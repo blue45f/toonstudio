@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -14,7 +15,6 @@ import { planStudioBg3dRoomBuild, type StudioBg3dRoomSpec } from "./studio-bg3d-
 import { readStudioBg3dRuntimeNodeExtras, studioBg3dNodeRuntimeExtras } from "./studio-bg3d-runtime-organization";
 import {
   captureStudioBg3dShot,
-  createDefaultStudioBg3dSceneDocument,
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   migrateStudioBg3dSceneDocument,
   normalizeStudioBg3dGlbAttachment,
@@ -38,15 +38,20 @@ import type { BgPrimitive } from "../studio-background-3d-primitives";
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
-/**
- * 2026-11-21(b5b505a79) 기본 문서 `quality.mobile.dprMax: 1.5 → 2` 상향 반영 직렬화 해시.
- * 새 선택 키(`surface`, `sceneRecipe`)가 없는 문서의 바이트가 고정되어야 한다.
- */
-const DEFAULT_DOCUMENT_SHA256 = "bd8f24771b687f6bd5059e2a7d43efdd125360102eec482d8f522b87456e1df9";
-const REPRESENTATIVE_DOCUMENT_SHA256 = "1ac43330cc32f376040f900f18a5b13442852e33d9123f6362e4e4c0861933e7";
-/** 2026-10-23 변경 전(HEAD 8ef318ad5, `quality.mobile.dprMax: 1.5`) 직렬화 해시. */
-const LEGACY_DPR15_DEFAULT_DOCUMENT_SHA256 = "df55d009ebe7c37bec88083e5a48df63ad81a1d851e569cf0e422db727d0a8fb";
-const LEGACY_DPR15_REPRESENTATIVE_DOCUMENT_SHA256 = "c286ab40d4c6b78ef26be344debd3535fa00fed6653869f76eb82efb941e983b";
+/** 2026-10-23 변경 전(HEAD 8ef318ad5) 직렬화 해시. 새 키가 없는 문서의 바이트가 같아야 한다. */
+const DEFAULT_DOCUMENT_SHA256 = "df55d009ebe7c37bec88083e5a48df63ad81a1d851e569cf0e422db727d0a8fb";
+const REPRESENTATIVE_DOCUMENT_SHA256 = "c286ab40d4c6b78ef26be344debd3535fa00fed6653869f76eb82efb941e983b";
+
+// 8ef318ad5의 저장 바이트를 고정한다. 신규 문서의 mobile.dprMax=2가 과거 fixture를 바꾸면 안 된다.
+const LEGACY_DEFAULT_DOCUMENT_JSON = readFileSync(
+  new URL("./fixtures/legacy-scene-document-20261023.json", import.meta.url), "utf8",
+).trimEnd();
+
+function legacyDefaultDocument(): StudioBg3dSceneDocument {
+  const document = parseStudioBg3dSceneDocument(LEGACY_DEFAULT_DOCUMENT_JSON);
+  if (!document) throw new Error("기존 장면 문서 fixture를 열지 못했습니다.");
+  return document;
+}
 
 function node(id: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -134,12 +139,8 @@ const strictSerialize = (overrides: Record<string, unknown>) => serializeStudioB
 
 describe("새 키가 없는 기존 문서는 바이트가 같다", () => {
   it("기본 문서와 대표 문서(태그·컴포넌트·메타·페인트·유리 재질·컷 포함)의 직렬화가 변경 전 해시와 같다", () => {
-    const defaultDoc = createDefaultStudioBg3dSceneDocument();
-    expect(sha256(serializeStudioBg3dSceneDocument(defaultDoc)!)).toBe(DEFAULT_DOCUMENT_SHA256);
-    expect(sha256(serializeStudioBg3dSceneDocument({
-      ...defaultDoc,
-      quality: { ...defaultDoc.quality, mobile: { ...defaultDoc.quality.mobile, dprMax: 1.5 } },
-    })!)).toBe(LEGACY_DPR15_DEFAULT_DOCUMENT_SHA256);
+    expect(sha256(LEGACY_DEFAULT_DOCUMENT_JSON)).toBe(DEFAULT_DOCUMENT_SHA256);
+    expect(serializeStudioBg3dSceneDocument(legacyDefaultDocument())).toBe(LEGACY_DEFAULT_DOCUMENT_JSON);
     // 변경 전 원클릭 교실 스펙(스타일·천장·몰딩 없음)의 앞 40 도형으로 같은 문서를 다시 만든다.
     const entry = getStudioBg3dWebtoonBackground("classroom") as StudioBg3dWebtoonRoomEntry;
     const { ceiling: _ceiling, trims: _trims, ...current } = entry.spec;
@@ -171,23 +172,13 @@ describe("새 키가 없는 기존 문서는 바이트가 같다", () => {
       } : {}),
     }));
     const withNodes = normalizeStudioBg3dSceneDocument({
-      ...createDefaultStudioBg3dSceneDocument(),
+      ...legacyDefaultDocument(),
       nodes,
       meta: { name: "교실 장면", memo: "첫 줄\n둘째 줄", hiddenTags: ["벽"] },
     });
     const withShot = captureStudioBg3dShot(withNodes, { id: "shot-1", name: "컷 1" })!;
     const serialized = serializeStudioBg3dSceneDocument(withShot)!;
     expect(sha256(serialized)).toBe(REPRESENTATIVE_DOCUMENT_SHA256);
-    const legacyWithShot = captureStudioBg3dShot(
-      normalizeStudioBg3dSceneDocument({
-        ...defaultDoc,
-        quality: { ...defaultDoc.quality, mobile: { ...defaultDoc.quality.mobile, dprMax: 1.5 } },
-        nodes,
-        meta: { name: "교실 장면", memo: "첫 줄\n둘째 줄", hiddenTags: ["벽"] },
-      }),
-      { id: "shot-1", name: "컷 1" },
-    )!;
-    expect(sha256(serializeStudioBg3dSceneDocument(legacyWithShot)!)).toBe(LEGACY_DPR15_REPRESENTATIVE_DOCUMENT_SHA256);
     expect(serialized).not.toContain('"surface"');
     expect(serialized).not.toContain('"sceneRecipe"');
     expect(serializeStudioBg3dSceneDocument(parseStudioBg3dSceneDocument(serialized))).toBe(serialized);

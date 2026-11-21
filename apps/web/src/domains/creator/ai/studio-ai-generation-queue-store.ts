@@ -154,6 +154,8 @@ export function createStudioAiGenerationQueueStore(options: {
   const listeners = new Set<() => void>();
   const activeControllers = new Map<string, AbortController>();
   let editRevision = 0;
+  let lastWrittenRaw: string | null = null;
+  let hasRestoredStoredQueue = false;
 
   let snapshot: StudioAiQueueSnapshot = Object.freeze({
     schemaVersion: 1,
@@ -168,14 +170,42 @@ export function createStudioAiGenerationQueueStore(options: {
     for (const listener of listeners) listener();
   };
 
-  const persistCurrent = async (): Promise<void> => {
-    if (!storage) return;
-    const payload: PersistedQueuePayload = {
+  const readStoredQueue = (raw: string | null): PersistedQueuePayload => {
+    if (raw !== null) {
+      const envelope: unknown = JSON.parse(raw);
+      if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)
+        || !("schemaVersion" in envelope) || envelope.schemaVersion !== 1
+        || ("documentId" in envelope && envelope.documentId !== documentId)
+        || !("jobs" in envelope) || !Array.isArray(envelope.jobs)
+        || !("artifacts" in envelope) || !envelope.artifacts || typeof envelope.artifacts !== "object" || Array.isArray(envelope.artifacts)) {
+        throw new Error("복원할 수 없는 다른 문서 또는 미지원 대기열 기록입니다.");
+      }
+      const restored = parsePersistedQueuePayload(raw, now);
+      if (restored.jobs.length !== Math.min(envelope.jobs.length, MAX_STORED_AI_QUEUE_JOBS)) {
+        throw new Error("손상된 작업이 있는 대기열 원본을 보존합니다.");
+      }
+      return restored;
+    }
+    return parsePersistedQueuePayload(null, now);
+  };
+
+  const persistCurrent = (): boolean => {
+    if (!storage) return true;
+    const raw = storage.getItem(storageKey);
+    readStoredQueue(raw);
+    // 복원 전에 만든 초안으로 이전 대기열을 덮지 않고 hydrate에서 두 사본을 합친다.
+    if (!hasRestoredStoredQueue && raw !== null && raw !== lastWrittenRaw) return false;
+    const payload: PersistedQueuePayload & { readonly documentId: string } = {
       schemaVersion: 1,
+      documentId,
       jobs: snapshot.jobs.slice(0, MAX_STORED_AI_QUEUE_JOBS),
       artifacts: snapshot.artifacts,
     };
-    storage.setItem(storageKey, JSON.stringify(payload));
+    const serialized = JSON.stringify(payload);
+    storage.setItem(storageKey, serialized);
+    if (storage.getItem(storageKey) !== serialized) throw new Error("대기열 저장 결과를 확인하지 못했습니다.");
+    lastWrittenRaw = serialized;
+    return true;
   };
 
   const commitState = (
@@ -184,21 +214,19 @@ export function createStudioAiGenerationQueueStore(options: {
     extra: { readonly hydrated?: boolean; readonly storageError?: string | null } = {},
     skipPersist = false,
   ) => {
+    const jobs = nextJobs.slice(0, MAX_STORED_AI_QUEUE_JOBS);
+    const retainedIds = new Set(jobs.map((job) => job.id));
     snapshot = Object.freeze({
       schemaVersion: 1,
       documentId,
-      jobs: Object.freeze(nextJobs.slice(0, MAX_STORED_AI_QUEUE_JOBS)),
-      artifacts: Object.freeze({ ...nextArtifacts }),
+      jobs: Object.freeze(jobs),
+      artifacts: Object.freeze(Object.fromEntries(Object.entries(nextArtifacts).filter(([id]) => retainedIds.has(id)))),
       hydrated: extra.hydrated ?? snapshot.hydrated,
       storageError: extra.storageError !== undefined ? extra.storageError : snapshot.storageError,
     });
     if (!skipPersist && storage) {
       try {
-        storage.setItem(
-          storageKey,
-          JSON.stringify({ schemaVersion: 1, jobs: snapshot.jobs, artifacts: snapshot.artifacts }),
-        );
-        if (snapshot.storageError !== null) {
+        if (persistCurrent() && snapshot.storageError !== null) {
           snapshot = Object.freeze({ ...snapshot, storageError: null });
         }
       } catch {
@@ -247,19 +275,34 @@ export function createStudioAiGenerationQueueStore(options: {
     },
 
     async hydrate() {
-      const revisionAtStart = editRevision;
+      const revisionAtStart = hasRestoredStoredQueue ? editRevision : 0;
       const [settled] = await Promise.allSettled([
         Promise.resolve().then(() =>
-          storage ? parsePersistedQueuePayload(storage.getItem(storageKey), now) : { schemaVersion: 1 as const, jobs: [], artifacts: {} },
+          storage ? readStoredQueue(storage.getItem(storageKey)) : { schemaVersion: 1 as const, jobs: [], artifacts: {} },
         ),
       ]);
+      if (settled?.status !== "fulfilled") {
+        commitState(snapshot.jobs, snapshot.artifacts,
+          { hydrated: true, storageError: "저장된 대기열을 복원하지 못해 현재 초안을 메모리에 보존했습니다." }, true);
+        return false;
+      }
+      hasRestoredStoredQueue = true;
+      if (editRevision !== revisionAtStart) {
+        const currentIds = new Set(snapshot.jobs.map((job) => job.id));
+        commitState(
+          [...snapshot.jobs, ...settled.value.jobs.filter((job) => !currentIds.has(job.id))],
+          { ...settled.value.artifacts, ...snapshot.artifacts },
+          { hydrated: true },
+          true,
+        );
+      }
       const ok = await hydrateStudioPreference(
         settled!,
         editRevision === revisionAtStart,
         (saved) => {
           commitState(saved.jobs, saved.artifacts, { hydrated: true, storageError: null }, true);
         },
-        persistCurrent,
+        async () => { persistCurrent(); },
       );
       if (!ok) {
         commitState(
@@ -268,8 +311,8 @@ export function createStudioAiGenerationQueueStore(options: {
           { hydrated: true, storageError: "저장된 대기열을 복원하지 못해 새 대기열로 시작했습니다." },
           true,
         );
-      } else if (!snapshot.hydrated) {
-        commitState(snapshot.jobs, snapshot.artifacts, { hydrated: true }, true);
+      } else if (!snapshot.hydrated || snapshot.storageError !== null) {
+        commitState(snapshot.jobs, snapshot.artifacts, { hydrated: true, storageError: null }, true);
       }
       return ok;
     },

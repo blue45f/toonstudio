@@ -53,6 +53,14 @@ test("전체 문맥을 유지한 샤드는 imported 비root 오류·global/modul
     assert.ok(report.identity.files.some((file) => file.path === join(context.root, "library.ts")));
     assert.equal(report.phases.semantic.checkedFiles, report.identity.files.length);
     assert.ok(report.workers.length > 1);
+    const larger = verifyInShards(optionsFor(context), fixtureRunner(context));
+    assert.notEqual(report.workers.length, larger.workers.length);
+    assert.equal(larger.complete, true);
+    assert.deepEqual(larger.diagnostics, report.diagnostics);
+    assert.deepEqual(larger.phases.semantic, report.phases.semantic);
+    assert.equal(larger.fingerprint, report.fingerprint);
+    assert.equal(larger.phases.finalSnapshot.fingerprint, report.fingerprint);
+    assert.equal(report.phases.finalSnapshot.fingerprint, report.fingerprint);
     assert.ok(report.diagnostics.some((item) => item.file === join(context.root, "library.ts") && item.code === 2322));
     assert.ok(report.diagnostics.some((item) => item.code === 2578));
   } finally { context.dispose(); }
@@ -375,4 +383,19 @@ test("CLI 연속 실행은 동일 fingerprint 완료 리포트를 재사용하�
     assert.equal(warmReport.complete, true);
     assert.equal(warmReport.cacheReuse?.mode, "complete");
   } finally { context.dispose(); }
+});
+
+test("호스팅 CI의 초기 바이트 예산은 명시된 경우에만 기본 CLI 값을 덮어쓴다", () => {
+  const args = ["--heap-mb", "8192", "--max-source-bytes", "12582912"];
+  const local = parseArguments(args, {});
+  const hosted = parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" });
+  assert.equal(local.maxBytes, 12582912);
+  assert.deepEqual(hosted, { ...local, maxBytes: 6291456 });
+  assert.equal(parseArguments([], {}).maxBytes, 4 * 1024 * 1024);
+  for (const value of ["", "0", "-1", "2.5", "NaN", "Infinity", "9007199254740992"]) {
+    assert.throws(() => parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: value }),
+      /TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES/u);
+  }
+  assert.throws(() => parseArguments(["--max-source-bytes", "0"], { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" }),
+    /--max-source-bytes/u);
 });

@@ -11,6 +11,7 @@ import type { StudioAdjustmentLayerSpec } from "../layer/studio-adjustment-layer
 import type { StudioBlendIfConfig } from "../layer/studio-blend-if-compositor";
 import type { DialoguePageLike } from "../lettering/studio-dialogue-batch";
 import { STUDIO_PLANNING_UPDATED_EVENT, readStudioProjectPlanning, writeStudioProjectPlanning } from "../planning/studio-planning-store";
+import { canReplaceScopedStudioProjectRecord, isScopedStudioProjectRecord, isStudioProjectRecordMemoryOnly, markStudioProjectRecordMemoryOnly } from "../planning/studio-local-project-record-guard";
 import type { StoryLivingSpecState } from "../planning/studio-story-living-spec-types";
 import type { WebtoonViewAreaAspectRatio } from "../reader-preview/StudioWebtoonViewAreaOverlay";
 import type { CornerPinQuad } from "../transform/studio-corner-pin-transform";
@@ -202,9 +203,9 @@ export function readExpandedLiveWorkspace(projectId: string, storage: StorageLik
   if (!storage) return fallback;
   try {
     const raw = storage.getItem(studioExpandedWorkspaceStorageKey(projectId));
-    if (!raw) return fallback;
+    if (raw === null) return fallback;
     const parsed = JSON.parse(raw) as Partial<StudioExpandedLiveWorkspaceState> | null;
-    if (!parsed || parsed.schemaVersion !== 1 || parsed.projectId !== projectId) return fallback;
+    if (!parsed || !isScopedStudioProjectRecord(parsed, projectId, "workspace")) return markStudioProjectRecordMemoryOnly(fallback);
     return {
       ...fallback, ...parsed,
       canvasZoneDrag: { ...fallback.canvasZoneDrag, ...(parsed.canvasZoneDrag ?? {}), zoneItemIds: { ...fallback.canvasZoneDrag.zoneItemIds, ...(parsed.canvasZoneDrag?.zoneItemIds ?? {}) } },
@@ -215,11 +216,11 @@ export function readExpandedLiveWorkspace(projectId: string, storage: StorageLik
       engineCommits: { ...(parsed.engineCommits ?? {}) },
       commitHistory: Array.isArray(parsed.commitHistory) ? parsed.commitHistory : [],
     };
-  } catch { return fallback; }
+  } catch { return markStudioProjectRecordMemoryOnly(fallback); }
 }
 
 export function writeExpandedLiveWorkspace(state: StudioExpandedLiveWorkspaceState, storage: StorageLike | null = defaultStorage()): StudioExpandedLiveWorkspaceState {
-  if (storage) {
+  if (storage && canReplaceScopedStudioProjectRecord(storage, studioExpandedWorkspaceStorageKey(state.projectId), state.projectId, "workspace", state)) {
     try { storage.setItem(studioExpandedWorkspaceStorageKey(state.projectId), JSON.stringify(state)); } catch { /* 저장 한도 초과 시 메모리 유지 */ }
   }
   return state;
@@ -235,12 +236,13 @@ export function commitExpandedLiveWorkspace(
   const storage = options?.storage === undefined ? defaultStorage() : options.storage;
   const target = options?.target === undefined ? defaultEventTarget() : options.target;
   const now = options?.now ?? new Date().toISOString();
-  const mutated = updater(readExpandedLiveWorkspace(projectId, storage), now);
+  const previous = readExpandedLiveWorkspace(projectId, storage);
+  const mutated = updater(previous, now);
   const envelope: ExpandedToolCommitEnvelope = {
     id: `commit-${mutated.commitHistory.length + 1}-${loaderId}`, projectId,
     cutId: mutated.activeCutId, layerId: mutated.activeLayerId, loaderId, summaryKo, committedAt: now, payload: options?.payload,
   };
-  const next: StudioExpandedLiveWorkspaceState = { ...mutated, projectId, updatedAt: now, commitHistory: [...mutated.commitHistory.slice(-29), envelope] };
+  const next: StudioExpandedLiveWorkspaceState = { ...previous, ...mutated, projectId, updatedAt: now, commitHistory: [...mutated.commitHistory.slice(-29), envelope] };
   writeExpandedLiveWorkspace(next, storage);
   target?.dispatchEvent(new CustomEvent<ExpandedToolCommitEnvelope>(STUDIO_EXPANDED_TOOL_COMMIT_EVENT, { detail: envelope }));
   return { state: next, envelope };
@@ -415,11 +417,11 @@ export function readProjectStoryLivingSpecRecord(projectId: string, storage: Sto
   if (!storage) return fallback;
   try {
     const raw = storage.getItem(studioStoryLivingSpecStorageKey(projectId));
-    if (!raw) return fallback;
+    if (raw === null) return fallback;
     const parsed = JSON.parse(raw) as Partial<StoryLivingSpecPersistedRecord> | null;
-    if (!parsed || parsed.schemaVersion !== 1 || !parsed.state) return fallback;
+    if (!parsed?.state || !isScopedStudioProjectRecord(parsed, projectId, "story")) return markStudioProjectRecordMemoryOnly(fallback);
     return { schemaVersion: 1, projectId, state: parsed.state, cutApprovals: parsed.cutApprovals ?? {}, updatedAt: parsed.updatedAt ?? fallback.updatedAt };
-  } catch { return fallback; }
+  } catch { return markStudioProjectRecordMemoryOnly(fallback); }
 }
 
 export function writeProjectStoryLivingSpecRecord(
@@ -429,8 +431,9 @@ export function writeProjectStoryLivingSpecRecord(
 ): StoryLivingSpecPersistedRecord {
   const storage = options?.storage === undefined ? defaultStorage() : options.storage;
   const target = options?.target === undefined ? defaultEventTarget() : options.target;
+  if (isStudioProjectRecordMemoryOnly(record) || !isScopedStudioProjectRecord(record, projectId, "story")) return record;
   const normalized: StoryLivingSpecPersistedRecord = { ...record, schemaVersion: 1, projectId, updatedAt: new Date().toISOString() };
-  if (storage) { try { storage.setItem(studioStoryLivingSpecStorageKey(projectId), JSON.stringify(normalized)); } catch { /* 한도 초과 시 유지 */ } }
+  if (storage && canReplaceScopedStudioProjectRecord(storage, studioStoryLivingSpecStorageKey(projectId), projectId, "story", normalized)) { try { storage.setItem(studioStoryLivingSpecStorageKey(projectId), JSON.stringify(normalized)); } catch { /* 한도 초과 시 유지 */ } }
   target?.dispatchEvent(new CustomEvent<StoryLivingSpecPersistedRecord>(STUDIO_STORY_LIVING_SPEC_UPDATED_EVENT, { detail: normalized }));
   return normalized;
 }

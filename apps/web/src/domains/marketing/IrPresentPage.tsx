@@ -5,6 +5,7 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import "./ir-present-page.css";
 
 import { SCENE_META, TOTAL } from "./ir-present-scene-data";
+import { getIrNarrationSource, isIrNarrationCurrent } from "./ir-present-narration";
 import { SCENE_NODES_A } from "./ir-present-scenes-a";
 import { SCENE_NODES_B } from "./ir-present-scenes-b";
 
@@ -12,8 +13,8 @@ import { SCENE_NODES_B } from "./ir-present-scenes-b";
  * IR 발표 플레이어 (/ir/present).
  *
  * 발표용 웹 아티팩트로 먼저 만든 24씬 풀스크린 슬라이드 플레이어를 실제 사이트에 이식한 페이지다.
- * 씬 구성·문안·내레이션·배경음은 아티팩트 검증 완료본 그대로이며, 제품 화면 이미지는
- * 제품 투어가 이미 쓰는 /brand/product-tour/ 자산을 재사용한다(중복 업로드 없음).
+ * 제품 화면 이미지는 제품 투어의 /brand/product-tour/ 자산을 재사용한다.
+ * 화면 문안과의 일치가 확인되지 않은 내레이션은 로드하지 않고 화면과 체류 시간으로 진행한다.
  * 내레이션 오디오(n01–n24)는 아티팩트 제작 때 생성한 AI 음성 파일로,
  * /brand/ir-present/audio/ 아래에 둔다. 배경음은 제품 투어 배경음 원본
  * (/brand/product-tour/toonstudio-product-tour-bgm.m4a)을 직접 공유한다.
@@ -31,7 +32,6 @@ import { SCENE_NODES_B } from "./ir-present-scenes-b";
  * 씬별 체류 시간(dwell)을 쓴다.
  */
 
-const AUDIO_DIR = "/brand/ir-present/audio";
 const SHARED_PRODUCT_TOUR_BGM_SRC = "/brand/product-tour/toonstudio-product-tour-bgm.m4a";
 const BGM_BASE_VOLUME = 0.14;
 const BGM_DUCK_VOLUME = 0.045;
@@ -50,6 +50,8 @@ const SCENE_NODES = [...SCENE_NODES_A, ...SCENE_NODES_B];
 
 export function IrPresentPage() {
   useDocumentTitle("툰스튜디오 IR · 발표 플레이어");
+  const narrationAvailable = isIrNarrationCurrent()
+    && SCENE_META.every((scene) => getIrNarrationSource(scene.audio) !== null);
 
   const [idx, setIdx] = useState(() => {
     const match = (window.location.hash || "").match(/s=(\d+)/);
@@ -127,11 +129,18 @@ export function IrPresentPage() {
     clearGap();
     const i = idxRef.current;
     const narr = narrRef.current;
-    if (!soundOnRef.current || !narr || narrFailedRef.current.has(i)) {
+    if (!narrationAvailable || !soundOnRef.current || !narr || narrFailedRef.current.has(i)) {
+      narr?.pause();
+      duck(false);
+      if (soundOnRef.current) setSoundMode("on");
       scheduleAdvance(dwellMs(i));
       return;
     }
-    const src = `${AUDIO_DIR}/${SCENE_META[i].audio}`;
+    const src = getIrNarrationSource(SCENE_META[i].audio);
+    if (!src) {
+      scheduleAdvance(dwellMs(i));
+      return;
+    }
     if (narrSrcRef.current !== src) {
       narr.src = src;
       narrSrcRef.current = src;
@@ -448,7 +457,7 @@ export function IrPresentPage() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
-          <span className={`sound-state ${soundMode}`}><span className="led" /><span className="txt">{soundMode === "narr" ? "내레이션 재생 중" : soundMode === "off" ? "소리 꺼짐" : "소리 켜짐"}</span></span>
+          <span className={`sound-state ${soundMode}`} title={narrationAvailable ? undefined : "내레이션은 화면 문안과의 일치 확인 후 제공됩니다."}><span className="led" /><span className="txt">{soundMode === "off" ? "소리 꺼짐" : !narrationAvailable ? "화면 문안으로 진행" : soundMode === "narr" ? "내레이션 재생 중" : "소리 켜짐"}</span></span>
           <button className="hud-btn" type="button" aria-pressed={soundOn} aria-label="소리 켜기/끄기 (M)" onClick={(event) => { unlockAudio(); const next = !soundOnRef.current; applySound(next); showToast(next ? "소리를 켰습니다" : "소리를 껐습니다 (M)"); event.currentTarget.blur(); }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none" /><path className="sw" style={{ display: soundOn ? undefined : "none" }} d="M15.5 8.5a5 5 0 0 1 0 7" /><path className="sw" style={{ display: soundOn ? undefined : "none" }} d="M18 6a8.5 8.5 0 0 1 0 12" /></svg>
             소리
@@ -494,9 +503,9 @@ export function IrPresentPage() {
         </div>
 
         {/* eslint-disable-next-line jsx-a11y/media-has-caption -- Scene narration for the presentation; the same content is shown as on-screen text in every scene. */}
-        <audio
+        {narrationAvailable ? <audio
           ref={narrRef}
-          preload="auto"
+          preload="none"
           onPlay={() => { duck(true); if (soundOnRef.current) setSoundMode("narr"); }}
           onPause={() => { duck(false); if (soundOnRef.current) setSoundMode("on"); }}
           onEnded={() => {
@@ -509,7 +518,7 @@ export function IrPresentPage() {
             duck(false);
             if (playingRef.current) scheduleAdvance(dwellMs(idxRef.current));
           }}
-        />
+        /> : null}
         {/* eslint-disable-next-line jsx-a11y/media-has-caption -- Background music only; there is no speech to caption. */}
         <audio ref={bgmRef} src={SHARED_PRODUCT_TOUR_BGM_SRC} loop preload="auto" />
       </div>

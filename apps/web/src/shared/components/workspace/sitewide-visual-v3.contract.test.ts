@@ -48,15 +48,14 @@ describe("sitewide visual identity v3 contract", () => {
   });
 
   it("keeps the canvas quiet while upgrading editor chrome and the beta gate", () => {
-    expect(editorCss).toContain("[data-studio-canvas-viewport]");
-    // 2026-11-20 스타라이트 OKLCH Unslop 정비 이후 개별 도구 원시 HEX 레일 대신 단색 2px 강조 레일을 사용한다.
-    expect(editorCss).toContain(
-      '[data-studio-editor="true"] :where([data-studio-rail-tool-id], [data-studio-current-tool-id])[aria-pressed="true"]',
-    );
-    expect(editorCss).toContain("box-shadow: inset 2px 0 0 var(--color-accent) !important");
+    expect(editorCss).toContain('[data-studio-canvas-viewport]');
+    // 펜을 포함한 모든 레일 도구는 같은 활성 표시를 사용한다.
+    const activeRailRule = editorCss.match(/\[data-studio-editor="true"\] :where\(\[data-studio-rail-tool-id\], \[data-studio-current-tool-id\]\)\[aria-pressed="true"\]\s*\{([^}]+)\}/u)?.[1];
+    expect(activeRailRule).toContain("background: var(--color-accent-soft)");
+    expect(activeRailRule).toContain("box-shadow: inset 2px 0 0 var(--color-accent)");
     expect(editorCss).toContain('[data-studio-beta-notice="true"]');
-    expect(editorCss).toMatch(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)/u);
-    expect(editorCss).toMatch(/@media\s*\(\s*forced-colors:\s*active\s*\)/u);
+    expect(editorCss).toMatch(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)\s*\{[^{}]+\{[^}]*transition:\s*none/u);
+    expect(editorCss).toMatch(/@media\s*\(\s*forced-colors:\s*active\s*\)\s*\{[^{}]+\{[^}]*color:\s*CanvasText/u);
   });
 
   it("gives protected administration routes the same image-led visual language", () => {

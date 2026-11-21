@@ -10,6 +10,10 @@ import { studioBrushCatalogSelectionSnapshot, studioBrushSlotSelectionSnapshot }
 import { assignStudioBrushSlot, emptyStudioBrushSlots, normalizeStudioBrushSlotsState, rememberStudioBrushSlot } from "./studio-brush-slots";
 import { studioMaterialBrushConfig } from "./studio-material-brush-runtime";
 
+import { createStudioBuiltInBrushDefaultRestoreProfile } from "./studio-brush-default-restore";
+import { DEFAULT_STUDIO_BRUSH_SNAPSHOT, sanitizeBrushSnapshot } from "./studio-brush-library";
+import { resolveStudioStampBrushStyle } from "./studio-brush-stamp-engine";
+
 const material = () => createBrushStudioV6ProductBrush(createBrushStudioV6Program("oil-hair-mixer"));
 
 describe("material brush selection transitions", () => {
@@ -119,5 +123,55 @@ describe("material brush selection transitions", () => {
     const assignedBlock = source.slice(assignedStart, assignedStart + 1_200);
     expect(assignedBlock).toContain("color,");
     expect(assignedBlock).toContain("stabilizer,");
+  });
+});
+
+describe("Fringe authored stamp controls", () => {
+  const fringe = BRUSH_PRESETS.find(({ id }) => id === "mypaint-cc0--watercolor-fringe")!;
+  const selection = studioCoreBrushCatalogSelection(fringe);
+  const stock = { flow: 0.26, hardness: 0.28, minSize: 0.55 };
+  const authored = { flow: 0.7752, hardness: 0.9, minSize: 1 };
+  const custom = { flow: 0.43, hardness: 0.51, minSize: 0.67 };
+  const current = { ...DEFAULT_STUDIO_BRUSH_SNAPSHOT, stampTuning: custom };
+
+  it("uses the authored Fringe controls on fresh selection, slot recall, and built-in reset", () => {
+    const applied = { brushId: fringe.id, strokeWidth: 34, brushOpacity: 0.55, color: current.color };
+    const next = studioBrushCatalogSelectionSnapshot(current, selection, applied);
+    expect(next.stampTuning).toEqual(authored);
+    const reloaded = normalizeStudioBrushSlotsState(JSON.parse(JSON.stringify(
+      assignStudioBrushSlot(emptyStudioBrushSlots(), 0, applied),
+    )));
+    expect(studioBrushSlotSelectionSnapshot(current, reloaded.slots[0]!).stampTuning).toEqual(authored);
+    expect(createStudioBuiltInBrushDefaultRestoreProfile(selection).values.stampTuning).toEqual(authored);
+  });
+
+  it.each(["wash-brush", "mypaint-cc0--watercolor-expressive", "pen"])(
+    "leaves %s authoring controls unchanged",
+    (id) => {
+      const preset = BRUSH_PRESETS.find((brush) => brush.id === id)!;
+      const selected = studioCoreBrushCatalogSelection(preset);
+      const next = studioBrushCatalogSelectionSnapshot(current, selected, {
+        brushId: id, strokeWidth: preset.defaultWidth, brushOpacity: preset.defaultOpacity, color: current.color,
+      });
+      const expected = id === "pen" ? null : stock;
+      expect(next.stampTuning).toEqual(expected);
+      expect(createStudioBuiltInBrushDefaultRestoreProfile(selected).values.stampTuning).toEqual(expected);
+    },
+  );
+
+  it("keeps serialized custom tuning and honors the existing committed stroke's stamp receipt", () => {
+    const savedSnapshot = sanitizeBrushSnapshot(JSON.parse(JSON.stringify({
+      ...current, brushId: fringe.id,
+    }))).snapshot;
+    expect(savedSnapshot.stampTuning).toEqual(custom);
+    const readStyle = (stamp: typeof stock) => {
+      const receipt = JSON.parse(JSON.stringify({ brush: fringe.id, stamp, strokeWidth: 34, opacity: 0.55 }));
+      return resolveStudioStampBrushStyle("watercolor", {
+        color: current.color, size: receipt.strokeWidth, opacity: receipt.opacity,
+      }, receipt.stamp, receipt.brush);
+    };
+    expect(readStyle(stock)).toMatchObject({ flow: stock.flow, hardness: stock.hardness, minSizeRatio: stock.minSize });
+    expect(readStyle(custom)).toMatchObject({ flow: custom.flow, hardness: custom.hardness, minSizeRatio: custom.minSize });
+    expect(readStyle(authored)).toMatchObject({ flow: authored.flow, hardness: authored.hardness, minSizeRatio: authored.minSize });
   });
 });

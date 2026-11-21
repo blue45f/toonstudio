@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import {
   buildGovernanceSarifReport,
   verifyGovernanceSarifReport,
 } from "./export-governance-sarif-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("buildGovernanceSarifReport emits valid SARIF 2.1.0 and catches failed governance checks", () => {
   const cleanSarif = buildGovernanceSarifReport({

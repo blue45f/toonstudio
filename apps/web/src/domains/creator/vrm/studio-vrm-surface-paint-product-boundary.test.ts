@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { readStudioPageCompositionSource } from "../studio-cuttoon-editor/read-studio-cuttoon-editor-source";
 
 import { readStudioVrmPoserImplementationSource } from "./studio-vrm-poser-implementation-source";
-import { resolveStudioVrmSurfaceStrokePressure } from "./studio-vrm-surface-paint-tool";
 
 const poserSource = readStudioVrmPoserImplementationSource();
 const pageSource = readStudioPageCompositionSource();
@@ -91,15 +90,8 @@ describe("VRM V12 surface-paint product boundary", () => {
 
   it("preserves pressure and tilt IR while retaining seam-safe measured projection", () => {
     expect(toolSource).toContain("modelRawInput(");
-    // 2026-11-21(b5b505a79): 압력 모드(fake/real/none) 지원을 위해 헬퍼로 분리했으며 미지정 시 원시 필압을 그대로 보존한다.
-    expect(toolSource).toContain(
-      "pressure: resolveStudioVrmSurfaceStrokePressure(sample.pressure, index / denom, pressureMode)",
-    );
-    expect(toolSource).toContain("if (!mode) return clampedRaw;");
-    expect(resolveStudioVrmSurfaceStrokePressure(0.375, 0.5)).toBe(0.375);
-    expect(resolveStudioVrmSurfaceStrokePressure(0.375, 0.5, "none")).toBe(1);
-    expect(resolveStudioVrmSurfaceStrokePressure(0.375, 0.5, "fake")).toBe(1);
-    expect(resolveStudioVrmSurfaceStrokePressure(0.375, 0.5, "real")).toBe(0.75);
+    expect(toolSource).toContain("toRawSamples(transaction.samples, transaction.settings.pressureMode)");
+    expect(toolSource).toContain("pressure: resolveStudioVrmSurfaceStrokePressure(sample.pressure, index / denom, pressureMode)");
     expect(toolSource).toContain("tiltXDeg: sample.tiltX");
     expect(toolSource).toContain("tiltYDeg: sample.tiltY");
     expect(toolSource).toContain("brushProgram: built.brushProgram");

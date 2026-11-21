@@ -3,6 +3,8 @@
  * 브라우저 재방문·리로드 시에도 공정 진행 상태와 인계 메모·타임스탬프를 복원한다.
  */
 
+import { isStudioProjectRecordMemoryOnly, markStudioProjectRecordMemoryOnly } from "../planning/studio-local-project-record-guard";
+
 export const KANBAN_STAGE_ORDER = [
   "storyboard",
   "bg3d",
@@ -118,21 +120,24 @@ function normalizeHandoffEntry(raw: unknown): KanbanHandoffEntry | null {
   };
 }
 
-export function loadProjectKanbanState(
-  storage: KanbanStorageLike | null | undefined,
-  projectId: string,
-): ProjectKanbanBoardState {
-  const fallback = createDefaultProjectKanbanState(projectId);
-  if (!storage) return fallback;
+function parseProjectKanbanState(raw: string, projectId: string): ProjectKanbanBoardState | null {
   try {
-    const raw = storage.getItem(kanbanStorageKey(projectId));
-    if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)
+      || parsed.version !== 1 || parsed.projectId !== projectId
+      || !Array.isArray(parsed.handoffs)) return null;
     const rawStages =
       parsed.stages && typeof parsed.stages === "object" && !Array.isArray(parsed.stages)
         ? (parsed.stages as Record<string, unknown>)
         : {};
+    if (!KANBAN_STAGE_ORDER.every(id => {
+      const stage = rawStages[id];
+      if (!stage || typeof stage !== "object" || Array.isArray(stage)) return false;
+      const record = stage as Record<string, unknown>;
+      return typeof record.status === "string" && STATUS_SET.has(record.status)
+        && typeof record.assignee === "string" && typeof record.lastHandoffMemo === "string"
+        && (record.updatedAt === null || typeof record.updatedAt === "string");
+    }) || !parsed.handoffs.every(entry => normalizeHandoffEntry(entry) !== null)) return null;
     const stages = {
       storyboard: normalizeStageRecord(rawStages.storyboard),
       bg3d: normalizeStageRecord(rawStages.bg3d),
@@ -153,7 +158,22 @@ export function loadProjectKanbanState(
       handoffs,
     };
   } catch {
-    return fallback;
+    return null;
+  }
+}
+
+export function loadProjectKanbanState(
+  storage: KanbanStorageLike | null | undefined,
+  projectId: string,
+): ProjectKanbanBoardState {
+  const fallback = createDefaultProjectKanbanState(projectId);
+  if (!storage) return markStudioProjectRecordMemoryOnly(fallback);
+  try {
+    const raw = storage.getItem(kanbanStorageKey(projectId));
+    if (raw === null) return fallback;
+    return parseProjectKanbanState(raw, projectId) ?? markStudioProjectRecordMemoryOnly(fallback);
+  } catch {
+    return markStudioProjectRecordMemoryOnly(fallback);
   }
 }
 
@@ -161,10 +181,15 @@ export function saveProjectKanbanState(
   storage: KanbanStorageLike | null | undefined,
   state: ProjectKanbanBoardState,
 ): boolean {
-  if (!storage) return false;
+  if (!storage || isStudioProjectRecordMemoryOnly(state)) return false;
   try {
-    storage.setItem(kanbanStorageKey(state.projectId), JSON.stringify(state));
-    return true;
+    const normalized = parseProjectKanbanState(JSON.stringify(state), state.projectId);
+    if (!normalized) return false;
+    const raw = storage.getItem(kanbanStorageKey(state.projectId));
+    if (raw !== null && !parseProjectKanbanState(raw, state.projectId)) return false;
+    const serialized = JSON.stringify(normalized);
+    storage.setItem(kanbanStorageKey(state.projectId), serialized);
+    return storage.getItem(kanbanStorageKey(state.projectId)) === serialized;
   } catch {
     return false;
   }

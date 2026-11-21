@@ -12,10 +12,20 @@ import type { StudioLiveStrokeBackendAuditSession } from "../studio-page-editor-
 import type { StudioWebGpuCanvasHandle, StudioWebGpuSurfaceFrameRequest } from "../StudioWebGpuCanvas";
 import type { StudioWebGpuAuthorityFrame } from "./studio-webgpu-authority";
 import type { StudioGpuBackend, StudioGpuFrameReceipt } from "./studio-webgpu-frame-contract";
+import type { StudioGpuLiveSourceJournalRejectionReason } from "./studio-webgpu-live-source-journal";
 import type { StudioGpuPendingDrawAuthority } from "./studio-webgpu-pending-authority";
 import type { StudioGpuStroke } from "./studio-webgpu-stroke";
 import type Konva from "konva";
 import type { MutableRefObject, RefObject } from "react";
+
+/** 입력·대칭 예산의 정상 거절을 GPU 장치 장애로 바꾸지 않는다. */
+export function studioLiveSourceJournalFailureReason(
+  reason: StudioGpuLiveSourceJournalRejectionReason,
+): StudioLiveStrokeGpuFailureReason {
+  return reason === "variation-budget" || reason === "source-advance-budget"
+    ? "stroke-budget-exceeded"
+    : "request-failed";
+}
 
 /**
  * 라이브 스트로크 백엔드 감사(coordinator receipt authority) + WebGPU 표면 콜백을 StudioPage 본문에서
@@ -408,19 +418,26 @@ export function createStudioLiveStrokeGpuAudit(
     requestId?: string,
     strokeId?: string
   ): boolean {
-    const requestOwner = requestId
+    const requestOwner = requestId !== undefined
       ? liveStrokeBackendAuditGpuOwnersRef.current.get(requestId)
       : null;
+    const strokeOwner = strokeId !== undefined
+      ? liveStrokeBackendAuditSessionsRef.current.get(strokeId)
+      : null;
+    // 명시한 소유자를 잃은 실패를 새로 그리는 획에 연결하지 않는다.
+    if (requestId !== undefined && !requestOwner) return false;
+    if (strokeId !== undefined && !strokeOwner) return false;
+    if (requestOwner && strokeOwner && requestOwner !== strokeOwner) return false;
     const activeId = liveStrokeBackendAuditActiveIdRef.current;
+    const globalSurfaceFailure = requestId === undefined && strokeId === undefined
+      && (reason === "device-lost" || reason === "surface-lost");
     const session = requestOwner
-      ?? (strokeId
-        ? liveStrokeBackendAuditSessionsRef.current.get(strokeId)
-        : null)
-      ?? (activeId
+      ?? strokeOwner
+      ?? (globalSurfaceFailure && activeId
         ? liveStrokeBackendAuditSessionsRef.current.get(activeId)
         : null);
     if (!session) return false;
-    const token = requestId
+    const token = requestId !== undefined
       ? session.gpuRequest?.requestId === requestId
         ? session.gpuRequest
         : null
@@ -430,7 +447,7 @@ export function createStudioLiveStrokeGpuAudit(
       strokeId: session.strokeId,
       reason,
       ...(
-        reason === "device-lost" || reason === "surface-lost"
+        reason === "device-lost" || reason === "surface-lost" || reason === "stroke-budget-exceeded"
           ? {}
           : { token }
       ),

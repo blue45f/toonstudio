@@ -497,6 +497,11 @@ export function bindStudioCuttoonStagePointersBatch(
                 twists: authoritativeDrawing.twists,
                 speeds: authoritativeDrawing.speeds,
                 tangentialPressures: authoritativeDrawing.tangentialPressures,
+                altitudeAngles: authoritativeDrawing.altitudeAngles,
+                azimuthAngles: authoritativeDrawing.azimuthAngles,
+                contactWidths: authoritativeDrawing.contactWidths,
+                contactHeights: authoritativeDrawing.contactHeights,
+                sampleTimeOffsets: authoritativeDrawing.sampleTimeOffsets,
                 fallbackPressure: studioInkFallbackPressure(authoritativeDrawing.pressureModel),
               })
             : null;
@@ -531,21 +536,21 @@ export function bindStudioCuttoonStagePointersBatch(
               : authoritativeDrawing.tangentialPressures
                 ? [...authoritativeDrawing.tangentialPressures]
                 : undefined,
-            altitudeAngles: authoritativeDrawing.altitudeAngles
-              ? [...authoritativeDrawing.altitudeAngles]
-              : undefined,
-            azimuthAngles: authoritativeDrawing.azimuthAngles
-              ? [...authoritativeDrawing.azimuthAngles]
-              : undefined,
-            contactWidths: authoritativeDrawing.contactWidths
-              ? [...authoritativeDrawing.contactWidths]
-              : undefined,
-            contactHeights: authoritativeDrawing.contactHeights
-              ? [...authoritativeDrawing.contactHeights]
-              : undefined,
-            sampleTimeOffsets: authoritativeDrawing.sampleTimeOffsets
-              ? [...authoritativeDrawing.sampleTimeOffsets]
-              : undefined,
+            altitudeAngles: suffixDraft
+              ? suffixDraft.altitudeAngles
+              : authoritativeDrawing.altitudeAngles ? [...authoritativeDrawing.altitudeAngles] : undefined,
+            azimuthAngles: suffixDraft
+              ? suffixDraft.azimuthAngles
+              : authoritativeDrawing.azimuthAngles ? [...authoritativeDrawing.azimuthAngles] : undefined,
+            contactWidths: suffixDraft
+              ? suffixDraft.contactWidths
+              : authoritativeDrawing.contactWidths ? [...authoritativeDrawing.contactWidths] : undefined,
+            contactHeights: suffixDraft
+              ? suffixDraft.contactHeights
+              : authoritativeDrawing.contactHeights ? [...authoritativeDrawing.contactHeights] : undefined,
+            sampleTimeOffsets: suffixDraft
+              ? suffixDraft.sampleTimeOffsets
+              : authoritativeDrawing.sampleTimeOffsets ? [...authoritativeDrawing.sampleTimeOffsets] : undefined,
           };
           drawingPredictionBatchMutationRef.current = true;
           for (const sample of batch.predicted) {

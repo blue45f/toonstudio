@@ -2,7 +2,6 @@
  * Wave V2-W3B: 온디스크 5아키타입 웹툰 키트 v2(`toonstudio-kit-v2/kit.json`) 런타임 로드·정규화·플랜 생성 검증.
  */
 import { readFileSync } from "node:fs";
-import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -18,13 +17,9 @@ import { isKitPlanV2 } from "./kit-plan-v2-types";
 
 import type { KitFetchPort } from "./kit-load-flow";
 
-const KIT_V2_MANIFEST_PATH = path.resolve(
-  process.cwd(),
-  "public",
-  "assets",
-  "characters",
-  "toonstudio-kit-v2",
-  "kit.json",
+const KIT_V2_MANIFEST_PATH = new URL(
+  "../../../public/assets/characters/toonstudio-kit-v2/kit.json",
+  import.meta.url,
 );
 
 function loadOnDiskKitV2Json(): unknown {

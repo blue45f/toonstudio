@@ -1,7 +1,7 @@
 import { BRUSH_PRESETS } from "../studio-brush";
-import { defaultStampTuningForBrushId } from "../studio-page-editor-runtime-contracts";
 import { normalizeStudioBrushDynamicsSettings, studioBrushDynamicsSettingsForBrushId } from "./studio-brush-dynamics";
 import { normalizeStudioBrushEngineProgramSet } from "./studio-brush-engine-program-set";
+import { defaultStampTuningForBrushId } from "./studio-brush-stamp-authoring-defaults";
 import type { StudioBrushSnapshot } from "./studio-brush-library";
 import type { StudioBrushCatalogSelection } from "./studio-brush-selection";
 import type { StudioBrushSlot } from "./studio-brush-slots";

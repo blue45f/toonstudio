@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyMovingToonPipelineJson } from "./verify-movingtoon-pipeline-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyMovingToonPipelineJson approves valid MovingToon delivery and blocks uncleared stems", () => {
   const okRes = verifyMovingToonPipelineJson(

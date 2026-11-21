@@ -56,7 +56,9 @@ describe("Studio brush-library SQLite product boundary", () => {
     expect(studioPageSource).toContain("product.repository.getById(saved.id)");
     expect(studioPageSource).toContain("product.repository.put({ ...stored, lastUsedAt: usedAt })");
     expect(studioPageSource).toContain("importAndCommitStudioBrushProgramFile");
-    expect(studioPageSource).toContain("file, \"bundle\", product.repository");
+    expect(studioPageSource).toMatch(
+      /case "bundle":\s*case "brushset": committed = await importer\.importAndCommitStudioBrushProgramFile\(file, format, product\.repository\)/,
+    );
   });
 
   it("does not reopen the legacy localStorage brush authority from StudioPage", () => {

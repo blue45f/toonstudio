@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-
+import { GTM_STEPS } from "./ir-pitch-data";
+import { formatProductTourDuration, formatProductTourTime, PRODUCT_TOUR, productTourChapterById, productTourChapterHref } from "./product-tour-content";
 
 export const SCENE_NODES_B: ReactNode[] = [
   /* 13 크레코 비교 */
@@ -49,8 +50,8 @@ export const SCENE_NODES_B: ReactNode[] = [
         </article>
         <article className="diff-card rv">
           <div className="t-label">Professional Drawing</div>
-          <h3>직접 설계·튜닝한 브러시 프리셋 226종 + WebGPU 스트로크 렌더링</h3>
-          <p>브라우저라고 얕은 드로잉이 아니에요. G펜부터 질감 브러시까지 <b>직접 설계·튜닝한 브러시 프리셋 226종</b>과 직접 포팅·패치한 <b>WebGPU(WGSL) 스트로크 렌더링</b>으로 필압과 스트로크의 질감을 브라우저에서 직접 처리합니다. "웹에서 도는 가벼운 그림판"이 아니라, 전문 작화를 전제로 만든 엔진이에요.</p>
+          <h3>필압·질감 브러시 + WebGPU 스트로크 렌더링</h3>
+          <p>G펜부터 질감 브러시까지 <b>브러시의 필압·크기·질감을 조절</b>하고, <b>WebGPU(WGSL) 스트로크 렌더링</b>을 활용하는 제작 환경을 개발하고 있어요. 선택 가능한 브러시와 품질 검증 범위는 현재 제품에서 확인할 수 있습니다.</p>
         </article>
         <article className="diff-card rv">
           <div className="t-label">Structured Production</div>
@@ -105,7 +106,7 @@ export const SCENE_NODES_B: ReactNode[] = [
           <div className="body">
             <div className="no">DEEP 01 · VIRTUAL STUDIO</div>
             <h3>가상 스튜디오 — 세계관을 무대로</h3>
-            <p>작품의 세계관과 공간을 <b>무대로 구성해 장면을 탐색하는 제작 공간</b>이에요. 클래식 2D 무대 위에 3D 배경(bg3d — 테마 팩 42개 · 배치 가능 에셋 14,928개 · 프리셋 9종)을 올려서, 같은 장소를 여러 각도에서 반복해 쓸 수 있습니다. 배경을 매번 새로 그리는 대신, 무대를 세우고 카메라를 움직이는 거예요.</p>
+            <p>작품의 세계관과 공간을 <b>무대로 구성해 장면을 탐색하는 제작 공간</b>이에요. 3D 배경과 카메라로 같은 장소의 여러 구도를 탐색합니다. 사용할 소재는 현재 라이브러리의 제공 상태와 이용 조건을 확인해 선택합니다.</p>
           </div>
         </article>
         <article className="deep-card rv">
@@ -118,8 +119,8 @@ export const SCENE_NODES_B: ReactNode[] = [
         </article>
       </div>
       <p className="tour-note rv">이 장면들, 영상으로 바로 볼 수 있어요 —
-        <a href="/product-tour?t=108#product-tour-video" target="_blank" rel="noopener" style={{ color: "var(--accent)", fontWeight: 700 }}>드로잉 챕터 (1:48)</a> ·
-        <a href="/product-tour?t=228#product-tour-video" target="_blank" rel="noopener" style={{ color: "var(--accent)", fontWeight: 700 }}>3D 장면 챕터 (3:48)</a>
+        <a href={productTourChapterHref(productTourChapterById("draw").start)} target="_blank" rel="noopener" style={{ color: "var(--accent)", fontWeight: 700 }}>드로잉 챕터 ({formatProductTourTime(productTourChapterById("draw").start)})</a> ·
+        <a href={productTourChapterHref(productTourChapterById("three-d").start)} target="_blank" rel="noopener" style={{ color: "var(--accent)", fontWeight: 700 }}>3D 장면 챕터 ({formatProductTourTime(productTourChapterById("three-d").start)})</a>
         <span style={{ color: "var(--muted)" }}>(새 탭으로 열려서, 발표 화면은 그대로 유지됩니다)</span>
       </p>
     </div>
@@ -135,7 +136,7 @@ export const SCENE_NODES_B: ReactNode[] = [
           <div className="body">
             <div className="no">DEEP 03 · CHARACTER · POSE · 3D</div>
             <h3>구도는 3D로 탐색하고, 제작은 2D로</h3>
-            <p>어려운 구도는 감으로 그리지 않아요. <b>캐릭터와 포즈, 배경과 카메라를 3D 장면으로 구성</b>해서 구도를 먼저 확정하고, 그 결과를 현재 컷의 2D 제작으로 연결합니다. 인물은 <b>3D 캐릭터 셰이퍼</b>로 체형과 포즈를 직접 조정해 세우고, 15개 슬롯 프리셋으로 구성도 빠르게 잡아요.</p>
+            <p><b>캐릭터와 포즈, 배경과 카메라를 3D 장면으로 구성</b>해 구도를 탐색하고, 그 결과를 현재 컷의 2D 제작에 활용합니다. 인물은 <b>3D 캐릭터 셰이퍼</b>로 체형과 포즈를 조정하며, 사용할 모델과 프리셋의 준비 상태는 제품에서 확인합니다.</p>
           </div>
         </article>
         <article className="deep-card rv">
@@ -155,31 +156,29 @@ export const SCENE_NODES_B: ReactNode[] = [
     <div className="scene-inner top" key="s18">
       <p className="kicker rv">Product Tour Film</p>
       <h2 className="headline rv">말로 설명한 다음엔,<br /><em>실제 화면</em>으로 보여드립니다</h2>
-      <p className="lede rv" style={{ marginBottom: 26 }}>실제 제품 화면 캡처로 만든 <strong>8분 전체 제품 투어</strong>가 이미 서비스 안에 있어요. 챕터를 누르면 그 장면부터 바로 열립니다. 투어는 새 탭으로 열리니까, 보고 나서 이 발표 화면으로 돌아와 그대로 이어가면 돼요.</p>
+      <p className="lede rv" style={{ marginBottom: 26 }}>제작 시점의 제품 화면과 개념 도해를 담은 <strong>{formatProductTourDuration(PRODUCT_TOUR.duration, "ko")} 전체 제품 투어</strong>입니다. 챕터를 누르면 그 장면부터 새 탭으로 열려, 확인 후 발표 화면으로 돌아와 이어갈 수 있어요.</p>
       <div className="split wide-right" style={{ alignItems: "start" }}>
         <div className="rv">
           <div className="shot-frame">
             <div className="frame-bar"><i /><i /><i /><span className="frame-url">toonstudio.cloud/product-tour</span></div>
-            <a className="tour-feature" href="/product-tour?t=48#product-tour-video" target="_blank" rel="noopener" aria-label="ToonStudio 전체 제품 투어 영상, 기획 챕터부터 열기">
+            <a className="tour-feature" href={productTourChapterHref(productTourChapterById("overview").start)} target="_blank" rel="noopener" aria-label="ToonStudio 전체 제품 투어 영상, 처음부터 열기">
               <img src="/brand/product-tour/01-overview.png" alt="ToonStudio 실제 제품 화면 — 아이디어부터 연재 원고까지 이어지는 웹툰 작업 공간 홈" width="1440" height="1000" />
               <span className="play-overlay">
                 <span className="play-circle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z" /></svg></span>
-                <span className="tour-badge">전체 제품 투어 · 8분<small>실제 제품 화면 캡처 9개 챕터 + 24초 브랜드 필름</small></span>
+                <span className="tour-badge">전체 제품 투어 · {formatProductTourDuration(PRODUCT_TOUR.duration, "ko")}<small>{PRODUCT_TOUR.chapters.length}개 챕터 · 제품 화면과 개념 도해</small></span>
               </span>
             </a>
           </div>
-          <p className="shot-caption"><b>실제 제품 투어</b> — 챕터 이미지는 전부 실제 제품 화면 캡처예요 (CH.4만 기능 구성을 설명하는 개념 도해).</p>
+          <p className="shot-caption"><b>제품 투어</b> — 제작 시점의 제품 화면이며, {PRODUCT_TOUR.chapters.flatMap((chapter, index) => chapter.visual === "concept" ? [`CH.${index + 1}`] : []).join("·")}은 기능 구성을 설명하는 개념 도해입니다.</p>
         </div>
         <div className="chapter-list rv">
-          <a className="chapter-row" href="/product-tour?t=0#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.1</span><span className="t">툰스튜디오는 무엇인가<small>기획부터 연재·운영까지, 하나의 작품 흐름</small></span><span className="time">0:00</span></a>
-          <a className="chapter-row" href="/product-tour?t=48#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.2</span><span className="t">아이디어와 기획<small>세계관·인물·회차와 장면 목적 정리</small></span><span className="time">0:48</span></a>
-          <a className="chapter-row" href="/product-tour?t=108#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.3</span><span className="t">드로잉과 브러시<small>캔버스·브러시·레이어·질감·보정</small></span><span className="time">1:48</span></a>
-          <a className="chapter-row" href="/product-tour?t=174#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.4</span><span className="t">컷과 말풍선<small>컷 분할·대사·말풍선과 장면 리듬 (개념 도해)</small></span><span className="time">2:54</span></a>
-          <a className="chapter-row" href="/product-tour?t=228#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.5</span><span className="t">캐릭터·포즈·3D 장면<small>포즈·배경·카메라 구성 후 2D로 연결</small></span><span className="time">3:48</span></a>
-          <a className="chapter-row" href="/product-tour?t=300#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.6</span><span className="t">AI 보조와 반복 작업<small>검토와 최종 선택은 창작자가 유지</small></span><span className="time">5:00</span></a>
-          <a className="chapter-row" href="/product-tour?t=354#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.7</span><span className="t">프로젝트·협업·검토<small>담당자·상태·수정 요청·변경 이력</small></span><span className="time">5:54</span></a>
-          <a className="chapter-row" href="/product-tour?t=420#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.8</span><span className="t">학습·소재·사운드<small>강좌·레퍼런스·소재 마켓·오디오</small></span><span className="time">7:00</span></a>
-          <a className="chapter-row" href="/product-tour?t=468#product-tour-video" target="_blank" rel="noopener"><span className="no">CH.9</span><span className="t">검사·내보내기·게시 준비<small>규격 확인부터 게시 준비까지</small></span><span className="time">7:48</span></a>
+          {PRODUCT_TOUR.chapters.map((chapter, index) => (
+            <a className="chapter-row" key={chapter.id} href={productTourChapterHref(chapter.start)} target="_blank" rel="noopener">
+              <span className="no">CH.{index + 1}</span>
+              <span className="t">{chapter.ko}<small>{chapter.feature.ko}{chapter.visual === "concept" ? " · 개념 도해" : ""}</small></span>
+              <span className="time">{formatProductTourTime(chapter.start)}</span>
+            </a>
+          ))}
         </div>
       </div>
     </div>
@@ -205,15 +204,15 @@ export const SCENE_NODES_B: ReactNode[] = [
         </article>
         <article className="tech-card rv">
           <div className="t-label">Local First &amp; Portable Cloud</div>
-          <h3>로컬 우선 저장(OPFS · IndexedDB) + 7-타깃 멀티 클라우드 배포</h3>
-          <p>원고는 먼저 내 기기(<b>OPFS · IndexedDB</b>)에 원자적 저장·복구되고 <b>SHA-256 무결성 검증</b>을 거칩니다. 서버와 프론트엔드는 Cloudflare · Vercel · Docker · K8s · AWS · GCP · GitHub Pages 7개 타깃 어디서든 원클릭으로 구동되는 포터블 매트릭스를 갖췄어요.</p>
-          <div className="chips"><span className="chip">OPFS · IndexedDB</span><span className="chip">SHA-256</span><span className="chip">7-Target Multi-Cloud &amp; Local</span><span className="chip">3-Labs Bridge (96.84)</span></div>
+          <h3>기기 내 저장과 원본 파일 보관</h3>
+          <p><b>OPFS · IndexedDB</b>를 활용한 기기 내 저장과 원본 파일 보관을 구분합니다. 기기를 바꾸거나 브라우저 데이터를 지우기 전에는 원본을 별도로 보관해야 합니다. 실행 환경별 지원 범위와 저장·복구 동작은 각각 검증합니다.</p>
+          <div className="chips"><span className="chip">OPFS · IndexedDB</span><span className="chip">원본 파일 보관</span><span className="chip">환경별 검증</span></div>
         </article>
         <article className="tech-card rv">
           <div className="t-label">Realtime Collaboration &amp; Verify AI</div>
           <h3>Yjs 실시간 협업 + Verify AI 프리플라이트 게이트</h3>
-          <p>동시 편집의 정합성은 <b>바이너리 CRDT의 CRC 검증</b>이 지키고, <b>Verify AI 통합 게이트(96.74점)</b>가 3D 배경(8-Pass PSD)·캐릭터(4각 턴어라운드·SDF)·브러시(38밴드 분광) 간 색온도·광원·선굵기·권리 BOM을 연재 전 자동 검증합니다.</p>
-          <div className="chips"><span className="chip">Yjs · CRDT</span><span className="chip">Verify AI (96.74점)</span><span className="chip">171 Automated Tests</span></div>
+          <p><b>Yjs CRDT 기반 동시 편집</b>과 제작 결과 검사를 개발하고 있습니다. 원고·소재·권리 정보를 확인하는 흐름을 연결하며, 자동 검사 결과의 적용 범위와 최종 게시 판단은 제작자가 확인합니다.</p>
+          <div className="chips"><span className="chip">Yjs · CRDT</span><span className="chip">제작 결과 검사</span><span className="chip">창작자 최종 확인</span></div>
         </article>
       </div>
     </div>
@@ -242,7 +241,7 @@ export const SCENE_NODES_B: ReactNode[] = [
     <div className="scene-inner" key="s21">
       <p className="kicker rv">Business Model</p>
       <h2 className="headline rv">무료로 시작해, 팀으로 확장하고,<br />에셋 마켓까지 <em>이어지는</em> 구조</h2>
-      <p className="lede rv">가격 정책은 심플하게, <strong>기본 무료 + AI 크레딧 중심</strong>입니다. 팀 가격은 지금 정하지 않고, 사용자가 늘어난 뒤에 정합니다. 적어 둔 가격은 <strong>전부 예시(미확정)</strong>이고, 실제 창작자 검증을 거쳐 정합니다. 서비스도 아직 베타라, 쓰면서 다듬어 가는 중이에요.</p>
+      <p className="lede rv">가격 정책은 심플하게, <strong>기본 무료 + AI 크레딧 중심</strong>입니다. 팀 가격은 미정이며 사용 검증 후 정합니다. 적어 둔 유료 가격은 <strong>예시(미확정)</strong>이고, 실제 창작자 검증을 거쳐 정합니다. 서비스도 아직 베타라, 쓰면서 다듬어 가는 중이에요.</p>
       <div className="tiers rv">
         <div className="tier">
           <div className="t-name">Free<small>개인 창작자 누구나</small></div>
@@ -251,13 +250,13 @@ export const SCENE_NODES_B: ReactNode[] = [
         </div>
         <div className="tier hot">
           <div className="t-name">Pro<small>본격 연재 창작자</small></div>
-          <p>대용량 원고, 고급 브러시·3D 에셋, 버전 관리 등 연재 생산성을 높이는 기능을 묶은 개인 유료 플랜이에요. 회원 1만 명 달성 이후, 유료화 시점에 켭니다.</p>
+          <p>대용량 원고, 제작 도구와 버전 관리 등 연재 생산성을 높이는 기능을 묶은 개인 유료 플랜을 검토하고 있어요. 유료 전환 시점과 제공 범위는 사용자 검증 후 정합니다.</p>
           <div className="price">월 19,900원<small>유료화 시점 예시 가격 — 미확정, 개인 플랜 예시이며 팀 가격이 아님</small></div>
         </div>
         <div className="tier">
           <div className="t-name">Team · Education<small>스튜디오 · 학원 · 학교</small></div>
-          <p>역할 기반 권한, 검수·승인 흐름, 팀 자산 관리를 묶은 조직용 플랜과 교육기관용 플랜을 준비 중이에요. 팀 가격은 지금 정하지 않고, 사용자가 늘어난 뒤에 정합니다.</p>
-          <div className="price">미결정<small>팀 가격 미결정 — 사용자가 늘어난 뒤에 정함</small></div>
+          <p>역할 기반 권한, 검수·승인 흐름, 팀 자산 관리를 묶은 조직용 플랜과 교육기관용 플랜을 검토하고 있어요. 팀 가격은 미정이며 사용 검증 후 정합니다.</p>
+          <div className="price">미결정<small>팀 가격 미결정 — 사용 검증 후 결정</small></div>
         </div>
         <div className="tier">
           <div className="t-name">Asset Marketplace<small>창작 마켓</small></div>
@@ -267,15 +266,15 @@ export const SCENE_NODES_B: ReactNode[] = [
       </div>
       <div className="money-plan rv">
         <div className="mp-step">
-          <span className="mp-tag">지금 ~ 회원 1만 명</span>
-          <b>전 기능 무료 운영</b>
-          <p>사용자를 모으는 게 먼저예요. 회원 1만 명을 달성할 때까지는 모든 기능을 무료로 엽니다.</p>
+          <span className="mp-tag">베타 검증</span>
+          <b>기본 무료 + AI 크레딧</b>
+          <p>기본 제작·협업 흐름을 무료로 시작하고, AI는 제공된 크레딧 범위에서 사용합니다. 전문가·제작팀의 실제 사용을 검증합니다.</p>
         </div>
         <div className="mp-arrow" aria-hidden="true">→</div>
         <div className="mp-step hot">
-          <span className="mp-tag">회원 1만 명 달성 이후</span>
-          <b>유료화 전환</b>
-          <p>그때부터 Pro 같은 유료 플랜을 켜요. 월 19,900원은 그 시점의 개인 플랜 예시 가격이고, 아직 확정은 아니며 팀 가격이 아닙니다.</p>
+          <span className="mp-tag">사용 검증 이후</span>
+          <b>유료 플랜 검토</b>
+          <p>개인 Pro 월 19,900원은 예시·미확정이며, 팀 가격은 미정입니다. 유료 전환 시점과 무료 제공 범위는 검증 후 정합니다.</p>
         </div>
       </div>
     </div>
@@ -303,24 +302,16 @@ export const SCENE_NODES_B: ReactNode[] = [
           <p>Pro 예시 가격(월 19,900원 · 미확정, 개인 플랜 예시이며 팀 가격이 아님)을 실제 결제 의사로 검증하는 유료 검증 기간을 운영해요.</p>
         </div>
       </div>
-      <h3 className="sub-head rv" style={{ marginTop: 46 }}>고객 확보 — <em>어떻게 1만 명까지</em> 갈 것인가</h3>
-      <p className="sub-lede rv">수익화 단계와 맞물려 있어요. 무료 기간에는 확보에 집중하고, 고객층은 작은 곳에서 큰 곳으로 단계적으로 넓힙니다.</p>
+      <h3 className="sub-head rv" style={{ marginTop: 46 }}>고객 검증 — <em>전문가·제작팀부터</em> 시작합니다</h3>
+      <p className="sub-lede rv">실제 제작 흐름과 도입 조건을 확인하고, 사용 근거가 쌓인 뒤 대상과 규모를 넓히는 계획입니다.</p>
       <div className="road-steps rv">
-        <div className="road-step">
-          <div className="when">GTM 1 · 확보 엔진</div>
-          <div className="gtm-title">온라인 커뮤니티에서 작가 확보</div>
-          <p>투자 이후 웹툰·만화 온라인 커뮤니티와 네이버 카페 같은 온라인 채널을 중심으로 홍보해 작가 회원을 모아요. 전 기능 무료 기간이라, 써보는 데 장벽이 없는 것 자체가 확보 엔진입니다.</p>
-        </div>
-        <div className="road-step">
-          <div className="when">GTM 2 · 장기 고객</div>
-          <div className="gtm-title">학원 · 교육기관</div>
-          <p>학원과 교육기관을 대상으로 도입을 넓혀요. 배우는 단계에서 손에 익은 도구는 현업까지 이어지니까, 길게 함께 가는 고객층이 됩니다.</p>
-        </div>
-        <div className="road-step">
-          <div className="when">GTM 3 · 점진적 확장</div>
-          <div className="gtm-title">작은 팀에서 큰 스튜디오로</div>
-          <p>소규모 전문 팀에서 시작해 사용 검증이 쌓이면 대형 스튜디오로 고객층을 넓혀요. 규모별 지원 구조도 그 순서에 맞춰 짜여 있습니다.</p>
-        </div>
+        {GTM_STEPS.map((step, index) => (
+          <div className="road-step" key={step.en.title}>
+            <div className="when">GTM {index + 1} · 검증 계획</div>
+            <div className="gtm-title">{step.ko.title}</div>
+            <p>{step.ko.body}</p>
+          </div>
+        ))}
       </div>
     </div>
   ),
@@ -370,7 +361,7 @@ export const SCENE_NODES_B: ReactNode[] = [
       <p className="thanks rv">2조 원대 산업의 빈자리,<br />툰스튜디오가 채우겠습니다.</p>
       <p className="rv">들어주셔서 감사합니다. 질문은 실제 제품 화면으로 바로 보여드리면서 답할게요 — 아래 제품 투어에서 챕터별로 열 수 있습니다.</p>
       <div className="links rv">
-        <a className="btn btn-primary" href="/product-tour?t=48#product-tour-video" target="_blank" rel="noopener">제품 투어 영상 열기</a>
+        <a className="btn btn-primary" href={productTourChapterHref(productTourChapterById("overview").start)} target="_blank" rel="noopener">제품 투어 영상 열기</a>
         <a className="btn btn-ghost" href="/" target="_blank" rel="noopener">실제 서비스 체험하기</a>
         <a className="btn btn-ghost" href="https://github.com/blue45f/toonstudio" target="_blank" rel="noopener">GitHub 소스코드</a>
       </div>
@@ -379,7 +370,7 @@ export const SCENE_NODES_B: ReactNode[] = [
         <p>멀리 보면, <b>네이버·카카오·리디</b> 같은 기존 사업자와의 업무협의를 추진해서 포털·통합 랭킹·자체 연재 플랫폼·교육 정보·커뮤니티를 아우르는 <b>웹툰 포털</b>로 확장하는 그림을 그리고 있어요. 다만 지금 단계의 집중은 끝까지 <b>제작과 협업</b>이고, 제휴는 성사된 게 아니라 추진할 계획으로만 적어 둡니다.</p>
         <div className="v-chips"><span>웹툰 포털</span><span>통합 랭킹</span><span>자체 연재 플랫폼</span><span>교육 정보</span><span>커뮤니티</span></div>
       </div>
-      <p className="fineprint rv">이 발표의 제품 수치·기능 설명은 실제 서비스와 공개 소스코드 기준이며, 로드맵 숫자는 전부 검증 목표입니다.</p>
+      <p className="fineprint rv">기능 설명은 개발 중인 제품의 범위를 안내합니다. 제공 상태·이용 조건은 제품에서 확인하며, 로드맵 숫자는 검증 목표입니다.</p>
     </div>
   ),
 ];

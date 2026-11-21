@@ -12,20 +12,25 @@ import {
   UsersRound,
 } from "lucide-react";
 
-/** IR 컷: 제품 투어(8:24)의 챕터 중 개요·드로잉·3D·제작·마무리를 완결 단위로 발췌한 4:48 편집본. 실제 제품 화면만으로 구성했다. */
+import { productTourChapterById } from "./product-tour-content";
+
+/** 이전 제품 투어에서 발췌한 IR 편집 영상. 현재 전체 투어의 길이·챕터 구성과 구분한다. */
 export const IR_FILM_SRC = "/brand/toonstudio-ir-tour.mp4";
 export const IR_FILM_POSTER = "/brand/toonstudio-product-tour-poster.jpg";
 
-/** 발표 자료 파일. 덱 정본을 사이트 public 자산으로 함께 배포한다. */
+/** 웹 발표의 24개 주제에 최신 확인 근거를 반영한 검토용 발표자료. */
 export const IR_DECK_PPTX = "/brand/toonstudio-ir-deck.pptx";
 export const IR_DECK_PDF = "/brand/toonstudio-ir-deck.pdf";
+export const IR_DECK_UPDATED_AT = "2026-11-21";
+export const IR_DECK_STATUS = "review";
+export const IR_DECK_SLIDE_COUNT = 24;
 
 /** 발표 중 질의가 나오면 전체 투어의 해당 챕터로 바로 점프한다. 시작 초는 product-tour-content의 챕터 정본을 쓴다. */
 export const CHAPTER_JUMPS = [
-  { start: 108, ko: "드로잉", en: "Drawing" },
-  { start: 228, ko: "3D 배경", en: "3D sets" },
-  { start: 300, ko: "AI 보조", en: "AI assist" },
-  { start: 354, ko: "협업·제작 관리", en: "Production" },
+  { start: productTourChapterById("draw").start, ko: "드로잉", en: "Drawing" },
+  { start: productTourChapterById("three-d").start, ko: "3D 배경", en: "3D sets" },
+  { start: productTourChapterById("assist").start, ko: "AI 보조", en: "AI assist" },
+  { start: productTourChapterById("production").start, ko: "협업·제작 관리", en: "Production" },
 ] as const;
 
 export const PROBLEMS = [
@@ -70,7 +75,7 @@ export const CAPABILITIES = [
     id: "drawing",
     image: "/brand/product-tour/03-draw.png",
     href: "/studio/canvas",
-    chapterStart: 108,
+    chapterStart: productTourChapterById("draw").start,
     icon: PenTool,
     stats: [
       { ko: "브러시·레이어·선택", en: "Brushes, layers and selection" },
@@ -84,7 +89,7 @@ export const CAPABILITIES = [
     id: "three-d",
     image: "/brand/product-tour/05-3d.png",
     href: "/studio/bg3d",
-    chapterStart: 228,
+    chapterStart: productTourChapterById("three-d").start,
     icon: Boxes,
     stats: [
       { ko: "배경 선택", en: "Choose a setting" },
@@ -99,7 +104,7 @@ export const CAPABILITIES = [
     id: "collaboration",
     image: "/brand/product-tour/07-production.png",
     href: "/production",
-    chapterStart: 354,
+    chapterStart: productTourChapterById("production").start,
     icon: UsersRound,
     stats: [{ ko: "권한에 따른 공유", en: "Share with appropriate permissions" }],
     ko: { title: "실시간 협업·제작 관리", body: "원고의 코멘트·역할·승인 기록과 일정을 같은 작품 맥락에서 살펴봅니다. 실제 공동 작업은 연결 상태와 참여자 권한을 확인한 뒤 이용해요.", cta: "제작 관리 열기" },
@@ -109,7 +114,7 @@ export const CAPABILITIES = [
     id: "ai",
     image: "/brand/product-tour/06-ai.png",
     href: "/studio/ai-lab",
-    chapterStart: 300,
+    chapterStart: productTourChapterById("assist").start,
     icon: Sparkles,
     stats: [
       { ko: "사용할 AI와 비용 확인", en: "Check the AI provider and costs" },
@@ -128,23 +133,23 @@ export const CAPABILITIES = [
       { ko: "이 브라우저에 임시 보관", en: "Temporary storage in this browser" },
       { ko: "원본 파일·개인 드라이브 별도 저장", en: "Separate file or personal-drive save" },
     ],
-    ko: { title: "작업 보관과 별도 저장", body: "기기 내 임시 보관과 원본 파일 저장을 구분해 안내합니다. 기기를 옮기기 전에는 별도로 저장하세요. 현재 운영 웹은 Cloudflare, API·DB는 onpod를 사용하며 배포는 승인·검증 후 수동으로 진행합니다.", cta: "기술 자세히 보기" },
-    en: { title: "Keep your work and save a copy", body: "Temporary device storage and saving an original file are different. Save a separate copy before changing devices. The current web runs on Cloudflare and the API and database on onpod; releases require approval, checks and manual deployment.", cta: "Read the engineering hub" },
+    ko: { title: "작업 보관과 별도 저장", body: "기기 내 임시 보관과 원본 파일 저장을 구분해 안내합니다. 기기를 옮기기 전에는 원본 파일이나 개인 드라이브에 별도로 저장하세요.", cta: "기술 자세히 보기" },
+    en: { title: "Keep your work and save a copy", body: "Temporary device storage and saving an original file are different. Save a separate copy as a file or to your personal drive before changing devices.", cta: "Read the engineering hub" },
   },
 ] as const;
 
 export const BUSINESS_MODEL = [
-  { ko: { tier: "Free", body: "회원이 1만 명이 될 때까지는 전 기능을 무료로 운영해요. 핵심 제작 흐름부터 협업·AI까지 전부요." }, en: { tier: "Free", body: "Until membership reaches 10,000, every feature runs free — the full production flow, collaboration and AI included." } },
-  { ko: { tier: "Pro", body: "유료화 뒤에 열 고급 제작 기능, 넉넉한 저장·버전, 귀찮은 일을 줄여 주는 자동화. 월 19,900원은 그때의 예시 가격이에요 — 아직 확정된 가격은 아니에요." }, en: { tier: "Pro", body: "Advanced tools, roomier storage and versions, and automation for the tedious parts — opening with the paid switch. KRW 19,900 a month is an example price for that point, not a confirmed one." } },
-  { ko: { tier: "Team · Education", body: "권한과 공정, 자산을 팀 단위로 관리하고, 교육용으로는 반과 과제를 운영할 수 있어요." }, en: { tier: "Team · Education", body: "Manage permissions, workflow and assets as a team — or run classes and assignments for education" } },
+  { ko: { tier: "Free", body: "기획·드로잉·협업의 기본 흐름을 무료로 제공하고, AI는 크레딧 한도 안에서 이용하는 방향입니다. 사용 가능한 범위와 추가 비용은 실행 전에 확인합니다." }, en: { tier: "Free", body: "The plan is to offer the basic planning, drawing and collaboration flow for free, with AI use within credit limits. Check availability and additional costs before running AI." } },
+  { ko: { tier: "Pro", body: "고급 제작 기능, 저장·버전 관리와 자동화를 묶은 개인 유료 플랜을 검토하고 있어요. 월 19,900원은 개인 플랜 예시 가격이며 팀 가격이 아니에요. 아직 확정된 가격은 아니에요." }, en: { tier: "Pro", body: "We are considering an individual paid plan for advanced tools, storage, versions and automation. KRW 19,900 a month is an example price for an individual plan, not a team price or a confirmed price." } },
+  { ko: { tier: "Team · Education", body: "팀의 권한·공정·자산 관리와 교육용 반·과제 운영을 위한 플랜을 검토하고 있어요. 팀 가격은 미결정이며, 사용 검증 후 정합니다." }, en: { tier: "Team · Education", body: "We are considering plans for team permissions, workflow and assets, and for classes and assignments. Team pricing is undecided and will follow usage validation." } },
   { ko: { tier: "Marketplace", body: "향후 계획이에요. 브러시·소재·3D·템플릿을 사고팔고, 산 것은 제작 화면에 바로 갖다 쓰는 거래 수수료 모델로 준비하고 있어요. 아직 운영 중인 마켓은 아니에요." }, en: { tier: "Marketplace", body: "A future plan, not a running market: brushes, materials, 3D and templates traded on transaction fees, usable right in the studio." } },
 ] as const;
 
-/** 고객 확보 순서 — 무료 구간(1만 명) 안에서 단계별로 넓혀 간다. */
+/** 고객 확보 계획 — 전문가·제작팀 검증 뒤에 도입 범위를 넓히며 확보 실적으로 표시하지 않는다. */
 export const GTM_STEPS = [
-  { ko: { title: "작가부터 모아요", body: "투자 유치 뒤에는 웹툰·만화 온라인 커뮤니티와 네이버 카페 같은 온라인 채널에서 알리며 작가 회원을 모아요." }, en: { title: "Creators first", body: "After raising investment, we promote in online webtoon and comics communities — online communities and Naver Cafes — to bring in creator members." } },
-  { ko: { title: "교육으로 자리 잡아요", body: "학원과 교육기관을 장기 고객으로 확보해요. 배우는 단계에서 익숙해진 도구가 현장의 표준이 되니까요." }, en: { title: "Education for the long term", body: "We secure academies and educational institutions as long-term customers — the tool you learn on tends to become the tool you work on." } },
-  { ko: { title: "팀 규모를 키워 가요", body: "소규모 아마추어 팀에서 시작해 대형 스튜디오로, 고객층을 단계씩 넓혀 갑니다." }, en: { title: "Grow team by team", body: "Starting with small amateur teams, we expand the customer base step by step toward large studios." } },
+  { ko: { title: "전문가·제작팀부터 검증해요", body: "작가 지망생 이상 전문가와 소규모 제작팀의 베타에서 실제 제작 흐름을 확인할 계획입니다. 커뮤니티와 카페는 전문 사용자 피드백을 받는 경로로 활용합니다." }, en: { title: "Validate with professional creators and teams", body: "We plan to test real production workflows with aspiring professionals and small production teams in beta. Communities and forums provide feedback from professional users." } },
+  { ko: { title: "스튜디오 도입 조건을 확인해요", body: "분업 스튜디오·제작팀 대표에게 직접 소개하고, 파일 이동·검수 기록과 결제 의사를 확인할 계획입니다. 사용 근거가 쌓인 뒤 더 큰 전문팀으로 넓힙니다." }, en: { title: "Validate studio adoption", body: "We plan direct outreach to studio and production-team decision makers to examine file handoffs, review records and willingness to pay. Expansion to larger professional teams follows usage evidence." } },
+  { ko: { title: "교육기관으로 확대를 검토해요", body: "교육기관은 초기 유입 경로가 아니라 확대 단계입니다. 제작 현장 검증 뒤 한 학기 시범 운영과 기관 도입을 검토할 계획입니다." }, en: { title: "Consider education after validation", body: "Education is an expansion stage. After validation in production settings, we plan to consider a semester-long pilot and institutional adoption." } },
 ] as const;
 
 /** 아래 수치는 성과가 아니라 검증 목표다. */

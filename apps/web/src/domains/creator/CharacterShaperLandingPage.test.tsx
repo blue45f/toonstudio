@@ -119,7 +119,7 @@ describe("CharacterShaperLandingPage", () => {
 
     for (const image of document.querySelectorAll<HTMLImageElement>(".studio-3d-illustration__portraits img")) {
       expect(image.getAttribute("src")).toMatch(/\/brand\/illustrated-20260928\/character-(pink|blue)\.webp$/u);
-      expect(image.getAttribute("srcset")).toMatch(/-320\.webp 320w, .*-640\.webp 640w, .*-960\.webp 960w, .*\.webp 1200w$/u);
+      expect(image.getAttribute("srcset")).toMatch(/-320\.webp 320w, .*-640\.webp 640w, .*-960\.webp 960w$/u);
     }
   });
 

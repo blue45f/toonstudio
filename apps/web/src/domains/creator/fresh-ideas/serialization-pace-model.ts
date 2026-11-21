@@ -6,6 +6,8 @@
  * 연속 작업 스트릭을 실시간 계산하고 브라우저에 저장한다.
  */
 
+import { isStudioProjectRecordMemoryOnly, markStudioProjectRecordMemoryOnly } from "../planning/studio-local-project-record-guard";
+
 export type PaceCadencePresetId = "weekly-60" | "biweekly-50" | "instatoon-8";
 export type PaceStageId = "storyboard" | "bg3d" | "ink" | "color" | "lettering";
 
@@ -205,16 +207,20 @@ export function computePaceSummary(state: SerializationPaceState): Serialization
 
 const STORAGE_KEY = "toonstudio.serialization-pace-board.v1";
 
-export function loadSerializationPaceState(): SerializationPaceState {
-  if (typeof window === "undefined") return createInitialPaceState("weekly-60");
+function parsePaceState(raw: string): SerializationPaceState | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialPaceState("weekly-60");
-    const parsed = JSON.parse(raw) as Partial<SerializationPaceState>;
-    const presetId: PaceCadencePresetId =
-      parsed.presetId === "biweekly-50" || parsed.presetId === "instatoon-8"
-        ? parsed.presetId
-        : "weekly-60";
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const parsed = value as Partial<SerializationPaceState>;
+    if ((parsed.presetId !== "weekly-60" && parsed.presetId !== "biweekly-50" && parsed.presetId !== "instatoon-8")
+      || typeof parsed.episodeLabel !== "string"
+      || typeof parsed.targetCuts !== "number" || !Number.isFinite(parsed.targetCuts)
+      || typeof parsed.daysRemaining !== "number" || !Number.isFinite(parsed.daysRemaining)
+      || typeof parsed.dailyCheckInStreak !== "number" || !Number.isFinite(parsed.dailyCheckInStreak)
+      || (parsed.lastCheckInDate !== null && typeof parsed.lastCheckInDate !== "string")
+      || !parsed.completedByStage || typeof parsed.completedByStage !== "object"
+      || !PACE_STAGES.every(stage => typeof parsed.completedByStage?.[stage.id] === "number" && Number.isFinite(parsed.completedByStage[stage.id]))) return null;
+    const presetId = parsed.presetId;
     const fallback = createInitialPaceState(presetId);
     const targetCuts = Math.max(4, Math.min(200, Math.round(parsed.targetCuts ?? fallback.targetCuts)));
     const daysRemaining = Math.max(1, Math.min(30, Math.round(parsed.daysRemaining ?? fallback.daysRemaining)));
@@ -237,15 +243,35 @@ export function loadSerializationPaceState(): SerializationPaceState {
       lastCheckInDate: typeof parsed.lastCheckInDate === "string" ? parsed.lastCheckInDate : null,
     };
   } catch {
-    return createInitialPaceState("weekly-60");
+    return null;
   }
 }
 
-export function saveSerializationPaceState(state: SerializationPaceState): void {
-  if (typeof window === "undefined") return;
+export function loadSerializationPaceState(): SerializationPaceState {
+  const fallback = createInitialPaceState("weekly-60");
+  if (typeof window === "undefined") return markStudioProjectRecordMemoryOnly(fallback);
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return fallback;
+    return parsePaceState(raw) ?? markStudioProjectRecordMemoryOnly(fallback);
   } catch {
-    // 프라이빗 모드에서도 현재 세션 페이스 보드는 정상 동작한다.
+    return markStudioProjectRecordMemoryOnly(fallback);
+  }
+}
+
+export function saveSerializationPaceState(state: SerializationPaceState): boolean {
+  // 읽기 실패 뒤의 부분 편집은 정상 재읽기로 복원한 상태와 구분한다.
+  if (typeof window === "undefined" || isStudioProjectRecordMemoryOnly(state)) return false;
+  try {
+    const normalized = parsePaceState(JSON.stringify(state));
+    if (!normalized) return false;
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw !== null && !parsePaceState(raw)) return false;
+    const serialized = JSON.stringify(normalized);
+    window.localStorage.setItem(STORAGE_KEY, serialized);
+    return window.localStorage.getItem(STORAGE_KEY) === serialized;
+  } catch {
+    // 읽지 못한 원본은 보존하고 현재 화면의 계획은 메모리에 유지한다.
+    return false;
   }
 }

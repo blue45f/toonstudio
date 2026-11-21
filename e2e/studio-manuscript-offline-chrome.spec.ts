@@ -4,6 +4,8 @@ import { STUDIO_OFFLINE_AUTOMATION_EVENT } from "../apps/web/src/domains/creator
 
 import { installGuestOfflineEnvironment } from "./helpers/studio-editor-a11y";
 
+import type { ServiceCapabilitiesReport } from "../apps/web/src/platform/service-capability-state";
+
 test.beforeEach(async ({ page }) => {
   // 실제 원고 화면을 게스트로 열고, 각 검사의 연결 상태 응답은 뒤에서 구체적으로 등록한다.
   await installGuestOfflineEnvironment(page, { dismissStartDock: true });
@@ -18,6 +20,14 @@ async function openManuscriptHeader(page: Page) {
   await page.locator("[data-studio-offline-panel][data-studio-offline-presentation=status-center]").waitFor({ state: "attached", timeout: 60_000 });
   await expect(canvas).toBeVisible();
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await expect(summary).toBeVisible();
+  const headerBounds = await header.boundingBox();
+  const hit = await summary.boundingBox();
+  if (!headerBounds || !hit) throw new Error("원고 상단바에서 저장 상태 버튼을 찾을 수 없습니다.");
+  expect(hit.y).toBeGreaterThanOrEqual(0);
+  expect(hit.y).toBeGreaterThanOrEqual(headerBounds.y);
+  expect(hit.y + hit.height).toBeLessThanOrEqual(headerBounds.y + headerBounds.height);
+  await summary.click({ trial: true });
   return { header, canvas, summary, notice };
 }
 
@@ -30,7 +40,15 @@ async function offlinePhase(page: Page, phase: "partial" | "ready") {
 test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스 원점을 유지한다", async ({ page }) => {
   // 실제 상태 패널에 단일 도구 준비 안내만 발생하도록 연결 확인 응답을 고정한다.
   await page.route("**/api/health/capabilities*", route => route.fulfill({
-    json: { status: "ready", capabilities: { studioProjectRead: "available", studioCloudSave: "available" } },
+    json: {
+      status: "available", checkedAt: new Date().toISOString(), incidentId: null, retryAfterSeconds: null,
+      capabilities: {
+        publicCatalog: "available", authSession: "available", communityRead: "available",
+        communityWrite: "available", marketplaceRead: "available", studioLocalEditing: "available",
+        studioProjectRead: "available", studioCloudSave: "available", realtimeCollaboration: "available",
+        publishing: "available", serverAi: "available",
+      },
+    } satisfies ServiceCapabilitiesReport,
   }));
   await page.setViewportSize({ width: 1280, height: 900 });
   const { header, canvas, summary, notice } = await openManuscriptHeader(page);
@@ -49,25 +67,29 @@ test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스
     return range.getClientRects().length;
   });
   expect(noticeLines).toBe(1);
-  const menu = header.getByRole("navigation", { name: "원고 빠른 메뉴" });
-  for (const name of ["파일", "편집", "컷·원고", "레이어", "필터", "3D·캐릭터", "협업·검수"]) {
-    const button = menu.getByRole("menuitem", { name, exact: true }).or(menu.getByRole("button", { name, exact: true }));
+  const menu = header.getByRole("navigation", { name: "표준 7대 메뉴", exact: true })
+    .getByRole("menubar", { name: "표준 7대 메뉴", exact: true });
+  await expect(menu.getByRole("menuitem")).toHaveCount(7);
+  for (const name of ["파일", "편집", "캔버스/레이어", "웹툰/식자", "3D/모션", "협업/AI", "보기/도움말"]) {
+    const button = menu.getByRole("menuitem", { name, exact: true });
+    await expect(button).toBeVisible();
     const box = await button.boundingBox();
-    expect(box?.width).toBeGreaterThanOrEqual(44);
-    expect(box?.height).toBeGreaterThanOrEqual(44);
+    expect(box?.width, `${name} 메뉴 너비`).toBeGreaterThanOrEqual(44);
+    expect(box?.height, `${name} 메뉴 높이`).toBeGreaterThanOrEqual(44);
     await button.focus();
     await expect(button).toBeFocused();
+    await button.click({ trial: true });
   }
   await offlinePhase(page, "ready");
   await expect(notice).toHaveCount(0);
   expect(await canvas.boundingBox()).toEqual(before);
 });
 
-test("1280·390 원고에서 연결 복구와 오프라인 도구 준비를 함께 읽어도 캔버스 원점을 유지한다", async ({ page }) => {
+test("1440·1280·390 원고에서 연결 복구와 오프라인 도구 준비를 함께 읽어도 캔버스 원점을 유지한다", async ({ page }) => {
   await page.route("**/api/health/capabilities*", route => route.fulfill({ status: 503, json: { status: "unavailable" } }));
   const retryMessage = "연결 복구 후 재시도";
   const message = "일부 오프라인 도구 준비 필요";
-  for (const size of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+  for (const size of [{ width: 1440, height: 1100 }, { width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await test.step(`${size.width}px에서 두 안내를 추가하고 해제한다`, async () => {
       await page.setViewportSize(size);
       const { header, canvas, summary, notice } = await openManuscriptHeader(page);
@@ -100,6 +122,7 @@ test("1280·390 원고에서 연결 복구와 오프라인 도구 준비를 함�
         expect(lines[0].right).toBeLessThanOrEqual(hit.x + hit.width + 1);
         expect(lines[0].top).toBeGreaterThanOrEqual(hit.y - 1);
         expect(lines[0].bottom).toBeLessThanOrEqual(hit.y + hit.height + 1);
+        expect(await label.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
       }
       expect(await title.boundingBox()).toEqual(titleBox);
       expect(await canvas.boundingBox()).toEqual(origin);

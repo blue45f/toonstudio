@@ -5,10 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { allocateStudioBg3dTemplateInstanceNodeIds } from "./studio-bg3d-template-instance";
 import { studioBg3dAssistantLocationId } from "./studio-bg3d-assistant-location";
 import { copyStudioBg3dBundledEnvironmentLibraryEntries } from "./studio-bg3d-bundled-environment-library";
-import {
-  formatHeroBg3dDeliveryBadgeKo,
-  resolveHeroBg3dDeliveryAsset,
-} from "./studio-bg3d-hero-tier-selector";
 import { BG_SCENE_TEMPLATES } from "../studio-background-3d-scene-templates";
 import {
   StudioBg3dSceneAssistantWorkspace,
@@ -419,16 +415,9 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
       expect(apartmentButton.getAttribute("data-bg3d-delivery-url")).toBe(
         "/assets/3d/environments/hero-v1/kr_modern_apartment_living-mobile.glb",
       );
-      // 2026-11-21(b5b505a79) Blender 5.3 hero-v1 GLB 재빌드 실측(4,825,616 → 2,730,404 B, -43.4% / 2.0 MB 절감) 정본 동기화.
-      const expectedResolution = resolveHeroBg3dDeliveryAsset(
-        "ts-bg3d-hero-v1-kr_modern_apartment_living-desktop",
-        { viewportWidthPx: 390 },
-      );
-      const expectedBadge = formatHeroBg3dDeliveryBadgeKo(expectedResolution);
-      expect(expectedBadge).toBe("모바일 경량 -43.4% (2.0 MB 절감)");
       expect(
         screen.getByTestId("bg3d-asset-mobile-savings-ts-bg3d-hero-v1-kr_modern_apartment_living-desktop").textContent,
-      ).toContain(expectedBadge);
+      ).toContain("모바일 경량 -43.4% (2.0 MB 절감)");
 
       fireEvent.click(apartmentButton);
       expect(host.addCustomModelToScene).toHaveBeenCalledWith(

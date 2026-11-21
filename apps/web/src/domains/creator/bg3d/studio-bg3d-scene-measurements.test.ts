@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   createStudioSpatialMeasurementDocument,
@@ -39,10 +40,7 @@ import {
 } from "./studio-bg3d-scene-runtime";
 
 const encoder = new TextEncoder();
-/** 2026-11-21(b5b505a79) `quality.mobile.dprMax: 1.5 → 2` 상향 반영 기본 문서 해시. */
-const DEFAULT_DOCUMENT_SHA256 = "bd8f24771b687f6bd5059e2a7d43efdd125360102eec482d8f522b87456e1df9";
-/** 2026-10-23(`quality.mobile.dprMax: 1.5`) 기준 기본 문서 해시 — 선택 키 무유입 하위 호환 교차 검증용. */
-const LEGACY_DPR15_DEFAULT_DOCUMENT_SHA256 = "df55d009ebe7c37bec88083e5a48df63ad81a1d851e569cf0e422db727d0a8fb";
+const DEFAULT_DOCUMENT_SHA256 = "df55d009ebe7c37bec88083e5a48df63ad81a1d851e569cf0e422db727d0a8fb";
 
 function measurements(count = 1, longCoordinates = false): StudioBg3dMeasurementDocument {
   return {
@@ -126,15 +124,14 @@ describe("장면 측정 가이드 선택 필드", () => {
   });
 
   it("측정 필드가 없는 기존 기본 문서의 해시와 왕복 바이트를 유지한다", () => {
-    const defaultDoc = createDefaultStudioBg3dSceneDocument();
-    const original = serializedDocument(defaultDoc);
+    // 신규 문서의 기본 DPR 변경과 관계없이 8ef318ad5의 실제 저장 바이트를 다시 연다.
+    const original = readFileSync(
+      new URL("./fixtures/legacy-scene-document-20261023.json", import.meta.url), "utf8",
+    ).trimEnd();
     expect(createHash("sha256").update(original).digest("hex")).toBe(DEFAULT_DOCUMENT_SHA256);
-    const legacyDpr15 = serializedDocument({
-      ...defaultDoc,
-      quality: { ...defaultDoc.quality, mobile: { ...defaultDoc.quality.mobile, dprMax: 1.5 } },
-    });
-    expect(createHash("sha256").update(legacyDpr15).digest("hex")).toBe(LEGACY_DPR15_DEFAULT_DOCUMENT_SHA256);
     const reopened = canonicalDocument(JSON.parse(original));
+    expect(reopened.quality.mobile.dprMax).toBe(1.5);
+    expect(createDefaultStudioBg3dSceneDocument().quality.mobile.dprMax).toBe(2);
     expect(Object.prototype.hasOwnProperty.call(reopened, "measurements")).toBe(false);
     expect(serializedDocument(reopened)).toBe(original);
     expect(serializedDocument(normalizeStudioBg3dSceneDocument(original))).toBe(original);

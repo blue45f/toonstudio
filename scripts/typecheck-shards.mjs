@@ -101,10 +101,22 @@ function numericOption(value, name, minimum) {
   return number;
 }
 
-export function parseArguments(args, runtime = {}) {
-  const env = runtime.env ?? process.env;
-  const isCi = runtime.isCi ?? Boolean(env.CI || env.GITHUB_ACTIONS);
-  const totalMemoryBytes = runtime.totalMemoryBytes ?? totalmem();
+export function parseArguments(args, runtimeOrEnv) {
+  const hasExplicitSecondArg = runtimeOrEnv !== undefined;
+  const isRuntimeConfig = Boolean(
+    runtimeOrEnv
+    && typeof runtimeOrEnv === "object"
+    && ("totalMemoryBytes" in runtimeOrEnv || "isCi" in runtimeOrEnv || "env" in runtimeOrEnv),
+  );
+  const env = isRuntimeConfig
+    ? (runtimeOrEnv.env ?? process.env)
+    : (runtimeOrEnv ?? process.env);
+  const isCi = isRuntimeConfig
+    ? (runtimeOrEnv.isCi ?? Boolean(env.CI || env.GITHUB_ACTIONS))
+    : Boolean(env.CI || env.GITHUB_ACTIONS);
+  const totalMemoryBytes = isRuntimeConfig
+    ? (runtimeOrEnv.totalMemoryBytes ?? totalmem())
+    : totalmem();
   let explicitHeapMb;
   let explicitMaxBytes;
   const options = {
@@ -141,10 +153,19 @@ export function parseArguments(args, runtime = {}) {
       ? (explicitMaxBytes ?? adaptive.maxBytes)
       : (explicitMaxBytes !== undefined ? Math.max(explicitMaxBytes, adaptive.maxBytes) : adaptive.maxBytes);
     options.tuningTier = adaptive.tier;
+  } else if (hasExplicitSecondArg && !isRuntimeConfig) {
+    options.heapMb = explicitHeapMb ?? DEFAULT_HEAP_MB;
+    options.maxBytes = explicitMaxBytes ?? DEFAULT_MAX_SOURCE_BYTES;
+    options.tuningTier = "explicit";
   } else {
     options.heapMb = explicitHeapMb ?? adaptive.heapMb;
     options.maxBytes = explicitMaxBytes ?? adaptive.maxBytes;
     options.tuningTier = explicitHeapMb === undefined ? adaptive.tier : "explicit";
+  }
+  // CI는 pnpm의 기존 명령을 그대로 호출한다. 설정된 환경값만 CLI의 기본 예산을 덮어쓴다.
+  const maxSourceBytes = env.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES;
+  if (maxSourceBytes !== undefined) {
+    options.maxBytes = numericOption(maxSourceBytes, "TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES", 1);
   }
   return options;
 }

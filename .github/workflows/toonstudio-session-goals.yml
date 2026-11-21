@@ -36,7 +36,8 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
       # Related tests validate tracked documentation evidence; retain docs.
-      # 환경 팩·VRM 카탈로그·썸네일 무결성 시험도 related 로 걸리므로 그 시험이 디스크에서 읽는 자산(3D 환경 GLB, 캐릭터 썸네일, 해당 VRM 폴더)을 함께 받는다. 전체 VRM 폴더 같은 무관한 자산 트리는 받지 않는다.
+      # PR related의 digest 검사는 등록 VRM 116개를 모두 읽는다. 정본 경로만 최초 checkout에 포함한다.
+      # 환경 무결성 검사는 썸네일 뒤의 GLB까지 읽으므로 두 파일을 함께 받고, 무관한 자산 트리는 제외한다.
       # 일러스트 팩 무결성 시험(studio-illustration-pack)은 원본 PNG·SOURCE.json·PROMPTS.json 을 디스크에서 읽는다(약 33 MB).
       # Creator Bundle 시험은 공개 JSON·권리 원장을 읽고, PR Nature 시험은 정본 hash가 결박된 JSON 원본도 읽는다.
       # PR의 세 파생 팩은 인증이 유효한 최초 체크아웃에 포함하고 수동 검사는 manifest만 유지한다.
@@ -63,6 +64,15 @@ jobs:
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/refined-v6/*.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/refined-v6/thumbnails/*.png' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/refined-v6/passes/**/*.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/glasshouse-v1/botanical_glasshouse.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/glasshouse-v1/botanical_glasshouse.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/coast-v1/coastal_signal_station.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/coast-v1/coastal_signal_station.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/specimen-v1/botanical_illustration_room.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/specimen-v1/botanical_illustration_room.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/boatyard-v1/harbor_boat_repair_shed.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/boatyard-v1/harbor_boat_repair_shed.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/riverside-v2/hangang_riverside_pavilion.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/LICENSES.md' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/hdri/*.hdr' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/virtual-studio/office-themes-v1/' || '' }}
@@ -147,6 +157,80 @@ jobs:
             /apps/web/public/vrm/Victoria_Rubin.vrm
             /apps/web/public/vrm/UnicornPerson.vrm
             /apps/web/public/vrm/MegaAngel.vrm
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-female.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-male.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-female.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-male.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-empress.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-duke.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/action-hunter.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/chibi-mascot.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Vita.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Avatar_Orion.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/cryptovoxels.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Seed_san.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Devil.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Polydancer.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Rose.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Robert.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Bloody.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Rabbit.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Eggplant.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolBanana.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Skull.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolAlien.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Froggy.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Teddy.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Nightmare.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Pumpkin.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Wizzir.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Clown.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Wolfman.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Mummy.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Witch.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Dracula.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Zombie.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/DinoKid.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Astronaut.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Polybot.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Avocado.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/IceCream.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/PyreSorcerer.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/LaloBot.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/SharkPerson.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/ChillPenguin.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolTurtle.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/MoonGirl.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/EyeWizard.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolPizza.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolRamen.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolTaco.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolPirate.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CosmicDweller.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/ChillPalm.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/GoodKnight.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/BadBot.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/PirateBot.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/BaoSamurai.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Kiba.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/StitchWitch.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/MushroomFairy.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/WeirdCat.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CuteSaurus.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Crowley.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/LadyKoi.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/YetiDude.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/MeganTheFox.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CoolTiger.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/LilRam.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/LadyFawn.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/StrawberryPrincess.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/BluePixie.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/BotBunny.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/SportMecha.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/CosmicBot.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/OldMoustache.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/Eugenia.vrm' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/studio/bundle-renders-v1/' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/studio/bundle-scenes-v1/' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/virtual-studio/bundle-decor-v1/' || '' }}
@@ -227,7 +311,8 @@ jobs:
             exit 0
           fi
           # PR related 검사가 읽는 CC0 실물 자산도 최초 인증 checkout에 포함한다.
-          # vrm-library.test.ts 는 번들된 모든 VRM 파일(약 414MB)을 읽어 크기를 확인하는 시험이라 이 부분 체크아웃에서는 뺀다. 전체 체크아웃으로 도는 Full pnpm test 가 계속 실행한다.
+          # 등록 VRM 전체의 digest 계약을 포함한 기존 related 범위를 유지한다.
+          # vrm-library.test.ts의 파일 크기 검사는 기존처럼 Full pnpm test에서 실행한다.
           pnpm exec vitest related "${files[@]}" --run --pool=forks --maxWorkers=2 \
             --exclude '**/vrm-library.test.ts'
 

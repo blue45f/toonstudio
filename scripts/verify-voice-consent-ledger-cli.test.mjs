@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyVoiceConsentLedgerJson } from "./verify-voice-consent-ledger-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyVoiceConsentLedgerJson approves in-scope AI voice dubbing and blocks model training reuse", () => {
   const input = {

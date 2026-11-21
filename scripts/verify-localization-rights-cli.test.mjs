@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { verifyLocalizationManifestJson } from "./verify-localization-rights-cli.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("verifyLocalizationManifestJson passes clean multi-locale tracks and rejects source hash mismatch or NC fonts", () => {
   const cleanManifest = {

@@ -569,6 +569,9 @@ apps/web/src/domains/creator/live/studio-live-p2p-reader-requirements.test.ts
 apps/web/src/domains/creator/live/studio-live-purpose-routed-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-socket-transport.test.ts
 apps/web/src/domains/creator/live/studio-live-transform-*.test.ts
+apps/web/src/domains/creator/live/studio-pages-history-command-journal.test.ts
+apps/web/src/domains/creator/live/studio-pages-history-durable-runtime.test.ts
+apps/web/src/domains/creator/live/studio-pages-history-journal-long-session.test.ts
 apps/web/src/domains/creator/live/studio-pending-stroke-admission.test.ts
 apps/web/src/domains/creator/live/studio-rejected-stroke-recovery-persistence.test.ts
 apps/web/src/domains/creator/live/studio-scoped-write-wire.test.ts
@@ -679,6 +682,9 @@ apps/web/src/domains/creator/studio-comment-editor-selection.test.ts
 apps/web/src/domains/creator/studio-companion-browser-harness-boundary.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingAppBar.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass
+apps/web/src/domains/creator/studio-cuttoon-editor/runtime/history/studio-command-journal-identity.test.ts
+apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts
+apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers-admission.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-pending-stroke-pointer-lifecycle.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-touch-gesture-policy.test.ts
@@ -702,6 +708,7 @@ apps/web/src/domains/creator/studio-multi-selection-color.test.ts
 apps/web/src/domains/creator/studio-page-autosave-runtime.test.ts
 apps/web/src/domains/creator/studio-page-lazy-ui-recovery.test.ts
 apps/web/src/domains/creator/studio-page-orchestration-intent-lock.test.ts
+apps/web/src/domains/creator/studio-pages-history-command-journal-client.test.ts
 apps/web/src/domains/creator/studio-palette-brand-clip-sqlite-authority-contract.test.ts
 apps/web/src/domains/creator/studio-production/StudioProductionHubPage.scope.test.tsx
 apps/web/src/domains/creator/studio-production/creator-role-production-bridge.test.ts
@@ -899,6 +906,8 @@ scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
 scripts/cloud-deploy-onpod.test.mjs
 scripts/cloud-deploy-runners.test.mjs
+scripts/cloudflare-observability-cost.test.mjs
+scripts/cloudflare-observability-policy.test.mjs
 scripts/cloudflare-static-rules.test.mjs
 scripts/creator-bundle-decor.test.mjs
 scripts/creator-bundle-pack-rights-form.test.mjs
@@ -920,6 +929,7 @@ scripts/free-database-federation.test.mjs
 scripts/free-infrastructure-policy.test.mjs
 scripts/generate-creator-bundle-theme-packs.test.mjs
 scripts/generate-latent-pigment-model.test.ts
+scripts/ir-static-deck.test.ts
 scripts/lib/character-psd-reference-compositor.test.mjs
 scripts/lib/compact-svg-structure.test.mjs
 scripts/lib/path-containment.test.ts
@@ -930,6 +940,7 @@ scripts/lib/studio-3d-production-audit-policy.test.mjs
 scripts/lib/studio-bg3d-rotation-ring.test.ts
 scripts/lib/studio-brush-first-contact-diagnostics.test.ts
 scripts/lib/studio-brush-latency-eraser-fixture.test.ts
+scripts/lib/studio-brush-latency-evidence.test.ts
 scripts/lib/studio-capture-cpu-profile.test.ts
 scripts/lib/studio-capture-native-trace.test.ts
 scripts/lib/studio-companion-preview-diagnostics.test.ts
@@ -947,13 +958,23 @@ scripts/lib/studio-preview-navigation-settlement.test.ts
 scripts/lib/studio-quick-brush-interactions.test.ts
 scripts/lib/studio-shell-readiness.test.ts
 scripts/lib/studio-smart-shape-visible-grid.test.ts
+scripts/lib/studio-soak-desktop-pen.test.ts
+scripts/lib/studio-soak-evidence.test.ts
+scripts/lib/studio-soak-layer-count.test.ts
+scripts/lib/studio-soak-pointer-latency.test.ts
+scripts/lib/studio-soak-pointer-route.test.ts
+scripts/lib/studio-soak-telemetry.test.ts
+scripts/lib/studio-soak-ui-actions.test.ts
+scripts/lib/studio-soak-visual-evidence.test.ts
 scripts/lib/studio-verify-shape-readiness.test.tsx
+scripts/lib/studio-worker-error-observer.test.ts
 scripts/multi-env-dynamic-deploy.test.mjs
 scripts/nonstudio-journey-contract.test.mjs
 scripts/pigment-dependency-install-policy.test.mjs
 scripts/plan-creator-bundle-deploy-cli.test.mjs
 scripts/plan-creator-bundle-deploy.test.mjs
 scripts/prepare-cloudflare-static-assets.test.ts
+scripts/prepare-ir-present-narration.test.ts
 scripts/prepare-managed-database-bootstrap.test.mjs
 scripts/production-database-connection.test.mjs
 scripts/provision-cloudflare-free-data-plane.test.mjs
@@ -969,6 +990,7 @@ scripts/studio-bg3d-bundle-runtime-acl.test.mjs
 scripts/studio-openai-credit-evaluation.test.ts
 scripts/studio-production-realtime.test.ts
 scripts/studio-review-local-storage-certificates.test.mjs
+scripts/studio-soak-workflow-plan.test.mjs
 scripts/sync-cloudflare-r2-assets.test.ts
 scripts/toonstudio-integration-disk-policy.test.mjs
 scripts/ux-audit/aggregate.test.mjs
@@ -996,6 +1018,7 @@ scripts/verify-studio-hybrid-dcc-opfs-race.test.ts
 scripts/verify-studio-launch.test.ts
 scripts/verify-studio-living-ink-integration.test.ts
 scripts/verify-studio-menus.test.ts
+scripts/verify-studio-soak-completion-observers.test.ts
 scripts/verify-typechecked-build-inputs.test.mjs
 scripts/verify-virtual-studio-art-manifest.test.mjs
 scripts/workflow-injection-policy.test.mjs

@@ -26,7 +26,7 @@ test.beforeAll(async () => { tooltipBundle = await buildStudioReactFixture(`
 
 async function tooltipFixture(page: Page, edge: "left" | "right") {
   const tools = readFileSync(new URL("../apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityCoreTools.tsx", import.meta.url), "utf8");
-  expect(tools).toMatch(/className="studio-drawing-clarity-tools" role="toolbar" aria-orientation="vertical"/u);
+  expect(tools).toMatch(/className="studio-drawing-clarity-tools"\s+role="toolbar"\s+aria-orientation="vertical"/u);
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.setContent(`<html lang="ko"><style>
     body{margin:0;font:16px sans-serif}.rail{position:fixed;${edge}:16px;top:180px;display:flex;flex-direction:column;gap:4px}

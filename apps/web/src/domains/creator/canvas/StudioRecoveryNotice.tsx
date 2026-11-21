@@ -28,6 +28,7 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
   const titleId = useId();
   const detailsId = useId();
   const [expanded, setExpanded] = useState(false);
+  const [compact, setCompact] = useState(false);
   const [busy, setBusy] = useState<"restore" | "delete" | "backup" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [automaticRestoreSettled, setAutomaticRestoreSettled] = useState(false);
@@ -118,6 +119,9 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
       ? bt("이 탭이 저장을 맡는지 확인하지 못해 자동으로 열지 않았어요. 현재 그림은 그대로 유지됩니다.", "The drawing is unchanged. This tab could not confirm it can save, so recovery needs your confirmation.")
       : bt("자동 복원이 끝나지 않았어요. 현재 그림은 바꾸지 않았습니다. 다시 이어 열거나 새 그림을 시작할 수 있어요.", "Your current drawing is unchanged. Retry recovery or start a new drawing."));
   const description = blockedDescription ?? fallbackDescription;
+  const canCompact = blockedReason === "revision-mismatch";
+  const isCompact = canCompact && compact;
+  const explanationId = `${detailsId}-explanation`;
 
   return (
     <section
@@ -125,12 +129,13 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
       data-studio-auto-resume-fallback={blockedReason === null ? "true" : undefined}
       aria-labelledby={titleId}
       aria-busy={busy !== null}
-      className={cn("mb-3 min-w-0 rounded-xl border bg-panel p-3 text-xs text-fg", blockedReason ? "border-warning/35" : "border-accent/25")}
+      className={cn("mb-3 min-w-0 rounded-xl border bg-panel text-xs text-fg", isCompact ? "w-fit max-w-full px-2 py-0.5" : "p-3", blockedReason ? "border-warning/35" : "border-accent/25")}
     >
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 basis-48" role="status" aria-live="polite">
+        <div className={cn("min-w-0", !isCompact && "flex-1 basis-48")} role="status" aria-live="polite">
           <h2 id={titleId} className="font-bold">{blockedReason ? bt("남겨 둔 그림을 보관해 주세요", "Keep a backup of the earlier drawing") : manualRestoreRequired ? bt("저장 상태를 확인해 주세요", "Check the save status") : t("studio.brushCanvasStatus.canvas.recoveryAutoRestoreFailedTitle", "자동으로 이어 열지 못했어요")}</h2>
-          <p className="mt-1 leading-relaxed text-fg-2">{description}</p>
+          <p id={explanationId} hidden={isCompact} className="mt-1 leading-relaxed text-fg-2">{description}</p>
+          {isCompact && <p className="leading-relaxed text-fg-2">{bt("저장본과 다른 그림이 있어요.", "An earlier drawing differs from the saved work.")}</p>}
         </div>
         <div className="flex max-w-full flex-wrap gap-2">
           <button
@@ -143,7 +148,14 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
             {busy === "restore" ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden /> : blockedReason ? <Download size={15} aria-hidden /> : <RotateCcw size={15} aria-hidden />}
             {busy === "restore" ? t("studio.brushCanvasStatus.canvas.recoveryOpening", "그림 여는 중…") : blockedReason ? bt("백업 파일 받기", "Download backup") : manualRestoreRequired ? bt("이어서 그리기", "Continue drawing") : bt("다시 이어 열기", "Retry recovery")}
           </button>
-          <a
+          {canCompact && (
+            <button type="button" aria-expanded={!isCompact} aria-controls={explanationId}
+              disabled={busy !== null} onClick={() => setCompact(!isCompact)}
+              className={cn(actionClass, "border border-line hover:bg-raised")}>
+              {isCompact ? bt("복구 안내 펼치기", "Expand recovery notice") : bt("복구 안내 접기", "Collapse recovery notice")}
+            </button>
+          )}
+          {!isCompact && <a
             href={newDrawingHref}
             target="_blank"
             rel="noopener noreferrer"
@@ -159,40 +171,42 @@ export function StudioRecoveryNotice({ blockedReason, autoRestore, onRestore, on
             className={cn(actionClass, "border border-line bg-card text-fg-2 hover:bg-raised", busy && "pointer-events-none opacity-50")}
           >
             {bt("새 그림 그리기", "Start a new drawing")} <span className="text-[0.65rem]">{bt("새 탭", "New tab")}</span>
-          </a>
+          </a>}
         </div>
       </div>
-      <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">
-        {bt("새 탭에서 시작합니다. 현재 그림과 남겨 둔 작업은 유지돼요.", "The new tab opens a blank drawing. Both existing drawings stay here.")}
-      </p>
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={detailsId}
-        disabled={busy !== null}
-        onClick={() => setExpanded(!expanded)}
-        className={cn(actionClass, "mt-1 text-fg-2 hover:bg-raised")}
-      >
-        {bt("다른 방법", "More options")} <span aria-hidden>{expanded ? "▴" : "▾"}</span>
-      </button>
-      {expanded && (
-        <div id={detailsId} className="mt-1 border-t border-line pt-2">
-          <p className="leading-relaxed text-fg-2">
-            {bt("현재 그림은 ‘파일 → 저장 기록’에 먼저 보관합니다. 실패하면 이어 열지 않아요.", "A copy of the current drawing is saved in File → Save history before recovery starts.")}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {!blockedReason && (
-              <button type="button" disabled={busy !== null} onClick={() => void run("backup")} className={cn(actionClass, "border border-line hover:bg-raised")}>
-                <Download size={14} aria-hidden /> {bt("백업 파일 받기", "Download backup")}
+      {!isCompact && <>
+        <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">
+          {bt("새 탭에서 시작합니다. 현재 그림과 남겨 둔 작업은 유지돼요.", "The new tab opens a blank drawing. Both existing drawings stay here.")}
+        </p>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={detailsId}
+          disabled={busy !== null}
+          onClick={() => setExpanded(!expanded)}
+          className={cn(actionClass, "mt-1 text-fg-2 hover:bg-raised")}
+        >
+          {bt("다른 방법", "More options")} <span aria-hidden>{expanded ? "▴" : "▾"}</span>
+        </button>
+        {expanded && (
+          <div id={detailsId} className="mt-1 border-t border-line pt-2">
+            <p className="leading-relaxed text-fg-2">
+              {bt("현재 그림은 ‘파일 → 저장 기록’에 먼저 보관합니다. 실패하면 이어 열지 않아요.", "A copy of the current drawing is saved in File → Save history before recovery starts.")}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {!blockedReason && (
+                <button type="button" disabled={busy !== null} onClick={() => void run("backup")} className={cn(actionClass, "border border-line hover:bg-raised")}>
+                  <Download size={14} aria-hidden /> {bt("백업 파일 받기", "Download backup")}
+                </button>
+              )}
+              <button type="button" disabled={busy !== null} onClick={() => void run("delete")} className={cn(actionClass, "text-bad hover:bg-bad/10")}>
+                <Trash2 size={14} aria-hidden /> {busy === "delete" ? t("studio.brushCanvasStatus.canvas.recoveryDeletingCheck", "삭제 확인 중…") : bt("이전 그림 삭제…", "Delete earlier drawing…")}
               </button>
-            )}
-            <button type="button" disabled={busy !== null} onClick={() => void run("delete")} className={cn(actionClass, "text-bad hover:bg-bad/10")}>
-              <Trash2 size={14} aria-hidden /> {busy === "delete" ? t("studio.brushCanvasStatus.canvas.recoveryDeletingCheck", "삭제 확인 중…") : bt("이전 그림 삭제…", "Delete earlier drawing…")}
-            </button>
+            </div>
+            <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">{bt("백업에는 이전 그림이 담겨요. 삭제는 현재 캔버스가 아닌 이전 그림에 적용되며, 확인 후 되돌릴 수 없어요.", "The backup contains the earlier drawing. Deleting it is permanent once confirmed. Your current canvas stays here.")}</p>
           </div>
-          <p className="mt-2 text-[0.7rem] leading-relaxed text-fg-3">{bt("백업에는 이전 그림이 담겨요. 삭제는 현재 캔버스가 아닌 이전 그림에 적용되며, 확인 후 되돌릴 수 없어요.", "The backup contains the earlier drawing. Deleting it is permanent once confirmed. Your current canvas stays here.")}</p>
-        </div>
-      )}
+        )}
+      </>}
       {error && <p role="alert" className="mt-2 leading-relaxed text-bad">{error}</p>}
     </section>
   );

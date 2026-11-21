@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -36,7 +36,7 @@ export interface StudioProjectLibraryDeleteRequest {
 export function useStudioProjectLibraryManagementController() {
   useBilingualI18nRevision();
   const [searchParams] = useSearchParams();
-  const { data: session } = useSession();
+  const { data: session, ready: sessionReady, status: sessionStatus } = useSession();
   const language = useI18n((state) => state.lang);
   const authUserId = session?.user?.id ?? null;
   const locale = studioProjectLibraryLocale(language);
@@ -50,6 +50,8 @@ export function useStudioProjectLibraryManagementController() {
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [notice, setNotice] = useState<StudioProjectLibraryNoticeState | null>(null);
   const [busyProjectId, setBusyProjectId] = useState<string | null>(null);
+  const copyingProject = useRef(false);
+  const duplicateProjectRef = useRef<(project: StudioProjectLibraryEntry) => Promise<void>>(async () => undefined);
   const [saveTarget, setSaveTarget] = useState<StudioProjectLibraryEntry | null>(null);
   const [deleteRequest, setDeleteRequest] = useState<StudioProjectLibraryDeleteRequest | null>(null);
 
@@ -308,45 +310,66 @@ export function useStudioProjectLibraryManagementController() {
     }
   };
 
-  const duplicateProject = (project: StudioProjectLibraryEntry) => {
-    if (typeof window === "undefined") return;
-    try {
-      const duplicate = library.duplicate(project.id);
-      if (!duplicate) {
+  const duplicateProject = async (project: StudioProjectLibraryEntry) => {
+    if (typeof window === "undefined" || busyProjectId || copyingProject.current) return;
+    if (!sessionReady) {
+      setNotice({ message: bi("로그인 상태를 확인 중입니다. 잠시 후 다시 시도하세요.", "Checking sign-in status. Please try again in a moment.") });
+      return;
+    }
+    // 이 변경은 비로그인 브라우저 원고만 다룹니다. 계정 작업의 경로나 권한은 바꾸지 않습니다.
+    if (sessionStatus === "authenticated") {
+      try {
+        const duplicate = library.duplicate(project.id);
+        if (!duplicate) throw new Error("프로젝트 복사본을 만들지 못했습니다.");
+        ensureInitialStudioProjectDocument(window.localStorage, {
+          projectId: duplicate.id,
+          projectTitle: duplicate.title,
+          projectKind: duplicate.kind,
+          templateId: duplicate.templateId,
+          target: window,
+        });
+        profiles.ensure(duplicate.id, { provider: "browser", autoSave: true, createVersions: true });
+        setNotice({
+          message: formatI18nTemplate(String(bi("“{value0}”의 임시 복사본을 만들었습니다.", "Created a temporary copy of “{value0}”.")), { value0: project.title }),
+        });
+      } catch {
         library.reload();
         profiles.reload();
         setNotice({
           message: bi("프로젝트 복사본을 만들지 못했습니다. 브라우저 저장 공간을 확인한 뒤 다시 시도하세요.", "Could not create a project copy. Check browser storage and try again."),
           actionLabel: bi("다시 시도", "Try again"),
-          action: () => duplicateProject(project),
+          action: () => { void duplicateProjectRef.current(project); },
         });
-        return;
       }
-      ensureInitialStudioProjectDocument(window.localStorage, {
-        projectId: duplicate.id,
-        projectTitle: duplicate.title,
-        projectKind: duplicate.kind,
-        templateId: duplicate.templateId,
-        target: window,
-      });
-      profiles.ensure(duplicate.id, {
-        provider: "browser",
-        autoSave: true,
-        createVersions: true,
+      return;
+    }
+    copyingProject.current = true;
+    setBusyProjectId(project.id);
+    try {
+      const { copyStudioProjectWithLocalWorkspace } = await import("../save-first/studio-project-local-copy");
+      const result = await copyStudioProjectWithLocalWorkspace(project.id, {
+        storage: window.localStorage, target: window, authUserId: null,
       });
       setNotice({
-        message: formatI18nTemplate(String(bi("“{value0}”의 임시 복사본을 만들었습니다.", "Created a temporary copy of “{value0}”.")), { value0: project.title }),
+        message: formatI18nTemplate(String(bi("“{value0}”의 기기 내 원고 복사본을 만들었습니다. 공유·검토·제출 정보는 포함하지 않았습니다.", "Created a local manuscript copy of “{value0}”. Sharing, review and submission information was not included.")), { value0: project.title }),
+        actionLabel: bi("복사본 열기", "Open copy"),
+        actionHref: result.href,
       });
     } catch {
       library.reload();
       profiles.reload();
       setNotice({
-        message: bi("프로젝트 복사본을 만들지 못했습니다. 브라우저 저장 공간을 확인한 뒤 다시 시도하세요.", "Could not create a project copy. Check browser storage and try again."),
+        message: bi("원고를 복제하지 못했습니다. 원본은 그대로 유지됩니다. 저장소 상태를 확인한 뒤 다시 시도하세요.", "Could not copy the manuscript. The original is unchanged. Check device storage and try again."),
         actionLabel: bi("다시 시도", "Try again"),
-        action: () => duplicateProject(project),
+        action: () => { void duplicateProjectRef.current(project); },
       });
+    } finally {
+      copyingProject.current = false;
+      setBusyProjectId(null);
     }
   };
+
+  useLayoutEffect(() => { duplicateProjectRef.current = duplicateProject; });
 
   const createPackage = async (project: StudioProjectLibraryEntry, profile: StudioSaveProfile) => {
     const submissions = typeof window === "undefined"

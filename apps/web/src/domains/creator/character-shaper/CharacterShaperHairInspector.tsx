@@ -5,8 +5,6 @@
  * 형태(길이·볼륨·모발 굵기·컬·웨이브·윤기·삐침머리·묶음 높이), 원본 헤어 감추기.
  * 모든 변경은 `binding.commitHairParams` 한 번 = 되돌리기 한 단계이고, 포지 상태로 저장된다.
  */
-import { useState } from "react";
-
 import {
   AVATAR_FORGE_BANG_STYLE_OPTIONS,
   AVATAR_FORGE_HAIR_LIMITS,
@@ -15,32 +13,24 @@ import {
 import {
   AVATAR_FORGE_DEFAULT_HAIR_ACCENT_COLOR,
   AVATAR_FORGE_HAIR_ACCENT_MODE_OPTIONS,
-  AVATAR_FORGE_HAIR_GRADIENT_LIMITS,
   AVATAR_FORGE_TIED_HAIR_STYLES,
-  resolveAvatarForgeHairGradient,
 } from "../vrm/studio-vrm-avatar-forge-hair-color";
 
 import { frozenStatus3Text } from "../studio-frozen3-status-i18n";
 import { CHARACTER_HAIR_PALETTES } from "./character-shaper-catalog";
-import { resolveHairCommitPatch } from "./character-shaper-custom-quality";
-import { applyHairSpringBoneToVrm } from "./character-shaper-mtoon-uniforms";
 import { characterSlotSelection } from "./character-shaper-ui-model";
-import { CharacterChipGroup, CharacterColorControl, CharacterRangeControl } from "./CharacterShaperControls";
+import { CharacterChipGroup, CharacterColorControl } from "./CharacterShaperControls";
 import { InspectorNote, InspectorSection, InspectorToggleRow } from "./CharacterShaperInspectorParts";
-import {
-  BACK_HAIR_PART_OPTIONS,
-  FRONT_HAIR_PART_OPTIONS,
-  SIDE_HAIR_PART_OPTIONS,
-} from "./studio-webtoon-21-body-and-3part-hair";
+import { CharacterShaperHairAdvancedControls } from "./CharacterShaperHairAdvancedControls";
+import { HairRange, type HairSliderKey } from "./CharacterShaperHairRange";
 
 import type { CharacterColorSwatch } from "./CharacterShaperControls";
 import type { CharacterShaperInspectorProps } from "./character-shaper-ui-contract";
 import type {
   AvatarForgeHairLimitKey,
-  AvatarForgeHairParams,
   AvatarForgeState,
 } from "../vrm/studio-vrm-avatar-forge";
-import type { AvatarForgeHairAccentMode, AvatarForgeHairGradientKey } from "../vrm/studio-vrm-avatar-forge-hair-color";
+import type { AvatarForgeHairAccentMode } from "../vrm/studio-vrm-avatar-forge-hair-color";
 
 /** 카탈로그의 "원본 유지" 헤어 항목(`hair:original`). 이 항목이면 절차형 헤어 조절은 보이지 않는다. */
 const ORIGINAL_HAIR_ENTRY_ID = "hair:original";
@@ -56,17 +46,6 @@ const HAIR_SHAPE_KEYS: readonly AvatarForgeHairLimitKey[] = [
   "ahoge",
 ];
 
-type HairSliderKey = AvatarForgeHairLimitKey | AvatarForgeHairGradientKey;
-
-const HAIR_SLIDER_HINTS: Partial<Record<HairSliderKey, string>> = {
-  strandWidth: "가닥 하나하나의 폭. 작게 하면 가늘고 날카로운 머리카락",
-  ahoge: "정수리에서 튀어나온 한 가닥. 0이면 없음",
-  tailHeight: "포니테일·트윈테일·번·땋은 머리가 묶이는 높이",
-  fringe: "앞머리가 내려오는 길이. 눈을 덮을 만큼 길게도 짧게도",
-  gradientPosition: "끝 색이 시작되는 지점. 0은 뿌리부터, 1은 끝만 물듭니다",
-  gradientSoftness: "기본색과 끝 색의 경계. 0이면 또렷한 투톤, 1이면 부드러운 그라데이션",
-};
-
 /** 하이라이트 추천 색 — 애니풍 브릿지·이너 컬러에 자주 쓰는 밝은 색. */
 const HAIR_ACCENT_SWATCHES: readonly CharacterColorSwatch[] = [
   { color: "#f2a7c3", label: "로즈" },
@@ -79,41 +58,6 @@ const HAIR_ACCENT_SWATCHES: readonly CharacterColorSwatch[] = [
   { color: "#f5f5f4", label: "실버 화이트" },
 ];
 
-function HairRange({
-  hair,
-  limitKey,
-  locked,
-  onCommit,
-}: {
-  readonly hair: AvatarForgeHairParams;
-  readonly limitKey: HairSliderKey;
-  readonly locked: boolean;
-  readonly onCommit: (key: HairSliderKey, value: number, label: string) => void;
-}) {
-  const gradient = resolveAvatarForgeHairGradient(hair);
-  const isGradient = limitKey === "gradientPosition" || limitKey === "gradientSoftness";
-  const limit = isGradient ? AVATAR_FORGE_HAIR_GRADIENT_LIMITS[limitKey] : AVATAR_FORGE_HAIR_LIMITS[limitKey];
-  const fallback = limitKey === "gradientPosition" ? 0.5
-    : limitKey === "gradientSoftness" ? 1
-      : DEFAULT_AVATAR_FORGE_STATE.hair[limitKey];
-  const value = limitKey === "gradientPosition" ? gradient.position
-    : limitKey === "gradientSoftness" ? gradient.softness
-      : hair[limitKey];
-  return (
-    <CharacterRangeControl
-      label={limit.label}
-      hint={HAIR_SLIDER_HINTS[limitKey]}
-      value={typeof value === "number" ? value : fallback}
-      min={limit.min}
-      max={limit.max}
-      step={limit.step}
-      unit={limit.unit}
-      defaultValue={fallback}
-      disabled={locked}
-      onCommit={(next) => onCommit(limitKey, next, limit.label)}
-    />
-  );
-}
 
 export function CharacterShaperHairInspector({
   h,
@@ -138,24 +82,6 @@ export function CharacterShaperHairInspector({
   const tied = AVATAR_FORGE_TIED_HAIR_STYLES.has(hair.style);
   const commitNumber = (key: HairSliderKey, value: number, label: string) =>
     binding.commitHairParams({ [key]: value }, `헤어: ${label}`);
-  const [lockMainColor, setLockMainColor] = useState(true);
-  const [springStiffness, setSpringStiffness] = useState(1.0);
-  const [springGravity, setSpringGravity] = useState(0.35);
-  const [springDrag, setSpringDrag] = useState(0.4);
-  const [springUpdatedCount, setSpringUpdatedCount] = useState(0);
-
-  const applyHairSpringBone = (next: { stiffness: number; gravity: number; drag: number }) => {
-    setSpringStiffness(next.stiffness);
-    setSpringGravity(next.gravity);
-    setSpringDrag(next.drag);
-    const updated = applyHairSpringBoneToVrm(h.vrm, {
-      stiffness: next.stiffness,
-      gravityPower: next.gravity,
-      dragForce: next.drag,
-    });
-    setSpringUpdatedCount(updated);
-    if (typeof h.invalidateViewport === "function") h.invalidateViewport();
-  };
 
   return (
     <>
@@ -337,148 +263,11 @@ export function CharacterShaperHairInspector({
             )}
         />
       </InspectorSection>
-      <InspectorSection
-        title="3분할 헤어 파츠 & 메인 색 고정"
-        hint="Tooning Plus처럼 앞·옆·뒷머리를 독립 조합하면서 메인 머리색을 유지합니다."
-        collapsible
-        defaultOpen={false}
-      >
-        <InspectorToggleRow
-          label="메인 헤어 색 고정 (isKeepMainColor)"
-          hint="파츠를 교체해도 현재 머리 기본색과 끝 색을 그대로 유지합니다."
-          checked={lockMainColor}
-          disabled={locked}
-          onToggle={() => setLockMainColor((prev) => !prev)}
-        />
-        <div data-testid="shaper-hair-three-part-strip" className="grid grid-cols-3 gap-1.5 text-xs">
-          <label className="flex flex-col gap-1 text-fg-2">
-            <span>앞머리</span>
-            <select
-              aria-label="3분할 앞머리 파츠"
-              disabled={locked}
-              defaultValue={FRONT_HAIR_PART_OPTIONS[0]?.id}
-              onChange={(event) =>
-                binding.commitHairParams(
-                  {
-                    bangStyle: event.currentTarget.value.includes("split") || event.currentTarget.value.includes("center")
-                      ? "split"
-                      : event.currentTarget.value.includes("side")
-                        ? "side-swept"
-                        : event.currentTarget.value.includes("curtain")
-                          ? "curtain"
-                          : "full",
-                    ...(lockMainColor ? { baseColor, tipColor } : {}),
-                  },
-                  "헤어: 3분할 앞머리",
-                )
-              }
-              className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
-            >
-              {FRONT_HAIR_PART_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>{opt.labelKo}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-fg-2">
-            <span>옆머리</span>
-            <select
-              aria-label="3분할 옆머리 파츠"
-              disabled={locked}
-              defaultValue={SIDE_HAIR_PART_OPTIONS[0]?.id}
-              onChange={() =>
-                binding.commitHairParams(
-                  { volume: Number(Math.min(1.5, Math.max(0.6, hair.volume)).toFixed(2)), ...(lockMainColor ? { baseColor, tipColor } : {}) },
-                  "헤어: 3분할 옆머리",
-                )
-              }
-              className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
-            >
-              {SIDE_HAIR_PART_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>{opt.labelKo}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-fg-2">
-            <span>뒷머리</span>
-            <select
-              aria-label="3분할 뒷머리 파츠"
-              disabled={locked}
-              defaultValue={BACK_HAIR_PART_OPTIONS[0]?.id}
-              onChange={(event) => {
-                const nextStyle = event.currentTarget.value.includes("ponytail")
-                  ? "ponytail"
-                  : event.currentTarget.value.includes("twintail")
-                    ? "twintail"
-                    : event.currentTarget.value.includes("bob")
-                      ? "bob"
-                      : event.currentTarget.value.includes("long")
-                        ? "long"
-                        : hair.style;
-                const patch = resolveHairCommitPatch(
-                  {
-                    style: nextStyle,
-                    ...(lockMainColor ? { baseColor, tipColor } : {}),
-                  },
-                  { style: usingOriginalHair ? "none" : hair.style, replaceOriginal: Boolean(replaceOriginal) },
-                );
-                binding.commitHairParams(patch, "헤어: 3분할 뒷머리");
-              }}
-              className="min-h-11 rounded-lg border border-line bg-panel px-2 text-xs text-fg"
-            >
-              {BACK_HAIR_PART_OPTIONS.map((opt) => (
-                <option key={opt.id} value={opt.id}>{opt.labelKo}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </InspectorSection>
-      <InspectorSection
-        title="헤어 번들 SpringBone 탄성 · 중력"
-        hint="VRoid처럼 머리카락 가닥의 흔들림 탄성·중력·저항을 실시간으로 조절합니다."
-        collapsible
-        defaultOpen={false}
-      >
-        <div data-testid="shaper-hair-springbone-controls" className="space-y-2">
-          <CharacterRangeControl
-            label="탄성 (Stiffness)"
-            hint="값이 클수록 머리카락이 원래 형태로 빠르게 복원됩니다."
-            value={springStiffness}
-            min={0.1}
-            max={4.0}
-            step={0.05}
-            defaultValue={1.0}
-            disabled={locked}
-            onCommit={(stiffness) => applyHairSpringBone({ stiffness, gravity: springGravity, drag: springDrag })}
-          />
-          <CharacterRangeControl
-            label="중력 (Gravity)"
-            hint="머리카락이 아래로 처지는 무게감입니다."
-            value={springGravity}
-            min={0}
-            max={1.5}
-            step={0.05}
-            defaultValue={0.35}
-            disabled={locked}
-            onCommit={(gravity) => applyHairSpringBone({ stiffness: springStiffness, gravity, drag: springDrag })}
-          />
-          <CharacterRangeControl
-            label="공기 저항 (Drag)"
-            hint="흔들림이 잦아드는 감쇠 속도입니다."
-            value={springDrag}
-            min={0.05}
-            max={1.0}
-            step={0.05}
-            defaultValue={0.4}
-            disabled={locked}
-            onCommit={(drag) => applyHairSpringBone({ stiffness: springStiffness, gravity: springGravity, drag })}
-          />
-          <p role="status" className="text-xs text-fg-3">
-            {springUpdatedCount > 0
-              ? `실시간 SpringBone 헤어 조인트 ${springUpdatedCount}개 반영됨`
-              : "모델에 VRM SpringBone 헤어 조인트가 있으면 즉시 실시간 반영됩니다."}
-          </p>
-        </div>
-      </InspectorSection>
+      <CharacterShaperHairAdvancedControls
+        h={h} binding={binding} locked={locked} hair={hair}
+        baseColor={baseColor} tipColor={tipColor}
+        usingOriginalHair={usingOriginalHair} replaceOriginal={Boolean(replaceOriginal)}
+      />
     </>
   );
 }

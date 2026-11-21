@@ -396,15 +396,6 @@ async function parseStudioProjectPackage(
   });
 }
 
-function generatedImportProjectId(factory: () => string): string {
-  return `import-${factory()}`.slice(0, 160);
-}
-
-function generatedImportDocumentId(factory: () => string): string {
-  return `import-document-${factory()}`.slice(0, 160);
-}
-
-
 export async function importStudioProjectPackage(
   file: File,
   options: StudioProjectPackageImportOptions,
@@ -418,17 +409,39 @@ export async function importStudioProjectPackage(
     throw new Error("유효한 .toonstudio 프로젝트 파일을 선택해 주세요.");
   }
   const parsed = await parseStudioProjectPackage(file, options.signal);
+  return commitStudioProjectPackage(parsed, options, file);
+}
+
+export function commitStudioLocalProjectCopy(
+  project: StudioProjectLibraryEntry,
+  documents: readonly StudioProjectDocumentEntry[],
+  snapshots: ReadonlyMap<string, StudioAutosavePayload>,
+  options: StudioProjectPackageImportOptions,
+): Promise<StudioProjectPackageImportResult> {
+  return commitStudioProjectPackage({
+    project, documents, snapshots,
+    autoSave: true, createVersions: true,
+    accessMode: "owner-only", distributionState: "none",
+    revision: 0, lastExportAt: null, lastSubmissionAt: null, lastPublicationAt: null,
+    submissions: [],
+  }, options, null);
+}
+
+async function commitStudioProjectPackage(
+  parsed: ParsedProjectPackage, options: StudioProjectPackageImportOptions, file: File | null,
+): Promise<StudioProjectPackageImportResult> {
   throwIfImportAborted(options.signal);
   const now = options.now ?? new Date().toISOString();
+  const prefix = file ? "import" : "copy";
   const createProjectId = options.createProjectId
-    ?? (() => createSecureRandomUuid("프로젝트 가져오기 ID를 안전하게 만들 수 없습니다."));
+    ?? (() => createSecureRandomUuid("새 프로젝트 ID를 안전하게 만들 수 없습니다."));
   const createDocumentId = options.createDocumentId
     ?? (() => createSecureRandomUuid("원고 가져오기 ID를 안전하게 만들 수 없습니다."));
   const current = readStudioProjectLibrary(options.storage);
-  let projectId = generatedImportProjectId(createProjectId);
+  let projectId = `${prefix}-${createProjectId()}`.slice(0, 160);
   for (let attempt = 0; current.projects.some((project) => project.id === projectId); attempt += 1) {
     if (attempt >= 10) throw new Error("가져온 프로젝트의 고유 ID를 만들지 못했습니다.");
-    projectId = generatedImportProjectId(createProjectId);
+    projectId = `${prefix}-${createProjectId()}`.slice(0, 160);
   }
 
   const occupiedDocumentIds = new Set(current.projects.flatMap((project) => (
@@ -436,10 +449,10 @@ export async function importStudioProjectPackage(
   )));
   const documentIdBySource = new Map<string, string>();
   for (const sourceDocument of parsed.documents) {
-    let documentId = generatedImportDocumentId(createDocumentId);
+    let documentId = `${prefix}-document-${createDocumentId()}`.slice(0, 160);
     for (let attempt = 0; occupiedDocumentIds.has(documentId); attempt += 1) {
       if (attempt >= 10) throw new Error("가져온 원고의 고유 ID를 만들지 못했습니다.");
-      documentId = generatedImportDocumentId(createDocumentId);
+      documentId = `${prefix}-document-${createDocumentId()}`.slice(0, 160);
     }
     occupiedDocumentIds.add(documentId);
     documentIdBySource.set(sourceDocument.id, documentId);
@@ -464,7 +477,7 @@ export async function importStudioProjectPackage(
 }
 
 function publishImportedProjectMetadata(
-  file: File, options: StudioProjectPackageImportOptions, parsed: ParsedProjectPackage,
+  file: File | null, options: StudioProjectPackageImportOptions, parsed: ParsedProjectPackage,
   now: string, projectId: string, documentIdBySource: ReadonlyMap<string, string>,
 ): StudioProjectPackageImportResult {
   throwIfImportAborted(options.signal);
@@ -573,31 +586,34 @@ function publishImportedProjectMetadata(
       now,
       target: options.target,
     });
-    upsertStudioStorageBinding(options.storage, project.id, {
-      id: "local-file:imported",
-      provider: "local-file",
-      role: "backup",
-      label: file.name,
-      syncState: "pending",
-    }, { now, target: options.target });
-    const saved = recordStudioManualSave(options.storage, project.id, {
-      now,
-      target: options.target,
-    });
-    const targetRevision = Math.max(saved.revision, parsed.revision);
-    markStudioStorageBindingSynced(
-      options.storage,
-      project.id,
-      "local-file:imported",
-      {
-        remotePath: file.name,
-        byteLength: file.size,
-        revision: targetRevision,
-      },
-      { now, target: options.target },
-    );
+    let targetRevision = parsed.revision;
+    if (file) {
+      upsertStudioStorageBinding(options.storage, project.id, {
+        id: "local-file:imported",
+        provider: "local-file",
+        role: "backup",
+        label: file.name,
+        syncState: "pending",
+      }, { now, target: options.target });
+      const saved = recordStudioManualSave(options.storage, project.id, {
+        now,
+        target: options.target,
+      });
+      targetRevision = Math.max(saved.revision, parsed.revision);
+      markStudioStorageBindingSynced(
+        options.storage,
+        project.id,
+        "local-file:imported",
+        {
+          remotePath: file.name,
+          byteLength: file.size,
+          revision: targetRevision,
+        },
+        { now, target: options.target },
+      );
+    }
     // 제출 기록 왕복 (C5): 패키지에 실린 기록을 새 프로젝트 id로 재연결해 되살린다.
-    const restoredSubmissions = restoreStudioSubmissionsForImportedProject(
+    const restoredSubmissions = file ? restoreStudioSubmissionsForImportedProject(
       options.storage,
       {
         sourceProjectId: parsed.project.id,
@@ -605,7 +621,7 @@ function publishImportedProjectMetadata(
         entries: parsed.submissions,
       },
       { now, target: options.target },
-    );
+    ) : [];
     const profileState = readStudioSaveProfiles(options.storage);
     const currentProfile = profileState.profiles[project.id];
     if (currentProfile) {
@@ -617,7 +633,7 @@ function publishImportedProjectMetadata(
             ...currentProfile,
             accessMode: parsed.accessMode,
             distributionState: parsed.distributionState,
-            revision: targetRevision,
+            revision: Math.max(currentProfile.revision, targetRevision),
             lastExportAt: parsed.lastExportAt ?? currentProfile.lastExportAt,
             lastSubmissionAt: parsed.lastSubmissionAt ?? currentProfile.lastSubmissionAt,
             lastPublicationAt: parsed.lastPublicationAt ?? currentProfile.lastPublicationAt,

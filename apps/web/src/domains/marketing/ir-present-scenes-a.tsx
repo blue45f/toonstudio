@@ -22,7 +22,7 @@ export const SCENE_NODES_A: ReactNode[] = [
           </div>
           <div className="hero-meta rv">
             <span><b>WebGPU(Vello)</b> 직접 포팅·패치한 렌더링 엔진</span>
-            <span><b>14,928</b> 배치 가능 3D 에셋</span>
+            <span><b>3D 배경</b> 씬에서 구도와 원근 조절</span>
             <span><b>설치 불필요</b> 브라우저 완결</span>
           </div>
         </div>
@@ -155,35 +155,35 @@ export const SCENE_NODES_A: ReactNode[] = [
       </figure>
     </div>
   ),
-  /* 05 제품 수치 */
+  /* 05 제작 도구 */
   (
     <div className="scene-inner" key="s05">
-      <p className="kicker rv">Proof in Numbers</p>
-      <h2 className="headline rv">말로만 그러면 안 되니까,<br /><em>숫자</em>로 보여드릴게요</h2>
-      <p className="lede rv">전부 계획이 아니라, 지금 서비스에 실제로 연결돼서 쓸 수 있는 것들이에요.</p>
+      <p className="kicker rv">Production Tools</p>
+      <h2 className="headline rv">작품을 만드는 도구들을,<br /><em>한 흐름</em>으로 연결해요</h2>
+      <p className="lede rv">배경 구성부터 작화까지 이어지는 도구들이에요. 실제 작업에는 각 도구의 준비 상태와 소재의 이용 조건을 확인해 주세요.</p>
       <div className="stats rv">
         <div className="stat">
-          <div className="num"><span data-count="42">42</span><small>개</small></div>
+          <div className="num">테마</div>
           <div className="label">bg3d 테마 팩</div>
-          <div className="desc">장르·시대·공간별 배경 3D 테마 팩이 스튜디오에 바로 연결돼요.</div>
+          <div className="desc">장르·시대·공간에 맞는 3D 배경을 구성하는 도구예요.</div>
         </div>
         <div className="stat">
-          <div className="num"><span data-count="14928">14,928</span><small>개</small></div>
-          <div className="label">배치 가능 3D 에셋</div>
-          <div className="desc">배경 씬에 그대로 놓고 구도와 원근을 잡을 수 있는 실제 에셋 수예요.</div>
+          <div className="num">3D</div>
+          <div className="label">3D 배경 에셋</div>
+          <div className="desc">배경 씬에 소재를 놓고 구도와 원근을 조절해요. 소재마다 이용 조건을 확인합니다.</div>
         </div>
         <div className="stat">
-          <div className="num"><span data-count="9">9</span><small>종</small></div>
+          <div className="num">장면</div>
           <div className="label">배경 프리셋</div>
           <div className="desc">자주 쓰는 배경 구성을 한 번에 불러오는 프리빌트 프리셋이에요.</div>
         </div>
         <div className="stat">
-          <div className="num"><span data-count="226">226</span><small>종</small></div>
+          <div className="num">작화</div>
           <div className="label">브러시 카탈로그 · 3-Labs</div>
-          <div className="desc">기본 G펜부터 38밴드 분광·수묵 농담 브러시(Brush Labs 97.43점)까지 제공되는 드로잉 브러시예요.</div>
+          <div className="desc">선화·채색에 맞는 브러시를 고르고 작업해요. 실험 기능과 기본 작화 도구는 구분합니다.</div>
         </div>
       </div>
-      <p className="stats-note rv">수치는 실제 서비스 배선 및 공개 소스코드(0d380996, 2026-11-09) 기준입니다 — 3-Labs 교차 제작 브리지(X_LABS = 96.84), Verify AI 통합 프리플라이트 게이트(96.74점), 7-타깃 멀티 클라우드·로컬 배포 매트릭스(171개 자동 테스트 통과) 검증 완료.</p>
+      <p className="stats-note rv">이 소개는 기능 범위를 설명합니다. 현재 제공 수량, 전체 기능의 안정성, 실제 원고 제작 효과는 별도 검증이 필요해요.</p>
     </div>
   ),
   /* 06 역할별 UX */
