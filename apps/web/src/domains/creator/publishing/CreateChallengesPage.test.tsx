@@ -90,6 +90,19 @@ describe("CreateChallengesPage", () => {
     renderPage();
     expect(await screen.findByRole("button", { name: "챌린지 공유: 비 오는 날" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "스튜디오에서 참여하기" })).toBeNull();
+    expect(screen.queryByTestId("challenge-spark-remix-bar")).toBeNull();
+  });
+
+  it("진행 중인 챌린지 상세에서 주제→3컷 스파크 리믹서로 3컷 구상을 섞고 스튜디오로 바로 이동할 수 있다", async () => {
+    renderPage();
+    const remixBar = await screen.findByTestId("challenge-spark-remix-bar");
+    expect(within(remixBar).getByTestId("challenge-spark-cut-1").textContent).toContain("가을밤 거리를 한 컷으로");
+    fireEvent.click(within(remixBar).getByTestId("challenge-spark-mood-tension"));
+    fireEvent.click(within(remixBar).getByTestId("challenge-spark-shuffle-btn"));
+    expect(within(remixBar).getByTestId("challenge-spark-seed-badge").textContent).toContain("#2");
+    expect(within(remixBar).getByTestId("challenge-spark-studio-cta").getAttribute("href")).toBe(
+      "/studio?challengeId=c1",
+    );
   });
 
   it("참여작이 없으면 스튜디오 참여 행동을 함께 안내한다", async () => {

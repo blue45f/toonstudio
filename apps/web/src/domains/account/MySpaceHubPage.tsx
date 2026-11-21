@@ -28,6 +28,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
+import { MySpaceDailyPulseRibbon } from "./MySpaceDailyPulseRibbon";
 import { MySpaceVaultAndRestBar } from "./MySpaceVaultAndRestBar";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
@@ -484,6 +485,17 @@ export function MySpaceHubPage() {
             />
           )}
         </section>
+
+        <MySpaceDailyPulseRibbon
+          hydrated={hydrated}
+          readsCount={stats[0] ?? 0}
+          ratingsCount={stats[1] ?? 0}
+          collectionsCount={stats[2] ?? 0}
+          recentEntries={validRecentEntries}
+          sessionStatus={sessionStatus}
+          activeCategory={roleFilter}
+          onSelectCategory={(nextRole) => selectRoleFilter(nextRole)}
+        />
 
         <section className="mt-3.5" aria-labelledby="my-space-destinations">
           <div className="flex flex-wrap items-center justify-between gap-2">
