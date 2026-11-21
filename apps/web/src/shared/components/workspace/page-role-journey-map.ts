@@ -106,8 +106,9 @@ const nextStep = (
   accentTone: PageJourneyAccentTone,
 ): JourneyNextStep => ({ href, labelKo, labelEn, reasonKo, reasonEn, accentTone });
 
-/** 신규 핵심 4+1 표면으로 1클릭 도달하는 공통 바로가기. */
+/** 신규 핵심 5+1 표면으로 1클릭 도달하는 공통 바로가기 (통합 소재 검색 최상단 전진 배치). */
 export const CORE_SURFACE_QUICK_LINKS: readonly JourneyNextStep[] = Object.freeze([
+  nextStep("/research/materials", "통합 소재 검색", "Unified Asset Search", "3D 배경·브러시·텍스처·포즈·효과음을 라이선스 검증과 함께 1클릭 탐색", "Search verified 3D scenes, brushes, textures, poses and SFX in one click", "market"),
   nextStep("/studio/bg3d", "스튜디오 3D·AI", "Studio 3D & AI", "3D 배경·캐릭터·AI 구도를 한 캔버스에서 합성", "Compose 3D scenes, characters and AI guides", "three-d"),
   nextStep("/production", "분업 OS", "Production OS", "팀원 공정 배정·검수·정산을 한눈에 관제", "Coordinate episode stages, reviews and payouts", "collab"),
   nextStep("/market", "에셋 마켓", "Asset Market", "상업용 3D 배경·브러시·소재 호환성 확인 후 적용", "Browse licensed 3D scenes, brushes and materials", "market"),
@@ -398,6 +399,14 @@ export const PAGE_ROLE_JOURNEY_ENTRIES: readonly PageRoleJourneyEntry[] = Object
     ]),
 
   // ── ④ 탐색·마켓·에셋 ──
+  pageRole("/research/materials", 4, "market", ["통합 소재 검색 · 도감", "Unified Asset Search"],
+    ["3D 배경·브러시·텍스처·포즈·효과음을 라이선스 검증과 함께 1클릭 투입하는 소재 허브", "Search verified 3D scenes, brushes, textures, poses and SFX for one-click canvas use"],
+    ["CC0·상업 무료 소재 통합 검색 허브(/research/materials)이며, 유료 거래는 /market입니다", "Unified CC0 & commercial-safe material search hub — pair with /market"],
+    [
+      nextStep("/studio/bg3d", "3D 배경 스테이지 적용", "Open in 3D stage", "찾은 3D 배경·텍스처를 투시·잉크선과 합성", "Stage matched 3D scenes and textures", "three-d"),
+      nextStep("/market", "에셋 마켓 더 보기", "Browse market", "로판·무협·서울 프리미엄 상업 소재 탐색", "Explore commercial genre asset packs", "market"),
+      nextStep("/studio", "스튜디오 캔버스 복귀", "Return to studio", "고른 소재를 원고 컷에 바로 배치", "Drop picked materials into your canvas", "creation"),
+    ]),
   pageRole("/market", 4, "market", ["소재 찾기 · 에셋 마켓", "Asset market"],
     ["3D 배경·브러시·효과 소재를 상업 라이선스·호환성과 함께 찾는 에셋 마켓", "Find 3D backdrops, brushes and effects with clear commercial rights"],
     ["새 소재를 탐색·확보하는 마켓(/market)이며, 담은 소재는 /studio/assets에 모입니다", "Discover & license new assets — your owned items live in /studio/assets"],

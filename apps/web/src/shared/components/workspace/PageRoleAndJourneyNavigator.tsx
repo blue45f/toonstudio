@@ -1,8 +1,10 @@
-import { ArrowRight, Check, Compass } from "lucide-react";
+import { ArrowRight, Check, Compass, Search } from "lucide-react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { cx } from "@/shared/lib/cx";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import Link from "@/shared/navigation/router-link";
 
 import {
@@ -16,6 +18,21 @@ import {
   type WorkspaceNavigationContext,
 } from "./workspace-navigation-model";
 
+const GlobalAssetSearchPalette = lazyRetry(
+  () =>
+    import("./GlobalAssetSearchPalette").then((module) => ({
+      default: module.GlobalAssetSearchPalette,
+    })),
+  "GlobalAssetSearchPalette",
+);
+
+function isEditableElement(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName.toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+  return target.isContentEditable || target.getAttribute("role") === "textbox";
+}
+
 interface PageRoleAndJourneyNavigatorProps {
   readonly pathname: string;
   readonly context?: WorkspaceNavigationContext;
@@ -24,7 +41,8 @@ interface PageRoleAndJourneyNavigatorProps {
 
 /**
  * PC·태블릿·모바일 공통 5단계 창작 여정 진행 바 + 현재 페이지 역할 1줄 안내 + 다음 추천 동선 칩.
- * WorkspaceTaskFrame에 지연 연결되어 진입 번들 비용 없이 현재 위치와 다음 행동을 즉시 안내한다.
+ * WorkspaceTaskFrame에 지연 연결되어 진입 번들 비용 없이 현재 위치와 다음 행동을 즉시 안내하며,
+ * 전역 소재 검색 커맨드 팔레트(⌘K / /)를 지연 로딩 런처로 함께 제공한다.
  */
 export function PageRoleAndJourneyNavigator({
   pathname,
@@ -34,6 +52,32 @@ export function PageRoleAndJourneyNavigator({
   const bt = useBilingual("PageRoleAndJourneyNavigator");
   const isKo = useI18n((state) => state.lang.toLowerCase().startsWith("ko"));
   const entry = resolvePageRoleJourney(pathname);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const closePalette = useCallback(() => setPaletteOpen(false), []);
+
+  useEffect(() => {
+    const handleGlobalShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((prev) => !prev);
+        return;
+      }
+      if (
+        event.key === "/" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !isEditableElement(event.target)
+      ) {
+        event.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleGlobalShortcut);
+    return () => window.removeEventListener("keydown", handleGlobalShortcut);
+  }, []);
 
   return (
     <section
@@ -116,6 +160,22 @@ export function PageRoleAndJourneyNavigator({
             <span className="text-[11px] font-semibold text-fg-3 [word-break:keep-all]">
               {bt("이 페이지에서 할 일", "What you do here")} · {isKo ? entry.pageLabelKo : entry.pageLabelEn}
             </span>
+            <button
+              type="button"
+              data-testid="journey-asset-search-launcher"
+              data-accent-tone="market"
+              aria-haspopup="dialog"
+              aria-expanded={paletteOpen}
+              onClick={openPalette}
+              title={bt("어느 화면에서든 ⌘K 또는 / 로 통합 소재 검색 열기", "Open unified asset search anywhere with ⌘K or /")}
+              className={cx(
+                "ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]",
+                accentToneChipClasses("market", paletteOpen),
+              )}
+            >
+              <Search size={14} strokeWidth={2} aria-hidden="true" className="shrink-0 text-warning" />
+              <span>{bt("소재 검색 (⌘K)", "Asset Search (⌘K)")}</span>
+            </button>
           </div>
           <p className="mt-1 text-sm font-semibold leading-snug text-fg [word-break:keep-all]">
             {isKo ? entry.roleHeadlineKo : entry.roleHeadlineEn}
@@ -160,6 +220,11 @@ export function PageRoleAndJourneyNavigator({
           </ul>
         </nav>
       </div>
+      {paletteOpen ? (
+        <Suspense fallback={null}>
+          <GlobalAssetSearchPalette open={paletteOpen} onClose={closePalette} />
+        </Suspense>
+      ) : null}
     </section>
   );
 }
