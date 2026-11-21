@@ -224,8 +224,15 @@ describe("Studio five-hour soak checkpoint telemetry", () => {
   });
 
   it("wires the tested checkpoint builder into the browser harness", () => {
-    expect(source).toContain("report.checkpoints.push(createStudioSoakCheckpoint({");
+    expect(source).toContain("...createStudioSoakCheckpoint({");
     expect(source).toContain("heapSamples: report.heapSamples");
+  });
+
+  it("실제 DOM과 listener 관측값을 checkpoint에 보존한다", () => {
+    const measured = { ...sample(1, 108), nodes: 210, jsEventListeners: 18 };
+    expect(createStudioSoakCheckpoint({ atMs: 3_600_000, cycle: 1, heap: measured,
+      heapSamples: [sample(0, 100), measured], failures: 0 }))
+      .toMatchObject({ domNodes: 210, eventListeners: 18 });
   });
 });
 
