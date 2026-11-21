@@ -1,12 +1,12 @@
 // Isolated fixture adapters; production renderers and accounts are never mutated here.
+import { normalizeStudioBrushDynamicsSettings } from "../../src/domains/creator/brush/studio-brush-dynamics";
+import { DEFAULT_STUDIO_BRUSH_SNAPSHOT } from "../../src/domains/creator/brush/studio-brush-library";
 import { defaultStudioAppSettings } from "../../src/domains/creator/studio-app-settings";
 import { DEFAULT_STUDIO_LIVING_INK_MATERIAL_CONTROLS } from "../../src/domains/creator/studio-living-ink-gpu-protocol";
 import { StudioBrushLibraryPanel, StudioBrushStudio, StudioShapePickerGrid, StudioUnifiedBrushPicker, loadStudioBrushStudio } from "../../src/domains/creator/studio-page-lazy-ui";
 import { DEFAULT_STUDIO_PRO_DRAW_PREFS } from "../../src/domains/creator/studio-pro-draw-prefs";
 import { StudioMobileSheetHandle } from "../../src/domains/creator/StudioMobileSheetHandle";
 
-import type { NormalizedStudioBrushDynamicsSettings } from "../../src/domains/creator/brush/studio-brush-dynamics";
-import type { StudioBrushSnapshot } from "../../src/domains/creator/brush/studio-brush-library";
 import type { StudioLeftToolRailClientInput } from "../../src/domains/creator/editor-client/studio-left-tool-rail-client";
 import type { StudioWorkspaceState } from "../../src/domains/creator/studio-workspaces";
 import type { StudioMobileEditingDockHandlers, StudioMobileEditingDockProps } from "../../src/domains/creator/StudioMobileEditingDock";
@@ -42,6 +42,7 @@ export function createMobileHandlers(): StudioMobileEditingDockHandlers {
 export function createMobileProps(
   overrides: Partial<StudioMobileEditingDockProps> = {},
 ): StudioMobileEditingDockProps {
+  const brushDynamics = overrides.brushDynamics ?? normalizeStudioBrushDynamicsSettings();
   return {
     touchPreferences: { twoFinger: "pan-zoom", threeFinger: "undo" },
     activeCatalogBrushId: "gpen",
@@ -66,7 +67,7 @@ export function createMobileProps(
       available: true,
       undoAvailable: false,
     },
-    brushDynamics: {} as NormalizedStudioBrushDynamicsSettings,
+    brushDynamics,
     brushManagerSheetRef: { current: null },
     brushOpacity: 1,
     collaborationDocumentLocked: false,
@@ -74,7 +75,18 @@ export function createMobileProps(
     color: "#111111",
     colorBlindPreview: "none",
     colorVisionSheetRef: { current: null },
-    currentBrushSnapshot: {} as StudioBrushSnapshot,
+    currentBrushSnapshot: {
+      ...DEFAULT_STUDIO_BRUSH_SNAPSHOT,
+      brushId: overrides.brush ?? "gpen",
+      color: overrides.color ?? "#111111",
+      strokeWidth: overrides.strokeWidth ?? 4,
+      stabilizer: overrides.stabilizer ?? 0,
+      stabilizerMode: overrides.stabilizerMode ?? "standard",
+      tipAngle: overrides.tipAngle ?? 0,
+      tipRoundness: overrides.tipRoundness ?? 1,
+      tiltEnabled: overrides.tiltEnabled ?? false,
+      brushDynamics,
+    },
     drawMode: "pen",
     drawShape: "rect",
     drawSheetRef: { current: null },
