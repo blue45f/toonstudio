@@ -201,7 +201,7 @@ test("좁은320 화면과 두 배 글꼴에서도 경고 전문과 복구 동작
   await expect(dialog).not.toBeVisible();
   await expect(summary).toBeFocused();
   await expect(summary).toHaveAccessibleDescription(messages.join(" "));
-  await summary.click();
+  await summary.getByRole("status").first().click();
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: /닫기|Close/u }).click();
   await expect(summary).toBeFocused();
