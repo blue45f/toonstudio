@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import "./StudioProjectMoodboard.css";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import { loadDeviceMoodboard, writeDeviceMoodboard, MoodboardChanged, type DeviceBoard } from "./studio-moodboard-device-store";
@@ -65,6 +66,7 @@ export function StudioProjectMoodboard(props: StudioProjectMoodboardProps) {
 const HISTORY_LIMIT = 30;
 
 function ProjectBoardSession({ projectId, imageCatalog }: StudioProjectMoodboardProps) {
+  const t = useBilingual("StudioProjectMoodboard");
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [history, setHistory] = useState<{ past: Moodboard[]; future: Moodboard[] }>({ past: [], future: [] });
   const [saveError, setSaveError] = useState<"unavailable" | "changed" | null>(null);
@@ -195,7 +197,13 @@ function ProjectBoardSession({ projectId, imageCatalog }: StudioProjectMoodboard
     {boardSurfaceMode === "spatial" ? (
       <div className="space-y-3">
         {tools}
-        <Suspense fallback={<p role="status" className="p-3">자유 공간 보드를 여는 중…</p>}>
+        <Suspense
+          fallback={
+            <p role="status" className="p-3">
+              {t("자유 공간 보드를 여는 중…", "Opening the free-form spatial board…")}
+            </p>
+          }
+        >
           <LazyPlotrSpatialBoardView document={spatialDoc} onChange={setCustomSpatialDoc} />
         </Suspense>
       </div>
