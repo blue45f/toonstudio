@@ -28,6 +28,7 @@ import {
   INVESTOR_QA_ITEMS,
   IR_DECK_PDF,
   IR_DECK_PPTX,
+  IR_DECK_UPDATED_AT,
   IR_FILM_POSTER,
   IR_FILM_SRC,
   LANDSCAPE,
@@ -248,7 +249,7 @@ export function IrPitchPage() {
         <ul className="grid gap-3 md:grid-cols-2">
           {[
             { ko: "아직 비어 있는 자리 — 브라우저에서 전문 드로잉 + 전 공정 통합", en: "A position still open — pro drawing + full process, in a browser" },
-            { ko: "직접 설계·튜닝한 전문 브러시 프리셋 226종 · WebGPU 스트로크 렌더링", en: "226 pro brush presets, designed and tuned in-house · WebGPU stroke rendering" },
+            { ko: "필압·질감 브러시 · WebGPU 스트로크 렌더링", en: "Pressure and texture brushes · WebGPU stroke rendering" },
             { ko: "지망생 이상 전문 창작자부터 소규모 팀까지 한곳에서 협업 (대규모는 설계·로드맵)", en: "Collaboration in one place, from aspiring professionals to small teams (large studios: design & roadmap)" },
             { ko: "회차-공정-담당-승인, 웹툰식 분업을 그대로 내장", en: "Episodes, processes, owners, approvals — the webtoon way, built in" },
           ].map((item) => (
@@ -418,8 +419,8 @@ export function IrPitchPage() {
               en: { title: "A position still open", body: "Pro tools live in desktop apps, and collaboration tools stop at managing outputs. Nobody has yet put pro drawing and the whole process together in a browser." },
             },
             {
-              ko: { title: "직접 설계·튜닝한 전문 브러시 프리셋 226종 · WebGPU 스트로크 렌더링", body: "직접 포팅·패치한 WebGPU 벡터 렌더러(Vello)가 획을 GPU로 그려 줘서, 브라우저에서도 전문 브러시의 질감과 속도가 그대로 나와요." },
-              en: { title: "226 pro brush presets, designed and tuned in-house · WebGPU stroke rendering", body: "A WebGPU vector renderer (Vello) that we ported and patched ourselves draws strokes on the GPU, so professional brush feel and speed hold up right in the browser." },
+              ko: { title: "필압·질감 브러시 · WebGPU 스트로크 렌더링", body: "브러시의 필압·크기·질감을 조절하고 GPU 렌더링을 활용하는 제작 환경을 개발하고 있어요. 선택 가능한 브러시와 품질 검증 범위는 현재 제품에서 확인할 수 있습니다." },
+              en: { title: "Pressure and texture brushes · WebGPU stroke rendering", body: "We are developing a production environment with adjustable brush pressure, size and texture, and GPU rendering. Check the current product for available brushes and their validation status." },
             },
             {
               ko: { title: "지망생 이상 전문 창작자부터 팀까지, 한곳에서 협업", body: "지금은 지망생 이상 전문 작가와 소규모 팀이 실제로 연재하는 흐름에 맞춰 설계하고 검증하고 있어요. 대규모 스튜디오로 넓히는 건 같은 구조를 키우는 일이라, 지원 설계와 로드맵 단계로 구분해 둡니다." },
@@ -558,7 +559,7 @@ export function IrPitchPage() {
             })}
           </ol>
           <p className="mt-4 break-keep border-t border-line/60 pt-4 text-sm leading-6 text-fg-2">
-            {bi("회원이 1만 명이 될 때까지는 전 기능을 무료로 운영해요. 위 순서로 사람을 모으고, 1만 명을 넘긴 뒤에 유료화로 넘어가는 계획입니다. 가격 정책은 심플하게 기본 무료 + AI 크레딧 중심이며, 팀 가격은 지금 정하지 않고 사용자가 늘어난 뒤에 정합니다.", "Every feature stays free until membership reaches 10,000. We grow in the order above, then switch to paid plans past that mark. Pricing stays simple — free basic plus AI credits — and the team price is undecided until users grow.")}
+            {bi("기본 제작·협업 기능을 무료로 시작하고, AI는 제공된 크레딧 범위에서 사용합니다. 유료 전환 시점과 무료 제공 범위는 사용자 검증 후 정합니다. 개인 Pro 월 19,900원은 예시·미확정이며, 팀 가격은 미정입니다.", "Start with free basic creation and collaboration, and use AI within the available credits. The timing of paid plans and free scope will follow user validation. KRW 19,900 a month is an unconfirmed example for an individual Pro plan; team pricing is undecided.")}
           </p>
           <p className="mt-4 break-keep border-t border-line/60 pt-4 text-sm leading-6 text-fg-2">
             <span className="font-bold text-fg">{bi("장기 비전 — 웹툰 포털로 진화", "Long-term vision — evolving into a webtoon portal")}</span>
@@ -609,15 +610,16 @@ export function IrPitchPage() {
       </IrBriefSection>
 
       <IrBriefSection id="downloads">
-        <IntroSectionHeading id="ir-downloads-title" eyebrow={eyebrow("DOWNLOADS")} title={bi("발표 자료는 파일로도 가져가실 수 있어요.", "Take the presentation files with you.")} />
+        <IntroSectionHeading id="ir-downloads-title" eyebrow={eyebrow("DOWNLOADS")} title={bi("이전 발표 자료를 참고용으로 내려받기", "Download the earlier presentation for reference")} />
+        <p className="mt-3 break-keep text-sm leading-6 text-fg-2">{bi(`${IR_DECK_UPDATED_AT} 참고본입니다. 최신 문안과 차이가 있으므로 일정·가격·기능 안내는 웹 발표에서 확인해 주세요.`, `Reference edition dated ${IR_DECK_UPDATED_AT}. It differs from the current copy; check the web presentation for current schedules, pricing and feature descriptions.`)} <Link href="/ir/present" className="font-bold text-accent underline">{bi("최신 웹 발표 보기", "View the current web presentation")}</Link></p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <a href={IR_DECK_PPTX} download className="group rounded-2xl border border-line/70 bg-card/65 p-5 transition-colors hover:border-accent/50 sm:p-6">
             <p className="flex items-center gap-2 font-display text-base font-black text-fg">
               <Presentation size={17} className="text-accent" aria-hidden="true" />
-              {bi("IR 발표 덱 · PPTX", "IR pitch deck · PPTX")}
+              {bi("IR 참고본 · PPTX", "IR reference edition · PPTX")}
             </p>
             <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
-              {bi("파워포인트에서 바로 열리고, 필요하면 고쳐 쓸 수도 있어요. 약 4.8MB예요.", "Opens right in PowerPoint, and you can edit it if you need to. About 4.8 MB.")}
+              {bi(`${IR_DECK_UPDATED_AT} 기준 편집 가능한 발표자료입니다.`, `Editable presentation dated ${IR_DECK_UPDATED_AT}.`)}
             </p>
             <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent group-hover:text-accent-2">
               <Download size={14} aria-hidden="true" />{bi("PPTX 내려받기", "Download the PPTX")}
@@ -626,10 +628,10 @@ export function IrPitchPage() {
           <a href={IR_DECK_PDF} download className="group rounded-2xl border border-line/70 bg-card/65 p-5 transition-colors hover:border-accent/50 sm:p-6">
             <p className="flex items-center gap-2 font-display text-base font-black text-fg">
               <FileText size={17} className="text-accent" aria-hidden="true" />
-              {bi("IR 발표 덱 · PDF", "IR pitch deck · PDF")}
+              {bi("IR 참고본 · PDF", "IR reference edition · PDF")}
             </p>
             <p className="mt-2 break-keep text-sm leading-6 text-fg-2">
-              {bi("고치지 않고 그대로 읽거나 나눠 보기 좋아요. 27쪽, 약 7.9MB예요.", "Best for reading as-is or sharing. 27 pages, about 7.9 MB.")}
+              {bi(`${IR_DECK_UPDATED_AT} 기준 열람용 발표자료입니다.`, `Read-only presentation dated ${IR_DECK_UPDATED_AT}.`)}
             </p>
             <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent group-hover:text-accent-2">
               <Download size={14} aria-hidden="true" />{bi("PDF 내려받기", "Download the PDF")}
