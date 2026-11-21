@@ -699,45 +699,32 @@ export function createStudioLayerOperations(
         return;
       case "set-items-opacity": {
         const opacity = Math.min(1, Math.max(0, action.opacity));
-        // 스크러버가 포인터를 놓기 전에도 문서에 값을 넣어야 캔버스 픽셀이 실시간으로 따라온다.
-        // 표본마다 `commit()`을 부르면 undo가 1%마다 하나씩 쌓이므로, 같은 키의 연속 표본을
-        // 최상단 스냅샷 교체로 합치는 `commitCoalesced`로 보낸다 — 라이브 반영 + ⌘Z 1회.
-        // 확정 표본(live 없음)은 같은 키로 한 번 더 합친 뒤 체인을 끊어, 다음 제스처가 이번
-        // 제스처의 히스토리 항목에 빨려 들어가지 않게 한다.
+        // 드래그 중 프리뷰(`live`)는 같은 키로 합쳐 ⌘Z 1회로 유지하고, 확정 시 체인을 끊는다.
         const coalesceKey = `opacity:${[...action.ids].join(",")}`;
         patchLayerItems(action.ids, () => ({ opacity }), { coalesceKey });
         if (!action.live) coalesceKeyRef.current = null;
         return;
       }
       case "merge-down": {
-        void commitLayerMergePlan(
-          planStudioLayerMergeDown({
-            items: elements,
-            groups,
-            selectedId: action.id,
-          })
-        );
+        void commitLayerMergePlan(planStudioLayerMergeDown({ items: elements, groups, selectedId: action.id }));
         return;
       }
       case "flatten-visible": {
-        void commitLayerMergePlan(
-          planStudioLayerFlattenVisible({ items: elements, groups })
-        );
+        void commitLayerMergePlan(planStudioLayerFlattenVisible({ items: elements, groups }));
         return;
       }
       case "merge-selected": {
-        void commitLayerMergePlan(
-          planStudioLayerMergeSelected({
-            items: elements,
-            groups,
-            selectedIds: action.ids,
-          })
-        );
+        void commitLayerMergePlan(planStudioLayerMergeSelected({ items: elements, groups, selectedIds: action.ids }));
         return;
       }
-      case "set-item-flag":
+      case "set-item-flag": {
+        if (action.flag === "fillReference" && action.value) {
+          const prevRefs = elements.filter((el) => el.id !== action.id && el.fillReference).map((el) => el.id);
+          if (prevRefs.length > 0) patchLayerItems(prevRefs, () => ({ fillReference: false } as Partial<El>));
+        }
         patchLayerItems([action.id], () => ({ [action.flag]: action.value } as Partial<El>));
         return;
+      }
       case "assign-items-to-group": {
         if (masterEditMode) return;
         const requestedIds = new Set(action.ids.filter((id) => elementById.has(id)));

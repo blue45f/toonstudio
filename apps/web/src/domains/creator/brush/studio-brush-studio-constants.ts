@@ -1,4 +1,4 @@
-import type { MangaNibPersonalityId } from "@toonstudio/studio-brush-platform";
+import type { MangaNibPersonalityId } from "@toonstudio/studio-brush-platform/natural-media";
 
 import type { StudioBrushTipShapeId } from "./studio-brush-tip-stamp";
 
