@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 
-import type { ProductionQaRedlineStroke } from "../../platform/database/schema/production-division-os.schema";
+import type { ProductionQaRedlineStroke } from "../../platform/database/schema/production.schema";
 import {
   detectCutRangeOverlaps,
   type BinaryLockRecord,

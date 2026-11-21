@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { ProductionQaRedlineStroke } from "../../platform/database/schema/production-division-os.schema";
+import type { ProductionQaRedlineStroke } from "../../platform/database/schema/production.schema";
 import type {
   DivisionLayerFolder,
   DivisionLedgerStatus,
