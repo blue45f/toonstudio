@@ -1,6 +1,58 @@
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+
+import ts from "typescript";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS } from "../studio-page-shell-runtime";
+
 import { StudioGpuPinReceiptWatchdog } from "./studio-webgpu-pin-receipt-watchdog";
+
+import type { DrawEl } from "../studio-element-model";
+
+const host = ts.createSourceFile("Host.tsx", readFileSync(
+  new URL("../StudioCuttoonEditorHost.tsx", import.meta.url), "utf8",
+), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const appendDeclarations: ts.FunctionDeclaration[] = [];
+function findHostAppend(node: ts.Node): void {
+  if (ts.isFunctionDeclaration(node) && node.name?.text === "appendGpuLiveSourceJournalSuffix") appendDeclarations.push(node);
+  else ts.forEachChild(node, findHostAppend);
+}
+findHostAppend(host);
+if (appendDeclarations.length !== 1) throw new Error("실제 Host GPU append 함수가 하나여야 합니다.");
+const hostAppendExecutable = ts.transpileModule(appendDeclarations[0]!.getText(host), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+}).outputText;
+
+function hostJournalAppend(watchdog: StudioGpuPinReceiptWatchdog) {
+  let requestSequence = 1;
+  const journal = { identity: { epoch: 1, variations: [] } };
+  const failSelectedGpuLiveInk = vi.fn();
+  const armGpuPinnedRequestWatchdog = vi.fn((requestId: string, timeoutMs?: number) => watchdog.request(requestId, timeoutMs));
+  // 기하 계산과 GPU 제출은 대역으로 두되, 예산을 연결하는 Host 함수와 시한 관리는 실제 코드를 실행한다.
+  const append = runInNewContext(`${hostAppendExecutable}\nappendGpuLiveSourceJournalSuffix`, {
+    gpuLiveSourceJournalRef: { current: journal },
+    webGpuCanvasHandleRef: { current: {
+      appendPinnedJournalSuffixBatch: () => ({ status: "accepted", requestId: `frame:${++requestSequence}` }),
+    } },
+    gpuLiveSourceJournalFirstStrokeIndexRef: { current: 0 },
+    gpuLiveSourceJournalIdentityFor: () => journal.identity,
+    advanceStudioGpuLiveSourceJournal: () => ({
+      status: "advanced", state: journal,
+      suffixes: [{ previousRenderedPointCount: 2, points: [2, 2], pressures: [0.5] }],
+    }),
+    prepareLiveStrokeGpuSubmission: () => true,
+    registerLiveStrokeGpuRequest: () => true,
+    gpuLiveAcceptedRequestIdRef: { current: null },
+    armGpuPinnedRequestWatchdog,
+    STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS,
+    applyLiveStrokeBackendPresentationEffects: vi.fn(),
+    failSelectedGpuLiveInk,
+  }) as (element: DrawEl, sealEndpoint?: boolean) => "advanced" | "retained" | "rejected";
+  return { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk };
+}
+
+const liveStroke: DrawEl = { id: "stroke:1", type: "draw", points: [0, 0, 2, 2], stroke: "#000000", strokeWidth: 4 };
 
 afterEach(() => {
   vi.useRealTimers();
@@ -119,5 +171,51 @@ describe("StudioGpuPinReceiptWatchdog", () => {
     vi.advanceTimersByTime(301);
 
     expect(onTimeout).toHaveBeenCalledWith("progress", "frame:2");
+  });
+
+  it("실제 Host의 연속 일반 append는 첫 receipt 이후 300 ms progress 시한을 미루지 않는다", () => {
+    vi.useFakeTimers();
+    const onTimeout = vi.fn();
+    const watchdog = new StudioGpuPinReceiptWatchdog({ timeoutMs: STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, onTimeout });
+    const { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk } = hostJournalAppend(watchdog);
+    watchdog.begin("frame:1");
+    expect(watchdog.receipt("frame:1")).toBe(true);
+
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(100);
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(100);
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(99);
+    expect(onTimeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+
+    expect(onTimeout).toHaveBeenCalledExactlyOnceWith("progress", "frame:4");
+    expect(armGpuPinnedRequestWatchdog.mock.calls).toEqual([
+      ["frame:2", undefined], ["frame:3", undefined], ["frame:4", undefined],
+    ]);
+    expect(failSelectedGpuLiveInk).not.toHaveBeenCalled();
+  });
+
+  it("실제 Host의 seal append만 대기 중인 live 시한을 2000 ms terminal 예산으로 바꾼다", () => {
+    vi.useFakeTimers();
+    const onTimeout = vi.fn();
+    const watchdog = new StudioGpuPinReceiptWatchdog({ timeoutMs: STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, onTimeout });
+    const { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk } = hostJournalAppend(watchdog);
+    watchdog.begin("frame:1");
+    expect(watchdog.receipt("frame:1")).toBe(true);
+
+    expect(append(liveStroke)).toBe("advanced");
+    vi.advanceTimersByTime(120);
+    expect(append(liveStroke, true)).toBe("advanced");
+    vi.advanceTimersByTime(1_999);
+    expect(onTimeout).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+
+    expect(onTimeout).toHaveBeenCalledExactlyOnceWith("progress", "frame:3");
+    expect(armGpuPinnedRequestWatchdog.mock.calls).toEqual([
+      ["frame:2", undefined], ["frame:3", STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS],
+    ]);
+    expect(failSelectedGpuLiveInk).not.toHaveBeenCalled();
   });
 });

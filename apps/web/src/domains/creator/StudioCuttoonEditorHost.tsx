@@ -10699,7 +10699,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       return "rejected";
     }
     gpuLiveAcceptedRequestIdRef.current = outcome.requestId;
-    armGpuPinnedRequestWatchdog(outcome.requestId, STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS);
+    armGpuPinnedRequestWatchdog(outcome.requestId, sealEndpoint ? STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS : undefined);
     applyLiveStrokeBackendPresentationEffects();
     return "advanced";
   }
