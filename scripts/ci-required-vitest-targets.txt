@@ -751,6 +751,7 @@ apps/web/src/domains/creator/studio-shell/StudioVisualGuidance.test.tsx
 apps/web/src/domains/creator/studio-shell/studio-creator-lobby-layout.contract.test.ts
 apps/web/src/domains/creator/studio-shell/studio-shell-default-safe-viewport.test.ts
 apps/web/src/domains/creator/studio-shell/use-studio-floating-surface-layout.test.tsx
+apps/web/src/domains/creator/studio-shell/use-studio-shell-floating-target-node.test.tsx
 apps/web/src/domains/creator/studio-shell/useStudioModalSheet.details.test.ts
 apps/web/src/domains/creator/studio-shell/useStudioProjectLibrary.test.tsx
 apps/web/src/domains/creator/studio-smart-filter-opacity.test.ts
