@@ -3,5 +3,6 @@
 export {
   CHUNK_RELOAD_FLAG,
   hasAttemptedChunkReload,
+  isOfflineChunkReloadBlocked,
   markChunkReloadAttempted,
 } from "@/shared/lib/chunk-load-recovery";

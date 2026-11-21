@@ -1,8 +1,7 @@
 import { MonitorUp, WifiOff } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import { RoutePurposeScene } from "./RoutePurposeScene";
 import { useCampus } from "./spatial-campus/campus-context";
 import { WorkflowTrustBadge } from "./WorkflowTrustBadge";
 import { supportsRoutePurposeScene } from "./site-experience/site-experience-policy";
@@ -12,6 +11,12 @@ import { useI18n, useT } from "@/shared/lib/i18n";
 import { resolveProductLocale } from "@/shared/lib/product-identity";
 import { resolveSiteRouteExperience } from "@/shared/lib/site-route-experience";
 import { resolveSiteRouteVisual } from "@/shared/lib/site-route-visual";
+
+// 첫 화면·스튜디오·탐색·마켓 등 대다수 경로에서는 supportsRoutePurposeScene이 false이므로
+// 정적 진입 프리캐시에서 RoutePurposeScene과 전용 CSS(route-purpose-scene.css)를 분리한다.
+const RoutePurposeScene = lazy(() =>
+  import("./RoutePurposeScene").then((mod) => ({ default: mod.RoutePurposeScene })),
+);
 
 const COPY = {
   desktopTitle: defineBilingualText(
@@ -128,12 +133,14 @@ export function SiteRouteExperienceBoundary({
       </p>
 
       {routePurposeSceneSupported ? (
-        <RoutePurposeScene
-          title={routeTitle}
-          locale={locale}
-          experience={experience}
-          profile={visual}
-        />
+        <Suspense fallback={null}>
+          <RoutePurposeScene
+            title={routeTitle}
+            locale={locale}
+            experience={experience}
+            profile={visual}
+          />
+        </Suspense>
       ) : null}
 
       {desktopRequired ? (
