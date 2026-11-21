@@ -22,3 +22,13 @@ export const STUDIO_GENERIC_3D_SOURCE_FORMATS = [
 
 export type StudioGeneric3dSourceFormat =
   (typeof STUDIO_GENERIC_3D_SOURCE_FORMATS)[number];
+
+const STUDIO_GENERIC_3D_SOURCE_FORMAT_SET = new Set<string>(
+  STUDIO_GENERIC_3D_SOURCE_FORMATS,
+);
+
+export function isStudioGeneric3dSourceFormat(
+  value: unknown,
+): value is StudioGeneric3dSourceFormat {
+  return typeof value === "string" && STUDIO_GENERIC_3D_SOURCE_FORMAT_SET.has(value);
+}

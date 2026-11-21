@@ -83,6 +83,36 @@
       "types": "./src/shaper-slots/shaper-15-slot-contract.ts",
       "import": "./src/shaper-slots/shaper-15-slot-contract.ts",
       "default": "./src/shaper-slots/shaper-15-slot-contract.ts"
+    },
+    "./digest": {
+      "types": "./src/ir/digest.ts",
+      "import": "./src/ir/digest.ts",
+      "default": "./src/ir/digest.ts"
+    },
+    "./graph-ids": {
+      "types": "./src/graph/ids.ts",
+      "import": "./src/graph/ids.ts",
+      "default": "./src/graph/ids.ts"
+    },
+    "./path": {
+      "types": "./src/ir/path.ts",
+      "import": "./src/ir/path.ts",
+      "default": "./src/ir/path.ts"
+    },
+    "./path-transform": {
+      "types": "./src/ir/path-transform.ts",
+      "import": "./src/ir/path-transform.ts",
+      "default": "./src/ir/path-transform.ts"
+    },
+    "./brush": {
+      "types": "./src/ir/brush.ts",
+      "import": "./src/ir/brush.ts",
+      "default": "./src/ir/brush.ts"
+    },
+    "./review-source-map": {
+      "types": "./src/graph/review-source-map.ts",
+      "import": "./src/graph/review-source-map.ts",
+      "default": "./src/graph/review-source-map.ts"
     }
   },
   "scripts": {
@@ -118,7 +148,13 @@
       ],
       "review-voice-note": [
         "src/graph/review-voice-note.ts"
-      ]
+      ],
+      "digest": ["src/ir/digest.ts"],
+      "graph-ids": ["src/graph/ids.ts"],
+      "path": ["src/ir/path.ts"],
+      "path-transform": ["src/ir/path-transform.ts"],
+      "brush": ["src/ir/brush.ts"],
+      "review-source-map": ["src/graph/review-source-map.ts"]
     }
   }
 }

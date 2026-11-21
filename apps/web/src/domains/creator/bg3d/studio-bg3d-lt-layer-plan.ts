@@ -12,11 +12,23 @@ import { isStandardBase64 } from "@/shared/lib/standard-base64";
 import { createLayerGroup, type LayerGroup } from "../studio-layers";
 import type { StudioBg3dLtLayerPresentation } from "../scene-3d/studio-3d-insert-contract";
 import { makeStudioBg3dLtLayerElement as makeLayerElement } from "../contracts/studio-bg3d-lt-layer-element";
+import {
+  preserveStudioBg3dLtSceneAnchorAfterRemoval,
+  STUDIO_BG3D_LT_LAYER_ROLES,
+  type StudioBg3dLtImageElementLike,
+  type StudioBg3dLtLayerRole,
+  type StudioBg3dLtPageElementLike,
+  type StudioBg3dLtRenderMode,
+} from "../studio-bg3d-lt-layer-anchor";
 
-export const STUDIO_BG3D_LT_LAYER_ROLES = ["color", "tone", "shadow", "depth", "texture-line", "main-line"] as const;
-
-/** Back-to-front order. The last available role is the editable-scene anchor. */
-export type StudioBg3dLtLayerRole = (typeof STUDIO_BG3D_LT_LAYER_ROLES)[number];
+export {
+  preserveStudioBg3dLtSceneAnchorAfterRemoval,
+  STUDIO_BG3D_LT_LAYER_ROLES,
+  type StudioBg3dLtImageElementLike,
+  type StudioBg3dLtLayerRole,
+  type StudioBg3dLtPageElementLike,
+  type StudioBg3dLtRenderMode,
+};
 
 export const STUDIO_BG3D_LT_GROUP_NAME = "3D LT 배경";
 
@@ -32,41 +44,6 @@ export const STUDIO_BG3D_LT_LAYER_NAMES: Readonly<Record<StudioBg3dLtLayerRole, 
 
 export const STUDIO_BG3D_LT_MAX_RASTER_EDGE = 32_768;
 export const STUDIO_BG3D_LT_MAX_DATA_URL_LENGTH = 96 * 1024 * 1024;
-
-export type StudioBg3dLtRenderMode = "separated" | "combined";
-
-/** The smallest shape shared by every StudioPage element. */
-export interface StudioBg3dLtPageElementLike {
-  readonly id: string;
-  readonly type: string;
-  readonly groupId?: string;
-  readonly locked?: boolean;
-}
-
-/**
- * Image fields owned by this planner. StudioPage's ImageEl is structurally compatible after it
- * declares the three bg3dLt* metadata fields used for subsequent bundle discovery.
- */
-export interface StudioBg3dLtImageElementLike<TScene = unknown>
-  extends StudioBg3dLtPageElementLike {
-  readonly type: "image";
-  readonly src: string;
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-  readonly rotation?: number;
-  readonly flipped?: boolean;
-  readonly flippedY?: boolean;
-  readonly skewX?: number;
-  readonly skewY?: number;
-  readonly name?: string;
-  readonly layerRole?: string;
-  readonly bg3dScene?: TScene;
-  readonly bg3dLtBundleId?: string;
-  readonly bg3dLtRole?: StudioBg3dLtLayerRole;
-  readonly bg3dLtRenderMode?: StudioBg3dLtRenderMode;
-}
 
 export interface StudioBg3dLtSeparatedRaster extends StudioBg3dLtLayerPresentation {
   readonly role: StudioBg3dLtLayerRole;
@@ -189,58 +166,6 @@ export interface StudioBg3dLtLayerPlanSuccess<TElement extends StudioBg3dLtPageE
 export type StudioBg3dLtLayerPlanResult<TElement extends StudioBg3dLtPageElementLike> =
   | StudioBg3dLtLayerPlanFailure
   | StudioBg3dLtLayerPlanSuccess<TElement>;
-
-/**
- * Keeps a separated bundle editable when its sole scene-anchor layer is deleted but other bundle
- * layers remain. The highest remaining paint role is promoted without mutating either input.
- * Corrupt bundles with zero or multiple source anchors are deliberately left untouched.
- */
-export function preserveStudioBg3dLtSceneAnchorAfterRemoval<
-  TElement extends StudioBg3dLtPageElementLike,
-  TScene,
->(before: readonly TElement[], after: TElement[]): TElement[] {
-  const sourceAnchors = new Map<
-    string,
-    Array<TElement & StudioBg3dLtImageElementLike<TScene>>
-  >();
-  for (const element of before) {
-    if (!isImageElement<TScene>(element) || !isValidId(element.bg3dLtBundleId)) continue;
-    if (element.bg3dScene === undefined) continue;
-    const anchors = sourceAnchors.get(element.bg3dLtBundleId) ?? [];
-    anchors.push(element as TElement & StudioBg3dLtImageElementLike<TScene>);
-    sourceAnchors.set(element.bg3dLtBundleId, anchors);
-  }
-
-  let next = after;
-  for (const [bundleId, anchors] of sourceAnchors) {
-    if (anchors.length !== 1) continue;
-    const remaining = after
-      .map((element, index) => ({ element, index }))
-      .filter(
-        (entry): entry is {
-          element: TElement & StudioBg3dLtImageElementLike<TScene>;
-          index: number;
-        } =>
-          isImageElement<TScene>(entry.element) &&
-          entry.element.bg3dLtBundleId === bundleId &&
-          isRole(entry.element.bg3dLtRole)
-      );
-    if (remaining.length === 0 || remaining.some(({ element }) => element.bg3dScene !== undefined)) {
-      continue;
-    }
-    const promoted = remaining.reduce((best, candidate) => {
-      const bestPriority = STUDIO_BG3D_LT_LAYER_ROLES.indexOf(best.element.bg3dLtRole!);
-      const candidatePriority = STUDIO_BG3D_LT_LAYER_ROLES.indexOf(candidate.element.bg3dLtRole!);
-      return candidatePriority >= bestPriority ? candidate : best;
-    });
-    if (next === after) next = [...after];
-    next[promoted.index] = {
-      ...promoted.element,
-      bg3dScene: anchors[0]!.bg3dScene,
-    } as TElement;
-  }
-  return next;
-}
 
 interface NormalizedRaster extends StudioBg3dLtLayerPresentation {
   readonly role: StudioBg3dLtLayerRole;

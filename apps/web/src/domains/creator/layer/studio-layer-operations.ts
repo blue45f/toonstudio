@@ -1,4 +1,4 @@
-import { preserveStudioBg3dLtSceneAnchorAfterRemoval } from "../bg3d/studio-bg3d-lt-layer-plan";
+import { preserveStudioBg3dLtSceneAnchorAfterRemoval } from "../studio-bg3d-lt-layer-anchor";
 import { hasTrack, removeTrack, type AnimationTimelineDoc } from "../studio-anim-tracks";
 import { elBounds } from "../studio-element-geometry";
 import { planBindSelectionToFrameFolder } from "../studio-frame-folder";

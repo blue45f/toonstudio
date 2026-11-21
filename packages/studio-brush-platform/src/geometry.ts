@@ -1,4 +1,4 @@
-import { evaluateDynamicMapping } from "@toonstudio/studio-project-model";
+import { evaluateDynamicMapping } from "@toonstudio/studio-project-model/brush";
 import { getStroke } from "perfect-freehand";
 
 import type {

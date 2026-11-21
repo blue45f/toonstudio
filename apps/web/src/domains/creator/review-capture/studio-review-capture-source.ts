@@ -1,4 +1,4 @@
-import { sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model";
+import { sha256Schema, studioEntityIdSchema } from "@toonstudio/studio-project-model/graph-ids";
 import { z } from "zod";
 
 export const studioReviewCaptureSourceRevisionSchema = z.object({

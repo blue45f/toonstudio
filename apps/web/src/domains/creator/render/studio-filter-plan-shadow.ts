@@ -1,10 +1,6 @@
-import {
-  declareTrustedBootstrapProvider,
-  EngineCapabilityRegistry,
-  HybridExecutionPlanner,
-  providerDescriptorSchema,
-  type SurfacePlan,
-} from "@toonstudio/studio-engine-registry";
+import { providerDescriptorSchema } from "@toonstudio/studio-engine-registry/descriptor";
+import { HybridExecutionPlanner, type SurfacePlan } from "@toonstudio/studio-engine-registry/planner";
+import { declareTrustedBootstrapProvider, EngineCapabilityRegistry } from "@toonstudio/studio-engine-registry/registry";
 
 import type { StudioFilterLane } from "../filter/studio-filter-lane-cost-model";
 

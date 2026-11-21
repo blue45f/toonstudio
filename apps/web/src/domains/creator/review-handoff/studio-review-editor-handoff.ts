@@ -1,5 +1,10 @@
-import { canonicalJson, deriveStudioReviewPageMapping, validateStudioReviewSpatialAnchor,
-  type ReviewAnchor, type StudioReviewMappedPage } from "@toonstudio/studio-project-model";
+import { canonicalJson } from "@toonstudio/studio-project-model/digest";
+import {
+  deriveStudioReviewPageMapping,
+  validateStudioReviewSpatialAnchor,
+  type StudioReviewMappedPage,
+} from "@toonstudio/studio-project-model/review-source-map";
+import type { ReviewAnchor } from "@toonstudio/studio-project-model";
 
 import type { StudioEditorCommentTarget } from "../studio-comment-editor-selection";
 import type { StudioReviewCaptureContext, StudioReviewCaptureProjection } from "../review-capture/studio-review-capture-bridge";

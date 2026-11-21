@@ -1,4 +1,4 @@
-import { canonicalJson } from "@toonstudio/studio-project-model";
+import { canonicalJson } from "@toonstudio/studio-project-model/digest";
 import type { El, DrawEl  } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
 import { studioScopedWriteAuthority } from "./studio-scoped-write-authority";
