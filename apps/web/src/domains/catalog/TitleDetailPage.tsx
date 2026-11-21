@@ -15,6 +15,7 @@ import type { StudioPublicWiki } from "@/domains/creator/public/world-wiki";
 import { TitleDetailBreadcrumb } from "./TitleDetailBreadcrumb";
 import { TitleDetailCreationBridgeCard } from "./TitleDetailCreationBridgeCard";
 import { TitleDetailHero } from "./TitleDetailHero";
+import { TitleDetailQuickDecisionRibbon } from "./fresh-ideas/TitleDetailQuickDecisionRibbon";
 import { TitleEpisodeSection } from "./TitleEpisodeSection";
 import { TitleNotFound } from "./TitleNotFound";
 import { WorldWikiSection } from "./WorldWikiSection";
@@ -319,6 +320,13 @@ export function TitleDetailPage() {
 
       <PersonalContentPreferenceNotice title={title} />
       <TitleEarlyAccessNotice titleId={title.id} />
+      <TitleDetailQuickDecisionRibbon
+        title={title}
+        episodes={episodes}
+        showAvailability={showAvailability}
+        firstEpisodeHref={firstEpisodeHref}
+        remixBlueprint={remixBlueprint}
+      />
 
       <div id="title-episodes-anchor" tabIndex={-1} className="title-primary-episodes">
         <TitleEpisodeSection title={title} episodes={episodes} />

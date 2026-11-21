@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { LibraryDiaryTab } from "@/domains/engagement/public/LibraryDiaryTab";
 import { useEngagement } from "@/domains/engagement/public/engagement-store";
 import { LibraryView } from "@/shared/components/library-view";
+import { LibraryReadingMomentumBar } from "./fresh-ideas/LibraryReadingMomentumBar";
 import { MySpaceModuleChrome } from "@/shared/components/my-space-module-chrome";
 import { Container } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
@@ -51,6 +52,8 @@ export function LibraryPage() {
             : tx("비로그인 상태에서는 서재와 감상 기록이 이 브라우저에 저장되며, 로그인하면 서재·평가·컬렉션이 계정에 동기화됩니다.")}
         </p>
       </header>
+
+      <LibraryReadingMomentumBar />
 
       <LibraryView
         initialTab={tab}
