@@ -101,9 +101,15 @@ export function buildStudioFileMenuItems({
     {
       id: "import-ora-cbz",
       commandId: "file.import-interchange",
+      searchActivation: "execute",
       label: "ORA · CBZ · WILL 가져오기…",
       icon: Package,
       disabled: state.interchangeImportBusy || state.collaborationDocumentLocked,
+      unavailableReason: state.interchangeImportBusy
+        ? "다른 파일을 가져오는 중입니다."
+        : state.collaborationDocumentLocked
+          ? "문서가 잠겨 있어 파일을 가져올 수 없습니다."
+          : undefined,
       separatorAfter: true,
       onSelect: () => {
         ui.requestInterchangeImport();

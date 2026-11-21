@@ -37,7 +37,12 @@ import {
   rankPaletteStudioTools,
 } from "./command-palette-search";
 import { CommandPaletteUnavailableStudioSection } from "./command-palette-unavailable-section";
-import { requestStudioCommandExecutionFromPalette } from "@/shared/lib/studio-command-search-bridge";
+import {
+  inspectStudioCommandExecutionFromPalette,
+  requestStudioCommandExecutionFromPalette,
+  requestStudioCommandSearchFromAppShell,
+  studioCommandSearchBridgeListenerCount,
+} from "@/shared/lib/studio-command-search-bridge";
 import type { UnavailableStudioFeatureMatch, UnifiedSearchSection } from "./unified-search";
 import { LoadingState } from "./LoadingState";
 import { MiniPoster } from "./rank-row";
@@ -356,7 +361,7 @@ export function CommandPalette({
   });
 
   const go = (href: string, searchRecordQuery?: string) => {
-    if (!imeGuard.claimExecution()) return;
+    if (imeGuard.isComposingNow() || !imeGuard.claimExecution()) return;
     if (searchRecordQuery?.trim()) {
       addRecentSearch(searchRecordQuery.trim());
     }
@@ -367,32 +372,47 @@ export function CommandPalette({
 
   const executeCommand = (cmdId: string) => {
     const command = PALETTE_COMMANDS.find((c) => c.id === cmdId);
-    if (!command || !imeGuard.claimExecution({ closesSurface: false })) return;
+    if (!command || imeGuard.isComposingNow() || !imeGuard.claimExecution({ closesSurface: false })) return;
     command.action(createContext());
   };
 
   const executeStudioTool = (toolId: string) => {
     const tool = PALETTE_STUDIO_TOOLS.find((t) => t.id === toolId);
-    if (!tool) return;
+    if (!tool || imeGuard.isComposingNow()) return;
 
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
-    if (currentPath.startsWith("/studio")) {
-      if (tool.studioCommandId) {
-        const executed = requestStudioCommandExecutionFromPalette({
-          commandId: tool.studioCommandId,
-          toolId: tool.id,
-          label: tool.name,
-          shortcutKey: tool.shortcutKey,
-        });
-        if (executed) {
-          if (!imeGuard.claimExecution()) return;
-          toast(`스튜디오 기능 '${tool.name}' 실행됨`, { tone: "success" });
-          playSfx("tick");
-          onOpenChange(false);
-          return;
-        }
+    const inStudio = currentPath === "/studio" || currentPath.startsWith("/studio/");
+    const isActiveEditorCanvas =
+      currentPath.startsWith("/studio/work/")
+      || currentPath.startsWith("/studio/draft/")
+      || currentPath.startsWith("/studio/canvas")
+      || currentPath.startsWith("/studio/p/");
+
+    if (inStudio) {
+      const request = tool.studioCommandId
+        ? { commandId: tool.studioCommandId, toolId: tool.id, label: tool.name, shortcutKey: tool.shortcutKey }
+        : null;
+      const availability = request
+        ? inspectStudioCommandExecutionFromPalette(request)
+        : { status: "unmounted" as const };
+
+      if (availability.status === "disabled") {
+        toast(availability.reason, { tone: "default" });
+        playSfx("error");
+        return;
       }
-      if (tool.shortcutKey && tool.shortcutKey.length === 1 && !tool.actionPath) {
+
+      if (availability.status === "executable" && request) {
+        // IME·중복 Enter 가드를 실제 명령 실행보다 먼저 통과시켜 이중 실행을 차단한다.
+        if (!imeGuard.claimExecution()) return;
+        requestStudioCommandExecutionFromPalette(request);
+        toast(`스튜디오 기능 '${tool.name}' 실행됨`, { tone: "success" });
+        playSfx("tick");
+        onOpenChange(false);
+        return;
+      }
+
+      if (tool.shortcutKey && tool.shortcutKey.length === 1 && isActiveEditorCanvas) {
         if (!imeGuard.claimExecution()) return;
         window.dispatchEvent(new KeyboardEvent("keydown", { key: tool.shortcutKey.toLowerCase(), bubbles: true }));
         toast(`스튜디오 도구 '${tool.name}' 선택됨 (${tool.shortcutKey})`, { tone: "info" });
@@ -400,20 +420,25 @@ export function CommandPalette({
         onOpenChange(false);
         return;
       }
-      if (tool.actionPath) {
-        go(tool.actionPath);
+
+      if (studioCommandSearchBridgeListenerCount() > 0) {
+        if (!imeGuard.claimExecution()) return;
+        requestStudioCommandSearchFromAppShell({ scope: "all", query: tool.name });
+        playSfx("tick");
+        onOpenChange(false);
         return;
       }
-      if (!imeGuard.claimExecution()) return;
-      window.dispatchEvent(new KeyboardEvent("keydown", { key: tool.shortcutKey.toLowerCase(), bubbles: true }));
-      toast(`스튜디오 도구 '${tool.name}' 선택됨 (${tool.shortcutKey})`, { tone: "info" });
-      playSfx("tick");
-      onOpenChange(false);
-    } else if (tool.actionPath) {
-      go(tool.actionPath);
-    } else {
-      go(`/studio?tool=${encodeURIComponent(tool.shortcutKey.toLowerCase())}`);
+
+      if (isActiveEditorCanvas) {
+        toast("편집기 도구 준비가 끝난 뒤 다시 실행해 주세요.", { tone: "default" });
+        return;
+      }
+
+      go(tool.actionPath ?? "/studio/canvas");
+      return;
     }
+
+    go(tool.actionPath ?? "/studio/canvas");
   };
 
   // Switch tabs
@@ -916,94 +941,43 @@ export function CommandPalette({
               </Command.Group>
             )}
 
-            {/* Unified Search: Courses Section (통합 검색 집계층) */}
-            {unifiedCourseItems.length > 0 && (
-              <Command.Group
-                forceMount
-                heading={
-                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
-                    강좌 ({unifiedCourseItems.length})
-                  </div>
-                }
-              >
-                {unifiedCourseItems.map((item) => (
-                  <Command.Item
-                    forceMount
-                    key={`course-${item.id}`}
-                    value={`course-${item.id}`}
-                    onSelect={() => go(item.href, effectiveQuery)}
-                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
-                  >
-                    <GraduationCap size={16} className="text-fg-3 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="font-medium text-fg">{item.title}</span>
-                      {item.description ? (
-                        <span className="ml-2 text-xs text-fg-3">{item.description}</span>
-                      ) : null}
+            {/* Unified Search: Courses / Help / Assets Sections (통합 검색 집계층) */}
+            {(
+              [
+                { items: unifiedCourseItems, title: "강좌", prefix: "course", Icon: GraduationCap },
+                { items: unifiedHelpItems, title: "도움말·매뉴얼", prefix: "helpdoc", Icon: BookOpen },
+                { items: unifiedAssetItems, title: "소재", prefix: "asset", Icon: Store },
+              ] as const
+            ).map(({ items, title, prefix, Icon }) =>
+              items.length > 0 ? (
+                <Command.Group
+                  key={prefix}
+                  forceMount
+                  heading={
+                    <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
+                      {title} ({items.length})
                     </div>
-                  </Command.Item>
-                ))}
-              </Command.Group>
-            )}
-
-            {/* Unified Search: Help & Manual Section (통합 검색 집계층) */}
-            {unifiedHelpItems.length > 0 && (
-              <Command.Group
-                forceMount
-                heading={
-                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
-                    도움말·매뉴얼 ({unifiedHelpItems.length})
-                  </div>
-                }
-              >
-                {unifiedHelpItems.map((item) => (
-                  <Command.Item
-                    forceMount
-                    key={`helpdoc-${item.id}`}
-                    value={`helpdoc-${item.id}`}
-                    onSelect={() => go(item.href, effectiveQuery)}
-                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
-                  >
-                    <BookOpen size={16} className="text-fg-3 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="font-medium text-fg">{item.title}</span>
-                      {item.description ? (
-                        <span className="ml-2 text-xs text-fg-3">{item.description}</span>
-                      ) : null}
-                    </div>
-                  </Command.Item>
-                ))}
-              </Command.Group>
-            )}
-
-            {/* Unified Search: Assets Section (A6 — 경량 로컬 색인 항목) */}
-            {unifiedAssetItems.length > 0 && (
-              <Command.Group
-                forceMount
-                heading={
-                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
-                    소재 ({unifiedAssetItems.length})
-                  </div>
-                }
-              >
-                {unifiedAssetItems.map((item) => (
-                  <Command.Item
-                    forceMount
-                    key={`asset-${item.id}`}
-                    value={`asset-${item.id}`}
-                    onSelect={() => go(item.href, effectiveQuery)}
-                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
-                  >
-                    <Store size={16} className="text-fg-3 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <span className="font-medium text-fg">{item.title}</span>
-                      {item.description ? (
-                        <span className="ml-2 text-xs text-fg-3">{item.description}</span>
-                      ) : null}
-                    </div>
-                  </Command.Item>
-                ))}
-              </Command.Group>
+                  }
+                >
+                  {items.map((item) => (
+                    <Command.Item
+                      forceMount
+                      key={`${prefix}-${item.id}`}
+                      value={`${prefix}-${item.id}`}
+                      onSelect={() => go(item.href, effectiveQuery)}
+                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-sm text-fg transition-colors data-[selected=true]:bg-raised"
+                    >
+                      <Icon size={16} className="text-fg-3 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium text-fg">{item.title}</span>
+                        {item.description ? (
+                          <span className="ml-2 text-xs text-fg-3">{item.description}</span>
+                        ) : null}
+                      </div>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              ) : null,
             )}
 
             {/* Unified Search: Assets Link (전용 표면 서버 검색으로 이어가기) */}

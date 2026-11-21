@@ -84,7 +84,7 @@ export const EXISTING_TOOL_COMPETITOR_ALIASES: Readonly<
 
 /**
  * 4대 경쟁 앱(CLIP STUDIO PAINT · Photoshop · SketchUp · Procreate)의
- * 대표 한/영 용어를 ToonStudio 대응 기능으로 직결하는 도구 카탈로그.
+ * 대표 한/영 용어를 ToonStudio 실제 라이브 명령과 정본 라우트로 직결하는 도구 카탈로그.
  */
 export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
   /* ── CLIP STUDIO PAINT (CSP) ────────────────────────────────────── */
@@ -95,7 +95,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "edit",
     icon: Move,
     studioCommandId: "transform.pixel-selection",
-    actionPath: "/studio?tool=puppet-warp",
+    actionPath: "/studio/canvas",
     tip: "핀을 찍어 캐릭터 팔·다리·의상 실루엣을 자연스럽게 구부리고 자세를 미세 조정합니다.",
     keywords: ["퍼펫 워프", "퍼펫", "포즈 변형", "메시 변형", "puppet warp", "mesh transform"],
     competitorAliases: [
@@ -112,7 +112,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: Layers,
     studioCommandId: "insert.background-3d",
-    actionPath: "/studio?panel=bg3d&tool=lt-convert",
+    actionPath: "/studio/bg3d",
     tip: "3D 배경과 소품에서 깔끔한 만화 선화와 명암 톤 레이어를 한 번에 추출합니다.",
     keywords: ["lt 변환", "레이어의 lt 변환", "선화 추출", "3d 선화", "lt conversion", "line extraction"],
     competitorAliases: [
@@ -129,7 +129,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "draw",
     icon: Eraser,
     studioCommandId: "vector.erase-to-intersection",
-    actionPath: "/studio?tool=vector-eraser",
+    actionPath: "/studio/canvas",
     tip: "벡터 선화에서 삐져나온 끝선을 교차점까지만 한 번에 깔끔하게 잘라냅니다.",
     keywords: ["벡터 지우개", "교점 지우개", "교점까지 지우기", "vector eraser", "erase up to intersection"],
     competitorAliases: [
@@ -145,7 +145,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "draw",
     icon: Grid,
     studioCommandId: "comic.tone",
-    actionPath: "/studio?panel=tone",
+    actionPath: "/studio/canvas",
     tip: "만화 망점·그라데이션 톤과 선수를 선택 영역이나 레이어에 비파괴로 적용합니다.",
     keywords: ["톤", "스크린톤", "망점", "하프톤", "tone", "screentone", "halftone"],
     competitorAliases: [
@@ -162,7 +162,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: UserRound,
     studioCommandId: "insert.mannequin-3d",
-    actionPath: "/studio/character",
+    actionPath: "/studio/assets/characters/new",
     tip: "인체 비율과 관절 포즈를 자유롭게 잡아 원고 컷 위에 밑그림 참고로 배치합니다.",
     keywords: ["3d 데생인형", "데생인형", "데생 인형", "3d 마네킹", "포즈 인형", "3d drawing figure", "mannequin"],
     competitorAliases: [
@@ -179,7 +179,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "panel",
     icon: Play,
     studioCommandId: "edit.auto-actions",
-    actionPath: "/studio?panel=auto-actions",
+    actionPath: "/studio/canvas",
     tip: "선화 정리·채색 준비·후보정 같은 반복 공정을 기록해 원클릭으로 일괄 실행합니다.",
     keywords: ["오토액션", "오토 액션", "자동화", "매크로", "액션", "auto action", "actions", "macro"],
     competitorAliases: [
@@ -196,7 +196,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: Clock,
     studioCommandId: "file.export",
-    actionPath: "/studio?panel=timelapse",
+    actionPath: "/studio/canvas",
     tip: "드로잉 전 과정을 자동 기록해 15초·30초·60초 홍보용 타임랩스 영상으로 내보냅니다.",
     keywords: ["타임랩스", "작업 녹화", "과정 영상", "timelapse", "time-lapse", "speedpaint"],
     competitorAliases: [
@@ -213,7 +213,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "edit",
     icon: Layers,
     studioCommandId: "layer.clipping-mask",
-    actionPath: "/studio?action=clipping-mask",
+    actionPath: "/studio/canvas",
     tip: "밑색 레이어 영역 밖으로 튀어나가지 않도록 명암·질감 레이어를 묶어 채색합니다.",
     keywords: ["클리핑", "클리핑 마스크", "아래 레이어에서 클리핑", "clipping", "clip at layer below", "clipping mask"],
     competitorAliases: [
@@ -231,7 +231,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "edit",
     icon: Palette,
     studioCommandId: "tool.fill",
-    actionPath: "/studio?action=reference-layer",
+    actionPath: "/studio/canvas",
     tip: "선화 레이어를 참조 기준으로 지정해 별도 밑색 레이어에 틈새 없이 빠르게 채색합니다.",
     keywords: ["참조 레이어", "참조 레이어 설정", "선화 참조", "reference layer", "set as reference layer"],
     competitorAliases: [
@@ -246,11 +246,11 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
   {
     id: "tool-liquify",
     name: "액화 / 유동화 브러시",
-    shortcutKey: "Shift+X",
+    shortcutKey: "J",
     category: "edit",
     icon: Waves,
     studioCommandId: "tool.liquify",
-    actionPath: "/studio?tool=liquify",
+    actionPath: "/studio/canvas",
     tip: "얼굴 비율·머리카락 볼륨·체형 실루엣을 밀고 당겨 자연스럽게 보정합니다.",
     keywords: ["액화", "유동화", "픽셀 유동화", "밀기 보정", "liquify", "warp"],
     competitorAliases: [
@@ -268,7 +268,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "edit",
     icon: Sparkles,
     studioCommandId: "filter.lens-blur",
-    actionPath: "/studio?filter=lens-blur",
+    actionPath: "/studio/canvas",
     tip: "카메라 조리개 보케와 원근 깊이감으로 배경을 부드럽게 날려 인물을 돋보이게 합니다.",
     keywords: ["렌즈 블러", "렌즈 흐림", "보케", "아웃포커스", "lens blur", "bokeh", "depth blur"],
     competitorAliases: [
@@ -284,7 +284,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "edit",
     icon: Sliders,
     studioCommandId: "layer.adjustment",
-    actionPath: "/studio?panel=adjustment-layer",
+    actionPath: "/studio/canvas",
     tip: "원본 그림을 건드리지 않고 톤 커브·레벨·색조/채도를 레이어 단위로 실시간 보정합니다.",
     keywords: ["조정 레이어", "보정 레이어", "색조 보정 레이어", "adjustment layer", "correction layer"],
     competitorAliases: [
@@ -301,7 +301,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: Download,
     studioCommandId: "file.export",
-    actionPath: "/studio?action=export-psd",
+    actionPath: "/studio/publish",
     tip: "레이어 구조·블렌드 모드·마스크를 그대로 유지한 채 Photoshop 호환 PSD로 내보냅니다.",
     keywords: ["psd 내보내기", "psd 저장", "포토샵 내보내기", "export psd", "save as psd", "psd"],
     competitorAliases: [
@@ -318,7 +318,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "edit",
     icon: Wand2,
     studioCommandId: "filter.filter-gallery",
-    actionPath: "/studio?panel=filters",
+    actionPath: "/studio/canvas",
     tip: "가우시안 블러·색수차·글로우 등의 효과를 원본 파괴 없이 언제든 수치 수정·끄기 합니다.",
     keywords: ["스마트 필터", "비파괴 필터", "필터 갤러리", "smart filter", "smart filters", "live filter"],
     competitorAliases: [
@@ -333,8 +333,8 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     shortcutKey: "Shift+H",
     category: "canvas",
     icon: FlipHorizontal2,
-    studioCommandId: "transform.flip-selection-horizontal",
-    actionPath: "/studio?action=flip-horizontal",
+    studioCommandId: "view.flip-horizontal",
+    actionPath: "/studio/canvas",
     tip: "인체 데생과 얼굴 좌우 대칭 오류를 빠르게 확인하기 위해 캔버스를 좌우 반전합니다.",
     keywords: ["캔버스 뒤집기", "좌우 반전", "좌우 뒤집기", "수평 뒤집기", "flip canvas", "flip horizontal"],
     competitorAliases: [
@@ -353,7 +353,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: Box,
     studioCommandId: "insert.background-3d",
-    actionPath: "/studio?panel=bg3d",
+    actionPath: "/studio/bg3d",
     tip: "웹툰 실내·도시 3D 배경을 원고 컷에 배치하고 구도·조명·선화 변환까지 원스톱 처리합니다.",
     keywords: ["3d 배경", "3d 씬", "배경 배치", "스케치업 배경", "3d background", "sketchup background"],
     competitorAliases: [
@@ -369,7 +369,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: Scissors,
     studioCommandId: "insert.background-3d",
-    actionPath: "/studio?panel=bg3d&mode=section",
+    actionPath: "/studio/bg3d",
     tip: "실내 3D 배경의 앞벽이나 천장을 깔끔하게 잘라내 막힘없는 카메라 앵글을 확보합니다.",
     keywords: ["단면 컷어웨이", "단면 평면", "벽면 절단", "단면도", "section plane", "section cut", "cutaway"],
     competitorAliases: [
@@ -386,7 +386,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: Camera,
     studioCommandId: "view.save-current-view",
-    actionPath: "/studio?panel=bg3d&mode=camera",
+    actionPath: "/studio/bg3d",
     tip: "자주 쓰는 복도·교실·방 구도를 카메라 씬으로 저장해 회차마다 동일한 앵글을 불러옵니다.",
     keywords: ["씬 카메라", "카메라 씬", "앵글 저장", "시점 저장", "scenes", "scene camera", "camera bookmark"],
     competitorAliases: [
@@ -403,7 +403,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: FolderInput,
     studioCommandId: "file.import-interchange",
-    actionPath: "/studio?panel=bg3d&action=import-skp",
+    actionPath: "/studio/import",
     tip: "SketchUp(.skp)·GLB·OBJ 배경 파일을 가져와 3D 무대 위에서 바로 선화·조명 편집합니다.",
     keywords: ["skp 가져오기", "스케치업 가져오기", "skp 불러오기", "3d 가져오기", "import skp", "sketchup import"],
     competitorAliases: [
@@ -419,7 +419,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "canvas",
     icon: Sun,
     studioCommandId: "insert.background-3d",
-    actionPath: "/studio?panel=bg3d&mode=lighting",
+    actionPath: "/studio/bg3d",
     tip: "아침·낮·노을·밤 시간대 슬라이더로 3D 배경의 태양 고도와 그림자 방향을 실시간 조절합니다.",
     keywords: ["그림자 시간", "태양 시간", "그림자 설정", "조명 시간", "shadow settings", "shadows", "sun time"],
     competitorAliases: [
@@ -437,8 +437,8 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     shortcutKey: "Q",
     category: "panel",
     icon: Compass,
-    studioCommandId: "window.quick-hud",
-    actionPath: "/studio?action=quick-menu",
+    studioCommandId: "window.quick-access-palette",
+    actionPath: "/studio/canvas",
     tip: "자주 쓰는 브러시·반전·레이어 작업을 커서 근처 원형 퀵메뉴로 즉시 호출합니다.",
     keywords: ["퀵메뉴", "퀵 메뉴", "빠른 메뉴", "방사형 메뉴", "quickmenu", "quick menu", "radial menu"],
     competitorAliases: [
@@ -455,7 +455,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "draw",
     icon: Shapes,
     studioCommandId: "tool.smart-shape",
-    actionPath: "/studio?tool=smart-shape",
+    actionPath: "/studio/canvas",
     tip: "손으로 그린 선·원·사각형 끝을 잠시 누르고 있으면 깔끔한 기하 도형으로 자동 보정합니다.",
     keywords: ["퀵셰이프", "퀵 셰이프", "스마트 도형", "도형 보정", "quickshape", "quick shape", "smart shape"],
     competitorAliases: [
@@ -470,8 +470,8 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     shortcutKey: "/",
     category: "edit",
     icon: Lock,
-    studioCommandId: "layer.lock-alpha",
-    actionPath: "/studio?action=alpha-lock",
+    studioCommandId: "layer.mask",
+    actionPath: "/studio/canvas",
     tip: "이미 칠해진 픽셀 내부만 수정되도록 투명 영역을 잠가 선색 변경과 명암 작업을 돕습니다.",
     keywords: ["알파 잠금", "투명 픽셀 잠금", "투명도 잠금", "alpha lock", "lock transparent pixels"],
     competitorAliases: [
@@ -488,7 +488,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "draw",
     icon: Compass,
     studioCommandId: "view.perspective-guide",
-    actionPath: "/studio?panel=guides",
+    actionPath: "/studio/canvas",
     tip: "1·2·3점 투시 자와 좌우 대칭 가이드에 브러시 획을 자석처럼 붙여 정밀하게 그립니다.",
     keywords: ["드로잉 어시스트", "그리기 보조", "투시 자", "원근 가이드", "drawing assist", "drawing guide", "perspective ruler"],
     competitorAliases: [
@@ -505,7 +505,7 @@ export const COMPETITOR_PALETTE_STUDIO_TOOLS: readonly PaletteStudioTool[] = [
     category: "draw",
     icon: Waves,
     studioCommandId: "brush.correct-current-stroke",
-    actionPath: "/studio?panel=brush-stabilization",
+    actionPath: "/studio/assets/brushes/new",
     tip: "펜 선의 미세한 떨림을 실시간 매끄럽게 보정해 깔끔한 웹툰 펜선을 그립니다.",
     keywords: ["스트림라인", "손떨림 보정", "손떨림", "안정화", "streamline", "stabilization", "stabilizer"],
     competitorAliases: [

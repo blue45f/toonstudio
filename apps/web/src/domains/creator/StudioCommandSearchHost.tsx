@@ -170,14 +170,73 @@ export function StudioCommandSearchHost({
   const openRequest = useEffectEvent((request: StudioCommandSearchRequest) => {
     openSearch(request.scope ?? "all", request.query ?? "");
   });
+  const inspectPaletteCommand = useEffectEvent(
+    (request: { readonly commandId: string; readonly toolId?: string }) => {
+      const bindings = getStudioCommandExecutionBindings();
+      const binding = bindings.get(request.commandId);
+      if (binding) {
+        if (!binding.disabled) {
+          return { status: "executable" as const, label: binding.label };
+        }
+        if (request.toolId === "tool-alpha-lock" && dialogProps.onNavigateInspector) {
+          return { status: "executable" as const, label: "레이어 패널 (알파 잠금)" };
+        }
+        return {
+          status: "disabled" as const,
+          reason: binding.unavailableReason ?? "현재 편집 상태에서는 이 기능을 사용할 수 없습니다.",
+        };
+      }
+      if (request.commandId === "tool.liquify") {
+        if (dialogProps.onNavigateInspector) {
+          return { status: "executable" as const, label: "액화 / 유동화 (선택·보정)" };
+        }
+        const fallbackWarp = bindings.get("filter.pinch-bloat");
+        if (fallbackWarp && !fallbackWarp.disabled) {
+          return { status: "executable" as const, label: fallbackWarp.label };
+        }
+      }
+      if (request.commandId === "layer.mask" && dialogProps.onNavigateInspector) {
+        return { status: "executable" as const, label: "레이어 패널 (알파 잠금)" };
+      }
+      return { status: "unbound" as const };
+    },
+  );
+  const executePaletteCommand = useEffectEvent(
+    (request: { readonly commandId: string; readonly toolId?: string }) => {
+      const bindings = getStudioCommandExecutionBindings();
+      const binding = bindings.get(request.commandId);
+      if (binding && !binding.disabled) {
+        binding.execute();
+        return true;
+      }
+      if (request.commandId === "tool.liquify") {
+        if (dialogProps.onNavigateInspector) {
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "j", bubbles: true }));
+          dialogProps.onNavigateInspector({ primary: "properties", image: "retouch" });
+          return true;
+        }
+        const fallbackWarp = bindings.get("filter.pinch-bloat");
+        if (fallbackWarp && !fallbackWarp.disabled) {
+          fallbackWarp.execute();
+          return true;
+        }
+      }
+      if (
+        (request.commandId === "layer.mask" || request.toolId === "tool-alpha-lock")
+        && dialogProps.onNavigateInspector
+      ) {
+        dialogProps.onNavigateInspector({ primary: "layers" });
+        return true;
+      }
+      return false;
+    },
+  );
   useEffect(() => {
     const unsubscribeStudio = subscribeStudioCommandSearchRequests(openRequest);
     const unsubscribeAppShell = subscribeStudioCommandSearchFromAppShell(openRequest);
-    const unsubscribePaletteExec = subscribeStudioCommandExecutionFromPalette((request) => {
-      const binding = getStudioCommandExecutionBindings().get(request.commandId);
-      if (!binding || binding.disabled) return false;
-      binding.execute();
-      return true;
+    const unsubscribePaletteExec = subscribeStudioCommandExecutionFromPalette({
+      inspect: inspectPaletteCommand,
+      execute: executePaletteCommand,
     });
     const unregisterReady = registerStudioCommandSearchHost();
     return () => {

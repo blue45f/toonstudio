@@ -1,7 +1,7 @@
 /**
  * 4대 경쟁 앱(CLIP STUDIO PAINT · Photoshop · SketchUp · Procreate) 한/영 용어 별칭 보강표.
  *
- * `studio-command-search.ts`가 색인을 만들 때 기존 명령/코퍼스 항목에 별칭을 병합해,
+ * `studio-command-search.ts`가 색인을 만들 때 실제 카탈로그·코퍼스 항목에만 별칭을 병합해,
  * 어떤 앱에서 옮겨 온 작가라도 F1 / ⌘K 검색 한 번으로 대응 ToonStudio 기능에 즉시 도달한다.
  */
 
@@ -71,6 +71,17 @@ export const EXTRA_COMPETITOR_ALIASES_BY_ENTRY_ID: Readonly<
     { vendor: "photoshop", term: "Create Clipping Mask", locale: "en" },
     { vendor: "procreate", term: "Clipping Mask", locale: "en" },
   ],
+  "layer.mask": [
+    { vendor: "procreate", term: "알파 잠금", locale: "ko" },
+    { vendor: "procreate", term: "Alpha Lock", locale: "en" },
+    { vendor: "csp", term: "투명 픽셀 잠금", locale: "ko" },
+    { vendor: "photoshop", term: "Lock Transparent Pixels", locale: "en" },
+  ],
+  "panel.layer-list": [
+    { vendor: "procreate", term: "알파 잠금", locale: "ko" },
+    { vendor: "procreate", term: "Alpha Lock", locale: "en" },
+    { vendor: "csp", term: "투명 픽셀 잠금", locale: "ko" },
+  ],
   "tool.fill": [
     { vendor: "csp", term: "참조 레이어", locale: "ko" },
     { vendor: "csp", term: "Reference Layer", locale: "en" },
@@ -99,7 +110,7 @@ export const EXTRA_COMPETITOR_ALIASES_BY_ENTRY_ID: Readonly<
     { vendor: "photoshop", term: "스마트 필터", locale: "ko" },
     { vendor: "photoshop", term: "Smart Filter", locale: "en" },
   ],
-  "transform.flip-selection-horizontal": [
+  "view.flip-horizontal": [
     { vendor: "photoshop", term: "캔버스 뒤집기", locale: "ko" },
     { vendor: "photoshop", term: "Flip Canvas Horizontal", locale: "en" },
     { vendor: "csp", term: "좌우 반전", locale: "ko" },
@@ -114,7 +125,7 @@ export const EXTRA_COMPETITOR_ALIASES_BY_ENTRY_ID: Readonly<
     { vendor: "sketchup", term: "SKP 가져오기", locale: "ko" },
     { vendor: "sketchup", term: "Import SKP", locale: "en" },
   ],
-  "window.quick-hud": [
+  "window.quick-access-palette": [
     { vendor: "procreate", term: "퀵메뉴", locale: "ko" },
     { vendor: "procreate", term: "QuickMenu", locale: "en" },
     { vendor: "procreate", term: "Quick Menu", locale: "en" },
@@ -170,26 +181,6 @@ export function mergeCompetitorAliases(
 }
 
 /**
- * 기존 카탈로그/코퍼스에 별도 명령 엔트리가 없는 알파 잠금 등 특수 항목 보강.
+ * 모든 경쟁 앱 별칭은 실제 카탈로그·코퍼스 엔트리에 직접 병합된다(가상 엔트리 0건).
  */
-export const EXTRA_COMPETITOR_SEARCH_ENTRIES: readonly StudioSearchEntry[] = Object.freeze([
-  {
-    id: "layer.lock-alpha",
-    kind: "property",
-    label: "알파 잠금 (투명 픽셀 잠금)",
-    labelEn: "Alpha Lock",
-    description: "이미 칠해진 픽셀 내부만 수정되도록 투명 영역을 잠급니다.",
-    location: "메뉴 › 레이어 › 투명 픽셀 잠금",
-    shortcut: "/",
-    aliases: [
-      { vendor: "procreate", term: "알파 잠금", locale: "ko" },
-      { vendor: "procreate", term: "Alpha Lock", locale: "en" },
-      { vendor: "csp", term: "투명 픽셀 잠금", locale: "ko" },
-      { vendor: "photoshop", term: "Lock Transparent Pixels", locale: "en" },
-    ],
-    keywords: ["알파 잠금", "투명 픽셀 잠금", "alpha lock", "transparent lock"],
-    helpNodeId: "help/layer/alpha-lock",
-    target: { type: "inspector", primary: "layers" },
-    requiresSelection: false,
-  },
-]);
+export const EXTRA_COMPETITOR_SEARCH_ENTRIES: readonly StudioSearchEntry[] = Object.freeze([]);
