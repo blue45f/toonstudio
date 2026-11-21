@@ -44,6 +44,10 @@ import {
   applyCspColorTransferFilter,
   type CspColorTransferPresetId,
 } from "../../drawing/studio-csp-unified-runtime-hub";
+import {
+  accelerateCspFilterWithWasm64,
+  isCspFilterWasm64Acceleratable,
+} from "../../kernel/wasm64-live-canvas-bridge";
 
 import {
   applyCspCustomReferenceColorMatch,
@@ -109,6 +113,11 @@ export function executeCspReaFilter(
   height: number,
   params?: CspReaFilterParamMap,
 ): Uint8ClampedArray {
+  if (params?.disableWasm64 !== true && isCspFilterWasm64Acceleratable(filterId)) {
+    const accelerated = accelerateCspFilterWithWasm64(filterId, src, width, height, params);
+    if (accelerated) return accelerated.data;
+  }
+
   const raw = new Uint8Array(src.buffer, src.byteOffset, src.byteLength);
   const cx = width * 0.5;
   const cy = height * 0.5;
@@ -429,5 +438,7 @@ export function getCspReaFilterDialogAdapter() {
     descriptors: CSP_REA_ALL_FILTER_SPECS,
     executeRgba: executeCspReaFilter,
     applyInPlace: applyCspReaFilterToImageData,
+    isWasm64Accelerated: isCspFilterWasm64Acceleratable,
+    executeRgbaAccelerated: accelerateCspFilterWithWasm64,
   };
 }
