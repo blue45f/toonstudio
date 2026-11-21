@@ -2,6 +2,12 @@
  * SHAPER 0.5.563 `BuiltInData/Presets/{head,eyes,nose,mouth,ears,hair,body,pose,defaultStyle}/*.preset`
  * 역공학 추출 데이터 및 웹툰 장르별 연출 문법에 기반한 풀세트 아키타입·포즈·부위별 프리셋 라이브러리.
  */
+import {
+  KWEBTOON_ARCHETYPE_LIST,
+  KWEBTOON_ARCHETYPE_PRESETS,
+  isKWebtoonArchetypeId,
+  type KWebtoonArchetypeId,
+} from "../../../presets";
 import { qNormalize, type Quat, type Vec3 } from "../../../shared/math";
 
 import type {
@@ -539,13 +545,70 @@ export const SHAPER_BUILTIN_ARCHETYPE_PRESETS: Readonly<Record<string, ShaperArc
   },
 };
 
+/** 한국 웹툰 완성형 캐릭터 아키타입 10종을 SHAPER 아키타입 레코드 형식으로 노출한다. */
+export const KWEBTOON_BUILTIN_ARCHETYPE_PRESETS: Readonly<Record<KWebtoonArchetypeId, ShaperArchetypePreset>> =
+  Object.fromEntries(
+    KWEBTOON_ARCHETYPE_LIST.map((preset) => [
+      preset.id,
+      {
+        id: preset.id,
+        labelKo: `${preset.labelKo} · ${preset.proportion.headsTall.toFixed(1)}등신`,
+        bodyParams: preset.bodyParams,
+        faceParams: preset.faceParams,
+        slots: preset.slots,
+        colors: preset.colors,
+        pose: preset.pose,
+      } satisfies ShaperArchetypePreset,
+    ]),
+  ) as Readonly<Record<KWebtoonArchetypeId, ShaperArchetypePreset>>;
+
 /**
- * 선택한 SHAPER 아키타입/포즈/부위 프리셋 ID를 실행할 `LabCommand[]` 시퀀스로 변환한다.
+ * 선택한 K-웹툰 10종·SHAPER 아키타입/포즈/부위 프리셋 ID를 실행할 `LabCommand[]` 시퀀스로 변환한다.
  */
 export function buildShaperPresetCommands(presetKey: string): {
   readonly commands: readonly LabCommand[];
   readonly noticeKo: string;
 } | null {
+  if (isKWebtoonArchetypeId(presetKey)) {
+    const preset = KWEBTOON_ARCHETYPE_PRESETS[presetKey];
+    const coalesceKey = `kwebtoon-archetype:${preset.id}`;
+    const commands: LabCommand[] = [];
+    for (const [slot, presetId] of Object.entries(preset.slots)) {
+      if (presetId) commands.push({ type: "slot/apply", slot: slot as SlotKind, presetId, coalesceKey });
+    }
+    if (!preset.slots.accessory) {
+      commands.push({ type: "slot/apply", slot: "accessory", presetId: null, coalesceKey });
+    }
+    for (const [key, value] of Object.entries(preset.bodyParams)) {
+      if (typeof value === "number") {
+        commands.push({ type: "param/set", group: "body", key: key as BodyParamKey, value, coalesceKey });
+      }
+    }
+    for (const [key, value] of Object.entries(preset.faceParams)) {
+      if (typeof value === "number") {
+        commands.push({ type: "param/set", group: "face", key: key as FaceParamKey, value, coalesceKey });
+      }
+    }
+    commands.push({ type: "proportion/set", proportion: preset.proportion, coalesceKey });
+    for (const [colorKey, hex] of Object.entries(preset.colors)) {
+      commands.push({ type: "color/set", key: colorKey as RecipeColorKey, value: hex, coalesceKey });
+    }
+    commands.push({
+      type: "shading/set",
+      profile: {
+        mode: "toon",
+        toon: { rampSteps: preset.rampSteps, outline: "hull", outlinePressure: true, rim: true, faceSdfShadow: true },
+        look: preset.look,
+      },
+    });
+    commands.push({ type: "expression/set", weights: preset.expression, merge: false, coalesceKey });
+    commands.push({ type: "pose/set", pose: preset.pose, scope: "full", labelKo: preset.shortLabelKo, coalesceKey });
+    return {
+      commands,
+      noticeKo: `K-웹툰 아키타입 '${preset.shortLabelKo}'(${preset.proportion.headsTall.toFixed(1)}등신 · 2단 셀 · 유색 선화)을 일괄 적용했습니다.`,
+    };
+  }
+
   if (presetKey in SHAPER_BUILTIN_ARCHETYPE_PRESETS) {
     const preset = SHAPER_BUILTIN_ARCHETYPE_PRESETS[presetKey];
     if (!preset) return null;

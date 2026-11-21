@@ -74,8 +74,8 @@ const MOUTH_CORNER_TAPER = 0.07;
 const MOUTH_FLAT_HALF_WIDTH = 0.3;
 const MOUTH_FALLOFF_END = 0.62;
 const MOUTH_Y_SIGMA = 0.14;
-/** 입술 앞 돌출량(머리 로컬) */
-const MOUTH_LIP_BULGE = 0.03;
+/** 입술 앞 돌출량(머리 로컬) — K-웹툰 중앙 입술 볼륨·큐피드 보우 */
+const MOUTH_LIP_BULGE = 0.036;
 
 /**
  * 입 둘레 변형(머리 로컬): 입선 주변 정점을 세로로 눌러 구멍 가장자리 두 줄(위·아래 입술)이 얇은 틈을 이루게 하고 입술을 앞으로
@@ -91,7 +91,9 @@ export function mouthWarp(p: Vec3): Vec3 {
   const taper = 1 + MOUTH_CORNER_TAPER * Math.min(1, (ax / MOUTH_FLAT_HALF_WIDTH) ** 2);
   const strength = Math.min(0.97, MOUTH_COMPRESS * taper * gx * gy * front);
   const y = MOUTH_Y + dy * (1 - strength);
-  const lip = MOUTH_LIP_BULGE * front * (1 - smooth01(ax, 0.16, 0.5)) * Math.exp(-((y - MOUTH_Y) * (y - MOUTH_Y)) / (2 * 0.075 * 0.075));
+  // 중앙이 도톰하고 입꼬리로 자연스럽게 얇아지는 한국 웹툰형 입술 윤곽
+  const centralFullness = 1 - smooth01(ax, 0.13, 0.46);
+  const lip = MOUTH_LIP_BULGE * front * centralFullness * Math.exp(-((y - MOUTH_Y) * (y - MOUTH_Y)) / (2 * 0.072 * 0.072));
   return [p[0], y, p[2] + lip];
 }
 
@@ -195,6 +197,8 @@ const BROW_DIR = v3Normalize(HEAD_LANDMARKS.brow);
 const NOSE_DIR = v3Normalize(HEAD_LANDMARKS.noseTip);
 const BRIDGE_DIR = v3Normalize(HEAD_LANDMARKS.noseBridge);
 const CHEEK_DIR = v3Normalize(HEAD_LANDMARKS.cheek);
+const UPPER_CHEEK_DIR = v3Normalize([0.46, -0.13, 0.78]);
+const AEGYOSAL_DIR = v3Normalize([0.33, -0.04, 0.88]);
 const MOUTH_DIR = v3Normalize(HEAD_LANDMARKS.mouth);
 const CHIN_DIR = v3Normalize(HEAD_LANDMARKS.chin);
 
@@ -206,37 +210,40 @@ function mirroredFeature(dir: Vec3, feature: Vec3, sigma: number): number {
   return a + b - a * b;
 }
 
-/** 단위 방향 → 머리 로컬 표면 점. 결정적·좌우 대칭(x 부호만 다름). */
+/** 단위 방향 → 머리 로컬 표면 점. 결정적·좌우 대칭(x 부호만 다름). 한국 웹툰 미형 조형 프로파일을 적용한다. */
 export function headSurfacePoint(dir: Vec3): Vec3 {
   const [x, y, z] = dir;
   const base = 1 / Math.sqrt((x / HEAD_RADII[0]) ** 2 + (y / HEAD_RADII[1]) ** 2 + (z / HEAD_RADII[2]) ** 2);
   let f = 1;
-  // 뒤통수 아래(후두부 → 목) 수축
+  // 뒤통수 아래(후두부 → 목) 수축 + 위쪽 두상 볼륨 유지
   if (y < 0 && z < 0) f *= 1 - 0.5 * Math.pow(-y, 1.5) * -z;
-  // 턱 좁힘(옆·뒤 + SHAPER 얼굴형1..6 V라인 하악 수축), 턱 끝 중앙은 유지
-  const frontJaw = Math.max(z, 0) * (1 - 0.55 * smooth01(Math.abs(x), 0.18, 0.7));
+  // 턱 좁힘(옆·뒤 + K-웹툰 샤프 V라인 하악 수축), 앞 중앙 턱선은 단조 감소 유지
+  const frontJaw = Math.max(z, 0) * (1 - 0.55 * smooth01(Math.abs(x), 0.18, 0.68));
   f *= 1 - 0.22 * smooth01(-y, 0.35, 1) * (1 - 0.85 * frontJaw);
-  // 얼굴 평탄화
+  // 얼굴 앞면 셀 셰이딩이 깨끗하게 떨어지도록 이마·미간 평탄화
   f *= 1 - 0.05 * Math.max(z, 0) ** 2;
-  // 눈 소켓 함몰
-  f *= 1 - 0.09 * mirroredFeature(dir, EYE_DIR, 0.22);
-  // 눈썹 융기
-  f *= 1 + 0.03 * mirroredFeature(dir, BROW_DIR, 0.2);
-  // 코·콧등
-  f *= 1 + 0.13 * gaussian(angleBetween(dir, NOSE_DIR), 0.15);
-  f *= 1 + 0.045 * gaussian(angleBetween(dir, BRIDGE_DIR), 0.14);
-  // 볼
-  f *= 1 + 0.03 * mirroredFeature(dir, CHEEK_DIR, 0.3);
-  // 입술
+  // 눈 소켓 함몰(크고 또렷한 웹툰 눈매 프레임)
+  f *= 1 - 0.095 * mirroredFeature(dir, EYE_DIR, 0.22);
+  // 눈밑 애교살 미세 볼륨(소켓 하단 부드러운 하이라이트 라인)
+  f *= 1 + 0.018 * mirroredFeature(dir, AEGYOSAL_DIR, 0.1);
+  // 눈썹 뼈 융기(과하지 않게 부드럽게 정리)
+  f *= 1 + 0.026 * mirroredFeature(dir, BROW_DIR, 0.19);
+  // 세련된 오뚝한 코끝 + 좁고 정돈된 콧대 하이라이트 능선
+  const noseSlim = Math.exp(-(x * x) / (2 * 0.14 * 0.14));
+  f *= 1 + 0.142 * gaussian(angleBetween(dir, NOSE_DIR), 0.13);
+  f *= 1 + 0.056 * noseSlim * gaussian(angleBetween(dir, BRIDGE_DIR), 0.13);
+  // 부드러운 상부 볼(애플존) 볼륨 — 광대 돌출은 억제하고 생기 있는 볼 라인 형성
+  f *= 1 + 0.022 * mirroredFeature(dir, CHEEK_DIR, 0.28);
+  f *= 1 + 0.024 * mirroredFeature(dir, UPPER_CHEEK_DIR, 0.24);
+  // 입술·턱 끝(앞 정중선 단조성 및 턱 열림 기준 유지)
   f *= 1 + 0.025 * gaussian(angleBetween(dir, MOUTH_DIR), 0.15);
-  // 턱 끝
   f *= 1 + 0.045 * gaussian(angleBetween(dir, CHIN_DIR), 0.24);
   const r = base * f;
-  // SHAPER BuiltInData (head0.obj · 얼굴형1..6.preset) 하악 V라인 테이퍼링 + 관자놀이(temple) 인덴테이션
-  const vLineTaper = 1 - 0.25 * smooth01(-y, 0.32, 0.92) * smooth01(Math.abs(x), 0.14, 0.68);
+  // K-웹툰 샤프 V라인 하악 테이퍼링(x축 수렴 강화) + 관자놀이(temple) 인덴테이션
+  const vLineTaper = 1 - 0.3 * smooth01(-y, 0.26, 0.9) * smooth01(Math.abs(x), 0.12, 0.64);
   const templeTaper =
     1 -
-    0.045 *
+    0.05 *
       smooth01(y, 0.08, 0.28) *
       (1 - smooth01(y, 0.44, 0.68)) *
       smooth01(Math.abs(x), 0.34, 0.68) *
