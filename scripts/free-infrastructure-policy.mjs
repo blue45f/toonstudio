@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
+import { validateCloudflareObservabilityRepository } from "./cloudflare-observability-policy.mjs";
 import { validateReleaseWorkflows } from "./release-workflow-policy.mjs";
 
 export const FREE_INFRASTRUCTURE_POLICY_VERSION =
@@ -340,6 +341,7 @@ export function validateFreeInfrastructureRepository(root = process.cwd()) { // 
   for (const relativePath of activeSurfacePaths) visit(at(relativePath));
 
   issues.push(...validateReleaseWorkflows(root));
+  issues.push(...validateCloudflareObservabilityRepository(root));
 
   return issues;
 }

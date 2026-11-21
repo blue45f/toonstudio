@@ -95,11 +95,15 @@ describe("mobile route density contract", () => {
     ].map((item) => item.href));
     for (const item of Object.values(SITE_NAVIGATION_ITEMS)) expect(reachable.has(item.href), item.id).toBe(true);
     // 하단 탭 그리드는 탭 수에 맞는 균등 열과 최소 폭 0을 유지해 좁은 화면의 넘침을 막는다.
+    expect(mobileNavigation).toMatch(/const mobileTabs\s*=\s*\[\.\.\.mobileSiteTabsForPath\(pathname\),\s*SITE_NAVIGATION_ITEMS\.allMenu\]/u);
     const tabGridColumns = mobileNavigation.match(/"site-bottom-tabs__grid[^"]*"\s*,\s*mobileTabs\.length\s*===\s*5\s*\?\s*"([^"]+)"\s*:\s*"([^"]+)"/u)?.slice(1);
     expect(tabGridColumns).toEqual([
       "grid-cols-[repeat(5,minmax(0,1fr))]",
       "grid-cols-[repeat(4,minmax(0,1fr))]",
     ]);
+    const mobileTabLinkClasses = mobileNavigation.match(/"site-bottom-tabs__link\s+([^"]*)"/u)?.[1]?.split(/\s+/u) ?? [];
+    expect(mobileTabLinkClasses).toEqual(expect.arrayContaining(["min-h-[3.75rem]", "min-w-0", "overflow-hidden"]));
+    expect(mobileNavigation).toContain('className="min-w-0 max-w-full truncate text-[11px] leading-tight"');
     expect(scene).toContain("min-height: 8rem");
     expect(scene).toContain(".route-purpose-scene__cards,");
     expect(workspace).toContain("grid-template-columns:repeat(5,minmax(0,1fr))");

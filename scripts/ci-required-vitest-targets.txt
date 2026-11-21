@@ -899,6 +899,8 @@ scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
 scripts/cloud-deploy-onpod.test.mjs
 scripts/cloud-deploy-runners.test.mjs
+scripts/cloudflare-observability-cost.test.mjs
+scripts/cloudflare-observability-policy.test.mjs
 scripts/cloudflare-static-rules.test.mjs
 scripts/creator-bundle-decor.test.mjs
 scripts/creator-bundle-pack-rights-form.test.mjs
