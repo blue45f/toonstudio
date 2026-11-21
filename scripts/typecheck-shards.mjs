@@ -54,7 +54,7 @@ function numericOption(value, name, minimum) {
   return number;
 }
 
-export function parseArguments(args) {
+export function parseArguments(args, env = process.env) {
   const options = {
     project: resolve(REPOSITORY_ROOT, "tsconfig.json"),
     report: resolve(REPOSITORY_ROOT, "node_modules/.cache/typecheck-shards/report.json"),
@@ -74,6 +74,9 @@ export function parseArguments(args) {
       else options.maxBytes = numericOption(value, arg, 1);
     } else throw new Error(`알 수 없는 인자: ${arg}`);
   }
+  // CI는 pnpm의 기존 명령을 그대로 호출한다. 설정된 환경값만 CLI의 기본 예산을 덮어쓴다.
+  const maxSourceBytes = env.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES;
+  if (maxSourceBytes !== undefined) options.maxBytes = numericOption(maxSourceBytes, "TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES", 1);
   return options;
 }
 

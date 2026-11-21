@@ -40,10 +40,8 @@ const HARNESS_PATH = "/__studio_gpu_committed_parity__";
 const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(
   new URL("./studio-gpu-committed-parity-browser.ts", import.meta.url),
 ))}`;
-// The browser entry runs its PARITY_CASES sequentially, each with its own ~10s per-case receipt
-// timeout (see RECEIPT_TIMEOUT_MS in studio-gpu-committed-parity-browser.ts). This outer timeout
-// must safely exceed every case's worst-case budget plus Vite/Playwright startup, not just one.
-const RESULT_TIMEOUT_MS = 45_000;
+// 기존 parity 3회와 서브픽셀 면적 1회의 receipt(각 10초), Vite/Playwright 시작 15초를 확보한다.
+const RESULT_TIMEOUT_MS = 55_000;
 // SwiftShader의 Vulkan 캔버스 표시 경로를 명시하고 실제 실행 설정을 증거에 남긴다.
 const BROWSER_LAUNCH = {
   headless: true,
@@ -88,6 +86,15 @@ interface ParityCaseResult {
   readonly diffPng: string;
 }
 
+interface SubpixelCoverageResult {
+  readonly id: string;
+  readonly radius: number;
+  readonly alphaByteSum: number;
+  readonly expectedAlphaByteSum: number;
+  readonly quantizationBound: number;
+  readonly nonzeroPixels: number;
+}
+
 interface ParityQualityBudget {
   readonly maxAlphaDelta: number;
   readonly maxTolerance2ChangedPixels: number;
@@ -129,6 +136,7 @@ type ParityResult =
       readonly width: number;
       readonly height: number;
       readonly cases: readonly ParityCaseResult[];
+      readonly subpixelCoverage: readonly SubpixelCoverageResult[];
     }
   | {
       readonly status: "error";
@@ -303,11 +311,32 @@ async function main(): Promise<void> {
       };
     });
 
+    const subpixelRadii = new Map([
+      ["centered-tiny", 0.08], ["corner-tiny", 0.08], ["between-samples", 0.12],
+      ["subpixel-radius", 0.75], ["zero-pressure", 0],
+    ]);
+    // 브라우저 결과가 허용 오차를 넓혀 독립 검증을 통과하지 못하게 픽셀 수별 예산을 고정한다.
+    const subpixelQuantizationBounds = new Map([
+      ["centered-tiny", 0.6], ["corner-tiny", 2.1], ["between-samples", 0.6],
+      ["subpixel-radius", 4.6], ["zero-pressure", 0.6],
+    ]);
+    invariant(result.subpixelCoverage.length === subpixelRadii.size, "서브픽셀 면적 검증 결과가 누락됐습니다.");
+    invariant(new Set(result.subpixelCoverage.map(({ id }) => id)).size === subpixelRadii.size, "서브픽셀 면적 검증 ID가 중복됐습니다.");
+    for (const probe of result.subpixelCoverage) {
+      invariant(subpixelRadii.get(probe.id) === probe.radius, `검증하지 않은 서브픽셀 원: ${probe.id}`);
+      invariant(subpixelQuantizationBounds.get(probe.id) === probe.quantizationBound,
+        `서브픽셀 양자화 허용치가 변경됐습니다: ${probe.id}`);
+      invariant(probe.radius === 0 ? probe.alphaByteSum === 0 : probe.nonzeroPixels > 0, `서브픽셀 압력 면적이 유실됐습니다: ${probe.id}`);
+      invariant(Math.abs(probe.alphaByteSum - Math.PI * probe.radius ** 2 * 255) <= probe.quantizationBound,
+        `서브픽셀 총 알파가 원 면적과 다릅니다: ${probe.id}`);
+    }
+
     const summary = {
       backend: result.backend,
       width: result.width,
       height: result.height,
       cases: caseSummaries,
+      subpixelCoverage: result.subpixelCoverage,
       consoleErrorCount: consoleErrors.length,
       pageErrorCount: pageErrors.length,
       scratch: SCRATCH,

@@ -318,6 +318,7 @@ describe("studio live-stroke render backend coordinator", () => {
     "frame-invalid",
     "device-lost",
     "surface-lost",
+    "stroke-budget-exceeded",
     "timeout",
     "cancelled",
   ] as const)("marks %s GPU authority unavailable without selecting Canvas", (reason) => {
@@ -330,7 +331,7 @@ describe("studio live-stroke render backend coordinator", () => {
       epoch,
       strokeId: "stroke-a",
       reason,
-      ...(["device-lost", "surface-lost"].includes(reason) ? {} : { token: current }),
+      ...(["device-lost", "surface-lost", "stroke-budget-exceeded"].includes(reason) ? {} : { token: current }),
     });
     expect(failed).toMatchObject({
       status: "accepted",
@@ -604,9 +605,10 @@ describe("studio live-stroke render backend coordinator", () => {
       "frame-invalid",
       "device-lost",
       "surface-lost",
+      "stroke-budget-exceeded",
       "timeout",
       "cancelled",
     ];
-    expect(reasons).toHaveLength(6);
+    expect(reasons).toHaveLength(7);
   });
 });

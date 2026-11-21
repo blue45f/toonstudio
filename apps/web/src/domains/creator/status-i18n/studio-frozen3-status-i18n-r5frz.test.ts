@@ -124,6 +124,9 @@ const CONSUMERS = [
   "character-shaper/CharacterShaperInspector.tsx",
   // 2026-10-23(ff4e8ddc): 헤어 구역을 인스펙터에서 분리했다(원본 헤어 메시 안내 키 1개가 함께 옮겨 감).
   "character-shaper/CharacterShaperHairInspector.tsx",
+  "character-shaper/CharacterShaperHairAdvancedControls.tsx",
+  // 의상 빈 상태 키는 인스펙터에서 분리된 의상 구역이 소비한다.
+  "character-shaper/CharacterShaperGarmentSection.tsx",
   "studio-production/StudioProductionHubPageV2.tsx",
   "layer/StudioLayerNavigator.tsx",
   "StudioMenubarContent.tsx",
@@ -146,6 +149,8 @@ const BASELINE_LINES: Record<(typeof CONSUMERS)[number], number> = {
   "StudioSelectionToolsPanel.tsx": 1506,
   "character-shaper/CharacterShaperInspector.tsx": 1039,
   "character-shaper/CharacterShaperHairInspector.tsx": 315,
+  "character-shaper/CharacterShaperHairAdvancedControls.tsx": 200,
+  "character-shaper/CharacterShaperGarmentSection.tsx": 292,
   "studio-production/StudioProductionHubPageV2.tsx": 1216,
   "layer/StudioLayerNavigator.tsx": 2125,
   "StudioMenubarContent.tsx": 2490,
@@ -171,6 +176,8 @@ const EXPECTED_VIOLATIONS: Record<(typeof CONSUMERS)[number], number> = {
   "StudioSelectionToolsPanel.tsx": 0,
   "character-shaper/CharacterShaperInspector.tsx": 0,
   "character-shaper/CharacterShaperHairInspector.tsx": 0,
+  "character-shaper/CharacterShaperHairAdvancedControls.tsx": 0,
+  "character-shaper/CharacterShaperGarmentSection.tsx": 0,
   "studio-production/StudioProductionHubPageV2.tsx": 0,
   "layer/StudioLayerNavigator.tsx": 0,
   "StudioMenubarContent.tsx": 0,

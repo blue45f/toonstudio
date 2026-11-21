@@ -1,5 +1,5 @@
 /**
- * WebGPU 38밴드 Kubelka-Munk 안료 혼색 + 듀얼 엔벨로프 서브픽셀 SDF AA 셰이더 모듈.
+ * WebGPU 38밴드 Kubelka-Munk 안료 혼색 + 원형 dab의 물리 픽셀 면적 AA 셰이더 모듈.
  *
  * `@toonstudio/studio-brush-platform`의 단일 정본 38밴드 테이블(`SPECTRAL_38BAND_KM_WGSL_SNIPPET`)을
  * 재사용해 CPU(`studio-wet-mix.ts`, `apps/brush-lab`)와 GPU(WebGPU)가 동일한 분광 혼색 수식을 실행한다.
@@ -10,8 +10,9 @@ import { SPECTRAL_38BAND_KM_WGSL_SNIPPET } from "@toonstudio/studio-brush-platfo
 export { SPECTRAL_38BAND_KM_WGSL_SNIPPET };
 
 /**
- * 4×4 서브픽셀 듀얼 엔벨로프(Inner Core + Outer Soft Band) 분석 AA WebGPU 브러시 셰이더.
- * 기존 단일 `fwidth` smoothstep 대비 대각선 펜선·칼끝 테이퍼 계단 현상을 억제하고 per-dab `rgbTint`를 보존한다.
+ * 원의 경계 픽셀만 4×4로 샘플링하며, 반지름 1픽셀 이하에서는 원–픽셀 교차면적을 적분한다.
+ * 방향에 따라 폭이 달라지는 거리 미분 밴드를 없애고, 샘플 사이의 얇은 압력 dab도 보존한다.
+ * 기존 공개 이름과 per-dab premultiplied 색·타일 quad 계약은 유지한다.
  */
 export const STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER = /* wgsl */ `
   struct VertexOutput {
@@ -46,17 +47,63 @@ export const STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER = /* wgsl */ `
     return output;
   }
 
+  // 단위원 제1사분면에서 sqrt(1 - x*x)의 적분 원시함수.
+  fn circle_primitive(x: f32) -> f32 {
+    let bounded = clamp(x, 0.0, 1.0);
+    return 0.5 * (bounded * sqrt(max(0.0, 1.0 - bounded * bounded)) + asin(bounded));
+  }
+
+  // 원점부터 point까지의 직사각형과 원이 겹치는 부호 있는 면적.
+  fn circle_area_to(point: vec2<f32>, radius: f32) -> f32 {
+    let bound = min(abs(point) / radius, vec2<f32>(1.0));
+    var area = bound.x * bound.y;
+    if (dot(bound, bound) > 1.0) {
+      let intersection = sqrt(max(0.0, 1.0 - bound.y * bound.y));
+      area = bound.y * intersection + circle_primitive(bound.x) - circle_primitive(intersection);
+    }
+    return sign(point.x) * sign(point.y) * area * radius * radius;
+  }
+
+  fn small_circle_pixel_coverage(local: vec2<f32>, radius: f32, pixel_size: vec2<f32>) -> f32 {
+    let low = local - pixel_size * 0.5;
+    let high = local + pixel_size * 0.5;
+    let area = circle_area_to(high, radius)
+      - circle_area_to(vec2<f32>(low.x, high.y), radius)
+      - circle_area_to(vec2<f32>(high.x, low.y), radius)
+      + circle_area_to(low, radius);
+    return clamp(area / (pixel_size.x * pixel_size.y), 0.0, 1.0);
+  }
+
   @fragment
   fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    let dist = length(input.local);
-    let edge_w = max(fwidth(dist), 0.0005);
-    let outer_half = edge_w * 0.6;
-    let core_half = edge_w * 0.27;
-    let sdf = dist - input.nominal_radius_ratio;
-    let outer_cov = 1.0 - smoothstep(-outer_half, outer_half, sdf);
-    let core_cov = 1.0 - smoothstep(-core_half, core_half, sdf);
-    let coverage = 0.65 * outer_cov + 0.35 * core_cov;
-    return input.color * coverage;
+    // 분기 전에 계산한 미분으로 물리 타일 텍셀 하나의 발자국을 구한다.
+    let pixel_dx = dpdx(input.local);
+    let pixel_dy = dpdy(input.local);
+    let pixel_size = max(vec2<f32>(length(pixel_dx), length(pixel_dy)), vec2<f32>(0.00000001));
+    let radius = input.nominal_radius_ratio;
+    let radius_squared = radius * radius;
+    let half_pixel = pixel_size * 0.5;
+    let nearest = max(abs(input.local) - half_pixel, vec2<f32>(0.0));
+    if (radius <= 0.0 || dot(nearest, nearest) >= radius_squared) {
+      return vec4<f32>(0.0);
+    }
+    let farthest = abs(input.local) + half_pixel;
+    if (dot(farthest, farthest) <= radius_squared) {
+      return input.color;
+    }
+    // 모든 샘플점 사이에 놓인 작은 원도 픽셀 내 위치에 관계없이 면적을 보존한다.
+    if (radius <= max(pixel_size.x, pixel_size.y)) {
+      return input.color * small_circle_pixel_coverage(input.local, radius, pixel_size);
+    }
+    var covered_samples = 0.0;
+    for (var y = 0u; y < 4u; y += 1u) {
+      for (var x = 0u; x < 4u; x += 1u) {
+        let offset = (vec2<f32>(f32(x), f32(y)) + vec2<f32>(0.5)) * 0.25 - vec2<f32>(0.5);
+        let sample_local = input.local + pixel_dx * offset.x + pixel_dy * offset.y;
+        covered_samples += select(0.0, 1.0, dot(sample_local, sample_local) <= radius_squared);
+      }
+    }
+    return input.color * (covered_samples * 0.0625);
   }
 `;
 

@@ -100,6 +100,123 @@ describe("studio predicted ink tail", () => {
     expect(pressureScalarReads).toBe(2);
   });
 
+  it.each([1_000, 8_000, 50_000])(
+    "%i점 장획에서도 v2 센서를 좌표 끝점에 맞추고 채널당 두 원소만 읽는다",
+    (sampleCount) => {
+      const points = Object.freeze(Array.from({ length: sampleCount * 2 }, (_, index) => index));
+      const channel = (start: number, end: number): readonly number[] => Object.freeze(
+        Array.from({ length: sampleCount }, (_, index) => start + (end - start) * index / (sampleCount - 1))
+      );
+      const sources = {
+        altitudeAngles: channel(0.2, 1.2),
+        azimuthAngles: channel(0.4, 3.4),
+        contactWidths: channel(2, 5),
+        contactHeights: channel(3, 7),
+        sampleTimeOffsets: channel(0, (sampleCount - 1) * 4),
+      };
+      const channelNames = [
+        "altitudeAngles", "azimuthAngles", "contactWidths", "contactHeights", "sampleTimeOffsets",
+      ] as const;
+      const scalarReads = {
+        altitudeAngles: 0,
+        azimuthAngles: 0,
+        contactWidths: 0,
+        contactHeights: 0,
+        sampleTimeOffsets: 0,
+      };
+      const observed = (name: typeof channelNames[number]): readonly number[] => new Proxy(sources[name], {
+        get(target, property, receiver) {
+          if (typeof property === "string" && /^\d+$/.test(property)) scalarReads[name] += 1;
+          return Reflect.get(target, property, receiver);
+        },
+      });
+      const plan = planStudioPredictedInkSuffixDraft({
+        points,
+        altitudeAngles: observed("altitudeAngles"),
+        azimuthAngles: observed("azimuthAngles"),
+        contactWidths: observed("contactWidths"),
+        contactHeights: observed("contactHeights"),
+        sampleTimeOffsets: observed("sampleTimeOffsets"),
+        fallbackPressure: 0.5,
+      });
+      if (!plan) throw new Error("장획의 예측 접미사 계획이 없습니다.");
+
+      expect(plan.points).toEqual([0, 1, sampleCount * 2 - 2, sampleCount * 2 - 1]);
+      expect(plan.draftPredictionStartSampleIndex).toBe(2);
+      expect(scalarReads).toEqual({
+        altitudeAngles: 2,
+        azimuthAngles: 2,
+        contactWidths: 2,
+        contactHeights: 2,
+        sampleTimeOffsets: 2,
+      });
+      for (const name of channelNames) {
+        const draft = plan[name];
+        const source = sources[name];
+        if (!draft) throw new Error(`${name} 예측 센서 채널이 없습니다.`);
+        expect(draft).toEqual([source[0], source[sampleCount - 1]]);
+        expect(draft).not.toBe(source);
+        draft[0] = -1;
+        draft.push(99);
+        expect(source).toHaveLength(sampleCount);
+        expect(source[0]).not.toBe(-1);
+      }
+      plan.points[0] = -1;
+      plan.points.push(100, 101);
+      expect(points).toHaveLength(sampleCount * 2);
+      expect(points[0]).toBe(0);
+    }
+  );
+
+  it("비어 있거나 유한하지 않은 v2 센서는 정규화 경계의 중립값으로 채운다", () => {
+    const plan = planStudioPredictedInkSuffixDraft({
+      points: [0, 0, 10, 10, 20, 20],
+      altitudeAngles: [Number.NaN, 0.4],
+      azimuthAngles: [Number.POSITIVE_INFINITY, 1.2, Number.NaN],
+      contactWidths: [Number.NEGATIVE_INFINITY, 5],
+      contactHeights: [],
+      sampleTimeOffsets: [Number.NaN],
+      fallbackPressure: 0.5,
+    });
+
+    expect(plan).toMatchObject({
+      points: [0, 0, 20, 20],
+      altitudeAngles: [Math.PI / 2, Math.PI / 2],
+      azimuthAngles: [0, 0],
+      contactWidths: [1, 1],
+      contactHeights: [1, 1],
+      sampleTimeOffsets: [0, 0],
+    });
+  });
+
+  it("단일 앵커의 v2 센서는 한 점으로 유지하고 없는 레거시 채널은 만들지 않는다", () => {
+    const plan = planStudioPredictedInkSuffixDraft({
+      points: [2, 3],
+      altitudeAngles: [0.7],
+      azimuthAngles: [1.3],
+      contactWidths: [2],
+      contactHeights: [4],
+      sampleTimeOffsets: [0],
+      fallbackPressure: 0.5,
+    });
+    expect(plan).toMatchObject({
+      draftPredictionStartSampleIndex: 1,
+      altitudeAngles: [0.7],
+      azimuthAngles: [1.3],
+      contactWidths: [2],
+      contactHeights: [4],
+      sampleTimeOffsets: [0],
+    });
+
+    const legacy = planStudioPredictedInkSuffixDraft({ points: [2, 3, 4, 5], fallbackPressure: 0.5 });
+    if (!legacy) throw new Error("레거시 입력의 예측 접미사 계획이 없습니다.");
+    expect(legacy.altitudeAngles).toBeUndefined();
+    expect(legacy.azimuthAngles).toBeUndefined();
+    expect(legacy.contactWidths).toBeUndefined();
+    expect(legacy.contactHeights).toBeUndefined();
+    expect(legacy.sampleTimeOffsets).toBeUndefined();
+  });
+
   it("preserves a single anchor, aligns sparse channels, and fails closed without finite endpoints", () => {
     expect(planStudioPredictedInkSuffixDraft({
       points: [2, 3],

@@ -366,6 +366,21 @@ const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
+  // 2026-11-21: 기기 설정·명시 주입 레지스트리·범위가 확인된 작업 사본만 정확한 호출 수로 등록한다.
+  allow("apps/web/src/domains/creator/StudioPressureCalibrationPanel.tsx", "local-storage-write", '"toonstudio:colordrop-settings:v1"', 1, UI_ONLY, "StudioPressureCalibrationPanel.storage.test.tsx가 임계값·대기 시간 두 수치만 저장하는 왕복, 잘못된 값 복원, 저장 거부 시 메모리 설정과 원고 원본 보존을 검증한다."),
+  allow("apps/web/src/domains/creator/brush/studio-custom-pattern-tip-registrar.ts", "durable-storage-write", '"toonstudio:custom-pattern-tips:v1"', 1, "기본 레지스트리는 메모리 전용이며 storage를 명시 주입한 호출만 호환용 팁 사본을 저장한다. 제품 부팅에 ambient localStorage 권위를 추가하지 않는다.", "studio-custom-pattern-tip-registrar.test.ts가 기본 인스턴스 간 비영속성, 콘텐츠 해시 중복 제거, 주입 저장소 왕복, 저장 실패의 전파와 기존 원본 보존을 검증한다."),
+  allow("apps/web/src/domains/creator/planning/StudioStoryLivingSpecWorkbench.tsx", "local-storage-write", "storyLivingSpecStorageKey(projectId)", 2, PLANNING_LOCAL_WORKING_COPY, "StudioStoryLivingSpecWorkbench.test.tsx가 봉투·state의 projectId 일치, 다른 작품·손상 원본의 시드 및 편집 덮어쓰기 거부, 저장 실패 시 메모리 초안 보존을 검증한다. 컷 승인 표시는 이 로컬 기획 사본의 상태이며 서버 권한을 부여하지 않는다."),
+  allow("apps/web/src/domains/creator/studio-cuttoon-editor/studio-expanded-tool-live-adapters.ts", "durable-storage-write", "studioExpandedWorkspaceStorageKey(state.projectId)", 1, OPTIONAL_LOCAL_TOOL_STATE, "studio-expanded-tool-live-adapters.test.ts가 작품별 도구 설정·엔진 결과 왕복, 다른 작품·손상된 원본의 덮어쓰기 거부, 저장 거부 때 원본 보존을 검증한다. 원고 문서와 별개인 도구 작업 사본만 이 키를 사용한다."),
+  allow("apps/web/src/domains/creator/studio-cuttoon-editor/studio-expanded-tool-live-adapters.ts", "durable-storage-write", "studioStoryLivingSpecStorageKey(projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-expanded-tool-live-adapters.test.ts가 Workbench와 같은 키·봉투의 projectId 및 state.projectId 검증, 위조된 다른 작품 쓰기 거절, 손상 원본 및 저장 실패의 보존을 검증한다."),
+  allow("apps/web/src/domains/creator/virtual-space/crdt/studio-virtual-space-yjs-doc.ts", "local-storage-write", "key", 1, "프로젝트·방별 가상 공간 Yjs 협업 작업 사본이다. 원고 정본과 분리되고 개인 사본을 합칠 때 저장·재읽기를 먼저 확인한다.", "studio-virtual-space-yjs-doc.test.tsx가 방별 복원, scope 전환 뒤 오래된 콜백 거절, 쓰기 거부·무시·원본 동시 변경·손상 업데이트 보존, 읽기 전용 및 개인 모드 거절을 검증한다."),
+  allow("apps/web/src/domains/creator/virtual-space/crdt/studio-virtual-space-yjs-doc.ts", "local-storage-cleanup", "key", 1, CLEANUP_ONLY, "studio-virtual-space-yjs-doc.test.tsx가 대상 저장·재읽기 성공 뒤 읽었던 개인 원본과 여전히 같은 값만 제거하고 실패하면 재시도 상태를 유지함을 검증한다."),
+  // 2026-11-21 main 동기화: 새 로컬 작업 사본과 닫힌 배지를 실제 저장·복원·실패 보존 검증 뒤 등록한다.
+  allow("apps/web/src/domains/creator/ai/studio-ai-generation-queue-store.ts", "durable-storage-write", '`${STORAGE_KEY_PREFIX}${documentId}`', 1, "문서별 최대24개 생성 초안과 미리보기의 브라우저 작업 사본이다. 실제 원고 적용은 별도 승인·삽입 실행기가 담당하며 서버 작업·과금·원고 저장의 정본이 아니다.", "studio-ai-generation-queue-store.test.ts가 documentId 봉투 격리, 기존 v1 복원, 복원 전 초안 병합, 손상·다른 문서 원본 보존, quota 실패의 메모리 초안과24개 한도를 검증한다."),
+  allow("apps/web/src/domains/creator/bg3d/studio-bg3d-live-ink-bake-bridge.ts", "durable-storage-write", "storageKeyForDocument(docId)", 1, "명시적 굽기로 만든 문서별 최대24개 캡처·출처·재촬영 인계 사본이다. 2D 삽입과 원고 정본 저장은 별도 경로이며 이 키는 브라우저 로컬 인계 기록만 소유한다.", "studio-bg3d-live-ink-bake-bridge.test.ts가 메모리 캐시 제거 후 재읽기, 문서 범위 거절, 손상 원본 보존, 저장 실패 때 기존 사본을4개로 줄여 덮지 않음, 무시된 저장 검출과24개 한도를 검증한다."),
+  allow("apps/web/src/domains/creator/fresh-ideas/serialization-pace-model.ts", "local-storage-write", '"toonstudio.serialization-pace-board.v1"', 1, "이 기기의 개인 연재 계획·공정 진행 작업 사본이다. 계정·작품 서버 정본이나 원고 내용은 저장하지 않으며 닫힌 프리셋과 유한 수치·회차 라벨만 직렬화한다.", "serialization-pace-model.storage.test.ts와 CreatorSerializationPaceBoard.test.tsx가 계획 왕복·재마운트, 수치 한도, 원고 필드 제외, 손상 원본과 비유한 입력 및 quota 실패 보존을 검증한다."),
+  allow("apps/web/src/domains/creator/studio-shell/studio-project-team-kanban-store.ts", "durable-storage-write", "kanbanStorageKey(state.projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-project-team-kanban-store.test.ts가 version·projectId 봉투, 닫힌 공정 상태, 담당자·인계 메모 왕복과30개 이력, 다른 작품·손상·미지원 원본 거절, 저장 거부·무시 보존을 검증한다. 이 로컬 보드는 팀 권한이나 서버 승인 기록을 부여하지 않는다."),
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-work-status.ts", "local-storage-write", '"toonstudio:virtual-space:work-status:v1"', 1, UI_ONLY, "studio-virtual-space-work-status.storage.test.ts가 다섯 업무 배지의 왕복, 알 수 없는 입력 거절, 원고 키 보존, 저장 거부 때 기존값 유지와 성공 이벤트 미발행을 검증한다."),
+  allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-work-status.ts", "local-storage-cleanup", '"toonstudio:virtual-space:work-status:v1"', 1, CLEANUP_ONLY, "studio-virtual-space-work-status.storage.test.ts가 명시적 배지 해제 시 해당 키만 제거하고 삭제 실패 시 기존 배지·다른 키를 유지함을 검증한다."),
   // 2026-11-12: 함수/주입 포트로 감싸진 sessionStorage 두 곳만 아래 payload·기본 저장소 변이 계약과 함께 허용한다.
   allow("apps/web/src/domains/creator/studio-shell/ActiveProjectContextBridge.tsx", "durable-storage-write", '"toonstudio:active-project-bridge:return:v1"', 1, "현재 history entry의 작품 선택·메뉴·초점 복귀용 탭 표식이며 원고·검색 query·저장 상태는 포함하지 않는다.", "ActiveProjectContextBridge.test.tsx가 native Back/SPA POP 복원과 소비 후 제거·저장 거부를 검증한다. 아래 계약은 sessionStorage 전용 getter와 정확한 다섯 필드 payload를 고정한다."),
   allow("apps/web/src/domains/creator/studio-shell/guided-flow/studio-assistant-session-store.ts", "durable-storage-write", '`${SESSION_KEY_PREFIX}${projectId}`', 1, "프로젝트별 도우미 입력·모드·검증된 응답의 같은 탭 UI 초안이며 원고 또는 기획 데이터의 정본 저장소가 아니다.", "StudioProjectAssistantPanel.test.tsx가 빈 입력 제거·작품별 분리·취소 시 입력 보존을 검증한다. 아래 계약은 sessionStorage 기본값, 6000자 prompt, 검증 결과만 기록하는 정확한 호출을 고정한다."),
@@ -952,6 +967,29 @@ describe("Studio browser-KV authority boundary", () => {
       }
     }
   });
+  it("추가 검토한 생성·인계·제작 메모·배지의 허용은 소유자·키·종류·호출 수를 넘지 않는다", () => {
+    for (const relativePath of [
+      "ai/studio-ai-generation-queue-store.ts",
+      "bg3d/studio-bg3d-live-ink-bake-bridge.ts",
+      "fresh-ideas/serialization-pace-model.ts",
+      "studio-shell/studio-project-team-kanban-store.ts",
+      "virtual-space/studio-virtual-space-work-status.ts",
+    ]) {
+      const file = `apps/web/src/domains/creator/${relativePath}`;
+      const source = readFileSync(resolve(WORKSPACE_ROOT, file), "utf8");
+      const allowances = ALLOWANCES.filter(entry => entry.file === file);
+      const findings = analyzeBrowserKvSource(file, source);
+      expect(unauthorizedFindings(findings, allowances), file).toEqual([]);
+      expect(unauthorizedFindings([...findings, ...findings], allowances), file).not.toEqual([]);
+      expect(unauthorizedFindings(findings.map(entry => ({ ...entry, key: "other-key" })), allowances), file).not.toEqual([]);
+      expect(unauthorizedFindings(analyzeBrowserKvSource(`${file}.other.ts`, source), allowances), file).not.toEqual([]);
+      expect(unauthorizedFindings(analyzeBrowserKvSource(file, `${source}\nlocalStorage.setItem("studio-project-document", payload);`), allowances), file).not.toEqual([]);
+      const cleanup = findings.find(entry => entry.kind === "local-storage-cleanup");
+      if (cleanup) expect(unauthorizedFindings(findings.map(entry => entry === cleanup
+        ? { ...entry, kind: "local-storage-write" as const } : entry), allowances)).not.toEqual([]);
+    }
+  });
+
   it("keeps every allowance narrow, justified, and reviewable", () => {
     const ids = new Set<string>();
     for (const allowance of ALLOWANCES) {

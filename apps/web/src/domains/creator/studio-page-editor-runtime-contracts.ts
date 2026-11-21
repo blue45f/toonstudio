@@ -1,9 +1,7 @@
-import { resolveStudioStampBrushKind, STUDIO_STAMP_BRUSH_DEFAULTS } from "./brush/studio-brush-stamp-engine";
 import { creatorWorkSnapshotToStudioProject } from "./studio-creator-work-project";
 
 import type { StudioAiImageSize } from "./ai/studio-ai-client";
 import type { StudioBg3dShotBatchRecoveryScope } from "./bg3d/studio-bg3d-shot-batch-plan";
-import type { StudioBrushStampTuning } from "./brush/studio-brush-library";
 import type { StudioFilterKind } from "./filter/studio-filter-menu";
 import type { ScenarioPanelAspect } from "./studio-scenario-layout";
 import type { SfxPreset } from "./studio-sfx-presets";
@@ -145,17 +143,6 @@ export const BRUSH_DELETE_UNDO_MS = 10_000;
  * 겹치지 않게 한다.
  */
 export const STUDIO_SERVER_AUTOSAVE_IDLE_MS = 45_000;
-
-export function defaultStampTuningForBrushId(brushId: string): StudioBrushStampTuning | null {
-  const kind = resolveStudioStampBrushKind(brushId);
-  if (!kind) return null;
-  const defaults = STUDIO_STAMP_BRUSH_DEFAULTS[kind];
-  return {
-    flow: defaults.flow,
-    hardness: defaults.hardness,
-    minSize: defaults.minSizeRatio,
-  };
-}
 
 export const STUDIO_INTERCHANGE_IMPORT_PLACEMENT_CHOICES = Object.freeze([
   Object.freeze({

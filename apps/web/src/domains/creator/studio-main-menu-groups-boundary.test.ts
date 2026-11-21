@@ -31,6 +31,8 @@ const CATALOGUE_MODULE_LINE_BUDGETS = {
   // Help group's own declaration moved out rather than the number moving up —
   // raising it would have retired the invariant it exists for.
   "./studio-main-menu-group-spec.ts": 640,
+  // 7대 표준 메뉴 투영은 정본 카탈로그에서 분리하되 순수 변환·파일 예산을 함께 검사한다.
+  "./studio-shell/studio-standard-seven-menu-projection.ts": 200,
   // Row constructors and the spec types the table is written in.
   "./studio-main-menu-group-spec-model.ts": 120,
   // Readers over the table: order, lookup, coverage summary, shortfall list.

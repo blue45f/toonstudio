@@ -13,7 +13,7 @@
  * error so the Node orchestrator never has to guess from a bare timeout.
  */
 import type { StudioWebGpuCommittedHandoffElement } from "@/domains/creator/render/studio-webgpu-committed-handoff";
-import type { StudioGpuFrameReceipt } from "@/domains/creator/render/studio-webgpu-engine";
+import type { StudioGpuFrameReceipt, StudioGpuStroke } from "@/domains/creator/render/studio-webgpu-engine";
 
 import { STUDIO_INK_PRESSURE_MODEL_LINEAR_FULL_V1 } from "@/domains/creator/brush/studio-ink-pressure-model";
 import { createStudioWebGpuCommittedHandoff } from "@/domains/creator/render/studio-webgpu-committed-handoff";
@@ -190,6 +190,15 @@ interface ParityCaseResult {
   readonly diffPng: string;
 }
 
+interface SubpixelCoverageResult {
+  readonly id: string;
+  readonly radius: number;
+  readonly alphaByteSum: number;
+  readonly expectedAlphaByteSum: number;
+  readonly quantizationBound: number;
+  readonly nonzeroPixels: number;
+}
+
 type ParityResult = { readonly diagnostics: ParityDiagnostics } & (
   | {
       readonly status: "ok";
@@ -197,6 +206,7 @@ type ParityResult = { readonly diagnostics: ParityDiagnostics } & (
       readonly width: number;
       readonly height: number;
       readonly cases: readonly ParityCaseResult[];
+      readonly subpixelCoverage: readonly SubpixelCoverageResult[];
     }
   | {
       readonly status: "error";
@@ -366,30 +376,7 @@ async function runCase(
 
   // --- Real WebGPU render + capture --------------------------------------------------------
   const requestId = `${REQUEST_ID_PREFIX}:${parityCase.id}:${index}`;
-  diagnostics.requestId = requestId;
-  diagnostics.phase = "render-requested";
-  const receiptPromise = waitForReceipt(pendingReceipts, requestId);
-
-  engine.render(handoff.strokes, requestId);
-  diagnostics.phase = "waiting-receipt";
-  const receipt = await receiptPromise;
-
-  diagnostics.phase = "receipt-validation";
-  if (receipt.backend !== "webgpu" || !receipt.complete) {
-    throw new Error(`[${parityCase.id}] WebGPU did not produce a complete authoritative receipt`);
-  }
-  if (receipt.physicalWidth !== WIDTH || receipt.physicalHeight !== HEIGHT) {
-    throw new Error(
-      `[${parityCase.id}] Receipt dimensions ${receipt.physicalWidth}x${receipt.physicalHeight} do not match the golden ${WIDTH}x${HEIGHT}`
-    );
-  }
-
-  diagnostics.phase = "capturing-frame";
-  const capture = await engine.captureFrame({ receipt, area: { kind: "viewport" } });
-  if (capture.status !== "captured") throw new Error(`[${parityCase.id}] GPU capture rejected: ${capture.reason}`);
-
-  diagnostics.phase = "comparing-pixels";
-  const gpuPixels = new Uint8ClampedArray(capture.pixels);
+  const gpuPixels = await captureGpuPixels(engine, pendingReceipts, handoff.strokes, requestId);
 
   return {
     id: parityCase.id,
@@ -401,6 +388,110 @@ async function runCase(
     gpuPng: pixelsToPngDataUrl(gpuPixels, WIDTH, HEIGHT),
     diffPng: diffPngDataUrl(canvasPixels, gpuPixels, WIDTH, HEIGHT),
   };
+}
+
+async function captureGpuPixels(
+  engine: StudioWebGpuEngine,
+  pendingReceipts: Map<string, (receipt: StudioGpuFrameReceipt) => void>,
+  strokes: readonly StudioGpuStroke[],
+  requestId: string,
+): Promise<Uint8ClampedArray> {
+  diagnostics.requestId = requestId;
+  diagnostics.phase = "render-requested";
+  const receiptPromise = waitForReceipt(pendingReceipts, requestId);
+
+  engine.render(strokes, requestId);
+  diagnostics.phase = "waiting-receipt";
+  const receipt = await receiptPromise;
+
+  diagnostics.phase = "receipt-validation";
+  if (receipt.backend !== "webgpu" || !receipt.complete) {
+    throw new Error(`[${diagnostics.caseId}] WebGPU did not produce a complete authoritative receipt`);
+  }
+  if (receipt.physicalWidth !== WIDTH || receipt.physicalHeight !== HEIGHT) {
+    throw new Error(
+      `[${diagnostics.caseId}] Receipt dimensions ${receipt.physicalWidth}x${receipt.physicalHeight} do not match the golden ${WIDTH}x${HEIGHT}`
+    );
+  }
+
+  diagnostics.phase = "capturing-frame";
+  const capture = await engine.captureFrame({ receipt, area: { kind: "viewport" } });
+  if (capture.status !== "captured") throw new Error(`[${diagnostics.caseId}] GPU capture rejected: ${capture.reason}`);
+
+  diagnostics.phase = "comparing-pixels";
+  return new Uint8ClampedArray(capture.pixels);
+}
+
+// 4×4 샘플 사이·픽셀 모서리·압력 0을 한 프레임에 배치해 작은 원의 면적 보존을 독립 검사한다.
+const SUBPIXEL_PROBES = [
+  { id: "centered-tiny", x: 16.5, y: 16.5, radius: 0.08 },
+  { id: "corner-tiny", x: 40, y: 16, radius: 0.08 },
+  { id: "between-samples", x: 64.25, y: 16.25, radius: 0.12 },
+  { id: "subpixel-radius", x: 88.5, y: 16.5, radius: 0.75 },
+  { id: "zero-pressure", x: 112.5, y: 16.5, radius: 0 },
+] as const;
+
+async function verifySubpixelCoverage(
+  engine: StudioWebGpuEngine,
+  pendingReceipts: Map<string, (receipt: StudioGpuFrameReceipt) => void>,
+): Promise<readonly SubpixelCoverageResult[]> {
+  diagnostics.caseId = "subpixel-area";
+  const elements = SUBPIXEL_PROBES.map((probe) => baseElement({
+    id: `area-${probe.id}`,
+    points: [probe.x, probe.y, probe.x, probe.y],
+    pressures: [probe.radius / 5, probe.radius / 5],
+  }));
+  const handoff = createStudioWebGpuCommittedHandoff({ elements });
+  if (handoff.status !== "ready" || handoff.strokes.length !== SUBPIXEL_PROBES.length) {
+    throw new Error("서브픽셀 원의 실제 committed handoff가 준비되지 않았습니다.");
+  }
+  const plan = planStudioGpuDabs(handoff.strokes);
+  if (!plan.complete || plan.dabs.length !== SUBPIXEL_PROBES.length) {
+    throw new Error("서브픽셀 원의 dab 개수가 변경되었습니다.");
+  }
+  for (const [index, probe] of SUBPIXEL_PROBES.entries()) {
+    const dab = plan.dabs[index];
+    if (!dab || dab.x !== probe.x || dab.y !== probe.y || Math.abs(dab.radius - probe.radius) > 1e-8) {
+      throw new Error(`서브픽셀 원의 지오메트리가 변경되었습니다: ${probe.id}`);
+    }
+  }
+  const pixels = await captureGpuPixels(
+    engine, pendingReceipts, handoff.strokes, `${REQUEST_ID_PREFIX}:subpixel-area`,
+  );
+  const bounds = SUBPIXEL_PROBES.map((probe) => ({
+    left: Math.floor(probe.x - probe.radius), right: Math.ceil(probe.x + probe.radius),
+    top: Math.floor(probe.y - probe.radius), bottom: Math.ceil(probe.y + probe.radius),
+  }));
+  const results = SUBPIXEL_PROBES.map((probe, index): SubpixelCoverageResult => {
+    const rect = bounds[index]!;
+    let alphaByteSum = 0;
+    let nonzeroPixels = 0;
+    for (let y = rect.top; y < rect.bottom; y += 1) {
+      for (let x = rect.left; x < rect.right; x += 1) {
+        const alpha = pixels[(y * WIDTH + x) * 4 + 3]!;
+        alphaByteSum += alpha;
+        if (alpha > 0) nonzeroPixels += 1;
+      }
+    }
+    // 적분식의 총 면적은 πr². 출력 8bit의 픽셀당 반 LSB와 float16 반올림만 허용한다.
+    const expectedAlphaByteSum = Math.PI * probe.radius * probe.radius * 255;
+    const quantizationBound = (rect.right - rect.left) * (rect.bottom - rect.top) * 0.5 + 0.1;
+    if (Math.abs(alphaByteSum - expectedAlphaByteSum) > quantizationBound
+      || (probe.radius > 0 && nonzeroPixels === 0)
+      || (probe.radius === 0 && alphaByteSum !== 0)) {
+      throw new Error(`[${probe.id}] 원 면적 알파 ${alphaByteSum}, 기대 ${expectedAlphaByteSum} ± ${quantizationBound}`);
+    }
+    return { id: probe.id, radius: probe.radius, alphaByteSum, expectedAlphaByteSum, quantizationBound, nonzeroPixels };
+  });
+  for (let y = 0; y < HEIGHT; y += 1) {
+    for (let x = 0; x < WIDTH; x += 1) {
+      if (pixels[(y * WIDTH + x) * 4 + 3] === 0) continue;
+      if (!bounds.some((rect) => x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom)) {
+        throw new Error(`원 발자국 바깥에 알파가 남았습니다: ${x},${y}`);
+      }
+    }
+  }
+  return results;
 }
 
 function waitForReceipt(
@@ -479,8 +570,9 @@ async function run(): Promise<ParityResult> {
       cases.push(await runCase(engine, pendingReceipts, parityCase, index));
     }
 
+    const subpixelCoverage = await verifySubpixelCoverage(engine, pendingReceipts);
     diagnostics.phase = "complete";
-    return { status: "ok", backend, width: WIDTH, height: HEIGHT, cases, diagnostics };
+    return { status: "ok", backend, width: WIDTH, height: HEIGHT, cases, subpixelCoverage, diagnostics };
   } finally {
     diagnostics.backendAvailableBeforeDispose = engine.isBackendAvailable();
     engine.dispose();

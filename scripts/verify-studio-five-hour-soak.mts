@@ -12,12 +12,13 @@
  *   TOONSPECTRUM_SOAK_PROFILE=desktop|kakaotalk-android-360|instagram-ios-390|naver-android-412
  *   TOONSPECTRUM_SOAK_WEBGPU=1
  *   TOONSPECTRUM_SOAK_INPUT=auto|mouse|pen|touch
+ *   TOONSPECTRUM_SOAK_WORKLOAD=bounded-churn|accumulate
  *   TOONSPECTRUM_SOAK_OUT=<directory>
  *   TOONSPECTRUM_SOAK_SAMPLE_HEAP_PER_STROKE=1  # 진단 실행 전용: 획마다 GC 힙을 샘플에 남긴다
  *   TOONSPECTRUM_VERIFY_ORIGIN=http://127.0.0.1:4173  # optional existing preview
  */
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -37,8 +38,10 @@ import {
   resolveStudioPointerInputMode,
 } from "./lib/studio-pointer-input-driver.mjs";
 import { ensureStudioSoakDesktopPen } from "./lib/studio-soak-desktop-pen";
+import { evaluateStudioSoakCompletion, parseStudioSoakWorkload, readStudioSoakBuildEvidence, shouldChurnStudioSoakHistory, studioSoakDocumentAdvanced, type StudioSoakBuildEvidence } from "./lib/studio-soak-evidence";
 import { readStudioSoakLayerCount, waitForStudioSoakLayerCount, withStudioSoakLayerNavigator } from "./lib/studio-soak-layer-count";
 import { assertStudioSoakPointerRoute, prepareStudioSoakPointerRoute } from "./lib/studio-soak-pointer-route";
+import { drainGpuAndPerf, gcHeap, installGpuAndPerfCollector, markStudioSoakStroke, type GpuEvent, type HeapSample, type LongTaskSample } from "./lib/studio-soak-telemetry";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const MINUTES = Math.max(1, Number(process.env.TOONSPECTRUM_SOAK_MINUTES ?? "300") || 300);
@@ -58,29 +61,7 @@ const INK_MIN_CHANGED_PIXELS = 120;
 const HISTORY_CHURN_INTERVAL = 10;
 const HISTORY_CHURN_REDO_PROBES = 3;
 const CHECKPOINT_MS = 10 * 60_000;
-
-interface HeapSample {
-  readonly atMs: number;
-  readonly usedBytes: number;
-  readonly totalBytes: number;
-  readonly embedderBytes: number;
-  readonly backingStorageBytes: number;
-  readonly documents: number | null;
-  readonly nodes: number | null;
-  readonly jsEventListeners: number | null;
-}
-
-interface GpuEvent {
-  readonly atMs: number;
-  readonly kind: "lost" | "uncaptured";
-  readonly reason: string;
-  readonly message: string;
-}
-
-interface LongTaskSample {
-  readonly atMs: number;
-  readonly durationMs: number;
-}
+const WORKLOAD = parseStudioSoakWorkload(process.env.TOONSPECTRUM_SOAK_WORKLOAD);
 
 interface PixelSample {
   readonly cycle: number;
@@ -162,100 +143,6 @@ function changedPixels(before: Buffer, after: Buffer): number {
   }
   return changed;
 }
-
-async function installGpuAndPerfCollector(page: Page): Promise<void> {
-  await page.addInitScript(`(() => {
-    window.__studioFiveHourTelemetry = { gpu: [], longTasks: [] };
-    const telemetry = window.__studioFiveHourTelemetry;
-    try {
-      const observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (entry.duration >= 50) telemetry.longTasks.push([performance.now(), entry.duration]);
-        }
-      });
-      observer.observe({ type: "longtask", buffered: false });
-    } catch {}
-    try {
-      const gpu = navigator.gpu;
-      if (!gpu?.requestAdapter) return;
-      const requestAdapter = gpu.requestAdapter.bind(gpu);
-      gpu.requestAdapter = async (...args) => {
-        const adapter = await requestAdapter(...args);
-        if (!adapter?.requestDevice) return adapter;
-        const requestDevice = adapter.requestDevice.bind(adapter);
-        adapter.requestDevice = async (...deviceArgs) => {
-          const device = await requestDevice(...deviceArgs);
-          device?.lost?.then((info) => {
-            telemetry.gpu.push([performance.now(), "lost", String(info?.reason ?? "unknown"), String(info?.message ?? "")]);
-          });
-          device?.addEventListener?.("uncapturederror", (event) => {
-            telemetry.gpu.push([performance.now(), "uncaptured", "", String(event?.error?.message ?? "unknown GPU error")]);
-          });
-          return device;
-        };
-        return adapter;
-      };
-    } catch {}
-  })();`);
-}
-
-async function drainGpuAndPerf(page: Page, startedAt: number): Promise<{
-  gpu: GpuEvent[];
-  longTasks: LongTaskSample[];
-}> {
-  const raw = await page.evaluate(`(() => {
-    const telemetry = window.__studioFiveHourTelemetry || { gpu: [], longTasks: [] };
-    const out = { gpu: telemetry.gpu.slice(), longTasks: telemetry.longTasks.slice() };
-    telemetry.gpu.length = 0;
-    telemetry.longTasks.length = 0;
-    return out;
-  })()`) as {
-    gpu: Array<[number, string, string, string]>;
-    longTasks: Array<[number, number]>;
-  };
-  const offset = nowMs(startedAt) - performance.now?.call(globalThis);
-  void offset;
-  return {
-    gpu: raw.gpu.map(([, kind, reason, message]) => ({
-      atMs: nowMs(startedAt),
-      kind: kind === "uncaptured" ? "uncaptured" : "lost",
-      reason,
-      message,
-    })),
-    longTasks: raw.longTasks.map(([, durationMs]) => ({ atMs: nowMs(startedAt), durationMs })),
-  };
-}
-
-async function gcHeap(cdp: CDPSession | null, startedAt: number): Promise<HeapSample | null> {
-  if (!cdp) return null;
-  try {
-    await cdp.send("HeapProfiler.collectGarbage");
-    const usage = await cdp.send("Runtime.getHeapUsage") as {
-      usedSize: number;
-      totalSize: number;
-      embedderHeapUsedSize: number;
-      backingStorageSize: number;
-    };
-    const dom = await cdp.send("Memory.getDOMCounters").catch(() => null) as {
-      documents: number;
-      nodes: number;
-      jsEventListeners: number;
-    } | null;
-    return {
-      atMs: nowMs(startedAt),
-      usedBytes: usage.usedSize,
-      totalBytes: usage.totalSize,
-      embedderBytes: usage.embedderHeapUsedSize,
-      backingStorageBytes: usage.backingStorageSize,
-      documents: dom?.documents ?? null,
-      nodes: dom?.nodes ?? null,
-      jsEventListeners: dom?.jsEventListeners ?? null,
-    };
-  } catch {
-    return null;
-  }
-}
-
 
 async function closeBrushSurfaces(page: Page): Promise<boolean> {
   const floating = page.locator('[role="dialog"][data-studio-brush-floating]:visible');
@@ -484,6 +371,8 @@ async function waitForStudioDocumentAdvance(
   input: {
     layerCountBefore: number | null;
     historyUndoDepthBefore: number | null;
+    historyTotalAppendsBefore: number | null;
+    rejectedStrokeCountBefore: number | null;
   },
   timeoutMs = 4_500,
 ): Promise<{
@@ -496,13 +385,13 @@ async function waitForStudioDocumentAdvance(
     let layerCountAfter = await readLayerCount();
     let history = await readStudioHistoryDepth(page, Math.max(1, deadline - Date.now()));
     do {
-      const acceptedByLayer = input.layerCountBefore !== null
-        && layerCountAfter !== null
-        && layerCountAfter > input.layerCountBefore;
-      const acceptedByHistory = input.historyUndoDepthBefore !== null
-        && history.undoDepth !== null
-        && history.undoDepth > input.historyUndoDepthBefore;
-      if ((acceptedByLayer || acceptedByHistory) && Date.now() < deadline) {
+      const diagnostics = await readStudioHistoryDiagnostics(page);
+      const accepted = studioSoakDocumentAdvanced({
+        ...input, layerCountAfter, historyUndoDepthAfter: history.undoDepth,
+        historyTotalAppendsAfter: diagnostics.totalAppends,
+        rejectedStrokeCountAfter: diagnostics.rejectedStrokeCount,
+      });
+      if (accepted && Date.now() < deadline) {
         return { layerCountAfter, historyEntryCount: history.entryCount, historyUndoDepth: history.undoDepth, accepted: true };
       }
       const remaining = deadline - Date.now();
@@ -643,22 +532,28 @@ async function drawEvidenceStroke(
   const { box, points } = await prepareStudioSoakPointerRoute(page, cycle);
   const before = await page.screenshot({ clip: box, animations: "disabled" });
   await assertStudioSoakPointerRoute(page, points);
-  const pointer = await dispatchStudioPointerStroke({
-    page,
-    cdp,
-    mode: inputMode,
-    points,
-    stepDelayMs: inputMode === "mouse" ? 0 : 2,
-  });
-  await page.waitForTimeout(500);
+  await markStudioSoakStroke(page, true);
+  const pointer = await (async () => {
+    try {
+      const result = await dispatchStudioPointerStroke({
+        page, cdp, mode: inputMode, points, stepDelayMs: inputMode === "mouse" ? 0 : 2,
+      });
+      await page.waitForTimeout(500);
+      return result;
+    } finally { await markStudioSoakStroke(page, false); }
+  })();
   const advance = await waitForStudioDocumentAdvance(page, {
     layerCountBefore,
     historyUndoDepthBefore: historyBefore.undoDepth,
+    historyTotalAppendsBefore: diagnosticsBefore.totalAppends,
+    rejectedStrokeCountBefore: diagnosticsBefore.rejectedStrokeCount,
   });
   const rejectedStrokeCount = await page.locator("[data-studio-rejected-stroke-notice]").count();
   const diagnosticsAfter = await readStudioHistoryDiagnostics(page);
   const commitErrorText = await readStudioVisibleCommitError(page);
-  const heapAfter = SAMPLE_HEAP_PER_STROKE ? await gcHeap(cdp, startedAt) : null;
+  const heapAfter = SAMPLE_HEAP_PER_STROKE ? await gcHeap(cdp, startedAt).catch((error: unknown) => {
+    collectionFailed("per-stroke-heap", error, cycle); return null;
+  }) : null;
   const after = await page.screenshot({ clip: box, animations: "disabled" });
   return {
     changed: changedPixels(before, after),
@@ -700,6 +595,7 @@ mkdirSync(OUT, { recursive: true });
 const startedAt = Date.now();
 let sessionStartedAt: number | null = null;
 let sessionEndedAt: number | null = null;
+let finalized = false;
 const profile = PROFILE_ID === "desktop"
   ? null
   : STUDIO_INAPP_PROFILES.find((candidate) => candidate.id === PROFILE_ID) ?? null;
@@ -707,14 +603,19 @@ if (PROFILE_ID !== "desktop" && !profile) throw new Error(`unknown in-app profil
 const inputMode = resolveStudioPointerInputMode(INPUT_MODE_REQUEST, { mobile: profile !== null });
 
 const report = {
+  schemaVersion: 2,
+  sessionId: randomUUID(),
   startedAt: new Date(startedAt).toISOString(),
   sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+  sourceDirty: execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], { encoding: "utf8" }).trim().length > 0,
+  build: null as StudioSoakBuildEvidence | null,
   buildLabel: process.env.TOONSPECTRUM_SOAK_BUILD_LABEL?.trim() || null,
   previewIndexSha256: existsSync(join(BUILD_DIRECTORY, "index.html"))
     ? createHash("sha256").update(readFileSync(join(BUILD_DIRECTORY, "index.html"))).digest("hex")
     : null,
   renderEnvironment: "chromium-swiftshader",
   requestedMinutes: MINUTES,
+  workload: WORKLOAD,
   brushCycles: BRUSH_CYCLES,
   stopOnFailure: STOP_ON_FAILURE,
   sampleHeapPerStroke: SAMPLE_HEAP_PER_STROKE,
@@ -731,6 +632,7 @@ const report = {
   origin: "",
   cycles: 0,
   strokes: 0,
+  attemptedStrokes: 0,
   brushSwitches: 0,
   historyActions: 0,
   visuallyCoveredStrokes: 0,
@@ -741,22 +643,30 @@ const report = {
   runtimeErrors: [] as StudioInAppRuntimeError[],
   environmentNoise: [] as StudioInAppRuntimeError[],
   failures: [] as SoakFailure[],
-  checkpoints: [] as Array<{
-    atMs: number;
-    cycle: number;
-    heapBytes: number | null;
-    heapSlopeBytesPerHour: number | null;
-    domNodes: number | null;
-    eventListeners: number | null;
-    failures: number;
+  collectionFailures: [] as SoakFailure[],
+  telemetryChecks: 0,
+  pageEpochs: [] as number[],
+  checkpoints: [] as Array<ReturnType<typeof createStudioSoakCheckpoint> & {
+    phase: "initial" | "periodic" | "final";
+    scheduledAtMs: number;
+    sessionAtMs: number;
   }>,
 };
 
+const assessCompletion = () => evaluateStudioSoakCompletion({
+  ...report, requestedDurationMs: MINUTES * 60_000, checkpointIntervalMs: CHECKPOINT_MS,
+  sessionDurationMs: sessionStartedAt === null ? 0 : (sessionEndedAt ?? Date.now()) - sessionStartedAt,
+  telemetryErrors: report.collectionFailures.length, failures: report.failures.length, strokes: report.pixelSamples,
+});
 const writeReport = (): void => {
-  const coveredBrushIds = new Set(report.pixelSamples.map((sample) => sample.brushId).filter(Boolean));
+  const coveredBrushIds = new Set(report.pixelSamples.filter((sample) => sample.acceptedByDocument).map((sample) => sample.brushId).filter(Boolean));
   const temporaryPath = join(OUT, "report.json.tmp");
+  const completion = assessCompletion();
   writeFileSync(temporaryPath, JSON.stringify({
     ...report,
+    status: finalized ? completion.status : "running",
+    ok: finalized && completion.ok,
+    acceptance: completion,
     elapsedMinutes: Number((nowMs(startedAt) / 60_000).toFixed(2)),
     sessionStartedAt: sessionStartedAt === null ? null : new Date(sessionStartedAt).toISOString(),
     sessionEndedAt: sessionEndedAt === null ? null : new Date(sessionEndedAt).toISOString(),
@@ -785,9 +695,62 @@ let boundedLayerBaseline: number | null = null;
 let nextCheckpoint = CHECKPOINT_MS;
 let activeBrush: StudioBrushCatalogItem | null = null;
 
+function collectionFailed(kind: string, error: unknown, cycle = report.cycles): void {
+  report.collectionFailures.push({ atMs: nowMs(startedAt), cycle, kind,
+    detail: String(error instanceof Error ? error.message : error).slice(0, 800) });
+}
+
+async function recordTelemetry(): Promise<void> {
+  if (!page) { collectionFailed("telemetry-page", "소크 페이지가 없습니다."); return; }
+  try {
+    const telemetry = await drainGpuAndPerf(page, startedAt, report.sessionId, WEBGPU);
+    report.telemetryChecks += 1;
+    if (!report.pageEpochs.includes(telemetry.pageEpoch)) report.pageEpochs.push(telemetry.pageEpoch);
+    report.gpuEvents.push(...telemetry.gpu);
+    report.longTasks.push(...telemetry.longTasks);
+    for (const event of telemetry.gpu) {
+      if (event.kind === "lost" && event.reason === "destroyed") continue;
+      report.failures.push({ atMs: event.atMs, cycle: report.cycles, kind: "gpu-" + event.kind,
+        detail: event.reason + ": " + event.message });
+    }
+  } catch (error) { collectionFailed("gpu-and-performance", error); }
+}
+
+async function recordHeapCheckpoint(phase: "initial" | "periodic" | "final", scheduledAtMs: number): Promise<HeapSample | null> {
+  let heap: HeapSample | null = null;
+  try {
+    heap = await gcHeap(cdp, startedAt);
+    report.heapSamples.push(heap);
+    if (!baselineHeap && phase !== "initial") baselineHeap = phase === "periodic" ? heap : report.heapSamples[0] ?? heap;
+    if (baselineHeap) {
+      const assessment = evaluateStudioSoakHeapGrowth(report.heapSamples, baselineHeap);
+      if (assessment?.absoluteExceeded && !heapGrowthFailureRecorded) {
+        heapGrowthFailureRecorded = true;
+        report.failures.push({ atMs: heap.atMs, cycle: report.cycles, kind: "heap-growth",
+          detail: "GC 힙 증가 " + Math.round(assessment.growthBytes / 1048576) + " MiB; 기존 허용량 " + Math.round(assessment.allowanceBytes / 1048576) + " MiB" });
+      }
+      if (assessment?.slopeExceeded && !heapSlopeFailureRecorded) {
+        heapSlopeFailureRecorded = true;
+        report.failures.push({ atMs: heap.atMs, cycle: report.cycles, kind: "heap-growth-slope",
+          detail: "GC 힙 증가율 " + Math.round(assessment.slopeBytesPerHour / 1048576) + " MiB/h; 기존 한도 " + Math.round(STUDIO_SOAK_HEAP_MAX_SLOPE_BYTES_PER_HOUR / 1048576) + " MiB/h" });
+      }
+    }
+  } catch (error) { collectionFailed("heap-" + phase, error); }
+  report.checkpoints.push({
+    ...createStudioSoakCheckpoint({ atMs: nowMs(startedAt), cycle: report.cycles, heap,
+      heapSamples: report.heapSamples, failures: report.failures.length }),
+    phase, scheduledAtMs, sessionAtMs: sessionStartedAt === null ? 0 : nowMs(sessionStartedAt),
+  });
+  return heap;
+}
+
 try {
   preview = await spawnPreview();
   report.origin = preview.origin;
+  report.build = await readStudioSoakBuildEvidence({ origin: preview.origin, directory: BUILD_DIRECTORY,
+    spawnedPreview: preview.child !== null, sourceCommit: report.sourceCommit });
+  report.previewIndexSha256 = report.build.indexSha256;
+  if (!report.build.verified) throw new Error(report.build.error ?? "빌드 증거를 확인할 수 없습니다.");
   const args = ["--disable-dev-shm-usage", "--enable-unsafe-swiftshader", "--use-gl=swiftshader"];
   if (WEBGPU) args.push("--enable-unsafe-webgpu");
   browser = await chromium.launch({ args });
@@ -802,7 +765,7 @@ try {
   page = await context.newPage();
   await installStudioInAppGuestBoundary(page);
   await installStudioInAppFirstRunState(page);
-  await installGpuAndPerfCollector(page);
+  await installGpuAndPerfCollector(page, report.sessionId);
   const errors = await collectStudioInAppRuntimeErrors(page);
   cdp = await context.newCDPSession(page).catch(() => null);
   if (inputMode !== "mouse" && !cdp) {
@@ -830,6 +793,8 @@ try {
   // 준비·빌드·서버 대기 시간은 실제 편집 세션의 최소 시간에 포함하지 않는다.
   sessionStartedAt = Date.now();
   const deadline = sessionStartedAt + MINUTES * 60_000;
+  await recordTelemetry();
+  await recordHeapCheckpoint("initial", 0);
   writeReport();
   while (Date.now() < deadline) {
     const cycleStarted = Date.now();
@@ -863,6 +828,7 @@ try {
       }
 
       if (penReady) {
+        report.attemptedStrokes += 1;
         const evidence = await drawEvidenceStroke(page, cdp, cycle, inputMode);
         report.strokes += 1;
         report.pixelSamples.push({
@@ -926,7 +892,7 @@ try {
         }
       }
 
-      if (strokesSinceHistoryChurn >= HISTORY_CHURN_INTERVAL) {
+      if (shouldChurnStudioSoakHistory(WORKLOAD, strokesSinceHistoryChurn, HISTORY_CHURN_INTERVAL)) {
         // 실행 중 기본 탭이 바뀌어 내비게이터가 내려갔으면 churn 판정 전에 다시 마운트한다.
         await ensureStudioLayerNavigatorCount(page);
         report.historyActions += await exerciseBoundedHistoryChurn(
@@ -959,57 +925,14 @@ try {
       });
     }
 
-    const telemetry = await drainGpuAndPerf(page, startedAt).catch(() => ({ gpu: [], longTasks: [] }));
-    report.gpuEvents.push(...telemetry.gpu);
-    report.longTasks.push(...telemetry.longTasks);
-    for (const event of telemetry.gpu) {
-      const benignDestroy = event.kind === "lost" && event.reason === "destroyed";
-      if (!benignDestroy) report.failures.push({
-        atMs: event.atMs, cycle, kind: `gpu-${event.kind}`,
-        detail: `${event.reason}: ${event.message}`,
-      });
-    }
+    await recordTelemetry();
 
-    if (cycle === 1 || nowMs(startedAt) >= nextCheckpoint) {
-      const heap = await gcHeap(cdp, startedAt);
-      if (heap) {
-        report.heapSamples.push(heap);
-        if (!baselineHeap && cycle > 1) baselineHeap = heap;
-        if (baselineHeap) {
-          const assessment = evaluateStudioSoakHeapGrowth(
-            report.heapSamples,
-            baselineHeap,
-          );
-          if (assessment?.absoluteExceeded && !heapGrowthFailureRecorded) {
-            heapGrowthFailureRecorded = true;
-            report.failures.push({
-              atMs: heap.atMs,
-              cycle,
-              kind: "heap-growth",
-              detail: `GC heap grew ${Math.round(assessment.growthBytes / 1048576)} MiB from baseline; allowance ${Math.round(assessment.allowanceBytes / 1048576)} MiB`,
-            });
-          }
-          if (assessment?.slopeExceeded && !heapSlopeFailureRecorded) {
-            heapSlopeFailureRecorded = true;
-            report.failures.push({
-              atMs: heap.atMs,
-              cycle,
-              kind: "heap-growth-slope",
-              detail: `GC heap retained-growth slope ${Math.round(assessment.slopeBytesPerHour / 1048576)} MiB/h exceeds ${Math.round(STUDIO_SOAK_HEAP_MAX_SLOPE_BYTES_PER_HOUR / 1048576)} MiB/h`,
-            });
-          }
-        }
-      }
-      report.checkpoints.push(createStudioSoakCheckpoint({
-        atMs: nowMs(startedAt),
-        cycle,
-        heap,
-        heapSamples: report.heapSamples,
-        failures: report.failures.length,
-      }));
+    if (nowMs(sessionStartedAt) >= nextCheckpoint) {
+      const scheduledAtMs = Math.floor(nowMs(sessionStartedAt) / CHECKPOINT_MS) * CHECKPOINT_MS;
+      const heap = await recordHeapCheckpoint("periodic", scheduledAtMs);
       await page.screenshot({ path: join(OUT, `checkpoint-${Math.round(nowMs(startedAt) / 60000)}m.png`) }).catch(() => undefined);
       writeReport();
-      nextCheckpoint = (Math.floor(nowMs(startedAt) / CHECKPOINT_MS) + 1) * CHECKPOINT_MS;
+      nextCheckpoint = scheduledAtMs + CHECKPOINT_MS;
       log(`checkpoint ${Math.round(nowMs(startedAt) / 60000)}m · cycle ${cycle} · failures ${report.failures.length} · heap ${heap ? Math.round(heap.usedBytes / 1048576) + " MiB" : "n/a"}`);
     }
 
@@ -1019,7 +942,7 @@ try {
 
     report.actionDurationMs += Date.now() - cycleStarted;
     writeReport();
-    if (STOP_ON_FAILURE && report.failures.length > 0) {
+    if (STOP_ON_FAILURE && (report.failures.length > 0 || report.collectionFailures.length > 0 || assessCompletion().failed.length > 0)) {
       log("실패를 기록했습니다. 원인 수정과 재검증을 위해 장시간 실행을 중단합니다.");
       break;
     }
@@ -1030,10 +953,12 @@ try {
       report.scheduledRestMs += Date.now() - restStartedAt;
     }
   }
+} catch (error) {
+  collectionFailed("execution", error);
 } finally {
   sessionEndedAt = sessionStartedAt === null ? null : Date.now();
   if (page) {
-    if (strokesSinceHistoryChurn > 0) {
+    if (shouldChurnStudioSoakHistory(WORKLOAD, strokesSinceHistoryChurn, 1)) {
       try {
         await ensureStudioLayerNavigatorCount(page);
         report.historyActions += await exerciseBoundedHistoryChurn(
@@ -1051,15 +976,17 @@ try {
         });
       }
     }
-    const finalHeap = await gcHeap(cdp, startedAt);
-    if (finalHeap) report.heapSamples.push(finalHeap);
+    await recordTelemetry();
+    await recordHeapCheckpoint("final", MINUTES * 60_000);
     await page.screenshot({ path: join(OUT, "final.png") }).catch(() => undefined);
   }
+  finalized = true;
   writeReport();
   await browser?.close().catch(() => undefined);
   if (preview?.child) await stopChildProcess(preview.child).catch(() => undefined);
 }
 
+const completion = assessCompletion();
 const meaningfulFailures = report.failures.filter((failure) => {
   if (failure.kind === "no-ink") {
     const sample = report.pixelSamples.find((row) => row.cycle === failure.cycle);
@@ -1076,4 +1003,5 @@ if (initialHeap !== null && finalHeap !== null) {
   log(`GC heap ${Math.round(initialHeap / 1048576)} MiB → ${Math.round(finalHeap / 1048576)} MiB`);
 }
 log(`${meaningfulFailures.length} recorded failures · report ${join(OUT, "report.json")}`);
-if (meaningfulFailures.length > 0) process.exitCode = 1;
+log("판정 " + completion.status + " · 미완료 " + completion.incomplete.join(", ") + " · 실패 " + completion.failed.join(", "));
+if (!completion.ok) process.exitCode = 1;

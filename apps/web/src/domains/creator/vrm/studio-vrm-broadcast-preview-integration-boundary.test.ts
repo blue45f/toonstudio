@@ -138,8 +138,10 @@ describe("Studio VRM broadcast preview product boundary", () => {
     expect(poser).toContain("entry.contentRect.width");
     expect(poser).toContain("requestedDpr: window.devicePixelRatio");
     expect(poser).toContain(
-      "dpr={broadcastPreviewActive ? broadcastCanvasDpr : h.vrmLowQualityMode ? Math.min(1, viewportBudget.dpr) : viewportBudget.dpr}",
+      "const effectiveDpr = broadcastPreviewActive ? broadcastCanvasDpr : h.vrmLowQualityMode ? Math.min(1, viewportBudget.dpr) : viewportBudget.dpr;",
     );
+    expect(poser).toContain('dpr={effectiveDpr} shadows="percentage"');
+    expect(poser).toContain("<StudioVrmCanvasSizeSync dpr={effectiveDpr} paused={captureActive} />");
     const preflightIndex = poser.indexOf("const framebufferPreflight = planStudioVrmBroadcastFramebuffer");
     const dprPublishIndex = poser.indexOf(
       "setBroadcastCanvasDpr(framebufferPreflight.receipt.dpr)",

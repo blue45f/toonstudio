@@ -36,6 +36,40 @@ describe("low-friction studio recovery", () => {
     },
   );
 
+  it("저장본 불일치 안내를 접어도 경고와 백업을 유지하고 작업에는 손대지 않는다", () => {
+    const props = handlers();
+    render(<StudioRecoveryNotice blockedReason="revision-mismatch" {...props} />);
+    const toggle = screen.getByRole("button", { name: "복구 안내 접기" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    const explanation = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
+    expect(explanation?.hidden).toBe(false);
+    toggle.focus();
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "복구 안내 펼치기" })).toBe(toggle);
+    expect(document.activeElement).toBe(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(explanation?.hidden).toBe(true);
+    expect(screen.getByRole("heading", { name: "남겨 둔 그림을 보관해 주세요" })).toBeTruthy();
+    expect(screen.getByText("저장본과 다른 그림이 있어요.")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /새 그림 그리기/ })).toBeNull();
+    expect(props.onBackup).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "백업 파일 받기" }));
+    expect(props.onBackup).toHaveBeenCalledOnce();
+    fireEvent.click(toggle);
+    expect(explanation?.hidden).toBe(false);
+    expect(screen.getByRole("button", { name: "복구 안내 접기" })).toBe(toggle);
+    expect(props.onDelete).not.toHaveBeenCalled();
+    expect(props.onRestore).not.toHaveBeenCalled();
+  });
+
+  it.each(["legacy-unversioned", "work-mismatch", null] as const)(
+    "다른 복구 상태 %s 에서는 기존 안내를 그대로 유지한다",
+    (blockedReason) => {
+      render(<StudioRecoveryNotice {...handlers()} autoRestore={false} blockedReason={blockedReason} />);
+      expect(screen.queryByRole("button", { name: "복구 안내 접기" })).toBeNull();
+    },
+  );
+
   it("영어에서도 현재 그림을 보존하고 다시 열기·새 탭·백업·명시적 삭제를 구분한다", () => {
     useI18n.setState({ lang: "en" });
     const props = handlers();

@@ -19,7 +19,12 @@ import {
 } from "docx";
 import { PDFDocument, rgb, type PDFFont } from "pdf-lib";
 
-import { BUSINESS_PLAN_SECTIONS, type PlanSection, type PlanTable } from "./business-plan-data";
+import {
+  BUSINESS_PLAN_DOCUMENT_BASIS,
+  BUSINESS_PLAN_SECTIONS,
+  type PlanSection,
+  type PlanTable,
+} from "./business-plan-data";
 
 /**
  * 사업계획서 내려받기 (/business-plan).
@@ -57,7 +62,7 @@ const DOC_TITLE = "툰스튜디오 사업계획서";
 const DOC_SUBTITLE = "웹툰 제작 전 과정의 협업 업무툴";
 const DOC_AUTHOR_LINE = "작성자 김희준 (1인 예비창업자, 팀 없음)";
 const DOC_MENTOR_LINE = "멘토기관 한국핀테크지원센터";
-const DOC_BASIS_LINE = "작성 기준 2026-11-04 고도화 초안 v11";
+const DOC_BASIS_LINE = BUSINESS_PLAN_DOCUMENT_BASIS;
 const DOC_NOT_SUBMISSION =
   "제출용 문서가 아닙니다. 제출은 2026-12-01 13:00까지 모두의 창업 플랫폼(modoo.or.kr)을 통해 별도로 합니다.";
 

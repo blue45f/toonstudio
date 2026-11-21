@@ -205,16 +205,20 @@ export function computePaceSummary(state: SerializationPaceState): Serialization
 
 const STORAGE_KEY = "toonstudio.serialization-pace-board.v1";
 
-export function loadSerializationPaceState(): SerializationPaceState {
-  if (typeof window === "undefined") return createInitialPaceState("weekly-60");
+function parsePaceState(raw: string): SerializationPaceState | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialPaceState("weekly-60");
-    const parsed = JSON.parse(raw) as Partial<SerializationPaceState>;
-    const presetId: PaceCadencePresetId =
-      parsed.presetId === "biweekly-50" || parsed.presetId === "instatoon-8"
-        ? parsed.presetId
-        : "weekly-60";
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const parsed = value as Partial<SerializationPaceState>;
+    if ((parsed.presetId !== "weekly-60" && parsed.presetId !== "biweekly-50" && parsed.presetId !== "instatoon-8")
+      || typeof parsed.episodeLabel !== "string"
+      || typeof parsed.targetCuts !== "number" || !Number.isFinite(parsed.targetCuts)
+      || typeof parsed.daysRemaining !== "number" || !Number.isFinite(parsed.daysRemaining)
+      || typeof parsed.dailyCheckInStreak !== "number" || !Number.isFinite(parsed.dailyCheckInStreak)
+      || (parsed.lastCheckInDate !== null && typeof parsed.lastCheckInDate !== "string")
+      || !parsed.completedByStage || typeof parsed.completedByStage !== "object"
+      || !PACE_STAGES.every(stage => typeof parsed.completedByStage?.[stage.id] === "number" && Number.isFinite(parsed.completedByStage[stage.id]))) return null;
+    const presetId = parsed.presetId;
     const fallback = createInitialPaceState(presetId);
     const targetCuts = Math.max(4, Math.min(200, Math.round(parsed.targetCuts ?? fallback.targetCuts)));
     const daysRemaining = Math.max(1, Math.min(30, Math.round(parsed.daysRemaining ?? fallback.daysRemaining)));
@@ -237,15 +241,32 @@ export function loadSerializationPaceState(): SerializationPaceState {
       lastCheckInDate: typeof parsed.lastCheckInDate === "string" ? parsed.lastCheckInDate : null,
     };
   } catch {
+    return null;
+  }
+}
+
+export function loadSerializationPaceState(): SerializationPaceState {
+  if (typeof window === "undefined") return createInitialPaceState("weekly-60");
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return (raw === null ? null : parsePaceState(raw)) ?? createInitialPaceState("weekly-60");
+  } catch {
     return createInitialPaceState("weekly-60");
   }
 }
 
-export function saveSerializationPaceState(state: SerializationPaceState): void {
-  if (typeof window === "undefined") return;
+export function saveSerializationPaceState(state: SerializationPaceState): boolean {
+  if (typeof window === "undefined") return false;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const normalized = parsePaceState(JSON.stringify(state));
+    if (!normalized) return false;
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw !== null && !parsePaceState(raw)) return false;
+    const serialized = JSON.stringify(normalized);
+    window.localStorage.setItem(STORAGE_KEY, serialized);
+    return window.localStorage.getItem(STORAGE_KEY) === serialized;
   } catch {
-    // 프라이빗 모드에서도 현재 세션 페이스 보드는 정상 동작한다.
+    // 읽지 못한 원본은 보존하고 현재 화면의 계획은 메모리에 유지한다.
+    return false;
   }
 }
