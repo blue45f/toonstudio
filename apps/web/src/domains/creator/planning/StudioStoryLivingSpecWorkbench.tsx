@@ -9,7 +9,7 @@
  * - ⑥ 컷 단위 승인 공유 상태 (승인 단계 & 읽기 전용 공유 링크 토글·영속화)
  */
 import { AlertTriangle, CheckCircle2, ClipboardCheck, FileText, Layers, Link2, RefreshCw, ShieldCheck, Sparkles, Table2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { cn } from "@/shared/lib/utils";
 import { StudioAiProposalDiffGate } from "./StudioAiProposalDiffGate";
@@ -46,6 +46,12 @@ import {
   type StoryNodeEdge,
 } from "./studio-story-living-spec-store";
 
+const LazyPlotrStoryAtelierWorkbench = lazy(() =>
+  import("./plotr/PlotrStoryAtelierWorkbench").then((m) => ({
+    default: m.PlotrStoryAtelierWorkbench,
+  })),
+);
+
 export type CutApprovalStatus = "draft" | "review-requested" | "approved";
 
 export interface CutApprovalShareRecord {
@@ -73,7 +79,7 @@ export interface StudioStoryLivingSpecWorkbenchProps {
   readonly selectedEpisodeId?: string | null;
 }
 
-type WorkbenchTabId = "synced-3view" | "living-spec" | "proposal-gate" | "review-drawer";
+type WorkbenchTabId = "synced-3view" | "living-spec" | "proposal-gate" | "review-drawer" | "plotr-atelier";
 
 const EXPANDED_TOOL_COMMIT_EVENT = "toonstudio:expanded-tool-commit";
 const LIVING_SPEC_UPDATED_EVENT = "toonstudio:story-living-spec-updated";
@@ -84,6 +90,7 @@ const TAB_ITEMS: readonly { readonly id: WorkbenchTabId; readonly labelKo: strin
   { id: "living-spec", labelKo: "리빙 스펙 뷰" },
   { id: "proposal-gate", labelKo: "AI 제안 Diff 게이트" },
   { id: "review-drawer", labelKo: "6관점 증분 검수" },
+  { id: "plotr-atelier", labelKo: "대본·컷 아틀리에" },
 ]);
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
@@ -588,6 +595,21 @@ export function StudioStoryLivingSpecWorkbench({
             onJumpToNode={(nodeKey) => { persistRecord((prev) => ({ ...prev, state: selectStoryNode(prev.state, nodeKey) })); setActiveTab("synced-3view"); }}
           />
         </div>
+      ) : null}
+
+      {activeTab === "plotr-atelier" ? (
+        <Suspense
+          fallback={
+            <p role="status" className="rounded-xl border border-line bg-panel p-4 text-xs text-fg-2">
+              대본·컷 아틀리에를 여는 중…
+            </p>
+          }
+        >
+          <LazyPlotrStoryAtelierWorkbench
+            projectId={projectId}
+            activeEpisodePlan={planning.plans[0] ?? null}
+          />
+        </Suspense>
       ) : null}
     </section>
   );
