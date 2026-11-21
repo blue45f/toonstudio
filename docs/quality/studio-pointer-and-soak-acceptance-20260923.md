@@ -515,3 +515,52 @@ Enter/Escape를 검사하는 E2E를 유지했다. 기존 Axe와 44px 입력 기�
 로컬에서는 기존 실패 세 경로와 새 시나리오를 선택했지만 Chromium이 socket 생성
 권한 오류로 launch 중 종료돼 페이지·Axe·입력 검사는 실행되지 않았다. 이 수정의
 실제 브라우저 통과는 후속 원격 CI에서 확인해야 한다.
+
+### 실제 17종 측정 #137과 후속 CI 회귀
+
+같은 `1445eebf`의 [대표 브러시 검사 #137](https://github.com/blue45f/toonstudio/actions/runs/44947214872)는
+데스크톱·Playwright mouse 환경에서 17종 모두 실제 측정을 마쳤다. 작은 ZIP의 API
+digest·CRC, 보고서의 source/build 전후 일치를 확인했다. 준비 오류·예상 밖 브라우저
+오류·첫 픽셀 timeout·blank frame은 모두 0이며 입력 전달은 100%였다. pen의 실제
+잉크 PNG도 확인했다. 이 범위에서 이전 #132의 입력 영역 준비 실패는 해소됐지만,
+crop 이미지에 없는 전체 원고 배율이나 다른 화면 프로필의 결과는 추정하지 않는다.
+
+엄격 수락은 0/17이다. 첫 픽셀은 25.470~73.855ms, vsync 초과분은
+8.805~57.190ms로 17종 모두 기존 8ms 기준을 넘었다. sumi의 51ms 긴 작업과
+62.145ms settle, oil의 최대 68ms 긴 작업·75.300ms settle·25.985ms move→frame
+p99 초과분도 실패 항목이다. 기준 실패로 후속 3분 소크는 실행하지 않았다.
+이 결과는 후속 협업 DOM 보존·두 단계 relay 이전 소스의 실제 측정이며, 새 소스의
+첫 표시 지연·WebGPU·300분 수락은 별도로 확인해야 한다.
+
+`1445eebf`의 [수동 editing 회귀](https://github.com/blue45f/toonstudio/actions/runs/44946764126/job/136975674333)와
+PR editing은 Krita bundle 검사에서 저장 호출 전에 기본 대기 한도가 끝났다.
+실패 시 UI는 변환 중이었다. 로컬 원본 파일 전체는 17/17 통과했고 해당 case는
+666.8ms여서 로컬 실패 재현으로 표현하지 않는다. 실제 중첩 지연 import의 완료를
+기존 도메인 방식인 `act(() => vi.dynamicImportSettled())`로 기다리게 보완한 뒤
+같은 17개가 통과했다. 실제 bundle·parser·putMany·권리·미지원 항목 검증과 결과
+확인의 기본 시간 한도는 유지했다. CI 로그만으로 지연 전부를 모듈 로드에 귀속하지 않는다.
+
+PR foundation의 LT 역할 문자열 검사 두 건은 완료된 `5f51f06`의 변경을 통합했다.
+역할 여섯 개의 정확한 순서를 실제 정본인 runtime leaf에서 확인하고 planner의
+import·재export·flatMap 소비까지 검사한다. 기존 render 분기와 문서 문구 검사는
+유지하며, 이동한 정본의 이전 위치만 읽던 검사를 갱신한다. 두 파일 전체 60개는
+검사에 필요한 누락 자료를 HEAD 원문으로 복원한 뒤 제품·테스트 변경 없이 통과했다.
+
+### 전체 타입 검사 범위를 유지하는 초기 묶음·시간 조정
+
+이전 `471a970c`의 [수동 타입 검사](https://github.com/blue45f/toonstudio/actions/runs/44941781594/job/136960355358)는
+6MiB 초기 묶음에서 메모리 한도 분류에 따른 재분할을 다섯 번 기록했다. 이 실패한
+worker 시도만 878.903초를 소비했고, 28,657개 중 2,222개를 확인한 상태에서 새 소스
+검증으로 대체하기 위해 취소했다. 이를 전체 타입 검사 실패나 timeout으로 부르지 않는다.
+
+완료된 `caf17f06`과 `1c134fe4`의 설정·회귀를 통합해 초기 묶음을 3MiB로 낮추고
+필수 타입 및 CC0 인계에 110분, 비 main 수동 editing에 120분을 둔다. 다른 static
+작업의 25분 한도, 표준 runner와 8192MiB worker heap은 유지한다. 전체 TypeScript
+Program, 모든 파일의 의미 검사·중복/누락 확인·입력 fingerprint, API/realtime 명령,
+95% type coverage와 실패 시 중단 정책도 유지한다. 기존 하네스의 단일 env 허용과
+추가 env·인증/fetch 변경 거부 검사에 YAML 값·타입 검사를 함께 보존했다.
+
+3MiB 묶음의 전체 완주 시간은 아직 확인 전이다. 작은 묶음도 전체 Program을 만들기
+때문에 메모리 실패가 사라진다고 보장하지 않으며, 후속 실제 CI의 완료 결과를 요구한다.
+설정과 실제 하위 명령 전달을 확인하는 정책 회귀 50개, 변경된 JS lint, 소스 크기
+래칫과 workflow fanout 22개 검사는 통과했다. 이는 전체 타입 검사의 완료 결과가 아니다.
