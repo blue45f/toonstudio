@@ -23,6 +23,7 @@ import {
 
 import type { StudioBg3dLineOutputSettings } from "./studio-bg3d-scene-document-types";
 import type { StudioLtVectorLineOptions } from "../lt-convert/studio-lt-convert-vector";
+import type { Studio3dVectorLineArtOptions } from "../scene3d-pro/studio-3d-vector-lineart-extractor";
 
 /** 선화를 뽑는 출처. bg3d LT 렌더·씬 3D 캡처·채색용 사진 선화. */
 export type StudioLineExtractSource = "bg3d-lt" | "scene-3d" | "colorize-photo";
@@ -280,5 +281,28 @@ export function studioLineExtractJobToLtVectorOptions(
     strokeWidth: job.widthPx,
     simplifyTolerance: Math.round(0.75 * (1 - job.smoothing) * 1000) / 1000,
     scale: 1,
+  });
+}
+
+/**
+ * 작업을 클린룸 3D→웹툰 벡터 강약선 추출기(`extract3dVectorLineArt`) 옵션으로 변환한다.
+ * 크리즈 이면각·은선 제거·원근 거리 강약 가중치를 기존 선화 추출 계약과 단일 소스로 맞춘다.
+ */
+export function studioLineExtractJobToVectorLineArtOptions(
+  job: StudioLineExtractJob,
+): Studio3dVectorLineArtOptions {
+  return Object.freeze({
+    creaseAngleThresholdDeg: Math.max(5, job.creaseAngleDegrees),
+    extractSilhouette: true,
+    extractCrease: job.algorithm !== "sobel" || job.strength > 0,
+    extractBoundary: true,
+    hiddenLineRemoval: job.hiddenLineRemoval,
+    baseWidthPx: job.widthPx,
+    minWidthPx: Math.max(0.4, Math.round(job.widthPx * 0.35 * 100) / 100),
+    maxWidthPx: Math.min(12, Math.round(job.widthPx * 2.4 * 100) / 100),
+    distanceWeightStrength: job.depthNeeded ? Math.max(0.25, job.strength * 0.85) : 0,
+    normalSlopeStrength: Math.min(1, Math.max(0.2, job.strength * 0.75)),
+    simplifyTolerancePx: Math.round((0.15 + job.smoothing * 0.65) * 1000) / 1000,
+    svgRenderMode: "variable-ribbon" as const,
   });
 }
