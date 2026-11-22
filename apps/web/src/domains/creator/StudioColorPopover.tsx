@@ -3,6 +3,7 @@ import { Pin, X } from "lucide-react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { StudioColorEditor } from "./color/StudioColorEditor";
+import { StudioSpectralBlendPreviewChip } from "./canvas-chrome/StudioSpectralBlendPreviewChip";
 import { resolveStudioColorSurfacePosition } from "./color/studio-color-surface-position";
 import { useStudioColorTargetKey } from "./color/StudioColorWorkspaceContext";
 import { useStudioColorSession } from "./color/useStudioColorSession";
@@ -204,6 +205,14 @@ export function StudioColorPopover({ value, onChange, recentColors, documentColo
               onRequestCanvasEyedropper={onRequestCanvasEyedropper ? () => {
                 if (finish(false)) onRequestCanvasEyedropper();
               } : undefined} />
+            <div className="mt-3">
+              <StudioSpectralBlendPreviewChip
+                foregroundHex={session.color}
+                canvasBaseHex={recentColors.find((hex) => hex.toLowerCase() !== session.color.toLowerCase())}
+                compact={position.compact}
+                onPickMixedColor={change}
+              />
+            </div>
           </div>
           <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <button type="button" data-studio-color-cancel="true" onClick={dismiss}

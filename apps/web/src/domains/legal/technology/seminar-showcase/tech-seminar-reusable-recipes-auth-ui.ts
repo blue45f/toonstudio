@@ -207,6 +207,13 @@ export async function processKakaoUnlink(
           '{ httpOnly: true, secure: true, sameSite: provider === "apple" ? "none" : "lax", path: prod ? "/" : "/api/auth/oauth/:p", maxAge: 600_000 }',
         errorContract: "프로덕션 __Host- 접두사 규칙(Secure + Path=/ + Domain 미지정) 위반 시 브라우저가 쿠키 거부",
       },
+      {
+        endpointOrSymbol: "createSingleFlightTokenRefresher · validateOAuthCallbackSecurity · resolveOAuthPopupFallback",
+        methodOrKind: "Core Kit",
+        requestOrInput: "동시 401 갱신 요청 · 콜백 state/PKCE · 팝업/웹뷰 상태 · 5xx/네트워크 오류",
+        responseOrOutput: "단일 flight 토큰 갱신 병합 · 팝업 차단 시 리다이렉트 폴백 · 지수 백오프 · 사용자 친화적 한글 오류 분류",
+        errorContract: "invalid_grant / 401 갱신 실패 시 OAuthReauthRequiredError로 무한 루프 차단 (서버 JWT TTL 정책 비변경)",
+      },
     ],
     codeExcerpt: {
       title: "Google ID 토큰 서버 검증 · 브라우저 바인딩 State · __Host- 쿠키 옵션",
@@ -260,6 +267,7 @@ export function canAutoLinkOAuthEmail(): boolean {
       "apps/api/src/server/oauth.ts",
       "apps/api/src/oauth-state-cookie.ts",
       "apps/api/src/modules/auth/auth.controller.ts",
+      "packages/core/src/auth/oauth-recovery-kit.ts",
     ],
     adoptionSteps: [
       {

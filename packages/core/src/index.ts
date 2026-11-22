@@ -30,3 +30,4 @@ export * from "./supporter-payment";
 export * from "./creator-support";
 export * from "./creator-ecosystem";
 export * from "./membership-wallet";
+export * from "./auth/oauth-recovery-kit";

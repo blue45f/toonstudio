@@ -1,5 +1,6 @@
-import { PanelsTopLeft, PanelLeft, Undo2, Zap } from "lucide-react";
+import { Eye, EyeOff, PanelsTopLeft, PanelLeft, Undo2, Zap } from "lucide-react";
 
+import { useAdaptiveFloatingChrome } from "./canvas-chrome/useAdaptiveFloatingChrome";
 import type { StudioOptionsBarsHandlers } from "./StudioOptionsBars";
 
 export interface StudioDrawingWorkbenchControlsProps {
@@ -9,14 +10,20 @@ export interface StudioDrawingWorkbenchControlsProps {
     "toggleBrushDock" | "restoreDrawingLayout" | "undoDrawingLayoutRestore" | "openQuickAccess">;
 }
 
-const button = "inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const button = "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-fg-2 hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 export function StudioDrawingWorkbenchControls({
   libraryOpen, undoAvailable, handlers,
 }: StudioDrawingWorkbenchControlsProps) {
-  if (!handlers.toggleBrushDock && !handlers.restoreDrawingLayout) return null;
+  const hasWorkbenchActions = Boolean(handlers.toggleBrushDock || handlers.restoreDrawingLayout);
+  const adaptiveChrome = useAdaptiveFloatingChrome({
+    listenGlobalCanvasPointer: hasWorkbenchActions,
+  });
+
+  if (!hasWorkbenchActions) return null;
   return (
     <div role="group" aria-label="드로잉 작업 배치"
+      {...adaptiveChrome.chromeContainerProps}
       className="flex shrink-0 items-center gap-1 border-r border-line px-1">
       {handlers.openQuickAccess ? <button type="button" className={button} aria-label="빠른 실행 열기"
         onClick={(event) => handlers.openQuickAccess?.({ x: event.clientX, y: event.clientY })}><Zap size={16} aria-hidden /><span className="hidden xl:inline">빠른 실행</span></button> : null}
@@ -40,6 +47,15 @@ export function StudioDrawingWorkbenchControls({
           <Undo2 size={16} aria-hidden /><span className="hidden xl:inline">이전 배치</span>
         </button>
       ) : null}
+      <button type="button"
+        className={`${button} ${adaptiveChrome.enabled ? "bg-accent-soft text-accent" : ""}`}
+        aria-label={adaptiveChrome.toggleLabel}
+        aria-pressed={adaptiveChrome.enabled}
+        data-studio-adaptive-chrome-toggle="true"
+        onClick={adaptiveChrome.toggleEnabled}>
+        {adaptiveChrome.enabled ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
+        <span className="hidden 2xl:inline">자동 숨김</span>
+      </button>
     </div>
   );
 }

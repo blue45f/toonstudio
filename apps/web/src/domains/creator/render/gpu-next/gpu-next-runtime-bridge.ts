@@ -45,6 +45,11 @@ import {
   type StylusPredictorOptions,
   type StylusStepPredictionResult,
 } from "./gpu-stylus-predict-and-screentone";
+import {
+  WebGpuMemoryFailSafeGuard,
+  type WebGpuMemoryFailSafeOptions,
+  type WebGpuMemoryFailSafeSnapshot,
+} from "../../webgpu";
 
 export interface StudioGpuNextDiagnosticsSnapshot {
   readonly hdrTextureFormat: typeof GPU_NEXT_HDR_TEXTURE_FORMAT;
@@ -52,6 +57,7 @@ export interface StudioGpuNextDiagnosticsSnapshot {
   readonly warmup: GpuPipelineWarmupMetrics;
   readonly frameBudget: AdaptiveFrameBudgetSnapshot;
   readonly tileResidency: LruTileSchedulerSnapshot;
+  readonly vramFailSafe: WebGpuMemoryFailSafeSnapshot;
   readonly stylus: {
     readonly historyLength: number;
     readonly totalAuthoritativeCount: number;
@@ -66,6 +72,7 @@ export interface StudioGpuNextRuntimeHubOptions {
   readonly warmup?: GpuPipelineWarmupQueueOptions;
   readonly frameBudget?: AdaptiveFrameBudgetOptions;
   readonly tileResidency?: LruTileEvictionOptions;
+  readonly vramFailSafe?: WebGpuMemoryFailSafeOptions;
   readonly stylus?: StylusPredictorOptions;
   readonly autoStartWarmup?: boolean;
 }
@@ -75,6 +82,7 @@ export class StudioGpuNextRuntimeHub {
   readonly warmupQueue: GpuPipelineWarmupQueue;
   readonly frameBudget: AdaptiveFrameBudgetController;
   readonly tileScheduler: LruTileResidencyEvictionScheduler;
+  readonly vramGuard: WebGpuMemoryFailSafeGuard;
   readonly stylusPredictor: StylusSubpixelPredictor;
   private readonly device: (GpuNextPipelineDeviceLike & GpuNextHdrComputeDeviceLike) | null;
 
@@ -88,6 +96,12 @@ export class StudioGpuNextRuntimeHub {
     );
     this.frameBudget = new AdaptiveFrameBudgetController(options.frameBudget);
     this.tileScheduler = new LruTileResidencyEvictionScheduler(options.tileResidency);
+    this.vramGuard = new WebGpuMemoryFailSafeGuard({
+      ...options.vramFailSafe,
+      onEvictTile: (allocation) => {
+        options.vramFailSafe?.onEvictTile?.(allocation);
+      },
+    });
     this.stylusPredictor = new StylusSubpixelPredictor(options.stylus);
 
     if (options.autoStartWarmup !== false && this.device !== null) {
@@ -155,6 +169,7 @@ export class StudioGpuNextRuntimeHub {
       warmup: this.warmupQueue.getMetrics(),
       frameBudget: this.frameBudget.getSnapshot(),
       tileResidency: this.tileScheduler.getSnapshot(),
+      vramFailSafe: this.vramGuard.getSnapshot(),
       stylus: this.stylusPredictor.getStats(),
     });
   }
@@ -163,6 +178,7 @@ export class StudioGpuNextRuntimeHub {
     this.warmupQueue.dispose();
     this.pool.dispose();
     this.tileScheduler.dispose();
+    this.vramGuard.dispose();
     this.stylusPredictor.reset();
   }
 }
@@ -196,11 +212,18 @@ export function disposeStudioGpuNextRuntimeHub(): void {
 export function formatStudioGpuNextTelemetrySummary(
   snapshot: StudioGpuNextDiagnosticsSnapshot,
 ): string {
-  const scalePercent = Math.round(snapshot.frameBudget.currentScale * 100);
+  const scalePercent = Math.round(
+    Math.min(snapshot.frameBudget.currentScale, snapshot.vramFailSafe.previewRenderScale) * 100,
+  );
   const poolHitPercent = Math.round(snapshot.bufferPool.gpuHitRate * 100);
   const warmupReady =
     snapshot.warmup.backend === "webgpu"
       ? `${snapshot.warmup.readyCount}/${snapshot.warmup.totalTasks}`
       : `CPU 폴백(${snapshot.warmup.totalTasks})`;
-  return `${snapshot.hdrTextureFormat} · 스케일 ${scalePercent}% · 풀 재사용 ${poolHitPercent}% · 셰이더 ${warmupReady}`;
+  const vramPct = Math.round(snapshot.vramFailSafe.utilizationRatio * 100);
+  const rendererTag =
+    snapshot.vramFailSafe.activeRenderer === "canvas2d-cpu-safe"
+      ? "2D 안전모드"
+      : `VRAM ${vramPct}%`;
+  return `${snapshot.hdrTextureFormat} · 스케일 ${scalePercent}% · ${rendererTag} · 풀 재사용 ${poolHitPercent}% · 셰이더 ${warmupReady}`;
 }
