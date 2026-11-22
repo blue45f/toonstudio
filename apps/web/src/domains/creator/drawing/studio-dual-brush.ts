@@ -5,6 +5,13 @@
  */
 
 import {
+  compositeDualBrushTipMasks,
+  type BrushTipMaskBuffer,
+  type DualBrushTipCompositeMode,
+  type DualBrushTipCompositeOptions,
+  type DualBrushTipCompositeResult,
+} from "../drawing-pro/studio-gap-closing-fill-and-dual-brush";
+import {
   synthesizeCrayonWaxPaperStamp,
   type CrayonWaxStampResult,
 } from "./brush-quality-soak-guard";
@@ -752,4 +759,16 @@ export function compositeDualBrushStroke(
   rctx.globalAlpha = 1;
   rctx.globalCompositeOperation = "source-over";
   return result;
+}
+
+/**
+ * 클린룸 듀얼 브러시 팁 마스크 합성(`multiply`/`subtract`/`darken`/`overlay`) 진입점.
+ */
+export function compositeStudioDualBrushTipMasks(
+  primary: BrushTipMaskBuffer,
+  secondary: BrushTipMaskBuffer,
+  mode: DualBrushTipCompositeMode,
+  options: Omit<DualBrushTipCompositeOptions, "mode"> = {},
+): DualBrushTipCompositeResult {
+  return compositeDualBrushTipMasks(primary, secondary, { ...options, mode });
 }

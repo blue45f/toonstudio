@@ -7,6 +7,14 @@
  */
 
 import {
+  eraseVectorPolylinesAtIntersections,
+  type PolylineIntersectionRecord,
+  type VectorEraserInput,
+  type VectorIntersectionEraserOptions,
+  type VectorPolylinePoint,
+  type VectorPolylineStroke,
+} from "../drawing-pro/studio-vector-intersection-eraser";
+import {
   clampVectorWidthScale,
   VECTOR_STROKE_MIN_WIDTH_PX,
   type VectorBrushShapeId,
@@ -441,6 +449,126 @@ export function simplifyVectorStrokeAnchors(
     ...stroke,
     segments: newSegments,
     widths: keptWidths,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. 클린룸 벡터 교차점 지우개 (CSP '교차점까지 지우기' 진입점 연결)         */
+/* ------------------------------------------------------------------ */
+
+export interface VectorStrokeIntersectionEraseResult {
+  readonly strokes: readonly VectorStroke[];
+  readonly removedStrokeIds: readonly string[];
+  readonly intersections: readonly PolylineIntersectionRecord[];
+  readonly erasedSpanCount: number;
+  readonly splitStrokeCount: number;
+}
+
+function polylinePointsToVectorStroke(
+  template: VectorStroke,
+  id: string,
+  points: readonly VectorPolylinePoint[],
+): VectorStroke {
+  const widths = points.map((pt) =>
+    Math.max(VECTOR_STROKE_MIN_WIDTH_PX, finiteNumber(pt.width, 1)),
+  );
+  const segments = [];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const pPrev = points[Math.max(0, i - 1)]!;
+    const pCurr = points[i]!;
+    const pNext = points[i + 1]!;
+    const pAfter = points[Math.min(points.length - 1, i + 2)]!;
+    segments.push({
+      p0: { x: pCurr.x, y: pCurr.y },
+      p1: { x: pCurr.x + (pNext.x - pPrev.x) / 6, y: pCurr.y + (pNext.y - pPrev.y) / 6 },
+      p2: { x: pNext.x - (pAfter.x - pCurr.x) / 6, y: pNext.y - (pAfter.y - pCurr.y) / 6 },
+      p3: { x: pNext.x, y: pNext.y },
+    });
+  }
+  return {
+    ...template,
+    id,
+    segments,
+    widths,
+    closed: false,
+  };
+}
+
+/**
+ * 벡터 레이어 스트로크 배열에 클린룸 교차점 지우개를 적용한다.
+ * 히트되지 않은 스트로크는 원본 참조를 보존하고, 분할·트리밍된 조각만 베지어 세그먼트로 재구성한다.
+ */
+export function eraseVectorStrokesToIntersection(
+  strokes: readonly VectorStroke[],
+  eraser: VectorEraserInput,
+  options: VectorIntersectionEraserOptions & { readonly samplesPerSegment?: number } = {},
+): VectorStrokeIntersectionEraseResult {
+  const perSeg = Math.max(2, Math.min(24, Math.floor(finiteNumber(options.samplesPerSegment, 8))));
+  const strokeById = new Map<string, VectorStroke>();
+  const polylines: VectorPolylineStroke[] = [];
+
+  for (const stroke of strokes) {
+    strokeById.set(stroke.id, stroke);
+    const pts: VectorPolylinePoint[] = [];
+    stroke.segments.forEach((seg, segIdx) => {
+      const w0 = stroke.widths[segIdx] ?? 1;
+      const w1 = stroke.widths[segIdx + 1] ?? w0;
+      for (let step = 0; step < perSeg; step += 1) {
+        const t = step / perSeg;
+        const mt = 1 - t;
+        pts.push({
+          x:
+            mt * mt * mt * seg.p0.x
+            + 3 * mt * mt * t * seg.p1.x
+            + 3 * mt * t * t * seg.p2.x
+            + t * t * t * seg.p3.x,
+          y:
+            mt * mt * mt * seg.p0.y
+            + 3 * mt * mt * t * seg.p1.y
+            + 3 * mt * t * t * seg.p2.y
+            + t * t * t * seg.p3.y,
+          width: w0 + (w1 - w0) * t,
+        });
+      }
+    });
+    const lastSeg = stroke.segments[stroke.segments.length - 1];
+    if (lastSeg) {
+      pts.push({
+        x: lastSeg.p3.x,
+        y: lastSeg.p3.y,
+        width: stroke.widths[stroke.widths.length - 1] ?? 1,
+      });
+    }
+    polylines.push({
+      id: stroke.id,
+      points: pts,
+      closed: Boolean(stroke.closed),
+      color: stroke.color,
+    });
+  }
+
+  const rawById = new Map<string, VectorPolylineStroke>();
+  for (const pl of polylines) rawById.set(pl.id, pl);
+
+  const erased = eraseVectorPolylinesAtIntersections(polylines, eraser, options);
+  const rebuilt: VectorStroke[] = [];
+  for (const piece of erased.strokes) {
+    const baseId = piece.id.split("#seg-")[0] ?? piece.id;
+    const original = strokeById.get(baseId);
+    if (!original) continue;
+    if (piece === rawById.get(original.id)) {
+      rebuilt.push(original);
+    } else {
+      rebuilt.push(polylinePointsToVectorStroke(original, piece.id, piece.points));
+    }
+  }
+
+  return {
+    strokes: rebuilt,
+    removedStrokeIds: erased.removedStrokeIds,
+    intersections: erased.intersections,
+    erasedSpanCount: erased.erasedSpanCount,
+    splitStrokeCount: erased.splitStrokeCount,
   };
 }
 
