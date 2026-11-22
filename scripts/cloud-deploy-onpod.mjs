@@ -36,6 +36,15 @@ function appendStepSummary(lines, env = process.env) {
   appendFileSync(summaryPath, `${lines.join("\n")}\n`, "utf8");
 }
 
+function appendStepOutput(entries, env = process.env) {
+  const outputPath = env.GITHUB_OUTPUT;
+  if (!outputPath) return;
+  const lines = Object.entries(entries).map(
+    ([key, value]) => `${key}=${String(value ?? "").replace(/[\r\n]/gu, " ")}`,
+  );
+  appendFileSync(outputPath, `${lines.join("\n")}\n`, "utf8");
+}
+
 export function parseOnpodDeployArgs(argv) {
   let updateImage = false;
   let syncEnv = false;
@@ -386,6 +395,15 @@ async function main() {
     appName, originUrl, targetImage, requireTargetImage: options.updateImage,
     beforeStatus, childEnv,
   });
+
+  appendStepOutput(
+    {
+      api_sha: options.updateImage ? releaseSha : "",
+      active_api_image: afterStatus.image ?? "",
+      previous_api_image: beforeStatus.image ?? "",
+    },
+    process.env,
+  );
 
   appendStepSummary(
     [

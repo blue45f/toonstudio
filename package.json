@@ -266,7 +266,7 @@
     "deploy:info": "node scripts/setup-deploy-auth.mjs --status --local-only",
     "deploy:doctor": "node scripts/dispatch-cloud-deploy.mjs --status --check-local-oauth",
     "deploy:cloud": "node scripts/dispatch-cloud-deploy.mjs",
-    "test:cloud-deploy": "node --test scripts/setup-deploy-auth.test.mjs scripts/cloud-deploy-runners.test.mjs scripts/release-required-ci.test.mjs scripts/dispatch-cloud-workflow.test.mjs",
+    "test:cloud-deploy": "node --test scripts/setup-deploy-auth.test.mjs scripts/cloud-deploy-runners.test.mjs scripts/release-required-ci.test.mjs scripts/dispatch-cloud-workflow.test.mjs scripts/deploy-manifest-briefing.test.mjs",
     "cloudflare:static:dry-run": "node scripts/deploy-cloudflare-static.mjs --dry-run",
     "cloudflare:static:deploy": "node scripts/deploy-cloudflare-static.mjs --production",
     "verify:free-infrastructure": "node scripts/verify-free-infrastructure-policy.mjs && node scripts/generate-federated-data-plane-policy.mjs --check && node scripts/verify-free-database-federation.mjs",

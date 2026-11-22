@@ -92,6 +92,13 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 
 ## 8. 운영 및 배포 정책
 
+### LLM 공통 배포 요약 카드
+1. **단일 정본 매니페스트:** [`deploy/DEPLOY_MANIFEST.json`](deploy/DEPLOY_MANIFEST.json) (현역: Cloudflare `https://www.toonstudio.cloud` · 서울 onpod `https://toonstudio-api.onpod.ai` / `toonstudio-db`, 승인 정책: `deploy/STANDING_APPROVAL.json`)
+2. **상태·변경 범위 JSON 브리핑:** `pnpm run deploy:doctor -- --json` (`activeInfra`·`retiredInfra`·`forbiddenCommands`·`changeScope`·`nextExactCommand`·`workflowDispatchCommand` 확인, 시크릿 출력 금지)
+3. **클라우드 1줄 스마트 배포:** `gh workflow run cloud-production-deploy.yml -f mode=smart-release` (`web-only`·`api-only`·`dry-run` 지원, onpod 반영 시 `-f onpod_confirm=CONFIRM-ONPOD-TOONSTUDIO-API` 필수)
+4. **로컬 웹 OAuth 자가치유:** 셸 `CLOUDFLARE_API_TOKEN` 충돌 시 `env -u CLOUDFLARE_API_TOKEN pnpm run deploy:web -- --wrangler-oauth` 실행
+5. **퇴역·절대 금지:** `vercel`·`render`·`supabase` 재도입 금지, `onpod app deploy --attach-db`·`onpod app rollback`·`onpod app rm`·`onpod db rm` 금지 (API 교체·복구는 `onpod app update toonstudio-api --image ghcr.io/blue45f/toonspectrum-core-api:<40자리-sha>`만 허용)
+
 이 정책은 이전의 main 자동 배포와 `[deploy]` 예외 지침을 대체한다.
 세부 절차는 [`docs/operations/ai-deployment-quickstart.md`](docs/operations/ai-deployment-quickstart.md), `docs/operations/minimum-cost-deployment-policy.md`, `DEPLOY.md`를 따른다.
 

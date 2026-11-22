@@ -14,12 +14,13 @@
  */
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
-import { delimiter, dirname, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
   GITHUB_DEPLOY_ENVIRONMENT,
   GITHUB_REPO_SLUG,
+  isPlaceholderCredentialValue,
   redactSensitiveText,
 } from "./lib/deploy-auth-env.mjs";
 import {
@@ -29,30 +30,41 @@ import {
   resolveChangedFilesBetweenRefs,
   resolveDeployBaseSha,
 } from "./lib/deploy-change-scope.mjs";
+import {
+  WORKFLOW_DEPLOY_MODES,
+  assertSafeDeployArguments,
+  buildCloudflareTokenConflictGuidance,
+  buildCrossLlmDeployBriefing,
+  buildSelfHealingExecPath,
+} from "./lib/deploy-manifest-briefing.mjs";
 import { inspectReleaseCi } from "./release-required-ci.mjs";
 import { REQUIRED_ONPOD_CONFIRM } from "./cloud-deploy-onpod.mjs";
-import { inspectGitHubEnvironmentStatus } from "./setup-deploy-auth.mjs";
+import { inspectGitHubEnvironmentStatus, verifyCloudflareApiToken } from "./setup-deploy-auth.mjs";
 
 const MODULE_PATH = realpathSync(fileURLToPath(import.meta.url));
 export const ROOT = resolve(dirname(MODULE_PATH), "..");
 export const CLOUD_DEPLOY_WORKFLOW_FILE = "cloud-production-deploy.yml";
 
 function buildExecEnv(baseEnv = process.env) {
-  const nodeBin = dirname(process.execPath);
-  const existing = (baseEnv.PATH ?? "").split(delimiter).filter(Boolean);
-  const mergedPath = [nodeBin, "/opt/homebrew/bin", "/usr/local/bin", ...existing].filter(
-    (entry, index, list) => list.indexOf(entry) === index,
-  );
-  return { ...baseEnv, PATH: mergedPath.join(delimiter) };
+  const healed = buildSelfHealingExecPath({ env: baseEnv });
+  return {
+    ...baseEnv,
+    PATH: healed.path,
+    ...(healed.home ? { HOME: healed.home } : {}),
+  };
 }
 
 export function parseCloudDispatchArgs(argv) {
+  assertSafeDeployArguments(argv, { context: "deploy:cloud" });
+
   const out = {
     help: false,
     status: false,
+    json: false,
     localOAuth: false,
     dryRun: false,
     smart: false,
+    mode: "",
     web: false,
     apex: false,
     apiImage: false,
@@ -71,10 +83,16 @@ export function parseCloudDispatchArgs(argv) {
     if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") out.help = true;
     else if (arg === "--status") out.status = true;
+    else if (arg === "--json") out.json = true;
     else if (arg === "--check-local-oauth") out.localOAuth = true;
     else if (arg === "--dry-run") out.dryRun = true;
     else if (arg === "--smart") out.smart = true;
-    else if (arg === "--web") out.web = true;
+    else if (arg === "--mode" && argv[i + 1]) {
+      out.mode = argv[i + 1].trim();
+      i += 1;
+    } else if (arg.startsWith("--mode=")) {
+      out.mode = arg.slice("--mode=".length).trim();
+    } else if (arg === "--web") out.web = true;
     else if (arg === "--apex") out.apex = true;
     else if (arg === "--api-image") out.apiImage = true;
     else if (arg === "--api-onpod") out.apiOnpod = true;
@@ -102,6 +120,12 @@ export function parseCloudDispatchArgs(argv) {
     }
   }
 
+  if (out.mode && !WORKFLOW_DEPLOY_MODES.includes(out.mode)) {
+    throw new Error(
+      `[deploy:cloud] 지원하지 않는 \`--mode\` 값입니다. 허용 값: ${WORKFLOW_DEPLOY_MODES.join(", ")}`,
+    );
+  }
+
   if (!Number.isSafeInteger(out.watchIntervalSec) || out.watchIntervalSec < 5 || out.watchIntervalSec > 60) {
     throw new Error("[deploy:cloud] `--watch-interval`은 5~60초 사이의 정수여야 합니다.");
   }
@@ -116,12 +140,18 @@ export function parseCloudDispatchArgs(argv) {
   const anyMutating =
     out.web || out.apex || out.apiImage || out.apiOnpod || out.syncApiEnv || out.syncWorkerSecrets;
   if (out.localOAuth) {
-    if (out.dryRun || out.smart || anyMutating || out.watch) {
+    if (out.dryRun || out.smart || anyMutating || out.watch || out.mode) {
       throw new Error("[deploy:cloud] --check-local-oauth는 읽기 전용 상태 조회에서 사용할 수 있습니다.");
     }
     out.status = true;
   }
-  if (out.dryRun && (anyMutating || out.smart)) {
+  if (out.json) {
+    if (out.dryRun || out.smart || anyMutating || out.watch || out.mode) {
+      throw new Error("[deploy:cloud] --json은 읽기 전용 상태 조회(--status / deploy:doctor)에서만 사용할 수 있습니다.");
+    }
+    out.status = true;
+  }
+  if ((out.dryRun || out.mode === "dry-run") && (anyMutating || out.smart)) {
     throw new Error("[deploy:cloud] `--dry-run`은 실제 배포 플래그(`--web`, `--api-onpod`, `--smart` 등)와 함께 쓸 수 없습니다.");
   }
   if ((out.apiOnpod || out.syncApiEnv) && !out.confirmOnpod) {
@@ -129,11 +159,11 @@ export function parseCloudDispatchArgs(argv) {
       "[deploy:cloud] 서울 onpod 변경(`--api-onpod`, `--sync-api-env`)은 상시 승인 범위 밖이므로 `--confirm-onpod`를 명시해야 합니다.",
     );
   }
-  if (out.syncWorkerSecrets && !out.web) {
+  if (out.syncWorkerSecrets && !out.web && out.mode !== "web-only") {
     throw new Error("[deploy:cloud] `--sync-worker-secrets`는 `--web` 배포와 함께 실행하세요.");
   }
 
-  if (!out.help && !out.status && !out.dryRun && !anyMutating && !out.smart) {
+  if (!out.help && !out.status && !out.dryRun && !anyMutating && !out.smart && !out.mode) {
     out.status = true;
   }
   return out;
@@ -181,7 +211,7 @@ export function inspectCommitRequiredGates(
 }
 
 export function buildWorkflowDispatchFields(options, resolvedSha) {
-  return {
+  const fields = {
     ref: resolvedSha,
     deploy_web: String(Boolean(options.web)),
     deploy_apex_redirect: String(Boolean(options.apex)),
@@ -191,6 +221,10 @@ export function buildWorkflowDispatchFields(options, resolvedSha) {
     sync_worker_secrets: String(Boolean(options.syncWorkerSecrets)),
     onpod_confirm: options.confirmOnpod ? REQUIRED_ONPOD_CONFIRM : "NONE",
   };
+  if (options.mode) {
+    fields.mode = options.mode;
+  }
+  return fields;
 }
 
 export function inspectDeployChangeScope({
@@ -315,7 +349,9 @@ function printHelp(log = console.log) {
     [
       "사용법: pnpm run deploy:cloud -- [옵션]",
       "  --status                원격 origin/main SHA, 필수 CI(core·verify), GitHub Environment 및 변경 영역 진단(기본)",
+      "  --json                  크로스-LLM 기계 판독용 단일 JSON 브리핑 출력 (`pnpm run deploy:doctor -- --json`, 시크릿 0노출)",
       "  --check-local-oauth     로컬 Wrangler 로그인으로 Worker 버전과 R2 객체 조회 (deploy:doctor)",
+      "  --mode <프리셋>         Actions 단일 프리셋 지정 (custom | smart-release | web-only | api-only | dry-run)",
       "  --smart                 변경 영역(webChanged·apiChanged·apexChanged)에 따라 무변경 단위를 안전 건너뛰기/자동 선별",
       "  --base-sha <40자리-sha> 변경 영역 비교 기준 SHA 명시 (생략 시 배포 원장 → 직전 커밋 순으로 자동 탐색)",
       "  --dry-run               실제 배포 없이 클라우드 빌드 + Cloudflare/Onpod 드라이런 워크플로 실행",
@@ -333,32 +369,123 @@ function printHelp(log = console.log) {
   );
 }
 
+async function inspectLocalOAuthAndTokenConflict({
+  rootDir,
+  execEnv,
+  inspectLocalCloudflareOAuthImpl,
+  resolveLocalCloudflareAccountIdImpl,
+  verifyCloudflareApiTokenImpl,
+}) {
+  let resolveAccountId = resolveLocalCloudflareAccountIdImpl;
+  let inspectOAuth = inspectLocalCloudflareOAuthImpl;
+  if (!resolveAccountId || !inspectOAuth) {
+    const mod = await import("./lib/cloudflare-local-oauth.mjs");
+    resolveAccountId ??= mod.resolveLocalCloudflareAccountId;
+    inspectOAuth ??= mod.inspectLocalCloudflareOAuth;
+  }
+  const accountId = resolveAccountId(rootDir, execEnv);
+  const oauthResult = await inspectOAuth({ accountId, env: execEnv });
+  const shellToken = (execEnv.CLOUDFLARE_API_TOKEN || "").trim();
+  const shellApiTokenPresent = Boolean(shellToken);
+  let shellApiTokenValid = null;
+  if (shellApiTokenPresent && accountId) {
+    if (isPlaceholderCredentialValue(shellToken)) {
+      shellApiTokenValid = false;
+    } else {
+      try {
+        const checked = await verifyCloudflareApiTokenImpl(shellToken, accountId);
+        shellApiTokenValid = Boolean(checked?.ok);
+      } catch {
+        shellApiTokenValid = false;
+      }
+    }
+  }
+  return {
+    checked: true,
+    auth: oauthResult.auth ?? "unavailable",
+    accountIdConfigured: Boolean(accountId),
+    workerStatus: oauthResult.workerStatus ?? null,
+    r2Status: oauthResult.r2Status ?? null,
+    shellApiTokenPresent,
+    shellApiTokenValid,
+  };
+}
+
 export async function printCloudStatus({
   rootDir = ROOT,
   execEnv = buildExecEnv(),
   targetSha = "",
   baseSha = "",
   localOAuth = false,
+  json = false,
   log = console.log,
   resolveOriginMainShaImpl = resolveOriginMainSha,
   inspectGitHubEnvironmentStatusImpl = inspectGitHubEnvironmentStatus,
   inspectCommitRequiredGatesImpl = inspectCommitRequiredGates,
   inspectDeployChangeScopeImpl = inspectDeployChangeScope,
+  inspectLocalCloudflareOAuthImpl,
+  resolveLocalCloudflareAccountIdImpl,
+  verifyCloudflareApiTokenImpl = verifyCloudflareApiToken,
 } = {}) {
-  const originMainSha = resolveOriginMainShaImpl({ rootDir, execEnv });
-  const effectiveSha = targetSha || originMainSha;
-  const ghEnv = inspectGitHubEnvironmentStatusImpl({ rootDir, execEnv });
-  let gateInfo;
+  let originMainSha = null;
+  let originMainError = null;
   try {
-    gateInfo = inspectCommitRequiredGatesImpl(effectiveSha, { rootDir, execEnv });
-  } catch {
-    gateInfo = null;
+    originMainSha = resolveOriginMainShaImpl({ rootDir, execEnv });
+  } catch (error) {
+    if (!json) throw error;
+    originMainError = error instanceof Error ? error.message : String(error);
   }
-  let scopeInfo;
+  const effectiveSha = targetSha || originMainSha || "";
+
+  let ghEnv;
   try {
-    scopeInfo = inspectDeployChangeScopeImpl({ rootDir, targetSha: effectiveSha, baseSha, execEnv });
+    ghEnv = inspectGitHubEnvironmentStatusImpl({ rootDir, execEnv });
   } catch {
-    scopeInfo = { unknownScope: true, baseSha: "", baseShaSource: "unavailable", scope: null };
+    ghEnv = { ghReady: false, environmentExists: false, configuredVariables: [], configuredSecrets: [] };
+  }
+
+  let gateInfo = null;
+  if (effectiveSha) {
+    try {
+      gateInfo = inspectCommitRequiredGatesImpl(effectiveSha, { rootDir, execEnv });
+    } catch {
+      gateInfo = null;
+    }
+  }
+
+  let scopeInfo = { unknownScope: true, baseSha: "", baseShaSource: "unavailable", diffSource: "unavailable", scope: null };
+  if (effectiveSha) {
+    try {
+      scopeInfo = inspectDeployChangeScopeImpl({ rootDir, targetSha: effectiveSha, baseSha, execEnv });
+    } catch {
+      scopeInfo = { unknownScope: true, baseSha: "", baseShaSource: "unavailable", diffSource: "unavailable", scope: null };
+    }
+  }
+
+  let localOAuthInfo = null;
+  if (localOAuth) {
+    localOAuthInfo = await inspectLocalOAuthAndTokenConflict({
+      rootDir,
+      execEnv,
+      inspectLocalCloudflareOAuthImpl,
+      resolveLocalCloudflareAccountIdImpl,
+      verifyCloudflareApiTokenImpl,
+    });
+  }
+
+  if (json) {
+    const briefing = buildCrossLlmDeployBriefing({
+      rootDir,
+      originMainSha,
+      originMainError,
+      targetSha,
+      gateInfo,
+      ghEnv,
+      scopeInfo,
+      localOAuthInfo,
+    });
+    log(JSON.stringify(briefing, null, 2));
+    return briefing;
   }
 
   log(localOAuth ? "ToonStudio 운영 배포 진단" : "ToonStudio GitHub Actions 배포 상태");
@@ -392,17 +519,28 @@ export async function printCloudStatus({
     log(`• 등록된 Environment Variables: ${ghEnv.configuredVariables.join(", ") || "없음"}`);
     log(`• 등록된 Environment Secrets: ${ghEnv.configuredSecrets.join(", ") || "없음"}`);
   }
-  if (localOAuth) {
-    const { inspectLocalCloudflareOAuth, resolveLocalCloudflareAccountId } = await import("./lib/cloudflare-local-oauth.mjs");
-    const accountId = resolveLocalCloudflareAccountId(rootDir, execEnv);
-    const { workerStatus, r2Status } = await inspectLocalCloudflareOAuth({ accountId, env: execEnv });
+  if (localOAuth && localOAuthInfo) {
+    const { workerStatus, r2Status, shellApiTokenPresent, shellApiTokenValid, accountIdConfigured } = localOAuthInfo;
     log(`• 로컬 Wrangler OAuth 조회 — Worker 버전 ${workerStatus ?? "미확인"}, R2 객체 ${r2Status ?? "미확인"}`);
-    if (workerStatus === 200 && r2Status === 200) {
+    const localReady = workerStatus === 200 && r2Status === 200;
+    if (localReady) {
       log("  로컬 웹·R2 배포 명령: pnpm run deploy:web -- --wrangler-oauth");
     } else {
       log("  로컬 CLOUDFLARE_ACCOUNT_ID와 Wrangler 로그인, 운영 Worker·R2 조회 권한을 확인하세요.");
     }
+    if (shellApiTokenPresent && (shellApiTokenValid === false || localReady)) {
+      const guidance = buildCloudflareTokenConflictGuidance({
+        hasShellToken: true,
+        useLocalOAuth: false,
+        localOAuthReady: localReady,
+        accountIdConfigured,
+      });
+      for (const line of guidance.lines) {
+        log(`  ${line}`);
+      }
+    }
   }
+  return null;
 }
 
 /** 응답에서 받은 실행 ID만 추적한다. 응답 유실 시 배포 요청을 다시 보내지 않는다. */
@@ -456,6 +594,7 @@ async function main() {
       targetSha: options.sha,
       baseSha: options.baseSha,
       localOAuth: options.localOAuth,
+      json: options.json,
     });
     return;
   }
@@ -469,7 +608,7 @@ async function main() {
   }
 
   const gateStatus = inspectCommitRequiredGates(targetSha, { execEnv });
-  if (!gateStatus.allGreen && !options.dryRun) {
+  if (!gateStatus.allGreen && !options.dryRun && options.mode !== "dry-run") {
     throw new Error(
       `[deploy:cloud] 대상 SHA(${targetSha})의 필수 CI가 아직 녹색이 아닙니다 (ci.yml main push ${gateStatus.runStatus}, core=${gateStatus.gates.core}, verify=${gateStatus.gates.verify}).`,
     );

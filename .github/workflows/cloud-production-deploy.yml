@@ -3,6 +3,17 @@ name: Cloud production deploy
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "단일 배포 프리셋 (custom=개별 체크박스, smart-release=변경 영역 자동 선별, web-only=웹+R2, api-only=Core API, dry-run=운영 미변경 검증)"
+        required: false
+        default: "custom"
+        type: choice
+        options:
+          - "custom"
+          - "smart-release"
+          - "web-only"
+          - "api-only"
+          - "dry-run"
       ref:
         description: "배포할 origin/main 소문자 40자리 커밋 SHA (비워두면 실행 시점 origin/main 최신 SHA 자동 고정)"
         required: false
@@ -65,6 +76,15 @@ jobs:
     outputs:
       release_sha: ${{ steps.gate.outputs.release_sha }}
       any_live_deploy: ${{ steps.gate.outputs.any_live_deploy }}
+      resolved_mode: ${{ steps.gate.outputs.resolved_mode }}
+      effective_deploy_web: ${{ steps.gate.outputs.effective_deploy_web }}
+      effective_deploy_apex: ${{ steps.gate.outputs.effective_deploy_apex }}
+      effective_build_api_image: ${{ steps.gate.outputs.effective_build_api_image }}
+      effective_deploy_api_onpod: ${{ steps.gate.outputs.effective_deploy_api_onpod }}
+      effective_sync_api_env_onpod: ${{ steps.gate.outputs.effective_sync_api_env_onpod }}
+      effective_sync_worker_secrets: ${{ steps.gate.outputs.effective_sync_worker_secrets }}
+      smart_noop: ${{ steps.gate.outputs.smart_noop }}
+      scope_summary: ${{ steps.gate.outputs.scope_summary }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -76,6 +96,7 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_MODE: ${{ inputs.mode }}
           INPUT_REF: ${{ inputs.ref }}
           DEPLOY_WEB: ${{ inputs.deploy_web }}
           DEPLOY_APEX: ${{ inputs.deploy_apex_redirect }}
@@ -109,31 +130,19 @@ jobs:
             RELEASE_SHA="$ORIGIN_MAIN_SHA"
           fi
 
-          if [[ "$SYNC_WORKER_SECRETS" == "true" && "$DEPLOY_WEB" != "true" ]]; then
-            echo "::error::sync_worker_secrets는 deploy_web=true와 함께만 사용할 수 있습니다."
-            exit 1
-          fi
-
-          if [[ "$DEPLOY_API_ONPOD" == "true" || "$SYNC_API_ENV_ONPOD" == "true" ]]; then
-            if [[ "$ONPOD_CONFIRM" != "CONFIRM-ONPOD-TOONSTUDIO-API" ]]; then
-              echo "::error::서울 onpod 변경은 상시 승인 범위 밖이므로 onpod_confirm=CONFIRM-ONPOD-TOONSTUDIO-API 선택이 필수입니다."
-              exit 1
-            fi
-          fi
-
-          ANY_LIVE="false"
-          if [[ "$DEPLOY_WEB" == "true" || "$DEPLOY_APEX" == "true" || "$BUILD_API_IMAGE" == "true" || "$DEPLOY_API_ONPOD" == "true" || "$SYNC_API_ENV_ONPOD" == "true" ]]; then
-            ANY_LIVE="true"
-          fi
+          ANY_LIVE="$(
+            RELEASE_SHA="$RELEASE_SHA" \
+            node scripts/lib/deploy-manifest-briefing.mjs --resolve-workflow-plan
+          )"
 
           node scripts/release-required-ci.mjs "$GITHUB_REPOSITORY" "$RELEASE_SHA" "$ANY_LIVE"
 
           echo "release_sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
-          echo "any_live_deploy=$ANY_LIVE" >> "$GITHUB_OUTPUT"
           {
             echo "### 🔒 클라우드 배포 릴리스 게이트 통과"
             echo "- **고정된 origin/main SHA:** \`$RELEASE_SHA\`"
-            echo "- **실행 모드:** $([[ "$ANY_LIVE" == "true" ]] && echo "운영 반영(선택된 단위만)" || echo "안전 드라이런(운영 미변경)")"
+            echo "- **프리셋 모드(\`mode\`):** \`$INPUT_MODE\`"
+            echo "- **실행 유형:** $([[ "$ANY_LIVE" == "true" ]] && echo "운영 반영(선택된 단위만)" || echo "안전 드라이런/무변경 건너뛰기(운영 미변경)")"
           } >> "$GITHUB_STEP_SUMMARY"
 
   cloudflare-web:
@@ -141,10 +150,18 @@ jobs:
     needs: verify-release-gate
     if: >-
       github.ref == 'refs/heads/main' &&
-      (inputs.deploy_web == true || needs.verify-release-gate.outputs.any_live_deploy == 'false')
+      (
+        inputs.deploy_web == true ||
+        needs.verify-release-gate.outputs.effective_deploy_web == 'true' ||
+        (needs.verify-release-gate.outputs.any_live_deploy == 'false' && needs.verify-release-gate.outputs.smart_noop != 'true')
+      )
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment: production-deploy
+    outputs:
+      web_sha: ${{ steps.deploy_web.outputs.web_sha }}
+      worker_version_id: ${{ steps.deploy_web.outputs.worker_version_id }}
+      previous_worker_version_id: ${{ steps.deploy_web.outputs.previous_worker_version_id }}
     env:
       CI: "1"
       NODE_OPTIONS: --max-old-space-size=12288
@@ -156,7 +173,7 @@ jobs:
           persist-credentials: false
 
       - name: 빌드 전 운영 웹 배포 인증 설정 확인
-        if: inputs.deploy_web
+        if: ${{ inputs.deploy_web == true || needs.verify-release-gate.outputs.effective_deploy_web == 'true' }}
         env:
           HAS_ACCOUNT: ${{ vars.CLOUDFLARE_ACCOUNT_ID != '' }}
           HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
@@ -219,14 +236,15 @@ jobs:
           node scripts/verify-static-service-worker.mjs
 
       - name: Execute Cloudflare static web & R2 dry-run
-        if: ${{ inputs.deploy_web == false }}
+        if: ${{ inputs.deploy_web == false && needs.verify-release-gate.outputs.effective_deploy_web != 'true' }}
         shell: bash
         env:
           CORE_API_ORIGIN: ${{ vars.CORE_API_ORIGIN || 'https://toonstudio-api.onpod.ai' }}
         run: node scripts/cloud-deploy-cloudflare.mjs --unit=static-web --dry-run
 
       - name: Deploy Cloudflare static web & R2 with live smoke verification
-        if: ${{ inputs.deploy_web == true }}
+        id: deploy_web
+        if: ${{ inputs.deploy_web == true || needs.verify-release-gate.outputs.effective_deploy_web == 'true' }}
         shell: bash
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -234,7 +252,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CORE_ORIGIN_SECRET: ${{ secrets.CORE_ORIGIN_SECRET }}
           NEIS_API_KEY: ${{ secrets.NEIS_API_KEY }}
-          SYNC_WORKER_SECRETS: ${{ inputs.sync_worker_secrets }}
+          SYNC_WORKER_SECRETS: ${{ needs.verify-release-gate.outputs.effective_sync_worker_secrets }}
         run: |
           set -euo pipefail
           extra_args=()
@@ -244,7 +262,7 @@ jobs:
           node scripts/cloud-deploy-cloudflare.mjs --unit=static-web "${extra_args[@]}"
 
       - uses: actions/upload-artifact@v7
-        if: ${{ always() && inputs.deploy_web == true }}
+        if: ${{ always() && (inputs.deploy_web == true || needs.verify-release-gate.outputs.effective_deploy_web == 'true') }}
         with:
           name: cloudflare-web-rollback-${{ needs.verify-release-gate.outputs.release_sha }}
           path: artifacts/cloud-deploy/cloudflare-rollback.json
@@ -254,7 +272,9 @@ jobs:
   deploy-cloudflare-apex:
     name: Deploy Cloudflare apex redirect Worker
     needs: verify-release-gate
-    if: ${{ github.ref == 'refs/heads/main' && inputs.deploy_apex_redirect == true }}
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (inputs.deploy_apex_redirect == true || needs.verify-release-gate.outputs.effective_deploy_apex == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: production-deploy
@@ -288,12 +308,19 @@ jobs:
     needs: verify-release-gate
     if: >-
       github.ref == 'refs/heads/main' &&
-      (inputs.build_api_image == true || inputs.deploy_api_onpod == true)
+      (
+        inputs.build_api_image == true ||
+        inputs.deploy_api_onpod == true ||
+        needs.verify-release-gate.outputs.effective_build_api_image == 'true' ||
+        needs.verify-release-gate.outputs.effective_deploy_api_onpod == 'true'
+      )
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
       packages: write
+    outputs:
+      api_image_sha: ${{ needs.verify-release-gate.outputs.release_sha }}
     env:
       CI: "1"
       NODE_OPTIONS: --max-old-space-size=8192
@@ -316,7 +343,7 @@ jobs:
         id: check_existing
         shell: bash
         env:
-          DEPLOY_API_ONPOD: ${{ inputs.deploy_api_onpod }}
+          DEPLOY_API_ONPOD: ${{ needs.verify-release-gate.outputs.effective_deploy_api_onpod }}
         run: |
           set -euo pipefail
           if docker buildx imagetools inspect "${IMAGE_NAME}:${RELEASE_SHA}" >/dev/null 2>&1; then
@@ -407,11 +434,20 @@ jobs:
       github.ref == 'refs/heads/main' &&
       needs.verify-release-gate.result == 'success' &&
       (needs.build-api-container.result == 'success' || needs.build-api-container.result == 'skipped') &&
-      (inputs.deploy_api_onpod == true || inputs.sync_api_env_onpod == true) &&
+      (
+        inputs.deploy_api_onpod == true ||
+        inputs.sync_api_env_onpod == true ||
+        needs.verify-release-gate.outputs.effective_deploy_api_onpod == 'true' ||
+        needs.verify-release-gate.outputs.effective_sync_api_env_onpod == 'true'
+      ) &&
       inputs.onpod_confirm == 'CONFIRM-ONPOD-TOONSTUDIO-API'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     environment: production-deploy
+    outputs:
+      api_sha: ${{ steps.deploy_onpod.outputs.api_sha }}
+      active_api_image: ${{ steps.deploy_onpod.outputs.active_api_image }}
+      previous_api_image: ${{ steps.deploy_onpod.outputs.previous_api_image }}
     env:
       CI: "1"
       RELEASE_SHA: ${{ needs.verify-release-gate.outputs.release_sha }}
@@ -440,13 +476,14 @@ jobs:
           done
 
       - name: Update onpod Core API image / runtime env & verify live origin readiness
+        id: deploy_onpod
         shell: bash
         env:
           ONPOD_APP_NAME: ${{ vars.ONPOD_APP_NAME || 'toonstudio-api' }}
           CORE_API_ORIGIN: ${{ vars.CORE_API_ORIGIN || 'https://toonstudio-api.onpod.ai' }}
           ONPOD_CONFIRM: ${{ inputs.onpod_confirm }}
-          DEPLOY_API_ONPOD: ${{ inputs.deploy_api_onpod }}
-          SYNC_API_ENV_ONPOD: ${{ inputs.sync_api_env_onpod }}
+          DEPLOY_API_ONPOD: ${{ needs.verify-release-gate.outputs.effective_deploy_api_onpod }}
+          SYNC_API_ENV_ONPOD: ${{ needs.verify-release-gate.outputs.effective_sync_api_env_onpod }}
           ONPOD_DEPLOY_TOKEN: ${{ secrets.ONPOD_DEPLOY_TOKEN }}
           ONPOD_API_ENV_JSON: ${{ secrets.ONPOD_API_ENV_JSON }}
         run: |
@@ -469,3 +506,63 @@ jobs:
             artifacts/cloud-deploy/onpod-verification.json
           if-no-files-found: ignore
           retention-days: 14
+
+  release-summary:
+    name: Post-deploy smoke & unified release summary
+    needs:
+      - verify-release-gate
+      - cloudflare-web
+      - deploy-cloudflare-apex
+      - build-api-container
+      - deploy-onpod-api
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      needs.verify-release-gate.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.verify-release-gate.outputs.release_sha }}
+          persist-credentials: false
+
+      - name: Run combined post-deploy smoke verification
+        id: post_smoke
+        if: >-
+          (needs.verify-release-gate.outputs.effective_deploy_web == 'true' && needs.cloudflare-web.result == 'success') ||
+          (needs.verify-release-gate.outputs.effective_deploy_api_onpod == 'true' && needs.deploy-onpod-api.result == 'success')
+        shell: bash
+        env:
+          PREV_WORKER_VERSION: ${{ needs.cloudflare-web.outputs.previous_worker_version_id }}
+          PREV_API_IMAGE: ${{ needs.deploy-onpod-api.outputs.previous_api_image }}
+        run: |
+          set -euo pipefail
+          smoke_args=(--retries 6 --retry-delay-ms 5000)
+          if [[ -n "$PREV_WORKER_VERSION" && "$PREV_WORKER_VERSION" != 70517470* ]]; then
+            smoke_args+=(--prev-worker-version "$PREV_WORKER_VERSION")
+          fi
+          prev_sha="${PREV_API_IMAGE##*:}"
+          if [[ "$prev_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            smoke_args+=(--prev-api-sha "$prev_sha")
+          fi
+          node scripts/verify-production-post-deploy-smoke.mjs "${smoke_args[@]}"
+
+      - name: Write unified cross-LLM release summary & safe rollback commands
+        if: always()
+        shell: bash
+        env:
+          RESOLVED_MODE: ${{ needs.verify-release-gate.outputs.resolved_mode }}
+          RELEASE_SHA: ${{ needs.verify-release-gate.outputs.release_sha }}
+          WEB_SHA: ${{ needs.cloudflare-web.outputs.web_sha }}
+          API_SHA: ${{ needs.deploy-onpod-api.outputs.api_sha }}
+          API_IMAGE_SHA: ${{ needs.build-api-container.outputs.api_image_sha }}
+          WORKER_VERSION_ID: ${{ needs.cloudflare-web.outputs.worker_version_id }}
+          PREVIOUS_WORKER_VERSION_ID: ${{ needs.cloudflare-web.outputs.previous_worker_version_id }}
+          PREVIOUS_API_IMAGE: ${{ needs.deploy-onpod-api.outputs.previous_api_image }}
+          SMOKE_STATUS: ${{ steps.post_smoke.outcome }}
+          SMART_NOOP: ${{ needs.verify-release-gate.outputs.smart_noop }}
+          SCOPE_SUMMARY: ${{ needs.verify-release-gate.outputs.scope_summary }}
+        run: |
+          set -euo pipefail
+          node scripts/lib/deploy-manifest-briefing.mjs --write-step-summary

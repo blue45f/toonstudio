@@ -1,0 +1,173 @@
+{
+  "schemaVersion": "toonstudio.deploy-manifest.v1",
+  "status": "current",
+  "updatedAt": "2026-11-22",
+  "repository": "blue45f/toonstudio",
+  "branch": "main",
+  "workflow": {
+    "file": ".github/workflows/cloud-production-deploy.yml",
+    "environment": "production-deploy",
+    "modes": [
+      "custom",
+      "smart-release",
+      "web-only",
+      "api-only",
+      "dry-run"
+    ],
+    "defaultMode": "custom",
+    "onpodConfirmPhrase": "CONFIRM-ONPOD-TOONSTUDIO-API"
+  },
+  "approvalPolicy": {
+    "standingApprovalPath": "deploy/STANDING_APPROVAL.json",
+    "staticStandingApprovalPath": "deploy/cloudflare-static/STANDING_APPROVAL.json",
+    "environmentContractPath": "config/deployment/environment-contract.json",
+    "infrastructureMapPath": "docs/operations/infrastructure-map.md",
+    "quickstartPath": "docs/operations/ai-deployment-quickstart.md",
+    "localSecretStore": ".env.infrastructure.local",
+    "standingScopes": [
+      "cloudflare-static-production",
+      "cloudflare-apex-redirect-production",
+      "core-api-container-release"
+    ],
+    "explicitApprovalRequired": [
+      "onpod-seoul-api",
+      "onpod-seoul-db",
+      "cloudflare-realtime",
+      "cloudflare-analytics",
+      "dns-or-domain-changes",
+      "secrets-or-env-changes",
+      "paid-plan-changes"
+    ]
+  },
+  "activeInfra": {
+    "cloudflare-static": {
+      "provider": "cloudflare",
+      "service": "toonspectrum-web",
+      "url": "https://www.toonstudio.cloud",
+      "r2Bucket": "toonspectrum-public-assets",
+      "configPath": "deploy/cloudflare-static/wrangler.jsonc",
+      "approval": "standing",
+      "preCutoverForbiddenVersionPrefix": "70517470"
+    },
+    "cloudflare-apex-redirect": {
+      "provider": "cloudflare",
+      "service": "toonstudio-apex-redirect",
+      "url": "https://toonstudio.cloud",
+      "configPath": "deploy/cloudflare-apex-redirect/wrangler.jsonc",
+      "approval": "standing"
+    },
+    "cloudflare-realtime": {
+      "provider": "cloudflare",
+      "service": "toonspectrum-realtime",
+      "url": "https://realtime.toonstudio.cloud",
+      "configPath": "deploy/cloudflare-realtime/wrangler.jsonc",
+      "approval": "explicit"
+    },
+    "cloudflare-analytics": {
+      "provider": "cloudflare",
+      "service": "toonspectrum-analytics",
+      "entryPath": "deploy/cloudflare-analytics/src/index.ts",
+      "approval": "explicit"
+    },
+    "onpod-seoul-api": {
+      "provider": "onpod",
+      "region": "seoul",
+      "app": "toonstudio-api",
+      "url": "https://toonstudio-api.onpod.ai",
+      "imageRepository": "ghcr.io/blue45f/toonspectrum-core-api",
+      "profile": "onpod-current",
+      "approval": "explicit",
+      "confirmPhrase": "CONFIRM-ONPOD-TOONSTUDIO-API"
+    },
+    "onpod-seoul-db": {
+      "provider": "onpod",
+      "region": "seoul",
+      "database": "toonstudio-db",
+      "engine": "postgresql-17",
+      "runtimeRoleMode": "single-owner",
+      "internalHost": "toonstudio-db.db.onpod.local:5432",
+      "approval": "explicit"
+    }
+  },
+  "retiredInfra": [
+    {
+      "id": "vercel",
+      "status": "retired",
+      "forbiddenDomains": [
+        "vercel.app"
+      ],
+      "reason": "Vercel 런타임·설정·배포 워크플로는 완전 퇴역 상태이며 재도입을 금지한다."
+    },
+    {
+      "id": "render",
+      "status": "retired",
+      "retiredAt": "2026-10-23",
+      "forbiddenDomains": [
+        "onrender.com"
+      ],
+      "reason": "서울 onpod 컷오버(2026-10-23)로 Render 서비스가 삭제되었으며 재배포·복구·승계 대상이 아니다."
+    },
+    {
+      "id": "supabase",
+      "status": "legacy-exception-unused",
+      "forbiddenDomains": [
+        "supabase.co"
+      ],
+      "reason": "미사용 레거시 예외(SUPABASE_OBJECT_STORAGE_ENABLED=false)이며 신규 배포·연결·임의 삭제를 금지한다."
+    },
+    {
+      "id": "neon",
+      "status": "retired",
+      "retiredAt": "2026-10-22",
+      "forbiddenDomains": [
+        "neon.tech"
+      ],
+      "reason": "2026-10-22 소유자 삭제 완료된 과거 DB이며 onpod에 Neon 전용 마이그레이션·진단을 실행할 수 없다."
+    }
+  ],
+  "forbiddenCommands": [
+    {
+      "command": "onpod app deploy --attach-db",
+      "reason": "DB 비밀번호를 재발급·회전시키고 기존 런타임 시크릿 구성을 파손한다.",
+      "safeAlternative": "onpod app update toonstudio-api --image ghcr.io/blue45f/toonspectrum-core-api:<40자리-sha>"
+    },
+    {
+      "command": "onpod app rollback",
+      "reason": "환경변수 세대까지 함께 되돌려 출처 인증 시크릿 짝과 DB 비밀번호를 파손한다.",
+      "safeAlternative": "onpod app update toonstudio-api --image ghcr.io/blue45f/toonspectrum-core-api:<직전-정상-40자리-sha>"
+    },
+    {
+      "command": "onpod app rm",
+      "reason": "운영 서울 Core API 앱을 삭제하는 파괴적 명령이다.",
+      "safeAlternative": "onpod app status toonstudio-api --json"
+    },
+    {
+      "command": "onpod db rm",
+      "reason": "운영 PostgreSQL 원장(toonstudio-db)을 영구 삭제하는 파괴적 명령이다.",
+      "safeAlternative": "onpod db status toonstudio-db"
+    }
+  ],
+  "commands": {
+    "doctor": "pnpm run deploy:doctor",
+    "doctorJson": "pnpm run deploy:doctor -- --json",
+    "verify": "pnpm run deploy:verify",
+    "preflight": "pnpm run deploy:preflight",
+    "webDryRun": "pnpm run deploy:web:dry-run",
+    "webDeployLocal": "pnpm run deploy:web",
+    "webDeployLocalOAuth": "env -u CLOUDFLARE_API_TOKEN pnpm run deploy:web -- --wrangler-oauth",
+    "cloudStatus": "pnpm run deploy:cloud -- --status",
+    "cloudDryRun": "pnpm run deploy:cloud -- --dry-run --watch",
+    "cloudSmartRelease": "pnpm run deploy:cloud -- --smart --watch",
+    "cloudWeb": "pnpm run deploy:cloud -- --web --watch",
+    "cloudApiImage": "pnpm run deploy:cloud -- --api-image --watch",
+    "cloudApiOnpod": "pnpm run deploy:cloud -- --api-onpod --confirm-onpod --watch",
+    "workflowSmartRelease": "gh workflow run cloud-production-deploy.yml -f mode=smart-release",
+    "workflowWebOnly": "gh workflow run cloud-production-deploy.yml -f mode=web-only",
+    "workflowApiOnly": "gh workflow run cloud-production-deploy.yml -f mode=api-only -f onpod_confirm=CONFIRM-ONPOD-TOONSTUDIO-API",
+    "workflowDryRun": "gh workflow run cloud-production-deploy.yml -f mode=dry-run",
+    "smokeOrigin": "pnpm run deploy:status:origin",
+    "smokePostDeploy": "node scripts/verify-production-post-deploy-smoke.mjs",
+    "rollbackWeb": "pnpm exec wrangler versions deploy <version-id>@100 --name toonspectrum-web --yes",
+    "rollbackApi": "onpod app update toonstudio-api --image ghcr.io/blue45f/toonspectrum-core-api:<직전-정상-40자리-sha>"
+  }
+}
