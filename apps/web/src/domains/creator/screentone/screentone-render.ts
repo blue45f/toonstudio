@@ -9,6 +9,13 @@
  * 농도 0%는 완전 투명. 인쇄용 2치화는 toBinaryThreshold로 이어진다.
  */
 
+import {
+  renderScreentoneAndOutlineCpu,
+  type ComputeOutlineMode,
+  type ComputeScreentoneDotShape,
+  type ScreentoneAndOutlineResult,
+} from "../render/gpu-next/gpu-stylus-predict-and-screentone";
+
 import type { ScreentoneLayer, ScreentoneToneKind } from "./screentone-layer";
 
 /**
@@ -252,4 +259,48 @@ export function toBinaryThreshold(
     bitmap[i] = darkness * 255 >= t ? 1 : 0;
   }
   return { bitmap, width: w, height: h };
+}
+
+export interface ScreentoneComputeOutlineOptions {
+  readonly dotShape?: ComputeScreentoneDotShape;
+  readonly outlineMode?: ComputeOutlineMode;
+  readonly outlineWidthPx?: number;
+  readonly inkRgba?: readonly [number, number, number, number];
+  readonly outlineRgba?: readonly [number, number, number, number];
+  readonly useSourceLuma?: boolean;
+  readonly dpi?: number;
+}
+
+function mapLayerKindToComputeDotShape(kind: ScreentoneToneKind): ComputeScreentoneDotShape {
+  if (kind === "line") return "line";
+  if (kind === "cross") return "cross";
+  return "circle";
+}
+
+/**
+ * 차세대 WebGPU Compute 호환 비파괴 스크린톤·외곽선(Sobel/JFA) 경로로 RGBA 버퍼를 합성한다.
+ * 기존 `ScreentoneLayer` 파라미터를 `gpu-next` Compute/CPU 동등 엔진에 연결한다.
+ */
+export function renderScreentoneWithOutlineFallback(
+  srcRgba8: Uint8ClampedArray | Uint8Array,
+  width: number,
+  height: number,
+  params: ScreentoneLayer,
+  options: ScreentoneComputeOutlineOptions = {},
+): ScreentoneAndOutlineResult {
+  return renderScreentoneAndOutlineCpu(srcRgba8, {
+    width,
+    height,
+    dotShape: options.dotShape ?? mapLayerKindToComputeDotShape(params.kind),
+    lpi: params.lines,
+    dpi: options.dpi ?? SCREENTONE_CELL_BASE_PX,
+    angleDeg: params.angle,
+    density: clamp01(params.density / 100),
+    invertTone: params.invert === true,
+    useSourceLuma: options.useSourceLuma === true,
+    inkRgba: options.inkRgba,
+    outlineMode: options.outlineMode ?? "none",
+    outlineWidthPx: options.outlineWidthPx ?? 2,
+    outlineRgba: options.outlineRgba,
+  });
 }

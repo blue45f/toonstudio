@@ -13,6 +13,10 @@
  * 것 포함)를 패널이 결정할 수 있다.
  */
 
+import {
+  formatStudioGpuNextTelemetrySummary,
+  type StudioGpuNextDiagnosticsSnapshot,
+} from "./render/gpu-next/gpu-next-runtime-bridge";
 import { STUDIO_CAPABILITY_TIER_LABELS } from "./studio-capability-messages";
 import { describeStudioSafeModeReason } from "./studio-reliability-status-store";
 
@@ -86,6 +90,8 @@ export interface StudioDiagnosticsInput {
   readonly appVersion: string;
   /** 하드웨어 동시성 등 `capability` 가 담지 않는 페이지 컨텍스트. */
   readonly secureContext: boolean | null;
+  /** 차세대 WebGPU 버퍼 풀·프리웜업·HDR·프레임 버제팅 실측 스냅샷(선택). */
+  readonly gpuNext?: StudioGpuNextDiagnosticsSnapshot | null;
 }
 
 /* -------------------------------------------------------------- formatting */
@@ -292,6 +298,18 @@ function gpuGroup(input: StudioDiagnosticsInput): StudioDiagnosticsGroup {
             `조회 실패: ${adapter.reason ?? "이유 없음"}`,
           ),
   );
+
+  if (input.gpuNext) {
+    const next = input.gpuNext;
+    fields.push(
+      field(
+        "gpu.next-pipeline",
+        "차세대 WebGPU 파이프라인",
+        formatStudioGpuNextTelemetrySummary(next),
+        `누수 버퍼 ${next.bufferPool.leakedGpuBuffers}건 · 회수 타일 ${next.tileResidency.totalEvictedTiles}개 · EMA ${next.frameBudget.emaFrameMs.toFixed(1)}ms`,
+      ),
+    );
+  }
 
   return { id: "gpu", label: "GPU · 렌더링", fields };
 }

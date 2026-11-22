@@ -112,6 +112,39 @@ function useStudioViewPerformanceMetrics(
   return metrics;
 }
 
+function useStudioGpuNextTelemetrySummary(
+  enabled: boolean,
+  metrics: StudioViewPerformanceMetrics
+): string | null {
+  const [summary, setSummary] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    void import("../render/gpu-next/gpu-next-runtime-bridge")
+      .then((bridge) => {
+        if (!active) return;
+        const hub = bridge.getStudioGpuNextRuntimeHub();
+        if (metrics.sampleCount > 0 && metrics.averageFrameMs > 0) {
+          hub.recordFrameSample(metrics.averageFrameMs, "idle");
+        }
+        setSummary(
+          bridge.formatStudioGpuNextTelemetrySummary(
+            hub.getDiagnosticsSnapshot()
+          )
+        );
+      })
+      .catch(() => {
+        // 선택적 GPU 텔레메트리 로드 실패는 기본 성능 HUD 표시에 영향을 주지 않는다.
+      });
+    return () => {
+      active = false;
+    };
+  }, [enabled, metrics.averageFrameMs, metrics.sampleCount]);
+
+  return enabled ? summary : null;
+}
+
 function useStudioViewportSize(
   viewportRef: RefObject<HTMLDivElement | null>,
   enabled: boolean
@@ -247,12 +280,14 @@ function PerformanceCard({
   zoomPercent,
   rotation,
   flipped,
+  gpuNextSummary,
 }: {
   readonly metrics: StudioViewPerformanceMetrics;
   readonly viewportSize: ViewportSize;
   readonly zoomPercent: number;
   readonly rotation: number;
   readonly flipped: boolean;
+  readonly gpuNextSummary: string | null;
 }) {
   const dpr =
     typeof window === "undefined"
@@ -302,6 +337,14 @@ function PerformanceCard({
         <span>회전 {rotation}°</span>
         <span>{flipped ? "좌우 반전" : "원본 방향"}</span>
       </div>
+      {gpuNextSummary ? (
+        <p
+          className="mt-1.5 truncate border-t border-line/60 pt-1.5 font-mono text-[10px] tabular-nums text-fg-3"
+          data-studio-gpu-next-telemetry
+        >
+          {gpuNextSummary}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -329,6 +372,10 @@ export function StudioViewInspectorHud({
     getStudioViewInspectionSnapshot
   );
   const metrics = useStudioViewPerformanceMetrics(snapshot.performanceHudEnabled);
+  const gpuNextSummary = useStudioGpuNextTelemetrySummary(
+    snapshot.performanceHudEnabled,
+    metrics
+  );
   const viewportSize = useStudioViewportSize(
     viewportRef,
     snapshot.performanceHudEnabled
@@ -532,6 +579,7 @@ export function StudioViewInspectorHud({
           zoomPercent={zoomPercent}
           rotation={normalizedRotation}
           flipped={canvasFlipH}
+          gpuNextSummary={gpuNextSummary}
         />
       ) : null}
     </div>
