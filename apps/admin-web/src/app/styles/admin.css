@@ -142,6 +142,22 @@ body {
 .admin-shell > details.policy-card > summary { min-height: 44px; align-content: center; cursor: pointer; font-weight: 650; }
 .admin-shell > details.policy-card > summary:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 3px; }
 .operation-policy kbd { padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-line); background: var(--admin-raised); font-size: 0.8em; }
+.ops-cutover-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ops-cutover-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; margin: 16px 0; }
+.ops-cutover-tile { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--admin-line); background: var(--admin-canvas); min-width: 0; }
+.ops-cutover-tile[data-ok="true"] { border-color: oklch(0.78 0.14 155 / 0.45); }
+.ops-cutover-tile[data-ok="false"] { border-color: oklch(0.82 0.15 80 / 0.65); }
+.ops-cutover-tile__label { font-size: 0.8rem; color: var(--admin-muted); }
+.ops-cutover-tile__value { font-size: 1.05rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ops-cutover-tile small { color: var(--admin-muted); font-size: 0.78rem; overflow-wrap: anywhere; }
+.ops-cutover-ledger-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 12px; margin: 16px 0; }
+.ops-cutover-ledger-grid > div { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--admin-line); background: var(--admin-canvas); min-width: 0; }
+.ops-cutover-ledger-grid dt { font-size: 0.78rem; color: var(--admin-muted); margin-bottom: 4px; }
+.ops-cutover-ledger-grid dd { margin: 0; font-size: 0.88rem; line-height: 1.5; overflow-wrap: anywhere; }
+.ops-cutover-audit-strip { padding: 10px 14px; border-radius: 10px; border: 1px solid oklch(0.78 0.14 155 / 0.4); background: oklch(0.28 0.05 155 / 0.25); font-size: 0.86rem; }
+.ops-cutover-import { margin-top: 16px; }
+.ops-cutover-import__body { padding-top: 8px; }
+.ops-cutover-preview { margin-top: 12px; max-height: 280px; overflow: auto; padding: 12px; border-radius: 10px; border: 1px solid var(--admin-line); background: var(--admin-canvas); font-size: 0.8rem; line-height: 1.5; }
 dialog:modal { overscroll-behavior: contain; }
 dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
 @media (prefers-reduced-motion: no-preference) {

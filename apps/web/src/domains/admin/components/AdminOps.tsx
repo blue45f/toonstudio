@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   adminButtonClass,
   adminFetch,
+  downloadAdminFile,
   formatNum,
   type AdminApiError,
   type AdminBenchmarkResult,
@@ -100,66 +101,77 @@ const buildBenchmarkCsv = (result: AdminBenchmarkResult) => {
   return rows.map((row) => row.map(quoteCsvCell).join(",")).join("\n");
 };
 
-const downloadFile = (filename: string, content: string, type: string) => {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
 const formatDateTime = (value: string | null | undefined) =>
   value ? new Date(value).toLocaleString("ko-KR") : "—";
 
 const formatDuration = (ms: number | null) => (ms == null ? "—" : `${(ms / 1000).toFixed(1)}초`);
+
+const ADMIN_ENTRY_LINK_CLASS =
+  "mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+interface AdminPreparationCardSpec {
+  readonly id: string;
+  readonly titleKey: string;
+  readonly descriptionKey: string;
+  readonly primaryHref: string;
+  readonly primaryLabelKey: string;
+  readonly secondaryLink?: { readonly href: string; readonly label: string };
+}
+
+const ADMIN_PREPARATION_CARDS: readonly AdminPreparationCardSpec[] = [
+  {
+    id: "admin-production-changes-title",
+    titleKey: "admin.productionChanges.title",
+    descriptionKey: "admin.productionChanges.description",
+    primaryHref: "/admin/production/changes/",
+    primaryLabelKey: "admin.productionChanges.open",
+    secondaryLink: { href: "/admin/platform/operations?view=ops-overview", label: "운영·배포 원장 · DB 133/133" },
+  },
+  {
+    id: "admin-workspace-title",
+    titleKey: "admin.workspace.title",
+    descriptionKey: "admin.workspace.description",
+    primaryHref: "/admin/workspace/",
+    primaryLabelKey: "admin.workspace.open",
+  },
+  {
+    id: "admin-ci-quality-title",
+    titleKey: "admin.ciQuality.title",
+    descriptionKey: "admin.ciQuality.description",
+    primaryHref: "/admin/platform/quality/",
+    primaryLabelKey: "admin.ciQuality.open",
+  },
+  {
+    id: "admin-business-plan-title",
+    titleKey: "admin.businessPlan.title",
+    descriptionKey: "admin.businessPlan.description",
+    primaryHref: "/admin/growth/business-plan/",
+    primaryLabelKey: "admin.businessPlan.open",
+    secondaryLink: { href: "/admin/platform/ai-operations/", label: "AI·인프라 운영 보드" },
+  },
+];
 
 /** 독립 Admin 문서로 이동하여 사용자 Web의 라우터·번들 경계를 유지한다. */
 function AdminPreparationEntries() {
   const t = useT();
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <section aria-labelledby="admin-production-changes-title" className="rounded-2xl border border-line bg-card p-5">
-        <h2 id="admin-production-changes-title" className="text-sm font-semibold text-fg">{t("admin.productionChanges.title")}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.productionChanges.description")}</p>
-        <a href="/admin/production/changes/" className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-          {t("admin.productionChanges.open")}
-        </a>
-      </section>
-      <section aria-labelledby="admin-workspace-title" className="rounded-2xl border border-line bg-card p-5">
-        <h2 id="admin-workspace-title" className="text-sm font-semibold text-fg">{t("admin.workspace.title")}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.workspace.description")}</p>
-        <a
-          href="/admin/workspace/"
-          className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {t("admin.workspace.open")}
-        </a>
-      </section>
-      <section aria-labelledby="admin-ci-quality-title" className="rounded-2xl border border-line bg-card p-5">
-        <h2 id="admin-ci-quality-title" className="text-sm font-semibold text-fg">{t("admin.ciQuality.title")}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.ciQuality.description")}</p>
-        <a
-          href="/admin/platform/quality/"
-          className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {t("admin.ciQuality.open")}
-        </a>
-      </section>
-    <section aria-labelledby="admin-business-plan-title" className="rounded-2xl border border-line bg-card p-5">
-      <h2 id="admin-business-plan-title" className="text-sm font-semibold text-fg">{t("admin.businessPlan.title")}</h2>
-      <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.businessPlan.description")}</p>
-      <a href="/admin/growth/business-plan/" className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-        {t("admin.businessPlan.open")}
-      </a>
-      <a
-        href="/admin/platform/ai-operations/"
-        className="ml-3 mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        AI·인프라 운영 보드
-      </a>
-    </section>
+      {ADMIN_PREPARATION_CARDS.map((card) => (
+        <section key={card.id} aria-labelledby={card.id} className="rounded-2xl border border-line bg-card p-5">
+          <h2 id={card.id} className="text-sm font-semibold text-fg">{t(card.titleKey)}</h2>
+          <p className="mt-2 text-xs leading-relaxed text-fg-3">{t(card.descriptionKey)}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <a href={card.primaryHref} className={ADMIN_ENTRY_LINK_CLASS}>
+              {t(card.primaryLabelKey)}
+            </a>
+            {card.secondaryLink && (
+              <a href={card.secondaryLink.href} className={ADMIN_ENTRY_LINK_CLASS}>
+                {card.secondaryLink.label}
+              </a>
+            )}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -337,7 +349,7 @@ function AdminBenchmarkPanel({ uid }: { uid: string }) {
 
   const exportJson = () => {
     if (!result) return;
-    downloadFile(
+    downloadAdminFile(
       `admin-benchmark-${new Date(result.generatedAt).toISOString()}.json`,
       JSON.stringify(result, null, 2),
       "application/json;charset=utf-8",
@@ -346,7 +358,7 @@ function AdminBenchmarkPanel({ uid }: { uid: string }) {
 
   const exportCsv = () => {
     if (!result) return;
-    downloadFile(
+    downloadAdminFile(
       `admin-benchmark-${new Date(result.generatedAt).toISOString()}.csv`,
       buildBenchmarkCsv(result),
       "text/csv;charset=utf-8",

@@ -16,8 +16,17 @@ import {
   sanitizeOpsText,
 } from "./lib/ops-dashboard-core.mjs";
 import {
+  DEFAULT_MOBILE_3D_AUDIT_REPORT,
+  MOBILE_3D_AUDIT_ISSUE_TITLE,
   OpsDashboardUsageError,
+  collectCodeScanningStatus,
+  collectExtendedOpsDashboard,
+  collectMobile3dAuditStatus,
   executeOpsDashboardCli,
+  formatExtendedOpsDashboardReport,
+  parseCodeScanningAlertsPayload,
+  parseMobile3dAuditMarkdown,
+  parseMobile3dAuditReportPayload,
   parseOpsDashboardArgs,
 } from "./ops-dashboard.mjs";
 
@@ -606,5 +615,179 @@ describe("ops-dashboard 통합 상태판 CLI", () => {
     const errCode = await executeOpsDashboardCli(["--bad-flag"], { errorLog: (line) => errLogs.push(line) });
     assert.equal(errCode, 2);
     assert.match(errLogs.join("\n"), /입력 오류/u);
+  });
+
+  test("순수 파서: CodeQL 열림 경보와 모바일 3D 감사 report.json/report.md를 정확히 파싱한다", () => {
+    const parsedAlerts = parseCodeScanningAlertsPayload(JSON.stringify([
+      { number: 246, state: "open", tool: { name: "CodeQL" }, rule: { id: "js/bad-code-sanitization", security_severity_level: "high" } },
+      { number: 247, state: "open", tool: { name: "CodeQL" }, rule: { id: "js/incomplete-sanitization", security_severity_level: "medium" } },
+      { number: 240, state: "fixed", tool: { name: "CodeQL" }, rule: { id: "js/old-issue", security_severity_level: "critical" } },
+    ]));
+    assert.equal(parsedAlerts.openAlertsCount, 2);
+    assert.equal(parsedAlerts.bySeverity.high, 1);
+    assert.equal(parsedAlerts.bySeverity.medium, 1);
+    assert.equal(parsedAlerts.bySeverity.critical, 0);
+    assert.deepEqual(parsedAlerts.tools, ["CodeQL"]);
+    assert.equal(parsedAlerts.truncated, false);
+    assert.throws(() => parseCodeScanningAlertsPayload('{"not":"array"}'));
+
+    const parsedJson = parseMobile3dAuditReportPayload({
+      schemaVersion: 2,
+      generatedAt: "2026-11-23T01:00:00.000Z",
+      failures: ["mobile actionable request failure"],
+      targets: [
+        { name: "desktop", failedRequestSummary: { totalCount: 0, abortedCount: 0, actionableCount: 0, httpErrorCount: 0 } },
+        {
+          name: "mobile",
+          failedRequestSummary: { totalCount: 15, abortedCount: 13, actionableCount: 2, httpErrorCount: 1 },
+          consoleErrors: ["err-1"],
+          pageErrors: [],
+        },
+      ],
+    });
+    assert.equal(parsedJson.targetName, "mobile");
+    assert.equal(parsedJson.actionableFailedRequests, 2);
+    assert.equal(parsedJson.abortedRequests, 13);
+    assert.equal(parsedJson.httpErrorCount, 1);
+    assert.equal(parsedJson.totalFailedRequests, 15);
+    assert.equal(parsedJson.consoleErrorCount, 1);
+
+    const parsedFallback = parseMobile3dAuditReportPayload({
+      generatedAt: "2026-11-23T01:30:00.000Z",
+      targets: [{
+        name: "mobile",
+        failedRequests: [
+          { error: "net::ERR_ABORTED", url: "https://www.toonstudio.cloud/a" },
+          { error: "net::ERR_CONNECTION_REFUSED", url: "https://www.toonstudio.cloud/b" },
+        ],
+        httpErrors: [{ status: 500, url: "https://www.toonstudio.cloud/c" }],
+      }],
+    });
+    assert.equal(parsedFallback.actionableFailedRequests, 1);
+    assert.equal(parsedFallback.abortedRequests, 1);
+    assert.equal(parsedFallback.httpErrorCount, 1);
+
+    const parsedMd = parseMobile3dAuditMarkdown([
+      "# Studio 3D Production Audit",
+      "- Generated at: 2026-11-23T02:00:00.000Z",
+      "### desktop",
+      "- Failed request breakdown: aborted(ERR_ABORTED)=0, actionable(network/policy)=0, httpErrors(4xx/5xx)=0",
+      "### mobile",
+      "- Failed requests: 16",
+      "- Failed request breakdown: aborted(ERR_ABORTED)=13, actionable(network/policy)=3, httpErrors(4xx/5xx)=1",
+    ].join("\n"));
+    assert.equal(parsedMd?.targetName, "mobile");
+    assert.equal(parsedMd?.actionableFailedRequests, 3);
+    assert.equal(parsedMd?.abortedRequests, 13);
+    assert.equal(parsedMd?.httpErrorCount, 1);
+    assert.equal(parsedMd?.totalFailedRequests, 16);
+    assert.equal(parsedMd?.generatedAt, "2026-11-23T02:00:00.000Z");
+  });
+
+  test("CodeQL 및 모바일 3D 감사 수집기는 오프라인·403 권한 부족·비인증 환경에서 fail-safe로 동작한다", async () => {
+    const root = createTempRepo();
+    const offlineCs = await collectCodeScanningStatus({ rootDir: root, offline: true });
+    assert.equal(offlineCs.skipped, true);
+    assert.equal(offlineCs.openAlertsCount, null);
+
+    const forbiddenCs = await collectCodeScanningStatus({
+      rootDir: root,
+      offline: false,
+      execImpl: async () => { throw new Error("gh: Resource not accessible by integration (HTTP 403)"); },
+    });
+    assert.equal(forbiddenCs.available, false);
+    assert.equal(forbiddenCs.reason, "gh-forbidden");
+    assert.equal(forbiddenCs.status, "unavailable");
+
+    const noGhM3d = await collectMobile3dAuditStatus({
+      rootDir: root,
+      offline: false,
+      execImpl: async () => { const err = new Error("spawn gh ENOENT"); err.code = "ENOENT"; throw err; },
+    });
+    assert.equal(noGhM3d.available, false);
+    assert.equal(noGhM3d.status, "unavailable");
+
+    mkdirSync(join(root, "artifacts/studio-3d-production-audit"), { recursive: true });
+    writeFileSync(
+      join(root, DEFAULT_MOBILE_3D_AUDIT_REPORT),
+      JSON.stringify({
+        schemaVersion: 2,
+        generatedAt: "2026-11-23T03:00:00.000Z",
+        targets: [{ name: "mobile", failedRequestSummary: { totalCount: 4, abortedCount: 3, actionableCount: 1, httpErrorCount: 0 } }],
+      }),
+      "utf8",
+    );
+    const localOfflineM3d = await collectMobile3dAuditStatus({ rootDir: root, offline: true });
+    assert.equal(localOfflineM3d.available, true);
+    assert.equal(localOfflineM3d.status, "alert");
+    assert.equal(localOfflineM3d.source, "local-report-json");
+    assert.equal(localOfflineM3d.actionableFailedRequests, 1);
+  });
+
+  test("확장 ops-dashboard CLI는 CodeQL 경보와 원격 모바일 3D 감사 이슈를 통합 수집·출력한다", async () => {
+    const sha = "a".repeat(40);
+    const root = createTempRepo({
+      buildMeta: { gitSha: sha, buildId: "abcdef123456", catalogSource: "static" },
+    });
+    const { fetchImpl } = createHealthyMockFetch();
+    const { execImpl: baseExec } = createHealthyMockExec({ headSha: sha, originMainSha: sha });
+
+    const execImpl = async (command, args) => {
+      if (command === "gh" && args[0] === "api") {
+        const endpoint = args[1] ?? "";
+        if (endpoint.includes("/code-scanning/alerts")) {
+          return {
+            stdout: JSON.stringify([
+              { number: 250, state: "open", tool: { name: "CodeQL" }, rule: { id: "js/bad-code-sanitization", security_severity_level: "high" } },
+            ]),
+          };
+        }
+        if (endpoint.includes("/issues?state=all")) {
+          return {
+            stdout: JSON.stringify([
+              {
+                number: 999,
+                state: "open",
+                title: MOBILE_3D_AUDIT_ISSUE_TITLE,
+                updated_at: "2026-11-23T03:30:00.000Z",
+                body: [
+                  "### mobile",
+                  "- Failed requests: 5",
+                  "- Failed request breakdown: aborted(ERR_ABORTED)=3, actionable(network/policy)=2, httpErrors(4xx/5xx)=1",
+                ].join("\n"),
+              },
+            ]),
+          };
+        }
+      }
+      return baseExec(command, args);
+    };
+
+    const report = await collectExtendedOpsDashboard({ rootDir: root, offline: false, fetchImpl, execImpl });
+    assert.equal(report.overallStatus, "degraded");
+    assert.equal(report.codeScanning.available, true);
+    assert.equal(report.codeScanning.openAlertsCount, 1);
+    assert.equal(report.mobile3dAudit.available, true);
+    assert.equal(report.mobile3dAudit.source, "github-issue");
+    assert.equal(report.mobile3dAudit.actionableFailedRequests, 2);
+    assert.ok(report.degradedReasons.some((reason) => reason.includes("CodeQL 열림 경보 1건")));
+    assert.ok(report.degradedReasons.some((reason) => reason.includes("모바일 3D 감사 actionable 실패 요청 2건")));
+
+    const text = formatExtendedOpsDashboardReport(report);
+    assert.match(text, /8\. Code Scanning \(CodeQL\)/u);
+    assert.match(text, /열림 경보: 1건/u);
+    assert.match(text, /9\. 모바일 3D 감사/u);
+    assert.match(text, /actionable 실패 요청=2건/u);
+
+    const logs = [];
+    const exitCode = await executeOpsDashboardCli(["--json", "--root", root], {
+      fetchImpl,
+      execImpl,
+      log: (line) => logs.push(line),
+    });
+    assert.equal(exitCode, 0);
+    const parsedCli = JSON.parse(logs.join("\n"));
+    assert.equal(parsedCli.codeScanning.openAlertsCount, 1);
+    assert.equal(parsedCli.mobile3dAudit.actionableFailedRequests, 2);
   });
 });

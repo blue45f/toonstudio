@@ -1,5 +1,10 @@
 import { TOONSPECTRUM_CSRF_HEADER, TOONSPECTRUM_CSRF_HEADER_VALUE } from "@toonstudio/contracts/security/csrf";
 
+import {
+  sanitizeAdminDiagnosticText,
+  sanitizeAdminResponseValue,
+} from "./admin-response-whitelist";
+
 interface AdminRequestOptions {
   readonly body?: unknown;
   readonly signal?: AbortSignal;
@@ -41,13 +46,13 @@ export async function requestAdminJson<T>(path: string, options: AdminRequestOpt
   });
   const payload: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = payload
+    const rawMessage = payload
       && typeof payload === "object"
       && "message" in payload
       && typeof payload.message === "string"
       ? payload.message
       : "설정을 처리하지 못했습니다. 관리자 로그인과 연결을 확인해주세요.";
-    throw new AdminApiError(response.status, message);
+    throw new AdminApiError(response.status, sanitizeAdminDiagnosticText(rawMessage));
   }
   if (!payload || typeof payload !== "object") {
     throw new AdminApiError(
@@ -55,7 +60,7 @@ export async function requestAdminJson<T>(path: string, options: AdminRequestOpt
       "관리자 API 응답 형식이 올바르지 않습니다. API 서버 연결과 관리자 인증 상태를 확인해주세요.",
     );
   }
-  return payload as T;
+  return sanitizeAdminResponseValue(payload) as T;
 }
 
 export const centsToWon = (cents: number): number =>
