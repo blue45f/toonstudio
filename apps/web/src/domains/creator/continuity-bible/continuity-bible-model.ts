@@ -7,6 +7,28 @@
 
 import type { StudioStoryCharacter } from "../studio-story-bible";
 
+export {
+  buildCrossCutCheckKey,
+  createStarterCutObservations,
+  evaluateCrossCutContinuity,
+  formatCrossCutJumpSummaryText,
+  markCrossCutCheckResolved,
+  type CrossCutBibleSnapshot,
+  type CrossCutCharacterSpec,
+  type CrossCutCheckSeverity,
+  type CrossCutCheckStatus,
+  type CrossCutChecklistItem,
+  type CrossCutContinuityReport,
+  type CrossCutHandPreference,
+  type CrossCutOutfitSpec,
+  type CrossCutPropSpec,
+  type CrossCutScarSeverity,
+  type CrossCutScarSpec,
+  type CrossCutTraitCategory,
+  type CutCharacterObservation,
+  type RevisionCutJumpTarget,
+} from "./continuity-cross-cut-checklist";
+
 export type ContinuityTraitCategory = "visual" | "scar" | "outfit" | "prop" | "status";
 export type ContinuityWarningSeverity = "error" | "warn" | "info";
 export type ContinuityScarSeverity = "permanent" | "temporary" | "healed";

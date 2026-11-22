@@ -286,6 +286,45 @@
   outline-offset: 2px;
 }
 
+/* 50분 손목 휴식 비차단 1줄 마이크로 브레이크 배지 */
+.hshield-micro-break-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+  padding: 0.375rem 0.75rem;
+}
+
+.hshield-micro-break-line[data-visibility="inline_badge"] {
+  border-color: color-mix(in oklch, var(--hs-amber) 58%, var(--color-line));
+  background-color: color-mix(in oklch, var(--hs-amber) 12%, var(--color-panel));
+}
+
+.hshield-micro-break-line[data-visibility="collapsed_silent"] {
+  border-style: dashed;
+  border-color: var(--color-line);
+  background-color: var(--color-canvas);
+}
+
+/* 00:00~06:00 심야 무음·접힘 억제 바 */
+.hshield-silent-collapse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px dashed var(--color-line);
+  background-color: var(--color-canvas);
+  padding: 0.5rem 0.75rem;
+}
+
 :root[data-design-theme="contrast"] .hshield-card,
 :root[data-design-theme="contrast"] .hshield-subcard,
 :root[data-design-theme="contrast"] .hshield-scenario-card {

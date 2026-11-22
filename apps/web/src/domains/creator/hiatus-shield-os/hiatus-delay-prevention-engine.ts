@@ -82,6 +82,37 @@ export {
 
 export { createInitialHiatusShieldState } from "./hiatus-shield-seed";
 
+export {
+  DEFAULT_BACKGROUND_CUT_SHARE,
+  DEFAULT_DANGER_BUFFER_WEEKS,
+  DEFAULT_VELOCITY_EMA_ALPHA,
+  DEFAULT_VELOCITY_WINDOW_WEEKS,
+  DEFAULT_WORK_HOURS_PER_DAY,
+  DEFAULT_WRIST_BREAK_DURATION_MINUTES,
+  DEFAULT_WRIST_BREAK_INTERVAL_MINUTES,
+  LATE_NIGHT_QUIET_END_HOUR,
+  LATE_NIGHT_QUIET_START_HOUR,
+  computeWeeklyVelocityMovingAverages,
+  createStarterWeeklyVelocitySamples,
+  evaluateHiatusCoachingSurface,
+  evaluateLateNightCoachingSuppression,
+  evaluateWristMicroBreakState,
+  forecastThreeWeekHiatusRisk,
+  type BgOutsourceSplitRecommendation,
+  type DeterministicLocalClock,
+  type HiatusCoachingSurfaceState,
+  type LateNightSuppressionPolicy,
+  type ThreeWeekHiatusForecast,
+  type ThreeWeekHiatusForecastInput,
+  type VelocityForecastStage,
+  type VelocityMovingAverageMetrics,
+  type WeeklyBufferTrajectoryPoint,
+  type WeeklyCutVelocitySample,
+  type WristMicroBreakBadgeState,
+  type WristMicroBreakInput,
+  type WristMicroBreakVisibility,
+} from "./hiatus-velocity-forecast-engine";
+
 const KST_UTC_OFFSET = 9;
 const WORK_HOURS_PER_DAY = 8;
 
