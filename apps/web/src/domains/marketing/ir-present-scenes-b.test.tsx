@@ -36,4 +36,19 @@ describe("IR 발표의 제품 투어 연결", () => {
       expect(within(steps).getByText(step.ko.body)).toBeTruthy();
     }
   });
+
+  it("기술(19)·BM(21)·팀/Ask(23) 씬이 분광 위젯·₩0 단위경제성·라이선스 카드·5대 Q&A를 포함한다", () => {
+    render(SCENE_NODES_B[6]);
+    expect(screen.getByRole("slider", { name: "안료 혼색 비율 조절" })).toBeTruthy();
+    cleanup();
+
+    render(SCENE_NODES_B[8]);
+    expect(screen.getByText("₩0 / 월 (실측)")).toBeTruthy();
+    expect(screen.getByTestId("unit-economics-output")).toBeTruthy();
+    cleanup();
+
+    render(SCENE_NODES_B[10]);
+    expect(screen.getByText("1인 기업 상용 라이선스 무결성 & 크로스-LLM 배포 가드")).toBeTruthy();
+    expect(screen.getByText("투자자·심사위원이 가장 먼저 묻는 5가지 질문")).toBeTruthy();
+  });
 });

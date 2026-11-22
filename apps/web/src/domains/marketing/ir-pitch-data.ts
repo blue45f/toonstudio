@@ -12,6 +12,7 @@ import {
   UsersRound,
 } from "lucide-react";
 
+import { INVESTOR_DEFENSE_QA } from "./ir-bizplan-shared-facts";
 import { productTourChapterById } from "./product-tour-content";
 
 /** 이전 제품 투어에서 발췌한 IR 편집 영상. 현재 전체 투어의 길이·챕터 구성과 구분한다. */
@@ -175,36 +176,5 @@ export const FOUNDER_CAREER = [
   { ko: "엔씨소프트 — 모바일 퍼블리싱 플랫폼을 다뤘어요.", en: "NCSOFT — worked on the mobile publishing platform." },
 ] as const;
 
-/** 투자자 미팅 핵심 Q&A 요약 — 현재 운영 범위·개발 중 점검과 고객 검증 목표를 구분해 답한다. */
-export const INVESTOR_QA_ITEMS = [
-  {
-    ko: {
-      question: "클립스튜디오가 표준인데 왜 ToonStudio를 함께 쓰나요?",
-      answer: "클립스튜디오를 당장 버리게 하는 대체재가 아니라, 기존 원고(PSD)를 그대로 불러와 핀 검수·승인 기록·3D 배경/캐릭터 턴어라운드 일관성을 잇는 공존형 제작 OS로 진입합니다.",
-    },
-    en: {
-      question: "Clip Studio is the standard — why adopt ToonStudio alongside it?",
-      answer: "Rather than forcing creators to drop Clip Studio on day one, ToonStudio imports existing PSD manuscripts and adds pin review, approval logs, and 3D set/character turnaround consistency in one browser flow.",
-    },
-  },
-  {
-    ko: {
-      question: "배경·캐릭터·브러시의 표현 차이는 어떻게 다루나요?",
-      answer: "연결 도구로 색·그림자·선의 차이를 비교하고 조절하는 흐름을 다듬고 있습니다. 개발 중의 점검 수치를 작품 품질 보장으로 제시하지 않으며, 출력과 이용 권한은 사람이 확인합니다.",
-    },
-    en: {
-      question: "How do you handle visual differences between settings, characters and brushes?",
-      answer: "We are refining a workflow for comparing and adjusting color, shadows and strokes across tools. Development checks do not guarantee artwork quality; people must review the output and usage rights.",
-    },
-  },
-  {
-    ko: {
-      question: "스튜디오 보안과 인프라 비용(적자 위험)은 어떻게 관리하나요?",
-      answer: "기기 내 임시 보관과 원본 파일·개인 드라이브 저장을 구분합니다. 현재 운영은 Cloudflare 정적 웹과 onpod API·DB이며, 다른 환경의 배포 예제가 운영 성공을 뜻하지 않습니다. AI는 제공자·크레딧·개인 키·로컬 모델의 조건과 비용을 확인한 뒤 이용합니다.",
-    },
-    en: {
-      question: "How do you handle studio security and infrastructure/AI cost risk?",
-      answer: "Temporary device storage is distinct from file or personal-drive saves. Production uses the Cloudflare static web and onpod API and database; examples for other environments do not prove a production deployment. AI use requires checking provider, credit, personal-key and local-model conditions and costs.",
-    },
-  },
-] as const;
+/** 투자자·심사위원 5대 핵심 방어 Q&A — ir-bizplan-shared-facts.ts 단일 정본을 공유한다. */
+export const INVESTOR_QA_ITEMS = INVESTOR_DEFENSE_QA.map(({ ko, en }) => ({ ko, en }));

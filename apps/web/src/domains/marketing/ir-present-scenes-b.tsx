@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { GTM_STEPS } from "./ir-pitch-data";
+import { IrInteractiveMoatShowcase } from "./IrInteractiveMoatShowcase";
+import { IrDefenseQaAccordion, IrSoloLicenseIntegrityCard } from "./IrQaAndLicenseSection";
 import { formatProductTourDuration, formatProductTourTime, PRODUCT_TOUR, productTourChapterById, productTourChapterHref } from "./product-tour-content";
 
 export const SCENE_NODES_B: ReactNode[] = [
@@ -44,14 +46,14 @@ export const SCENE_NODES_B: ReactNode[] = [
       <p className="lede rv">브라우저에서 도는 협업 도구는 많고, 설치해서 쓰는 전문 드로잉 앱도 많아요. 그런데 <strong>브라우저 안에서 전문급 드로잉과 전 공정 통합이 함께 도는 제작 환경</strong>은 비어 있었습니다. 툰스튜디오는 스스로를 "브라우저 기반 통합 제작 OS"로 정의하고, 그 빈 조합을 채워요.</p>
       <div className="diff-grid">
         <article className="diff-card rv">
-          <div className="t-label">Browser-Native OS</div>
-          <h3>설치 없이, 브라우저가 곧 스튜디오</h3>
-          <p>앱을 설치하고 파일을 주고받는 구조가 아니에요. 브라우저 탭 하나로 기획·대본·콘티·드로잉·3D·협업·검수가 열리고, 기기가 바뀌어도 같은 작품이 이어집니다. <b>전문 도구는 설치형, 협업 도구는 브라우저형</b>으로 나뉘어 있던 관성을 하나로 합친 시도예요.</p>
+          <div className="t-label">Browser-Native OS · Wasm64</div>
+          <h3>설치 없이, 브라우저가 곧 1 GiB 3D 스튜디오</h3>
+          <p>Wasm64·OPFS 로컬 처리로 단일 3D 모델 <b>최대 1 GiB(일괄 2 GiB)</b>까지 사용자 기기에서 소화합니다. <b>전문 도구는 설치형, 협업 도구는 브라우저형</b>으로 나뉘어 있던 관성을 하나로 합쳤습니다.</p>
         </article>
         <article className="diff-card rv">
-          <div className="t-label">Professional Drawing</div>
-          <h3>필압·질감 브러시 + WebGPU 스트로크 렌더링</h3>
-          <p>G펜부터 질감 브러시까지 <b>브러시의 필압·크기·질감을 조절</b>하고, <b>WebGPU(WGSL) 스트로크 렌더링</b>을 활용하는 제작 환경을 개발하고 있어요. 선택 가능한 브러시와 품질 검증 범위는 현재 제품에서 확인할 수 있습니다.</p>
+          <div className="t-label">Cleanroom 8 Engines · KM7</div>
+          <h3>WebGPU 7밴드 KM 분광 안료 · 클린룸 8종 자체 IP</h3>
+          <p>비상업 Mixbox 없이 자체 <b>7밴드 분광 Kubelka-Munk WGSL 엔진</b>을 비롯해 Knuth-Plass 말풍선, 벡터 교차점 지우개, 3D 벡터 강약선, PBD 의상 주름 등 <b>8종을 클린룸 자체 구현</b>했습니다.</p>
         </article>
         <article className="diff-card rv">
           <div className="t-label">Structured Production</div>
@@ -185,35 +187,38 @@ export const SCENE_NODES_B: ReactNode[] = [
   ),
   /* 19 기술 */
   (
-    <div className="scene-inner" key="s19">
-      <p className="kicker rv">Technology</p>
+    <div className="scene-inner top" key="s19">
+      <p className="kicker rv">Technology · Live Proof</p>
       <h2 className="headline rv">브라우저를 얕보지 마세요.<br /><em>핵심 기술은 직접</em> 개발했어요</h2>
-      <p className="lede rv">기본 부품은 검증된 오픈소스를 쓰고, 핵심 기술은 직접 개발했습니다. 문서·명령·히스토리·협업은 렌더러에 종속되지 않는 정본 모델이 권위를 갖고, 그 아래 렌더링 엔진들을 역할별로 조합하는 <strong>하이브리드 엔진 구조</strong>입니다.</p>
+      <p className="lede rv">기본 부품은 검증된 오픈소스를 쓰고, 핵심 기술 8종은 클린룸으로 직접 개발했습니다. 아래 분광 안료 슬라이더를 지금 바로 움직여 <strong>7밴드 KM 물리 혼색(₩0 자체 IP)</strong>과 일반 RGB의 차이를 확인해 보세요.</p>
       <div className="tech-grid">
         <article className="tech-card rv">
-          <div className="t-label">Vector Engine</div>
-          <h3>직접 포팅·패치한 WebGPU(Vello) 벡터 렌더링 엔진</h3>
-          <p>드로잉의 픽셀 권위는 <b>Raw WebGPU / WGSL</b>이 쥐어요. 벡터 렌더링은 Rust 기반 <b>Vello를 웹으로 포팅</b>한 provider가 맡고, 엔진들은 문서 모델 아래에서 교체 가능한 단위로 조합됩니다. 지원하지 않는 조합은 조용히 뭉개지 않고 제출 전에 차단(fail-closed)해요.</p>
-          <div className="chips"><span className="chip">WebGPU · WGSL</span><span className="chip">Vello Port</span><span className="chip">RGBA16F Tiles</span><span className="chip">Dirty-rect Upload</span></div>
+          <div className="t-label">Vector · Spectral Engine</div>
+          <h3>WebGPU(Vello) + 7밴드 KM 분광 안료</h3>
+          <p>드로잉 픽셀 권위는 <b>Raw WebGPU / WGSL</b>, 벡터는 Rust 기반 <b>Vello 웹 포팅</b>이 맡습니다. 420~670nm 7밴드 KM 감산 혼색으로 외부 Mixbox 없이 자체 IP를 확보했습니다.</p>
+          <div className="chips"><span className="chip">WebGPU · WGSL</span><span className="chip">Vello Port</span><span className="chip">7-Band KM</span><span className="chip">클린룸 8종</span></div>
         </article>
         <article className="tech-card rv">
-          <div className="t-label">Precision Rendering</div>
-          <h3>CanvasKit · Skia</h3>
-          <p>정밀한 벡터·패스·텍스트와 인쇄 품질 렌더링은 <b>CanvasKit(Skia)</b>이 맡아요. 화면용 엔진과 출판용 기준 엔진을 나눠서, 확대해도 깨지지 않는 선과 정확한 색을 지킵니다.</p>
-          <div className="chips"><span className="chip">CanvasKit WASM</span><span className="chip">Vector · Text · PDF</span></div>
+          <div className="t-label">Wasm64 · Local First</div>
+          <h3>Wasm64 1 GiB 로컬 3D · OPFS 보관 분리</h3>
+          <p>단일 3D 모델 <b>최대 1 GiB(일괄 2 GiB)</b>를 브라우저 로컬에서 처리하고, 서버 HTTP 동기화 상한(12 MiB)과 분리해 GPU 서버비를 없앴습니다. 기기 내 임시 보관과 원본 파일 별도 저장을 명확히 구분합니다.</p>
+          <div className="chips"><span className="chip">Wasm64 1 GiB</span><span className="chip">OPFS · IndexedDB</span><span className="chip">서버 GPU ₩0</span></div>
         </article>
         <article className="tech-card rv">
-          <div className="t-label">Local First &amp; Portable Cloud</div>
-          <h3>기기 내 저장과 원본 파일 보관</h3>
-          <p><b>OPFS · IndexedDB</b>를 활용한 기기 내 저장과 원본 파일 보관을 구분합니다. 기기를 바꾸거나 브라우저 데이터를 지우기 전에는 원본을 별도로 보관해야 합니다. 실행 환경별 지원 범위와 저장·복구 동작은 각각 검증합니다.</p>
-          <div className="chips"><span className="chip">OPFS · IndexedDB</span><span className="chip">원본 파일 보관</span><span className="chip">환경별 검증</span></div>
+          <div className="t-label">Schema · Cross-LLM Ops</div>
+          <h3>PostgreSQL 17(0133) · 크로스-LLM 배포 매니페스트</h3>
+          <p>저장소 마이그레이션 원장 <b>0001~0133</b>(운영 DB 113/113 체크섬 일치 · 20건 승인 대기)과 <b>DEPLOY_MANIFEST.json</b> 단일 규약으로 모델·도구가 바뀌어도 배포 안정성을 지킵니다.</p>
+          <div className="chips"><span className="chip">PG 17 · 0133</span><span className="chip">Cloudflare · onpod ₩0</span><span className="chip">DEPLOY_MANIFEST</span></div>
         </article>
         <article className="tech-card rv">
-          <div className="t-label">Realtime Collaboration &amp; Verify AI</div>
-          <h3>Yjs 실시간 협업 + Verify AI 프리플라이트 게이트</h3>
-          <p><b>Yjs CRDT 기반 동시 편집</b>과 제작 결과 검사를 개발하고 있습니다. 원고·소재·권리 정보를 확인하는 흐름을 연결하며, 자동 검사 결과의 적용 범위와 최종 게시 판단은 제작자가 확인합니다.</p>
-          <div className="chips"><span className="chip">Yjs · CRDT</span><span className="chip">제작 결과 검사</span><span className="chip">창작자 최종 확인</span></div>
+          <div className="t-label">Commercial License · Collab</div>
+          <h3>상용 라이선스 590 감사 통과 · Yjs 실시간 협업</h3>
+          <p><b>pnpm audit:licenses 590개 통과</b>·차단 위반 0건(Mixbox·GPL·AGPL·SSPL)·OpenSSF ready를 자동 검증하며, Yjs CRDT 동시 편집과 Rights BOM 출고 검수를 연결했습니다.</p>
+          <div className="chips"><span className="chip">590 통과 · 0 차단</span><span className="chip">OpenSSF ready</span><span className="chip">Yjs CRDT</span></div>
         </article>
+      </div>
+      <div className="rv" style={{ marginTop: 22 }}>
+        <IrInteractiveMoatShowcase mode="spectral" surface="present" lang="ko" />
       </div>
     </div>
   ),
@@ -238,8 +243,8 @@ export const SCENE_NODES_B: ReactNode[] = [
   ),
   /* 21 BM */
   (
-    <div className="scene-inner" key="s21">
-      <p className="kicker rv">Business Model</p>
+    <div className="scene-inner top" key="s21">
+      <p className="kicker rv">Business Model · Unit Economics</p>
       <h2 className="headline rv">무료로 시작해, 팀으로 확장하고,<br />에셋 마켓까지 <em>이어지는</em> 구조</h2>
       <p className="lede rv">가격 정책은 심플하게, <strong>기본 무료 + AI 크레딧 중심</strong>입니다. 팀 가격은 미정이며 사용 검증 후 정합니다. 적어 둔 유료 가격은 <strong>예시(미확정)</strong>이고, 실제 창작자 검증을 거쳐 정합니다. 서비스도 아직 베타라, 쓰면서 다듬어 가는 중이에요.</p>
       <div className="tiers rv">
@@ -276,6 +281,9 @@ export const SCENE_NODES_B: ReactNode[] = [
           <b>유료 플랜 검토</b>
           <p>개인 Pro 월 19,900원은 예시·미확정이며, 팀 가격은 미정입니다. 유료 전환 시점과 무료 제공 범위는 검증 후 정합니다.</p>
         </div>
+      </div>
+      <div className="rv" style={{ marginTop: 22 }}>
+        <IrInteractiveMoatShowcase mode="economics" surface="present" lang="ko" />
       </div>
     </div>
   ),
@@ -317,8 +325,8 @@ export const SCENE_NODES_B: ReactNode[] = [
   ),
   /* 23 팀 · Ask */
   (
-    <div className="scene-inner" key="s23">
-      <p className="kicker rv">Team &amp; Ask</p>
+    <div className="scene-inner top" key="s23">
+      <p className="kicker rv">Team · Governance &amp; Ask</p>
       <h2 className="headline rv">만든 사람이, 끝까지<br /><em>설명할 수 있는</em> 제품이에요</h2>
       <div className="team-grid">
         <article className="founder rv">
@@ -348,6 +356,10 @@ export const SCENE_NODES_B: ReactNode[] = [
             <a className="btn btn-ghost" href="https://github.com/blue45f/toonstudio" target="_blank" rel="noopener">소스코드 확인하기</a>
           </div>
         </div>
+      </div>
+      <div className="rv" style={{ marginTop: 20, display: "grid", gap: 16 }}>
+        <IrSoloLicenseIntegrityCard surface="present" lang="ko" compact />
+        <IrDefenseQaAccordion surface="present" lang="ko" compact />
       </div>
     </div>
   ),

@@ -59,4 +59,21 @@ describe("투자 소개 목적별 페이지", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(trigger);
   });
+  it("각 목적 섹션에서 2026-11-22 실측 요약·분광 위젯·₩0 단위경제성·라이선스 카드·5대 Q&A를 제공한다", () => {
+    open("/ir");
+    expect(screen.getByText("PostgreSQL 17 스키마 원장")).toBeTruthy();
+    cleanup();
+    open("/ir?brief=difference");
+    expect(screen.getByRole("slider", { name: "안료 혼색 비율 조절" })).toBeTruthy();
+    cleanup();
+    open("/ir?brief=model");
+    expect(screen.getByText("₩0 / 월 (실측)")).toBeTruthy();
+    expect(screen.getByTestId("unit-economics-output")).toBeTruthy();
+    cleanup();
+    open("/ir?brief=founder");
+    expect(screen.getByText("1인 기업 상용 라이선스 무결성 & 크로스-LLM 배포 가드")).toBeTruthy();
+    cleanup();
+    open("/ir?brief=downloads");
+    expect(screen.getByText("투자자·심사위원이 가장 먼저 묻는 5가지 질문")).toBeTruthy();
+  });
 });

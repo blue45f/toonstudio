@@ -125,4 +125,15 @@ describe("IR 내레이션 문안 검증", () => {
     expect(playedSources).toHaveLength(playedBefore + 1);
     expect(playedSources.at(-1)).toContain("product-tour-bgm.m4a");
   });
+
+  it("슬라이드 내부 range 입력 조작 중 방향키가 씬을 강제로 넘기지 않는다", () => {
+    const { container } = render(<IrPresentPage />);
+    const input = document.createElement("input");
+    input.type = "range";
+    container.appendChild(input);
+    input.focus();
+    fireEvent.keyDown(input, { key: "ArrowRight", bubbles: true });
+    expect(container.querySelector(".scene.active")?.textContent).toBe("장면 1");
+    input.remove();
+  });
 });
