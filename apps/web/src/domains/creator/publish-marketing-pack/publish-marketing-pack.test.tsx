@@ -64,7 +64,9 @@ describe("og-card-renderer — 1200×630 3컷 OG 공유 카드 SVG·Canvas 렌�
       font: "",
     };
     const canvas = document.createElement("canvas");
-    vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as unknown as CanvasRenderingContext2D);
+    vi.spyOn(canvas, "getContext").mockImplementation(
+      (() => mockCtx) as unknown as typeof canvas.getContext,
+    );
 
     expect(renderOgCardToCanvas(canvas, input)).toBe(true);
     expect(canvas.width).toBe(1200);

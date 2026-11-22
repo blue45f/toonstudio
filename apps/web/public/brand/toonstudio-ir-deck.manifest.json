@@ -6,7 +6,7 @@
   "sources": [
     {
       "path": "apps/web/src/domains/marketing/ir-pitch-data.ts",
-      "sha256": "be5eed8e1b37f57fc249917f2c367c2629e54bbe64e0fd7c2de80d65c7fa574c"
+      "sha256": "c42c60cc5121ed6168a142a9e3ac1c5a076f31b482a767e9b627c97a44510df5"
     },
     {
       "path": "apps/web/src/domains/marketing/ir-present-scene-data.ts",
@@ -14,11 +14,11 @@
     },
     {
       "path": "apps/web/src/domains/marketing/ir-present-scenes-a.tsx",
-      "sha256": "bed685b0e935006a49f4e75b9d37361f015d5569904e0bcfef689b581245d5e4"
+      "sha256": "9f98783bdca92a10214c2dbaddebb44e5621834048c9404fda48503e2186dbbf"
     },
     {
       "path": "apps/web/src/domains/marketing/ir-present-scenes-b.tsx",
-      "sha256": "31c1b03a33bd1e4f6e7dfe9a661db494c2aedb406c3ec28f3f9a1f0f6714d628"
+      "sha256": "1b200765ff820f37ead9f1be2394dc386d9d991f6479a21d9acc38c0d1ce3179"
     },
     {
       "path": "apps/web/src/domains/marketing/ir-present-pipeline-widget.tsx",
@@ -34,7 +34,7 @@
     },
     {
       "path": "tools/media/ir-present/narration.ko.json",
-      "sha256": "41bf7eed9d0bcad6883e86156e88b49ee82343ca9ce9de317f1a328bb7fbb647"
+      "sha256": "4693273ca77cd2ebe51ee25f1e336be728ad03994d17f6e0c25499928160baef"
     },
     {
       "path": "apps/web/public/brand/product-tour/03-draw.png",

@@ -196,9 +196,12 @@ describe("2. 캐릭터 디자인 비중복 보장 & 신규 고유 스튜디오 �
 
     for (const preset of STUDIO_WEBTOON_AVATAR_ARCHETYPE_PRESETS) {
       expect(parseStudioVirtualAvatarProfile(preset.profile), preset.id).not.toBeNull();
+      const outfitStyle = preset.profile.outfitStyle;
+      expect(outfitStyle, `${preset.id} 의상 스타일 누락`).toBeDefined();
+      if (!outfitStyle) continue;
       const resolved = resolveStudioCharacterPartConflicts({
         hairStyle: preset.profile.hairStyle,
-        outfitStyle: preset.profile.outfitStyle,
+        outfitStyle,
         accessory: preset.profile.accessory,
       });
       expect(resolved.accessory, `${preset.id} 헤어-액세서리 충돌`).toBe(preset.profile.accessory);

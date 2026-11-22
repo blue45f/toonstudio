@@ -35,13 +35,9 @@ const MIB = 1024 * 1024;
 const ONE_PAGE = Number(STUDIO_WASM_PAGE_BYTES);
 
 function virtualImportFile(name: string, size: number): StudioBg3dImportFile {
-  return {
-    name,
-    size,
-    async arrayBuffer() {
-      return new ArrayBuffer(0);
-    },
-  };
+  const file = new File([], name);
+  Object.defineProperty(file, "size", { value: size, configurable: true });
+  return file;
 }
 
 describe("studio-3d-upload-limit-policy", () => {

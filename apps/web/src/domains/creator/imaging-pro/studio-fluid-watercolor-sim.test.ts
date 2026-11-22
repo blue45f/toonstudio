@@ -288,8 +288,8 @@ describe("studio-fluid-watercolor-sim (Rebelle 식 2D 유체 수채화 WGSL + CP
     const grid = createFluidWatercolorGrid(24, 20, { paperPreset: "cold-press", seed: 91 });
     depositFluidWatercolorDab(grid, { centerX: 11, centerY: 9, radius: 6, waterAmount: 0.88, pigmentAmount: 0.72 });
 
-    let mirrorCells = Float32Array.from(grid.cells);
-    let mirrorPaper = Float32Array.from(grid.paper);
+    let mirrorCells: Float32Array = Float32Array.from(grid.cells);
+    let mirrorPaper: Float32Array = Float32Array.from(grid.paper);
     for (let s = 0; s < 6; s += 1) {
       const next = mirrorWgslSingleStep(grid.width, grid.height, mirrorCells, mirrorPaper, params);
       stepFluidWatercolorCpu(grid, params, 1);

@@ -104,8 +104,8 @@ const AGENTS_MD_SINGLE_POLICY: EngineeringAtlasEntry = {
       "The alternative is copying rules into every tool's file, but copies always drift. The weakness of this approach is that telling a tool to read is not the same as it reading. For example, Claude Code by default does not load AGENTS.md when a CLAUDE.md exists, so the rules arrive when the model follows the instruction in CLAUDE.md.",
     ),
     t(
-      "하네스(pnpm harness:check)는 어댑터 5개가 AGENTS.md를 '언급'하는지, 필수 파일 21개와 정책 문장 7곳이 남아 있는지 매번 검사합니다. 다만 이는 언급 여부 검사이지 도구가 실제로 읽었다는 증명이 아니며, Gemini·Copilot·Cursor를 실제로 썼는지는 저장소에서 확인하지 못했습니다.",
-      "The harness (pnpm harness:check) verifies every time that five adapters mention AGENTS.md and that 21 required files and seven policy passages remain. That is a mention check, not proof that a tool read the file, and the repository shows no sign that Gemini, Copilot or Cursor were actually used.",
+      "하네스(pnpm harness:check)는 어댑터 5개가 AGENTS.md를 '언급'하는지, 필수 파일 22개와 정책 문장 7곳이 남아 있는지 매번 검사합니다. 다만 이는 언급 여부 검사이지 도구가 실제로 읽었다는 증명이 아니며, Gemini·Copilot·Cursor를 실제로 썼는지는 저장소에서 확인하지 못했습니다.",
+      "The harness (pnpm harness:check) verifies every time that five adapters mention AGENTS.md and that 22 required files and seven policy passages remain. That is a mention check, not proof that a tool read the file, and the repository shows no sign that Gemini, Copilot or Cursor were actually used.",
     ),
   ],
   keyPoints: [
@@ -790,7 +790,7 @@ const AGENT_HARNESS_VERIFY_GATES: EngineeringAtlasEntry = {
   technologies: ["Husky", "commitlint", "lint-staged", "Secretlint", "GitHub Actions", "Playwright", "@axe-core/playwright", "ESLint"],
   facts: [
     {
-      value: "21",
+      value: "22",
       label: t("하네스가 확인하는 필수 파일 수", "Required files the harness checks"),
       source: "scripts/agent-harness.mjs",
     },
