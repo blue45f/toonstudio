@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 
 import "./ir-interactive-moat.css";
 
@@ -47,8 +48,13 @@ import { INTRO_PAGE } from "@/domains/marketing/public/intro-tokens";
 
 import { IrBriefLayout, IrBriefSection } from "./IrBriefLayout";
 import { IrBriefOverview } from "./IrBriefOverview";
+import { resolveIrBriefSection } from "./ir-brief-navigation";
 import { IrInteractiveMoatShowcase } from "./IrInteractiveMoatShowcase";
-import { IrDefenseQaAccordion, IrSoloLicenseIntegrityCard } from "./IrQaAndLicenseSection";
+import {
+  IrDefenseQaAccordion,
+  IrSoloLicenseIntegrityCard,
+  IrVerifiedSnapshotStrip,
+} from "./IrQaAndLicenseSection";
 
 const SCOPE = "domains.marketing.IrPitchPage";
 
@@ -56,6 +62,8 @@ const SCOPE = "domains.marketing.IrPitchPage";
 export function IrPitchPage() {
   const bi = useBilingualLocalizer(SCOPE);
   const activeLang: "ko" | "en" = useI18n((state) => state.lang) === "ko" ? "ko" : "en";
+  const location = useLocation();
+  const isOverview = resolveIrBriefSection(location.search, location.hash) === "overview";
   const eyebrow = (text: string) => translateCurrentStaticSourceText(SCOPE, "en", text);
 
   useDocumentTitle(bi("ToonStudio IR · 웹툰 제작 OS 투자 소개", "ToonStudio IR · Investor brief for the webtoon production OS"));
@@ -344,6 +352,11 @@ export function IrPitchPage() {
   return (
     <Container size="wide" className={INTRO_PAGE}>
       <IrBriefLayout onPresent={openPresentation}>
+      {isOverview ? (
+        <div className="mb-5">
+          <IrVerifiedSnapshotStrip surface="site" lang={activeLang} />
+        </div>
+      ) : null}
       <IrBriefOverview />
 
       <IrBriefSection id="problem">
