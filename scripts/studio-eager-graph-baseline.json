@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1708,
-    "bytes": 20742811
+    "modules": 1564,
+    "bytes": 17713413
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
-      "modules": 229,
-      "bytes": 1210595
+      "modules": 220,
+      "bytes": 1115772
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1517,
-      "bytes": 19859129
+      "modules": 1382,
+      "bytes": 16923800
     }
   },
   "forbiddenDomains": {
@@ -59,10 +59,9 @@
       "files": []
     },
     "apps/web/src/domains/creator/bg3d": {
-      "modules": 15,
-      "bytes": 260552,
+      "modules": 12,
+      "bytes": 219148,
       "files": [
-        "apps/web/src/domains/creator/bg3d/StudioBg3dRetainedOwnerRouteBridge.tsx",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-capture-frame-geometry.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-hdri-environment-assets.ts",
@@ -70,9 +69,7 @@
         "apps/web/src/domains/creator/bg3d/studio-bg3d-hierarchy.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-lens.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-copy-remap.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-layer-plan.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-recovery-access-lease.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-retained-owner.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-defaults.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-types.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts",
@@ -172,12 +169,11 @@
       ]
     },
     "apps/web/src/domains/creator/scene3d": {
-      "modules": 3,
-      "bytes": 52860,
+      "modules": 2,
+      "bytes": 10958,
       "files": [
         "apps/web/src/domains/creator/scene3d/studio-scene3d-document.ts",
-        "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts",
-        "apps/web/src/domains/creator/scene3d/studio-scene3d-shot-versions.ts"
+        "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts"
       ]
     },
     "apps/web/src/domains/creator/series-launch": {
@@ -211,23 +207,13 @@
       "files": []
     },
     "apps/web/src/domains/creator/vrm": {
-      "modules": 14,
-      "bytes": 457390,
+      "modules": 4,
+      "bytes": 90345,
       "files": [
-        "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx",
-        "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge-hair-color.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-body-silhouette.ts",
         "apps/web/src/domains/creator/vrm/studio-vrm-joint-limits.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-limb-profile.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-linked-appearance-projection-plan.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-prop-assets.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-proportion-core.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-props.ts",
         "apps/web/src/domains/creator/vrm/studio-vrm-rig-profile.ts",
         "apps/web/src/domains/creator/vrm/studio-vrm-scene-document.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-texture-paint-channel.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-wardrobe.ts"
+        "apps/web/src/domains/creator/vrm/studio-vrm-texture-paint-channel.ts"
       ]
     },
     "apps/web/src/domains/creator/xr-webtoon": {
@@ -307,16 +293,16 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 562,
-      "bytes": 8420059
+      "modules": 535,
+      "bytes": 7794858
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
       "bytes": 2781
     },
     "apps/web/src/domains/creator/ai": {
-      "modules": 33,
-      "bytes": 266110
+      "modules": 25,
+      "bytes": 91143
     },
     "apps/web/src/domains/creator/asset-workspace": {
       "modules": 2,
@@ -327,8 +313,8 @@
       "bytes": 5248
     },
     "apps/web/src/domains/creator/bg3d": {
-      "modules": 15,
-      "bytes": 260552
+      "modules": 12,
+      "bytes": 219148
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
@@ -336,15 +322,15 @@
     },
     "apps/web/src/domains/creator/brush": {
       "modules": 154,
-      "bytes": 2562768
+      "bytes": 2535028
     },
     "apps/web/src/domains/creator/brush-lab": {
-      "modules": 40,
-      "bytes": 397389
+      "modules": 30,
+      "bytes": 299952
     },
     "apps/web/src/domains/creator/canvas": {
       "modules": 65,
-      "bytes": 676830
+      "bytes": 675189
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 3,
@@ -376,7 +362,7 @@
     },
     "apps/web/src/domains/creator/drawing": {
       "modules": 5,
-      "bytes": 108390
+      "bytes": 65831
     },
     "apps/web/src/domains/creator/ecosystem": {
       "modules": 1,
@@ -392,7 +378,7 @@
     },
     "apps/web/src/domains/creator/filter": {
       "modules": 13,
-      "bytes": 170483
+      "bytes": 156163
     },
     "apps/web/src/domains/creator/generic-3d-model": {
       "modules": 1,
@@ -407,16 +393,16 @@
       "bytes": 37839
     },
     "apps/web/src/domains/creator/layer": {
-      "modules": 34,
-      "bytes": 491146
+      "modules": 25,
+      "bytes": 186870
     },
     "apps/web/src/domains/creator/lettering": {
       "modules": 18,
       "bytes": 269450
     },
     "apps/web/src/domains/creator/live": {
-      "modules": 53,
-      "bytes": 814231
+      "modules": 52,
+      "bytes": 709158
     },
     "apps/web/src/domains/creator/localization": {
       "modules": 2,
@@ -427,7 +413,7 @@
       "bytes": 695
     },
     "apps/web/src/domains/creator/offline-branch": {
-      "modules": 3,
+      "modules": 2,
       "bytes": 12927
     },
     "apps/web/src/domains/creator/page": {
@@ -448,15 +434,15 @@
     },
     "apps/web/src/domains/creator/render": {
       "modules": 58,
-      "bytes": 591499
+      "bytes": 581784
     },
     "apps/web/src/domains/creator/review-capture": {
       "modules": 7,
       "bytes": 34766
     },
     "apps/web/src/domains/creator/review-handoff": {
-      "modules": 5,
-      "bytes": 25640
+      "modules": 2,
+      "bytes": 13455
     },
     "apps/web/src/domains/creator/ruler": {
       "modules": 1,
@@ -471,28 +457,28 @@
       "bytes": 6716
     },
     "apps/web/src/domains/creator/scene3d": {
-      "modules": 3,
-      "bytes": 52860
+      "modules": 2,
+      "bytes": 10958
     },
     "apps/web/src/domains/creator/selection": {
       "modules": 7,
       "bytes": 31191
     },
     "apps/web/src/domains/creator/status-i18n": {
-      "modules": 25,
-      "bytes": 528424
+      "modules": 18,
+      "bytes": 342542
     },
     "apps/web/src/domains/creator/studio-3d-ui": {
       "modules": 1,
       "bytes": 1000
     },
     "apps/web/src/domains/creator/studio-collab": {
-      "modules": 14,
-      "bytes": 69244
+      "modules": 13,
+      "bytes": 68598
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
       "modules": 103,
-      "bytes": 1112826
+      "bytes": 1095870
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -519,12 +505,12 @@
       "bytes": 23760
     },
     "apps/web/src/domains/creator/vrm": {
-      "modules": 14,
-      "bytes": 457390
+      "modules": 4,
+      "bytes": 90345
     },
     "apps/web/src/domains/creator/writer-room": {
       "modules": 1,
-      "bytes": 6274
+      "bytes": 3772
     },
     "apps/web/src/domains/cuts": {
       "modules": 1,
@@ -547,20 +533,20 @@
       "bytes": 2562
     },
     "apps/web/src/shared/ai": {
-      "modules": 11,
-      "bytes": 121612
+      "modules": 8,
+      "bytes": 90696
     },
     "apps/web/src/shared/ambient": {
-      "modules": 12,
-      "bytes": 110639
+      "modules": 2,
+      "bytes": 3290
     },
     "apps/web/src/shared/catalog": {
       "modules": 1,
       "bytes": 3978
     },
     "apps/web/src/shared/components": {
-      "modules": 50,
-      "bytes": 213537
+      "modules": 47,
+      "bytes": 209671
     },
     "apps/web/src/shared/hooks": {
       "modules": 2,
@@ -571,7 +557,7 @@
       "bytes": 114655
     },
     "apps/web/src/shared/lib": {
-      "modules": 76,
+      "modules": 75,
       "bytes": 290226
     },
     "apps/web/src/shared/navigation": {
@@ -583,36 +569,32 @@
       "bytes": 9170
     },
     "packages/contracts": {
-      "modules": 35,
-      "bytes": 424120
+      "modules": 32,
+      "bytes": 301259
     },
     "packages/core": {
-      "modules": 12,
-      "bytes": 194757
+      "modules": 6,
+      "bytes": 14462
     },
     "packages/studio-brush-platform": {
-      "modules": 16,
-      "bytes": 234164
+      "modules": 9,
+      "bytes": 136560
     },
     "packages/studio-command-registry": {
       "modules": 7,
       "bytes": 32834
     },
     "packages/studio-engine-registry": {
-      "modules": 18,
-      "bytes": 276334
+      "modules": 7,
+      "bytes": 146718
     },
     "packages/studio-engine-skia": {
       "modules": 1,
       "bytes": 4890
     },
-    "packages/studio-format-gateway": {
-      "modules": 6,
-      "bytes": 74031
-    },
     "packages/studio-project-model": {
-      "modules": 53,
-      "bytes": 356546
+      "modules": 8,
+      "bytes": 49041
     }
   },
   "modules": {
@@ -709,7 +691,6 @@
     "apps/web/src/domains/creator/StudioDrawingPracticeBar.tsx": 2,
     "apps/web/src/domains/creator/StudioEditorReturnButton.tsx": 2,
     "apps/web/src/domains/creator/StudioFloatingSurface.tsx": 2,
-    "apps/web/src/domains/creator/StudioGroupUniformResizeProxy.tsx": 2,
     "apps/web/src/domains/creator/StudioHelpCenterHost.tsx": 2,
     "apps/web/src/domains/creator/StudioInkMeshLivePreviewHost.tsx": 2,
     "apps/web/src/domains/creator/StudioInlineScrubber.tsx": 2,
@@ -749,22 +730,17 @@
     "apps/web/src/domains/creator/StudioWorkspaceRegion.tsx": 2,
     "apps/web/src/domains/creator/a11y/use-studio-window-keyboard-focus.ts": 2,
     "apps/web/src/domains/creator/ai/StudioAiProjectHandoffHost.tsx": 2,
-    "apps/web/src/domains/creator/ai/answer-tuning.ts": 2,
     "apps/web/src/domains/creator/ai/assist/AiAssistDialogHostEntry.tsx": 2,
     "apps/web/src/domains/creator/ai/assist/ai-assist-dialog-store.ts": 2,
     "apps/web/src/domains/creator/ai/assist/assist-canvas-capture-registry.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-asset-image-request.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-assist-ux.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-candidate-apply.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-client.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-colorize-candidates.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-comic-composer-intent.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-composition-suggestion.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-context-note-storage.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-context-note.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-context-prompt.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-error-i18n-t4t5-core.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-error-i18n.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-generated-asset-model.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-image-reference-resolution.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-image-reference-roles.ts": 2,
@@ -772,21 +748,15 @@
     "apps/web/src/domains/creator/ai/studio-ai-provenance-recorder.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-provenance.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-reference-attachments.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-reference-images.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-reference-request.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-response-parsing.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-settings.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-super-suite-intent.ts": 2,
     "apps/web/src/domains/creator/ai/studio-ai-super-suite-loader.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-ai-webtoon-style-filter.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-scenario-candidate-workflow.ts": 2,
-    "apps/web/src/domains/creator/ai/studio-scenario-image-generation.ts": 2,
     "apps/web/src/domains/creator/asset-workspace/StudioUnifiedAssetWorkspaceSessionProvider.tsx": 2,
     "apps/web/src/domains/creator/asset-workspace/studio-unified-asset-workspace-state.ts": 2,
     "apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.tsx": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-document.ts": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-loader.ts": 2,
-    "apps/web/src/domains/creator/bg3d/StudioBg3dRetainedOwnerRouteBridge.tsx": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-capture-frame-geometry.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-hdri-environment-assets.ts": 2,
@@ -794,9 +764,7 @@
     "apps/web/src/domains/creator/bg3d/studio-bg3d-hierarchy.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-lens.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-copy-remap.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-layer-plan.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-recovery-access-lease.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-retained-owner.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-defaults.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-types.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts": 2,
@@ -817,17 +785,6 @@
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-harmony-kernels.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-kit.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-procedural-klecks-kernels.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-core.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-material-v7-advanced.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-material-v7.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-mixbox.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-procedural.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-showcase.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-texture.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-v8.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-v9-webtoon-master.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog.ts": 2,
-    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-types.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-catalog.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-engine.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-material.ts": 2,
@@ -872,16 +829,12 @@
     "apps/web/src/domains/creator/brush/studio-brush-library-export-contract.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-library.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-material-dynamics.ts": 2,
-    "apps/web/src/domains/creator/brush/studio-brush-material-group.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-mode-width.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-original-source.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-pack-format.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-pack-id.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-pack-index.ts": 2,
-    "apps/web/src/domains/creator/brush/studio-brush-pattern-r8-grain-assets.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-product-model.ts": 2,
-    "apps/web/src/domains/creator/brush/studio-brush-product-profile.ts": 2,
-    "apps/web/src/domains/creator/brush/studio-brush-quarantine.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-r8-grain-asset-contract.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-r8-grain-hydrator.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-r8-grain-runtime.ts": 2,
@@ -890,7 +843,6 @@
     "apps/web/src/domains/creator/brush/studio-brush-runtime-contract.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-selection-snapshot.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-selection.ts": 2,
-    "apps/web/src/domains/creator/brush/studio-brush-semantic-quality.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-slots.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-soft-falloff-stamp.ts": 2,
     "apps/web/src/domains/creator/brush/studio-brush-stamp-engine.ts": 2,
@@ -912,7 +864,6 @@
     "apps/web/src/domains/creator/brush/studio-draw-pointer-start-ink-channels.ts": 2,
     "apps/web/src/domains/creator/brush/studio-draw-pointer-start-plan.ts": 2,
     "apps/web/src/domains/creator/brush/studio-draw-rendering.ts": 2,
-    "apps/web/src/domains/creator/brush/studio-draw-ux.ts": 2,
     "apps/web/src/domains/creator/brush/studio-drawing-assist-document.ts": 2,
     "apps/web/src/domains/creator/brush/studio-drawing-palettes.ts": 2,
     "apps/web/src/domains/creator/brush/studio-drawing-pointer-transport.ts": 2,
@@ -947,7 +898,6 @@
     "apps/web/src/domains/creator/brush/studio-paper-grain-visibility-v1.ts": 2,
     "apps/web/src/domains/creator/brush/studio-paper-granulation-runtime.ts": 2,
     "apps/web/src/domains/creator/brush/studio-paper-media-profile-v1.ts": 2,
-    "apps/web/src/domains/creator/brush/studio-paper-media-r8-grain-assets.ts": 2,
     "apps/web/src/domains/creator/brush/studio-paper-substrate-model.ts": 2,
     "apps/web/src/domains/creator/brush/studio-paper-substrate-tile-host-v1.ts": 2,
     "apps/web/src/domains/creator/brush/studio-paper-surface-catalog.ts": 2,
@@ -998,7 +948,6 @@
     "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-program-ids.ts": 2,
     "apps/web/src/domains/creator/canvas/StudioAdjustmentElLazyBoundary.tsx": 2,
     "apps/web/src/domains/creator/canvas/StudioCanvasCollaborationDisclosure.tsx": 2,
-    "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu.tsx": 2,
     "apps/web/src/domains/creator/canvas/StudioCanvasControls.tsx": 2,
     "apps/web/src/domains/creator/canvas/StudioCanvasGuideLayers.tsx": 2,
     "apps/web/src/domains/creator/canvas/StudioCanvasInteractiveOverlays.tsx": 2,
@@ -1078,15 +1027,11 @@
     "apps/web/src/domains/creator/color/studio-recent-color-intents.ts": 2,
     "apps/web/src/domains/creator/comipo/studio-quick-comic-controller.ts": 2,
     "apps/web/src/domains/creator/contracts/studio-adjustment-engine-ids.ts": 2,
-    "apps/web/src/domains/creator/contracts/studio-bg3d-lt-layer-element.ts": 2,
     "apps/web/src/domains/creator/contracts/studio-bg3d-output-settings.ts": 2,
     "apps/web/src/domains/creator/contracts/studio-bg3d-six-pass-settings.ts": 2,
     "apps/web/src/domains/creator/contracts/studio-comments-primitives.ts": 2,
     "apps/web/src/domains/creator/contracts/studio-live-adjustment-contract.ts": 2,
     "apps/web/src/domains/creator/creator-studio-links.ts": 2,
-    "apps/web/src/domains/creator/drawing/studio-csp-benchmark-scorecard.ts": 2,
-    "apps/web/src/domains/creator/drawing/studio-magma-brush-engine.ts": 2,
-    "apps/web/src/domains/creator/drawing/studio-magma-brush-presets.ts": 2,
     "apps/web/src/domains/creator/drawing/studio-perspective-guide.ts": 2,
     "apps/web/src/domains/creator/drawing/studio-perspective-pen-snap.ts": 2,
     "apps/web/src/domains/creator/ecosystem/ecosystem-content.ts": 2,
@@ -1101,7 +1046,6 @@
     "apps/web/src/domains/creator/filter/studio-filter-island-plan.ts": 2,
     "apps/web/src/domains/creator/filter/studio-filter-lane-cost-model.ts": 2,
     "apps/web/src/domains/creator/filter/studio-filter-mask-surface-admission.ts": 2,
-    "apps/web/src/domains/creator/filter/studio-filter-mask-surface-hydrator.ts": 2,
     "apps/web/src/domains/creator/filter/studio-filter-mask-surface-projection.ts": 2,
     "apps/web/src/domains/creator/filter/studio-filter-mask.ts": 2,
     "apps/web/src/domains/creator/filter/studio-filter-menu-groups.ts": 2,
@@ -1121,21 +1065,7 @@
     "apps/web/src/domains/creator/layer/studio-layer-comps-document.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-comps.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-intelligence.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-artifact.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-lift-availability.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-compose-worker-client.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-compose-worker-protocol.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-composition-receipt.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-compositor.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-contract.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-local-provider-diagnostics.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-local-provider.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-mask.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-mediapipe-inference.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-onnx-inference.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-operation-context.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-plan.ts": 2,
-    "apps/web/src/domains/creator/layer/studio-layer-lift-session.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-mask.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-merge.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-navigator.ts": 2,
@@ -1152,7 +1082,6 @@
     "apps/web/src/domains/creator/lettering/studio-bubble-merge.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-bubble-outline-style.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-bubble-path.ts": 2,
-    "apps/web/src/domains/creator/lettering/studio-bubble-style-presets.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-bubble-text-fit.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-bubble-text-runtime.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-dialogue-batch.ts": 2,
@@ -1165,7 +1094,6 @@
     "apps/web/src/domains/creator/lettering/studio-dialogue-translate.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-text-path.ts": 2,
     "apps/web/src/domains/creator/lettering/studio-translation-card-prompt.ts": 2,
-    "apps/web/src/domains/creator/live/StudioLiveCollaborationProvider.tsx": 2,
     "apps/web/src/domains/creator/live/StudioLiveCollaborationQuickControls.tsx": 2,
     "apps/web/src/domains/creator/live/createStudioLiveResourceLeaseController.ts": 2,
     "apps/web/src/domains/creator/live/studio-collaboration-wiring.ts": 2,
@@ -1177,16 +1105,13 @@
     "apps/web/src/domains/creator/live/studio-crdt-page-payload.ts": 2,
     "apps/web/src/domains/creator/live/studio-crdt-payload-metadata.ts": 2,
     "apps/web/src/domains/creator/live/studio-crdt-protocol.ts": 2,
-    "apps/web/src/domains/creator/live/studio-crdt-raster-replay-runtime.ts": 2,
     "apps/web/src/domains/creator/live/studio-crdt-reader-capability.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-admission-support.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-auth-ticket-client.ts": 2,
-    "apps/web/src/domains/creator/live/studio-live-canonical-authority.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-canvas-mutation-gate.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-canvas-overlay-model.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-client-identity.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-collaboration-context.ts": 2,
-    "apps/web/src/domains/creator/live/studio-live-collaboration-protocol.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-dynamic-brush-overlay.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-gesture-preview-projection.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-gesture-preview-publisher.ts": 2,
@@ -1198,7 +1123,6 @@
     "apps/web/src/domains/creator/live/studio-live-ink-overlay.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-ink-rollout.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-jam-session.ts": 2,
-    "apps/web/src/domains/creator/live/studio-live-local-transport-support.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-mutation-guard.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-mutation-lock-coordinator.ts": 2,
     "apps/web/src/domains/creator/live/studio-live-oil-underlay-paint.ts": 2,
@@ -1215,13 +1139,10 @@
     "apps/web/src/domains/creator/live/studio-live-wet-ink-overlay.ts": 2,
     "apps/web/src/domains/creator/live/studio-pending-stroke-admission.ts": 2,
     "apps/web/src/domains/creator/live/studio-rejected-stroke-recovery-persistence.ts": 2,
-    "apps/web/src/domains/creator/live/use-studio-live-auto-reconnect.ts": 2,
     "apps/web/src/domains/creator/live/use-studio-live-transport-auth.ts": 2,
-    "apps/web/src/domains/creator/live/use-studio-offline-conflict-session.ts": 2,
     "apps/web/src/domains/creator/localization/studio-i18n-loader.ts": 1,
     "apps/web/src/domains/creator/localization/studio-i18n-priority-loader.ts": 1,
     "apps/web/src/domains/creator/offline-branch/createStudioOfflineCapableResourceLeaseController.ts": 2,
-    "apps/web/src/domains/creator/offline-branch/studio-offline-branch-feature.ts": 2,
     "apps/web/src/domains/creator/offline-branch/studio-offline-host-integration.ts": 2,
     "apps/web/src/domains/creator/offline/StudioOfflineRuntimeBoundary.tsx": 1,
     "apps/web/src/domains/creator/offline/studio-offline-runtime-path.ts": 1,
@@ -1239,7 +1160,6 @@
     "apps/web/src/domains/creator/render/StudioSkiaDocumentSurface.tsx": 2,
     "apps/web/src/domains/creator/render/studio-canvaskit-path-boolean-document-adapter.ts": 2,
     "apps/web/src/domains/creator/render/studio-document-scene-lower.ts": 2,
-    "apps/web/src/domains/creator/render/studio-engine-failure-policy.ts": 2,
     "apps/web/src/domains/creator/render/studio-engine-scene-spatial-index.ts": 2,
     "apps/web/src/domains/creator/render/studio-filter-plan-shadow.ts": 2,
     "apps/web/src/domains/creator/render/studio-gpu-bristle-admission.ts": 2,
@@ -1286,7 +1206,6 @@
     "apps/web/src/domains/creator/render/studio-skia-presentation-fence.ts": 2,
     "apps/web/src/domains/creator/render/studio-skia-specialist-raster-contract.ts": 2,
     "apps/web/src/domains/creator/render/studio-vello-hub-capability.ts": 2,
-    "apps/web/src/domains/creator/render/studio-vello-hub.ts": 2,
     "apps/web/src/domains/creator/render/studio-webgpu-authority.ts": 2,
     "apps/web/src/domains/creator/render/studio-webgpu-color.ts": 2,
     "apps/web/src/domains/creator/render/studio-webgpu-live-source-journal.ts": 2,
@@ -1301,10 +1220,7 @@
     "apps/web/src/domains/creator/review-capture/studio-review-capture-source.ts": 2,
     "apps/web/src/domains/creator/review-capture/useStudioReviewCapture.ts": 2,
     "apps/web/src/domains/creator/review-capture/useStudioReviewCaptureHost.tsx": 2,
-    "apps/web/src/domains/creator/review-handoff/StudioReviewEditorHandoffMount.tsx": 2,
-    "apps/web/src/domains/creator/review-handoff/studio-review-editor-authority.ts": 2,
     "apps/web/src/domains/creator/review-handoff/studio-review-editor-handoff.ts": 2,
-    "apps/web/src/domains/creator/review-handoff/studio-review-editor-host.ts": 2,
     "apps/web/src/domains/creator/review-handoff/studio-review-editor-route.ts": 2,
     "apps/web/src/domains/creator/ruler/studio-figure-ellipse-ruler.ts": 2,
     "apps/web/src/domains/creator/save-first/StudioFormalSaveDialogMount.tsx": 2,
@@ -1318,7 +1234,6 @@
     "apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.ts": 2,
     "apps/web/src/domains/creator/scene3d/studio-scene3d-document.ts": 2,
     "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts": 2,
-    "apps/web/src/domains/creator/scene3d/studio-scene3d-shot-versions.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-geometry.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-layout.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-marquee.ts": 2,
@@ -1334,22 +1249,15 @@
     "apps/web/src/domains/creator/status-i18n/studio-host-reason-i18n.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c06-core.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-panel-status-i18n-r3c07-core.ts": 2,
-    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-asset-library.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-auto-actions.ts": 2,
-    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-autosave.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-comments.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-filter-worker.ts": 2,
-    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-glb.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-linked3d.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-crdt.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-raster.ts": 2,
-    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-live-room.ts": 2,
-    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-opfs-recovery.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-path-boolean.ts": 2,
-    "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-publish.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-shortcut.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-producer-error-i18n-vector.ts": 2,
-    "apps/web/src/domains/creator/status-i18n/studio-vrm-panel-status-i18n-core.ts": 2,
     "apps/web/src/domains/creator/status-i18n/studio-writer-room-error.ts": 2,
     "apps/web/src/domains/creator/studio-2d-source-size.ts": 2,
     "apps/web/src/domains/creator/studio-3d-ui/studio-3d-handoff-copy.ts": 2,
@@ -1384,11 +1292,8 @@
     "apps/web/src/domains/creator/studio-background-3d-metadata.ts": 2,
     "apps/web/src/domains/creator/studio-background-gradient-color-stops.ts": 2,
     "apps/web/src/domains/creator/studio-bg3d-model-texture-paint.ts": 2,
-    "apps/web/src/domains/creator/studio-bounded-asset-response.ts": 2,
     "apps/web/src/domains/creator/studio-brand-kit.ts": 2,
     "apps/web/src/domains/creator/studio-brush.ts": 2,
-    "apps/web/src/domains/creator/studio-canonical-brush-draw-adapter.ts": 2,
-    "apps/web/src/domains/creator/studio-canonical-brush-plan.ts": 2,
     "apps/web/src/domains/creator/studio-canonical-vnext-dry-media-eligibility.ts": 2,
     "apps/web/src/domains/creator/studio-canonical-vnext-quality-shadow.ts": 2,
     "apps/web/src/domains/creator/studio-capability-probe.ts": 2,
@@ -1407,7 +1312,6 @@
     "apps/web/src/domains/creator/studio-clips.ts": 2,
     "apps/web/src/domains/creator/studio-coalesced-batch-mutation.ts": 2,
     "apps/web/src/domains/creator/studio-collab/studio-role-pipeline-mutation.ts": 2,
-    "apps/web/src/domains/creator/studio-collab/studio-scoped-asset-context.ts": 2,
     "apps/web/src/domains/creator/studio-collab/studio-scoped-canonical-image.ts": 2,
     "apps/web/src/domains/creator/studio-collab/studio-scoped-draft-save.ts": 2,
     "apps/web/src/domains/creator/studio-collab/studio-scoped-drawing-boundary.ts": 2,
@@ -1422,14 +1326,12 @@
     "apps/web/src/domains/creator/studio-collab/use-studio-temporal-clock.ts": 2,
     "apps/web/src/domains/creator/studio-collaboration-lock-copy.ts": 2,
     "apps/web/src/domains/creator/studio-color-popover-hints.ts": 2,
-    "apps/web/src/domains/creator/studio-color-quality-engine.ts": 2,
     "apps/web/src/domains/creator/studio-color-range-worker-protocol.ts": 2,
     "apps/web/src/domains/creator/studio-color-range.ts": 2,
     "apps/web/src/domains/creator/studio-color-utils.ts": 2,
     "apps/web/src/domains/creator/studio-color-vision-model.ts": 2,
     "apps/web/src/domains/creator/studio-color-wheel.ts": 2,
     "apps/web/src/domains/creator/studio-colordrop-gesture.ts": 2,
-    "apps/web/src/domains/creator/studio-command-journal.ts": 2,
     "apps/web/src/domains/creator/studio-comment-editor-selection.ts": 2,
     "apps/web/src/domains/creator/studio-comment-screen-projection.ts": 2,
     "apps/web/src/domains/creator/studio-comment-thread-session.ts": 2,
@@ -1441,12 +1343,9 @@
     "apps/web/src/domains/creator/studio-companion-popup-guidance.ts": 2,
     "apps/web/src/domains/creator/studio-companion-tool-command-executor.ts": 2,
     "apps/web/src/domains/creator/studio-competitor-specialty-ribbon-carrier.ts": 2,
-    "apps/web/src/domains/creator/studio-content-aware-fill-contract.ts": 2,
     "apps/web/src/domains/creator/studio-continuity.ts": 2,
-    "apps/web/src/domains/creator/studio-crc32.ts": 2,
     "apps/web/src/domains/creator/studio-creation-mode.ts": 2,
     "apps/web/src/domains/creator/studio-creation-presets.ts": 2,
-    "apps/web/src/domains/creator/studio-creative-ux.ts": 2,
     "apps/web/src/domains/creator/studio-creator-work-project.ts": 2,
     "apps/web/src/domains/creator/studio-crop.ts": 2,
     "apps/web/src/domains/creator/studio-croquis-capsule-pen-v1.ts": 2,
@@ -1455,7 +1354,6 @@
     "apps/web/src/domains/creator/studio-cuttoon-editor-host-helpers.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorCanvasColumn.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorChrome.tsx": 2,
-    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorContextMenu.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorDialogs.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorHosts.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorInspectorColumn.tsx": 2,
@@ -1463,7 +1361,6 @@
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorSessionDialogs.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorView.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorWorkspace.tsx": 2,
-    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingAppBar.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityContext.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityEntry.tsx": 2,
@@ -1568,7 +1465,6 @@
     "apps/web/src/domains/creator/studio-document-workspace.ts": 3,
     "apps/web/src/domains/creator/studio-dodge-burn.ts": 2,
     "apps/web/src/domains/creator/studio-draft-preview-store.ts": 2,
-    "apps/web/src/domains/creator/studio-draft-save-center-model.ts": 2,
     "apps/web/src/domains/creator/studio-drawing-assist-handlers.ts": 2,
     "apps/web/src/domains/creator/studio-drawing-core-tools.ts": 2,
     "apps/web/src/domains/creator/studio-drawing-practice-document.ts": 2,
@@ -1611,10 +1507,8 @@
     "apps/web/src/domains/creator/studio-frame-animation-timing.ts": 2,
     "apps/web/src/domains/creator/studio-frame-animation.ts": 2,
     "apps/web/src/domains/creator/studio-frame-folder.ts": 2,
-    "apps/web/src/domains/creator/studio-frozen3-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-frozen4-status-i18n.ts": 2,
     "apps/web/src/domains/creator/studio-fx-brush.ts": 2,
-    "apps/web/src/domains/creator/studio-generic-3d-model-mode.ts": 2,
     "apps/web/src/domains/creator/studio-generic-3d-workflow-metadata.ts": 2,
     "apps/web/src/domains/creator/studio-google-fonts.ts": 2,
     "apps/web/src/domains/creator/studio-gradient-engine.ts": 2,
@@ -1636,7 +1530,6 @@
     "apps/web/src/domains/creator/studio-history-retention-ui.ts": 2,
     "apps/web/src/domains/creator/studio-horizontal-wheel.ts": 2,
     "apps/web/src/domains/creator/studio-host-status-i18n.ts": 2,
-    "apps/web/src/domains/creator/studio-humanoid-bones.ts": 2,
     "apps/web/src/domains/creator/studio-id.ts": 2,
     "apps/web/src/domains/creator/studio-image-filter-worker-error.ts": 2,
     "apps/web/src/domains/creator/studio-image-placement.ts": 2,
@@ -1672,14 +1565,12 @@
     "apps/web/src/domains/creator/studio-liquify-stroke-sampling.ts": 2,
     "apps/web/src/domains/creator/studio-live-adjustment-status.ts": 2,
     "apps/web/src/domains/creator/studio-live-adjustment.ts": 2,
-    "apps/web/src/domains/creator/studio-live-canvas-gesture.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-clip-tracking-konva.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-clip-tracking.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-draft-store.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-draw-compiler.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-exact-draft-admission.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-gesture-konva.ts": 2,
-    "apps/web/src/domains/creator/studio-live-transform-group-gesture-konva.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-preview-eligibility.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-preview-konva.ts": 2,
     "apps/web/src/domains/creator/studio-live-transform-preview-session.ts": 2,
@@ -1692,7 +1583,6 @@
     "apps/web/src/domains/creator/studio-living-ink-execution-protocol.ts": 2,
     "apps/web/src/domains/creator/studio-living-ink-field.ts": 2,
     "apps/web/src/domains/creator/studio-living-ink-fluid-reference.ts": 2,
-    "apps/web/src/domains/creator/studio-living-ink-gpu-protocol.ts": 2,
     "apps/web/src/domains/creator/studio-living-ink-input-routing.ts": 2,
     "apps/web/src/domains/creator/studio-living-ink-overlay.ts": 2,
     "apps/web/src/domains/creator/studio-living-ink-product-admission.ts": 2,
@@ -1783,8 +1673,6 @@
     "apps/web/src/domains/creator/studio-panel-split.ts": 2,
     "apps/web/src/domains/creator/studio-panel-ui.tsx": 2,
     "apps/web/src/domains/creator/studio-path-boolean.ts": 2,
-    "apps/web/src/domains/creator/studio-pathfinder-boolean-adapter.ts": 2,
-    "apps/web/src/domains/creator/studio-pathfinder-vector-engine.ts": 2,
     "apps/web/src/domains/creator/studio-pattern-fill.ts": 2,
     "apps/web/src/domains/creator/studio-pending-stroke-durability.ts": 2,
     "apps/web/src/domains/creator/studio-perfect-freehand.ts": 2,
@@ -1862,18 +1750,14 @@
     "apps/web/src/domains/creator/studio-selection-border.ts": 2,
     "apps/web/src/domains/creator/studio-selection-chrome-mirror.ts": 2,
     "apps/web/src/domains/creator/studio-selection-tools.ts": 2,
-    "apps/web/src/domains/creator/studio-selection-transform-advanced.ts": 2,
     "apps/web/src/domains/creator/studio-selection-transform-commit.ts": 2,
     "apps/web/src/domains/creator/studio-selection-transform-contract.ts": 2,
-    "apps/web/src/domains/creator/studio-selection-transform-metrics.ts": 2,
     "apps/web/src/domains/creator/studio-selection-transform-multi.ts": 2,
     "apps/web/src/domains/creator/studio-selection-transform-single.ts": 2,
     "apps/web/src/domains/creator/studio-selection.ts": 2,
     "apps/web/src/domains/creator/studio-selective-hsl.ts": 2,
-    "apps/web/src/domains/creator/studio-server-ai-client.ts": 2,
     "apps/web/src/domains/creator/studio-sfx-presets.ts": 2,
     "apps/web/src/domains/creator/studio-sha256.ts": 2,
-    "apps/web/src/domains/creator/studio-shared-3d-scene-bridge.ts": 2,
     "apps/web/src/domains/creator/studio-shared-3d-scene-runtime.ts": 2,
     "apps/web/src/domains/creator/studio-shared-3d-stage-collection.ts": 2,
     "apps/web/src/domains/creator/studio-shared-3d-stage-document.ts": 2,
@@ -1891,8 +1775,6 @@
     "apps/web/src/domains/creator/studio-smart-shape-copy.ts": 2,
     "apps/web/src/domains/creator/studio-smart-shape-geometry.ts": 2,
     "apps/web/src/domains/creator/studio-smart-shape-snapshot.ts": 2,
-    "apps/web/src/domains/creator/studio-smoke-core.ts": 2,
-    "apps/web/src/domains/creator/studio-smoke-grid.ts": 2,
     "apps/web/src/domains/creator/studio-smudge.ts": 2,
     "apps/web/src/domains/creator/studio-space-pan-shortcut.ts": 2,
     "apps/web/src/domains/creator/studio-spectral-wgm-mix-v1.ts": 2,
@@ -1900,12 +1782,10 @@
     "apps/web/src/domains/creator/studio-stable-handlers.ts": 2,
     "apps/web/src/domains/creator/studio-standard-blend.ts": 2,
     "apps/web/src/domains/creator/studio-sticky-note.ts": 2,
-    "apps/web/src/domains/creator/studio-storage-recovery-runtime.ts": 2,
     "apps/web/src/domains/creator/studio-story-beats.ts": 2,
     "apps/web/src/domains/creator/studio-stroke-focus-activity.ts": 2,
     "apps/web/src/domains/creator/studio-task-tools.ts": 2,
     "apps/web/src/domains/creator/studio-task-workspace.ts": 2,
-    "apps/web/src/domains/creator/studio-team-client.ts": 2,
     "apps/web/src/domains/creator/studio-team-comment-frontier.ts": 2,
     "apps/web/src/domains/creator/studio-team-comment-operation-scope.ts": 2,
     "apps/web/src/domains/creator/studio-team-comment-read-marking.ts": 2,
@@ -1953,7 +1833,6 @@
     "apps/web/src/domains/creator/studio-webtoon-canvas-presets.ts": 2,
     "apps/web/src/domains/creator/studio-whiteboard-ephemeral.ts": 2,
     "apps/web/src/domains/creator/studio-work-asset-admission.ts": 2,
-    "apps/web/src/domains/creator/studio-work-asset-client.ts": 2,
     "apps/web/src/domains/creator/studio-work-asset-edit-guard.ts": 2,
     "apps/web/src/domains/creator/studio-work-asset-hydrator.ts": 2,
     "apps/web/src/domains/creator/studio-work-asset-render-projection.ts": 2,
@@ -1968,9 +1847,7 @@
     "apps/web/src/domains/creator/studio-workspace-route.ts": 3,
     "apps/web/src/domains/creator/studio-workspace-wide-mode.ts": 2,
     "apps/web/src/domains/creator/studio-workspaces.ts": 2,
-    "apps/web/src/domains/creator/studio-writer-room-canvas-projection.ts": 2,
     "apps/web/src/domains/creator/studio-writer-room.ts": 2,
-    "apps/web/src/domains/creator/studio-z-index.ts": 2,
     "apps/web/src/domains/creator/template/studio-template-layout-controller.ts": 2,
     "apps/web/src/domains/creator/toolchain/studio-local-tool-import-authority.ts": 2,
     "apps/web/src/domains/creator/use-studio-drawing-practice-runtime.ts": 2,
@@ -1994,21 +1871,10 @@
     "apps/web/src/domains/creator/vector/studio-node-bubble-edit-controller.ts": 2,
     "apps/web/src/domains/creator/vector/studio-node-edit-pointer-session.ts": 2,
     "apps/web/src/domains/creator/vector/studio-vector-magnet-snap.ts": 2,
-    "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge-hair-color.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-body-silhouette.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-joint-limits.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-limb-profile.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-linked-appearance-projection-plan.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-prop-assets.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-proportion-core.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-props.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-rig-profile.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-scene-document.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-texture-paint-channel.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-wardrobe.ts": 2,
-    "apps/web/src/domains/creator/writer-room/buildStudioWriterRoomCanvasPages.ts": 2,
     "apps/web/src/domains/cuts/cuts-labels.ts": 1,
     "apps/web/src/domains/newsletter/newsletter-labels.ts": 1,
     "apps/web/src/platform/api-error.ts": 3,
@@ -2022,29 +1888,15 @@
     "apps/web/src/shared/ai/assist/assist-protocol.ts": 2,
     "apps/web/src/shared/ai/free-ai-policy.ts": 2,
     "apps/web/src/shared/ai/free-ai-runtime-budget.ts": 2,
-    "apps/web/src/shared/ai/unified-ai-settings.ts": 2,
-    "apps/web/src/shared/ai/user-ai-bounded-read.ts": 2,
     "apps/web/src/shared/ai/user-ai-crypto.ts": 2,
     "apps/web/src/shared/ai/user-ai-store.ts": 2,
     "apps/web/src/shared/ai/user-ai-transport-error.ts": 2,
-    "apps/web/src/shared/ai/user-ai-transport.ts": 2,
     "apps/web/src/shared/ai/user-ai-types.ts": 2,
-    "apps/web/src/shared/ambient/PageIntroMotif.tsx": 1,
-    "apps/web/src/shared/ambient/ambient-engine.ts": 1,
-    "apps/web/src/shared/ambient/ambient-labels.ts": 1,
-    "apps/web/src/shared/ambient/ambient-layers.ts": 1,
-    "apps/web/src/shared/ambient/ambient-particles.ts": 1,
-    "apps/web/src/shared/ambient/ambient-preferences.ts": 1,
-    "apps/web/src/shared/ambient/ambient-renderer.ts": 1,
     "apps/web/src/shared/ambient/ambient-routes.ts": 1,
-    "apps/web/src/shared/ambient/ambient-time.ts": 1,
-    "apps/web/src/shared/ambient/ambient-weather.ts": 1,
     "apps/web/src/shared/ambient/page-intro-motif.ts": 1,
-    "apps/web/src/shared/ambient/useAmbientExperience.ts": 1,
     "apps/web/src/shared/catalog/catalog-static.ts": 3,
     "apps/web/src/shared/components/EntryIntro.tsx": 1,
     "apps/web/src/shared/components/LoadingState.tsx": 1,
-    "apps/web/src/shared/components/RoutePurposeScene.tsx": 1,
     "apps/web/src/shared/components/SiteRouteExperienceBoundary.tsx": 1,
     "apps/web/src/shared/components/WorkflowTrustBadge.tsx": 1,
     "apps/web/src/shared/components/appearance/AppearanceBridge.tsx": 1,
@@ -2056,7 +1908,6 @@
     "apps/web/src/shared/components/open-search-button.tsx": 1,
     "apps/web/src/shared/components/page-intro/PageIntro.tsx": 1,
     "apps/web/src/shared/components/page-intro/page-intro-utils.ts": 1,
-    "apps/web/src/shared/components/public-site-appearance-toggle.tsx": 1,
     "apps/web/src/shared/components/pwa-install-nudge-host.tsx": 1,
     "apps/web/src/shared/components/route-silhouette.tsx": 1,
     "apps/web/src/shared/components/site-experience/SiteConnectionNotice.tsx": 1,
@@ -2064,9 +1915,6 @@
     "apps/web/src/shared/components/site-experience/site-experience-context.ts": 1,
     "apps/web/src/shared/components/site-experience/site-experience-policy.ts": 1,
     "apps/web/src/shared/components/site-experience/site-illustrated-art.ts": 1,
-    "apps/web/src/shared/components/site-experience/use-atelier-motion.ts": 1,
-    "apps/web/src/shared/components/site-experience/workflow-illustration.ts": 1,
-    "apps/web/src/shared/components/site-experience/workflow-route-art.ts": 1,
     "apps/web/src/shared/components/site-header.tsx": 1,
     "apps/web/src/shared/components/site-navigation.ts": 1,
     "apps/web/src/shared/components/site-public-routes.ts": 1,
@@ -2077,11 +1925,9 @@
     "apps/web/src/shared/components/spatial-campus/campus-context.ts": 1,
     "apps/web/src/shared/components/spatial-campus/campus-object-context.ts": 1,
     "apps/web/src/shared/components/spatial-campus/campus-palette-context.ts": 1,
-    "apps/web/src/shared/components/toonstudio-brand.tsx": 3,
-    "apps/web/src/shared/components/toonstudio-mark.tsx": 3,
+    "apps/web/src/shared/components/toonstudio-brand.tsx": 1,
+    "apps/web/src/shared/components/toonstudio-mark.tsx": 1,
     "apps/web/src/shared/components/ui/button-utils.ts": 2,
-    "apps/web/src/shared/components/ui/button.tsx": 2,
-    "apps/web/src/shared/components/ui/slot.tsx": 2,
     "apps/web/src/shared/components/ui/switch.tsx": 2,
     "apps/web/src/shared/components/use-site-header-height.ts": 1,
     "apps/web/src/shared/components/workspace/WorkspaceChrome.tsx": 1,
@@ -2104,12 +1950,9 @@
     "apps/web/src/shared/lib/creator-continuity-codec.ts": 1,
     "apps/web/src/shared/lib/creator-continuity-destinations.ts": 1,
     "apps/web/src/shared/lib/creator-continuity-model.ts": 1,
-    "apps/web/src/shared/lib/creator-continuity-plan.ts": 1,
     "apps/web/src/shared/lib/creator-continuity-reducer.ts": 1,
     "apps/web/src/shared/lib/creator-continuity-store.ts": 1,
-    "apps/web/src/shared/lib/creator-continuity.ts": 1,
     "apps/web/src/shared/lib/creator-experience-mode.ts": 1,
-    "apps/web/src/shared/lib/creator-role-contract.ts": 2,
     "apps/web/src/shared/lib/csrf.ts": 3,
     "apps/web/src/shared/lib/cx.ts": 3,
     "apps/web/src/shared/lib/decode-path-segment.ts": 1,
@@ -2152,7 +1995,6 @@
     "apps/web/src/shared/lib/studio-brush-material-program-contract.ts": 2,
     "apps/web/src/shared/lib/studio-brush-r8-grain-asset-contract.ts": 2,
     "apps/web/src/shared/lib/studio-command-search-bridge.ts": 1,
-    "apps/web/src/shared/lib/studio-crdt-raster-compaction.ts": 2,
     "apps/web/src/shared/lib/studio-crdt-raster-ops.ts": 2,
     "apps/web/src/shared/lib/studio-filter-mask-surface-contract.ts": 2,
     "apps/web/src/shared/lib/studio-ink-input-contract.ts": 2,
@@ -2173,13 +2015,12 @@
     "apps/web/src/shared/lib/workspace-scene-art.ts": 1,
     "apps/web/src/shared/navigation/navigation.ts": 1,
     "apps/web/src/shared/navigation/return-context.ts": 2,
-    "apps/web/src/shared/navigation/router-link.tsx": 3,
+    "apps/web/src/shared/navigation/router-link.tsx": 1,
     "apps/web/src/shared/rest-status-i18n-core.ts": 1,
     "apps/web/src/shared/seo/use-document-title.ts": 1,
     "packages/contracts/src/avatar.ts": 1,
     "packages/contracts/src/creator-asset-contract.ts": 2,
     "packages/contracts/src/creator-community-publication-contract.ts": 2,
-    "packages/contracts/src/creator-role-contract.ts": 2,
     "packages/contracts/src/security/csrf.ts": 3,
     "packages/contracts/src/sha256-portable.ts": 2,
     "packages/contracts/src/studio-adjustment-engine-ids.ts": 2,
@@ -2188,13 +2029,7 @@
     "packages/contracts/src/studio-brush-material-program-contract.ts": 2,
     "packages/contracts/src/studio-brush-r8-grain-asset-contract.ts": 2,
     "packages/contracts/src/studio-bundle-source-credit.ts": 2,
-    "packages/contracts/src/studio-crdt-authoring.ts": 2,
-    "packages/contracts/src/studio-crdt-authoring/element-projection.ts": 2,
     "packages/contracts/src/studio-crdt-authoring/group-key.ts": 2,
-    "packages/contracts/src/studio-crdt-authoring/page-reconcile.ts": 2,
-    "packages/contracts/src/studio-crdt-authoring/raw-reader.ts": 2,
-    "packages/contracts/src/studio-crdt-authoring/shared-stage-projection.ts": 2,
-    "packages/contracts/src/studio-crdt-raster-compaction.ts": 2,
     "packages/contracts/src/studio-crdt-raster-ops.ts": 2,
     "packages/contracts/src/studio-filter-mask-surface-contract.ts": 2,
     "packages/contracts/src/studio-ink-input-contract.ts": 2,
@@ -2213,30 +2048,15 @@
     "packages/contracts/src/studio-writer-room.ts": 2,
     "packages/core/src/business.ts": 1,
     "packages/core/src/calendar.ts": 3,
-    "packages/core/src/creator-role.ts": 2,
     "packages/core/src/format.ts": 2,
-    "packages/core/src/fx/audio.ts": 2,
-    "packages/core/src/fx/hooks.ts": 2,
-    "packages/core/src/fx/index.ts": 2,
-    "packages/core/src/fx/particles.ts": 2,
-    "packages/core/src/fx/playlist-media-release.ts": 2,
     "packages/core/src/production/scope.ts": 2,
     "packages/core/src/public-share-path.ts": 1,
     "packages/core/src/taxonomy.ts": 3,
     "packages/studio-brush-platform/src/bristle-model.ts": 2,
-    "packages/studio-brush-platform/src/brush-preview.ts": 2,
     "packages/studio-brush-platform/src/compile.ts": 2,
     "packages/studio-brush-platform/src/geometry.ts": 2,
-    "packages/studio-brush-platform/src/index.ts": 2,
     "packages/studio-brush-platform/src/ink-mesh-derivation.ts": 2,
     "packages/studio-brush-platform/src/ink-mesh-path.ts": 2,
-    "packages/studio-brush-platform/src/ink-mesh.ts": 2,
-    "packages/studio-brush-platform/src/input.ts": 2,
-    "packages/studio-brush-platform/src/libmypaint.ts": 2,
-    "packages/studio-brush-platform/src/natural-media-fullsize-benchmark.ts": 2,
-    "packages/studio-brush-platform/src/providers.ts": 2,
-    "packages/studio-brush-platform/src/raster-compile.ts": 2,
-    "packages/studio-brush-platform/src/raster-stroke-samples.ts": 2,
     "packages/studio-brush-platform/src/stabilizer.ts": 2,
     "packages/studio-brush-platform/src/stroke-budget.ts": 2,
     "packages/studio-command-registry/src/availability.ts": 2,
@@ -2246,84 +2066,22 @@
     "packages/studio-command-registry/src/registry.ts": 2,
     "packages/studio-command-registry/src/terminology.ts": 2,
     "packages/studio-command-registry/src/types.ts": 2,
-    "packages/studio-engine-registry/src/benchmark-registry.ts": 2,
-    "packages/studio-engine-registry/src/capability-gap-plan.ts": 2,
     "packages/studio-engine-registry/src/descriptor.ts": 2,
-    "packages/studio-engine-registry/src/effect-compiler.ts": 2,
-    "packages/studio-engine-registry/src/external-filter-bridge.ts": 2,
-    "packages/studio-engine-registry/src/feature-contract.ts": 2,
-    "packages/studio-engine-registry/src/filter-providers.ts": 2,
-    "packages/studio-engine-registry/src/index.ts": 2,
-    "packages/studio-engine-registry/src/island-compiler.ts": 2,
     "packages/studio-engine-registry/src/manifest.ts": 2,
     "packages/studio-engine-registry/src/manifest/providers.json": 2,
     "packages/studio-engine-registry/src/planner-cost-shadow.ts": 2,
     "packages/studio-engine-registry/src/planner.ts": 2,
     "packages/studio-engine-registry/src/registry.ts": 2,
     "packages/studio-engine-registry/src/tournament.ts": 2,
-    "packages/studio-engine-registry/src/wgsl-pipeline-cache.ts": 2,
-    "packages/studio-engine-registry/src/wgsl-sandbox.ts": 2,
-    "packages/studio-engine-registry/src/workload-fingerprint.ts": 2,
     "packages/studio-engine-skia/src/document-contract.ts": 2,
-    "packages/studio-format-gateway/src/abr-preview.ts": 2,
-    "packages/studio-format-gateway/src/abr.ts": 2,
-    "packages/studio-format-gateway/src/kpp.ts": 2,
-    "packages/studio-format-gateway/src/myb.ts": 2,
-    "packages/studio-format-gateway/src/nul-text.ts": 2,
-    "packages/studio-format-gateway/src/xml-character-reference.ts": 2,
-    "packages/studio-project-model/src/assets/asset-lockfile.ts": 2,
-    "packages/studio-project-model/src/authority/document-authority.ts": 2,
-    "packages/studio-project-model/src/capability/capability-ledger.ts": 2,
-    "packages/studio-project-model/src/command/bus.ts": 2,
-    "packages/studio-project-model/src/command/journal-store.ts": 2,
-    "packages/studio-project-model/src/command/recovery.ts": 2,
-    "packages/studio-project-model/src/command/reducer.ts": 2,
-    "packages/studio-project-model/src/compat/project-graph-v3.ts": 2,
     "packages/studio-project-model/src/frame-clip.ts": 2,
-    "packages/studio-project-model/src/graph/artifact-revision.ts": 2,
-    "packages/studio-project-model/src/graph/artifact.ts": 2,
-    "packages/studio-project-model/src/graph/external-file-binding.ts": 2,
-    "packages/studio-project-model/src/graph/handoff-envelope.ts": 2,
     "packages/studio-project-model/src/graph/ids.ts": 2,
-    "packages/studio-project-model/src/graph/pinned-review-share.ts": 2,
-    "packages/studio-project-model/src/graph/project-graph.ts": 2,
-    "packages/studio-project-model/src/graph/recording-booth-asset.ts": 2,
-    "packages/studio-project-model/src/graph/review-delivery.ts": 2,
-    "packages/studio-project-model/src/graph/review-pen-storage.ts": 2,
-    "packages/studio-project-model/src/graph/review-pen.ts": 2,
-    "packages/studio-project-model/src/graph/review-policy-history.ts": 2,
-    "packages/studio-project-model/src/graph/review-policy.ts": 2,
     "packages/studio-project-model/src/graph/review-source-map.ts": 2,
-    "packages/studio-project-model/src/graph/review-task-completion.ts": 2,
-    "packages/studio-project-model/src/graph/review-task-reference.ts": 2,
-    "packages/studio-project-model/src/graph/review-task-role-assignment.ts": 2,
-    "packages/studio-project-model/src/graph/review-voice-note.ts": 2,
-    "packages/studio-project-model/src/graph/revision.ts": 2,
-    "packages/studio-project-model/src/graph/scope-ref.ts": 2,
-    "packages/studio-project-model/src/index.ts": 2,
-    "packages/studio-project-model/src/interchange/compatibility-report.ts": 2,
-    "packages/studio-project-model/src/ir/animation-lowering.ts": 2,
-    "packages/studio-project-model/src/ir/animation.ts": 2,
-    "packages/studio-project-model/src/ir/asset-metadata.ts": 2,
-    "packages/studio-project-model/src/ir/balloon-text-layout.ts": 2,
     "packages/studio-project-model/src/ir/brush.ts": 2,
-    "packages/studio-project-model/src/ir/color.ts": 2,
-    "packages/studio-project-model/src/ir/comic-lowering.ts": 2,
-    "packages/studio-project-model/src/ir/comic.ts": 2,
     "packages/studio-project-model/src/ir/digest.ts": 2,
-    "packages/studio-project-model/src/ir/effect.ts": 2,
-    "packages/studio-project-model/src/ir/frame-graph.ts": 2,
-    "packages/studio-project-model/src/ir/journal.ts": 2,
     "packages/studio-project-model/src/ir/path-transform.ts": 2,
     "packages/studio-project-model/src/ir/path.ts": 2,
-    "packages/studio-project-model/src/ir/project-state.ts": 2,
-    "packages/studio-project-model/src/ir/render-scene.ts": 2,
-    "packages/studio-project-model/src/ir/scene-features.ts": 2,
-    "packages/studio-project-model/src/ir/scene-sharding.ts": 2,
-    "packages/studio-project-model/src/ir/scene.ts": 2,
-    "packages/studio-project-model/src/ir/spatial-measurement.ts": 2,
-    "packages/studio-project-model/src/ir/stroke.ts": 2,
-    "packages/studio-project-model/src/testing/fault-injection.ts": 2
+    "packages/studio-project-model/src/ir/spatial-measurement.ts": 2
   },
   "registrations": [
     {
