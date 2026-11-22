@@ -4,40 +4,45 @@
  * 공유하는 기반 정의만 모았다.
  */
 
-import { STUDIO_3D_LOCAL_WASM64_MAX_BYTES } from "../import-safety/studio-3d-upload-limit-policy";
+import type {
+  STUDIO_BG3D_AIM_AXES,
+  STUDIO_BG3D_PRIMITIVE_KINDS,
+  STUDIO_BG3D_SKY_PRESET_IDS,
+} from "../contracts/studio-bg3d-scene-document-constants";
 import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
 import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
 import type { StudioSpatialMeasurementDocument as StudioBg3dMeasurementDocument } from "@toonstudio/studio-project-model/spatial-measurement";
 import type { StudioBg3dEnvironmentSettings } from "../contracts/studio-bg3d-environment-settings";
 import type { StudioBg3dSceneRecipeEnvelope, StudioBg3dSurfaceRef } from "./studio-bg3d-scene-surface-types";
 
-export const STUDIO_BG3D_SCENE_DOCUMENT_KIND = "toonstudio.bg3d-scene" as const;
-// 노드 tags·componentRef, 장면 meta, 컷 hiddenTags 는 v3 에 선택 필드로 더했고 버전은 올리지 않았다.
-// 올리면 저장된 v3 데이터(고정 컷 sourceHash, 템플릿 sceneJson 등)를 함께 옮겨야 한다. 소유자 판정 대기:
-// docs/features/bg3d-components-tags-scenes.md "버전을 올리지 않은 이유와 대가".
-export const STUDIO_BG3D_SCENE_DOCUMENT_VERSION = 3 as const;
-export const STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION = 4 as const;
-export const STUDIO_BG3D_SCHEMA_V2_SCENE_DOCUMENT_VERSION = 2 as const;
-export const STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION = 1 as const;
-// Schema v3 adds an explicit `twoBoneIks` collection to every constrained model. Keeping the old
-// 256 KiB ceiling would make an otherwise valid near-cap v2 document fail migration solely because
-// each aim-only layer gains `twoBoneIks: []`. The bounded 320 KiB ceiling preserves all legacy
-// payloads while retaining a small, deterministic metadata budget.
-export const STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES = 320 * 1024;
-export const STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES = 512;
-/**
- * Attachment budget must cover Hybrid DCC editable room presets (classroom ≈ 66
- * parts) plus a few CAD/prop assets. Align with Hybrid layout/room authority
- * caps (256) so "교실 세트 → 3D 배경 편집기" handoff does not fail by default.
- */
-export const STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS = 256;
-export const STUDIO_BG3D_SCENE_DOCUMENT_MAX_SHOTS = 64;
-export const STUDIO_BG3D_SHOT_ID_MAX_LENGTH = 80;
-export const STUDIO_BG3D_SHOT_NAME_MAX_LENGTH = 80;
-export const STUDIO_BG3D_SHOT_MAX_NODE_VISIBILITY_OVERRIDES =
-  STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES;
-export const STUDIO_BG3D_GLB_MIME = "model/gltf-binary" as const;
-export const STUDIO_BG3D_GLB_MAX_BYTES = STUDIO_3D_LOCAL_WASM64_MAX_BYTES;
+export {
+  DEFAULT_STUDIO_BG3D_ANIMATION_PLAYBACK,
+  DEFAULT_STUDIO_BG3D_CONSTRAINT_LAYER,
+  DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
+  DEFAULT_STUDIO_BG3D_MORPH_LAYER,
+  DEFAULT_STUDIO_BG3D_POSE_LAYER,
+  STUDIO_BG3D_AIM_AXES,
+  STUDIO_BG3D_GLB_MAX_BYTES,
+  STUDIO_BG3D_GLB_MIME,
+  STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH,
+  STUDIO_BG3D_LEGACY_SCENE_DOCUMENT_VERSION,
+  STUDIO_BG3D_MAX_TWO_BONE_IK_CONSTRAINTS,
+  STUDIO_BG3D_PRIMITIVE_KINDS,
+  STUDIO_BG3D_SCENE_DOCUMENT_KIND,
+  STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS,
+  STUDIO_BG3D_SCENE_DOCUMENT_MAX_BYTES,
+  STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES,
+  STUDIO_BG3D_SCENE_DOCUMENT_MAX_SHOTS,
+  STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
+  STUDIO_BG3D_SCHEMA_V2_SCENE_DOCUMENT_VERSION,
+  STUDIO_BG3D_SHOT_ID_MAX_LENGTH,
+  STUDIO_BG3D_SHOT_MAX_NODE_VISIBILITY_OVERRIDES,
+  STUDIO_BG3D_SHOT_NAME_MAX_LENGTH,
+  STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION,
+  STUDIO_BG3D_SKY_PRESET_IDS,
+  StudioBg3dSceneDocumentBudgetError,
+  failBudget,
+} from "../contracts/studio-bg3d-scene-document-constants";
 
 export type StudioBg3dSceneDocumentBudgetErrorCode =
   | "input-byte-budget-exceeded"
@@ -54,48 +59,13 @@ export type StudioBg3dSceneDocumentBudgetErrorCode =
   | "hidden-tag-count-budget-exceeded"
   | "document-byte-budget-exceeded";
 
-/**
- * Typed fail-closed signal for editor normalization. Strict parse/serialize APIs continue to return
- * `null`; the lenient editor API throws this error instead of returning a valid-looking prefix.
- */
-export class StudioBg3dSceneDocumentBudgetError extends Error {
-  readonly code: StudioBg3dSceneDocumentBudgetErrorCode;
-
-  constructor(code: StudioBg3dSceneDocumentBudgetErrorCode) {
-    super(`Studio BG3D scene document budget exceeded: ${code}.`);
-    this.name = "StudioBg3dSceneDocumentBudgetError";
-    this.code = code;
-  }
-}
-
 export type BudgetFailureMode = "null" | "throw";
-
-export function failBudget(code: StudioBg3dSceneDocumentBudgetErrorCode): never {
-  throw new StudioBg3dSceneDocumentBudgetError(code);
-}
 
 export type StudioBg3dVec3 = readonly [number, number, number];
 export type StudioBg3dQuaternion = readonly [number, number, number, number];
 
-export const STUDIO_BG3D_PRIMITIVE_KINDS = [
-  "box",
-  "cylinder",
-  "plane",
-  "sphere",
-  "hemisphere",
-  "cone",
-  "pyramid",
-  "triangularPrism",
-  "hexPrism",
-  "torus",
-  "tube",
-  "ring",
-  "capsule",
-] as const;
-
 export type StudioBg3dPrimitiveKind = (typeof STUDIO_BG3D_PRIMITIVE_KINDS)[number];
 export type StudioBg3dBackgroundMode = "color" | "sky-preset" | "transparent";
-export const STUDIO_BG3D_SKY_PRESET_IDS = ["blank", "clear_day", "sunset", "night"] as const;
 export type StudioBg3dSkyPresetId = (typeof STUDIO_BG3D_SKY_PRESET_IDS)[number];
 export type StudioBg3dToneMapping = "none" | "neutral" | "aces";
 export type StudioBg3dToneMode = "none" | "flat" | "cel" | "screentone";
@@ -129,19 +99,6 @@ export interface StudioBg3dMaterialOverride {
   /** Optional CC0 2K PBR surface material catalog ID for real-time multi-channel texture binding. */
   readonly surfaceMaterialId?: string;
 }
-
-export const DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE: StudioBg3dMaterialOverride = Object.freeze({
-  colorMode: "original",
-  color: "#ffffff",
-  colorStrength: 1,
-  opacityMultiplier: 1,
-  roughness: null,
-  metalness: null,
-  emissiveColor: "#000000",
-  emissiveIntensity: null,
-  wireframe: false,
-  doubleSided: false,
-});
 
 /** UV 좌표 쌍 [u, v]. 둘 다 0..1, 원점은 텍스처 왼쪽 아래(Three UV 관례). */
 export type StudioBg3dTexturePaintPoint = readonly [number, number];
@@ -197,15 +154,6 @@ export interface StudioBg3dAnimationPlayback {
   readonly weight: number;
 }
 
-export const DEFAULT_STUDIO_BG3D_ANIMATION_PLAYBACK: StudioBg3dAnimationPlayback = Object.freeze({
-  clipIndex: 0,
-  playing: false,
-  loop: "repeat",
-  timeSeconds: 0,
-  timeScale: 1,
-  weight: 1,
-});
-
 export interface StudioBg3dJointPoseOverride {
   /** Engine-neutral canonical skin/joint ordinal, e.g. `skin-0:joint-12`. */
   readonly jointKey: string;
@@ -218,12 +166,6 @@ export interface StudioBg3dPoseLayer {
   readonly weight: number;
   readonly joints: readonly StudioBg3dJointPoseOverride[];
 }
-
-export const DEFAULT_STUDIO_BG3D_POSE_LAYER: StudioBg3dPoseLayer = Object.freeze({
-  enabled: true,
-  weight: 1,
-  joints: Object.freeze([]),
-});
 
 export interface StudioBg3dMorphWeightOverride {
   /** Engine-neutral canonical renderable/target ordinal, e.g. `mesh-2:target-0`. */
@@ -238,16 +180,6 @@ export interface StudioBg3dMorphLayer {
   readonly targets: readonly StudioBg3dMorphWeightOverride[];
 }
 
-export const DEFAULT_STUDIO_BG3D_MORPH_LAYER: StudioBg3dMorphLayer = Object.freeze({
-  enabled: true,
-  weight: 1,
-  targets: Object.freeze([]),
-});
-
-export const STUDIO_BG3D_AIM_AXES = [
-  "+x", "-x", "+y", "-y", "+z", "-z",
-] as const;
-export const STUDIO_BG3D_MAX_TWO_BONE_IK_CONSTRAINTS = 32;
 export type StudioBg3dAimAxis = (typeof STUDIO_BG3D_AIM_AXES)[number];
 
 export interface StudioBg3dJointAimConstraint {
@@ -275,12 +207,6 @@ export interface StudioBg3dConstraintLayer {
   readonly aims: readonly StudioBg3dJointAimConstraint[];
   readonly twoBoneIks: readonly StudioBg3dTwoBoneIkConstraint[];
 }
-
-export const DEFAULT_STUDIO_BG3D_CONSTRAINT_LAYER: StudioBg3dConstraintLayer = Object.freeze({
-  enabled: true,
-  aims: Object.freeze([]),
-  twoBoneIks: Object.freeze([]),
-});
 
 export interface StudioBg3dCameraSettings {
   readonly position: StudioBg3dVec3;
@@ -380,15 +306,6 @@ export interface StudioBg3dLineOutputSettings {
   /** 내부선 억제 강도(0..1, 없으면 0.6). 켜져 있을 때만 의미가 있다. */
   readonly interiorSuppressionStrength?: number;
 }
-
-/**
- * 내부선 억제를 켰을 때 강도 필드가 없으면 쓰는 기본 강도. 장면 문서 정규화(라우트)가 쓰는 원본이다.
- * 같은 값을 선화 렌더러 쪽 잎 모듈(`studio-bg3d-line-output-rules`)도 가지고 있으며 두 값이 같음을 시험이 지킨다.
- * 내부선 억제 해석·깊이 캡처 판정 함수는 이 큰 모듈에 두지 않고 그 잎 모듈에만 둔다: 이 모듈에 새 런타임
- * import 가 생기면 번들러가 이 모듈을 장면 문서 청크에서 떼어 선화·생산 청크에 묶고 Studio 라우트가 그 청크를
- * 정적으로 끌어온다(2026-10-16 번들 래칫 회귀).
- */
-export const STUDIO_BG3D_INTERIOR_SUPPRESSION_DEFAULT_STRENGTH = 0.6;
 
 export interface StudioBg3dToneOutputSettings {
   readonly mode: StudioBg3dToneMode;

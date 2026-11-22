@@ -3,7 +3,7 @@ import type { El, ImageEl } from "../../studio-element-model";
 import { isEffectivelyLocked } from "../../studio-layers";
 import { isPageReviewLocked } from "../../studio-page-review";
 import type { PageState } from "../../studio-page-state";
-import { resolveStudioScene3dLinkedLayerEditSource, snapshotStudioScene3dLinkedLayerEditSource } from "../../scene3d/studio-scene3d-linked-layer-source";
+import { resolveStudioScene3dLinkedLayerEditSource, snapshotStudioScene3dLinkedLayerEditSource } from "../../contracts/studio-scene3d-linked-layer-source";
 
 type ScenePage = Pick<PageState, "linked3dRender" | "shared3dStage">;
 

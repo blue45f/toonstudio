@@ -18,7 +18,7 @@ import { normalizeStudioMaterialPointerPressure, resolveStudioMaterialReleasePre
 import {
   resolveStudioHybridPressureProfile,
   resolveStudioHybridPressureSample,
-} from "../hybrid-dcc/studio-hybrid-pressure-profile";
+} from "../contracts/studio-hybrid-pressure-profile";
 import { resolveBrushReleasePressureSample } from "../studio-brush";
 import {
   advanceStudioVelocityPressure,

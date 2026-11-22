@@ -5,6 +5,8 @@
  * 값 변경은 문서 기본값 변경이므로 정규화 테스트와 함께 움직인다.
  */
 
+import type { StudioBg3dVec3 } from "../bg3d/studio-bg3d-scene-document-types";
+
 import {
   STUDIO_BG3D_CAMERA_DEFAULT_NEAR_CLIP,
   STUDIO_BG3D_CAMERA_DEFAULT_UP,
@@ -12,8 +14,7 @@ import {
 import {
   STUDIO_BG3D_SCENE_DOCUMENT_KIND,
   STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
-  type StudioBg3dVec3,
-} from "./studio-bg3d-scene-document-types";
+} from "./studio-bg3d-scene-document-constants";
 
 export const DEFAULT_STUDIO_BG3D_CAMERA_POSITION: StudioBg3dVec3 = [4, 3, 6];
 export const DEFAULT_STUDIO_BG3D_CAMERA_TARGET: StudioBg3dVec3 = [0, 0.6, 0];
@@ -114,10 +115,6 @@ export const DEFAULT_STUDIO_BG3D_RAW_DOCUMENT = {
       hiddenLineRemoval: true,
     },
     tone: {
-      // A 3D background should look like the shaded viewport when it is first inserted. Earlier
-      // defaults disabled this layer, so the LT exporter truthfully emitted only edge rasters and
-      // users saw an apparently broken wireframe. Dedicated line-art presets can still opt into
-      // `none`; the general-purpose default preserves the rendered material colors.
       mode: "flat",
       type: "color",
       pattern: "dot",
@@ -154,4 +151,3 @@ export const DEFAULT_STUDIO_BG3D_RAW_DOCUMENT = {
   attachments: [],
   nodes: [],
 } as const;
-

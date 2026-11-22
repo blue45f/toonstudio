@@ -6,7 +6,7 @@ import {
   countStudioBg3dTexturePaintPoints,
   normalizeStudioBg3dTexturePaint,
   type StudioBg3dTexturePaint,
-} from "./bg3d/studio-bg3d-texture-paint";
+} from "./contracts/studio-bg3d-texture-paint-contract";
 import type {
   StudioBg3dModelTexturePaint,
   StudioBg3dModelTexturePaintTarget,

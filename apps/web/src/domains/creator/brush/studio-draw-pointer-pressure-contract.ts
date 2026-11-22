@@ -5,7 +5,7 @@
  * lookup and dynamics normalization together so the planner remains a small orchestration boundary.
  */
 
-import { resolveStudioHybridPressureProfile } from "../hybrid-dcc/studio-hybrid-pressure-profile";
+import { resolveStudioHybridPressureProfile } from "../contracts/studio-hybrid-pressure-profile";
 import { isStudioFxPressureBrushId } from "../studio-fx-brush";
 import {
   STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1,

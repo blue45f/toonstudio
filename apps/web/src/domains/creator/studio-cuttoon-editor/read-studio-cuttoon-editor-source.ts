@@ -84,6 +84,15 @@ export function readStudioPageCompositionSource(): string {
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-live-ink-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-pixel-retouch-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-workspace-helpers.ts"),
+    // Wave 5(2026-11-23) 호스트 3차 안전 분리 도메인 헬퍼 8종 — 합성 경계 검사에 포함한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-assets-catalog-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-comments-companion-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-pixel-selection-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-pixel-stroke-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-project-save-export-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-server-revision-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-viewport-lifecycle-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-workspace-surface-helpers.ts"),
   ]
     .map((filePath) => readFileSync(filePath, "utf8"))
     .join("\n");
@@ -119,6 +128,7 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "../studio-page-shortcut-dispatcher.ts"),
     resolve(baseDir, "../studio-page-comments-runtime.ts"),
     resolve(baseDir, "../studio-page-autosave-runtime.ts"),
+    resolve(baseDir, "../contracts/studio-hybrid-dcc-persistence.ts"),
     resolve(baseDir, "../hybrid-dcc/studio-hybrid-dcc-persistence.ts"),
     // DCC 라우트/내비게이션 절반. 지속성 절반 바로 뒤에 둬서 세 조각이 인접하게 읽힌다.
     resolve(baseDir, "../studio-router/studio-dcc-workbench-navigation.ts"),
@@ -136,7 +146,7 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "../page/studio-page-management-controller.ts"),
     resolve(baseDir, "../history/studio-page-sidecars-controller.ts"),
     resolve(baseDir, "../vector/studio-node-bubble-edit-controller.ts"),
-    resolve(baseDir, "../bg3d/studio-bg3d-lt-copy-remap.ts"),
+    resolve(baseDir, "../contracts/studio-bg3d-lt-copy-remap.ts"),
     resolve(baseDir, "../filter/studio-retouch-mask-tools-controller.ts"),
     resolve(baseDir, "../canvas/studio-crop-panel-split-controller.ts"),
     resolve(baseDir, "../checkpoint/studio-checkpoints-controller.ts"),
@@ -182,6 +192,15 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-live-ink-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-pixel-retouch-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-workspace-helpers.ts"),
+    // Wave 5(2026-11-23) 호스트 3차 안전 분리 도메인 헬퍼 8종 — 호스트 본문 앞에 배치한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-assets-catalog-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-comments-companion-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-pixel-selection-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-pixel-stroke-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-project-save-export-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-server-revision-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-viewport-lifecycle-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-workspace-surface-helpers.ts"),
     resolve(baseDir, "../StudioCuttoonEditorHost.tsx"),
     resolve(baseDir, "../canvas/studio-canvas-viewport-input.ts"),
     resolve(baseDir, "../StudioPage.tsx"),

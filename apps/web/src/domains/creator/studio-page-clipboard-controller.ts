@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { studioBg3dSixPassCopyUnavailableReason } from "./studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-copy-guard";
-import { remapStudioBg3dLtCopiedBundles } from "./bg3d/studio-bg3d-lt-copy-remap";
+import { remapStudioBg3dLtCopiedBundles } from "./contracts/studio-bg3d-lt-copy-remap";
 import { hasTrack, normalizeAnimationTimelineDoc } from "./studio-anim-tracks";
 import { CANVAS_W } from "./studio-assets";
 import {

@@ -2,7 +2,7 @@ import { isStudioRasterHandoffViewNavigationTool } from "../render/studio-raster
 import {
   describeStudioScene3dLinkedLayerReview,
   snapshotStudioScene3dLinkedLayerEditSource,
-} from "../scene3d/studio-scene3d-linked-layer-source";
+} from "../contracts/studio-scene3d-linked-layer-source";
 import type { studioBg3dLayerEditSource } from "../studio-cuttoon-editor/runtime/studio-bg3d-layer-resume";
 import { elementLabel } from "../studio-element-label";
 import type { El, FrameEl, ImageEl } from "../studio-element-model";

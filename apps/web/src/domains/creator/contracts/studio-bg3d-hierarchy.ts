@@ -1,0 +1,671 @@
+/**
+ * 장면 노드의 계층(부모·자식)과 장면 구성 정보(태그·컴포넌트 참조·장면 메타)의 규칙을 한곳에 둔다.
+ *
+ * 이 모듈은 Studio 진입 그래프에 정적으로 닿는 장면 문서(studio-bg3d-scene-document)가 직접 가져오는
+ * 모듈이다. 문서 정규화가 쓰는 규칙(텍스트 안전 검사·태그/컴포넌트/메타 정규화)을 새 파일로 나누면
+ * 금지 도메인(bg3d)으로 닿는 모듈이 늘어 진입 그래프 래칫을 건드리므로, 이미 닿아 있는 이 모듈에 둔다.
+ * 편집 동작(태그 붙이기·숨기기·묶기 계획)은 이 모듈이 아니라 지연 로드되는 studio-bg3d-scene-organization 쪽에 있다.
+ */
+
+import {
+  parseStudioSpatialMeasurementDocument,
+  serializeStudioSpatialMeasurementDocument,
+} from "@toonstudio/studio-project-model/spatial-measurement";
+import {
+  validateStudioScene3dShotVersionCollectionWithBg3dParser,
+  type StudioLegacyBg3dSceneDocumentParser,
+} from "./studio-scene3d-shot-version-validator";
+import { failBudget } from "./studio-bg3d-scene-document-constants";
+
+import type {
+  StudioBg3dComponentRef,
+  StudioBg3dNodeOrganization,
+  StudioBg3dSceneDocument,
+  StudioBg3dSceneMeta,
+} from "../bg3d/studio-bg3d-scene-document-types";
+import type {
+  StudioBg3dSceneRecipeEnvelope,
+  StudioBg3dSurfaceOverlay,
+  StudioBg3dSurfaceOverlayKind,
+  StudioBg3dSurfaceRef,
+  StudioBg3dSurfaceText,
+  StudioBg3dSurfaceTextScript,
+} from "../bg3d/studio-bg3d-scene-surface-types";
+
+export interface StudioBg3dHierarchyEntity {
+  readonly id: string;
+  readonly parentId?: string | null;
+}
+
+export interface StudioBg3dVisibleHierarchyEntity extends StudioBg3dHierarchyEntity {
+  readonly visible?: boolean;
+  /** 장면 구성 정보의 태그. 숨긴 태그(hiddenTags)를 넘기면 이 값으로 태그 숨김을 판정한다. */
+  readonly tags?: readonly string[];
+}
+
+export interface StudioBg3dResolvedHierarchy {
+  readonly roots: readonly string[];
+  readonly childrenByParent: ReadonlyMap<string, readonly string[]>;
+  readonly parentById: ReadonlyMap<string, string | null>;
+  readonly repairedOrphans: number;
+  readonly repairedSelfParents: number;
+  readonly repairedCycles: number;
+}
+
+/**
+ * Resolves a bounded forest from user/project data. Invalid parents are promoted to roots and one
+ * deterministic edge per cycle is removed, so recursive renderers and layer trees can never loop.
+ */
+export function resolveStudioBg3dHierarchy(
+  entities: readonly StudioBg3dHierarchyEntity[],
+): StudioBg3dResolvedHierarchy {
+  const orderedIds: string[] = [];
+  const entityById = new Map<string, StudioBg3dHierarchyEntity>();
+  for (const entity of entities) {
+    if (!entity.id || entityById.has(entity.id)) continue;
+    entityById.set(entity.id, entity);
+    orderedIds.push(entity.id);
+  }
+  const order = new Map(orderedIds.map((id, index) => [id, index] as const));
+  const parentById = new Map<string, string | null>();
+  let repairedOrphans = 0;
+  let repairedSelfParents = 0;
+  for (const id of orderedIds) {
+    const requested = entityById.get(id)?.parentId ?? null;
+    if (!requested) {
+      parentById.set(id, null);
+    } else if (requested === id) {
+      repairedSelfParents += 1;
+      parentById.set(id, null);
+    } else if (!entityById.has(requested)) {
+      repairedOrphans += 1;
+      parentById.set(id, null);
+    } else {
+      parentById.set(id, requested);
+    }
+  }
+
+  let repairedCycles = 0;
+  for (const startId of orderedIds) {
+    const path: string[] = [];
+    const pathIndex = new Map<string, number>();
+    let cursor: string | null = startId;
+    while (cursor !== null) {
+      const cycleStart = pathIndex.get(cursor);
+      if (cycleStart !== undefined) {
+        const cycle = path.slice(cycleStart);
+        const breakId = cycle.reduce((first, id) =>
+          (order.get(id) ?? Number.MAX_SAFE_INTEGER) < (order.get(first) ?? Number.MAX_SAFE_INTEGER)
+            ? id
+            : first);
+        parentById.set(breakId, null);
+        repairedCycles += 1;
+        break;
+      }
+      pathIndex.set(cursor, path.length);
+      path.push(cursor);
+      cursor = parentById.get(cursor) ?? null;
+    }
+  }
+
+  const roots: string[] = [];
+  const mutableChildren = new Map<string, string[]>();
+  for (const id of orderedIds) {
+    const parentId = parentById.get(id) ?? null;
+    if (parentId === null) {
+      roots.push(id);
+      continue;
+    }
+    const children = mutableChildren.get(parentId) ?? [];
+    children.push(id);
+    mutableChildren.set(parentId, children);
+  }
+  const childrenByParent = new Map<string, readonly string[]>();
+  for (const [id, children] of mutableChildren) {
+    childrenByParent.set(id, Object.freeze([...children]));
+  }
+  return Object.freeze({
+    roots: Object.freeze(roots),
+    childrenByParent,
+    parentById,
+    repairedOrphans,
+    repairedSelfParents,
+    repairedCycles,
+  });
+}
+
+export function normalizeStudioBg3dHierarchyParents<T extends StudioBg3dHierarchyEntity>(
+  entities: readonly T[],
+): readonly T[] {
+  const resolved = resolveStudioBg3dHierarchy(entities);
+  return entities.map((entity) => {
+    const parentId = resolved.parentById.get(entity.id) ?? null;
+    return (entity.parentId ?? null) === parentId ? entity : { ...entity, parentId };
+  });
+}
+
+/** 숨긴 태그가 하나라도 붙은 엔티티인가. 오브젝트 자체의 `visible` 과 부모 숨김은 보지 않는다. */
+export function isStudioBg3dTagHidden(
+  entity: { readonly tags?: readonly string[] },
+  hiddenTags: ReadonlySet<string> | undefined,
+): boolean {
+  if (hiddenTags === undefined || hiddenTags.size === 0 || entity.tags === undefined) return false;
+  return entity.tags.some((tag) => hiddenTags.has(tag));
+}
+
+/**
+ * 숨긴 태그가 붙은 엔티티를 렌더용으로 `visible: false` 사본으로 바꾼 배열. 숨길 것이 없으면 입력 배열을 그대로 돌려줘
+ * 참조가 바뀌지 않는다(불필요한 다시 그리기를 막는다). 저장되는 `visible` 은 이 투영과 무관하게 그대로라서
+ * 태그를 다시 보이게 해도 따로 숨겨 둔 오브젝트는 숨겨진 채로 남는다.
+ */
+export function projectStudioBg3dTagVisibility<T extends StudioBg3dVisibleHierarchyEntity>(
+  entities: readonly T[],
+  hiddenTags: ReadonlySet<string> | undefined,
+): readonly T[] {
+  if (hiddenTags === undefined || hiddenTags.size === 0) return entities;
+  let changed = false;
+  const projected = entities.map((entity) => {
+    if (entity.visible === false || !isStudioBg3dTagHidden(entity, hiddenTags)) return entity;
+    changed = true;
+    return { ...entity, visible: false };
+  });
+  return changed ? projected : entities;
+}
+
+/** 문서의 숨긴 태그를 렌더용 집합으로 읽는다. 없으면 undefined. */
+export function readStudioBg3dHiddenTagSet(
+  document: Pick<StudioBg3dSceneDocument, "meta"> | undefined,
+): ReadonlySet<string> | undefined {
+  const hidden = document?.meta?.hiddenTags;
+  return hidden && hidden.length > 0 ? new Set(hidden) : undefined;
+}
+
+/**
+ * 숨긴 태그를 문서 노드의 `visible` 에 굽는다 — 문서를 렌더 전용 사본으로 쓰는 경로(특화 런타임 스냅샷)에서만 쓴다.
+ * 저장하는 문서에는 쓰지 않는다. 숨길 노드가 없으면 같은 문서를 돌려준다.
+ */
+export function bakeStudioBg3dTagVisibilityIntoDocument(document: StudioBg3dSceneDocument): StudioBg3dSceneDocument {
+  const hidden = readStudioBg3dHiddenTagSet(document);
+  if (!hidden) return document;
+  const nodes = projectStudioBg3dTagVisibility(document.nodes, hidden);
+  return nodes === document.nodes ? document : { ...document, nodes };
+}
+
+/**
+ * Returns exactly the entities visible through the same repaired hierarchy used for rendering.
+ * `hiddenTags` 를 넘기면 그 태그가 붙은 엔티티도 숨긴 것으로 본다(오브젝트 `visible` 과 별개로 계산하며,
+ * 자식은 부모가 숨겨지면 함께 숨겨진다). 넘기지 않으면 예전과 똑같이 동작한다.
+ */
+export function collectStudioBg3dEffectivelyVisibleEntityIds(
+  entities: readonly StudioBg3dVisibleHierarchyEntity[],
+  hiddenTags?: ReadonlySet<string>,
+): ReadonlySet<string> {
+  const hierarchy = resolveStudioBg3dHierarchy(entities);
+  const entityById = new Map(entities.map((entity) => [entity.id, entity] as const));
+  const visibleIds = new Set<string>();
+  const pending = hierarchy.roots.map((id) => ({ id, ancestorsVisible: true }));
+  while (pending.length > 0) {
+    const entry = pending.pop();
+    if (!entry) break;
+    const entity = entityById.get(entry.id);
+    if (!entity) continue;
+    const visible = entry.ancestorsVisible && entity.visible !== false
+      && !isStudioBg3dTagHidden(entity, hiddenTags);
+    if (visible) visibleIds.add(entry.id);
+    const children = hierarchy.childrenByParent.get(entry.id) ?? [];
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      const childId = children[index];
+      if (childId) pending.push({ id: childId, ancestorsVisible: visible });
+    }
+  }
+  return visibleIds;
+}
+
+export function canSetStudioBg3dParent(
+  entities: readonly StudioBg3dHierarchyEntity[],
+  childId: string,
+  proposedParentId: string | null,
+): boolean {
+  if (proposedParentId === null) return entities.some((entity) => entity.id === childId);
+  const entityById = new Map(entities.map((entity) => [entity.id, entity] as const));
+  if (!entityById.has(childId) || !entityById.has(proposedParentId) || childId === proposedParentId) {
+    return false;
+  }
+  const visited = new Set<string>();
+  let cursor: string | null = proposedParentId;
+  while (cursor !== null) {
+    if (cursor === childId || visited.has(cursor)) return false;
+    visited.add(cursor);
+    const parentId: string | null | undefined = entityById.get(cursor)?.parentId;
+    cursor = parentId && entityById.has(parentId) ? parentId : null;
+  }
+  return true;
+}
+
+// ── 장면 문서 텍스트 안전 검사 ─────────────────────────────────────────────────────────────
+// 장면 문서의 모든 사용자 텍스트(노드 이름·샷 이름·태그·컴포넌트 이름·장면 이름과 메모)가 같은 규칙을 쓴다.
+// 문서는 외부 주소·자격 증명 문자열을 담지 않는 계약이라, 그런 모양의 텍스트는 값을 고쳐 쓰지 않고 거절한다.
+
+const EXTERNAL_REFERENCE_PATTERN = /(?:\b(?:blob|data|file|https?):|:\/\/|\bwww\.)/iu;
+const SENSITIVE_REFERENCE_PATTERN =
+  /(?:\b(?:api[-_ ]?key|access[-_ ]?token|secret|password)\b|(?:^|\s)sk-[A-Za-z0-9_-]{8,})/iu;
+
+export function containsStudioBg3dControlCharacter(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint <= 0x1f || codePoint === 0x7f) return true;
+  }
+  return false;
+}
+
+/**
+ * NFKC 정규화·앞뒤 공백 제거·연속 공백 접기를 한 텍스트를 돌려준다. 제어 문자가 있거나 비어 있거나
+ * `maximumLength` 코드 포인트를 넘으면 null 이다. `rejectExternalReference` 이면 주소·자격 증명 모양도 거절한다.
+ */
+export function normalizeStudioBg3dDocumentText(
+  value: unknown,
+  maximumLength: number,
+  rejectExternalReference = false,
+): string | null {
+  if (typeof value !== "string" || containsStudioBg3dControlCharacter(value)) return null;
+  const normalized = value.normalize("NFKC").trim().replace(/\s+/gu, " ");
+  if (
+    !normalized ||
+    Array.from(normalized).length > maximumLength ||
+    (rejectExternalReference &&
+      (EXTERNAL_REFERENCE_PATTERN.test(normalized) ||
+        SENSITIVE_REFERENCE_PATTERN.test(normalized)))
+  ) {
+    return null;
+  }
+  return normalized;
+}
+
+// ── 장면 구성 정보: 태그 · 컴포넌트 참조 · 장면 메타 ─────────────────────────────────────────
+
+/** 태그 하나의 최대 길이(코드 포인트). 한글 3바이트 기준 문서 바이트 예산 안에서 노드당 8개까지 안전한 값이다. */
+export const STUDIO_BG3D_TAG_MAX_CODE_POINTS = 32;
+export const STUDIO_BG3D_NODE_MAX_TAGS = 8;
+export const STUDIO_BG3D_SCENE_MAX_HIDDEN_TAGS = 64;
+export const STUDIO_BG3D_COMPONENT_NAME_MAX_CODE_POINTS = 48;
+export const STUDIO_BG3D_SCENE_NAME_MAX_CODE_POINTS = 80;
+export const STUDIO_BG3D_SCENE_MEMO_MAX_CODE_POINTS = 600;
+const STUDIO_BG3D_TAG_SCAN_LIMIT = 1_024;
+const COMPONENT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._~-]{0,79}$/u;
+const FORBIDDEN_ORGANIZATION_KEYS = new Set(["constructor", "prototype", "__proto__"]);
+
+/** 태그를 넘치게 받았을 때: "fail" 은 문서 규칙대로 예산 오류를 던지고, "truncate" 는 편집 경계에서 앞쪽만 남긴다. */
+export type StudioBg3dTagOverflow = "fail" | "truncate";
+/** "node" 는 노드의 태그 목록(최대 8개), "scene" 은 장면·컷의 숨긴 태그 목록(최대 64개)이다. */
+export type StudioBg3dTagScope = "node" | "scene";
+
+function isOrganizationRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** 코드 유닛 순서의 비교. 로케일에 따라 순서가 달라지면 직렬화가 흔들리므로 localeCompare 를 쓰지 않는다. */
+export function compareStudioBg3dTags(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+/**
+ * 태그 목록을 정규화한다: 각 태그는 문서 텍스트 규칙을 통과해야 하고(실패한 항목은 버린다), 중복을 없애고
+ * 코드 유닛 순서로 정렬한다. 같은 입력이면 언제나 같은 바이트가 나온다.
+ */
+export function normalizeStudioBg3dTags(
+  value: unknown,
+  scope: StudioBg3dTagScope = "node",
+  overflow: StudioBg3dTagOverflow = "fail",
+): readonly string[] {
+  if (!Array.isArray(value)) return [];
+  const limit = scope === "node" ? STUDIO_BG3D_NODE_MAX_TAGS : STUDIO_BG3D_SCENE_MAX_HIDDEN_TAGS;
+  const code = scope === "node" ? "tag-count-budget-exceeded" : "hidden-tag-count-budget-exceeded";
+  if (value.length > STUDIO_BG3D_TAG_SCAN_LIMIT && overflow === "fail") failBudget(code);
+  const tags = new Set<string>();
+  const candidates: readonly unknown[] = value.slice(0, STUDIO_BG3D_TAG_SCAN_LIMIT);
+  for (const raw of candidates) {
+    const tag = normalizeStudioBg3dDocumentText(raw, STUDIO_BG3D_TAG_MAX_CODE_POINTS, true);
+    if (tag && !FORBIDDEN_ORGANIZATION_KEYS.has(tag.toLowerCase())) tags.add(tag);
+  }
+  const sorted = [...tags].sort(compareStudioBg3dTags);
+  if (sorted.length <= limit) return sorted;
+  if (overflow === "fail") failBudget(code);
+  return sorted.slice(0, limit);
+}
+
+/** 컴포넌트 참조를 정규화한다. id 나 이름이 규칙에 맞지 않으면 참조 전체를 버린다. */
+export function normalizeStudioBg3dComponentRef(value: unknown): StudioBg3dComponentRef | undefined {
+  if (!isOrganizationRecord(value)) return undefined;
+  const id = value.id;
+  const name = normalizeStudioBg3dDocumentText(value.name, STUDIO_BG3D_COMPONENT_NAME_MAX_CODE_POINTS, true);
+  if (
+    typeof id !== "string" ||
+    !COMPONENT_ID_PATTERN.test(id) ||
+    FORBIDDEN_ORGANIZATION_KEYS.has(id.toLowerCase()) ||
+    !name
+  ) {
+    return undefined;
+  }
+  return { id, name };
+}
+
+/**
+ * 노드 객체에서 `tags`·`componentRef`·`surface` 를 읽어 정규화한다. 비어 있거나 올바르지 않은 값은 키 자체를 만들지 않는다
+ * (빈 배열을 쓰지 않으므로 태그·컴포넌트·재질 참조가 없는 노드는 기존 문서와 바이트가 같다). `surface` 는 프리미티브
+ * 노드만 가진다 — 모델 노드에 있으면 버리므로 엄격 파싱은 그 문서를 거부한다.
+ */
+export function normalizeStudioBg3dNodeOrganization(
+  node: unknown,
+  overflow: StudioBg3dTagOverflow = "fail",
+): StudioBg3dNodeOrganization {
+  if (!isOrganizationRecord(node)) return {};
+  const tags = normalizeStudioBg3dTags(node.tags, "node", overflow);
+  const componentRef = normalizeStudioBg3dComponentRef(node.componentRef);
+  const surface = node.kind === "primitive" ? normalizeStudioBg3dSurfaceRef(node.surface) : undefined;
+  return {
+    ...(tags.length > 0 ? { tags } : {}),
+    ...(componentRef ? { componentRef } : {}),
+    ...(surface ? { surface } : {}),
+  };
+}
+
+// ── 절차 재질 참조(surface) · 장면 레시피 봉투(sceneRecipe) — 읽기 단계(Phase R) ─────────────────────────
+// 두 키는 "받아들여 그대로 보존"만 한다. 규칙에 맞는 값은 입력과 같은 구조로 돌려줘 엄격 왕복이 무손실이고, 맞지 않는
+// 값은 버린다: 너그러운 정규화는 그 필드만 빼고 문서를 열고, 엄격 파싱은 결과가 입력과 달라 문서 전체를 거부한다
+// (다른 필드와 같은 규칙). 레시피 본문의 의미 검증은 지연 로드되는 구성기 몫이라 여기서는 경계만 본다.
+// 진입 그래프 래칫 때문에 새 파일로 나누지 않고 이미 진입 그래프에 닿아 있는 이 모듈에 둔다(머리 주석 참고).
+
+// 노드 하나의 `surface` 크기는 아래 필드 규칙만으로 묶인다(모든 필드를 가장 길게 채워도 525 B — 시험이 잰다).
+// 바이트 상한을 따로 두지 않는다: 읽기가 쓰기보다 엄격하면 롤백한 빌드가 새 빌드의 문서를 열지 못한다. 컷 여유를 지키는
+// 노드당 크기 목표(설계 B4 의 256 B)는 재질을 쓰는 쪽(다음 단계)이 지킨다.
+export const STUDIO_BG3D_SURFACE_MAX_COLORS = 3;
+export const STUDIO_BG3D_SURFACE_TEXT_MAX_CODE_POINTS = 32;
+export const STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_KIND = "toonstudio.bg3d-scene-recipe-set" as const;
+export const STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION = 1 as const;
+export const STUDIO_BG3D_SCENE_RECIPE_LIMITS = Object.freeze({
+  maxRecipes: 4,
+  /** 레시피 객체 자신이 깊이 1 이다. 이보다 깊은 객체·배열이 있으면 봉투를 버린다. */
+  maxDepth: 6,
+  maxKeysPerObject: 48,
+  maxArrayLength: 128,
+  maxStringCodePoints: 160,
+  maxEnvelopeBytes: 24 * 1024,
+});
+
+const SURFACE_ID_PATTERN = /^[a-z][a-z0-9-]{1,39}$/u;
+const SURFACE_COLOR_PATTERN = /^#[0-9a-f]{6}$/iu;
+const SURFACE_OVERLAY_KINDS: ReadonlySet<string> = new Set<StudioBg3dSurfaceOverlayKind>([
+  "wet", "snow", "petals", "leaves", "dust",
+]);
+const SURFACE_TEXT_SCRIPTS: ReadonlySet<string> = new Set<StudioBg3dSurfaceTextScript>(["ko", "ja", "latin"]);
+const RECIPE_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]{0,31}$/u;
+const RECIPE_INSTANCE_KEY_PATTERN = /^[0-9a-f]{8}$/u;
+const UINT32_MAX = 0xffff_ffff;
+
+/** JSON 문자열의 UTF-8 바이트 수. 진입 그래프 모듈이라 인코더 객체를 만들지 않고 코드 포인트로 센다. */
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    bytes += codePoint <= 0x7f ? 1 : codePoint <= 0x7ff ? 2 : codePoint <= 0xffff ? 3 : 4;
+  }
+  return bytes;
+}
+
+function boundedSurfaceNumber(value: unknown, minimum: number, maximum: number): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(maximum, Math.max(minimum, value))
+    : undefined;
+}
+
+function boundedSurfaceInteger(value: unknown, minimum: number, maximum: number): number | undefined {
+  const bounded = boundedSurfaceNumber(value, minimum, maximum);
+  return bounded === undefined ? undefined : Math.round(bounded);
+}
+
+function normalizeSurfaceColors(value: unknown): readonly string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const colors = value
+    .slice(0, STUDIO_BG3D_SURFACE_MAX_COLORS)
+    .filter((color): color is string => typeof color === "string" && SURFACE_COLOR_PATTERN.test(color))
+    .map((color) => color.toLowerCase());
+  return colors.length > 0 ? colors : undefined;
+}
+
+function normalizeSurfaceOverlay(value: unknown): StudioBg3dSurfaceOverlay | undefined {
+  if (!isOrganizationRecord(value) || typeof value.kind !== "string" || !SURFACE_OVERLAY_KINDS.has(value.kind)) {
+    return undefined;
+  }
+  const amount = boundedSurfaceNumber(value.amount, 0, 1);
+  const seed = boundedSurfaceInteger(value.seed, 0, UINT32_MAX);
+  if (amount === undefined || seed === undefined) return undefined;
+  return { kind: value.kind as StudioBg3dSurfaceOverlayKind, amount, seed };
+}
+
+function normalizeSurfaceText(value: unknown): StudioBg3dSurfaceText | undefined {
+  if (!isOrganizationRecord(value)) return undefined;
+  const text = normalizeStudioBg3dDocumentText(value.value, STUDIO_BG3D_SURFACE_TEXT_MAX_CODE_POINTS, true);
+  if (!text || typeof value.script !== "string" || !SURFACE_TEXT_SCRIPTS.has(value.script)) return undefined;
+  if (typeof value.vertical !== "boolean") return undefined;
+  return { value: text, script: value.script as StudioBg3dSurfaceTextScript, vertical: value.vertical };
+}
+
+/**
+ * 프리미티브 노드의 절차 재질 참조를 정규화한다. `id` 가 규칙에 맞지 않으면 참조 전체를 버리고, 선택 값은 형식이 맞을 때만
+ * 범위 안으로 눌러 담는다. 재질 id 가 실제로 있는지는 보지 않는다(이 빌드가 모르는 재질은 노드 색으로 그린다).
+ */
+export function normalizeStudioBg3dSurfaceRef(value: unknown): StudioBg3dSurfaceRef | undefined {
+  if (!isOrganizationRecord(value) || typeof value.id !== "string" || !SURFACE_ID_PATTERN.test(value.id)) {
+    return undefined;
+  }
+  const colors = normalizeSurfaceColors(value.colors);
+  const tileM = boundedSurfaceNumber(value.tileM, 0.02, 8);
+  const angleDeg = boundedSurfaceNumber(value.angleDeg, 0, 180);
+  const roughness = boundedSurfaceNumber(value.roughness, 0, 1);
+  const variant = boundedSurfaceInteger(value.variant, 0, 15);
+  const wear = boundedSurfaceNumber(value.wear, 0, 1);
+  const lineWeight = boundedSurfaceNumber(value.lineWeight, 0, 1);
+  const overlay = normalizeSurfaceOverlay(value.overlay);
+  const text = normalizeSurfaceText(value.text);
+  return {
+    id: value.id,
+    ...(colors ? { colors } : {}),
+    ...(tileM === undefined ? {} : { tileM }),
+    ...(angleDeg === undefined ? {} : { angleDeg }),
+    ...(roughness === undefined ? {} : { roughness }),
+    ...(variant === undefined ? {} : { variant }),
+    ...(wear === undefined ? {} : { wear }),
+    ...(lineWeight === undefined ? {} : { lineWeight }),
+    ...(typeof value.cutout === "boolean" ? { cutout: value.cutout } : {}),
+    ...(overlay ? { overlay } : {}),
+    ...(text ? { text } : {}),
+  };
+}
+
+/**
+ * 레시피 본문이 "경계 있는 JSON" 인가: null·불리언·유한수·짧은 문자열(제어 문자·외부 주소·자격 증명 모양 금지)과
+ * 깊이·키 수·키 모양·배열 길이 한도 안의 객체·배열만 허용한다. 값을 고치지 않고 판정만 한다.
+ */
+function isBoundedRecipeValue(value: unknown, depth: number): boolean {
+  const limits = STUDIO_BG3D_SCENE_RECIPE_LIMITS;
+  if (value === null || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "string") {
+    return Array.from(value).length <= limits.maxStringCodePoints &&
+      !containsStudioBg3dControlCharacter(value) &&
+      !EXTERNAL_REFERENCE_PATTERN.test(value) &&
+      !SENSITIVE_REFERENCE_PATTERN.test(value);
+  }
+  if (depth > limits.maxDepth) return false;
+  if (Array.isArray(value)) {
+    return value.length <= limits.maxArrayLength && value.every((item) => isBoundedRecipeValue(item, depth + 1));
+  }
+  if (!isOrganizationRecord(value)) return false;
+  const keys = Object.keys(value);
+  return keys.length <= limits.maxKeysPerObject && keys.every((key) =>
+    RECIPE_KEY_PATTERN.test(key) &&
+    !FORBIDDEN_ORGANIZATION_KEYS.has(key.toLowerCase()) &&
+    isBoundedRecipeValue(value[key], depth + 1));
+}
+
+/**
+ * 문서 루트의 장면 레시피 봉투를 검사한다. kind·version 이 맞고, 레시피가 1–4개이며, 각 레시피가 경계 있는 JSON 이고
+ * 서로 다른 8자리 소문자 hex `instanceKey` 를 가지며, 봉투 직렬화가 24 KiB 이하일 때만 같은 구조로 돌려준다.
+ * 하나라도 어기면 봉투 전체를 버린다(레시피를 고쳐 쓰지 않는다 — 고친 레시피는 사용자가 만든 것이 아니다).
+ */
+export function normalizeStudioBg3dSceneRecipeEnvelope(value: unknown): StudioBg3dSceneRecipeEnvelope | undefined {
+  if (
+    !isOrganizationRecord(value) ||
+    value.kind !== STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_KIND ||
+    value.version !== STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION ||
+    !Array.isArray(value.recipes) ||
+    value.recipes.length < 1 ||
+    value.recipes.length > STUDIO_BG3D_SCENE_RECIPE_LIMITS.maxRecipes
+  ) {
+    return undefined;
+  }
+  const instanceKeys = new Set<string>();
+  const recipes: Readonly<Record<string, unknown>>[] = [];
+  for (const recipe of value.recipes as readonly unknown[]) {
+    if (!isOrganizationRecord(recipe) || !isBoundedRecipeValue(recipe, 1)) return undefined;
+    const instanceKey = recipe.instanceKey;
+    if (
+      typeof instanceKey !== "string" ||
+      !RECIPE_INSTANCE_KEY_PATTERN.test(instanceKey) ||
+      instanceKeys.has(instanceKey)
+    ) {
+      return undefined;
+    }
+    instanceKeys.add(instanceKey);
+    recipes.push(recipe);
+  }
+  const envelope: StudioBg3dSceneRecipeEnvelope = {
+    kind: STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_KIND,
+    version: STUDIO_BG3D_SCENE_RECIPE_ENVELOPE_VERSION,
+    recipes,
+  };
+  return utf8ByteLength(JSON.stringify(envelope)) <= STUDIO_BG3D_SCENE_RECIPE_LIMITS.maxEnvelopeBytes ? envelope : undefined;
+}
+
+/**
+ * 장면 메모를 정규화한다. 줄바꿈은 살리되 줄마다 문서 텍스트 규칙을 적용하고, 앞뒤 빈 줄을 없애며,
+ * 연속 빈 줄은 하나로 접는다. 줄 하나라도 규칙에 걸리면(주소·자격 증명 모양) 메모 전체를 버린다.
+ */
+export function normalizeStudioBg3dSceneMemo(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const lines: string[] = [];
+  for (const rawLine of value.split(/\r\n|\r|\n/u)) {
+    if (rawLine.trim() === "") {
+      if (lines.length > 0 && lines[lines.length - 1] !== "") lines.push("");
+      continue;
+    }
+    const line = normalizeStudioBg3dDocumentText(rawLine, STUDIO_BG3D_SCENE_MEMO_MAX_CODE_POINTS, true);
+    if (line === null) return undefined;
+    lines.push(line);
+  }
+  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  const memo = lines.join("\n");
+  if (memo === "" || Array.from(memo).length > STUDIO_BG3D_SCENE_MEMO_MAX_CODE_POINTS) return undefined;
+  return memo;
+}
+
+/** 장면 메타를 정규화한다. 모든 필드가 비면 undefined 라서 문서가 `meta` 키를 만들지 않는다. */
+export function normalizeStudioBg3dSceneMeta(
+  value: unknown,
+  overflow: StudioBg3dTagOverflow = "fail",
+): StudioBg3dSceneMeta | undefined {
+  if (!isOrganizationRecord(value)) return undefined;
+  const name = normalizeStudioBg3dDocumentText(value.name, STUDIO_BG3D_SCENE_NAME_MAX_CODE_POINTS, true);
+  const memo = normalizeStudioBg3dSceneMemo(value.memo);
+  const hiddenTags = normalizeStudioBg3dTags(value.hiddenTags, "scene", overflow);
+  const meta: StudioBg3dSceneMeta = {
+    ...(name ? { name } : {}),
+    ...(memo ? { memo } : {}),
+    ...(hiddenTags.length > 0 ? { hiddenTags } : {}),
+  };
+  return Object.keys(meta).length > 0 ? meta : undefined;
+}
+
+/** 장면 메타의 숨긴 태그만 바꾼 사본. 결과가 비면 undefined(문서에서 `meta` 를 뺀다). */
+export function withStudioBg3dHiddenTags(
+  meta: StudioBg3dSceneMeta | undefined,
+  hiddenTags: readonly string[],
+): StudioBg3dSceneMeta | undefined {
+  const { hiddenTags: _previous, ...rest } = meta ?? {};
+  return normalizeStudioBg3dSceneMeta({ ...rest, hiddenTags }, "truncate");
+}
+
+/** 선택 측정 필드가 손상됐을 때 기존 문서를 조용히 덮어쓰지 않는 오류 계약. */
+export class StudioBg3dSceneMeasurementsValidationError extends Error {
+  readonly code = "invalid-scene-measurements";
+
+  constructor() {
+    super("측정 가이드가 손상되었거나 저장 한도를 넘어 장면을 변경하지 않았습니다.");
+    this.name = "StudioBg3dSceneMeasurementsValidationError";
+  }
+}
+
+/** JSON 변환이 undefined·함수·접근자 또는 명시 필드를 지우기 전에 검증한다. */
+export function assertStudioBg3dSceneMeasurementsInput(raw: unknown): void {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return;
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(raw, "measurements");
+    if (!descriptor) return;
+    if (!("value" in descriptor) || !descriptor.enumerable || "toJSON" in raw ||
+      serializeStudioSpatialMeasurementDocument(descriptor.value) === null) {
+      throw new StudioBg3dSceneMeasurementsValidationError();
+    }
+  } catch {
+    throw new StudioBg3dSceneMeasurementsValidationError();
+  }
+}
+
+/** 중첩 문서 코덱만 동기로 사용하며 가이드가 없는 키는 결과에도 만들지 않는다. */
+export function normalizeStudioBg3dSceneMeasurementsField(
+  value: Record<string, unknown>,
+): Pick<StudioBg3dSceneDocument, "measurements"> {
+  const descriptor = Object.getOwnPropertyDescriptor(value, "measurements");
+  if (!descriptor) return {};
+  assertStudioBg3dSceneMeasurementsInput(value);
+  const serialized = serializeStudioSpatialMeasurementDocument(descriptor.value);
+  const measurements = serialized === null ? null : parseStudioSpatialMeasurementDocument(serialized);
+  if (!measurements) throw new StudioBg3dSceneMeasurementsValidationError();
+  return { measurements };
+}
+
+type SceneOptionalFields = Pick<StudioBg3dSceneDocument,
+  "pinnedVersionedCut" | "meta" | "sceneRecipe" | "measurements"
+>;
+
+/** 기존 선택 루트 필드의 키 순서와 오류 계약을 유지한다. */
+export function normalizeStudioBg3dSceneOptionalFields(
+  value: Record<string, unknown>,
+  rootMode: "lenient" | "strict",
+  parseLegacyBg3d?: StudioLegacyBg3dSceneDocumentParser,
+): SceneOptionalFields | null {
+  let pinnedVersionedCut: StudioBg3dSceneDocument["pinnedVersionedCut"];
+  if (Object.prototype.hasOwnProperty.call(value, "pinnedVersionedCut")) {
+    try {
+      pinnedVersionedCut = validateStudioScene3dShotVersionCollectionWithBg3dParser({
+        version: 1,
+        cuts: [value.pinnedVersionedCut],
+      }, parseLegacyBg3d ?? (() => null)).cuts[0];
+    } catch {
+      if (rootMode === "lenient") throw new Error("고정 컷 원본이 손상되어 장면을 변경하지 않았습니다.");
+      return null;
+    }
+  }
+  const meta = normalizeStudioBg3dSceneMeta(value.meta);
+  const sceneRecipe = normalizeStudioBg3dSceneRecipeEnvelope(value.sceneRecipe);
+  try {
+    return {
+      ...(pinnedVersionedCut ? { pinnedVersionedCut } : {}),
+      ...(meta ? { meta } : {}),
+      ...(sceneRecipe ? { sceneRecipe } : {}),
+      ...normalizeStudioBg3dSceneMeasurementsField(value),
+    };
+  } catch (cause) {
+    if (rootMode === "strict") return null;
+    throw cause;
+  }
+}
