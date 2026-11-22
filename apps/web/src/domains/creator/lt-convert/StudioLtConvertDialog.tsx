@@ -22,12 +22,14 @@ import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 
 import {
+  LT_DEPTH_PRESET_LIST,
   convertStudioLtImage,
   STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE,
   STUDIO_LT_CONVERT_DEFAULT_OPTIONS,
   STUDIO_LT_CONVERT_LINE_THICKNESS_RANGE,
   STUDIO_LT_CONVERT_LINE_THRESHOLD_RANGE,
   STUDIO_LT_CONVERT_TONE_DENSITY_RANGE,
+  type LtDepthAttenuationPresetId,
   type StudioLtConvertOptions,
   type StudioLtConvertResult,
 } from "./studio-lt-convert";
@@ -46,6 +48,9 @@ export type StudioLtConvertSourceStatus =
 export interface StudioLtConvertDialogSource {
   readonly status: StudioLtConvertSourceStatus;
   readonly imageData: ImageData | null;
+  readonly depthBuffer?: Float32Array | Uint8Array | null;
+  readonly normalBuffer?: Uint8Array | Uint8ClampedArray | null;
+  readonly alphaCutoutMaterialMask?: Uint8Array | null;
   readonly error: string | null;
   readonly label: string;
 }
@@ -161,6 +166,9 @@ export function StudioLtConvertDialog({
   const [blackFillThresholdPercent, setBlackFillThresholdPercent] = useState<number>(
     Math.round(STUDIO_LT_CONVERT_DEFAULT_OPTIONS.blackFillThreshold * 100),
   );
+  const [enableDepthAttenuation, setEnableDepthAttenuation] = useState<boolean>(false);
+  const [depthPreset, setDepthPreset] = useState<LtDepthAttenuationPresetId>("character-focus");
+  const [separateAlphaCutoutMask, setSeparateAlphaCutoutMask] = useState<boolean>(false);
   const [tab, setTab] = useState<PreviewTab>("line");
   const [vectorStatus, setVectorStatus] = useState<string | null>(null);
 
@@ -173,6 +181,12 @@ export function StudioLtConvertDialog({
       edgeThinning,
       extractBlackFill,
       blackFillThreshold: blackFillThresholdPercent / 100,
+      enableDepthAttenuation,
+      depthPreset,
+      ...(source.depthBuffer ? { depthBuffer: source.depthBuffer } : {}),
+      ...(source.normalBuffer ? { normalBuffer: source.normalBuffer } : {}),
+      separateAlphaCutoutMask,
+      ...(source.alphaCutoutMaterialMask ? { alphaCutoutMaterialMask: source.alphaCutoutMaterialMask } : {}),
     }),
     [
       toneDensity,
@@ -182,6 +196,12 @@ export function StudioLtConvertDialog({
       edgeThinning,
       extractBlackFill,
       blackFillThresholdPercent,
+      enableDepthAttenuation,
+      depthPreset,
+      source.depthBuffer,
+      source.normalBuffer,
+      separateAlphaCutoutMask,
+      source.alphaCutoutMaterialMask,
     ],
   );
 
@@ -514,6 +534,45 @@ export function StudioLtConvertDialog({
                 onChange={setBlackFillThresholdPercent}
               />
             ) : null}
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-fg-2">
+              <input
+                type="checkbox"
+                checked={enableDepthAttenuation}
+                disabled={slidersDisabled}
+                onChange={(event) => setEnableDepthAttenuation(event.currentTarget.checked)}
+                className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
+              />
+              {t("studio.ltConvert.depthAttenuation", "Z-Depth 깊이 감쇠 (1.8 / 1.1 / 0.5px)")}
+            </label>
+            {enableDepthAttenuation ? (
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <label htmlFor={`${id}-depth-preset`} className="font-semibold text-fg-2">
+                  깊이 프리셋
+                </label>
+                <select
+                  id={`${id}-depth-preset`}
+                  aria-label="Z-Depth 프리셋"
+                  value={depthPreset}
+                  disabled={slidersDisabled}
+                  onChange={(event) => setDepthPreset(event.currentTarget.value as LtDepthAttenuationPresetId)}
+                  className={cn("rounded-lg border border-line bg-card px-2 py-1 text-xs text-fg", STUDIO_FOCUS_RING)}
+                >
+                  {LT_DEPTH_PRESET_LIST.map((preset) => (
+                    <option key={preset.id} value={preset.id}>{preset.labelKo}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-fg-2">
+              <input
+                type="checkbox"
+                checked={separateAlphaCutoutMask}
+                disabled={slidersDisabled}
+                onChange={(event) => setSeparateAlphaCutoutMask(event.currentTarget.checked)}
+                className={cn("size-4 accent-accent", STUDIO_FOCUS_RING)}
+              />
+              {t("studio.ltConvert.alphaCutoutMask", "유리·철망 알파 컷아웃 마스크 패스 분리")}
+            </label>
             {outcome.error ? (
               <p role="alert" className="text-xs text-fg-2">
                 {outcome.error}

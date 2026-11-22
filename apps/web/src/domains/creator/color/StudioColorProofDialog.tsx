@@ -7,6 +7,11 @@ import { downloadBlob } from "../export/studio-export";
 import { studioPageToCrdtPage } from "../live/studio-crdt-page-payload";
 import { useStudioModalSheet } from "../useStudioModalSheet";
 import { importStudioColorProofProfile, loadStudioColorProofProfile, transformStudioColorProofPixels, type StudioRgbIccTransform } from "./studio-rgb-icc-transform";
+import {
+  COLOR_VISION_SOFTPROOF_MODES,
+  softProofRgbaForColorVision,
+  type ColorVisionDeficiencyType,
+} from "./oklch-colorblind-softproof";
 import { encodeStudioColorProofPng } from "./studio-color-proof-png";
 import type { StudioColorProofHost } from "./StudioColorProofContext";
 import type { PageState } from "../studio-page-state";
@@ -28,7 +33,7 @@ export default function StudioColorProofDialog({ host, onClose }: { host: Studio
   const [authorized, setAuthorized] = useState(false);
   const [transform, setTransform] = useState<StudioRgbIccTransform | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [view, setView] = useState<"original" | "proof" | "gamut">("proof");
+  const [view, setView] = useState<"original" | "proof" | "gamut" | ColorVisionDeficiencyType>("proof");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -97,8 +102,8 @@ export default function StudioColorProofDialog({ host, onClose }: { host: Studio
       {host.page.colorProof ? <div className="mt-2 flex flex-wrap items-center gap-2 text-sm"><span>{host.page.colorProof.profile.name} · {transform?.profile.description || t("studio.brushCanvasStatus.color.proofProfileChecking", "프로필 확인 중")}</span><button className={CONTROL} type="button" disabled={busy || host.disabled} onClick={() => { if (!host.commitProfile(host.page, undefined)) setError(t("studio.brushCanvasStatus.color.proofSettingsChangeUnavailable", "현재 문서의 설정을 변경할 수 없습니다.")); }}>프로필 해제</button></div> : null}
       {selected ? <p className="mt-2 text-sm" role="status">현재 선택 색 {host.color}: {selected.outOfGamut ? "대상 프로필 색역 밖 — 출력 시 색역 경계로 제한됩니다." : "대상 프로필 색역 안"}</p> : null}
       <div className="mt-3 flex flex-wrap gap-2"><button type="button" className={CONTROL} disabled={busy || !transform} onClick={() => void preparePreview()}>현재 페이지로 소프트 프루프</button>
-        {preview ? <label className="text-sm">비교<select className={`${CONTROL} ml-2`} value={view} onChange={event => setView(event.target.value as typeof view)}><option value="original">sRGB 원본</option><option value="proof">ICC 소프트 프루프</option><option value="gamut">색역 경고 (자홍)</option></select></label> : null}</div>
-      {preview ? <div className="mt-3"><PixelPreview pixels={view === "original" ? preview.original : preview[view]} width={preview.width} height={preview.height} /><p className="mt-2 text-sm">색역 밖 {preview.outOfGamutPixels} / 표시 픽셀 {preview.visiblePixels} · 알파 유지</p></div> : null}
+        {preview ? <label className="text-sm">비교<select className={`${CONTROL} ml-2`} value={view} onChange={event => setView(event.target.value as typeof view)}><option value="original">sRGB 원본</option><option value="proof">ICC 소프트 프루프</option><option value="gamut">색역 경고 (자홍)</option>{COLOR_VISION_SOFTPROOF_MODES.filter(mode => mode.id !== "none").map(mode => <option key={mode.id} value={mode.id}>{mode.labelKo}</option>)}</select></label> : null}</div>
+      {preview ? <div className="mt-3"><PixelPreview pixels={view === "original" ? preview.original : view === "proof" || view === "gamut" ? preview[view] : softProofRgbaForColorVision(preview.original, view)} width={preview.width} height={preview.height} /><p className="mt-2 text-sm">색역 밖 {preview.outOfGamutPixels} / 표시 픽셀 {preview.visiblePixels} · 알파 유지</p></div> : null}
       {stale ? <p role="status" className="mt-2 text-sm">원고가 변경되었습니다. 소프트 프루프를 새로 만들어 주세요.</p> : null}
       {error ? <p role="alert" className="mt-2 text-sm text-bad">{error}</p> : null}
       {busy ? <p role="status" className="mt-2 text-sm">색상 계산 중…</p> : null}

@@ -7,7 +7,7 @@
  * 한국어 라벨은 컴포넌트 내 상수로 둔다(i18n 파일 수정 없음).
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Layers } from "lucide-react";
 
 import {
@@ -22,7 +22,7 @@ import {
   type ScreentoneLayer,
   type ScreentoneToneKind,
 } from "./screentone-layer";
-import { renderScreentone } from "./screentone-render";
+import { inspectScreentoneMoireRisk, renderScreentone } from "./screentone-render";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -56,14 +56,23 @@ const PREVIEW_HEIGHT = 96;
 export function ScreentoneLayerPanel({
   value,
   disabled,
+  companionLayers,
   onChange,
 }: {
   readonly value?: Partial<ScreentoneLayer> | null;
   readonly disabled?: boolean;
+  readonly companionLayers?: readonly ScreentoneLayer[];
   readonly onChange: (next: ScreentoneLayer) => void;
 }) {
   const current = normalizeScreentoneLayer(value);
   const isEnabled = !isIdentityScreentoneLayer(current);
+  const dpr = typeof window !== "undefined" && Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
+    ? window.devicePixelRatio
+    : 1;
+  const moireReport = useMemo(
+    () => inspectScreentoneMoireRisk(current, { companionLayers, dpr, snapEnabled: true }),
+    [current, companionLayers, dpr],
+  );
   const previewRef = useRef<HTMLCanvasElement | null>(null);
   const kindButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const gradientButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -75,13 +84,16 @@ export function ScreentoneLayerPanel({
     const canvas = previewRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    // 흰 바탕 위에 톤 렌더 (검정 잉크 + alpha).
+    // 흰 바탕 위에 톤 렌더 (검정 잉크 + alpha). 분수 DPR에서도 정수 디바이스 픽셀 스냅으로 계단 모와레를 방지한다.
     if (ctx) {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-    renderScreentone(ctx, canvas.width, canvas.height, current);
-  }, [current]);
+    renderScreentone(ctx, canvas.width, canvas.height, current, null, {
+      dpr,
+      snapToDevicePixels: true,
+    });
+  }, [current, dpr]);
 
   const patch = (partial: Partial<ScreentoneLayer>): void => {
     onChange(normalizeScreentoneLayer({ ...current, ...partial }));
@@ -316,6 +328,24 @@ export function ScreentoneLayerPanel({
               <span className={READOUT_CLASS}>{current.angle}°</span>
             </div>
           </div>
+
+          {/* 출판 모와레 경고 및 권장 각도 원클릭 적용 */}
+          {moireReport.hasWarning && moireReport.warnings[0] && (
+            <div
+              role="alert"
+              className="rounded-md border border-warn/50 bg-warn/10 p-2 text-[11px] leading-snug text-fg space-y-1.5"
+            >
+              <p>{moireReport.warnings[0].messageKo}</p>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => patch({ angle: moireReport.recommendedAngleDeg })}
+                className="rounded border border-accent/50 bg-card px-2 py-0.5 text-[10px] font-medium text-accent hover:bg-raised disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                권장 각도 {moireReport.recommendedAngleDeg}° 적용
+              </button>
+            </div>
+          )}
 
           {/* 모래망점 시드 */}
           {current.kind === "sand" && (

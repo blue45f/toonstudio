@@ -17,6 +17,35 @@ import {
 } from "../render/gpu-next/gpu-stylus-predict-and-screentone";
 
 import type { ScreentoneLayer, ScreentoneToneKind } from "./screentone-layer";
+import {
+  computeScreentoneAngleSeparationDeg,
+  inspectScreentoneMoireRisk,
+  inspectScreentoneStackMoire,
+  measureHalftoneCellCoverageSpread,
+  recommendSafeScreentoneAngle,
+  snapScreentoneToDevicePixels,
+  type ScreentoneDevicePixelSnapInput,
+  type ScreentoneDevicePixelSnapPlan,
+  type ScreentoneMoireInspectionReport,
+  type ScreentoneMoireSeverity,
+  type ScreentoneMoireWarning,
+  type ScreentoneMoireWarningCode,
+} from "./screentone-moire-guard";
+
+export {
+  computeScreentoneAngleSeparationDeg,
+  inspectScreentoneMoireRisk,
+  inspectScreentoneStackMoire,
+  measureHalftoneCellCoverageSpread,
+  recommendSafeScreentoneAngle,
+  snapScreentoneToDevicePixels,
+  type ScreentoneDevicePixelSnapInput,
+  type ScreentoneDevicePixelSnapPlan,
+  type ScreentoneMoireInspectionReport,
+  type ScreentoneMoireSeverity,
+  type ScreentoneMoireWarning,
+  type ScreentoneMoireWarningCode,
+};
 
 /**
  * renderScreentone이 요구하는 최소 2D 컨텍스트.
@@ -31,6 +60,17 @@ export type ScreentoneRenderContext = {
 export type RenderScreentoneOptions = {
   /** 잉크 색상 [r,g,b] 0..255 — 기본 검정. */
   ink?: readonly [number, number, number];
+  /** 디스플레이 배율(DPR, 예: 1.2 / 1.5). 미지정 시 1. */
+  dpr?: number;
+  /** 뷰포트 줌 배율. 미지정 시 1. */
+  zoomScale?: number;
+  /**
+   * 분수 DPR(120%·150% 등)에서 하프톤 도트 계단 모와레를 막는 디바이스 픽셀 정수 스냅 여부.
+   * 기본값 true(명시적으로 false를 넘길 때만 비정수 주기를 그대로 사용한다).
+   */
+  snapToDevicePixels?: boolean;
+  /** CSS 논리 좌표계 원점 오프셋(px). */
+  originOffsetPx?: readonly [number, number];
 };
 
 /** 선 수(lines) → 망점 셀 한 변(px). lines=10→30px, lines=60→5px. */
@@ -177,7 +217,28 @@ export function renderScreentone(
   const ig = Math.min(255, Math.max(0, Math.round(ink[1] ?? 0)));
   const ib = Math.min(255, Math.max(0, Math.round(ink[2] ?? 0)));
 
-  const cell = screentoneCellSize(params.lines);
+  const snapPlan = snapScreentoneToDevicePixels({
+    lines: params.lines,
+    dpr: options?.dpr,
+    zoomScale: options?.zoomScale,
+    originCssPx: options?.originOffsetPx,
+    cellBasePx: SCREENTONE_CELL_BASE_PX,
+    kind: params.kind,
+  });
+  const useDeviceSnap = options?.snapToDevicePixels !== false;
+  const hasScaleOverride =
+    (options?.dpr !== undefined && Math.abs(snapPlan.dpr - 1) > 1e-4)
+    || (options?.zoomScale !== undefined && Math.abs(snapPlan.zoomScale - 1) > 1e-4);
+  const cell = hasScaleOverride
+    ? (useDeviceSnap ? snapPlan.snappedDeviceCellPx : Math.max(2, snapPlan.rawDeviceCellPx))
+    : screentoneCellSize(params.lines);
+  const originX = useDeviceSnap
+    ? snapPlan.snappedOriginDevicePx[0]
+    : (options?.originOffsetPx?.[0] ?? 0) * snapPlan.effectiveScale;
+  const originY = useDeviceSnap
+    ? snapPlan.snappedOriginDevicePx[1]
+    : (options?.originOffsetPx?.[1] ?? 0) * snapPlan.effectiveScale;
+
   const rad = (params.angle * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
@@ -187,10 +248,11 @@ export function renderScreentone(
   const data = img.data;
   const isInverted = params.invert === true;
   for (let y = 0; y < h; y++) {
+    const sy = y + originY;
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       const d = screentoneDensityAt(params, x, y, w, h);
-      let cov = patternCoverage(params.kind, x, y, cell, cos, sin, d, seed);
+      let cov = patternCoverage(params.kind, x + originX, sy, cell, cos, sin, d, seed);
       if (isInverted && d > 0) {
         cov = 1 - cov;
       }

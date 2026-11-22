@@ -1,4 +1,12 @@
 import { StudioColorSwatches } from "./StudioColorSwatches";
+import {
+  COLOR_VISION_SOFTPROOF_MODES,
+  type ColorVisionSoftProofMode,
+} from "./oklch-colorblind-softproof";
+import {
+  SCENE_TEMPERATURE_KELVIN_RANGE,
+  generateOklchThreeTonePalette,
+} from "./oklch-scene-temperature-palette";
 import { StudioToolHintTarget } from "../StudioToolHint";
 import { Copy, Pipette } from "lucide-react";
 import { lazy, Suspense, useEffect, useLayoutEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
@@ -57,6 +65,8 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
   const [focusedTab, setFocusedTab] = useState<Tab>(initialTab);
   const [picker, setPicker] = useState(initialView === "wheel" ? "wheel" : "rectangle");
   const [harmony, setHarmony] = useState(initialView === "cel-shade" ? "cel" : "harmony");
+  const [sceneKelvin, setSceneKelvin] = useState<number>(SCENE_TEMPERATURE_KELVIN_RANGE.defaultKelvin);
+  const [cvdSoftProof, setCvdSoftProof] = useState<ColorVisionSoftProofMode>("none");
   const [paletteId, setPaletteId] = useState("");
   const [palettes, setPalettes] = useState<StudioPalette[]>([]);
   const [paletteFailure, setPaletteFailure] = useState(false);
@@ -71,6 +81,10 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
   const recent = useMemo(() => uniqueColors(recentColors), [recentColors]);
   const authored = useMemo(() => uniqueColors(documentColors), [documentColors]);
   const shades = useMemo(() => uniqueColors(getTintsAndShades(session.color, 9)), [session.color]);
+  const oklchThreeTone = useMemo(
+    () => generateOklchThreeTonePalette(session.color, { kelvin: sceneKelvin }),
+    [session.color, sceneKelvin],
+  );
   const activePalette = palettes.find((palette) => palette.id === paletteId) ?? palettes[0];
   useLayoutEffect(() => { ownerRef.current = session.targetKey; gestureRef.current = null; }, [session.targetKey]);
   useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
@@ -205,7 +219,28 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
         </select>
         {harmony === "harmony" ? <StudioColorHarmoniesPanel saveFeedbackExternally value={session.color} onSelectColor={choose} onSaveAsPalette={(name, colors) => { void save(name, colors); }} />
           : <StudioWebtoonCelShadePanel saveFeedbackExternally value={session.color} onSelectColor={choose} onSaveAsPalette={(name, colors) => { void save(name, colors); }} />}
-        {swatches("밝기와 음영 단계", shades)}
+        <section className="space-y-2 rounded-lg border border-line p-2" aria-label="장면 색온도 OKLCH 3-톤">
+          <div className="flex items-center justify-between gap-2 text-xs text-fg-2">
+            <label htmlFor={`${id}-scene-kelvin`} className="font-semibold">장면 색온도 (OKLCH 3-톤)</label>
+            <output htmlFor={`${id}-scene-kelvin`} className="font-mono tabular-nums">{sceneKelvin}K</output>
+          </div>
+          <input id={`${id}-scene-kelvin`} type="range" aria-label="장면 조명 색온도"
+            min={SCENE_TEMPERATURE_KELVIN_RANGE.min} max={SCENE_TEMPERATURE_KELVIN_RANGE.max} step={SCENE_TEMPERATURE_KELVIN_RANGE.step}
+            value={sceneKelvin} onChange={(event) => setSceneKelvin(Number(event.currentTarget.value))}
+            className="h-6 w-full cursor-pointer accent-accent" />
+          <label className="flex items-center justify-between gap-2 text-xs text-fg-2">색약 소프트프루프
+            <select aria-label="색약 소프트프루프 모드" value={cvdSoftProof}
+              onChange={(event) => setCvdSoftProof(event.currentTarget.value as ColorVisionSoftProofMode)}
+              className={`${button} bg-card`}>
+              {COLOR_VISION_SOFTPROOF_MODES.map((mode) => (
+                <option key={mode.id} value={mode.id}>{mode.shortLabelKo}</option>
+              ))}
+            </select>
+          </label>
+          <StudioColorSwatches title="OKLCH 3-톤 (광원·중간·그림자·반사광)" colors={oklchThreeTone.orderedHexSwatches}
+            value={session.color} onChoose={choose} softProofMode={cvdSoftProof} showContrastAudit />
+        </section>
+        <StudioColorSwatches title="밝기와 음영 단계" colors={shades} value={session.color} onChoose={choose} softProofMode={cvdSoftProof} />
       </> : null}
     </div>
     <div className="space-y-1 border-t border-line pt-3">
