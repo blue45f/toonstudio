@@ -12,26 +12,31 @@ const trackedServerTextCalls = new Set([
 ]);
 
 function trackedCallSources(): Map<string, string[]> {
-  const fileUrl = new URL("../StudioCuttoonEditorHost.tsx", import.meta.url);
-  const source = readFileSync(fileUrl, "utf8");
-  const file = ts.createSourceFile(
-    fileUrl.pathname,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TSX
-  );
+  const targetFiles = [
+    new URL("../StudioCuttoonEditorHost.tsx", import.meta.url),
+    new URL("../studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers.ts", import.meta.url),
+  ];
   const calls = new Map<string, string[]>();
-  function visit(node: ts.Node): void {
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
-      const name = node.expression.text;
-      if (trackedServerTextCalls.has(name)) {
-        calls.set(name, [...(calls.get(name) ?? []), node.getText(file)]);
+  for (const fileUrl of targetFiles) {
+    const source = readFileSync(fileUrl, "utf8");
+    const file = ts.createSourceFile(
+      fileUrl.pathname,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      fileUrl.pathname.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    );
+    function visit(node: ts.Node): void {
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+        const name = node.expression.text;
+        if (trackedServerTextCalls.has(name)) {
+          calls.set(name, [...(calls.get(name) ?? []), node.getText(file)]);
+        }
       }
+      ts.forEachChild(node, visit);
     }
-    ts.forEachChild(node, visit);
+    visit(file);
   }
-  visit(file);
   return calls;
 }
 
@@ -41,8 +46,8 @@ describe("Studio AI paid request identity boundary", () => {
 
     for (const name of trackedServerTextCalls) {
       expect(calls.get(name), `${name} 호출 수`).toHaveLength(1);
-      expect(calls.get(name)?.[0]).toContain(
-        "studioTextAiTransportForOperation(textAiTransport, operationId)"
+      expect(calls.get(name)?.[0]).toMatch(
+        /studioTextAiTransportForOperation\((?:input\.)?textAiTransport, operationId\)/u
       );
     }
   });

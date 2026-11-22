@@ -190,8 +190,8 @@ describe("StudioUnifiedBrushPicker", () => {
     expect(handler.indexOf("return;")).toBeLessThan(handler.indexOf("setDrawingPaletteLayout"));
     expect(studioPageSource).toContain("focusBrushDockOwner === currentWorkspaceOwnerScope");
     expect(studioPageSource).toContain("}, [uiDensityMode, currentWorkspaceOwnerScope]);");
-    expect(studioPageSource).toContain("libraryDockOpen: focusBrushDockOpen ||");
-    expect(studioPageSource).toContain("brushCatalogOpen: focusBrushDockOpen ||");
+    expect(studioPageSource).toMatch(/const libraryDockOpen =\s*input\.focusBrushDockOpen\s*\|\|/u);
+    expect(studioPageSource).toContain("brushCatalogOpen: libraryDockOpen ||");
   });
 
   it("keeps the mobile catalogue open while settings inspect a non-drawing tool", () => {

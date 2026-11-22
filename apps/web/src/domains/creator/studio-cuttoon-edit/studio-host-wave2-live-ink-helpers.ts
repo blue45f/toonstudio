@@ -430,7 +430,7 @@ export function runStudioQueueDeferredStrokePostprocess(input: {
     if (input.controllersRef.current.get(input.finished.id) !== controller) return;
     replaceStudioPendingStrokePostprocess(input.pendingStrokeCommitsRef.current, target, result.points);
   }).catch(() => {
-    // Worker 실패 시 대기 중 원본 획을 그대로 유지한다.
+    // Worker failure falls back safely: the unchanged authoritative stroke remains in the pending batch.
   }).finally(() => {
     if (input.controllersRef.current.get(input.finished.id) === controller) {
       input.controllersRef.current.delete(input.finished.id);

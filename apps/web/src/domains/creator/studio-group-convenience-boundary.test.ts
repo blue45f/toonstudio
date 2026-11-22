@@ -55,10 +55,15 @@ describe("Studio PPT-style group convenience boundary", () => {
       "openFeatureTutorial",
     );
 
+    const clickHelperStart = pageSource.indexOf("export function runStudioSelectElementFromCanvas(");
+    const clickHelperEnd = pageSource.indexOf("export function ", clickHelperStart + 1);
+    const clickHelper = pageSource.slice(clickHelperStart, clickHelperEnd);
+
     expect(selectionAdapter).toContain("selectedIdRef.current = next.selectedId");
     expect(selectionAdapter).toContain("marqueeIdsRef.current = next.marqueeIds");
-    expect(clickHandler).toContain("selectedId: selectedIdRef.current");
-    expect(clickHandler).toContain("marqueeIds: marqueeIdsRef.current");
+    expect(clickHandler).toContain("runStudioSelectElementFromCanvas({");
+    expect(clickHelper).toContain("selectedId: input.selectedIdRef.current");
+    expect(clickHelper).toContain("marqueeIds: input.marqueeIdsRef.current");
   });
 
   it("publishes select-all through the synchronous selection authority before a rapid group command", () => {

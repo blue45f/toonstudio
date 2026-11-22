@@ -42,9 +42,9 @@ describe("Studio Quick Access live boundary", () => {
     );
     expect(studioPageSource).toContain('e.code === "KeyQ"');
     expect(studioPageSource).toContain(
-      "resolveStudioQuickAccessExecutionIntent(commandId)",
+      "resolveStudioQuickAccessExecutionIntent(input.commandId)",
     );
-    expect(studioPageSource).toContain("executeQuickAction(intent.action)");
+    expect(studioPageSource).toContain("input.executeQuickAction(intent.action)");
     expect(studioPageSource).toContain('handleSave("draft")');
     expect(studioPageSource).toContain("openPixelSelectionTransform()");
   });

@@ -38,7 +38,7 @@ describe("Living Ink Studio wiring boundary", () => {
     expect(action).toContain("studioLivingInkEffectiveScope(");
     expect(action).toContain("scope,");
     expect(action).not.toContain("scope: livingInkScope");
-    expect(studioPageSource).toContain("scope: livingInkEffectiveScope,");
+    expect(studioPageSource).toContain("scope: input.livingInkEffectiveScope,");
   });
 
   it("returns to an unselected, whole-layer drawing context after canonical handoff", () => {

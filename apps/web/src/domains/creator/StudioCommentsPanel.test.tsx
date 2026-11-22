@@ -494,8 +494,9 @@ describe("StudioCommentsPanel review rail contract", () => {
     expect(studioShortcutDispatcherSource).toContain('announceDrawingShortcut({ code: "commentPinCancelled" })');
     expect(studioPageSource).toContain("studioCommentFocusRequestSequenceRef");
     expect(studioPageSource).toContain('setStudioCommentPlacementPhase("idle")');
+    expect(studioPageSource).toContain("markRead: markStudioCommentThreadRead");
     expect(studioPageSource).toContain(
-      "void markStudioCommentThreadRead(selection.selected.id)"
+      "void input.markRead(input.selection.selected.id)"
     );
     expect(studioPageSource).toContain("void markStudioCommentThreadRead(nextThread.id)");
     expect(studioPageSource).not.toContain("Promise.all(threadIds.map");
