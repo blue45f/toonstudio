@@ -1,7 +1,8 @@
 /**
- * 창작자 커머스·컴패니언·출고 검수 도메인 진입 배럴.
+ * 창작자 커머스·컴패니언·출고 검수·워터마크 체험 치환 도메인 진입 배럴.
  *
- * - 분업·글로벌 마켓 로열티 자동 정산 원장 (`royalty-settlement-calculator`)
+ * - 분업·글로벌 마켓 로열티 자동 정산 원장 및 다중 통화 인쇄용 명세서 (`royalty-settlement-calculator`)
+ * - 10초 워터마크 체험 배치→무손실 치환 · 3줄 투명 라이선스 배지 (`trial-stamp-license-summary`)
  * - QR 멀티 디바이스 컴패니언 브리지 (`companion-device-bridge`)
  * - 출고 전 원고 사전 검수 게이트 (`episode-preflight-gate`)
  */
@@ -22,19 +23,31 @@ export {
   DEFAULT_FX_KRW_PER_MAJOR,
   DEFAULT_ROLE_CUT_WEIGHTS,
   DEFAULT_WITHHOLDING_BPS,
+  PRINTABLE_SETTLEMENT_STATEMENT_SCHEMA_VERSION,
   ROYALTY_SETTLEMENT_SCHEMA_VERSION,
   SUPPORTED_SETTLEMENT_CURRENCIES,
   allocateIntegerPool,
+  buildPrintableSettlementStatement,
   calculateRoyaltySettlement,
   convertCurrencyMinor,
   exportSettlementStatementCsv,
   exportSettlementStatementJson,
   formatCurrencyMinor,
   fromMinorUnits,
+  generateDeterministicSettlementStatement,
   resolveFxTable,
   toMinorUnits,
   type CurrencySpec,
   type IntegerPoolAllocation,
+  type PrintableCurrencyEquivalent,
+  type PrintableFxSnapshotRow,
+  type PrintableRecipientTaxPayoutRow,
+  type PrintableSettlementStatement,
+  type PrintableSettlementStatementOptions,
+  type PrintableSettlementTotals,
+  type PrintableSourceCurrencyBucket,
+  type PrintableStreamFeeRow,
+  type PrintableSummaryMetricCard,
   type RevenueStreamInput,
   type RevenueStreamKind,
   type RightsBomRoyaltyInput,
@@ -48,6 +61,52 @@ export {
   type TeamContributorInput,
   type TeamContributorRole,
 } from "./royalty-settlement-calculator";
+
+export {
+  SPONSORED_BADGE_LABEL_KO,
+  STANDARD_MARKET_LICENSE_PRESETS,
+  TRIAL_STAMP_LICENSE_SCHEMA_VERSION,
+  TRIAL_STAMP_QUICK_PLACE_TARGET_MS,
+  buildTransparentLicenseSummary,
+  checkLicenseUsageEligibility,
+  computePurchaseReceiptSignature,
+  createMarketplaceCardDisclosure,
+  createTrialStampPlacement,
+  partitionMarketplaceListings,
+  swapAllTrialStampsForPurchasedAsset,
+  swapTrialStampToPurchasedAsset,
+  verifyPurchaseReceipt,
+  type AssetLicenseRightsInput,
+  type BatchTrialSwapResult,
+  type Camera3dPoseSnapshot,
+  type CanvasBlendMode,
+  type CanvasMarketplacePlacement,
+  type CanvasPlacementTransform,
+  type CreateTrialStampPlacementInput,
+  type LicenseAxisSpec,
+  type LicenseBadgeAxis,
+  type LicenseGrantStatus,
+  type LicenseUsageCheckInput,
+  type LicenseUsageCheckResult,
+  type MarketplaceCardDisclosure,
+  type MarketplaceListingCardInput,
+  type MarketplaceListingPlacement,
+  type MarketplacePurchaseReceipt,
+  type MarketplacePurchaseReceiptPayload,
+  type PartitionedMarketplaceListings,
+  type PurchaseReceiptStatus,
+  type PurchasedAssetPlacement,
+  type PurchasedLosslessAssetRef,
+  type ReceiptVerificationResult,
+  type SwapTrialStampInput,
+  type SwapTrialStampResult,
+  type SwappedRightsBomEntry,
+  type TransparentLicenseBadgeItem,
+  type TransparentLicenseThreeLineSummary,
+  type TrialStampPlacement,
+  type TrialSwapErrorCode,
+  type TrialWatermarkSpec,
+} from "./trial-stamp-license-summary";
 
 export {
   COMPANION_BRIDGE_URI_SCHEME,
