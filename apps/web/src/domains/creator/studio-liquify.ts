@@ -33,6 +33,10 @@
  * 들어와야 한다 — 호출부(StudioPage)가 flipNormalizedPoint로 되돌린 뒤 자연 해상도로 스케일해서 넘긴다.
  */
 import {
+  sampleRgbaWithResampler,
+  type StudioTransformResampleMode,
+} from "./render/studio-webgpu-transform-resample-wgsl";
+import {
   LIQUIFY_MAX_FIELD_CELLS,
   LIQUIFY_MAX_INPUT_POINTS,
   LIQUIFY_MAX_DISPLACEMENT_RADIUS_RATIO,
@@ -614,10 +618,13 @@ export function applyLiquifyDisplacement(
   field: LiquifyDisplacementField,
   options: Pick<LiquifyDisplacementOptions, "signal"> & {
     readonly region?: LiquifyImageRegion;
+    /** 고품질 리샘플러(`lanczos3` · `catmull-rom` · `nearest-sharp`). 미지정 시 기존 양선형 동작을 유지한다. */
+    readonly resampler?: StudioTransformResampleMode;
   } = {}
 ): void {
   throwIfLiquifyAborted(options.signal);
   const region = options.region;
+  const resampler = options.resampler;
   const originX = region?.originX ?? 0;
   const originY = region?.originY ?? 0;
   const w = region?.canvasWidth ?? dst.width;
@@ -652,10 +659,31 @@ export function applyLiquifyDisplacement(
       const ddx = field.dx[idx]!;
       const ddy = field.dy[idx]!;
       if (!Number.isFinite(ddx) || !Number.isFinite(ddy) || (ddx === 0 && ddy === 0)) continue;
+      const dstIdx = ((y - originY) * dst.width + (x - originX)) * 4;
+      if (resampler && resampler !== "bilinear") {
+        const localSx = region
+          ? clampFloat(x - ddx, 0, region.canvasWidth - 1) - region.originX
+          : clampFloat(x - ddx, 0, src.width - 1);
+        const localSy = region
+          ? clampFloat(y - ddy, 0, region.canvasHeight - 1) - region.originY
+          : clampFloat(y - ddy, 0, src.height - 1);
+        sampleRgbaWithResampler(
+          src.data,
+          src.width,
+          src.height,
+          clampFloat(localSx, 0, src.width - 1),
+          clampFloat(localSy, 0, src.height - 1),
+          dst.data,
+          dstIdx,
+          resampler,
+          1,
+          1,
+        );
+        continue;
+      }
       const [r, g, b, a] = region
         ? sampleBilinearClampedFromRegion(src, x - ddx, y - ddy, region)
         : sampleBilinearClamped(src, x - ddx, y - ddy);
-      const dstIdx = ((y - originY) * dst.width + (x - originX)) * 4;
       dst.data[dstIdx] = r;
       dst.data[dstIdx + 1] = g;
       dst.data[dstIdx + 2] = b;

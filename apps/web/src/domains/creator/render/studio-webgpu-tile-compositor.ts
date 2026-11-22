@@ -12,6 +12,20 @@ import {
   type StudioGpuTile,
   type StudioGpuTileState,
 } from "./studio-webgpu-tile-plan";
+import {
+  computeOptimalMipLevel,
+  planGpuMipmapPyramid,
+  StudioWebGpuTileViewportCuller,
+  type StudioGpuMipmapPyramid,
+  type StudioMipLevelSelection,
+  type StudioTileCullFrameResult,
+} from "./studio-webgpu-tile-viewport-culling";
+import {
+  createZeroCopyWorkerPacket,
+  uploadFloat32ViewToGpuBuffer,
+  type StudioGpuBufferWriteQueue,
+  type StudioZeroCopyTransferResult,
+} from "./studio-webgpu-zero-copy-pack";
 
 import type {
   PlannedStudioGpuDabs,
@@ -367,10 +381,14 @@ function logicalPointToNdc(
 /** Builds cropped tile quads; bleed texels remain sampleable but never overlap adjacent content. */
 export function planStudioGpuTilePresentation<Resource>(
   frame: StudioGpuTileCompositeFrame<Resource>,
-  viewport: StudioGpuNormalizedTileViewport
+  viewport: StudioGpuNormalizedTileViewport,
+  scratch?: Float32Array,
 ): StudioGpuTilePresentationPlan<Resource> {
   const drawable = frame.items.filter((item) => item.resource && item.descriptor);
-  const vertices = new Float32Array(drawable.length * 6 * PRESENTATION_VERTEX_FLOATS);
+  const requiredFloats = drawable.length * 6 * PRESENTATION_VERTEX_FLOATS;
+  const vertices = scratch !== undefined && scratch.length >= requiredFloats
+    ? scratch.subarray(0, requiredFloats)
+    : new Float32Array(requiredFloats);
   const draws: StudioGpuTilePresentationDraw<Resource>[] = [];
   const corners = [
     [0, 0], [1, 0], [0, 1],
@@ -400,4 +418,88 @@ export function planStudioGpuTilePresentation<Resource>(
     draws.push({ resource, firstVertex, vertexCount: 6, tileId: item.tile.id });
   }
   return { vertices, draws };
+}
+
+export interface StudioGpuMipCulledTileFrameOptions {
+  readonly cameraZoom: number;
+  readonly dirtyRects?: readonly StudioGpuRect[];
+  readonly prefetchMarginTiles?: number;
+  readonly lodBias?: number;
+  readonly culler?: StudioWebGpuTileViewportCuller;
+}
+
+export interface StudioGpuMipCulledTileFramePlan {
+  readonly viewBox: StudioGpuRect;
+  readonly pyramid: StudioGpuMipmapPyramid;
+  readonly mipSelection: StudioMipLevelSelection;
+  readonly cullResult: StudioTileCullFrameResult;
+}
+
+/**
+ * 대형 세로 웹툰 캔버스에서 현재 줌 배율에 맞는 최적 GPU Mip 레벨과
+ * O(visible) 뷰포트·프리페치·Dirty-Rect 타일 컬링 계획을 한 번에 생성한다.
+ */
+export function planStudioGpuMipCulledTileFrame(
+  viewport: StudioGpuNormalizedTileViewport,
+  options: StudioGpuMipCulledTileFrameOptions,
+): StudioGpuMipCulledTileFramePlan {
+  const viewBox = studioGpuLogicalViewBox(viewport);
+  const pyramid = planGpuMipmapPyramid(
+    viewport.logicalWidth,
+    viewport.logicalHeight,
+    STUDIO_GPU_TILE_SIZE,
+  );
+  const mipSelection = computeOptimalMipLevel(
+    options.cameraZoom,
+    pyramid.maxLevel,
+    options.lodBias ?? 0,
+  );
+  const culler = options.culler ?? new StudioWebGpuTileViewportCuller();
+  const cullResult = culler.cullAndSchedule({
+    documentWidth: viewport.logicalWidth,
+    documentHeight: viewport.logicalHeight,
+    tileSize: STUDIO_GPU_TILE_SIZE,
+    cameraZoom: options.cameraZoom,
+    viewport: viewBox,
+    prefetchMarginTiles: options.prefetchMarginTiles ?? 1,
+    dirtyRects: options.dirtyRects,
+    lodBias: options.lodBias ?? 0,
+  });
+  return { viewBox, pyramid, mipSelection, cullResult };
+}
+
+/**
+ * 컬링된 타일 인스턴스 `Float32Array` 뷰를 중간 복사 없이 WebGPU 버퍼에 직접 업로드한다.
+ */
+export function uploadStudioGpuCulledTilesToBuffer(
+  queue: StudioGpuBufferWriteQueue,
+  gpuBuffer: GPUBuffer,
+  cullResult: StudioTileCullFrameResult,
+  dstOffset = 0,
+): number {
+  return uploadFloat32ViewToGpuBuffer(
+    queue,
+    gpuBuffer,
+    {
+      data: cullResult.packedVisibleTiles,
+      byteOffset: cullResult.packedVisibleTiles.byteOffset,
+      byteLength: cullResult.packedVisibleTiles.byteLength,
+    },
+    dstOffset,
+  );
+}
+
+/**
+ * 컬링된 타일 인스턴스 뷰를 Web Worker `Transferable` 제로카피 패킷으로 변환한다.
+ */
+export function createStudioGpuTileCullTransferPacket(
+  cullResult: StudioTileCullFrameResult,
+  frameSequence: number,
+): StudioZeroCopyTransferResult {
+  return createZeroCopyWorkerPacket({
+    frameSequence,
+    mipLevel: cullResult.mipSelection.mipLevel,
+    packedTileInstances: cullResult.packedVisibleTiles,
+    packedTileInstanceCount: cullResult.visibleTileCount,
+  });
 }

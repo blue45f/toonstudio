@@ -11,6 +11,18 @@
  * - evidence_id: ev_0c6a677d38f821a7c782b943662be657510c27ee397e744fa128f63a1ca2d1fa
  */
 
+import {
+  computeHomographyLocalScale,
+  RESAMPLER_MODE_CODES,
+  sampleRgbaWithResampler,
+  TRANSFORM_MODE_CODES,
+  type StudioTransformResampleMode,
+} from "../render/studio-webgpu-transform-resample-wgsl";
+import {
+  packTransformUniformsInto,
+  STUDIO_TRANSFORM_UNIFORM_FLOATS,
+} from "../render/studio-webgpu-zero-copy-pack";
+
 import type { StudioImageDataLike } from "../studio-filters";
 
 export interface CornerPinPoint {
@@ -52,6 +64,8 @@ export interface CornerPinTransformOptions {
   readonly outputWidth?: number;
   readonly outputHeight?: number;
   readonly sourceQuad?: CornerPinQuad;
+  /** 고품질 리샘플러(`lanczos3` · `catmull-rom` · `nearest-sharp`). 미지정 시 기존 양선형 동작을 유지한다. */
+  readonly resampler?: StudioTransformResampleMode;
 }
 
 /** 주어진 이미지 해상도(픽셀 중심 0..W-1, 0..H-1)에 대응하는 항등 4점 사각형을 생성한다. */
@@ -455,15 +469,62 @@ export function applyCornerPinTransform(
   const minV = Math.max(0, Math.floor(Math.min(pts[0].y, pts[1].y, pts[2].y, pts[3].y)));
   const maxV = Math.min(outH - 1, Math.ceil(Math.max(pts[0].y, pts[1].y, pts[2].y, pts[3].y)));
 
+  const resampler = options.resampler;
   for (let v = minV; v <= maxV; v += 1) {
     for (let u = minU; u <= maxU; u += 1) {
       const dstPt = { x: u, y: v };
       if (!pointInsideConvexQuad(dstPt, dstQuad)) continue;
       const srcPt = projectPointHomography(invH, dstPt);
       if (!srcPt) continue;
-      sampleInverseBilinearRgba(data, width, height, srcPt.x, srcPt.y, out, (v * outW + u) * 4);
+      const outOffset = (v * outW + u) * 4;
+      if (resampler && resampler !== "bilinear") {
+        const [fsx, fsy] = computeHomographyLocalScale(invH, u, v);
+        sampleRgbaWithResampler(data, width, height, srcPt.x, srcPt.y, out, outOffset, resampler, fsx, fsy);
+      } else {
+        sampleInverseBilinearRgba(data, width, height, srcPt.x, srcPt.y, out, outOffset);
+      }
     }
   }
 
   return { width: outW, height: outH, data: out };
+}
+
+/**
+ * 4점 코너핀 원근 변형을 WebGPU Compute 1패스 셰이더 및 Worker 제로카피 버퍼로 전달할
+ * 24-float `TransformUniforms` 레이아웃에 직접 패킹한다.
+ */
+export function packCornerPinTransformUniforms(
+  sourceWidth: number,
+  sourceHeight: number,
+  dstQuad: CornerPinQuad,
+  options: CornerPinTransformOptions = {},
+  target?: Float32Array,
+  offset = 0,
+): Float32Array {
+  const srcQuad = options.sourceQuad ?? createIdentityCornerPinQuad(sourceWidth, sourceHeight);
+  const invH = solveHomography8Dof(dstQuad, srcQuad);
+  if (!invH) {
+    throw new Error("원근 호모그래피 행렬이 특이(singular) 상태입니다.");
+  }
+  const dstWidth = Math.max(1, Math.trunc(options.outputWidth ?? sourceWidth));
+  const dstHeight = Math.max(1, Math.trunc(options.outputHeight ?? sourceHeight));
+  const resampler = options.resampler ?? "lanczos3";
+  const [filterScaleX, filterScaleY] = computeHomographyLocalScale(
+    invH,
+    dstWidth * 0.5,
+    dstHeight * 0.5,
+  );
+  const buffer = target ?? new Float32Array(offset + STUDIO_TRANSFORM_UNIFORM_FLOATS);
+  packTransformUniformsInto(buffer, offset, {
+    srcWidth: sourceWidth,
+    srcHeight: sourceHeight,
+    dstWidth,
+    dstHeight,
+    inverseMatrix: invH,
+    transformModeCode: TRANSFORM_MODE_CODES.perspective,
+    resamplerModeCode: RESAMPLER_MODE_CODES[resampler],
+    filterScaleX,
+    filterScaleY,
+  });
+  return buffer;
 }
