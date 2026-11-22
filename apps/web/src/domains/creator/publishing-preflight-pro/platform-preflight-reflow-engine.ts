@@ -30,13 +30,43 @@ import {
   type TrailerCameraMotion,
 } from "./platform-publishing-specs";
 
+import { evaluateRightsBomForPreflight } from "./rights-bom-cc0-preflight";
+import { findSmartCutSafeSeam } from "./smart-cut-safe-slicer";
+
 export {
   createDefaultPreflightEpisode,
   getPlatformPublishingSpec,
   PLATFORM_PUBLISHING_SPECS,
+  type EpisodeCutEyeLevelBand,
   type EpisodeCutInput,
+  type PreflightRightsBomAsset,
   type PublishingPlatformId,
 } from "./platform-publishing-specs";
+export {
+  applyCc0AssetSubstitutions,
+  CC0_REPLACEMENT_CATALOG,
+  createDefaultPreflightRightsBom,
+  evaluateRightsBomForPreflight,
+  FIVE_PLATFORM_PREFLIGHT_PRESETS,
+  getUnifiedPlatformPreflightPreset,
+  recommendCc0Replacement,
+  runUnifiedFivePlatformPreflight,
+  type Cc0ReplacementCatalogItem,
+  type RightsBomPreflightAuditReport,
+  type RightsBomSubstitutionRecord,
+  type UnifiedFivePlatformPreflightResult,
+  type UnifiedPlatformPreflightPreset,
+  type UnifiedPreflightPresetId,
+} from "./rights-bom-cc0-preflight";
+export {
+  evaluateScanlineSeamEnergy,
+  findSmartCutSafeSeam,
+  planSmartCutSafeSlices,
+  SMART_SLICE_DEFAULT_TARGET_HEIGHT_PX,
+  type SmartCutSafeSeamResult,
+  type SmartCutSafeSliceSegment,
+  type SmartCutSafeSlicerPlan,
+} from "./smart-cut-safe-slicer";
 
 const BYTES_PER_MB = 1024 * 1024;
 
@@ -68,27 +98,41 @@ function findSafeSeamOffset(
   cut: EpisodeCutInput,
   scaleRatio: number,
   sliceStartY: number,
-  candidateEndY: number,
   maxSliceHeightPx: number,
-): { readonly endY: number; readonly avoidedBalloon: boolean } {
+): {
+  readonly endY: number;
+  readonly avoidedBalloon: boolean;
+  readonly avoidedEyeLevel: boolean;
+  readonly seamEnergy: number;
+} {
   const scaledHeight = Math.max(1, Math.round(cut.heightPx * scaleRatio));
-  if (candidateEndY >= scaledHeight) {
-    return { endY: scaledHeight, avoidedBalloon: false };
-  }
-  const intersecting = cut.balloons.find((balloon) => {
-    const top = Math.round(balloon.y * scaleRatio);
-    const bottom = Math.round((balloon.y + balloon.height) * scaleRatio);
-    return top < candidateEndY && bottom > candidateEndY;
+  const seam = findSmartCutSafeSeam({
+    totalHeightPx: scaledHeight,
+    sliceStartY,
+    targetSliceHeightPx: maxSliceHeightPx,
+    maxSliceHeightPx,
+    balloons: cut.balloons.map((b) => ({
+      id: b.id,
+      cutId: cut.cutId,
+      topY: Math.round(b.y * scaleRatio),
+      bottomY: Math.round((b.y + b.height) * scaleRatio),
+    })),
+    eyeLevelBands: (cut.eyeLevelBands ?? []).map((eye) => ({
+      id: eye.id,
+      cutId: cut.cutId,
+      characterName: eye.characterName,
+      priority: eye.priority,
+      topY: Math.round(eye.topY * scaleRatio),
+      bottomY: Math.round(eye.bottomY * scaleRatio),
+    })),
+    rowEnergyProfile: cut.rowEnergyProfile,
   });
-  if (!intersecting) {
-    return { endY: candidateEndY, avoidedBalloon: false };
-  }
-  const safeTop = Math.round(intersecting.y * scaleRatio) - 16;
-  const minAllowedEnd = sliceStartY + Math.max(240, Math.round(maxSliceHeightPx * 0.45));
-  if (safeTop >= minAllowedEnd) {
-    return { endY: safeTop, avoidedBalloon: true };
-  }
-  return { endY: candidateEndY, avoidedBalloon: false };
+  return {
+    endY: seam.endY,
+    avoidedBalloon: seam.avoidedBalloon,
+    avoidedEyeLevel: seam.avoidedEyeLevel,
+    seamEnergy: seam.seamEnergy,
+  };
 }
 
 export function runPlatformPreflightPackage(input: EpisodePreflightInput): PlatformPreflightResult {
@@ -253,12 +297,10 @@ export function runPlatformPreflightPackage(input: EpisodePreflightInput): Platf
 
     let cursorY = 0;
     while (cursorY < scaledHeightPx) {
-      const rawEndY = Math.min(scaledHeightPx, cursorY + spec.maxSliceHeightPx);
-      const { endY, avoidedBalloon } = findSafeSeamOffset(
+      const { endY, avoidedBalloon, avoidedEyeLevel, seamEnergy } = findSafeSeamOffset(
         cut,
         scaleRatio,
         cursorY,
-        rawEndY,
         spec.maxSliceHeightPx,
       );
       const sliceHeightPx = Math.max(1, endY - cursorY);
@@ -281,6 +323,8 @@ export function runPlatformPreflightPackage(input: EpisodePreflightInput): Platf
         targetQuality: 90,
         needsResize: !widthAllowed,
         seamAvoidedBalloon: avoidedBalloon,
+        seamAvoidedEyeLevel: avoidedEyeLevel,
+        seamEnergy,
       });
 
       globalSliceIndex += 1;
@@ -347,6 +391,16 @@ export function runPlatformPreflightPackage(input: EpisodePreflightInput): Platf
       severity: hasTextError ? "error" : "warn",
       messageKo: `대사 금지어·임시문구·오타 ${textFlags.length}건 확인 필요`,
     });
+  }
+  if (input.rightsBomAssets && input.rightsBomAssets.length > 0) {
+    const rightsAudit = evaluateRightsBomForPreflight(input.rightsBomAssets);
+    if (rightsAudit.exportBlocked) {
+      issues.push({
+        code: "RIGHTS_BOM_BLOCKED",
+        severity: "error",
+        messageKo: rightsAudit.summaryKo,
+      });
+    }
   }
 
   const projectedTotalBytes = adjustedSlices.reduce((acc, slice) => acc + slice.estimatedBytes, 0);

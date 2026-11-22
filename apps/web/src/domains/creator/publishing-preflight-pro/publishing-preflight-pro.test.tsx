@@ -610,4 +610,29 @@ describe("6. StudioPublishingPreflightPanel UI 및 ProductionSurfaceHeader 지�
       expect(screen.getByTestId("studio-publishing-preflight-panel")).toBeTruthy();
     });
   });
+
+  it("5대 통합 출판 프리셋 전환, Rights BOM CC0 일괄 대체, 1,280px 스마트 컷-세이프 슬라이서 UI가 정상 연동된다", () => {
+    render(<StudioPublishingPreflightPanel projectId="proj-smart" seriesTitle="밤의 우편배달부" episodeNumber={12} />);
+
+    expect(screen.getByTestId("ppf-smart-slice-rights-section")).toBeTruthy();
+    expect(screen.getByTestId("ppf-rights-bom-status").textContent).toContain("차단 2건");
+    expect(screen.getByTestId("ppf-five-preset-status").textContent).toContain("Rights BOM 차단");
+
+    // 인쇄 PDF (CMYK) 및 SNS 9:16 숏폼 프리셋 전환 확인
+    fireEvent.click(screen.getByTestId("ppf-five-preset-print-pdf-cmyk"));
+    expect(screen.getByTestId("ppf-five-preset-summary").textContent).toContain("CMYK");
+    expect(screen.getByTestId("ppf-five-preset-summary").textContent).toContain("300DPI");
+
+    fireEvent.click(screen.getByTestId("ppf-five-preset-sns-shortform-9-16"));
+    expect(screen.getByTestId("ppf-five-preset-summary").textContent).toContain("9:16");
+
+    // Rights BOM CC0 일괄 대체 클릭 시 차단 해제 확인
+    fireEvent.click(screen.getByTestId("ppf-rights-apply-cc0"));
+    expect(screen.getByTestId("ppf-rights-bom-status").textContent).toContain("전체 통과");
+    expect(screen.getByTestId("ppf-rights-substitution-log").textContent).toContain("CC0 치환 완료");
+
+    // 1,280px 스마트 컷-세이프 슬라이서 요약 카드 확인
+    expect(screen.getByTestId("ppf-smart-slicer-count").textContent).toContain("장 분할");
+    expect(Number(screen.getByTestId("ppf-smart-gutter-snap").textContent?.replace(/[^0-9]/gu, ""))).toBeGreaterThan(0);
+  });
 });

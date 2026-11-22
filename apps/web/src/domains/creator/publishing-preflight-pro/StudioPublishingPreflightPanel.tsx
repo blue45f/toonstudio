@@ -9,8 +9,10 @@ import {
   runMultiFormatReflow,
   runPlatformPreflightPackage,
   type EpisodeCutInput,
+  type PreflightRightsBomAsset,
   type PublishingPlatformId,
 } from "./platform-preflight-reflow-engine";
+import { StudioSmartSliceAndRightsSection } from "./StudioSmartSliceAndRightsSection";
 import {
   analyzeReaderRetentionHeatmap,
   computeOklchDeltaE,
@@ -34,6 +36,7 @@ interface StudioPublishingPreflightPanelProps {
   readonly seriesTitle?: string;
   readonly episodeNumber?: number;
   readonly initialCuts?: readonly EpisodeCutInput[];
+  readonly initialRightsBomAssets?: readonly PreflightRightsBomAsset[];
 }
 
 function formatMb(bytes: number): string {
@@ -54,6 +57,7 @@ export function StudioPublishingPreflightPanel({
   seriesTitle = "밤의 우편배달부",
   episodeNumber = 12,
   initialCuts,
+  initialRightsBomAssets,
 }: StudioPublishingPreflightPanelProps) {
   const [activeTab, setActiveTab] = useState<PreflightSuiteTabId>("preflight");
   const [platformId, setPlatformId] = useState<PublishingPlatformId>("naver-webtoon");
@@ -317,6 +321,11 @@ export function StudioPublishingPreflightPanel({
               {preflightResult.manifestJson}
             </pre>
           ) : null}
+
+          <StudioSmartSliceAndRightsSection
+            cuts={activeCuts}
+            initialRightsBomAssets={initialRightsBomAssets}
+          />
         </div>
       ) : null}
 

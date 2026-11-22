@@ -41,6 +41,40 @@ export interface EpisodeCutBalloon {
   readonly isVerticalText?: boolean;
 }
 
+/** 스마트 컷-세이프 슬라이서가 인물 얼굴/눈높이를 자르지 않도록 보호하는 수직 밴드. */
+export interface EpisodeCutEyeLevelBand {
+  readonly id: string;
+  readonly topY: number;
+  readonly bottomY: number;
+  readonly characterName?: string;
+  readonly priority?: "lead" | "supporting";
+}
+
+export type RightsBomLicenseType =
+  | "CC0"
+  | "CC-BY"
+  | "CC-BY-SA"
+  | "CC-BY-NC"
+  | "COMMERCIAL-PERPETUAL"
+  | "COMMERCIAL-RENTAL"
+  | "EDITORIAL-ONLY"
+  | "UNKNOWN";
+
+export type RightsBomAssetCategory = "3d-bg" | "brush" | "font" | "texture" | "sfx" | "prop";
+
+export interface PreflightRightsBomAsset {
+  readonly assetId: string;
+  readonly name: string;
+  readonly category: RightsBomAssetCategory;
+  readonly licenseCode: RightsBomLicenseType;
+  readonly commercialAllowed: boolean;
+  readonly verified: boolean;
+  readonly usedInCutIds: readonly string[];
+  readonly tags?: readonly string[];
+  readonly attributionText?: string;
+  readonly sourceOrigin?: string;
+}
+
 export interface EpisodeCutInput {
   readonly cutId: string;
   readonly order: number;
@@ -56,6 +90,10 @@ export interface EpisodeCutInput {
   readonly isKeyBeat?: boolean;
   readonly caption?: string;
   readonly blankGapBelowPx?: number;
+  /** 인물 눈높이 보호 밴드(스마트 컷-세이프 슬라이서 입력). */
+  readonly eyeLevelBands?: readonly EpisodeCutEyeLevelBand[];
+  /** 수직 스캔라인별 시각 에너지 프로파일(0..1, 낮을수록 여백/거터). */
+  readonly rowEnergyProfile?: readonly number[];
 }
 
 export interface EpisodePreflightInput {
@@ -65,6 +103,7 @@ export interface EpisodePreflightInput {
   readonly platformId: PublishingPlatformId;
   readonly cuts: readonly EpisodeCutInput[];
   readonly customForbiddenWords?: readonly string[];
+  readonly rightsBomAssets?: readonly PreflightRightsBomAsset[];
   readonly generatedAtIso?: string;
 }
 
@@ -81,6 +120,8 @@ export interface PreflightSlicePlanItem {
   readonly targetQuality: number;
   readonly needsResize: boolean;
   readonly seamAvoidedBalloon: boolean;
+  readonly seamAvoidedEyeLevel?: boolean;
+  readonly seamEnergy?: number;
 }
 
 export interface PreflightCompressionPlan {
@@ -126,7 +167,8 @@ export interface PreflightIssueItem {
     | "COLOR_PROFILE_NON_SRGB"
     | "DPI_TOO_HIGH"
     | "BALLOON_SAFE_MARGIN"
-    | "FORBIDDEN_OR_TYPO";
+    | "FORBIDDEN_OR_TYPO"
+    | "RIGHTS_BOM_BLOCKED";
   readonly severity: "error" | "warn" | "info";
   readonly cutId?: string;
   readonly messageKo: string;
@@ -450,6 +492,19 @@ export function createDefaultPreflightEpisode(cutCount = 60): readonly EpisodeCu
       isKeyBeat: isKey,
       caption: isKey ? `핵심 감정·전환 장면 #${i}` : `에피소드 전개 컷 #${i}`,
       blankGapBelowPx: i === 25 || i === 26 ? 720 : i % 7 === 0 ? 220 : 120,
+      ...(isTallActionCut || isKey
+        ? {
+            eyeLevelBands: [
+              {
+                id: `eye-${i}-lead`,
+                topY: isTallActionCut ? 1180 : 340,
+                bottomY: isTallActionCut ? 1340 : 480,
+                characterName: isKey ? "주인공" : "상대역",
+                priority: "lead" as const,
+              },
+            ],
+          }
+        : {}),
     });
   }
 
