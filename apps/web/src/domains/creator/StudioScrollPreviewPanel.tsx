@@ -20,10 +20,17 @@
  */
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { resolveStudioScrollRhythmEndingLabel, resolveStudioScrollRhythmInsight } from "./status-i18n/studio-producer-error-i18n-scroll-rhythm";
-import { Activity, LocateFixed, Pause, Play, Smartphone, X } from "lucide-react";
+import { Activity, LocateFixed, MapPin, Pause, Play, Smartphone, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
+import {
+  resolveReaderFeedbackPinJumpTarget,
+  type ReaderFeedbackPin,
+  type ReaderFeedbackPinJumpTarget,
+} from "./reader-pins/reader-feedback-pins-model";
+import { StudioReaderFeedbackPinOverlay } from "./reader-pins/StudioReaderFeedbackPinOverlay";
+import { StudioReaderFeedbackPinsWidget } from "./reader-pins/StudioReaderFeedbackPinsWidget";
 import { CANVAS_W } from "./studio-assets";
 import { pageDisplayName } from "./studio-page-meta";
 import {
@@ -57,6 +64,14 @@ export interface StudioScrollPreviewPanelProps {
   /** 페이지 클릭 시 그 페이지로 점프 + 패널 닫기. 생략하면 클릭 핸들러 자체가 붙지 않는다
    *  (순수 열람 모드). */
   onSelectPage?: (pageId: string) => void;
+  /** 초기 독자·어시스턴트 피드백 핀 목록(선택). */
+  initialFeedbackPins?: readonly ReaderFeedbackPin[];
+  /** 피드백 핀 목록이 변경될 때 호출되는 콜백(선택). */
+  onFeedbackPinsChange?: (pins: readonly ReaderFeedbackPin[]) => void;
+  /** 피드백 핀에서 해당 컷/좌표로 점프할 때 호출되는 콜백(선택). */
+  onJumpToFeedbackPin?: (target: ReaderFeedbackPinJumpTarget) => void;
+  /** 피드백 핀 사이드 섹션 초기 펼침 여부(기본 false). */
+  defaultFeedbackPinsOpen?: boolean;
 }
 
 const FRAME_WIDTH_PRESETS = [
@@ -214,9 +229,24 @@ export function StudioScrollPreviewPanel({
   pages,
   currentPageId,
   onSelectPage,
+  initialFeedbackPins,
+  onFeedbackPinsChange,
+  onJumpToFeedbackPin,
+  defaultFeedbackPinsOpen = false,
 }: StudioScrollPreviewPanelProps): ReactElement | null {
   const [frameWidthId, setFrameWidthId] = useState<FrameWidthId>("normal");
   const [showRhythmAnalysis, setShowRhythmAnalysis] = useState(true);
+  const [showFeedbackPins, setShowFeedbackPins] = useState(defaultFeedbackPinsOpen);
+  const [feedbackPins, setFeedbackPins] = useState<readonly ReaderFeedbackPin[]>(
+    () => initialFeedbackPins ?? [],
+  );
+  const [activePinId, setActivePinId] = useState<string | null>(null);
+  const [pinPlacementMode, setPinPlacementMode] = useState(false);
+  const [draftPinCoordinate, setDraftPinCoordinate] = useState<{
+    readonly pageId: string;
+    readonly x: number;
+    readonly y: number;
+  } | null>(null);
   const [autoScrollSpeed, setAutoScrollSpeed] = useState(240);
   const [autoScrolling, setAutoScrolling] = useState(false);
   const pageRefs = useRef(new Map<string, HTMLDivElement>());
@@ -278,6 +308,32 @@ export function StudioScrollPreviewPanel({
     pageGapPx: PAGE_GAP_PX,
   });
   const pageLabels = buildPageLabelMap(pages);
+  const pageOptions = pages.map((page, index) => ({
+    id: page.id,
+    label: pageDisplayName(page, index),
+  }));
+  const openFeedbackPinCount = feedbackPins.filter((pin) => pin.status === "open").length;
+
+  const updateFeedbackPins = (nextPins: readonly ReaderFeedbackPin[]) => {
+    setFeedbackPins(nextPins);
+    onFeedbackPinsChange?.(nextPins);
+  };
+
+  const jumpToFeedbackPin = (target: ReaderFeedbackPinJumpTarget) => {
+    setActivePinId(target.pinId);
+    pageRefs.current
+      .get(target.pageId)
+      ?.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
+    onJumpToFeedbackPin?.(target);
+  };
+
+  const openFeedbackPinInEditor = onSelectPage
+    ? (target: ReaderFeedbackPinJumpTarget) => {
+        onJumpToFeedbackPin?.(target);
+        onSelectPage(target.pageId);
+        onClose();
+      }
+    : undefined;
 
   const modal = (
     <div
@@ -333,6 +389,23 @@ export function StudioScrollPreviewPanel({
               title="정보 밀도·대사량·컷 간 호흡·엔딩 여백을 원고 안에서 계산합니다"
             >
               <Activity size={13} aria-hidden /> 리듬 분석
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFeedbackPins((visible) => !visible)}
+              aria-pressed={showFeedbackPins}
+              className={cn(
+                "flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised",
+                showFeedbackPins && "border-accent/50 bg-accent-soft text-accent"
+              )}
+              title="독자·어시스턴트 오탈자·작화 피드백 핀을 수집하고 해당 컷으로 점프합니다"
+            >
+              <MapPin size={13} aria-hidden /> 피드백 핀
+              {openFeedbackPinCount > 0 ? (
+                <span className="rounded-full bg-accent px-1.5 py-0.5 text-[0.6rem] font-bold tabular-nums text-on-accent">
+                  {openFeedbackPinCount}
+                </span>
+              ) : null}
             </button>
             <div
               role="group"
@@ -402,7 +475,7 @@ export function StudioScrollPreviewPanel({
           <div
             className={cn(
               "mx-auto flex w-full items-start justify-center gap-4",
-              showRhythmAnalysis ? "max-w-5xl flex-col lg:flex-row" : "max-w-max"
+              showRhythmAnalysis || showFeedbackPins ? "max-w-6xl flex-col lg:flex-row" : "max-w-max"
             )}
           >
             {showRhythmAnalysis && (
@@ -427,6 +500,7 @@ export function StudioScrollPreviewPanel({
                   const canvasH = page.canvasH > 0 ? page.canvasH : 1080;
                   const displayName = pageDisplayName(page, index);
                   const rhythmMetric = rhythmAnalysis.pages[index];
+                  const pagePins = feedbackPins.filter((pin) => pin.pageId === page.id);
                   return (
                     <div
                       key={page.id}
@@ -458,7 +532,7 @@ export function StudioScrollPreviewPanel({
                           {rhythmMetric.score} · 밀도 {rhythmMetric.densityPerScreen}
                         </span>
                       )}
-                      {onSelectPage && (
+                      {onSelectPage && !pinPlacementMode && (
                         <button
                           type="button"
                           onClick={() => {
@@ -469,11 +543,46 @@ export function StudioScrollPreviewPanel({
                           className="absolute inset-0 z-10 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         />
                       )}
+                      <StudioReaderFeedbackPinOverlay
+                        pageId={page.id}
+                        pageLabel={displayName}
+                        pins={pagePins}
+                        activePinId={activePinId}
+                        placementMode={pinPlacementMode}
+                        onSelectPin={(pin) => {
+                          setShowFeedbackPins(true);
+                          jumpToFeedbackPin(resolveReaderFeedbackPinJumpTarget(pin));
+                        }}
+                        onPickCoordinate={(targetPageId, x, y) => {
+                          setDraftPinCoordinate({ pageId: targetPageId, x, y });
+                          setPinPlacementMode(false);
+                          setShowFeedbackPins(true);
+                        }}
+                      />
                     </div>
                   );
                 })
               )}
             </div>
+            {showFeedbackPins ? (
+              <aside
+                aria-label="피드백 핀 패널"
+                className="w-full shrink-0 rounded-xl border border-line bg-panel/95 p-3 shadow-lg lg:sticky lg:top-0 lg:w-80"
+              >
+                <StudioReaderFeedbackPinsWidget
+                  pages={pageOptions}
+                  currentPageId={currentPageId}
+                  pins={feedbackPins}
+                  activePinId={activePinId}
+                  placementMode={pinPlacementMode}
+                  draftCoordinate={draftPinCoordinate}
+                  onChangePins={updateFeedbackPins}
+                  onTogglePlacementMode={() => setPinPlacementMode((prev) => !prev)}
+                  onJumpToPin={jumpToFeedbackPin}
+                  onOpenPinInEditor={openFeedbackPinInEditor}
+                />
+              </aside>
+            ) : null}
           </div>
         </div>
       </div>
