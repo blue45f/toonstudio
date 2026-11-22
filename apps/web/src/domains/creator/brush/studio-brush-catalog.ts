@@ -21,6 +21,11 @@ import {
   studioBrushCatalogKindLabel,
   type StudioBrushCatalogItem,
 } from "./studio-brush-catalog-core";
+import {
+  dedupeStudioBrushCatalogItems,
+  resolveCanonicalStudioBrushCatalogId,
+  studioBrushDistinctShortName,
+} from "./studio-brush-canonical-dedupe";
 import { STUDIO_BRUSH_PACK_DESCRIPTORS } from "./studio-brush-pack-index";
 import {
   STUDIO_BRUSH_QUALITY_PORTFOLIO,
@@ -52,7 +57,11 @@ export const STUDIO_PRO_BRUSH_CATALOG_ITEMS: readonly StudioBrushCatalogItem[] =
         id: descriptor.catalogId,
         runtimeBrushId: descriptor.runtimeBrushId,
         name: descriptor.catalogName,
-        shortName: descriptor.shortName,
+        shortName: studioBrushDistinctShortName(
+          descriptor.catalogId,
+          descriptor.catalogName,
+          descriptor.shortName,
+        ),
         hint: descriptor.hint,
         searchAliases: Object.freeze([
           descriptor.category,
@@ -96,11 +105,12 @@ const STUDIO_BRUSH_CATALOG_BY_ID: ReadonlyMap<string, StudioBrushCatalogItem> =
 export function studioBrushCatalogItemById(
   brushId: unknown,
 ): StudioBrushCatalogItem | null {
-  return typeof brushId === "string"
-    ? STUDIO_BRUSH_CATALOG_BY_ID.get(brushId)
-      ?? studioV6BrushCatalogItemById(brushId)
-      ?? null
-    : null;
+  if (typeof brushId !== "string") return null;
+  const direct = STUDIO_BRUSH_CATALOG_BY_ID.get(brushId) ?? studioV6BrushCatalogItemById(brushId);
+  if (direct) return direct;
+  const canonicalId = resolveCanonicalStudioBrushCatalogId(brushId);
+  if (canonicalId === brushId) return null;
+  return STUDIO_BRUSH_CATALOG_BY_ID.get(canonicalId) ?? studioV6BrushCatalogItemById(canonicalId) ?? null;
 }
 
 function materializeProductPortfolio(): readonly StudioBrushCatalogItem[] {
@@ -220,12 +230,23 @@ export const STUDIO_LIBRARY_ERASER_BRUSH_CATALOG_ITEMS: readonly StudioBrushCata
     STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS.filter((item) => item.operation === "erase"),
   );
 
+/** 중복 별칭을 제거해 아티스트 라이브러리 카드 중복 노출을 차단한 정본 목록. */
+export const STUDIO_CANONICAL_LIBRARY_BRUSH_CATALOG_ITEMS: readonly StudioBrushCatalogItem[] =
+  Object.freeze(dedupeStudioBrushCatalogItems(STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS));
+
+export const STUDIO_CANONICAL_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS: readonly StudioBrushCatalogItem[] =
+  Object.freeze(
+    STUDIO_CANONICAL_LIBRARY_BRUSH_CATALOG_ITEMS.filter((item) => item.operation === "paint"),
+  );
+
 export const STUDIO_BRUSH_LIBRARY_COUNTS = Object.freeze({
   classic: STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS.length,
   v6: STUDIO_V6_BRUSH_CATALOG_COUNT,
   total: STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS.length,
   paint: STUDIO_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS.length,
   erase: STUDIO_LIBRARY_ERASER_BRUSH_CATALOG_ITEMS.length,
+  canonicalTotal: STUDIO_CANONICAL_LIBRARY_BRUSH_CATALOG_ITEMS.length,
+  canonicalPaint: STUDIO_CANONICAL_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS.length,
 });
 
 const STUDIO_LIBRARY_BRUSH_CATALOG_BY_ID: ReadonlyMap<string, StudioBrushCatalogItem> =
@@ -255,20 +276,26 @@ export function filterStudioBrushCatalogItems(options: {
   recentIds?: readonly string[];
   /** Include V6 material recipes on artist-facing library surfaces. */
   includeV6?: boolean;
+  /** 중복 별칭(동일 12슬롯·교차 카탈로그 중복)을 정본 1종으로 접어 노출한다. */
+  dedupeCanonical?: boolean;
 } = {}): StudioBrushCatalogItem[] {
-  const { operation, includeV6 = false, ...libraryOptions } = options;
+  const { operation, includeV6 = false, dedupeCanonical, ...libraryOptions } = options;
   const query = (libraryOptions.query ?? "").trim();
   const pinnedLane =
     libraryOptions.category === "favorites" ||
     libraryOptions.category === "recent";
   const category = query && !pinnedLane ? "all" : libraryOptions.category;
 
-  return filterStudioBrushLibraryItems({
+  const filtered = filterStudioBrushLibraryItems({
     ...libraryOptions,
     category,
     query,
     catalogItems: operationInventory(operation, includeV6),
   }) as StudioBrushCatalogItem[];
+
+  const applyCanonicalDedupe =
+    dedupeCanonical ?? (includeV6 && !query && !pinnedLane && category !== "nextgen");
+  return applyCanonicalDedupe ? dedupeStudioBrushCatalogItems(filtered) : filtered;
 }
 
 function quickCatalogInventory(options: {

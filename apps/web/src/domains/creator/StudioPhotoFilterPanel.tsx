@@ -7,7 +7,7 @@
  */
 import { RotateCcw } from "lucide-react";
 
-
+import { StudioCanonicalFilterNotice } from "./filter/StudioCanonicalFilterNotice";
 import { StudioSliderRow, StudioSwatchChip } from "./studio-panel-ui";
 import {
   isIdentityPhotoFilter,
@@ -95,6 +95,7 @@ export function StudioPhotoFilterPanel({
         />
         광도 유지 (Preserve Luminosity)
       </label>
+      <StudioCanonicalFilterNotice panelId="StudioPhotoFilterPanel" />
     </div>
   );
 }

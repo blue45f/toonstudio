@@ -6,6 +6,7 @@
  */
 import { RotateCcw } from "lucide-react";
 
+import { StudioCanonicalFilterNotice } from "./filter/StudioCanonicalFilterNotice";
 import { DUOTONE_PRESETS } from "./studio-color-palettes";
 import {
   IMAGE_ADJUSTMENT_RANGES,
@@ -383,6 +384,7 @@ export function StudioImageFilterPanel({
           </>
         )}
       </div>
+      <StudioCanonicalFilterNotice panelId="StudioImageFilterPanel" />
     </div>
   );
 }

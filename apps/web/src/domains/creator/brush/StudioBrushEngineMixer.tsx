@@ -1,7 +1,4 @@
-/**
- * Brush engine mixer UI: stack diagnosis, portable trait imports, curated multi-source recipes,
- * watercolor programs and durable custom-brush saving.
- */
+/** Brush engine mixer UI: quick canvas trait mix, diagnosis & custom-brush saving. */
 import {
   CheckCircle2,
   Download,
@@ -674,26 +671,21 @@ export function StudioBrushSaveAsCustomControls({ snapshot, baseBrushName }: Sav
   );
 }
 
-export function StudioBrushComposerIntro() {
+export function StudioBrushComposerIntro({ fullEditorHref }: { readonly fullEditorHref?: string } = {}) {
   return (
-    <StudioSectionHeader
-      title="엔진 믹서"
-      description="캐리어 위에 촉·종이·안료·입력 반응·물성 프로그램을 조합하고, 품질과 실시간 비용을 확인한 뒤 커스텀 브러시로 저장합니다."
-    />
+    <div className="space-y-2">
+      <StudioSectionHeader title="엔진 믹서 · 빠른 튜닝" description="캔버스 작업을 유지한 채 촉·종이·안료·물성을 조합해 내 브러시로 저장합니다. 12슬롯 그래프·A/B 비교는 전체 제작 스튜디오에서 이어서 편집하세요." />
+      {fullEditorHref ? (
+        <a href={fullEditorHref} data-studio-brush-tier2-handoff="true" className={cn("inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-accent/35 bg-accent-soft/45 px-2.5 py-1 text-[0.68rem] font-semibold text-accent hover:bg-accent-soft", STUDIO_FOCUS_RING)}>
+          브러시 스튜디오 전체 제작(V6) 열기 →
+        </a>
+      ) : null}
+    </div>
   );
 }
 
-const STUDIO_WET_EDGE_BLOOM_PROGRAM_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  "edge-bloom": "에지 블룸 — 건조 링",
-  "granulating-wash": "과립 워시 — 안료 침전",
-  "fiber-feather": "파이버 페더 — 신묵 번짐",
-  "chroma-halo": "크로마 헤일로 — 크로마토그래피",
-});
-
-const STUDIO_LIVING_INK_BAKE_PROGRAM_LABELS: Readonly<Record<string, string>> = Object.freeze({
-  "sumi-flow-bake": "수묵 플로우 베이크",
-  "fluid-feather-lite": "유체 페더 (가벼운 수채)",
-});
+const STUDIO_WET_EDGE_BLOOM_PROGRAM_LABELS: Readonly<Record<string, string>> = Object.freeze({ "edge-bloom": "에지 블룸 — 건조 링", "granulating-wash": "과립 워시 — 안료 침전", "fiber-feather": "파이버 페더 — 신묵 번짐", "chroma-halo": "크로마 헤일로 — 크로마토그래피" });
+const STUDIO_LIVING_INK_BAKE_PROGRAM_LABELS: Readonly<Record<string, string>> = Object.freeze({ "sumi-flow-bake": "수묵 플로우 베이크", "fluid-feather-lite": "유체 페더 (가벼운 수채)" });
 
 const STUDIO_WATERCOLOR_PROGRAM_RECIPES = Object.freeze([
   { id: "lane", label: "레인 기본", bloom: "", bake: "" },

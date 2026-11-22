@@ -7,6 +7,8 @@ import { BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE } from "../brush-lab/brush-stud
 import { createBrushStudioV6ProductBrush } from "../brush-lab/brush-studio-v6-product-bridge";
 import { planBrushStudioV6ProviderRuntime } from "../brush-lab/brush-studio-v6-provider-runtime";
 
+import { resolveCanonicalBrushStudioV6RecipeId } from "../brush-lab/brush-studio-v6-recipe-dedupe";
+
 import { studioV6BrushCatalogItemById } from "./studio-brush-v6-catalog";
 import { studioV6RecipeIdFromCatalogId } from "./studio-brush-v6-id";
 
@@ -43,7 +45,10 @@ export function studioV6BrushProgramForCatalogId(
   catalogId: unknown,
 ): BrushStudioV6Program | null {
   const recipeId = studioV6RecipeIdFromCatalogId(catalogId);
-  return recipeId ? RECIPE_BY_ID.get(recipeId)?.create() ?? null : null;
+  if (!recipeId) return null;
+  const direct = RECIPE_BY_ID.get(recipeId);
+  if (direct) return direct.create();
+  return RECIPE_BY_ID.get(resolveCanonicalBrushStudioV6RecipeId(recipeId))?.create() ?? null;
 }
 
 function selectionBlockForProgram(

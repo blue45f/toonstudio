@@ -7,6 +7,7 @@
  */
 import { RotateCcw } from "lucide-react";
 
+import { StudioCanonicalFilterNotice } from "./filter/StudioCanonicalFilterNotice";
 import {
   BLURFX_ANGLE_RANGE,
   BLURFX_PRESETS,
@@ -117,6 +118,7 @@ export function StudioBlurPanel({
           );
         })}
       </div>
+      <StudioCanonicalFilterNotice panelId="StudioBlurPanel" />
     </div>
   );
 }

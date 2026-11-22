@@ -7,6 +7,7 @@
  */
 import { RotateCcw } from "lucide-react";
 
+import { StudioCanonicalFilterNotice } from "./filter/StudioCanonicalFilterNotice";
 import {
   DETAIL_AMOUNT_RANGE,
   DETAIL_PRESETS,
@@ -99,6 +100,7 @@ export function StudioDetailPanel({
           />
         ))}
       </div>
+      <StudioCanonicalFilterNotice panelId="StudioDetailPanel" />
     </div>
   );
 }

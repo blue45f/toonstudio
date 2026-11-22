@@ -39,6 +39,7 @@ import { BRUSH_PRESETS, resolveStudioBrushRenderFamily } from "../studio-brush";
 import { STUDIO_FOCUS_RING, StudioSectionHeader } from "../studio-panel-ui";
 import { STUDIO_SPECTRAL_WGM_COLOR_MIX_PROGRAM_ID } from "../studio-spectral-wgm-mix-v1";
 
+import { studioBrushAuthoringTier, studioBrushListedScopeSummaryKo } from "./studio-brush-authoring-hierarchy";
 import {
   createStudioBuiltInBrushDefaultRestoreProfile,
   createStudioSavedBrushDefaultRestoreProfile,
@@ -209,7 +210,7 @@ export function StudioBrushDynamicsPreview(props: StudioBrushLiveTestPadProps) {
 
 /**
  * 비입자(코어·자연매체) 58종 브러시용 비차단 엔진 전환 안내.
- * 기존 "입자 브러시를 먼저 선택하세요" 차단 화면을 해제하고 전 241종 브러시 통합 편집을
+ * 기존 "입자 브러시를 먼저 선택하세요" 차단 화면을 해제하고 전체 브러시 통합 편집을
  * 즉시 열되, 원할 때 빠른 설정에서 잉크 입자·에어브러시·드라이 미디어 엔진으로 한 번에
  * 전환할 수 있는 44px CTA를 하단에 유지한다.
  */
@@ -767,13 +768,12 @@ export function StudioBrushStudio({
       <div className="rounded-xl border border-line bg-card/45 px-3 py-2.5 text-xs leading-relaxed text-fg-3 text-pretty">
         설정을 조정하면 자동으로 사용자 지정 상태가 됩니다. 원본 프리셋은 언제든 다시 고를 수 있습니다.
       </div>
-      {unifiedMediaSection}
     </div>
   ) : category === "response" ? (
     <div className="space-y-2.5">
       <StudioSectionHeader
         title="압력 반응과 도포량"
-        description="전 241종 브러시에서 필압·불투명도·유량·물성을 일관되게 조정합니다."
+        description={`${studioBrushListedScopeSummaryKo()}에서 필압·불투명도·유량·물성을 일관되게 조정합니다.`}
       />
       <RangeRow
         label="가벼운 필압의 굵기"
@@ -1098,7 +1098,6 @@ export function StudioBrushStudio({
       <StudioBrushGrainControls settings={settings} onSettingsChange={onSettingsChange} />
       <StudioBrushDualBrushControls settings={settings} onSettingsChange={onSettingsChange} />
       <StudioBrushColorDynamicsControls settings={settings} onSettingsChange={onSettingsChange} />
-      {unifiedMediaSection}
       {!dynamicsActive ? <DynamicsRequiredNotice onRequestCompatibleBrush={onRequestCompatibleBrush} /> : null}
     </div>
   ) : category === "engines" ? (
@@ -1129,7 +1128,7 @@ export function StudioBrushStudio({
           </li>
         ))}
       </ol>
-      <StudioBrushComposerIntro />
+      <StudioBrushComposerIntro fullEditorHref={fullEditorHref} />
       <Suspense fallback={<p role="status">{frozenStatus5Text("studio.frozenStatus5.brushStudio.engineToolsLoading", "엔진 시험 도구를 불러오는 중…")}</p>}>
         <StudioNativeBrushEngineProbe color={color} strokeWidth={strokeWidth} />
       </Suspense>
@@ -1149,7 +1148,6 @@ export function StudioBrushStudio({
         programSet={currentSnapshot.enginePrograms ?? null}
         onChange={onEngineProgramsChange}
       />
-      {unifiedMediaSection}
       <StudioBrushTraitImportControls settings={settings} onSettingsChange={onSettingsChange} />
       <StudioBrushSaveAsCustomControls snapshot={currentSnapshot} baseBrushName={brushLabel} />
     </div>
@@ -1330,7 +1328,7 @@ export function StudioBrushStudio({
           <div className="min-w-0 flex-1">
             <h2 id={titleId} className="truncate text-sm font-bold text-fg">{STUDIO_BRUSH_LABELS.editCurrent}</h2>
             <p id={descriptionId} className="truncate text-xs text-fg-3">
-              {brushLabel} · {dynamicsActive ? `${mappingCount}개 입력 연결` : "전 241 브러시 통합 편집"}
+              {brushLabel} · {dynamicsActive ? `${mappingCount}개 입력 연결` : studioBrushListedScopeSummaryKo()} · {studioBrushAuthoringTier("canvas-quick-tune").titleKo}
             </p>
           </div>
           <a

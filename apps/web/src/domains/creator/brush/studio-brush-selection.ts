@@ -9,6 +9,7 @@ import {
   studioBrushDynamicsSettingsForBrushId,
   type NormalizedStudioBrushDynamicsSettings,
 } from "./studio-brush-dynamics";
+import { resolveCanonicalStudioBrushCatalogId } from "./studio-brush-canonical-dedupe";
 import { isStudioBrushPackCatalogId } from "./studio-brush-pack-id";
 import { isStudioV6BrushCatalogId } from "./studio-brush-v6-id";
 
@@ -104,10 +105,9 @@ export function studioCoreBrushCatalogSelection(
  * physics chunk lazy, but both the desktop catalogue and mobile sheet receive the same durable
  * `StudioBrushCatalogSelection` payload and never guess a renderer fallback for an unknown id.
  */
-export async function materializeStudioBrushCatalogSelection(
-  catalogId: unknown
+async function materializeExactOrPackCatalogId(
+  catalogId: string,
 ): Promise<StudioBrushCatalogSelection | null> {
-  if (typeof catalogId !== "string" || !catalogId) return null;
   prewarmDryBrush(catalogId);
   const corePreset = STUDIO_CORE_BRUSH_PRESET_BY_ID.get(catalogId);
   if (corePreset) return studioCoreBrushCatalogSelection(corePreset);
@@ -117,6 +117,17 @@ export async function materializeStudioBrushCatalogSelection(
   }
   if (!isStudioBrushPackCatalogId(catalogId)) return null;
   return (await loadStudioBrushPackRuntime()).materializeStudioBrushPackSelection(catalogId);
+}
+
+export async function materializeStudioBrushCatalogSelection(
+  catalogId: unknown
+): Promise<StudioBrushCatalogSelection | null> {
+  if (typeof catalogId !== "string" || !catalogId) return null;
+  const direct = await materializeExactOrPackCatalogId(catalogId);
+  if (direct) return direct;
+  const canonicalId = resolveCanonicalStudioBrushCatalogId(catalogId);
+  if (canonicalId === catalogId) return null;
+  return materializeExactOrPackCatalogId(canonicalId);
 }
 
 /** Warm only the optional engine chunk when pointer/focus intent makes selection likely. */

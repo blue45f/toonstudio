@@ -7,6 +7,7 @@
  */
 import { RotateCcw } from "lucide-react";
 
+import { StudioCanonicalFilterNotice } from "./filter/StudioCanonicalFilterNotice";
 import {
   CLARITY_PRESETS,
   CLARITY_RANGE,
@@ -89,6 +90,7 @@ export function StudioClarityPanel({
           );
         })}
       </div>
+      <StudioCanonicalFilterNotice panelId="StudioClarityPanel" />
     </div>
   );
 }

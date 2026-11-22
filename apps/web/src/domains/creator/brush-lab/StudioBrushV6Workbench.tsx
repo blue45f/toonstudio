@@ -11,6 +11,7 @@ import { r5CreatorStatusText } from "../r5-cat1-status-i18n";
 import "../studio-brush-canvas-status-i18n";
 import { StudioPigmentComparison } from "./pigment/StudioPigmentComparison";
 import { StudioBrushV6ProviderPlan } from "./StudioBrushV6ProviderPlan";
+import { resolveCanonicalBrushStudioV6RecipeId } from "./brush-studio-v6-recipe-dedupe";
 import { StudioBrushV6RecipeShelf } from "./StudioBrushV6RecipeShelf";
 import { brushStudioV6Topology } from "./brush-studio-v6-topology-catalog";
 import { isBrushStudioV6TopologyNodeCompatible } from "./brush-studio-v6-topology-material";
@@ -40,6 +41,7 @@ import {
   saveBrushStudioV6ProductBrush,
 } from "./brush-studio-v6-product-bridge";
 import {
+  BRUSH_STUDIO_V6_CANONICAL_RECIPES,
   BRUSH_STUDIO_V6_NODES,
   BRUSH_STUDIO_V6_RECIPES,
   analyzeBrushStudioV6Program,
@@ -82,7 +84,7 @@ type BrushStudioExperience = "guided" | "expert";
 
 const BRUSH_STUDIO_EXPERIENCE_KEY = "toonstudio.brush-studio.experience";
 const GUIDED_TABS: readonly { id: Tab; label: string }[] = [
-  { id: "recipes", label: `시작 레시피 ${BRUSH_STUDIO_V6_RECIPES.length}` },
+  { id: "recipes", label: `시작 레시피 ${BRUSH_STUDIO_V6_CANONICAL_RECIPES.length}` },
   { id: "experiment", label: "비교·실험" },
   { id: "material", label: "재료·질감" },
   { id: "input", label: "입력·필압" },
@@ -475,7 +477,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
   const patchInput = (delta: Partial<BrushStudioV6InputPolicy>) => replace(patchBrushStudioV6Input(program, delta), undefined, `input:${Object.keys(delta).join(",")}`);
   const patchTuning = <K extends keyof BrushStudioV6Tuning>(key: K, value: BrushStudioV6Tuning[K]) => replace(patchBrushStudioV6Tuning(program, { [key]: value }), undefined, `tuning:${key}`);
   const choose = (slot: SingleSlot, id: string) => replace(replaceBrushStudioV6Slot(program, slot, id));
-  const chooseRecipe = (id: string) => { const recipe = BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === id); if (!recipe) return; controllerRef.current?.clear(); setTelemetry(EMPTY_TELEMETRY); replace(recipe.create(), `${recipe.label} 레시피를 불러왔습니다.`); setTab("material"); };
+  const chooseRecipe = (id: string) => { const recipe = BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === id) ?? BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === resolveCanonicalBrushStudioV6RecipeId(id)); if (!recipe) return; controllerRef.current?.clear(); setTelemetry(EMPTY_TELEMETRY); replace(recipe.create(), `${recipe.label} 레시피를 불러왔습니다.`); setTab("material"); };
   const importProgram = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (!file) return;
     const generation = ++editGenerationRef.current;
@@ -537,7 +539,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
           <div className="max-w-3xl">
             <p className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-accent">BRUSH STUDIO · FULL EDIT</p>
             <h2 className="mt-1 text-lg font-black text-fg">브러시 만들기·전체 편집</h2>
-            <p className="mt-1 text-xs leading-relaxed text-fg-3">{BRUSH_STUDIO_V6_RECIPES.length}개 시작 레시피에서 골라 실제 획을 비교하세요. 기본 편집은 결과 중심으로 단순하게, 전문가 설정은 엔진과 물리까지 단계적으로 엽니다.</p>
+            <p className="mt-1 text-xs leading-relaxed text-fg-3">{BRUSH_STUDIO_V6_CANONICAL_RECIPES.length}개 정본 시작 레시피에서 골라 실제 획을 비교하세요. 기본 편집은 결과 중심으로 단순하게, 전문가 설정은 12슬롯 엔진과 물리까지 단계적으로 엽니다.</p>
             <div role="group" aria-label="브러시 편집 깊이" className="mt-3 inline-flex rounded-xl border border-line bg-raised/55 p-1">
               <button type="button" aria-pressed={experience === "guided"} onClick={() => changeExperience("guided")} className={`min-h-[44px] rounded-lg px-3 text-xs font-black ${experience === "guided" ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised"} ${STUDIO_FOCUS_RING}`}>기본 편집</button>
               <button type="button" aria-pressed={experience === "expert"} onClick={() => changeExperience("expert")} className={`min-h-[44px] rounded-lg px-3 text-xs font-black ${experience === "expert" ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-raised"} ${STUDIO_FOCUS_RING}`}>전문가 설정</button>
@@ -651,7 +653,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
             onPin={() => { setReference(program); setStatus("현재 브러시 전체 설정을 비교 기준으로 고정했습니다."); }}
             onRestore={() => replace(reference, "비교 기준의 전체 설정을 복원했습니다. 실행 취소로 돌아갈 수 있습니다.")}
             onChange={replace} /> : null}
-          {tab === "recipes" ? <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "시그니처 레시피")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "이름·용도·영문 ID로 찾아 실제 질감과 조절값을 확인하세요.")}><StudioBrushV6RecipeShelf selectedId={program.id} onChoose={chooseRecipe} /></Panel> : null}
+          {tab === "recipes" ? <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "시그니처 레시피")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "이름·용도·영문 ID로 찾아 실제 질감과 조절값을 확인하세요.")}><StudioBrushV6RecipeShelf selectedId={program.id} onChoose={chooseRecipe} dedupeCanonical /></Panel> : null}
 
           {tab === "graph" ? <Panel title={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "Engine Graph")} description={translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "실제 획은 공통 CPU 접촉 계산기를 사용합니다. 회색 항목은 아직 연결되지 않은 설계 기록이며, 외부 엔진을 실행하지 않습니다.")}><div className="grid gap-4 lg:grid-cols-2">{SINGLE_SLOTS.map(({ slot, label, description }) => { const selected = program.slots[slot]; const node = brushStudioV6Node(selected); return <div key={slot} className={SUB}><Select id={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "en", "brush-v6-slot-{v0}"), { v0: String(slot) })} label={label} value={selected} options={nodeOptions(slot, Boolean(topology))} onChange={(id) => choose(slot, id)} /><p className="mt-2 text-xs text-fg-3">{description}</p><p className="mt-1 text-[0.68rem] font-bold text-accent">{materialNodeStatus(node.id, activeTuning, Boolean(topology))}</p></div>; })}</div></Panel> : null}
           {tab === "graph" && topology ? <Panel title={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "{v0} · 구조 설정"), { v0: String(topology.label) })} description={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "{v0} 구조 전환 시 미지원 물리·패턴은 해제됩니다. 종이·도포·안료·네온은 재조합할 수 있습니다."), { v0: String(topology.description) })}><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{topology.controls.map((spec) => <Slider key={spec.key} spec={spec} value={program.tuning[spec.key]} inactive={!activeTuning.has(spec.key)} onChange={(value) => patchTuning(spec.key, value)} />)}</div></Panel> : null}
