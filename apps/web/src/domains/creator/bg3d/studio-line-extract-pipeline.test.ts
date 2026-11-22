@@ -4,6 +4,7 @@ import {
   resolveStudioLineExtractJob,
   studioLineExtractJobToBg3dLineSettings,
   studioLineExtractJobToLtVectorOptions,
+  studioLineExtractJobToVectorLineArtOptions,
 } from "./studio-line-extract-pipeline";
 
 describe("studio-line-extract-pipeline", () => {
@@ -76,5 +77,23 @@ describe("studio-line-extract-pipeline", () => {
     expect(studioLineExtractJobToLtVectorOptions(plain).strokeWidth).toBe(2);
     expect(studioLineExtractJobToLtVectorOptions(plain).simplifyTolerance).toBe(0.75);
     expect(studioLineExtractJobToLtVectorOptions(smooth).simplifyTolerance).toBe(0);
+  });
+
+  it("3D 벡터 강약선 옵션은 크리즈 각도·은선 제거·깊이 강약 가중치를 작업 계약과 일치시킨다", () => {
+    const job = resolveStudioLineExtractJob({
+      source: "bg3d-lt",
+      widthPx: 2.5,
+      creaseAngleDegrees: 38,
+      hiddenLineRemoval: true,
+      depthEnabled: true,
+    });
+    expect(job).not.toBeNull();
+    if (!job) return;
+    const opts = studioLineExtractJobToVectorLineArtOptions(job);
+    expect(opts.creaseAngleThresholdDeg).toBe(38);
+    expect(opts.hiddenLineRemoval).toBe(true);
+    expect(opts.baseWidthPx).toBe(2.5);
+    expect(opts.distanceWeightStrength).toBeGreaterThan(0);
+    expect(opts.svgRenderMode).toBe("variable-ribbon");
   });
 });

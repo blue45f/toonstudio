@@ -19,6 +19,15 @@ import {
 import { Studio3DClothHairDynamics } from "../scene-3d/studio-3d-cloth-hair-dynamics";
 import { Studio3DEditableMesh } from "../scene-3d/studio-3d-editable-mesh";
 import {
+  StudioPbdClothDrapeSolver,
+  createClothGarmentMesh,
+  createLookAtViewMatrix,
+  createPerspectiveProjectionMatrix,
+  createVectorLineArtCubeMesh,
+  extract3dVectorLineArt,
+  type ClothGarmentPreset,
+} from "../scene3d-pro";
+import {
   CURRENT_TOON3D_FORMAT_VERSION,
   createEmptyToon3DPackage,
   validateToon3DPackage,
@@ -84,6 +93,12 @@ const HAND_GRIP_TYPES: readonly { readonly id: HandGripArchetype; readonly label
   { id: "cup-wrap-grasp", labelKo: "머그컵 손잡이 홀드" },
 ];
 
+const CLOTH_GARMENT_PRESETS: readonly { readonly id: ClothGarmentPreset; readonly labelKo: string }[] = [
+  { id: "cape", labelKo: "망토 드레이프" },
+  { id: "shirt", labelKo: "셔츠 주름" },
+  { id: "skirt", labelKo: "치마 플레어" },
+];
+
 const LENS_PRESET_IDS = Object.keys(CAMERA_LENS_PRESET_UI) as CameraLensPreset[];
 const TEMPO_EASING_IDS = Object.keys(CAMERA_TEMPO_EASING_UI) as CameraTempoEasing[];
 
@@ -115,6 +130,7 @@ export function StudioBg3dDccScenePipelinePanel({
     TEMPO_EASING_IDS[0] ?? "ease-in-out",
   );
   const [gripType, setGripType] = useState<HandGripArchetype>("sword-power-grip");
+  const [garmentPreset, setGarmentPreset] = useState<ClothGarmentPreset>("cape");
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDayPreset>("golden-hour-sunset");
 
   const resolvedRealistic = useMemo(
@@ -160,6 +176,26 @@ export function StudioBg3dDccScenePipelinePanel({
     cloth.initClothGrid(3, 3, 0.1);
     cloth.step();
 
+    const pbdGarment = createClothGarmentMesh(garmentPreset, {
+      cols: garmentPreset === "cape" ? 5 : 8,
+      rows: 5,
+    });
+    const pbdSolver = new StudioPbdClothDrapeSolver(
+      pbdGarment,
+      { wind: [1.2, 0, 0.4], subSteps: 2, solverIterations: 2 },
+      [
+        {
+          id: "torso-proxy",
+          kind: "capsule",
+          start: [0, 0.9, 0],
+          end: [0, 1.42, 0],
+          radius: 0.16,
+        },
+      ],
+    );
+    pbdSolver.stepMany(3);
+    const pbdDiag = pbdSolver.computeDiagnostics();
+
     const hairGen = new Studio3DProceduralHairStrandGenerator();
     hairGen.addStrand({
       id: "strand-main",
@@ -190,12 +226,15 @@ export function StudioBg3dDccScenePipelinePanel({
       indexFlexionDeg: Math.round(gripResult.index.proximalAngleDeg),
       characterCount: mixSummary.characterCount,
       clothParticles: cloth.getParticles().length,
+      pbdClothParticles: pbdDiag.particleCount,
+      pbdClothBendingCount: pbdDiag.bendingConstraintCount,
+      pbdClothStable: pbdDiag.allFinite && pbdDiag.maxColliderPenetration <= 1e-3,
       hairTriangles: hairBuf.triangleCount,
       twoHandSpanM: scaleState.currentSpanMeters + cropState.width,
       attachMaxDist: STUDIO_3D_ATTACHMENT_SOLVER_MAX_WORLD_DISTANCE,
       attachProbeStatus: attachProbe.ok ? "ok" : attachProbe.code,
     };
-  }, [gripType]);
+  }, [gripType, garmentPreset]);
 
   const pipelineQualityDiag = useMemo(() => {
     const culling = new Studio3DSceneAutoCulling(timeOfDay);
@@ -254,6 +293,16 @@ export function StudioBg3dDccScenePipelinePanel({
     const corpusManifest = createStudioBg3dProfessionalBenchmarkManifest();
     const p95Ms = calculateStudioBg3dEngineTimingP95([11.2, 13.8, 14.5, 16.0]) ?? 0;
     const rasterErrorSample = new StudioBg3dArtifactRasterizationError("invalid-capture").code;
+    const vectorLineArtSample = extract3dVectorLineArt(
+      createVectorLineArtCubeMesh(1.2),
+      {
+        viewMatrix: createLookAtViewMatrix([2.8, 2.0, 3.6], [0, 0, 0]),
+        projectionMatrix: createPerspectiveProjectionMatrix(45, 4 / 3, 0.1, 50),
+        viewportWidth: 640,
+        viewportHeight: 480,
+      },
+      { creaseAngleThresholdDeg: 32, hiddenLineRemoval: true },
+    );
 
     return {
       sunAltitudeDeg: atmo.sunAltitudeDeg,
@@ -275,6 +324,8 @@ export function StudioBg3dDccScenePipelinePanel({
       combinedDeps: DEFAULT_STUDIO_BG3D_LINKED_RENDER_GRAPH.combined.length,
       fxExecutor: STUDIO_BG3D_SPECIALIST_WEBTOON_FX_CPU_EXECUTOR,
       rasterErrorSample,
+      vectorLineArtPolylines: vectorLineArtSample.polylines.length,
+      vectorLineArtSilhouettes: vectorLineArtSample.stats.silhouetteEdgeCount,
     };
   }, [timeOfDay]);
 
@@ -440,7 +491,9 @@ export function StudioBg3dDccScenePipelinePanel({
           </span>
           <span data-testid="bg3d-grip-cloth-readout" className="text-[11px] text-fg-2">
             검지 굴곡 {characterDccDiag.indexFlexionDeg}° · 천 파티클 {characterDccDiag.clothParticles}
-            개 · 헤어 삼각형 {characterDccDiag.hairTriangles}개
+            개 · PBD 의상 {characterDccDiag.pbdClothParticles}노드/굽힘{" "}
+            {characterDccDiag.pbdClothBendingCount}개 ({characterDccDiag.pbdClothStable ? "안정" : "보정"}) ·
+            헤어 삼각형 {characterDccDiag.hairTriangles}개
           </span>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -463,6 +516,22 @@ export function StudioBg3dDccScenePipelinePanel({
               {grip.labelKo}
             </button>
           ))}
+          {CLOTH_GARMENT_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              disabled={disabled}
+              data-testid={`bg3d-pbd-garment-${preset.id}`}
+              onClick={() => setGarmentPreset(preset.id)}
+              className={`rounded-md border px-2 py-1 text-[10px] ${
+                garmentPreset === preset.id
+                  ? "border-fg/40 bg-fg/10 font-medium text-fg"
+                  : "border-line bg-card text-fg-2"
+              }`}
+            >
+              {preset.labelKo}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -474,7 +543,9 @@ export function StudioBg3dDccScenePipelinePanel({
         <span className="flex items-center gap-1.5 font-medium text-fg">
           <Cpu className="size-3.5 text-good" />
           Toon3D v{pipelineQualityDiag.toon3dVersion} ({pipelineQualityDiag.pkgValid ? "정상" : "경고"}) ·
-          하프엣지 면 {pipelineQualityDiag.editableFaces}개 · 툰 디퓨즈{" "}
+          하프엣지 면 {pipelineQualityDiag.editableFaces}개 · 벡터 강약선{" "}
+          {pipelineQualityDiag.vectorLineArtPolylines}패스(실루엣{" "}
+          {pipelineQualityDiag.vectorLineArtSilhouettes}) · 툰 디퓨즈{" "}
           {pipelineQualityDiag.diffuseIntensity}%
         </span>
         <span className="flex items-center gap-1.5">

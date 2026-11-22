@@ -46,4 +46,5 @@ export * from "../bg3d/studio-bg3d-sketchup-direct-modeling";
 export * from "../bg3d/studio-bg3d-sketchup-guides-sections-dimensions";
 export * from "../bg3d/studio-bg3d-sketchup-styles-uv-engine";
 export * from "../bg3d/studio-bg3d-sketchup-shadow-and-exporter";
+export * from "../scene3d-pro";
 
