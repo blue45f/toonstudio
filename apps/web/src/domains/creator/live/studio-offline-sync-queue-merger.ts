@@ -9,6 +9,11 @@
  * 5. 실패/거절 작업에 대해 지수 백오프 재시도 계획을 산출하는 순수 엔진이다.
  */
 
+import {
+  verifyOfflineSyncQueueConvergence,
+  type OfflineMultideviceSyncVerificationReport,
+} from "../creator-trust/offline-multidevice-sync-verifier";
+
 export type OfflineSyncMutationKind = "upsert" | "patch" | "delete";
 
 export type OfflineSyncScalarValue = string | number | boolean | null;
@@ -568,4 +573,14 @@ export function planOfflineSyncRetrySchedule(
     earliestNextRetryAtMs,
     entries: Object.freeze(planned),
   });
+}
+
+/**
+ * 오프라인 동기화 큐 항목들을 기기(`actorId`)별 CRDT/벡터 클록 세션으로 검증해
+ * 6종 도착 순열 및 중복 재전송에서의 무손실·결정적 수렴을 확인한다.
+ */
+export function verifyOfflineSyncQueueMultideviceConvergence(
+  entries: readonly OfflineSyncQueueEntry[],
+): OfflineMultideviceSyncVerificationReport {
+  return verifyOfflineSyncQueueConvergence(entries);
 }
