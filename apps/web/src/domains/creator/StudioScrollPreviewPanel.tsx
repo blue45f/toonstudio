@@ -32,6 +32,7 @@ import {
   type StudioScrollRhythmAnalysis,
   type StudioScrollRhythmInsightSeverity,
 } from "./studio-scroll-rhythm";
+import { StudioMobileScrollCutRhythmSection } from "./reader-preview/StudioMobileScrollCutRhythmSection";
 import { StudioPageThumbnail } from "./StudioPageThumbnails";
 
 import type { ThumbPageLike } from "./studio-page-thumbs";
@@ -95,10 +96,14 @@ function buildPageLabelMap(pages: readonly ScrollPreviewPage[]): ReadonlyMap<str
 
 function RhythmSummaryCard({
   analysis,
+  pages,
   pageLabels,
+  onJumpToPage,
 }: {
   analysis: StudioScrollRhythmAnalysis;
+  pages: readonly ScrollPreviewPage[];
   pageLabels: ReadonlyMap<string, string>;
+  onJumpToPage: (pageId: string) => void;
 }): ReactElement {
   return (
     <aside
@@ -191,6 +196,14 @@ function RhythmSummaryCard({
           })
         )}
       </div>
+
+      <StudioMobileScrollCutRhythmSection
+        pages={pages}
+        pageLabels={pageLabels}
+        pageGapPx={PAGE_GAP_PX}
+        canvasWidthPx={CANVAS_W}
+        onJumpToPage={onJumpToPage}
+      />
     </aside>
   );
 }
@@ -393,7 +406,16 @@ export function StudioScrollPreviewPanel({
             )}
           >
             {showRhythmAnalysis && (
-              <RhythmSummaryCard analysis={rhythmAnalysis} pageLabels={pageLabels} />
+              <RhythmSummaryCard
+                analysis={rhythmAnalysis}
+                pages={pages}
+                pageLabels={pageLabels}
+                onJumpToPage={(pageId) =>
+                  pageRefs.current
+                    .get(pageId)
+                    ?.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" })
+                }
+              />
             )}
             <div className="mx-auto shrink-0" style={{ width: framePx, maxWidth: "100%" }}>
               {pages.length === 0 ? (

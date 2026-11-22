@@ -3,6 +3,7 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 
 import { createStudioLocalizationUnit, evaluateStudioLocalizationQa, summarizeStudioLocalization, transitionStudioLocalizationUnit, type StudioLocalizationStatus, type StudioLocalizationUnit, type StudioLocalizationUnitKind } from "../studio-localization-workflow";
 import { projectLocalizationDiagnostics, readStudioLocalizationProject, STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT, writeStudioLocalizationProject, type StudioLocalizationProjectDocument } from "../studio-localization-project-store";
+import { StudioMultilingualBalloonFitCard } from "../lettering/StudioMultilingualBalloonFitCard";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n } from "@/shared/lib/i18n";
@@ -489,6 +490,33 @@ export function StudioLocalizationPanel({
                 rows={5}
                 className="mt-2 w-full rounded-2xl border border-line bg-card px-4 py-3 text-sm leading-6 text-fg disabled:opacity-60"
               />
+
+              {selected.kind === "dialogue" || selected.kind === "narration" || selected.kind === "caption" ? (
+                <StudioMultilingualBalloonFitCard
+                  sourceText={selected.sourceText}
+                  boxWidthPx={layoutDraft.availableWidth}
+                  boxHeightPx={layoutDraft.availableHeight}
+                  fontSizePx={layoutDraft.actualFontSize}
+                  activeTargetLocale={selected.targetLocale}
+                  onApplyRecommendation={
+                    selected.status === "complete"
+                      ? undefined
+                      : (patch) => {
+                          setLayoutDraft((current) => ({
+                            ...current,
+                            availableHeight: patch.availableHeight,
+                            actualFontSize: patch.actualFontSize,
+                          }));
+                          setMessage(
+                            bt(
+                              `권장 말풍선 높이(${patch.availableHeight}px)와 폰트(${patch.actualFontSize}px)를 배치 초안에 반영했습니다.`,
+                              `Applied recommended height (${patch.availableHeight}px) and font size (${patch.actualFontSize}px) to the layout draft.`,
+                            ),
+                          );
+                        }
+                  }
+                />
+              ) : null}
 
               {showLayout ? (
                 <fieldset className="mt-5 rounded-2xl border border-line bg-card p-4">

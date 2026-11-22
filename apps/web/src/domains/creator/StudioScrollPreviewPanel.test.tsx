@@ -149,4 +149,37 @@ describe("StudioScrollPreviewPanel rhythm analysis", () => {
     expect(html).toBe("");
     expect(createPortalMock).not.toHaveBeenCalled();
   });
+
+  it("renders the mobile 390x844 cut rhythm summary and actionable Korean spacing feedback", () => {
+    const html = renderPanel([
+      makePage(
+        "밀집 화",
+        [
+          { id: "f1", type: "frame", y: 40, height: 500 },
+          {
+            id: "b1",
+            type: "bubble",
+            y: 120,
+            height: 120,
+            text: "지금 바로 떠나지 않으면 문이 닫혀 버립니다 어서 서두르세요",
+          },
+          { id: "f2", type: "frame", y: 580, height: 500 },
+          {
+            id: "b2",
+            type: "bubble",
+            y: 660,
+            height: 120,
+            text: "알았어 지금 바로 따라갈 테니까 먼저 계단 아래로 내려가 있어",
+          },
+        ],
+        1_280,
+      ),
+    ]);
+
+    expect(html).toContain('data-testid="mobile-scroll-cut-rhythm-section"');
+    expect(html).toContain("모바일 390×844 컷 리듬");
+    expect(html).toContain('data-mobile-feedback-category="suffocating"');
+    expect(html).toContain("여백을");
+    expect(html).toContain("대사 호흡이 살아납니다");
+  });
 });
