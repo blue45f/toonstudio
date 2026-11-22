@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   Archive,
   ArrowRight,
@@ -46,6 +46,11 @@ import {
   studioSpaceMapWeatherOverlay,
   type StudioSpaceMapScene,
 } from "./studio-space-map-art";
+import {
+  computeVirtualSpaceHudSafeOffset,
+  resolveVirtualSpaceViewportMetrics,
+  type VirtualSpaceHudHandedness,
+} from "./virtual-space-hud-safe-offset";
 import "./studio-space-map-menu.css";
 
 export interface StudioSpaceMapMenuPeer {
@@ -72,6 +77,16 @@ export interface StudioSpaceMapMenuProps {
     zoneId: string,
   ) => void;
   readonly reducedMotion?: boolean;
+  /** 좁은 화면(태블릿 세로·모바일) 하단 세이프존 계산용 뷰포트 너비(px). */
+  readonly viewportWidth?: number;
+  /** 좁은 화면 하단 세이프존 계산용 뷰포트 높이(px). */
+  readonly viewportHeight?: number;
+  /** 터치 이동 조이스틱 활성 여부 오버라이드(미지정 시 좁은 화면 자동 true). */
+  readonly joystickVisible?: boolean;
+  /** 이동 조이스틱 배치 방향. 기본 "right". */
+  readonly joystickHandedness?: VirtualSpaceHudHandedness;
+  /** OS 하단 안전 영역 인셋(px). 기본 0. */
+  readonly safeAreaBottomPx?: number;
 }
 
 const SCENE_ICONS: Record<StudioSpaceMapScene, LucideIcon> = {
@@ -344,10 +359,49 @@ export function StudioSpaceMapMenu({
   onTravel,
   onOpenDestination,
   reducedMotion: reducedMotionProp,
+  viewportWidth,
+  viewportHeight,
+  joystickVisible,
+  joystickHandedness = "right",
+  safeAreaBottomPx = 0,
 }: StudioSpaceMapMenuProps) {
   const bt = useBilingual("StudioSpaceMapMenu");
   const [systemReducedMotion] = useState(readReducedMotion);
   const reducedMotion = reducedMotionProp ?? systemReducedMotion;
+  const [measuredViewport, setMeasuredViewport] = useState(() =>
+    resolveVirtualSpaceViewportMetrics({ viewportWidth, viewportHeight }),
+  );
+
+  useEffect(() => {
+    if (viewportWidth !== undefined || viewportHeight !== undefined || typeof window === "undefined") {
+      return undefined;
+    }
+    const onResize = () => {
+      setMeasuredViewport(resolveVirtualSpaceViewportMetrics());
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [viewportWidth, viewportHeight]);
+
+  const effectiveViewportWidth = viewportWidth ?? measuredViewport.viewportWidth;
+  const effectiveViewportHeight = viewportHeight ?? measuredViewport.viewportHeight;
+  const hudSafeOffset = useMemo(
+    () =>
+      computeVirtualSpaceHudSafeOffset({
+        viewportWidth: effectiveViewportWidth,
+        viewportHeight: effectiveViewportHeight,
+        joystickVisible,
+        joystickHandedness,
+        safeAreaBottomPx,
+      }),
+    [
+      effectiveViewportWidth,
+      effectiveViewportHeight,
+      joystickVisible,
+      joystickHandedness,
+      safeAreaBottomPx,
+    ],
+  );
 
   const occupancy = useMemo(
     () => countPeersPerZone(zones, peers),
@@ -359,11 +413,20 @@ export function StudioSpaceMapMenu({
   );
   const WeatherIcon = weather ? WEATHER_ICONS[weather] : null;
   const weatherNames = weather ? STUDIO_SPACE_MAP_WEATHER_NAMES[weather] : null;
+  const sectionStyle = {
+    ...hudSafeOffset.cssVariables,
+    paddingBottom: `${hudSafeOffset.menuBottomPaddingPx}px`,
+  } as CSSProperties;
 
   return (
     <section
       className={`studio-space-map vs2-panel${reducedMotion ? " studio-space-map--reduced-motion" : ""}`}
       aria-label={bt("공간 지도", "Space map")}
+      data-viewport-class={hudSafeOffset.viewportClass}
+      data-safe-bottom-offset={hudSafeOffset.menuBottomPaddingPx}
+      data-minimap-anchor={hudSafeOffset.minimapHorizontalAnchor}
+      data-joystick-collision-free={String(hudSafeOffset.collisionFree)}
+      style={sectionStyle}
     >
       <div className="studio-space-map-head">
         <div>
@@ -384,6 +447,18 @@ export function StudioSpaceMapMenu({
           </span>
         ) : null}
       </div>
+
+      {hudSafeOffset.joystickAvoidanceActive ? (
+        <p
+          className="studio-space-map-safezone-note"
+          data-testid="studio-space-map-safe-offset-hint"
+        >
+          {bt(
+            `좁은 화면 하단 이동 조이스틱과 겹치지 않도록 하단 여백 ${hudSafeOffset.menuBottomPaddingPx}px를 확보했어요.`,
+            `Reserved ${hudSafeOffset.menuBottomPaddingPx}px bottom clearance above the movement joystick.`,
+          )}
+        </p>
+      ) : null}
 
       {npcs.length > 0 ? (
         <div
@@ -471,7 +546,7 @@ export function StudioSpaceMapMenu({
                     {zone.destination !== "none" && onOpenDestination ? (
                       <button
                         type="button"
-                        className="studio-space-map-tool"
+                        className="studio-space-map-tool min-h-11 min-w-11 motion-reduce:transition-none"
                         onClick={() => {
                           const dest = zone.destination;
                           if (dest !== "none") {

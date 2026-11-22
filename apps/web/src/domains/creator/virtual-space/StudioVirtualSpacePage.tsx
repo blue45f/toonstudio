@@ -531,7 +531,7 @@ export function VirtualSpaceExperience({
 
   const sidePanelKeepAlive = [
     ...(!personal ? [{ id: "huddle", visible: overlays.panel === "chat", node: <Suspense fallback={null}><StudioP2pHuddleLauncher placement="inline" /></Suspense> }] : []),
-    { id: "ambient-audio", visible: overlays.panel === "settings", node: <StudioVirtualSpaceAmbientAudio key={projectId} scope={worldRuntime.worldManifest} ready={worldRuntime.worldReady && !authoringMode} focused={atmosphere === "focus" || activity === "focused"} away={activity === "away"} /> },
+    { id: "ambient-audio", visible: overlays.panel === "settings", node: <StudioVirtualSpaceAmbientAudio key={projectId} scope={worldRuntime.worldManifest} ready={worldRuntime.worldReady && !authoringMode} focused={atmosphere === "focus" || activity === "focused"} away={activity === "away"} hour={lighting.hourOverride ?? lighting.lightHour} /> },
     {
       id: "customization", visible: overlays.panel === "build", node: <StudioVirtualSpacePanelGate active={overlays.panel === "build"} preserveAfterOpen>
         <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} key={decorationScope} world={worldRuntime.worldManifest} nickname={nickname}

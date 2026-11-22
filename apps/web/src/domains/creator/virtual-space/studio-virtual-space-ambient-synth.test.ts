@@ -31,7 +31,16 @@ describe("generateStudioAmbientSamples", () => {
   });
 
   it("루프 경계가 이어진다: 모든 합성 사운드스케이프의 마지막 샘플과 첫 샘플 점프가 신호 크기에 비해 작다", () => {
-    for (const kind of ["wind", "room", "ocean", "hearth", "focus-stream", "atelier-breeze"] as const) {
+    for (const kind of [
+      "wind",
+      "room",
+      "ocean",
+      "hearth",
+      "focus-stream",
+      "atelier-breeze",
+      "soft-rain",
+      "pencil-scratch",
+    ] as const) {
       const { left, right } = generateStudioAmbientSamples(kind, 8000, 4);
       expect(left.every((value) => Number.isFinite(value))).toBe(true);
       expect(right.every((value) => Number.isFinite(value))).toBe(true);

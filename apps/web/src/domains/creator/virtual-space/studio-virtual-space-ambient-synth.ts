@@ -13,7 +13,9 @@ export type StudioAmbientSynthKind =
   | "ocean"
   | "hearth"
   | "focus-stream"
-  | "atelier-breeze";
+  | "atelier-breeze"
+  | "soft-rain"
+  | "pencil-scratch";
 
 export interface StudioAmbientSynthSpec {
   /** 저역 필터 기본 차단 주파수(Hz). */
@@ -44,6 +46,10 @@ const SYNTH_SPECS: Record<StudioAmbientSynthKind, StudioAmbientSynthSpec> = {
   "focus-stream": { baseCutoffHz: 310, swingCutoffHz: 95, gustCycles: 2, swellCycles: 1, swellDepth: 0.14, targetRms: 0.08, seed: 0x39f4c },
   // 가든 테라스 산들바람: 잎사귀가 스치는 산뜻한 중대역 미풍.
   "atelier-breeze": { baseCutoffHz: 520, swingCutoffHz: 320, gustCycles: 2, swellCycles: 3, swellDepth: 0.3, targetRms: 0.11, seed: 0x62b8e },
+  // 자연광 빗소리: 창가에 잔잔하게 내리는 부드러운 빗방울 배경음.
+  "soft-rain": { baseCutoffHz: 480, swingCutoffHz: 180, gustCycles: 2, swellCycles: 2, swellDepth: 0.16, targetRms: 0.085, seed: 0x41a7e },
+  // 연필 사각임: 종이 위를 일정한 호흡으로 오가는 부드러운 연필·타블렛 마찰 질감.
+  "pencil-scratch": { baseCutoffHz: 460, swingCutoffHz: 380, gustCycles: 6, swellCycles: 6, swellDepth: 0.44, targetRms: 0.075, seed: 0x2d8f5 },
 };
 
 export function studioAmbientSynthSpec(kind: StudioAmbientSynthKind): StudioAmbientSynthSpec {

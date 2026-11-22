@@ -132,4 +132,77 @@ describe("StudioSpaceMapMenu", () => {
     render(<StudioSpaceMapMenu onTravel={vi.fn()} npcs={[]} />);
     expect(screen.queryByLabelText("지금 공간에 있는 NPC")).toBeNull();
   });
+
+  it("모바일·태블릿 세로 좁은 화면에서 이동 조이스틱 비충돌 하단 세이프존 오프셋을 적용한다 (#040)", () => {
+    const { container, rerender } = render(
+      <StudioSpaceMapMenu
+        onTravel={vi.fn()}
+        viewportWidth={390}
+        viewportHeight={844}
+        safeAreaBottomPx={34}
+        joystickHandedness="right"
+      />,
+    );
+    const mobileSection = container.querySelector<HTMLElement>("section.studio-space-map");
+    expect(mobileSection?.getAttribute("data-viewport-class")).toBe("mobile");
+    expect(mobileSection?.getAttribute("data-joystick-collision-free")).toBe("true");
+    expect(mobileSection?.getAttribute("data-minimap-anchor")).toBe("left");
+    const mobileOffset = Number(mobileSection?.getAttribute("data-safe-bottom-offset"));
+    expect(mobileOffset).toBeGreaterThanOrEqual(210);
+    expect(mobileSection?.style.paddingBottom).toBe(`${mobileOffset}px`);
+    expect(screen.getByTestId("studio-space-map-safe-offset-hint")).toBeTruthy();
+
+    rerender(
+      <StudioSpaceMapMenu
+        onTravel={vi.fn()}
+        viewportWidth={768}
+        viewportHeight={1024}
+        joystickHandedness="left"
+      />,
+    );
+    const tabletSection = container.querySelector<HTMLElement>("section.studio-space-map");
+    expect(tabletSection?.getAttribute("data-viewport-class")).toBe("tablet-portrait");
+    expect(tabletSection?.getAttribute("data-minimap-anchor")).toBe("right");
+    expect(tabletSection?.getAttribute("data-joystick-collision-free")).toBe("true");
+
+    rerender(<StudioSpaceMapMenu onTravel={vi.fn()} viewportWidth={1440} viewportHeight={900} />);
+    const desktopSection = container.querySelector<HTMLElement>("section.studio-space-map");
+    expect(desktopSection?.getAttribute("data-viewport-class")).toBe("desktop");
+    expect(screen.queryByTestId("studio-space-map-safe-offset-hint")).toBeNull();
+  });
+
+  it("OS prefers-reduced-motion 설정을 자동 감지하고 도구 버튼의 터치 영역과 모션 감소를 유지한다", () => {
+    const originalMatchMedia = globalThis.matchMedia;
+    Object.defineProperty(globalThis, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+    try {
+      const { container } = render(
+        <StudioSpaceMapMenu onTravel={vi.fn()} onOpenDestination={vi.fn()} />,
+      );
+      expect(container.querySelector(".studio-space-map--reduced-motion")).not.toBeNull();
+      const toolButton = container.querySelector<HTMLButtonElement>(".studio-space-map-tool");
+      expect(toolButton).not.toBeNull();
+      expect(toolButton?.className).toContain("min-h-11");
+      expect(toolButton?.className).toContain("min-w-11");
+      expect(toolButton?.className).toContain("motion-reduce:transition-none");
+    } finally {
+      Object.defineProperty(globalThis, "matchMedia", {
+        configurable: true,
+        writable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
 });

@@ -5,6 +5,17 @@
 
 .studio-space-map {
   --space-map-radius: 1rem;
+  padding-bottom: var(--vspace-menu-safe-padding-bottom, 1rem);
+}
+
+.studio-space-map-safezone-note {
+  margin: 0 0 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.65rem;
+  font-size: 0.74rem;
+  color: var(--vs2-fg-2, var(--color-fg-2));
+  background: var(--vs2-panel-2, var(--color-panel));
+  border: 1px solid var(--vs2-line, var(--color-line));
 }
 
 .studio-space-map-head {
