@@ -21,6 +21,18 @@ export interface EyeFlowRect {
 /** 읽기 방향: 한국어/글로벌 웹툰(좌→우·상→하 Z-패턴) 또는 일본 만화(우→좌·상→하). */
 export type EyeFlowReadingDirection = "ltr-ttb" | "rtl-ttb";
 
+/** 시선 흐름 기준 패턴: Z-패턴, S-패턴(지그재그 사행), 또는 자동 판별. */
+export type EyeFlowPatternMode = "z-pattern" | "s-pattern" | "auto";
+
+/** 감지된 시선 동선 패턴 분류. */
+export type EyeFlowPatternKind = "z-pattern" | "s-pattern" | "vertical-scroll" | "mixed";
+
+/** 1클릭 3종 컷 리듬 프리셋. */
+export type CutRhythmPresetId =
+  | "tension-escalation"
+  | "comedy-tempo"
+  | "emotional-lingering";
+
 export interface EyeFlowBalloonInput {
   readonly id: string;
   readonly bounds: EyeFlowRect;
@@ -51,6 +63,23 @@ export interface EyeFlowFaceRegion {
 export interface EyeFlowCutBounds {
   readonly id: string;
   readonly bounds: EyeFlowRect;
+  /** 컷 시각 밀도(0..1). 생략 시 컷 내 요소 수·면적으로 자동 추정한다. */
+  readonly visualDensity01?: number;
+  /** 클라이맥스/반전 비트 여부. */
+  readonly isClimaxBeat?: boolean;
+  /** 클라이맥스 강도(0..1). */
+  readonly climaxIntensity01?: number;
+}
+
+export interface MobileSpoilerGuardConfig {
+  /** 모바일 기준 뷰포트 폭(CSS px). 기본 390. */
+  readonly viewportWidthPx: number;
+  /** 모바일 기준 뷰포트 높이(CSS px). 기본 844. */
+  readonly viewportHeightPx: number;
+  /** 가드 적용 범위: 연속 대사 전체 또는 클라이맥스 컷 전환만. */
+  readonly scope: "all-consecutive-dialogue" | "climax-only";
+  /** 추가 안전 여유(캔버스 px). 기본 0. */
+  readonly extraMarginPx?: number;
 }
 
 export interface EyeFlowAnalysisConfig {
@@ -73,7 +102,15 @@ export interface EyeFlowAnalysisInput {
   readonly faces: readonly EyeFlowFaceRegion[];
   readonly cuts?: readonly EyeFlowCutBounds[];
   readonly direction?: EyeFlowReadingDirection;
+  readonly patternMode?: EyeFlowPatternMode;
+  readonly mobileSpoilerGuard?: Partial<MobileSpoilerGuardConfig>;
   readonly config?: Partial<EyeFlowAnalysisConfig>;
+}
+
+export interface SegmentIntersection {
+  readonly point: EyeFlowPoint;
+  readonly tA: number;
+  readonly tB: number;
 }
 
 export interface SegmentAabbIntersection {
@@ -114,10 +151,12 @@ export type EyeFlowTransitionSeverity = "ok" | "warning" | "critical";
 export type EyeFlowTransitionReason =
   | "natural-z-right"
   | "natural-z-sweep"
+  | "natural-s-serpentine"
   | "natural-vertical"
   | "upward-reversal"
   | "upward-left-jump"
-  | "same-row-backtrack";
+  | "same-row-backtrack"
+  | "s-pattern-backtrack";
 
 export interface EyeFlowSegment {
   readonly id: string;
@@ -134,6 +173,42 @@ export interface EyeFlowSegment {
   readonly isReversal: boolean;
   readonly reason: EyeFlowTransitionReason;
   readonly severity: EyeFlowTransitionSeverity;
+  readonly messageKo: string;
+  readonly detailKo: string;
+}
+
+export interface TailCrossingWarning {
+  readonly id: string;
+  readonly firstBalloonId: string;
+  readonly secondBalloonId: string;
+  readonly firstSequence: number;
+  readonly secondSequence: number;
+  readonly firstTailIndex: number;
+  readonly secondTailIndex: number;
+  readonly intersectionPoint: EyeFlowPoint;
+  readonly severity: TailOcclusionSeverity;
+  readonly messageKo: string;
+  readonly detailKo: string;
+}
+
+export interface MobileViewportSpoilerRisk {
+  readonly id: string;
+  readonly prevBalloonId: string;
+  readonly nextBalloonId: string;
+  readonly prevSequence: number;
+  readonly nextSequence: number;
+  readonly prevCutId: string | null;
+  readonly nextCutId: string | null;
+  readonly sameCut: boolean;
+  /** 이전 말풍선 하단에서 다음 말풍선 상단까지의 세로 간격(캔버스 px). */
+  readonly verticalGapPx: number;
+  /** 390×844 모바일 1뷰포트에 해당하는 캔버스 높이(px). */
+  readonly requiredViewportSpanPx: number;
+  /** 모바일 390×844 기준 실제 화면 간격(CSS px). */
+  readonly effectiveScreenGapPx: number;
+  /** 동시 노출을 차단하기 위해 추가로 확보해야 할 최소 거터 높이(캔버스 px). */
+  readonly requiredGutterAddPx: number;
+  readonly severity: TailOcclusionSeverity;
   readonly messageKo: string;
   readonly detailKo: string;
 }
@@ -174,10 +249,13 @@ export interface EyeFlowAnalysisResult {
   readonly canvasWidth: number;
   readonly canvasHeight: number;
   readonly direction: EyeFlowReadingDirection;
+  readonly detectedPattern: EyeFlowPatternKind;
   readonly nodes: readonly EyeFlowNode[];
   readonly segments: readonly EyeFlowSegment[];
   readonly reversals: readonly EyeFlowSegment[];
   readonly occlusions: readonly TailOcclusionWarning[];
+  readonly tailCrossings: readonly TailCrossingWarning[];
+  readonly spoilerRisks: readonly MobileViewportSpoilerRisk[];
   readonly faces: readonly ResolvedEyeFlowFaceRegion[];
   readonly suggestedOrderIds: readonly string[];
   readonly score: number;

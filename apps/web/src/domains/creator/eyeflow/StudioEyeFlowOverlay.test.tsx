@@ -122,6 +122,43 @@ describe("StudioEyeFlowSummaryRail", () => {
     fireEvent.click(screen.getByRole("button", { name: /눈을 가로지릅니다/ }));
     expect(onJumpToPage).toHaveBeenCalledWith("p1");
   });
+
+  it("1클릭 3종 리듬 변환(긴장 고조 / 코미디 템포 / 감정 여운) 버튼 클릭 시 콜백을 호출하고 390×844 가드를 표시한다", () => {
+    const onApplyRhythmPreset = vi.fn();
+    const summary = analyzeReaderPagesEyeFlow([
+      {
+        id: "p-rhythm",
+        canvasW: 720,
+        canvasH: 1_400,
+        elements: [
+          { id: "cut-1", type: "frame", x: 20, y: 20, width: 680, height: 460 },
+          { id: "b1", type: "bubble", x: 60, y: 300, width: 180, height: 80, text: "대사 하나" },
+          { id: "cut-2", type: "frame", x: 20, y: 540, width: 680, height: 460, isClimaxBeat: true },
+          { id: "b2", type: "bubble", x: 420, y: 600, width: 180, height: 80, text: "대사 둘" },
+        ],
+      },
+    ]);
+
+    render(
+      <StudioEyeFlowSummaryRail
+        summary={summary}
+        pageLabels={new Map([["p-rhythm", "1페이지"]])}
+        overlayVisible={false}
+        onToggleOverlay={() => undefined}
+        direction="ltr-ttb"
+        onChangeDirection={() => undefined}
+        onApplyRhythmPreset={onApplyRhythmPreset}
+      />,
+    );
+
+    expect(screen.getByText(/390×844 가드/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "코미디 템포" }));
+    expect(onApplyRhythmPreset).toHaveBeenCalledWith("comedy-tempo");
+    fireEvent.click(screen.getByRole("button", { name: "감정 여운" }));
+    expect(onApplyRhythmPreset).toHaveBeenCalledWith("emotional-lingering");
+    fireEvent.click(screen.getByRole("button", { name: "긴장 고조" }));
+    expect(onApplyRhythmPreset).toHaveBeenCalledWith("tension-escalation");
+  });
 });
 
 describe("ReaderPreviewPanel 시선 동선 오버레이 통합", () => {

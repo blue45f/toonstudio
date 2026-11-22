@@ -24,6 +24,7 @@ import {
   UNDERPAINTING_DEFAULT_TILE_OVERLAP_PX,
   UNDERPAINTING_TALL_ASPECT_THRESHOLD,
   planVerticalOverlapTiles,
+  type CelLightPinPreset,
   type UnderpaintingCharacterLabel,
   type UnderpaintingCharacterPalette,
   type UnderpaintingColorJob,
@@ -90,6 +91,15 @@ const SHADING_LEVELS: readonly {
   { id: "cel_highlight", label: "셀+림광" },
 ]);
 
+const LIGHT_PIN_OPTIONS: readonly {
+  readonly id: Exclude<CelLightPinPreset, "custom">;
+  readonly label: string;
+}[] = Object.freeze([
+  { id: "top-left-45", label: "좌상단 45°" },
+  { id: "top-down", label: "정면 상단" },
+  { id: "top-right-45", label: "우상단 45°" },
+]);
+
 const MARK_BADGE_TONE: Readonly<Record<UnderpaintingCharacterLabel, string>> = Object.freeze({
   A: "border-accent/60 bg-accent-soft text-accent",
   B: "border-cool/60 bg-cool/15 text-cool",
@@ -128,6 +138,9 @@ export function StudioUnderpaintingPanel({
   const [shadingLevel, setShadingLevel] =
     useState<UnderpaintingShadingLevel>("cel_highlight");
   const [propagateFromFirstCut, setPropagateFromFirstCut] = useState(true);
+  const [autoCloseGaps, setAutoCloseGaps] = useState(true);
+  const [lightPinPreset, setLightPinPreset] =
+    useState<Exclude<CelLightPinPreset, "custom">>("top-left-45");
   const [instructionText, setInstructionText] = useState("");
   const [shadowOpacityPct, setShadowOpacityPct] = useState(48);
   const [highlightOpacityPct, setHighlightOpacityPct] = useState(58);
@@ -182,6 +195,9 @@ export function StudioUnderpaintingPanel({
       shadowOpacity: shadowOpacityPct / 100,
       highlightOpacity: highlightOpacityPct / 100,
       tileOverlapPx: UNDERPAINTING_DEFAULT_TILE_OVERLAP_PX,
+      gapCloseRadiusPx: autoCloseGaps ? "auto" : 0,
+      protectMicroDetailAreaPx: 24,
+      lightPin: { preset: lightPinPreset, hardEdge: true },
     });
   };
 
@@ -339,6 +355,17 @@ export function StudioUnderpaintingPanel({
           />
           <span>첫 컷 팔레트 전파 (시트 없이 같은 인물 색 유지)</span>
         </label>
+
+        <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2">
+          <input
+            type="checkbox"
+            checked={autoCloseGaps}
+            disabled={effectiveDisabled}
+            onChange={(event) => setAutoCloseGaps(event.target.checked)}
+            className="size-4 accent-accent"
+          />
+          <span>선화 틈새 자동 닫힘 (0~12px · &lt; 24px² 미세 디테일 보호)</span>
+        </label>
       </div>
 
       {/* 출력 층 모드 & 명암 단계 */}
@@ -397,6 +424,34 @@ export function StudioUnderpaintingPanel({
                 )}
               >
                 {level.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="단일 광원 방향 핀">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-fg-2">
+            광원 핀
+          </span>
+          {LIGHT_PIN_OPTIONS.map((pinOpt) => {
+            const active = lightPinPreset === pinOpt.id;
+            return (
+              <button
+                key={pinOpt.id}
+                type="button"
+                aria-pressed={active}
+                disabled={effectiveDisabled}
+                onClick={() => setLightPinPreset(pinOpt.id)}
+                className={cn(
+                  "min-h-11 rounded-lg border px-2.5 text-xs font-semibold",
+                  INTERACTIVE_TRANSITION,
+                  FOCUS_RING,
+                  active
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
+                )}
+              >
+                {pinOpt.label}
               </button>
             );
           })}

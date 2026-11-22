@@ -5,11 +5,11 @@
  * 모든 인터랙션 버튼은 `min-h-11`(44px 이상) 터치 타깃, 시맨틱 색상 토큰,
  * `motion-reduce:transition-none` 및 한글 우선 문구를 따른다.
  */
-import { AlertTriangle, CircleAlert, Eye, EyeOff, Route, ShieldCheck } from "lucide-react";
-import type { ReactElement } from "react";
+import { AlertTriangle, CircleAlert, Eye, EyeOff, Route, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
+import { useState, type ReactElement } from "react";
 
 import type { MultiPageEyeFlowSummary } from "./studio-eyeflow-page-adapter";
-import type { EyeFlowReadingDirection } from "./studio-eyeflow-types";
+import type { CutRhythmPresetId, EyeFlowReadingDirection } from "./studio-eyeflow-types";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -21,6 +21,8 @@ export interface StudioEyeFlowSummaryRailProps {
   readonly direction: EyeFlowReadingDirection;
   readonly onChangeDirection: (next: EyeFlowReadingDirection) => void;
   readonly onJumpToPage?: (pageId: string) => void;
+  readonly activeRhythmPreset?: CutRhythmPresetId | null;
+  readonly onApplyRhythmPreset?: (preset: CutRhythmPresetId) => void;
   readonly className?: string;
 }
 
@@ -40,8 +42,23 @@ export function StudioEyeFlowSummaryRail({
   direction,
   onChangeDirection,
   onJumpToPage,
+  activeRhythmPreset,
+  onApplyRhythmPreset,
   className,
 }: StudioEyeFlowSummaryRailProps): ReactElement {
+  const [selectedRhythmPreview, setSelectedRhythmPreview] = useState<CutRhythmPresetId>(
+    activeRhythmPreset ?? "tension-escalation",
+  );
+  const effectiveRhythmPreset = activeRhythmPreset ?? selectedRhythmPreview;
+  const activeRhythmSummary = summary.rhythmPreviews.find(
+    (entry) => entry.preset === effectiveRhythmPreset,
+  );
+
+  const handleSelectRhythm = (preset: CutRhythmPresetId): void => {
+    setSelectedRhythmPreview(preset);
+    onApplyRhythmPreset?.(preset);
+  };
+
   const hasCritical = summary.criticalCount > 0;
   const hasWarning = summary.warningCount > 0;
   const statusLabel = hasCritical ? "수정 필요" : hasWarning ? "주의" : "양호";
@@ -120,8 +137,8 @@ export function StudioEyeFlowSummaryRail({
       </div>
 
       {/* 핵심 카운터 요약 */}
-      <div className="mt-2.5 grid grid-cols-2 gap-1.5">
-        <div className="rounded-lg border border-line bg-card px-2.5 py-1.5">
+      <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+        <div className="rounded-lg border border-line bg-card px-2 py-1.5">
           <p className="text-xs text-fg-3">시선 역주행</p>
           <p
             className={cn(
@@ -132,7 +149,7 @@ export function StudioEyeFlowSummaryRail({
             {summary.reversalCount}건
           </p>
         </div>
-        <div className="rounded-lg border border-line bg-card px-2.5 py-1.5">
+        <div className="rounded-lg border border-line bg-card px-2 py-1.5">
           <p className="text-xs text-fg-3">얼굴·눈 가림</p>
           <p
             className={cn(
@@ -143,7 +160,68 @@ export function StudioEyeFlowSummaryRail({
             {summary.occlusionCount}건
           </p>
         </div>
+        <div className="rounded-lg border border-line bg-card px-2 py-1.5">
+          <p className="text-xs text-fg-3">꼬리 교차</p>
+          <p
+            className={cn(
+              "mt-0.5 text-xs font-bold tabular-nums",
+              summary.tailCrossingCount > 0 ? "text-bad" : "text-fg",
+            )}
+          >
+            {summary.tailCrossingCount}건
+          </p>
+        </div>
       </div>
+
+      {/* 1클릭 3종 리듬 변환 + 390×844 모바일 스포일러 가드 */}
+      {summary.rhythmPreviews.length > 0 ? (
+        <div
+          data-studio-eyeflow-rhythm="true"
+          className="mt-2.5 rounded-lg border border-line bg-card p-2"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-fg">
+              <Sparkles size={13} aria-hidden className="text-accent" />
+              1클릭 컷 리듬
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium tabular-nums text-fg-3">
+              <Smartphone size={12} aria-hidden />
+              390×844 가드{" "}
+              {summary.spoilerRiskCount > 0 ? `${summary.spoilerRiskCount}건` : "안전"}
+            </span>
+          </div>
+          <div
+            role="group"
+            aria-label="1클릭 컷 리듬 프리셋"
+            className="mt-1.5 grid grid-cols-3 gap-1"
+          >
+            {summary.rhythmPreviews.map((presetEntry) => {
+              const active = effectiveRhythmPreset === presetEntry.preset;
+              return (
+                <button
+                  key={presetEntry.preset}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => handleSelectRhythm(presetEntry.preset)}
+                  className={cn(
+                    "min-h-11 rounded-md border px-1.5 text-[11px] font-semibold transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent",
+                    active
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg",
+                  )}
+                >
+                  {presetEntry.labelKo}
+                </button>
+              );
+            })}
+          </div>
+          {activeRhythmSummary ? (
+            <p className="mt-1.5 text-[11px] leading-4 text-fg-3 tabular-nums">
+              {activeRhythmSummary.summaryKo}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* 진단 항목 목록 */}
       <div className="mt-2.5 space-y-1.5">

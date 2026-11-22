@@ -10,18 +10,50 @@ import {
   analyzeEyeFlowAndTailGuard,
   computeBalloonTailBase,
 } from "./studio-eyeflow-geometry";
+import {
+  applyRhythmPresetToEyeFlowPage,
+  buildMultiPageRhythmPreviews,
+  computeStudioPageRhythmPlan,
+  type MultiPageRhythmPresetPreview,
+} from "./studio-eyeflow-page-rhythm";
 import type {
   EyeFlowAnalysisConfig,
   EyeFlowAnalysisResult,
   EyeFlowBalloonInput,
   EyeFlowCutBounds,
   EyeFlowFaceRegion,
+  EyeFlowPatternMode,
   EyeFlowPoint,
   EyeFlowReadingDirection,
   EyeFlowRect,
   EyeFlowSegment,
+  MobileSpoilerGuardConfig,
+  MobileViewportSpoilerRisk,
+  TailCrossingWarning,
   TailOcclusionWarning,
 } from "./studio-eyeflow-types";
+
+export {
+  CUT_RHYTHM_PRESET_LIST,
+  CUT_RHYTHM_PRESETS,
+  DEFAULT_MOBILE_SPOILER_VIEWPORT,
+  computeAutoCutRhythmPlan,
+  computeMobileViewportCanvasSpanPx,
+  detectMobileViewportSpoilerRisks,
+} from "./studio-eyeflow-rhythm-solver";
+export {
+  applyRhythmPresetToEyeFlowPage,
+  computeStudioPageRhythmPlan,
+  type MultiPageRhythmPresetPreview,
+};
+export type {
+  AutoCutRhythmInput,
+  AutoCutRhythmPlanOptions,
+  AutoCutRhythmPlanResult,
+  CutGutterDecision,
+  CutRhythmPresetDescriptor,
+  RepositionedCutLayout,
+} from "./studio-eyeflow-rhythm-solver";
 
 export interface EyeFlowElementLike {
   readonly id?: string;
@@ -56,6 +88,12 @@ export interface EyeFlowElementLike {
   readonly layerRole?: string;
   readonly characterId?: string;
   readonly vrmScene?: unknown;
+  /** 컷 시각 밀도(0..1, 프레임/패널 요소용 선택 메타데이터). */
+  readonly visualDensity01?: number;
+  /** 클라이맥스/반전 컷 여부(프레임/패널 요소용 선택 메타데이터). */
+  readonly isClimaxBeat?: boolean;
+  /** 클라이맥스 강도(0..1). */
+  readonly climaxIntensity01?: number;
 }
 
 export interface EyeFlowPageLike {
@@ -74,7 +112,7 @@ export interface MultiPageEyeFlowPageSummary {
 export interface MultiPageEyeFlowIssue {
   readonly id: string;
   readonly pageId: string;
-  readonly category: "reversal" | "occlusion";
+  readonly category: "reversal" | "occlusion" | "tail-crossing";
   readonly severity: "warning" | "critical";
   readonly sequenceNumber: number;
   readonly messageKo: string;
@@ -87,10 +125,14 @@ export interface MultiPageEyeFlowSummary {
   readonly pages: readonly MultiPageEyeFlowPageSummary[];
   readonly byPageId: ReadonlyMap<string, EyeFlowAnalysisResult>;
   readonly issues: readonly MultiPageEyeFlowIssue[];
+  readonly spoilerRisks: readonly (MobileViewportSpoilerRisk & { readonly pageId: string })[];
+  readonly rhythmPreviews: readonly MultiPageRhythmPresetPreview[];
   readonly totalBalloons: number;
   readonly totalFaces: number;
   readonly reversalCount: number;
   readonly occlusionCount: number;
+  readonly tailCrossingCount: number;
+  readonly spoilerRiskCount: number;
   readonly criticalCount: number;
   readonly warningCount: number;
   readonly overallScore: number;
@@ -379,6 +421,8 @@ export function analyzeStudioPageEyeFlow(
   page: EyeFlowPageLike,
   options?: {
     readonly direction?: EyeFlowReadingDirection;
+    readonly patternMode?: EyeFlowPatternMode;
+    readonly mobileSpoilerGuard?: Partial<MobileSpoilerGuardConfig>;
     readonly config?: Partial<EyeFlowAnalysisConfig>;
   },
 ): EyeFlowAnalysisResult {
@@ -411,6 +455,9 @@ export function analyzeStudioPageEyeFlow(
       cuts.push({
         id: element.id?.trim() || `cut-${cuts.length + 1}`,
         bounds: { x: cutX, y: element.y as number, width: cutW, height: element.height },
+        visualDensity01: element.visualDensity01,
+        isClimaxBeat: element.isClimaxBeat,
+        climaxIntensity01: element.climaxIntensity01,
       });
       continue;
     }
@@ -432,8 +479,26 @@ export function analyzeStudioPageEyeFlow(
     faces,
     cuts,
     direction: options?.direction ?? "ltr-ttb",
+    patternMode: options?.patternMode,
+    mobileSpoilerGuard: options?.mobileSpoilerGuard,
     config: options?.config,
   });
+}
+
+function mapTailCrossingToIssue(
+  pageId: string,
+  crossing: TailCrossingWarning,
+): MultiPageEyeFlowIssue {
+  return {
+    id: `${pageId}:${crossing.id}`,
+    pageId,
+    category: "tail-crossing",
+    severity: crossing.severity,
+    sequenceNumber: crossing.firstSequence,
+    messageKo: crossing.messageKo,
+    detailKo: crossing.detailKo,
+    recommendedTailTip: null,
+  };
 }
 
 function mapReversalToIssue(pageId: string, segment: EyeFlowSegment): MultiPageEyeFlowIssue {
@@ -475,11 +540,13 @@ export function analyzeReaderPagesEyeFlow(
   const pageSummaries: MultiPageEyeFlowPageSummary[] = [];
   const byPageId = new Map<string, EyeFlowAnalysisResult>();
   const issues: MultiPageEyeFlowIssue[] = [];
+  const spoilerRisks: Array<MobileViewportSpoilerRisk & { readonly pageId: string }> = [];
 
   let totalBalloons = 0;
   let totalFaces = 0;
   let reversalCount = 0;
   let occlusionCount = 0;
+  let tailCrossingCount = 0;
   let criticalCount = 0;
   let warningCount = 0;
   let scoredPages = 0;
@@ -494,6 +561,7 @@ export function analyzeReaderPagesEyeFlow(
     totalFaces += analysis.faces.length;
     reversalCount += analysis.reversals.length;
     occlusionCount += analysis.occlusions.length;
+    tailCrossingCount += analysis.tailCrossings.length;
     criticalCount += analysis.criticalCount;
     warningCount += analysis.warningCount;
 
@@ -505,17 +573,30 @@ export function analyzeReaderPagesEyeFlow(
     for (const occ of analysis.occlusions) {
       issues.push(mapOcclusionToIssue(page.id, occ));
     }
+    for (const cross of analysis.tailCrossings) {
+      issues.push(mapTailCrossingToIssue(page.id, cross));
+    }
     for (const rev of analysis.reversals) {
       issues.push(mapReversalToIssue(page.id, rev));
     }
+    for (const risk of analysis.spoilerRisks) {
+      spoilerRisks.push({ ...risk, pageId: page.id });
+    }
   }
 
-  // 심각(critical) 항목을 먼저 보여 주어 작가가 눈 가림/급격한 역주행부터 바로 고칠 수 있게 한다.
+  // 심각(critical) 항목을 먼저 보여 주어 작가가 눈 가림/꼬리 교차/급격한 역주행부터 바로 고칠 수 있게 한다.
   issues.sort((a, b) => {
     if (a.severity !== b.severity) return a.severity === "critical" ? -1 : 1;
-    if (a.category !== b.category) return a.category === "occlusion" ? -1 : 1;
+    if (a.category !== b.category) {
+      if (a.category === "occlusion") return -1;
+      if (b.category === "occlusion") return 1;
+      if (a.category === "tail-crossing") return -1;
+      if (b.category === "tail-crossing") return 1;
+    }
     return a.sequenceNumber - b.sequenceNumber;
   });
+
+  const rhythmPreviews = buildMultiPageRhythmPreviews(pages);
 
   const overallScore = scoredPages > 0 ? Math.round(scoreSum / scoredPages) : 100;
 
@@ -524,10 +605,14 @@ export function analyzeReaderPagesEyeFlow(
     pages: Object.freeze(pageSummaries),
     byPageId,
     issues: Object.freeze(issues),
+    spoilerRisks: Object.freeze(spoilerRisks),
+    rhythmPreviews,
     totalBalloons,
     totalFaces,
     reversalCount,
     occlusionCount,
+    tailCrossingCount,
+    spoilerRiskCount: spoilerRisks.length,
     criticalCount,
     warningCount,
     overallScore,

@@ -34,6 +34,8 @@ export const PANEL_REFLOW_WIDTH_PRESETS = Object.freeze([
 /** 컷 사이 표준 여백(px). */
 export const PANEL_REFLOW_STANDARD_GAP = 80;
 export const PANEL_REFLOW_MAX_GAP = 400;
+/** 가변 리듬·390×844 스포일러 방지 거터용 컷별 여백 상한(px). */
+export const PANEL_REFLOW_MAX_RHYTHM_GAP = 2_400;
 /** Studio 웹툰 새 문서의 기본 세로 길이와 같다(studio-webtoon-canvas-presets). 이 길이를 넘기기 전에 컷 경계에서 페이지를 나눈다. */
 export const PANEL_REFLOW_PAGE_TARGET_HEIGHT = 8_000;
 /** 결과 이미지의 전체 픽셀 상한(메모리 보호). */
@@ -49,6 +51,8 @@ export interface PanelReflowOptions {
   readonly scaleMode: ReflowScaleMode;
   /** 페이지 분할 기준 높이. 기본 PANEL_REFLOW_PAGE_TARGET_HEIGHT. */
   readonly pageHeight?: number;
+  /** 컷 전환별 가변 리듬 거터(px, 길이 = panels.length - 1). 생략 시 고정 `gap`을 사용한다. */
+  readonly cutGaps?: readonly number[];
 }
 
 export interface ReflowSourcePanel extends PanelRect {
@@ -93,7 +97,9 @@ export class PanelReflowError extends Error {
 }
 
 export interface PanelReflowPlan {
-  readonly options: Required<PanelReflowOptions>;
+  readonly options: Omit<Required<PanelReflowOptions>, "cutGaps"> & {
+    readonly cutGaps?: readonly number[];
+  };
   readonly pages: readonly ReflowPage[];
   readonly placements: readonly ReflowPlacement[];
   /** 모든 페이지 높이의 합(페이지 사이 여백 제외). */
@@ -105,7 +111,9 @@ export interface PanelReflowPlan {
   readonly maxScale: number;
 }
 
-function assertOptions(options: PanelReflowOptions): Required<PanelReflowOptions> {
+function assertOptions(
+  options: PanelReflowOptions,
+): Omit<Required<PanelReflowOptions>, "cutGaps"> & { readonly cutGaps?: readonly number[] } {
   if (!(PANEL_REFLOW_WIDTHS as readonly number[]).includes(options.targetWidth)) {
     throw new PanelReflowError("invalid-options", "폭 규격은 690 또는 720 만 쓸 수 있어요.");
   }
@@ -119,7 +127,25 @@ function assertOptions(options: PanelReflowOptions): Required<PanelReflowOptions
   if (!Number.isInteger(pageHeight) || pageHeight < 256 || pageHeight > STUDIO_PROJECT_MAX_CANVAS_HEIGHT) {
     throw new PanelReflowError("invalid-options", "페이지 높이 값이 올바르지 않아요.");
   }
-  return { targetWidth: options.targetWidth, gap: options.gap, scaleMode: options.scaleMode, pageHeight };
+  if (options.cutGaps !== undefined) {
+    for (const cutGap of options.cutGaps) {
+      if (!Number.isInteger(cutGap) || cutGap < 0 || cutGap > PANEL_REFLOW_MAX_RHYTHM_GAP) {
+        throw new PanelReflowError(
+          "invalid-options",
+          `리듬 거터는 0~${PANEL_REFLOW_MAX_RHYTHM_GAP}px 정수여야 해요.`,
+        );
+      }
+    }
+  }
+  return options.cutGaps !== undefined
+    ? {
+        targetWidth: options.targetWidth,
+        gap: options.gap,
+        scaleMode: options.scaleMode,
+        pageHeight,
+        cutGaps: [...options.cutGaps],
+      }
+    : { targetWidth: options.targetWidth, gap: options.gap, scaleMode: options.scaleMode, pageHeight };
 }
 
 /**
@@ -134,7 +160,10 @@ function assertPanels(panels: readonly ReflowSourcePanel[]): void {
   });
 }
 
-function destSize(panel: PanelRect, options: Required<PanelReflowOptions>): { width: number; height: number } {
+function destSize(
+  panel: PanelRect,
+  options: Pick<PanelReflowOptions, "targetWidth" | "scaleMode">,
+): { width: number; height: number } {
   const scale = options.scaleMode === "fit-width"
     ? options.targetWidth / panel.width
     : Math.min(1, options.targetWidth / panel.width);
@@ -169,8 +198,12 @@ export function planPanelReflow(
     if (size.height > STUDIO_PROJECT_MAX_CANVAS_HEIGHT) {
       throw new PanelReflowError("panel-too-tall", `${index + 1}번 컷이 배율을 적용하면 ${STUDIO_PROJECT_MAX_CANVAS_HEIGHT}px 를 넘어요.`);
     }
-    if (current.length > 0 && currentHeight + options.gap + size.height > options.pageHeight) closePage();
-    const y = current.length === 0 ? 0 : currentHeight + options.gap;
+    const activeGap =
+      index > 0 && options.cutGaps && options.cutGaps[index - 1] !== undefined
+        ? options.cutGaps[index - 1]!
+        : options.gap;
+    if (current.length > 0 && currentHeight + activeGap + size.height > options.pageHeight) closePage();
+    const y = current.length === 0 ? 0 : currentHeight + activeGap;
     const x = Math.round((options.targetWidth - size.width) / 2);
     const scale = size.width / panel.width;
     minScale = Math.min(minScale, scale);

@@ -8,6 +8,27 @@
  * - evidence_id: `ev_9e97a121e10ceaa075c9f4fb0b21c7bf2bd090aa4a639830aa6f070bec16e30f`
  */
 
+import {
+  DEFAULT_MICRO_DETAIL_PROTECTION_AREA_PX,
+  floodFillWithGapClosing,
+} from "./studio-lineart-gap-closing";
+
+export {
+  DEFAULT_MICRO_DETAIL_PROTECTION_AREA_PX,
+  MAX_GAP_CLOSE_RADIUS_PX,
+  closeLineartGapsWithDetailGuard,
+  detectMicroDetailProtectionMask,
+  estimateLineartGapCloseRadius,
+  floodFillWithGapClosing,
+} from "./studio-lineart-gap-closing";
+export type {
+  GapClosedFloodFillResult,
+  LineartGapCloseOptions,
+  LineartGapCloseResult,
+  MicroDetailProtectionResult,
+  MicroDetailRegionInfo,
+} from "./studio-lineart-gap-closing";
+
 export type FillExpandType = "standard" | "expand-to-darkest-pixel";
 export type FillExpandKernelShape = "round" | "square";
 
@@ -80,6 +101,12 @@ export interface AdvancedFillPostExpansionRequest {
   readonly useNotStartColor?: boolean;
   readonly notStartColor?: FillRgbTuple;
   readonly notStartColorTolerance?: number;
+  /** 선화 틈새 닫힘 반경(0..12px) 또는 `"auto"` 자동 추정. 지정 시 시드 기준 누출 0건 갭 클로징을 선행 적용한다. */
+  readonly gapCloseRadiusPx?: number | "auto";
+  /** 선화 판정 명도 임계값(0..255). 기본 185. */
+  readonly inkLuminanceThreshold?: number;
+  /** 미세 디테일 보호 면적 임계치(px²). 기본 24(`#140`). */
+  readonly protectMicroDetailAreaPx?: number;
 }
 
 export interface AdvancedFillPostExpansionResult {
@@ -91,6 +118,9 @@ export interface AdvancedFillPostExpansionResult {
     readonly height: number;
   };
   readonly paintedPixelCount: number;
+  readonly appliedGapCloseRadiusPx?: number;
+  readonly protectedMicroDetailPixelCount?: number;
+  readonly leakedToBorder?: boolean;
 }
 
 /**
@@ -400,6 +430,25 @@ export function applyAdvancedFillPostExpansion(
   }
 
   let workingMask: Uint8Array = new Uint8Array(request.mask);
+  let appliedGapCloseRadiusPx: number | undefined;
+  let protectedMicroDetailPixelCount: number | undefined;
+  let leakedToBorder: boolean | undefined;
+  let microProtectionMask: Uint8Array | null = null;
+
+  if (request.gapCloseRadiusPx !== undefined && request.seed) {
+    const gapFill = floodFillWithGapClosing(ref, request.seed, {
+      gapCloseRadiusPx: request.gapCloseRadiusPx,
+      inkLuminanceThreshold: request.inkLuminanceThreshold,
+      protectMicroDetailAreaPx:
+        request.protectMicroDetailAreaPx ?? DEFAULT_MICRO_DETAIL_PROTECTION_AREA_PX,
+    });
+    workingMask = new Uint8Array(gapFill.mask);
+    appliedGapCloseRadiusPx = gapFill.gapClose.appliedRadiusPx;
+    protectedMicroDetailPixelCount = gapFill.gapClose.microDetailProtection.protectedPixelCount;
+    leakedToBorder = gapFill.leakedToBorder;
+    microProtectionMask = gapFill.gapClose.microDetailProtection.mask;
+  }
+
   if (request.soakIntoNarrowArea) {
     workingMask = soakNarrowSliversInMask(workingMask, w, h, {
       sliverRadiusPx: request.sliverRadiusPx ?? 2,
@@ -422,6 +471,24 @@ export function applyAdvancedFillPostExpansion(
     });
   }
 
+  // 미세 디테일 보호 마스크(#140, < 24px²): 확장/스며들기 이후에도 눈동자 하이라이트 등이 뭉개지지 않게 보호
+  if (microProtectionMask) {
+    const seedIdx =
+      request.seed &&
+      request.seed.x >= 0 &&
+      request.seed.x < w &&
+      request.seed.y >= 0 &&
+      request.seed.y < h
+        ? Math.floor(request.seed.y) * w + Math.floor(request.seed.x)
+        : -1;
+    const seedInsideMicro = seedIdx >= 0 && microProtectionMask[seedIdx]! > 0;
+    if (!seedInsideMicro) {
+      for (let i = 0; i < total; i += 1) {
+        if (microProtectionMask[i]! > 0) workingMask[i] = 0;
+      }
+    }
+  }
+
   let paintedPixelCount = 0;
   const [fr, fg, fb, fa] = request.fill;
   for (let i = 0; i < total; i++) {
@@ -440,5 +507,27 @@ export function applyAdvancedFillPostExpansion(
     mask: workingMask,
     imageData: { data: outData, width: w, height: h },
     paintedPixelCount,
+    ...(appliedGapCloseRadiusPx !== undefined
+      ? { appliedGapCloseRadiusPx, protectedMicroDetailPixelCount, leakedToBorder }
+      : {}),
   };
+}
+
+/**
+ * 선화 틈새 닫힘(0~12px 자동 추정) + 미세 디테일 보호(< 24px²) + 능선 정지 확장을
+ * 시드 좌표 하나로 일괄 실행하는 편의 진입점.
+ */
+export function runGapClosedAdvancedFill(
+  request: Omit<AdvancedFillPostExpansionRequest, "mask"> & {
+    readonly seed: { readonly x: number; readonly y: number };
+  },
+): AdvancedFillPostExpansionResult {
+  const total = Math.max(0, Math.floor(request.target.width)) * Math.max(0, Math.floor(request.target.height));
+  return applyAdvancedFillPostExpansion({
+    ...request,
+    mask: new Uint8Array(total),
+    gapCloseRadiusPx: request.gapCloseRadiusPx ?? "auto",
+    protectMicroDetailAreaPx:
+      request.protectMicroDetailAreaPx ?? DEFAULT_MICRO_DETAIL_PROTECTION_AREA_PX,
+  });
 }
