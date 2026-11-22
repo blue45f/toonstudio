@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { UserAiTransportError, type UserAiTransportErrorCode } from "@/shared/ai/user-ai-transport-error";
+
 export type AssistTaskState =
   | { readonly status: "idle" }
   | { readonly status: "running" }
   | { readonly status: "stopped" }
-  | { readonly status: "error"; readonly message: string };
+  | { readonly status: "error"; readonly message: string; readonly code?: UserAiTransportErrorCode };
 
 export interface AssistTask {
   readonly state: AssistTaskState;
@@ -66,7 +68,11 @@ export function useAssistTask(): AssistTask {
     } catch (error) {
       // 중단·교체·초기화는 그 호출이 이미 상태를 정했다. 아직 이 요청이 현재 요청일 때만 오류로 남긴다.
       if (controllerRef.current === controller && !controller.signal.aborted) {
-        setState({ status: "error", message: messageOf(error) });
+        setState({
+          status: "error",
+          message: messageOf(error),
+          code: error instanceof UserAiTransportError ? error.code : undefined,
+        });
       }
       return undefined;
     } finally {

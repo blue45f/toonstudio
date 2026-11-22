@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetAssistBudgetForTests, setAssistBudgetLimit } from "@/shared/ai/assist/assist-budget";
 import { resetAssistUsage } from "@/shared/ai/assist/assist-usage-meter";
+import { UserAiTransportError } from "@/shared/ai/user-ai-transport-error";
 import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
 import { EMPTY_AI_CONNECTION } from "@/shared/ai/user-ai-types";
 import { useI18n } from "@/shared/lib/i18n";
@@ -153,6 +154,28 @@ describe("AssistAltTextDialog", () => {
   });
 
   describe("처음 열었을 때", () => {
+    it("처리 여부를 모르면 하단에 안내하고 같은 이미지의 버튼·단축키 재전송을 막는다", async () => {
+      runAltText.mockRejectedValueOnce(new UserAiTransportError("outcome-unknown", "처리 여부 미확인", 409));
+      renderDialog();
+      await chooseImage();
+      const run = screen.getByRole("button", { name: "설명 만들기" }) as HTMLButtonElement;
+      fireEvent.click(run);
+
+      const alert = await screen.findByRole("alert");
+      expect(alert.closest("footer")).toBeTruthy();
+      expect(alert.textContent).toContain("중복 실행을 막기 위해 이 요청은 다시 보내지 않아요.");
+      expect(run.disabled).toBe(true);
+      expect(run.getAttribute("aria-describedby")).toBe(alert.id);
+      fireEvent.click(run);
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Enter", ctrlKey: true });
+      expect(runAltText).toHaveBeenCalledTimes(1);
+
+      await chooseImage(pngFile(640, 480));
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(run.disabled).toBe(false);
+      expect(runAltText).toHaveBeenCalledTimes(1);
+    });
+
     it("키가 없으면 ToonStudio AI로 무료 실행하고 요금 문구를 쓰지 않는다", async () => {
       renderDialog();
 
@@ -503,8 +526,21 @@ describe("AssistAltTextDialog", () => {
       expect((screen.getByRole("button", { name: RUN }) as HTMLButtonElement).disabled).toBe(false);
     });
 
-    it("중단하면 요청을 취소하고 오류가 아니라 중단으로 보여 준다", async () => {
-      connectAssist();
+    it.each([
+      {
+        route: "관리형",
+        byok: false,
+        runButton: /^설명 만들기$/,
+        stopped: "설명 만들기를 중단했어요. 필요하면 다시 시도해 주세요.",
+      },
+      {
+        route: "개인 키",
+        byok: true,
+        runButton: RUN,
+        stopped: "설명 만들기를 중단했어요. 이미 처리된 부분은 요금이 청구됐을 수 있어요. 필요하면 다시 시도해 주세요.",
+      },
+    ])("$route 요청을 중단하면 해당 경로의 안내를 보여 준다", async ({ byok, runButton, stopped }) => {
+      if (byok) connectAssist();
       let signal: AbortSignal | undefined;
       runAltText.mockImplementation((_route, _image, _context, options: { signal: AbortSignal }) => new Promise((_resolve, reject) => {
         signal = options.signal;
@@ -513,7 +549,7 @@ describe("AssistAltTextDialog", () => {
       renderDialog();
       await chooseImage();
 
-      fireEvent.click(screen.getByRole("button", { name: RUN }));
+      fireEvent.click(screen.getByRole("button", { name: runButton }));
       await screen.findByRole("button", { name: "중단" });
       expect(screen.getByText(/이미지를 보고 설명을 쓰는 중이에요\. 보통 10~30초 걸려요\./)).toBeTruthy();
       // 매초 바뀌는 경과 시간은 화면에만 보이고 안내 영역(role=status)에는 들어가지 않는다.
@@ -521,7 +557,8 @@ describe("AssistAltTextDialog", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "중단" }));
       expect(signal?.aborted).toBe(true);
-      await screen.findByText("설명 만들기를 중단했어요. 이미 처리된 부분은 요금이 청구됐을 수 있어요. 필요하면 다시 시도해 주세요.");
+      await screen.findByText(stopped);
+      expect(runAltText).toHaveBeenCalledTimes(1);
       expect(screen.queryByRole("alert")).toBeNull();
     });
 

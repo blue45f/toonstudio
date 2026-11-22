@@ -70,6 +70,7 @@ export function AssistAltTextDialog({ onClose }: AssistAltTextDialogProps) {
   const [drafts, setDrafts] = useState<ReadonlyMap<number, AltTextDraft>>(new Map());
   // 실행이 끝날 때마다 하나씩 올라가는 표식. 결과가 나오면 좁은 화면에서도 결과가 보이도록 스크롤한다.
   const [finishedRuns, setFinishedRuns] = useState(0);
+  const [lastRunManaged, setLastRunManaged] = useState(false);
   const resultRef = useRevealOnChange<HTMLDivElement>(finishedRuns);
   const hintId = `${useId()}-need-hint`;
 
@@ -118,7 +119,8 @@ export function AssistAltTextDialog({ onClose }: AssistAltTextDialogProps) {
     void load(file);
   };
 
-  const canRun = Boolean(rendered && !image.preparing && !running && guard.allowed);
+  const outcomeUnknown = task.state.status === "error" && task.state.code === "outcome-unknown";
+  const canRun = Boolean(rendered && !image.preparing && !running && !outcomeUnknown && guard.allowed);
 
   // 이미지를 올리면 올리기 구역이 사라지며 포커스가 body로 떨어진다. 바로 실행할 수 있게 실행 버튼으로 옮긴다.
   const hasImage = Boolean(rendered);
@@ -129,6 +131,7 @@ export function AssistAltTextDialog({ onClose }: AssistAltTextDialogProps) {
   const run = async () => {
     if (!canRun || !rendered) return;
     const assistRoute = resolveAssistRoute();
+    setLastRunManaged(assistRoute.managed === true);
     const index = rendered.segment.index;
     const input = rendered.input;
     const context: AltTextContext = { scope: form.scope, language: form.language, depth: resolved.depth, genre: form.genre, notes: form.notes };
@@ -165,7 +168,10 @@ export function AssistAltTextDialog({ onClose }: AssistAltTextDialogProps) {
 
   const footer = (
     <div className="flex flex-wrap items-center gap-3">
-      <button ref={runRef} type="button" className={ASSIST_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={needHint ? hintId : undefined} onClick={() => void run()}>
+      {outcomeUnknown ? (
+        <p id={hintId} role="alert" className="w-full text-sm text-fg">{t("aiAssist.managed.altTextOutcomeUnknown")}</p>
+      ) : null}
+      <button ref={runRef} type="button" className={ASSIST_PRIMARY_BUTTON} disabled={!canRun} aria-describedby={needHint || outcomeUnknown ? hintId : undefined} onClick={() => void run()}>
         {running ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : draft ? <RefreshCw size={16} aria-hidden /> : <Sparkles size={16} aria-hidden />}
         {route.managed
           ? (draft && !running ? t("aiAssist.managed.altTextRerun") : t("aiAssist.managed.altTextRun"))
@@ -178,10 +184,12 @@ export function AssistAltTextDialog({ onClose }: AssistAltTextDialogProps) {
         </button>
       ) : null}
       <AssistCostChip capUsd={capUsd} />
-      <span className="ml-auto flex items-center gap-3">
-        {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
-        <AssistShortcutHint action={t("aiAssist.common.shortcutRun")} />
-      </span>
+      {!outcomeUnknown ? (
+        <span className="ml-auto flex items-center gap-3">
+          {needHint ? <span id={hintId} data-claude-need-hint="true" className="text-xs text-fg-3">{needHint}</span> : null}
+          <AssistShortcutHint action={t("aiAssist.common.shortcutRun")} />
+        </span>
+      ) : null}
     </div>
   );
 
@@ -251,12 +259,12 @@ export function AssistAltTextDialog({ onClose }: AssistAltTextDialogProps) {
             message={image.preparing
               ? t("aiAssist.art.preparing")
               : task.state.status === "stopped"
-                ? t("aiAssist.altText.stopped")
+                ? t(lastRunManaged ? "aiAssist.managed.altTextStopped" : "aiAssist.altText.stopped")
                 : task.state.status === "idle" && draft
                   ? t("aiAssist.altText.done")
                   : null}
           />
-          {task.state.status === "error" ? (
+          {task.state.status === "error" && !outcomeUnknown ? (
             <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
               {t("aiAssist.altText.error", { message: task.state.message })}
             </p>
