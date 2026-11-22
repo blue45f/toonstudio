@@ -8,6 +8,7 @@
  * - 데이터는 props 로 받는다 (스토어·영속 연결은 후속 단계; 정본은 EpisodePlan/SeasonPlan).
  */
 import { Suspense, lazy, useMemo, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
@@ -30,6 +31,12 @@ import {
 const LazyPlotrStoryAtelierWorkbench = lazy(() =>
   import("./plotr/PlotrStoryAtelierWorkbench").then((m) => ({
     default: m.PlotrStoryAtelierWorkbench,
+  })),
+);
+
+const LazyStudioGenreSkeletonPanel = lazy(() =>
+  import("../genre-skeleton-pro/StudioGenreSkeletonPanel").then((m) => ({
+    default: m.StudioGenreSkeletonPanel,
   })),
 );
 
@@ -67,11 +74,13 @@ export function StudioEpisodeStoryPage({
   onSavePlan,
   storyboardHrefForEpisode,
 }: StudioEpisodeStoryPageProps) {
+  const t = useT();
   const arc = useMemo(() => seasonArcView(season, plans), [season, plans]);
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(
     arc.episodes[0]?.episodeId ?? null,
   );
   const [atelierOpen, setAtelierOpen] = useState(false);
+  const [genreSkeletonOpen, setGenreSkeletonOpen] = useState(false);
   const selectedId = selectedEpisodeId !== undefined ? selectedEpisodeId : internalSelectedId;
   const selectEpisode = (episodeId: string) => {
     setInternalSelectedId(episodeId);
@@ -88,16 +97,44 @@ export function StudioEpisodeStoryPage({
             회차마다 줄거리를 짧게 적어 두면, 콘티를 짤 때 길을 잃지 않아요.
           </p>
         </div>
-        <button
-          type="button"
-          data-testid="episode-story-plotr-atelier-toggle"
-          aria-expanded={atelierOpen}
-          onClick={() => setAtelierOpen((prev) => !prev)}
-          className="inline-flex min-h-11 items-center rounded-lg border border-accent/45 bg-accent-soft px-3.5 text-xs font-semibold text-accent transition-colors duration-150 hover:border-accent motion-reduce:transition-none [word-break:keep-all] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {atelierOpen ? "대본·컷 아틀리에 접기" : "대본·컷 아틀리에 열기"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            data-testid="episode-story-genre-skeleton-toggle"
+            aria-expanded={genreSkeletonOpen}
+            onClick={() => setGenreSkeletonOpen((prev) => !prev)}
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3.5 text-xs font-semibold text-fg transition-colors duration-150 hover:border-line-strong hover:bg-raised motion-reduce:transition-none [word-break:keep-all] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {genreSkeletonOpen ? "60컷 장르 골격 접기" : "60컷 장르 골격 열기"}
+          </button>
+          <button
+            type="button"
+            data-testid="episode-story-plotr-atelier-toggle"
+            aria-expanded={atelierOpen}
+            onClick={() => setAtelierOpen((prev) => !prev)}
+            className="inline-flex min-h-11 items-center rounded-lg border border-accent/45 bg-accent-soft px-3.5 text-xs font-semibold text-accent transition-colors duration-150 hover:border-accent motion-reduce:transition-none [word-break:keep-all] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {atelierOpen ? "대본·컷 아틀리에 접기" : "대본·컷 아틀리에 열기"}
+          </button>
+        </div>
       </header>
+
+      {genreSkeletonOpen ? (
+        <Suspense
+          fallback={
+            <p role="status" className="rounded-xl border border-line bg-panel p-4 text-xs text-fg-2">
+              {t("studio.canvas.shell.loadingPanel", "패널을 여는 중...")}
+            </p>
+          }
+        >
+          <LazyStudioGenreSkeletonPanel
+            projectId={season.projectId}
+            initialGenre={genre}
+            activeEpisodePlan={selected}
+            onApplyToEpisodePlan={onSavePlan}
+          />
+        </Suspense>
+      ) : null}
 
       {atelierOpen ? (
         <Suspense

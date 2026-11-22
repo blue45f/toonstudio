@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   FileCheck2,
   Globe2,
@@ -40,6 +41,12 @@ import { useStudioExportPanelController } from "./useStudioExportPanelController
 
 const StudioNextGenWebPlatformHub = lazy(
   () => import("../nextgen-web-platform/StudioNextGenWebPlatformHub"),
+);
+
+const StudioPublishMarketingPackPanel = lazy(() =>
+  import("../publish-marketing-pack/StudioPublishMarketingPackPanel").then((module) => ({
+    default: module.StudioPublishMarketingPackPanel,
+  })),
 );
 
 /**
@@ -91,6 +98,7 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
 
   const [publishProfile, setPublishProfile] = useState<StudioPublishProfile>("generic");
   const [nextGenHubOpen, setNextGenHubOpen] = useState(false);
+  const [marketingPackOpen, setMarketingPackOpen] = useState(false);
   const estimatedMb = Math.max(
     0.1,
     Math.round((draft.estimatedFileSizeBytes / 1024 / 1024) * 10) / 10,
@@ -427,6 +435,48 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
               locale={locale}
               manuscriptWidth={draft.width}
               manuscriptHeight={draft.height}
+            />
+          </Suspense>
+        ) : null}
+      </details>
+
+      <details
+        data-testid="studio-export-marketing-pack"
+        open={marketingPackOpen}
+        onToggle={(event) => setMarketingPackOpen(event.currentTarget.open)}
+        className="mt-4 min-w-0 rounded-2xl border border-line bg-panel/40 p-4"
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]">
+          <span className="inline-flex items-center gap-2">
+            <BookOpen size={15} className="shrink-0 text-accent" aria-hidden="true" />
+            <span>
+              {bt(
+                "₩0 발행 마케팅·출판 패키지 (OG 1200×630 공유 카드 · 단행본 재단선 표지)",
+                "₩0 Marketing & Print Pack (OG 1200×630 Share Card · Print Cover Bleed Template)",
+              )}
+            </span>
+          </span>
+          <span className="shrink-0 rounded-full border border-line bg-card px-2.5 py-0.5 text-xs font-semibold text-fg-2">
+            {bt("펼쳐서 생성", "Open generator")}
+          </span>
+        </summary>
+        {marketingPackOpen ? (
+          <Suspense
+            fallback={
+              <div
+                role="status"
+                className="mt-3 rounded-xl border border-line bg-card p-4 text-xs font-semibold text-fg-2"
+              >
+                {bt(
+                  "OG 공유 카드·단행본 표지 생성기를 불러오는 중입니다…",
+                  "Loading OG share card & print cover generator…",
+                )}
+              </div>
+            }
+          >
+            <StudioPublishMarketingPackPanel
+              projectId={projectId}
+              seriesTitle={manuscript?.documentTitle}
             />
           </Suspense>
         ) : null}
