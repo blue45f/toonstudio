@@ -56,7 +56,7 @@ export async function runStudioApplyCropToSelectedImage(input: {
   readonly cropRect: CropRect | null;
   readonly selected: El | null;
   readonly activeSurfaceReviewLocked: boolean;
-  readonly groups: readonly LayerGroup[];
+  readonly groups: LayerGroup[];
   readonly captureMutationTicket: () => StudioEditorMutationTicket;
   readonly canApplyMutation: (ticket: StudioEditorMutationTicket) => boolean;
   readonly isLatestLayerContentMutationLocked: (id: string) => boolean;
@@ -142,7 +142,7 @@ export async function runStudioApplyPuppetWarpToSelectedImage(input: {
   readonly puppetWarpPins: readonly PuppetPin[];
   readonly selected: El | null;
   readonly activeSurfaceReviewLocked: boolean;
-  readonly groups: readonly LayerGroup[];
+  readonly groups: LayerGroup[];
   readonly captureMutationTicket: () => StudioEditorMutationTicket;
   readonly canApplyMutation: (ticket: StudioEditorMutationTicket) => boolean;
   readonly isLatestLayerContentMutationLocked: (id: string) => boolean;
@@ -195,7 +195,7 @@ export function runStudioCreateLayerMaskFromSelection(input: {
   readonly outside: boolean;
   readonly selected: El | null;
   readonly activeSurfaceReviewLocked: boolean;
-  readonly groups: readonly LayerGroup[];
+  readonly groups: LayerGroup[];
   readonly pixelSel: PixelSelection | null;
   readonly captureMutationTicket: () => StudioEditorMutationTicket;
   readonly canApplyMutation: (ticket: StudioEditorMutationTicket) => boolean;
@@ -266,7 +266,7 @@ export async function runStudioBakeHistoryBrushDragStroke(input: {
   };
   readonly target: El | undefined;
   readonly activeSurfaceReviewLocked: boolean;
-  readonly groups: readonly LayerGroup[];
+  readonly groups: LayerGroup[];
   readonly historyBrushSourceSrc: string | null;
   readonly historyBrushRadius: number;
   readonly historyBrushHardness: number;
@@ -439,7 +439,7 @@ export function runStudioVectorEraseToIntersectionAt(input: {
   readonly x: number;
   readonly y: number;
   readonly elements: readonly El[];
-  readonly groups: readonly LayerGroup[];
+  readonly groups: LayerGroup[];
   readonly allocateId: () => string;
   readonly commit: (elements: El[]) => boolean;
   readonly setError: (message: string | null) => void;

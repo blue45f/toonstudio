@@ -261,8 +261,10 @@ describe("studio host status i18n batch2", () => {
   });
 
   it("studio.hostStatus 키가 호스트에서 실제로 참조되고 미등록 참조가 없다", () => {
-    const source = readSource("StudioCuttoonEditorHost.tsx");
-    expect(source.includes('import "./studio-host-status-i18n";')).toBe(true);
+    const hostSource = readSource("StudioCuttoonEditorHost.tsx");
+    const rasterHelperSource = readSource("studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers.ts");
+    const source = `${hostSource}\n${rasterHelperSource}`;
+    expect(hostSource.includes('import "./studio-host-status-i18n";')).toBe(true);
     for (const key of HOST_STATUS_KEYS) {
       expect(source.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
     }

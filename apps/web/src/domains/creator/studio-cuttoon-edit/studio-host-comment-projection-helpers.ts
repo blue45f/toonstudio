@@ -97,12 +97,18 @@ export function applyLocalStudioCommentMutationPlan(
   return reopenStudioCommentThread(current, plan.threadId, now);
 }
 
+export type StudioCanvasCommentAnchor =
+  | { type: "page"; pageId: string }
+  | { type: "frame"; pageId: string; frameId: string }
+  | { type: "element"; pageId: string; elementId: string; frameId?: string }
+  | { type: "point"; pageId: string; x: number; y: number };
+
 export function deriveStudioActiveCommentAnchor(input: {
   readonly masterEditMode: boolean;
   readonly selected: El | null;
   readonly activePageId: string;
   readonly pointCommentAnchor: StudioPointCommentAnchorInput | null;
-}): StudioCommentAnchor {
+}): StudioCanvasCommentAnchor {
   if (!input.masterEditMode && input.selected?.type === "frame") {
     return { type: "frame", pageId: input.activePageId, frameId: input.selected.id };
   }

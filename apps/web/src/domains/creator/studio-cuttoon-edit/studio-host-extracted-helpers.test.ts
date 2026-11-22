@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { createEmptyStudioCommentsDocument, type StudioCommentThread } from "../studio-comments";
-import type { BubbleEl, DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
+import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
 import type { PixelSelection } from "../studio-selection-tools";
 import {
@@ -50,6 +50,7 @@ import { runStudioVectorEraseToIntersectionAt } from "./studio-host-raster-edit-
 import {
   computeStudioMinimapClickScrollTarget,
   projectStudioHostClientPointToDocument,
+  resolveStudioHostCanvasInsertionTarget,
   resolveStudioMinimapArrowScrollDelta,
   validateStudioSelectionResizeBegin,
 } from "./studio-host-view-and-resize-helpers";
@@ -60,13 +61,14 @@ function makePage(overrides: Partial<PageState> = {}): PageState {
     name: "1화",
     canvasH: 1200,
     bg: "#ffffff",
+    bgGrad: null,
     elements: [],
     groups: [],
     ...overrides,
   };
 }
 
-function makeFrame(id: string, overrides: Partial<FrameEl> = {}): FrameEl {
+function makeFrame(id: string, overrides: Partial<Extract<El, { type: "frame" }>> = {}): Extract<El, { type: "frame" }> {
   return {
     id,
     type: "frame",
@@ -78,7 +80,7 @@ function makeFrame(id: string, overrides: Partial<FrameEl> = {}): FrameEl {
   };
 }
 
-function makeImage(id: string, overrides: Partial<ImageEl> = {}): ImageEl {
+function makeImage(id: string, overrides: Partial<Extract<El, { type: "image" }>> = {}): Extract<El, { type: "image" }> {
   return {
     id,
     type: "image",
@@ -92,11 +94,11 @@ function makeImage(id: string, overrides: Partial<ImageEl> = {}): ImageEl {
   };
 }
 
-function makeBubble(id: string, overrides: Partial<BubbleEl> = {}): BubbleEl {
+function makeBubble(id: string, overrides: Partial<Extract<El, { type: "bubble" }>> = {}): Extract<El, { type: "bubble" }> {
   return {
     id,
     type: "bubble",
-    variant: "normal",
+    variant: "speech",
     text: "안녕",
     x: 40,
     y: 60,
@@ -118,7 +120,7 @@ describe("studio-cuttoon-edit extracted host helpers", () => {
       });
       const bottomFrame = makeFrame("f-bottom", {
         y: 420,
-        storyBeat: { type: "action", summary: "두 번째 장면" },
+        storyBeat: { type: "escalation", summary: "두 번째 장면" },
       });
       const imageWithCredit = makeImage("img-1", {
         name: "배경 사진",
@@ -258,14 +260,16 @@ describe("studio-cuttoon-edit extracted host helpers", () => {
 
       const nav = resolveStudioCommentPinClusterNavigation(
         {
-          surface: "pin-quick-reply",
-          openReason: "canvas-pin",
+          open: true,
           selectedThread: created.threads[0]!,
-          selectedDraft: null,
           clusterThreads: [created.threads[0]!, frameThread],
           selectedClusterIndex: 0,
-          submittingMutationId: null,
-          unreadCount: 0,
+          selectedUnread: false,
+          unreadClusterCount: 0,
+          selectedResolved: false,
+          selectedDraft: null,
+          preservedDraft: null,
+          draftTargetMissing: false,
           replyBlockedReason: null,
         },
         1,
@@ -334,7 +338,8 @@ describe("studio-cuttoon-edit extracted host helpers", () => {
             beatType: "setup",
             summary: "초안",
             imagePrompt: "old prompt",
-            dialogue: [],
+            dialogue: "안녕",
+            aspect: "landscape",
             frame: { x: 0, y: 0, width: 800, height: 400 },
             bubbles: [],
             imageDataUrl: "data:image/png;base64,old",
@@ -567,6 +572,17 @@ describe("studio-cuttoon-edit extracted host helpers", () => {
       expect(consumed).toBe(true);
       expect(setError).toHaveBeenCalledTimes(1);
       expect(commit).not.toHaveBeenCalled();
+
+      const selectedFrame = makeFrame("frame-insert", { x: 40, y: 80, width: 600, height: 320 });
+      const target = resolveStudioHostCanvasInsertionTarget({
+        selected: selectedFrame,
+        canvasHeight: 1200,
+        activePageId: "page-1",
+        masterEditMode: false,
+        getVisiblePlacement: () => null,
+      });
+      expect(target.key).toBe("page-1:page:frame:frame-insert");
+      expect(target.placement.bounds).toEqual({ x: 40, y: 80, width: 600, height: 320 });
     });
   });
 });

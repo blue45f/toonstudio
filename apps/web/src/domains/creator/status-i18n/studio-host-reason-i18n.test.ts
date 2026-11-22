@@ -57,18 +57,19 @@ const count = (prefix: string) => ALL_KEYS.filter((key) => key.startsWith(prefix
 
 const CONSUMER_SOURCES: Record<string, string> = {
   host: readSource("StudioCuttoonEditorHost.tsx"),
+  commentProjection: readSource("studio-cuttoon-edit/studio-host-comment-projection-helpers.ts"),
   prodOps: readProdOps(),
 };
 
 const KEY_GROUP = "studio\\.host(?:Reason|FillGuide|LivingInk|Error)\\.[A-Za-z0-9]+";
-/** 2인자 호출 t("키", "폴백") — 중첩 삼항 안의 동사·범위 키 호출도 독립 부분 문자열로 잡힌다. */
+/** 2인자 호출 t("키", "폴백") — 추출 헬퍼의 input.translate/줄바꿈 hostErrorText 호출도 함께 검증한다. */
 const SIMPLE_CALL_PATTERN = new RegExp(
-  `(?:\\bt|hostErrorText)\\("(${KEY_GROUP})",\\s*"((?:[^"\\\\]|\\\\.)*)"\\)`,
+  `(?:\\bt|hostErrorText|input\\.translate)\\(\\s*"(${KEY_GROUP})",\\s*"((?:[^"\\\\]|\\\\.)*)",?\\s*\\)`,
   "g",
 );
 /** 보간 호출 t("키", {…}, "폴백") — 파라미터 객체 안에 중첩 t()가 있어도 바깥 호출을 잡는다. */
 const PARAM_CALL_PATTERN = new RegExp(
-  `(?:\\bt|hostErrorText)\\("(${KEY_GROUP})",\\s*\\{[^}]*\\},\\s*"((?:[^"\\\\]|\\\\.)*)"\\)`,
+  `(?:\\bt|hostErrorText|input\\.translate)\\(\\s*"(${KEY_GROUP})",\\s*\\{[^}]*\\},\\s*"((?:[^"\\\\]|\\\\.)*)",?\\s*\\)`,
   "gs",
 );
 

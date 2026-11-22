@@ -3,6 +3,8 @@ import type { StudioEditorMutationTicket } from "../studio-editor-scope";
 import type { El } from "../studio-element-model";
 import { finitePositiveGroupResizeBounds } from "../studio-group-resize-bounds";
 import type { StudioGroupUniformResizeBounds } from "../studio-group-uniform-resize";
+import type { CanvasImagePlacement } from "../studio-image-placement";
+import { resolveStudioInsertTarget } from "../studio-insert-drag-core";
 import {
   isEffectivelyHidden,
   isEffectivelyLocked,
@@ -13,6 +15,7 @@ import {
   projectStudioViewPointToDocument,
   resolveStudioVisibleDocumentPlacement,
   type StudioViewRotation,
+  type StudioVisibleDocumentPlacement,
 } from "../studio-view-controls";
 
 export interface StudioGroupResizeSession {
@@ -134,6 +137,49 @@ export function resolveStudioHostVisibleCanvasPlacement(input: {
       bottom: input.viewportRect.bottom,
     },
   });
+}
+
+export function resolveStudioHostCanvasInsertionTarget(input: {
+  readonly selected: El | null;
+  readonly canvasHeight: number;
+  readonly activePageId: string;
+  readonly masterEditMode: boolean;
+  readonly getVisiblePlacement: () => StudioVisibleDocumentPlacement | null;
+}): {
+  key: string;
+  center: { x: number; y: number };
+  placement: CanvasImagePlacement;
+} {
+  const selectedFrame = input.selected?.type === "frame"
+    ? {
+        x: input.selected.x,
+        y: input.selected.y,
+        width: input.selected.width,
+        height: input.selected.height,
+      }
+    : null;
+  const visible = selectedFrame ? null : input.getVisiblePlacement();
+  const target = resolveStudioInsertTarget({
+    documentWidth: CANVAS_W,
+    documentHeight: input.canvasHeight,
+    selectedFrame,
+    viewport: visible,
+  });
+  const inset = target.source === "selected-frame"
+    ? Math.max(10, Math.min(28, Math.min(target.bounds.width, target.bounds.height) * 0.04))
+    : Math.max(16, Math.min(40, Math.min(target.bounds.width, target.bounds.height) * 0.05));
+  const key = target.source === "selected-frame" && input.selected?.type === "frame"
+    ? `${input.activePageId}:${input.masterEditMode ? "master" : "page"}:frame:${input.selected.id}`
+    : `${input.activePageId}:${input.masterEditMode ? "master" : "page"}:view:${Math.round(target.anchor.x / 80)}:${Math.round(target.anchor.y / 80)}`;
+  return {
+    key,
+    center: target.anchor,
+    placement: {
+      anchor: target.anchor,
+      bounds: target.bounds,
+      inset,
+    },
+  };
 }
 
 export function validateStudioSelectionResizeBegin(input: {

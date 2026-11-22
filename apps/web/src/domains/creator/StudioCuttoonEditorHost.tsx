@@ -26369,8 +26369,7 @@ function clearSelectionForEdit() {
     tool === "select" && !canvasOnlyMode && !selectionOptionsSuppressed;
   const selectionLaneMounted = !isMobile;
 
-  const studioOptionsBarsSelectionModel = useMemo<StudioOptionsBarsSelectionModel>(
-    () => deriveStudioOptionsBarsSelectionModel({
+  const studioOptionsBarsSelectionModel = useMemo<StudioOptionsBarsSelectionModel>(() => deriveStudioOptionsBarsSelectionModel({
       activeSurfaceReviewLocked, elements, groups, marqueeIds, selectionLaneMounted,
       selectOptionsStripArmed, selected, selectedId,
     }),

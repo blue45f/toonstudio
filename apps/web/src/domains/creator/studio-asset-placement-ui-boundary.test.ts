@@ -53,11 +53,14 @@ describe("Studio asset placement UI boundary", () => {
 
   it("routes click, touch, and native drop placement through the same safe target contract", () => {
     const studioPage = read("./StudioCuttoonEditorHost.tsx");
+    const viewHelpers = read("./studio-cuttoon-edit/studio-host-view-and-resize-helpers.ts");
+    const combined = `${studioPage}\n${viewHelpers}`;
 
     expect(studioPage).toContain("resolveStudioInsertTarget");
+    expect(studioPage).toContain("resolveStudioHostCanvasInsertionTarget");
     expect(studioPage).toContain("consumeStudioInsertDropTransfer");
     expect(studioPage).toContain("consumedInsertDropTransfersRef");
-    expect(studioPage).toContain('target.source === "selected-frame"');
-    expect(studioPage.match(/resolveStudioInsertTarget\(/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(viewHelpers).toContain('target.source === "selected-frame"');
+    expect(combined.match(/resolveStudioInsertTarget\(/g)?.length).toBeGreaterThanOrEqual(2);
   });
 });

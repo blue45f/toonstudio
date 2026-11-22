@@ -144,9 +144,23 @@ describe("Studio canvas image I/O module boundary", () => {
     // the shared pixel-edit factory.
     // 의도적 변경(2026-08-20): 확장 블렌드 병합이 layer/studio-layer-operations 로 추출되며
     // 그 안의 load 1회 / canvas 2회가 함께 이동 — load 20 → 19, canvas 30 → 28.
-    expect(callCount(page.sourceFile, "loadStudioPixelEditImage")).toBe(19);
-    expect(callCount(page.sourceFile, "loadStudioRetouchSourceImage")).toBe(5);
-    expect(page.source.match(/\bcreateStudioPixelEditCanvas\b/gu)).toHaveLength(28);
+    // 의도적 변경(2026-11-22): 크롭·퍼펫 워프·마스크·히스토리 브러시·리퀴파이 헬퍼가
+    // studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers.ts 및
+    // studio-host-liquify-and-selection-pointer-helpers.ts 로 추출되며 호출 소유권이 분산되었다
+    // (총 호출 수 보존: loadStudioPixelEditImage 14+5=19, loadStudioRetouchSourceImage 4+1=5).
+    const rasterEditHelpers = moduleShape(
+      "../studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers.ts",
+    );
+    const liquifyPointerHelpers = moduleShape(
+      "../studio-cuttoon-edit/studio-host-liquify-and-selection-pointer-helpers.ts",
+    );
+    expect(callCount(page.sourceFile, "loadStudioPixelEditImage")).toBe(14);
+    expect(callCount(rasterEditHelpers.sourceFile, "loadStudioPixelEditImage")).toBe(5);
+    expect(callCount(page.sourceFile, "loadStudioRetouchSourceImage")).toBe(4);
+    expect(callCount(liquifyPointerHelpers.sourceFile, "loadStudioRetouchSourceImage")).toBe(1);
+    expect(page.source.match(/\bcreateStudioPixelEditCanvas\b/gu)).toHaveLength(21);
+    expect(rasterEditHelpers.source.match(/\bcreateStudioPixelEditCanvas\b/gu)).toHaveLength(6);
+    expect(liquifyPointerHelpers.source.match(/\bcreateStudioPixelEditCanvas\b/gu)).toHaveLength(3);
     const layerOperations = moduleShape("../layer/studio-layer-operations.ts");
     expect(callCount(layerOperations.sourceFile, "loadStudioPixelEditImage")).toBe(1);
     expect(layerOperations.source.match(/\bcreateStudioPixelEditCanvas\b/gu)).toHaveLength(3);
