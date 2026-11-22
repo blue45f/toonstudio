@@ -9,15 +9,17 @@
 
 import {
   STUDIO_FLUID_WATERCOLOR_WGSL,
+  STUDIO_IMPASTO_RAKING_LIGHT_WGSL,
   createFluidWatercolorGrid,
   depositFluidWatercolorDab,
+  evaluateBrushTextureMaxStep,
   measureFluidWatercolorDiagnostics,
   renderFluidWatercolorRgba,
   stepFluidWatercolorCpu,
   type FluidPaperGrainPreset,
   type FluidWatercolorDiagnostics,
   type FluidWatercolorSimParams,
-} from "../../imaging-pro/studio-fluid-watercolor-sim";
+} from "../../imaging-pro";
 
 import {
   clamp01,
@@ -787,3 +789,5 @@ export function runRebelleShallowWaterFluidPreview(
     wgslShader: STUDIO_FLUID_WATERCOLOR_WGSL,
   };
 }
+
+export { STUDIO_IMPASTO_RAKING_LIGHT_WGSL, evaluateBrushTextureMaxStep };
