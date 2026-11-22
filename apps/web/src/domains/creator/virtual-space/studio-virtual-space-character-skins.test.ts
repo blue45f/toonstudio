@@ -30,10 +30,12 @@ function createMockDeps(): ProceduralSheetDeps {
 }
 
 describe("프로시저럴 플레이어 스킨 레지스트리", () => {
-  it("6종 정의를 등록하고 키가 중복되지 않는다", () => {
-    expect(STUDIO_PROCEDURAL_PLAYER_SKIN_DEFINITIONS).toHaveLength(6);
+  it("14종 고유 플레이어 스킨을 등록하고 키와 프리셋이 중복되지 않는다", () => {
+    expect(STUDIO_PROCEDURAL_PLAYER_SKIN_DEFINITIONS).toHaveLength(14);
     const keys = STUDIO_PROCEDURAL_PLAYER_SKIN_DEFINITIONS.map((item) => item.key);
-    expect(new Set(keys).size).toBe(6);
+    const presetKeys = STUDIO_PROCEDURAL_PLAYER_SKIN_DEFINITIONS.map((item) => item.presetKey);
+    expect(new Set(keys).size).toBe(14);
+    expect(new Set(presetKeys).size).toBe(14);
     expect(keys.every((key) => key.startsWith("procedural-"))).toBe(true);
     for (const item of STUDIO_PROCEDURAL_PLAYER_SKIN_DEFINITIONS) {
       expect(item.labelKo.trim().length).toBeGreaterThan(0);

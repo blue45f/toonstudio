@@ -23,6 +23,8 @@ export interface StudioCanvasInputOptions {
   readonly onEscape: () => void;
   /** 상호작용 키(화면 안내의 E, 별칭 X)를 처음 눌렀다(자동 반복 제외). */
   readonly onInteractKey: () => void;
+  /** 점프 키(Space)를 처음 눌렀다(자동 반복 제외). */
+  readonly onJumpKey?: () => void;
   /** 고스트 모드 토글 키를 처음 눌렀다(자동 반복 제외). */
   readonly onGhostToggle: () => void;
   /** 탭이 숨겨졌다. */
@@ -43,6 +45,7 @@ export function bindStudioCanvasInput(options: StudioCanvasInputOptions): () => 
     if (!WORLD_KEY_CODES.has(event.code)) return;
     heldKeys.add(event.code);
     if (STUDIO_INTERACT_KEY_CODES.has(event.code) && !event.repeat) options.onInteractKey();
+    if (event.code === "Space" && !event.repeat) options.onJumpKey?.();
     // 고스트 모드 토글: 반투명 + 장애물 통과 이동 (대규모 이벤트 끼임 해소)
     if (event.code === STUDIO_GHOST_TOGGLE_KEY && !event.repeat) options.onGhostToggle();
     event.preventDefault();

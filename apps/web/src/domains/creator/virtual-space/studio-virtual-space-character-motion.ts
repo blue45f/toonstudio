@@ -636,25 +636,25 @@ export function sampleStudioRichMotion(
   let facingCycleIndex: number | null = null;
 
   if (id === "walk-natural" || id === "jog-brisk" || id === "sprint-dash" || id === "tiptoe-sneak" || id === "hop-skip") {
-    const spec = id === "walk-natural" ? { period: 560, bounce: 2.2, scale: 0.016, lean: 0, sway: 0.032, arm: 0.42, leg: 0.46, xAmp: 0 }
-      : id === "jog-brisk" ? { period: 400, bounce: 3.5, scale: 0.024, lean: 0.042, sway: 0.022, arm: 0.65, leg: 0.68, xAmp: 0 }
-      : id === "sprint-dash" ? { period: 290, bounce: 4.4, scale: 0.032, lean: 0.072, sway: 0.022, arm: 0.88, leg: 0.85, xAmp: 0 }
-      : id === "tiptoe-sneak" ? { period: 780, bounce: 2.6, scale: 0.018, lean: 0, sway: 0.055, arm: 0.24, leg: 0.28, xAmp: 1.4 }
-      : { period: 460, bounce: 6.0, scale: 0.045, lean: 0, sway: 0.072, arm: 0.72, leg: 0.64, xAmp: 0 };
+    const spec = id === "walk-natural" ? { period: 560, bounce: 1.2, lean: 0, sway: 0.012, arm: 0.42, leg: 0.46, xAmp: 0 }
+      : id === "jog-brisk" ? { period: 400, bounce: 2.2, lean: 0.032, sway: 0.014, arm: 0.65, leg: 0.68, xAmp: 0 }
+      : id === "sprint-dash" ? { period: 280, bounce: 3.4, lean: 0.055, sway: 0.014, arm: 0.88, leg: 0.85, xAmp: 0 }
+      : id === "tiptoe-sneak" ? { period: 780, bounce: 1.8, lean: 0, sway: 0.025, arm: 0.24, leg: 0.28, xAmp: 0.7 }
+      : { period: 460, bounce: 4.8, lean: 0, sway: 0.032, arm: 0.72, leg: 0.64, xAmp: 0 };
     const p = stride ?? wave(spec.period);
     const g = env * speedGate;
     const lift = liftCos(p * 2);
     offsetX = Math.sin(p) * spec.xAmp * g;
     offsetY = -lift * spec.bounce * g;
-    scaleYDelta = (id === "hop-skip" ? lift * spec.scale - (1 - lift) * 0.028 : id === "tiptoe-sneak" ? spec.scale : Math.cos(p * 2) * spec.scale) * g;
+    scaleYDelta = 0;
     tiltRad = (spec.lean + Math.sin(p) * spec.sway) * g;
     armSwingRad = Math.sin(p) * spec.arm * g;
     legSwingRad = -Math.sin(p) * spec.leg * g;
   } else if (id === "idle-breathe") {
     const p = wave(3_800);
-    offsetY = -liftCos(p) * 1.1 * env;
-    scaleYDelta = Math.sin(p) * 0.012 * env;
-    tiltRad = Math.sin(p * 0.5) * 0.01 * env;
+    offsetY = -liftCos(p) * 0.25 * env;
+    scaleYDelta = 0;
+    tiltRad = 0;
   } else if (id === "sit-draw") {
     const p = wave(920);
     offsetX = Math.sin(p) * 0.9 * env;
@@ -748,8 +748,10 @@ export function sampleStudioRichMotion(
   const clampedOffsetX = cleanZero(clampValue(offsetX, -8, 8));
   const clampedOffsetY = cleanZero(clampValue(offsetY, -profile.maxBouncePx, 8));
   const clampedTilt = cleanZero(clampValue(tiltRad, -profile.maxTiltRad, profile.maxTiltRad));
-  const scaleY = clampValue(profile.staticScaleY + scaleYDelta, 0.82, 1.1);
-  const scaleX = clampValue(1 / Math.sqrt(scaleY / profile.staticScaleY), 0.9, 1.1);
+  // 등신 비율 잠금: 어떤 모션에서도 캐릭터 전체 크기가 출렁이지 않도록 scaleX·scaleY를 고정한다.
+  void scaleYDelta;
+  const scaleY = profile.staticScaleY;
+  const scaleX = 1;
   const shadowScale = clampValue(1 - clampValue(-clampedOffsetY / 10, 0, 1) * 0.22, 0.72, 1.12);
 
   return Object.freeze({

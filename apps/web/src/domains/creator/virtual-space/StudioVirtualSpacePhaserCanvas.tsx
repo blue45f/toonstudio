@@ -43,14 +43,21 @@ import { resolveStudioThemeSurfacePhysics } from "./studio-virtual-space-theme-p
 import {
   createStudioFacingTurnState,
   facingAngleFromVelocity,
-  locomotionDirectionalSquashStretch,
   shortestAngleDelta,
   stepTurnAngleSmooth,
   studioLocomotionStopSettle,
   turnSlowdownFactor,
 } from "./studio-virtual-space-locomotion-feel";
 import { StudioMotionEaser } from "./studio-virtual-space-motion-easing";
-import { scaleAroundOne, stepCrispVelocity, studioCadenceLimitedStride } from "./studio-virtual-space-locomotion-style";
+import { stepCrispVelocity, studioCadenceLimitedStride } from "./studio-virtual-space-locomotion-style";
+import {
+  createStudioJumpMotionState,
+  stepStudioJump,
+  studioRunGaitOffset,
+  triggerStudioJump,
+} from "./studio-virtual-space-jump-motion";
+import { playStudioSfxSound } from "./studio-virtual-space-sound-engine";
+import { studioEmoteSfxKind } from "./studio-virtual-space-sound-synth";
 import {
   advanceBreathPhase,
   advanceWalkPhase,
@@ -166,7 +173,7 @@ import { StudioVirtualDecorationRuntime } from "./studio-virtual-space-decoratio
 import { StudioDeskPodRuntime } from "./studio-virtual-space-desk-pods";
 import { studioRuntimeBudget, studioTownInterestSnapshot } from "./studio-virtual-space-town-program";
 import { studioVirtualDecorationNavigationWorld, studioVirtualDecorationStateForWorld } from "./studio-virtual-space-decoration-layout";
-import { StudioCameraFollowModeController, studioAwayDozeMotion, studioBlinkScaleY, studioEffectiveGaitStride, studioGaitBodyOffset, studioGaitRockAngle, studioGaitShadowAlpha, studioGaitShadowScale, studioGaitSquashScale, studioIdleSwayOffsetX, studioIdleUpperBodyBreathScale, studioImageSpriteSubframeMotion, studioPlayerLocomotionProfile } from "./studio-virtual-space-locomotion-presentation";
+import { StudioCameraFollowModeController, studioAwayDozeMotion, studioEffectiveGaitStride, studioGaitBodyOffset, studioGaitShadowAlpha, studioGaitShadowScale, studioPlayerLocomotionProfile } from "./studio-virtual-space-locomotion-presentation";
 import {
   DEFAULT_STUDIO_VIRTUAL_EXPERIENCE,
 } from "./studio-virtual-space-experience-preference";
@@ -197,7 +204,6 @@ import {
 import {
   studioCharacterPoseTextureKey,
   studioCharacterStaticAsset,
-  studioCharacterWalkAnimationKey as walkAnimationKey,
 } from "./studio-virtual-space-character-assets";
 import type {
   StudioVirtualSpaceFacing,
@@ -711,6 +717,9 @@ export function StudioVirtualSpacePhaserCanvas({
       let actorAura: StudioActorAuraRuntime | null = null;
       let lastStoppedAt = -1_000;
       let preStopSpeed = 0;
+      let jumpState = createStudioJumpMotionState();
+      let jumpQueued = false;
+      let wasLocalSeated = false;
       let localDisplayPoint: StudioDisplayPoint | null = null;
       const npcDisplayPoints = new Map<string, StudioDisplayPoint>();
       /** NPC 가시성 페이드 상태: 관심 경계에서 툭 나타나고 사라지던 팝을 알파 전이로 바꾼다. */
@@ -1316,6 +1325,7 @@ export function StudioVirtualSpacePhaserCanvas({
           isSceneReady: () => sceneReady, isInputBlocked: runtimeInputBlocked,
           onEscape: () => { if (buildPlacement?.handleEscape()) return; npcDirector.cancelGuideTour(); stopMovement(); },
           onInteractKey: () => { if (!buildPlacement?.active) queueKeyboardInteraction(); },
+          onJumpKey: () => { if (!buildPlacement?.active && document.activeElement === canvas && !runtimeInputBlocked()) jumpQueued = true; },
           onGhostToggle: () => { const next = !bridge.isGhostMode(); bridge.setGhostMode(next); applyGhostMode(next); },
           onHidden: () => { npcDirector.cancelGuideTour(); stopMovement(); },
           onReducedMotionChange: reduceMotionChanged,
@@ -1440,6 +1450,7 @@ export function StudioVirtualSpacePhaserCanvas({
         if (requestedEmote) {
           // 같은 요청이 스냅샷(selfReaction) 경로로 이미 막 시작됐다면 두 번 재시작하지 않는다.
           emotes?.play("self", requestedEmote, time, "person", STUDIO_EMOTE_DEDUPE_MS);
+          playStudioSfxSound(studioEmoteSfxKind(requestedEmote), 0.85);
           queueEmoteReaction(requestedEmote, null);
         }
         let ix = blocked || buildPlacement?.active ? 0 : bridge.getJoystick().x;
@@ -1850,6 +1861,7 @@ export function StudioVirtualSpacePhaserCanvas({
             // 복귀 페이드인은 타이머가 아니라 새 월드의 스폰 시퀀스(월드 변경 시)나
             // 페이지의 같은-장소 확정 신호(requestPortalReveal)가 담당한다.
             if (zoneTransition.phase === "idle") {
+              playStudioSfxSound("portal", 0.9);
               zoneTransition = beginStudioZoneDepartureTransition(zoneTransition, {
                 now: time,
                 reducedMotion: reducedMotion.matches,
@@ -1864,6 +1876,7 @@ export function StudioVirtualSpacePhaserCanvas({
           } else if (portal && moved) {
             if (zoneTransition.phase === "idle") {
               // 같은 월드 순간이동: 몸은 베일이 완전히 덮인 시점에 옮긴다.
+              playStudioSfxSound("portal", 0.9);
               pendingPortalArrival = arrival;
               zoneTransition = beginStudioZonePortalTransition(zoneTransition, {
                 zoneId: studioWorldRoomAt(manifest, arrival.body),
@@ -2141,113 +2154,103 @@ export function StudioVirtualSpacePhaserCanvas({
         applyStudioCameraFollow(this.cameras.main, { deltaSeconds: dt, followBase, roomTransitioning: directed.roomTransitioning, immediate: snapCamera || reducedMotion.matches || lookAround.direct,
           edgeSoftening: cameraFollows, world: manifest, centerOn: snapCamera ? cameraVisualTarget : lookAround.direct ? cameraTarget : null });
 
-        const hasWalkClip = scene.anims.exists(walkAnimationKey(localSkin, facing)) || reducedMotion.matches;
-        // 몸 bob·그림자·흔들림·스쿼시는 위에서 확정한 유효 보폭(localGaitStride)을 같은 거리 위상으로 쓴다.
-        // (레거시 프로필도 시간 기반 사인 폴백 대신 이 보폭으로 잠근다.) 즉응형은 좌우 스웨이를 끄고 위아래 bob만 미세하게 남긴다.
-        const gaitBody = studioGaitBodyOffset(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
-        const bodyOffset = locomotion.inertial ? gaitBody
-          : { offsetX: gaitBody.offsetX * locomotion.gaitSwayScale, offsetY: gaitBody.offsetY * locomotion.gaitBobScale };
-        const localGroundPoint = localSeat?.anchorPoint ?? rendered;
-        const localVisualPoint = studioProjectTownPoint(manifest, localGroundPoint);
-        // 표시 전용 지수 감쇠: 물리 스텝(60Hz)과 렌더 프레임이 어긋날 때 생기는 계단 이동과
-        // 정지·회전 끝의 툭 끊김을 둥글게 한다. 논리 위치·충돌·카메라·깊이는 기존 좌표를 그대로 쓰고
-        // 몸·그림자·이름표·이모트만 감쇠 좌표를 쓴다. 96px 초과 점프(텔레포트·포털·구조)는 즉시 스냅한다.
-        // 시간상수는 속도 적응형이다: 느릴 때는 기본 50ms, 빠를수록 줄여 표시가 뒤처지지 않게 한다.
-        localDisplayPoint = dampStudioDisplayPoint(localDisplayPoint, localVisualPoint, dt, {
+        const localSurface = (campusFloorMap && studioCampusFloorSurface(campusFloorMap, rendered.x, rendered.y)) || studioMotionFeelTerrainSurface(terrain.kind);
+        const localMaterial = localSurface.material ?? localSurface.surface;
+        const localDisplay = (localDisplayPoint = dampStudioDisplayPoint(localDisplayPoint, studioProjectTownPoint(manifest, localSeat?.anchorPoint ?? rendered), dt, {
           enabled: !reducedMotion.matches,
           tauSeconds: studioDisplayDampTauSeconds(speed) * locomotion.displayDampScale,
-        });
-        const localDisplay = localDisplayPoint;
+        }));
+        const localGroundPoint = localSeat?.anchorPoint ?? rendered;
+        const localVisualPoint = studioProjectTownPoint(manifest, localGroundPoint);
         const localShadowPoint = localDisplay;
         const localEmoteBody = localSeat || nextMoving ? null : localEmotePose;
+        const isLocalSeated = Boolean(localSeat);
+        if (isLocalSeated !== wasLocalSeated) {
+          wasLocalSeated = isLocalSeated;
+          playStudioSfxSound(isLocalSeated ? "seat-settle" : "seat-stand", 0.88);
+        }
+        if (jumpQueued) {
+          jumpQueued = false;
+          const jumpLaunch = triggerStudioJump(jumpState, { seated: isLocalSeated, blocked });
+          jumpState = jumpLaunch.state;
+          if (jumpLaunch.triggered) {
+            playStudioSfxSound("jump", 0.9);
+            motionFeel?.emitJumpDust(localShadowPoint.x, localShadowPoint.y, localSprite.depth, localMaterial, true, reducedMotion.matches || worldFeel.effective.reducedMotion);
+          }
+        }
+        const jumpStep = stepStudioJump(jumpState, dt, isLocalSeated);
+        jumpState = jumpStep.state;
+        if (jumpStep.landed) {
+          playStudioSfxSound("land", 0.95);
+          motionFeel?.emitJumpDust(localShadowPoint.x, localShadowPoint.y, localSprite.depth, localMaterial, false, reducedMotion.matches || worldFeel.effective.reducedMotion);
+        }
         if (moving && !nextMoving) { lastStoppedAt = time; preStopSpeed = Math.max(feelSpeed, speed); }
-        const stopSettle = !nextMoving && !localSeat
+        const stopSettle = !nextMoving && !localSeat && !jumpStep.airborne
           ? studioLocomotionStopSettle(time - lastStoppedAt, preStopSpeed, config.maxSpeed, reducedMotion.matches) : null;
-        const subframeMotion = nextMoving
-          ? studioImageSpriteSubframeMotion(localDistance, localGaitStride, 4, nextMoving, reducedMotion.matches) : null;
         const activeDayPhase = environmentRef.current.dayPhase === "auto" ? studioVirtualDayPhase(time) : environmentRef.current.dayPhase;
         actorAura?.beginFrame();
-        // 자리 비움 졸기: 앉기·이모트가 없을 때만 긴 주기의 꾸벅임을 얹어 상태가 몸짓으로 읽히게 한다.
-        const localDoze = activity === "away" && !nextMoving && !localSeat && !localEmoteBody
+        const localDoze = activity === "away" && !nextMoving && !localSeat && !localEmoteBody && !jumpStep.airborne
           ? studioAwayDozeMotion(time, studioSmoothingPhaseSeed(identityRef.current), reducedMotion.matches) : null;
-        // 이동 모드·걸음 위상·호흡 (locomotion-feel 연결)
         locomotionMode = nextLocomotionMode(locomotionMode, feelSpeed);
         walkPhase = advanceWalkPhase(walkPhase, feelSpeed, dt, config.maxSpeed);
         breathPhase = advanceBreathPhase(breathPhase, dt);
-        const breathY = breathOffset(breathPhase, locomotionMode);
-        // 대기 무게 이동: 정지 중에도 좌우로 미세하게 흔들려 석상처럼 굳지 않게 한다.
-        const localIdleSway = !nextMoving && !localSeat && !localEmoteBody
-          ? studioIdleSwayOffsetX(time, studioSmoothingPhaseSeed(identityRef.current), reducedMotion.matches) : 0;
-        localSprite.setPosition(localDisplay.x + bodyOffset.offsetX + localIdleSway + (localEmoteBody?.bodyX ?? 0),
-          localDisplay.y + bodyOffset.offsetY + (localEmoteBody?.bodyY ?? 0) + breathY + (localDoze?.offsetY ?? 0) + (stopSettle?.offsetY ?? 0) + (subframeMotion?.liftPx ?? 0));
-        // 눕기 폴백(포즈 텍스처가 없을 때 idle 프레임+회전) + 급회전 린(lean)
+        const breathY = jumpStep.airborne ? 0 : breathOffset(breathPhase, locomotionMode);
+        const runGait = studioRunGaitOffset(localDistance, localGaitStride, {
+          moving: nextMoving, sprinting: sprint && nextMoving, airborne: jumpStep.airborne,
+          velocityX: motion.velocity.x, reducedMotion: reducedMotion.matches,
+        });
+        const gaitY = locomotion.inertial ? runGait.offsetY : runGait.offsetY * locomotion.gaitBobScale;
+        localSprite.setPosition(
+          localDisplay.x + (localEmoteBody?.bodyX ?? 0),
+          localDisplay.y + gaitY + jumpStep.offsetY + (localEmoteBody?.bodyY ?? 0) + breathY + (localDoze?.offsetY ?? 0) + (stopSettle?.offsetY ?? 0),
+        );
         const poseTextureUsed = localSprite.getData("poseTextureUsed") === true;
         const lieFallbackAngle = poseFrame.pose === "lie" && !poseTextureUsed ? 90 : 0;
         const turnTargetAngle = feelSpeed > 4 ? facingAngleFromVelocity(motion.velocity, turnState.angle) : turnState.angle;
         turnState = stepTurnAngleSmooth(turnState, turnTargetAngle, dt, feelSpeed, feelConfig);
         const leanDegrees = turnLeanAngle(turnState.angularVelocity * 180 / Math.PI) * locomotion.leanScale;
-        // 걸음 위상 동기 흔들림: 프레임 전환 사이에 연속적인 2차 모션을 넣는다 (위에서 확정한 유효 보폭 기준).
-        const localRockAngle = studioGaitRockAngle(localDistance, localGaitStride, nextMoving, reducedMotion.matches) * locomotion.gaitRockScale;
-        localSprite.setAngle((playerLocomotion.gaitDistancePerCycle ? 0 : nextMoving && !hasWalkClip ? Math.sin(time * 0.018) * 0.8 : 0)
-          + localRockAngle + (subframeMotion?.tiltDeg ?? 0) + (stopSettle?.leanDeg ?? 0)
-          + (localEmoteBody?.bodyAngle ?? 0) + lieFallbackAngle + leanDegrees + (localDoze?.angleDegrees ?? 0));
-        // 캐릭터 모션 오버레이 (트랙1): 상태머신이 블렌딩한 변형을 가산한다.
-        // 전이 시점(어떤 모션을 언제)은 트랙3 소유라, 아래는 기존 이동·자세 신호를
-        // 그대로 쓰는 잠정 매핑이다. 프로시저럴 스킨은 기존 포즈 시트 경로를 유지해
-        // 회귀를 막고, 커스텀 시트에만 오버레이를 적용한다.
+        localSprite.setAngle(
+          runGait.leanDegrees + (stopSettle?.leanDeg ?? 0) + (localEmoteBody?.bodyAngle ?? 0) + lieFallbackAngle + leanDegrees + (localDoze?.angleDegrees ?? 0),
+        );
+        // 캐릭터 모션 오버레이(등신 비율 잠금: scaleY는 변형하지 않고 위치·기울기만 반영한다).
         if (selfCustomSheetSkin && !localSeat) {
-          const desiredMotion: StudioMotionKind = nextMoving ? (sprint ? "run" : "walk") : localState;
+          const desiredMotion: StudioMotionKind = jumpStep.airborne ? "jump" : nextMoving ? (sprint ? "run" : "walk") : localState;
           localMotion = requestMotionState(localMotion, desiredMotion, time);
           if (motionOneShotFinished(localMotion, time)) localMotion = requestMotionState(localMotion, "idle", time);
           if (!reducedMotion.matches) {
             const motionSample = sampleMotionRender(localMotion, time);
-            localSprite.y += motionSample.offsetYPx;
+            if (!jumpStep.airborne) localSprite.y += motionSample.offsetYPx;
             localSprite.angle += motionSample.rotationDeg + (motionSample.tiltRad * 180) / Math.PI;
-            if (motionSample.scaleY !== 1) localSprite.setScale(localSprite.scaleX, localSprite.scaleY * motionSample.scaleY);
           }
         }
-        // 고스트 모드 + HD 환경광 틴트 + 보행 동기 접지 그림자 농도
+        // 고스트 모드 + HD 환경광 틴트 + 보행·점프 동기 접지 그림자(등신 비율 1.0 고정, scale 펌핑 제거)
         localSprite.setAlpha(ghostActive ? STUDIO_GHOST_SPRITE_ALPHA : 1);
         localSprite.setTint(resolveStudioHdActorTint({
           phase: activeDayPhase, style: artStyle, spaceTheme: spaceTheme, facing, focused: activity === "focused", away: activity === "away", ghost: ghostActive,
         }));
-        localShadow.setAlpha(ghostActive ? 0.1 : studioGaitShadowAlpha(localDistance, localGaitStride, nextMoving, reducedMotion.matches, 0.28));
-        // 스쿼시 & 스트레치 + 서브프레임 탄성 + 정지 세틀 + 상체 호흡 합성
-        const rawSquash = locomotionDirectionalSquashStretch(motion.velocity, previousVelocity, dt, config.maxSpeed, reducedMotion.matches);
-        const rawGaitSquash = studioGaitSquashScale(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
-        const squash = locomotion.squashScale === 1 ? rawSquash
-          : { scaleX: scaleAroundOne(rawSquash.scaleX, locomotion.squashScale), scaleY: scaleAroundOne(rawSquash.scaleY, locomotion.squashScale) };
-        const gaitSquash = locomotion.squashScale === 1 ? rawGaitSquash
-          : { scaleX: scaleAroundOne(rawGaitSquash.scaleX, locomotion.squashScale), scaleY: scaleAroundOne(rawGaitSquash.scaleY, locomotion.squashScale) };
-        const idleBreath = studioIdleUpperBodyBreathScale(time, studioSmoothingPhaseSeed(identityRef.current), nextMoving, Boolean(localSeat), reducedMotion.matches);
-        const localBlinkY = !nextMoving && !localSeat
-          ? studioBlinkScaleY(time, studioSmoothingPhaseSeed(identityRef.current), reducedMotion.matches) : 1;
-        localSprite.setScale(
-          localSprite.scaleX * squash.scaleX * gaitSquash.scaleX * idleBreath.scaleX * (subframeMotion?.scaleX ?? 1) * (stopSettle?.scaleX ?? 1),
-          localSprite.scaleY * squash.scaleY * gaitSquash.scaleY * idleBreath.scaleY * (subframeMotion?.scaleY ?? 1) * (stopSettle?.scaleY ?? 1) * localBlinkY,
-        );
-        // 트랙1 모션 렌더러 연결 지점 (StudioMotionRequest 계약)
+        localShadow.setAlpha(ghostActive ? 0.1 : studioGaitShadowAlpha(localDistance, localGaitStride, nextMoving && !jumpStep.airborne, reducedMotion.matches, 0.28) * jumpStep.shadowScale);
         _lastMotionRequest = buildStudioMotionRequest({
           pose: poseFrame.pose, locomotionMode, speed: feelSpeed, facing, walkPhase, poseBlend: poseFrame.poseBlend,
-          squashX: squash.scaleX, squashY: squash.scaleY, leanDegrees, breathOffset: breathY, ghost: ghostActive,
+          squashX: 1, squashY: 1, leanDegrees: leanDegrees + runGait.leanDegrees, breathOffset: breathY, ghost: ghostActive,
         });
         localSprite.setDepth(studioTownDepthForPoint(manifest, localGroundPoint, 1_001));
         localShadow.setPosition(localShadowPoint.x, localShadowPoint.y + 1);
-        const shadowScale = studioGaitShadowScale(localDistance, localGaitStride, nextMoving, reducedMotion.matches);
+        const shadowScale = studioGaitShadowScale(localDistance, localGaitStride, nextMoving && !jumpStep.airborne, reducedMotion.matches) * jumpStep.shadowScale;
         localShadow.setVisible(!localSeat).setScale(shadowScale, 1).setDepth(studioTownDepthForPoint(manifest, rendered, 990));
         actorAura?.drawActorGroundAndAura({
           x: localShadowPoint.x, y: localShadowPoint.y, distance: localDistance, stride: localGaitStride,
-          moving: nextMoving, seated: Boolean(localSeat), ghost: ghostActive, reducedMotion: reducedMotion.matches,
+          moving: nextMoving, seated: isLocalSeated, ghost: ghostActive, reducedMotion: reducedMotion.matches,
           activity, userStatus: snapshotRef.current.self.userStatus, reaction: shownLocalEmote, sprite: localSprite, timeMs: time,
         });
-        // 발밑 연출: 먼지·발걸음 조각·미끄럼·급정지 퍼프·달리기 잔상(캠퍼스는 바닥 재질별 색).
+        // 발밑 연출: 바닥 재질별 먼지 뭉게구름·발걸음·미끄럼·급정지 퍼프·달리기 잔상.
         if (motionFeel && !localSeat) {
           Object.assign(motionFrame, {
             time, deltaSeconds: dt, x: localShadowPoint.x, y: localShadowPoint.y, depth: localSprite.depth,
             speed, sprintSpeed, inputSpeed: config.maxSpeed * Math.min(1, Math.hypot(ix, iy)),
-            surface: (campusFloorMap && studioCampusFloorSurface(campusFloorMap, rendered.x, rendered.y)) || studioMotionFeelTerrainSurface(terrain.kind),
+            surface: localSurface,
             particleDensity: worldFeel.effective.particleDensity * currentQualityProfile.particleRatio * (experienceRef.current.effectLevel === "low" ? 0.5 : 1),
             reducedMotion: reducedMotion.matches || worldFeel.effective.reducedMotion,
+            vx: motion.velocity.x, vy: motion.velocity.y, sprinting: sprint && nextMoving, airborne: jumpStep.airborne,
           });
           motionFeel.step(motionFrame, localSprite);
         }
@@ -2336,31 +2339,23 @@ export function StudioVirtualSpacePhaserCanvas({
           const peerBreathY = !target.moving && !peerSeatRequested && !peerEmotePose && presenceBob === 0
             ? breathOffset(studioBreathPhaseAt(time, studioSmoothingPhaseSeed(peerId)), "idle")
             : 0;
-          const peerIdleSway = !target.moving && !peerSeatRequested && !peerEmotePose && presenceBob === 0
-            ? studioIdleSwayOffsetX(time, studioSmoothingPhaseSeed(peerId), reducedMotion.matches) : 0;
-          // 자리 비움은 몸짓으로도 읽히게: 긴 주기로 고개가 살짝 떨어졌다 돌아오는 졸기를 얹는다.
           const peerDoze = visual.activity === "away" && !target.moving && !peerSeatRequested && !peerEmotePose
             ? studioAwayDozeMotion(time, studioSmoothingPhaseSeed(peerId), reducedMotion.matches) : null;
-          // 전파된 충돌 반발: 같은 감쇠 곡선으로 재생한 표시 오프셋(흡수 창이 지나면 0).
           const peerImpact = peerImpactOffsetAt(visual.impactVx, visual.impactVy, time - visual.impactAt,
             { suppressed: reducedMotion.matches || experienceRef.current.effectLevel === "low" });
-          const peerTargetX = peerVisualPoint.x + peerGait.offsetX + peerIdleSway + (peerEmotePose?.bodyX ?? 0) + peerImpact.x;
+          const peerTargetX = peerVisualPoint.x + (peerEmotePose?.bodyX ?? 0) + peerImpact.x;
           const peerTargetY = peerVisualPoint.y + peerGait.offsetY + (peerEmotePose?.bodyY ?? 0) + presenceBob + peerBreathY
             + (peerDoze?.offsetY ?? 0) + peerImpact.y;
           const peerBeforeX = visual.sprite.x;
           const peerBeforeY = visual.sprite.y;
           if (distance >= 128) {
-            // 텔레포트급 점프는 즉시 스냅
             visual.sprite.setPosition(peerTargetX, peerTargetY);
           } else {
-            // 피어 스냅샷 지터 감쇠: 작은 흔들림은 무시하고 큰 이동만 따라간다(즉응형은 데드존을 좁혀 느린 이동이 끊겨 보이지 않게 한다)
             visual.sprite.setPosition(
               visual.sprite.x + dampPeerOffset(peerTargetX - visual.sprite.x, locomotion.peerDeadzonePx),
               visual.sprite.y + dampPeerOffset(peerTargetY - visual.sprite.y, locomotion.peerDeadzonePx),
             );
           }
-          // 게이트 위상은 목표점이 아니라 실제로 그려진 변위로 누적한다: 패킷 간격으로
-          // 뭉텅이 점프하던 다리 프레임이 몸의 감쇠 이동과 같은 리듬으로 진행한다.
           const peerRenderedStep = Math.hypot(visual.sprite.x - peerBeforeX, visual.sprite.y - peerBeforeY);
           if (peerRenderedStep > 0 && peerRenderedStep < 128) {
             visual.sprite.setData("walkDistance", peerWalkDistance + peerRenderedStep);
@@ -2370,26 +2365,8 @@ export function StudioVirtualSpacePhaserCanvas({
           spriteCrossfades?.capture(visual.sprite);
           applyAvatarVisual(visual.sprite, visual, peerSeatRequested?.facing ?? studioEmoteFacing(peerEmotePose) ?? target.facing, peerState, peerId);
           spriteCrossfades?.commit(visual.sprite, time, crossfadeEnabled);
-          const peerRockAngle = studioGaitRockAngle(peerWalkDistance, peerGaitStride, target.moving, reducedMotion.matches) * locomotion.gaitRockScale;
-          const peerSubframe = target.moving
-            ? studioImageSpriteSubframeMotion(peerWalkDistance, peerGaitStride, 4, target.moving, reducedMotion.matches) : null;
-          if (peerSubframe?.liftPx) visual.sprite.y += peerSubframe.liftPx;
-          if (target.moving && !reducedMotion.matches && !scene.anims.exists(walkAnimationKey(peerSkin, target.facing))) {
-            visual.sprite.setAngle(Math.sin(time * 0.017 + visual.targetX * 0.01) * 0.65 + peerRockAngle + (peerSubframe?.tiltDeg ?? 0));
-          } else {
-            visual.sprite.setAngle((peerEmotePose?.bodyAngle ?? 0) + peerRockAngle + (peerSubframe?.tiltDeg ?? 0) + (peerDoze?.angleDegrees ?? 0));
-          }
-          // 2차 모션 합성: 걷기는 접지 스쿼시·서브프레임 탄성, 대기는 상체 호흡·절차적 깜빡임.
-          const peerSquashRaw = studioGaitSquashScale(peerWalkDistance, peerGaitStride, target.moving, reducedMotion.matches);
-          const peerSquash = locomotion.squashScale === 1 ? peerSquashRaw
-            : { scaleX: scaleAroundOne(peerSquashRaw.scaleX, locomotion.squashScale), scaleY: scaleAroundOne(peerSquashRaw.scaleY, locomotion.squashScale) };
-          const peerIdleBreath = studioIdleUpperBodyBreathScale(time, studioSmoothingPhaseSeed(peerId), target.moving, Boolean(peerSeat), reducedMotion.matches);
-          const peerBlinkY = !target.moving && !peerSeat
-            ? studioBlinkScaleY(time, studioSmoothingPhaseSeed(peerId), reducedMotion.matches) : 1;
-          visual.sprite.setScale(
-            visual.sprite.scaleX * peerSquash.scaleX * peerIdleBreath.scaleX * (peerSubframe?.scaleX ?? 1),
-            visual.sprite.scaleY * peerSquash.scaleY * peerIdleBreath.scaleY * (peerSubframe?.scaleY ?? 1) * peerBlinkY,
-          );
+          // 등신 비율 잠금: 동료 스프라이트에도 중첩 스케일·흔들림을 적용하지 않는다.
+          visual.sprite.setAngle((peerEmotePose?.bodyAngle ?? 0) + (peerDoze?.angleDegrees ?? 0));
           visual.sprite.setTint(resolveStudioHdActorTint({
             phase: activeDayPhase, style: artStyle, spaceTheme: spaceTheme, facing: target.facing,
             focused: visual.activity === "focused", away: visual.activity === "away", ghost: false,
@@ -2588,14 +2565,9 @@ export function StudioVirtualSpacePhaserCanvas({
           const npcBreathY = !view.moving && !attached && !npcEmotePose
             ? breathOffset(studioBreathPhaseAt(time, studioSmoothingPhaseSeed(view.id)), "idle")
             : 0;
-          const npcIdleSway = !view.moving && !attached && !npcEmotePose
-            ? studioIdleSwayOffsetX(time, studioSmoothingPhaseSeed(view.id), reducedMotion.matches) : 0;
-          const npcRockAngle = studioGaitRockAngle(view.distance, npcGaitStride, view.moving, reducedMotion.matches);
-          const npcSubframe = view.moving
-            ? studioImageSpriteSubframeMotion(view.distance, npcGaitStride, 4, view.moving, reducedMotion.matches) : null;
-          npc.sprite.setPosition(npcDisplay.x + npcGait.offsetX + npcIdleSway + (npcEmotePose?.bodyX ?? 0),
-            npcDisplay.y + npcGait.offsetY + (npcEmotePose?.bodyY ?? 0) + npcBreathY + (npcSubframe?.liftPx ?? 0))
-            .setAngle((npcEmotePose?.bodyAngle ?? 0) + npcRockAngle + (npcSubframe?.tiltDeg ?? 0))
+          npc.sprite.setPosition(npcDisplay.x + (npcEmotePose?.bodyX ?? 0),
+            npcDisplay.y + npcGait.offsetY + (npcEmotePose?.bodyY ?? 0) + npcBreathY)
+            .setAngle(npcEmotePose?.bodyAngle ?? 0)
             .setDepth(studioTownDepthForPoint(manifest, groundPoint, 1_000)).setData("seatAttached", Boolean(attached));
           npc.sprite.setData("activityStage", view.activityStage).setData("activityAnchorId", view.activityAnchorId);
           npc.sprite.setData("walkDistance", view.distance).setData("actorReaction", npcEmote).setData("actorNpcPhase", view.phase);
@@ -2616,15 +2588,6 @@ export function StudioVirtualSpacePhaserCanvas({
             studioEmoteFacing(npcEmotePose) ?? (lookAtPlayer ? studioFacingToward(currentPoint.x - view.point.x, currentPoint.y - view.point.y) : npcBaseFacing),
             npcEmote === "wave" && !view.moving && !attached ? "wave" : talking ? "talk" : view.animation);
           spriteCrossfades?.commit(npc.sprite, time, crossfadeEnabled);
-          // 2차 모션 합성: 걷기는 접지 스쿼시·서브프레임 탄성, 대기는 상체 호흡·절차적 깜빡임.
-          const npcSquash = studioGaitSquashScale(view.distance, npcGaitStride, view.moving, reducedMotion.matches);
-          const npcIdleBreath = studioIdleUpperBodyBreathScale(time, studioSmoothingPhaseSeed(view.id), view.moving, Boolean(attached), reducedMotion.matches);
-          const npcBlinkY = !view.moving && !attached
-            ? studioBlinkScaleY(time, studioSmoothingPhaseSeed(view.id), reducedMotion.matches) : 1;
-          npc.sprite.setScale(
-            npc.sprite.scaleX * npcSquash.scaleX * npcIdleBreath.scaleX * (npcSubframe?.scaleX ?? 1),
-            npc.sprite.scaleY * npcSquash.scaleY * npcIdleBreath.scaleY * (npcSubframe?.scaleY ?? 1) * npcBlinkY,
-          );
           npc.shadow.setPosition(npcDisplay.x, npcDisplay.y + 1).setDepth(studioTownDepthForPoint(manifest, view.point, 990)).setVisible(!attached)
             .setAlpha(npcFadeAlpha * studioGaitShadowAlpha(view.distance, npcGaitStride, view.moving, reducedMotion.matches, 1));
           const headY = npc.sprite.y - npc.sprite.displayHeight * npc.sprite.originY;

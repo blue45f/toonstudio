@@ -19,6 +19,8 @@ export interface Office2dCoworkerPlan {
   readonly seat: Office2dSeatVisual;
   readonly roomId: string;
   readonly character: Office2dCharacterKey;
+  /** 동료별 고유 포인트 색(중복 외형 방지용 오라·배지 색). */
+  readonly accent: string;
   readonly titleKo: string;
   readonly titleEn: string;
   /** 낮을수록 먼저 자리를 내준다(팀원이 늘 때 줄이는 순서). */
@@ -26,16 +28,28 @@ export interface Office2dCoworkerPlan {
 }
 
 /**
- * 공정 방별 상주 직군과 직함. 한 방에 여럿이 앉으면 캐릭터를 돌려 써서 같은 얼굴이 줄지어 앉지 않게 한다
- * (작화 오픈 데스크의 대화형 NPC가 작화 캐릭터이므로 어시스턴트는 다른 캐릭터로 채운다).
+ * 공정 방별 상주 직군과 직함. 한 방에 여럿이 앉으면 캐릭터·직함·포인트 색을 모두 달리 배정해
+ * 같은 얼굴·같은 스타일이 줄지어 앉지 않게 한다.
  */
-const ROOM_STAFF: Readonly<Record<string, { readonly characters: readonly Office2dCharacterKey[]; readonly ko: string; readonly en: string; readonly seats: number }>> = Object.freeze({
-  "hq-story-room": { characters: ["writer"], ko: "콘티 작가", en: "Storyboard writer", seats: 1 },
-  "hq-ink-bay": { characters: ["bgartist", "editor", "writer"], ko: "선화 어시스턴트", en: "Inking assistant", seats: 3 },
-  "hq-color-lab": { characters: ["colorist"], ko: "채색 어시스턴트", en: "Color assistant", seats: 1 },
-  "hq-bg3d-lab": { characters: ["modeler"], ko: "3D 배경 작가", en: "3D background artist", seats: 1 },
-  "hq-lettering-desk": { characters: ["letterer"], ko: "식자 담당", en: "Letterer", seats: 1 },
-  "hq-publish-desk": { characters: ["pd"], ko: "연재 매니저", en: "Publishing manager", seats: 1 },
+const ROOM_STAFF: Readonly<Record<string, {
+  readonly characters: readonly Office2dCharacterKey[];
+  readonly accents: readonly string[];
+  readonly titlesKo: readonly string[];
+  readonly titlesEn: readonly string[];
+  readonly seats: number;
+}>> = Object.freeze({
+  "hq-story-room": { characters: ["writer"], accents: ["#6366f1"], titlesKo: ["콘티 작가"], titlesEn: ["Storyboard writer"], seats: 1 },
+  "hq-ink-bay": {
+    characters: ["bgartist", "editor", "artist"],
+    accents: ["#0ea5e9", "#f59e0b", "#ec4899"],
+    titlesKo: ["배경 선화 어시스턴트", "원고 검수 어시스턴트", "메인 선화 어시스턴트"],
+    titlesEn: ["Background inker", "Editorial inker", "Lead inking assistant"],
+    seats: 3,
+  },
+  "hq-color-lab": { characters: ["colorist"], accents: ["#f43f5e"], titlesKo: ["수채화 채색 어시스턴트"], titlesEn: ["Color assistant"], seats: 1 },
+  "hq-bg3d-lab": { characters: ["modeler"], accents: ["#14b8a6"], titlesKo: ["3D 배경 테크니컬 작가"], titlesEn: ["3D background artist"], seats: 1 },
+  "hq-lettering-desk": { characters: ["letterer"], accents: ["#8b5cf6"], titlesKo: ["효과음·식자 디자이너"], titlesEn: ["SFX & Letterer"], seats: 1 },
+  "hq-publish-desk": { characters: ["pd"], accents: ["#10b981"], titlesKo: ["연재·커뮤니티 매니저"], titlesEn: ["Publishing manager"], seats: 1 },
 });
 
 export const OFFICE2D_COWORKER_MAX = Object.values(ROOM_STAFF).reduce((sum, staff) => sum + staff.seats, 0);
@@ -70,8 +84,9 @@ export function planOffice2dCoworkers(scene: Office2dScene, seed = 0): readonly 
         seat,
         roomId,
         character: staff.characters[index % staff.characters.length] ?? "artist",
-        titleKo: staff.ko,
-        titleEn: staff.en,
+        accent: staff.accents[index % staff.accents.length] ?? "#a78bfa",
+        titleKo: staff.titlesKo[index % staff.titlesKo.length] ?? "스튜디오 동료",
+        titleEn: staff.titlesEn[index % staff.titlesEn.length] ?? "Studio coworker",
         priority: index === 0 ? 2 : 1,
       }));
     });
@@ -151,7 +166,7 @@ export class Office2dCoworkerCrowd {
   constructor(scene: Office2dScene | null, now: number, private readonly blocker: Office2dCoworkerBlocker) {
     if (!scene) return;
     for (const plan of planOffice2dCoworkers(scene)) {
-      const actor = createOffice2dActor({ id: plan.id, kind: "ambient", character: plan.character, accent: "#a78bfa", name: `NPC · ${plan.titleKo}`,
+      const actor = createOffice2dActor({ id: plan.id, kind: "ambient", character: plan.character, accent: plan.accent, name: `NPC · ${plan.titleKo}`,
         x: plan.seat.anchor.x, y: plan.seat.anchor.y, facing: plan.seat.facing, now });
       actor.seat = plan.seat;
       actor.alpha = 0;

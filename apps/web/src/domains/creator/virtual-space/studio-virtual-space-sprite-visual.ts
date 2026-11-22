@@ -280,13 +280,13 @@ export function createStudioSpriteVisualApplier(deps: StudioSpriteVisualApplierD
     nextState: StudioCharacterMotionState,
   ) => {
     applySpriteVisualBody(sprite, skin, nextFacing, nextState);
-    const settle = studioPoseSettleScaleY({
+    // 등신 비율 잠금: 포즈 전이 중에도 발 접지 기준 displaySize와 배율을 변형하지 않는다.
+    void studioPoseSettleScaleY({
       state: nextState,
       previousState: (sprite.getData("visualPreviousMotionState") as StudioCharacterMotionState | null | undefined) ?? null,
       elapsedMs: scene.time.now - Number(sprite.getData("visualStateStartedAt") ?? scene.time.now),
       reducedMotion: reducedMotion.matches,
     });
-    if (settle !== 1) sprite.setScale(sprite.scaleX, sprite.scaleY * settle);
   };
 
   const applyAvatarVisual = (

@@ -311,7 +311,11 @@ describe("먼지 파티클 · 12종 캐릭터 모션 · 코너 슬라이딩 · �
     const actor = createOffice2dActor({ id: "self", kind: "self", character: "artist", accent: "#f43f5e", name: "작가", x: 100, y: 100, facing: "right", now: 0 });
 
     particles.emitFootstepDust(100, 100, { surface: "wood", vx: 180, vy: 0, sprint: false });
-    expect(particles.count).toBeGreaterThanOrEqual(3);
+    expect(particles.count).toBeGreaterThanOrEqual(1);
+    expect(particles.count).toBeLessThanOrEqual(2);
+    const afterWalk = particles.count;
+    particles.emitFootstepDust(100, 100, { surface: "wood", vx: 270, vy: 0, sprint: true });
+    expect(particles.count - afterWalk).toBeGreaterThanOrEqual(4);
     particles.emitLandingDust(100, 100, "terrace", false);
     expect(particles.count).toBeGreaterThanOrEqual(10);
     particles.emitTypingRipple(100, 100);

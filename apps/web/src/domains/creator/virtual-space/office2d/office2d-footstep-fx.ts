@@ -159,12 +159,13 @@ const SPRINT_SPEED_THRESHOLD = 245;
 export class Office2dFootstepFx {
   private jumpZ = 0;
   private jumpVz = 0;
+  private wasSprinting = false;
 
   get jumpHeight(): number {
     return this.jumpZ;
   }
 
-  /** 공중이 아니고 앉아 있지 않으면 경쾌한 점프를 시작한다. */
+  /** 공중이 아니고 앉아 있지 않으면 경쾌한 점프를 시작한다(등신 비율 잠금: 크기 요동 0). */
   triggerJump(
     actor: Office2dActor,
     particles: Office2dParticles,
@@ -176,7 +177,6 @@ export class Office2dFootstepFx {
     this.jumpVz = JUMP_VELOCITY;
     this.jumpZ = 0.6;
     actor.jumpHeight = this.jumpZ;
-    actor.squash = 0.085;
     if (!reducedMotion) {
       particles.emitLandingDust(actor.x, actor.y, surface, true);
       particles.emit("ring", actor.x, actor.y, 1, 0.8);
@@ -187,7 +187,7 @@ export class Office2dFootstepFx {
     return true;
   }
 
-  /** 매 프레임 점프 중력을 적분하고 착지 시 먼지 링·바닥 재질 파문·착지음·스쿼시를 발동한다. */
+  /** 매 프레임 점프 중력을 적분하고 착지 시 원형 먼지 링·바닥 재질 파문·착지음을 발동한다. */
   stepJump(
     actor: Office2dActor,
     dt: number,
@@ -212,7 +212,6 @@ export class Office2dFootstepFx {
       this.jumpZ = 0;
       this.jumpVz = 0;
       actor.jumpHeight = 0;
-      actor.squash = -0.095;
       if (!reducedMotion) {
         particles.emitLandingDust(actor.x, actor.y, surface, false);
         const recipe = resolveFloorMaterialFootstepVfx(surface);
@@ -232,7 +231,7 @@ export class Office2dFootstepFx {
     return false;
   }
 
-  /** 보행 반주기 착지 및 방향 급전환 시 바닥 재질별 발소리(Web Audio)와 파문·먼지·대시 스피드라인을 낸다. */
+  /** 보행 반주기 착지·달리기 진입·급회전/급정지 시 바닥 재질별 발소리와 먼지 뭉게구름을 낸다. */
   onMovementStep(
     actor: Office2dActor,
     particles: Office2dParticles,
@@ -241,7 +240,20 @@ export class Office2dFootstepFx {
     reducedMotion: boolean,
     muted: boolean,
   ): void {
-    if (actor.seat || this.jumpZ > 0.5) return;
+    if (actor.seat || this.jumpZ > 0.5) {
+      this.wasSprinting = false;
+      return;
+    }
+    const isSprinting = actor.moving && (sprint || actor.speed >= SPRINT_SPEED_THRESHOLD);
+    if (isSprinting && !this.wasSprinting) {
+      if (!reducedMotion) {
+        particles.emitFootstepDust(actor.x, actor.y, { surface, vx: actor.vx, vy: actor.vy, sprint: true, skid: false });
+      }
+      if (!muted) {
+        playStudioSfxSound("sprint-start", 0.8);
+      }
+    }
+    this.wasSprinting = isSprinting;
     if (actor.skidTriggered) {
       if (!reducedMotion) {
         particles.emitFootstepDust(actor.x, actor.y, {
@@ -260,7 +272,6 @@ export class Office2dFootstepFx {
     if (!actor.footstepTriggered) return;
 
     const footX = actor.x + actor.footstepSide * 5;
-    const isSprinting = sprint || actor.speed >= SPRINT_SPEED_THRESHOLD;
     if (!reducedMotion) {
       particles.emitFootstepDust(footX, actor.y, {
         surface,
@@ -289,6 +300,7 @@ export class Office2dFootstepFx {
         foot,
         surface,
         volume: Math.min(1, spec.loudness * (0.48 + 0.52 * speedFactor) * footFactor),
+        ...(isSprinting ? { sprinting: true } : {}),
       });
     }
   }
@@ -362,6 +374,14 @@ export class Office2dFootstepFx {
 
   onSeatSettle(muted: boolean): void {
     if (!muted) playStudioSfxSound("seat-settle", 0.9);
+  }
+
+  onSeatStand(muted: boolean): void {
+    if (!muted) playStudioSfxSound("seat-stand", 0.85);
+  }
+
+  onPortal(muted: boolean): void {
+    if (!muted) playStudioSfxSound("portal", 0.9);
   }
 
   onEmote(

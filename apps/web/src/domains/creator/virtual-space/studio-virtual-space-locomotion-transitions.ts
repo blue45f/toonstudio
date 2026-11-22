@@ -77,10 +77,10 @@ export function advanceBreathPhase(phase: number, dt: number): number {
   return (phase + 0.25 * safeDt) % 1;
 }
 
-/** 호흡 진폭(px): idle에서만, 초당 미세하게. */
+/** 호흡 진폭(px): idle에서만, 발 접지가 흔들리지 않는 극미세 진폭. */
 export function breathOffset(breathPhase: number, mode: StudioLocomotionMode): number {
   if (mode !== "idle") return 0;
-  return Math.sin(breathPhase * Math.PI * 2) * 1.6;
+  return Math.sin(breathPhase * Math.PI * 2) * 0.25;
 }
 
 /** 카메라 데드존: 플레이어가 데드존 반경 안에 있으면 카메라 목표를 고정한다. */
@@ -103,8 +103,8 @@ export function applyCameraDeadzone(input: {
 /** 카메라 데드존 기본 반경(px). */
 export const STUDIO_CAMERA_DEADZONE_RADIUS = 36;
 
-/** 회전 린: 각속도(deg/s) → 기울기 각도(deg), 부호는 회전 방향. */
-export function turnLeanAngle(angularVelocityDegPerSec: number, maxLeanDeg: number = 9): number {
+/** 회전 린: 각속도(deg/s) → 절제된 기울기 각도(deg), 부호는 회전 방향. */
+export function turnLeanAngle(angularVelocityDegPerSec: number, maxLeanDeg: number = 2.6): number {
   const safe = Number.isFinite(angularVelocityDegPerSec) ? angularVelocityDegPerSec : 0;
   const normalized = clamp01Local(Math.abs(safe) / 540);
   return Math.sign(safe) * easeOutCubic(normalized) * maxLeanDeg;

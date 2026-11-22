@@ -545,10 +545,8 @@ export class Office2dRenderer {
     const foot = seated ? office2dActorFoot(actor) : { x: smooth.x, y: smooth.y };
     const footX = foot.x + emoteTransform.offsetX + rest.offsetX;
     const footY = (seated ? foot.y : smooth.y + 3) + rest.offsetY;
-    const emoteScaleX = seated ? 1 : (emoteTransform.scaleX ?? 1);
-    const emoteScaleY = seated ? 1 : (emoteTransform.scaleY ?? 1);
-    const height = ACTOR_HEIGHT * bob.scaleY * emoteScaleY;
-    const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height) * (seated ? 1 : bob.scaleX * emoteScaleX);
+    const height = ACTOR_HEIGHT;
+    const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height);
     ctx.globalAlpha = opacity;
     paintOffice2dActorSpatialAura(ctx, actor, frame, frame.actors);
     if (actor.id === frame.selfId && !seated) {

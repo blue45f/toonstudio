@@ -73,13 +73,11 @@ describe("업무 공간의 걷기 표현", () => {
 });
 
 describe("몸의 보행 위상", () => {
-  it("접지 순간에만 몸이 낮아지고 그림자와 같은 거리에서 같은 위상을 쓴다", () => {
+  it("접지 순간에만 몸이 절제된 진폭(-2px)으로 낮아지고 그림자와 같은 거리 위상을 쓴다", () => {
     const stride = 108;
-    // 그림자가 가장 작은 27px가 두 발 접지다. 몸도 정확히 그때 가장 낮아야 한다.
     const planted = studioGaitBodyOffset(27, stride, true, false);
     expect(planted.offsetY).toBeLessThan(0);
-    // cos(π) = -1 이므로 접지 지점은 정확히 두 배 리프트만큼 내려간다.
-    expect(planted.offsetY).toBeCloseTo(-7, 6);
+    expect(planted.offsetY).toBeCloseTo(-2, 6);
     expect(studioGaitBodyOffset(0, stride, true, false).offsetY).toBeCloseTo(0, 6);
     expect(studioGaitBodyOffset(54, stride, true, false).offsetY).toBeCloseTo(0, 6);
 
@@ -87,24 +85,18 @@ describe("몸의 보행 위상", () => {
       const distance = step;
       const shadow = studioGaitShadowScale(distance, stride, true, false);
       const body = studioGaitBodyOffset(distance, stride, true, false);
-      // 둘 다 같은 (1 - cos)에서 나오므로 몸이 내리는 높이는 그림자가 줄어든 높이의 고정 배다.
-      // 비례가 깨지면 그림자와 캐릭터가 따로 동동하지 않는다.
       const shadowDip = 1 - shadow;
       const bodyDip = -body.offsetY;
       expect(shadowDip === 0, `거리 ${distance}`).toBe(bodyDip === 0);
-      if (shadowDip > 0) expect(bodyDip / shadowDip, `거리 ${distance}`).toBeCloseTo(87.5, 6);
+      if (shadowDip > 0) expect(bodyDip / shadowDip, `거리 ${distance}`).toBeCloseTo(25, 6);
     }
   });
 
-  it("좌우 흔들림은 한 보행 주기에서 두 번 방향을 바꾼다", () => {
+  it("좌우 흔들림(sway)을 제거해 보행 중 수평 요동이 0이다", () => {
     const stride = 108;
-    const first = studioGaitBodyOffset(13.5, stride, true, false).offsetX;
-    const second = studioGaitBodyOffset(40.5, stride, true, false).offsetX;
-    expect(first).toBeGreaterThan(0);
-    expect(second).toBeLessThan(0);
-    expect(first).toBeCloseTo(-second, 6);
-    // 두 번째 보행 주기도 같은 자리에서 같은 흔들림으로 반복된다.
-    expect(studioGaitBodyOffset(13.5 + stride, stride, true, false).offsetX).toBeCloseTo(first, 6);
+    for (const d of [0, 13.5, 27, 40.5, 54, 13.5 + stride]) {
+      expect(studioGaitBodyOffset(d, stride, true, false).offsetX).toBe(0);
+    }
   });
 
   it("정지·벽·모션 감소·입력 오류에서는 몸이 완전히 고정된다", () => {
@@ -120,15 +112,14 @@ describe("몸의 보행 위상", () => {
     }
   });
 
-  it("보행 클립이 있는 내장 장소에서도 몸이 그림자와 함께 움직인다", () => {
+  it("보행 클립이 있는 내장 장소에서도 좌우 요동 없이 상하 리듬만 그림자와 동기화된다", () => {
     const profile = studioPlayerLocomotionProfile(true);
     expect(profile.gaitDistancePerCycle).toBeDefined();
     const stride = profile.gaitDistancePerCycle!;
     const moving = studioGaitBodyOffset(27, stride, true, false);
     const idle = studioGaitBodyOffset(27, stride, false, false);
     expect(moving.offsetY).toBeLessThan(idle.offsetY);
-    expect(moving.offsetX).not.toBe(0);
-    // 기존 사용자 월드는 보폭이 없으므로 원본 속도와 흔들림을 그대로 유지한다.
+    expect(moving.offsetX).toBe(0);
     expect(studioPlayerLocomotionProfile(false).gaitDistancePerCycle).toBeUndefined();
   });
 });
@@ -166,85 +157,40 @@ describe("유효 보폭 단일화", () => {
   });
 });
 
-describe("걸음 위상 동기 2차 모션", () => {
-  it("흔들림은 보폭 한 주기 안에서 부호가 바뀌고 진폭이 1.1도를 넘지 않는다", () => {
+describe("걸음 위상 안정화 및 등신 비율 고정", () => {
+  it("보행 중 과도한 좌우 회전 흔들림과 접지 스쿼시를 제거해 항상 0도와 1.0 배율을 유지한다", () => {
     const stride = 84;
-    expect(studioGaitRockAngle(0, stride, true, false)).toBe(0);
-    expect(studioGaitRockAngle(stride / 8, stride, true, false)).toBeGreaterThan(0);
-    expect(studioGaitRockAngle(stride * 3 / 8, stride, true, false)).toBeLessThan(0);
-    for (let d = 0; d <= stride * 2; d += 3) {
-      expect(Math.abs(studioGaitRockAngle(d, stride, true, false))).toBeLessThanOrEqual(1.1);
+    for (let d = 0; d <= stride * 2; d += 7) {
+      expect(studioGaitRockAngle(d, stride, true, false)).toBe(0);
+      expect(studioGaitSquashScaleY(d, stride, true, false)).toBe(1);
+      expect(studioGaitSquashScale(d, stride, true, false)).toEqual({ scaleX: 1, scaleY: 1 });
     }
-    // 한 보폭이 지나면 같은 위상으로 돌아온다.
-    expect(studioGaitRockAngle(stride / 8 + stride, stride, true, false))
-      .toBeCloseTo(studioGaitRockAngle(stride / 8, stride, true, false), 10);
-  });
-
-  it("접지 스쿼시는 발이 닿는 위상에서 가장 눌리고 주기 끝에서 원복한다", () => {
-    const stride = 84;
-    expect(studioGaitSquashScaleY(0, stride, true, false)).toBeCloseTo(0.988, 10);
-    expect(studioGaitSquashScaleY(stride / 4, stride, true, false)).toBe(1);
-    expect(studioGaitSquashScaleY(stride / 2, stride, true, false)).toBeCloseTo(0.988, 10);
-  });
-
-  it("정지·벽·모션 감소에서는 흔들림과 스쿼시가 모두 중립이다", () => {
     expect(studioGaitRockAngle(30, 84, false, false)).toBe(0);
     expect(studioGaitRockAngle(30, 84, true, true)).toBe(0);
     expect(studioGaitSquashScaleY(0, 84, false, false)).toBe(1);
     expect(studioGaitSquashScaleY(0, 84, true, true)).toBe(1);
-    expect(studioGaitRockAngle(Number.NaN, 84, true, false)).toBe(0);
-    expect(studioGaitSquashScaleY(30, 0, true, false)).toBe(1);
-  });
-
-  it("접지 스쿼시 쌍은 세로 눌림의 60%를 가로 반동으로 돌려준다", () => {
-    const stride = 84;
-    const contact = studioGaitSquashScale(0, stride, true, false);
-    expect(contact.scaleY).toBeCloseTo(0.988, 10);
-    expect(contact.scaleX).toBeCloseTo(1 + 0.012 * 0.6, 10);
-    // 발이 떠오른 위상에서는 두 축 모두 원복한다.
-    expect(studioGaitSquashScale(stride / 4, stride, true, false)).toEqual({ scaleX: 1, scaleY: 1 });
-    // 정지·모션 감소에서는 두 축 모두 중립이다.
-    expect(studioGaitSquashScale(0, stride, false, false)).toEqual({ scaleX: 1, scaleY: 1 });
-    expect(studioGaitSquashScale(0, stride, true, true)).toEqual({ scaleX: 1, scaleY: 1 });
   });
 });
 
-describe("대기 생명감", () => {
-  it("무게 이동은 ±1.2px 안에서 5.9초 주기로 반복되고 시드마다 위상이 어긋난다", () => {
+describe("대기 접지 안정성", () => {
+  it("정지 중 좌우 흔들림과 몸 전체 찌그러짐(가짜 눈 깜빡임)이 항상 중립이다", () => {
     for (let t = 0; t <= 12_000; t += 250) {
-      expect(Math.abs(studioIdleSwayOffsetX(t, 0.3, false))).toBeLessThanOrEqual(1.2);
+      expect(studioIdleSwayOffsetX(t, 0.3, false)).toBe(0);
+      expect(studioBlinkScaleY(t, 0, false)).toBe(1);
     }
-    expect(studioIdleSwayOffsetX(1_234, 0.3, false)).toBeCloseTo(studioIdleSwayOffsetX(1_234 + 5_900, 0.3, false), 10);
-    expect(studioIdleSwayOffsetX(1_000, 0, false)).not.toBeCloseTo(studioIdleSwayOffsetX(1_000, 0.5, false), 3);
     expect(studioIdleSwayOffsetX(1_000, 0.3, true)).toBe(0);
-  });
-
-  it("깜빡임 대용 스쿼시는 대부분 1이고 간격 안에 한 번 0.986까지 눌렸다 돌아온다", () => {
-    let min = 1;
-    let dippedFrames = 0;
-    for (let t = 0; t <= 6_800; t += 10) {
-      const value = studioBlinkScaleY(t, 0, false);
-      if (value < 1) dippedFrames += 1;
-      min = Math.min(min, value);
-    }
-    expect(min).toBeCloseTo(0.986, 3);
-    // 110ms 창만 눌리므로 표본(10ms 간격) 기준 20개를 넘지 않는다.
-    expect(dippedFrames).toBeGreaterThan(0);
-    expect(dippedFrames).toBeLessThanOrEqual(20);
     expect(studioBlinkScaleY(1_000, 0.5, true)).toBe(1);
   });
 });
 
 describe("자리 비움 졸기 모션", () => {
-  it("주기 안에서는 고개가 아래로 떨어졌다 돌아오고, 주기 밖에서는 중립이다", () => {
-    // 시드 0이면 딥 구간은 0~1700ms, 가장 깊은 지점은 850ms.
+  it("주기 안에서는 과도한 흔들림 없이 미세하게(0.8px, 0.6도) 내려갔다 돌아오고 주기 밖에서는 중립이다", () => {
     const deepest = studioAwayDozeMotion(850, 0, false);
-    expect(deepest.offsetY).toBeCloseTo(2.4, 5);
-    expect(Math.abs(deepest.angleDegrees)).toBeCloseTo(1.8, 5);
+    expect(deepest.offsetY).toBeCloseTo(0.8, 5);
+    expect(Math.abs(deepest.angleDegrees)).toBeCloseTo(0.6, 5);
     expect(studioAwayDozeMotion(0, 0, false)).toEqual({ offsetY: 0, angleDegrees: 0 });
     expect(studioAwayDozeMotion(3_000, 0, false)).toEqual({ offsetY: 0, angleDegrees: 0 });
-    // 다음 주기에서 같은 위상이 반복된다.
-    expect(studioAwayDozeMotion(6_400 + 850, 0, false).offsetY).toBeCloseTo(2.4, 5);
+    expect(studioAwayDozeMotion(6_400 + 850, 0, false).offsetY).toBeCloseTo(0.8, 5);
   });
 
   it("시드가 다르면 위상과 기울기 방향이 어긋나고, 모션 감소에서는 항상 중립이다", () => {
@@ -255,7 +201,7 @@ describe("자리 비움 졸기 모션", () => {
   });
 });
 
-describe("이미지 스프라이트 서브프레임 인비트위닝 및 접지 그림자 농도", () => {
+describe("이미지 스프라이트 서브프레임 위상 및 접지 그림자 농도", () => {
   it("접지 순간 그림자 알파가 가장 짙어지고 공중에서 옅어지며 정지 시 기본 알파를 유지한다", () => {
     const stride = 108;
     const planted = studioGaitShadowAlpha(27, stride, true, false, 0.28);
@@ -266,31 +212,23 @@ describe("이미지 스프라이트 서브프레임 인비트위닝 및 접지 �
     expect(studioGaitShadowAlpha(27, stride, true, true, 0.28)).toBe(0.28);
   });
 
-  it("대기 상체 호흡은 부피를 보존하며 보행 중이거나 모션 감소 시 중립이다", () => {
-    const inhale = studioIdleUpperBodyBreathScale(950, 0, false, false, false);
-    expect(inhale.scaleY).toBeGreaterThan(1);
-    expect(inhale.scaleX).toBeLessThan(1);
+  it("대기·착석·보행 전 구간에서 상체 호흡 스케일 펌핑이 1.0으로 고정된다", () => {
+    expect(studioIdleUpperBodyBreathScale(950, 0, false, false, false)).toEqual({ scaleX: 1, scaleY: 1 });
+    expect(studioIdleUpperBodyBreathScale(950, 0, false, true, false)).toEqual({ scaleX: 1, scaleY: 1 });
     expect(studioIdleUpperBodyBreathScale(950, 0, true, false, false)).toEqual({ scaleX: 1, scaleY: 1 });
     expect(studioIdleUpperBodyBreathScale(950, 0, false, false, true)).toEqual({ scaleX: 1, scaleY: 1 });
   });
 
-  it("서브프레임 인비트위닝은 프레임 경계에서 변위가 0이고 프레임 중앙에서 연속 아크와 교번 기울기를 만든다", () => {
+  it("서브프레임은 위상(0~1)만 계산하고 추가 스케일·기울기·리프트 요동을 만들지 않는다", () => {
     const stride = 84;
-    // 프레임 0의 시작 경계 (distance = 0)
     const boundary0 = studioImageSpriteSubframeMotion(0, stride, 4, true, false);
-    expect(boundary0.liftPx).toBeCloseTo(0, 4);
-    expect(boundary0.tiltDeg).toBeCloseTo(0, 4);
-    // 프레임 0의 정중앙 (distance = 84 / 8 = 10.5)
+    expect(boundary0).toEqual({ subframePhase: 0, liftPx: 0, tiltDeg: 0, scaleX: 1, scaleY: 1 });
     const mid0 = studioImageSpriteSubframeMotion(10.5, stride, 4, true, false);
     expect(mid0.subframePhase).toBeCloseTo(0.5, 3);
-    expect(mid0.liftPx).toBeLessThan(0);
-    expect(mid0.tiltDeg).toBeGreaterThan(0);
-    expect(mid0.scaleY).toBeGreaterThan(1);
-    expect(mid0.scaleX).toBeLessThan(1);
-    // 프레임 1의 정중앙 (distance = 84 * 3 / 8 = 31.5) -> 기울기 부호 반전
-    const mid1 = studioImageSpriteSubframeMotion(31.5, stride, 4, true, false);
-    expect(mid1.tiltDeg).toBeLessThan(0);
-    // 정지 또는 모션 감소에서는 중립
+    expect(mid0.liftPx).toBe(0);
+    expect(mid0.tiltDeg).toBe(0);
+    expect(mid0.scaleX).toBe(1);
+    expect(mid0.scaleY).toBe(1);
     expect(studioImageSpriteSubframeMotion(10.5, stride, 4, false, false)).toEqual({
       subframePhase: 0,
       liftPx: 0,

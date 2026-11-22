@@ -398,7 +398,8 @@ describe("Office2dRuntime", () => {
     expect(actor.leanAngle).toBeGreaterThan(0.01);
     const walkingPose = office2dActorBob(actor, 1.0, false);
     expect(walkingPose.offsetY).toBe(0);
-    expect(walkingPose.scaleY).not.toBe(1);
+    expect(walkingPose.scaleX).toBe(1);
+    expect(walkingPose.scaleY).toBe(1);
     expect(walkingPose.shadowScale).toBeLessThanOrEqual(1);
 
     // 멈추면 gaitBlend가 감쇠하며 정지 프레임(0열)으로 매끄럽게 복귀한다.

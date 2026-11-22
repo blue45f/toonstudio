@@ -170,16 +170,18 @@ describe("2D 오피스의 기존 아바타 꾸미기 연결", () => {
   });
 });
 
-describe("배우별 자연스러운 숨쉬기", () => {
+describe("배우별 안정적 접지 및 등신 비율 고정", () => {
   const actor = (id: string) => createOffice2dActor({ id, kind: "ambient", character: "artist", accent: "#ab8dce", name: id, x: 0, y: 0, now: 0 });
 
-  it("동료별 호흡은 결정적이지만 서로 엇갈리며 보행 위상은 이동 거리를 따른다", () => {
+  it("대기·보행 전 구간에서 등신 비율(scale 1.0)이 고정되며 보행 위상은 이동 거리를 따른다", () => {
     const a = actor("coworker-a"), b = actor("coworker-b");
-    expect(office2dActorBob(a, 1, false)).toEqual(office2dActorBob(actor("coworker-a"), 1, false));
-    expect(office2dActorBob(a, 1, false).scaleY).not.toBe(office2dActorBob(b, 1, false).scaleY);
+    expect(office2dActorBob(a, 1, false)).toEqual({ offsetY: 0, scaleX: 1, scaleY: 1, tiltRad: 0, shadowScale: 1 });
+    expect(office2dActorBob(b, 1, false)).toEqual({ offsetY: 0, scaleX: 1, scaleY: 1, tiltRad: 0, shadowScale: 1 });
     advanceOffice2dActor(a, 3, 0, 1 / 60);
     advanceOffice2dActor(b, 3, 0, 1 / 60);
     expect(office2dActorBob(a, 1, false)).toEqual(office2dActorBob(b, 1, false));
+    expect(office2dActorBob(a, 1, false).scaleX).toBe(1);
+    expect(office2dActorBob(a, 1, false).scaleY).toBe(1);
   });
 
   it("동작 줄이기를 켜면 신원과 시간에 관계없이 정적 자세를 유지한다", () => {

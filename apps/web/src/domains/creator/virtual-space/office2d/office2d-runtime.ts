@@ -436,7 +436,6 @@ export class Office2dRuntime {
           Math.min(10, impact.impactSpeed / 36), Math.min(2, impact.impactSpeed / 190));
       }
       if (involvesSelf && other?.kind === "dynamic" && body) {
-        this.self.squash = Math.max(-0.085, this.self.squash - Math.min(0.06, impact.impactSpeed / 3200));
         if (nowMs - this.lastImpactAt > 300) {
           this.lastImpactAt = nowMs;
           callbacks.onSelfImpact?.(body.vx, body.vy);
@@ -590,10 +589,11 @@ export class Office2dRuntime {
     if (prevSeatId !== (selfSeat?.id ?? null)) {
       this.self.previousSeated = selfSeat !== null;
       this.self.poseTransition = 1;
+      const muted = this.options.getSoundMuted?.() === true;
       if (selfSeat) {
         if (!this.options.getReducedMotion()) this.particles.emitComboBurst("seat", selfSeat.anchor.x, selfSeat.anchor.y, 0.7);
-        this.footstepFx.onSeatSettle(this.options.getSoundMuted?.() === true);
-      }
+        this.footstepFx.onSeatSettle(muted);
+      } else this.footstepFx.onSeatStand(muted);
     }
   }
 
@@ -688,6 +688,7 @@ export class Office2dRuntime {
       if (!inside) this.armedPortals.set(portal.id, true);
       else if (this.armedPortals.get(portal.id) && this.self.moving) {
         this.armedPortals.set(portal.id, false);
+        this.footstepFx.onPortal(this.options.getSoundMuted?.() === true);
         callbacks.onPortal?.(portal);
       }
     }
