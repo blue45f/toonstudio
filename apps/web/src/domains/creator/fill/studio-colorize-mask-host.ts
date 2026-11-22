@@ -11,6 +11,11 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  colorizeLineartWithWatershed,
+  type WatershedColorHint,
+  type WatershedColorizeOptions,
+} from "../imaging-pro/studio-watershed-lineart-colorizer";
+import {
   encodeStudioAutoColorHintImageToPngDataUrl,
   loadStudioAutoColorHintImageFromSrc,
 } from "../studio-auto-color-hints-image-source";
@@ -313,6 +318,64 @@ export function bakeStudioColorizeMaskWithSmartGap(input: {
     paintedRegionCount: paintedRegions.size,
     sealedGapCount: maxSealedGapCount,
     absorbedPinholeCount: totalAbsorbedPinholes,
+    nextMaskState,
+  };
+}
+
+/**
+ * G'MIC/Krita 식 우선순위 큐 Watershed 선화 자동 플랫 채색 엔진으로 힌트 마스크를 굽는다.
+ * 입력 `lineArt`는 절대 수정하지 않으며, 경계 침범을 최소화하고 안티앨리어싱 팽창으로 밑색을 생성한다.
+ */
+export function bakeStudioColorizeMaskWithWatershed(input: {
+  readonly lineArt: AdvancedFillImageDataLike;
+  readonly state: StudioColorizeMaskState;
+  readonly watershed?: WatershedColorizeOptions;
+}): StudioColorizeSmartGapBakeResult {
+  const { lineArt, state } = input;
+  const normalized = normalizeColorizeParams(state.params);
+  if (!normalized.ok) return { ok: false, reason: normalized.reason };
+  if (state.hints.length === 0) {
+    return { ok: false, reason: "힌트 획이 없어요. 선화 위에 색 힌트를 먼저 그어 주세요." };
+  }
+  const hints: WatershedColorHint[] = [];
+  for (const stroke of state.hints) {
+    if (!stroke.transparent && !isValidColorizeHex(stroke.colorHex)) {
+      return { ok: false, reason: `힌트 색 형식이 올바르지 않아요: ${stroke.colorHex}` };
+    }
+    if (stroke.points.length === 0) return { ok: false, reason: "점이 없는 힌트 획이 있어요." };
+    const rgba = stroke.transparent ? ([0, 0, 0, 0] as const) : colorizeHexToRgba(stroke.colorHex);
+    if (!rgba) return { ok: false, reason: `힌트 색을 해석할 수 없어요: ${stroke.colorHex}` };
+    for (let idx = 0; idx < stroke.points.length; idx += 1) {
+      const pt = stroke.points[idx]!;
+      hints.push({
+        id: `${stroke.id}#${idx}`,
+        x: pt.x,
+        y: pt.y,
+        r: rgba[0],
+        g: rgba[1],
+        b: rgba[2],
+        a: rgba[3],
+        radiusPx: Math.min(4, Math.max(0, Math.round(stroke.radiusPx * 0.5))),
+        transparent: stroke.transparent,
+      });
+    }
+  }
+  const params = normalized.params;
+  const nextRevision = colorizeMaskRevision({ ...state, params });
+  const nextMaskState = markColorizeMaskBaked({ ...state, params }, nextRevision);
+  const res = colorizeLineartWithWatershed(lineArt, hints, {
+    gapSealRadiusPx: params.gapCloseHintPx > 0 ? Math.min(4, Math.ceil(params.gapCloseHintPx * 0.25)) : 0,
+    antiAliasExpandPx: 1,
+    ...input.watershed,
+  });
+  const paintedRegionCount = Object.values(res.stats.regionPixelCounts).filter((count) => count > 0).length;
+  return {
+    ok: true,
+    imageData: res.imageData,
+    paintedPixelCount: res.stats.coloredPixelCount,
+    paintedRegionCount,
+    sealedGapCount: 0,
+    absorbedPinholeCount: 0,
     nextMaskState,
   };
 }

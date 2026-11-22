@@ -8,6 +8,18 @@
  */
 
 import {
+  STUDIO_FLUID_WATERCOLOR_WGSL,
+  createFluidWatercolorGrid,
+  depositFluidWatercolorDab,
+  measureFluidWatercolorDiagnostics,
+  renderFluidWatercolorRgba,
+  stepFluidWatercolorCpu,
+  type FluidPaperGrainPreset,
+  type FluidWatercolorDiagnostics,
+  type FluidWatercolorSimParams,
+} from "../../imaging-pro/studio-fluid-watercolor-sim";
+
+import {
   clamp01,
   clampNumber,
   detCos,
@@ -717,4 +729,61 @@ export function runRebelleWatercolorMetallicPreview(
     });
   }
   return compositeWatercolorAndMetallicRgba(state, heightmap, { metallicPigment });
+}
+
+export interface RebelleShallowWaterPreviewResult {
+  readonly width: number;
+  readonly height: number;
+  readonly rgba: Uint8ClampedArray;
+  readonly diagnostics: FluidWatercolorDiagnostics;
+  readonly wgslShader: string;
+}
+
+/**
+ * 클린룸 2D Shallow-Water 유체 수채화(WGSL Compute + CPU 동등 엔진)로
+ * 중력 기울기·모세관 확산·종이 골짜기 과립화·백런 미리보기를 실행한다.
+ */
+export function runRebelleShallowWaterFluidPreview(
+  options: RunRebellePreviewOptions & {
+    readonly simParams?: Partial<FluidWatercolorSimParams>;
+  },
+): RebelleShallowWaterPreviewResult {
+  const width = clampDimension(options.width ?? 48, 48);
+  const height = clampDimension(options.height ?? 48, 48);
+  const steps = Math.max(1, Math.min(48, Math.trunc(options.steps ?? 10)));
+  const paperPreset: FluidPaperGrainPreset =
+    options.presetId === "hot-press"
+      ? "hot-press"
+      : options.presetId === "linen-canvas"
+        ? "rough"
+        : "cold-press";
+  const grid = createFluidWatercolorGrid(width, height, {
+    paperPreset,
+    seed: options.seed ?? 20261122,
+    pigmentColor: options.pigmentColor ?? { r: 0.14, g: 0.34, b: 0.68 },
+  });
+  depositFluidWatercolorDab(grid, {
+    centerX: width * 0.5,
+    centerY: height * 0.5,
+    radius: Math.min(width, height) * 0.34,
+    waterAmount: 0.92,
+    pigmentAmount: 0.78,
+  });
+  stepFluidWatercolorCpu(
+    grid,
+    {
+      gravityX: (options.tiltX ?? 0.04) * 3,
+      gravityY: (options.tiltY ?? 0.08) * 3,
+      ...options.simParams,
+    },
+    steps,
+  );
+  const frame = renderFluidWatercolorRgba(grid);
+  return {
+    width: frame.width,
+    height: frame.height,
+    rgba: frame.data,
+    diagnostics: measureFluidWatercolorDiagnostics(grid),
+    wgslShader: STUDIO_FLUID_WATERCOLOR_WGSL,
+  };
 }
