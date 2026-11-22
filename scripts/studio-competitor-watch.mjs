@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { htmlToText } from "./lib/html-text.mjs";
+import { escapeMarkdownTableCell } from "./lib/safe-text-serialization.mjs";
 
 import {
   STUDIO_COMPETITOR_REGISTRY_PATH,
@@ -174,7 +175,7 @@ export async function buildStudioCompetitorWatchReport(registry, options = {}) {
 }
 
 function escapeMarkdown(value) {
-  return String(value ?? "").replaceAll("|", "\\|").replace(/\s+/gu, " ").trim();
+  return escapeMarkdownTableCell(value, { collapseWhitespace: true });
 }
 
 export function renderStudioCompetitorWatchMarkdown(report) {

@@ -61,7 +61,7 @@ const statusBadgeClass = (status: DialogueReviewStatus | null, untranslated: boo
     untranslated
       ? "border-line bg-card text-fg-4"
       : status === "approved"
-        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        ? "border-good/40 bg-good/10 text-good"
         : status === "needs-edit"
           ? "border-warn/40 bg-warn/10 text-warn"
           : "border-line bg-card text-fg-3"

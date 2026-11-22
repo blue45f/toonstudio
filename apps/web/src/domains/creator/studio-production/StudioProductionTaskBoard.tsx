@@ -87,8 +87,8 @@ function selectedValues(target: HTMLSelectElement): readonly string[] {
 }
 
 function taskTone(status: ProductionTaskStatus): string {
-  if (status === "done") return "border-emerald-500/30 bg-emerald-500/10";
-  if (status === "blocked") return "border-red-500/30 bg-red-500/10";
+  if (status === "done") return "border-good/30 bg-good/10";
+  if (status === "blocked") return "border-bad/30 bg-bad/10";
   if (status === "doing") return "border-accent/30 bg-accent-soft";
   return "border-line bg-raised";
 }
@@ -273,7 +273,7 @@ function TaskEditor({
         <div className="h-full rounded-full bg-accent" style={{ width: `${task.progress}%` }} />
       </div>
 
-      {conflicted ? <div className="mt-3 rounded-lg border border-amber-500/40 p-3 text-sm" role="alert">
+      {conflicted ? <div className="mt-3 rounded-lg border border-warn/40 p-3 text-sm" role="alert">
         <p>{bt("다른 곳에서 이 작업이 변경되었습니다. 작성 중인 입력은 유지했으며 저장·완료·삭제는 중지했습니다.", "This task changed elsewhere. Your input is preserved; save, complete and delete are blocked.")}</p>
         <button type="button" className="mt-2 min-h-11 rounded-lg border border-line px-3" disabled={pending} onClick={() => { setEditing(newTaskEdit(task)); setError(null); }}>{bt("입력 대신 최신 작업 불러오기", "Discard input and load latest task")}</button>
       </div> : dirty ? <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-2">
@@ -478,14 +478,14 @@ function TaskEditor({
               />
             </label>
           ) : null}
-          {error ? <p className="mt-3 text-xs font-semibold text-red-600" role="alert">{error}</p> : null}
+          {error ? <p className="mt-3 text-xs font-semibold text-bad" role="alert">{error}</p> : null}
           <div className="mt-3 flex flex-wrap justify-between gap-2">
             <button
               type="button"
               className={buttonClass({
                 variant: "outline",
                 size: "sm",
-                className: "border-red-500/40 text-red-600 hover:border-red-500 hover:bg-red-500/10",
+                className: "border-bad/40 text-bad hover:border-bad hover:bg-bad/10",
               })}
               onClick={remove}
               disabled={pending || !canEdit || dirty || conflicted}
@@ -504,7 +504,7 @@ function TaskEditor({
             </button>
           </div>
           {draft.dependencyIds.some((id) => !taskById.has(id)) ? (
-            <p className="mt-3 text-xs text-red-600" role="alert">
+            <p className="mt-3 text-xs text-bad" role="alert">
               존재하지 않는 선행 작업이 포함되어 있습니다. 선택을 다시 저장해 주세요.
             </p>
           ) : null}

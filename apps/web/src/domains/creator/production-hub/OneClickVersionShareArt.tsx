@@ -85,13 +85,13 @@ export function VersionThumbnailArt({ snapshotId, name, className }: {
     <circle cx={160 - dotX * 0.5} cy={90 - dotY * 0.4} r="9" fill={mid} opacity={0.35} />
     {/* 쌓인 원고 페이지 */}
     <g transform={`rotate(${rotA} 80 45)`}>
-      <rect x="42" y="19" width="76" height="52" rx="4" fill="#ffffff" stroke={deep} strokeOpacity=".25" />
+      <rect x="42" y="19" width="76" height="52" rx="4" fill="var(--color-card)" stroke={deep} strokeOpacity=".25" />
     </g>
     <g transform={`rotate(${rotB} 80 45)`}>
-      <rect x="42" y="19" width="76" height="52" rx="4" fill="#ffffff" stroke={deep} strokeOpacity=".3" />
+      <rect x="42" y="19" width="76" height="52" rx="4" fill="var(--color-card)" stroke={deep} strokeOpacity=".3" />
     </g>
     <g transform={`rotate(${rotC} 80 45)`}>
-      <rect x="42" y="19" width="76" height="52" rx="4" fill="#ffffff" stroke={deep} strokeOpacity=".4" />
+      <rect x="42" y="19" width="76" height="52" rx="4" fill="var(--color-card)" stroke={deep} strokeOpacity=".4" />
       {/* 콘티 패널 선 */}
       {Array.from({ length: lineCount }, (_, i) => <line
         key={i}
@@ -100,16 +100,16 @@ export function VersionThumbnailArt({ snapshotId, name, className }: {
         stroke={deep} strokeOpacity=".28" strokeWidth="2.5" strokeLinecap="round"
       />)}
       {/* 말풍선 */}
-      <circle cx={bubbleX} cy={bubbleY} r="7" fill="#ffffff" stroke={deep} strokeOpacity=".55" strokeWidth="1.6" />
-      <path d={`M${bubbleX - 4} ${bubbleY + 5}l-3 6 7-4Z`} fill="#ffffff" stroke={deep} strokeOpacity=".55" strokeWidth="1.2" />
+      <circle cx={bubbleX} cy={bubbleY} r="7" fill="var(--color-card)" stroke={deep} strokeOpacity=".55" strokeWidth="1.6" />
+      <path d={`M${bubbleX - 4} ${bubbleY + 5}l-3 6 7-4Z`} fill="var(--color-card)" stroke={deep} strokeOpacity=".55" strokeWidth="1.2" />
       <rect x="50" y="58" width="14" height="8" rx="2" fill={mid} opacity={0.8} />
     </g>
     {/* 버전 배지 */}
     <circle cx="134" cy="66" r="16" fill={deep} />
-    <circle cx="134" cy="66" r="16" fill="none" stroke="#ffffff" strokeOpacity=".35" strokeWidth="1.5" />
+    <circle cx="134" cy="66" r="16" fill="none" stroke="var(--color-on-accent)" strokeOpacity=".35" strokeWidth="1.5" />
     <text
       x="134" y="66" textAnchor="middle" dy=".35em"
-      fontSize="11" fontWeight="800" fill="#ffffff"
+      fontSize="11" fontWeight="800" fill="var(--color-on-accent)"
       fontFamily="system-ui, sans-serif"
     >
       {badgeLabel}
@@ -124,25 +124,25 @@ export function VersionThumbnailArt({ snapshotId, name, className }: {
 export function EmptyVersionsArt({ className }: { readonly className?: string }) {
   return <svg viewBox="0 0 220 150" className={className} aria-hidden="true" focusable="false">
     <rect x="10" y="10" width="200" height="130" rx="18" fill="none"
-      stroke="#6366f1" strokeWidth="2" strokeDasharray="9 7" opacity={0.45} />
+      stroke="var(--color-accent)" strokeWidth="2" strokeDasharray="9 7" opacity={0.45} />
     {/* 뒤 페이지 */}
     <g transform="rotate(-8 95 85)">
-      <rect x="60" y="52" width="70" height="66" rx="6" fill="#eef2ff" stroke="#a5b4fc" strokeWidth="1.5" />
+      <rect x="60" y="52" width="70" height="66" rx="6" fill="var(--color-panel)" stroke="var(--color-line-strong)" strokeWidth="1.5" />
     </g>
     {/* 앞 페이지 */}
-    <rect x="80" y="44" width="70" height="66" rx="6" fill="#ffffff" stroke="#6366f1" strokeWidth="2" />
-    <path d="M150 44v14a4 4 0 0 1-4 4h-14Z" fill="#e0e7ff" />
-    <line x1="92" y1="66" x2="128" y2="66" stroke="#c7d2fe" strokeWidth="4" strokeLinecap="round" />
-    <line x1="92" y1="78" x2="138" y2="78" stroke="#c7d2fe" strokeWidth="4" strokeLinecap="round" />
-    <line x1="92" y1="90" x2="118" y2="90" stroke="#c7d2fe" strokeWidth="4" strokeLinecap="round" />
+    <rect x="80" y="44" width="70" height="66" rx="6" fill="var(--color-card)" stroke="var(--color-accent)" strokeWidth="2" />
+    <path d="M150 44v14a4 4 0 0 1-4 4h-14Z" fill="var(--color-raised)" />
+    <line x1="92" y1="66" x2="128" y2="66" stroke="var(--color-line)" strokeWidth="4" strokeLinecap="round" />
+    <line x1="92" y1="78" x2="138" y2="78" stroke="var(--color-line)" strokeWidth="4" strokeLinecap="round" />
+    <line x1="92" y1="90" x2="118" y2="90" stroke="var(--color-line)" strokeWidth="4" strokeLinecap="round" />
     {/* 버전 추가 배지 */}
-    <circle cx="152" cy="104" r="17" fill="#6366f1" />
-    <path d="M152 96v16M144 104h16" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" />
+    <circle cx="152" cy="104" r="17" fill="var(--color-accent)" />
+    <path d="M152 96v16M144 104h16" stroke="var(--color-on-accent)" strokeWidth="3.5" strokeLinecap="round" />
     {/* 반짝임 */}
-    <Sparkle x={42} y={42} size={7} fill="#f59e0b" />
-    <Sparkle x={182} y={56} size={6} fill="#ec4899" opacity={0.85} />
-    <Sparkle x={168} y={122} size={5} fill="#6366f1" opacity={0.6} />
-    <Sparkle x={52} y={112} size={5} fill="#06b6d4" opacity={0.7} />
+    <Sparkle x={42} y={42} size={7} fill="var(--color-warn)" />
+    <Sparkle x={182} y={56} size={6} fill="var(--color-bad)" opacity={0.85} />
+    <Sparkle x={168} y={122} size={5} fill="var(--color-accent)" opacity={0.6} />
+    <Sparkle x={52} y={112} size={5} fill="var(--color-cool)" opacity={0.7} />
   </svg>;
 }
 
@@ -170,25 +170,25 @@ export function VersionFlowDiagram({ labels, className }: {
     </g>
     {nodes.map((node) => <g key={node.step}>
       {/* 단계 배지 */}
-      <circle cx={node.cx - 22} cy="14" r="9" fill="#6366f1" />
+      <circle cx={node.cx - 22} cy="14" r="9" fill="var(--color-accent)" />
       <text x={node.cx - 22} y="14" textAnchor="middle" dy=".35em"
-        fontSize="10" fontWeight="800" fill="#ffffff" fontFamily="system-ui, sans-serif">
+        fontSize="10" fontWeight="800" fill="var(--color-on-accent)" fontFamily="system-ui, sans-serif">
         {node.step}
       </text>
       {/* 아이콘 박스 */}
       <rect x={node.cx - 24} y="14" width="48" height="42" rx="12"
-        fill="#ffffff" stroke="#6366f1" strokeWidth="1.8" strokeOpacity=".55" />
-      {node.step === "1" ? <g stroke="#6366f1" strokeWidth="2" strokeLinecap="round">
+        fill="var(--color-card)" stroke="var(--color-accent)" strokeWidth="1.8" strokeOpacity=".55" />
+      {node.step === "1" ? <g stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round">
         <rect x={node.cx - 10} y="24" width="20" height="24" rx="3" fill="none" />
         <line x1={node.cx - 5} y1="31" x2={node.cx + 5} y2="31" />
         <line x1={node.cx - 5} y1="37" x2={node.cx + 5} y2="37" />
       </g> : null}
       {node.step === "2" ? <g>
-        <rect x={node.cx - 12} y="22" width="24" height="18" rx="3" fill="#eef2ff" stroke="#6366f1" strokeWidth="1.6" />
-        <rect x={node.cx - 8} y="28" width="24" height="18" rx="3" fill="#ffffff" stroke="#6366f1" strokeWidth="1.8" />
-        <path d={`M${node.cx - 2} 34v8M${node.cx - 6} 38h8`} stroke="#6366f1" strokeWidth="2" strokeLinecap="round" />
+        <rect x={node.cx - 12} y="22" width="24" height="18" rx="3" fill="var(--color-panel)" stroke="var(--color-accent)" strokeWidth="1.6" />
+        <rect x={node.cx - 8} y="28" width="24" height="18" rx="3" fill="var(--color-card)" stroke="var(--color-accent)" strokeWidth="1.8" />
+        <path d={`M${node.cx - 2} 34v8M${node.cx - 6} 38h8`} stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" />
       </g> : null}
-      {node.step === "3" ? <g stroke="#6366f1" strokeWidth="2.2" fill="none" strokeLinecap="round">
+      {node.step === "3" ? <g stroke="var(--color-accent)" strokeWidth="2.2" fill="none" strokeLinecap="round">
         <circle cx={node.cx - 7} cy="35" r="6" />
         <circle cx={node.cx + 7} cy="35" r="6" />
         <line x1={node.cx - 2} y1="35" x2={node.cx + 2} y2="35" />

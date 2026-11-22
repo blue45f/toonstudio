@@ -206,7 +206,7 @@ export function XrWebtoonVrTheaterPanel({
               aria-label={t("컷 배치 탑다운 도식", "Top-down cut layout diagram")}
               style={{ display: "block", margin: "0 auto" }}
             >
-              <circle cx={mapCenter} cy={mapCenter} r={radiusM * mapScale} fill="none" stroke="#8b5cf6" strokeWidth="1.5" strokeDasharray="6 5" opacity="0.6" />
+              <circle cx={mapCenter} cy={mapCenter} r={radiusM * mapScale} fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeDasharray="6 5" opacity="0.6" />
               {panelDots.map((dot, i) => (
                 <g key={i}>
                   <rect
@@ -226,8 +226,8 @@ export function XrWebtoonVrTheaterPanel({
                 </g>
               ))}
               {/* 시청자 */}
-              <circle cx={mapCenter} cy={mapCenter} r="10" fill="#f472b6" />
-              <text x={mapCenter} y={mapCenter + 4} textAnchor="middle" fontSize="9" fontWeight="700" fill="#fff">
+              <circle cx={mapCenter} cy={mapCenter} r="10" fill="var(--color-accent)" />
+              <text x={mapCenter} y={mapCenter + 4} textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--color-on-accent)">
                 {t("나", "Me")}
               </text>
             </svg>

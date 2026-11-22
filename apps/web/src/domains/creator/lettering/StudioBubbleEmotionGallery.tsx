@@ -135,14 +135,14 @@ function wrapLines(text: string, maxPerLine = 11): string[] {
 function JaggedTail(): ReactElement {
   // 번개형 꼬리 (rage).
   const points = "150,128 138,160 152,158 142,196 176,150 160,152";
-  return <polygon points={points} fill="#ffffff" stroke="#e5484d" strokeWidth={2.5} strokeLinejoin="round" />;
+  return <polygon points={points} fill="var(--color-card)" stroke="var(--color-bad)" strokeWidth={2.5} strokeLinejoin="round" />;
 }
 
 function SolidTail({ stroke }: { stroke: string }): ReactElement {
   return (
     <polygon
       points={`128,126 104,168 158,132`}
-      fill="#ffffff"
+      fill="var(--color-card)"
       stroke={stroke}
       strokeWidth={2.5}
       strokeLinejoin="round"
@@ -195,11 +195,11 @@ function EmotionBubbleSvg({
         <SolidTail stroke={card.stroke} />
       ) : null}
       {tailBubbles ? (
-        <g fill="#ffffff" stroke={card.stroke} strokeWidth={2} dangerouslySetInnerHTML={{ __html: tailBubbles }} />
+        <g fill="var(--color-card)" stroke={card.stroke} strokeWidth={2} dangerouslySetInnerHTML={{ __html: tailBubbles }} />
       ) : null}
       <path
         d={path}
-        fill="#ffffff"
+        fill="var(--color-card)"
         stroke={card.stroke}
         strokeWidth={2.5 * params.strokeScale}
         strokeDasharray={params.dashed ? "7 5" : undefined}
@@ -210,7 +210,7 @@ function EmotionBubbleSvg({
         y={startY}
         textAnchor="middle"
         dominantBaseline="central"
-        fill="#1c1c1e"
+        fill="var(--color-fg)"
         fontSize={fontSize}
         fontWeight={500}
       >
@@ -236,14 +236,14 @@ function EmotionBubbleSvg({
 function EmptyStateIllustration(): ReactElement {
   return (
     <svg viewBox="0 0 200 150" role="img" aria-hidden="true" style={{ width: 160, height: "auto" }} className="sbega-float">
-      <ellipse cx={96} cy={62} rx={72} ry={44} fill="none" stroke="#a1a1aa" strokeWidth={3} strokeDasharray="9 7" />
-      <polygon points="70,100 58,132 92,106" fill="none" stroke="#a1a1aa" strokeWidth={3} strokeLinejoin="round" />
-      <text x={96} y={62} textAnchor="middle" dominantBaseline="central" fontSize={30} fill="#a1a1aa">
+      <ellipse cx={96} cy={62} rx={72} ry={44} fill="none" stroke="var(--color-fg-3)" strokeWidth={3} strokeDasharray="9 7" />
+      <polygon points="70,100 58,132 92,106" fill="none" stroke="var(--color-fg-3)" strokeWidth={3} strokeLinejoin="round" />
+      <text x={96} y={62} textAnchor="middle" dominantBaseline="central" fontSize={30} fill="var(--color-fg-3)">
         ?
       </text>
       <g transform="translate(138,96) rotate(24)">
-        <rect x={-4} y={-34} width={8} height={30} rx={3} fill="#f4a259" />
-        <polygon points="-4,-4 4,-4 0,6" fill="#52525b" />
+        <rect x={-4} y={-34} width={8} height={30} rx={3} fill="var(--color-warn)" />
+        <polygon points="-4,-4 4,-4 0,6" fill="var(--color-fg-2)" />
       </g>
     </svg>
   );
@@ -281,7 +281,7 @@ export function StudioBubbleEmotionGallery(): ReactElement {
 
       {/* 헤더 */}
       <header className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-amber-400 text-white shadow-lg">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-accent to-warn text-on-accent shadow-lg">
           <Sparkles className="size-5" aria-hidden="true" />
         </span>
         <div>
@@ -295,7 +295,7 @@ export function StudioBubbleEmotionGallery(): ReactElement {
       {/* 핵심 액션: 내 대사로 미리보기 */}
       <div className="rounded-2xl border border-line bg-card/60 p-4 shadow-sm">
         <label htmlFor="sbega-draft" className="flex items-center gap-2 text-sm font-semibold text-fg-1">
-          <PenLine className="size-4 text-fuchsia-500" aria-hidden="true" />
+          <PenLine className="size-4 text-accent" aria-hidden="true" />
           {tx("내 대사로 미리보기")}
         </label>
         <textarea
@@ -305,7 +305,7 @@ export function StudioBubbleEmotionGallery(): ReactElement {
           rows={2}
           maxLength={120}
           placeholder={ko ? "예) 절대 안 돼!!!  /  쉿, 조용히~" : "e.g. No way!!!  /  Shh, quietly~"}
-          className="mt-2 w-full resize-none rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+          className="mt-2 w-full resize-none rounded-xl border border-line bg-bg px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:outline-none focus:ring-2 focus:ring-accent"
         />
         <div className="mt-3 flex items-center gap-3">
           <FlaskConical className="size-4 shrink-0 text-fg-3" aria-hidden="true" />
@@ -319,7 +319,7 @@ export function StudioBubbleEmotionGallery(): ReactElement {
             max={100}
             value={intensity}
             onChange={(e) => setIntensity(Number(e.target.value))}
-            className="w-full accent-fuchsia-500"
+            className="w-full accent-accent"
             aria-valuetext={`${intensity}%`}
           />
           <span className="w-11 shrink-0 text-right text-xs font-semibold tabular-nums text-fg-2">{intensity}%</span>

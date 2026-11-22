@@ -155,13 +155,13 @@ function ReviewEditor({
             <span className={cn(
               "rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
               issue.status === "resolved"
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                ? "border-good/30 bg-good/10 text-good"
                 : "border-accent/30 bg-accent-soft text-accent",
             )}>
               {issue.status === "resolved" ? "해결" : "열림"}
             </span>
             {issue.approvalRequired ? (
-              <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[0.6875rem] font-bold text-violet-700 dark:text-violet-300">
+              <span className="rounded-full border border-cool/30 bg-cool/10 px-2 py-0.5 text-[0.6875rem] font-bold text-cool">
                 승인 필수
               </span>
             ) : null}
@@ -275,7 +275,7 @@ function ReviewEditor({
             해결 시 승인 권한 필요
           </label>
           {error ? (
-            <p className="text-xs font-semibold text-red-600 md:col-span-2 xl:col-span-4" role="alert">
+            <p className="text-xs font-semibold text-bad md:col-span-2 xl:col-span-4" role="alert">
               {error}
             </p>
           ) : null}
@@ -285,7 +285,7 @@ function ReviewEditor({
               className={buttonClass({
                 variant: "outline",
                 size: "sm",
-                className: "border-red-500/40 text-red-600 hover:border-red-500 hover:bg-red-500/10",
+                className: "border-bad/40 text-bad hover:border-bad hover:bg-bad/10",
               })}
               onClick={remove}
               disabled={!canEdit}

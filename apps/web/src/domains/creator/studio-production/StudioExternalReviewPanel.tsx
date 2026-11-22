@@ -141,8 +141,8 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
 
   if (state.kind === "error") {
     return (
-      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6" role="alert">
-        <AlertTriangle className="size-8 text-red-600" aria-hidden="true" />
+      <div className="rounded-2xl border border-bad/30 bg-bad/10 p-6" role="alert">
+        <AlertTriangle className="size-8 text-bad" aria-hidden="true" />
         <h2 className="mt-3 text-base font-black">{r3c04StatusText("studio.r3c04Status.production.externalReview.cannotOpen", "검토 원고를 열 수 없습니다")}</h2>
         <p className="mt-1 text-sm text-fg-2">{state.message}</p>
         <button type="button" className={cn(buttonClass({ variant: "outline", size: "sm" }), "mt-4")} onClick={() => void load()}>
@@ -238,7 +238,7 @@ export function StudioExternalReviewPanel({ token }: StudioExternalReviewPanelPr
                   ))}
                   {selectedAnchor?.pageId === page.id ? (
                     <span
-                      className="pointer-events-none absolute z-20 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-red-500 shadow-lg"
+                      className="pointer-events-none absolute z-20 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-bad shadow-lg"
                       style={{
                         left: `${selectedAnchor.x * 100}%`,
                         top: `${selectedAnchor.y * 100}%`,
@@ -390,9 +390,9 @@ function FeedbackItem({ feedback }: { readonly feedback: StudioExternalReviewFee
         <Icon className={cn(
           "size-4",
           feedback.kind === "approve"
-            ? "text-emerald-600"
+            ? "text-good"
             : feedback.kind === "reject"
-              ? "text-red-600"
+              ? "text-bad"
               : "text-accent",
         )} aria-hidden="true" />
         <strong>{feedback.reviewerName}</strong>

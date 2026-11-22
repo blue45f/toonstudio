@@ -22,6 +22,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseModuleTreeshakeInfo } from "./lib/bundle-treeshake-ast.mjs";
+import { escapeMarkdownTableCell } from "./lib/safe-text-serialization.mjs";
 import {
   buildEagerGraph,
   compareText,
@@ -705,13 +706,6 @@ export function analyzeBundleTreeshake({
   };
 }
 
-function escapeMarkdownCell(text) {
-  return String(text)
-    .replace(/\\/gu, "\\\\")
-    .replace(/\|/gu, "\\|")
-    .replace(/\r?\n/gu, " ");
-}
-
 const CATEGORY_LABELS_KO = {
   "barrel-reexport": "배럴 re-export",
   "namespace-import": "네임스페이스(`* as`)",
@@ -750,7 +744,7 @@ export function formatMarkdownReport(report, { top = DEFAULT_TOP } = {}) {
         ? `~${item.saveableKiB.toFixed(1)}`
         : item.saveableKiB.toFixed(1);
     lines.push(
-      `| ${index + 1} | ${escapeMarkdownCell(kindLabel)} | \`${escapeMarkdownCell(location)}\` | \`${escapeMarkdownCell(item.target)}\` | ${savingsLabel} | ${item.pulledKiB.toFixed(1)} | ${escapeMarkdownCell(item.recommendationKo)} |`,
+      `| ${index + 1} | ${escapeMarkdownTableCell(kindLabel)} | \`${escapeMarkdownTableCell(location)}\` | \`${escapeMarkdownTableCell(item.target)}\` | ${savingsLabel} | ${item.pulledKiB.toFixed(1)} | ${escapeMarkdownTableCell(item.recommendationKo)} |`,
     );
   }
 

@@ -15,34 +15,34 @@ export function ProcessCompareNoDataArt() {
     >
       <defs>
         <linearGradient id="pcv-art-a" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7aa2ff" />
-          <stop offset="1" stopColor="#4a5fd0" />
+          <stop offset="0" stopColor="var(--color-cool)" />
+          <stop offset="1" stopColor="var(--color-accent)" />
         </linearGradient>
         <linearGradient id="pcv-art-b" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#c084fc" />
-          <stop offset="1" stopColor="#7e3fd1" />
+          <stop offset="0" stopColor="var(--color-warn)" />
+          <stop offset="1" stopColor="var(--color-accent-2)" />
         </linearGradient>
       </defs>
 
       {/* 왼쪽 패널: 산 풍경 */}
       <rect x="14" y="28" width="88" height="94" rx="10" fill="url(#pcv-art-a)" opacity="0.9" />
-      <path d="M14 96 L44 62 L66 88 L82 72 L102 96 Z" fill="#ffffff" opacity="0.35" />
-      <circle cx="82" cy="48" r="9" fill="#ffffff" opacity="0.8" />
+      <path d="M14 96 L44 62 L66 88 L82 72 L102 96 Z" fill="var(--color-on-accent)" opacity="0.35" />
+      <circle cx="82" cy="48" r="9" fill="var(--color-on-accent)" opacity="0.8" />
 
       {/* 오른쪽 패널: 다른 풍경 */}
       <rect x="118" y="28" width="88" height="94" rx="10" fill="url(#pcv-art-b)" opacity="0.9" />
-      <path d="M118 100 L148 66 L168 90 L186 74 L206 100 Z" fill="#ffffff" opacity="0.35" />
-      <circle cx="140" cy="50" r="7" fill="#ffffff" opacity="0.8" />
+      <path d="M118 100 L148 66 L168 90 L186 74 L206 100 Z" fill="var(--color-on-accent)" opacity="0.35" />
+      <circle cx="140" cy="50" r="7" fill="var(--color-on-accent)" opacity="0.8" />
 
       {/* 가운데 슬라이더 핸들 */}
-      <line x1="110" y1="20" x2="110" y2="130" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="110" cy="75" r="13" fill="#ffffff" />
-      <path d="M107 70 l-5 5 5 5" fill="none" stroke="#4a5fd0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M113 70 l5 5 -5 5" fill="none" stroke="#4a5fd0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="110" y1="20" x2="110" y2="130" stroke="var(--color-card)" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="110" cy="75" r="13" fill="var(--color-card)" />
+      <path d="M107 70 l-5 5 5 5" fill="none" stroke="var(--color-accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M113 70 l5 5 -5 5" fill="none" stroke="var(--color-accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
 
       {/* 반짝이 */}
-      <path d="M34 18 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z" fill="#ffd76a" />
-      <path d="M188 132 l2 4.5 4.5 2 -4.5 2 -2 4.5 -2 -4.5 -4.5 -2 4.5 -2 Z" fill="#ffd76a" opacity="0.85" />
+      <path d="M34 18 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z" fill="var(--color-warn)" />
+      <path d="M188 132 l2 4.5 4.5 2 -4.5 2 -2 4.5 -2 -4.5 -4.5 -2 4.5 -2 Z" fill="var(--color-warn)" opacity="0.85" />
     </svg>
   );
 }

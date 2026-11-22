@@ -6,6 +6,7 @@
 import { HUMANOID_BONE_PARENTS, clampParam, isHumanoidBoneName } from "../../../contracts";
 import { qNormalize, v3IsFinite, type Quat, type Vec3 } from "../../../shared/math";
 
+import { resolveDragPivot, type DragPivot } from "./drag-pivot";
 import {
   diagnoseSkeletonData,
   isFinitePixelPair,
@@ -13,7 +14,6 @@ import {
   safeComputeWorldTransforms,
   type SkeletonBoundaryOptions,
 } from "./skeleton-boundary-guard";
-import { resolveDragPivot, type DragPivot } from "./drag-pivot";
 
 import type { BodyParamKey, FaceParamKey, HumanoidBoneName, JointDragHandle, ParamValues, Pose, SkeletonData } from "../../../contracts";
 

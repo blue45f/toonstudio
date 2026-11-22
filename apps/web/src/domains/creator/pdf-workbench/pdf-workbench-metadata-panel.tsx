@@ -38,8 +38,8 @@ export interface PdfWorkbenchMetadataPanelProps {
 }
 
 const inputClassName =
-  "w-full rounded-md border border-neutral-300 bg-white px-2.5 py-1.5 text-sm text-neutral-900 placeholder:text-neutral-400 disabled:bg-neutral-100 disabled:text-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100";
-const labelClassName = "text-xs font-medium text-neutral-600 dark:text-neutral-300";
+  "w-full rounded-md border border-line bg-card px-2.5 py-1.5 text-sm text-fg placeholder:text-fg-3 disabled:bg-raised disabled:text-fg-3";
+const labelClassName = "text-xs font-medium text-fg-2";
 
 export function PdfWorkbenchMetadataPanel({ value, onChange, sources, disabled }: PdfWorkbenchMetadataPanelProps) {
   const patch = (partial: Partial<PdfMetadataFormValue>) => onChange({ ...value, ...partial });
@@ -48,8 +48,8 @@ export function PdfWorkbenchMetadataPanel({ value, onChange, sources, disabled }
   return (
     <section aria-label="문서 속성" data-pdf-metadata-panel="" className="flex flex-col gap-4">
       <fieldset className="flex flex-col gap-3" disabled={disabled}>
-        <legend className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">출력 문서 속성</legend>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        <legend className="text-sm font-semibold text-fg">출력 문서 속성</legend>
+        <p className="text-xs text-fg-3">
           병합·분할한 PDF 파일 정보에 그대로 기록돼요. 비워 두면 기록하지 않아요.
         </p>
         <label className="flex flex-col gap-1">
@@ -96,7 +96,7 @@ export function PdfWorkbenchMetadataPanel({ value, onChange, sources, disabled }
         {firstSourceWithMetadata ? (
           <button
             type="button"
-            className="self-start rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+            className="self-start rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-raised disabled:opacity-50"
             onClick={() => onChange(formValueFromMetadata(firstSourceWithMetadata.metadata))}
           >
             소스 속성 가져오기 ({firstSourceWithMetadata.name})
@@ -106,27 +106,27 @@ export function PdfWorkbenchMetadataPanel({ value, onChange, sources, disabled }
 
       {sources.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">소스 문서 속성</h3>
+          <h3 className="text-sm font-semibold text-fg">소스 문서 속성</h3>
           {sources.map((source) => {
             const rows = describePdfSourceMetadataRows(source.metadata);
             return (
               <div
                 key={source.id}
                 data-pdf-source-metadata={source.id}
-                className="rounded-md border border-neutral-200 px-3 py-2 dark:border-neutral-800"
+                className="rounded-md border border-line px-3 py-2"
               >
-                <p className="truncate text-xs font-medium text-neutral-700 dark:text-neutral-200">{source.name}</p>
+                <p className="truncate text-xs font-medium text-fg">{source.name}</p>
                 {rows.length > 0 ? (
                   <dl className="mt-1.5 flex flex-col gap-1">
                     {rows.map((row) => (
                       <div key={row.key} className="flex gap-2 text-xs">
-                        <dt className="w-20 shrink-0 text-neutral-500 dark:text-neutral-400">{row.label}</dt>
-                        <dd className="min-w-0 break-words text-neutral-800 dark:text-neutral-100">{row.value}</dd>
+                        <dt className="w-20 shrink-0 text-fg-3">{row.label}</dt>
+                        <dd className="min-w-0 break-words text-fg">{row.value}</dd>
                       </div>
                     ))}
                   </dl>
                 ) : (
-                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{creatorRestStatusText("creatorRest.status.pdfMetadata.empty", "기록된 속성이 없어요.")}</p>
+                  <p className="mt-1 text-xs text-fg-3">{creatorRestStatusText("creatorRest.status.pdfMetadata.empty", "기록된 속성이 없어요.")}</p>
                 )}
               </div>
             );

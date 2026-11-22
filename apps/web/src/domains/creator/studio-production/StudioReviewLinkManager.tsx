@@ -153,7 +153,7 @@ export function StudioReviewLinkManager({
         </div>
 
         {error ? (
-          <p className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs" role="alert">
+          <p className="mt-3 rounded-xl border border-bad/30 bg-bad/10 p-3 text-xs" role="alert">
             {error}
           </p>
         ) : null}
@@ -240,9 +240,9 @@ export function StudioReviewLinkManager({
         </div>
       </section>
       {created ? (
-        <section className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4" role="status">
+        <section className="rounded-2xl border border-good/30 bg-good/10 p-4" role="status">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-5 text-emerald-600" aria-hidden="true" />
+            <CheckCircle2 className="size-5 text-good" aria-hidden="true" />
             <h3 className="text-sm font-black">새 링크를 지금 보관하세요</h3>
           </div>
           <p className="mt-1 text-xs leading-relaxed text-fg-2">
@@ -292,7 +292,7 @@ export function StudioReviewLinkManager({
                       <span className={cn(
                         "rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold",
                         status === "active"
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          ? "border-good/30 bg-good/10 text-good"
                           : "border-line bg-raised text-fg-3",
                       )}>
                         {status === "active" ? r3c04StatusText("studio.r3c04Status.production.reviewLink.statusActive", "활성") : status === "expired" ? r3c04StatusText("studio.r3c04Status.production.reviewLink.statusExpired", "만료") : r3c04StatusText("studio.r3c04Status.production.reviewLink.statusRevoked", "폐기")}
