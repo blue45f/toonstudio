@@ -37,6 +37,7 @@ import {
   type StudioVrmIkEffectorBone,
   type StudioVrmJointHandleBone,
 } from "./StudioVrmJointHandles";
+import { findVrmActionSilhouettePreset } from "./vrm-action-silhouette-presets";
 
 import type { StudioVrmPoseTranslations, StudioVrmSceneDocument } from "./studio-vrm-scene-document";
 import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
@@ -86,8 +87,11 @@ export function extractStudioVrmFingerRotations(
   if (Object.keys(fingers).length > 0) {
     return fingers;
   }
+  const actionPreset = poseId ? findVrmActionSilhouettePreset(poseId) : null;
   const [leftPose, rightPose]: readonly [StudioVrmHandPoseType, StudioVrmHandPoseType] =
-    (poseId ? POSE_PRESET_HAND_PAIR[poseId] : undefined) ?? (["relaxed", "relaxed"] as const);
+    actionPreset?.handPair
+    ?? (poseId ? POSE_PRESET_HAND_PAIR[poseId] : undefined)
+    ?? (["relaxed", "relaxed"] as const);
   return {
     ...createStudioVrmHandPose("left", leftPose),
     ...createStudioVrmHandPose("right", rightPose),
@@ -165,11 +169,12 @@ export function cx(...classes: Array<string | false | null | undefined>) {
 }
 
 export function findPoseById(id: string): PosePreset | null {
-  // 기본 프리셋 → 확장 팩 → 자연 아이들(스폰 기본) 순으로 탐색. 셋 다 같은 본 규약을 쓴다.
+  // 기본 프리셋 → 확장 팩 → 자연 아이들(스폰 기본) → 웹툰 액션 실루엣 12종 순으로 탐색.
   return (
     POSE_PRESETS.find((pose) => pose.id === id) ??
     EXTRA_POSE_PRESETS.find((pose) => pose.id === id) ??
     NATURAL_IDLE_POSES.find((pose) => pose.id === id) ??
+    findVrmActionSilhouettePreset(id) ??
     null
   );
 }

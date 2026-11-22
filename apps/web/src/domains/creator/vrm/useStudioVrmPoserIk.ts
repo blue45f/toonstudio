@@ -42,6 +42,25 @@ import {
   STUDIO_VRM_USER_IK_CHAINS,
   type StudioVrmUserIkResult,
 } from "./studio-vrm-user-ik";
+import {
+  applyVrmActionSilhouettePreset,
+  applyVrmLookAtPinToVrm,
+  type VrmActionSilhouetteId,
+  type VrmLookAtPin,
+  type VrmLookAtPinSolution,
+} from "./vrm-action-silhouette-presets";
+import {
+  buildVrmBodyCapsulesFromVrm,
+  clampVrmPoseAnatomicalJoints,
+  detectAndGuardGarmentCapsuleClipping,
+  type VrmGarmentCapsuleGuardResult,
+} from "./vrm-anatomy-garment-guard";
+import {
+  normalizeVrmSceneForwardAxis,
+  resolveVrmForwardAxisFromVrm,
+  type NormalizeVrmSceneForwardResult,
+  type VrmForwardAxisResolution,
+} from "./vrm-forward-axis-normalizer";
 import type {
   StudioVrmIkEffectorBone,
   StudioVrmIkHandleControl,
@@ -333,25 +352,35 @@ export function useStudioVrmPoserIk(h: StudioVrmPoserHost): void {
       return null;
     }
 
-    transaction.latest = result;
+    // 어깨·팔꿈치·무릎 과신전 방지 해부학 클램프를 IK 프리뷰 결과에 즉시 적용한다(#027).
+    const anatomicalGuard = clampVrmPoseAnatomicalJoints(result.bones, {
+      clampAllHumanoidBones: false,
+    });
+    const guardedResult = anatomicalGuard.wasClamped
+      ? { ...result, bones: anatomicalGuard.bones, limited: true }
+      : result;
+
+    transaction.latest = guardedResult;
     applyStudioVrmRotationPose(currentVrm, {
-      ...result,
-      translations: "translations" in result
-        ? result.translations
+      ...guardedResult,
+      translations: "translations" in guardedResult
+        ? guardedResult.translations
         : transaction.baseline.translations,
     }, bodyScale);
     setJointHandleStatus(
-      "constraints" in result
-        ? result.constraints.length > 1
-          ? `다중 체인 ${result.constraints.length}개를 ${result.iterations}회 반복 계산 중 · 양발 고정과 활성 ${STUDIO_VRM_USER_IK_CHAINS[effector].kind === "hand" ? "손" : "발"} 목표를 함께 유지합니다.`
+      "constraints" in guardedResult
+        ? guardedResult.constraints.length > 1
+          ? `다중 체인 ${guardedResult.constraints.length}개를 ${guardedResult.iterations}회 반복 계산 중 · 양발 고정과 활성 ${STUDIO_VRM_USER_IK_CHAINS[effector].kind === "hand" ? "손" : "발"} 목표를 함께 유지합니다.`
           : "전신 이동과 활성 IK 체인을 함께 미리 보는 중입니다."
-        : result.clamped
+        : guardedResult.clamped
         ? "목표가 팔·다리 길이를 벗어나 도달 가능한 최대 위치에서 미리 보는 중입니다."
-        : result.limited
-          ? "관절 보호 범위 안으로 부드럽게 제한해 미리 보는 중입니다."
-          : "IK 자세 미리보기 · 놓으면 한 번만 포즈에 적용됩니다.",
+        : anatomicalGuard.hyperextensionCount > 0
+          ? "어깨·팔꿈치·무릎 과신전을 방지해 해부학 안전 범위 안에서 미리 보는 중입니다."
+          : guardedResult.limited
+            ? "관절 보호 범위 안으로 부드럽게 제한해 미리 보는 중입니다."
+            : "IK 자세 미리보기 · 놓으면 한 번만 포즈에 적용됩니다.",
     );
-    return result;
+    return guardedResult;
   }
 
   function handleJointHandleIkCommit(
@@ -533,6 +562,71 @@ export function useStudioVrmPoserIk(h: StudioVrmPoserHost): void {
     setJointHandleStatus("현재 보이는 자세를 회전 기반 관절 편집값으로 동기화했습니다.");
   }
 
+  function applyActionSilhouettePreset(
+    presetId: VrmActionSilhouetteId,
+    lookAtPin?: VrmLookAtPin | null,
+  ): boolean {
+    const currentVrm = vrmRef.current;
+    if (!currentVrm || webcamActive || idleAnimation || isCapturing) return false;
+    const applied = applyVrmActionSilhouettePreset(currentVrm, presetId, { lookAtPin });
+    if (!applied.applied || !applied.preset) return false;
+    const baked = bakeStudioVrmRuntimePose(currentVrm);
+    const nextBones = stripFingerBones(baked?.bones ?? applied.preset.bones);
+    const nextFingers = extractStudioVrmFingerRotations(baked?.bones ?? applied.preset.bones, presetId);
+    setActivePoseId(presetId);
+    setCustomBones(nextBones);
+    setFingerEdits(nextFingers);
+    setCustomYOffset(applied.preset.yOffset);
+    setJointHandleStatus(
+      `${applied.preset.label} 액션 실루엣 프리셋 적용 완료${applied.lookAtSolution?.enabled ? " · 시선 핀 반영" : ""}`,
+    );
+    return true;
+  }
+
+  function applyLookAtPin(pin: VrmLookAtPin): VrmLookAtPinSolution | null {
+    const currentVrm = vrmRef.current;
+    if (!currentVrm || webcamActive || isCapturing) return null;
+    const solution = applyVrmLookAtPinToVrm(currentVrm, pin);
+    const baked = bakeStudioVrmRuntimePose(currentVrm);
+    if (baked) {
+      setCustomBones(stripFingerBones(baked.bones));
+    }
+    setJointHandleStatus(
+      solution.enabled
+        ? solution.clamped
+          ? "시선 핀 적용 완료 · 목·머리·안구 안전 가동 범위에서 제한됨"
+          : "시선 핀 적용 완료 · 목·머리·안구가 목표 좌표를 향합니다."
+        : "시선 핀을 해제했습니다.",
+    );
+    return solution;
+  }
+
+  function guardGarmentCapsuleClipping(
+    garmentPositions: Float32Array,
+    garmentId?: string,
+  ): VrmGarmentCapsuleGuardResult | null {
+    const currentVrm = vrmRef.current;
+    if (!currentVrm) return null;
+    const bodyCapsules = buildVrmBodyCapsulesFromVrm(currentVrm);
+    const guarded = detectAndGuardGarmentCapsuleClipping(garmentPositions, bodyCapsules, {
+      garmentId,
+    });
+    if (guarded.hasClipping && guarded.warnings[0]) {
+      setJointHandleStatus(guarded.warnings[0].message);
+    }
+    return guarded;
+  }
+
+  function resolveActiveVrmForwardAxis(): VrmForwardAxisResolution {
+    return resolveVrmForwardAxisFromVrm(vrmRef.current);
+  }
+
+  function normalizeActiveVrmForwardAxis(): NormalizeVrmSceneForwardResult | null {
+    const currentVrm = vrmRef.current;
+    if (!currentVrm) return null;
+    return normalizeVrmSceneForwardAxis(currentVrm);
+  }
+
   Object.assign(h, {
     handleJointHandleSelect,
     handleJointHandlePoleSelect,
@@ -543,5 +637,10 @@ export function useStudioVrmPoserIk(h: StudioVrmPoserHost): void {
     handleJointHandlePoleCommit,
     handleJointHandleIkRollback,
     handleBakeCurrentPoseForManualEditing,
+    applyActionSilhouettePreset,
+    applyLookAtPin,
+    guardGarmentCapsuleClipping,
+    resolveActiveVrmForwardAxis,
+    normalizeActiveVrmForwardAxis,
   });
 }
