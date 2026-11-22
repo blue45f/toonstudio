@@ -3,7 +3,10 @@ import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import "./studio-host-status-i18n";
 import { hostErrorText } from "./status-i18n/studio-host-reason-i18n";
 import { resolveStudioShortcutAnnouncement } from "./status-i18n/studio-producer-error-i18n-shortcut";
-import { resolveStudioVectorEraseResult, resolveStudioVectorFillPlanFailure, resolveStudioVectorReferenceErrorFromCause } from "./status-i18n/studio-producer-error-i18n-vector";
+import {
+  resolveStudioVectorFillPlanFailure,
+  resolveStudioVectorReferenceErrorFromCause,
+} from "./status-i18n/studio-producer-error-i18n-vector";
 import {
   formatI18nTemplate,
   getActiveI18nLocale,
@@ -238,10 +241,7 @@ import { remapStudioBg3dLtCopiedBundles } from "./bg3d/studio-bg3d-lt-copy-remap
 import { useStudioPageClipboard } from "./studio-page-clipboard-controller";
 import { useStudioPageViewControls } from "./canvas/studio-page-view-controller";
 import { studioPageSequenceOpenByDefault, useStudioPageManagement } from "./page/studio-page-management-controller";
-import {
-  useStudioVectorNodeBubbleEdit,
-  type BubbleShapePointerCaptureTarget,
-} from "./vector/studio-node-bubble-edit-controller";
+import { useStudioVectorNodeBubbleEdit } from "./vector/studio-node-bubble-edit-controller";
 import { useStudioCropPanelSplitTools } from "./canvas/studio-crop-panel-split-controller";
 import { useStudioCheckpoints } from "./checkpoint/studio-checkpoints-controller";
 import { useStudioTemplateLayout } from "./template/studio-template-layout-controller";
@@ -301,7 +301,6 @@ import {
   CANVAS_W,
   EFFECT_EMOJIS,
   filterAssetsByLabel,
-  filterBgSceneSections,
   type BubbleVariant,
   type TemplateSpec,
 } from "./studio-assets";
@@ -353,19 +352,13 @@ import {
   type StudioToolOperation,
 } from "./studio-brush";
 import {
-  bubbleShapeCanvasPointToLocal,
   bubbleShapePointHandles,
   computeBubbleShapeGeometry,
   hasCustomBubbleShape,
-  insertBubbleShapePointAtClosestSegment,
-  removeBubbleShapePoint,
 } from "./lettering/studio-bubble-custom-shape";
 import { bubbleMergeUnavailableReason, mergeStudioBubbles } from "./lettering/studio-bubble-merge";
 import {
   bubbleLetterSpacing,
-  bubbleTextBoxWidth,
-  bubbleVerticalPaddingTotal,
-  fitBubbleBoxHeightToText,
   resolveBubbleFontFamily,
   resolveBubbleFontSize,
   resolveBubbleFontStyle,
@@ -407,22 +400,15 @@ import {
   reduceStudioCommentThreadSession,
   selectStudioCommentThreadSessionSourceThreads,
   studioCommentThreadSessionCloseDiscardsDraft,
-  studioCommentThreadSessionDraftBlocksResolutionChange,
-  studioCommentThreadSessionMutationId,
   type StudioCommentThreadSessionCloseReason,
-  type StudioCommentThreadSessionMutationPlan,
 } from "./studio-comment-thread-session";
 import {
-  addStudioCommentReply,
   addStudioCommentThread,
   createEmptyStudioCommentsDocument,
   createStudioCommentMessageId,
   normalizeStudioCommentsDocument,
   partitionStudioTeamCommentMutableDocument,
-  reopenStudioCommentThread,
-  resolveStudioCommentThread,
   STUDIO_COMMENTS_MAX_DISPLAY_NAME_LENGTH,
-  studioCommentAnchorsEqual,
   studioCommentMutationReceiptOwnsDraft,
   type StudioCommentActor,
   type StudioCommentAnchor,
@@ -441,12 +427,9 @@ import {
   appendStudioCommittedInkHandoff,
 } from "./studio-skia-committed-ink-bridge";
 import { useStudioSkiaCommittedInkHostRuntime } from "./use-studio-skia-committed-ink-host-runtime";
-import {
-  createStudioCommunityAssetCredit,
-  formatStudioCommunityAssetCredit,
-} from "./studio-community-asset-license";
+import { createStudioCommunityAssetCredit } from "./studio-community-asset-license";
 import { executeStudioCompanionToolCommand } from "./studio-companion-tool-command-executor";
-import { lintStudioContinuity, type StudioContinuityIssue, type StudioStoryBeat } from "./studio-continuity";
+import { type StudioContinuityIssue } from "./studio-continuity";
 import {
   commitPendingStrokeBatchForAdmission,
 } from "./live/studio-live-ink-lane-admission";
@@ -454,7 +437,7 @@ import { useStudioCollaborationWiring } from "./live/studio-collaboration-wiring
 import { studioDrawElementToCrdtStroke } from "./live/studio-crdt-draw-bridge";
 import { StudioCrdtLiveStrokePublisher } from "./live/studio-crdt-live-stroke-publisher";
 import { readStudioCreatorWorkProject } from "./studio-creator-work-project";
-import { initialCropRect, isCropRectNoop, planCropApply } from "./studio-crop";
+import { initialCropRect } from "./studio-crop";
 import {
   STUDIO_DEFERRED_STROKE_POSTPROCESS_TIMEOUT_MS,
   replaceStudioPendingStrokePostprocess,
@@ -568,7 +551,6 @@ import {
 import {
   DEFAULT_FRAME_FPS,
   DEFAULT_ONION_SKIN,
-  insertFrame,
   type OnionSkinSettings,
 } from "./studio-frame-animation";
 import {
@@ -576,7 +558,6 @@ import {
   applyVerticalGapDragPlan,
   createFrameFolderGroupForNewFrame,
   planSharedGutterDrag,
-  planSharedGutterSegments,
   planVerticalGapDrag,
   sharedGutterSegmentKey,
   verticalGapDragKey,
@@ -589,15 +570,10 @@ import {
   selectionShapeForIds,
   type GroupSelectionState,
 } from "./studio-group-selection";
-import { finitePositiveGroupResizeBounds } from "./studio-group-resize-bounds";
 import type { StudioGroupUniformResizeBounds } from "./studio-group-uniform-resize";
 import { planStudioSelectionTransformCommit } from "./studio-selection-transform-commit";
 import { planHealCloneDabs } from "./studio-heal-clone";
-import {
-  bakeHistoryBrushStrokeToCanvas,
-  planHistoryBrushDabs,
-  resolveHistoryBrushSource,
-} from "./studio-history-brush";
+import { resolveHistoryBrushSource } from "./studio-history-brush";
 import {
   createStudioHistoryJournal,
   readStudioHistoryJournalRedoEntry,
@@ -698,19 +674,9 @@ import {
   studioLinked3dPassSourceReplacementReason,
 } from "./studio-linked-3d-raster-edit-policy";
 
-import {
-  describeStudioScene3dLinkedLayerReview,
-  snapshotStudioScene3dLinkedLayerEditSource,
-} from "./scene3d/studio-scene3d-linked-layer-source";
 import type { StudioLiquifyMode } from "./studio-liquify-contract";
-import { mapLiquifyRoiToDocumentFrame, planStudioLiquifyLivePreview } from "./studio-liquify-live-preview";
-import {
-  endStudioLiquifyPointerSession,
-  isStudioLiquifyPointerOwner,
-  type StudioLiquifyPointerSession,
-} from "./studio-liquify-pointer";
+import { type StudioLiquifyPointerSession } from "./studio-liquify-pointer";
 import { thinStudioLiquifyPointsForApply } from "./studio-liquify-stroke-sampling";
-import { projectStudioCanvasCommentPins } from "./live/studio-live-canvas-overlay-model";
 import {
   StudioLiveDynamicBrushOverlayRenderer,
   studioLiveDynamicBrushOverlaySupportsElement,
@@ -844,9 +810,7 @@ import {
 } from "./studio-marketplace-deep-link";
 import type { StudioCreatorPackDefinition } from "./studio-creator-pack-catalog";
 import {
-  beginNodeDrag,
   decimateStrokeHandles,
-  hitTestNodeHandle,
   isNodeEditableKind,
   NODE_EDIT_DEFAULT_MAX_HANDLES,
   NODE_EDIT_DEFAULT_MIN_SPACING_PX,
@@ -1032,8 +996,6 @@ import {
   rememberRecentBrushId,
   rememberStudioBrushLibraryView,
 } from "./studio-pro-draw-prefs";
-import { computeStudioProductionInsights } from "./studio-production-insights";
-import { buildStudioProductionInsightsInput } from "./studio-production-projection";
 import { resetStudioAiProvenanceForRemix, type StudioProjectFile } from "./studio-project-file";
 import {
   buildStudioProjectFileSnapshot,
@@ -1051,10 +1013,7 @@ import {
 } from "./studio-publish-compliance";
 import {
   DEFAULT_STUDIO_PUBLISH_PACKAGE_SETTINGS,
-  getStudioPublishPlatformPreset,
   normalizeStudioPublishPackageSettings,
-  planStudioPublishCanvasSlices,
-  planStudioPublishPackage,
   type StudioPublishPackagePlan,
   type StudioPublishPackageSettings,
 } from "./studio-publish-package";
@@ -1062,7 +1021,6 @@ import {
   normalizeStudioPublishPackSettings,
   validateStudioPublishPreflight,
 } from "./studio-publish-preflight";
-import { bakePuppetWarpToCanvas, isPuppetWarpNoop } from "./studio-puppet-warp";
 import type { StudioQuickActionId, StudioQuickActionsPreferences } from "./studio-quick-actions";
 import {
   buildQuickMaskTintPixels,
@@ -1090,7 +1048,6 @@ import { buildStudioRasterAssetElements } from "./render/studio-raster-asset-ele
 import { verifyStudioRasterAssetBlob } from "./render/studio-raster-asset-integrity";
 import {
   createStudioRasterHandoffBaseKey,
-  isStudioRasterHandoffViewNavigationTool,
   readStudioAuthoritativeStageFrame,
   studioRasterAuthorizedOperationIds,
   type StudioRasterHandoffCandidate,
@@ -1127,7 +1084,6 @@ import { publishStudioRenderBackend } from "./studio-render-backend-beacon";
 import {
   beginStudioPendingRasterRetouchGesture,
   canApplyStudioPendingRasterRetouchGesture,
-  endStudioPendingRasterRetouchGesture,
   normalizeStudioPendingRasterRetouchGesture,
   type StudioPendingRasterRetouchGesture,
   type StudioRasterRetouchGestureTool,
@@ -1137,7 +1093,12 @@ import { useStudioDocumentLayout } from "./studio-router/studio-document-layout-
 import { resolveStudioDccRouteAccess, useStudioDccWorkbenchNavigation } from "./studio-router/studio-dcc-workbench-navigation";
 import { StudioDccWorkbenchRoute } from "./studio-router/StudioDccWorkbenchRoute";
 import { announceStudioGpuDeviceLoss } from "./studio-safe-mode-runtime";
-import { layoutScenarioPanels, scenarioReviewedArtwork, scenarioGenerationPreferences, scenarioGenerationPreferencesFromHandoff, type ScenarioPreviewItem } from "./studio-scenario-layout";
+import {
+  layoutScenarioPanels,
+  scenarioReviewedArtwork,
+  scenarioGenerationPreferencesFromHandoff,
+  type ScenarioPreviewItem,
+} from "./studio-scenario-layout";
 import {
   STUDIO_SCROLL_VIEWPORT_ORIGIN,
   STUDIO_SCROLL_VIEWPORT_SETTLE_MS,
@@ -1157,7 +1118,6 @@ import {
   canvasPointToNormalized,
   commitPolyLassoSession,
   commitSelectionDrag,
-  commitSelectionDragAtPoint,
   emptyPixelSelection,
   extractSelectionToCanvas,
   isSelectionAdjustNoop,
@@ -1166,7 +1126,6 @@ import {
   normalizedPointToCanvas,
   planSelectionAdjust,
   rasterizeSelectionMask,
-  resolveSelectionCombineOverride,
   selectAllPixels,
   selectionCombineModeForOperation,
   selectionOperationBase,
@@ -1174,7 +1133,6 @@ import {
   SELECTION_BRUSH_RADIUS_DEFAULT,
   toggleSelectionInvert,
   transformSelectionMarquee,
-  translateSelection,
   updateSelectionDrag,
   type PixelSelection,
   type PixelSelectionAutoTargetResolution,
@@ -1183,7 +1141,6 @@ import {
   type SelectionContentTransform,
   type SelectionDragState,
   type SelectionFrame,
-  type SelectionLuminanceField,
   type SelectionOperationMode,
   type SelectionToolKind,
   type SelPoint,
@@ -1262,17 +1219,12 @@ import { hasStudioUnloadPromptWork, studioPendingStrokeFingerprint } from "./stu
 import { useStudioUnloadGuard } from "./studio-cuttoon-editor/runtime/useStudioUnloadGuard";
 import { useStudioEditorUpdateSafety } from "./use-studio-editor-update-safety";
 import { useStudioEditorStatusNotices } from "./studio-cuttoon-editor/use-studio-editor-status-notices";
-import {
-  planStudioVectorEraseToIntersectionApply,
-  STUDIO_ERASE_TO_INTERSECTION_LABEL,
-} from "./studio-vector-erase-to-intersection-apply";
+import { STUDIO_ERASE_TO_INTERSECTION_LABEL } from "./studio-vector-erase-to-intersection-apply";
 import { currentStudioVectorReferenceBudgets, materializeStudioAdvancedFillVectorTarget, planStudioAdvancedFillVectorTarget, prepareStudioVectorReferenceExport, renderPreparedStudioVectorReference, renderStudioVectorReference, type StudioAdvancedFillVirtualTarget } from "./studio-vector-fill-reference";
 import {
   planStudioViewRestore,
   planStudioViewRotationTransition,
-  planStudioViewScrollToDocumentPoint,
   projectStudioViewPointToDocument,
-  resolveStudioVisibleDocumentPlacement,
   stepStudioViewZoom,
   type StudioViewRotation,
   type StudioViewSnapshot,
@@ -1515,10 +1467,90 @@ import { loadStudioWriterRoomRuntime } from "./studio-cuttoon-editor/runtime/loa
 import { composeStudioEmergencyPendingFingerprint, createStudioAutosaveMonotonicGate, createStudioAutosaveSupersededError, isStudioAutosaveSupersededFailure } from "./studio-cuttoon-editor/runtime/studio-autosave-monotonic-gate";
 import {
   afterInspectorCommit,
-  compareStudioCommentThreadActivity,
   mobileBarBtn,
   rememberedOperationForDrawMode,
 } from "./studio-cuttoon-editor-host-helpers";
+import {
+  applyStudioScenarioScenePatch,
+  computeStudioBubbleOutlinePointInsert,
+  computeStudioBubbleOutlinePointRemoval,
+  computeStudioScenarioDraftRelayout,
+  createStudioFocusLinesElement,
+  createStudioSpeedLinesElement,
+  deriveStudioDrawingAssistDocumentSnapshot,
+  extractStudioMacroCommandsFromPatch,
+  measureStudioBubbleCommitHeight,
+  planStudioAnimFrameCaptureElements,
+  planStudioDiagonalSplitFrames,
+  planStudioSplitFrameSelected,
+} from "./studio-cuttoon-edit/studio-host-canvas-element-helpers";
+import {
+  applyLocalStudioCommentMutationPlan,
+  deriveStudioActiveCommentAnchor,
+  deriveStudioCanvasCommentBounds,
+  deriveStudioCanvasCommentPins,
+  deriveStudioCommentAnchorOptions,
+  deriveStudioCommentPinReanchorDisabledReason,
+  deriveStudioCommentPinReanchorableIds,
+  deriveStudioOpenCanvasCommentThreads,
+  resolveStudioCommentPinClusterNavigation,
+  runChangeStudioCommentThreadResolution,
+  runSubmitStudioCommentThreadReply,
+  selectStudioCommentPinThreadFromDocument,
+  type StudioCommentThreadPopoverTarget,
+} from "./studio-cuttoon-edit/studio-host-comment-projection-helpers";
+import {
+  createStudioPendingPixelSelectionRasterGesture,
+  runStudioLiquifyLivePreviewPump,
+  runStudioLiquifyPointerSessionFinish,
+  runStudioPendingPixelSelectionRasterGestureFinish,
+  runStudioPendingRasterRetouchGestureFinish,
+  runStudioPixelSelectionPointerSessionFinish,
+  type StudioLiquifyPreviewSource,
+  type StudioPendingPixelSelectionRasterGesture,
+  type StudioPixelDragSession,
+  type StudioPixelSelectionStateUpdate,
+} from "./studio-cuttoon-edit/studio-host-liquify-and-selection-pointer-helpers";
+import {
+  deriveStudioMainMenuSurfaceState,
+  deriveStudioMobileSelectionLocked,
+  deriveStudioOptionsBarsSelectionModel,
+  deriveStudioQuickAccessCommandAvailability,
+  deriveStudioQuickActionsDisabledSet,
+  deriveStudioRasterHandoffGates,
+  deriveStudioSelectedLinked3dReview,
+  deriveStudioSharedGutterSegments,
+  resolveStudioMenuPixelSelectionTool,
+} from "./studio-cuttoon-edit/studio-host-options-and-menu-derivations";
+import {
+  buildStudioPublishPackagePlan,
+  collectStudioPublishPackageCreditsText,
+  deriveStudioContinuityIssues,
+  deriveStudioContinuityScenes,
+  deriveStudioProductionBibleAssetOptions,
+  deriveStudioProductionInsightsResult,
+  filterStudioBgSceneCatalogSections,
+  filterStudioEmeresCatalogSections,
+  hasStudioFxPickerResults,
+} from "./studio-cuttoon-edit/studio-host-publish-continuity-helpers";
+import {
+  runStudioApplyCropToSelectedImage,
+  runStudioApplyPuppetWarpToSelectedImage,
+  runStudioBakeHistoryBrushDragStroke,
+  runStudioBubbleShapePointerDown,
+  runStudioCreateLayerMaskFromSelection,
+  runStudioVectorEraseToIntersectionAt,
+} from "./studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers";
+import {
+  computeStudioMinimapClickScrollTarget,
+  projectStudioHostClientPointToDocument,
+  resolveStudioHostCanvasInsertionTarget,
+  resolveStudioHostVisibleCanvasPlacement,
+  resolveStudioMinimapArrowScrollDelta,
+  validateStudioSelectionResizeBegin,
+  validateStudioSelectionResizeCommit,
+  type StudioGroupResizeSession,
+} from "./studio-cuttoon-edit/studio-host-view-and-resize-helpers";
 
 import type { LegacyStudioEditorAdapterProps } from "./studio-legacy-editor-adapter";
 
@@ -1787,49 +1819,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   }
   function maybeRecordMacroFromPatch(patch: Partial<El>) {
     if (!macroSession.recording) return;
-    const fields = patch as Partial<El> & {
-      fontSize?: number;
-      color?: string;
-      blendMode?: string;
-      font?: string;
-      opacity?: number;
-      hidden?: boolean;
-      locked?: boolean;
-    };
-    if (typeof fields.opacity === "number") {
-      setMacroSession((session) =>
-        recordStudioMacroCommand(session, { type: "set-opacity", opacity: fields.opacity })
-      );
-    }
-    if (typeof fields.hidden === "boolean") {
-      setMacroSession((session) =>
-        recordStudioMacroCommand(session, { type: "set-hidden", hidden: fields.hidden })
-      );
-    }
-    if (typeof fields.locked === "boolean") {
-      setMacroSession((session) =>
-        recordStudioMacroCommand(session, { type: "set-locked", locked: fields.locked })
-      );
-    }
-    if (typeof fields.blendMode === "string") {
-      setMacroSession((session) =>
-        recordStudioMacroCommand(session, { type: "set-blend-mode", blendMode: fields.blendMode })
-      );
-    }
-    if (typeof fields.fontSize === "number") {
-      setMacroSession((session) =>
-        recordStudioMacroCommand(session, { type: "lettering-font-size", fontSize: fields.fontSize })
-      );
-    }
-    if (typeof fields.color === "string") {
-      setMacroSession((session) =>
-        recordStudioMacroCommand(session, { type: "lettering-color", color: fields.color })
-      );
-    }
-    if (typeof fields.font === "string") {
-      setMacroSession((session) =>
-        recordStudioMacroCommand(session, { type: "lettering-font", font: fields.font })
-      );
+    for (const command of extractStudioMacroCommandsFromPatch(patch)) {
+      setMacroSession((session) => recordStudioMacroCommand(session, command));
     }
   }
   const [saveSyncStore] = useState(() => createStudioSaveSyncSignalStore());
@@ -2903,12 +2894,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   );
   const studioCommentThreadSessionRef = useRef(studioCommentThreadSession);
   studioCommentThreadSessionRef.current = studioCommentThreadSession;
-  const [studioCommentThreadPopoverTarget, setStudioCommentThreadPopoverTarget] = useState<{
-    pinKey: string;
-    anchor: StudioCommentAnchor;
-    screenPoint: { x: number; y: number };
-    anchorElement: HTMLButtonElement;
-  } | null>(null);
+  const [studioCommentThreadPopoverTarget, setStudioCommentThreadPopoverTarget] =
+    useState<StudioCommentThreadPopoverTarget | null>(null);
   const setCommentsOpen = useCallback((next: Parameters<typeof setCommentsOpenState>[0]) => {
     // Keep the lazy rail mounted after its first open so failed request ids and drafts survive a
     // close/reopen cycle. A direct `false` before first use still avoids loading the chunk.
@@ -4115,17 +4102,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   // Escape/포인터 취소는 lease를 직접 반납하지 않고 이 카운터로 proxy의 Konva 제스처를
   // 중단시킨다. renderer close/settle이 성공한 뒤 commit-port finalizer만 ref와 lease를 해제한다.
   const [canvasSelectionResizeCancelSignal, setCanvasSelectionResizeCancelSignal] = useState(0);
-  const groupResizeRef = useRef<{
-    phase: "active" | "cancel-requested" | "settling";
-    selectedIds: string[];
-    sourceBounds: StudioGroupUniformResizeBounds;
-    sourceElements: El[];
-    /** O(1) persisted-project generation fence; sample payloads are never serialized at begin. */
-    sourceDocumentGeneration: number;
-    pageId: string;
-    masterEditMode: boolean;
-    mutationTicket: StudioEditorMutationTicket;
-  } | null>(null);
+  const groupResizeRef = useRef<StudioGroupResizeSession | null>(null);
   // 단일 선택이 생기면 마퀴 다중선택은 해제(상호 배타).
   useEffect(() => {
     if (selectedId) {
@@ -4252,37 +4229,14 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   ): boolean {
     if (groupResizeRef.current || groupDragRef.current) return false;
     const selectedIds = currentCanvasResizeSelectionIds();
-    const uniqueIds = new Set(selectedIds);
-    const currentElements = activeElementsRef.current;
-    const currentById = new Map(
-      currentElements.map((element) => [element.id, element])
-    );
-    const singleDrawResize =
-      selectedIds.length === 1
-      && currentById.get(selectedIds[0]!)?.type === "draw";
-    // Multi-selection (2+) or a single freehand stroke — other single objects use Konva Transformer.
-    if (
-      (selectedIds.length < 2 && !singleDrawResize) ||
-      uniqueIds.size !== selectedIds.length ||
-      !finitePositiveGroupResizeBounds(sourceBounds) ||
-      activeSurfaceReviewLockedRef.current ||
-      selectedIds.some((id) => !currentById.has(id)) ||
-      selectedIds.some((id) => {
-        const element = currentById.get(id);
-        return Boolean(
-          element && isEffectivelyLocked(element, activeGroupsRef.current)
-        );
-      }) ||
-      // The source frame is derived from the VISIBLE box, so a hidden member would be transformed
-      // by an affine that never accounted for it -- a turn about a box it sits outside throws it
-      // far off-page, and nothing shows that until it is unhidden. Refuse like a locked member.
-      selectedIds.some((id) => {
-        const element = currentById.get(id);
-        return Boolean(
-          element && isEffectivelyHidden(element, activeGroupsRef.current)
-        );
-      })
-    ) {
+    const validation = validateStudioSelectionResizeBegin({
+      selectedIds,
+      currentElements: activeElementsRef.current,
+      activeGroups: activeGroupsRef.current,
+      sourceBounds,
+      activeSurfaceReviewLocked: activeSurfaceReviewLockedRef.current,
+    });
+    if (!validation.ok) {
       setError(
         activeSurfaceReviewLockedRef.current
           ? collaborationAccessRef.current.locked
@@ -4292,13 +4246,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       );
       return false;
     }
-    const sourceElements = selectedIds.map((id) => currentById.get(id)!);
     if (!beginLiveResourceEdit(selectedIds, "transform")) return false;
     groupResizeRef.current = {
       phase: "active",
       selectedIds,
       sourceBounds: { ...sourceBounds },
-      sourceElements,
+      sourceElements: validation.sourceElements,
       sourceDocumentGeneration: studioRevisionProjectGenerationRef.current,
       pageId: currentPageIdRef.current,
       masterEditMode: masterEditModeRef.current,
@@ -4329,41 +4282,23 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   ): boolean {
     const session = groupResizeRef.current;
     if (!session || session.phase !== "active") return false;
-    // Durable publication does not end writer exclusion. The common gesture lifecycle releases
-    // this ref and the collaboration lease only after its terminal renderer settlement succeeds.
     session.phase = "settling";
-    const currentIds = currentCanvasResizeSelectionIds();
-    const currentIdSet = new Set(currentIds);
     const currentElements = activeElementsRef.current;
-    const currentById = new Map(
-      currentElements.map((element) => [element.id, element])
-    );
-    const selectionStillMatches =
-      currentIds.length === session.selectedIds.length &&
-      currentIdSet.size === currentIds.length &&
-      session.selectedIds.every((id) => currentIdSet.has(id));
-    const sourceStillMatches = session.sourceElements.every(
-      (element) => currentById.get(element.id) === element
-    );
-    if (
-      !finitePositiveGroupResizeBounds(targetBounds) ||
-      !Number.isFinite(rotationDeg) ||
-      !selectionStillMatches ||
-      !sourceStillMatches ||
-      studioRevisionProjectGenerationRef.current !== session.sourceDocumentGeneration ||
-      currentPageIdRef.current !== session.pageId ||
-      masterEditModeRef.current !== session.masterEditMode ||
-      activeSurfaceReviewLockedRef.current ||
-      !canApplyStudioMutation(session.mutationTicket)
-    ) {
-      setError(
-        "크기 조절 중 선택이나 문서가 바뀌어 안전하게 취소했어요."
-      );
+    if (!validateStudioSelectionResizeCommit({
+      session,
+      currentIds: currentCanvasResizeSelectionIds(),
+      currentElements,
+      targetBounds,
+      rotationDeg,
+      documentGeneration: studioRevisionProjectGenerationRef.current,
+      currentPageId: currentPageIdRef.current,
+      masterEditMode: masterEditModeRef.current,
+      activeSurfaceReviewLocked: activeSurfaceReviewLockedRef.current,
+      canApplyMutation: canApplyStudioMutation(session.mutationTicket),
+    })) {
+      setError("크기 조절 중 선택이나 문서가 바뀌어 안전하게 취소했어요.");
       return false;
     }
-
-    // Which planner runs, whether anything changed and what to say about it are pure facts;
-    // `planStudioSelectionTransformCommit` owns them so this host keeps only its refs.
     const plan = planStudioSelectionTransformCommit({
       elements: currentElements,
       selectedIds: session.selectedIds,
@@ -4426,20 +4361,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     | "wand"
     | "quick-select"
     | "color-range";
-  type PendingPixelSelectionRasterGesture = {
-    runId: number;
-    pointerId: number;
-    tool: SelectionToolKind | "wand" | "quick-select";
-    forceCircle: boolean;
-    combine: SelectionOperationMode;
-    start: { x: number; y: number };
-    current: { x: number; y: number };
-    shift: boolean;
-    alt: boolean;
-    released: boolean;
-    cancelled: boolean;
-    captureTarget: Element | null;
-  };
+  type PendingPixelSelectionRasterGesture = StudioPendingPixelSelectionRasterGesture;
   const pendingPixelSelectionRasterGestureRef =
     useRef<PendingPixelSelectionRasterGesture | null>(null);
   const pixelMarqueeRasterPreparationActivationRef = useRef<{
@@ -6293,36 +6215,14 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [continuityOpen, setContinuityOpen] = useState(false);
   const [webtoonAssistantOpen, setWebtoonAssistantOpen] = useState(false);
   const [aiSuperSuiteOpen, setAiSuperSuiteOpen] = useState<boolean | null>(null); // null defers first load.
-  const continuityScenes = useMemo(() => continuityOpen || productionInsightsOpen
-    ? pages.flatMap((page, pageIndex) =>
-        page.elements
-          .filter((element): element is FrameEl => element.type === "frame" && !!element.storyBeat)
-          .sort((a, b) => a.y - b.y || a.x - b.x)
-          .map((frame, sceneIndex) => ({
-            id: frame.id,
-            frameId: frame.id,
-            pageId: page.id,
-            label: `${pageDisplayName(page, pageIndex)} · 장면 ${sceneIndex + 1}${
-              frame.storyBeat?.summary ? ` — ${frame.storyBeat.summary.slice(0, 48)}` : ""
-            }`,
-            beat: {
-              sceneId: frame.id,
-              ...(frame.storyBeat?.continuity ?? {}),
-            } satisfies StudioStoryBeat,
-          }))
-      )
-    : [], [continuityOpen, productionInsightsOpen, pages]);
-  const continuityIssues: StudioContinuityIssue[] = useMemo(() => continuityOpen || productionInsightsOpen
-    ? lintStudioContinuity({
-        characters: characterBible.characters.map((character) => ({
-          name: character.name,
-          appearance: character.appearance,
-          voice: character.voice,
-          goal: character.goal,
-        })),
-        beats: continuityScenes.map((scene) => scene.beat),
-      })
-    : [], [continuityOpen, productionInsightsOpen, characterBible.characters, continuityScenes]);
+  const continuityScenes = useMemo(
+    () => deriveStudioContinuityScenes(continuityOpen || productionInsightsOpen, pages),
+    [continuityOpen, productionInsightsOpen, pages]
+  );
+  const continuityIssues: StudioContinuityIssue[] = useMemo(
+    () => deriveStudioContinuityIssues(continuityOpen || productionInsightsOpen, characterBible.characters, continuityScenes),
+    [continuityOpen, productionInsightsOpen, characterBible.characters, continuityScenes]
+  );
   const [timelapseCapturing, setTimelapseCapturing] = useState(false);
   const timelapseOriginalHiRef = useRef(0);
   const timelapseOriginalPageIdRef = useRef("");
@@ -6750,94 +6650,29 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setSharedDocumentNotice(null);
   }
   // useCallback: 패널 스택 memo 자식에서 렌더 중 호출 — prop 안정성 유지.
-  const currentPublishPackageCreditsText = useCallback((): string => {
-    const credits = new Map<string, string>();
-    if (publishPackageCredits.trim()) credits.set("manual", publishPackageCredits.trim());
-    for (const page of pages) {
-      for (const element of page.elements) {
-        if (element.type !== "image") continue;
-        if (element.stockImageCredit) {
-          const credit = element.stockImageCredit;
-          credits.set(
-            `stock:${credit.unsplashPhotoPageUrl}`,
-            `${credit.photographerName} · ${credit.photographerProfileUrl} · ${credit.unsplashPhotoPageUrl}`
-          );
-        }
-        if (element.communityAssetCredit) {
-          const line = formatStudioCommunityAssetCredit(element.communityAssetCredit);
-          if (line) credits.set(`community:${element.communityAssetCredit.assetId}`, line);
-        }
-      }
-    }
-    return [...credits.values()].join("\n");
-  }, [publishPackageCredits, pages]);
-  const publishPackagePlan: StudioPublishPackagePlan | null = publishPackageOpen
-    ? (() => {
-        const canvases = pages.map((page) => ({ id: page.id, width: CANVAS_W, height: page.canvasH }));
-        const slices = planStudioPublishCanvasSlices({
-          destination: effectivePublishPackageSettings.destination,
-          seriesTitle: title,
-          canvases,
-          format: effectivePublishPackageSettings.outputFormat,
-        });
-        const preset = getStudioPublishPlatformPreset(effectivePublishPackageSettings.destination);
-        const thumbnails = preset.thumbnails
-          .filter((thumbnail) =>
-            effectivePublishPackageSettings.requestedThumbnailSlots.includes(thumbnail.slot)
-          )
-          .map((thumbnail) => ({
-            id: `planned-thumbnail-${thumbnail.slot}`,
-            sourceCanvasId: currentPageId,
-            slot: thumbnail.slot,
-            mimeType: thumbnail.allowedMimeTypes[0],
-            width: thumbnail.width,
-            height: thumbnail.height,
-          }));
-        return planStudioPublishPackage({
-          settings: effectivePublishPackageSettings,
-          seriesTitle: title,
-          episodeTitle: writerRoom.stages["episode-outline"].title || title,
-          canvases,
-          episodeImages: slices.map((slice, index) => ({
-            id: `planned-episode-image-${index + 1}`,
-            sourceCanvasId: slice.sourceCanvasId,
-            mimeType: slice.mimeType,
-            width: slice.output.width,
-            height: slice.output.height,
-            fileName: slice.fileName,
-          })),
-          thumbnails,
-          creditsText: currentPublishPackageCreditsText(),
-        });
-      })()
-    : null;
-  const productionInsightsResult = productionInsightsOpen
-    ? (() => {
-        const productionPreflightResult = validateStudioPublishPreflight(
-          buildPublishPreflightInput(collectPublishPreflightProvenance()),
-          publishProfile
-        );
-        return computeStudioProductionInsights(
-          buildStudioProductionInsightsInput(pages, [
-            ...continuityIssues.map((issue) => ({ severity: issue.severity, resolved: false })),
-            ...productionPreflightResult.issues
-              .filter((issue) => issue.code !== "EDITORIAL_COMMENTS_OPEN")
-              .map((issue) => ({
-                severity: issue.severity,
-                resolved: false,
-              })),
-            ...publishComplianceResult.issues.map((issue) => ({
-              severity: issue.severity,
-              resolved: false,
-            })),
-            ...studioCommentViewDocument.threads.map((thread) => ({
-              severity: "warning" as const,
-              resolved: thread.resolved,
-            })),
-          ])
-        );
-      })()
-    : null;
+  const currentPublishPackageCreditsText = useCallback(
+    (): string => collectStudioPublishPackageCreditsText(publishPackageCredits, pages),
+    [publishPackageCredits, pages]
+  );
+  const publishPackagePlan: StudioPublishPackagePlan | null = buildStudioPublishPackagePlan({
+    open: publishPackageOpen,
+    pages,
+    canvasWidth: CANVAS_W,
+    currentPageId,
+    title,
+    episodeTitle: writerRoom.stages["episode-outline"].title || title,
+    settings: effectivePublishPackageSettings,
+    getCreditsText: currentPublishPackageCreditsText,
+  });
+  const productionInsightsResult = deriveStudioProductionInsightsResult({
+    open: productionInsightsOpen,
+    pages,
+    publishProfile,
+    continuityIssues,
+    publishComplianceResult,
+    commentThreads: studioCommentViewDocument.threads,
+    buildPreflightInput: () => buildPublishPreflightInput(collectPublishPreflightProvenance()),
+  });
   // PSD 레이어 가져오기 — studio-psd-import.ts 통합 상태(tri-tone 배너, StudioExportMenuPanel의
   // psdStatus/svgStatus/pdfStatus와 동일한 { tone, text } 관례).
   const [psdImportBusy, setPsdImportBusy] = useState(false);
@@ -7829,23 +7664,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   };
 
   const onMinimapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const mWidth = rect.width;
-    const mHeight = rect.height;
     const wrap = wrapRef.current;
     if (!wrap) return;
-    const target = planStudioViewScrollToDocumentPoint({
-      documentWidth: CANVAS_W,
-      documentHeight: canvasH,
-      canvasFlipH,
-      canvasRotation,
-      scale: effScale,
-      viewportWidth: wrap.clientWidth,
-      viewportHeight: wrap.clientHeight,
-      x: (mx / mWidth) * CANVAS_W,
-      y: (my / mHeight) * canvasH,
+    const target = computeStudioMinimapClickScrollTarget({
+      clientX: e.clientX, clientY: e.clientY, rect: e.currentTarget.getBoundingClientRect(),
+      canvasHeight: canvasH, canvasFlipH, canvasRotation, scale: effScale,
+      viewportWidth: wrap.clientWidth, viewportHeight: wrap.clientHeight,
     });
     wrap.scrollLeft = target.scrollLeft;
     wrap.scrollTop = target.scrollTop;
@@ -7856,41 +7680,19 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const onMinimapKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const wrap = wrapRef.current;
     if (!wrap) return;
-    const stepX = wrap.clientWidth / 4;
-    const stepY = wrap.clientHeight / 4;
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      wrap.scrollLeft -= stepX;
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      wrap.scrollLeft += stepX;
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      wrap.scrollTop -= stepY;
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      wrap.scrollTop += stepY;
-    } else {
-      return;
-    }
+    const delta = resolveStudioMinimapArrowScrollDelta(e.key, wrap.clientWidth, wrap.clientHeight);
+    if (!delta) return;
+    e.preventDefault();
+    wrap.scrollLeft += delta.dx;
+    wrap.scrollTop += delta.dy;
     updateScrollPos();
   };
 
   function projectStudioClientPointToDocument(clientX: number, clientY: number) {
     const host = zoomHostRef.current;
     if (!host) return null;
-    const rect = host.getBoundingClientRect();
-    if (!(rect.width > 0) || !(rect.height > 0)) return null;
-    const quarterTurn = canvasRotation === 90 || canvasRotation === 270;
-    const viewWidth = quarterTurn ? canvasH : CANVAS_W;
-    const viewHeight = quarterTurn ? CANVAS_W : canvasH;
-    return projectStudioViewPointToDocument({
-      documentWidth: CANVAS_W,
-      documentHeight: canvasH,
-      canvasFlipH,
-      canvasRotation,
-      x: ((clientX - rect.left) / rect.width) * viewWidth,
-      y: ((clientY - rect.top) / rect.height) * viewHeight,
+    return projectStudioHostClientPointToDocument({
+      clientX, clientY, hostRect: host.getBoundingClientRect(), canvasHeight: canvasH, canvasFlipH, canvasRotation,
     });
   }
 
@@ -7898,25 +7700,9 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     const host = zoomHostRef.current;
     const wrap = wrapRef.current;
     if (!host || !wrap) return null;
-    const hostRect = host.getBoundingClientRect();
-    const wrapRect = wrap.getBoundingClientRect();
-    return resolveStudioVisibleDocumentPlacement({
-      documentWidth: CANVAS_W,
-      documentHeight: canvasH,
-      canvasFlipH,
-      canvasRotation,
-      hostRect: {
-        left: hostRect.left,
-        top: hostRect.top,
-        right: hostRect.right,
-        bottom: hostRect.bottom,
-      },
-      viewportRect: {
-        left: wrapRect.left,
-        top: wrapRect.top,
-        right: wrapRect.right,
-        bottom: wrapRect.bottom,
-      },
+    return resolveStudioHostVisibleCanvasPlacement({
+      canvasHeight: canvasH, canvasFlipH, canvasRotation,
+      hostRect: host.getBoundingClientRect(), viewportRect: wrap.getBoundingClientRect(),
     });
   }
 
@@ -7925,36 +7711,10 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     center: { x: number; y: number };
     placement: CanvasImagePlacement;
   } {
-    const selectedFrame = selected?.type === "frame"
-      ? {
-          x: selected.x,
-          y: selected.y,
-          width: selected.width,
-          height: selected.height,
-        }
-      : null;
-    const visible = selectedFrame ? null : currentVisibleCanvasPlacement();
-    const target = resolveStudioInsertTarget({
-      documentWidth: CANVAS_W,
-      documentHeight: canvasH,
-      selectedFrame,
-      viewport: visible,
+    return resolveStudioHostCanvasInsertionTarget({
+      selected, canvasHeight: canvasH, activePageId: activePage.id, masterEditMode,
+      getVisiblePlacement: currentVisibleCanvasPlacement,
     });
-    const inset = target.source === "selected-frame"
-      ? Math.max(10, Math.min(28, Math.min(target.bounds.width, target.bounds.height) * 0.04))
-      : Math.max(16, Math.min(40, Math.min(target.bounds.width, target.bounds.height) * 0.05));
-    const key = target.source === "selected-frame" && selected?.type === "frame"
-      ? `${activePage.id}:${masterEditMode ? "master" : "page"}:frame:${selected.id}`
-      : `${activePage.id}:${masterEditMode ? "master" : "page"}:view:${Math.round(target.anchor.x / 80)}:${Math.round(target.anchor.y / 80)}`;
-    return {
-      key,
-      center: target.anchor,
-      placement: {
-        anchor: target.anchor,
-        bounds: target.bounds,
-        inset,
-      },
-    };
   }
 
   function nextAssetInsertionPlacement(): CanvasImagePlacement {
@@ -11672,11 +11432,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const liquifyPreviewBusyRef = useRef(false);
   const liquifyPreviewPendingRef = useRef(false);
   const liquifyPreviewTokenRef = useRef(0);
-  const liquifyPreviewSourceRef = useRef<{
-    elId: string;
-    src: string;
-    image: CanvasImageSource;
-  } | null>(null);
+  const liquifyPreviewSourceRef = useRef<StudioLiquifyPreviewSource | null>(null);
   const liquifyCaptureTargetRef = useRef<Element | null>(null);
   const liquifyHandledNativeEndEventsRef = useRef(new WeakSet<Event>());
   const liquifyPointerGlobalEndRef = useRef<(event: PointerEvent, cancelled: boolean) => boolean>(
@@ -11862,23 +11618,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   }, []);
   // 진행 중 드래그 — ref 가 원본(포인터 이벤트마다 갱신), 미리보기 상태는 RAF 로 합쳐 반영(마퀴와
   // 동일 패턴). frame 은 드래그 시작 시점 스냅샷 — 제스처 중 좌표 변환이 흔들리지 않는다.
-  const pixelDragRef = useRef<{
-    elId: string;
-    frame: SelectionFrame;
-    drag: SelectionDragState;
-    operation: SelectionOperationMode;
-    pointerId: number;
-    /** 자석 올가미 휘도장 스냅샷(드래그 시작 시점) — null 이면 일반 올가미와 동일하게 동작. */
-    magneticField: SelectionLuminanceField | null;
-    /**
-     * Magma-style marquee move: drag started inside an existing selection with replace intent.
-     * Only the outline moves; pixels stay put until a content transform is applied.
-     */
-    marqueeMove?: {
-      startNorm: { x: number; y: number };
-      baseSelection: PixelSelection;
-    };
-  } | null>(null);
+  const pixelDragRef = useRef<StudioPixelDragSession | null>(null);
   // arm-anytime(2026-07-24) — 대상 이미지 없이 무장된 픽셀 선택 도구의 첫 제스처가 방금 자동
   // 획득한 이미지 id. 요소 전환 effect 가 이 값을 보고, 같은 포인터 제스처로 연 드래그/다각형
   // 초안/완드 스캔을 취소하지 않는다(advanced fill 의 auto-arm ref 재무장과 동일한 패턴).
@@ -11909,10 +11649,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setPolyLassoSession(null);
     setPolyLassoHover(null);
   };
-  type PixelSelectionStateUpdate =
-    | PixelSelection
-    | null
-    | ((current: PixelSelection | null) => PixelSelection | null);
+  type PixelSelectionStateUpdate = StudioPixelSelectionStateUpdate;
   const selectedImageElementId = selectedId && activePage.elements.some(
     (element) => element.id === selectedId && element.type === "image"
   )
@@ -13277,26 +13014,11 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     plan: StudioTeamCommentMutationPlan
   ): boolean {
     if (collaborationDocumentLocked) return false;
-    const current = studioCommentViewDocumentRef.current;
-    const now = new Date();
-    const next = plan.kind === "create"
-      ? addStudioCommentThread(current, {
-          id: plan.mutationId,
-          anchor: plan.anchor,
-          author: studioCommentActor,
-          body: plan.body,
-          mentions: plan.mentions,
-        }, now)
-      : plan.kind === "reply"
-        ? addStudioCommentReply(current, plan.threadId, {
-            id: plan.mutationId,
-            author: studioCommentActor,
-            body: plan.body,
-            mentions: plan.mentions,
-          }, now)
-        : plan.kind === "resolve"
-          ? resolveStudioCommentThread(current, plan.threadId, studioCommentActor, now)
-          : reopenStudioCommentThread(current, plan.threadId, now);
+    const next = applyLocalStudioCommentMutationPlan(
+      studioCommentViewDocumentRef.current,
+      plan,
+      studioCommentActor
+    );
     if (!setStudioComments(next)) return false;
     setStudioCommentSyncError(null);
     return true;
@@ -13407,48 +13129,13 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   );
   // Figma식 자유 위치 핀이 잡혀 있으면 선택 기반 앵커보다 우선한다(현재 페이지에서만 유효).
   const activeCommentAnchor: StudioCommentAnchor = useMemo(
-    () =>
-      !masterEditMode && selected?.type === "frame"
-          ? { type: "frame", pageId: activePage.id, frameId: selected.id }
-          : !masterEditMode && selected
-            ? { type: "element", pageId: activePage.id, elementId: selected.id }
-            : pointCommentAnchor && pointCommentAnchor.pageId === activePage.id && !masterEditMode
-              ? { type: "point", ...pointCommentAnchor }
-            : { type: "page", pageId: activePage.id },
+    () => deriveStudioActiveCommentAnchor({ masterEditMode, selected, activePageId: activePage.id, pointCommentAnchor }),
     [pointCommentAnchor, activePage.id, masterEditMode, selected]
   );
-  const studioCommentAnchorOptions = useMemo(() => {
-    const all = pages.flatMap((page, pageIndex) => {
-      const options: Array<{ anchor: StudioCommentAnchor; label: string }> = [
-        { anchor: { type: "page", pageId: page.id }, label: pageDisplayName(page, pageIndex) },
-      ];
-      let frameIndex = 0;
-      for (const element of page.elements) {
-        if (element.type !== "frame") continue;
-        frameIndex += 1;
-        options.push({
-          anchor: { type: "frame", pageId: page.id, frameId: element.id },
-          label: `${pageDisplayName(page, pageIndex)} · 컷 ${frameIndex}${
-            element.storyBeat?.summary ? ` — ${element.storyBeat.summary.slice(0, 32)}` : ""
-          }`,
-        });
-      }
-      return options;
-    });
-    if (!masterEditMode && selected && selected.type !== "frame") {
-      all.push({
-        anchor: { type: "element", pageId: activePage.id, elementId: selected.id },
-        label: `${pageDisplayName(activePage, activePageIndex)} · ${elementLabel(selected)}`,
-      });
-    }
-    if (pointCommentAnchor && pointCommentAnchor.pageId === activePage.id && !masterEditMode) {
-      all.push({
-        anchor: { type: "point", ...pointCommentAnchor },
-        label: `${pageDisplayName(activePage, activePageIndex)} · 위치 ${Math.round(pointCommentAnchor.x * 100)}%, ${Math.round(pointCommentAnchor.y * 100)}%`,
-      });
-    }
-    return all;
-  }, [pages, masterEditMode, selected, pointCommentAnchor, activePage, activePageIndex]);
+  const studioCommentAnchorOptions = useMemo(
+    () => deriveStudioCommentAnchorOptions({ pages, masterEditMode, selected, pointCommentAnchor, activePage, activePageIndex }),
+    [pages, masterEditMode, selected, pointCommentAnchor, activePage, activePageIndex]
+  );
 
   const isStudioCommentAnchorValid = useCallback(
     (anchor: StudioCommentAnchor): boolean => isStudioCommentAnchorValidInPages(anchor, pages),
@@ -13476,96 +13163,36 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     return selectCommentEditorTarget(studioEditorTargetForComment(anchor));
   }
   const studioOpenCanvasThreads = useMemo(
-    () =>
-      studioCommentPinsHidden
-      || (studioTeamCommentsWorkId
-        ? studioTeamCommentCapabilities?.view !== true
-        : expectsSharedDocument && !sharedDocument?.capabilities.view)
-      || masterEditMode
-        ? []
-        : studioCommentViewDocument.threads.filter(
-            (thread) => !thread.resolved
-              && thread.anchor.type !== "pdf-page"
-              && thread.anchor.type !== "compare-image"
-              && thread.anchor.pageId === activePage.id
-          ),
+    () => deriveStudioOpenCanvasCommentThreads({
+      studioCommentPinsHidden, studioTeamCommentsWorkId, teamCanView: studioTeamCommentCapabilities?.view,
+      expectsSharedDocument, sharedCanView: sharedDocument?.capabilities.view,
+      masterEditMode, threads: studioCommentViewDocument.threads, activePageId: activePage.id,
+    }),
     [studioCommentPinsHidden, studioTeamCommentsWorkId, studioTeamCommentCapabilities?.view, expectsSharedDocument, sharedDocument?.capabilities.view, masterEditMode, studioCommentViewDocument.threads, activePage.id]
   );
-  const studioCanvasCommentBounds = useMemo(() => {
-    const targetIds = new Set(
-      studioOpenCanvasThreads.flatMap((thread) =>
-        thread.anchor.type === "frame"
-          ? [thread.anchor.frameId]
-          : thread.anchor.type === "element"
-            ? [thread.anchor.elementId]
-            : []
-      )
-    );
-    const bounds = new Map<string, { x: number; y: number; width: number; height: number }>();
-    if (targetIds.size > 0) {
-      for (const element of activePage.elements) {
-        if (!targetIds.has(element.id)) continue;
-        const b = elBounds(element);
-        bounds.set(element.id, { x: b.x, y: b.y, width: b.w, height: b.h });
-      }
-    }
-    return bounds;
-  }, [studioOpenCanvasThreads, activePage.elements]);
-  const studioCanvasCommentPins = useMemo(() => studioOpenCanvasThreads.length > 0
-    ? projectStudioCanvasCommentPins({
-        threads: studioOpenCanvasThreads,
-        pageId: activePage.id,
-        canvasWidth: CANVAS_W,
-        canvasHeight: canvasH,
-        boundsByElementId: studioCanvasCommentBounds,
-        unreadThreadIds: studioTeamUnreadCommentIdSet,
-        labelForAnchor: (anchor) =>
-          studioCommentAnchorOptions.find((option) =>
-            studioCommentAnchorsEqual(option.anchor, anchor)
-          )?.label ??
-          (anchor.type === "page"
-            ? "페이지 댓글"
-            : anchor.type === "frame"
-              ? "컷 댓글"
-              : anchor.type === "point"
-                ? "위치 댓글"
-                : anchor.type === "pdf-page"
-                  ? "PDF 페이지 댓글"
-                  : "요소 댓글"),
-      })
-    : [], [studioOpenCanvasThreads, activePage.id, canvasH, studioCanvasCommentBounds, studioCommentAnchorOptions, studioTeamUnreadCommentIdSet]);
-  const studioCommentPinReanchorableThreadIds = useMemo(() => {
-    const threadIds = new Set<string>();
-    for (const thread of studioOpenCanvasThreads) {
-      if (thread.anchor.type !== "point") continue;
-      if (!studioTeamCommentsWorkId) {
-        if (!collaborationDocumentLocked) threadIds.add(thread.id);
-        continue;
-      }
-      if (studioLegacyCommentThreadIdSet.has(thread.id)) continue;
-      if (
-        studioTeamCommentCapabilities?.reanchor === true
-        || (studioAuthUserId && thread.author.id === studioAuthUserId)
-      ) {
-        threadIds.add(thread.id);
-      }
-    }
-    return threadIds;
-  }, [
-    collaborationDocumentLocked,
-    studioAuthUserId,
-    studioLegacyCommentThreadIdSet,
-    studioOpenCanvasThreads,
-    studioTeamCommentCapabilities?.reanchor,
-    studioTeamCommentsWorkId,
-  ]);
-  const studioCommentPinReanchorDisabledReason = studioTeamCommentsWorkId
-    ? studioTeamCommentCapabilities === null
-      ? t("studio.hostReason.commentPinCheckingPermission", "팀 댓글 권한을 확인하고 있어요.")
-      : t("studio.hostReason.commentPinOwnOnly", "자신이 작성한 핀만 옮길 수 있어요.")
-    : collaborationDocumentLocked
-      ? t("studio.hostReason.commentPinReadOnly", "읽기 전용 원고에서는 위치를 변경할 수 없어요.")
-      : undefined;
+  const studioCanvasCommentBounds = useMemo(
+    () => deriveStudioCanvasCommentBounds(studioOpenCanvasThreads, activePage.elements),
+    [studioOpenCanvasThreads, activePage.elements]
+  );
+  const studioCanvasCommentPins = useMemo(
+    () => deriveStudioCanvasCommentPins({
+      openThreads: studioOpenCanvasThreads, pageId: activePage.id, canvasWidth: CANVAS_W, canvasHeight: canvasH,
+      boundsByElementId: studioCanvasCommentBounds, unreadThreadIds: studioTeamUnreadCommentIdSet,
+      anchorOptions: studioCommentAnchorOptions,
+    }),
+    [studioOpenCanvasThreads, activePage.id, canvasH, studioCanvasCommentBounds, studioCommentAnchorOptions, studioTeamUnreadCommentIdSet]
+  );
+  const studioCommentPinReanchorableThreadIds = useMemo(
+    () => deriveStudioCommentPinReanchorableIds({
+      openThreads: studioOpenCanvasThreads, studioTeamCommentsWorkId, collaborationDocumentLocked,
+      legacyThreadIds: studioLegacyCommentThreadIdSet, teamCanReanchor: studioTeamCommentCapabilities?.reanchor,
+      authUserId: studioAuthUserId,
+    }),
+    [collaborationDocumentLocked, studioAuthUserId, studioLegacyCommentThreadIdSet, studioOpenCanvasThreads, studioTeamCommentCapabilities?.reanchor, studioTeamCommentsWorkId]
+  );
+  const studioCommentPinReanchorDisabledReason = deriveStudioCommentPinReanchorDisabledReason({
+    studioTeamCommentsWorkId, capabilities: studioTeamCommentCapabilities, collaborationDocumentLocked, translate: t,
+  });
   const studioCommentThreadSessionThreads = useMemo(
     () => selectStudioCommentThreadSessionSourceThreads(
       studioCommentThreadSession.surface,
@@ -13611,27 +13238,14 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   function selectStudioCommentPinThread(
     payload: StudioCommentPinClickPayload
   ): { selected: StudioCommentThread; cluster: StudioCommentThread[] } | null {
-    const payloadThreadIds = new Set(payload.threadIds);
-    const candidates = studioCommentViewDocumentRef.current.threads.filter((thread) =>
-      payloadThreadIds.has(thread.id)
-      && !thread.resolved
-      && studioCommentAnchorsEqual(thread.anchor, payload.anchor)
-    );
-    if (candidates.length === 0) return null;
-    const mutableCandidates = studioTeamCommentsScopeRef.current
-      ? candidates.filter((thread) => !studioLegacyCommentThreadIdSet.has(thread.id))
-      : candidates;
-    const cluster = (mutableCandidates.length > 0 ? mutableCandidates : candidates)
-      .sort((left, right) => {
-        const unreadDifference = Number(studioTeamUnreadCommentIdSet.has(right.id))
-          - Number(studioTeamUnreadCommentIdSet.has(left.id));
-        return unreadDifference || compareStudioCommentThreadActivity(left, right);
-      });
-    const currentDraft = studioCommentThreadSessionRef.current.draft;
-    const selected = currentDraft?.body.trim()
-      ? cluster.find((thread) => thread.id === currentDraft.threadId) ?? cluster[0]
-      : cluster[0];
-    return selected ? { selected, cluster } : null;
+    return selectStudioCommentPinThreadFromDocument({
+      payload,
+      threads: studioCommentViewDocumentRef.current.threads,
+      teamScopeWorkId: studioTeamCommentsScopeRef.current,
+      legacyThreadIds: studioLegacyCommentThreadIdSet,
+      unreadThreadIds: studioTeamUnreadCommentIdSet,
+      currentDraft: studioCommentThreadSessionRef.current.draft,
+    });
   }
 
   // 의도된 변경(2026-08, B-06): 핀 재앵커 본문은 화면 투영 핸들러들과 함께
@@ -13744,97 +13358,32 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     dispatchStudioCommentThreadSession({ type: "draft.change", threadId, body });
   }
 
-  async function submitStudioCommentThreadReply(
-    threadId: string,
-    body: string
-  ): Promise<boolean> {
-    const session = studioCommentThreadSessionRef.current;
-    if (session.selectedThreadId !== threadId) return false;
-    const mutationId = session.draft?.threadId === threadId
-      && session.draft.body.trim() === body.trim()
-      && session.draft.mutationId
-        ? session.draft.mutationId
-        : createStudioCommentMessageId("reply");
-    const trimmedBody = body.trim();
-    // The quick reply carries no recorded mentions, so settle them from the body at plan
-    // creation time — the same derivation the document-diff planner applies to
-    // panel-written replies — or the server would store this reply with no mentions.
-    const { planStudioTeamCommentReplyMentions } = await loadStudioTeamCommentMutationPlanner();
-    if (studioCommentThreadSessionRef.current.selectedThreadId !== threadId) return false;
-    const plan: StudioCommentThreadSessionMutationPlan = {
-      kind: "reply",
-      mutationId,
-      threadId,
-      body: trimmedBody,
-      mentions: planStudioTeamCommentReplyMentions(
-        trimmedBody,
-        studioCommentViewDocumentRef.current,
-        studioCommentActor
-      ),
-    };
-    dispatchStudioCommentThreadSession({ type: "mutation.start", plan });
-    try {
-      const accepted = await executeStudioCommentMutationPlan(plan);
-      if (!accepted) {
-        dispatchStudioCommentThreadSession({ type: "mutation.failure", mutationId });
-        return false;
-      }
-      dispatchStudioCommentThreadSession({ type: "mutation.receipt", plan });
-      return true;
-    } catch (cause) {
-      dispatchStudioCommentThreadSession({ type: "mutation.failure", mutationId });
-      throw cause;
-    }
+  async function submitStudioCommentThreadReply(threadId: string, body: string): Promise<boolean> {
+    return runSubmitStudioCommentThreadReply({
+      threadId, body, sessionRef: studioCommentThreadSessionRef, documentRef: studioCommentViewDocumentRef,
+      actor: studioCommentActor, dispatch: dispatchStudioCommentThreadSession,
+      executeMutationPlan: executeStudioCommentMutationPlan,
+    });
   }
 
-  async function changeStudioCommentThreadResolution(
-    threadId: string,
-    resolved: boolean
-  ): Promise<boolean> {
-    const session = studioCommentThreadSessionRef.current;
-    if (session.selectedThreadId !== threadId) return false;
-    if (studioCommentThreadSessionDraftBlocksResolutionChange(session, threadId, resolved)) {
-      throw new Error(hostErrorText("studio.hostError.commentReplyDraftBlocksResolution", "작성 중인 답글을 등록하거나 내용을 비운 뒤 해결 상태를 변경해 주세요."));
-    }
-    const plan = resolved
-      ? { kind: "resolve" as const, threadId }
-      : { kind: "reopen" as const, threadId };
-    const operationId = createStudioCommentMessageId("reply");
-    const mutationId = studioCommentThreadSessionMutationId(plan, operationId);
-    dispatchStudioCommentThreadSession({ type: "mutation.start", plan, operationId });
-    try {
-      const accepted = await executeStudioCommentMutationPlan(plan);
-      if (!accepted) {
-        dispatchStudioCommentThreadSession({ type: "mutation.failure", mutationId });
-        return false;
-      }
-      dispatchStudioCommentThreadSession({ type: "mutation.receipt", plan, operationId });
-      if (resolved) closeStudioCommentThreadPopover("explicit");
-      return true;
-    } catch (cause) {
-      dispatchStudioCommentThreadSession({ type: "mutation.failure", mutationId });
-      throw cause;
-    }
+  async function changeStudioCommentThreadResolution(threadId: string, resolved: boolean): Promise<boolean> {
+    return runChangeStudioCommentThreadResolution({
+      threadId, resolved, sessionRef: studioCommentThreadSessionRef, dispatch: dispatchStudioCommentThreadSession,
+      executeMutationPlan: executeStudioCommentMutationPlan, closePopover: closeStudioCommentThreadPopover,
+    });
   }
 
   function navigateStudioCommentPinCluster(direction: -1 | 1): void {
-    const view = studioCommentThreadSessionView;
-    if (view.clusterThreads.length < 2 || view.selectedClusterIndex < 0) return;
-    if (view.selectedDraft?.body.trim()) {
-      setStudioCommentInteractionNotice("작성 중인 답글을 등록하거나 내용을 비운 뒤 다른 댓글로 이동해 주세요.");
+    const outcome = resolveStudioCommentPinClusterNavigation(studioCommentThreadSessionView, direction);
+    if (outcome.kind === "noop") return;
+    if (outcome.kind === "blocked-by-draft") {
+      setStudioCommentInteractionNotice(outcome.notice);
       return;
     }
-    const nextIndex = (
-      view.selectedClusterIndex + direction + view.clusterThreads.length
-    ) % view.clusterThreads.length;
-    const nextThread = view.clusterThreads[nextIndex];
-    if (!nextThread) return;
+    const { nextThread } = outcome;
     dispatchStudioCommentThreadSession({
-      type: "thread.select",
-      threadId: nextThread.id,
-      threads: studioCommentThreadSessionThreads,
-      reason: "canvas-pin",
-      clusterThreadIds: view.clusterThreads.map((thread) => thread.id),
+      type: "thread.select", threadId: nextThread.id, threads: studioCommentThreadSessionThreads,
+      reason: "canvas-pin", clusterThreadIds: [...outcome.clusterThreadIds],
     });
     setStudioCommentInteractionNotice(null);
     void markStudioCommentThreadRead(nextThread.id).catch(() => false);
@@ -14178,66 +13727,23 @@ const cropArmed =
     }
   }, [bubbleShapeArmed, resetBubbleShapeSession]);
   function addBubbleShapePointFromInspector(): void {
-    if (
-      !bubbleShapeArmed ||
-      selected?.type !== "bubble" ||
-      selectedContentMutationLocked ||
-      !hasCustomBubbleShape(selected.customShapePoints)
-    ) {
-      return;
-    }
-    const points = selected.customShapePoints;
-    const pointCount = points.length / 2;
-    let segmentIndex =
-      bubbleShapeSelectedPointIndex !== null &&
-      bubbleShapeSelectedPointIndex >= 0 &&
-      bubbleShapeSelectedPointIndex < pointCount
-        ? bubbleShapeSelectedPointIndex
-        : 0;
-    if (bubbleShapeSelectedPointIndex === null) {
-      let longestSquared = -1;
-      for (let index = 0; index < pointCount; index++) {
-        const nextIndex = (index + 1) % pointCount;
-        const dx = points[nextIndex * 2]! - points[index * 2]!;
-        const dy = points[nextIndex * 2 + 1]! - points[index * 2 + 1]!;
-        const lengthSquared = dx * dx + dy * dy;
-        // tie는 먼저 나온 선분을 유지해 CRDT 클라이언트간 결과를 결정적으로 만든다.
-        if (lengthSquared > longestSquared) {
-          longestSquared = lengthSquared;
-          segmentIndex = index;
-        }
-      }
-    }
-    const nextIndex = (segmentIndex + 1) % pointCount;
-    const midpointX = (points[segmentIndex * 2]! + points[nextIndex * 2]!) / 2;
-    const midpointY = (points[segmentIndex * 2 + 1]! + points[nextIndex * 2 + 1]!) / 2;
-    const inserted = insertBubbleShapePointAtClosestSegment(points, midpointX, midpointY);
-    if (!inserted.changed || inserted.pointIndex === null) return;
+    if (!bubbleShapeArmed || selected?.type !== "bubble" || selectedContentMutationLocked) return;
+    const inserted = computeStudioBubbleOutlinePointInsert(selected.customShapePoints, bubbleShapeSelectedPointIndex);
+    if (!inserted) return;
     patchEl(selected.id, { customShapePoints: inserted.points } as Partial<El>);
     setBubbleShapeSelectedPointIndex(inserted.pointIndex);
     announceDrawingShortcut(`말풍선 외곽선 점 추가 · ${inserted.points.length / 2}개`);
   }
   function removeBubbleShapePointFromInspector(): void {
-    if (
-      !bubbleShapeArmed ||
-      selected?.type !== "bubble" ||
-      selectedContentMutationLocked ||
-      bubbleShapeSelectedPointIndex === null
-    ) {
-      return;
-    }
-    const removed = removeBubbleShapePoint(
-      selected.customShapePoints ?? [],
-      bubbleShapeSelectedPointIndex
-    );
-    if (removed.changed) {
+    if (!bubbleShapeArmed || selected?.type !== "bubble" || selectedContentMutationLocked || bubbleShapeSelectedPointIndex === null) return;
+    const removed = computeStudioBubbleOutlinePointRemoval(selected.customShapePoints, bubbleShapeSelectedPointIndex);
+    if (removed.kind === "removed") {
       patchEl(selected.id, { customShapePoints: removed.points } as Partial<El>);
-      const nextCount = removed.points.length / 2;
-      setBubbleShapeSelectedPointIndex(Math.min(bubbleShapeSelectedPointIndex, nextCount - 1));
-      announceDrawingShortcut(`말풍선 외곽선 점 삭제 · ${nextCount}개`);
+      setBubbleShapeSelectedPointIndex(removed.nextSelectedIndex);
+      announceDrawingShortcut(`말풍선 외곽선 점 삭제 · ${removed.points.length / 2}개`);
       return;
     }
-    if (removed.outcome === "minimum-points") {
+    if (removed.kind === "minimum-points") {
       announceDrawingShortcut(t("studio.hostStatus.bubbleMinPoints", "말풍선 외곽선에는 최소 3개의 점이 필요합니다"));
     }
   }
@@ -14275,22 +13781,12 @@ const puppetWarpArmed =
     () => resolveBg3dEditSource(selected),
     [selected, resolveBg3dEditSource]
   );
-  const selectedLinked3dReview = useMemo(() => {
-    const bundleId = selected?.type === "image"
-      ? selected.bg3dLtBundleId
-      : selected?.type === "draw" ? selected.linked3dCorrection?.bundleId : undefined;
-    const linkedScene = bundleId
-      ? elements.find((element): element is ImageEl => element.type === "image"
-        && element.bg3dLtBundleId === bundleId && element.bg3dScene !== undefined)?.bg3dScene
-      : undefined;
-    const scene = selectedBg3dEditSource?.scene
-      ?? (linkedScene ? snapshotStudioScene3dLinkedLayerEditSource(linkedScene) : null);
-    return scene ? describeStudioScene3dLinkedLayerReview({
-      scene,
-      bundleId,
-      linked3dRender: activePage.linked3dRender,
-    }) : null;
-  }, [activePage.linked3dRender, elements, selected, selectedBg3dEditSource]);
+  const selectedLinked3dReview = useMemo(
+    () => deriveStudioSelectedLinked3dReview({
+      selected, elements, selectedBg3dEditSource, linked3dRender: activePage.linked3dRender,
+    }),
+    [activePage.linked3dRender, elements, selected, selectedBg3dEditSource]
+  );
   const contextMenuBg3dEditSource = resolveBg3dEditSource(contextMenuEl);
   // Auto-coach only while the page is still idle. Late work/autosave hydration must not
   // cover the canvas after the artist already placed content or operated any Studio control
@@ -15305,34 +14801,19 @@ const puppetWarpArmed =
         : EMPTY_STUDIO_OPTIONAL_ASSETS.fxOverlays,
     [fxMenuOpen, studioOptionalAssets.fxOverlays, fxSearchQuery]
   );
-  const fxPickerHasResults = fxMenuOpen && (
-    (fxSectionVisible("raster") && fxRasterFiltered.length > 0) ||
-    (fxSectionVisible("sfx") && fxSfxFiltered.length > 0) ||
-    (fxSectionVisible("emoji") && fxEmojisFiltered.length > 0) ||
-    (fxSectionVisible("comic") && fxComicFiltered.length > 0) ||
-    (fxSectionVisible("creature") && fxCreatureFiltered.length > 0) ||
-    (fxSectionVisible("prop") && fxPropFiltered.length > 0) ||
-    (fxSectionVisible("lines") && fxLinePresetsFiltered.length > 0) ||
-    (fxSectionVisible("overlay") && fxOverlaysFiltered.length > 0)
-  );
+  const fxPickerHasResults = hasStudioFxPickerResults({
+    fxMenuOpen, sectionVisible: fxSectionVisible, rasterCount: fxRasterFiltered.length,
+    sfxCount: fxSfxFiltered.length, emojiCount: fxEmojisFiltered.length, comicCount: fxComicFiltered.length,
+    creatureCount: fxCreatureFiltered.length, propCount: fxPropFiltered.length,
+    linePresetCount: fxLinePresetsFiltered.length, overlayCount: fxOverlaysFiltered.length,
+  });
 
   const bgSceneSectionsFiltered = useMemo(
-    () =>
-      bgSceneMenuOpen
-        ? filterBgSceneSections(
-            bgSceneGenreFilter === "all"
-              ? studioOptionalAssets.bgSceneSections
-              : studioOptionalAssets.bgSceneGenreGroups.filter((group) => group.genre === bgSceneGenreFilter),
-            bgSceneSearchQuery
-          )
-        : EMPTY_STUDIO_OPTIONAL_ASSETS.bgSceneSections,
-    [
-      bgSceneMenuOpen,
-      bgSceneGenreFilter,
-      studioOptionalAssets.bgSceneSections,
-      studioOptionalAssets.bgSceneGenreGroups,
-      bgSceneSearchQuery,
-    ]
+    () => filterStudioBgSceneCatalogSections(
+      bgSceneMenuOpen, bgSceneGenreFilter, studioOptionalAssets.bgSceneSections,
+      studioOptionalAssets.bgSceneGenreGroups, bgSceneSearchQuery
+    ),
+    [bgSceneMenuOpen, bgSceneGenreFilter, studioOptionalAssets.bgSceneSections, studioOptionalAssets.bgSceneGenreGroups, bgSceneSearchQuery]
   );
 
   // 이메레스(스케치 밑그림) 피커 검색/카테고리 상태
@@ -15344,13 +14825,7 @@ const puppetWarpArmed =
   // 하나만 보여준다 — 다른 카드에서 다시 누르면 그 카드 기준으로 갈아탄다).
   const [emeresSimilarAnchorId, setEmeresSimilarAnchorId] = useState<string | null>(null);
   const emeresSectionsFiltered = useMemo(
-    () =>
-      emeresMenuOpen
-        ? studioOptionalAssets.emeresSections
-            .filter((section) => emeresCategoryFilter === "all" || section.category === emeresCategoryFilter)
-            .map((section) => ({ ...section, templates: filterAssetsByLabel(section.templates, emeresSearchQuery) }))
-            .filter((section) => section.templates.length > 0)
-        : EMPTY_STUDIO_OPTIONAL_ASSETS.emeresSections,
+    () => filterStudioEmeresCatalogSections(emeresMenuOpen, studioOptionalAssets.emeresSections, emeresCategoryFilter, emeresSearchQuery),
     [emeresMenuOpen, studioOptionalAssets.emeresSections, emeresCategoryFilter, emeresSearchQuery]
   );
 
@@ -16476,38 +15951,15 @@ const puppetWarpArmed =
     setBubbleAnchorPickActive(false);
     patchEl(selected.id, { tailAnchorId: undefined, tailAnchorPoint: undefined } as Partial<El>);
   }
-  function currentStudioDrawingAssistDocument(): {
-    document: StudioDrawingAssistDocument;
-    persistedDocument: StudioDrawingAssistDocument;
-    page: PageState;
-    pages: PageState[];
-  } | null {
-    const history = pagesHistoryRef.current;
-    const historyIndex = Math.max(0, Math.min(pagesHiRef.current, Math.max(0, history.length - 1)));
-    const currentPages = history[historyIndex] ?? pages;
-    const page = currentPages.find((candidate) => candidate.id === currentPageIdRef.current);
-    if (!page) return null;
-    const normalized = normalizeStudioDrawingAssistDocument(page.drawingAssist, {
-      canvasWidth: CANVAS_W,
-      canvasHeight: page.canvasH,
+  function currentStudioDrawingAssistDocument() {
+    return deriveStudioDrawingAssistDocumentSnapshot({
+      history: pagesHistoryRef.current,
+      historyIndex: pagesHiRef.current,
+      fallbackPages: pages,
+      currentPageId: currentPageIdRef.current,
+      showIsometricOnDraw: appSettingsRef.current.grids.showIsometricOnDraw,
+      preview: drawingAssistPreviewRef.current,
     });
-    const defaulted = page.drawingAssist === undefined
-      && appSettingsRef.current.grids.showIsometricOnDraw
-      ? { ...normalized, isometric: { ...normalized.isometric, active: true } }
-      : normalized;
-    const preview = drawingAssistPreviewRef.current;
-    return {
-      document: resolveStudioDrawingAssistPreviewDocument({
-        preview,
-        pageId: page.id,
-        source: page.drawingAssist,
-        fallback: defaulted,
-        viewport: { canvasWidth: CANVAS_W, canvasHeight: page.canvasH },
-      }),
-      persistedDocument: defaulted,
-      page,
-      pages: currentPages,
-    };
   }
 
   function previewStudioDrawingAssistDocument(
@@ -16727,28 +16179,9 @@ const puppetWarpArmed =
         pixelRatio: 2 / effScale,
       }),
     }), 2);
-    const newFrameId = uid();
-    // 마지막 캡처 이후 새로 추가된 "draw" 타입 요소 중 캡처 bbox와 겹치는 것만 스트로크로 간주해
-    // 소거한다(텍스트/말풍선/스티커 등 다른 새 요소는 건드리지 않는다 — flatten은 펜 스크래치만 소비).
-    const bbox = { x: el.x, y: el.y, w: el.width, h: el.height };
-    const overlaps = (b: { x: number; y: number; w: number; h: number }) =>
-      b.x < bbox.x + bbox.w && b.x + b.w > bbox.x && b.y < bbox.y + bbox.h && b.y + b.h > bbox.y;
-    const newStrokeIds = new Set(
-      elements
-        .filter((e) => e.type === "draw" && !capturedElementIdsRef.current.has(e.id) && overlaps(elBounds(e)))
-        .map((e) => e.id)
-    );
-    const kept = elements.filter((e) => !newStrokeIds.has(e.id));
-    const next = kept.map((e) =>
-      e.id === elId
-        ? ({
-            ...e,
-            frames: insertFrame((e as ImageEl).frames ?? [], { id: newFrameId, src }, (e as ImageEl).activeFrameId ?? null),
-            activeFrameId: newFrameId,
-            src,
-          } as El)
-        : e
-    );
+    const next = planStudioAnimFrameCaptureElements({
+      elements, target: el, capturedElementIds: capturedElementIdsRef.current, newFrameId: uid(), src,
+    });
     if (!markStudioDocumentChanged()) return;
     commit(next);
     capturedElementIdsRef.current = new Set(next.map((e) => e.id));
@@ -17153,101 +16586,17 @@ const puppetWarpArmed =
   }
   function splitFrameSelected(orientation: "horizontal" | "vertical") {
     if (!selected || selected.type !== "frame") return;
-    const f = selected as FrameEl;
-    const ratio = panelSplitRatio / 100;
-    const gutter = panelGutter;
-
-    let f1: FrameEl;
-    let f2: FrameEl;
-
-    if (orientation === "horizontal") {
-      const availableH = f.height - gutter;
-      const h1 = Math.round(availableH * ratio);
-      const h2 = Math.round(availableH * (1 - ratio));
-      f1 = {
-        id: uid(),
-        type: "frame",
-        x: f.x,
-        y: f.y,
-        width: f.width,
-        height: h1,
-        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
-      };
-      f2 = {
-        id: uid(),
-        type: "frame",
-        x: f.x,
-        y: f.y + h1 + gutter,
-        width: f.width,
-        height: h2,
-        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
-      };
-    } else {
-      const availableW = f.width - gutter;
-      const w1 = Math.round(availableW * ratio);
-      const w2 = Math.round(availableW * (1 - ratio));
-      f1 = {
-        id: uid(),
-        type: "frame",
-        x: f.x,
-        y: f.y,
-        width: w1,
-        height: f.height,
-        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
-      };
-      f2 = {
-        id: uid(),
-        type: "frame",
-        x: f.x + w1 + gutter,
-        y: f.y,
-        width: w2,
-        height: f.height,
-        bg: f.bg, bundleSourceCredit: f.bundleSourceCredit,
-      };
-    }
-
-    const nextElements = elements.filter((e) => e.id !== f.id);
-    const splitLabel =
-      "name" in f && typeof f.name === "string" && f.name.trim() ? f.name : "컷";
-    const folder1 = createFrameFolderGroupForNewFrame({ frameLabel: splitLabel, groupId: uid() });
-    const folder2 = createFrameFolderGroupForNewFrame({ frameLabel: splitLabel, groupId: uid() });
-    updateActivePage({
-      elements: [...nextElements, f1, f2],
-      groups: [...groups, ...(folder1 ? [folder1] : []), ...(folder2 ? [folder2] : [])],
+    const planned = planStudioSplitFrameSelected({
+      frame: selected, orientation, panelSplitRatio, panelGutter, elements, groups, allocateId: uid,
     });
-    setSelectedId(f1.id);
+    updateActivePage({ elements: planned.elements, groups: planned.groups });
+    setSelectedId(planned.selectedId);
   }
   function addFocusLines() {
-    addEl({
-      id: uid(),
-      type: "focusLines",
-      x: 100,
-      y: 100,
-      width: 360,
-      height: 360,
-      lineCount: 80,
-      innerRadius: 100,
-      outerRadius: 360,
-      stroke: "#16100c",
-      strokeWidth: 2.5,
-      noise: 20,
-      rotation: 0,
-    });
+    addEl(createStudioFocusLinesElement(uid()));
   }
   function addSpeedLines() {
-    addEl({
-      id: uid(),
-      type: "speedLines",
-      x: 50,
-      y: 200,
-      width: 500,
-      height: 180,
-      lineCount: 50,
-      direction: "horizontal",
-      stroke: "#16100c",
-      strokeWidth: 2.5,
-      rotation: 0,
-    });
+    addEl(createStudioSpeedLinesElement(uid()));
   }
   function yieldQuickStart() {
     // 첫 조작은 코치를 영구히 지우지 않는다 — 접힌 "사용법" 상태로 남겨 두고,
@@ -18901,30 +18250,7 @@ const puppetWarpArmed =
     items: ScenarioPreviewItem[],
     target: "current-page" | "new-page" = scenarioApplyTarget
   ) {
-    const existingFrames =
-      target === "current-page"
-        ? elements.filter((element): element is FrameEl => element.type === "frame")
-        : [];
-    const layout = layoutScenarioPanels(
-      existingFrames,
-      CANVAS_W,
-      target === "current-page" ? canvasH : 1080,
-      items.map((item) => ({
-        beatType: item.beatType,
-        summary: item.summary,
-        imagePrompt: item.imagePrompt,
-        dialogue: item.dialogue,
-        continuity: item.continuity,
-      }))
-    );
-    return {
-      nextCanvasH: layout.nextCanvasH,
-      items: layout.panels.map((panel, index) => ({
-        ...panel,
-        ...scenarioReviewedArtwork(items[index]),
-        ...scenarioGenerationPreferences(items[index] ?? {}),
-      })),
-    };
+    return computeStudioScenarioDraftRelayout({ items, target, elements, canvasHeight: canvasH });
   }
 
   function onScenarioApplyTargetChange(target: "current-page" | "new-page") {
@@ -18935,28 +18261,11 @@ const puppetWarpArmed =
     );
   }
 
-  function onChangeScenarioScene(
-    index: number,
-    patch: Partial<ScenarioPreviewItem>
-  ) {
+  function onChangeScenarioScene(index: number, patch: Partial<ScenarioPreviewItem>) {
     if (scenarioBusy || scenarioRegeneratingIndex !== null) return;
     setScenarioResult((previous) => {
       if (!previous || !previous.items[index]) return previous;
-      const items = previous.items.map((item, itemIndex) => {
-        if (itemIndex !== index) return item;
-        const generationInputChanged =
-          (typeof patch.imagePrompt === "string" && patch.imagePrompt !== item.imagePrompt)
-          || ("continuity" in patch && patch.continuity !== item.continuity);
-        return {
-          ...item,
-          ...patch,
-          // 현재 입력과 대응하지 않는 이미지는 작업 이미지에서 내리되 후보 이력은 보존한다.
-          ...(generationInputChanged
-            ? { imageDataUrl: undefined, imageError: undefined, imageProvenance: undefined }
-            : {}),
-        };
-      });
-      return { ...previous, ...relayoutScenarioDrafts(items) };
+      return { ...previous, ...relayoutScenarioDrafts(applyStudioScenarioScenePatch(previous.items, index, patch)) };
     });
   }
 
@@ -19267,45 +18576,8 @@ const puppetWarpArmed =
   }
   // 사선 2분할 컷 — 기울어진 분할선으로 두 패널을 깐다(역동적 만화 연출).
   function addDiagonalSplit() {
-    const margin = 24;
-    const w = CANVAS_W - margin * 2;
-    const frames = elements.filter((e): e is FrameEl => e.type === "frame");
-    const bottomFrame = frames.reduce<FrameEl | null>(
-      (best, f) => (!best || f.y + f.height > best.y + best.height ? f : best),
-      null
-    );
-    const top = bottomFrame ? bottomFrame.y + bottomFrame.height + margin : margin;
-    const h = 440;
-    const g = 18; // 사선 거터
-    const t1 = Math.round(h * 0.6); // 좌측 분할 y
-    const t2 = Math.round(h * 0.4); // 우측 분할 y(위로 기울어짐)
-    const upper: FrameEl = {
-      id: uid(),
-      type: "frame",
-      x: margin,
-      y: top,
-      width: w,
-      height: t1,
-      points: [0, 0, w, 0, w, t2, 0, t1],
-    };
-    const lowerY = top + t2 + g;
-    const lowerH = h - (t2 + g);
-    const lower: FrameEl = {
-      id: uid(),
-      type: "frame",
-      x: margin,
-      y: lowerY,
-      width: w,
-      height: lowerH,
-      points: [0, t1 - t2, w, 0, w, lowerH, 0, lowerH],
-    };
-    const folderUpper = createFrameFolderGroupForNewFrame({ frameLabel: "컷", groupId: uid() });
-    const folderLower = createFrameFolderGroupForNewFrame({ frameLabel: "컷", groupId: uid() });
-    updateActivePage({
-      elements: [...elements, upper, lower],
-      groups: [...groups, ...(folderUpper ? [folderUpper] : []), ...(folderLower ? [folderLower] : [])],
-      canvasH: Math.max(canvasH, top + h + margin),
-    });
+    const planned = planStudioDiagonalSplitFrames({ elements, groups, canvasHeight: canvasH, allocateId: uid });
+    updateActivePage(planned);
     setTool("select");
   }
   // 선택한 사각형 프레임을 평행사변형(사선)으로 ↔ 사각형으로 토글.
@@ -20573,133 +19845,10 @@ const puppetWarpArmed =
   }
 
   async function pumpLiquifyLivePreview() {
-    if (liquifyPreviewBusyRef.current) return;
-    liquifyPreviewBusyRef.current = true;
-    try {
-      while (liquifyPreviewPendingRef.current && liquifyDragRef.current) {
-        liquifyPreviewPendingRef.current = false;
-        const session = liquifyDragRef.current;
-        if (!session) break;
-        const target = activeElementsRef.current.find((element) => element.id === session.elId);
-        if (!target || target.type !== "image") break;
-        const token = liquifyPreviewTokenRef.current + 1;
-        liquifyPreviewTokenRef.current = token;
-        try {
-          const [
-            { bakeLiquifyStrokeToCanvas, bakeLiquifyStrokeRoiPreview },
-            { loadStudioRetouchSourceImage, studioRetouchSourceDimensions },
-          ] = await Promise.all([
-            loadStudioLiquifyBrowserRuntime(),
-            loadStudioPixelEditBrushRuntime(),
-          ]);
-          if (token !== liquifyPreviewTokenRef.current || !liquifyDragRef.current) break;
-          let source = liquifyPreviewSourceRef.current;
-          if (!source || source.elId !== target.id || source.src !== target.src) {
-            const image = await loadStudioRetouchSourceImage(target.src);
-            if (token !== liquifyPreviewTokenRef.current || !liquifyDragRef.current) break;
-            source = { elId: target.id, src: target.src, image };
-            liquifyPreviewSourceRef.current = source;
-          }
-          const { width: w, height: h } = studioRetouchSourceDimensions(
-            source.image as HTMLImageElement,
-          );
-          const plan = planStudioLiquifyLivePreview({
-            points: session.points,
-            sourceWidth: w,
-            sourceHeight: h,
-            elementWidth: target.width,
-            radiusCanvasPx: liquifyRadius,
-          });
-          if (!plan) continue;
-          const dynamics = {
-            flipX: target.flipped ?? false,
-            flipY: target.flippedY ?? false,
-            mode: session.mode,
-            stabilizer: 0.12,
-            spacingRatio: 0.45,
-          } as const;
-          const node = liquifyPreviewImageRef.current;
-          if (!node) continue;
-          const frame = session.frame;
-
-          if (plan.mode === "roi-full-res") {
-            // Full native density inside the stroke dirty rect only — no whole-image downscale.
-            const roi = await bakeLiquifyStrokeRoiPreview(
-              source.image as never,
-              plan.width,
-              plan.height,
-              plan.points,
-              plan.radiusDevice,
-              liquifyStrength / 100,
-              createStudioPixelEditCanvas,
-              dynamics,
-            );
-            if (token !== liquifyPreviewTokenRef.current || !liquifyDragRef.current || !roi) {
-              continue;
-            }
-            const place = mapLiquifyRoiToDocumentFrame(
-              roi.region,
-              roi.sourceWidth,
-              roi.sourceHeight,
-              {
-                x: frame.x,
-                y: frame.y,
-                width: frame.width,
-                height: frame.height,
-                rotation: frame.rotation ?? 0,
-              },
-              Boolean(target.flipped),
-              Boolean(target.flippedY),
-            );
-            node.image(roi.canvas as HTMLCanvasElement);
-            node.x(place.x);
-            node.y(place.y);
-            node.width(place.width);
-            node.height(place.height);
-            node.scaleX(place.scaleX);
-            node.scaleY(place.scaleY);
-            node.rotation(place.rotation);
-            node.visible(true);
-            node.getLayer()?.batchDraw();
-          } else {
-            // Fallback: whole-frame downscale when the dirty ROI itself is huge.
-            const out = await bakeLiquifyStrokeToCanvas(
-              source.image as never,
-              plan.width,
-              plan.height,
-              plan.points,
-              plan.radiusDevice,
-              liquifyStrength / 100,
-              createStudioPixelEditCanvas,
-              dynamics,
-            );
-            if (token !== liquifyPreviewTokenRef.current || !liquifyDragRef.current || !out) {
-              continue;
-            }
-            const flipX = target.flipped ? -1 : 1;
-            const flipY = target.flippedY ? -1 : 1;
-            node.image(out as HTMLCanvasElement);
-            node.x(frame.x + (flipX < 0 ? frame.width : 0));
-            node.y(frame.y + (flipY < 0 ? frame.height : 0));
-            node.width(frame.width);
-            node.height(frame.height);
-            node.scaleX(flipX);
-            node.scaleY(flipY);
-            node.rotation(frame.rotation);
-            node.visible(true);
-            node.getLayer()?.batchDraw();
-          }
-        } catch (cause) {
-          if (cause instanceof Error && cause.name === "AbortError") continue;
-          // Preview is best-effort; keep the trail and full bake path authoritative.
-        }
-      }
-    } finally {
-      liquifyPreviewBusyRef.current = false;
-      if (liquifyPreviewPendingRef.current && liquifyDragRef.current) {
-        void pumpLiquifyLivePreview();
-      }
-    }
+    await runStudioLiquifyLivePreviewPump({
+      liquifyPreviewBusyRef, liquifyPreviewPendingRef, liquifyDragRef, activeElementsRef,
+      liquifyPreviewTokenRef, liquifyPreviewSourceRef, liquifyPreviewImageRef, liquifyRadius, liquifyStrength,
+    });
   }
 
   function finishLiquifyPointerSession(
@@ -20707,33 +19856,11 @@ const puppetWarpArmed =
     cancelled: boolean,
     stage: Konva.Stage | null
   ): boolean {
-    const session = liquifyDragRef.current;
-    if (!session || !isStudioLiquifyPointerOwner(session, pointerEvent)) return false;
-    let releasePoint: SelPoint | undefined;
-    if (!cancelled && stage) {
-      try {
-        stage.setPointersPositions(pointerEvent);
-        const position = stage.getRelativePointerPosition();
-        if (position) {
-          releasePoint = canvasPointToNormalized(position.x, position.y, session.frame);
-        }
-      } catch {
-        // An outside release can race Stage teardown; the accumulated prefix remains usable.
-      }
-    }
-    const outcome = endStudioLiquifyPointerSession(session, pointerEvent, {
-      cancelled,
-      releasePoint,
+    return runStudioLiquifyPointerSessionFinish({
+      pointerEvent, cancelled, stage, liquifyDragRef, releaseCapture: releaseLiquifyPointerCapture,
+      clearStrokePreview: clearPaintRetouchStrokePreview, clearLivePreview: clearLiquifyLivePreview,
+      applyStroke: applyLiquifyStroke,
     });
-    if (outcome.kind === "ignored") return false;
-    liquifyDragRef.current = null;
-    releaseLiquifyPointerCapture(session);
-    clearPaintRetouchStrokePreview();
-    clearLiquifyLivePreview();
-    if (outcome.kind === "apply") {
-      void applyLiquifyStroke(outcome.elId, outcome.points, session.mode);
-    }
-    return true;
   }
   liquifyPointerGlobalEndRef.current = (event, cancelled) =>
     finishLiquifyPointerSession(event, cancelled, stageRef.current);
@@ -20743,33 +19870,10 @@ const puppetWarpArmed =
     cancelled: boolean,
     stage = stageRef.current,
   ): boolean {
-    const pending = pendingPixelSelectionRasterGestureRef.current;
-    const pointerId = Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 1;
-    if (!pending || pending.pointerId !== pointerId) return false;
-    // Releasing capture after a successful pointerup emits lostpointercapture in Chromium. Keep the
-    // completed journal authoritative instead of relabelling and deleting it as a cancellation
-    // before the async raster preparation continuation can replay the first selection gesture.
-    if (pending.released) return true;
-    if (!cancelled && stage) {
-      try {
-        stage.setPointersPositions(pointerEvent);
-        const position = stage.getRelativePointerPosition();
-        if (position) {
-          pending.current = { x: position.x, y: position.y };
-          pending.shift = pointerEvent.shiftKey;
-          pending.alt = pointerEvent.altKey;
-        }
-      } catch {
-        // The latest captured move remains an exact bounded fallback after Stage teardown.
-      }
-    }
-    pending.released = true;
-    pending.cancelled = cancelled;
-    releasePendingPixelSelectionRasterGesture(pending);
-    // Keep a successful release journaled until the async raster copy can replay it. Cancellation
-    // only discards the user's gesture; the requested tool/copy preparation may still finish.
-    if (cancelled) pendingPixelSelectionRasterGestureRef.current = null;
-    return true;
+    return runStudioPendingPixelSelectionRasterGestureFinish({
+      pointerEvent, cancelled, stage, pendingRef: pendingPixelSelectionRasterGestureRef,
+      releaseGesture: releasePendingPixelSelectionRasterGesture,
+    });
   }
 
   function finishPendingRasterRetouchGesture(
@@ -20777,37 +19881,11 @@ const puppetWarpArmed =
     cancelled: boolean,
     stage = stageRef.current,
   ): boolean {
-    const pending = pendingRasterRetouchGestureRef.current;
-    const pointerId = Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 1;
-    if (!pending || pending.pointerId !== pointerId) return false;
-    // Releasing our own capture after a successful pointerup can emit lostpointercapture. That
-    // lifecycle notification must not rewrite the already-finished journal as a cancellation while
-    // its vector raster copy is still rendering.
-    if (pending.released) return true;
-    let releasePoint: { x: number; y: number } | undefined;
-    if (!cancelled && stage) {
-      try {
-        stage.setPointersPositions(pointerEvent);
-        const position = stage.getRelativePointerPosition();
-        if (position) releasePoint = { x: position.x, y: position.y };
-      } catch {
-        // Preserve the last captured sample if Stage teardown races the outside pointer release.
-      }
-    }
-    const finished = endStudioPendingRasterRetouchGesture(
-      pending,
-      pointerEvent,
-      { cancelled, ...(releasePoint ? { releasePoint } : {}) },
-    );
-    pendingRasterRetouchGestureRef.current = finished;
-    releasePendingRasterRetouchGestureCapture(finished);
-    if (cancelled) {
-      clearPendingRasterRetouchGesture();
-      return true;
-    }
-    const target = pendingRasterRetouchTargetRef.current;
-    if (target) queuePendingRasterRetouchGesture(finished, target);
-    return true;
+    return runStudioPendingRasterRetouchGestureFinish({
+      pointerEvent, cancelled, stage, pendingRef: pendingRasterRetouchGestureRef,
+      targetRef: pendingRasterRetouchTargetRef, releaseCapture: releasePendingRasterRetouchGestureCapture,
+      clearPending: clearPendingRasterRetouchGesture, queueGesture: queuePendingRasterRetouchGesture,
+    });
   }
 
   function finishPixelSelectionPointerSession(
@@ -20815,71 +19893,11 @@ const puppetWarpArmed =
     cancelled: boolean,
     stage = stageRef.current,
   ): boolean {
-    const session = pixelDragRef.current;
-    const pointerId = Number.isFinite(pointerEvent.pointerId) ? pointerEvent.pointerId : 1;
-    if (!session || session.pointerId !== pointerId) return false;
-    let releasePoint: SelPoint | null = null;
-    if (!cancelled && stage) {
-      try {
-        stage.setPointersPositions(pointerEvent);
-        const position = stage.getRelativePointerPosition();
-        if (position) {
-          releasePoint = canvasPointToNormalized(position.x, position.y, session.frame);
-        }
-      } catch {
-        // An outside release can race Stage teardown; commit the accumulated prefix in that case.
-      }
-    }
-    pixelDragRef.current = null;
-    releasePixelSelectionPointerCapture(session);
-    clearPixelDragPreview();
-    if (session.marqueeMove) {
-      if (cancelled) {
-        pixelSelRef.current = session.marqueeMove.baseSelection;
-        setPixelSel(session.marqueeMove.baseSelection);
-        return true;
-      }
-      const end = releasePoint ?? session.marqueeMove.startNorm;
-      const dx = end.x - session.marqueeMove.startNorm.x;
-      const dy = end.y - session.marqueeMove.startNorm.y;
-      commitPixelSelectionState(
-        (previous) => translateSelection(
-          previous ?? session.marqueeMove!.baseSelection,
-          dx,
-          dy,
-        ) ?? previous,
-        "move",
-      );
-      return true;
-    }
-    if (!cancelled) {
-      commitPixelSelectionState(
-        (previous) => (
-          releasePoint
-            ? commitSelectionDragAtPoint(
-                selectionOperationBase(previous, session.operation),
-                session.drag,
-                releasePoint,
-                {
-                  shift: pointerEvent.shiftKey,
-                  alt: pointerEvent.altKey,
-                  aspect: session.frame.height / Math.max(1, session.frame.width),
-                  magneticField: session.magneticField,
-                },
-              )
-            : commitSelectionDrag(
-                selectionOperationBase(previous, session.operation),
-                session.drag,
-              )
-        ) ?? previous,
-        session.drag.tool === "lasso"
-          ? "free-lasso"
-          : session.drag.tool === "brush"
-            ? "brush"
-            : "marquee"
-      );
-    }
-    return true;
+    return runStudioPixelSelectionPointerSessionFinish({
+      pointerEvent, cancelled, stage, pixelDragRef, pixelSelRef, setPixelSel,
+      releaseCapture: releasePixelSelectionPointerCapture, clearPreview: clearPixelDragPreview,
+      commitSelectionState: commitPixelSelectionState,
+    });
   }
   pixelSelectionPointerGlobalEndRef.current = (event, cancelled) =>
     finishPendingRasterRetouchGesture(event, cancelled)
@@ -21237,50 +20255,11 @@ const puppetWarpArmed =
    * outside=true 면 선택 "바깥"만 남긴다(선택 밖 마스크).
    */
   function createLayerMaskFromSelection(outside: boolean) {
-    if (
-      selected?.type !== "image" ||
-      !canLayerMask(selected) ||
-      activeSurfaceReviewLocked ||
-      isEffectivelyLocked(selected, groups)
-    ) return;
-    if (!isSelectionUsable(pixelSel)) {
-      setError("마스크로 만들 픽셀 영역을 먼저 선택하세요.");
-      return;
-    }
-    const target = selected;
-    const sel = pixelSel;
-    const mutationTicket = captureStudioMutationTicket();
-    void (async () => {
-      try {
-        const img = await loadStudioPixelEditImage(target.src);
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
-        const maskPlan = buildSelectionMaskPlan(sel, w, h, {
-          featherScale: target.width > 0 ? w / target.width : 1,
-          flipX: target.flipped,
-          flipY: target.flippedY,
-        });
-        if (!maskPlan) return;
-        const selectionMask = rasterizeSelectionMask(maskPlan, createStudioPixelEditCanvas);
-        if (!selectionMask) throw new Error(t("studio.hostStatus.selectionMaskCreateFailed", "선택 마스크를 만들지 못했습니다."));
-        const mask = outside
-          ? invertLayerMaskAlpha(selectionMask, w, h, createStudioPixelEditCanvas)
-          : selectionMask;
-        if (!mask) throw new Error(t("studio.hostStatus.maskInvertFailed", "마스크를 반전하지 못했습니다."));
-        await yieldStudioPixelEditMainThread();
-        const maskSrc = await encodeStudioPixelEditResultPng(mask as HTMLCanvasElement);
-        if (!canApplyStudioMutation(mutationTicket)) return;
-        if (isLatestLayerContentMutationLocked(target.id)) return;
-        patchEl(target.id, {
-          maskSrc,
-          maskEnabled: true,
-        } as Partial<El>);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to create layer mask from selection:", err);
-        setError(err instanceof Error ? err.message : t("studio.hostStatus.maskFromSelectionFailed", "선택 영역으로 마스크를 만들지 못했습니다."));
-      }
-    })();
+    runStudioCreateLayerMaskFromSelection({
+      outside, selected, activeSurfaceReviewLocked, groups, pixelSel,
+      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
+      isLatestLayerContentMutationLocked, patchEl, setError, translate: t,
+    });
   }
   function deleteLayerMask() {
     if (
@@ -21540,52 +20519,12 @@ const puppetWarpArmed =
     radiusNorm: number;
     points: SelPoint[];
   }) {
-    const target = elementById.get(session.elId);
-    if (
-      !target ||
-      target.type !== "image" ||
-      activeSurfaceReviewLocked ||
-      isEffectivelyLocked(target, groups)
-    ) return;
-    const mutationTicket = captureStudioMutationTicket();
-    const historySrc = historyBrushSourceSrc;
-    if (!historySrc) return; // 굽는 사이 소스가 해제됐으면(요소 전환 등) 조용히 무시 — 방어적.
-    setHistoryBrushBusy(true);
-    try {
-      const [historyImg, currentImg] = await Promise.all([
-        loadStudioPixelEditImage(historySrc),
-        loadStudioPixelEditImage(target.src),
-      ]);
-      const w = currentImg.naturalWidth || currentImg.width;
-      const h = currentImg.naturalHeight || currentImg.height;
-      const dabs = planHistoryBrushDabs(session.points, w, h, {
-        flipX: target.flipped,
-        flipY: target.flippedY,
-      });
-      if (dabs.length === 0) return;
-      const radiusPxDevice = historyBrushRadius * (target.width > 0 ? w / target.width : 1);
-      const out = bakeHistoryBrushStrokeToCanvas(
-        historyImg,
-        currentImg,
-        w,
-        h,
-        dabs,
-        { radiusPx: radiusPxDevice, hardness: historyBrushHardness, opacity: historyBrushOpacity },
-        createStudioPixelEditCanvas
-      );
-      if (!out) throw new Error(t("studio.hostStatus.historyBrushResultCreateFailed", "히스토리 브러시 결과를 만들지 못했습니다."));
-      await yieldStudioPixelEditMainThread();
-      const src = await encodeStudioPixelEditResultPng(out as HTMLCanvasElement);
-      if (!canApplyStudioMutation(mutationTicket)) return;
-      if (isLatestLayerContentMutationLocked(target.id)) return;
-      patchEl(target.id, { src } as Partial<El>);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to bake history brush stroke:", err);
-      setError(err instanceof Error ? err.message : t("studio.hostStatus.historyBrushApplyFailed", "히스토리 브러시 적용에 실패했습니다."));
-    } finally {
-      setHistoryBrushBusy(false);
-    }
+    await runStudioBakeHistoryBrushDragStroke({
+      session, target: elementById.get(session.elId), activeSurfaceReviewLocked, groups,
+      historyBrushSourceSrc, historyBrushRadius, historyBrushHardness, historyBrushOpacity,
+      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
+      isLatestLayerContentMutationLocked, setHistoryBrushBusy, patchEl, setError, translate: t,
+    });
   }
 
   function createAdvancedFillSelectionMask(
@@ -22076,100 +21015,19 @@ const puppetWarpArmed =
   // 크롭 후에도 화면상 위치가 유지되도록 src 와 요소 프레임(x/y/width/height)을 한 번의
   // patchEl 로 함께 갱신한다(⌘Z 1회로 원복). 반전(flipX/flipY)·회전 보정은 planCropApply 가 담당.
   async function applyCropToSelectedImage() {
-    if (cropBusy || !cropRect) return;
-    if (selected?.type !== "image") return;
-    if (activeSurfaceReviewLocked || isEffectivelyLocked(selected, groups)) return;
-    if (isCropRectNoop(cropRect)) {
-      setCropRect(null); // 전체 영역 = 자를 것 없음 → 모드만 종료.
-      return;
-    }
-    const target = selected; // await 사이 선택 변경에 흔들리지 않게 스냅샷.
-    const mutationTicket = captureStudioMutationTicket();
-    const rect = cropRect;
-    setCropBusy(true);
-    try {
-      const img = await loadStudioPixelEditImage(target.src);
-      const plan = planCropApply({
-        rect,
-        natural: { width: img.naturalWidth || img.width, height: img.naturalHeight || img.height },
-        frame: { x: target.x, y: target.y, width: target.width, height: target.height, rotation: target.rotation },
-        flipX: target.flipped,
-        flipY: target.flippedY,
-      });
-      if (!plan) throw new Error(t("studio.hostStatus.cropRegionCalcFailed", "크롭 영역을 계산하지 못했습니다."));
-      const out = createStudioPixelEditCanvas(plan.source.sw, plan.source.sh);
-      if (!out) throw new Error(t("studio.hostStatus.cropCanvasCreateFailed", "크롭 캔버스를 만들지 못했습니다."));
-      out.ctx.drawImage(
-        img,
-        plan.source.sx,
-        plan.source.sy,
-        plan.source.sw,
-        plan.source.sh,
-        0,
-        0,
-        plan.source.sw,
-        plan.source.sh
-      );
-      // PNG: 투명 배경(누끼·스티커) 알파를 보존하는 무손실 포맷. Async encode avoids main-thread freeze.
-      await yieldStudioPixelEditMainThread();
-      const src = await encodeStudioPixelEditResultPng(out.canvas);
-      if (!canApplyStudioMutation(mutationTicket)) return;
-      if (isLatestLayerContentMutationLocked(target.id)) return;
-      patchEl(target.id, {
-        src,
-        x: plan.el.x,
-        y: plan.el.y,
-        width: plan.el.width,
-        height: plan.el.height,
-        // 크롭은 자연 해상도 자체를 바꾸므로 기존 maskSrc(구 해상도 기준)는 정렬이 깨진다 —
-        // 잘못 정렬된 채 남기는 것보다 지우는 편이 안전(재작업 필요, 알려진 한계).
-        maskSrc: target.maskSrc ? undefined : target.maskSrc,
-        maskEnabled: target.maskSrc ? undefined : target.maskEnabled,
-      } as Partial<El>);
-      setCropRect(null);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to apply image crop:", err);
-      setError(err instanceof Error ? err.message : t("studio.hostStatus.imageCropFailed", "이미지 크롭에 실패했습니다."));
-    } finally {
-      setCropBusy(false);
-    }
+    await runStudioApplyCropToSelectedImage({
+      cropBusy, cropRect, selected, activeSurfaceReviewLocked, groups,
+      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
+      isLatestLayerContentMutationLocked, setCropBusy, setCropRect, patchEl, setError, translate: t,
+    });
   }
-  // ── 퍼펫 워프 적용 — "적용" 버튼을 눌러야 실행되는 파괴적 편집(crop과 동일 패턴, heal-clone처럼
-  // 스트로크 종료마다 자동으로 굽지 않는다 — 핀을 여러 번 조정해보고 마음에 들 때 확정한다).
-  // 원본 자연 해상도로 삼각형 메쉬를 워프해 굽고, 결과를 data URL로 교체(patchEl)해 히스토리
-  // 1건(⌘Z 1회)으로 남긴다.
   async function applyPuppetWarpToSelectedImage() {
-    if (puppetWarpBusy || isPuppetWarpNoop(puppetWarpPins)) return;
-    if (selected?.type !== "image") return;
-    if (activeSurfaceReviewLocked || isEffectivelyLocked(selected, groups)) return;
-    const target = selected; // await 사이 선택 변경에 흔들리지 않게 스냅샷(crop/heal-clone과 동일).
-    const mutationTicket = captureStudioMutationTicket();
-    const pins = puppetWarpPins;
-    setPuppetWarpBusy(true);
-    try {
-      const img = await loadStudioPixelEditImage(target.src);
-      const w = img.naturalWidth || img.width;
-      const h = img.naturalHeight || img.height;
-      const out = bakePuppetWarpToCanvas(img, w, h, pins, createStudioPixelEditCanvas, {
-        flipX: target.flipped,
-        flipY: target.flippedY,
-      });
-      if (!out) throw new Error(t("studio.hostStatus.puppetWarpResultCreateFailed", "퍼펫 워프 결과를 만들지 못했습니다."));
-      await yieldStudioPixelEditMainThread();
-      const src = await encodeStudioPixelEditResultPng(out as HTMLCanvasElement);
-      if (!canApplyStudioMutation(mutationTicket)) return;
-      if (isLatestLayerContentMutationLocked(target.id)) return;
-      patchEl(target.id, { src } as Partial<El>);
-      setPuppetWarpActive(false);
-      setPuppetWarpPins([]);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to apply puppet warp:", err);
-      setError(err instanceof Error ? err.message : t("studio.hostStatus.puppetWarpApplyFailed", "퍼펫 워프 적용에 실패했습니다."));
-    } finally {
-      setPuppetWarpBusy(false);
-    }
+    await runStudioApplyPuppetWarpToSelectedImage({
+      puppetWarpBusy, puppetWarpPins, selected, activeSurfaceReviewLocked, groups,
+      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
+      isLatestLayerContentMutationLocked, setPuppetWarpBusy, setPuppetWarpActive, setPuppetWarpPins,
+      patchEl, setError, translate: t,
+    });
   }
 
   // 스테이지의 실제 합성 픽셀에서 색을 읽는다.
@@ -22661,83 +21519,11 @@ const puppetWarpArmed =
     e: Konva.KonvaEventObject<MouseEvent | TouchEvent>,
     stagePointerEvent: PointerEvent,
   ): boolean {
-    if (
-      !bubbleShapeArmed
-      || selected?.type !== "bubble"
-      || isSpacePressed
-      || e.target.getParent() instanceof KonvaRuntime.Transformer
-    ) {
-      return false;
-    }
-    const pos = e.target.getStage()?.getRelativePointerPosition();
-    if (!pos) return true;
-    const local = bubbleShapeCanvasPointToLocal(pos.x, pos.y, {
-      x: selected.x,
-      y: selected.y,
-      rotation: selected.rotation,
+    return runStudioBubbleShapePointerDown({
+      event: e, stagePointerEvent, bubbleShapeArmed, selected, isSpacePressed, effScale,
+      bubbleShapeHandles, bubbleShapeDragRef, patchEl, setBubbleShapeSelectedPointIndex,
+      announceDrawingShortcut, translate: t,
     });
-    const tolerance = 14 / effScale;
-    const hitIdx = hitTestNodeHandle(local, bubbleShapeHandles, tolerance);
-    if (hitIdx !== null) {
-      if (e.evt.altKey) {
-        const removed = removeBubbleShapePoint(selected.customShapePoints ?? [], hitIdx);
-        if (removed.changed) {
-          patchEl(selected.id, { customShapePoints: removed.points } as Partial<El>);
-          const nextCount = removed.points.length / 2;
-          setBubbleShapeSelectedPointIndex(Math.min(hitIdx, nextCount - 1));
-          announceDrawingShortcut(`말풍선 외곽선 점 삭제 · ${nextCount}개`);
-        } else if (removed.outcome === "minimum-points") {
-          announceDrawingShortcut(t("studio.hostStatus.bubbleMinPoints", "말풍선 외곽선에는 최소 3개의 점이 필요합니다"));
-        }
-        return true;
-      }
-      setBubbleShapeSelectedPointIndex(hitIdx);
-      const session = beginNodeDrag(
-        selected.customShapePoints ?? [],
-        undefined,
-        hitIdx,
-        "move",
-        local,
-      );
-      if (session) {
-        const pointerId = Number.isFinite(stagePointerEvent.pointerId)
-          ? stagePointerEvent.pointerId
-          : 1;
-        const nativeTarget = stagePointerEvent.currentTarget as
-          | (EventTarget & {
-              releasePointerCapture?: (capturedPointerId: number) => void;
-              setPointerCapture?: (capturedPointerId: number) => void;
-            })
-          | null;
-        let captureTarget: BubbleShapePointerCaptureTarget | null = null;
-        if (nativeTarget?.setPointerCapture) {
-          try {
-            nativeTarget.setPointerCapture(pointerId);
-            captureTarget = nativeTarget;
-          } catch {
-            // Some WebViews expose Pointer Events but reject capture for synthesized mouse input.
-          }
-        }
-        bubbleShapeDragRef.current = {
-          captureTarget,
-          elId: selected.id,
-          pointerId,
-          session,
-        };
-      }
-    } else if (e.evt.shiftKey) {
-      const inserted = insertBubbleShapePointAtClosestSegment(
-        selected.customShapePoints ?? [],
-        local.x,
-        local.y,
-      );
-      if (inserted.changed && inserted.pointIndex !== null) {
-        patchEl(selected.id, { customShapePoints: inserted.points } as Partial<El>);
-        setBubbleShapeSelectedPointIndex(inserted.pointIndex);
-        announceDrawingShortcut(`말풍선 외곽선 점 추가 · ${inserted.points.length / 2}개`);
-      }
-    }
-    return true;
   }
 
   function handleStudioPointCommentStageDown(
@@ -22794,37 +21580,13 @@ const puppetWarpArmed =
     forceCircle: boolean;
     captureFallback: Element | null;
   }): boolean {
-    if (
-      pendingPixelSelectionRasterGestureRef.current
-      || pixelMarqueeRasterPreparationAbortRef.current === null
-    ) return false;
-    const pointerId = Number.isFinite(input.event.pointerId) ? input.event.pointerId : 1;
-    const captureTarget = input.event.target instanceof Element
-      ? input.event.target
-      : input.captureFallback;
-    pendingPixelSelectionRasterGestureRef.current = {
-      runId: pixelMarqueeRasterPreparationRunIdRef.current,
-      pointerId,
-      tool: input.tool,
-      forceCircle: input.forceCircle,
-      combine: resolveSelectionCombineOverride(
-        pixelCombine,
-        { shift: input.event.shiftKey, alt: input.event.altKey },
-        isSelectionUsable(pixelSelRef.current),
-      ),
-      start: { x: input.position.x, y: input.position.y },
-      current: { x: input.position.x, y: input.position.y },
-      shift: input.event.shiftKey,
-      alt: input.event.altKey,
-      released: false,
-      cancelled: false,
-      captureTarget,
-    };
-    try {
-      captureTarget?.setPointerCapture(pointerId);
-    } catch {
-      // Global capture-phase pointerup remains the safety net without pointer capture.
-    }
+    if (pendingPixelSelectionRasterGestureRef.current || pixelMarqueeRasterPreparationAbortRef.current === null) return false;
+    const gesture = createStudioPendingPixelSelectionRasterGesture({
+      ...input, runId: pixelMarqueeRasterPreparationRunIdRef.current,
+      pixelCombine, currentSelection: pixelSelRef.current,
+    });
+    pendingPixelSelectionRasterGestureRef.current = gesture;
+    try { gesture.captureTarget?.setPointerCapture(gesture.pointerId); } catch { /* pointerup fallback */ }
     announceDrawingShortcut("선택 대상을 준비하는 동안 첫 제스처를 안전하게 이어갈게요");
     return true;
   }
@@ -22861,26 +21623,9 @@ const puppetWarpArmed =
 
   /** One-shot CSP erase-to-intersection. Returns true when the pointer event is consumed. */
   function applyVectorEraseToIntersectionAt(x: number, y: number): boolean {
-    const planned = planStudioVectorEraseToIntersectionApply({
-      elements,
-      point: { x, y },
-      allocateId: uid,
-      isEditable: (el) =>
-        !isEffectivelyLocked(el, groups) && !isEffectivelyHidden(el, groups),
+    return runStudioVectorEraseToIntersectionAt({
+      x, y, elements, groups, allocateId: uid, commit, setError, announceDrawingShortcut,
     });
-    if (!planned.ok) {
-      setError(resolveStudioVectorEraseResult(planned) ?? planned.reason);
-      return true;
-    }
-    if (!commit(planned.nextElements)) return true;
-    announceDrawingShortcut(
-      planned.pieceCount === 0
-        ? `${STUDIO_ERASE_TO_INTERSECTION_LABEL} · 선 삭제`
-        : planned.pieceCount === 1
-          ? `${STUDIO_ERASE_TO_INTERSECTION_LABEL} · 구간 정리`
-          : `${STUDIO_ERASE_TO_INTERSECTION_LABEL} · ${planned.pieceCount}조각`
-    );
-    return true;
   }
 
     const finishQueuedStudioDrawingPointerRef: {
@@ -23521,49 +22266,9 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
         // 2×bHPad)·높이 여유 `+28`(실제 상하 패딩 합)이라 블록 높이를 항상 과소평가했고,
         // Konva.Text는 고정 height를 넘는 줄을 경고 없이 버려 대사가 조용히 잘렸다.
         // 기본값·패딩은 전부 studio-bubble-text-fit 단일 소스에서 가져온다.
-        let height: number | undefined;
-        if (el && el.type === "bubble" && !el.autoShrinkText) {
-          const fontSize = resolveBubbleFontSize(el.fontSize);
-          const fontFamily = resolveBubbleFontFamily(el.font);
-          const fontStyle = resolveBubbleFontStyle(el.fontStyle);
-          const lineHeight = resolveBubbleLineHeight({
-            lineHeight: el.lineHeight,
-            vertical: el.vertical,
-            theme: webtoonTheme,
-          });
-          const letterSpacing = bubbleLetterSpacing(webtoonTheme);
-          if (el.vertical) {
-            // 세로쓰기는 열 조판이라 가로 KText로 잴 수 없다 — 세로 코어를 쓰는 공유 계산.
-            height = fitBubbleBoxHeightToText({
-              text: finalValue,
-              boxWidth: el.width,
-              fontSize,
-              fontFamily,
-              fontStyle,
-              lineHeight,
-              letterSpacing,
-              vertical: true,
-              // blockAlign은 열 안 정렬일 뿐이라 "들어가느냐" 판정에는 영향이 없다(코어 계약).
-              minHeight: el.height,
-            });
-          } else {
-            const measure = new KonvaRuntime.Text({
-              text: finalValue || " ",
-              width: bubbleTextBoxWidth(el.width, fontSize),
-              fontSize,
-              fontFamily,
-              fontStyle,
-              align: el.align ?? "center",
-              lineHeight,
-              letterSpacing,
-            });
-            height = Math.max(
-              el.height,
-              Math.ceil(measure.height()) + bubbleVerticalPaddingTotal(fontSize)
-            );
-            measure.destroy();
-          }
-        }
+        const height = el && el.type === "bubble"
+          ? measureStudioBubbleCommitHeight(el, finalValue, webtoonTheme)
+          : undefined;
         patchEl(editing.id, { text: finalValue, ...(height !== undefined ? { height } : {}) } as Partial<El>);
       }
       setEditing(null);
@@ -25169,39 +23874,18 @@ function clearSelectionForEdit() {
   // 무장된 픽셀 선택 도구를 메뉴가 읽는 단일 문자열로 환원한다. 원형 마퀴는
   // `ellipse` + forceCircle 조합이고 색 범위는 별도 플래그라, 라디오 체크 표시를
   // 항목마다 재계산하지 않도록 여기서 한 번만 정규화한다.
-  const menuPixelSelectionTool: StudioPixelSelectionToolId | null = colorRangePickActive
-    ? "color-range"
-    : pixelTool === "ellipse"
-      ? pixelForceCircle
-        ? "circle"
-        : "ellipse"
-      : pixelTool;
+  const menuPixelSelectionTool: StudioPixelSelectionToolId | null = resolveStudioMenuPixelSelectionTool(
+    colorRangePickActive, pixelTool, pixelForceCircle
+  );
   const menuCommandBarVisible = workspacePersistence.state.liveLayout.commandBar?.visible !== false;
   const studioMainMenuSurfaceState = useMemo<StudioMainMenuSurfaceState>(
-    () => ({
-      pixelSelectionTool: menuPixelSelectionTool,
-      quickMaskActive,
-      animationTimelineOpen: timelineOpen,
-      onionSkinEnabled: onionSkin.enabled,
-      documentCommentsOpen: commentsOpen,
-      canvasGridVisible: showGrid, webtoonGuidesVisible: showWebtoonGuides,
-      vectorEraseToIntersection: eraseToIntersection,
-      commandBarVisible: menuCommandBarVisible,
-      masterEditMode,
-      pixelArtEnabled: pixelArtMode.enabled,
+    () => deriveStudioMainMenuSurfaceState({
+      pixelSelectionTool: menuPixelSelectionTool, quickMaskActive, animationTimelineOpen: timelineOpen,
+      onionSkinEnabled: onionSkin.enabled, documentCommentsOpen: commentsOpen, canvasGridVisible: showGrid,
+      webtoonGuidesVisible: showWebtoonGuides, vectorEraseToIntersection: eraseToIntersection,
+      commandBarVisible: menuCommandBarVisible, masterEditMode, pixelArtEnabled: pixelArtMode.enabled,
     }),
-    [
-      commentsOpen,
-      eraseToIntersection,
-      masterEditMode,
-      menuCommandBarVisible,
-      menuPixelSelectionTool,
-      onionSkin.enabled,
-      pixelArtMode.enabled,
-      quickMaskActive,
-      showGrid, showWebtoonGuides,
-      timelineOpen,
-    ],
+    [commentsOpen, eraseToIntersection, masterEditMode, menuCommandBarVisible, menuPixelSelectionTool, onionSkin.enabled, pixelArtMode.enabled, quickMaskActive, showGrid, showWebtoonGuides, timelineOpen],
   );
   const studioMainMenuGroups = useMemo(
     () =>
@@ -25411,68 +24095,20 @@ function clearSelectionForEdit() {
       workId,
     ],
   );
-  const quickActionsDisabledActions = useMemo(() => {
-    const disabled = new Set<StudioQuickActionId>();
-    if (hi === 0 || masterEditMode || collaborationDocumentLocked) disabled.add("undo");
-    if (hi >= history.length - 1 || masterEditMode || collaborationDocumentLocked) disabled.add("redo");
-    if (!selected && marqueeIds.length === 0) {
-      disabled.add("duplicate");
-      disabled.add("delete");
-    }
-    if (!selected && marqueeIds.length === 0) disabled.add("bring-front");
-    if (activePageMutationLocked) {
-      disabled.add("pen");
-      disabled.add("eraser");
-      disabled.add("duplicate");
-      disabled.add("delete");
-      disabled.add("bring-front");
-      disabled.add("add-bubble");
-    }
-    // 픽셀 보정 3종은 이미지 레이어 선택+편집 가능 상태에서만 의미가 있다.
-    if (selected?.type !== "image" || selectedImageMutationLocked) {
-      disabled.add("quick-mask");
-      disabled.add("wet-mix");
-      disabled.add("dodge-burn");
-    }
-    return disabled;
-  }, [
-    hi,
-    masterEditMode,
-    collaborationDocumentLocked,
-    history.length,
-    selected,
-    marqueeIds,
-    activePageMutationLocked,
-    selectedImageMutationLocked,
-  ]);
-  const quickAccessCommandAvailability: StudioQuickAccessCommandAvailability = {
-    undo: !quickActionsDisabledActions.has("undo"),
-    redo: !quickActionsDisabledActions.has("redo"),
-    save: !saving && (!collaborationDocumentLocked || scopedDraftSaveState.available),
-    pen: !quickActionsDisabledActions.has("pen"),
-    eraser: !quickActionsDisabledActions.has("eraser"),
-    fill:
-      !advancedFillBusy
-      && advancedFillUnsupportedReason === null
-      && !activePageMutationLocked,
-    eyedropper: true,
-    select: true,
-    transform:
-      selected?.type === "image"
-      && isSelectionUsable(pixelSel)
-      && !pixelBusy
-      && !selectedImageMutationLocked,
-    "fit-canvas": !viewTransformSuppressed,
-    properties: true,
-    duplicate: !quickActionsDisabledActions.has("duplicate"),
-    delete: !quickActionsDisabledActions.has("delete"),
-    "bring-front": !quickActionsDisabledActions.has("bring-front"),
-    "add-bubble": !quickActionsDisabledActions.has("add-bubble"),
-    "quick-mask": !quickActionsDisabledActions.has("quick-mask"),
-    "wet-mix": !quickActionsDisabledActions.has("wet-mix"),
-    "dodge-burn": !quickActionsDisabledActions.has("dodge-burn"),
-    "correct-current-stroke": !activePageMutationLocked,
-  };
+  const quickActionsDisabledActions = useMemo(
+    () => deriveStudioQuickActionsDisabledSet({
+      hi, historyLength: history.length, masterEditMode, collaborationDocumentLocked,
+      selected, marqueeIdsLength: marqueeIds.length, activePageMutationLocked, selectedImageMutationLocked,
+    }),
+    [hi, masterEditMode, collaborationDocumentLocked, history.length, selected, marqueeIds.length, activePageMutationLocked, selectedImageMutationLocked]
+  );
+  const quickAccessCommandAvailability: StudioQuickAccessCommandAvailability =
+    deriveStudioQuickAccessCommandAvailability({
+      disabledActions: quickActionsDisabledActions, saving, collaborationDocumentLocked,
+      scopedDraftSaveAvailable: scopedDraftSaveState.available, advancedFillBusy,
+      advancedFillUnsupportedReason, activePageMutationLocked, selected, pixelSel,
+      pixelBusy, selectedImageMutationLocked, viewTransformSuppressed,
+    });
   const quickAccessCatalog: readonly StudioQuickAccessCommandMeta[] =
     quickAccessIntegration?.buildStudioQuickAccessCommandCatalog(
       quickAccessCommandAvailability,
@@ -26512,25 +25148,19 @@ function clearSelectionForEdit() {
   // non-filter grade component: it renders as an overlay sibling OUTSIDE that wrapper, and the
   // z-indexed raster surface only stays beneath it while the wrapper forms a stacking context
   // (i.e. while some CSS filter is active). A vignette therefore still fails closed here.
-  const studioRasterHandoffGates = useMemo(() => ({
-    exportActive: isExporting || saving || timelapseCapturing,
-    masterEditActive: masterEditMode,
-    editActive: selectedId !== null || marqueeIds.length > 0 || editing !== null,
-    specialDraftActive:
-      !isStudioRasterHandoffViewNavigationTool(tool) || canvasRotation !== 0 || eyedropperActive || timelinePlaying ||
-      marqueeActive || userGuides.length > 0 ||
-      advancedFillArmed || pixelToolArmed || cropArmed || panelSplitArmed ||
-      nodeEditArmed || bubbleShapeArmed || smudgeArmed || dodgeBurnArmed || wetMixArmed || liquifyArmed || healCloneArmed ||
-      layerMaskPaintArmed || filterMaskPaintArmed || quickMaskArmed || historyBrushArmed || puppetWarpArmed,
-    postProcessingActive: pageGrade.vignette > 0 || elements.some((element) => element.type === "image" && element.adjustmentLayer
-      && !isEffectivelyHidden(element, groups) && !localHiddenElementIds.has(element.id) && (element.opacity ?? 1) > 0),
-  } as const), [
-    isExporting, saving, timelapseCapturing, masterEditMode, selectedId, marqueeIds.length,
-    editing, tool, canvasRotation, eyedropperActive, timelinePlaying, marqueeActive, userGuides.length,
-    advancedFillArmed, pixelToolArmed, cropArmed, panelSplitArmed, nodeEditArmed,
-    bubbleShapeArmed, smudgeArmed, dodgeBurnArmed, wetMixArmed, liquifyArmed, healCloneArmed, layerMaskPaintArmed, filterMaskPaintArmed, quickMaskArmed, historyBrushArmed,
-    puppetWarpArmed, pageGrade.vignette, elements, groups, localHiddenElementIds,
-  ]);
+  const studioRasterHandoffArmedToolActive =
+    advancedFillArmed || pixelToolArmed || cropArmed || panelSplitArmed ||
+    nodeEditArmed || bubbleShapeArmed || smudgeArmed || dodgeBurnArmed || wetMixArmed || liquifyArmed || healCloneArmed ||
+    layerMaskPaintArmed || filterMaskPaintArmed || quickMaskArmed || historyBrushArmed || puppetWarpArmed;
+  const studioRasterHandoffGates = useMemo(
+    () => deriveStudioRasterHandoffGates({
+      isExporting, saving, timelapseCapturing, masterEditMode, selectedId, marqueeIdsLength: marqueeIds.length,
+      editingActive: editing !== null, tool, canvasRotation, eyedropperActive, timelinePlaying, marqueeActive,
+      userGuidesLength: userGuides.length, armedToolActive: studioRasterHandoffArmedToolActive,
+      pageGradeVignette: pageGrade.vignette, elements, groups, localHiddenElementIds,
+    }),
+    [isExporting, saving, timelapseCapturing, masterEditMode, selectedId, marqueeIds.length, editing, tool, canvasRotation, eyedropperActive, timelinePlaying, marqueeActive, userGuides.length, studioRasterHandoffArmedToolActive, pageGrade.vignette, elements, groups, localHiddenElementIds]
+  );
   const {
     visibleDocumentRect: studioRasterVisibleDocumentRect,
     handoffBaseKey: studioRasterHandoffBaseKey,
@@ -27739,55 +26369,18 @@ function clearSelectionForEdit() {
     tool === "select" && !canvasOnlyMode && !selectionOptionsSuppressed;
   const selectionLaneMounted = !isMobile;
 
-  const studioOptionsBarsSelectionModel = useMemo<StudioOptionsBarsSelectionModel>(() => {
-    const count = marqueeIds.length > 0 ? marqueeIds.length : selectedId ? 1 : 0;
-    return {
-      visible: selectOptionsStripArmed && count > 0 && selectionLaneMounted,
-      count,
-      label: selected ? elementLabel(selected) : null,
-      locked: activeSurfaceReviewLocked || (marqueeIds.length > 0
-        ? elements.filter((element) => marqueeIds.includes(element.id)).some((element) => isEffectivelyLocked(element, groups))
-        : Boolean(selected && isEffectivelyLocked(selected, groups))),
-      canToggleLock: Boolean(selected),
-      textEditLabel:
-        selected && !activeSurfaceReviewLocked && !isEffectivelyLocked(selected, groups)
-          ? selected.type === "bubble"
-            ? "대사 편집"
-            : selected.type === "text" || selected.type === "sticker"
-              ? "글자 편집"
-              : null
-          : null,
-      canFitBubble:
-        selected?.type === "bubble" &&
-        !activeSurfaceReviewLocked &&
-        !isEffectivelyLocked(selected, groups),
-    };
-  }, [
-    activeSurfaceReviewLocked,
-    elements,
-    groups,
-    marqueeIds,
-    selectionLaneMounted,
-    selectOptionsStripArmed,
-    selected,
-    selectedId,
-  ]);
+  const studioOptionsBarsSelectionModel = useMemo<StudioOptionsBarsSelectionModel>(
+    () => deriveStudioOptionsBarsSelectionModel({
+      activeSurfaceReviewLocked, elements, groups, marqueeIds, selectionLaneMounted,
+      selectOptionsStripArmed, selected, selectedId,
+    }),
+    [activeSurfaceReviewLocked, elements, groups, marqueeIds, selectionLaneMounted, selectOptionsStripArmed, selected, selectedId]
+  );
 
-  /**
-   * 모바일 플로팅 빠른 작업 바의 잠금 버튼이 쓸 상태. 판정식은 `toggleSelectedElementsLocked`
-   * 가 다음 잠금 값을 정할 때 쓰는 것과 **같아야** 한다 — 그래야 라벨("잠금"/"잠금 해제")이
-   * 실제로 일어날 일을 가리킨다. 그룹에서 상속된 잠금도 잠긴 것으로 본다.
-   */
-  const mobileSelectionLocked = useMemo(() => {
-    const ids = marqueeIds.length > 0 ? marqueeIds : selectedId ? [selectedId] : [];
-    if (ids.length === 0) return false;
-    const idSet = new Set(ids);
-    const picked = elements.filter((element) => idSet.has(element.id));
-    return (
-      picked.length > 0 &&
-      picked.every((element) => isEffectivelyLocked(element, groups))
-    );
-  }, [elements, groups, marqueeIds, selectedId]);
+  const mobileSelectionLocked = useMemo(
+    () => deriveStudioMobileSelectionLocked({ elements, groups, marqueeIds, selectedId }),
+    [elements, groups, marqueeIds, selectedId]
+  );
 
   // 렌더 시점 ref 스냅샷 — RC 컴파일 자식(캔버스)은 렌더 중 ref 접근이 금지라, 비컴파일
   // 에디터에서 읽어 값으로 전달한다(어차피 렌더 시점 값만 화면에 반영되므로 의미 동일).
@@ -27803,13 +26396,7 @@ function clearSelectionForEdit() {
   const bubbleShapeActiveHandleIndex =
     bubbleShapeDragRef.current?.session.pointIndex ?? bubbleShapeSelectedPointIndex;
   const sharedGutters = useMemo(
-    () => masterEditMode
-      ? []
-      : planSharedGutterSegments(
-          elements.filter((element): element is FrameEl =>
-            element.type === "frame" && !element.hidden
-          )
-        ),
+    () => deriveStudioSharedGutterSegments(elements, masterEditMode),
     [elements, masterEditMode]
   );
   const studioCanvasViewportHandlers = useStudioStableHandlers<StudioCanvasViewportHandlers>({
@@ -27950,28 +26537,7 @@ function clearSelectionForEdit() {
     setStudioRasterHandoffCandidate,
   });
 
-  const productionBibleAssetOptions = productionBibleOpen
-    ? Array.from(
-        new Map(
-          pages.flatMap((page, pageIndex) =>
-            page.elements.flatMap((element) => {
-              if (element.type !== "image") return [];
-              const id =
-                element.communityAssetCredit?.assetId
-                ?? element.builtinRasterAssetId
-                ?? element.id;
-              return [[
-                id,
-                {
-                  id,
-                  label: `${pageDisplayName(page, pageIndex)} · ${element.name?.trim() || id}`,
-                },
-              ] as const];
-            })
-          )
-        ).values()
-      )
-    : [];
+  const productionBibleAssetOptions = deriveStudioProductionBibleAssetOptions(productionBibleOpen, pages);
 
   // 편집기 표면은 DCC 라우트 래퍼 안에서 렌더된다. 래퍼는 표면 전환을 가로질러 마운트를
   // 유지하므로 캔버스↔DCC 왕복이 이 트리를 재마운트하지 않는다.
