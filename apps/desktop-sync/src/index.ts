@@ -7,6 +7,7 @@ export * from "./agent.js";
 export * from "./cloud/index.js";
 export * from "./filesystem-remote.js";
 export * from "./journal.js";
+export * from "./local-folder-hot-reload-watcher.js";
 export * from "./model.js";
 export * from "./path-policy.js";
 export * from "./planner.js";

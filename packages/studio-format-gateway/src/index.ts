@@ -39,3 +39,6 @@ export * from "./artcraft-suite-formats";
 export * from "./clip-vector-layer";
 
 export * from "./compatibility-report";
+export * from "./legacy-layer-name-decoder";
+export * from "./psd-preflight-parser";
+export * from "./format-compatibility-preflight";
