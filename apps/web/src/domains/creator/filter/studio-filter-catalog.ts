@@ -119,7 +119,7 @@ export const STUDIO_FILTER_CATALOG: readonly StudioFilterCatalogEntry[] = [
     title: "이음매 없는 블러",
     description: "반대편 가장자리를 이어 샘플링해 배경·패턴 소재의 이음매를 부드럽게 없앱니다.",
     group: "blur",
-    keywords: ["타일러블 블러", "tileable blur", "seamless", "wrap", "타일러블 블러", "이음매", "반복 소재"],
+    keywords: ["타일러블 블러", "tileable blur", "seamless", "wrap", "이음매", "반복 소재"],
   },
   {
     engine: "blur",

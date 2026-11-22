@@ -4,6 +4,10 @@ import { BRUSH_STUDIO_V6_TOPOLOGIES, brushStudioV6Topology } from "./brush-studi
 import { planBrushStudioV6ProviderRuntime } from "./brush-studio-v6-provider-runtime";
 import { BRUSH_STUDIO_V6_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog";
 import {
+  dedupeBrushStudioV6Recipes,
+  resolveCanonicalBrushStudioV6RecipeId,
+} from "./brush-studio-v6-recipe-dedupe";
+import {
   BRUSH_STUDIO_V6_DEFAULT_LICENSE_PROFILE,
   brushStudioV6LicenseProfileAllows,
   brushStudioV6ProviderManifestForNode,
@@ -176,9 +180,19 @@ export const BRUSH_STUDIO_V6_RECIPES: readonly BrushStudioV6Recipe[] = Object.fr
   ),
 );
 
+/** 12슬롯 완전 중복 별칭을 제외한 정본 V6 레시피 목록(카탈로그 노출용). */
+export const BRUSH_STUDIO_V6_CANONICAL_RECIPES: readonly BrushStudioV6Recipe[] =
+  dedupeBrushStudioV6Recipes(BRUSH_STUDIO_V6_RECIPES);
+
 export function brushStudioV6NodesForSlot(slot: BrushStudioV6Slot): readonly BrushStudioV6NodeDescriptor[] { return BRUSH_STUDIO_V6_NODES.filter((entry) => entry.slot === slot); }
 export function brushStudioV6Node(id: string): BrushStudioV6NodeDescriptor { return nodeFor(id); }
-export function createBrushStudioV6Program(recipeId = "clean-ink"): BrushStudioV6Program { return (BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === recipeId) ?? BRUSH_STUDIO_V6_RECIPES[0]!).create(); }
+export function createBrushStudioV6Program(recipeId = "clean-ink"): BrushStudioV6Program {
+  const direct = BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === recipeId);
+  if (direct) return direct.create();
+  const canonicalId = resolveCanonicalBrushStudioV6RecipeId(recipeId);
+  const canonical = BRUSH_STUDIO_V6_RECIPES.find((entry) => entry.id === canonicalId);
+  return (canonical ?? BRUSH_STUDIO_V6_RECIPES[0]!).create();
+}
 
 export function normalizeBrushStudioV6Program(value: unknown): BrushStudioV6Program {
   const source = obj(value); if (source.schemaVersion !== 6) return createBrushStudioV6Program();

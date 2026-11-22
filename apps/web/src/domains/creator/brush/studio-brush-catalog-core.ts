@@ -15,6 +15,7 @@ import {
 } from "../studio-creative-ux";
 
 import { STUDIO_BRUSH_MATERIAL_GROUP_LABELS } from "./studio-brush-material-group";
+import { studioBrushDistinctShortName } from "./studio-brush-canonical-dedupe";
 import { STUDIO_BRUSH_PACK_CATALOG_IDS } from "./studio-brush-pack-id";
 import {
   isStudioBrushQuarantinedPresetId,
@@ -30,7 +31,11 @@ export interface StudioBrushCatalogItem extends StudioBrushTrayItem {
 export const STUDIO_CORE_BRUSH_CATALOG_ITEMS: readonly StudioBrushCatalogItem[] =
   Object.freeze(
     listStudioBrushTrayItems("all").map((item) =>
-      Object.freeze({ ...item, source: "core" as const })
+      Object.freeze({
+        ...item,
+        shortName: studioBrushDistinctShortName(item.id, item.name, item.shortName),
+        source: "core" as const,
+      })
     )
   );
 

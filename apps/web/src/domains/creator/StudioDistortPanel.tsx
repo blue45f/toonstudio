@@ -7,6 +7,7 @@
  */
 import { RotateCcw } from "lucide-react";
 
+import { StudioCanonicalFilterNotice } from "./filter/StudioCanonicalFilterNotice";
 import {
   DISTORT_AMOUNT_RANGE,
   DISTORT_PRESETS,
@@ -110,6 +111,7 @@ export function StudioDistortPanel({
           );
         })}
       </div>
+      <StudioCanonicalFilterNotice panelId="StudioDistortPanel" />
     </div>
   );
 }

@@ -4,8 +4,10 @@
  */
 import { BRUSH_STUDIO_V6_RECIPE_SEEDS } from "../brush-lab/brush-studio-v6-recipe-catalog";
 
+import { studioBrushDistinctShortName } from "./studio-brush-canonical-dedupe";
 import { studioBrushDefaultStartWidth } from "./studio-brush-default-size-policy";
-import { studioV6BrushCatalogId } from "./studio-brush-v6-id";
+import { studioV6BrushCatalogId, studioV6RecipeIdFromCatalogId } from "./studio-brush-v6-id";
+import { resolveCanonicalBrushStudioV6RecipeId } from "../brush-lab/brush-studio-v6-recipe-dedupe";
 
 import type { BrushStudioV6RecipeSeed } from "../brush-lab/brush-studio-v6-recipe-catalog";
 import type { StudioBrushCatalogItem } from "./studio-brush-catalog-core";
@@ -107,7 +109,11 @@ export const STUDIO_V6_BRUSH_CATALOG_ITEMS: readonly StudioBrushCatalogItem[] =
         id: studioV6BrushCatalogId(seed.id),
         runtimeBrushId: "brush",
         name: seed.label,
-        shortName: shortName(seed.label),
+        shortName: studioBrushDistinctShortName(
+          studioV6BrushCatalogId(seed.id),
+          seed.label,
+          shortName(seed.label),
+        ),
         hint: seed.description,
         searchAliases: Object.freeze(Array.from(new Set([
           seed.group,
@@ -142,7 +148,11 @@ const STUDIO_V6_BRUSH_CATALOG_BY_ID = new Map(
 export function studioV6BrushCatalogItemById(
   catalogId: unknown,
 ): StudioBrushCatalogItem | null {
-  return typeof catalogId === "string"
-    ? STUDIO_V6_BRUSH_CATALOG_BY_ID.get(catalogId) ?? null
-    : null;
+  if (typeof catalogId !== "string") return null;
+  const direct = STUDIO_V6_BRUSH_CATALOG_BY_ID.get(catalogId);
+  if (direct) return direct;
+  const recipeId = studioV6RecipeIdFromCatalogId(catalogId);
+  if (!recipeId) return null;
+  const canonicalId = studioV6BrushCatalogId(resolveCanonicalBrushStudioV6RecipeId(recipeId));
+  return STUDIO_V6_BRUSH_CATALOG_BY_ID.get(canonicalId) ?? null;
 }
