@@ -64,3 +64,35 @@ export type {
   DownsampleBg3dTextureInput,
   RgbaBoxFilterInput,
 } from "./bg3d-texture-device-downsampler";
+
+export {
+  BG3D_CANVAS_SAFE_DPR_MAX,
+  BG3D_CANVAS_SAFE_DPR_MIN,
+  BG3D_CONSERVATIVE_FALLBACK_MAX_TEXTURE_SIZE,
+  BG3D_DEFAULT_MAX_HEAP_LEAK_RATIO,
+  BG3D_DEFAULT_MAX_TEXTURE_SIZE,
+  BG3D_DEFAULT_MUTATED_CUT_MAX_SSIM,
+  BG3D_DEFAULT_UNTOUCHED_CUT_MIN_SSIM,
+  BG3D_MIN_VALID_MAX_TEXTURE_SIZE,
+  clampBg3dCanvasDpr,
+  compareBg3dThreeCutSnapshots,
+  computeBg3dBytesSha256,
+  computeBg3dRgbaSsim,
+  evaluateBg3dHeapLeakGrowth,
+} from "./bg3d-dpr-webgl-guard";
+
+export type {
+  Bg3dCanvasDprClampResult,
+  Bg3dCutComparisonResult,
+  Bg3dDprGuardWarningCode,
+  Bg3dHeapLeakEvaluation,
+  Bg3dHeapSample,
+  Bg3dRgbaImageInput,
+  Bg3dRgbaSsimResult,
+  Bg3dSsimOptions,
+  Bg3dThreeCutComparisonInput,
+  Bg3dThreeCutComparisonReport,
+  Bg3dThreeCutRole,
+  Bg3dThreeCutSnapshotPair,
+  ClampBg3dCanvasDprOptions,
+} from "./bg3d-dpr-webgl-guard";
