@@ -15,6 +15,7 @@ import {
   listStudioObjectInsertItems,
   type StudioObjectInsertItem,
 } from "./studio-object-insert-catalog";
+import { extractStudioAssetAutotagMetadata } from "./asset-workspace/studio-asset-smart-autotag";
 
 import {
   SHARED_LIBRARY_SCOPE_LABELS,
@@ -449,6 +450,17 @@ function nativeToolItem(
 function localItem(asset: StudioAsset, index: number): StudioUnifiedAssetItem {
   const aiGenerated = asset.kind === "ai" || asset.rights?.sourceKind === "ai-generated";
   const rightsConfirmed = asset.rights?.rightsConfirmed === true;
+  const autotag = extractStudioAssetAutotagMetadata(asset);
+  const keywordSet = new Set([
+    asset.id,
+    asset.name,
+    asset.kind ?? "",
+    asset.rights?.licenseLabel ?? "",
+    aiGenerated ? "AI 생성" : "업로드",
+    "내 에셋",
+    autotag.reusableBlock.roleLabelKo,
+    ...autotag.allTags,
+  ].filter(Boolean));
   return {
     id: `local:${asset.id}`,
     category: "mine",
@@ -456,14 +468,7 @@ function localItem(asset: StudioAsset, index: number): StudioUnifiedAssetItem {
     title: asset.name,
     description: `${asset.width} × ${asset.height}px · 내 라이브러리`,
     categoryLabel: "내 에셋",
-    keywords: Object.freeze([
-      asset.id,
-      asset.name,
-      asset.kind ?? "",
-      asset.rights?.licenseLabel ?? "",
-      aiGenerated ? "AI 생성" : "업로드",
-      "내 에셋",
-    ].filter(Boolean)),
+    keywords: Object.freeze([...keywordSet]),
     badges: Object.freeze([
       aiGenerated ? "AI" : "내 에셋",
       rightsConfirmed ? "권리 확인" : "개인 보관",

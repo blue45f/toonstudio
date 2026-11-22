@@ -12,6 +12,12 @@
  * 5. Background timer throttling & NTP clock-jump guard for presence heartbeats.
  */
 
+import {
+  getStudioResourceLeakGuard,
+  type StudioResourceLeakGuard,
+  type StudioResourceLeakStatus,
+} from "../render/studio-resource-leak-guard";
+
 export type StudioLiveLongSessionHealth = "healthy" | "degraded" | "recovering";
 
 export const STUDIO_LIVE_AUTO_DEGRADE_PEER_THRESHOLD = 6;
@@ -244,6 +250,14 @@ export interface StudioLiveLongSessionDiagnosticsInput {
   readonly storageQuotaStatus?: StudioStorageQuotaStatus;
   readonly now?: () => number;
   readonly heapUsedMb?: number | null;
+  readonly resourceLeakGuard?: StudioResourceLeakGuard;
+}
+
+export interface StudioLiveTrackedResourceSummary {
+  readonly status: StudioResourceLeakStatus;
+  readonly activeCount: number;
+  readonly totalEstimatedBytes: number;
+  readonly staleCount: number;
 }
 
 export interface StudioLiveLongSessionDiagnostics {
@@ -257,6 +271,7 @@ export interface StudioLiveLongSessionDiagnostics {
   readonly autoDegradedTrails: boolean;
   readonly storageQuotaStatus: StudioStorageQuotaStatus;
   readonly heapUsedMb: number | null;
+  readonly trackedResources: StudioLiveTrackedResourceSummary;
 }
 
 function readBrowserHeapUsedMb(): number | null {
@@ -286,6 +301,13 @@ export function collectStudioLiveLongSessionDiagnostics(
   const storageQuotaStatus: StudioStorageQuotaStatus = input.storageQuotaStatus ?? "unknown";
   const heapUsedMb = input.heapUsedMb !== undefined ? input.heapUsedMb : readBrowserHeapUsedMb();
   const capturedAt = input.now ? input.now() : Date.now();
+  const leakReport = (input.resourceLeakGuard ?? getStudioResourceLeakGuard()).inspect(capturedAt);
+  const trackedResources: StudioLiveTrackedResourceSummary = Object.freeze({
+    status: leakReport.status,
+    activeCount: leakReport.activeCount,
+    totalEstimatedBytes: leakReport.totalEstimatedBytes,
+    staleCount: leakReport.staleEntries.length,
+  });
 
   let status: StudioLiveLongSessionHealth = "healthy";
   if (input.recovering) {
@@ -294,6 +316,7 @@ export function collectStudioLiveLongSessionDiagnostics(
     outboxQueueSize > 32
     || activeInkStrokes >= 8
     || storageQuotaStatus === "critical"
+    || trackedResources.status === "critical"
     || (heapUsedMb !== null && heapUsedMb > 768)
   ) {
     status = "degraded";
@@ -310,6 +333,7 @@ export function collectStudioLiveLongSessionDiagnostics(
     autoDegradedTrails,
     storageQuotaStatus,
     heapUsedMb,
+    trackedResources,
   });
 }
 

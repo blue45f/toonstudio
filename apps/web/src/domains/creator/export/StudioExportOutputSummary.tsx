@@ -6,6 +6,7 @@ import type { WatermarkSettings } from "../studio-watermark";
 import { exportFormatLabel, type ExportFormat } from "./studio-export";
 import { exportMenuText } from "./studio-export-menu-i18n";
 import { studioExportAppearanceSummary } from "./studio-export-summary";
+import { planStudioLocalTileExport } from "./studio-local-tile-export-planner";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioExportOutputSummary", ko, en);
@@ -39,6 +40,15 @@ export function StudioExportOutputSummary({
   const sizeGuidance = largeImage
     ? bi("큰 이미지예요. 제출처의 가로·세로 제한을 확인하세요.", "Large image. Check the destination's width and height limits.")
     : bi("선택한 이미지 크기입니다.", "The image uses the selected dimensions.");
+  const tilePlan = planStudioLocalTileExport({
+    width,
+    height,
+    transparent,
+    requestedFormat: format,
+  });
+  const tileBandwidthGuidance = tilePlan.requiresChunkedExport
+    ? `${tilePlan.tiles.length}개 로컬 타일 · 워커 ${tilePlan.workerConcurrency}개 · ${tilePlan.pngVsWebp.summaryKo}`
+    : tilePlan.pngVsWebp.summaryKo;
 
   return (
     <section
@@ -68,6 +78,10 @@ export function StudioExportOutputSummary({
         <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1 border-t border-line/65 pt-2" data-studio-export-size-guidance="true">
           <dt>{bi("이미지 크기 안내", "Image size guidance")}</dt>
           <dd className="m-0 min-w-0 break-words text-fg-2">{sizeGuidance}</dd>
+        </div>
+        <div className="flex min-w-0 flex-wrap justify-between gap-x-3 gap-y-1 border-t border-line/65 pt-2" data-studio-export-tile-plan="true">
+          <dt>{bi("로컬 타일·포맷 비교", "Local tile & format comparison")}</dt>
+          <dd className="m-0 min-w-0 break-words text-fg-2">{tileBandwidthGuidance}</dd>
         </div>
       </dl>
       {appearance.background === "unsupported" && transparent ? (
