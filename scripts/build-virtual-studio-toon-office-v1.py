@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 from collections import deque
 from pathlib import Path
 
@@ -32,7 +33,11 @@ from PIL import Image, ImageDraw
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "apps/web/public/assets/virtual-studio/toon-office-v1"
-DEFAULT_SOURCE_DIR = Path("/Users/hjunkim/.gemini/antigravity-cli/brain/97335b3c-f2e6-4b24-b8eb-eb56e28c1460")
+DEFAULT_SOURCE_DIR = (
+    Path(os.environ["TOONSTUDIO_TOON_OFFICE_SOURCE_DIR"])
+    if os.environ.get("TOONSTUDIO_TOON_OFFICE_SOURCE_DIR")
+    else None
+)
 
 CELL_W, CELL_H = 128, 192
 CHAR_COLS, CHAR_ROWS = 9, 4
@@ -539,6 +544,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-dir", type=Path, default=DEFAULT_SOURCE_DIR)
     args = parser.parse_args()
+    if args.source_dir is None:
+        raise SystemExit(
+            "원화 폴더가 필요합니다. --source-dir <경로> 또는 TOONSTUDIO_TOON_OFFICE_SOURCE_DIR 환경변수를 지정하세요."
+        )
     keyed: dict[str, np.ndarray] = {}
     source_hashes: dict[str, str] = {}
     for sheet, file_name in SOURCES.items():
