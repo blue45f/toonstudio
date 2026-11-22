@@ -3,6 +3,14 @@ import { CheckCircle2, MonitorCog, Save, Trash2, TriangleAlert } from "lucide-re
 import { useId } from "react";
 
 import type { StudioCompanionWindowLayoutSurface } from "./studio-companion-window-layout";
+import {
+  DEFAULT_PANEL_SNAP_OPTIONS,
+  inspectRuntimeResilienceReadiness,
+  snapAndClampPanelToDisplay,
+  type DisplayMonitorBounds,
+  type PanelClampResolution,
+  type PinnedPanelRect,
+} from "./runtime-resilience";
 
 import { SwitchIndicator } from "@/shared/components/ui/switch";
 import { cn } from "@/shared/lib/utils";
@@ -23,6 +31,12 @@ export interface StudioCompanionWindowLayoutControlsProps {
   /** Optional until the companion page wires manual capture into its placement runtime. */
   onCapture?: () => void;
   onClear: () => void;
+  /** Optional multi-monitor bounds used to snap and clamp detached panel positions on capture. */
+  displayBounds?: readonly DisplayMonitorBounds[];
+  /** Optional current panel rectangle to guard against off-screen escape across monitors. */
+  panelRect?: PinnedPanelRect;
+  /** Optional callback receiving the clamped multi-monitor panel resolution on capture. */
+  onResolvePinnedLayout?: (resolution: PanelClampResolution) => void;
 }
 
 const SURFACE_LABELS: Readonly<Record<StudioCompanionWindowSurface, string>> = {
@@ -87,6 +101,9 @@ export function StudioCompanionWindowLayoutControls({
   onEnabledChange,
   onCapture,
   onClear,
+  displayBounds,
+  panelRect,
+  onResolvePinnedLayout,
 }: StudioCompanionWindowLayoutControlsProps) {
   const id = useId();
   const titleId = `${id}-title`;
@@ -95,16 +112,33 @@ export function StudioCompanionWindowLayoutControls({
   const privacyId = `${id}-privacy`;
   const surfaceLabel = SURFACE_LABELS[surface];
   const persistence = describePersistence(persistenceStatus, enabled, hasSavedLayout);
+  const resilienceReadiness = inspectRuntimeResilienceReadiness();
+  const pinnedResolution =
+    panelRect && displayBounds && displayBounds.length > 0
+      ? snapAndClampPanelToDisplay(panelRect, displayBounds, DEFAULT_PANEL_SNAP_OPTIONS)
+      : null;
+  const displayPinGuardState = pinnedResolution
+    ? pinnedResolution.wasClamped
+      ? "clamped"
+      : "aligned"
+    : resilienceReadiness.layoutPinGuard;
   const switchDisabled = disabled || persistenceStatus === "unsupported";
   const captureDisabled = disabled
     || !enabled
     || persistenceStatus === "unsupported"
     || !onCapture;
   const clearDisabled = disabled || !hasSavedLayout;
+  const handleCapture = () => {
+    if (pinnedResolution) {
+      onResolvePinnedLayout?.(pinnedResolution);
+    }
+    onCapture?.();
+  };
 
   return (
     <section
       aria-labelledby={titleId}
+      data-display-pin-guard={displayPinGuardState}
       className="min-w-0 rounded-lg border border-line/70 bg-card/70 p-2.5"
     >
       <div className="flex min-w-0 items-start gap-2.5">
@@ -170,7 +204,7 @@ export function StudioCompanionWindowLayoutControls({
           type="button"
           aria-describedby={`${descriptionId} ${statusId} ${privacyId}`}
           disabled={captureDisabled}
-          onClick={onCapture}
+          onClick={handleCapture}
           className={cn(
             "inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-raised px-2",
             "text-[0.68rem] font-semibold text-fg-2 outline-none transition-[border-color,background-color,color] duration-150",
