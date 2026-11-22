@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { ProductionTask } from "./studio-production-workspace-runtime";
 import { productionCalendarGroups } from "./studio-production-calendar";
+import { StudioSoloDeadlineMeterPanel } from "../deadline-meter/StudioSoloDeadlineMeterPanel";
 
 export function StudioProductionCalendar({ tasks, today, onOpen }: {
   readonly tasks: readonly ProductionTask[]; readonly today: string; readonly onOpen: (id: string) => void;
@@ -27,5 +28,9 @@ export function StudioProductionCalendar({ tasks, today, onOpen }: {
     </section>)}</div>
     {!groups.length ? <p role="status" className="text-sm">{bt("이 달에 해당하는 작업이 없습니다.", "No matching tasks in this month.")}</p> : null}
     {undated.length ? <section className="rounded-lg border border-line p-3"><h3 className="mb-2 text-sm font-bold">{bt("기한 확인 필요", "Due date needs checking")}</h3>{items(undated)}</section> : null}
+    <StudioSoloDeadlineMeterPanel
+      today={today}
+      activeTaskCount={tasks.filter((task) => task.status !== "done").length}
+    />
   </section>;
 }
