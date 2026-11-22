@@ -52,6 +52,7 @@ import {
 } from "./StudioLocalizationAiSyncTabs";
 import { StudioOfflineSyncLegacyExport } from "./StudioOfflineSyncLegacyExport";
 import { OFFLINE_SYNC_COPY } from "./studio-offline-sync-storage-copy";
+import { StudioOpfsSelfHealPanel } from "../storage/StudioOpfsSelfHealPanel";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -434,6 +435,7 @@ export function StudioLocalizationAiSyncPanel({
             onStopScreenShare={handleStopScreenShare}
           />
           <StudioOfflineSyncLegacyExport key={projectId} projectId={projectId} />
+          <StudioOpfsSelfHealPanel key={`self-heal-${projectId}`} projectId={projectId} />
           </>
         ) : null}
       </div>
