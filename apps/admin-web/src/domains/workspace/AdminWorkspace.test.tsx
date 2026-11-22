@@ -43,7 +43,7 @@ describe("관리자 작업실 화면 경계", () => {
     const error = await within(dialog).findByRole("alert");
     expect(error.textContent).toContain("근거");
     expect(api.save).not.toHaveBeenCalled();
-    expect(document.activeElement).toBe(error);
+    await waitFor(() => expect(document.activeElement).toBe(error));
   });
 
   it("계정 전환 후 늦게 도착한 이전 계정 응답과 편집 상태를 표시하지 않는다", async () => {
