@@ -9,12 +9,13 @@
  */
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { LayoutGrid, Loader2 } from "lucide-react";
+import { useState, type ReactElement } from "react";
 
 import { CONTACT_SHEET_COLUMN_CHOICES, CONTACT_SHEET_PAGE_PRESETS, CONTACT_SHEET_ROW_CHOICES } from "./studio-pdf-contact-sheet";
 
-import type { ReactElement } from "react";
-
 import { cx } from "@/shared/lib/cx";
+
+type StoryPrintProModule = typeof import("./story-print-pro");
 
 export interface StudioContactSheetPanelProps {
   columns: number;
@@ -52,6 +53,35 @@ export function StudioContactSheetPanel({
 }: StudioContactSheetPanelProps): ReactElement {
   const perSheet = Math.max(1, columns) * Math.max(1, rows);
   const sheetCount = pageCount > 0 ? Math.ceil(pageCount / perSheet) : 0;
+  const [storyPrintMod, setStoryPrintMod] = useState<StoryPrintProModule | null>(null);
+
+  const loadPrintSpec = () => {
+    if (storyPrintMod) return;
+    void import("./story-print-pro").then((mod) => {
+      setStoryPrintMod(mod);
+    });
+  };
+
+  const printSpec = storyPrintMod
+    ? (() => {
+        const formatId = pagePresetId === "a4" ? "a5" : "shin-gukpan";
+        const geometry = storyPrintMod.computePrintPageGeometry({
+          formatId,
+          bleedMm: storyPrintMod.DEFAULT_PRINT_BLEED_MM,
+          dpi: storyPrintMod.MIN_RECOMMENDED_PRINT_DPI,
+        });
+        const spine = storyPrintMod.calculateBookSpineThicknessMm({
+          interiorPageCount: Math.max(4, pageCount),
+          paperStock: "white-uncoated",
+          interiorGsm: 100,
+          bindingType: "perfect-bound",
+          trimWidthMm: geometry.trimBoxMm.widthMm,
+          trimHeightMm: geometry.trimBoxMm.heightMm,
+          bleedMm: geometry.bleedMm,
+        });
+        return { geometry, spine };
+      })()
+    : null;
 
   return (
     <div className="mt-2.5 space-y-2 rounded-xl border border-line bg-card/45 p-2.5">
@@ -141,6 +171,27 @@ export function StudioContactSheetPanel({
       <p className="tabular-nums text-[0.66rem] text-fg-3">
         {columns}×{rows} = 한 장에 {perSheet}칸 · 전체 {pageCount}페이지 → {sheetCount}장
       </p>
+
+      <details
+        className="rounded-lg border border-line/80 bg-panel/50 px-2 py-1.5 text-[0.66rem] text-fg-2"
+        onToggle={(event) => {
+          if (event.currentTarget.open) loadPrintSpec();
+        }}
+      >
+        <summary className="cursor-pointer font-semibold text-fg-2">
+          단행본 인쇄 규격 (CMYK · 3mm 도련 · 책등)
+        </summary>
+        {printSpec && (
+          <div className="mt-1.5 space-y-0.5 tabular-nums text-[0.64rem] text-fg-3">
+            <p>
+              도련 {printSpec.geometry.bleedMm}mm · {printSpec.geometry.dpi} DPI ({printSpec.geometry.bleedWidthPx}×{printSpec.geometry.bleedHeightPx}px)
+            </p>
+            <p>
+              예상 책등 {printSpec.spine.spineWidthMm}mm · 표지 전개도 {printSpec.spine.fullCoverSpreadWidthMm}×{printSpec.spine.fullCoverSpreadHeightMm}mm
+            </p>
+          </div>
+        )}
+      </details>
 
       <button
         type="button"
