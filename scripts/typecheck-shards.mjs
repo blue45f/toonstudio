@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir, totalmem } from "node:os";
 import { dirname, relative, resolve } from "node:path";
@@ -125,6 +126,7 @@ export function parseArguments(args, runtimeOrEnv) {
     heapMb: DEFAULT_HEAP_MB,
     maxBytes: DEFAULT_MAX_SOURCE_BYTES,
     list: false,
+    printCacheKey: false,
     autoTune: env.TOONSTUDIO_TYPECHECK_AUTO_TUNE === "1",
     noCache: env.TOONSTUDIO_TYPECHECK_NO_CACHE === "1",
     tuningTier: "explicit",
@@ -132,6 +134,7 @@ export function parseArguments(args, runtimeOrEnv) {
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === "--list" || arg === "--dry-run") options.list = true;
+    else if (arg === "--print-cache-key") options.printCacheKey = true;
     else if (arg === "--auto-tune") options.autoTune = true;
     else if (arg === "--no-cache" || arg === "--fresh") options.noCache = true;
     else if (["--project", "--report", "--heap-mb", "--max-source-bytes"].includes(arg)) {
@@ -170,9 +173,58 @@ export function parseArguments(args, runtimeOrEnv) {
   return options;
 }
 
+const CACHE_KEY_ROOT_FILES = new Set([
+  "pnpm-lock.yaml",
+  "tsconfig.json",
+  "package.json",
+  "eslint.config.mjs",
+  "postcss.config.mjs",
+]);
+const CACHE_KEY_EXCLUDED_TREES = /^(?:\.github|apps\/api|artifacts|dist|worktrees|\.worktrees|\.claude\/worktrees)\//u;
+const CACHE_KEY_NON_WEB_TREES = /^(?:docs|apps\/admin-web|apps\/mobile|apps\/desktop-sync|apps\/brush-lab|apps\/character-lab)\//u;
+const CACHE_KEY_SOURCE_EXTENSION = /\.(?:[cm]?[jt]sx?|jsonc?)$/u;
+
+/** 루트 tsconfig.json 프로그램 입력에 영향을 줄 수 있는 Git 추적 경로를 판별한다. */
+export function isTypecheckShardsCacheInputPath(relativePath) {
+  if (typeof relativePath !== "string" || relativePath.length === 0) return false;
+  if (CACHE_KEY_ROOT_FILES.has(relativePath)) return true;
+  if (CACHE_KEY_EXCLUDED_TREES.test(relativePath)) return false;
+  if (relativePath.endsWith(".mts")) return true;
+  if (CACHE_KEY_NON_WEB_TREES.test(relativePath)) return false;
+  return CACHE_KEY_SOURCE_EXTENSION.test(relativePath);
+}
+
+/**
+ * Git 트리 객체만으로 typecheck-shards 캐시 키 다이제스트를 계산한다(lazy fetch·작업 트리 스캔 없음).
+ * 실제 재사용 가능 여부는 실행 시 extractReusableCheckpoint의 전체 TS fingerprint 대조로 fail-closed 검증한다.
+ */
+export function computeTypecheckShardsCacheKey({
+  cwd = REPOSITORY_ROOT,
+  run = execFileSync,
+} = {}) {
+  const tree = String(run("git", ["ls-tree", "-r", "-z", "HEAD"], {
+    cwd,
+    env: { ...process.env, GIT_NO_LAZY_FETCH: "1" },
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  }));
+  const relevant = [];
+  for (const entry of tree.split("\0")) {
+    if (!entry) continue;
+    const tab = entry.indexOf("\t");
+    if (tab < 0) continue;
+    const filePath = entry.slice(tab + 1);
+    if (isTypecheckShardsCacheInputPath(filePath)) relevant.push(entry);
+  }
+  relevant.sort((left, right) => left.localeCompare(right, "en"));
+  return createHash("sha256")
+    .update(`typecheck-shards-cache-v1\n${relevant.join("\n")}`)
+    .digest("hex");
+}
+
 /**
  * 동일 입력 fingerprint의 기존 체크포인트를 검증해 완전 재사용 또는 미완료 샤드 이어달리기를 판정한다.
- * 입력·프로젝트·TS 버전 중 하나라도 달라지면 fail-closed로 캐시를 폐기한다.
+ * 입력·프로젝트·TS 버전·워커 coverage·진단 합계 중 하나라도 달라지면 fail-closed로 캐시를 폐기한다.
  */
 export function extractReusableCheckpoint(existingReport, { project, identity, fingerprint }) {
   if (!existingReport || typeof existingReport !== "object") return { mode: "none" };
@@ -184,18 +236,6 @@ export function extractReusableCheckpoint(existingReport, { project, identity, f
     || !Array.isArray(existingReport.diagnostics)
   ) {
     return { mode: "none" };
-  }
-
-  const expectedCount = identity.files.length;
-  if (
-    existingReport.complete === true
-    && !existingReport.failure
-    && existingReport.phases?.finalSnapshot?.fingerprint === fingerprint
-    && existingReport.phases?.preflight?.fingerprint === fingerprint
-    && existingReport.phases?.semantic?.checkedFiles === expectedCount
-    && existingReport.phases?.semantic?.expectedFiles === expectedCount
-  ) {
-    return { mode: "complete", report: existingReport };
   }
 
   const preflight = existingReport.phases?.preflight;
@@ -232,6 +272,20 @@ export function extractReusableCheckpoint(existingReport, { project, identity, f
     checkedGroups.push(worker.files);
     shardDiagnostics.push(worker.diagnostics);
     reusedWorkers.push({ ...worker, reused: true });
+  }
+
+  const expectedCount = identity.files.length;
+  const mergedDiagnostics = mergeDiagnostics([preflight.diagnostics, ...shardDiagnostics]);
+  if (
+    existingReport.complete === true
+    && !existingReport.failure
+    && existingReport.phases?.finalSnapshot?.fingerprint === fingerprint
+    && existingReport.phases?.semantic?.checkedFiles === expectedCount
+    && existingReport.phases?.semantic?.expectedFiles === expectedCount
+    && checkedSet.size === expectedCount
+    && JSON.stringify(existingReport.diagnostics) === JSON.stringify(mergedDiagnostics)
+  ) {
+    return { mode: "complete", report: existingReport };
   }
 
   if (reusedWorkers.length === 0) return { mode: "none" };
@@ -479,6 +533,10 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
 
 export function main(args = process.argv.slice(2)) {
   const parsedOptions = parseArguments(args);
+  if (parsedOptions.printCacheKey) {
+    process.stdout.write(`${computeTypecheckShardsCacheKey()}\n`);
+    return 0;
+  }
   const options = parsedOptions.list ? parsedOptions : resolveRuntimeExecutionBudget(parsedOptions);
   const scratch = mkdtempSync(resolve(tmpdir(), "toonstudio-typecheck-shards-"));
   try {

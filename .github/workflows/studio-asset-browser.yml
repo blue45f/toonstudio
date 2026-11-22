@@ -1,23 +1,5 @@
 name: Studio asset browser
 on:
-  push:
-    branches: [main, feat/studio-asset-browser-quality-20260906]
-    paths:
-      - apps/web/src/domains/creator/catalog/**
-      - apps/web/src/domains/creator/studio-shell/StudioAssetHubPage*
-      - apps/web/src/domains/creator/studio-shell/StudioAssetVisualIntro*
-      - apps/web/src/domains/creator/studio-shell/studio-asset-visual-intro.css
-      - e2e/studio-assets-layout.spec.ts
-      - playwright.assets-layout.config.ts
-      - apps/web/src/domains/creator/StudioElementsPanel*
-      - apps/web/src/domains/creator/StudioAssetToolPopoverBody.tsx
-      - apps/web/src/domains/creator/studio-tool-belt-lazy-ui*
-      - apps/web/src/domains/creator/studio-scene-templates*
-      - scripts/verify-studio-catalog-browser.mjs
-      - scripts/pack_studio_curated_gltf.py
-      - scripts/tests/test_studio_*.py
-      - apps/web/tests/browser-fixtures/studio-catalog/**
-      - .github/workflows/studio-asset-browser.yml
   pull_request:
     paths:
       - apps/web/src/domains/creator/catalog/**
@@ -36,6 +18,8 @@ on:
       - apps/web/tests/browser-fixtures/studio-catalog/**
       - .github/workflows/studio-asset-browser.yml
   workflow_dispatch:
+  schedule:
+    - cron: "23 15 * * 4"
 permissions:
   contents: read
 concurrency:
@@ -116,12 +100,33 @@ jobs:
         run: |
           set -o pipefail
           NODE_OPTIONS=--max-old-space-size=12288 pnpm exec tsc -p tsconfig.json 2>&1 | tee artifacts/studio-catalog-browser/typecheck.log
+      - name: Compute typecheck-shards cache key
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        id: typecheck-shards-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'key=core-typecheck-shards-v1-%s-%s-%s\n' \
+            "${RUNNER_OS}" "${RUNNER_ARCH}" \
+            "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+      - name: Restore typecheck-shards checkpoint cache
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
       - name: Production build and Studio bundle budget
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           set -o pipefail
           pnpm run build 2>&1 | tee artifacts/studio-catalog-browser/build.log
           pnpm run check:studio-bundle 2>&1 | tee artifacts/studio-catalog-browser/bundle.log
+      - name: Restore Playwright Chromium cache
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Chromium setup
         id: browser
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}

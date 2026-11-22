@@ -15,14 +15,9 @@ on:
       - "package.json"
       - "pnpm-lock.yaml"
       - ".github/workflows/webtoon-assistant-regression.yml"
-  push:
-    branches: [main]
-    paths:
-      - "apps/web/src/domains/creator/assistant/**"
-      - "apps/web/src/domains/creator/StudioCompanionAssistantDisplay*"
-      - "apps/web/src/domains/creator/StudioReferencePanel*"
-      - "apps/web/src/domains/creator/studio-reference-import*"
-      - ".github/workflows/webtoon-assistant-regression.yml"
+  schedule:
+    - cron: "41 21 * * 5"
+  workflow_dispatch:
 
 permissions:
   contents: read

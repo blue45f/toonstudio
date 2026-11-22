@@ -9,15 +9,9 @@ on:
       - 'apps/web/src/domains/creator/studio-raster-worker-*.ts'
       - 'apps/web/src/domains/creator/studio-abortable-serial-queue.ts'
       - '.github/workflows/studio-raster-snapshot-stability.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/src/domains/creator/studio-smudge-worker-*.ts'
-      - 'apps/web/src/domains/creator/studio-retouch-worker-*.ts'
-      - 'apps/web/src/domains/creator/studio-raster-worker-*.ts'
-      - 'apps/web/src/domains/creator/studio-abortable-serial-queue.ts'
-      - '.github/workflows/studio-raster-snapshot-stability.yml'
   workflow_dispatch:
+  schedule:
+    - cron: "11 15 * * 0"
 
 permissions:
   contents: read

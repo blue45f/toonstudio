@@ -15,19 +15,8 @@ on:
       - "apps/web/src/shared/lib/__tests__/pwa-manifest.test.ts"
       - "scripts/*brand-icons*"
       - ".github/workflows/brand-icon-quality.yml"
-  push:
-    branches: [main]
-    paths:
-      - "apps/web/index.html"
-      - "apps/web/public/favicon*"
-      - "apps/web/public/icon-*"
-      - "apps/web/public/apple-touch-icon.png"
-      - "apps/web/public/safari-pinned-tab.svg"
-      - "apps/web/public/manifest.webmanifest"
-      - "apps/web/public/brand/spectrum-ribbon-v2/**"
-      - "apps/web/src/shared/lib/__tests__/pwa-manifest.test.ts"
-      - "scripts/*brand-icons*"
-      - ".github/workflows/brand-icon-quality.yml"
+  schedule:
+    - cron: "29 20 * * 3"
 
 permissions:
   contents: read

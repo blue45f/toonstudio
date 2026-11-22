@@ -9,7 +9,9 @@ import ts from "typescript";
 
 import {
   assertCompleteCoverage,
+  computeTypecheckShardsCacheKey,
   extractReusableCheckpoint,
+  isTypecheckShardsCacheInputPath,
   mergeDiagnostics,
   parseArguments,
   partitionFiles,
@@ -453,4 +455,138 @@ test("메모리 실패 발생 시 남은 큐 샤드도 즉시 안전한 절반 �
     ["e", "f"],
     ["g", "h"],
   ]);
+});
+
+test("CI의 3MiB 초기 바이트 예산(3145728)도 16GiB 러너에서는 11796MB·18MiB로 승격되고 7GiB에서는 3MiB를 유지한다", () => {
+  const ciBase = parseArguments(
+    ["--heap-mb", "8192", "--max-source-bytes", "12582912"],
+    { CI: "1", TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "3145728" },
+  );
+  assert.equal(ciBase.heapMb, 8192);
+  assert.equal(ciBase.maxBytes, 3145728);
+
+  const runner16g = resolveRuntimeExecutionBudget(ciBase, {
+    env: { NODE_OPTIONS: "--max-old-space-size=12288" },
+    totalMemoryBytes: 16 * 1024 ** 3,
+  });
+  assert.equal(runner16g.heapMb, Math.floor(16 * 1024 * 0.72));
+  assert.equal(runner16g.maxBytes, 18 * 1024 * 1024);
+
+  const runner7g = resolveRuntimeExecutionBudget(ciBase, {
+    env: { NODE_OPTIONS: "--max-old-space-size=12288" },
+    totalMemoryBytes: 7 * 1024 ** 3,
+  });
+  assert.deepEqual(runner7g, ciBase);
+});
+
+test("완료 체크포인트 재사용은 워커 coverage 누락·진단 변조·preflight 불허를 fail-closed로 거부한다", () => {
+  const identity = {
+    version: "fixture-ts",
+    options: { skipLibCheck: true },
+    files: [{ path: "a.ts", bytes: 10 }, { path: "b.ts", bytes: 10 }],
+  };
+  const validComplete = {
+    schemaVersion: 1,
+    project: "/repo/tsconfig.json",
+    typescriptVersion: "fixture-ts",
+    fingerprint: "fp-same",
+    complete: true,
+    phases: {
+      preflight: { fingerprint: "fp-same", semanticAllowed: true, diagnostics: [] },
+      semantic: { checkedFiles: 2, expectedFiles: 2 },
+      finalSnapshot: { fingerprint: "fp-same" },
+    },
+    workers: [
+      { files: ["a.ts"], checked: 1, fingerprint: "fp-same", diagnostics: [] },
+      { files: ["b.ts"], checked: 1, fingerprint: "fp-same", diagnostics: [{ code: 2322, category: 1, message: "err", file: "b.ts" }] },
+    ],
+    diagnostics: [{ code: 2322, category: 1, message: "err", file: "b.ts" }],
+  };
+  assert.equal(extractReusableCheckpoint(validComplete, { project: "/repo/tsconfig.json", identity, fingerprint: "fp-same" }).mode, "complete");
+
+  // 1) 최상위 diagnostics를 빈 배열로 변조해 워커 오류를 숨기면 완료 재사용 거부
+  const hiddenError = structuredClone(validComplete);
+  hiddenError.diagnostics = [];
+  assert.notEqual(extractReusableCheckpoint(hiddenError, { project: "/repo/tsconfig.json", identity, fingerprint: "fp-same" }).mode, "complete");
+
+  // 2) 워커 목록에서 b.ts가 빠졌는데 checkedFiles만 2로 기록된 손상 리포트는 완료 재사용 거부
+  const missingWorker = structuredClone(validComplete);
+  missingWorker.workers = [validComplete.workers[0]];
+  missingWorker.diagnostics = [];
+  assert.notEqual(extractReusableCheckpoint(missingWorker, { project: "/repo/tsconfig.json", identity, fingerprint: "fp-same" }).mode, "complete");
+
+  // 3) preflight semanticAllowed가 false이면 완전 폐기
+  const blockedPreflight = structuredClone(validComplete);
+  blockedPreflight.phases.preflight.semanticAllowed = false;
+  assert.equal(extractReusableCheckpoint(blockedPreflight, { project: "/repo/tsconfig.json", identity, fingerprint: "fp-same" }).mode, "none");
+});
+
+test("typecheck-shards 캐시 키는 비웹·문서 변경에 불변이고 웹·패키지·설정·mts 변경에 즉시 달라진다", () => {
+  for (const included of [
+    "pnpm-lock.yaml",
+    "tsconfig.json",
+    "package.json",
+    "apps/web/src/app/main.tsx",
+    "apps/web/public/assets/3d/environments/refined-v6/manifest.json",
+    "packages/core/src/index.ts",
+    "crates/studio-engine-vello/pkg/studio_engine_vello.d.ts",
+    "config/studio-production-toolchain.json",
+    "scripts/verify-studio-menus.mts",
+    "scripts/typecheck-shards.mjs",
+    "docs/example.mts",
+  ]) {
+    assert.equal(isTypecheckShardsCacheInputPath(included), true, included);
+  }
+  for (const excluded of [
+    ".github/workflows/ci.yml",
+    "docs/operations/ai-deployment-quickstart.md",
+    "apps/api/src/main.ts",
+    "apps/api/scripts/tool.mts",
+    "apps/admin-web/src/App.tsx",
+    "apps/brush-lab/src/main.ts",
+    "apps/web/public/assets/3d/model.glb",
+    "apps/web/src/styles/app.css",
+  ]) {
+    assert.equal(isTypecheckShardsCacheInputPath(excluded), false, excluded);
+  }
+
+  const baseTree = [
+    "100644 blob 1111111111111111111111111111111111111111\tpnpm-lock.yaml",
+    "100644 blob 2222222222222222222222222222222222222222\tapps/web/src/app/main.tsx",
+    "100644 blob 3333333333333333333333333333333333333333\tdocs/README.md",
+    "100644 blob 4444444444444444444444444444444444444444\t.github/workflows/ci.yml",
+  ];
+  const digest = (entries) => computeTypecheckShardsCacheKey({
+    run: (_cmd, args, opts) => {
+      assert.deepEqual(args, ["ls-tree", "-r", "-z", "HEAD"]);
+      assert.equal(opts.env.GIT_NO_LAZY_FETCH, "1");
+      return `${entries.join("\0")}\0`;
+    },
+  });
+  const initial = digest(baseTree);
+  assert.match(initial, /^[a-f0-9]{64}$/u);
+  // 문서·워크플로만 바뀌면 캐시 키 동일
+  const docAndWorkflowChanged = digest([
+    baseTree[0],
+    baseTree[1],
+    "100644 blob aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\tdocs/README.md",
+    "100644 blob bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\t.github/workflows/ci.yml",
+  ]);
+  assert.equal(docAndWorkflowChanged, initial);
+  // 웹 소스 변경 시 즉시 달라짐
+  const webChanged = digest([
+    baseTree[0],
+    "100644 blob cccccccccccccccccccccccccccccccccccccccc\tapps/web/src/app/main.tsx",
+    baseTree[2],
+    baseTree[3],
+  ]);
+  assert.notEqual(webChanged, initial);
+
+  // 실제 CLI --print-cache-key 동작 확인
+  const cli = spawnSync(process.execPath, [
+    fileURLToPath(new URL("./typecheck-shards.mjs", import.meta.url)),
+    "--print-cache-key",
+  ], { encoding: "utf8" });
+  assert.equal(cli.status, 0, cli.stderr);
+  assert.match(cli.stdout.trim(), /^[a-f0-9]{64}$/u);
 });

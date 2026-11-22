@@ -18,13 +18,9 @@ on:
       - "apps/web/src/domains/creator/brush/studio-sub-tool-palette-data.test.ts"
       - "apps/web/src/domains/creator/brush/studio-sub-tool-palette-data.ts"
       - ".github/workflows/studio-brush-quality-portfolio.yml"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/audit-studio-brush-quality-portfolio.mts"
-      - "apps/web/src/domains/creator/brush/**"
-      - ".github/workflows/studio-brush-quality-portfolio.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "17 15 * * 2"
 
 permissions:
   contents: read
@@ -93,6 +89,21 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=16384
         run: pnpm exec tsc -p tsconfig.json --noEmit --incremental false
+
+      - name: Compute typecheck-shards cache key
+        id: typecheck-shards-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'key=core-typecheck-shards-v1-%s-%s-%s\n' \
+            "${RUNNER_OS}" "${RUNNER_ARCH}" \
+            "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore typecheck-shards checkpoint cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
 
       - name: Build production Studio
         run: pnpm run build

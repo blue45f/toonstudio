@@ -7,12 +7,9 @@ on:
       - 'apps/web/src/domains/creator/bg3d/StudioReferenceRebuildPresets.tsx'
       - 'apps/web/src/domains/creator/bg3d/StudioBg3dAssetLibraryPanel*.tsx'
       - '.github/workflows/reference-rebuild.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/public/assets/reference-rebuild/**'
-      - 'scripts/*reference-rebuild*'
-      - '.github/workflows/reference-rebuild.yml'
+  schedule:
+    - cron: "29 21 * * 2"
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

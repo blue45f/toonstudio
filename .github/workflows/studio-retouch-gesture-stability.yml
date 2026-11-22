@@ -1,13 +1,6 @@
 name: Studio retouch gesture stability
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/src/domains/creator/studio-retouch-raster-gesture*.ts'
-      - 'apps/web/src/domains/creator/studio-selection-tools.ts'
-      - 'apps/web/src/domains/creator/studio-liquify-contract.ts'
-      - '.github/workflows/studio-retouch-gesture-stability.yml'
   pull_request:
     branches: [main]
     paths:
@@ -16,6 +9,8 @@ on:
       - 'apps/web/src/domains/creator/studio-liquify-contract.ts'
       - '.github/workflows/studio-retouch-gesture-stability.yml'
   workflow_dispatch:
+  schedule:
+    - cron: "23 20 * * 2"
 
 permissions:
   contents: read

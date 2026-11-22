@@ -15,15 +15,9 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'apps/web/vite.config.ts'
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/bundle-visualizer.yml'
-      - 'scripts/__tests__/bundle-visualizer-contract.test.mjs'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'apps/web/vite.config.ts'
   workflow_dispatch:
+  schedule:
+    - cron: "11 16 * * 1"
 
 permissions:
   contents: read

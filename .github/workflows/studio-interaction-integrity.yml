@@ -6,11 +6,9 @@ on:
     paths:
       - 'apps/web/src/domains/creator/studio-dialog-focus-return*.ts'
       - '.github/workflows/studio-interaction-integrity.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/src/domains/creator/studio-dialog-focus-return*.ts'
-      - '.github/workflows/studio-interaction-integrity.yml'
+  schedule:
+    - cron: "31 16 * * 5"
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,20 +1,6 @@
 name: WebGPU dab tile binning compute
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/web/src/domains/creator/render/studio-webgpu-dab-tile-binning.ts"
-      - "apps/web/src/domains/creator/render/studio-webgpu-dab-tile-binning.test.ts"
-      - "apps/web/src/domains/creator/render/studio-webgpu-dab-tile-binning-compute.ts"
-      - "apps/web/src/domains/creator/render/studio-webgpu-dab-tile-binning-compute.test.ts"
-      - "apps/web/src/domains/creator/render/studio-webgpu-dab-tile-binning-wgsl-compat.test.ts"
-      - "apps/web/src/domains/creator/render/studio-webgpu-sparse-brush-compute-runtime.ts"
-      - "apps/web/src/domains/creator/render/studio-webgpu-sparse-brush-compute-runtime.test.ts"
-      - "scripts/studio-webgpu-dab-tile-binning-compute-browser.ts"
-      - "scripts/verify-studio-webgpu-dab-tile-binning-compute.mjs"
-      - ".github/workflows/webgpu-dab-tile-binning-compute.yml"
   pull_request:
     paths:
       - "apps/web/src/domains/creator/render/studio-webgpu-dab-tile-binning.ts"
@@ -28,6 +14,8 @@ on:
       - "scripts/verify-studio-webgpu-dab-tile-binning-compute.mjs"
       - ".github/workflows/webgpu-dab-tile-binning-compute.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "19 15 * * 3"
 
 permissions:
   contents: read
@@ -81,6 +69,12 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=12288
         run: pnpm exec tsc -p tsconfig.json --noEmit
+
+      - name: Restore Playwright Chromium cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install Chromium runtime
         run: pnpm exec playwright install --with-deps chromium

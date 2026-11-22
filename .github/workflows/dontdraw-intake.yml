@@ -9,14 +9,9 @@ on:
       - "docs/studio/dontdraw-authorized-import.md"
       - "docs/studio/dontdraw-upload-handoff.md"
       - ".github/workflows/dontdraw-intake.yml"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/dontdraw/**"
-      - "scripts/upload-toonstudio-3d-assets.mts"
-      - "docs/studio/dontdraw-authorized-import.md"
-      - "docs/studio/dontdraw-upload-handoff.md"
-      - ".github/workflows/dontdraw-intake.yml"
+  schedule:
+    - cron: "23 21 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read

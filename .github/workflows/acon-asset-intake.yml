@@ -7,12 +7,9 @@ on:
       - 'scripts/verify-acon-asset-intake.mjs'
       - 'docs/acon-authorized-asset-intake.md'
       - '.github/workflows/acon-asset-intake.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/import-acon-assets.mjs'
-      - 'scripts/verify-acon-asset-intake.mjs'
-      - '.github/workflows/acon-asset-intake.yml'
+  schedule:
+    - cron: "19 21 * * 0"
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -13,17 +13,8 @@ on:
         required: false
         default: "local-docker-compose,cloudflare-edge-static,onpod-container-cloud,aws-ecs-cloudfront,gcp-cloud-run,self-hosted-k8s"
         type: string
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/web/src/domains/creator/bg3d/**"
-      - "apps/character-lab/src/**"
-      - "apps/brush-lab/src/**"
-      - "scripts/multi-env-dynamic-deploy.mjs"
-      - "scripts/verify-all-labs-production-release.mts"
-      - "deploy/multi-env/**"
-      - ".github/workflows/multi-cloud-local-dynamic-deploy.yml"
+  schedule:
+    - cron: "13 20 * * 0"
 
 permissions:
   contents: read

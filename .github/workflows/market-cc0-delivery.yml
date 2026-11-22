@@ -9,8 +9,9 @@ on:
       - 'scripts/*market*'
       - 'scripts/seed/market-cc0-manifests.mts'
       - '.github/workflows/market-cc0-delivery.yml'
-  push:
-    branches: [main]
+  schedule:
+    - cron: "17 20 * * 1"
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

@@ -193,7 +193,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - name: Verify mandatory CI wiring before installing dependencies
-        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/deployment-preflight.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/architecture-workflow-concurrency.test.mjs scripts/ci-throughput-policy.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs scripts/ci-shared-typecheck.test.mjs scripts/ci-typecheck-receipt.test.mjs scripts/ci-typecheck-lookup.test.mjs scripts/onpod-admin-db-audit-payload.test.mjs scripts/run-onpod-admin-readonly-audit.test.mjs
+        run: node --test scripts/ci-core-gate.test.mjs scripts/agent-harness.test.mjs scripts/deployment-preflight.test.mjs scripts/ci-core-regression-shards.test.mjs scripts/ci-executed-gates.test.mjs scripts/lint-changed-policy.test.mjs scripts/run-core-vitest.test.mjs scripts/studio-bundle-temporary-allowance.test.mjs scripts/ci-merge-reliability.test.mjs scripts/architecture-workflow-concurrency.test.mjs scripts/ci-throughput-policy.test.mjs scripts/ci-queue-and-typecheck-cache.test.mjs scripts/type-coverage-gate-contract.test.mjs scripts/code-structure-gates-contract.test.mjs scripts/check-source-file-size.test.mjs scripts/ci-shared-typecheck.test.mjs scripts/ci-typecheck-receipt.test.mjs scripts/ci-typecheck-lookup.test.mjs scripts/onpod-admin-db-audit-payload.test.mjs scripts/run-onpod-admin-readonly-audit.test.mjs
       - name: Verify QA classification and failure exit codes before installing dependencies
         run: node --test scripts/lib/qa-page-state.test.mjs scripts/qa-studio-cross-browser-soak.test.mjs
       - name: 수동 배포의 CI 승인·실행 추적 계약
@@ -227,9 +227,24 @@ jobs:
           key: core-ts-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'tsconfig*.json', 'apps/**/tsconfig*.json', 'deploy/**/tsconfig*.json', 'packages/**/tsconfig*.json') }}-${{ github.sha }}
           restore-keys: |
             core-ts-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'tsconfig*.json', 'apps/**/tsconfig*.json', 'deploy/**/tsconfig*.json', 'packages/**/tsconfig*.json') }}-
+      - name: Compute typecheck-shards cache key
+        id: typecheck-shards-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'key=core-typecheck-shards-v1-%s-%s-%s\n' \
+            "${RUNNER_OS}" "${RUNNER_ARCH}" \
+            "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+      - name: Restore typecheck-shards checkpoint cache
+        id: typecheck-shards-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
       - name: Typecheck application, API and realtime worker
         env:
           # 3MiB 약 70묶음 추산과 worker 48~75초·후속 검증 비용을 반영하고 전체 문맥은 유지한다.
+          # 16GiB 러너에서는 resolveRuntimeExecutionBudget이 안전 상한 내에서 워커 힙·샤드 예산을 자동 확장한다.
           TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail
@@ -258,6 +273,12 @@ jobs:
           path: |
             **/*.tsbuildinfo
           key: core-ts-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'tsconfig*.json', 'apps/**/tsconfig*.json', 'deploy/**/tsconfig*.json', 'packages/**/tsconfig*.json') }}-${{ github.sha }}
+      - name: Save typecheck-shards checkpoint cache on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.typecheck-shards-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
 
   static:
     name: Core regression shard / ${{ matrix.shard }}
@@ -509,6 +530,22 @@ jobs:
           python -m unittest discover -s scripts/tests -p 'test_studio_asset_glb.py' -v
       - name: Run semantic regression shard
         run: node scripts/ci-core-regression-shards.mjs "${{ matrix.shard }}"
+      - name: Compute typecheck-shards cache key for manual harness
+        if: github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'
+        id: typecheck-shards-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'key=core-typecheck-shards-v1-%s-%s-%s\n' \
+            "${RUNNER_OS}" "${RUNNER_ARCH}" \
+            "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+      - name: Restore typecheck-shards checkpoint cache for manual harness
+        if: github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'
+        id: typecheck-shards-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
       - name: 수동 후보의 전체 하네스 검증
         if: github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'
         env: { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728' }
@@ -838,9 +875,21 @@ jobs:
             RUNNER_ARCH="${RUNNER_ARCH:?}" \
             ImageOS="${ImageOS:?}" \
             "$(command -v node)" scripts/ci-ubuntu-apt-mirrors.mjs
+      - name: Restore Playwright Chromium cache
+        id: playwright-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Install Chromium
         id: chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: Save Playwright Chromium cache on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.playwright-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - name: 자체 안료·23종 브러시·GPU 공개 기능 검증
         run: node scripts/verify-latent-pigment-browser.mjs
       - name: Run serious and critical accessibility smoke
@@ -1031,6 +1080,20 @@ jobs:
               if test -d "$store"; then du -s -B1 -- "$store"; fi
             fi
           fi
+      - name: Compute typecheck-shards cache key
+        id: typecheck-shards-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'key=core-typecheck-shards-v1-%s-%s-%s\n' \
+            "${RUNNER_OS}" "${RUNNER_ARCH}" \
+            "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+      - name: Restore typecheck-shards checkpoint cache
+        id: typecheck-shards-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
       - name: Build API and web without repeating the required web typecheck
         run: |
           set -euo pipefail

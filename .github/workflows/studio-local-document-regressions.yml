@@ -6,11 +6,9 @@ on:
     paths:
       - 'apps/web/src/domains/creator/**'
       - '.github/workflows/studio-local-document-regressions.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/src/domains/creator/**'
-      - '.github/workflows/studio-local-document-regressions.yml'
+  schedule:
+    - cron: "29 15 * * 5"
+  workflow_dispatch:
 
 permissions:
   contents: read

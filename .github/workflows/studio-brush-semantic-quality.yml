@@ -25,17 +25,9 @@ on:
       - "apps/web/src/domains/creator/brush/studio-brush-semantic-quality.ts"
       - "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-solver.test.ts"
       - ".github/workflows/studio-brush-semantic-quality.yml"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/audit-studio-brush-pressure-curves.mts"
-      - "scripts/audit-studio-brush-semantic-quality.mts"
-      - "scripts/lib/studio-brush-settled-granulation-evidence.ts"
-      - "apps/web/src/domains/creator/brush/StudioActiveBrushSummary.test.tsx"
-      - "apps/web/src/domains/creator/StudioActiveBrushSummary.tsx"
-      - "apps/web/src/domains/creator/brush/**"
-      - ".github/workflows/studio-brush-semantic-quality.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "19 16 * * 2"
 
 permissions:
   contents: read
@@ -114,6 +106,21 @@ jobs:
           apps/web/src/domains/creator/brush/studio-brush-semantic-quality.test.ts
           apps/web/src/domains/creator/brush/studio-brush-semantic-quality.ts
           apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-solver.test.ts
+
+      - name: Compute typecheck-shards cache key
+        id: typecheck-shards-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'key=core-typecheck-shards-v1-%s-%s-%s\n' \
+            "${RUNNER_OS}" "${RUNNER_ARCH}" \
+            "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore typecheck-shards checkpoint cache
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
 
       - name: Typecheck
         run: pnpm run typecheck:web

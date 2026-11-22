@@ -14,12 +14,9 @@ on:
       - 'data/studio-assets/diversity-20260913-*'
       - 'scripts/tests/test_studio_premium_assets.py'
       - 'data/studio-assets/premium-20260913-decisions.json'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/public/assets/studio/cc0-20260906/**'
-      - 'apps/web/src/domains/creator/studio-cc0-*'
-      - 'apps/web/src/domains/creator/StudioCc0AssetLibraryPanel.tsx'
+  schedule:
+    - cron: "37 21 * * 4"
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -40,6 +37,11 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+      - name: Restore Playwright Chromium cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Install isolated verification tools with the repository package manager
         run: |
           set -euo pipefail

@@ -8,14 +8,9 @@ on:
       - 'packages/core/src/legal-policy.ts'
       - 'scripts/verify-legal-policy-runtime.mjs'
       - '.github/workflows/legal-policy-recovery.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/src/domains/legal/**'
-      - 'apps/api/src/modules/legal/**'
-      - 'packages/core/src/legal-policy.ts'
-      - 'scripts/verify-legal-policy-runtime.mjs'
-      - '.github/workflows/legal-policy-recovery.yml'
+  schedule:
+    - cron: "31 21 * * 3"
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

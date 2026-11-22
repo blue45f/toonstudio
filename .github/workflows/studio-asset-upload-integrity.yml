@@ -11,16 +11,9 @@ on:
       - apps/web/src/domains/creator/StudioContinuityPanel.tsx
       - apps/web/src/domains/creator/quality-review-store.ts
       - .github/workflows/studio-asset-upload-integrity.yml
-  push:
-    branches: [main]
-    paths:
-      - scripts/upload-toonstudio-3d-assets.mts
-      - scripts/upload-toonstudio-3d-assets.test.mjs
-      - apps/web/src/domains/creator/StudioContinuityPanel.hardening.test.tsx
-      - apps/web/src/domains/creator/StudioContinuityPanel.test.tsx
-      - apps/web/src/domains/creator/StudioContinuityPanel.tsx
-      - apps/web/src/domains/creator/quality-review-store.ts
-      - .github/workflows/studio-asset-upload-integrity.yml
+  schedule:
+    - cron: "31 20 * * 4"
+  workflow_dispatch:
 
 permissions:
   contents: read
