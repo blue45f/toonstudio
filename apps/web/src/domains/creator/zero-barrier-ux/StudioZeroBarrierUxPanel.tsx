@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { StudioAdaptiveModeChromeBar } from "../canvas-chrome/StudioAdaptiveModeChromeBar";
+import { StudioMobileThreeModeShell } from "./StudioMobileThreeModeShell";
+import type { MobileThumbDockActionId } from "./mobile-three-mode-shell";
 import {
   CREATION_STAGE_PROFILES,
   GENRE_STARTER_KITS,
@@ -280,6 +283,19 @@ export function StudioZeroBarrierUxPanel() {
       case "promote-mode":
         handleSelectMode(mode === "beginner-easy" ? "pro-studio" : "beginner-easy");
         break;
+    }
+  };
+
+  const handleMobileDockAction = (actionId: MobileThumbDockActionId) => {
+    resetHesitation();
+    if (actionId === "undo") {
+      handleInstantRecover("모바일 엄지 독 되돌리기");
+    } else if (actionId === "quick-save") {
+      runTextCommand("저장해 줘");
+    } else if (actionId === "bubble") {
+      runTextCommand("말풍선 추가");
+    } else if (actionId === "sfx") {
+      runTextCommand("효과음 넣어줘");
     }
   };
 
@@ -682,6 +698,34 @@ export function StudioZeroBarrierUxPanel() {
               </button>
             </div>
           </div>
+        </section>
+
+        {/* 5. Calm Atelier 5-모드 적응형 크롬 & 모바일 3-모드 초집중 셸 */}
+        <section className="zb-ux-section" aria-labelledby="zb-focus-shells-heading">
+          <div className="zb-ux-section-head">
+            <h3 id="zb-focus-shells-heading" className="zb-ux-section-title">
+              <Layers className="size-4" aria-hidden="true" />
+              {bt("5. 5-모드 집중 크롬 & 모바일 3-모드 셸", "5. 5-Mode Chrome & Mobile 3-Mode Shell")}
+            </h3>
+            <span className="zb-ux-badge zb-ux-num" data-tone="good">
+              {bt("캔버스 >= 82% · CLS 0 · 엄지 독 5버튼", "Canvas >= 82% · CLS 0 · 5-Button Dock")}
+            </span>
+          </div>
+
+          <StudioAdaptiveModeChromeBar
+            onSelectTool={(_toolId, labelKo) => {
+              resetHesitation();
+              setStatusBanner(`집중 크롬에서 '${labelKo}' 도구를 선택했어요.`);
+            }}
+          />
+
+          <StudioMobileThreeModeShell
+            panels={currentSnapshot.panels}
+            onDockAction={handleMobileDockAction}
+            onBatterySaverChange={(contract) => {
+              setStatusBanner(contract.statusHintKo);
+            }}
+          />
         </section>
       </div>
     </section>

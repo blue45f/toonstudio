@@ -16,6 +16,47 @@ import {
   evaluateCanvasViewportRatio,
   type CanvasViewportRatioCheck,
 } from "../chrome/studio-ui-v2-chrome-contract";
+import {
+  DEFAULT_STUDIO_ADAPTIVE_MODE,
+  getStudioAdaptiveModeProfile,
+  measureAdaptiveModeCanvasOccupancy,
+  measureAdaptiveModeSwitchCls,
+  resolveFloatingPanelEdgeSnap,
+  type AdaptiveModeCanvasOccupancy,
+  type AdaptiveModeSwitchClsReport,
+  type FloatingPanelDockSide,
+  type FloatingPanelEdgeSnapResult,
+  type StudioAdaptiveModeId,
+} from "./studio-adaptive-mode-profiles";
+
+export {
+  ADAPTIVE_MODE_PRIMARY_TOOL_BUDGET,
+  ADAPTIVE_MODE_SHELL_FIXED_SLOTS,
+  CENTER_CANVAS_PROTECTED_RATIO,
+  DEFAULT_STUDIO_ADAPTIVE_MODE,
+  LAPTOP_REFERENCE_WIDTH_PX,
+  STUDIO_ADAPTIVE_MODE_PROFILES,
+  ULTRAWIDE_REFERENCE_WIDTH_PX,
+  ULTRAWIDE_VIEWPORT_MIN_WIDTH_PX,
+  getStudioAdaptiveModeProfile,
+  isWithinAdaptiveToolBudget,
+  measureAdaptiveModeCanvasOccupancy,
+  measureAdaptiveModeSwitchCls,
+  resolveAdaptiveViewportTier,
+  resolveFloatingPanelEdgeSnap,
+  type AdaptiveCanvasRect,
+  type AdaptiveModeCanvasOccupancy,
+  type AdaptiveModeCanvasOccupancyInput,
+  type AdaptiveModeSwitchClsReport,
+  type AdaptiveModeToolItem,
+  type AdaptiveViewportTier,
+  type FloatingPanelDockSide,
+  type FloatingPanelEdgeSnapInput,
+  type FloatingPanelEdgeSnapResult,
+  type ResizeTransitionKind,
+  type StudioAdaptiveModeId,
+  type StudioAdaptiveModeProfile,
+} from "./studio-adaptive-mode-profiles";
 
 export const ADAPTIVE_FLOATING_CHROME_TOGGLE_LABEL = "그리는 중 패널 자동 숨김" as const;
 export const ADAPTIVE_FLOATING_CHROME_STORAGE_KEY =
@@ -47,6 +88,11 @@ export interface AdaptiveFloatingChromeState {
   readonly chromeFocused: boolean;
   readonly essentialAlertActive: boolean;
   readonly recededOpacity: number;
+  readonly activeMode: StudioAdaptiveModeId;
+  readonly lastModeSwitchCls: AdaptiveModeSwitchClsReport;
+  readonly viewportWidthPx: number;
+  readonly viewportHeightPx: number;
+  readonly floatingPanelSnap: FloatingPanelEdgeSnapResult;
   readonly phase: AdaptiveFloatingChromePhase;
   readonly reason: AdaptiveFloatingChromeReason;
 }
@@ -62,12 +108,36 @@ export type AdaptiveFloatingChromeAction =
   | { readonly type: "toggle-enabled" }
   | { readonly type: "set-reduced-motion"; readonly reducedMotion: boolean }
   | { readonly type: "set-essential-alert"; readonly active: boolean }
+  | { readonly type: "set-mode"; readonly mode: StudioAdaptiveModeId }
+  | {
+      readonly type: "resize-viewport";
+      readonly viewportWidthPx: number;
+      readonly viewportHeightPx: number;
+      readonly panelWidthPx?: number;
+      readonly panelHeightPx?: number;
+    }
+  | {
+      readonly type: "snap-floating-panel";
+      readonly currentX: number;
+      readonly currentY?: number;
+      readonly panelWidthPx?: number;
+      readonly panelHeightPx?: number;
+      readonly preferredDockSide?: FloatingPanelDockSide;
+    }
   | { readonly type: "window-blur" };
 
 export interface AdaptiveFloatingChromeInitOptions {
   readonly enabled?: boolean;
   readonly reducedMotion?: boolean;
   readonly recededOpacity?: number;
+  readonly initialMode?: StudioAdaptiveModeId;
+  readonly viewportWidthPx?: number;
+  readonly viewportHeightPx?: number;
+  readonly floatingPanelWidthPx?: number;
+  readonly floatingPanelHeightPx?: number;
+  readonly floatingPanelX?: number;
+  readonly floatingPanelY?: number;
+  readonly preferredDockSide?: FloatingPanelDockSide;
 }
 
 export interface AdaptiveChromeSurfacePresentation {
@@ -145,6 +215,34 @@ function finalizeState(
 export function createAdaptiveFloatingChromeState(
   options: AdaptiveFloatingChromeInitOptions = {},
 ): AdaptiveFloatingChromeState {
+  const activeMode = options.initialMode ?? DEFAULT_STUDIO_ADAPTIVE_MODE;
+  const profile = getStudioAdaptiveModeProfile(activeMode);
+  const viewportWidthPx =
+    options.viewportWidthPx !== undefined && Number.isFinite(options.viewportWidthPx)
+      ? Math.max(320, options.viewportWidthPx)
+      : 1440;
+  const viewportHeightPx =
+    options.viewportHeightPx !== undefined && Number.isFinite(options.viewportHeightPx)
+      ? Math.max(320, options.viewportHeightPx)
+      : 900;
+  const panelWidthPx = options.floatingPanelWidthPx ?? profile.recommendedDockWidthPx;
+  const preferredDockSide = options.preferredDockSide ?? profile.defaultDockSide;
+  const defaultPanelX =
+    preferredDockSide === "left"
+      ? STUDIO_UI_V2_CHROME_CONSTANTS.desktopLeftToolRailWidthPx + 12
+      : Math.max(0, viewportWidthPx - panelWidthPx - 12);
+
+  const floatingPanelSnap = resolveFloatingPanelEdgeSnap({
+    panelWidthPx,
+    panelHeightPx: options.floatingPanelHeightPx,
+    currentX: options.floatingPanelX ?? defaultPanelX,
+    currentY: options.floatingPanelY,
+    preferredDockSide,
+    viewportWidthPx,
+    viewportHeightPx,
+    mode: activeMode,
+  });
+
   return finalizeState({
     enabled: options.enabled ?? true,
     reducedMotion: options.reducedMotion ?? false,
@@ -154,6 +252,14 @@ export function createAdaptiveFloatingChromeState(
     chromeFocused: false,
     essentialAlertActive: false,
     recededOpacity: clampRecededOpacity(options.recededOpacity),
+    activeMode,
+    lastModeSwitchCls: measureAdaptiveModeSwitchCls(activeMode, activeMode, {
+      widthPx: viewportWidthPx,
+      heightPx: viewportHeightPx,
+    }),
+    viewportWidthPx,
+    viewportHeightPx,
+    floatingPanelSnap,
   });
 }
 
@@ -216,6 +322,65 @@ export function reduceAdaptiveFloatingChromeState(
       return finalizeState({ ...state, reducedMotion: action.reducedMotion });
     case "set-essential-alert":
       return finalizeState({ ...state, essentialAlertActive: action.active });
+    case "set-mode": {
+      const nextProfile = getStudioAdaptiveModeProfile(action.mode);
+      const lastModeSwitchCls = measureAdaptiveModeSwitchCls(state.activeMode, nextProfile.id, {
+        widthPx: state.viewportWidthPx,
+        heightPx: state.viewportHeightPx,
+      });
+      const floatingPanelSnap = resolveFloatingPanelEdgeSnap({
+        panelWidthPx: state.floatingPanelSnap.requestedPanelWidthPx,
+        currentX: state.floatingPanelSnap.snappedX,
+        currentY: state.floatingPanelSnap.snappedY,
+        preferredDockSide: state.floatingPanelSnap.dockSide,
+        viewportWidthPx: state.viewportWidthPx,
+        viewportHeightPx: state.viewportHeightPx,
+        mode: nextProfile.id,
+      });
+      return finalizeState({
+        ...state,
+        activeMode: nextProfile.id,
+        lastModeSwitchCls,
+        floatingPanelSnap,
+      });
+    }
+    case "resize-viewport": {
+      const nextWidth = Math.max(320, action.viewportWidthPx);
+      const nextHeight = Math.max(320, action.viewportHeightPx);
+      const floatingPanelSnap = resolveFloatingPanelEdgeSnap({
+        panelWidthPx: action.panelWidthPx ?? state.floatingPanelSnap.requestedPanelWidthPx,
+        panelHeightPx: action.panelHeightPx,
+        currentX: state.floatingPanelSnap.snappedX,
+        currentY: state.floatingPanelSnap.snappedY,
+        preferredDockSide: state.floatingPanelSnap.dockSide,
+        viewportWidthPx: nextWidth,
+        viewportHeightPx: nextHeight,
+        previousViewportWidthPx: state.viewportWidthPx,
+        mode: state.activeMode,
+      });
+      return finalizeState({
+        ...state,
+        viewportWidthPx: nextWidth,
+        viewportHeightPx: nextHeight,
+        floatingPanelSnap,
+      });
+    }
+    case "snap-floating-panel": {
+      const floatingPanelSnap = resolveFloatingPanelEdgeSnap({
+        panelWidthPx: action.panelWidthPx ?? state.floatingPanelSnap.requestedPanelWidthPx,
+        panelHeightPx: action.panelHeightPx,
+        currentX: action.currentX,
+        currentY: action.currentY ?? state.floatingPanelSnap.snappedY,
+        preferredDockSide: action.preferredDockSide,
+        viewportWidthPx: state.viewportWidthPx,
+        viewportHeightPx: state.viewportHeightPx,
+        mode: state.activeMode,
+      });
+      return finalizeState({
+        ...state,
+        floatingPanelSnap,
+      });
+    }
     case "window-blur":
       return finalizeState(
         {
@@ -227,6 +392,18 @@ export function reduceAdaptiveFloatingChromeState(
         true,
       );
   }
+}
+
+export function evaluateAdaptiveModeOccupancyForState(
+  state: AdaptiveFloatingChromeState,
+): AdaptiveModeCanvasOccupancy {
+  return measureAdaptiveModeCanvasOccupancy({
+    mode: state.activeMode,
+    viewportWidthPx: state.viewportWidthPx,
+    viewportHeightPx: state.viewportHeightPx,
+    chromePhase: state.phase,
+    dockedPanelWidthPx: state.floatingPanelSnap.effectivePanelWidthPx,
+  });
 }
 
 /**

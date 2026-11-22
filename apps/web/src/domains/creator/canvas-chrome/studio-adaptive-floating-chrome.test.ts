@@ -161,4 +161,33 @@ describe("어댑티브 플로팅 크롬 상태머신 (CLS 0 · >= 82% 캔버스 
     expect(writeAdaptiveFloatingChromeEnabled(storage, false)).toBe(true);
     expect(readAdaptiveFloatingChromeEnabled(storage, true)).toBe(false);
   });
+
+  it("5-모드 전환 시 CLS 0을 유지하고 2560px ↔ 1280px 리사이즈에서 좌·우 도크 자동 스냅을 계산한다", () => {
+    const initial = createAdaptiveFloatingChromeState({
+      initialMode: "storyboard",
+      viewportWidthPx: 2560,
+      viewportHeightPx: 1440,
+      floatingPanelWidthPx: 260,
+    });
+    expect(initial.activeMode).toBe("storyboard");
+    expect(initial.floatingPanelSnap.viewportTier).toBe("ultrawide");
+    expect(initial.floatingPanelSnap.overlapsCanvasCenterAfter).toBe(false);
+
+    const coloring = reduceAdaptiveFloatingChromeState(initial, {
+      type: "set-mode",
+      mode: "coloring",
+    });
+    expect(coloring.activeMode).toBe("coloring");
+    expect(coloring.lastModeSwitchCls.clsScore).toBe(0);
+    expect(coloring.lastModeSwitchCls.isClsZero).toBe(true);
+
+    const resizedLaptop = reduceAdaptiveFloatingChromeState(coloring, {
+      type: "resize-viewport",
+      viewportWidthPx: 1280,
+      viewportHeightPx: 720,
+    });
+    expect(resizedLaptop.floatingPanelSnap.resizeTransitionKind).toBe("ultrawide-to-laptop");
+    expect(resizedLaptop.floatingPanelSnap.overlapsCanvasCenterAfter).toBe(false);
+    expect(resizedLaptop.floatingPanelSnap.canvasOccupancy.passed).toBe(true);
+  });
 });

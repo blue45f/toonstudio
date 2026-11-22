@@ -107,4 +107,52 @@ describe("useAdaptiveFloatingChrome React 훅", () => {
     fireEvent.pointerDown(canvas, { button: 0, isPrimary: true, pointerId: 4 });
     expect(panel.getAttribute("data-adaptive-floating-chrome")).toBe("visible");
   });
+
+  it("직접 localStorage 호출 없이 주입된 메모리 storage 어댑터와 5-모드 전환·리사이즈 스냅을 동기화한다", () => {
+    mockMatchMedia(false);
+    const mem = new Map<string, string>();
+    const injectedStorage = {
+      getItem: vi.fn((key: string) => mem.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        mem.set(key, value);
+      }),
+    };
+    const onModeChange = vi.fn();
+    const onEnabledChange = vi.fn();
+
+    function ModeSnapHarness() {
+      const chrome = useAdaptiveFloatingChrome({
+        storage: injectedStorage,
+        onEnabledChange,
+        onModeChange,
+        initialMode: "lineart",
+      });
+      return (
+        <div>
+          <output data-testid="active-mode">{chrome.activeMode}</output>
+          <output data-testid="cls-score">{chrome.lastModeSwitchCls.clsScore}</output>
+          <output data-testid="dock-side">{chrome.floatingPanelSnap.dockSide}</output>
+          <button type="button" onClick={() => chrome.setMode("three-d")}>
+            3D 전환
+          </button>
+          <button type="button" onClick={chrome.toggleEnabled}>
+            자동 숨김 토글
+          </button>
+        </div>
+      );
+    }
+
+    render(<ModeSnapHarness />);
+    expect(injectedStorage.getItem).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("active-mode").textContent).toBe("lineart");
+
+    fireEvent.click(screen.getByRole("button", { name: "3D 전환" }));
+    expect(screen.getByTestId("active-mode").textContent).toBe("three-d");
+    expect(screen.getByTestId("cls-score").textContent).toBe("0");
+    expect(onModeChange).toHaveBeenCalledWith("three-d");
+
+    fireEvent.click(screen.getByRole("button", { name: "자동 숨김 토글" }));
+    expect(injectedStorage.setItem).toHaveBeenCalled();
+    expect(onEnabledChange).toHaveBeenCalledWith(false);
+  });
 });
