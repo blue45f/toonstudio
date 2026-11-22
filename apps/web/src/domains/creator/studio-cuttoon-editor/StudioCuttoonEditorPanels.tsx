@@ -1,6 +1,7 @@
 /* Extracted render tree from StudioCuttoonEditor.
  * Session props are an `any` bag matching the original editor closure. */
 "use no memo";
+import { useMemo } from "react";
 import { useStudioBg3dSixPassDocumentCapability } from "./runtime/bg3d-six-pass/useStudioBg3dSixPassDocumentCapability";
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
@@ -115,6 +116,7 @@ export function StudioCuttoonEditorPanels(s: StudioCuttoonEditorViewSession) {
     scenarioStageLabel,
     scenarioStoryText,
     scrollPreviewOpen,
+    scrollPreviewDocumentEpoch,
     readerPreviewOpen,
     serverCurrentRevision,
     serverRevisionError,
@@ -200,6 +202,9 @@ export function StudioCuttoonEditorPanels(s: StudioCuttoonEditorViewSession) {
     writerRoomCanvasPlan,
     writerRoomOpen,
   } = s;
+  const scrollPreview = useMemo(() => ({
+    open: scrollPreviewOpen, documentEpoch: scrollPreviewDocumentEpoch,
+  }), [scrollPreviewOpen, scrollPreviewDocumentEpoch]);
   const sixPassReason = useStudioBg3dSixPassDocumentCapability(workId, masterEditMode, admittedBg3dOpen);
   return (
         <StudioLocalToolImportAuthorityContext.Provider value={{ locked: collaborationDocumentLocked, capture: s.captureStudioMutationTicket, isCurrent: s.canApplyStudioMutation }}>
@@ -328,7 +333,7 @@ export function StudioCuttoonEditorPanels(s: StudioCuttoonEditorViewSession) {
           scenarioSceneCountHint={scenarioSceneCountHint}
           scenarioStageLabel={scenarioStageLabel}
           scenarioStoryText={scenarioStoryText}
-          scrollPreviewOpen={scrollPreviewOpen}
+          scrollPreview={scrollPreview}
           readerPreviewOpen={readerPreviewOpen}
           serverCurrentRevision={serverCurrentRevision}
           serverRevisionError={serverRevisionError}

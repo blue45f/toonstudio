@@ -6211,6 +6211,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [timelapseOpen, setTimelapseOpen] = useState(false);
   const [storyboardGridOpen, setStoryboardGridOpen] = useState(false);
   const [scrollPreviewOpen, setScrollPreviewOpen] = useState(false);
+  const [scrollPreviewDocumentEpoch, setScrollPreviewDocumentEpoch] = useState(0);
   const [readerPreviewOpen, setReaderPreviewOpen] = useState(false);
   const [continuityOpen, setContinuityOpen] = useState(false);
   const [webtoonAssistantOpen, setWebtoonAssistantOpen] = useState(false);
@@ -7558,7 +7559,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       pagesHistoryRef,
       pendingStrokeCommitsRef,
       prepareStudioDocumentReplacement,
-      resetAdvancedFillForDocumentReplacement: () => resetAdvancedFillForDocumentReplacement(),
+      resetAdvancedFillForDocumentReplacement: resetDocumentPreviews,
       resetStudioHistoryJournal: () => resetStudioHistoryJournal(),
       resetStudioHistoryRetention: () => resetStudioHistoryRetention(),
       setAiProvenance,
@@ -13923,9 +13924,8 @@ const puppetWarpArmed =
                 }))
           : parsedProject;
         if (!alive || controller.signal.aborted) return;
-        // Server hydration is one canonical document replacement. Advance the async mutation
-        // barrier once, then use the raw React setters so this route-scoped effect does not depend
-        // on render-local guarded setter identities (and cannot re-run on every document render).
+        // 서버 원고를 교체할 때 검수 핀 복귀와 비동기 편집의 이전 원고 참조를 만료한다.
+        setScrollPreviewDocumentEpoch((epoch) => epoch + 1);
         const hydrationGeneration = collaborationAccessRef.current;
         studioRevisionProjectGenerationRef.current += 1;
         collaborationAccessRef.current = {
@@ -20564,7 +20564,8 @@ const puppetWarpArmed =
     advancedFillTouchPanRef.current = null;
   }
 
-  function resetAdvancedFillForDocumentReplacement() {
+  function resetDocumentPreviews() {
+    setScrollPreviewDocumentEpoch((epoch) => epoch + 1);
     advancedFillRunIdRef.current += 1;
     advancedFillAbortRef.current?.abort();
     advancedFillAbortRef.current = null;
@@ -24672,11 +24673,9 @@ function clearSelectionForEdit() {
       setError(workAssetReason);
       return false;
     }
-    // Every replacement starts without import provenance. A successful canonical JSON import
-    // installs its own detached envelope metadata after this transaction returns; legacy,
-    // archive, checkpoint, and server restore paths intentionally leave the session cleared.
+    // 정본 JSON을 가져오면 교체가 끝난 뒤 해당 파일의 메타데이터를 다시 연결한다.
     studioProjectDocumentSessionRef.current = null;
-    resetAdvancedFillForDocumentReplacement();
+    resetDocumentPreviews();
     // 히스토리에 새 페이지 상태를 추가해 JSON/복구 지점 복원도 ⌘Z 흐름과 충돌하지 않게 한다.
     const appended = appendStudioPagesHistorySnapshot(
       currentHistory,
@@ -27172,6 +27171,7 @@ function clearSelectionForEdit() {
       scopedHybridDccWorkspace={scopedHybridDccWorkspace}
       scrollPos={scrollPos}
       scrollPreviewOpen={scrollPreviewOpen}
+      scrollPreviewDocumentEpoch={scrollPreviewDocumentEpoch}
       readerPreviewOpen={readerPreviewOpen}
       scrollViewportStore={scrollViewportStore}
       selected={selected}

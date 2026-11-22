@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -14,7 +14,11 @@ import {
   updateReaderFeedbackPinStatus,
 } from "./reader-feedback-pins-model";
 import { StudioReaderFeedbackPinsWidget } from "./StudioReaderFeedbackPinsWidget";
-import { StudioScrollPreviewPanel, type ScrollPreviewPage } from "../StudioScrollPreviewPanel";
+import {
+  StudioScrollPreviewPanel,
+  type ScrollPreviewPage,
+  type StudioScrollPreviewPanelProps,
+} from "../StudioScrollPreviewPanel";
 
 vi.mock("../StudioPageThumbnails", () => ({
   StudioPageThumbnail: ({ page }: { page: ScrollPreviewPage }) => (
@@ -306,5 +310,67 @@ describe("StudioReaderFeedbackPinsWidget & StudioScrollPreviewPanel 통합", () 
     fireEvent.click(screen.getByRole("button", { name: "편집 컷 열기" }));
     expect(onSelectPage).toHaveBeenCalledWith("p2");
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("편집한 두 핀을 차례로 다시 열면 해당 마커가 포커스를 받고 자동 스크롤은 멈춰 있다", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const pages = [makePreviewPage("p1", "앞쪽"), makePreviewPage("p2", "뒤쪽")];
+    const pins = pages.map((page, index) => createReaderFeedbackPin({
+      id: `pin-${page.id}`,
+      pageId: page.id,
+      x: 0.5,
+      y: index === 0 ? 0.13 : 0.86,
+      category: "typo",
+      comment: `${page.name} 대사`,
+    }));
+    const onClose = vi.fn<StudioScrollPreviewPanelProps["onClose"]>();
+    const onSelectPage = vi.fn();
+    const props = { open: true, pages, onClose, onSelectPage };
+    let panel = render(
+      <StudioScrollPreviewPanel
+        {...props}
+        currentPageId="p1"
+        initialFeedbackPins={pins}
+        defaultFeedbackPinsOpen
+      />,
+    );
+
+    for (const pin of pins) {
+      // 목록에서 바로 편집해도 이전에 선택했던 마커보다 이 핀이 우선한다.
+      const row = screen.getByText(pin.comment).closest("li");
+      if (!row) throw new Error("검수 핀 목록 항목이 없습니다.");
+      fireEvent.click(screen.getByRole("button", { name: "자동 스크롤 재생" }));
+      const playing = screen.getByRole("button", { name: "자동 스크롤 일시정지" });
+      expect(playing.getAttribute("aria-pressed")).toBe("true");
+      fireEvent.click(within(row).getByRole("button", { name: "편집 컷 열기" }));
+      expect(onSelectPage).toHaveBeenLastCalledWith(pin.pageId);
+      const snapshot = onClose.mock.lastCall?.[0];
+      panel.unmount();
+      panel = render(
+        <StudioScrollPreviewPanel {...props} currentPageId={pin.pageId} initialPinReturn={snapshot} />,
+      );
+      const marker = screen.queryByRole("button", { name: new RegExp(`핀: ${pin.comment}$`) });
+      expect(marker, `편집기에서 돌아온 뒤 ${pin.pageId}에 ${pin.id} 마커가 보여야 합니다.`).not.toBeNull();
+      await waitFor(() => expect(document.activeElement).toBe(marker));
+      expect(marker?.getAttribute("aria-pressed")).toBe("true");
+      expect(screen.getAllByRole("button", { name: /오탈자 핀:/ })).toHaveLength(2);
+      const paused = screen.getByRole("button", { name: "자동 스크롤 재생" });
+      expect(paused.getAttribute("aria-pressed")).toBe("false");
+    }
+
+    const snapshot = onClose.mock.lastCall?.[0];
+    panel.unmount();
+    render(
+      <StudioScrollPreviewPanel {...props} pages={pages.slice(0, 1)} currentPageId="p1" initialPinReturn={snapshot} />,
+    );
+    expect(screen.queryByRole("button", { name: /핀: 뒤쪽 대사/ })).toBeNull();
+    const list = screen.getByRole("list", { name: "피드백 핀 목록" });
+    expect(within(list).queryByText("뒤쪽 대사")).toBeNull();
+    expect(within(list).getAllByRole("button", { name: "편집 컷 열기" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /핀: 앞쪽 대사/ }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenLastCalledWith();
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    expect(onClose).toHaveBeenLastCalledWith();
   });
 });

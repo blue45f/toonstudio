@@ -38,6 +38,7 @@ import {
 } from "./studio-shared-3d-stage-collection";
 
 import type { StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
+import type { ScrollPreviewPinReturn } from "./StudioScrollPreviewPanel";
 import type { BgPrimitiveKind } from "./studio-background-3d-metadata";
 import type {
   StudioLazyPanelStackHandlers,
@@ -181,7 +182,7 @@ export type StudioScrollScenarioPreviewPanelStackProps = Pick<
   | "scenarioSceneCountHint"
   | "scenarioStageLabel"
   | "scenarioStoryText"
-  | "scrollPreviewOpen"
+  | "scrollPreview"
   | "readerPreviewOpen"
   | "setScenarioOpen"
   | "setScenarioImageReferenceDocument"
@@ -662,7 +663,7 @@ export const StudioScrollScenarioPreviewPanelStack = memo(function StudioScrollS
   scenarioSceneCountHint,
   scenarioStageLabel,
   scenarioStoryText,
-  scrollPreviewOpen,
+  scrollPreview: { open: scrollPreviewOpen, documentEpoch: scrollPreviewDocumentEpoch },
   readerPreviewOpen,
   setScenarioOpen,
   setScenarioImageReferenceDocument,
@@ -673,6 +674,7 @@ export const StudioScrollScenarioPreviewPanelStack = memo(function StudioScrollS
   textAiConfigured,
   stableHandlers,
 }: StudioScrollScenarioPreviewPanelStackProps) {
+  const [pinReturn, setPinReturn] = useState<{ epoch: number; point: ScrollPreviewPinReturn }>();
   const {
     onApplyScenarioPreview,
     onCancelScenario,
@@ -710,14 +712,16 @@ export const StudioScrollScenarioPreviewPanelStack = memo(function StudioScrollS
       <Suspense fallback={<ScrollPreviewLoadingOverlay />}>
         {scrollPreviewOpen ? (
           <StudioScrollPreviewPanel
+            key={scrollPreviewDocumentEpoch}
             open
-            onClose={() => setScrollPreviewOpen(false)}
-            pages={pages.map(composeWorkAssetPreviewPage)}
-            currentPageId={currentPageId}
-            onSelectPage={(id) => {
-              setCurrentPageId(id);
+            initialPinReturn={pinReturn && pinReturn.epoch === scrollPreviewDocumentEpoch ? pinReturn.point : undefined}
+            onClose={(nextReturn) => {
+              setPinReturn(nextReturn && { epoch: scrollPreviewDocumentEpoch, point: nextReturn });
               setScrollPreviewOpen(false);
             }}
+            pages={pages.map(composeWorkAssetPreviewPage)}
+            currentPageId={currentPageId}
+            onSelectPage={setCurrentPageId}
           />
         ) : null}
       </Suspense>
