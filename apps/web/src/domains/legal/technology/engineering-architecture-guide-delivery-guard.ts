@@ -337,8 +337,8 @@ const AI_ASSISTED_DEV: ArchitectureGuideSection = {
       "An AI coding tool says 'done' with confidence, but you cannot tell whether it actually ran anything. So ToonStudio set the rules for using AI in files and scripts rather than in a person's reminders. However many tools there are, they read the same rules, and their output passes the same gates as a change made by a person.",
     ),
     t(
-      "규칙은 루트 AGENTS.md 한 곳(한글 기본, 증거 우선, 완료 전 검증, 비밀값 금지, 운영 배포는 별도 승인)에 두고, 영역별 규칙은 하위 AGENTS.md 가 더합니다. 도구별 파일은 세부 규칙을 복사하지 않고 핵심만 요약해 그곳을 가리키는 얇은 파일입니다. harness:check 는 필수 파일 21개와 정책 문장이 남아 있는지 보고, harness:verify 는 바뀐 범위에 맞는 검사를 고르며, 한글 커밋 제목은 commitlint 가 훅과 CI 에서 확인합니다. 사실이 충돌하면 소스·테스트, 승인된 ADR(결정 기록), 아키텍처 문서, OpenWiki 순으로 판정합니다.",
-      "The rules live in one root AGENTS.md (Korean by default, evidence first, verify before finishing, no secrets, production release only by separate approval), and nested AGENTS.md files add area rules. Each tool's file is a thin file that summarizes the essentials and points to it. harness:check verifies that 21 required files and the policy passages remain, harness:verify picks the checks that fit the changed scope, and commitlint checks Korean commit subjects in the hooks and in CI. When facts conflict, they are judged in the order source and tests, accepted ADRs (decision records), architecture docs, then OpenWiki.",
+      "규칙은 루트 AGENTS.md 한 곳(한글 기본, 증거 우선, 완료 전 검증, 비밀값 금지, 운영 배포는 별도 승인)에 두고, 영역별 규칙은 하위 AGENTS.md 가 더합니다. 도구별 파일은 세부 규칙을 복사하지 않고 핵심만 요약해 그곳을 가리키는 얇은 파일입니다. harness:check 는 필수 파일 22개와 정책 문장이 남아 있는지 보고, harness:verify 는 바뀐 범위에 맞는 검사를 고르며, 한글 커밋 제목은 commitlint 가 훅과 CI 에서 확인합니다. 사실이 충돌하면 소스·테스트, 승인된 ADR(결정 기록), 아키텍처 문서, OpenWiki 순으로 판정합니다.",
+      "The rules live in one root AGENTS.md (Korean by default, evidence first, verify before finishing, no secrets, production release only by separate approval), and nested AGENTS.md files add area rules. Each tool's file is a thin file that summarizes the essentials and points to it. harness:check verifies that 22 required files and the policy passages remain, harness:verify picks the checks that fit the changed scope, and commitlint checks Korean commit subjects in the hooks and in CI. When facts conflict, they are judged in the order source and tests, accepted ADRs (decision records), architecture docs, then OpenWiki.",
     ),
     t(
       "한계도 분명합니다. 하네스는 어댑터가 AGENTS.md 를 '언급하는지'만 볼 뿐 도구가 실제로 읽었다는 증명이 아니고, harness:verify 는 기본으로 시험을 돌리지 않고(--full 은 루트 단위 시험만 더함) 전체 보증은 CI 의 몫입니다. 상한 같은 숫자는 고치면 바뀌므로 사람의 리뷰가 필요합니다.",
@@ -426,7 +426,7 @@ const AI_ASSISTED_DEV: ArchitectureGuideSection = {
   ),
   facts: [
     {
-      value: "21",
+      value: "22",
       label: t("harness:check 가 매번 확인하는 필수 파일 수", "Required files that harness:check verifies every time"),
       source: "scripts/agent-harness.mjs",
     },

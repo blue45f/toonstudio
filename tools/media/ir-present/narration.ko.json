@@ -14,7 +14,7 @@
     {
       "scene": 1,
       "title": "표지",
-      "markupSha256": "63c90e8d75fb30660619910d846fc8c309f38b82f7e2492feb2a5eab5987a398"
+      "markupSha256": "87127c24ecd0adfbc8be1e7de9e557733ef9dacbf1038ce1b00111a7e921133e"
     },
     {
       "scene": 2,
@@ -79,7 +79,7 @@
     {
       "scene": 14,
       "title": "차별화",
-      "markupSha256": "590c18030bda19743401134d99aabc0a065dc2b334399b6fd11e53a3f464d138"
+      "markupSha256": "4c98dffbac9d8ace9204f34767cfbc8ce64fb48cef453fb7700f431004908b78"
     },
     {
       "scene": 15,
@@ -104,7 +104,7 @@
     {
       "scene": 19,
       "title": "기술 구조",
-      "markupSha256": "7ca13bf0571a3d9e00a8fddeae192425c0427a12c0fb865b3f249e70ae23d482"
+      "markupSha256": "001f32f8cd60f028f67cc7d84ac4b38fee29057dd99e75b6d793e3a641d7ae9e"
     },
     {
       "scene": 20,
@@ -114,7 +114,7 @@
     {
       "scene": 21,
       "title": "비즈니스 모델",
-      "markupSha256": "6e7b5b693d6892d90ef364e657458fcb04f2ef187279e75a8b23f0ee1e965e20"
+      "markupSha256": "9aad4c24a99bcf3d0744ca851880c746446eeb96be12103ce3a41b61e8cab8e6"
     },
     {
       "scene": 22,
@@ -124,7 +124,7 @@
     {
       "scene": 23,
       "title": "1인 창업자 · Ask",
-      "markupSha256": "2d504c903e7054aaa38931a96ed39c033c02eefc2f28b0c315a487c3cc25c263"
+      "markupSha256": "9b29c03115eb9a944c5589cf7c858f464175340f1bbbc51465a904fb387196de"
     },
     {
       "scene": 24,
@@ -132,7 +132,37 @@
       "markupSha256": "69db1dc4c168a77ff85befc776227643f09841748460f5bd6a22904f387c7798"
     }
   ],
-  "sourceSha256": "9f375d07f1b15c39fe4a5c0d61007279506586d64a55be8a12ea08dc8843face",
+  "sourceFiles": [
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-scene-data.ts",
+      "sha256": "91b408a3357a7e0cb256dece3c5b4eb02aca94bce677c83f89211cf6298ad61b"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-scenes-a.tsx",
+      "sha256": "9f98783bdca92a10214c2dbaddebb44e5621834048c9404fda48503e2186dbbf"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-scenes-b.tsx",
+      "sha256": "1b200765ff820f37ead9f1be2394dc386d9d991f6479a21d9acc38c0d1ce3179"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-present-pipeline-widget.tsx",
+      "sha256": "8f3a33f0f81c3baaf96a8ca30830524f247b7565db40d83f4f0a400cc480819d"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/ir-pitch-data.ts",
+      "sha256": "c42c60cc5121ed6168a142a9e3ac1c5a076f31b482a767e9b627c97a44510df5"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/product-tour-content.ts",
+      "sha256": "623c7ffdee5aa778374328a9773564678260f4b12025e3460ba30fed082cd995"
+    },
+    {
+      "path": "apps/web/src/domains/marketing/product-tour-asset.generated.ts",
+      "sha256": "a52a3ac18c5b6af7a5f76099a071a57188eec5d9577c2420c945ffdafc4db980"
+    }
+  ],
+  "sourceSha256": "67a363bf72f5159f6b3b5bdba67d74aed374bfdebfd95bf2a352e13d7e81636f",
   "scenes": [
     {
       "scene": 1,
@@ -253,36 +283,6 @@
       "scene": 24,
       "audio": "n24.mp3",
       "text": "툰스튜디오는 제작과 협업의 흐름을 끝까지 연결하는 데 집중합니다. 웹툰 포털과 통합 랭킹, 교육 정보와 커뮤니티로의 확장은 장기 계획이며, 다른 사업자와의 제휴도 성사된 것으로 제시하지 않습니다. 실제 제품과 투어를 보면서 기능의 제공 상태와 검증이 필요한 범위를 함께 확인하겠습니다. 감사합니다."
-    }
-  ],
-  "sourceFiles": [
-    {
-      "path": "apps/web/src/domains/marketing/ir-present-scene-data.ts",
-      "sha256": "91b408a3357a7e0cb256dece3c5b4eb02aca94bce677c83f89211cf6298ad61b"
-    },
-    {
-      "path": "apps/web/src/domains/marketing/ir-present-scenes-a.tsx",
-      "sha256": "bed685b0e935006a49f4e75b9d37361f015d5569904e0bcfef689b581245d5e4"
-    },
-    {
-      "path": "apps/web/src/domains/marketing/ir-present-scenes-b.tsx",
-      "sha256": "31c1b03a33bd1e4f6e7dfe9a661db494c2aedb406c3ec28f3f9a1f0f6714d628"
-    },
-    {
-      "path": "apps/web/src/domains/marketing/ir-present-pipeline-widget.tsx",
-      "sha256": "8f3a33f0f81c3baaf96a8ca30830524f247b7565db40d83f4f0a400cc480819d"
-    },
-    {
-      "path": "apps/web/src/domains/marketing/ir-pitch-data.ts",
-      "sha256": "be5eed8e1b37f57fc249917f2c367c2629e54bbe64e0fd7c2de80d65c7fa574c"
-    },
-    {
-      "path": "apps/web/src/domains/marketing/product-tour-content.ts",
-      "sha256": "623c7ffdee5aa778374328a9773564678260f4b12025e3460ba30fed082cd995"
-    },
-    {
-      "path": "apps/web/src/domains/marketing/product-tour-asset.generated.ts",
-      "sha256": "a52a3ac18c5b6af7a5f76099a071a57188eec5d9577c2420c945ffdafc4db980"
     }
   ]
 }

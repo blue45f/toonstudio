@@ -610,11 +610,11 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-ai-harness", claim: "하네스 필수 파일 21개, loop 명령 파일 23개", needles: ["21개", "23개", "AGENTS.md"],
+    lesson: "seminar-ai-harness", claim: "하네스 필수 파일 22개, loop 명령 파일 23개", needles: ["22개", "23개", "AGENTS.md"],
     check: () => {
       const harness = readText("scripts", "agent-harness.mjs");
       const required = /const REQUIRED_FILES = \[([^\]]*)\]/u.exec(harness)?.[1] ?? "";
-      expect(countMatches(required, /"[^"]+"/gu)).toBe(21);
+      expect(countMatches(required, /"[^"]+"/gu)).toBe(22);
       expect(readdirSync(repo(".opencode", "command")).filter((name) => name.startsWith("loop"))).toHaveLength(23);
     },
   },
