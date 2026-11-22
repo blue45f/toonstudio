@@ -58,7 +58,13 @@ export function StudioEyeFlowOverlay({
   const uid = useId().replace(/[^a-zA-Z0-9_-]/gu, "");
 
   if (!visible) return null;
-  if (analysis.nodes.length === 0 && analysis.occlusions.length === 0) return null;
+  if (
+    analysis.nodes.length === 0 &&
+    analysis.occlusions.length === 0 &&
+    analysis.tailCrossings.length === 0
+  ) {
+    return null;
+  }
 
   const arrowOkId = `eyeflow-arrow-ok-${uid}`;
   const arrowWarnId = `eyeflow-arrow-warn-${uid}`;
@@ -80,8 +86,11 @@ export function StudioEyeFlowOverlay({
       aria-label={`${label} — ${analysis.summaryKo}`}
       data-studio-eyeflow-overlay="true"
       data-eyeflow-direction={analysis.direction}
+      data-eyeflow-pattern={analysis.detectedPattern}
       data-eyeflow-reversals={analysis.reversals.length}
       data-eyeflow-occlusions={analysis.occlusions.length}
+      data-eyeflow-tail-crossings={analysis.tailCrossings.length}
+      data-eyeflow-spoiler-risks={analysis.spoilerRisks.length}
       viewBox={`0 0 ${analysis.canvasWidth} ${analysis.canvasHeight}`}
       preserveAspectRatio="none"
       className={cn(
@@ -316,6 +325,58 @@ export function StudioEyeFlowOverlay({
                 />
               </g>
             ) : null}
+          </g>
+        );
+      })}
+
+      {/* 3-b) 말풍선 꼬리 간 X-교차 경고 지점 */}
+      {analysis.tailCrossings.map((crossing) => {
+        const toneClass = crossing.severity === "critical" ? "text-bad" : "text-warn";
+        return (
+          <g
+            key={crossing.id}
+            data-eyeflow-crossing-id={crossing.id}
+            className={toneClass}
+          >
+            <circle
+              cx={crossing.intersectionPoint.x}
+              cy={crossing.intersectionPoint.y}
+              r={10}
+              className="fill-panel"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            />
+            <path
+              d={`M ${crossing.intersectionPoint.x - 4} ${crossing.intersectionPoint.y - 4} L ${crossing.intersectionPoint.x + 4} ${crossing.intersectionPoint.y + 4} M ${crossing.intersectionPoint.x + 4} ${crossing.intersectionPoint.y - 4} L ${crossing.intersectionPoint.x - 4} ${crossing.intersectionPoint.y + 4}`}
+              stroke="currentColor"
+              strokeWidth={2.2}
+              strokeLinecap="round"
+            />
+            <g
+              transform={`translate(${crossing.intersectionPoint.x.toFixed(1)}, ${(crossing.intersectionPoint.y - 22).toFixed(1)})`}
+            >
+              <rect
+                x={-36}
+                y={-11}
+                width={72}
+                height={22}
+                rx={11}
+                className="fill-panel"
+                stroke="currentColor"
+                strokeWidth={2}
+              />
+              <text
+                x={0}
+                y={0}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="currentColor"
+                fontSize={12}
+                fontWeight={700}
+              >
+                꼬리 교차
+              </text>
+            </g>
           </g>
         );
       })}

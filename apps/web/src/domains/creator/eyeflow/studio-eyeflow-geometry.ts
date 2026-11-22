@@ -16,12 +16,14 @@ import {
   distanceBetween,
   intersectAabb,
   intersectSegmentAabb,
+  intersectSegments,
   isFinitePoint,
   isValidRect,
   pointInsideRect,
   rectCenter,
   round2,
 } from "./studio-eyeflow-primitives";
+import { detectMobileViewportSpoilerRisks } from "./studio-eyeflow-rhythm-solver";
 import type {
   EyeFlowAnalysisConfig,
   EyeFlowAnalysisInput,
@@ -30,6 +32,8 @@ import type {
   EyeFlowCutBounds,
   EyeFlowHealthStatus,
   EyeFlowNode,
+  EyeFlowPatternKind,
+  EyeFlowPatternMode,
   EyeFlowPoint,
   EyeFlowReadingDirection,
   EyeFlowResolvedTail,
@@ -37,6 +41,7 @@ import type {
   EyeFlowTransitionReason,
   EyeFlowTransitionSeverity,
   ResolvedEyeFlowFaceRegion,
+  TailCrossingWarning,
   TailOcclusionKind,
   TailOcclusionSeverity,
   TailOcclusionWarning,
@@ -48,6 +53,7 @@ export {
   deriveDefaultEyeBounds,
   intersectAabb,
   intersectSegmentAabb,
+  intersectSegments,
 } from "./studio-eyeflow-primitives";
 
 export const DEFAULT_EYEFLOW_ANALYSIS_CONFIG: EyeFlowAnalysisConfig = Object.freeze({
@@ -131,19 +137,29 @@ function evaluateTransition(params: {
   readonly prev: EyeFlowNode;
   readonly next: EyeFlowNode;
   readonly direction: EyeFlowReadingDirection;
+  readonly patternMode: EyeFlowPatternMode;
+  readonly rowIndex: number;
   readonly canvasWidth: number;
   readonly config: EyeFlowAnalysisConfig;
   readonly cutOrderIndex: ReadonlyMap<string, number>;
 }): EyeFlowSegment {
-  const { prev, next, direction, canvasWidth, config, cutOrderIndex } = params;
+  const { prev, next, direction, patternMode, rowIndex, canvasWidth, config, cutOrderIndex } =
+    params;
   const dx = round2(next.center.x - prev.center.x);
   const dy = round2(next.center.y - prev.center.y);
   const distancePx = round2(Math.hypot(dx, dy));
   const angleDeg = round2((Math.atan2(dy, dx) * 180) / Math.PI);
 
-  const forwardDx = direction === "rtl-ttb" ? -dx : dx;
-  const reverseSideLabel = direction === "rtl-ttb" ? "오른쪽 위" : "왼쪽 위";
-  const reverseHorizontalLabel = direction === "rtl-ttb" ? "왼쪽→오른쪽" : "오른쪽→왼쪽";
+  const isSerpentineReversedRow = patternMode === "s-pattern" && rowIndex % 2 === 1;
+  const effectiveDirection: EyeFlowReadingDirection = isSerpentineReversedRow
+    ? direction === "rtl-ttb"
+      ? "ltr-ttb"
+      : "rtl-ttb"
+    : direction;
+  const forwardDx = effectiveDirection === "rtl-ttb" ? -dx : dx;
+  const reverseSideLabel = effectiveDirection === "rtl-ttb" ? "오른쪽 위" : "왼쪽 위";
+  const reverseHorizontalLabel =
+    effectiveDirection === "rtl-ttb" ? "왼쪽→오른쪽" : "오른쪽→왼쪽";
 
   const prevCutIdx = prev.cutId ? cutOrderIndex.get(prev.cutId) : undefined;
   const nextCutIdx = next.cutId ? cutOrderIndex.get(next.cutId) : undefined;
@@ -181,16 +197,27 @@ function evaluateTransition(params: {
         dy / Math.max(1, Math.abs(forwardDx)) < SHALLOW_BACKWARD_SLOPE_LIMIT))
   ) {
     isReversal = true;
-    reason = "same-row-backtrack";
+    reason = patternMode === "s-pattern" ? "s-pattern-backtrack" : "same-row-backtrack";
     severity = "warning";
-    messageKo = `${prev.sequenceNumber}→${next.sequenceNumber}번 같은 행 시선 역행`;
-    detailKo = `비슷한 높이에서 ${reverseHorizontalLabel}으로 ${Math.round(Math.abs(forwardDx))}px 되돌아갑니다. 행 내 읽기 방향을 맞추거나 두 번째 말풍선을 ${config.rowBandTolerancePx + 24}px 이상 아래로 내려 Z-패턴으로 분리하세요.`;
+    messageKo =
+      patternMode === "s-pattern"
+        ? `${prev.sequenceNumber}→${next.sequenceNumber}번 S-패턴 시선 역행`
+        : `${prev.sequenceNumber}→${next.sequenceNumber}번 같은 행 시선 역행`;
+    detailKo = `비슷한 높이에서 ${reverseHorizontalLabel}으로 ${Math.round(Math.abs(forwardDx))}px 되돌아갑니다. 행 내 읽기 방향을 맞추거나 두 번째 말풍선을 ${config.rowBandTolerancePx + 24}px 이상 아래로 내려 시선을 분리하세요.`;
   } else if (Math.abs(dy) <= config.rowBandTolerancePx && forwardDx > 0) {
-    reason = "natural-z-right";
-    detailKo = "같은 행에서 정방향으로 자연스럽게 이어집니다.";
+    reason = isSerpentineReversedRow ? "natural-s-serpentine" : "natural-z-right";
+    detailKo = isSerpentineReversedRow
+      ? "S-패턴 꺾임 행에서 반대 방향으로 자연스럽게 이어집니다."
+      : "같은 행에서 정방향으로 자연스럽게 이어집니다.";
   } else if (dy > config.rowBandTolerancePx && forwardDx < -config.horizontalBacktrackThresholdPx * 0.5) {
-    reason = "natural-z-sweep";
-    detailKo = "위 행에서 아래 행 시작 지점으로 이어지는 표준 Z-패턴 전환입니다.";
+    reason = patternMode === "s-pattern" ? "natural-s-serpentine" : "natural-z-sweep";
+    detailKo =
+      patternMode === "s-pattern"
+        ? "위 행 끝에서 아래 행으로 부드럽게 꺾이는 S-패턴 사행 전환입니다."
+        : "위 행에서 아래 행 시작 지점으로 이어지는 표준 Z-패턴 전환입니다.";
+  } else if (patternMode === "s-pattern" && dy > config.rowBandTolerancePx && Math.abs(dx) <= config.horizontalBacktrackThresholdPx) {
+    reason = "natural-s-serpentine";
+    detailKo = "S-패턴 아래 행으로 이어지는 수직 꺾임 전환입니다.";
   }
 
   return {
@@ -214,6 +241,70 @@ function evaluateTransition(params: {
 }
 
 /**
+ * 서로 다른 말풍선의 꼬리 선분이 X자로 교차하는 화자 혼선 구간을 검출한다.
+ */
+export function detectBalloonTailCrossings(
+  nodes: readonly EyeFlowNode[],
+): readonly TailCrossingWarning[] {
+  const crossings: TailCrossingWarning[] = [];
+  for (let i = 0; i < nodes.length; i += 1) {
+    const first = nodes[i]!;
+    if (first.tails.length === 0) continue;
+    for (let j = i + 1; j < nodes.length; j += 1) {
+      const second = nodes[j]!;
+      if (second.tails.length === 0) continue;
+      if (first.cutId && second.cutId && first.cutId !== second.cutId) continue;
+
+      for (const tailA of first.tails) {
+        for (const tailB of second.tails) {
+          const hit = intersectSegments(tailA.base, tailA.tip, tailB.base, tailB.tip);
+          if (!hit) continue;
+          const isConsecutive = Math.abs(second.sequenceNumber - first.sequenceNumber) === 1;
+          const severity: TailOcclusionSeverity = isConsecutive ? "critical" : "warning";
+          crossings.push({
+            id: `cross-${first.balloonId}-${tailA.tailIndex}-${second.balloonId}-${tailB.tailIndex}`,
+            firstBalloonId: first.balloonId,
+            secondBalloonId: second.balloonId,
+            firstSequence: first.sequenceNumber,
+            secondSequence: second.sequenceNumber,
+            firstTailIndex: tailA.tailIndex,
+            secondTailIndex: tailB.tailIndex,
+            intersectionPoint: hit.point,
+            severity,
+            messageKo: `${first.sequenceNumber}·${second.sequenceNumber}번 말풍선 꼬리가 교차합니다`,
+            detailKo: `(${Math.round(hit.point.x)}, ${Math.round(hit.point.y)}) 지점에서 두 말풍선 꼬리가 X자로 겹쳐 화자 구분이 흐려집니다. 두 말풍선의 좌우 위치를 바꾸거나 꼬리 길이를 줄여 교차를 해소하세요.`,
+          });
+        }
+      }
+    }
+  }
+  return Object.freeze(crossings);
+}
+
+function classifyEyeFlowPattern(
+  segments: readonly EyeFlowSegment[],
+  patternMode: EyeFlowPatternMode,
+): EyeFlowPatternKind {
+  if (segments.length === 0) return "vertical-scroll";
+  if (patternMode === "s-pattern") return "s-pattern";
+  const horizontalSigns: number[] = [];
+  let zSweepCount = 0;
+  for (const seg of segments) {
+    if (seg.reason === "natural-z-sweep") zSweepCount += 1;
+    if (Math.abs(seg.dx) >= 60 && Math.abs(seg.dy) <= 48) {
+      horizontalSigns.push(seg.dx > 0 ? 1 : -1);
+    }
+  }
+  let alternations = 0;
+  for (let i = 1; i < horizontalSigns.length; i += 1) {
+    if (horizontalSigns[i] !== horizontalSigns[i - 1]) alternations += 1;
+  }
+  if (alternations >= 1 && zSweepCount === 0) return "s-pattern";
+  if (zSweepCount >= 1 || horizontalSigns.length > 0) return "z-pattern";
+  return "vertical-scroll";
+}
+
+/**
  * 컷 내 말풍선과 캐릭터 얼굴/눈 바운딩 박스를 입력받아:
  * - Z-패턴 시선 경로 및 역주행 구간
  * - 말풍선 본체·꼬리의 캐릭터 얼굴/눈 가림(occlusion) 및 권장 꼬리 보정 좌표
@@ -224,6 +315,7 @@ export function analyzeEyeFlowAndTailGuard(input: EyeFlowAnalysisInput): EyeFlow
   const canvasWidth = Math.max(1, Number.isFinite(input.canvasWidth) ? input.canvasWidth : 720);
   const canvasHeight = Math.max(1, Number.isFinite(input.canvasHeight) ? input.canvasHeight : 1_280);
   const direction: EyeFlowReadingDirection = input.direction ?? "ltr-ttb";
+  const patternMode: EyeFlowPatternMode = input.patternMode ?? "z-pattern";
 
   const config: EyeFlowAnalysisConfig = {
     upwardBacktrackThresholdPx:
@@ -312,12 +404,26 @@ export function analyzeEyeFlowAndTailGuard(input: EyeFlowAnalysisInput): EyeFlow
   });
 
   const segments: EyeFlowSegment[] = [];
+  let currentRowIndex = 0;
+  let currentRowAnchorY = nodes[0]?.center.y ?? 0;
   for (let i = 0; i < nodes.length - 1; i += 1) {
+    const prevNode = nodes[i]!;
+    const nextNode = nodes[i + 1]!;
+    if (nextNode.center.y - currentRowAnchorY > config.rowBandTolerancePx) {
+      currentRowIndex += 1;
+      currentRowAnchorY = nextNode.center.y;
+    }
+    const rowForSegment =
+      Math.abs(nextNode.center.y - prevNode.center.y) <= config.rowBandTolerancePx
+        ? currentRowIndex
+        : Math.max(0, currentRowIndex - 1);
     segments.push(
       evaluateTransition({
-        prev: nodes[i]!,
-        next: nodes[i + 1]!,
+        prev: prevNode,
+        next: nextNode,
         direction,
+        patternMode,
+        rowIndex: rowForSegment,
         canvasWidth,
         config,
         cutOrderIndex,
@@ -325,6 +431,14 @@ export function analyzeEyeFlowAndTailGuard(input: EyeFlowAnalysisInput): EyeFlow
     );
   }
   const reversals = segments.filter((segment) => segment.isReversal);
+  const tailCrossings = detectBalloonTailCrossings(nodes);
+  const spoilerRisks = detectMobileViewportSpoilerRisks({
+    canvasWidth,
+    nodes,
+    cuts: validCuts,
+    config: input.mobileSpoilerGuard,
+  });
+  const detectedPattern = classifyEyeFlowPattern(segments, patternMode);
 
   const occlusions: TailOcclusionWarning[] = [];
 
@@ -450,6 +564,16 @@ export function analyzeEyeFlowAndTailGuard(input: EyeFlowAnalysisInput): EyeFlow
     }
   }
 
+  for (const cross of tailCrossings) {
+    if (cross.severity === "critical") {
+      criticalCount += 1;
+      penalty += 20;
+    } else {
+      warningCount += 1;
+      penalty += 10;
+    }
+  }
+
   const score = clamp(100 - penalty, 0, 100);
   const status: EyeFlowHealthStatus =
     criticalCount > 0 ? "blocked" : warningCount > 0 ? "caution" : "clear";
@@ -463,12 +587,13 @@ export function analyzeEyeFlowAndTailGuard(input: EyeFlowAnalysisInput): EyeFlow
   let summaryKo: string;
   if (nodes.length === 0) {
     summaryKo = "분석할 말풍선이 없습니다.";
-  } else if (reversals.length === 0 && occlusions.length === 0) {
+  } else if (reversals.length === 0 && occlusions.length === 0 && tailCrossings.length === 0) {
     summaryKo = `말풍선 ${nodes.length}개의 시선 동선과 꼬리 배치가 자연스럽습니다.`;
   } else {
     const parts: string[] = [];
     if (reversals.length > 0) parts.push(`시선 역주행 ${reversals.length}건`);
     if (occlusions.length > 0) parts.push(`얼굴·눈 가림 ${occlusions.length}건`);
+    if (tailCrossings.length > 0) parts.push(`말풍선 꼬리 교차 ${tailCrossings.length}건`);
     summaryKo = `${parts.join(", ")}이 감지되었습니다.`;
   }
 
@@ -476,10 +601,13 @@ export function analyzeEyeFlowAndTailGuard(input: EyeFlowAnalysisInput): EyeFlow
     canvasWidth,
     canvasHeight,
     direction,
+    detectedPattern,
     nodes: Object.freeze(nodes),
     segments: Object.freeze(segments),
     reversals: Object.freeze(reversals),
     occlusions: Object.freeze(occlusions),
+    tailCrossings,
+    spoilerRisks,
     faces: Object.freeze(resolvedFaces),
     suggestedOrderIds,
     score,

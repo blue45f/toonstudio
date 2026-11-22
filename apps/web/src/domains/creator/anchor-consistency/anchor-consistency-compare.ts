@@ -15,10 +15,50 @@
  */
 
 import { compareAnchorColorStats, type AnchorColorComparison } from "./anchor-color-stats";
+import {
+  CUT_SCENE_MOOD_RELAXATIONS,
+  auditSingleCutCharacterConsistency,
+  type CanonicalCharacterAuditProfile,
+  type CanonicalPaletteSlot,
+  type ColorSampleInput,
+  type CutSceneMoodTag,
+  type EpisodeCutConsistencyResult,
+  type ObservedAsymmetricAnchor,
+} from "./anchor-episode-consistency-auditor";
 import { compareAnchorPalettes, type AnchorPaletteComparison } from "./anchor-palette";
 import type { AnchorImageFeatures } from "./anchor-image-features";
 import { compareAnchorSilhouettes, type AnchorSilhouetteSimilarity } from "./anchor-silhouette";
 import { compareAnchorStructureHashes, type AnchorStructureComparison } from "./anchor-structure-hash";
+
+export {
+  CUT_SCENE_MOOD_RELAXATIONS,
+  auditSingleCutCharacterConsistency,
+  hexToOklch,
+  labToOklch,
+  oklchDeltaE,
+  registerCanonicalCharacterProfile,
+  srgbToOklch,
+} from "./anchor-episode-consistency-auditor";
+export type {
+  AsymmetricAnchorFinding,
+  AsymmetricAnchorSide,
+  AsymmetricPropAnchor,
+  AsymmetricPropKind,
+  CanonicalCharacterAuditProfile,
+  CanonicalOklchSlotInput,
+  CanonicalOklchSlotRange,
+  CanonicalPaletteSlot,
+  ColorSampleInput,
+  CutSceneMoodRelaxationProfile,
+  CutSceneMoodTag,
+  EpisodeCutAuditVerdict,
+  EpisodeCutConsistencyInput,
+  EpisodeCutConsistencyResult,
+  ObservedAsymmetricAnchor,
+  ObservedAsymmetricSide,
+  OklchColor,
+  PaletteSlotAuditFinding,
+} from "./anchor-episode-consistency-auditor";
 
 export const ANCHOR_FEATURE_IDS = ["color", "palette", "silhouette", "structure"] as const;
 export type AnchorFeatureId = (typeof ANCHOR_FEATURE_IDS)[number];
@@ -51,6 +91,19 @@ export type AnchorComparisonLimit =
 /** 피사체가 화면의 이 비율보다 작으면 특징이 불안정하다고 알린다. */
 export const ANCHOR_TINY_SUBJECT_COVERAGE = 0.03;
 
+export interface AnchorCompareOptions {
+  /** 컷 장면 무드 태그(회상 세피아·흑백·역광 실루엣 시 색상/팔레트 임계치·가중치 자동 완화). */
+  readonly moodTag?: CutSceneMoodTag;
+  /** 1클릭 "의도적 조명 변화 무시" 예외 적용 여부. */
+  readonly ignoreIntentionalLighting?: boolean;
+  /** 등록된 캐릭터 정본 팔레트·좌우 비대칭 소품 앵커 프로파일(제공 시 상세 검수 동시 실행). */
+  readonly canonicalProfile?: CanonicalCharacterAuditProfile;
+  readonly cutId?: string;
+  readonly cutIndex?: number;
+  readonly sampledSlots?: Partial<Record<CanonicalPaletteSlot, ColorSampleInput>>;
+  readonly observedAnchors?: readonly ObservedAsymmetricAnchor[];
+}
+
 export interface AnchorPairComparison {
   /** 0~1 참고 점수. */
   readonly score: number;
@@ -67,6 +120,12 @@ export interface AnchorPairComparison {
     silhouette: AnchorSilhouetteSimilarity | null;
     structure: AnchorStructureComparison;
   }>;
+  /** 적용된 컷 장면 무드 태그(옵션 지정 시). */
+  readonly moodTag?: CutSceneMoodTag;
+  /** 의도적 조명 변화 무시 적용 여부(옵션 지정 시). */
+  readonly ignoredIntentionalLighting?: boolean;
+  /** 캐릭터 정본 프로파일 기반 OKLCH·좌우 비대칭 검수 결과(`canonicalProfile` 지정 시). */
+  readonly episodeAudit?: EpisodeCutConsistencyResult;
 }
 
 function comparisonLimits(anchor: AnchorImageFeatures, candidate: AnchorImageFeatures): AnchorComparisonLimit[] {
@@ -82,7 +141,11 @@ function comparisonLimits(anchor: AnchorImageFeatures, candidate: AnchorImageFea
   return limits;
 }
 
-export function compareAnchorFeatures(anchor: AnchorImageFeatures, candidate: AnchorImageFeatures): AnchorPairComparison {
+export function compareAnchorFeatures(
+  anchor: AnchorImageFeatures,
+  candidate: AnchorImageFeatures,
+  options?: AnchorCompareOptions,
+): AnchorPairComparison {
   const color = compareAnchorColorStats(anchor.color, candidate.color);
   const palette = compareAnchorPalettes(anchor.palette, candidate.palette);
   const silhouette = anchor.silhouette && candidate.silhouette ? compareAnchorSilhouettes(anchor.silhouette, candidate.silhouette) : null;
@@ -93,19 +156,47 @@ export function compareAnchorFeatures(anchor: AnchorImageFeatures, candidate: An
     silhouette: silhouette ? silhouette.score : null,
     structure: structure.similarity,
   };
+
+  const moodTag: CutSceneMoodTag = options?.moodTag ?? "normal";
+  const ignoreLighting = options?.ignoreIntentionalLighting === true;
+  const colorWeightScale = ignoreLighting
+    ? 0.05
+    : CUT_SCENE_MOOD_RELAXATIONS[moodTag].featureColorWeightScale;
+
+  const rawWeights: Record<AnchorFeatureId, number> = {
+    color: ANCHOR_SCORE_WEIGHTS.color * colorWeightScale,
+    palette: ANCHOR_SCORE_WEIGHTS.palette * colorWeightScale,
+    silhouette: ANCHOR_SCORE_WEIGHTS.silhouette,
+    structure: ANCHOR_SCORE_WEIGHTS.structure,
+  };
+
   let totalWeight = 0;
   for (const id of ANCHOR_FEATURE_IDS) {
-    if (similarities[id] !== null) totalWeight += ANCHOR_SCORE_WEIGHTS[id];
+    if (similarities[id] !== null) totalWeight += rawWeights[id];
   }
   const weights: Record<AnchorFeatureId, number> = { color: 0, palette: 0, silhouette: 0, structure: 0 };
   let score = 0;
   for (const id of ANCHOR_FEATURE_IDS) {
     const similarity = similarities[id];
-    if (similarity === null) continue;
-    weights[id] = ANCHOR_SCORE_WEIGHTS[id] / totalWeight;
+    if (similarity === null || totalWeight <= 0) continue;
+    weights[id] = rawWeights[id] / totalWeight;
     score += weights[id] * similarity;
   }
   const clamped = Math.min(1, Math.max(0, score));
+
+  const episodeAudit = options?.canonicalProfile
+    ? auditSingleCutCharacterConsistency(options.canonicalProfile, {
+        cutId: options.cutId ?? "cut-compare",
+        cutIndex: options.cutIndex ?? 1,
+        moodTag,
+        ignoreIntentionalLighting: ignoreLighting,
+        sampledSlots: options.sampledSlots,
+        features: candidate,
+        observedAnchors: options.observedAnchors,
+        mirroredHorizontally: silhouette?.mirrored ?? false,
+      })
+    : undefined;
+
   return Object.freeze({
     score: clamped,
     band: anchorScoreBand(clamped),
@@ -113,5 +204,7 @@ export function compareAnchorFeatures(anchor: AnchorImageFeatures, candidate: An
     weights: Object.freeze(weights),
     limits: Object.freeze(comparisonLimits(anchor, candidate)),
     detail: Object.freeze({ color, palette, silhouette, structure }),
+    ...(options ? { moodTag, ignoredIntentionalLighting: ignoreLighting } : {}),
+    ...(episodeAudit ? { episodeAudit } : {}),
   });
 }

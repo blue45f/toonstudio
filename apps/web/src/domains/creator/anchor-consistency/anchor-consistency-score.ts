@@ -10,12 +10,30 @@ import { ANCHOR_ANGLE_IDS, type AnchorAngleId } from "./anchor-capture-spec";
 import {
   anchorScoreBand,
   compareAnchorFeatures,
+  type AnchorCompareOptions,
   type AnchorComparisonLimit,
   type AnchorFeatureId,
   type AnchorPairComparison,
   type AnchorScoreBand,
 } from "./anchor-consistency-compare";
+import {
+  scanEpisodeCharacterConsistency,
+  type CanonicalCharacterAuditProfile,
+  type EpisodeConsistencyAuditReport,
+  type EpisodeCutConsistencyInput,
+  type IntentionalLightingOverrideMap,
+} from "./anchor-episode-consistency-auditor";
 import type { AnchorImageFeatures } from "./anchor-image-features";
+
+export {
+  scanEpisodeCharacterConsistency,
+  toggleIntentionalLightingException,
+} from "./anchor-episode-consistency-auditor";
+export type {
+  EpisodeConsistencyActionableIssue,
+  EpisodeConsistencyAuditReport,
+  IntentionalLightingOverrideMap,
+} from "./anchor-episode-consistency-auditor";
 
 export interface AnchorReferenceFeatures {
   readonly angleId: AnchorAngleId;
@@ -46,13 +64,18 @@ export interface AnchorCandidateScore {
 export function scoreCandidateAgainstAnchors(
   anchors: readonly AnchorReferenceFeatures[],
   candidate: AnchorImageFeatures,
+  options?: AnchorCompareOptions,
 ): AnchorCandidateScore | null {
   const byAngle = new Map<AnchorAngleId, AnchorImageFeatures>();
   for (const anchor of anchors) if (!byAngle.has(anchor.angleId)) byAngle.set(anchor.angleId, anchor.features);
   const perAnchor: AnchorCandidateAnchorScore[] = [];
   for (const angleId of ANCHOR_ANGLE_IDS) {
     const features = byAngle.get(angleId);
-    if (features) perAnchor.push(Object.freeze({ angleId, comparison: compareAnchorFeatures(features, candidate) }));
+    if (features) {
+      perAnchor.push(
+        Object.freeze({ angleId, comparison: compareAnchorFeatures(features, candidate, options) }),
+      );
+    }
   }
   let best: AnchorCandidateAnchorScore | null = null;
   for (const entry of perAnchor) {
@@ -129,5 +152,75 @@ export function sortAnchorCandidates<T extends RankableAnchorCandidate>(
     if (b === null) return -1;
     const diff = mode === "score-asc" ? a - b : b - a;
     return Math.abs(diff) < 1e-9 ? left.order - right.order : diff;
+  });
+}
+
+export interface EpisodeAnchorScoredCut {
+  readonly cutId: string;
+  readonly cutIndex: number;
+  readonly anchorScore: AnchorCandidateScore | null;
+}
+
+export interface EpisodeAnchorAuditBundle {
+  readonly auditReport: EpisodeConsistencyAuditReport;
+  readonly perCutAnchorScores: readonly EpisodeAnchorScoredCut[];
+  readonly averageAnchorScore: number | null;
+}
+
+/**
+ * 60컷 에피소드 후보 목록을 앵커 세트 특징 비교(`scoreCandidateAgainstAnchors`)와
+ * 정본 OKLCH·좌우 비대칭 일괄 검수관(`scanEpisodeCharacterConsistency`)에 동시에 연결해 일괄 채점한다.
+ */
+export function scoreEpisodeCutsAgainstAnchors(params: {
+  readonly anchors: readonly AnchorReferenceFeatures[];
+  readonly profile: CanonicalCharacterAuditProfile;
+  readonly cuts: readonly EpisodeCutConsistencyInput[];
+  readonly overrides?: IntentionalLightingOverrideMap;
+}): EpisodeAnchorAuditBundle {
+  const ignoredSet = params.overrides?.ignoredCutIds;
+  const perCutAnchorScores: EpisodeAnchorScoredCut[] = [];
+  const enrichedCuts: EpisodeCutConsistencyInput[] = [];
+  let anchorScoreSum = 0;
+  let anchorScoredCount = 0;
+
+  for (const cut of params.cuts) {
+    const ignoreLighting = cut.ignoreIntentionalLighting === true || Boolean(ignoredSet?.has(cut.cutId));
+    const anchorScore =
+      cut.features && params.anchors.length > 0
+        ? scoreCandidateAgainstAnchors(params.anchors, cut.features, {
+            moodTag: cut.moodTag,
+            ignoreIntentionalLighting: ignoreLighting,
+          })
+        : null;
+
+    if (anchorScore) {
+      anchorScoreSum += anchorScore.score;
+      anchorScoredCount += 1;
+    }
+
+    perCutAnchorScores.push(
+      Object.freeze({
+        cutId: cut.cutId,
+        cutIndex: cut.cutIndex,
+        anchorScore,
+      }),
+    );
+
+    const detectedMirror = anchorScore?.best.comparison.detail.silhouette?.mirrored ?? false;
+    enrichedCuts.push({
+      ...cut,
+      ignoreIntentionalLighting: ignoreLighting,
+      mirroredHorizontally: cut.mirroredHorizontally ?? detectedMirror,
+    });
+  }
+
+  const auditReport = scanEpisodeCharacterConsistency(params.profile, enrichedCuts, params.overrides);
+  const averageAnchorScore =
+    anchorScoredCount > 0 ? Math.round((anchorScoreSum / anchorScoredCount) * 1000) / 1000 : null;
+
+  return Object.freeze({
+    auditReport,
+    perCutAnchorScores: Object.freeze(perCutAnchorScores),
+    averageAnchorScore,
   });
 }

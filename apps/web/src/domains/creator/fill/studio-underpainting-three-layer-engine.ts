@@ -12,6 +12,47 @@
  *    세로 2배 초과 컷을 256px 코사인 페더링 오버랩 타일로 분할 처리·병합해 이음매 없이 완성한다.
  */
 
+import {
+  extractCutRegionPaletteDescriptors,
+  paintCelPinShadowIntoBuffer,
+  prepareUnderpaintingLineartAndSeeds,
+  resolveCelLightPinVector,
+  type CelLightDirectionPin,
+  type CutPaletteRegionDescriptor,
+} from "./studio-cel-shading-propagation";
+import {
+  UNDERPAINTING_DEFAULT_TILE_OVERLAP_PX,
+  cropVerticalTile,
+  mergeFeatheredVerticalTiles,
+  planVerticalOverlapTiles,
+  type UnderpaintingTilePlan,
+  type UnderpaintingVerticalTile,
+} from "./studio-underpainting-tiling";
+
+export {
+  UNDERPAINTING_DEFAULT_TILE_OVERLAP_PX,
+  UNDERPAINTING_TALL_ASPECT_THRESHOLD,
+  mergeFeatheredVerticalTiles,
+  planVerticalOverlapTiles,
+  type UnderpaintingTilePlan,
+  type UnderpaintingVerticalTile,
+} from "./studio-underpainting-tiling";
+
+export {
+  extractCutRegionPaletteDescriptors,
+  generateSingleLightCelShadowMask,
+  propagatePreviousCutRegionSeeds,
+  resolveCelLightPinVector,
+} from "./studio-cel-shading-propagation";
+export type {
+  CelLightDirectionPin,
+  CelLightPinPreset,
+  CelShadowMaskResult,
+  CutPaletteRegionDescriptor,
+  PropagatedCutSeed,
+  ResolvedCelLightPin,
+} from "./studio-cel-shading-propagation";
+
 export type UnderpaintingCharacterLabel = "A" | "B" | "C" | "D" | "E" | "F";
 
 export const UNDERPAINTING_CHARACTER_LABELS: readonly UnderpaintingCharacterLabel[] =
@@ -73,6 +114,14 @@ export interface UnderpaintingColorJob {
   readonly highlightOpacity?: number;
   /** 장편 세로 컷 오버랩 픽셀 수. 기본 256. */
   readonly tileOverlapPx?: number;
+  /** 선화 틈새 닫힘 반경(0..12px) 또는 `"auto"` 자동 추정. */
+  readonly gapCloseRadiusPx?: number | "auto";
+  /** 미세 디테일 보호 면적 임계치(px²). 기본 24(`#140`). */
+  readonly protectMicroDetailAreaPx?: number;
+  /** 단일 광원 방향 핀(예: 좌상단 45°). 지정 시 윤곽 법선 기반 1차 셀 그림자 마스크를 생성한다. */
+  readonly lightPin?: CelLightDirectionPin;
+  /** 이전 컷 캐릭터 팔레트 영역 기술자 목록(현재 컷 마킹 없을 때 자동 시드 전파). */
+  readonly previousCutRegions?: readonly CutPaletteRegionDescriptor[];
 }
 
 export interface UnderpaintingOutputLayer {
@@ -84,22 +133,6 @@ export interface UnderpaintingOutputLayer {
   readonly locked: boolean;
   readonly clipping: boolean;
   readonly imageData: UnderpaintingImageLike;
-}
-
-export interface UnderpaintingVerticalTile {
-  readonly index: number;
-  readonly yStart: number;
-  readonly yEnd: number;
-  readonly height: number;
-  readonly topOverlapPx: number;
-  readonly bottomOverlapPx: number;
-}
-
-export interface UnderpaintingTilePlan {
-  readonly usedTiling: boolean;
-  readonly aspectRatio: number;
-  readonly overlapPx: number;
-  readonly tiles: readonly UnderpaintingVerticalTile[];
 }
 
 export interface UnderpaintingRunResult {
@@ -115,12 +148,11 @@ export interface UnderpaintingRunResult {
   readonly paintedPixelCount: number;
   readonly shadowPixelCount: number;
   readonly highlightPixelCount: number;
+  readonly appliedGapCloseRadiusPx?: number;
+  readonly protectedMicroDetailPixelCount?: number;
+  readonly propagatedSeedCount?: number;
+  readonly regionDescriptors?: readonly CutPaletteRegionDescriptor[];
 }
-
-/** 세로 비율 H/W > 2.0 초과 시 오버랩 타일링이 자동 활성화된다. */
-export const UNDERPAINTING_TALL_ASPECT_THRESHOLD = 2.0;
-/** 장편 컷 타일 경계 페더링 기본 오버랩(px). */
-export const UNDERPAINTING_DEFAULT_TILE_OVERLAP_PX = 256;
 
 export const DEFAULT_CHARACTER_PALETTES: Readonly<
   Record<UnderpaintingCharacterLabel, UnderpaintingCharacterPalette>
@@ -197,174 +229,11 @@ export function propagateCharacterPalettesFromFirstCut(
   return resolved;
 }
 
-/**
- * 세로 비율(H/W > 2.0) 장편 컷에 대해 오버랩 페더링 타일 분할 계획을 생성한다.
- * 기본 오버랩은 256px이며, 타일 높이가 매우 작은 경우에만 안전 상한(floor(tileHeight/2) - 1)으로 클램프한다.
- */
-export function planVerticalOverlapTiles(
-  width: number,
-  height: number,
-  requestedOverlapPx: number = UNDERPAINTING_DEFAULT_TILE_OVERLAP_PX,
-): UnderpaintingTilePlan {
-  const safeW = Math.max(1, Math.floor(width));
-  const safeH = Math.max(1, Math.floor(height));
-  const aspectRatio = safeH / safeW;
-
-  if (aspectRatio <= UNDERPAINTING_TALL_ASPECT_THRESHOLD) {
-    return {
-      usedTiling: false,
-      aspectRatio,
-      overlapPx: 0,
-      tiles: [
-        {
-          index: 0,
-          yStart: 0,
-          yEnd: safeH,
-          height: safeH,
-          topOverlapPx: 0,
-          bottomOverlapPx: 0,
-        },
-      ],
-    };
-  }
-
-  const maxTileHeight = Math.max(
-    4,
-    Math.floor(safeW * UNDERPAINTING_TALL_ASPECT_THRESHOLD),
-  );
-  const maxSafeOverlap = Math.max(1, Math.floor(maxTileHeight / 2) - 1);
-  const overlapPx = clamp(Math.floor(requestedOverlapPx), 1, maxSafeOverlap);
-  const stride = Math.max(1, maxTileHeight - overlapPx);
-
-  const tiles: UnderpaintingVerticalTile[] = [];
-  let yStart = 0;
-  let index = 0;
-
-  while (yStart < safeH) {
-    const yEnd = Math.min(safeH, yStart + maxTileHeight);
-    const isFirst = index === 0;
-    const isLast = yEnd >= safeH;
-    const prevTile = tiles[tiles.length - 1];
-    const topOverlapPx = !isFirst && prevTile ? Math.max(0, prevTile.yEnd - yStart) : 0;
-
-    tiles.push({
-      index,
-      yStart,
-      yEnd,
-      height: yEnd - yStart,
-      topOverlapPx,
-      bottomOverlapPx: 0,
-    });
-
-    if (prevTile && topOverlapPx > 0) {
-      tiles[tiles.length - 2] = {
-        ...prevTile,
-        bottomOverlapPx: topOverlapPx,
-      };
-    }
-
-    if (isLast) break;
-    yStart += stride;
-    if (safeH - yStart <= overlapPx && yStart > 0) {
-      // 마지막 잔여 조각이 오버랩보다 작으면 직전 타일 시작을 당겨 자연스럽게 끝을 맞춘다.
-      yStart = Math.max(0, safeH - maxTileHeight);
-      if (yStart <= (tiles[tiles.length - 1]?.yStart ?? -1)) break;
-    }
-    index += 1;
-  }
-
-  return {
-    usedTiling: true,
-    aspectRatio,
-    overlapPx,
-    tiles,
-  };
-}
-
-function cropVerticalTile(
-  source: UnderpaintingImageLike,
-  tile: UnderpaintingVerticalTile,
-): UnderpaintingImageLike {
-  const rowBytes = source.width * 4;
-  const startByte = tile.yStart * rowBytes;
-  const endByte = tile.yEnd * rowBytes;
-  return {
-    width: source.width,
-    height: tile.height,
-    data: new Uint8ClampedArray(source.data.subarray(startByte, endByte)),
-  };
-}
-
-/**
- * 코사인(Hann) 페더링 가중치로 오버랩 세로 타일들을 이음매 없이 단일 RGBA 버퍼로 병합한다.
- */
-export function mergeFeatheredVerticalTiles(
-  width: number,
-  height: number,
-  tilePlan: UnderpaintingTilePlan,
-  tileImages: readonly UnderpaintingImageLike[],
-): UnderpaintingImageLike {
-  const totalPixels = width * height;
-  const accumR = new Float32Array(totalPixels);
-  const accumG = new Float32Array(totalPixels);
-  const accumB = new Float32Array(totalPixels);
-  const accumA = new Float32Array(totalPixels);
-  const accumW = new Float32Array(totalPixels);
-
-  for (let tileIndex = 0; tileIndex < tilePlan.tiles.length; tileIndex += 1) {
-    const tile = tilePlan.tiles[tileIndex];
-    const image = tileImages[tileIndex];
-    if (!tile || !image) continue;
-
-    for (let localY = 0; localY < tile.height; localY += 1) {
-      let weight = 1;
-      if (tile.topOverlapPx > 0 && localY < tile.topOverlapPx) {
-        const t = (localY + 0.5) / tile.topOverlapPx;
-        weight *= 0.5 - 0.5 * Math.cos(Math.PI * t);
-      }
-      if (tile.bottomOverlapPx > 0 && localY >= tile.height - tile.bottomOverlapPx) {
-        const distFromBottom = tile.height - 1 - localY;
-        const t = (distFromBottom + 0.5) / tile.bottomOverlapPx;
-        weight *= 0.5 - 0.5 * Math.cos(Math.PI * t);
-      }
-
-      const globalY = tile.yStart + localY;
-      for (let x = 0; x < width; x += 1) {
-        const localIdx = (localY * width + x) * 4;
-        const globalPixel = globalY * width + x;
-        const alpha = (image.data[localIdx + 3] ?? 0) / 255;
-        accumR[globalPixel] = (accumR[globalPixel] ?? 0) + (image.data[localIdx] ?? 0) * alpha * weight;
-        accumG[globalPixel] =
-          (accumG[globalPixel] ?? 0) + (image.data[localIdx + 1] ?? 0) * alpha * weight;
-        accumB[globalPixel] =
-          (accumB[globalPixel] ?? 0) + (image.data[localIdx + 2] ?? 0) * alpha * weight;
-        accumA[globalPixel] = (accumA[globalPixel] ?? 0) + alpha * weight;
-        accumW[globalPixel] = (accumW[globalPixel] ?? 0) + weight;
-      }
-    }
-  }
-
-  const out = new Uint8ClampedArray(totalPixels * 4);
-  for (let pixel = 0; pixel < totalPixels; pixel += 1) {
-    const w = accumW[pixel] ?? 0;
-    if (w <= 1e-6) continue;
-    const alpha = clamp((accumA[pixel] ?? 0) / w, 0, 1);
-    if (alpha <= 1e-4) continue;
-    const off = pixel * 4;
-    const premulNorm = accumA[pixel] ?? 1;
-    out[off] = clamp(Math.round((accumR[pixel] ?? 0) / premulNorm), 0, 255);
-    out[off + 1] = clamp(Math.round((accumG[pixel] ?? 0) / premulNorm), 0, 255);
-    out[off + 2] = clamp(Math.round((accumB[pixel] ?? 0) / premulNorm), 0, 255);
-    out[off + 3] = clamp(Math.round(alpha * 255), 0, 255);
-  }
-
-  return { width, height, data: out };
-}
-
 interface TileUnderpaintingBuffers {
   readonly base: UnderpaintingImageLike;
   readonly shadow: UnderpaintingImageLike;
   readonly highlight: UnderpaintingImageLike;
+  readonly regionDescriptors: readonly CutPaletteRegionDescriptor[];
 }
 
 function paintSingleTileThreeLayers(
@@ -378,15 +247,23 @@ function paintSingleTileThreeLayers(
     readonly shadingLevel: UnderpaintingShadingLevel;
     readonly lightDirX: number;
     readonly lightDirY: number;
+    readonly precomputedBarrier?: Uint8Array | null;
+    readonly microDetailMask?: Uint8Array | null;
+    readonly lightPin?: CelLightDirectionPin;
   },
 ): TileUnderpaintingBuffers {
   const { width, height } = tileImage;
   const total = width * height;
-  const barrier = new Uint8Array(total);
+  const barrier = options.precomputedBarrier
+    ? options.precomputedBarrier.subarray(tile.yStart * width, tile.yEnd * width)
+    : new Uint8Array(total);
+  const tileMicroMask = options.microDetailMask
+    ? options.microDetailMask.subarray(tile.yStart * width, tile.yEnd * width)
+    : null;
 
-  for (let i = 0; i < total; i += 1) {
-    if (paperLuminance(tileImage.data, i) <= options.inkThreshold) {
-      barrier[i] = 1;
+  if (!options.precomputedBarrier) {
+    for (let i = 0; i < total; i += 1) {
+      if (paperLuminance(tileImage.data, i) <= options.inkThreshold) barrier[i] = 1;
     }
   }
 
@@ -506,6 +383,7 @@ function paintSingleTileThreeLayers(
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const idx = y * width + x;
+      if (tileMicroMask && tileMicroMask[idx]! > 0) continue;
       const regionId = regionMap[idx] ?? -1;
       if (regionId < 0) continue;
       const palette = regionPalette[regionId];
@@ -523,7 +401,7 @@ function paintSingleTileThreeLayers(
       const ny = ((y - (regionMinY[regionId] ?? y)) / spanY) * 2 - 1;
       const lightProjection = nx * options.lightDirX + ny * options.lightDirY;
 
-      if (includeShadow && lightProjection < -shadowThreshold) {
+      if (includeShadow && !options.lightPin && lightProjection < -shadowThreshold) {
         const depth = clamp((-lightProjection - shadowThreshold) / (1 - shadowThreshold), 0.35, 1);
         shadowData[off] = palette.shadowRgb[0];
         shadowData[off + 1] = palette.shadowRgb[1];
@@ -541,10 +419,29 @@ function paintSingleTileThreeLayers(
     }
   }
 
+  const finalShadowData =
+    includeShadow && options.lightPin
+      ? paintCelPinShadowIntoBuffer({
+          width,
+          height,
+          regionMap,
+          regionShadowRgb: regionPalette.map((p) => p?.shadowRgb ?? null),
+          pin: options.lightPin,
+          microDetailMask: tileMicroMask,
+        })
+      : shadowData;
+  const regionDescriptors = extractCutRegionPaletteDescriptors({
+    width,
+    height,
+    regionMap,
+    regionLabels: regionPalette.map((p) => p?.label ?? null),
+  });
+
   return {
     base: { width, height, data: baseData },
-    shadow: { width, height, data: shadowData },
+    shadow: { width, height, data: finalShadowData },
     highlight: { width, height, data: highlightData },
+    regionDescriptors,
   };
 }
 
@@ -635,8 +532,9 @@ export function runThreeLayerUnderpainting(
     job.tileOverlapPx ?? UNDERPAINTING_DEFAULT_TILE_OVERLAP_PX,
   );
 
-  const rawDirX = job.lightDirection?.[0] ?? -0.65;
-  const rawDirY = job.lightDirection?.[1] ?? -0.76;
+  const pinVec = job.lightPin ? resolveCelLightPinVector(job.lightPin).lightSourceVector : null;
+  const rawDirX = pinVec?.[0] ?? job.lightDirection?.[0] ?? -0.65;
+  const rawDirY = pinVec?.[1] ?? job.lightDirection?.[1] ?? -0.76;
   const dirLen = Math.hypot(rawDirX, rawDirY) || 1;
   const lightDirX = rawDirX / dirLen;
   const lightDirY = rawDirY / dirLen;
@@ -645,11 +543,29 @@ export function runThreeLayerUnderpainting(
   const cutStrokes = job.markingStrokes.filter(
     (stroke) => stroke.cutId === job.cutId || stroke.cutId === "*",
   );
-  const activeStrokes = cutStrokes.length > 0 ? cutStrokes : job.markingStrokes;
+  const manualStrokes = cutStrokes.length > 0 ? cutStrokes : job.markingStrokes;
+  const prepared = prepareUnderpaintingLineartAndSeeds({
+    lineart,
+    cutId: job.cutId,
+    inkLuminanceThreshold: inkThreshold,
+    gapCloseRadiusPx: job.gapCloseRadiusPx,
+    protectMicroDetailAreaPx: job.protectMicroDetailAreaPx,
+    previousCutRegions: job.propagateFromFirstCut ? job.previousCutRegions : undefined,
+    existingStrokes: manualStrokes,
+  });
+  const activeStrokes: readonly UnderpaintingMarkingStroke[] =
+    manualStrokes.length > 0
+      ? manualStrokes
+      : prepared.propagatedSeeds.map((s) => ({
+          cutId: s.cutId,
+          label: s.label,
+          normalizedXY: s.normalizedXY,
+        }));
 
   const baseTiles: UnderpaintingImageLike[] = [];
   const shadowTiles: UnderpaintingImageLike[] = [];
   const highlightTiles: UnderpaintingImageLike[] = [];
+  const collectedDescriptors: CutPaletteRegionDescriptor[] = [];
 
   for (const tile of tilePlan.tiles) {
     const cropped = tilePlan.usedTiling ? cropVerticalTile(lineart, tile) : lineart;
@@ -664,11 +580,15 @@ export function runThreeLayerUnderpainting(
         shadingLevel: job.shadingLevel,
         lightDirX,
         lightDirY,
+        precomputedBarrier: prepared.closedBarrier,
+        microDetailMask: prepared.microDetailMask,
+        lightPin: job.lightPin,
       },
     );
     baseTiles.push(painted.base);
     shadowTiles.push(painted.shadow);
     highlightTiles.push(painted.highlight);
+    collectedDescriptors.push(...painted.regionDescriptors);
   }
 
   const baseImage = tilePlan.usedTiling
@@ -754,5 +674,9 @@ export function runThreeLayerUnderpainting(
     paintedPixelCount: countOpaquePixels(baseImage),
     shadowPixelCount: countOpaquePixels(shadowImage),
     highlightPixelCount: countOpaquePixels(highlightImage),
+    appliedGapCloseRadiusPx: prepared.appliedGapCloseRadiusPx,
+    protectedMicroDetailPixelCount: prepared.protectedMicroDetailPixelCount,
+    propagatedSeedCount: prepared.propagatedSeeds.length,
+    regionDescriptors: Object.freeze(collectedDescriptors),
   };
 }

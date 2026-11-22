@@ -15,6 +15,7 @@ import type {
   EyeFlowRect,
   ResolvedEyeFlowFaceRegion,
   SegmentAabbIntersection,
+  SegmentIntersection,
 } from "./studio-eyeflow-types";
 
 const CANVAS_EDGE_INSET_PX = 4;
@@ -97,6 +98,47 @@ export function deriveDefaultEyeBounds(faceBounds: EyeFlowRect): EyeFlowRect {
     y: round2(faceBounds.y + faceBounds.height * 0.24),
     width: round2(faceBounds.width * 0.72),
     height: round2(faceBounds.height * 0.28),
+  };
+}
+
+/**
+ * 두 2D 선분(a1→a2, b1→b2)의 내부 교차 여부를 계산한다.
+ * 같은 화자의 입 좌표를 공유하는 끝점 접촉은 오탐을 막기 위해 `endpointMargin`(기본 0.02)만큼 제외한다.
+ */
+export function intersectSegments(
+  a1: EyeFlowPoint,
+  a2: EyeFlowPoint,
+  b1: EyeFlowPoint,
+  b2: EyeFlowPoint,
+  endpointMargin = 0.02,
+): SegmentIntersection | null {
+  if (!isFinitePoint(a1) || !isFinitePoint(a2) || !isFinitePoint(b1) || !isFinitePoint(b2)) {
+    return null;
+  }
+  const rx = a2.x - a1.x;
+  const ry = a2.y - a1.y;
+  const sx = b2.x - b1.x;
+  const sy = b2.y - b1.y;
+  const denom = rx * sy - ry * sx;
+  if (Math.abs(denom) < 1e-6) return null;
+
+  const qpx = b1.x - a1.x;
+  const qpy = b1.y - a1.y;
+  const tA = (qpx * sy - qpy * sx) / denom;
+  const tB = (qpx * ry - qpy * rx) / denom;
+  const margin = clamp(endpointMargin, 0, 0.25);
+
+  if (tA <= margin || tA >= 1 - margin || tB <= margin || tB >= 1 - margin) {
+    return null;
+  }
+
+  return {
+    point: {
+      x: round2(a1.x + tA * rx),
+      y: round2(a1.y + tA * ry),
+    },
+    tA: round2(tA),
+    tB: round2(tB),
   };
 }
 
