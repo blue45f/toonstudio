@@ -4,8 +4,10 @@ import { pointsToVectorStroke } from "./vector-stroke-path";
 import type { VectorStroke } from "./vector-layer-model";
 import {
   eraseVectorStrokes,
+  eraseVectorStrokesToIntersection,
   pointToSegmentDistance,
   replaceVectorBrushShape,
+  resolveVectorEraserHitRadius,
   scaleVectorStrokeWidths,
   segmentsIntersect,
   simplifyVectorStrokeAnchors,
@@ -304,4 +306,79 @@ describe("smoothVectorStrokeWidths & simplifyVectorStrokeAnchors", () => {
     expect(simplified.widths).toHaveLength(2);
   });
 });
+
+describe("마우스/트랙패드 pressure === 0.0 벡터 지우개 최소 반경 하한 (#015)", () => {
+  it("resolveVectorEraserHitRadius가 pressure === 0.0에서도 Math.max(computedRadius, 3 / Math.max(zoom, 0.05))를 강제한다", () => {
+    expect(resolveVectorEraserHitRadius(10, { pressure: 0, zoom: 1 })).toBeCloseTo(3, 9);
+    expect(resolveVectorEraserHitRadius(10, { pressure: 0, zoom: 2 })).toBeCloseTo(1.5, 9);
+    expect(resolveVectorEraserHitRadius(10, { pressure: 0, zoom: 0.5 })).toBeCloseTo(6, 9);
+    // zoom < 0.05 클램프: 3 / 0.05 = 60
+    expect(resolveVectorEraserHitRadius(10, { pressure: 0, zoom: 0.01 })).toBeCloseTo(60, 9);
+    expect(resolveVectorEraserHitRadius(0, { pressure: 0, zoom: 0 })).toBeCloseTo(60, 9);
+    // 정상 스타일러스 필압으로 계산 반경이 하한보다 크면 계산 반경 유지
+    expect(resolveVectorEraserHitRadius(20, { pressure: 0.5, zoom: 1 })).toBeCloseTo(10, 9);
+  });
+
+  it("마우스/트랙패드 pressure === 0.0 + width 0 입력에서도 벡터 스트로크 접촉 판정이 0px로 붕괴하지 않는다", () => {
+    const stroke = horizontalStroke("thin", 0.5); // 반경 0.25
+    // 1x 줌에서 최소 반경 하한 3px → 거리 2.8px 지점을 히트해야 한다.
+    const hitAt1x = eraseVectorStrokes(
+      [stroke],
+      [{ x: 50, y: 2.8 }],
+      0,
+      { pressure: 0, zoom: 1 },
+    );
+    expect(hitAt1x.removed.map((s) => s.id)).toEqual(["thin"]);
+
+    // 0.25x 축소 줌에서는 3 / 0.25 = 12px 하한 → 거리 10px 지점도 히트해야 한다.
+    const hitZoomedOut = eraseVectorStrokes(
+      [stroke],
+      [{ x: 50, y: 10 }],
+      0,
+      { pressure: 0, zoom: 0.25 },
+    );
+    expect(hitZoomedOut.removed.map((s) => s.id)).toEqual(["thin"]);
+
+    // 하한 범위를 크게 벗어난 위치는 오탐 없이 유지된다.
+    const missFar = eraseVectorStrokes(
+      [stroke],
+      [{ x: 50, y: 40 }],
+      0,
+      { pressure: 0, zoom: 1 },
+    );
+    expect(missFar.removed).toEqual([]);
+    expect(missFar.kept).toEqual([stroke]);
+  });
+
+  it("eraseVectorStrokesToIntersection에서도 pressure === 0.0 / radiusPx === 0 입력이 교차점까지 정상 트리밍된다", () => {
+    const horiz = pointsToVectorStroke(
+      [
+        { x: 0, y: 50, pressure: 1 },
+        { x: 100, y: 50, pressure: 1 },
+      ],
+      { baseWidth: 1, id: "h1" },
+    )!;
+    const vert = pointsToVectorStroke(
+      [
+        { x: 50, y: 0, pressure: 1 },
+        { x: 50, y: 100, pressure: 1 },
+      ],
+      { baseWidth: 1, id: "v1" },
+    )!;
+
+    // 중심선에서 2.5px 떨어진 마우스 클릭(pressure: 0, radiusPx: 0, zoom: 1 → 하한 3px 적용)
+    const result = eraseVectorStrokesToIntersection(
+      [horiz, vert],
+      { x: 80, y: 52.5, radiusPx: 0 },
+      { pressure: 0, zoom: 1 },
+    );
+
+    expect(result.erasedSpanCount).toBe(1);
+    const trimmedH = result.strokes.find((s) => s.id === "h1")!;
+    expect(trimmedH).toBeDefined();
+    expect(trimmedH.segments[trimmedH.segments.length - 1]!.p3.x).toBeCloseTo(50, 1);
+    expect(result.strokes.find((s) => s.id === "v1")).toBe(vert);
+  });
+});
+
 
