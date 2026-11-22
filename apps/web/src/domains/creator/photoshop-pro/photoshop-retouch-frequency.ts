@@ -8,6 +8,14 @@
  */
 
 import {
+  recombineImageFrequencies,
+  runCleanroomPatchMatchInpaint,
+  separateImageFrequencies,
+  type CleanroomFrequencySeparation,
+  type CleanroomPatchMatchOptions,
+  type CleanroomPatchMatchResult,
+} from "../imaging-pro/studio-patchmatch-inpaint-and-freqsep";
+import {
   blurByteMaskSeparable,
   blurRgbaSeparable,
   clamp01,
@@ -24,6 +32,8 @@ export interface FrequencySeparationResult {
   readonly radiusPx: number;
   readonly lowFrequency: Uint8ClampedArray;
   readonly highFrequency: Uint8ClampedArray;
+  /** 무손실 왕복 복원용 정밀 주파수 분리 결과(분리형 가우시안 Float32 잔차). */
+  readonly exactSeparation?: CleanroomFrequencySeparation;
 }
 
 export interface CloneStampStrokeOptions {
@@ -40,6 +50,8 @@ export interface ContentAwareFillOptions {
   readonly patchRadius?: number;
   readonly searchRadius?: number;
   readonly smoothPasses?: number;
+  readonly engine?: "edge-fill" | "patchmatch";
+  readonly patchMatchOptions?: CleanroomPatchMatchOptions;
 }
 
 export interface BezierAnchor {
@@ -86,29 +98,39 @@ export interface QuickMaskOverlayOptions {
 // 1. Frequency Separation (고주파 질감 / 저주파 톤 분리 & 재합성)
 // ---------------------------------------------------------------------------
 
-/** 원본 RGBA를 저주파(색·명암)와 고주파(질감·선화)로 분리한다 (`high = 128 + (orig - low) * 0.5`). */
+/** 원본 RGBA를 분리형 가우시안 저주파(색·명암)와 고주파(질감·선화)로 분리한다. */
 export function separateFrequencies(source: RgbaImageBuffer, radiusPx = 3): FrequencySeparationResult {
   const safeRadius = Math.max(0.5, Math.min(24, radiusPx));
-  const lowFrequency = blurRgbaSeparable(source.data, source.width, source.height, safeRadius);
-  const highFrequency = new Uint8ClampedArray(source.data.length);
-  const total = source.width * source.height;
-  for (let i = 0; i < total; i += 1) {
-    const off = i * 4;
-    for (let c = 0; c < 3; c += 1) {
-      highFrequency[off + c] = clampByte(128 + ((source.data[off + c] ?? 0) - (lowFrequency[off + c] ?? 0)) * 0.5);
-    }
-    highFrequency[off + 3] = source.data[off + 3] ?? 255;
-  }
-  return { width: source.width, height: source.height, radiusPx: safeRadius, lowFrequency, highFrequency };
+  const exactSeparation = separateImageFrequencies(source, { radiusPx: safeRadius });
+  return {
+    width: exactSeparation.width,
+    height: exactSeparation.height,
+    radiusPx: safeRadius,
+    lowFrequency: exactSeparation.lowRgba,
+    highFrequency: exactSeparation.highLinearLightRgba,
+    exactSeparation,
+  };
 }
 
-/** 저주파 톤과 고주파 질감을 Photoshop Linear Light 공식(`low + 2*(high-128)*strength`)으로 재합성한다. */
+/** 저주파 톤과 고주파 질감을 재합성한다(기본 강도 1.0 + 미변형 시 정밀 잔차로 무손실 왕복 복원). */
 export function recombineFrequencies(
   separation: FrequencySeparationResult,
   options?: { readonly textureStrength?: number; readonly lowSmoothRadiusPx?: number },
 ): RgbaImageBuffer {
   const { width, height, highFrequency } = separation;
   const textureStrength = Math.max(0, Math.min(2, options?.textureStrength ?? 1));
+  if (separation.exactSeparation) {
+    const lowOverrideRgba =
+      options?.lowSmoothRadiusPx && options.lowSmoothRadiusPx > 0.25
+        ? blurRgbaSeparable(separation.lowFrequency, width, height, options.lowSmoothRadiusPx)
+        : undefined;
+    return recombineImageFrequencies(separation.exactSeparation, {
+      highGain: textureStrength,
+      lowGain: 1,
+      mode: "exact-float",
+      lowOverrideRgba,
+    });
+  }
   const lowSource = options?.lowSmoothRadiusPx && options.lowSmoothRadiusPx > 0.25
     ? blurRgbaSeparable(separation.lowFrequency, width, height, options.lowSmoothRadiusPx)
     : separation.lowFrequency;
@@ -255,10 +277,29 @@ export function applySpotHealingBrush(
 // 3. Content-Aware Edge-Fill 클린업 (배경/잡티/말풍선 흔적 자동 메우기)
 // ---------------------------------------------------------------------------
 
-/** 마스크 영역(>=128)을 바깥 껍질부터 패치 유사도 탐색 + 가중 확산으로 자연스럽게 메운다. */
+/** Barnes et al. PatchMatch 로컬 콘텐츠 인식 채우기 진입점. */
+export function applyPatchMatchContentAwareFill(
+  source: RgbaImageBuffer,
+  mask: Uint8Array,
+  options?: CleanroomPatchMatchOptions,
+): CleanroomPatchMatchResult {
+  const binaryMask = new Uint8Array(mask.length);
+  for (let i = 0; i < mask.length; i += 1) {
+    if ((mask[i] ?? 0) >= 128) binaryMask[i] = 1;
+  }
+  return runCleanroomPatchMatchInpaint(source, binaryMask, options);
+}
+
+/** 마스크 영역(>=128)을 바깥 껍질부터 패치 유사도 탐색 + 가중 확산(또는 PatchMatch 엔진)으로 자연스럽게 메운다. */
 export function applyContentAwareFill(
   source: RgbaImageBuffer, mask: Uint8Array, options?: ContentAwareFillOptions,
 ): RgbaImageBuffer {
+  if (options?.engine === "patchmatch") {
+    return applyPatchMatchContentAwareFill(source, mask, {
+      patchRadius: options.patchRadius ?? 2,
+      ...options.patchMatchOptions,
+    }).imageData;
+  }
   const { width, height, data } = source;
   const total = width * height;
   const out = new Uint8ClampedArray(data);
