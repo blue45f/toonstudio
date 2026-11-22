@@ -21,11 +21,18 @@ import {
   type LightDirectionPreset,
   type LightSourceConfig,
 } from "../ai/studio-ai-shading-assist";
+import { SCENE_TEMPERATURE_KELVIN_RANGE } from "../color/oklch-scene-temperature-palette";
+import {
+  ambientLightingTemperatureToKelvin,
+  computeOklchTemperatureShading,
+  kelvinToAmbientLightingTemperature,
+} from "./oklch-temperature-shading-bridge";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 export interface StudioShadingAssistPanelProps {
+  readonly baseColorHex?: string;
   readonly onApplyShading?: (params: ComputedShadingParams) => void;
   readonly onGenerateShadingLayer?: (params: ComputedShadingParams) => void;
   readonly className?: string;
@@ -62,6 +69,7 @@ const AMBIENT_TEMPERATURES: readonly {
 const engine = new StudioAiShadingAssistEngine();
 
 export function StudioShadingAssistPanel({
+  baseColorHex = "#e8b498",
   onApplyShading,
   onGenerateShadingLayer,
   className,
@@ -71,6 +79,9 @@ export function StudioShadingAssistPanel({
   const [softness, setSoftness] = useState(20);
   const [temperature, setTemperature] =
     useState<AmbientLightingTemperature>("neutral-day");
+  const [sceneKelvin, setSceneKelvin] = useState<number>(
+    SCENE_TEMPERATURE_KELVIN_RANGE.defaultKelvin,
+  );
   const [enableRimLight, setEnableRimLight] = useState(true);
   const [appliedNotice, setAppliedNotice] = useState(false);
 
@@ -85,10 +96,25 @@ export function StudioShadingAssistPanel({
     [direction, intensity, softness, temperature, enableRimLight],
   );
 
-  const computed = useMemo<ComputedShadingParams>(
-    () => engine.compute(config),
-    [config],
+  const oklchShading = useMemo(
+    () =>
+      computeOklchTemperatureShading({
+        baseHex: baseColorHex,
+        kelvin: sceneKelvin,
+        intensityPercent: intensity,
+      }),
+    [baseColorHex, sceneKelvin, intensity],
   );
+
+  const computed = useMemo<ComputedShadingParams>(() => {
+    const base = engine.compute(config);
+    return {
+      ...base,
+      shadow1ColorHex: oklchShading.shadow1ColorHex,
+      shadow2ColorHex: oklchShading.shadow2ColorHex,
+      rimLightColorHex: enableRimLight ? oklchShading.rimLightColorHex : base.rimLightColorHex,
+    };
+  }, [config, oklchShading, enableRimLight]);
 
   const handleApply = () => {
     if (onApplyShading) {
@@ -170,7 +196,10 @@ export function StudioShadingAssistPanel({
               <button
                 key={temp.id}
                 type="button"
-                onClick={() => setTemperature(temp.id)}
+                onClick={() => {
+                  setTemperature(temp.id);
+                  setSceneKelvin(ambientLightingTemperatureToKelvin(temp.id));
+                }}
                 className={cn(
                   "flex flex-col items-start p-1.5 rounded border text-left transition-colors",
                   isSelected
@@ -189,8 +218,33 @@ export function StudioShadingAssistPanel({
         </div>
       </div>
 
-      {/* Sliders: Intensity & Softness */}
+      {/* Sliders: Scene Kelvin, Intensity & Softness */}
       <div className="flex flex-col gap-2 border-t border-line/60 pt-2">
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between text-[11px]">
+            <span className="text-fg-3">장면 색온도 (OKLCH 3-톤)</span>
+            <span className="font-semibold tabular-nums text-fg">{sceneKelvin}K</span>
+          </div>
+          <input
+            type="range"
+            min={SCENE_TEMPERATURE_KELVIN_RANGE.min}
+            max={SCENE_TEMPERATURE_KELVIN_RANGE.max}
+            step={SCENE_TEMPERATURE_KELVIN_RANGE.step}
+            value={sceneKelvin}
+            aria-label="장면 색온도"
+            onChange={(e) => {
+              const nextKelvin = Number(e.target.value);
+              setSceneKelvin(nextKelvin);
+              setTemperature(kelvinToAmbientLightingTemperature(nextKelvin));
+            }}
+            className="h-6 w-full cursor-pointer accent-accent"
+          />
+          <div className="flex items-center justify-between text-[10px] text-fg-3 tabular-nums">
+            <span>광원·중간·반사광 자동 이동</span>
+            <span>최소 대비 {oklchShading.contrastAudit.minWcagRatio}:1</span>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-1">
           <div className="flex justify-between text-[11px]">
             <span className="text-fg-3">명암 강도</span>

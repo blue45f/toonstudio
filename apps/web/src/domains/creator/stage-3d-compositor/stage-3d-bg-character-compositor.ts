@@ -56,8 +56,12 @@ import {
   type WebtoonCompositeFramingId,
   type WebtoonCompositeFramingPreset,
 } from "./stage-3d-compositor-catalog";
+import { buildStageLtSixPassBundle, computeStageSubjectDepthNorm, getStageAlphaCutoutMaterials, type StageAlphaCutoutMaterialSpec, type StageDepthAttenuatedSubject, type StageLtSixPassBundle } from "./stage-3d-lt-six-pass-parallax";
+import type { LtDepthAttenuationPresetId } from "../lt-convert/studio-lt-depth-attenuation";
 
 export {
+  buildStageLtSixPassBundle, computeStageSubjectDepthNorm, getStageAlphaCutoutMaterials,
+  type LtDepthAttenuationPresetId, type StageAlphaCutoutMaterialSpec, type StageDepthAttenuatedSubject, type StageLtSixPassBundle,
   COMPOSITE_BAKE_PASS_ORDER,
   DEFAULT_ENABLED_BAKE_PASSES,
   MAX_STAGE_CHARACTERS,
@@ -514,6 +518,7 @@ export interface CompositeCutLayerPlan {
   readonly enabledCount: number;
   readonly compositeSvgMarkup: string;
   readonly pngManifest: CompositeCutPngManifest;
+  readonly ltSixPassBundle: StageLtSixPassBundle;
 }
 
 export interface StageCompositeState {
@@ -528,6 +533,8 @@ export interface StageCompositeState {
   readonly crowdDensity: StageCrowdDensityId;
   readonly enabledPasses: Readonly<Record<CompositeBakePassCode, boolean>>;
   readonly lastCollisionCount: number;
+  readonly ltDepthPreset?: LtDepthAttenuationPresetId;
+  readonly alphaCutoutThreshold?: number;
 }
 
 export function projectStagePointToPreview(
@@ -613,6 +620,14 @@ export function buildCompositeCutLayerPlan(params: {
   const bodySvg = drawOrder.map((code) => (byCode.get(code)?.enabled ? byCode.get(code)?.svgFragment ?? "" : "")).join("");
   const enabledLayers = layers.filter((layer) => layer.enabled);
   const maxGroundingErrorMeters = state.characters.reduce((maxE, c) => Math.max(maxE, c.groundingErrorMeters), 0);
+  const ltSixPassBundle = buildStageLtSixPassBundle({
+    background: bg,
+    characters: state.characters.map((c) => ({ id: c.id, labelKo: c.displayNameKo, positionZ: c.positionM[2] })),
+    crowdExtras: crowdExtras.map((e) => ({ id: e.id, labelKo: e.labelKo, positionZ: e.positionM[2] })),
+    viewportPx: harmony.viewportPx,
+    presetId: state.ltDepthPreset,
+    alphaCutoutThreshold: state.alphaCutoutThreshold,
+  });
 
   return {
     backgroundId: state.backgroundId,
@@ -627,6 +642,7 @@ export function buildCompositeCutLayerPlan(params: {
       inkPx: harmony.inkContract.inkPx, groundingVerified: maxGroundingErrorMeters === 0,
       maxGroundingErrorMeters, passFiles: enabledLayers.map((l) => l.fileName),
     },
+    ltSixPassBundle,
   };
 }
 

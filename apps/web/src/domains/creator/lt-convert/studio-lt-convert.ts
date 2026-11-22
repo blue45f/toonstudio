@@ -19,6 +19,72 @@
  * hidden-line 제거 가속(향후 과제)으로만 의미가 있다.
  */
 
+import {
+  LT_ALPHA_CUTOUT_THRESHOLD_RANGE,
+  LT_DEPTH_ATTENUATION_PRESETS,
+  LT_DEPTH_PRESET_LIST,
+  LT_DEPTH_STANDARD_WIDTHS_PX,
+  classifyLtDepthBand,
+  computeDepthAttenuatedLineWidthPx,
+  normalizeAlphaCutoutThreshold,
+  normalizeCameraDepthValue,
+  normalizeLtDepthPresetId,
+  renderDepthAttenuatedLineBuffer,
+  separateAlphaCutoutMaskPass,
+  type AlphaCutoutMaskSeparationOptions,
+  type AlphaCutoutMaskSeparationResult,
+  type LtDepthAttenuationPreset,
+  type LtDepthAttenuationPresetId,
+  type LtDepthAttenuationReport,
+  type LtDepthBandId,
+} from "./studio-lt-depth-attenuation";
+import {
+  LT_SIX_PASS_ORDER,
+  buildLtSixPassLayerGroup,
+  evaluateSixPassParallaxOffset,
+  type LtSixPassCode,
+  type LtSixPassId,
+  type SixPassLtLayerEntry,
+  type SixPassLtLayerGroup,
+  type SixPassParallaxBandBinding,
+  type SixPassParallaxBandOffset,
+  type SixPassParallaxBindingContract,
+  type SixPassParallaxCameraInput,
+  type SixPassParallaxEvaluation,
+} from "./studio-lt-six-pass-parallax";
+
+export {
+  LT_ALPHA_CUTOUT_THRESHOLD_RANGE,
+  LT_DEPTH_ATTENUATION_PRESETS,
+  LT_DEPTH_PRESET_LIST,
+  LT_DEPTH_STANDARD_WIDTHS_PX,
+  LT_SIX_PASS_ORDER,
+  buildLtSixPassLayerGroup,
+  classifyLtDepthBand,
+  computeDepthAttenuatedLineWidthPx,
+  evaluateSixPassParallaxOffset,
+  normalizeAlphaCutoutThreshold,
+  normalizeCameraDepthValue,
+  normalizeLtDepthPresetId,
+  renderDepthAttenuatedLineBuffer,
+  separateAlphaCutoutMaskPass,
+  type AlphaCutoutMaskSeparationOptions,
+  type AlphaCutoutMaskSeparationResult,
+  type LtDepthAttenuationPreset,
+  type LtDepthAttenuationPresetId,
+  type LtDepthAttenuationReport,
+  type LtDepthBandId,
+  type SixPassLtLayerEntry,
+  type SixPassLtLayerGroup,
+  type SixPassParallaxBandBinding,
+  type SixPassParallaxBandOffset,
+  type SixPassParallaxBindingContract,
+  type SixPassParallaxCameraInput,
+  type SixPassParallaxEvaluation,
+  type LtSixPassCode,
+  type LtSixPassId,
+};
+
 export const STUDIO_LT_CONVERT_MAX_PIXELS = 16_000_000 as const;
 
 /** 톤 농도(포스터라이즈 단계 수) 허용 범위. */
@@ -83,6 +149,20 @@ export interface StudioLtConvertOptions {
   readonly extractBlackFill?: boolean;
   /** 먹베타 추출 휘도 임계값 (0~0.5, 기본값 0.15). */
   readonly blackFillThreshold?: number;
+  /** Z-Depth 깊이 감쇠 선화(근경 1.8px · 중경 1.1px · 원경 0.5px) 활성화 여부. */
+  readonly enableDepthAttenuation?: boolean;
+  /** Z-Depth 프리셋(`character-focus` 인물 집중 / `architecture-emphasis` 건축 강조). */
+  readonly depthPreset?: LtDepthAttenuationPresetId;
+  /** 선택적 카메라 Z-Depth 버퍼(Float32 0..1 또는 Uint8 0..255, width*height). */
+  readonly depthBuffer?: Float32Array | Uint8Array;
+  /** 선택적 표면 노멀 버퍼(RGBA8, width*height*4). */
+  readonly normalBuffer?: Uint8Array | Uint8ClampedArray;
+  /** 유리/철망 알파 컷아웃 마스크 패스 분리 활성화 여부. */
+  readonly separateAlphaCutoutMask?: boolean;
+  /** 알파 컷아웃(Alpha-Test) 임계값 (0.05~0.95, 기본 0.5). */
+  readonly alphaCutoutThreshold?: number;
+  /** 픽셀별 알파 컷아웃 머티리얼 마스크(1=유리/철망, 0=일반). */
+  readonly alphaCutoutMaterialMask?: Uint8Array;
 }
 
 export interface NormalizedStudioLtConvertOptions {
@@ -93,6 +173,10 @@ export interface NormalizedStudioLtConvertOptions {
   readonly edgeThinning: boolean;
   readonly extractBlackFill: boolean;
   readonly blackFillThreshold: number;
+  readonly enableDepthAttenuation: boolean;
+  readonly depthPreset: LtDepthAttenuationPresetId;
+  readonly separateAlphaCutoutMask: boolean;
+  readonly alphaCutoutThreshold: number;
 }
 
 export interface StudioLtConvertResult {
@@ -100,6 +184,21 @@ export interface StudioLtConvertResult {
   readonly lineLayer: ImageData;
   /** 양자화된 명암 톤 (screentone 여부에 따라 회색조/도트). */
   readonly toneLayer: ImageData;
+  /** 알파 컷아웃(유리/철망) 노멀 보호 마스크 패스 (활성화 시 제공). */
+  readonly alphaCutoutMaskLayer?: ImageData;
+  /** Z-Depth 깊이 감쇠 및 알파 컷아웃 억제 리포트 (활성화 시 제공). */
+  readonly depthAttenuationReport?: LtDepthAttenuationReport;
+  /** 6패스(선화·음영·원색·깊이·노멀·마스크) 자동 그룹화 및 시차 바인딩 계약. */
+  readonly sixPassGroup?: SixPassLtLayerGroup;
+}
+
+export interface StudioLtSixPassResult extends StudioLtConvertResult {
+  readonly albedoLayer: ImageData;
+  readonly depthLayer: ImageData;
+  readonly normalLayer: ImageData;
+  readonly maskLayer: ImageData;
+  readonly sixPassGroup: SixPassLtLayerGroup;
+  readonly depthAttenuationReport: LtDepthAttenuationReport;
 }
 
 /**
@@ -170,6 +269,11 @@ export function normalizeStudioLtConvertOptions(
       STUDIO_LT_CONVERT_BLACK_FILL_THRESHOLD_RANGE.max,
       STUDIO_LT_CONVERT_DEFAULT_OPTIONS.blackFillThreshold,
     ),
+    enableDepthAttenuation: options.enableDepthAttenuation === true || options.depthBuffer !== undefined,
+    depthPreset: normalizeLtDepthPresetId(options.depthPreset),
+    separateAlphaCutoutMask:
+      options.separateAlphaCutoutMask === true || options.alphaCutoutMaterialMask !== undefined,
+    alphaCutoutThreshold: normalizeAlphaCutoutThreshold(options.alphaCutoutThreshold),
   };
 }
 
@@ -418,22 +522,87 @@ export function convertStudioLtImage(
   }
 
   const blurred = gaussianBlur3x3(luminance, width, height);
-  const lineMask = buildLineMask(
-    blurred,
-    width,
-    height,
-    normalized.lineThreshold,
-    normalized.lineThickness,
-    normalized.edgeThinning,
-  );
+  const useDepthOrCutout =
+    normalized.enableDepthAttenuation
+    || normalized.separateAlphaCutoutMask
+    || options.normalBuffer !== undefined;
 
-  const blackFillLumaMax = normalized.blackFillThreshold * 255;
-  const lineData = new Uint8ClampedArray(pixels * 4);
-  for (let index = 0; index < pixels; index += 1) {
-    const isBlackFill =
-      normalized.extractBlackFill && (luminance[index] ?? 255) <= blackFillLumaMax;
-    if (lineMask[index] === 1 || isBlackFill) {
-      lineData[index * 4 + 3] = sourceData[index * 4 + 3] ?? 255;
+  let lineData: Uint8ClampedArray<ArrayBuffer>;
+  let alphaCutoutMaskLayer: ImageData | undefined;
+  let depthAttenuationReport: LtDepthAttenuationReport | undefined;
+  let sixPassGroup: SixPassLtLayerGroup | undefined;
+
+  if (useDepthOrCutout) {
+    const baseThinMask = buildLineMask(
+      blurred,
+      width,
+      height,
+      normalized.lineThreshold,
+      1,
+      normalized.edgeThinning,
+    );
+    const preset = LT_DEPTH_ATTENUATION_PRESETS[normalized.depthPreset];
+    const alphaCutout = normalized.separateAlphaCutoutMask
+      ? separateAlphaCutoutMaskPass(sourceData, width, height, {
+          alphaThreshold: normalized.alphaCutoutThreshold,
+          materialMask: options.alphaCutoutMaterialMask,
+          normalBuffer: options.normalBuffer,
+          normalAngleThresholdDeg: preset.normalCreaseThresholdDeg,
+        })
+      : null;
+
+    const kernelResult = renderDepthAttenuatedLineBuffer({
+      baseEdgeMask: baseThinMask,
+      width,
+      height,
+      depthBuffer: options.depthBuffer,
+      normalBuffer: options.normalBuffer,
+      sourceRgba: sourceData,
+      presetId: normalized.depthPreset,
+      alphaCutout,
+    });
+    lineData = kernelResult.lineRgba;
+    depthAttenuationReport = kernelResult.report;
+    if (alphaCutout) {
+      alphaCutoutMaskLayer = new ImageData(alphaCutout.maskRgba, width, height);
+    }
+    sixPassGroup = buildLtSixPassLayerGroup({
+      presetId: normalized.depthPreset,
+      width,
+      height,
+      alphaCutoutSeparated: alphaCutout !== null,
+      alphaCutoutThreshold: normalized.alphaCutoutThreshold,
+    });
+
+    const blackFillLumaMax = normalized.blackFillThreshold * 255;
+    if (normalized.extractBlackFill) {
+      for (let index = 0; index < pixels; index += 1) {
+        if ((luminance[index] ?? 255) <= blackFillLumaMax) {
+          lineData[index * 4 + 3] = Math.max(
+            lineData[index * 4 + 3] ?? 0,
+            sourceData[index * 4 + 3] ?? 255,
+          );
+        }
+      }
+    }
+  } else {
+    const lineMask = buildLineMask(
+      blurred,
+      width,
+      height,
+      normalized.lineThreshold,
+      normalized.lineThickness,
+      normalized.edgeThinning,
+    );
+
+    const blackFillLumaMax = normalized.blackFillThreshold * 255;
+    lineData = new Uint8ClampedArray(pixels * 4);
+    for (let index = 0; index < pixels; index += 1) {
+      const isBlackFill =
+        normalized.extractBlackFill && (luminance[index] ?? 255) <= blackFillLumaMax;
+      if (lineMask[index] === 1 || isBlackFill) {
+        lineData[index * 4 + 3] = sourceData[index * 4 + 3] ?? 255;
+      }
     }
   }
   const lineLayer = new ImageData(lineData, width, height);
@@ -464,5 +633,89 @@ export function convertStudioLtImage(
   }
   const toneLayer = new ImageData(toneData, width, height);
 
-  return { lineLayer, toneLayer };
+  return {
+    lineLayer,
+    toneLayer,
+    ...(alphaCutoutMaskLayer ? { alphaCutoutMaskLayer } : {}),
+    ...(depthAttenuationReport ? { depthAttenuationReport } : {}),
+    ...(sixPassGroup ? { sixPassGroup } : {}),
+  };
+}
+
+/**
+ * 6패스(선화·음영·원색·깊이·노멀·마스크) 분리 ImageData 번들과 자동 그룹화/시차 계약을 일괄 생성한다.
+ */
+export function convertStudioLtSixPass(
+  source: StudioLtConvertPixelSource,
+  options: StudioLtConvertOptions,
+): StudioLtSixPassResult {
+  const { width, height, pixels } = validateSource(source);
+  const converted = convertStudioLtImage(source, {
+    ...options,
+    enableDepthAttenuation: true,
+    separateAlphaCutoutMask: true,
+  });
+
+  const albedoData = new Uint8ClampedArray(pixels * 4);
+  const depthData = new Uint8ClampedArray(pixels * 4);
+  const normalData = new Uint8ClampedArray(pixels * 4);
+  const isUint8Depth = options.depthBuffer instanceof Uint8Array;
+
+  for (let i = 0; i < pixels; i += 1) {
+    const o = i * 4;
+    albedoData[o] = source.data[o] ?? 0;
+    albedoData[o + 1] = source.data[o + 1] ?? 0;
+    albedoData[o + 2] = source.data[o + 2] ?? 0;
+    albedoData[o + 3] = source.data[o + 3] ?? 255;
+
+    const zNorm = options.depthBuffer && options.depthBuffer.length >= pixels
+      ? normalizeCameraDepthValue(options.depthBuffer[i] ?? 0.5, { isUint8: isUint8Depth })
+      : 0.5;
+    const zByte = Math.round(zNorm * 255);
+    depthData[o] = zByte;
+    depthData[o + 1] = zByte;
+    depthData[o + 2] = zByte;
+    depthData[o + 3] = 255;
+
+    if (options.normalBuffer && options.normalBuffer.length >= pixels * 4) {
+      normalData[o] = options.normalBuffer[o] ?? 128;
+      normalData[o + 1] = options.normalBuffer[o + 1] ?? 128;
+      normalData[o + 2] = options.normalBuffer[o + 2] ?? 255;
+      normalData[o + 3] = 255;
+    } else {
+      normalData[o] = 128;
+      normalData[o + 1] = 128;
+      normalData[o + 2] = 255;
+      normalData[o + 3] = 255;
+    }
+  }
+
+  const maskLayer = converted.alphaCutoutMaskLayer
+    ?? new ImageData(new Uint8ClampedArray(pixels * 4).fill(255), width, height);
+
+  return {
+    ...converted,
+    albedoLayer: new ImageData(albedoData, width, height),
+    depthLayer: new ImageData(depthData, width, height),
+    normalLayer: new ImageData(normalData, width, height),
+    maskLayer,
+    sixPassGroup: converted.sixPassGroup ?? buildLtSixPassLayerGroup({
+      presetId: normalizeLtDepthPresetId(options.depthPreset),
+      width,
+      height,
+      alphaCutoutSeparated: true,
+      alphaCutoutThreshold: normalizeAlphaCutoutThreshold(options.alphaCutoutThreshold),
+    }),
+    depthAttenuationReport: converted.depthAttenuationReport ?? {
+      presetId: normalizeLtDepthPresetId(options.depthPreset),
+      presetLabelKo: LT_DEPTH_ATTENUATION_PRESETS[normalizeLtDepthPresetId(options.depthPreset)].labelKo,
+      targetWidthsPx: { near: 1.8, mid: 1.1, far: 0.5 },
+      bandEdgeCounts: { foreground: 0, midground: 0, background: 0 },
+      meanEffectiveWidthPxByBand: { foreground: 0, midground: 0, background: 0 },
+      alphaCutoutSeparated: true,
+      alphaCutoutThreshold: normalizeAlphaCutoutThreshold(options.alphaCutoutThreshold),
+      suppressedNormalArtifactCount: 0,
+      cutoutContourEdgeCount: 0,
+    },
+  };
 }

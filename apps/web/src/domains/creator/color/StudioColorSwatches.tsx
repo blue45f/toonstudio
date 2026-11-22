@@ -1,28 +1,41 @@
 import { Check } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useT } from "@/shared/lib/i18n";
 
 import "../studio-brush-canvas-status-i18n";
+import {
+  auditPaletteLuminanceContrast,
+  simulateColorVisionHex,
+  type ColorVisionSoftProofMode,
+} from "./oklch-colorblind-softproof";
 
 /** One Tab stop per color set. Arrow navigation never applies a color. */
-export function StudioColorSwatches({ title, colors, value, onChoose }: {
+export function StudioColorSwatches({ title, colors, value, onChoose, softProofMode = "none", showContrastAudit = false }: {
   readonly title: string;
   readonly colors: readonly string[];
   readonly value: string;
   readonly onChoose: (color: string) => void;
+  readonly softProofMode?: ColorVisionSoftProofMode;
+  readonly showContrastAudit?: boolean;
 }) {
   const t = useT();
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const [focused, setFocused] = useState<string | null>(null);
   const entry = focused && colors.includes(focused) ? focused : colors.includes(value) ? value : colors[0];
+  const contrastAudit = useMemo(
+    () => (showContrastAudit && colors.length >= 2 ? auditPaletteLuminanceContrast(colors) : null),
+    [showContrastAudit, colors],
+  );
   return <section className="space-y-2" aria-label={title}>
     <h4 className="text-xs font-semibold text-fg-2">{title}</h4>
     {colors.length ? <>
       <p id={id} className="sr-only">방향키로 이동하고 Enter 또는 Space로 선택하세요. Home과 End로 처음과 마지막 색에 이동합니다.</p>
       <div ref={root} className="grid grid-cols-[repeat(auto-fill,minmax(36px,1fr))] gap-1.5 pointer-coarse:grid-cols-[repeat(auto-fill,minmax(44px,1fr))]"
         role="group" aria-label={`${title} 목록`} aria-describedby={id}>
-        {colors.map((color, index) => <button key={color} type="button" aria-label={`${title} ${color} 적용`}
+        {colors.map((color, index) => {
+          const displayColor = softProofMode === "none" ? color : simulateColorVisionHex(color, softProofMode);
+          return <button key={color} type="button" aria-label={`${title} ${color} 적용`}
           aria-pressed={color === value} tabIndex={color === entry ? 0 : -1}
           onFocus={() => setFocused(color)} onClick={() => onChoose(color)}
           onKeyDown={(event) => {
@@ -41,10 +54,15 @@ export function StudioColorSwatches({ title, colors, value, onChoose }: {
             buttons[next]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
           }}
           className="relative min-h-9 min-w-0 rounded-md border border-line-strong focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
-          style={{ background: color }}>
+          style={{ background: displayColor }}>
           {color === value ? <Check size={16} aria-hidden className="mx-auto text-white [filter:drop-shadow(0_1px_1px_black)]" /> : null}
-        </button>)}
+        </button>;
+        })}
       </div>
+      {contrastAudit ? <p className="text-[11px] leading-snug text-fg-2 tabular-nums" role="status">
+        명도 대비 최소 {contrastAudit.minWcagRatio}:1 · ΔL {contrastAudit.minOklchDeltaL}
+        {contrastAudit.warningKo ? ` — ${contrastAudit.warningKo}` : " · 색약 3종 변별 양호"}
+      </p> : null}
     </> : <p className="text-xs leading-relaxed text-fg-2">{title === "최근 선택 색" ? t("studio.brushCanvasStatus.color.swatchesRecentEmpty", "확정한 색상이 없습니다. 색을 적용하면 이곳에 쌓입니다.") : t("studio.brushCanvasStatus.color.swatchesAuthoredEmpty", "이 원고에 지정된 색상이 없습니다. 이미지의 색상 추출 결과는 별도로 표시됩니다.")}</p>}
   </section>;
 }

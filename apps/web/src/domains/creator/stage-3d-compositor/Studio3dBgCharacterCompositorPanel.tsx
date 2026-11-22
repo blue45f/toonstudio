@@ -25,12 +25,14 @@ import {
   updateStageCharacterSlot,
   type CompositeBakePassCode,
   type CompositeCutLayerPlan,
+  type LtDepthAttenuationPresetId,
   type StageAspectRatioId,
   type StageBackgroundSlotId,
   type StageCompositeState,
   type StageCrowdDensityId,
   type StageTimeOfDayId,
 } from "./stage-3d-bg-character-compositor";
+import { LT_DEPTH_PRESET_LIST } from "../lt-convert/studio-lt-depth-attenuation";
 
 export interface Studio3dBgCharacterCompositorPanelProps {
   readonly initialBackgroundId?: StageBackgroundSlotId;
@@ -628,6 +630,35 @@ export function Studio3dBgCharacterCompositorPanel({
               </label>
             ))}
           </fieldset>
+
+          {/* Z-Depth 깊이 감쇠 LT 프리셋 · 6패스 자동 그룹 & 알파 컷아웃 마스크 보호 */}
+          <div className="flex flex-col gap-2 border-t border-line pt-2.5">
+            <strong className="text-xs font-semibold [word-break:keep-all]">
+              Z-Depth 깊이 감쇠 LT (근경 1.8px · 중경 1.1px · 원경 0.5px)
+            </strong>
+            <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Z-Depth LT 프리셋 선택">
+              {LT_DEPTH_PRESET_LIST.map((preset) => {
+                const active = (state.ltDepthPreset ?? "character-focus") === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    aria-pressed={active}
+                    className={pillClass(active)}
+                    onClick={() =>
+                      setState((prev) => ({ ...prev, ltDepthPreset: preset.id as LtDepthAttenuationPresetId }))
+                    }
+                  >
+                    {preset.labelKo}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-fg-2 tabular-nums [word-break:keep-all]">
+              6패스 자동 그룹({bakePlan.ltSixPassBundle.group.passes.map((p) => p.labelKo.split(" ")[0]).join("·")}) · 유리/철망 알파 컷아웃 노멀 분리{" "}
+              {bakePlan.ltSixPassBundle.alphaCutoutMaterials.length}종 보호
+            </p>
+          </div>
 
           {/* 자동 3D 군중 엑스트라 밀도 */}
           <div className="flex flex-col gap-1.5">
