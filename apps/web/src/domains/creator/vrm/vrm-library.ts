@@ -1,3 +1,4 @@
+import { STUDIO_3D_LOCAL_WASM64_MAX_BYTES, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { QUATERNIUS_FANTASY_VRMS } from "./quaternius-fantasy-catalog";
 import { QUATERNIUS_MODULAR_VRMS } from "./quaternius-modular-catalog";
 import { STUDIO_VRM_HERO_V1_SAMPLES } from "./studio-vrm-hero-v1-catalog-entries";
@@ -31,10 +32,9 @@ const GLB_JSON_CHUNK_TYPE = 0x4e4f534a;
 const MAX_VRM_JSON_CHUNK_BYTES = 8 * 1024 * 1024;
 
 /**
- * 업로드 한 건을 검증·해시할 때 브라우저 메모리에 파일 전체가 한 번 올라간다.
- * 현재 번들 중 가장 큰 모델(약 20 MB)에 충분한 여유를 두되, 무제한 Blob 할당은 막는다.
+ * 로컬 VRM 업로드 절대 상한(1 GiB). 실제 허용 크기는 Wasm64·기기 메모리 정책에 따라 동적으로 조정된다.
  */
-export const MAX_VRM_UPLOAD_BYTES = 128 * 1024 * 1024;
+export const MAX_VRM_UPLOAD_BYTES = STUDIO_3D_LOCAL_WASM64_MAX_BYTES;
 export const VRM_VALIDATION_VERSION = 1;
 export const VRM_LIBRARY_THUMBNAIL_WINDOW_MAX_ITEMS = 12;
 export const VRM_LIBRARY_THUMBNAIL_WINDOW_MAX_BYTES = 24 * 1024 * 1024;
@@ -465,8 +465,9 @@ export function inspectVrmGlbBytes(input: ArrayBuffer | Uint8Array): InspectedVr
   if (bytes.byteLength < GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES) {
     throw new VrmLibraryError("glb-too-short");
   }
-  if (bytes.byteLength > MAX_VRM_UPLOAD_BYTES) {
-    throw new VrmLibraryError("glb-too-large", { sizeMb: String(MAX_VRM_UPLOAD_BYTES / (1024 * 1024)) });
+  const maxVrmBytes = Math.min(MAX_VRM_UPLOAD_BYTES, resolveStudio3dUploadLimitPolicy().maxLocalVrmBytes);
+  if (bytes.byteLength > maxVrmBytes) {
+    throw new VrmLibraryError("glb-too-large", { sizeMb: String(Math.round(maxVrmBytes / (1024 * 1024))) });
   }
 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -650,8 +651,9 @@ function assertSafeVrmBlobSize(blob: Pick<Blob, "size">) {
   if (!Number.isSafeInteger(blob.size) || blob.size <= 0) {
     throw new VrmLibraryError("blob-size-invalid");
   }
-  if (blob.size > MAX_VRM_UPLOAD_BYTES) {
-    throw new VrmLibraryError("glb-too-large", { sizeMb: String(MAX_VRM_UPLOAD_BYTES / (1024 * 1024)) });
+  const maxVrmBytes = Math.min(MAX_VRM_UPLOAD_BYTES, resolveStudio3dUploadLimitPolicy().maxLocalVrmBytes);
+  if (blob.size > maxVrmBytes) {
+    throw new VrmLibraryError("glb-too-large", { sizeMb: String(Math.round(maxVrmBytes / (1024 * 1024))) });
   }
 }
 

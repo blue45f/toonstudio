@@ -2,7 +2,11 @@
 import { STUDIO_EDITABLE_MESH_LIMITS } from "../../studio-editable-half-edge-mesh";
 
 import { reject } from "./studio-hybrid-dcc-native-glb-data";
-import { estimateStudioNativeImportAssetBytes, STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES } from "./studio-hybrid-dcc-native-import-contracts";
+import {
+  STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES,
+  estimateStudioNativeImportAssetBytes,
+  formatStudioNativeImportFileLimit,
+} from "./studio-hybrid-dcc-native-import-contracts";
 
 const MAX_PRIMITIVE_SCAN_WORK = 16_000_000;
 
@@ -27,7 +31,10 @@ export function admitNativeGlbOutputWork(previousBytes: number, vertices: number
   const bytes = estimateStudioNativeImportAssetBytes(vertices, corners, corners / 3, hasUv);
   const total = previousBytes + bytes;
   if (!Number.isSafeInteger(previousBytes) || previousBytes < 0 || !Number.isSafeInteger(total) || total > STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES) {
-    reject("OUTPUT_WORK_BUDGET", "장면의 예상 메시 생성 작업이 256 MiB 예산을 넘었습니다.");
+    reject(
+      "OUTPUT_WORK_BUDGET",
+      `장면의 예상 메시 생성 작업이 ${formatStudioNativeImportFileLimit(STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES)} 예산을 넘었습니다.`,
+    );
   }
   return total;
 }

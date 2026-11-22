@@ -6,15 +6,13 @@
  */
 
 import {
-  isAttestedStudioBg3dKtx2TranscoderCapability,
-  type StudioBg3dKtx2TranscoderCapability,
-} from "./studio-bg3d-ktx2-transcoder-capability";
-import {
-  inspectStudioBg3dBasisKtx2,
-  type StudioBg3dBasisKtx2Info,
-} from "./studio-bg3d-ktx2-validation";
+  STUDIO_3D_LOCAL_CONSTRAINED_MAX_BYTES,
+  STUDIO_3D_LOCAL_WASM64_MAX_BYTES,
+} from "../import-safety/studio-3d-upload-limit-policy";
+import { isAttestedStudioBg3dKtx2TranscoderCapability, type StudioBg3dKtx2TranscoderCapability } from "./studio-bg3d-ktx2-transcoder-capability";
+import { inspectStudioBg3dBasisKtx2, type StudioBg3dBasisKtx2Info } from "./studio-bg3d-ktx2-validation";
 
-export const STUDIO_BG3D_GLB_MAX_BYTES = 100 * 1024 * 1024;
+export const STUDIO_BG3D_GLB_MAX_BYTES = STUDIO_3D_LOCAL_WASM64_MAX_BYTES;
 export const STUDIO_BG3D_GLB_MAX_JSON_BYTES = 4 * 1024 * 1024;
 export const STUDIO_BG3D_GLB_MIME_TYPE = "model/gltf-binary" as const;
 
@@ -88,7 +86,7 @@ export const DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES: StudioBg3dGlbBudgetProfile
   Object.freeze({
     mobile: Object.freeze({
       complexity: Object.freeze({
-        maxModelBytes: 64 * 1024 * 1024,
+        maxModelBytes: STUDIO_3D_LOCAL_CONSTRAINED_MAX_BYTES,
         maxNodes: 256,
         maxTriangles: 500_000,
         maxDrawCalls: 256,
@@ -102,7 +100,7 @@ export const DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES: StudioBg3dGlbBudgetProfile
         maxJoints: 1_024,
         maxMorphTargets: 128,
         maxAccessorElements: 20_000_000,
-        maxDecodedGeometryBytes: 128 * 1024 * 1024,
+        maxDecodedGeometryBytes: 256 * 1024 * 1024,
       }),
       textures: Object.freeze({
         maxTextures: 64,
@@ -126,7 +124,7 @@ export const DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES: StudioBg3dGlbBudgetProfile
         maxJoints: 4_096,
         maxMorphTargets: 512,
         maxAccessorElements: 80_000_000,
-        maxDecodedGeometryBytes: 512 * 1024 * 1024,
+        maxDecodedGeometryBytes: 1536 * 1024 * 1024,
       }),
       textures: Object.freeze({
         maxTextures: 256,

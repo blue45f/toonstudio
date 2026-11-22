@@ -8,6 +8,7 @@ import {
   type StudioBg3dObjWorkerLike,
 } from "./studio-bg3d-obj-worker-client";
 import {
+  STUDIO_BG3D_OBJ_WORKER_MAX_OBJ_BYTES,
   STUDIO_BG3D_OBJ_WORKER_PROTOCOL_VERSION,
   type StudioBg3dObjWorkerCanonicalResult,
   type StudioBg3dObjWorkerRequest,
@@ -267,8 +268,8 @@ describe("StudioBg3dObjWorkerClient", () => {
     const halfBudget = STUDIO_BG3D_OBJ_WORKER_MAX_OWNED_INPUT_BYTES / 2;
     let largeSequence = 0;
     const large = () => input(`large-${largeSequence += 1}`, {
-      objBytes: 32 * 1024 * 1024,
-      mtlBytes: halfBudget - 32 * 1024 * 1024,
+      objBytes: Math.min(halfBudget, STUDIO_BG3D_OBJ_WORKER_MAX_OBJ_BYTES),
+      mtlBytes: Math.max(0, halfBudget - STUDIO_BG3D_OBJ_WORKER_MAX_OBJ_BYTES),
     });
     const first = byteClient.parse(large()).catch((error: unknown) => error);
     const second = byteClient.parse(large()).catch((error: unknown) => error);

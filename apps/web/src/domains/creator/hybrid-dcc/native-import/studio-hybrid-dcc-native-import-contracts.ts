@@ -1,13 +1,32 @@
 /** 설치 없는 모델 가져오기의 정본 입력 계약. 보고서만 생성한 결과를 편집 성공으로 보지 않는다. */
+import {
+  STUDIO_3D_LOCAL_WASM64_MAX_BYTES,
+  formatStudio3dByteLimit,
+  resolveStudio3dUploadLimitPolicy,
+  type Studio3dRuntimeCapabilitySignals,
+} from "../../import-safety/studio-3d-upload-limit-policy";
 import type { StudioEditableMesh } from "../../studio-editable-half-edge-mesh";
 import type { StudioHybridDccObjectTransform } from "../studio-hybrid-dcc-object-transform";
 import type { StudioHybridDccToonMaterial } from "../materials/studio-hybrid-dcc-toon-material";
 
-export const STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES = 128 * 1024 * 1024;
+export const STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES = STUDIO_3D_LOCAL_WASM64_MAX_BYTES;
 export const STUDIO_NATIVE_IMPORT_MAX_JSON_BYTES = 16 * 1024 * 1024;
 export const STUDIO_NATIVE_IMPORT_MAX_ASSETS = 256;
 /** 입력 파일과 별도로, 정본·임시 배열 생성을 허용할 보수적 작업량 추정 상한이다. 실제 메모리 측정값은 아니다. */
-export const STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES = 256 * 1024 * 1024;
+export const STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES = 1024 * 1024 * 1024;
+
+export function resolveStudioNativeImportMaxFileBytes(
+  runtimeSignals?: Studio3dRuntimeCapabilitySignals,
+): number {
+  return Math.min(
+    STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES,
+    resolveStudio3dUploadLimitPolicy(runtimeSignals).maxLocalModelBytes,
+  );
+}
+
+export function formatStudioNativeImportFileLimit(bytes: number): string {
+  return formatStudio3dByteLimit(bytes);
+}
 
 export function estimateStudioNativeImportAssetBytes(vertices: number, corners: number, faces: number, hasUv: boolean): number {
   if ([vertices, corners, faces].some((count) => !Number.isSafeInteger(count) || count < 0)) return Infinity;

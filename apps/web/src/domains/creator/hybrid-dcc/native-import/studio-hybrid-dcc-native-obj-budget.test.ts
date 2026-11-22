@@ -25,8 +25,8 @@ describe("OBJ 개별 메시와 파일 작업 예산", () => {
     expect(estimateStudioNativeObjPartBytes(STUDIO_EDITABLE_MESH_LIMITS.maxVertices + 1, 3, 1, false)).toBe(Infinity);
     expect(estimateStudioNativeObjPartBytes(3, STUDIO_EDITABLE_MESH_LIMITS.maxEdges + 1, 1, false)).toBe(Infinity);
     expect(estimateStudioNativeObjPartBytes(3, 3, STUDIO_EDITABLE_MESH_LIMITS.maxFaces + 1, false)).toBe(Infinity);
-    expect(estimateStudioNativeObjWorkingBytes({ ...empty, sourceVertices: 3_000_000 })).toBeGreaterThan(STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES);
-    expect(estimateStudioNativeObjWorkingBytes({ ...empty, textCharacters: 128 * 1024 * 1024 })).toBeGreaterThan(STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES);
+    expect(estimateStudioNativeObjWorkingBytes({ ...empty, sourceVertices: 12_000_000 })).toBeGreaterThan(STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES);
+    expect(estimateStudioNativeObjWorkingBytes({ ...empty, textCharacters: 512 * 1024 * 1024 })).toBeGreaterThan(STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES);
     expect(estimateStudioNativeObjWorkingBytes({ ...empty, assetBytes: -1 })).toBe(Infinity);
   });
 

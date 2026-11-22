@@ -1,5 +1,9 @@
 /** 외부 리소스를 읽지 않는 glTF 컨테이너·accessor 경계. 범위 검증 뒤에만 값을 읽는다. */
-import { STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES, STUDIO_NATIVE_IMPORT_MAX_JSON_BYTES } from "./studio-hybrid-dcc-native-import-contracts";
+import {
+  STUDIO_NATIVE_IMPORT_MAX_JSON_BYTES,
+  formatStudioNativeImportFileLimit,
+  resolveStudioNativeImportMaxFileBytes,
+} from "./studio-hybrid-dcc-native-import-contracts";
 
 export type JsonRecord = Record<string, unknown>;
 export class NativeGlbError extends Error {
@@ -27,12 +31,12 @@ export function extensions(value: JsonRecord, path: string): JsonRecord {
 }
 
 /** base64 길이·패딩·문자를 먼저 확인한다. Buffer·atob·DOM에 의존하지 않는다. */
-function embeddedBuffer(uri: unknown, expected: number, path: string): Uint8Array {
+function embeddedBuffer(uri: unknown, expected: number, maxBufferBytes: number, path: string): Uint8Array {
   if (typeof uri !== "string" || !/^data:application\/(?:octet-stream|gltf-buffer);base64,/u.test(uri)) reject("EXTERNAL_BUFFER", "외부 버퍼를 참조하는 모델은 단일 파일로 다시 내보내야 합니다.", path);
   const start = uri.indexOf(",") + 1; const length = uri.length - start;
   const padding = uri.endsWith("==") ? 2 : uri.endsWith("=") ? 1 : 0;
   const size = length / 4 * 3 - padding;
-  if (length % 4 !== 0 || size !== expected || size > STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES) reject("INVALID_BUFFER", "내장 버퍼 길이가 선언과 다릅니다.", path);
+  if (length % 4 !== 0 || size !== expected || size > maxBufferBytes) reject("INVALID_BUFFER", "내장 버퍼 길이가 선언과 다릅니다.", path);
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   for (let index = start; index < uri.length; index += 1) {
     if (index >= uri.length - padding ? uri[index] !== "=" : alphabet.indexOf(uri[index] ?? "") < 0) reject("INVALID_BUFFER", "내장 버퍼의 base64 형식이 올바르지 않습니다.", path);
@@ -50,7 +54,9 @@ function embeddedBuffer(uri: unknown, expected: number, path: string): Uint8Arra
 
 export interface NativeGltfData { readonly root: JsonRecord; readonly buffers: readonly Uint8Array[]; readonly views: readonly unknown[]; readonly accessors: readonly unknown[] }
 export function parseNativeGltf(bytes: Uint8Array, binary: boolean): NativeGltfData {
-  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0 || bytes.byteLength > STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES) reject("FILE_BUDGET", "모델 파일은 비어 있지 않은 128 MiB 이하 파일이어야 합니다.");
+  const maxFileBytes = resolveStudioNativeImportMaxFileBytes();
+  const limitLabel = formatStudioNativeImportFileLimit(maxFileBytes);
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0 || bytes.byteLength > maxFileBytes) reject("FILE_BUDGET", `모델 파일은 비어 있지 않은 ${limitLabel} 이하 파일이어야 합니다.`);
   let json = bytes; let bin: Uint8Array | undefined;
   if (binary) {
     if (bytes.byteLength < 20) reject("INVALID_GLB", "GLB 헤더가 잘렸습니다.");
@@ -84,13 +90,13 @@ export function parseNativeGltf(bytes: Uint8Array, binary: boolean): NativeGltfD
   if (bufferSources.length > 1024 || views.length > 8192 || accessors.length > 8192) reject("METADATA_BUDGET", "버퍼·accessor 메타데이터 수가 편집 예산을 넘었습니다.");
   for (const [index, raw] of bufferSources.entries()) {
     const path = `buffers[${index}]`; const descriptor = object(raw, path);
-    const length = integer(descriptor.byteLength, `${path}.byteLength`, STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES, 1);
+    const length = integer(descriptor.byteLength, `${path}.byteLength`, maxFileBytes, 1);
     total += length;
-    if (total > STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES) reject("BUFFER_BUDGET", "내장 버퍼 합계가 128 MiB 예산을 넘었습니다.", path);
+    if (total > maxFileBytes) reject("BUFFER_BUDGET", `내장 버퍼 합계가 ${limitLabel} 예산을 넘었습니다.`, path);
     if (descriptor.uri === undefined) {
       if (!binary || index !== 0 || !bin || length > bin.byteLength || bin.byteLength - length > 3) reject("INVALID_BUFFER", "GLB 내장 버퍼와 선언 길이가 일치하지 않습니다.", path);
       buffers.push(bin.subarray(0, length));
-    } else buffers.push(embeddedBuffer(descriptor.uri, length, `${path}.uri`));
+    } else buffers.push(embeddedBuffer(descriptor.uri, length, maxFileBytes, `${path}.uri`));
   }
   return { root, buffers, views, accessors };
 }

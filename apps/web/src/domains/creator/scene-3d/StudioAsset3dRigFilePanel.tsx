@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
+import { formatStudio3dByteLimit, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { STUDIO_VRM_EXPORT_MAX_BYTES } from "../vrm/studio-vrm-export-glb-container";
 import {
   addStudioRigChild,
@@ -127,8 +128,9 @@ function RigFileEditor({ scope }: { readonly scope: string }) {
   }
   function importFile(file: File) {
     void run(async () => {
-      if (!file.size || file.size > STUDIO_VRM_EXPORT_MAX_BYTES)
-        throw new Error("100 MiB 이하의 GLB를 선택해 주세요.");
+      const maxBytes = Math.min(STUDIO_VRM_EXPORT_MAX_BYTES, resolveStudio3dUploadLimitPolicy().maxLocalModelBytes);
+      if (!file.size || file.size > maxBytes)
+        throw new Error(`현재 로컬 환경 기준 ${formatStudio3dByteLimit(maxBytes)} 이하의 GLB를 선택해 주세요.`);
       const model = readStudioRigFile(new Uint8Array(await file.arrayBuffer()));
       setReplacement(null);
       await commit({ model, name: file.name }, 0);

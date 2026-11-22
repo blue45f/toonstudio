@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, validateStudioBg3dGlb, type StudioBg3dGlbFailureCode } from "../bg3d/studio-bg3d-glb-validation";
+import { formatStudio3dByteLimit, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { sha256HexPortable } from "../studio-sha256";
 import { checkConversionAbort, pngBytes, rasterCanvas } from "./conversion-browser";
 import { CHARACTER_VIEWS, type CharacterRender, type CharacterView } from "./conversion-contract";
@@ -38,14 +39,29 @@ function passMaterial(original: THREE.Material, kind: "normal" | "depth"): THREE
   return material;
 }
 export async function renderCharacterGlb(file: File, size: number, views: readonly CharacterView[], options: CharacterCameraOptions, signal: AbortSignal, onProgress: (view: CharacterView) => void): Promise<{ renders: CharacterRender[]; sha256: string }> {
-  if (file.size < 20 || file.size > 64 * 1024 * 1024 || ![512, 768, 1024].includes(size) || views.length < 1 || views.length > 4 || new Set(views).size !== views.length) throw new Error("64MiB 이하 GLB와 최대 4개 시점을 사용해 주세요.");
+  const limitPolicy = resolveStudio3dUploadLimitPolicy();
+  const maxGlbBytes = limitPolicy.maxLocalModelBytes;
+  const maxTextureBytes = limitPolicy.maxDecodedTextureBytes;
+  if (file.size < 20 || file.size > maxGlbBytes || ![512, 768, 1024].includes(size) || views.length < 1 || views.length > 4 || new Set(views).size !== views.length) {
+    throw new Error(`${formatStudio3dByteLimit(maxGlbBytes)} 이하 GLB와 최대 4개 시점을 사용해 주세요.`);
+  }
   if (!Number.isFinite(options.animationTime) || options.animationTime < 0 || options.animationTime > 60) throw new Error("애니메이션 시간은 0~60초여야 합니다.");
   for (const view of views) characterCameraPosition(view, 1, options.yaw, options.pitch);
   checkConversionAbort(signal);
   const bytes = new Uint8Array(await file.arrayBuffer()); const sha256 = sha256HexPortable(bytes);
-  const validated = await validateStudioBg3dGlb(bytes, { declared: { byteSize: bytes.length, sha256 }, cumulative: { usedBytes: 0, maximumBytes: 64 * 1024 * 1024 }, profile: "mobile", budgets: DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES, supportedRequiredExtensions: ["KHR_materials_unlit", "KHR_texture_transform", "KHR_mesh_quantization", "KHR_materials_emissive_strength"] });
+  const budgets = {
+    ...DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
+    desktop: {
+      ...DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES.desktop,
+      complexity: { ...DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES.desktop.complexity, maxModelBytes: maxGlbBytes, maxDecodedGeometryBytes: limitPolicy.maxDecodedGeometryBytes },
+      textures: { ...DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES.desktop.textures, maxTotalBytes: maxTextureBytes },
+    },
+  };
+  const validated = await validateStudioBg3dGlb(bytes, { declared: { byteSize: bytes.length, sha256 }, cumulative: { usedBytes: 0, maximumBytes: maxGlbBytes }, profile: limitPolicy.profile, budgets, supportedRequiredExtensions: ["KHR_materials_unlit", "KHR_texture_transform", "KHR_mesh_quantization", "KHR_materials_emissive_strength"] });
   if (!validated.ok) throw new StudioCharacterGlbValidationError(validated.code);
-  if (validated.metrics.estimatedDecodedImageBytes > 128 * 1024 * 1024 || validated.usesBasisTextures) throw new Error("텍스처를 PNG·JPEG로 내보내고, 디코딩 후 총 128MiB 이하로 줄여 주세요.");
+  if (validated.metrics.estimatedDecodedImageBytes > maxTextureBytes || validated.usesBasisTextures) {
+    throw new Error(`텍스처를 PNG·JPEG로 내보내고, 디코딩 후 총 ${formatStudio3dByteLimit(maxTextureBytes)} 이하로 줄여 주세요.`);
+  }
   checkConversionAbort(signal);
   const manager = new THREE.LoadingManager();
   manager.setURLModifier((url) => { if (!url.startsWith("blob:")) throw new Error("외부 3D 리소스는 불러오지 않습니다."); return url; });

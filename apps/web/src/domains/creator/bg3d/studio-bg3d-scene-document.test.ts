@@ -857,11 +857,11 @@ describe("Studio BG3D scene document normalization", () => {
             maxMorphTargets: 99_999,
             maxAccessorElements: 999_999_999,
             maxDecodedGeometryBytes: 9_999_999_999,
-            maxModelBytes: 999_999_999,
+            maxModelBytes: 9_999_999_999,
           },
           textures: {
             maxTextures: 999,
-            maxTotalBytes: 999_999_999,
+            maxTotalBytes: 9_999_999_999,
             maxDimension: 99_999,
           },
         },
@@ -925,12 +925,12 @@ describe("Studio BG3D scene document normalization", () => {
       maxJoints: 8_192,
       maxMorphTargets: 1_024,
       maxAccessorElements: 160_000_000,
-      maxDecodedGeometryBytes: 1024 * 1024 * 1024,
-      maxModelBytes: 512 * 1024 * 1024,
+      maxDecodedGeometryBytes: 2 * 1024 * 1024 * 1024,
+      maxModelBytes: 2 * 1024 * 1024 * 1024,
     });
     expect(normalized.budgets.textures).toEqual({
       maxTextures: 256,
-      maxTotalBytes: 512 * 1024 * 1024,
+      maxTotalBytes: 1024 * 1024 * 1024,
       maxDimension: 8192,
     });
   });

@@ -7,7 +7,13 @@ import { hybridDccRegisterAssets } from "../studio-hybrid-dcc-document";
 import { createStudioHybridDccIdentityTransform } from "../studio-hybrid-dcc-object-transform";
 import { synchronizeWorkspaceGeometryAuthority, type StudioHybridDccWorkspace } from "../studio-hybrid-dcc-geometry-sync";
 
-import { STUDIO_NATIVE_IMPORT_MAX_ASSETS, STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES, type StudioNativeImportAsset, type StudioNativeImportIssue } from "./studio-hybrid-dcc-native-import-contracts";
+import {
+  STUDIO_NATIVE_IMPORT_MAX_ASSETS,
+  formatStudioNativeImportFileLimit,
+  resolveStudioNativeImportMaxFileBytes,
+  type StudioNativeImportAsset,
+  type StudioNativeImportIssue,
+} from "./studio-hybrid-dcc-native-import-contracts";
 import { decodeStudioNativeGlb } from "./studio-hybrid-dcc-native-glb";
 import { decodeStudioNativeObj } from "./studio-hybrid-dcc-native-obj";
 
@@ -47,7 +53,8 @@ function uniqueAssetId(prefix: string, ids: Set<string>): string {
 
 export function workspaceImportStudioNativeBytes(workspace: StudioHybridDccWorkspace, fileName: string, bytes: Uint8Array): StudioHybridDccWorkspace {
   if (typeof fileName !== "string" || !fileName.trim() || fileName.length > 512) fail("file-name", "모델 파일 이름이 비어 있거나 너무 깁니다.");
-  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0 || bytes.byteLength > STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES) fail("file-size", "모델 파일이 비어 있거나 128 MiB 한도를 넘었습니다.");
+  const maxFileBytes = resolveStudioNativeImportMaxFileBytes();
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0 || bytes.byteLength > maxFileBytes) fail("file-size", `모델 파일이 비어 있거나 ${formatStudioNativeImportFileLimit(maxFileBytes)} 한도를 넘었습니다.`);
   const extension = fileName.toLowerCase().split(".").at(-1) ?? "";
   let assets: readonly StudioNativeImportAsset[] = [];
   let issues: readonly StudioNativeImportIssue[] = [];

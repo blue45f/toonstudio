@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES } from "./studio-bg3d-glb-validation";
 import {
+  STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES,
   StudioBg3dModelImportError,
   convertStudioBg3dModelFilesToGlb,
   type StudioBg3dImportFile,
@@ -29,7 +30,6 @@ import { readGlbJson, replaceUtf16Text } from "./studio-bg3d-skp.test-fixture";
 
 type Point = [number, number, number];
 
-const MIB = 1024 * 1024;
 const GLB_MAGIC = [0x67, 0x6c, 0x54, 0x46];
 
 function buildBytes(fill: (builder: SkpBuilder) => void): Uint8Array {
@@ -365,7 +365,7 @@ describe("SketchUp import through the model import pipeline", () => {
   });
 
   it("applies the mobile profile's tighter .skp limit without reading the file", async () => {
-    const { file, arrayBuffer } = unreadableFile("big.skp", 20 * MIB);
+    const { file, arrayBuffer } = unreadableFile("big.skp", STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES + 1);
     await expect(convertStudioBg3dModelFilesToGlb([file], {
       executionBackend: "direct",
       profile: "mobile",
@@ -375,7 +375,7 @@ describe("SketchUp import through the model import pipeline", () => {
   });
 
   it("keeps the generic file-too-large code for the other formats", async () => {
-    const { file } = unreadableFile("huge.obj", STUDIO_BG3D_SKP_MAX_SOURCE_BYTES + 1);
+    const { file } = unreadableFile("huge.obj", STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES + 1);
     await expect(convertStudioBg3dModelFilesToGlb([file], { executionBackend: "direct" })).rejects.toMatchObject({
       code: "file-too-large",
     });

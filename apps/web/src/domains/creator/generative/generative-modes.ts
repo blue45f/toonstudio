@@ -45,7 +45,7 @@ export const GENERATIVE_MODES: readonly GenerativeMode[] = Object.freeze([
     kind: "render-to-2d",
     title: { ko: "3D → 웹툰 일러스트", en: "3D → webtoon illustration" },
     summary: { ko: "3D 포즈·구도를 웹툰 느낌의 2D 이미지로 바꿔요.", en: "Turn a 3D pose and camera into a webtoon-style 2D image." },
-    input: { ko: "텍스처 내장 GLB(30MB 이하) 또는 3D 캡처 PNG", en: "A self-contained GLB (up to 30 MB) or a 3D capture PNG" },
+    input: { ko: "텍스처 내장 GLB(로컬 256MiB~1GiB) 또는 3D 캡처 PNG", en: "A self-contained GLB (256 MiB–1 GiB locally) or a 3D capture PNG" },
     output: { ko: "PNG 일러스트", en: "PNG illustration" },
     defaultPrompt: {
       ko: "깔끔한 웹툰 선화와 부드러운 셀 채색으로 표현합니다.",

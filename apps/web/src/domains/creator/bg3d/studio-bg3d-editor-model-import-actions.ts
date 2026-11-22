@@ -310,7 +310,7 @@ export function createStudioBg3dModelImportActions(
       if (importController.signal.aborted) {
         throw new modelImportRuntime.StudioBg3dModelImportError("aborted");
       }
-      const importPlan = modelImportRuntime.planStudioBg3dModelImports(files);
+      const importPlan = modelImportRuntime.planStudioBg3dModelImports(files, { profile: policy.profile });
       if (!canAdmitSceneNodes(importPlan.items.length)) {
         throw new modelImportRuntime.StudioBg3dModelImportError("node-budget-exceeded");
       }

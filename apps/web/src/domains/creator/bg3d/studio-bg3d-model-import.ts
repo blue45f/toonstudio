@@ -1,23 +1,11 @@
-import {
-  disposeStudioBg3dThreeResources,
-} from "../studio-background-3d-model";
+import { disposeStudioBg3dThreeResources } from "../studio-background-3d-model";
+import { resolveStudio3dUploadLimitPolicy, type Studio3dRuntimeCapabilitySignals } from "../import-safety/studio-3d-upload-limit-policy";
 import { markStudioBg3dSkpMetricImport } from "./studio-bg3d-skp-metric-provenance";
 import { createStudioBg3dTrackedLoadingManager as createTrackedLoadingManager } from "./studio-bg3d-import-loading-manager";
 import { createStudioBg3dGltfEmbeddedImagesPlugin } from "./studio-bg3d-gltf-embedded-images";
-import {
-  StudioBg3dGeometryWorkerClientError,
-  parseStudioBg3dGeometryInWorker,
-} from "./studio-bg3d-geometry-worker-client";
-import {
-  hasValidStudioBg3dCanonicalGeometryNumbers,
-  isStudioBg3dCanonicalGeometryPayload,
-  type StudioBg3dCanonicalGeometryPayload,
-} from "./studio-bg3d-geometry-worker-protocol";
-import {
-  type StudioBg3dGlbBudgetProfiles,
-  type StudioBg3dGlbProfile,
-  type StudioBg3dGlbValidationBudget,
-} from "./studio-bg3d-glb-validation";
+import { StudioBg3dGeometryWorkerClientError, parseStudioBg3dGeometryInWorker } from "./studio-bg3d-geometry-worker-client";
+import { hasValidStudioBg3dCanonicalGeometryNumbers, isStudioBg3dCanonicalGeometryPayload, type StudioBg3dCanonicalGeometryPayload } from "./studio-bg3d-geometry-worker-protocol";
+import { type StudioBg3dGlbBudgetProfiles, type StudioBg3dGlbProfile, type StudioBg3dGlbValidationBudget } from "./studio-bg3d-glb-validation";
 import { STUDIO_BG3D_MESHOPT_EXTENSION } from "./studio-bg3d-meshopt";
 import {
   StudioBg3dObjPreflightWorkerClientError,
@@ -314,10 +302,10 @@ function canonicalFilePath(file: StudioBg3dImportFile): string {
   return segments.join("/");
 }
 
-function validateInputFile(file: StudioBg3dImportFile): void {
+function validateInputFile(file: StudioBg3dImportFile, maxFileBytes: number): void {
   validateInputFileShape(file);
   if (file.size <= 0) throw importError("empty-file");
-  if (file.size > STUDIO_BG3D_IMPORT_MAX_FILE_BYTES) throw importError("file-too-large");
+  if (file.size > maxFileBytes) throw importError("file-too-large");
 }
 
 function validateInputFileShape(file: StudioBg3dImportFile): void {
@@ -338,8 +326,14 @@ function validateInputFileShape(file: StudioBg3dImportFile): void {
  */
 export function planStudioBg3dModelImports(
   input: readonly StudioBg3dImportFile[],
+  runtimeSignals?: Studio3dRuntimeCapabilitySignals,
 ): StudioBg3dImportPlan {
   if (input.length > STUDIO_BG3D_IMPORT_MAX_FILES) throw importError("too-many-files");
+  const limitPolicy = resolveStudio3dUploadLimitPolicy(runtimeSignals);
+  const maxFileBytes = Math.min(STUDIO_BG3D_IMPORT_MAX_FILE_BYTES, limitPolicy.maxLocalModelBytes);
+  const maxConversionBytes = Math.min(STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES, limitPolicy.maxLocalConversionSourceBytes);
+  const maxSkpBytes = limitPolicy.maxLocalSkpSourceBytes;
+  const maxBatchBytes = Math.min(STUDIO_BG3D_IMPORT_MAX_TOTAL_BYTES, limitPolicy.maxLocalBatchTotalBytes);
   const resources = new Map<string, StudioBg3dImportFile>();
   const canonicalPathByFoldedPath = new Map<string, string>();
   const items: StudioBg3dImportPlanItem[] = [];
@@ -356,15 +350,16 @@ export function planStudioBg3dModelImports(
       ignoredFiles.push(path);
       continue;
     }
-    validateInputFile(file);
-    if (
-      isPrimary
-      && extension !== "glb"
-      && file.size > STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES
-    ) {
-      throw importError(extension === "skp" ? "skp-too-large" : "file-too-large");
+    if (isPrimary && extension === "skp") {
+      if (file.size <= 0) throw importError("empty-file");
+      if (file.size > maxSkpBytes) throw importError("skp-too-large");
+    } else {
+      validateInputFile(file, maxFileBytes);
+      if (isPrimary && extension !== "glb" && file.size > maxConversionBytes) {
+        throw importError("file-too-large");
+      }
     }
-    if (totalBytes > STUDIO_BG3D_IMPORT_MAX_TOTAL_BYTES - file.size) throw importError("total-too-large");
+    if (totalBytes > maxBatchBytes - file.size) throw importError("total-too-large");
     totalBytes += file.size;
     const foldedPath = path.toLocaleLowerCase("en-US");
     if (canonicalPathByFoldedPath.has(foldedPath)) throw importError("duplicate-resource");
@@ -1853,13 +1848,10 @@ export async function convertStudioBg3dModelFilesToGlb(
   }
   const preExportBudget = resolvePreExportBudget(options);
   const skp: StudioBg3dSkpImportContext = { options: options.skp, profile: options.profile };
-  const plan = planStudioBg3dModelImports(input);
-  options.onProgress?.({
-    stage: "planning",
-    completedModels: 0,
-    totalModels: plan.items.length,
-    sourceName: "",
-  });
+  const limitPolicy = resolveStudio3dUploadLimitPolicy(options.profile ? { profile: options.profile } : undefined);
+  const maxOutputTotalBytes = Math.min(STUDIO_BG3D_IMPORT_MAX_OUTPUT_TOTAL_BYTES, limitPolicy.maxLocalModelBytes);
+  const plan = planStudioBg3dModelImports(input, options.profile ? { profile: options.profile } : undefined);
+  options.onProgress?.({ stage: "planning", completedModels: 0, totalModels: plan.items.length, sourceName: "" });
   throwIfAborted(options.signal);
   const converted: Bg3dModelUploadSource[] = [];
   let convertedOutputBytes = 0;
@@ -1870,34 +1862,17 @@ export async function convertStudioBg3dModelFilesToGlb(
   }
   for (let index = 0; index < plan.items.length; index += 1) {
     const item = plan.items[index];
-    const progress = (stage: StudioBg3dImportProgressStage) => options.onProgress?.({
-      stage,
-      completedModels: index,
-      totalModels: plan.items.length,
-      sourceName: item.primary.name,
-    });
+    const progress = (stage: StudioBg3dImportProgressStage) => options.onProgress?.({ stage, completedModels: index, totalModels: plan.items.length, sourceName: item.primary.name });
     progress("reading");
     throwIfAborted(options.signal);
-    if (
-      item.format === "glb"
-      && item.primary.size > STUDIO_BG3D_IMPORT_MAX_OUTPUT_TOTAL_BYTES - convertedOutputBytes
-    ) {
+    if (item.format === "glb" && item.primary.size > maxOutputTotalBytes - convertedOutputBytes) {
       throw importError("output-total-too-large");
     }
     if (item.format !== "glb") progress("parsing");
     throwIfAborted(options.signal);
-    const result = await convertPlanItem(
-      item,
-      plan.resources,
-      executionBackend,
-      options.signal,
-      companionDecodedImageBytes,
-      preExportBudget,
-      skp,
-      item.format === "glb" ? undefined : () => progress("exporting"),
-    );
+    const result = await convertPlanItem(item, plan.resources, executionBackend, options.signal, companionDecodedImageBytes, preExportBudget, skp, item.format === "glb" ? undefined : () => progress("exporting"));
     throwIfAborted(options.signal);
-    if (result.size > STUDIO_BG3D_IMPORT_MAX_OUTPUT_TOTAL_BYTES - convertedOutputBytes) {
+    if (result.size > maxOutputTotalBytes - convertedOutputBytes) {
       throw importError("output-total-too-large");
     }
     convertedOutputBytes += result.size;

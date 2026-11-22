@@ -50,6 +50,7 @@ describe("Studio BG3D asset-library ownership boundary", () => {
       "@/shared/lib/i18n-bilingual-copy",
       "@/shared/lib/i18n",
       "../studio-bg3d-panel-status-i18n",
+      "../components/Studio3dLocalLimitNotice",
       "./StudioBg3dAssetAiUseFields",
       "./StudioBg3dAssetCardRightsActions",
       "./StudioBg3dAssetNameMatchHint",

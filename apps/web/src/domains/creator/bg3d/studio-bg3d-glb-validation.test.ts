@@ -464,8 +464,9 @@ describe("validateStudioBg3dGlb metadata and integrity boundary", () => {
     expect(digest).not.toHaveBeenCalled();
   });
 
-  it("rejects files over the 100 MiB hard ceiling before copying or hashing", async () => {
-    const bytes = new Uint8Array(STUDIO_BG3D_GLB_MAX_BYTES + 1);
+  it("rejects files over the 1 GiB hard ceiling before copying or hashing", async () => {
+    const bytes = new Uint8Array(1);
+    Object.defineProperty(bytes, "byteLength", { value: STUDIO_BG3D_GLB_MAX_BYTES + 1 });
     const digest = vi.fn(async () => new Uint8Array(32));
     const result = await validateStudioBg3dGlb(bytes, {
       declared: { byteSize: bytes.byteLength, sha256: "0".repeat(64) },

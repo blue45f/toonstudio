@@ -4,6 +4,7 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { SectionArt } from "@/shared/components/section-art";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { resolveStudioBg3dGlbErrorFromCause } from "../status-i18n/studio-producer-error-i18n-glb";
+import { formatStudio3dByteLimit, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { downloadConversion, prepareCharacterImage } from "./conversion-browser";
 import { CHARACTER_VIEWS, CONVERSION_STYLES, DEFAULT_CONVERSION_SETTINGS, PASS_LABELS, QUALITY_PROFILES, VIEW_LABELS, validateReferenceSet, type CharacterRender, type CharacterView, type ConversionSettings, type PreparedCharacterImage, type RenderPass, type ShapeEngine } from "./conversion-contract";
 import { buildCharacterKit } from "./conversion-kit";
@@ -43,6 +44,7 @@ function PreviewPng({ bytes, label }: { bytes: Uint8Array; label: string }) {
 }
 export function StudioCharacterConversionPage() {
   const bt = useBilingual("StudioCharacterConversionPage");
+  const local3dLimitLabel = formatStudio3dByteLimit(resolveStudio3dUploadLimitPolicy().maxLocalModelBytes);
   useDocumentTitle(bt("캐릭터 2D ↔ 3D", "Character 2D ↔ 3D"));
   const [kind, setKind] = useState<"shape" | "image">("shape");
   const [engine, setEngine] = useState<ShapeEngine>("triposr");
@@ -122,7 +124,7 @@ export function StudioCharacterConversionPage() {
               <p className="text-xs leading-relaxed text-fg-3">{bt("실제 다른 시점 원화를 사용해 주세요. TripoSR은 정면 한 장만 사용하며, 불투명 배경은 자동으로 제거하지 않습니다.", "Use real artwork for each view. TripoSR only uses the front view and does not remove opaque backgrounds automatically.")}</p>
             </div> : <div className="space-y-4">
               <ConversionFilePicker label={bt("캐릭터 GLB", "Character GLB")} accept=".glb,model/gltf-binary" fileName={model?.name}
-                hint={bt("최대 64MiB. 텍스처를 내장한 GLB 2.0을 사용해 주세요. 외부 참조·미지원 압축은 차단합니다.", "Up to 64MiB. Use GLB 2.0 with embedded textures. External references and unsupported compression are rejected.")}
+                hint={bt(`로컬 최대 ${local3dLimitLabel}. 텍스처를 내장한 GLB 2.0을 사용해 주세요. 외부 참조·미지원 압축은 차단합니다.`, `Up to ${local3dLimitLabel} locally. Use GLB 2.0 with embedded textures. External references and unsupported compression are rejected.`)}
                 onFile={(file) => { setModel(file); reset(); }} />
               <label className="flex gap-2 text-sm"><input type="checkbox" checked={fourViews} onChange={(event) => { setFourViews(event.target.checked); reset(); }} />{bt("정면·좌·후면·우 4방향 만들기", "Build front, left, back, and right views")}</label>
               <label className="block text-sm">{bt("기준 회전", "Base rotation")} {camera.yaw}°<input className="mt-2 w-full" type="range" min={-180} max={180} step={5} value={camera.yaw} onChange={(event) => { setCamera({ ...camera, yaw: Number(event.target.value) }); reset(); }} /></label>

@@ -935,13 +935,13 @@ function normalizeBudgets(value: unknown): StudioBg3dSceneBudgets {
         complexity.maxDecodedGeometryBytes,
         DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxDecodedGeometryBytes,
         0,
-        1024 * 1024 * 1024
+        2 * 1024 * 1024 * 1024
       ),
       maxModelBytes: boundedInteger(
         complexity.maxModelBytes,
         DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.complexity.maxModelBytes,
         1 * 1024 * 1024,
-        512 * 1024 * 1024
+        2 * 1024 * 1024 * 1024
       ),
     },
     textures: {
@@ -955,7 +955,7 @@ function normalizeBudgets(value: unknown): StudioBg3dSceneBudgets {
         textures.maxTotalBytes,
         DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.budgets.textures.maxTotalBytes,
         0,
-        512 * 1024 * 1024
+        1024 * 1024 * 1024
       ),
       maxDimension: boundedInteger(
         textures.maxDimension,

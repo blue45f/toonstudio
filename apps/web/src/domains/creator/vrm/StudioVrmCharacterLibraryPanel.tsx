@@ -17,6 +17,7 @@ import { presentStudioVrmLicenseAuthority } from "./studio-vrm-license-product-g
 import { filterStudioVrmProductionLibraryEntries } from "./studio-vrm-production-catalog";
 import { resolveVrmLibraryEntryDisplayName } from "./studio-vrm-display-name";
 import { StudioVrmCharacterPreviewImage } from "./StudioVrmCharacterPreviewImage";
+import { Studio3dLocalLimitNotice } from "../components/Studio3dLocalLimitNotice";
 import { buildFallbackVrmLibraryThumbnail, type VrmLibraryEntry } from "./vrm-library";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
@@ -239,6 +240,7 @@ export function StudioVrmCharacterLibraryPanel({
         {isUploading ? <Loader2 className="animate-spin motion-reduce:animate-none" size={14} aria-hidden /> : <Upload size={14} aria-hidden />}
         VRM 업로드
       </button>
+      <Studio3dLocalLimitNotice />
       <p className="mt-2 rounded-xl border border-line bg-card/60 px-3 py-2 text-xs leading-relaxed text-fg-3">
         기본 목록은 확대 시각 감사를 통과한 번들 캐릭터만 표시합니다. 직접 업로드한 VRM과 기존 문서에서 참조하는 모델은 이 품질 필터와 무관하게 그대로 유지됩니다.
         이용 조건이 없거나 손상된 모델도 로컬 미리보기는 가능하지만, 모델 파일을 포함하는 archive·내보내기·공유는 확인 전까지 차단됩니다.

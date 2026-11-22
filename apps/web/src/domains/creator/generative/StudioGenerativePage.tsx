@@ -5,6 +5,7 @@ import { Container } from "@/shared/components/section";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { formatStudio3dByteLimit, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 import { AiStudioPageHeader } from "../ai/AiStudioSurfaceNav";
@@ -200,7 +201,10 @@ export function StudioGenerativePage() {
               {kind === "render-to-2d" ? (
                 <FileDropZone
                   label={bt("3D 캐릭터 GLB 선택", "Choose a 3D character GLB")}
-                  hint={bt("텍스처를 포함한 GLB · 30MB 이하 · 끌어 놓아도 돼요", "Self-contained GLB · up to 30 MB · drag and drop works")}
+                  hint={bt(
+                    `텍스처를 포함한 GLB · 로컬 최대 ${formatStudio3dByteLimit(resolveStudio3dUploadLimitPolicy().maxLocalModelBytes)} · 끌어 놓아도 돼요`,
+                    `Self-contained GLB · up to ${formatStudio3dByteLimit(resolveStudio3dUploadLimitPolicy().maxLocalModelBytes)} locally · drag and drop works`,
+                  )}
                   accept=".glb,model/gltf-binary"
                   fileName={glb?.name}
                   disabled={inference.busy || active}

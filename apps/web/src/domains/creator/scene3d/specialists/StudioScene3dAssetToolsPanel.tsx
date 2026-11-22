@@ -8,7 +8,8 @@ import type { SpecialistArtifact,
   SpecialistResult } from "./specialist-contract";
 import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { SPECIALIST_LIMITS, SpecialistError } from "./specialist-contract";
+import { formatStudio3dByteLimit } from "../../import-safety/studio-3d-upload-limit-policy";
+import { SpecialistError, resolveSpecialistMaxInputBytes } from "./specialist-contract";
 import { runScene3dSpecialistInWorker } from "./specialist-client";
 import { parseNavigationInput } from "./specialist-navigation-input";
 import { formatNumber } from "@toonstudio/core/format";
@@ -124,14 +125,17 @@ export function StudioScene3dAssetToolsPanel({
       setNodeNames([]);
     }
     try {
-      if (file.size > SPECIALIST_LIMITS.inputBytes)
+      const maxInputBytes = resolveSpecialistMaxInputBytes();
+      if (file.size > maxInputBytes) {
+        const limitLabel = formatStudio3dByteLimit(maxInputBytes);
         throw new SpecialistError(
           "budget",
           t(
-            "입력 파일은 256MiB 이하로 준비하세요.",
-            "Input files must not exceed 256 MiB.",
+            `입력 파일은 현재 로컬 환경 기준 ${limitLabel} 이하로 준비하세요.`,
+            `Input files must not exceed ${limitLabel} in this local environment.`,
           ),
         );
+      }
       const bytes = await file.arrayBuffer();
       if (ticket !== generation.current) return;
       if (second) {
