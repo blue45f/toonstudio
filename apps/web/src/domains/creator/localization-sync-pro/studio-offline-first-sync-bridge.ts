@@ -5,6 +5,21 @@
  * - 가상 스튜디오 근접 원고 합평 테이블 & 화면공유 시그널링 상태 머신 재수출
  */
 
+import {
+  computeOfflineSyncRetryDelayMs, deriveOfflineSyncIdempotencyKey, mergeOfflineSyncQueue,
+  offlineSyncCutKey, planOfflineSyncRetrySchedule,
+  type CompactedOfflineSyncOperation, type OfflineSyncMutationKind, type OfflineSyncQueueConflict,
+  type OfflineSyncQueueEntry, type OfflineSyncQueueMergeResult, type OfflineSyncRetryPlanEntry,
+  type OfflineSyncRetryPolicy, type OfflineSyncRetrySchedule, type OfflineSyncTombstone,
+} from "../live/studio-offline-sync-queue-merger";
+
+export {
+  computeOfflineSyncRetryDelayMs, deriveOfflineSyncIdempotencyKey, mergeOfflineSyncQueue, planOfflineSyncRetrySchedule,
+  type CompactedOfflineSyncOperation, type OfflineSyncMutationKind, type OfflineSyncQueueConflict,
+  type OfflineSyncQueueEntry, type OfflineSyncQueueMergeResult, type OfflineSyncRetryPlanEntry,
+  type OfflineSyncRetryPolicy, type OfflineSyncRetrySchedule,
+};
+
 export {
   addReviewCommentPin,
   computeAvatarDistance,
@@ -63,6 +78,9 @@ export interface SyncEntityRecord {
 
 export interface SyncQueueOperation {
   readonly opId: string;
+  readonly idempotencyKey?: string;
+  readonly mutationKind?: OfflineSyncMutationKind;
+  readonly revision?: number;
   readonly surface: SyncStudioSurface;
   readonly entityId: string;
   readonly patch: Readonly<Record<string, string | number | boolean | null>>;
@@ -123,6 +141,9 @@ export interface SyncCycleResult {
   readonly failed: number;
   readonly mergedConflicts: number;
   readonly manualConflicts: number;
+  readonly deduplicatedOps?: number;
+  readonly queueConflicts?: readonly OfflineSyncQueueConflict[];
+  readonly retrySchedule?: OfflineSyncRetrySchedule;
   readonly skippedOffline: boolean;
   readonly summaryKo: string;
 }
@@ -248,11 +269,71 @@ export function resolveSyncConflict(
 }
 
 export function computeRetryBackoffMs(retryCount: number, baseMs = 1000, maxMs = 60_000): number {
-  return Math.min(maxMs, baseMs * 2 ** Math.max(0, Math.floor(retryCount)));
+  return computeOfflineSyncRetryDelayMs(retryCount, {
+    baseDelayMs: baseMs,
+    maxDelayMs: maxMs,
+    multiplier: 2,
+    jitterRatio: 0,
+  });
+}
+
+function toMergerEntry(op: SyncQueueOperation): OfflineSyncQueueEntry {
+  const kind = op.mutationKind ?? "patch";
+  const idempotencyKey =
+    op.idempotencyKey ??
+    deriveOfflineSyncIdempotencyKey({
+      surface: op.surface,
+      cutId: op.entityId,
+      kind,
+      causalSequence: op.lamport,
+      actorId: op.actorId,
+      patch: op.patch,
+    });
+  return {
+    opId: op.opId,
+    idempotencyKey,
+    surface: op.surface,
+    cutId: op.entityId,
+    kind,
+    causalSequence: op.lamport,
+    revision: op.revision ?? op.lamport,
+    patch: op.patch,
+    actorId: op.actorId,
+    createdAtMs: op.createdAtMs,
+    retryCount: op.retryCount,
+    maxRetries: op.maxRetries,
+    nextRetryAtMs: op.nextRetryAtMs,
+    ...(op.lastError !== undefined ? { lastError: op.lastError } : {}),
+  };
+}
+
+function fromCompactedOperation(
+  compacted: CompactedOfflineSyncOperation,
+  template?: SyncQueueOperation,
+): SyncQueueOperation {
+  return Object.freeze({
+    opId: compacted.opId,
+    idempotencyKey: compacted.idempotencyKey,
+    mutationKind: compacted.kind,
+    revision: compacted.revision,
+    surface: compacted.surface as SyncStudioSurface,
+    entityId: compacted.cutId,
+    patch: compacted.patch,
+    lamport: compacted.causalSequence,
+    createdAtMs: compacted.createdAtMs,
+    actorId: compacted.actorId,
+    status: template?.status ?? "pending",
+    retryCount: template?.retryCount ?? 0,
+    maxRetries: template?.maxRetries ?? 4,
+    nextRetryAtMs: template?.nextRetryAtMs ?? compacted.createdAtMs,
+    ...(template?.lastError !== undefined ? { lastError: template.lastError } : {}),
+  });
 }
 
 export interface OfflineFirstSyncBridge {
   getState(): OfflineSyncSnapshotDocument;
+  getQueueConflicts(): readonly OfflineSyncQueueConflict[];
+  planReconnectMerge(nowMs?: number): OfflineSyncQueueMergeResult;
   setNetworkStatus(status: SyncNetworkStatus): OfflineSyncSnapshotDocument;
   enqueueLocalMutation(input: {
     readonly surface: SyncStudioSurface;
@@ -260,10 +341,21 @@ export interface OfflineFirstSyncBridge {
     readonly patch: Readonly<Record<string, string | number | boolean | null>>;
     readonly actorId?: string;
     readonly nowMs?: number;
-  }): { readonly record: SyncEntityRecord; readonly operation: SyncQueueOperation };
+    readonly idempotencyKey?: string;
+    readonly kind?: OfflineSyncMutationKind;
+    readonly revision?: number;
+  }): {
+    readonly record: SyncEntityRecord;
+    readonly operation: SyncQueueOperation;
+    readonly queueConflicts?: readonly OfflineSyncQueueConflict[];
+  };
   syncNow(
     transport: RemoteSyncTransport,
-    options?: { readonly strategy?: ConflictResolutionStrategy; readonly nowMs?: number },
+    options?: {
+      readonly strategy?: ConflictResolutionStrategy;
+      readonly nowMs?: number;
+      readonly retryPolicy?: OfflineSyncRetryPolicy;
+    },
   ): Promise<SyncCycleResult>;
   resolveManualConflict(conflictId: string, winner: "local" | "remote", nowMs?: number): boolean;
   exportSnapshotJson(): string;
@@ -313,10 +405,36 @@ export function createOfflineFirstSyncBridge(
   })();
 
   const persist = () => { store.write(storageKey, JSON.stringify(state)); };
+  const acknowledgedKeys = new Set<string>();
+  const deletedTombstones = new Map<string, OfflineSyncTombstone>();
+  let queueConflicts: readonly OfflineSyncQueueConflict[] = Object.freeze([]);
   persist();
+
+  const recordQueueConflicts = (incoming: readonly OfflineSyncQueueConflict[]) => {
+    if (incoming.length === 0) return;
+    const seen = new Set(queueConflicts.map((item) => `${item.code}:${item.conflictingOpId}:${item.idempotencyKey}`));
+    const appended = [...queueConflicts];
+    for (const conflict of incoming) {
+      const signature = `${conflict.code}:${conflict.conflictingOpId}:${conflict.idempotencyKey}`;
+      if (!seen.has(signature)) {
+        seen.add(signature);
+        appended.push(conflict);
+      }
+    }
+    queueConflicts = Object.freeze(appended);
+  };
 
   return {
     getState: () => state,
+    getQueueConflicts: () => queueConflicts,
+
+    planReconnectMerge(nowMs = Date.now()) {
+      const eligible = state.queue.filter((op) => (op.status === "pending" || op.status === "retrying") && op.nextRetryAtMs <= nowMs);
+      return mergeOfflineSyncQueue(eligible.map(toMergerEntry), {
+        acknowledgedIdempotencyKeys: acknowledgedKeys,
+        deletedCutTombstones: deletedTombstones,
+      });
+    },
 
     setNetworkStatus(status) {
       state = { ...state, networkStatus: status };
@@ -324,21 +442,37 @@ export function createOfflineFirstSyncBridge(
       return state;
     },
 
-    enqueueLocalMutation({ surface, entityId, patch, actorId = "author-local", nowMs = Date.now() }) {
+    enqueueLocalMutation({
+      surface,
+      entityId,
+      patch,
+      actorId = "author-local",
+      nowMs = Date.now(),
+      idempotencyKey,
+      kind = "patch",
+      revision,
+    }) {
       const nextLamport = state.lamportClock + 1;
       const key = recordKey(surface, entityId);
       const existing = state.records[key];
-      const nextRecord: SyncEntityRecord = Object.freeze({
-        surface,
-        entityId,
-        lamport: nextLamport,
-        updatedAtMs: nowMs,
-        actorId,
-        payload: Object.freeze({ ...(existing?.payload ?? {}), ...patch }),
-      });
+      const effectiveRev = revision ?? nextLamport;
+      const resolvedIdempotencyKey =
+        idempotencyKey && idempotencyKey.trim().length > 0
+          ? idempotencyKey.trim()
+          : deriveOfflineSyncIdempotencyKey({
+              surface,
+              cutId: entityId,
+              kind,
+              causalSequence: nextLamport,
+              actorId,
+              patch,
+            });
 
       const operation: SyncQueueOperation = Object.freeze({
         opId: `op-${surface}-${entityId}-${nextLamport}`,
+        idempotencyKey: resolvedIdempotencyKey,
+        mutationKind: kind,
+        revision: effectiveRev,
         surface,
         entityId,
         patch: Object.freeze({ ...patch }),
@@ -351,20 +485,80 @@ export function createOfflineFirstSyncBridge(
         nextRetryAtMs: nowMs,
       });
 
-      const coalesced = state.queue.filter((op) => !(op.status === "pending" && op.surface === surface && op.entityId === entityId));
-      const existingPending = state.queue.find((op) => op.status === "pending" && op.surface === surface && op.entityId === entityId);
-      const finalOp: SyncQueueOperation = existingPending
-        ? Object.freeze({ ...operation, patch: Object.freeze({ ...existingPending.patch, ...patch }) })
-        : operation;
+      const nonPending = state.queue.filter((op) => op.status !== "pending");
+      const pending = state.queue.filter((op) => op.status === "pending");
+      const mergeResult = mergeOfflineSyncQueue([...pending.map(toMergerEntry), toMergerEntry(operation)], {
+        acknowledgedIdempotencyKeys: acknowledgedKeys,
+        deletedCutTombstones: deletedTombstones,
+      });
+      recordQueueConflicts(mergeResult.conflicts);
 
-      state = { ...state, lamportClock: nextLamport, records: { ...state.records, [key]: nextRecord }, queue: [...coalesced, finalOp] };
+      const templateByOpId = new Map<string, SyncQueueOperation>(
+        [...pending, operation].map((item) => [item.opId, item]),
+      );
+      const compactedPending = mergeResult.operations.map((compacted) =>
+        fromCompactedOperation(compacted, templateByOpId.get(compacted.opId)),
+      );
+      const wasDroppedOrConflicted =
+        mergeResult.droppedDuplicateOpIds.includes(operation.opId) ||
+        mergeResult.conflicts.some((item) => item.conflictingOpId === operation.opId);
+
+      const nextRecords: Record<string, SyncEntityRecord> = { ...state.records };
+      let nextRecord: SyncEntityRecord;
+      if (wasDroppedOrConflicted) {
+        nextRecord =
+          existing ??
+          Object.freeze({
+            surface,
+            entityId,
+            lamport: state.lamportClock,
+            updatedAtMs: nowMs,
+            actorId,
+            payload: Object.freeze({}),
+          });
+      } else if (kind === "delete") {
+        delete nextRecords[key];
+        nextRecord = Object.freeze({
+          surface,
+          entityId,
+          lamport: nextLamport,
+          updatedAtMs: nowMs,
+          actorId,
+          payload: Object.freeze({}),
+        });
+      } else {
+        nextRecord = Object.freeze({
+          surface,
+          entityId,
+          lamport: nextLamport,
+          updatedAtMs: nowMs,
+          actorId,
+          payload: Object.freeze(kind === "upsert" ? { ...patch } : { ...(existing?.payload ?? {}), ...patch }),
+        });
+        nextRecords[key] = nextRecord;
+      }
+
+      const finalOp =
+        compactedPending.find((op) => op.surface === surface && op.entityId === entityId) ?? operation;
+
+      state = {
+        ...state,
+        lamportClock: nextLamport,
+        records: nextRecords,
+        queue: [...nonPending, ...compactedPending],
+      };
       persist();
-      return { record: nextRecord, operation: finalOp };
+      return {
+        record: nextRecord,
+        operation: finalOp,
+        ...(mergeResult.conflicts.length > 0 ? { queueConflicts: mergeResult.conflicts } : {}),
+      };
     },
 
     async syncNow(transport, syncOptions = {}) {
       const nowMs = syncOptions.nowMs ?? Date.now();
       const strategy = syncOptions.strategy ?? "field-level-merge";
+      const retryPolicy = syncOptions.retryPolicy;
       if (state.networkStatus === "offline") {
         const waitingCount = state.queue.filter((q) => q.status === "pending" || q.status === "retrying").length;
         return Object.freeze({
@@ -381,34 +575,99 @@ export function createOfflineFirstSyncBridge(
         });
       }
 
+      const mergeResult = mergeOfflineSyncQueue(eligible.map(toMergerEntry), {
+        acknowledgedIdempotencyKeys: acknowledgedKeys,
+        deletedCutTombstones: deletedTombstones,
+      });
+      recordQueueConflicts(mergeResult.conflicts);
+
+      const eligibleByOpId = new Map<string, SyncQueueOperation>(eligible.map((item) => [item.opId, item]));
+      const dispatchOps: SyncQueueOperation[] = [];
+      const mergedOpIdsByDispatch = new Map<string, readonly string[]>();
+      const mergedKeysByDispatch = new Map<string, readonly string[]>();
+      for (const compacted of mergeResult.operations) {
+        const template =
+          eligibleByOpId.get(compacted.opId) ??
+          compacted.mergedOpIds.map((id) => eligibleByOpId.get(id)).find((item) => item !== undefined);
+        const dispatchOp = fromCompactedOperation(compacted, template);
+        dispatchOps.push(dispatchOp);
+        mergedOpIdsByDispatch.set(dispatchOp.opId, compacted.mergedOpIds);
+        mergedKeysByDispatch.set(dispatchOp.opId, compacted.mergedIdempotencyKeys);
+      }
+
+      const droppedSet = new Set(mergeResult.droppedDuplicateOpIds);
+      if (dispatchOps.length === 0) {
+        const remainingQueue = state.queue.filter((op) => !droppedSet.has(op.opId));
+        state = { ...state, queue: remainingQueue };
+        persist();
+        return Object.freeze({
+          attempted: 0,
+          synced: 0,
+          retried: 0,
+          failed: 0,
+          mergedConflicts: 0,
+          manualConflicts: mergeResult.conflicts.length,
+          deduplicatedOps: mergeResult.deduplicatedCount,
+          queueConflicts: mergeResult.conflicts,
+          skippedOffline: false,
+          summaryKo: mergeResult.summaryKo,
+        });
+      }
+
+      const applyRetryPlan = (op: SyncQueueOperation, plan: OfflineSyncRetryPlanEntry): SyncQueueOperation =>
+        Object.freeze({
+          ...op,
+          status: plan.status,
+          retryCount: plan.attempt,
+          nextRetryAtMs: plan.nextRetryAtMs,
+          ...(plan.reason !== undefined ? { lastError: plan.reason } : {}),
+        });
+      const collectConsumedIds = () => {
+        const ids = new Set<string>(droppedSet);
+        for (const op of dispatchOps) {
+          for (const id of mergedOpIdsByDispatch.get(op.opId) ?? [op.opId]) ids.add(id);
+        }
+        return ids;
+      };
+
       let synced = 0;
-      let retried = 0;
-      let failed = 0;
       let mergedConflicts = 0;
       let manualConflicts = 0;
 
       try {
-        const response = await transport.pushOperations(eligible);
+        const response = await transport.pushOperations(dispatchOps);
         const acceptedSet = new Set(response.acceptedOpIds);
         const rejectedMap = new Map((response.rejected ?? []).map((item) => [item.opId, item.reason]));
-
-        const nextQueue: SyncQueueOperation[] = [];
-        for (const op of state.queue) {
-          if (acceptedSet.has(op.opId)) { synced += 1; continue; }
-          if (rejectedMap.has(op.opId)) {
-            const nextRetryCount = op.retryCount + 1;
-            const exhausted = nextRetryCount >= op.maxRetries;
-            if (exhausted) failed += 1; else retried += 1;
-            nextQueue.push(Object.freeze({
-              ...op,
-              status: exhausted ? "failed" : "retrying",
-              retryCount: nextRetryCount,
-              nextRetryAtMs: nowMs + computeRetryBackoffMs(nextRetryCount),
-              lastError: rejectedMap.get(op.opId),
-            }));
-          } else {
-            nextQueue.push(op);
+        const consumedEligibleIds = collectConsumedIds();
+        const rejectedDispatchOps: SyncQueueOperation[] = [];
+        for (const dispatchOp of dispatchOps) {
+          if (acceptedSet.has(dispatchOp.opId)) {
+            synced += 1;
+            for (const keyItem of mergedKeysByDispatch.get(dispatchOp.opId) ?? []) acknowledgedKeys.add(keyItem);
+            if (dispatchOp.mutationKind === "delete") {
+              deletedTombstones.set(offlineSyncCutKey(dispatchOp.surface, dispatchOp.entityId), {
+                opId: dispatchOp.opId,
+                causalSequence: dispatchOp.lamport,
+              });
+            }
+          } else if (rejectedMap.has(dispatchOp.opId)) {
+            rejectedDispatchOps.push(dispatchOp);
           }
+        }
+
+        const retrySchedule = planOfflineSyncRetrySchedule(
+          rejectedDispatchOps.map(toMergerEntry),
+          { nowMs, policy: retryPolicy, failureReasons: rejectedMap },
+        );
+        const planByOpId = new Map(retrySchedule.entries.map((entry) => [entry.opId, entry]));
+        const retried = retrySchedule.retryingCount;
+        const failed = retrySchedule.exhaustedCount;
+
+        const nextQueue: SyncQueueOperation[] = state.queue.filter((op) => !consumedEligibleIds.has(op.opId));
+        for (const dispatchOp of dispatchOps) {
+          if (acceptedSet.has(dispatchOp.opId)) continue;
+          const retryPlan = planByOpId.get(dispatchOp.opId);
+          nextQueue.push(retryPlan ? applyRetryPlan(dispatchOp, retryPlan) : dispatchOp);
         }
 
         const nextRecords: Record<string, SyncEntityRecord> = { ...state.records };
@@ -444,28 +703,51 @@ export function createOfflineFirstSyncBridge(
         };
         persist();
         return Object.freeze({
-          attempted: eligible.length, synced, retried, failed, mergedConflicts, manualConflicts, skippedOffline: false,
+          attempted: dispatchOps.length,
+          synced,
+          retried,
+          failed,
+          mergedConflicts,
+          manualConflicts,
+          deduplicatedOps: mergeResult.deduplicatedCount,
+          queueConflicts: mergeResult.conflicts,
+          ...(retrySchedule.entries.length > 0 ? { retrySchedule } : {}),
+          skippedOffline: false,
           summaryKo: `메모리 동기화 시연: 반영 ${synced}건 · 재시도 예약 ${retried}건 · 충돌 병합 ${mergedConflicts}건`,
         });
       } catch (cause) {
         const reason = cause instanceof Error ? cause.message : "네트워크 오류";
-        const nextQueue = state.queue.map((op) => {
-          if (!eligible.some((item) => item.opId === op.opId)) return op;
-          const nextRetryCount = op.retryCount + 1;
-          const exhausted = nextRetryCount >= op.maxRetries;
-          if (exhausted) failed += 1; else retried += 1;
-          return Object.freeze({
-            ...op,
-            status: exhausted ? ("failed" as const) : ("retrying" as const),
-            retryCount: nextRetryCount,
-            nextRetryAtMs: nowMs + computeRetryBackoffMs(nextRetryCount),
-            lastError: reason,
-          });
-        });
+        const retrySchedule = planOfflineSyncRetrySchedule(
+          dispatchOps.map(toMergerEntry),
+          { nowMs, policy: retryPolicy, failureReasons: new Map(dispatchOps.map((op) => [op.opId, reason])) },
+        );
+        const planByOpId = new Map(retrySchedule.entries.map((entry) => [entry.opId, entry]));
+        const retried = retrySchedule.retryingCount;
+        const failed = retrySchedule.exhaustedCount;
+
+        const consumedEligibleIds = collectConsumedIds();
+        const nextQueue: SyncQueueOperation[] = state.queue.filter((op) => !consumedEligibleIds.has(op.opId));
+        for (const dispatchOp of dispatchOps) {
+          const retryPlan = planByOpId.get(dispatchOp.opId);
+          nextQueue.push(
+            retryPlan
+              ? applyRetryPlan(dispatchOp, retryPlan)
+              : Object.freeze({ ...dispatchOp, status: "retrying" as const, retryCount: dispatchOp.retryCount + 1, nextRetryAtMs: nowMs + computeRetryBackoffMs(dispatchOp.retryCount + 1), lastError: reason }),
+          );
+        }
         state = { ...state, networkStatus: "degraded", queue: nextQueue };
         persist();
         return Object.freeze({
-          attempted: eligible.length, synced: 0, retried, failed, mergedConflicts: 0, manualConflicts: 0, skippedOffline: false,
+          attempted: dispatchOps.length,
+          synced: 0,
+          retried,
+          failed,
+          mergedConflicts: 0,
+          manualConflicts: 0,
+          deduplicatedOps: mergeResult.deduplicatedCount,
+          queueConflicts: mergeResult.conflicts,
+          retrySchedule,
+          skippedOffline: false,
           summaryKo: `시연 전송 실패(${reason}) → 현재 세션 메모리의 재시도 큐 ${retried}건 예약(영구 저장 아님)`,
         });
       }

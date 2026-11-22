@@ -327,8 +327,3 @@ export function filterBgSceneSections<T extends { label: string }>(
     .map((section) => ({ ...section, scenes: filterAssetsByLabel(section.scenes, query) }))
     .filter((section) => section.scenes.length > 0);
 }
-
-export {
-  BUBBLE_STYLE_PRESETS,
-  type BubbleStylePreset,
-} from "./lettering/studio-bubble-style-presets";

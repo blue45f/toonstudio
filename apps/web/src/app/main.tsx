@@ -8,7 +8,7 @@ import { registerUnauthorizedSessionProbe } from "../platform/api-error";
 import { installStaticCatalog } from "../shared/catalog/catalog-static";
 import { getNextgenLabSettingsSnapshot } from "../shared/lib/nextgen-lab-settings";
 import { installSpeculationRules, runWhenDocumentActivated, STUDIO_PRERENDER_URLS } from "../shared/lib/speculation-rules";
-import { initializeCreatorContinuity } from "../shared/lib/creator-continuity";
+import { initializeCreatorContinuity } from "../shared/lib/creator-continuity-store";
 import { initializePwaInstallCapture } from "../shared/lib/pwa-install-store";
 import "../shared/lib/programmatic-reload-hmr";
 
