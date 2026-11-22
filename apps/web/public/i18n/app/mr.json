@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "संपादकीय सूचना समाविष्ट करा",
   "aiAssist.episodic.exampleComments": "प्रातिनिधिक वाचक प्रतिक्रिया · प्रत्यक्ष टिप्पण्या नाहीत",
   "aiAssist.episodic.noGuarantee": "सातत्य सूचना · शून्य त्रुटींची हमी देता येत नाही",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "प्रायोगिक",
   "anchorLab.header.title": "पात्र अँकर प्रयोगशाळा",
   "anchorLab.header.lead": "3D पात्राचा समोरून, दोन्ही बाजूंनी आणि मागून घेतलेला अँकर संच तयार करा, आणि मग AI ने काढलेले उमेदवार त्याच्याशी किती जुळतात ते या डिव्हाइसवर तपासा.",

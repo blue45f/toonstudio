@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Tekshiruv tavsiyasi",
   "aiAssist.episodic.append": "Tahririy tavsiyani kiritish",
   "aiAssist.episodic.exampleComments": "Oʻquvchilarning namunaviy munosabatlari · Haqiqiy izohlar emas",
-  "aiAssist.episodic.noGuarantee": "Izchillik tavsiyalari · Xatolar umuman boʻlmasligiga kafolat berilmaydi"
+  "aiAssist.episodic.noGuarantee": "Izchillik tavsiyalari · Xatolar umuman boʻlmasligiga kafolat berilmaydi",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

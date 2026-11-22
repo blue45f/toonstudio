@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Pārskata ieteikums",
   "aiAssist.episodic.append": "Ievietot redakcionālu ieteikumu",
   "aiAssist.episodic.exampleComments": "Ilustratīvas lasītāju reakcijas · Nav īsti komentāri",
-  "aiAssist.episodic.noGuarantee": "Nepārtrauktības ieteikumi · Nevar garantēt nulles kļūdas"
+  "aiAssist.episodic.noGuarantee": "Nepārtrauktības ieteikumi · Nevar garantēt nulles kļūdas",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

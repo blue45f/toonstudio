@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "समीक्षा सुझाव",
   "aiAssist.episodic.append": "संपादकीय सुझाव जोड़ें",
   "aiAssist.episodic.exampleComments": "उदाहरणात्मक पाठक प्रतिक्रियाएँ · वास्तविक टिप्पणियाँ नहीं",
-  "aiAssist.episodic.noGuarantee": "निरंतरता सुझाव · शून्य त्रुटियों की गारंटी नहीं दी जा सकती"
+  "aiAssist.episodic.noGuarantee": "निरंतरता सुझाव · शून्य त्रुटियों की गारंटी नहीं दी जा सकती",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Предлог од прегледот",
   "aiAssist.episodic.append": "Вметни уреднички предлог",
   "aiAssist.episodic.exampleComments": "Илустративни реакции на читатели · Не се вистински коментари",
-  "aiAssist.episodic.noGuarantee": "Предлози за континуитет · Не може да се гарантира нула грешки"
+  "aiAssist.episodic.noGuarantee": "Предлози за континуитет · Не може да се гарантира нула грешки",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

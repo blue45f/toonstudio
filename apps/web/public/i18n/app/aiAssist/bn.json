@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "পর্যালোচনা পরামর্শ",
   "aiAssist.episodic.append": "সম্পাদনা পরামর্শ যোগ করুন",
   "aiAssist.episodic.exampleComments": "দৃষ্টান্তমূলক পাঠক প্রতিক্রিয়া · প্রকৃত মন্তব্য নয়",
-  "aiAssist.episodic.noGuarantee": "ধারাবাহিকতার পরামর্শ · শূন্য ত্রুটির নিশ্চয়তা দেওয়া যায় না"
+  "aiAssist.episodic.noGuarantee": "ধারাবাহিকতার পরামর্শ · শূন্য ত্রুটির নিশ্চয়তা দেওয়া যায় না",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

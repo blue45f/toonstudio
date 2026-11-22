@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Fut sugjerimin editorial",
   "aiAssist.episodic.exampleComments": "Reagime ilustruese të lexuesve · Nuk janë komente reale",
   "aiAssist.episodic.noGuarantee": "Sugjerime vazhdimësie · Nuk mund të garantohen zero gabime",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Eksperimental",
   "anchorLab.header.title": "Laboratori i ankorave të personazheve",
   "anchorLab.header.lead": "Ndërtoni një grup ankorash të një personazhi 3D të fotografuar nga përpara, anët dhe mbrapa, pastaj kontrolloni në këtë pajisje sa shumë i ngjajnë atij kandidatët e vizatuar me AI.",

@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Arviointiehdotus",
   "aiAssist.episodic.append": "Lisää toimituksellinen ehdotus",
   "aiAssist.episodic.exampleComments": "Havainnollistavat lukijareaktiot · Eivät oikeita kommentteja",
-  "aiAssist.episodic.noGuarantee": "Jatkuvuusehdotukset · Virheettömyyttä ei voida taata"
+  "aiAssist.episodic.noGuarantee": "Jatkuvuusehdotukset · Virheettömyyttä ei voida taata",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

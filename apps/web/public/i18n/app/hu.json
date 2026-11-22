@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Szerkesztői javaslat beszúrása",
   "aiAssist.episodic.exampleComments": "Szemléltető olvasói reakciók · Nem valódi hozzászólások",
   "aiAssist.episodic.noGuarantee": "Folytonossági javaslatok · A hibamentesség nem garantálható",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Kísérleti",
   "anchorLab.header.title": "Karakterhorgony-labor",
   "anchorLab.header.lead": "Készíts horgonykészletet egy 3D karakterről elölről, oldalról és hátulról készített felvételekből, majd ellenőrizd ezen az eszközön, mennyire hasonlítanak rá az AI által rajzolt jelöltek.",

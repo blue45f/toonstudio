@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "ادارتی تجویز شامل کریں",
   "aiAssist.episodic.exampleComments": "قارئین کے مثالی ردِ عمل · حقیقی تبصرے نہیں ہیں",
   "aiAssist.episodic.noGuarantee": "تسلسل کی تجاویز · صفر غلطیوں کی ضمانت نہیں دی جا سکتی",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "تجرباتی",
   "anchorLab.header.title": "کردار اینکر لیب",
   "anchorLab.header.lead": "کسی 3D کردار کی سامنے، اطراف اور پیچھے سے لی گئی تصاویر کا اینکر سیٹ بنائیں، پھر اسی آلے پر جانچیں کہ AI کی بنائی ہوئی امیدوار تصاویر اس سے کتنی ملتی جلتی ہیں۔",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Įterpti redakcinį pasiūlymą",
   "aiAssist.episodic.exampleComments": "Pavyzdinės skaitytojų reakcijos · Ne tikri komentarai",
   "aiAssist.episodic.noGuarantee": "Nuoseklumo pasiūlymai · Negalima garantuoti nulio klaidų",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Eksperimentinė",
   "anchorLab.header.title": "Veikėjų inkarų laboratorija",
   "anchorLab.header.lead": "Sukurkite 3D veikėjo, nufotografuoto iš priekio, šonų ir nugaros, inkarų rinkinį, tada šiame įrenginyje patikrinkite, kiek AI nupiešti kandidatai į jį panašūs.",

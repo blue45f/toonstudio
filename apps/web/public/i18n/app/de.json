@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Redaktionsvorschlag einfügen",
   "aiAssist.episodic.exampleComments": "Beispielhafte Leserreaktionen · Keine echten Kommentare",
   "aiAssist.episodic.noGuarantee": "Kontinuitätsvorschläge · Fehlerfreiheit kann nicht garantiert werden",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Experimentell",
   "anchorLab.header.title": "Charakter-Anker-Labor",
   "anchorLab.header.lead": "Erstellen Sie ein Ankerset aus einem 3D-Charakter, den Sie von vorn, von den Seiten und von hinten aufgenommen haben, und prüfen Sie auf diesem Gerät, wie ähnlich ihm von der KI gezeichnete Kandidaten sind.",

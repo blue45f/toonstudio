@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "レビュー提案",
   "aiAssist.episodic.append": "編集提案を挿入",
   "aiAssist.episodic.exampleComments": "読者反応のイメージ例・実際のコメントではありません",
-  "aiAssist.episodic.noGuarantee": "整合性の提案・エラーゼロを保証するものではありません"
+  "aiAssist.episodic.noGuarantee": "整合性の提案・エラーゼロを保証するものではありません",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

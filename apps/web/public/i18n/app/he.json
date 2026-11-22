@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "הוסף הצעת עריכה",
   "aiAssist.episodic.exampleComments": "תגובות קוראים להמחשה · אינן תגובות אמיתיות",
   "aiAssist.episodic.noGuarantee": "הצעות המשכיות · לא ניתן להבטיח אפס שגיאות",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "ניסיוני",
   "anchorLab.header.title": "מעבדת עוגני דמויות",
   "anchorLab.header.lead": "בנו סט עוגנים של דמות תלת-ממדית שצולמה מהחזית, מהצדדים ומהגב, ואז בדקו במכשיר זה עד כמה מועמדים שצוירו ב-AI דומים לו.",

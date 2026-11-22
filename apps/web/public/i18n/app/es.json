@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Insertar sugerencia editorial",
   "aiAssist.episodic.exampleComments": "Reacciones ilustrativas de lectores · No son comentarios reales",
   "aiAssist.episodic.noGuarantee": "Sugerencias de continuidad · No se garantiza cero errores",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Experimental",
   "anchorLab.header.title": "Laboratorio de anclas de personaje",
   "anchorLab.header.lead": "Crea un conjunto de anclas de un personaje 3D capturado desde el frente, los lados y la espalda, y comprueba en este dispositivo cuánto se le parecen las candidatas dibujadas por la IA.",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "பதிப்புரை பரிந்துரையைச் செருகு",
   "aiAssist.episodic.exampleComments": "மாதிரி வாசகர் எதிர்வினைகள் · உண்மையான கருத்துகள் அல்ல",
   "aiAssist.episodic.noGuarantee": "தொடர்ச்சி பரிந்துரைகள் · பிழைகளே இருக்காது என உத்தரவாதம் அளிக்க முடியாது",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "சோதனை அம்சம்",
   "anchorLab.header.title": "கதாபாத்திர ஆங்கர் ஆய்வகம்",
   "anchorLab.header.lead": "முன்புறம், பக்கங்கள் மற்றும் பின்புறத்திலிருந்து படம்பிடிக்கப்பட்ட 3D கதாபாத்திரத்தின் ஆங்கர் தொகுப்பை உருவாக்கி, AI வரைந்த வேட்பாளர் படங்கள் அதை எவ்வளவு நெருக்கமாக ஒத்திருக்கின்றன என்பதை இந்த சாதனத்திலேயே சரிபார்க்கவும்.",

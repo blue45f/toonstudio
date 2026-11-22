@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Návrh z kontroly",
   "aiAssist.episodic.append": "Vložit redakční návrh",
   "aiAssist.episodic.exampleComments": "Ilustrační reakce čtenářů · Nejde o skutečné komentáře",
-  "aiAssist.episodic.noGuarantee": "Návrhy návaznosti · Nelze zaručit nulový počet chyb"
+  "aiAssist.episodic.noGuarantee": "Návrhy návaznosti · Nelze zaručit nulový počet chyb",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

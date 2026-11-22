@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "ແທກຄຳແນະນຳການບັນນາທິການ",
   "aiAssist.episodic.exampleComments": "ຕົວຢ່າງປະຕິກິລິຍາຂອງຜູ້ອ່ານ · ບໍ່ແມ່ນຄຳເຫັນຕົວຈິງ",
   "aiAssist.episodic.noGuarantee": "ຄຳແນະນຳຄວາມຕໍ່ເນື່ອງ · ບໍ່ສາມາດຮັບປະກັນວ່າບໍ່ມີຂໍ້ຜິດພາດເລີຍ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "ທົດລອງ",
   "anchorLab.header.title": "ຫ້ອງທົດລອງຈຸດຍຶດຕົວລະຄອນ",
   "anchorLab.header.lead": "ສ້າງຊຸດຈຸດຍຶດຂອງຕົວລະຄອນ 3D ທີ່ຖ່າຍຈາກດ້ານໜ້າ, ດ້ານຂ້າງ ແລະ ດ້ານຫຼັງ, ແລ້ວກວດສອບໃນອຸປະກອນນີ້ວ່າຕົວເລືອກທີ່ແຕ້ມໂດຍ AI ຄ້າຍຄືກັບມັນເທົ່າໃດ.",

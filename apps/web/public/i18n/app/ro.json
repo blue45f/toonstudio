@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Inserează sugestia editorială",
   "aiAssist.episodic.exampleComments": "Reacții ilustrative ale cititorilor · Nu sunt comentarii reale",
   "aiAssist.episodic.noGuarantee": "Sugestii de continuitate · Nu se poate garanta lipsa totală a erorilor",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Experimental",
   "anchorLab.header.title": "Laborator de ancore pentru personaje",
   "anchorLab.header.lead": "Creați un set de ancore al unui personaj 3D fotografiat din față, din lateral și din spate, apoi verificați pe acest dispozitiv cât de mult seamănă cu el candidații desenați de AI.",

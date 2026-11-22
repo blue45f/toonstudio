@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Oorsigvoorstel",
   "aiAssist.episodic.append": "Voeg redaksionele voorstel in",
   "aiAssist.episodic.exampleComments": "Illustratiewe leserreaksies · Nie werklike kommentaar nie",
-  "aiAssist.episodic.noGuarantee": "Kontinuïteitsvoorstelle · Kan nie nul foute waarborg nie"
+  "aiAssist.episodic.noGuarantee": "Kontinuïteitsvoorstelle · Kan nie nul foute waarborg nie",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

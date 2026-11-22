@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "ಪರಿಶೀಲನಾ ಸಲಹೆ",
   "aiAssist.episodic.append": "ಸಂಪಾದಕೀಯ ಸಲಹೆಯನ್ನು ಸೇರಿಸಿ",
   "aiAssist.episodic.exampleComments": "ಮಾದರಿ ಓದುಗರ ಪ್ರತಿಕ್ರಿಯೆಗಳು · ನಿಜವಾದ ಕಾಮೆಂಟ್‌ಗಳಲ್ಲ",
-  "aiAssist.episodic.noGuarantee": "ನಿರಂತರತೆಯ ಸಲಹೆಗಳು · ಶೂನ್ಯ ದೋಷಗಳನ್ನು ಖಾತರಿಪಡಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ"
+  "aiAssist.episodic.noGuarantee": "ನಿರಂತರತೆಯ ಸಲಹೆಗಳು · ಶೂನ್ಯ ದೋಷಗಳನ್ನು ಖಾತರಿಪಡಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

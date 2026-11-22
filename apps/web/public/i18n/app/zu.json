@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Faka isiphakamiso sokuhlela",
   "aiAssist.episodic.exampleComments": "Izibonelo zokusabela kwabafundi · Akuyona imibono yangempela",
   "aiAssist.episodic.noGuarantee": "Iziphakamiso zokuqhubeka · Azikwazi ukuqinisekisa ukungabi bikho kwamaphutha",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Okokuhlola",
   "anchorLab.header.title": "Ilabhu ye-ankora yomlingiswa",
   "anchorLab.header.lead": "Yakha isethi ye-ankora yomlingiswa we-3D othwetshulwe ngaphambili, ezinhlangothini nangemuva, bese uhlola kule divayisi ukuthi abazokhethwa abadwetshwe yi-AI bafana kangakanani nayo.",

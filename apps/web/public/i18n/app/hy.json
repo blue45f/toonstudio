@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Տեղադրել խմբագրական առաջարկ",
   "aiAssist.episodic.exampleComments": "Ընթերցողների օրինակելի արձագանքներ · Իրական մեկնաբանություններ չեն",
   "aiAssist.episodic.noGuarantee": "Շարունակականության առաջարկներ · Զրոյական սխալներ երաշխավորվել չեն կարող",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Փորձարարական",
   "anchorLab.header.title": "Կերպարի հենակետի լաբորատորիա",
   "anchorLab.header.lead": "Կազմեք 3D կերպարի հենակետային հավաքածու՝ նկարված առջևից, կողքերից և հետևից, ապա այս սարքի վրա ստուգեք, թե որքանով են AI-ով նկարված թեկնածուները նման դրան։",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "સંપાદકીય સૂચન ઉમેરો",
   "aiAssist.episodic.exampleComments": "દૃષ્ટાંતરૂપ વાચક પ્રતિભાવો · વાસ્તવિક ટિપ્પણીઓ નથી",
   "aiAssist.episodic.noGuarantee": "સાતત્ય સૂચનો · શૂન્ય ભૂલોની ખાતરી આપી શકાતી નથી",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "પ્રાયોગિક",
   "anchorLab.header.title": "પાત્ર એન્કર લેબ",
   "anchorLab.header.lead": "આગળ, બાજુઓ અને પાછળથી લીધેલા 3D પાત્રના શોટનો એન્કર સેટ બનાવો, પછી આ ઉપકરણ પર તપાસો કે AI દ્વારા દોરેલા ઉમેદવારો તેને કેટલા મળતા આવે છે.",

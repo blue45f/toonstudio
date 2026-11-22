@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "അവലോകന നിർദ്ദേശം",
   "aiAssist.episodic.append": "എഡിറ്റോറിയൽ നിർദ്ദേശം ചേർക്കുക",
   "aiAssist.episodic.exampleComments": "മാതൃകാ വായനക്കാരുടെ പ്രതികരണങ്ങൾ · യഥാർത്ഥ കമന്റുകളല്ല",
-  "aiAssist.episodic.noGuarantee": "തുടർച്ചയ്ക്കുള്ള നിർദ്ദേശങ്ങൾ · പൂജ്യം പിശകുകൾ ഉറപ്പുനൽകാനാവില്ല"
+  "aiAssist.episodic.noGuarantee": "തുടർച്ചയ്ക്കുള്ള നിർദ്ദേശങ്ങൾ · പൂജ്യം പിശകുകൾ ഉറപ്പുനൽകാനാവില്ല",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

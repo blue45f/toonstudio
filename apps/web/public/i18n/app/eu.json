@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Txertatu argitaratze-iradokizuna",
   "aiAssist.episodic.exampleComments": "Irakurleen erreakzio adierazgarriak · Ez dira benetako iruzkinak",
   "aiAssist.episodic.noGuarantee": "Jarraitutasun-iradokizunak · Ezin da zero akats bermatu",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Esperimentala",
   "anchorLab.header.title": "Pertsonaien aingura laborategia",
   "anchorLab.header.lead": "Eraiki 3D pertsonaia baten aingura-multzo bat aurretik, alboetatik eta atzetik aterata, eta egiaztatu gailu honetan IA bidez marraztutako hautagaiek zenbateraino antzematen dioten.",

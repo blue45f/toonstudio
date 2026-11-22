@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "插入編輯建議",
   "aiAssist.episodic.exampleComments": "讀者反應範例 · 非真實留言",
   "aiAssist.episodic.noGuarantee": "連貫性建議 · 無法保證零錯誤",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "實驗功能",
   "anchorLab.header.title": "角色錨點實驗室",
   "anchorLab.header.lead": "為 3D 角色建立一組從正面、側面與背面拍攝的錨點，再於此裝置上檢查 AI 繪製的候選圖片與錨點有多相近。",

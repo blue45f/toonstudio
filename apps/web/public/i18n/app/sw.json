@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Weka pendekezo la uhariri",
   "aiAssist.episodic.exampleComments": "Mifano ya hisia za wasomaji · Sio maoni halisi",
   "aiAssist.episodic.noGuarantee": "Mapendekezo ya mwendelezo · Haiwezi kuhakikisha kutokuwepo kwa makosa kabisa",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Majaribio",
   "anchorLab.header.title": "Maabara ya nanga ya mhusika",
   "anchorLab.header.lead": "Tengeneza seti ya nanga ya mhusika wa 3D aliyepigwa picha kutoka mbele, pande na nyuma, kisha angalia kwenye kifaa hiki wagombea waliochorwa na AI wanafanana nayo kwa kiasi gani.",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Editöryal öneri ekle",
   "aiAssist.episodic.exampleComments": "Örnek okuyucu tepkileri · Gerçek yorumlar değildir",
   "aiAssist.episodic.noGuarantee": "Süreklilik önerileri · Sıfır hata garanti edilemez",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Deneysel",
   "anchorLab.header.title": "Karakter çapa laboratuvarı",
   "anchorLab.header.lead": "Bir 3D karakterin önden, yanlardan ve arkadan çekilmiş görüntülerinden bir çapa kümesi oluşturun, ardından yapay zekâ ile çizilen adayların buna ne kadar benzediğini bu cihazda kontrol edin.",

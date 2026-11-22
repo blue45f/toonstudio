@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Vložiť redakčný návrh",
   "aiAssist.episodic.exampleComments": "Ilustračné reakcie čitateľov · Nejde o skutočné komentáre",
   "aiAssist.episodic.noGuarantee": "Návrhy nadväznosti · Nemožno zaručiť nulový počet chýb",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Experimentálne",
   "anchorLab.header.title": "Laboratórium kotiev postáv",
   "anchorLab.header.lead": "Vytvorte súpravu kotiev 3D postavy nasnímanej spredu, zo strán a zozadu a potom na tomto zariadení skontrolujte, ako blízko sa jej podobajú kandidáti nakreslení AI.",

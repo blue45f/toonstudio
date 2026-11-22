@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Beoordelingssuggestie",
   "aiAssist.episodic.append": "Redactionele suggestie invoegen",
   "aiAssist.episodic.exampleComments": "Illustratieve lezersreacties · Geen echte reacties",
-  "aiAssist.episodic.noGuarantee": "Continuïteitssuggesties · Nul fouten kan niet worden gegarandeerd"
+  "aiAssist.episodic.noGuarantee": "Continuïteitssuggesties · Nul fouten kan niet worden gegarandeerd",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

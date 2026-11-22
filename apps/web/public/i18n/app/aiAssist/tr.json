@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "İnceleme önerisi",
   "aiAssist.episodic.append": "Editöryal öneri ekle",
   "aiAssist.episodic.exampleComments": "Örnek okuyucu tepkileri · Gerçek yorumlar değildir",
-  "aiAssist.episodic.noGuarantee": "Süreklilik önerileri · Sıfır hata garanti edilemez"
+  "aiAssist.episodic.noGuarantee": "Süreklilik önerileri · Sıfır hata garanti edilemez",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "แทรกข้อเสนอแนะเชิงบรรณาธิการ",
   "aiAssist.episodic.exampleComments": "ตัวอย่างปฏิกิริยาของผู้อ่าน · ไม่ใช่ความคิดเห็นจริง",
   "aiAssist.episodic.noGuarantee": "ข้อเสนอแนะความต่อเนื่อง · ไม่สามารถรับประกันได้ว่าไม่มีข้อผิดพลาดเลย",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "ฟีเจอร์ทดลอง",
   "anchorLab.header.title": "ห้องทดลองแองเคอร์ตัวละคร",
   "anchorLab.header.lead": "สร้างชุดแองเคอร์ของตัวละคร 3D ที่ถ่ายจากด้านหน้า ด้านข้าง และด้านหลัง แล้วตรวจสอบบนอุปกรณ์นี้ว่าภาพตัวเลือกที่ AI วาดคล้ายกับแองเคอร์แค่ไหน",

@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "پیشنهاد بازبینی",
   "aiAssist.episodic.append": "درج پیشنهاد ویرایشی",
   "aiAssist.episodic.exampleComments": "واکنش‌های نمونه خوانندگان · دیدگاه‌های واقعی نیستند",
-  "aiAssist.episodic.noGuarantee": "پیشنهادهای پیوستگی · نمی‌توان نبود خطا را تضمین کرد"
+  "aiAssist.episodic.noGuarantee": "پیشنهادهای پیوستگی · نمی‌توان نبود خطا را تضمین کرد",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

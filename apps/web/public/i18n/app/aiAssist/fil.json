@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Mungkahi sa pagsusuri",
   "aiAssist.episodic.append": "Maglagay ng mungkahing editoryal",
   "aiAssist.episodic.exampleComments": "Mga halimbawang reaksyon ng mambabasa · Hindi totoong mga komento",
-  "aiAssist.episodic.noGuarantee": "Mga mungkahi sa pagpapatuloy · Hindi magagarantiya ang kawalan ng error"
+  "aiAssist.episodic.noGuarantee": "Mga mungkahi sa pagpapatuloy · Hindi magagarantiya ang kawalan ng error",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "సమీక్ష సూచన",
   "aiAssist.episodic.append": "ఎడిటోరియల్ సూచనను చొప్పించు",
   "aiAssist.episodic.exampleComments": "ఉదాహరణ పాఠకుల స్పందనాలు · నిజమైన వ్యాఖ్యలు కావు",
-  "aiAssist.episodic.noGuarantee": "కొనసాగింపు సూచనలు · సున్నా లోపాలకు హామీ ఇవ్వలేము"
+  "aiAssist.episodic.noGuarantee": "కొనసాగింపు సూచనలు · సున్నా లోపాలకు హామీ ఇవ్వలేము",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

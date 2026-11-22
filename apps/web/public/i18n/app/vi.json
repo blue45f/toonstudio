@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Chèn đề xuất biên tập",
   "aiAssist.episodic.exampleComments": "Phản ứng minh họa của độc giả · Không phải bình luận thực tế",
   "aiAssist.episodic.noGuarantee": "Đề xuất tính liền mạch · Không thể đảm bảo hoàn toàn không có lỗi",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Tính năng thử nghiệm",
   "anchorLab.header.title": "Phòng thử nghiệm điểm neo nhân vật",
   "anchorLab.header.lead": "Tạo một bộ điểm neo từ nhân vật 3D được chụp ở mặt trước, hai bên và mặt sau, rồi kiểm tra ngay trên thiết bị này xem các hình ứng viên do AI vẽ giống bộ điểm neo đến mức nào.",

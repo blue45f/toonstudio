@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Вмъкване на редакторско предложение",
   "aiAssist.episodic.exampleComments": "Примерни реакции на читатели · Не са реални коментари",
   "aiAssist.episodic.noGuarantee": "Предложения за последователност · Не се гарантира липса на грешки",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Експериментална функция",
   "anchorLab.header.title": "Лаборатория за котви на героя",
   "anchorLab.header.lead": "Създайте набор от котви на 3D герой, заснет отпред, отстрани и отзад, и проверете на това устройство колко изображенията кандидати, нарисувани от ИИ, приличат на него.",

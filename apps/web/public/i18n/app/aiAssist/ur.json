@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "جائزے کی تجویز",
   "aiAssist.episodic.append": "ادارتی تجویز شامل کریں",
   "aiAssist.episodic.exampleComments": "قارئین کے مثالی ردِ عمل · حقیقی تبصرے نہیں ہیں",
-  "aiAssist.episodic.noGuarantee": "تسلسل کی تجاویز · صفر غلطیوں کی ضمانت نہیں دی جا سکتی"
+  "aiAssist.episodic.noGuarantee": "تسلسل کی تجاویز · صفر غلطیوں کی ضمانت نہیں دی جا سکتی",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

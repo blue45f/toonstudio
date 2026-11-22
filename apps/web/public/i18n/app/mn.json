@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Редакцын санал оруулах",
   "aiAssist.episodic.exampleComments": "Уншигчдын жишээ хариу үйлдэл · Бодит сэтгэгдэл биш",
   "aiAssist.episodic.noGuarantee": "Уялдаа холбооны санал · Алдаа огт гарахгүй гэсэн баталгаа өгөх боломжгүй",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Туршилтын",
   "anchorLab.header.title": "Дүрийн зангуун лаборатори",
   "anchorLab.header.lead": "3D дүрийг урд, хажуу, араас нь авсан зургуудаар зангуу багц бүтээгээд, AI-гаар зурсан хувилбарууд түүнтэй хэр төстэйг энэ төхөөрөмж дээр шалгаарай.",

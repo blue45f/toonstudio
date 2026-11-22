@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "သုံးသပ်ချက် အကြံပြုချက်",
   "aiAssist.episodic.append": "တည်းဖြတ်မှု အကြံပြုချက် ထည့်သွင်းရန်",
   "aiAssist.episodic.exampleComments": "စာဖတ်သူ တုံ့ပြန်မှု နမူနာများ · အမှန်တကယ် မှတ်ချက်များ မဟုတ်ပါ",
-  "aiAssist.episodic.noGuarantee": "အဆက်အစပ် အကြံပြုချက်များ · အမှားလုံးဝမရှိကြောင်း အာမမခံနိုင်ပါ"
+  "aiAssist.episodic.noGuarantee": "အဆက်အစပ် အကြံပြုချက်များ · အမှားလုံးဝမရှိကြောင်း အာမမခံနိုင်ပါ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

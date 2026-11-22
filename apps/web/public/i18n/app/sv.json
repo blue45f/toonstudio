@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Infoga redaktionellt förslag",
   "aiAssist.episodic.exampleComments": "Illustrativa läsarreaktioner · Inte faktiska kommentarer",
   "aiAssist.episodic.noGuarantee": "Kontinuitetsförslag · Kan inte garantera noll fel",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Experimentellt",
   "anchorLab.header.title": "Karaktärsankarlaboratorium",
   "anchorLab.header.lead": "Bygg en ankarsats av en 3D-karaktär fotograferad framifrån, från sidorna och bakifrån, och kontrollera sedan på den här enheten hur nära AI-ritade kandidater liknar den.",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Ievietot redakcionālu ieteikumu",
   "aiAssist.episodic.exampleComments": "Ilustratīvas lasītāju reakcijas · Nav īsti komentāri",
   "aiAssist.episodic.noGuarantee": "Nepārtrauktības ieteikumi · Nevar garantēt nulles kļūdas",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Eksperimentāls",
   "anchorLab.header.title": "Varoņa enkura laboratorija",
   "anchorLab.header.lead": "Izveidojiet 3D varoņa enkura kopu, kas uzņemta no priekšas, sāniem un aizmugures, pēc tam šajā ierīcē pārbaudiet, cik cieši AI zīmētie kandidāti tai līdzinās.",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Sett inn redaksjonelt forslag",
   "aiAssist.episodic.exampleComments": "Illustrerende leserreaksjoner · Ikke faktiske kommentarer",
   "aiAssist.episodic.noGuarantee": "Kontinuitetsforslag · Kan ikke garantere null feil",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Eksperimentelt",
   "anchorLab.header.title": "Laboratorium for karakterankere",
   "anchorLab.header.lead": "Bygg et ankersett av en 3D-karakter fotografert forfra, fra sidene og bakfra, og kontroller på denne enheten hvor nært AI-tegnede kandidater ligner på det.",

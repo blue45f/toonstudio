@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Umetni urednički prijedlog",
   "aiAssist.episodic.exampleComments": "Ilustrativne reakcije čitalaca · Nisu stvarni komentari",
   "aiAssist.episodic.noGuarantee": "Prijedlozi za kontinuitet · Ne može se garantovati nula grešaka",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Eksperimentalno",
   "anchorLab.header.title": "Laboratorij za sidra likova",
   "anchorLab.header.lead": "Napravite skup sidara 3D lika snimljenog sprijeda, sa strana i nazad, a zatim na ovom uređaju provjerite koliko kandidati nacrtani AI-jem liče na njega.",

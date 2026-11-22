@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Forslag fra gennemgang",
   "aiAssist.episodic.append": "Indsæt redaktionelt forslag",
   "aiAssist.episodic.exampleComments": "Illustrerende læserreaktioner · Ikke faktiske kommentarer",
-  "aiAssist.episodic.noGuarantee": "Kontinuitetsforslag · Kan ikke garantere nul fejl"
+  "aiAssist.episodic.noGuarantee": "Kontinuitetsforslag · Kan ikke garantere nul fejl",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

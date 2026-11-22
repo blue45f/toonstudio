@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "插入编辑建议",
   "aiAssist.episodic.exampleComments": "读者反应示例 · 非真实评论",
   "aiAssist.episodic.noGuarantee": "连贯性建议 · 无法保证零错误",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "实验功能",
   "anchorLab.header.title": "角色锚点实验室",
   "anchorLab.header.lead": "用 3D 角色的正面、侧面和背面图像建立锚点集，然后在此设备上查看 AI 绘制的候选图像与锚点有多相似。",

@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Текшерүү сунушу",
   "aiAssist.episodic.append": "Редакциялык сунушту кошуу",
   "aiAssist.episodic.exampleComments": "Окурмандардын мисалдык реакциялары · Чыныгы пикирлер эмес",
-  "aiAssist.episodic.noGuarantee": "Ырааттуулук сунуштары · Каталардын такыр болбошуна кепилдик берилбейт"
+  "aiAssist.episodic.noGuarantee": "Ырааттуулук сунуштары · Каталардын такыр болбошуна кепилдик берилбейт",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Suggestion de relecture",
   "aiAssist.episodic.append": "Insérer la suggestion éditoriale",
   "aiAssist.episodic.exampleComments": "Réactions de lecteurs à titre d'exemple · Pas de vrais commentaires",
-  "aiAssist.episodic.noGuarantee": "Suggestions de continuité · Zéro erreur non garanti"
+  "aiAssist.episodic.noGuarantee": "Suggestions de continuité · Zéro erreur non garanti",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

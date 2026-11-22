@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "ସମୀକ୍ଷା ପରାମର୍ଶ",
   "aiAssist.episodic.append": "ସମ୍ପାଦକୀୟ ପରାମର୍ଶ ଭର୍ତ୍ତି କରନ୍ତୁ",
   "aiAssist.episodic.exampleComments": "ଉଦାହରଣମୂଳକ ପାଠକ ପ୍ରତିକ୍ରିୟା · ପ୍ରକୃତ ମନ୍ତବ୍ୟ ନୁହେଁ",
-  "aiAssist.episodic.noGuarantee": "ଧାରାବାହିକତା ପରାମର୍ଶ · ଶୂନ୍ୟ ତ୍ରୁଟିର ଗ୍ୟାରେଣ୍ଟି ଦିଆଯାଇପାରିବ ନାହିଁ"
+  "aiAssist.episodic.noGuarantee": "ଧାରାବାହିକତା ପରାମର୍ଶ · ଶୂନ୍ୟ ତ୍ରୁଟିର ଗ୍ୟାରେଣ୍ଟି ଦିଆଯାଇପାରିବ ନାହିଁ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

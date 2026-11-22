@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Вставить редакторское предложение",
   "aiAssist.episodic.exampleComments": "Примерные реакции читателей · Не настоящие комментарии",
   "aiAssist.episodic.noGuarantee": "Предложения по целостности · Полное отсутствие ошибок не гарантируется",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Экспериментальная функция",
   "anchorLab.header.title": "Лаборатория якорей персонажа",
   "anchorLab.header.lead": "Создайте набор якорей 3D-персонажа, снятого спереди, с боков и сзади, и прямо на этом устройстве проверьте, насколько изображения-кандидаты, нарисованные ИИ, похожи на него.",

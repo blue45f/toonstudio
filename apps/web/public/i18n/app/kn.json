@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "ಸಂಪಾದಕೀಯ ಸಲಹೆಯನ್ನು ಸೇರಿಸಿ",
   "aiAssist.episodic.exampleComments": "ಮಾದರಿ ಓದುಗರ ಪ್ರತಿಕ್ರಿಯೆಗಳು · ನಿಜವಾದ ಕಾಮೆಂಟ್‌ಗಳಲ್ಲ",
   "aiAssist.episodic.noGuarantee": "ನಿರಂತರತೆಯ ಸಲಹೆಗಳು · ಶೂನ್ಯ ದೋಷಗಳನ್ನು ಖಾತರಿಪಡಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "ಪ್ರಾಯೋಗಿಕ",
   "anchorLab.header.title": "ಪಾತ್ರ ಆಂಕರ್ ಪ್ರಯೋಗಾಲಯ",
   "anchorLab.header.lead": "3D ಪಾತ್ರವನ್ನು ಮುಂಭಾಗ, ಬದಿಗಳು ಮತ್ತು ಹಿಂಭಾಗದಿಂದ ಚಿತ್ರೀಕರಿಸಿದ ಆಂಕರ್ ಸೆಟ್ ಅನ್ನು ರಚಿಸಿ, ನಂತರ AI ರಚಿಸಿದ ಅಭ್ಯರ್ಥಿ ಚಿತ್ರಗಳು ಅದನ್ನು ಎಷ್ಟು ಹೋಲುತ್ತವೆ ಎಂಬುದನ್ನು ಈ ಸಾಧನದಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.",

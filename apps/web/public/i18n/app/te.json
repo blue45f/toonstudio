@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "ఎడిటోరియల్ సూచనను చొప్పించు",
   "aiAssist.episodic.exampleComments": "ఉదాహరణ పాఠకుల స్పందనాలు · నిజమైన వ్యాఖ్యలు కావు",
   "aiAssist.episodic.noGuarantee": "కొనసాగింపు సూచనలు · సున్నా లోపాలకు హామీ ఇవ్వలేము",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "ప్రయోగాత్మకం",
   "anchorLab.header.title": "పాత్ర యాంకర్ ప్రయోగశాల",
   "anchorLab.header.lead": "3D పాత్రను ముందు, పక్కలు మరియు వెనుక నుండి చిత్రీకరించి యాంకర్ సమితిని రూపొందించండి, ఆపై AI గీసిన అభ్యర్థి చిత్రాలు దానిని ఎంత దగ్గరగా పోలి ఉన్నాయో ఈ పరికరంలోనే తనిఖీ చేయండి.",

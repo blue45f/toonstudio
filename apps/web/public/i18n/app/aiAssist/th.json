@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "ข้อเสนอแนะจากการตรวจทาน",
   "aiAssist.episodic.append": "แทรกข้อเสนอแนะเชิงบรรณาธิการ",
   "aiAssist.episodic.exampleComments": "ตัวอย่างปฏิกิริยาของผู้อ่าน · ไม่ใช่ความคิดเห็นจริง",
-  "aiAssist.episodic.noGuarantee": "ข้อเสนอแนะความต่อเนื่อง · ไม่สามารถรับประกันได้ว่าไม่มีข้อผิดพลาดเลย"
+  "aiAssist.episodic.noGuarantee": "ข้อเสนอแนะความต่อเนื่อง · ไม่สามารถรับประกันได้ว่าไม่มีข้อผิดพลาดเลย",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

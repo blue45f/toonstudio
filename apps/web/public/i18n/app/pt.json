@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Inserir sugestão editorial",
   "aiAssist.episodic.exampleComments": "Reações ilustrativas de leitores · Não são comentários reais",
   "aiAssist.episodic.noGuarantee": "Sugestões de continuidade · Não é possível garantir zero erros",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Experimental",
   "anchorLab.header.title": "Laboratório de âncoras de personagens",
   "anchorLab.header.lead": "Monte um conjunto de âncoras de um personagem 3D fotografado de frente, dos lados e de trás e verifique neste dispositivo o quanto as imagens candidatas desenhadas por IA se parecem com ele.",

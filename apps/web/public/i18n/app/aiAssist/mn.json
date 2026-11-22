@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Хяналтын санал",
   "aiAssist.episodic.append": "Редакцын санал оруулах",
   "aiAssist.episodic.exampleComments": "Уншигчдын жишээ хариу үйлдэл · Бодит сэтгэгдэл биш",
-  "aiAssist.episodic.noGuarantee": "Уялдаа холбооны санал · Алдаа огт гарахгүй гэсэн баталгаа өгөх боломжгүй"
+  "aiAssist.episodic.noGuarantee": "Уялдаа холбооны санал · Алдаа огт гарахгүй гэсэн баталгаа өгөх боломжгүй",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

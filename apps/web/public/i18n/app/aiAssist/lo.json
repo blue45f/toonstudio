@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "ຄຳແນະນຳຈາກການກວດສອບ",
   "aiAssist.episodic.append": "ແທກຄຳແນະນຳການບັນນາທິການ",
   "aiAssist.episodic.exampleComments": "ຕົວຢ່າງປະຕິກິລິຍາຂອງຜູ້ອ່ານ · ບໍ່ແມ່ນຄຳເຫັນຕົວຈິງ",
-  "aiAssist.episodic.noGuarantee": "ຄຳແນະນຳຄວາມຕໍ່ເນື່ອງ · ບໍ່ສາມາດຮັບປະກັນວ່າບໍ່ມີຂໍ້ຜິດພາດເລີຍ"
+  "aiAssist.episodic.noGuarantee": "ຄຳແນະນຳຄວາມຕໍ່ເນື່ອງ · ບໍ່ສາມາດຮັບປະກັນວ່າບໍ່ມີຂໍ້ຜິດພາດເລີຍ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

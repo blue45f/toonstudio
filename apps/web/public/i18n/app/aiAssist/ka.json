@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "მიმოხილვის შემოთავაზება",
   "aiAssist.episodic.append": "სარედაქციო შემოთავაზების ჩასმა",
   "aiAssist.episodic.exampleComments": "მკითხველის სანიმუშო რეაქციები · არ არის რეალური კომენტარები",
-  "aiAssist.episodic.noGuarantee": "უწყვეტობის შემოთავაზებები · უშეცდომობა გარანტირებული არ არის"
+  "aiAssist.episodic.noGuarantee": "უწყვეტობის შემოთავაზებები · უშეცდომობა გარანტირებული არ არის",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

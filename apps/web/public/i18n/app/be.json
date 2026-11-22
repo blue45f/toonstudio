@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Уставіць рэдактарскую прапанову",
   "aiAssist.episodic.exampleComments": "Прыкладныя рэакцыі чытачоў · Не сапраўдныя каментарыі",
   "aiAssist.episodic.noGuarantee": "Прапановы па паслядоўнасці · Поўная адсутнасць памылак не гарантуецца",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Эксперыментальна",
   "anchorLab.header.title": "Лабараторыя апор персанажа",
   "anchorLab.header.lead": "Стварыце набор апор 3D-персанажа, знятага спераду, збоку і ззаду, затым праверце на гэтай прыладзе, наколькі кандыдаты, намаляваныя AI, падобныя на яго.",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Setja inn ritstjórnartillögu",
   "aiAssist.episodic.exampleComments": "Dæmi um viðbrögð lesenda · Ekki raunverulegar athugasemdir",
   "aiAssist.episodic.noGuarantee": "Samfellutillögur · Ekki er hægt að tryggja núll villur",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Tilraun",
   "anchorLab.header.title": "Tilraunastofa fyrir persónuankeri",
   "anchorLab.header.lead": "Búðu til ankerisett af þrívíddarpersónu sem er mynduð að framan, frá hliðum og aftan, og athugaðu síðan á þessu tæki hversu líkir gervigreindarteiknaðir kostir eru því.",

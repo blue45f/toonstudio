@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "સમીક્ષા સૂચન",
   "aiAssist.episodic.append": "સંપાદકીય સૂચન ઉમેરો",
   "aiAssist.episodic.exampleComments": "દૃષ્ટાંતરૂપ વાચક પ્રતિભાવો · વાસ્તવિક ટિપ્પણીઓ નથી",
-  "aiAssist.episodic.noGuarantee": "સાતત્ય સૂચનો · શૂન્ય ભૂલોની ખાતરી આપી શકાતી નથી"
+  "aiAssist.episodic.noGuarantee": "સાતત્ય સૂચનો · શૂન્ય ભૂલોની ખાતરી આપી શકાતી નથી",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

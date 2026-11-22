@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "审阅建议",
   "aiAssist.episodic.append": "插入编辑建议",
   "aiAssist.episodic.exampleComments": "读者反应示例 · 非真实评论",
-  "aiAssist.episodic.noGuarantee": "连贯性建议 · 无法保证零错误"
+  "aiAssist.episodic.noGuarantee": "连贯性建议 · 无法保证零错误",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

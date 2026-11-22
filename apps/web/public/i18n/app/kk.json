@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Редакциялық ұсынысты кірістіру",
   "aiAssist.episodic.exampleComments": "Оқырмандардың үлгі реакциялары · Нақты пікірлер емес",
   "aiAssist.episodic.noGuarantee": "Сабақтастық ұсыныстары · Қателердің мүлдем болмауына кепілдік берілмейді",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Эксперименттік",
   "anchorLab.header.title": "Кейіпкер якорі зертханасы",
   "anchorLab.header.lead": "3D кейіпкердің алдынан, бүйірлерінен және артынан түсірілген якорь жиынтығын жасаңыз, содан кейін осы құрылғыда ЖИ салған үміткерлердің оған қаншалықты ұқсайтынын тексеріңіз.",

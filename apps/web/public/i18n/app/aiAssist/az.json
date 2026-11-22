@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "İcmal təklifi",
   "aiAssist.episodic.append": "Redaktə təklifini əlavə et",
   "aiAssist.episodic.exampleComments": "Nümunəvi oxucu reaksiyaları · Faktiki şərhlər deyil",
-  "aiAssist.episodic.noGuarantee": "Ardıcıllıq təklifləri · Sıfır xəta zəmanəti verilmir"
+  "aiAssist.episodic.noGuarantee": "Ardıcıllıq təklifləri · Sıfır xəta zəmanəti verilmir",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "編集提案を挿入",
   "aiAssist.episodic.exampleComments": "読者反応のイメージ例・実際のコメントではありません",
   "aiAssist.episodic.noGuarantee": "整合性の提案・エラーゼロを保証するものではありません",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "実験的機能",
   "anchorLab.header.title": "キャラクターアンカーラボ",
   "anchorLab.header.lead": "3Dキャラクターを正面・側面・背面から撮影したアンカーセットを作成し、AIが描いた候補画像がアンカーにどのくらい似ているかを、このデバイス上で手軽に確認できます。",

@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Ülevaatuse soovitus",
   "aiAssist.episodic.append": "Lisa toimetamissoovitus",
   "aiAssist.episodic.exampleComments": "Näitlikud lugejate reaktsioonid · Pole tegelikud kommentaarid",
-  "aiAssist.episodic.noGuarantee": "Järjepidevuse soovitused · Vigade puudumist ei saa garanteerida"
+  "aiAssist.episodic.noGuarantee": "Järjepidevuse soovitused · Vigade puudumist ei saa garanteerida",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

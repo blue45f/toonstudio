@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Ստուգման առաջարկ",
   "aiAssist.episodic.append": "Տեղադրել խմբագրական առաջարկ",
   "aiAssist.episodic.exampleComments": "Ընթերցողների օրինակելի արձագանքներ · Իրական մեկնաբանություններ չեն",
-  "aiAssist.episodic.noGuarantee": "Շարունակականության առաջարկներ · Զրոյական սխալներ երաշխավորվել չեն կարող"
+  "aiAssist.episodic.noGuarantee": "Շարունակականության առաջարկներ · Զրոյական սխալներ երաշխավորվել չեն կարող",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

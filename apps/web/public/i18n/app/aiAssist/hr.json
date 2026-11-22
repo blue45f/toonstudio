@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Prijedlog pregleda",
   "aiAssist.episodic.append": "Umetni urednički prijedlog",
   "aiAssist.episodic.exampleComments": "Ilustrativne reakcije čitatelja · Nisu stvarni komentari",
-  "aiAssist.episodic.noGuarantee": "Prijedlozi za kontinuitet · Ne može se jamčiti nula pogrešaka"
+  "aiAssist.episodic.noGuarantee": "Prijedlozi za kontinuitet · Ne može se jamčiti nula pogrešaka",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

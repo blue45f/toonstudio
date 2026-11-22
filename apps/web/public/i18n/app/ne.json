@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "सम्पादकीय सुझाव घुसाउनुहोस्",
   "aiAssist.episodic.exampleComments": "उदाहरणात्मक पाठक प्रतिक्रियाहरू · वास्तविक टिप्पणीहरू होइनन्",
   "aiAssist.episodic.noGuarantee": "निरन्तरताका सुझावहरू · शून्य त्रुटिको ग्यारेन्टी गर्न सकिँदैन",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "प्रयोगात्मक",
   "anchorLab.header.title": "पात्र एङ्कर प्रयोगशाला",
   "anchorLab.header.lead": "अगाडि, छेउ र पछाडिबाट खिचिएको 3D पात्रको एङ्कर सेट बनाउनुहोस्, अनि AI ले कोरेका उम्मेदवारहरू त्यससँग कत्तिको मिल्छन् यो यन्त्रमा जाँच्नुहोस्।",

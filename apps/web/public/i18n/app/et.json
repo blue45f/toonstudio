@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Lisa toimetamissoovitus",
   "aiAssist.episodic.exampleComments": "Näitlikud lugejate reaktsioonid · Pole tegelikud kommentaarid",
   "aiAssist.episodic.noGuarantee": "Järjepidevuse soovitused · Vigade puudumist ei saa garanteerida",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Eksperimentaalne",
   "anchorLab.header.title": "Tegelase ankrute labor",
   "anchorLab.header.lead": "Koosta 3D-tegelasest eest, külgedelt ja tagant tehtud võtetega ankrute komplekt ning kontrolli selles seadmes, kui lähedalt tehisintellekti joonistatud kandidaadid sellele sarnanevad.",

@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Indsæt redaktionelt forslag",
   "aiAssist.episodic.exampleComments": "Illustrerende læserreaktioner · Ikke faktiske kommentarer",
   "aiAssist.episodic.noGuarantee": "Kontinuitetsforslag · Kan ikke garantere nul fejl",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Eksperimentel",
   "anchorLab.header.title": "Laboratorium for figurankre",
   "anchorLab.header.lead": "Byg et ankersæt af en 3D-figur fotograferet forfra, fra siderne og bagfra, og kontrollér derefter på denne enhed, hvor tæt AI-tegnede kandidater ligner det.",

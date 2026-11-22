@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "የአርትዖት ጥቆማ አስገባ",
   "aiAssist.episodic.exampleComments": "ምሳሌያዊ የአንባቢ ምላሾች · ትክክለኛ አስተያየቶች አይደሉም",
   "aiAssist.episodic.noGuarantee": "የቀጣይነት ጥቆማዎች · ምንም ስህተት አለመኖሩን ማረጋገጥ አይቻልም",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "የሙከራ",
   "anchorLab.header.title": "የገጸ ባህሪ መልሕቅ ላብራቶሪ",
   "anchorLab.header.lead": "ከፊት፣ ከጎኖች እና ከኋላ የተነሳ የ3D ገጸ ባህሪ መልሕቅ ስብስብ ይገንቡ፣ ከዚያ በAI የተሳሉ እጩዎች ምን ያህል እንደሚመሳሰሉ በዚህ መሣሪያ ላይ ያረጋግጡ።",

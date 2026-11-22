@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "සංස්කරණ යෝජනාව ඇතුළත් කරන්න",
   "aiAssist.episodic.exampleComments": "නිදසුන් පාඨක ප්‍රතිචාර · සැබෑ අදහස් නොවේ",
   "aiAssist.episodic.noGuarantee": "අඛණ්ඩතා යෝජනා · දෝෂ ශූන්‍ය බව සහතික කළ නොහැක",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "පර්යේෂණාත්මක",
   "anchorLab.header.title": "චරිත ඇන්කර් විද්‍යාගාරය",
   "anchorLab.header.lead": "ඉදිරිපස, පැති සහ පිටුපස සිට ඡායාරූපගත කළ ත්‍රිමාණ චරිතයක ඇන්කර් කට්ටලයක් සාදා, AI විසින් ඇඳි අපේක්ෂකයන් එයට කොපමණ සමීපව සමාන දැයි මෙම උපාංගයේදීම පරීක්ෂා කරන්න.",

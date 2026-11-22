@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "ସମ୍ପାଦକୀୟ ପରାମର୍ଶ ଭର୍ତ୍ତି କରନ୍ତୁ",
   "aiAssist.episodic.exampleComments": "ଉଦାହରଣମୂଳକ ପାଠକ ପ୍ରତିକ୍ରିୟା · ପ୍ରକୃତ ମନ୍ତବ୍ୟ ନୁହେଁ",
   "aiAssist.episodic.noGuarantee": "ଧାରାବାହିକତା ପରାମର୍ଶ · ଶୂନ୍ୟ ତ୍ରୁଟିର ଗ୍ୟାରେଣ୍ଟି ଦିଆଯାଇପାରିବ ନାହିଁ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "ପରୀକ୍ଷାମୂଳକ",
   "anchorLab.header.title": "ଚରିତ୍ର ଆଙ୍କର୍ ଲ୍ୟାବ୍",
   "anchorLab.header.lead": "ଏକ 3D ଚରିତ୍ରକୁ ସମ୍ମୁଖ, ପାର୍ଶ୍ୱ ଏବଂ ପଛରୁ ନିଆଯାଇଥିବା ଏକ ଆଙ୍କର୍ ସେଟ୍ ତିଆରି କରନ୍ତୁ, ତା'ପରେ AI ଦ୍ୱାରା ଅଙ୍କିତ ପ୍ରାର୍ଥୀମାନେ ଏହା ସହ କେତେ ମେଳ ଖାଉଛନ୍ତି ଏହି ଡିଭାଇସରେ ଯାଞ୍ଚ କରନ୍ତୁ।",

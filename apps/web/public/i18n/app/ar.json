@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "إدراج اقتراح تحريري",
   "aiAssist.episodic.exampleComments": "تفاعلات قراء توضيحية · ليست تعليقات فعلية",
   "aiAssist.episodic.noGuarantee": "اقتراحات الاستمرارية · لا يمكن ضمان خلو العمل من الأخطاء",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "تجريبي",
   "anchorLab.header.title": "مختبر مراسي الشخصية",
   "anchorLab.header.lead": "أنشئ مجموعة مراسي لشخصية ثلاثية الأبعاد ملتقطة من الأمام والجانبين والخلف، ثم تحقق على هذا الجهاز من مدى تشابه الصور المرشحة التي رسمها الذكاء الاصطناعي معها.",

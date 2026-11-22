@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Вставити редакторську пропозицію",
   "aiAssist.episodic.exampleComments": "Приблизні реакції читачів · Не справжні коментарі",
   "aiAssist.episodic.noGuarantee": "Пропозиції щодо цілісності · Повна відсутність помилок не гарантується",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Експериментальна функція",
   "anchorLab.header.title": "Лабораторія якорів персонажа",
   "anchorLab.header.lead": "Створіть набір якорів 3D-персонажа, знятого спереду, з боків і ззаду, і просто на цьому пристрої перевірте, наскільки зображення-кандидати, намальовані ШІ, схожі на нього.",

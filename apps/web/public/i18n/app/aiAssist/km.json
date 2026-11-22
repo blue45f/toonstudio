@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "ការណែនាំពីការពិនិត្យ",
   "aiAssist.episodic.append": "បញ្ចូលការណែនាំផ្នែកនិពន្ធ",
   "aiAssist.episodic.exampleComments": "ប្រតិកម្មអ្នកអានជាឧទាហរណ៍ · មិនមែនជាមតិពិតប្រាកដទេ",
-  "aiAssist.episodic.noGuarantee": "ការណែនាំអំពីភាពស៊ីសង្វាក់ · មិនអាចធានាថាគ្មានកំហុសសោះឡើយទេ"
+  "aiAssist.episodic.noGuarantee": "ការណែនាំអំពីភាពស៊ីសង្វាក់ · មិនអាចធានាថាគ្មានកំហុសសោះឡើយទេ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

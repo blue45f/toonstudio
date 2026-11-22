@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "Saran tinjauan",
   "aiAssist.episodic.append": "Sisipkan saran editorial",
   "aiAssist.episodic.exampleComments": "Ilustrasi reaksi pembaca · Bukan komentar sebenarnya",
-  "aiAssist.episodic.noGuarantee": "Saran kesinambungan · Tidak dapat menjamin nol kesalahan"
+  "aiAssist.episodic.noGuarantee": "Saran kesinambungan · Tidak dapat menjamin nol kesalahan",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

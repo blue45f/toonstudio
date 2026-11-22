@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Insérer la suggestion éditoriale",
   "aiAssist.episodic.exampleComments": "Réactions de lecteurs à titre d'exemple · Pas de vrais commentaires",
   "aiAssist.episodic.noGuarantee": "Suggestions de continuité · Zéro erreur non garanti",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Expérimental",
   "anchorLab.header.title": "Laboratoire d'ancres de personnage",
   "anchorLab.header.lead": "Créez un ensemble d'ancres à partir de vues d'un personnage 3D (face, profils et dos), puis vérifiez sur cet appareil dans quelle mesure les candidats dessinés par l'IA s'en rapprochent.",

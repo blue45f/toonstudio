@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "ਸੰਪਾਦਕੀ ਸੁਝਾਅ ਸ਼ਾਮਲ ਕਰੋ",
   "aiAssist.episodic.exampleComments": "ਉਦਾਹਰਣ ਵਜੋਂ ਪਾਠਕ ਪ੍ਰਤੀਕਿਰਿਆਵਾਂ · ਅਸਲ ਟਿੱਪਣੀਆਂ ਨਹੀਂ ਹਨ",
   "aiAssist.episodic.noGuarantee": "ਨਿਰੰਤਰਤਾ ਸੁਝਾਅ · ਜ਼ੀਰੋ ਗਲਤੀਆਂ ਦੀ ਗਾਰੰਟੀ ਨਹੀਂ ਦਿੱਤੀ ਜਾ ਸਕਦੀ",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "ਪ੍ਰਯੋਗਾਤਮਕ",
   "anchorLab.header.title": "ਚਰਿੱਤਰ ਐਂਕਰ ਲੈਬ",
   "anchorLab.header.lead": "ਕਿਸੇ 3D ਚਰਿੱਤਰ ਦਾ ਸਾਹਮਣੇ, ਦੋਵੇਂ ਪਾਸਿਆਂ ਅਤੇ ਪਿੱਛੇ ਤੋਂ ਲਿਆ ਗਿਆ ਐਂਕਰ ਸੈੱਟ ਬਣਾਓ, ਫਿਰ ਇਸ ਡਿਵਾਈਸ 'ਤੇ ਜਾਂਚੋ ਕਿ AI ਨਾਲ ਬਣੇ ਉਮੀਦਵਾਰ ਉਸ ਨਾਲ ਕਿੰਨੇ ਮਿਲਦੇ-ਜੁਲਦੇ ਹਨ।",

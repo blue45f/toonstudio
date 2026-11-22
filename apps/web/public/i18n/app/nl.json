@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "Redactionele suggestie invoegen",
   "aiAssist.episodic.exampleComments": "Illustratieve lezersreacties · Geen echte reacties",
   "aiAssist.episodic.noGuarantee": "Continuïteitssuggesties · Nul fouten kan niet worden gegarandeerd",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "Experimenteel",
   "anchorLab.header.title": "Ankerlab voor personages",
   "anchorLab.header.lead": "Stel een ankerset samen van een 3D-personage dat van voren, van de zijkanten en van achteren is vastgelegd, en controleer op dit apparaat hoe sterk door AI getekende kandidaten erop lijken.",

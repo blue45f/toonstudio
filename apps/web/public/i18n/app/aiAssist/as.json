@@ -442,5 +442,7 @@
   "aiAssist.episodic.suggestion": "পৰ্যালোচনাৰ পৰামৰ্শ",
   "aiAssist.episodic.append": "সম্পাদনা পৰামৰ্শ সুমুৱাওক",
   "aiAssist.episodic.exampleComments": "পাঠকৰ প্ৰতিক্ৰিয়াৰ উদাহৰণ · প্ৰকৃত মন্তব্য নহয়",
-  "aiAssist.episodic.noGuarantee": "ধাৰাবাহিকতাৰ পৰামৰ্শ · শূন্য ত্ৰুটিৰ নিশ্চয়তা দিব নোৱাৰি"
+  "aiAssist.episodic.noGuarantee": "ধাৰাবাহিকতাৰ পৰামৰ্শ · শূন্য ত্ৰুটিৰ নিশ্চয়তা দিব নোৱাৰি",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again."
 }

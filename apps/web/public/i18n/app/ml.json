@@ -513,6 +513,8 @@
   "aiAssist.episodic.append": "എഡിറ്റോറിയൽ നിർദ്ദേശം ചേർക്കുക",
   "aiAssist.episodic.exampleComments": "മാതൃകാ വായനക്കാരുടെ പ്രതികരണങ്ങൾ · യഥാർത്ഥ കമന്റുകളല്ല",
   "aiAssist.episodic.noGuarantee": "തുടർച്ചയ്ക്കുള്ള നിർദ്ദേശങ്ങൾ · പൂജ്യം പിശകുകൾ ഉറപ്പുനൽകാനാവില്ല",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "anchorLab.header.eyebrow": "പരീക്ഷണാത്മകം",
   "anchorLab.header.title": "കഥാപാത്ര ആങ്കർ ലാബ്",
   "anchorLab.header.lead": "മുന്നിൽ നിന്നും വശങ്ങളിൽ നിന്നും പിന്നിൽ നിന്നും ചിത്രീകരിച്ച ഒരു 3D കഥാപാത്രത്തിന്റെ ആങ്കർ സെറ്റ് നിർമ്മിക്കൂ, തുടർന്ന് AI വരച്ച കാൻഡിഡേറ്റുകൾ അതിനോട് എത്രത്തോളം സാമ്യമുള്ളതാണെന്ന് ഈ ഉപകരണത്തിൽ തന്നെ പരിശോധിക്കൂ.",
