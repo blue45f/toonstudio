@@ -62,6 +62,12 @@ const StudioSubmissionPackagePanel = lazy(async () => {
   return { default: module.StudioSubmissionPackagePanel };
 });
 
+// 화수 일괄 납품 패키지는 플랫폼 슬라이스·Rights BOM 증명서·ZIP 생성 코드를 포함하므로 출고 섹션에서만 지연 로드한다.
+const StudioEpisodeDeliveryPackPanel = lazy(async () => {
+  const module = await import("../delivery-pack/StudioEpisodeDeliveryPackPanel");
+  return { default: module.StudioEpisodeDeliveryPackPanel };
+});
+
 // KAISTORY 만화 제작·다국어 검수·학습카드 워크벤치 (conti · design · editor · story 통합 표면).
 const StudioKaistoryProductionWorkbench = lazy(async () => {
   const module = await import("../kaistory/StudioKaistoryProductionWorkbench");
@@ -89,6 +95,19 @@ function SubmissionPackageFallback() {
       aria-label={bt("투고 패키지 화면을 불러오는 중", "Loading the submission package panel")}
     >
       {bt("투고 패키지 화면을 준비하고 있습니다.", "Preparing the submission package panel.")}
+    </div>
+  );
+}
+
+function EpisodeDeliveryPackFallback() {
+  const bt = useBilingual("studioProjectIntegrated.deliveryPackFallback");
+  return (
+    <div
+      className="flex min-h-20 items-center rounded-xl border border-line bg-card/70 px-4 py-5 text-xs text-fg-3"
+      role="status"
+      aria-label={bt("화수 납품 패키지 화면을 불러오는 중", "Loading the episode delivery pack panel")}
+    >
+      {bt("화수 일괄 납품 패키지를 준비하고 있습니다.", "Preparing the episode delivery pack panel.")}
     </div>
   );
 }
@@ -164,6 +183,11 @@ function SectionWorkflow({
     <>
       {section === "export" ? (
         <StudioExportPanel projectId={projectId} locale={locale} />
+      ) : null}
+      {section === "export" ? (
+        <Suspense fallback={<EpisodeDeliveryPackFallback />}>
+          <StudioEpisodeDeliveryPackPanel key={projectId} projectId={projectId} locale={locale} />
+        </Suspense>
       ) : null}
       {section === "export" && view === "packages" ? (
         <Suspense fallback={<SubmissionPackageFallback />}>
