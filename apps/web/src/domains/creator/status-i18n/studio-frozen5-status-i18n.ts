@@ -533,9 +533,11 @@ registerI18nLocaleEntries("en", {
 // ── StudioBg3dSceneAssistantWorkspace
 registerI18nLocaleEntries("ko", {
   "studio.frozenStatus5.bg3dAssistant.assetsEmpty": "표시할 준비된 소재가 없습니다.",
+  "studio.frozenStatus5.bg3dAssistant.proLabLoading": "3D 프로 랩 불러오는 중…",
 });
 registerI18nLocaleEntries("en", {
   "studio.frozenStatus5.bg3dAssistant.assetsEmpty": "No ready assets to show.",
+  "studio.frozenStatus5.bg3dAssistant.proLabLoading": "Loading the 3D Pro Lab…",
 });
 
 export function frozenStatus5Text(key: string, koFallback: string): string;

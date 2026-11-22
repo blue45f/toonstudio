@@ -19,6 +19,14 @@ const viewControllerSource = readFileSync(
   "utf8",
 );
 const viewportSource = readStudioCanvasViewportStack(import.meta.url, "./canvas/");
+const autoScaleSource = readFileSync(
+  new URL("./canvas/use-studio-canvas-auto-scale.ts", import.meta.url),
+  "utf8",
+);
+const canvasColumnSource = readFileSync(
+  new URL("./studio-cuttoon-editor/StudioCuttoonEditorCanvasColumn.tsx", import.meta.url),
+  "utf8",
+);
 const canvasControlsSource = ["StudioCanvasControls.tsx", "StudioCanvasStageHud.tsx"]
   .map((name) => readFileSync(new URL(`./canvas/${name}`, import.meta.url), "utf8"))
   .join("\n");
@@ -80,11 +88,14 @@ describe("StudioPage view integration contract", () => {
     expect(inspectorSource).not.toMatch(/scrollPos\.(?:left|top)\s*\/\s*effScale/u);
   });
 
-  it("keeps rotation out of automatic ResizeObserver fitting", () => {
-    expect(source).toContain("w / studioViewDocumentWidthRef.current");
-    expect(source).toContain(
-      "[canvasOnlyMode, isFullscreen, maximized, mobileImmersive]"
-    );
+  it("실제 뷰포트가 폭 관측을 소유하고 회전만으로 자동 맞춤을 다시 실행하지 않는다", () => {
+    expect(viewportSource).toContain("useStudioCanvasAutoScale({");
+    expect(viewportSource).toContain("documentWidth: props.canvasRotation === 90 || props.canvasRotation === 270 ? props.canvasH : CANVAS_W");
+    expect(viewportSource).toContain("setScale: props.setScale");
+    expect(canvasColumnSource).toContain("setScale={s.setScale} autoFitMaximumScale={s.isFullscreen || s.maximized || s.mobileImmersive || s.canvasOnlyMode ? 4 : 2.5}");
+    expect(autoScaleSource).toContain("const currentDocumentWidth = documentWidthRef.current");
+    expect(autoScaleSource).toContain("[maximumScale, setScale, wrapRef]");
+    expect(source).not.toContain("w / studioViewDocumentWidthRef.current");
   });
 
   it("shows effective magnification and exposes an accessible rail-to-toolbar relationship", () => {

@@ -16,11 +16,51 @@ import {
   generateLocalSupportReply,
   maskSensitiveSupportInput,
   requestSupportTicketAutofill,
+  saveSupportHandoffDraft,
   sendSupportAiChatMessage,
+  type SupportHandoffPayload,
 } from "../support-ai-chat-client";
 
 const readSupportChatFile = (relativePath: string) =>
   readFileSync(new URL(relativePath, import.meta.url), "utf8");
+
+describe("지원 문의 인계 사본의 저장 경계", () => {
+  const payload: SupportHandoffPayload = { oneLineIssue: "저장 위치 확인", category: "general", creatorSupportCategory: "story",
+    urgency: "normal", summary: "확인한 문의 요약", checkedItems: ["로컬 파일 확인"], contact: "작가 연락처", createdAt: "2026-11-22T00:00:00.000Z" };
+
+  it("최근 인계 1개의 닫힌 필드만 보존하고 원고·대화 전체 필드는 제외한다", () => {
+    const withDocument = { ...payload, document: { pages: ["원고"] }, history: ["상담 전체"] };
+    expect(saveSupportHandoffDraft(withDocument)).toBe(true);
+    expect(JSON.parse(window.localStorage.getItem(SUPPORT_HANDOFF_STORAGE_KEY) ?? "null")).toEqual(payload);
+    const next = { ...payload, summary: "다음 문의 요약" };
+    expect(saveSupportHandoffDraft(next)).toBe(true);
+    expect(JSON.parse(window.localStorage.getItem(SUPPORT_HANDOFF_STORAGE_KEY) ?? "null")).toEqual(next);
+  });
+
+  it.each(["invalid", "oversize"])("%s 입력은 기존 사본과 원고를 변경하지 않는다", (kind) => {
+    window.localStorage.setItem(SUPPORT_HANDOFF_STORAGE_KEY, JSON.stringify(payload));
+    window.localStorage.setItem("studio-project-document", "원고 보존");
+    const next = kind === "oversize" ? { ...payload, summary: "가".repeat(65_536) } : { ...payload, createdAt: "invalid" };
+    expect(saveSupportHandoffDraft(next)).toBe(false);
+    expect(window.localStorage.getItem(SUPPORT_HANDOFF_STORAGE_KEY)).toBe(JSON.stringify(payload));
+    expect(window.localStorage.getItem("studio-project-document")).toBe("원고 보존");
+  });
+
+  it("손상되거나 다른 형식인 기존 사본을 새 문의로 덮지 않는다", () => {
+    window.localStorage.setItem(SUPPORT_HANDOFF_STORAGE_KEY, '{"schemaVersion":2,"summary":"기존 문의"}');
+    expect(saveSupportHandoffDraft(payload)).toBe(false);
+    expect(window.localStorage.getItem(SUPPORT_HANDOFF_STORAGE_KEY)).toBe('{"schemaVersion":2,"summary":"기존 문의"}');
+  });
+
+  it.each(["throw", "ignore"])("%s 저장 실패를 성공으로 알리지 않는다", (kind) => {
+    window.localStorage.setItem(SUPPORT_HANDOFF_STORAGE_KEY, JSON.stringify(payload));
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      if (kind === "throw") throw new DOMException("quota", "QuotaExceededError");
+    });
+    expect(saveSupportHandoffDraft({ ...payload, summary: "새 문의" })).toBe(false);
+    expect(window.localStorage.getItem(SUPPORT_HANDOFF_STORAGE_KEY)).toBe(JSON.stringify(payload));
+  });
+});
 
 function renderChat(props?: {
   onApplyToBrief?: (payload: { category: string; summary: string; contact: string }) => void;

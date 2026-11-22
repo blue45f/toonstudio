@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioCrdtDocument } from "./studio-crdt-document";
 import { publishStudioCrdtDrawGraphDiff } from "./studio-crdt-scene-publisher";
 import { StudioAutosaveOpfsSession } from "../studio-autosave-opfs-session";
+import { isStudioAutosaveSupersededFailure } from "../studio-cuttoon-editor/runtime/studio-autosave-monotonic-gate";
 import { createStudioOpfsMemoryFileSystem } from "../studio-opfs-filesystem";
 import { createStudioOpfsRecoveryJournal } from "../studio-opfs-recovery-journal";
 import { createStudioLifecycleEmergencyAutosave } from "../studio-pending-stroke-durability";
@@ -52,10 +53,18 @@ function fixture(options: { empty?: boolean; holdFirstWrite?: boolean } = {}) {
   const firstWriteGate = options.holdFirstWrite
     ? new Promise<void>((resolve) => { releaseFirstWrite = resolve; })
     : Promise.resolve();
+  let notifyFirstWriteStarted = () => {};
+  const firstWriteStarted = new Promise<void>((resolve) => { notifyFirstWriteStarted = resolve; });
   const appendCheckpoint = journal.appendCheckpoint.bind(journal);
   let firstWrite = true;
+  let checkpointStarts = 0;
   journal.appendCheckpoint = async (...args) => {
-    if (firstWrite) { firstWrite = false; await firstWriteGate; }
+    checkpointStarts += 1;
+    if (firstWrite) {
+      firstWrite = false;
+      notifyFirstWriteStarted();
+      await firstWriteGate;
+    }
     return appendCheckpoint(...args);
   };
   const sessionOptions = { autosaveKey: "retained-undo", ownerId: "writer", now: () => 1000 };
@@ -113,7 +122,10 @@ function fixture(options: { empty?: boolean; holdFirstWrite?: boolean } = {}) {
     await reader.dispose();
     return result;
   }
-  return { context, document, pending, undone, state, pages, writes, persist, readAfterCrash, releaseFirstWrite };
+  return {
+    context, document, pending, undone, state, pages, writes, persist, readAfterCrash,
+    releaseFirstWrite, firstWriteStarted, getCheckpointStarts: () => checkpointStarts,
+  };
 }
 
 describe("retained Undo durable recovery", () => {
@@ -157,20 +169,58 @@ describe("retained Undo durable recovery", () => {
     expect(f.document.getStroke("pending", true)?.deleted).toBe(true);
   });
 
-  it("queues the newer Undo generation while the pointerup checkpoint is still in flight", async () => {
+  it("실제 저널 기록이 시작된 pointerup 저장 뒤에 새 Undo 세대를 기록한다", async () => {
     const f = fixture({ holdFirstWrite: true });
     f.persist();
+    await f.firstWriteStarted;
+    expect(f.getCheckpointStarts()).toBe(1);
     expect(undoStudioRetainedStrokeHistory(f.context)).toBe(true);
     expect(f.writes).toHaveLength(2);
+    expect(f.getCheckpointStarts()).toBe(1);
     expect(f.context.onUndone.mock.invocationCallOrder[0]).toBeLessThan(f.persist.mock.invocationCallOrder[1]!);
     f.releaseFirstWrite();
-    await Promise.all(f.writes);
+    expect(await Promise.all(f.writes)).toMatchObject([
+      { revision: 1, savedAt: "2026-09-07T00:00:01.000Z" },
+      { revision: 2, savedAt: "2026-09-07T00:00:02.000Z" },
+    ]);
+    expect(f.getCheckpointStarts()).toBe(2);
     const recovered = await f.readAfterCrash();
     expect(recovered).toMatchObject({
-      state: "snapshot", revision: 2,
+      state: "snapshot", revision: 2, savedAt: "2026-09-07T00:00:02.000Z",
       payload: { pagesList: [{ elements: [{ id: "earlier" }] }] },
     });
     if (recovered?.state === "snapshot") expect(recovered.payload.pagesList[0]!.elements).toHaveLength(1);
+    expect(f.document.getStroke("pending", true)?.deleted).toBe(true);
+  });
+
+  it.each([false, true])("시작 전 pointerup 저장은 같은 턴 Undo로 대체하고 새 원고만 복구한다 (%s)", async (empty) => {
+    const f = fixture({ empty, holdFirstWrite: true });
+    f.persist();
+    expect(f.getCheckpointStarts()).toBe(0);
+    expect(undoStudioRetainedStrokeHistory(f.context)).toBe(true);
+    expect(f.writes).toHaveLength(2);
+    const settled = Promise.allSettled(f.writes);
+    await f.firstWriteStarted;
+    expect(f.getCheckpointStarts()).toBe(1);
+    f.releaseFirstWrite();
+    const [replaced, saved] = await settled;
+    expect(replaced?.status).toBe("rejected");
+    if (replaced?.status !== "rejected") throw new Error("대체된 원고에 내구 영수증을 발행하면 안 됩니다.");
+    expect(isStudioAutosaveSupersededFailure(replaced.reason)).toBe(true);
+    expect(saved).toMatchObject({
+      status: "fulfilled", value: { revision: 1, savedAt: "2026-09-07T00:00:02.000Z" },
+    });
+    expect(f.getCheckpointStarts()).toBe(1);
+    expect(f.pending.current).toBeNull();
+    expect(f.state).toMatchObject({ generation: 2, retryRequests: 1 });
+    vi.advanceTimersByTime(500);
+    const recovered = await f.readAfterCrash();
+    expect(recovered).toMatchObject({ state: "snapshot", revision: 1, savedAt: "2026-09-07T00:00:02.000Z" });
+    if (recovered?.state !== "snapshot") throw new Error("Undo checkpoint missing");
+    expect(recovered.payload.pagesList[0]?.elements).toEqual(empty ? [] : [earlierStroke]);
+    expect(recovered.payload.pendingStrokeDurability).toBeUndefined();
+    expect(recovered.payload.lifecycleDurability?.pendingStrokeIds).toBeUndefined();
+    expect(f.document.getStroke("pending", true)?.deleted).toBe(true);
   });
 
   it.each(["saving", "publication-rejected", "page-missing"] as const)(

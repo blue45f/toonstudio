@@ -197,6 +197,11 @@ jobs:
         env:
           TOONSPECTRUM_SOAK_OUT: artifacts/studio-five-hour-soak/${{ matrix.id }}
         run: pnpm exec tsx scripts/analyze-studio-five-hour-visual.mts
+      - name: Preserve bounded diagnostic bundle sources
+        if: ${{ !cancelled() && needs.production-build.outputs.diagnostic == '1' && steps.restore_dist.outcome == 'success' }}
+        env:
+          TOONSPECTRUM_SOAK_OUT: artifacts/studio-five-hour-soak/${{ matrix.id }}
+        run: node scripts/collect-studio-soak-diagnostic-assets.mjs
       - name: Preserve 10-minute checkpoints, screenshots and report
         if: always()
         uses: actions/upload-artifact@v7

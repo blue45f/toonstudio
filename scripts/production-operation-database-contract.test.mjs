@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildProductionOperationCapabilitySql, buildProductionOperationRuntimeAclSql, PRODUCTION_OPERATION_RELATIONS } from "./production-operation-database-contract.mjs";
 describe("production operation runtime ACL contract", () => {
-  it("covers all nine new tables and keeps immutable receipts/audits append-only", () => {
-    expect(PRODUCTION_OPERATION_RELATIONS).toHaveLength(9);
-    for (const table of PRODUCTION_OPERATION_RELATIONS.filter(({relation}) => /receipt|audit/u.test(relation))) {
+  it("운영·분업 13개 표와 추가 전용 영수증·감사·검수 기록의 권한을 추적한다", () => {
+    expect(PRODUCTION_OPERATION_RELATIONS).toHaveLength(13);
+    for (const table of PRODUCTION_OPERATION_RELATIONS.filter(({relation}) => /receipt|audit|qa_inspection/u.test(relation))) {
       expect(table.updates).toEqual([]); expect(table.remove).toBe(false); expect(table.insert).toBe(true);
     }
   });

@@ -1,7 +1,7 @@
 /**
  * T-036 · T-043 · T-044:
- * - Plotr · Tooning Plus · Character Chat · Virtual Studio 통합 오프라인 우선(Local-First) 동기화 브리지
- *   (IndexedDB/로컬 스냅샷 권위 유지, 낙관적 동기화, 필드 단위 충돌 머지, 지수 백오프 오프라인 큐 재시도)
+ * - Plotr · Tooning Plus · Character Chat · Virtual Studio의 메모리 동기화 시연 모델
+ *   (샘플 큐·충돌 머지·백오프 검증용이며 실제 원고 저장·서버 반영 권위와 연결하지 않는다.)
  * - 가상 스튜디오 근접 원고 합평 테이블 & 화면공유 시그널링 상태 머신 재수출
  */
 
@@ -89,7 +89,7 @@ export interface SyncConflictRecord {
 }
 
 export interface LocalSnapshotStore {
-  readonly backend: "indexeddb-mirror" | "local-storage" | "memory";
+  readonly backend: "memory";
   read(key: string): string | null;
   write(key: string, value: string): void;
 }
@@ -105,7 +105,7 @@ export interface RemoteSyncTransport {
 export interface OfflineSyncSnapshotDocument {
   readonly schemaVersion: 1;
   readonly projectId: string;
-  readonly authority: "local-first";
+  readonly authority: "session-demo";
   readonly lamportClock: number;
   readonly networkStatus: SyncNetworkStatus;
   readonly storageBackend: LocalSnapshotStore["backend"];
@@ -144,43 +144,6 @@ export function createMemorySnapshotStore(): LocalSnapshotStore {
     backend: "memory",
     read: (key) => map.get(key) ?? null,
     write: (key, value) => { map.set(key, value); },
-  };
-}
-
-export function createBrowserSnapshotStore(namespace = "toonstudio:local-first-sync:v1"): LocalSnapshotStore {
-  const hasLocalStorage = typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-  const hasIdb = typeof globalThis !== "undefined" && "indexedDB" in globalThis;
-  const fallback = createMemorySnapshotStore();
-
-  const mirrorToIndexedDb = (key: string, value: string): void => {
-    if (!hasIdb) return;
-    try {
-      const request = globalThis.indexedDB.open("toonstudio_offline_sync_v1", 1);
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains("snapshots")) db.createObjectStore("snapshots");
-      };
-      request.onsuccess = () => {
-        try {
-          const db = request.result;
-          db.transaction("snapshots", "readwrite").objectStore("snapshots").put(value, `${namespace}:${key}`);
-        } catch { /* 로컬스토리지 권위가 이미 저장됨 */ }
-      };
-    } catch { /* 사생활 보호 모드 등 IDB 미지원 시 무시 */ }
-  };
-
-  if (!hasLocalStorage) return fallback;
-  return {
-    backend: hasIdb ? "indexeddb-mirror" : "local-storage",
-    read: (key) => {
-      try { return window.localStorage.getItem(`${namespace}:${key}`); }
-      catch { return fallback.read(key); }
-    },
-    write: (key, value) => {
-      try { window.localStorage.setItem(`${namespace}:${key}`, value); }
-      catch { fallback.write(key, value); }
-      mirrorToIndexedDb(key, value);
-    },
   };
 }
 
@@ -325,7 +288,7 @@ export function createOfflineFirstSyncBridge(
     return {
       schemaVersion: 1,
       projectId,
-      authority: "local-first",
+      authority: "session-demo",
       lamportClock: options.seedDemoRecords ? 1 : 0,
       networkStatus: options.initialNetwork ?? "online",
       storageBackend: store.backend,
@@ -406,7 +369,7 @@ export function createOfflineFirstSyncBridge(
         const waitingCount = state.queue.filter((q) => q.status === "pending" || q.status === "retrying").length;
         return Object.freeze({
           attempted: 0, synced: 0, retried: 0, failed: 0, mergedConflicts: 0, manualConflicts: 0, skippedOffline: true,
-          summaryKo: `오프라인 상태입니다. 대기 작업 ${waitingCount}건이 로컬 스냅샷에 안전 보관 중입니다.`,
+          summaryKo: `오프라인 시연입니다. 대기 작업 ${waitingCount}건은 현재 세션 메모리에만 있으며 화면을 닫으면 사라집니다.`,
         });
       }
 
@@ -414,7 +377,7 @@ export function createOfflineFirstSyncBridge(
       if (eligible.length === 0) {
         return Object.freeze({
           attempted: 0, synced: 0, retried: 0, failed: 0, mergedConflicts: 0, manualConflicts: 0, skippedOffline: false,
-          summaryKo: "동기화할 대기 변경사항이 없습니다(최신 상태).",
+          summaryKo: "동기화 시연에 대기 중인 샘플 변경사항이 없습니다.",
         });
       }
 
@@ -482,7 +445,7 @@ export function createOfflineFirstSyncBridge(
         persist();
         return Object.freeze({
           attempted: eligible.length, synced, retried, failed, mergedConflicts, manualConflicts, skippedOffline: false,
-          summaryKo: `낙관적 동기화 완료: 반영 ${synced}건 · 재시도 예약 ${retried}건 · 충돌 병합 ${mergedConflicts}건`,
+          summaryKo: `메모리 동기화 시연: 반영 ${synced}건 · 재시도 예약 ${retried}건 · 충돌 병합 ${mergedConflicts}건`,
         });
       } catch (cause) {
         const reason = cause instanceof Error ? cause.message : "네트워크 오류";
@@ -503,7 +466,7 @@ export function createOfflineFirstSyncBridge(
         persist();
         return Object.freeze({
           attempted: eligible.length, synced: 0, retried, failed, mergedConflicts: 0, manualConflicts: 0, skippedOffline: false,
-          summaryKo: `API 연결 실패(${reason}) → 로컬 스냅샷 보존 및 재시도 큐 ${retried}건 예약`,
+          summaryKo: `시연 전송 실패(${reason}) → 현재 세션 메모리의 재시도 큐 ${retried}건 예약(영구 저장 아님)`,
         });
       }
     },

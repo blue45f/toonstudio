@@ -109,14 +109,12 @@ export interface StudioWorkspaceMenuProps {
    */
   liveLayout: StudioWorkspaceLayout;
   /**
-   * Samples which input surface the studio is being drawn on right now, or `null` for no adaptation.
-   *
-   * A function rather than a value so the manager reads it once as it opens. The answer can change
-   * mid-session — the first time an artist puts a pen down — and a device editor that re-labelled
-   * itself while someone was reading it would be worse than one that answers for the moment it was
-   * opened.
+   * 메뉴를 열 때 최근 입력 기기를 한 번 읽는다. 적용된 화면 기기와 다를 수 있으며,
+   * 관리 중 표시와 편집 대상은 처음 읽은 값을 유지한다.
    */
   resolveDeviceKind?: () => StudioWorkspaceDeviceKind | null;
+  /** 표시 배치의 기기. null은 저자 배치이며 undefined일 때만 기존 관측값을 쓴다. */
+  appliedDeviceKind?: StudioWorkspaceDeviceKind | null;
   /** Result of loading or most recently persisting this owner's workspace state. */
   persistence: StudioWorkspacePersistenceSnapshot;
   /** Persists catalog, active selection, and device preferences. */
@@ -472,7 +470,7 @@ export function StudioWorkspaceMenu({
   state,
   creatorRole,
   liveLayout,
-  resolveDeviceKind,
+  resolveDeviceKind, appliedDeviceKind,
   persistence,
   onStateChange,
   onApplyLayout,
@@ -2305,7 +2303,7 @@ export function StudioWorkspaceMenu({
                           // 화면에 실제로 서 있는 기하 — liveLayout 은 저자형이라 .desktop 을 그대로
                           // 쓰면 지금 보이는 도크가 아니라 저술된 도크를 집는다.
                           {
-                            desktop: resolveStudioWorkspaceDeviceLayout(liveLayout, deviceKind)
+                            desktop: resolveStudioWorkspaceDeviceLayout(liveLayout, appliedDeviceKind === undefined ? deviceKind : appliedDeviceKind)
                               .desktop,
                           },
                           `지금 도크 배치를 ${DEVICE_KIND_LABELS[overrideDevice]} 값으로 저장했어요.`

@@ -106,8 +106,9 @@ export function createStudioFirstContactTrace(input: {
     || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > DEADLINE_MS) throw new Error("trace 수집 한도를 확인해 주세요.");
   const metadata = { schemaVersion: 1, diagnosticOnly: true, acceptanceProven: false, ...source,
     captureScope: input.captureScope ?? { kind: "armed-strokes", maxCycles: 64 },
-    categories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], availableCategories: null as string[] | null,
-    unadvertisedRequestedCategories: null as string[] | null, categoryValidation: "trace-start-and-native-evidence",
+    categories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], requestedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES],
+    advertisedCategories: null as readonly string[] | null, missingRequestedCategories: null as readonly string[] | null,
+    categoryEvidenceAuthority: "captured native RunTask/EventDispatch/UserTiming evidence; the advertised catalog can change as code paths are reached",
     mainFrameId: null as string | null, endFrameId: null as string | null,
     started: false, completed: false, startPendingAtFinish: false, dataLossOccurred: null as boolean | null,
     rawTraceFile: null as string | null, rawTraceBytes: 0, rawTraceSha256: null as string | null, streamComplete: false,
@@ -172,13 +173,10 @@ export function createStudioFirstContactTrace(input: {
         metadata.mainFrameId = await within(transport.frameId(), timeoutMs);
         if (!metadata.mainFrameId) throw new Error("trace의 최상위 frame ID가 없습니다.");
         const categories = await within(transport.categories(), timeoutMs);
-        if (!Array.isArray(categories) || !categories.every((category) => typeof category === "string")) {
-          throw new Error("trace 범주 목록 형식이 잘못되었습니다.");
-        }
-        // 조회 목록의 완전성을 가정하지 않는다. 요청은 유지하며 실제 start·원본 상관분석으로 검증한다.
-        // Chromium TracingController::GetCategories 계약은 새 실행 경로에 따라 category groups가 바뀔 수 있다고 명시한다.
-        metadata.availableCategories = [...categories];
-        metadata.unadvertisedRequestedCategories = metadata.categories.filter((category) => !categories.includes(category));
+        if (!Array.isArray(categories) || categories.some((category) => typeof category !== "string")) throw new Error("trace 범주 목록 형식이 잘못되었습니다.");
+        metadata.advertisedCategories = [...categories];
+        metadata.missingRequestedCategories = STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => !categories.includes(category));
+        // Chromium GetCategories의 목록은 도달한 코드 경로에 따라 바뀐다. 실제 native 증거의 누락은 finish에서 거절한다.
         startPromise = transport.start().then((value) => {
           startSettled = true; traceStarted = true;
           if (terminal) void cleanupLateStart(true);

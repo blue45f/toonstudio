@@ -435,7 +435,7 @@ async function drawEvidenceStroke(
       await page.waitForTimeout(500);
       return result;
     } finally {
-      try { await markStudioSoakStroke(page, false); }
+      try { await markStudioSoakStroke(page, false); } catch (error) { collectionFailed("stroke-mark-stop", error, cycle); }
       finally {
         if (MEASURE_POINTER_LATENCY) try {
           pointerLatency = await drainStudioSoakPointerLatency(page);
@@ -447,8 +447,7 @@ async function drawEvidenceStroke(
       }
     }
   })();
-  const advance = await waitForStudioDocumentAdvance(page, {
-    layerCountBefore,
+  const advance = await waitForStudioDocumentAdvance(page, { layerCountBefore,
     historyUndoDepthBefore: historyBefore.undoDepth,
     historyTotalAppendsBefore: diagnosticsBefore.totalAppends,
     rejectedStrokeCountBefore: diagnosticsBefore.rejectedStrokeCount,
@@ -464,8 +463,7 @@ async function drawEvidenceStroke(
     changed: changedPixels(before, after),
     shot: after,
     pointer,
-    layerCountBefore,
-    layerCountAfter: advance.layerCountAfter,
+    layerCountBefore, layerCountAfter: advance.layerCountAfter,
     historyEntryCountBefore: historyBefore.entryCount,
     historyUndoDepthBefore: historyBefore.undoDepth,
     historyEntryCount: advance.historyEntryCount,
@@ -935,8 +933,9 @@ try {
     await recordHeapCheckpoint("final", MINUTES * 60_000);
     await recordScreenshot("final", MINUTES * 60_000);
   }
-  recordRuntimeErrors();
   await finishCpuDiagnostic();
+  if (CPU_DIAGNOSTIC && page) await recordTelemetry();
+  recordRuntimeErrors();
   finalized = true;
   writeReport();
   await browser?.close().catch(() => undefined);

@@ -52,11 +52,11 @@ import {
 
 test("manifest lists every numbered SQL migration exactly once in order", () => {
   const manifest = loadMigrationManifest();
-  expect(manifest).toHaveLength(132);
+  expect(manifest).toHaveLength(133);
   expect(manifest[0].id).toBe("0001_studio_ai_usage_ledger");
   expect(manifest[130].id).toBe("0131_studio_space_poll");
-  expect(manifest.at(-1).id).toBe("0132_admin_production_changes");
-  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(132);
+  expect(manifest.at(-1).id).toBe("0133_production_division_os");
+  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(133);
 });
 
 test("음성 검수 함수 복구는 기배포 0093 원문과 체크섬을 보존한다", () => {
@@ -1508,7 +1508,7 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "membership_resource_state",
     "membership_resource_usage_event",
     "membership_reward_reversal",
-    "personal_cloud_connection",
+    "personal_cloud_connection", "production_binary_lock", "production_cut_slice",
     "production_episode_voice_commentary",
     "production_integration_connection",
     "production_integration_oauth_state",
@@ -1526,7 +1526,7 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "production_project",
     "production_project_event",
     "production_project_mutation_receipt",
-    "production_push_subscription",
+    "production_push_subscription", "production_qa_inspection", "production_royalty_ledger",
     "production_stage_gate",
     "production_stage_gate_audit",
     "production_stage_gate_decision",

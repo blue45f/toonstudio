@@ -246,6 +246,32 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
     expect(result.issues.join(" ")).toContain("초과"); expect(f.transport.close).toHaveBeenCalledOnce(); expect(f.activeListeners()).toBe(0);
   });
 
+  it("사전 catalog에 없는 요청 범주도 실제 native 증거로 검증하고 전체 목록·차집합을 보존한다", async () => {
+    const f = fixture(); vi.mocked(f.transport.categories).mockResolvedValue(["blink.user_timing"]);
+    await f.trace.start(); await f.trace.armStroke(1, "pen"); f.stroke();
+    expect(await f.trace.finish()).toMatchObject({ completed: true, issues: [],
+      requestedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES], advertisedCategories: ["blink.user_timing"],
+      missingRequestedCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "blink.user_timing") });
+    expect(f.metadata().advertisedCategories).toEqual(["blink.user_timing"]);
+  });
+
+  it("비어 있는 catalog를 수집해도 실제 RunTask가 없으면 성공으로 바꾸지 않는다", async () => {
+    const f = fixture(); vi.mocked(f.transport.categories).mockResolvedValue([]);
+    f.transform((events) => events.filter((event) => !event.name.includes("RunTask")));
+    await f.trace.start(); await f.trace.armStroke(1, "pen"); f.stroke();
+    const result = await f.trace.finish();
+    expect(result).toMatchObject({ completed: false, advertisedCategories: [], missingRequestedCategories: [...STUDIO_FIRST_CONTACT_TRACE_CATEGORIES] });
+    expect(result.issues.join(" ")).toContain("first-contact-task");
+    expect(result.rawTraceSha256).toMatch(/^[a-f0-9]{64}$/u);
+  });
+
+  it("catalog 조회 오류를 숨기거나 trace를 시작하지 않는다", async () => {
+    const f = fixture(); vi.mocked(f.transport.categories).mockRejectedValue(new Error("catalog unavailable"));
+    await expect(f.trace.start()).rejects.toThrow("catalog unavailable");
+    expect(await f.trace.finish()).toMatchObject({ completed: false, advertisedCategories: null, missingRequestedCategories: null });
+    expect(f.transport.start).not.toHaveBeenCalled();
+  });
+
   it.each(["complete", "RunTask", "EventDispatch", "UserTiming"] as const)("조회 목록에 toplevel이 없어도 요청을 유지하며 실제 %s 증거로 완료를 판정한다", async (missing) => {
     const f = fixture();
     const available = STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "toplevel");
@@ -257,8 +283,9 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
     const result = await f.trace.finish();
     expect(result).toMatchObject({ started: true, completed: missing === "complete", streamComplete: true,
       categories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES,
-      availableCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "toplevel"),
-      unadvertisedRequestedCategories: ["toplevel"], categoryValidation: "trace-start-and-native-evidence",
+      requestedCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES,
+      advertisedCategories: STUDIO_FIRST_CONTACT_TRACE_CATEGORIES.filter((category) => category !== "toplevel"),
+      missingRequestedCategories: ["toplevel"],
       rawTraceSha256: expect.stringMatching(/^[a-f0-9]{64}$/u) });
     expect(f.transport.start).toHaveBeenCalledOnce();
     if (missing === "complete") expect(result.issues).toEqual([]);
@@ -266,8 +293,8 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
       expect(result.correlation).toBeNull();
       expect(result.issues.join(" ")).toContain(missing === "UserTiming" ? "native-marker-count" : "first-contact-task-or-pointerdown-dispatch");
     }
-    expect(f.metadata()).toMatchObject({ availableCategories: result.availableCategories,
-      unadvertisedRequestedCategories: ["toplevel"], completed: missing === "complete" });
+    expect(f.metadata()).toMatchObject({ advertisedCategories: result.advertisedCategories,
+      missingRequestedCategories: ["toplevel"], completed: missing === "complete" });
   });
 
   it.each(["rejected", "malformed"] as const)("범주 조회의 %s 결과는 시작 실패와 metadata에 남긴다", async (failure) => {
@@ -276,7 +303,7 @@ describe("진단 trace의 원본 실패 보존과 제한", () => {
     else vi.mocked(f.transport.categories).mockResolvedValue("toplevel" as unknown as readonly string[]);
     await expect(f.trace.start()).rejects.toThrow();
     const result = await f.trace.finish();
-    expect(result).toMatchObject({ completed: false, availableCategories: null, unadvertisedRequestedCategories: null });
+    expect(result).toMatchObject({ completed: false, advertisedCategories: null, missingRequestedCategories: null });
     expect(result.issues.join(" ")).toContain(failure === "rejected" ? "category discovery failed" : "범주 목록 형식");
     expect(f.transport.start).not.toHaveBeenCalled();
     expect(f.transport.detach).toHaveBeenCalledOnce();

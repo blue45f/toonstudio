@@ -28,6 +28,8 @@ import { openStudioBrushCatalogThroughUi, selectStudioBrushCatalogItemThroughUi,
 import { createStudioBrushFirstContactCpuCapture, type StudioBrushDiagnosticInputSample } from "./lib/studio-brush-first-contact-diagnostics";
 import { assertStudioEraserLatencyFixture, prepareStudioEraserLatencyFixture } from "./lib/studio-brush-latency-eraser-fixture";
 import { evaluateStudioBrushLatencyProvenance, readStudioBrushLatencyProvenance, type StudioBrushLatencyBrowserErrors as BrowserErrors, type StudioBrushLatencyProvenance, type StudioBrushLatencyResult as BrushLatencyResult } from "./lib/studio-brush-latency-evidence";
+import { verifyStudioBrushPointerDispatchNativeFixture, type StudioBrushPointerDispatchNativeFixture } from "./lib/studio-brush-pointer-dispatch-native-fixture";
+import { studioBrushPointerDispatchInitSource } from "./lib/studio-brush-pointer-dispatch-probe";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import {
@@ -179,22 +181,11 @@ function collectBrowserErrors(page: Page, label: string, studioUrl: string): Bro
 
 async function prepareStudio(page: Page, studioUrl: string): Promise<void> {
   page.setDefaultTimeout(9_000);
-  await page.addInitScript(({ autosavePrefix, mobileHintKey, quickstartKey }) => {
-    try {
-      window.localStorage.setItem(quickstartKey, "1");
-      window.localStorage.setItem(mobileHintKey, "1");
-      for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
-        const key = window.localStorage.key(index);
-        if (key?.startsWith(autosavePrefix)) window.localStorage.removeItem(key);
-      }
-    } catch {
-      // Visible and pixel assertions below remain strict without storage.
-    }
-  }, {
+  await page.addInitScript({ content: studioBrushPointerDispatchInitSource({
     autosavePrefix: AUTOSAVE_PREFIX,
     mobileHintKey: MOBILE_HINT_KEY,
     quickstartKey: QUICKSTART_KEY,
-  });
+  }) });
   await page.goto(studioUrl, { waitUntil: "domcontentloaded", timeout: 25_000 });
   await page.evaluate("globalThis.__name ??= (target) => target");
   await page.locator(".konvajs-content").first().waitFor({
@@ -874,6 +865,7 @@ async function main(): Promise<void> {
   const results: BrushLatencyResult[] = [];
   const executionFailures: Array<{ caseId: string; message: string }> = [];
   let provenanceBefore: StudioBrushLatencyProvenance | null = null;
+  let pointerDispatchNativeFixture: StudioBrushPointerDispatchNativeFixture | null = null;
   let reportWritten = false;
   try {
     await waitForServer(origin, {
@@ -890,6 +882,8 @@ async function main(): Promise<void> {
       ...(process.env.TOONSPECTRUM_BRUSH_LATENCY_GPU === "1" ? { channel: "chromium" } : {}),
       args: ["--no-sandbox", ...(process.env.TOONSPECTRUM_BRUSH_LATENCY_GPU === "1" ? ["--enable-unsafe-webgpu", "--use-gpu-in-tests"] : [])],
     });
+    pointerDispatchNativeFixture = await verifyStudioBrushPointerDispatchNativeFixture(browser);
+    invariant(pointerDispatchNativeFixture.ok, `native 포인터 경계 회귀 실패: ${pointerDispatchNativeFixture.failures.join("; ")}`);
     const executionCases: readonly (StudioBrushCompetitiveExecutionCase | null)[] =
       competitiveLongStroke ? STUDIO_BRUSH_COMPETITIVE_EXECUTION_CASES : [null];
     for (const { id, brush } of representatives) {
@@ -954,6 +948,7 @@ async function main(): Promise<void> {
       route: studioUrl,
       scratch: SCRATCH,
       provenance, browserVersion: browser.version(), inputEvidence: "playwright-mouse", physicalDeviceCertified: false,
+      pointerDispatchNativeFixture,
       policy: {
         hardAcceptance: STUDIO_BRUSH_COMPETITIVE_FRAME_BUDGETS,
         inputTimeoutMs: INPUT_TIMEOUT_MS,
@@ -975,7 +970,7 @@ async function main(): Promise<void> {
       executionFailures,
       unexpectedBrowserErrors,
       ok:
-        provenance.ok && results.length === representatives.length * executionCases.length
+        provenance.ok && pointerDispatchNativeFixture.ok && results.length === representatives.length * executionCases.length
         && executionFailures.length === 0
         && results.every((result) => result.frameBudgetEvaluation.ok)
         && (!competitiveLongStroke || competitiveCoverage.ok)
@@ -992,7 +987,7 @@ async function main(): Promise<void> {
     log("ALL REPRESENTATIVE BRUSH LATENCY GATES OK");
   } catch (error) {
     if (!reportWritten) writeFileSync(REPORT_PATH, JSON.stringify({ ok: false, status: "incomplete",
-      provenance: evaluateStudioBrushLatencyProvenance(provenanceBefore, null), results, executionFailures,
+      provenance: evaluateStudioBrushLatencyProvenance(provenanceBefore, null), pointerDispatchNativeFixture, results, executionFailures,
       inputEvidence: "playwright-mouse", physicalDeviceCertified: false,
       error: error instanceof Error ? error.message : String(error) }, null, 2));
     throw error;

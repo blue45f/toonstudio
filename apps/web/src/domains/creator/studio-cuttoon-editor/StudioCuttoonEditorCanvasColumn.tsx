@@ -608,7 +608,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
           quickShapeActive={quickShapeActive}
           remixId={remixId}
           saving={saving}
-          scale={scale}
+          scale={scale} setScale={s.setScale} autoFitMaximumScale={s.isFullscreen || s.maximized || s.mobileImmersive || s.canvasOnlyMode ? 4 : 2.5}
           selected={selected}
           selectedId={selectedId}
           setAppSettingsInitialTab={setAppSettingsInitialTab}

@@ -20,6 +20,27 @@ describe("Studio brush latency and continuous frame-budget gate integration", ()
     expect(verifierSource).toContain("evaluateStudioBrushFrameBudget(frameBudgetMetrics)");
   });
 
+  it("단일 page init을 사용하고 실제 native 경계 회귀를 본 측정 전에 요구한다", () => {
+    expect(verifierSource.match(/page\.addInitScript\(/gu)).toHaveLength(1);
+    expect(verifierSource).toContain("page.addInitScript({ content: studioBrushPointerDispatchInitSource({");
+    expect(verifierSource.indexOf("verifyStudioBrushPointerDispatchNativeFixture(browser)")).toBeLessThan(
+      verifierSource.indexOf("for (const { id, brush } of representatives)"),
+    );
+    expect(verifierSource).toContain("invariant(pointerDispatchNativeFixture.ok,");
+    expect(verifierSource).toContain("provenance.ok && pointerDispatchNativeFixture.ok && results.length");
+  });
+
+  it("경계·native 판정·hard policy 회귀를 필수 CI 대상에 보존한다", () => {
+    const targets = readFileSync(new URL("./ci-required-vitest-targets.txt", import.meta.url), "utf8").trim().split("\n");
+    for (const target of [
+      "scripts/lib/studio-brush-pointer-dispatch-native-fixture.test.ts",
+      "scripts/lib/studio-brush-pointer-dispatch-probe.test.ts",
+      "scripts/studio-brush-frame-budget-policy.test.ts",
+      "scripts/studio-brush-frame-budget-profiler.test.ts",
+      "scripts/verify-studio-brush-frame-budget-integration.test.ts",
+    ]) expect(targets).toContain(target);
+  });
+
   it("makes severe continuous-stroke regressions part of the final browser result", () => {
     expect(verifierSource).toContain(
       "&& results.every((result) => result.frameBudgetEvaluation.ok)",

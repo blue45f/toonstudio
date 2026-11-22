@@ -6,50 +6,90 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS } from "../studio-page-shell-runtime";
 
+import { createStudioLiveStrokeGpuAppend } from "./studio-live-stroke-gpu-append";
+import { createStudioLiveStrokeGpuAudit } from "./studio-live-stroke-gpu-audit";
+import { advanceStudioGpuLiveSourceJournal, createStudioGpuLiveSourceJournal } from "./studio-webgpu-live-source-journal";
 import { StudioGpuPinReceiptWatchdog } from "./studio-webgpu-pin-receipt-watchdog";
 
 import type { DrawEl } from "../studio-element-model";
+import type { StudioLiveStrokeBackendAuditSession } from "../studio-page-editor-types";
+import type { StudioGpuLiveSourceJournalIdentity } from "./studio-webgpu-live-source-journal";
 
 const host = ts.createSourceFile("Host.tsx", readFileSync(
   new URL("../StudioCuttoonEditorHost.tsx", import.meta.url), "utf8",
 ), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const appendDeclarations: ts.FunctionDeclaration[] = [];
+const hostPartNames = new Set(["gpuLiveSourceJournalAppend", "appendGpuLiveSourceJournalSuffix"]);
+const hostParts: string[] = [];
 function findHostAppend(node: ts.Node): void {
-  if (ts.isFunctionDeclaration(node) && node.name?.text === "appendGpuLiveSourceJournalSuffix") appendDeclarations.push(node);
-  else ts.forEachChild(node, findHostAppend);
+  if (ts.isFunctionDeclaration(node) && node.name && hostPartNames.has(node.name.text)) {
+    hostParts.push(node.getText(host));
+  } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && hostPartNames.has(node.name.text)) {
+    hostParts.push(`const ${node.getText(host)};`);
+  } else ts.forEachChild(node, findHostAppend);
 }
 findHostAppend(host);
-if (appendDeclarations.length !== 1) throw new Error("실제 Host GPU append 함수가 하나여야 합니다.");
-const hostAppendExecutable = ts.transpileModule(appendDeclarations[0]!.getText(host), {
+if (hostParts.length !== hostPartNames.size) throw new Error("실제 Host GPU append 생성부와 함수가 있어야 합니다.");
+const hostAppendExecutable = ts.transpileModule(hostParts.join("\n"), {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
 }).outputText;
 
 function hostJournalAppend(watchdog: StudioGpuPinReceiptWatchdog) {
   let requestSequence = 1;
-  const journal = { identity: { epoch: 1, variations: [] } };
+  const identity: StudioGpuLiveSourceJournalIdentity = {
+    epoch: 1, strokeId: liveStroke.id, styleKey: "watchdog-fixture", brushAlias: null,
+    mode: "pen", selectedDiameter: liveStroke.strokeWidth, color: liveStroke.stroke,
+    opacity: 1, composite: "normal", sampleSpacing: 0,
+    variations: [{ id: liveStroke.id, transform: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 } }],
+  };
+  const empty = createStudioGpuLiveSourceJournal(identity);
+  if (!empty) throw new Error("초기 journal 생성 거절");
+  const initial = advanceStudioGpuLiveSourceJournal(empty, { identity, points: [0, 0] });
+  if (initial.status !== "advanced") throw new Error("초기 점 입장 거절");
+  const journal = { current: initial.state };
+  const latest = { current: liveStroke };
+  const acceptedRequest: { current: string | null } = { current: null };
+  const activeStroke: { current: string | null } = { current: null };
+  const pinned = { current: true };
+  const sessions = { current: new Map<string, StudioLiveStrokeBackendAuditSession>() };
+  const audit = createStudioLiveStrokeGpuAudit({
+    gpuCanvasShadowVisibleRef: { current: false }, gpuLiveAcceptedRequestIdRef: acceptedRequest,
+    gpuLiveInkPinnedRef: pinned, gpuPinReceiptWatchdogRef: { current: watchdog },
+    liveDraftLayerRef: { current: null }, liveStrokeBackendAuditActiveIdRef: activeStroke,
+    liveStrokeBackendAuditEarlyGpuReceiptsRef: { current: new Map() },
+    liveStrokeBackendAuditGpuOwnersRef: { current: new Map() }, liveStrokeBackendAuditSessionsRef: sessions,
+    pendingGpuDrawAuthoritiesRef: { current: [] }, pendingGpuStrokesRef: { current: [] },
+    onSelectedEngineUnavailable: vi.fn(), setWebGpuAuthority: vi.fn(), webGpuCanvasHandleRef: { current: null },
+  });
+  expect(audit.beginLiveStrokeBackendAudit(liveStroke.id, "webgpu")).toBe(true);
+  expect(audit.prepareLiveStrokeGpuSubmission(liveStroke.id)).toBe(true);
+  expect(audit.registerLiveStrokeGpuRequest(liveStroke.id, "frame:1")).toBe(true);
+  acceptedRequest.current = "frame:1";
+  audit.beginGpuPinnedReceiptEpoch("frame:1");
+  expect(audit.receiveLiveStrokeGpuAuditReceipt({
+    requestId: "frame:1", fingerprint: "frame:1", backend: "webgpu", complete: true,
+    strokeCount: 1, dabCount: 1, physicalWidth: 64, physicalHeight: 64,
+  })).toMatchObject({ status: "accepted", strokeId: liveStroke.id });
+  expect(watchdog.receipt("frame:1")).toBe(true);
   const failSelectedGpuLiveInk = vi.fn();
-  const armGpuPinnedRequestWatchdog = vi.fn((requestId: string, timeoutMs?: number) => watchdog.request(requestId, timeoutMs));
-  // 기하 계산과 GPU 제출은 대역으로 두되, 예산을 연결하는 Host 함수와 시한 관리는 실제 코드를 실행한다.
-  const append = runInNewContext(`${hostAppendExecutable}\nappendGpuLiveSourceJournalSuffix`, {
-    gpuLiveSourceJournalRef: { current: journal },
-    webGpuCanvasHandleRef: { current: {
-      appendPinnedJournalSuffixBatch: () => ({ status: "accepted", requestId: `frame:${++requestSequence}` }),
-    } },
+  const armGpuPinnedRequestWatchdog = vi.fn(audit.armGpuPinnedRequestWatchdog);
+  const submit = vi.fn(() => ({ status: "accepted", requestId: `frame:${++requestSequence}` }));
+  // GPU 제출은 대역으로 두고 Host의 실제 생성부·wrapper와 append helper·journal·audit·watchdog를 실행한다.
+  const appendHost = runInNewContext(`${hostAppendExecutable}\nappendGpuLiveSourceJournalSuffix`, {
+    ...audit, createStudioLiveStrokeGpuAppend,
+    gpuLiveSourceJournalRef: journal, liveDraftVisualRef: latest,
+    webGpuCanvasHandleRef: { current: { appendPinnedJournalSuffixBatch: submit } },
     gpuLiveSourceJournalFirstStrokeIndexRef: { current: 0 },
-    gpuLiveSourceJournalIdentityFor: () => journal.identity,
-    advanceStudioGpuLiveSourceJournal: () => ({
-      status: "advanced", state: journal,
-      suffixes: [{ previousRenderedPointCount: 2, points: [2, 2], pressures: [0.5] }],
-    }),
-    prepareLiveStrokeGpuSubmission: () => true,
-    registerLiveStrokeGpuRequest: () => true,
-    gpuLiveAcceptedRequestIdRef: { current: null },
+    gpuLiveSourceJournalIdentityFor: () => identity,
+    gpuLiveAcceptedRequestIdRef: acceptedRequest, gpuLiveInkPinnedRef: pinned,
+    liveStrokeBackendAuditActiveIdRef: activeStroke, liveStrokeBackendAuditSessionsRef: sessions,
     armGpuPinnedRequestWatchdog,
-    STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS,
-    applyLiveStrokeBackendPresentationEffects: vi.fn(),
     failSelectedGpuLiveInk,
   }) as (element: DrawEl, sealEndpoint?: boolean) => "advanced" | "retained" | "rejected";
-  return { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk };
+  const append = (element: DrawEl, sealEndpoint = false) => {
+    latest.current = element;
+    return appendHost(element, sealEndpoint);
+  };
+  return { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk, submit, journal, latest };
 }
 
 const liveStroke: DrawEl = { id: "stroke:1", type: "draw", points: [0, 0, 2, 2], stroke: "#000000", strokeWidth: 4 };
@@ -177,23 +217,22 @@ describe("StudioGpuPinReceiptWatchdog", () => {
     vi.useFakeTimers();
     const onTimeout = vi.fn();
     const watchdog = new StudioGpuPinReceiptWatchdog({ timeoutMs: STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, onTimeout });
-    const { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk } = hostJournalAppend(watchdog);
-    watchdog.begin("frame:1");
-    expect(watchdog.receipt("frame:1")).toBe(true);
+    const { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk, submit, journal, latest } = hostJournalAppend(watchdog);
 
     expect(append(liveStroke)).toBe("advanced");
     vi.advanceTimersByTime(100);
-    expect(append(liveStroke)).toBe("advanced");
+    expect(append({ ...liveStroke, points: [0, 0, 2, 2, 4, 4] })).toBe("retained");
     vi.advanceTimersByTime(100);
-    expect(append(liveStroke)).toBe("advanced");
+    expect(append({ ...liveStroke, points: [0, 0, 2, 2, 4, 4, 6, 6] })).toBe("retained");
     vi.advanceTimersByTime(99);
     expect(onTimeout).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
 
-    expect(onTimeout).toHaveBeenCalledExactlyOnceWith("progress", "frame:4");
-    expect(armGpuPinnedRequestWatchdog.mock.calls).toEqual([
-      ["frame:2", undefined], ["frame:3", undefined], ["frame:4", undefined],
-    ]);
+    expect(onTimeout).toHaveBeenCalledExactlyOnceWith("progress", "frame:2");
+    expect(armGpuPinnedRequestWatchdog.mock.calls).toEqual([["frame:2", undefined]]);
+    expect(submit).toHaveBeenCalledOnce();
+    expect(journal.current.sourcePointCount).toBe(2);
+    expect(latest.current.points).toEqual([0, 0, 2, 2, 4, 4, 6, 6]);
     expect(failSelectedGpuLiveInk).not.toHaveBeenCalled();
   });
 
@@ -202,12 +241,10 @@ describe("StudioGpuPinReceiptWatchdog", () => {
     const onTimeout = vi.fn();
     const watchdog = new StudioGpuPinReceiptWatchdog({ timeoutMs: STUDIO_GPU_PIN_REQUEST_TIMEOUT_MS, onTimeout });
     const { append, armGpuPinnedRequestWatchdog, failSelectedGpuLiveInk } = hostJournalAppend(watchdog);
-    watchdog.begin("frame:1");
-    expect(watchdog.receipt("frame:1")).toBe(true);
 
     expect(append(liveStroke)).toBe("advanced");
     vi.advanceTimersByTime(120);
-    expect(append(liveStroke, true)).toBe("advanced");
+    expect(append({ ...liveStroke, points: [0, 0, 2, 2, 4, 4] }, true)).toBe("advanced");
     vi.advanceTimersByTime(1_999);
     expect(onTimeout).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);

@@ -5,16 +5,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { compact, finding, type BrowserKvFinding, type FindingKind } from "./__fixtures__/studio-browser-kv-findings";
-
-interface BrowserKvAllowance {
-  readonly file: string;
-  readonly kind: FindingKind;
-  readonly key: string;
-  readonly occurrences: number;
-  readonly rationale: string;
-  readonly proof: string;
-}
+import { compact, finding, type BrowserKvAllowance, type BrowserKvFinding, type FindingKind } from "./__fixtures__/studio-browser-kv-findings";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = resolve(HERE, "../../../../../");
@@ -366,6 +357,9 @@ const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
+  allow("apps/web/src/domains/creator/hyper-automation-os/hyper-automation-catalog.ts", "local-storage-write", '"toonstudio.hyper-auto.artist-autonomy-presets.v1"', 1, "아홉 공정의 0~99 자율도와 설정 이름·id만 담는 기기 UI 프리셋이다. 파이프라인 산출물·원고·레이어·실행 이력과 SQLite 저장 성공을 소유하지 않는다.", "hyper-automation-os.test.tsx가 실제 저장·재읽기, 닫힌 공정 필드, 추가 원고 필드 제외, 손상 원본·quota·무시된 쓰기 보존과 현재 화면 설정의 저장 실패 안내를 검증한다."),
+  allow("apps/web/src/domains/creator/support-chat-ai/support-ai-chat-client.ts", "local-storage-write", '"toonstudio:ai-support-handoff:v1"', 1, "사용자가 명시 준비한 최근 문의 한 건의 최대64KiB 인계 사본이다. 실제 지원 브리프는 현재 값 콜백으로 전달하고 이 키는 원고·상담 전체·티켓 접수 정본이 아니다.", "support-chat-ai.test.tsx가 닫힌 인계 필드와 재읽기, 원고·대화 필드 제외, 크기·형식·기존 손상 사본 보존 및 quota·무시된 쓰기 실패를 검증한다. 화면 전달 경로는 저장 실패와 분리돼 있다."),
+  allow("apps/web/src/domains/creator/localization-sync-pro/studio-offline-sync-legacy-export.ts", "indexeddb-open", '"toonstudio_offline_sync_v1"', 1, "사용자가 출처를 선택해 명시 실행하는 이전 사본 원문 내보내기만 소유한다. 기존 DB 존재 확인·readonly 읽기 전용이며 자동 복원·DB 생성·쓰기·삭제·원고 적용은 하지 않는다.", "offline-sync-storage-boundary.test.tsx가 제품 부트·샘플 편집의 browser KV 접근 없음, DB 생성 중단, 출처 분리, 작품·형식·8MiB 검증, 실제 버튼 다운로드 원문 일치와 원본 보존을 검증한다."),
   // 2026-11-21: 기기 설정·명시 주입 레지스트리·범위가 확인된 작업 사본만 정확한 호출 수로 등록한다.
   allow("apps/web/src/domains/creator/StudioPressureCalibrationPanel.tsx", "local-storage-write", '"toonstudio:colordrop-settings:v1"', 1, UI_ONLY, "StudioPressureCalibrationPanel.storage.test.tsx가 임계값·대기 시간 두 수치만 저장하는 왕복, 잘못된 값 복원, 저장 거부 시 메모리 설정과 원고 원본 보존을 검증한다."),
   allow("apps/web/src/domains/creator/brush/studio-custom-pattern-tip-registrar.ts", "durable-storage-write", '"toonstudio:custom-pattern-tips:v1"', 1, "기본 레지스트리는 메모리 전용이며 storage를 명시 주입한 호출만 호환용 팁 사본을 저장한다. 제품 부팅에 ambient localStorage 권위를 추가하지 않는다.", "studio-custom-pattern-tip-registrar.test.ts가 기본 인스턴스 간 비영속성, 콘텐츠 해시 중복 제거, 주입 저장소 왕복, 저장 실패의 전파와 기존 원본 보존을 검증한다."),
@@ -974,6 +968,9 @@ describe("Studio browser-KV authority boundary", () => {
       "fresh-ideas/serialization-pace-model.ts",
       "studio-shell/studio-project-team-kanban-store.ts",
       "virtual-space/studio-virtual-space-work-status.ts",
+      "hyper-automation-os/hyper-automation-catalog.ts",
+      "support-chat-ai/support-ai-chat-client.ts",
+      "localization-sync-pro/studio-offline-sync-legacy-export.ts",
     ]) {
       const file = `apps/web/src/domains/creator/${relativePath}`;
       const source = readFileSync(resolve(WORKSPACE_ROOT, file), "utf8");

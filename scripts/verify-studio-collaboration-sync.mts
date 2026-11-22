@@ -197,6 +197,15 @@ async function enableBrushTool(page: Page): Promise<void> {
     await page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').waitFor({ state: "visible" });
   }
   await selectStudioCollaborationPen(page);
+  // 작은 초기·복원 배율도 정상 맞춤 버튼으로 준비하고 실제 Stage 너비가 반영된 뒤 기존 hit-test를 수행한다.
+  await page.waitForFunction(() => document.fonts.status === "loaded", undefined, { timeout: 20_000 });
+  await page.locator('[data-studio-status-bar="true"]:visible').getByRole("button", { name: "맞춤", exact: true }).click();
+  await page.waitForFunction(() => {
+    const viewport = document.querySelector<HTMLElement>('[data-studio-canvas-viewport="true"]');
+    const stage = viewport?.querySelector<HTMLElement>(".konvajs-content");
+    return viewport !== null && viewport.clientWidth > 0 && stage !== undefined && stage !== null
+      && stage.getBoundingClientRect().width >= viewport.clientWidth - 1;
+  }, undefined, { timeout: 20_000 });
 }
 
 async function canvasFingerprint(page: Page): Promise<StudioCompositedCanvasFingerprint> {

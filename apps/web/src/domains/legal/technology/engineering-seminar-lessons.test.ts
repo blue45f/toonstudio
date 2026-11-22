@@ -389,8 +389,12 @@ const LESSON_FACTS: readonly LessonFact[] = [
   {
     lesson: "seminar-scene3d", claim: "기본 LT는 설정별 역할, 6패스는 그림자·깊이까지 명시적으로 분리", needles: ["컬러 또는 톤", "6패스를 선택하면", "그림자·깊이", "여섯 역할"],
     check: () => {
-      expect(readText("apps", "web", "src", "domains", "creator", "runtime-leaves", "studio-bg3d-lt-layer-anchor.ts")).toContain('STUDIO_BG3D_LT_LAYER_ROLES = ["color", "tone", "shadow", "depth", "texture-line", "main-line"]');
-      expect(readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-layer-plan.ts")).toContain("STUDIO_BG3D_LT_LAYER_ROLES");
+      const roles = flat("apps", "web", "src", "domains", "creator", "runtime-leaves", "studio-bg3d-lt-layer-anchor.ts");
+      expect(roles).toMatch(/STUDIO_BG3D_LT_LAYER_ROLES = \[\s*"color",\s*"tone",\s*"shadow",\s*"depth",\s*"texture-line",\s*"main-line",?\s*\]/u);
+      const planner = flat("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-layer-plan.ts");
+      expect(planner).toMatch(/import \{[^}]*\bSTUDIO_BG3D_LT_LAYER_ROLES\b[^}]*\} from "\.\.\/runtime-leaves\/studio-bg3d-lt-layer-anchor";/u);
+      expect(planner).toMatch(/export \{[^}]*\bSTUDIO_BG3D_LT_LAYER_ROLES\b[^}]*\}/u);
+      expect(planner).toContain("const layers = STUDIO_BG3D_LT_LAYER_ROLES.flatMap");
       const render = readText("apps", "web", "src", "domains", "creator", "bg3d", "studio-bg3d-lt-render.ts");
       expect(render).toContain('role: tone.type === "color" ? "color" : "tone"');
       expect(render).toContain("if (settings.sixPassLt !== undefined) {");

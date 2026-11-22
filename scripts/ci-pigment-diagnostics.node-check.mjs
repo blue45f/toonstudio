@@ -45,11 +45,11 @@ function timeoutMinutes(name, event, ref, shard) {
   return clauses.every((clause) => values.get(clause)) ? Number(enabled) : Number(fallback);
 }
 
-test("타입 작업 예산 8조합은 전체 타입 검사의 65분 상한을 유지한다", () => {
+test("타입 작업 예산 8조합은 전체 타입 검사의 110분 상한을 유지한다", () => {
   let count = 0;
   for (const event of ["workflow_dispatch", "pull_request", "push", "merge_group"]) {
     for (const ref of ["refs/heads/main", "refs/heads/codex/test"]) {
-      const expected = 65;
+      const expected = 110;
       assert.equal(timeoutMinutes("typecheck", event, ref), expected, `${event}/${ref}`);
       count += 1;
     }
@@ -57,14 +57,14 @@ test("타입 작업 예산 8조합은 전체 타입 검사의 65분 상한을 �
   assert.equal(count, 8);
 });
 
-test("static 작업 예산 40조합은 비 main 수동 editing만 65분이며 나머지는 25분이다", () => {
+test("static 작업 예산 40조합은 비 main 수동 editing만 120분이며 나머지는 25분이다", () => {
   const shards = [...job("static").matchAll(/^ {10}- ([a-z][a-z0-9-]*)$/gmu)].map((match) => match[1]);
   assert.deepEqual(shards, ["product", "studio-foundation", "studio-editing", "studio-3d", "studio-character"]);
   let count = 0;
   for (const event of ["workflow_dispatch", "pull_request", "push", "merge_group"]) {
     for (const ref of ["refs/heads/main", "refs/heads/codex/test"]) {
       for (const shard of shards) {
-        const expected = event === "workflow_dispatch" && ref !== "refs/heads/main" && shard === "studio-editing" ? 65 : 25;
+        const expected = event === "workflow_dispatch" && ref !== "refs/heads/main" && shard === "studio-editing" ? 120 : 25;
         assert.equal(timeoutMinutes("static", event, ref, shard), expected, `${event}/${ref}/${shard}`);
         count += 1;
       }

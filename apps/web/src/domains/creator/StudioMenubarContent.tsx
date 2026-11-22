@@ -970,6 +970,7 @@ export interface StudioMenubarContentProps {
   liveWorkspaceLayout: StudioWorkspaceLayout;
   /** Samples the input surface in use, for device-aware workspace resolution. */
   resolveWorkspaceDeviceKind: () => StudioWorkspaceDeviceKind | null;
+  appliedWorkspaceDeviceKind?: StudioWorkspaceDeviceKind | null;
   loadedWork: WorkDetail | null;
   masterEditMode: boolean;
   menu: StudioMenu | null;
@@ -1059,6 +1060,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   isMobile,
   liveWorkspaceLayout,
   resolveWorkspaceDeviceKind,
+  appliedWorkspaceDeviceKind,
   loadedWork,
   masterEditMode,
   menu,
@@ -1931,7 +1933,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   const workspaceControls = <StudioWorkspaceContextControls
     currentOwnerScope={currentWorkspaceOwnerScope} menuEpoch={workspaceMenuEpoch} syncNotice={workspaceSyncNotice}
     creatorRole={activeRole} state={workspaceState} liveLayout={liveWorkspaceLayout}
-    resolveDeviceKind={resolveWorkspaceDeviceKind} persistence={workspacePersistence}
+    resolveDeviceKind={resolveWorkspaceDeviceKind} appliedDeviceKind={appliedWorkspaceDeviceKind} persistence={workspacePersistence}
     onStateChange={persistStudioWorkspaceState} onApplyLayout={applyStudioWorkspaceLayout}
   />;
   if (drawingToolsOnly) return <>{projectCenter}{commandBar}

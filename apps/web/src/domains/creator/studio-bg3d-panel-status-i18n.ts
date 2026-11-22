@@ -18,6 +18,8 @@ import {
 } from "@/shared/lib/i18n";
 
 registerI18nLocaleEntries("ko", {
+  "studio.bg3dPanelStatus.editorSidebar.modelingLoading": "고급 모델링 도구를 불러오는 중이에요…",
+  "studio.bg3dPanelStatus.editorSidebar.compositeLoading": "실시간 합성 스테이지를 불러오는 중이에요…",
   "studio.bg3dPanelStatus.immersive.insecureContext": "HTTPS 보안 연결이 필요합니다. 장면은 그대로 두고 기존 3D 보기에서 계속 작업해 주세요.",
   "studio.bg3dPanelStatus.immersive.unavailable": "이 브라우저에는 WebXR API가 없습니다. 최신 지원 브라우저 또는 기기에서 다시 열어 주세요.",
   "studio.bg3dPanelStatus.immersive.unsupported": "{modeLabel}를 이 기기에서 지원하지 않습니다. 기존 3D 보기는 계속 사용할 수 있습니다.",
@@ -162,6 +164,8 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "studio.bg3dPanelStatus.editorSidebar.modelingLoading": "Loading advanced modeling tools…",
+  "studio.bg3dPanelStatus.editorSidebar.compositeLoading": "Loading the real-time compositing stage…",
   "studio.bg3dPanelStatus.immersive.insecureContext": "A secure HTTPS connection is required. Keep working in the standard 3D view; your scene is unchanged.",
   "studio.bg3dPanelStatus.immersive.unavailable": "This browser has no WebXR API. Reopen it in a recent supported browser or device.",
   "studio.bg3dPanelStatus.immersive.unsupported": "{modeLabel} is not supported on this device. You can keep using the standard 3D view.",

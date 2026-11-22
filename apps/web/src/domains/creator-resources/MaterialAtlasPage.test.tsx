@@ -10,6 +10,11 @@ import { MaterialAtlasPage } from "./MaterialAtlasPage";
 import snapshot from "./material-atlas/catalog.json";
 
 vi.mock("./ResourceLayout", () => ({ ResourceLayout: ({ title, children }: { title: string; children: ReactNode }) => <main><h1>{title}</h1>{children}</main> }));
+// 제품에 등록된 ko/en 문구를 검사하며 외부 기계 번역 transport는 실행하지 않는다.
+vi.mock("@/shared/lib/i18n-runtime-translation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/shared/lib/i18n-runtime-translation")>();
+  return { ...actual, loadRuntimeTranslationBundle: vi.fn(async () => undefined) };
+});
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); useI18n.setState({ lang: "ko" }); });
 function open(search = "") { return render(<MemoryRouter initialEntries={[`/research/materials${search}`]}><MaterialAtlasPage /></MemoryRouter>); }
 
@@ -70,11 +75,14 @@ describe("material atlas independent browser workflow", () => {
     open();
     const carousel = screen.getByRole("list", { name: /트렌딩 소재 목록/ });
     const first = within(carousel).getAllByRole("listitem")[0];
-    const firstButton = within(first).getByRole("button");
-    const label = firstButton.getAttribute("aria-label") ?? "";
+    const selectedTitle = snapshot.assets[0].title;
+    const firstButton = within(first).getByRole("button", {
+      name: (name) => name.startsWith(selectedTitle),
+    });
     fireEvent.click(firstButton);
-    expect(label.length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("검색어")).toBeTruthy();
+    expect((screen.getByLabelText("검색어") as HTMLInputElement).value).toBe(selectedTitle);
+    expect(screen.getAllByRole("button", { name: /소재 담기/ })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: `${selectedTitle} 소재 담기` })).toBeTruthy();
   });
   it("suggests keywords on empty results", () => {
     open();
