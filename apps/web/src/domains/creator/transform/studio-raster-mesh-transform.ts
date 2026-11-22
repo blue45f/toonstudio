@@ -10,6 +10,14 @@
  * - evidence_id: ev_0c6a677d38f821a7c782b943662be657510c27ee397e744fa128f63a1ca2d1fa
  */
 
+import {
+  sampleRgbaWithResampler,
+  type StudioTransformResampleMode,
+} from "../render/studio-webgpu-transform-resample-wgsl";
+import {
+  packMeshControlPointsInto,
+  STUDIO_MESH_CONTROL_STRIDE_FLOATS,
+} from "../render/studio-webgpu-zero-copy-pack";
 import { sampleInverseBilinearRgba } from "./studio-corner-pin-transform";
 
 import type { StudioImageDataLike } from "../studio-filters";
@@ -67,6 +75,8 @@ export interface RasterMeshTriangle {
 export interface RasterMeshTransformOptions {
   readonly outputWidth?: number;
   readonly outputHeight?: number;
+  /** 고품질 리샘플러(`lanczos3` · `catmull-rom` · `nearest-sharp`). 미지정 시 기존 양선형 동작을 유지한다. */
+  readonly resampler?: StudioTransformResampleMode;
 }
 
 function clampGridCount(value: number, fallback = 4): number {
@@ -282,10 +292,30 @@ export function applyRasterMeshTransform(
         visited[pixelIndex] = 1;
         const sx = w0 * a.restX + w1 * b.restX + w2 * c.restX;
         const sy = w0 * a.restY + w1 * b.restY + w2 * c.restY;
-        sampleInverseBilinearRgba(data, width, height, sx, sy, out, pixelIndex * 4);
+        const outOffset = pixelIndex * 4;
+        if (options.resampler && options.resampler !== "bilinear") {
+          sampleRgbaWithResampler(data, width, height, sx, sy, out, outOffset, options.resampler, 1, 1);
+        } else {
+          sampleInverseBilinearRgba(data, width, height, sx, sy, out, outOffset);
+        }
       }
     }
   }
 
   return { width: outW, height: outH, data: out };
+}
+
+/**
+ * `RasterMeshLattice` 제어점을 WebGPU Compute 셰이더(`mesh_nodes: array<vec4<f32>>`) 및
+ * 제로카피 Worker 패킷용 연속 `Float32Array` 버퍼에 패킹한다.
+ */
+export function packRasterMeshControlPoints(
+  lattice: RasterMeshLattice,
+  target?: Float32Array,
+  offset = 0,
+): Float32Array {
+  const required = offset + lattice.nodes.length * STUDIO_MESH_CONTROL_STRIDE_FLOATS;
+  const buffer = target ?? new Float32Array(required);
+  packMeshControlPointsInto(buffer, offset, lattice.nodes);
+  return buffer;
 }
