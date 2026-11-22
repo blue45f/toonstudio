@@ -115,9 +115,8 @@ __pycache__/
 *.db-shm
 
 !.env.example
-!.env.production.example
-!.env.deploy.example
 # Reviewed, public browser origins only; local files stay ignored.
+# Specialized env templates live under config/env/*.env.example (tracked by default).
 
 # coturn runtime material (the tracked deployment scaffold contains placeholders only)
 /deploy/coturn/secrets/

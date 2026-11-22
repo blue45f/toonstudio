@@ -1154,8 +1154,8 @@ test("full-suite health probes cannot race the target database's NOLOGIN bootstr
 
 test("제작 보드의 실제 브라우저 검증과 증거가 필수 접근성 lane에 연결된다", () => {
   const source = job("a11y");
-  assert.match(source, /run: pnpm exec playwright test --config playwright\.production-workflows\.config\.ts/u);
+  assert.match(source, /run: pnpm exec playwright test --config config\/playwright\/playwright\.production-workflows\.config\.ts/u);
   assert.match(source, /path: \.qa\/production-workflows/u);
-  assert.ok(source.indexOf("pnpm run test:a11y") < source.indexOf("playwright.production-workflows.config.ts"));
+  assert.ok(source.indexOf("pnpm run test:a11y") < source.indexOf("config/playwright/playwright.production-workflows.config.ts"));
   assert.doesNotMatch(source, /continue-on-error|\|\| true/u);
 });

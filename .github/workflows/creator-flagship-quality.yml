@@ -41,7 +41,7 @@ on:
       - 'scripts/lib/public-page-event-gate.mjs'
       - 'e2e/open-creation.spec.ts'
       - 'e2e/helpers/capture-page-evidence.ts'
-      - 'playwright.non-studio.config.ts'
+      - 'config/playwright/playwright.non-studio.config.ts'
       - '.github/workflows/creator-flagship-quality.yml'
   workflow_dispatch:
 
@@ -94,7 +94,7 @@ jobs:
       - name: Actual application browser regression
         env:
           PLAYWRIGHT_CHANNEL: ''
-        run: pnpm exec playwright test e2e/creator-flagship.spec.ts e2e/open-creation.spec.ts --config playwright.non-studio.config.ts
+        run: pnpm exec playwright test e2e/creator-flagship.spec.ts e2e/open-creation.spec.ts --config config/playwright/playwright.non-studio.config.ts
       - name: Preserve browser evidence
         if: always()
         uses: actions/upload-artifact@v7

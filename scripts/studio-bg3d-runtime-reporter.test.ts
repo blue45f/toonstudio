@@ -91,7 +91,7 @@ describe("BG3D runtime verification verdict", () => {
 
 describe("BG3D production verification configuration", () => {
   const source = readFileSync(
-    new URL("../playwright.bg3d-runtime.config.ts", import.meta.url),
+    new URL("../config/playwright/playwright.bg3d-runtime.config.ts", import.meta.url),
     "utf8",
   );
 
@@ -107,8 +107,8 @@ describe("BG3D production verification configuration", () => {
     expect(source).toContain('mode: "on"');
     expect(source).toContain("screenshots: false");
     expect(source).toContain('screenshot: "only-on-failure"');
-    expect(source).toContain('outputFolder: "test-results/bg3d-runtime-report"');
-    expect(source).toContain('"./scripts/studio-bg3d-runtime-reporter.ts"');
-    expect(source).toContain('globalSetup: "./scripts/studio-bg3d-runtime-setup.mts"');
+    expect(source).toContain('outputFolder: "../../test-results/bg3d-runtime-report"');
+    expect(source).toContain('"../../scripts/studio-bg3d-runtime-reporter.ts"');
+    expect(source).toContain('globalSetup: "../../scripts/studio-bg3d-runtime-setup.mts"');
   });
 });

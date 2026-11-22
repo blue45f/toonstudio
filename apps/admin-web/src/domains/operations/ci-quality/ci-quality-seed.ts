@@ -2,7 +2,7 @@ import type { QualityBoard, QualityCheck } from "./ci-quality-model";
 
 const metadata: readonly [string, string, string, QualityCheck["group"], string, string, string][] = [
   ["vitest", "Vitest", "단위·회귀·성능 테스트", "tests", "bolt", "pnpm run test:root\npnpm run test:perf\nnode scripts/ci-core-regression-shards.mjs <shard>", "package.json · .github/workflows/ci.yml · scripts/ci-core-regression-shards-impl.mjs"],
-  ["playwright", "Playwright", "브라우저·접근성 워크플로", "tests", "browser", "pnpm run test:a11y\npnpm exec playwright test --config playwright.production-workflows.config.ts", "package.json · .github/workflows/ci.yml"],
+  ["playwright", "Playwright", "브라우저·접근성 워크플로", "tests", "browser", "pnpm run test:a11y\npnpm exec playwright test --config config/playwright/playwright.production-workflows.config.ts", "package.json · .github/workflows/ci.yml"],
   ["types", "타입 검사", "TypeScript·타입 커버리지", "quality", "code", "pnpm run typecheck\npnpm run typecheck:cloudflare-realtime\npnpm run check:type-coverage", "package.json · .github/workflows/ci.yml"],
   ["lint", "Lint", "정적 분석·코드 규칙", "quality", "list", "pnpm run lint:strict", "package.json · .github/workflows/ci.yml (PR은 lint-changed)"],
   ["csp", "CSP", "콘텐츠 보안 정책·dist 검증", "quality", "shield", "pnpm run verify:csp", "package.json · .github/workflows/ci.yml · postbuild 검증"],

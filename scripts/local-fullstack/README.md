@@ -57,7 +57,7 @@ node scripts/local-fullstack/cli.mjs down           # 웹·API·PostgreSQL 중�
 | `status` | 구성요소 실행 여부·PID·포트·헬스, 기록된 비밀 키 개수(값 없음) |
 | `reset --yes` | 중지 후 임베디드 DB 데이터(`pg/data`)와 스키마·시드 기록 삭제. 표식 파일이 있는 스택에서만 동작. `--rotate-secrets` 를 더하면 비밀값을 새로 만든다 |
 | `smoke` | API 인증 스모크. 옵션: `--skip-web`, `--no-ratelimit-probe`, `--ratelimit-probe`, `--json` |
-| `e2e` | 브라우저 스모크(`playwright.local-fullstack.config.mjs`). `--` 뒤 인자는 Playwright 로 전달 |
+| `e2e` | 브라우저 스모크(`config/playwright/playwright.local-fullstack.config.mjs`). `--` 뒤 인자는 Playwright 로 전달 |
 | `leakcheck` | 로그·상태 파일(과 `--path` 로 준 대상)에 비밀값이 남았는지 검사. 값은 출력하지 않고 키 이름·건수만 보고 |
 | `db:start` `db:stop` `schema` `seed` `api:start` `api:stop` `web:start` `web:stop` | `up` 의 단계를 개별 실행 |
 

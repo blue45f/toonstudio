@@ -78,7 +78,7 @@ test("피드백은 기존 전체 build·PostgreSQL·브라우저 검사와 모�
     && step.run.includes("pnpm run build:bundle 2>&1 | tee artifacts/feedback/production-build.log")
     && step.if.includes("steps.types.outcome == 'success'")));
   assert(job.steps.some((step) => step.id === "database" && step.run.includes("scripts/verify-feedback-community-db.mts")));
-  assert(job.steps.some((step) => step.id === "browser" && step.run.includes("playwright test --config playwright.feedback.config.ts")));
+  assert(job.steps.some((step) => step.id === "browser" && step.run.includes("playwright test --config config/playwright/playwright.feedback.config.ts")));
   const gate = job.steps.find((step) => step.name === "Require every check to pass");
   assert.equal(gate.if, "always()");
   const keys = ["LINT", "TYPES", "UNIT", "DATABASE", "BROWSER_INSTALL", "BROWSER", "BUILD", "PRODUCTION"];

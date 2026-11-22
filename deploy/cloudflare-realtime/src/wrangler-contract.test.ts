@@ -44,7 +44,7 @@ describe("Cloudflare realtime deployment contract", () => {
     expect(identity).toEqual({ ...EXPECTED_IDENTITY, name: "toonstudio-realtime-test" });
   });
 
-  it.each(["../../../.env.example", "../../../.env.production.example"])(
+  it.each(["../../../.env.example", "../../../config/env/production.env.example"])(
     "%s의 API 발급 identity와 control URL을 Worker 계약에 맞춘다",
     (path) => {
       const environment = parseEnv(read(path));

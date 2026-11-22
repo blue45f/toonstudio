@@ -175,4 +175,4 @@ live key는 `explicit-cost-enabled`와 `PRODUCTION_TOSS_ALLOW_LIVE=true`가 모�
 7. Documenso와 Toss live 경로는 비용·약관·환불 정책 검토 전 활성화하지 않습니다.
 8. 운영 로그에 OAuth code, token, webhook secret, PDF 본문이 기록되지 않는지 점검합니다.
 
-설정 전체 예시는 `.env.example`과 `.env.production.example`에 있습니다.
+설정 전체 예시는 `.env.example`과 `config/env/production.env.example`에 있습니다.

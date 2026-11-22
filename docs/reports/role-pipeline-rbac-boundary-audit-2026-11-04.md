@@ -100,7 +100,7 @@
 - 같은 파일에 실제 제출·필수 검수·승인 command 이후 제한 담당자의 REST·CRDT·재제출 차단과
   원고·Production aggregate 불변 회귀도 추가했다. 상태를 DB에서 직접 고쳐 승인한 fixture가 아니다.
 - [실제 화면의 계획 범위·초기화](../../e2e/local-fullstack-role-preview.spec.mjs)
-- [기존 로컬 전용 Playwright 설정에 연결](../../playwright.local-fullstack.config.mjs)
+- [기존 로컬 전용 Playwright 설정에 연결](../../config/playwright/playwright.local-fullstack.config.mjs)
 
 브라우저 재현은 [로컬 풀스택 하네스](../../scripts/local-fullstack/README.md)로 별도 스택을 준비한 뒤
 해당 스택의 env 파일만 지정해 실행한다. 기본 CI에서는 브라우저 회귀를 실행하지 않는다.

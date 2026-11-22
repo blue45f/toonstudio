@@ -181,7 +181,7 @@ routing fingerprint만 바꾼다고 기존 객체가 이동하지 않는다. 기
 - `docs/operations/federated-free-database-data-plane.md` — 무료 DB federation의 전환·rollback 기록
 - `config/free-database-federation.json` — provider/shard/route 정책
 - `docs/FREE_INFRASTRUCTURE.md` — 무료 인프라와 실제 생성 자원 기록
-- `.env.production.example` — 운영 환경변수 계약
+- `config/env/production.env.example` — 운영 환경변수 계약
 - `deploy/trust/README.md` — Supabase PostgreSQL TLS CA 계약
 
 > **중요:** DB 개수나 schema 파일 존재만으로 “분산 처리가 완료”된 것으로 기록하지 않는다.

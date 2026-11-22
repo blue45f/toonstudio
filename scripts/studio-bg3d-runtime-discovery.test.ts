@@ -20,7 +20,7 @@ import {
 import type { Page } from "@playwright/test";
 
 const filename = "studio-bg3d-production-rotation.runtime.ts";
-const config = readFileSync(new URL("../playwright.bg3d-runtime.config.ts", import.meta.url), "utf8");
+const config = readFileSync(new URL("../config/playwright/playwright.bg3d-runtime.config.ts", import.meta.url), "utf8");
 const runtimeUrl = new URL(`../e2e/${filename}`, import.meta.url);
 
 /** The strict hardware gate is explicit, not an unconditional extra case in headless WebGL runs. */

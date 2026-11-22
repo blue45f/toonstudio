@@ -897,7 +897,7 @@ jobs:
         run: pnpm run test:a11y
       - name: 제작 작업 보드 실제 흐름과 반응형 접근성 검증
         if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
-        run: pnpm exec playwright test --config playwright.production-workflows.config.ts
+        run: pnpm exec playwright test --config config/playwright/playwright.production-workflows.config.ts
       - name: 관리자 CI·QA 기록·권한·JSON·모바일 브라우저 검증
         if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
         run: pnpm run test:admin:e2e
@@ -919,7 +919,7 @@ jobs:
           # 수동 부분 진단은 V2 clipping 입력 대조만 선택한다. 일반·main 실행은 원래 세 시험을 유지한다.
           TOONSTUDIO_PIGMENT_CLIP_CONTRAST: ${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && github.ref != 'refs/heads/main' && '1' || '0' }}
           TOONSTUDIO_PIGMENT_TEST_FILTER: "${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && github.ref != 'refs/heads/main' && '(^| )분리 진단: V2 클리핑 교차 픽셀 의미' || '.*' }}"
-        run: pnpm exec playwright test --config playwright.pigment-product.config.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000 --grep "$TOONSTUDIO_PIGMENT_TEST_FILTER"
+        run: pnpm exec playwright test --config config/playwright/playwright.pigment-product.config.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000 --grep "$TOONSTUDIO_PIGMENT_TEST_FILTER"
       - uses: actions/upload-artifact@v7
         if: always()
         with:

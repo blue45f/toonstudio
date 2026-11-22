@@ -29,7 +29,7 @@ API `validateEnv()`는 일반 schema 실패 시 경고 후 null을 반환하지�
 | --- | --- | --- | --- |
 | `local` | current | `.env.example`, 로컬 개발 참조 | separated 기본, 개발 제한 자동 선택, postgres 기본 |
 | `onpod-current` | current 기록 | `deploy/onpod/runtime.env.example` | single-owner, single-instance-local, d1, memory adapter, 증명된 edge IP 활성 |
-| `generic-separated` | target | `.env.production.example`, 일반 분리 역할 설계 예제 | separated, distributed + Upstash 필수, postgres, memory adapter |
+| `generic-separated` | target | `config/env/production.env.example`, 일반 분리 역할 설계 예제 | separated, distributed + Upstash 필수, postgres, memory adapter |
 | Render/Vercel/Neon runtime | retired | 과거 기록만 | 배포·fallback·rollback 대상으로 선택하지 않는다 |
 
 current 기록의 API origin은 `https://toonstudio-api.onpod.ai`, 내부 DB host는 `toonstudio-db.db.onpod.local`이다.

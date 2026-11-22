@@ -334,7 +334,7 @@ export const FREE_TIER_INFRA_ROWS: readonly EngineeringMapRow[] = [
       "apps/api/src/server/auth-email.ts",
       "config/free-infrastructure-policy.json",
       "docs/FREE_INFRASTRUCTURE.md",
-      ".env.production.example",
+      "config/env/production.env.example",
     ],
     asOf: "2026-10-07",
   },

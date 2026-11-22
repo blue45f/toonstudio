@@ -14,8 +14,8 @@ on:
       - scripts/studio-stabilization-followup-cases.mjs
       - scripts/studio-stabilization-followup-cases.test.mjs
       - scripts/studio-exhaustive-evidence.test.mjs
-      - playwright.studio-production-followup.config.ts
-      - playwright.studio-qa-helpers.config.ts
+      - config/playwright/playwright.studio-production-followup.config.ts
+      - config/playwright/playwright.studio-qa-helpers.config.ts
       - e2e/studio-bg3d-qa-interactions.spec.mts
       - e2e/studio-qa-ux-followup.spec.mts
       - e2e/helpers/studio-react-fixture.mts
@@ -24,7 +24,7 @@ on:
       - e2e/studio-3d-visual-verification.spec.ts
       - e2e/studio-bg3d-production-rotation.runtime.ts
       - e2e/studio-bg3d-compositor-sampler.ts
-      - playwright.bg3d-runtime.config.ts
+      - config/playwright/playwright.bg3d-runtime.config.ts
       - e2e/studio-qa-interactions.spec.mts
       - e2e/studio-qa-shell-interactions.spec.mts
       - e2e/studio-drawing-chrome-layout.spec.mts

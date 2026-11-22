@@ -12,7 +12,7 @@ const scripts = (JSON.parse(read("../package.json")) as {
 describe("BG3D release runtime gate wiring", () => {
   it("routes the release alias to the strict production gate, not the skippable dev suite", () => {
     expect(scripts["verify:studio-bg3d-webgpu-rotation"]).toBe(
-      "STUDIO_BG3D_WEBGPU_GIZMO=1 playwright test --config=playwright.bg3d-runtime.config.ts",
+      "STUDIO_BG3D_WEBGPU_GIZMO=1 playwright test --config=config/playwright/playwright.bg3d-runtime.config.ts",
     );
     expect(read("../.github/workflows/main-full-qa-studio.yml"))
       .toContain("pnpm run verify:studio-bg3d-webgpu-rotation");
