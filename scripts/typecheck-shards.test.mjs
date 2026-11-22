@@ -14,6 +14,7 @@ import {
   parseArguments,
   partitionFiles,
   resolveAdaptiveTypecheckLimits,
+  resolveRuntimeExecutionBudget,
   verifyInShards,
 } from "./typecheck-shards.mjs";
 import { loadFullProgram, runWorker, serializeDiagnostic } from "./typecheck-shards-worker.mjs";
@@ -388,9 +389,11 @@ test("CLI 연속 실행은 동일 fingerprint 완료 리포트를 재사용하�
 test("호스팅 CI의 초기 바이트 예산은 명시된 경우에만 기본 CLI 값을 덮어쓴다", () => {
   const args = ["--heap-mb", "8192", "--max-source-bytes", "12582912"];
   const local = parseArguments(args, {});
-  const hosted = parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" });
   assert.equal(local.maxBytes, 12582912);
-  assert.deepEqual(hosted, { ...local, maxBytes: 6291456 });
+  for (const maxBytes of [3145728, 6291456]) {
+    const hosted = parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: String(maxBytes) });
+    assert.deepEqual(hosted, { ...local, maxBytes });
+  }
   assert.equal(parseArguments([], {}).maxBytes, 4 * 1024 * 1024);
   for (const value of ["", "0", "-1", "2.5", "NaN", "Infinity", "9007199254740992"]) {
     assert.throws(() => parseArguments(args, { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: value }),
@@ -398,4 +401,56 @@ test("호스팅 CI의 초기 바이트 예산은 명시된 경우에만 기본 C
   }
   assert.throws(() => parseArguments(["--max-source-bytes", "0"], { TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" }),
     /--max-source-bytes/u);
+});
+
+test("16GiB CI 러너에서 NODE_OPTIONS 12GiB가 주어지면 물리 메모리 72% 상한 내에서 워커 힙과 샤드 예산을 안전하게 확장한다", () => {
+  const base = parseArguments(
+    ["--heap-mb", "8192", "--max-source-bytes", "12582912"],
+    { CI: "1", TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: "6291456" },
+  );
+  const runner16g = resolveRuntimeExecutionBudget(base, {
+    env: { NODE_OPTIONS: "--max-old-space-size=12288" },
+    totalMemoryBytes: 16 * 1024 ** 3,
+  });
+  assert.equal(runner16g.heapMb, Math.floor(16 * 1024 * 0.72));
+  assert.equal(runner16g.maxBytes, 18 * 1024 * 1024);
+
+  // 7GiB 러너나 NODE_OPTIONS 상향이 없는 경우는 기존 8192MB·6MiB 예산을 유지한다.
+  const runner7g = resolveRuntimeExecutionBudget(base, {
+    env: { NODE_OPTIONS: "--max-old-space-size=12288" },
+    totalMemoryBytes: 7 * 1024 ** 3,
+  });
+  assert.deepEqual(runner7g, base);
+
+  const unchanged = resolveRuntimeExecutionBudget(base, {
+    env: { NODE_OPTIONS: "--max-old-space-size=8192" },
+    totalMemoryBytes: 16 * 1024 ** 3,
+  });
+  assert.deepEqual(unchanged, base);
+});
+
+test("메모리 실패 발생 시 남은 큐 샤드도 즉시 안전한 절반 상한으로 분할해 반복 OOM 재시도를 방지한다", () => {
+  const files = ["a", "b", "c", "d", "e", "f", "g", "h"].map((path) => ({ path, bytes: 10 }));
+  const identity = { version: "fixture", options: {}, files };
+  const semanticBatches = [];
+  const worker = (job) => {
+    if (job.phase === "inventory") return { identity, fingerprint: "same" };
+    if (job.phase === "preflight") return { fingerprint: "same", semanticAllowed: true, diagnostics: [] };
+    semanticBatches.push(job.files);
+    if (job.files.length > 2) return { failed: true, memoryFailure: true, exit: 134 };
+    return { checked: job.files, fingerprint: "same", diagnostics: [], elapsedMs: 1, peakRssBytes: 1 };
+  };
+  const report = verifyInShards({ maxBytes: 40 }, worker);
+  assert.equal(report.complete, true);
+  assert.equal(report.phases.semantic.checkedFiles, 8);
+  // 첫 4개 그룹만 OOM 1회 발생하고, 두 번째 4개 그룹은 미리 2개씩 분할돼 OOM 없이 통과한다.
+  const oomRetries = report.workers.filter((item) => item.retry === "bisect");
+  assert.equal(oomRetries.length, 1);
+  assert.deepEqual(semanticBatches, [
+    ["a", "b", "c", "d"],
+    ["a", "b"],
+    ["c", "d"],
+    ["e", "f"],
+    ["g", "h"],
+  ]);
 });

@@ -22,6 +22,11 @@ const contextualSubnavCss = readFileSync(
 vi.mock("../../domains/auth/components/auth-menu-shell", () => ({
   AuthMenuShell: () => <button type="button">계정</button>,
 }));
+// 언어 선택·초점 계약은 로컬 사전으로 검증하고 외부 번역 요청은 격리한다.
+vi.mock("@/shared/lib/i18n-runtime-translation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/shared/lib/i18n-runtime-translation")>();
+  return { ...actual, loadRuntimeTranslationBundle: vi.fn(async () => undefined) };
+});
 
 /**
  * 헤더 1차 메뉴 목적지 (2026-11-18 동선 재구성): 창작 여정 순서의 5개 축이다.
@@ -171,7 +176,7 @@ describe("mobile site shell accessibility", () => {
     expect(pageAction.hasAttribute("aria-hidden")).toBe(false);
   });
 
-  it("keeps desktop destinations and the four mobile purposes on discovery routes", async () => {
+  it("keeps desktop destinations and five equal mobile tabs on discovery routes", async () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/discover"]}>
         <SiteHeader />
@@ -183,7 +188,9 @@ describe("mobile site shell accessibility", () => {
 
     const quickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
     expect(Array.from(quickNavigation.querySelectorAll("a")).map((link) => link.getAttribute("href"))).toEqual(["/studio", "/discover", "/market", "/my", "/sitemap"]);
-    expect(quickNavigation.querySelector(":scope > .grid")?.className).toContain("grid-cols-5");
+    const grid = quickNavigation.querySelector<HTMLElement>(":scope > .grid");
+    expect(grid?.classList.contains("grid-cols-[repeat(5,minmax(0,1fr))]")).toBe(true);
+    expect(grid?.style.getPropertyValue("--tab-count")).toBe("5");
     expect(within(quickNavigation).getByRole("link", { name: "작품 찾기" }).getAttribute("aria-current")).toBe("page");
     const trigger = fullMenuTrigger();
     fireEvent.click(trigger);

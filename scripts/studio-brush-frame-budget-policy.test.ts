@@ -98,6 +98,7 @@ function routeDiagnostics(
 function healthy(
   overrides: Partial<StudioBrushFrameBudgetMetrics> = {},
 ): StudioBrushFrameBudgetMetrics {
+  const expected = overrides.expectedPointerMoves ?? 72;
   return {
     id: "g-pen-flex",
     firstPixelMs: 8,
@@ -113,6 +114,12 @@ function healthy(
     observedCoalescedSamples: 72,
     pointerAppendDurationsMs: Array.from({ length: 72 }, (_, index) => 2 + index % 3),
     pointerUpMainThreadMs: 8,
+    pointerDispatchBoundary: {
+      method: "init-capture-to-verified-window-bubble-v1", installedBeforePageScripts: true,
+      complete: true, pageEpoch: 100, endPageEpoch: 100, expectedPointerMoves: expected,
+      starts: expected + 2, ends: expected + 2, moveStarts: expected, moveEnds: expected,
+      downCount: 1, upCount: 1, pendingEvents: 0, lateWindowChanges: 0, errors: [],
+    },
     pointerUpToFirstFrameMs: 12,
     blankFrameObservationCount: 20,
     blankFrameCount: 0,
@@ -331,12 +338,34 @@ describe("Studio competitive continuous brush frame-budget policy", () => {
       "compositor-surface-missing",
       "continuous-profile-missing",
       "pointer-delivery-loss",
+      "pointer-dispatch-boundary-invalid",
       "pointer-append-profile-missing",
       "blank-frame-profile-missing",
       "long-task-profile-missing",
       "pointerup-main-profile-missing",
       "settle-timeout",
     ]));
+  });
+
+  it("누락된 경계는 이전의 빠른 microtask 숫자로 통과시키지 않는다", () => {
+    const result = evaluateStudioBrushFrameBudget(healthy({
+      pointerDispatchBoundary: null,
+      pointerAppendDurationsMs: Array.from({ length: 72 }, () => 0.02), pointerUpMainThreadMs: 0.045,
+      legacyPointerDispatch: { method: "capture-to-microtask-legacy", pointerAppendDurationsMs: [0.02], pointerUpMainThreadMs: 0.045 },
+    }));
+    expect(result.ok).toBe(false);
+    expect(result.findings.map(finding => finding.code)).toEqual(["pointer-dispatch-boundary-invalid"]);
+  });
+
+  it("legacy가 빨라도 전체 경계의 8/16.7/50ms 초과를 그대로 거절한다", () => {
+    const result = evaluateStudioBrushFrameBudget(healthy({
+      pointerAppendDurationsMs: Array.from({ length: 72 }, () => 20), pointerUpMainThreadMs: 51,
+      legacyPointerDispatch: { method: "capture-to-microtask-legacy", pointerAppendDurationsMs: [0.02], pointerUpMainThreadMs: 0.045 },
+    }));
+    expect(result.ok).toBe(false);
+    expect(result.findings.map(finding => finding.code)).toEqual([
+      "pointer-append-p95", "pointer-append-p99", "pointerup-main-stall",
+    ]);
   });
 
   it("summarizes append and compositor tails without counting malformed values", () => {

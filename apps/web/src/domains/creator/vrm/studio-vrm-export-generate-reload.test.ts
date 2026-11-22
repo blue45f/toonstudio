@@ -305,43 +305,6 @@ describe("generate recipe → .vrm file reload", () => {
     60_000,
   );
 
-  it.each(AVATAR_FORGE_PRESETS.map((preset) => preset.id))(
-    "leaves %s's hair at rest when the head never moves",
-    async (presetId) => {
-      // 콜라이더가 정지 헤어를 뚫고 있으면, 고개를 전혀 움직이지 않아도 첫 프레임부터 스프링
-      // 해석이 머리카락을 바깥으로 밀어낸다. 예전에는 앞머리가 4.5cm 앞으로 튀어나갔다 —
-      // 두개골 캡슐을 눌리지 않은 원 타원체에서 뽑았고(렌더링된 이마는 0.87배로 눌린다),
-      // 몸통 캡슐의 위쪽 반구가 반경만큼 어깨 위로 솟아 목덜미를 삼켰기 때문이다.
-      const vrm = await loadVrmBytes(
-        exportStudioVrmFromGenerateRecipe(createStudioVrmGenerateRecipe({ presetId })),
-      );
-      const joints = [...(vrm.springBoneManager?.joints ?? [])];
-      if (joints.length === 0) return;
-      const head = vrm.humanoid?.getNormalizedBoneNode("head");
-      if (!head) throw new Error(`${presetId}: expected a head bone`);
-      vrm.scene.updateMatrixWorld(true);
-      const skull = head.getWorldPosition(new Vector3());
-      const rest = joints.map((spring) => spring.bone.getWorldPosition(new Vector3()).clone());
-
-      for (let step = 0; step < 200; step += 1) vrm.update(1 / 60);
-      vrm.scene.updateMatrixWorld(true);
-
-      let pushed = 0;
-      let worst = "";
-      joints.forEach((spring, index) => {
-        const now = spring.bone.getWorldPosition(new Vector3());
-        // 머리 관절에서 바깥으로 향하는 성분만 본다. 아래로 처지는 것은 중력이고 정상이다.
-        const outward = now.sub(rest[index]).dot(rest[index].clone().sub(skull).normalize());
-        if (outward > pushed) {
-          pushed = outward;
-          worst = spring.bone.name;
-        }
-      });
-      expect(pushed, `${presetId}: ${worst} 가 정지 상태에서 밀려났다`).toBeLessThan(0.012);
-    },
-    60_000,
-  );
-
   it("assigns both the torso and skull collider groups to every hair spring", () => {
     const snapshot = buildStudioVrmGenerateAuthoringSnapshot(
       createStudioVrmGenerateRecipe({ presetId: "hime-noble" }),

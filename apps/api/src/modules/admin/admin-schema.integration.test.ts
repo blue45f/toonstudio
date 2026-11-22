@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ADMIN_SCHEMA_COLUMNS_SQL } from "./schema/admin.schema";
+import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/schema/admin.schema";
 
 const integrationUrl = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim();
 if (process.env.CI && !integrationUrl) {
@@ -22,13 +22,13 @@ postgres("Managed administrator PostgreSQL schema", () => {
 
   beforeAll(async () => {
     pool = new Pool({ connectionString: integrationUrl, max: 4, statement_timeout: 10_000 });
-    migration = await readFile(new URL("./migrations/0043_admin_runtime_schema.sql", import.meta.url), "utf8");
+    migration = await readFile(new URL("../../platform/database/migrations/0043_admin_runtime_schema.sql", import.meta.url), "utf8");
     runtimeMigrations = await Promise.all([
       "0097_admin_member_test_accounts.sql",
       "0123_admin_business_plan.sql",
       "0128_admin_business_plan_access.sql",
-    ].map((file) => readFile(new URL(`./migrations/${file}`, import.meta.url), "utf8")));
-    legacy = await readFile(new URL("./fixtures/admin-runtime-legacy.sql", import.meta.url), "utf8");
+    ].map((file) => readFile(new URL(`../../platform/database/migrations/${file}`, import.meta.url), "utf8")));
+    legacy = await readFile(new URL("../../platform/database/fixtures/admin-runtime-legacy.sql", import.meta.url), "utf8");
   });
   afterAll(async () => {
     try {

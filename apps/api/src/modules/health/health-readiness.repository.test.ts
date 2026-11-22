@@ -34,6 +34,11 @@ const ASSET_PLATFORM_RELATIONS = [
   "creator_work_catalog_asset_binding",
 ] as const;
 
+const PRODUCTION_DIVISION_RELATIONS = [
+  "production_binary_lock", "production_cut_slice",
+  "production_qa_inspection", "production_royalty_ledger",
+] as const;
+
 function completeSchemaCatalog() {
   return {
     relationNames: [...REQUIRED_DATABASE_RELATIONS],
@@ -68,7 +73,7 @@ function completeSchemaCatalog() {
 }
 
 describe("PostgresHealthReadinessRepository", () => {
-  it.each(ASSET_PLATFORM_RELATIONS)(
+  it.each([...ASSET_PLATFORM_RELATIONS, ...PRODUCTION_DIVISION_RELATIONS])(
     "rejects otherwise complete infrastructure when %s is missing",
     async (missingRelation) => {
       expect(REQUIRED_DATABASE_RELATIONS).toContain(missingRelation);

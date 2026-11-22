@@ -111,6 +111,7 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "../studio-page-workspace-persistence.ts"),
     resolve(baseDir, "../render/studio-hokusai-natural-media-replacement.ts"),
     resolve(baseDir, "../render/studio-live-stroke-gpu-audit.ts"),
+    resolve(baseDir, "../render/studio-live-stroke-gpu-append.ts"),
     resolve(baseDir, "../studio-auto-actions-controller.ts"),
     resolve(baseDir, "./studio-align-selected.ts"),
     resolve(baseDir, "../studio-drawing-assist-handlers.ts"),

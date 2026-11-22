@@ -53,6 +53,7 @@ import {
   planStudioGpuVisibleTileFrame,
   resolveStudioGpuTileTasks,
   STUDIO_GPU_DAB_INSTANCE_FLOATS,
+  STUDIO_GPU_DAB_VERTEX_ATTRIBUTES,
 } from "./studio-webgpu-tile-compositor";
 import {
   createStudioGpuTileTextureFactory,
@@ -1717,12 +1718,7 @@ export class StudioWebGpuEngine {
           {
             arrayStride: INSTANCE_BYTES,
             stepMode: "instance",
-            attributes: [
-              { shaderLocation: 0, offset: 0, format: "float32x2" },
-              { shaderLocation: 1, offset: 8, format: "float32x2" },
-              { shaderLocation: 2, offset: 16, format: "float32x4" },
-              { shaderLocation: 3, offset: 32, format: "float32" },
-            ],
+            attributes: [...STUDIO_GPU_DAB_VERTEX_ATTRIBUTES],
           },
         ],
       };

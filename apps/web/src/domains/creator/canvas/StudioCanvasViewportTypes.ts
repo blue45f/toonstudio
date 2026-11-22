@@ -461,6 +461,8 @@ export interface StudioCanvasViewportProps {
   remixId: string | null;
   saving: boolean;
   scale: number;
+  autoFitMaximumScale: number;
+  setScale: (scale: number) => void;
   selected: El | null;
   selectedId: string | null;
   setAppSettingsInitialTab: import("react").Dispatch<import("react").SetStateAction<StudioAppSettingsTab>>;

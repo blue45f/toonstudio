@@ -815,7 +815,7 @@ export function StudioBg3dSceneAssistantWorkspace({
           <details className="mt-2 rounded-lg border border-line bg-card px-3 py-2" open={proLabOpen} onToggle={(e) => setProLabOpen(e.currentTarget.open)}>
             <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-fg">한국 웹툰 3D 프로 랩</summary>
             {proLabOpen ? (
-              <Suspense fallback={<p role="status" className="py-2 text-xs">3D 프로 랩 불러오는 중…</p>}>
+              <Suspense fallback={<p role="status" className="py-2 text-xs">{frozenStatus5Text("studio.frozenStatus5.bg3dAssistant.proLabLoading", "3D 프로 랩 불러오는 중…")}</p>}>
                 <LazyStudio3dWebtoonProPanel onApplyCelContract={(p) => { h.setLineArtPreview(true); h.updateLtToneSettings({ mode: "cel", toneBands: p.toneBandCount, inkPx: p.inkPx }); }} onPlaceHeroAsset={(a) => { void h.addCustomModelToScene(a.id); }} />
               </Suspense>
             ) : null}

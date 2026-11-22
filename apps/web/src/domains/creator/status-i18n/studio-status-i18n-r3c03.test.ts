@@ -41,6 +41,8 @@ function placeholders(text: string): string[] {
 }
 
 const BG3D_R3_KEYS = [
+  "studio.bg3dPanelStatus.editorSidebar.modelingLoading",
+  "studio.bg3dPanelStatus.editorSidebar.compositeLoading",
   "studio.bg3dPanelStatus.actionFooter.renderInstanceFailed",
   "studio.bg3dPanelStatus.assetLibraryWithPresets.importStartBlocked",
   "studio.bg3dPanelStatus.assetLibraryWithPresets.directTransferUnsupported",
@@ -133,6 +135,8 @@ const SCENE3D_KEYS = [
 ] as const;
 
 const EXPECTED_KO: Readonly<Record<string, string>> = {
+  "studio.bg3dPanelStatus.editorSidebar.modelingLoading": "고급 모델링 도구를 불러오는 중이에요…",
+  "studio.bg3dPanelStatus.editorSidebar.compositeLoading": "실시간 합성 스테이지를 불러오는 중이에요…",
   "studio.bg3dPanelStatus.actionFooter.renderInstanceFailed": "검증된 모델의 렌더 인스턴스를 만들지 못했습니다. 기존 PNG를 보존하기 위해 저장을 막았습니다.",
   "studio.bg3dPanelStatus.assetLibraryWithPresets.importStartBlocked": "현재 가져오기를 시작할 수 없습니다. 진행 중인 작업과 이용 권리 입력을 확인해 주세요.",
   "studio.bg3dPanelStatus.assetLibraryWithPresets.directTransferUnsupported": "이 브라우저는 직접 전달을 지원하지 않습니다. 검토실에서 GLB를 저장한 뒤 가져와 주세요.",
@@ -219,6 +223,7 @@ const EXPECTED_KO: Readonly<Record<string, string>> = {
 };
 
 const CONSUMERS = [
+  "bg3d/StudioBg3dEditorSidebar.tsx",
   "bg3d/StudioBg3dActionFooter.tsx",
   "bg3d/StudioBg3dAssetLibraryPanelWithPresets.tsx",
   "bg3d/StudioBg3dCinematicDirectorPanelContent.tsx",

@@ -12,13 +12,14 @@ export { SPECTRAL_38BAND_KM_WGSL_SNIPPET };
 /**
  * 원의 경계 픽셀만 4×4로 샘플링하며, 반지름 1픽셀 이하에서는 원–픽셀 교차면적을 적분한다.
  * 방향에 따라 폭이 달라지는 거리 미분 밴드를 없애고, 샘플 사이의 얇은 압력 dab도 보존한다.
- * 기존 공개 이름과 per-dab premultiplied 색·타일 quad 계약은 유지한다.
+ * 원의 중심과 픽셀 크기는 flat 좌표로 받아 정점의 래스터 격자 반올림에 영향받지 않는다.
+ * 기존 공개 이름과 per-dab premultiplied 색·타일 quad 여백은 유지한다.
  */
 export const STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER = /* wgsl */ `
   struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) local: vec2<f32>,
-    @location(1) color: vec4<f32>,
+    @location(0) @interpolate(flat) pixel_geometry: vec4<f32>,
+    @location(1) @interpolate(flat) color: vec4<f32>,
     @location(2) @interpolate(flat) nominal_radius_ratio: f32,
   }
 
@@ -29,6 +30,7 @@ export const STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER = /* wgsl */ `
     @location(1) quad_radius: vec2<f32>,
     @location(2) color: vec4<f32>,
     @location(3) nominal_radius_ratio: f32,
+    @location(4) pixel_geometry: vec4<f32>,
   ) -> VertexOutput {
     let corners = array<vec2<f32>, 6>(
       vec2<f32>(-1.0, -1.0),
@@ -41,7 +43,7 @@ export const STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER = /* wgsl */ `
     let corner = corners[vertex_index];
     var output: VertexOutput;
     output.position = vec4<f32>(center + corner * quad_radius, 0.0, 1.0);
-    output.local = corner;
+    output.pixel_geometry = pixel_geometry;
     output.color = color;
     output.nominal_radius_ratio = nominal_radius_ratio;
     return output;
@@ -76,30 +78,30 @@ export const STUDIO_GPU_DUAL_ENVELOPE_AA_BRUSH_SHADER = /* wgsl */ `
 
   @fragment
   fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    // 분기 전에 계산한 미분으로 물리 타일 텍셀 하나의 발자국을 구한다.
-    let pixel_dx = dpdx(input.local);
-    let pixel_dy = dpdy(input.local);
-    let pixel_size = max(vec2<f32>(length(pixel_dx), length(pixel_dy)), vec2<f32>(0.00000001));
+    // 보간된 quad 모서리는 정점이 격자에 맞춰질 때 원까지 이동시킨다.
+    // 실제 fragment 픽셀과 별도로 전달한 중심에서 해석적 좌표를 복원한다.
+    let pixel_size = max(input.pixel_geometry.zw, vec2<f32>(0.00000001));
+    let local = (input.position.xy - input.pixel_geometry.xy) * pixel_size;
     let radius = input.nominal_radius_ratio;
     let radius_squared = radius * radius;
     let half_pixel = pixel_size * 0.5;
-    let nearest = max(abs(input.local) - half_pixel, vec2<f32>(0.0));
+    let nearest = max(abs(local) - half_pixel, vec2<f32>(0.0));
     if (radius <= 0.0 || dot(nearest, nearest) >= radius_squared) {
       return vec4<f32>(0.0);
     }
-    let farthest = abs(input.local) + half_pixel;
+    let farthest = abs(local) + half_pixel;
     if (dot(farthest, farthest) <= radius_squared) {
       return input.color;
     }
     // 모든 샘플점 사이에 놓인 작은 원도 픽셀 내 위치에 관계없이 면적을 보존한다.
     if (radius <= max(pixel_size.x, pixel_size.y)) {
-      return input.color * small_circle_pixel_coverage(input.local, radius, pixel_size);
+      return input.color * small_circle_pixel_coverage(local, radius, pixel_size);
     }
     var covered_samples = 0.0;
     for (var y = 0u; y < 4u; y += 1u) {
       for (var x = 0u; x < 4u; x += 1u) {
         let offset = (vec2<f32>(f32(x), f32(y)) + vec2<f32>(0.5)) * 0.25 - vec2<f32>(0.5);
-        let sample_local = input.local + pixel_dx * offset.x + pixel_dy * offset.y;
+        let sample_local = local + pixel_size * offset;
         covered_samples += select(0.0, 1.0, dot(sample_local, sample_local) <= radius_squared);
       }
     }

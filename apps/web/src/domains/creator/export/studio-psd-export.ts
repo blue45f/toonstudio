@@ -27,9 +27,9 @@ import { groupPsdExportLayers, type StudioPsdFolder } from "./studio-psd-folder-
  *  - `pixelRatio: scale / effScale` 로 Stage 자체 스케일(현재 줌)을 상쇄해, 항상 논리적
  *    "출력 배율(scale)" 기준 픽셀 크기가 나오게 한다(기존 PNG 내보내기와 동일한 트릭).
  *
- * z-order 규약: Studio 는 `elements[0]`=맨 뒤 → `elements[last]`=맨 앞(z-order 오름차순)이지만
- * ag-psd 의 `Psd.children` 은 그 반대(0번째=포토샵 레이어 패널의 맨 위) — 뒤집어 넣지 않으면
- * 스택 순서가 통째로 반전된다.
+ * z-order 규약: Studio 는 `elements[0]`=맨 뒤 → `elements[last]`=맨 앞(z-order 오름차순)이며
+ * ag-psd 의 `Psd.children` 도 같은 뒤→앞 순서다. 포토샵 레이어 패널의 표시 순서와 혼동해
+ * 배열을 뒤집으면 스택 순서가 통째로 반전된다.
  *
  * 회전: PSD 클래식 레이어엔 회전 필드가 없다. `toCanvas()` 는 노드의 절대(회전 포함) 변환으로
  * 그리므로 회전된 요소도 이미 "회전이 픽셀에 구워진" 래스터로 캡처된다 — 별도 처리가 필요 없다

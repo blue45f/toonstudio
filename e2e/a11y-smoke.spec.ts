@@ -168,6 +168,64 @@ for (const route of DESKTOP_A11Y_ROUTES) {
   });
 }
 
+test("여정 단계와 소재 검색은 세 폭에서 겹치지 않고 포인터·키보드로 열린다", async ({ page }) => {
+  await page.goto("/production", { waitUntil: "domcontentloaded" });
+  const bar = page.locator('[data-role-journey-bar="true"]');
+  const launcher = bar.getByTestId("journey-asset-search-launcher");
+  await expect(launcher).toBeVisible();
+  await page.evaluate(async () => { await document.fonts.ready; });
+
+  for (const viewport of [{ width: 1280, height: 720 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    const steps = bar.getByRole("list", { name: "5단계 창작 여정" });
+    const lastStep = steps.getByRole("link").last();
+    await lastStep.scrollIntoViewIfNeeded();
+    const lastStepVisible = await lastStep.evaluate((link) => {
+      const list = link.closest("ol");
+      if (!list) return false;
+      const box = link.getBoundingClientRect(), bounds = list.getBoundingClientRect();
+      const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return box.left >= bounds.left && box.right <= bounds.right && top !== null && link.contains(top);
+    });
+    expect(lastStepVisible, `${viewport.width}px에서 마지막 단계가 스크롤로 접근 가능해야 한다`).toBe(true);
+
+    await launcher.scrollIntoViewIfNeeded();
+    const geometry = await launcher.evaluate((button) => {
+      const owner = button.closest('[data-role-journey-bar="true"]');
+      const list = owner?.querySelector(":scope > ol");
+      if (!owner || !list) throw new Error("여정 목록이 없어요.");
+      const box = button.getBoundingClientRect();
+      const overlaps = Array.from(list.querySelectorAll("a")).filter((link) => {
+        const other = link.getBoundingClientRect();
+        return Math.min(box.right, other.right) > Math.max(box.left, other.left)
+          && Math.min(box.bottom, other.bottom) > Math.max(box.top, other.top);
+      }).map((link) => link.getAttribute("data-journey-stage"));
+      const hitTargets = [8, box.width / 2, box.width - 8].flatMap((x) =>
+        [8, box.height / 2, box.height - 8].map((y) => {
+          const top = document.elementFromPoint(box.left + x, box.top + y);
+          return top !== null && button.contains(top);
+        }));
+      return { width: box.width, height: box.height, overlaps, hitTargets, separateRows: list.getBoundingClientRect().bottom <= box.top };
+    });
+    expect(geometry.width).toBeGreaterThanOrEqual(44);
+    expect(geometry.height).toBeGreaterThanOrEqual(44);
+    expect(geometry.overlaps, `${viewport.width}px에서 단계 링크가 검색 버튼을 가리지 않아야 한다`).toEqual([]);
+    expect(geometry.separateRows).toBe(true);
+    expect(geometry.hitTargets).toEqual(Array(9).fill(true));
+
+    const dialog = page.getByTestId("global-asset-search-dialog");
+    await launcher.click();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await launcher.focus();
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+  }
+});
+
 test.describe("mobile shell accessibility", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

@@ -211,6 +211,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   currentPublishPackageCreditsText: () => string;
   currentStudioFilterPageRasterContext: (name: string, rasterRuntime: typeof import("../render/studio-raster-edit-preparation"), sourceId?: string) => import("../render/studio-raster-edit-preparation").StudioEditablePageRasterContext;
   currentStudioWorkspaceDeviceKind: () => "mouse" | "touch" | "pen-display" | "mobile" | "keyboard" | null;
+  appliedWorkspaceDeviceKind: import("../studio-workspaces").StudioWorkspaceDeviceKind | null;
   currentTemplate: import("../studio-assets").TemplateSpec | null;
   currentWorkspaceOwnerScope: string;
   description: string;

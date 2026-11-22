@@ -50,6 +50,19 @@ describe("natural normalized-VRM hand poses", () => {
     expect(proximal).toEqual([...proximal].sort((a, b) => a - b));
   });
 
+  it.each(["left", "right"] as const)("%s OK 손의 실제 중지는 약하게 펴고 검지는 원을 만들 만큼 굽힌다", (side) => {
+    const hand = createStudioVrmHandPose(side, "okSign");
+    const fist = createStudioVrmHandPose(side, "fist");
+    const flexion = (pose: typeof hand, finger: string) => ["Proximal", "Intermediate", "Distal"]
+      .reduce((sum, segment) => sum + Math.abs(pose[`${side}${finger}${segment}`][2]), 0);
+    expect(flexion(hand, "Middle")).toBeGreaterThan(0);
+    expect(flexion(hand, "Middle")).toBeLessThan(flexion(fist, "Middle") * 0.1);
+    expect(flexion(hand, "Index")).toBeGreaterThan(flexion(fist, "Index") * 0.5);
+    const pip = Math.abs(hand[`${side}MiddleIntermediate`][2]);
+    const dip = Math.abs(hand[`${side}MiddleDistal`][2]);
+    expect(dip / pip).toBeCloseTo(2 / 3, 5);
+  });
+
   it("authors thumb opposition through the CMC instead of hinging only MCP/IP", () => {
     for (const pose of ["fist", "holding", "penGrip", "relaxed"] as const) {
       const hand = createStudioVrmHandPose("right", pose);

@@ -34,6 +34,7 @@ import { copyStudioSmartShapeSnapshot } from "./studio-smart-shape-copy";
 import { Command } from "lucide-react";
 import {
   Suspense,
+  startTransition,
   useCallback,
   useEffect,
   useEffectEvent,
@@ -1257,7 +1258,8 @@ import {
   type StudioToolOperationMemory,
 } from "./studio-tool-operation-memory";
 import { openStudioToolsCompanionForMenu } from "./studio-tools-companion-runtime";
-import { hasStudioUnloadPromptWork, installStudioUnloadGuard, studioPendingStrokeFingerprint } from "./studio-unsaved-work-guard";
+import { hasStudioUnloadPromptWork, studioPendingStrokeFingerprint } from "./studio-unsaved-work-guard";
+import { useStudioUnloadGuard } from "./studio-cuttoon-editor/runtime/useStudioUnloadGuard";
 import { useStudioEditorUpdateSafety } from "./use-studio-editor-update-safety";
 import { useStudioEditorStatusNotices } from "./studio-cuttoon-editor/use-studio-editor-status-notices";
 import {
@@ -1292,7 +1294,8 @@ import {
   type StudioGpuPendingDrawAuthority,
   pruneStudioGpuPendingAuthority,
 } from "./render/studio-webgpu-pending-authority";
-import { createStudioLiveStrokeGpuAudit, studioLiveSourceJournalFailureReason } from "./render/studio-live-stroke-gpu-audit";
+import { createStudioLiveStrokeGpuAppend } from "./render/studio-live-stroke-gpu-append";
+import { createStudioLiveStrokeGpuAudit } from "./render/studio-live-stroke-gpu-audit";
 import type {
   StudioLiveStrokeGpuFailureReason,
   StudioLiveStrokeUnavailableReason,
@@ -3206,11 +3209,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     ownerScope: string;
     layout: StudioWorkspaceLayout;
   } | null>(null);
-  // Device adaptation is *applied* only when a workspace is applied, never continuously: docks that
-  // re-arrange because the artist reached for the keyboard mid-drawing would be worse than docks
-  // that stay where the profile put them. A pointer press writes a ref and, on the rare press that
-  // changes the classification, one state update — never per stroke, so the drawing route keeps its
-  // zero-render contract.
+  // 관측한 입력은 다음 배치 적용에만 쓴다. 그리다 다른 입력을 잡아도 현재 도크는 움직이지 않는다.
+  // 화면을 역캡처할 기기축은 아래 적용 상태가 소유하며, 포인터 관측만으로 렌더를 예약하지 않는다.
   const workspaceDevicePointerTypeRef = useRef<string | null>(null);
   const [workspaceControlSide, setWorkspaceControlSide] = useState<StudioMobileControlSide>(() =>
     resolveStudioWorkspaceControlSide(
@@ -3224,8 +3224,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       readStudioWorkspaceDeviceSignalsFromGlobals(workspaceDevicePointerTypeRef.current)
     );
   }
-  // 기기 종류는 layout을 저자형으로 되돌릴 때(캡처) 필요해서 렌더가 읽을 수 있어야 한다. 다만 획마다
-  // 리렌더가 나면 안 되므로, 실제로 종류가 *바뀔 때만* 상태를 옮긴다 — 보통 세션당 0~1회다.
+  // 현재 화면에 실제 적용한 기기로 역캡처한다. 마지막 입력 기기를 쓰면 pen 도크가 mouse의
+  // 저자 배치로 저장되거나, 아직 적용하지 않은 기기 override를 덮어쓸 수 있다.
   const [workspaceDeviceKind, setWorkspaceDeviceKind] =
     useState<StudioWorkspaceDeviceKind | null>(() =>
       resolveStudioWorkspaceDeviceKind(readStudioWorkspaceDeviceSignalsFromGlobals(null))
@@ -3235,8 +3235,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       const pointerType = event.pointerType || null;
       if (workspaceDevicePointerTypeRef.current === pointerType) return;
       workspaceDevicePointerTypeRef.current = pointerType;
-      const next = currentStudioWorkspaceDeviceKind();
-      setWorkspaceDeviceKind((current) => (current === next ? current : next));
     };
     globalThis.addEventListener("pointerdown", recordPointerType, { passive: true, capture: true });
     return () =>
@@ -3856,6 +3854,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     // artist who saved a workspace on a desktop still gets that workspace back on a desktop.
     const deviceKind = currentStudioWorkspaceDeviceKind();
     const presented = resolveStudioWorkspaceDeviceLayout(layout, deviceKind);
+    setWorkspaceDeviceKind(deviceKind);
     const preserveSaveStep = (source === "owner-hydration" || source === "owner-scope-change") && pendingSaveIntent !== null;
     const preserveOpenInspector = preserveSaveStep || (source === "owner-hydration" && mobileSheet === "props");
     if (!preserveOpenInspector) setInspectorLayout(presented.inspector);
@@ -6938,31 +6937,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const studioViewDocumentWidth = canvasRotation === 90 || canvasRotation === 270
     ? canvasH
     : CANVAS_W;
-  const studioViewDocumentWidthRef = useRef(studioViewDocumentWidth);
-  useLayoutEffect(() => {
-    studioViewDocumentWidthRef.current = studioViewDocumentWidth;
-  }, [studioViewDocumentWidth]);
-  useEffect(() => {
-    const el = wrapRef.current;
-    // 컨테이너 폭에 맞춰 캔버스를 채운다. 전체화면이면 초광폭 모니터도 채우게 상한을 4배로 올린다.
-    // ResizeObserver로 패널 접기·전체화면 등 레이아웃 변화까지 감지(예전엔 window resize만 들어 접어도 안 넓어졌다).
-    const cap = isFullscreen || maximized || mobileImmersive || canvasOnlyMode ? 4 : 2.5;
-    const measure = () => {
-      const w = (el ?? wrapRef.current)?.clientWidth ?? CANVAS_W;
-      setScale(Math.min(cap, Math.max(0.1, w / studioViewDocumentWidthRef.current)));
-    };
-    measure();
-    let ro: ResizeObserver | null = null;
-    if (el && typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(measure);
-      ro.observe(el);
-    }
-    globalThis.addEventListener("resize", measure);
-    return () => {
-      ro?.disconnect();
-      globalThis.removeEventListener("resize", measure);
-    };
-  }, [canvasOnlyMode, isFullscreen, maximized, mobileImmersive]);
 
   // 휠·핀치 줌 제스처 엔진 — canvas/studio-zoom-gesture-engine 훅으로 추출. 틱은 ref 와 CSS
   // transform 만 만지고 정착 시 한 번만 setZoom 하는 제로 렌더 핫패스 계약이 훅 안에 그대로 있다.
@@ -9488,6 +9462,10 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         auditReceipt.strokeId,
         receipt.requestId,
       );
+      gpuLiveSourceJournalAppend.flushGpuLiveSourceJournalAfterReceipt(
+        auditReceipt.strokeId,
+        receipt.requestId,
+      );
       return;
     }
     if (gpuLiveInkPinnedRef.current) {
@@ -9996,13 +9974,13 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     requestId: string,
   ): void {
     if (gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId) return;
+    if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
     if (gpuFinalReceiptStrokeRef.current?.id === strokeId) {
       // An asynchronous post-contact receipt still owns the pointer-down watchdog epoch. Feed the
       // exact identity before durability work; stale receipts cannot clear this deadline.
       gpuPinReceiptWatchdog().receipt(requestId);
       applyLiveStrokeBackendPresentationEffects();
     }
-    if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
     globalThis.queueMicrotask(() => {
       const pending = pendingStrokeCommitsRef.current;
       const stroke = pending?.strokes.find((candidate) => candidate.id === strokeId);
@@ -10641,64 +10619,25 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     gpuLiveAcceptedRequestIdRef.current = outcome.requestId;
     return true;
   }
-  function appendGpuLiveSourceJournalSuffix(
-    el: DrawEl,
-    sealEndpoint = false
-  ): "advanced" | "retained" | "rejected" {
-    const journal = gpuLiveSourceJournalRef.current;
-    const handle = webGpuCanvasHandleRef.current;
-    if (!journal || !handle) {
-      failSelectedGpuLiveInk("surface-lost", el.id);
-      return "rejected";
-    }
-    const advanced = advanceStudioGpuLiveSourceJournal(journal, {
-      // Rebuild only the O(1) paint identity from the current DrawEl. A mid-contact style or epoch
-      // mutation therefore rejects before the journal reads even one source-array suffix slot.
-      identity: gpuLiveSourceJournalIdentityFor(
-        el,
-        journal.identity.epoch,
-        journal.identity.variations
-      ),
-      points: el.points,
-      pressures: el.pressures,
-      sealEndpoint,
-    });
-    if (advanced.status === "rejected") {
-      failSelectedGpuLiveInk(studioLiveSourceJournalFailureReason(advanced.reason), el.id);
-      return "rejected";
-    }
-    if (advanced.status === "retained") {
-      gpuLiveSourceJournalRef.current = advanced.state;
-      return "retained";
-    }
-
-    const firstStrokeIndex = gpuLiveSourceJournalFirstStrokeIndexRef.current;
-    // Grows the retained journal in place, so the presented prefix survives this submission.
-    if (!prepareLiveStrokeGpuSubmission(el.id, "append")) {
-      failSelectedGpuLiveInk("request-failed", el.id);
-      return "rejected";
-    }
-    const outcome = handle.appendPinnedJournalSuffixBatch({
-      patches: advanced.suffixes.map((suffix, variationIndex) => ({
-        strokeIndex: firstStrokeIndex + variationIndex,
-        previousPointCount: suffix.previousRenderedPointCount,
-        suffixPoints: suffix.points,
-        suffixPressures: suffix.pressures,
-      })),
-    });
-    if (outcome.status === "rejected") {
-      failSelectedGpuLiveInk("request-failed", el.id);
-      return "rejected";
-    }
-    gpuLiveSourceJournalRef.current = advanced.state;
-    if (!registerLiveStrokeGpuRequest(el.id, outcome.requestId, "append")) {
-      failSelectedGpuLiveInk("surface-lost", el.id);
-      return "rejected";
-    }
-    gpuLiveAcceptedRequestIdRef.current = outcome.requestId;
-    armGpuPinnedRequestWatchdog(outcome.requestId, sealEndpoint ? STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS : undefined);
-    applyLiveStrokeBackendPresentationEffects();
-    return "advanced";
+  const gpuLiveSourceJournalAppend = createStudioLiveStrokeGpuAppend({
+    gpuLiveSourceJournalRef,
+    gpuLiveSourceJournalFirstStrokeIndexRef,
+    liveDraftVisualRef,
+    gpuLiveAcceptedRequestIdRef,
+    gpuLiveInkPinnedRef,
+    webGpuCanvasHandleRef,
+    liveStrokeBackendAuditActiveIdRef,
+    liveStrokeBackendAuditSessionsRef,
+    gpuLiveSourceJournalIdentityFor,
+    failSelectedGpuLiveInk,
+    prepareLiveStrokeGpuSubmission,
+    registerLiveStrokeGpuRequest,
+    armGpuPinnedRequestWatchdog,
+    applyLiveStrokeBackendPresentationEffects,
+    gpuPinReceiptWatchdog,
+  });
+  function appendGpuLiveSourceJournalSuffix(el: DrawEl, sealEndpoint = false) {
+    return gpuLiveSourceJournalAppend.appendGpuLiveSourceJournalSuffix(el, sealEndpoint);
   }
   const settleGpuLiveStroke = (source: DrawEl, finished: DrawEl): boolean => {
     if (appendGpuLiveSourceJournalSuffix(source, true) === "rejected") {
@@ -11469,8 +11408,11 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     // durable SQLite/OPFS snapshot at the microtask checkpoint before a browser navigation task
     // can tear down this document and its Dedicated Worker.
     setUnloadGuardArmed(true);
-    setHasPendingOverlayCommit(true);
-    setHasUndonePendingOverlay(false);
+    // 획·저장 권위는 위의 ref에 이미 반영됐다. 메뉴 갱신만 중단 가능한 우선순위로 예약한다.
+    startTransition(() => {
+      setHasPendingOverlayCommit(true);
+      setHasUndonePendingOverlay(false);
+    });
     globalThis.queueMicrotask(() => {
       const pending = pendingStrokeCommitsRef.current;
       if (!pending || !pending.strokes.some((stroke) => stroke.id === finished.id)) return;
@@ -11487,7 +11429,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     if (discardStudioRetainedStrokeRedo(
       pendingUndoneStrokeCommitsRef,
       (ids) => liveRetainedMediaOverlayRendererRef.current.discardHiddenSettledStrokes(ids),
-    )) setHasUndonePendingOverlay(false);
+    )) startTransition(() => setHasUndonePendingOverlay(false));
   }
   const scheduleMarqueeRect = (next: { x: number; y: number; w: number; h: number } | null) => {
     pendingMarqueeRectRef.current = next;
@@ -11599,26 +11541,9 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
           studioLifecycleDurablePendingFingerprintRef.current,
       }),
   });
-  const [unloadGuardArmed, setUnloadGuardArmed] = useState(false);
-  useEffect(() => {
-    if (unloadGuardArmed) return;
-    if (!studioUnsavedWorkRef.hasUnsavedStudioWorkNow()) return;
-    setUnloadGuardArmed(true);
-  }, [
-    pages,
-    master,
-    studioUnsavedWorkRef,
-    toolOperationMemoryPersistenceDirty,
-    unloadGuardArmed,
-    workHydrated,
-  ]);
-  useLayoutEffect(() => {
-    if (!unloadGuardArmed) return;
-    return installStudioUnloadGuard({
-      target: globalThis,
-      hasUnsavedWork: () => studioUnsavedWorkRef.hasUnsavedStudioWorkNow(),
-    });
-  }, [studioUnsavedWorkRef, unloadGuardArmed]);
+  const setUnloadGuardArmed = useStudioUnloadGuard({
+    target: globalThis, hasUnsavedWork: studioUnsavedWorkRef.hasUnsavedStudioWorkNow,
+  });
   useStudioEditorUpdateSafety(`studio-editor:${autosaveKey}`, () => documentSaveInFlightRef.current, studioUnsavedWorkRef.hasUnsavedStudioWorkNow, collaborationOperationSyncPending, pendingExternalWorkspaceSync !== null);
   // ── 픽셀 선택 도구(포토샵식 마퀴/올가미) — studio-selection-tools 통합 상태 ──
   // 선택 영역·도구는 "이미지 요소 1개"에 귀속된다(요소가 바뀌면 아래 effect 가 해제).
@@ -17849,7 +17774,10 @@ const puppetWarpArmed =
     setPagesHi(nextIndex);
   };
   companionHistoryHandlerRef.current = (action) => {
-    routeStudioCompanionHistory({ action, blocked: masterEditMode, canUndo: collaborationDocumentLocked ? scopedHistory.canUndo() : studioHistoryCanUndo, canRedo: collaborationDocumentLocked ? scopedHistory.canRedo() : studioHistoryCanRedo, undo, redo });
+    // 메뉴의 transition 완료 전에도 입력 명령은 최신 pending 권위를 읽는다.
+    const canUndo = pagesHiRef.current > 0 || studioHistorySidecarUndoAvailable || Boolean(pendingStrokeCommitsRef.current?.strokes.length);
+    const canRedo = pagesHiRef.current < pagesHistoryRef.current.length - 1 || studioHistorySidecarRedoAvailable || Boolean(pendingUndoneStrokeCommitsRef.current?.strokes.length);
+    routeStudioCompanionHistory({ action, blocked: masterEditMode, canUndo: collaborationDocumentLocked ? scopedHistory.canUndo() : canUndo, canRedo: collaborationDocumentLocked ? scopedHistory.canRedo() : canRedo, undo, redo });
   };
   const {
     fitCanvasToViewport,
@@ -28263,6 +28191,7 @@ function clearSelectionForEdit() {
       currentPublishPackageCreditsText={currentPublishPackageCreditsText}
       currentStudioFilterPageRasterContext={currentStudioFilterPageRasterContext}
       currentStudioWorkspaceDeviceKind={currentStudioWorkspaceDeviceKind}
+      appliedWorkspaceDeviceKind={workspaceDeviceKind}
       currentTemplate={currentTemplate}
       currentWorkspaceOwnerScope={currentWorkspaceOwnerScope}
       description={description}

@@ -17,6 +17,15 @@ export interface BrowserKvFinding {
   readonly call: string;
 }
 
+export interface BrowserKvAllowance {
+  readonly file: string;
+  readonly kind: FindingKind;
+  readonly key: string;
+  readonly occurrences: number;
+  readonly rationale: string;
+  readonly proof: string;
+}
+
 export function compact(value: string): string {
   return value.replace(/\s+/gu, "");
 }

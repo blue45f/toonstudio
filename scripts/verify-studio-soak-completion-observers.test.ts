@@ -7,6 +7,7 @@ import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 
 import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-runtime-noise.mjs";
+import { evaluateStudioSoakCompletion } from "./lib/studio-soak-evidence";
 
 const source = readFileSync(new URL("./verify-studio-five-hour-soak.mts", import.meta.url), "utf8");
 const ast = ts.createSourceFile("soak.mts", source, ts.ScriptTarget.ESNext, true);
@@ -140,8 +141,12 @@ describe("기존 획에만 지연 관측을 붙이는 실제 draw callback", () 
     });
   });
 
-  it.each(["dispatch", "latency-drain", "trace-complete"])("%s 실패에도 첫 입력 trace 종료 순서와 원래 오류를 보존한다", async (failure) => {
-    const calls: string[] = [], collectionFailed = vi.fn();
+  it.each(["dispatch", "latency-drain", "trace-complete", "mark-stop", "dispatch-and-mark-stop"])("%s 실패에도 첫 입력 trace 종료 순서와 원래 오류를 보존한다", async (failure) => {
+    const calls: string[] = [], report = { sessionId: "same-session", cycles: 1, collectionFailures: [] as Array<{ kind: string; detail: string }> };
+    const collectionFailed = vi.fn(harnessFunction("collectionFailed", { report, nowMs: () => 100, startedAt: 0, Error }));
+    const dispatchFails = failure === "dispatch" || failure === "dispatch-and-mark-stop";
+    const markStopFails = failure === "mark-stop" || failure === "dispatch-and-mark-stop";
+    const markStopError = new Error("stroke mark stop failed");
     const dispatchError = new Error("dispatch failed"), cleanupError = new Error("trace cleanup failed");
     const completeStroke = vi.fn(async () => { calls.push("trace-complete"); if (failure === "trace-complete") throw cleanupError; });
     const page = { waitForTimeout: async (ms: number) => { calls.push(`wait:${ms}`); }, screenshot: async () => Buffer.from("pixels"),
@@ -153,20 +158,39 @@ describe("기존 획에만 지연 관측을 붙이는 실제 draw callback", () 
       assertStudioSoakPointerRoute: async () => undefined, MEASURE_POINTER_LATENCY: true, CPU_DIAGNOSTIC: true,
       armStudioSoakPointerLatency: async () => { calls.push("latency-arm"); },
       cpuDiagnostic: { armStroke: async () => { calls.push("trace-arm"); }, completeStroke },
-      markStudioSoakStroke: async (_page: unknown, active: boolean) => { calls.push(`stroke:${active}`); },
-      dispatchStudioPointerStroke: async () => { calls.push("dispatch"); if (failure === "dispatch") throw dispatchError; return {}; },
+      markStudioSoakStroke: async (_page: unknown, active: boolean) => { calls.push(`stroke:${active}`); if (!active && markStopFails) throw markStopError; },
+      dispatchStudioPointerStroke: async () => { calls.push("dispatch"); if (dispatchFails) throw dispatchError; return {}; },
       drainStudioSoakPointerLatency: async () => { calls.push("latency-drain"); if (failure === "latency-drain") throw new Error("drain failed"); return {}; },
-      studioSoakPointerLatencyIssues: () => [], report: { sessionId: "same-session" }, collectionFailed,
+      studioSoakPointerLatencyIssues: () => [], report, collectionFailed,
       waitForStudioDocumentAdvance: async () => ({}), readStudioVisibleCommitError: async () => null,
       SAMPLE_HEAP_PER_STROKE: false, changedPixels: () => 1,
     });
-    if (failure === "dispatch") await expect(draw(page, null, 1, "pen")).rejects.toBe(dispatchError);
+    if (dispatchFails) await expect(draw(page, null, 1, "pen")).rejects.toBe(dispatchError);
     else await draw(page, null, 1, "pen");
     expect(calls).toEqual(["wait:80", "latency-arm", "trace-arm", "stroke:true", "dispatch",
-      ...(failure === "dispatch" ? [] : ["wait:500"]), "stroke:false", "latency-drain", "trace-complete"]);
+      ...(dispatchFails ? [] : ["wait:500"]), "stroke:false", "latency-drain", "trace-complete"]);
     expect(completeStroke).toHaveBeenCalledExactlyOnceWith(1);
     if (failure === "trace-complete") expect(collectionFailed).toHaveBeenCalledWith("diagnostic-cpu", cleanupError, 1);
     else if (failure === "latency-drain") expect(collectionFailed.mock.calls[0]?.[0]).toBe("pointer-latency");
-    else expect(collectionFailed).not.toHaveBeenCalled();
+    else if (markStopFails) {
+      expect(collectionFailed).toHaveBeenCalledExactlyOnceWith("stroke-mark-stop", markStopError, 1);
+      expect(report.collectionFailures).toEqual([{ atMs: 100, cycle: 1, kind: "stroke-mark-stop", detail: markStopError.message }]);
+      const assess = (telemetryErrors: number) => evaluateStudioSoakCompletion({
+        requestedDurationMs: 60_000, sessionDurationMs: 60_000, checkpointIntervalMs: 600_000,
+        checkpoints: [{ phase: "initial", scheduledAtMs: 0, sessionAtMs: 1, heapBytes: 10 },
+          { phase: "final", scheduledAtMs: 60_000, sessionAtMs: 60_001, heapBytes: 10 }],
+        heapSamples: [1, 60_001].map((atMs) => ({ atMs, usedBytes: 10, totalBytes: 20,
+          embedderBytes: 0, backingStorageBytes: 0, documents: 1, nodes: 1, jsEventListeners: 1 })),
+        telemetryChecks: 3, telemetryErrors, pageEpochs: [1], sourceCommit: "a".repeat(40), sourceDirty: false,
+        build: { source: "owned-preview", gitSha: "a".repeat(40), buildId: "a".repeat(12),
+          indexSha256: "b".repeat(64), metadataSha256: "c".repeat(64), verified: true, error: null },
+        cycles: 1, attemptedStrokes: 1, failures: 0, workload: "bounded-churn", longTasks: [],
+        strokes: [{ acceptedByDocument: true, historyTotalAppendsBefore: 0, historyTotalAppendsAfter: 1,
+          historyEvictedStepsBefore: 0, historyEvictedStepsAfter: 0, historyRetainedBytesAfter: 10,
+          rejectedStrokeCountBefore: 0, rejectedStrokeCountAfter: 0 }],
+      });
+      expect(assess(0).ok).toBe(true);
+      expect(assess(report.collectionFailures.length)).toMatchObject({ ok: false, incomplete: ["telemetry-collection"] });
+    } else expect(collectionFailed).not.toHaveBeenCalled();
   });
 });

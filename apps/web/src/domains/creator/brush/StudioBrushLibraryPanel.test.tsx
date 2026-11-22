@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -573,6 +573,8 @@ describe("StudioBrushLibraryPanel", () => {
       },
     });
 
+    // 파일 선택으로 시작한 실제 파서의 중첩 지연 로드를 먼저 완료한다.
+    await act(() => vi.dynamicImportSettled());
     await waitFor(() => expect(putMany).toHaveBeenCalledOnce());
     expect(putMany.mock.calls[0]?.[0]).toHaveLength(3);
     await waitFor(() => expect(screen.getByText(/3개 · 무제한 · 로컬 SQL/u)).toBeTruthy());

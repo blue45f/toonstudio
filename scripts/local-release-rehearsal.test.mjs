@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, it } from "node:test";
+const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 import {
   REHEARSAL_SCHEMA,

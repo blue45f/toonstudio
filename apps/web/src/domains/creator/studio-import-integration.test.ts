@@ -596,7 +596,7 @@ describe("PSD 가져오기(ag-psd 실바이트 왕복)", () => {
         width: 100,
         height: 60,
         children: [
-          // CSP 실물에서 확인한 레코드 순서: [0]=맨 뒤(아래), [1]=맨 앞(위).
+          // ag-psd children과 Studio elements는 모두 뒤→앞 순서를 보존한다.
           {
             name: "Bottom Layer",
             left: 0,

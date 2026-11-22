@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 
 import { describe, expect, it } from "vitest";
 
@@ -94,14 +95,24 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     const deploy = read("scripts/deploy-cloudflare-static.mjs");
     expect(deploy).toContain("[0-9a-f]{40}");
     expect(deploy).toContain("TOONSPECTRUM_APPROVED_MAIN_SHA");
-    // skipBuild의 두 갈래는 상호 배타적이다: 선언 7개 중 기본 6개, 빌드 생략 5개만 실행한다.
-    const buildBranches = /\.\.\.\(skipBuild\s*\?\s*\[([\s\S]*?)\]\s*:\s*\[([\s\S]*?)\]\),/u.exec(deploy);
-    expect(buildBranches, "배포의 빌드 생략/기본 분기").not.toBeNull();
-    const commandCount = (source: string): number => source.match(/executable:/gu)?.length ?? 0;
-    expect(commandCount(buildBranches?.[1] ?? "")).toBe(1);
-    expect(commandCount(buildBranches?.[2] ?? "")).toBe(2);
-    expect(commandCount(deploy) - commandCount(buildBranches?.[1] ?? "")).toBe(6);
-    expect(commandCount(deploy) - commandCount(buildBranches?.[2] ?? "")).toBe(5);
+    // 실제 명령 배열만 평가한다. 명령을 실행하거나 배포 모듈을 import하지 않는다.
+    const buildDecision = /const effectiveSkipBuild = [^;]+;/u.exec(deploy)?.[0];
+    const pipeline = /const pipelineCommands = (\[[\s\S]*?\n\]);/u.exec(deploy)?.[1];
+    if (!buildDecision || !pipeline) throw new Error("정적 웹 배포의 빌드 판정·명령 배열이 없습니다.");
+    expect(deploy).toContain('if (!skipBuild && !forceBuild && mode === "production" && productionHead)');
+    for (const [skipBuild, reusable] of [[false, false], [true, false], [false, true]]) {
+      const labels: unknown = runInNewContext(`${buildDecision}\n(${pipeline}).map(command => command.label)`, {
+        skipBuild, autoReusedDist: { reusable }, baseChildEnvironment: {}, staticCatalogSource: "static",
+        mode: "dry-run", skipR2Sync: true, useLocalOAuth: false, oauthChildEnvironment: undefined,
+        oldWorkerIsolation: false, routeVariables: [],
+      });
+      expect(labels).toEqual([
+        "static-rules-check",
+        ...(skipBuild || reusable ? ["verify-static-csp"] : ["build", "prepare-static-assets"]),
+        "verify-service-worker", "sync-r2-dry-run", "wrangler-dry-run",
+      ]);
+      expect(labels).toHaveLength(skipBuild || reusable ? 5 : 6);
+    }
 
     expect(read("render.yaml").match(/autoDeployTrigger:\s*"off"/gu)).toHaveLength(2);
 
@@ -150,13 +161,13 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     const spec = read("e2e/a11y-smoke.spec.ts");
     expect(quotedItems(spec, /DESKTOP_A11Y_ROUTES = \[([^\]]*)\]/u)).toHaveLength(10);
     expect(quotedItems(spec, /MOBILE_A11Y_ROUTES = \[([^\]]*)\]/u)).toHaveLength(4);
-    // 라우트 반복 2곳, 독립 상호작용 3곳, CSS 모드별 2곳: 10 + 4 + 3 + (3 × 2) = 23.
-    expect(spec.match(/^\s*test\(/gmu)).toHaveLength(7);
+    // 라우트 반복 2곳, 독립 상호작용 4곳, CSS 모드별 2곳: 10 + 4 + 4 + (3 × 2) = 24.
+    expect(spec.match(/^\s*test\(/gmu)).toHaveLength(8);
     expect(quotedItems(spec, /for \(const mode of \[([^\]]*)\]/u)).toEqual(["desktop", "touch", "contrast"]);
     expect(spec.split("for (const mode of")[1]?.match(/^\s*test\(/gmu)).toHaveLength(2);
     expect(spec.match(/await assertNoBlockingViolations\(/gu)).toHaveLength(3);
     const accessibilityFact = sectionOf("quality-gates").facts?.find((fact) => fact.source === "e2e/a11y-smoke.spec.ts");
-    expect(accessibilityFact?.value).toBe(String(10 + 4 + 3 + 3 * 2));
+    expect(accessibilityFact?.value).toBe(String(10 + 4 + 4 + 3 * 2));
     expect(accessibilityFact?.label.ko).toContain("그중 axe 15");
     const source = JSON.parse(read("config/architecture-source-ratchet.json")) as { lintStrictMaxWarnings: number };
     expect(source.lintStrictMaxWarnings).toBeGreaterThan(0);

@@ -94,7 +94,8 @@ concurrency:
 jobs:
   quality-static:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # 완료 영수증이 없을 때도 전체 타입 검사와 기존 lint·경계 검사를 끝낸다.
+    timeout-minutes: 120
     permissions:
       contents: read
       actions: read
@@ -191,6 +192,7 @@ jobs:
       - name: Frontend and API type contracts
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail
           node scripts/ci-shared-typecheck.mjs reuse-or-run 2>&1 | tee "$RUNNER_TEMP/quality-static/typecheck.log"

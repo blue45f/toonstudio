@@ -3,50 +3,15 @@ import { paintStudioOilRibbonCarrier } from "../brush/studio-oil-ribbon-carrier"
 import type { StudioOilRibbonPaintInput } from "../brush/studio-oil-ribbon-carrier-types";
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
 import { releaseStudioLiveOverlayCanvas } from "./studio-live-overlay-canvas-cleanup";
+import { StudioLiveOilSnapshotTiles } from "./studio-live-oil-snapshot-tiles";
+
+export { studioOilSourceOverContribution } from "./studio-live-oil-snapshot-tiles";
 
 export interface StudioLiveOilUnderlay {
   readonly canvas: HTMLCanvasElement;
   readonly left: number;
   readonly top: number;
   readonly pixelRatio: number;
-}
-
-/** 혼색 결과에서 이미 표시 중인 바닥을 빼서 source-over 기여분만 남긴다. */
-export function studioOilSourceOverContribution(
-  before: Uint8ClampedArray,
-  after: Uint8ClampedArray,
-  region?: { readonly x: number; readonly y: number; readonly width: number; readonly sourceWidth: number },
-): void {
-  const rowBytes = (region?.width ?? after.length / 4) * 4;
-  const rowSkip = region ? (region.sourceWidth - region.width) * 4 : 0;
-  let source = region ? (region.y * region.sourceWidth + region.x) * 4 : 0;
-  for (let i = 0; i < after.length; i += 4, source += 4) {
-    if (i > 0 && i % rowBytes === 0) source += rowSkip;
-    const a = before[source + 3]! / 255;
-    const b = after[i + 3]! / 255;
-    if (before[source] === after[i] && before[source + 1] === after[i + 1]
-      && before[source + 2] === after[i + 2] && a === b) {
-      after.fill(0, i, i + 4);
-      continue;
-    }
-    // 알파의 8비트 반올림으로 254→254여도 multiply 강모는 RGB를 바꿀 수 있다.
-    // 색이 표현 가능한 최소 알파도 함께 구해 바닥 감산 뒤 음수/범위 초과를 막는다.
-    let alpha = a === 1 ? 1 : Math.max(0, Math.min(1, (b - a) / (1 - a)));
-    for (let channel = 0; channel < 3; channel += 1) {
-      const previous = before[source + channel]! / 255 * a;
-      const next = after[i + channel]! / 255 * b;
-      if (next < previous) alpha = Math.max(alpha, 1 - next / previous);
-      else if (next > previous) alpha = Math.max(alpha, (next - previous) / (1 - previous));
-    }
-    if (alpha === 0) {
-      after.fill(0, i, i + 4);
-      continue;
-    }
-    for (let channel = 0; channel < 3; channel += 1) {
-      after[i + channel] = (after[i + channel]! * b - before[source + channel]! * a * (1 - alpha)) / alpha;
-    }
-    after[i + 3] = alpha * 255;
-  }
 }
 
 /** 현재 획의 바닥만 보유한다. 문서·pending 순서는 캡처 때 고정하며 재생 때 갱신한다. */
@@ -59,14 +24,14 @@ export class StudioLiveOilUnderlayPainter {
   }
   private snapshot: HTMLCanvasElement | null = null;
   private strokeId: string | null = null;
-  private snapshotPixels: ImageData | null = null;
+  private snapshotTiles: StudioLiveOilSnapshotTiles | null = null;
   private scratch: HTMLCanvasElement | null = null;
 
   reset(): void {
     releaseStudioLiveOverlayCanvas(this.snapshot);
     releaseStudioLiveOverlayCanvas(this.scratch);
     this.snapshot = null;
-    this.snapshotPixels = null;
+    this.snapshotTiles = null;
     this.scratch = null;
     this.strokeId = null;
   }
@@ -90,6 +55,7 @@ export class StudioLiveOilUnderlayPainter {
         throw new Error("유화 정본 바닥 표면이 없습니다.");
       }
       releaseStudioLiveOverlayCanvas(this.snapshot);
+      this.snapshotTiles = null;
       const snapshot = document.createElement("canvas");
       snapshot.width = width;
       snapshot.height = height;
@@ -101,7 +67,9 @@ export class StudioLiveOilUnderlayPainter {
         surface.width * source.pixelRatio, surface.height * source.pixelRatio,
         0, 0, width, height);
       if (settled) context.drawImage(settled, 0, 0);
-      this.snapshotPixels = context.getImageData(0, 0, width, height);
+      // canvas 자체는 획 시작에 고정하고, CPU 픽셀은 필요한 타일만 한 번씩 읽는다.
+      this.snapshotTiles = new StudioLiveOilSnapshotTiles(width, height,
+        rect => context.getImageData(rect.x, rect.y, rect.width, rect.height));
       this.snapshot = snapshot;
       this.strokeId = strokeId;
     }
@@ -125,9 +93,8 @@ export class StudioLiveOilUnderlayPainter {
     // 같은 carrier와 실제 바닥을 사용한다. 최종 혼색·강모의 합성 순서도 정본과 같다.
     paintStudioOilRibbonCarrier(Object.assign(context, { _context: context }), input);
     const after = context.getImageData(x, y, w, h);
-    if (!this.snapshotPixels) throw new Error("Oil snapshot pixels unavailable");
-    studioOilSourceOverContribution(this.snapshotPixels.data, after.data,
-      { x, y, width: w, sourceWidth: width });
+    if (!this.snapshotTiles) throw new Error("유화 바닥 스냅샷 타일이 없습니다.");
+    this.snapshotTiles.contribute(after, rect);
     if (active) target.putImageData(after, x, y);
     else {
       context.putImageData(after, x, y);

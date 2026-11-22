@@ -5,14 +5,7 @@
  * 끌어오지 않도록 최소 순수 계약을 분리한다.
  */
 
-export const STUDIO_BG3D_LT_LAYER_ROLES = [
-  "color",
-  "tone",
-  "shadow",
-  "depth",
-  "texture-line",
-  "main-line",
-] as const;
+export const STUDIO_BG3D_LT_LAYER_ROLES = ["color", "tone", "shadow", "depth", "texture-line", "main-line"] as const;
 
 /** Back-to-front order. The last available role is the editable-scene anchor. */
 export type StudioBg3dLtLayerRole = (typeof STUDIO_BG3D_LT_LAYER_ROLES)[number];
