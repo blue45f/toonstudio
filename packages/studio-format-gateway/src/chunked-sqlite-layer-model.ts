@@ -16,6 +16,7 @@
  */
 
 import { CLIP_DOCUMENT_LIMITS, type ClipLayerKind, type ClipSqliteColumn, type ClipSqliteValue } from "./chunked-sqlite-document-types";
+import { decodeLegacyLayerNameBytes } from "./legacy-layer-name-decoder";
 
 // ---------------------------------------------------------------------------
 // 값 환산
@@ -42,12 +43,29 @@ export function readClipNumber(value: ClipSqliteValue | undefined): number | nul
 }
 
 const UTF8 = new TextDecoder("utf-8");
+const UTF8_STRICT = new TextDecoder("utf-8", { fatal: true });
 
-/** 텍스트 셀(BLOB로 저장된 UTF-8 포함)을 `maxCharacters` 코드 단위까지만 읽는다. */
+function decodeClipBlobText(value: Uint8Array, maxCharacters: number): string {
+  const maxBytes = maxCharacters * 4;
+  if (value.byteLength > maxBytes) {
+    return UTF8.decode(value.subarray(0, maxBytes));
+  }
+  try {
+    return UTF8_STRICT.decode(value);
+  } catch {
+    const recovered = decodeLegacyLayerNameBytes(value);
+    if (recovered.detectedEncoding === "cp949" || recovered.detectedEncoding === "shift-jis") {
+      return recovered.text;
+    }
+    return UTF8.decode(value);
+  }
+}
+
+/** 텍스트 셀(BLOB로 저장된 UTF-8 및 레거시 CP949/Shift-JIS 포함)을 `maxCharacters` 코드 단위까지만 읽는다. */
 export function readClipText(value: ClipSqliteValue | undefined, maxCharacters: number): string | null {
   let text: string;
   if (typeof value === "string") text = value;
-  else if (value instanceof Uint8Array) text = UTF8.decode(value.subarray(0, maxCharacters * 4));
+  else if (value instanceof Uint8Array) text = decodeClipBlobText(value, maxCharacters);
   else return null;
   if (text.length <= maxCharacters) return text;
   const clipped = text.slice(0, maxCharacters);
