@@ -4,7 +4,7 @@
 - 성격: 사실 조사 문서이며 결정·구현을 포함하지 않는다
 - 읽는 법: 경로는 모두 이 커밋에서 실제로 열어 확인한 것이다. 확인하지 못한 것은 "미확인"으로 적었다
 - 방법: `git ls-files`·`git grep`·`git show origin/main:<경로>`로 읽었고, 줄 수(`wc -l`)·개수(`git ls-files`·JSON·GLB 헤더 스캔)는 직접 센 값이다. 조사용 체크아웃에는 origin/main 위에 랩·Godot 문서와 랩 소스 2건(총 9파일)을 고친 커밋(53be9acdf)이 얹혀 있어, 그 9파일은 `origin/main` 본문으로 읽었다. 어떤 스크립트·시험·워크플로도 실행하지 않았다(코드 판독 기준).
-- 약어: "필수 CI" = `.github/workflows/ci.yml`(이하 `ci.yml`)의 `core`(lint·typecheck·static 5샤드·serial·a11y·build·database 합산, `ci.yml:406,415`). 작성 뒤 GitHub API 로 확인한 바 `main` 에는 필수 상태 검사가 걸려 있지 않고(`Required status checks not enabled`) 룰셋도 조회되지 않는다. 그래서 "필수 CI"는 저장소 문서(`DEPLOY.md:317-319`)가 말하는 관례상의 게이트다. "필수 목록" = `scripts/ci-required-vitest-targets.txt`. "R2 README" = `deploy/cloudflare-static/README.md`. "`디렉터리/`의 `a`·`b`"는 그 디렉터리 아래 파일 `a`, `b`를 뜻한다.
+- 약어: "필수 CI" = `.github/workflows/ci.yml`(이하 `ci.yml`)의 `core`(lint·typecheck·static 5샤드·serial·a11y·build·database 합산, `ci.yml:406,415`). 작성 뒤 GitHub API 로 확인한 바 `main` 에는 필수 상태 검사가 걸려 있지 않고(`Required status checks not enabled`) 룰셋도 조회되지 않는다. 그래서 "필수 CI"는 저장소 문서(`DEPLOY.md:317-319`)가 말하는 관례상의 게이트다. "필수 목록" = `scripts/ci-required-vitest-targets.txt`. "R2 README" = `deploy/cloudflare-static/README.md`. "`디렉터리/`의 `a`·`b`"는 그 디렉터리 아래 파일 `a`, `b`를 뜻한다. (참고: 본문 표가 조사 시점 경로로 인용하는 `ASSET-INVENTORY.md`는 `2026-11-22`에 [`docs/asset-provenance/asset-inventory.md`](../asset-provenance/asset-inventory.md)로 이동했다.)
 - VARCO: 이 저장소에는 VARCO 관련 파일·설정·문서가 0개다(`git grep -i varco origin/main` 일치는 wasm 바이너리 2건뿐).
 
 ## 1. 반입 체계 목록

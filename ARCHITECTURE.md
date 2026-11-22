@@ -1,7 +1,7 @@
 # ToonStudio 아키텍처
 
 - 상태: **현재 구조 + 진행 중인 마이그레이션**
-- 최종 갱신: **2026-11-16**
+- 최종 갱신: **2026-11-22**
 - 적용 범위: 저장소 구조, 애플리케이션 경계, 공유 패키지, 테스트·도구·문서 소유권
 
 ## 1. 권위 순서
@@ -44,7 +44,7 @@ packages/
 
 config/                   기계 판독 정책과 아키텍처 ratchet
 data/                     검토된 카탈로그·에셋 릴리스 자료
-deploy/                   Cloudflare·Coturn 등 배포 단위
+deploy/                   Cloudflare·onpod·Coturn 등 배포 단위
 scripts/                  저장소 횡단 생성·검증·운영 스크립트
 tests/
   integration/            앱·패키지 사이 교차 경계 테스트
@@ -53,7 +53,7 @@ tests/
   visual/                 시각·렌더링 검증
 
 tools/                    제품 번들 밖의 제작·자동화·DCC 도구
-docs/                     현재 문서, ADR, 역사 기록과 검증 증거
+docs/                     현재 문서, ADR, 아카이브(`docs/archive/`), 역사 기록과 검증 증거
 openwiki/                 코드 탐색용 보조 문서
 ```
 
@@ -260,7 +260,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 
 ## 9. 현재 마이그레이션 부채
 
-수치는 2026-11-16에 `config/architecture-source-ratchet.json`·`config/architecture-boundary-ratchet.json`·`scripts/source-file-size-baseline.json`의 상한을 읽고 `node scripts/validate-source-layout.mjs`·`node scripts/validate-app-boundaries.mjs`·`node scripts/check-source-file-size.mjs`로 다시 확인한 값이며 설정 파일이 최종 권위다. 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
+수치는 2026-11-22에 `config/architecture-source-ratchet.json`·`config/architecture-boundary-ratchet.json`·`scripts/source-file-size-baseline.json`의 상한을 읽고 `node scripts/validate-source-layout.mjs`·`node scripts/validate-app-boundaries.mjs`·`node scripts/check-source-file-size.mjs`로 다시 확인한 값이며 설정 파일이 최종 권위다(2026-11-22 실측: 대상 소스 14,305개, 800줄 초과 708개, 총 초과 355,686줄 / 기준선 360,065줄, `// @ts-nocheck` 0개). 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
 
 | 항목 | 현재 상한 |
 | --- | ---: |
@@ -329,8 +329,8 @@ Studio의 동기 wire 검증은 `@toonstudio/core/production/scope`의 기존 �
 문서는 `docs/README.md`의 분류를 따른다.
 
 - 현재 문서에는 `현재`, `마이그레이션`, `목표`, `역사 자료` 상태를 명시한다.
-- 과거 설계·감사 문서는 현재 구현을 덮어쓰지 않는다.
-- 실행 지시용 프롬프트, 임시 연구 메모, 중복 복사본은 유지 문서로 커밋하지 않는다.
+- 과거 설계·감사 문서는 현재 구현을 덮어쓰지 않으며, 완료된 백로그·과거 사고/QA·시효 만료 계획서는 `docs/archive/`로 분리 보관한다.
+- 실행 지시용 프롬프트, 임시 연구 메모, 유휴 worktree 정리 메모, 일회성 CI/PR 수정 메모, 중복 복사본은 유지 문서로 커밋하지 않는다.
 - 문서 경로와 내부 링크는 `pnpm run validate:documentation`으로 검사한다.
 - 한국어가 저장소 문서의 기본 언어다. 외부 원문·법적 고지·생성 파일은 예외다.
 
@@ -395,3 +395,8 @@ DTO·승인·상태 전이·증빙 최신성 규칙을 공유한다. 기존 CI·
 `schema/admin.schema.ts`에 함께 두며 다른 소스·경계·파일 크기 상한은 유지한다.
 운영 DB 적용·onpod 이미지 교체·외부 배포는 이 소스 통합으로 실행하지 않는다.
 상태와 반영 절차는 [제작 변경 보드 운영 문서](docs/operations/admin-production-change-board.md)에 기록한다.
+
+2026-11-22 상태: **current — 마이그레이션 133개 원장 정렬 및 CI·배포 가드 최적화**.
+- DB 마이그레이션 원장은 `0133_production_division_os.sql`을 포함해 총 **133개** numbered SQL(`scripts/production-database-migrations.manifest` 133행 일치)이며, `apiDatabaseFiles` 상한 `185/185`와 기존 불변 SQL `0001`~`0132`를 유지한다. (`2026-10-29` 운영 onpod DB 조회 시점 113개 적용 이후의 `0114`~`0133` 운영 반영은 별도 승인 대기.)
+- CI 큐·캐시 최적화: 비필수 보조 워크플로 25개를 `push: main`에서 분리해 오프피크 주간 분산 `schedule`·`workflow_dispatch`로 전환했고(기존 PR 게이트 유지, `scripts/ci-queue-and-typecheck-cache.test.mjs`), `scripts/typecheck-shards.mjs` 체크포인트 캐시·16GiB 힙 큐 백프레셔와 `scripts/lib/static-gen-cache.mjs` 기반 SHA-256 스킵 캐시(`catalog:gen`, `i18n:builtins:gen`)를 연동했다.
+- 배포 안전 가드: `pnpm run deploy:cloud -- --smart` 변경 영역 자동 선별(`scripts/lib/deploy-change-scope.mjs`), 배포 전 드리프트 점검(`scripts/lib/deploy-preflight-drift.mjs`), 배포 직후 스모크·안전 롤백 명령 안내(`scripts/verify-production-post-deploy-smoke.mjs`)를 추가했다. 운영 배포와 인프라 변경은 별도 승인 절차를 따른다.

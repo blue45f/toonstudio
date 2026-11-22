@@ -1,7 +1,7 @@
 # ToonStudio 문서 안내
 
 - 상태: **현재 문서 체계**
-- 최종 갱신: **2026-11-21**
+- 최종 갱신: **2026-11-22**
 
 ## 문서 권위 순서
 
@@ -28,17 +28,19 @@ UV 아일랜드를 한 타일로 정리하는 후속 구현은 [웹 UV 정리 �
 | --- | --- | --- |
 | `docs/architecture/` | 현재 구조, 목표 구조, 장기 설계 | 현재 표시 문서만 권위 있음 |
 | `docs/adr/` | 결정 시점의 맥락과 선택 | 결정 기록으로 권위 있음 |
-| `docs/operations/`, `DEPLOY.md` | 운영·배포 정책 | 현재 표시 문서만 권위 있음 |
+| `docs/operations/`, `DEPLOY.md` | 현행 운영·배포 정본 정책과 런북 (`infrastructure-map.md`, `ai-deployment-quickstart.md` 등) | 현재 표시 문서만 권위 있음 |
 | `docs/engineering/` | 코드 구조·번들 경계 등 개발 패턴과 가드레일 해설 | 현재 표시 문서만 권위 있음(가드레일 규칙의 권위는 스크립트와 기준선) |
 | `docs/engines/` | 엔진 역할·핀·품질 계약 | 생성 원장과 현재 표시 문서 우선 |
-| `docs/reports/`, `docs/evidence/` | 특정 commit·실험의 증거 | 해당 시점의 증거이며 현재 구조 문서가 아님 |
-| `docs/rewrite/` | 과거 재구성 감사·계획 | 역사 자료 |
-| `docs/benchmarks/`, `tests/benchmarks/` | 비교 방법과 결과 | 측정 조건 안에서만 유효 |
-| `docs/studio/` | Studio 설계·제작 기록 (현재 설계와 2026-09 마감·인수·CI 복구 기록이 혼합) | 혼합 — 개별 문서 상단 상태 표기 우선, 현재 표시 문서만 권위 있음 |
-| `docs/features/` | 기능별 현재 구현·정책 (접근성 1단계, Claude AI 보조, 잠재 안료 혼합 등) | 현재 표시 문서만 권위 있음 |
+| `docs/features/` | 기능별 현재 구현·정책 (접근성 1단계, Claude AI 보조, 잠재 안료 혼합, 필터 갤러리 등) | 현재 표시 문서만 권위 있음 |
+| `docs/asset-provenance/` | UI 폰트·3D/2D 에셋 출처·라이선스 원장([`asset-inventory.md`](asset-provenance/asset-inventory.md) 포함) | 출처·권리 원장으로 관리(정책 개정 대기 항목은 본문 명시) |
+| `docs/studio/` | Studio 설계·제작 계약 (Blender 웹 모델링·UV·재질 계약 등) | 개별 문서 상단 상태 표기 우선, 현재 표시 문서만 권위 있음 |
+| `docs/design/` | UX·디자인 기반과 분석 (2026-09 기반 문서와 2026-10/11 분석 포함) | 혼합 — 분석 시점의 기록, 현재 표시 문서만 권위 있음 |
+| `docs/archive/` | 완료된 백로그·과거 운영 사고/QA·시효 만료 계획서 아카이브([`archive/README.md`](archive/README.md)) | **역사 자료** — 현재 사실을 주장하지 않음 |
+| `docs/reports/`, `docs/evidence/` | 특정 commit·실험·라이선스 감사의 증거 | 해당 시점의 증거이며 현재 구조 문서가 아님 |
+| `docs/candidates/`, `docs/benchmarks/`, `tests/benchmarks/` | 엔진 후보 비교 방법과 측정 결과 | 측정 조건 안에서만 유효(역사 자료) |
+| `docs/rewrite/`, `docs/quality/`, `docs/maintenance/` | 과거 재구성 감사·품질 수용·복구 기록 | 역사 자료 |
 | `docs/technology/` | 공유 엔지니어링 기록·플레이북 | 참고 자료 — 현재 구조 문서가 아님 |
-| `docs/design/` | UX·디자인 기반과 분석 (2026-09 기반 문서와 2026-10-26/27 분석 포함) | 혼합 — 분석 시점의 기록, 현재 표시 문서만 권위 있음 |
-| `docs/ops/` | 홈페이지 릴리스 기록 1건 (2026-09-12) | 역사 자료 — 신규 운영 문서는 `docs/operations/`로 작성 |
+| `docs/launch-loop/` | 자율 출시 검증 루프 원장(`scripts/launch-loop-runner.sh` 연동) | 루프 작업 원장 |
 | `openwiki/` | 빠른 탐색과 설명 | 보조 문서 |
 
 ## 현재 구조를 읽는 순서
@@ -101,11 +103,12 @@ UI/UX 자동 측정 하니스와 기준선(2026-10-16, 역사 자료)은 다음 
 1. [`../scripts/ux-audit/README.md`](../scripts/ux-audit/README.md) — 측정 항목, 점수 규칙, 실행·보안 규칙(현재 구현)
 2. [`reports/ux-audit-baseline-2026-10-16.md`](reports/ux-audit-baseline-2026-10-16.md) — 개발 서버 기준 합계 95.12 와 시간 지표 최악 가정 하한 89.71, 감점 유형별 회수 점수, 미측정 항목, 다시 재는 법
 
-인프라 구성은 2026-10-23 onpod 컷오버를 마쳤다. 아래 지도에는 2026-10-29 공급자 조회 기록이 있으며, 이 기록을 이후 시점의 실시간 상태로 간주하지 않는다. 인프라·배포·DB·도메인·비밀값 작업 전에 다음 문서를 먼저 본다.
+인프라 구성은 2026-10-23 onpod 컷오버를 마쳤다. 아래 지도에는 2026-10-29 공급자 조회 기록과 2026-11-22 저장소 배포 도구·마이그레이션 원장(133개) 동기화 기록이 구분되어 있으며, 과거 공급자 조회를 실시간 상태로 간주하지 않는다. 인프라·배포·DB·도메인·비밀값 작업 전에 다음 문서를 먼저 본다.
 
 1. [`operations/infrastructure-map.md`](operations/infrastructure-map.md) — 구성요소별 위치·비용·상태, 요청 경로, 비밀값 저장 위치(이름만), 배포·DB 접속 문자열 동기화·롤백 절차, 측정으로 확인한 제약, 열린 결정
-2. [`adr/0030-seoul-origin-hybrid-infrastructure.md`](adr/0030-seoul-origin-hybrid-infrastructure.md) — Core API·DB는 onpod 서울, 웹 엣지는 Cloudflare 유지(Accepted). 근거 측정, 대안, 컷오버 전 열린 문제
-3. [`../deploy/onpod/README.md`](../deploy/onpod/README.md) — onpod DB에 운영 스키마를 올리는 재현 도구(상시 승인 배포 단위가 아니다)
+2. [`operations/ai-deployment-quickstart.md`](operations/ai-deployment-quickstart.md) — AI·운영자용 5단계 정본 배포 명령(`deploy:preflight`, `deploy:web`, `deploy:cloud -- --smart`, 사후 스모크·롤백 가드)
+3. [`adr/0030-seoul-origin-hybrid-infrastructure.md`](adr/0030-seoul-origin-hybrid-infrastructure.md) — Core API·DB는 onpod 서울, 웹 엣지는 Cloudflare 유지(Accepted). 근거 측정, 대안, 컷오버 전 열린 문제
+4. [`../deploy/onpod/README.md`](../deploy/onpod/README.md) — onpod DB에 운영 스키마를 올리는 재현 도구(상시 승인 배포 단위가 아니다)
 
 2026-11-20의 Onpod 배포·읽기 전용 감사와 활동보고서 활용 범위는 [Onpod 활용 증빙 보완 기록](reports/onpod-utilization-evidence-2026-11-21.md)에서 확인한다. 특정 시점의 배포·가동 증거와 미확인인 운영 사용량·크레딧 차감·성능 개선을 구분하며, 원본 출처와 발췌 필드는 [증빙 원장](evidence/onpod-utilization-2026-11-21.json)에 연결한다.
 
@@ -133,20 +136,25 @@ AI 보조(2026-10-22 도입, 2026-10-29부터 키 없이도 ToonStudio AI로 실
 - **목표**: 아직 완료되지 않은 의도
 - **역사 자료**: 특정 날짜·commit·실험을 기록하며 현재 사실을 주장하지 않음
 
-## 작성 원칙
+## 작성 및 정리·아카이브 정책 (`2026-11-22` 정비)
 
 - 기본 언어는 한국어다.
 - 명령, 식별자, API 이름, 원문 인용은 필요한 범위에서 영어를 유지한다.
 - 경로는 저장소 루트 기준으로 적는다.
 - 자주 변하는 수치는 원장 파일을 링크하고 산문에 중복하지 않는 것을 우선한다.
 - “구현”, “검증”, “병합”, “배포”를 서로 다른 상태로 기록한다.
-- 생성 파일은 직접 수정하지 않고 생성 원장을 수정한다.
-- 일회성 작업 지시 프롬프트, 임시 연구 메모, 백업·복사본은 삭제한다.
+- 생성 파일(`STUDIO_MANUAL.md`, `STUDIO_3D_DCC_MANUAL.md`, `THIRD_PARTY_NOTICES.md`, `docs/engines/renderer-roles.md`)은 직접 수정하지 않고 생성 원장을 수정한다.
+- **저장소 루트 경계**: 루트에는 전역 계약·진입·정책 문서(`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `README.md`, `ARCHITECTURE.md`, `PRODUCT.md`, `DESIGN.md`, `DEPLOY.md`, `CONTRIBUTING.md`, `SECURITY.md`, `DIFFERENTIATION.md`, `MONETIZATION.md`, 동기화/생성 매뉴얼·고지)만 두고, 작업 백로그·티켓·에셋 인벤토리는 `docs/` 하위 해당 디렉터리나 `docs/archive/`에 둔다.
+- **아카이브 이동(`docs/archive/`)**: 완료된 백로그, 퇴역 공급자 시기의 사고·릴리스·QA 기록, 새 정본으로 대체된 중기 계획서는 활성 디렉터리에서 [`docs/archive/`](archive/README.md)로 옮겨 노이즈를 줄인다.
+- **즉시 삭제(Git 이력 보존)**: 일회성 작업 지시 프롬프트, 임시 브랜치 통합 체크리스트, 유휴 worktree 정리 영수증, 단일 PR/CI 실패 수정 메모, 미참조 빈 스텁·미체크 초안 목록은 저장소에 남기지 않고 삭제한다.
+- **삭제·이동 전 필수 점검**: `config/documentation-authority.json` 원장 등록 여부, 코드·테스트·계약 테스트(`engineering-seminar-*.test.ts`, `deploy-docs-contract.test.mjs`, `verify:studio-manual-docs` 등) 참조 여부, SHA-256 해시로 봉인된 감사 증거(`docs/evidence/`) 여부를 먼저 확인한다.
 
 ## 검사
 
 ```sh
 pnpm run validate:documentation
+pnpm run validate:architecture
+pnpm run harness:check
 ```
 
 검사는 현재 문서의 존재, 한국어 본문, 폐기 경로, 오래된 아키텍처 경로와 내부 링크를 확인한다.

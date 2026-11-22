@@ -69,5 +69,5 @@ bundle thresholds, image integrity checks or dynamic-import boundaries are chang
 The shot-batch/recovery/archive/worker/frame/content suite has 151 passing tests in 21 files,
 including the helpers' differential boundary checks. The optimized local production build passes
 all ratchets: 27 within baseline, 10 improved and zero regressed, with no baseline change.
-Actual PR/core receipts remain necessary before merge. See test-portfolio-review-20260920.md
+Actual PR/core receipts remain necessary before merge. See [`../archive/operations-2026/test-portfolio-review-20260920.md`](../archive/operations-2026/test-portfolio-review-20260920.md)
 for the full static census, retained coverage, duplicate-case decision and audit limitations.
