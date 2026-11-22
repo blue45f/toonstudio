@@ -189,6 +189,42 @@ export function pointToSegmentDistance(
 }
 
 /**
+ * 마우스·트랙패드 등 필압이 0.0으로 들어오는 포인터에서 벡터 지우개 교차점 판정 반경이
+ * 0px로 붕괴하지 않도록 보장하는 화면 기준 최소 반경(px)과 줌 하한.
+ */
+export const VECTOR_ERASER_MIN_SCREEN_RADIUS_PX = 3;
+export const VECTOR_ERASER_MIN_ZOOM = 0.05;
+
+export interface VectorEraserRadiusFloorOptions {
+  /** 현재 뷰포트 줌 배율(기본 1). 0.05 미만은 0.05로 클램프된다. */
+  readonly zoom?: number;
+  /** 포인터 필압(0..1). 마우스/트랙패드 0.0 입력에서도 최소 반경 하한을 강제한다. */
+  readonly pressure?: number;
+}
+
+/**
+ * 벡터 지우개 교차·접촉 판정에 사용하는 유효 반경(캔버스 좌표 px)을 계산한다.
+ * 필압이 0.0이거나 계산 반경이 0px로 수렴하더라도
+ * `Math.max(computedRadius, 3 / Math.max(zoom, 0.05))` 하한을 보장한다.
+ */
+export function resolveVectorEraserHitRadius(
+  baseRadiusPx: number,
+  options: VectorEraserRadiusFloorOptions = {},
+): number {
+  const safeBase = Math.max(0, finiteNumber(baseRadiusPx, 0));
+  const effectivePressure =
+    options.pressure !== undefined
+      ? Math.min(1, Math.max(0, finiteNumber(options.pressure, 1)))
+      : 1;
+  const computedRadius = safeBase * effectivePressure;
+  const zoom = finiteNumber(options.zoom, 1);
+  return Math.max(
+    computedRadius,
+    VECTOR_ERASER_MIN_SCREEN_RADIUS_PX / Math.max(zoom, VECTOR_ERASER_MIN_ZOOM),
+  );
+}
+
+/**
  * 지우개 폴리라인이 스트로크 중심선과 교차하는지 판정한다.
  * 중심선 교차(끝점 접촉 포함) 또는 지우개 반경+스트로크 반경 이내 접촉이면 true.
  */
@@ -196,10 +232,14 @@ export function vectorEraserHitsStroke(
   strokeSamples: readonly VectorPoint2D[],
   strokeWidths: readonly number[],
   eraserPoints: readonly VectorPoint2D[],
-  eraserWidth: number
+  eraserWidth: number,
+  options: VectorEraserRadiusFloorOptions = {}
 ): boolean {
   if (strokeSamples.length === 0 || eraserPoints.length === 0) return false;
-  const eraserRadius = Math.max(0, finiteNumber(eraserWidth, 0)) / 2;
+  const eraserRadius = resolveVectorEraserHitRadius(
+    Math.max(0, finiteNumber(eraserWidth, 0)) / 2,
+    options,
+  );
   const eraserSegments: Array<readonly [VectorPoint2D, VectorPoint2D]> = [];
   if (eraserPoints.length === 1) {
     const point = eraserPoints[0]!;
@@ -259,7 +299,7 @@ export interface EraseVectorStrokesResult {
   readonly removed: VectorStroke[];
 }
 
-export interface EraseVectorStrokesOptions {
+export interface EraseVectorStrokesOptions extends VectorEraserRadiusFloorOptions {
   /** 패스 샘플링 밀도(세그먼트당). 기본 8. */
   readonly samplesPerSegment?: number;
 }
@@ -314,7 +354,8 @@ export function eraseVectorStrokes(
       samples,
       widths,
       eraserPoints,
-      eraserWidth
+      eraserWidth,
+      { zoom: options.zoom, pressure: options.pressure },
     );
     if (hit) removed.push(stroke);
     else kept.push(stroke);
@@ -501,7 +542,9 @@ function polylinePointsToVectorStroke(
 export function eraseVectorStrokesToIntersection(
   strokes: readonly VectorStroke[],
   eraser: VectorEraserInput,
-  options: VectorIntersectionEraserOptions & { readonly samplesPerSegment?: number } = {},
+  options: VectorIntersectionEraserOptions
+    & VectorEraserRadiusFloorOptions
+    & { readonly samplesPerSegment?: number } = {},
 ): VectorStrokeIntersectionEraseResult {
   const perSeg = Math.max(2, Math.min(24, Math.floor(finiteNumber(options.samplesPerSegment, 8))));
   const strokeById = new Map<string, VectorStroke>();
@@ -550,7 +593,16 @@ export function eraseVectorStrokesToIntersection(
   const rawById = new Map<string, VectorPolylineStroke>();
   for (const pl of polylines) rawById.set(pl.id, pl);
 
-  const erased = eraseVectorPolylinesAtIntersections(polylines, eraser, options);
+  const effectiveRadiusPx = resolveVectorEraserHitRadius(eraser.radiusPx, {
+    zoom: options.zoom,
+    pressure: options.pressure,
+  });
+  const normalizedEraser: VectorEraserInput = {
+    ...eraser,
+    radiusPx: effectiveRadiusPx,
+  };
+
+  const erased = eraseVectorPolylinesAtIntersections(polylines, normalizedEraser, options);
   const rebuilt: VectorStroke[] = [];
   for (const piece of erased.strokes) {
     const baseId = piece.id.split("#seg-")[0] ?? piece.id;

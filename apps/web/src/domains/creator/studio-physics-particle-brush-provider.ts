@@ -1,3 +1,22 @@
+import {
+  STUDIO_PHYSICS_PARTICLE_STATION_STRIDE,
+  buildSpringEdges,
+  expressionValue,
+  f32,
+  initializeParticleState,
+  initializeSpawnSpringRestLengths,
+  stepPhysicsParticles,
+  type PhysicsParticleState,
+} from "./brush/studio-physics-particle-kernel";
+import {
+  allocatePhysicsParticleSimulationArrays,
+  buildPhysicsParticleEmitterStations,
+  calculatePhysicsParticleOutputBytes,
+  isPreviousPhysicsParticleShapeValid,
+  maximumPhysicsParticleArtifactPlaneBytes,
+  normalizePhysicsParticleRecipe,
+  normalizePhysicsParticleSamples,
+} from "./brush/studio-physics-particle-recipe";
 import { sha256HexPortable } from "./studio-sha256";
 
 export const STUDIO_PHYSICS_PARTICLE_BRUSH_REVISION = 1 as const;
@@ -19,10 +38,8 @@ export const STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS = Object.freeze({
   maxSeed: 0xffff_ffff,
 } as const);
 
-const FLOAT_EPSILON = 1e-7;
-const TAU = Math.PI * 2;
 const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
-const STATION_STRIDE = 8;
+const STATION_STRIDE = STUDIO_PHYSICS_PARTICLE_STATION_STRIDE;
 const MAX_SYNCHRONOUS_HASH_BYTES = 1024 * 1024;
 
 export type StudioPhysicsParticleMode = "orbital" | "flow" | "spring-net";
@@ -355,15 +372,7 @@ interface SimulationArrays {
   readonly connectors: StudioPhysicsParticleConnectorArtifact | null;
 }
 
-interface ParticleState {
-  readonly x: Float64Array;
-  readonly y: Float64Array;
-  readonly vx: Float64Array;
-  readonly vy: Float64Array;
-  readonly damping: Float64Array;
-  readonly chaosX: Float64Array;
-  readonly chaosY: Float64Array;
-}
+type ParticleState = PhysicsParticleState;
 
 interface AbortSignalBridge {
   readonly target: AbortSignal;
@@ -642,286 +651,19 @@ function createCooperativeYieldScheduler(
   });
 }
 
-function f32(value: number): number {
-  return Math.fround(Number.isFinite(value) ? value : 0);
-}
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
-function normalizeExpression(
-  input: StudioPhysicsParticleExpression | undefined,
-  label: string,
-): NormalizedExpression {
-  const source = input?.source ?? "constant";
-  if (
-    source !== "constant"
-    && source !== "pressure"
-    && source !== "speed"
-    && source !== "tilt"
-  ) {
-    throw new StudioPhysicsParticleBrushError(
-      "invalid-request",
-      `${label}.source is not supported.`,
-    );
-  }
-  return Object.freeze({
-    source,
-    minimum: finite(input?.minimum ?? 1, `${label}.minimum`, 0, 16),
-    maximum: finite(input?.maximum ?? 1, `${label}.maximum`, 0, 16),
-    invert: Boolean(input?.invert),
-  });
-}
+const VALIDATION_ERROR_CALLBACKS = Object.freeze({
+  invalidRequest: (message: string): never => invalidRequest(message),
+  budget,
+});
 
 function normalizeRecipe(
   input: StudioPhysicsParticleBrushRecipe,
 ): NormalizedRecipe {
-  if (!input || typeof input !== "object") {
-    throw new StudioPhysicsParticleBrushError(
-      "invalid-request",
-      "A particle brush recipe is required.",
-    );
-  }
-  if (
-    input.mode !== "orbital"
-    && input.mode !== "flow"
-    && input.mode !== "spring-net"
-  ) {
-    throw new StudioPhysicsParticleBrushError(
-      "invalid-request",
-      "Particle mode must be orbital, flow, or spring-net.",
-    );
-  }
-  const common = input.common;
-  if (!common || typeof common !== "object") {
-    throw new StudioPhysicsParticleBrushError(
-      "invalid-request",
-      "Common particle settings are required.",
-    );
-  }
-  const normalizedCommon = Object.freeze({
-    count: safeInteger(
-      common.count,
-      "common.count",
-      1,
-      STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxParticles,
-    ),
-    spawnSpacing: finite(
-      common.spawnSpacing,
-      "common.spawnSpacing",
-      0.01,
-      1_000_000,
-    ),
-    fixedTimeStepSeconds: finite(
-      common.fixedTimeStepSeconds,
-      "common.fixedTimeStepSeconds",
-      0.0001,
-      0.25,
-    ),
-    globalChaos: finite(common.globalChaos, "common.globalChaos", 0, 100_000),
-    localChaos: finite(common.localChaos, "common.localChaos", 0, 100_000),
-    chaosSmoothing: finite(
-      common.chaosSmoothing,
-      "common.chaosSmoothing",
-      0,
-      0.9999,
-    ),
-    damping: finite(common.damping, "common.damping", 0, 1_000),
-    dampingJitter: finite(
-      common.dampingJitter,
-      "common.dampingJitter",
-      0,
-      1,
-    ),
-    directionalForce: finite(
-      common.directionalForce,
-      "common.directionalForce",
-      -100_000,
-      100_000,
-    ),
-    forceDirectionRadians: finite(
-      common.forceDirectionRadians,
-      "common.forceDirectionRadians",
-      -100_000,
-      100_000,
-    ),
-    baseRadius: finite(common.baseRadius, "common.baseRadius", 0.001, 1_000_000),
-    baseAlpha: finite(common.baseAlpha, "common.baseAlpha", 0, 1),
-    baseWeight: finite(common.baseWeight, "common.baseWeight", 0, 16),
-    baseGlow: finite(common.baseGlow, "common.baseGlow", 0, 16),
-    expressions: Object.freeze({
-      radius: normalizeExpression(common.expressions?.radius, "expressions.radius"),
-      alpha: normalizeExpression(common.expressions?.alpha, "expressions.alpha"),
-      weight: normalizeExpression(common.expressions?.weight, "expressions.weight"),
-      glow: normalizeExpression(common.expressions?.glow, "expressions.glow"),
-      force: normalizeExpression(common.expressions?.force, "expressions.force"),
-      chaos: normalizeExpression(common.expressions?.chaos, "expressions.chaos"),
-    }),
-  });
-
-  let orbital: Readonly<StudioPhysicsParticleOrbitalSettings> | null = null;
-  let flow: Readonly<StudioPhysicsParticleFlowSettings> | null = null;
-  let springNet: Readonly<Required<StudioPhysicsParticleSpringSettings>> | null =
-    null;
-  if (input.mode === "orbital") {
-    if (!input.orbital) {
-      throw new StudioPhysicsParticleBrushError(
-        "invalid-request",
-        "Orbital settings are required for orbital mode.",
-      );
-    }
-    orbital = Object.freeze({
-      steps: safeInteger(
-        input.orbital.steps,
-        "orbital.steps",
-        1,
-        STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxStepsPerSpawn,
-      ),
-      velocity: finite(input.orbital.velocity, "orbital.velocity", -100_000, 100_000),
-      acceleration: finite(
-        input.orbital.acceleration,
-        "orbital.acceleration",
-        -100_000,
-        100_000,
-      ),
-      spin: finite(input.orbital.spin, "orbital.spin", -10_000, 10_000),
-      orbitRadius: finite(
-        input.orbital.orbitRadius,
-        "orbital.orbitRadius",
-        0,
-        1_000_000,
-      ),
-      orbitRadiusJitter: finite(
-        input.orbital.orbitRadiusJitter,
-        "orbital.orbitRadiusJitter",
-        0,
-        1,
-      ),
-    });
-  } else if (input.mode === "flow") {
-    if (!input.flow) {
-      throw new StudioPhysicsParticleBrushError(
-        "invalid-request",
-        "Flow settings are required for flow mode.",
-      );
-    }
-    flow = Object.freeze({
-      lifetimeSteps: safeInteger(
-        input.flow.lifetimeSteps,
-        "flow.lifetimeSteps",
-        1,
-        Math.min(
-          96,
-          STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxStepsPerSpawn,
-        ),
-      ),
-      velocity: finite(input.flow.velocity, "flow.velocity", -100_000, 100_000),
-      positionJitter: finite(
-        input.flow.positionJitter,
-        "flow.positionJitter",
-        0,
-        1_000_000,
-      ),
-      flowHeightGain: finite(
-        input.flow.flowHeightGain,
-        "flow.flowHeightGain",
-        -100_000,
-        100_000,
-      ),
-      flowTangentGain: finite(
-        input.flow.flowTangentGain,
-        "flow.flowTangentGain",
-        -100_000,
-        100_000,
-      ),
-    });
-  } else {
-    if (!input.springNet) {
-      throw new StudioPhysicsParticleBrushError(
-        "invalid-request",
-        "Spring-net settings are required for spring-net mode.",
-      );
-    }
-    const topology = input.springNet.topology;
-    if (topology !== "radial" && topology !== "chain" && topology !== "ring") {
-      throw new StudioPhysicsParticleBrushError(
-        "invalid-request",
-        "Spring topology must be radial, chain, or ring.",
-      );
-    }
-    springNet = Object.freeze({
-      topology,
-      steps: safeInteger(
-        input.springNet.steps,
-        "springNet.steps",
-        1,
-        STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxStepsPerSpawn,
-      ),
-      initialRadius: finite(
-        input.springNet.initialRadius,
-        "springNet.initialRadius",
-        0,
-        1_000_000,
-      ),
-      stiffness: finite(
-        input.springNet.stiffness,
-        "springNet.stiffness",
-        0,
-        1_000_000,
-      ),
-      springDamping: finite(
-        input.springNet.springDamping,
-        "springNet.springDamping",
-        0,
-        10_000,
-      ),
-      restLength: finite(
-        input.springNet.restLength,
-        "springNet.restLength",
-        0.0001,
-        1_000_000,
-      ),
-      restLengthJitter: finite(
-        input.springNet.restLengthJitter,
-        "springNet.restLengthJitter",
-        0,
-        1,
-      ),
-      emitConnectors: Boolean(input.springNet.emitConnectors),
-      connectorAlpha: finite(
-        input.springNet.connectorAlpha ?? 0.5,
-        "springNet.connectorAlpha",
-        0,
-        1,
-      ),
-      connectorWeight: finite(
-        input.springNet.connectorWeight ?? 1,
-        "springNet.connectorWeight",
-        0,
-        16,
-      ),
-      connectorGlow: finite(
-        input.springNet.connectorGlow ?? 0,
-        "springNet.connectorGlow",
-        0,
-        16,
-      ),
-    });
-  }
-  return Object.freeze({
-    mode: input.mode,
-    seed: safeInteger(
-      input.seed,
-      "seed",
-      0,
-      STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxSeed,
-    ),
-    common: normalizedCommon,
-    orbital,
-    flow,
-    springNet,
-  });
+  return normalizePhysicsParticleRecipe(
+    input,
+    STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS,
+    VALIDATION_ERROR_CALLBACKS,
+  );
 }
 
 function preflightFlowFieldUnsafe(
@@ -1074,175 +816,26 @@ async function prepareFlowField(
   });
 }
 
-interface NormalizedSample {
-  readonly x: number;
-  readonly y: number;
-  readonly pressure: number;
-  readonly speed: number;
-  readonly tiltX: number;
-  readonly tiltY: number;
-}
-
 function normalizeSamples(
   input: readonly StudioPhysicsParticleStrokeSample[],
-): readonly NormalizedSample[] {
-  if (
-    !Array.isArray(input)
-    || input.length < 2
-    || input.length > STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxInputSamples
-  ) {
-    throw new StudioPhysicsParticleBrushError(
-      input?.length > STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxInputSamples
-        ? "budget-exceeded"
-        : "invalid-request",
-      "Particle strokes require two or more bounded input samples.",
-    );
-  }
-  const result: NormalizedSample[] = [];
-  for (let index = 0; index < input.length; index += 1) {
-    const sample = input[index];
-    if (!sample || typeof sample !== "object") {
-      throw new StudioPhysicsParticleBrushError(
-        "invalid-request",
-        `samples[${index}] is malformed.`,
-      );
-    }
-    const normalized = Object.freeze({
-      x: finite(
-        sample.x,
-        `samples[${index}].x`,
-        -STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxCoordinateMagnitude,
-        STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxCoordinateMagnitude,
-      ),
-      y: finite(
-        sample.y,
-        `samples[${index}].y`,
-        -STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxCoordinateMagnitude,
-        STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxCoordinateMagnitude,
-      ),
-      pressure: finite(
-        sample.pressure ?? 1,
-        `samples[${index}].pressure`,
-        0,
-        1,
-      ),
-      speed: finite(sample.speed ?? 0, `samples[${index}].speed`, 0, 1),
-      tiltX: finite(sample.tiltX ?? 0, `samples[${index}].tiltX`, -1, 1),
-      tiltY: finite(sample.tiltY ?? 0, `samples[${index}].tiltY`, -1, 1),
-    });
-    const previous = result.at(-1);
-    if (
-      previous
-      && Math.hypot(normalized.x - previous.x, normalized.y - previous.y)
-        <= FLOAT_EPSILON
-    ) {
-      result[result.length - 1] = normalized;
-    } else {
-      result.push(normalized);
-    }
-  }
-  if (result.length < 2) {
-    throw new StudioPhysicsParticleBrushError(
-      "invalid-request",
-      "Particle stroke geometry must have non-zero arc length.",
-    );
-  }
-  return Object.freeze(result);
+) {
+  return normalizePhysicsParticleSamples(
+    input,
+    STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS,
+    VALIDATION_ERROR_CALLBACKS,
+  );
 }
 
 function buildEmitterStations(
-  samples: readonly NormalizedSample[],
+  samples: ReturnType<typeof normalizeSamples>,
   spawnSpacing: number,
 ): Float32Array {
-  const cumulative = new Float64Array(samples.length);
-  let totalLength = 0;
-  for (let index = 1; index < samples.length; index += 1) {
-    const previous = samples[index - 1];
-    const current = samples[index];
-    totalLength += Math.hypot(current.x - previous.x, current.y - previous.y);
-    cumulative[index] = totalLength;
-  }
-  const spawnCount = Math.floor(
-    (totalLength + spawnSpacing * 1e-9) / spawnSpacing,
-  ) + 1;
-  if (
-    spawnCount < 1
-    || spawnCount > STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxSpawnStations
-  ) budget("Fixed arc-length spawn station count exceeds its budget.");
-  const stations = new Float32Array(spawnCount * STATION_STRIDE);
-  let segment = 0;
-  for (let spawn = 0; spawn < spawnCount; spawn += 1) {
-    const distance = Math.min(totalLength, spawn * spawnSpacing);
-    while (
-      segment + 1 < cumulative.length - 1
-      && cumulative[segment + 1] < distance
-    ) segment += 1;
-    const start = samples[segment];
-    const end = samples[segment + 1];
-    const segmentLength = cumulative[segment + 1] - cumulative[segment];
-    const amount = segmentLength <= FLOAT_EPSILON
-      ? 0
-      : clamp01((distance - cumulative[segment]) / segmentLength);
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const inverseLength = 1 / Math.max(FLOAT_EPSILON, Math.hypot(dx, dy));
-    const offset = spawn * STATION_STRIDE;
-    stations[offset] = f32(start.x + dx * amount);
-    stations[offset + 1] = f32(start.y + dy * amount);
-    stations[offset + 2] = f32(dx * inverseLength);
-    stations[offset + 3] = f32(dy * inverseLength);
-    stations[offset + 4] = f32(
-      start.pressure + (end.pressure - start.pressure) * amount,
-    );
-    stations[offset + 5] = f32(
-      start.speed + (end.speed - start.speed) * amount,
-    );
-    stations[offset + 6] = f32(
-      start.tiltX + (end.tiltX - start.tiltX) * amount,
-    );
-    stations[offset + 7] = f32(
-      start.tiltY + (end.tiltY - start.tiltY) * amount,
-    );
-  }
-  return stations;
-}
-
-function expressionValue(
-  expression: NormalizedExpression,
-  station: Float32Array,
-  offset: number,
-): number {
-  let source = 1;
-  if (expression.source === "pressure") source = station[offset + 4];
-  else if (expression.source === "speed") source = station[offset + 5];
-  else if (expression.source === "tilt") {
-    source = clamp01(Math.hypot(station[offset + 6], station[offset + 7]));
-  }
-  if (expression.invert) source = 1 - source;
-  return expression.minimum
-    + (expression.maximum - expression.minimum) * clamp01(source);
-}
-
-function buildSpringEdges(
-  count: number,
-  topology: StudioPhysicsParticleSpringTopology | null,
-): readonly (readonly [number, number])[] {
-  if (!topology || count < 2) return Object.freeze([]);
-  const edges: (readonly [number, number])[] = [];
-  if (topology === "radial") {
-    for (let particle = 1; particle < count; particle += 1) {
-      edges.push(Object.freeze([0, particle] as const));
-    }
-  } else if (topology === "chain") {
-    for (let particle = 1; particle < count; particle += 1) {
-      edges.push(Object.freeze([particle - 1, particle] as const));
-    }
-  } else {
-    for (let particle = 0; particle < count; particle += 1) {
-      edges.push(Object.freeze([particle, (particle + 1) % count] as const));
-    }
-  }
-  return Object.freeze(edges);
+  return buildPhysicsParticleEmitterStations(
+    samples,
+    spawnSpacing,
+    STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxSpawnStations,
+    VALIDATION_ERROR_CALLBACKS,
+  );
 }
 
 function canonicalRecipeRecord(recipe: NormalizedRecipe): string {
@@ -1347,38 +940,15 @@ function calculateOutputBytes(
   pathPointCount: number,
   connectorSegmentCount: number,
 ): number {
-  const emitterBytes = spawnCount * STATION_STRIDE * Float32Array.BYTES_PER_ELEMENT;
-  const pathBytes = pathPointCount * (
-    2 * Float32Array.BYTES_PER_ELEMENT
-    + 3 * Uint32Array.BYTES_PER_ELEMENT
+  return calculatePhysicsParticleOutputBytes(
+    spawnCount,
+    pathPointCount,
+    connectorSegmentCount,
+    VALIDATION_ERROR_CALLBACKS,
   );
-  const depositionBytes = pathPointCount * (
-    2 * Float32Array.BYTES_PER_ELEMENT
-    + 4 * Float32Array.BYTES_PER_ELEMENT
-  );
-  const connectorBytes = connectorSegmentCount * (
-    4 * Float32Array.BYTES_PER_ELEMENT
-    + 2 * Uint32Array.BYTES_PER_ELEMENT
-    + 3 * Float32Array.BYTES_PER_ELEMENT
-  );
-  const total = emitterBytes + pathBytes + depositionBytes + connectorBytes;
-  if (!Number.isSafeInteger(total)) budget("Particle artifact bytes are unsafe.");
-  return total;
 }
 
-function maximumArtifactPlaneBytes(
-  spawnCount: number,
-  pathPointCount: number,
-  connectorSegmentCount: number,
-): number {
-  return Math.max(
-    spawnCount * STATION_STRIDE * Float32Array.BYTES_PER_ELEMENT,
-    pathPointCount * 2 * Float32Array.BYTES_PER_ELEMENT,
-    pathPointCount * Uint32Array.BYTES_PER_ELEMENT,
-    connectorSegmentCount * 4 * Float32Array.BYTES_PER_ELEMENT,
-    connectorSegmentCount * Uint32Array.BYTES_PER_ELEMENT,
-  );
-}
+const maximumArtifactPlaneBytes = maximumPhysicsParticleArtifactPlaneBytes;
 
 async function cloneFloat32Array(
   source: Float32Array,
@@ -2028,109 +1598,25 @@ function prepareRequest(
   ).then(finishWithFlow);
 }
 
-function mix32(value: number): number {
-  let mixed = value >>> 0;
-  mixed ^= mixed >>> 16;
-  mixed = Math.imul(mixed, 0x7feb_352d);
-  mixed ^= mixed >>> 15;
-  mixed = Math.imul(mixed, 0x846c_a68b);
-  mixed ^= mixed >>> 16;
-  return mixed >>> 0;
-}
-
-function deterministicUnit(
-  seed: number,
-  spawn: number,
-  particle: number,
-  step: number,
-  channel: number,
-): number {
-  let value = seed >>> 0;
-  value = mix32(value ^ Math.imul(spawn + 1, 0x9e37_79b1));
-  value = mix32(value ^ Math.imul(particle + 1, 0x85eb_ca77));
-  value = mix32(value ^ Math.imul(step + 1, 0xc2b2_ae3d));
-  value = mix32(value ^ Math.imul(channel + 1, 0x27d4_eb2f));
-  return value / 0x1_0000_0000;
-}
-
-function deterministicSigned(
-  seed: number,
-  spawn: number,
-  particle: number,
-  step: number,
-  channel: number,
-): number {
-  return deterministicUnit(seed, spawn, particle, step, channel) * 2 - 1;
-}
-
 function allocateSimulationArrays(
   prepared: PreparedRequest,
 ): SimulationArrays {
-  const path: StudioPhysicsParticlePathArtifact = Object.freeze({
-    positions: new Float32Array(prepared.pathPointCount * 2),
-    particleIndices: new Uint32Array(prepared.pathPointCount),
-    spawnIndices: new Uint32Array(prepared.pathPointCount),
-    stepIndices: new Uint32Array(prepared.pathPointCount),
-  });
-  const deposition: StudioPhysicsParticleDepositionArtifact = Object.freeze({
-    positions: new Float32Array(prepared.pathPointCount * 2),
-    radius: new Float32Array(prepared.pathPointCount),
-    alpha: new Float32Array(prepared.pathPointCount),
-    weight: new Float32Array(prepared.pathPointCount),
-    glow: new Float32Array(prepared.pathPointCount),
-  });
-  const connectors = prepared.connectorSegmentCount > 0
-    ? Object.freeze({
-      segments: new Float32Array(prepared.connectorSegmentCount * 4),
-      spawnIndices: new Uint32Array(prepared.connectorSegmentCount),
-      stepIndices: new Uint32Array(prepared.connectorSegmentCount),
-      alpha: new Float32Array(prepared.connectorSegmentCount),
-      weight: new Float32Array(prepared.connectorSegmentCount),
-      glow: new Float32Array(prepared.connectorSegmentCount),
-    })
-    : null;
-  return Object.freeze({ path, deposition, connectors });
+  return allocatePhysicsParticleSimulationArrays(
+    prepared.pathPointCount,
+    prepared.connectorSegmentCount,
+  );
 }
 
 function previousShapeIsValid(
   previous: StudioPhysicsParticleBrushArtifact,
   prepared: PreparedRequest,
 ): boolean {
-  const previousPointCount = previous.spawnCount
-    * prepared.recipe.common.count
-    * prepared.stepsPerSpawn;
-  const previousConnectorCount = (
-    prepared.recipe.springNet?.emitConnectors
-  )
-    ? previous.spawnCount
-      * prepared.connectorEdges.length
-      * prepared.stepsPerSpawn
-    : 0;
-  return (
-    previous.emitterStations.length
-      === previous.spawnCount * STATION_STRIDE
-    && previous.path.positions.length === previousPointCount * 2
-    && previous.path.particleIndices.length === previousPointCount
-    && previous.path.spawnIndices.length === previousPointCount
-    && previous.path.stepIndices.length === previousPointCount
-    && previous.deposition.positions.length === previousPointCount * 2
-    && previous.deposition.radius.length === previousPointCount
-    && previous.deposition.alpha.length === previousPointCount
-    && previous.deposition.weight.length === previousPointCount
-    && previous.deposition.glow.length === previousPointCount
-    && (
-      previousConnectorCount === 0
-        ? previous.connectors === null
-        : Boolean(
-          previous.connectors
-          && previous.connectors.segments.length === previousConnectorCount * 4
-          && previous.connectors.spawnIndices.length === previousConnectorCount
-          && previous.connectors.stepIndices.length === previousConnectorCount
-          && previous.connectors.alpha.length === previousConnectorCount
-          && previous.connectors.weight.length === previousConnectorCount
-          && previous.connectors.glow.length === previousConnectorCount,
-        )
-    )
+  return isPreviousPhysicsParticleShapeValid(
+    previous,
+    prepared.recipe.common.count,
+    prepared.stepsPerSpawn,
+    prepared.connectorEdges.length,
+    Boolean(prepared.recipe.springNet?.emitConnectors),
   );
 }
 
@@ -2257,252 +1743,6 @@ async function copyPreviousArrays(
   }
 }
 
-function sampleFlowHeight(
-  field: PreparedFlowField,
-  x: number,
-  y: number,
-): number {
-  const gridX = Math.min(
-    field.width - 1,
-    Math.max(0, (x - field.originX) / field.cellSize),
-  );
-  const gridY = Math.min(
-    field.height - 1,
-    Math.max(0, (y - field.originY) / field.cellSize),
-  );
-  const x0 = Math.floor(gridX);
-  const y0 = Math.floor(gridY);
-  const x1 = Math.min(field.width - 1, x0 + 1);
-  const y1 = Math.min(field.height - 1, y0 + 1);
-  const tx = gridX - x0;
-  const ty = gridY - y0;
-  const top = field.heights[y0 * field.width + x0]
-    + (field.heights[y0 * field.width + x1]
-      - field.heights[y0 * field.width + x0]) * tx;
-  const bottom = field.heights[y1 * field.width + x0]
-    + (field.heights[y1 * field.width + x1]
-      - field.heights[y1 * field.width + x0]) * tx;
-  return top + (bottom - top) * ty;
-}
-
-function sampleFlowVector(
-  field: PreparedFlowField | null,
-  x: number,
-  y: number,
-): Readonly<{ gradientX: number; gradientY: number; height: number }> {
-  if (!field) {
-    return { gradientX: 0, gradientY: 0, height: 0 };
-  }
-  const half = field.cellSize * 0.5;
-  const left = sampleFlowHeight(field, x - half, y);
-  const right = sampleFlowHeight(field, x + half, y);
-  const top = sampleFlowHeight(field, x, y - half);
-  const bottom = sampleFlowHeight(field, x, y + half);
-  return {
-    gradientX: (right - left) / field.cellSize,
-    gradientY: (bottom - top) / field.cellSize,
-    height: sampleFlowHeight(field, x, y),
-  };
-}
-
-function initializeParticleState(
-  prepared: PreparedRequest,
-  state: ParticleState,
-  spawn: number,
-): void {
-  const recipe = prepared.recipe;
-  const count = recipe.common.count;
-  const stationOffset = spawn * STATION_STRIDE;
-  const emitterX = prepared.stations[stationOffset];
-  const emitterY = prepared.stations[stationOffset + 1];
-  const tangentX = prepared.stations[stationOffset + 2];
-  const tangentY = prepared.stations[stationOffset + 3];
-  const normalX = -tangentY;
-  const normalY = tangentX;
-  for (let particle = 0; particle < count; particle += 1) {
-    const dampingVariation = deterministicSigned(
-      recipe.seed,
-      spawn,
-      particle,
-      0,
-      1,
-    );
-    state.damping[particle] = Math.max(
-      0,
-      recipe.common.damping
-        * (1 + recipe.common.dampingJitter * dampingVariation),
-    );
-    state.chaosX[particle] = 0;
-    state.chaosY[particle] = 0;
-    if (recipe.mode === "orbital" && recipe.orbital) {
-      const angle = TAU * particle / count
-        + deterministicSigned(recipe.seed, spawn, particle, 0, 2) * 0.2;
-      const radius = recipe.orbital.orbitRadius * (
-        1
-        + recipe.orbital.orbitRadiusJitter
-          * deterministicSigned(recipe.seed, spawn, particle, 0, 3)
-      );
-      const radialX = Math.cos(angle);
-      const radialY = Math.sin(angle);
-      state.x[particle] = emitterX + radialX * radius;
-      state.y[particle] = emitterY + radialY * radius;
-      state.vx[particle] = tangentX * recipe.orbital.velocity
-        - radialY * recipe.orbital.spin * radius;
-      state.vy[particle] = tangentY * recipe.orbital.velocity
-        + radialX * recipe.orbital.spin * radius;
-    } else if (recipe.mode === "flow" && recipe.flow) {
-      const angle = TAU * deterministicUnit(
-        recipe.seed,
-        spawn,
-        particle,
-        0,
-        4,
-      );
-      const radius = recipe.flow.positionJitter * Math.sqrt(
-        deterministicUnit(recipe.seed, spawn, particle, 0, 5),
-      );
-      const radialX = Math.cos(angle);
-      const radialY = Math.sin(angle);
-      state.x[particle] = emitterX + radialX * radius;
-      state.y[particle] = emitterY + radialY * radius;
-      state.vx[particle] = tangentX * recipe.flow.velocity
-        + radialX * Math.abs(recipe.flow.velocity) * 0.25;
-      state.vy[particle] = tangentY * recipe.flow.velocity
-        + radialY * Math.abs(recipe.flow.velocity) * 0.25;
-    } else if (recipe.springNet) {
-      if (recipe.springNet.topology === "chain") {
-        const centered = particle - (count - 1) * 0.5;
-        state.x[particle] = emitterX
-          + normalX * centered * recipe.springNet.restLength;
-        state.y[particle] = emitterY
-          + normalY * centered * recipe.springNet.restLength;
-      } else if (
-        recipe.springNet.topology === "radial"
-        && particle === 0
-      ) {
-        state.x[particle] = emitterX;
-        state.y[particle] = emitterY;
-      } else {
-        const denominator = recipe.springNet.topology === "radial"
-          ? Math.max(1, count - 1)
-          : count;
-        const ringIndex = recipe.springNet.topology === "radial"
-          ? particle - 1
-          : particle;
-        const angle = TAU * ringIndex / denominator;
-        state.x[particle] = emitterX
-          + Math.cos(angle) * recipe.springNet.initialRadius;
-        state.y[particle] = emitterY
-          + Math.sin(angle) * recipe.springNet.initialRadius;
-      }
-      state.vx[particle] = tangentX
-        * deterministicSigned(recipe.seed, spawn, particle, 0, 6)
-        * 0.01;
-      state.vy[particle] = tangentY
-        * deterministicSigned(recipe.seed, spawn, particle, 0, 7)
-        * 0.01;
-    }
-  }
-}
-
-function assertFinitePosition(x: number, y: number): void {
-  const maximum =
-    STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxCoordinateMagnitude;
-  if (
-    !Number.isFinite(x)
-    || !Number.isFinite(y)
-    || Math.abs(x) > maximum
-    || Math.abs(y) > maximum
-  ) {
-    throw new StudioPhysicsParticleBrushError(
-      "simulation-failed",
-      "Particle integration escaped its finite coordinate envelope.",
-    );
-  }
-}
-
-function recordPathPoint(
-  arrays: SimulationArrays,
-  prepared: PreparedRequest,
-  spawn: number,
-  step: number,
-  particle: number,
-  x: number,
-  y: number,
-): void {
-  const recipe = prepared.recipe;
-  const count = recipe.common.count;
-  const pointIndex = (
-    spawn * prepared.stepsPerSpawn * count
-    + step * count
-    + particle
-  );
-  const positionOffset = pointIndex * 2;
-  const stationOffset = spawn * STATION_STRIDE;
-  const expressions = recipe.common.expressions;
-  const life = recipe.mode === "flow"
-    ? 1 - step / prepared.stepsPerSpawn
-    : 1;
-  const radius = recipe.common.baseRadius
-    * expressionValue(expressions.radius, prepared.stations, stationOffset);
-  const alpha = clamp01(
-    recipe.common.baseAlpha
-    * expressionValue(expressions.alpha, prepared.stations, stationOffset)
-    * life,
-  );
-  const weight = Math.max(
-    0,
-    recipe.common.baseWeight
-    * expressionValue(expressions.weight, prepared.stations, stationOffset),
-  );
-  const glow = Math.max(
-    0,
-    recipe.common.baseGlow
-    * expressionValue(expressions.glow, prepared.stations, stationOffset)
-    * life,
-  );
-  arrays.path.positions[positionOffset] = f32(x);
-  arrays.path.positions[positionOffset + 1] = f32(y);
-  arrays.path.particleIndices[pointIndex] = particle;
-  arrays.path.spawnIndices[pointIndex] = spawn;
-  arrays.path.stepIndices[pointIndex] = step;
-  arrays.deposition.positions[positionOffset] = f32(x);
-  arrays.deposition.positions[positionOffset + 1] = f32(y);
-  arrays.deposition.radius[pointIndex] = f32(radius);
-  arrays.deposition.alpha[pointIndex] = f32(alpha);
-  arrays.deposition.weight[pointIndex] = f32(weight);
-  arrays.deposition.glow[pointIndex] = f32(glow);
-}
-
-function recordConnectors(
-  arrays: SimulationArrays,
-  prepared: PreparedRequest,
-  state: ParticleState,
-  spawn: number,
-  step: number,
-): void {
-  if (!arrays.connectors || !prepared.recipe.springNet) return;
-  const settings = prepared.recipe.springNet;
-  const baseIndex = (
-    spawn * prepared.stepsPerSpawn * prepared.connectorEdges.length
-    + step * prepared.connectorEdges.length
-  );
-  for (let edgeIndex = 0; edgeIndex < prepared.connectorEdges.length; edgeIndex += 1) {
-    const [left, right] = prepared.connectorEdges[edgeIndex];
-    const connectorIndex = baseIndex + edgeIndex;
-    const offset = connectorIndex * 4;
-    arrays.connectors.segments[offset] = f32(state.x[left]);
-    arrays.connectors.segments[offset + 1] = f32(state.y[left]);
-    arrays.connectors.segments[offset + 2] = f32(state.x[right]);
-    arrays.connectors.segments[offset + 3] = f32(state.y[right]);
-    arrays.connectors.spawnIndices[connectorIndex] = spawn;
-    arrays.connectors.stepIndices[connectorIndex] = step;
-    arrays.connectors.alpha[connectorIndex] = f32(settings.connectorAlpha);
-    arrays.connectors.weight[connectorIndex] = f32(settings.connectorWeight);
-    arrays.connectors.glow[connectorIndex] = f32(settings.connectorGlow);
-  }
-}
-
 async function simulatePrepared(
   prepared: PreparedRequest,
   assertCurrent: () => void,
@@ -2538,9 +1778,10 @@ async function simulatePrepared(
   const accelerationX = new Float64Array(count);
   const accelerationY = new Float64Array(count);
   const restLengths = new Float64Array(prepared.connectorEdges.length);
-  const timeStep = recipe.common.fixedTimeStepSeconds;
   const directionalX = Math.cos(recipe.common.forceDirectionRadians);
   const directionalY = Math.sin(recipe.common.forceDirectionRadians);
+  const maxCoordinateMagnitude =
+    STUDIO_PHYSICS_PARTICLE_BRUSH_BUDGETS.maxCoordinateMagnitude;
   let workSinceYield = 0;
 
   for (
@@ -2549,10 +1790,10 @@ async function simulatePrepared(
     spawn += 1
   ) {
     assertCurrent();
-    initializeParticleState(prepared, state, spawn);
+    initializeParticleState(recipe, prepared.stations, state, spawn);
     const stationOffset = spawn * STATION_STRIDE;
-    const emitterX = prepared.stations[stationOffset];
-    const emitterY = prepared.stations[stationOffset + 1];
+    const emitterX = prepared.stations[stationOffset] ?? 0;
+    const emitterY = prepared.stations[stationOffset + 1] ?? 0;
     const forceExpression = expressionValue(
       recipe.common.expressions.force,
       prepared.stations,
@@ -2563,155 +1804,48 @@ async function simulatePrepared(
       prepared.stations,
       stationOffset,
     );
-    for (let edgeIndex = 0; edgeIndex < prepared.connectorEdges.length; edgeIndex += 1) {
-      restLengths[edgeIndex] = (recipe.springNet?.restLength ?? 0) * (
-        1
-        + (recipe.springNet?.restLengthJitter ?? 0)
-          * deterministicSigned(recipe.seed, spawn, edgeIndex, 0, 20)
-      );
-    }
+    initializeSpawnSpringRestLengths(
+      recipe,
+      prepared.connectorEdges.length,
+      spawn,
+      restLengths,
+    );
     let globalChaosX = 0;
     let globalChaosY = 0;
 
     for (let step = 0; step < prepared.stepsPerSpawn; step += 1) {
       assertCurrent();
-      const smoothing = recipe.common.chaosSmoothing;
-      globalChaosX = globalChaosX * smoothing
-        + deterministicSigned(recipe.seed, spawn, 0, step, 21)
-          * (1 - smoothing);
-      globalChaosY = globalChaosY * smoothing
-        + deterministicSigned(recipe.seed, spawn, 0, step, 22)
-          * (1 - smoothing);
-      accelerationX.fill(
-        directionalX * recipe.common.directionalForce * forceExpression,
-      );
-      accelerationY.fill(
-        directionalY * recipe.common.directionalForce * forceExpression,
-      );
-
-      for (let particle = 0; particle < count; particle += 1) {
-        state.chaosX[particle] = state.chaosX[particle] * smoothing
-          + deterministicSigned(recipe.seed, spawn, particle, step, 23)
-            * (1 - smoothing);
-        state.chaosY[particle] = state.chaosY[particle] * smoothing
-          + deterministicSigned(recipe.seed, spawn, particle, step, 24)
-            * (1 - smoothing);
-        accelerationX[particle] += (
-          globalChaosX * recipe.common.globalChaos
-          + state.chaosX[particle] * recipe.common.localChaos
-        ) * chaosExpression;
-        accelerationY[particle] += (
-          globalChaosY * recipe.common.globalChaos
-          + state.chaosY[particle] * recipe.common.localChaos
-        ) * chaosExpression;
-
-        if (recipe.mode === "orbital" && recipe.orbital) {
-          const relativeX = state.x[particle] - emitterX;
-          const relativeY = state.y[particle] - emitterY;
-          const length = Math.max(FLOAT_EPSILON, Math.hypot(relativeX, relativeY));
-          accelerationX[particle] += relativeX / length
-            * recipe.orbital.acceleration;
-          accelerationY[particle] += relativeY / length
-            * recipe.orbital.acceleration;
-          const angle = recipe.orbital.spin * timeStep;
-          const cosine = Math.cos(angle);
-          const sine = Math.sin(angle);
-          const rotatedX = state.vx[particle] * cosine
-            - state.vy[particle] * sine;
-          const rotatedY = state.vx[particle] * sine
-            + state.vy[particle] * cosine;
-          state.vx[particle] = rotatedX;
-          state.vy[particle] = rotatedY;
-        } else if (recipe.mode === "flow" && recipe.flow) {
-          const flow = sampleFlowVector(
-            prepared.flowField,
-            state.x[particle],
-            state.y[particle],
-          );
-          accelerationX[particle] += (
-            flow.gradientX * recipe.flow.flowHeightGain
-            - flow.gradientY * recipe.flow.flowTangentGain
-          ) * (1 + Math.abs(flow.height) * 0.01);
-          accelerationY[particle] += (
-            flow.gradientY * recipe.flow.flowHeightGain
-            + flow.gradientX * recipe.flow.flowTangentGain
-          ) * (1 + Math.abs(flow.height) * 0.01);
-        }
-      }
-
-      if (recipe.mode === "spring-net" && recipe.springNet) {
-        for (
-          let edgeIndex = 0;
-          edgeIndex < prepared.connectorEdges.length;
-          edgeIndex += 1
-        ) {
-          const [left, right] = prepared.connectorEdges[edgeIndex];
-          const deltaX = state.x[right] - state.x[left];
-          const deltaY = state.y[right] - state.y[left];
-          const length = Math.max(FLOAT_EPSILON, Math.hypot(deltaX, deltaY));
-          const directionX = deltaX / length;
-          const directionY = deltaY / length;
-          const relativeVelocity = (
-            (state.vx[right] - state.vx[left]) * directionX
-            + (state.vy[right] - state.vy[left]) * directionY
-          );
-          const magnitude = (
-            recipe.springNet.stiffness * (length - restLengths[edgeIndex])
-            + recipe.springNet.springDamping * relativeVelocity
-          );
-          const forceX = directionX * magnitude;
-          const forceY = directionY * magnitude;
-          accelerationX[left] += forceX;
-          accelerationY[left] += forceY;
-          accelerationX[right] -= forceX;
-          accelerationY[right] -= forceY;
-        }
-        for (let particle = 0; particle < count; particle += 1) {
-          accelerationX[particle] += (
-            emitterX - state.x[particle]
-          ) * recipe.springNet.stiffness * 0.05;
-          accelerationY[particle] += (
-            emitterY - state.y[particle]
-          ) * recipe.springNet.stiffness * 0.05;
-        }
-      }
-
-      for (let particle = 0; particle < count; particle += 1) {
-        const anchored = (
-          recipe.mode === "spring-net"
-          && recipe.springNet
-          && (
-            recipe.springNet.topology === "radial"
-            || recipe.springNet.topology === "chain"
-          )
-          && particle === 0
-        );
-        if (anchored) {
-          state.x[particle] = emitterX;
-          state.y[particle] = emitterY;
-          state.vx[particle] = 0;
-          state.vy[particle] = 0;
-        } else {
-          state.vx[particle] += accelerationX[particle] * timeStep;
-          state.vy[particle] += accelerationY[particle] * timeStep;
-          const dampingFactor = Math.exp(-state.damping[particle] * timeStep);
-          state.vx[particle] *= dampingFactor;
-          state.vy[particle] *= dampingFactor;
-          state.x[particle] += state.vx[particle] * timeStep;
-          state.y[particle] += state.vy[particle] * timeStep;
-        }
-        assertFinitePosition(state.x[particle], state.y[particle]);
-        recordPathPoint(
-          arrays,
-          prepared,
-          spawn,
-          step,
-          particle,
-          state.x[particle],
-          state.y[particle],
+      const stepOutcome = stepPhysicsParticles({
+        recipe,
+        stations: prepared.stations,
+        flowField: prepared.flowField,
+        connectorEdges: prepared.connectorEdges,
+        stepsPerSpawn: prepared.stepsPerSpawn,
+        spawn,
+        step,
+        emitterX,
+        emitterY,
+        directionalX,
+        directionalY,
+        forceExpression,
+        chaosExpression,
+        globalChaosX,
+        globalChaosY,
+        maxCoordinateMagnitude,
+        state,
+        accelerationX,
+        accelerationY,
+        restLengths,
+        arrays,
+      });
+      if (!stepOutcome.ok) {
+        throw new StudioPhysicsParticleBrushError(
+          "simulation-failed",
+          "Particle integration escaped its finite coordinate envelope.",
         );
       }
-      recordConnectors(arrays, prepared, state, spawn, step);
+      globalChaosX = stepOutcome.globalChaosX;
+      globalChaosY = stepOutcome.globalChaosY;
       workSinceYield += count + prepared.connectorEdges.length;
       if (workSinceYield >= COOPERATIVE_WORK_CHUNK) {
         workSinceYield = 0;

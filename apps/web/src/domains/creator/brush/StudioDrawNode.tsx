@@ -18,16 +18,13 @@ import {
 } from "../render/studio-gpu-bristle-host";
 import { refreshStudioRasterPresentationCaches } from "../render/studio-raster-presentation-cache";
 import {
-  buildCalligraphySegments,
   processFreehandPoints,
   processPencilPoints,
   resampleStrokePressures,
-  resolveStudioBrushRenderFamily,
   resolveStudioFreehandRenderPath,
   screentoneDotRadius,
   screentoneDotsForStroke,
   screentoneDotsForStrokeIncremental,
-  strokeRenderDistance,
 } from "../studio-brush";
 import {
   DEFAULT_STUDIO_CAUSAL_WATERCOLOR_MAX_DABS,
@@ -37,38 +34,26 @@ import {
 import {
   planStudioDynamicBrushCoverageAndLegacyMarks,
   renderStudioDynamicBrushCoverage,
-  renderStudioDynamicBrushCoverageMark,
   renderStudioDynamicBrushLegacyMarks,
 } from "../studio-dynamic-brush-coverage-renderer";
 import { planStudioDynamicBrushRender } from "../studio-dynamic-brush-render-plan";
 import {
-  FX_OIL_DAB_CAP,
   FX_PASTEL_DAB_CAP,
   STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION,
   fxBrushSeedFromKey,
   isStudioFxPressureBrushId,
-  planGlitterBrushParticles,
-  planGlowBrushPasses,
   createStudioIncrementalFxLuminousRibbonBuilder,
   createStudioIncrementalFxPressurePathBuilder,
-  planNeonBrushPasses,
   planOilBrushDabs,
   planOilBrushDabsIncremental,
   releaseOilBrushDabDraftPlanners,
   planPastelBrushDabs,
-  planStudioFxBrushPressurePath,
-  planStudioFxLuminousRibbonPass,
   resolveStudioFxBrushTapPressureResponse,
-  resolveStudioFxPressurePassResponse,
-  studioLuminousCoreColor,
 } from "../studio-fx-brush";
 import { konvaGradientProps } from "../studio-gradient-engine";
 import {
-  planStudioHighlighterWashRibbon,
   planStudioHighlighterWashTap,
   resolveStudioHighlighterWashBrushId,
-  traceStudioHighlighterWashDetail,
-  traceStudioHighlighterWashPlan,
 } from "../studio-highlighter-wash-ribbon";
 import { STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1 } from "../studio-material-pressure-model";
 import {
@@ -81,24 +66,19 @@ import {
   patternDataUrl,
 } from "../studio-pattern-fill";
 import {
-  buildStudioPerfectFreehandOutline,
   loadStudioPerfectFreehandStroker,
   peekStudioPerfectFreehandStroker,
-  studioPerfectFreehandOutlineToPathData,
   resolveStudioPerfectFreehandProfile,
 } from "../studio-perfect-freehand";
 import {
   fillStudioPixelPencilCells,
-  isStudioPixelPencilRenderMode,
   planStudioPixelPencilCells,
 } from "../studio-pixel-pencil";
 import {
-  planStudioRetainedMediaPressureCurve,
   planStudioRetainedMediaTapDab,
   resolveStudioRetainedMediaPressure,
   resolveStudioRetainedMediaPressureProfileId,
 } from "../studio-retained-media-pressure";
-import { planStudioRetainedMediaRibbon } from "../studio-retained-media-ribbon";
 import {
   buildStudioRoughShapeRenderPlan,
   loadStudioRoughGenerator,
@@ -111,12 +91,8 @@ import { StudioStampDrawShape } from "../StudioStampDrawShape";
 import { StudioMaterialBrushShape } from "./StudioMaterialBrushShape";
 
 import {
-  isStudioBrushEraserAliasId,
-  mapStudioBrushAliasPressure,
   mapStudioBrushAliasPressureSamples,
-  resolveStudioBrushAliasPencilPasses,
   resolveStudioBrushAliasWatercolorPlanSettings,
-  studioBrushAliasEffectiveDiameter,
 } from "./studio-brush-alias-profile";
 import {
   resolveStudioCapturedBrushDynamicsPresetId,
@@ -124,26 +100,50 @@ import {
 import { resolveStudioBrushRuntimeProgramSet } from "./studio-brush-composition-runtime";
 import {
   resolveStudioBrushRuntimeContract,
-  resolveStudioBrushSinglePointRoute,
 } from "./studio-brush-runtime-contract";
 import {
   resolveStudioStampBrushKind,
 } from "./studio-brush-stamp-engine";
 import { STUDIO_BRUSH_RETAINED_DRAFT_SYMMETRY_VARIATIONS } from "./studio-brush-symmetry";
-import { resolveStudioCalligraphyRenderTip } from "./studio-calligraphy-nib-profile";
-import { planStudioCalligraphyRibbon } from "./studio-calligraphy-ribbon";
+import {
+  paintStudioDrawAngledNibCoverage,
+  paintStudioDrawCalligraphyRibbon,
+  paintStudioDrawFreehandPenStroke,
+  paintStudioDrawGlitterParticles,
+  paintStudioDrawHighlighterWashRibbon,
+  paintStudioDrawHighlighterWashTap,
+  paintStudioDrawLuminousRibbonPass,
+  paintStudioDrawPastelDabs,
+  paintStudioDrawPencilRibbonPasses,
+  paintStudioDrawScreentoneDots,
+  paintStudioDrawWatercolorDab,
+} from "./studio-draw-node-canvas-painters";
+import {
+  buildStudioCalligraphyDrawRibbon,
+  buildStudioGlitterBrushParticles,
+  buildStudioHighlighterDrawWashPlan,
+  buildStudioOilBrushPlanInput,
+  buildStudioOilRibbonPaintInput,
+  buildStudioPencilPassPlans,
+  computeStudioOutlineErrorBounds,
+  evaluateStudioPerfectOutlinePath,
+  evaluateStudioPerfectStrokeClassification,
+  isStudioDynamicSealDebugEnabled,
+  planStudioLuminousBrushRender,
+  recordStudioDynamicCommitRenderDebug,
+  recordStudioDynamicCommitRouteDebug,
+  resolveStudioAngledNibCoveragePressureInput,
+  resolveStudioDrawFreehandContext,
+  resolveStudioDrawTapMetrics,
+} from "./studio-draw-node-stroke-helpers";
 import {
   drawBounds,
-  drawFreehandPenSegments,
   drawStudioCausalInkContract,
   getSymmetricPoints,
   resolveStudioCausalInkDrawContract,
 } from "./studio-draw-rendering";
-import { studioOilFamilyPlanFields } from "./studio-fluid-paint-reference";
 import {
   createStudioFxLuminousRetainedPass,
-  fillStudioFxLuminousRibbonPass,
-  studioFxLuminousDraftRetentionFits,
   type StudioFxLuminousRetainedPass,
 } from "./studio-fx-luminous-retained-path";
 import { resolveStudioDrawTapRadius } from "./studio-live-visible-tap";
@@ -160,9 +160,7 @@ import {
   STUDIO_PENCIL_DEFAULT_ALIAS_PASS,
   STUDIO_PENCIL_RIBBON_ALPHA_BUCKET_COUNT,
   studioPencilAliasPassPoints,
-  studioPencilRibbonAlphaBucket,
 } from "./studio-pencil-alias-passes";
-import { rasterizeStudioCoverageBands } from "./studio-stroke-coverage-raster";
 import {
   planStudioAngledNibStrokeLocalCoverage,
   planStudioAngledNibStrokeLocalCoverageIncremental,
@@ -193,7 +191,6 @@ import {
 import { planStudioWetWashLivePipeline } from "./studio-wet-wash-live-pipeline";
 import { drawStudioWetPaperBake, releaseStudioWetPaperBakeRequesters, resolveStudioWatercolorSettledSurface, resolveStudioWetPaperBakeProgramIdForBrush } from "./wet-paper/studio-watercolor-settled-surface";
 
-import type { CalligraphyStylusInput } from "../studio-brush";
 import type { DrawEl } from "../studio-element-model";
 import type { StudioIncrementalFxPressurePathBuilder } from "../studio-fx-brush";
 import type { StudioPaperSurfaceSettings } from "./studio-paper-granulation-runtime";
@@ -203,26 +200,6 @@ import type { StudioRoughGeneratorHandle } from "../studio-rough-shape";
 import type Konva from "konva";
 
 export { STUDIO_PENCIL_RIBBON_ALPHA_BUCKET_COUNT };
-
-type PerfectInkDebugState = {
-  brush: string;
-  pointCount: number;
-  strokeDistance: number;
-  isVeryShort: boolean;
-  isSparseLong: boolean;
-  profile: string;
-  outlineDistance?: number;
-  outlinePointCount?: number;
-  isDegeneratePath?: boolean;
-};
-
-function setPerfectInkDebugState(state: PerfectInkDebugState | null): void {
-  if (typeof globalThis === "undefined") {
-    return;
-  }
-  (globalThis as { __perfectInkDebugState?: PerfectInkDebugState | null }).__perfectInkDebugState =
-    state;
-}
 
 
 // 손그림(스케치) 도형용 rough.js generator 훅 — 스케치가 켜진 도형이 처음 보일 때만
@@ -592,29 +569,18 @@ export const StudioDrawNode = memo(function StudioDrawNode({
       !durableDocumentRender
       || kind !== "freehand"
       || el.mode === "eraser"
-      || (globalThis as { __studioDynamicSealDebugEnabled?: boolean })
-        .__studioDynamicSealDebugEnabled !== true
+      || !isStudioDynamicSealDebugEnabled()
     ) {
       return;
     }
-    (globalThis as {
-      __studioCommitRouteDebug?: Record<string, unknown>;
-    }).__studioCommitRouteDebug = {
-      elId: el.id,
-      brush: el.brush ?? null,
-      brushCatalogId: el.brushCatalogId ?? null,
+    recordStudioDynamicCommitRouteDebug({
+      el,
       dynamicBrushId,
       planStatus: dynamicBrushPlanResult?.status ?? null,
       coverageOk: dynamicCoverageMarkPlan?.ok ?? null,
-      paintModel: el.paintModel ?? null,
-      watercolorPipeline: el.watercolorPipeline ?? null,
-      stampPipeline: el.stampPipeline ?? null,
-      paperModel: el.paperModel ?? null,
-      hasDynamics: typeof el.brushDynamics === "object" && el.brushDynamics !== null,
-      pointCount: Math.floor(el.points.length / 2),
       stampBrushKind,
-      perfectProfile: perfectProfile !== null,
-    };
+      hasPerfectProfile: perfectProfile !== null,
+    });
   }, [
     durableDocumentRender,
     dynamicBrushId,
@@ -869,58 +835,27 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               />
             );
           }
-          const brush = el.brush ?? "pen";
-          const brushFamily = resolveStudioBrushRenderFamily(brush);
-          const aliasProfileEnabled =
-            el.mode !== "eraser" || isStudioBrushEraserAliasId(brush);
-          const isPerfectAliasBrush = brush.startsWith("perfect-");
-          const pixelPencil = isStudioPixelPencilRenderMode(brush);
-          const aliasStrokeWidth = aliasProfileEnabled
-            ? studioBrushAliasEffectiveDiameter(brush, strokeWidth)
-            : strokeWidth;
-          const aliasPencilPasses = aliasProfileEnabled
-            ? resolveStudioBrushAliasPencilPasses(brush)
-            : [];
+          const {
+            brush,
+            brushFamily,
+            aliasProfileEnabled,
+            isPerfectAliasBrush,
+            pixelPencil,
+            aliasStrokeWidth,
+            aliasPencilPasses,
+            singlePointRoute,
+            renderSampleDistance,
+            pointCount,
+            strokeDistance,
+            isCompactPerfectDotRoute,
+          } = resolveStudioDrawFreehandContext({
+            el,
+            points,
+            strokeWidth,
+            hasPerfectProfile: perfectProfile !== null,
+          });
           const stampKind = stampBrushKind;
           const dynamicBrush = dynamicBrushId !== null;
-          // Legacy documents predate the explicit causal-walker marker, but their four stamp
-          // brushes still need the exact dab renderer for a one-point tap. The shared pure route
-          // keeps Canvas, SVG and the future WebGPU playback contract in agreement.
-          const singlePointRoute = resolveStudioBrushSinglePointRoute({
-            brushId: brush,
-            mode: el.mode,
-            causalInkEnabled:
-              el.sampleSpacing !== undefined || el.pressureModel !== undefined,
-          });
-          const renderSampleDistance = strokeRenderDistance(el.sampleSpacing);
-          const pointCount = Math.floor(points.length / 2);
-          const pointBounds = perfectProfile === null || pointCount < 2
-            ? null
-            : points.reduce<{ minX: number; minY: number; maxX: number; maxY: number }>((
-              bounds,
-              point,
-              index,
-            ) => {
-              if (index % 2 === 1) return bounds;
-              return {
-                minX: Math.min(bounds.minX, point),
-                maxX: Math.max(bounds.maxX, point),
-                minY: Math.min(bounds.minY, points[index + 1]!),
-                maxY: Math.max(bounds.maxY, points[index + 1]!),
-              };
-            }, {
-              minX: points[0] ?? 0,
-              maxX: points[0] ?? 0,
-              minY: points[1] ?? 0,
-              maxY: points[1] ?? 0,
-            });
-          const strokeSpanX = pointBounds ? pointBounds.maxX - pointBounds.minX : 0;
-          const strokeSpanY = pointBounds ? pointBounds.maxY - pointBounds.minY : 0;
-          const strokeDistance = Math.hypot(strokeSpanX, strokeSpanY);
-          const isCompactPerfectDotRoute = isPerfectAliasBrush
-            && singlePointRoute === "generic-dot"
-            && pointCount <= 4
-            && strokeDistance < 16;
 
           if (pixelPencil && el.mode !== "eraser") {
             const pixelPlan = planStudioPixelPencilCells({ points, strokeWidth: aliasStrokeWidth });
@@ -1027,30 +962,8 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               );
             }
             if (outlinePlan.kind !== "legacy-contract") {
-              const finitePairs = Array.from(
-                { length: Math.floor(points.length / 2) },
-                (_, pointIndex) => ({
-                  x: points[pointIndex * 2],
-                  y: points[pointIndex * 2 + 1],
-                }),
-              ).filter(
-                (point): point is { x: number; y: number } =>
-                  Number.isFinite(point.x) && Number.isFinite(point.y),
-              );
-              const minX = finitePairs.length > 0
-                ? Math.min(...finitePairs.map((point) => point.x))
-                : 0;
-              const minY = finitePairs.length > 0
-                ? Math.min(...finitePairs.map((point) => point.y))
-                : 0;
-              const maxX = finitePairs.length > 0
-                ? Math.max(...finitePairs.map((point) => point.x))
-                : minX;
-              const maxY = finitePairs.length > 0
-                ? Math.max(...finitePairs.map((point) => point.y))
-                : minY;
-              const width = Math.max(16, maxX - minX);
-              const height = Math.max(16, maxY - minY);
+              const { minX, minY, width, height } =
+                computeStudioOutlineErrorBounds(points);
               const issueName = outlinePlan.kind === "unsupported-contract"
                 ? outlinePlan.issue.code
                 : outlinePlan.reason;
@@ -1148,33 +1061,18 @@ export const StudioDrawNode = memo(function StudioDrawNode({
             singlePointRoute === "generic-dot"
             && !isPerfectAliasBrush
           ) {
-            const sourcePressure = Math.min(1, Math.max(0, el.pressures?.[0] ?? 0.5));
-            const pressure = aliasProfileEnabled
-              ? mapStudioBrushAliasPressure(brush, sourcePressure, 0.5)
-              : sourcePressure;
-            const retainedPressureProfile =
-              resolveStudioRetainedMediaPressureProfileId(brush);
-            const retainedPressure = retainedPressureProfile
-              ? resolveStudioRetainedMediaPressure(
-                  retainedPressureProfile,
-                  el.materialPressureModel === STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1
-                    ? sourcePressure
-                    : undefined,
-                  el.materialMinimumDiameterRatio,
-                )
-              : null;
-            const pressureAware = el.mode === "eraser"
-              || brushFamily === "pen"
-              || brushFamily === "gpen"
-              || brushFamily === "calligraphy"
-              || isPerfectAliasBrush
-              || brushFamily === "marker"
-              || retainedPressure !== null;
-            const width = retainedPressure
-              ? aliasStrokeWidth * retainedPressure.sizeScale
-              : pressureAware
-                ? aliasStrokeWidth * (0.3 + pressure * 1.4)
-                : aliasStrokeWidth;
+            const { sourcePressure, width } = resolveStudioDrawTapMetrics({
+              brush,
+              brushFamily,
+              mode: el.mode,
+              pressures: el.pressures,
+              materialPressureModel: el.materialPressureModel,
+              materialMinimumDiameterRatio: el.materialMinimumDiameterRatio,
+              aliasProfileEnabled,
+              isPerfectAliasBrush,
+              aliasStrokeWidth,
+              includeRetainedPressure: true,
+            });
             if (brushFamily === "highlighter") {
               const pressureBrush = isStudioFxPressureBrushId(brush)
                 ? brush
@@ -1197,14 +1095,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                 <Shape
                   key={index}
                   sceneFunc={(context) => {
-                    if (washPlan.runs.length === 0) return;
-                    context.save();
-                    context.globalAlpha *= washPlan.opacityScale;
-                    context.fillStyle = stroke;
-                    context.beginPath();
-                    traceStudioHighlighterWashPlan(context, washPlan);
-                    context.fill();
-                    context.restore();
+                    paintStudioDrawHighlighterWashTap(context, washPlan, stroke);
                   }}
                   opacity={opacity}
                   globalCompositeOperation="multiply"
@@ -1270,19 +1161,18 @@ export const StudioDrawNode = memo(function StudioDrawNode({
             singlePointRoute === "generic-dot"
             && isCompactPerfectDotRoute
           ) {
-            const sourcePressure = Math.min(1, Math.max(0, el.pressures?.[0] ?? 0.5));
-            const pressure = el.mode === "eraser"
-              ? sourcePressure
-              : mapStudioBrushAliasPressure(brush, sourcePressure, 0.5);
-            const pressureAware = el.mode === "eraser"
-              || brushFamily === "pen"
-              || brushFamily === "gpen"
-              || brushFamily === "calligraphy"
-              || isPerfectAliasBrush
-              || brushFamily === "marker";
-            const width = pressureAware
-              ? aliasStrokeWidth * (0.3 + pressure * 1.4)
-              : aliasStrokeWidth;
+            const { width } = resolveStudioDrawTapMetrics({
+              brush,
+              brushFamily,
+              mode: el.mode,
+              pressures: el.pressures,
+              materialPressureModel: el.materialPressureModel,
+              materialMinimumDiameterRatio: el.materialMinimumDiameterRatio,
+              aliasProfileEnabled: el.mode !== "eraser",
+              isPerfectAliasBrush,
+              aliasStrokeWidth,
+              includeRetainedPressure: false,
+            });
             if (perfectProfile) {
               const dotWidth = Math.max(Math.max(aliasStrokeWidth, 2), width);
               const minimumDotRadius = brush === "perfect-ink" ? 3 : 1.4;
@@ -1344,38 +1234,21 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               return null;
             }
             const legacyMarks = dynamicCoverageAndLegacyMarkPlan?.legacyMarks ?? [];
-            // 브라우저 감사 진단(플래그 게이트): 커밋 sceneFunc이 실제로 택한 분기와 커버리지
-            // 렌더 결과를 남긴다 — 계획은 풍부한데 커밋 픽셀이 희미한 실측 모순의 최종 판별점.
-            const commitRenderDebugEnabled = durableDocumentRender
-              && (globalThis as { __studioDynamicSealDebugEnabled?: boolean })
-                .__studioDynamicSealDebugEnabled === true;
+            const commitRenderDebugEnabled =
+              durableDocumentRender && isStudioDynamicSealDebugEnabled();
             const recordCommitRenderDebug = (
               branch: string,
               result: unknown,
             ): void => {
-              if (!commitRenderDebugEnabled) return;
-              const planMarks = dynamicCoverageMarkPlan?.ok
-                ? dynamicCoverageMarkPlan.marks
-                : [];
-              (globalThis as {
-                __studioCommitRenderDebug?: Record<string, unknown>;
-              }).__studioCommitRenderDebug = {
+              recordStudioDynamicCommitRenderDebug({
+                enabled: commitRenderDebugEnabled,
                 elId: el.id,
                 branch,
                 result,
-                markCount: dynamicCoverageMarkPlan?.ok ? planMarks.length : -1,
-                // 인앱 커밋 플랜의 강도 요약 — 오프라인 프로브와의 마지막 비교점.
-                alphaPeak: planMarks.reduce((m, mark) => Math.max(m, mark.alpha), 0),
-                energy: planMarks.reduce(
-                  (sum, mark) => sum + mark.alpha * mark.radiusX * mark.radiusY,
-                  0,
-                ),
-                textured: planMarks.filter((mark) => mark.texture).length,
-                ribbons: planMarks.filter((mark) => mark.ribbon).length,
+                coveragePlan: dynamicCoverageMarkPlan,
                 legacyMarkCount: legacyMarks.length,
                 opacity,
-                at: performance.now(),
-              };
+              });
             };
             return (
               <Shape
@@ -1415,42 +1288,18 @@ export const StudioDrawNode = memo(function StudioDrawNode({
           }
 
           if (perfectProfile && el.mode !== "eraser") {
-            const debug = durableDocumentRender
-              && typeof globalThis !== "undefined"
-              && (globalThis as { __debugPerfectInk?: boolean }).__debugPerfectInk;
-            if (debug) {
-              console.log(
-                `[debug-perfect-ink] render brush=${brush} mode=${el.mode} points=${pointCount} stroker=${perfectStroker ? "loaded" : "missing"}`
-              );
-            }
-            // 퍼펙트-프리핸드(tldraw 필기감): 필압·테이퍼가 새겨진 아웃라인 폴리곤을 선 색으로
-            // 채운다(stroked Line 대체). getStroke는 순수 함수라 협업 복제본·재렌더에서 결정적.
-            // 라이브 계약(§핫패스): 다이렉트 라이브 초안 파이프라인(임페러티브 sceneFunc/WebGPU)
-            // 은 pen/marker 전용이며 여기서 건드리지 않는다 — "perfect" 패밀리 초안은 리테인드
-            // 경로로 이 브랜치를 그대로 지나고, pointer-up 커밋 스왑 계약도 동일하게 유지된다.
-            // 아주 짧은 스토크는 경량 Line 폴백이 더 안정적이다.
-            // 퍼펙트 경로 생성은 짧은 이동에서 Path가 1픽셀 이하로만 변화해 보이지 않는 경우가 있다.
-            // 브러시 검증 시 false negative를 만들 수 있다.
-            // The historical perfect-* profiles deliberately keep their compact tap fallback.
-            // G-pen nibs must not use it: even a two-point flick needs pressure and taper geometry.
-            const isVeryShortPerfectStroke = brushFamily === "perfect"
-              && pointCount <= 3
-              && strokeDistance < 16;
-            const sparseSpacingPx = strokeDistance / Math.max(1, pointCount - 1);
-            const isSparseLongPerfectStroke = perfectProfile.id === "perfect-ink"
-              && pointCount >= 4
-              && strokeDistance >= 180
-              && sparseSpacingPx >= Math.max(20, aliasStrokeWidth * 4);
-            if (debug) {
-              setPerfectInkDebugState({
+            const { debug, isVeryShortPerfectStroke, isSparseLongPerfectStroke } =
+              evaluateStudioPerfectStrokeClassification({
+                durableDocumentRender,
                 brush,
+                mode: el.mode,
+                brushFamily,
                 pointCount,
                 strokeDistance,
-                isVeryShort: isVeryShortPerfectStroke,
-                isSparseLong: isSparseLongPerfectStroke,
-                profile: perfectProfile.id,
+                aliasStrokeWidth,
+                perfectProfile,
+                hasStroker: perfectStroker !== null,
               });
-            }
             if (isVeryShortPerfectStroke || isSparseLongPerfectStroke) {
               const perfectFallback = resolveStudioFreehandRenderPath(points, {
                 sampleSpacing: el.sampleSpacing,
@@ -1499,69 +1348,21 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               );
             }
             if (perfectStroker) {
-              const outlinePressures = brushFamily === "gpen"
-                || (el.pressures && el.pressures.length > 0)
-                ? mapStudioBrushAliasPressureSamples(
-                    brush,
-                    el.pressures,
-                    pointCount,
-                    brushFamily === "gpen" ? 0.6 : 0.5,
-                  )
-                : el.pressures;
-              const perfectOutline = buildStudioPerfectFreehandOutline(perfectStroker, {
-                points,
-                pressures: outlinePressures,
-                strokeWidth: aliasStrokeWidth,
-                profile: perfectProfile,
-              });
-              const perfectPathData = studioPerfectFreehandOutlineToPathData(perfectOutline);
-              const perfectOutlineBounds = perfectOutline.length < 2
-                ? null
-                : perfectOutline.reduce<{ minX: number; maxX: number; minY: number; maxY: number }>(
-                  (bounds, point) => ({
-                    minX: Math.min(bounds.minX, point[0]),
-                    maxX: Math.max(bounds.maxX, point[0]),
-                    minY: Math.min(bounds.minY, point[1]),
-                    maxY: Math.max(bounds.maxY, point[1]),
-                  }),
-                  {
-                    minX: perfectOutline[0]?.[0] ?? 0,
-                    maxX: perfectOutline[0]?.[0] ?? 0,
-                    minY: perfectOutline[0]?.[1] ?? 0,
-                    maxY: perfectOutline[0]?.[1] ?? 0,
-                  },
-                );
-              const outlineSpanX = perfectOutlineBounds
-                ? perfectOutlineBounds.maxX - perfectOutlineBounds.minX
-                : 0;
-              const outlineSpanY = perfectOutlineBounds
-                ? perfectOutlineBounds.maxY - perfectOutlineBounds.minY
-                : 0;
-              const outlineDistance = Math.hypot(outlineSpanX, outlineSpanY);
-              const isDegeneratePerfectPath = perfectOutline.length < 12
-                && strokeDistance < 120
-                || outlineDistance < Math.max(6, strokeDistance * 0.35);
-              if (debug) {
-                console.log(
-                  `[debug-perfect-ink] pathDecision brush=${brush} points=${pointCount} ` +
-                    `strokeDistance=${strokeDistance.toFixed(1)} ` +
-                    `outlineDistance=${outlineDistance.toFixed(1)} ` +
-                    `outlinePoints=${perfectOutline.length} ` +
-                    `isDegenerate=${isDegeneratePerfectPath ? "true" : "false"} ` +
-                    `pathLen=${perfectPathData.length}`
-                );
-                setPerfectInkDebugState({
+              const { pathData: perfectPathData, isDegeneratePerfectPath } =
+                evaluateStudioPerfectOutlinePath({
+                  stroker: perfectStroker,
                   brush,
+                  brushFamily,
+                  points,
+                  pressures: el.pressures,
                   pointCount,
                   strokeDistance,
-                  isVeryShort: isVeryShortPerfectStroke,
-                  isSparseLong: isSparseLongPerfectStroke,
-                  profile: perfectProfile.id,
-                  outlineDistance,
-                  outlinePointCount: perfectOutline.length,
-                  isDegeneratePath: isDegeneratePerfectPath,
+                  aliasStrokeWidth,
+                  perfectProfile,
+                  isVeryShortPerfectStroke,
+                  isSparseLongPerfectStroke,
+                  debug,
                 });
-              }
               if (perfectPathData && !isDegeneratePerfectPath) {
                 return (
                   <Path
@@ -1602,82 +1403,24 @@ export const StudioDrawNode = memo(function StudioDrawNode({
           }
 
           if (brushFamily === "calligraphy" && el.mode !== "eraser") {
-            const smoothed = resolveStudioFreehandRenderPath(points, {
-              sampleSpacing: el.sampleSpacing,
-              legacyMinDistance: renderSampleDistance,
-              legacyTension: 0,
-            }).points;
-            const sourcePointCount = Math.floor(points.length / 2);
-            const sampleCount = Math.min(
-              sourcePointCount,
-              Math.max(el.tiltXs?.length ?? 0, el.tiltYs?.length ?? 0, el.twists?.length ?? 0)
-            );
-            const stylusSamples: CalligraphyStylusInput[] = Array.from(
-              { length: sampleCount },
-              (_, sampleIndex) => ({
-                pointerType: "pen",
-                tiltX: el.tiltXs?.[sampleIndex],
-                tiltY: el.tiltYs?.[sampleIndex],
-                twist: el.twists?.[sampleIndex],
-              })
-            );
-            const segments = buildCalligraphySegments(
-              smoothed,
-              mapStudioBrushAliasPressureSamples(
-                brush,
-                el.pressures,
-                sourcePointCount,
-                0.5,
-              ),
-              stylusSamples,
+            const { smoothed, ribbon } = buildStudioCalligraphyDrawRibbon({
+              el,
+              brush,
+              points,
+              renderSampleDistance,
               aliasStrokeWidth,
-              // Pre-nib-table documents carry no brushTip; the catalogue nib stands in so a stored
-              // fountain/parallel pen renders as the pen it was drawn with.
-              resolveStudioCalligraphyRenderTip(brush, el.brushTip)
-            );
-            const ribbon = planStudioCalligraphyRibbon(segments);
+            });
             return (
               <Shape
                 key={index}
                 sceneFunc={(context) => {
-                  if (ribbon.runs.length === 0 && smoothed.length >= 2) {
-                    context.beginPath();
-                    context.arc(smoothed[0]!, smoothed[1]!, Math.max(0.5, aliasStrokeWidth * 0.18), 0, Math.PI * 2);
-                    context.fillStyle = stroke;
-                    context.fill();
-                    return;
-                  }
-                  context.beginPath();
-                  for (const run of ribbon.runs) {
-                    const [firstX, firstY, ...outlineTail] = run.outlinePoints;
-                    if (firstX === undefined || firstY === undefined) continue;
-                    context.moveTo(firstX, firstY);
-                    for (let pointIndex = 0; pointIndex < outlineTail.length; pointIndex += 2) {
-                      context.lineTo(
-                        outlineTail[pointIndex]!,
-                        outlineTail[pointIndex + 1]!,
-                      );
-                    }
-                    context.closePath();
-                    context.moveTo(run.startCap.x + run.startCap.radius, run.startCap.y);
-                    context.arc(
-                      run.startCap.x,
-                      run.startCap.y,
-                      run.startCap.radius,
-                      0,
-                      Math.PI * 2,
-                    );
-                    context.moveTo(run.endCap.x + run.endCap.radius, run.endCap.y);
-                    context.arc(
-                      run.endCap.x,
-                      run.endCap.y,
-                      run.endCap.radius,
-                      0,
-                      Math.PI * 2,
-                    );
-                  }
-                  context.fillStyle = stroke;
-                  context.fill();
+                  paintStudioDrawCalligraphyRibbon(
+                    context,
+                    ribbon,
+                    smoothed,
+                    aliasStrokeWidth,
+                    stroke,
+                  );
                 }}
                 opacity={opacity}
                 globalCompositeOperation={composite}
@@ -1693,20 +1436,11 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               legacyTension: 0,
             }).points;
             const coveragePressureInput =
-              el.materialPressureModel === STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1
-                ? {
-                    profileId: brush === "flat-brush"
-                      ? ("flat-brush" as const)
-                      : brush === "marker--chisel-ribbon"
-                        ? ("marker-chisel" as const)
-                        : ("brush" as const),
-                    pressures: el.pressures,
-                    minimumDiameterRatio: el.materialMinimumDiameterRatio,
-                    // The bands carry ABSOLUTE alpha, so the element opacity is folded in by the
-                    // planner and the Shape below must not apply it a second time.
-                    elementOpacity: opacity,
-                  }
-                : undefined;
+              resolveStudioAngledNibCoveragePressureInput({
+                el,
+                brush,
+                opacity,
+              });
             // 활성 초안은 요소 id 로 키된 증분 빌더가 세그먼트 폴리곤/밀도의 안정 prefix 를
             // 유지한다(장획 게이트 angled-ribbon; 톤 밴딩은 의도적 전역 설계라 매 호출 접는다).
             // 커밋 렌더는 배치 리플레이를 유지해 항상 정본을 그린다.
@@ -1737,53 +1471,13 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               <Shape
                 key={index}
                 sceneFunc={(context, shape) => {
-                  if (coveragePlan.polygons.length === 0) return;
-                  if (tonal) {
-                    // Device scale = the layer's own pixel ratio times everything the stage and
-                    // its groups scale this node by. Rasterising at anything less would make the
-                    // mark go soft the moment the artboard is zoomed in.
-                    const nodeScale = shape.getAbsoluteScale();
-                    const raster = rasterizeStudioCoverageBands(
-                      coveragePlan.bands,
-                      stroke,
-                      context.getCanvas().getPixelRatio()
-                        * Math.max(Math.abs(nodeScale.x), Math.abs(nodeScale.y)),
-                    );
-                    if (raster) {
-                      context.drawImage(
-                        raster.source,
-                        0,
-                        0,
-                        raster.sourceWidth,
-                        raster.sourceHeight,
-                        raster.x,
-                        raster.y,
-                        raster.width,
-                        raster.height,
-                      );
-                      return;
-                    }
-                    // Surface refused (no document, or a mark too large to scratch). Falling
-                    // through paints the silhouette flat rather than dropping the stroke.
-                  }
-                  context.beginPath();
-                  for (const polygon of coveragePlan.polygons) {
-                    context.moveTo(polygon.points[0]!, polygon.points[1]!);
-                    for (
-                      let coordinateIndex = 2;
-                      coordinateIndex < polygon.points.length;
-                      coordinateIndex += 2
-                    ) {
-                      context.lineTo(
-                        polygon.points[coordinateIndex]!,
-                        polygon.points[coordinateIndex + 1]!,
-                      );
-                    }
-                    context.closePath();
-                  }
-                  // All subpaths now have one winding, so non-zero fill is a monotonic union.
-                  // Konva applies the Shape opacity once to this complete stroke-local coverage.
-                  context.fillStrokeShape(shape);
+                  paintStudioDrawAngledNibCoverage(
+                    context,
+                    shape,
+                    coveragePlan,
+                    tonal,
+                    stroke,
+                  );
                 }}
                 fill={stroke}
                 opacity={tonal ? tonalOpacity : opacity}
@@ -1919,28 +1613,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                     return;
                   }
                   for (const dab of dabs) {
-                    context.globalAlpha = Math.min(1, Math.max(0, dab.opacity * opacity));
-                    context.beginPath();
-                    context.arc(dab.x, dab.y, dab.radius, 0, Math.PI * 2);
-                    if (dab.role === "diffuse") {
-                      // 외곽이 0 alpha로 사라지는 방사 그라디언트라, 별도 blur 필터 없이도 젖은
-                      // 종이 가장자리처럼 퍼진다. 중심 dab과 함께 그려져 단일 탭도 자연스러운 점이 된다.
-                      const gradient = context.createRadialGradient(
-                        dab.x,
-                        dab.y,
-                        0,
-                        dab.x,
-                        dab.y,
-                        dab.radius
-                      );
-                      gradient.addColorStop(0, stroke);
-                      gradient.addColorStop(0.45, stroke);
-                      gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-                      context.fillStyle = gradient;
-                    } else {
-                      context.fillStyle = stroke;
-                    }
-                    context.fill();
+                    paintStudioDrawWatercolorDab(context, dab, stroke, opacity);
                   }
                   context.restore();
                 }}
@@ -1965,12 +1638,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               <Shape
                 key={index}
                 sceneFunc={(context, shape) => {
-                  context.beginPath();
-                  for (let i = 0; i < dots.length; i += 2) {
-                    context.moveTo(dots[i]! + dotR, dots[i + 1]!);
-                    context.arc(dots[i]!, dots[i + 1]!, dotR, 0, Math.PI * 2);
-                  }
-                  context.fillStrokeShape(shape);
+                  paintStudioDrawScreentoneDots(context, shape, dots, dotR);
                 }}
                 fill={stroke}
                 opacity={opacity}
@@ -2115,102 +1783,21 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                 </Group>
               );
             }
-            const passPlans = passes.map((pass) => {
-              const curve = planStudioRetainedMediaPressureCurve(
-                studioPencilAliasPassPoints(
-                  renderPath.points,
-                  pass.jitterRadius,
-                ),
-                el.materialPressureModel === STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1
-                  ? el.pressures
-                  : undefined,
-                pressureProfile,
-                {
-                  tension: renderPath.tension,
-                  minimumDiameterRatio: el.materialMinimumDiameterRatio,
-                },
-              );
-              return {
-                pass,
-                ribbon: planStudioRetainedMediaRibbon(
-                  curve,
-                  Math.max(0.5, aliasStrokeWidth * pass.widthScale),
-                ),
-              };
+            const passPlans = buildStudioPencilPassPlans({
+              passes,
+              points: renderPath.points,
+              pressures: el.pressures,
+              materialPressureModel: el.materialPressureModel,
+              materialMinimumDiameterRatio: el.materialMinimumDiameterRatio,
+              tension: renderPath.tension,
+              pressureProfile,
+              aliasStrokeWidth,
             });
             return (
               <Shape
                 key={index}
                 sceneFunc={(context) => {
-                  context.save();
-                  const inheritedAlpha = context.globalAlpha;
-                  context.fillStyle = stroke;
-                  // Every adjacent cell shares one miter/bevel cross-section. Unlike independent
-                  // butt strokes, the pressure mesh has neither an outer hole nor a darker inner
-                  // overlap; each source segment still owns its canonical pigment response.
-                  for (const { pass, ribbon } of passPlans) {
-                    const buckets: number[][] = Array.from(
-                      { length: STUDIO_PENCIL_RIBBON_ALPHA_BUCKET_COUNT + 1 },
-                      () => [],
-                    );
-                    for (const run of ribbon.runs) {
-                      for (const cell of run.cells) {
-                        if (cell.points.length < 6) continue;
-                        const alpha = Math.min(
-                          1,
-                          pass.opacityScale
-                          * Math.sqrt(cell.opacityScale * cell.flowScale),
-                        );
-                        const bIndex = studioPencilRibbonAlphaBucket(alpha);
-                        if (bIndex > 0) {
-                          const bucket = buckets[bIndex]!;
-                          for (let ci = 0; ci < cell.points.length; ci += 1) {
-                            bucket.push(cell.points[ci]!);
-                          }
-                          bucket.push(Number.NaN);
-                        }
-                      }
-                      for (const cap of run.caps) {
-                        if (cap.points.length < 6) continue;
-                        const alpha = Math.min(
-                          1,
-                          pass.opacityScale
-                          * Math.sqrt(cap.opacityScale * cap.flowScale),
-                        );
-                        const bIndex = studioPencilRibbonAlphaBucket(alpha);
-                        if (bIndex > 0) {
-                          const bucket = buckets[bIndex]!;
-                          for (let ci = 0; ci < cap.points.length; ci += 1) {
-                            bucket.push(cap.points[ci]!);
-                          }
-                          bucket.push(Number.NaN);
-                        }
-                      }
-                    }
-
-                    for (let b = 1; b <= STUDIO_PENCIL_RIBBON_ALPHA_BUCKET_COUNT; b += 1) {
-                      const coords = buckets[b]!;
-                      if (coords.length === 0) continue;
-                      context.globalAlpha =
-                        inheritedAlpha * (b / STUDIO_PENCIL_RIBBON_ALPHA_BUCKET_COUNT);
-                      context.beginPath();
-                      let startIdx = 0;
-                      for (let i = 0; i <= coords.length; i += 1) {
-                        if (i === coords.length || Number.isNaN(coords[i])) {
-                          if (i - startIdx >= 6) {
-                            context.moveTo(coords[startIdx]!, coords[startIdx + 1]!);
-                            for (let c = startIdx + 2; c < i; c += 2) {
-                              context.lineTo(coords[c]!, coords[c + 1]!);
-                            }
-                            context.closePath();
-                          }
-                          startIdx = i + 1;
-                        }
-                      }
-                      context.fill();
-                    }
-                  }
-                  context.restore();
+                  paintStudioDrawPencilRibbonPasses(context, passPlans, stroke);
                 }}
                 opacity={opacity}
                 globalCompositeOperation={composite}
@@ -2221,49 +1808,18 @@ export const StudioDrawNode = memo(function StudioDrawNode({
           }
 
           if (brushFamily === "highlighter" && el.mode !== "eraser") {
-            const renderPath = resolveStudioFreehandRenderPath(points, {
-              sampleSpacing: el.sampleSpacing,
-              acceptedTension: 0.35,
-              legacyMinDistance: renderSampleDistance,
-              legacyTension: 0.35,
-            });
-            const pressureBrush = isStudioFxPressureBrushId(brush)
-              ? brush
-              : "highlighter";
-            const pressurePath = planStudioFxBrushPressurePath({
-              brushId: pressureBrush,
-              points: renderPath.points,
-              pressures: el.pressures,
-              pressureModel: el.materialPressureModel,
-              minimumDiameterRatio: el.materialMinimumDiameterRatio,
-              tension: renderPath.tension,
-            });
-            const washPlan = planStudioHighlighterWashRibbon({
-              brushId: resolveStudioHighlighterWashBrushId(brush),
-              pressurePath,
-              baseWidth: aliasStrokeWidth,
+            const washPlan = buildStudioHighlighterDrawWashPlan({
+              el,
+              brush,
+              points,
+              renderSampleDistance,
+              aliasStrokeWidth,
             });
             return (
               <Shape
                 key={index}
                 sceneFunc={(context) => {
-                  if (washPlan.runs.length === 0) return;
-                  context.save();
-                  const washAlpha = context.globalAlpha * washPlan.opacityScale;
-                  context.globalAlpha = washAlpha;
-                  context.fillStyle = stroke;
-                  context.beginPath();
-                  traceStudioHighlighterWashPlan(context, washPlan);
-                  context.fill();
-                  // Rim pooling and fibre streaks: one extra compound fill, so a self-crossing
-                  // still receives at most one detail wash.
-                  if (washPlan.detailRuns.length > 0) {
-                    context.globalAlpha = washAlpha * washPlan.detailOpacityScale;
-                    context.beginPath();
-                    traceStudioHighlighterWashDetail(context, washPlan);
-                    context.fill();
-                  }
-                  context.restore();
+                  paintStudioDrawHighlighterWashRibbon(context, washPlan, stroke);
                 }}
                 opacity={opacity}
                 globalCompositeOperation="multiply"
@@ -2273,333 +1829,124 @@ export const StudioDrawNode = memo(function StudioDrawNode({
             );
           }
 
-          if (brushFamily === "neon" && el.mode !== "eraser") {
-            const renderPath = resolveStudioFreehandRenderPath(points, {
-              sampleSpacing: el.sampleSpacing,
-              acceptedTension: 0.3,
-              legacyMinDistance: renderSampleDistance,
-              legacyTension: 0.35,
-            });
-            const passes = planNeonBrushPasses(strokeWidth);
-            const retainLuminousPasses = studioFxLuminousDraftRetentionFits(
+          if (
+            (brushFamily === "neon" || brushFamily === "glow")
+            && el.mode !== "eraser"
+          ) {
+            const luminousPlan = planStudioLuminousBrushRender({
+              family: brushFamily,
+              el,
+              points,
+              stroke,
+              strokeWidth,
+              renderSampleDistance,
               activeDraft,
-              renderPath.points.length,
-              passes.length,
-              symmetricVariations.length,
-            );
-            if (
-              el.materialPressureModel
-              !== STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1
-            ) {
+              symmetryVariationCount: symmetricVariations.length,
+            });
+            if (!luminousPlan.isCanonicalPressure) {
               return (
                 <Group key={index} opacity={opacity} listening={false}>
-                  {passes.map((pass, passIndex) => {
-                    const passColor = pass.tone === "white-core"
-                      ? studioLuminousCoreColor(stroke)
-                      : stroke;
-                    const passWidth = Math.max(
-                      0.5,
-                      strokeWidth * pass.widthScale,
-                    );
-                    return renderPath.points.length === 2 ? (
+                  {luminousPlan.passes.map((pass) =>
+                    luminousPlan.points.length === 2 ? (
                       <KCircle
-                        key={passIndex}
-                        x={renderPath.points[0]}
-                        y={renderPath.points[1]}
-                        radius={Math.max(0.25, passWidth / 2)}
-                        fill={passColor}
+                        key={pass.passIndex}
+                        x={luminousPlan.points[0]}
+                        y={luminousPlan.points[1]}
+                        radius={pass.legacyTapRadius}
+                        fill={pass.passColor}
                         opacity={pass.opacity}
                         globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
                         listening={false}
                       />
                     ) : (
                       <Line
-                        key={passIndex}
-                        points={renderPath.points}
-                        stroke={passColor}
-                        strokeWidth={passWidth}
+                        key={pass.passIndex}
+                        points={luminousPlan.points}
+                        stroke={pass.passColor}
+                        strokeWidth={pass.legacyLineWidth}
                         opacity={pass.opacity}
                         lineCap="round"
                         lineJoin="round"
-                        tension={renderPath.tension}
+                        tension={luminousPlan.tension}
                         globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
                         listening={false}
                       />
-                    );
-                  })}
+                    ),
+                  )}
                 </Group>
               );
             }
-            const tapPressure = resolveStudioFxBrushTapPressureResponse(
-              "neon",
-              el.pressures?.[0],
-              el.materialPressureModel,
-              el.materialMinimumDiameterRatio,
-            );
             return (
               <Group key={index} opacity={opacity} listening={false}>
-                {passes.map((pass, passIndex) => {
-                  const passColor = pass.tone === "white-core" ? studioLuminousCoreColor(stroke) : stroke;
-                  const luminousCore = pass.tone === "white-core";
-                  const tapPassPressure = resolveStudioFxPressurePassResponse(
-                    tapPressure,
-                    pass.widthScale,
-                    luminousCore,
-                  );
-                  const passWidth = Math.max(
-                    0.5,
-                    strokeWidth * pass.widthScale * tapPassPressure.widthScale,
-                  );
-                  return renderPath.points.length === 2 ? (
+                {luminousPlan.passes.map((pass) =>
+                  luminousPlan.points.length === 2 ? (
                     <KCircle
-                      key={passIndex}
-                      x={renderPath.points[0]}
-                      y={renderPath.points[1]}
-                      radius={Math.max(0.25, passWidth / 2)}
-                      fill={passColor}
-                      opacity={Math.min(
-                        1,
-                        pass.opacity * tapPassPressure.opacityScale,
-                      )}
+                      key={pass.passIndex}
+                      x={luminousPlan.points[0]}
+                      y={luminousPlan.points[1]}
+                      radius={pass.canonicalTapRadius}
+                      fill={pass.passColor}
+                      opacity={pass.canonicalTapOpacity}
                       globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
                       listening={false}
                     />
                   ) : (
                     <Shape
-                      key={passIndex}
+                      key={pass.passIndex}
                       sceneFunc={(context) => {
-                        // 압력 경로도 리본도 라이브 드래프트에서만 증분 빌더로 소비한다 — 같은
-                        // 스냅샷의 두 번째 이후 패스는 휘발 꼬리만 다시 방출하므로 그리기당 추가
-                        // 비용이 상수다. 커밋 요소는 배치 플래너로 매번 값 동일 재계산(P2: O(1)
-                        // 앵커가 같은 길이·꼬리의 내부 재작성을 놓친다).
-                        const fxInput = {
-                          brushId: "neon",
-                          points: renderPath.points,
-                          pressures: el.pressures,
-                          pressureModel: el.materialPressureModel,
-                          minimumDiameterRatio: el.materialMinimumDiameterRatio,
-                          tension: renderPath.tension,
-                        } as const;
                         const producer = activeDraft
                           ? fxPressurePathBuilderForVariation(index)
                           : null;
                         const retained = producer
-                          ? fxLuminousRetainedPass(index, passIndex, retainLuminousPasses)
+                          ? fxLuminousRetainedPass(
+                              index,
+                              pass.passIndex,
+                              luminousPlan.retainLuminousPasses,
+                            )
                           : null;
-                        const passPlanInput = {
-                          brushId: "neon",
-                          pressurePath: producer
-                            ? producer.append(fxInput)
-                            : planStudioFxBrushPressurePath(fxInput),
+                        paintStudioDrawLuminousRibbonPass(context, {
+                          brushId: luminousPlan.brushId,
+                          points: luminousPlan.points,
+                          pressures: el.pressures,
+                          pressureModel: el.materialPressureModel,
+                          minimumDiameterRatio: el.materialMinimumDiameterRatio,
+                          tension: luminousPlan.tension,
                           baseWidth: strokeWidth,
                           passWidthScale: pass.widthScale,
                           passOpacity: pass.opacity,
-                          luminousCore,
-                        } as const;
-                        const ribbonPlan = producer && retained
-                          ? retained.builder.append({ ...passPlanInput, producer })
-                          : planStudioFxLuminousRibbonPass(passPlanInput);
-                        if (ribbonPlan.polygons.length === 0) return;
-                        context.save();
-                        context.globalAlpha *= ribbonPlan.opacity;
-                        context.fillStyle = passColor;
-                        fillStudioFxLuminousRibbonPass(context, ribbonPlan, retained);
-                        context.restore();
+                          passColor: pass.passColor,
+                          luminousCore: pass.luminousCore,
+                          producer,
+                          retained,
+                        });
                       }}
                       globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
                       listening={false}
                       perfectDrawEnabled={false}
                     />
-                  );
-                })}
-              </Group>
-            );
-          }
-
-          if (brushFamily === "glow" && el.mode !== "eraser") {
-            const renderPath = resolveStudioFreehandRenderPath(points, {
-              sampleSpacing: el.sampleSpacing,
-              acceptedTension: 0.3,
-              legacyMinDistance: renderSampleDistance,
-              legacyTension: 0.35,
-            });
-            const soft = (el.brush ?? "glow") === "soft-glow";
-            const passes = planGlowBrushPasses(strokeWidth, soft);
-            const retainLuminousPasses = studioFxLuminousDraftRetentionFits(
-              activeDraft,
-              renderPath.points.length,
-              passes.length,
-              symmetricVariations.length,
-            );
-            if (
-              el.materialPressureModel
-              !== STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1
-            ) {
-              return (
-                <Group key={index} opacity={opacity} listening={false}>
-                  {passes.map((pass, passIndex) => (
-                    renderPath.points.length === 2 ? (
-                      <KCircle
-                        key={passIndex}
-                        x={renderPath.points[0]}
-                        y={renderPath.points[1]}
-                        radius={Math.max(
-                          0.25,
-                          strokeWidth * pass.widthScale * 0.5,
-                        )}
-                        fill={stroke}
-                        opacity={pass.opacity}
-                        globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
-                        listening={false}
-                      />
-                    ) : (
-                      <Line
-                        key={passIndex}
-                        points={renderPath.points}
-                        stroke={stroke}
-                        strokeWidth={Math.max(
-                          0.5,
-                          strokeWidth * pass.widthScale,
-                        )}
-                        opacity={pass.opacity}
-                        lineCap="round"
-                        lineJoin="round"
-                        tension={renderPath.tension}
-                        globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
-                        listening={false}
-                      />
-                    )
-                  ))}
-                </Group>
-              );
-            }
-            const pressureBrush = soft ? "soft-glow" : "glow";
-            const tapPressure = resolveStudioFxBrushTapPressureResponse(
-              pressureBrush,
-              el.pressures?.[0],
-              el.materialPressureModel,
-              el.materialMinimumDiameterRatio,
-            );
-            return (
-              <Group key={index} opacity={opacity} listening={false}>
-                {passes.map((pass, passIndex) => {
-                  const luminousCore = passIndex === passes.length - 1;
-                  const tapPassPressure = resolveStudioFxPressurePassResponse(
-                    tapPressure,
-                    pass.widthScale,
-                    luminousCore,
-                  );
-                  return renderPath.points.length === 2 ? (
-                    <KCircle
-                      key={passIndex}
-                      x={renderPath.points[0]}
-                      y={renderPath.points[1]}
-                      radius={Math.max(
-                        0.25,
-                        strokeWidth
-                        * pass.widthScale
-                        * tapPassPressure.widthScale
-                        * 0.5,
-                      )}
-                      fill={stroke}
-                      opacity={Math.min(
-                        1,
-                        pass.opacity * tapPassPressure.opacityScale,
-                      )}
-                      globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
-                      listening={false}
-                    />
-                  ) : (
-                    <Shape
-                      key={passIndex}
-                      sceneFunc={(context) => {
-                        // neon 분기와 같은 소비 규율 — 라이브 드래프트만 증분(이동당 상수),
-                        // 커밋 요소는 배치 플래너로 값 동일 재계산. 셸이 48개인 이 분기가 유지
-                        // 리본이 갚는 비용의 전부다(실측 r150 원 34.8초 → 0.91초).
-                        const fxInput = {
-                          brushId: pressureBrush,
-                          points: renderPath.points,
-                          pressures: el.pressures,
-                          pressureModel: el.materialPressureModel,
-                          minimumDiameterRatio: el.materialMinimumDiameterRatio,
-                          tension: renderPath.tension,
-                        } as const;
-                        const producer = activeDraft
-                          ? fxPressurePathBuilderForVariation(index)
-                          : null;
-                        const retained = producer
-                          ? fxLuminousRetainedPass(index, passIndex, retainLuminousPasses)
-                          : null;
-                        const passPlanInput = {
-                          brushId: pressureBrush,
-                          pressurePath: producer
-                            ? producer.append(fxInput)
-                            : planStudioFxBrushPressurePath(fxInput),
-                          baseWidth: strokeWidth,
-                          passWidthScale: pass.widthScale,
-                          passOpacity: pass.opacity,
-                          luminousCore,
-                        } as const;
-                        const ribbonPlan = producer && retained
-                          ? retained.builder.append({ ...passPlanInput, producer })
-                          : planStudioFxLuminousRibbonPass(passPlanInput);
-                        if (ribbonPlan.polygons.length === 0) return;
-                        context.save();
-                        context.globalAlpha *= ribbonPlan.opacity;
-                        context.fillStyle = stroke;
-                        fillStudioFxLuminousRibbonPass(context, ribbonPlan, retained);
-                        context.restore();
-                      }}
-                      globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
-                      listening={false}
-                      perfectDrawEnabled={false}
-                    />
-                  );
-                })}
+                  ),
+                )}
               </Group>
             );
           }
 
           if (brushFamily === "glitter" && el.mode !== "eraser") {
-            const mode = (el.brush ?? "glitter") === "star-dust"
-              ? "star-dust"
-              : el.brush === "sparkle-star"
-                ? "sparkle-star"
-                : "glitter";
-            const particles = planGlitterBrushParticles({
-              points: resolveStudioFreehandRenderPath(points, {
-                sampleSpacing: el.sampleSpacing,
-                legacyMinDistance: renderSampleDistance,
-                legacyTension: 0,
-              }).points,
-              pressures: el.pressures,
-              baseWidth: aliasStrokeWidth,
-              seed: fxBrushSeedFromKey(el.id),
-              mode,
-              maxParticles: 512,
+            const particles = buildStudioGlitterBrushParticles({
+              el,
+              points,
+              renderSampleDistance,
+              aliasStrokeWidth,
             });
             return (
               <Shape
                 key={index}
                 sceneFunc={(context) => {
-                  context.save();
-                  for (const particle of particles) {
-                    context.globalAlpha = Math.min(1, Math.max(0, particle.opacity * opacity));
-                    context.fillStyle = stroke;
-                    if (particle.kind === 1) {
-                      const s = particle.radius * 1.35;
-                      context.save();
-                      context.translate(particle.x, particle.y);
-                      context.rotate(Math.PI / 4);
-                      context.fillRect(-s * 0.5, -s * 0.5, s, s);
-                      context.restore();
-                    } else {
-                      context.beginPath();
-                      context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-                      context.fill();
-                    }
-                  }
-                  context.restore();
+                  paintStudioDrawGlitterParticles(
+                    context,
+                    particles,
+                    stroke,
+                    opacity,
+                  );
                 }}
                 globalCompositeOperation={STUDIO_FX_LUMINOUS_COMPOSITE_OPERATION}
                 listening={false}
@@ -2608,18 +1955,13 @@ export const StudioDrawNode = memo(function StudioDrawNode({
           }
 
           if (brushFamily === "oil" && el.mode !== "eraser") {
-            const oilPlanInput = {
-              points: resolveStudioFreehandRenderPath(points, {
-                sampleSpacing: el.sampleSpacing,
-                legacyMinDistance: renderSampleDistance,
-                legacyTension: 0,
-              }).points,
-              pressures: el.pressures,
-              baseWidth: aliasStrokeWidth,
-              seed: fxBrushSeedFromKey(el.id),
-              maxDabs: FX_OIL_DAB_CAP,
-              ...studioOilFamilyPlanFields(brush),
-            };
+            const oilPlanInput = buildStudioOilBrushPlanInput({
+              el,
+              brush,
+              points,
+              renderSampleDistance,
+              aliasStrokeWidth,
+            });
             // 활성 초안만 요소 id 로 키된 증분 플래너를 쓴다. 대브 베드와 캐리어 모두 이동당
             // 전체를 다시 세우고 있었고(2906-대브 베드 기준 캐리어만 14.6ms), 두 플래너 모두
             // 스스로 검증한 접두만 재사용하므로 플랜은 배치와 바이트 동일하다. 커밋 렌더는
@@ -2684,17 +2026,12 @@ export const StudioDrawNode = memo(function StudioDrawNode({
                     );
                     return;
                   }
-                  const paintInput = {
+                  const paintInput = buildStudioOilRibbonPaintInput(
                     carrier,
                     stroke,
                     opacity,
-                    points: dabs.map((dab) => ({ x: dab.x, y: dab.y })),
-                    radiusPx: Math.max(
-                      1,
-                      dabs.reduce((sum, dab) => sum + dab.radiusY, 0)
-                      / Math.max(1, dabs.length),
-                    ),
-                  };
+                    dabs,
+                  );
                   if (activeDraft) {
                     paintStudioOilRibbonCarrierIncremental(context, {
                       ...paintInput,
@@ -2729,59 +2066,7 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               <Shape
                 key={index}
                 sceneFunc={(context) => {
-                  context.save();
-                  for (const dab of dabs) {
-                    try {
-                      // Reuse the same high-resolution colourless falloff mask as dynamic soft
-                      // brushes. This is one cached affine drawImage per fibre instead of creating
-                      // thousands of radial gradients again on every retained-layer repaint.
-                      renderStudioDynamicBrushCoverageMark(
-                        context,
-                        {
-                          x: dab.x,
-                          y: dab.y,
-                          radiusX: dab.radiusX,
-                          radiusY: dab.radiusY,
-                          angleRadians: dab.angleRad,
-                          alpha: dab.opacity,
-                          color: stroke,
-                          falloff: {
-                            kind: "analytic-radial",
-                            exponent: 0.72,
-                          },
-                        },
-                        opacity,
-                      );
-                    } catch {
-                      // Restricted Canvas hosts without an allocatable stamp surface retain a
-                      // deterministic analytic-gradient fallback rather than dropping pigment.
-                      context.globalAlpha = Math.min(
-                        1,
-                        Math.max(0, dab.opacity * opacity),
-                      );
-                      context.save();
-                      context.translate(dab.x, dab.y);
-                      context.rotate(dab.angleRad);
-                      context.scale(1, dab.radiusY / dab.radiusX);
-                      const gradient = context.createRadialGradient(
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        dab.radiusX,
-                      );
-                      gradient.addColorStop(0, stroke);
-                      gradient.addColorStop(0.55, stroke);
-                      gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-                      context.beginPath();
-                      context.arc(0, 0, dab.radiusX, 0, Math.PI * 2);
-                      context.fillStyle = gradient;
-                      context.fill();
-                      context.restore();
-                    }
-                  }
-                  context.restore();
+                  paintStudioDrawPastelDabs(context, dabs, stroke, opacity);
                 }}
                 globalCompositeOperation={composite}
                 listening={false}
@@ -2836,28 +2121,14 @@ export const StudioDrawNode = memo(function StudioDrawNode({
               <Shape
                 key={index}
                 sceneFunc={(context) => {
-                  if (smoothed.length < 4) return;
-                  if (composite !== "source-over") {
-                    context.globalCompositeOperation = composite;
-                  }
-                  if (freehandFill && smoothed.length >= 6) {
-                    context.beginPath();
-                    context.moveTo(smoothed[0]!, smoothed[1]!);
-                    for (let i = 2; i < smoothed.length; i += 2) {
-                      context.lineTo(smoothed[i]!, smoothed[i + 1]!);
-                    }
-                    context.closePath();
-                    context.fillStyle = freehandFill;
-                    context.fill();
-                  }
-                  // 중점 이차곡선 보간 — 다이렉트 라이브 초안과 같은 래스터라이저를 공유한다.
-                  drawFreehandPenSegments(
-                    context,
+                  paintStudioDrawFreehandPenStroke(context, {
                     smoothed,
                     sampledPressures,
                     stroke,
                     aliasStrokeWidth,
-                  );
+                    composite,
+                    freehandFill,
+                  });
                 }}
                 opacity={opacity}
                 globalCompositeOperation={composite}

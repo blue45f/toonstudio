@@ -6,16 +6,27 @@ import { describe, expect, it } from "vitest";
 const fileUrl = new URL("./studio-physics-particle-brush-provider.ts",
   import.meta.url,
 );
-const source = readFileSync(fileUrl, "utf8");
-const file = ts.createSourceFile(
-  fileUrl.pathname,
-  source,
-  ts.ScriptTarget.Latest,
-  true,
-  ts.ScriptKind.TS,
+const kernelFileUrl = new URL(
+  "./brush/studio-physics-particle-kernel.ts",
+  import.meta.url,
 );
+const recipeFileUrl = new URL(
+  "./brush/studio-physics-particle-recipe.ts",
+  import.meta.url,
+);
+const source = readFileSync(fileUrl, "utf8");
+const kernelSource = readFileSync(kernelFileUrl, "utf8");
+const recipeSource = readFileSync(recipeFileUrl, "utf8");
+const combinedSource = `${source}\n${kernelSource}\n${recipeSource}`;
 
-function analyzeModule() {
+function analyzeModuleAt(url: URL, rawSource: string) {
+  const file = ts.createSourceFile(
+    url.pathname,
+    rawSource,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
   const staticImports: string[] = [];
   const dynamicImports: string[] = [];
   const identifiers = new Set<string>();
@@ -88,12 +99,25 @@ function analyzeModule() {
   };
 }
 
-const analysis = analyzeModule();
+const analysis = analyzeModuleAt(fileUrl, source);
+const kernelAnalysis = analyzeModuleAt(kernelFileUrl, kernelSource);
+const recipeAnalysis = analyzeModuleAt(recipeFileUrl, recipeSource);
+const allModules = [analysis, kernelAnalysis, recipeAnalysis] as const;
 
 describe("Studio physics particle brush clean-room AST boundary", () => {
-  it("depends only on the portable digest primitive", () => {
-    expect(analysis.staticImports).toEqual(["./studio-sha256"]);
-    expect(analysis.dynamicImports).toEqual([]);
+  it("depends only on the portable digest primitive and pure extracted kernels", () => {
+    expect(analysis.staticImports).toEqual([
+      "./brush/studio-physics-particle-kernel",
+      "./brush/studio-physics-particle-recipe",
+      "./studio-sha256",
+    ]);
+    expect(kernelAnalysis.staticImports).toEqual([]);
+    expect(recipeAnalysis.staticImports).toEqual([
+      "./studio-physics-particle-kernel",
+    ]);
+    for (const mod of allModules) {
+      expect(mod.dynamicImports).toEqual([]);
+    }
   });
 
   it("has no UI, raster, GPU, worker, network, media-input, or engine boundary", () => {
@@ -124,10 +148,12 @@ describe("Studio physics particle brush clean-room AST boundary", () => {
       "postMessage",
     ];
     for (const identifier of forbiddenIdentifiers) {
-      expect(analysis.identifiers.has(identifier), identifier).toBe(false);
+      for (const mod of allModules) {
+        expect(mod.identifiers.has(identifier), identifier).toBe(false);
+      }
     }
-    expect(source).not.toMatch(/\bvendor(?:Id|Mode|Name|Code)?\b/iu);
-    expect(source).not.toMatch(/\b(?:audio|microphone)\b/iu);
+    expect(combinedSource).not.toMatch(/\bvendor(?:Id|Mode|Name|Code)?\b/iu);
+    expect(combinedSource).not.toMatch(/\b(?:audio|microphone)\b/iu);
   });
 
   it("exposes only generic modes and renderer-neutral typed-array artifacts", () => {
@@ -161,10 +187,12 @@ describe("Studio physics particle brush clean-room AST boundary", () => {
   });
 
   it("uses seeded hashes instead of clock or random inputs", () => {
-    expect(analysis.nondeterministicCalls).toEqual([]);
-    expect(source).toContain("deterministicUnit");
-    expect(source).toContain("fixedTimeStepSeconds");
-    expect(source).toContain("spawnSpacing");
+    for (const mod of allModules) {
+      expect(mod.nondeterministicCalls).toEqual([]);
+    }
+    expect(combinedSource).toContain("deterministicUnit");
+    expect(combinedSource).toContain("fixedTimeStepSeconds");
+    expect(combinedSource).toContain("spawnSpacing");
   });
 
   it("preflights owned memory and yields only at bounded work slices", () => {

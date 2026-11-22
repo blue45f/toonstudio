@@ -22,6 +22,38 @@
  * 이 파일의 `VECTOR_LAYER_TYPE` 상수와 `isVectorLayer` 가드가 그 판별 기준이다.
  */
 
+import {
+  isVectorSmartRasterProxy,
+  normalizeVectorLayerRevision,
+  type VectorSmartRasterProxy,
+} from "./vector-smart-raster-proxy";
+
+export {
+  VECTOR_SMART_RASTER_PROXY_TYPE,
+  VECTOR_SMART_RASTER_SCALE_MAX,
+  VECTOR_SMART_RASTER_SCALE_MIN,
+  VECTOR_SMART_RASTER_WARP_KINDS,
+  applyVectorSmartRasterWarp,
+  computeVectorLayerProxyBounds,
+  computeVectorLayerRevisionDigest,
+  createVectorSmartRasterProxy,
+  inspectVectorSmartRasterProxySync,
+  isVectorSmartRasterProxy,
+  isVectorSmartRasterWarpKind,
+  normalizeVectorLayerRevision,
+  revertVectorSmartRasterProxy,
+  type CreateVectorSmartRasterProxyOptions,
+  type CreateVectorSmartRasterWarpOperationInput,
+  type RevertVectorSmartRasterProxyResult,
+  type VectorSmartRasterProxy,
+  type VectorSmartRasterProxyBounds,
+  type VectorSmartRasterProxySyncStatus,
+  type VectorSmartRasterProxyType,
+  type VectorSmartRasterWarpKind,
+  type VectorSmartRasterWarpOperation,
+  type VectorSmartRasterWarpParamValue,
+} from "./vector-smart-raster-proxy";
+
 export interface VectorPoint2D {
   readonly x: number;
   readonly y: number;
@@ -108,6 +140,10 @@ export interface VectorLayer {
   readonly locked: boolean;
   /** 0..1 */
   readonly opacity: number;
+  /** 비파괴 워프 프록시 동기화·복구용 단조 리비전(선택, 음이 아닌 안전 정수). */
+  readonly revision?: number;
+  /** 리퀴파이/스머지/퍼펫 워프 적용 시 원본 벡터를 보존하는 비파괴 래스터 프록시(선택). */
+  readonly smartRasterProxy?: VectorSmartRasterProxy;
 }
 
 /** 사후 선 굵기 일괄 조정의 허용 배율 범위. */
@@ -200,6 +236,8 @@ export interface CreateVectorLayerInit {
   readonly visible?: boolean;
   readonly locked?: boolean;
   readonly opacity?: number;
+  readonly revision?: number;
+  readonly smartRasterProxy?: VectorSmartRasterProxy;
 }
 
 export function createVectorLayer(init: CreateVectorLayerInit): VectorLayer {
@@ -211,6 +249,12 @@ export function createVectorLayer(init: CreateVectorLayerInit): VectorLayer {
     visible: init.visible ?? true,
     locked: init.locked ?? false,
     opacity: normalizeVectorOpacity(init.opacity),
+    ...(init.revision !== undefined
+      ? { revision: normalizeVectorLayerRevision(init.revision, 0) }
+      : {}),
+    ...(init.smartRasterProxy !== undefined
+      ? { smartRasterProxy: init.smartRasterProxy }
+      : {}),
   };
 }
 
@@ -262,6 +306,12 @@ export function isVectorLayer(value: unknown): value is VectorLayer {
     && typeof layer["visible"] === "boolean"
     && typeof layer["locked"] === "boolean"
     && typeof layer["opacity"] === "number"
+    && (layer["revision"] === undefined
+      || (typeof layer["revision"] === "number"
+        && Number.isSafeInteger(layer["revision"])
+        && layer["revision"] >= 0))
+    && (layer["smartRasterProxy"] === undefined
+      || isVectorSmartRasterProxy(layer["smartRasterProxy"]))
   );
 }
 
