@@ -16,6 +16,7 @@ import {
   studioFootstepSynthSpec,
   studioSfxSpec,
   type StudioSfxKind,
+  type StudioSfxNoiseStep,
 } from "./studio-virtual-space-sound-synth";
 import type { StudioVirtualSoundPreference } from "./studio-virtual-space-sound-preference";
 import { studioHuddleAudioFocusSnapshot, subscribeStudioHuddleAudioFocus } from "../live/huddle/studio-p2p-huddle-audio-focus";
@@ -35,8 +36,9 @@ const browserDependencies: StudioSoundEngineDependencies = {
 const FOOTSTEP_MASTER = 0.5;
 /** SFX 마스터 배율. 레시피 peak와 거리 게인, 설정 음량에 다시 곱해진다. */
 const SFX_MASTER = 0.5;
-/** 발소리 전역 최소 간격(ms). 보폭 타이밍이 겹쳐 쌓이는 것을 막는다. */
+/** 발소리 전역 최소 간격(ms). 보폭 타이밍이 겹쳐 쌓이는 것을 막는다. 달리기는 빠른 케이던스에 맞춰 조금 짧게 둔다. */
 const FOOTSTEP_THROTTLE_MS = 80;
+const FOOTSTEP_SPRINT_THROTTLE_MS = 60;
 
 function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
@@ -90,16 +92,17 @@ export class StudioVirtualSpaceSoundEngine {
     if (context && context.state === "suspended") void context.resume().catch(() => undefined);
   }
 
-  /** 발소리 한 걸음. footsteps 모듈이 계산한 이벤트(표면·볼륨)를 그대로 소리로 바꾼다. */
+  /** 발소리 한 걸음. footsteps 모듈이 계산한 이벤트(표면·볼륨·달리기 여부)를 소리로 합성한다. */
   playFootstep(event: StudioFootstepEvent): void {
     const context = this.playableContext();
     if (!context || !this.master) return;
     const now = this.now();
-    if (now - this.lastFootstepAt < FOOTSTEP_THROTTLE_MS) return;
+    const minInterval = event.sprinting ? FOOTSTEP_SPRINT_THROTTLE_MS : FOOTSTEP_THROTTLE_MS;
+    if (now - this.lastFootstepAt < minInterval) return;
     const eventGain = clamp01(event.volume) * FOOTSTEP_MASTER;
     if (eventGain <= 0.001) return;
     this.lastFootstepAt = now;
-    const spec = studioFootstepSynthSpec(event.surface, event.foot);
+    const spec = studioFootstepSynthSpec(event.surface, event.foot, event.sprinting === true);
     const start = context.currentTime;
     // 노이즈 버스트: 표면 필터를 통과시켜 음색을 만든다.
     const noise = context.createBufferSource();
@@ -131,6 +134,24 @@ export class StudioVirtualSpaceSoundEngine {
       tone.start(start);
       tone.stop(start + toneDuration + 0.02);
     }
+    // 달리기 2단 추진 톤 + 미세 마찰음
+    if (spec.secondaryTone) {
+      const pushStart = start + spec.secondaryTone.startOffsetMs / 1000;
+      const pushDuration = spec.secondaryTone.durationMs / 1000;
+      const pushOsc = context.createOscillator();
+      pushOsc.type = spec.secondaryTone.wave;
+      pushOsc.frequency.value = spec.secondaryTone.frequency;
+      const pushGain = context.createGain();
+      pushGain.gain.setValueAtTime(0, pushStart);
+      pushGain.gain.linearRampToValueAtTime(eventGain * spec.secondaryTone.peak, pushStart + 0.003);
+      pushGain.gain.exponentialRampToValueAtTime(0.0001, pushStart + pushDuration);
+      pushOsc.connect(pushGain).connect(this.master);
+      pushOsc.start(pushStart);
+      pushOsc.stop(pushStart + pushDuration + 0.02);
+    }
+    if (spec.frictionNoise) {
+      this.playNoiseStep(context, this.master, start, eventGain, spec.frictionNoise);
+    }
   }
 
   /** 상호작용 SFX 한 번. distanceGain은 호출 측이 acoustics 곡선으로 계산한 0~1 값이다. */
@@ -159,6 +180,45 @@ export class StudioVirtualSpaceSoundEngine {
       osc.start(start);
       osc.stop(start + duration + 0.02);
     }
+    if (spec.noiseSteps) {
+      for (const noiseStep of spec.noiseSteps) {
+        this.playNoiseStep(context, this.master, base, gainScale, noiseStep);
+      }
+    }
+  }
+
+  private playNoiseStep(
+    context: AudioContext,
+    master: GainNode,
+    baseTime: number,
+    gainScale: number,
+    step: StudioSfxNoiseStep,
+  ): void {
+    const start = baseTime + step.startOffsetMs / 1000;
+    const duration = Math.max(0.015, step.durationMs / 1000);
+    const noise = context.createBufferSource();
+    noise.buffer = this.noise(context);
+    noise.loop = true;
+    const filter = context.createBiquadFilter();
+    filter.type = step.filterType;
+    filter.Q.value = step.filterQ;
+    const fromHz = Math.max(40, step.fromHz);
+    const toHz = Math.max(40, step.toHz);
+    if (typeof filter.frequency.setValueAtTime === "function") {
+      filter.frequency.setValueAtTime(fromHz, start);
+      if (toHz !== fromHz && typeof filter.frequency.exponentialRampToValueAtTime === "function") {
+        filter.frequency.exponentialRampToValueAtTime(toHz, start + duration);
+      }
+    } else {
+      filter.frequency.value = fromHz;
+    }
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(gainScale * step.peak, start + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    noise.connect(filter).connect(gain).connect(master);
+    noise.start(start, Math.random() * 0.4);
+    noise.stop(start + duration + 0.02);
   }
 
   dispose(): void {

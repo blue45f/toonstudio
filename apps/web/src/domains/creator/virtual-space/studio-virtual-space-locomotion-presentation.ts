@@ -17,12 +17,12 @@ export function studioGaitShadowScale(distance: number, stride: number, moving: 
   return .96 + Math.cos(distance / stride * Math.PI * 4) * .04;
 }
 
-const GAIT_BODY_LIFT = 3.5;
-const GAIT_BODY_SWAY = 2.4;
+const GAIT_BODY_LIFT = 1.0;
 
 /**
  * 그림자와 같은 이동 거리·같은 위상을 쓴다. 접지 순간 그림자가 가장 작아지므로 몸도 가장 낮아져야
- * 하므로 `(cos - 1)`을 쓴다. 정지·벽·모션 감소에서는 0이다.
+ * 하므로 `(cos - 1)`을 쓴다. 좌우 흔들림(sway)을 제거해 보행 중 캐릭터가 흔들리지 않고
+ * 정갈한 미세 상하 리듬만 유지한다. 정지·벽·모션 감소에서는 0이다.
  */
 export function studioGaitBodyOffset(distance: number, stride: number, moving: boolean, reducedMotion: boolean): {
   readonly offsetX: number;
@@ -32,11 +32,11 @@ export function studioGaitBodyOffset(distance: number, stride: number, moving: b
     return { offsetX: 0, offsetY: 0 };
   }
   const phase = distance / stride * Math.PI * 4;
-  return { offsetX: Math.sin(phase) * GAIT_BODY_SWAY, offsetY: (Math.cos(phase) - 1) * GAIT_BODY_LIFT };
+  return { offsetX: 0, offsetY: (Math.cos(phase) - 1) * GAIT_BODY_LIFT };
 }
 
 /**
- * 유효 보폭 단일화: 프레임 선택·몸 bob·기울기·스쿼시가 전부 같은 보폭을 써야
+ * 유효 보폭 단일화: 프레임 선택·몸 bob·그림자가 전부 같은 보폭을 써야
  * 발 접지와 몸 움직임의 위상이 어긋나지 않는다. 장소 프로필의 강제 보폭(스프라이트
  * 데이터)이 있으면 그것이, 없으면 클립 고유 보폭이, 둘 다 없으면 표준 보폭이 이긴다.
  */
@@ -46,76 +46,52 @@ export function studioEffectiveGaitStride(override: number | undefined, clipStri
   return STUDIO_GAIT_DISTANCE_PER_CYCLE;
 }
 
-const GAIT_ROCK_DEGREES = 1.1;
-
 /**
- * 걸음 위상에 동기된 몸 흔들림(도). 좌우 스웨이(offsetX)와 같은 위상이라 몸이
- * 걸음마다 한 몸으로 흔들린다. 4프레임 걷기 사이클의 딱딱한 프레임 전환 사이에
- * 연속적인 2차 모션을 넣어 끊김을 누그러뜨리는 절차적 인비트위닝이다.
- * 정지·벽·모션 감소에서는 0이다.
+ * 걸음 위상에 동기된 몸 흔들림(도).
+ * 등신 비율과 직립 자세 안정을 위해 보행 중 과도한 좌우 회전 흔들림을 제거하고 0도를 유지한다.
  */
-export function studioGaitRockAngle(distance: number, stride: number, moving: boolean, reducedMotion: boolean): number {
-  if (!moving || reducedMotion || !Number.isFinite(distance) || distance < 0 || !Number.isFinite(stride) || stride <= 0) return 0;
-  return Math.sin(distance / stride * Math.PI * 4) * GAIT_ROCK_DEGREES;
+export function studioGaitRockAngle(_distance: number, _stride: number, _moving: boolean, _reducedMotion: boolean): number {
+  return 0;
 }
 
-const GAIT_SQUASH_DEPTH = 0.012;
-
 /**
- * 걸음 위상에 동기된 세로 스쿼시 배율. 발이 땅에 닿는 순간(bob이 가장 낮은 위상,
- * cos=1) 몸이 살짝 눌리고, 떠오를 때 원복한다. 진폭 1.2%로 과하지 않게 둔다.
- * 정지·벽·모션 감소에서는 1이다.
+ * 걸음 위상 세로 배율.
+ * 대기·걷기·뛰기 전 구간에서 캐릭터 등신 비율과 키를 1.0으로 고정(proportional height lock)해
+ * 프레임마다 사이즈가 출렁이는 현상을 원천 차단한다.
  */
-export function studioGaitSquashScaleY(distance: number, stride: number, moving: boolean, reducedMotion: boolean): number {
-  if (!moving || reducedMotion || !Number.isFinite(distance) || distance < 0 || !Number.isFinite(stride) || stride <= 0) return 1;
-  const contact = (Math.cos(distance / stride * Math.PI * 4) + 1) / 2;
-  return 1 - GAIT_SQUASH_DEPTH * contact;
+export function studioGaitSquashScaleY(_distance: number, _stride: number, _moving: boolean, _reducedMotion: boolean): number {
+  return 1;
 }
 
-/** 접지 스쿼시의 가로 반동 비율. 세로로 눌린 만큼의 60%를 가로로 돌려 부피가 보존되는 느낌을 준다. */
-const GAIT_SQUASH_LATERAL_REBOUND = 0.6;
-
 /**
- * 접지 스쿼시 배율 쌍. 세로는 기존 곡선 그대로, 가로에는 부피 보존 반동을 더해
- * 발이 닿는 순간 몸이 아래로만 꺼지지 않고 살짝 퍼지며 "착지"로 읽히게 한다.
- * 정지·벽·모션 감소에서는 두 축 모두 1이다.
+ * 접지 배율 쌍. 보행 중 캐릭터 가로·세로 크기를 1.0으로 고정한다.
  */
 export function studioGaitSquashScale(
-  distance: number,
-  stride: number,
-  moving: boolean,
-  reducedMotion: boolean,
+  _distance: number,
+  _stride: number,
+  _moving: boolean,
+  _reducedMotion: boolean,
 ): { readonly scaleX: number; readonly scaleY: number } {
-  const scaleY = studioGaitSquashScaleY(distance, stride, moving, reducedMotion);
-  return { scaleX: 1 + (1 - scaleY) * GAIT_SQUASH_LATERAL_REBOUND, scaleY };
+  return { scaleX: 1, scaleY: 1 };
 }
 
-const IDLE_SWAY_AMPLITUDE_PX = 1.2;
-const IDLE_SWAY_PERIOD_MS = 5_900;
-
 /**
- * 대기 중 무게중심 이동(px): 좌우로 아주 느리게 흔들려 정지 포즈가 석상처럼
- * 굳지 않게 한다. 위상은 배우별 시드로 어긋나 군집이 한 몸처럼 움직이지 않는다.
- * 모션 감소에서는 0이다.
+ * 대기 중 무게중심 이동(px).
+ * 정지 상태에서 좌우로 흔들리는 현상을 제거해 발바닥 접지를 완전히 고정한다.
  */
-export function studioIdleSwayOffsetX(timeMs: number, seed: number, reducedMotion: boolean): number {
-  if (reducedMotion || !Number.isFinite(timeMs)) return 0;
-  const safeSeed = Number.isFinite(seed) ? seed : 0;
-  return Math.sin((timeMs / IDLE_SWAY_PERIOD_MS + safeSeed) * Math.PI * 2) * IDLE_SWAY_AMPLITUDE_PX;
+export function studioIdleSwayOffsetX(_timeMs: number, _seed: number, _reducedMotion: boolean): number {
+  return 0;
 }
 
 const DOZE_CYCLE_MS = 6_400;
 const DOZE_DIP_MS = 1_700;
-const DOZE_DIP_DEPTH_PX = 2.4;
-const DOZE_TILT_DEGREES = 1.8;
+const DOZE_DIP_DEPTH_PX = 0.8;
+const DOZE_TILT_DEGREES = 0.6;
 
 /**
- * 자리 비움(away) 졸기 오프셋. 자리 비움은 지금까지 이름표·투명도뿐이라 몸은
- * available 대기 자세와 똑같이 서 있어 상태가 몸짓으로 읽히지 않았다.
- * 긴 주기(6.4초)마다 한 번씩 고개가 아래로 살짝 떨어졌다 돌아오는 꾸벅임을
- * 기존 idle 생명감(호흡·sway·깜빡임)과 같은 절차 모션 어휘로 얹는다.
- * 전용 아트가 아니라 몸 전체의 미세 변위이며, 진폭을 작게 잡는 이유도 그 전제다.
- * 배우별 시드로 위상을 어긋나게 하고, 모션 감소에서는 중립값을 돌려준다.
+ * 자리 비움(away) 졸기 오프셋.
+ * 긴 주기(6.4초)마다 한 번씩 고개가 아주 미세하게 내려갔다 돌아오며, 과도한 흔들림 없이
+ * 자리 비움 상태만 정갈하게 전달한다. 모션 감소에서는 중립값을 돌려준다.
  */
 export function studioAwayDozeMotion(
   timeMs: number,
@@ -133,30 +109,12 @@ export function studioAwayDozeMotion(
   return { offsetY: depth * DOZE_DIP_DEPTH_PX, angleDegrees };
 }
 
-const BLINK_MIN_INTERVAL_MS = 3_400;
-const BLINK_INTERVAL_SPREAD_MS = 3_400;
-const BLINK_DURATION_MS = 110;
-const BLINK_DEPTH = 0.014;
-
-function smoothstep01(value: number): number {
-  const clamped = Math.max(0, Math.min(1, value));
-  return clamped * clamped * (3 - 2 * clamped);
-}
-
 /**
- * 절차적 눈 깜빡임의 세로 배율. 표정 아트(깜빡임 프레임)가 있는 스타일은 그쪽이
- * 우선이며, 이 값은 깜빡임 작화가 없는 스킨에서 몸 전체가 110ms 동안 1.4% 눌리는
- * 미세한 생동감으로 대신한다 — 진짜 눈동자 움직임이 아님을 전제로 진폭을 작게 둔다.
- * 간격은 배우별 시드로 3.4~6.8초 사이에서 어긋난다. 모션 감소에서는 항상 1이다.
+ * 절차적 눈 깜빡임의 세로 배율.
+ * 몸 전체를 찌그러뜨리는 가짜 눈 깜빡임(body squash)을 제거해 키 요동 없이 항상 1을 유지한다.
  */
-export function studioBlinkScaleY(timeMs: number, seed: number, reducedMotion: boolean): number {
-  if (reducedMotion || !Number.isFinite(timeMs) || timeMs < 0) return 1;
-  const safeSeed = Number.isFinite(seed) ? Math.max(0, Math.min(1, seed)) : 0;
-  const interval = BLINK_MIN_INTERVAL_MS + safeSeed * BLINK_INTERVAL_SPREAD_MS;
-  const phase = (timeMs + safeSeed * interval * 7) % interval;
-  if (phase >= BLINK_DURATION_MS) return 1;
-  const edge = Math.min(phase, BLINK_DURATION_MS - phase) / (BLINK_DURATION_MS / 2);
-  return 1 - BLINK_DEPTH * smoothstep01(edge);
+export function studioBlinkScaleY(_timeMs: number, _seed: number, _reducedMotion: boolean): number {
+  return 1;
 }
 
 /**
@@ -204,50 +162,36 @@ export function studioGaitShadowAlpha(
 }
 
 /**
- * 대기(idle) 및 착석(sit) 상태에서 이미지 스프라이트가 석상처럼 멈춰 보이지 않도록
- * 부피 보존 호흡 배율(들숨 시 세로 확장·가로 미세 수축)을 계산한다.
- * 보행 중이거나 모션 감소일 때는 `{ scaleX: 1, scaleY: 1 }`을 반환한다.
+ * 대기(idle) 및 착석(sit) 상태 호흡 배율.
+ * 캐릭터 전체를 세로·가로로 늘였다 줄이는 사이즈 요동을 차단하고 항상 1.0 비율을 고정한다.
  */
 export function studioIdleUpperBodyBreathScale(
-  timeMs: number,
-  seed: number,
-  moving: boolean,
-  seated: boolean,
-  reducedMotion: boolean,
+  _timeMs: number,
+  _seed: number,
+  _moving: boolean,
+  _seated: boolean,
+  _reducedMotion: boolean,
 ): { readonly scaleX: number; readonly scaleY: number } {
-  if (moving || reducedMotion || !Number.isFinite(timeMs) || timeMs < 0) {
-    return { scaleX: 1, scaleY: 1 };
-  }
-  const safeSeed = Number.isFinite(seed) ? Math.max(0, Math.min(1, seed)) : 0;
-  const periodMs = seated ? 4_600 : 3_800;
-  const depthY = seated ? 0.0065 : 0.0095;
-  const wave = Math.sin(((timeMs / periodMs) + safeSeed) * Math.PI * 2);
-  return {
-    scaleX: Number((1 - wave * depthY * 0.42).toFixed(5)),
-    scaleY: Number((1 + wave * depthY).toFixed(5)),
-  };
+  return { scaleX: 1, scaleY: 1 };
 }
 
 export interface StudioImageSpriteSubframeMotion {
   /** 프레임 내부 위상 (0~1). 프레임 전환 경계에서는 0 또는 1에 수렴. */
   readonly subframePhase: number;
-  /** 프레임과 프레임 사이의 불연속 포즈 점프를 메우는 미세 수직 아크(px, 경계에서 0). */
+  /** 프레임 경계 보조 수직 오프셋(px). 중첩 바운스 방지를 위해 0으로 고정. */
   readonly liftPx: number;
-  /** 좌우 발 교차에 맞춘 미세 상체 회전 인비트위닝(도, 경계에서 0). */
+  /** 프레임 경계 보조 기울기(도). 흔들림 방지를 위해 0으로 고정. */
   readonly tiltDeg: number;
-  /** 프레임 내부 탄성 부피 보존 가로 배율. */
+  /** 등신 비율 고정 가로 배율(항상 1). */
   readonly scaleX: number;
-  /** 프레임 내부 탄성 부피 보존 세로 배율. */
+  /** 등신 비율 고정 세로 배율(항상 1). */
   readonly scaleY: number;
 }
 
 /**
- * 4프레임(또는 N프레임) PNG 이미지 스프라이트 전용 서브프레임(Sub-frame) 절차적 인비트위닝.
- *
- * 이미지 스프라이트는 프레임 수가 4장 내외로 적어 60~120Hz 화면에서 프레임이 바뀔 때
- * 자세가 계단식으로 끊겨 보일 수 있다. 각 프레임의 고유 `originX/originY` 정합은 그대로 보존하면서,
- * 프레임 내부 진행도 `u ∈ [0, 1)` 구간에서 경계값(`u=0, 1`)이 정확히 0인 사인 엔벨로프(`sin(πu)`)로
- * 미세 리프트·상체 스윙·탄성 스케일을 보간해 60fps 이상의 부드러운 연속 동작감을 만든다.
+ * 이미지 스프라이트 서브프레임 위상 계산.
+ * 프레임 내부 진행도 `subframePhase ∈ [0, 1)`만 유지하고, 중첩 크기 펌핑·흔들림(scale/tilt/lift)은
+ * 0과 1.0으로 잠가 프레임 전환 시 캐릭터 크기가 출렁이지 않게 한다.
  */
 export function studioImageSpriteSubframeMotion(
   distance: number,
@@ -272,20 +216,12 @@ export function studioImageSpriteSubframeMotion(
   const scaled = cycleProgress * frameCount;
   const frameIndex = Math.floor(scaled);
   const u = scaled - frameIndex;
-  // 프레임 교체 경계(u = 0, u = 1)에서 0이 되는 매끄러운 반파 엔벨로프
-  const envelope = Math.sin(u * Math.PI);
-  // 짝수/홀수 프레임(왼발/오른발 교차)에 따라 상체 미세 스윙 부호를 교번
-  const paritySign = frameIndex % 2 === 0 ? 1 : -1;
-  const liftPx = Number((-envelope * 0.95).toFixed(4));
-  const tiltDeg = Number((envelope * paritySign * 0.42).toFixed(4));
-  const scaleY = Number((1 + envelope * 0.0055).toFixed(5));
-  const scaleX = Number((1 - envelope * 0.0032).toFixed(5));
   return {
     subframePhase: Number(u.toFixed(4)),
-    liftPx,
-    tiltDeg,
-    scaleX,
-    scaleY,
+    liftPx: 0,
+    tiltDeg: 0,
+    scaleX: 1,
+    scaleY: 1,
   };
 }
 

@@ -5,7 +5,8 @@
  * 고정 상한 풀을 써서 오래 켜 둬도 메모리가 늘지 않는다.
  */
 import { office2dRandom, type Office2dCanvas2D } from "./office2d-procedural-art";
-import type { StudioExtendedFootstepSurface } from "../studio-virtual-space-footsteps";
+import type { StudioFloorMaterialKind } from "../studio-virtual-space-dramatic-vfx-catalog";
+import { planStudioDustPuffs, studioDustSurfacePalette } from "../studio-virtual-space-jump-motion";
 
 export type Office2dParticleKind =
   | "dust"
@@ -22,14 +23,6 @@ export type Office2dParticleKind =
   | "shockwave";
 
 export type Office2dComboBurstPreset = "interaction" | "sprint" | "emote" | "seat" | "awakening";
-
-const SURFACE_DUST_PALETTE: Readonly<Record<StudioExtendedFootstepSurface, readonly [string, string]>> = Object.freeze({
-  wood: ["rgba(224, 200, 166, 0.78)", "rgba(244, 232, 212, 0.62)"],
-  carpet: ["rgba(228, 222, 212, 0.68)", "rgba(244, 240, 234, 0.52)"],
-  tile: ["rgba(232, 229, 220, 0.78)", "rgba(250, 248, 242, 0.62)"],
-  stone: ["rgba(210, 218, 228, 0.78)", "rgba(236, 241, 248, 0.62)"],
-  terrace: ["rgba(218, 202, 174, 0.84)", "rgba(242, 230, 206, 0.66)"],
-});
 
 interface Particle {
   kind: Office2dParticleKind;
@@ -180,14 +173,17 @@ export class Office2dParticles {
   }
 
   /**
-   * 걷기·달리기·방향 급전환 시 발밑에서 자연스럽게 피어오르는 다중 먼지 퍼프.
-   * 이동 반대 방향으로 살짝 밀려나며 커지다가 부드럽게 사라진다.
+   * 걷기·달리기·급회전/급정지 시 발밑에서 물리적으로 피어오르는 먼지 뭉게구름 퍼프.
+   * - 걷기: 발뒤꿈치 소형 먼지 1~2알
+   * - 달리기: 속도 반대 방향 다층 먼지 뭉게구름(크기 확장 + 공기 저항 감속 + 부드러운 페이드아웃)
+   * - 급회전/급정지: 슬라이드 먼지 버스트
+   * - 바닥 재질(`wood`, `carpet`, `stone`, `grass`, `tile`, `terrace` 등) 색조 자동 매칭
    */
   emitFootstepDust(
     x: number,
     y: number,
     options: {
-      readonly surface: StudioExtendedFootstepSurface;
+      readonly surface: StudioFloorMaterialKind;
       readonly vx?: number;
       readonly vy?: number;
       readonly sprint?: boolean;
@@ -195,59 +191,60 @@ export class Office2dParticles {
     },
   ): void {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-    const palette = SURFACE_DUST_PALETTE[options.surface] ?? SURFACE_DUST_PALETTE.wood;
     const vx = Number.isFinite(options.vx) ? (options.vx ?? 0) : 0;
     const vy = Number.isFinite(options.vy) ? (options.vy ?? 0) : 0;
-    const speed = Math.hypot(vx, vy);
-    const backX = speed > 1 ? -vx / speed : 0;
-    const backY = speed > 1 ? -vy / speed : 0;
-    const count = options.skid ? 5 : options.sprint ? 4 : options.surface === "carpet" ? 2 : 3;
-    const baseSize = options.skid ? 3.8 : options.sprint ? 3.5 : 2.6;
-    const spread = options.skid ? 34 : options.sprint ? 26 : 16;
-
-    for (let index = 0; index < count; index += 1) {
-      const jitterAngle = (this.random() - 0.5) * Math.PI * 1.1;
-      const cos = Math.cos(jitterAngle);
-      const sin = Math.sin(jitterAngle);
-      const driftX = (backX * cos - backY * sin) * (spread * (0.45 + this.random() * 0.75)) + (this.random() - 0.5) * 14;
-      const driftY = (backX * sin + backY * cos) * (spread * 0.4) - (10 + this.random() * 14);
+    const mode = options.skid ? "skid" : options.sprint ? "run" : "walk";
+    const puffs = planStudioDustPuffs({
+      mode,
+      material: options.surface,
+      vx,
+      vy,
+      reducedMotion: false,
+      seed: this.random() * 997,
+    });
+    for (const puff of puffs) {
       this.push({
         kind: "dust",
-        x: x + (this.random() - 0.5) * (options.skid ? 12 : 8),
-        y: y - 1 + (this.random() - 0.5) * 4,
-        vx: driftX,
-        vy: driftY,
+        x: x + puff.offsetX,
+        y: y + puff.offsetY,
+        vx: puff.vx,
+        vy: puff.vy,
         life: 0,
-        maxLife: (options.skid ? 0.56 : options.sprint ? 0.5 : 0.42) + this.random() * 0.24,
-        size: baseSize + this.random() * 2.2,
-        color: palette[index % palette.length] ?? palette[0],
+        maxLife: puff.lifetimeMs / 1000,
+        size: puff.startSize,
+        color: puff.colorRgba,
         spin: this.random() * Math.PI * 2,
       });
     }
     if (options.sprint) {
+      const speed = Math.hypot(vx, vy);
+      const backX = speed > 1 ? -vx / speed : 0;
       this.emit("speedline", x + backX * 6, y - 16, 1, 0.75);
     }
   }
 
-  /** 점프 도약·착지 시 발밑에서 원형으로 퍼지는 먼지 구름과 접지 파동. */
-  emitLandingDust(x: number, y: number, surface: StudioExtendedFootstepSurface, takeoff = false): void {
+  /** 점프 도약·착지 시 발밑에서 원형으로 퍼지는 먼지 링 퍼프와 접지 파동. */
+  emitLandingDust(x: number, y: number, surface: StudioFloorMaterialKind, takeoff = false): void {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-    const palette = SURFACE_DUST_PALETTE[surface] ?? SURFACE_DUST_PALETTE.wood;
-    const puffs = takeoff ? 4 : 7;
-    for (let index = 0; index < puffs; index += 1) {
-      const angle = (index / puffs) * Math.PI * 2 + (this.random() - 0.5) * 0.4;
-      const radial = (takeoff ? 18 : 28) + this.random() * 16;
+    const tone = studioDustSurfacePalette(surface);
+    const puffs = planStudioDustPuffs({
+      mode: takeoff ? "jump-takeoff" : "jump-land",
+      material: surface,
+      reducedMotion: false,
+      seed: this.random() * 997,
+    });
+    for (const puff of puffs) {
       this.push({
         kind: "dust",
-        x: x + Math.cos(angle) * 6,
-        y: y + Math.sin(angle) * 2.5,
-        vx: Math.cos(angle) * radial,
-        vy: Math.sin(angle) * radial * 0.35 - (takeoff ? 8 : 14) - this.random() * 6,
+        x: x + puff.offsetX,
+        y: y + puff.offsetY,
+        vx: puff.vx,
+        vy: puff.vy,
         life: 0,
-        maxLife: (takeoff ? 0.4 : 0.58) + this.random() * 0.2,
-        size: (takeoff ? 2.8 : 3.6) + this.random() * 2.2,
-        color: palette[index % palette.length] ?? palette[0],
-        spin: angle,
+        maxLife: puff.lifetimeMs / 1000,
+        size: puff.startSize,
+        color: puff.colorRgba,
+        spin: this.random() * Math.PI * 2,
       });
     }
     if (!takeoff) {
@@ -260,7 +257,7 @@ export class Office2dParticles {
         life: 0,
         maxLife: 0.42,
         size: 8,
-        color: palette[0],
+        color: tone.primaryRgba,
         spin: 0,
       });
     }

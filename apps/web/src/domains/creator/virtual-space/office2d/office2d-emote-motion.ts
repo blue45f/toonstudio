@@ -162,8 +162,8 @@ export function resolveOffice2dEmoteTransform(
       offsetY: clamp(pose.offsetY, -9, 8),
       tiltRad: clamp(pose.tiltRad, -0.22, 0.22),
       facingOverride,
-      scaleX: pose.scaleX,
-      scaleY: pose.scaleY,
+      scaleX: 1,
+      scaleY: 1,
     };
   }
 

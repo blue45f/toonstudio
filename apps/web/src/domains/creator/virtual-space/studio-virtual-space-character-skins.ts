@@ -450,13 +450,23 @@ function proceduralPlayerSkinDef(def: StudioProceduralPlayerSkinDefinition): Stu
   return Object.freeze(def);
 }
 
+// NPC 프로시저럴 프리셋(guide·barista·guard·cleaner·mentor·visitor·shopkeeper)과 0% 겹치도록
+// 플레이어 전용 고유 파츠 프리셋 14종(기본 6종 + 스튜디오 직군 신규 8종)을 매핑한다.
 export const STUDIO_PROCEDURAL_PLAYER_SKIN_DEFINITIONS: readonly StudioProceduralPlayerSkinDefinition[] = Object.freeze([
-  proceduralPlayerSkinDef({ key: "procedural-mint", labelKo: "민트", labelEn: "Mint", presetKey: "cleaner" }),
-  proceduralPlayerSkinDef({ key: "procedural-coral", labelKo: "코랄", labelEn: "Coral", presetKey: "barista" }),
-  proceduralPlayerSkinDef({ key: "procedural-navy", labelKo: "네이비", labelEn: "Navy", presetKey: "guard" }),
-  proceduralPlayerSkinDef({ key: "procedural-cream", labelKo: "크림", labelEn: "Cream", presetKey: "mentor" }),
-  proceduralPlayerSkinDef({ key: "procedural-forest", labelKo: "포레스트", labelEn: "Forest", presetKey: "guide" }),
-  proceduralPlayerSkinDef({ key: "procedural-rose", labelKo: "로즈", labelEn: "Rose", presetKey: "visitor" }),
+  proceduralPlayerSkinDef({ key: "procedural-mint", labelKo: "민트", labelEn: "Mint", presetKey: "creator" }),
+  proceduralPlayerSkinDef({ key: "procedural-coral", labelKo: "코랄", labelEn: "Coral", presetKey: "campus" }),
+  proceduralPlayerSkinDef({ key: "procedural-navy", labelKo: "네이비", labelEn: "Navy", presetKey: "office" }),
+  proceduralPlayerSkinDef({ key: "procedural-cream", labelKo: "크림", labelEn: "Cream", presetKey: "editor" }),
+  proceduralPlayerSkinDef({ key: "procedural-forest", labelKo: "포레스트", labelEn: "Forest", presetKey: "archivist" }),
+  proceduralPlayerSkinDef({ key: "procedural-rose", labelKo: "로즈", labelEn: "Rose", presetKey: "broadcast" }),
+  proceduralPlayerSkinDef({ key: "procedural-storyboard", labelKo: "스토리보드 감독", labelEn: "Storyboard Director", presetKey: "storyboard-director" }),
+  proceduralPlayerSkinDef({ key: "procedural-watercolor", labelKo: "수채화 채색 아티스트", labelEn: "Watercolor Artist", presetKey: "watercolor-artist" }),
+  proceduralPlayerSkinDef({ key: "procedural-bg3d", labelKo: "3D 배경 테크니컬", labelEn: "3D Tech Artist", presetKey: "bg3d-tech-artist" }),
+  proceduralPlayerSkinDef({ key: "procedural-letterer", labelKo: "효과음·식자 디자이너", labelEn: "SFX & Letterer", presetKey: "sfx-letterer" }),
+  proceduralPlayerSkinDef({ key: "procedural-indie-editor", labelKo: "인디 출판 편집장", labelEn: "Indie Chief Editor", presetKey: "indie-publisher" }),
+  proceduralPlayerSkinDef({ key: "procedural-night-barista", labelKo: "야간 마감 바리스타", labelEn: "Night Barista", presetKey: "night-barista" }),
+  proceduralPlayerSkinDef({ key: "procedural-shortform", labelKo: "숏폼 애니메이션 감독", labelEn: "Short-Form Director", presetKey: "shortform-animator" }),
+  proceduralPlayerSkinDef({ key: "procedural-community", labelKo: "팬 커뮤니티 매니저", labelEn: "Community Manager", presetKey: "community-manager" }),
 ]);
 
 const proceduralPlayerSkinCache = new Map<string, StudioCharacterSkin>();

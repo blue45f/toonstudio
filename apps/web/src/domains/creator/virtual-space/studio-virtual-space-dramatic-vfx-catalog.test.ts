@@ -145,14 +145,18 @@ describe("20종 화려한 연출(Dramatic VFX) 카탈로그 & reduced-motion 감
   });
 });
 
-describe("20인 한국 웹툰 대표 아키타입 마스터 스프라이트 & 체조/댄스 다층 SVG 렌더링", () => {
-  it("20인 아키타입(로판·헌터·학원물·사이버펑크·무협·바리스타·반려마스코트 포함)이 선명한 다층 파츠를 생성한다", () => {
-    expect(STUDIO_WEBTOON_MASTER_SPRITE_CAST).toHaveLength(20);
+describe("28인 한국 웹툰·스튜디오 아키타입 마스터 스프라이트 & 체조/댄스 다층 SVG 렌더링", () => {
+  it("28인 비중복 아키타입(기본 12 + 장르 8 + 전문 직군 8)이 선명한 다층 파츠를 생성한다", () => {
+    expect(STUDIO_WEBTOON_MASTER_SPRITE_CAST).toHaveLength(28);
     expect(STUDIO_WEBTOON_ARCHETYPE_EXTRA_CAST).toHaveLength(8);
     expect(STUDIO_EXTENDED_SPRITE_ACTIONS).toHaveLength(20);
 
     const uniqueIds = new Set(STUDIO_WEBTOON_MASTER_SPRITE_CAST.map((p) => p.personaId));
-    expect(uniqueIds.size).toBe(20);
+    expect(uniqueIds.size).toBe(28);
+    const uniqueSilhouettes = new Set(
+      STUDIO_WEBTOON_MASTER_SPRITE_CAST.map((p) => `${p.hairSilhouette}|${p.outfitSilhouette}`),
+    );
+    expect(uniqueSilhouettes.size).toBe(28);
 
     for (const persona of STUDIO_WEBTOON_MASTER_SPRITE_CAST) {
       expect(getDynamicCreatorPersonaSpec(persona.personaId).personaId).toBe(persona.personaId);

@@ -58,8 +58,22 @@ export type StudioWebtoonArchetypePersonaId =
   | "atelier-barista"
   | "companion-corgi-director";
 
-/** 기존 12인 + 한국 웹툰 확장 8인 전체(20인) 식별자. */
-export type StudioMasterSpritePersonaId = StudioFullSpritePersonaId | StudioWebtoonArchetypePersonaId;
+/** 스튜디오 전문 직군 고유 확장 8인 식별자 (기존 20인 + 신규 8인 = 28인 비중복 마스터 캐스트). */
+export type StudioCreatorSpecialistPersonaId =
+  | "storyboard-director"
+  | "watercolor-colorist"
+  | "bg3d-tech-artist"
+  | "sfx-lettering-designer"
+  | "indie-chief-editor"
+  | "night-deadline-barista"
+  | "shortform-anim-director"
+  | "fan-community-manager";
+
+/** 기존 12인 + 한국 웹툰 확장 8인 + 스튜디오 전문 직군 신규 8인 전체(28인) 식별자. */
+export type StudioMasterSpritePersonaId =
+  | StudioFullSpritePersonaId
+  | StudioWebtoonArchetypePersonaId
+  | StudioCreatorSpecialistPersonaId;
 
 export type DynamicSpriteVfxId =
   | "neon-magic-circle"
@@ -361,7 +375,7 @@ export const STUDIO_EXTENDED_SPRITE_ACTIONS: readonly (Omit<DynamicSpriteActionS
 
 export const STUDIO_DIVERSITY_SPRITE_EXTRA_CAST: readonly DynamicCreatorPersonaSpriteSpec<StudioDiversityExtraPersonaId>[] = [
   { personaId: "bg-architect", characterNameKo: "아마라 (배경 원화 디렉터)", roleTitleKo: "건축 투시 · 자연 배경 · 실내 라이트 설계", personalityTraitKo: "따뜻한 채광과 실사급 투시로 장면의 공간감을 완성하는 배경 장인", archetypeGenreKo: "배경 3D·건축 원화", headToBodyRatio: 0.169, headTallUnits: 5.9, hairSilhouette: "scholar-wave", outfitSilhouette: "holo-trench", primaryHex: "#0d9488", secondaryHex: "#134e4a", accentHex: "#5eead4", hairHex: "#27272a", skinHex: "#d69e72", eyeHex: "#0f766e", inkOutlineHex: "#0c2b28", hairHighlightHex: "#71717a", outfitTrimHex: "#ccfbf1", propKind: "sketchbook", companionKind: "none", dramaticVfxId: "grass-petal-ripple", signatureWeaponKo: "투시 자 & 건축 스케치 패드", defaultExpressionId: "zen-flow", defaultActionId: "dcc-3d-sculpt", defaultVfxId: "biophilic-sakura-wind", defaultZoneId: "zone-3d-blender-sketchup", eyewear: "round-glasses" },
-  { personaId: "editorial-chief", characterNameKo: "정호 (베테랑 편집장)", roleTitleKo: "수석 편집장 · AD 아트디렉터 · 마감 품질 검수", personalityTraitKo: "20년 경력의 침착한 시선으로 회차 템포와 아트 방향을 다듬는 AD 편집장", archetypeGenreKo: "AD 아트디렉터", headToBodyRatio: 0.166, headTallUnits: 6.0, hairSilhouette: "executive-bob", outfitSilhouette: "tailored-director-suit", primaryHex: "#475569", secondaryHex: "#0f172a", accentHex: "#cbd5e1", hairHex: "#64748b", skinHex: "#f3cdb0", eyeHex: "#334155", inkOutlineHex: "#0f172a", hairHighlightHex: "#e2e8f0", outfitTrimHex: "#f8fafc", propKind: "director-baton", companionKind: "none", dramaticVfxId: "marble-starlight-ripple", signatureWeaponKo: "레드라인 검수 펜 & 회차 타임라인 보드", defaultExpressionId: "smug-grin", defaultActionId: "whiteboard-laser-pitch", defaultVfxId: "collab-tether-beam", defaultZoneId: "zone-pd-storyboard-warroom", eyewear: "glasses" },
+  { personaId: "editorial-chief", characterNameKo: "정호 (베테랑 편집장)", roleTitleKo: "수석 편집장 · AD 아트디렉터 · 마감 품질 검수", personalityTraitKo: "20년 경력의 침착한 시선으로 회차 템포와 아트 방향을 다듬는 AD 편집장", archetypeGenreKo: "AD 아트디렉터", headToBodyRatio: 0.166, headTallUnits: 6.0, hairSilhouette: "scholar-wave", outfitSilhouette: "tailored-director-suit", primaryHex: "#475569", secondaryHex: "#0f172a", accentHex: "#cbd5e1", hairHex: "#64748b", skinHex: "#f3cdb0", eyeHex: "#334155", inkOutlineHex: "#0f172a", hairHighlightHex: "#e2e8f0", outfitTrimHex: "#f8fafc", propKind: "director-baton", companionKind: "none", dramaticVfxId: "marble-starlight-ripple", signatureWeaponKo: "레드라인 검수 펜 & 회차 타임라인 보드", defaultExpressionId: "smug-grin", defaultActionId: "whiteboard-laser-pitch", defaultVfxId: "collab-tether-beam", defaultZoneId: "zone-pd-storyboard-warroom", eyewear: "glasses" },
   { personaId: "lighting-director", characterNameKo: "누르 (라이팅·합성 감독)", roleTitleKo: "분위기 조명 · 후보정 · 색보정 아티스트", personalityTraitKo: "시간대별 자연광과 역광 대비로 컷의 감정을 살리는 색보정 전문가", archetypeGenreKo: "채색·라이팅 마스터", headToBodyRatio: 0.172, headTallUnits: 5.8, hairSilhouette: "cyber-ponytail", outfitSilhouette: "prism-atelier-apron", primaryHex: "#6366f1", secondaryHex: "#1e1b4b", accentHex: "#a5b4fc", hairHex: "#312e81", skinHex: "#c68b59", eyeHex: "#818cf8", inkOutlineHex: "#141038", hairHighlightHex: "#c7d2fe", outfitTrimHex: "#e0e7ff", propKind: "color-wand", companionKind: "none", dramaticVfxId: "entrance-spotlight-beam", signatureWeaponKo: "스펙트럼 컬러 휠 & 광원 브러시", defaultExpressionId: "bright-smile", defaultActionId: "tablet-combo-draw", defaultVfxId: "prism-stardust-burst", defaultZoneId: "zone-color-sound-stage" },
   { personaId: "junior-inker", characterNameKo: "도윤 (신입 선화·어시스턴트)", roleTitleKo: "밑선 정리 · 말풍선 배치 · 톤 보정 어시스턴트", personalityTraitKo: "빠른 손과 밝은 에너지로 마감 팀의 빈틈을 메우는 열정 신입", archetypeGenreKo: "어시스턴트 선화", headToBodyRatio: 0.178, headTallUnits: 5.6, hairSilhouette: "beret-spiky", outfitSilhouette: "sonic-street-parka", primaryHex: "#2563eb", secondaryHex: "#1e3a8a", accentHex: "#93c5fd", hairHex: "#3f2e21", skinHex: "#fde2c8", eyeHex: "#1d4ed8", inkOutlineHex: "#122152", hairHighlightHex: "#a16207", outfitTrimHex: "#dbeafe", propKind: "stylus-pen", companionKind: "none", dramaticVfxId: "dash-speedlines", signatureWeaponKo: "정밀 잉크 펜 & 말풍선 가이드", defaultExpressionId: "joyful-wink", defaultActionId: "walk-stride", defaultVfxId: "manga-speedlines", defaultZoneId: "zone-line-atelier" },
 ];
@@ -494,7 +508,7 @@ export const STUDIO_WEBTOON_ARCHETYPE_EXTRA_CAST: readonly DynamicCreatorPersona
     archetypeGenreKo: "사이버펑크 해커",
     headToBodyRatio: 0.17,
     headTallUnits: 5.9,
-    hairSilhouette: "visor-undercut",
+    hairSilhouette: "headphone-hood",
     outfitSilhouette: "neon-mocap-suit",
     primaryHex: "#06b6d4",
     secondaryHex: "#0f172a",
@@ -601,10 +615,23 @@ export const STUDIO_WEBTOON_ARCHETYPE_EXTRA_CAST: readonly DynamicCreatorPersona
   },
 ];
 
-/** 20인 한국 웹툰 대표 아키타입 마스터 스프라이트 캐스트 (기본 12인 + 웹툰 장르·동행 8인). */
+/** 스튜디오 전문 직군 고유 확장 8인 캐스트 (기존 20인과 실루엣·팔레트·역할 비중복). */
+export const STUDIO_CREATOR_SPECIALIST_EXTRA_CAST: readonly DynamicCreatorPersonaSpriteSpec<StudioCreatorSpecialistPersonaId>[] = [
+  { personaId: "storyboard-director", characterNameKo: "한지훈 (웹툰 스토리보드 감독)", roleTitleKo: "연출 콘티 · 컷 리듬 · 스크롤 페이싱 감독", personalityTraitKo: "긴장감 있는 컷 분할과 시선 유도선으로 매 화 엔딩을 설계하는 연출 감독", archetypeGenreKo: "스토리보드 감독", headToBodyRatio: 0.167, headTallUnits: 6.0, hairSilhouette: "visor-undercut", outfitSilhouette: "holo-trench", primaryHex: "#4d7c0f", secondaryHex: "#1a2e05", accentHex: "#fde047", hairHex: "#1e293b", skinHex: "#f5d0b5", eyeHex: "#65a30d", inkOutlineHex: "#142107", hairHighlightHex: "#94a3b8", outfitTrimHex: "#fef9c3", propKind: "sketchbook", companionKind: "none", dramaticVfxId: "eureka-spark-aura", signatureWeaponKo: "컷 페이싱 레이저 보드 & 스토리보드 바인더", defaultExpressionId: "focused-flame", defaultActionId: "whiteboard-laser-pitch", defaultVfxId: "manga-speedlines", defaultZoneId: "zone-pd-storyboard-warroom", eyewear: "glasses" },
+  { personaId: "watercolor-colorist", characterNameKo: "채린 (수채화 채색 아티스트)", roleTitleKo: "수채화 텍스처 · 감성 파스텔 명암 · 질감 브러시 아티스트", personalityTraitKo: "물 번짐과 종이 결이 살아 숨 쉬는 투명한 수채화 감성으로 장면을 물들이는 채색가", archetypeGenreKo: "수채화 채색", headToBodyRatio: 0.175, headTallUnits: 5.7, hairSilhouette: "barista-beret-bun", outfitSilhouette: "prism-atelier-apron", primaryHex: "#f472b6", secondaryHex: "#500724", accentHex: "#fde68a", hairHex: "#fb923c", skinHex: "#fff1f2", eyeHex: "#ec4899", inkOutlineHex: "#3b0a20", hairHighlightHex: "#fed7aa", outfitTrimHex: "#fff7ed", propKind: "color-wand", companionKind: "none", dramaticVfxId: "rofan-rose-petals", signatureWeaponKo: "투명 수채화 워시 브러시 & 팔레트 트레이", defaultExpressionId: "bright-smile", defaultActionId: "tablet-combo-draw", defaultVfxId: "biophilic-sakura-wind", defaultZoneId: "zone-color-sound-stage" },
+  { personaId: "bg3d-tech-artist", characterNameKo: "태민 (3D 배경 테크니컬 아티스트)", roleTitleKo: "3D NPR 셰이더 · 절차적 건축 · 카메라 매칭 TA", personalityTraitKo: "블렌더 지오메트리 노드와 툰 셰이더 파이프라인으로 배경 제작 속도를 3배 끌어올리는 TA", archetypeGenreKo: "3D 배경 TA", headToBodyRatio: 0.168, headTallUnits: 5.9, hairSilhouette: "hunter-spiky-aura", outfitSilhouette: "holo-trench", primaryHex: "#0284c7", secondaryHex: "#082f49", accentHex: "#2dd4bf", hairHex: "#0369a1", skinHex: "#e6b89c", eyeHex: "#0ea5e9", inkOutlineHex: "#072033", hairHighlightHex: "#7dd3fc", outfitTrimHex: "#ccfbf1", propKind: "holo-gizmo", companionKind: "holo-drone", dramaticVfxId: "cyber-holo-grid", signatureWeaponKo: "셰이더 노드 큐브 & 3D 카메라 리깅 툴", defaultExpressionId: "smug-grin", defaultActionId: "dcc-3d-sculpt", defaultVfxId: "holo-floating-monitors", defaultZoneId: "zone-3d-blender-sketchup" },
+  { personaId: "sfx-lettering-designer", characterNameKo: "다솜 (효과음·식자 디자이너)", roleTitleKo: "의성어 캘리그라피 · 다국어 식자 · 말풍선 타이포 디자이너", personalityTraitKo: "한 글자 획의 강약만으로 타격감과 감정의 울림을 전달하는 식자 타이포 장인", archetypeGenreKo: "효과음·식자", headToBodyRatio: 0.176, headTallUnits: 5.7, hairSilhouette: "aurora-twintail", outfitSilhouette: "sonic-street-parka", primaryHex: "#4f46e5", secondaryHex: "#1e1b4b", accentHex: "#a3e635", hairHex: "#9333ea", skinHex: "#ffe4e6", eyeHex: "#6366f1", inkOutlineHex: "#17143b", hairHighlightHex: "#d8b4fe", outfitTrimHex: "#ecfccb", propKind: "sound-brush", companionKind: "none", dramaticVfxId: "rhythm-note-wave", signatureWeaponKo: "의성어 네온 브러시 & 다국어 조판 룰러", defaultExpressionId: "sparkle-star", defaultActionId: "victory-jump-cheer", defaultVfxId: "neon-magic-circle", defaultZoneId: "zone-color-sound-stage" },
+  { personaId: "indie-chief-editor", characterNameKo: "서연 (인디 출판 편집장)", roleTitleKo: "단행본 북디자인 · 인디 연재 큐레이션 · 원고 교정 편집장", personalityTraitKo: "작품의 문체와 종이책 여백까지 세심하게 매만지는 독립 출판 베테랑 편집장", archetypeGenreKo: "인디 출판 편집장", headToBodyRatio: 0.168, headTallUnits: 5.9, hairSilhouette: "executive-bob", outfitSilhouette: "scroll-vest", primaryHex: "#9f1239", secondaryHex: "#4c0519", accentHex: "#fdba74", hairHex: "#9a3412", skinHex: "#f3d5b5", eyeHex: "#b91c1c", inkOutlineHex: "#310612", hairHighlightHex: "#fdba74", outfitTrimHex: "#ffedd5", propKind: "rose-quill", companionKind: "none", dramaticVfxId: "marble-starlight-ripple", signatureWeaponKo: "교정 만년필 & 단행본 교정지 더미", defaultExpressionId: "zen-flow", defaultActionId: "whiteboard-laser-pitch", defaultVfxId: "collab-tether-beam", defaultZoneId: "zone-pd-storyboard-warroom", eyewear: "round-glasses" },
+  { personaId: "night-deadline-barista", characterNameKo: "준호 (야간 마감 커피 바리스타)", roleTitleKo: "심야 에스프레소 로스터 · 마감 야식·웰니스 케어 바리스타", personalityTraitKo: "새벽 마감 시간에도 완벽한 추출과 따뜻한 응원으로 팀 에너지를 지키는 야간 바리스타", archetypeGenreKo: "야간 마감 바리스타", headToBodyRatio: 0.172, headTallUnits: 5.8, hairSilhouette: "beret-spiky", outfitSilhouette: "cafe-barista-apron", primaryHex: "#15803d", secondaryHex: "#052e16", accentHex: "#fb923c", hairHex: "#713f12", skinHex: "#d8a373", eyeHex: "#16a34a", inkOutlineHex: "#072111", hairHighlightHex: "#ca8a04", outfitTrimHex: "#fef3c7", propKind: "coffee-dripper", companionKind: "none", dramaticVfxId: "coffee-healing-steam", signatureWeaponKo: "콜드브루 에스프레소 탬퍼 & 심야 머그", defaultExpressionId: "caffeine-overdrive", defaultActionId: "espresso-power-charge", defaultVfxId: "fever-lightning-flames", defaultZoneId: "zone-line-atelier" },
+  { personaId: "shortform-anim-director", characterNameKo: "소라 (숏폼 애니메이션 감독)", roleTitleKo: "웹툰 PV · 숏폼 모션그래픽 · 키프레임 타이밍 감독", personalityTraitKo: "정지된 웹툰 컷에 60fps 카메라 모션과 리듬 편집을 불어넣는 숏폼 애니메이션 감독", archetypeGenreKo: "숏폼 애니메이션", headToBodyRatio: 0.17, headTallUnits: 5.9, hairSilhouette: "cyber-ponytail", outfitSilhouette: "neon-mocap-suit", primaryHex: "#0d9488", secondaryHex: "#134e4a", accentHex: "#38bdf8", hairHex: "#10b981", skinHex: "#c68b59", eyeHex: "#14b8a6", inkOutlineHex: "#0a2a28", hairHighlightHex: "#6ee7b7", outfitTrimHex: "#e0f2fe", propKind: "director-baton", companionKind: "none", dramaticVfxId: "dash-speedlines", signatureWeaponKo: "타임라인 셔틀 컨트롤러 & 모션 슬레이트", defaultExpressionId: "joyful-wink", defaultActionId: "sprint-afterimage", defaultVfxId: "prism-stardust-burst", defaultZoneId: "zone-3d-blender-sketchup" },
+  { personaId: "fan-community-manager", characterNameKo: "민지 (팬 커뮤니티 매니저)", roleTitleKo: "독자 소통 · 굿즈 이벤트 · 글로벌 팬덤 커뮤니티 매니저", personalityTraitKo: "독자 댓글의 뜨거운 반응과 팬아트를 모아 작가와 팬을 잇는 스튜디오 소통 허브", archetypeGenreKo: "팬 커뮤니티 매니저", headToBodyRatio: 0.176, headTallUnits: 5.7, hairSilhouette: "academy-ribbon-long", outfitSilhouette: "cozy-companion-cardigan", primaryHex: "#a855f7", secondaryHex: "#3b0764", accentHex: "#f472b6", hairHex: "#9ca3af", skinHex: "#ffe8dc", eyeHex: "#9333ea", inkOutlineHex: "#270642", hairHighlightHex: "#e5e7eb", outfitTrimHex: "#fce7f3", propKind: "tablet-deck", companionKind: "none", dramaticVfxId: "deadline-confetti-fireworks", signatureWeaponKo: "팬 피드백 라이브 패드 & 응원 메가폰", defaultExpressionId: "collab-heart", defaultActionId: "highfive-team-sync", defaultVfxId: "biophilic-sakura-wind", defaultZoneId: "zone-pd-storyboard-warroom" },
+];
+
+/** 28인 한국 웹툰·스튜디오 대표 아키타입 마스터 스프라이트 캐스트 (기본 12인 + 웹툰 8인 + 스튜디오 전문 직군 8인). */
 export const STUDIO_WEBTOON_MASTER_SPRITE_CAST: readonly DynamicCreatorPersonaSpriteSpec[] = [
   ...STUDIO_FULL_SPRITE_CAST,
   ...STUDIO_WEBTOON_ARCHETYPE_EXTRA_CAST,
+  ...STUDIO_CREATOR_SPECIALIST_EXTRA_CAST,
 ];
 
 export function getDynamicCreatorPersonaSpec(

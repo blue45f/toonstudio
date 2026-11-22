@@ -92,6 +92,8 @@ export interface StudioFootstepEvent {
   /** 재생 볼륨 0~1 (표면 계수 × 속도 계수). */
   readonly volume: number;
   readonly surface: StudioExtendedFootstepSurface;
+  /** 달리기/스프린트 걸음 여부(true면 경쾌한 2단 톤과 미세 마찰음을 합성). */
+  readonly sprinting?: boolean;
 }
 
 /** 왼발/오른발의 미세한 세기 차이. 같은 속도라도 양발이 기계적으로 똑같지 않게 한다. */
@@ -110,12 +112,14 @@ export function stepStudioFootsteps(
   surface: StudioExtendedFootstepSurface,
   speed: number,
   stridePxOverride?: number,
+  sprinting?: boolean,
 ): { readonly state: StudioFootstepState; readonly events: readonly StudioFootstepEvent[] } {
   const delta = Number.isFinite(distanceDelta) ? Math.max(0, distanceDelta) : 0;
   const spec = SURFACE_SPECS[surface];
   const stride = stridePxOverride !== undefined && Number.isFinite(stridePxOverride) && stridePxOverride > 0
     ? stridePxOverride
     : spec.stridePx;
+  const isSprinting = sprinting === true || (sprinting === undefined && Number.isFinite(speed) && speed >= 235);
   const events: StudioFootstepEvent[] = [];
   let distanceRemaining = state.distanceRemaining;
   let nextFoot = state.nextFoot;
@@ -127,11 +131,12 @@ export function stepStudioFootsteps(
       const foot = nextFoot;
       nextFoot = foot === "left" ? "right" : "left";
       const speedFactor = Math.min(1, speed / 210);
-      events.push({
-        foot,
-        volume: spec.loudness * (0.45 + 0.55 * speedFactor) * FOOT_VOLUME_FACTOR[foot],
-        surface,
-      });
+      const baseVolume = spec.loudness * (0.45 + 0.55 * speedFactor) * FOOT_VOLUME_FACTOR[foot];
+      events.push(
+        isSprinting
+          ? { foot, volume: Math.min(1, baseVolume * 1.12), surface, sprinting: true }
+          : { foot, volume: baseVolume, surface },
+      );
     }
   }
   return {

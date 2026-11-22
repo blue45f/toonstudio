@@ -19,7 +19,13 @@ import {
   type StudioFootstepState,
   type StudioFootstepSurface,
 } from "./studio-virtual-space-footsteps";
-import { playStudioFootstepSound } from "./studio-virtual-space-sound-engine";
+import { playStudioFootstepSound, playStudioSfxSound } from "./studio-virtual-space-sound-engine";
+import type { StudioFloorMaterialKind } from "./studio-virtual-space-dramatic-vfx-catalog";
+import {
+  planStudioDustPuffs,
+  studioDustSurfacePalette,
+  type StudioDustPuffMode,
+} from "./studio-virtual-space-jump-motion";
 import type { StudioVirtualTerrainKind } from "./studio-virtual-space-living-world";
 import { skidIntensity } from "./studio-virtual-space-locomotion-feel";
 import {
@@ -37,32 +43,34 @@ export const STUDIO_MOTION_FEEL_REFERENCE_SPRINT = 205 * 1.35;
 
 export interface StudioMotionFeelSurface {
   readonly surface: StudioFootstepSurface;
+  /** 바닥 재질 분류(wood·carpet·stone·grass·tile·terrace 등 먼지 색조 자동 매칭용). */
+  readonly material: StudioFloorMaterialKind;
   /** 먼지 색(0xRRGGBB). */
   readonly color: number;
 }
 
-function surface(kind: StudioFootstepSurface, color: number): StudioMotionFeelSurface {
-  return Object.freeze({ surface: kind, color });
+function surface(kind: StudioFootstepSurface, color: number, material: StudioFloorMaterialKind = kind): StudioMotionFeelSurface {
+  return Object.freeze({ surface: kind, material, color });
 }
 
 /** 캠퍼스 바닥 재질 → 발소리 표면과 먼지 색. 모래·조약돌은 먼지가 많고 카펫·잔디는 보풀이 적다. */
 const CAMPUS_SURFACES: Readonly<Record<StudioCampusTerrain, StudioMotionFeelSurface>> = Object.freeze({
-  [CAMPUS_TERRAIN.grass]: surface("carpet", 0x9cc47c),
-  [CAMPUS_TERRAIN.slate]: surface("tile", 0xc9ced6),
-  [CAMPUS_TERRAIN.plank]: surface("wood", 0xc9a06a),
-  [CAMPUS_TERRAIN.water]: surface("tile", 0xbfeeff),
-  [CAMPUS_TERRAIN.cobble]: surface("tile", 0xdcd4c6),
-  [CAMPUS_TERRAIN.marble]: surface("tile", 0xece7df),
-  [CAMPUS_TERRAIN.walnut]: surface("wood", 0xb08458),
-  [CAMPUS_TERRAIN.sand]: surface("tile", 0xe8cf9a),
-  [CAMPUS_TERRAIN.oak]: surface("wood", 0xc9a06a),
-  [CAMPUS_TERRAIN.lightWood]: surface("wood", 0xd8b98a),
-  [CAMPUS_TERRAIN.redWood]: surface("wood", 0xb3754f),
-  [CAMPUS_TERRAIN.stage]: surface("wood", 0xa59ad8),
-  [CAMPUS_TERRAIN.shellSand]: surface("tile", 0xefdcb2),
-  [CAMPUS_TERRAIN.lavender]: surface("carpet", 0xc7b6ee),
-  [CAMPUS_TERRAIN.carpet]: surface("carpet", 0xd8a3a0),
-  [CAMPUS_TERRAIN.mosaic]: surface("tile", 0xd9d0c0),
+  [CAMPUS_TERRAIN.grass]: surface("carpet", 0x9cc47c, "grass"),
+  [CAMPUS_TERRAIN.slate]: surface("tile", 0xc9ced6, "stone"),
+  [CAMPUS_TERRAIN.plank]: surface("wood", 0xc9a06a, "wood"),
+  [CAMPUS_TERRAIN.water]: surface("tile", 0xbfeeff, "tile"),
+  [CAMPUS_TERRAIN.cobble]: surface("tile", 0xdcd4c6, "stone"),
+  [CAMPUS_TERRAIN.marble]: surface("tile", 0xece7df, "marble"),
+  [CAMPUS_TERRAIN.walnut]: surface("wood", 0xb08458, "wood"),
+  [CAMPUS_TERRAIN.sand]: surface("tile", 0xe8cf9a, "terrace"),
+  [CAMPUS_TERRAIN.oak]: surface("wood", 0xc9a06a, "wood"),
+  [CAMPUS_TERRAIN.lightWood]: surface("wood", 0xd8b98a, "wood"),
+  [CAMPUS_TERRAIN.redWood]: surface("wood", 0xb3754f, "wood"),
+  [CAMPUS_TERRAIN.stage]: surface("wood", 0xa59ad8, "wood"),
+  [CAMPUS_TERRAIN.shellSand]: surface("tile", 0xefdcb2, "terrace"),
+  [CAMPUS_TERRAIN.lavender]: surface("carpet", 0xc7b6ee, "carpet"),
+  [CAMPUS_TERRAIN.carpet]: surface("carpet", 0xd8a3a0, "carpet"),
+  [CAMPUS_TERRAIN.mosaic]: surface("tile", 0xd9d0c0, "tile"),
 });
 
 function hexColor(value: string): number {
@@ -71,12 +79,12 @@ function hexColor(value: string): number {
 }
 
 const TERRAIN_SURFACES: Readonly<Record<StudioVirtualTerrainKind, StudioMotionFeelSurface>> = Object.freeze({
-  grass: surface("carpet", 0x9cc47c),
-  path: surface("wood", hexColor(studioFootstepSurfaceSpec("wood").particleColor)),
-  stone: surface("tile", hexColor(studioFootstepSurfaceSpec("tile").particleColor)),
-  bridge: surface("wood", hexColor(studioFootstepSurfaceSpec("wood").particleColor)),
-  boardwalk: surface("wood", hexColor(studioFootstepSurfaceSpec("wood").particleColor)),
-  "shallow-water": surface("tile", 0xbfeeff),
+  grass: surface("carpet", 0x9cc47c, "grass"),
+  path: surface("wood", hexColor(studioFootstepSurfaceSpec("wood").particleColor), "wood"),
+  stone: surface("tile", hexColor(studioFootstepSurfaceSpec("tile").particleColor), "stone"),
+  bridge: surface("wood", hexColor(studioFootstepSurfaceSpec("wood").particleColor), "wood"),
+  boardwalk: surface("wood", hexColor(studioFootstepSurfaceSpec("wood").particleColor), "wood"),
+  "shallow-water": surface("tile", 0xbfeeff, "tile"),
 });
 
 /** 일반 월드의 지형 종류 → 표면(main 캔버스의 footstepSurfaceForTerrain과 같은 분류). */
@@ -127,12 +135,20 @@ export interface StudioMotionFeelFrame {
   /** 0~1. 게임필 설정 × 품질 단계 배율. */
   particleDensity: number;
   reducedMotion: boolean;
+  /** 이동 속도 벡터(px/s). 달리기·스키드 먼지를 이동 반대 방향으로 날리는 데 쓴다. */
+  vx?: number;
+  vy?: number;
+  /** 달리기/대시 상태 여부. */
+  sprinting?: boolean;
+  /** 점프 체공 중 여부(체공 중에는 발소리·지상 먼지를 억제). */
+  airborne?: boolean;
 }
 
 export function createStudioMotionFeelFrame(): StudioMotionFeelFrame {
   return {
     time: 0, deltaSeconds: 0, x: 0, y: 0, depth: 0, speed: 0, sprintSpeed: STUDIO_MOTION_FEEL_REFERENCE_SPRINT,
     inputSpeed: 0, surface: TERRAIN_SURFACES.path, stepPx: 0, particleDensity: 1, reducedMotion: false,
+    vx: 0, vy: 0, sprinting: false, airborne: false,
   };
 }
 
@@ -164,6 +180,8 @@ export class StudioMotionFeelRuntime {
   private ghostCursor = 0;
   private nextGhostAt = 0;
   private previousSpeed = 0;
+  private wasSprinting = false;
+  private puffSequence = 0;
   private skidCarry = 0;
   private footstepState: StudioFootstepState = createStudioFootstepState();
   private lastX = Number.NaN;
@@ -172,16 +190,17 @@ export class StudioMotionFeelRuntime {
   constructor(scene: MotionFeelScene) {
     if (!scene.textures.exists(DUST_TEXTURE)) {
       const graphics = scene.make.graphics({ x: 0, y: 0 }, false);
-      graphics.fillStyle(0xffffff, 1).fillCircle(8, 8, 7);
-      graphics.fillStyle(0xffffff, 0.45).fillCircle(8, 8, 8);
+      graphics.fillStyle(0xffffff, 0.92).fillCircle(8, 8, 5.2);
+      graphics.fillStyle(0xffffff, 0.52).fillCircle(5.5, 9, 4.2);
+      graphics.fillStyle(0xffffff, 0.45).fillCircle(10.5, 7.5, 3.8);
       graphics.generateTexture(DUST_TEXTURE, 16, 16);
       graphics.destroy();
     }
     this.emitter = scene.add.particles(0, 0, DUST_TEXTURE, {
-      speed: { min: 18, max: 70 },
-      lifespan: 480,
-      scale: { start: 0.55, end: 0 },
-      alpha: { start: 0.55, end: 0 },
+      speed: { min: 14, max: 52 },
+      lifespan: { min: 320, max: 520 },
+      scale: { start: 0.44, end: 1.38 },
+      alpha: { start: 0.68, end: 0 },
       quantity: 0,
       emitting: false,
     });
@@ -219,33 +238,51 @@ export class StudioMotionFeelRuntime {
     this.lastX = safeX;
     this.lastY = safeY;
     this.emitter.setDepth(frame.depth - 2);
+    const material = frame.surface.material ?? frame.surface.surface;
+    const vx = Number.isFinite(frame.vx) ? (frame.vx ?? 0) : 0;
+    const vy = Number.isFinite(frame.vy) ? (frame.vy ?? 0) : 0;
+    const airborne = frame.airborne === true;
+    const sprinting = !airborne && (frame.sprinting === true || studioAfterimageFastEnough(rawSpeed, frame.sprintSpeed)) && speed >= 80;
+    // 달리기 진입 순간: 추진 스우시 효과음 + 초기 먼지 버스트
+    if (sprinting && !this.wasSprinting && moved >= MIN_STEP_DELTA) {
+      if (!frame.reducedMotion) playStudioSfxSound("sprint-start", 0.78);
+      if (density > 0) this.emitPlannedPuffs("run", safeX, safeY + 3, material, vx, vy, density, frame.reducedMotion);
+    }
+    this.wasSprinting = sprinting;
     // 1) 이동 먼지: 속도·표면·밀도에 비례(규칙: studioDustSpawnRule). dt 스파이크 클램프 적용.
-    const dust = density > 0 ? studioDustSpawnCount(speed, frame.surface.surface, density, frame.reducedMotion, safeDt) : 0;
+    const dust = !airborne && density > 0 ? studioDustSpawnCount(speed, frame.surface.surface, density, frame.reducedMotion, safeDt) : 0;
     if (dust > 0) this.emit(dust, safeX, safeY + 3, frame.surface.color);
-    // 2) 발걸음 조각·발소리: 표면 보폭마다 한 걸음(규칙: stepStudioFootsteps).
+    // 2) 발걸음 먼지 퍼프·발소리: 표면 보폭마다 한 걸음(규칙: stepStudioFootsteps).
     //    파티클 밀도가 0이어도(모션 줄이기가 아닌 한) 발소리는 정상 재생하되 미세 떨림은 무시한다.
-    if (!frame.reducedMotion && moved >= MIN_STEP_DELTA && moved < MAX_STEP_DELTA && speed >= 8) {
+    if (!airborne && !frame.reducedMotion && moved >= MIN_STEP_DELTA && moved < MAX_STEP_DELTA && speed >= 8) {
       const strideOverride = Number.isFinite(frame.stepPx) && frame.stepPx > 0 ? frame.stepPx : undefined;
-      const stepped = stepStudioFootsteps(this.footstepState, moved, frame.surface.surface, speed, strideOverride);
+      const stepped = stepStudioFootsteps(this.footstepState, moved, frame.surface.surface, speed, strideOverride, sprinting);
       this.footstepState = stepped.state;
       for (const event of stepped.events) {
-        if (density > 0) this.emit(1, safeX, safeY + 2, frame.surface.color);
+        if (density > 0) {
+          this.emitPlannedPuffs(sprinting ? "run" : "walk", safeX, safeY + 2, material, vx, vy, density, frame.reducedMotion);
+        }
         playStudioFootstepSound(event);
       }
     }
-    // 3) 미끄럼 먼지: 입력을 놓아 급감속할 때(규칙: stepStudioSkidDust).
-    const skid = skidIntensity(rawSpeed, rawInputSpeed, frame.sprintSpeed);
+    // 3) 미끄럼 먼지·스키드음: 입력을 놓아 급감속할 때(규칙: stepStudioSkidDust).
+    const skid = airborne ? 0 : skidIntensity(rawSpeed, rawInputSpeed, frame.sprintSpeed);
     this.skidCarry += density > 0 ? studioSkidDustAmount(skid, speed, safeDt, frame.reducedMotion) * density : 0;
     if (density <= 0 || skid < 0.15) this.skidCarry = 0;
     const skidCount = Math.floor(this.skidCarry);
     if (skidCount > 0) {
       this.skidCarry -= skidCount;
-      this.emit(skidCount, safeX, safeY + 4, frame.surface.color);
+      this.emitPlannedPuffs("skid", safeX, safeY + 4, material, vx, vy, density, frame.reducedMotion);
+      if (!frame.reducedMotion) playStudioSfxSound("skid", 0.72);
     }
     // 4) 급정지 퍼프(규칙: stepStudioLandingPuff).
-    const puff = density > 0 ? studioLandingPuffCount(this.previousSpeed, speed, frame.reducedMotion) : 0;
+    const puff = !airborne && density > 0 ? studioLandingPuffCount(this.previousSpeed, speed, frame.reducedMotion) : 0;
     this.previousSpeed = speed;
-    if (puff > 0) this.emit(Math.max(1, Math.round(puff * density)), safeX, safeY + 4, LANDING_COLOR);
+    if (puff > 0) {
+      this.emitPlannedPuffs("skid", safeX, safeY + 4, material, vx, vy, density, frame.reducedMotion);
+      this.emit(Math.max(1, Math.round(puff * density * 0.5)), safeX, safeY + 4, LANDING_COLOR);
+      if (!frame.reducedMotion) playStudioSfxSound("skid", 0.65);
+    }
     // 5) 달리기 잔상: 달리기 최고속 80% 이상에서 90ms마다(규칙: stepStudioRunAfterimage).
     if (frame.reducedMotion || !studioAfterimageFastEnough(rawSpeed, frame.sprintSpeed)) {
       if (this.nextGhostAt > safeTime) this.nextGhostAt = safeTime;
@@ -253,6 +290,20 @@ export class StudioMotionFeelRuntime {
       this.nextGhostAt = safeTime + STUDIO_AFTERIMAGE_INTERVAL_MS;
       this.spawnGhost(source, safeTime);
     }
+  }
+
+  /** 점프 도약·착지 시 바닥 재질에 맞춘 원형 먼지 링 퍼프를 방출한다. */
+  emitJumpDust(
+    x: number,
+    y: number,
+    depth: number,
+    material: StudioFloorMaterialKind,
+    takeoff: boolean,
+    reducedMotion: boolean,
+  ): void {
+    if (reducedMotion || this.density <= 0) return;
+    this.emitter.setDepth(depth - 2);
+    this.emitPlannedPuffs(takeoff ? "jump-takeoff" : "jump-land", x, y + 2, material, 0, 0, this.density, reducedMotion);
   }
 
   /** 머리 위 이모트·상호작용 연출용 짧은 파티클 터뜨림. 모션 줄이기에서는 호출하지 않는다. */
@@ -277,6 +328,25 @@ export class StudioMotionFeelRuntime {
     this.sparkEmitter.destroy();
     for (const ghost of this.ghosts) ghost.sprite.destroy();
     this.ghosts.length = 0;
+  }
+
+  private emitPlannedPuffs(
+    mode: StudioDustPuffMode,
+    x: number,
+    y: number,
+    material: StudioFloorMaterialKind,
+    vx: number,
+    vy: number,
+    density: number,
+    reducedMotion: boolean,
+  ): void {
+    this.puffSequence += 1;
+    const puffs = planStudioDustPuffs({ mode, material, vx, vy, reducedMotion, density, seed: this.puffSequence });
+    if (puffs.length === 0) return;
+    const palette = studioDustSurfacePalette(material);
+    for (const puff of puffs) {
+      this.emit(1, x + puff.offsetX, y + puff.offsetY, puff.colorHex || palette.primaryHex);
+    }
   }
 
   private emit(count: number, x: number, y: number, color: number): void {

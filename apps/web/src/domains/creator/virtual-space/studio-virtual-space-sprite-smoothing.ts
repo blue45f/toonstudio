@@ -258,30 +258,15 @@ export const STUDIO_POSE_SETTLE_MS = 380;
 export const STUDIO_POSE_STAND_SETTLE_MS = 300;
 
 /**
- * 자세 전이 세틀 스쿼시(표시 전용 scaleY 배율).
- * 앉기·눕기는 정적 포즈 시트 교체라 그 자체로는 "툭" 바뀌는데, 전이 구간 동안
- * 몸이 살짝 눌렸다 돌아오는 세틀을 얹으면 무게감이 생긴다. 일어설 때도
- * 직전 자세가 앉기·눕기였으면 더 가벼운 세틀로 받아 준다.
- * 곡선은 sin(π·진행도)라 양끝에서 기울기가 0 — 시작·종료 모두 끊기지 않는다.
- * 모션 줄이기에서는 항상 1(변형 없음)이다.
+ * 자세 전이 세틀 세로 배율.
+ * 앉기·눕기·기립 전환 시 몸 전체를 찌그러뜨리지 않고 등신 비율(1.0)을 안정적으로 유지한다.
  */
-export function studioPoseSettleScaleY(input: {
+export function studioPoseSettleScaleY(_input: {
   readonly state: string;
   readonly previousState: string | null;
   readonly elapsedMs: number;
   readonly reducedMotion: boolean;
 }): number {
-  if (input.reducedMotion || !Number.isFinite(input.elapsedMs) || input.elapsedMs < 0) return 1;
-  const settle = (durationMs: number, depth: number): number => {
-    const progress = Math.min(1, input.elapsedMs / durationMs);
-    return 1 - Math.sin(progress * Math.PI) * depth;
-  };
-  if (input.state === "sit") return settle(STUDIO_POSE_SETTLE_MS, 0.055);
-  if (input.state === "lie") return settle(STUDIO_POSE_SETTLE_MS, 0.04);
-  if ((input.state === "idle" || input.state === "walk")
-    && (input.previousState === "sit" || input.previousState === "lie")) {
-    return settle(STUDIO_POSE_STAND_SETTLE_MS, 0.03);
-  }
   return 1;
 }
 
