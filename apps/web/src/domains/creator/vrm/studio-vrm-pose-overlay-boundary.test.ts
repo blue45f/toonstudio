@@ -122,9 +122,12 @@ describe("Studio VRM visual pose bone boundary", () => {
     expect(previewSource).toContain("양발 고정에 참여하는 다리에 잠긴 관절이 있습니다");
     expect(previewSource).toContain("applyStudioVrmRotationPose(currentVrm");
     const convergenceGuard = previewSource.indexOf("if (!canCommitStudioVrmIkResult(result))");
-    const latestPreview = previewSource.indexOf("transaction.latest = result");
+    const latestPreview = previewSource.indexOf("transaction.latest = guardedResult");
     expect(convergenceGuard).toBeGreaterThan(-1);
     expect(latestPreview).toBeGreaterThan(convergenceGuard);
+    expect(previewSource.slice(convergenceGuard, latestPreview)).toContain(
+      "clampVrmPoseAnatomicalJoints(result.bones",
+    );
     expect(previewSource.slice(convergenceGuard, latestPreview)).toContain(
       "applyStudioVrmRotationPose(currentVrm, transaction.baseline, bodyScale)",
     );

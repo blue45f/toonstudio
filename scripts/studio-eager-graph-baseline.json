@@ -59,16 +59,10 @@
       "files": []
     },
     "apps/web/src/domains/creator/bg3d": {
-      "modules": 7,
-      "bytes": 179308,
+      "modules": 1,
+      "bytes": 82540,
       "files": [
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-hierarchy.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-copy-remap.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-defaults.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-types.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-texture-paint.ts"
+        "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts"
       ]
     },
     "apps/web/src/domains/creator/character-platform": {
@@ -94,12 +88,9 @@
       "files": []
     },
     "apps/web/src/domains/creator/hybrid-dcc": {
-      "modules": 2,
-      "bytes": 37839,
-      "files": [
-        "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-persistence.ts",
-        "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-pressure-profile.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/lift3d": {
       "modules": 0,
@@ -164,11 +155,9 @@
       ]
     },
     "apps/web/src/domains/creator/scene3d": {
-      "modules": 1,
-      "bytes": 10905,
-      "files": [
-        "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/series-launch": {
       "modules": 0,
@@ -285,7 +274,7 @@
     },
     "apps/web/src/domains/creator": {
       "modules": 535,
-      "bytes": 7699490
+      "bytes": 7637312
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -304,8 +293,8 @@
       "bytes": 5248
     },
     "apps/web/src/domains/creator/bg3d": {
-      "modules": 7,
-      "bytes": 179308
+      "modules": 1,
+      "bytes": 82540
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
@@ -379,10 +368,6 @@
       "modules": 1,
       "bytes": 7475
     },
-    "apps/web/src/domains/creator/hybrid-dcc": {
-      "modules": 2,
-      "bytes": 37839
-    },
     "apps/web/src/domains/creator/layer": {
       "modules": 25,
       "bytes": 186870
@@ -446,10 +431,6 @@
     "apps/web/src/domains/creator/scene-3d": {
       "modules": 1,
       "bytes": 6716
-    },
-    "apps/web/src/domains/creator/scene3d": {
-      "modules": 1,
-      "bytes": 10905
     },
     "apps/web/src/domains/creator/selection": {
       "modules": 7,
@@ -748,13 +729,7 @@
     "apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.tsx": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-document.ts": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-loader.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-hierarchy.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-copy-remap.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-defaults.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-types.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-texture-paint.ts": 2,
     "apps/web/src/domains/creator/browser-translate/studio-no-auto-translate.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-material-input.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-artistry-catalog.ts": 2,
@@ -1041,8 +1016,6 @@
     "apps/web/src/domains/creator/filter/studio-retouch-mask-tools-controller.ts": 2,
     "apps/web/src/domains/creator/generic-3d-model/studio-generic-3d-source-formats.ts": 2,
     "apps/web/src/domains/creator/history/studio-page-sidecars-controller.ts": 2,
-    "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-persistence.ts": 2,
-    "apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-pressure-profile.ts": 2,
     "apps/web/src/domains/creator/layer/createStudioLayerCompHandlers.ts": 2,
     "apps/web/src/domains/creator/layer/studio-adjustment-element-guard.ts": 2,
     "apps/web/src/domains/creator/layer/studio-layer-border-effect.ts": 2,
@@ -1218,7 +1191,6 @@
     "apps/web/src/domains/creator/save-first/studio-save-profile.ts": 2,
     "apps/web/src/domains/creator/save-first/studio-submission-store.ts": 2,
     "apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.ts": 2,
-    "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-geometry.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-layout.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-marquee.ts": 2,

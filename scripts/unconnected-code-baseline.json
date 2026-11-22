@@ -52,7 +52,6 @@
     "orphan-module:apps/web/src/domains/creator/StudioScrollRhythmSfxStrip.tsx",
     "orphan-module:apps/web/src/domains/creator/StudioSettingChangeImpactPanel.tsx",
     "orphan-module:apps/web/src/domains/creator/virtual-space/StudioPresenceRoster.tsx",
-    "orphan-module:apps/web/src/domains/creator/writing-polish/StudioWritingPolishPanel.tsx",
     "orphan-module:apps/web/src/domains/cuts/cuts-labels.ts",
     "orphan-module:apps/web/src/domains/fortune/provenance/FortuneSourcePanel.tsx",
     "orphan-module:apps/web/src/domains/marketing/CreatorHomePage.tsx",
