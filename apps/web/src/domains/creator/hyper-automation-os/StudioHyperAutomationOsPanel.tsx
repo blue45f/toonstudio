@@ -49,6 +49,7 @@ import {
   type WebtoonArtStyle,
   type WebtoonGenre,
 } from "./hyper-automation-catalog";
+import { HyperAutoBatchMacroSection } from "./HyperAutoBatchMacroSection";
 import { HyperAutoDnaLightballSection } from "./HyperAutoDnaLightballSection";
 import "./hyper-automation-os.css";
 
@@ -759,6 +760,8 @@ export function StudioHyperAutomationOsPanel() {
               </ul>
             </div>
           </div>
+
+          <HyperAutoBatchMacroSection run={run} />
         </>
       ) : (
         <p className="hyper-auto-os__status-note">

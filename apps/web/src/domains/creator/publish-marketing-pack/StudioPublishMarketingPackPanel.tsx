@@ -5,8 +5,10 @@
  * 2) 단행본 인쇄 규격(신국판·A5·B6, 쪽수·평량 기반 spineMm 자동 계산, 3mm 재단선 bleed + 앞/책등/뒤 안전선 SVG)
  * StudioExportPanel(출고·발행 진입점)에서 지연 마운트된다.
  */
-import { AlertTriangle, BookOpen, Copy, Download, ImagePlus, Share2 } from "lucide-react";
+import { AlertTriangle, BookOpen, Copy, Download, ImagePlus, Layers, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
+
+import { StudioMultichannelFinishPackTab } from "./StudioMultichannelFinishPackTab";
 
 import {
   buildSocialShareSnippets,
@@ -40,7 +42,7 @@ export interface StudioPublishMarketingPackPanelProps {
   readonly episodeNumber?: number;
 }
 
-type MarketingPackTabId = "og-card" | "print-cover";
+type MarketingPackTabId = "og-card" | "print-cover" | "finish-pack";
 
 const INPUT_CLASS =
   "mt-1 min-h-11 w-full rounded-lg border border-line bg-panel px-3 py-2 text-xs text-fg outline-none placeholder:text-fg-3 focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -259,6 +261,23 @@ export function StudioPublishMarketingPackPanel({
             <BookOpen size={14} aria-hidden="true" />
             단행본 재단선 표지
           </button>
+          <button
+            type="button"
+            role="tab"
+            id="marketing-tab-finish-pack"
+            aria-selected={activeTab === "finish-pack"}
+            aria-controls="marketing-panel-finish-pack"
+            data-testid="marketing-pack-tab-finish-pack"
+            onClick={() => setActiveTab("finish-pack")}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3.5 text-xs font-semibold transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+              activeTab === "finish-pack"
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg"
+            }`}
+          >
+            <Layers size={14} aria-hidden="true" />
+            멀티채널 마감 팩
+          </button>
         </div>
       </header>
 
@@ -470,6 +489,16 @@ export function StudioPublishMarketingPackPanel({
             ))}
           </div>
         </div>
+      ) : activeTab === "finish-pack" ? (
+        <StudioMultichannelFinishPackTab
+          projectId={projectId}
+          seriesTitle={ogInput.seriesTitle}
+          episodeNumber={ogInput.episodeNumber}
+          onDownloadFile={(filename, content, mimeType, messageKo) => {
+            triggerDownload(filename, content, mimeType);
+            setStatusMessage(messageKo);
+          }}
+        />
       ) : (
         /* TAB 2: 단행본 인쇄 규격 표지 템플릿 */
         <div

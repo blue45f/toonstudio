@@ -1,6 +1,8 @@
 import { creatorRestStatusText } from "../creator-rest-status-i18n";
 import { useMemo, useState } from "react";
 
+import type { CharacterVoiceProfile } from "./dialogue-voice-cadence-guard";
+import { StudioDialogueVoiceCadenceSection } from "./StudioDialogueVoiceCadenceSection";
 import {
   applyWritingPolishSuggestion,
   applyWritingPolishSuggestions,
@@ -35,11 +37,14 @@ const BUTTON =
 export function StudioWritingPolishPanel({
   documents,
   provider,
+  voiceProfiles,
   onApplyDocument,
 }: {
   readonly documents: readonly WritingPolishDocument[];
   /** 미지정 시 로컬 규칙으로 즉시 제안한다. 지정 시 [표현 제안 받기]로 비동기 조회. */
   readonly provider?: WritingPolishProvider;
+  /** 선택적 캐릭터 말투 프로파일 목록(반말/존댓말·호칭·금지어 일관성 검사). */
+  readonly voiceProfiles?: readonly CharacterVoiceProfile[];
   /** 제안 적용 결과 — 호스트가 해당 문서 텍스트를 이 값으로 교체·저장한다. */
   readonly onApplyDocument: (documentId: string, nextText: string) => void;
 }) {
@@ -172,6 +177,12 @@ export function StudioWritingPolishPanel({
                       <span className="mr-1 font-semibold">원문</span>
                       {suggestion.original || "(빈 문장)"}
                     </p>
+                    {suggestion.suggested !== "" && (
+                      <WritingPolishRemovedLine
+                        original={suggestion.original}
+                        suggested={suggestion.suggested}
+                      />
+                    )}
                     <p aria-label="제안" className="text-fg">
                       <span className="mr-1 font-semibold">제안</span>
                       {suggestion.suggested === "" ? (
@@ -200,6 +211,11 @@ export function StudioWritingPolishPanel({
           </section>
         );
       })}
+      <StudioDialogueVoiceCadenceSection
+        documents={documents}
+        voiceProfiles={voiceProfiles}
+        onApplySplitDocument={onApplyDocument}
+      />
     </section>
   );
 }
@@ -221,8 +237,8 @@ function DiffLine({ original, suggested }: { readonly original: string; readonly
   );
 }
 
-/** 원문 쪽에서 빠지는 말을 보여 주는 보조 줄 — 패널 테스트·접근성용으로 분리. */
-export function WritingPolishRemovedLine({
+/** 원문 쪽에서 빠지는 말을 보여 주는 보조 줄. */
+function WritingPolishRemovedLine({
   original,
   suggested,
 }: {
@@ -230,13 +246,13 @@ export function WritingPolishRemovedLine({
   readonly suggested: string;
 }) {
   const segments = diffWritingWords(original, suggested);
+  const removed = segments.filter((segment) => segment.type === "removed");
+  if (removed.length === 0) return null;
   return (
-    <p aria-label="빠지는 말">
-      {segments
-        .filter((segment) => segment.type === "removed")
-        .map((segment, index) => (
-          <del key={index}>{segment.text}</del>
-        ))}
+    <p aria-label="빠지는 말" className="text-xs text-fg-3">
+      {removed.map((segment, index) => (
+        <del key={index}>{segment.text}</del>
+      ))}
     </p>
   );
 }
