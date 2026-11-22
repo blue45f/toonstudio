@@ -46,7 +46,22 @@ import {
   type StylusStepPredictionResult,
 } from "./gpu-stylus-predict-and-screentone";
 import {
+  WebGpuDirtyTilePyramidCache,
   WebGpuMemoryFailSafeGuard,
+  computeTileApronBounds,
+  planVisibleCutTilePrefetch,
+  type ComputeTileApronBoundsInput,
+  type DirtyTileCanvasDimensions,
+  type DirtyTileCommitBatch,
+  type DirtyTileCommitOptions,
+  type DirtyTileMarkResult,
+  type DirtyTileSwapDescriptor,
+  type MarkDirtyRectInput,
+  type PlanVisibleCutTilePrefetchInput,
+  type TileApronBounds,
+  type VisibleCutPrefetchPlan,
+  type WebGpuDirtyTilePyramidOptions,
+  type WebGpuDirtyTilePyramidSnapshot,
   type WebGpuMemoryFailSafeOptions,
   type WebGpuMemoryFailSafeSnapshot,
 } from "../../webgpu";
@@ -57,6 +72,7 @@ export interface StudioGpuNextDiagnosticsSnapshot {
   readonly warmup: GpuPipelineWarmupMetrics;
   readonly frameBudget: AdaptiveFrameBudgetSnapshot;
   readonly tileResidency: LruTileSchedulerSnapshot;
+  readonly dirtyTilePyramid: WebGpuDirtyTilePyramidSnapshot;
   readonly vramFailSafe: WebGpuMemoryFailSafeSnapshot;
   readonly stylus: {
     readonly historyLength: number;
@@ -72,6 +88,7 @@ export interface StudioGpuNextRuntimeHubOptions {
   readonly warmup?: GpuPipelineWarmupQueueOptions;
   readonly frameBudget?: AdaptiveFrameBudgetOptions;
   readonly tileResidency?: LruTileEvictionOptions;
+  readonly dirtyTilePyramid?: Omit<WebGpuDirtyTilePyramidOptions, "vramGuard">;
   readonly vramFailSafe?: WebGpuMemoryFailSafeOptions;
   readonly stylus?: StylusPredictorOptions;
   readonly autoStartWarmup?: boolean;
@@ -83,6 +100,7 @@ export class StudioGpuNextRuntimeHub {
   readonly frameBudget: AdaptiveFrameBudgetController;
   readonly tileScheduler: LruTileResidencyEvictionScheduler;
   readonly vramGuard: WebGpuMemoryFailSafeGuard;
+  readonly dirtyTilePyramid: WebGpuDirtyTilePyramidCache;
   readonly stylusPredictor: StylusSubpixelPredictor;
   private readonly device: (GpuNextPipelineDeviceLike & GpuNextHdrComputeDeviceLike) | null;
 
@@ -101,6 +119,10 @@ export class StudioGpuNextRuntimeHub {
       onEvictTile: (allocation) => {
         options.vramFailSafe?.onEvictTile?.(allocation);
       },
+    });
+    this.dirtyTilePyramid = new WebGpuDirtyTilePyramidCache({
+      ...options.dirtyTilePyramid,
+      vramGuard: this.vramGuard,
     });
     this.stylusPredictor = new StylusSubpixelPredictor(options.stylus);
 
@@ -161,6 +183,44 @@ export class StudioGpuNextRuntimeHub {
     });
   }
 
+  /** 256×256px Dirty-Tile Pyramid에 변경 영역을 마킹한다. */
+  markCanvasDirtyRect(input: MarkDirtyRectInput): DirtyTileMarkResult {
+    return this.dirtyTilePyramid.markDirtyRect(input);
+  }
+
+  /** 변경 타일만 부분 커밋하고 VRAM/LRU 상한 초과 타일의 스왑 디스크립터를 반환한다. */
+  commitDirtyTiles(options?: DirtyTileCommitOptions): DirtyTileCommitBatch {
+    return this.dirtyTilePyramid.commitDirtyTiles(options);
+  }
+
+  /** 현재 세로 스크롤 뷰포트 기준 가시 컷 ±1컷 프리페치 계획을 산출한다. */
+  planVisibleCutPrefetch(
+    input: Omit<PlanVisibleCutTilePrefetchInput, "canvas"> & {
+      readonly canvas?: DirtyTileCanvasDimensions;
+    },
+  ): VisibleCutPrefetchPlan {
+    return planVisibleCutTilePrefetch({
+      ...input,
+      canvas: input.canvas ?? this.dirtyTilePyramid.getCanvasDimensions(),
+    });
+  }
+
+  /** 보호 타일 외 비가시 유휴 타일의 OPFS/슬립 스왑 디스크립터를 산출하고 퇴거한다. */
+  evictIdlePyramidTiles(
+    protectedTileKeys?: ReadonlySet<string>,
+    options?: { readonly nowMs?: number; readonly idleThresholdMs?: number; readonly maxEvictions?: number },
+  ): readonly DirtyTileSwapDescriptor[] {
+    return this.dirtyTilePyramid.evictIdleOffscreenTiles({
+      protectedTileKeys,
+      ...options,
+    });
+  }
+
+  /** 1px Overlap Apron 타일 경계와 회전·반전 UV 매핑을 계산한다. */
+  computeTileApron(input: ComputeTileApronBoundsInput): TileApronBounds {
+    return computeTileApronBounds(input);
+  }
+
   /** 현재 실측 텔레메트리 스냅샷을 반환한다(추정값·더미값 없이 실측 카운터만 노출). */
   getDiagnosticsSnapshot(): StudioGpuNextDiagnosticsSnapshot {
     return Object.freeze({
@@ -169,6 +229,7 @@ export class StudioGpuNextRuntimeHub {
       warmup: this.warmupQueue.getMetrics(),
       frameBudget: this.frameBudget.getSnapshot(),
       tileResidency: this.tileScheduler.getSnapshot(),
+      dirtyTilePyramid: this.dirtyTilePyramid.getSnapshot(),
       vramFailSafe: this.vramGuard.getSnapshot(),
       stylus: this.stylusPredictor.getStats(),
     });
@@ -178,6 +239,7 @@ export class StudioGpuNextRuntimeHub {
     this.warmupQueue.dispose();
     this.pool.dispose();
     this.tileScheduler.dispose();
+    this.dirtyTilePyramid.dispose();
     this.vramGuard.dispose();
     this.stylusPredictor.reset();
   }
@@ -225,5 +287,6 @@ export function formatStudioGpuNextTelemetrySummary(
     snapshot.vramFailSafe.activeRenderer === "canvas2d-cpu-safe"
       ? "2D 안전모드"
       : `VRAM ${vramPct}%`;
-  return `${snapshot.hdrTextureFormat} · 스케일 ${scalePercent}% · ${rendererTag} · 풀 재사용 ${poolHitPercent}% · 셰이더 ${warmupReady}`;
+  const tileSummary = `타일 ${snapshot.dirtyTilePyramid.residentTileCount}/${snapshot.dirtyTilePyramid.effectiveMaxResidentTiles}`;
+  return `${snapshot.hdrTextureFormat} · 스케일 ${scalePercent}% · ${rendererTag} · ${tileSummary} · 풀 재사용 ${poolHitPercent}% · 셰이더 ${warmupReady}`;
 }
