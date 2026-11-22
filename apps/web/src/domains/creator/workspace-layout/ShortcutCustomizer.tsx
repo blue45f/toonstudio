@@ -21,6 +21,12 @@ import {
   findDuplicateShortcutKeys,
   normalizeShortcutKeys,
 } from "./shortcut-bindings";
+import {
+  bridgeBindingsToShortcutProfile,
+  createDefaultShortcutAndDialProfile,
+  extractShortcutBindingsFromProfile,
+} from "../shortcuts/studio-shortcut-profile-engine";
+import { StudioShortcutProfileManagerSection } from "../shortcuts/StudioShortcutProfileManagerSection";
 import { StudioModifierKeySettingsSection } from "./StudioModifierKeySettingsSection";
 
 import type { ShortcutCommandBinding } from "./shortcut-bindings";
@@ -61,6 +67,10 @@ export function ShortcutCustomizer({
   const [notice, setNotice] = useState("");
 
   const duplicates = useMemo(() => new Set(findDuplicateShortcutKeys(bindings)), [bindings]);
+  const bridgedShortcuts = useMemo(
+    () => bridgeBindingsToShortcutProfile(bindings, createDefaultShortcutAndDialProfile()).shortcuts,
+    [bindings],
+  );
 
   function commit(next: ShortcutCommandBinding[], message: string) {
     setBindings(next);
@@ -189,6 +199,14 @@ export function ShortcutCustomizer({
       <StudioModifierKeySettingsSection
         initialConfig={initialModifierConfig}
         onConfigChange={onModifierConfigChange}
+      />
+
+      <StudioShortcutProfileManagerSection
+        shortcuts={bridgedShortcuts}
+        onApplyProfile={(appliedProfile) => {
+          const updatedBindings = extractShortcutBindingsFromProfile(appliedProfile, bindings);
+          commit(updatedBindings, `「${appliedProfile.name}」 단축키 프로필을 반영했어요.`);
+        }}
       />
     </section>
   );

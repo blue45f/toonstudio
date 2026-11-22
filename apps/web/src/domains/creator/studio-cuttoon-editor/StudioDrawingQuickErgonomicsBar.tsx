@@ -19,6 +19,7 @@ import { StudioToolArtwork } from "../studio-tool-art/StudioToolArtwork";
 import { normalizeHexColor } from "../studio-color-utils";
 import { cycleStudioStabilizerStrength } from "../studio-pro-draw-prefs";
 import { drawingCommandShortcut, type DrawingCommandSettings } from "./studio-drawing-command-shortcut";
+import { StudioRadialQuickDialTriggerAndHost } from "../shortcuts/StudioRadialQuickDialTriggerAndHost";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import type { StudioContextMiniDockMode } from "./StudioContextMiniDock";
@@ -686,6 +687,8 @@ export function StudioDrawingQuickErgonomicsBar({
         <Compass size={15} aria-hidden />
         <span>{bt("퀵 휠", "Wheel")}</span>
       </button>
+
+      <StudioRadialQuickDialTriggerAndHost session={s} blocked={blocked} onPushCue={pushCue} onResetZoom={resetZoomToActualPixel} />
 
       <button
         ref={miniDockTriggerRef}

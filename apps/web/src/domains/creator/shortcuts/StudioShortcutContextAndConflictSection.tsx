@@ -14,6 +14,7 @@ import {
   resolveStudioShortcutConflictDetails,
   resolveStudioShortcutRowConflictStatus,
 } from "./studio-shortcut-conflict-guide";
+import { StudioShortcutProfileManagerSection } from "./StudioShortcutProfileManagerSection";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useT } from "@/shared/lib/i18n";
@@ -258,6 +259,11 @@ export function StudioShortcutSettingsTabContent({
       />
 
       <StudioShortcutContextComparisonSection isKo={isKo} compact />
+
+      <StudioShortcutProfileManagerSection
+        shortcuts={settings.shortcuts}
+        onApplyShortcuts={onPatchShortcuts}
+      />
 
       <ul className="divide-y divide-line/60 rounded-xl border border-line">
         {STUDIO_SHORTCUT_ACTIONS.map((action) => {
