@@ -7,6 +7,24 @@
 
 import { SPECTRAL_38BAND_KM_WGSL_SNIPPET } from "@toonstudio/studio-brush-platform/spectral-km-wgsl";
 
+export {
+  KM7_FILTER_OP_GLAZING,
+  KM7_FILTER_OP_GRADIENT_MAP,
+  KM7_FILTER_OP_HARMONIZER,
+  KM7_FILTER_OP_TEMP_SHIFT,
+  STUDIO_WEBGPU_KM7_FILTER_COMPUTE_WGSL,
+  STUDIO_WEBGPU_KM7_FILTER_UNIFORM_BYTES,
+  STUDIO_WEBGPU_KM7_SPECTRAL_WGSL_SNIPPET,
+  STUDIO_WEBGPU_KM7_TILE_BRUSH_COMPUTE_WGSL,
+  StudioWebGpuKm7FilterComputePipeline,
+  packKm7FilterComputeUniforms,
+} from "./studio-webgpu-km7-compute-wgsl";
+export type {
+  Km7FilterComputeOp,
+  Km7FilterComputeUniformInput,
+  Km7WebGpuFilterDispatchReceipt,
+} from "./studio-webgpu-km7-compute-wgsl";
+
 export { SPECTRAL_38BAND_KM_WGSL_SNIPPET };
 
 /**

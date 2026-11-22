@@ -61,6 +61,7 @@ const NODE_SPECS: readonly CompactNode[] = [
   ["pigment-open-km-spectral", "pigment", "main", "live", "pigment", "permissive"],
   ["pigment-colormix-lab", "pigment", "main", "live", "pigment", "permissive"],
   ["pigment-latent", "pigment", "main", "live", "pigment", "internal"],
+  ["pigment-km7-spectral", "pigment", "webgpu", "live", "pigment", "internal"],
 
   ...BRUSH_STUDIO_V6_TOPOLOGIES.map((entry): CompactNode => [entry.id, "carrier", "main", "live", "carrier", entry.rights ?? "internal"]),
   ["input-pointer-v3", "input", "input-worker", "preview", "input", "internal", ["pressure"]],
@@ -84,6 +85,7 @@ const LABELS: Readonly<Record<string, string>> = Object.freeze({
   "pigment-open-km-spectral": "open-km · 합성 분광 K/S",
   "pigment-colormix-lab": "ColorMix.js · Lab 비교",
   "pigment-latent": "ToonStudio Latent Pigment",
+  "pigment-km7-spectral": "7밴드 분광 KM (WebGPU)",
 
   "input-pointer-v3": "Pointer Input V3", "motion-direct": "Direct", "motion-adaptive-ema": "Adaptive EMA", "motion-spring": "Spring", "motion-google-ink": "Google Ink Modeler", "motion-brush-inertia": "Brush Inertia", "motion-lazy-leash": "Lazy Leash",
   "carrier-webgpu-centerline": "WebGPU Centerline", "carrier-perfect-outline": "Perfect Freehand Outline", "carrier-google-mesh": "Google Ink Mesh", "carrier-webgpu-ribbon": "WebGPU Tilt Ribbon", "carrier-libmypaint-dabs": "libmypaint Dabs", "carrier-hokusai-dabs": "Hokusai Dabs", "carrier-krita-hairy": "Krita Hairy Carrier", "carrier-webgpu-particles": "WebGPU Particle Stream", "carrier-p5-flow": "p5.brush Flow Carrier",
@@ -279,7 +281,7 @@ export function replaceBrushStudioV6Slot(program: BrushStudioV6Program, slot: Ex
       finish: program.slots.finish.filter((node) => node === "finish-neon"), output: "output-contact-canvas-svg",
       tip: isBrushStudioV6TopologyNodeCompatible(program.slots.tip) ? program.slots.tip : "tip-round-sdf",
       deposition: ["deposit-ink", "deposit-marker", "deposit-dry", "deposit-wet", "deposit-watercolor", "deposit-oil"].includes(program.slots.deposition) ? program.slots.deposition : "deposit-ink",
-      pigment: ["pigment-rgb", "pigment-spectral", "pigment-mixbox", "pigment-spectral-js", "pigment-open-km-spectral", "pigment-colormix-lab", "pigment-latent"].includes(program.slots.pigment) ? program.slots.pigment : "pigment-spectral",
+      pigment: ["pigment-rgb", "pigment-spectral", "pigment-mixbox", "pigment-spectral-js", "pigment-open-km-spectral", "pigment-colormix-lab", "pigment-latent", "pigment-km7-spectral"].includes(program.slots.pigment) ? program.slots.pigment : "pigment-spectral",
     } }));
   }
   return normalizeBrushStudioV6Program(patch(program, { slots: { [slot]: validNode(id, slot, program.slots[slot] as string) } }));

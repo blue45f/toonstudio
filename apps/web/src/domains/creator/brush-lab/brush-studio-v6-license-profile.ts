@@ -102,6 +102,12 @@ export const BRUSH_STUDIO_V6_PROVIDER_MANIFEST = Object.freeze([
     roles: ["pigment", "palette"], nodeIds: ["pigment-latent", "pigment-mixbox"],
   }),
   provider({
+    id: "toonstudio-km7-spectral-v1", label: "ToonStudio 7-Band Spectral KM (WebGPU)", version: "1",
+    license: "Project license", rights: "internal", runtime: "webgpu",
+    integration: "connected", productPath: "material-contact", materialExecution: "native",
+    roles: ["pigment", "palette"], nodeIds: ["pigment-km7-spectral"],
+  }),
+  provider({
     id: "spectral-wgm-v1", label: "Spectral WGM", version: "1",
     license: "Project/permissive components", rights: "permissive", runtime: "javascript",
     integration: "connected", productPath: "material-contact", materialExecution: "native",

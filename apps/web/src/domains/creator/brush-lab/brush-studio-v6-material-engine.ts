@@ -50,7 +50,7 @@ export const BRUSH_STUDIO_V6_MATERIAL_ENGINE = Object.freeze({
   backend: "cpu",
   pigments: Object.freeze([
     "spectral-js-v3", "open-km-spectral-v1", "colormix-lab-v3", "rgb-linear-v1",
-    "spectral-wgm-v1", "toonstudio-latent-pigment-v1", "ks-reference-wgm-v1", "inkwash-density-wgm-v1",
+    "spectral-wgm-v1", "toonstudio-latent-pigment-v1", "toonstudio-km7-spectral-v1", "ks-reference-wgm-v1", "inkwash-density-wgm-v1",
   ]),
   contact: "distance-sampled grain, dual tips, persistent reservoirs, bristles, particles and patterns",
   wet: "deterministic porous deposition approximation; no canvas readback",
