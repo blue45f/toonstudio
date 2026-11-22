@@ -1,6 +1,7 @@
 import { BRUSH_STUDIO_V6_TOPOLOGIES } from "./brush-studio-v6-topology-catalog";
 import { isBrushStudioV6ProceduralModel } from "./brush-studio-v6-procedural-family-catalog";
 import { BRUSH_STUDIO_V6_CORE_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-core";
+import { BRUSH_STUDIO_V6_KM7_SPECTRAL_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-km7-spectral";
 import { BRUSH_STUDIO_V6_MIXBOX_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-mixbox";
 import { BRUSH_STUDIO_V6_PROCEDURAL_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-procedural";
 import { BRUSH_STUDIO_V6_SHOWCASE_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-showcase";
@@ -20,6 +21,7 @@ export const BRUSH_STUDIO_V6_RECIPE_SEEDS = Object.freeze([
   ...BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V8_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V9_WEBTOON_MASTER_RECIPE_SEEDS,
+  ...BRUSH_STUDIO_V6_KM7_SPECTRAL_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V6_TEXTURE_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V6_MIXBOX_RECIPE_SEEDS,
   // 절차 계열은 모델별 도포 재료가 달라 전용 시드 파일(recipe-catalog-procedural)이 레시피를 만든다.

@@ -29,6 +29,7 @@
 import { mixSpectral38BandSrgb8 } from "@toonstudio/studio-brush-platform/spectral-km";
 
 import { mixSrgb8LatentPigmentTableInto } from "../brush-lab/pigment/latent-pigment-table";
+import { mixKm7SpectralSrgb8 } from "../render/studio-webgpu-km7-spectral-core";
 import { dodgeBurnBrushFalloff } from "../studio-dodge-burn";
 import {
   resolveStudioHandFeelMediaLoadV1,
@@ -82,8 +83,8 @@ export type WetMixSettings = {
   paperGrainDepth?: number;
   /** 0..1 수분·용제 희석(Solvent Dilution — 반투명 글레이즈 희석율). 기본 0. */
   solventDilution?: number;
-  /** 분광 혼색 파장 밴드 수: `38`(기본 38밴드 CIE 1931 D65 Kubelka-Munk) 또는 `10`(레거시 WGM). */
-  spectralBands?: 10 | 38;
+  /** 분광 혼색 파장 밴드 수: `38`(기본 38밴드 CIE 1931 D65 Kubelka-Munk), `7`(클린룸 7밴드 SIMD KM+Oklab), 또는 `10`(레거시 WGM). */
+  spectralBands?: 7 | 10 | 38;
 };
 
 // 표시 px 기준 범위 — DODGE_BURN_RADIUS_RANGE 와 동일 관례(자연 해상도 환산은 호출자 몫).
@@ -413,18 +414,24 @@ export function wetMixStroke(
     let depB = paintB;
     if (hasWell) {
       if (spectralMix) {
-        const mixed = settings.spectralBands === 10
-          ? mixStudioSpectralWgmSrgb8(
-              { r: paintR, g: paintG, b: paintB },
-              { r: wellR, g: wellG, b: wellB },
-              1 - wetness,
-              STUDIO_OSS_OIL_FILM_RECIPE.paintMode,
-            )
-          : mixSpectral38BandSrgb8(
+        const mixed = settings.spectralBands === 7
+          ? mixKm7SpectralSrgb8(
               { r: paintR, g: paintG, b: paintB },
               { r: wellR, g: wellG, b: wellB },
               wetness,
-            );
+            )
+          : settings.spectralBands === 10
+            ? mixStudioSpectralWgmSrgb8(
+                { r: paintR, g: paintG, b: paintB },
+                { r: wellR, g: wellG, b: wellB },
+                1 - wetness,
+                STUDIO_OSS_OIL_FILM_RECIPE.paintMode,
+              )
+            : mixSpectral38BandSrgb8(
+                { r: paintR, g: paintG, b: paintB },
+                { r: wellR, g: wellG, b: wellB },
+                wetness,
+              );
         depR = mixed.r;
         depG = mixed.g;
         depB = mixed.b;

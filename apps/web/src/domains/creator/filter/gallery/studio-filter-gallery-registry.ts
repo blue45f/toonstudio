@@ -16,6 +16,7 @@ import { STUDIO_FILTER_GALLERY_BLUR_EFFECTS, STUDIO_FILTER_GALLERY_NOISE_EFFECTS
 import { STUDIO_FILTER_GALLERY_PIXELATE_EFFECTS } from "./studio-filter-gallery-pixelate";
 import { STUDIO_FILTER_GALLERY_RENDER_EFFECTS } from "./studio-filter-gallery-render";
 import { STUDIO_FILTER_GALLERY_SKETCH_EFFECTS } from "./studio-filter-gallery-sketch";
+import { STUDIO_FILTER_GALLERY_SPECTRAL_PIGMENT_EFFECTS } from "./studio-filter-gallery-spectral-pigment";
 import { STUDIO_FILTER_GALLERY_STYLIZE_EFFECTS } from "./studio-filter-gallery-stylize";
 import { STUDIO_FILTER_GALLERY_TEXTURE_EFFECTS } from "./studio-filter-gallery-texture-stylize";
 import {
@@ -46,6 +47,7 @@ const FAMILIES: readonly (readonly StudioFilterGalleryEffectDef[])[] = [
   STUDIO_FILTER_GALLERY_NOISE_EFFECTS,
   STUDIO_FILTER_GALLERY_BLUR_EFFECTS,
   STUDIO_FILTER_GALLERY_COLOR_EFFECTS,
+  STUDIO_FILTER_GALLERY_SPECTRAL_PIGMENT_EFFECTS,
   STUDIO_FILTER_GALLERY_EDGE_EFFECTS,
   STUDIO_FILTER_GALLERY_LIGHT_EFFECTS,
   STUDIO_FILTER_GALLERY_DECOR_EFFECTS,

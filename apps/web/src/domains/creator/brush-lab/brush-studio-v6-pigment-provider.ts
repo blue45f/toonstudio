@@ -12,6 +12,7 @@ import {
   rgbToLatentPigment,
 } from "./pigment/latent-pigment-mixer";
 
+import { mixKm7SpectralSrgb } from "../render/studio-webgpu-km7-spectral-core";
 import { mixStudioSpectralWgm } from "../studio-spectral-wgm-mix-v1";
 
 import type { BrushStudioV6Rights } from "./brush-studio-v6-license-profile";
@@ -21,6 +22,7 @@ export type BrushStudioV6PigmentProviderId =
   | "rgb-linear-v1"
   | "spectral-wgm-v1"
   | "toonstudio-latent-pigment-v1"
+  | "toonstudio-km7-spectral-v1"
   | "ks-reference-wgm-v1"
   | "inkwash-density-wgm-v1";
 
@@ -46,6 +48,7 @@ export const BRUSH_STUDIO_V6_PIGMENT_PROVIDERS = Object.freeze([
   descriptor({ id: "rgb-linear-v1", nodeId: "pigment-rgb", label: "RGB Linear", version: "1", rights: "internal", execution: "native" }),
   descriptor({ id: "spectral-wgm-v1", nodeId: "pigment-spectral", label: "Spectral WGM", version: "1", rights: "permissive", execution: "native" }),
   descriptor({ id: "toonstudio-latent-pigment-v1", nodeId: "pigment-latent", label: "ToonStudio Latent Pigment", version: "1", rights: "internal", execution: "native" }),
+  descriptor({ id: "toonstudio-km7-spectral-v1", nodeId: "pigment-km7-spectral", label: "ToonStudio 7-Band Spectral KM", version: "1", rights: "internal", execution: "native" }),
   descriptor({ id: "ks-reference-wgm-v1", nodeId: "pigment-open-km", label: "K/S Reference WGM", version: "1", rights: "internal", execution: "legacy-reference" }),
   descriptor({ id: "inkwash-density-wgm-v1", nodeId: "pigment-inkwash-density", label: "Inkwash Density WGM", version: "1", rights: "private-grant", execution: "legacy-reference" }),
 ] as const);
@@ -138,6 +141,13 @@ export function createBrushStudioV6PigmentPalette(
   const first = parseColor(primary);
   const second = parseColor(secondary);
   if (providerId === "toonstudio-latent-pigment-v1") return latentPalette(first, second, count);
+  if (providerId === "toonstudio-km7-spectral-v1") {
+    return Object.freeze(Array.from({ length: count }, (_, index) => {
+      const ratio = index / (count - 1);
+      const endpoint = exactEndpoint(first, second, ratio);
+      return endpoint ?? hexColor(mixKm7SpectralSrgb(first, second, ratio));
+    }));
+  }
   const spectral = providerId !== "rgb-linear-v1";
   return Object.freeze(Array.from({ length: count }, (_, index) => {
     const ratio = index / (count - 1);
@@ -165,6 +175,9 @@ export function mixBrushStudioV6PigmentColors(
       { rgb: [primary.r, primary.g, primary.b], weight: 1 - ratio },
       { rgb: [secondary.r, secondary.g, secondary.b], weight: ratio },
     ]));
+  }
+  if (providerId === "toonstudio-km7-spectral-v1") {
+    return hexColor(mixKm7SpectralSrgb(parseColor(first), parseColor(second), ratio));
   }
   const provider = PROVIDER_BY_ID.get(providerId);
   if (!provider) throw new BrushStudioV6PigmentProviderUnavailableError(providerId);
