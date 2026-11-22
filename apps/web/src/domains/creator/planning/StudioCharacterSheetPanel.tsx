@@ -12,7 +12,8 @@
  *   컬렉션(production-hub/model-sheet-storage.ts 저장 계약)이고, 동결·영향
  *   확인 결과는 콜백으로 올려 호스트가 withModelSheet 로 다시 저장한다.
  */
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 import type { StudioStoryBible } from "../studio-story-bible";
 import { ModelSheetFreezePanel } from "../production-hub/ModelSheetFreezePanel";
@@ -44,6 +45,12 @@ export interface StudioCharacterSheetPanelProps {
   readonly onAcknowledgeModelSheetImpact?: (characterId: string, episodeId: string) => void;
 }
 
+const LazyStudioContinuityBiblePanel = lazy(() =>
+  import("../continuity-bible/StudioContinuityBiblePanel").then((m) => ({
+    default: m.StudioContinuityBiblePanel,
+  })),
+);
+
 const FIELD_INPUT_CLASS =
   "mt-1.5 min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const FIELD_TEXTAREA_CLASS =
@@ -59,18 +66,47 @@ export function StudioCharacterSheetPanel({
   onFreezeModelSheet,
   onAcknowledgeModelSheetImpact,
 }: StudioCharacterSheetPanelProps) {
+  const t = useT();
   const [selectedId, setSelectedId] = useState<string | null>(bible.characters[0]?.id ?? null);
+  const [continuityBibleOpen, setContinuityBibleOpen] = useState(false);
   const sheet = selectedId ? characterSheetView(bible, narrative, selectedId) : null;
   const nameOf = (id: string) => bible.characters.find((c) => c.id === id)?.name ?? id;
 
   return (
     <section aria-label="캐릭터 시트" className="space-y-4 text-fg">
-      <header className="rounded-xl border border-line bg-panel p-4 sm:p-5">
-        <h1 className="text-lg font-semibold tracking-tight text-fg">캐릭터 시트</h1>
-        <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
-          어떤 인물인지 적어 두면, 대사와 행동이 흔들리지 않아요.
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-4 sm:p-5">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight text-fg">캐릭터 시트</h1>
+          <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+            어떤 인물인지 적어 두면, 대사와 행동이 흔들리지 않아요.
+          </p>
+        </div>
+        <button
+          type="button"
+          data-testid="character-sheet-continuity-bible-toggle"
+          aria-expanded={continuityBibleOpen}
+          onClick={() => setContinuityBibleOpen((prev) => !prev)}
+          className="inline-flex min-h-11 items-center rounded-lg border border-accent/45 bg-accent-soft px-3.5 text-xs font-semibold text-accent transition-colors duration-150 hover:border-accent motion-reduce:transition-none [word-break:keep-all] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {continuityBibleOpen ? "연재 작화 바이블 접기" : "연재 작화 바이블 열기"}
+        </button>
       </header>
+
+      {continuityBibleOpen ? (
+        <Suspense
+          fallback={
+            <p role="status" className="rounded-xl border border-line bg-panel p-4 text-xs text-fg-2">
+              {t("studio.canvas.shell.loadingPanel", "패널을 여는 중...")}
+            </p>
+          }
+        >
+          <LazyStudioContinuityBiblePanel
+            projectId={bible.projectId}
+            characters={bible.characters}
+            selectedCharacterId={selectedId}
+          />
+        </Suspense>
+      ) : null}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(14rem,18rem)_minmax(0,1fr)]">
         <ul
