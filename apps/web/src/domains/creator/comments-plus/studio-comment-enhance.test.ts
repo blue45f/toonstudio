@@ -2,12 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   TYPING_EXPIRY_MS,
+  acceptRedpenAndResolve,
+  addRedpenStroke,
   aggregateReactions,
   computeUnread,
+  createRedpenOverlayState,
   createTypingTracker,
   filterThreads,
+  hasVisibleRedpenAnnotation,
   parseMentions,
+  recordThreadResolutionTransition,
   sortThreads,
+  summarizeRedpenAuditCounts,
   toggleReaction,
   type EnhanceThread,
 } from "./studio-comment-enhance";
@@ -245,5 +251,48 @@ describe("computeUnread", () => {
     expect(computeUnread(t, 150, "me")).toBe(1);
     expect(computeUnread(t, 0, "me")).toBe(2);
     expect(computeUnread(t, 500, "me")).toBe(0);
+  });
+});
+
+describe("빨간펜 오버레이 스레드 연동 요약", () => {
+  it("표시 중인 빨간펜 주석 여부와 해결·재열기 감사 이력을 집계한다", () => {
+    const overlay = addRedpenStroke(
+      createRedpenOverlayState({
+        threadId: "t-rp",
+        anchor: { cutId: "cut-1", u: 0.5, v: 0.5 },
+        createdAt: 1_000,
+        authorId: "editor",
+      }),
+      {
+        id: "s-1",
+        authorId: "editor",
+        authorName: "편집자",
+        createdAt: 1_100,
+        points: [
+          { u: 0.2, v: 0.2 },
+          { u: 0.4, v: 0.4 },
+        ],
+      },
+    );
+    const activeThread = thread({ id: "t-rp", redpenOverlay: overlay });
+    expect(hasVisibleRedpenAnnotation(activeThread)).toBe(true);
+
+    const accepted = acceptRedpenAndResolve(overlay, { id: "artist", name: "작가" }, 2_000);
+    const reopened = recordThreadResolutionTransition(
+      accepted,
+      "reopen",
+      { id: "editor", name: "편집자" },
+      3_000,
+    );
+    const summary = summarizeRedpenAuditCounts([
+      thread({ id: "t-plain" }),
+      thread({ id: "t-rp", redpenOverlay: reopened }),
+    ]);
+    expect(summary).toEqual({
+      acceptedCount: 1,
+      resolvedCount: 0,
+      reopenCount: 1,
+      totalEvents: 2,
+    });
   });
 });

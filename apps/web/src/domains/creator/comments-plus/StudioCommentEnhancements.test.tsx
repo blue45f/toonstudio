@@ -4,12 +4,21 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CommentResolutionAuditLog,
   MentionText,
   QuickReactionPicker,
   ReactionBar,
+  RedpenCommentOverlaySvg,
+  RedpenOverlayControlBar,
   ThreadStatusChip,
   TypingIndicator,
 } from "./StudioCommentEnhancements";
+import {
+  acceptRedpenAndResolve,
+  addRedpenStroke,
+  createRedpenOverlayState,
+  recordThreadResolutionTransition,
+} from "./studio-redpen-comment-overlay";
 
 afterEach(cleanup);
 
@@ -125,5 +134,105 @@ describe("ThreadStatusChip", () => {
     render(<ThreadStatusChip resolved={false} onToggle={onToggle} />);
     fireEvent.click(screen.getByRole("button", { name: "해결하기" }));
     expect(onToggle).toHaveBeenCalled();
+  });
+});
+
+describe("RedpenCommentOverlaySvg & RedpenOverlayControlBar", () => {
+  const cutBox = { cutId: "cut-01", x: 0, y: 0, width: 800, height: 1_200 };
+
+  it("비파괴 SVG 오버레이에 빨간펜 스트로크와 정규화 앵커 핀을 렌더한다", () => {
+    const overlay = addRedpenStroke(
+      createRedpenOverlayState({
+        threadId: "t-svg",
+        anchor: { cutId: "cut-01", u: 0.25, v: 0.5 },
+        createdAt: 1_000,
+        authorId: "editor",
+      }),
+      {
+        id: "rp-svg-1",
+        authorId: "editor",
+        authorName: "편집자",
+        createdAt: 1_100,
+        points: [
+          { u: 0.1, v: 0.2 },
+          { u: 0.3, v: 0.4 },
+        ],
+      },
+    );
+
+    const { container } = render(
+      <RedpenCommentOverlaySvg overlay={overlay} cutBox={cutBox} />,
+    );
+    const svg = container.querySelector("svg");
+    expect(svg?.getAttribute("data-non-destructive-overlay")).toBe("true");
+    expect(svg?.getAttribute("data-canvas-layer-id")).toBe("none");
+
+    const strokePath = container.querySelector('[data-redpen-stroke-id="rp-svg-1"]');
+    expect(strokePath?.getAttribute("d")).toBe("M 80 240 L 240 480");
+
+    const pin = container.querySelector('[data-redpen-pin-anchor="true"]');
+    expect(pin?.getAttribute("transform")).toBe("translate(200, 600)");
+    expect(pin?.getAttribute("data-pin-u")).toBe("0.25");
+    expect(pin?.getAttribute("data-pin-v")).toBe("0.5");
+  });
+
+  it("컨트롤 바에서 빨간펜 토글·1클릭 수락 체크완료·감사 이력 펼치기가 동작한다", () => {
+    const base = addRedpenStroke(
+      createRedpenOverlayState({
+        threadId: "t-ctrl",
+        anchor: { cutId: "cut-01", u: 0.5, v: 0.5 },
+        createdAt: 1_000,
+        authorId: "editor",
+      }),
+      {
+        id: "rp-ctrl-1",
+        authorId: "editor",
+        authorName: "편집자",
+        createdAt: 1_100,
+        points: [{ u: 0.4, v: 0.4 }],
+      },
+    );
+    const onToggleVisibility = vi.fn();
+    const onAcceptAndResolve = vi.fn();
+
+    render(
+      <RedpenOverlayControlBar
+        overlay={base}
+        onToggleVisibility={onToggleVisibility}
+        onAcceptAndResolve={onAcceptAndResolve}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "빨간펜 숨기기" }));
+    expect(onToggleVisibility).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "빨간펜 수락 후 1클릭 체크완료" }));
+    expect(onAcceptAndResolve).toHaveBeenCalledTimes(1);
+  });
+
+  it("해결/재열기 감사 이력을 순서대로 표시한다", () => {
+    const base = createRedpenOverlayState({
+      threadId: "t-log",
+      anchor: { cutId: "cut-01", u: 0.5, v: 0.5 },
+      createdAt: 1_000,
+      authorId: "editor",
+    });
+    const accepted = acceptRedpenAndResolve(base, { id: "artist", name: "민수" }, 1_700_000_000_000, {
+      note: "선 굵기 보정",
+    });
+    const reopened = recordThreadResolutionTransition(
+      accepted,
+      "reopen",
+      { id: "editor", name: "지훈" },
+      1_700_000_060_000,
+    );
+
+    render(<CommentResolutionAuditLog entries={reopened.auditLog} />);
+    const log = screen.getByRole("log", { name: "해결 및 재열기 감사 이력" });
+    expect(log.textContent).toContain("빨간펜 수락 · 체크완료");
+    expect(log.textContent).toContain("민수");
+    expect(log.textContent).toContain("선 굵기 보정");
+    expect(log.textContent).toContain("다시 열기");
+    expect(log.textContent).toContain("지훈");
   });
 });

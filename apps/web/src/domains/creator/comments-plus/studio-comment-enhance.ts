@@ -14,6 +14,52 @@
  * 전부 순수·결정적. DOM 의존성 없음.
  */
 
+import {
+  getVisibleRedpenStrokes,
+  type RedpenOverlayThreadState,
+} from "./studio-redpen-comment-overlay";
+
+export {
+  DEFAULT_REDPEN_COLOR,
+  DEFAULT_REDPEN_OPACITY,
+  DEFAULT_REDPEN_WIDTH_PX,
+  MAX_REDPEN_OPACITY,
+  MAX_REDPEN_POINTS_PER_STROKE,
+  MAX_REDPEN_STROKES_PER_THREAD,
+  MAX_REDPEN_WIDTH_PX,
+  MIN_REDPEN_OPACITY,
+  MIN_REDPEN_WIDTH_PX,
+  acceptRedpenAndResolve,
+  addRedpenStroke,
+  canvasPointToCutNormalizedAnchor,
+  clampUnitInterval,
+  createRedpenOverlayState,
+  cutNormalizedAnchorToCanvasPoint,
+  getVisibleRedpenStrokes,
+  mergeRedpenOverlayStates,
+  moveRedpenPinAnchor,
+  projectRedpenStrokeToCanvasPath,
+  recordThreadResolutionTransition,
+  remapCutPinAnchorForCrop,
+  remapRedpenOverlayForCrop,
+  remapRedpenStrokeForCrop,
+  removeRedpenStroke,
+  toggleRedpenOverlayVisibility,
+  type CanvasPoint,
+  type CommentResolutionAction,
+  type CommentResolutionAuditEntry,
+  type CutBoundingBox,
+  type CutClampEdge,
+  type NormalizedCutPinAnchor,
+  type PinAnchorResolution,
+  type ProjectedRedpenStrokePath,
+  type RedpenAuditActor,
+  type RedpenOverlayThreadState,
+  type RedpenStroke,
+  type RedpenStrokeInput,
+  type RedpenStrokePoint,
+} from "./studio-redpen-comment-overlay";
+
 export interface Mention {
   /** "@"를 제외한 이름 (예: "김민준"). */
   name: string;
@@ -202,6 +248,8 @@ export interface EnhanceThread {
   comments: EnhanceComment[];
   /** 마지막 활동 시각 (댓글 생성/수정 중 가장 최근). */
   lastActivityAt: number;
+  /** 선택적 비파괴 빨간펜 오버레이 및 해결/재열기 감사 이력. */
+  redpenOverlay?: RedpenOverlayThreadState;
 }
 
 export type ThreadSortKey =
@@ -307,4 +355,39 @@ export function computeUnread(
   return thread.comments.filter(
     (c) => c.createdAt > lastReadAt && c.authorId !== myUserId
   ).length;
+}
+
+/** 스레드에 현재 화면에 표시 중인 비파괴 빨간펜 스트로크가 있는지 판정한다. */
+export function hasVisibleRedpenAnnotation(thread: EnhanceThread): boolean {
+  if (!thread.redpenOverlay) return false;
+  return getVisibleRedpenStrokes(thread.redpenOverlay).length > 0;
+}
+
+export interface RedpenAuditSummary {
+  readonly acceptedCount: number;
+  readonly resolvedCount: number;
+  readonly reopenCount: number;
+  readonly totalEvents: number;
+}
+
+/** 스레드 묶음 전체의 해결·재열기·수락 감사 로그 건수를 집계한다. */
+export function summarizeRedpenAuditCounts(
+  threads: readonly EnhanceThread[],
+): RedpenAuditSummary {
+  let acceptedCount = 0;
+  let resolvedCount = 0;
+  let reopenCount = 0;
+  for (const thread of threads) {
+    for (const entry of thread.redpenOverlay?.auditLog ?? []) {
+      if (entry.action === "accept-and-resolve") acceptedCount += 1;
+      else if (entry.action === "resolve") resolvedCount += 1;
+      else if (entry.action === "reopen") reopenCount += 1;
+    }
+  }
+  return {
+    acceptedCount,
+    resolvedCount,
+    reopenCount,
+    totalEvents: acceptedCount + resolvedCount + reopenCount,
+  };
 }

@@ -11,8 +11,8 @@
  *
  * ko/en, 다크/라이트, 390px 모바일, reduced-motion, 키보드 접근성 대응.
  */
-import type { ReactElement, ReactNode } from "react";
-import { Check, CircleDashed } from "lucide-react";
+import { useState, type ReactElement, type ReactNode } from "react";
+import { Check, CheckCheck, CircleDashed, Eye, EyeOff, History, RotateCcw } from "lucide-react";
 
 import {
   getCurrentUiLocale,
@@ -25,6 +25,15 @@ import {
   type Reaction,
   type ReactionSummary,
 } from "./studio-comment-enhance";
+import {
+  cutNormalizedAnchorToCanvasPoint,
+  getVisibleRedpenStrokes,
+  projectRedpenStrokeToCanvasPath,
+  type CommentResolutionAction,
+  type CommentResolutionAuditEntry,
+  type CutBoundingBox,
+  type RedpenOverlayThreadState,
+} from "./studio-redpen-comment-overlay";
 
 function useTx(): (source: string) => string {
   useBilingualI18nRevision();
@@ -72,9 +81,9 @@ export function TypingIndicator({
         @media (prefers-reduced-motion: reduce) { .sc-enh-typing-dot { animation: none; opacity: .7; } }
       `}</style>
       <span className="flex items-end gap-1" aria-hidden="true">
-        <span className="sc-enh-typing-dot inline-block size-1.5 rounded-full bg-fuchsia-500" />
-        <span className="sc-enh-typing-dot inline-block size-1.5 rounded-full bg-fuchsia-500" />
-        <span className="sc-enh-typing-dot inline-block size-1.5 rounded-full bg-fuchsia-500" />
+        <span className="sc-enh-typing-dot inline-block size-1.5 rounded-full bg-accent" />
+        <span className="sc-enh-typing-dot inline-block size-1.5 rounded-full bg-accent" />
+        <span className="sc-enh-typing-dot inline-block size-1.5 rounded-full bg-accent" />
       </span>
       <span className="truncate">{label}</span>
     </div>
@@ -112,8 +121,8 @@ export function ReactionBar({
           aria-label={`${emoji} ${count}개${reactedByMe ? `, ${tx("내 리액션")}` : ""}`}
           className={
             reactedByMe
-              ? "inline-flex min-h-8 items-center gap-1 rounded-full bg-gradient-to-r from-fuchsia-500 to-amber-400 px-2.5 py-1 text-xs font-bold text-white shadow-md transition-transform hover:scale-105 active:scale-95"
-              : "inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-xs font-medium text-fg-2 transition-all hover:scale-105 hover:border-fuchsia-400 active:scale-95"
+              ? "inline-flex min-h-8 items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-contrast shadow-md transition-transform hover:scale-105 active:scale-95"
+              : "inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-xs font-medium text-fg-2 transition-all hover:scale-105 hover:border-accent active:scale-95"
           }
         >
           <span aria-hidden="true">{emoji}</span>
@@ -126,7 +135,7 @@ export function ReactionBar({
           onClick={onQuickAdd}
           aria-label={tx("리액션 추가")}
           title={tx("리액션 추가")}
-          className="inline-flex min-h-8 size-8 items-center justify-center rounded-full border border-dashed border-line text-fg-3 transition-colors hover:border-fuchsia-400 hover:text-fuchsia-500"
+          className="inline-flex min-h-8 size-8 items-center justify-center rounded-full border border-dashed border-line text-fg-3 transition-colors hover:border-accent hover:text-accent"
         >
           <span aria-hidden="true" className="text-sm leading-none">+</span>
         </button>
@@ -186,14 +195,14 @@ export function MentionText({
           key={i}
           type="button"
           onClick={() => onMentionClick(m.name)}
-          className="rounded bg-fuchsia-500/15 px-0.5 font-semibold text-fuchsia-600 underline decoration-fuchsia-300 underline-offset-2 dark:text-fuchsia-300"
+          className="rounded bg-accent-soft px-0.5 font-semibold text-accent underline decoration-accent/50 underline-offset-2"
         >
           {label}
         </button>
       ) : (
         <span
           key={i}
-          className="rounded bg-fuchsia-500/15 px-0.5 font-semibold text-fuchsia-600 dark:text-fuchsia-300"
+          className="rounded bg-accent-soft px-0.5 font-semibold text-accent"
         >
           {label}
         </span>
@@ -223,16 +232,16 @@ export function ThreadStatusChip({
         <Check className="size-3.5" aria-hidden="true" />
       ) : (
         <span className="relative flex size-2.5" aria-hidden="true">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-60 motion-reduce:animate-none" />
-          <span className="relative inline-flex size-2.5 rounded-full bg-amber-500" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-warn opacity-60 motion-reduce:animate-none" />
+          <span className="relative inline-flex size-2.5 rounded-full bg-warn" />
         </span>
       )}
       {label}
     </>
   );
   const className = resolved
-    ? "inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300"
-    : "inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-300";
+    ? "inline-flex items-center gap-1.5 rounded-full bg-good-soft px-2.5 py-1 text-xs font-semibold text-good"
+    : "inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-2.5 py-1 text-xs font-semibold text-warn";
 
   if (!onToggle) {
     return (
@@ -253,5 +262,248 @@ export function ThreadStatusChip({
       {inner}
       {!resolved && <CircleDashed className="size-3.5 opacity-60" aria-hidden="true" />}
     </button>
+  );
+}
+
+// ── 비파괴 빨간펜 코멘트 오버레이 (#066–#070) ──────────────────────────
+
+/**
+ * 캔버스 드로잉 레이어와 완전히 분리된 비파괴 빨간펜 SVG 오버레이.
+ * 컷 바운딩 박스 기준 정규화 좌표 `(u, v)`로 핀과 스트로크를 투영하므로
+ * 컷 높이가 변하거나 크롭되어도 핀이 허공에 뜨지 않는다.
+ */
+export function RedpenCommentOverlaySvg({
+  overlay,
+  cutBox,
+  showPinMarker = true,
+  className,
+}: {
+  overlay: RedpenOverlayThreadState;
+  cutBox: CutBoundingBox;
+  /** 정규화 앵커 핀 마커 표시 여부 (기본 true). */
+  showPinMarker?: boolean;
+  className?: string;
+}): ReactElement | null {
+  const tx = useTx();
+  const visibleStrokes = getVisibleRedpenStrokes(overlay);
+  if (!overlay.visible && !showPinMarker) return null;
+
+  const resolution = cutNormalizedAnchorToCanvasPoint(overlay.anchor, cutBox);
+  const projected = visibleStrokes.map((stroke) =>
+    projectRedpenStrokeToCanvasPath(stroke, cutBox),
+  );
+  const safeWidth = Number.isFinite(cutBox.width) && cutBox.width > 0 ? cutBox.width : 1;
+  const safeHeight = Number.isFinite(cutBox.height) && cutBox.height > 0 ? cutBox.height : 1;
+  const viewBox = `${cutBox.x} ${cutBox.y} ${safeWidth} ${safeHeight}`;
+
+  return (
+    <svg
+      role="img"
+      aria-label={tx("비파괴 빨간펜 코멘트 오버레이 ({count}획)").replace(
+        "{count}",
+        String(projected.length),
+      )}
+      viewBox={viewBox}
+      data-non-destructive-overlay="true"
+      data-canvas-layer-id="none"
+      data-thread-id={overlay.threadId}
+      data-cut-id={cutBox.cutId}
+      className={`pointer-events-none select-none overflow-visible ${className ?? ""}`.trim()}
+    >
+      {overlay.visible &&
+        projected.map((item) => (
+          <path
+            key={item.strokeId}
+            d={item.d}
+            fill="none"
+            stroke={item.color}
+            strokeOpacity={item.opacity}
+            strokeWidth={item.widthPx}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            data-redpen-stroke-id={item.strokeId}
+          />
+        ))}
+      {showPinMarker && (
+        <g
+          data-redpen-pin-anchor="true"
+          data-pin-u={String(resolution.anchor.u)}
+          data-pin-v={String(resolution.anchor.v)}
+          data-pin-clamped={String(resolution.wasClamped)}
+          transform={`translate(${resolution.canvasPoint.x}, ${resolution.canvasPoint.y})`}
+        >
+          <circle
+            r={8}
+            fill={overlay.resolved ? "var(--color-good)" : "var(--color-bad)"}
+            fillOpacity={0.9}
+            stroke="var(--color-canvas)"
+            strokeWidth={2}
+          />
+          {resolution.wasClamped && (
+            <circle
+              r={12}
+              fill="none"
+              stroke="var(--color-warn)"
+              strokeWidth={1.5}
+              strokeDasharray="3 2"
+            />
+          )}
+        </g>
+      )}
+    </svg>
+  );
+}
+
+// ── 해결 · 재열기 감사 로그 (#069) ──────────────────────────────────────
+
+function auditActionLabel(
+  action: CommentResolutionAction,
+  tx: (source: string) => string,
+): string {
+  switch (action) {
+    case "accept-and-resolve":
+      return tx("빨간펜 수락 · 체크완료");
+    case "resolve":
+      return tx("해결 완료");
+    case "reopen":
+      return tx("다시 열기");
+  }
+}
+
+function formatAuditTimestamp(timestamp: number): string {
+  if (!Number.isFinite(timestamp)) return "";
+  return new Date(timestamp).toISOString().replace("T", " ").slice(0, 16);
+}
+
+export function CommentResolutionAuditLog({
+  entries,
+}: {
+  entries: readonly CommentResolutionAuditEntry[];
+}): ReactElement {
+  const tx = useTx();
+  if (entries.length === 0) {
+    return (
+      <p className="text-xs text-fg-4" role="status">
+        {tx("아직 해결 이력이 없습니다")}
+      </p>
+    );
+  }
+  return (
+    <ol
+      role="log"
+      aria-label={tx("해결 및 재열기 감사 이력")}
+      className="space-y-1.5 border-l-2 border-line pl-3 text-xs text-fg-2"
+    >
+      {entries.map((entry) => (
+        <li
+          key={entry.id}
+          data-audit-action={entry.action}
+          className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
+        >
+          <span
+            className={
+              entry.nextResolved
+                ? "rounded bg-good-soft px-1.5 py-0.5 font-semibold text-good"
+                : "rounded bg-warning-soft px-1.5 py-0.5 font-semibold text-warn"
+            }
+          >
+            {auditActionLabel(entry.action, tx)}
+          </span>
+          <span className="font-medium text-fg-1">{entry.actorName}</span>
+          <span className="tabular-nums text-fg-4">{formatAuditTimestamp(entry.timestamp)}</span>
+          {entry.note && <span className="text-fg-3">· {entry.note}</span>}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+// ── 빨간펜 토글 + 1클릭 수락 체크완료 컨트롤 바 (#066–#069) ─────────────
+
+export function RedpenOverlayControlBar({
+  overlay,
+  onToggleVisibility,
+  onAcceptAndResolve,
+  onReopen,
+  defaultAuditOpen = false,
+}: {
+  overlay: RedpenOverlayThreadState;
+  onToggleVisibility: () => void;
+  /** 수락 시 1클릭 체크완료 콜백. */
+  onAcceptAndResolve?: () => void;
+  /** 해결된 코멘트를 다시 열 때 호출. */
+  onReopen?: () => void;
+  defaultAuditOpen?: boolean;
+}): ReactElement {
+  const tx = useTx();
+  const [auditOpen, setAuditOpen] = useState(defaultAuditOpen);
+  const strokeCount = overlay.strokes.length;
+
+  return (
+    <div className="space-y-2">
+      <div
+        className="flex flex-wrap items-center gap-1.5"
+        role="group"
+        aria-label={tx("빨간펜 오버레이 제어")}
+      >
+        <button
+          type="button"
+          onClick={onToggleVisibility}
+          aria-pressed={overlay.visible}
+          aria-label={overlay.visible ? tx("빨간펜 숨기기") : tx("빨간펜 보기")}
+          className={
+            overlay.visible
+              ? "inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-bad/40 bg-bad-soft px-2.5 py-1 text-xs font-semibold text-bad transition-colors hover:bg-bad-soft/80"
+              : "inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-medium text-fg-2 transition-colors hover:border-bad"
+          }
+        >
+          {overlay.visible ? (
+            <Eye className="size-3.5" aria-hidden="true" />
+          ) : (
+            <EyeOff className="size-3.5" aria-hidden="true" />
+          )}
+          <span>{overlay.visible ? tx("빨간펜 숨기기") : tx("빨간펜 보기")}</span>
+          <span className="tabular-nums opacity-75">({strokeCount})</span>
+        </button>
+
+        {!overlay.resolved && onAcceptAndResolve && (
+          <button
+            type="button"
+            onClick={onAcceptAndResolve}
+            aria-label={tx("빨간펜 수락 후 1클릭 체크완료")}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-good/40 bg-good-soft px-2.5 py-1 text-xs font-semibold text-good transition-colors hover:bg-good-soft/80"
+          >
+            <CheckCheck className="size-3.5" aria-hidden="true" />
+            <span>{tx("수락 · 체크완료")}</span>
+          </button>
+        )}
+
+        {overlay.resolved && onReopen && (
+          <button
+            type="button"
+            onClick={onReopen}
+            aria-label={tx("코멘트 다시 열기")}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-warn/40 bg-warning-soft px-2.5 py-1 text-xs font-semibold text-warn transition-colors hover:bg-warning-soft/80"
+          >
+            <RotateCcw className="size-3.5" aria-hidden="true" />
+            <span>{tx("다시 열기")}</span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setAuditOpen((open) => !open)}
+          aria-expanded={auditOpen}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-medium text-fg-2 transition-colors hover:border-fg-3"
+        >
+          <History className="size-3.5" aria-hidden="true" />
+          <span>
+            {tx("이력 {n}건").replace("{n}", String(overlay.auditLog.length))}
+          </span>
+        </button>
+      </div>
+
+      {auditOpen && <CommentResolutionAuditLog entries={overlay.auditLog} />}
+    </div>
   );
 }
