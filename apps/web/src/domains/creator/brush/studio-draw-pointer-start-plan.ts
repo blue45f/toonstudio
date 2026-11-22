@@ -7,7 +7,7 @@
  * pointer-move and replay pipelines from seeing a partially configured stroke.
  */
 
-import { resolveStudioHybridPressureSample } from "../hybrid-dcc/studio-hybrid-pressure-profile";
+import { resolveStudioHybridPressureSample } from "../contracts/studio-hybrid-pressure-profile";
 import {
   normalizeCalligraphyStylusInput,
   resolveBrushPressureSample,
