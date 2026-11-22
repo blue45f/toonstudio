@@ -3,6 +3,7 @@ import { useState } from "react";
 import { STUDIO_BG3D_CONTROL_BUTTON, studioBg3dClassNames as cx } from "./studio-bg3d-editor-ui";
 import { STUDIO_BG3D_COMPOSITION_LENSES } from "./studio-bg3d-lens-composition";
 import { useStudioBg3dProSuiteRuntime } from "./studio-bg3d-pro-suite-runtime-context";
+import { StudioCameraAngleBookmarkPanel } from "../camera-angles-pro/StudioCameraAngleBookmarkPanel";
 
 import { useT } from "@/shared/lib/i18n";
 import "../studio-bg3d-panel-status-i18n";
@@ -54,6 +55,12 @@ export function StudioBg3dCompositionLensPanel({ disabled = false }: { readonly 
       </div>}
       <button type="button" className={cx(STUDIO_BG3D_CONTROL_BUTTON, "w-full border-accent bg-accent text-on-accent")} disabled={locked}
         onClick={() => { if (!locked) runtime?.onCaptureCurrentShot(); }}>이 구도를 컷으로 저장</button>
+      <StudioCameraAngleBookmarkPanel
+        baseCamera={camera}
+        disabled={locked || orthographic}
+        onApplyCamera={runtime?.onApplyCameraView}
+        onCaptureCurrentShot={runtime?.onCaptureCurrentShot}
+      />
     </section>
   );
 }

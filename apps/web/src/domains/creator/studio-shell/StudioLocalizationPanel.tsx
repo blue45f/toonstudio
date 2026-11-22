@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { createStudioLocalizationUnit, evaluateStudioLocalizationQa, summarizeStudioLocalization, transitionStudioLocalizationUnit, type StudioLocalizationStatus, type StudioLocalizationUnit, type StudioLocalizationUnitKind } from "../studio-localization-workflow";
 import { projectLocalizationDiagnostics, readStudioLocalizationProject, STUDIO_LOCALIZATION_PROJECT_UPDATED_EVENT, writeStudioLocalizationProject, type StudioLocalizationProjectDocument } from "../studio-localization-project-store";
 import { StudioMultilingualBalloonFitCard } from "../lettering/StudioMultilingualBalloonFitCard";
+import { StudioSfxTypoStampPanel } from "../sfx-typo-pro/StudioSfxTypoStampPanel";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n } from "@/shared/lib/i18n";
@@ -140,6 +141,7 @@ export function StudioLocalizationPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [proSuiteOpen, setProSuiteOpen] = useState(false);
+  const [sfxTypoOpen, setSfxTypoOpen] = useState(false);
 
   useEffect(() => {
     const load = () => {
@@ -676,6 +678,32 @@ export function StudioLocalizationPanel({
                 sourceLines={document.units.map((unit) => ({ id: unit.id, sourceText: unit.sourceText }))}
               />
             </Suspense>
+          </div>
+        ) : null}
+      </details>
+
+      <details
+        data-testid="sfx-typo-pro-disclosure"
+        className="group/sfx-pro mt-3 rounded-2xl border border-line bg-panel"
+        aria-label={bt("컷별 자동 효과음(SFX) 타이포 & 원근 스탬프", "Cut SFX Typography & Perspective Vector Stamps")}
+        onToggle={(event) => setSfxTypoOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <Sparkles className="size-4 shrink-0 text-accent" aria-hidden="true" />
+            <span className="min-w-0 [word-break:keep-all]">
+              {bt("효과음(SFX) 자동 타이포 · 번역 스탬프", "Auto SFX Typography · Localized Stamp")}
+            </span>
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open/sfx-pro:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+        </summary>
+        {sfxTypoOpen ? (
+          <div className="border-t border-line p-3 sm:p-4">
+            <StudioSfxTypoStampPanel
+              projectId={projectId}
+              initialText={selected?.kind === "sfx" && selected.sourceText.trim() ? selected.sourceText : "쾅!"}
+              initialCutId={selected?.id ?? "cut-01"}
+            />
           </div>
         ) : null}
       </details>
