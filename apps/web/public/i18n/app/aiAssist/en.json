@@ -423,6 +423,8 @@
   "aiAssist.managed.localizeRerun": "Translate again",
   "aiAssist.managed.altTextRun": "Write descriptions",
   "aiAssist.managed.altTextRerun": "Generate again",
+  "aiAssist.managed.altTextStopped": "Description generation stopped. You can try again when you’re ready.",
+  "aiAssist.managed.altTextOutcomeUnknown": "We don’t yet know whether the provider processed this image. To avoid a duplicate, this request won’t be sent again.",
   "aiAssist.managed.usageLine": "{model} · {input} in · {output} out tokens · free",
   "aiAssist.episodic.title": "Episode AI assist · Script-based editorial suggestions",
   "aiAssist.episodic.readerTab": "Reader-perspective review",

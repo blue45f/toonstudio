@@ -7,6 +7,7 @@ export type UserAiTransportErrorCode =
   | "quota-exhausted"
   | "all-free-exhausted"
   | "authentication"
+  | "outcome-unknown"
   | "http-error";
 
 export class UserAiTransportError extends Error {

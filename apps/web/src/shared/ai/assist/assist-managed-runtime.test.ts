@@ -306,6 +306,38 @@ describe("runManagedAssistMessage", () => {
 });
 
 describe("mapManagedAssistError", () => {
+  it("형식 복구 중 공급자 처리가 불명확해져도 그 사유를 유지하고 재전송하지 않는다", async () => {
+    const error = new UserAiTransportError("outcome-unknown", "공급자 처리 여부를 확인 중입니다.", 409);
+    const post = vi.fn().mockResolvedValueOnce(serverMessage("{}")).mockRejectedValueOnce(error);
+    const request = runManagedAssistParse(
+      { model: "synthetic", max_tokens: 100, messages: [{ role: "user", content: "테스트" }] },
+      Schema,
+      { post },
+    );
+    await expect(request).rejects.toBe(error);
+    expect(post).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["이 AI 작업은 공급자 처리 여부를 확인 중이라 재전송하지 않았어요. 새 과금 방지를 위해 잠시 후 작업 기록을 확인해 주세요.", "outcome-unknown"],
+    ["같은 AI 작업 식별자를 다른 요청에 재사용할 수 없어요.", "http-error"],
+    ["이 AI 작업은 이미 공급자에서 완료되어 재전송하지 않았어요.", "http-error"],
+  ])("관리형 API의 409 응답을 한 번만 받고 사유를 구분한다 (%s)", async (message, expectedCode) => {
+    const { api } = await vi.importActual<typeof import("@/platform/api")>("@/platform/api");
+    const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json({ statusCode: 409, message }, { status: 409 }));
+    try {
+      const request = runManagedAssistParse(
+        { model: "synthetic", max_tokens: 100, messages: [{ role: "user", content: "테스트" }] },
+        Schema,
+        { post: (body) => api.post("/studio-ai/messages", body) },
+      );
+      await expect(request).rejects.toMatchObject({ code: expectedCode, status: 409 });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      fetch.mockRestore();
+    }
+  });
+
   it.each([
     [new AppApiError("login", { kind: "unauthorized", status: 401, code: "FREE_AI_LOGIN_REQUIRED" }), "authentication"],
     [new AppApiError("pool", { kind: "rate_limited", status: 429, code: "FREE_AI_POOL_EXHAUSTED" }), "all-free-exhausted"],

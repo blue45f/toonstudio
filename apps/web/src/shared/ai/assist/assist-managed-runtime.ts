@@ -14,7 +14,7 @@
  */
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 
-import { api, isAppApiError } from "@/platform/api";
+import { api, isAppApiError, isHttpError } from "@/platform/api";
 
 import { UserAiTransportError } from "../user-ai-transport-error";
 
@@ -177,6 +177,8 @@ const UNAVAILABLE_MESSAGE = "ToonStudio AI가 아직 준비되지 않았어요. 
 // 서버는 오늘 한도를 다 쓴 경우와 무료 제공자가 잠시 요청을 제한한 경우에 같은 코드를 보낸다. 둘 다 맞는 문구를 쓴다.
 const EXHAUSTED_MESSAGE = "ToonStudio AI 사용 한도에 닿았어요. 잠시 뒤 다시 시도해 보고, 계속되면 오늘 한도를 다 쓴 것이라 UTC 자정 이후 다시 쓰거나 설정 > AI에서 내 API 키를 연결해 주세요.";
 const CANCELLED_MESSAGE = "AI 요청이 취소되거나 제한 시간을 초과했습니다. 앱은 같은 요청을 자동 재전송하지 않습니다.";
+// 현재 서버는 request_ambiguous에 별도 오류 코드 없이 이 공개 문구를 보낸다.
+const AMBIGUOUS_MESSAGE = "이 AI 작업은 공급자 처리 여부를 확인 중이라 재전송하지 않았어요. 새 과금 방지를 위해 잠시 후 작업 기록을 확인해 주세요.";
 
 /** 서버 오류를 기존 보조 기능 오류 모델로 바꾼다. 코드에 따라 화면이 로그인·설정 안내를 고른다. */
 export function mapManagedAssistError(error: unknown, signal?: AbortSignal): Error {
@@ -186,6 +188,12 @@ export function mapManagedAssistError(error: unknown, signal?: AbortSignal): Err
   }
   if (isAppApiError(error)) {
     const code = error.code ?? "";
+    if (error.status === 409 && isHttpError(error.cause)) {
+      const payload = error.cause.data;
+      if (isRecord(payload) && payload.message === AMBIGUOUS_MESSAGE) {
+        return new UserAiTransportError("outcome-unknown", "공급자가 요청을 처리했는지 아직 확인할 수 없어요. 중복 실행을 막기 위해 이 요청은 다시 보내지 않아요.", 409);
+      }
+    }
     if (error.status === 401 || code === "FREE_AI_LOGIN_REQUIRED") {
       return new UserAiTransportError("authentication", LOGIN_MESSAGE, 401);
     }
@@ -350,7 +358,7 @@ export async function runManagedAssistParse<Schema extends z.ZodType>(
       ],
     });
   } catch (error) {
-    if (options.signal?.aborted) throw error;
+    if (options.signal?.aborted || (error instanceof UserAiTransportError && error.code === "outcome-unknown")) throw error;
     // 복구 요청이 막혀도(한도·서버 형식 검사) 사용자에게는 처음 답의 형식 문제를 알린다.
     throw new UserAiTransportError("http-error", FORMAT_ERROR_MESSAGE, 200);
   }
