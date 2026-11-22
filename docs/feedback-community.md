@@ -35,7 +35,7 @@ pnpm exec vitest run packages/core/src/feedback.test.ts
 TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/feedback_community_test \
   TSX_TSCONFIG_PATH=apps/api/tsconfig.json pnpm exec tsx scripts/verify-feedback-community-db.mts
 pnpm exec playwright install --with-deps chromium
-pnpm exec playwright test --config playwright.feedback.config.ts
+pnpm exec playwright test --config config/playwright/playwright.feedback.config.ts
 pnpm run typecheck
 ```
 

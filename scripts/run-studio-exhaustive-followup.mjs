@@ -52,7 +52,7 @@ export const SUITES = Object.freeze({
   "pencil-only": Object.freeze([pencil]),
   "canvas-layout": Object.freeze([
     Object.freeze({ id: "ui-helpers-and-chrome-layout", kind: "helpers", command: "pnpm", minutes: 3,
-      args: ["exec", "playwright", "test", "--config", "playwright.studio-qa-helpers.config.ts", "--reporter=list,json"],
+      args: ["exec", "playwright", "test", "--config", "config/playwright/playwright.studio-qa-helpers.config.ts", "--reporter=list,json"],
       report: "helper-results.json", env: {} }),
     pencil, inappEditor,
   ]),
@@ -121,7 +121,7 @@ export function validateMetadata(input, run, artifact, now = Date.now()) {
 export function validateChangedPaths(paths) {
   const allowed = new Set([workflowPath, runnerPath, "scripts/run-studio-exhaustive-followup.test.mjs",
     "scripts/run-studio-exhaustive-regressions.test.mjs", "scripts/studio-stabilization-followup-cases.mjs",
-    "scripts/studio-stabilization-followup-cases.test.mjs", "playwright.studio-production-followup.config.ts"]);
+    "scripts/studio-stabilization-followup-cases.test.mjs", "config/playwright/playwright.studio-production-followup.config.ts"]);
   const rejected = paths.filter(path => !allowed.has(path));
   requireValue(rejected.length === 0, `기존 dist와 제품 입력이 다릅니다. 새 빌드가 필요합니다: ${rejected.join(", ")}`);
   return paths;

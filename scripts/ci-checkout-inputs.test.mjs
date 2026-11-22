@@ -134,12 +134,12 @@ test("접근성 체크아웃은 화면·글꼴·브랜드 영상과 검증 소�
   assert.equal(checkout.with["sparse-checkout-cone-mode"], false);
   assert.equal(job["timeout-minutes"], 35);
   assert.equal(job["runs-on"], "ubuntu-24.04");
-  for (const command of ["pnpm run test:a11y", "pnpm exec playwright test --config playwright.production-workflows.config.ts"]) {
+  for (const command of ["pnpm run test:a11y", "pnpm exec playwright test --config config/playwright/playwright.production-workflows.config.ts"]) {
     assert(job.steps.some((step) => step.run === command), command);
   }
   const retained = [
     "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "patches/minimatch/index.js",
-    "playwright.config.ts", "playwright.production-workflows.config.ts",
+    "playwright.config.ts", "config/playwright/playwright.production-workflows.config.ts",
     "e2e/a11y-smoke.spec.ts", "e2e/production-workflows.spec.ts",
     "apps/web/src/editor.tsx", "apps/web/src/fixture.glb", "apps/api/package.json",
     "apps/web/public/fonts/text.woff2", "apps/web/public/brand/toonstudio-intro.mp4",

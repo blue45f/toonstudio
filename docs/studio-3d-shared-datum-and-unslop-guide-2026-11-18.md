@@ -199,7 +199,7 @@
 | `webtoon-prop-hunter-awakening-rank-kiosk-v31.glb` | 헌터물 · `0.74m` 스캔 · `ㄱㅅㅂㅅ` | `2.40m` 육각 마나 오벨리스크 · 3단 공명 링 · 손바닥 측정석 | `2,480 tris` |
 
 - **클로즈업 인서트 작화 절감(`+1.6h/주`) & 19개 CC0 서랍 통합:** 회차당 핵심 소품 인서트 4컷(`24분/컷` 수작업 제거)을 자동화하여 주간 총 **`41.6시간`(`5.20인일`)**, 13주 분기당 **`540.8시간` (`6.76회차` 비축 원고)**을 달성합니다.
-- **Playwright E2E 실브라우저 UX·접근성 검증(`playwright.studio-3d-v31.config.ts`):** 데스크톱(`1440×900`) 및 모바일(`390×844`) 뷰포트에서 가로 스크롤 누수 `0px`, `pageerror`·`console.error` `0건`, 19개 서랍 한글 초성 검색·GLB 바이너리 사전 차단·axe-core 색상 대비 통과를 자동 검증합니다.
+- **Playwright E2E 실브라우저 UX·접근성 검증(`config/playwright/playwright.studio-3d-v31.config.ts`):** 데스크톱(`1440×900`) 및 모바일(`390×844`) 뷰포트에서 가로 스크롤 누수 `0px`, `pageerror`·`console.error` `0건`, 19개 서랍 한글 초성 검색·GLB 바이너리 사전 차단·axe-core 색상 대비 통과를 자동 검증합니다.
 
 
 

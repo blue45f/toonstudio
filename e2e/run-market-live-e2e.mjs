@@ -201,7 +201,7 @@ function runPlaywright(apiOrigin) {
     [
       PLAYWRIGHT_ENTRYPOINT,
       "test",
-      "--config=playwright.market-live.config.ts",
+      "--config=config/playwright/playwright.market-live.config.ts",
     ],
     {
       cwd: REPOSITORY_ROOT,

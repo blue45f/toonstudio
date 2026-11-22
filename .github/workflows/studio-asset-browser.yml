@@ -7,7 +7,7 @@ on:
       - apps/web/src/domains/creator/studio-shell/StudioAssetVisualIntro*
       - apps/web/src/domains/creator/studio-shell/studio-asset-visual-intro.css
       - e2e/studio-assets-layout.spec.ts
-      - playwright.assets-layout.config.ts
+      - config/playwright/playwright.assets-layout.config.ts
       - apps/web/src/domains/creator/StudioElementsPanel*
       - apps/web/src/domains/creator/StudioAssetToolPopoverBody.tsx
       - apps/web/src/domains/creator/studio-tool-belt-lazy-ui*
@@ -135,7 +135,7 @@ jobs:
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         env:
           PLAYWRIGHT_CHANNEL: ''
-        run: pnpm exec playwright test --config playwright.assets-layout.config.ts
+        run: pnpm exec playwright test --config config/playwright/playwright.assets-layout.config.ts
       - name: Actual component layout, keyboard and SQLite checks
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         run: pnpm exec node scripts/verify-studio-catalog-browser.mjs

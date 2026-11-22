@@ -81,11 +81,11 @@ test("원래 source harness 8개와 presentation/LivingInk, DOM·CSS 50개를 �
     assert.ok(covers(gate.script), `${gate.script}: PR 변경 감지 누락`);
     assert.ok(covers(gate.browserEntry), `${gate.browserEntry}: PR 변경 감지 누락`);
   }
-  assert.deepEqual(REGRESSION_GATES[0].args, ["exec", "playwright", "test", "--config", "playwright.studio-qa-helpers.config.ts", "--reporter=list,json"]);
+  assert.deepEqual(REGRESSION_GATES[0].args, ["exec", "playwright", "test", "--config", "config/playwright/playwright.studio-qa-helpers.config.ts", "--reporter=list,json"]);
 });
 
 test("helper·CSS의 실제 다섯 파일/표시 selector/실패 계약을 유지하고 skip·force로 축소하지 않는다", () => {
-  const config = readFileSync(join(REPOSITORY_ROOT, "playwright.studio-qa-helpers.config.ts"), "utf8");
+  const config = readFileSync(join(REPOSITORY_ROOT, "config/playwright/playwright.studio-qa-helpers.config.ts"), "utf8");
   assert.match(config, /testMatch: \["studio-qa-interactions\.spec\.mts", "studio-qa-shell-interactions\.spec\.mts", "studio-drawing-chrome-layout\.spec\.mts", "studio-qa-ux-followup\.spec\.mts", "studio-bg3d-qa-interactions\.spec\.mts"\]/u);
   assert.match(config, /workers: 1/u);
   assert.match(config, /retries: 0/u);

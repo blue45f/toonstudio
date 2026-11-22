@@ -52,11 +52,11 @@ export const STABILIZATION_SUITES = Object.freeze({
     gate("hybrid-dcc-integration", "hybrid", "verify-studio-hybrid-dcc-integration", "studio-hybrid-dcc-integration.json"),
     gate("bg3d-webgpu-rotation", "playwright-production", "unused", "playwright-results.json", {
       command: "xvfb-run", args: ["-a", "--server-args=-screen 0 1920x1200x24", "pnpm", "exec", "playwright", "test",
-        "--config=playwright.bg3d-runtime.config.ts", "--reporter=list,json,./scripts/studio-bg3d-runtime-reporter.ts"],
+        "--config=config/playwright/playwright.bg3d-runtime.config.ts", "--reporter=list,json,./scripts/studio-bg3d-runtime-reporter.ts"],
       titles: [ROTATION_TITLE], env: { STUDIO_BG3D_WEBGPU_GIZMO: "1", PLAYWRIGHT_CHANNEL: "chromium" },
     }),
     gate("3d-visual-pro-vrm", "playwright-production", "unused", "playwright-results.json", {
-      args: ["exec", "playwright", "test", "--config=playwright.studio-production-followup.config.ts"],
+      args: ["exec", "playwright", "test", "--config=config/playwright/playwright.studio-production-followup.config.ts"],
       titles: VISUAL_TITLES, env: { STUDIO_BG3D_WEBGPU_GIZMO: "0", PLAYWRIGHT_CHANNEL: "" },
     }),
   ]),

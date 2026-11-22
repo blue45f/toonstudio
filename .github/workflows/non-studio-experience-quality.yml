@@ -52,8 +52,8 @@ on:
       - 'e2e/studio-exact-resume.spec.ts'
       - 'e2e/helpers/capture-page-evidence.ts'
       - 'e2e/a11y-smoke.spec.ts'
-      - 'playwright.a11y.config.ts'
-      - 'playwright.non-studio.config.ts'
+      - 'config/playwright/playwright.a11y.config.ts'
+      - 'config/playwright/playwright.non-studio.config.ts'
       - '.github/workflows/non-studio-experience-quality.yml'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
   workflow_dispatch:
@@ -203,7 +203,7 @@ jobs:
       - name: Axe serious and critical accessibility smoke
         run: pnpm run test:a11y
       - name: Production-bundle non-studio navigation and resilience
-        run: pnpm exec playwright test --config playwright.non-studio.config.ts
+        run: pnpm exec playwright test --config config/playwright/playwright.non-studio.config.ts
       - name: Preserve route report and browser evidence
         if: always()
         uses: actions/upload-artifact@v7

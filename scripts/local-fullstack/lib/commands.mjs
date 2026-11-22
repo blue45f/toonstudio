@@ -728,7 +728,7 @@ export async function commandE2e(options) {
   const args = [
     playwrightCli,
     "test",
-    "--config=playwright.local-fullstack.config.mjs",
+    "--config=config/playwright/playwright.local-fullstack.config.mjs",
     `--output=${join(context.paths.browser, "results")}`,
     ...options.passthrough,
   ];

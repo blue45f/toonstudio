@@ -167,7 +167,7 @@ pnpm run deploy:cloud -- --sync-api-env --confirm-onpod     # ONPOD_API_ENV_JSON
 5. GitHub 환경(`production-database`)의 required reviewer 같은 보호 설정은 저장소 소유자의 통제 아래 그대로 유지한다. `NO-STUDIO-WRITERS` 확인 문구는 추가형 migration에서만 소유자를 대신해 입력하며, 입력 사실과 근거를 배포 기록에 남긴다.
 6. 결과에는 승인(상시 승인 적용), SHA, 검증, 배포 ID/URL, 롤백 대상을 구분해 기록한다.
 
-Core API의 환경변수 이름과 계약은 `.env.production.example`을 참조하고, onpod 주입·저장 위치는
+Core API의 환경변수 이름과 계약은 `config/env/production.env.example`을 참조하고, onpod 주입·저장 위치는
 인프라 지도 5·6.3절을 따릅니다. 예제는 활성 기능이나 실제 키의 유효성을 증명하지 않습니다. `CORE_API_ORIGIN`은
 credential, path, query가 없는 별도 HTTPS origin이어야 하며 readiness와 origin provenance 검사를 통과해야 합니다.
 상시 플랫폼 헬스체크는 DB를 깨우지 않는 `/api/health/live`만 사용합니다. DB·스키마를 확인하는

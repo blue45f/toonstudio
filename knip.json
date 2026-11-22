@@ -8,5 +8,13 @@
     "^/src/domains/creator/catalog/studio-catalog-preferences\\.ts$",
     "^/scripts/studio-hybrid-topology-browser\\.ts$",
     "^/scripts/studio-material-morphology-browser\\.ts$"
+  ],
+  "rules": {
+    "cycles": "warn"
+  },
+  "ignoreFiles": [
+    "packages/studio-hokusai-wasm/pkg/**",
+    "crates/studio-engine-vello/pkg/**",
+    "crates/studio-engine-vello/pkg-gpu/**"
   ]
 }

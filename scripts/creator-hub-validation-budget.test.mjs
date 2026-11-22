@@ -12,7 +12,7 @@ test("the full creator typecheck retains the established core heap budget and al
     "pnpm exec tsc --noEmit --pretty false",
     "pnpm exec tsc -p apps/api/tsconfig.json --noEmit --pretty false",
     "pnpm exec vitest run packages/core/src/collaboration.test.ts",
-    "pnpm exec playwright test --config playwright.creator-hub.config.ts",
+    "pnpm exec playwright test --config config/playwright/playwright.creator-hub.config.ts",
   ]) expect(workflow).toContain(stage);
   expect(workflow).toContain("runs-on: ubuntu-latest");
   expect(workflow).toContain("timeout-minutes: 25");

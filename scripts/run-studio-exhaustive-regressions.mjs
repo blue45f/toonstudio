@@ -20,7 +20,7 @@ export const SOURCE_GATE_IDS = Object.freeze([
 export const REGRESSION_GATES = Object.freeze([
   Object.freeze({
     id: "ui-helpers", kind: "helpers", executable: "pnpm",
-    args: Object.freeze(["exec", "playwright", "test", "--config", "playwright.studio-qa-helpers.config.ts", "--reporter=list,json"]),
+    args: Object.freeze(["exec", "playwright", "test", "--config", "config/playwright/playwright.studio-qa-helpers.config.ts", "--reporter=list,json"]),
   }),
   ...[...SOURCE_GATE_IDS, "engine-webgpu-presentation", "living-ink-execution"].map(id => Object.freeze({
     id, kind: SOURCE_GATE_IDS.includes(id) ? "source-harness" : "runtime",

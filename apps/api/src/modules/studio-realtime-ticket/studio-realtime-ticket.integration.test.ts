@@ -110,7 +110,7 @@ describe("Studio realtime ticket deployment configuration", () => {
     expect(dynamicModule?.imports).toContain(CreatorModule);
   });
 
-  it.each([".env.example", ".env.production.example"].flatMap((example) => [
+  it.each([".env.example", "config/env/production.env.example"].flatMap((example) => [
     { example, label: "정상", issuer: undefined, audience: undefined, accepted: true },
     { example, label: "이전 issuer", issuer: "toonstudio-api", audience: undefined, accepted: false },
     { example, label: "이전 audience", issuer: undefined, audience: "toonstudio-realtime", accepted: false },

@@ -143,7 +143,7 @@ for (const [inputName, environmentName, enabledValue, disabledValue] of [
   const owner = job("a11y").split(/(?=^ {6}- )/mu).find((step) => step.includes(`          ${environmentName}: `));
   assert.ok(owner, "관측 환경변수는 제품 검증 단계에 있어야 합니다.");
   assert.match(owner, /^ {6}- name: 자체 안료 실제 제품 UI·저장·재열기·명시 전환$/mu);
-  assert.match(owner, /run: pnpm exec playwright test --config playwright\.pigment-product\.config\.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000/u);
+  assert.match(owner, /run: pnpm exec playwright test --config config\/playwright\/playwright\.pigment-product\.config\.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000/u);
   for (const event of ["workflow_dispatch", "pull_request", "push", "merge_group"]) {
     for (const diagnostic of [true, false, undefined]) {
       for (const profile of [true, false, undefined]) {
@@ -200,7 +200,7 @@ test("V2 클리핑 교차 의미는 비 main 수동 부분 진단에서만 한 �
   const owner = job("a11y").split(/(?=^ {6}- )/mu).find((step) => step.includes("          TOONSTUDIO_PIGMENT_CLIP_CONTRAST: "));
   assert.ok(owner);
   assert.match(owner, /^ {6}- name: 자체 안료 실제 제품 UI·저장·재열기·명시 전환$/mu);
-  assert.match(owner, /^ {8}run: pnpm exec playwright test --config playwright\.pigment-product\.config\.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000 --grep "\$TOONSTUDIO_PIGMENT_TEST_FILTER"$/mu);
+  assert.match(owner, /^ {8}run: pnpm exec playwright test --config config\/playwright\/playwright\.pigment-product\.config\.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000 --grep "\$TOONSTUDIO_PIGMENT_TEST_FILTER"$/mu);
   const gates = [
     ["TOONSTUDIO_PIGMENT_CLIP_CONTRAST", "1", "0"],
     ["TOONSTUDIO_PIGMENT_TEST_FILTER", "(^| )분리 진단: V2 클리핑 교차 픽셀 의미", ".*"],

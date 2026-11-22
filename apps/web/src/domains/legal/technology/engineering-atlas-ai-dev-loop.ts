@@ -243,8 +243,8 @@ const OPENCODE_LOOP_COMMANDS: EngineeringAtlasEntry = {
       },
     ],
     pitfall: t(
-      "'루프 25개로 업무를 자동화한다'고 말하지 않습니다. 파일은 23개이고 업무 내용이 없는 이름표이며, 실제 실행 기록과 .opencode.jsonc(Cloudflare MCP 연결)의 로드 여부는 확인하지 못했습니다. 플러그인 문서 기준으로 testfix의 기본 검증은 npm test라(저장소·설치본에서 확인 불가) 정책의 harness:verify와 다릅니다.",
-      "Do not say 25 loops automate the work. There are 23 files, they are name tags without business logic, and neither actual runs nor whether .opencode.jsonc (the Cloudflare MCP connection) is loaded could be confirmed. Per the plugin's documentation (not verifiable from the repository or an installed copy), the testfix default check is npm test, not the policy's harness:verify.",
+      "'루프 25개로 업무를 자동화한다'고 말하지 않습니다. 파일은 23개이고 업무 내용이 없는 이름표이며, 실제 실행 기록과 opencode.json의 Cloudflare MCP 연결 호출 여부는 확인하지 못했습니다. 플러그인 문서 기준으로 testfix의 기본 검증은 npm test라(저장소·설치본에서 확인 불가) 정책의 harness:verify와 다릅니다.",
+      "Do not say 25 loops automate the work. There are 23 files, they are name tags without business logic, and neither actual runs nor whether the Cloudflare MCP entries in opencode.json are invoked could be confirmed. Per the plugin's documentation (not verifiable from the repository or an installed copy), the testfix default check is npm test, not the policy's harness:verify.",
     ),
   },
   technologies: ["OpenCode", "opencode-loop", "opencode-goal-plugin", "AGENTS.md"],

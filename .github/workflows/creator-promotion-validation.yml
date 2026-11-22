@@ -11,7 +11,7 @@ on:
       - 'apps/web/src/domains/collaboration/**'
       - 'apps/web/src/platform/collaboration-client.ts'
       - 'e2e/creator-hub.spec.ts'
-      - 'playwright.creator-hub.config.ts'
+      - 'config/playwright/playwright.creator-hub.config.ts'
       - 'apps/api/src/modules/promotion/**'
       - 'apps/api/src/platform/database/schema/promotion.schema.ts'
       - 'apps/api/src/platform/database/migrations/0046_creator_promotion_community.sql'
@@ -75,4 +75,4 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Desktop and mobile checks with explicit API fixtures
-        run: pnpm exec playwright test --config playwright.creator-hub.config.ts
+        run: pnpm exec playwright test --config config/playwright/playwright.creator-hub.config.ts

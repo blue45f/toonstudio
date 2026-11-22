@@ -35,7 +35,7 @@ node tools/verify-studio-promo-preview.mjs
 python3 tools/verify-studio-promo-output.py --self-test
 python3 tools/verify-studio-promo-director-output.py --results test-results --remotion /path/to/director/out/promo.mp4
 pnpm exec eslint apps/web/src/domains/creator/promo e2e/studio-promo.spec.ts --max-warnings=0
-pnpm exec playwright test --config playwright.promo.config.ts --project=chromium
+pnpm exec playwright test --config config/playwright/playwright.promo.config.ts --project=chromium
 ```
 
 Local verification used an isolated worktree, its own Vite cache/port and installed Chrome. Unit tests: 59 passed. Recorder/preview lifecycle tests: 17 + 5 passed. The two browser scenarios use production UI, real canvas, real local audio and real native encoding; only the optional text-AI HTTP responses are fixtures. They exercise split import, templates, foregrounds, history, narration, captions, exports, local draft restoration, mobile overflow and offline-after-load recording.
@@ -56,14 +56,14 @@ suite's forced SwiftShader flags; it does not waive video or audio checks.
   rerendering the editor on every frame. Capture still requests 30fps.
 - Music fades and narration ducking use linear ramps scheduled on the Web
   Audio clock. Source nodes stop at the timeline boundary, independent of UI.
-- `playwright.promo.config.ts` uses an isolated cache/port and fresh browser,
+- `config/playwright/playwright.promo.config.ts` uses an isolated cache/port and fresh browser,
   without unrelated 3D renderer flags. Both full editor workflows and the new
   raster-quality scenario remain mandatory alongside real encoded-media tests.
 
 Run browser verification with:
 
 ```sh
-pnpm exec playwright test --config playwright.promo.config.ts --project=chromium
+pnpm exec playwright test --config config/playwright/playwright.promo.config.ts --project=chromium
 ```
 
 Local validation of this follow-up:
@@ -107,7 +107,7 @@ from these local measurements.
 
 **target / 미구현**
 
-- 10초 네이티브 녹화의 **영상 트랙이 10초 엔딩까지 닿는지**는 이 환경에서 확인하지 못했습니다. 다른 작업과 CPU를 나눠 쓰며 load average가 4~9.5였던 4코어 머신의 헤드리스 소프트웨어 렌더링에서는 영상 프레임이 드물게만 잡혀(10초 녹화 10회 중 가장 길게 9.47초까지) `tools/verify-studio-promo-output.py`의 timing 검사를 통과한 녹화가 없었고, 같은 조건의 기존 15초 녹화 4회도 11.8~13.9초에서 끝났습니다. 오디오 트랙의 마지막 패킷은 측정한 4회 모두 9.85~9.99초였습니다. 렌더링 여유가 있는 환경(CI의 설치된 Chrome)에서 `pnpm exec playwright test --config playwright.promo.config.ts --project=chromium`과 이 검증기로 다시 확인해야 합니다. Remotion 킷을 실제로 렌더링(`npm install` 후 H.264)하는 검증과 엔딩 화면 비교도 네트워크·설치가 필요해 실행하지 않았습니다. `tools/verify-studio-promo-output.py --self-test`는 10초 합성 데이터로 확장했습니다(10초 계약은 통과하고 15초 계약은 실패해야 함).
+- 10초 네이티브 녹화의 **영상 트랙이 10초 엔딩까지 닿는지**는 이 환경에서 확인하지 못했습니다. 다른 작업과 CPU를 나눠 쓰며 load average가 4~9.5였던 4코어 머신의 헤드리스 소프트웨어 렌더링에서는 영상 프레임이 드물게만 잡혀(10초 녹화 10회 중 가장 길게 9.47초까지) `tools/verify-studio-promo-output.py`의 timing 검사를 통과한 녹화가 없었고, 같은 조건의 기존 15초 녹화 4회도 11.8~13.9초에서 끝났습니다. 오디오 트랙의 마지막 패킷은 측정한 4회 모두 9.85~9.99초였습니다. 렌더링 여유가 있는 환경(CI의 설치된 Chrome)에서 `pnpm exec playwright test --config config/playwright/playwright.promo.config.ts --project=chromium`과 이 검증기로 다시 확인해야 합니다. Remotion 킷을 실제로 렌더링(`npm install` 후 H.264)하는 검증과 엔딩 화면 비교도 네트워크·설치가 필요해 실행하지 않았습니다. `tools/verify-studio-promo-output.py --self-test`는 10초 합성 데이터로 확장했습니다(10초 계약은 통과하고 15초 계약은 실패해야 함).
 - 틱톡·쇼츠의 화면 안전 영역은 플랫폼마다 다르므로 기존처럼 게시 전에 대상 플랫폼에서 확인해야 합니다.
 
 ### 2. Studio 문서의 컷 → 샷 초안

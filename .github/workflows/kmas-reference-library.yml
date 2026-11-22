@@ -13,7 +13,7 @@ on:
       - 'apps/web/src/domains/legal/SitemapPage.tsx'
       - 'apps/web/src/shared/components/site-footer.tsx'
       - 'e2e/kmas-references.spec.ts'
-      - 'playwright.references.config.ts'
+      - 'config/playwright/playwright.references.config.ts'
       - '.github/workflows/kmas-reference-library.yml'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
   push:
@@ -28,7 +28,7 @@ on:
       - 'apps/web/src/domains/legal/SitemapPage.tsx'
       - 'apps/web/src/shared/components/site-footer.tsx'
       - 'e2e/kmas-references.spec.ts'
-      - 'playwright.references.config.ts'
+      - 'config/playwright/playwright.references.config.ts'
       - '.github/workflows/kmas-reference-library.yml'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
   workflow_dispatch:
@@ -128,7 +128,7 @@ jobs:
       - run: pnpm run catalog:gen && pnpm run build:bundle
       - run: pnpm exec playwright install --with-deps chromium
       - name: Chromium route and interaction verification
-        run: pnpm exec playwright test --config playwright.references.config.ts
+        run: pnpm exec playwright test --config config/playwright/playwright.references.config.ts
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v7

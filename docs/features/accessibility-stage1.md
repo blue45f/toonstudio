@@ -100,7 +100,7 @@ CDP의 `Accessibility.getFullAXTree`를 읽어 `auditAccessibilityTree`(순수 �
 pnpm run test:a11y:editor
 ```
 
-- 설정 파일은 `playwright.studio-editor-a11y.config.ts`다. 기본 포트 5233, 개발 서버는 항상 새로 띄운다. 시험 하나의 제한 시간은 480초이고 CI에서는 한 번 다시 시도한다(결정적인 위반은 두 번 다 실패하므로 가려지지 않고, 한 번 실패 뒤 통과하면 보고서가 flaky로 표시한다).
+- 설정 파일은 `config/playwright/playwright.studio-editor-a11y.config.ts`다. 기본 포트 5233, 개발 서버는 항상 새로 띄운다. 시험 하나의 제한 시간은 480초이고 CI에서는 한 번 다시 시도한다(결정적인 위반은 두 번 다 실패하므로 가려지지 않고, 한 번 실패 뒤 통과하면 보고서가 flaky로 표시한다).
 - 콜드 스타트한 개발 서버는 편집기 모듈을 처음 열 때 1~3분이 걸린다. 시험 파일의 `beforeAll`이 편집기를 한 번 미리 열어(`warmUpEditor`, 제한 10분) 그 비용을 시험 제한 시간 밖에서 치른다. 워밍업 없이 제한 시간 240초로 돌렸을 때는, 다른 작업이 함께 돌던 로컬 환경(적재 평균 10 안팎)에서 콜드 서버의 첫 두 시험이 제한 시간에 걸려 실패했다.
 - 이미지에 고정된 Chromium을 쓰려면 `PLAYWRIGHT_EXECUTABLE_PATH`를, 채널을 고르려면 `PLAYWRIGHT_CHANNEL`을 준다. 서버를 재사용하려면 `TOONSTUDIO_A11Y_EDITOR_REUSE_SERVER=1`과 `TOONSTUDIO_A11Y_EDITOR_PORT`를 함께 준다.
 - 한 시험만 보려면 `pnpm run test:a11y:editor -- -g "데스크톱.*대표 패널"`처럼 `-g`를 붙인다.

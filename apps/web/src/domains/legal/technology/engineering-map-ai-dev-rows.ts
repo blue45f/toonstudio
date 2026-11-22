@@ -522,7 +522,7 @@ export const AI_DEV_TOOL_ROWS: readonly EngineeringMapRow[] = [
     name: "OpenCode Cloudflare MCP",
     status: "configured",
     link: { title: "OpenCode · MCP servers", url: "https://opencode.ai/docs/mcp-servers/" },
-    evidence: [".opencode.jsonc"],
+    evidence: ["opencode.json"],
     cells: cells({
       kind: MCP,
       what: t(
@@ -530,12 +530,12 @@ export const AI_DEV_TOOL_ROWS: readonly EngineeringMapRow[] = [
         "A setting that lets OpenCode connect to two remote Cloudflare MCP servers: the Cloudflare tools server and the official docs server.",
       ),
       where: t(
-        ".opencode.jsonc의 mcp 항목 2개(cloudflare, cloudflare-docs). 운영 배포는 이 연결과 별개로 AGENTS.md §8의 별도 명시 승인이 필요합니다.",
-        "Two mcp entries in .opencode.jsonc (cloudflare, cloudflare-docs). Production release still needs the separate explicit approval of AGENTS.md section 8.",
+        "opencode.json의 mcp 항목 2개(cloudflare, cloudflare-docs). 운영 배포는 이 연결과 별개로 AGENTS.md §8의 별도 명시 승인이 필요합니다.",
+        "Two mcp entries in opencode.json (cloudflare, cloudflare-docs). Production release still needs the separate explicit approval of AGENTS.md section 8.",
       ),
       guard: t(
-        "설정 파일에는 주소와 사용 여부만 있고 비밀값이 없습니다. 점으로 시작하는 루트 파일 이름은 OpenCode 공식 설정 위치에 없어 실제로 읽히는지 확인하지 못했습니다.",
-        "The file holds only addresses and an enabled flag, no secrets. A dot-prefixed root file name is not among OpenCode's documented config locations, so whether it is actually read is unconfirmed.",
+        "설정 파일에는 주소와 사용 여부만 있고 비밀값이 없습니다. 과거 별도 파일(.opencode.jsonc)은 opencode.json으로 통합했습니다.",
+        "The file holds only addresses and an enabled flag, no secrets. The former separate .opencode.jsonc file was consolidated into opencode.json.",
       ),
     }),
   },

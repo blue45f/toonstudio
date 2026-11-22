@@ -113,7 +113,7 @@ test("모든 새 원본 report는 빈·다른 case·미완료·기능 실패를 
 });
 
 test("production 원래 test제목·skip0·retry0와 preview만 허용한다", () => {
-  const config = readFileSync(join(ROOT, "playwright.studio-production-followup.config.ts"), "utf8");
+  const config = readFileSync(join(ROOT, "config/playwright/playwright.studio-production-followup.config.ts"), "utf8");
   assert.match(config, /pnpm exec vite preview --config apps\/web\/vite\.config\.ts/u);
   assert.match(config, /reuseExistingServer: false/u);
   for (const item of SUITES["3d-followup"].filter(value => value.kind === "playwright-production")) {

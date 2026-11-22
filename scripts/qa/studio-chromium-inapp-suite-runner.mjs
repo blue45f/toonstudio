@@ -53,7 +53,7 @@ const SUITES = Object.freeze({
     command("autosave-two-tab", "pnpm run verify:studio-autosave-two-tab", 18, "multi-tab"),
     command(
       "community-market-deeplink",
-      "pnpm exec playwright test --config playwright.market.config.ts --grep '스튜디오 마켓 딥링크 진입 시 커뮤니티 탭이 활성화된다|스튜디오에서 마켓 리소스를 설치'",
+      "pnpm exec playwright test --config config/playwright/playwright.market.config.ts --grep '스튜디오 마켓 딥링크 진입 시 커뮤니티 탭이 활성화된다|스튜디오에서 마켓 리소스를 설치'",
       22,
       "asset-marketplace",
     ),

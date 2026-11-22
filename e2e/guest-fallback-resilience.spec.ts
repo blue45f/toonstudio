@@ -15,7 +15,7 @@ import type { Page, Route } from "@playwright/test";
  * - 플랫폼 읽기: timeout 12s / totalTimeout 30s (platform/api.ts)
  * - apiFetch 기본 상한: 60s (platform/api.ts) — 그래서 "종단 상태" 데드라인은 75s로 둔다.
  *
- * 실행 레인: playwright.non-studio.config.ts (vite preview, 127.0.0.1:5209).
+ * 실행 레인: config/playwright/playwright.non-studio.config.ts (vite preview, 127.0.0.1:5209).
  * 실제 백엔드가 필요 없는 스펙이다 — 모든 /api/* 요청을 인터셉트해 장애를 재현한다.
  */
 

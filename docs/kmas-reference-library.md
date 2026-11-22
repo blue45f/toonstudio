@@ -27,7 +27,7 @@ Security/reliability: HTTPS host allowlist; redirects rejected; 8-second upstrea
 
 Unit contract tests: `pnpm exec vitest run lib/__tests__/kmas-reference.test.ts lib/__tests__/kmas-reference-hardening.test.ts lib/__tests__/kmas-reference-recovery.test.ts`.
 
-Browser tests: `pnpm exec playwright test --config playwright.references.config.ts`. The suite uses explicitly synthetic API fixtures and tests search submission, history, notes, reload, export, keyboard modal close, unavailable-key handling and narrow-screen overflow. Fixture screenshots are test evidence, not evidence of a live approved KMAS call.
+Browser tests: `pnpm exec playwright test --config config/playwright/playwright.references.config.ts`. The suite uses explicitly synthetic API fixtures and tests search submission, history, notes, reload, export, keyboard modal close, unavailable-key handling and narrow-screen overflow. Fixture screenshots are test evidence, not evidence of a live approved KMAS call.
 
 Release acceptance also requires existing repository lint/type/build/test gates. Live KMAS acceptance requires a valid approved key and must not be inferred from successful mocked tests or a successful code merge.
 

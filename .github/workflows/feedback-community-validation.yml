@@ -13,6 +13,7 @@ on:
       - 'scripts/feedback-review-config.test.ts'
       - 'scripts/verify-feedback-community-db.mts'
       - '*feedback*.ts'
+      - 'config/playwright/playwright.feedback.config.ts'
       - '.github/workflows/feedback-community-validation.yml'
       - 'scripts/verify-typechecked-build-inputs.mjs'
       - 'scripts/verify-typechecked-build-inputs.test.mjs'
@@ -35,6 +36,7 @@ on:
       - 'scripts/feedback-review-config.test.ts'
       - 'scripts/verify-feedback-community-db.mts'
       - '*feedback*.ts'
+      - 'config/playwright/playwright.feedback.config.ts'
       - '.github/workflows/feedback-community-validation.yml'
       - 'scripts/verify-typechecked-build-inputs.mjs'
       - 'scripts/verify-typechecked-build-inputs.test.mjs'
@@ -175,7 +177,7 @@ jobs:
           packages/core/src/feedback-response.test.ts
           packages/core/src/index.ts
           packages/core/src/types.ts
-          playwright.feedback.config.ts
+          config/playwright/playwright.feedback.config.ts
           scripts/verify-feedback-community-db.mts
           apps/web/src/domains/legal/ContactPage.tsx
           apps/web/src/domains/legal/FeedbackPage.tsx
@@ -233,7 +235,7 @@ jobs:
       - name: Browser and responsive regression tests
         id: browser
         continue-on-error: true
-        run: pnpm exec playwright test --config playwright.feedback.config.ts 2>&1 | tee artifacts/feedback/browser.log
+        run: pnpm exec playwright test --config config/playwright/playwright.feedback.config.ts 2>&1 | tee artifacts/feedback/browser.log
       - name: Build isolated UI review bundle
         id: build
         continue-on-error: true
