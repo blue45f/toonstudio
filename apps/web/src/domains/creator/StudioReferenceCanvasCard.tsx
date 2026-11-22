@@ -7,6 +7,11 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import {
+  StudioReferenceStampsWidget,
+  type ReferenceStampInsertPayload,
+} from "./reference-stamps/StudioReferenceStampsWidget";
+
 import { cn } from "@/shared/lib/utils";
 
 export interface StudioReferenceCanvasCardProps {
@@ -14,6 +19,7 @@ export interface StudioReferenceCanvasCardProps {
   readonly open?: boolean;
   readonly onOpenCanvas?: () => void;
   readonly onOpenWindow?: () => void;
+  readonly onInsertReferenceStamp?: (payload: ReferenceStampInsertPayload) => void;
   readonly className?: string;
 }
 
@@ -33,6 +39,7 @@ export function StudioReferenceCanvasCard({
   open = false,
   onOpenCanvas,
   onOpenWindow,
+  onInsertReferenceStamp,
   className,
 }: StudioReferenceCanvasCardProps) {
   const safeItemCount = Number.isFinite(itemCount)
@@ -155,6 +162,16 @@ export function StudioReferenceCanvasCard({
       <p className="mt-2 text-[0.59rem] leading-relaxed text-fg-3">
         캔버스에서 바꾼 이동·확대·회전·레이어 순서는 전용 창에도 바로 반영됩니다.
       </p>
+
+      <details className="mt-3 rounded-xl border border-line bg-card/60 p-1.5">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2.5 text-[0.72rem] font-bold text-fg select-none transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          <span>턴어라운드 · 손 포즈 24종 스탬프</span>
+          <span className="text-[0.62rem] font-normal text-fg-3">6~8등신 · SVG</span>
+        </summary>
+        <div className="pt-2">
+          <StudioReferenceStampsWidget onInsertStamp={onInsertReferenceStamp} />
+        </div>
+      </details>
     </section>
   );
 }
