@@ -5,6 +5,13 @@
  * 지정된 갭 반경(gapRadius px) 내의 열린 윤곽선 구멍을 미리 가상 밀폐(Seal)한 후 칠 구역을 추출한다.
  */
 
+import {
+  runGapClosingFloodFill,
+  type GapClosingFillOptions,
+  type GapClosingFillResult,
+  type RgbaTuple,
+} from "./drawing-pro/studio-gap-closing-fill-and-dual-brush";
+
 export interface StudioSmartGapFillOptions {
   /** 윤곽선 세기 판단 임계값 (0–255). 기본값 32. */
   readonly lineThreshold?: number;
@@ -365,4 +372,20 @@ export function computeStudioSmartGapFillMask(
   }
 
   return { mask, width, height, sealedGapCount, filledPixelCount, absorbedPinholeCount };
+}
+
+/**
+ * 클린룸 형태학적 닫힘(gap radius 1..12px) + 1~2px 안티앨리어싱 팽창 채우기(흰 테두리 0)를
+ * 스마트 갭 채우기 진입점에서 직접 실행한다.
+ */
+export function computeStudioMorphologicalCloseAndFill(
+  pixelData: Uint8ClampedArray | Uint8Array,
+  width: number,
+  height: number,
+  startX: number,
+  startY: number,
+  fillColor: RgbaTuple = [0, 0, 0, 255],
+  options: GapClosingFillOptions = {},
+): GapClosingFillResult {
+  return runGapClosingFloodFill(pixelData, width, height, startX, startY, fillColor, options);
 }

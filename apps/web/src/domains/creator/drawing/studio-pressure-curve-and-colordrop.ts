@@ -5,6 +5,14 @@
  * - T6: 컬러 드래그 -> 450ms 홀드 -> 좌우 스크럽(0~100% 허용 오차) -> sticky 임계값 기억.
  */
 
+import {
+  CleanroomColorDropController,
+  mapDragDistanceToColorTolerance,
+  type CleanroomColorDropControllerOptions,
+  type ColorDropToleranceMappingOptions,
+  type ColorDropToleranceSnapshot,
+} from "../drawing-pro/studio-quickshape-and-colordrop";
+
 export interface PressureCurveControlPoints {
   /** 첫 번째 제어점 (x1, y1), 각 0..1 범위 */
   readonly x1: number;
@@ -158,4 +166,19 @@ export class ColorDropThresholdController {
       anchorY: this.anchorY,
     });
   }
+}
+
+/** 드래그 거리(0..1)를 실시간 CIE ΔE / RGB ColorDrop 허용치로 매핑한다. */
+export function resolveColorDropToleranceFromDrag(
+  dragDistance01: number,
+  options: ColorDropToleranceMappingOptions = {},
+): ColorDropToleranceSnapshot {
+  return mapDragDistanceToColorTolerance(dragDistance01, options);
+}
+
+/** CIE ΔE / RGB 실시간 매핑을 지원하는 클린룸 ColorDrop 컨트롤러를 생성한다. */
+export function createCleanroomColorDropController(
+  options: CleanroomColorDropControllerOptions = {},
+): CleanroomColorDropController {
+  return new CleanroomColorDropController(options);
 }

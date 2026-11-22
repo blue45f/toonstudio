@@ -3,6 +3,12 @@
  * QuickShape(T7, 드로잉 후 400ms 정지 홀드 시 직선·사각형·타원·삼각형 스냅 + 제어 핸들 편집) 엔진 (AC-016 / F07).
  */
 
+import {
+  recognizeCleanroomQuickShape,
+  type CleanroomQuickShapeOptions,
+  type CleanroomQuickShapeResult,
+} from "../drawing-pro/studio-quickshape-and-colordrop";
+
 export type QuickMenuActionId =
   | "undo"
   | "redo"
@@ -247,4 +253,19 @@ export function moveQuickShapeHandle(
     handles: Object.freeze(handles),
     boundingBox: { left, top, width, height },
   });
+}
+
+/**
+ * 홀드 조건을 만족한 자유곡선에 6종 최소자승 QuickShape(직선·원·타원·삼각형·사각형·호) 인식기를 적용한다.
+ */
+export function snapStrokeToLeastSquaresQuickShape(
+  points: readonly StrokeSamplePoint[],
+  holdDurationMs: number,
+  minHoldMs = 400,
+  options: CleanroomQuickShapeOptions = {},
+): CleanroomQuickShapeResult | null {
+  if (holdDurationMs < minHoldMs || points.length < 2) {
+    return null;
+  }
+  return recognizeCleanroomQuickShape(points, options);
 }
