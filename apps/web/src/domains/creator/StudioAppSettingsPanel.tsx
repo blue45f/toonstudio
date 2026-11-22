@@ -30,6 +30,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { StudioErgonomicsSettingsSection } from "./ergonomics/StudioErgonomicsSettingsSection";
 import {
   STUDIO_APP_SETTINGS_TABS,
   studioAppSettingsTabLabel,
@@ -439,6 +440,8 @@ export function StudioAppSettingsPanel({
               ))}
             </div>
           </section>
+
+          <StudioErgonomicsSettingsSection reduceMotion={settings.other.reduceMotion} />
 
           <Card
             title={t("studio.settings.center.detailsTitle")}

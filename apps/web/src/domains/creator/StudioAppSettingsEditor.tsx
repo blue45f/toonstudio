@@ -28,6 +28,7 @@ import {
   type StudioAppSettingsTab,
   type StudioShortcutActionId,
 } from "./studio-app-settings";
+import { StudioErgonomicsSettingsSection } from "./ergonomics/StudioErgonomicsSettingsSection";
 import { StudioShortcutSettingsTabContent } from "./shortcuts/StudioShortcutContextAndConflictSection";
 import { runStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioResetApplicationSettingsRequest } from "./studio-destructive-command-catalog";
@@ -350,6 +351,12 @@ export function StudioAppSettingsPanel({
                       : t("studio.settings.general.applyImmediately")}
                   </StudioToggleChip>
                 </Row>
+                <div className="pt-2">
+                  <StudioErgonomicsSettingsSection
+                    compact
+                    reduceMotion={settings.other.reduceMotion}
+                  />
+                </div>
               </>
             ) : null}
 
