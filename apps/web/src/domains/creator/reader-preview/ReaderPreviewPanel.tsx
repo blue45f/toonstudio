@@ -29,6 +29,7 @@ import {
   LocateFixed,
   Pause,
   Play,
+  Route,
   ShieldCheck,
   Smartphone,
   X,
@@ -56,6 +57,13 @@ import {
   type ReaderPreviewWarningSeverity,
 } from "./reader-preview-analysis";
 import { formatReaderPreviewText } from "./reader-preview-i18n";
+import { StudioEyeFlowOverlay } from "../eyeflow/StudioEyeFlowOverlay";
+import { StudioEyeFlowSummaryRail } from "../eyeflow/StudioEyeFlowSummaryRail";
+import { analyzeReaderPagesEyeFlow } from "../eyeflow/studio-eyeflow-page-adapter";
+import type {
+  EyeFlowAnalysisResult,
+  EyeFlowReadingDirection,
+} from "../eyeflow/studio-eyeflow-types";
 
 import { useT } from "@/shared/lib/i18n";
 import { reducedMotion } from "@/shared/hooks/use-in-view";
@@ -122,7 +130,7 @@ function ReadingChecklist({
   return (
     <aside
       aria-label={t("reader.preview.checklistTitle")}
-      className="w-full shrink-0 rounded-xl border border-line bg-panel/95 shadow-lg md:sticky md:top-0 md:w-72"
+      className="w-full shrink-0 rounded-xl border border-line bg-panel/95 shadow-lg"
     >
       <button
         type="button"
@@ -195,6 +203,8 @@ function ReaderFramePage({
   pageIndex,
   pageCount,
   pageAnalysis,
+  eyeFlowAnalysis,
+  showEyeFlow,
   pageLabel,
   onSelectPage,
   pageRef,
@@ -203,6 +213,8 @@ function ReaderFramePage({
   pageIndex: number;
   pageCount: number;
   pageAnalysis: ReaderPreviewPageAnalysis;
+  eyeFlowAnalysis?: EyeFlowAnalysisResult;
+  showEyeFlow: boolean;
   pageLabel: string;
   onSelectPage?: (pageId: string) => void;
   pageRef: (element: HTMLDivElement | null) => void;
@@ -365,6 +377,15 @@ function ReaderFramePage({
             </span>
           );
         })}
+
+        {/* 토글형 시선 동선(Z-패턴) & 말풍선 꼬리 얼굴 가림 SVG 오버레이 */}
+        {eyeFlowAnalysis ? (
+          <StudioEyeFlowOverlay
+            analysis={eyeFlowAnalysis}
+            visible={showEyeFlow}
+            label={`${pageLabel} 시선 동선`}
+          />
+        ) : null}
       </section>
 
       <span
@@ -394,6 +415,9 @@ export function ReaderPreviewPanel({
 }: ReaderPreviewPanelProps): ReactElement | null {
   const t = useT();
   const [checklistCollapsed, setChecklistCollapsed] = useState(false);
+  const [showEyeFlow, setShowEyeFlow] = useState(false);
+  const [eyeFlowDirection, setEyeFlowDirection] =
+    useState<EyeFlowReadingDirection>("ltr-ttb");
   const [devicePresetId, setDevicePresetId] =
     useState<ReaderPreviewDevicePresetId>(READER_PREVIEW_DEFAULT_DEVICE_PRESET_ID);
   const device = readerPreviewDevicePreset(devicePresetId);
@@ -411,6 +435,10 @@ export function ReaderPreviewPanel({
         viewportHeightPx: device.viewportHeightPx,
       }),
     [pages, device],
+  );
+  const eyeFlowSummary = useMemo(
+    () => analyzeReaderPagesEyeFlow(pages, eyeFlowDirection),
+    [pages, eyeFlowDirection],
   );
   const pageLabels = useMemo(() => buildPageLabelMap(pages), [pages]);
   const pageAnalysisById = useMemo(
@@ -578,6 +606,26 @@ export function ReaderPreviewPanel({
             </div>
             <button
               type="button"
+              aria-pressed={showEyeFlow}
+              onClick={() => setShowEyeFlow((visible) => !visible)}
+              className={cn(
+                "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                showEyeFlow
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
+              )}
+              title="Z-패턴 시선 동선 및 말풍선 꼬리 얼굴 가림 안내선 토글"
+            >
+              <Route size={14} aria-hidden />
+              <span>시선 동선</span>
+              {eyeFlowSummary.issues.length > 0 ? (
+                <span className="rounded-full bg-warn/15 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-warn">
+                  {eyeFlowSummary.issues.length}
+                </span>
+              ) : null}
+            </button>
+            <button
+              type="button"
               onClick={() => jumpToPage(currentPageId)}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
               title={t("reader.preview.gotoCurrentPage")}
@@ -599,13 +647,24 @@ export function ReaderPreviewPanel({
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-raised/30 px-3 py-6">
           <div className="mx-auto flex w-full max-w-4xl flex-col items-stretch gap-4 md:flex-row md:items-start">
-            <ReadingChecklist
-              analysis={analysis}
-              pageLabels={pageLabels}
-              onJumpToPage={jumpToPage}
-              collapsed={checklistCollapsed}
-              onToggleCollapsed={() => setChecklistCollapsed((collapsed) => !collapsed)}
-            />
+            <div className="flex w-full shrink-0 flex-col gap-3 md:sticky md:top-0 md:w-72">
+              <ReadingChecklist
+                analysis={analysis}
+                pageLabels={pageLabels}
+                onJumpToPage={jumpToPage}
+                collapsed={checklistCollapsed}
+                onToggleCollapsed={() => setChecklistCollapsed((collapsed) => !collapsed)}
+              />
+              <StudioEyeFlowSummaryRail
+                summary={eyeFlowSummary}
+                pageLabels={pageLabels}
+                overlayVisible={showEyeFlow}
+                onToggleOverlay={() => setShowEyeFlow((visible) => !visible)}
+                direction={eyeFlowDirection}
+                onChangeDirection={setEyeFlowDirection}
+                onJumpToPage={jumpToPage}
+              />
+            </div>
             <div className="mx-auto w-full shrink-0 md:mx-0" style={{ width: device.widthPx, maxWidth: "100%" }}>
               {/* 디바이스 프레임 — 선택한 실기기 규격 폭×높이, 스크롤은 프레임 안에서만 */}
               <div className="overflow-hidden rounded-2xl border border-line bg-canvas shadow-xl">
@@ -647,6 +706,8 @@ export function ReaderPreviewPanel({
                           } satisfies ReaderPreviewPageAnalysis)
                         }
                         pageLabel={pageLabels.get(page.id) ?? page.id}
+                        eyeFlowAnalysis={eyeFlowSummary.byPageId.get(page.id)}
+                        showEyeFlow={showEyeFlow}
                         onSelectPage={onSelectPage}
                         pageRef={(element) => {
                           if (element) pageRefs.current.set(page.id, element);
