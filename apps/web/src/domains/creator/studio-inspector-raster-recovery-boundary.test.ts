@@ -140,12 +140,16 @@ describe("Studio inspector raster recovery boundary", () => {
     const stageDown = functionBody(pageSource, "onStageDown");
     const stageMove = functionBody(pageSource, "onStageMove");
     const pendingEnd = functionBody(pageSource, "finishPendingRasterRetouchGesture");
+    const pendingEndHelperStart = pageSource.indexOf("export function runStudioPendingRasterRetouchGestureFinish");
+    const pendingEndHelperEnd = pageSource.indexOf("export function runStudioPixelSelectionPointerSessionFinish", pendingEndHelperStart);
+    const pendingEndHelper = pageSource.slice(pendingEndHelperStart, pendingEndHelperEnd);
     const nodeInteractionBegin = functionBody(pageSource, "nodeInteractionBegin");
 
     expect(stageDown).toContain("studioRasterRetouchPreparationRef.current");
     expect(stageDown).toContain("journalPendingRasterRetouchGesture");
     expect(stageMove).toContain("appendStudioPendingRasterRetouchGesturePoint");
-    expect(pendingEnd).toContain("endStudioPendingRasterRetouchGesture");
+    expect(pendingEnd).toContain("runStudioPendingRasterRetouchGestureFinish({");
+    expect(pendingEndHelper).toContain("endStudioPendingRasterRetouchGesture");
     expect(pendingEnd).toContain("queuePendingRasterRetouchGesture");
     expect(pageSource).toContain("normalizeStudioPendingRasterRetouchGesture");
     expect(pageSource).toContain("applyQueuedRasterRetouchReplayRef.current");

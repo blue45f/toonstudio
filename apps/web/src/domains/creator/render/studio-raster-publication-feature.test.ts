@@ -81,6 +81,7 @@ describe("automatic raster publication feature gate", () => {
     expect(source.match(/readStudioAuthoritativeStageFrame\(\{/gu)).toHaveLength(4);
     expect(source.match(/revokeRasterHandoff: \(\) => revokeStudioRasterHandoffRef\.current\(\)/gu)).toHaveLength(4);
     // 마퀴 프리뷰는 임페러티브 Konva Rect 로 옮겨졌고, 게이트는 저빈도 활성 불리언만 본다.
-    expect(source).toMatch(/marqueeActive\s*\|\|\s*userGuides\.length\s*>\s*0/u);
+    expect(source).toContain("userGuidesLength: userGuides.length");
+    expect(source).toMatch(/input\.marqueeActive[\s\S]*?\|\|\s*input\.userGuidesLength\s*>\s*0/u);
   });
 });

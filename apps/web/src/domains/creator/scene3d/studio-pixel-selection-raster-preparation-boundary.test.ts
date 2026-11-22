@@ -123,20 +123,28 @@ describe("Studio pixel marquee vector-only raster preparation boundary", () => {
 
   it("journals and replays a quick first pointer without losing its selection geometry", () => {
     const journal = nestedFunction("journalPendingPixelSelectionRasterGesture");
+    const journalHelper = source.slice(
+      source.indexOf("export function createStudioPendingPixelSelectionRasterGesture("),
+    );
     const finish = nestedFunction("finishPendingPixelSelectionRasterGesture");
+    const finishHelperStart = source.indexOf("export function runStudioPendingPixelSelectionRasterGestureFinish(");
+    const finishHelperEnd = source.indexOf("export function runStudioPendingRasterRetouchGestureFinish(", finishHelperStart);
+    const finishHelper = source.slice(finishHelperStart, finishHelperEnd);
     const nodeInteractionBegin = nestedFunction("nodeInteractionBegin");
     const stageDown = nestedFunction("onStageDown");
     const prepare = nestedFunction("preparePixelMarqueeRasterTarget");
 
     expect(journal).toContain("pendingPixelSelectionRasterGestureRef.current");
-    expect(journal).toContain("setPointerCapture(pointerId)");
-    expect(journal).toContain("resolveSelectionCombineOverride(");
-    expect(finish).toContain("stage.setPointersPositions(pointerEvent)");
-    expect(finish).toContain("pending.released = true");
-    expect(finish).toContain("pending.cancelled = cancelled");
-    expect(finish).toContain("if (pending.released) return true");
-    expect(finish.indexOf("if (pending.released) return true"))
-      .toBeLessThan(finish.indexOf("pending.cancelled = cancelled"));
+    expect(journal).toContain("createStudioPendingPixelSelectionRasterGesture({");
+    expect(journal).toContain("setPointerCapture(gesture.pointerId)");
+    expect(journalHelper).toContain("resolveSelectionCombineOverride(");
+    expect(finish).toContain("runStudioPendingPixelSelectionRasterGestureFinish({");
+    expect(finishHelper).toContain("stage.setPointersPositions(input.pointerEvent)");
+    expect(finishHelper).toContain("pending.released = true");
+    expect(finishHelper).toContain("pending.cancelled = input.cancelled");
+    expect(finishHelper).toContain("if (pending.released) return true");
+    expect(finishHelper.indexOf("if (pending.released) return true"))
+      .toBeLessThan(finishHelper.indexOf("pending.cancelled = input.cancelled"));
     expect(prepare).toContain("beginSelectionDrag(");
     expect(prepare).toContain("updateSelectionDrag(");
     expect(prepare).toMatch(

@@ -69,6 +69,14 @@ export function readStudioPageCompositionSource(): string {
     resolve(baseDir, "./runtime/useStudioTournamentPersistenceBoot.ts"),
     resolve(baseDir, "./runtime/useStudioUnifiedHistoryJournal.ts"),
     resolve(baseDir, "./runtime/useStudioVectorOperationRuntime.ts"),
+    // Phase 5B(2026-11-22) 호스트 분리 도메인 헬퍼 7종 — 합성 경계 검사가 분리된 배선까지 읽도록 포함한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-canvas-element-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-comment-projection-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-liquify-and-selection-pointer-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-options-and-menu-derivations.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-publish-continuity-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-view-and-resize-helpers.ts"),
   ]
     .map((filePath) => readFileSync(filePath, "utf8"))
     .join("\n");
@@ -152,6 +160,14 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "./runtime/useStudioTournamentPersistenceBoot.ts"),
     resolve(baseDir, "./runtime/useStudioUnifiedHistoryJournal.ts"),
     resolve(baseDir, "./runtime/useStudioVectorOperationRuntime.ts"),
+    // Phase 5B(2026-11-22) 호스트 분리 도메인 헬퍼 7종 — 분리된 심볼에서 시작하는 슬라이스가 호스트 본문까지 이어지도록 호스트 앞에 배치한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-canvas-element-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-comment-projection-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-liquify-and-selection-pointer-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-options-and-menu-derivations.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-publish-continuity-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-view-and-resize-helpers.ts"),
     resolve(baseDir, "../StudioCuttoonEditorHost.tsx"),
     resolve(baseDir, "../canvas/studio-canvas-viewport-input.ts"),
     resolve(baseDir, "../StudioPage.tsx"),

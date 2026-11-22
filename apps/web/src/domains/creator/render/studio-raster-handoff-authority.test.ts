@@ -309,31 +309,43 @@ describe("studio raster handoff authority", () => {
 
   it("pins the StudioPage gate matrix wiring for the M2 view-tool slice", () => {
     const source = readStudioPageCompositionSource();
+    const armedStart = source.indexOf("const studioRasterHandoffArmedToolActive =");
     const memoStart = source.indexOf("const studioRasterHandoffGates = useMemo");
+    expect(armedStart).toBeGreaterThan(-1);
     expect(memoStart).toBeGreaterThan(-1);
-    const memo = source.slice(memoStart, source.indexOf("]);", memoStart));
+    const memo = source.slice(armedStart, source.indexOf("\n  );", memoStart));
+    const helperStart = source.indexOf("export function deriveStudioRasterHandoffGates(");
+    const helperEnd = source.indexOf("export function deriveStudioSelectedLinked3dReview(", helperStart);
+    expect(helperStart).toBeGreaterThan(-1);
+    const helper = source.slice(helperStart, helperEnd);
 
     // Correctness vetoes: capture and scene identity stay closed.
-    expect(memo).toContain("exportActive: isExporting || saving || timelapseCapturing");
-    expect(memo).toContain("masterEditActive: masterEditMode");
-    expect(memo).toContain(
-      "editActive: selectedId !== null || marqueeIds.length > 0 || editing !== null"
+    expect(memo).toContain("deriveStudioRasterHandoffGates({");
+    expect(memo).toContain("editingActive: editing !== null");
+    expect(memo).toContain("pageGradeVignette: pageGrade.vignette");
+    expect(memo).toContain("userGuidesLength: userGuides.length");
+    expect(helper).toContain("exportActive: input.isExporting || input.saving || input.timelapseCapturing");
+    expect(helper).toContain("masterEditActive: input.masterEditMode");
+    expect(helper).toContain(
+      "editActive: input.selectedId !== null || input.marqueeIdsLength > 0 || input.editingActive"
     );
     // M2b: the CSS-filter post-processing inputs (page grade filter chain, colour-vision preview)
     // are colocation-proven by the wrapper contract test below and no longer veto. The vignette
     // is not a CSS filter — it is an overlay outside the filter wrapper — so it is the one
     // remaining post-processing veto.
-    expect(memo).toContain("postProcessingActive: pageGrade.vignette > 0");
+    expect(helper).toContain("input.pageGradeVignette > 0");
     expect(memo).not.toContain("pageGradeActive");
     expect(memo).not.toContain("colorBlindPreview");
+    expect(helper).not.toContain("pageGradeActive");
+    expect(helper).not.toContain("colorBlindPreview");
 
     // M2 slice: only the tested view-navigation predicate may widen the tool axis.
-    expect(memo).toContain("!isStudioRasterHandoffViewNavigationTool(tool)");
-    expect(memo).not.toMatch(/tool\s*!==\s*"select"/u);
+    expect(helper).toContain("!isStudioRasterHandoffViewNavigationTool(input.tool)");
+    expect(helper).not.toMatch(/tool\s*!==\s*"select"/u);
 
     // Every state that still shows a Konva interaction plane keeps its veto bit.
-    expect(memo).toMatch(/canvasRotation\s*!==\s*0/u);
-    expect(memo).toMatch(/marqueeActive\s*\|\|\s*userGuides\.length\s*>\s*0/u);
+    expect(helper).toMatch(/input\.canvasRotation\s*!==\s*0/u);
+    expect(helper).toMatch(/input\.marqueeActive[\s\S]*?\|\|\s*input\.userGuidesLength\s*>\s*0/u);
     for (const flag of [
       "eyedropperActive", "timelinePlaying",
       "advancedFillArmed", "pixelToolArmed", "cropArmed", "panelSplitArmed", "nodeEditArmed",

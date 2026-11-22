@@ -44,6 +44,10 @@ const commitPlanSource = readFileSync(
   new URL("./studio-selection-transform-commit.ts", import.meta.url),
   "utf8",
 );
+const viewResizeHelpersSource = readFileSync(
+  new URL("./studio-cuttoon-edit/studio-host-view-and-resize-helpers.ts", import.meta.url),
+  "utf8",
+);
 const browserVerifierSource = readFileSync(
   new URL("../../../../../scripts/verify-studio-groups.mts", import.meta.url),
   "utf8",
@@ -247,96 +251,106 @@ describe("Studio group uniform-resize runtime boundary", () => {
   });
 
   it("starts one exact multi-selection lease after validating IDs, locks, and source bounds", () => {
-    const source = functionBody("beginCanvasSelectionResize");
+    const hostBegin = functionBody("beginCanvasSelectionResize");
+    const helperBeginStart = viewResizeHelpersSource.indexOf("export function validateStudioSelectionResizeBegin");
+    const helperBeginEnd = viewResizeHelpersSource.indexOf("export function validateStudioSelectionResizeCommit", helperBeginStart);
+    const helperBegin = viewResizeHelpersSource.slice(helperBeginStart, helperBeginEnd);
+    const source = `${helperBegin}\n${hostBegin}`;
     const idsHelper = functionBody("currentCanvasResizeSelectionIds");
     // Geometry validation belongs to the pure guard module, not the editor host.
     const boundsGuard = readFileSync(
       new URL("./studio-group-resize-bounds.ts", import.meta.url), "utf8",
     );
     expectSourceToken(
-      pageSource,
-      'import { finitePositiveGroupResizeBounds } from "./studio-group-resize-bounds"',
+      viewResizeHelpersSource,
+      'import { finitePositiveGroupResizeBounds } from "../studio-group-resize-bounds"',
       "shared bounds guard ownership",
     );
 
-    expectSourceToken(source, "currentCanvasResizeSelectionIds()", "resize begin");
+    expectSourceToken(hostBegin, "validateStudioSelectionResizeBegin({", "resize begin validator");
+    expectSourceToken(hostBegin, "currentCanvasResizeSelectionIds()", "resize begin");
     expectSourceToken(idsHelper, "marqueeIdsRef.current", "resize ids helper");
     expectSourceToken(idsHelper, "selectedIdRef.current", "resize single-object ids");
     expectSourceToken(source, "new Set", "resize begin");
-    expectSourceToken(source, "activeElementsRef.current", "resize begin");
-    expectSourceToken(source, "currentPageIdRef.current", "resize page snapshot");
-    expectSourceToken(source, "masterEditModeRef.current", "resize master snapshot");
-    expectSourceToken(source, "captureStudioMutationTicket()", "resize document snapshot");
-    expectSourceToken(source, "isEffectivelyLocked", "resize begin");
+    expectSourceToken(hostBegin, "activeElementsRef.current", "resize begin");
+    expectSourceToken(hostBegin, "currentPageIdRef.current", "resize page snapshot");
+    expectSourceToken(hostBegin, "masterEditModeRef.current", "resize master snapshot");
+    expectSourceToken(hostBegin, "captureStudioMutationTicket()", "resize document snapshot");
+    expectSourceToken(helperBegin, "isEffectivelyLocked", "resize begin");
     // The source frame comes from the VISIBLE box, so a hidden member would be transformed by an
     // affine that never accounted for it -- a turn about a box it sits outside throws it off-page
     // with nothing on screen to show it. Refused at the gate, like a locked member.
-    expectSourceToken(source, "isEffectivelyHidden", "resize hidden-member guard");
+    expectSourceToken(helperBegin, "isEffectivelyHidden", "resize hidden-member guard");
     expectSourceToken(
       viewportSource,
       "!selectionHasHiddenMember",
       "group resize hidden-member gate",
     );
     expectSourceToken(
-      source,
-      "finitePositiveGroupResizeBounds(sourceBounds)",
+      helperBegin,
+      "finitePositiveGroupResizeBounds(input.sourceBounds)",
       "resize source bounds",
     );
     expectSourceToken(boundsGuard, "Number.isFinite", "resize bounds guard");
     expectSourceToken(boundsGuard, "bounds.width > 0", "resize bounds guard");
     expectSourceToken(boundsGuard, "bounds.height > 0", "resize bounds guard");
-    expectSourceToken(source, "beginLiveResourceEdit(", "resize begin");
-    expectSourceToken(source, "uniqueIds.size !== selectedIds.length", "resize duplicate guard");
-    expectSourceToken(source, "!currentById.has(id)", "resize missing-ID guard");
-    expectSourceToken(source, "sourceElements,", "resize element identity snapshot");
+    expectSourceToken(hostBegin, "beginLiveResourceEdit(", "resize begin");
+    expectSourceToken(helperBegin, "uniqueIds.size !== input.selectedIds.length", "resize duplicate guard");
+    expectSourceToken(helperBegin, "!currentById.has(id)", "resize missing-ID guard");
+    expectSourceToken(hostBegin, "sourceElements: validation.sourceElements", "resize element identity snapshot");
     expectSourceToken(
-      source,
+      hostBegin,
       "studioRevisionProjectGenerationRef.current",
       "O(1) document generation snapshot",
     );
     expect(source).not.toContain("canonicalJson");
     expect(source).not.toContain("completeSelectedGroupId()");
     // Multi-select (2+) or a single freehand stroke (CSP free-scale on one layer).
-    expectSourceToken(source, "singleDrawResize", "single stroke free-scale");
-    expectSourceToken(source, 'type === "draw"', "single stroke free-scale");
-    expect(source).toContain("selectedIds.length < 2 && !singleDrawResize");
-    expect(source.indexOf("isEffectivelyLocked")).toBeLessThan(
-      source.indexOf("beginLiveResourceEdit("),
+    expectSourceToken(helperBegin, "singleDrawResize", "single stroke free-scale");
+    expectSourceToken(helperBegin, 'type === "draw"', "single stroke free-scale");
+    expect(helperBegin).toContain("input.selectedIds.length < 2 && !singleDrawResize");
+    expect(hostBegin.indexOf("validateStudioSelectionResizeBegin({")).toBeLessThan(
+      hostBegin.indexOf("beginLiveResourceEdit("),
     );
     expect(source).not.toContain("commit(");
     expect(source).not.toContain("patchEl(");
   });
 
   it("bakes every member through the uniform planner in exactly one document commit", () => {
-    const source = functionBody("commitCanvasSelectionResize");
+    const hostCommit = functionBody("commitCanvasSelectionResize");
+    const helperCommit = viewResizeHelpersSource.slice(
+      viewResizeHelpersSource.indexOf("export function validateStudioSelectionResizeCommit"),
+    );
+    const source = `${helperCommit}\n${hostCommit}`;
 
-    expectSourceToken(source, "planStudioSelectionTransformCommit(", "resize commit");
+    expectSourceToken(hostCommit, "validateStudioSelectionResizeCommit({", "resize commit validator");
+    expectSourceToken(hostCommit, "planStudioSelectionTransformCommit(", "resize commit");
     expectSourceToken(
       commitPlanSource,
       "planStudioGroupUniformResize({",
       "resize commit planner",
     );
-    expectSourceToken(source, "groupResizeRef.current", "resize commit");
-    expectSourceToken(source, "currentPageIdRef.current", "resize page identity");
-    expectSourceToken(source, "masterEditModeRef.current", "resize master identity");
-    expectSourceToken(source, "currentCanvasResizeSelectionIds()", "resize commit");
-    expectSourceToken(source, "selectionStillMatches", "resize selection identity");
-    expectSourceToken(source, "sourceStillMatches", "resize element identity");
+    expectSourceToken(hostCommit, "groupResizeRef.current", "resize commit");
+    expectSourceToken(hostCommit, "currentPageIdRef.current", "resize page identity");
+    expectSourceToken(hostCommit, "masterEditModeRef.current", "resize master identity");
+    expectSourceToken(hostCommit, "currentCanvasResizeSelectionIds()", "resize commit");
+    expectSourceToken(helperCommit, "selectionStillMatches", "resize selection identity");
+    expectSourceToken(helperCommit, "sourceStillMatches", "resize element identity");
     expectSourceToken(
-      source,
-      "session.sourceDocumentGeneration",
+      helperCommit,
+      "input.session.sourceDocumentGeneration",
       "O(1) document generation identity",
     );
     expectSourceToken(
-      source,
+      hostCommit,
       "canApplyStudioMutation(session.mutationTicket)",
       "resize document identity",
     );
-    expectSourceToken(source, "isEffectivelyLocked", "resize effective lock guard");
-    expect(occurrences(source, "commit(")).toBe(1);
+    expectSourceToken(hostCommit, "isEffectivelyLocked", "resize effective lock guard");
+    expect(occurrences(hostCommit, "commit(")).toBe(1);
     expect(source).not.toContain("patchEl(");
-    expectSourceToken(source, 'session.phase = "settling"', "resize settlement lease");
-    expect(source).not.toContain("endLiveResourceEdit()");
+    expectSourceToken(hostCommit, 'session.phase = "settling"', "resize settlement lease");
+    expect(hostCommit).not.toContain("endLiveResourceEdit()");
   });
 
   it("cancels without mutation and always releases the transform lease", () => {

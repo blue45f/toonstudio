@@ -7,7 +7,7 @@ const pageSource = readStudioPageCompositionSource();
 
 describe("Studio pixel-selection pointer lifecycle", () => {
   it("captures the owning pointer and keeps global release/cancel safety nets", () => {
-    expect(pageSource).toContain("captureTarget?.setPointerCapture(pointerId)");
+    expect(pageSource).toMatch(/captureTarget\?\.setPointerCapture\((?:gesture\.)?pointerId\)/u);
     expect(pageSource).toContain('globalThis.addEventListener("pointerup", onPointerUp, true)');
     expect(pageSource).toContain('globalThis.addEventListener("pointercancel", onPointerCancel, true)');
     expect(pageSource).toContain('globalThis.addEventListener("lostpointercapture", onPointerCancel, true)');
@@ -16,7 +16,7 @@ describe("Studio pixel-selection pointer lifecycle", () => {
 
   it("commits only the owner release and cancels without mutating the selection", () => {
     expect(pageSource).toContain("session.pointerId !== pointerId");
-    expect(pageSource).toContain("if (!cancelled) {");
+    expect(pageSource).toMatch(/if \(!(?:input\.)?cancelled\) \{/u);
     expect(pageSource).toContain("commitSelectionDragAtPoint(");
     expect(pageSource).toMatch(
       /commitSelectionDragAtPoint\(\s*selectionOperationBase\(previous, session\.operation\),\s*session\.drag,/u,
@@ -32,7 +32,7 @@ describe("Studio pixel-selection pointer lifecycle", () => {
   });
 
   it("samples the owning pointerup coordinate before committing a rectangle or ellipse", () => {
-    expect(pageSource).toContain("stage.setPointersPositions(pointerEvent)");
+    expect(pageSource).toMatch(/stage\.setPointersPositions\((?:input\.)?pointerEvent\)/u);
     expect(pageSource).toContain("stage.getRelativePointerPosition()");
     expect(pageSource).toContain("commitSelectionDragAtPoint(");
     expect(pageSource).toContain("canvasPointToNormalized(position.x, position.y, session.frame)");

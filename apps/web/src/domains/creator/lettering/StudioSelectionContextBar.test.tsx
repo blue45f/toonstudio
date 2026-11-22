@@ -233,8 +233,9 @@ describe("Studio selection context integration", () => {
     expect(pageSource).toContain(
       'tool === "select" && !canvasOnlyMode && !selectionOptionsSuppressed;'
     );
+    expect(pageSource).toContain("deriveStudioOptionsBarsSelectionModel({");
     expect(pageSource).toContain(
-      "visible: selectOptionsStripArmed && count > 0 && selectionLaneMounted,"
+      "visible: input.selectOptionsStripArmed && count > 0 && input.selectionLaneMounted,"
     );
     expect(pageSource).not.toContain("selectOptionsLaneReserved");
     expect(pageSource).not.toContain('data-studio-select-options-reserve="true"');
