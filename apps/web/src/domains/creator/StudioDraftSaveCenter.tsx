@@ -5,6 +5,7 @@ import {
   type StudioDraftSaveCenterProps,
 } from "./StudioDraftSaveCenterImpl";
 import { StudioDraftOperationSyncAssistant } from "./StudioDraftOperationSyncAssistant";
+import { StudioEnduranceGuardChip } from "./session-endurance";
 import { resolveStudioDraftServerRevision } from "./studio-draft-save-center-model";
 import {
   clearStudioDraftSaveOutbox,
@@ -170,6 +171,10 @@ export function StudioDraftSaveCenter(props: StudioDraftSaveCenterProps) {
         canvasOnlyMode={props.canvasOnlyMode}
         onOpenVersions={props.onOpenVersions}
         onExportBackup={props.onExportBackup}
+      />
+      <StudioEnduranceGuardChip
+        mobileImmersive={props.mobileImmersive}
+        canvasOnlyMode={props.canvasOnlyMode}
       />
     </>
   );
