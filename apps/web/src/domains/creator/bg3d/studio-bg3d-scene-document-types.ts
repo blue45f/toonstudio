@@ -4,6 +4,7 @@
  * 공유하는 기반 정의만 모았다.
  */
 
+import { STUDIO_3D_LOCAL_WASM64_MAX_BYTES } from "../import-safety/studio-3d-upload-limit-policy";
 import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
 import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
 import type { StudioSpatialMeasurementDocument as StudioBg3dMeasurementDocument } from "@toonstudio/studio-project-model/spatial-measurement";
@@ -36,7 +37,7 @@ export const STUDIO_BG3D_SHOT_NAME_MAX_LENGTH = 80;
 export const STUDIO_BG3D_SHOT_MAX_NODE_VISIBILITY_OVERRIDES =
   STUDIO_BG3D_SCENE_DOCUMENT_MAX_NODES;
 export const STUDIO_BG3D_GLB_MIME = "model/gltf-binary" as const;
-export const STUDIO_BG3D_GLB_MAX_BYTES = 100 * 1024 * 1024;
+export const STUDIO_BG3D_GLB_MAX_BYTES = STUDIO_3D_LOCAL_WASM64_MAX_BYTES;
 
 export type StudioBg3dSceneDocumentBudgetErrorCode =
   | "input-byte-budget-exceeded"

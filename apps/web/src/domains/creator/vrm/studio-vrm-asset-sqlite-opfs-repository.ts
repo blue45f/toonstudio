@@ -24,7 +24,7 @@ export const STUDIO_VRM_ASSET_CAS_OWNER = "studio-vrm-assets-v12";
 export const STUDIO_VRM_MODEL_ASSET_LIMITS = Object.freeze({
   /** Historical total limit; v2 reuses it only as a bounded metadata page size. */
   maxModels: 512,
-  maxModelBytes: 128 * 1024 * 1024,
+  maxModelBytes: 1024 * 1024 * 1024,
   maxAggregateModelBytes: 16 * 1024 * 1024 * 1024,
   maxThumbnailBytes: 2 * 1024 * 1024,
   maxSampleThumbnails: 512,

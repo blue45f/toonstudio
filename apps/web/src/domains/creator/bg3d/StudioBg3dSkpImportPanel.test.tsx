@@ -44,7 +44,7 @@ describe("StudioBg3dSkpImportPanel", () => {
     render(<StudioBg3dSkpImportPanel session={session} />);
     const guide = screen.getByText("SKP 파일 가져오기 안내").closest("details");
     expect(guide).not.toBeNull();
-    expect(within(guide as HTMLElement).getByText(/데스크톱 32MiB·모바일 16MiB/u)).toBeTruthy();
+    expect(within(guide as HTMLElement).getByText(/데스크톱 256MiB·모바일 32MiB/u)).toBeTruthy();
     expect(within(guide as HTMLElement).getByText(/Trimble과 관련 없는 비공식/u)).toBeTruthy();
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("group", { name: QUESTION_TITLE })).toBeNull();

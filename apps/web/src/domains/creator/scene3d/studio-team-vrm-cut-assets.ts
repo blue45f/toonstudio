@@ -1,6 +1,8 @@
 import { WORK_VRM_CUT_MAX_ATTACHMENTS } from "@toonstudio/contracts/studio-work-vrm-cut";
 import { STUDIO_WORK_ASSET_MAX_BYTES_BY_TYPE } from "@toonstudio/contracts/studio-work-asset-contract";
 
+import { formatStudio3dByteLimit, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
+
 import { inspectVrmGlbBytes, getStoredVrmModelByHash, hashVrmBlob, selectableSampleVrmUrl } from "../vrm/vrm-library";
 import { createStudioVrmTexturePaintArtifact, type StudioVrmTexturePaintArtifact } from "../vrm/studio-vrm-texture-paint-artifact";
 import { getStudioVrmTexturePaintLibraryArtifact } from "../vrm/studio-vrm-texture-paint-library";
@@ -18,7 +20,12 @@ export interface TeamCutCharacterRuntime { readonly teamCutResources?: StudioTea
 export function teamCutAssetPlan(cast: StudioScene3dCutLinkedVrm) {
   const plan = new Map<string, TeamCutAsset>();
   function add(hash: string, size: number, asset: TeamCutAsset) {
-    if (size > STUDIO_WORK_ASSET_MAX_BYTES_BY_TYPE[asset.kind]) throw new Error("팀 컷 파일 한도를 넘었습니다. VRM은 12MiB, 채색 PNG는 8MiB까지 저장할 수 있습니다.");
+    if (size > STUDIO_WORK_ASSET_MAX_BYTES_BY_TYPE[asset.kind]) {
+      const localVrmLimit = formatStudio3dByteLimit(resolveStudio3dUploadLimitPolicy().maxLocalVrmBytes);
+      throw new Error(
+        `팀 컷 클라우드 동기화 한도를 넘었습니다. 서버 팀 컷은 VRM 12MiB, 채색 PNG 8MiB까지 저장할 수 있으며, 더 큰 VRM(로컬 OPFS 최대 ${localVrmLimit})은 개인 로컬 작업에서 바로 편집할 수 있습니다.`,
+      );
+    }
     const existing = plan.get(hash);
     if (existing) {
       if (existing.kind !== asset.kind || (existing.kind === "vrm" ? existing.model.byteSize : existing.paint.byteSize) !== size

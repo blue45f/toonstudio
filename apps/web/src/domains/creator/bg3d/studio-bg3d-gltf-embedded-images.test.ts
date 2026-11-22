@@ -337,9 +337,11 @@ describe("공개 GLTFLoader embedded 이미지 소유권", () => {
   });
   it("누적 decoded 이미지 예산 초과는 URL을 만들지 않는다", async () => {
     const boundary = installImageBoundary();
-    const width = STUDIO_BG3D_IMPORT_MAX_IMAGE_DIMENSION, height = STUDIO_BG3D_IMPORT_MAX_DECODED_IMAGE_BYTES / (width * 4);
-    const f = fixture({ imageBytes: header(width, height), images: [{ bufferView: 2, mimeType: "image/png" }, { bufferView: 2, mimeType: "image/png" }],
-      change: (json) => { json.textures = [{ source: 0 }, { source: 1 }]; } });
+    const width = STUDIO_BG3D_IMPORT_MAX_IMAGE_DIMENSION, height = STUDIO_BG3D_IMPORT_MAX_IMAGE_DIMENSION;
+    const count = Math.floor(STUDIO_BG3D_IMPORT_MAX_DECODED_IMAGE_BYTES / (width * height * 4)) + 1;
+    const f = fixture({ imageBytes: header(width, height),
+      images: Array.from({ length: count }, () => ({ bufferView: 2, mimeType: "image/png" })),
+      change: (json) => { json.textures = Array.from({ length: count }, (_, source) => ({ source })); } });
     await expect(load(f.bytes)).rejects.toMatchObject({ code: "image-memory-too-large" }); expect(boundary.created).toHaveLength(0);
   });
   it("큰 논리 이미지 view는 dependency 복호화 전에 예약 예산으로 거부한다", async () => {

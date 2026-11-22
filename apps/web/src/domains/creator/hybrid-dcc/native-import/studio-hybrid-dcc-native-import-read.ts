@@ -1,8 +1,14 @@
-import { STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES } from "./studio-hybrid-dcc-native-import-contracts";
+import {
+  formatStudioNativeImportFileLimit,
+  resolveStudioNativeImportMaxFileBytes,
+} from "./studio-hybrid-dcc-native-import-contracts";
 
 /** 크기를 먼저 확인하고 FileReader를 취소한다. 사용자 파일은 URL이나 저장소로 보내지 않는다. */
 export function readStudioNativeImportFile(file: File, signal: AbortSignal): Promise<Uint8Array> {
-  if (!Number.isSafeInteger(file.size) || file.size <= 0 || file.size > STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES) return Promise.reject(new Error("모델 파일이 비어 있거나 128 MiB 한도를 넘었습니다."));
+  const maxFileBytes = resolveStudioNativeImportMaxFileBytes();
+  if (!Number.isSafeInteger(file.size) || file.size <= 0 || file.size > maxFileBytes) {
+    return Promise.reject(new Error(`모델 파일이 비어 있거나 ${formatStudioNativeImportFileLimit(maxFileBytes)} 한도를 넘었습니다.`));
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     const cleanup = () => { signal.removeEventListener("abort", abort); reader.onload = null; reader.onerror = null; reader.onabort = null; };

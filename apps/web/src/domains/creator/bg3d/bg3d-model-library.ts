@@ -292,7 +292,7 @@ const ERROR_MESSAGES: Readonly<Record<Bg3dModelLibraryErrorCode, string>> = Obje
   "unsupported-format": "안전한 GLB 2.0 파일만 등록할 수 있습니다. GLB로 다시 내보내 주세요.",
   "invalid-file": "3D 모델 파일을 읽을 수 없습니다. 원본 GLB 파일을 다시 선택해 주세요.",
   "invalid-mime": "선택한 파일의 형식 정보가 GLB와 일치하지 않습니다. 원본 파일을 다시 선택해 주세요.",
-  "file-too-large": "3D 모델은 파일 하나당 최대 100MiB까지 등록할 수 있습니다. 모델을 최적화해 주세요.",
+  "file-too-large": "3D 모델은 로컬 환경(Wasm64·OPFS)에서 파일 하나당 최대 1GiB까지 등록할 수 있습니다. 모델을 최적화해 주세요.",
   "digest-unavailable": "이 환경에서는 3D 모델 무결성 검사를 사용할 수 없습니다. 최신 브라우저에서 다시 시도해 주세요.",
   "hash-mismatch": "3D 모델의 무결성 정보가 실제 파일과 다릅니다. 신뢰할 수 있는 원본을 다시 등록해 주세요.",
   "validation-failed": "3D 모델 안전 검사를 통과하지 못했습니다. 모든 리소스를 포함한 GLB 2.0으로 다시 내보내 주세요.",
@@ -1571,7 +1571,7 @@ export const BG3D_MODEL_LIBRARY_V12_MANIFEST_KIND =
   "toonstudio-studio-bg3d-model-library-v12";
 export const BG3D_MODEL_LIBRARY_V12_MANIFEST_VERSION = 1 as const;
 export const BG3D_MODEL_LIBRARY_V12_MAX_ENTRIES = 512;
-export const BG3D_MODEL_LIBRARY_V12_MAX_TOTAL_BYTES = 4 * 1024 * 1024 * 1024;
+export const BG3D_MODEL_LIBRARY_V12_MAX_TOTAL_BYTES = 16 * 1024 * 1024 * 1024;
 export const BG3D_MODEL_LIBRARY_V12_MAX_DELETION_RECEIPTS = 2_048;
 export const BG3D_MODEL_LIBRARY_V12_MAX_MANIFEST_BYTES = 8 * 1024 * 1024;
 

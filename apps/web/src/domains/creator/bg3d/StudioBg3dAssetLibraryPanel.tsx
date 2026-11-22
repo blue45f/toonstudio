@@ -16,6 +16,7 @@ import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-co
 import { useT } from "@/shared/lib/i18n";
 
 import "../studio-bg3d-panel-status-i18n";
+import { Studio3dLocalLimitNotice } from "../components/Studio3dLocalLimitNotice";
 
 import {
   StudioBg3dAssetAiUseFields,
@@ -485,6 +486,7 @@ export function StudioBg3dAssetLibraryPanel({
         카드의 GLB 저장은 원본 FBX·OBJ를 확장자만 바꾸는 기능이 아니라, 로컬에서 검증·정규화한
         자체 포함 GLB를 저장 직전에 다시 검사해 내려받는 기능입니다.
       </p>
+      <Studio3dLocalLimitNotice profile={deviceProfileLabel === "모바일" ? "mobile" : "desktop"} includeSkp />
       <StudioBg3dSkpImportPanel />
       {renderLocalImport?.(importRights, rightsAreComplete, () => { setAiGenerated("unknown"); setAiTraining("unknown"); })}
 

@@ -13,21 +13,28 @@
 /** 모든 .skp 컨테이너가 공유하는 첫 4바이트 시그니처. */
 export const STUDIO_BG3D_SKP_SIGNATURE = [0xff, 0xfe, 0xff, 0x0e] as const;
 
-/** 데스크톱·기본 원본 상한. 일반 변환 원본 상한(32MiB)과 같다. */
-export const STUDIO_BG3D_SKP_MAX_SOURCE_BYTES = 32 * 1024 * 1024;
-/** 모바일 원본 상한. 탭 힙이 작아 데스크톱의 절반으로 둔다. */
-export const STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES = 16 * 1024 * 1024;
+const SKP_MIB = 1024 * 1024;
+const SKP_WASM_PAGE_BYTES = 65_536;
+
+/** 데스크톱 Wasm64·고메모리 원본 상한(256MiB). 일반 브라우저는 resolveStudioBg3dSkpMaxSourceBytes가 128MiB로 조정한다. */
+export const STUDIO_BG3D_SKP_MAX_SOURCE_BYTES = 256 * SKP_MIB;
+/** 데스크톱 Wasm64·균형 메모리(4GiB) 원본 상한(192MiB). */
+export const STUDIO_BG3D_SKP_BALANCED_MAX_SOURCE_BYTES = 192 * SKP_MIB;
+/** 데스크톱 비-Wasm64 표준 원본 상한(128MiB). */
+export const STUDIO_BG3D_SKP_STANDARD_MAX_SOURCE_BYTES = 128 * SKP_MIB;
+/** 모바일 원본 상한(32MiB). 탭 힙이 작아 데스크톱보다 보수적으로 둔다. */
+export const STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES = 32 * SKP_MIB;
 /** Worker 를 쓸 수 없어 메인 스레드에서 변환할 때의 상한. 화면이 멈추는 시간을 수백 ms 안으로 묶는다. */
 export const STUDIO_BG3D_SKP_MAIN_THREAD_MAX_BYTES = 2 * 1024 * 1024;
 /** 이 크기를 넘으면 이름·단위 보고용 2차 파싱(parseSkp)을 건너뛰어 시간과 힙을 아낀다. */
-export const STUDIO_BG3D_SKP_METADATA_PASS_MAX_BYTES = 24 * 1024 * 1024;
+export const STUDIO_BG3D_SKP_METADATA_PASS_MAX_BYTES = 64 * 1024 * 1024;
 /** Worker 변환 시간 상한. 넘으면 Worker 를 종료하고 skp-timeout 으로 실패한다. */
 export const STUDIO_BG3D_SKP_CONVERSION_TIMEOUT_MS = 90_000;
 /** OpenSKP 가 지원한다고 밝힌 가장 오래된 버전(SketchUp 2013 = 파일 버전 13). */
 export const STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION = 13;
 
 /** 텍스처 이미지를 GLB 에 넣는 상한. 넘으면 평균 색으로 가져오고 보고서에 경고를 남긴다. */
-export const STUDIO_BG3D_SKP_TEXTURE_EMBED_MAX_BYTES = 24 * 1024 * 1024;
+export const STUDIO_BG3D_SKP_TEXTURE_EMBED_MAX_BYTES = 64 * 1024 * 1024;
 export const STUDIO_BG3D_SKP_TEXTURE_EMBED_MAX_COUNT = 64;
 
 /** 면 방향 점검에 쓰는 삼각형 상한. 넘으면 점검을 건너뛰고 그 사실을 보고한다. */
@@ -49,13 +56,60 @@ export const STUDIO_BG3D_SKP_PLAUSIBLE_MAX_METERS = 500;
 
 export type StudioBg3dSkpDeviceProfile = "mobile" | "desktop";
 
-/** 프로필별 원본 크기 상한. 프로필을 모르면 데스크톱 상한을 쓴다. */
+export interface StudioBg3dSkpRuntimeSignals {
+  readonly isWasm64Supported?: boolean;
+  readonly deviceMemoryGb?: number | null;
+}
+
+function probeSkpHostWasm64(): boolean {
+  if (typeof WebAssembly !== "object" || WebAssembly === null || typeof WebAssembly.Memory !== "function") {
+    return false;
+  }
+  type MemCtor = new (
+    descriptor:
+      | { readonly initial: bigint; readonly maximum: bigint; readonly address: "i64" }
+      | { readonly initial: bigint; readonly maximum: bigint; readonly index: "i64" },
+  ) => { readonly buffer?: { readonly byteLength?: unknown } };
+  const MemoryCtor = WebAssembly.Memory as unknown as MemCtor;
+  for (const descriptor of [
+    { initial: BigInt(1), maximum: BigInt(2), address: "i64" as const },
+    { initial: BigInt(1), maximum: BigInt(2), index: "i64" as const },
+  ]) {
+    try {
+      const mem = new MemoryCtor(descriptor);
+      if (mem?.buffer?.byteLength === SKP_WASM_PAGE_BYTES) return true;
+    } catch {
+      // 다음 디스크립터를 시도한다.
+    }
+  }
+  return false;
+}
+
+function readSkpHostDeviceMemoryGb(): number | null {
+  if (typeof navigator !== "object" || navigator === null) return null;
+  const value = (navigator as unknown as { readonly deviceMemory?: unknown }).deviceMemory;
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** 프로필·Wasm64·기기 메모리별 원본 크기 상한. Worker 그래프를 가볍게 유지하기 위해 외부 런타임 import 없이 계산한다. */
 export function resolveStudioBg3dSkpMaxSourceBytes(
   profile: StudioBg3dSkpDeviceProfile | undefined,
+  runtimeSignals?: StudioBg3dSkpRuntimeSignals,
 ): number {
-  return profile === "mobile"
-    ? STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES
-    : STUDIO_BG3D_SKP_MAX_SOURCE_BYTES;
+  if (profile === "mobile") return STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES;
+  const rawMemory = runtimeSignals?.deviceMemoryGb === undefined
+    ? readSkpHostDeviceMemoryGb()
+    : runtimeSignals.deviceMemoryGb;
+  const deviceMemoryGb =
+    typeof rawMemory === "number" && Number.isFinite(rawMemory) && rawMemory > 0 ? rawMemory : null;
+  if (deviceMemoryGb !== null && deviceMemoryGb <= 2) return STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES;
+  const wasm64 = runtimeSignals?.isWasm64Supported ?? probeSkpHostWasm64();
+  if (wasm64) {
+    if (deviceMemoryGb !== null && deviceMemoryGb < 8) return STUDIO_BG3D_SKP_BALANCED_MAX_SOURCE_BYTES;
+    return STUDIO_BG3D_SKP_MAX_SOURCE_BYTES;
+  }
+  if (deviceMemoryGb !== null && deviceMemoryGb < 4) return STUDIO_BG3D_SKP_MOBILE_MAX_SOURCE_BYTES;
+  return STUDIO_BG3D_SKP_STANDARD_MAX_SOURCE_BYTES;
 }
 
 /** 변환 실행 위치. 폴백은 Worker 가 없는 환경에서만 쓰며 보고서에 그대로 남는다. */

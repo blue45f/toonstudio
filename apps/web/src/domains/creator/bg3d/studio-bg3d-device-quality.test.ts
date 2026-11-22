@@ -341,8 +341,15 @@ describe("GLB validator policy derivation", () => {
     const document = defaultDocument();
     const profiles = deriveStudioBg3dGlbBudgetProfiles(document);
 
-    expect(profiles.mobile.complexity.maxModelBytes).toBe(64 * 1024 * 1024);
-    expect(profiles.desktop.complexity.maxModelBytes).toBe(100 * 1024 * 1024);
+    expect(profiles.mobile.complexity.maxModelBytes).toBe(128 * 1024 * 1024);
+    expect(profiles.desktop.complexity.maxModelBytes).toBe(1024 * 1024 * 1024);
+
+    const standardProfiles = deriveStudioBg3dGlbBudgetProfiles(document, {
+      isWasm64Supported: false,
+      deviceMemoryGb: 8,
+    });
+    expect(standardProfiles.mobile.complexity.maxModelBytes).toBe(128 * 1024 * 1024);
+    expect(standardProfiles.desktop.complexity.maxModelBytes).toBe(256 * 1024 * 1024);
     expect(profiles.mobile.complexity.maxNodes).toBe(256);
     expect(profiles.desktop.complexity.maxNodes).toBe(256);
     expect(profiles.mobile.complexity).toMatchObject({

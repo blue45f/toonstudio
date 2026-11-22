@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STUDIO_3D_LOCAL_WASM64_MAX_BYTES, resolveStudio3dUploadLimitPolicy } from "../../import-safety/studio-3d-upload-limit-policy";
 
 const point = z.tuple([
   z.number().finite().min(-10000).max(10000),
@@ -100,18 +101,22 @@ export interface SpecialistResult {
   readonly sourceNodeNames?: readonly string[];
 }
 export const SPECIALIST_LIMITS = Object.freeze({
-  inputBytes: 256 * 1024 * 1024,
+  inputBytes: STUDIO_3D_LOCAL_WASM64_MAX_BYTES,
   jsonBytes: 8 * 1024 * 1024,
   vertices: 2_000_000,
   triangles: 2_000_000,
-  decodedBytes: 256 * 1024 * 1024,
-  outputBytes: 384 * 1024 * 1024,
+  decodedBytes: 1024 * 1024 * 1024,
+  outputBytes: 1024 * 1024 * 1024,
   nodes: 4096,
   navCells: 2_000_000,
   csgTriangles: 100_000,
   csgInputBytes: 128 * 1024 * 1024,
   timeoutMs: 120_000,
 });
+
+export function resolveSpecialistMaxInputBytes(): number {
+  return Math.min(SPECIALIST_LIMITS.inputBytes, resolveStudio3dUploadLimitPolicy().maxLocalModelBytes);
+}
 export class SpecialistError extends Error {
   constructor(
     readonly code:
@@ -138,13 +143,14 @@ export function parseSpecialistRequest(value: unknown): SpecialistRequest {
     })
     .strict()
     .parse(value);
+  const maxInputBytes = resolveSpecialistMaxInputBytes();
   for (const bytes of [
     request.source,
     request.options.kind === "csg" ? request.secondary : undefined,
   ]) {
     if (
       bytes &&
-      (bytes.byteLength < 20 || bytes.byteLength > SPECIALIST_LIMITS.inputBytes)
+      (bytes.byteLength < 20 || bytes.byteLength > maxInputBytes)
     ) {
       throw new SpecialistError("budget", "Input GLB exceeds the file budget.");
     }

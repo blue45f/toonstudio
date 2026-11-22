@@ -1,4 +1,8 @@
 import {
+  resolveStudio3dUploadLimitPolicy,
+  type Studio3dRuntimeCapabilitySignals,
+} from "../import-safety/studio-3d-upload-limit-policy";
+import {
   DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES,
   type StudioBg3dGlbBudgetProfiles,
   type StudioBg3dGlbProfile,
@@ -505,14 +509,24 @@ function cappedDocumentLimit(value: unknown, productMaximum: number): number {
  */
 export function deriveStudioBg3dGlbBudgetProfiles(
   document: Pick<StudioBg3dSceneDocument, "budgets">,
+  runtimeSignals?: Omit<Studio3dRuntimeCapabilitySignals, "profile">,
 ): StudioBg3dGlbBudgetProfiles {
   const deriveProfile = (profile: StudioBg3dGlbProfile) => {
     const defaults = DEFAULT_STUDIO_BG3D_GLB_BUDGET_PROFILES[profile];
+    const runtimePolicy = resolveStudio3dUploadLimitPolicy({ ...runtimeSignals, profile });
+    const profileMaxModelBytes = Math.min(defaults.complexity.maxModelBytes, runtimePolicy.maxLocalModelBytes);
+    const profileMaxDecodedGeometryBytes = Math.min(
+      defaults.complexity.maxDecodedGeometryBytes,
+      runtimePolicy.maxDecodedGeometryBytes,
+    );
+    const profileMaxTextureBytes = profile === "mobile"
+      ? defaults.textures.maxTotalBytes
+      : Math.min(defaults.textures.maxTotalBytes, runtimePolicy.maxDecodedTextureBytes);
     return Object.freeze({
       complexity: Object.freeze({
         maxModelBytes: cappedDocumentLimit(
           document.budgets.complexity.maxModelBytes,
-          defaults.complexity.maxModelBytes,
+          profileMaxModelBytes,
         ),
         maxNodes: cappedDocumentLimit(
           document.budgets.complexity.maxNodes,
@@ -568,7 +582,7 @@ export function deriveStudioBg3dGlbBudgetProfiles(
         ),
         maxDecodedGeometryBytes: cappedDocumentLimit(
           document.budgets.complexity.maxDecodedGeometryBytes,
-          defaults.complexity.maxDecodedGeometryBytes,
+          profileMaxDecodedGeometryBytes,
         ),
       }),
       textures: Object.freeze({
@@ -578,7 +592,7 @@ export function deriveStudioBg3dGlbBudgetProfiles(
         ),
         maxTotalBytes: cappedDocumentLimit(
           document.budgets.textures.maxTotalBytes,
-          defaults.textures.maxTotalBytes,
+          profileMaxTextureBytes,
         ),
         maxDimension: cappedDocumentLimit(
           document.budgets.textures.maxDimension,
@@ -598,10 +612,11 @@ export function deriveStudioBg3dGlbBudgetProfiles(
 export function deriveStudioBg3dGlbValidationPolicy(
   document: Pick<StudioBg3dSceneDocument, "budgets">,
   resolvedQuality: Pick<StudioBg3dResolvedDeviceQuality, "profile">,
+  runtimeSignals?: Omit<Studio3dRuntimeCapabilitySignals, "profile">,
 ): StudioBg3dGlbValidationPolicy {
   return Object.freeze({
     profile: resolvedQuality.profile,
-    budgets: deriveStudioBg3dGlbBudgetProfiles(document),
+    budgets: deriveStudioBg3dGlbBudgetProfiles(document, runtimeSignals),
   });
 }
 

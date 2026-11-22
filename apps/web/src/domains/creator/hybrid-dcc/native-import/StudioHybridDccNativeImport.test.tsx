@@ -117,7 +117,7 @@ describe("실제 모델 파일의 읽기·검증·등록 UI", () => {
     const { notify } = await mount(); const before = probe().getAttribute("data-state");
     const read = vi.spyOn(FileReader.prototype, "readAsArrayBuffer");
     const huge = new File(["x"], "huge.glb"); Object.defineProperty(huge, "size", { value: STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES + 1 });
-    choose(huge); await waitFor(() => expect(within(status()).getByRole("alert").textContent).toContain("128 MiB"));
+    choose(huge); await waitFor(() => expect(within(status()).getByRole("alert").textContent).toContain("1 GiB"));
     choose(new File([], "empty.obj")); await waitFor(() => expect(within(status()).getByRole("alert").textContent).toContain("비어 있거나"));
     expect(read).not.toHaveBeenCalled();
     choose(new File(["broken"], "broken.glb"));

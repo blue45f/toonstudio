@@ -1,8 +1,12 @@
 import { Box3, LoadingManager, Mesh, Vector3, type Object3D, type Texture } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { formatStudio3dByteLimit, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 /** Only self-contained GLB. Imported artwork never causes outbound texture/buffer requests. */
 export function validateLocalGlb(buffer: ArrayBuffer): void {
-  if (buffer.byteLength < 28 || buffer.byteLength > 30 * 1024 * 1024) throw new Error("GLB는 30MB 이하여야 해요.");
+  const maxGlbBytes = resolveStudio3dUploadLimitPolicy().maxLocalModelBytes;
+  if (buffer.byteLength < 28 || buffer.byteLength > maxGlbBytes) {
+    throw new Error(`GLB는 현재 로컬 환경 기준 ${formatStudio3dByteLimit(maxGlbBytes)} 이하여야 해요.`);
+  }
   const view = new DataView(buffer);
   if (view.getUint32(0,true) !== 0x46546c67 || view.getUint32(4,true) !== 2 || view.getUint32(8,true) !== buffer.byteLength || view.getUint32(16,true) !== 0x4e4f534a) throw new Error("올바른 GLB 2.0 파일이 아니에요.");
   const length = view.getUint32(12,true); if (length > 4 * 1024 * 1024 || length + 20 > buffer.byteLength) throw new Error("GLB 메타데이터가 너무 크거나 손상됐어요.");

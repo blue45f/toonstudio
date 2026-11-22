@@ -1763,6 +1763,8 @@ describe("convertStudioBg3dModelFilesToGlb", () => {
       obj,
       sourceFile("texture-a.png", pngHeader(6_000, 6_000)),
       sourceFile("texture-b.png", pngHeader(6_000, 6_000)),
+      sourceFile("texture-c.png", pngHeader(6_000, 6_000)),
+      sourceFile("texture-d.png", pngHeader(6_000, 6_000)),
     ])).rejects.toMatchObject({ code: "image-memory-too-large" });
   });
 

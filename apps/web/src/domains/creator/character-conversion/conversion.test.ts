@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+
+import { resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { promoUnzip } from "../promo/promo-zip";
 import { sha256HexPortable } from "../studio-sha256";
 import { DEFAULT_CONVERSION_SETTINGS, isModelFilename, validateConversionSettings, validateReferenceSet, type CharacterView, type PreparedCharacterImage } from "./conversion-contract";
@@ -93,7 +95,9 @@ describe("bounded character rendering", () => {
     expect(() => characterCameraPosition("front", 1, 0, 61)).toThrow();
   });
   it("rejects oversized files before reading their bytes", async () => {
-    const read = vi.fn(); const file = { size: 65 * 1024 * 1024, arrayBuffer: read } as unknown as File;
+    const read = vi.fn();
+    const maxBytes = resolveStudio3dUploadLimitPolicy().maxLocalModelBytes;
+    const file = { size: maxBytes + 1, arrayBuffer: read } as unknown as File;
     await expect(renderCharacterGlb(file, 512, ["front"], { yaw: 0, pitch: 0, animationTime: 0 }, new AbortController().signal, vi.fn())).rejects.toThrow();
     expect(read).not.toHaveBeenCalled();
   });

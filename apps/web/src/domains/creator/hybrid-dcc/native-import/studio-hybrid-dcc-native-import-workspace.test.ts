@@ -69,7 +69,7 @@ describe("실제 파일의 native workspace 등록", () => {
     const source = workspaceAddUnitCube(createStudioHybridDccWorkspace("failed-import"), "original"); const state = source.session.state; const journal = source.session.journal;
     expect(() => workspaceImportBytes(source, "invalid.glb", new Uint8Array([1, 2, 3]))).toThrow();
     const oversized = new Uint8Array([1]); Object.defineProperty(oversized, "byteLength", { value: STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES + 1 });
-    expect(() => workspaceImportBytes(source, "huge.glb", oversized)).toThrow(/128 MiB/u);
+    expect(() => workspaceImportBytes(source, "huge.glb", oversized)).toThrow(/1 GiB/u);
     expect(source.session.state).toBe(state); expect(source.session.journal).toBe(journal); expect(Object.keys(state.geometry.records)).toEqual(["original"]);
   });
 });

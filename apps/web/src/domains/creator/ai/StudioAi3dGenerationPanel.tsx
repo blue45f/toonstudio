@@ -15,6 +15,7 @@ import {
 } from "./studio-3d-generation-client";
 import { StudioAiConnectionBadge } from "./StudioAiConnectionBadge";
 import { aiStatusText } from "./studio-ai-status-i18n";
+import { formatStudio3dByteLimit, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 
 const TERMINAL = new Set(["ready", "failed", "cancelled", "expired"]);
 
@@ -106,6 +107,10 @@ export function StudioAi3dGenerationPanel({
     });
   }, [advanced, preset, provider, seed, targetFaceCount]);
 
+  const local3dLimitLabel = useMemo(
+    () => formatStudio3dByteLimit(resolveStudio3dUploadLimitPolicy().maxLocalModelBytes),
+    [],
+  );
   const expectedFileCount = mode === "image-to-3d" ? 1 : mode === "multiview-to-3d" ? 2 : mode === "texture-only" ? 1 : 0;
   const inputBytes = files.reduce((total, file) => total + file.size, modelFile?.size ?? 0);
   const inputWithinBudget = inputBytes <= STUDIO_3D_INLINE_INPUT_MAX_BYTES;
@@ -292,7 +297,7 @@ export function StudioAi3dGenerationPanel({
       {mode !== "text-to-3d" ? (
         <p className={`rounded-lg border px-2.5 py-2 text-[0.63rem] leading-relaxed ${inputWithinBudget ? "border-line bg-panel/50 text-fg-3" : "border-bad/35 bg-bad/10 text-bad"}`}>
           현재 전송 방식은 선택한 이미지와 모델 합계 10MB까지 지원합니다. 선택됨 {(inputBytes / 1024 / 1024).toFixed(1)}MB / 10MB.
-          더 큰 자산은 객체 저장소 업로드 경로가 제공되기 전까지 전송하지 않습니다.
+          서버 AI 인라인 전송은 10MB 계약으로 제한되지만, 더 큰 3D 모델(최대 {local3dLimitLabel})은 3D 배경·VRM 라이브러리에서 로컬 OPFS 우선으로 즉시 작업할 수 있습니다.
         </p>
       ) : null}
 

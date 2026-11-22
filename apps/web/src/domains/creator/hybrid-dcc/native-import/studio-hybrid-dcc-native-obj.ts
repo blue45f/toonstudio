@@ -4,7 +4,16 @@ import { STUDIO_GEOMETRY_MAX_ABSOLUTE_COORDINATE } from "../../studio-geometry-a
 import { decodeStudioMeshUvLayer, hashStudioMeshUvTopology } from "../../mesh-uv/studio-mesh-uv-authority";
 import { createStudioHybridDccIdentityTransform } from "../studio-hybrid-dcc-object-transform";
 
-import { STUDIO_NATIVE_IMPORT_MAX_ASSETS, STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES, STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES, studioNativeImportFailure, type StudioNativeImportAsset, type StudioNativeImportIssue, type StudioNativeImportResult } from "./studio-hybrid-dcc-native-import-contracts";
+import {
+  STUDIO_NATIVE_IMPORT_MAX_ASSETS,
+  STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES,
+  formatStudioNativeImportFileLimit,
+  resolveStudioNativeImportMaxFileBytes,
+  studioNativeImportFailure,
+  type StudioNativeImportAsset,
+  type StudioNativeImportIssue,
+  type StudioNativeImportResult,
+} from "./studio-hybrid-dcc-native-import-contracts";
 import { estimateStudioNativeObjPartBytes, estimateStudioNativeObjWorkingBytes } from "./studio-hybrid-dcc-native-obj-budget";
 import { studioNativeObjPolygonLoops } from "./studio-hybrid-dcc-native-obj-polygons";
 import { assertStudioNativeUvPrecision, StudioNativeUvPrecisionError } from "./studio-hybrid-dcc-native-uv-precision";
@@ -40,7 +49,10 @@ function name(tokens: readonly string[], fallback: string, line: number): string
 }
 
 export function decodeStudioNativeObj(bytes: Uint8Array): StudioNativeImportResult {
-  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0 || bytes.byteLength > STUDIO_NATIVE_IMPORT_MAX_FILE_BYTES) return studioNativeImportFailure("obj-file-budget", "OBJ 파일이 비어 있거나 128 MiB 입력 한도를 넘었습니다.");
+  const maxFileBytes = resolveStudioNativeImportMaxFileBytes();
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0 || bytes.byteLength > maxFileBytes) {
+    return studioNativeImportFailure("obj-file-budget", `OBJ 파일이 비어 있거나 ${formatStudioNativeImportFileLimit(maxFileBytes)} 입력 한도를 넘었습니다.`);
+  }
   let text: string;
   try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
   catch { return studioNativeImportFailure("obj-invalid-utf8", "OBJ 파일을 올바른 UTF-8 텍스트로 읽을 수 없습니다."); }
@@ -56,7 +68,7 @@ export function decodeStudioNativeObj(bytes: Uint8Array): StudioNativeImportResu
     const checkWorkingBudget = (line?: number) => {
       const estimate = estimateStudioNativeObjWorkingBytes({ textCharacters: text.length, sourceVertices: positions.length,
         sourceUvs: texture.length, sourceCorners: cornersRead, outputCorners, outputFaces, assetBytes });
-      if (estimate > STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES) abort("obj-working-budget", "OBJ 파싱과 편집 자산 생성의 예상 작업량이 256 MiB 예산을 넘었습니다.", line);
+      if (estimate > STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES) abort("obj-working-budget", `OBJ 파싱과 편집 자산 생성의 예상 작업량이 ${formatStudioNativeImportFileLimit(STUDIO_NATIVE_IMPORT_MAX_WORKING_BYTES)} 예산을 넘었습니다.`, line);
     };
     checkWorkingBudget();
     const budget = { spend(amount = 1) {

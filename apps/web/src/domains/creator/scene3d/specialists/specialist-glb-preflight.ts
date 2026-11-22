@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { inspectSpecialistGlbImages } from "./specialist-image-budget";
-import { SPECIALIST_LIMITS, SpecialistError } from "./specialist-contract";
+import { SPECIALIST_LIMITS, SpecialistError, resolveSpecialistMaxInputBytes } from "./specialist-contract";
 import type { GLTF } from "@gltf-transform/core";
 
 /** Validate all executable/resource references BEFORE any decoder or graph allocation. */
@@ -9,7 +9,7 @@ export function preflightSpecialistGlb(bytes: Uint8Array): GLTF.IGLTF {
   const fail = (detail: string): never => {
     throw new SpecialistError("unsupported", detail);
   };
-  if (bytes.length < 20 || bytes.length > SPECIALIST_LIMITS.inputBytes)
+  if (bytes.length < 20 || bytes.length > resolveSpecialistMaxInputBytes())
     fail("Invalid GLB size.");
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (

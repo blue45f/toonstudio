@@ -5,6 +5,12 @@
  * 기반 정의만 모았다. 다른 모듈에 의존하지 않는 최하위 층이다(순환 import 방지).
  */
 
+import {
+  STUDIO_3D_LOCAL_BATCH_WASM64_MAX_BYTES,
+  STUDIO_3D_LOCAL_CONVERSION_WASM64_MAX_BYTES,
+  STUDIO_3D_LOCAL_TEXT_WASM64_MAX_BYTES,
+  formatStudio3dByteLimit,
+} from "../import-safety/studio-3d-upload-limit-policy";
 import { STUDIO_BG3D_GLB_MAX_BYTES } from "./studio-bg3d-glb-validation";
 import {
   STUDIO_BG3D_SKP_CONVERSION_TIMEOUT_MS,
@@ -19,11 +25,11 @@ import type * as THREE from "three";
 export const STUDIO_BG3D_IMPORT_MAX_FILES = 256;
 export const STUDIO_BG3D_IMPORT_MAX_MODELS = 32;
 export const STUDIO_BG3D_IMPORT_MAX_FILE_BYTES = STUDIO_BG3D_GLB_MAX_BYTES;
-export const STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES = 32 * 1024 * 1024;
-export const STUDIO_BG3D_IMPORT_MAX_TOTAL_BYTES = 300 * 1024 * 1024;
-export const STUDIO_BG3D_IMPORT_MAX_TEXT_BYTES = 32 * 1024 * 1024;
+export const STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES = STUDIO_3D_LOCAL_CONVERSION_WASM64_MAX_BYTES;
+export const STUDIO_BG3D_IMPORT_MAX_TOTAL_BYTES = STUDIO_3D_LOCAL_BATCH_WASM64_MAX_BYTES;
+export const STUDIO_BG3D_IMPORT_MAX_TEXT_BYTES = STUDIO_3D_LOCAL_TEXT_WASM64_MAX_BYTES;
 export const STUDIO_BG3D_IMPORT_MAX_IMAGE_DIMENSION = 8_192;
-export const STUDIO_BG3D_IMPORT_MAX_DECODED_IMAGE_BYTES = 256 * 1024 * 1024;
+export const STUDIO_BG3D_IMPORT_MAX_DECODED_IMAGE_BYTES = 512 * 1024 * 1024;
 /** Hard pre-parser ceilings. The canonical GLB validator applies the active device/document budget later. */
 export const STUDIO_BG3D_IMPORT_MAX_INLINE_RESOURCE_BYTES = 8 * 1024 * 1024;
 export const STUDIO_BG3D_IMPORT_MAX_INLINE_TOTAL_BYTES = 32 * 1024 * 1024;
@@ -33,7 +39,7 @@ export const STUDIO_BG3D_IMPORT_MAX_MESH_PRIMITIVES = 2_048;
 export const STUDIO_BG3D_IMPORT_MAX_VERTICES = 4_000_000;
 export const STUDIO_BG3D_IMPORT_MAX_TRIANGLES = 2_000_000;
 export const STUDIO_BG3D_IMPORT_MAX_ACCESSOR_ELEMENTS = 40_000_000;
-export const STUDIO_BG3D_IMPORT_MAX_DECODED_GEOMETRY_BYTES = 256 * 1024 * 1024;
+export const STUDIO_BG3D_IMPORT_MAX_DECODED_GEOMETRY_BYTES = 1536 * 1024 * 1024;
 export const STUDIO_BG3D_IMPORT_MAX_EXPORT_MATERIALS = 1_024;
 export const STUDIO_BG3D_IMPORT_MAX_EXPORT_MATERIAL_SLOTS = 4_096;
 export const STUDIO_BG3D_IMPORT_MAX_ANIMATION_CLIPS = 128;
@@ -43,7 +49,7 @@ export const STUDIO_BG3D_IMPORT_MAX_ANIMATION_BYTES = 128 * 1024 * 1024;
 export const STUDIO_BG3D_IMPORT_MAX_ANIMATION_DURATION_SECONDS = 6 * 60 * 60;
 export const STUDIO_BG3D_IMPORT_MAX_OBJ_MTL_REFERENCE_DIRECTIVES = 256;
 export const STUDIO_BG3D_IMPORT_MAX_OBJ_MATERIAL_LIBRARIES = 64;
-export const STUDIO_BG3D_IMPORT_MAX_OBJ_MTL_TOTAL_BYTES = 16 * 1024 * 1024;
+export const STUDIO_BG3D_IMPORT_MAX_OBJ_MTL_TOTAL_BYTES = 32 * 1024 * 1024;
 export const STUDIO_BG3D_IMPORT_MAX_OBJ_MTL_DIRECTIVES = 65_536;
 export const STUDIO_BG3D_IMPORT_DIRECT_MAX_BYTES = 512 * 1024;
 export const STUDIO_BG3D_IMPORT_MAX_GLTF_TABLE_ENTRIES = 65_536;
@@ -110,9 +116,9 @@ const ERROR_MESSAGES: Readonly<Record<StudioBg3dModelImportErrorCode, string>> =
   "empty-file": "비어 있는 3D 모델 또는 리소스 파일은 가져올 수 없습니다.",
   "environment-unsupported": "이 브라우저에서는 3D 모델 변환 기능을 사용할 수 없습니다. 최신 브라우저에서 다시 시도해 주세요.",
   "export-failed": "3D 모델을 자체 포함 GLB로 변환하지 못했습니다. 원본 모델과 텍스처를 확인해 주세요.",
-  "file-too-large": "GLB·리소스는 100MiB, 변환할 원본 모델은 32MiB 제한을 초과할 수 없습니다.",
+  "file-too-large": `현재 로컬 환경의 3D 모델 용량 한도(GLB·리소스 최대 ${formatStudio3dByteLimit(STUDIO_BG3D_IMPORT_MAX_FILE_BYTES)}, 변환 원본 최대 ${formatStudio3dByteLimit(STUDIO_BG3D_IMPORT_MAX_CONVERSION_SOURCE_BYTES)})를 초과했습니다.`,
   "image-dimension-too-large": "3D 모델 텍스처 한 변은 8192px을 초과할 수 없습니다. 텍스처 해상도를 낮춰 주세요.",
-  "image-memory-too-large": "선택한 3D 텍스처의 디코딩 메모리가 256MiB 제한을 초과했습니다. 텍스처를 줄여 주세요.",
+  "image-memory-too-large": `선택한 3D 텍스처의 디코딩 메모리가 ${formatStudio3dByteLimit(STUDIO_BG3D_IMPORT_MAX_DECODED_IMAGE_BYTES)} 제한을 초과했습니다. 텍스처를 줄여 주세요.`,
   "inline-resource-too-large": "glTF에 직접 포함된 데이터의 용량 제한을 초과했습니다. BIN·텍스처를 별도 파일로 내보내거나 모델을 줄여 주세요.",
   "invalid-image": "3D 모델 텍스처의 형식 또는 크기 정보를 안전하게 확인할 수 없습니다.",
   "invalid-path": "3D 모델 리소스 경로가 안전하지 않습니다. 상대 경로로 구성된 원본을 선택해 주세요.",
@@ -123,8 +129,8 @@ const ERROR_MESSAGES: Readonly<Record<StudioBg3dModelImportErrorCode, string>> =
   "model-byte-budget-exceeded": "변환될 3D 모델의 예상 용량이 이 기기의 안전 기준을 초과했습니다. 메시와 텍스처를 줄여 주세요.",
   "no-model": "GLB, glTF, OBJ, FBX, DAE, STL, PLY, 3DS 또는 SKP 모델 파일을 하나 이상 선택해 주세요.",
   "node-budget-exceeded": "3D 모델의 노드 수가 가져오기 안전 기준을 초과했습니다. 계층을 단순화해 주세요.",
-  "output-too-large": "변환된 GLB가 100MiB 제한을 초과했습니다. 텍스처나 메시를 최적화해 주세요.",
-  "output-total-too-large": "한 번에 변환된 GLB의 총용량은 100MiB를 초과할 수 없습니다. 모델을 나누어 가져와 주세요.",
+  "output-too-large": `변환된 GLB가 현재 환경의 로컬 한도(최대 ${formatStudio3dByteLimit(STUDIO_BG3D_IMPORT_MAX_FILE_BYTES)})를 초과했습니다. 텍스처나 메시를 최적화해 주세요.`,
+  "output-total-too-large": `한 번에 변환된 GLB의 총용량이 현재 로컬 한도(최대 ${formatStudio3dByteLimit(STUDIO_BG3D_IMPORT_MAX_OUTPUT_TOTAL_BYTES)})를 초과했습니다. 모델을 나누어 가져와 주세요.`,
   "parse-failed": "3D 모델 구조를 해석하지 못했습니다. 원본 파일과 연결 리소스를 확인해 주세요.",
   "skp-cancelled": "SKP 변환을 취소했습니다. 장면과 라이브러리는 변경하지 않았습니다.",
   "skp-converter-unavailable": ".skp 변환기(OpenSKP)를 불러오거나 실행하지 못해 SKP 파일을 가져올 수 없습니다. 잠시 후 다시 시도하거나, SketchUp에서 GLB 또는 DAE로 내보낸 뒤 가져와 주세요.",
@@ -135,7 +141,7 @@ const ERROR_MESSAGES: Readonly<Record<StudioBg3dModelImportErrorCode, string>> =
   "skp-unsupported-version": `SketchUp ${2000 + STUDIO_BG3D_SKP_MIN_SUPPORTED_MAJOR_VERSION} 이전 버전에서 저장한 파일은 변환할 수 없습니다. 최신 SketchUp에서 파일을 열어 다시 저장하거나 GLB 또는 DAE로 내보낸 뒤 가져와 주세요.`,
   "too-many-files": "한 번에 선택할 수 있는 3D 모델과 연결 리소스는 최대 256개입니다.",
   "too-many-models": "한 번에 가져올 수 있는 3D 모델은 최대 32개입니다.",
-  "total-too-large": "한 번에 가져올 파일의 총용량은 300MiB를 초과할 수 없습니다.",
+  "total-too-large": `한 번에 가져올 파일의 총용량이 현재 로컬 한도(최대 ${formatStudio3dByteLimit(STUDIO_BG3D_IMPORT_MAX_TOTAL_BYTES)})를 초과했습니다.`,
   "triangle-budget-exceeded": "3D 모델의 삼각형 수가 가져오기 안전 기준을 초과했습니다. 메시를 경량화해 주세요.",
   "light-budget-exceeded": "3D 모델의 조명 수가 이 기기의 안전 기준을 초과했습니다. 조명 수를 줄여 주세요.",
   "skin-count-budget-exceeded": "3D 모델의 스킨 수가 이 기기의 안전 기준을 초과했습니다. 리깅 구조를 단순화해 주세요.",
@@ -148,7 +154,7 @@ const ERROR_MESSAGES: Readonly<Record<StudioBg3dModelImportErrorCode, string>> =
   "unsupported-extension": "아직 변환할 수 없는 압축 또는 텍스처 확장이 포함되어 있습니다. 표준 glTF/GLB로 다시 내보내 주세요.",
   "vertex-budget-exceeded": "3D 모델의 정점 수가 가져오기 안전 기준을 초과했습니다. 메시를 경량화해 주세요.",
   "worker-required": "선택한 OBJ·STL·PLY 변환 백엔드를 사용할 수 없습니다. Worker를 지원하는 최신 브라우저에서 다시 시도하거나 명시적 직접 실행 모델의 크기를 줄여 주세요.",
-  "geometry-memory-too-large": "3D 모델의 디코딩된 기하 데이터가 256MiB 안전 기준을 초과했습니다. 메시를 경량화해 주세요.",
+  "geometry-memory-too-large": `3D 모델의 디코딩된 기하 데이터가 ${formatStudio3dByteLimit(STUDIO_BG3D_IMPORT_MAX_DECODED_GEOMETRY_BYTES)} 안전 기준을 초과했습니다. 메시를 경량화해 주세요.`,
 });
 
 export class StudioBg3dModelImportError extends Error {

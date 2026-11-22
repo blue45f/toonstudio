@@ -226,8 +226,8 @@ describe("notices", () => {
   it("derives the support limits from the contract constants", () => {
     expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).toContain("SketchUp 2013 이후");
     expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).toContain("90초");
-    expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).toContain("데스크톱 32MiB");
-    expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).toContain("모바일 16MiB");
+    expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).toContain("데스크톱 256MiB");
+    expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).toContain("모바일 32MiB");
     expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).toContain("압축을 푼 모델 데이터");
     expect(STUDIO_BG3D_SKP_SUPPORT_SUMMARY).not.toMatch(/undefined|NaN/u);
   });
