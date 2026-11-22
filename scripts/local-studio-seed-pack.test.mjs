@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { describe, it } from "node:test";
+const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 import { fileURLToPath } from "node:url";
 
 import {

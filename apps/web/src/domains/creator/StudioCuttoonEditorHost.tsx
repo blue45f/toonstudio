@@ -34,6 +34,7 @@ import { copyStudioSmartShapeSnapshot } from "./studio-smart-shape-copy";
 import { Command } from "lucide-react";
 import {
   Suspense,
+  startTransition,
   useCallback,
   useEffect,
   useEffectEvent,
@@ -1257,7 +1258,8 @@ import {
   type StudioToolOperationMemory,
 } from "./studio-tool-operation-memory";
 import { openStudioToolsCompanionForMenu } from "./studio-tools-companion-runtime";
-import { hasStudioUnloadPromptWork, installStudioUnloadGuard, studioPendingStrokeFingerprint } from "./studio-unsaved-work-guard";
+import { hasStudioUnloadPromptWork, studioPendingStrokeFingerprint } from "./studio-unsaved-work-guard";
+import { useStudioUnloadGuard } from "./studio-cuttoon-editor/runtime/useStudioUnloadGuard";
 import { useStudioEditorUpdateSafety } from "./use-studio-editor-update-safety";
 import { useStudioEditorStatusNotices } from "./studio-cuttoon-editor/use-studio-editor-status-notices";
 import {
@@ -11406,8 +11408,11 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     // durable SQLite/OPFS snapshot at the microtask checkpoint before a browser navigation task
     // can tear down this document and its Dedicated Worker.
     setUnloadGuardArmed(true);
-    setHasPendingOverlayCommit(true);
-    setHasUndonePendingOverlay(false);
+    // 획·저장 권위는 위의 ref에 이미 반영됐다. 메뉴 갱신만 중단 가능한 우선순위로 예약한다.
+    startTransition(() => {
+      setHasPendingOverlayCommit(true);
+      setHasUndonePendingOverlay(false);
+    });
     globalThis.queueMicrotask(() => {
       const pending = pendingStrokeCommitsRef.current;
       if (!pending || !pending.strokes.some((stroke) => stroke.id === finished.id)) return;
@@ -11424,7 +11429,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     if (discardStudioRetainedStrokeRedo(
       pendingUndoneStrokeCommitsRef,
       (ids) => liveRetainedMediaOverlayRendererRef.current.discardHiddenSettledStrokes(ids),
-    )) setHasUndonePendingOverlay(false);
+    )) startTransition(() => setHasUndonePendingOverlay(false));
   }
   const scheduleMarqueeRect = (next: { x: number; y: number; w: number; h: number } | null) => {
     pendingMarqueeRectRef.current = next;
@@ -11536,26 +11541,9 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
           studioLifecycleDurablePendingFingerprintRef.current,
       }),
   });
-  const [unloadGuardArmed, setUnloadGuardArmed] = useState(false);
-  useEffect(() => {
-    if (unloadGuardArmed) return;
-    if (!studioUnsavedWorkRef.hasUnsavedStudioWorkNow()) return;
-    setUnloadGuardArmed(true);
-  }, [
-    pages,
-    master,
-    studioUnsavedWorkRef,
-    toolOperationMemoryPersistenceDirty,
-    unloadGuardArmed,
-    workHydrated,
-  ]);
-  useLayoutEffect(() => {
-    if (!unloadGuardArmed) return;
-    return installStudioUnloadGuard({
-      target: globalThis,
-      hasUnsavedWork: () => studioUnsavedWorkRef.hasUnsavedStudioWorkNow(),
-    });
-  }, [studioUnsavedWorkRef, unloadGuardArmed]);
+  const setUnloadGuardArmed = useStudioUnloadGuard({
+    target: globalThis, hasUnsavedWork: studioUnsavedWorkRef.hasUnsavedStudioWorkNow,
+  });
   useStudioEditorUpdateSafety(`studio-editor:${autosaveKey}`, () => documentSaveInFlightRef.current, studioUnsavedWorkRef.hasUnsavedStudioWorkNow, collaborationOperationSyncPending, pendingExternalWorkspaceSync !== null);
   // ── 픽셀 선택 도구(포토샵식 마퀴/올가미) — studio-selection-tools 통합 상태 ──
   // 선택 영역·도구는 "이미지 요소 1개"에 귀속된다(요소가 바뀌면 아래 effect 가 해제).
@@ -17786,7 +17774,10 @@ const puppetWarpArmed =
     setPagesHi(nextIndex);
   };
   companionHistoryHandlerRef.current = (action) => {
-    routeStudioCompanionHistory({ action, blocked: masterEditMode, canUndo: collaborationDocumentLocked ? scopedHistory.canUndo() : studioHistoryCanUndo, canRedo: collaborationDocumentLocked ? scopedHistory.canRedo() : studioHistoryCanRedo, undo, redo });
+    // 메뉴의 transition 완료 전에도 입력 명령은 최신 pending 권위를 읽는다.
+    const canUndo = pagesHiRef.current > 0 || studioHistorySidecarUndoAvailable || Boolean(pendingStrokeCommitsRef.current?.strokes.length);
+    const canRedo = pagesHiRef.current < pagesHistoryRef.current.length - 1 || studioHistorySidecarRedoAvailable || Boolean(pendingUndoneStrokeCommitsRef.current?.strokes.length);
+    routeStudioCompanionHistory({ action, blocked: masterEditMode, canUndo: collaborationDocumentLocked ? scopedHistory.canUndo() : canUndo, canRedo: collaborationDocumentLocked ? scopedHistory.canRedo() : canRedo, undo, redo });
   };
   const {
     fitCanvasToViewport,

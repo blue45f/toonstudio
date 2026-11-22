@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { creatorRoleDefinition } from "@/shared/lib/creator-role-contract";
 
@@ -43,6 +43,7 @@ import { StudioHyperAutomationOsPanel } from "./StudioHyperAutomationOsPanel";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   window.localStorage.clear();
 });
 
@@ -239,6 +240,78 @@ describe("하이퍼 오토메이션 OS — 9단계 파이프라인 · 스펙트�
     expect(applied.automationPercent).toBe(preset.averagePercent);
   });
 
+  it("프리셋 저장은 닫힌 공정 비중만 기록하고 추가 원고 필드를 제외한다", () => {
+    const preset = createArtistAutonomyPreset("원고와 분리한 설정", DEFAULT_STAGE_AUTONOMY_BY_MODE["assist-50"]);
+    const withDocument = { ...preset, document: { pages: ["원고 본문"] },
+      stageAutonomy: { ...preset.stageAutonomy, manuscript: "원고" }, averagePercent: 1234 };
+    expect(saveArtistAutonomyPresets([withDocument])).toBe(true);
+    expect(JSON.parse(window.localStorage.getItem("toonstudio.hyper-auto.artist-autonomy-presets.v1") ?? "null")).toEqual([preset]);
+    expect(loadSavedArtistAutonomyPresets()).toEqual([preset]);
+  });
+
+  it.each(["{broken", '{"version":2}', '[{"name":"읽을 수 없는 기존 설정"}]'])(
+    "읽을 수 없는 기존 프리셋 %s를 새 설정으로 덮지 않는다", (original) => {
+      const key = "toonstudio.hyper-auto.artist-autonomy-presets.v1";
+      window.localStorage.setItem(key, original);
+      expect(loadSavedArtistAutonomyPresets()).toEqual([]);
+      expect(saveArtistAutonomyPresets([createArtistAutonomyPreset("새 설정", DEFAULT_STAGE_AUTONOMY_BY_MODE["assist-50"])])).toBe(false);
+      expect(window.localStorage.getItem(key)).toBe(original);
+    },
+  );
+
+  it.each(["throw", "ignore"])("프리셋 쓰기 %s 실패는 기존 값과 다른 원고 키를 보존한다", (mode) => {
+    const key = "toonstudio.hyper-auto.artist-autonomy-presets.v1";
+    const existing = createArtistAutonomyPreset("기존 설정", DEFAULT_STAGE_AUTONOMY_BY_MODE["assist-50"]);
+    window.localStorage.setItem(key, JSON.stringify([existing]));
+    window.localStorage.setItem("studio-project-document", "기존 원고");
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      if (mode === "throw") throw new DOMException("quota", "QuotaExceededError");
+    });
+    expect(saveArtistAutonomyPresets([existing, { ...existing, id: "new", name: "새 설정" }])).toBe(false);
+    expect(window.localStorage.getItem(key)).toBe(JSON.stringify([existing]));
+    expect(window.localStorage.getItem("studio-project-document")).toBe("기존 원고");
+  });
+
+  it.each([
+    { label: "중첩 원고 leaf", patch: { stageAutonomy: { "story-plot": { pages: ["legacy"] } } } },
+    { label: "배열 leaf", patch: { stageAutonomy: { "story-plot": [42] } } },
+    { label: "문자열 leaf", patch: { stageAutonomy: { "story-plot": "42" } } },
+    { label: "boolean leaf", patch: { stageAutonomy: { "story-plot": true } } },
+    { label: "null leaf", patch: { stageAutonomy: { "story-plot": null } } },
+    { label: "객체 builtIn", patch: { builtIn: { pages: ["legacy"] } } },
+    { label: "문자열 builtIn", patch: { builtIn: "false" } },
+    { label: "null builtIn", patch: { builtIn: null } },
+    { label: "객체 averagePercent", patch: { averagePercent: { pages: ["legacy"] } } },
+    { label: "문자열 averagePercent", patch: { averagePercent: "50" } },
+    { label: "null averagePercent", patch: { averagePercent: null } },
+  ])("저장된 프리셋의 $label 값은 쓰기 없이 원문을 보존한다", ({ patch }) => {
+    const key = "toonstudio.hyper-auto.artist-autonomy-presets.v1";
+    const preset = createArtistAutonomyPreset("기존 사본", DEFAULT_STAGE_AUTONOMY_BY_MODE["assist-50"]);
+    const original = JSON.stringify([{ ...preset, ...patch }], null, 2);
+    window.localStorage.setItem(key, original);
+    const write = vi.spyOn(Storage.prototype, "setItem");
+    const restored = loadSavedArtistAutonomyPresets();
+    const saved = saveArtistAutonomyPresets([createArtistAutonomyPreset("새 설정", preset.stageAutonomy)]);
+    expect.soft(write).not.toHaveBeenCalled();
+    expect.soft(window.localStorage.getItem(key)).toBe(original);
+    expect.soft(saved).toBe(false);
+    expect(restored).toEqual([]);
+  });
+
+  it.each([false, true])("숫자 clamp와 빠진 공정의 기본값은 메타데이터 존재=%s에서도 호환된다", (metadata) => {
+    const key = "toonstudio.hyper-auto.artist-autonomy-presets.v1";
+    window.localStorage.setItem(key, JSON.stringify([{ id: "legacy-numeric", name: "구형 숫자 설정",
+      stageAutonomy: { "story-plot": -2.9, "rough-cleanup": 150, "one-tap-coloring": 26.6 },
+      ...(metadata ? { builtIn: false, averagePercent: 1234 } : {}) }]));
+    const restored = loadSavedArtistAutonomyPresets();
+    expect(restored).toHaveLength(1);
+    expect(restored[0]?.stageAutonomy).toEqual({ ...DEFAULT_STAGE_AUTONOMY_BY_MODE["assist-50"],
+      "story-plot": 0, "rough-cleanup": 99, "one-tap-coloring": 27 });
+    expect(restored[0]?.averagePercent).not.toBe(1234);
+    expect(saveArtistAutonomyPresets(restored)).toBe(true);
+    expect(loadSavedArtistAutonomyPresets()).toEqual(restored);
+  });
+
   it("manualLocked: true 단계는 전체 파이프라인을 재실행해도 원본 내용과 버전이 100% 보호된다", () => {
     const first = runHyperAutomationPipeline({
       input: { ideaLine: "잠금 보호 검증 에피소드" },
@@ -412,6 +485,33 @@ describe("하이퍼 오토메이션 OS — 캐릭터 DNA(8각도·12표정) · 3
 });
 
 describe("StudioHyperAutomationOsPanel UI 및 SpaceRoleGuide 지연 마운트 통합", () => {
+  it("기존 손상 프리셋의 중첩 원고는 UI 저장에서도 쓰기 없이 보존하고 실패 상태만 표시한다", () => {
+    const key = "toonstudio.hyper-auto.artist-autonomy-presets.v1";
+    const original = '[{"id":"legacy","name":"기존 사본","stageAutonomy":{"story-plot":{"pages":["legacy"]}}}]';
+    window.localStorage.setItem(key, original);
+    const write = vi.spyOn(Storage.prototype, "setItem");
+    render(<StudioHyperAutomationOsPanel />);
+    fireEvent.change(screen.getByTestId("hyper-auto-idea-input"), { target: { value: "기존 사본 보호" } });
+    fireEvent.click(screen.getByTestId("hyper-auto-run-button"));
+    fireEvent.change(screen.getByTestId("hyper-auto-preset-name-input"), { target: { value: "새 화면 설정" } });
+    fireEvent.click(screen.getByTestId("hyper-auto-preset-save-button"));
+    expect.soft(write).not.toHaveBeenCalled();
+    expect.soft(window.localStorage.getItem(key)).toBe(original);
+    expect(screen.getByTestId("hyper-auto-preset-bar").textContent).toContain("새 화면 설정");
+    expect(screen.getByRole("status").textContent).toContain("화면을 닫으면 잃을 수");
+    expect(screen.getByRole("status").textContent).not.toContain("저장했습니다");
+  });
+  it("브라우저 저장이 거부되면 현재 화면 프리셋은 유지하고 영구 저장 성공을 표시하지 않는다", () => {
+    render(<StudioHyperAutomationOsPanel />);
+    fireEvent.change(screen.getByTestId("hyper-auto-idea-input"), { target: { value: "저장 실패 설정 보존" } });
+    fireEvent.click(screen.getByTestId("hyper-auto-run-button"));
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("quota", "QuotaExceededError"); });
+    fireEvent.change(screen.getByTestId("hyper-auto-preset-name-input"), { target: { value: "보존할 화면 설정" } });
+    fireEvent.click(screen.getByTestId("hyper-auto-preset-save-button"));
+    expect(screen.getByTestId("hyper-auto-preset-bar").textContent).toContain("보존할 화면 설정");
+    expect(screen.getByRole("status").textContent).toContain("화면을 닫으면 잃을 수");
+    expect(screen.getByRole("status").textContent).not.toContain("저장했습니다");
+  });
   it("3단 자동화 스펙트럼 전환 시 라디오 상태와 실행 버튼 라벨이 즉시 반영된다", () => {
     render(<StudioHyperAutomationOsPanel />);
     const auto99 = screen.getByTestId("hyper-auto-mode-hyper-auto-99");

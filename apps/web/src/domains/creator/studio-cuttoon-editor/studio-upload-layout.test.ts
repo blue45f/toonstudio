@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -32,7 +34,12 @@ describe("studio upload mobile layout contract", () => {
   });
 
   it("모바일 저장 도크는 입력을 덮지 않고 도달한 뒤 상단 safe-area에 머문다", () => {
-    expect(STUDIO_UPLOAD_CONTAINER_CLASS).toContain("env(safe-area-inset-bottom)");
+    expect(STUDIO_UPLOAD_CONTAINER_CLASS).toContain("pb-[calc(var(--site-float-base,5.75rem)+1.5rem)]");
+    const shellCss = readFileSync(new URL("../../../app/styles/sitewide-visual-ux.css", import.meta.url), "utf8");
+    const entry = readFileSync(new URL("../../../app/main.tsx", import.meta.url), "utf8");
+    expect(entry).toContain('import "./styles/sitewide-visual-ux.css"');
+    expect(shellCss).toContain("--site-float-base: calc(1rem + env(safe-area-inset-bottom));");
+    expect(shellCss).toContain(":root:has(nav[data-site-product]) { --site-float-base: calc(5.75rem + env(safe-area-inset-bottom)); }");
     expect(STUDIO_UPLOAD_ACTION_DOCK_CLASS).toContain("top-[calc(env(safe-area-inset-top)");
     expect(STUDIO_UPLOAD_ACTION_DOCK_CLASS).not.toContain("bottom-[calc(");
     expect(STUDIO_UPLOAD_ACTION_DOCK_CLASS).toContain("sticky");

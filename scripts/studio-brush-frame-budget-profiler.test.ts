@@ -59,10 +59,15 @@ describe("Studio continuous brush frame-budget profiler", () => {
     expect(profilerSource).toContain("releaseLongTaskDurationsMs");
   });
 
-  it("measures synchronous append and seal work at 120/240Hz without prefix batching", () => {
+  it("native 경계로 append/release를 판정하고 microtask 측정은 legacy로만 남긴다", () => {
     expect(profilerSource).toContain("pointerAppendDurationsMs");
     expect(profilerSource).toContain("pointerUpMainThreadMs");
     expect(profilerSource).toContain("queueMicrotask(() => {");
+    expect(profilerSource).toContain("pointerAppendDurationsMs: dispatch.pointerAppendDurationsMs");
+    expect(profilerSource).toContain("pointerUpMainThreadMs: dispatch.pointerUpMainThreadMs");
+    expect(profilerSource).toContain("pointerDispatchBoundary: dispatch.boundary");
+    expect(profilerSource).toContain('legacyPointerDispatch: { method: "capture-to-microtask-legacy"');
+    expect(profilerSource.indexOf("probe.arm({ expectedPointerMoves")).toBeLessThan(profilerSource.indexOf("await page.mouse.down();"));
     expect(profilerSource).toContain("execution.targetInputSamples");
     expect(profilerSource).toContain("execution.intendedStrokeDurationMs");
     expect(profilerSource).toContain("await page.mouse.move(");

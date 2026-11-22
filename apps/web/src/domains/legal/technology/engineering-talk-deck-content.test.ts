@@ -492,9 +492,9 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(read("playwright.config.ts")).not.toContain("reducedMotion");
     const accessibilitySpec = read("e2e/a11y-smoke.spec.ts");
     expect(accessibilitySpec).toContain('test.use({ reducedMotion: "reduce" })');
-    expect(accessibilitySpec).toContain(".toBeFocused()");
-    expect(accessibilitySpec).not.toMatch(/keyboard\.|\.press\(|forcedColors|forced-colors/u);
-    expect(slide.notes.ko).toMatch(/모션 감소 설정에서 axe·터치·초점 복귀[^\n]*강제 색상은 수동 매트릭스[^\n]*키보드 탐색 전수 검증은 아닙니다/u);
+    for (const interaction of [".toBeFocused()", 'await page.keyboard.press("Enter")', 'await page.keyboard.press("Escape")']) expect(accessibilitySpec).toContain(interaction);
+    expect(accessibilitySpec).not.toMatch(/forcedColors|forced-colors/u);
+    expect(slide.notes.ko).toMatch(/모션 감소 설정에서 axe·터치·초점 복귀와 소재 검색 Enter·Escape[^\n]*강제 색상은 수동 매트릭스[^\n]*키보드 탐색 전수 검증은 아닙니다/u);
   });
 
   it("성능: 번들 기준선과 참고 예산, 크기 상한 없음(관찰)은 기준선·검사 스크립트와 같다", () => {

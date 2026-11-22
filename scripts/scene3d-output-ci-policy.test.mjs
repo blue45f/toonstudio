@@ -27,7 +27,9 @@ describe("Scene3D output CI inputs", () => {
     const core = workflow("ci.yml").jobs.typecheck;
     expect(scene.steps.some((step) => step.run === "pnpm run typecheck")).toBe(true);
     expect(core.steps.some((step) => step.run?.includes("pnpm run typecheck"))).toBe(true);
-    expect(scene["timeout-minutes"]).toBe(35);
+    expect(scene["timeout-minutes"]).toBe(120);
+    const types = scene.steps.find((step) => step.run === "pnpm run typecheck");
+    expect(types.env?.TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES).toBe("3145728");
     expect(scene["runs-on"]).toBe("ubuntu-24.04-arm");
     expect(scene.env.NODE_OPTIONS).toBe("--max-old-space-size=12288");
     for (const step of scene.steps) expect(step["continue-on-error"]).toBeUndefined();

@@ -93,6 +93,8 @@ const VRM_PANEL_STATUS_KEYS = [
 ] as const;
 
 const BG3D_PANEL_STATUS_KEYS = [
+  "studio.bg3dPanelStatus.editorSidebar.modelingLoading",
+  "studio.bg3dPanelStatus.editorSidebar.compositeLoading",
   "studio.bg3dPanelStatus.measurement.document-rejected",
   "studio.bg3dPanelStatus.measurement.measurement-invalid",
   "studio.bg3dPanelStatus.measurement.scene-unavailable",
@@ -249,6 +251,7 @@ const VRM_CONSUMERS = [
 ] as const;
 
 const BG3D_CONSUMERS = [
+  "bg3d/StudioBg3dEditorSidebar.tsx",
   "bg3d/StudioBg3dImmersivePanel.tsx",
   "bg3d/StudioReferenceRebuildPresets.tsx",
   "bg3d/StudioBg3dSharedStagePanel.tsx",

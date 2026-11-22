@@ -12,6 +12,29 @@ import { assertCompleteCoverage, parseArguments, partitionFiles } from "./typech
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const root = fileURLToPath(new URL("../", import.meta.url));
 
+test("자동 도메인 전체 타입 검사와 영수증 fallback도 작은 묶음을 실제 명령에 전달한다", async () => {
+  const pkg = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
+  const args = pkg.scripts["typecheck:web"].split(/\s+/u).slice(2);
+  const ordinary = parseArguments(args, {});
+  for (const [file, jobId, command] of [
+    ["studio-mesh-sync-repair", "application-typecheck", "pnpm run typecheck"],
+    ["studio-scene3d-next", "scene3d-contracts", "pnpm run typecheck"],
+    ["studio-finishing-quality", "quality-static", "node scripts/ci-shared-typecheck.mjs reuse-or-run"],
+    ["feedback-community-validation", "feedback-community", "node scripts/ci-shared-typecheck.mjs reuse-or-run"],
+  ]) {
+    const workflow = parse(await fs.readFile(path.join(root, `.github/workflows/${file}.yml`), "utf8"));
+    const job = workflow.jobs[jobId];
+    const steps = job.steps.filter((step) => step.run?.includes(command));
+    assert.equal(steps.length, 1, `${file}: 실제 전체 검사 또는 fallback은 한 번이어야 합니다.`);
+    const types = steps[0];
+    assert.equal(types.if, undefined, `${file}: 자동 경로에서 전체 검사를 생략하지 않습니다.`);
+    const inherited = parseArguments(args, { ...workflow.env, ...job.env, ...types.env });
+    assert.equal(inherited.maxBytes, 3145728, file);
+    assert.equal(inherited.heapMb, ordinary.heapMb, file);
+    assert.equal(inherited.project, ordinary.project, file);
+  }
+});
+
 test("CC0 인계는 작은 타입 묶음을 실제 하위 명령에 전달하고 전체 검증을 실패 시 중단한다", async () => {
   const workflow = parse(await fs.readFile(path.join(root, ".github/workflows/market-cc0-handoff.yml"), "utf8"));
   const job = workflow.jobs.handoff;
