@@ -434,6 +434,12 @@ function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
     p99Frames.push(frameTimes[Math.min(frameTimes.length - 1, Math.floor(frameTimes.length * 0.99))]);
   }
   const heapDeltaMb = Math.max(0, (process.memoryUsage().heapUsed - heapBefore) / (1024 * 1024));
+  // 시간·힙 측정이 끝난 뒤 정렬 전의 실행 순서와 앞·뒤 표본 짝을 보존한다.
+  const timingSamples = earlySamples.map((earlyMs, index) => ({
+    run: index + 1,
+    earlyMs,
+    lateMs: lateSamples[index],
+  }));
   earlySamples.sort((a, b) => a - b);
   lateSamples.sort((a, b) => a - b);
   meanFrames.sort((a, b) => a - b);
@@ -447,7 +453,9 @@ function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
   // 축 3 점수 (20점)
   let perfScore = 0;
   if (lateEarlyRatio <= 1.35) perfScore += 10;
-  else notes3.push(`장획 속도 비율 초과(${lateEarlyRatio.toFixed(2)}x > 1.35x)`);
+  else notes3.push(
+    `장획 속도 비율 초과(${lateEarlyRatio.toFixed(2)}x > 1.35x); Node ${process.version}; 원시 측정(ms): ${JSON.stringify(timingSamples)}`,
+  );
   if (avgFrameMs < 16.6 && p99FrameMs < 16.6) perfScore += 10;
   else notes3.push(`프레임 예산 초과(avg=${avgFrameMs.toFixed(2)}ms, p99=${p99FrameMs.toFixed(2)}ms)`);
 
