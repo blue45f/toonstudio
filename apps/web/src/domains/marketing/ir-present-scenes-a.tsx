@@ -21,9 +21,9 @@ export const SCENE_NODES_A: ReactNode[] = [
             </a>
           </div>
           <div className="hero-meta rv">
-            <span><b>WebGPU(Vello)</b> 직접 포팅·패치한 렌더링 엔진</span>
-            <span><b>3D 배경</b> 씬에서 구도와 원근 조절</span>
-            <span><b>설치 불필요</b> 브라우저 완결</span>
+            <span><b>WebGPU 7밴드 KM 분광</b> 자체 클린룸 8종 엔진</span>
+            <span><b>Wasm64 1 GiB 로컬 3D</b> 서버 GPU 비용 ₩0</span>
+            <span><b>베타 인프라 ₩0</b> 라이선스 감사 590 통과 · 0133 스키마</span>
           </div>
         </div>
         <div className="hero-art rv" aria-hidden="true">

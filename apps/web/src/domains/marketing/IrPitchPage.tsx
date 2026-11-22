@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 
+import "./ir-interactive-moat.css";
+
+import { useI18n } from "@/shared/lib/i18n";
 import { translateCurrentStaticSourceText, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 import {
   ArrowRight,
@@ -25,7 +29,6 @@ import {
   FLOW_STEPS,
   FOUNDER_CAREER,
   GTM_STEPS,
-  INVESTOR_QA_ITEMS,
   IR_DECK_PDF,
   IR_DECK_PPTX,
   IR_DECK_SLIDE_COUNT,
@@ -45,12 +48,22 @@ import { INTRO_PAGE } from "@/domains/marketing/public/intro-tokens";
 
 import { IrBriefLayout, IrBriefSection } from "./IrBriefLayout";
 import { IrBriefOverview } from "./IrBriefOverview";
+import { resolveIrBriefSection } from "./ir-brief-navigation";
+import { IrInteractiveMoatShowcase } from "./IrInteractiveMoatShowcase";
+import {
+  IrDefenseQaAccordion,
+  IrSoloLicenseIntegrityCard,
+  IrVerifiedSnapshotStrip,
+} from "./IrQaAndLicenseSection";
 
 const SCOPE = "domains.marketing.IrPitchPage";
 
 
 export function IrPitchPage() {
   const bi = useBilingualLocalizer(SCOPE);
+  const activeLang: "ko" | "en" = useI18n((state) => state.lang) === "ko" ? "ko" : "en";
+  const location = useLocation();
+  const isOverview = resolveIrBriefSection(location.search, location.hash) === "overview";
   const eyebrow = (text: string) => translateCurrentStaticSourceText(SCOPE, "en", text);
 
   useDocumentTitle(bi("ToonStudio IR · 웹툰 제작 OS 투자 소개", "ToonStudio IR · Investor brief for the webtoon production OS"));
@@ -249,10 +262,10 @@ export function IrPitchPage() {
         <h2 className={bigTitle}>{bi("네 가지 차별화", "Four points of difference")}</h2>
         <ul className="grid gap-3 md:grid-cols-2">
           {[
-            { ko: "아직 비어 있는 자리 — 브라우저에서 전문 드로잉 + 전 공정 통합", en: "A position still open — pro drawing + full process, in a browser" },
-            { ko: "필압·질감 브러시 · WebGPU 스트로크 렌더링", en: "Pressure and texture brushes · WebGPU stroke rendering" },
-            { ko: "지망생 이상 전문 창작자부터 소규모 팀까지 한곳에서 협업 (대규모는 설계·로드맵)", en: "Collaboration in one place, from aspiring professionals to small teams (large studios: design & roadmap)" },
-            { ko: "회차-공정-담당-승인, 웹툰식 분업을 그대로 내장", en: "Episodes, processes, owners, approvals — the webtoon way, built in" },
+            { ko: "아직 비어 있는 자리 — 브라우저 로컬 WebGPU·Wasm64(1 GiB 3D) + 전 공정 통합", en: "A position still open — browser-local WebGPU/Wasm64 (1 GiB 3D) + full workflow" },
+            { ko: "WebGPU 7밴드 KM 분광 안료(₩0 자체 IP) · 클린룸 자체 제작 엔진 8종", en: "WebGPU 7-band KM spectral pigment (KRW 0 IP) · 8 cleanroom engines" },
+            { ko: "베타 인프라 월 ₩0 (Cloudflare Static·R2 + 서울 onpod) · 상용 라이선스 590 통과", en: "KRW 0/mo beta infra (Cloudflare Static/R2 + Seoul onpod) · 590 license checks passed" },
+            { ko: "PostgreSQL 17 스키마 0133 · 크로스-LLM 배포 매니페스트 · 웹툰식 분업 내장", en: "PostgreSQL 17 schema 0133 · cross-LLM deploy manifest · webtoon workflow built in" },
           ].map((item) => (
             <li key={item.en} className="rounded-2xl border border-line/70 bg-card/65 p-6 font-display text-xl font-black leading-snug text-fg">{bi(item.ko, item.en)}</li>
           ))}
@@ -339,6 +352,11 @@ export function IrPitchPage() {
   return (
     <Container size="wide" className={INTRO_PAGE}>
       <IrBriefLayout onPresent={openPresentation}>
+      {isOverview ? (
+        <div className="mb-5">
+          <IrVerifiedSnapshotStrip surface="site" lang={activeLang} />
+        </div>
+      ) : null}
       <IrBriefOverview />
 
       <IrBriefSection id="problem">
@@ -441,6 +459,9 @@ export function IrPitchPage() {
             );
           })}
         </ul>
+        <div className="mt-6">
+          <IrInteractiveMoatShowcase mode="spectral" surface="site" lang={activeLang} />
+        </div>
       </IrBriefSection>
 
       <IrBriefSection id="product">
@@ -568,6 +589,9 @@ export function IrPitchPage() {
             {bi("멀리 보면 제작 도구를 넘어 웹툰 포털로 진화하는 그림을 그리고 있어요. 네이버·카카오·리디 같은 기존 사업자와의 업무협의를 추진해, 포털과 통합 랭킹, 자체 연재 플랫폼, 교육 정보와 커뮤니티를 한곳에 모으는 계획입니다. 다만 지금 단계의 집중은 제작과 협업 도구 자체에 있어요 — 제휴는 성사된 일이 아니라 추진 계획 단계입니다.", "Further out, we picture ToonStudio growing past a production tool into a webtoon portal: pursuing business talks with established players such as Naver, Kakao and Ridi to bring a portal, unified rankings, our own serialisation platform, education content and community together in one place. For now, though, the focus stays on the production and collaboration tool itself — partnerships are a plan to pursue, not a done deal.")}
           </p>
         </div>
+        <div className="mt-5">
+          <IrInteractiveMoatShowcase mode="economics" surface="site" lang={activeLang} />
+        </div>
       </IrBriefSection>
 
       <IrBriefSection id="founder">
@@ -608,6 +632,9 @@ export function IrPitchPage() {
             </p>
           </div>
         </div>
+        <div className="mt-5">
+          <IrSoloLicenseIntegrityCard surface="site" lang={activeLang} />
+        </div>
       </IrBriefSection>
 
       <IrBriefSection id="downloads">
@@ -639,17 +666,9 @@ export function IrPitchPage() {
             </p>
           </a>
         </div>
-        <ul className="mt-4 grid gap-3 md:grid-cols-3" aria-label={bi("투자자 미팅 핵심 Q&A", "Investor meeting key Q&A")}>
-          {INVESTOR_QA_ITEMS.map((qa) => {
-            const copy = bi(qa.ko, qa.en);
-            return (
-              <li key={qa.en.question} className="rounded-2xl border border-line/70 bg-card/65 p-4">
-                <h3 className="break-keep font-display text-sm font-black text-fg">{copy.question}</h3>
-                <p className="mt-1.5 break-keep text-xs leading-5 text-fg-2">{copy.answer}</p>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-5">
+          <IrDefenseQaAccordion surface="site" lang={activeLang} />
+        </div>
       </IrBriefSection>
 
       {presenting

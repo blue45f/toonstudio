@@ -3,6 +3,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 import "./ir-present-page.css";
+import "./ir-interactive-moat.css";
 
 import { SCENE_META, TOTAL } from "./ir-present-scene-data";
 import { getIrNarrationSource, isIrNarrationCurrent } from "./ir-present-narration";
@@ -322,8 +323,22 @@ export function IrPresentPage() {
 
   useEffect(() => setupPresentationEffect(), []);
 
-  /* 단축키 — 아티팩트와 같은 키 배치. */
+  /* 단축키 — 아티팩트와 같은 키 배치. 슬라이드 내부 슬라이더·아코디언 조작 중에는 키를 가로채지 않는다. */
   const onKey = useEffectEvent((event: KeyboardEvent) => {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (
+      target !== null &&
+      (target.matches("input, select, textarea") ||
+        (target.closest('[data-ir-interactive-control="true"]') !== null &&
+          (event.key === " " ||
+            event.key === "Spacebar" ||
+            event.key === "ArrowLeft" ||
+            event.key === "ArrowRight" ||
+            event.key === "Home" ||
+            event.key === "End")))
+    ) {
+      return;
+    }
     const k = event.key;
     if (k === " " || k === "Spacebar") {
       event.preventDefault();
@@ -381,6 +396,10 @@ export function IrPresentPage() {
   }, []);
 
   const onTouchStart = (event: React.TouchEvent) => {
+    if (event.target instanceof HTMLElement && event.target.matches("input, select, textarea")) {
+      touchRef.current = null;
+      return;
+    }
     touchRef.current = { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
   };
 

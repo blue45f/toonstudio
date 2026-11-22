@@ -1,0 +1,222 @@
+/*
+ * IR 피치(/ir) · IR 발표(/ir/present) · 사업계획서(/business-plan) 공용 인터랙티브 위젯 스타일.
+ *
+ * - 기본 사이트(site) 표면은 ToonStudio 의미 토큰(--color-*)만 참조해 모든 테마(스타라이트·페이퍼·잉크·고대비)를 따른다.
+ * - 발표 플레이어(.ir-present) 내부는 플레이어의 어두운 극장 변수(--surface, --ink, --accent 등)로 자연 매핑한다.
+ * - 인쇄(@media print) 시 고대비 흑백 문서로 정리해 심사위원 A4 출력 가독성을 지킨다.
+ */
+
+.ir-moat-scope {
+  --irm-bg: var(--color-card);
+  --irm-panel: var(--color-panel);
+  --irm-raised: var(--color-raised);
+  --irm-line: var(--color-line);
+  --irm-line-strong: var(--color-line-strong);
+  --irm-fg: var(--color-fg);
+  --irm-fg-2: var(--color-fg-2);
+  --irm-fg-3: var(--color-fg-3);
+  --irm-accent: var(--color-accent);
+  --irm-accent-soft: var(--color-accent-soft);
+  --irm-on-accent: var(--color-on-accent);
+  --irm-good: var(--color-good);
+  --irm-warn: var(--color-warn);
+  --irm-cool: var(--color-cool);
+  color: var(--irm-fg);
+}
+
+.ir-moat-scope[data-surface="present"] {
+  --irm-bg: var(--surface);
+  --irm-panel: var(--bg-2);
+  --irm-raised: var(--surface-2);
+  --irm-line: var(--line);
+  --irm-line-strong: var(--line-strong);
+  --irm-fg: var(--ink);
+  --irm-fg-2: var(--ink-2);
+  --irm-fg-3: var(--muted);
+  --irm-accent: var(--accent);
+  --irm-accent-soft: var(--accent-soft);
+  --irm-on-accent: var(--ink);
+  --irm-good: var(--teal);
+  --irm-warn: var(--amber);
+  --irm-cool: var(--teal);
+}
+
+.ir-moat-card {
+  border: 1px solid var(--irm-line);
+  border-radius: 1rem;
+  background: var(--irm-bg);
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .ir-moat-card {
+    padding: 1.5rem;
+  }
+}
+
+.ir-moat-subpanel {
+  border: 1px solid var(--irm-line);
+  border-radius: 0.75rem;
+  background: var(--irm-panel);
+  padding: 1rem;
+}
+
+.ir-moat-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  border-radius: 9999px;
+  border: 1px solid var(--irm-line-strong);
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--irm-fg-2);
+}
+
+.ir-moat-pill[data-tone="current"] {
+  border-color: color-mix(in srgb, var(--irm-good) 55%, transparent);
+  background: color-mix(in srgb, var(--irm-good) 14%, transparent);
+  color: var(--irm-good);
+}
+
+.ir-moat-pill[data-tone="target"] {
+  border-color: color-mix(in srgb, var(--irm-warn) 55%, transparent);
+  background: color-mix(in srgb, var(--irm-warn) 14%, transparent);
+  color: var(--irm-warn);
+}
+
+.ir-moat-pill[data-tone="assumption"] {
+  border-color: color-mix(in srgb, var(--irm-accent) 55%, transparent);
+  background: var(--irm-accent-soft);
+  color: var(--irm-accent);
+}
+
+.ir-moat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  gap: 0.375rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--irm-line-strong);
+  background: var(--irm-panel);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--irm-fg-2);
+  cursor: pointer;
+  transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), color 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ir-moat-btn:hover {
+  border-color: var(--irm-accent);
+  color: var(--irm-fg);
+}
+
+.ir-moat-btn:focus-visible {
+  outline: 2px solid var(--irm-accent);
+  outline-offset: 2px;
+}
+
+.ir-moat-btn[aria-pressed="true"],
+.ir-moat-btn[data-active="true"] {
+  border-color: var(--irm-accent);
+  background: var(--irm-accent-soft);
+  color: var(--irm-fg);
+}
+
+.ir-moat-range {
+  width: 100%;
+  min-height: 2.75rem;
+  accent-color: var(--irm-accent);
+  cursor: pointer;
+}
+
+.ir-moat-range:focus-visible {
+  outline: 2px solid var(--irm-accent);
+  outline-offset: 2px;
+}
+
+.ir-moat-qa-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 0;
+  background: transparent;
+  padding: 0.75rem 0;
+  text-align: left;
+  color: var(--irm-fg);
+  cursor: pointer;
+}
+
+.ir-moat-qa-trigger:focus-visible {
+  outline: 2px solid var(--irm-accent);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.ir-moat-swatch {
+  min-height: 5.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--irm-line-strong);
+}
+
+.ir-moat-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.ir-moat-bar-fill {
+  transition: width 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ir-moat-btn,
+  .ir-moat-bar-fill {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .ir-moat-card,
+  .ir-moat-subpanel,
+  .ir-moat-btn,
+  .ir-moat-pill {
+    border-color: ButtonText;
+    box-shadow: none;
+  }
+}
+
+@media print {
+  .ir-print-hide {
+    display: none !important;
+  }
+
+  .ir-moat-scope {
+    --irm-bg: Canvas;
+    --irm-panel: Canvas;
+    --irm-raised: Canvas;
+    --irm-line: GrayText;
+    --irm-line-strong: CanvasText;
+    --irm-fg: CanvasText;
+    --irm-fg-2: CanvasText;
+    --irm-fg-3: GrayText;
+    --irm-accent: CanvasText;
+    --irm-accent-soft: Canvas;
+    --irm-good: CanvasText;
+    --irm-warn: CanvasText;
+  }
+
+  .ir-moat-card,
+  .ir-moat-subpanel {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .ir-moat-qa-panel[hidden] {
+    display: block !important;
+  }
+}
