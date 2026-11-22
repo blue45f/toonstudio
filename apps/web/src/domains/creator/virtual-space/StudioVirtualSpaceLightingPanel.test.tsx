@@ -99,3 +99,20 @@ describe("조명 프리셋", () => {
     expect(onApplyPreset).toHaveBeenCalledWith("event-party");
   });
 });
+
+describe("자연광·실시간 작업 상태·미니맵 원클릭 이동 연동", () => {
+  it("현재 시각의 자연광 색온도(K)·창문 빛줄기·접지 그림자 요약과 작업 상태 배지를 표시한다", () => {
+    renderPanel({ hour: 18, liveWorkState: "line-art" });
+    expect(screen.getByText(/노을빛/)).not.toBeNull();
+    expect(screen.getByText(/창문 빛줄기/)).not.toBeNull();
+    expect(screen.getByText(/타블렛 작화/)).not.toBeNull();
+  });
+
+  it("구역 바로 이동 버튼 클릭 시 onSelectMinimapLandmark에 목표 좌표를 전달한다", () => {
+    const onSelectMinimapLandmark = vi.fn();
+    renderPanel({ onSelectMinimapLandmark, activeMinimapLandmarkId: "workroom", reducedMotion: true });
+    expect(screen.getByRole("group", { name: "구역 바로 이동" })).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "외주 광장" }));
+    expect(onSelectMinimapLandmark).toHaveBeenCalledWith("outsourcing-plaza", { x: 640, y: 540 });
+  });
+});

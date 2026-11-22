@@ -2,6 +2,15 @@ import { Lightbulb, LightbulbOff, Moon, Sun } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
+  STUDIO_MINIMAP_DEFAULT_LANDMARKS,
+  computeVirtualSpaceDaylightAtHour,
+  createVirtualSpaceMinimapCameraState,
+  jumpMinimapCameraToLandmark,
+  resolveVirtualSpaceLiveChoreography,
+  type StudioLiveWorkState,
+  type StudioMinimapLandmarkId,
+} from "./atmosphere";
+import {
   STUDIO_DAY_NIGHT_CYCLE_MS,
   studioDayNightName,
 } from "./studio-virtual-space-day-night-cycle";
@@ -48,6 +57,10 @@ export function StudioVirtualSpaceLightingPanel({
   onToggleCycle,
   onCycleScrub,
   onCycleSpeedChange,
+  liveWorkState,
+  activeMinimapLandmarkId,
+  onSelectMinimapLandmark,
+  reducedMotion,
 }: {
   readonly fixtures: readonly StudioLightFixture[];
   readonly ambient: StudioAmbientLight;
@@ -73,6 +86,17 @@ export function StudioVirtualSpaceLightingPanel({
   readonly onToggleCycle?: () => void;
   readonly onCycleScrub?: (timeOfDay: number) => void;
   readonly onCycleSpeedChange?: (cycleMs: number) => void;
+  /** 실시간 작업 상태 연동 모션 미리보기(전달 시 표시). */
+  readonly liveWorkState?: StudioLiveWorkState;
+  /** 현재 선택된 미니맵 원클릭 거점 ID. */
+  readonly activeMinimapLandmarkId?: StudioMinimapLandmarkId | null;
+  /** 미니맵 거점 원클릭 이동 콜백(전달 시 거점 이동 버튼 표시). */
+  readonly onSelectMinimapLandmark?: (
+    landmarkId: StudioMinimapLandmarkId,
+    target: { readonly x: number; readonly y: number },
+  ) => void;
+  /** 모션 줄이기 설정(미니맵 즉시 점프 계산에 반영). */
+  readonly reducedMotion?: boolean;
 }) {
   const bt = useBilingual("StudioVirtualSpaceLightingPanel");
   const phaseLabel = studioDayPhaseLabel(ambient.phase);
@@ -83,6 +107,21 @@ export function StudioVirtualSpaceLightingPanel({
     ? studioLightingPresetForDayNightPhase(studioDayNightLightingPhaseAt(cycleTimeOfDay))
     : null;
   const cycleMinutes = cycleTimeOfDay !== undefined ? Math.round(cycleTimeOfDay * 24 * 60) % 1440 : 0;
+  const effectiveHour = cycleEnabled === true && cycleTimeOfDay !== undefined
+    ? cycleTimeOfDay * 24
+    : (hourOverride ?? hour);
+  const daylight = computeVirtualSpaceDaylightAtHour(effectiveHour);
+  const liveChoreography = liveWorkState ? resolveVirtualSpaceLiveChoreography(liveWorkState) : null;
+  const handleLandmarkJump = (landmarkId: StudioMinimapLandmarkId) => {
+    if (!onSelectMinimapLandmark) return;
+    const baseCamera = createVirtualSpaceMinimapCameraState({
+      landmarkId: activeMinimapLandmarkId ?? null,
+    });
+    const jumped = jumpMinimapCameraToLandmark(baseCamera, landmarkId, {
+      reducedMotion: reducedMotion === true,
+    });
+    onSelectMinimapLandmark(landmarkId, { x: jumped.targetX, y: jumped.targetY });
+  };
 
   const phaseOptions: readonly StudioDayPhase[] = [
     "dawn", "morning", "noon", "afternoon", "sunset", "night", "midnight",
@@ -103,6 +142,61 @@ export function StudioVirtualSpaceLightingPanel({
           </span>
         </p>
       </header>
+
+      <div
+        className="studio-vspace-lighting-atmosphere"
+        data-daylight-period={daylight.period}
+        data-daylight-kelvin={daylight.kelvin}
+      >
+        <span>
+          {bt(daylight.labelKo, daylight.labelEn)} · {daylight.kelvin}K
+        </span>
+        <span>
+          {bt(
+            `창문 빛줄기 ${Math.round(daylight.godRay.opacity * 100)}% · 접지 그림자 ${Math.round(daylight.contactShadow.angleDeg)}° (${daylight.contactShadow.lengthMultiplier.toFixed(2)}x)`,
+            `Window rays ${Math.round(daylight.godRay.opacity * 100)}% · Contact shadow ${Math.round(daylight.contactShadow.angleDeg)}° (${daylight.contactShadow.lengthMultiplier.toFixed(2)}x)`,
+          )}
+        </span>
+      </div>
+
+      {liveChoreography && (
+        <div className="studio-vspace-lighting-live-status" role="status" aria-live="polite">
+          <span aria-hidden>{liveChoreography.bubbleIcon}</span>
+          <span>
+            {bt(
+              `${liveChoreography.actionLabelKo} · ${liveChoreography.bubbleKo}`,
+              `${liveChoreography.actionLabelEn} · ${liveChoreography.bubbleEn}`,
+            )}
+          </span>
+        </div>
+      )}
+
+      {onSelectMinimapLandmark && (
+        <div
+          className="studio-vspace-lighting-time"
+          role="group"
+          aria-label={bt("구역 바로 이동", "Quick zone jump")}
+        >
+          <span>{bt("구역 바로 이동", "Quick zone jump")}</span>
+          <div className="studio-vspace-lighting-phases">
+            {STUDIO_MINIMAP_DEFAULT_LANDMARKS.map((landmark) => {
+              const selected = activeMinimapLandmarkId === landmark.id;
+              return (
+                <button
+                  key={landmark.id}
+                  type="button"
+                  className="studio-vspace-lighting-phase-button"
+                  data-selected={selected}
+                  aria-pressed={selected}
+                  onClick={() => handleLandmarkJump(landmark.id)}
+                >
+                  {bt(landmark.labelKo, landmark.labelEn)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="studio-vspace-lighting-time" role="group" aria-label={bt("시간대 미리보기", "Time preview")}>
         <span>{bt("시간대", "Time of day")}</span>
