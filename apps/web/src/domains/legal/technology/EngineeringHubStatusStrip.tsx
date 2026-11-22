@@ -84,8 +84,14 @@ export function EngineeringHubStatusStrip() {
           </span>
         ) : null}
         <Link
+          href="/about/technology/field-notes#incidents"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-card/75 px-3.5 py-2 text-xs font-bold text-fg-2 transition-colors hover:border-accent/40 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {bi("장애·복구 기록", "Incident log")}
+        </Link>
+        <Link
           href="/status"
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line-strong bg-card px-3.5 py-2 text-xs font-black text-fg-2 transition-colors hover:border-accent/40 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line-strong bg-card px-3.5 py-2 text-xs font-black text-fg-2 transition-colors hover:border-accent/40 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {bi("상태 자세히 보기", "View status details")}
           <ArrowRight size={14} aria-hidden="true" />

@@ -1,8 +1,12 @@
 import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { cx } from "@/shared/lib/cx";
-import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import {
+  formatI18nTemplate,
+  translateBilingualValueForActiveLocale,
+  useBilingualI18nRevision,
+} from "@/shared/lib/i18n-bilingual-copy";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("EngineeringArchitectureNav", ko, en);
@@ -61,6 +65,7 @@ export function ArchitectureSectionStrip({ items, bodyId }: { readonly items: re
   useBilingualI18nRevision();
   const active = useActiveSection(items.map((item) => item.id));
   const listRef = useRef<HTMLOListElement>(null);
+  const activeIndex = Math.max(0, items.findIndex((item) => item.id === active));
 
   // 지금 구간의 알약이 가로 스크롤 안에 보이도록 맞춘다(세로 스크롤은 건드리지 않는다).
   useEffect(() => {
@@ -71,13 +76,43 @@ export function ArchitectureSectionStrip({ items, bodyId }: { readonly items: re
     list.scrollLeft = Math.max(0, offset - (list.clientWidth - current.offsetWidth) / 2);
   }, [active]);
 
+  const handleItemKeyDown = (event: KeyboardEvent<HTMLAnchorElement>, index: number) => {
+    const list = listRef.current;
+    if (!list || items.length === 0) return;
+
+    let nextIndex: number | undefined;
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % items.length;
+    else if (event.key === "ArrowLeft") nextIndex = (index - 1 + items.length) % items.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = items.length - 1;
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    const links = list.querySelectorAll<HTMLAnchorElement>("a[href]");
+    links[nextIndex]?.focus();
+  };
+
   return (
     <nav
       aria-label={bi("구간 이동", "Move between sections")}
       className="sticky top-[calc(var(--site-header-height,4rem)+0.5rem)] z-30 rounded-2xl border border-line/70 bg-panel/95 shadow-sm backdrop-blur-xl print:hidden"
     >
       <div className="flex items-center gap-2 p-1.5">
-        <ol ref={listRef} className="flex min-w-0 flex-1 snap-x items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
+        {items.length > 0 ? (
+          <span
+            className="hidden shrink-0 items-center rounded-xl border border-line bg-card px-2.5 py-1.5 font-display text-xs font-black tabular-nums text-fg-3 sm:inline-flex"
+            aria-label={formatI18nTemplate(String(bi("전체 {value1}개 중 {value0}번 구간", "Section {value0} of {value1}")), {
+              value0: activeIndex + 1,
+              value1: items.length,
+            })}
+          >
+            {activeIndex + 1}/{items.length}
+          </span>
+        ) : null}
+        <ol
+          ref={listRef}
+          className="flex min-w-0 flex-1 snap-x items-center gap-1 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
+        >
           {items.map((item, index) => {
             const current = item.id === active;
             const startsGroup = index > 0 && items[index - 1]?.groupId !== item.groupId;
@@ -87,6 +122,7 @@ export function ArchitectureSectionStrip({ items, bodyId }: { readonly items: re
                 <li className="shrink-0 snap-start">
                   <a
                     href={`#${item.id}`}
+                    onKeyDown={(event) => handleItemKeyDown(event, index)}
                     aria-current={current ? "location" : undefined}
                     aria-label={`${item.number}. ${item.title}`}
                     title={item.title}
