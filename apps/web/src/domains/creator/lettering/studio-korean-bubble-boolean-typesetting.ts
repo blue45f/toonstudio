@@ -1,6 +1,18 @@
 import { hasBatchim, josa } from "es-hangul";
 
 import {
+  typesetKnuthPlassEllipticalBalloon,
+  type EllipticalBalloonGeometry,
+  type KnuthPlassBalloonOptions,
+  type KnuthPlassBalloonTypesetResult,
+} from "../typesetting-pro/studio-knuth-plass-balloon-typeset";
+import {
+  layoutTategakiWithRuby,
+  parseInlineRubyAnnotations,
+  type TategakiRubyLayoutInput,
+  type TategakiRubyLayoutResult,
+} from "../typesetting-pro/studio-tategaki-ruby-layout";
+import {
   createLiveBooleanGroup,
   createLiveBooleanLeaf,
   evaluateLiveBooleanGroup,
@@ -197,4 +209,38 @@ export function speechBubbleBooleanPolygonsToSvgPath(
     }
   }
   return parts.join(" ");
+}
+
+/**
+ * 타원 말풍선 `(rx, ry)` 곡률에 맞춰 Knuth-Plass 동적 계획법으로 한국어 다이아몬드 균형 조판을 수행한다.
+ * 어절 무결성(`keep-all`), 단독 조사·어미 분리 방지, 고아줄 억제, 문장부호 광학 커닝을 통합 적용한다.
+ */
+export function typesetKoreanEllipticalBalloon(
+  text: string,
+  ellipse: EllipticalBalloonGeometry,
+  options?: KnuthPlassBalloonOptions,
+): KnuthPlassBalloonTypesetResult {
+  return typesetKnuthPlassEllipticalBalloon(text, ellipse, {
+    opticalCenterOffsetRatio: -0.03,
+    ...options,
+  });
+}
+
+/**
+ * 한국어·일본어 출판 만화 세로쓰기(우→좌 열 진행, 90° 회전, 2자리 숫자·`!?` 세로중가로)와
+ * 루비(후리가나) 비겹침 충돌 회피 레이아웃을 계산한다.
+ * `rubySpans`를 생략하고 `text`에 `漢字《かんじ》` 인라인 표기를 넣으면 자동 파싱한다.
+ */
+export function layoutKoreanVerticalRubyBalloon(
+  input: TategakiRubyLayoutInput,
+): TategakiRubyLayoutResult {
+  if (!input.rubySpans && input.text.includes("《")) {
+    const parsed = parseInlineRubyAnnotations(input.text);
+    return layoutTategakiWithRuby({
+      ...input,
+      text: parsed.text,
+      rubySpans: parsed.rubySpans,
+    });
+  }
+  return layoutTategakiWithRuby(input);
 }

@@ -14,6 +14,17 @@
  * 전부 순수·결정적. DOM/Konva 의존성 없음.
  */
 
+import {
+  typesetKnuthPlassEllipticalBalloon,
+  type KnuthPlassBalloonOptions,
+  type KnuthPlassBalloonTypesetResult,
+} from "../typesetting-pro/studio-knuth-plass-balloon-typeset";
+import {
+  layoutTategakiWithRuby,
+  type TategakiRubyLayoutInput,
+  type TategakiRubyLayoutResult,
+} from "../typesetting-pro/studio-tategaki-ruby-layout";
+
 import { clamp01 } from "./studio-bubble-math";
 
 export interface EmphasisSpan {
@@ -214,4 +225,30 @@ export function letterSpacingForKind(
     case "plain":
       return 0;
   }
+}
+
+/**
+ * 타원 말풍선 치수(`widthPx × heightPx`)와 폰트 크기에 맞춰 Knuth-Plass 타원 곡률 최적 줄나눔을 산출한다.
+ */
+export function planEllipticalBalloonTypography(
+  text: string,
+  widthPx: number,
+  heightPx: number,
+  fontSizePx: number,
+  options?: Omit<KnuthPlassBalloonOptions, "fontSize">,
+): KnuthPlassBalloonTypesetResult {
+  return typesetKnuthPlassEllipticalBalloon(
+    text,
+    { rx: widthPx / 2, ry: heightPx / 2 },
+    { ...options, fontSize: fontSizePx },
+  );
+}
+
+/**
+ * 세로쓰기(tategaki)·세로중가로·루비(후리가나) 비겹침 조판 계획을 산출한다.
+ */
+export function planVerticalRubyTypography(
+  input: TategakiRubyLayoutInput,
+): TategakiRubyLayoutResult {
+  return layoutTategakiWithRuby(input);
 }
