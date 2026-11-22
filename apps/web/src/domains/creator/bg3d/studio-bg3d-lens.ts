@@ -9,15 +9,24 @@
 // 만들면 수직 엣지가 전부 화면 수직이 되고, 원래 바라보던 지점이 화면 밖으로 밀리는 만큼을
 // lens shift(뷰 오프셋)로 되가져온다 — 틸트-시프트 렌즈의 라이즈/폴과 동일한 원리.
 
+import {
+  STUDIO_BG3D_LENS_MAX_FOCAL_MM,
+  STUDIO_BG3D_LENS_MAX_FOV_DEG,
+  STUDIO_BG3D_LENS_MIN_FOCAL_MM,
+  STUDIO_BG3D_LENS_MIN_FOV_DEG,
+  STUDIO_BG3D_LENS_SENSOR_HEIGHT_MM,
+  studioBg3dFocalLengthToFovDegrees,
+} from "../contracts/studio-bg3d-lens-math";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document";
 
-/** 35mm 풀프레임 세로 치수(mm). fov = 2·atan(12/f). */
-export const STUDIO_BG3D_LENS_SENSOR_HEIGHT_MM = 24;
-export const STUDIO_BG3D_LENS_MIN_FOCAL_MM = 8;
-export const STUDIO_BG3D_LENS_MAX_FOCAL_MM = 135;
-/** 문서 카메라 fovDegrees의 정규화 범위(studio-bg3d-scene-document.ts §normalizeCamera). */
-export const STUDIO_BG3D_LENS_MIN_FOV_DEG = 10;
-export const STUDIO_BG3D_LENS_MAX_FOV_DEG = 120;
+export {
+  STUDIO_BG3D_LENS_MAX_FOCAL_MM,
+  STUDIO_BG3D_LENS_MAX_FOV_DEG,
+  STUDIO_BG3D_LENS_MIN_FOCAL_MM,
+  STUDIO_BG3D_LENS_MIN_FOV_DEG,
+  STUDIO_BG3D_LENS_SENSOR_HEIGHT_MM,
+  studioBg3dFocalLengthToFovDegrees,
+};
 /**
  * 렌즈 시프트(가로, 세로) 한 축의 절댓값 한도. 단위는 "프레임 한 변의 비율"이며
  * studio-bg3d-scene-document.ts 의 카메라·샷 정규화(±2)와 같은 값이다. 슬라이더, 2점 투시 자동 보정,
@@ -26,15 +35,6 @@ export const STUDIO_BG3D_LENS_MAX_FOV_DEG = 120;
 export const STUDIO_BG3D_LENS_SHIFT_LIMIT = 2;
 /** 이 값보다 작은 시프트는 "없음"으로 본다(부동소수 잡음 허용). */
 const STUDIO_BG3D_LENS_SHIFT_EPSILON = 1e-4;
-
-export function studioBg3dFocalLengthToFovDegrees(focalLengthMm: number): number {
-  const focal = Math.min(
-    STUDIO_BG3D_LENS_MAX_FOCAL_MM,
-    Math.max(STUDIO_BG3D_LENS_MIN_FOCAL_MM, Number.isFinite(focalLengthMm) ? focalLengthMm : 50),
-  );
-  const fov = (2 * Math.atan(STUDIO_BG3D_LENS_SENSOR_HEIGHT_MM / 2 / focal) * 180) / Math.PI;
-  return Math.min(STUDIO_BG3D_LENS_MAX_FOV_DEG, Math.max(STUDIO_BG3D_LENS_MIN_FOV_DEG, fov));
-}
 
 export function studioBg3dFovDegreesToFocalLength(fovDegrees: number): number {
   const fov = Math.min(

@@ -34,7 +34,7 @@ import {
 } from "./studio-bg3d-hierarchy";
 import { normalizeStudioBg3dTexturePaint } from "./studio-bg3d-texture-paint";
 import { normalizeStudioBg3dModelTexturePaint } from "../studio-bg3d-model-texture-paint";
-import { normalizeStudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
+import { normalizeStudioBg3dEnvironmentSettings } from "../contracts/studio-bg3d-environment-settings";
 import {
   DEFAULT_STUDIO_BG3D_CAMERA_POSITION,
   DEFAULT_STUDIO_BG3D_CAMERA_TARGET,

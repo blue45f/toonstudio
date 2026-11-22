@@ -1,6 +1,18 @@
-import { normalizeStudioBg3dCaptureAspectRatio } from "../bg3d/studio-bg3d-capture-frame-geometry";
 import { parseStudioBg3dSixPassLtSettings } from "./studio-bg3d-six-pass-settings";
 import type { StudioBg3dLineOutputSettings, StudioBg3dOutputSettings } from "../bg3d/studio-bg3d-scene-document-types";
+
+/** 문서에 저장할 수 있는 캡처 비율 범위(세로 4:1 ~ 가로 4:1). */
+export const STUDIO_BG3D_CAPTURE_ASPECT_MIN = 0.25;
+export const STUDIO_BG3D_CAPTURE_ASPECT_MAX = 4;
+
+/**
+ * 손상된 문서 값을 방어적으로 정규화한다. 숫자가 아니거나 유한하지 않으면 null(=자동)로 떨어지고,
+ * 범위를 벗어난 유한한 값은 계약 범위로 클램프된다. 클램프는 멱등이라 canonical 왕복에 안전하다.
+ */
+export function normalizeStudioBg3dCaptureAspectRatio(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
+  return Math.min(STUDIO_BG3D_CAPTURE_ASPECT_MAX, Math.max(STUDIO_BG3D_CAPTURE_ASPECT_MIN, value));
+}
 
 const TONE_MODE_SET = new Set<string>(["none", "flat", "cel", "screentone"]);
 const TONE_OUTPUT_TYPE_SET = new Set<string>(["color", "grayscale", "pattern"]);
