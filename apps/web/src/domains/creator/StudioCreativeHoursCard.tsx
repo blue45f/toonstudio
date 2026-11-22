@@ -5,9 +5,29 @@
  * - 50분 이상 연속 작업 시 비차단 휴식·스트레칭 알림과 중립 자세 4대 체크리스트를 제공한다.
  */
 
-import { CheckCircle2, Clock, Flame, HeartPulse, PauseCircle, PlayCircle, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Flame,
+  HeartPulse,
+  PauseCircle,
+  PlayCircle,
+  RotateCcw,
+} from "lucide-react";
+import { useId, useMemo, useState } from "react";
 
+import {
+  DEFAULT_BEFORE_AFTER_SHOWCASE_PRESETS,
+  planSerializationBuffer,
+  planShortsAudioCueSheet,
+  StudioBeforeAfterShowcaseCard,
+  type BeforeAfterShowcaseAsset,
+  type BufferAlertLevel,
+  type SerializationBufferInput,
+  type WebtoonCutTimelineItem,
+} from "./creator-promo-kit";
 import {
   computeCreativeWorkStatistics,
   type CreativeWorkTimeTrackerState,
@@ -18,6 +38,10 @@ export interface StudioCreativeHoursCardProps {
   readonly tracker: CreativeWorkTimeTrackerState;
   readonly onResetSession?: () => void;
   readonly className?: string;
+  readonly serializationInput?: SerializationBufferInput;
+  readonly shortsCuts?: readonly WebtoonCutTimelineItem[];
+  readonly showcaseAsset?: BeforeAfterShowcaseAsset;
+  readonly defaultPromoKitOpen?: boolean;
 }
 
 const POSTURE_CHECKS = [
@@ -27,15 +51,72 @@ const POSTURE_CHECKS = [
   { id: "glare", label: "눈부심 저감 조명 확인" },
 ] as const;
 
+const DEFAULT_SHORTS_SAMPLE_CUTS: readonly WebtoonCutTimelineItem[] = [
+  {
+    cutId: "sample-cut-1",
+    cutNumber: 1,
+    emotion: "tense",
+    dialogues: [{ id: "d-1", speaker: "주인공", text: "오늘 밤 마감 전에는 반드시 끝낸다." }],
+    sfx: [{ id: "s-1", label: "두근", presetId: "heartbeat-pulse" }],
+  },
+  {
+    cutId: "sample-cut-2",
+    cutNumber: 2,
+    emotion: "action",
+    dialogues: [{ id: "d-2", speaker: "어시", text: "배경 셰이더 1차 렌더 올렸습니다!" }],
+    sfx: [{ id: "s-2", label: "스윽", presetId: "whoosh-pan" }],
+  },
+];
+
+const BUFFER_ALERT_BADGE_CLASS: Readonly<Record<BufferAlertLevel, string>> = {
+  green: "bg-good/20 text-good",
+  amber: "bg-warn/20 text-warn",
+  red: "bg-bad/20 text-bad",
+};
+
 export function StudioCreativeHoursCard({
   tracker,
   onResetSession,
   className = "",
+  serializationInput,
+  shortsCuts,
+  showcaseAsset,
+  defaultPromoKitOpen = false,
 }: StudioCreativeHoursCardProps) {
+  const promoSectionId = useId();
   const stats = computeCreativeWorkStatistics(tracker);
   const [checkedIds, setCheckedIds] = useState<readonly string[]>(["wrist", "eye"]);
+  const [promoKitOpen, setPromoKitOpen] = useState(defaultPromoKitOpen);
   const sessionMinutes = Math.floor(tracker.sessionWorkTimeSeconds / 60);
   const breakRecommended = sessionMinutes >= 50 && !stats.isCurrentlyIdle;
+
+  const bufferPlan = useMemo(() => {
+    const fallbackCutsPerDay = Math.max(6, Math.min(24, Math.round(stats.strokesPerMinute / 2) + 8));
+    const effectiveInput: SerializationBufferInput = serializationInput ?? {
+      seriesTitle: tracker.projectId || "현재 연재작",
+      nextEpisodeNumber: 1,
+      cutsPerEpisode: 70,
+      currentEpisodeCompletedCuts: 35,
+      daysUntilDeadline: 5,
+      publishCadenceDays: 7,
+      stockpiledCompletedEpisodes: 1.5,
+      recentVelocity: [
+        { dateIso: "2026-11-20", completedCuts: fallbackCutsPerDay },
+        { dateIso: "2026-11-21", completedCuts: fallbackCutsPerDay },
+      ],
+    };
+    return planSerializationBuffer(effectiveInput);
+  }, [serializationInput, stats.strokesPerMinute, tracker.projectId]);
+
+  const shortsPlan = useMemo(
+    () =>
+      planShortsAudioCueSheet(shortsCuts ?? DEFAULT_SHORTS_SAMPLE_CUTS, {
+        episodeTitle: `${bufferPlan.seriesTitle} ${bufferPlan.nextEpisodeNumber}화 숏폼`,
+      }),
+    [bufferPlan.nextEpisodeNumber, bufferPlan.seriesTitle, shortsCuts],
+  );
+
+  const activeShowcaseAsset = showcaseAsset ?? DEFAULT_BEFORE_AFTER_SHOWCASE_PRESETS[0];
 
   const toggleCheck = (id: string) => {
     setCheckedIds((prev) =>
@@ -144,6 +225,63 @@ export function StudioCreativeHoursCard({
             );
           })}
         </div>
+      </div>
+
+      {/* 연재 마감 버퍼 · 9:16 숏폼 큐 · 마켓 Before/After 시연 킷 */}
+      <div className="flex flex-col gap-2 border-t border-line/60 pt-2.5">
+        <button
+          type="button"
+          aria-expanded={promoKitOpen}
+          aria-controls={promoSectionId}
+          onClick={() => setPromoKitOpen((open) => !open)}
+          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg bg-panel/70 px-2.5 py-2 text-left text-[0.72rem] font-semibold text-fg transition-colors duration-150 hover:bg-raised"
+        >
+          <span>연재 마감 버퍼 · 숏폼 큐 · 시연 카드</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${BUFFER_ALERT_BADGE_CLASS[bufferPlan.alertLevel]}`}
+            >
+              {bufferPlan.alertLabelKo}
+            </span>
+            {promoKitOpen ? (
+              <ChevronUp className="size-3.5 text-fg-2" strokeWidth={1.6} aria-hidden="true" />
+            ) : (
+              <ChevronDown className="size-3.5 text-fg-2" strokeWidth={1.6} aria-hidden="true" />
+            )}
+          </span>
+        </button>
+
+        {promoKitOpen ? (
+          <div id={promoSectionId} data-creator-promo-kit-panel="true" className="flex flex-col gap-2.5">
+            <div className="rounded-lg bg-panel/60 p-2.5 text-[0.72rem] leading-[1.5]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-fg">2주 전 마감 버퍼</span>
+                <span className="tabular-nums text-fg-3">
+                  비축 {bufferPlan.buffer.stockpiledBufferDays}일 · 주간 권장{" "}
+                  {bufferPlan.recommendation.recommendedWeeklyCuts}컷
+                </span>
+              </div>
+              <p className="mt-1 text-fg-2">{bufferPlan.alertHeadlineKo}</p>
+              <p className="mt-1 text-[0.68rem] text-fg-3">{bufferPlan.noticeDraft.title}</p>
+            </div>
+
+            <div className="rounded-lg bg-panel/60 p-2.5 text-[0.72rem] leading-[1.5]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-fg">9:16 숏폼 · 로컬 오디오 큐</span>
+                <span className="tabular-nums text-fg-3">
+                  {shortsPlan.reels.length}편 · 자막 {shortsPlan.totalCues}건 · SFX{" "}
+                  {shortsPlan.totalAudioStems}건
+                </span>
+              </div>
+              <p className="mt-1 text-fg-2">
+                총 {Math.round(shortsPlan.totalDurationMs / 100) / 10}초 · SRT/WebVTT/JSON 및 ₩0
+                WebAudio 스템 준비 완료
+              </p>
+            </div>
+
+            <StudioBeforeAfterShowcaseCard asset={activeShowcaseAsset} compact />
+          </div>
+        ) : null}
       </div>
 
       {onResetSession && (
