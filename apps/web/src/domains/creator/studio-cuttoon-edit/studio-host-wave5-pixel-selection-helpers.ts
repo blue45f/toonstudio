@@ -26,9 +26,22 @@ import {
   selectionOperationBase,
   type PixelSelection,
   type SelectionFrame,
-  type SelectionOperationMode,
+  type SelectionOperationMode, SelPoint 
 } from "../studio-selection-tools";
-import type { StudioQuickSelectStrokeSession } from "./studio-host-wave2-pixel-retouch-helpers";
+
+export interface StudioQuickSelectStrokeSession {
+  elId: string;
+  frame: SelectionFrame;
+  points: SelPoint[];
+  radiusNorm: number;
+  target: ImageEl & El;
+  base: PixelSelection | null;
+  combine: SelectionOperationMode;
+  mutationTicket: StudioEditorMutationTicket;
+  scanInFlight: boolean;
+  scanQueued: boolean;
+  finished: boolean;
+}
 
 export async function runStudioMagicWandSelectOnTarget({
   target, pos, frame, activeSurfaceReviewLockedRef, groups, wandTolerance, pixelCombine,

@@ -4,7 +4,7 @@ import type { WorkDetail, WorkRevisionSummary } from "@/platform/creator-client"
 
 import {
   isStudioEditorAsyncScopeCurrent,
-  type StudioEditorDocumentScope,
+  type StudioEditorAsyncScope,
 } from "../studio-editor-scope";
 import type { PublishContext } from "../StudioPublishContextBanner";
 
@@ -16,11 +16,11 @@ export function runStudioLoadServerRevisionsEffect({
   readonly checkpointPanelOpen: boolean;
   readonly workId: string | null;
   readonly studioAuthUserId: string | null;
-  readonly serverCurrentRevision: number | null;
+  readonly serverCurrentRevision: number | null | undefined;
   readonly sharedDocumentRole: string | undefined;
   readonly loggedIn: boolean;
   readonly serverRevisionRequestRef: MutableRefObject<number>;
-  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorDocumentScope>;
+  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorAsyncScope>;
   readonly editorMountedRef: MutableRefObject<boolean>;
   readonly setServerRevisions: Dispatch<SetStateAction<WorkRevisionSummary[]>>;
   readonly setServerRevisionError: Dispatch<SetStateAction<string | null>>;
@@ -80,7 +80,7 @@ export async function runStudioOpenOwnerFxPanel({
   readonly studioAuthUserId: string | null;
   readonly fxPanelLoading: boolean;
   readonly ownerDetailAbortRef: MutableRefObject<AbortController | null>;
-  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorDocumentScope>;
+  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorAsyncScope>;
   readonly editorMountedRef: MutableRefObject<boolean>;
   readonly setFxPanelOpen: Dispatch<SetStateAction<boolean>>;
   readonly setFxPanelLoading: Dispatch<SetStateAction<boolean>>;
@@ -137,12 +137,12 @@ export async function runStudioReloadServerRevisions({
 }: {
   readonly workId: string | null;
   readonly studioAuthUserId: string | null;
-  readonly serverCurrentRevision: number | null;
+  readonly serverCurrentRevision: number | null | undefined;
   readonly sharedDocumentRole: string | undefined;
   readonly loggedIn: boolean;
   readonly serverRevisionRequestRef: MutableRefObject<number>;
   readonly serverRevisionAbortRef: MutableRefObject<AbortController | null>;
-  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorDocumentScope>;
+  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorAsyncScope>;
   readonly editorMountedRef: MutableRefObject<boolean>;
   readonly setServerRevisions: Dispatch<SetStateAction<WorkRevisionSummary[]>>;
   readonly setServerRevisionError: Dispatch<SetStateAction<string | null>>;
@@ -189,8 +189,8 @@ export async function runStudioReloadServerRevisions({
 export function runStudioLoadPublishContextEffect({
   publishContextSeriesId, publishContextChallengeId, setPublishContext,
 }: {
-  readonly publishContextSeriesId: string | null;
-  readonly publishContextChallengeId: string | null;
+  readonly publishContextSeriesId?: string | null;
+  readonly publishContextChallengeId?: string | null;
   readonly setPublishContext: Dispatch<SetStateAction<PublishContext>>;
 }): (() => void) | undefined {
   if (!publishContextSeriesId && !publishContextChallengeId) {

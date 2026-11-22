@@ -1,6 +1,6 @@
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
 
-import type { StudioTextAiProvenance } from "../ai/studio-ai-provenance";
+import type { StudioTextAiProvenance } from "../ai/studio-ai-response-parsing";
 import { CANVAS_W } from "../studio-assets";
 import {
   BRUSH_PRESETS,
@@ -21,7 +21,6 @@ import {
   createEmptyStudioCommentsDocument,
   normalizeStudioCommentsDocument,
   partitionStudioTeamCommentMutableDocument,
-  type StudioCommentAnchor,
   type StudioCommentThread,
   type StudioCommentsDocument,
 } from "../studio-comments";
@@ -32,7 +31,7 @@ import type { DrawMode, Tool } from "../studio-editor-tool-model";
 import { elementLabel } from "../studio-element-label";
 import type { El } from "../studio-element-model";
 import type { GroupSelectionState } from "../studio-group-selection";
-import type { StudioInspectorRoute } from "../studio-inspector-routes";
+import type { StudioInspectorRoute } from "../studio-inspector-layout";
 import {
   loadStudioTeamCommentClient,
   loadStudioTeamCommentMutationPlanner,
@@ -49,7 +48,7 @@ import {
 } from "../studio-team-comment-refresh-session";
 import type { StudioToolsCompanionReviewProjectionInput } from "../studio-tools-companion-runtime";
 import type { StudioWriterRoomDocument, StudioWriterRoomStage } from "../studio-writer-room";
-import type { StudioWriterRoomCanvasProjectionResult } from "../writer-room/studio-writer-room-canvas-projection";
+import type { StudioWriterRoomCanvasProjectionResult } from "../studio-writer-room-canvas-projection";
 import {
   resolveStudioCommentPinClusterNavigation,
   type StudioCommentThreadPopoverTarget,
@@ -69,12 +68,12 @@ export function runStudioTeamCommentsRefreshEffect({
 }: {
   readonly studioTeamCommentsWorkId: string | null;
   readonly studioTeamCommentOperationScopeRegistryRef: MutableRefObject<StudioTeamCommentOperationScopeRegistry>;
-  readonly studioTeamCommentMutationFlightRef: MutableRefObject<Set<string>>;
-  readonly studioTeamCommentReadFlightRef: MutableRefObject<Set<string>>;
-  readonly studioTeamCommentReanchorFlightRef: MutableRefObject<Set<string>>;
+  readonly studioTeamCommentMutationFlightRef: { readonly current: { clear(): void } };
+  readonly studioTeamCommentReadFlightRef: { readonly current: { clear(): void } };
+  readonly studioTeamCommentReanchorFlightRef: { readonly current: { clear(): void } };
   readonly studioTeamCommentReanchorQueueRef: { readonly current: { clear(): void } };
   readonly studioTeamCommentLiveTargetSequenceRef: MutableRefObject<Map<string, bigint>>;
-  readonly studioTeamCommentLiveRefreshFlightRef: MutableRefObject<Set<string>>;
+  readonly studioTeamCommentLiveRefreshFlightRef: { readonly current: { clear(): void } };
   readonly studioTeamCommentsLoadGenerationRef: MutableRefObject<number>;
   readonly studioTeamCommentRefreshSessionRef: MutableRefObject<StudioTeamCommentRefreshSession | null>;
   readonly studioTeamCommentsScopeRef: MutableRefObject<string | null>;
@@ -317,7 +316,7 @@ export function runStudioSelectCommentEditorTarget({
   readonly currentPageIdRef: MutableRefObject<string>;
   readonly setCurrentPageId: (next: string) => boolean;
   readonly setMasterEditMode: Dispatch<SetStateAction<boolean>>;
-  readonly setPointCommentAnchor: Dispatch<SetStateAction<Extract<StudioCommentAnchor, { kind: "point" }> | null>>;
+  readonly setPointCommentAnchor: Dispatch<SetStateAction<{ pageId: string; x: number; y: number } | null>>;
   readonly applyGroupSelectionState: (next: GroupSelectionState) => void;
   readonly setTool: Dispatch<SetStateAction<Tool>>;
   readonly setError: Dispatch<SetStateAction<string | null>>;

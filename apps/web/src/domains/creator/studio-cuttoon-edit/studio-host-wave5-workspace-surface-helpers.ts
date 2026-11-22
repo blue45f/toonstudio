@@ -19,7 +19,7 @@ import {
 } from "../studio-pixel-art-mode";
 import type { StudioQuickAccessState } from "../studio-quick-access";
 import type { StudioQuickActionId } from "../studio-quick-actions";
-import { elBounds } from "../studio-selection";
+import { elBounds } from "../studio-element-geometry";
 import {
   DEFAULT_STUDIO_SILK_GENERATIVE_SPEC,
   type StudioSilkGenerativeSpec,
@@ -109,7 +109,7 @@ export async function runStudioHandleBrushPackImportFromMenu({
   readonly setError: Dispatch<SetStateAction<string | null>>;
   readonly setBrushPackImporting: Dispatch<SetStateAction<boolean>>;
   readonly productBrushRepository: () => Promise<ProductBrushLibraryRepository>;
-  readonly refreshSavedBrushesFromRepository: (product: ProductBrushLibraryRepository) => Promise<void>;
+  readonly refreshSavedBrushesFromRepository: (product: ProductBrushLibraryRepository) => Promise<unknown>;
   readonly loadBrushPackImporter: () => Promise<typeof import("../brush/studio-brush-pack-import")>;
   readonly messages: {
     readonly formatUnknown: string;
@@ -184,9 +184,9 @@ export function runStudioFilterPreflightEffect<
   readonly studioFilterPreflightContextRef: MutableRefObject<((
     label: string,
     runtime: typeof import("../render/studio-raster-edit-preparation"),
-    selectedLayerId: string | null,
+    selectedLayerId?: string,
   ) => TContext) | null>;
-  readonly studioSelectedFilterLayerId: string | null;
+  readonly studioSelectedFilterLayerId?: string | null;
   readonly setStudioFilterDocumentPreflightReason: Dispatch<SetStateAction<string | null>>;
 }): (() => void) | undefined {
   if (studioDirectImageFilterTarget) {
@@ -205,7 +205,7 @@ export function runStudioFilterPreflightEffect<
         if (cancelled) return;
         const buildContext = studioFilterPreflightContextRef.current;
         if (!buildContext) return;
-        const context = buildContext("필터 사전점검", rasterRuntime, studioSelectedFilterLayerId);
+        const context = buildContext("필터 사전점검", rasterRuntime, studioSelectedFilterLayerId ?? undefined);
         const planned = rasterRuntime.planStudioEditableRasterCopy(context.input);
         setStudioFilterDocumentPreflightReason(
           planned.ok ? null : rasterI18n.resolveStudioRasterEditReason(planned.reason),
@@ -249,16 +249,16 @@ export function buildStudioMainMenuSurfaceActions({
   readonly setCommentsOpen: Dispatch<SetStateAction<boolean>>;
   readonly setTeamPanelOpen: Dispatch<SetStateAction<boolean>>;
   readonly setPageReviewOpen: Dispatch<SetStateAction<boolean>>;
-  readonly setCheckpointPanelOpen: Dispatch<SetStateAction<boolean>>;
+  readonly setCheckpointPanelOpen: (open: boolean) => void;
   readonly setWriterRoomOpen: Dispatch<SetStateAction<boolean>>;
   readonly setStoryboardGridOpen: Dispatch<SetStateAction<boolean>>;
   readonly setScrollPreviewOpen: Dispatch<SetStateAction<boolean>>;
   readonly setContinuityOpen: Dispatch<SetStateAction<boolean>>;
   readonly setProductionBibleOpen: Dispatch<SetStateAction<boolean>>;
   readonly setWebtoonAssistantOpen: Dispatch<SetStateAction<boolean>>;
-  readonly setAiSuperSuiteOpen: Dispatch<SetStateAction<boolean>>;
+  readonly setAiSuperSuiteOpen: (open: boolean) => void;
   readonly sendCurrentPageToCompareReview: () => Promise<void>;
-  readonly setQuickStartOpen: Dispatch<SetStateAction<boolean>>;
+  readonly setQuickStartOpen: (open: boolean) => void;
   readonly setPublishPackageOpen: Dispatch<SetStateAction<boolean>>;
   readonly setPublishPreflightOpen: Dispatch<SetStateAction<boolean>>;
   readonly setAssetRightsAuditOpen: Dispatch<SetStateAction<boolean>>;
@@ -269,7 +269,7 @@ export function buildStudioMainMenuSurfaceActions({
   readonly setShowWebtoonGuides: Dispatch<SetStateAction<boolean>>;
   readonly toggleEraseToIntersectionMode: () => void;
   readonly setDialogueBatchOpen: Dispatch<SetStateAction<boolean>>;
-  readonly setDialogueTranslateOpen: Dispatch<SetStateAction<"translate" | "qa" | null>>;
+  readonly setDialogueTranslateOpen: (mode: "translate" | "qa") => void;
   readonly setPixelArtMode: Dispatch<SetStateAction<StudioPixelArtModeState>>;
   readonly insertStudioStickyNote: (color: "lemon") => void;
   readonly setSilkGenerativeSpec: Dispatch<SetStateAction<StudioSilkGenerativeSpec>>;
@@ -371,7 +371,7 @@ export function buildStudioOnCanvasSurfaceHandlers({
   readonly currentCanvasSelectionIds: () => readonly string[];
   readonly elementById: ReadonlyMap<string, El>;
   readonly canvasFlipH: boolean;
-  readonly canvasRotation: number;
+  readonly canvasRotation: Parameters<typeof projectStudioDocumentRectToClient>[0]["canvasRotation"];
 }) {
   return {
     onStrokeWidthChange: (next: number) => setStrokeWidth(next),

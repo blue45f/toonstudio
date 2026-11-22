@@ -37,14 +37,14 @@ import { EMPTY_LAYER_GROUPS } from "../studio-page-editor-ui-contracts";
 import { pageDisplayName } from "../studio-page-meta";
 import type { PageState } from "../studio-page-state";
 import { readStudioProjectDocuments } from "../studio-project-document-reader";
-import type { StudioProjectEntry } from "../studio-project-library-reader";
+import type { StudioProjectLibraryEntry } from "../studio-project-library-reader";
 import type { StudioProjectSnapshot } from "../studio-project-snapshot";
-import { elBounds } from "../studio-selection";
+import { elBounds } from "../studio-element-geometry";
 
 type BilingualFn = (ko: string, en: string) => string;
 
 export interface StudioLocalProjectSaveContext {
-  readonly project: StudioProjectEntry;
+  readonly project: StudioProjectLibraryEntry;
   readonly documentId: string;
 }
 

@@ -515,7 +515,7 @@ export function verifyHumanStrokeProvenanceRecord(
     contentHashMatched,
     dHashHammingDistance,
     dHashSimilarity,
-    summaryKo: `인간 작화 비중(${candidate.humanStrokePercent.toFixed(1)}%) 및 64-bit dHash 원장 무결성 검증을 통과했습니다.`,
+    summaryKo: `인간 작화 비중(${(candidate.humanStrokePercent ?? 0).toFixed(1)}%) 및 64-bit dHash 원장 무결성 검증을 통과했습니다.`,
   });
 }
 

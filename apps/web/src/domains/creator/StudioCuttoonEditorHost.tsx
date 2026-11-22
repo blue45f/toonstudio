@@ -8827,7 +8827,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
    */
   const studioOnCanvasSurfaceHandlers = useStudioStableHandlers(buildStudioOnCanvasSurfaceHandlers({
     setStrokeWidth, setBrushOpacity, openColorWheelAt, drawMode, executeQuickAction,
-    reorder, alignSelected, wrapRef, zoomHostRef, canvasH, currentCanvasSelectionIds,
+    reorder: (d) => reorder(d), alignSelected: (m) => alignSelected(m), wrapRef, zoomHostRef, canvasH, currentCanvasSelectionIds,
     elementById, canvasFlipH, canvasRotation,
   }));
   /** Marquee wins when present; otherwise the single selection. */
@@ -21095,10 +21095,10 @@ function clearSelectionForEdit() {
       activatePixelSelectionToolFromInspector, setRightPanelOpenWithOverride, workspacePersistenceRef,
       persistStudioWorkspaceState, enterQuickMask, commitQuickMask, setTimelineOpen,
       openFrameAnimationForSelected, setOnionSkin, setAnimaticTimelineOpen, setCommentsOpen,
-      setTeamPanelOpen, setPageReviewOpen, setCheckpointPanelOpen, setWriterRoomOpen,
+      setTeamPanelOpen, setPageReviewOpen, setCheckpointPanelOpen: (v) => setCheckpointPanelOpen(v), setWriterRoomOpen,
       setStoryboardGridOpen, setScrollPreviewOpen, setContinuityOpen, setProductionBibleOpen,
       setWebtoonAssistantOpen, setAiSuperSuiteOpen, sendCurrentPageToCompareReview, setQuickStartOpen,
-      setPublishPackageOpen, setPublishPreflightOpen, setAssetRightsAuditOpen, openAutoActions,
+      setPublishPackageOpen, setPublishPreflightOpen, setAssetRightsAuditOpen, openAutoActions: () => openAutoActions(),
       openInspectorRoute,
       applyWebtoonCanvasPreset: (presetId) => applyMagicResizePreset(studioWebtoonCanvasMagicResizePresetForId(presetId)),
       setShowGrid, setShowWebtoonGuides,

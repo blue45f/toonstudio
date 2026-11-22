@@ -101,10 +101,10 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
       x: 10,
       y: 20,
       width: 120,
-      height: 40,
       text: "",
       fontSize: 20,
-      color: "#111111",
+      fill: "#111111",
+      rotation: 0,
     };
 
     const blocked = runStudioCommitEditText({
@@ -156,7 +156,7 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
   });
 
   it("wires main menu surface actions and on-canvas surface handlers cleanly", () => {
-    const defaultWorkspace = createStudioWorkspaceDefaultState("owner-1", "desktop");
+    const defaultWorkspace = createStudioWorkspaceDefaultState("owner-1");
     const persistStudioWorkspaceState = vi.fn();
     const setCommentsOpen = vi.fn();
     const setTeamPanelOpen = vi.fn();
@@ -273,10 +273,10 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
       x: 0,
       y: 0,
       width: 100,
-      height: 40,
       text: "hi",
       fontSize: 16,
-      color: "#000000",
+      fill: "#000000",
+      rotation: 0,
     };
 
     runStudioCompanionControl({
@@ -409,7 +409,7 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
       workHydrated: true,
       title: "테스트",
       pages: [createPage("p1")],
-      master: { elements: [], bg: "#ffffff", bgGrad: null },
+      master: { elements: [] },
       characterBible: { version: 1, characters: [] },
       documentSaveInFlightRef: { current: false },
       drawingRef: { current: null },
@@ -417,13 +417,14 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
       handleSaveRef: { current: vi.fn(async () => undefined) },
     })).toBeUndefined();
 
-    const imgEl: El = {
+    const imgEl = {
       id: "img-1",
-      type: "image",
+      type: "image" as const,
       x: 0,
       y: 0,
       width: 200,
       height: 200,
+      rotation: 0,
       src: "data:image/png;base64,AAA",
     };
     const setHistoryIndex = vi.fn();
@@ -591,7 +592,7 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
     const setShareError = vi.fn();
     await runStudioShareAsset({
       asset: { id: "a1", name: "배경", dataUrl: "data:image/png;base64,AA", width: 10, height: 10, createdAt: 0 },
-      options: { description: "", license: "cc0", tags: [], containsAi: false },
+      options: { description: "", license: "cc0-1.0", tags: [], containsAi: false },
       studioAuthUserId: null,
       setPublishingId: vi.fn(),
       setAssetTab: vi.fn(),
@@ -626,6 +627,9 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
       height: 70,
       text: "안녕",
       variant: "speech",
+      fill: "#ffffff",
+      textFill: "#111111",
+      rotation: 0,
     };
     runStudioApplyTranslationDraft({
       translateDraft: new Map([["b1", "Hello"]]),
@@ -683,12 +687,12 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
 
   it("preserves lightweight contracts extracted from bg3d", () => {
     expect(DEFAULT_STUDIO_BG3D_RAW_DOCUMENT.version).toBe(STUDIO_BG3D_SCENE_DOCUMENT_VERSION);
-    expect(new StudioBg3dSceneDocumentBudgetError("limit")).toBeInstanceOf(Error);
+    expect(new StudioBg3dSceneDocumentBudgetError("node-count-budget-exceeded")).toBeInstanceOf(Error);
 
     const paint = createEmptyStudioBg3dTexturePaint();
     expect(countStudioBg3dTexturePaintPoints(paint)).toBe(0);
 
-    const remapped = remapStudioBg3dLtCopiedBundles([], () => "next-id");
+    const remapped = remapStudioBg3dLtCopiedBundles([], true);
     expect(remapped).toEqual([]);
   });
 });

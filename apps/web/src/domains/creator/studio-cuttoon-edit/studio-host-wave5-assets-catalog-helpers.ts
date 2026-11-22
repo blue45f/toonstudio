@@ -9,7 +9,10 @@ import {
   applyDialogueTranslations,
   switchDialogueLocale,
 } from "../lettering/studio-dialogue-translate";
-import { createStudioAssetFavoriteId } from "../studio-asset-favorites";
+import {
+  createStudioAssetFavoriteId,
+  type StudioAssetFavoriteId,
+} from "../studio-asset-favorites";
 import type { StudioAsset } from "../studio-asset-library";
 import type { StudioPageInsertState } from "../studio-comipo-shipped";
 import type { StudioCreatorPackDefinition } from "../studio-creator-pack-catalog";
@@ -282,7 +285,7 @@ export async function runStudioDeleteSharedAsset({
   deleteFailedMessage,
 }: {
   readonly id: string;
-  readonly removeAssetFavorite: (favoriteId: string) => void;
+  readonly removeAssetFavorite: (favoriteId: StudioAssetFavoriteId) => void;
   readonly loadSharedAssets: () => Promise<void>;
   readonly setError: Dispatch<SetStateAction<string | null>>;
   readonly deleteFailedMessage: string;

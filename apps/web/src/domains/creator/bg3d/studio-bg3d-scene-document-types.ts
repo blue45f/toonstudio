@@ -6,7 +6,11 @@
 
 import type {
   STUDIO_BG3D_AIM_AXES,
+  STUDIO_BG3D_GLB_MIME,
   STUDIO_BG3D_PRIMITIVE_KINDS,
+  STUDIO_BG3D_SCENE_DOCUMENT_KIND,
+  STUDIO_BG3D_SCENE_DOCUMENT_VERSION,
+  STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION,
   STUDIO_BG3D_SKY_PRESET_IDS,
 } from "../contracts/studio-bg3d-scene-document-constants";
 import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
