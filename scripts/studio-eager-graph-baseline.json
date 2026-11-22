@@ -59,17 +59,12 @@
       "files": []
     },
     "apps/web/src/domains/creator/bg3d": {
-      "modules": 12,
-      "bytes": 219148,
+      "modules": 7,
+      "bytes": 179308,
       "files": [
         "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-capture-frame-geometry.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-hdri-environment-assets.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-hdri-environment.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-hierarchy.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-lens.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-copy-remap.ts",
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-recovery-access-lease.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-defaults.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-types.ts",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts",
@@ -169,10 +164,9 @@
       ]
     },
     "apps/web/src/domains/creator/scene3d": {
-      "modules": 2,
-      "bytes": 10958,
+      "modules": 1,
+      "bytes": 10905,
       "files": [
-        "apps/web/src/domains/creator/scene3d/studio-scene3d-document.ts",
         "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts"
       ]
     },
@@ -207,13 +201,10 @@
       "files": []
     },
     "apps/web/src/domains/creator/vrm": {
-      "modules": 4,
-      "bytes": 90345,
+      "modules": 1,
+      "bytes": 69375,
       "files": [
-        "apps/web/src/domains/creator/vrm/studio-vrm-joint-limits.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-rig-profile.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-scene-document.ts",
-        "apps/web/src/domains/creator/vrm/studio-vrm-texture-paint-channel.ts"
+        "apps/web/src/domains/creator/vrm/studio-vrm-scene-document.ts"
       ]
     },
     "apps/web/src/domains/creator/xr-webtoon": {
@@ -294,7 +285,7 @@
     },
     "apps/web/src/domains/creator": {
       "modules": 535,
-      "bytes": 7794858
+      "bytes": 7699490
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -313,8 +304,8 @@
       "bytes": 5248
     },
     "apps/web/src/domains/creator/bg3d": {
-      "modules": 12,
-      "bytes": 219148
+      "modules": 7,
+      "bytes": 179308
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
@@ -457,8 +448,8 @@
       "bytes": 6716
     },
     "apps/web/src/domains/creator/scene3d": {
-      "modules": 2,
-      "bytes": 10958
+      "modules": 1,
+      "bytes": 10905
     },
     "apps/web/src/domains/creator/selection": {
       "modules": 7,
@@ -505,8 +496,8 @@
       "bytes": 23760
     },
     "apps/web/src/domains/creator/vrm": {
-      "modules": 4,
-      "bytes": 90345
+      "modules": 1,
+      "bytes": 69375
     },
     "apps/web/src/domains/creator/writer-room": {
       "modules": 1,
@@ -758,13 +749,8 @@
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-document.ts": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-loader.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-capture-frame-geometry.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-hdri-environment-assets.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-hdri-environment.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-hierarchy.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-lens.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-lt-copy-remap.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-recovery-access-lease.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-defaults.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document-types.ts": 2,
     "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts": 2,
@@ -1232,7 +1218,6 @@
     "apps/web/src/domains/creator/save-first/studio-save-profile.ts": 2,
     "apps/web/src/domains/creator/save-first/studio-submission-store.ts": 2,
     "apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.ts": 2,
-    "apps/web/src/domains/creator/scene3d/studio-scene3d-document.ts": 2,
     "apps/web/src/domains/creator/scene3d/studio-scene3d-linked-layer-source.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-geometry.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-layout.ts": 2,
@@ -1871,10 +1856,7 @@
     "apps/web/src/domains/creator/vector/studio-node-bubble-edit-controller.ts": 2,
     "apps/web/src/domains/creator/vector/studio-node-edit-pointer-session.ts": 2,
     "apps/web/src/domains/creator/vector/studio-vector-magnet-snap.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-joint-limits.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-rig-profile.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-scene-document.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-texture-paint-channel.ts": 2,
     "apps/web/src/domains/cuts/cuts-labels.ts": 1,
     "apps/web/src/domains/newsletter/newsletter-labels.ts": 1,
     "apps/web/src/platform/api-error.ts": 3,

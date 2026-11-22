@@ -494,7 +494,6 @@
     "test-only-module:apps/web/src/domains/creator/StudioUnifiedAssetSmartLibrary.tsx",
     "test-only-module:apps/web/src/domains/creator/subtool/subtool-preset-adapter.ts",
     "test-only-module:apps/web/src/domains/creator/subtool/SubToolDetailPanel.tsx",
-    "test-only-module:apps/web/src/domains/creator/touch-gestures/touch-gesture-model.ts",
     "test-only-module:apps/web/src/domains/creator/transform/studio-multi-layer-warp-coordinator.ts",
     "test-only-module:apps/web/src/domains/creator/useStudioResumeCheckpoint.ts",
     "test-only-module:apps/web/src/domains/creator/vector-layer/studio-styled-svg-generator.ts",
