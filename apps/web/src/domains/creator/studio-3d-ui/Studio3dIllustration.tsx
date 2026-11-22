@@ -3,9 +3,10 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import "./studio-3d-illustrated-chrome.css";
 
 const ART_BASE = "/brand/illustrated-20260928";
-// Retina DPR 2(290×363 CSS px → 580×726 물리 px)에서 HTML srcSet 밀도 보정으로 naturalWidth가
-// 절반 미만으로 떨어지지 않도록 4:5 포트레이트 960×1200 정본과 640px 슬롯 크기를 매칭한다.
-const PORTRAIT_SIZES = "(max-width: 1023px) 190px, 640px";
+// 모바일(390px DPR 3)·태블릿(820px DPR 2)·데스크톱 Retina(DPR 2) 전 구간에서
+// HTML srcSet 밀도 보정(naturalWidth = sizes)이 표시 픽셀×DPR 2 기준 아래로 떨어지지 않도록
+// 좁은 휴대폰은 380px, 태블릿·데스크톱은 640px 슬롯을 선언해 4:5 정본(320·640·960w)과 매칭한다.
+const PORTRAIT_SIZES = "(max-width: 479px) 380px, 640px";
 
 function Portrait({ name }: { readonly name: "character-pink" | "character-blue" }) {
   return (

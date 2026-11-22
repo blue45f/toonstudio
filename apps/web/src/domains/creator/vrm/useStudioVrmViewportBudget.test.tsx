@@ -66,4 +66,12 @@ describe("VRM 작업면 예산 수명주기", () => {
     hook.unmount();
     expect(disconnect).toHaveBeenCalledOnce();
   });
+  it("초기 레이아웃 측정 전 0×0 크기여도 Retina·모바일 2배 초기 DPR을 1로 덮어쓰지 않는다", async () => {
+    width = 0; height = 0;
+    const hook = renderHook(() => useStudioVrmViewportBudget(ref, false));
+    expect(hook.result.current.dpr).toBe(2);
+    width = 372; height = 475;
+    await act(async () => { observerCallback?.(); await vi.advanceTimersByTimeAsync(30); });
+    expect(hook.result.current.dpr).toBe(2);
+  });
 });
