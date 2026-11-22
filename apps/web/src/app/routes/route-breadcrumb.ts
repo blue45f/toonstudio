@@ -12,6 +12,7 @@ const MARKET: AppBreadcrumbItem = { ko: "마켓", en: "Market", href: "/market" 
 const COMMUNITY: AppBreadcrumbItem = { ko: "커뮤니티", en: "Community", href: "/community" };
 const ABOUT: AppBreadcrumbItem = { ko: "소개", en: "About", href: "/about" };
 const TECHNOLOGY: AppBreadcrumbItem = { ko: "기술", en: "Technology", href: "/about/technology" };
+const TECH_BENCHMARKS: AppBreadcrumbItem = { ko: "세부 벤치마크", en: "Benchmarks", href: "/about/technology/benchmarks" };
 const STUDIO: AppBreadcrumbItem = { ko: "Studio", en: "Studio", href: "/studio" };
 const PRODUCTION: AppBreadcrumbItem = { ko: "제작", en: "Production", href: "/production" };
 const RESEARCH: AppBreadcrumbItem = { ko: "창작 리서치", en: "Research", href: "/research" };
@@ -82,6 +83,12 @@ const CURATED_TRAILS: Record<string, AppBreadcrumbItem[]> = {
   "/about/technology/drawing-compare": [HOME, ABOUT, TECHNOLOGY, { ko: "드로잉 비교", en: "Draw compare" }],
   "/about/technology/atlas": [HOME, ABOUT, TECHNOLOGY, { ko: "기술 도감", en: "Tech atlas" }],
   "/about/technology/playbook": [HOME, ABOUT, TECHNOLOGY, { ko: "플레이북", en: "Playbook" }],
+  "/about/technology/benchmarks": [HOME, ABOUT, TECHNOLOGY, { ko: "세부 벤치마크", en: "Benchmarks" }],
+  "/about/technology/benchmarks/brushes": [HOME, ABOUT, TECHNOLOGY, TECH_BENCHMARKS, { ko: "브러시 비교", en: "Brushes" }],
+  "/about/technology/benchmarks/filters": [HOME, ABOUT, TECHNOLOGY, TECH_BENCHMARKS, { ko: "필터 비교", en: "Filters" }],
+  "/about/technology/benchmarks/collab-office": [HOME, ABOUT, TECHNOLOGY, TECH_BENCHMARKS, { ko: "협업·가상 오피스", en: "Collab & Virtual Office" }],
+  "/about/technology/benchmarks/3d-studio": [HOME, ABOUT, TECHNOLOGY, TECH_BENCHMARKS, { ko: "3D·CAD·조형", en: "3D & CAD" }],
+  "/about/technology/benchmarks/ai-assist": [HOME, ABOUT, TECHNOLOGY, TECH_BENCHMARKS, { ko: "AI 보조·권리", en: "AI Assist & Rights" }],
   "/product-tour": [HOME, { ko: "제품 투어", en: "Product tour" }],
   "/brand-film": [HOME, { ko: "브랜드 필름", en: "Brand film" }],
   "/promo-library": [HOME, { ko: "홍보 영상 자료실", en: "Promo video library" }],

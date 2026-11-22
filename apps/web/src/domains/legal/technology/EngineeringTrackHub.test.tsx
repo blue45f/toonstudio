@@ -50,6 +50,7 @@ describe("4-트랙 기술 허브 데이터 계약", () => {
       "/about/technology/videos",
       "/about/technology/drawing-compare",
       "/about/compare",
+      "/about/technology/benchmarks",
     ]);
     expect(byTrack.get("architecture-code")).toEqual([
       "/about/technology/architecture",
@@ -73,6 +74,8 @@ describe("4-트랙 기술 허브 데이터 계약", () => {
       expect(hubTrackForPath(page.href)?.id, page.id).toBe(track.id);
     }
     expect(hubTrackForPath("/about/compare")?.id).toBe("glance");
+    expect(hubTrackForPath("/about/technology/benchmarks")?.id).toBe("glance");
+    expect(hubTrackForPath("/about/technology/benchmarks/ai-assist")?.id).toBe("glance");
   });
 
   it("목적별 1클릭 읽기 코스는 3분·15분·30분 세 가지이며 영문 문구에 한글이 섞이지 않는다", () => {
