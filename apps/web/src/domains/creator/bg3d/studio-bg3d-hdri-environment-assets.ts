@@ -13,10 +13,12 @@
  * 위해 sourceUrl과 체크섬을 함께 보존합니다.
  */
 
-export type StudioBg3dHdriEnvironmentAssetId =
-  | "combination-room"
-  | "cobblestone-street-night"
-  | "konigsallee";
+import {
+  isStudioBg3dHdriEnvironmentAssetId,
+  type StudioBg3dHdriEnvironmentAssetId,
+} from "../contracts/studio-bg3d-environment-settings";
+
+export { isStudioBg3dHdriEnvironmentAssetId, type StudioBg3dHdriEnvironmentAssetId };
 
 /** HDRI 파일 해상도 티어. 1k는 모바일·기본, 2k는 데스크톱 품질 프로파일용입니다. */
 export type StudioBg3dHdriFileTier = "1k" | "2k";
@@ -162,16 +164,6 @@ export function getStudioBg3dHdriEnvironmentAsset(
 ): StudioBg3dHdriEnvironmentAsset | undefined {
   if (typeof id !== "string") return undefined;
   return STUDIO_BG3D_HDRI_ENVIRONMENT_ASSETS.find((asset) => asset.id === id);
-}
-
-/** 저장된 문서 값 등이 카탈로그 ID인지 판정합니다(정규화용 타입 가드). */
-export function isStudioBg3dHdriEnvironmentAssetId(
-  value: unknown,
-): value is StudioBg3dHdriEnvironmentAssetId {
-  return (
-    typeof value === "string" &&
-    STUDIO_BG3D_HDRI_ENVIRONMENT_ASSETS.some((asset) => asset.id === value)
-  );
 }
 
 /** 에셋 파일이 앱 안에서 서빙되는 로컬 파일명. `public/assets/3d/hdri/` 아래에 둡니다. */

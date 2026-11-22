@@ -5,13 +5,13 @@ import {
   studioVrmTexturePaintChannelEncoding,
   type StudioVrmTexturePaintChannel,
   type StudioVrmTexturePaintChannelEncoding,
-} from "./studio-vrm-texture-paint-channel";
+} from "@toonstudio/contracts/studio-vrm-texture-paint-channel";
 import {
   STUDIO_VRM_RIG_PROFILE_PURPOSE,
   STUDIO_VRM_RIG_PROFILE_VERSION,
   createStudioVrmRigProfileSelection,
   type StudioVrmRigProfileSelection,
-} from "./studio-vrm-rig-profile";
+} from "../contracts/studio-vrm-rig-profile-selection";
 
 /**
  * Engine-neutral, persistence-safe scene document for the Studio VRM poser.

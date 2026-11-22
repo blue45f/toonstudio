@@ -8,7 +8,7 @@
 import { hashStudioScene3dCutValue as hash } from "@toonstudio/contracts/studio-scene3d-cut-canonical";
 
 import { parseCharacterDocumentV3, type CharacterDocumentV3 } from "../character-platform/document/character-document-v3";
-import { assertStudioScene3dDocument, type StudioScene3dCamera, type StudioScene3dDocumentV1 } from "../scene3d/studio-scene3d-document";
+import { assertStudioScene3dDocument, type StudioScene3dCamera, type StudioScene3dDocumentV1 } from "@toonstudio/contracts/studio-scene3d-document";
 import type { StudioShared3dCharacterSource } from "../studio-shared-3d-scene-bridge";
 import { parseStudioShared3dCharacterStageTransform } from "../studio-shared-3d-scene-runtime";
 import { parseStudioVrmSceneDocument, serializeStudioVrmSceneDocument, type StudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";

@@ -8,7 +8,7 @@ import { STUDIO_3D_LOCAL_WASM64_MAX_BYTES } from "../import-safety/studio-3d-upl
 import type { StudioGeneric3dWorkflowMetadataRecord } from "../studio-generic-3d-workflow-metadata";
 import type { StudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
 import type { StudioSpatialMeasurementDocument as StudioBg3dMeasurementDocument } from "@toonstudio/studio-project-model/spatial-measurement";
-import type { StudioBg3dEnvironmentSettings } from "./studio-bg3d-hdri-environment";
+import type { StudioBg3dEnvironmentSettings } from "../contracts/studio-bg3d-environment-settings";
 import type { StudioBg3dSceneRecipeEnvelope, StudioBg3dSurfaceRef } from "./studio-bg3d-scene-surface-types";
 
 export const STUDIO_BG3D_SCENE_DOCUMENT_KIND = "toonstudio.bg3d-scene" as const;

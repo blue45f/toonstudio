@@ -4,7 +4,7 @@ import {
   type StudioBg3dSceneDocument,
 } from "../bg3d/studio-bg3d-scene-document";
 import { bakeStudioBg3dTagVisibilityIntoDocument } from "../bg3d/studio-bg3d-hierarchy";
-import { studioBg3dFocalLengthToFovDegrees } from "../bg3d/studio-bg3d-lens";
+import { studioBg3dFocalLengthToFovDegrees } from "../contracts/studio-bg3d-lens-math";
 import { isStudioLinked3dPassRevisionForScene } from "../studio-linked-3d-pass-transaction";
 import {
   parseStudioLinked3dRenderDocument,

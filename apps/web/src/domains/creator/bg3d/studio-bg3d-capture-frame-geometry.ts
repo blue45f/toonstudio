@@ -19,9 +19,17 @@
  * 창을 1000 단위로 쓰고 있으므로(studio-bg3d-camera-application) 두 값을 선형 합성한다.
  */
 
-/** 문서에 저장할 수 있는 캡처 비율 범위(세로 4:1 ~ 가로 4:1). */
-export const STUDIO_BG3D_CAPTURE_ASPECT_MIN = 0.25;
-export const STUDIO_BG3D_CAPTURE_ASPECT_MAX = 4;
+import {
+  STUDIO_BG3D_CAPTURE_ASPECT_MAX,
+  STUDIO_BG3D_CAPTURE_ASPECT_MIN,
+  normalizeStudioBg3dCaptureAspectRatio,
+} from "../contracts/studio-bg3d-output-settings";
+
+export {
+  STUDIO_BG3D_CAPTURE_ASPECT_MAX,
+  STUDIO_BG3D_CAPTURE_ASPECT_MIN,
+  normalizeStudioBg3dCaptureAspectRatio,
+};
 /** 렌즈 시프트가 쓰는 `setViewOffset` 단위 정사각형. 크롭은 여기에 합성된다. */
 export const STUDIO_BG3D_CAPTURE_VIEW_OFFSET_UNIT = 1_000;
 /** 비율 비교 허용 오차(프리셋 매칭 전용). */
@@ -92,15 +100,6 @@ export interface StudioBg3dCaptureFrameCameraLike {
 
 function finitePositive(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-/**
- * 손상된 문서 값을 방어적으로 정규화한다. 숫자가 아니거나 유한하지 않으면 null(=자동)로 떨어지고,
- * 범위를 벗어난 유한한 값은 계약 범위로 클램프된다. 클램프는 멱등이라 canonical 왕복에 안전하다.
- */
-export function normalizeStudioBg3dCaptureAspectRatio(value: unknown): number | null {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
-  return Math.min(STUDIO_BG3D_CAPTURE_ASPECT_MAX, Math.max(STUDIO_BG3D_CAPTURE_ASPECT_MIN, value));
 }
 
 /**

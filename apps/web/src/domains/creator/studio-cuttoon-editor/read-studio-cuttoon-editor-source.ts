@@ -77,6 +77,13 @@ export function readStudioPageCompositionSource(): string {
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-publish-continuity-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-view-and-resize-helpers.ts"),
+    // Wave 2(2026-11-23) 호스트 2차 안전 분리 도메인 헬퍼 6종 — 합성 경계 검사에 포함한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-draw-options-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-element-layout-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-live-ink-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-pixel-retouch-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-workspace-helpers.ts"),
   ]
     .map((filePath) => readFileSync(filePath, "utf8"))
     .join("\n");
@@ -168,6 +175,13 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-publish-continuity-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-raster-edit-and-shape-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-view-and-resize-helpers.ts"),
+    // Wave 2(2026-11-23) 호스트 2차 안전 분리 도메인 헬퍼 6종 — 호스트 본문 앞에 배치한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-draw-options-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-element-layout-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-live-ink-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-pixel-retouch-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave2-workspace-helpers.ts"),
     resolve(baseDir, "../StudioCuttoonEditorHost.tsx"),
     resolve(baseDir, "../canvas/studio-canvas-viewport-input.ts"),
     resolve(baseDir, "../StudioPage.tsx"),
