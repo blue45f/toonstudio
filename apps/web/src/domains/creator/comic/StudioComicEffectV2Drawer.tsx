@@ -33,6 +33,12 @@ const LazyMangaToolkitPanel = lazy(() =>
   })),
 );
 
+const LazyProceduralEffectLinesPanel = lazy(() =>
+  import("../rulers-pro/StudioMangaRulersEffectLinesPanel").then((m) => ({
+    default: m.StudioMangaRulersEffectLinesPanel,
+  })),
+);
+
 const FOCUS_V2_IDS: readonly StudioFocusPresetId[] = [
   "scattered-focus",
   "dense-focus",
@@ -77,6 +83,38 @@ function LazyMangaToolkitDisclosure(): ReactElement {
             }
           >
             <LazyMangaToolkitPanel />
+          </Suspense>
+        </div>
+      ) : null}
+    </details>
+  );
+}
+
+function LazyProceduralEffectDisclosure({
+  selected,
+  onPatch,
+}: {
+  readonly selected: FocusLinesEl | SpeedLinesEl | FrameEl;
+  readonly onPatch: (patch: Partial<El>) => void;
+}): ReactElement {
+  const [opened, setOpened] = useState(false);
+  return (
+    <details
+      onToggle={(event) => setOpened(event.currentTarget.open)}
+      className="rounded-lg border border-line/70 bg-card/45 p-2 [word-break:keep-all]"
+    >
+      <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-xs font-semibold text-fg-2">
+        <span>절차적 효과선 벡터 생성기</span>
+        <span className="text-[0.68rem] font-normal text-fg-3">집중·스피드·유선·폭발</span>
+      </summary>
+      {opened ? (
+        <div className="mt-2 rounded-lg border border-line/60 bg-panel/60 p-2">
+          <Suspense fallback={null}>
+            <LazyProceduralEffectLinesPanel
+              defaultTab="effect-lines"
+              selectedElement={selected}
+              onApplyElementPatch={onPatch}
+            />
           </Suspense>
         </div>
       ) : null}
@@ -137,6 +175,7 @@ export function StudioComicEffectV2Drawer({
             ))}
           </div>
         </details>
+        <LazyProceduralEffectDisclosure selected={selected} onPatch={onPatch} />
         <LazyMangaToolkitDisclosure />
       </div>
     );
@@ -162,6 +201,7 @@ export function StudioComicEffectV2Drawer({
             ))}
           </div>
         </details>
+        <LazyProceduralEffectDisclosure selected={selected} onPatch={onPatch} />
         <LazyMangaToolkitDisclosure />
       </div>
     );
@@ -243,6 +283,7 @@ export function StudioComicEffectV2Drawer({
         </div>
       </details>
 
+      <LazyProceduralEffectDisclosure selected={selected} onPatch={onPatch} />
       <LazyMangaToolkitDisclosure />
     </div>
   );
