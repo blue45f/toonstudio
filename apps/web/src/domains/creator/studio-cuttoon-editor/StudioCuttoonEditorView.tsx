@@ -42,6 +42,11 @@ const StudioDrawingAppBar = lazyRetry(
   "StudioDrawingAppBar",
 );
 const StudioLegacyPigmentStrokeMigration = lazy(() => import("../brush/StudioLegacyPigmentStrokeMigration"));
+const StudioErgonomicsRuntimeHost = lazy(() =>
+  import("../ergonomics/StudioErgonomicsRuntimeHost").then((module) => ({
+    default: module.StudioErgonomicsRuntimeHost,
+  })),
+);
 
 export type { StudioCuttoonEditorViewSession };
 
@@ -283,6 +288,27 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
       </div>
     ) : null}
     <StudioHelpCenterHost />
+    <Suspense fallback={null}>
+      <StudioErgonomicsRuntimeHost
+        studioRootRef={studioRootRef}
+        workMode={workMode}
+        tool={tool}
+        drawMode={s.drawMode}
+        eyedropperActive={s.eyedropperActive}
+        colorWheelOpen={s.colorWheelOpen}
+        colorRangePickActive={s.colorRangePickActive}
+        pageGradePanelOpen={s.pageGradePanelOpen}
+        advancedFillActive={s.advancedFillActive}
+        wetMixActive={s.wetMixActive}
+        dodgeBurnActive={s.dodgeBurnActive}
+        isExporting={s.isExporting}
+        exportMenuOpen={s.exportMenuOpen}
+        colorBlindPreview={s.colorBlindPreview}
+        activeMenu={s.menu}
+        canvasOnlyMode={canvasOnlyMode}
+        reduceMotion={appSettings.other.reduceMotion}
+      />
+    </Suspense>
       </StudioAppliedFilterPresentation>
     </div>
     </StudioToolHintPreferencesProvider>
