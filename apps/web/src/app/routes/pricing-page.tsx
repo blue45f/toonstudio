@@ -91,6 +91,7 @@ const COPY = {
     "Not decided yet. We'll announce well in advance before paid billing begins — until then every tier is free to use.",
   ),
   membershipPolicyCta: defineBilingualText("pricingPage", "membershipPolicyCta", "멤버십 정책 자세히 보기", "See membership policy"),
+  competitorCompareCta: defineBilingualText("pricingPage", "competitorCompareCta", "경쟁 도구 7종 기능·비용 비교", "Compare 7 creative tools"),
   supportCta: defineBilingualText("pricingPage", "supportCta", "ToonStudio 응원하기", "Support ToonStudio"),
   startCta: defineBilingualText("pricingPage", "startCta", "무료로 시작하기", "Start free"),
   // MEMBERSHIP_PLAN_POLICIES의 description은 한국어 고정이므로 페이지에서 bilingual로 덮는다.
@@ -379,6 +380,7 @@ export function PricingPage() {
 
       <div className="flex flex-wrap justify-center gap-3 py-10 sm:py-12">
         <Link href="/studio/new" className={buttonClass({ className: "min-h-11 gap-2" })}>{t(COPY.startCta)}</Link>
+        <Link href="/about/compare" className={buttonClass({ variant: "outline", className: "min-h-11" })}>{t(COPY.competitorCompareCta)}</Link>
         <Link href="/membership" className={buttonClass({ variant: "quiet", className: "min-h-11" })}>{t(COPY.membershipPolicyCta)}</Link>
         <Link href="/support-us" className={buttonClass({ variant: "quiet", className: "min-h-11" })}>{t(COPY.supportCta)}</Link>
       </div>

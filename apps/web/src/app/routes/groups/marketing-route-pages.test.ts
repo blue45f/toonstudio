@@ -49,7 +49,7 @@ describe("마케팅 페이지 지연 로더", () => {
       "WorkspaceHomeRoute", "ComicIntroHost", "ProductTourPage", "BrandFilmPage",
       "PromoVideoLibraryPage", "MembershipPolicyPage", "PricingPage", "FeaturesOverviewPage",
       "EventsHubPage", "BetaOpenEventPage", "StudioWorkspacePage", "StudioIntroductionPage",
-      "IrPitchPage", "IrPresentPage", "BusinessPlanPage",
+      "IrPitchPage", "IrPresentPage", "BusinessPlanPage", "CompetitorComparisonPage",
     ]);
     expect(new Set(ids).size).toBe(ids.length);
   });

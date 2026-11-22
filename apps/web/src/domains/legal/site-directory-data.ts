@@ -494,6 +494,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/brand-film", "툰스튜디오 홍보영상", "ToonStudio brand film", "24초 브랜드 필름으로 핵심 제작 경험 빠르게 보기", "Watch the 24-second brand film for a quick product overview"),
       destination("/promo-library", "홍보 영상 자료실", "Promo video library", "홍보에 쓴 생성형 AI 영상 204편을 카테고리별로 모아 미리 보고 원본을 내려받는 자료실", "Preview and download the library of 204 AI-generated promo clips, organized by category"),
       destination("/features", "기능 한눈에 보기", "Features at a glance", "툰스튜디오의 모든 기능을 카테고리별로 한눈에 확인", "Browse every ToonStudio feature by category at a glance"),
+      destination("/about/compare", "경쟁 도구 7종 비교", "Competitor tool comparison", "Clip Studio Paint·Procreate·Photoshop·Rebelle·Blender·Creco·ACON3D와 기능·UX·비용 실측 대조", "Compare ToonStudio with 7 creative & webtoon tools across features, UX and cost"),
       destination("/about", "서비스 소개", "About ToonStudio", "핵심 기능·제작 흐름·역할별 시작점과 소개 영상을 한눈에", "Core features, the production flow, starting points by role and intro films at a glance"),
       destination("/ir", "IR · 투자 소개", "IR · Investor brief", "핵심 메시지·제품 역량·시장·BM·검증 로드맵과 IR 영상을 발표 흐름 한 페이지로", "The pitch in one page: key message, product capabilities, market, business model, validation roadmap and the IR film"),
       destination("/business-plan", "사업계획서", "Business plan", "문제 인식·실현 가능성·성장전략·향후 발전방안", "Problem, feasibility, growth strategy and future development"),
