@@ -8,12 +8,19 @@ import {
   CircleDot,
   Clock3,
   FlaskConical,
+  GitCompareArrows,
   LayoutGrid,
   Presentation,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { AboutSectionNav } from "../AboutSectionNav";
+import {
+  ENGINEERING_HUB_TRACKS,
+  hubTrackForPageId,
+  hubTrackRegistryPages,
+} from "./engineering-hub-tracks";
+import { EngineeringTrackSiblingBar } from "./EngineeringTrackHub";
 import {
   ENGINEERING_PAGES,
   ENGINEERING_PAGE_GROUPS,
@@ -129,9 +136,8 @@ export function EngineeringTechNav({ className }: { readonly className?: string 
   return (
     <nav
       aria-label={bi("기술 문서 메뉴", "Engineering documents")}
-      className={cx("relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-r from-accent/8 via-panel/85 to-card/90 shadow-sm backdrop-blur-xl", className)}
+      className={cx("relative overflow-hidden rounded-3xl border border-line/75 bg-panel/80 shadow-sm backdrop-blur-xl", className)}
     >
-      <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
       <div ref={scrollerRef} className="flex snap-x gap-1 overflow-x-auto overscroll-x-contain p-2 [scrollbar-width:thin]">
         {ENGINEERING_PAGE_GROUPS.map((group, groupIndex) => {
           const pages = ENGINEERING_PAGES.filter((page) => page.group === group.id);
@@ -182,13 +188,16 @@ export function EngineeringTechNav({ className }: { readonly className?: string 
 
 function AtlasTocGroups({ currentId }: { readonly currentId: EngineeringPageId }) {
   return (
-    <div className="space-y-3">
-      {ENGINEERING_PAGE_GROUPS.map((group) => {
-        const pages = ENGINEERING_PAGES.filter((page) => page.group === group.id);
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {ENGINEERING_HUB_TRACKS.map((track) => {
+        const pages = hubTrackRegistryPages(track);
         return (
-          <div key={group.id}>
-            <p className="px-2 font-display text-[0.65rem] font-black uppercase tracking-[0.12em] text-fg-3">
-              {bi(group.label.ko, group.label.en)}
+          <div key={track.id} className="rounded-2xl border border-line/60 bg-card/55 p-2">
+            <p className="px-2 py-1 font-display text-[0.68rem] font-black tracking-[0.04em] text-fg-3">
+              {formatI18nTemplate(String(bi("트랙 {value0} · {value1}", "Track {value0} · {value1}")), {
+                value0: track.number,
+                value1: bi(track.label.ko, track.label.en),
+              })}
             </p>
             <ul className="mt-1 space-y-0.5">
               {pages.map((page) => {
@@ -206,7 +215,7 @@ function AtlasTocGroups({ currentId }: { readonly currentId: EngineeringPageId }
                           : "text-fg-2 hover:bg-raised hover:text-fg",
                       )}
                     >
-                      {"step" in page ? (
+                      {page.step !== undefined ? (
                         <StepMark step={page.step} active={active} />
                       ) : (
                         <Icon size={14} aria-hidden="true" className={active ? "text-accent" : "text-fg-3"} />
@@ -224,10 +233,11 @@ function AtlasTocGroups({ currentId }: { readonly currentId: EngineeringPageId }
   );
 }
 
-/** 도감 검색을 가리지 않도록 중복 문서 메뉴를 한 곳에 모으되 기존 링크와 선택 상태를 유지한다. */
+/** 도감 검색을 가리지 않도록 중복 문서 메뉴를 4-트랙 목차 한 곳에 모으되 기존 링크와 선택 상태를 유지한다. */
 function EngineeringCatalogMenu({ currentId }: { readonly currentId: EngineeringPageId }) {
   useBilingualI18nRevision();
   const current = findEngineeringPage(currentId);
+  const currentTrack = hubTrackForPageId(currentId);
   const menuRef = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const menu = menuRef.current;
@@ -248,6 +258,12 @@ function EngineeringCatalogMenu({ currentId }: { readonly currentId: Engineering
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-3 text-sm font-bold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
         <span>{bi("기술 문서 메뉴·목차", "Documents & index")}</span>
         <span className="flex min-w-0 items-center gap-2 text-xs text-fg-2">
+          <span className="hidden rounded-full border border-line bg-card px-2 py-0.5 text-[0.68rem] font-bold text-fg-3 sm:inline-flex">
+            {formatI18nTemplate(String(bi("트랙 {value0} · {value1}", "Track {value0} · {value1}")), {
+              value0: currentTrack.number,
+              value1: bi(currentTrack.label.ko, currentTrack.label.en),
+            })}
+          </span>
           {current ? bi(current.label.ko, current.label.en) : null}
           <ChevronDown size={15} aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
         </span>
@@ -257,6 +273,18 @@ function EngineeringCatalogMenu({ currentId }: { readonly currentId: Engineering
         <nav aria-label={bi("기술 문서 목차", "Engineering document index")} className="mt-4">
           <AtlasTocGroups currentId={currentId} />
         </nav>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3">
+          <p className="text-xs text-fg-3">
+            {bi("경쟁 툴 기능·비용 비교는 트랙 1 연관 페이지에서 바로 확인합니다.", "Tool feature and cost comparisons open directly from Track 1.")}
+          </p>
+          <Link
+            href="/about/compare"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <GitCompareArrows size={14} aria-hidden="true" />
+            {bi("경쟁 비교 보기", "Compare tools")}
+          </Link>
+        </div>
       </div>
     </details>
   );
@@ -503,14 +531,14 @@ function HubCard({ alignEnd = false }: { readonly alignEnd?: boolean }) {
         {bi("기술 허브", "Engineering hub")}
       </span>
       <span className="text-lg font-black text-fg group-hover:text-accent">{bi("읽는 길 한눈에 보기", "See every reading route")}</span>
-      <span className="text-sm leading-6 text-fg-2">{bi("큰 그림 두 해설, 발표 동선 다섯 단계, 찾아보기 도구를 한 화면에서 고릅니다.", "Pick a big-picture guide, one of the five talk-path steps or a look-up tool on one screen.")}</span>
+      <span className="text-sm leading-6 text-fg-2">{bi("4개 트랙과 3분·15분·30분 읽기 코스를 한 화면에서 고릅니다.", "Pick one of the four tracks or a 3/15/30-minute reading course on one screen.")}</span>
     </Link>
   );
 }
 
 /* ── 공통 페이지 틀 ────────────────────────────────────────── */
 
-/** 기술 하위 페이지 공통 틀: 소개 메뉴(간결형) → 기술 메뉴 → 좌측 고정 목차(시안 P) + 본문 → 이어보기. */
+/** 기술 하위 페이지 공통 틀: 4-트랙 목차 메뉴 → 현재 트랙 빠른 전환 띠 → 본문 → 이어보기. */
 export function EngineeringPageFrame({
   pageId,
   children,
@@ -528,6 +556,7 @@ export function EngineeringPageFrame({
   return (
     <Container size="wide" className={cx(variant === "catalog" ? "py-3 sm:py-5" : "py-4 sm:py-6", className)}>
       <EngineeringCatalogMenu currentId={pageId} />
+      <EngineeringTrackSiblingBar currentId={pageId} />
       <div className="min-w-0 max-w-5xl mx-auto">
         {children}
         {pager ? <EngineeringPathPager current={pageId} /> : null}

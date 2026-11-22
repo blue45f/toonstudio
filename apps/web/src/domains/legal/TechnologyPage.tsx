@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Clock3,
   Database,
+  GitCompareArrows,
   Play,
   Presentation,
   Scale,
@@ -18,6 +19,7 @@ import {
   EngineeringHubStart,
   EngineeringReadingFlow,
   EngineeringReadingRoutes,
+  EngineeringTrackHub,
 } from "./technology/EngineeringReadingRoutes";
 import { ENGINEERING_ATLAS_CATEGORIES } from "./technology/engineering-atlas-types";
 import { ENGINEERING_MAP_META } from "./technology/engineering-map-types";
@@ -171,6 +173,13 @@ export function TechnologyPage() {
               {bi("전체 제작 과정 보기", "Read the full story")}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
+            <Link
+              href="/about/compare"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-card/70 px-4 py-2.5 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <GitCompareArrows size={16} aria-hidden="true" />
+              {bi("경쟁 비교", "Compare tools")}
+            </Link>
             <p className="text-xs font-bold text-fg-3">
               {formatI18nTemplate(String(bi("챕터 {value0}개 · 전체 읽기 약 {value1}분", "{value0} chapters · about {value1} min in total")), {
                 value0: ENGINEERING_CHAPTERS.length,
@@ -183,7 +192,8 @@ export function TechnologyPage() {
 
       <AboutSectionNav variant="compact" className="mt-5" />
 
-      <EngineeringHubStart className="mt-6 sm:mt-7" />
+      <EngineeringTrackHub className="mt-6 sm:mt-8" />
+      <EngineeringHubStart className="mt-10 sm:mt-12" />
       <EngineeringReadingRoutes className="mt-12 sm:mt-14" />
       <EngineeringReadingFlow className="mt-12 sm:mt-14" />
 
@@ -196,10 +206,10 @@ export function TechnologyPage() {
             <h2 id="engineering-path-title" className="mt-3 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
               {bi("발표 동선: 이야기에서 발표까지 다섯 단계", "Talk path: five steps from story to presentation")}
             </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2">
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-fg-2">
               {formatI18nTemplate(String(bi(
-                "큰 그림 두 해설(번호 없음)에서 구조와 재료를 본 뒤, 1~4단계에서 발표의 근거를 쌓고 5단계 발표 모드에서 같은 사실을 말로 풀어냅니다. 발표 모드는 세미나 {value0}분을 기본으로 요약·강의·도감 부록 트랙도 갖고 있습니다. 단계마다 목적이 겹치지 않습니다.",
-                "After the two big-picture guides (unnumbered), steps 1 to 4 build the evidence and step 5, presentation mode, tells the same facts aloud. Presentation mode defaults to a {value0}-minute seminar and also has brief, lecture and atlas-appendix tracks. Each step has its own purpose.",
+                "1~4단계로 근거를 쌓고 5단계 발표 모드(세미나 {value0}분 기본 · 요약·강의·도감 트랙 포함)로 이어집니다.",
+                "Steps 1–4 build evidence leading into step 5 presentation mode (default {value0}-minute seminar plus brief, lecture and atlas tracks).",
               )), { value0: DECK_TALK_MINUTES })}
             </p>
           </div>
@@ -238,32 +248,15 @@ export function TechnologyPage() {
         </div>
         <p className="mt-3 text-xs leading-6 text-fg-3">
           {bi(
-            "근거: DEPLOY.md · render.yaml · deploy/cloudflare-realtime/wrangler.jsonc. 구간별 풀이는 아키텍처 해설에서, 결정과 대가는 플레이북과 제작 스토리에서 이어집니다.",
-            "Sources: DEPLOY.md · render.yaml · deploy/cloudflare-realtime/wrangler.jsonc. Section-by-section explanations continue in the architecture guide; decisions and trade-offs in the playbook and story.",
+            "근거: DEPLOY.md · deploy/cloudflare-realtime/wrangler.jsonc · docs/operations/infrastructure-map.md. 구간별 풀이는 아키텍처 해설에서 이어집니다.",
+            "Sources: DEPLOY.md · deploy/cloudflare-realtime/wrangler.jsonc · docs/operations/infrastructure-map.md. Section details continue in the architecture guide.",
           )}
         </p>
       </section>
 
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-accent/35 bg-accent-soft/25 p-5 sm:p-6">
-        <div className="min-w-0 max-w-3xl">
-          <p className="text-sm font-black text-fg">{bi("구조를 봤다면 다음은 재료입니다.", "Structure seen? Materials come next.")}</p>
-          <p className="mt-1 text-sm leading-6 text-fg-2">
-            {bi(
-              "아래는 핵심 기술 네 가지의 요약입니다. 브러시 엔진·VRM·협업·저장·서버까지 쓰인 라이브러리를 영역별로, 고른 이유와 함께 보려면 라이브러리 해설을 여세요.",
-              "Below is a summary of four core technologies. For every library in use, from brush engines and VRM to collaboration, storage and the server, area by area with the reasons for each choice, open the library guide.",
-            )}
-          </p>
-        </div>
-        <Link
-          href={findEngineeringPage("libraries").href}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-        >
-          {bi("라이브러리 해설 열기", "Open the library guide")}
-          <ArrowRight size={16} aria-hidden="true" />
-        </Link>
+      <div className="mt-10">
+        <TechnologyStackShowcase />
       </div>
-
-      <TechnologyStackShowcase />
 
       <section className="pb-12 sm:pb-16" aria-labelledby="engineering-films-title">
         <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "WATCH THE PRODUCT")}</p>

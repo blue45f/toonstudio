@@ -52,6 +52,8 @@ function stepLabelText(step: ReadingRouteStep): string {
   return bi(label.ko, label.en);
 }
 
+export { EngineeringTrackHub } from "./EngineeringTrackHub";
+
 /* ── 여기서 시작 ──────────────────────────────────────────── */
 
 /** 첫 화면의 두 문: 구조(아키텍처 해설)와 재료(라이브러리 해설). */
@@ -64,13 +66,13 @@ export function EngineeringHubStart({ className }: { readonly className?: string
       <h2 id="engineering-start-title" className="mt-2 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
         {bi("처음이라면 여기서 시작: 구조와 재료", "New here? Start with the structure and the materials")}
       </h2>
-      <p className="mt-2 max-w-3xl text-sm leading-7 text-fg-2">
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
         {bi(
-          "도식과 쉬운 말로 푼 두 해설입니다. 구조를 보면 나머지 자료가 놓일 자리가 보이고, 재료를 보면 고른 이유가 이어집니다.",
-          "Two guides in diagrams and plain words. The structure shows where the rest fits; the materials explain why each piece was chosen.",
+          "큰 그림 도식으로 전체 구조를 잡고, 영역별 라이브러리 선택 이유를 바로 이어 봅니다.",
+          "Start with the system map for structure, then check why each library was chosen.",
         )}
       </p>
-      <ul className="mt-5 grid gap-4 md:grid-cols-2">
+      <ul className="mt-4 grid gap-4 md:grid-cols-2">
         {ENGINEERING_START_PAGES.map((entry) => {
           const page = findEngineeringPage(entry.pageId);
           const Icon = page.icon;
@@ -79,7 +81,7 @@ export function EngineeringHubStart({ className }: { readonly className?: string
             <li key={entry.pageId} className="flex">
               <Link
                 href={page.href}
-                className="group flex w-full flex-col gap-3 rounded-3xl border border-accent/45 bg-accent-soft/30 p-5 transition-colors hover:border-accent hover:bg-accent-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="group flex min-h-11 w-full flex-col gap-3 rounded-3xl border border-accent/40 bg-accent-soft/25 p-5 transition-colors hover:border-accent hover:bg-accent-soft/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <span className="flex items-center justify-between gap-3">
                   <span className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-card/70 px-3 py-1 text-xs font-black text-accent">
@@ -123,7 +125,7 @@ function RouteStepRow({ step }: { readonly step: ReadingRouteStep }) {
     <li>
       <Link
         href={readingStepHref(step)}
-        className="group flex items-start gap-3 rounded-2xl border border-line/60 bg-panel/50 p-3 transition-colors hover:border-accent/45 hover:bg-raised/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="group flex min-h-11 items-start gap-3 rounded-2xl border border-line/60 bg-panel/50 p-3 transition-colors hover:border-accent/45 hover:bg-raised/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-3 group-hover:text-accent">
           <Icon size={16} aria-hidden="true" />
@@ -200,10 +202,10 @@ export function EngineeringReadingRoutes({ className }: { readonly className?: s
       <h2 id="engineering-routes-title" className="mt-2 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
         {bi("시간과 목적에 맞는 길을 고르세요", "Pick the route that fits your time and goal")}
       </h2>
-      <p className="mt-2 max-w-3xl text-sm leading-7 text-fg-2">
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
         {bi(
-          "같은 자료를 세 가지 깊이로 읽습니다. 길마다 거치는 페이지와 걸리는 시간을 적었고, 시간은 각 페이지의 읽기·발표 시간을 더한 값입니다.",
-          "The same material at three depths. Each route lists the pages it passes through and how long it takes, summed from each page's reading or talk time.",
+          "정독 기준으로 훑어보기·이해하기·깊이 파고들기 세 길과 각 단계의 실측 읽기·발표 시간을 묶었습니다.",
+          "Full-read paths at three depths, with durations summed from each page's measured reading or talk time.",
         )}
       </p>
       <ol className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -227,10 +229,10 @@ export function EngineeringReadingFlow({ className }: { readonly className?: str
       <h2 id="engineering-flow-title" className="mt-2 text-balance text-2xl font-black tracking-tight text-fg sm:text-3xl">
         {bi("한눈에 보는 읽는 순서", "The reading order at a glance")}
       </h2>
-      <p className="mt-2 max-w-3xl text-sm leading-7 text-fg-2">
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
         {bi(
-          "큰 그림에서 시작해 1~4단계로 발표의 근거를 쌓고, 5단계에서 발표합니다. 점선으로 이어진 찾아보기 도구는 낯선 말이나 질문이 나올 때 꺼내 씁니다. 각 단계는 아래 카드에서 바로 열 수 있습니다.",
-          "Begin with the big picture, build the evidence in steps 1 to 4 and give the talk in step 5. The look-up tools joined by dashed lines come out when an unfamiliar term or a question appears. Each step opens from the cards below.",
+          "큰 그림 → 근거(1~4단계) → 발표(5단계) 흐름과 필요할 때 꺼내 보는 찾아보기 도구를 한 장에 담았습니다.",
+          "Big picture → evidence (steps 1–4) → talk (step 5), with dashed links to on-demand reference tools.",
         )}
       </p>
       <div className="mt-5 rounded-[2rem] border border-line/70 bg-panel/65 p-4 shadow-sm sm:p-6">
