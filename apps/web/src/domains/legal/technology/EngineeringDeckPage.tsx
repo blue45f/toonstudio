@@ -13,6 +13,8 @@ import {
   X,
 } from "lucide-react";
 import {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useEffectEvent,
@@ -84,6 +86,8 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
 /** 주소를 위치로 바꿀 때 쓰는 트랙별 슬라이드 수·id(번역 없이 계산된다). 모듈 상수라 렌더마다 새로 만들지 않는다. */
 const DECK_POSITION_SOURCE: DeckPositionSource = { count: deckTrackSlideCount, ids: deckTrackSlideIds };
+
+const TechSeminarShowcaseStudio = lazy(() => import("./seminar-showcase/TechSeminarShowcaseStudio"));
 
 const PRIMARY_BUTTON =
   "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent px-5 text-sm font-black text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas";
@@ -631,6 +635,15 @@ export function EngineeringDeckPage() {
       {position.track === "talk" ? <EngineeringSeminarPrep model={model} onJump={goTo} onOpenAtlas={openAtlasCard} /> : null}
       <WorkshopModules />
       <EngineeringSeminarResources />
+      <Suspense
+        fallback={(
+          <div className="mt-10 rounded-3xl border border-line/60 bg-panel/40 px-6 py-5 text-xs font-bold text-fg-3" aria-busy="true">
+            {bi("Remotion 모션 도식 및 실무 레시피 6선을 불러오는 중입니다…", "Loading Remotion motion diagrams and reusable recipes…")}
+          </div>
+        )}
+      >
+        <TechSeminarShowcaseStudio />
+      </Suspense>
       <EngineeringFreeAiTokenGuide />
 
       <PrintDeck slides={scope.slides} firstIndex={scope.firstIndex} total={model.slides.length} sections={model.sections} />
