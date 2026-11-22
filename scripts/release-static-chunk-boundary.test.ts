@@ -61,12 +61,21 @@ describe("release static chunk isolation", () => {
   });
   it("loads the project archive builder after the user-activation file picker, not at editor boot", () => {
     const host = readFileSync("apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx", "utf8");
-    expect(host).not.toContain('import { buildStudioProjectPackageWithWorkspace } from');
-    const start = host.indexOf("async function saveLocalStudioProjectFile()");
-    const end = host.indexOf("function openLocalStudioPersonalDrive()", start);
-    const action = host.slice(start, end);
+    const saveHelper = readFileSync(
+      "apps/web/src/domains/creator/studio-cuttoon-edit/studio-host-wave5-project-save-export-helpers.ts",
+      "utf8",
+    );
+    expect(host).not.toContain("buildStudioProjectPackageWithWorkspace");
+    expect(saveHelper).not.toMatch(/^import\s+\{[^}]*buildStudioProjectPackageWithWorkspace/mu);
+    const hostStart = host.indexOf("async function saveLocalStudioProjectFile()");
+    const hostEnd = host.indexOf("function openLocalStudioPersonalDrive()", hostStart);
+    expect(host.slice(hostStart, hostEnd)).toContain("runStudioSaveLocalProjectFile(");
+    const start = saveHelper.indexOf("export async function runStudioSaveLocalProjectFile(");
+    const end = saveHelper.indexOf("export async function runStudioExportCurrentPageToSvg(", start);
+    const action = saveHelper.slice(start, end);
     const picker = action.indexOf("await chooseStudioProjectPackageSaveTarget(");
-    const load = action.indexOf('await import("./save-first/studio-project-package-with-workspace")');
+    const loadMatch = /await\s+import\(\s*["']\.\.\/save-first\/studio-project-package-with-workspace["']\s*\)/u.exec(action);
+    const load = loadMatch ? loadMatch.index : -1;
     expect(picker).toBeGreaterThan(0);
     expect(load).toBeGreaterThan(picker);
     expect(action.indexOf("currentStudioProjectSnapshot()")).toBeGreaterThan(load);

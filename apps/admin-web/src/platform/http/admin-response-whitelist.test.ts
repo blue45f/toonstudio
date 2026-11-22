@@ -75,9 +75,13 @@ describe("admin-response-whitelist (#115)", () => {
     expect(sanitized).toContain(REDACTED_INTERNAL_HOST);
     expect(sanitized).toContain(REDACTED_ENV_ENTRY);
     expect(sanitized).toContain(REDACTED_ENV_KEY);
-    // 정상 공개 운영 URL은 보존한다.
+    // 정상 공개 운영 URL 및 비엔드포인트 바인드 문서 표기(host 0.0.0.0.)는 보존한다.
     expect(sanitized).toContain("https://www.toonstudio.cloud");
     expect(sanitized).toContain("https://toonstudio-api.onpod.ai");
+    expect(sanitizeAdminDiagnosticText("PORT > NEST_API_PORT > 4001, host 0.0.0.0.")).toBe(
+      "PORT > NEST_API_PORT > 4001, host 0.0.0.0.",
+    );
+    expect(sanitizeAdminDiagnosticText("endpoint=0.0.0.0:4001")).toContain(REDACTED_INTERNAL_HOST);
 
     for (const forbidden of [
       "postgres://",
