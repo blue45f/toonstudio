@@ -1,48 +1,16 @@
 import {
-  activeAssignments,
-  createProductionTaskWorkflowReader,
-  scopeContains,
-  type ClarificationThread,
+  decodeResubmissionEvidenceRefs,
+  planProductionReviewResubmission,
   type CutPlan,
   type ProductionProjectAggregate,
+  type ResubmitForReviewCommand,
   type ReviewDecision,
   type ReviewLane,
   type ReviewPolicy,
   type Submission,
 } from "@toonstudio/core/production";
 
-import type { ProductionClientCommand } from "./production-api";
-
-const RESUBMIT_PREV_PREFIX = "resubmit-prev:";
-const RESUBMIT_CHANGED_CUTS_PREFIX = "resubmit-changed-cuts:";
-const RESUBMIT_RESOLVED_REQS_PREFIX = "resubmit-resolved-reqs:";
-const RESUBMIT_OPEN_REQS_PREFIX = "resubmit-open-reqs:";
-const RESUBMIT_NOTE_PREFIX = "resubmit-note:";
-
-export interface SubmissionResubmitStep {
-  readonly stage:
-    | "resolve-clarification"
-    | "resume-task"
-    | "supersede-previous"
-    | "create-submission"
-    | "reenter-review";
-  readonly command: ProductionClientCommand;
-}
-
-export interface PlanSubmissionResubmissionInput {
-  readonly aggregate: ProductionProjectAggregate;
-  readonly previousSubmission: Submission;
-  readonly changedCutIds: readonly string[];
-  readonly resolveClarificationIds?: readonly string[];
-  readonly resolutionNote?: string;
-  readonly submittedByAssignmentId?: string;
-  readonly at: string;
-}
-
-export interface PlannedSubmissionResubmission {
-  readonly nextSubmission: Submission;
-  readonly steps: readonly SubmissionResubmitStep[];
-}
+export { decodeResubmissionEvidenceRefs, encodeResubmissionEvidenceRefs } from "@toonstudio/core/production";
 
 export interface ResubmissionRequestEntry {
   readonly id: string;
@@ -81,243 +49,25 @@ export interface DerivedSubmissionResubmissionSummary {
   readonly note: string | null;
 }
 
-function stripTrailingRevisionSuffix(id: string): string {
-  return id.replace(/-r\d+$/u, "");
-}
-
-function buildHexDigest(seed: string): string {
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (let i = 0; i < seed.length; i += 1) {
-    const code = seed.charCodeAt(i);
-    h1 = Math.imul(h1 ^ code, 0x01000193) >>> 0;
-    h2 = Math.imul(h2 ^ (code + i), 0x85ebca6b) >>> 0;
-  }
-  const part = `${h1.toString(16).padStart(8, "0")}${h2.toString(16).padStart(8, "0")}`;
-  return `sha256:${part.repeat(4).slice(0, 64)}`;
-}
-
-function normalizeUniqueIds(values: readonly string[]): readonly string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of values) {
-    const trimmed = raw.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    out.push(trimmed);
-  }
-  return out;
-}
-
-export function encodeResubmissionEvidenceRefs(input: {
-  readonly previousSubmissionId: string;
+export function planProductionSubmissionResubmission(input: {
+  readonly aggregate: ProductionProjectAggregate;
+  readonly previousSubmission: Submission;
   readonly changedCutIds: readonly string[];
-  readonly resolvedRequestIds: readonly string[];
-  readonly openRequestIds: readonly string[];
-  readonly note?: string;
-}): readonly string[] {
-  const refs: string[] = [
-    `${RESUBMIT_PREV_PREFIX}${input.previousSubmissionId}`,
-    `${RESUBMIT_CHANGED_CUTS_PREFIX}${normalizeUniqueIds(input.changedCutIds).join(",")}`,
-    `${RESUBMIT_RESOLVED_REQS_PREFIX}${normalizeUniqueIds(input.resolvedRequestIds).join(",")}`,
-    `${RESUBMIT_OPEN_REQS_PREFIX}${normalizeUniqueIds(input.openRequestIds).join(",")}`,
-  ];
-  const trimmedNote = input.note?.trim() ?? "";
-  if (trimmedNote) {
-    refs.push(`${RESUBMIT_NOTE_PREFIX}${encodeURIComponent(trimmedNote.slice(0, 240))}`);
-  }
-  return refs;
-}
-
-export function decodeResubmissionEvidenceRefs(evidenceRefs: readonly string[]): {
-  readonly previousSubmissionId: string | null;
-  readonly changedCutIds: readonly string[];
-  readonly resolvedRequestIds: readonly string[];
-  readonly openRequestIds: readonly string[];
-  readonly note: string | null;
-} | null {
-  const prevRef = evidenceRefs.find((ref) => ref.startsWith(RESUBMIT_PREV_PREFIX));
-  if (!prevRef) return null;
-  const parseList = (prefix: string): readonly string[] => {
-    const matched = evidenceRefs.find((ref) => ref.startsWith(prefix));
-    if (!matched) return [];
-    return normalizeUniqueIds(matched.slice(prefix.length).split(","));
+  readonly resolveClarificationIds?: readonly string[];
+  readonly resolutionNote?: string;
+  readonly submittedByAssignmentId?: string;
+  readonly at: string;
+}) {
+  const command: ResubmitForReviewCommand = {
+    type: "resubmit-for-review",
+    previousSubmissionId: input.previousSubmission.id,
+    submittedByAssignmentId: input.submittedByAssignmentId ?? input.previousSubmission.submittedByAssignmentId,
+    changedCutIds: input.changedCutIds,
+    resolveClarificationIds: input.resolveClarificationIds ?? [],
+    resolutionNote: input.resolutionNote ?? "",
   };
-  const noteRef = evidenceRefs.find((ref) => ref.startsWith(RESUBMIT_NOTE_PREFIX));
-  let note: string | null = null;
-  if (noteRef) {
-    try {
-      note = decodeURIComponent(noteRef.slice(RESUBMIT_NOTE_PREFIX.length)) || null;
-    } catch {
-      note = noteRef.slice(RESUBMIT_NOTE_PREFIX.length) || null;
-    }
-  }
-  return {
-    previousSubmissionId: prevRef.slice(RESUBMIT_PREV_PREFIX.length).trim() || null,
-    changedCutIds: parseList(RESUBMIT_CHANGED_CUTS_PREFIX),
-    resolvedRequestIds: parseList(RESUBMIT_RESOLVED_REQS_PREFIX),
-    openRequestIds: parseList(RESUBMIT_OPEN_REQS_PREFIX),
-    note,
-  };
-}
-
-export function planProductionSubmissionResubmission(
-  input: PlanSubmissionResubmissionInput,
-): PlannedSubmissionResubmission {
-  const { aggregate, previousSubmission, at } = input;
-  const deliverable = aggregate.deliverables.find(
-    (entry) => entry.id === previousSubmission.deliverableId && entry.projectId === aggregate.projectId,
-  );
-  if (!deliverable || deliverable.currentSubmissionId !== previousSubmission.id) {
-    throw new Error("현재 산출물의 수정 요청 제출본에서만 재제출할 수 있습니다.");
-  }
-  if (previousSubmission.status !== "changes-requested") {
-    throw new Error("수정 요청(changes-requested) 상태인 제출본만 새 리비전으로 재제출할 수 있습니다.");
-  }
-  const changedCutIds = normalizeUniqueIds(input.changedCutIds);
-  if (changedCutIds.length === 0) {
-    throw new Error("재제출 전 수정·반영한 컷을 최소 1개 이상 선택하세요.");
-  }
-
-  const activeIds = new Set(
-    activeAssignments(aggregate.assignments, at)
-      .filter((assignment) => assignment.projectId === aggregate.projectId)
-      .map((assignment) => assignment.id),
-  );
-  const submitterId = input.submittedByAssignmentId && activeIds.has(input.submittedByAssignmentId)
-    ? input.submittedByAssignmentId
-    : activeIds.has(previousSubmission.submittedByAssignmentId)
-      ? previousSubmission.submittedByAssignmentId
-      : [...activeIds][0];
-  if (!submitterId) {
-    throw new Error("재제출을 기록할 활성 담당자 배정이 없습니다.");
-  }
-
-  const maxRev = aggregate.submissions
-    .filter((entry) => entry.deliverableId === deliverable.id && entry.projectId === aggregate.projectId)
-    .reduce((max, entry) => Math.max(max, entry.revisionRef.revision), previousSubmission.revisionRef.revision);
-  const nextRevisionNumber = maxRev + 1;
-  const nextSubmissionId = `${stripTrailingRevisionSuffix(previousSubmission.id)}-r${nextRevisionNumber}`;
-  const nextRevisionId = `${stripTrailingRevisionSuffix(previousSubmission.revisionRef.id)}-r${nextRevisionNumber}`;
-  const resolutionText = input.resolutionNote?.trim() || "수정본 반영 후 재제출 완료";
-
-  const resolveSet = new Set(normalizeUniqueIds(input.resolveClarificationIds ?? []));
-  const episodeId = deliverable.scope.kind === "episode"
-    ? deliverable.scope.id
-    : deliverable.scope.ancestors.find((ancestor) => ancestor.kind === "episode")?.id ?? null;
-  const handoffIds = new Set(
-    aggregate.handoffs
-      .filter((handoff) => handoff.episodeId === episodeId && !["superseded", "cancelled"].includes(handoff.status))
-      .map((handoff) => handoff.id),
-  );
-  const episodeClarifications = aggregate.clarifications.filter((entry) => handoffIds.has(entry.handoffId));
-
-  const steps: SubmissionResubmitStep[] = [];
-  const resolvedRequestIds: string[] = [];
-  const openRequestIds: string[] = [];
-
-  for (const thread of episodeClarifications) {
-    if (resolveSet.has(thread.id) && (thread.status === "open" || thread.status === "answered")) {
-      const updated: ClarificationThread = {
-        ...thread,
-        status: "decision-recorded",
-        answer: thread.answer ?? resolutionText,
-        updatedAt: at,
-      };
-      steps.push({
-        stage: "resolve-clarification",
-        command: { type: "upsert-clarification", clarification: updated },
-      });
-      resolvedRequestIds.push(thread.id);
-    } else if (thread.status === "decision-recorded" || thread.status === "closed") {
-      resolvedRequestIds.push(thread.id);
-    } else {
-      openRequestIds.push(thread.id);
-    }
-  }
-
-  for (const decision of aggregate.reviewDecisions) {
-    if (decision.reviewRoundId === previousSubmission.id && (decision.value === "request-changes" || decision.value === "veto")) {
-      resolvedRequestIds.push(decision.id);
-    }
-  }
-
-  for (const changeReq of aggregate.changeRequests) {
-    if (changeReq.episodeId !== episodeId) continue;
-    if (["completed", "cancelled", "rejected"].includes(changeReq.status)) {
-      resolvedRequestIds.push(changeReq.id);
-    } else {
-      openRequestIds.push(changeReq.id);
-    }
-  }
-
-  const workflowReader = createProductionTaskWorkflowReader(aggregate);
-  const linkedChangesTasks = aggregate.tasks.filter(
-    (task) => task.projectId === aggregate.projectId
-      && task.outputDeliverableIds.includes(deliverable.id)
-      && scopeContains(task.scope, deliverable.scope)
-      && task.status === "changes-requested"
-      && workflowReader.hasCurrentDependencyInputs(task),
-  );
-
-  for (const task of linkedChangesTasks) {
-    steps.push({
-      stage: "resume-task",
-      command: {
-        type: "upsert-task",
-        task: { ...task, status: "in-progress", statusChangedAt: at },
-      },
-    });
-  }
-
-  steps.push({
-    stage: "supersede-previous",
-    command: {
-      type: "upsert-submission",
-      submission: { ...previousSubmission, status: "superseded" },
-    },
-  });
-
-  const nextSubmission: Submission = {
-    id: nextSubmissionId,
-    projectId: aggregate.projectId,
-    deliverableId: deliverable.id,
-    revisionRef: {
-      id: nextRevisionId,
-      lineage: previousSubmission.revisionRef.lineage,
-      revision: nextRevisionNumber,
-      digest: buildHexDigest(`${nextSubmissionId}:${nextRevisionId}:${changedCutIds.join(",")}:${at}`),
-      createdAt: at,
-    },
-    submittedByAssignmentId: submitterId,
-    submittedAt: at,
-    status: "in-review",
-    inputRevisionRefs: [...previousSubmission.inputRevisionRefs],
-    evidenceRefs: encodeResubmissionEvidenceRefs({
-      previousSubmissionId: previousSubmission.id,
-      changedCutIds,
-      resolvedRequestIds,
-      openRequestIds,
-      note: input.resolutionNote,
-    }),
-  };
-
-  steps.push({
-    stage: "create-submission",
-    command: { type: "upsert-submission", submission: nextSubmission },
-  });
-
-  for (const task of linkedChangesTasks) {
-    steps.push({
-      stage: "reenter-review",
-      command: {
-        type: "upsert-task",
-        task: { ...task, status: "internal-review", statusChangedAt: at },
-      },
-    });
-  }
-
-  return { nextSubmission, steps };
+  const { nextSubmission } = planProductionReviewResubmission(input.aggregate, command, input.at);
+  return { nextSubmission, steps: [{ command }] as const };
 }
 
 export function deriveSubmissionResubmissionSummary(input: {

@@ -1,6 +1,6 @@
-import { validateProductionWorkflowMutation } from "@toonstudio/contracts/production-workflow";
+import { applyCheckedProductionMutation } from "./production-resubmission-command";
 import { applyProductionWorkflowCommand } from "./production-workflow-command";
-import { applyProductionReviewDecision, assertProductionTaskMutationSafety } from "./production-approval-command";
+import { applyProductionReviewDecision } from "./production-approval-command";
 import { applyProductionSubmissionCommand } from "./production-submission-command";
 import { applyProductionReviewPolicyCommand } from "./production-review-policy-command";
 import { productionTaskBatchPreconditions } from "./production-task-batch-concurrency";
@@ -214,6 +214,8 @@ function eventTarget(command: ProductionCommand): { type: string; id: string } {
       return { type: "deliverable", id: command.deliverable.id };
     case "upsert-submission":
       return { type: "submission", id: command.submission.id };
+    case "resubmit-for-review":
+      return { type: "submission", id: command.previousSubmissionId };
     case "submit-task-output":
       return { type: "submission", id: command.submissionId };
     case "upsert-studio-revision-link":
@@ -852,7 +854,7 @@ function sanitizeBoardOrderColumns(
 
 function applyCommand(
   aggregate: ProductionProjectAggregate,
-  command: ProductionCommand,
+  command: Exclude<ProductionCommand, { type: "resubmit-for-review" }>,
   actorUserId: string,
   at: string,
   taskOutputCaptures?: ProductionTaskOutputCaptures,
@@ -1938,10 +1940,8 @@ export class ProductionCollaborationService {
         }
         const beforeDigest = stableProductionFingerprint(current);
         const at = new Date().toISOString();
-        const mutation = applyCommand(current, input.command, actorUserId, at, taskOutputCaptures);
-        assertProductionTaskMutationSafety(current, mutation.aggregate, at);
-        const workflowIssues = validateProductionWorkflowMutation(current, mutation.aggregate, at);
-        if (workflowIssues.length) throw new BadRequestException({ message: "공정 운영 조건을 충족하지 못했습니다.", issues: workflowIssues });
+        const mutation = applyCheckedProductionMutation(current, input.command, actorUserId, at, access,
+          applyCommand, taskOutputCaptures);
         const riskEvaluation = evaluateRiskAggregate(mutation.aggregate, at);
         const aggregate = commitProductionAggregate(current, {
           expectedRevision: taskBatchPreconditions && input.expectedRevision < current.revision ? current.revision : input.expectedRevision,

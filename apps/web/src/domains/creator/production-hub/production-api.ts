@@ -50,6 +50,7 @@ import type {
   StoryToArtHandoffPackage,
   CollaborationParty,
   SubmitProductionTaskOutputCommand,
+  ResubmitForReviewCommand,
 } from "@toonstudio/core/production";
 
 import type { ProductionProjectAccess } from "./production-dashboard-api";
@@ -138,6 +139,7 @@ export interface ProductionMutationResponse {
 
 export type ProductionClientCommand =
   | SubmitProductionTaskOutputClientCommand
+  | ResubmitForReviewCommand
   | { readonly type: "configure-workflow"; readonly profile: import("@toonstudio/core/production").ProductionWorkflowProfile; readonly expectedWorkflowRevision: number }
   | { readonly type: "instantiate-workflow"; readonly episodeId: string; readonly workflowRevision: number; readonly instanceId: string }
   | { readonly type: "transition-task-batch"; readonly transitions: readonly import("@toonstudio/core/production").ProductionTaskTransition[] }

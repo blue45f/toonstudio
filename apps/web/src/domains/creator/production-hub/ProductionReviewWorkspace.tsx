@@ -583,7 +583,7 @@ function ProductionReviewWorkspaceForProject({
         resolveClarificationIds: input.resolveClarificationIds, resolutionNote: input.note, at: new Date().toISOString(),
       });
       selfResubmittedIdRef.current = plan.nextSubmission.id;
-      for (const step of plan.steps) await execute(step.command, bt("수정본 재제출 단계를 저장했습니다.", "Saved resubmission step."));
+      await execute(plan.steps[0].command, bt("수정본을 재제출했습니다.", "Saved the revised submission."));
       setResubmitNote("");
       setSelectedSubmissionId(plan.nextSubmission.id);
       syncDeepLinkCoordinates({ submissionId: plan.nextSubmission.id, revisionId: plan.nextSubmission.revisionRef.id });

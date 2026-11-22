@@ -14,6 +14,7 @@ describe("제작 관리 이름표", () => {
   it("활동 기록의 명령 이름을 사람이 읽는 말로 바꾼다", () => {
     expect(productionActivityLabel("upsert-clarification", ko)).toBe("질문·답변 저장");
     expect(productionActivityLabel("record-review-decision", ko)).toBe("검수 결정 기록");
+    expect(productionActivityLabel("resubmit-for-review", ko)).toBe("수정본 검수 요청");
     expect(productionActivityLabel("project-created", en)).toBe("Project created");
   });
 

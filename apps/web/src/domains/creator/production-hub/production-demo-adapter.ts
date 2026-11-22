@@ -12,6 +12,7 @@ import {
   activeAssignments,
   applyProductionSubmissionReviewToTasks,
   applySubmissionToDeliverable,
+  planProductionReviewResubmission,
   createImmutableScopePackage,
   createPlanningSnapshot,
   evaluateProductionRisks,
@@ -69,6 +70,17 @@ export function reduceProductionDemoCommand(
 ): ProductionProjectAggregate {
   const base = { ...aggregate, revision: aggregate.revision + 1, updatedAt: new Date().toISOString() };
   switch (command.type) {
+    case "resubmit-for-review": {
+      const { commands } = planProductionReviewResubmission(aggregate, command, base.updatedAt);
+      let current = aggregate;
+      for (const step of commands) {
+        const next = reduceProductionDemoCommand(current, step, translate);
+        const issues = validateProductionWorkflowMutation(current, next, base.updatedAt);
+        if (issues.length) throw new Error(issues.join("\n"));
+        current = next;
+      }
+      return { ...current, revision: base.revision, updatedAt: base.updatedAt };
+    }
     case "submit-task-output":
       throw new Error(translate(TASK_OUTPUT_SERVER_KEY, TASK_OUTPUT_SERVER_KO));
     case "upsert-planning-record": {
@@ -461,7 +473,8 @@ export const productionDemoAdapter = {
         ? demoSession
         : current;
     const next = evaluateProductionDemoRiskState(reduceProductionDemoCommand(authoritative, command, translate));
-    const issues = validateProductionWorkflowMutation(authoritative, next);
+    // 재제출은 중간 작업 전환마다 검사하므로 시작과 끝만 비교하면 합법적인 두 단계 전환을 거부한다.
+    const issues = command.type === "resubmit-for-review" ? [] : validateProductionWorkflowMutation(authoritative, next);
     if (issues.length) throw new Error(issues.join("\n"));
     if (demoSession && demoSession.projectId === next.projectId) {
       demoSession = next;
