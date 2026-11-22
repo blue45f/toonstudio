@@ -36,6 +36,8 @@ import {
   triggerStudioRestNudgePreview,
   type StudioRestNudgeState,
 } from "./studio-rest-nudge-timer";
+import { StudioPenCadenceBadge } from "../touch-gestures/StudioPenCadenceBadge";
+
 import { StudioRestNudgeBar } from "./StudioRestNudgeBar";
 
 import { cn } from "@/shared/lib/utils";
@@ -317,6 +319,8 @@ export function StudioErgonomicsSettingsSection({
           </div>
         </article>
       </div>
+
+      <StudioPenCadenceBadge compact={compact} reduceMotion={reduceMotion} />
 
       {previewState ? (
         <div data-studio-ergonomics-rest-preview-host="true">

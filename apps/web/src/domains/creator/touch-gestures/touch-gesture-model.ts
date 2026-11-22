@@ -8,7 +8,7 @@
  * 실제 이벤트 바인딩과 undo/redo 실행은 UI 레이어(호스트 훅)가 담당한다.
  */
 
-/** 추상화된 포인터 샘플 1개. PointerEvent 에서 x/y/t/pointerType 만 추출한 값이다. */
+/** 추상화된 포인터 샘플 1개. PointerEvent 에서 x/y/t/pointerType 및 선택적 접촉 크기를 추출한 값이다. */
 export interface TouchSample {
   /** 포인터 식별자 (PointerEvent.pointerId). */
   pointerId: number;
@@ -20,6 +20,10 @@ export interface TouchSample {
   t: number;
   /** 포인터 종류. */
   pointerType: "touch" | "pen" | "mouse";
+  /** 선택적 접촉 가로 폭 (CSS px, PointerEvent.width). 손바닥 오입력 판정에 사용한다. */
+  width?: number;
+  /** 선택적 접촉 세로 높이 (CSS px, PointerEvent.height). 손바닥 오입력 판정에 사용한다. */
+  height?: number;
 }
 
 /**
@@ -42,6 +46,10 @@ export const TAP_MAX_DURATION_MS = 300;
 export const SCRUB_INTERVAL_MS = 150;
 /** 스타일러스(pen) 입력 직후 손바닥 터치를 무시하는 팜 리젝션 보호 시간창 (ms). */
 export const PALM_REJECTION_WINDOW_MS = 250;
+/** 손바닥(팜) 접촉으로 간주하는 단일 축 최소 크기 (CSS px). 일반 손가락 끝은 보통 10~22px 범위다. */
+export const PALM_CONTACT_MAX_DIAMETER_PX = 28;
+/** 손바닥(팜) 접촉으로 간주하는 접촉 면적 임계값 (CSS px²). */
+export const PALM_CONTACT_MAX_AREA_PX2 = 625;
 
 /** 터치 시퀀스 판정 결과. "tap"일 때만 gestureForTap 으로 액션을 매핑한다. */
 export type TouchSequenceKind = "tap" | "pan" | "hold";
@@ -62,8 +70,38 @@ export type ExtendedGestureAction =
   | "toggle-focus-mode";
 
 /**
+ * 터치 샘플의 접촉 크기(`width`, `height`)가 손가락 끝 범위를 초과한 손바닥(팜) 접촉인지 판정한다.
+ * 스타일러스(`pen`)와 마우스(`mouse`)는 항상 `false`를 반환한다.
+ */
+export function isPalmContactSize(
+  sample: Pick<TouchSample, "pointerType" | "width" | "height">,
+  maxDiameterPx: number = PALM_CONTACT_MAX_DIAMETER_PX,
+  maxAreaPx2: number = PALM_CONTACT_MAX_AREA_PX2,
+): boolean {
+  if (sample.pointerType !== "touch") return false;
+  const safeDiameter =
+    Number.isFinite(maxDiameterPx) && maxDiameterPx > 0
+      ? maxDiameterPx
+      : PALM_CONTACT_MAX_DIAMETER_PX;
+  const safeArea =
+    Number.isFinite(maxAreaPx2) && maxAreaPx2 > 0
+      ? maxAreaPx2
+      : PALM_CONTACT_MAX_AREA_PX2;
+  const width = typeof sample.width === "number" && Number.isFinite(sample.width) && sample.width > 0
+    ? sample.width
+    : 0;
+  const height = typeof sample.height === "number" && Number.isFinite(sample.height) && sample.height > 0
+    ? sample.height
+    : 0;
+  if (width >= safeDiameter || height >= safeDiameter) {
+    return true;
+  }
+  return width > 0 && height > 0 && width * height >= safeArea;
+}
+
+/**
  * 스타일러스(pen)가 활성 상태이거나 방금 떨어진 직후(`windowMs` 이내)에 들어온
- * 손바닥 터치(`pointerType === "touch"`) 샘플인지 판정한다.
+ * 손바닥 터치(`pointerType === "touch"`), 또는 손바닥 접촉 크기 임계값을 초과한 터치 샘플인지 판정한다.
  */
 export function shouldRejectPalmTouch(
   sample: TouchSample,
@@ -71,6 +109,7 @@ export function shouldRejectPalmTouch(
   windowMs: number = PALM_REJECTION_WINDOW_MS,
 ): boolean {
   if (sample.pointerType !== "touch") return false;
+  if (isPalmContactSize(sample)) return true;
   if (typeof lastPenTimestampMs !== "number" || !Number.isFinite(lastPenTimestampMs)) {
     return false;
   }
