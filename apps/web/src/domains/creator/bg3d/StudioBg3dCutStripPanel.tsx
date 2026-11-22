@@ -10,6 +10,18 @@ import {
   storyboardSceneMetaBadgeKo,
   type SceneLinkedStoryboardCut,
 } from "./studio-bg3d-storyboard-cut-link";
+import {
+  StudioBg3dCutScopeBanner,
+  applyBg3dMultiCutResolution,
+  evaluateBg3dCutScope,
+  extractCutLinksFromStoryboardCuts,
+  planBg3dTextureBatchDownsample,
+  type Bg3dEditActionKind,
+  type Bg3dMultiCutResolutionMode,
+  type Bg3dMultiCutResolutionResult,
+  type Bg3dTextureDeviceProfileId,
+  type Bg3dTextureSourceMetadata,
+} from "./cut-scope";
 import { Studio3DContinuityChecker } from "../scene-3d/studio-3d-continuity-checker";
 import {
   CUT_ASPECT_RATIO_UI,
@@ -55,6 +67,20 @@ export interface StudioBg3dCutStripPanelProps {
    * 죽은 버튼은 만들지 않는다.
    */
   readonly onReturnToScene?: (cut: SceneLinkedStoryboardCut) => void;
+  /** 현재 활성 편집 대상 컷 ID (생략 시 첫 컷 기준으로 적용 범위를 표시). */
+  readonly activeCutId?: string;
+  /** 현재 3D 배경 편집 액션 종류 (기본 `"camera-orbit"` = 현재 컷 카메라만). */
+  readonly activeEditAction?: Bg3dEditActionKind;
+  /** 다중 컷 공유 배경 변경 대상 표시명 (예: "카페 테이블"). */
+  readonly pendingEditTargetLabelKo?: string;
+  /** 다중 컷 1줄 확인 바에서 분리 적용 또는 전체 반영 선택 시 호출. */
+  readonly onResolveSharedBackgroundEdit?: (result: Bg3dMultiCutResolutionResult) => void;
+  /** 다중 컷 1줄 확인 바 취소 콜백. */
+  readonly onCancelSharedBackgroundEdit?: () => void;
+  /** 선택적 외부 SKP/GLB 텍스처 목록 (기기 VRAM 프로필 기준 로컬 최적화 요약 산출용). */
+  readonly externalTextureSources?: readonly Bg3dTextureSourceMetadata[];
+  /** 외부 텍스처 다운샘플링에 적용할 기기 프로필 (기본 `"desktop"`). */
+  readonly textureDeviceProfile?: Bg3dTextureDeviceProfileId;
 }
 
 function makeCutId(): string {
@@ -94,6 +120,13 @@ export function StudioBg3dCutStripPanel({
   onExportPsdManifest,
   sceneCutTemplate,
   onReturnToScene,
+  activeCutId,
+  activeEditAction = "camera-orbit",
+  pendingEditTargetLabelKo,
+  onResolveSharedBackgroundEdit,
+  onCancelSharedBackgroundEdit,
+  externalTextureSources,
+  textureDeviceProfile = "desktop",
 }: StudioBg3dCutStripPanelProps) {
   const t = useT();
   const [newCutAspect, setNewCutAspect] = useState<CutAspectRatio>("9:16-vertical-climax");
@@ -153,6 +186,45 @@ export function StudioBg3dCutStripPanel({
   }, [cuts]);
 
   const totalHeight = strip.evaluateTotalStripHeight();
+
+  const cutLinks = useMemo(
+    () => extractCutLinksFromStoryboardCuts(cuts, sceneCutTemplate?.sceneMeta.sceneId),
+    [cuts, sceneCutTemplate],
+  );
+
+  const scopeDecision = useMemo(() => {
+    const activeCut =
+      (activeCutId ? cuts.find((cut) => cut.id === activeCutId) : undefined) ?? cuts[0];
+    if (!activeCut) return null;
+    const activeLinked = asSceneLinkedStoryboardCut(activeCut);
+    const backgroundSceneId =
+      activeLinked?.sceneMeta.sceneId ??
+      sceneCutTemplate?.sceneMeta.sceneId ??
+      `isolated-cut:${activeCut.id}`;
+    return evaluateBg3dCutScope({
+      actionKind: activeEditAction,
+      activeCutId: activeCut.id,
+      activeCutNumber: activeCut.cutNumber,
+      backgroundSceneId,
+      linkedCuts: cutLinks,
+      targetLabelKo: pendingEditTargetLabelKo,
+    });
+  }, [activeCutId, activeEditAction, cutLinks, cuts, pendingEditTargetLabelKo, sceneCutTemplate]);
+
+  const textureBatchPlan = useMemo(() => {
+    if (!externalTextureSources || externalTextureSources.length === 0) return null;
+    return planBg3dTextureBatchDownsample(externalTextureSources, textureDeviceProfile);
+  }, [externalTextureSources, textureDeviceProfile]);
+
+  const handleResolveSharedEdit = (resolution: Bg3dMultiCutResolutionMode) => {
+    if (!scopeDecision) return;
+    const result = applyBg3dMultiCutResolution({
+      decision: scopeDecision,
+      resolution,
+      linkedCuts: cutLinks,
+    });
+    onResolveSharedBackgroundEdit?.(result);
+  };
 
   const handleAddCut = () => {
     onAddCut({
@@ -215,6 +287,16 @@ export function StudioBg3dCutStripPanel({
           </p>
         </div>
       </div>
+
+      {scopeDecision ? (
+        <StudioBg3dCutScopeBanner
+          decision={scopeDecision}
+          disabled={disabled}
+          onResolve={onResolveSharedBackgroundEdit ? handleResolveSharedEdit : undefined}
+          onCancel={onCancelSharedBackgroundEdit}
+          textureBatchPlan={textureBatchPlan}
+        />
+      ) : null}
 
       {notice ? (
         <p className="rounded-lg border border-good/40 bg-good/10 px-2.5 py-1.5 text-[0.625rem] text-good" role="status">
