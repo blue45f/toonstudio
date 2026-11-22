@@ -21,6 +21,14 @@ export interface StudioAmbientAudioDependencies {
   /** 합성 트랙용 버퍼 생성. 없으면 절차 생성 모듈의 기본 구현을 쓴다. */
   synthBuffer?(context: AudioContext, track: StudioAmbientSynthTrack): AudioBuffer;
 }
+export interface StudioAmbientAudioOptions {
+  /** 허용할 최대 출력 게인 상한(0~1). 기본 1, 자연광 옵트인 앰비언스는 0.25 하드 클램프 적용. */
+  readonly maxGain?: number;
+  /** 초기 음량(0~maxGain). 기본 0.6(상한이 더 낮으면 maxGain으로 제한). */
+  readonly initialVolume?: number;
+  /** 초기 선택 트랙. 기본 "gentle-rain". */
+  readonly initialTrackId?: StudioAmbientTrackId;
+}
 const browserDependencies: StudioAmbientAudioDependencies = {
   createContext: () => new AudioContext(),
   synthBuffer: (context, track) => createStudioAmbientSynthBuffer(context, track.synth, track.duration),
@@ -38,7 +46,9 @@ const browserDependencies: StudioAmbientAudioDependencies = {
 
 /** Owns one selected local-output recording. Never creates a media stream or a capture track. */
 export class StudioVirtualAmbientAudioController {
-  private state: StudioAmbientAudioSnapshot = { enabled: false, phase: "off", trackId: "gentle-rain", volume: .6, ducked: false, pauseReason: null };
+  private readonly maxGain: number;
+  private gainMultiplier = 1;
+  private state: StudioAmbientAudioSnapshot;
   private listeners = new Set<() => void>();
   private context: AudioContext | null = null;
   private gain: GainNode | null = null;
@@ -47,7 +57,31 @@ export class StudioVirtualAmbientAudioController {
   private loading: AbortController | null = null;
   private generation = 0;
   private disposed = false;
-  constructor(private readonly dependencies: StudioAmbientAudioDependencies = browserDependencies) {}
+  constructor(
+    private readonly dependencies: StudioAmbientAudioDependencies = browserDependencies,
+    options?: StudioAmbientAudioOptions,
+  ) {
+    this.maxGain =
+      options?.maxGain !== undefined && Number.isFinite(options.maxGain)
+        ? Math.min(1, Math.max(0, options.maxGain))
+        : 1;
+    const requestedInitialVolume =
+      options?.initialVolume !== undefined && Number.isFinite(options.initialVolume)
+        ? options.initialVolume
+        : 0.6;
+    const initialTrackId =
+      options?.initialTrackId && STUDIO_AMBIENT_TRACKS.some((track) => track.id === options.initialTrackId)
+        ? options.initialTrackId
+        : "gentle-rain";
+    this.state = {
+      enabled: false,
+      phase: "off",
+      trackId: initialTrackId,
+      volume: Math.min(this.maxGain, Math.max(0, requestedInitialVolume)),
+      ducked: false,
+      pauseReason: null,
+    };
+  }
   snapshot = (): StudioAmbientAudioSnapshot => this.state;
   subscribe = (listener: () => void): (() => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private update(patch: Partial<StudioAmbientAudioSnapshot>): void {
@@ -68,7 +102,12 @@ export class StudioVirtualAmbientAudioController {
   }
   setVolume(volume: number): void {
     if (this.disposed || !Number.isFinite(volume)) return;
-    this.update({ volume: Math.min(1, Math.max(0, volume)) }); this.applyGain();
+    this.update({ volume: Math.min(this.maxGain, Math.max(0, volume)) }); this.applyGain();
+  }
+  setGainMultiplier(multiplier: number): void {
+    if (this.disposed || !Number.isFinite(multiplier)) return;
+    this.gainMultiplier = Math.min(1, Math.max(0, multiplier));
+    this.applyGain();
   }
   setEnvironment(pauseReason: StudioAmbientPauseReason, ducked: boolean): void {
     if (this.disposed) return;
@@ -85,7 +124,11 @@ export class StudioVirtualAmbientAudioController {
     if (!this.context || !this.gain) return;
     const parameter = this.gain.gain;
     parameter.cancelScheduledValues(this.context.currentTime);
-    parameter.setTargetAtTime(this.state.volume * (this.state.ducked ? .15 : 1), this.context.currentTime, this.state.ducked ? .04 : .18);
+    const targetGain = Math.min(
+      this.maxGain,
+      Math.max(0, this.state.volume * this.gainMultiplier * (this.state.ducked ? .15 : 1)),
+    );
+    parameter.setTargetAtTime(targetGain, this.context.currentTime, this.state.ducked ? .04 : .18);
   }
   private async start(): Promise<void> {
     if (this.disposed || this.state.pauseReason || !this.state.enabled || this.source || this.loading) return;

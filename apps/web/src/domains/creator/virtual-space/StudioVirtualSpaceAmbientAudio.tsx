@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { studioHuddleAudioFocusSnapshot, subscribeStudioHuddleAudioFocus } from "../live/huddle/studio-p2p-huddle-audio-focus";
 import { StudioVirtualAmbientAudioController, type StudioAmbientAudioSnapshot, type StudioAmbientPauseReason } from "./studio-virtual-space-ambient-audio";
@@ -13,6 +13,15 @@ import { studioFootstepSynthSpec, studioSfxSpec, type StudioSfxKind } from "./st
 import {
   readStudioVirtualSoundPreference, writeStudioVirtualSoundPreference, type StudioVirtualSoundPreference,
 } from "./studio-virtual-space-sound-preference";
+import type { StudioWeatherCondition } from "./studio-virtual-space-weather";
+import {
+  DAYLIGHT_AMBIENCE_MODES,
+  STUDIO_AMBIENT_AUDIO_DEFAULT_GAIN,
+  STUDIO_AMBIENT_AUDIO_MAX_GAIN,
+  clampAmbientAudioGain,
+  resolveDaylightLinkedAmbience,
+  type DaylightAmbienceSourceMode,
+} from "./virtual-space-pomodoro-room";
 
 const FOOTSTEP_AUDITION_ITEMS: readonly {
   readonly surface: StudioExtendedFootstepSurface;
@@ -46,18 +55,56 @@ export interface StudioVirtualSpaceAmbientAudioProps {
   readonly ready: boolean;
   readonly focused: boolean;
   readonly away: boolean;
+  /** 24시간 자연광 연동 시각(0~24). 미지정 시 로컬 시계 기준. */
+  readonly hour?: number;
+  /** 외부 날씨 조건(자연광 자동 앰비언스 연동). */
+  readonly weather?: StudioWeatherCondition | null;
+}
+
+function readCurrentLocalHour(): number {
+  const now = new Date();
+  return now.getHours() + now.getMinutes() / 60;
 }
 
 function useStudioProximityDisplay(): StudioProximityDisplaySnapshot {
   return useSyncExternalStore(subscribeStudioProximityDisplay, studioProximityDisplaySnapshot, studioProximityDisplaySnapshot);
 }
 
-export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: StudioVirtualSpaceAmbientAudioProps) {
+export function StudioVirtualSpaceAmbientAudio({
+  scope,
+  ready,
+  focused,
+  away,
+  hour,
+  weather = null,
+}: StudioVirtualSpaceAmbientAudioProps) {
   const bt = useBilingual("domains.creator.virtual-space.StudioVirtualSpaceAmbientAudio");
   const controller = useRef<StudioVirtualAmbientAudioController | null>(null);
   const soundEngine = useRef<StudioVirtualSpaceSoundEngine | null>(null);
   const [sound, setSound] = useState<StudioVirtualSoundPreference>(() => readStudioVirtualSoundPreference());
-  const [audio, setAudio] = useState<StudioAmbientAudioSnapshot>({ enabled: false, phase: "off", trackId: "gentle-rain", volume: .6, ducked: false, pauseReason: null });
+  const [localHour] = useState<number>(() => readCurrentLocalHour());
+  const effectiveHour = hour !== undefined && Number.isFinite(hour) ? hour : localHour;
+  const [daylightMode, setDaylightMode] = useState<DaylightAmbienceSourceMode>("auto");
+  const [daylightSynced, setDaylightSynced] = useState(true);
+  const initialDaylightTrack = useMemo(
+    () =>
+      resolveDaylightLinkedAmbience({
+        hour: effectiveHour,
+        enabled: false,
+        mode: "auto",
+        requestedGain: STUDIO_AMBIENT_AUDIO_DEFAULT_GAIN,
+        weather,
+      }).resolvedTrackId,
+    [effectiveHour, weather],
+  );
+  const [audio, setAudio] = useState<StudioAmbientAudioSnapshot>(() => ({
+    enabled: false,
+    phase: "off",
+    trackId: initialDaylightTrack,
+    volume: STUDIO_AMBIENT_AUDIO_DEFAULT_GAIN,
+    ducked: false,
+    pauseReason: null,
+  }));
   const [hidden, setHidden] = useState(() => typeof document !== "undefined" && document.visibilityState === "hidden");
   const [blurred, setBlurred] = useState(false);
   const ducked = useSyncExternalStore(subscribeStudioHuddleAudioFocus, studioHuddleAudioFocusSnapshot, () => false);
@@ -69,6 +116,18 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
     ? studioProximityCurveSamples(proximity.presetId).map((sample) => `${sample.distance}px → ${Math.round(sample.gain * 100)}%`).join(" · ")
     : null;
   const pauseReason: StudioAmbientPauseReason = !ready ? "world" : away ? "away" : focused ? "focus" : hidden ? "hidden" : blurred ? "blur" : null;
+  const daylightAmbience = useMemo(
+    () =>
+      resolveDaylightLinkedAmbience({
+        hour: effectiveHour,
+        enabled: audio.enabled && !pauseReason,
+        mode: daylightMode,
+        requestedGain: audio.volume,
+        ducked,
+        weather,
+      }),
+    [effectiveHour, audio.enabled, pauseReason, daylightMode, audio.volume, ducked, weather],
+  );
   useEffect(() => {
     const visibility = () => setHidden(document.visibilityState === "hidden");
     const blur = () => setBlurred(true); const focus = () => setBlurred(false);
@@ -76,12 +135,27 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
     window.addEventListener("blur", blur); window.addEventListener("focus", focus);
     return () => { document.removeEventListener("visibilitychange", visibility); window.removeEventListener("blur", blur); window.removeEventListener("focus", focus); };
   }, []);
+  const initialDaylightTrackRef = useRef(initialDaylightTrack);
   useEffect(() => {
-    const owner = new StudioVirtualAmbientAudioController(); controller.current = owner;
-    const off = owner.subscribe(() => setAudio(owner.snapshot())); setAudio(owner.snapshot());
+    const owner = new StudioVirtualAmbientAudioController(undefined, {
+      maxGain: STUDIO_AMBIENT_AUDIO_MAX_GAIN,
+      initialVolume: STUDIO_AMBIENT_AUDIO_DEFAULT_GAIN,
+      initialTrackId: initialDaylightTrackRef.current,
+    });
+    controller.current = owner;
+    const off = owner.subscribe(() => setAudio(owner.snapshot()));
+    setAudio(owner.snapshot());
     return () => { off(); owner.dispose(); if (controller.current === owner) controller.current = null; };
   }, [scope]);
   useEffect(() => { controller.current?.setEnvironment(pauseReason, ducked); }, [scope, pauseReason, ducked]);
+  useEffect(() => {
+    const owner = controller.current;
+    if (!owner) return;
+    owner.setGainMultiplier(daylightSynced ? daylightAmbience.daylightGainFactor : 1);
+    if (daylightSynced) {
+      owner.selectTrack(daylightAmbience.resolvedTrackId);
+    }
+  }, [daylightSynced, daylightAmbience.daylightGainFactor, daylightAmbience.resolvedTrackId]);
   // 효과음 엔진 소유권: 이 패널이 만들고 버스에 등록한다. 컨텍스트는 첫 사용자
   // 제스처(클릭·키 입력) 안에서만 unlock으로 연다 — 자동재생 정책을 지킨다.
   useEffect(() => {
@@ -128,21 +202,118 @@ export function StudioVirtualSpaceAmbientAudio({ scope, ready, focused, away }: 
     : audio.phase === "playing" && ducked ? bt("대화 중이라 환경음 음량을 낮췄어요.", "Ambient volume is lower while your huddle is active.")
     : audio.phase === "playing" ? bt("이 기기에서만 재생 중", "Playing on this device only")
     : bt("환경음 꺼짐", "Ambient sound off");
-  return <section className="vs2-panel studio-vspace-ambient" data-space-interactive="true" data-ambient-phase={audio.phase} data-ambient-ducked={ducked}>
+  const clampedVolume = clampAmbientAudioGain(audio.volume);
+  const clampedVolumePercent = Math.round(clampedVolume * 100);
+  const maxGainPercent = Math.round(STUDIO_AMBIENT_AUDIO_MAX_GAIN * 100);
+  const handleSelectDaylightMode = (nextMode: DaylightAmbienceSourceMode) => {
+    setDaylightSynced(true);
+    setDaylightMode(nextMode);
+    const resolved = resolveDaylightLinkedAmbience({
+      hour: effectiveHour,
+      enabled: audio.enabled && !pauseReason,
+      mode: nextMode,
+      requestedGain: clampedVolume,
+      ducked,
+      weather,
+    });
+    controller.current?.selectTrack(resolved.resolvedTrackId);
+    controller.current?.setGainMultiplier(resolved.daylightGainFactor);
+  };
+  return <section
+    className="vs2-panel studio-vspace-ambient"
+    data-space-interactive="true"
+    data-ambient-phase={audio.phase}
+    data-ambient-ducked={ducked}
+    data-ambient-max-gain={STUDIO_AMBIENT_AUDIO_MAX_GAIN.toFixed(2)}
+    data-ambient-gain={clampedVolume.toFixed(4)}
+    data-ambient-effective-gain={daylightAmbience.effectiveGain.toFixed(4)}
+    data-daylight-period={daylightAmbience.daylight.period}
+    data-daylight-ambience-mode={daylightMode}
+  >
     <h2>{bt("환경음", "Ambient sound")}</h2>
-    <p>{bt("직접 켠 환경음은 내 기기에서만 들려요. 마이크·통화 오디오에 섞어 보내지 않아요.", "Ambient sound plays only when you turn it on, on your device. It is never mixed into microphone or call audio.")}</p>
+    <p>{bt("기본은 꺼짐 상태예요. 직접 켠 환경음은 내 기기에서만 들리며 음량은 최대 25% 이하로 잔잔하게 제한돼요.", "Off by default. Ambient sound plays only when you turn it on, on this device, capped at 25% gain.")}</p>
+    <div
+      className="my-2 rounded-lg border border-line bg-card p-2.5"
+      data-testid="studio-vspace-daylight-ambience-card"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-semibold text-fg">
+          {bt("24시간 자연광 연동 빗소리·연필 사각임", "24h daylight-linked rain & pencil ambience")}
+        </span>
+        <span className="tabular-nums text-fg-2" data-testid="studio-vspace-daylight-ambience-readout">
+          {bt(daylightAmbience.daylight.labelKo, daylightAmbience.daylight.labelEn)} · {daylightAmbience.daylight.kelvin}K
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-fg-2" data-testid="studio-vspace-daylight-ambience-summary">
+        {bt(daylightAmbience.summaryKo, daylightAmbience.summaryEn)}
+      </p>
+      <div
+        className="mt-2 flex flex-wrap gap-1.5"
+        role="group"
+        aria-label={bt("자연광 연동 앰비언스 모드", "Daylight-linked ambience mode")}
+      >
+        {DAYLIGHT_AMBIENCE_MODES.map((option) => {
+          const active = daylightSynced && daylightMode === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              data-testid={`studio-vspace-daylight-mode-${option.id}`}
+              aria-pressed={active}
+              onClick={() => handleSelectDaylightMode(option.id)}
+              className={`min-h-11 min-w-11 rounded-lg border px-3 text-xs font-medium transition-colors motion-reduce:transition-none ${
+                active
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line bg-panel text-fg-2 hover:text-fg"
+              }`}
+            >
+              {bt(option.labelKo, option.labelEn)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
     <label className="flex min-h-11 items-center justify-between gap-2 text-sm">
       {bt("소리 선택", "Sound")}
-      <select className="min-h-11 rounded-lg border border-line bg-panel px-2" value={audio.trackId} onChange={(event) => controller.current?.selectTrack(event.target.value as StudioAmbientTrackId)}>
+      <select
+        className="min-h-11 rounded-lg border border-line bg-panel px-2"
+        value={audio.trackId}
+        onChange={(event) => {
+          const nextTrack = event.target.value as StudioAmbientTrackId;
+          setDaylightSynced(nextTrack === "synth-soft-rain" || nextTrack === "synth-pencil-scratch");
+          if (nextTrack === "synth-soft-rain") setDaylightMode("rain");
+          else if (nextTrack === "synth-pencil-scratch") setDaylightMode("pencil-scratch");
+          controller.current?.selectTrack(nextTrack);
+        }}
+      >
         {STUDIO_AMBIENT_TRACKS.map((track) => <option key={track.id} value={track.id}>{bt(track.labelKo, track.labelEn)}</option>)}
       </select>
     </label>
     <label className="flex min-h-11 items-center gap-2 text-sm">
       {bt("환경음 음량", "Ambient volume")}
-      <input type="range" min="0" max="100" step="5" value={Math.round(audio.volume * 100)} onChange={(event) => controller.current?.setVolume(Number(event.target.value) / 100)} />
-      <output>{Math.round(audio.volume * 100)}%</output>
+      <input
+        type="range"
+        min="0"
+        max={String(maxGainPercent)}
+        step="1"
+        aria-label={bt("환경음 음량 (최대 25%)", "Ambient volume (max 25%)")}
+        data-testid="studio-vspace-ambient-volume-slider"
+        value={clampedVolumePercent}
+        onChange={(event) => controller.current?.setVolume(clampAmbientAudioGain(Number(event.target.value) / 100))}
+      />
+      <output className="tabular-nums" data-testid="studio-vspace-ambient-volume-output">
+        {clampedVolumePercent}% / {maxGainPercent}%
+      </output>
     </label>
-    <button className="min-h-11 rounded-lg border border-line px-3 text-sm" type="button" aria-pressed={audio.enabled} disabled={!audio.enabled && Boolean(pauseReason)} title={!audio.enabled && Boolean(pauseReason) ? bt("공간에 입장해 활동 중일 때 환경음을 켤 수 있어요", "Available once you enter the space and stay active") : undefined} onClick={() => controller.current?.setEnabled(!audio.enabled)}>
+    <button
+      className="min-h-11 min-w-11 rounded-lg border border-line px-3 text-sm transition-colors motion-reduce:transition-none"
+      type="button"
+      data-testid="studio-vspace-ambient-toggle-btn"
+      aria-pressed={audio.enabled}
+      disabled={!audio.enabled && Boolean(pauseReason)}
+      title={!audio.enabled && Boolean(pauseReason) ? bt("공간에 입장해 활동 중일 때 환경음을 켤 수 있어요", "Available once you enter the space and stay active") : undefined}
+      onClick={() => controller.current?.setEnabled(!audio.enabled)}
+    >
       {audio.enabled ? bt("환경음 끄기", "Turn ambient sound off") : bt("환경음 켜기", "Turn ambient sound on")}
     </button>
     <p role="status" className="text-xs">{status}</p>

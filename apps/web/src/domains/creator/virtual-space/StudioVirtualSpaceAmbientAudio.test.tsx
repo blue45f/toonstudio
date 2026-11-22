@@ -83,3 +83,54 @@ describe("StudioVirtualSpaceAmbientAudio proximity section", () => {
     expect(screen.getByTestId("studio-vspace-sfx-audition-status").textContent).toContain("587Hz → 880Hz sine");
   });
 });
+
+describe("StudioVirtualSpaceAmbientAudio daylight-linked opt-in ambience (#039)", () => {
+  it("기본 꺼짐(OFF) 상태를 유지하고 음량 상한 0.25(25%)를 하드 클램프한다", () => {
+    render(<StudioVirtualSpaceAmbientAudio scope={null} ready focused={false} away={false} hour={9} />);
+    const section = document.querySelector<HTMLElement>(".studio-vspace-ambient");
+    expect(section?.getAttribute("data-ambient-phase")).toBe("off");
+    expect(section?.getAttribute("data-ambient-max-gain")).toBe("0.25");
+    expect(section?.getAttribute("data-ambient-effective-gain")).toBe("0.0000");
+
+    const toggleBtn = screen.getByTestId("studio-vspace-ambient-toggle-btn");
+    expect(toggleBtn.getAttribute("aria-pressed")).toBe("false");
+    expect(toggleBtn.className).toContain("min-h-11");
+    expect(toggleBtn.className).toContain("min-w-11");
+    expect(toggleBtn.className).toContain("motion-reduce:transition-none");
+
+    const slider = screen.getByTestId("studio-vspace-ambient-volume-slider") as HTMLInputElement;
+    expect(slider.max).toBe("25");
+    fireEvent.change(slider, { target: { value: "90" } });
+    expect(Number(section?.getAttribute("data-ambient-gain"))).toBeLessThanOrEqual(0.25);
+    expect(screen.getByTestId("studio-vspace-ambient-volume-output").textContent).toBe("25% / 25%");
+  });
+
+  it("24시간 자연광 시간대에 맞춰 아침 연필 사각임·야간 빗소리를 연동하고 모드 버튼 접근성을 지킨다", () => {
+    const { rerender } = render(
+      <StudioVirtualSpaceAmbientAudio scope={null} ready focused={false} away={false} hour={9} />,
+    );
+    expect(screen.getByTestId("studio-vspace-daylight-ambience-readout").textContent).toContain("아침 자연광");
+    expect(screen.getByTestId("studio-vspace-daylight-ambience-summary").textContent).toContain("연필 사각임");
+
+    const rainBtn = screen.getByTestId("studio-vspace-daylight-mode-rain");
+    const pencilBtn = screen.getByTestId("studio-vspace-daylight-mode-pencil-scratch");
+    const autoBtn = screen.getByTestId("studio-vspace-daylight-mode-auto");
+    for (const btn of [autoBtn, rainBtn, pencilBtn]) {
+      expect(btn.className).toContain("min-h-11");
+      expect(btn.className).toContain("min-w-11");
+      expect(btn.className).toContain("motion-reduce:transition-none");
+    }
+
+    fireEvent.click(rainBtn);
+    expect(rainBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("studio-vspace-daylight-ambience-summary").textContent).toContain("빗소리");
+
+    fireEvent.click(autoBtn);
+    rerender(
+      <StudioVirtualSpaceAmbientAudio scope={null} ready focused={false} away={false} hour={22} />,
+    );
+    expect(screen.getByTestId("studio-vspace-daylight-ambience-readout").textContent).toContain("야간 스탠드");
+    expect(screen.getByTestId("studio-vspace-daylight-ambience-summary").textContent).toContain("빗소리");
+    expect(screen.queryByText(/WebAudio/u)).toBeNull();
+  });
+});

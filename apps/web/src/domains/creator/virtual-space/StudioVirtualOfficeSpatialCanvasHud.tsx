@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   getDynamicCreatorPersonaSpec,
   renderDynamicCreatorSpriteDataUri,
@@ -26,12 +26,41 @@ import {
   type SpatialCanvasViewMode,
   type SpatialQuickCommandItem,
 } from "./studio-virtual-office-spatial-ux-design-model";
+import { StudioVirtualSpacePomodoroRoomBar } from "./StudioVirtualSpacePomodoroRoomBar";
+import {
+  computeVirtualSpaceHudSafeOffset,
+  createVirtualSpaceSeatStatusMap,
+  getVirtualSpaceSeatStatusMeta,
+  resolveVirtualSpaceViewportMetrics,
+  setVirtualSpaceSeatStatus,
+  type VirtualSpaceHudHandedness,
+  type VirtualSpaceSeatStatus,
+} from "./virtual-space-pomodoro-room";
 
 export interface StudioVirtualOfficeSpatialCanvasHudProps {
   readonly onNavigateToTab?: (
     tabId: SpatialQuickCommandItem["targetTabId"],
     statusMessageKo: string,
   ) => void;
+  /** 좁은 화면(태블릿 세로/모바일) 세이프존 계산용 뷰포트 너비(px). */
+  readonly viewportWidth?: number;
+  /** 좁은 화면 세이프존 계산용 뷰포트 높이(px). */
+  readonly viewportHeight?: number;
+  /** 이동 조이스틱 표시 여부(미지정 시 좁은 화면 자동 true). */
+  readonly joystickVisible?: boolean;
+  /** 이동 조이스틱 배치 방향. 기본 "right". */
+  readonly joystickHandedness?: VirtualSpaceHudHandedness;
+  /** OS 하단 안전 영역 인셋(px). 기본 0. */
+  readonly safeAreaBottomPx?: number;
+  /** 모션 줄이기 오버라이드(미지정 시 OS prefers-reduced-motion 따름). */
+  readonly reducedMotion?: boolean;
+  /** 포모도로 로컬 시계 테스트용 고정 epoch(ms). */
+  readonly pomodoroNowMs?: number;
+}
+
+function readPrefersReducedMotion(): boolean {
+  if (typeof globalThis.matchMedia !== "function") return false;
+  return globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 const SPATIAL_QUICK_COMMANDS_COUNT = 6;
@@ -48,6 +77,13 @@ const DEFAULT_FLOOR_BACKDROP_URL =
 
 export function StudioVirtualOfficeSpatialCanvasHud({
   onNavigateToTab,
+  viewportWidth,
+  viewportHeight,
+  joystickVisible,
+  joystickHandedness = "right",
+  safeAreaBottomPx = 0,
+  reducedMotion: reducedMotionProp,
+  pomodoroNowMs,
 }: StudioVirtualOfficeSpatialCanvasHudProps) {
   const [hudState, setHudState] = useState<SpatialCanvasHudState>(() =>
     createDefaultSpatialCanvasHudState(),
@@ -57,13 +93,67 @@ export function StudioVirtualOfficeSpatialCanvasHud({
     IllustratedV13EmoteId | null
   >(null);
   const [spriteFrameIdx, setSpriteFrameIdx] = useState(0);
+  const [systemReducedMotion] = useState(readPrefersReducedMotion);
+  const reducedMotion = reducedMotionProp ?? systemReducedMotion;
+  const [measuredViewport, setMeasuredViewport] = useState(() =>
+    resolveVirtualSpaceViewportMetrics({ viewportWidth, viewportHeight }),
+  );
+  const [seatStatuses, setSeatStatuses] = useState<Readonly<Record<string, VirtualSpaceSeatStatus>>>(
+    () =>
+      createVirtualSpaceSeatStatusMap(
+        hudState.avatars.map((avatar) => avatar.avatarId),
+        "do-not-disturb",
+      ),
+  );
 
   useEffect(() => {
+    if (viewportWidth !== undefined || viewportHeight !== undefined || typeof window === "undefined") {
+      return undefined;
+    }
+    const onResize = () => {
+      setMeasuredViewport(resolveVirtualSpaceViewportMetrics());
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [viewportWidth, viewportHeight]);
+
+  useEffect(() => {
+    if (reducedMotion) return undefined;
     const timer = window.setInterval(() => {
       setSpriteFrameIdx((prev) => (prev + 1) % 8);
     }, 110);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [reducedMotion]);
+
+  const effectiveViewportWidth = viewportWidth ?? measuredViewport.viewportWidth;
+  const effectiveViewportHeight = viewportHeight ?? measuredViewport.viewportHeight;
+  const hudSafeOffset = useMemo(
+    () =>
+      computeVirtualSpaceHudSafeOffset({
+        viewportWidth: effectiveViewportWidth,
+        viewportHeight: effectiveViewportHeight,
+        joystickVisible,
+        joystickHandedness,
+        safeAreaBottomPx,
+      }),
+    [
+      effectiveViewportWidth,
+      effectiveViewportHeight,
+      joystickVisible,
+      joystickHandedness,
+      safeAreaBottomPx,
+    ],
+  );
+  const pomodoroSeats = useMemo(
+    () =>
+      hudState.avatars.map((avatar) => ({
+        seatId: avatar.avatarId,
+        labelKo: avatar.displayNameKo,
+        labelEn: avatar.roleBadgeKo,
+        isSelf: avatar.isSelf,
+      })),
+    [hudState.avatars],
+  );
   const [hudToastKo, setHudToastKo] = useState<string>(
     "아이소메트릭 공간 플로어 캔버스 · 구역을 클릭하면 내 아바타가 즉시 텔레포트합니다.",
   );
@@ -97,12 +187,53 @@ export function StudioVirtualOfficeSpatialCanvasHud({
     [hudState.commandSearchQuery],
   );
 
+  const hudSectionStyle = {
+    ...hudSafeOffset.cssVariables,
+    paddingBottom: hudSafeOffset.joystickAvoidanceActive
+      ? `${hudSafeOffset.minimapBottomOffsetPx}px`
+      : undefined,
+  } as CSSProperties;
+
   return (
     <section
       aria-label="REA 역공학 기반 인터랙티브 공간 플로어 레이더 및 글래스모피즘 플로팅 HUD"
       data-testid="studio-virtual-office-spatial-canvas-hud"
+      data-viewport-class={hudSafeOffset.viewportClass}
+      data-minimap-bottom-offset={hudSafeOffset.minimapBottomOffsetPx}
+      data-minimap-anchor={hudSafeOffset.minimapHorizontalAnchor}
+      data-joystick-collision-free={String(hudSafeOffset.collisionFree)}
+      data-reduced-motion={String(reducedMotion)}
+      style={hudSectionStyle}
       className="space-y-3 rounded-xl border border-line bg-card/90 p-3.5 shadow-sm backdrop-blur-md transition-colors duration-200 motion-reduce:transition-none"
     >
+      <StudioVirtualSpacePomodoroRoomBar
+        seats={pomodoroSeats}
+        seatStatuses={seatStatuses}
+        nowMs={pomodoroNowMs}
+        reducedMotion={reducedMotion}
+        onSeatStatusChange={(seatId, nextStatus) => {
+          setSeatStatuses((prev) => setVirtualSpaceSeatStatus(prev, seatId, nextStatus));
+          const seat = pomodoroSeats.find((item) => item.seatId === seatId);
+          const meta = getVirtualSpaceSeatStatusMeta(nextStatus);
+          setHudToastKo(`${seat?.labelKo ?? "좌석"} 상태를 '${meta.labelKo}'로 전환했습니다.`);
+        }}
+      />
+
+      {hudSafeOffset.joystickAvoidanceActive ? (
+        <div
+          data-testid="spatial-hud-mobile-safezone-banner"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-[11px] text-fg-2"
+        >
+          <span>
+            좁은 화면 미니맵 세이프존 적용 · 하단 이동 조이스틱과 겹치지 않도록{" "}
+            {hudSafeOffset.minimapBottomOffsetPx}px 위로 띄웠어요.
+          </span>
+          <span className="tabular-nums">
+            미니맵 위치: {hudSafeOffset.minimapHorizontalAnchor === "left" ? "좌측" : "우측"} · 여유 간격{" "}
+            {hudSafeOffset.clearancePx}px
+          </span>
+        </div>
+      ) : null}
       {/* Top UX Control Ribbon */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -232,13 +363,16 @@ export function StudioVirtualOfficeSpatialCanvasHud({
           viewBox="0 0 714 280"
           role="img"
           aria-label="툰스튜디오 다층 가상 오피스 실시간 공간 레이더 맵"
-          className="h-56 w-full select-none rounded-lg"
+          data-testid="spatial-floor-radar-svg"
+          className="h-56 w-full select-none rounded-lg motion-reduce:transition-none"
           style={{
             transform:
-              hudState.viewMode === "isometric-3d"
+              hudState.viewMode === "isometric-3d" && !reducedMotion
                 ? "perspective(980px) rotateX(10deg)"
                 : "none",
-            transition: `transform 260ms ${REA_VIRTUAL_OFFICE_UX_TOKEN_LEDGER.canonicalEasingCurve}`,
+            transition: reducedMotion
+              ? "none"
+              : `transform 260ms ${REA_VIRTUAL_OFFICE_UX_TOKEN_LEDGER.canonicalEasingCurve}`,
           }}
         >
           <defs>
