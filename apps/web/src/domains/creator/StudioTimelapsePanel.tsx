@@ -19,6 +19,7 @@ import {
   type TimelapseExportResult,
 } from "./studio-timelapse";
 import { StudioToolHintTarget } from "./StudioToolHint";
+import { StudioTimelapseShortformPlanner } from "./timelapse-pro/StudioTimelapseShortformPlanner";
 import {
   StudioTimelapseShareDialog,
   type TimelapseShareClipSource,
@@ -77,6 +78,7 @@ export function StudioTimelapsePanel({
   onRecordingStart,
   onRecordingEnd,
 }: StudioTimelapsePanelProps) {
+  const [activeTab, setActiveTab] = useState<"record" | "shortform">("record");
   const [resolutionId, setResolutionId] = useState<string>(TIMELAPSE_RESOLUTION_PRESETS[0].id);
   const [durationId, setDurationId] = useState<string>(TIMELAPSE_DURATION_PRESETS[1].id);
   // 공유 클립 워터마크 — 게스트는 항상 표시(체크 해제 불가), 로그인 사용자만 끌 수 있다.
@@ -236,7 +238,52 @@ export function StudioTimelapsePanel({
           </button>
         </header>
 
+        <nav
+          aria-label="타임랩스 모드 선택"
+          className="flex shrink-0 gap-1.5 border-b border-line bg-card/40 px-4 py-2"
+        >
+          <button
+            type="button"
+            aria-pressed={activeTab === "record"}
+            disabled={exporting}
+            onClick={() => setActiveTab("record")}
+            className={cx(
+              CONTROL_BUTTON,
+              "flex-1",
+              activeTab === "record"
+                ? "border-accent/60 bg-accent-soft text-accent"
+                : "border-line bg-card text-fg-2 hover:bg-raised",
+            )}
+          >
+            그리기 과정 녹화
+          </button>
+          <button
+            type="button"
+            aria-pressed={activeTab === "shortform"}
+            disabled={exporting}
+            onClick={() => setActiveTab("shortform")}
+            className={cx(
+              CONTROL_BUTTON,
+              "flex-1",
+              activeTab === "shortform"
+                ? "border-accent/60 bg-accent-soft text-accent"
+                : "border-line bg-card text-fg-2 hover:bg-raised",
+            )}
+          >
+            SNS 9:16 숏폼 플래너
+          </button>
+        </nav>
+
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          {activeTab === "shortform" ? (
+            <StudioTimelapseShortformPlanner
+              title={title}
+              pageId={pageId}
+              history={history}
+              steps={steps}
+            />
+          ) : (
+            <>
           <p className="mb-3 rounded-lg border border-line bg-card/60 px-2.5 py-2 text-[0.7rem] leading-relaxed text-fg-3">
             이 페이지를 그린 과정을 빠르게 재생하는 영상(WebM)으로 저장해요. 지금 이 브라우저 탭에서
             작업한 기록만 담겨요 — 새로고침하거나 다른 기기에서 이어작업했다면 그 이전 기록은
@@ -341,6 +388,8 @@ export function StudioTimelapsePanel({
           )}
           {error && <p className="mt-3 text-xs text-bad">{error}</p>}
           {doneMsg && !error && <p className="mt-3 text-xs text-good">{doneMsg}</p>}
+            </>
+          )}
         </div>
 
         <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-line px-4 py-3">
