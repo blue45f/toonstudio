@@ -325,7 +325,9 @@ export function StudioVrmCanvasSizeSync({
 }) {
   const gl = useThree((state) => state.gl);
   const camera = useThree((state) => state.camera);
+  const setDpr = useThree((state) => state.setDpr);
   const setSize = useThree((state) => state.setSize);
+  const viewportDpr = useThree((state) => state.viewport.dpr);
   const invalidate = useThree((state) => state.invalidate);
 
   useLayoutEffect(() => {
@@ -350,7 +352,14 @@ export function StudioVrmCanvasSizeSync({
         Math.abs(canvas.width - expectedWidth) > 1
         || Math.abs(canvas.height - expectedHeight) > 1;
       const dprMismatch = Math.abs(gl.getPixelRatio() - safeDpr) > 0.001;
-      if (!styleMismatch && !bitmapMismatch && !dprMismatch) return;
+      const storeDprMismatch =
+        typeof viewportDpr === "number" && Math.abs(viewportDpr - safeDpr) > 0.001;
+      if (!styleMismatch && !bitmapMismatch && !dprMismatch && !storeDprMismatch) return;
+      // R3F의 setSize 구독자가 오래된 viewport.dpr(예: 초기 1)로 gl.setPixelRatio를 되돌리지 않도록
+      // 스토어 DPR을 먼저 동기화한다.
+      if (typeof setDpr === "function" && storeDprMismatch) {
+        setDpr(safeDpr);
+      }
       gl.setPixelRatio(safeDpr);
       gl.setSize(width, height, true);
       if (camera instanceof THREE.PerspectiveCamera) {
@@ -358,20 +367,36 @@ export function StudioVrmCanvasSizeSync({
         camera.updateProjectionMatrix();
       }
       setSize(width, height, rect.top, rect.left);
+      if (Math.abs(gl.getPixelRatio() - safeDpr) > 0.001) {
+        gl.setPixelRatio(safeDpr);
+        gl.setSize(width, height, true);
+      }
       invalidate();
     };
 
     sync();
     const observer = typeof ResizeObserver === "function" ? new ResizeObserver(sync) : null;
     observer?.observe(host);
+    const outerHost = host.parentElement;
+    if (outerHost && outerHost !== host) observer?.observe(outerHost);
     window.addEventListener("resize", sync);
-    const frame = typeof requestAnimationFrame === "function" ? requestAnimationFrame(sync) : null;
+    const visualViewport = typeof window !== "undefined" ? window.visualViewport : null;
+    visualViewport?.addEventListener("resize", sync);
+    let settledFrame: number | null = null;
+    const frame = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame(() => {
+          sync();
+          settledFrame = requestAnimationFrame(sync);
+        })
+      : null;
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
+      if (settledFrame !== null) cancelAnimationFrame(settledFrame);
       window.removeEventListener("resize", sync);
+      visualViewport?.removeEventListener("resize", sync);
       observer?.disconnect();
     };
-  }, [camera, dpr, gl, invalidate, paused, setSize]);
+  }, [camera, dpr, gl, invalidate, paused, setDpr, setSize, viewportDpr]);
 
   return null;
 }

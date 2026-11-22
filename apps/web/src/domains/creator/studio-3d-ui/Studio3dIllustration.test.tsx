@@ -33,10 +33,29 @@ describe("3D 스튜디오 예시 일러스트", () => {
     for (const image of container.querySelectorAll("img")) {
       // 너비 서술자는 4:5 파생본의 실제 폭(320·640·960)에 맞추며 높이 1200을 폭으로 쓰지 않는다.
       expect(image.getAttribute("srcset")).toMatch(/-320\.webp 320w,.*-640\.webp 640w,.*-960\.webp 960w$/u);
-      expect(image.getAttribute("sizes")).toContain("190px");
-      expect(image.getAttribute("sizes")).toContain("640px");
+      expect(image.getAttribute("sizes")).toBe("(max-width: 479px) 380px, 640px");
       expect(image.getAttribute("width")).toBe("960");
       expect(image.getAttribute("height")).toBe("1200");
+    }
+  });
+
+  it("모바일·태블릿·데스크톱 Retina 전 구간에서 HTML srcSet 밀도 보정 naturalWidth가 업스케일 임계치를 넘는다", () => {
+    const { container } = render(<Studio3dIllustration responsiveCompact />);
+    const sizes = container.querySelector("img")?.getAttribute("sizes") ?? "";
+    // HTML 명세상 intrinsicWidth === w 서술자일 때 density-corrected naturalWidth는 sizes 평가값과 같다.
+    const slotForViewport = (viewportWidth: number) => (viewportWidth <= 479 ? 380 : 640);
+    expect(sizes).toBe("(max-width: 479px) 380px, 640px");
+    for (const sample of [
+      { viewportWidth: 390, displayedWidth: 165.5, displayedHeight: 142.3, dpr: 3 },
+      { viewportWidth: 820, displayedWidth: 316.5, displayedHeight: 396.3, dpr: 2 },
+      { viewportWidth: 1440, displayedWidth: 290.1, displayedHeight: 363.3, dpr: 1 },
+      { viewportWidth: 1440, displayedWidth: 290.1, displayedHeight: 363.3, dpr: 2 },
+    ]) {
+      const naturalWidth = slotForViewport(sample.viewportWidth);
+      const naturalHeight = naturalWidth * 5 / 4;
+      const effectiveDpr = Math.min(Math.max(sample.dpr, 1), 2);
+      expect(naturalWidth).toBeGreaterThanOrEqual(sample.displayedWidth * effectiveDpr * 0.75);
+      expect(naturalHeight).toBeGreaterThanOrEqual(sample.displayedHeight * effectiveDpr * 0.75);
     }
   });
 
