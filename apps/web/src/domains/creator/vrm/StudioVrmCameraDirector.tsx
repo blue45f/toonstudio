@@ -7,6 +7,7 @@ import { resolveStudioVrmPortraitBounds } from "./studio-vrm-portrait-framing";
 import { findCameraPreset } from "./studio-vrm-poser-helpers";
 import { fitStudioVrmPreviewCamera } from "./studio-vrm-preview-framing";
 import { applyCameraPreset, type OrbitLike } from "./StudioVrmPoserTypes";
+import { normalizeCameraPresetForVrmForward } from "./vrm-forward-axis-normalizer";
 
 import type { VRM } from "@pixiv/three-vrm";
 
@@ -78,7 +79,9 @@ export function CameraDirector({ presetId, resetNonce, vrm, interactionLocked = 
     if (!pendingRef.current || presetId === "custom" || interactionLocked || size.width <= 0 || size.height <= 0) return;
     pendingRef.current = false;
     const orbit = frameControls as OrbitLike;
-    let effectivePreset = preset;
+    // VRM 0.x(+Z)/1.0(-Z) 전방축 보정으로 정면·상반신 카메라 프리셋이 뒤통수를 비추지 않도록 정규화한다.
+    const orientedPreset = normalizeCameraPresetForVrmForward(preset, vrm);
+    let effectivePreset = orientedPreset;
     let fitDistance: number | null = null;
     let boundsRadius = 0;
     if (vrm?.scene) {
@@ -89,11 +92,11 @@ export function CameraDirector({ presetId, resetNonce, vrm, interactionLocked = 
         ?? resolveStudioVrmPortraitBounds(presetId, bodyBounds, landmarks);
       // Keep the actual portrait lens/direction, fitting only its landmark region.
       // Custom and over-shoulder crops never enter this automatic subject fit.
-      const fitPreset = portrait ? { ...preset, id: "fullBody" } : preset;
+      const fitPreset = portrait ? { ...orientedPreset, id: "fullBody" } : orientedPreset;
       const selectedBounds = portrait ?? bodyBounds;
       const fitted = fitStudioVrmPreviewCamera(fitPreset, selectedBounds, size.width / size.height);
       if (fitted) {
-        effectivePreset = { ...preset, position: fitted.position, target: fitted.target };
+        effectivePreset = { ...orientedPreset, position: fitted.position, target: fitted.target };
         fitDistance = fitted.distance;
         boundsRadius = Math.hypot(...selectedBounds.max.map((value, axis) => value - selectedBounds.min[axis])) / 2;
       } else {
@@ -103,9 +106,9 @@ export function CameraDirector({ presetId, resetNonce, vrm, interactionLocked = 
           const shift = (height - 1.6) * 0.62;
           const scale = Math.min(1.25, Math.max(0.75, Math.sqrt(height / 1.6)));
           effectivePreset = {
-            ...preset,
-            target: [preset.target[0], Math.max(box.min.y + 0.1, preset.target[1] + shift), preset.target[2]],
-            position: [preset.position[0] * scale, Math.max(box.min.y + 0.2, preset.position[1] + shift), preset.position[2] * scale],
+            ...orientedPreset,
+            target: [orientedPreset.target[0], Math.max(box.min.y + 0.1, orientedPreset.target[1] + shift), orientedPreset.target[2]],
+            position: [orientedPreset.position[0] * scale, Math.max(box.min.y + 0.2, orientedPreset.position[1] + shift), orientedPreset.position[2] * scale],
           };
         }
       }

@@ -6,10 +6,32 @@
  * `readStudioVrmPoserShaperSurface` so hand-pose / pose / wardrobe entry points are typed.
  */
 
+import type {
+  VrmActionSilhouetteId,
+  VrmLookAtPin,
+  VrmLookAtPinSolution,
+} from "./vrm-action-silhouette-presets";
+import type { VrmGarmentCapsuleGuardResult } from "./vrm-anatomy-garment-guard";
+import type {
+  NormalizeVrmSceneForwardResult,
+  VrmForwardAxisResolution,
+} from "./vrm-forward-axis-normalizer";
+
 /** Typed shaper/apply-plan surface — prefer this over indexing the open host bag. */
 export interface StudioVrmPoserShaperSurface {
   readonly applyHandPosePreset?: (side: "left" | "right", poseType: string) => void;
   readonly handlePoseSelect?: (presetId: string) => void;
+  readonly applyActionSilhouettePreset?: (
+    presetId: VrmActionSilhouetteId,
+    lookAtPin?: VrmLookAtPin | null,
+  ) => boolean;
+  readonly applyLookAtPin?: (pin: VrmLookAtPin) => VrmLookAtPinSolution | null;
+  readonly guardGarmentCapsuleClipping?: (
+    garmentPositions: Float32Array,
+    garmentId?: string,
+  ) => VrmGarmentCapsuleGuardResult | null;
+  readonly resolveActiveVrmForwardAxis?: () => VrmForwardAxisResolution;
+  readonly normalizeActiveVrmForwardAxis?: () => NormalizeVrmSceneForwardResult | null;
   readonly handleExpressionPresetSelect?: (preset: unknown) => void;
   readonly handleAvatarForgeChange?: (forge: unknown) => void;
   readonly equipWardrobeItem?: (slot: string, itemId: string | null) => void;
@@ -45,6 +67,11 @@ export function readStudioVrmPoserShaperSurface(host: StudioVrmPoserHost): Studi
   return Object.freeze({
     applyHandPosePreset: pickFn(host, "applyHandPosePreset"),
     handlePoseSelect: pickFn(host, "handlePoseSelect"),
+    applyActionSilhouettePreset: pickFn(host, "applyActionSilhouettePreset"),
+    applyLookAtPin: pickFn(host, "applyLookAtPin"),
+    guardGarmentCapsuleClipping: pickFn(host, "guardGarmentCapsuleClipping"),
+    resolveActiveVrmForwardAxis: pickFn(host, "resolveActiveVrmForwardAxis"),
+    normalizeActiveVrmForwardAxis: pickFn(host, "normalizeActiveVrmForwardAxis"),
     handleExpressionPresetSelect: pickFn(host, "handleExpressionPresetSelect"),
     handleAvatarForgeChange: pickFn(host, "handleAvatarForgeChange"),
     equipWardrobeItem: pickFn(host, "equipWardrobeItem"),
