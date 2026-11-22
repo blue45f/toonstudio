@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetStudioBg3dRetainedOwnerForTests } from "./bg3d/studio-bg3d-retained-owner";
 import { StudioBg3dRetainedOwnerHost } from "./bg3d/StudioBg3dRetainedOwnerHost";
+import { createReaderFeedbackPin } from "./reader-pins/reader-feedback-pins-model";
 import { EMPTY_STUDIO_SHARED_3D_SCENE_SESSION } from "./runtime-leaves/studio-shared-3d-character-identity";
 import { StudioDocumentRuntimeContext } from "./studio-router/studio-document-runtime-context";
 import {
@@ -15,9 +16,11 @@ import {
 
 
 import type { StudioShared3dSceneSessionModules } from "./runtime-leaves/studio-shared-3d-scene-session-loader";
+import type { ScrollPreviewPinReturn, StudioScrollPreviewPanelProps } from "./StudioScrollPreviewPanel";
 import type { ReactElement } from "react";
 
 const commentsSessionHarness = vi.hoisted(() => ({ nextInstanceId: 0 }));
+const scrollPreviewProps = vi.hoisted(() => vi.fn<(props: StudioScrollPreviewPanelProps) => void>());
 const shared3dSessionHarness = vi.hoisted(() => ({
   load: vi.fn<() => Promise<StudioShared3dSceneSessionModules>>(),
 }));
@@ -97,7 +100,10 @@ vi.mock("./studio-page-lazy-ui", async () => {
       open ? <div data-optional-panel="quick-actions">quick-actions</div> : null,
     StudioReferencePanel: panel("reference"),
     StudioScenarioAutoLayoutPanel: panel("scenario"),
-    StudioScrollPreviewPanel: panel("scroll-preview"),
+    StudioScrollPreviewPanel: (props: StudioScrollPreviewPanelProps) => {
+      scrollPreviewProps(props);
+      return <div data-optional-panel="scroll-preview" />;
+    },
     StudioStoryboardGridPanel: panel("storyboard"),
     StudioTeamPanel: MockStudioTeamPanel,
     StudioTimelapsePanel: panel("timelapse"),
@@ -155,7 +161,7 @@ function createProps(
     recentColors: [],
     referencePanelOpen: false,
     scenarioOpen: false,
-    scrollPreviewOpen: false,
+    scrollPreview: { open: false, documentEpoch: 0 },
     storyboardGridOpen: false,
     teamPanelOpen: false,
     timelapseOpen: false,
@@ -188,6 +194,47 @@ function withRetainedBg3dHost(element: ReactElement) {
 }
 
 describe("StudioLazyPanelStack", () => {
+  it("복귀 핀은 같은 원고에서만 전달하고 일반 닫기로 비운다", () => {
+    const pageId = "shared-page-id";
+    const pin = createReaderFeedbackPin({ pageId, x: 0.2, y: 0.85, category: "typo", comment: "대사 확인" });
+    const snapshot: ScrollPreviewPinReturn = {
+      pins: [pin], pinId: pin.id, viewportFraction: 0.5, frameWidthId: "normal", showRhythmAnalysis: false,
+    };
+    const setScrollPreviewOpen = vi.fn();
+    const props = createProps({
+      currentPageId: pageId,
+      pages: [{ id: pageId, bg: "#fff", bgGrad: null, canvasH: 3200, elements: [] }],
+      composeWorkAssetPreviewPage: (page) => page,
+      setScrollPreviewOpen,
+    });
+    const stack = (epoch: number, open: boolean) => withRetainedBg3dHost(
+      <StudioLazyPanelStack {...props} scrollPreview={{ open, documentEpoch: epoch }} />,
+    );
+    const panel = () => {
+      const latest = scrollPreviewProps.mock.lastCall?.[0];
+      if (!latest) throw new Error("스크롤 미리보기가 열리지 않았습니다.");
+      return latest;
+    };
+
+    const view = render(stack(1, true));
+    act(() => panel().onClose(snapshot));
+    expect(setScrollPreviewOpen).toHaveBeenCalledWith(false);
+    view.rerender(stack(1, false));
+    view.rerender(stack(1, true));
+    expect(panel().initialPinReturn).toBe(snapshot);
+
+    act(() => panel().onClose());
+    view.rerender(stack(1, false));
+    view.rerender(stack(1, true));
+    expect(panel().initialPinReturn).toBeUndefined();
+
+    act(() => panel().onClose(snapshot));
+    view.rerender(stack(1, false));
+    view.rerender(stack(2, true));
+    expect(panel().pages[0]?.id).toBe(pageId);
+    expect(panel().initialPinReturn).toBeUndefined();
+  });
+
   it("does not mount optional surfaces while every open flag is false", () => {
     const view = render(withRetainedBg3dHost(<StudioLazyPanelStack {...createProps()} />));
 

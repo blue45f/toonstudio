@@ -73,6 +73,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   scopedHybridDccWorkspace: import("../hybrid-dcc/studio-hybrid-dcc-workspace").StudioHybridDccWorkspace | undefined;
   scrollPos: import("../studio-scroll-viewport-store").StudioScrollViewport;
   scrollPreviewOpen: boolean;
+  scrollPreviewDocumentEpoch: number;
   scrollViewportStore: import("../studio-scroll-viewport-store").StudioScrollViewportStore;
   selected: import("../studio-element-model").El | null;
   selectedBg3dEditSource: { readonly scene?: import("../bg3d/studio-bg3d-scene-document-types").StudioBg3dSceneDocument | undefined; readonly legacyDataUrl?: string | undefined; } | null;

@@ -21,7 +21,7 @@
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { resolveStudioScrollRhythmEndingLabel, resolveStudioScrollRhythmInsight } from "./status-i18n/studio-producer-error-i18n-scroll-rhythm";
 import { Activity, LocateFixed, MapPin, Pause, Play, Smartphone, X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -53,9 +53,18 @@ import { reducedMotion } from "@/shared/hooks/use-in-view";
  *  표시(pageDisplayName)에 필요한 만큼만 옵셔널로 얹는다. */
 export type ScrollPreviewPage = ThumbPageLike & { name?: string };
 
+export interface ScrollPreviewPinReturn {
+  readonly pins: readonly ReaderFeedbackPin[];
+  readonly pinId: string;
+  readonly viewportFraction: number;
+  readonly frameWidthId: FrameWidthId;
+  readonly showRhythmAnalysis: boolean;
+}
+
 export interface StudioScrollPreviewPanelProps {
   open: boolean;
-  onClose: () => void;
+  onClose: (pinReturn?: ScrollPreviewPinReturn) => void;
+  initialPinReturn?: ScrollPreviewPinReturn;
   /** composeThumbPage(master, p)가 이미 적용된 상태로 호출측(StudioPage)이 전달 — 이 패널은
    *  DocumentMaster 타입을 몰라도 된다(StudioStoryboardGridPanel과 동일 계약). */
   pages: ScrollPreviewPage[];
@@ -229,18 +238,21 @@ export function StudioScrollPreviewPanel({
   pages,
   currentPageId,
   onSelectPage,
+  initialPinReturn,
   initialFeedbackPins,
   onFeedbackPinsChange,
   onJumpToFeedbackPin,
   defaultFeedbackPinsOpen = false,
 }: StudioScrollPreviewPanelProps): ReactElement | null {
-  const [frameWidthId, setFrameWidthId] = useState<FrameWidthId>("normal");
-  const [showRhythmAnalysis, setShowRhythmAnalysis] = useState(true);
-  const [showFeedbackPins, setShowFeedbackPins] = useState(defaultFeedbackPinsOpen);
+  const [frameWidthId, setFrameWidthId] = useState<FrameWidthId>(initialPinReturn?.frameWidthId ?? "normal");
+  const [showRhythmAnalysis, setShowRhythmAnalysis] = useState(initialPinReturn?.showRhythmAnalysis ?? true);
+  const [showFeedbackPins, setShowFeedbackPins] = useState(Boolean(initialPinReturn) || defaultFeedbackPinsOpen);
   const [feedbackPins, setFeedbackPins] = useState<readonly ReaderFeedbackPin[]>(
-    () => initialFeedbackPins ?? [],
+    () => initialPinReturn?.pins.filter((pin) => pages.some((page) => page.id === pin.pageId))
+      ?? initialFeedbackPins ?? [],
   );
-  const [activePinId, setActivePinId] = useState<string | null>(null);
+  const [returnPin] = useState(() => feedbackPins.find((pin) => pin.id === initialPinReturn?.pinId));
+  const [activePinId, setActivePinId] = useState<string | null>(returnPin?.id ?? null);
   const [pinPlacementMode, setPinPlacementMode] = useState(false);
   const [draftPinCoordinate, setDraftPinCoordinate] = useState<{
     readonly pageId: string;
@@ -256,10 +268,20 @@ export function StudioScrollPreviewPanel({
   // 의미론). "현재 페이지로" 버튼은 이 스냅샷이 아니라 최신 currentPageId prop 을 직접 읽는다.
   const initialPageId = useRef(currentPageId).current;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
+    const viewport = scrollViewportRef.current;
+    const marker = returnPin && pageRefs.current.get(returnPin.pageId)
+      ?.querySelector<HTMLButtonElement>('[data-feedback-pin-marker][aria-pressed="true"]');
+    if (initialPinReturn && viewport && marker) {
+      const rect = marker.getBoundingClientRect();
+      viewport.scrollTop += rect.top + rect.height / 2 - viewport.getBoundingClientRect().top
+        - viewport.clientHeight * initialPinReturn.viewportFraction;
+      marker.focus({ preventScroll: true });
+      return;
+    }
     pageRefs.current.get(initialPageId)?.scrollIntoView({ block: "start", behavior: "auto" });
-  }, [initialPageId, open]);
+  }, [initialPageId, initialPinReturn, open, returnPin]);
 
   useEffect(() => {
     if (!open) return;
@@ -329,9 +351,21 @@ export function StudioScrollPreviewPanel({
 
   const openFeedbackPinInEditor = onSelectPage
     ? (target: ReaderFeedbackPinJumpTarget) => {
+        const viewport = scrollViewportRef.current;
+        const page = pageRefs.current.get(target.pageId)?.getBoundingClientRect();
+        const pinOffset = viewport && page && viewport.clientHeight > 0
+          ? (page.top + page.height * target.y - viewport.getBoundingClientRect().top) / viewport.clientHeight
+          : 0.5;
         onJumpToFeedbackPin?.(target);
         onSelectPage(target.pageId);
-        onClose();
+        onClose({
+          pins: feedbackPins,
+          pinId: target.pinId,
+          // 모바일 목록에서 화면 밖 핀을 열었으면 돌아올 때 마커를 가운데 놓는다.
+          viewportFraction: pinOffset >= 0 && pinOffset <= 1 ? pinOffset : 0.5,
+          frameWidthId,
+          showRhythmAnalysis,
+        });
       }
     : undefined;
 
@@ -351,7 +385,7 @@ export function StudioScrollPreviewPanel({
         type="button"
         aria-hidden="true"
         tabIndex={-1}
-        onClick={onClose}
+        onClick={() => onClose()}
         className="absolute inset-0 z-0 cursor-default"
       />
       <div className="relative z-10 mx-auto flex h-full w-full max-w-[100rem] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
@@ -460,7 +494,7 @@ export function StudioScrollPreviewPanel({
               type="button"
               aria-label="닫기"
               title="닫기 (Esc)"
-              onClick={onClose}
+              onClick={() => onClose()}
               className="grid size-8 place-items-center rounded-lg border border-line bg-card text-fg-3 transition-colors hover:bg-accent-soft hover:text-accent"
             >
               <X size={15} aria-hidden />

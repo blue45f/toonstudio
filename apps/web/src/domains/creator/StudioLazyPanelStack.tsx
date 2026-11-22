@@ -341,7 +341,7 @@ export interface StudioLazyPanelStackProps extends StudioLocalVrmCutHostScope {
   scenarioSceneCountHint: number | undefined;
   scenarioStageLabel: string | null;
   scenarioStoryText: string;
-  scrollPreviewOpen: boolean;
+  scrollPreview: { open: boolean; documentEpoch: number };
   readerPreviewOpen: boolean;
   serverCurrentRevision: number | undefined;
   serverRevisionError: string | null;
@@ -553,7 +553,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
   scenarioSceneCountHint,
   scenarioStageLabel,
   scenarioStoryText,
-  scrollPreviewOpen,
+  scrollPreview,
   readerPreviewOpen,
   serverCurrentRevision,
   serverRevisionError,
@@ -847,7 +847,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
         scenarioSceneCountHint={scenarioSceneCountHint}
         scenarioStageLabel={scenarioStageLabel}
         scenarioStoryText={scenarioStoryText}
-        scrollPreviewOpen={scrollPreviewOpen}
+        scrollPreview={scrollPreview}
         readerPreviewOpen={readerPreviewOpen}
         setScenarioOpen={setScenarioOpen}
         setScenarioImageReferenceDocument={setScenarioImageReferenceDocument}
