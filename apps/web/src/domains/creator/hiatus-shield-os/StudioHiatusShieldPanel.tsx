@@ -13,7 +13,10 @@ import {
   assessBufferAndBurnoutRisk,
   buildStyleLockHandoffKit,
   createInitialHiatusShieldState,
+  createStarterWeeklyVelocitySamples,
   declareMemberAbsenceAndReleaseSlices,
+  evaluateHiatusCoachingSurface,
+  forecastThreeWeekHiatusRisk,
   generateEmergencyDefenseScenarios,
   rankEmergencyStandbyArtists,
   splitBottleneckSliceIntoMicroSlices,
@@ -22,15 +25,18 @@ import {
   type AbsenceReason,
   type BufferHealthTier,
   type DefenseScenarioCode,
+  type DeterministicLocalClock,
   type HiatusShieldStudioState,
   type MicroSliceAssignee,
   type RankedStandbyMatch,
+  type WeeklyCutVelocitySample,
 } from "./hiatus-delay-prevention-engine";
 import {
   MicroSliceAndDefenseCard,
   StyleLockHandoffKitCard,
 } from "./HiatusHandoffAndDefenseViews";
 import { CrewRadarAndStandbyView } from "./HiatusRadarAndStandbyViews";
+import { HiatusVelocityForecastCard } from "./HiatusVelocityForecastCard";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -38,9 +44,13 @@ export interface StudioHiatusShieldPanelProps {
   readonly projectTitle?: string;
   readonly episodeId?: string;
   readonly episodeNumber?: number;
+  readonly localClock?: DeterministicLocalClock;
+  readonly initialContinuousWorkMinutes?: number;
+  readonly weeklyVelocitySamples?: readonly WeeklyCutVelocitySample[];
 }
 
 const FIXED_OPS_NOW_ISO = "2026-11-21T15:00:00.000Z";
+const DEFAULT_LOCAL_CLOCK: DeterministicLocalClock = { localHour: 15, localMinute: 0 };
 const BUFFER_WEEK_OPTIONS: readonly number[] = [0, 1, 2, 3, 4];
 const DEADLINE_HOUR_OPTIONS: readonly number[] = [12, 16, 24, 48];
 
@@ -54,6 +64,9 @@ export function StudioHiatusShieldPanel({
   projectTitle = "밤의 우편배달부",
   episodeId = "ep-14",
   episodeNumber = 14,
+  localClock,
+  initialContinuousWorkMinutes = 50,
+  weeklyVelocitySamples,
 }: StudioHiatusShieldPanelProps) {
   const bt = useBilingual("StudioHiatusShieldPanel");
 
@@ -65,10 +78,39 @@ export function StudioHiatusShieldPanel({
       nowIso: FIXED_OPS_NOW_ISO,
     }),
   );
+  const [clockOverride, setClockOverride] = useState<DeterministicLocalClock | null>(null);
+  const [continuousWorkMinutes, setContinuousWorkMinutes] = useState<number>(
+    initialContinuousWorkMinutes,
+  );
+  const [acknowledgedBreakCycle, setAcknowledgedBreakCycle] = useState<number>(0);
   const [selectedAbsenceReason, setSelectedAbsenceReason] = useState<AbsenceReason>("injury");
   const [regionFilter, setRegionFilter] = useState<"all" | "domestic" | "global_sea">("all");
   const [currencyView, setCurrencyView] = useState<"KRW" | "USD">("KRW");
   const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
+
+  const activeClock = clockOverride ?? localClock ?? DEFAULT_LOCAL_CLOCK;
+  const resolvedVelocitySamples = useMemo(
+    () => weeklyVelocitySamples ?? createStarterWeeklyVelocitySamples(),
+    [weeklyVelocitySamples],
+  );
+  const velocityForecast = useMemo(
+    () =>
+      forecastThreeWeekHiatusRisk({
+        samples: resolvedVelocitySamples,
+        targetWeeklyCuts: state.targetTotalCuts,
+        currentBufferWeeks: state.bufferWeeks,
+      }),
+    [resolvedVelocitySamples, state.targetTotalCuts, state.bufferWeeks],
+  );
+  const coachingSurface = useMemo(
+    () =>
+      evaluateHiatusCoachingSurface({
+        continuousWorkMinutes,
+        acknowledgedBreakCycle,
+        clock: activeClock,
+      }),
+    [continuousWorkMinutes, acknowledgedBreakCycle, activeClock],
+  );
 
   const completedCutsTotal = useMemo(
     () =>
@@ -345,6 +387,9 @@ export function StudioHiatusShieldPanel({
         nowIso: FIXED_OPS_NOW_ISO,
       }),
     );
+    setClockOverride(null);
+    setContinuousWorkMinutes(initialContinuousWorkMinutes);
+    setAcknowledgedBreakCycle(0);
     setStatusFeedback(bt("휴재 방지 관제실을 초기 상태로 복원했습니다.", "Reset Hiatus Shield Control Room."));
   };
 
@@ -528,17 +573,32 @@ export function StudioHiatusShieldPanel({
         </div>
 
         {riskReport.earlyWarnings.length > 0 ? (
-          <div className="grid gap-2 sm:grid-cols-2" data-testid="hshield-early-warnings">
-            {riskReport.earlyWarnings.map((alert) => (
-              <div key={alert.id} className="hshield-alert space-y-0.5" data-tier={alert.tier}>
-                <p className="flex items-center gap-1.5 text-xs font-bold text-fg">
-                  <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-                  {bt(alert.titleKo, alert.titleEn)}
-                </p>
-                <p className="text-xs text-fg-2">{bt(alert.detailKo, alert.detailEn)}</p>
-              </div>
-            ))}
-          </div>
+          coachingSurface.earlyWarningsCollapsedByDefault ? (
+            <div
+              className="hshield-silent-collapse"
+              data-testid="hshield-early-warnings-collapsed"
+              data-suppressed="silent_collapsed"
+            >
+              <p className="text-xs text-fg-2">
+                {bt(
+                  `심야 무음 모드(${coachingSurface.lateNightPolicy.formattedLocalTime}) · 조기 경보 ${riskReport.earlyWarnings.length}건이 팝업 없이 접혀 있습니다.`,
+                  `Silent night mode (${coachingSurface.lateNightPolicy.formattedLocalTime}) · ${riskReport.earlyWarnings.length} early warnings silently collapsed.`,
+                )}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2" data-testid="hshield-early-warnings">
+              {riskReport.earlyWarnings.map((alert) => (
+                <div key={alert.id} className="hshield-alert space-y-0.5" data-tier={alert.tier}>
+                  <p className="flex items-center gap-1.5 text-xs font-bold text-fg">
+                    <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+                    {bt(alert.titleKo, alert.titleEn)}
+                  </p>
+                  <p className="text-xs text-fg-2">{bt(alert.detailKo, alert.detailEn)}</p>
+                </div>
+              ))}
+            </div>
+          )
         ) : null}
 
         {statusFeedback ? (
@@ -551,6 +611,19 @@ export function StudioHiatusShieldPanel({
           </div>
         ) : null}
       </section>
+
+      {/* 0. 로컬 이동평균(SMA/EMA) 3주 전 휴재 예측 · 50분 손목 휴식 · 00:00~06:00 심야 무음 억제 */}
+      <HiatusVelocityForecastCard
+        forecast={velocityForecast}
+        samples={resolvedVelocitySamples}
+        surface={coachingSurface}
+        onChangeClockPreset={(nextClock) => setClockOverride(nextClock)}
+        onChangeContinuousWorkMinutes={(mins) => {
+          setContinuousWorkMinutes(mins);
+          if (mins < 50) setAcknowledgedBreakCycle(0);
+        }}
+        onAcknowledgeWristBreak={(cycleIndex) => setAcknowledgedBreakCycle(cycleIndex)}
+      />
 
       {/* 1. 팀원 번아웃 레이더 + 2. 10분 긴급 대타 매칭 */}
       <CrewRadarAndStandbyView

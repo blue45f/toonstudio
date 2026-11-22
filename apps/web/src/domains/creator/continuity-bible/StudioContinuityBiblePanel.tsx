@@ -8,15 +8,19 @@ import { AlertTriangle, BookMarked, CheckCircle2, Copy, Minus, Plus } from "luci
 import { useEffect, useMemo, useState } from "react";
 
 import type { StudioStoryCharacter } from "../studio-story-bible";
+import { ContinuityCrossCutChecklistCard } from "./ContinuityCrossCutChecklistCard";
 import { ContinuityMiniReferenceCard } from "./ContinuityMiniReferenceCard";
 import {
   addCharacterOutfit,
   addCharacterProp,
   addCharacterScar,
   createStarterContinuityBible,
+  createStarterCutObservations,
+  evaluateCrossCutContinuity,
   evaluateSeriesContinuity,
   formatContinuityChecksheetMarkdown,
   loadContinuityBible,
+  markCrossCutCheckResolved,
   saveContinuityBible,
   syncContinuityBibleCharacters,
   toggleContinuityCheckItem,
@@ -24,12 +28,17 @@ import {
   type ContinuityBibleState,
   type ContinuityHandPreference,
   type ContinuityScarSeverity,
+  type CrossCutChecklistItem,
+  type CutCharacterObservation,
+  type RevisionCutJumpTarget,
 } from "./continuity-bible-model";
 
 export interface StudioContinuityBiblePanelProps {
   readonly projectId: string;
   readonly characters?: readonly StudioStoryCharacter[];
   readonly selectedCharacterId?: string | null;
+  readonly cutObservations?: readonly CutCharacterObservation[];
+  readonly onJumpToCut?: (target: RevisionCutJumpTarget) => void;
 }
 
 const INPUT_CLASS =
@@ -39,6 +48,8 @@ export function StudioContinuityBiblePanel({
   projectId,
   characters,
   selectedCharacterId,
+  cutObservations,
+  onJumpToCut,
 }: StudioContinuityBiblePanelProps) {
   const [bible, setBible] = useState<ContinuityBibleState>(() => {
     const storage = typeof window !== "undefined" ? window.localStorage : null;
@@ -55,6 +66,10 @@ export function StudioContinuityBiblePanel({
     selectedCharacterId ?? bible.characters[0]?.characterId ?? "",
   );
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [resolvedCrossCutItems, setResolvedCrossCutItems] = useState<
+    readonly CrossCutChecklistItem[]
+  >([]);
+  const [activeJumpCutId, setActiveJumpCutId] = useState<string | null>(null);
 
   // 상처·소품·복장 추가 폼 로컬 입력
   const [newScarLocation, setNewScarLocation] = useState("");
@@ -83,6 +98,27 @@ export function StudioContinuityBiblePanel({
   }, [syncedBible]);
 
   const summary = useMemo(() => evaluateSeriesContinuity(syncedBible), [syncedBible]);
+
+  const baseCutObservations = useMemo(
+    () => cutObservations ?? createStarterCutObservations(syncedBible),
+    [cutObservations, syncedBible],
+  );
+  const effectiveCutObservations = useMemo(() => {
+    let next = baseCutObservations;
+    for (const item of resolvedCrossCutItems) {
+      next = markCrossCutCheckResolved(next, item);
+    }
+    return next;
+  }, [baseCutObservations, resolvedCrossCutItems]);
+
+  const crossCutReport = useMemo(
+    () => evaluateCrossCutContinuity(syncedBible, effectiveCutObservations),
+    [syncedBible, effectiveCutObservations],
+  );
+  const effectiveJumpCutId =
+    activeJumpCutId && crossCutReport.jumpTargets.some((t) => t.cutId === activeJumpCutId)
+      ? activeJumpCutId
+      : null;
 
   const activeCharacterId =
     syncedBible.characters.some((c) => c.characterId === focusedCharacterId)
@@ -170,6 +206,36 @@ export function StudioContinuityBiblePanel({
       // 클립보드 차단 환경에서는 상태 안내로 마무리한다.
     }
     setStatusMessage(`${summary.episodeNumber}화 체크시트 요약을 준비했어요.`);
+  };
+
+  const handleJumpToCut = (target: RevisionCutJumpTarget) => {
+    setActiveJumpCutId((prev) => (prev === target.cutId ? null : target.cutId));
+    onJumpToCut?.(target);
+    setStatusMessage(
+      `수정 대상 컷 #${target.cutNumber}(${target.sceneLabelKo})로 이동했어요.`,
+    );
+  };
+
+  const handleResolveCrossCutItem = (item: CrossCutChecklistItem) => {
+    setResolvedCrossCutItems((prev) =>
+      prev.some((entry) => entry.checkKey === item.checkKey) ? prev : [...prev, item],
+    );
+    setStatusMessage(
+      `컷 #${item.cutNumber} ${item.characterName} 항목을 수정 완료로 반영했어요.`,
+    );
+  };
+
+  const handleCopyJumpSummary = async (payload: string) => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload);
+        setStatusMessage(`${crossCutReport.episodeNumber}화 수정 컷 점프 요약을 복사했어요.`);
+        return;
+      }
+    } catch {
+      // 클립보드 차단 환경에서는 상태 안내로 마무리한다.
+    }
+    setStatusMessage(`${crossCutReport.episodeNumber}화 수정 컷 점프 요약을 준비했어요.`);
   };
 
   return (
@@ -295,6 +361,16 @@ export function StudioContinuityBiblePanel({
           </ul>
         ) : null}
       </section>
+
+      {/* 컷 간 복장·소품·상처 자동 대조 체크리스트 & 수정 컷 점프 요약 */}
+      <ContinuityCrossCutChecklistCard
+        report={crossCutReport}
+        activeJumpCutId={effectiveJumpCutId}
+        onJumpToCut={handleJumpToCut}
+        onClearJumpCut={() => setActiveJumpCutId(null)}
+        onResolveItem={handleResolveCrossCutItem}
+        onCopyJumpSummary={(payload) => void handleCopyJumpSummary(payload)}
+      />
 
       {/* Calm Atelier 미니 참조 카드 그리드 */}
       <div className="grid gap-3 md:grid-cols-2">
