@@ -14,6 +14,7 @@ import {
 } from "@/shared/lib/file-system-access";
 
 import { tagStudioRasterBlobResolution } from "../render/studio-raster-resolution-metadata";
+import { getStudioResourceLeakGuard } from "../render/studio-resource-leak-guard";
 
 import {
   appendStudioDownloadSuffix,
@@ -255,16 +256,31 @@ export async function canvasToBlob(
     });
   }
   const targetCanvas = resolveShieldedExportCanvas(canvas);
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    targetCanvas.toBlob(
-      (result) => {
-        if (result) resolve(result);
-        else reject(new Error("캔버스를 이미지로 변환하지 못했어요. 배율을 낮춰 다시 시도해주세요."));
-      },
-      type,
-      quality
-    );
-  });
+  const leakGuard = getStudioResourceLeakGuard();
+  const shieldedCanvasId =
+    targetCanvas !== canvas
+      ? leakGuard.trackOffscreenCanvas(targetCanvas, {
+        owner: "export:shielded-canvas",
+        label: requestedMime,
+      })
+      : null;
+  let blob: Blob;
+  try {
+    blob = await new Promise<Blob>((resolve, reject) => {
+      targetCanvas.toBlob(
+        (result) => {
+          if (result) resolve(result);
+          else reject(new Error("캔버스를 이미지로 변환하지 못했어요. 배율을 낮춰 다시 시도해주세요."));
+        },
+        type,
+        quality
+      );
+    });
+  } finally {
+    if (shieldedCanvasId !== null) {
+      leakGuard.release(shieldedCanvasId);
+    }
+  }
   const actualMime = normalizeCanvasRasterMime(blob.type);
   const header = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
   const detectedMime = detectStudioCanvasRasterMime(header);
@@ -306,10 +322,18 @@ export function downloadBlob(blob: Blob, filename: string): void {
   ) {
     throw new Error("이 환경에서는 브라우저 파일 다운로드를 시작할 수 없습니다.");
   }
+  const sanitizedName = sanitizeStudioDownloadFileName(filename);
   const url = URL.createObjectURL(blob);
+  const leakGuard = getStudioResourceLeakGuard();
+  const trackedUrlId = leakGuard.trackObjectUrl(url, {
+    owner: "export:download-blob",
+    label: sanitizedName,
+    estimatedBytes: blob.size,
+    maxLifetimeMs: DOWNLOAD_OBJECT_URL_REVOKE_DELAY_MS + 15_000,
+  });
   const link = document.createElement("a");
   link.href = url;
-  link.download = sanitizeStudioDownloadFileName(filename);
+  link.download = sanitizedName;
   link.rel = "noopener";
   link.style.display = "none";
   document.body.appendChild(link);
@@ -317,7 +341,9 @@ export function downloadBlob(blob: Blob, filename: string): void {
     link.click();
   } finally {
     link.remove();
-    globalThis.setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_OBJECT_URL_REVOKE_DELAY_MS);
+    globalThis.setTimeout(() => {
+      leakGuard.release(trackedUrlId);
+    }, DOWNLOAD_OBJECT_URL_REVOKE_DELAY_MS);
   }
 }
 

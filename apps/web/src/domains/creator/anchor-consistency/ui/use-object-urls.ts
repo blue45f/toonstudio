@@ -6,6 +6,8 @@
  */
 import { useEffect, useRef, useState } from "react";
 
+import { getStudioResourceLeakGuard } from "../../render/studio-resource-leak-guard";
+
 export interface ObjectUrlEntry {
   readonly id: string;
   readonly blob: Blob;
@@ -33,12 +35,15 @@ export function useObjectUrls(entries: readonly ObjectUrlEntry[]): ReadonlyMap<s
   const createdRef = useRef(new Map<string, string>());
 
   useEffect(() => {
+    const guard = getStudioResourceLeakGuard();
     const created = createdRef.current;
     const wanted = new Map(entries.map((entry) => [entry.id, entry.blob] as const));
     let changed = false;
     for (const [id, url] of [...created]) {
       if (wanted.has(id)) continue;
-      revokeUrl(url);
+      if (!guard.releaseByUrl(url)) {
+        revokeUrl(url);
+      }
       created.delete(id);
       changed = true;
     }
@@ -46,6 +51,12 @@ export function useObjectUrls(entries: readonly ObjectUrlEntry[]): ReadonlyMap<s
       if (created.has(id)) continue;
       const url = createUrl(blob);
       if (url === null) continue;
+      guard.trackObjectUrl(url, {
+        owner: "anchor-preview:object-urls",
+        label: id,
+        estimatedBytes: blob.size,
+        pinned: true,
+      });
       created.set(id, url);
       changed = true;
     }
@@ -53,9 +64,14 @@ export function useObjectUrls(entries: readonly ObjectUrlEntry[]): ReadonlyMap<s
   }, [entries]);
 
   useEffect(() => {
+    const guard = getStudioResourceLeakGuard();
     const created = createdRef.current;
     return () => {
-      for (const url of created.values()) revokeUrl(url);
+      for (const url of created.values()) {
+        if (!guard.releaseByUrl(url)) {
+          revokeUrl(url);
+        }
+      }
       created.clear();
     };
   }, []);

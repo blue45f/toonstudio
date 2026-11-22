@@ -10,6 +10,7 @@ import type {
   StudioInsertPlacementMode,
 } from "../studio-insert-hub-model";
 import type { StudioUnifiedAssetItem } from "../studio-unified-asset-catalog";
+import { extractStudioAssetAutotagMetadata } from "./studio-asset-smart-autotag";
 import type { AssetWorkspaceFacet } from "./studio-unified-asset-workspace-state";
 
 export const assetWorkspaceText = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
@@ -156,12 +157,17 @@ export function assetWorkspaceDetailsForItem(
         ? bi("대사는 별도 텍스트로 편집", "Edit dialogue as separate text")
         : bi("크기·회전·복제 가능", "Resize, rotate and duplicate"),
     ];
-  if (source.kind === "local")
+  if (source.kind === "local") {
+    const autotag = extractStudioAssetAutotagMetadata(source.value);
+    const previewTags = autotag.tagsKo.slice(0, 4).join(" · ");
     return [
-      `${source.value.width} × ${source.value.height}px`,
+      `${source.value.width} × ${source.value.height}px (${autotag.geometry.aspectLabel})`,
+      autotag.reusableBlock.summaryKo,
+      ...(previewTags ? [`${bi("자동 태그", "Auto tags")}: ${previewTags}`] : []),
       bi("내 에셋", "My asset"),
       bi("배치 방식 선택 가능", "Choose placement"),
     ];
+  }
   return [
     bi("편집 도구에서 열기", "Open editing tool"),
     bi("편집 가능한 결과", "Editable result"),

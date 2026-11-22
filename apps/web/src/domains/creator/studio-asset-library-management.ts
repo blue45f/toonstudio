@@ -1,3 +1,5 @@
+import { extractStudioAssetAutotagMetadata } from "./asset-workspace/studio-asset-smart-autotag";
+
 import type { StudioAsset } from "./studio-asset-library";
 import type { StudioUnifiedAssetItem } from "./studio-unified-asset-catalog";
 
@@ -41,7 +43,16 @@ export function selectStudioLocalAssetPage(
   sort: StudioAssetLibrarySort = "recent",
   page = 0,
 ): StudioAssetLibraryPage<StudioAsset> {
-  const result = assets.filter((asset) => matches(`${asset.name} ${studioLocalAssetKindLabel(asset)}`, query));
+  const hasQuery = normalized(query).length > 0;
+  const result = hasQuery
+    ? assets.filter((asset) => {
+      const autotag = extractStudioAssetAutotagMetadata(asset);
+      return matches(
+        `${asset.name} ${studioLocalAssetKindLabel(asset)} ${autotag.allTags.join(" ")} ${autotag.reusableBlock.roleLabelKo}`,
+        query,
+      );
+    })
+    : [...assets];
   result.sort((left, right) => sort === "name"
     ? left.name.localeCompare(right.name, "ko")
     : right.createdAt - left.createdAt || left.name.localeCompare(right.name, "ko"));
