@@ -99,7 +99,7 @@ jobs:
             /tmp/multi-env-deploy-plan.json
             /tmp/blender-verify-ai-report.md
             /tmp/all-labs-production-release.md
-          retention-days: 14
+          retention-days: 7
 
   verify-and-package-workspaces:
     name: "Stage 2 · Parallel Workspace Verify (${{ matrix.workspace.id }})"
@@ -170,4 +170,4 @@ jobs:
         with:
           name: deploy-plan-bundle-${{ matrix.target.id }}
           path: /tmp/deploy-bundle-${{ matrix.target.id }}
-          retention-days: 14
+          retention-days: 7

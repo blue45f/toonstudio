@@ -42,5 +42,5 @@ jobs:
             apps/web/public/brand/toonstudio-og.png
             apps/web/public/brand/film-manifest.json
             apps/web/public/brand/toonstudio-intro.*.vtt
-          retention-days: 30
+          retention-days: 7
           if-no-files-found: error

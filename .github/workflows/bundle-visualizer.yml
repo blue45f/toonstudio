@@ -61,5 +61,5 @@ jobs:
         with:
           name: bundle-visualizer-report
           path: .qa/bundle-visualizer.html
-          retention-days: 14
+          retention-days: 5
           if-no-files-found: warn

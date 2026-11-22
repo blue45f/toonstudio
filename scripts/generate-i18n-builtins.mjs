@@ -1,9 +1,19 @@
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const checkOnly = process.argv.includes("--check");
+import {
+  computeInputsDigest,
+  listFilesSorted,
+  readCacheStamp,
+  verifyCachedOutputs,
+  writeCacheStamp,
+} from "./lib/static-gen-cache.mjs";
+
+const MODULE_PATH = realpathSync(fileURLToPath(import.meta.url));
+const SCRIPT_DIR = path.dirname(MODULE_PATH);
+const DEFAULT_REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
+const GENERATOR_ID = "i18n-builtins";
 
 // [wave7-stage1] App-shell builtins no longer compile these namespaces in.
 // Their ko/en dictionaries are emitted as a separate generated bundle owned by the
@@ -41,7 +51,7 @@ const checkOnly = process.argv.includes("--check");
 //   page 는 이번 단계에서 제외한다: page.events.* 36키 중 리터럴 소비가 확인된
 //     것은 community-events-board 3키뿐이고 나머지는 이중언어 코드 정본·미확인
 //     소비처가 섞여 있어, 소비처 전수 확인이 끝나기 전에는 이동하지 않는다.
-const LAZY_APP_BUILTIN_GROUPS = [
+export const LAZY_APP_BUILTIN_GROUPS = [
   {
     id: "monetization",
     namespaces: ["membership", "paywall", "revenue", "tipping"],
@@ -118,7 +128,18 @@ const LAZY_APP_BUILTIN_NAMESPACES = new Set(
   LAZY_APP_BUILTIN_GROUPS.flatMap((group) => group.namespaces),
 );
 
-function mergeLocale(scope, locale, namespaceFilter) {
+const APP_SHELL_TARGET = "apps/web/src/shared/i18n/generated/i18n-app-builtins.json";
+const ADMIN_TARGET = "apps/web/src/domains/admin/i18n/generated/i18n-admin-builtins.json";
+
+export function collectI18nBuiltinTargets() {
+  return [
+    APP_SHELL_TARGET,
+    ...LAZY_APP_BUILTIN_GROUPS.map((group) => group.target),
+    ADMIN_TARGET,
+  ];
+}
+
+function mergeLocale(repoRoot, scope, locale, namespaceFilter) {
   const root = path.join(repoRoot, "apps/web/public/i18n", scope);
   const merged = {};
   for (const namespace of readdirSync(root, { withFileTypes: true })
@@ -142,42 +163,144 @@ function mergeLocale(scope, locale, namespaceFilter) {
   return merged;
 }
 
-function render(scope, namespaceFilter) {
+function render(repoRoot, scope, namespaceFilter) {
   return JSON.stringify({
-    en: mergeLocale(scope, "en", namespaceFilter),
-    ko: mergeLocale(scope, "ko", namespaceFilter),
+    en: mergeLocale(repoRoot, scope, "en", namespaceFilter),
+    ko: mergeLocale(repoRoot, scope, "ko", namespaceFilter),
   }, null, 2) + "\n";
 }
 
-function sync(targetRelative, contents) {
-  const target = path.join(repoRoot, targetRelative);
-  if (checkOnly) {
+export function computeI18nBuiltinsInputsHash(repoRoot) {
+  const files = [
+    { path: MODULE_PATH, label: "scripts/generate-i18n-builtins.mjs" },
+    { path: path.join(SCRIPT_DIR, "lib/static-gen-cache.mjs"), label: "scripts/lib/static-gen-cache.mjs" },
+  ];
+  const scopeDirectories = {};
+  for (const scope of ["app", "admin"]) {
+    const scopeRoot = path.join(repoRoot, "apps/web/public/i18n", scope);
+    scopeDirectories[scope] = existsSync(scopeRoot)
+      ? readdirSync(scopeRoot, { withFileTypes: true })
+          .filter((entry) => entry.isDirectory())
+          .map((entry) => entry.name)
+          .sort((a, b) => a.localeCompare(b, "en"))
+      : [];
+    for (const rel of listFilesSorted(scopeRoot, (entry) => /(?:^|\/)(?:en|ko)\.json$/u.test(entry))) {
+      const normalizedRel = `apps/web/public/i18n/${scope}/${rel}`;
+      files.push({ path: path.join(repoRoot, normalizedRel), label: normalizedRel });
+    }
+  }
+
+  return computeInputsDigest({
+    rootDir: repoRoot,
+    files,
+    extraValues: {
+      scopeDirectories,
+      targets: collectI18nBuiltinTargets(),
+    },
+  });
+}
+
+export function resolveDefaultI18nBuiltinsCacheFile(repoRoot = DEFAULT_REPO_ROOT, env = process.env) {
+  const configured = env.TOONSTUDIO_I18N_BUILTINS_CACHE_FILE?.trim();
+  if (configured) {
+    return path.isAbsolute(configured) ? configured : path.resolve(repoRoot, configured);
+  }
+  return path.join(repoRoot, "node_modules", ".cache", "toonstudio-gen", "i18n-builtins.json");
+}
+
+export function runI18nBuiltinsSync({
+  repoRoot = DEFAULT_REPO_ROOT,
+  checkOnly = false,
+  force = false,
+  cacheFile = resolveDefaultI18nBuiltinsCacheFile(repoRoot),
+  stdout = process.stdout,
+  stderr = process.stderr,
+} = {}) {
+  const targets = collectI18nBuiltinTargets();
+
+  // --check 모드는 캐시를 신뢰하지 않고 실제 산출물을 직접 대조한다(fail-closed).
+  let inputsHash = null;
+  if (!checkOnly) {
+    inputsHash = computeI18nBuiltinsInputsHash(repoRoot).digest;
+    if (!force) {
+      const stamp = readCacheStamp(cacheFile);
+      const verification = verifyCachedOutputs({
+        rootDir: repoRoot,
+        generator: GENERATOR_ID,
+        stamp,
+        expectedInputsHash: inputsHash,
+        requiredFiles: targets,
+        hashedFiles: targets,
+      });
+      if (verification.hit) {
+        stdout.write(
+          `[i18n-builtins] up-to-date (cache hit ${inputsHash.slice(0, 12)}, ${targets.length} targets; pass --force to regenerate)\n`,
+        );
+        return { skipped: true, stale: [], wrote: [], unchanged: targets, inputsHash, reason: verification.reason };
+      }
+    }
+  }
+
+  const stale = [];
+  const wrote = [];
+  const unchanged = [];
+
+  const sync = (targetRelative, contents) => {
+    const target = path.join(repoRoot, targetRelative);
     let current = "";
     try {
       current = readFileSync(target, "utf8");
     } catch {
       // Missing generated output is stale by definition.
     }
-    if (current !== contents) {
-      process.stderr.write("[i18n-builtins] stale: " + targetRelative + "\n");
-      process.exitCode = 1;
+    if (checkOnly) {
+      if (current !== contents) {
+        stderr.write("[i18n-builtins] stale: " + targetRelative + "\n");
+        stale.push(targetRelative);
+      }
+      return;
     }
-    return;
+    if (!force && current === contents) {
+      unchanged.push(targetRelative);
+      stdout.write("[i18n-builtins] unchanged " + targetRelative + "\n");
+      return;
+    }
+    mkdirSync(path.dirname(target), { recursive: true });
+    writeFileSync(target, contents);
+    wrote.push(targetRelative);
+    stdout.write("[i18n-builtins] wrote " + targetRelative + "\n");
+  };
+
+  sync(
+    APP_SHELL_TARGET,
+    render(repoRoot, "app", (namespace) => !LAZY_APP_BUILTIN_NAMESPACES.has(namespace)),
+  );
+  for (const group of LAZY_APP_BUILTIN_GROUPS) {
+    const groupNamespaces = new Set(group.namespaces);
+    sync(
+      group.target,
+      render(repoRoot, "app", (namespace) => groupNamespaces.has(namespace)),
+    );
   }
-  mkdirSync(path.dirname(target), { recursive: true });
-  writeFileSync(target, contents);
-  process.stdout.write("[i18n-builtins] wrote " + targetRelative + "\n");
+  sync(ADMIN_TARGET, render(repoRoot, "admin"));
+
+  if (!checkOnly && inputsHash) {
+    writeCacheStamp(cacheFile, {
+      generator: GENERATOR_ID,
+      inputsHash,
+      rootDir: repoRoot,
+      hashedFiles: targets,
+    });
+  }
+
+  return { skipped: false, stale, wrote, unchanged, inputsHash, reason: checkOnly ? "check" : force ? "forced" : "rebuilt" };
 }
 
-sync(
-  "apps/web/src/shared/i18n/generated/i18n-app-builtins.json",
-  render("app", (namespace) => !LAZY_APP_BUILTIN_NAMESPACES.has(namespace)),
-);
-for (const group of LAZY_APP_BUILTIN_GROUPS) {
-  const groupNamespaces = new Set(group.namespaces);
-  sync(
-    group.target,
-    render("app", (namespace) => groupNamespaces.has(namespace)),
-  );
+if (process.argv[1] && realpathSync(process.argv[1]) === MODULE_PATH) {
+  const checkOnly = process.argv.includes("--check");
+  const force = process.argv.includes("--force") || process.env.TOONSTUDIO_FORCE_I18N_GEN === "1";
+  const result = runI18nBuiltinsSync({ repoRoot: DEFAULT_REPO_ROOT, checkOnly, force });
+  if (checkOnly && result.stale.length > 0) {
+    process.exitCode = 1;
+  }
 }
-sync("apps/web/src/domains/admin/i18n/generated/i18n-admin-builtins.json", render("admin"));

@@ -127,4 +127,4 @@ jobs:
           name: studio-vrm-asset-quality-${{ github.run_id }}
           path: artifacts/studio-vrm-*-quality-report.json
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 5

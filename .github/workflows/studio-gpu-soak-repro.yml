@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: studio-gpu-soak-repro-${{ github.event_name }}-${{ inputs.expected_sha || github.sha }}
+  cancel-in-progress: false
+
 jobs:
   linux-webgpu:
     runs-on: ubuntu-24.04
@@ -82,4 +86,4 @@ jobs:
           name: studio-gpu-soak-repro-${{ github.sha }}-${{ github.run_attempt }}
           path: artifacts/studio-gpu-soak-repro
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7

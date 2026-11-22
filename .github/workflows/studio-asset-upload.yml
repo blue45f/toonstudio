@@ -99,6 +99,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: studio-asset-upload-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
+
 jobs:
   upload-assets:
     runs-on: ubuntu-latest

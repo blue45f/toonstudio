@@ -48,7 +48,7 @@ jobs:
           path: dist/
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1
 
   studio-audit:
     name: Studio exhaustive · ${{ matrix.lane }}

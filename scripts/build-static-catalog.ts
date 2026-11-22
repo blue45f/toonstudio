@@ -1,12 +1,13 @@
 // 정적 카탈로그 생성기 — 커밋된 gz 스냅샷을 읽어 apps/web/public/data/*.json 을 만든다.
 //
 //   pnpm catalog:gen                       # apps/api/data/catalog.json.gz → apps/web/public/data/*
+//   pnpm catalog:gen -- --force            # 입력 해시 캐시를 무시하고 전체 재생성
 //   WEBDEX_CATALOG_GZ=path pnpm catalog:gen
 //
 // 카탈로그 읽기에 Neon/DB 를 전혀 쓰지 않는다(순수 함수만). 리뷰·북마크·인증은 런타임 /api 담당.
 // apps/web/public/data 는 빌드 산출물(.gitignore) — git 소스는 2.3MB gz 하나만 유지한다.
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
@@ -42,11 +43,48 @@ import { getRankingData } from "../apps/web/src/shared/lib/server/ranking-servic
 import { GENRES, WEEK_DAYS } from "../apps/web/src/shared/lib/taxonomy";
 import { kstDayOfWeek } from "../apps/web/src/shared/lib/utils";
 
-import { readFileIfExists, writeNews } from "./news-gen";
+import {
+  computeInputsDigest,
+  getKstDateString,
+  readCacheStamp,
+  verifyCachedOutputs,
+  writeCacheStamp,
+} from "./lib/static-gen-cache.mjs";
+import { readFileIfExists, writeNews, type WriteNewsOptions } from "./news-gen";
 
 import type { Title, TitleCard } from "../apps/web/src/shared/lib/types";
 
+const MODULE_PATH = realpathSync(fileURLToPath(import.meta.url));
 const RANK_TYPES = ["all", "webtoon", "webnovel"];
+const STATIC_CATALOG_GENERATOR_ID = "static-catalog";
+
+export const CATALOG_INPUT_SCRIPT_PATHS: readonly string[] = [
+  "scripts/build-static-catalog.ts",
+  "scripts/news-gen.ts",
+  "scripts/lib/static-gen-cache.mjs",
+  "apps/web/src/shared/lib/catalog-research.ts",
+  "apps/web/src/shared/lib/catalog-slim.ts",
+  "apps/web/src/shared/lib/platforms.ts",
+  "apps/web/src/shared/lib/ranking.ts",
+  "apps/web/src/shared/lib/search.ts",
+  "apps/web/src/shared/lib/server/calendar.ts",
+  "apps/web/src/shared/lib/server/catalog-store.ts",
+  "apps/web/src/shared/lib/server/insights.ts",
+  "apps/web/src/shared/lib/server/ranking-service.ts",
+  "apps/web/src/shared/lib/taxonomy.ts",
+  "apps/web/src/shared/lib/utils.ts",
+];
+
+const CORE_DATA_FILES: readonly string[] = [
+  "catalog/manifest.json",
+  "research-index.json",
+  "home.json",
+  "calendar.json",
+  "insights.json",
+  "tags.json",
+  "authors.json",
+  "news.json",
+];
 
 // 랭킹 기본 뷰(축×타입, 필터 없음) 사전계산 — live 비활성(스냅샷 산식)으로 결정적.
 // /ranking 이 전체 카탈로그를 클라이언트에서 로드하지 않고 작은 정적 파일로 즉시 표시한다.
@@ -66,11 +104,10 @@ async function buildRankingFiles(writeJson: (name: string, data: unknown) => voi
 // 크롤러(scripts/crawl-related-info.mjs)가 수집한 작품별 관련 정보 실링크 스냅샷.
 // { [titleId]: RelatedInfoItem[] } — 커밋된 JSON 이라 빌드가 결정적(카탈로그 스냅샷과 동일 규약).
 type RelatedSnapshot = Record<string, Title["relatedInfo"]>;
-function loadRelatedInfoSnapshot(): RelatedSnapshot {
-  const file = path.join(ROOT, "data", "related-info.json");
-  if (!existsSync(file)) return {};
+function loadRelatedInfoSnapshot(relatedFile: string): RelatedSnapshot {
+  if (!existsSync(relatedFile)) return {};
   try {
-    const parsed = JSON.parse(readFileSync(file, "utf-8"));
+    const parsed = JSON.parse(readFileSync(relatedFile, "utf-8"));
     return parsed && typeof parsed === "object" ? (parsed as RelatedSnapshot) : {};
   } catch (e) {
     // 손상된 스냅샷을 조용히 무시하면 관련 정보가 통째로 사라진 채 green 빌드가 나간다 → 경고로 알린다.
@@ -81,9 +118,12 @@ function loadRelatedInfoSnapshot(): RelatedSnapshot {
 
 // 상세 전용 필드(시놉시스 원문·보러가기 URL·평점분포·관련 정보)를 해시 버킷 샤드로 분리 —
 // 상세/비교 화면이 작은 샤드 1개만 추가로 받아 병합한다(src/shared/catalog/catalog-static-engine.ts).
-function buildDetailShards(titles: readonly Title[]): { files: DetailShardFile[]; entryCount: number } {
+function buildDetailShards(
+  titles: readonly Title[],
+  relatedFile: string,
+): { files: DetailShardFile[]; entryCount: number } {
   const files: DetailShardFile[] = Array.from({ length: DETAIL_SHARD_COUNT }, () => ({}));
-  const related = loadRelatedInfoSnapshot();
+  const related = loadRelatedInfoSnapshot(relatedFile);
   let entryCount = 0;
   for (const title of titles) {
     // buildDetailExtra 는 s/u/d 가 없으면 null — 관련 정보만 있는 작품도 샤드에 실어야 하므로 {} 로 시작.
@@ -97,19 +137,29 @@ function buildDetailShards(titles: readonly Title[]): { files: DetailShardFile[]
   return { files, entryCount };
 }
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = path.resolve(path.dirname(MODULE_PATH), "..");
 // WEBDEX_CATALOG_FILE 이 정식 이름(서버 런타임과 동일), WEBDEX_CATALOG_GZ 는 기존 호환 별칭.
-const SRC_GZ =
+const DEFAULT_SRC_GZ =
   process.env.WEBDEX_CATALOG_FILE ??
   process.env.WEBDEX_CATALOG_GZ ??
   path.join(ROOT, "apps/api/data/catalog.json.gz");
-const OUT = path.join(ROOT, "apps", "web", "public", "data");
+const DEFAULT_RELATED_FILE = path.join(ROOT, "data", "related-info.json");
+const DEFAULT_PUBLIC_DIR = path.join(ROOT, "apps", "web", "public");
+const DEFAULT_OUT_DIR = path.join(DEFAULT_PUBLIC_DIR, "data");
 
-function loadTitles(): Title[] {
-  if (!existsSync(SRC_GZ)) {
-    throw new Error(`catalog gz not found: ${SRC_GZ} (먼저 pnpm catalog:update:manual 로 생성)`);
+function resolveDefaultCatalogCacheFile(rootDir = ROOT, env = process.env): string {
+  const configured = env.TOONSTUDIO_CATALOG_CACHE_FILE?.trim();
+  if (configured) {
+    return path.isAbsolute(configured) ? configured : path.resolve(rootDir, configured);
   }
-  const raw = gunzipSync(readFileSync(SRC_GZ)).toString("utf8");
+  return path.join(rootDir, "node_modules", ".cache", "toonstudio-gen", "static-catalog.json");
+}
+
+function loadTitles(srcGz: string): Title[] {
+  if (!existsSync(srcGz)) {
+    throw new Error(`catalog gz not found: ${srcGz} (먼저 pnpm catalog:update:manual 로 생성)`);
+  }
+  const raw = gunzipSync(readFileSync(srcGz)).toString("utf8");
   const parsed = JSON.parse(raw) as unknown;
   const titles = Array.isArray(parsed) ? parsed : (parsed as { titles?: unknown })?.titles;
   if (!Array.isArray(titles)) throw new Error("invalid catalog payload (titles 배열 없음)");
@@ -158,15 +208,22 @@ function buildHome() {
 
 const STATIC_ASSET_APPLICATION_LIMIT_BYTES = 24 * 1024 * 1024;
 
-function writeJson(name: string, data: unknown): void {
-  const file = path.join(OUT, name);
-  mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify(data));
-  const kb = (statSync(file).size / 1024).toFixed(0);
-  console.log(`  ${name.padEnd(16)} ${kb.padStart(7)} KB`);
+function createJsonWriter(outDir: string, log: (line: string) => void) {
+  return (name: string, data: unknown): void => {
+    const file = path.join(outDir, name);
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify(data));
+    const kb = (statSync(file).size / 1024).toFixed(0);
+    log(`  ${name.padEnd(16)} ${kb.padStart(7)} KB`);
+  };
 }
 
-function writeCatalogShards(titles: readonly Title[]): void {
+function writeCatalogShards(
+  outDir: string,
+  titles: readonly Title[],
+  writeJson: (name: string, data: unknown) => void,
+  log: (line: string) => void,
+): void {
   const cards = titles.map(toListTitle);
   const shardCount = Math.min(CATALOG_SHARD_COUNT, Math.max(1, cards.length));
   const shardSize = Math.ceil(cards.length / shardCount);
@@ -177,7 +234,7 @@ function writeCatalogShards(titles: readonly Title[]): void {
     const shard = cards.slice(bucket * shardSize, (bucket + 1) * shardSize) as TitleCard[];
     if (shard.length === 0) continue;
     const name = catalogShardFileForBucket(bucket);
-    const file = path.join(OUT, name);
+    const file = path.join(outDir, name);
     mkdirSync(path.dirname(file), { recursive: true });
     writeFileSync(file, JSON.stringify(shard));
     const bytes = statSync(file).size;
@@ -196,40 +253,209 @@ function writeCatalogShards(titles: readonly Title[]): void {
     shards: descriptors,
   };
   writeJson("catalog/manifest.json", manifest);
-  console.log(
+  log(
     `  catalog/*.json  ${String(descriptors.length).padStart(5)} files (${cards.length} entries, ${(totalBytes / 1024).toFixed(0)} KB)`,
   );
 }
 
-async function main(): Promise<void> {
-  const titles = loadTitles();
+export interface StaticCatalogBuildOptions {
+  rootDir?: string;
+  srcGz?: string;
+  relatedFile?: string;
+  publicDir?: string;
+  outDir?: string;
+  cacheFile?: string;
+  kstDate?: string;
+  force?: boolean;
+  log?: (line: string) => void;
+  writeNewsImpl?: (options: WriteNewsOptions) => Promise<unknown>;
+}
+
+export interface StaticCatalogBuildResult {
+  skipped: boolean;
+  reason: string;
+  inputsHash: string;
+  titleCount: number | null;
+}
+
+export function computeCatalogInputsHash({
+  rootDir = ROOT,
+  srcGz = DEFAULT_SRC_GZ,
+  relatedFile = DEFAULT_RELATED_FILE,
+  kstDate = getKstDateString(),
+}: Pick<StaticCatalogBuildOptions, "rootDir" | "srcGz" | "relatedFile" | "kstDate"> = {}): string {
+  const rankKeys = RANK_AXES.flatMap((axis) => RANK_TYPES.map((type) => `${axis.key}-${type}`));
+  const files = [
+    { path: srcGz, label: "input:catalog.json.gz" },
+    { path: relatedFile, label: "input:related-info.json", optional: true },
+    ...CATALOG_INPUT_SCRIPT_PATHS.map((relativePath) => ({
+      path: path.join(rootDir, relativePath),
+      label: relativePath,
+    })),
+  ];
+  return computeInputsDigest({
+    rootDir,
+    files,
+    extraValues: {
+      kstDate,
+      catalogShardCount: CATALOG_SHARD_COUNT,
+      detailShardCount: DETAIL_SHARD_COUNT,
+      manifestVersion: CATALOG_SHARD_MANIFEST_VERSION,
+      rankKeys,
+    },
+  }).digest;
+}
+
+function collectCatalogExpectedOutputFiles(
+  outDir: string,
+  publicDir: string,
+): { requiredFiles: string[]; hashedFiles: string[]; valid: boolean; reason?: string } {
+  const manifestFile = path.join(outDir, "catalog/manifest.json");
+  const sitemapIndexFile = path.join(publicDir, "sitemap.xml");
+  if (!existsSync(manifestFile)) {
+    return { requiredFiles: [], hashedFiles: [], valid: false, reason: "missing-manifest" };
+  }
+  if (!existsSync(sitemapIndexFile)) {
+    return { requiredFiles: [], hashedFiles: [], valid: false, reason: "missing-sitemap-index" };
+  }
+
+  let manifest: Partial<CatalogShardManifest>;
+  try {
+    manifest = JSON.parse(readFileSync(manifestFile, "utf8")) as Partial<CatalogShardManifest>;
+  } catch {
+    return { requiredFiles: [], hashedFiles: [], valid: false, reason: "invalid-manifest-json" };
+  }
+  if (
+    manifest.version !== CATALOG_SHARD_MANIFEST_VERSION
+    || !Array.isArray(manifest.shards)
+    || manifest.shards.length === 0
+  ) {
+    return { requiredFiles: [], hashedFiles: [], valid: false, reason: "invalid-manifest-schema" };
+  }
+
+  const sitemapXml = readFileSync(sitemapIndexFile, "utf8");
+  const sitemapMatches = [...sitemapXml.matchAll(/<loc>https:\/\/www\.toonstudio\.cloud\/(sitemaps\/[^<]+)<\/loc>/gu)];
+  if (sitemapMatches.length === 0) {
+    return { requiredFiles: [], hashedFiles: [], valid: false, reason: "invalid-sitemap-index" };
+  }
+
+  const requiredFiles: string[] = [
+    ...CORE_DATA_FILES.map((name) => path.join(outDir, name)),
+    ...manifest.shards.map((shard) => path.join(outDir, shard.file)),
+    ...Array.from({ length: DETAIL_SHARD_COUNT }, (_, bucket) =>
+      path.join(outDir, detailShardFileForBucket(bucket)),
+    ),
+    ...RANK_AXES.flatMap((axis) =>
+      RANK_TYPES.map((type) => path.join(outDir, `ranking/${axis.key}-${type}.json`)),
+    ),
+    sitemapIndexFile,
+    ...sitemapMatches.map((match) => path.join(publicDir, match[1])),
+  ];
+
+  return {
+    requiredFiles,
+    hashedFiles: [manifestFile, sitemapIndexFile],
+    valid: true,
+  };
+}
+
+export function inspectStaticCatalogCache({
+  rootDir = ROOT,
+  outDir = DEFAULT_OUT_DIR,
+  publicDir = DEFAULT_PUBLIC_DIR,
+  cacheFile = resolveDefaultCatalogCacheFile(rootDir),
+  inputsHash,
+}: {
+  rootDir?: string;
+  outDir?: string;
+  publicDir?: string;
+  cacheFile?: string;
+  inputsHash: string;
+}): { hit: boolean; reason: string } {
+  const stamp = readCacheStamp(cacheFile);
+  if (!stamp) return { hit: false, reason: "stamp-missing" };
+  if (stamp.inputsHash !== inputsHash) return { hit: false, reason: "inputs-changed" };
+
+  const outputs = collectCatalogExpectedOutputFiles(outDir, publicDir);
+  if (!outputs.valid) {
+    return { hit: false, reason: outputs.reason ?? "invalid-outputs" };
+  }
+
+  return verifyCachedOutputs({
+    rootDir,
+    generator: STATIC_CATALOG_GENERATOR_ID,
+    stamp,
+    expectedInputsHash: inputsHash,
+    requiredFiles: outputs.requiredFiles,
+    hashedFiles: outputs.hashedFiles,
+  });
+}
+
+export async function runStaticCatalogBuild(
+  options: StaticCatalogBuildOptions = {},
+): Promise<StaticCatalogBuildResult> {
+  const rootDir = options.rootDir ?? ROOT;
+  const srcGz = options.srcGz ?? DEFAULT_SRC_GZ;
+  const relatedFile = options.relatedFile ?? DEFAULT_RELATED_FILE;
+  const publicDir = options.publicDir ?? DEFAULT_PUBLIC_DIR;
+  const outDir = options.outDir ?? path.join(publicDir, "data");
+  const cacheFile = options.cacheFile ?? resolveDefaultCatalogCacheFile(rootDir);
+  const kstDate = options.kstDate ?? getKstDateString();
+  const force = Boolean(options.force);
+  const log = options.log ?? console.log;
+  const writeNewsImpl = options.writeNewsImpl ?? writeNews;
+
+  if (!existsSync(srcGz)) {
+    throw new Error(`catalog gz not found: ${srcGz} (먼저 pnpm catalog:update:manual 로 생성)`);
+  }
+
+  const inputsHash = computeCatalogInputsHash({ rootDir, srcGz, relatedFile, kstDate });
+  if (!force) {
+    const cacheCheck = inspectStaticCatalogCache({
+      rootDir,
+      outDir,
+      publicDir,
+      cacheFile,
+      inputsHash,
+    });
+    if (cacheCheck.hit) {
+      log(
+        `정적 카탈로그 캐시 적중 — 입력 해시 일치 및 출력 유효(${inputsHash.slice(0, 12)}, --force로 강제 재생성)`,
+      );
+      return { skipped: true, reason: cacheCheck.reason, inputsHash, titleCount: null };
+    }
+  }
+
+  const titles = loadTitles(srcGz);
   replaceCatalogData(titles, { source: "cli-ingest", sourceVersion: "static-build" });
-  console.log(`정적 카탈로그 생성: ${TITLES.length}편 → ${path.relative(ROOT, OUT)}/`);
+  log(`정적 카탈로그 생성: ${TITLES.length}편 → ${path.relative(rootDir, outDir)}/`);
 
   // 산출물 초기화(낡은 파일 제거) 후 재생성. 뉴스는 수집 전체 실패 시 직전 스냅샷을
   // 보존해야 하므로(빈 파일로 덮지 않기) 삭제 전에 원문을 확보해 둔다.
-  const newsFallbackRaw = readFileIfExists(path.join(OUT, "news.json"));
-  rmSync(OUT, { recursive: true, force: true });
-  mkdirSync(OUT, { recursive: true });
+  const newsFallbackRaw = readFileIfExists(path.join(outDir, "news.json"));
+  rmSync(outDir, { recursive: true, force: true });
+  mkdirSync(outDir, { recursive: true });
+
+  const writeJson = createJsonWriter(outDir, log);
 
   // 전체 카탈로그(클라이언트 검색·탐색·랭킹·추천 계산용)는 Static Assets의 개별 파일
   // 제한을 넘지 않도록 경량 카드 순서 보존 샤드 + manifest로 생성한다. 상세 전용 필드
   // (시놉시스 원문·availability.url·ratingDist)는 detail/<bucket>.json 샤드로 별도 분리한다.
   // 메모리 스토어(TITLES)는 풀 데이터를 유지 — insights·뉴스 매칭 등 빌드 계산은 원본 사용.
-  writeCatalogShards(TITLES);
-  const sourceBytes = readFileSync(SRC_GZ);
+  writeCatalogShards(outDir, TITLES, writeJson, log);
+  const sourceBytes = readFileSync(srcGz);
   const sourceMetadata: unknown = JSON.parse(gunzipSync(sourceBytes).toString("utf8"));
   const sourceHash = createHash("sha256").update(sourceBytes).digest("hex").slice(0, 16);
   writeJson("research-index.json", buildResearchSnapshot(titles, sourceMetadata, sourceHash));
-  const { files: detailShards, entryCount: detailEntryCount } = buildDetailShards(TITLES);
+  const { files: detailShards, entryCount: detailEntryCount } = buildDetailShards(TITLES, relatedFile);
   let detailBytes = 0;
   detailShards.forEach((shard, bucket) => {
-    const file = path.join(OUT, detailShardFileForBucket(bucket));
+    const file = path.join(outDir, detailShardFileForBucket(bucket));
     mkdirSync(path.dirname(file), { recursive: true });
     writeFileSync(file, JSON.stringify(shard));
     detailBytes += statSync(file).size;
   });
-  console.log(
+  log(
     `  detail/*.json    ${String(DETAIL_SHARD_COUNT).padStart(5)} files (${detailEntryCount} entries, ${(detailBytes / 1024).toFixed(0)} KB)`
   );
   // 파라미터 없는 공통 페이지 — 사전 계산(즉시 로드).
@@ -247,19 +473,30 @@ async function main(): Promise<void> {
   // 랭킹 기본 뷰 사전계산(축×타입). /ranking 즉시 로드.
   let rankingCount = 0;
   await buildRankingFiles((name, data) => {
-    const file = path.join(OUT, name);
+    const file = path.join(outDir, name);
     mkdirSync(path.dirname(file), { recursive: true });
     writeFileSync(file, JSON.stringify(data));
     rankingCount += 1;
   });
-  console.log(`  ranking/*.json   ${String(rankingCount).padStart(5)} files (축×타입 사전계산)`);
+  log(`  ranking/*.json   ${String(rankingCount).padStart(5)} files (축×타입 사전계산)`);
 
-  writeSitemap();
+  writeSitemap(publicDir, log);
   // 웹툰·웹소설 뉴스 — 수집·정제·작품 매칭은 scripts/news-gen.ts 담당(단독 실행도 가능).
   // 실패해도 빌드는 계속(직전 스냅샷 보존 → 없으면 빈 목록 폴백).
-  await writeNews({ outFile: path.join(OUT, "news.json"), titles: TITLES, fallbackRaw: newsFallbackRaw });
+  await writeNewsImpl({ outFile: path.join(outDir, "news.json"), titles: TITLES, fallbackRaw: newsFallbackRaw, log });
 
-  console.log("완료.");
+  writeCacheStamp(cacheFile, {
+    generator: STATIC_CATALOG_GENERATOR_ID,
+    inputsHash,
+    rootDir,
+    hashedFiles: [
+      path.join(outDir, "catalog/manifest.json"),
+      path.join(publicDir, "sitemap.xml"),
+    ],
+  });
+
+  log("완료.");
+  return { skipped: false, reason: force ? "forced" : "rebuilt", inputsHash, titleCount: TITLES.length };
 }
 
 // SEO 사이트맵 — 검색 가치가 있는 canonical 공개 URL만 노출한다.
@@ -292,8 +529,8 @@ function sitemapUrlEntry(loc: string): string {
   return `  <url><loc>${sitemapEscape(loc)}</loc></url>`;
 }
 
-function writeSitemapUrlSet(relativeFile: string, urls: readonly string[]): void {
-  const file = path.join(ROOT, "apps", "web", "public", relativeFile);
+function writeSitemapUrlSet(publicDir: string, relativeFile: string, urls: readonly string[]): void {
+  const file = path.join(publicDir, relativeFile);
   mkdirSync(path.dirname(file), { recursive: true });
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -306,17 +543,18 @@ function writeChunkedSitemaps(
   stem: string,
   urls: readonly string[],
   sitemapFiles: string[],
+  publicDir = DEFAULT_PUBLIC_DIR,
 ): void {
   for (let offset = 0; offset < urls.length; offset += SITEMAP_MAX_URLS) {
     const chunk = urls.slice(offset, offset + SITEMAP_MAX_URLS);
     const index = Math.floor(offset / SITEMAP_MAX_URLS) + 1;
     const relativeFile = `sitemaps/${stem}-${index}.xml`;
-    writeSitemapUrlSet(relativeFile, chunk);
+    writeSitemapUrlSet(publicDir, relativeFile, chunk);
     sitemapFiles.push(relativeFile);
   }
 }
 
-function writeSitemap(): void {
+function writeSitemap(publicDir: string, log: (line: string) => void): void {
   // thin-content 방지를 위해 평점 참여가 있는 비성인 작품 중 조회수 상위 15,000편만 노출한다.
   const titleUrls = TITLES
     .filter((title) => title.ageRating !== "19" && title.stats.ratingCount > 0)
@@ -329,13 +567,13 @@ function writeSitemap(): void {
     .map((author) => `${SEO_BASE_URL}/author/${encodeURIComponent(author.name)}`);
 
   const pageUrls = STATIC_ROUTES.map((route) => `${SEO_BASE_URL}${route}`);
-  const sitemapDirectory = path.join(ROOT, "apps", "web", "public", "sitemaps");
+  const sitemapDirectory = path.join(publicDir, "sitemaps");
   rmSync(sitemapDirectory, { recursive: true, force: true });
 
   const sitemapFiles: string[] = [];
-  writeChunkedSitemaps("pages", pageUrls, sitemapFiles);
-  writeChunkedSitemaps("titles", titleUrls, sitemapFiles);
-  writeChunkedSitemaps("authors", authorUrls, sitemapFiles);
+  writeChunkedSitemaps("pages", pageUrls, sitemapFiles, publicDir);
+  writeChunkedSitemaps("titles", titleUrls, sitemapFiles, publicDir);
+  writeChunkedSitemaps("authors", authorUrls, sitemapFiles, publicDir);
 
   const indexXml =
     `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -343,14 +581,27 @@ function writeSitemap(): void {
       .map((relativeFile) => `  <sitemap><loc>${SEO_BASE_URL}/${sitemapEscape(relativeFile)}</loc></sitemap>`)
       .join("\n") +
     `\n</sitemapindex>\n`;
-  const indexFile = path.join(ROOT, "apps", "web", "public", "sitemap.xml");
+  const indexFile = path.join(publicDir, "sitemap.xml");
   writeFileSync(indexFile, indexXml);
-  console.log(
+  log(
     `  sitemap.xml      ${String(sitemapFiles.length).padStart(5)} files (${pageUrls.length + titleUrls.length + authorUrls.length} URLs)`,
   );
 }
 
-main().catch((error) => {
-  console.error("정적 카탈로그 생성 실패:", error?.message ?? error);
-  process.exit(1);
-});
+function isDirectExecution(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return realpathSync(entry) === MODULE_PATH;
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectExecution()) {
+  const force = process.argv.includes("--force") || process.env.TOONSTUDIO_FORCE_CATALOG_GEN === "1";
+  runStaticCatalogBuild({ force }).catch((error) => {
+    console.error("정적 카탈로그 생성 실패:", error?.message ?? error);
+    process.exit(1);
+  });
+}

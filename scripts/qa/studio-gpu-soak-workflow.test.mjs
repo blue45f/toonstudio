@@ -18,7 +18,10 @@ test('the dedicated job is limited to the two Linux cases and preserves evidence
     'scripts/qa/studio-soak-config.mjs', 'scripts/qa/studio-soak-runner.mjs',
   ]);
   assert.equal(workflow.on.workflow_dispatch.inputs.expected_sha.required, true);
-  assert.equal(workflow.concurrency, undefined);
+  assert.deepEqual(workflow.concurrency, {
+    group: 'studio-gpu-soak-repro-${{ github.event_name }}-${{ inputs.expected_sha || github.sha }}',
+    'cancel-in-progress': false,
+  });
   assert.equal(job['runs-on'], 'ubuntu-24.04');
   assert.ok(job['timeout-minutes'] >= 20 && job['timeout-minutes'] <= 30);
   assert.equal(job.env.QA_SUITE, 'brush-raster');
