@@ -1,0 +1,229 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { parse as parseYaml } from "yaml";
+
+import {
+  classifyLicenseExpression,
+  evaluateSoloCommercialReadiness,
+  formatSoloCommercialReadinessKo,
+} from "./verify-solo-commercial-readiness.mjs";
+
+const { describe, test } = process.env.VITEST
+  ? await import("vitest")
+  : await import("node:test");
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const SCRIPT_PATH = path.join(REPO_ROOT, "scripts/verify-solo-commercial-readiness.mjs");
+
+function withTempFixture(fn) {
+  const dir = mkdtempSync(path.join(tmpdir(), "toonstudio-solo-readiness-"));
+  try {
+    return fn(dir);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function writeJson(filePath, value) {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+describe("verify-solo-commercial-readiness (1인 기업 상용 라이선스·OpenSSF 태세 가드)", () => {
+  test("실제 저장소에서 1초 이내에 통과하고 Remotion 3인 경계·p5/opencascade.js LGPL·OpenSSF 태세를 보고한다", () => {
+    const report = evaluateSoloCommercialReadiness({ rootDir: REPO_ROOT, teamSize: 1 });
+
+    assert.equal(report.ok, true, `예상치 못한 차단 위반: ${JSON.stringify(report.blockers)}`);
+    assert.ok(report.elapsedMs < 1000, `1초 이내 완료 필요 (실측 ${report.elapsedMs}ms)`);
+    assert.equal(report.remotionBoundary.detected, true);
+    assert.equal(report.remotionBoundary.status, "free-solo-eligible");
+    assert.match(report.remotionBoundary.noticeKo, /3인 이하 무료/u);
+
+    const lgplNames = new Set(report.lgplPackages.map((item) => item.name));
+    assert.ok(lgplNames.has("opencascade.js"), "opencascade.js LGPL 상태 리포트가 필요합니다");
+    assert.ok(lgplNames.has("p5"), "p5 LGPL 상태 리포트가 필요합니다");
+
+    const occt = report.lgplPackages.find((item) => item.name === "opencascade.js");
+    assert.equal(occt?.boundaryDocPresent, true);
+    assert.equal(occt?.status, "tracked-lgpl-boundary");
+
+    const p5 = report.lgplPackages.find((item) => item.name === "p5");
+    assert.match(p5?.license ?? "", /LGPL/u);
+    assert.match(p5?.installedVia ?? "", /p5\.brush/u);
+
+    assert.equal(report.securityPosture.openssfWorkflowPresent, true);
+    assert.equal(report.securityPosture.openssfUsesReadAll, false);
+    assert.equal(report.securityPosture.openssfScheduleOnlyOrManual, true);
+    assert.equal(report.securityPosture.openssfPinnedActions, true);
+    assert.equal(report.securityPosture.openssfRetentionDaysValid, true);
+    assert.equal(report.securityPosture.openssfSarifUploadPresent, true);
+    assert.equal(report.securityPosture.status, "ready");
+
+    const summaryText = formatSoloCommercialReadinessKo(report);
+    assert.match(summaryText, /1인 기업 상용 준비 통과/u);
+    assert.match(summaryText, /opencascade\.js/u);
+    assert.match(summaryText, /p5@/u);
+  });
+
+  test("SPDX 분류기는 GPL·AGPL·SSPL·CC-BY-NC를 차단하고 LGPL 및 허용적 OR 이중 라이선스는 오탐하지 않는다", () => {
+    assert.equal(classifyLicenseExpression("GPL-3.0-only").status, "blocked");
+    assert.deepEqual(classifyLicenseExpression("GPL-3.0-only").blockedCategories, ["GPL"]);
+
+    assert.equal(classifyLicenseExpression("AGPL-3.0-or-later").status, "blocked");
+    assert.deepEqual(classifyLicenseExpression("AGPL-3.0-or-later").blockedCategories, ["AGPL"]);
+
+    assert.equal(classifyLicenseExpression("SSPL-1.0").status, "blocked");
+    assert.deepEqual(classifyLicenseExpression("SSPL-1.0").blockedCategories, ["SSPL"]);
+
+    assert.equal(classifyLicenseExpression("CC-BY-NC-4.0").status, "blocked");
+    assert.deepEqual(classifyLicenseExpression("CC-BY-NC-4.0").blockedCategories, ["CC-BY-NC"]);
+
+    assert.equal(classifyLicenseExpression("(MIT AND GPL-2.0-only)").status, "blocked");
+    assert.equal(classifyLicenseExpression("(BSD-3-Clause OR GPL-2.0)").status, "permissive");
+    assert.equal(classifyLicenseExpression("LGPL-2.1-only").status, "lgpl");
+    assert.equal(classifyLicenseExpression("LGPL-3.0-or-later").status, "lgpl");
+    assert.equal(classifyLicenseExpression("MIT").status, "permissive");
+  });
+
+  test("package.json 또는 pnpm-lock.yaml에 mixbox가 유입되면 즉시 차단한다", () => {
+    withTempFixture((dir) => {
+      writeJson(path.join(dir, "package.json"), {
+        name: "fixture-mixbox-pkg",
+        dependencies: { mixbox: "2.0.0" },
+      });
+      const report = evaluateSoloCommercialReadiness({ rootDir: dir, includeNodeModules: false });
+      assert.equal(report.ok, false);
+      assert.ok(report.blockers.some((b) => b.code === "BLOCKED_PACKAGE_MIXBOX"));
+    });
+
+    withTempFixture((dir) => {
+      writeJson(path.join(dir, "package.json"), { name: "fixture-mixbox-lock" });
+      writeFileSync(
+        path.join(dir, "pnpm-lock.yaml"),
+        "lockfileVersion: '9.0'\npackages:\n  '@scrtwpns/mixbox@2.0.0':\n    resolution: {integrity: sha512-test}\n",
+        "utf8",
+      );
+      const report = evaluateSoloCommercialReadiness({ rootDir: dir, includeNodeModules: false });
+      assert.equal(report.ok, false);
+      assert.ok(report.blockers.some((b) => b.code === "BLOCKED_PACKAGE_MIXBOX"));
+    });
+  });
+
+  test("설치된 패키지에 GPL·AGPL·SSPL·CC-BY-NC 라이선스가 유입되면 모두 차단한다", () => {
+    const forbiddenCases = [
+      { pkg: "bad-gpl", license: "GPL-3.0-only", category: "GPL" },
+      { pkg: "bad-agpl", license: "AGPL-3.0-only", category: "AGPL" },
+      { pkg: "bad-sspl", license: "SSPL-1.0", category: "SSPL" },
+      { pkg: "bad-nc", license: "CC-BY-NC-4.0", category: "CC-BY-NC" },
+    ];
+
+    for (const item of forbiddenCases) {
+      withTempFixture((dir) => {
+        writeJson(path.join(dir, "package.json"), {
+          name: "fixture-license-block",
+          dependencies: { [item.pkg]: "1.0.0" },
+        });
+        writeJson(path.join(dir, "node_modules", item.pkg, "package.json"), {
+          name: item.pkg,
+          version: "1.0.0",
+          license: item.license,
+        });
+
+        const report = evaluateSoloCommercialReadiness({ rootDir: dir });
+        assert.equal(report.ok, false, `${item.license}는 차단되어야 합니다`);
+        assert.ok(
+          report.blockers.some((b) => b.category === item.category && b.packageName === item.pkg),
+          `${item.category} 위반 항목 누락`,
+        );
+      });
+    }
+  });
+
+  test("Remotion은 3인 이하 무료 경계로 안내하고 4인 이상에서는 상업 라이선스 차단을 발생시킨다", () => {
+    withTempFixture((dir) => {
+      writeJson(path.join(dir, "package.json"), {
+        name: "fixture-remotion",
+        dependencies: { remotion: "4.0.543", "@remotion/player": "4.0.543" },
+      });
+
+      const solo = evaluateSoloCommercialReadiness({
+        rootDir: dir,
+        teamSize: 3,
+        includeNodeModules: false,
+      });
+      assert.equal(solo.ok, true);
+      assert.equal(solo.remotionBoundary.status, "free-solo-eligible");
+
+      const team4 = evaluateSoloCommercialReadiness({
+        rootDir: dir,
+        teamSize: 4,
+        includeNodeModules: false,
+      });
+      assert.equal(team4.ok, false);
+      assert.equal(team4.remotionBoundary.status, "commercial-license-required");
+      assert.ok(team4.blockers.some((b) => b.code === "REMOTION_COMMERCIAL_LICENSE_REQUIRED"));
+    });
+  });
+
+  test("CLI(--json 및 --out)가 실제 저장소에서 1초 이내 정상 종료하고 유효한 JSON을 출력한다", () => {
+    withTempFixture((dir) => {
+      const outFile = path.join(dir, "readiness.json");
+      const raw = execFileSync(
+        process.execPath,
+        [SCRIPT_PATH, "--json", "--out", outFile],
+        { cwd: REPO_ROOT, encoding: "utf8" },
+      );
+      const parsed = JSON.parse(raw);
+      const fromDisk = JSON.parse(readFileSync(outFile, "utf8"));
+      assert.equal(parsed.ok, true);
+      assert.equal(fromDisk.ok, true);
+      assert.ok(parsed.elapsedMs < 1000, `CLI 실행 1초 미만 필요 (실측 ${parsed.elapsedMs}ms)`);
+      assert.equal(parsed.remotionBoundary.detected, true);
+    });
+  });
+
+  test(".github/workflows/openssf-scorecard.yml은 주간 오프피크 schedule+dispatch 전용·최소 권한·retention-days: 5·SARIF 업로드 계약을 만족한다", () => {
+    const workflowPath = path.join(REPO_ROOT, ".github/workflows/openssf-scorecard.yml");
+    const source = readFileSync(workflowPath, "utf8");
+    const parsed = parseYaml(source);
+
+    assert.equal(parsed.on.push, undefined, "main push 트리거 홍수 금지");
+    assert.equal(parsed.on.pull_request, undefined, "PR 트리거 홍수 금지");
+    assert.ok(Array.isArray(parsed.on.schedule) && parsed.on.schedule.length === 1);
+    assert.ok(Object.hasOwn(parsed.on, "workflow_dispatch"));
+
+    assert.notEqual(parsed.permissions, "read-all", "permissions: read-all 금지");
+    assert.deepEqual(parsed.permissions, {}, "최상위 permissions는 빈 객체({})로 최소화");
+    assert.ok(typeof parsed.concurrency?.group === "string" && parsed.concurrency.group.length > 0);
+
+    const scorecardJob = parsed.jobs?.scorecard;
+    assert.ok(scorecardJob, "scorecard 잡 필요");
+    assert.deepEqual(scorecardJob.permissions, {
+      "security-events": "write",
+      contents: "read",
+      actions: "read",
+    });
+
+    const uploadSteps = Object.values(parsed.jobs ?? {}).flatMap((job) =>
+      (job.steps ?? []).filter(
+        (step) => typeof step.uses === "string" && step.uses.startsWith("actions/upload-artifact@"),
+      ),
+    );
+    assert.ok(uploadSteps.length >= 2);
+    for (const step of uploadSteps) {
+      assert.equal(step.with?.["retention-days"], 5);
+    }
+
+    const sarifUpload = (scorecardJob.steps ?? []).find(
+      (step) =>
+        typeof step.uses === "string" &&
+        step.uses.startsWith("github/codeql-action/upload-sarif@"),
+    );
+    assert.ok(sarifUpload, "SARIF 업로드 단계가 필요합니다");
+  });
+});
