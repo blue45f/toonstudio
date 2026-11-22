@@ -706,7 +706,10 @@ export function analyzeBundleTreeshake({
 }
 
 function escapeMarkdownCell(text) {
-  return String(text).replace(/\|/gu, "\\|").replace(/\n/gu, " ");
+  return String(text)
+    .replace(/\\/gu, "\\\\")
+    .replace(/\|/gu, "\\|")
+    .replace(/\r?\n/gu, " ");
 }
 
 const CATEGORY_LABELS_KO = {

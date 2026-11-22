@@ -248,12 +248,20 @@ function installStudioBrushPointerDispatchProbe(): void {
   host.__studioBrushPointerDispatch = api;
 }
 
+function serializeJsStringPayload(value: unknown): string {
+  return JSON.stringify(value ?? null).replace(
+    /[<>&/\u2028\u2029]/gu,
+    (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
+}
+
 /** 하나의 init에서 계측을 먼저 설치하고 기존 지연 검사 storage 준비를 이어간다. */
 export function studioBrushPointerDispatchInitSource(seed?: {
   readonly autosavePrefix: string; readonly mobileHintKey: string; readonly quickstartKey: string;
 }): string {
+  const encodedSeed = serializeJsStringPayload(seed ?? null);
   return `(() => { const __name = (value) => value; (${installStudioBrushPointerDispatchProbe.toString()})();
-    const seed = ${JSON.stringify(seed ?? null)};
+    const seed = ${encodedSeed};
     if (seed) { try {
       localStorage.setItem(seed.quickstartKey, "1"); localStorage.setItem(seed.mobileHintKey, "1");
       for (let index = localStorage.length - 1; index >= 0; index -= 1) {
