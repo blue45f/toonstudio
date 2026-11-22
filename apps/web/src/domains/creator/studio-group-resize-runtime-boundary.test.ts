@@ -261,11 +261,10 @@ describe("Studio group uniform-resize runtime boundary", () => {
     const boundsGuard = readFileSync(
       new URL("./studio-group-resize-bounds.ts", import.meta.url), "utf8",
     );
-    expectSourceToken(
+    expect(
       viewResizeHelpersSource,
-      'import { finitePositiveGroupResizeBounds } from "../studio-group-resize-bounds"',
-      "shared bounds guard ownership",
-    );
+      "shared bounds guard ownership must import finitePositiveGroupResizeBounds from studio-group-resize-bounds",
+    ).toMatch(/import\s*\{\s*finitePositiveGroupResizeBounds\s*\}\s*from\s*"\.\.\/studio-group-resize-bounds"/u);
 
     expectSourceToken(hostBegin, "validateStudioSelectionResizeBegin({", "resize begin validator");
     expectSourceToken(hostBegin, "currentCanvasResizeSelectionIds()", "resize begin");
