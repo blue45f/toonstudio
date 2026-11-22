@@ -20,6 +20,10 @@ import {
   listPinnedReviewShares,
   revokePinnedReviewShare,
 } from "./studio-pinned-review-share-client";
+import {
+  StudioScopedHandoffDrawer,
+  buildScopedHandoffManuscriptFromPinnedPages,
+} from "./scoped-handoff";
 
 type Purpose = PinnedShareCreate["purpose"];
 type Role = PinnedShareCreate["role"];
@@ -76,6 +80,7 @@ function StudioPinnedReviewShareManagerForActor({ actorId, verified }: {
   const bt = useBilingual("StudioPinnedReviewShareManager");
   const key = JSON.stringify(verified.subject);
   const [open, setOpen] = useState(false);
+  const [scopedHandoffOpen, setScopedHandoffOpen] = useState(false);
   const [sources, setSources] = useState<PinnedSharePage[]>([]);
   const [sourceOffset, setSourceOffset] = useState<number | null>(0);
   const [sourceApproved, setSourceApproved] = useState(false);
@@ -202,6 +207,17 @@ function StudioPinnedReviewShareManagerForActor({ actorId, verified }: {
   }, [purpose]);
 
   const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const scopedManuscript = useMemo(
+    () => buildScopedHandoffManuscriptFromPinnedPages({
+      workId: verified.subject.workId,
+      projectId: verified.subject.projectId,
+      episodeLabel: verified.review.title,
+      baseRevisionId: verified.revision.id,
+      baseRevisionHash: verified.revision.rootGraphHash,
+      pages: sources,
+    }),
+    [sources, verified.review.title, verified.revision.id, verified.revision.rootGraphHash, verified.subject.projectId, verified.subject.workId],
+  );
   const showcaseAllowed = sourceApproved && verified.review.status === "approved";
   const canCreate = Boolean(actorId) && online && selected.length > 0 && title.trim().length > 0 && !busy
     && (purpose !== "showcase" || (showcaseAllowed && publicationConsent && rightsStatement.trim().length > 0));
@@ -388,5 +404,20 @@ function StudioPinnedReviewShareManagerForActor({ actorId, verified }: {
       {notice ? <p className="mt-3 text-sm" role="status">{notice}</p> : null}
       </> : null}
     </details>
+    <div className="mt-2 border-t border-line pt-2">
+      <button
+        type="button"
+        data-testid="open-scoped-cut-handoff-btn"
+        onClick={() => setScopedHandoffOpen(true)}
+        className="min-h-11 rounded-lg border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors motion-reduce:transition-none hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        {bt("컷 단위 어시스턴트 전달", "Scoped cut assistant handoff")}
+      </button>
+    </div>
+    <StudioScopedHandoffDrawer
+      open={scopedHandoffOpen}
+      onClose={() => setScopedHandoffOpen(false)}
+      manuscript={scopedManuscript}
+    />
   </section>;
 }
