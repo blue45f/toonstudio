@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { performance } from "node:perf_hooks";
 const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 import {
@@ -434,6 +435,36 @@ describe("ux-competitor-benchmark rubric & CSS helpers", () => {
       false,
     );
     assert.equal(hasUnpairedBackdropFilter(".a { backdrop-filter: none; }"), false);
+  });
+
+  it("ReDoS 회귀 방어: url( 뒤에 작은따옴표(')가 50,000번 반복되어도 50ms 이내에 선형 시간으로 종료한다", () => {
+    const adversarialNoHex = `url(${"'".repeat(50_000)}`;
+    const startNoHex = performance.now();
+    const resNoHex = findRawHexLiterals(adversarialNoHex);
+    const elapsedNoHexMs = performance.now() - startNoHex;
+    assert.deepEqual(resNoHex, []);
+    assert.ok(
+      elapsedNoHexMs < 50,
+      `ReDoS 의심 지연: url( + '×50,000 처리에 ${elapsedNoHexMs.toFixed(2)}ms 소요됨 (50ms 이내여야 함)`,
+    );
+
+    const adversarialWithHex = `url(${"'".repeat(50_000)}; color: #ff00aa;`;
+    const startWithHex = performance.now();
+    const resWithHex = findRawHexLiterals(adversarialWithHex);
+    const elapsedWithHexMs = performance.now() - startWithHex;
+    assert.deepEqual(resWithHex, ["#ff00aa"]);
+    assert.ok(
+      elapsedWithHexMs < 50,
+      `ReDoS 의심 지연: 꼬리 HEX 포함 입력 처리에 ${elapsedWithHexMs.toFixed(2)}ms 소요됨`,
+    );
+
+    // 따옴표 및 중첩 괄호를 포함한 정상 SVG data URL 내부 HEX는 오탐 없이 제외하고 외부 HEX만 감지한다.
+    assert.deepEqual(
+      findRawHexLiterals(
+        `background: url("data:image/svg+xml,<svg fill='#112233'>)</svg>"), url(data:image/svg+xml,<svg fill="#445566" transform="translate(1,2)"></svg>); color: #abcdef;`,
+      ),
+      ["#abcdef"],
+    );
   });
 });
 

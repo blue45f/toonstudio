@@ -44,8 +44,98 @@ export function stripCssComments(css) {
   return css.replace(/\/\*[\s\S]*?\*\//gu, "");
 }
 
+function isCssUrlOpenAt(source, index) {
+  if (index + 3 >= source.length) return false;
+  const c0 = source.charCodeAt(index);
+  const c1 = source.charCodeAt(index + 1);
+  const c2 = source.charCodeAt(index + 2);
+  return (
+    (c0 === 117 || c0 === 85) &&
+    (c1 === 114 || c1 === 82) &&
+    (c2 === 108 || c2 === 76) &&
+    source.charCodeAt(index + 3) === 40
+  );
+}
+
+function tryMatchQuotedCssUrl(source, openIndex, noClosingQuote) {
+  const isWs = (code) => code === 32 || code === 9 || code === 10 || code === 13 || code === 12;
+  let cursor = openIndex + 4;
+  while (cursor < source.length && isWs(source.charCodeAt(cursor))) cursor += 1;
+  const quote = cursor < source.length ? source.charCodeAt(cursor) : -1;
+  if ((quote !== 34 && quote !== 39) || noClosingQuote.has(quote)) return -1;
+
+  for (cursor += 1; cursor < source.length; cursor += 1) {
+    const code = source.charCodeAt(cursor);
+    if (code === 92) {
+      cursor += 1;
+      continue;
+    }
+    if (code === 10 || code === 13) return -1;
+    if (code === quote) {
+      cursor += 1;
+      while (cursor < source.length && isWs(source.charCodeAt(cursor))) cursor += 1;
+      return cursor < source.length && source.charCodeAt(cursor) === 41 ? cursor + 1 : -1;
+    }
+  }
+  noClosingQuote.add(quote);
+  return -1;
+}
+
+/** 선형 시간(O(n)) 스캐너로 CSS `url(...)` 함수를 치환해 정규식 백트래킹(ReDoS)을 차단한다. */
+export function stripCssUrlFunctions(css) {
+  const ranges = [];
+  const stack = [];
+  const noClosingQuote = new Set();
+  const pushRange = (start, end) => {
+    while (ranges.length > 0 && ranges[ranges.length - 1][0] >= start) ranges.pop();
+    ranges.push([start, end]);
+  };
+
+  for (let index = 0; index < css.length;) {
+    if (isCssUrlOpenAt(css, index)) {
+      const quotedEnd = tryMatchQuotedCssUrl(css, index, noClosingQuote);
+      if (quotedEnd !== -1) {
+        pushRange(index, quotedEnd);
+        index = quotedEnd;
+        continue;
+      }
+      stack.push({ isUrl: true, start: index });
+      index += 4;
+      continue;
+    }
+    if (stack.length > 0) {
+      const code = css.charCodeAt(index);
+      if (code === 92) {
+        index += 2;
+        continue;
+      }
+      if (code === 40) {
+        stack.push({ isUrl: false, start: index });
+        index += 1;
+        continue;
+      }
+      if (code === 41) {
+        const frame = stack.pop();
+        index += 1;
+        if (frame?.isUrl) pushRange(frame.start, index);
+        continue;
+      }
+    }
+    index += 1;
+  }
+
+  if (ranges.length === 0) return css;
+  let output = "";
+  let cursor = 0;
+  for (const [start, end] of ranges) {
+    output += css.slice(cursor, start) + "url()";
+    cursor = end;
+  }
+  return output + css.slice(cursor);
+}
+
 export function findRawHexLiterals(css) {
-  const cleaned = stripCssComments(css).replace(/url\((?:[^)(]+|\([^)(]*\))*\)/giu, "url()");
+  const cleaned = stripCssUrlFunctions(stripCssComments(css));
   const matches = [];
   const pattern = /(?:^|[:(\s,"'])(#[0-9a-fA-F]{3,8})(?![-\w])(?!\s*[{>+~])/gu;
   for (const match of cleaned.matchAll(pattern)) {
