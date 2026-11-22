@@ -61,18 +61,21 @@ describe("Studio CRDT root schema ownership boundary", () => {
 
     expect(service.valueImports).toContain("./studio-crdt-root-schema");
     expect(schema.valueImports).toEqual([
-      "./studio-crdt-psd-metadata",
-      "@toonstudio/contracts/studio-linked-3d-correction",
-      "@toonstudio/contracts/studio-legacy-pigment-archive",
-      "./studio-crdt-identifiers",
-      "./studio-crdt-bg3d-shape",
-      "@toonstudio/contracts/studio-brush-material-program-contract",
       "yjs",
-      "@toonstudio/contracts/studio-brush-r8-grain-asset-contract",
+      "@toonstudio/contracts/studio-brush-material-program-contract",
       "@toonstudio/contracts/studio-crdt-raster-document-contract",
-      "@toonstudio/contracts/studio-filter-mask-surface-contract",
       "@toonstudio/contracts/studio-ink-input-contract",
+      "@toonstudio/contracts/studio-legacy-pigment-archive",
+      "@toonstudio/contracts/studio-linked-3d-correction",
       "@toonstudio/contracts/studio-work-asset-contract",
+      "./studio-crdt-bg3d-shape",
+      "./studio-crdt-identifiers",
+      "./studio-crdt-psd-metadata",
+      "./studio-crdt-root-schema-page-metadata",
+      "./studio-crdt-root-schema-primitives",
+      "./studio-crdt-root-schema-scene-work-asset",
+      "./studio-crdt-root-schema-shared-3d-roots",
+      "./studio-crdt-root-schema-stroke-paint",
     ]);
     expect(schema.valueImports).not.toContain("./studio-crdt.service");
     expect(schema.valueImports).not.toContain("./studio-crdt.repository");
@@ -105,6 +108,16 @@ describe("Studio CRDT root schema ownership boundary", () => {
     }
     expect([...visited].some((url) => url.endsWith("/studio-crdt-bg3d-shape.ts"))).toBe(true);
     expect([...visited].some((url) => url.endsWith("/studio-crdt-r8-reference-snapshot.ts"))).toBe(true);
+    for (const subSchema of [
+      "/studio-crdt-root-schema-primitives.ts",
+      "/studio-crdt-root-schema-page-metadata.ts",
+      "/studio-crdt-root-schema-scene-work-asset.ts",
+      "/studio-crdt-root-schema-shared-3d-entry.ts",
+      "/studio-crdt-root-schema-shared-3d-roots.ts",
+      "/studio-crdt-root-schema-stroke-paint.ts",
+    ]) {
+      expect([...visited].some((url) => url.endsWith(subSchema)), subSchema).toBe(true);
+    }
   });
 
   it("leaves hydration, queues, compaction, and errors in the service owner", () => {
