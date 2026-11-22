@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createStudioOpfsMemoryFileSystem } from "../studio-opfs-filesystem";
+import { readOpfsContentAddressedAsset } from "./studio-opfs-content-dedupe-vacuum";
 import { createOpfsSnapshotTimeMachine } from "./studio-opfs-self-heal-engine";
 import { StudioOpfsSelfHealPanel } from "./StudioOpfsSelfHealPanel";
 
@@ -97,5 +98,79 @@ describe("StudioOpfsSelfHealPanel", () => {
       expect(screen.getByTestId("self-heal-quota-grade").textContent).toContain("주의 (75%+)");
     });
     expect(screen.getByText(/OPFS.*열 수 없어/u)).toBeTruthy();
+  });
+
+  it("진단 후 회수 가능 중복 용량 미리보기와 1클릭 중복 정리(Vacuum)를 실행하고 복원 바이트를 100% 보존한다", async () => {
+    const fs = createStudioOpfsMemoryFileSystem();
+    const bgBytes = new Uint8Array(8_192);
+    for (let i = 0; i < bgBytes.length; i += 1) bgBytes[i] = (i * 31) & 0xff;
+    for (let cut = 1; cut <= 10; cut += 1) {
+      await fs.write(`cuts/cut-${String(cut).padStart(2, "0")}-bg.png`, bgBytes);
+    }
+
+    render(
+      <StudioOpfsSelfHealPanel
+        projectId="project-vacuum-ui"
+        fileSystem={fs}
+        storageEstimator={{ estimate: async () => ({ usage: 500_000, quota: 1_000_000 }) }}
+        vacuumLockOptions={{
+          lockManager: {
+            request: async (name, options, cb) => cb({ name, mode: options.mode ?? "exclusive" }),
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "저장소·무결성 진단" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("self-heal-vacuum-preview").textContent).toContain("회수 가능");
+    });
+    expect(screen.getByTestId("self-heal-vacuum-preview").textContent).toContain("중복 에셋 10건");
+
+    const vacuumButton = screen.getByRole("button", { name: /중복 정리\(Vacuum\)/u });
+    expect((vacuumButton as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(vacuumButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toContain("OPFS 중복 정리(Vacuum) 완료");
+    });
+    expect(screen.getByTestId("self-heal-vacuum-preview").textContent).toContain("회수 가능 중복 없음");
+    expect(screen.getByTestId("self-heal-vacuum-preview").textContent).toContain("CAS 포인터 10건");
+
+    // 모든 컷 바이트 100% 무손실 복원 확인
+    const restored = await readOpfsContentAddressedAsset(fs, "cuts/cut-01-bg.png");
+    expect(restored).not.toBeNull();
+    expect(Array.from(restored ?? [])).toEqual(Array.from(bgBytes));
+  });
+
+  it("다른 탭이 Vacuum 잠금을 점유 중이면 충돌 경고를 표시하고 OPFS 파일을 변경하지 않는다", async () => {
+    const fs = createStudioOpfsMemoryFileSystem();
+    const bgBytes = new Uint8Array(6_144).fill(77);
+    await fs.write("cuts/c1.png", bgBytes);
+    await fs.write("cuts/c2.png", bgBytes);
+
+    render(
+      <StudioOpfsSelfHealPanel
+        projectId="project-vacuum-lock-ui"
+        fileSystem={fs}
+        storageEstimator={{ estimate: async () => ({ usage: 400_000, quota: 1_000_000 }) }}
+        vacuumLockOptions={{
+          lockManager: {
+            request: async (_name, _options, cb) => cb(null),
+          },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "저장소·무결성 진단" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("self-heal-vacuum-preview").textContent).toContain("중복 에셋 2건");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /중복 정리\(Vacuum\)/u }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toContain("다른 탭에서");
+    });
+    expect(await fs.list("cas/")).toEqual([]);
   });
 });

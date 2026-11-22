@@ -1,7 +1,14 @@
-import { HardDrive, RefreshCw, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
+import { HardDrive, Layers, RefreshCw, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import type { StudioOpfsFileSystem } from "../studio-opfs-filesystem";
+import {
+  executeOpfsContentDedupeVacuum,
+  planOpfsContentDedupeVacuum,
+  type StudioOpfsVacuumExecutionResult,
+  type StudioOpfsVacuumLockOptions,
+  type StudioOpfsVacuumPlan,
+} from "./studio-opfs-content-dedupe-vacuum";
 import {
   STUDIO_OPFS_SELF_HEAL_ROOT_NAME,
   createOpfsSnapshotTimeMachine,
@@ -28,6 +35,8 @@ export interface StudioOpfsSelfHealPanelProps {
   readonly extraFiles?: readonly StudioOpfsFileEntry[];
   /** 검증된 직전 정상 스냅샷 복구 콜백(미지정 시 검증 JSON 파일 다운로드). */
   readonly onRestoreSnapshot?: (snapshot: StudioManuscriptSnapshotRecord) => void | Promise<void>;
+  /** 테스트·호스트 주입용 다중 탭 Vacuum 잠금 옵션(미지정 시 Web Locks + BroadcastChannel 폴백 사용). */
+  readonly vacuumLockOptions?: StudioOpfsVacuumLockOptions;
 }
 
 const QUOTA_BADGE_META: Readonly<Record<StudioStorageQuotaGrade, { readonly label: string; readonly className: string }>> = {
@@ -60,9 +69,12 @@ function OpfsSelfHealPanelSession({
   activeManuscriptPaths,
   extraFiles,
   onRestoreSnapshot,
+  vacuumLockOptions,
 }: StudioOpfsSelfHealPanelProps) {
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<StudioOpfsSelfHealReport | null>(null);
+  const [vacuumPlan, setVacuumPlan] = useState<StudioOpfsVacuumPlan | null>(null);
+  const [lastVacuumResult, setLastVacuumResult] = useState<StudioOpfsVacuumExecutionResult | null>(null);
   const [opfsUnavailable, setOpfsUnavailable] = useState(false);
   const [notice, setNotice] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -102,6 +114,8 @@ function OpfsSelfHealPanelSession({
           activeProjectIds: [projectId],
         });
         setOpfsUnavailable(true);
+        setVacuumPlan(null);
+        setLastVacuumResult(null);
         setReport({
           projectId,
           diagnosedAtMs: Date.now(),
@@ -126,13 +140,22 @@ function OpfsSelfHealPanelSession({
 
       setOpfsUnavailable(false);
       const timeMachine = createOpfsSnapshotTimeMachine({ fs, projectId });
-      const nextReport = await timeMachine.runSelfHealDiagnosis({
-        estimator: storageEstimator,
-        extraFiles,
-        activeManuscriptPaths,
-      });
+      const [nextReport, nextVacuumPlan] = await Promise.all([
+        timeMachine.runSelfHealDiagnosis({
+          estimator: storageEstimator,
+          extraFiles,
+          activeManuscriptPaths,
+        }),
+        planOpfsContentDedupeVacuum({
+          fs,
+          projectId,
+          excludePrefixes: [timeMachine.projectPrefix],
+          excludePaths: activeManuscriptPaths,
+        }),
+      ]);
       if (token !== generationRef.current) return;
       setReport(nextReport);
+      setVacuumPlan(nextVacuumPlan);
       setNotice(`${nextReport.quota.summaryKo} · ${nextReport.timeline.summaryKo}`);
     } catch (cause) {
       if (token !== generationRef.current) return;
@@ -158,16 +181,85 @@ function OpfsSelfHealPanelSession({
       const execution = await executeOrphanTempCleanup(report.cleanupPlan, (path) => fs.remove(path));
       if (token !== generationRef.current) return;
       const timeMachine = createOpfsSnapshotTimeMachine({ fs, projectId });
-      const refreshed = await timeMachine.runSelfHealDiagnosis({
-        estimator: storageEstimator,
-        activeManuscriptPaths,
-      });
+      const [refreshed, nextVacuumPlan] = await Promise.all([
+        timeMachine.runSelfHealDiagnosis({
+          estimator: storageEstimator,
+          activeManuscriptPaths,
+        }),
+        planOpfsContentDedupeVacuum({
+          fs,
+          projectId,
+          excludePrefixes: [timeMachine.projectPrefix],
+          excludePaths: activeManuscriptPaths,
+        }),
+      ]);
       if (token !== generationRef.current) return;
       setReport(refreshed);
+      setVacuumPlan(nextVacuumPlan);
       setNotice(execution.summaryKo);
     } catch (cause) {
       if (token !== generationRef.current) return;
       setErrorMessage(cause instanceof Error ? cause.message : "고아 임시 파일 정리 중 오류가 발생했습니다.");
+    } finally {
+      if (token === generationRef.current) setBusy(false);
+    }
+  }
+
+  async function handleRunDedupeVacuum(): Promise<void> {
+    if (!vacuumPlan || !vacuumPlan.hasActionableWork) return;
+    const fs = activeFsRef.current;
+    if (!fs) {
+      setErrorMessage("로컬 원고 파일시스템에 연결되지 않아 중복 정리를 실행할 수 없습니다.");
+      return;
+    }
+    const token = ++generationRef.current;
+    setBusy(true);
+    setErrorMessage(null);
+    setNotice("SHA-256 콘텐츠 해시 검증 후 중복 에셋을 원자적으로 통합하고 있습니다.");
+    try {
+      const timeMachine = createOpfsSnapshotTimeMachine({ fs, projectId });
+      const result = await executeOpfsContentDedupeVacuum({
+        fs,
+        projectId,
+        excludePrefixes: [timeMachine.projectPrefix],
+        excludePaths: activeManuscriptPaths,
+        lockOptions: vacuumLockOptions,
+      });
+      if (token !== generationRef.current) return;
+      setLastVacuumResult(result);
+
+      if (result.status === "locked-conflict") {
+        setErrorMessage(result.summaryKo);
+        setNotice("");
+        return;
+      }
+
+      const [refreshedReport, refreshedVacuumPlan] = await Promise.all([
+        timeMachine.runSelfHealDiagnosis({
+          estimator: storageEstimator,
+          activeManuscriptPaths,
+        }),
+        planOpfsContentDedupeVacuum({
+          fs,
+          projectId,
+          excludePrefixes: [timeMachine.projectPrefix],
+          excludePaths: activeManuscriptPaths,
+        }),
+      ]);
+      if (token !== generationRef.current) return;
+      setReport(refreshedReport);
+      setVacuumPlan(refreshedVacuumPlan);
+
+      if (result.status === "rolled-back") {
+        setErrorMessage(result.summaryKo);
+        setNotice("");
+      } else {
+        setNotice(result.summaryKo);
+      }
+    } catch (cause) {
+      if (token !== generationRef.current) return;
+      setErrorMessage(cause instanceof Error ? cause.message : "중복 정리(Vacuum) 실행 중 오류가 발생했습니다.");
+      setNotice("");
     } finally {
       if (token === generationRef.current) setBusy(false);
     }
@@ -204,6 +296,7 @@ function OpfsSelfHealPanelSession({
 
   const quotaBadge = report ? QUOTA_BADGE_META[report.quota.grade] : null;
   const canCleanup = Boolean(report && !opfsUnavailable && report.cleanupPlan.deletable.length > 0);
+  const canVacuum = Boolean(vacuumPlan && !opfsUnavailable && vacuumPlan.hasActionableWork);
   const canRecover = Boolean(report?.timeline.lastKnownGood);
 
   return (
@@ -251,9 +344,24 @@ function OpfsSelfHealPanelSession({
           className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg hover:border-accent/45 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Trash2 className="size-3.5" aria-hidden="true" />
-          <span>
+          <span className="tabular-nums [word-break:keep-all]">
             고아 임시 파일 정리
             {report ? ` (${report.cleanupPlan.deletable.length}건)` : ""}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          disabled={busy || !canVacuum}
+          onClick={() => void handleRunDedupeVacuum()}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg hover:border-accent/45 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <Layers className="size-3.5" aria-hidden="true" />
+          <span className="tabular-nums [word-break:keep-all]">
+            중복 정리(Vacuum)
+            {vacuumPlan && vacuumPlan.reclaimableBytes > 0
+              ? ` (${formatStorageBytes(vacuumPlan.reclaimableBytes)})`
+              : ""}
           </span>
         </button>
 
@@ -296,6 +404,33 @@ function OpfsSelfHealPanelSession({
               </p>
             </div>
           </div>
+
+          {vacuumPlan ? (
+            <div
+              data-testid="self-heal-vacuum-preview"
+              className="rounded-lg border border-line bg-card/50 p-2.5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <p className="font-semibold text-fg [word-break:keep-all]">
+                  콘텐츠 해시 중복 정리 (CAS Vacuum)
+                </p>
+                <span className="font-semibold text-accent tabular-nums">
+                  {vacuumPlan.reclaimableBytes > 0
+                    ? `회수 가능 ${formatStorageBytes(vacuumPlan.reclaimableBytes)} (${(vacuumPlan.estimatedSavingsRatio * 100).toFixed(1)}%)`
+                    : "회수 가능 중복 없음"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-fg-2 [word-break:keep-all]">{vacuumPlan.summaryKo}</p>
+              <p className="mt-0.5 text-fg-3 tabular-nums [word-break:keep-all]">
+                중복 에셋 {vacuumPlan.duplicateFileCount}건 ({vacuumPlan.duplicateGroups.length}그룹) · 고아 CAS 청크 {vacuumPlan.gcOrphanBlobs.length}건 · CAS 포인터 {vacuumPlan.trackedPointerCount}건
+              </p>
+              {lastVacuumResult && lastVacuumResult.status === "completed" ? (
+                <p className="mt-1 text-good tabular-nums [word-break:keep-all]">
+                  최근 정리 완료: {formatStorageBytes(lastVacuumResult.reclaimedBytes)} 절감 ({(lastVacuumResult.savedRatio * 100).toFixed(1)}%)
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="rounded-lg border border-line bg-card/40 p-2.5">
             <div className="flex flex-wrap items-center justify-between gap-1.5">
