@@ -13,6 +13,7 @@ import {
   type CutArtStyleDna,
   type StyleDriftGrade,
 } from "./cross-cut-style-harmonizer-engine";
+import { ProAtelier3dSixPassSyncSection } from "./ProAtelier3dSixPassSyncSection";
 
 function buildLutPolyline(lut: readonly number[]): string {
   return lut
@@ -249,6 +250,12 @@ export function ProAtelierStyleSyncWorkbench() {
           );
         })}
       </div>
+      <ProAtelier3dSixPassSyncSection
+        syncStrength={syncStrength}
+        onApplyMasterStrokePx={(strokePx) =>
+          setMasterStrokePx(Math.min(3.4, Math.max(1.4, Number(strokePx.toFixed(1)))))
+        }
+      />
     </div>
   );
 }

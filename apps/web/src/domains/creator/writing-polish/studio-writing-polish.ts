@@ -21,6 +21,18 @@
  *  - 순수·결정적. 입력은 변형하지 않는다. Konva/DOM/네트워크 의존 없음.
  */
 
+import type { BubbleVariant } from "../studio-assets";
+import {
+  detectCharacterVoiceMismatches,
+  evaluateMobileBubbleCadenceBatch,
+  extractAndTranslateSfxInText,
+  type CharacterVoiceConsistencyReport,
+  type CharacterVoiceProfile,
+  type DialogueUtteranceInput,
+  type MobileBubbleCadenceReport,
+  type SfxInlineAdaptation,
+} from "./dialogue-voice-cadence-guard";
+
 export type WritingPolishTargetKind = "synopsis" | "dialogue" | "general";
 
 export type WritingPolishRuleId =
@@ -42,6 +54,12 @@ export interface WritingPolishDocument {
   readonly label: string;
   readonly kind: WritingPolishTargetKind;
   readonly text: string;
+  /** 선택적 화자 캐릭터 id (말투 일관성 검사용). */
+  readonly characterId?: string;
+  /** 선택적 말풍선 종류 (모바일 390px 차등 글자 수 임계치 적용). */
+  readonly bubbleVariant?: BubbleVariant;
+  /** 선택적 대화 상대 이름 (호칭 일관성 검사용). */
+  readonly addresseeName?: string;
 }
 
 export interface WritingPolishSuggestion {
@@ -515,3 +533,51 @@ export const WRITING_POLISH_RULE_LABELS: Readonly<Record<WritingPolishRuleId, st
   "duplicate-sentence": "같은 문장 반복",
   "long-sentence-split": "긴 문장 나누기",
 };
+
+export interface StudioDialoguePolishPackReport {
+  readonly polishSuggestions: readonly WritingPolishSuggestion[];
+  readonly voiceConsistency: CharacterVoiceConsistencyReport;
+  readonly mobileBubbleCadence: readonly MobileBubbleCadenceReport[];
+  readonly sfxAdaptationsByDocId: Readonly<Record<string, readonly SfxInlineAdaptation[]>>;
+}
+
+/**
+ * 표현 다듬기 + 캐릭터 말투 일관성 + 모바일 390px 말풍선 호흡 + 의성어 문화권 대체를 한 번에 분석한다.
+ */
+export function analyzeStudioDialoguePolishPack(
+  documents: readonly WritingPolishDocument[],
+  options: WritingPolishOptions & {
+    readonly voiceProfiles?: readonly CharacterVoiceProfile[];
+  } = {},
+): StudioDialoguePolishPackReport {
+  const polishSuggestions = suggestWritingPolish(documents, options);
+  const dialogueDocs = documents.filter((doc) => doc.kind === "dialogue");
+  const utterances: DialogueUtteranceInput[] = dialogueDocs.map((doc) => ({
+    id: doc.id,
+    documentId: doc.id,
+    characterId: doc.characterId ?? "",
+    text: doc.text,
+    bubbleVariant: doc.bubbleVariant,
+    addresseeName: doc.addresseeName,
+  }));
+
+  const voiceConsistency = detectCharacterVoiceMismatches(
+    utterances,
+    options.voiceProfiles ?? [],
+  );
+  const mobileBubbleCadence = evaluateMobileBubbleCadenceBatch(utterances);
+  const sfxMap: Record<string, readonly SfxInlineAdaptation[]> = {};
+  for (const doc of documents) {
+    const found = extractAndTranslateSfxInText(doc.text);
+    if (found.length > 0) {
+      sfxMap[doc.id] = found;
+    }
+  }
+
+  return Object.freeze({
+    polishSuggestions,
+    voiceConsistency,
+    mobileBubbleCadence,
+    sfxAdaptationsByDocId: Object.freeze(sfxMap),
+  });
+}

@@ -1,4 +1,13 @@
 import {
+  DEFAULT_CONDITIONAL_BATCH_MACRO,
+  createBatchMacroCutsFromStoryboard,
+  executeEpisodeBatchMacro,
+  type CutAssetIntegrity,
+  type EpisodeBatchMacroReport,
+  type MacroCommitPolicy,
+  type RecordedEpisodeMacro,
+} from "./conditional-episode-batch-macro";
+import {
   computeLightballShading,
   createCharacterDnaProfile,
   updateCharacterDnaSelection,
@@ -519,4 +528,30 @@ export function updateMasterLayer(
     ...run,
     masterLayers,
   };
+}
+
+/**
+ * 9단계 파이프라인 실행 결과를 60컷 조건 분기 배치 매크로 엔진에 직결해 실행한다.
+ */
+export function runPipelineConditionalBatchMacro(
+  run: HyperAutomationPipelineRun,
+  options: {
+    readonly targetCutCount?: number;
+    readonly macro?: RecordedEpisodeMacro;
+    readonly commitPolicy?: MacroCommitPolicy;
+    readonly pauseAfterCount?: number;
+    readonly faultInjections?: Readonly<Record<number, CutAssetIntegrity>>;
+  } = {},
+): EpisodeBatchMacroReport {
+  const cuts = createBatchMacroCutsFromStoryboard(
+    run.cuts,
+    options.targetCutCount ?? 60,
+    options.faultInjections ?? {},
+  );
+  return executeEpisodeBatchMacro({
+    cuts,
+    macro: options.macro ?? DEFAULT_CONDITIONAL_BATCH_MACRO,
+    commitPolicy: options.commitPolicy ?? "isolate-failures",
+    pauseAfterCount: options.pauseAfterCount,
+  });
 }

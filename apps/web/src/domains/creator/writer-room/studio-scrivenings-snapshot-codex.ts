@@ -10,6 +10,11 @@
  *   폐기·격리 설정 언급 시 즉시 경고를 발생시킨다.
  */
 
+import type {
+  CharacterVoiceProfile,
+  SpeechRegister,
+} from "../writing-polish/dialogue-voice-cadence-guard";
+
 export interface ScriptSceneCard {
   readonly id: string;
   readonly episodeId: string;
@@ -636,4 +641,48 @@ export function scanTextForCodexMatches(
     }
   }
   return Object.freeze(resolved);
+}
+
+function inferRegisterFromCodexVoiceTone(voiceTone: string): SpeechRegister {
+  const tone = voiceTone.trim();
+  if (/하십시오|극존칭|격식|군대/u.test(tone)) return "hapsyo";
+  if (/하오체|사극.*중후|무사/u.test(tone)) return "haoche";
+  if (/고어|하대|왕|군주/u.test(tone)) return "archaic";
+  if (/존댓말|해요|정중|공손/u.test(tone)) return "haeyo";
+  return "banmal";
+}
+
+/**
+ * Writer Room Codex 캐릭터 엔트리의 `voiceTone` 설명에서
+ * 말투 일관성 감지기용 `CharacterVoiceProfile` 목록을 결정론적으로 추출한다.
+ */
+export function buildVoiceProfilesFromCodexEntities(
+  entities: readonly CodexEntityEntry[],
+): readonly CharacterVoiceProfile[] {
+  const profiles: CharacterVoiceProfile[] = [];
+  for (const entity of entities) {
+    if (entity.kind !== "character") continue;
+    if (entity.status === "deprecated" || entity.status === "quarantined") continue;
+    const speechRegister = inferRegisterFromCodexVoiceTone(entity.voiceTone ?? "");
+    const preferredEndings =
+      speechRegister === "hapsyo"
+        ? ["~습니다", "~십시오"]
+        : speechRegister === "haeyo"
+          ? ["~요", "~세요"]
+          : speechRegister === "haoche"
+            ? ["~오", "~소", "~구려"]
+            : speechRegister === "archaic"
+              ? ["~느냐", "~거라"]
+              : ["~어", "~야", "~지", "~다"];
+    profiles.push(
+      Object.freeze({
+        characterId: entity.id,
+        name: entity.canonical,
+        speechRegister,
+        preferredEndings: Object.freeze(preferredEndings),
+        forbiddenWords: Object.freeze([]),
+      }),
+    );
+  }
+  return Object.freeze(profiles);
 }

@@ -9,6 +9,15 @@
  */
 
 import {
+  build3dSixPassStyleSync,
+  extractArtistLineLayerProfile,
+  type ArtistLineLayerProfile,
+  type CharacterLineLayerSample,
+  type CutLightingPresetId,
+  type FocalDepthBlurInput,
+  type ThreeDSixPassSyncPlan,
+} from "./artist-style-6pass-sync";
+import {
   formatOklchCss,
   oklchToOklab,
   type OklchColor,
@@ -457,4 +466,59 @@ export function harmonizeCrossCutStyles(
 
 export function formatCutSwatchCss(color: OklchColor): string {
   return formatOklchCss(color);
+}
+
+/**
+ * 캐릭터 선화 레이어에서 로컬 추출한 주 선색·평균 선폭 프로파일을
+ * 원작자 마스터 컷 DNA에 투영한다.
+ */
+export function deriveMasterCutDnaFromArtistLineProfile(
+  baseMaster: CutArtStyleDna,
+  profile: ArtistLineLayerProfile,
+): CutArtStyleDna {
+  return {
+    ...baseMaster,
+    averageStrokeWidthPx: profile.averageStrokeWidthPx,
+    lineInkOklch: profile.dominantLineColorOklch,
+  };
+}
+
+/**
+ * 선화 레이어 1장 추출 → 마스터 DNA 동기화 → 3D 6패스 계획 & 전 컷 화풍 수렴을 일괄 계산한다.
+ */
+export function syncCrossCutMasterWith3dSixPass(options: {
+  readonly baseMaster: CutArtStyleDna;
+  readonly lineSample: CharacterLineLayerSample;
+  readonly submittedCuts: ReadonlyArray<CutArtStyleDna>;
+  readonly lightingPresetId?: CutLightingPresetId;
+  readonly depthBlurInput?: Partial<FocalDepthBlurInput>;
+  readonly syncStrength?: number;
+}): {
+  readonly extractedProfile: ArtistLineLayerProfile;
+  readonly updatedMaster: CutArtStyleDna;
+  readonly sixPassPlan: ThreeDSixPassSyncPlan;
+  readonly harmonizationReport: CrossCutHarmonizationReport;
+} {
+  const extractedProfile = extractArtistLineLayerProfile(options.lineSample);
+  const updatedMaster = deriveMasterCutDnaFromArtistLineProfile(
+    options.baseMaster,
+    extractedProfile,
+  );
+  const sixPassPlan = build3dSixPassStyleSync({
+    profile: extractedProfile,
+    lightingPresetId: options.lightingPresetId,
+    depthBlurInput: options.depthBlurInput,
+    syncStrength: options.syncStrength ?? 1,
+  });
+  const harmonizationReport = harmonizeCrossCutStyles(
+    updatedMaster,
+    options.submittedCuts,
+    options.syncStrength ?? 1,
+  );
+  return {
+    extractedProfile,
+    updatedMaster,
+    sixPassPlan,
+    harmonizationReport,
+  };
 }

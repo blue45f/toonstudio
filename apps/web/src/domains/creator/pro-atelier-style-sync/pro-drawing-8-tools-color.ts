@@ -69,7 +69,7 @@ export function oklchToOklab(color: OklchColor): OklabColor {
   };
 }
 
-function oklabToOklch(lab: OklabColor): OklchColor {
+export function oklabToOklch(lab: OklabColor): OklchColor {
   const c = Math.hypot(lab.a, lab.b);
   const h = c < 1e-6 ? 0 : normalizeHueDeg((Math.atan2(lab.b, lab.a) * 180) / Math.PI);
   return {
@@ -79,7 +79,7 @@ function oklabToOklch(lab: OklabColor): OklchColor {
   };
 }
 
-function rgbToOklab(rgb: RgbColor): OklabColor {
+export function rgbToOklab(rgb: RgbColor): OklabColor {
   const r = srgbByteToLinear(rgb.r);
   const g = srgbByteToLinear(rgb.g);
   const b = srgbByteToLinear(rgb.b);
@@ -137,6 +137,14 @@ function oklabToRgbGamutMapped(lab: OklabColor): RgbColor {
     g: linearToSrgbByte(g),
     b: linearToSrgbByte(b),
   };
+}
+
+export function rgbToOklch(rgb: RgbColor): OklchColor {
+  return oklabToOklch(rgbToOklab(rgb));
+}
+
+export function oklchToRgb(color: OklchColor): RgbColor {
+  return oklabToRgbGamutMapped(oklchToOklab(color));
 }
 
 export function formatOklchCss(color: OklchColor): string {
