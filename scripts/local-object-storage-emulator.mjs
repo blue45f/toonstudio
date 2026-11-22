@@ -127,6 +127,17 @@ function inferContentType(key, headerValue) {
   return CONTENT_TYPE_BY_EXTENSION[extname(key).toLowerCase()] ?? "application/octet-stream";
 }
 
+function extractSafeErrorCode(error) {
+  if (error && typeof error === "object" && "code" in error && typeof error.code === "string") {
+    const normalized = error.code.trim();
+    if (/^[A-Z0-9_-]{1,64}$/iu.test(normalized)) return normalized;
+  }
+  if (error instanceof Error && /^[A-Za-z0-9_-]{1,64}$/u.test(error.name)) {
+    return error.name;
+  }
+  return "unknown_error";
+}
+
 function sendJson(res, status, payload, extraHeaders = {}) {
   const body = Buffer.from(JSON.stringify(payload), "utf8");
   res.writeHead(status, {
@@ -174,7 +185,10 @@ function readBoundedBody(req, { maxObjectBytes, maxTotalBytes, projectedBaseByte
       chunks.push(chunk);
     });
     req.on("end", () => finish({ ok: true, buffer: Buffer.concat(chunks, received) }));
-    req.on("error", (error) => finish({ ok: false, status: 400, error: error instanceof Error ? error.message : "stream_error" }));
+    req.on("error", (error) => {
+      process.stderr.write(`[storage] 요청 스트림 오류(${extractSafeErrorCode(error)})\n`);
+      finish({ ok: false, status: 400, error: "stream_error" });
+    });
   });
 }
 
@@ -335,9 +349,16 @@ export async function startLocalObjectStorageEmulator({
 
       sendJson(res, 405, { ok: false, error: "method_not_allowed" });
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      if (!res.headersSent) sendJson(res, 500, { ok: false, error: "internal_storage_error", detail });
-      else res.end();
+      process.stderr.write(`[storage] 내부 처리 오류(${extractSafeErrorCode(error)})\n`);
+      if (!res.headersSent) {
+        sendJson(res, 500, {
+          ok: false,
+          error: "internal_storage_error",
+          message: "로컬 오브젝트 스토리지 요청 처리 중 내부 오류가 발생했습니다.",
+        });
+      } else {
+        res.end();
+      }
     }
   });
 

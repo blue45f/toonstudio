@@ -112,21 +112,22 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
 
     const calledUrls: string[] = [];
     const fetchMock = vi.fn<typeof fetch>(async (url) => {
-      const target = String(url);
+      const target = url instanceof Request ? url.url : String(url);
+      const hostname = new URL(target).hostname;
       calledUrls.push(target);
-      if (target.includes("api.openai.com")) {
+      if (hostname === "api.openai.com") {
         return new Response(
           JSON.stringify({ error: { code: "insufficient_quota", message: "No credits" } }),
           { status: 429 },
         );
       }
-      if (target.includes("generativelanguage.googleapis.com")) {
+      if (hostname === "generativelanguage.googleapis.com") {
         return new Response(
           JSON.stringify({ error: { code: "billing_hard_limit_reached" } }),
           { status: 402 },
         );
       }
-      if (target.includes("models.github.ai")) {
+      if (hostname === "models.github.ai") {
         return new Response(JSON.stringify({ error: "rate limited" }), { status: 429 });
       }
       return new Response(
@@ -201,7 +202,8 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
     expect(openai?.remainingSafeTokens).toBe(0);
 
     const fetchMock = vi.fn<typeof fetch>(async (url) => {
-      expect(String(url)).toContain("models.github.ai");
+      const target = url instanceof Request ? url.url : String(url);
+      expect(new URL(target).hostname).toBe("models.github.ai");
       return new Response(
         JSON.stringify({
           model: "openai/gpt-4o-mini",
@@ -244,5 +246,40 @@ describe("StudioFreeAiZeroBillRouter (₩0 Fail-Closed 다중 무료 AI 캐스�
     expect(resolved.find((p) => p.id === "gemini-free")?.configured).toBe(true);
     expect(resolved.find((p) => p.id === "sambanova-free")?.configured).toBe(true);
     expect(resolved.find((p) => p.id === "groq-free")?.configured).toBe(true);
+  });
+
+  it("클라우드 공급자 엔드포인트 호스트가 공식 도메인과 정확히 일치하고 위조된 로컬 Ollama URL은 차단한다", () => {
+    const resolved = resolveZeroBillFreeProviders({
+      OPENAI_API_KEY: "test-openai",
+      GEMINI_API_KEY: "test-gemini",
+      STUDIO_AI_FREE_GITHUB_MODELS_API_KEY: "test-github",
+      STUDIO_AI_FREE_CLOUDFLARE_API_TOKEN: "test-cf",
+      STUDIO_AI_FREE_CLOUDFLARE_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
+      STUDIO_AI_FREE_MISTRAL_API_KEY: "test-mistral",
+      STUDIO_AI_FREE_SAMBANOVA_API_KEY: "test-samba",
+      STUDIO_AI_FREE_GROQ_API_KEY: "test-groq",
+      STUDIO_AI_FREE_OPENROUTER_API_KEY: "test-or",
+      STUDIO_LOCAL_OLLAMA_URL: "http://localhost.evil.example:11434",
+    });
+
+    const expectedHosts: Record<string, string> = {
+      "openai-free-share": "api.openai.com",
+      "gemini-free": "generativelanguage.googleapis.com",
+      "github-models-free": "models.github.ai",
+      "cloudflare-workers-ai-free": "api.cloudflare.com",
+      "mistral-free": "api.mistral.ai",
+      "sambanova-free": "api.sambanova.ai",
+      "groq-free": "api.groq.com",
+      "openrouter-free": "openrouter.ai",
+    };
+
+    for (const [providerId, expectedHost] of Object.entries(expectedHosts)) {
+      const provider = resolved.find((item) => item.id === providerId);
+      expect(provider?.configured).toBe(true);
+      expect(new URL(provider!.endpoint).hostname).toBe(expectedHost);
+    }
+
+    const localFallback = resolved.find((item) => item.id === "local-zero-cost-fallback");
+    expect(localFallback?.endpoint).toBe("local://toonstudio-deterministic-coach");
   });
 });

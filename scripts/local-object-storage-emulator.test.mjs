@@ -220,4 +220,38 @@ describe("local-object-storage-emulator HTTP lifecycle", () => {
       assert.equal(closed.storageRemoved, true);
     }
   });
+
+  it("내부 파일시스템 오류(500) 발생 시 고정된 안전 에러만 반환하고 스택 트레이스·내부 경로를 노출하지 않는다", async () => {
+    const emulator = await startLocalObjectStorageEmulator({ port: 0 });
+    try {
+      // 하위 경로에 객체를 먼저 저장해 디렉터리 경로를 만든 뒤, 동일 디렉터리 이름에 파일 저장을 시도해 EISDIR 내부 오류를 유발한다.
+      const seedRes = await fetch(`${emulator.baseUrl}/objects/fault-bucket/dir-clash/child.txt`, {
+        method: "PUT",
+        body: Buffer.from("seed"),
+      });
+      assert.equal(seedRes.status, 200);
+
+      const errRes = await fetch(`${emulator.baseUrl}/objects/fault-bucket/dir-clash`, {
+        method: "PUT",
+        body: Buffer.from("conflict"),
+      });
+      assert.equal(errRes.status, 500);
+
+      const rawText = await errRes.text();
+      const parsed = JSON.parse(rawText);
+      assert.equal(parsed.ok, false);
+      assert.equal(parsed.error, "internal_storage_error");
+      assert.equal(typeof parsed.message, "string");
+      assert.ok(parsed.message.length > 0);
+      assert.equal(Object.hasOwn(parsed, "detail"), false);
+      assert.equal(Object.hasOwn(parsed, "stack"), false);
+      assert.equal(rawText.includes("at "), false, "스택 트레이스 프레임이 응답에 노출되었습니다.");
+      assert.equal(rawText.includes("EISDIR"), false, "OS 예외 코드가 응답에 노출되었습니다.");
+      assert.equal(rawText.includes("rename"), false, "내부 시스템 호출명이 응답에 노출되었습니다.");
+      assert.equal(rawText.includes(emulator.storageRoot), false, "내부 파일시스템 경로가 응답에 노출되었습니다.");
+    } finally {
+      const closed = await emulator.close();
+      assert.equal(closed.storageRemoved, true);
+    }
+  });
 });
