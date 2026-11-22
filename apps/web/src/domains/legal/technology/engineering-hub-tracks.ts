@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Compass,
   GitCompareArrows,
   Layers3,
@@ -54,8 +55,8 @@ export interface EngineeringHubRegistryItem {
 
 export interface EngineeringHubCompanionItem {
   readonly kind: "companion";
-  readonly id: "compare";
-  readonly href: "/about/compare";
+  readonly id: "compare" | "benchmarks";
+  readonly href: "/about/compare" | "/about/technology/benchmarks";
   readonly icon: LucideIcon;
   readonly label: LocalizedText;
   readonly roleSummary: LocalizedText;
@@ -136,6 +137,15 @@ export const ENGINEERING_HUB_TRACKS: readonly EngineeringHubTrack[] = [
         label: t("경쟁 비교", "Compare tools"),
         roleSummary: t("CSP·Procreate·Photoshop·Blender 등과 기능·비용 비교", "Compare features, UX and ₩0 cost against major tools"),
         badge: t("비교표", "Matrix"),
+      },
+      {
+        kind: "companion",
+        id: "benchmarks",
+        href: "/about/technology/benchmarks",
+        icon: BarChart3,
+        label: t("세부 벤치마크", "Benchmarks"),
+        roleSummary: t("브러시·필터·협업·3D/CAD·AI 보조 5대 1:1 정밀 벤치마크", "5 granular 1:1 benchmarks across brushes, filters, collab, 3D and AI assist"),
+        badge: t("5대 실측", "5 Suites"),
       },
     ],
   },

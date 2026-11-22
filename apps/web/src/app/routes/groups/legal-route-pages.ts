@@ -60,6 +60,30 @@ export const EngineeringLibrariesPage = lazyRetry(
   () => import("@/domains/legal/technology/EngineeringLibrariesPage").then((module) => ({ default: module.EngineeringLibrariesPage })),
   "EngineeringLibrariesPage",
 );
+export const BenchmarkHubPage = lazyRetry(
+  () => import("@/domains/legal/technology/benchmarks/BenchmarkHubPage").then((module) => ({ default: module.BenchmarkHubPage })),
+  "BenchmarkHubPage",
+);
+export const BenchmarkBrushesPage = lazyRetry(
+  () => import("@/domains/legal/technology/benchmarks/BenchmarkDetailPage").then((module) => ({ default: module.BenchmarkBrushesPage })),
+  "BenchmarkBrushesPage",
+);
+export const BenchmarkFiltersPage = lazyRetry(
+  () => import("@/domains/legal/technology/benchmarks/BenchmarkDetailPage").then((module) => ({ default: module.BenchmarkFiltersPage })),
+  "BenchmarkFiltersPage",
+);
+export const BenchmarkCollabOfficePage = lazyRetry(
+  () => import("@/domains/legal/technology/benchmarks/BenchmarkDetailPage").then((module) => ({ default: module.BenchmarkCollabOfficePage })),
+  "BenchmarkCollabOfficePage",
+);
+export const Benchmark3dStudioPage = lazyRetry(
+  () => import("@/domains/legal/technology/benchmarks/BenchmarkDetailPage").then((module) => ({ default: module.Benchmark3dStudioPage })),
+  "Benchmark3dStudioPage",
+);
+export const BenchmarkAiAssistPage = lazyRetry(
+  () => import("@/domains/legal/technology/benchmarks/BenchmarkDetailPage").then((module) => ({ default: module.BenchmarkAiAssistPage })),
+  "BenchmarkAiAssistPage",
+);
 export const ProductPrinciplesPage = lazyRetry(
   () => import("@/domains/legal/ProductPrinciplesPage").then((module) => ({ default: module.ProductPrinciplesPage })),
   "ProductPrinciplesPage",
