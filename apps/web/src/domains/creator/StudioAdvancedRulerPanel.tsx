@@ -11,7 +11,7 @@ import {
   Target,
   Trash2,
 } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import {
   STUDIO_ADVANCED_RULER_MAX_COUNT,
@@ -44,6 +44,12 @@ import type { ReactElement } from "react";
 const StudioVectorSurgeryInteractiveSection = lazy(() =>
   import("./vector/StudioVectorSurgeryInteractiveSection").then((m) => ({
     default: m.StudioVectorSurgeryInteractiveSection,
+  })),
+);
+
+const LazyMangaRulersEffectLinesPanel = lazy(() =>
+  import("./rulers-pro/StudioMangaRulersEffectLinesPanel").then((m) => ({
+    default: m.StudioMangaRulersEffectLinesPanel,
   })),
 );
 
@@ -149,6 +155,7 @@ export function StudioAdvancedRulerPanel({
   vectorStrokes,
   onVectorStrokesChange,
 }: StudioAdvancedRulerPanelProps): ReactElement {
+  const [proRulersOpened, setProRulersOpened] = useState(false);
   const selected = selectedRuler(document);
   const atLimit = document.rulers.length >= STUDIO_ADVANCED_RULER_MAX_COUNT;
   const disabledTitle = disabledReason ?? r3c07StatusText("studio.panelStatus.r3c07.advancedRuler.editUnavailable", "현재 문서에서는 자를 편집할 수 없습니다.");
@@ -541,6 +548,26 @@ export function StudioAdvancedRulerPanel({
             disabled={disabled}
           />
         </Suspense>
+      </details>
+
+      <details
+        onToggle={(event) => setProRulersOpened(event.currentTarget.open)}
+        className="rounded-lg border border-line/70 bg-card/45 px-2.5 py-1.5 text-xs [word-break:keep-all]"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          <span>다점 투시·대칭·분할 스냅 · 효과선</span>
+          <span className="tabular-nums text-[0.72rem] text-fg-3">1·2·3·5점</span>
+        </summary>
+        {proRulersOpened ? (
+          <Suspense fallback={null}>
+            <LazyMangaRulersEffectLinesPanel
+              defaultTab="rulers-snap"
+              canvasWidth={canvasWidth}
+              canvasHeight={canvasHeight}
+              disabled={disabled}
+            />
+          </Suspense>
+        ) : null}
       </details>
     </div>
   );
