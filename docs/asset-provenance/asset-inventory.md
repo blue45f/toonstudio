@@ -1,5 +1,6 @@
 # ToonStudio 에셋 인벤토리 (ASSET-INVENTORY)
 
+- 문서 상태: **migration / 출처·라이선스 원장** (`2026-11-22` 저장소 루트 `ASSET-INVENTORY.md`에서 `docs/asset-provenance/asset-inventory.md`로 이동; §3.1·§3.2 Creator Bundle 권리 정책 개정안은 소유자 결정 대기 유지)
 작성일: 2026-09-30 · 작업 공간: `~/workspace/toonstudio-advance` (브랜치 `advancement/2026-09-29`)
 기준: `apps/web/src/domains/creator/` 전체 스캔 + `material-atlas/catalog.json`
 

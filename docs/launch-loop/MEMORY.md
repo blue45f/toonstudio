@@ -9,7 +9,7 @@
 - **패키지 매니저 / 런타임**: `pnpm@11.4.0`, `node >= 24.16.0`
 - **핵심 설치 엔진**: `canvaskit-wasm`, `@sqlite.org/sqlite-wasm`, `yjs`, `@babylonjs/core`, `three`, `@pixiv/three-vrm`, `openskp`, `manifold-3d`, `ag-psd`, `es-hangul`, `harfbuzzjs`, `spectral.js`, `motion`, `@radix-ui/*`
 - **알려진 로컬 환경 함정**:
-  - worktree에서 E2E 기동 시 `apps/web/config/` sparse-checkout 누락 및 inotify 와처 한도(`ENOSPC`) 주의 (`UX_FLOW_BACKLOG.md` P2).
+  - worktree에서 E2E 기동 시 `apps/web/config/` sparse-checkout 누락 및 inotify 와처 한도(`ENOSPC`) 주의 (`docs/archive/root-backlogs/ux-flow-backlog-2026-11-21.md` P2).
   - WebGPU/3D 브라우저 테스트(`verify:studio-3d-*`, `verify:studio-bg3d-*`)는 병렬 실행 시 GPU 컨텍스트 충돌이 발생하므로 반드시 순차 실행.
   - `AGENTS.md` §8에 따라 `deploy:web`, `onpod`, `cloudflare:static:deploy` 등 운영 배포 스크립트는 무인 루프에서 실행 금지.
 

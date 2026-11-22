@@ -18,7 +18,7 @@
 
 ## 현재 저장소와 개발 기준
 
-2026-09-26 기준 ToonStudio 저장소는 하나의 모노레포에서 Web, Admin, API, Mobile, Desktop Sync,
+2026-11-22 기준 ToonStudio 저장소는 하나의 모노레포에서 Web, Admin, API, Mobile, Desktop Sync,
 선택형 서비스와 Studio 핵심 패키지를 함께 관리합니다. 도메인은 `packages/domains/*`로 분리하지 않고
 각 애플리케이션 안에서 논리적으로 구성합니다.
 
@@ -26,7 +26,7 @@
 apps/
   web/                 사용자·창작자용 Vite/React 애플리케이션
   admin-web/           독립 관리자 UI, 기능 이전 중
-  api/                 NestJS API
+  api/                 NestJS API (PostgreSQL 마이그레이션 0001~0133)
   mobile/              Capacitor Android/iOS wrapper
   desktop-sync/        로컬·클라우드 양방향 동기화
   character-lab/       캐릭터 파이프라인 실험 앱, 배포 대상 아님
@@ -39,14 +39,15 @@ packages/
 tests/integration/     앱·패키지 사이 교차 경계 테스트
 tools/                 제품 번들 밖의 authoring·automation·DCC 도구
 openwiki/              코드 기반 탐색 문서
-docs/                  현재 문서, ADR와 역사적 증거
+docs/                  현재 정본 문서, ADR, 아카이브(`docs/archive/`)와 역사적 증거
 ```
 
 - **현재 구조:** [ARCHITECTURE.md](ARCHITECTURE.md)
 - **문서 지도:** [docs/README.md](docs/README.md)
 - **목표와 마이그레이션:** [docs/architecture/modular-monorepo-target.md](docs/architecture/modular-monorepo-target.md)
 - **Studio 현재 경계:** [docs/architecture/studio-current-boundaries.md](docs/architecture/studio-current-boundaries.md)
-- **운영·배포 권위:** [DEPLOY.md](DEPLOY.md)와 [최소 비용 배포 정책](docs/operations/minimum-cost-deployment-policy.md)
+- **인프라 정본 지도:** [docs/operations/infrastructure-map.md](docs/operations/infrastructure-map.md) (2026-10-23 서울 onpod 컷오버·Render 퇴역 반영)
+- **운영·배포 권위:** [DEPLOY.md](DEPLOY.md), [AI·운영자 정본 배포 안내](docs/operations/ai-deployment-quickstart.md), [최소 비용 배포 정책](docs/operations/minimum-cost-deployment-policy.md)
 - **실험 앱(labs) 엔진 결정:** [ADR-0026](docs/adr/0026-labs-experimental-apps-engine-selection-and-promotion.md)과 [엔진 대안 비교 보고서](docs/reports/character-lab-engine-alternatives-2026-10-01.md)
 - **AI/문서 탐색:** [openwiki/quickstart.md](openwiki/quickstart.md)
 - 문서 권위는 **source/tests → 기계 원장·ratchet → 현재 아키텍처 문서 → ADR → 역사 자료 → OpenWiki** 순서입니다.
@@ -130,7 +131,7 @@ docs/                  현재 문서, ADR와 역사적 증거
 
 | 라이브러리 | 용도 |
 | --- | --- |
-| `drizzle-orm` + `pg` (node-postgres) | DB/ORM — PostgreSQL(로컬 docker / 원격 Supabase) 접근 (`DATABASE_URL`) |
+| `drizzle-orm` + `pg` (node-postgres) | DB/ORM — PostgreSQL(로컬 docker / 운영 서울 onpod `toonstudio-db`) 접근 (`DATABASE_URL`) |
 | `react` · `react-dom` | UI 런타임 (React 19, React Compiler 활성) |
 | `react-router-dom` | 라우팅 — React Router 7 SPA 라우트 |
 | `zustand` | 상태 관리 — 평점·리뷰·북마크·취향·컬렉션 (localStorage 영속화) |
@@ -265,20 +266,27 @@ pnpm dev                    # 사용자 웹: http://localhost:5173
 pnpm dev:api                # API: http://127.0.0.1:4001
 pnpm dev:all                # 사용자 웹 + API
 pnpm dev:admin              # 관리자 UI: http://localhost:4174
+pnpm typecheck              # Web 샤드 타입체크(typecheck-shards 체크포인트 캐시) + API 타입체크
 pnpm typecheck:admin
 pnpm build:admin            # apps/admin-web/dist/
 pnpm dev:character-lab      # 실험 앱: http://localhost:4176
 pnpm dev:brush-lab          # 실험 앱: http://localhost:4178
-pnpm validate:architecture  # 구조 + source-layout + application boundary + 파일 크기·Studio 진입 그래프 ratchet
+pnpm validate:architecture  # 구조 + 문서 + source-layout + 앱 경계 + 파일 크기·Studio 진입 그래프 ratchet
+pnpm harness:verify         # 변경 범위별 빠른 품질 게이트
 pnpm build && pnpm start    # 사용자 웹 프로덕션 프리뷰
 ```
+
+### CI·빌드 캐시 및 수동 배포 진입점 (2026-11-22 기준)
+
+- **CI 큐·캐시 최적화**: 비필수 보조 워크플로 25개를 `push: main`에서 분리해 야간·주간 분산 `schedule`과 `workflow_dispatch`로 전환했고(기존 PR 게이트 유지, `scripts/ci-queue-and-typecheck-cache.test.mjs`), `scripts/typecheck-shards.mjs` 체크포인트 캐시와 `scripts/lib/static-gen-cache.mjs` 기반 SHA-256 스킵 캐시(`pnpm catalog:gen`, `pnpm run i18n:builtins:gen`; `--force`로 강제 재생성)를 적용했습니다.
+- **수동 배포·사전/사후 가드**: 자동 배포는 금지하며, 변경된 단위만 `pnpm run deploy:doctor`, `pnpm run deploy:preflight`, `pnpm run deploy:web`, `pnpm run deploy:cloud -- --smart --watch`(변경 영역 자동 선별·무변경 단위 안전 건너뛰기), `node scripts/verify-production-post-deploy-smoke.mjs`(배포 직후 스모크·안전 롤백 명령 안내)로 수동 검증·반영합니다. 세부 승인 경계는 [DEPLOY.md](DEPLOY.md)와 [AI·운영자 정본 배포 안내](docs/operations/ai-deployment-quickstart.md)를 따릅니다.
 
 ### Studio 3D 에셋 배치 업로드
 
 `toonstudio` 쪽 3D 배경/캐릭터/소품을 `manifest`로 묶어 운영 API에 업로드하려면
 [`docs/studio-asset-upload-automation.md`](docs/studio-asset-upload-automation.md)를 그대로 따라오면 됩니다.
 
-현재 기본 절차는 **로컬 생성·검증·dry-run까지만 자동화**합니다. 저장소의 현재 운영 정책은 자동 배포를 금지하므로 `--auto-deploy`를 사용하지 않습니다. 운영 업로드와 Cloudflare/Render 배포는 각각 명시적 승인을 받은 뒤 별도 수행합니다.
+현재 기본 절차는 **로컬 생성·검증·dry-run까지만 자동화**합니다. 저장소의 현재 운영 정책은 자동 배포를 금지하므로 `--auto-deploy`를 사용하지 않습니다. 운영 업로드와 Cloudflare/onpod 배포(Render는 2026-10-23 퇴역)는 각각 승인 정책에 따라 별도 수행합니다.
 
 ```bash
 pnpm run studio:toolchain:setup -- --check
@@ -291,7 +299,12 @@ pnpm run studio:upload-assets:dry-run -- --manifest batch_generated/manifest.jso
 
 ### DB 준비 (PostgreSQL)
 
-DB는 **PostgreSQL**입니다 — 로컬은 docker, 원격·운영 쓰기 권위는 **Supabase**입니다. Neon `neondb`는 legacy 보존 자원이며 더 이상 운영 쓰기 권위가 아닙니다. 권위와 drift 금지 규칙의 정본은 [`docs/operations/canonical-database-topology.md`](docs/operations/canonical-database-topology.md)입니다. `DATABASE_URL`은 필수이며, Studio 다중 인스턴스와 SQL migration에는 transaction pooler가 아닌 `STUDIO_LIVE_POSTGRES_URL` direct endpoint도 필요합니다. 개발/빈 DB는 스키마를 push한 뒤 historical SQL(0001~0019)을 한 번 적용하고, 구조 증명에 성공한 history를 checksum 원장에 채택하면서 genuine pending(0020~0022, 0024~0025)을 적용한 다음 카탈로그를 적재하세요. `0023`부터 배포 원장은 이미 적용한 migration을 다시 실행하지 않으며, 파일 변경·중단 상태·중간 번호 누락을 fail-closed로 처리합니다. 필요한 capability가 빠진 프로세스는 요청 중 DDL을 실행하지 않고 readiness/부팅 단계에서 실패합니다.
+DB는 **PostgreSQL**입니다.
+
+- **현재 운영 쓰기 권위 (`current`, 2026-10-23 컷오버)**: 서울 onpod PostgreSQL **`toonstudio-db`**(PG 17, 단일 소유자 역할). 접속 경로·비밀 저장 위치(`.env.infrastructure.local`)·허용 목록·스키마 반영 절차는 [`docs/operations/infrastructure-map.md`](docs/operations/infrastructure-map.md)와 [`deploy/onpod/README.md`](deploy/onpod/README.md)가 정본입니다.
+- **퇴역·미사용 자원 (`retired` / `legacy exception`)**: Render Core API는 `2026-10-23` 삭제, Neon `toonspectrum-production`은 `2026-10-22` 소유자 삭제 완료, Supabase `toonspectrum-collaboration`은 `legacy exception`(미사용·Core API 미연결) 상태입니다.
+- **저장소 마이그레이션 원장 (`2026-11-22` 기준)**: `apps/api/src/platform/database/migrations/`에 `0001`~`0133_production_division_os.sql` **133개** 번호 SQL이 있으며 `scripts/production-database-migrations.manifest`(133행)와 1:1 일치합니다(`scripts/lib/deploy-preflight-drift.mjs`로 드리프트 검증). `2026-10-29` 운영 DB 조회 시점에는 `0001`~`0113` 113개가 적용되어 있으며, `0114`~`0133` 20건의 운영 DB 반영은 별도 승인 대기 상태입니다.
+- **불변·fail-closed 원칙**: 이미 적용한 migration은 재실행하지 않으며, 파일 변조·중단 상태·번호 누락을 fail-closed로 차단합니다. 필요한 capability가 빠진 프로세스는 요청 중 DDL을 실행하지 않고 부팅/readiness 단계에서 실패합니다.
 
 **A. 로컬 docker Postgres**
 
@@ -303,31 +316,13 @@ export DATABASE_URL='postgresql://webdex:webdex@127.0.0.1:55432/webdex'
 export STUDIO_LIVE_POSTGRES_URL="$DATABASE_URL"
 ```
 
-**B. 원격 Supabase** — 원격 연결 문자열은 시크릿 저장소에서 관리합니다. 아래는 `.env.local`에 두는 **형식 템플릿**이며 실제 값이 아닙니다. 크롤·ingest·API가 모두 이를 읽습니다.
+**B. 운영 서울 onpod DB (`toonstudio-db`)**
 
-```bash
-# .env.local (gitignore됨): 앱 일반 쿼리는 pooler, realtime migration/adapter는 direct endpoint
-# 실제 자격 증명은 시크릿 저장소에서 받으세요. 템플릿은 Supabase 프로젝트 ref로 치환합니다.
-# secretlint-disable-next-line @secretlint/secretlint-rule-database-connection-string -- placeholder Supabase connection template
-echo 'DATABASE_URL="postgresql://postgres.<project-ref>:<pw>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require"' >> .env.local
-# secretlint-disable-next-line @secretlint/secretlint-rule-database-connection-string -- placeholder Supabase connection template
-echo 'STUDIO_LIVE_POSTGRES_URL="postgresql://postgres.<project-ref>:<pw>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require"' >> .env.local
-set -a; source .env.local; set +a
-```
+운영 DB 자격 증명과 접속 문자열은 주 작업트리 루트의 `.env.infrastructure.local`(Git 무시, 권한 `0600`)에서만 관리하며 문서·코드·채팅에 실제 값을 적지 않습니다. 공개 `5432` 포트는 평상시 IP 허용 목록으로 닫혀 있고, 스키마 작업·점검 때만 임시 허용 후 해제합니다. 상세 절차와 비밀번호 동기화 스크립트는 [`docs/operations/infrastructure-map.md`](docs/operations/infrastructure-map.md) 5·6.2·6.4절 및 [`deploy/onpod/README.md`](deploy/onpod/README.md)를 따릅니다.
 
-운영 컨테이너는 Supabase TLS 신뢰를 위해 `deploy/trust/supabase-prod-ca-2021.crt`를 함께 번들에 넣고 `NODE_EXTRA_CA_CERTS`로 지정합니다. pooler 사용 여부는 `pg-connection.ts`의 `WEBDEX_PG_CONNECTION_MODE`가 결정합니다.
+**C. 완전한 빈 로컬 DB 최초 provision (`db:bootstrap:production-empty`)**
 
-**C. 선택한 완전한 빈 로컬 DB 최초 provision** — 아래 `drizzle-kit push`는 public table이 없는
-DB에 처음 한 번만 실행합니다. Drizzle 0.31.x의 반복 push는 FK/unique 재정렬 오류가 있으므로 이미
-provision된 DB의 upgrade나 운영 rolling migration에 사용하지 않습니다. migration runner는
-`scripts/production-database-migrations.manifest`가 모든 numbered SQL 파일을 정확히 한 번씩
-0001부터 번호 누락 없이 정렬해 포함하는지 검사합니다. 최초 `adopt`는 0019까지의 relation,
-constraint/index, comment re-anchor, AI gate/receipt, 0017 cutover marker를 먼저 증명한 뒤 해당
-checksum을 `adopted`로 기록하며 과거 migration을 재실행하지 않습니다.
-
-수동 DDL 대신 fail-closed bootstrap 명령 하나를 사용합니다. 먼저 `--plan`은 읽기 전용으로
-대상 DB, 다른 연결, 기존 application object, migrator/runtime 역할 분리, manifest와 schema
-fingerprint를 검사합니다. URL과 비밀번호는 출력하지 않습니다.
+`drizzle-kit push`는 public table이 없는 빈 DB에 처음 한 번만 사용하며, 이미 provision된 DB의 upgrade나 운영 rolling migration에는 사용하지 않습니다. 수동 DDL 대신 fail-closed bootstrap 명령으로 `--plan` 읽기 전용 점검 후 `--execute`를 실행하면 `pg_trgm`, 현재 Drizzle base, reviewed `0001`~`0019` 구조, checksum adoption, `0020`~`0133` 전체 forward migration, runtime 최소 권한, idempotent 재실행과 capability 검증을 순서대로 수행합니다.
 
 ```bash
 release_sha="$(git rev-parse HEAD)"
@@ -339,10 +334,7 @@ MIGRATION_DATABASE_URL="$STUDIO_LIVE_POSTGRES_URL" \
     --release-sha "$release_sha"
 ```
 
-계획이 빈 DB임을 확인한 뒤 실행합니다. runtime role이 아직 없을 때만 별도 runtime 연결에
-사용할 24자 이상의 비밀번호를 환경변수로 제공합니다. 명령은 `pg_trgm`, 현재 Drizzle base,
-reviewed 0001~0019 구조, checksum adoption, 실제 0020~0022/0024~0025 forward migration, runtime 최소
-권한, idempotent apply와 전체 capability verifier를 순서대로 수행합니다.
+계획이 빈 DB임을 확인한 뒤 실행합니다(runtime role이 아직 없을 때만 24자 이상의 비밀번호를 `BOOTSTRAP_RUNTIME_DATABASE_PASSWORD`로 전달).
 
 ```bash
 MIGRATION_DATABASE_URL="$STUDIO_LIVE_POSTGRES_URL" \
@@ -355,61 +347,9 @@ BOOTSTRAP_RUNTIME_DATABASE_PASSWORD='<runtime-role-secret-if-missing>' \
     --confirmation BOOTSTRAP-EMPTY-TOONSPECTRUM-DATABASE
 ```
 
-대상에 application object가 하나라도 있으면 실행은 거부됩니다. 백업과 대상 DB 확인을 마친
-**폐기 가능한 DB**만 계획 출력에 표시된 DB명 결합 토큰을 별도로 추가해 초기화할 수 있습니다.
-예: `--reset-confirmation RESET-AND-BOOTSTRAP-TOONSPECTRUM-DATABASE:webdex`. 이 승인은
-`public`과 `toonspectrum_ops` application schema의 모든 데이터를 삭제하며 다른 DB 이름에는
-재사용할 수 없습니다. 실행 중 schema/migration 소스가 바뀌거나 다른 client가 연결되면 즉시
-중단되고, 부분 상태를 자동 채택하지 않습니다.
+대상에 application object가 하나라도 있으면 거부되며, 폐기 가능한 로컬 DB만 계획 출력에 표시된 DB명 결합 토큰(`--reset-confirmation RESET-AND-BOOTSTRAP-TOONSPECTRUM-DATABASE:<db>`)으로 초기화할 수 있습니다. 실행 중 runtime role을 일시적으로 `NOLOGIN` 전환했다가 `finally`에서 `LOGIN`으로 복원하며, 비정상 종료 시에는 migrator로 `ALTER ROLE webdex_runtime LOGIN;` 복원 후 `--plan`과 capability verifier를 다시 통과시켜야 합니다.
 
-`--execute`는 사전 점검 뒤 runtime role을 대상 DB에 한정해 일시적으로 `NOLOGIN`으로
-전환하고, 전환 직후 다른 client가 끼어들지 않았는지 다시 확인한 다음에만 DDL을 시작합니다.
-따라서 `PUBLIC`의 기본 `CONNECT` 권한이 남아 있어도 새 runtime writer는 들어올 수 없습니다.
-정상 완료와 포착 가능한 실패에서는 `finally` 경계가 `LOGIN`을 복원하고 최종 verifier가 이를
-재확인합니다. 호스트 강제 종료처럼 복원 코드를 실행할 수 없었던 경우에는 fail-closed로
-`NOLOGIN`이 남을 수 있습니다. bootstrap 프로세스가 완전히 종료되고 다른 client가 없음을
-확인한 뒤 migrator로 `ALTER ROLE webdex_runtime LOGIN;`을 실행하고, 반드시 `--plan`과 capability
-verifier를 다시 통과시킨 후 API를 시작합니다. `--plan`은 역할이나 ACL을 변경하지 않습니다.
-
-기존 운영 DB upgrade에는 `drizzle-kit push`를 사용하지 않고, 앱 시작 시에는 어떤 DDL도 실행하지
-않습니다.
-[production-database-migrations.yml](.github/workflows/production-database-migrations.yml)을
-정확한 release commit SHA로 수동 실행하고,
-`production-database` GitHub Environment의 required reviewer 승인과
-`PRODUCTION_DATABASE_DIRECT_URL` secret, `PRODUCTION_RUNTIME_DATABASE_ROLE` variable을 사용합니다.
-direct URL은 runtime 앱 role과 별개인 전용 DDL migrator role이어야 하며 runtime role은 migrator
-role을 포함한 다른 role을 상속하거나 DB·extension·`public` 객체를 소유할 수 없고, DB 또는
-`public` schema의 `CREATE` 권한과 `toonspectrum_ops` schema/원장 table의 어떤 권한도 가질 수
-없습니다. migration runner는 `PUBLIC`과 runtime role의 원장 접근을 매번 회수한 뒤 verifier와
-동일한 0024 object-storage 컬럼 권한 계약을 적용하고, 0025 인증 lifecycle 스키마·인덱스와
-runtime DML 권한을 검증합니다. runtime
-role의 public relation/sequence 최소 DML GRANT와 실제 `DATABASE_URL` canary는
-[`DEPLOY.md`](DEPLOY.md)의 운영 전제대로 별도 완료해야 합니다. URL은
-구조 파싱 후 `postgresql:`/`postgres:`
-protocol, credentialed authority, direct hostname을 확인하고, query는
-`sslmode=verify-full&channel_binding=require`만 정확히 한 번씩 허용합니다. `host`, `hostaddr`,
-`service`, `port`, `user`, `dbname`, `options`를 포함한 libpq override와 pooler hostname은
-거부합니다. DB secret은 URL 검증·migration·capability 검증 step에만 전달됩니다.
-
-최초 원장 도입은 `migration_mode=adopt`와
-`ADOPT-TOONSPECTRUM-MIGRATION-HISTORY`, 이후 일반 배포는 `migration_mode=apply`와
-`APPLY-TOONSPECTRUM-PRODUCTION-MIGRATIONS`를 사용합니다. 중단되어 `applying`/`failed`가 남으면
-일반 실행은 거부되며, 원인을 확인한 뒤에만 `migration_mode=repair`와
-`REPAIR-TOONSPECTRUM-MIGRATION-STATE`를 사용합니다. `repair`는 checksum이 일치하는 기존
-`applying`/`failed` row만 재개하며, 원장이 없거나 누락된 history/pending migration을 생성하는
-우회 경로로 사용할 수 없습니다. durable lock이 남아 있으면 DB에서 확인한 exact 64자리
-`ownerToken`을 workflow의 `stale_lock_owner_token`에 입력해야 하고, 획득 후 60분이 지나지 않은
-lock은 token이 일치해도 active runner로 간주해 탈취하지 않습니다. 모든 mode는
-`NO-STUDIO-WRITERS` 확인과 Environment reviewer 승인을 요구합니다. workflow는 exact checksum
-원장, 현재 runtime health relation 전체, comment reanchor, Marketplace generated search/GIN
-opclass, `pg_trgm`, `0017` cutover marker를 함께 검증합니다.
-
-이 workflow는 이미 provision된 운영 DB upgrade 전용이며 `user`, `creator_work`,
-`creator_work_live_lock` base relation이 없으면 DDL 전에 실패합니다. 새 production DB bootstrap은
-별도의 승인·검증 작업으로 먼저 완료해야 합니다. `0017` 최초 cutover와 최초 adoption 전에 모든
-Studio writer를 drain해야 합니다. Render pre-deploy 등 다른 migration writer와 동시에 활성화하면
-안 됩니다. API writer drain, live-lock revision cutover, retry, emergency rollback 절차는
-[`docs/STUDIO-LIVE-LOCK-REVISION-MIGRATION.md`](docs/STUDIO-LIVE-LOCK-REVISION-MIGRATION.md)를 따릅니다.
+> **참고 (레거시 분리 역할 마이그레이션 워크플로)**: [production-database-migrations.yml](.github/workflows/production-database-migrations.yml)은 분리된 migrator/runtime 역할을 전제로 한 기존 운영 DB(`adopt` / `apply` / `repair`, `NO-STUDIO-WRITERS`, Environment reviewer 승인, `sslmode=verify-full&channel_binding=require`)용 워크플로이며, 현재 단일 소유자 역할인 서울 onpod `toonstudio-db`에는 그대로 실행하지 않습니다([`infrastructure-map.md`](docs/operations/infrastructure-map.md) 7.2·8절, [`docs/STUDIO-LIVE-LOCK-REVISION-MIGRATION.md`](docs/STUDIO-LIVE-LOCK-REVISION-MIGRATION.md)).
 
 > 데이터 갱신: 로컬에서 `pnpm catalog:update:manual`을 실행하고 결과를 검토·커밋한 뒤 재배포합니다. 정적 파일과 API 번들은 같은 검토된 스냅샷을 사용하며, 실행 중인 서버는 카탈로그를 다시 읽지 않습니다. 전체 흐름은 [`docs/data-pipeline.md`](docs/data-pipeline.md) 참고.
 
@@ -426,7 +366,7 @@ apps/
     src/{app,domains,platform,shared}/
   api/                       NestJS backend
     drizzle.config.ts
-    src/{modules,infrastructure,db,server,...}/
+    src/{modules,platform,realtime,runtime,server,config,logging}/
   mobile/                    Capacitor Android/iOS wrapper
   desktop-sync/              로컬·cloud 동기화
   character-lab/             캐릭터 파이프라인 실험 앱(배포 대상 아님)
@@ -443,10 +383,10 @@ tests/
   corpus/                    검증 코퍼스
 tools/                       authoring·automation·DCC utility
 data/                        검토된 카탈로그·asset release 자료
-deploy/                      Cloudflare·Coturn 등 배포 단위
+deploy/                      Cloudflare·onpod·Coturn 등 배포 단위
 config/                      기계 정책과 아키텍처 ratchet
 openwiki/                    탐색·설명 보조 문서
-docs/                        현재 문서, ADR, 역사 자료
+docs/                        현재 문서, ADR, 아카이브(`docs/archive/`), 역사 자료
 ```
 
 `packages/domains/*`는 만들지 않습니다. 기능은 먼저 각 앱의
@@ -466,6 +406,7 @@ docs/                        현재 문서, ADR, 역사 자료
 ### 런타임 소스 지도
 
 Web과 Admin은 `app/domains/platform/shared` 소유권을 사용합니다. API 기능은
-`apps/api/src/modules`, 외부 adapter는 `apps/api/src/platform/adapters`, schema·migration은
-`apps/api/src/platform/database`가 소유합니다. `apps/api/src/server`와 `common`은 점진적으로 축소하는 레거시
-경계입니다. 운영 HTTP 진입점은 `apps/api/src/main.ts`입니다.
+`apps/api/src/modules`, HTTP 경계는 `apps/api/src/platform/http`, 외부 adapter는
+`apps/api/src/platform/adapters`, schema·migration은 `apps/api/src/platform/database`가 소유합니다.
+`apps/api/src/server`는 점진적으로 축소하는 레거시 경계입니다. 운영 HTTP 진입점은
+`apps/api/src/main.ts`입니다.

@@ -3,7 +3,7 @@
 - 작성일: `2026-11-19`
 - 기준 브랜치 / HEAD: `feat/studio-assistant-router-workflow-packs-20261119` (`9fb467d90`)
 - 문서 상태: **current** (Wave 0 기준선. 각 항목의 구현 완료·검증 통과는 `AC_LEDGER.md`에서 개별 추적)
-- 참조 정본: `AGENTS.md`, `PRODUCT.md`, `DESIGN.md`, `DIFFERENTIATION.md`, `UX_FLOW_BACKLOG.md`, `PENDING-TICKETS-MOBILE-DRAW.md`, `docs/design/sitewide-clarity-20261111/verification-matrix.md`
+- 참조 정본: `AGENTS.md`, `PRODUCT.md`, `DESIGN.md`, `DIFFERENTIATION.md`, `docs/archive/root-backlogs/ux-flow-backlog-2026-11-21.md`(구 `UX_FLOW_BACKLOG.md`), `docs/archive/root-backlogs/pending-tickets-mobile-draw-2026-11-21.md`(구 `PENDING-TICKETS-MOBILE-DRAW.md`), `docs/design/sitewide-clarity-20261111/verification-matrix.md`
 
 ---
 

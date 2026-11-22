@@ -120,13 +120,16 @@ pnpm run deploy:auth:sync
 pnpm run deploy:auth -- --set-cloudflare-token --sync-github
 
 # [로컬 env가 없는 아무 클라우드 환경에서 실행]
-pnpm run deploy:cloud -- --status                           # origin/main SHA, 필수 CI(core·verify), 시크릿 준비 상태 조회
+pnpm run deploy:cloud -- --status                           # origin/main SHA, 필수 CI(core·verify), 시크릿 준비 상태 + 변경 영역 진단
+pnpm run deploy:cloud -- --smart --watch                    # 변경 영역(web/api/apex)만 자동 선별 배포 (무변경 단위 안전 건너뛰기)
 pnpm run deploy:cloud -- --dry-run                          # 운영 미변경 클라우드 빌드·드라이런 실행
 pnpm run deploy:cloud -- --web --watch                      # Cloudflare 정적 웹 + R2 배포 (상시 승인 범위)
 pnpm run deploy:cloud -- --api-image --watch                # Core API 불변 GHCR 이미지 발행 (상시 승인 범위)
 pnpm run deploy:cloud -- --api-onpod --confirm-onpod        # 서울 onpod(toonstudio-api) 이미지 교체 (명시 승인 필요)
 pnpm run deploy:cloud -- --sync-api-env --confirm-onpod     # ONPOD_API_ENV_JSON을 onpod에 반영 (DATABASE_URL 보존)
 ```
+
+- `2026-11-22` 보강: `scripts/lib/deploy-change-scope.mjs` 기반 `--smart` 선별 실행, `scripts/lib/deploy-preflight-drift.mjs` 드리프트 점검(마이그레이션 133건·상시 승인·`build-meta.json`·env 키 존재 여부), `node scripts/verify-production-post-deploy-smoke.mjs` 배포 직후 스모크·안전 롤백 명령 안내 가드를 함께 지원합니다.
 
 보안·비용 경계:
 - 전권 `ONPOD_TOKEN`, `ONPOD_DATABASE_URL*`, 퇴역 공급자 키, 개발용 `VITE_*` 비밀은 GitHub에 업로드하지 않으며 `toonstudio-api` 단일 앱 범위·90일 만료 키(`ONPOD_DEPLOY_TOKEN`)와 `DATABASE_URL`을 제외한 검증된 `ONPOD_API_ENV_JSON`만 `gh secret set`(표준 입력 파이프)으로 등록합니다.

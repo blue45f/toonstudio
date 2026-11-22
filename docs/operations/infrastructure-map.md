@@ -1,7 +1,7 @@
 # ToonStudio 인프라 지도
 
 - 문서 상태: **current** — 2026-10-23 컷오버를 마쳤다(Core API·DB가 onpod 서울에서 운영 트래픽을 받는다). 행마다 `current`(지금 동작·검증), `migration`(진행 중), `target`(승인 대기), `legacy exception`(퇴역 예정), `retired`(삭제됨)를 따로 적는다.
-- 운영 상태·DB 원장·Cloudflare CLI 인증 확인일: 2026-10-29. TLS 문서 갱신일: 2026-11-08 (7.2절, 첨부 인증서 오프라인 대조).
+- 운영 상태·DB 원장·Cloudflare CLI 인증 확인일: 2026-10-29. TLS 문서 갱신일: 2026-11-08 (7.2절, 첨부 인증서 오프라인 대조). 저장소 배포 도구·마이그레이션 원장 동기화 확인일: 2026-11-22 (`[저장소]` 확인, 실시간 공급자 재조회 아님).
 - 목적: 에이전트와 사람이 "무엇이 어디서 어떤 비용으로 도는지, 비밀값은 어디에 있는지, 어떻게 다시 만드는지"를 한 곳에서 본다. 이 문서는 정책을 바꾸지 않는다. 정책 정본은 루트 `AGENTS.md` 8·9절, 배포 절차는 `DEPLOY.md`다.
 - 갱신 의무: 공급자·자원·도메인·비밀 저장 위치·연결 경로를 바꾸는 변경은 **같은 변경에서 이 문서를 고친다**. 날짜와 증거 표기를 함께 바꾼다.
 - 증거 표기: **[직접]** 이 Mac에서 조회하거나 실행해 확인. 별도 날짜가 없는 기존 기록은 2026-10-22 기준이며, 이후 조회는 항목에 날짜를 적는다 · **[벤더]** 벤더 매뉴얼의 서술(저장소가 검증하지 않음) · **[저장소]** 저장소 파일 · **미확인**.
@@ -26,7 +26,7 @@
 | 트래픽 분석 | Cloudflare Worker `toonspectrum-analytics` + D1(`TRAFFIC_ANALYTICS_STORE=d1`) | 무료 | current | Core API가 RPC로 기록한다. onpod DB에는 분석 표가 없다(7.2절) |
 | apex 리다이렉트 | Cloudflare Worker(`deploy/cloudflare-apex-redirect`) | 무료 | current | |
 | **Core API** | onpod 앱 `toonstudio-api`, 서울, 무료 티어 | 0원 | **current** — 2026-10-23 05:14 KST 컷오버. 2026-10-29 조회에서도 running·free·single이며 always-on은 꺼져 있다. 준비성 200(단일 소유자 옵트인, 7.3절) | `https://toonstudio-api.onpod.ai`. 현재 이미지 `onpod://toonspectrum-core-api:5294fcc693284c38563ed7773748bbd0b7b2822e` [직접] |
-| **PostgreSQL 원장** | onpod DB `toonstudio-db`, 서울, dev 플랜, PG 17 | 0원 | **current** — 2026-10-29 읽기 전용 검증: migration 113개 체크섬 113/113 일치, adoption marker 포함 원장 114행·문제 0건 | 단일 소유자 역할(7.2절). 과거 이관 검증 12/12와 이번 읽기 전용 검증을 구분한다 [직접] |
+| **PostgreSQL 원장** | onpod DB `toonstudio-db`, 서울, dev 플랜, PG 17 | 0원 | **current** — 2026-10-29 읽기 전용 검증: migration 113개 체크섬 113/113 일치, adoption marker 포함 원장 114행·문제 0건 (저장소 원장은 2026-11-22 기준 `0001`~`0133_production_division_os.sql` 133개이며 `0114`~`0133` 20건은 운영 DB 미적용·승인 대기 [저장소]) | 단일 소유자 역할(7.2절). 과거 이관 검증 12/12와 이번 읽기 전용 검증을 구분한다 [직접] |
 | Core API (구) | Render 무료 `toonspectrum-core-api`(싱가포르) | — | **retired** — 2026-10-23 05:22 KST 삭제 | 2026-10-22 19:21 KST부터 DB 인증 실패(28P01)로 재시작을 반복했다. 삭제 전 환경변수 106개를 로컬에 백업했다(5절) [직접] |
 | Render 검증용 정적 사이트 19개 | `toonstudio-*-20260909` | — | **retired** — 2026-10-23 04:09 KST 삭제 | 2026-09-09 CI·레이어 검증 산출물. 저장소 참조 없음 [직접] |
 | studio-live | Render `toonspectrum-studio-live` | — | 없음 | `render.yaml`에 선언만 있고 Render에 만든 적이 없다 [직접] |
@@ -226,7 +226,12 @@ onpod exec toonstudio-api -- sh -c 'grep -E "VmRSS|VmHWM" /proc/1/status; cat /s
 # 엣지 비밀이 필요한 경로는 헤더 파일로 전달한다(명령줄에 값을 쓰지 않는다)
 umask 077; HF=$(mktemp); printf 'x-toonstudio-origin-secret: %s\n' "$(grep -E '^ONPOD_API_ENV_CLOUDFLARE_EDGE_ORIGIN_SECRET=' "$ENVF" | cut -d= -f2-)" > "$HF"
 curl -sS -H @"$HF" "$A/api/health/capabilities"; rm -f "$HF"
+
+# 2026-11-22 추가: 원점 live/ready·핵심 SPA 4경로·Studio COOP/COEP 자동 스모크 + 실패 시 안전 롤백 명령 안내
+node scripts/verify-production-post-deploy-smoke.mjs
 ```
+
+- 배포 전 드리프트 점검 유틸리티(`scripts/lib/deploy-preflight-drift.mjs`)는 `scripts/production-database-migrations.manifest`(133건)와 SQL 파일 간 드리프트, `deploy/STANDING_APPROVAL.json` 유효성, `dist/.vite/build-meta.json`의 `gitSha`/`buildId`, `.env.infrastructure.local` 필수 키 존재 여부(값 비노출)를 검사한다 [저장소: 2026-11-22].
 
 ### 6.6 롤백·철수
 
@@ -326,3 +331,4 @@ openssl x509 -in onpod-managed-postgres-server-cert.pem -noout -fingerprint -sha
 - 2026-10-23 컷오버 뒤 점검(05:15~): 공개 경로 live·ready 200, 능력 11개 모두 `available`, `edgeOriginAuth=enforced`(원점 직접 호출 403), OAuth 시작 4종(Google·GitHub·Kakao·Naver) 302와 www 콜백, DB 읽기·익명 쓰기(page-view 202)·표지 프록시 200, `/studio`의 `crossOriginIsolated=true`, 제품 투어 실재생 게이트(G5-1·G5-2) 전체 통과. 서버 오류 로그 0건, OOM 0건. Apple 로그인은 Render 때와 같이 자격 증명이 없어 꺼져 있다.
 - 2026-10-23 05:18 KST: 소유자 요청으로 `blue45f@gmail.com`(새 DB의 첫 계정)을 첫 관리자로 지정했다(`user.role=admin`, `admin_audit_logs`에 `USER_ROLE_CHANGE` 기록). 이메일 기반 관리자 부여는 코드에서 제거됐고 DB 역할만 권한을 정한다.
 - 2026-11-16: 로컬 `.env`가 없는 클라우드 환경에서도 수동 승인 배포가 가능하도록 GitHub Actions `production-deploy` Environment(main 브랜치 전용)와 수동 전용 `.github/workflows/cloud-production-deploy.yml`, 동기화·실행 도구(`scripts/setup-deploy-auth.mjs`, `scripts/dispatch-cloud-deploy.mjs`)를 구성했다. `onpod key add --app toonstudio-api --expires-days 90`으로 앱 전용 키(`ONPOD_DEPLOY_TOKEN`, 지문 `b1481287`)를 발급해 로컬 `.env.infrastructure.local`(0600)에 저장하고, 비비밀 Variables 8개(`CLOUDFLARE_ACCOUNT_ID`, `CORE_API_ORIGIN`, `ONPOD_APP_NAME`, 공개 `VITE_*` 5종)와 검증된 Secrets 7개(`ONPOD_DEPLOY_TOKEN`, `ONPOD_API_ENV_JSON` 104개 키·`DATABASE_URL` 제외, `VITE_KAKAO_JAVASCRIPT_KEY`, `CORE_ORIGIN_SECRET`, `NEIS_API_KEY`, `REALTIME_TICKET_SECRET`, `ANALYTICS_RPC_TOKEN`)를 `production-deploy` Environment에 주입했다 [직접: 2026-11-16]. 부모 셸(`~/.zshenv`)의 구 `CLOUDFLARE_API_TOKEN`은 HTTP 401 만료를 확인해 업로드에서 제외했으며, 정적 웹·R2 클라우드 배포만 신규 `CLOUDFLARE_API_TOKEN` 1회 등록을 남겨 두었다.
+- 2026-11-22: 저장소의 CI·배포 안전 가드를 보강했다(`56b4c4104a`, `a8c63fa6cc`, `f61b730dbf`, `7341be2725`). 비필수 보조 워크플로 25개를 `push: main`에서 분리해 주간 분산 `schedule`·`workflow_dispatch`로 전환했고, `cloud-production-deploy.yml` 웹 빌드에 `typecheck-shards` 읽기 전용 체크포인트 캐시, `catalog:gen`·`i18n:builtins:gen`에 SHA-256 스킵 캐시(`scripts/lib/static-gen-cache.mjs`), `pnpm run deploy:cloud -- --smart` 변경 영역 자동 선별(`scripts/lib/deploy-change-scope.mjs`), 배포 전 드리프트 검증(`scripts/lib/deploy-preflight-drift.mjs`)과 배포 직후 스모크·안전 롤백 안내 가드(`scripts/verify-production-post-deploy-smoke.mjs`)를 추가했다. 저장소 SQL 마이그레이션 원장은 `0133_production_division_os.sql`까지 133개로 확장되었으며, 이 갱신에서는 운영 배포나 실시간 공급자 조회를 수행하지 않았다 [저장소: 2026-11-22].

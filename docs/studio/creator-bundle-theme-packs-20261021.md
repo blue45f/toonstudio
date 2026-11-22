@@ -274,4 +274,4 @@ pnpm run deploy:creator-bundle-assets -- --asset-root <output-v2 트리>
   제외하는 것이다.
 - R2 키 불투명화 최종 확정, 텍스처 교정 범위와 손실 허용선, theme-packs 캐시 정책, 번들 총량 상한.
 - 렌더 이미지(파생물)에만 적용되는 허용 구분이 필요한지(지금은 팩 단위 allow가 렌더 전달의 필요조건이다), 렌더의 출처 모델 해시(`sourceModelSha256`)를 팩과 대조하는 장치를 둘지, 배포 직전 산출물 점검을 배포 도구에 연결할지.
-- `ASSET-INVENTORY.md` §3 정책 개정(제안만 기록됨)과 `THIRD_PARTY_NOTICES`의 번들 항목(§3.2 결정 뒤 작업).
+- `docs/asset-provenance/asset-inventory.md`(구 `ASSET-INVENTORY.md`) §3 정책 개정(제안만 기록됨)과 `THIRD_PARTY_NOTICES`의 번들 항목(§3.2 결정 뒤 작업).
