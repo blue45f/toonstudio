@@ -73,7 +73,15 @@ export function collectStudioSoakDiagnosticAssets({ distDirectory, evidenceDirec
   return manifest;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const canonicalPath = (value) => {
+  try {
+    return realpathSync(value);
+  } catch {
+    return resolve(value);
+  }
+};
+
+if (process.argv[1] && canonicalPath(process.argv[1]) === canonicalPath(fileURLToPath(import.meta.url))) {
   const root = dirname(dirname(fileURLToPath(import.meta.url)));
   try {
     const evidenceDirectory = process.env.TOONSPECTRUM_SOAK_OUT;

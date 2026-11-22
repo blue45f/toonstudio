@@ -404,10 +404,24 @@ issue 0을 확인했다. 같은 `46c884d0`의 #128 일반 실행은 모바일 �
 ### 실행 코드와 대조한 첫 입력 #130
 
 [진단 #130](https://github.com/blue45f/toonstudio/actions/runs/44938045596)의
-소스는 `ecd2cebdbbeedc8a5b80c125319e23bd71d5019b`다. API digest, native·CPU
-원본과 선택된 실행 JavaScript의 해시를 확인했다. native 수집·stream은 완료됐고
-data loss와 검증 issue는 없었다. 실제 CPU 표본의 함수·URL·위치·호출 조상과
-native 시계를 대조했으며, 표본 수를 함수별 CPU 시간 비율로 해석하지 않는다.
+소스는 `ecd2cebdbbeedc8a5b80c125319e23bd71d5019b`다. 70.559초 동안 세 획을 수락했지만
+59~108ms 긴 작업 일곱 건과 `diagnostic-only` 판정이 있어 일반 수락 검사의 통과로 사용할
+수 없다. native 원본 6,767,257바이트(SHA-256
+`57d669ff0390aefb59505fad21730ccd644877b16f4c3ada4568f536615f8a4e`)와 같은 빌드 ID
+`03ac7922ac7e`의 JS 다섯 파일 3,199,451바이트의 크기·해시 및 API digest를 확인했다.
+native 수집·stream은 완료됐고 data loss와 검증 issue는 없었다. 실제 CPU 표본의
+함수·URL·위치·호출 조상과 native 시계를 대조했으며, CPU profile의 음수 `timeDelta`로
+시간 분석은 `unavailable`로 유지하고 표본 수를 함수별 CPU 시간 비율로 해석하지 않는다.
+대표 17종의 canvas capture와 소크의 window capture는 등록 위치가 다르며, 어느 측정도
+물리 펜 접촉 시각이 아니다.
+
+| 구간 | native 원본 관측 | 해석 범위 |
+| --- | --- | --- |
+| 첫 pointerdown | EventDispatch 51.641ms, capture marker까지 20.952ms | 뒤에 등록된 capture 측정이 앞선 제품 핸들러 시간을 포함하지 않음 |
+| 작업공간 입력 관측 | 함수 본문 0.081ms, 감싼 V8 호출 20.481ms 안에 React microtask 18.599ms | wrapper 전체를 관측 함수 본문의 실행 시간으로 해석하지 않음 |
+| pointerup | EventDispatch 105.969ms, 종료 함수 본문 10.465ms | 감싼 V8 호출 75.390ms에는 두 React microtask 등이 중첩됨 |
+| 종료 뒤 React 작업 | 29.877ms와 25.350ms | 두 번째 작업 직전 DOM 관측 callback이 있어도 그 callback만의 비용으로 단정할 수 없음 |
+| 첫 RAF 뒤 다음 move 전 | style 계산 39.478ms | 첫 RAF 시작 시각은 픽셀 표시 완료나 이후 style/layout 완료 시각이 아님 |
 
 첫 pointerdown에서 `recordPointerType`의 상태 갱신 뒤 실제 Host와 작업공간 배치
 계산을 포함한 React callback 18.599ms를 확인했다. 현재 입력 기기 관측은 해당
@@ -420,7 +434,9 @@ pointerup에는 Host를 포함한 두 React callback 29.877ms·25.350ms와 Konva
 `StudioShellFloatingTarget`의 같은 대상 탐색 callback이 10회 실행됐다. 새 hook은
 마지막 요청의 DOM node와 force-visible 값이 같으면 React dispatch 전에 반환하고,
 변경되면 두 값을 하나의 snapshot으로 전달한다. React 반영 전 A→B→A 관측도
-마지막 요청 ref를 먼저 갱신해 보존한다. 이 수정의 동작 회귀와 실제 지연 개선은
+마지막 요청 ref를 먼저 갱신해 보존한다. 고정 원본 추출 React 재현은 기존 16개 중
+렌더 횟수 6건에서 실패했으나 변경 후 16/16을 통과했고, 실제 컴포넌트 배선·provider·
+그리기 표시 네 파일 29/29도 통과했다. 이 수정의 동작 회귀와 실제 지연 개선은
 별도 판정이며, 두 번째 Host callback 전체의 제거를 증명한 것은 아니다.
 
 ### 사전 검사 #131의 입력 전 표시 실패
@@ -491,7 +507,9 @@ passive effect에서 room·outbox를 초기화한다. relay도 관측·확정을
 세 입력 effect·viewport 배율 hook을 연결한 두 테스트 파일에서 15개 모두 통과했다.
 새 정책 전환 두 건은 수정 전 실패·수정 후 통과를 확인했다. DOM 동일성·포커스,
 양수 resize, scroll·pointer·wheel·touch, cleanup, 원고·소유자·역할 변경과 기존
-복구 래치를 검사했다. 이 결과는 전체 타입 검사나 실제 브라우저의 장시간 수락과
+복구 래치를 검사했다. 기존 실제 공급자 38개를 포함한 회귀 확인과 최종 병합 추적은
+[PR 2863의 검증 기록](https://github.com/blue45f/toonstudio/pull/2863)에도 함께 남겼다.
+이 결과는 전체 타입 검사나 실제 브라우저의 장시간 수락과
 별개이며, `1445eebf94d2811d5e97644628b850781b8d3af8` 실행에는 포함되지 않는다.
 
 ### 같은 CI 소스에서 확인한 패널 준비와 검색 버튼 가림

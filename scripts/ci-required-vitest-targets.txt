@@ -580,6 +580,7 @@ apps/web/src/domains/creator/live/studio-pages-history-durable-runtime.test.ts
 apps/web/src/domains/creator/live/studio-pages-history-journal-long-session.test.ts
 apps/web/src/domains/creator/live/studio-pending-stroke-admission.test.ts
 apps/web/src/domains/creator/live/studio-rejected-stroke-recovery-persistence.test.ts
+apps/web/src/domains/creator/live/studio-retained-stroke-undo-durability.test.ts
 apps/web/src/domains/creator/live/studio-scoped-write-wire.test.ts
 apps/web/src/domains/creator/localization-sync-pro/__tests__/localization-sync-pro.test.tsx
 apps/web/src/domains/creator/localization-sync-pro/__tests__/offline-sync-storage-boundary.test.tsx
