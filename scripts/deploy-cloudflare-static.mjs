@@ -2,8 +2,7 @@
 
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { userInfo } from "node:os";
-import { delimiter, dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 
 import {
   isCloudflareAccountId,
@@ -17,7 +16,12 @@ import {
   resolveLocalDeployLedgerPath,
 } from "./lib/local-deploy-ledger.mjs";
 
-import { GITHUB_REPO_SLUG } from "./lib/deploy-auth-env.mjs";
+import { GITHUB_REPO_SLUG, isPlaceholderCredentialValue } from "./lib/deploy-auth-env.mjs";
+import {
+  assertSafeDeployArguments,
+  buildCloudflareTokenConflictGuidance,
+  buildSelfHealingExecPath,
+} from "./lib/deploy-manifest-briefing.mjs";
 import { inspectReleaseCi } from "./release-required-ci.mjs";
 
 const STANDING_APPROVAL_PATH = "deploy/cloudflare-static/STANDING_APPROVAL.json";
@@ -59,6 +63,15 @@ const MAX_PUBLIC_READ_ORIGINS = 8;
 function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+try {
+  assertSafeDeployArguments(process.argv.slice(2), {
+    context: "deploy:web",
+    rawOrigin: process.env.CLOUDFLARE_CORE_API_ORIGIN ?? "",
+  });
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
 }
 
 if (skipBuild && forceBuild) {
@@ -140,6 +153,11 @@ function parseOrigin(raw, environmentName) {
     || origin.hash !== ""
   ) {
     fail(`${environmentName} must be an HTTPS origin without credentials or a path`);
+  }
+  try {
+    assertSafeDeployArguments([], { context: "deploy:web", rawOrigin: origin.origin });
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
   }
   return origin.origin;
 }
@@ -310,28 +328,59 @@ if (!skipBuild && !forceBuild && mode === "production" && productionHead) {
 }
 const effectiveSkipBuild = skipBuild || autoReusedDist.reusable;
 
-const childHome = process.env.HOME?.includes("/.gemini/")
-  ? userInfo().homedir
-  : process.env.HOME;
-const nodeBinDirectory = dirname(process.execPath);
-const existingPathEntries = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
-const normalizedPathEntries = [
-  nodeBinDirectory,
-  "/opt/homebrew/bin",
-  ...existingPathEntries,
-].filter((entry, index, list) => list.indexOf(entry) === index);
+const healedExec = buildSelfHealingExecPath({
+  execPath: process.execPath,
+  env: process.env,
+});
 const baseChildEnvironment = {
   ...process.env,
-  PATH: normalizedPathEntries.join(delimiter),
-  ...(childHome ? { HOME: childHome } : {}),
+  PATH: healedExec.path,
+  ...(healedExec.home ? { HOME: healedExec.home } : {}),
 };
 if (useLocalOAuth && !isLocalWranglerOAuthAllowed(process.env)) fail("--wrangler-oauth는 로컬 배포에서만 사용할 수 있습니다.");
-const localAccountId = useLocalOAuth ? resolveLocalCloudflareAccountId(process.cwd(), baseChildEnvironment) : undefined;
-if (useLocalOAuth && mode === "production" && !isCloudflareAccountId(localAccountId)) {
+
+const ambientCloudflareToken = (process.env.CLOUDFLARE_API_TOKEN ?? "").trim();
+const hasAmbientShellToken = ambientCloudflareToken.length > 0;
+let effectiveUseLocalOAuth = useLocalOAuth;
+let localAccountId = effectiveUseLocalOAuth
+  ? resolveLocalCloudflareAccountId(process.cwd(), baseChildEnvironment)
+  : undefined;
+
+if (
+  !effectiveUseLocalOAuth
+  && mode === "production"
+  && hasAmbientShellToken
+  && isPlaceholderCredentialValue(ambientCloudflareToken)
+  && isLocalWranglerOAuthAllowed(process.env)
+) {
+  const candidateAccountId = resolveLocalCloudflareAccountId(process.cwd(), baseChildEnvironment);
+  if (isCloudflareAccountId(candidateAccountId)) {
+    effectiveUseLocalOAuth = true;
+    localAccountId = candidateAccountId;
+    console.log(
+      "[deploy-cloudflare-static] 셸의 CLOUDFLARE_API_TOKEN이 자리표시자 값으로 감지되어 로컬 Wrangler OAuth로 자동 격리 폴백합니다.",
+    );
+  } else {
+    const guidance = buildCloudflareTokenConflictGuidance({
+      hasShellToken: true,
+      useLocalOAuth: false,
+      localOAuthReady: false,
+      accountIdConfigured: false,
+    });
+    fail(guidance.lines.join("\n"));
+  }
+}
+
+if (effectiveUseLocalOAuth && hasAmbientShellToken && useLocalOAuth) {
+  console.log(
+    "[deploy-cloudflare-static] 셸의 CLOUDFLARE_API_TOKEN 충돌을 피하기 위해 로컬 Wrangler OAuth 세션으로 격리 실행합니다.",
+  );
+}
+if (effectiveUseLocalOAuth && mode === "production" && !isCloudflareAccountId(localAccountId)) {
   fail("--wrangler-oauth로 배포할 계정의 CLOUDFLARE_ACCOUNT_ID를 확인해 주세요.");
 }
-const oldWorkerIsolation = skipR2Sync && !process.env.CLOUDFLARE_API_TOKEN?.trim();
-const oauthChildEnvironment = useLocalOAuth
+const oldWorkerIsolation = skipR2Sync && !hasAmbientShellToken;
+const oauthChildEnvironment = effectiveUseLocalOAuth
   ? localWranglerOAuthEnvironment({ ...baseChildEnvironment, CLOUDFLARE_ACCOUNT_ID: localAccountId })
   : undefined;
 
@@ -380,7 +429,7 @@ const pipelineCommands = [
       mode === "production" && !skipR2Sync
         ? "sync:cloudflare-r2-assets"
         : "sync:cloudflare-r2-assets:dry-run",
-      ...(useLocalOAuth && mode === "production" && !skipR2Sync ? ["--wrangler-oauth"] : []),
+      ...(effectiveUseLocalOAuth && mode === "production" && !skipR2Sync ? ["--wrangler-oauth"] : []),
     ],
     environment: oauthChildEnvironment,
   },
@@ -393,7 +442,7 @@ const pipelineCommands = [
       "wrangler",
       "deploy",
       ...(mode === "dry-run" ? ["--dry-run"] : []),
-      ...(useLocalOAuth || oldWorkerIsolation ? ["--env-file", "/dev/null"] : []),
+      ...(effectiveUseLocalOAuth || oldWorkerIsolation ? ["--env-file", "/dev/null"] : []),
       "--config",
       "deploy/cloudflare-static/wrangler.jsonc",
       ...routeVariables,
@@ -413,7 +462,24 @@ for (const command of pipelineCommands) {
     stdio: "inherit",
     env: command.environment ?? baseChildEnvironment,
   });
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  if (result.status !== 0) {
+    if (
+      command.publishes
+      && !effectiveUseLocalOAuth
+      && hasAmbientShellToken
+      && isLocalWranglerOAuthAllowed(process.env)
+    ) {
+      const guidance = buildCloudflareTokenConflictGuidance({
+        hasShellToken: true,
+        useLocalOAuth: false,
+        accountIdConfigured: isCloudflareAccountId(
+          resolveLocalCloudflareAccountId(process.cwd(), baseChildEnvironment),
+        ),
+      });
+      console.error(guidance.lines.join("\n"));
+    }
+    process.exit(result.status ?? 1);
+  }
   stageTimings.push(`${command.label}=${((Date.now() - stageStartedAt) / 1000).toFixed(1)}s`);
 }
 

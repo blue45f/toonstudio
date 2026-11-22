@@ -29,6 +29,7 @@ const REQUIRED_FILES = [
   "scripts/verify-pre-push.sh",
   ".github/pull_request_template.md",
   "docs/operations/agent-harness.md",
+  "deploy/DEPLOY_MANIFEST.json",
 ];
 
 const ADAPTER_FILES = [
@@ -134,6 +135,10 @@ export function inspectHarness(root = ROOT) {
       'provider_id: "ghidra"',
       "REA_ANALYSIS_PROVIDER=ghidra",
       "## 8. 운영 및 배포 정책",
+      "### LLM 공통 배포 요약 카드",
+      "deploy/DEPLOY_MANIFEST.json",
+      "pnpm run deploy:doctor -- --json",
+      "gh workflow run cloud-production-deploy.yml -f mode=smart-release",
       "## 9. 로컬 시크릿·토큰 저장 정책",
       ".env.infrastructure.local",
       "환경변수 이름 또는 마스킹된 상태만 사용한다",

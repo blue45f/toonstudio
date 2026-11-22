@@ -33,6 +33,15 @@ function appendStepSummary(lines, env = process.env) {
   appendFileSync(summaryPath, `${lines.join("\n")}\n`, "utf8");
 }
 
+function appendStepOutput(entries, env = process.env) {
+  const outputPath = env.GITHUB_OUTPUT;
+  if (!outputPath) return;
+  const lines = Object.entries(entries).map(
+    ([key, value]) => `${key}=${String(value ?? "").replace(/[\r\n]/gu, " ")}`,
+  );
+  appendFileSync(outputPath, `${lines.join("\n")}\n`, "utf8");
+}
+
 export function parseCloudflareDeployArgs(argv) {
   let unit = "static-web";
   let dryRun = false;
@@ -335,6 +344,15 @@ async function runStaticWeb({ dryRun, syncWorkerSecrets, env }) {
 
   const postDeployState = await fetchActiveWorkerState(accountId, token, STATIC_WORKER_NAME);
   const smoke = await verifyLiveStaticWebSmoke("https://www.toonstudio.cloud");
+
+  appendStepOutput(
+    {
+      web_sha: releaseSha,
+      worker_version_id: postDeployState.activeVersionId ?? "",
+      previous_worker_version_id: remoteState.activeVersionId ?? "",
+    },
+    env,
+  );
 
   appendStepSummary(
     [
