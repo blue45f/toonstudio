@@ -279,7 +279,6 @@
     "test:studio-mcp": "node --test tools/toonstudio-mcp/server.test.mjs",
     "test:production-toolchain": "vitest run apps/web/src/domains/creator/toolchain && node --test tools/toonbridge/test/*.test.mjs",
     "test:desktop-sync-release": "pnpm --filter @toonstudio/desktop-sync run build && node --test scripts/desktop-sync-release.test.mjs",
-    "verify:studio-production-toolchain": "pnpm run test:production-toolchain",
     "verify:mobile-native-media": "pnpm --filter @toonstudio/mobile run verify:native-media",
     "mobile:doctor": "pnpm --filter @toonstudio/mobile run doctor",
     "mobile:sync": "pnpm --filter @toonstudio/mobile run sync",
@@ -340,7 +339,10 @@
     "test:local-test-stack": "node --test scripts/local-test-stack.test.mjs",
     "test:lint-strict-budget": "node --test scripts/lint-strict-warning-budget.test.mjs",
     "test:creator-bundle-deploy-plan": "node --test scripts/plan-creator-bundle-deploy.test.mjs",
-    "test:creator-bundle-release-r2": "node --test scripts/creator-bundle-release-r2.test.mjs scripts/lib/creator-bundle-r2-rest.test.mjs scripts/lib/creator-bundle-r2-release-gates.test.mjs"
+    "test:creator-bundle-release-r2": "node --test scripts/creator-bundle-release-r2.test.mjs scripts/lib/creator-bundle-r2-rest.test.mjs scripts/lib/creator-bundle-r2-release-gates.test.mjs",
+    "audit:repo-hygiene": "node scripts/audit-repo-hygiene.mjs",
+    "audit:repo-hygiene:check": "node scripts/audit-repo-hygiene.mjs --check",
+    "test:repo-hygiene": "node --test scripts/audit-repo-hygiene.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.8.0",
