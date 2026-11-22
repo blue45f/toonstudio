@@ -58,15 +58,25 @@ describe("저작 파생 메시의 기존 PNG/PSD 장면 연결", () => {
       return new Uint8ClampedArray(16).fill(255);
     } });
     const beauty = visibleByPass.get("beauty") ?? [];
-    const hair = beauty.find((name) => name.includes("groom"));
+    const hair = beauty.find((name) => name.startsWith("character-hair-groom:"));
+    const hairOutline = beauty.find((name) => name.startsWith("character-hair-groom-outline:"));
     const free = beauty.find((name) => name.includes("geometry-stroke:"));
     const line = beauty.find((name) => name.includes("surface-ink:"));
-    expect(hair).toBeDefined(); expect(free).toBeDefined(); expect(line).toBeDefined();
-    expect(visibleByPass.get("mask-hair")).toEqual([hair]);
+    expect(hair).toBeDefined(); expect(hairOutline).toBeDefined(); expect(free).toBeDefined(); expect(line).toBeDefined();
+    // 외곽선은 헤어 실루엣의 일부다. 얼굴/입체선과 섞이지 않고 본체와 같은 마스크에 남아야 한다.
+    expect(visibleByPass.get("mask-hair")).toEqual([hair, hairOutline]);
     expect(visibleByPass.get("mask-accessory")).toEqual([free]);
     expect(visibleByPass.get("mask-face")).toEqual(["Face", line]);
+    if (!hair || !hairOutline) throw new Error("헤어 본체와 외곽선이 모두 필요합니다.");
+    const outline = root.getObjectByName(hairOutline);
+    expect(outline?.parent).toBe(root.getObjectByName(hair));
+    expect(outline?.userData.studioVrmCustomPartOutline).toBe(true);
+    expect(outline?.userData.toonstudioComponent).toBe("hair");
     expect(result.passes.map((entry) => entry.id)).toEqual(expect.arrayContaining(["beauty", "mask-hair", "mask-accessory", "mask-face"]));
     expect(source.visible).toBe(true);
+    const restored: string[] = [];
+    scene.traverseVisible((node) => { if (node instanceof Mesh) restored.push(node.name); });
+    expect(restored).toEqual(beauty);
     disposeCharacterSurfaceInkGroup(ink); geometry.dispose(); groom.dispose();
   });
 });

@@ -83,7 +83,8 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
     commentsOpen,
     configuredServerAiProviders,
     continuityOpen,
-    currentStudioWorkspaceDeviceKind, appliedWorkspaceDeviceKind,
+    currentStudioWorkspaceDeviceKind,
+    appliedWorkspaceDeviceKind,
     currentWorkspaceOwnerScope,
     dialogueScript,
     displayLinkedTitleId,
@@ -357,7 +358,8 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           isExporting={isExporting}
           isMobile={isMobile}
           liveWorkspaceLayout={liveWorkspaceLayout}
-          resolveWorkspaceDeviceKind={currentStudioWorkspaceDeviceKind} appliedWorkspaceDeviceKind={appliedWorkspaceDeviceKind}
+          resolveWorkspaceDeviceKind={currentStudioWorkspaceDeviceKind}
+          appliedWorkspaceDeviceKind={appliedWorkspaceDeviceKind}
           loadedWork={loadedWork}
           masterEditMode={masterEditMode}
           menu={menu}

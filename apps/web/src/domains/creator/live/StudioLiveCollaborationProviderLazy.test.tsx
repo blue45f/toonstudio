@@ -9,7 +9,7 @@ import ts from "typescript";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createStudioScopedWriteFixture } from "../studio-collab/studio-scoped-write.test-fixture";
-import { StudioScopedWriteAuthorityContext } from "../studio-collab/studio-scoped-write-context";
+import { canParticipantEdit, StudioScopedWriteAuthorityContext } from "../studio-collab/studio-scoped-write-context";
 import { StudioLiveRoom } from "./studio-live-collaboration-room";
 import {
   EMPTY_STUDIO_LIVE_CONTEXT,
@@ -59,53 +59,81 @@ function compileLazyProvider() {
   return { Provider, resolve, reject, loader };
 }
 
-function actualProviderReset() {
+function actualProviderEffects() {
   const tree = ts.createSourceFile("Provider.tsx", providerSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const candidates: ts.Block[] = [];
+  const resets: ts.CallExpression[] = [];
+  const policies: ts.CallExpression[] = [];
   const visit = (node: ts.Node): void => {
     if (ts.isCallExpression(node) && node.expression.getText(tree) === "useEffect") {
       const callback = node.arguments[0];
-      if (callback && ts.isArrowFunction(callback) && ts.isBlock(callback.body)
-        && callback.body.getText(tree).includes("const latchedRecoveryBoundary =")) candidates.push(callback.body);
+      if (callback && ts.isArrowFunction(callback) && ts.isBlock(callback.body)) {
+        const source = callback.body.getText(tree);
+        if (source.includes("const latchedRecoveryBoundary =")) resets.push(node);
+        if (source.includes("const observed = observedTransportPolicyRef.current;")) policies.push(node);
+      }
     }
     ts.forEachChild(node, visit);
   };
   visit(tree);
-  if (candidates.length !== 1) throw new Error("실제 Provider 세대 초기화가 모호합니다.");
-  const block = candidates[0];
-  if (!block) throw new Error("세대 초기화 block이 없습니다.");
+  if (resets.length !== 1 || policies.length !== 1) throw new Error("실제 Provider 정책·세대 초기화가 모호합니다.");
+  const reset = resets[0], policy = policies[0];
+  const resetCallback = reset?.arguments[0], policyCallback = policy?.arguments[0];
+  const resetDependencies = reset?.arguments[1], policyDependencies = policy?.arguments[1];
+  if (!resetCallback || !ts.isArrowFunction(resetCallback) || !ts.isBlock(resetCallback.body)
+    || !policyCallback || !ts.isArrowFunction(policyCallback) || !ts.isBlock(policyCallback.body)
+    || !resetDependencies || !ts.isArrayLiteralExpression(resetDependencies)
+    || !policyDependencies || !ts.isArrayLiteralExpression(policyDependencies)) {
+    throw new Error("실제 Provider 정책·reset 본문과 의존성 배열이 필요합니다.");
+  }
+  const block = resetCallback.body;
   const end = block.statements.findIndex((statement) => ts.isVariableStatement(statement)
     && statement.declarationList.declarations.some((declaration) => declaration.name.getText(tree) === "disposeSession"));
   if (end < 0) throw new Error("비동기 transport 시작 경계를 찾지 못했습니다.");
-  // 네트워크를 시작하기 전의 실제 reset·복구/철회 latch·지원 불가 분기를 그대로 실행한다.
+  // 실제 순서와 의존성 배열을 유지한다. 정책 state 갱신을 reset과 한 단계로 합치지 않는다.
+  // 네트워크 앞의 reset·복구/철회 latch·지원 불가 분기까지만 그대로 실행한다.
   const prefix = block.statements.slice(0, end).map((statement) => statement.getText(tree)).join("\n");
   const names = ["recoveryBoundaryRef", "revocationBoundaryRef", "recoveryBoundaryScopeKey", "setRoom", "setPeers", "setLocks",
     "setChatMessages", "setError", "setLocalFallbackAllowed", "setSyncTelemetry", "setOperationSyncReady",
     "onAuthoritativeSaveBarrierChange", "onCrdtDocumentChange", "setAvailability", "setMode", "setTerminalTransportState",
     "setRecovery", "onRoomChange", "transportPreference", "outboxScope", "workId", "participantName", "participantRole",
-    "transportFactory", "isStudioLocalLiveTransportSupported", "frozenStatus3Text"];
-  const code = ts.transpileModule(`const {${names.join(",")}} = frame;\n${prefix}`, {
+    "transportFactory", "isStudioLocalLiveTransportSupported", "frozenStatus3Text",
+    "observedTransportPolicyRef", "serverRequired", "setTransportPreference", "openOfflineSession",
+    "participantCanEdit", "scopedWrite", "ephemeralOnly", "transportRetryKey"];
+  const code = ts.transpileModule(`const {useEffect} = React;
+    const {${names.join(",")}} = frame;
+    useEffect(() => ${policyCallback.body.getText(tree)}, ${policyDependencies.getText(tree)});
+    useEffect(() => {${prefix}}, ${resetDependencies.getText(tree)});`, {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
   }).outputText;
-  const program = new Function("frame", code);
-  return (frame: Readonly<Record<string, unknown>>): void => { program(frame); };
+  const program = new Function("React", "frame", code);
+  return (frame: Readonly<Record<string, unknown>>): void => { program(React, frame); };
 }
 
-const resetFromActualProvider = actualProviderReset();
+const useEffectsFromActualProvider = actualProviderEffects();
 
 function runtimeFixture() {
   const rendered = vi.fn();
+  const transportCommits: { serverRequired: boolean; preference: "server" | "local" }[] = [];
   const control = {
     get renders() { return rendered.mock.calls.length; },
     mounts: 0, unmounts: 0,
     props: null as Props | null,
     value: null as ContextValue | null,
+    transportCommits,
     update: (_patch: Partial<ContextValue>): void => { throw new Error("runtime 준비 전 갱신"); },
     latch: (_recovery: StudioLiveRecoveryState): void => { throw new Error("runtime 준비 전 latch"); },
   };
   function Runtime(props: Props) {
     rendered();
     const [snapshot, setSnapshot] = React.useState<ContextValue>(EMPTY_STUDIO_LIVE_CONTEXT);
+    const [transportPreference, setTransportPreference] = React.useState<"server" | "local">(
+      props.serverRequired ? "server" : "local",
+    );
+    const observedTransportPolicyRef = React.useRef({
+      transportFactory: props.transportFactory, serverRequired: props.serverRequired === true,
+    });
+    const scopedWrite = React.useContext(StudioScopedWriteAuthorityContext);
+    const openOfflineSession = React.useCallback(() => undefined, []);
     const recoveryBoundaryRef = React.useRef<{ scopeKey: string; recovery: StudioLiveRecoveryState } | null>(null);
     const revocationBoundaryRef = React.useRef(null);
     const scopeKey = props.workId ? JSON.stringify([props.outboxScope || null, props.workId]) : null;
@@ -116,7 +144,11 @@ function runtimeFixture() {
       control.mounts += 1;
       return () => { control.unmounts += 1; };
     }, []);
-    React.useEffect(() => resetFromActualProvider({
+    useEffectsFromActualProvider({
+      observedTransportPolicyRef, setTransportPreference,
+      serverRequired: props.serverRequired === true, openOfflineSession, scopedWrite,
+      participantCanEdit: canParticipantEdit(props.participant?.role ?? null),
+      ephemeralOnly: props.ephemeralOnly === true, transportRetryKey: 0,
       recoveryBoundaryRef, revocationBoundaryRef, recoveryBoundaryScopeKey: scopeKey,
       setRoom: field("room"), setPeers: field("peers"), setLocks: field("locks"), setChatMessages: field("chatMessages"),
       setError: field("error"), setLocalFallbackAllowed: field("localFallbackAllowed"),
@@ -124,18 +156,21 @@ function runtimeFixture() {
       setSyncTelemetry: () => undefined, setOperationSyncReady: () => undefined, setTerminalTransportState: () => undefined,
       onAuthoritativeSaveBarrierChange: props.onAuthoritativeSaveBarrierChange,
       onCrdtDocumentChange: props.onCrdtDocumentChange, onRoomChange: props.onRoomChange,
-      transportPreference: props.serverRequired ? "server" : "local",
+      transportPreference,
       outboxScope: props.outboxScope ?? null, workId: props.workId,
       participantName: props.participant?.displayName ?? null, participantRole: props.participant?.role ?? null,
       transportFactory: props.transportFactory, isStudioLocalLiveTransportSupported: () => false,
       frozenStatus3Text: (_key: string, fallback: string) => fallback,
-    }), [field, scopeKey, props.workId, props.outboxScope, props.participant?.displayName, props.participant?.role,
-      props.transportFactory, props.serverRequired, props.onAuthoritativeSaveBarrierChange, props.onCrdtDocumentChange, props.onRoomChange]);
+    });
     // 실제 Provider처럼 매 render 새 context object를 만든다. 잘못된 Relay는 여기서 반복된다.
-    const value = { ...snapshot };
+    const value = { ...snapshot,
+      serverAvailable: props.transportFactory !== undefined,
+      usingLocalFallback: props.transportFactory !== undefined && transportPreference === "local",
+    };
     React.useLayoutEffect(() => {
       control.props = props;
       control.value = value;
+      transportCommits.push({ serverRequired: props.serverRequired === true, preference: transportPreference });
       control.update = (patch) => setSnapshot((current) => ({ ...current, ...patch }));
       control.latch = (recovery) => {
         if (!scopeKey) throw new Error("복구 scope가 없습니다.");
@@ -258,6 +293,43 @@ describe("지연 협업 공급자의 안정적인 context 전달", () => {
     expect(after.at(-1)?.value).toBe(r.control.value);
     expect(r.control.mounts).toBe(1);
     expect(r.control.unmounts).toBe(0);
+  });
+
+  it.each([false, true])("같은 factory의 서버 필수 전환은 어느 consumer commit에도 이전 room을 노출하지 않는다 StrictMode=%s", async (strictMode) => {
+    const f = compileLazyProvider(), r = runtimeFixture();
+    const transportFactory = vi.fn(() => { throw new Error("정책 경계 검증에서 네트워크를 열면 안 됩니다."); });
+    const props = { ...baseProps(), transportFactory, serverRequired: false };
+    const commits: { label: string; value: ContextValue }[] = [];
+    function Read({ label }: { label: string }) {
+      const value = React.useContext(StudioLiveCollaborationContext);
+      React.useLayoutEffect(() => { commits.push({ label, value }); });
+      return <div data-testid="editor" />;
+    }
+    const view = render(<f.Provider {...props}><Read label="local" /></f.Provider>, { reactStrictMode: strictMode });
+    await act(async () => { f.resolve({ default: r.Runtime }); });
+    const room = new StudioLiveRoom({ workId: "work-a", participant: { sessionId: "local-fixture", displayName: "익명 게스트", role: "editor" } });
+    await act(async () => { r.control.update({ room, mode: "local", error: "이전 로컬 연결" }); });
+    const previous = r.control.value;
+    expect(commits.at(-1)?.value).toBe(previous);
+    expect(previous?.room).toBe(room);
+    const beforeTransportCommits = r.control.transportCommits.length;
+
+    view.rerender(<f.Provider {...props} serverRequired><Read label="server-required" /></f.Provider>);
+    const after = commits.filter(({ label }) => label === "server-required");
+    expect(after.length).toBeGreaterThan(0);
+    expect(r.control.props?.transportFactory).toBe(transportFactory);
+    expect(transportFactory).not.toHaveBeenCalled();
+    // 실제 정책 effect는 먼저 이전 local preference로 commit한 뒤 server state를 반영한다.
+    expect(r.control.transportCommits.slice(beforeTransportCommits)).toContainEqual({ serverRequired: true, preference: "local" });
+    expect(r.control.transportCommits.at(-1)).toEqual({ serverRequired: true, preference: "server" });
+    expect(after.at(-1)?.value.room).toBeNull();
+    expect(after.at(-1)?.value).toBe(r.control.value);
+    const observed = after.map(({ value }, index) => ({
+      index, oldRoom: value.room === room, oldContext: value === previous,
+      availability: value.availability, mode: value.mode, usingLocalFallback: value.usingLocalFallback,
+    }));
+    expect(observed.filter(({ oldRoom, oldContext }) => oldRoom || oldContext),
+      `서버 필수 범위의 모든 consumer commit: ${JSON.stringify(observed)}`).toEqual([]);
   });
 
   it("같은 소유자의 transport 변경에서 기존 복구 latch와 callback·huddle props를 보존한다", async () => {

@@ -462,13 +462,10 @@ export function createArtistAutonomyPreset(
   };
 }
 
-export function loadSavedArtistAutonomyPresets(): readonly ArtistAutonomyPreset[] {
-  if (typeof window === "undefined") return [];
+function parseSavedArtistAutonomyPresets(raw: string): readonly ArtistAutonomyPreset[] | null {
   try {
-    const raw = window.localStorage.getItem(ARTIST_PRESET_STORAGE_KEY);
-    if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) return null;
     const results: ArtistAutonomyPreset[] = [];
     for (const item of parsed) {
       if (
@@ -480,7 +477,12 @@ export function loadSavedArtistAutonomyPresets(): readonly ArtistAutonomyPreset[
         typeof item.id === "string" &&
         typeof item.name === "string" &&
         item.stageAutonomy &&
-        typeof item.stageAutonomy === "object"
+        typeof item.stageAutonomy === "object" &&
+        !Array.isArray(item.stageAutonomy) &&
+        (!("builtIn" in item) || typeof item.builtIn === "boolean") &&
+        (!("averagePercent" in item) || typeof item.averagePercent === "number") &&
+        Object.keys(item).every((key) => ["id", "name", "builtIn", "stageAutonomy", "averagePercent"].includes(key)) &&
+        Object.entries(item.stageAutonomy).every(([key, value]) => typeof value === "number" && PIPELINE_STAGE_ORDER.some((stage) => stage === key))
       ) {
         const normalized = normalizeStageAutonomy(
           DEFAULT_STAGE_AUTONOMY_BY_MODE["assist-50"],
@@ -493,20 +495,37 @@ export function loadSavedArtistAutonomyPresets(): readonly ArtistAutonomyPreset[
           stageAutonomy: normalized,
           averagePercent: computeAverageAutonomyPercent(normalized),
         });
-      }
+      } else return null;
     }
     return results;
   } catch {
-    return [];
+    return null;
   }
 }
 
-export function saveArtistAutonomyPresets(presets: readonly ArtistAutonomyPreset[]): void {
-  if (typeof window === "undefined") return;
+export function loadSavedArtistAutonomyPresets(): readonly ArtistAutonomyPreset[] {
+  if (typeof window === "undefined") return [];
   try {
-    const customOnly = presets.filter((preset) => !preset.builtIn);
-    window.localStorage.setItem(ARTIST_PRESET_STORAGE_KEY, JSON.stringify(customOnly));
+    const raw = window.localStorage.getItem(ARTIST_PRESET_STORAGE_KEY);
+    return raw === null ? [] : parseSavedArtistAutonomyPresets(raw) ?? [];
+  } catch { return []; }
+}
+
+export function saveArtistAutonomyPresets(presets: readonly ArtistAutonomyPreset[]): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const original = window.localStorage.getItem(ARTIST_PRESET_STORAGE_KEY);
+    if (original !== null && parseSavedArtistAutonomyPresets(original) === null) return false;
+    const customOnly = presets.filter((preset) => !preset.builtIn).map((preset) => {
+      const stageAutonomy = normalizeStageAutonomy(preset.stageAutonomy);
+      return { id: preset.id, name: preset.name, builtIn: false, stageAutonomy,
+        averagePercent: computeAverageAutonomyPercent(stageAutonomy) };
+    });
+    const serialized = JSON.stringify(customOnly);
+    window.localStorage.setItem(ARTIST_PRESET_STORAGE_KEY, serialized);
+    return window.localStorage.getItem(ARTIST_PRESET_STORAGE_KEY) === serialized;
   } catch {
-    // 저장소 제한 환경에서는 메모리 상태로만 유지한다.
+    // 실패를 호출자에게 알려 현재 화면의 설정과 기존 저장값을 구분한다.
+    return false;
   }
 }

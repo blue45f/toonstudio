@@ -1217,6 +1217,7 @@ jobs:
         run: >-
           pnpm exec vitest run --no-file-parallelism
           scripts/studio-review-voice-note-backup.integration.test.mjs
+          scripts/production-operations-runtime-acl.integration.test.mjs
           apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts
           apps/api/src/modules/admin-production-changes/admin-production-changes.integration.test.ts
           apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts
@@ -1240,7 +1241,6 @@ jobs:
           apps/api/src/modules/creator/studio-role-pipeline-migration.integration.test.ts
           apps/api/src/modules/creator/studio-work-asset.repository.integration.test.ts
           apps/api/src/modules/creator/studio-bg3d-bundle.repository.integration.test.ts
-
   core:
     name: core
     if: ${{ always() && !cancelled() }}

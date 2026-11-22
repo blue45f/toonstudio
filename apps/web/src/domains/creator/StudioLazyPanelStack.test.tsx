@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { resetStudioBg3dRetainedOwnerForTests } from "./bg3d/studio-bg3d-retained-owner";
 import { StudioBg3dRetainedOwnerHost } from "./bg3d/StudioBg3dRetainedOwnerHost";
+import { EMPTY_STUDIO_SHARED_3D_SCENE_SESSION } from "./runtime-leaves/studio-shared-3d-character-identity";
 import { StudioDocumentRuntimeContext } from "./studio-router/studio-document-runtime-context";
 import {
   StudioLazyPanelStack,
@@ -13,9 +14,23 @@ import {
 } from "./StudioLazyPanelStack";
 
 
+import type { StudioShared3dSceneSessionModules } from "./runtime-leaves/studio-shared-3d-scene-session-loader";
 import type { ReactElement } from "react";
 
 const commentsSessionHarness = vi.hoisted(() => ({ nextInstanceId: 0 }));
+const shared3dSessionHarness = vi.hoisted(() => ({
+  load: vi.fn<() => Promise<StudioShared3dSceneSessionModules>>(),
+}));
+const shared3dSessionModules: StudioShared3dSceneSessionModules = {
+  createStudioShared3dSceneSessionFromElements: () => EMPTY_STUDIO_SHARED_3D_SCENE_SESSION,
+  createStudioShared3dSceneSessionForStage: () => EMPTY_STUDIO_SHARED_3D_SCENE_SESSION,
+};
+
+vi.mock("./runtime-leaves/studio-shared-3d-scene-session-loader", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./runtime-leaves/studio-shared-3d-scene-session-loader")>();
+  // 실제 lazy RouteBridge는 유지하고 이 연결 검사와 무관한 무거운 세션 빌더만 대체한다.
+  return { ...actual, loadStudioShared3dSceneSessionModules: shared3dSessionHarness.load };
+});
 
 vi.mock("./studio-page-lazy-ui", async () => {
   const { useState } = await import("react");
@@ -154,6 +169,7 @@ function createProps(
 
 beforeEach(() => {
   commentsSessionHarness.nextInstanceId = 0;
+  shared3dSessionHarness.load.mockResolvedValue(shared3dSessionModules);
 });
 
 afterEach(() => {
@@ -176,6 +192,7 @@ describe("StudioLazyPanelStack", () => {
     const view = render(withRetainedBg3dHost(<StudioLazyPanelStack {...createProps()} />));
 
     expect(view.container.querySelectorAll("[data-optional-panel]")).toHaveLength(0);
+    expect(shared3dSessionHarness.load).not.toHaveBeenCalled();
   });
 
   it("keeps one comments session instance mounted across close and reopen after activation", () => {
@@ -277,7 +294,7 @@ describe("StudioLazyPanelStack", () => {
   it("6패스 수신 문서 capability를 실제 3D 편집기 경계까지 전달한다", async () => {
     render(withRetainedBg3dHost(<StudioLazyPanelStack {...createProps({ bg3dOpen: true,
       bg3dSixPassLtUnavailableReason: "six-pass-unsupported-document-surface" })} />));
-    await act(async () => { await vi.dynamicImportSettled(); });
+    await screen.findByRole("button", { name: "BG3D 삽입" });
     expect(document.querySelector('[data-optional-panel="bg3d"]')?.getAttribute("data-six-pass-unavailable-reason"))
       .toBe("six-pass-unsupported-document-surface");
   });
@@ -301,8 +318,7 @@ describe("StudioLazyPanelStack", () => {
       />
     ));
 
-    await act(async () => { await vi.dynamicImportSettled(); });
-    fireEvent.click(screen.getByRole("button", { name: "BG3D 삽입" }));
+    fireEvent.click(await screen.findByRole("button", { name: "BG3D 삽입" }));
     expect(stableHandlers.insertBg3dResult).toHaveBeenCalledWith({ kind: "bg3d" });
 
     fireEvent.click(screen.getByRole("button", { name: "BG3D 닫기" }));

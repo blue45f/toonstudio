@@ -44,7 +44,7 @@ const CONSUMERS = [
 ] as const;
 
 const CALL_PATTERN =
-  /r44CreatorStatusText\("([^"]+)",\s*(?:\{[^}}]*\},\s*)?"((?:[^"\\]|\\.)*)"\)/g;
+  /r44CreatorStatusText\(\s*"([^"]+)"\s*,\s*(?:\{[^}]*\}\s*,\s*)?"((?:[^"\\]|\\.)*)"\s*,?\s*\)/g;
 
 function collectCalls(): Array<{ key: string; fallback: string; file: string }> {
   const calls: Array<{ key: string; fallback: string; file: string }> = [];
@@ -84,6 +84,16 @@ describe("r44cat1.creator 사전 (44라운드 형제 등록 모듈)", () => {
 });
 
 describe("r44cat1.creator 소비 계약 (44라운드 이관)", () => {
+  it.each([
+    'r44CreatorStatusText("key", "fallback")',
+    'r44CreatorStatusText(\n  "key",\n  "fallback",\n)',
+    'r44CreatorStatusText(\n  "key", { count: 2 },\n  "fallback",\n)',
+  ])("줄바꿈과 마지막 쉼표를 포함한 실제 호출 형식을 추출한다: %s", (source) => {
+    const calls = [...source.matchAll(CALL_PATTERN)];
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.slice(1)).toEqual(["key", "fallback"]);
+  });
+
   it("등록된 전 키가 소비 파일에서 참조되고 미등록 참조가 없다", () => {
     const used = new Set(collectCalls().map((call) => call.key));
     expect([...used].sort()).toEqual(KEYS);

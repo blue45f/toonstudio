@@ -30,7 +30,7 @@ suite("real Postgres: workspace + operating mode", () => {
       CREATE TABLE creator_work_collaborator("workId" text REFERENCES creator_work(id),"userId" text REFERENCES "user"(id),role text,status text,PRIMARY KEY("workId","userId"));`);
     // Apply the real baseline with only its explicit public schema redirected to this isolated fixture.
     await pool.query(migration('0053_production_collaboration_core.sql').replaceAll('public.', `"${schema}".`));
-    for (const name of ['0084_production_model_v2_compatibility.sql','0085_production_team_workspace.sql','0086_production_operation_policy.sql']) await pool.query(migration(name));
+    for (const name of ['0084_production_model_v2_compatibility.sql','0085_production_team_workspace.sql','0086_production_operation_policy.sql','0133_production_division_os.sql']) await pool.query(migration(name));
     policy = new OperationPolicyRepository(pool); team = new TeamWorkspaceRepository(pool);
     process.env.TOONSTUDIO_LICENSE_FINGERPRINT = fingerprint;
   });

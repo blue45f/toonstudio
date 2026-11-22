@@ -259,7 +259,7 @@ describe("PostgreSQL integration test runner", () => {
     expect(POSTGRES_INTEGRATION_SUITES).toContain("scripts/production-release-compatibility.integration.test.mjs");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts");
     expect(new Set(POSTGRES_INTEGRATION_SUITES)).toHaveProperty("size", 35);
-    expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/platform/database/admin-schema.integration.test.ts");
+    expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin/admin-schema.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-review-existing-graph-runtime.integration.test.ts");

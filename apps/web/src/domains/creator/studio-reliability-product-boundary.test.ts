@@ -204,7 +204,9 @@ describe("Studio reliability product boundary", () => {
   });
 
   it("warns before the tab closes, but only while work is actually unsaved", () => {
-    expect(studioPage).toContain("installStudioUnloadGuard({");
+    expect(studioPage).toContain("useStudioUnloadGuard({");
+    expect(readFileSync(new URL("./studio-cuttoon-editor/runtime/useStudioUnloadGuard.ts", import.meta.url), "utf8"))
+      .toContain("installStudioUnloadGuard({ target, hasUnsavedWork })");
     expect(studioPage).toContain("hasStudioUnloadPromptWork({");
     // 자동저장과 종료 경고가 같은 지문 규칙을 봐야 한다(둘이 갈라지면 판정이 조용히 어긋난다).
     const fingerprints = studioPage.match(/studioPendingStrokeFingerprint\(/g) ?? [];

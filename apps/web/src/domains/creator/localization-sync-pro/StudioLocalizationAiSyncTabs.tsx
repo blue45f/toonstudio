@@ -14,6 +14,8 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+import { useT } from "@/shared/lib/i18n";
+import { OFFLINE_SYNC_COPY } from "./studio-offline-sync-storage-copy";
 
 import {
   BYOK_PROVIDER_IDS,
@@ -575,6 +577,7 @@ export function LocalAiCollabSyncTab({
   onAdvanceScreenShare,
   onStopScreenShare,
 }: LocalAiCollabSyncTabProps) {
+  const t = useT();
   const pendingCount = syncSnapshot.queue.filter((q) => q.status === "pending" || q.status === "retrying").length;
 
   return (
@@ -647,11 +650,12 @@ export function LocalAiCollabSyncTab({
 
       {/* 섹션 B: 4대 스튜디오 통합 오프라인 우선 동기화 + 섹션 C: 근접 합평 테이블 */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="space-y-3 rounded-2xl border border-line bg-card p-4" aria-label="오프라인 우선 멀티스튜디오 동기화">
+        <section className="space-y-3 rounded-2xl border border-line bg-card p-4" aria-label={t(OFFLINE_SYNC_COPY.title)}>
+          <p className="text-xs text-fg-2">{t(OFFLINE_SYNC_COPY.session)}</p>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="flex items-center gap-1.5 text-sm font-black text-fg [word-break:keep-all]">
               {syncSnapshot.networkStatus === "offline" ? <WifiOff className="size-4 text-warning" aria-hidden="true" /> : <Wifi className="size-4 text-success" aria-hidden="true" />}
-              오프라인 우선(Local-First) 동기화
+              {t(OFFLINE_SYNC_COPY.title)}
             </h4>
             <div className="flex gap-1.5">
               <button
@@ -663,7 +667,7 @@ export function LocalAiCollabSyncTab({
               </button>
               <button type="button" onClick={onRunOptimisticSync} className={BTN_PRIMARY}>
                 <RefreshCw className="size-3.5" aria-hidden="true" />
-                지금 동기화
+                {t(OFFLINE_SYNC_COPY.run)}
               </button>
             </div>
           </div>
@@ -674,7 +678,7 @@ export function LocalAiCollabSyncTab({
               <strong className="text-fg">{pendingCount}건</strong>
             </div>
             <div className="rounded-xl border border-line bg-panel p-2">
-              <span className="block text-[0.65rem] text-fg-3">반영 완료</span>
+              <span className="block text-[0.65rem] text-fg-3">{t(OFFLINE_SYNC_COPY.reflected)}</span>
               <strong className="text-success">{syncSnapshot.syncedOpCount}건</strong>
             </div>
             <div className="rounded-xl border border-line bg-panel p-2">
@@ -686,7 +690,7 @@ export function LocalAiCollabSyncTab({
           <div className="grid grid-cols-2 gap-2">
             {SYNC_STUDIO_SURFACES.map((surface) => (
               <button key={surface} type="button" onClick={() => onRecordDemoEdit(surface)} className={cn(BTN_BASE, "justify-start text-left")}>
-                <span>+ {SYNC_SURFACE_DESCRIPTORS[surface].labelKo} 변경 기록</span>
+                <span>+ {SYNC_SURFACE_DESCRIPTORS[surface].labelKo} {t(OFFLINE_SYNC_COPY.add)}</span>
               </button>
             ))}
           </div>

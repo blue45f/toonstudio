@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { request as httpRequest } from "node:http";
-import { describe, it } from "node:test";
+const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 import { fileURLToPath } from "node:url";
 
 import {

@@ -9,6 +9,10 @@ export const PRODUCTION_OPERATION_TABLES = Object.freeze([
   ["production_operation_policy", ["revision", "payload", "updated_at"], false, false],
   ["production_operation_policy_audit", [], false],
   ["production_operation_policy_receipt", [], false],
+  ["production_cut_slice", ["status", "latest_rev_hash", "updated_at"], true],
+  ["production_binary_lock", ["project_id", "holder_user_id", "lock_reason", "locked_at", "expires_at"], true],
+  ["production_qa_inspection", [], false],
+  ["production_royalty_ledger", ["settlement_model", "approved_cuts", "base_amount_krw", "royalty_bps", "mg_balance_krw"], false],
 ]);
 function roleName(role) {
   if (typeof role !== "string" || !/^[a-z_][a-z0-9_]{0,62}$/u.test(role)) throw new Error("Invalid runtime database role");

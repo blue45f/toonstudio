@@ -1,3 +1,4 @@
+import { MToonMaterial } from "@pixiv/three-vrm";
 import { Bone, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, Scene, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from "three";
 import { describe, expect, it, vi } from "vitest";
 
@@ -171,9 +172,13 @@ describe("두피 표면 앵커 groom", () => {
     });
     const mesh = f.mesh();
     const material = mesh.material;
-    if (!(material instanceof MeshStandardMaterial)) throw new Error("헤어 재질이 없습니다.");
+    if (!(material instanceof MToonMaterial)) throw new Error("헤어 툰 재질이 없습니다.");
     expect(material.color.getHexString()).toBe("ff0000");
     expect(material.opacity).toBeCloseTo(0.5 * 128 / 255);
+    expect(material.isOutline).toBe(false);
+    expect(material.transparent).toBe(true);
+    expect(material.depthWrite).toBe(false);
+    expect(mesh.children.some((child) => child.userData.studioVrmCustomPartOutline)).toBe(false);
     expect(f.scene.getObjectById(mesh.id)).toBe(mesh);
     expect(classifyMeshName(mesh.name).protected).toBe("hair");
     expect(classifyMeshName(material.name).protected).toBe("hair");
@@ -183,9 +188,18 @@ describe("두피 표면 앵커 groom", () => {
     expect(capture.classifications[0]).toMatchObject({ component: "hair", confidence: "explicit" });
     await f.runtime.update(f.document, "topology:test", "#332211", f.options);
     const reset = f.mesh().material;
-    if (!(reset instanceof MeshStandardMaterial)) throw new Error("헤어 재질이 없습니다.");
+    if (!(reset instanceof MToonMaterial)) throw new Error("헤어 툰 재질이 없습니다.");
     expect(reset.color.getHexString()).toBe("332211");
     expect(reset.opacity).toBe(1);
+    expect(reset.transparent).toBe(false);
+    expect(reset.depthWrite).toBe(true);
+    const outline = f.mesh().children.find((child) => child.userData.studioVrmCustomPartOutline);
+    if (!(outline instanceof Mesh) || !(outline.material instanceof MToonMaterial)) {
+      throw new Error("복원한 불투명 헤어의 툰 외곽선이 없습니다.");
+    }
+    expect(outline.material.isOutline).toBe(true);
+    expect(outline.geometry).toBe(f.mesh().geometry);
+    expect(outline.userData.toonstudioComponent).toBe("hair");
     await f.runtime.update(createEmptyCharacterGroomDocument("topology:test"), "topology:test", "#332211", f.options);
     expect(f.head.children[0]?.children).toHaveLength(0);
     f.runtime.dispose();

@@ -26,13 +26,22 @@ import type {
 
 const PRESENTATION_VERTEX_FLOATS = 4;
 /**
- * center(2) + quad radius(2) + premultiplied color(4) + nominal-radius-to-quad-radius ratio(1).
+ * center(2) + quad radius(2) + premultiplied color(4) + nominal-radius-to-quad-radius ratio(1)
+ * + 물리 픽셀 중심(2) + 물리 quad 반지름의 역수(2).
  * The quad is deliberately rasterized larger than the analytic dab radius (see writePackedTileDab)
  * so the fragment shader's antialiasing transition has real geometry to feather into on every side,
  * not just toward the instanced quad's corners; the ratio tells the shader where the true circle
- * boundary sits inside that larger quad.
+ * boundary sits inside that larger quad. 추가 좌표는 래스터 정점 반올림과 무관한 원의 위치를 보존한다.
  */
-export const STUDIO_GPU_DAB_INSTANCE_FLOATS = 9;
+export const STUDIO_GPU_DAB_INSTANCE_FLOATS = 13;
+/** 위 인스턴스 배치와 vertex 셰이더 입력을 한곳에서 대응시킨다. */
+export const STUDIO_GPU_DAB_VERTEX_ATTRIBUTES = [
+  { shaderLocation: 0, offset: 0, format: "float32x2" },
+  { shaderLocation: 1, offset: 8, format: "float32x2" },
+  { shaderLocation: 2, offset: 16, format: "float32x4" },
+  { shaderLocation: 3, offset: 32, format: "float32" },
+  { shaderLocation: 4, offset: 36, format: "float32x4" },
+] as const;
 
 export interface StudioGpuNormalizedTileViewport {
   readonly logicalWidth: number;
@@ -334,6 +343,10 @@ function writePackedTileDab(
   target[offset + 6] = linearBlue * alpha;
   target[offset + 7] = alpha;
   target[offset + 8] = nominalRadiusRatio;
+  target[offset + 9] = (dab.x - descriptor.renderX) * descriptor.width / descriptor.renderWidth;
+  target[offset + 10] = (dab.y - descriptor.renderY) * descriptor.height / descriptor.renderHeight;
+  target[offset + 11] = quadRadius > 0 ? descriptor.renderWidth / descriptor.width / quadRadius : 0;
+  target[offset + 12] = quadRadius > 0 ? descriptor.renderHeight / descriptor.height / quadRadius : 0;
 }
 
 function logicalPointToNdc(

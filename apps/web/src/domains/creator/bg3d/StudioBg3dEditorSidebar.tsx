@@ -19,6 +19,7 @@ import { StudioBg3dMissingTexturePanel } from "./StudioBg3dMissingTexturePanel";
 import { StudioBg3dWebglRecoveryNotice } from "./StudioBg3dWebglRecoveryNotice";
 import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
+import { bg3dPanelStatusText } from "../studio-bg3d-panel-status-i18n";
 import { useT } from "@/shared/lib/i18n";
 import { hasStudioBg3dTemplateContent } from "./studio-bg3d-measurement-template";
 
@@ -564,7 +565,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                   </summary>
                   {sidebarModelingProOpen ? (
                     <div className="border-t border-line p-2.5">
-                      <SidebarSuspense fallback={<p className="p-2 text-xs text-fg-3">고급 모델링 도구를 불러오는 중이에요…</p>}>
+                      <SidebarSuspense fallback={<p className="p-2 text-xs text-fg-3">{bg3dPanelStatusText("studio.bg3dPanelStatus.editorSidebar.modelingLoading", "고급 모델링 도구를 불러오는 중이에요…")}</p>}>
                         <LazySidebarModelingProDrawer disabled={isCapturing || isRestoringScene || physicsInteractionLocked} />
                       </SidebarSuspense>
                     </div>
@@ -678,7 +679,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                       </summary>
                       {sidebarCompositeStageOpen ? (
                         <div className="border-t border-line p-2.5">
-                          <SidebarSuspense fallback={<p className="p-2 text-xs text-fg-3">실시간 합성 스테이지를 불러오는 중이에요…</p>}>
+                          <SidebarSuspense fallback={<p className="p-2 text-xs text-fg-3">{bg3dPanelStatusText("studio.bg3dPanelStatus.editorSidebar.compositeLoading", "실시간 합성 스테이지를 불러오는 중이에요…")}</p>}>
                             <LazySidebarCharacterCompositePanel
                               disabled={isCapturing || isRestoringScene || physicsInteractionLocked}
                               activeAtmosphereId={h.activeWebtoonAtmosphereId ?? null}

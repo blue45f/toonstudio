@@ -1,5 +1,6 @@
 import { BookOpen, Cpu, Film, Globe } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
 
 import {
   DEFAULT_COMFYUI_HTTP_URL,
@@ -29,7 +30,6 @@ import {
 } from "./mantra-letr-localization-engine";
 import {
   addReviewCommentPin,
-  createBrowserSnapshotStore,
   createInitialProximityReviewTable,
   createInitialScreenShareSignalState,
   createOfflineFirstSyncBridge,
@@ -50,6 +50,8 @@ import {
   LocalizationSixStageTab,
   NovelTo3dBlockingTab,
 } from "./StudioLocalizationAiSyncTabs";
+import { StudioOfflineSyncLegacyExport } from "./StudioOfflineSyncLegacyExport";
+import { OFFLINE_SYNC_COPY } from "./studio-offline-sync-storage-copy";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -73,6 +75,7 @@ export function StudioLocalizationAiSyncPanel({
   projectId,
   sourceLines,
 }: StudioLocalizationAiSyncPanelProps) {
+  const t = useT();
   const [activeTab, setActiveTab] = useState<ProTabId>("localization");
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
@@ -159,7 +162,6 @@ export function StudioLocalizationAiSyncPanel({
 
   const [syncBridge] = useState(() =>
     createOfflineFirstSyncBridge(projectId, {
-      store: createBrowserSnapshotStore(),
       initialNetwork: "online",
       seedDemoRecords: true,
     }),
@@ -237,7 +239,7 @@ export function StudioLocalizationAiSyncPanel({
 
   const handleToggleNetwork = (next: SyncNetworkStatus) => {
     setSyncSnapshot(syncBridge.setNetworkStatus(next));
-    setStatusNotice(next === "offline" ? "오프라인 모드로 전환했습니다. 로컬 스냅샷에 계속 저장됩니다." : "온라인으로 복귀했습니다.");
+    setStatusNotice(t(OFFLINE_SYNC_COPY.session));
   };
 
   const handleRecordDemoEdit = (surface: SyncStudioSurface) => {
@@ -248,7 +250,7 @@ export function StudioLocalizationAiSyncPanel({
       patch: { revision: seq, updatedBy: "local-studio", ready: true },
     });
     setSyncSnapshot(syncBridge.getState());
-    setStatusNotice(`${surface} 로컬 변경사항이 오프라인 우선 큐에 기록되었습니다.`);
+    setStatusNotice(t(OFFLINE_SYNC_COPY.session));
   };
 
   const handleRunOptimisticSync = () => {
@@ -405,6 +407,7 @@ export function StudioLocalizationAiSyncPanel({
         ) : null}
 
         {activeTab === "local-ai-sync" ? (
+          <>
           <LocalAiCollabSyncTab
             comfyMode={comfyMode}
             onChangeComfyMode={setComfyMode}
@@ -430,6 +433,8 @@ export function StudioLocalizationAiSyncPanel({
             onAdvanceScreenShare={handleAdvanceScreenShare}
             onStopScreenShare={handleStopScreenShare}
           />
+          <StudioOfflineSyncLegacyExport key={projectId} projectId={projectId} />
+          </>
         ) : null}
       </div>
     </div>

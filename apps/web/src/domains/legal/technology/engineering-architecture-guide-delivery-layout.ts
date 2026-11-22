@@ -334,8 +334,8 @@ const BUILD_AND_SHIP: ArchitectureGuideSection = {
     {
       what: t("정적 웹 수동 배포 스크립트", "Manual deploy script for the static site"),
       role: t(
-        "승인 SHA 등을 확인한 뒤 같은 실행에서 규칙 검사, 빌드, 에셋 준비, 서비스 워커 점검, R2 동기화, wrangler 배포를 돌립니다.",
-        "After checking the approved SHA and more, one run does the rules check, build, asset preparation, service-worker check, R2 sync and wrangler deploy.",
+        "승인 SHA 확인 뒤 새 빌드 경로는 규칙·빌드·에셋 준비·서비스 워커·R2·wrangler의 6개 명령을 실행합니다. 빌드 생략·검증 dist 재사용은 CSP 점검으로 대체해 5개이며, --force-build는 재사용을 막습니다.",
+        "After checking the approved SHA, a full build runs 6 commands: rules, build, asset preparation, service worker, R2 and wrangler. Skipping or reusing verified dist substitutes a CSP check for 5 commands; --force-build prevents reuse.",
       ),
       paths: [
         "scripts/deploy-cloudflare-static.mjs",
@@ -402,8 +402,8 @@ const BUILD_AND_SHIP: ArchitectureGuideSection = {
     },
   ],
   pitfall: t(
-    "'버튼 한 번에 DB·API·웹이 같은 SHA 로 올라간다'고 말하면 틀립니다. 세 단계는 각각 수동이고 정적 웹은 운영자 환경에서 다시 빌드합니다. 운영 대시보드의 설정과 현재 SHA는 열람하지 않았습니다.",
-    "Saying one button ships the database, API and web with the same SHA is wrong. The three steps are separate manual procedures and the static site is rebuilt in the operator's environment. The dashboards' live settings and current SHA were not inspected.",
+    "'버튼 한 번에 DB·API·웹이 같은 SHA 로 올라간다'고 말하면 틀립니다. 세 단계는 각각 수동이고 정적 웹은 운영자 환경에서 빌드하거나 승인 SHA와 일치하는 검증된 dist를 재사용합니다. 운영 대시보드의 설정과 현재 SHA는 열람하지 않았습니다.",
+    "Saying one button ships the database, API and web with the same SHA is wrong. The three steps are separate manual procedures, and the static site is built in the operator's environment or reuses verified dist matching the approved SHA. The dashboards' live settings and current SHA were not inspected.",
   ),
   facts: [
     { value: "7", label: t("CI core 가 요구하는 필수 잡 수", "Required jobs behind CI core"), source: ".github/workflows/ci.yml" },
@@ -414,7 +414,7 @@ const BUILD_AND_SHIP: ArchitectureGuideSection = {
     },
     {
       value: "6",
-      label: t("기본 빌드 포함 정적 웹 배포가 순서대로 돌리는 명령 수", "Commands run in order by the default static deploy, including its build"),
+      label: t("새 빌드 포함 정적 웹 배포가 순서대로 돌리는 명령 수(검증 dist 재사용은 5)", "Commands run in order by a full static build and deploy (verified dist reuse runs 5)"),
       source: "scripts/deploy-cloudflare-static.mjs",
     },
     {

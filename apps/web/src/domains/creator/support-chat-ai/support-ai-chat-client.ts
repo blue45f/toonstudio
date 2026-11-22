@@ -444,11 +444,38 @@ export async function requestSupportTicketAutofill(input: {
   }
 }
 
+const SUPPORT_HANDOFF_MAX_BYTES = 64 * 1024;
+const SUPPORT_HANDOFF_FIELDS = ["oneLineIssue", "category", "creatorSupportCategory", "urgency", "summary", "checkedItems", "contact", "createdAt"];
+
+function handoffObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function validSupportHandoff(item: unknown): item is SupportHandoffPayload {
+  if (!handoffObject(item)) return false;
+  return Object.keys(item).every((key) => SUPPORT_HANDOFF_FIELDS.includes(key))
+    && typeof item.oneLineIssue === "string" && item.oneLineIssue.trim().length > 0
+    && typeof item.summary === "string" && typeof item.contact === "string"
+    && typeof item.createdAt === "string" && Number.isFinite(Date.parse(item.createdAt))
+    && SUPPORT_TOPIC_OPTIONS.some((topic) => topic.id === item.category && topic.creatorSupportCategory === item.creatorSupportCategory)
+    && ["high", "normal", "low"].some((urgency) => urgency === item.urgency)
+    && Array.isArray(item.checkedItems) && item.checkedItems.every((entry) => typeof entry === "string");
+}
+
+/** 최근 문의 1개의 인계 사본이다. 원고·티켓 접수 권위가 아니며 쓰기 실패는 화면 인계를 막지 않는다. */
 export function saveSupportHandoffDraft(payload: SupportHandoffPayload): boolean {
   if (typeof window === "undefined") return false;
   try {
-    window.localStorage.setItem(SUPPORT_HANDOFF_STORAGE_KEY, JSON.stringify(payload));
-    return true;
+    const copy: SupportHandoffPayload = { oneLineIssue: payload.oneLineIssue, category: payload.category,
+      creatorSupportCategory: payload.creatorSupportCategory, urgency: payload.urgency, summary: payload.summary,
+      checkedItems: payload.checkedItems, contact: payload.contact, createdAt: payload.createdAt };
+    if (!validSupportHandoff(copy)) return false;
+    const serialized = JSON.stringify(copy);
+    if (new TextEncoder().encode(serialized).byteLength > SUPPORT_HANDOFF_MAX_BYTES) return false;
+    const original = window.localStorage.getItem(SUPPORT_HANDOFF_STORAGE_KEY);
+    if (original !== null && (original.length > SUPPORT_HANDOFF_MAX_BYTES
+      || new TextEncoder().encode(original).byteLength > SUPPORT_HANDOFF_MAX_BYTES || !validSupportHandoff(JSON.parse(original)))) return false;
+    window.localStorage.setItem(SUPPORT_HANDOFF_STORAGE_KEY, serialized);
+    return window.localStorage.getItem(SUPPORT_HANDOFF_STORAGE_KEY) === serialized;
   } catch {
     return false;
   }

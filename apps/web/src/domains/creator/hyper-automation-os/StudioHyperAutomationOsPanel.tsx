@@ -1,5 +1,7 @@
 import { Eye, EyeOff, Layers, Lock, RotateCcw, Sparkles, Unlock, Wand2 } from "lucide-react";
 import { useId, useMemo, useState } from "react";
+import { useT } from "@/shared/lib/i18n";
+import { defineBilingualText } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
   applyArtistAutonomyPreset,
@@ -50,6 +52,10 @@ import {
 import { HyperAutoDnaLightballSection } from "./HyperAutoDnaLightballSection";
 import "./hyper-automation-os.css";
 
+const PRESET_MEMORY_ONLY = defineBilingualText("HyperAutomationStorage", "memoryOnly",
+  "브라우저 저장을 확인하지 못했습니다. 프리셋은 현재 화면에서 사용할 수 있지만 화면을 닫으면 잃을 수 있습니다.",
+  "Browser saving could not be verified. The preset is available in this view, but it may be lost when the view closes.");
+
 const BLEND_MODE_OPTIONS: readonly { readonly value: LayerBlendMode; readonly label: string }[] = [
   { value: "normal", label: "표준 (Normal)" },
   { value: "multiply", label: "곱하기 (Multiply)" },
@@ -90,6 +96,7 @@ function toRawOptionalInput(resolved: HyperAutomationPipelineRun["resolvedInput"
  * 6계층 분리 레이어(01_BG_3D~06_SPEECH_SFX) 수동 편집이 100% 열려 있다.
  */
 export function StudioHyperAutomationOsPanel() {
+  const t = useT();
   const ideaInputId = useId();
   const [mode, setMode] = useState<AutomationSpectrumMode>("hyper-auto-99");
   const [draftAutonomy, setDraftAutonomy] = useState<StageAutonomyMap>(
@@ -232,8 +239,9 @@ export function StudioHyperAutomationOsPanel() {
     const created = createArtistAutonomyPreset(name, activeMap, customCount);
     const nextList = [...savedPresets, created];
     setSavedPresets(nextList);
-    saveArtistAutonomyPresets(nextList);
-    setStatusMessage(`"${created.name}" 프리셋(평균 ${created.averagePercent}%)을 저장했습니다.`);
+    const saved = saveArtistAutonomyPresets(nextList);
+    setStatusMessage(saved ? `"${created.name}" 프리셋(평균 ${created.averagePercent}%)을 저장했습니다.`
+      : t(PRESET_MEMORY_ONLY));
   }
 
   function handleRerunStage(stageId: PipelineStageId) {

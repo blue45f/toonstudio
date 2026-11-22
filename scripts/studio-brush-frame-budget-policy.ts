@@ -1,3 +1,4 @@
+import { isStudioBrushPointerDispatchBoundaryValid, type StudioBrushPointerDispatchBoundary } from "./lib/studio-brush-pointer-dispatch-probe";
 // Exercise the current picker roster. Retired duplicate presets remain readable in old documents,
 // but their listed replacements must carry these pencil, airbrush, watercolor and ink workloads.
 export const STUDIO_BRUSH_FRAME_BUDGET_IDS = [
@@ -275,10 +276,11 @@ export interface StudioBrushFrameRuntimeSample {
   readonly expectedPointerMoves: number;
   readonly observedPointerMoves: number;
   readonly observedCoalescedSamples: number;
-  /** Synchronous pointermove dispatch through the product append path, measured capture→microtask. */
+  /** 최초 init capture부터 등록 순서를 검증한 마지막 window bubble까지의 native dispatch. */
   readonly pointerAppendDurationsMs: readonly number[];
-  /** Synchronous pointerup dispatch through the seal/handoff path, measured capture→microtask. */
   readonly pointerUpMainThreadMs: number | null;
+  readonly pointerDispatchBoundary: StudioBrushPointerDispatchBoundary | null;
+  readonly legacyPointerDispatch?: { readonly method: "capture-to-microtask-legacy"; readonly pointerAppendDurationsMs: readonly number[]; readonly pointerUpMainThreadMs: number | null };
   readonly pointerUpToFirstFrameMs: number | null;
   /** Frames sampled after ink first became visible in the compositor route. */
   readonly blankFrameObservationCount: number;
@@ -344,6 +346,7 @@ export interface StudioBrushFrameBudgetFinding {
     | "compositor-surface-missing"
     | "continuous-profile-missing"
     | "pointer-delivery-loss"
+    | "pointer-dispatch-boundary-invalid"
     | "pointer-append-profile-missing"
     | "pointer-append-p95"
     | "pointer-append-p99"
@@ -507,10 +510,7 @@ export function summarizeStudioBrushFrameBudget(
   };
 }
 
-/**
- * Historical diagnostics retained so old report series remain comparable. Its `ok` value is
- * telemetry and must not control the competitive gate or process exit code.
- */
+/** 이전 보고서 비교용 telemetry다. 이 ok는 경쟁 성능 gate나 종료 상태를 결정하지 않는다. */
 export function evaluateStudioBrushLegacyFrameBudgetTelemetry(
   metrics: StudioBrushFrameBudgetMetrics,
 ): StudioBrushLegacyFrameBudgetTelemetry {
@@ -697,11 +697,7 @@ export function evaluateStudioBrushLegacyFrameBudgetTelemetry(
   };
 }
 
-/**
- * Competitive long-stroke acceptance. Unlike the legacy telemetry above, every error here blocks
- * the browser gate. Timing is measured on the synchronous pointer/append path so a normal refresh
- * interval is not incorrectly charged as handler work.
- */
+/** native dispatch 경계·전체 handler와 그 사이 microtask 비용을 판정하며 렌더 대기 fallback은 쓰지 않는다. */
 export function evaluateStudioBrushFrameBudget(
   metrics: StudioBrushFrameBudgetMetrics,
 ): StudioBrushFrameBudgetEvaluation {
@@ -715,6 +711,9 @@ export function evaluateStudioBrushFrameBudget(
     findings.push({ level, code, message });
   };
 
+  if (!isStudioBrushPointerDispatchBoundaryValid(metrics.pointerDispatchBoundary, metrics.expectedPointerMoves, metrics.observedPointerMoves)) {
+    add("error", "pointer-dispatch-boundary-invalid", `${metrics.id}: 포인터 dispatch 시작·끝·등록 순서 증거가 불완전합니다.`);
+  }
   if (
     metrics.firstPixelTimedOut
     || metrics.firstPixelMs === null

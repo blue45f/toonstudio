@@ -72,10 +72,15 @@ function RuntimeContextRelay({ scope, publish }: {
   readonly publish: PublishRuntimeSnapshot;
 }) {
   const value = useContext(StudioLiveCollaborationContext);
+  const [observedScope, setObservedScope] = useState(scope);
   const [settledScope, setSettledScope] = useState(scope);
-  // 본체도 passive effect에서 이전 room·outbox 세대를 초기화한다. 새 소유자의 첫 render에
-  // 남은 이전 context를 재태깅하지 않고 그 초기화와 함께 처리된 다음 commit부터 전달한다.
-  useEffect(() => { setSettledScope(scope); }, [scope]);
+  // serverRequired 변경은 먼저 transportPreference를 바꾸고 다음 passive effect에서
+  // room·outbox를 초기화한다. 관측과 확정을 두 단계로 나눠 그 사이 남은 이전 room을
+  // 새 scope로 다시 발행하지 않는다. 본체 인스턴스와 복구·철회 래치는 계속 유지한다.
+  useEffect(() => { setObservedScope(scope); }, [scope]);
+  useEffect(() => {
+    if (observedScope === scope) setSettledScope(scope);
+  }, [observedScope, scope]);
   useLayoutEffect(() => {
     if (settledScope === scope) publish({ scope, value });
   }, [publish, scope, settledScope, value]);

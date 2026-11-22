@@ -1,3 +1,4 @@
+import type { StudioBrushPointerDispatchBoundary, StudioBrushPointerDispatchWindow } from "./lib/studio-brush-pointer-dispatch-probe";
 import type {
   StudioBrushCompetitiveExecutionCase,
   StudioBrushCompetitiveRouteDiagnostics,
@@ -158,6 +159,8 @@ export async function profileStudioBrushFrameBudget(
       readonly observedCoalescedSamples: number;
       readonly pointerAppendDurationsMs: readonly number[];
       readonly pointerUpMainThreadMs: number | null;
+      readonly pointerDispatchBoundary: StudioBrushPointerDispatchBoundary;
+      readonly legacyPointerDispatch: StudioBrushFrameRuntimeSample["legacyPointerDispatch"];
       readonly pointerUpToFirstFrameMs: number | null;
       readonly blankFrameObservationCount: number;
       readonly blankFrameCount: number;
@@ -197,14 +200,14 @@ export async function profileStudioBrushFrameBudget(
       && PerformanceObserver.supportedEntryTypes.includes("longtask");
     const globalState = globalThis as typeof globalThis & {
       __studioBrushFrameBudgetProbe?: BrowserFrameProbeState;
-    };
+    } & StudioBrushPointerDispatchWindow;
     globalState.__studioBrushFrameBudgetProbe?.cancel();
 
     const warmupFrameIntervalsMs: number[] = [];
     const moveFrameIntervalsMs: number[] = [];
     const moveToFrameLatenciesMs: number[] = [];
     const pendingMoveTimes: number[] = [];
-    const pointerAppendDurationsMs: number[] = [];
+    const legacyPointerAppendDurationsMs: number[] = [];
     const longTaskEntries: Array<{ startTime: number; duration: number }> = [];
     const renderSurfaces = new Map<string, MutableRenderSurface>();
     const contextLabels = new WeakMap<object, string>();
@@ -223,7 +226,7 @@ export async function profileStudioBrushFrameBudget(
     let observedCoalescedSamples = 0;
     let pointerDownAt: number | null = null;
     let pointerUpAt: number | null = null;
-    let pointerUpMainThreadMs: number | null = null;
+    let legacyPointerUpMainThreadMs: number | null = null;
     let blankFrameObservationCount = 0;
     let blankFrameCount = 0;
     let blankProbeSawInk = false;
@@ -442,6 +445,7 @@ export async function profileStudioBrushFrameBudget(
         observer?.disconnect();
         restoreRenderInstrumentation();
         removeListeners();
+        globalState.__studioBrushPointerDispatch?.cancel();
       },
     };
     const onPointerDown = (): void => {
@@ -464,7 +468,7 @@ export async function profileStudioBrushFrameBudget(
       observedCoalescedSamples += Math.max(1, coalesced?.length ?? 0);
       pendingMoveTimes.push(observedAt);
       queueMicrotask(() => {
-        pointerAppendDurationsMs.push(Math.max(0, performance.now() - observedAt));
+        legacyPointerAppendDurationsMs.push(Math.max(0, performance.now() - observedAt));
       });
     };
     const onPointerUp = (): void => {
@@ -473,7 +477,7 @@ export async function profileStudioBrushFrameBudget(
       renderPhase = "release";
       heapUsedAtPointerUp = heapUsed();
       queueMicrotask(() => {
-        pointerUpMainThreadMs = Math.max(0, performance.now() - pointerUpAt!);
+        legacyPointerUpMainThreadMs = Math.max(0, performance.now() - pointerUpAt!);
       });
     };
     const finish = (): void => {
@@ -514,6 +518,8 @@ export async function profileStudioBrushFrameBudget(
       } catch {
         // Full competitive coverage fails closed on the null diagnostics receipt.
       }
+      const dispatch = globalState.__studioBrushPointerDispatch?.finish();
+      if (!dispatch) throw new Error("최초 init 포인터 dispatch 경계 결과가 없습니다.");
       state.result = {
         nominalFrameMs: Math.max(8, Math.min(33.334, nominalFrameMs)),
         warmupFrameIntervalsMs,
@@ -521,8 +527,11 @@ export async function profileStudioBrushFrameBudget(
         moveToFrameLatenciesMs,
         observedPointerMoves,
         observedCoalescedSamples,
-        pointerAppendDurationsMs,
-        pointerUpMainThreadMs,
+        pointerAppendDurationsMs: dispatch.pointerAppendDurationsMs,
+        pointerUpMainThreadMs: dispatch.pointerUpMainThreadMs,
+        pointerDispatchBoundary: dispatch.boundary,
+        legacyPointerDispatch: { method: "capture-to-microtask-legacy",
+          pointerAppendDurationsMs: legacyPointerAppendDurationsMs, pointerUpMainThreadMs: legacyPointerUpMainThreadMs },
         pointerUpToFirstFrameMs,
         blankFrameObservationCount,
         blankFrameCount,
@@ -630,6 +639,11 @@ export async function profileStudioBrushFrameBudget(
     }).__studioBrushFrameBudgetProbe?.ready === true
   ), undefined, { timeout: 2_000 });
 
+  await page.evaluate((expectedPointerMoves) => {
+    const probe = (window as StudioBrushPointerDispatchWindow).__studioBrushPointerDispatch;
+    if (!probe) throw new Error("페이지 스크립트 이전의 포인터 경계 init이 없습니다.");
+    probe.arm({ expectedPointerMoves, stageSelector: ".konvajs-content", pointerType: "mouse" });
+  }, options.executionCase?.targetInputSamples ?? route.points.length - 1);
   await page.mouse.down();
   let expectedPointerMoves = 0;
   const execution = options.executionCase;

@@ -8,6 +8,7 @@ import ts from "typescript";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as viewportInput from "../canvas/studio-canvas-viewport-input";
+import { useStudioCanvasAutoScale } from "../canvas/use-studio-canvas-auto-scale";
 import { defaultStudioAppSettings } from "../studio-app-settings";
 import { StudioScopedWriteAuthorityContext } from "../studio-collab/studio-scoped-write-context";
 import { EMPTY_STUDIO_LIVE_CONTEXT, StudioLiveCollaborationContext } from "./studio-live-collaboration-context";
@@ -34,14 +35,14 @@ function actualViewportEffects(): string {
     if (ts.isExpressionStatement(node) && ts.isCallExpression(node.expression)
       && node.expression.expression.getText(tree) === "useEffect") {
       const source = node.getText(tree);
-      if (source.includes("ro.observe(el)") || source.includes("const onPointerDownCapture =")
+      if (source.includes("const onPointerDownCapture =")
         || source.startsWith("useEffect(() => installStudioCanvasWheelInput(")
         || source.startsWith("useEffect(() => installStudioCanvasTouchInput(")) effects.push(source);
     }
     ts.forEachChild(node, visit);
   };
   visit(tree);
-  if (effects.length !== 4) throw new Error("실제 Host의 scale·scroll·wheel·touch 설치 경계가 달라졌습니다.");
+  if (effects.length !== 3) throw new Error("실제 Host의 scroll·wheel·touch 설치 경계가 달라졌습니다.");
   return effects.join("\n");
 }
 
@@ -115,13 +116,21 @@ function createFixture() {
     scrollRafRef: { current: null },
   };
   let latest: ViewState | null = null;
-  // Host는 Provider 바깥에 남는다. 실제 네 effect와 실제 입력 설치기를 실행하고,
-  // 문서 렌더·줌 수학 대신 DOM 연결과 callback 전달만 관측한다.
+  // 실제 배율 훅은 DOM을 소유하는 viewport 자식의 표시 수명에 설치한다.
+  function Viewport({ wrapRef, setScale }: {
+    readonly wrapRef: React.RefObject<HTMLDivElement | null>;
+    readonly setScale: (scale: number) => void;
+  }) {
+    useStudioCanvasAutoScale({ wrapRef, documentWidth: 720, maximumScale: 2.5, setScale });
+    return <div ref={wrapRef} data-testid="viewport" tabIndex={-1} />;
+  }
+  // Host는 Provider 바깥에 남는다. 실제 세 effect와 입력 설치기를 실행하고,
+  // DOM 연결·입력 소유권과 실제 배율 훅의 resize·cleanup을 함께 관측한다.
   const host = `const {useEffect,useRef,useState}=React;
     const {${Object.keys(refs).join(",")}}=refs;
     const {installStudioCanvasWheelInput,installStudioCanvasTouchInput}=input;
     return function HostFixture({active=true}) {
-      const wrapRef=useRef(null), [scale,setScale]=useState(1), studioViewDocumentWidthRef=useRef(720);
+      const wrapRef=useRef(null), [scale,setScale]=useState(1);
       const CANVAS_W=720,isFullscreen=false,maximized=false,mobileImmersive=false,canvasOnlyMode=false;
       ${viewportEffects}
       publish({scale,wrapRef});
@@ -129,10 +138,10 @@ function createFixture() {
         workId:active?"instant-fixture":null,
         participant:active?{displayName:"익명 게스트",role:"editor"}:null,
         currentPageId:"page-a",currentTool:"draw"
-      },React.createElement("div",{ref:wrapRef,"data-testid":"viewport"}));
+      },React.createElement(Viewport,{wrapRef,setScale}));
     };`;
-  const candidate: unknown = new Function("React", "refs", "input", "Provider", "publish", transpile(host))(
-    React, refs, viewportInput, Provider, (value: ViewState) => { latest = value; },
+  const candidate: unknown = new Function("React", "refs", "input", "Provider", "Viewport", "publish", transpile(host))(
+    React, refs, viewportInput, Provider, Viewport, (value: ViewState) => { latest = value; },
   );
   if (!isHost(candidate)) throw new Error("실제 Host effect fixture를 만들지 못했습니다.");
   const runtimeValue = { ...EMPTY_STUDIO_LIVE_CONTEXT };
@@ -175,6 +184,7 @@ describe("지연 공급자와 실제 Host viewport 설치 수명", () => {
     const f = createFixture();
     const view = render(<f.Host />, { reactStrictMode: strictMode });
     const initial = f.node;
+    initial.focus();
     const initialScale = 412 / 720;
     expect(f.scale).toBe(initialScale);
     expect(dispatchInput(initial)).toEqual({ wheelHandled: true, touchHandled: true });
@@ -182,6 +192,7 @@ describe("지연 공급자와 실제 Host viewport 설치 수명", () => {
     await act(async () => { f.resolveRuntime(); });
     expect(f.node).toBe(initial);
     expect(initial.isConnected).toBe(true);
+    expect(document.activeElement).toBe(initial);
     expect(f.observations.filter((observer) => observer.targets.has(f.node))).toHaveLength(2);
     expect(dispatchInput(f.node)).toEqual({ wheelHandled: true, touchHandled: true });
     expect(f.counts).toEqual({ pointerCapture: 2, scrollUpdates: 2, revoked: 2, zoomSteps: 4, settled: 2 });
@@ -212,15 +223,18 @@ describe("지연 공급자와 실제 Host viewport 설치 수명", () => {
     const f = createFixture();
     const view = render(<f.Host active={false} />);
     const initial = f.node;
+    initial.focus();
     view.rerender(<f.Host active />);
     await act(async () => { f.resolveRuntime(); });
     expect(f.node).toBe(initial);
+    expect(document.activeElement).toBe(initial);
     expect(f.scale).toBe(412 / 720);
     expect(dispatchInput(f.node)).toEqual({ wheelHandled: true, touchHandled: true });
     expect(f.counts.pointerCapture).toBe(1);
     expect(f.counts.scrollUpdates).toBe(1);
     view.rerender(<f.Host active={false} />);
     expect(f.node).toBe(initial);
+    expect(document.activeElement).toBe(initial);
     expect(dispatchInput(f.node)).toEqual({ wheelHandled: true, touchHandled: true });
     expect(f.counts.pointerCapture).toBe(2);
     expect(f.counts.scrollUpdates).toBe(2);

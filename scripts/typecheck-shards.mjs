@@ -258,6 +258,47 @@ function withoutHeapOption(value = "") {
   return value.replace(/(?:^|\s)--max[-_]old[-_]space[-_]size(?:=|\s+)\d+/gu, " ").trim();
 }
 
+function parseNodeOptionsHeapMb(value = "") {
+  let highest = null;
+  for (const match of String(value).matchAll(/(?:^|\s)--max[-_]old[-_]space[-_]size(?:=|\s+)(\d+)/gu)) {
+    const parsed = Number(match[1]);
+    if (Number.isSafeInteger(parsed) && parsed >= 1024) {
+      highest = highest === null ? parsed : Math.max(highest, parsed);
+    }
+  }
+  return highest;
+}
+
+/**
+ * 호스트 물리 메모리(>= 14GiB)와 부모 프로세스의 NODE_OPTIONS(--max-old-space-size)를 고려해
+ * 워커 힙과 초기 샤드 바이트 예산을 안전 범위(물리 메모리 72% 이하)로 상향한다.
+ * 전체 프로그램·파일·진단 기준은 전혀 완화하지 않고 반복 OOM 분할·Program 재파싱만 줄인다.
+ */
+export function resolveRuntimeExecutionBudget(
+  options,
+  { env = process.env, totalMemoryBytes = totalmem() } = {},
+) {
+  const totalGiB = Number.isFinite(totalMemoryBytes) && totalMemoryBytes > 0
+    ? totalMemoryBytes / GIB
+    : 0;
+  const nodeOptionsHeapMb = parseNodeOptionsHeapMb(env?.NODE_OPTIONS ?? "");
+  if (nodeOptionsHeapMb === null || nodeOptionsHeapMb <= options.heapMb || totalGiB < 14) {
+    return options;
+  }
+  const safeHostHeapMb = Math.floor((totalMemoryBytes / (1024 * 1024)) * 0.72);
+  const heapMb = Math.max(options.heapMb, Math.min(nodeOptionsHeapMb, safeHostHeapMb));
+  if (heapMb <= options.heapMb) return options;
+  const maxBytes = heapMb >= 11264
+    ? Math.max(options.maxBytes, 18 * 1024 * 1024)
+    : options.maxBytes;
+  return {
+    ...options,
+    heapMb,
+    maxBytes,
+    tuningTier: `${options.tuningTier ?? "explicit"}+host-heap`,
+  };
+}
+
 function describeWorkerFailure(result) {
   const detail = result.message?.trim();
   return `exit=${result.exit ?? "null"}, signal=${result.signal ?? "none"}${detail ? `: ${detail}` : "; worker stderr가 없습니다."}\n종료 원인을 해결한 뒤 pnpm typecheck를 다시 실행하세요.`;
@@ -385,10 +426,20 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
     if (result.failed) {
       if (result.memoryFailure && files.length > 1) {
         const middle = Math.ceil(files.length / 2);
-        pending.unshift(files.slice(0, middle), files.slice(middle));
+        const adaptedPending = [];
+        for (const queued of pending) {
+          if (queued.length <= middle) {
+            adaptedPending.push(queued);
+          } else {
+            for (let offset = 0; offset < queued.length; offset += middle) {
+              adaptedPending.push(queued.slice(offset, offset + middle));
+            }
+          }
+        }
+        pending = [files.slice(0, middle), files.slice(middle), ...adaptedPending];
         report.workers.push({ files, ...result, retry: "bisect" });
         onCheckpoint(report);
-        onProgress(`메모리 한도로 ${files.length}개 그룹을 ${middle}/${files.length - middle}개로 나눠 다시 검사합니다.`);
+        onProgress(`메모리 한도로 ${files.length}개 그룹을 ${middle}/${files.length - middle}개로 나눠 다시 검사하고 남은 큐 상한도 ${middle}개로 조정합니다.`);
         continue;
       }
       report.failure = { files, ...result };
@@ -427,7 +478,8 @@ export function verifyInShards(options, runWorker, onProgress = () => {}, onChec
 }
 
 export function main(args = process.argv.slice(2)) {
-  const options = parseArguments(args);
+  const parsedOptions = parseArguments(args);
+  const options = parsedOptions.list ? parsedOptions : resolveRuntimeExecutionBudget(parsedOptions);
   const scratch = mkdtempSync(resolve(tmpdir(), "toonstudio-typecheck-shards-"));
   try {
     const runWorker = createWorkerRunner(options, scratch);
