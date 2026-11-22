@@ -15,6 +15,10 @@ function leaveEvent(): Event {
   return event;
 }
 
+function countBeforeUnloadCalls(calls: readonly (readonly unknown[])[]): number {
+  return calls.filter(([kind]) => kind === "beforeunload").length;
+}
+
 describe("편집기 이탈 가드의 입력 task 수명", () => {
   it("첫 획을 받아들이면 React 재렌더 없이 같은 task의 이탈부터 막는다", () => {
     let dirty = false;
@@ -26,7 +30,7 @@ describe("편집기 이탈 가드의 입력 task 수명", () => {
       return useStudioUnloadGuard({ target: window, hasUnsavedWork });
     });
     const initialRenders = rendered.mock.calls.length;
-    expect(add.mock.calls.filter(([kind]) => kind === "beforeunload")).toHaveLength(0);
+    expect(countBeforeUnloadCalls(add.mock.calls)).toBe(0);
     expect(leaveEvent().defaultPrevented).toBe(false);
 
     act(() => {
@@ -37,7 +41,7 @@ describe("편집기 이탈 가드의 입력 task 수명", () => {
       result.current(true);
     });
     expect(rendered).toHaveBeenCalledTimes(initialRenders);
-    expect(add.mock.calls.filter(([kind]) => kind === "beforeunload")).toHaveLength(1);
+    expect(countBeforeUnloadCalls(add.mock.calls)).toBe(1);
     dirty = false;
     expect(leaveEvent().defaultPrevented).toBe(false);
   });
@@ -46,8 +50,8 @@ describe("편집기 이탈 가드의 입력 task 수명", () => {
     const hasUnsavedWork = () => true;
     const add = vi.spyOn(window, "addEventListener");
     const remove = vi.spyOn(window, "removeEventListener");
-    const liveListeners = () => add.mock.calls.filter(([kind]) => kind === "beforeunload").length
-      - remove.mock.calls.filter(([kind]) => kind === "beforeunload").length;
+    const liveListeners = () => countBeforeUnloadCalls(add.mock.calls)
+      - countBeforeUnloadCalls(remove.mock.calls);
     const { result, unmount } = renderHook(() => useStudioUnloadGuard({
       target: window, hasUnsavedWork,
     }), { wrapper: StrictMode });
