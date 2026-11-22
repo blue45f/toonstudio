@@ -81,16 +81,7 @@ export function uniqueId(prefix: string): string {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
 }
 
-export function latestCuts(values: readonly CutPlan[]): readonly CutPlan[] {
-  const projected = new Map<string, CutPlan>();
-  for (const value of values) {
-    const current = projected.get(value.cutId);
-    if (!current || current.revision < value.revision) projected.set(value.cutId, value);
-  }
-  return [...projected.values()]
-    .filter((value) => value.status !== "archived" && value.status !== "superseded")
-    .sort((left, right) => left.order - right.order);
-}
+export { latestProductionCuts as latestCuts } from "@toonstudio/core/production";
 
 export function partyLabel(aggregate: ProductionProjectAggregate, assignmentId: string): string {
   const assignment = aggregate.assignments.find((entry) => entry.id === assignmentId);

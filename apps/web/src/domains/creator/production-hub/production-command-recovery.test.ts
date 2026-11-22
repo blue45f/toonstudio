@@ -24,6 +24,14 @@ describe("탭 한정 제작 명령 복구 기록", () => {
     vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
     expect(saveProductionCommandRecovery("actor-a", "project-a", request())).toBe(false);
   });
+  it("재제출의 이전 제출본과 선택한 컷을 동일 요청으로 복구한다", () => {
+    const pending = { ...request(), command: {
+      type: "resubmit-for-review", previousSubmissionId: "submission-r2", submittedByAssignmentId: "assignment-art",
+      changedCutIds: ["cut-02"], resolveClarificationIds: [], resolutionNote: "두 번째 컷의 구도를 수정",
+    } };
+    expect(saveProductionCommandRecovery("actor-a", "project-a", pending)).toBe(true);
+    expect(loadProductionCommandRecovery("actor-a", "project-a")).toEqual(pending);
+  });
   it("첫 제출의 원래 ID·원고 선택·페이지·입력 정책을 같은 요청으로 복원한다", () => {
     const command = { type: "submit-task-output", taskId: "task-one", submissionId: "submission-one",
       submittedByAssignmentId: "assignment-one", documentRole: "thumbnail",

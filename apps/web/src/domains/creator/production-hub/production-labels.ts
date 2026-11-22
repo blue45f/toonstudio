@@ -362,6 +362,7 @@ export const PRODUCTION_ACTIVITY_LABELS: Readonly<Record<ProductionActivityActio
   "publish-scope-package": { ko: "작업 범위 확정", en: "Scope published" },
   "rebaseline-task": { ko: "작업 일정 다시 잡기", en: "Task rescheduled" },
   "record-review-decision": { ko: "검수 결정 기록", en: "Review decision recorded" },
+  "resubmit-for-review": { ko: "수정본 검수 요청", en: "Revision resubmitted for review" },
   "set-board-order": { ko: "카드 순서 변경", en: "Card order changed" },
   "set-project-cover": { ko: "프로젝트 표지 변경", en: "Project cover changed" },
   "submit-task-output": { ko: "작업물 제출", en: "Task output submitted" },

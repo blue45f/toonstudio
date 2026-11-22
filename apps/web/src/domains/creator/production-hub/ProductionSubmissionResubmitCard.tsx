@@ -76,6 +76,9 @@ export function ProductionSubmissionResubmitComposer({
     );
   };
 
+  if (submission.sourceEvidence) {
+    return <p className="mt-3 text-xs text-fg-2">{bt("고정 원고는 작업물 제출에서 수정한 원고 버전을 선택해 재제출하세요.", "Select the revised manuscript in task output submission to resubmit it.")}</p>;
+  }
   const nextRevNumber = submission.revisionRef.revision + 1;
 
   return (
@@ -183,6 +186,7 @@ export function ProductionSubmissionResubmitComposer({
         <input
           type="text"
           value={note}
+          maxLength={4000}
           disabled={!canEdit || pending}
           onChange={(event) => setNote(event.target.value)}
           aria-label={bt("재제출 수정 요약 메모", "Resubmission summary note")}

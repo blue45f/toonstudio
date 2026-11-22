@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { decodeResubmissionEvidenceRefs, isProductionIdentity, isProductionResubmissionEvidenceRef, latestProductionCuts, planProductionReviewResubmission } from "@toonstudio/core/production";
 import { useState } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -32,6 +33,10 @@ describe("Backlog [20] 수정요청 처리 후 재제출 · 기존 승인 미승
   it("이전 리비전(2차)의 부분 승인이 있어도 3차 재제출 시 변경 컷·해결/미해결·다음 담당자를 구분하고 승인 0건으로 초기화한다", () => {
     const now = new Date();
     let current = rebaseProductionDemoTimeline(createProductionDemoProject(), now);
+    const firstCut = current.cutPlans.find((cut) => cut.cutId === "cut-12-001");
+    if (!firstCut) throw new Error("검수 기준 컷이 없습니다.");
+    current = { ...current, cutPlans: [...current.cutPlans, { ...firstCut, id: "cut-plan-12-003", cutId: "cut-12-003", order: 3 }] };
+    const originalCuts = latestProductionCuts(current.cutPlans);
     const r2 = current.submissions.find((entry) => entry.id === "submission-thumbnail-12-r2")!;
     const policy = policyForProductionSubmission(current, r2)!;
     const deliverable = current.deliverables.find((entry) => entry.id === r2.deliverableId)!;
@@ -86,17 +91,29 @@ describe("Backlog [20] 수정요청 처리 후 재제출 · 기존 승인 미승
 
     // 3) 차단 인계 질문 1건을 해결 처리하고 cut-12-001만 변경해 3차 제출본으로 재제출
     const t3 = new Date(now.getTime() + 5_000).toISOString();
+    current = productionDemoAdapter.reduce(current, { type: "upsert-planning-record", record: {
+      kind: "cut-plan", value: { ...firstCut, id: "cut-plan-12-001-r3", status: "draft", approvedByAssignmentIds: [], revision: firstCut.revision + 1, framing: "봉투 뒷면 가림" },
+    } });
+    expect(latestProductionCuts(current.cutPlans).filter((cut, index) => cut !== originalCuts[index]).map((cut) => cut.cutId)).toEqual(["cut-12-001"]);
+    const note = "봉투 뒷면 문양 가림 · ".repeat(40).trim();
     const resubmitPlan = planProductionSubmissionResubmission({
       aggregate: current,
       previousSubmission: r2ChangesRequested,
       changedCutIds: ["cut-12-001"],
       resolveClarificationIds: ["clarification-envelope-angle"],
-      resolutionNote: "cut-12-001 봉투 뒷면 문양 실루엣 가림 처리",
+      resolutionNote: note,
       at: t3,
     });
-    for (const step of resubmitPlan.steps) {
-      current = productionDemoAdapter.reduce(current, step.command);
-    }
+    expect(resubmitPlan.steps).toHaveLength(1);
+    const command = resubmitPlan.steps[0].command;
+    expect(command.type).toBe("resubmit-for-review");
+    const beforeRevision = current.revision;
+    const { commands } = planProductionReviewResubmission(current, command, t3);
+    expect(commands.flatMap((step) => step.type === "upsert-submission" ? [step.submission.status] : []))
+      .toEqual(["submitted", "superseded", "in-review"]);
+    expect(() => productionDemoAdapter.reduce(current, { ...command, changedCutIds: ["absent-cut"] })).toThrow("산출물 범위");
+    current = productionDemoAdapter.reduce(current, command);
+    expect(current.revision).toBe(beforeRevision + 1);
 
     const r2Superseded = current.submissions.find((entry) => entry.id === r2.id)!;
     const r3 = current.submissions.find((entry) => entry.id === "submission-thumbnail-12-r3")!;
@@ -116,7 +133,7 @@ describe("Backlog [20] 수정요청 처리 후 재제출 · 기존 승인 미승
     expect(episodeGate.lanes.every((lane) => lane.approved === false)).toBe(true);
 
     // 5) 재제출 브리핑 요약에서 변경 컷 / 해결·미해결 / 다음 담당자 / 이전 승인 미승계가 정확히 구분된다
-    const cuts = current.cutPlans.filter((cut) => cut.episodeId === "episode-12");
+    const cuts = latestProductionCuts(current.cutPlans).filter((cut) => cut.episodeId === "episode-12");
     const summary = deriveSubmissionResubmissionSummary({
       aggregate: current,
       submission: r3,
@@ -130,12 +147,41 @@ describe("Backlog [20] 수정요청 처리 후 재제출 · 기존 승인 미승
     expect(summary.isResubmitted).toBe(true);
     expect(summary.previousRevisionNumber).toBe(2);
     expect(summary.changedCutIds).toEqual(["cut-12-001"]);
-    expect(summary.unchangedCutIds).toContain("cut-12-002");
+    expect(summary.unchangedCutIds).toEqual(["cut-12-002", "cut-12-003"]);
+    expect(summary.note).toBe(note);
     expect(summary.resolvedRequests.some((item) => item.id === "clarification-envelope-angle")).toBe(true);
     expect(summary.openRequests.some((item) => item.id === "change-ending-dialogue-12")).toBe(true);
     expect(summary.priorApprovedReviewers.map((item) => item.assignmentId)).toEqual(["assignment-story"]);
     expect(summary.nextReviewers.every((item) => item.approvedInCurrentRevision === false)).toBe(true);
     expect(summary.nextReviewers).toHaveLength(3);
+  });
+
+  it("긴 제출 식별자와 여러 수정 컷을 보관하고 종료한 컷의 옛 버전은 거절한다", () => {
+    const now = new Date();
+    const sample = rebaseProductionDemoTimeline(createProductionDemoProject(), now);
+    const old = sample.submissions.find((entry) => entry.id === "submission-thumbnail-12-r2");
+    const cut = sample.cutPlans.find((entry) => entry.cutId === "cut-12-002");
+    if (!old || !cut) throw new Error("테스트 제출본과 컷이 필요합니다.");
+    const previous = { ...old, id: "s".repeat(160), status: "changes-requested" as const,
+      revisionRef: { ...old.revisionRef, id: "v".repeat(160) } };
+    const aggregate = { ...sample,
+      submissions: sample.submissions.map((entry) => entry.id === old.id ? previous : entry),
+      deliverables: sample.deliverables.map((entry) => entry.id === old.deliverableId ? { ...entry, currentSubmissionId: previous.id } : entry),
+    };
+    const changedCutIds = ["cut-12-001", "cut-12-002"];
+    const command = { type: "resubmit-for-review" as const, previousSubmissionId: previous.id,
+      submittedByAssignmentId: previous.submittedByAssignmentId, changedCutIds, resolveClarificationIds: [],
+      resolutionNote: "첫 컷과 둘째 컷 수정" };
+    const { nextSubmission } = planProductionReviewResubmission(aggregate, command, now.toISOString());
+    expect(isProductionIdentity(nextSubmission.id)).toBe(true);
+    expect(isProductionIdentity(nextSubmission.revisionRef.id)).toBe(true);
+    expect(nextSubmission.evidenceRefs.every(isProductionResubmissionEvidenceRef)).toBe(true);
+    expect(decodeResubmissionEvidenceRefs(nextSubmission.evidenceRefs)).toMatchObject({
+      changedCutIds, previousSubmissionId: previous.id, note: command.resolutionNote,
+    });
+    const archived = { ...cut, revision: cut.revision + 1, status: "archived" as const };
+    expect(() => planProductionReviewResubmission({ ...aggregate, cutPlans: [...aggregate.cutPlans, archived] }, command, now.toISOString()))
+      .toThrow("산출물 범위");
   });
 
   it("resubmitStudioRevision: 다중 검수자 중 일부 승인 후 수정 요청되어 재제출하면 decisions가 비워지고 메타데이터로만 이전 승인이 기록된다", () => {

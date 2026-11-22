@@ -20,6 +20,17 @@ const TERMINAL_PLANNING_STATUSES = new Set<PlanningDocumentStatus>([
   "archived",
 ]);
 
+export function latestProductionCuts(values: readonly CutPlan[]): readonly CutPlan[] {
+  const projected = new Map<string, CutPlan>();
+  for (const value of values) {
+    const current = projected.get(value.cutId);
+    if (!current || current.revision < value.revision) projected.set(value.cutId, value);
+  }
+  return [...projected.values()]
+    .filter((value) => value.status !== "archived" && value.status !== "superseded")
+    .sort((left, right) => left.order - right.order);
+}
+
 export function validatePlanningRevision(
   current: { readonly id: string; readonly projectId: string; readonly revision: number; readonly status: PlanningDocumentStatus } | null,
   next: { readonly id: string; readonly projectId: string; readonly revision: number; readonly status: PlanningDocumentStatus },

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { StudioScopedWriteContextSchema } from "@toonstudio/contracts/studio-scoped-write";
 
-import { PRODUCTION_STUDIO_DOCUMENT_ROLES } from "../../../../../packages/core/src/production";
+import { isProductionResubmissionEvidenceRef, PRODUCTION_STUDIO_DOCUMENT_ROLES } from "../../../../../packages/core/src/production";
 import { studioReviewCaptureSubjectSchema } from "../studio-project-graph/studio-review-capture-subject";
 import {
   HumanTextSchema,
@@ -69,7 +69,7 @@ export const SubmissionSchema = z.object({
   submittedAt: IsoDateTimeSchema,
   status: z.enum(["submitted", "in-review", "changes-requested", "approved", "superseded"]),
   inputRevisionRefs: z.array(ProductionRevisionRefSchema).min(1).max(100_000),
-  evidenceRefs: z.array(IdentitySchema).max(100_000),
+  evidenceRefs: z.array(IdentitySchema.or(z.string().refine(isProductionResubmissionEvidenceRef))).max(100_000),
   sourceEvidence: ProductionTaskOutputEvidenceSchema.optional(),
 }).strict();
 
@@ -94,6 +94,14 @@ export const UpsertDeliverableCommandSchema = z.object({
 }).strict();
 export const UpsertSubmissionCommandSchema = z.object({
   type: z.literal("upsert-submission"), submission: SubmissionSchema,
+}).strict();
+export const ResubmitForReviewCommandSchema = z.object({
+  type: z.literal("resubmit-for-review"),
+  previousSubmissionId: IdentitySchema,
+  changedCutIds: z.array(IdentitySchema).min(1).max(10_000),
+  resolveClarificationIds: z.array(IdentitySchema).max(10_000),
+  resolutionNote: z.string().trim().max(4_000),
+  submittedByAssignmentId: IdentitySchema,
 }).strict();
 export const UpsertStudioRevisionLinkCommandSchema = z.object({
   type: z.literal("upsert-studio-revision-link"), link: ProductionStudioRevisionLinkSchema,
@@ -123,3 +131,8 @@ export const SubmitProductionTaskOutputCommandSchema = z.object({
     }).strict(),
   ]),
 }).strict();
+
+export const ProductionSubmissionCommandSchemas = [
+  UpsertDeliverableCommandSchema, UpsertSubmissionCommandSchema, UpsertStudioRevisionLinkCommandSchema,
+  ResubmitForReviewCommandSchema, SubmitProductionTaskOutputCommandSchema,
+] as const;

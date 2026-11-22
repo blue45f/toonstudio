@@ -9,7 +9,7 @@ export const PRODUCTION_COMMAND_RECOVERY_PREFIX = "toonstudio:production-command
 export const PRODUCTION_COMMAND_RECOVERY_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 const MAX_RECORD_LENGTH = 1_048_576;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/iu;
-const SAFE_COMMANDS = new Set(["upsert-task", "upsert-task-batch", "transition-task-batch", "upsert-submission", "submit-task-output", "record-review-decision", "upsert-clarification", "configure-collaboration"]);
+const SAFE_COMMANDS = new Set(["upsert-task", "upsert-task-batch", "transition-task-batch", "upsert-submission", "resubmit-for-review", "submit-task-output", "record-review-decision", "upsert-clarification", "configure-collaboration"]);
 const SECRET_FIELD = /(?:token|secret|password|credential|authorization|cookie|api[-_]?key|private[-_]?key|oauth|signed[-_]?url)/iu;
 const SECRET_TEXT = /(?:\bBearer\s+\S+|[?&](?:token|access_token|key|signature|x-amz-signature|x-goog-signature)=|\bsk-[a-z0-9_-]{12,})/iu;
 

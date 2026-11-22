@@ -29,12 +29,7 @@ import {
   SeasonPlanSchema,
   SeriesMasterSchema,
 } from "./production-collaboration-planning.dto";
-import {
-  SubmitProductionTaskOutputCommandSchema,
-  UpsertDeliverableCommandSchema,
-  UpsertStudioRevisionLinkCommandSchema,
-  UpsertSubmissionCommandSchema,
-} from "./production-submission.dto";
+import { ProductionSubmissionCommandSchemas } from "./production-submission.dto";
 import { RecordReviewDecisionCommandSchema, UpsertReviewPolicyCommandSchema } from "./production-review.dto";
 
 export { ProductionRevisionRefSchema, ProductionScopeRefSchema };
@@ -1081,10 +1076,7 @@ export const ProductionCommandSchema = z.discriminatedUnion("type", [
   UpsertClarificationCommandSchema,
   UpsertBranchCommandSchema,
   UpsertMergeRequestCommandSchema,
-  UpsertDeliverableCommandSchema,
-  UpsertSubmissionCommandSchema,
-  UpsertStudioRevisionLinkCommandSchema,
-  SubmitProductionTaskOutputCommandSchema,
+  ...ProductionSubmissionCommandSchemas,
   UpsertReviewPolicyCommandSchema,
   RecordReviewDecisionCommandSchema,
   UpsertTaskCommandSchema,
