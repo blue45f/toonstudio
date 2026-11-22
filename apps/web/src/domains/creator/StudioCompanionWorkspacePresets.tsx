@@ -1,5 +1,18 @@
 import { Check, Images, ListChecks, Map, Paintbrush } from "lucide-react";
 
+import {
+  createCompanionBridgeSession,
+  createCreatorCommerceDeliverySnapshot,
+  encodeCompanionPairingUri,
+  formatCurrencyMinor,
+  type CompanionBridgeSessionState,
+  type CompanionCapability,
+  type EpisodePreflightGateInput,
+  type EpisodePreflightGateReport,
+  type RoyaltySettlementLedger,
+  type RoyaltySettlementRequest,
+} from "./creator-commerce";
+
 import { cn } from "@/shared/lib/utils";
 
 export type StudioCompanionWorkspacePresetId =
@@ -8,10 +21,23 @@ export type StudioCompanionWorkspacePresetId =
   | "review"
   | "reference";
 
+const PRESET_BRIDGE_CAPABILITIES: Readonly<Record<StudioCompanionWorkspacePresetId, readonly CompanionCapability[]>> =
+  Object.freeze({
+    draw: Object.freeze(["shortcuts", "palette"] as const),
+    navigate: Object.freeze(["navigator", "camera-3d"] as const),
+    review: Object.freeze(["navigator", "shortcuts"] as const),
+    reference: Object.freeze(["palette", "camera-3d"] as const),
+  });
+
 export interface StudioCompanionWorkspacePresetsProps {
   disabled: boolean;
   activePreset: StudioCompanionWorkspacePresetId | null;
   onApplyPreset: (preset: StudioCompanionWorkspacePresetId) => void;
+  companionBridgeSession?: CompanionBridgeSessionState | null;
+  companionBridgeHost?: { readonly hostDeviceId: string; readonly hostLabel: string; readonly nowMs: number } | null;
+  preflightReport?: EpisodePreflightGateReport | null;
+  settlementLedger?: RoyaltySettlementLedger | null;
+  deliveryInputs?: { readonly preflight: EpisodePreflightGateInput; readonly settlement: RoyaltySettlementRequest } | null;
 }
 
 const PRESETS: ReadonlyArray<{
@@ -60,7 +86,28 @@ export function StudioCompanionWorkspacePresets({
   disabled,
   activePreset,
   onApplyPreset,
+  companionBridgeSession = null,
+  companionBridgeHost = null,
+  preflightReport = null,
+  settlementLedger = null,
+  deliveryInputs = null,
 }: StudioCompanionWorkspacePresetsProps) {
+  const resolvedBridgeSession =
+    companionBridgeSession ??
+    (companionBridgeHost
+      ? createCompanionBridgeSession({
+          hostDeviceId: companionBridgeHost.hostDeviceId,
+          hostLabel: companionBridgeHost.hostLabel,
+          nowMs: companionBridgeHost.nowMs,
+          allowedCapabilities: PRESET_BRIDGE_CAPABILITIES[activePreset ?? "draw"],
+        })
+      : null);
+  const resolvedQrUri = resolvedBridgeSession ? encodeCompanionPairingUri(resolvedBridgeSession.pairing) : null;
+  const computedDelivery = deliveryInputs ? createCreatorCommerceDeliverySnapshot(deliveryInputs) : null;
+  const resolvedPreflight = preflightReport ?? computedDelivery?.preflightReport ?? null;
+  const resolvedSettlement = settlementLedger ?? computedDelivery?.settlementLedger ?? null;
+  const hasCommerceSummary = Boolean(resolvedBridgeSession || resolvedPreflight || resolvedSettlement);
+
   return (
     <section aria-labelledby="companion-workspace-presets-title" className="space-y-2">
       <div>
@@ -135,6 +182,40 @@ export function StudioCompanionWorkspacePresets({
           );
         })}
       </div>
+
+      {hasCommerceSummary ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-qr-uri={resolvedQrUri ?? undefined}
+          className="rounded-xl border border-line/70 bg-card px-2.5 py-2 text-[0.66rem] leading-relaxed text-fg-2"
+        >
+          {resolvedBridgeSession ? (
+            <p>
+              QR 컴패니언({resolvedBridgeSession.status}) · 코드{" "}
+              <span className="font-mono font-semibold text-fg">{resolvedBridgeSession.pairing.pairingCode}</span>
+            </p>
+          ) : null}
+          {resolvedPreflight ? (
+            <p>
+              출고 사전 검수: <strong className="text-fg">{resolvedPreflight.verdict}</strong> ·{" "}
+              {resolvedPreflight.summaryKo}
+            </p>
+          ) : null}
+          {resolvedSettlement ? (
+            <p>
+              정산 순지급 합계:{" "}
+              <strong className="text-fg">
+                {formatCurrencyMinor(
+                  resolvedSettlement.reconciliation.totalNetPayoutMinor,
+                  resolvedSettlement.settlementCurrency,
+                )}
+              </strong>{" "}
+              (오차 {resolvedSettlement.reconciliation.roundingErrorMinor})
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }
