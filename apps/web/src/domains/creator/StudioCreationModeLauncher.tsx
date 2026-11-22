@@ -6,6 +6,10 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import {
+  StudioQuickMigrateWizard,
+  type QuickMigrateAppliedBundle,
+} from "./creator-onboarding-pro";
+import {
   STUDIO_CREATION_MODE_EVENT,
   type StudioCreationMode,
 } from "./studio-creation-mode";
@@ -85,6 +89,7 @@ const CREATION_MODES: readonly StudioCreationModeDefinition[] = [
 interface StudioCreationModeLauncherProps {
   readonly className?: string;
   readonly onSelectMode: (mode: StudioCreationMode) => void;
+  readonly onQuickMigrateApplied?: (bundle: QuickMigrateAppliedBundle) => void;
 }
 
 interface PalettePosition {
@@ -109,12 +114,14 @@ function resolvePalettePosition(trigger: HTMLElement): PalettePosition {
 export function StudioCreationModeLauncher({
   className,
   onSelectMode,
+  onQuickMigrateApplied,
 }: StudioCreationModeLauncherProps) {
   const bt = useBilingual("StudioCreationModeLauncher");
   const titleId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const paletteRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [migrateWizardOpen, setMigrateWizardOpen] = useState(false);
   const [position, setPosition] = useState<PalettePosition>({ left: 82, top: 84 });
 
   const runMode = useCallback((mode: StudioCreationMode) => {
@@ -241,9 +248,34 @@ export function StudioCreationModeLauncher({
               </button>
             ))}
           </div>
+          <div className="mt-3 border-t border-line pt-3">
+            <button
+              type="button"
+              data-studio-quick-migrate-trigger="true"
+              onClick={() => {
+                setOpen(false);
+                setMigrateWizardOpen(true);
+              }}
+              className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-line-strong bg-raised px-3.5 py-2.5 text-left text-xs font-medium text-fg transition-colors hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none [word-break:keep-all]"
+            >
+              <span>
+                {bt(
+                  "타 툴 30초 정착 · 단축키 & 7밴드 브러시 매핑",
+                  "30s quick migrate · shortcuts & 7-band brushes",
+                )}
+              </span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
         </div>,
         document.body,
       ) : null}
+
+      <StudioQuickMigrateWizard
+        open={migrateWizardOpen}
+        onClose={() => setMigrateWizardOpen(false)}
+        onApply={onQuickMigrateApplied}
+      />
     </>
   );
 }
