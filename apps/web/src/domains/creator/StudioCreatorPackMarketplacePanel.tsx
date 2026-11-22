@@ -33,6 +33,7 @@ import {
   type StudioCreatorPackInstallResult,
   type StudioCreatorPackInstallState,
 } from "./studio-creator-pack-runtime";
+import { inspectLocalRenderCacheReadiness } from "./local-render-cache";
 import { filterStudioMarketplacePackages } from "./studio-marketplace-packages";
 
 import { cx } from "@/shared/lib/cx";
@@ -219,6 +220,7 @@ export function StudioCreatorPackMarketplacePanel({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StudioCreatorPackInstallResult | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const localInfra = open ? inspectLocalRenderCacheReadiness() : null;
   const visible = filterStudioMarketplacePackages(
     STUDIO_CREATOR_PACK_CATALOG.map((pack) => pack.metadata),
     {
@@ -273,6 +275,21 @@ export function StudioCreatorPackMarketplacePanel({
                 작은 JSON은 기존 Studio 라이브러리에 실제 설치합니다. 템플릿·3D는 검증된 내장 ID와 성능 예산만 참조하며 결제·가짜 클라우드 설치는 제공하지 않습니다.
               </p>
             </div>
+            {localInfra ? (
+              <div
+                data-studio-local-render-cache-status="ready"
+                className="mt-2 rounded-lg border border-line bg-card px-2.5 py-2 text-[0.58rem] leading-relaxed text-fg-2 [word-break:keep-all]"
+              >
+                <p className="font-semibold text-fg">
+                  로컬 실행 인프라 준비 완료 (클라우드 렌더 ₩{localInfra.zeroCloudCostKrw})
+                </p>
+                <p className="mt-0.5 tabular-nums text-fg-3">
+                  워커 풀 {localInfra.autoWorkerCount}스레드 · 예산 {localInfra.renderMemoryBudgetMb}MiB · 캐시 RAM{" "}
+                  {localInfra.l1CacheBudgetMb}MiB → OPFS {localInfra.l2CacheBudgetMb}MiB → R2 해시 · dHash 경고 ≤{" "}
+                  {localInfra.dHashWarningThreshold} · 펀딩 BEP 오차 {localInfra.sampleReconciliationErrorKrw}원
+                </p>
+              </div>
+            ) : null}
             <div className="relative mt-2">
               <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" aria-hidden />
               <input

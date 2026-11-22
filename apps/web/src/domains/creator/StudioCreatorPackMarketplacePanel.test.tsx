@@ -52,4 +52,14 @@ describe("StudioCreatorPackMarketplacePanel", () => {
     expect(paletteCard).toContain("무제한 · 로컬 SQL");
     expect(paletteCard).not.toContain("기기 로컬");
   });
+
+  it("renders local worker pool, hybrid cache, dHash, and funding BEP readiness only when expanded", () => {
+    const collapsedHtml = renderToStaticMarkup(<StudioCreatorPackMarketplacePanel />);
+    expect(collapsedHtml).not.toContain("data-studio-local-render-cache-status=");
+
+    const openHtml = renderToStaticMarkup(<StudioCreatorPackMarketplacePanel initialOpen />);
+    expect(openHtml).toContain('data-studio-local-render-cache-status="ready"');
+    expect(openHtml).toContain("로컬 실행 인프라 준비 완료 (클라우드 렌더 ₩0)");
+    expect(openHtml).toContain("펀딩 BEP 오차 0원");
+  });
 });
