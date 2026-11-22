@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AdminApiError } from "../../../platform/http/admin-api";
+import { OpsCutoverOverviewCard } from "../cutover-overview/OpsCutoverOverviewCard";
 
 import { applyOperationPolicy, loadOperationPolicy, previewOperationPolicy } from "./api/operation-policy-api";
 
@@ -546,6 +547,8 @@ export function OperationPolicyPanel() {
               </div>
             )}
           </section>
+
+          <OpsCutoverOverviewCard compact />
 
           <section className="policy-card">
             <h2>최근 변경 이력</h2>

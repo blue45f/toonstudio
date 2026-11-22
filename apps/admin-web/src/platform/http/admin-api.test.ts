@@ -97,4 +97,56 @@ describe("admin-api platform transport", () => {
       status: 502,
     });
   });
+
+  it("strips .env keys and masks internal hosts/credentials in API responses and errors", async () => {
+    const synthDsn = ["postgres", "://", "ops", ":", "Pass9988", "@toonstudio-db.db.onpod.local:5432/toonstudio"].join("");
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            note: `원격 상태 확인 (${synthDsn} / http://localhost:4174)`,
+            DATABASE_URL: synthDsn,
+            AUTH_SESSION_SECRET: "hidden",
+            internalHost: "toonstudio-db.db.onpod.local:5432",
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            message: "연결 실패: 127.0.0.1:5432 / ONPOD_DEPLOY_TOKEN 누락",
+          }),
+          { status: 503 },
+        ),
+      );
+
+    const response = await requestAdminJson<Record<string, unknown>>("/api/admin/diagnostics");
+    expect(response.ok).toBe(true);
+    expect(response.DATABASE_URL).toBeUndefined();
+    expect(response.AUTH_SESSION_SECRET).toBeUndefined();
+    expect(response.internalHost).toBeUndefined();
+    expect(String(response.note)).not.toContain("onpod.local");
+    expect(String(response.note)).not.toContain("localhost");
+    expect(String(response.note)).not.toContain("postgres://");
+
+    await expect(requestAdminJson("/api/admin/diagnostics")).rejects.toMatchObject({
+      name: "AdminApiError",
+      status: 503,
+    });
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ message: "오류: 127.0.0.1:5432 ONPOD_DEPLOY_TOKEN" }),
+        { status: 500 },
+      ),
+    );
+    try {
+      await requestAdminJson("/api/admin/diagnostics");
+    } catch (error) {
+      expect(error).toBeInstanceOf(AdminApiError);
+      expect((error as AdminApiError).message).not.toContain("127.0.0.1");
+      expect((error as AdminApiError).message).not.toContain("ONPOD_DEPLOY_TOKEN");
+    }
+  });
 });

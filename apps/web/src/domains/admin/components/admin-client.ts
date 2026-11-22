@@ -725,14 +725,10 @@ export function downloadTrafficOverviewCsv(data: TrafficOverview): void {
   const csv = `\uFEFF${rows
     .map((row) => row.map(escapeTrafficCsv).join(","))
     .join("\n")}`;
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `toonstudio-traffic-${data.rangeDays}d-${new Date()
-    .toISOString()
-    .slice(0, 10)}.csv`;
-  anchor.click();
-  URL.revokeObjectURL(url);
+  downloadAdminFile(
+    `toonstudio-traffic-${data.rangeDays}d-${new Date().toISOString().slice(0, 10)}.csv`,
+    csv,
+    "text/csv;charset=utf-8",
+  );
 }
 
