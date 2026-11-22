@@ -20,7 +20,7 @@ export function runStudioLoadServerRevisionsEffect({
   readonly sharedDocumentRole: string | undefined;
   readonly loggedIn: boolean;
   readonly serverRevisionRequestRef: MutableRefObject<number>;
-  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorAsyncScope>;
+  readonly currentStudioDocumentScopeRef: MutableRefObject<Pick<StudioEditorAsyncScope, "authScopeKey" | "workId">>;
   readonly editorMountedRef: MutableRefObject<boolean>;
   readonly setServerRevisions: Dispatch<SetStateAction<WorkRevisionSummary[]>>;
   readonly setServerRevisionError: Dispatch<SetStateAction<string | null>>;
@@ -80,7 +80,7 @@ export async function runStudioOpenOwnerFxPanel({
   readonly studioAuthUserId: string | null;
   readonly fxPanelLoading: boolean;
   readonly ownerDetailAbortRef: MutableRefObject<AbortController | null>;
-  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorAsyncScope>;
+  readonly currentStudioDocumentScopeRef: MutableRefObject<Pick<StudioEditorAsyncScope, "authScopeKey" | "workId">>;
   readonly editorMountedRef: MutableRefObject<boolean>;
   readonly setFxPanelOpen: Dispatch<SetStateAction<boolean>>;
   readonly setFxPanelLoading: Dispatch<SetStateAction<boolean>>;
@@ -142,7 +142,7 @@ export async function runStudioReloadServerRevisions({
   readonly loggedIn: boolean;
   readonly serverRevisionRequestRef: MutableRefObject<number>;
   readonly serverRevisionAbortRef: MutableRefObject<AbortController | null>;
-  readonly currentStudioDocumentScopeRef: MutableRefObject<StudioEditorAsyncScope>;
+  readonly currentStudioDocumentScopeRef: MutableRefObject<Pick<StudioEditorAsyncScope, "authScopeKey" | "workId">>;
   readonly editorMountedRef: MutableRefObject<boolean>;
   readonly setServerRevisions: Dispatch<SetStateAction<WorkRevisionSummary[]>>;
   readonly setServerRevisionError: Dispatch<SetStateAction<string | null>>;

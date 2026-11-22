@@ -26,7 +26,8 @@ import {
   selectionOperationBase,
   type PixelSelection,
   type SelectionFrame,
-  type SelectionOperationMode, SelPoint 
+  type SelectionOperationMode,
+  type SelPoint,
 } from "../studio-selection-tools";
 
 export interface StudioQuickSelectStrokeSession {

@@ -496,7 +496,7 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
         project: {
           id: "proj-1",
           title: "1화 원고",
-          kind: "cuttoon",
+          kind: "webtoon",
           createdAt: "2026-11-23T00:00:00Z",
           updatedAt: "2026-11-23T00:00:00Z",
         },
@@ -592,7 +592,7 @@ describe("studio-host-wave5 helpers & lightweight contracts", () => {
     const setShareError = vi.fn();
     await runStudioShareAsset({
       asset: { id: "a1", name: "배경", dataUrl: "data:image/png;base64,AA", width: 10, height: 10, createdAt: 0 },
-      options: { description: "", license: "cc0-1.0", tags: [], containsAi: false },
+      options: { description: "", license: "cc0-1.0", tags: [], containsAi: false, rightsConfirmed: true },
       studioAuthUserId: null,
       setPublishingId: vi.fn(),
       setAssetTab: vi.fn(),
