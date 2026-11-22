@@ -4,6 +4,7 @@ import {
   BetaOpenEventPage,
   BrandFilmPage,
   ComicIntroHost,
+  CompetitorComparisonPage,
   EventsHubPage,
   FeaturesOverviewPage,
   IrPitchPage,
@@ -44,6 +45,8 @@ export const marketingRoutes = defineAppRoutes([
   // 내비게이션 팀이 헤더/푸터에서 연결할 공개 요금제 안내. 상세 한도는 /membership이 소유한다.
   { id: "marketing-pricing", path: "/pricing", element: <PricingPage /> },
   { id: "marketing-features-overview", path: "/features", element: <FeaturesOverviewPage /> },
+  // 경쟁 도구 7종 기능·디자인·품질·비용(₩0) 비교 페이지. /compare는 독자용 두 작품 비교(catalog-compare)가 소유한다.
+  { id: "marketing-competitor-comparison", path: "/about/compare", element: <CompetitorComparisonPage /> },
   { id: "marketing-brand-film", path: "/brand-film", element: <BrandFilmPage /> },
   // 홍보 영상 자료실: 만든 홍보 영상 204편을 카테고리별로 모아 미리 보고 원본을 내려받는 보관함.
   // 개별 영상의 배선처는 각 표면이 소유하고, 이 페이지는 소재를 꺼내 쓰는 입구만 소유한다.

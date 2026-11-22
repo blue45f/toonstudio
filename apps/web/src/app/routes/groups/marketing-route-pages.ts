@@ -73,3 +73,7 @@ export const IrPresentPage = lazyPage(
 export const BusinessPlanPage = lazyPage(
   () => import("@/domains/marketing/BusinessPlanPage"), "BusinessPlanPage",
 );
+
+export const CompetitorComparisonPage = lazyPage(
+  () => import("@/domains/marketing/CompetitorComparisonPage"), "CompetitorComparisonPage",
+);

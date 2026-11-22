@@ -1,4 +1,4 @@
-import { Swords } from "lucide-react";
+import { Scale, Swords } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor, sitePageHeaderArtPlacementFor } from "@/domains/legal/public/site-page-header-art";
 import { CompareView } from "@/shared/components/compare-view";
 import { Container } from "@/shared/components/section";
+import Link from "@/shared/navigation/router-link";
 import {
   translateCurrentStaticSourceText,
   useBilingual,
@@ -138,6 +139,21 @@ export function ComparePage() {
         artPlacement={sitePageHeaderArtPlacementFor("/compare")}
       />
       <SiteContextualSubNav pathnameOverride="/compare" className="mb-5" />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-3 text-xs text-fg-2">
+        <span className="inline-flex items-center gap-2 font-medium">
+          <Scale size={15} className="shrink-0 text-accent" aria-hidden="true" />
+          {bt(
+            "웹툰 제작 도구(Clip Studio Paint · Procreate · Blender 등 7종)와 ToonStudio 비교를 찾으시나요?",
+            "Looking to compare ToonStudio with 7 creative tools (Clip Studio Paint, Procreate, Blender, etc.)?",
+          )}
+        </span>
+        <Link
+          href="/about/compare"
+          className="inline-flex min-h-11 items-center rounded-xl border border-accent/50 bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent"
+        >
+          {bt("경쟁 도구 7종 비교 보기", "View 7-tool comparison")}
+        </Link>
+      </div>
       <section
         data-testid="compare-rea-multi-axis-bar"
         aria-label={bt(

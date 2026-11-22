@@ -65,6 +65,16 @@ describe("marketing film routes", () => {
     expect(isPublicCreativeRoute("/pricing/")).toBe(true);
   });
 
+  it("registers the competitor comparison page as a public marketing route", () => {
+    expect(marketingRoutes).toContainEqual(
+      expect.objectContaining({ id: "marketing-competitor-comparison", path: "/about/compare" }),
+    );
+    expect(isPublicCreativeRoute("/about/compare")).toBe(true);
+    expect(isPublicCreativeRoute("/about/compare/")).toBe(true);
+    expect(CREATOR_RESOURCE_TITLES["/about/compare"]).toBe("툰스튜디오 vs 경쟁 도구 비교");
+    expect(shouldAppRouterOwnDocumentTitle({ pathname: "/about/compare" })).toBe(false);
+  });
+
   it("keeps the three workspace surfaces as separate destinations (O-01)", () => {
     // 세 주소는 같은 셸을 쓰지만 surface 본문이 달라 별도 목적지로 남는다.
     // 하나로 합치는 변경은 marketing.routes.tsx의 O-01 명문화 근거를 먼저 뒤집어야 한다.

@@ -509,6 +509,14 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
         href: "/about/principles",
       },
       {
+        name: { ko: "경쟁 도구 7종 비교", en: "Competitor tool comparison" },
+        description: {
+          ko: "Clip Studio Paint·Procreate·Photoshop·Rebelle·Blender·Creco·ACON3D와 5대 축 실측 대조",
+          en: "Side-by-side comparison with 7 creative and webtoon tools across 5 verified axes",
+        },
+        href: "/about/compare",
+      },
+      {
         name: { ko: "요금제", en: "Pricing" },
         description: { ko: "플랜과 제공 범위 안내", en: "Plans and what each includes" },
         href: "/pricing",

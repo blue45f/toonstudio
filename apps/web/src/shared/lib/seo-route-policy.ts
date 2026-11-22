@@ -43,6 +43,7 @@ const CRAWLABLE_UTILITY_ROUTES = new Set([
 const INDEXABLE_EXACT_ROUTES = new Set([
   "/",
   "/about",
+  "/about/compare",
   "/about/crawler",
   "/about/data",
   "/about/principles",
