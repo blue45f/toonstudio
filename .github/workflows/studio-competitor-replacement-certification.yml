@@ -123,4 +123,4 @@ jobs:
           name: studio-competitor-replacement-${{ github.run_id }}
           path: qa-results/studio-reference-projects
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 7

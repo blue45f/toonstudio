@@ -83,5 +83,5 @@ jobs:
         with:
           name: studio-cc0-library-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/studio-cc0-ui/
-          retention-days: 14
+          retention-days: 5
           if-no-files-found: error

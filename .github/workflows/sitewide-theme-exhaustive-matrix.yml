@@ -192,7 +192,7 @@ jobs:
           name: sitewide-theme-${{ matrix.profile }}-${{ matrix.viewport }}-${{ matrix.shard }}
           path: .qa/visual-ux
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 5
 
       - name: Stop audited application
         if: always()

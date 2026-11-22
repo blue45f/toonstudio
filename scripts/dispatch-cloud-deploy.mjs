@@ -3,7 +3,9 @@
  * 로컬 `.env`가 전혀 없는 클라우드 환경(Codex Cloud, Codespaces, 원격 컨테이너 등)에서
  * GitHub Actions `cloud-production-deploy.yml`을 안전하게 조회·실행하는 진입점 (`pnpm run deploy:cloud`)
  *
- *   pnpm run deploy:cloud -- --status                           # origin/main CI 게이트 및 GitHub Environment 준비 상태 확인
+ *   pnpm run deploy:cloud -- --status                           # origin/main CI 게이트 및 GitHub Environment 준비 상태 + 변경 영역 진단
+ *   pnpm run deploy:cloud -- --smart --watch                    # 변경 영역(web/api/apex)만 자동 선별 배포 (무변경 단위 안전 건너뛰기)
+ *   pnpm run deploy:cloud -- --web --api-image --smart          # 요청 단위 중 실제 변경된 단위만 실행하고 나머지는 건너뛰기
  *   pnpm run deploy:cloud -- --dry-run                          # 원격 변경 없이 클라우드 빌드·드라이런 실행
  *   pnpm run deploy:cloud -- --web --watch                      # Cloudflare 정적 웹 + R2 운영 배포 실행
  *   pnpm run deploy:cloud -- --api-image --watch                # Core API 불변 GHCR 이미지 빌드·발행
@@ -20,6 +22,13 @@ import {
   GITHUB_REPO_SLUG,
   redactSensitiveText,
 } from "./lib/deploy-auth-env.mjs";
+import {
+  classifyDeployChangedFiles,
+  formatDeployScopeLines,
+  planSmartDeploySelection,
+  resolveChangedFilesBetweenRefs,
+  resolveDeployBaseSha,
+} from "./lib/deploy-change-scope.mjs";
 import { inspectReleaseCi } from "./release-required-ci.mjs";
 import { REQUIRED_ONPOD_CONFIRM } from "./cloud-deploy-onpod.mjs";
 import { inspectGitHubEnvironmentStatus } from "./setup-deploy-auth.mjs";
@@ -43,6 +52,7 @@ export function parseCloudDispatchArgs(argv) {
     status: false,
     localOAuth: false,
     dryRun: false,
+    smart: false,
     web: false,
     apex: false,
     apiImage: false,
@@ -53,6 +63,7 @@ export function parseCloudDispatchArgs(argv) {
     watch: false,
     watchIntervalSec: 15,
     sha: "",
+    baseSha: "",
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -62,6 +73,7 @@ export function parseCloudDispatchArgs(argv) {
     else if (arg === "--status") out.status = true;
     else if (arg === "--check-local-oauth") out.localOAuth = true;
     else if (arg === "--dry-run") out.dryRun = true;
+    else if (arg === "--smart") out.smart = true;
     else if (arg === "--web") out.web = true;
     else if (arg === "--apex") out.apex = true;
     else if (arg === "--api-image") out.apiImage = true;
@@ -80,6 +92,11 @@ export function parseCloudDispatchArgs(argv) {
       i += 1;
     } else if (arg.startsWith("--sha=")) {
       out.sha = arg.slice("--sha=".length).trim();
+    } else if (arg === "--base-sha" && argv[i + 1]) {
+      out.baseSha = argv[i + 1].trim();
+      i += 1;
+    } else if (arg.startsWith("--base-sha=")) {
+      out.baseSha = arg.slice("--base-sha=".length).trim();
     } else {
       throw new Error("[deploy:cloud] 지원하지 않는 옵션입니다. `--help`로 사용법을 확인하세요(원문 미출력).");
     }
@@ -92,17 +109,20 @@ export function parseCloudDispatchArgs(argv) {
   if (out.sha && !/^[0-9a-f]{40}$/u.test(out.sha)) {
     throw new Error("[deploy:cloud] `--sha`는 소문자 40자리 16진수 커밋 SHA여야 합니다.");
   }
+  if (out.baseSha && !/^[0-9a-f]{40}$/u.test(out.baseSha)) {
+    throw new Error("[deploy:cloud] `--base-sha`는 소문자 40자리 16진수 커밋 SHA여야 합니다.");
+  }
 
   const anyMutating =
     out.web || out.apex || out.apiImage || out.apiOnpod || out.syncApiEnv || out.syncWorkerSecrets;
   if (out.localOAuth) {
-    if (out.dryRun || anyMutating || out.watch) {
+    if (out.dryRun || out.smart || anyMutating || out.watch) {
       throw new Error("[deploy:cloud] --check-local-oauth는 읽기 전용 상태 조회에서 사용할 수 있습니다.");
     }
     out.status = true;
   }
-  if (out.dryRun && anyMutating) {
-    throw new Error("[deploy:cloud] `--dry-run`은 실제 배포 플래그(`--web`, `--api-onpod` 등)와 함께 쓸 수 없습니다.");
+  if (out.dryRun && (anyMutating || out.smart)) {
+    throw new Error("[deploy:cloud] `--dry-run`은 실제 배포 플래그(`--web`, `--api-onpod`, `--smart` 등)와 함께 쓸 수 없습니다.");
   }
   if ((out.apiOnpod || out.syncApiEnv) && !out.confirmOnpod) {
     throw new Error(
@@ -113,7 +133,7 @@ export function parseCloudDispatchArgs(argv) {
     throw new Error("[deploy:cloud] `--sync-worker-secrets`는 `--web` 배포와 함께 실행하세요.");
   }
 
-  if (!out.help && !out.status && !out.dryRun && !anyMutating) {
+  if (!out.help && !out.status && !out.dryRun && !anyMutating && !out.smart) {
     out.status = true;
   }
   return out;
@@ -173,12 +193,131 @@ export function buildWorkflowDispatchFields(options, resolvedSha) {
   };
 }
 
+export function inspectDeployChangeScope({
+  rootDir = ROOT,
+  targetSha,
+  baseSha = "",
+  execEnv = buildExecEnv(),
+  repoSlug = GITHUB_REPO_SLUG,
+  execFileImpl = execFileSync,
+} = {}) {
+  const baseInfo = resolveDeployBaseSha({
+    rootDir,
+    targetSha,
+    explicitBaseSha: baseSha,
+    execEnv,
+    execFileImpl,
+  });
+  if (!baseInfo.baseSha) {
+    return {
+      unknownScope: true,
+      baseSha: "",
+      baseShaSource: baseInfo.source,
+      diffSource: "unavailable",
+      scope: null,
+    };
+  }
+  const diff = resolveChangedFilesBetweenRefs({
+    rootDir,
+    baseSha: baseInfo.baseSha,
+    targetSha,
+    repoSlug,
+    execEnv,
+    execFileImpl,
+  });
+  if (!diff.ok) {
+    return {
+      unknownScope: true,
+      baseSha: baseInfo.baseSha,
+      baseShaSource: baseInfo.source,
+      diffSource: diff.source,
+      scope: null,
+    };
+  }
+  return {
+    unknownScope: false,
+    baseSha: baseInfo.baseSha,
+    baseShaSource: baseInfo.source,
+    diffSource: diff.source,
+    scope: classifyDeployChangedFiles(diff.changedFiles),
+  };
+}
+
+export function resolveSmartDispatchFields(
+  options,
+  targetSha,
+  {
+    rootDir = ROOT,
+    execEnv = buildExecEnv(),
+    repoSlug = GITHUB_REPO_SLUG,
+    execFileImpl = execFileSync,
+    log = console.log,
+  } = {},
+) {
+  if (!options.smart) {
+    return {
+      shouldDispatch: true,
+      fields: buildWorkflowDispatchFields(options, targetSha),
+      scopeInfo: null,
+      plan: null,
+    };
+  }
+
+  const scopeInfo = inspectDeployChangeScope({
+    rootDir,
+    targetSha,
+    baseSha: options.baseSha,
+    execEnv,
+    repoSlug,
+    execFileImpl,
+  });
+  for (const line of formatDeployScopeLines({ ...scopeInfo, targetSha })) {
+    log(line);
+  }
+
+  const plan = planSmartDeploySelection({
+    requestedOptions: options,
+    scope: scopeInfo.scope,
+    unknownScope: scopeInfo.unknownScope,
+  });
+
+  for (const skipped of plan.skippedUnits) {
+    log(`• [smart skip] ${skipped.unit}: ${skipped.reason}`);
+  }
+  for (const warning of plan.warnings) {
+    log(`• [안내] ${warning}`);
+  }
+
+  if (plan.blockedReason) {
+    throw new Error(plan.blockedReason);
+  }
+
+  if (!plan.shouldDispatch) {
+    log("• 변경된 운영 배포 단위가 없어 GitHub Actions 워크플로 실행을 건너뜁니다.");
+    return {
+      shouldDispatch: false,
+      fields: null,
+      scopeInfo,
+      plan,
+    };
+  }
+
+  return {
+    shouldDispatch: true,
+    fields: buildWorkflowDispatchFields(plan.effectiveOptions, targetSha),
+    scopeInfo,
+    plan,
+  };
+}
+
 function printHelp(log = console.log) {
   log(
     [
       "사용법: pnpm run deploy:cloud -- [옵션]",
-      "  --status                원격 origin/main SHA, 필수 CI(core·verify), GitHub Environment 준비 상태 조회(기본)",
+      "  --status                원격 origin/main SHA, 필수 CI(core·verify), GitHub Environment 및 변경 영역 진단(기본)",
       "  --check-local-oauth     로컬 Wrangler 로그인으로 Worker 버전과 R2 객체 조회 (deploy:doctor)",
+      "  --smart                 변경 영역(webChanged·apiChanged·apexChanged)에 따라 무변경 단위를 안전 건너뛰기/자동 선별",
+      "  --base-sha <40자리-sha> 변경 영역 비교 기준 SHA 명시 (생략 시 배포 원장 → 직전 커밋 순으로 자동 탐색)",
       "  --dry-run               실제 배포 없이 클라우드 빌드 + Cloudflare/Onpod 드라이런 워크플로 실행",
       "  --web                   Cloudflare 정적 웹(toonspectrum-web) + R2 에셋 배포",
       "  --apex                  Cloudflare Apex 리다이렉트 Worker 배포",
@@ -194,54 +333,74 @@ function printHelp(log = console.log) {
   );
 }
 
-async function printCloudStatus({ rootDir = ROOT, execEnv = buildExecEnv(), targetSha = "", localOAuth = false } = {}) {
-  const originMainSha = resolveOriginMainSha({ rootDir, execEnv });
+export async function printCloudStatus({
+  rootDir = ROOT,
+  execEnv = buildExecEnv(),
+  targetSha = "",
+  baseSha = "",
+  localOAuth = false,
+  log = console.log,
+  resolveOriginMainShaImpl = resolveOriginMainSha,
+  inspectGitHubEnvironmentStatusImpl = inspectGitHubEnvironmentStatus,
+  inspectCommitRequiredGatesImpl = inspectCommitRequiredGates,
+  inspectDeployChangeScopeImpl = inspectDeployChangeScope,
+} = {}) {
+  const originMainSha = resolveOriginMainShaImpl({ rootDir, execEnv });
   const effectiveSha = targetSha || originMainSha;
-  const ghEnv = inspectGitHubEnvironmentStatus({ rootDir, execEnv });
+  const ghEnv = inspectGitHubEnvironmentStatusImpl({ rootDir, execEnv });
   let gateInfo;
   try {
-    gateInfo = inspectCommitRequiredGates(effectiveSha, { rootDir, execEnv });
+    gateInfo = inspectCommitRequiredGatesImpl(effectiveSha, { rootDir, execEnv });
   } catch {
     gateInfo = null;
   }
+  let scopeInfo;
+  try {
+    scopeInfo = inspectDeployChangeScopeImpl({ rootDir, targetSha: effectiveSha, baseSha, execEnv });
+  } catch {
+    scopeInfo = { unknownScope: true, baseSha: "", baseShaSource: "unavailable", scope: null };
+  }
 
-  console.log(localOAuth ? "ToonStudio 운영 배포 진단" : "ToonStudio GitHub Actions 배포 상태");
-  console.log(`• 원격 origin/main 최신 SHA: ${originMainSha}`);
+  log(localOAuth ? "ToonStudio 운영 배포 진단" : "ToonStudio GitHub Actions 배포 상태");
+  log(`• 원격 origin/main 최신 SHA: ${originMainSha}`);
   if (targetSha && targetSha !== originMainSha) {
-    console.log(`• 지정한 SHA 일치 여부: 불일치 ❌ (지정=${targetSha})`);
+    log(`• 지정한 SHA 일치 여부: 불일치 ❌ (지정=${targetSha})`);
   }
   if (gateInfo) {
-    console.log(
+    log(
       `• 필수 CI 체크(${effectiveSha.slice(0, 12)}, ci.yml main push #${gateInfo.runId ?? "없음"} 시도 ${gateInfo.runAttempt ?? "없음"}, ${gateInfo.runStatus}): core=${gateInfo.gates.core}, verify=${gateInfo.gates.verify} (${gateInfo.allGreen ? "배포 가능 ✅" : "대기/실패 ⚠️"})`,
     );
   } else {
-    console.log("• 필수 CI 체크: 조회 실패 (`gh auth login` 상태를 확인하세요)");
+    log("• 필수 CI 체크: 조회 실패 (`gh auth login` 상태를 확인하세요)");
+  }
+  for (const line of formatDeployScopeLines({ ...scopeInfo, targetSha: effectiveSha })) {
+    log(line);
   }
   if (!ghEnv.ghReady) {
-    console.log("• GitHub CLI 인증: 미로그인 ⚠️ (`GH_TOKEN` 주입 또는 `gh auth login` 필요)");
+    log("• GitHub CLI 인증: 미로그인 ⚠️ (`GH_TOKEN` 주입 또는 `gh auth login` 필요)");
   } else if (!ghEnv.environmentExists) {
-    console.log(`• GitHub Environment(\`${GITHUB_DEPLOY_ENVIRONMENT}\`): 미생성 ⚠️ (로컬 PC에서 \`pnpm run deploy:auth:sync\` 1회 실행)`);
+    log(`• GitHub Environment(\`${GITHUB_DEPLOY_ENVIRONMENT}\`): 미생성 ⚠️ (로컬 PC에서 \`pnpm run deploy:auth:sync\` 1회 실행)`);
   } else {
     const webReady =
       ghEnv.configuredVariables.includes("CLOUDFLARE_ACCOUNT_ID")
       && ghEnv.configuredSecrets.includes("CLOUDFLARE_API_TOKEN");
     const onpodReady = ghEnv.configuredSecrets.includes("ONPOD_DEPLOY_TOKEN");
-    console.log(
+    log(
       `• 클라우드 정적 웹 배포 준비(Cloudflare): ${webReady ? "준비됨 ✅" : "CLOUDFLARE_API_TOKEN 등록 필요 ⚠️"}`,
     );
-    console.log(`• 클라우드 Core API 배포 준비(onpod): ${onpodReady ? "준비됨 ✅" : "ONPOD_DEPLOY_TOKEN 등록 필요 ⚠️"}`);
-    console.log(`• 등록된 Environment Variables: ${ghEnv.configuredVariables.join(", ") || "없음"}`);
-    console.log(`• 등록된 Environment Secrets: ${ghEnv.configuredSecrets.join(", ") || "없음"}`);
+    log(`• 클라우드 Core API 배포 준비(onpod): ${onpodReady ? "준비됨 ✅" : "ONPOD_DEPLOY_TOKEN 등록 필요 ⚠️"}`);
+    log(`• 등록된 Environment Variables: ${ghEnv.configuredVariables.join(", ") || "없음"}`);
+    log(`• 등록된 Environment Secrets: ${ghEnv.configuredSecrets.join(", ") || "없음"}`);
   }
   if (localOAuth) {
     const { inspectLocalCloudflareOAuth, resolveLocalCloudflareAccountId } = await import("./lib/cloudflare-local-oauth.mjs");
     const accountId = resolveLocalCloudflareAccountId(rootDir, execEnv);
     const { workerStatus, r2Status } = await inspectLocalCloudflareOAuth({ accountId, env: execEnv });
-    console.log(`• 로컬 Wrangler OAuth 조회 — Worker 버전 ${workerStatus ?? "미확인"}, R2 객체 ${r2Status ?? "미확인"}`);
+    log(`• 로컬 Wrangler OAuth 조회 — Worker 버전 ${workerStatus ?? "미확인"}, R2 객체 ${r2Status ?? "미확인"}`);
     if (workerStatus === 200 && r2Status === 200) {
-      console.log("  로컬 웹·R2 배포 명령: pnpm run deploy:web -- --wrangler-oauth");
+      log("  로컬 웹·R2 배포 명령: pnpm run deploy:web -- --wrangler-oauth");
     } else {
-      console.log("  로컬 CLOUDFLARE_ACCOUNT_ID와 Wrangler 로그인, 운영 Worker·R2 조회 권한을 확인하세요.");
+      log("  로컬 CLOUDFLARE_ACCOUNT_ID와 Wrangler 로그인, 운영 Worker·R2 조회 권한을 확인하세요.");
     }
   }
 }
@@ -292,7 +451,12 @@ async function main() {
 
   const execEnv = buildExecEnv();
   if (options.status) {
-    await printCloudStatus({ execEnv, targetSha: options.sha, localOAuth: options.localOAuth });
+    await printCloudStatus({
+      execEnv,
+      targetSha: options.sha,
+      baseSha: options.baseSha,
+      localOAuth: options.localOAuth,
+    });
     return;
   }
 
@@ -311,8 +475,15 @@ async function main() {
     );
   }
 
-  const fields = buildWorkflowDispatchFields(options, targetSha);
-  dispatchCloudWorkflow(fields, { watch: options.watch, watchIntervalSec: options.watchIntervalSec, execEnv });
+  const resolution = resolveSmartDispatchFields(options, targetSha, { execEnv });
+  if (!resolution.shouldDispatch || !resolution.fields) {
+    return;
+  }
+  dispatchCloudWorkflow(resolution.fields, {
+    watch: options.watch,
+    watchIntervalSec: options.watchIntervalSec,
+    execEnv,
+  });
 }
 
 if (process.argv[1] && realpathSync(process.argv[1]) === MODULE_PATH) {

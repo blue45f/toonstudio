@@ -113,7 +113,7 @@ jobs:
           path: dist/
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 1
 
   overnight-full-soak:
     name: ${{ needs.production-build.outputs.diagnostic == '1' && 'diagnostic' || 'soak' }} · ${{ matrix.id }}
@@ -209,4 +209,4 @@ jobs:
           name: studio-five-hour-${{ matrix.id }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/studio-five-hour-soak/${{ matrix.id }}/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7

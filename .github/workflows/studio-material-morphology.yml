@@ -157,5 +157,5 @@ jobs:
         with:
           name: studio-material-morphology-${{ github.run_attempt }}
           path: ${{ runner.temp }}/studio-material-morphology
-          retention-days: 14
+          retention-days: 5
           if-no-files-found: warn

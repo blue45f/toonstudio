@@ -83,3 +83,20 @@ test("--watch-interval 옵션을 5~60초 범위로 검증하고 감시 명령에
   });
   assert.deepEqual(calls[1].slice(-2), ["--interval", "8"]);
 });
+
+test("--smart와 --base-sha 옵션 조합 검증 및 하위 호환성을 유지한다", () => {
+  const baseSha = "b".repeat(40);
+  const smartOnly = parseCloudDispatchArgs(["--smart", `--base-sha=${baseSha}`]);
+  assert.equal(smartOnly.smart, true);
+  assert.equal(smartOnly.status, false);
+  assert.equal(smartOnly.baseSha, baseSha);
+
+  const statusWithBase = parseCloudDispatchArgs(["--check-local-oauth", "--base-sha", baseSha]);
+  assert.equal(statusWithBase.status, true);
+  assert.equal(statusWithBase.localOAuth, true);
+  assert.equal(statusWithBase.baseSha, baseSha);
+
+  assert.throws(() => parseCloudDispatchArgs(["--base-sha=invalid"]), /40자리/u);
+  assert.throws(() => parseCloudDispatchArgs(["--dry-run", "--smart"]), /--dry-run/u);
+  assert.throws(() => parseCloudDispatchArgs(["--check-local-oauth", "--smart"]), /읽기 전용/u);
+});

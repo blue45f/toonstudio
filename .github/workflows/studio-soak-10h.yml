@@ -69,7 +69,7 @@ jobs:
           name: studio-soak-ux-persistence-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/studio-soak/ux-persistence
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7
 
   rendering-brush-3d:
     name: 2/2 rendering · brush · 3D soak
@@ -112,4 +112,4 @@ jobs:
           name: studio-soak-rendering-brush-3d-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/studio-soak/rendering-brush-3d
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7

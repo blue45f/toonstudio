@@ -47,3 +47,4 @@ jobs:
           name: dontdraw-intake-node24-${{ github.run_id }}
           path: dontdraw-intake-tests.tap
           if-no-files-found: warn
+          retention-days: 5

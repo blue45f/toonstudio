@@ -144,3 +144,4 @@ jobs:
           name: admin-hardening-evidence-${{ github.run_id }}
           path: test-results/admin-hardening/
           if-no-files-found: warn
+          retention-days: 5

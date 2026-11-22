@@ -183,6 +183,24 @@ jobs:
           test -z "$(git status --porcelain)"
           node scripts/deployment-preflight.mjs --profile onpod-current --sha "$RELEASE_SHA" --operation runtime-config --unit build
 
+      - name: Compute typecheck-shards cache key
+        id: typecheck-shards-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          digest="$(node scripts/typecheck-shards.mjs --print-cache-key 2>/dev/null || true)"
+          if [[ -n "$digest" ]]; then
+            printf 'key=core-typecheck-shards-v1-%s-%s-%s\n' \
+              "${RUNNER_OS}" "${RUNNER_ARCH}" "$digest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore typecheck-shards checkpoint cache
+        if: ${{ steps.typecheck-shards-key.outputs.key != '' }}
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules/.cache/typecheck-shards/report.json
+          key: ${{ steps.typecheck-shards-key.outputs.key }}
+
       - name: Build verified web bundle & prepare Static Assets sidecars
         shell: bash
         env:

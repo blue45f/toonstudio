@@ -59,7 +59,7 @@ jobs:
           name: studio-3d-production-visual-audit
           path: artifacts/studio-3d-production-audit
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
       - name: Open, update or close the production quality issue
         if: always()

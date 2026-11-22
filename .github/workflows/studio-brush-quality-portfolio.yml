@@ -115,4 +115,4 @@ jobs:
           name: studio-brush-quality-portfolio
           path: ${{ runner.temp }}/studio-brush-quality-portfolio
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 5

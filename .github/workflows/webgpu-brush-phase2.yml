@@ -99,4 +99,4 @@ jobs:
           name: webgpu-brush-phase2-topology
           path: artifacts/webgpu-brush-phase2-topology.json
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 5

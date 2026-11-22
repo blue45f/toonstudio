@@ -204,4 +204,4 @@ jobs:
           name: studio-collaboration-sync-${{ github.run_id }}
           path: ${{ runner.temp }}/toonstudio-verification/studio-collaboration-sync
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 5

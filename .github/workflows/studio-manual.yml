@@ -80,3 +80,4 @@ jobs:
           name: studio-manual-browser
           path: artifacts/studio-manual
           if-no-files-found: ignore
+          retention-days: 5

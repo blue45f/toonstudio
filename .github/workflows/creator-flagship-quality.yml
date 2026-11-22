@@ -102,6 +102,7 @@ jobs:
           name: creator-flagship-browser-evidence
           path: test-results/
           if-no-files-found: warn
+          retention-days: 5
 
 # Exercise the built public bundle; leave the independent Studio GPU harness unchanged.
 # This gate does not replace or relax any existing protected check.
