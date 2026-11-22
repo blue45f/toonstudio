@@ -35,10 +35,10 @@ const KIND_OPTIONS: readonly { value: AiBalloonKind; ko: string; en: string }[] 
 function BalloonShape({ kind, x, y, w, h }: { kind: AiBalloonKind; x: number; y: number; w: number; h: number }) {
   const cx = x + w / 2;
   const cy = y + h / 2;
-  const stroke = "#1a1a2e";
+  const stroke = "var(--color-fg)";
   const sw = 3;
   if (kind === "narration") {
-    return <rect x={x} y={y} width={w} height={h} rx={4} fill="#fffbe8" stroke={stroke} strokeWidth={sw} />;
+    return <rect x={x} y={y} width={w} height={h} rx={4} fill="var(--color-warning-soft)" stroke={stroke} strokeWidth={sw} />;
   }
   if (kind === "shout") {
     // 뾰족한 폭발형 — 타원 둘레에 지그재그
@@ -54,20 +54,20 @@ function BalloonShape({ kind, x, y, w, h }: { kind: AiBalloonKind; x: number; y:
       pts.push(`${cx + Math.cos(a1) * r1x},${cy + Math.sin(a1) * r1y}`);
       pts.push(`${cx + Math.cos(a2) * r2x},${cy + Math.sin(a2) * r2y}`);
     }
-    return <polygon points={pts.join(" ")} fill="#ffffff" stroke={stroke} strokeWidth={sw} strokeLinejoin="round" />;
+    return <polygon points={pts.join(" ")} fill="var(--color-card)" stroke={stroke} strokeWidth={sw} strokeLinejoin="round" />;
   }
   if (kind === "thought") {
     // 구름형 — 여러 원 겹치기
     return (
-      <g fill="#ffffff" stroke={stroke} strokeWidth={sw}>
+      <g fill="var(--color-card)" stroke={stroke} strokeWidth={sw}>
         <ellipse cx={cx} cy={cy} rx={w / 2} ry={h / 2} />
-        <circle cx={x + w * 0.15} cy={y + h * 0.2} r={h * 0.28} fill="#ffffff" stroke="none" />
-        <circle cx={x + w * 0.85} cy={y + h * 0.75} r={h * 0.24} fill="#ffffff" stroke="none" />
+        <circle cx={x + w * 0.15} cy={y + h * 0.2} r={h * 0.28} fill="var(--color-card)" stroke="none" />
+        <circle cx={x + w * 0.85} cy={y + h * 0.75} r={h * 0.24} fill="var(--color-card)" stroke="none" />
       </g>
     );
   }
   const dashed = kind === "whisper" ? { strokeDasharray: "7 5" } : {};
-  return <ellipse cx={cx} cy={cy} rx={w / 2} ry={h / 2} fill="#ffffff" stroke={stroke} strokeWidth={sw} {...dashed} />;
+  return <ellipse cx={cx} cy={cy} rx={w / 2} ry={h / 2} fill="var(--color-card)" stroke={stroke} strokeWidth={sw} {...dashed} />;
 }
 
 /**
@@ -189,12 +189,12 @@ export function AiBalloonStudio() {
             onClick={handleCanvasClick}
             aria-label={t("말풍선 미리보기 — 클릭해서 화자 위치 지정", "Balloon preview — click to set speaker position")}
           >
-            <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="#f4f2ff" />
+            <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="var(--color-panel)" />
             {/* 배경 캐릭터 실루엣 (화자 표시) */}
-            <circle cx={speaker.x} cy={speaker.y} r="16" fill="#7c5cff" opacity="0.25" />
-            <circle cx={speaker.x} cy={speaker.y} r="10" fill="none" stroke="#7c5cff" strokeWidth="2.5" />
-            <circle cx={speaker.x - 3.5} cy={speaker.y - 1} r="1.8" fill="#7c5cff" />
-            <circle cx={speaker.x + 3.5} cy={speaker.y - 1} r="1.8" fill="#7c5cff" />
+            <circle cx={speaker.x} cy={speaker.y} r="16" fill="var(--color-accent)" opacity="0.25" />
+            <circle cx={speaker.x} cy={speaker.y} r="10" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" />
+            <circle cx={speaker.x - 3.5} cy={speaker.y - 1} r="1.8" fill="var(--color-accent)" />
+            <circle cx={speaker.x + 3.5} cy={speaker.y - 1} r="1.8" fill="var(--color-accent)" />
             {/* 꼬리 */}
             {kind !== "narration" && (
               <line
@@ -202,13 +202,13 @@ export function AiBalloonStudio() {
                 y1={placement.tailBase.y}
                 x2={placement.tailTip.x}
                 y2={placement.tailTip.y}
-                stroke="#1a1a2e"
+                stroke="var(--color-fg)"
                 strokeWidth="3"
                 strokeLinecap="round"
               />
             )}
             {kind === "thought" && (
-              <g fill="#ffffff" stroke="#1a1a2e" strokeWidth="2">
+              <g fill="var(--color-card)" stroke="var(--color-fg)" strokeWidth="2">
                 <circle cx={(placement.tailBase.x + speaker.x) / 2} cy={(placement.tailBase.y + speaker.y) / 2} r="6" />
                 <circle cx={(speaker.x * 2 + placement.tailBase.x) / 3} cy={(speaker.y * 2 + placement.tailBase.y) / 3} r="4" />
               </g>
@@ -221,11 +221,11 @@ export function AiBalloonStudio() {
               dominantBaseline="central"
               fontSize={fontSize}
               fontFamily={previewFontFamily}
-              fill="#1a1a2e"
+              fill="var(--color-fg)"
             >
               {(text.length > 0 ? text : "…").slice(0, 28)}
             </text>
-            <text x={8} y={VIEW_H - 8} fontSize="11" fill="#7c5cff">
+            <text x={8} y={VIEW_H - 8} fontSize="11" fill="var(--color-accent)">
               {t("클릭: 화자 위치", "Click: speaker")}
             </text>
           </svg>

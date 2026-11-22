@@ -105,13 +105,13 @@ export function AiPerspectiveStudio() {
             aria-label={t("투시 그리드 — 소실점(분홍색 점)을 드래그하세요", "Perspective grid — drag the vanishing points (pink dots)")}
             style={{ touchAction: "none", opacity: 1 }}
           >
-            <rect x="0" y="0" width={VIEW_SIZE} height={VIEW_SIZE} fill="#ffffff" />
+            <rect x="0" y="0" width={VIEW_SIZE} height={VIEW_SIZE} fill="var(--color-card)" />
             {/* 데모: 배경 박스 */}
             {showDemoBox && (
               <g opacity="0.9">
-                <polygon points="110,190 170,190 170,260 110,260" fill="#ffd43b" stroke="#1a1a2e" strokeWidth="2.5" />
-                <polygon points="170,190 210,170 210,240 170,260" fill="#ffa94d" stroke="#1a1a2e" strokeWidth="2.5" />
-                <polygon points="110,190 170,190 210,170 150,170" fill="#ffe066" stroke="#1a1a2e" strokeWidth="2.5" />
+                <polygon points="110,190 170,190 170,260 110,260" fill="var(--color-warn)" stroke="var(--color-fg)" strokeWidth="2.5" />
+                <polygon points="170,190 210,170 210,240 170,260" fill="var(--color-accent)" stroke="var(--color-fg)" strokeWidth="2.5" />
+                <polygon points="110,190 170,190 210,170 150,170" fill="var(--color-warning-soft)" stroke="var(--color-fg)" strokeWidth="2.5" />
               </g>
             )}
             <g opacity={opacity}>
@@ -120,7 +120,7 @@ export function AiPerspectiveStudio() {
                   key={i}
                   d={line.d}
                   fill="none"
-                  stroke={line.kind === "horizon" ? "#ff5d8f" : "#7c5cff"}
+                  stroke={line.kind === "horizon" ? "var(--color-bad)" : "var(--color-accent)"}
                   strokeWidth={line.kind === "horizon" ? 2.5 : 1.2}
                   strokeDasharray={line.kind === "vertical" ? "5 4" : undefined}
                 />
@@ -143,12 +143,12 @@ export function AiPerspectiveStudio() {
                   cx={vp.x}
                   cy={vp.y}
                   r="7"
-                  fill="#ff5d8f"
-                  stroke="#ffffff"
+                  fill="var(--color-bad)"
+                  stroke="var(--color-card)"
                   strokeWidth="2.5"
                   pointerEvents="none"
                 />
-                <text x={vp.x + 11} y={vp.y - 9} fontSize="11" fill="#ff5d8f" fontWeight="700" pointerEvents="none">
+                <text x={vp.x + 11} y={vp.y - 9} fontSize="11" fill="var(--color-bad)" fontWeight="700" pointerEvents="none">
                   {t(`소실점 ${i + 1}`, `VP${i + 1}`)}
                 </text>
               </g>

@@ -151,9 +151,9 @@ function ProviderBadge({
   readonly locale: Props["locale"];
 }) {
   const tone = state === "ready"
-    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+    ? "border-good/30 bg-good/10 text-good"
     : state === "disabled"
-      ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+      ? "border-warn/30 bg-warn/10 text-warn"
       : "border-line bg-raised text-fg-3";
   return (
     <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${tone}`}>
@@ -451,7 +451,7 @@ export function StudioCreatorIntelligencePanel({ projectId, locale }: Props) {
         </div>
       </div>
 
-      {error ? <div role="alert" className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-fg">{error}</div> : null}
+      {error ? <div role="alert" className="rounded-2xl border border-warn/30 bg-warn/10 p-3 text-sm text-fg">{error}</div> : null}
       {providerStatus && !paidExecutionReady ? (
         <div
           data-creator-paid-ai-disabled="true"
@@ -601,10 +601,10 @@ export function StudioCreatorIntelligencePanel({ projectId, locale }: Props) {
               </button>
             ))}
           </div>
-          <div className="mt-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs leading-5 text-fg-2">
+          <div className="mt-3 rounded-2xl border border-good/20 bg-good/5 p-3 text-xs leading-5 text-fg-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-bold text-fg">{REFERENCE_PROVIDER_META[referenceProvider].label}</span>
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-700 dark:text-emerald-300">
+              <span className="rounded-full border border-good/30 bg-good/10 px-2 py-0.5 font-semibold text-good">
                 {locale === "ko" ? "무료 API" : "Free API"}
               </span>
               <span className="rounded-full border border-line bg-panel px-2 py-0.5 font-semibold text-fg-3">

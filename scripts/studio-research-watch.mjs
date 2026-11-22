@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { decodeXmlText } from "./lib/html-text.mjs";
+import { escapeMarkdownTableCell } from "./lib/safe-text-serialization.mjs";
 import { buildStudioCompetitorWatchReport } from "./studio-competitor-watch.mjs";
 
 export const STUDIO_RESEARCH_REGISTRY_PATH = "docs/benchmarks/studio-research-registry.json";
@@ -262,7 +263,7 @@ export async function buildStudioResearchWatchReport(registry, options = {}) {
 }
 
 function escapeMarkdown(value) {
-  return String(value ?? "").replaceAll("|", "\\|").replace(/\s+/gu, " ").trim();
+  return escapeMarkdownTableCell(value, { collapseWhitespace: true });
 }
 
 export function renderStudioResearchWatchMarkdown(report, options = {}) {

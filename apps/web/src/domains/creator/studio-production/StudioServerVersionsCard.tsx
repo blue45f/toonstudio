@@ -107,7 +107,7 @@ export function StudioServerVersionsCard({ scopeKey }: { readonly scopeKey: stri
       ) : null}
 
       {error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-fg" role="alert">
+        <div className="rounded-xl border border-bad/30 bg-bad/10 p-4 text-sm text-fg" role="alert">
           <p>{error}</p>
           <button type="button" className="mt-3 font-semibold text-accent" onClick={() => void refresh()}>
             다시 확인

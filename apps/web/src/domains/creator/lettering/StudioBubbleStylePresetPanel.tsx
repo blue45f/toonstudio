@@ -89,7 +89,7 @@ function BubbleStyleSwatch({ preset }: { preset: BubbleStylePreset }) {
       data-studio-bubble-swatch={preset.id}
       data-studio-bubble-swatch-variant={variant}
     >
-      <ellipse cx={22} cy={24} rx={14} ry={2.2} fill="oklch(0.1 0.01 70 / 0.22)" />
+      <ellipse cx={22} cy={24} rx={14} ry={2.2} fill="var(--color-fg)" fillOpacity={0.18} />
       <path
         d={body}
         fill={fill}

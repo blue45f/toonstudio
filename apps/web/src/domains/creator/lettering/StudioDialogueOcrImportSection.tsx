@@ -63,7 +63,7 @@ const statusBadgeClass = (draft: OcrImportDraft) =>
     draft.translation === null
       ? "border-line bg-card text-fg-4"
       : draft.status === "approved"
-        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        ? "border-good/40 bg-good/10 text-good"
         : draft.status === "needs-edit"
           ? "border-warn/40 bg-warn/10 text-warn"
           : "border-line bg-card text-fg-3"

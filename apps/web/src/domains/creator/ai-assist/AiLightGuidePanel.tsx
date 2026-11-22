@@ -67,8 +67,8 @@ export function AiLightGuidePanel({ bounds, canvasSize, intensity }: AiLightGuid
                 return (
                   <span key="center" className="ai-light__sun" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="18" height="18">
-                      <circle cx="12" cy="12" r="5" fill="#ffd43b" />
-                      <g stroke="#ffd43b" strokeWidth="2" strokeLinecap="round">
+                      <circle cx="12" cy="12" r="5" fill="var(--color-warn)" />
+                      <g stroke="var(--color-warn)" strokeWidth="2" strokeLinecap="round">
                         <line x1="12" y1="1" x2="12" y2="5" />
                         <line x1="12" y1="19" x2="12" y2="23" />
                         <line x1="1" y1="12" x2="5" y2="12" />
