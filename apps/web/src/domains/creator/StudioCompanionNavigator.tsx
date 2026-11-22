@@ -6,6 +6,13 @@ import {
   type StudioCompanionNormalizedPoint,
   type StudioCompanionNormalizedRect,
 } from "./studio-companion-review-projection";
+import {
+  computeComicStageMeterScaleProjection,
+  renderRentalWatermarkLabel,
+  resolveRentalGrantStatus,
+  type ComicStagePhysicalPresetId,
+  type UnreleasedAssetRentalGrant,
+} from "./xr-splat-runtime";
 
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -38,6 +45,9 @@ export interface StudioCompanionNavigatorProps {
   connected: boolean;
   captureAllowed: boolean;
   layout?: "embedded" | "dedicated";
+  stagePreviewPreset?: ComicStagePhysicalPresetId;
+  activeRentalGrant?: UnreleasedAssetRentalGrant | null;
+  rentalEvalNowMs?: number;
   onNavigate: (point: StudioCompanionNormalizedPoint, final?: boolean) => void;
 }
 
@@ -104,11 +114,29 @@ export function StudioCompanionNavigator({
   connected,
   captureAllowed,
   layout = "embedded",
+  stagePreviewPreset = "tankobon-b6",
+  activeRentalGrant = null,
+  rentalEvalNowMs,
   onNavigate,
 }: StudioCompanionNavigatorProps) {
   const activePointerRef = useRef<number | null>(null);
   const interactionReady = connected && imageUrl !== null && captureAllowed;
   const t = useT();
+  const stageProjection = imageWidth > 0 && imageHeight > 0
+    ? computeComicStageMeterScaleProjection({
+      presetId: stagePreviewPreset,
+      canvasWidthPx: imageWidth,
+      canvasHeightPx: imageHeight,
+      viewportWidthPx: imageWidth,
+      viewportHeightPx: imageHeight,
+    })
+    : null;
+  const rentalStatus = activeRentalGrant
+    ? resolveRentalGrantStatus(activeRentalGrant, rentalEvalNowMs ?? activeRentalGrant.startsAtMs)
+    : null;
+  const rentalWatermarkText = activeRentalGrant && rentalStatus === "active"
+    ? renderRentalWatermarkLabel(activeRentalGrant)
+    : null;
   const currentCenter = {
     x: viewport.x + viewport.width / 2,
     y: viewport.y + viewport.height / 2,
@@ -168,6 +196,12 @@ export function StudioCompanionNavigator({
   return (
     <section
       aria-labelledby="companion-navigator-title"
+      data-stage-physical-mm={
+        stageProjection
+          ? `${Math.round(stageProjection.fittedWidthM * 1000)}x${Math.round(stageProjection.fittedHeightM * 1000)}`
+          : undefined
+      }
+      data-rental-status={rentalStatus ?? undefined}
       className={cn("space-y-3", layout === "dedicated" && "flex min-h-0 flex-1 flex-col")}
     >
       <div className="flex items-start justify-between gap-3">
@@ -235,6 +269,14 @@ export function StudioCompanionNavigator({
                 className="fill-accent/10 stroke-current [stroke-width:2px] motion-safe:transition-all motion-safe:duration-150 motion-reduce:transition-none"
               />
             </svg>
+            {rentalWatermarkText && (
+              <span
+                data-testid="studio-companion-rental-watermark"
+                className="pointer-events-none absolute inset-x-2 bottom-2 truncate rounded bg-panel/80 px-2 py-0.5 text-[0.65rem] font-medium text-fg-2"
+              >
+                {rentalWatermarkText}
+              </span>
+            )}
           </>
         ) : (
           <span className="flex max-w-56 flex-col items-center px-5 text-center">
