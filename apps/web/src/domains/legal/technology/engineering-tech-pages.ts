@@ -8,6 +8,7 @@ import {
   LibraryBig,
   Network,
   NotebookTabs,
+  Paintbrush,
   Presentation,
   Scale,
   Wrench,
@@ -46,6 +47,7 @@ export type EngineeringPageId =
   | "references"
   | "atlas"
   | "glossary"
+  | "drawing-compare"
   | "licenses";
 
 export type EngineeringPageGroup = "overview" | "path" | "present" | "resources";
@@ -189,6 +191,17 @@ export const ENGINEERING_PAGES = [
     art: "storyboard",
     question: t("같은 원본으로 영상을 어떻게 만들고 검수하나요?", "How is a film built and reviewed from the same source?"),
     audience: t("소개·교육 영상을 만드는 분", "People producing intro or training films"),
+  },
+  {
+    id: "drawing-compare",
+    href: "/about/technology/drawing-compare",
+    group: "resources",
+    icon: Paintbrush,
+    label: t("드로잉 비교", "Draw compare"),
+    purpose: t("주요 드로잉 툴 8종과 브러시·필터·안료·협업 기술 상세 비교", "Deep brush, filter, pigment and collab comparison across 8 drawing tools"),
+    art: "review",
+    question: t("CSP·Krita·Magma 등 8종 드로잉 툴과 어떻게 다른가요?", "How does ToonStudio compare with CSP, Krita, Magma and 4 other drawing tools?"),
+    audience: t("브러시·필터·협업 기술 근거를 비교해 보는 작가·개발자", "Artists and engineers comparing brush, filter, physics and collaboration tech"),
   },
   {
     id: "atlas",

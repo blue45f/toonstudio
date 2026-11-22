@@ -62,7 +62,7 @@ const DECK_TALK_MINUTES = findEngineeringPage("deck").talkMinutes ?? 0;
  * "찾아보기" 구역의 나머지 도구. 도감은 위쪽에 따로 크게 소개하므로 빼고, 낯선 말을 가장 먼저 찾는 용어집부터 놓는다.
  * 발표 묶음에 속한 영상은 자료로 함께 보여준다. 자료 묶음에 페이지가 늘면 허브 테스트가 이 목록의 빠짐을 알려 준다.
  */
-const RESOURCE_PAGE_IDS = ["glossary", "references", "licenses", "videos"] as const satisfies readonly EngineeringPageId[];
+const RESOURCE_PAGE_IDS = ["glossary", "drawing-compare", "references", "licenses", "videos"] as const satisfies readonly EngineeringPageId[];
 const RESOURCE_PAGES: readonly EngineeringPageEntry[] = RESOURCE_PAGE_IDS.map((id) => findEngineeringPage(id));
 
 function pageMeta(page: EngineeringPageEntry): string {
@@ -348,8 +348,8 @@ export function TechnologyPage() {
             </li>
           ))}
         </ul>
-        <h3 className="mt-8 text-sm font-black text-fg">{bi("용어·참고·권리·영상", "Terms, references, rights and film")}</h3>
-        <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <h3 className="mt-8 text-sm font-black text-fg">{bi("용어·드로잉 비교·참고·권리·영상", "Terms, drawing compare, references, rights and film")}</h3>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {RESOURCE_PAGES.map((page) => {
             const Icon = page.icon;
             return (

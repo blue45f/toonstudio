@@ -46,6 +46,7 @@ describe("sitemap static routes", () => {
       '"/about/technology/videos"',
       '"/about/technology/licenses"',
       '"/about/technology/glossary"',
+      '"/about/technology/drawing-compare"',
       '"/about/technology/atlas"',
       '"/about/technology/playbook"',
     ]) {

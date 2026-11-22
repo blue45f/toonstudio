@@ -591,6 +591,13 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "Talk terminology with plain analogies and real cases",
       ),
       destination(
+        "/about/technology/drawing-compare",
+        "드로잉 툴 8종 기술 비교",
+        "Drawing tool technical comparison",
+        "Clip Studio Paint·Krita·Magma·Procreate·Rebelle 7·Photoshop·ibisPaint와 브러시·필터·안료·협업 37개 항목 비교",
+        "37-point technical comparison of brushes, filters, pigment physics and collaboration across 8 drawing tools",
+      ),
+      destination(
         "/about/technology/atlas",
         "기술 도감",
         "Technology atlas",

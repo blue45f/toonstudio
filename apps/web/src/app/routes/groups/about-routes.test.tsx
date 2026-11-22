@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { STATIC_TITLES } from "../route-titles";
+import { shouldAppRouterOwnDocumentTitle } from "../app-route-title-ownership";
+import { resolveBreadcrumbTrail } from "../route-breadcrumb";
+import { resolveRouteStageDesign } from "../route-stage-design";
+import { resolveRouteTitle, STATIC_TITLES } from "../route-titles";
 import { legalRoutes } from "./legal.routes";
 
 import { isPublicCreativeRoute } from "@/shared/components/site-public-routes";
@@ -58,5 +61,23 @@ describe("ToonStudio introduction route family", () => {
     for (const { path } of ABOUT_ROUTE_FAMILY) {
       expect(STATIC_TITLES[path], path).toBe(specificTitles[path] ?? "route.about");
     }
+  });
+
+  it("registers /about/technology/drawing-compare with child-owned title, breadcrumb and learn stage design", () => {
+    const pathname = "/about/technology/drawing-compare";
+    const translate = ((key: string) => key) as unknown as Parameters<typeof resolveRouteTitle>[1];
+    expect(legalRoutes).toContainEqual(
+      expect.objectContaining({ id: "legal-about-technology-drawing-compare", path: pathname }),
+    );
+    expect(isPublicCreativeRoute(pathname)).toBe(true);
+    expect(resolveRouteTitle(pathname, translate)).toBe("드로잉 툴 8종 기술 비교");
+    expect(shouldAppRouterOwnDocumentTitle({ pathname })).toBe(false);
+    expect(resolveRouteStageDesign(pathname)).toMatchObject({ domain: "learn", artPlacement: "chrome" });
+    expect(resolveBreadcrumbTrail(pathname).map((item) => item.ko)).toEqual([
+      "홈",
+      "소개",
+      "기술",
+      "드로잉 비교",
+    ]);
   });
 });

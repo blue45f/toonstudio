@@ -66,6 +66,7 @@ const COPY = {
       "설치나 결제 등록 없이 브라우저에서 캔버스·3D 배경·식자·분업 OS를 바로 열어 보고, 기술 아키텍처와 IR 브리프에서 상세 근거를 확인할 수 있습니다.",
     nextStudio: "새 작품 시작하기",
     nextIr: "IR · 투자 소개",
+    nextDrawingCompare: "드로잉 툴 8종 심층 기술 비교",
     nextTech: "기술과 신뢰 허브",
     nextFeatures: "전체 기능 한눈에",
     nextWorkCompare: "독자용 두 작품 비교(/compare)",
@@ -112,6 +113,7 @@ const COPY = {
       "Launch the canvas, 3D stage, lettering tools and Division OS with no install or billing, or inspect our engineering and IR briefs.",
     nextStudio: "Start a new work",
     nextIr: "IR · Investor brief",
+    nextDrawingCompare: "8-tool drawing technical deep dive",
     nextTech: "Technology & trust hub",
     nextFeatures: "All features at a glance",
     nextWorkCompare: "Reader work comparison (/compare)",
@@ -398,6 +400,9 @@ export function CompetitorComparisonPage() {
           </Link>
           <Link href="/ir" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
             {copy.nextIr}
+          </Link>
+          <Link href="/about/technology/drawing-compare" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
+            {copy.nextDrawingCompare}
           </Link>
           <Link href="/about/technology" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
             {copy.nextTech}

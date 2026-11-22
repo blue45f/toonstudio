@@ -19,6 +19,7 @@ export const CREATOR_RESOURCE_TITLES: Record<string, string> = {
   "/ir/present": "툰스튜디오 IR · 발표 플레이어",
   "/business-plan": "툰스튜디오 사업계획서",
   "/about/compare": "툰스튜디오 vs 경쟁 도구 비교",
+  "/about/technology/drawing-compare": "드로잉 툴 8종 기술 비교",
   "/events": "이벤트",
   "/events/beta-open": "베타 오픈 이벤트",
   "/accessibility": "접근성",

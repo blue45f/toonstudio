@@ -30,7 +30,7 @@ afterEach(() => {
 });
 
 describe("4-트랙 기술 허브 데이터 계약", () => {
-  it("12개 기술 페이지 전원을 중복·누락 없이 4개 트랙에 배정하고 트랙 1에 경쟁 비교(/about/compare)를 연결한다", () => {
+  it("13개 기술 페이지 전원을 중복·누락 없이 4개 트랙에 배정하고 트랙 1에 드로잉 비교와 경쟁 비교(/about/compare)를 연결한다", () => {
     expect(ENGINEERING_HUB_TRACKS.map((track) => [track.number, track.id])).toEqual([
       [1, "glance"],
       [2, "architecture-code"],
@@ -48,6 +48,7 @@ describe("4-트랙 기술 허브 데이터 계약", () => {
     expect(byTrack.get("glance")).toEqual([
       "/about/technology/story",
       "/about/technology/videos",
+      "/about/technology/drawing-compare",
       "/about/compare",
     ]);
     expect(byTrack.get("architecture-code")).toEqual([
