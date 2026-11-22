@@ -78,6 +78,7 @@ function defineActionPreset(spec: {
   return Object.freeze({
     id: spec.id,
     label: spec.label,
+    tone: spec.silhouetteSummary,
     category: spec.category,
     silhouetteSummary: spec.silhouetteSummary,
     handPair: Object.freeze([spec.handPair[0], spec.handPair[1]] as const),
@@ -580,10 +581,10 @@ function neutralLookAtSolution(targetWorld: VrmVec3, enabled: boolean): VrmLookA
     clamped: false,
     behindCharacter: false,
     bones: Object.freeze({
-      neck: { rotation: [0, 0, 0] },
-      head: { rotation: [0, 0, 0] },
-      leftEye: { rotation: [0, 0, 0] },
-      rightEye: { rotation: [0, 0, 0] },
+      neck: { rotation: [0, 0, 0] as const },
+      head: { rotation: [0, 0, 0] as const },
+      leftEye: { rotation: [0, 0, 0] as const },
+      rightEye: { rotation: [0, 0, 0] as const },
     }),
   });
 }
@@ -664,10 +665,10 @@ export function solveVrmLookAtPin(input: SolveVrmLookAtPinInput): VrmLookAtPinSo
     clamped: yawSplit.clamped || pitchSplit.clamped,
     behindCharacter,
     bones: Object.freeze({
-      neck: { rotation: [neckRotation[0], neckRotation[1], neckRotation[2]] },
-      head: { rotation: [headRotation[0], headRotation[1], headRotation[2]] },
-      leftEye: { rotation: [leftEyeRotation[0], leftEyeRotation[1], leftEyeRotation[2]] },
-      rightEye: { rotation: [rightEyeRotation[0], rightEyeRotation[1], rightEyeRotation[2]] },
+      neck: { rotation: [neckRotation[0], neckRotation[1], neckRotation[2]] as const },
+      head: { rotation: [headRotation[0], headRotation[1], headRotation[2]] as const },
+      leftEye: { rotation: [leftEyeRotation[0], leftEyeRotation[1], leftEyeRotation[2]] as const },
+      rightEye: { rotation: [rightEyeRotation[0], rightEyeRotation[1], rightEyeRotation[2]] as const },
     }),
   });
 }
