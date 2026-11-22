@@ -1,0 +1,153 @@
+/**
+ * Studio XR/AR 프리뷰 · 모바일 3D Gaussian Splatting LOD · 온디바이스 WebNN 옵트인 보조 ·
+ * 캔버스 실시간 분산 CRDT 리졸버 · 미출시 에셋 기간제 대여 정책 통합 진입점.
+ */
+
+export {
+  COMIC_STAGE_PHYSICAL_PRESETS,
+  WEBXR_COMIC_STAGE_VERSION,
+  computeComicStageMeterScaleProjection,
+  computeComicStageModelMatrix,
+  computeParallaxFallbackStage,
+  computePerspectiveProjectionMatrix,
+  detectWebXrComicStageCapabilities,
+  multiplyMat4,
+  projectStagePointToNdc,
+} from "./webxr-comic-stage-preview";
+export type {
+  ComicStageMeterScaleProjection,
+  ComicStagePhysicalPresetId,
+  ComicStagePhysicalTarget,
+  ComicStageProjectionInput,
+  Mat4,
+  ParallaxComicLayerInput,
+  ParallaxFallbackStageResult,
+  ParallaxLayerTransform,
+  ParallaxStageInput,
+  ProjectedNdcPoint,
+  Vec3,
+  WebXrNavigatorLike,
+  WebXrSessionMode,
+  WebXrStageCapabilityReport,
+  WebXrSystemLike,
+} from "./webxr-comic-stage-preview";
+
+export {
+  DEFAULT_SPLAT_LOD_BUDGETS,
+  MOBILE_GAUSSIAN_SPLAT_LOD_VERSION,
+  computeGaussianCovarianceUpper6,
+  decodeFloat16,
+  encodeFloat16,
+  evaluateMobileGaussianSplatLodFrame,
+  packCovariance3DToHalf,
+  packSplatGpuBuffer,
+  quantizeDepthToRadixKey,
+  sortSplatsByDepthBuckets,
+  unpackCovariance3DFromHalf,
+} from "./mobile-gaussian-splat-lod";
+export type {
+  CovarianceUpper6,
+  EvaluatedGaussianSplat,
+  GaussianSplatLodBudget,
+  GaussianSplatLodFrameResult,
+  GaussianSplatPrimitive,
+  MobileGpuTier,
+  PackedMobileSplatBuffer,
+  SplatCameraState,
+  SplatLodLevel,
+  SplatQuat,
+  SplatVec3,
+} from "./mobile-gaussian-splat-lod";
+
+export {
+  ONDEVICE_LIGHTWEIGHT_MODEL_CATALOG,
+  ONDEVICE_WEBNN_ASSIST_VERSION,
+  ZERO_SERVER_GPU_COST_KRW,
+  computeEdgeGuidedForegroundMaskLocal,
+  createDefaultOnDeviceConsentState,
+  createOpfsModelCacheManifest,
+  detectSpeechBubbleRegionsLocal,
+  runOnDeviceAssistTask,
+  selectOnDeviceExecutionProvider,
+  upsertOpfsCachedModel,
+  verifyOpfsModelChecksum,
+} from "./ondevice-webnn-assist-runtime";
+export type {
+  BoundingBoxPx,
+  DetectedSpeechBubbleRegion,
+  ForegroundCutoutMaskResult,
+  OnDeviceAssistConsentState,
+  OnDeviceAssistExecutionResult,
+  OnDeviceAssistTaskKind,
+  OnDeviceExecutionProvider,
+  OnDeviceHardwareProbe,
+  OnDeviceModelSpec,
+  OnDeviceProviderSelection,
+  OnnxRuntimeEpName,
+  OpfsCachedModelEntry,
+  OpfsModelCacheManifest,
+  RgbaImageSurface,
+} from "./ondevice-webnn-assist-runtime";
+
+export {
+  CANVAS_CRDT_VERSION,
+  applyCanvasCrdtOp,
+  applyLocalLayerRemove,
+  applyLocalLayerUpsert,
+  applyLocalStrokeAdd,
+  applyLocalStrokeRemove,
+  canonicalSerializeCrdtDocument,
+  compareCrdtStamps,
+  compareVectorClocks,
+  createCanvasCrdtDocument,
+  materializeCanvasSnapshot,
+  mergeCanvasCrdtDocuments,
+  mergeVectorClocks,
+} from "./realtime-canvas-crdt-resolver";
+export type {
+  CanvasCrdtDocument,
+  CanvasCrdtMergeDiagnostics,
+  CanvasCrdtMergeResult,
+  CanvasCrdtOp,
+  CanvasLayerBlendMode,
+  CanvasStrokePayload,
+  CanvasStrokePoint,
+  CausalRelation,
+  CrdtLayerEntry,
+  CrdtStamp,
+  CrdtStrokeEntry,
+  LayerUpsertPatch,
+  LwwRegister,
+  MaterializedCanvasLayer,
+  MaterializedCanvasSnapshot,
+  VectorClock,
+} from "./realtime-canvas-crdt-resolver";
+
+export {
+  MAX_UNRELEASED_RENTAL_DURATION_MS,
+  UNRELEASED_ASSET_RENTAL_POLICY_VERSION,
+  auditRentalGrantsWithRightsBom,
+  buildRightsBomItemFromRentalGrant,
+  createUnreleasedAssetRentalGrant,
+  evaluateRentalAssetAction,
+  extendRentalGrant,
+  renderRentalWatermarkLabel,
+  resolveRentalGrantStatus,
+  revokeRentalGrantImmediately,
+  sweepExpiredRentalGrants,
+} from "./unreleased-asset-rental-policy";
+export type {
+  CreateUnreleasedAssetRentalGrantInput,
+  RentalAccessDecision,
+  RentalAccessRequest,
+  RentalAssetAction,
+  RentalAuditEvent,
+  RentalDecisionCode,
+  RentalDownloadRestriction,
+  RentalGrantStatus,
+  RentalRightsBomAuditReport,
+  RentalSweepSummary,
+  RentalWatermarkPolicy,
+  UnreleasedAssetCategory,
+  UnreleasedAssetRentalGrant,
+} from "./unreleased-asset-rental-policy";
