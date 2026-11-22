@@ -5,6 +5,7 @@ import {
   ENGINEERING_HUB_TRACKS,
   ENGINEERING_QUICK_COURSES,
   ENGINEERING_READER_ROLES,
+  HUB_TRACK_TOTAL_PAGES,
   hubTrackForPageId,
   hubTrackItemHref,
   hubTrackItemIcon,
@@ -214,7 +215,10 @@ export function EngineeringTrackHub({ className }: { readonly className?: string
         <div className="grid gap-2">
           <p className="eyebrow text-accent">UNIFIED TECH HUB · 4 TRACKS</p>
           <h2 id="engineering-track-hub-title" className="text-balance break-keep text-2xl font-black tracking-tight text-fg sm:text-3xl">
-            {bi("12개 기술 문서를 4개 트랙으로 정리했습니다", "12 engineering pages organized into 4 clear tracks")}
+            {formatI18nTemplate(
+              String(bi("{value0}개 기술 문서를 4개 트랙으로 정리했습니다", "{value0} engineering pages organized into 4 clear tracks")),
+              { value0: HUB_TRACK_TOTAL_PAGES },
+            )}
           </h2>
           <p className="max-w-3xl text-sm leading-6 text-fg-2">
             {bi(

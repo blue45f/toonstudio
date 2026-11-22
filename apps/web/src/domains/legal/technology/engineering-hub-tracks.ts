@@ -18,7 +18,7 @@ import {
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 /**
- * 12개 기술 페이지와 경쟁 비교(`/about/compare`)를 4개 직관적 트랙으로 묶는 통합 허브 데이터.
+ * 13개 기술 페이지와 경쟁 비교(`/about/compare`)를 4개 직관적 트랙으로 묶는 통합 허브 데이터.
  *
  * 기존 라우트·레지스트리(`engineering-tech-pages.ts`)와 발표 동선 계약을 깨뜨리지 않으면서
  * 독자가 목적과 시간에 맞춰 1클릭으로 진입할 수 있도록 가벼운 메타데이터만 조합한다.
@@ -105,7 +105,7 @@ export interface EngineeringReaderRole {
   readonly quickLinks: readonly EngineeringQuickCourseLink[];
 }
 
-/** 12개 기술 페이지 + 경쟁 비교(`/about/compare`)를 겹침 없이 배정한 4개 통합 트랙. */
+/** 13개 기술 페이지 + 경쟁 비교(`/about/compare`)를 겹침 없이 배정한 4개 통합 트랙. */
 export const ENGINEERING_HUB_TRACKS: readonly EngineeringHubTrack[] = [
   {
     id: "glance",
@@ -113,8 +113,8 @@ export const ENGINEERING_HUB_TRACKS: readonly EngineeringHubTrack[] = [
     icon: Compass,
     label: t("한눈에 보기", "At a glance"),
     summary: t(
-      "왜 브라우저 스튜디오를 만들었는지, 영상과 경쟁 툴 비교로 빠르게 파악합니다.",
-      "See why we built a browser studio through the story, film and tool comparison.",
+      "왜 브라우저 스튜디오를 만들었는지, 영상과 경쟁·드로잉 툴 상세 비교로 빠르게 파악합니다.",
+      "See why we built a browser studio through the story, film and tool comparisons.",
     ),
     audience: t("처음 오신 분 · 투자자 · 기획자", "First-time visitors, investors & planners"),
     items: [
@@ -127,6 +127,11 @@ export const ENGINEERING_HUB_TRACKS: readonly EngineeringHubTrack[] = [
         kind: "page",
         pageId: "videos",
         roleSummary: t("장면 JSON 기반 기술 영상·스토리보드", "Scene-JSON film pipeline and storyboard"),
+      },
+      {
+        kind: "page",
+        pageId: "drawing-compare",
+        roleSummary: t("CSP·Krita·Magma·Procreate·Rebelle 등 8종 드로잉·협업 37항목 대조", "37-point brush, filter, pigment and collab comparison across 8 tools"),
       },
       {
         kind: "companion",

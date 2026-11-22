@@ -60,6 +60,10 @@ export const EngineeringLibrariesPage = lazyRetry(
   () => import("@/domains/legal/technology/EngineeringLibrariesPage").then((module) => ({ default: module.EngineeringLibrariesPage })),
   "EngineeringLibrariesPage",
 );
+export const DrawingToolComparisonPage = lazyRetry(
+  () => import("@/domains/legal/technology/DrawingToolComparisonPage").then((module) => ({ default: module.DrawingToolComparisonPage })),
+  "DrawingToolComparisonPage",
+);
 export const ProductPrinciplesPage = lazyRetry(
   () => import("@/domains/legal/ProductPrinciplesPage").then((module) => ({ default: module.ProductPrinciplesPage })),
   "ProductPrinciplesPage",
