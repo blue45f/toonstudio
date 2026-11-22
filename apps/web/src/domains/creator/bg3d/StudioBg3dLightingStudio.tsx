@@ -26,6 +26,7 @@ import {
   type StudioBg3dWebtoonAtmospherePreset,
   type StudioBg3dWebtoonAtmospherePresetId,
 } from "./studio-bg3d-lighting-studio";
+import { StudioBg3dCharacterLightSyncCard } from "./StudioBg3dCharacterLightSyncCard";
 import { StudioBg3dWebtoonAtmosphereStrip } from "./StudioBg3dWebtoonAtmosphereStrip";
 import {
   STUDIO_BG3D_ENVIRONMENT_INTENSITY_MAX,
@@ -44,6 +45,7 @@ import {
   type StudioBg3dHdriLightingPresetId,
 } from "./studio-bg3d-hdri-lighting-presets";
 
+import type { StudioBg3d2dCharacterLightSyncPayload } from "./studio-bg3d-2d-character-light-sync";
 import type { StudioBg3dLightAngles } from "./studio-bg3d-light-direction";
 import type {
   StudioBg3dDirectionalLightSettings,
@@ -76,6 +78,8 @@ export interface StudioBg3dLightingStudioProps {
   readonly activeWebtoonAtmosphereId?: StudioBg3dWebtoonAtmospherePresetId | null;
   /** 7종 웹툰 분위기(조명·안개·외곽선·날씨) 원클릭 적용 핸들러. */
   readonly onApplyWebtoonAtmosphere?: (preset: StudioBg3dWebtoonAtmospherePreset) => void;
+  /** 3D 배경 광원·색온도를 2D 캐릭터 그라데이션 맵·림라이트로 동기화할 때 호출됩니다. */
+  readonly onSync2dCharacterLight?: (payload: StudioBg3d2dCharacterLightSyncPayload) => void;
 }
 
 function clamp(value: number, minimum: number, maximum: number, fallback: number): number {
@@ -350,6 +354,7 @@ export function StudioBg3dLightingStudio({
   linkedWeatherPresetId,
   activeWebtoonAtmosphereId = null,
   onApplyWebtoonAtmosphere,
+  onSync2dCharacterLight,
 }: StudioBg3dLightingStudioProps) {
   const id = useId().replaceAll(":", "");
   const panelId = `${id}-bg3d-lighting-studio`;
@@ -447,6 +452,15 @@ export function StudioBg3dLightingStudio({
           activePresetId={activeWebtoonAtmosphereId}
           disabled={disabled}
           onSelectPreset={applyWebtoonAtmosphere}
+        />
+        <StudioBg3dCharacterLightSyncCard
+          lighting={lighting}
+          exposure={exposure}
+          disabled={disabled}
+          onUpdateLighting={onUpdateLighting}
+          onUpdateExposure={onUpdateExposure}
+          onCommitLightingHistory={onCommitLightingHistory}
+          onSync2dCharacterLight={onSync2dCharacterLight}
         />
         <p className="mb-2.5 rounded-lg border border-accent/30 bg-accent/5 px-2.5 py-2 text-[0.625rem] leading-relaxed text-fg-2">
           {copy(
