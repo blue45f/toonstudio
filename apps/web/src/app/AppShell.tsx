@@ -32,7 +32,7 @@ import { SiteExperienceFrame } from "@/shared/components/site-experience/SiteExp
 import { supportsSiteExperience } from "@/shared/components/site-experience/site-experience-policy";
 import { WorkspaceAccountContext } from "@/shared/components/workspace/workspace-account-context";
 import { workspaceTaskRoute } from "@/shared/components/workspace/workspace-task-route";
-import { recordCreatorDestination } from "@/shared/lib/creator-continuity";
+import { recordCreatorDestination } from "@/shared/lib/creator-continuity-store";
 import { useT } from "@/shared/lib/i18n";
 import { recordSiteRouteVisit } from "@/shared/lib/site-route-history";
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";

@@ -10,14 +10,14 @@ import {
   type LayerGroup,
 } from "../studio-layers";
 import {
-  planStudioMultiSelectionLayoutPatch,
   planStudioSelectionFlip,
-  planStudioSelectionLayoutPatch,
   selectStudioFigmaDesignTargets,
-  type StudioFigmaSelectionLayoutPatch,
-} from "../studio-selection-transform-advanced";
+} from "../studio-figma-selection-ux";
+import { planStudioMultiSelectionLayoutPatch } from "../studio-selection-transform-multi";
+import { planStudioSelectionLayoutPatch } from "../studio-selection-transform-single";
 
 import type { El } from "../studio-element-model";
+import type { StudioFigmaSelectionLayoutPatch } from "../studio-selection-transform-contract";
 
 export interface StudioSelectionTransformOptions {
   elements: El[];
