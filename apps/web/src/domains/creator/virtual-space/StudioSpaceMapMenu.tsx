@@ -51,6 +51,7 @@ import {
   resolveVirtualSpaceViewportMetrics,
   type VirtualSpaceHudHandedness,
 } from "./virtual-space-hud-safe-offset";
+import { VirtualAtelierInteractiveStationsPanel } from "./interactive-atelier-stations/VirtualAtelierInteractiveStationsPanel";
 import "./studio-space-map-menu.css";
 
 export interface StudioSpaceMapMenuPeer {
@@ -584,6 +585,12 @@ export function StudioSpaceMapMenu({
           );
         })}
       </ul>
+
+      <VirtualAtelierInteractiveStationsPanel
+        currentZoneId={currentZoneId}
+        weather={weather}
+        reducedMotion={reducedMotion}
+      />
     </section>
   );
 }
