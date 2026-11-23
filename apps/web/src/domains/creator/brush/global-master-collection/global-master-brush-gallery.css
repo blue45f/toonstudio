@@ -1,0 +1,512 @@
+/*
+ * 글로벌 마스터 무료 기본 브러시 60종 갤러리 · 라이브 테스트 패드 스타일시트.
+ * Calm Atelier 시맨틱 토큰(--unified-*, --color-*, --atelier-*)만 사용하며
+ * 원시 hex 색상과 전역 all 트랜지션을 사용하지 않는다.
+ */
+
+.gm-brush-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1rem;
+  border-radius: var(--atelier-radius-outer, 14px);
+  background: var(--unified-panel, Canvas);
+  color: var(--unified-fg, CanvasText);
+  border: 1px solid var(--unified-line, currentColor);
+  box-shadow: var(--atelier-elevation-dock, none);
+  box-sizing: border-box;
+}
+
+.gm-brush-gallery *,
+.gm-brush-gallery *::before,
+.gm-brush-gallery *::after {
+  box-sizing: border-box;
+}
+
+.gm-brush-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--unified-line, currentColor);
+}
+
+.gm-brush-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.gm-brush-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--unified-fg, CanvasText);
+}
+
+.gm-brush-subtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--unified-fg-2, CanvasText);
+}
+
+.gm-brush-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.375rem 0.6875rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--unified-fg, CanvasText);
+  background: var(--unified-accent-soft, transparent);
+  border: 1px solid color-mix(in oklch, var(--unified-accent, currentColor) 36%, var(--unified-line, currentColor));
+}
+
+.gm-brush-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.gm-brush-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gm-brush-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 15rem;
+  min-width: 12rem;
+}
+
+.gm-brush-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--unified-fg-3, CanvasText);
+  pointer-events: none;
+}
+
+.gm-brush-search-input {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 2.25rem 0.5rem 2.25rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--unified-line, currentColor);
+  background: var(--unified-card, Canvas);
+  color: var(--unified-fg, CanvasText);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  transition: border-color 140ms var(--atelier-ease-out, ease-out), box-shadow 140ms var(--atelier-ease-out, ease-out);
+}
+
+.gm-brush-search-input::placeholder {
+  color: var(--unified-fg-3, GrayText);
+}
+
+.gm-brush-search-input:focus-visible {
+  outline: 2px solid var(--unified-accent, Highlight);
+  outline-offset: 1px;
+  border-color: var(--unified-accent, Highlight);
+}
+
+.gm-brush-clear-btn {
+  position: absolute;
+  right: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--unified-fg-3, CanvasText);
+  cursor: pointer;
+  transition: background-color 120ms var(--atelier-ease-out, ease-out), color 120ms var(--atelier-ease-out, ease-out);
+}
+
+.gm-brush-clear-btn:hover {
+  background: var(--unified-raised, Canvas);
+  color: var(--unified-fg, CanvasText);
+}
+
+.gm-brush-result-counter {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--unified-fg-2, CanvasText);
+  white-space: nowrap;
+}
+
+.gm-brush-competitor-bar,
+.gm-brush-category-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.gm-brush-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  border: 1px solid var(--unified-line, currentColor);
+  background: var(--unified-card, Canvas);
+  color: var(--unified-fg-2, CanvasText);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 130ms var(--atelier-ease-out, ease-out), border-color 130ms var(--atelier-ease-out, ease-out), color 130ms var(--atelier-ease-out, ease-out);
+}
+
+.gm-brush-chip:hover {
+  background: var(--unified-raised, Canvas);
+  border-color: var(--unified-line-strong, currentColor);
+  color: var(--unified-fg, CanvasText);
+}
+
+.gm-brush-chip:focus-visible {
+  outline: 2px solid var(--unified-accent, Highlight);
+  outline-offset: 2px;
+}
+
+.gm-brush-chip[data-active="true"] {
+  background: var(--unified-accent, Highlight);
+  border-color: var(--unified-accent, Highlight);
+  color: var(--unified-on-accent, HighlightText);
+}
+
+.gm-brush-chip-count {
+  font-size: 0.7rem;
+  opacity: 0.82;
+}
+
+.gm-brush-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 1fr);
+  gap: 0.875rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .gm-brush-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.gm-brush-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.25rem, 1fr));
+  gap: 0.625rem;
+  max-height: 36rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.gm-brush-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.5625rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--unified-line, currentColor);
+  background: var(--unified-card, Canvas);
+  color: var(--unified-fg, CanvasText);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms var(--atelier-ease-out, ease-out), background-color 140ms var(--atelier-ease-out, ease-out), box-shadow 140ms var(--atelier-ease-out, ease-out);
+}
+
+.gm-brush-card:hover {
+  border-color: var(--unified-line-strong, currentColor);
+  background: var(--unified-raised, Canvas);
+}
+
+.gm-brush-card:focus-visible {
+  outline: 2px solid var(--unified-accent, Highlight);
+  outline-offset: 2px;
+}
+
+.gm-brush-card[data-selected="true"] {
+  border-color: var(--unified-accent, Highlight);
+  background: color-mix(in oklch, var(--unified-accent-soft, transparent) 55%, var(--unified-card, Canvas));
+  box-shadow: var(--atelier-active-bevel, none);
+}
+
+.gm-brush-preview-canvas {
+  width: 100%;
+  height: 3.25rem;
+  display: block;
+  border-radius: 6px;
+  background: var(--unified-canvas, Canvas);
+  border: 1px solid color-mix(in oklch, var(--unified-line, currentColor) 70%, transparent);
+}
+
+.gm-brush-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.gm-brush-card-name {
+  font-size: 0.825rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--unified-fg, CanvasText);
+}
+
+.gm-brush-free-pill {
+  flex-shrink: 0;
+  padding: 0.1rem 0.375rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-good, var(--unified-accent, CanvasText));
+  background: color-mix(in oklch, var(--color-good, var(--unified-accent, currentColor)) 14%, transparent);
+}
+
+.gm-brush-card-equiv {
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--unified-fg-3, CanvasText);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gm-brush-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  color: var(--unified-fg-2, CanvasText);
+}
+
+.gm-brush-spec-tag {
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+  background: var(--unified-raised, Canvas);
+  border: 1px solid color-mix(in oklch, var(--unified-line, currentColor) 65%, transparent);
+}
+
+.gm-brush-empty {
+  grid-column: 1 / -1;
+  padding: 2rem 1rem;
+  text-align: center;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px dashed var(--unified-line-strong, currentColor);
+  color: var(--unified-fg-2, CanvasText);
+  font-size: 0.85rem;
+}
+
+/* ── 라이브 테스트 드로잉 패드 & 인스펙터 ─────────────────────────────── */
+
+.gm-brush-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--unified-line, currentColor);
+  background: var(--unified-card, Canvas);
+}
+
+.gm-brush-inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.gm-brush-inspector-title {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--unified-fg, CanvasText);
+}
+
+.gm-brush-inspector-feel {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--unified-fg-2, CanvasText);
+}
+
+.gm-brush-pad-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.gm-brush-pad-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+}
+
+.gm-brush-pad-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.gm-brush-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 8px;
+  border: 1px solid var(--unified-line, currentColor);
+  background: var(--unified-panel, Canvas);
+  color: var(--unified-fg, CanvasText);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms var(--atelier-ease-out, ease-out), border-color 120ms var(--atelier-ease-out, ease-out);
+}
+
+.gm-brush-action-btn:hover {
+  background: var(--unified-raised, Canvas);
+  border-color: var(--unified-line-strong, currentColor);
+}
+
+.gm-brush-action-btn:focus-visible {
+  outline: 2px solid var(--unified-accent, Highlight);
+  outline-offset: 2px;
+}
+
+.gm-brush-live-canvas {
+  width: 100%;
+  height: 11.5rem;
+  display: block;
+  border-radius: 8px;
+  border: 1px solid var(--unified-line-strong, currentColor);
+  background: var(--unified-canvas, Canvas);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.gm-brush-live-canvas[data-dark-paper="true"] {
+  background: color-mix(in oklch, var(--unified-fg, CanvasText) 88%, var(--unified-canvas, Canvas));
+}
+
+.gm-brush-pad-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.73rem;
+  color: var(--unified-fg-3, CanvasText);
+}
+
+.gm-brush-slider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  font-size: 0.76rem;
+  color: var(--unified-fg-2, CanvasText);
+}
+
+.gm-brush-slider {
+  flex: 1 1 auto;
+  accent-color: var(--unified-accent, Highlight);
+}
+
+.gm-brush-equiv-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.gm-brush-equiv-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--unified-raised, Canvas);
+  color: var(--unified-fg-2, CanvasText);
+  border: 1px solid var(--unified-line, currentColor);
+}
+
+.gm-brush-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.gm-brush-metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  padding: 0.42rem 0.5rem;
+  border-radius: 7px;
+  background: var(--unified-panel, Canvas);
+  border: 1px solid color-mix(in oklch, var(--unified-line, currentColor) 72%, transparent);
+}
+
+.gm-brush-metric-label {
+  font-size: 0.67rem;
+  color: var(--unified-fg-3, CanvasText);
+}
+
+.gm-brush-metric-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--unified-fg, CanvasText);
+}
+
+.gm-brush-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--unified-accent, Highlight);
+  background: var(--unified-accent, Highlight);
+  color: var(--unified-on-accent, HighlightText);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 140ms var(--atelier-ease-out, ease-out), transform 140ms var(--atelier-ease-out, ease-out);
+}
+
+.gm-brush-apply-btn:hover {
+  opacity: 0.93;
+}
+
+.gm-brush-apply-btn:focus-visible {
+  outline: 2px solid var(--unified-accent, Highlight);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gm-brush-search-input,
+  .gm-brush-clear-btn,
+  .gm-brush-chip,
+  .gm-brush-card,
+  .gm-brush-action-btn,
+  .gm-brush-apply-btn {
+    transition: none;
+  }
+}
