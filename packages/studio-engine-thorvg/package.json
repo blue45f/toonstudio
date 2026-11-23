@@ -29,7 +29,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@thorvg/webcanvas": "1.1.3"
+    "@thorvg/webcanvas": "1.1.4"
   },
   "devDependencies": {
     "@types/node": "^26.6.6"
