@@ -30,6 +30,7 @@ interface OracleLiveSnapshot {
   readonly catalogBrushes: number;
   readonly namingParityPct: number;
   readonly kmGreenRgb: string;
+  readonly liveCommitDiffMax: number;
   readonly soakAllPassed: boolean;
   readonly soakMaxP95Ms: number;
 }
@@ -72,12 +73,24 @@ export function BrushWasm3dFrontierHubPanel() {
   const runLiveEngineOracle = async () => {
     setOracleBusy(true);
     try {
-      const [atlasMod, auditMod, gpuMod] = await Promise.all([
+      const [atlasMod, bakerMod, deltaMod, auditMod, gpuMod] = await Promise.all([
         import("../brush-baked-cache/real-media-tip-atlas"),
+        import("../brush-baked-cache/layer-stroke-bitmap-baker"),
+        import("../brush-baked-cache/incremental-delta-stroke-buffer"),
         import("../brush-master-audit/brush-catalog-visual-dedupe-audit"),
         import("../webgpu-zero-copy-studio/drawing-tools-perf-soak-harness"),
       ]);
       const km = atlasMod.mixPigmentsKubelkaMunk({ r: 20, g: 61, b: 199 }, { r: 250, g: 214, b: 23 }, 0.5);
+      const baker = new bakerMod.LayerStrokeBitmapBaker({ maxMemoryBytes: 8 * 1024 * 1024 });
+      const liveBuf = new deltaMod.IncrementalDeltaStrokeBuffer();
+      liveBuf.beginStroke({ strokeId: "oracle-1", tipId: "graphite-pencil-6b", color: { r: 30, g: 34, b: 40 }, radiusPx: 10 });
+      liveBuf.appendPoints([{ x: 16, y: 24, pressure: 0.45 }, { x: 48, y: 36, pressure: 0.82 }, { x: 80, y: 24, pressure: 0.35 }]);
+      const livePreview = liveBuf.composePreviewRegion(baker, "L0", 0, 0, 96, 64);
+      liveBuf.commitToBaker(baker, "L0");
+      const committed = baker.readRegion("L0", 0, 0, 96, 64);
+      const parityDiff = deltaMod.computeRgbaRegionDiff(livePreview, committed);
+      baker.dispose();
+
       const audit = auditMod.runFullBrushCatalogAudit();
       const soak = gpuMod.runFullDrawingToolsSoakBenchmark({ soakTicks: 180 });
       const maxP95 = Math.max(
@@ -91,6 +104,7 @@ export function BrushWasm3dFrontierHubPanel() {
         catalogBrushes: audit.totalBrushes,
         namingParityPct: Number((audit.namingParityRate01 * 100).toFixed(1)),
         kmGreenRgb: `rgb(${km.r}, ${km.g}, ${km.b})`,
+        liveCommitDiffMax: parityDiff.maxAbsDiff,
         soakAllPassed: soak.allPassed,
         soakMaxP95Ms: Number(maxP95.toFixed(2)),
       });
@@ -160,8 +174,10 @@ export function BrushWasm3dFrontierHubPanel() {
                   <dd className="mt-1 text-base font-bold text-fg">{oracleSnapshot.namingParityPct}%</dd>
                 </div>
                 <div className="rounded-lg border border-line bg-card p-2.5">
-                  <dt className="text-fg-2">{isEn ? "KM Blue+Yellow" : "KM 파랑+노랑 혼색"}</dt>
-                  <dd className="mt-1 font-mono text-xs font-semibold text-fg">{oracleSnapshot.kmGreenRgb}</dd>
+                  <dt className="text-fg-2">{isEn ? "KM Mix · Live=Commit" : "KM 혼색 · 라이브=커밋"}</dt>
+                  <dd className="mt-1 font-mono text-xs font-semibold text-fg">
+                    {oracleSnapshot.kmGreenRgb} · Δ={oracleSnapshot.liveCommitDiffMax}
+                  </dd>
                 </div>
                 <div className="rounded-lg border border-line bg-card p-2.5">
                   <dt className="text-fg-2">{isEn ? "5-Axis Soak p95" : "5축 소크 최대 p95"}</dt>
