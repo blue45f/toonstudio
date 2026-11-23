@@ -1,0 +1,777 @@
+/* 초보자·비전공자 30초 완성 4컷 웹툰 시작 위저드 스타일시트.
+ * OKLCH·시맨틱 CSS 변수 전용 · 원시 hex/rgb 금지 · GPU 합성 전이(transform/opacity)만 사용.
+ * light/dark/contrast · prefers-reduced-motion · prefers-contrast · forced-colors 존중. */
+
+.biw-shell {
+  --biw-accent: var(--color-accent, oklch(0.62 0.16 258));
+  --biw-accent-soft: color-mix(in oklch, var(--biw-accent) 14%, var(--color-panel));
+  --biw-good: var(--color-good, oklch(0.66 0.15 154));
+  --biw-good-soft: color-mix(in oklch, var(--biw-good) 14%, var(--color-panel));
+  --biw-surface-step: color-mix(in oklch, var(--color-card) 86%, var(--color-panel));
+
+  /* 4종 분위기별 OKLCH 4색 추천 팔레트 토큰 */
+  --biw-sw-1: oklch(0.84 0.08 78);
+  --biw-sw-2: oklch(0.72 0.14 38);
+  --biw-sw-3: oklch(0.64 0.11 196);
+  --biw-sw-4: oklch(0.32 0.03 55);
+  --biw-mood-tint: oklch(0.72 0.12 58 / 0.14);
+  --biw-mood-ring: oklch(0.74 0.14 58 / 0.56);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+  padding: 1.25rem;
+}
+
+.biw-shell[data-mood="daily"] {
+  --biw-sw-1: oklch(0.89 0.07 85);
+  --biw-sw-2: oklch(0.73 0.14 42);
+  --biw-sw-3: oklch(0.67 0.11 182);
+  --biw-sw-4: oklch(0.34 0.04 54);
+  --biw-mood-tint: oklch(0.74 0.11 68 / 0.14);
+  --biw-mood-ring: oklch(0.74 0.14 52 / 0.58);
+}
+
+.biw-shell[data-mood="romance"] {
+  --biw-sw-1: oklch(0.91 0.05 18);
+  --biw-sw-2: oklch(0.74 0.14 10);
+  --biw-sw-3: oklch(0.76 0.1 335);
+  --biw-sw-4: oklch(0.35 0.05 348);
+  --biw-mood-tint: oklch(0.74 0.13 12 / 0.14);
+  --biw-mood-ring: oklch(0.72 0.15 10 / 0.58);
+}
+
+.biw-shell[data-mood="comedy"] {
+  --biw-sw-1: oklch(0.9 0.12 96);
+  --biw-sw-2: oklch(0.74 0.17 50);
+  --biw-sw-3: oklch(0.68 0.15 215);
+  --biw-sw-4: oklch(0.3 0.04 260);
+  --biw-mood-tint: oklch(0.78 0.14 88 / 0.15);
+  --biw-mood-ring: oklch(0.76 0.16 68 / 0.6);
+}
+
+.biw-shell[data-mood="fantasy"] {
+  --biw-sw-1: oklch(0.86 0.07 205);
+  --biw-sw-2: oklch(0.66 0.15 186);
+  --biw-sw-3: oklch(0.75 0.13 84);
+  --biw-sw-4: oklch(0.28 0.05 245);
+  --biw-mood-tint: oklch(0.66 0.13 192 / 0.15);
+  --biw-mood-ring: oklch(0.68 0.15 188 / 0.58);
+}
+
+:root[data-theme="light"] .biw-shell,
+:root[data-design-theme="light"] .biw-shell,
+:root[data-design-theme="aurora"] .biw-shell,
+:root[data-design-theme="blossom"] .biw-shell,
+:root[data-design-theme="sepia"] .biw-shell {
+  --biw-accent-soft: color-mix(in oklch, var(--biw-accent) 10%, var(--color-card));
+  --biw-good-soft: color-mix(in oklch, var(--biw-good) 12%, var(--color-card));
+  --biw-mood-tint: color-mix(in oklch, var(--biw-sw-2) 10%, var(--color-card));
+  --biw-mood-ring: color-mix(in oklch, var(--biw-sw-2) 64%, var(--color-line-strong));
+}
+
+.biw-shell :is(h2, h3, h4, p, span, strong, small, label, button, a, input) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.biw-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 헤더 & 3단계 진행 표시줄 */
+.biw-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 900px) {
+  .biw-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.biw-heading-group {
+  min-width: 0;
+}
+
+.biw-kicker {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--biw-accent);
+}
+
+.biw-title {
+  margin: 0.25rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-fg);
+}
+
+@media (min-width: 640px) {
+  .biw-title {
+    font-size: 1.1875rem;
+  }
+}
+
+.biw-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+.biw-step-rail {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.biw-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-fg-2);
+}
+
+.biw-step-pill[data-ready="true"] {
+  border-color: color-mix(in oklch, var(--biw-good) 52%, var(--color-line));
+  background-color: var(--biw-good-soft);
+  color: var(--color-fg);
+}
+
+.biw-step-index {
+  display: inline-grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background-color: var(--color-raised);
+  color: var(--color-fg);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+/* 공통 스텝 블록 */
+.biw-step-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background-color: var(--biw-surface-step);
+  padding: 1rem;
+}
+
+.biw-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.biw-step-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.biw-step-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.45rem;
+  border: 1px solid color-mix(in oklch, var(--biw-accent) 44%, var(--color-line));
+  background-color: var(--biw-accent-soft);
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.biw-step-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-fg-3);
+}
+
+/* Step 1: 4종 분위기 선택 카드 */
+.biw-mood-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+@media (min-width: 640px) {
+  .biw-mood-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .biw-mood-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.biw-mood-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+  padding: 0.75rem;
+  text-align: start;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
+}
+
+.biw-mood-btn:hover {
+  border-color: var(--color-line-strong);
+  transform: translateY(-2px);
+}
+
+.biw-mood-btn:active {
+  transform: scale(0.985);
+}
+
+.biw-mood-btn[aria-pressed="true"] {
+  border-color: var(--biw-mood-ring);
+  background-color: var(--biw-mood-tint);
+}
+
+.biw-mood-sprite-wrap {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  padding: 0.25rem;
+}
+
+.biw-mood-sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.biw-mood-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.biw-mood-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-fg);
+}
+
+.biw-mood-desc {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-fg-2);
+}
+
+/* Step 2: 3종 안심 보정 스위치 */
+.biw-assist-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+@media (min-width: 1024px) {
+  .biw-assist-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.biw-switch-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+  padding: 0.85rem;
+  text-align: start;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
+}
+
+.biw-switch-card:hover {
+  border-color: var(--color-line-strong);
+  transform: translateY(-1px);
+}
+
+.biw-switch-card:active {
+  transform: scale(0.99);
+}
+
+.biw-switch-card[aria-checked="true"] {
+  border-color: color-mix(in oklch, var(--biw-good) 52%, var(--color-line));
+  background-color: var(--biw-good-soft);
+}
+
+.biw-switch-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.biw-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.biw-switch-desc {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-fg-2);
+}
+
+.biw-switch-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.biw-switch-track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.75rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong);
+  background-color: var(--color-raised);
+  padding: 0.15rem;
+}
+
+.biw-switch-card[aria-checked="true"] .biw-switch-track {
+  border-color: var(--biw-good);
+  background-color: var(--biw-good);
+}
+
+.biw-switch-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background-color: var(--color-canvas);
+  transform: translateX(0);
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.biw-switch-card[aria-checked="true"] .biw-switch-thumb {
+  transform: translateX(1.2rem);
+}
+
+.biw-switch-state {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-fg-2);
+}
+
+.biw-swatch-row {
+  margin-top: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.biw-swatch-dot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong);
+}
+
+.biw-swatch-dot--1 { background-color: var(--biw-sw-1); }
+.biw-swatch-dot--2 { background-color: var(--biw-sw-2); }
+.biw-swatch-dot--3 { background-color: var(--biw-sw-3); }
+.biw-swatch-dot--4 { background-color: var(--biw-sw-4); }
+
+.biw-swatch-row[data-muted="true"] {
+  opacity: 0.4;
+}
+
+/* Step 3: 제목 + 원클릭 대사 추천 + 실시간 4컷 프리뷰 보드 */
+.biw-story-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+@media (min-width: 768px) {
+  .biw-story-controls {
+    grid-template-columns: minmax(0, 1.3fr) auto;
+  }
+}
+
+.biw-title-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-fg-2);
+}
+
+.biw-text-input {
+  min-height: 48px;
+  width: 100%;
+  border-radius: 0.7rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.biw-text-input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.biw-template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.biw-template-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  border-radius: 0.7rem;
+  border: 1px solid var(--color-line-strong);
+  background-color: var(--color-panel);
+  padding: 0.55rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease;
+}
+
+.biw-template-btn:hover {
+  border-color: var(--biw-accent);
+  transform: translateY(-1px);
+}
+
+.biw-template-btn:active {
+  transform: scale(0.98);
+}
+
+.biw-preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .biw-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .biw-preview-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.biw-panel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-line-strong);
+  background-color: var(--color-panel);
+  padding: 0.75rem;
+}
+
+.biw-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.biw-panel-beat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.biw-panel-num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.4rem;
+  background-color: var(--biw-mood-tint);
+  border: 1px solid var(--biw-mood-ring);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--color-fg);
+}
+
+.biw-panel-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  border-radius: 0.65rem;
+  border: 1px dashed var(--color-line-strong);
+  background-color: var(--biw-mood-tint);
+  padding: 0.55rem 0.65rem;
+  min-height: 2.75rem;
+}
+
+.biw-panel-stage[data-palette-on="false"] {
+  background-color: var(--color-card);
+}
+
+.biw-stage-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.biw-stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-panel);
+  padding: 0.15rem 0.45rem;
+  font-size: 0.675rem;
+  font-weight: 600;
+  color: var(--color-fg-2);
+}
+
+.biw-bubble-input {
+  min-height: 48px;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--color-fg);
+}
+
+.biw-bubble-input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* 하단 최종 CTA 바 */
+.biw-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border-top: 1px solid var(--color-line);
+  padding-top: 1rem;
+}
+
+@media (min-width: 900px) {
+  .biw-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.biw-summary-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.biw-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-card);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-fg-2);
+}
+
+.biw-launch-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 48px;
+  border-radius: 0.8rem;
+  border: 1px solid transparent;
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+  padding: 0.75rem 1.35rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
+}
+
+.biw-launch-cta:hover {
+  background-color: var(--color-accent-2, var(--color-accent));
+  transform: translateY(-1px);
+}
+
+.biw-launch-cta:active {
+  transform: scale(0.98);
+}
+
+.biw-launch-cta:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* 접근성: 모션 감소 · 고대비 테마 · 강제 색상 */
+@media (prefers-reduced-motion: reduce) {
+  .biw-mood-btn,
+  .biw-switch-card,
+  .biw-switch-thumb,
+  .biw-template-btn,
+  .biw-launch-cta {
+    transition: none;
+  }
+
+  .biw-mood-btn:hover,
+  .biw-mood-btn:active,
+  .biw-switch-card:hover,
+  .biw-switch-card:active,
+  .biw-template-btn:hover,
+  .biw-template-btn:active,
+  .biw-launch-cta:hover,
+  .biw-launch-cta:active {
+    transform: none;
+  }
+}
+
+:root[data-design-theme="contrast"] .biw-shell,
+:root[data-design-theme="contrast"] .biw-step-block,
+:root[data-design-theme="contrast"] .biw-mood-btn,
+:root[data-design-theme="contrast"] .biw-switch-card,
+:root[data-design-theme="contrast"] .biw-panel-card,
+:root[data-design-theme="contrast"] .biw-text-input,
+:root[data-design-theme="contrast"] .biw-bubble-input {
+  border-width: 2px;
+  border-color: var(--color-line-strong);
+}
+
+@media (prefers-contrast: more) {
+  .biw-shell,
+  .biw-step-block,
+  .biw-mood-btn,
+  .biw-switch-card,
+  .biw-panel-card,
+  .biw-text-input,
+  .biw-bubble-input {
+    border-width: 2px;
+    border-color: var(--color-line-strong);
+  }
+}
+
+@media (forced-colors: active) {
+  .biw-shell,
+  .biw-step-block,
+  .biw-mood-btn,
+  .biw-switch-card,
+  .biw-panel-card,
+  .biw-panel-stage,
+  .biw-step-pill,
+  .biw-summary-chip,
+  .biw-template-btn,
+  .biw-text-input,
+  .biw-bubble-input {
+    border: 1px solid ButtonBorder;
+    background-color: Canvas;
+    color: CanvasText;
+  }
+
+  .biw-mood-btn[aria-pressed="true"],
+  .biw-switch-card[aria-checked="true"],
+  .biw-launch-cta {
+    border: 2px solid Highlight;
+    background-color: Highlight;
+    color: HighlightText;
+  }
+
+  .biw-switch-thumb {
+    background-color: CanvasText;
+  }
+}

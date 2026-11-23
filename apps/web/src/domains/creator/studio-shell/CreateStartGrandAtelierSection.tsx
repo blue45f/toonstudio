@@ -16,6 +16,8 @@ import { useState, type CSSProperties } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
+import { BeginnerInstantComicWizard } from "./beginner-quickstart/BeginnerInstantComicWizard";
+
 interface CreateStartGrandAtelierSectionProps {
   readonly storyHref: string;
   readonly compactOnMobile?: boolean;
@@ -229,6 +231,8 @@ export function CreateStartGrandAtelierSection({
           })}
         </div>
       </section>
+
+      <BeginnerInstantComicWizard />
 
       <details
         open={proToolsOpen}
