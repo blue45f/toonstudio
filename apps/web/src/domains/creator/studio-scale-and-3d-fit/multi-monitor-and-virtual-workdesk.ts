@@ -125,7 +125,8 @@ export function createMonitorPresetScreens(
 }
 
 function formatWindowFeatures(bounds: PopoutWindowPlan["bounds"]): string {
-  return `popup=yes,left=${bounds.left},top=${bounds.top},width=${bounds.width},height=${bounds.height},noopener=no`;
+  // 팝아웃 동기화는 BroadcastChannel을 사용하므로 window.opener 참조 노출을 차단한다.
+  return `popup=yes,left=${bounds.left},top=${bounds.top},width=${bounds.width},height=${bounds.height},noopener`;
 }
 
 /**

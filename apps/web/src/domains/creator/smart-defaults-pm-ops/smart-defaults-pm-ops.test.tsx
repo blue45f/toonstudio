@@ -196,6 +196,60 @@ describe("대형 스튜디오 PM 3~4화차 로테이션 컨베이어 · 정산 �
       report.freelancerSubtotal.withholdingTaxKrw,
     );
     expect(report.grandTotals.totalVatKrw).toBe(report.businessSubtotal.vatKrw);
+
+    // 4) 한국 소득세법 10원 미만 절사 (소득세 3% 절사 + 지방소득세는 산출 소득세의 10% 절사) 및 NaN 단가 방어
+    const truncationReport = calculateWeightedStudioSettlement([
+      {
+        entryId: "trunc-100500",
+        contractorNameKo: "절사 검증 작가 A",
+        episodeLabelKo: "Ep.15",
+        stageId: "coloring",
+        baseRatePerCutKrw: 100_500,
+        taxMode: "freelancer-3.3",
+        cuts: { simple: 0, standard: 1, actionDetail: 0, crowdBg: 0 },
+      },
+      {
+        entryId: "trunc-51800",
+        contractorNameKo: "절사 검증 작가 B",
+        episodeLabelKo: "Ep.15",
+        stageId: "lettering",
+        baseRatePerCutKrw: 51_800,
+        taxMode: "freelancer-3.3",
+        cuts: { simple: 0, standard: 1, actionDetail: 0, crowdBg: 0 },
+      },
+      {
+        entryId: "nan-guard",
+        contractorNameKo: "비정상 단가 방어",
+        episodeLabelKo: "Ep.15",
+        stageId: "lineart",
+        baseRatePerCutKrw: Number.NaN,
+        taxMode: "freelancer-3.3",
+        cuts: { simple: 2, standard: 3, actionDetail: 0, crowdBg: 0 },
+      },
+    ]);
+
+    // 100,500 * 3% = 3,015 -> 3,010원 / 3,010 * 10% = 301 -> 300원 / 합계 3,310원
+    const lineA = truncationReport.lines[0];
+    expect(lineA?.incomeTaxKrw).toBe(3_010);
+    expect(lineA?.localIncomeTaxKrw).toBe(300);
+    expect(lineA?.withholdingTaxKrw).toBe(3_310);
+    expect(lineA?.netPayoutKrw).toBe(97_190);
+
+    // 51,800 * 3% = 1,554 -> 1,550원 / 1,550 * 10% = 155 -> 150원 / 합계 1,700원
+    const lineB = truncationReport.lines[1];
+    expect(lineB?.incomeTaxKrw).toBe(1_550);
+    expect(lineB?.localIncomeTaxKrw).toBe(150);
+    expect(lineB?.withholdingTaxKrw).toBe(1_700);
+    expect(lineB?.netPayoutKrw).toBe(50_100);
+
+    // baseRatePerCutKrw가 NaN이면 0원으로 방어되어 NaN 전파 차단
+    const lineNan = truncationReport.lines[2];
+    expect(lineNan?.baseRatePerCutKrw).toBe(0);
+    expect(lineNan?.grossAmountKrw).toBe(0);
+    expect(lineNan?.withholdingTaxKrw).toBe(0);
+    expect(lineNan?.netPayoutKrw).toBe(0);
+    expect(Number.isFinite(truncationReport.grandTotals.grossTotalKrw)).toBe(true);
+    expect(Number.isFinite(truncationReport.grandTotals.totalNetPayoutKrw)).toBe(true);
   });
 
   it("네이버(690/1600px)·카카오·글로벌 플랫폼 사전 QC와 심의 충돌을 정확히 판정한다", () => {

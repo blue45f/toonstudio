@@ -29,6 +29,8 @@ export interface ShowcaseMcpApiEndpoint {
   readonly name: string;
   readonly category: "canvas" | "pm-ops" | "assets" | "3d-vrm" | "video" | "delivery" | "performance";
   readonly readOnly: boolean;
+  /** 로컬 CLI에서 현재 실행 가능(`local-cli`)인지 REST 목표 계약 프리뷰(`target-spec`)인지 구분한다. */
+  readonly contractStatus: "local-cli" | "target-spec";
   readonly restMirror: string;
   readonly summary: BilingualText;
   readonly sampleRequestJson: string;
@@ -164,6 +166,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_canvas_inspect",
     category: "canvas",
     readOnly: true,
+    contractStatus: "target-spec",
     restMirror: "GET /api/studio/v1/cuts/{cutId}/inspect",
     summary: bi(
       "현재 컷의 레이어 트리, `@캐릭터` 바이블 참조, 권리 BOM 라이선스 상태를 읽기 전용으로 조회",
@@ -176,6 +179,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_canvas_apply_action",
     category: "canvas",
     readOnly: false,
+    contractStatus: "target-spec",
     restMirror: "POST /api/studio/v1/cuts/{cutId}/actions?dryRun=true",
     summary: bi(
       "말풍선 배치, 팔레트 적용, 3D 카메라 앵글 전환, 수정 핀 등록을 dry-run 검증 후 실행",
@@ -188,6 +192,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_pm_conveyor_status",
     category: "pm-ops",
     readOnly: true,
+    contractStatus: "target-spec",
     restMirror: "GET /api/studio/v1/series/{seriesId}/conveyor",
     summary: bi(
       "3~4화차 동시 로테이션 컨베이어의 병목 공정과 도미노 지연 위험을 즉시 계산",
@@ -200,6 +205,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_pm_handoff_cut",
     category: "pm-ops",
     readOnly: false,
+    contractStatus: "target-spec",
     restMirror: "POST /api/studio/v1/cuts/{cutId}/handoff",
     summary: bi(
       "8단계 공정 바통 터치 게이트를 검증하고 이전 단계 읽기 전용 잠금을 안전 전환",
@@ -212,6 +218,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_settlement_preview",
     category: "pm-ops",
     readOnly: true,
+    contractStatus: "target-spec",
     restMirror: "POST /api/studio/v1/settlement/preview",
     summary: bi(
       "컷 난이도 가중치와 3.3% 원천징수·10% 사업자 세금계산서 정산서를 dry-run 산출",
@@ -224,6 +231,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_asset_smart_search",
     category: "assets",
     readOnly: true,
+    contractStatus: "target-spec",
     restMirror: "POST /api/studio/v1/assets/smart-search",
     summary: bi(
       "자연어·3획 실루엣·색상 무드·카메라 앵글·Rights BOM 상업 안전 조건 5축 통합 검색",
@@ -236,6 +244,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_vrm_autofit_audit",
     category: "3d-vrm",
     readOnly: true,
+    contractStatus: "target-spec",
     restMirror: "POST /api/studio/v1/vrm/autofit-audit",
     summary: bi(
       "42-소켓 본 자동 밀착, 1.5~3mm Anti-Clip 오프셋, 매니폴드 0결함 위상을 사전 검증",
@@ -248,6 +257,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_remotion_render_plan",
     category: "video",
     readOnly: true,
+    contractStatus: "target-spec",
     restMirror: "POST /api/studio/v1/remotion/render-plan",
     summary: bi(
       "완성 화차에서 16:9·9:16·1:1 결정론적 Remotion 숏폼 트레일러 컴포지션 계획 생성",
@@ -260,6 +270,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_export_platform_qc",
     category: "delivery",
     readOnly: true,
+    contractStatus: "target-spec",
     restMirror: "POST /api/studio/v1/export/platform-qc",
     summary: bi(
       "네이버·카카오·글로벌 연재 규격, Rights BOM, 스텔스 포렌식 워터마크 출고 전 일괄 검사",
@@ -272,6 +283,7 @@ export const SHOWCASE_MCP_API_ENDPOINTS: readonly ShowcaseMcpApiEndpoint[] = [
     name: "studio_stroke_endurance_bench",
     category: "performance",
     readOnly: true,
+    contractStatus: "local-cli",
     restMirror: "CLI: node scripts/toonstudio-llm-mcp-cli.mjs --bench-stroke --strokes 10000",
     summary: bi(
       "10,000획 장시간 드로잉 고정 링버퍼·256px Dirty-Tile LRU·OPFS Undo 스필 메모리 평탄화 실측",
@@ -511,8 +523,9 @@ export const SITEWIDE_UX_MOTION_AXES: readonly SitewideUxMotionAxis[] = [
 
 export function buildShowcaseClientMcpConfig(clientId: UniversalLlmClientProfile["id"]): string {
   const client = UNIVERSAL_LLM_CLIENTS.find((entry) => entry.id === clientId) ?? UNIVERSAL_LLM_CLIENTS[0]!;
+  const isStdioSchema = client.protocol === "mcp-stdio-jsonrpc-2.0";
   const serverEntry =
-    client.protocol === "mcp-stdio-jsonrpc-2.0"
+    isStdioSchema
       ? {
           command: "node",
           args: ["scripts/toonstudio-llm-mcp-cli.mjs", "--mcp-manifest"],
@@ -531,6 +544,7 @@ export function buildShowcaseClientMcpConfig(clientId: UniversalLlmClientProfile
   return JSON.stringify(
     {
       configFile: client.configPath,
+      contractStatus: isStdioSchema ? "local-cli-schema-preview" : "target-spec-preview",
       mcpServers: {
         toonstudio: serverEntry,
       },

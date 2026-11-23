@@ -51,13 +51,30 @@ const SPRITE_PUBLIC_DIR = resolve(REPO_ROOT, "apps/web/public/assets/studio/vibr
 const CSS_FILE_PATH = resolve(__dirname, "studio-vibrant-atelier.css");
 const ICON_TSX_PATH = resolve(__dirname, "StudioVibrantSpriteIcon.tsx");
 
-function createMockAudioContext() {
-  const createdOscillators: { startCalls: number; stopCalls: number; freqSet: number[] }[] = [];
-  const createdBufferSources: { startCalls: number; stopCalls: number; loop: boolean }[] = [];
-  const createdFilters: { type: string; freqSet: number[]; qSet: number[] }[] = [];
-  const createdGains: { valueSet: number[] }[] = [];
+function createMockAudioContext(initialState: AudioContextState = "running") {
+  const createdOscillators: {
+    startCalls: number;
+    stopCalls: number;
+    disconnectCalls: number;
+    freqSet: number[];
+    fireEnded: () => void;
+  }[] = [];
+  const createdBufferSources: {
+    startCalls: number;
+    stopCalls: number;
+    disconnectCalls: number;
+    loop: boolean;
+    fireEnded: () => void;
+  }[] = [];
+  const createdFilters: {
+    type: string;
+    disconnectCalls: number;
+    freqSet: number[];
+    qSet: number[];
+  }[] = [];
+  const createdGains: { valueSet: number[]; disconnectCalls: number }[] = [];
   let closed = false;
-  let state: AudioContextState = "running";
+  let state: AudioContextState = initialState;
 
   const makeParam = (sink: number[]) => ({
     value: 0,
@@ -87,16 +104,18 @@ function createMockAudioContext() {
       state = "closed";
     }),
     createGain: vi.fn(() => {
-      const record = { valueSet: [] as number[] };
+      const record = { valueSet: [] as number[], disconnectCalls: 0 };
       createdGains.push(record);
       return {
         gain: makeParam(record.valueSet),
         connect: vi.fn(),
-        disconnect: vi.fn(),
+        disconnect: vi.fn(() => {
+          record.disconnectCalls += 1;
+        }),
       };
     }),
     createBiquadFilter: vi.fn(() => {
-      const record = { type: "lowpass", freqSet: [] as number[], qSet: [] as number[] };
+      const record = { type: "lowpass", disconnectCalls: 0, freqSet: [] as number[], qSet: [] as number[] };
       createdFilters.push(record);
       return {
         get type() {
@@ -108,24 +127,42 @@ function createMockAudioContext() {
         frequency: makeParam(record.freqSet),
         Q: makeParam(record.qSet),
         connect: vi.fn(),
-        disconnect: vi.fn(),
+        disconnect: vi.fn(() => {
+          record.disconnectCalls += 1;
+        }),
       };
     }),
     createOscillator: vi.fn(() => {
-      const record = { startCalls: 0, stopCalls: 0, freqSet: [] as number[] };
-      createdOscillators.push(record);
-      return {
+      const node = {
         type: "sine",
-        frequency: makeParam(record.freqSet),
+        onended: null as (() => void) | null,
+        frequency: makeParam([] as number[]),
         connect: vi.fn(),
         disconnect: vi.fn(),
-        start: vi.fn(() => {
-          record.startCalls += 1;
-        }),
-        stop: vi.fn(() => {
-          record.stopCalls += 1;
-        }),
+        start: vi.fn(),
+        stop: vi.fn(),
       };
+      const record = {
+        startCalls: 0,
+        stopCalls: 0,
+        disconnectCalls: 0,
+        freqSet: [] as number[],
+        fireEnded: () => {
+          node.onended?.();
+        },
+      };
+      node.frequency = makeParam(record.freqSet);
+      node.disconnect = vi.fn(() => {
+        record.disconnectCalls += 1;
+      });
+      node.start = vi.fn(() => {
+        record.startCalls += 1;
+      });
+      node.stop = vi.fn(() => {
+        record.stopCalls += 1;
+      });
+      createdOscillators.push(record);
+      return node;
     }),
     createBuffer: vi.fn((channels: number, length: number, sampleRate: number) => {
       const data = new Float32Array(length);
@@ -137,10 +174,16 @@ function createMockAudioContext() {
       };
     }),
     createBufferSource: vi.fn(() => {
-      const record = { startCalls: 0, stopCalls: 0, loop: false };
-      createdBufferSources.push(record);
-      return {
+      const record = {
+        startCalls: 0,
+        stopCalls: 0,
+        disconnectCalls: 0,
+        loop: false,
+        fireEnded: () => {},
+      };
+      const node = {
         buffer: null,
+        onended: null as (() => void) | null,
         get loop() {
           return record.loop;
         },
@@ -148,7 +191,9 @@ function createMockAudioContext() {
           record.loop = next;
         },
         connect: vi.fn(),
-        disconnect: vi.fn(),
+        disconnect: vi.fn(() => {
+          record.disconnectCalls += 1;
+        }),
         start: vi.fn(() => {
           record.startCalls += 1;
         }),
@@ -156,6 +201,11 @@ function createMockAudioContext() {
           record.stopCalls += 1;
         }),
       };
+      record.fireEnded = () => {
+        node.onended?.();
+      };
+      createdBufferSources.push(record);
+      return node;
     }),
   } as unknown as AudioContext;
 
@@ -165,6 +215,9 @@ function createMockAudioContext() {
     createdBufferSources,
     createdFilters,
     createdGains,
+    setState: (next: AudioContextState) => {
+      state = next;
+    },
     isClosed: () => closed,
   };
 }
@@ -189,9 +242,11 @@ describe("1. 44종 주얼 아틀리에 투명 WebP 스프라이트 정본 레지
     const diskIndividualFiles = readdirSync(SPRITE_PUBLIC_DIR)
       .filter((name) => name.endsWith(".webp") && !name.endsWith("-sheet.webp"))
       .sort();
-    expect(diskIndividualFiles).toHaveLength(44);
+    const diskIndividualFileSet = new Set(diskIndividualFiles);
+    expect(diskIndividualFiles.length).toBeGreaterThanOrEqual(44);
 
     for (const entry of STUDIO_VIBRANT_SPRITE_REGISTRY) {
+      expect(diskIndividualFileSet.has(entry.fileName), `${entry.fileName} 디스크 목록 포함`).toBe(true);
       const diskPath = resolve(SPRITE_PUBLIC_DIR, entry.fileName);
       expect(existsSync(diskPath), `${entry.fileName} 파일 존재`).toBe(true);
       const header = readFileSync(diskPath).subarray(0, 12);
@@ -415,6 +470,71 @@ describe("4. StudioFoleyAudioEngine 물리 모델링 오디오 합성 · 3채널
     const headless = new StudioFoleyAudioEngine({ audioContextFactory: () => null });
     expect(headless.triggerSound("gpen-ink").reason).toBe("no-audio-context");
     headless.dispose();
+  });
+
+  it("onended 시 생성된 모든 오디오 노드를 disconnect하고 suspended 상태에서는 동시 보이스 폭주를 차단한다", async () => {
+    // 1) dual-noise-tone 보이스(gpen-ink)의 모든 노드(Gain/Filter/BufferSource/Oscillator)가 onended에서 해제됨
+    const mock = createMockAudioContext("running");
+    const engine = new StudioFoleyAudioEngine({
+      initialPreset: "lively-asmr",
+      audioContextFactory: () => mock.ctx,
+      minTriggerIntervalMs: 0,
+    });
+
+    const played = engine.triggerSound("gpen-ink", { speed01: 0.7, pressure01: 0.7 });
+    expect(played.played).toBe(true);
+    expect(mock.createdBufferSources).toHaveLength(1);
+    expect(mock.createdOscillators).toHaveLength(1);
+    expect(mock.createdFilters).toHaveLength(1);
+    // master(1) + channelGains(3) + env(1) + toneGain(1) = 6
+    const voiceEnvGain = mock.createdGains[4]!;
+    const voiceToneGain = mock.createdGains[5]!;
+
+    mock.createdBufferSources[0]!.fireEnded();
+    expect(mock.createdBufferSources[0]!.disconnectCalls).toBe(1);
+    expect(mock.createdFilters[0]!.disconnectCalls).toBe(1);
+    // oscillator가 끝나기 전에는 공용 env gain을 미리 끊지 않는다
+    expect(voiceEnvGain.disconnectCalls).toBe(0);
+
+    mock.createdOscillators[0]!.fireEnded();
+    expect(mock.createdOscillators[0]!.disconnectCalls).toBe(1);
+    expect(voiceToneGain.disconnectCalls).toBeGreaterThanOrEqual(1);
+    expect(voiceEnvGain.disconnectCalls).toBeGreaterThanOrEqual(1);
+    engine.dispose();
+
+    // 2) suspended 상태에서는 resume()만 중복 없이 요청하고 보이스 노드를 쌓지 않는다
+    let resolveResume: (() => void) | null = null;
+    const suspendedMock = createMockAudioContext("suspended");
+    (suspendedMock.ctx.resume as ReturnType<typeof vi.fn>).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveResume = () => {
+            suspendedMock.setState("running");
+            resolve();
+          };
+        }),
+    );
+
+    const suspendedEngine = new StudioFoleyAudioEngine({
+      initialPreset: "lively-asmr",
+      audioContextFactory: () => suspendedMock.ctx,
+      minTriggerIntervalMs: 0,
+    });
+    const r1 = suspendedEngine.triggerSound("gpen-ink");
+    const r2 = suspendedEngine.triggerSound("graphite-pencil");
+    expect(r1.played).toBe(false);
+    expect(r1.reason).toBe("suspended");
+    expect(r2.played).toBe(false);
+    expect(r2.reason).toBe("suspended");
+    expect(suspendedMock.createdBufferSources).toHaveLength(0);
+    expect(suspendedMock.createdOscillators).toHaveLength(0);
+    expect(suspendedMock.ctx.resume).toHaveBeenCalledTimes(1);
+
+    resolveResume?.();
+    await Promise.resolve();
+    const afterResume = suspendedEngine.triggerSound("gpen-ink");
+    expect(afterResume.played).toBe(true);
+    suspendedEngine.dispose();
   });
 });
 

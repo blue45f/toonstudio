@@ -289,6 +289,10 @@ describe("4. 멀티 모니터 팝아웃 오케스트레이터 & 가상 스튜디
     expect(dual.popoutWindows).toHaveLength(2);
     const readerPopout = dual.popoutWindows.find((win) => win.id === "reader-mobile-scroll-preview");
     expect(readerPopout?.targetSyncLatencyMs).toBe(16);
+    for (const popout of dual.popoutWindows) {
+      expect(popout.windowFeatures).not.toContain("noopener=no");
+      expect(popout.windowFeatures).toContain("noopener");
+    }
 
     const triple = planMultiMonitorLayout({ screens: createMonitorPresetScreens("triple-monitor") });
     expect(triple.topology).toBe("triple-monitor");

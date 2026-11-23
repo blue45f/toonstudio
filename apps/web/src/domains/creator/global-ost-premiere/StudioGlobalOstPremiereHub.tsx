@@ -36,6 +36,8 @@ import {
   OstPremiereHeatmapTabPanel,
 } from "./OstPremiereTrustTabPanels";
 
+import Link from "@/shared/navigation/router-link";
+
 import "./global-ost-premiere.css";
 
 export type GlobalOstPremiereTabId = "character-sfx" | "ost-premiere" | "trust-health";
@@ -167,15 +169,15 @@ export function StudioGlobalOstPremiereHub({
   );
 
   const handleToggleLocale = (code: GlobalLocaleCode) => {
-    setSelectedLocales((prev) => {
-      const exists = prev.includes(code);
-      if (exists && prev.length === 1) return prev;
-      const next = exists ? prev.filter((item) => item !== code) : [...prev, code];
-      setStatusNoticeKo(
-        `글로벌 SFX 로컬라이징 대상 언어를 ${next.length}개국으로 갱신했습니다.`,
-      );
-      return next;
-    });
+    const exists = selectedLocales.includes(code);
+    if (exists && selectedLocales.length === 1) return;
+    const next = exists
+      ? selectedLocales.filter((item) => item !== code)
+      : [...selectedLocales, code];
+    setSelectedLocales(next);
+    setStatusNoticeKo(
+      `글로벌 SFX 로컬라이징 대상 언어를 ${next.length}개국으로 갱신했습니다.`,
+    );
   };
 
   const handleSelectAll20Locales = () => {
@@ -201,15 +203,13 @@ export function StudioGlobalOstPremiereHub({
   };
 
   const handleToggleLeftHandShortcut = () => {
-    setLeftHandShortcutActive((prev) => {
-      const next = !prev;
-      setStatusNoticeKo(
-        next
-          ? "왼손 단축키·한손 패드 분담 모드를 활성화해 오른손 필압 부담을 낮췄습니다."
-          : "기본 단축키 모드로 전환했습니다.",
-      );
-      return next;
-    });
+    const next = !leftHandShortcutActive;
+    setLeftHandShortcutActive(next);
+    setStatusNoticeKo(
+      next
+        ? "왼손 단축키·한손 패드 분담 모드를 활성화해 오른손 필압 부담을 낮췄습니다."
+        : "기본 단축키 모드로 전환했습니다.",
+    );
   };
 
   return (
@@ -243,7 +243,7 @@ export function StudioGlobalOstPremiereHub({
           <span className="ts-gop-pill" data-tone="cool">
             {sfxPlan.plans.length}/{sfxPlan.supportedCountryCount}개국 SFX
           </span>
-          <a
+          <Link
             href={STUDIO_AUDIO_OST_WORKSHOP_PATH}
             className="ts-gop-ost-cta"
             data-testid="gop-header-ost-workshop-cta"
@@ -251,7 +251,7 @@ export function StudioGlobalOstPremiereHub({
             <Music2 size={15} aria-hidden="true" />
             웹 OST 제작실 바로가기
             <ExternalLink size={13} aria-hidden="true" />
-          </a>
+          </Link>
         </div>
       </header>
 

@@ -39,8 +39,10 @@ export function StudioOfflinePanel() {
   const [preparationIssue, setPreparationIssue] = useState<"partial" | "error" | null>(null);
   const [technicalDetail, setTechnicalDetail] = useState<string | null>(null);
   const [manualResult, setManualResult] = useState("");
-  const [message, setMessage] = useState(
-    () => bt("스튜디오가 열린 뒤 현재 버전의 필수 편집 도구를 이 기기에 자동으로 준비합니다.", "After Studio opens, its current essential editing tools are prepared on this device automatically."),
+  const [customMessage, setCustomMessage] = useState<string | null>(null);
+  const message = customMessage ?? bt(
+    "스튜디오가 열린 뒤 현재 버전의 필수 편집 도구를 이 기기에 자동으로 준비합니다.",
+    "After Studio opens, its current essential editing tools are prepared on this device automatically.",
   );
   const mounted = useRef(false);
   const operation = useRef(false);
@@ -66,7 +68,7 @@ export function StudioOfflinePanel() {
       if (detail.phase === "ready" || detail.phase === "preparing") setPreparationIssue(null);
       if (detail.phase === "partial" || detail.phase === "error") setPreparationIssue(detail.phase);
       setTechnicalDetail(null);
-      setMessage(detail.message);
+      setCustomMessage(detail.message);
       void refresh();
     };
     window.addEventListener("online", invalidate);
@@ -96,13 +98,13 @@ export function StudioOfflinePanel() {
     setPrepared(false);
     setPreparationIssue(null);
     setTechnicalDetail(null);
-    setMessage(creatorSub2StatusText("studio.creatorSub2.status.offline.panel.rechecking", "현재 버전의 편집 도구를 다시 확인하고 있습니다. 원고를 서버로 보내거나 화면을 새로고침하지 않습니다."));
+    setCustomMessage(creatorSub2StatusText("studio.creatorSub2.status.offline.panel.rechecking", "현재 버전의 편집 도구를 다시 확인하고 있습니다. 원고를 서버로 보내거나 화면을 새로고침하지 않습니다."));
     try {
       const report = await prepareLoadedStudioOfflineResources();
       if (!mounted.current) return;
       setPrepared(report.complete);
       setPreparationIssue(report.complete ? null : "partial");
-      setMessage(report.complete
+      setCustomMessage(report.complete
         ? bt(`오프라인 전환 준비가 완료됐습니다. 편집 도구 ${report.cached}개를 이 기기에서 확인했습니다.`, `Ready to work offline. ${report.cached} editing resources were checked on this device.`)
         : bt(`${report.checked}개 중 ${report.cached}개를 준비했습니다. 일부 도구는 연결이 필요할 수 있어 연결 상태가 바뀌면 다시 확인합니다.`, `${report.cached} of ${report.checked} resources are ready. Some tools may need a connection; they will be checked again when the connection changes.`));
       await refresh();
@@ -111,7 +113,7 @@ export function StudioOfflinePanel() {
       if (mounted.current) {
         setPreparationIssue("error");
         setTechnicalDetail(cause instanceof Error ? cause.message : String(cause));
-        setMessage(creatorSub2StatusText("studio.creatorSub2.status.offline.panel.prepareFailed", "오프라인 자동 준비에 실패했습니다. 연결이 복구되면 다시 시도합니다."));
+        setCustomMessage(creatorSub2StatusText("studio.creatorSub2.status.offline.panel.prepareFailed", "오프라인 자동 준비에 실패했습니다. 연결이 복구되면 다시 시도합니다."));
       }
     } finally {
       operation.current = false;
@@ -128,7 +130,7 @@ export function StudioOfflinePanel() {
     try {
       const granted = await requestStudioPersistentStorage();
       if (!mounted.current) return;
-      setMessage(granted === true
+      setCustomMessage(granted === true
         ? bt("브라우저가 기기 보관 유지 요청을 허용했습니다. 원고 저장 완료와는 별개입니다. 사이트 데이터를 직접 지우면 원고도 사라지므로 작업 파일 백업도 유지해 주세요.", "The browser allowed the request to keep device storage. This does not confirm that a manuscript was saved. Deleting site data also removes manuscripts, so keep a work-file backup.")
         : creatorSub2StatusText("studio.creatorSub2.status.offline.panel.persistDenied", "브라우저가 지속 저장을 허용하지 않았거나 지원하지 않습니다. 로컬 자동 저장은 계속되지만 프로젝트 파일 백업을 권장합니다."));
       await refresh();
@@ -137,7 +139,7 @@ export function StudioOfflinePanel() {
         : bt("기기 보관 유지 요청이 허용되지 않았습니다. 작업 파일 백업을 유지해 주세요.", "Device-storage retention was not allowed. Keep a work-file backup."));
     } catch (cause) {
       if (mounted.current) {
-        setMessage(bt("기기 보관 유지 요청을 완료하지 못했습니다. 작업 파일로 백업한 뒤 다시 시도해 주세요.", "The device-storage request could not be completed. Back up your work file and try again."));
+        setCustomMessage(bt("기기 보관 유지 요청을 완료하지 못했습니다. 작업 파일로 백업한 뒤 다시 시도해 주세요.", "The device-storage request could not be completed. Back up your work file and try again."));
         setManualResult(bt("기기 보관 유지 요청 실패. 작업 파일로 백업하고 다시 시도해 주세요.", "Device-storage retention failed. Back up your work file and try again."));
         setTechnicalDetail(cause instanceof Error ? cause.message : String(cause));
       }
@@ -162,17 +164,19 @@ export function StudioOfflinePanel() {
       ? bt("오프라인 도구 준비 실패 · 다시 확인", "Offline tools could not be prepared · Check again")
       : preparationIssue === "partial"
         ? bt("일부 오프라인 도구 준비 필요", "Some offline tools still need preparation") : null;
-  const summary = storageWarning ? "저장 공간 부족 · 백업 권장" : importantSummary ?? (connectivity.mode === "offline"
-    ? ready ? "오프라인 모드 · 로컬 작업 중" : "오프라인 모드 · 준비된 기능만 사용"
-    : connectivity.mode === "server-unavailable"
-      ? "서버 장애 · 로컬 작업 중"
-      : connectivity.mode === "reconnecting"
-        ? creatorSub2StatusText("studio.creatorSub2.status.offline.panel.summaryReconnecting", "서버 연결 확인 중")
-        : device?.navigationFallback
-          ? "저장된 스튜디오 · 로컬 작업 중"
-          : storageWarning
-            ? "저장 공간 부족 · 백업 권장"
-            : "스튜디오 연결 상태");
+  const summary = storageWarning
+    ? bt("저장 공간 부족 · 백업 권장", "Low device storage · Back up your work")
+    : importantSummary ?? (connectivity.mode === "offline"
+      ? ready
+        ? bt("오프라인 모드 · 로컬 작업 중", "Offline mode · Working locally")
+        : bt("오프라인 모드 · 준비된 기능만 사용", "Offline mode · Prepared tools only")
+      : connectivity.mode === "server-unavailable"
+        ? bt("서버 장애 · 로컬 작업 중", "Server unavailable · Working locally")
+        : connectivity.mode === "reconnecting"
+          ? creatorSub2StatusText("studio.creatorSub2.status.offline.panel.summaryReconnecting", "서버 연결 확인 중")
+          : device?.navigationFallback
+            ? bt("저장된 스튜디오 · 로컬 작업 중", "Saved Studio · Working locally")
+            : bt("스튜디오 연결 상태", "Studio connection status"));
 
   if (!shouldShowPanel && !editor) return null;
 
@@ -237,7 +241,7 @@ export function StudioOfflinePanel() {
   return (
     <aside
       className="fixed bottom-[max(calc(var(--studio-canvas-bottom-inset,3.25rem)+0.75rem),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))] right-3 z-40 max-w-[min(22rem,calc(100vw-1.5rem))]"
-      aria-label="스튜디오 연결 및 오프라인 작업 안내"
+      aria-label={bt("스튜디오 연결 및 오프라인 작업 안내", "Studio connection and offline work guide")}
       data-studio-shell-floating-target="offline-readiness"
       data-studio-shell-force-visible="true"
     >

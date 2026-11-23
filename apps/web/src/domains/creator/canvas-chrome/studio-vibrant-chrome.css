@@ -32,6 +32,53 @@
   --studio-vibrant-ring-neutral: var(--color-accent, oklch(0.62 0.17 265));
   --studio-vibrant-ring: var(--studio-vibrant-ring-neutral);
   --studio-vibrant-bloom-shadow: oklch(0.14 0.02 268 / 0.28);
+  --studio-vibrant-sheen-highlight: oklch(0.99 0.01 90 / 0.42);
+  --studio-vibrant-rail-shadow: oklch(0.18 0.02 250 / 0.18);
+  --studio-vibrant-rail-rim: oklch(0.99 0.01 90 / 0.55);
+  --studio-vibrant-stage-shadow: oklch(0.18 0.02 250 / 0.24);
+  --studio-vibrant-stage-ring: oklch(0.45 0.02 250 / 0.14);
+
+  /* 7밴드 분광 안료 반사율 바 전용 시맨틱 토큰 (420~670nm) */
+  --ts-spectral-band-420: oklch(0.56 0.14 275);
+  --ts-spectral-band-465: oklch(0.6 0.15 248);
+  --ts-spectral-band-505: oklch(0.68 0.12 195);
+  --ts-spectral-band-545: oklch(0.66 0.14 150);
+  --ts-spectral-band-585: oklch(0.78 0.14 95);
+  --ts-spectral-band-625: oklch(0.68 0.15 48);
+  --ts-spectral-band-670: oklch(0.56 0.16 28);
+}
+
+/* 7밴드 분광 반사율 미니 바 (TSX 인라인 원시색 대신 CSS 변수 기반) */
+.studio-spectral-band-bar {
+  background-color: var(--ts-spectral-band-tone, var(--color-accent));
+}
+
+.studio-spectral-band-bar[data-spectral-band="420"] {
+  --ts-spectral-band-tone: var(--ts-spectral-band-420);
+}
+
+.studio-spectral-band-bar[data-spectral-band="465"] {
+  --ts-spectral-band-tone: var(--ts-spectral-band-465);
+}
+
+.studio-spectral-band-bar[data-spectral-band="505"] {
+  --ts-spectral-band-tone: var(--ts-spectral-band-505);
+}
+
+.studio-spectral-band-bar[data-spectral-band="545"] {
+  --ts-spectral-band-tone: var(--ts-spectral-band-545);
+}
+
+.studio-spectral-band-bar[data-spectral-band="585"] {
+  --ts-spectral-band-tone: var(--ts-spectral-band-585);
+}
+
+.studio-spectral-band-bar[data-spectral-band="625"] {
+  --ts-spectral-band-tone: var(--ts-spectral-band-625);
+}
+
+.studio-spectral-band-bar[data-spectral-band="670"] {
+  --ts-spectral-band-tone: var(--ts-spectral-band-670);
 }
 
 /* 도구 카테고리별 OKLCH 액센트 링 토큰 매핑 */
@@ -230,7 +277,26 @@
   }
 }
 
-/* 고대비 모드 (앱 토글 data-studio-high-contrast + OS forced-colors) */
+/* 고대비 모드 (전역 contrast 테마 · 앱 토글 data-studio-high-contrast · OS forced-colors) */
+:root[data-design-theme="contrast"],
+[data-studio-high-contrast="true"] {
+  --ts-spectral-band-420: var(--color-fg);
+  --ts-spectral-band-465: var(--color-accent);
+  --ts-spectral-band-505: var(--color-cool, var(--color-fg));
+  --ts-spectral-band-545: var(--color-good, var(--color-fg));
+  --ts-spectral-band-585: var(--color-warn, var(--color-fg));
+  --ts-spectral-band-625: var(--color-accent);
+  --ts-spectral-band-670: var(--color-bad, var(--color-fg));
+}
+
+:root[data-design-theme="contrast"] .studio-spectral-band-bar,
+[data-studio-high-contrast="true"] .studio-spectral-band-bar {
+  border: 1px solid var(--color-fg);
+}
+
+:root[data-design-theme="contrast"] .studio-vibrant-surface,
+:root[data-design-theme="contrast"] .studio-vibrant-rail-btn,
+:root[data-design-theme="contrast"] .studio-vibrant-ink-bloom,
 [data-studio-high-contrast="true"] .studio-vibrant-surface,
 [data-studio-high-contrast="true"] .studio-vibrant-rail-btn,
 [data-studio-high-contrast="true"] .studio-vibrant-ink-bloom {
@@ -239,6 +305,9 @@
   color: var(--color-fg);
 }
 
+:root[data-design-theme="contrast"] .studio-vibrant-ink-bloom[data-vibrant-active="true"],
+:root[data-design-theme="contrast"] .studio-vibrant-ink-bloom[aria-pressed="true"],
+:root[data-design-theme="contrast"] .studio-vibrant-ink-bloom[aria-selected="true"],
 [data-studio-high-contrast="true"] .studio-vibrant-ink-bloom[data-vibrant-active="true"],
 [data-studio-high-contrast="true"] .studio-vibrant-ink-bloom[aria-pressed="true"],
 [data-studio-high-contrast="true"] .studio-vibrant-ink-bloom[aria-selected="true"] {
@@ -256,6 +325,11 @@
     background: Canvas !important;
     color: CanvasText !important;
     box-shadow: none !important;
+  }
+
+  .studio-spectral-band-bar {
+    background: Highlight !important;
+    border: 1px solid CanvasText !important;
   }
 
   .studio-vibrant-ink-bloom[data-vibrant-active="true"],
@@ -319,7 +393,7 @@
   background: linear-gradient(
     115deg,
     transparent 24%,
-    oklch(0.99 0.01 90 / 0.42) 50%,
+    var(--studio-vibrant-sheen-highlight) 50%,
     transparent 76%
   );
   animation: studio-vibrant-sheen-sweep 720ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
@@ -329,14 +403,14 @@
 [data-studio-left-tool-rail="true"] {
   border-radius: 1rem;
   box-shadow:
-    0 12px 32px -12px oklch(0.18 0.02 250 / 0.18),
-    0 1px 0 oklch(0.99 0.01 90 / 0.55) inset;
+    0 12px 32px -12px var(--studio-vibrant-rail-shadow),
+    0 1px 0 var(--studio-vibrant-rail-rim) inset;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
 
 [data-studio-canvas-stage="true"] {
   box-shadow:
-    0 20px 48px -22px oklch(0.18 0.02 250 / 0.24),
-    0 0 0 1px oklch(0.45 0.02 250 / 0.14);
+    0 20px 48px -22px var(--studio-vibrant-stage-shadow),
+    0 0 0 1px var(--studio-vibrant-stage-ring);
 }
