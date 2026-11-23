@@ -1,6 +1,10 @@
 /**
  * 글로벌 마스터 무료 브러시 60종 팁별 순수 2D Canvas 그리기 헬퍼(파트 1: 잉크·로판·자연·수묵·수채·유화·마커·건식).
  */
+import {
+  evaluateDryPaperPeakCatch,
+  samplePaperTooth,
+} from "./global-master-brush-renderer-dabs";
 import type {
   GlobalMasterBrushDab,
   GlobalMasterBrushPreset,
@@ -488,55 +492,174 @@ export function paintImpastoAndDryTip(
     return;
   }
 
+  const cosA = Math.cos(dab.angleRad);
+  const sinA = Math.sin(dab.angleRad);
+  const worldTooth = (lx: number, ly: number, scalePx: number, sheetSeed = 0x51a7_2026): number => {
+    const wx = dab.x + lx * cosA - ly * sinA;
+    const wy = dab.y + lx * sinA + ly * cosA;
+    return samplePaperTooth(wx, wy, scalePx, sheetSeed);
+  };
+
   if (dab.tipShape === "square-charcoal") {
-    for (let i = 0; i < 6; i += 1) {
-      const ox = (rng() * 2 - 1) * rx * 0.72;
-      const oy = (rng() * 2 - 1) * ry * 0.72;
-      ctx.fillStyle = rgbaCss(rgb, opacity * dab.grainFactor * (0.48 + rng() * 0.46));
-      fillSafeRect(ctx, ox - rx * 0.35, oy - ry * 0.28, rx * 0.7, ry * 0.56);
+    // 크로키 각목탄: 거친 판화지/목탄지(5.2px) 위 납작한 사각 블록 + 가장자리 숯가루 부스러기
+    const toothScale = 5.2;
+    const blockCount = 14;
+    for (let i = 0; i < blockCount; i += 1) {
+      const ox = (rng() * 2 - 1) * rx * 0.88;
+      const oy = (rng() * 2 - 1) * ry * 0.82;
+      const tooth = worldTooth(ox, oy, toothScale, 0x51a7_2026);
+      const bite = evaluateDryPaperPeakCatch(tooth, dab.pressure, 0.64, 0.14, 0.12);
+      if (bite <= 0.04) continue;
+      const bw = rx * (0.2 + rng() * 0.28);
+      const bh = Math.max(0.75, ry * (0.28 + rng() * 0.36));
+      ctx.fillStyle = rgbaCss(
+        tooth > 0.72 ? shadow : rgb,
+        opacity * bite * (0.58 + rng() * 0.36),
+      );
+      fillSafeRect(ctx, ox - bw * 0.5, oy - bh * 0.5, bw, bh);
+    }
+    // 사각 목탄 모서리 바깥으로 떨어지는 건조 목탄 가루 부스러기
+    for (let c = 0; c < 4; c += 1) {
+      const side = c % 2 === 0 ? 1 : -1;
+      const cx = side * rx * (0.76 + rng() * 0.34);
+      const cy = (rng() * 2 - 1) * ry * 1.15;
+      const tooth = worldTooth(cx, cy, toothScale * 0.75, 0x51a7_2026);
+      if (tooth < 0.52) continue;
+      const cr = Math.max(0.55, Math.min(rx, ry) * (0.14 + rng() * 0.18));
+      ctx.fillStyle = rgbaCss(rgb, opacity * (0.34 + (tooth - 0.52) * 0.9));
+      fillSafeRect(ctx, cx - cr * 0.6, cy - cr * 0.5, cr * 1.2, cr);
     }
     return;
   }
 
   if (dab.tipShape === "oil-pastel") {
-    for (let i = 0; i < 5; i += 1) {
-      const ox = (rng() * 2 - 1) * rx * 0.68;
-      const oy = (rng() * 2 - 1) * ry * 0.68;
-      const w = rx * (0.44 + rng() * 0.42);
-      const h = ry * (0.42 + rng() * 0.38);
-      ctx.fillStyle = rgbaCss(i === 0 ? light : rgb, opacity * (0.68 + rng() * 0.3));
-      fillSafeRect(ctx, ox - w * 0.5, oy - h * 0.5, w, h);
+    // 오일 파스텔 크레용: 굵은 왁스 골(Groove) + 날카로운 피크-캐치(골짜기 뚝 끊김) + 외곽 왁스 부스러기
+    const toothScale = 5.6;
+    const lanes = 4;
+    for (let lane = 0; lane < lanes; lane += 1) {
+      const laneFrac = lane / (lanes - 1) - 0.5;
+      const baseY = laneFrac * ry * 1.48;
+      for (let k = 0; k < 3; k += 1) {
+        const ox = ((k - 1) * 0.58 + (rng() - 0.5) * 0.38) * rx;
+        const oy = baseY + (rng() - 0.5) * ry * 0.24;
+        const tooth = worldTooth(ox, oy, toothScale, 0x7c3b_2026);
+        const bite = evaluateDryPaperPeakCatch(tooth, dab.pressure, 0.67, 0.12, 0.1);
+        if (bite <= 0.05) continue;
+        const w = rx * (0.34 + rng() * 0.26);
+        const h = Math.max(0.9, ry * (0.24 + rng() * 0.2));
+        const waxTone = tooth > 0.78 && lane === 0 ? light : rgb;
+        ctx.fillStyle = rgbaCss(waxTone, opacity * bite * (0.76 + rng() * 0.24));
+        fillSafeRect(ctx, ox - w * 0.5, oy - h * 0.5, w, h);
+      }
+    }
+    // 왁스 스틱 외곽 부스러기(Crumb Flecks)
+    for (let c = 0; c < 4; c += 1) {
+      const a = rng() * Math.PI * 2;
+      const dist = 0.78 + rng() * 0.34;
+      const cx = Math.cos(a) * rx * dist;
+      const cy = Math.sin(a) * ry * dist;
+      const tooth = worldTooth(cx, cy, toothScale * 0.85, 0x7c3b_2026);
+      if (tooth < 0.56) continue;
+      const cr = Math.max(0.7, rx * (0.08 + rng() * 0.1));
+      ctx.fillStyle = rgbaCss(c === 0 ? light : rgb, opacity * (0.58 + (tooth - 0.56) * 0.8));
+      fillSafeRect(ctx, cx - cr, cy - cr * 0.75, cr * 2, cr * 1.5);
     }
     return;
   }
 
   if (dab.tipShape === "colored-pencil") {
-    ctx.strokeStyle = rgbaCss(rgb, opacity * dab.grainFactor * 0.74);
-    ctx.lineWidth = 0.85;
+    // 색연필 종이결 쉐이딩: 3.6px 코튼지 이빨에 끊기며 쌓이는 왁스 심 사선 해칭 + 미세 이빨 점
+    const toothScale = 3.6;
+    ctx.lineWidth = Math.max(0.75, Math.min(1.35, ry * 0.14));
     for (let i = -2; i <= 2; i += 1) {
-      const off = i * ry * 0.42 + (rng() - 0.5) * ry * 0.18;
-      strokeSafeSegment(ctx, -rx * 0.88, off - ry * 0.3, rx * 0.88, off + ry * 0.3);
+      const off = i * ry * 0.36 + (rng() - 0.5) * ry * 0.14;
+      for (let seg = 0; seg < 3; seg += 1) {
+        const s0 = -0.88 + seg * 0.6;
+        const s1 = s0 + 0.52;
+        const midX = ((s0 + s1) * 0.5) * rx;
+        const midY = off + ((s0 + s1) * 0.5) * ry * 0.32;
+        const tooth = worldTooth(midX, midY, toothScale, 0x3b91_2026);
+        const bite = evaluateDryPaperPeakCatch(tooth, dab.pressure, 0.62, 0.16, 0.13);
+        if (bite <= 0.05) continue;
+        ctx.strokeStyle = rgbaCss(rgb, opacity * bite * (0.52 + rng() * 0.34));
+        strokeSafeSegment(
+          ctx,
+          s0 * rx,
+          off + s0 * ry * 0.32,
+          s1 * rx,
+          off + s1 * ry * 0.32,
+        );
+      }
+    }
+    for (let g = 0; g < 6; g += 1) {
+      const gx = (rng() * 2 - 1) * rx * 0.9;
+      const gy = (rng() * 2 - 1) * ry * 0.84;
+      const tooth = worldTooth(gx, gy, toothScale, 0x3b91_2026);
+      const bite = evaluateDryPaperPeakCatch(tooth, dab.pressure, 0.66, 0.2, 0.12);
+      if (bite <= 0.08) continue;
+      ctx.fillStyle = rgbaCss(rgb, opacity * bite * 0.56);
+      fillSafeEllipse(ctx, gx, gy, Math.max(0.55, rx * 0.12), Math.max(0.45, ry * 0.11));
     }
     return;
   }
 
   if (dab.tipShape === "pastel-chalk") {
-    for (let i = 0; i < 12; i += 1) {
-      const ox = (rng() * 2 - 1) * rx * 0.96;
+    // 소프트 파스텔 초크: 거친 파스텔지(4.6px) 봉우리에 보송하게 얹히는 분필 가루 입자 구름
+    const toothScale = 4.6;
+    for (let i = 0; i < 16; i += 1) {
+      const ox = (rng() * 2 - 1) * rx * 0.98;
       const oy = (rng() * 2 - 1) * ry * 0.96;
-      ctx.fillStyle = rgbaCss(i % 3 === 0 ? light : rgb, opacity * (0.18 + rng() * 0.34));
-      fillSafeEllipse(ctx, ox, oy, rx * (0.2 + rng() * 0.24), ry * (0.18 + rng() * 0.24));
+      const tooth = worldTooth(ox, oy, toothScale, 0x9f23_2026);
+      const bite = evaluateDryPaperPeakCatch(tooth, dab.pressure, 0.58, 0.1, 0.17);
+      if (bite <= 0.04) continue;
+      const isHighlightDust = i % 4 === 0 && tooth > 0.66;
+      ctx.fillStyle = rgbaCss(
+        isHighlightDust ? light : rgb,
+        opacity * bite * (0.24 + rng() * 0.36),
+      );
+      fillSafeEllipse(
+        ctx,
+        ox,
+        oy,
+        Math.max(0.65, rx * (0.14 + rng() * 0.18)),
+        Math.max(0.55, ry * (0.13 + rng() * 0.17)),
+      );
     }
     return;
   }
 
-  ctx.fillStyle = rgbaCss(rgb, opacity * 0.84 * dab.grainFactor);
-  fillSafeEllipse(ctx, 0, 0, rx * 0.62, ry * 0.56);
-  const specks = preset.grainTexture.depth > 0.45 ? 6 : 3;
+  // 6B 거친 흑연 연필(graphite-6b) 및 기타 건식 팁:
+  // 3.3px 스케치북 종이 높이장 위 고주파 흑연 심 코어 + 사선 쉐이딩 입자
+  const graphiteScale = 3.3;
+  for (let c = 0; c < 5; c += 1) {
+    const cx = (c / 4 - 0.5) * rx * 1.15 + (rng() - 0.5) * rx * 0.22;
+    const cy = (rng() - 0.5) * ry * 0.64;
+    const tooth = worldTooth(cx, cy, graphiteScale, 0x41d5_2026);
+    const bite = evaluateDryPaperPeakCatch(tooth, dab.pressure, 0.62, 0.12, 0.12);
+    if (bite <= 0.04) continue;
+    ctx.fillStyle = rgbaCss(tooth > 0.7 ? shadow : rgb, opacity * bite * (0.64 + rng() * 0.3));
+    fillSafeEllipse(
+      ctx,
+      cx,
+      cy,
+      Math.max(0.6, rx * (0.22 + rng() * 0.16)),
+      Math.max(0.45, ry * (0.18 + rng() * 0.14)),
+    );
+  }
+  const specks = preset.grainTexture.depth > 0.45 ? 11 : 6;
   for (let i = 0; i < specks; i += 1) {
-    const ox = (rng() * 2 - 1) * rx * 0.92;
-    const oy = (rng() * 2 - 1) * ry * 0.88;
-    ctx.fillStyle = rgbaCss(rgb, opacity * dab.grainFactor * (0.3 + rng() * 0.42));
-    fillSafeEllipse(ctx, ox, oy, rx * 0.22, ry * 0.18);
+    const ox = (rng() * 2 - 1) * rx * 0.96;
+    const oy = (rng() * 2 - 1) * ry * 0.92;
+    const tooth = worldTooth(ox, oy, graphiteScale, 0x41d5_2026);
+    const bite = evaluateDryPaperPeakCatch(tooth, dab.pressure, 0.68, 0.16, 0.12);
+    if (bite <= 0.05) continue;
+    ctx.fillStyle = rgbaCss(rgb, opacity * bite * (0.42 + rng() * 0.42));
+    fillSafeEllipse(
+      ctx,
+      ox,
+      oy,
+      Math.max(0.45, rx * (0.1 + rng() * 0.11)),
+      Math.max(0.4, ry * (0.09 + rng() * 0.1)),
+    );
   }
 }

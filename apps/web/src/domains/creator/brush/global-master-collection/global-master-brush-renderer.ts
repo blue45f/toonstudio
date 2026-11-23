@@ -346,6 +346,7 @@ export function renderMasterBrushUserStroke(
   const dabs = generateMasterBrushDabs(preset, points, {
     sizeScale: options.sizeScale,
     inkRgb: options.inkRgb,
+    maxDabs: options.maxDabs,
   });
   const darkPaper = options.darkPaper ?? false;
 

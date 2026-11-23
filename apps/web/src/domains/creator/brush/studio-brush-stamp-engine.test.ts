@@ -5,12 +5,19 @@ import {
   drawStampStroke,
   drawStudioStampBrushDabs,
   planStudioStampBrushDabs,
+  quantizeStampTipBakeRadius,
+  resetStudioStampDabTipCanvasCacheForTests,
   resolveStudioStampBrushKind,
   resolveStudioStampBrushStyle,
+  resolveStudioStampPaperGrainStyle,
   STUDIO_STAMP_BRUSH_DEFAULTS,
   STUDIO_STAMP_BRUSH_MAX_DABS,
+  STUDIO_STAMP_DAB_TIP_CACHE_MAX_SIZE,
+  STUDIO_STAMP_TIP_MIPMAP_BUCKETS,
   stampJitter,
   stampStrokeDot,
+  studioStampDabTipCacheStatsForTests,
+  studioStampDabTipCanvasCacheSizeForTests,
   studioStampOssTipCoverage,
   walkStampSegment,
   type StudioStampBrushKind,
@@ -643,5 +650,70 @@ describe("studio stamp brush engine — cached tip blit footprint", () => {
     for (const [index, radius] of radii.entries()) {
       expect(blittedRadius(blits[index]!, 1)).toBeCloseTo(radius, 10);
     }
+  });
+
+  it("quantizes textured tips into log mipmap buckets [8,16,32,64] with 4-phase reuse and zero per-dab gradient on pencil", () => {
+    resetStudioStampDabTipCanvasCacheForTests();
+    expect(STUDIO_STAMP_TIP_MIPMAP_BUCKETS).toEqual([8, 16, 32, 64]);
+    expect(STUDIO_STAMP_DAB_TIP_CACHE_MAX_SIZE).toBe(512);
+    expect(quantizeStampTipBakeRadius("pencil", 1.2)).toBe(8);
+    expect(quantizeStampTipBakeRadius("crayon", 11.4)).toBe(16);
+    expect(quantizeStampTipBakeRadius("charcoal", 27.9)).toBe(32);
+    expect(quantizeStampTipBakeRadius("pastel", 96)).toBe(64);
+
+    const { createdTips } = stubRealCanvasEnvironment();
+    const { context, blits, arcs } = blitRecordingContext();
+    let gradCalls = 0;
+    (context as unknown as { createRadialGradient: () => unknown }).createRadialGradient = () => {
+      gradCalls += 1;
+      return { addColorStop: () => undefined };
+    };
+
+    const points: number[] = [];
+    const pressures: number[] = [];
+    for (let i = 0; i <= 120; i += 1) {
+      points.push(i * 10, Math.sin(i / 6) * 14);
+      pressures.push(0.15 + 0.8 * ((i % 25) / 24));
+    }
+    drawStampStroke(context, style("pencil", { size: 22, color: "#1c2026" }), points, pressures);
+    expect(gradCalls).toBe(0);
+    expect(arcs).toHaveLength(0);
+    expect(blits.length).toBeGreaterThan(200);
+    // 로그 버킷(8, 16) × 4-위상 = 최대 8개 캐시 팁만으로 200+ 필압 가변 dab 전체를 소화한다.
+    expect(createdTips.length).toBeLessThanOrEqual(8);
+    const stats = studioStampDabTipCacheStatsForTests();
+    expect(stats.hitRate).toBeGreaterThan(0.95);
+    expect(stats.evictions).toBe(0);
+    resetStudioStampDabTipCanvasCacheForTests();
+  });
+
+  it("bakes pencil tooth pores and crayon zero-valley peak-catch while staying distinct and LRU-bounded at 512", () => {
+    const pencilField = sampleTipCoverageField("pencil", 1234, STUDIO_STAMP_BRUSH_DEFAULTS.pencil.hardness);
+    const crayonField = sampleTipCoverageField("crayon", 1234, STUDIO_STAMP_BRUSH_DEFAULTS.crayon.hardness);
+    expect(varianceOf(pencilField)).toBeGreaterThan(0.01);
+    expect(meanOf(pencilField)).toBeGreaterThan(0.05);
+    expect(pencilField.some((v) => v === 0)).toBe(true);
+    // 크레파스는 뿌연 바닥(0.34) 없이 종이 골짜기가 진짜 0으로 끊겨야 한다.
+    expect(crayonField.filter((v) => v === 0).length).toBeGreaterThan(crayonField.length * 0.15);
+    expect(meanAbsoluteDifference(pencilField, crayonField)).toBeGreaterThan(0.03);
+    expect(
+      meanAbsoluteDifference(sampleTipCoverageField("pencil", 1234, 0.1), sampleTipCoverageField("pencil", 1234, 0.9)),
+    ).toBeGreaterThan(0.015);
+    expect(
+      resolveStudioStampPaperGrainStyle("pencil", { paperProgramId: "dry-peak-catch-v1" }),
+    ).toMatchObject({ medium: "pencil", presetId: "kent" });
+
+    resetStudioStampDabTipCanvasCacheForTests();
+    stubRealCanvasEnvironment();
+    const { context } = blitRecordingContext();
+    for (let i = 0; i < 600; i += 1) {
+      const hex = `#${i.toString(16).padStart(6, "0")}`;
+      drawStudioStampBrushDabs(context, style("ink", { color: hex }), [
+        { x: 10, y: 10, radius: 10, alpha: 0.8, index: i },
+      ]);
+    }
+    expect(studioStampDabTipCanvasCacheSizeForTests()).toBeLessThanOrEqual(STUDIO_STAMP_DAB_TIP_CACHE_MAX_SIZE);
+    expect(studioStampDabTipCacheStatsForTests().evictions).toBeGreaterThan(0);
+    resetStudioStampDabTipCanvasCacheForTests();
   });
 });

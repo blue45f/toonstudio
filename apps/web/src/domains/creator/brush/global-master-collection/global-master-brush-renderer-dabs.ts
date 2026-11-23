@@ -43,6 +43,66 @@ export function createDeterministicRng(seed: number): () => number {
   };
 }
 
+function hashPaperLattice(ix: number, iy: number, seed: number): number {
+  let h = (Math.imul(ix | 0, 0x45d9f3b) ^ Math.imul(iy | 0, 0x27d4eb2d) ^ (seed >>> 0)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x7feb352d) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 0x846ca68b) >>> 0;
+  h ^= h >>> 16;
+  return (h >>> 0) / 0xffffffff;
+}
+
+function paperValueNoise2d(x: number, y: number, seed: number): number {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const a = hashPaperLattice(x0, y0, seed);
+  const b = hashPaperLattice(x0 + 1, y0, seed);
+  const c = hashPaperLattice(x0, y0 + 1, seed);
+  const d = hashPaperLattice(x0 + 1, y0 + 1, seed);
+  return a + (b - a) * ux + ((c - a) + (a - b - c + d) * ux) * uy;
+}
+
+/**
+ * 문서-공간(World-Space) 종이 이빨 높이장 샘플러 [0, 1].
+ * 겹치는 모든 dab과 교차 스트로크가 같은 문서 좌표에서 동일한 봉우리(1)·골짜기(0)를 읽으므로
+ * 스케치북 종이 결이 뭉개지지 않고 살아 숨 쉰다.
+ */
+export function samplePaperTooth(
+  x: number,
+  y: number,
+  toothScalePx = 4.2,
+  seed = 0x51a7_2026,
+): number {
+  const safeX = Number.isFinite(x) ? x : 0;
+  const safeY = Number.isFinite(y) ? y : 0;
+  const inv = 1 / Math.max(1.2, toothScalePx);
+  const gx = safeX * inv;
+  const gy = safeY * inv;
+  const macro = paperValueNoise2d(gx * 0.86, gy * 1.04, seed);
+  const micro = paperValueNoise2d(gx * 2.18 + 17.3, gy * 2.18 + 9.7, seed ^ 0x9e37);
+  const raw = macro * 0.58 + micro * 0.42;
+  return clamp(0.5 + (raw - 0.5) * 1.68, 0, 1);
+}
+
+/**
+ * 건식 매체 종이 피크-캐치 침착 계수 [0, 1].
+ * 저필압에서는 봉우리에만 안료가 걸리고 골짜기는 0으로 비워지며, 고필압에서는 골까지 채워진다.
+ */
+export function evaluateDryPaperPeakCatch(
+  toothHeight: number,
+  pressure: number,
+  thresholdLight = 0.66,
+  thresholdHeavy = 0.14,
+  feather = 0.13,
+): number {
+  const p = clamp(pressure, 0.04, 1);
+  const cut = thresholdLight + (thresholdHeavy - thresholdLight) * Math.pow(p, 0.82);
+  return smoothstep(cut - feather, cut + feather, toothHeight);
+}
+
 function rgbToHsl(rgb: GlobalMasterRgbTuple): readonly [number, number, number] {
   const r = clamp(rgb[0], 0, 255) / 255;
   const g = clamp(rgb[1], 0, 255) / 255;
@@ -171,7 +231,7 @@ export function generateMasterBrushDabs(
   if (points.length === 0) return [];
 
   const sizeScale = clamp(options.sizeScale ?? 1, 0.2, 3.5);
-  const maxDabs = clamp(options.maxDabs ?? 420, 12, 1200);
+  const maxDabs = clamp(options.maxDabs ?? 420, 12, 6000);
   const baseInk = options.inkRgb ?? preset.defaultInkRgb;
   const baseDiameter = Math.max(2, preset.defaultSizePx * sizeScale);
   const stepDistance = Math.max(0.9, baseDiameter * clamp(preset.spacing, 0.04, 1.5));
@@ -278,11 +338,17 @@ export function generateMasterBrushDabs(
         1,
       );
 
-      const grainFactor = clamp(
+      let grainFactor = clamp(
         1 - preset.grainTexture.depth * (0.28 + rGrain * 0.42),
         0.24,
         1,
       );
+      if (preset.category === "graphite-pastel") {
+        const paperScale = Math.max(2.6, preset.grainTexture.scale * 3.1);
+        const tooth = samplePaperTooth(dabX, dabY, paperScale, 0x51a7_2026);
+        const peakCatch = evaluateDryPaperPeakCatch(tooth, curvedP, 0.62, 0.14, 0.16);
+        grainFactor = clamp(0.22 + 0.78 * peakCatch * (0.72 + rGrain * 0.28), 0.22, 1);
+      }
       const dualScale = preset.dualTipProfile?.enabled
         ? preset.dualTipProfile.scaleRatio
         : 0;

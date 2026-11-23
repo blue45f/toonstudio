@@ -312,6 +312,7 @@ export interface RenderMasterBrushStrokeOptions {
   readonly inkRgb?: GlobalMasterRgbTuple;
   readonly darkPaper?: boolean;
   readonly clearCanvas?: boolean;
+  readonly maxDabs?: number;
 }
 
 export interface GlobalMasterStrokeRenderResult {

@@ -21,18 +21,25 @@ import {
   resolveStudioCc0MypaintStampTuning,
 } from "../studio-cc0-mypaint-preset-import-v1";
 import {
-  STUDIO_OSS_TIP_WAX_LATTICE_SCALE,
-  studioOssDirectionalWaxSample,
-  studioOssKlecksChalkCoverage,
-  studioOssSprayTipCoverage,
-  studioOssWatercolorTipCoverage,
-} from "../studio-oss-brush-kernels";
+  getCachedDabTipEntry,
+  quantizeStampTipBakeRadius,
+  resetStudioStampDabTipCanvasCacheForTests,
+  STUDIO_STAMP_DAB_TIP_CACHE_MAX_SIZE,
+  STUDIO_STAMP_TIP_MIPMAP_BUCKETS,
+  studioStampDabTipCacheStatsForTests,
+  studioStampDabTipCanvasCacheSizeForTests,
+  studioStampOssTipCoverage,
+} from "./studio-brush-dry-tooth-cache";
 import { resolveStudioBrushEngineLaneStampTuning } from "./studio-brush-engine-lane-catalog";
 import {
   getStudioPaperPresetV1,
   isStudioPaperPresetIdV1,
   resolveStudioPaperDepositScaleV1,
 } from "./studio-paper-media-profile-v1";
+import type {
+  StudioStampBrushKind,
+  StudioStampOssTexturedTipKind,
+} from "./studio-brush-dry-tooth-cache";
 import type { StudioBrushEngineLaneStampTuning } from "./studio-brush-engine-lane-catalog";
 import type { StudioCc0MypaintDabDynamicsStyle } from "../studio-cc0-mypaint-preset-import-v1";
 import type {
@@ -41,18 +48,16 @@ import type {
   StudioPaperPresetV1,
 } from "./studio-paper-media-profile-v1";
 
-export type StudioStampBrushKind =
-  | "airbrush"
-  | "pencil"
-  | "ink"
-  | "watercolor"
-  | "mypaint"
-  | "krita-auto"
-  /** Verified dry-media stamps (Klecks chalk / directional wax / libmypaint charcoal DNA). */
-  | "crayon"
-  | "chalk"
-  | "charcoal"
-  | "pastel";
+export type { StudioStampBrushKind, StudioStampOssTexturedTipKind };
+export {
+  quantizeStampTipBakeRadius,
+  resetStudioStampDabTipCanvasCacheForTests,
+  STUDIO_STAMP_DAB_TIP_CACHE_MAX_SIZE,
+  STUDIO_STAMP_TIP_MIPMAP_BUCKETS,
+  studioStampDabTipCacheStatsForTests,
+  studioStampDabTipCanvasCacheSizeForTests,
+  studioStampOssTipCoverage,
+};
 /**
  * One logical stamp stroke may be replayed from an imported/collaborative document. A finite cap
  * prevents a single enormous segment from monopolising the main thread while remaining far above
@@ -139,12 +144,14 @@ export const STUDIO_STAMP_PAPER_PROGRAMS: Readonly<
 > = Object.freeze({
   "dry-peak-catch-v1": Object.freeze({
     mediumByKind: Object.freeze({
+      pencil: "pencil",
       crayon: "crayon",
       chalk: "chalk",
       charcoal: "charcoal",
       pastel: "pastel",
     }),
     defaultPresetIdByKind: Object.freeze({
+      pencil: "kent",
       crayon: "printmaking",
       chalk: "printmaking",
       charcoal: "printmaking",
@@ -336,185 +343,6 @@ export const STUDIO_STAMP_BRUSH_DEFAULTS: Record<
   // Krita soft pastel cake.
   pastel: { flow: 0.48, hardness: 0.35, minSizeRatio: 0.5 },
 };
-
-const PARSED_COLOR_CACHE = new Map<string, Readonly<{ r: number; g: number; b: number }>>();
-
-function parseCssRgbColor(color: string,): Readonly<{ r: number; g: number; b: number }> | null {
-  const cached = PARSED_COLOR_CACHE.get(color);
-  if (cached) {
-    PARSED_COLOR_CACHE.delete(color);
-    PARSED_COLOR_CACHE.set(color, cached);
-    return cached;
-  }
-  const hex = /^#([\da-f]{3}|[\da-f]{6})$/iu.exec(color.trim());
-  let result: { r: number; g: number; b: number } | null = null;
-  if (hex) {
-    const raw = hex[1]!;
-    const full = raw.length === 3
-      ? `${raw[0]}${raw[0]}${raw[1]}${raw[1]}${raw[2]}${raw[2]}`
-      : raw;
-    result = {
-      r: Number.parseInt(full.slice(0, 2), 16),
-      g: Number.parseInt(full.slice(2, 4), 16),
-      b: Number.parseInt(full.slice(4, 6), 16),
-    };
-  } else {
-    const rgb = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/iu.exec(color);
-    if (rgb) {
-      result = {
-        r: Math.round(Number(rgb[1])),
-        g: Math.round(Number(rgb[2])),
-        b: Math.round(Number(rgb[3])),
-      };
-    }
-  }
-  if (result) {
-    if (PARSED_COLOR_CACHE.size >= 128) {
-      const firstKey = PARSED_COLOR_CACHE.keys().next().value;
-      if (firstKey !== undefined) PARSED_COLOR_CACHE.delete(firstKey);
-    }
-    PARSED_COLOR_CACHE.set(color, result);
-  }
-  return result;
-}
-
-/** OSS 질감 팁을 굽는 스탬프 종류(잉크·mypaint·krita-auto 는 그라디언트 팁을 유지한다). */
-export type StudioStampOssTexturedTipKind =
-  | "airbrush"
-  | "watercolor"
-  | "crayon"
-  | "chalk"
-  | "charcoal"
-  | "pastel";
-
-/** 캐시 가능한 dab 을 위해 고정한 팁 로컬 스트로크 축. 라이브 경로는 배치 지터로 회전감을 얻는다. */
-const OSS_TIP_DIRECTION_RADIANS = -Math.PI / 5;
-
-/**
- * OSS 질감 팁의 픽셀 커버리지(순수·결정적) — (nx, ny)는 팁 반경으로 정규화한 좌표.
- * rasterizeOssTexturedTip 이 이 함수로 ImageData 를 굽고, 테스트가 같은 함수를 그리드
- * 샘플링해 질감 분산·종류 간 구분·경도 응답을 고정한다.
- *
- * 종류별 질감 의도:
- * - airbrush: Klecks 스프레이 — 소프트 엔벨로프 × 멀티 옥타브 그릿(겹쳐도 입자감 유지).
- * - watercolor: 소프트 바디 + 웻엣지 링(r≈0.92 어두운 띠) × 과립.
- * - crayon: 방향성 왁스 베드. 림은 wax 노이즈로 반경 끝까지 너덜너덜하게 닿고(잘린 원판 금지),
- *   경도가 오르면 눌린 왁스 플래토가 넓어지며 scrape 골이 종이 이를 드러낸다.
- * - chalk: Klecks genBrushAlpha01 이 질감 마스터. 경도는 파우더 바디의 어깨 지수만 조인다
- *   (경도↑ = 판판하게 눌린 사이드스틱, 경도↓ = 가장자리로 흩어지는 가루).
- * - charcoal: libmypaint charcoal.myb DNA — wax.grit 이 이(tooth), scrape 가 종이 보임 골,
- *   Klecks 파우더가 바디. 경도가 낮을수록 파우더 엣지가 길게 풀린다.
- * - pastel: 소프트 케이크 — smoothstep 벨벳 어깨 × 굵은 파우더. 초크보다 결이 곱고 균일하다.
- */
-export function studioStampOssTipCoverage(
-  kind: StudioStampOssTexturedTipKind,
-  normalizedX: number,
-  normalizedY: number,
-  seed: number,
-  hardness: number,
-  grainStretch: number = 1,
-): number {
-  const hard = clamp01(hardness);
-  const radial = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
-  if (kind === "airbrush") {
-    return studioOssSprayTipCoverage(normalizedX, normalizedY, seed, hard);
-  }
-  if (kind === "watercolor") {
-    return studioOssWatercolorTipCoverage(normalizedX, normalizedY, seed, hard);
-  }
-  if (kind === "chalk") {
-    const klecks = studioOssKlecksChalkCoverage(
-      normalizedX,
-      normalizedY,
-      seed,
-      grainStretch,
-    );
-    const shoulder = clamp01(1 - radial);
-    const body = shoulder ** (0.4 + (1 - hard) * 0.9);
-    return clamp01(klecks * (0.5 + 0.5 * body));
-  }
-  if (kind === "crayon") {
-    const wax = studioOssDirectionalWaxSample(
-      normalizedX * STUDIO_OSS_TIP_WAX_LATTICE_SCALE,
-      normalizedY * STUDIO_OSS_TIP_WAX_LATTICE_SCALE,
-      OSS_TIP_DIRECTION_RADIANS,
-      seed,
-      grainStretch,
-    );
-    const rimWobble = (wax.wax - 0.5) * 0.24;
-    const plateau = 0.42 + hard * 0.3;
-    const shoulderWidth = Math.max(0.14, 1 - plateau);
-    const disk = clamp01(1 - (radial + rimWobble - plateau) / shoulderWidth);
-    return clamp01(disk * (0.34 + 0.66 * wax.wax) * (1 - wax.scrape * 0.55));
-  }
-  if (kind === "charcoal") {
-    const wax = studioOssDirectionalWaxSample(
-      normalizedX * STUDIO_OSS_TIP_WAX_LATTICE_SCALE,
-      normalizedY * STUDIO_OSS_TIP_WAX_LATTICE_SCALE,
-      OSS_TIP_DIRECTION_RADIANS,
-      seed ^ 0xc4,
-      grainStretch,
-    );
-    const chalkPowder = studioOssKlecksChalkCoverage(
-      normalizedX,
-      normalizedY,
-      seed ^ 0xa1,
-      grainStretch,
-    );
-    const body = clamp01(1 - radial) ** (0.55 + (1 - hard) * 0.95);
-    const packed = 0.28 * chalkPowder + 0.5 * wax.wax + 0.42 * wax.grit;
-    return clamp01(body * packed * (1 - wax.scrape * 0.38));
-  }
-  // pastel
-  const chalkPowder = studioOssKlecksChalkCoverage(
-    normalizedX,
-    normalizedY,
-    seed ^ 0xb7,
-    grainStretch,
-  );
-  const shoulder = clamp01(1 - radial * (0.8 + hard * 0.25));
-  const velvet = shoulder * shoulder * (3 - 2 * shoulder);
-  return clamp01(velvet * (0.45 + 0.55 * chalkPowder) * (0.72 + 0.28 * hard));
-}
-
-/**
- * Bake an OSS multi-octave tip into ImageData (Klecks chalk/spray/wax structure).
- * Falls back to null when the context cannot allocate ImageData (jsdom stubs).
- */
-function rasterizeOssTexturedTip(
-  ctx: CanvasRenderingContext2D,
-  kind: StudioStampOssTexturedTipKind,
-  color: string,
-  radius: number,
-  hardness: number,
-  seed: number,
-): boolean {
-  const channels = parseCssRgbColor(color);
-  if (!channels || typeof ctx.createImageData !== "function") return false;
-  const size = Math.max(4, Math.round(radius * 2 + 4));
-  const image = ctx.createImageData(size, size);
-  const cx = (size - 1) / 2;
-  const cy = (size - 1) / 2;
-  const invR = 1 / Math.max(1e-6, radius);
-  const data = image.data;
-  let offset = 0;
-  for (let y = 0; y < size; y += 1) {
-    const ny = (y - cy) * invR;
-    for (let x = 0; x < size; x += 1) {
-      const nx = (x - cx) * invR;
-      const coverage = studioStampOssTipCoverage(kind, nx, ny, seed, hardness);
-      data[offset] = channels.r;
-      data[offset + 1] = channels.g;
-      data[offset + 2] = channels.b;
-      data[offset + 3] = (clamp01(coverage) * 255 + 0.5) | 0;
-      offset += 4;
-    }
-  }
-  if (typeof ctx.putImageData !== "function") return false;
-  ctx.putImageData(image, 0, 0);
-  return true;
-}
-
 
 /** 사용자 조절 가능한 스탬프 파라미터(부분 지정) — DrawEl.stamp 로 획에 영속화된다. */
 export interface StudioStampBrushTuning {
@@ -796,116 +624,6 @@ function stampDotPlan(
   };
 }
 
-const dabTipCanvasCache = new Map<string, HTMLCanvasElement>();
-const MAX_DAB_TIP_CACHE_SIZE = 128;
-
-export function studioStampDabTipCanvasCacheSizeForTests(): number {
-  return dabTipCanvasCache.size;
-}
-
-function getCachedDabTipCanvas(
-  kind: StudioStampBrushKind,
-  color: string,
-  radius: number,
-  hardness: number
-): HTMLCanvasElement | null {
-  const roundedRadius = Math.max(1, Math.round(radius));
-  const roundedHardness = Math.round(hardness * 20) / 20;
-  const key = `${kind}:${color}:${roundedRadius}:${roundedHardness}`;
-  const existing = dabTipCanvasCache.get(key);
-  if (existing) {
-    dabTipCanvasCache.delete(key);
-    dabTipCanvasCache.set(key, existing);
-    return existing;
-  }
-
-  if (typeof document === "undefined") return null;
-  const size = roundedRadius * 2 + 4;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = roundedRadius;
-
-  if (
-    kind === "airbrush"
-    || kind === "watercolor"
-    || kind === "crayon"
-    || kind === "chalk"
-    || kind === "charcoal"
-    || kind === "pastel"
-  ) {
-    const tipSeed =
-      (Math.imul(roundedRadius + 1, 0x9e37) ^ Math.imul(Math.round(roundedHardness * 100) + 1, 0x85eb))
-      >>> 0;
-    const baked = rasterizeOssTexturedTip(
-      ctx,
-      kind,
-      color,
-      r,
-      roundedHardness,
-      tipSeed,
-    );
-    if (!baked) {
-      // jsdom / headless stubs without ImageData — soft gradient fallback.
-      const gradient = ctx.createRadialGradient(cx, cy, r * roundedHardness * 0.85, cx, cy, r);
-      gradient.addColorStop(0, color);
-      gradient.addColorStop(1, "transparent");
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-      if (kind === "watercolor") {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = Math.max(0.25, r * 0.06);
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.94, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    }
-  } else if (kind === "mypaint") {
-    const gradient = ctx.createRadialGradient(cx, cy, r * roundedHardness * 0.5, cx, cy, r);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(0.8, color);
-    gradient.addColorStop(1, "transparent");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (kind === "krita-auto") {
-    const gradient = ctx.createRadialGradient(cx, cy, r * roundedHardness * 0.7, cx, cy, r);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(1, "transparent");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  if (dabTipCanvasCache.size >= MAX_DAB_TIP_CACHE_SIZE) {
-    const firstKey = dabTipCanvasCache.keys().next().value;
-    if (firstKey !== undefined) {
-      const evicted = dabTipCanvasCache.get(firstKey);
-      dabTipCanvasCache.delete(firstKey);
-      if (evicted) {
-        evicted.width = 1;
-        evicted.height = 1;
-      }
-    }
-  }
-  dabTipCanvasCache.set(key, canvas);
-  return canvas;
-}
-
 function drawDab(
   context: CanvasRenderingContext2D,
   style: StudioStampBrushStyle,
@@ -948,12 +666,47 @@ function drawRoundDab(
   const isRealCanvas =
     typeof window !== "undefined" &&
     typeof (context.canvas as unknown) === "object" &&
-    context.canvas !== null;
+    context.canvas !== null &&
+    typeof context.drawImage === "function";
 
   if (kind === "pencil") {
     const jx = (stampJitter(index, 11) - 0.5) * radius * 0.5;
     const jy = (stampJitter(index, 23) - 0.5) * radius * 0.5;
     const dabRadius = radius * (0.82 + 0.18 * stampJitter(index, 41));
+    if (isRealCanvas) {
+      const cached = getCachedDabTipEntry("pencil", style.color, dabRadius, hardness, index);
+      if (cached) {
+        context.globalAlpha = alpha * (0.76 + 0.24 * stampJitter(index, 37));
+        const tipScale = Number.isFinite(dabRadius) && dabRadius > 0
+          ? dabRadius / cached.bakedRadius
+          : 1;
+        const tipWidth = cached.canvas.width * tipScale;
+        const tipHeight = cached.canvas.height * tipScale;
+        const drawX = x + jx;
+        const drawY = y + jy;
+        if (
+          tipRotationRadians
+          && typeof context.translate === "function"
+          && typeof context.save === "function"
+          && typeof context.restore === "function"
+        ) {
+          context.save();
+          context.translate(drawX, drawY);
+          context.rotate(tipRotationRadians);
+          context.drawImage(cached.canvas, -tipWidth / 2, -tipHeight / 2, tipWidth, tipHeight);
+          context.restore();
+        } else {
+          context.drawImage(
+            cached.canvas,
+            drawX - tipWidth / 2,
+            drawY - tipHeight / 2,
+            tipWidth,
+            tipHeight,
+          );
+        }
+        return;
+      }
+    }
     let fillStyle: string | CanvasGradient = style.color;
     if (typeof context.createRadialGradient === "function") {
       const gradient = context.createRadialGradient(
@@ -988,8 +741,8 @@ function drawRoundDab(
   }
 
   if (isRealCanvas) {
-    const cachedTip = getCachedDabTipCanvas(kind, style.color, radius, hardness);
-    if (cachedTip) {
+    const cached = getCachedDabTipEntry(kind, style.color, radius, hardness, index);
+    if (cached) {
       let dabAlpha = alpha;
       if (kind === "mypaint") dabAlpha = alpha * 0.9;
       else if (kind === "krita-auto") dabAlpha = alpha * 0.95;
@@ -998,27 +751,24 @@ function drawRoundDab(
       else if (kind === "charcoal") dabAlpha = alpha * 0.9;
       else if (kind === "pastel") dabAlpha = alpha * 0.9;
       context.globalAlpha = dabAlpha;
-      // 촉 래스터는 캐시 적중률을 위해 정수 반지름으로 굽지만, blit 은 계획된 연속 반지름으로
-      // 되돌린다. 자연 크기로 찍으면 화면 반지름이 Math.round(radius) 로 양자화돼 1.4 는 1.0,
-      // 1.6 은 2.0, 테이퍼 하한 0.35 는 1.0(약 3배)이 되고, 같은 dab 을 정확한 radius 로 쓰는
-      // 폴백 경로(아래 arc 분기)·SVG 내보내기와 아트보드가 어긋난다. 목적 사각형을
-      // radius/roundedRadius 로 곱하면 2px 여백까지 같은 비율로 늘어나 알파 프로파일은 그대로인
-      // 채 발자국만 정확해진다.
-      const bakedRadius = Math.max(1, Math.round(radius));
-      const tipScale = Number.isFinite(radius) && radius > 0 ? radius / bakedRadius : 1;
-      const tipWidth = cachedTip.width * tipScale;
-      const tipHeight = cachedTip.height * tipScale;
-      if (tipRotationRadians && typeof context.translate === "function") {
+      // 촉 래스터는 로그 밉맵 버킷(bakedRadius)으로 굽고, blit 시 정확한 연속 radius로 스케일한다.
+      const tipScale = Number.isFinite(radius) && radius > 0 ? radius / cached.bakedRadius : 1;
+      const tipWidth = cached.canvas.width * tipScale;
+      const tipHeight = cached.canvas.height * tipScale;
+      if (
+        tipRotationRadians
+        && typeof context.translate === "function"
+        && typeof context.save === "function"
+        && typeof context.restore === "function"
+      ) {
         context.save();
         context.translate(x, y);
         context.rotate(tipRotationRadians);
-        context.drawImage(cachedTip, -tipWidth / 2, -tipHeight / 2, tipWidth, tipHeight);
+        context.drawImage(cached.canvas, -tipWidth / 2, -tipHeight / 2, tipWidth, tipHeight);
         context.restore();
       } else {
-        context.drawImage(cachedTip, x - tipWidth / 2, y - tipHeight / 2, tipWidth, tipHeight);
+        context.drawImage(cached.canvas, x - tipWidth / 2, y - tipHeight / 2, tipWidth, tipHeight);
       }
-      // Spray grit is baked into the OSS tip raster (Klecks multi-octave coverage).
-      // Extra micro-arcs would break plan/render dab-count parity contracts.
       return;
     }
   }
