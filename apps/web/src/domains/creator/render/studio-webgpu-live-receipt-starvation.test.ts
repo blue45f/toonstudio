@@ -190,6 +190,15 @@ async function liveFixture(receiptTiming: "fenced" | "synchronous" = "fenced") {
   const hostRef: { current: HostRuntime | null } = { current: null };
   const durableWrites = vi.fn();
   const autosave = vi.fn();
+  const idleTasks: Array<() => void> = [];
+  const flushPending = vi.fn(() => { pendingCommits.current = null; return true; });
+  const idleState = {
+    drawingRef: { current: null as DrawEl | null },
+    editorMountedRef: { current: true }, documentSaveInFlightRef: { current: false },
+    collaborationAccessRef: { current: { documentGeneration: 1, locked: false } },
+    currentPageIdRef: { current: "page:fixture" },
+    deferredStrokePostprocessControllersRef: { current: new Map<string, AbortController>() },
+  };
   let sequence = 0;
   let uploadedPoints: number[] = [];
   let uploadedPressures: number[] = [];
@@ -266,7 +275,9 @@ async function liveFixture(receiptTiming: "fenced" | "synchronous" = "fenced") {
   };
   const arm = vi.fn(audit.armGpuPinnedRequestWatchdog);
   const host: HostRuntime = hostScript.runInNewContext({
-    ...audit, createStudioLiveStrokeGpuAppend, isStudioBrushAliasId,
+    ...audit, ...idleState, createStudioLiveStrokeGpuAppend, isStudioBrushAliasId,
+    scheduleIdle: (run: () => void) => idleTasks.push(run),
+    flushPendingStrokeCommitsRef: { current: flushPending },
     STUDIO_GPU_LIVE_SOURCE_JOURNAL_STYLE_KEY, STUDIO_GPU_TERMINAL_RECEIPT_TIMEOUT_MS,
     gpuLiveOperationOrderKeyRef: { current: "fixture:order" },
     gpuLiveSourceJournalRef: journal, gpuLiveSourceJournalFirstStrokeIndexRef: { current: 0 },
@@ -404,7 +415,8 @@ async function liveFixture(receiptTiming: "fenced" | "synchronous" = "fenced") {
   }
   return { audit, host, begin, append, stream, cancel, resize, seal, accepted, rawReceipts,
     failures, timeouts, sessions, latest, journal, pinned, inputs, uploads, arm,
-    durableWrites, autosave, fake, evidence, expectHealthyFences };
+    durableWrites, autosave, fake, evidence, expectHealthyFences,
+    idleTasks, flushPending, idleState, pendingCommits, finalRequestIds };
 }
 
 describe("정상 40ms GPU fence와 16ms 입력의 Host 영수증 진행", () => {
@@ -542,6 +554,7 @@ describe("정상 40ms GPU fence와 16ms 입력의 Host 영수증 진행", () => 
     await vi.advanceTimersByTimeAsync(FENCE_DELAY_MS - 1);
     expect(fixture.durableWrites).not.toHaveBeenCalled();
     expect(fixture.autosave).not.toHaveBeenCalled();
+    expect(fixture.idleTasks).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(1);
     expect(fixture.host.exactFinal("stroke-a")).toBe(true);
     expect(fixture.durableWrites).toHaveBeenCalledExactlyOnceWith({ pageId: "page:fixture", id: "stroke-a",
@@ -551,7 +564,43 @@ describe("정상 40ms GPU fence와 16ms 입력의 Host 영수증 진행", () => 
     fixture.host.persist("stroke-a", final.requestId);
     await vi.advanceTimersByTimeAsync(0);
     expect(fixture.durableWrites).toHaveBeenCalledTimes(1);
+    expect(fixture.idleTasks).toHaveLength(1);
+    expect(fixture.flushPending).not.toHaveBeenCalled();
+    fixture.idleTasks.forEach(run => run());
+    expect(fixture.flushPending).toHaveBeenCalledOnce();
+    expect(fixture.pendingCommits.current).toBeNull();
   });
+
+  it.each(["펜 접촉", "저장 중", "편집 잠금", "다른 문서", "다른 페이지", "종료", "후처리", "다른 영수증", "다른 배치", "추가 획"] as const)(
+    "유휴 콜백에 %s 상태가 되면 선행 확정을 건너뛰고 기존 배치를 유지한다",
+    async reason => {
+      const fixture = await liveFixture("synchronous");
+      fixture.begin();
+      const { source } = fixture.seal();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fixture.idleTasks).toHaveLength(1);
+      const batch = fixture.pendingCommits.current;
+      if (!batch) throw new Error("완료한 획이 대기 배치에 없습니다.");
+      const state = fixture.idleState;
+      switch (reason) {
+        case "펜 접촉": state.drawingRef.current = { ...source, id: "stroke-b" }; break;
+        case "저장 중": state.documentSaveInFlightRef.current = true; break;
+        case "편집 잠금": state.collaborationAccessRef.current.locked = true; break;
+        case "다른 문서": state.collaborationAccessRef.current.documentGeneration++; break;
+        case "다른 페이지": state.currentPageIdRef.current = "another-page"; break;
+        case "종료": state.editorMountedRef.current = false; break;
+        case "후처리": state.deferredStrokePostprocessControllersRef.current.set(source.id, new AbortController()); break;
+        case "다른 영수증": fixture.finalRequestIds.set(source.id, "superseded"); break;
+        case "다른 배치": fixture.pendingCommits.current = { ...batch }; break;
+        case "추가 획": batch.strokes.push({ ...source, id: "stroke-b" }); break;
+      }
+      const expectedBatch = fixture.pendingCommits.current;
+      fixture.idleTasks.forEach(run => run());
+      expect(fixture.flushPending).not.toHaveBeenCalled();
+      expect(fixture.pendingCommits.current).toBe(expectedBatch);
+      expect(fixture.durableWrites).toHaveBeenCalledOnce();
+    },
+  );
 
   it("아직 다음 RAF에 오지 않은 pointer-up 원본 점도 terminal에 포함한다", async () => {
     const fixture = await liveFixture();

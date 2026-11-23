@@ -43,6 +43,59 @@ function selectCut() {
 function write() { fireEvent.change(screen.getByLabelText("이 버전에 의견 남기기"), { target: { value: "Move this exact cut." } }); }
 function save() { fireEvent.click(screen.getByRole("button", { name: "의견 저장" })); }
 describe("real pinned preview to spatial note integration", () => {
+  it.each(["focus", "hidden"] as const)("권한 재확인 후 같은 원고의 미저장 좌표와 연결한 의견을 이어 쓴다 (%s)", async (event) => {
+    const mounted = await mount();
+    const visibility = vi.spyOn(document, "visibilityState", "get");
+    async function reverify() {
+      let complete!: (result: StudioVirtualSpaceReviewVerification) => void;
+      f.verify.mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
+      if (event === "hidden") {
+        act(() => { visibility.mockReturnValue("hidden"); fireEvent(document, new Event("visibilitychange")); });
+        expect(screen.queryByRole("img")).toBeNull();
+        act(() => { visibility.mockReturnValue("visible"); fireEvent(document, new Event("visibilitychange")); });
+      } else fireEvent(window, new Event("focus"));
+      expect(screen.queryByRole("img")).toBeNull();
+      expect(screen.queryByLabelText("이 버전에 의견 남기기")).toBeNull();
+      await act(async () => { complete(verified()); });
+      await screen.findByLabelText("1페이지 의견 위치");
+    }
+    fireEvent.change(screen.getByLabelText("위치 방식"), { target: { value: "coordinate" } });
+    fireEvent.change(screen.getByLabelText("가로 위치 (%)"), { target: { value: "42" } });
+    write();
+    mounted.rerender(<StudioPinnedReviewPanel subject={{ rootGraphHash: subject.rootGraphHash, ...Object.fromEntries(Object.entries(subject).slice(0, -1)) } as typeof subject} />);
+    await reverify();
+    expect(screen.getByLabelText("가로 위치 (%)")).toHaveProperty("value", "42");
+    fireEvent.click(screen.getByRole("button", { name: "이 위치에 의견 연결" }));
+    await reverify();
+    expect(screen.getByLabelText("가로 위치 (%)")).toHaveProperty("value", "42");
+    expect(screen.getByRole("link", { name: "의견 작성으로 이동" })).toBeTruthy();
+    expect(screen.getByLabelText("이 버전에 의견 남기기")).toHaveProperty("value", "Move this exact cut.");
+    expect(f.create).not.toHaveBeenCalled();
+    const checks = f.verify.mock.calls.length;
+    save();
+    await waitFor(() => expect(f.create).toHaveBeenCalledOnce());
+    expect(f.verify.mock.calls.length).toBeGreaterThan(checks);
+    expect(f.create.mock.lastCall?.[1]).toMatchObject({ body: "Move this exact cut.", anchor: {
+      kind: "coordinate", x: 336, y: 600, source: { pageOrdinal: 0, pageId: "page-0", sourceContentDigest: subject.rootGraphHash },
+    } });
+  });
+  it.each(["digest", "permission"] as const)("이미지나 접근 권한이 바뀌면 이전 위치로 저장할 수 없다 (%s)", async (change) => {
+    await mount(); selectCut(); write();
+    if (change === "permission") {
+      f.verify.mockResolvedValueOnce({ ok: false, reason: "access-denied" });
+      await act(async () => { fireEvent(window, new Event("focus")); });
+      expect(screen.queryByRole("img")).toBeNull();
+      expect(screen.queryByRole("button", { name: "의견 저장" })).toBeNull();
+    } else {
+      f.read.mockImplementation(async () => ({ ok: true, subject, previews: [{ ...preview(), sha256: secondHash }], nextCursor: null }));
+    }
+    await act(async () => { fireEvent(window, new Event("focus")); });
+    await screen.findByLabelText("1페이지 의견 위치");
+    expect(screen.getByLabelText("위치 방식")).toHaveProperty("value", "page");
+    expect(screen.getByRole("button", { name: "의견 저장" })).toHaveProperty("disabled", true);
+    expect(screen.queryByRole("link", { name: "의견 작성으로 이동" })).toBeNull();
+    expect(f.create).not.toHaveBeenCalled();
+  });
   it("stores the explicit cut source and immutable review pin without inventing graph panel scope", async () => {
     await mount(); selectCut(); write(); expect(f.create).not.toHaveBeenCalled(); save();
     await waitFor(() => expect(f.create).toHaveBeenCalledOnce());

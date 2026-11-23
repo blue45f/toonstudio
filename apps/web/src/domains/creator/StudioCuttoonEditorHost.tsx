@@ -8407,12 +8407,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const flushPendingStrokeCommitsRef = useRef<() => boolean>(() => true);
   const discardPendingStrokeCommitsRef = useRef<() => void>(() => {});
   // GPU 파인 획의 지연 표면 유지: 커밋 동기화 전까지 엔진에 함께 공급되는 확정 획들.
-  /**
-   * Set only while a pointer-down is completing the PREVIOUS stroke's deferred commit. The flush
-   * normally refuses to run while a stroke is armed (a commit render must never interrupt a
-   * gesture); at admission time the new stroke has not painted anything yet, and the previous
-   * stroke's idle window is over by definition.
-   */
+  // 새 획을 받는 pointerdown이 직전 획을 확정할 때만 활성화한다.
+  // 이미 그리고 있는 획의 도중에는 커밋 렌더가 끼어들 수 없다.
   const strokeAdmissionCommitFlushRef = useRef(false);
   const pendingGpuStrokesRef = useRef<StudioGpuStroke[]>([]);
   // Symmetry can fan one DrawEl out to several GPU operations. Retain that exact grouping so a
@@ -8491,31 +8487,24 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     );
   }
 
-  function persistAcceptedSelectedGpuFinalReceipt(
-    strokeId: string,
-    requestId: string,
-  ): void {
+  function persistAcceptedSelectedGpuFinalReceipt(strokeId: string, requestId: string): void {
     if (gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId) return;
     if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
     if (gpuFinalReceiptStrokeRef.current?.id === strokeId) {
-      // An asynchronous post-contact receipt still owns the pointer-down watchdog epoch. Feed the
-      // exact identity before durability work; stale receipts cannot clear this deadline.
+      // 종료 영수증이 이 획의 것일 때만 watchdog을 해제한다.
       gpuPinReceiptWatchdog().receipt(requestId);
       applyLiveStrokeBackendPresentationEffects();
     }
     globalThis.queueMicrotask(() => {
       const pending = pendingStrokeCommitsRef.current;
       const stroke = pending?.strokes.find((candidate) => candidate.id === strokeId);
-      if (!pending || !stroke) return;
+      if (!pending || !stroke || gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId) return;
       if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
-      if (gpuFinalCrdtPublishedRequestIdsRef.current.get(strokeId) !== requestId) {
+      const firstPublication = gpuFinalCrdtPublishedRequestIdsRef.current.get(strokeId) !== requestId;
+      if (firstPublication) {
         try {
-          // The pointer-release path cancelled its scheduled live suffix before it could flush.
-          // Replace/finalize the exact completed record now that the selected GPU operation has
-          // material proof; no speculative CRDT geometry becomes a durable finalized stroke.
-          studioCrdtDocumentRef.current?.replaceStroke(
-            studioDrawElementToCrdtStroke(pending.pageId, stroke),
-          );
+          // pointerup이 취소한 live suffix까지 포함한 최종 기록을 정확한 GPU 영수증으로 확정한다.
+          studioCrdtDocumentRef.current?.replaceStroke(studioDrawElementToCrdtStroke(pending.pageId, stroke));
           gpuFinalCrdtPublishedRequestIdsRef.current.set(strokeId, requestId);
         } catch (cause) {
           setError(
@@ -8528,6 +8517,17 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         }
       }
       persistPendingStrokeEmergencyAutosaveRef.current("pointerup");
+      if (!firstPublication || pending.strokes.length !== 1) return;
+      const generation = collaborationAccessRef.current.documentGeneration;
+      scheduleIdle(() => {
+        if (!editorMountedRef.current || drawingRef.current || documentSaveInFlightRef.current) return;
+        const access = collaborationAccessRef.current;
+        if (access.locked || access.documentGeneration !== generation || currentPageIdRef.current !== pending.pageId) return;
+        if (pendingStrokeCommitsRef.current !== pending || pending.strokes.length !== 1 || pending.strokes[0] !== stroke) return;
+        if (deferredStrokePostprocessControllersRef.current.has(strokeId)) return;
+        if (gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId || !hasExactSelectedGpuFinalReceipt(strokeId)) return;
+        flushPendingStrokeCommitsRef.current();
+      });
     });
   }
 
@@ -9444,9 +9444,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     draftPreviewStoreRef.current.setActive(null);
     setLiveDraftShapeKind(null);
   };
-  /** 마지막 획 후 이 유휴가 지나면 대기 배치를 한 번의 React 커밋으로 동기화한다.
-   *  Keep this longer than a follow-up pointerdown (verify warmup + next stroke arming) so the
-   *  39k-line page render cannot overlap the next stroke as a >=50ms long task. */
+  /** 종료 영수증을 받은 단일 GPU 획은 유휴 틈에 먼저 확정한다. 나머지 배치는 이 타이머가 처리한다. */
   const DEFERRED_STROKE_COMMIT_IDLE_MS = 2_000;
   const DEFERRED_STROKE_COMMIT_RETRY_MS = 500;
   const DEFERRED_STROKE_COMMIT_MAX_RETRIES = 4;
