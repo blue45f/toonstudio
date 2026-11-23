@@ -9,6 +9,12 @@ import { cx } from "@/shared/lib/cx";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { requestSiteOstPanelToggle } from "@/shared/lib/site-background-music";
+import {
+  attachPageTactileFeedback,
+  createTactileAudioSynthesizer,
+  triggerTactileFeedback,
+  type TactileAudioSynthesizer,
+} from "@/shared/lib/tactile-touch-audio/touch-drag-physics";
 import { useTheme } from "@/shared/lib/theme";
 
 import "./ui/floating-menu.css";
@@ -101,8 +107,25 @@ export function FloatingControls({
   const rootRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tactileSynthRef = useRef<TactileAudioSynthesizer | null>(null);
   const mobilePanelId = useId();
   const collapsible = COLLAPSIBLE[placement];
+
+  // 전 페이지 인터랙션에 옵트인 촉각 사운드/마이크로 햅틱을 연결하고 언마운트 시 AudioContext를 정리한다.
+  useEffect(() => {
+    const synth = createTactileAudioSynthesizer({ enabled: false });
+    tactileSynthRef.current = synth;
+    const detach = attachPageTactileFeedback({ synthesizer: synth, hapticsEnabled: true });
+    return () => {
+      detach();
+      synth.dispose();
+      tactileSynthRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    tactileSynthRef.current?.setEnabled(soundOn);
+  }, [soundOn]);
 
   const clearHideTimer = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -190,8 +213,23 @@ export function FloatingControls({
   }, [closeMobilePanel, open]);
 
   const toggleSound = () => {
+    const nextSoundOn = !soundOn;
     if (fx.audio.muted) fx.setMuted(false);
-    fx.setSfxEnabled(!soundOn);
+    fx.setSfxEnabled(nextSoundOn);
+    tactileSynthRef.current?.setEnabled(nextSoundOn);
+    triggerTactileFeedback(nextSoundOn ? "confirm" : "tap", {
+      soundEnabled: nextSoundOn,
+      synthesizer: tactileSynthRef.current ?? undefined,
+    });
+  };
+
+  const handleToggleTheme = () => {
+    toggleTheme();
+    triggerTactileFeedback("snap", {
+      soundEnabled: soundOn,
+      soundKind: "switch",
+      synthesizer: tactileSynthRef.current ?? undefined,
+    });
   };
 
   const ostLabel = bt("오리지널 OST 열기", "Open the original OST");
@@ -209,6 +247,7 @@ export function FloatingControls({
           aria-pressed={soundOn}
           title={soundOn ? t("control.sound.disable") : t("control.sound.enable")}
           data-no-sfx
+          data-tactile-handled="true"
           className={cx(
             PILL,
             soundOn ? "ts-float-active" : "text-fg-2 hover:text-fg"
@@ -222,10 +261,11 @@ export function FloatingControls({
       {showTheme && (
         <button
           type="button"
-          onClick={toggleTheme}
+          onClick={handleToggleTheme}
           aria-label={isDark ? t("control.theme.light") : t("control.theme.dark")}
           aria-pressed={isDark}
           title={isDark ? t("control.theme.light") : t("control.theme.dark")}
+          data-tactile-handled="true"
           className={cx(PILL, "text-fg-2 hover:text-fg")}
         >
           {isDark ? <Sun size={16} /> : <Moon size={16} />}
@@ -253,6 +293,7 @@ export function FloatingControls({
       data-floating-controls="true"
       data-floating-controls-mobile={mobileMode === "menu" ? "disabled" : undefined}
       data-floating-controls-open={open || undefined}
+      data-tactile-audio={soundOn ? "enabled" : "muted"}
       className={cx(PLACEMENT_CLASS[placement], className)}
       onMouseEnter={hold}
       onMouseLeave={scheduleHide}
@@ -283,7 +324,15 @@ export function FloatingControls({
             ref={toggleRef}
             type="button"
             data-floating-controls-toggle
-            onClick={() => setOpen((value) => !value)}
+            data-tactile-handled="true"
+            onClick={() => {
+              const nextOpen = !open;
+              setOpen(nextOpen);
+              triggerTactileFeedback(nextOpen ? "lift" : "tap", {
+                soundEnabled: soundOn,
+                synthesizer: tactileSynthRef.current ?? undefined,
+              });
+            }}
             aria-expanded={open}
             aria-controls={open ? mobilePanelId : undefined}
             aria-label={open ? t("control.settings.close") : bt("화면·언어·OST 설정", "Display, language and OST settings")}
@@ -303,8 +352,13 @@ export function FloatingControls({
               <button
                 type="button"
                 data-floating-ost-toggle
+                data-tactile-handled="true"
                 onClick={() => {
                   setOpen(false);
+                  triggerTactileFeedback("confirm", {
+                    soundEnabled: soundOn,
+                    synthesizer: tactileSynthRef.current ?? undefined,
+                  });
                   requestSiteOstPanelToggle();
                 }}
                 aria-label={ostLabel}
