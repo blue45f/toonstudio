@@ -25,8 +25,8 @@ concurrency:
 env:
   # Root replaces both placeholders with the reviewed source checkpoint.
   # That checkpoint must already contain the helper and its contract tests.
-  SOURCE_COMMIT: "3ddb1401276f8da5929d3e9c05a4e185ae0dc3dc"
-  SOURCE_TREE: "3c9105572e8b093d3f640a2f11904a644ecf54de"
+  SOURCE_COMMIT: "26811611ae029fcde95590d714601f172cdd6e49"
+  SOURCE_TREE: "0ddea2324433be0c1820f550c9464ae3f645c8b3"
   RUSTUP_TOOLCHAIN: "1.97.1"
   CARGO_BUILD_JOBS: "2"
   NODE_OPTIONS: --max-old-space-size=4096
