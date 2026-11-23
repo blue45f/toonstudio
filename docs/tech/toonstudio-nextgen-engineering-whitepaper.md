@@ -3,7 +3,7 @@
 > **"설치 0초의 브라우저 탭 하나에 WebGPU 분광 물감, Rust WASM 자연매체, 결정론적 Remotion 영상 파이프라인, WebHID 왼손 다이얼, 차세대 크롬 플랫폼 API까지 어떻게 다 우겨 넣었을까?"**
 
 - **문서 상태**: `current` (2026-11-23 저장소 실측 기준, 단 각 장·표마다 `current` / `migration` / `target` 경계를 엄격히 분리 표기)
-- **작성 기준일**: `2026-11-23` (Wave 8~10 `main` 반영 + Wave 11 병렬 통합 트랙 기준)
+- **작성 기준일**: `2026-11-23` (Wave 8~16 `main` 반영 및 Wave 15~16 병렬 통합 트랙 실측 기준)
 - **대상 독자**: 프런트엔드·그래픽스·시스템 엔지니어, 테크니컬 프로덕트 매니저(PM), 웹툰 프로덕션 파이프라인 설계자
 - **정직성 원칙**: 이 백서의 모든 코드 경로, 셰이더 상수, 거버넌스 수치는 실제 저장소 소스와 검증 스크립트에 근거한다. 아직 구현되지 않은 차세대 디바이스·API 계획은 `target`으로 분리하며, 완성된 기능처럼 포장하지 않는다.
 
@@ -22,7 +22,11 @@
 9. [Wave 8·9·10·11 차세대 기술 총괄 아키텍처 (발표용 마스터 요약)](#9-wave-891011-차세대-기술-총괄-아키텍처-발표용-마스터-요약)
 10. [풀스택 유·무료 라이브러리 전수 비교 & 클린룸 내재화 전략](#10-풀스택-유무료-라이브러리-전수-비교--클린룸-내재화-전략)
     - 10.5 [루트 설정 파일 · 스크립트 · ENV 그룹핑 맵](#105-루트-설정-파일--스크립트--env-그룹핑-맵-current)
-11. [연관 정본 문서](#11-연관-정본-문서)
+11. [Rust + WebAssembly 64-bit (`memory64`) 코어 엔진 & Vello GPU 아키텍처](#11-rust--webassembly-64-bit-memory64-코어-엔진--vello-gpu-아키텍처)
+12. [12대 매체별 물리 브러시 질감 전략 & 광학 혼색·2.5D 임파스토·이종 매체 상호작용](#12-12대-매체별-물리-브러시-질감-전략--광학-혼색25d-임파스토이종-매체-상호작용)
+13. [O(1) 256×256 타일 베이킹 · O(Δ) 라이브=커밋 패리티 · 실시간 Foley 필기음 & 필기감 VFX](#13-o1-256256-타일-베이킹--oδ-라이브커밋-패리티--실시간-foley-필기음--필기감-vfx)
+14. [WebGPU 제로 카피 필터·ARAP 변형·다중 사용자 CRDT 동시 스케치 & 장시간 소크 검증 체계](#14-webgpu-제로-카피-필터arap-변형다중-사용자-crdt-동시-스케치--장시간-소크-검증-체계)
+15. [연관 정본 문서](#15-연관-정본-문서)
 
 ---
 
@@ -652,7 +656,169 @@ pnpm run scripts:help -- --json           # 자동화·도구 연동용 구조�
 
 ---
 
-## 11. 연관 정본 문서
+## 11. Rust + WebAssembly 64-bit (`memory64`) 코어 엔진 & Vello GPU 아키텍처
+
+웹툰 세로 스크롤 원고(폭 800~2,400px × 높이 20,000~60,000px, 수십 장의 래스터·마스크·조정 레이어)와 대형 PSD·3D 에셋을 다룰 때 기존 32비트 WebAssembly(`wasm32`)는 **4 GiB 선형 주소 공간 상한**과 JS 힙 직렬화 복사 비용이라는 벽에 부딪힌다. ToonStudio는 **Linebender Vello GPU 렌더러(`crates/studio-engine-vello`)**, **Wasm 3.0 `memory64` 선형 메모리 런타임(`StudioWasmLinearMemoryRuntime`)**, **무의존 순수 Rust 드로잉 코어(`crates/studio-wasm64-drawing-core`, Wave 16 통합 트랙)**를 결합해 브라우저 안에서 네이티브 앱급 처리량과 결정론적 메모리 안전성을 동시에 확보한다.
+
+### 11.1 Vello GPU · Sparse-Strip 하이브리드 & `memory64` 이중 엔진 구조
+
+```mermaid
+flowchart TD
+  JS["TypeScript Studio 런타임<br/>StudioWasmLinearMemoryRuntime (current)<br/>i64 주소 16 GiB 가상 상한 · 1 GiB 물리 워킹셋 예산"]
+
+  subgraph VelloCrate["crates/studio-engine-vello (current)"]
+    VCpu["vello_cpu 0.3.0<br/>결정론 CPU 기준 렌더러 · SceneIR JSON -> RGBA8"]
+    VGpu["vello 0.12 + vello_hybrid 0.2<br/>wgpu 30.0.1 toon-fabric<br/>Device::from_webgpu_handle 제로카피 채택"]
+    VText["parley 0.13 + harfrust 0.16 + skrifa 0.44<br/>세로쓰기 GSUB vert/vrt2 · Kurbo 3차 베지어 피팅"]
+  end
+
+  subgraph Core64["crates/studio-wasm64-drawing-core (migration · Wave 16)"]
+    BrushK["brush_kernel.rs<br/>KM 광학 혼색 · 2층 종이 높이장 · 임파스토 Sobel"]
+    FilterK["filter_warp_kernel.rs<br/>경계차단 가우시안 · 언샤프 · 다중핀 ARAP/MLS"]
+    TileK["vector_psd_tile_kernel.rs<br/>RDP+3차 베지어 벡터화 · 8BPS PSD 스트리밍 · 64비트 타일 스와퍼"]
+  end
+
+  OPFS["OPFS SQLite + 256×256 타일 백킹 스토어<br/>64 MiB 슬라이딩 윈도우 스왑 · GC 할당 최소화"]
+
+  JS -->|"SceneIR / PathIR / Font"| VelloCrate
+  JS -->|"memory64 i64 오프셋 (미지원 시 Wasm32 명시 폴백)"| Core64
+  Core64 <-->|"256×256 가상 타일 스왑-인/아웃"| OPFS
+  VGpu -->|"단일 WebGPU 디바이스 공유"| GPU["브라우저 WebGPU Compute / Texture"]
+```
+
+### 11.2 핵심 모듈별 기술 원리 & 상태 구분 (`current` · `migration` · `target`)
+
+| 구성 요소 | 상태 | 핵심 구현 원리 및 아키텍처 제약 | 저장소 근거 |
+| --- | --- | --- | --- |
+| **Vello CPU/GPU 하이브리드 크레이트** | `current` | `vello_cpu 0.3.0` 기준 렌더러(`render_scene_json`), `fit_polyline_json`(Kurbo 3차 베지어 피팅), `shape_text_json`(`parley` + `harfrust` 세로쓰기 GSUB `vert`/`vrt2`). `pkg-gpu` 빌드(`--features hybrid,lottie,svg`)에서는 `crates/vendor/wgpu-toon`(TOON-PATCH 0001)의 `Device::from_webgpu_handle`로 브라우저 WebGPU 디바이스를 직접 채택해 텍스처 복사를 차단하고, `velato`(Lottie)·`vello_svg`(SVG)를 같은 GPU 씬으로 내린다. | [`crates/studio-engine-vello/Cargo.toml`](../../crates/studio-engine-vello/Cargo.toml), [`lib.rs`](../../crates/studio-engine-vello/src/lib.rs), [`gpu_web.rs`](../../crates/studio-engine-vello/src/gpu_web.rs) |
+| **Wasm 3.0 `memory64` 선형 메모리 런타임** | `current` | `StudioWasmLinearMemoryRuntime`과 `StudioWasm64MemoryManager`는 세 가지 사실을 엄격히 분리한다: ① `0x05` (`maximum | memory64`) 플래그 모듈 검증, ② 실제 `WebAssembly.Memory({ address: "i64", initial, maximum })` 1페이지(`64 KiB`) `bigint` 증설 확인, ③ 웹 표준 가상 주소 상한(`16 GiB`)과 실제 물리 워킹셋 예산(기본 `1 GiB`, 단일 뷰 상한 `256 MiB`, 기본 슬라이딩 윈도우 `64 MiB`) 분리. `growToFit()`마다 `viewGeneration` 토큰을 올려 detached `ArrayBuffer` 참조 버그를 막는다. Chrome 133+ · Firefox 134+ · Node 24+에서 동작하며, 미지원 환경(Safari 등)은 명시적 `memory32-requested`로 분리된다. | [`studio-wasm64-memory-governor.ts`](../../apps/web/src/domains/creator/studio-wasm64-memory-governor.ts) |
+| **순수 Rust 무의존 드로잉 코어 (`#![forbid(unsafe_code)]`)** | `migration` (Wave 16 Track 1) | 외부 crates.io 의존성 **0개**(`MIT OR Apache-2.0`, 오프라인 재현 빌드 보장)로 `brush_kernel.rs`·`filter_warp_kernel.rs`·`vector_psd_tile_kernel.rs`를 구현한다. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`, `wasm32-unknown-unknown --release`까지 검증한다. | `crates/studio-wasm64-drawing-core/` (Wave 16 병렬 트랙) |
+| **4 GiB+ 가상 주소 타일 스와퍼 & 대용량 PSD 스트리밍** | `migration` (Wave 16 Track 1) | 64비트 `u64` 글로벌 타일 주소 공간(`VirtualTileSwapper64` / `Wasm64VirtualTileSwapper`)으로 상주 예산 초과 타일을 OPFS로 자동 스왑아웃한다. 대형 PSD 파일은 전체 버퍼를 JS 힙에 복제하지 않고 `8BPS` 바이너리 시그니처·폭·높이·채널·심도·컬러모드·레이어 섹션 오프셋을 스트리밍으로 먼저 파싱한다(`parse_psd_header_streaming`). | `crates/studio-wasm64-drawing-core/`, `apps/web/src/domains/creator/wasm64-drawing-engine/` |
+| **실시간 선화 벡터라이징 · 부울 연산 · 비동기 히스토리** | `current` (Kurbo·`manifold-3d`·`polygon-clipping`) / `migration` (Wasm64 코어·비동기 델타 직렬화) | 고속 프리핸드 폴리라인을 Ramer-Douglas-Peucker 단순화 + 3차 베지어 곡선으로 실시간 벡터화하고(`fit_polyline_json`, `vectorize_stroke_to_cubic_beziers`), 2D/3D 부울 연산은 `polygon-clipping`·`manifold-3d`로 처리한다. Undo/Redo 히스토리는 타일 단위 바이너리 델타(`AsyncDeltaHistorySerializer`)로 비동기 직렬화해 메인 스레드 멈춤을 방지한다. | [`crates/studio-engine-vello/src/lib.rs`](../../crates/studio-engine-vello/src/lib.rs), `apps/web/src/domains/creator/wasm64-drawing-engine/` |
+| **네이티브 `wasm64-unknown-unknown` 풀 릴리스 빌드** | `target` | Rust 안정 채널(`stable`)에서 `wasm64-unknown-unknown` 표준 라이브러리 배포와 Safari `memory64` 정식 지원이 완료되면, 현재 TS `memory64` 인코더 + `wasm32` Rust 아티팩트 이중 구조를 단일 `wasm64` Rust 릴리스 아티팩트로 통합한다. | 로드맵 (`target`) |
+
+---
+
+## 12. 12대 매체별 물리 브러시 질감 전략 & 광학 혼색·2.5D 임파스토·이종 매체 상호작용
+
+디지털 브러시가 "플라스틱 도장처럼 보인다"는 불만은 해상도 부족 때문이 아니다. 종이 결이 붓을 따라 같이 끌려가거나(화면 고정 실패), 원형 스탬프가 격자 패턴으로 겹치거나, 파랑과 노랑이 탁한 회색으로 섞이거나, 크레파스 위에 수채를 칠해도 아무 반응이 없을 때 이질감이 생긴다. ToonStudio는 **12대 화구 매체별 물리 모델**, **월드 좌표 2층 종이 높이장**, **듀얼 브러시 3중 곱셈**, **7밴드 쿠벨카-문크 광학 혼색**, **2.5D 임파스토 & 이종 매체 상호작용**으로 이 문제를 정면으로 풀었다.
+
+### 12.1 12대 매체별 물리 질감 전략 매트릭스 (`current` 기반 · `migration` Wave 15B/16 물리 확장)
+
+| # | 매체 카테고리 | 핵심 물리 질감 전략 | 종이 결 모드 | 광학 혼색 · 높이 · 상호작용 특성 |
+| --- | --- | --- | --- | --- |
+| 1 | **`pencil` (연필 · 색연필)** | 28° 사선 마모 흑연 심 + 종이 봉우리(peak) 우선 포착 + 기울기 음영(`tiltDeg > 28°`) | `fixed-world` (고정 결) | 저필압 흰 종이 골짜기 보존, 떡지우개 봉우리 리프트·찰필 문지름 반응 |
+| 2 | **`crayon` (크레파스 · 오일파스텔)** | 불규칙 다중 로브 왁스 덩어리 + 고대비 피크-캐치(진짜 0 골짜기) + 외곽 왁스 크럼 | `fixed-world` (고정 결) | `Float32Array` 왁스 발수 마스크 생성 → 위에서 수채 덧칠 시 **왁스 레지스트** 발현 |
+| 3 | **`charcoal` (목탄 · 콘테)** | 압축 목탄 사각 단면 + 모서리 파절 결 + 굵은 황목 종이 골짜기 포착 | `rolling-tip` (붓 굴림) | 높은 스머지/번짐 반응성, 기울기 타원 확대(실측 `2.33×`) |
+| 4 | **`pastel` (소프트 파스텔)** | 다공성 분필 입자 클러스터 + 벨벳 건식 확산 + 붓 굴림 결 | `rolling-tip` (붓 굴림) | 부드러운 건식 층 혼색, 저/중/고 필압 톤 분리 |
+| 5 | **`gpen-ink` (G펜 · 마루펜 · 만화 잉크)** | 탄성 분할 펜촉(slit nib) + 속도 연동 테이퍼 + 고대비 선명 에지 | `fixed-world` (0% 번짐) | 저필압 극세선, 고필압 선명한 잉크 팽창, 고속 잉크 탄성 테일 |
+| 6 | **`watercolor` (수채화 · 수묵)** | 모세관 종이 골짜기 스며들기(diffusion) + 마르는 경계 안료 농축(**웨트 엣지 백런 링**) | `fixed-world` (골짜기 유입) | 7밴드 Kubelka-Munk 감산 혼색(청+황 → 자연 초록), 왁스 위 발수 |
+| 7 | **`oil-impasto` (유화 · 임파스토)** | 48개 개별 돈모(bristle) 다발 + 붓자국 고랑 높이 버퍼 축적 | `rolling-tip` (붓모 방향) | 2.5D 높이맵 3×3 Sobel 법선 실시간 광원(스페큘러 하이라이트 + 골 그림자) |
+| 8 | **`acrylic-gouache` (아크릴 · 과슈)** | 높은 불투명 피복력 + 중간 임파스토 질감 + 빠른 건조 경계 | `rolling-tip` | 밑색 은폐력 우선, 붓모 관성 유지 및 후반부 안료 고갈 갈필 |
+| 9 | **`marker` (알코올 마커 · 코픽)** | 사선 치즐 펠트 닙 + 미세 섬유 끝단 + 승산(Multiply) 겹칠 농도 누적 | `fixed-world` (매끈한 브리스톨) | 균일 플랫 워시, 겹칠 횟수에 비례한 자연스러운 음영 단계 |
+| 10 | **`airbrush` (에어브러시 · 스프레이)** | 부드러운 가우시안 감쇠 + 미세 분무 노이즈 + 디더링(0% 밴딩) | 무결(확산 분무) | 낮은 에지 선명도, 그라데이션·역광 글로우 연출 |
+| 11 | **`blending-stump` (찰필 · 스머지)** | 주변 안료 픽업 + 진행 방향 종이 골짜기 속으로 부드럽게 문지름 | `fixed-world` | 연필·목탄·파스텔 입자를 흰 종이 골짜기로 밀어 넣어 부드러운 그라데이션 형성 |
+| 12 | **`kneaded-eraser` (떡지우개 · 지우개)** | 필압에 비례해 **종이 봉우리(높은 곳)의 흑연부터** 부드럽게 들어 올림 | `fixed-world` | 한 번에 하얗게 밀지 않고 종이 결 하이라이트와 반사광을 자연스럽게 복원 |
+
+### 12.2 6대 핵심 물리 메커니즘 & 정량 오라클 실측 (`current` + `migration`)
+
+1. **월드 좌표 2층 심리스 종이 높이장 (`migration`, `brush-physics-pro/world-paper-heightfield.ts`)**: 저주파 매크로 종이 골짜기(주기 도메인 워핑 fBm)와 고주파 마이크로 방향성 섬유 결을 2층으로 합성해 `256×256` 심리스 타일 LUT에 사전 캐싱한다. `kent`, `cold-press`, `rough-cotton`, `sketchbook-tooth`, `linen-canvas` 5종 용지를 매 댑 `O(1)`으로 조회한다.
+2. **듀얼 브러시 3중 곱셈 공식 (`migration`)**:
+   $$\text{Coverage}(x, y) = \text{PrimaryTip}(u, v) \times \text{WorldPaperTooth}(x, y) \times \text{SecondaryTextureMask}(\tilde{u}, \tilde{v})$$
+   건식 고정 결(`fixed-world`)은 캔버스 월드 좌표를 잠가 연필·크레파스가 종이 위를 긁는 감각을 살리고, 붓 굴림 결(`rolling-tip`)은 스트로크 진행 거리와 회전각을 따라 2차 텍스처를 굴려 파스텔·목탄·거친 붓의 입체감을 만든다.
+3. **7밴드 쿠벨카-문크(Kubelka-Munk) 광학 혼색 (`current`)**: [`studio-webgpu-km7-spectral-core.ts`](../../apps/web/src/domains/creator/render/studio-webgpu-km7-spectral-core.ts)와 [`studio-webgpu-km7-compute-wgsl.ts`](../../apps/web/src/domains/creator/render/studio-webgpu-km7-compute-wgsl.ts)가 비상업 `mixbox`를 0바이트 배제한 1차 원리 7파장(`[420..670]nm`) 흡수·산란 비($K/S = (1-R)^2 / 2R$)로 감산 혼색을 계산해 파랑+노랑에서 탁한 회색 대신 맑은 초록을 재현한다.
+4. **이종 매체 상호작용 & 2.5D 임파스토 광원 (`current` WGSL · `migration` 물리 커널)**: 크레파스 왁스 마스크 위에 수채를 덧칠하면 `wax-resist`가 물감을 밀어내고 빈 종이 골짜기에만 안료를 남긴다. 유화/아크릴은 높이 버퍼(`Float32Array`)에 붓모 고랑을 쌓고 3×3 Sobel 법선으로 방향광 하이라이트와 그림자를 1패스로 셰이딩한다([`wgsl-compute-shaders.ts`](../../apps/web/src/domains/creator/webgpu-zero-copy-studio/wgsl-compute-shaders.ts)).
+5. **안료 고갈 갈필 게이지 & 붓모 관성 (`migration`, Wave 16 Track 2 `brush-master-audit`)**: 획 길이(px)·필압·종이 거칠기에 따라 붓끝 물감·수분 잔량이 단조 감소해 후반부가 갈필(dry-brush bristle split)로 갈라지며, 급회전 시 붓모 각도가 물리 관성(`stepBristleDirectionInertia`)으로 매끄럽게 따라 돈다.
+6. **전 카탈로그 시각 중복 제거 & 이름↔질감 1:1 정합성 감사 (`current` 60종 감사 · `migration` 전 카탈로그 감사)**: 64×32 표준 스트로크 지문을 렌더링해 브러시 이름/카테고리에서 기대되는 물리 벡터(예: 연필 `toothContrast >= 0.25`, G펜 `edgeSharpness >= 0.70`, 수채 `wetBleed >= 0.35`)와 실제 출력을 자동 대조하고, `pairwiseRmse < 0.025` 중복 쌍과 불일치 항목에 `recommendedPhysicsPatch`를 산출한다.
+
+> **Wave 15B 정량 오라클 실측 (`2026-11-23`, 병렬 트랙 `f7be74c5` 보고 기준 — 5종 용지 × 2결 모드 10/10 PASS)**:
+> - 종이 이빨 대비(`paperToothContrastIndex`): `0.2329` (`cold-press`, 기준 `>= 0.080`)
+> - 격자 주기성 억제(`gridPeriodicityScore`): `0.1329` (기준 `< 0.350`, 대조군 격자 스탬프 `1.0000`)
+> - 저/중/고 필압 톤 분리(`pressureToneSeparation`): `0.1586` (기준 `>= 0.080`)
+> - 웨트 엣지 백런 링 비율(`wetEdgeRingRatio`): `1.1162×` (기준 `> 1.050×`)
+> - 왁스 레지스트 발수율(`waxResistRejectionRatio`): `0.8798` (`88.0%`, 기준 `> 0.650`)
+> - 12종 혼합 브러시 `1024×1024` 더티 타일 합성 `p95`: `1.432 ms` (기준 `<= 4.00 ms`)
+
+---
+
+## 13. O(1) 256×256 타일 베이킹 · O(Δ) 라이브=커밋 패리티 · 실시간 Foley 필기음 & 필기감 VFX
+
+고품질 브러시를 구현하고도 200획만 넘어가면 캔버스가 버벅이거나, 그릴 때(Live)와 손을 뗀 뒤(Committed)의 선 굵기·질감이 달라지면 프로 작가는 즉시 도구를 떠난다. ToonStudio는 **렌더링 복잡도 O(1)/O(Δ) 구조화**와 **청각(Foley)·시각(VFX)·촉각(필압/Coalesced) 실시간 필기감**을 한 세트로 묶어 해결했다.
+
+### 13.1 로그 밉맵 캐시 · 블루노이즈 격자 제거 · O(1) 베이킹 · O(Δ) 패리티
+
+```mermaid
+flowchart LR
+  Pen["스타일러스 120~240Hz<br/>getCoalescedEvents + 3단 필압 커브<br/>(soft 0.68 · standard 1.0 · firm 1.48)"]
+  Delta["O(Δ) 증분 델타 라이브 버퍼<br/>직전 커밋 이후 신규 구간(Δpoints)만 스탬핑<br/>로그 밉맵 캐시 [8,16,32,64] + R2 블루노이즈"]
+  Baker["O(1) 256×256 타일 비트맵 베이커<br/>64 MiB LRU 상한 · Undo 시 영향 타일만 무효화<br/>pointerup 재래스터화 0회 -> 오차 0.0000"]
+  Sensory["실시간 필기감 레이어 (비출력 0% 혼입)<br/>Web Audio Foley '슥삭슥삭' (current)<br/>Zero-Alloc 160입자 SoA 닙 VFX (migration)"]
+
+  Pen --> Delta -->|"pointerup 직접 합성"| Baker
+  Pen -.->|"36ms / 2.5px 스로틀 · 유휴 0% CPU"| Sensory
+```
+
+- **로그 밉맵 팁 캐시 & 스래싱 0건 (`migration`, Wave 15 `7bb61c7f` · Wave 15B `d0da8b09`)**: 필압이 미세하게 변할 때마다 매 댑마다 새 반지름 팁을 굽는 대신, 로그 밉맵 버킷(`[8, 16, 32, 64]px`)과 4-위상 회전 변주(`Phase 0..3`, LRU `512` 상한)로 양자화하고 연속 반지름은 정확 스케일 blit(`radius / bakedRadius`)한다. 4,000px 장시간 혼합 스트로크 실측에서 코어 스탬프 10종 캐시 적중률 **`99.5~99.8%`**, `createRadialGradient` **0회**, eviction **0건**, 최대 스트로크 시간 **`10.25 ms`**를 달성했다.
+- **R2 플라스틱 상수 블루노이즈 격자 제거 (`migration`)**: 스탬프 간격과 종이 텍스처 주기가 정렬되어 나타나는 도장 격자(lattice/checkerboard)를 막기 위해 결정론적 2D R2 준난수 서브픽셀 지터를 적용하고, `sponge` 팁을 정방 셀에서 황금각 회전 보로노이 기공으로 교체했다.
+- **O(1) 256×256 타일 베이킹 & O(Δ) 라이브=커밋 패리티 (`migration`, Wave 15C `brush-baked-cache`)**: 커밋된 획을 매 프레임 `O(N strokes)`로 다시 그리지 않고 `256×256` 타일 백킹 스토어(`LayerStrokeBitmapBaker`, 상한 `64 MiB`)에 1회만 베이킹한다. 라이브 드로잉 중에는 `IncrementalDeltaStrokeBuffer`가 직전 샘플 이후의 신규 구간(`Δpoints`)만 증분 스탬핑하고, `pointerup` 시 재래스터화 없이 라이브 버퍼를 베이커 타일에 그대로 합성해 **Live === Committed 픽셀 오차 `0.0000`**을 수학적으로 보장한다.
+
+### 13.2 실시간 Web Audio Foley 필기음 · 3단 필압 커브 · Zero-Allocation SoA 닙 VFX
+
+| 계층 | 상태 | 핵심 구현 및 성능·UX 계약 | 저장소 근거 |
+| --- | --- | --- | --- |
+| **라이브 스트로크 Foley 필기음 (`슥삭슥삭`)** | `current` (`main` HEAD `e4c9ed456`) | `/studio/canvas` 포인터 루프(`down`/`move`/`finish`/`publish`)에 직결. 브러시 ID·드로잉 모드를 6대 물리 마찰음(`graphite-pencil`, `gpen-ink`, `watercolor-sable`, `oil-impasto`, `airbrush`, `eraser-scrub`)과 종이 결(`manga-kent`, `cold-press-watercolor`, `rough-cotton`, `linen-canvas`, `smooth-bristol`)로 자동 매핑한다. 첫 포인터 제스처에서 `studio-procedural-foley-audio`를 동적 `import()`해 초기 번들 증가 **`+0.0 KiB`**을 유지하며, `36ms`·`2.5px` 스로틀로 끊김 없는 연속 마찰음을 합성한다. | [`studio-live-stroke-foley-bridge.ts`](../../apps/web/src/domains/creator/studio-cuttoon-editor/studio-live-stroke-foley-bridge.ts), [`StudioLiveFoleyFeelControls.tsx`](../../apps/web/src/domains/creator/studio-cuttoon-editor/StudioLiveFoleyFeelControls.tsx) |
+| **원클릭 필기음 프리셋 & 3단 필압 커브 · Coalesced Pointer** | `current` (`main` HEAD `e4c9ed456`) | 빠른 인체공학 바에서 필기음 3단계(`quiet-atelier` 차분함 · `lively-asmr` ASMR · `silent-focus` 무음)와 필압 감도 커브 3프리셋(`soft γ=0.68` · `standard γ=1.0` · `firm γ=1.48`)을 원클릭 전환한다(`localStorage` 미사용). `extractCoalescedPointerSamples()`로 120~240Hz 고속 곡선 중간 샘플을 손실 없이 추출한다. | [`studio-live-stroke-foley-bridge.ts`](../../apps/web/src/domains/creator/studio-cuttoon-editor/studio-live-stroke-foley-bridge.ts) |
+| **Zero-Allocation SoA 닙 필기감 VFX 오버레이** | `migration` (Wave 15C `dd109f14`) | `Float32Array`/`Uint8Array` 고정 풀 Struct-of-Arrays(최대 **160입자**, 핫 패스 GC 할당 **0 bytes**)로 6종 매체 필기감 입자(`dust-fleck` 흑연·목탄 가루, `wax-crumb` 왁스 조각, `capillary-soak-ring` 수채 스며듦 링, `impasto-ridge-glint` 붓모 능선 광택, `ink-snap-trail` 고속 잉크 테일, `eraser-shaving` 지우개 가루)와 동적 기울기 닙 커서를 그린다. 활성 입자가 0개면 `requestAnimationFrame`을 즉시 정지(**Idle 0% CPU**)하며, `prefers-reduced-motion` 시 자동 `off`, PNG/PSD 내보내기 **0% 비출력**을 강제한다. | `apps/web/src/domains/creator/brush-feel-vfx/` (Wave 15C 병렬 트랙) |
+
+---
+
+## 14. WebGPU 제로 카피 필터·ARAP 변형·다중 사용자 CRDT 동시 스케치 & 장시간 소크 검증 체계
+
+브러시 한 획만 빨라서는 프로 웹툰 작업실을 지탱할 수 없다. 실제 마감 현장에서는 다중 레이어 블렌드, 10종 이상 복합 필터 그래프, 수백 개 오브젝트 자유변환, 다중 핀 ARAP/MLS 퍼펫 변형·모핑, 여러 어시스턴트의 동시 스케치 협업이 30분 이상 쉬지 않고 뒤섞인다. ToonStudio는 **4종 WGSL `@compute @workgroup_size(16, 16)` 셰이더**, **Wasm64 ↔ WebGPU 제로 카피 링 버퍼 브리지**, **5축 전수 스트레스·소크 테스트 하네스**를 [`apps/web/src/domains/creator/webgpu-zero-copy-studio/`](../../apps/web/src/domains/creator/webgpu-zero-copy-studio/webgpu-vello-zerocopy-pipeline.ts)에 구현해 모든 드로잉 서브시스템을 하나의 60fps(`<= 16.7 ms`) 게이트로 묶었다(`current`).
+
+### 14.1 4종 WGSL 컴퓨트 셰이더 & 바이트 동등 CPU 폴백 (`current`)
+
+모든 셰이더는 `@compute @workgroup_size(16, 16)`과 16바이트 정렬 유니폼 계약을 따르며, 단위 테스트 단계에서 실제 **WESL WGSL 파서·링커(`wesl`)**로 구문·바인딩 링크를 검증한다([`wgsl-compute-shaders.ts`](../../apps/web/src/domains/creator/webgpu-zero-copy-studio/wgsl-compute-shaders.ts), [`cpu-compute-fallbacks.ts`](../../apps/web/src/domains/creator/webgpu-zero-copy-studio/cpu-compute-fallbacks.ts)).
+
+| WGSL 셰이더 상수 | 워크그룹 / 바인딩 / 유니폼 | 1패스 GPU 연산 범위 | 바이트 동등 CPU 폴백 |
+| --- | --- | --- | --- |
+| **`WGSL_MULTI_LAYER_BLEND_SHADER`** | `16×16` · 5 bindings · `16 B` | Normal · Multiply · Screen · Overlay · Add 5종 블렌드 + 픽셀별 알파 마스크 1패스 합성(W3C Compositing Level 1 정확식) | `compositeMultiLayerCpu()` |
+| **`WGSL_SEPARABLE_FILTER_GRAPH_SHADER`** | `16×16` · 5 bindings · `48 B` | 1D 분리형 가우시안 커널(수평/수직 또는 단일패스 퓨전) + 임계값 언샤프 마스크 + HSL 색조·채도·명도 그레이딩 1패스 퓨전 | `applySeparableFilterGraphCpu()` |
+| **`WGSL_ARAP_MESH_WARP_SHADER`** | `16×16` · 4 bindings · `16 B` | Bowyer-Watson 델라우니 삼각 분할 + 다중 핀 ARAP/MLS 강체 변형·모핑(`morphT ∈ [0, 1]`) 무게중심 역매핑 + 쌍선형 샘플링 | `computeDelaunayTriangulation()`, `solveArapMlsMeshDeformation()`, `warpImageArapMeshCpu()` |
+| **`WGSL_IMPASTO_RELIEF_COMPOSITE_SHADER`** | `16×16` · 4 bindings · `48 B` | 2.5D 임파스토 높이장(`Float32Array`) 3×3 Sobel 법선 추출 + Blinn-Phong 지향성 스페큘러·골 그림자 1패스 셰이딩 | `applyImpastoReliefCpu()` |
+
+### 14.2 Wasm64 ↔ WebGPU 제로 카피 링 버퍼 브리지 (`current`)
+
+[`ZeroCopyGpuRingBridge`](../../apps/web/src/domains/creator/webgpu-zero-copy-studio/webgpu-vello-zerocopy-pipeline.ts)는 3-슬롯 링 버퍼(`SharedArrayBuffer`, `ArrayBuffer`, 또는 실제 Wasm64 `WebAssembly.Memory({ address: "i64" }).buffer` 직접 마운트) 위에서 **256바이트 정렬 슬라이스 오프셋 뷰만 발급**한다.
+
+- **버퍼 복사 0회 (`copyCount === 0`)**: `acquireZeroCopySlice()`가 반환하는 `Uint8Array`/`Float32Array`는 원본 `backingBuffer`와 동일한 메모리를 직접 가리키며, GPU 업로드 시 `queue.writeBuffer(targetBuffer, dstOffset, slice.buffer, slice.byteOffset, slice.byteLength)`로 중간 배열 복사 없이 바로 전송한다.
+- **GPU 메모리 상한 거버너**: `registerGpuResource()`가 `gpuMemoryBudgetBytes`(기본 `128 MiB`)를 초과하려는 순간 가장 오래된 LRU GPU 자원의 `destroy()`를 호출해 VRAM 누수를 원천 차단한다.
+- **WebGPU 미지원 자동 CPU 폴백**: 어댑터나 `GPUDevice`가 없는 환경에서는 `resolveExecutionMode()`가 `"cpu-fallback"`으로 전환하되 동일한 제로 카피 링 슬라이스 위에서 바이트 동등 CPU 커널을 실행해 GC 스파이크를 억제한다.
+
+### 14.3 전 드로잉 기능 5축 스트레스 · 30분(3,600틱) 소크 벤치마크 실측 (`2026-11-23`, `current`)
+
+[`drawing-tools-perf-soak-harness.ts`](../../apps/web/src/domains/creator/webgpu-zero-copy-studio/drawing-tools-perf-soak-harness.ts)와 [`webgpu-zero-copy-studio.test.ts`](../../apps/web/src/domains/creator/webgpu-zero-copy-studio/webgpu-zero-copy-studio.test.ts)를 Node `v24.22.1` 환경에서 실제 실행한 측정 결과다(프레임 예산 기준: **60fps = `16.7 ms`**).
+
+| 검증 축 | 테스트 워크로드 (실측 조건) | 실측 `p50` | 실측 `p95` | 실측 `max` | 핵심 무결성 · 메모리 지표 | 판정 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **① 12종 혼합 브러시** | 12매체 × 28댑(총 336댑, `128×128` 타일 + 높이장) | `0.2376 ms` | **`0.5289 ms`** | `1.0496 ms` | 12/12 매체 픽셀·높이 변이 확인 | **PASS** |
+| **② 10종 복합 필터 그래프** | 블러·언샤프·HSL·노이즈·하프톤·임파스토·다중블렌드·비네트·소벨·블룸 연속 실행(`48×48`) | `0.9233 ms` | **`2.5888 ms`** | `3.3022 ms` | 10/10 고유 픽셀 체크섬 변별 | **PASS** |
+| **③ 500 오브젝트 + ARAP 모핑** | 500개 SoA 자유변환·AABB 컬링 + 5핀 델라우니(16삼각형) ARAP 모핑 5단계(`0.0→1.0`) | `0.5685 ms` | **`0.5759 ms`** | `1.9604 ms` | 500/500 가시 계산, 유한 정점 무결성 `true` | **PASS** |
+| **④ 8인 동시 스케치 CRDT 버스트** | 8명 × 40획(320 op) × 8라운드 무작위 셔플 + 10% 중복 패킷 혼입 병합 | `0.1050 ms` | **`0.1501 ms`** | `0.4651 ms` | **충돌 0건**, 도착 순서 독립 100% 수렴 | **PASS** |
+| **⑤ 30분 모사(3,600틱) 소크** | 3,600틱(혼합 브러시·주기 필터·500오브젝트·CRDT·LRU 타일·제로카피 슬라이스 3,601회) | `0.0063 ms` | **`0.0135 ms`** | `3.8381 ms` | 복사 **0회**, 관리 메모리 상한 `0.50 MiB / 64 MiB` (`+0.39%`), 후반/초반 비율 **`0.405×`**(성능 저하 없음), V8 힙 증감 `+2.82 MB` | **PASS** |
+
+```bash
+# 실행 위치: 저장소 루트 (읽기 전용 테스트, 부작용 없음)
+pnpm exec vitest run apps/web/src/domains/creator/webgpu-zero-copy-studio/
+```
+
+- **현재 구현(`current`) vs 향후 목표(`target`) 경계**:
+  - `current`: 4종 WGSL 셰이더(WESL 파서/링커 검증 완료), 바이트 동등 CPU 폴백, Wasm64/SharedArrayBuffer 제로 카피 링 버퍼 브리지, GPU 메모리 상한 거버너, 5축 통합 소크 하네스(11/11 Vitest PASS).
+  - `target`: 실기기 Chromium/Apple Silicon/Windows GPU 어댑터 대상 CI WebGPU `GPUComputePipeline` 자동 프로파일링, WebGPU Timestamp Query 기반 프레임 동적 해상도 스케일링, `f16`·Subgroups 확장 커널 자동 선택.
+
+---
+
+## 15. 연관 정본 문서
 
 - **저장소 스크립트·설정·ENV 그룹핑 정본 가이드**: [저장소 스크립트(336개) · 루트 설정 파일 · ENV 그룹핑 가이드](../engineering/repo-scripts-and-configs-guide.md)
 - **경쟁 도구·멀티디바이스 심층 벤치마크**: [글로벌 경쟁사 및 멀티디바이스 드로잉 UX 벤치마크 보고서 (2026-11)](../benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md)
