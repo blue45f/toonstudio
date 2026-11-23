@@ -8,10 +8,10 @@ import { preserveStudioBg3dSixPassArtistLayers, preserveStudioBg3dSixPassArtistG
 import { planStudioBg3dLtLayers } from "../bg3d/studio-bg3d-lt-layer-plan";
 import { attachStudioBg3dMagicFilterMaskToLtPlan } from "../bg3d/studio-bg3d-magic-layer-attach";
 import type { StudioBg3dSixPassBundleManifest, StudioBg3dSixPassBundleState } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
-import type { StudioBg3dSceneDocument } from "../bg3d/studio-bg3d-scene-document";
+import type { StudioBg3dSceneDocument } from "../contracts/studio-bg3d-scene-document";
 import { expectStudioRasterImagePresentation } from "../render/studio-raster-image-presentation";
 import type { StudioBackground3DInsertResult } from "../scene-3d/studio-3d-insert-contract";
-import { mapStudioBg3dPerspectiveGuidesToAnchor } from "../scene-3d/studio-3d-insert-controller";
+import { mapStudioBg3dPerspectiveGuidesToAnchor } from "../contracts/studio-3d-insert-controller";
 import { CANVAS_W } from "../studio-assets";
 import type { El } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";

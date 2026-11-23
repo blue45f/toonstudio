@@ -5,7 +5,7 @@ import type {
   StudioBg3dMaterialOverride,
   StudioBg3dNodeOrganization,
   StudioBg3dTexturePaint,
-} from "./bg3d/studio-bg3d-scene-document";
+} from "./contracts/studio-bg3d-scene-document";
 
 export type BgPrimitiveKind =
   | "box"

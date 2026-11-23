@@ -75,10 +75,11 @@ function moduleShape(relativePath: string): ModuleShape {
 
 describe("Studio 3D insert controller boundary", () => {
   it("keeps the pure controller free of editor and renderer runtime imports", () => {
-    const controller = moduleShape("./studio-3d-insert-controller.ts");
+    const controller = moduleShape("../contracts/studio-3d-insert-controller.ts");
+    const facade = moduleShape("./studio-3d-insert-controller.ts");
 
     expect(controller.allImports).toEqual([
-      "./studio-3d-insert-contract",
+      "../scene-3d/studio-3d-insert-contract",
       "../studio-editor-scope",
     ]);
     expect(controller.wholeClauseTypeImports).toEqual(controller.allImports);
@@ -89,6 +90,10 @@ describe("Studio 3D insert controller boundary", () => {
     expect(controller.source).not.toContain("konva");
     expect(controller.source).not.toContain("three");
     expect(controller.source).not.toContain("react");
+
+    expect(facade.valueImports).toEqual([]);
+    expect(facade.dynamicImports).toEqual([]);
+    expect(facade.source).toContain('export * from "../contracts/studio-3d-insert-controller";');
   });
 
   it("owns insert payloads in a renderer-neutral type-only leaf with compatibility re-exports", () => {

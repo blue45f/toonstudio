@@ -32,7 +32,7 @@ import {
   type StudioBg3dPrimitiveNode,
   type StudioBg3dSceneDocument,
   type StudioBg3dSceneNode,
-} from "../bg3d/studio-bg3d-scene-document";
+} from "../contracts/studio-bg3d-scene-document";
 import { attachStudioGeneric3dWorkflowMetadata } from "../studio-generic-3d-workflow-metadata";
 import {
   assertRenderCacheIsNotAuthority,
