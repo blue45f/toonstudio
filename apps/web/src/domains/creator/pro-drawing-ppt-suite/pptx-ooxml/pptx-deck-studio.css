@@ -1,0 +1,443 @@
+/* Wave 9 Track 3 — OOXML PowerPoint .pptx 슬라이드 생성·가져오기 스튜디오 크롬
+ * OKLCH 토큰 전용(원시 hex/rgb 0건) · 명시적 속성 트랜지션 · >=44px 터치 타겟 · prefers-reduced-motion 준수
+ */
+
+.pptx-studio {
+  --pptx-surface: var(--color-panel, oklch(0.19 0.014 264));
+  --pptx-card: var(--color-card, oklch(0.23 0.016 264));
+  --pptx-raised: var(--color-raised, oklch(0.27 0.018 264));
+  --pptx-fg: var(--color-fg, oklch(0.96 0.008 264));
+  --pptx-fg-2: var(--color-fg-2, oklch(0.79 0.014 264));
+  --pptx-line: var(--color-line, oklch(0.36 0.018 264 / 0.58));
+  --pptx-accent: oklch(0.75 0.145 250);
+  --pptx-good: oklch(0.76 0.15 152);
+  --pptx-warn: oklch(0.81 0.15 76);
+  --pptx-on-accent: oklch(0.99 0.004 260);
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--pptx-fg);
+  word-break: keep-all;
+}
+
+:root[data-theme="light"] .pptx-studio,
+:root[data-design-theme="light"] .pptx-studio,
+:root[data-design-theme="sepia"] .pptx-studio {
+  --pptx-surface: var(--color-panel, oklch(0.985 0.004 260));
+  --pptx-card: var(--color-card, oklch(0.96 0.006 260));
+  --pptx-raised: var(--color-raised, oklch(0.92 0.008 260));
+  --pptx-fg: var(--color-fg, oklch(0.2 0.018 264));
+  --pptx-fg-2: var(--color-fg-2, oklch(0.42 0.018 264));
+  --pptx-line: var(--color-line, oklch(0.8 0.012 264));
+  --pptx-accent: oklch(0.48 0.16 250);
+  --pptx-good: oklch(0.44 0.145 152);
+  --pptx-warn: oklch(0.5 0.145 76);
+}
+
+:root[data-design-theme="contrast"] .pptx-studio {
+  --pptx-line: oklch(0.88 0.02 260);
+}
+
+.pptx-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pptx-toolbar-card,
+.pptx-inspector-card,
+.pptx-notes-card,
+.pptx-thumb-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--pptx-line);
+  background: var(--pptx-card);
+}
+
+.pptx-toolbar-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pptx-deck-title-group {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pptx-io-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pptx-toolbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pptx-line);
+}
+
+.pptx-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pptx-group-caption,
+.pptx-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--pptx-fg-2);
+}
+
+.pptx-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pptx-btn,
+.pptx-icon-btn,
+.pptx-subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pptx-line);
+  background: var(--pptx-raised);
+  color: var(--pptx-fg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.pptx-icon-btn {
+  padding: 6px;
+}
+
+.pptx-btn:hover,
+.pptx-icon-btn:hover,
+.pptx-subtab-btn:hover {
+  border-color: var(--pptx-accent);
+  background: color-mix(in oklch, var(--pptx-accent) 14%, var(--pptx-raised));
+}
+
+.pptx-btn--active,
+.pptx-btn[aria-pressed="true"],
+.pptx-subtab-btn[aria-selected="true"] {
+  border-color: var(--pptx-accent);
+  background: color-mix(in oklch, var(--pptx-accent) 24%, var(--pptx-card));
+  color: var(--pptx-fg);
+}
+
+.pptx-btn--primary {
+  border-color: var(--pptx-accent);
+  background: var(--pptx-accent);
+  color: var(--pptx-on-accent);
+}
+
+.pptx-btn--primary:hover {
+  background: color-mix(in oklch, var(--pptx-accent) 86%, var(--pptx-fg));
+  color: var(--pptx-on-accent);
+}
+
+.pptx-btn:disabled,
+.pptx-icon-btn:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+}
+
+.pptx-btn:focus-visible,
+.pptx-icon-btn:focus-visible,
+.pptx-subtab-btn:focus-visible,
+.pptx-thumb-card:focus-visible,
+.pptx-input:focus-visible,
+.pptx-select:focus-visible,
+.pptx-textarea:focus-visible {
+  outline: 2px solid var(--pptx-accent);
+  outline-offset: 2px;
+}
+
+.pptx-input,
+.pptx-select,
+.pptx-textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pptx-line);
+  background: var(--pptx-surface);
+  color: var(--pptx-fg);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.pptx-input--deck-title {
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.pptx-input--num {
+  max-width: 92px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pptx-input--header {
+  font-weight: 700;
+}
+
+.pptx-select--compact {
+  width: auto;
+  min-width: 136px;
+}
+
+.pptx-textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.pptx-status {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklch, var(--pptx-accent) 40%, var(--pptx-line));
+  background: color-mix(in oklch, var(--pptx-accent) 12%, var(--pptx-surface));
+  font-size: 0.82rem;
+  color: var(--pptx-fg);
+  line-height: 1.45;
+}
+
+.pptx-status--good {
+  border-color: color-mix(in oklch, var(--pptx-good) 56%, var(--pptx-line));
+  background: color-mix(in oklch, var(--pptx-good) 14%, var(--pptx-surface));
+}
+
+.pptx-status--warn {
+  border-color: color-mix(in oklch, var(--pptx-warn) 56%, var(--pptx-line));
+  background: color-mix(in oklch, var(--pptx-warn) 16%, var(--pptx-surface));
+}
+
+.pptx-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 1080px) {
+  .pptx-workspace-grid {
+    grid-template-columns: 230px minmax(0, 1.35fr) minmax(290px, 0.95fr);
+    align-items: start;
+  }
+}
+
+.pptx-rail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pptx-thumb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.pptx-thumb-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--pptx-line);
+  background: var(--pptx-surface);
+  color: var(--pptx-fg);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.pptx-thumb-card:hover {
+  border-color: var(--pptx-accent);
+  background: var(--pptx-raised);
+}
+
+.pptx-thumb-card--selected {
+  border-color: var(--pptx-accent);
+  background: color-mix(in oklch, var(--pptx-accent) 18%, var(--pptx-surface));
+}
+
+.pptx-thumb-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--pptx-accent) 22%, var(--pptx-raised));
+  font-size: 0.74rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pptx-thumb-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pptx-thumb-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.pptx-thumb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--pptx-fg-2);
+}
+
+.pptx-thumb-tags > span {
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--pptx-line);
+  background: var(--pptx-card);
+}
+
+.pptx-stage-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pptx-stage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pptx-stage-counter {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--pptx-fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pptx-inspector-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pptx-inspector-body,
+.pptx-field,
+.pptx-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pptx-inspector-body {
+  gap: 12px;
+}
+
+.pptx-inline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+
+.pptx-table-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.pptx-table-editor-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(90px, 1fr);
+  gap: 6px;
+}
+
+.pptx-anim-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--pptx-line);
+  background: var(--pptx-surface);
+}
+
+.pptx-anim-order {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--pptx-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.pptx-anim-target {
+  flex: 1 1 80px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pptx-anim-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.pptx-helper-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--pptx-fg-2);
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pptx-btn,
+  .pptx-icon-btn,
+  .pptx-subtab-btn,
+  .pptx-thumb-card {
+    transition: none;
+  }
+}

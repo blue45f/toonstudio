@@ -1,4 +1,4 @@
-import { Box, Brush, Gauge, SlidersHorizontal } from "lucide-react";
+import { Box, Brush, Gauge, Layers, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -6,7 +6,8 @@ import {
   BRUSH_FILTER_SUMMARY_STATS,
   QUANTITATIVE_PERFORMANCE_METRICS,
   SHAPER_3D_BREAKTHROUGH_PILLARS,
-  type BrushFilterCellGrade,
+  STUDIO_NEXTGEN_CAPABILITY_CARDS,
+  type CellGrade,
 } from "./brush-filter-competitor-data";
 import {
   BENCHMARK_TOOLS,
@@ -19,14 +20,14 @@ function pick(text: BilingualText, locale: "ko" | "en"): string {
   return locale === "ko" ? text.ko : text.en;
 }
 
-function gradeBadgeClass(grade: BrushFilterCellGrade): string {
+function gradeBadgeClass(grade: CellGrade): string {
   if (grade === "lead") return "ts-status-pill ts-status-good";
   if (grade === "strong") return "ts-status-pill ts-status-cool";
   if (grade === "partial") return "ts-status-pill ts-status-warn";
   return "ts-status-pill ts-status-neutral";
 }
 
-function gradeLabel(grade: BrushFilterCellGrade, locale: "ko" | "en"): string {
+function gradeLabel(grade: CellGrade, locale: "ko" | "en"): string {
   if (locale === "ko") {
     if (grade === "lead") return "★ 선도";
     if (grade === "strong") return "● 강점";
@@ -50,9 +51,9 @@ export function StudioBrushFilterMatrixSection({ locale }: { readonly locale: "k
   return (
     <div
       data-testid="benchmark-brush-filter-3d-suite"
-      className="space-y-8"
+      className="space-y-8 [word-break:keep-all]"
     >
-      {/* 1. 브러시 · 필터 경쟁사 정밀 비교 매트릭스 */}
+      {/* 1. 브러시 502종(등록 640종) · 무료 기본 필터 183종 글로벌 경쟁사 정밀 대조 */}
       <section
         aria-labelledby="bf-matrix-heading"
         className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
@@ -61,25 +62,25 @@ export function StudioBrushFilterMatrixSection({ locale }: { readonly locale: "k
           <div>
             <p className="inline-flex items-center gap-1.5 font-display text-xs font-bold tracking-[0.12em] text-cool uppercase">
               <Brush size={14} aria-hidden="true" />
-              <span>BRUSHES · 54+ SMART FILTERS · COMPETITOR DEEP DIVE</span>
+              <span>502 FREE BRUSHES (640 REGISTERED) · 183 FREE FILTERS · COMPETITOR DEEP DIVE</span>
             </p>
             <h2 id="bf-matrix-heading" className="mt-1 text-xl font-bold text-fg sm:text-2xl">
               {locale === "ko"
-                ? "브러시 종류 · 필터 58종 글로벌 경쟁사 정밀 대조"
-                : "Brush Engines & 58 Filters — Global Competitor Breakdown"}
+                ? "무료 기본 브러시 502종 · 무료 필터 183종 글로벌 경쟁사 정밀 대조"
+                : "502 Selectable Free Brushes & 183 Free Filters — Global Competitor Breakdown"}
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">
               {locale === "ko"
-                ? `ToonStudio는 54종 스마트 필터 + 4종 KM7 감산 안료 필터 + 11종 RGBA16F 비파괴 노드와 6대 브러시 레인을 저장소에 내재화했습니다. 타사(CSP·Procreate·Photoshop·Rebelle 7·Blender·ibisPaint)의 강점도 있는 그대로 병기합니다.`
-                : `ToonStudio ships 54 smart filters, 4 KM7 subtractive pigment filters, 11 RGBA16F non-destructive nodes and 6 brush lanes in-repo, crediting every competitor's real strengths transparently.`}
+                ? `ToonStudio는 선택 가능 무료 기본 브러시 ${BRUSH_FILTER_SUMMARY_STATS.selectableFreeBrushes}종(Core+Pro ${BRUSH_FILTER_SUMMARY_STATS.coreProBrushes} + MyPaint CC0 ${BRUSH_FILTER_SUMMARY_STATS.mypaintCc0Brushes} + 글로벌 시그니처 ${BRUSH_FILTER_SUMMARY_STATS.globalSignatureFreeBrushes} · 전체 등록 ${BRUSH_FILTER_SUMMARY_STATS.totalRegisteredBrushes}종, 100% 무료)과 무료 기본 필터 ${BRUSH_FILTER_SUMMARY_STATS.freeFiltersTotal}종(스튜디오 ${BRUSH_FILTER_SUMMARY_STATS.studioCatalogFilters} + Photoshop-Web ${BRUSH_FILTER_SUMMARY_STATS.photoshopWebFilters} + 마스터 LUT/웹툰 ${BRUSH_FILTER_SUMMARY_STATS.masterLutWebtoonFilters})을 실측 정본 그대로 공개합니다. 경쟁 6개 도구의 실제 강점도 숨기지 않고 병기합니다.`
+                : `ToonStudio ships ${BRUSH_FILTER_SUMMARY_STATS.selectableFreeBrushes} selectable free built-in brushes (${BRUSH_FILTER_SUMMARY_STATS.coreProBrushes} Core+Pro + ${BRUSH_FILTER_SUMMARY_STATS.mypaintCc0Brushes} MyPaint CC0 + ${BRUSH_FILTER_SUMMARY_STATS.globalSignatureFreeBrushes} Global Signature; ${BRUSH_FILTER_SUMMARY_STATS.totalRegisteredBrushes} total registered, 100% free) and ${BRUSH_FILTER_SUMMARY_STATS.freeFiltersTotal} free built-in filters (${BRUSH_FILTER_SUMMARY_STATS.studioCatalogFilters} Studio + ${BRUSH_FILTER_SUMMARY_STATS.photoshopWebFilters} Photoshop-Web + ${BRUSH_FILTER_SUMMARY_STATS.masterLutWebtoonFilters} Master LUT/Webtoon), while crediting every competitor's strengths transparently.`}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2" role="group" aria-label={locale === "ko" ? "브러시·필터 분류 필터" : "Filter brush and filter rows"}>
             {([
               ["all", locale === "ko" ? "전체 (6대 군)" : "All (6 Groups)"],
-              ["brush", locale === "ko" ? "브러시 엔진 (3)" : "Brushes (3)"],
-              ["filter", locale === "ko" ? "필터·색보정 (3)" : "Filters (3)"],
+              ["brush", locale === "ko" ? "브러시 502종 (3)" : "502 Brushes (3)"],
+              ["filter", locale === "ko" ? "필터 183종 (3)" : "183 Filters (3)"],
             ] as const).map(([id, label]) => (
               <button
                 key={id}
@@ -100,31 +101,45 @@ export function StudioBrushFilterMatrixSection({ locale }: { readonly locale: "k
           </div>
         </div>
 
-        {/* 실측 요약 KPI 4개 */}
+        {/* 코드베이스 실측 정본 KPI 4개 */}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-line bg-card p-3.5">
+          <div data-testid="bf-kpi-free-brushes" className="rounded-2xl border border-line bg-card p-3.5">
             <p className="text-[11px] font-semibold text-fg-3">
-              {locale === "ko" ? "내재화 스마트·분광 필터" : "Shipped Smart + KM7 Filters"}
+              {locale === "ko" ? "선택 가능 무료 기본 브러시" : "Selectable Free Built-In Brushes"}
             </p>
-            <p className="mt-1 font-display text-2xl font-bold tabular-nums text-fg">
-              {BRUSH_FILTER_SUMMARY_STATS.toonstudioSmartFilters + BRUSH_FILTER_SUMMARY_STATS.toonstudioSpectralPigmentFilters}
+            <p className="mt-1 flex items-baseline gap-2 font-display text-2xl font-bold tabular-nums text-fg">
+              <span>{BRUSH_FILTER_SUMMARY_STATS.selectableFreeBrushes}</span>
+              <span className="text-xs font-semibold text-good">
+                {locale === "ko"
+                  ? `전체 등록 ${BRUSH_FILTER_SUMMARY_STATS.totalRegisteredBrushes}종 · 무료`
+                  : `${BRUSH_FILTER_SUMMARY_STATS.totalRegisteredBrushes} registered · 100% free`}
+              </span>
             </p>
             <p className="text-[11px] text-fg-2">
-              {locale === "ko" ? "54 스마트 + 4 KM7 분광" : "54 Smart + 4 KM7 Spectral"}
+              {locale === "ko"
+                ? `Core+Pro ${BRUSH_FILTER_SUMMARY_STATS.coreProBrushes} + MyPaint CC0 ${BRUSH_FILTER_SUMMARY_STATS.mypaintCc0Brushes} + 시그니처 ${BRUSH_FILTER_SUMMARY_STATS.globalSignatureFreeBrushes}`
+                : `Core+Pro ${BRUSH_FILTER_SUMMARY_STATS.coreProBrushes} + MyPaint CC0 ${BRUSH_FILTER_SUMMARY_STATS.mypaintCc0Brushes} + Signature ${BRUSH_FILTER_SUMMARY_STATS.globalSignatureFreeBrushes}`}
             </p>
           </div>
-          <div className="rounded-2xl border border-line bg-card p-3.5">
+          <div data-testid="bf-kpi-free-filters" className="rounded-2xl border border-line bg-card p-3.5">
             <p className="text-[11px] font-semibold text-fg-3">
-              {locale === "ko" ? "비파괴 RGBA16F 노드 · 브러시 레인" : "RGBA16F Nodes · Brush Lanes"}
+              {locale === "ko" ? "무료 기본 필터 정본" : "Free Built-In Filters"}
             </p>
-            <p className="mt-1 font-display text-2xl font-bold tabular-nums text-fg">
-              {BRUSH_FILTER_SUMMARY_STATS.toonstudioCanonicalFilterNodes} / {BRUSH_FILTER_SUMMARY_STATS.toonstudioBrushLanes}
+            <p className="mt-1 flex items-baseline gap-2 font-display text-2xl font-bold tabular-nums text-fg">
+              <span>{BRUSH_FILTER_SUMMARY_STATS.freeFiltersTotal}</span>
+              <span className="text-xs font-semibold text-cool">
+                {locale === "ko"
+                  ? `+ KM7 ${BRUSH_FILTER_SUMMARY_STATS.toonstudioSpectralPigmentFilters} · RGBA16F ${BRUSH_FILTER_SUMMARY_STATS.toonstudioCanonicalFilterNodes}`
+                  : `+ ${BRUSH_FILTER_SUMMARY_STATS.toonstudioSpectralPigmentFilters} KM7 · ${BRUSH_FILTER_SUMMARY_STATS.toonstudioCanonicalFilterNodes} RGBA16F`}
+              </span>
             </p>
             <p className="text-[11px] text-fg-2">
-              {locale === "ko" ? "Display-P3 · KM7 · Hokusai WASM" : "Display-P3 · KM7 · Hokusai WASM"}
+              {locale === "ko"
+                ? `스튜디오 ${BRUSH_FILTER_SUMMARY_STATS.studioCatalogFilters} + Photoshop-Web ${BRUSH_FILTER_SUMMARY_STATS.photoshopWebFilters} + LUT/웹툰 ${BRUSH_FILTER_SUMMARY_STATS.masterLutWebtoonFilters}`
+                : `Studio ${BRUSH_FILTER_SUMMARY_STATS.studioCatalogFilters} + Photoshop-Web ${BRUSH_FILTER_SUMMARY_STATS.photoshopWebFilters} + Master LUT ${BRUSH_FILTER_SUMMARY_STATS.masterLutWebtoonFilters}`}
             </p>
           </div>
-          <div className="rounded-2xl border border-line bg-card p-3.5">
+          <div data-testid="bf-kpi-endurance-p95" className="rounded-2xl border border-line bg-card p-3.5">
             <p className="text-[11px] font-semibold text-fg-3">
               {locale === "ko" ? "10,000획 장시간 p95 실측" : "10,000-Stroke Endurance p95"}
             </p>
@@ -135,7 +150,7 @@ export function StudioBrushFilterMatrixSection({ locale }: { readonly locale: "k
               {locale === "ko" ? "60fps 예산(16.6ms) 여유 통과" : "Well inside 16.6ms 60fps budget"}
             </p>
           </div>
-          <div className="rounded-2xl border border-line bg-card p-3.5">
+          <div data-testid="bf-kpi-endurance-heap" className="rounded-2xl border border-line bg-card p-3.5">
             <p className="text-[11px] font-semibold text-fg-3">
               {locale === "ko" ? "10,000획 누적 힙 메모리 변동" : "10,000-Stroke Heap Delta"}
             </p>
@@ -204,26 +219,86 @@ export function StudioBrushFilterMatrixSection({ locale }: { readonly locale: "k
         </div>
       </section>
 
-      {/* 2. 수치화 가능 항목 실측 & 필기감·장시간 안정성 비교 */}
+      {/* 2. 올인원 스튜디오 차세대 6대 핵심 역량 */}
+      <section
+        aria-labelledby="nextgen-capabilities-heading"
+        data-testid="studio-nextgen-capabilities-section"
+        className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
+      >
+        <p className="inline-flex items-center gap-1.5 font-display text-xs font-bold tracking-[0.12em] text-accent uppercase">
+          <Layers size={14} aria-hidden="true" />
+          <span>ALL-IN-ONE STUDIO ENGINE · PPTX · DESIGN · CRDT · WEBXR · UHD 8K</span>
+        </p>
+        <h2 id="nextgen-capabilities-heading" className="mt-1 text-xl font-bold text-fg sm:text-2xl">
+          {locale === "ko"
+            ? "드로잉을 넘어선 차세대 올인원 스튜디오 6대 핵심 역량"
+            : "6 Next-Gen All-in-One Studio Capabilities Beyond 2D Drawing"}
+        </h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">
+          {locale === "ko"
+            ? "단순 페인팅 앱과 달리 실제 .pptx OOXML 제작, 미리캔버스·Canva·Figma 올인원 웹 디자인, HLC/CRDT 오프라인 무손실 병합, 홀로그램 WebXR 5-평면 웹툰, 아이디어→완성 웹툰 6단계 파이프라인, UHD 4K~8K 엣지 그리드까지 한 스튜디오에 통합했습니다."
+            : "Unifies native .pptx OOXML authoring, MiriCanvas/Canva/Figma web design, HLC/CRDT lossless offline merging, 5-plane Holographic WebXR comics, a 6-stage Idea-to-Webtoon pipeline, and UHD 4K-8K edge rendering inside one workspace."}
+        </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {STUDIO_NEXTGEN_CAPABILITY_CARDS.map((card) => (
+            <article
+              key={card.id}
+              data-testid={`nextgen-capability-${card.id}`}
+              className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-card p-4"
+            >
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="ts-status-pill ts-status-neutral">
+                    {pick(card.categoryTag, locale)}
+                  </span>
+                  <span className={cn("ts-status-pill shrink-0", card.status === "verified" ? "ts-status-good" : "ts-status-cool")}>
+                    {card.status === "verified"
+                      ? (locale === "ko" ? "수학 검증" : "Verified")
+                      : (locale === "ko" ? "엔진 내재화" : "Engine Shipped")}
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold leading-5 text-fg sm:text-base">
+                  {pick(card.title, locale)}
+                </h3>
+                <p className="rounded-xl bg-raised px-3 py-2 font-mono text-[11px] font-semibold text-fg">
+                  {pick(card.headlineMetric, locale)}
+                </p>
+                <p className="text-xs leading-5 text-fg-2">
+                  {pick(card.summary, locale)}
+                </p>
+                <p className="border-t border-line/60 pt-2 text-xs leading-5 text-fg-3">
+                  {pick(card.competitorEdge, locale)}
+                </p>
+              </div>
+              <p className="font-mono text-[11px] text-cool">
+                {card.repoAnchor}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* 3. 수치화 가능 항목 실측 & 필기감·초고해상도·장시간 안정성 비교 */}
       <section
         aria-labelledby="quant-perf-heading"
         className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
       >
         <p className="inline-flex items-center gap-1.5 font-display text-xs font-bold tracking-[0.12em] text-accent uppercase">
           <Gauge size={14} aria-hidden="true" />
-          <span>QUANTITATIVE PERFORMANCE · FEEL · LONG-SESSION STABILITY</span>
+          <span>QUANTITATIVE PERFORMANCE · UHD EDGE · FEEL · LONG-SESSION STABILITY</span>
         </p>
         <h2 id="quant-perf-heading" className="mt-1 text-xl font-bold text-fg sm:text-2xl">
           {locale === "ko"
-            ? "성능 · 질감 · 필기감 · 장시간 안정성 실측 정량 지표"
-            : "Quantitative Performance, Tactile Feel & Long-Session Metrics"}
+            ? "성능 · 초고해상도 엣지 · 필기감 · 장시간 안정성 실측 정량 지표"
+            : "Quantitative Performance, UHD Edge Snap, Tactile Feel & Stability Metrics"}
         </h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {QUANTITATIVE_PERFORMANCE_METRICS.map((metric) => (
             <article
               key={metric.id}
               data-testid={`quant-metric-${metric.id}`}
-              className="rounded-2xl border border-line bg-card p-4 space-y-2"
+              className="space-y-2 rounded-2xl border border-line bg-card p-4"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-sm font-bold text-fg sm:text-base">{pick(metric.label, locale)}</h3>
@@ -246,7 +321,7 @@ export function StudioBrushFilterMatrixSection({ locale }: { readonly locale: "k
         </div>
       </section>
 
-      {/* 3. 3D 캐릭터 셰이퍼 솔직한 현황 진단 & 경쟁사 추월 4대 돌파 로드맵 */}
+      {/* 4. 3D 캐릭터 셰이퍼 솔직한 현황 진단 & 경쟁사 추월 4대 돌파 로드맵 */}
       <section
         aria-labelledby="shaper-3d-heading"
         className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
@@ -271,7 +346,7 @@ export function StudioBrushFilterMatrixSection({ locale }: { readonly locale: "k
             <article
               key={pillar.id}
               data-testid={`shaper-pillar-${pillar.id}`}
-              className="rounded-2xl border border-line bg-card p-4 flex flex-col justify-between gap-3"
+              className="flex flex-col justify-between gap-3 rounded-2xl border border-line bg-card p-4"
             >
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-2">

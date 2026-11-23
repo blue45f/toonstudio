@@ -7,9 +7,15 @@ import { SpaceCoworkSheet, type SpaceCoworkPeer } from "./SpaceCoworkSheet";
 import { SpaceProximityStrip } from "./SpaceProximityStrip";
 import { SpaceRequestToast } from "./SpaceRequestToast";
 import { SpaceStatusMenu } from "./SpaceStatusMenu";
+import { initialPanel } from "../studio-virtual-space-page-helpers";
 import { SpaceZoneWorkbar } from "./SpaceZoneWorkbar";
 import { spaceAutoMeetingDecision } from "./use-space-auto-meeting";
-import { spaceZoneWorkItems, spaceZoneWorkKind } from "./space-zone-workflow";
+import {
+  buildZeroWalkShortcuts,
+  resolveSpaceDeepLinkZone,
+  spaceZoneWorkItems,
+  spaceZoneWorkKind,
+} from "./space-zone-workflow";
 
 afterEach(cleanup);
 
@@ -52,6 +58,190 @@ describe("협업 구역 동선", () => {
     expect(onPanel).toHaveBeenCalledExactlyOnceWith("work");
     expect(onShare).toHaveBeenCalledOnce();
     expect(onCowork).not.toHaveBeenCalled();
+  });
+});
+
+describe("검수 딥링크(?zone=...) 및 개인 마감 직행(Zero-Walk) 동선", () => {
+  it("?zone=review&reviewId=..., desk, classroom, stage 딥링크를 안전하게 파싱해 즉시 착석 정보를 반환한다", () => {
+    const reviewWithId = resolveSpaceDeepLinkZone("?zone=review&reviewId=rev-42");
+    expect(reviewWithId).toMatchObject({
+      zone: "review",
+      roomId: "review",
+      placeId: "review-gallery",
+      workKind: "review",
+      panel: "work",
+      reviewId: "rev-42",
+      instantSeat: true,
+      skipWalk: true,
+      deepLinkHref: "/studio/space?zone=review&reviewId=rev-42",
+    });
+
+    const reviewByIdOnly = resolveSpaceDeepLinkZone("?reviewId=ep14_cut05.v2");
+    expect(reviewByIdOnly).toMatchObject({
+      zone: "review",
+      roomId: "review",
+      panel: "work",
+      reviewId: "ep14_cut05.v2",
+      instantSeat: true,
+      skipWalk: true,
+    });
+
+    expect(resolveSpaceDeepLinkZone("?zone=desk")).toMatchObject({
+      zone: "desk",
+      roomId: "drawing",
+      placeId: "personal-atelier",
+      workKind: "atelier",
+      panel: "seats",
+      reviewId: null,
+      instantSeat: true,
+      skipWalk: true,
+    });
+
+    expect(resolveSpaceDeepLinkZone("?zone=classroom")).toMatchObject({
+      zone: "classroom",
+      roomId: "story-lab",
+      placeId: "story-lab",
+      workKind: "story",
+      panel: "sessions",
+      instantSeat: true,
+    });
+
+    expect(resolveSpaceDeepLinkZone("?zone=stage")).toMatchObject({
+      zone: "stage",
+      roomId: "event-stage",
+      placeId: "event-stage",
+      workKind: "meeting",
+      panel: "town",
+      instantSeat: true,
+    });
+
+    // 전체 경로·대문자·기존 방 alias도 일관되게 정규화한다.
+    expect(resolveSpaceDeepLinkZone("/studio/space?zone=REVIEW&reviewId=rev-9")?.zone).toBe("review");
+    expect(resolveSpaceDeepLinkZone("zone=hq-review-room")?.zone).toBe("review");
+    expect(resolveSpaceDeepLinkZone("?zone=hq-ink-bay")?.zone).toBe("desk");
+
+    // 초기 패널 결정도 딥링크와 연동된다.
+    expect(initialPanel("?zone=review&reviewId=rev-42")).toBe("work");
+    expect(initialPanel("?zone=desk")).toBe("seats");
+    expect(initialPanel("?zone=classroom")).toBe("sessions");
+    expect(initialPanel("?zone=stage")).toBe("town");
+    expect(initialPanel("?zone=unknown")).toBeNull();
+  });
+
+  it("알 수 없거나 위험한 zone·reviewId 파라미터는 fail-closed로 차단·정제한다", () => {
+    expect(resolveSpaceDeepLinkZone("")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?place=toon-hq")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?zone=unknown")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?zone=../admin")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?zone=<script>alert(1)</script>")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?zone=unknown&reviewId=rev-1")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?reviewId=https://evil.example/x")).toBeNull();
+    expect(resolveSpaceDeepLinkZone("?reviewId=../secret")).toBeNull();
+
+    // 구역은 유효하지만 reviewId가 비정상이면 reviewId만 안전하게 제거한다.
+    const sanitized = resolveSpaceDeepLinkZone("?zone=review&reviewId=https://evil.example/x");
+    expect(sanitized).toMatchObject({
+      zone: "review",
+      reviewId: null,
+      deepLinkHref: "/studio/space?zone=review",
+    });
+  });
+
+  it("개인 마감 모드(personal=true)는 14구역 보행 없이 3대 초고속 직행 액션을 반환한다", () => {
+    const shortcuts = buildZeroWalkShortcuts({
+      personal: true,
+      activeZoneId: "review",
+      reviewCount: 4,
+    });
+    expect(shortcuts).toHaveLength(3);
+    expect(shortcuts.map((item) => item.labelKo)).toEqual([
+      "내 원고 바로 열기",
+      "붉은펜 검수실 직행",
+      "집중 타이머·무음 책상",
+    ]);
+    expect(shortcuts.every((item) => item.zeroWalk)).toBe(true);
+    expect(shortcuts[0]).toMatchObject({ id: "open-manuscript", href: "/studio", active: false });
+    expect(shortcuts[1]).toMatchObject({
+      id: "direct-redline-review",
+      href: "/studio/space?zone=review",
+      active: true,
+      badgeCount: 4,
+      badgeLabelKo: "검수 4건",
+    });
+    expect(shortcuts[2]).toMatchObject({
+      id: "focus-timer-silent-desk",
+      href: "/studio/space?zone=desk",
+      active: false,
+    });
+
+    // 무음 집중 부스에 앉아 있고 비정상 reviewCount가 들어오면 배지를 숨기고 책상을 활성 표시한다.
+    const atDesk = buildZeroWalkShortcuts({
+      personal: true,
+      activeZoneId: "hq-focus-booths",
+      reviewCount: Number.NaN,
+    });
+    expect(atDesk[1]?.badgeCount).toBeNull();
+    expect(atDesk[1]?.badgeLabelKo).toBeNull();
+    expect(atDesk[2]?.active).toBe(true);
+  });
+
+  it("팀·수업 모드(personal=false)는 팀원 책상·동기화 검수·강의실 크리틱 직행 3종을 반환한다", () => {
+    const shortcuts = buildZeroWalkShortcuts({
+      personal: false,
+      activeZoneId: "classroom",
+      reviewCount: 2,
+    });
+    expect(shortcuts).toHaveLength(3);
+    expect(shortcuts.map((item) => item.labelKo)).toEqual([
+      "팀원 책상 현황",
+      "동기화 검수 테이블",
+      "강의실 크리틱",
+    ]);
+    expect(shortcuts.every((item) => item.zeroWalk)).toBe(true);
+    expect(shortcuts[0]).toMatchObject({ id: "team-desk-presence", panel: "people", active: false });
+    expect(shortcuts[1]).toMatchObject({
+      id: "synced-review-table",
+      href: "/studio/space?zone=review",
+      badgeCount: 2,
+      badgeLabelKo: "검수 2건",
+      active: false,
+    });
+    expect(shortcuts[2]).toMatchObject({
+      id: "classroom-critique",
+      href: "/studio/space?zone=classroom",
+      panel: "sessions",
+      active: true,
+    });
+  });
+
+  it("SpaceZoneWorkbar는 로비(kind=null)에서도 Zero-Walk 직행 바를 렌더링하고 클릭을 연결한다", () => {
+    const onZeroWalk = vi.fn();
+    const shortcuts = buildZeroWalkShortcuts({
+      personal: true,
+      activeZoneId: "hq-review-room",
+      reviewCount: 3,
+    });
+    render(
+      <MemoryRouter>
+        <SpaceZoneWorkbar
+          kind={null}
+          items={[]}
+          zeroWalkShortcuts={shortcuts}
+          onPanel={vi.fn()}
+          onCowork={vi.fn()}
+          onShare={vi.fn()}
+          onZeroWalkShortcut={onZeroWalk}
+        />
+      </MemoryRouter>,
+    );
+    const bar = screen.getByTestId("space-zero-walk-bar");
+    expect(within(bar).getByRole("link", { name: /내 원고 바로 열기/u }).getAttribute("href")).toBe("/studio");
+    const reviewBtn = within(bar).getByRole("button", { name: /붉은펜 검수실 직행/u });
+    expect(reviewBtn.getAttribute("aria-current")).toBe("location");
+    expect(reviewBtn.textContent).toContain("검수 3건");
+    fireEvent.click(reviewBtn);
+    expect(onZeroWalk).toHaveBeenCalledWith(expect.objectContaining({ id: "direct-redline-review" }));
   });
 });
 

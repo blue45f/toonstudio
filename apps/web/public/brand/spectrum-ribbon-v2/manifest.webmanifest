@@ -9,6 +9,28 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "file_handlers": [
+    {
+      "action": "/studio",
+      "name": "툰스튜디오 원고·레이어 파일 열기",
+      "launch_type": "single-client",
+      "accept": {
+        "application/vnd.toonstudio.project": [".toon", ".toonstudio"],
+        "image/openraster": [".ora"],
+        "image/vnd.adobe.photoshop": [".psd"]
+      },
+      "icons": [
+        {
+          "src": "/brand/spectrum-ribbon-v2/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "theme_color": "#10182d",
   "background_color": "#10182d",
   "icons": [

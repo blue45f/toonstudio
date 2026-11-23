@@ -62,7 +62,7 @@ import { spaceHudChatHintBlocked, spaceHudShowsEventBanner } from "./hud/space-h
 import { StudioP2pHuddleLauncher, StudioVirtualSpaceCustomizationPanel } from "./hud/space-lazy-panels";
 import { spaceMoreItems } from "./hud/space-more-items";
 import { SPACE_PROXIMITY_MEDIA_RADIUS } from "./hud/space-proximity-media";
-import { spaceZoneWorkItems, spaceZoneWorkKind } from "./hud/space-zone-workflow";
+import { buildZeroWalkShortcuts, resolveSpaceDeepLinkZone, spaceZoneWorkItems, spaceZoneWorkKind, type ZeroWalkShortcutItem } from "./hud/space-zone-workflow";
 import { useSpaceAttentionLoss } from "./hud/use-space-attention-loss";
 import { useSpaceAutoMeeting } from "./hud/use-space-auto-meeting";
 import { useSpaceBuildPlacement } from "./hud/use-space-build-placement";
@@ -94,7 +94,7 @@ import { EMPTY_STUDIO_VIRTUAL_RUNTIME_METRICS, type StudioVirtualRuntimeMetrics 
 import { createStudioVirtualSpaceInitialSnapshot, distanceBetween, SIDE_PANEL_ID, studioNearbyCards, studioPromptNpc, TALK_DISTANCE } from "./studio-virtual-space-page-helpers";
 import type { VirtualSpaceExperienceProps } from "./studio-virtual-space-page-props";
 import { captureStudioVirtualPhoto } from "./studio-virtual-space-photo-mode";
-import { readStudioVirtualPlaceId, studioVirtualPlaceWorldScope } from "./studio-virtual-space-place-world";
+import { readStudioVirtualPlaceId, studioVirtualPlaceIdForMode, studioVirtualPlaceWorldScope } from "./studio-virtual-space-place-world";
 import type { StudioSpacePose } from "./studio-virtual-space-pose-controller";
 import type { StudioVirtualSpacePresenceController, StudioVirtualSpaceSnapshot } from "./studio-virtual-space-presence";
 import { studioDefaultRecordingBoothConfig } from "./studio-virtual-space-recording-booth-defaults";
@@ -157,9 +157,13 @@ export function VirtualSpaceExperience({
   const { toasts, notify, dismiss: dismissToast } = useSpaceToasts();
   const spaceUi = useSpaceUiEvents(bt, notify);
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const deepLinkZone = useMemo(() => resolveSpaceDeepLinkZone(location.search), [location.search]);
   const authoringMode = searchParams.get("worldEdit") === "1" && !isGuest;
   const publishedWorld = publication.snapshot.active;
-  const selectedPlaceId = useMemo(() => readStudioVirtualPlaceId(location.search, personal), [location.search, personal]);
+  const selectedPlaceId = useMemo(
+    () => (!searchParams.has("place") && deepLinkZone ? studioVirtualPlaceIdForMode(deepLinkZone.placeId, personal) : readStudioVirtualPlaceId(location.search, personal)),
+    [deepLinkZone, location.search, personal, searchParams],
+  );
   const builtinPlaceWorld = !publishedWorld && !authoringMode;
   const builtin = useMemo(() => (builtinPlaceWorld ? resolveStudioVirtualBuiltinWorld(selectedPlaceId, personal, { arrivalFrom: searchParams.get("from") }) : null), [builtinPlaceWorld, personal, searchParams, selectedPlaceId]);
   const activeWorldScope = publishedWorld?.scope ?? builtin?.worldScope ?? studioVirtualPlaceWorldScope(selectedPlaceId);
@@ -275,7 +279,7 @@ export function VirtualSpaceExperience({
 
   const worldRuntime = useVirtualSpaceWorldRuntime({
     projectId, personal, signedIn, authoringMode, currentSessionReady: currentSession.ready,
-    builtin, builtinPlaceWorld, selectedPlaceId, explicitPlace: searchParams.has("place"), resumeRequested: searchParams.get("resume") === "1",
+    builtin, builtinPlaceWorld, selectedPlaceId, explicitPlace: searchParams.has("place") || deepLinkZone !== null, resumeRequested: searchParams.get("resume") === "1",
     publishedWorld, activeWorldScope, sharedWorldAllowed, positionScope, positionScopeKey, officeNavigationScope,
     fallbackIdentity, startLocation: initialExperiencePreference.startLocation, guestSpawn, live,
     connectivityMode: connectivity.mode, connectivityServerAvailable: connectivity.serverAvailable,
@@ -513,6 +517,10 @@ export function VirtualSpaceExperience({
   const { people: nearbyPeopleCards, npcs: nearbyNpcCards } = studioNearbyCards({ personal, snapshot, nearbyNpcs: worldRuntime.nearbyNpcs, conversationMemberIds, promptNpcId: promptNpc?.id ?? null });
   const zoneWorkKind = worldRuntime.worldReady && !authoringMode ? spaceZoneWorkKind(locationZone.roomId, currentRoom?.action) : null;
   const zoneWorkItems = zoneWorkKind ? spaceZoneWorkItems(zoneWorkKind, { projectId, productionProjectId, personal }) : [];
+  const zeroWalkShortcuts = useMemo(
+    () => (worldRuntime.worldReady && !authoringMode ? buildZeroWalkShortcuts({ personal, activeZoneId: locationZone.roomId ?? "", reviewCount: operations.snapshot.inbox.length }) : []),
+    [authoringMode, locationZone.roomId, operations.snapshot.inbox.length, personal, worldRuntime.worldReady],
+  );
   const socialDisabledReason = !permissions.canVoice || !snapshot.direct || authoringMode || !socialAndMedia.socialInteractive ? bt("팀원 연결을 확인하는 중이에요", "Checking connection") : socialAndMedia.socialFocused ? bt("집중·자리 비움 중에는 요청을 보내지 않아요", "Paused while focusing") : null;
   const proximityWaitingReason = socialAndMedia.proximity.phase !== "waiting" ? null : socialAndMedia.proximity.viewer ? bt("관람 모드에서는 근접 음성을 쓸 수 없어요.", "Viewer mode cannot use proximity voice.") : bt("팀원 연결을 확인하는 중이에요.", "Checking teammate connection.");
 
@@ -568,6 +576,17 @@ export function VirtualSpaceExperience({
     else if (atelierPulse.quickActionId === "join-huddle") overlays.openCowork(null);
     else overlays.setPanel("places");
   };
+  const handleZeroWalkShortcut = useCallback((shortcut: ZeroWalkShortcutItem) => {
+    if (shortcut.targetKind === "focus-desk") { startFocusPulse(); applyWorkStatus("focusing", "focused"); openOfficeSeatsRef.current(); return; }
+    if (shortcut.targetKind === "panel" && shortcut.panel) { overlays.setPanel(shortcut.panel); return; }
+    const target = resolveSpaceDeepLinkZone(shortcut.href);
+    if (!target) return;
+    const nextSearch = new URLSearchParams(location.search);
+    nextSearch.set("zone", target.zone);
+    navigate({ pathname: location.pathname, search: `?${nextSearch.toString()}` }, { replace: true });
+    worldRuntime.moveToRoomOrPlace(target.roomId);
+    if (shortcut.panel && !personal) overlays.setPanel(shortcut.panel);
+  }, [applyWorkStatus, location.pathname, location.search, navigate, overlays, personal, startFocusPulse, worldRuntime]);
 
   const dockMedia = {
     available: socialAndMedia.mediaAvailable, onOpen: openMedia,
@@ -666,7 +685,7 @@ export function VirtualSpaceExperience({
               ) : null}
               {homeHeader}
               {worldRuntime.worldReady && overlays.tourOpen ? <StudioVirtualSpaceMiniTour progress={overlays.tourProgress} touch={touch} onDone={overlays.finishMiniTour} /> : null}
-              <SpaceZoneWorkbar kind={zoneWorkKind} items={zoneWorkItems} pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} onPanel={overlays.setPanel} onCowork={() => overlays.openCowork(null)} onShare={shareScreenNearby} onPulseAction={handleAtelierPulseAction} />
+              <SpaceZoneWorkbar kind={zoneWorkKind} items={zoneWorkItems} pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} zeroWalkShortcuts={zeroWalkShortcuts} onPanel={overlays.setPanel} onCowork={() => overlays.openCowork(null)} onShare={shareScreenNearby} onPulseAction={handleAtelierPulseAction} onZeroWalkShortcut={handleZeroWalkShortcut} />
               <StudioVirtualSpaceSilentZoneBadge zone={socialAndMedia.silentZone.zone} mutedByZone={socialAndMedia.silentZone.mutedByZone} />
             </>
           }
