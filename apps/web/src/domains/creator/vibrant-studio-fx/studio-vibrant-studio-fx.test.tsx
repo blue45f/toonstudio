@@ -503,17 +503,9 @@ describe("4. StudioFoleyAudioEngine 물리 모델링 오디오 합성 · 3채널
     engine.dispose();
 
     // 2) suspended 상태에서는 resume()만 중복 없이 요청하고 보이스 노드를 쌓지 않는다
-    let resolveResume: (() => void) | null = null;
+    const pendingResume = Promise.withResolvers<void>();
     const suspendedMock = createMockAudioContext("suspended");
-    (suspendedMock.ctx.resume as ReturnType<typeof vi.fn>).mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveResume = () => {
-            suspendedMock.setState("running");
-            resolve();
-          };
-        }),
-    );
+    vi.mocked(suspendedMock.ctx.resume).mockReturnValue(pendingResume.promise);
 
     const suspendedEngine = new StudioFoleyAudioEngine({
       initialPreset: "lively-asmr",
@@ -530,8 +522,9 @@ describe("4. StudioFoleyAudioEngine 물리 모델링 오디오 합성 · 3채널
     expect(suspendedMock.createdOscillators).toHaveLength(0);
     expect(suspendedMock.ctx.resume).toHaveBeenCalledTimes(1);
 
-    resolveResume?.();
-    await Promise.resolve();
+    suspendedMock.setState("running");
+    pendingResume.resolve();
+    await pendingResume.promise;
     const afterResume = suspendedEngine.triggerSound("gpen-ink");
     expect(afterResume.played).toBe(true);
     suspendedEngine.dispose();

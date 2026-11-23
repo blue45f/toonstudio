@@ -24,6 +24,8 @@ export type BenchmarkToolId =
   | "blender"
   | "ibispaint";
 
+export type CellGrade = "lead" | "strong" | "partial" | "none";
+
 export type BenchmarkStatus =
   | "current"
   | "partial"
