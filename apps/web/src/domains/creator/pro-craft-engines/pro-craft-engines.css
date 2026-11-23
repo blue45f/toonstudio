@@ -1,0 +1,253 @@
+.pro-craft-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border, currentColor);
+  background: var(--card, transparent);
+  color: var(--foreground, inherit);
+  word-break: keep-all;
+}
+
+.pro-craft-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pro-craft-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.pro-craft-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted-foreground, inherit);
+}
+
+.pro-craft-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--secondary, transparent);
+  border: 1px solid var(--border, currentColor);
+}
+
+.pro-craft-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pro-craft-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--border, currentColor);
+  background: var(--background, transparent);
+  color: var(--foreground, inherit);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.pro-craft-tab[aria-selected="true"] {
+  background: var(--primary, currentColor);
+  color: var(--primary-foreground, inherit);
+  border-color: var(--primary, currentColor);
+}
+
+.pro-craft-tab:active {
+  transform: scale(0.98);
+}
+
+.pro-craft-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.pro-craft-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border, currentColor);
+  background: var(--background, transparent);
+}
+
+.pro-craft-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.pro-craft-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.55rem;
+  border: 1px solid var(--border, currentColor);
+  background: var(--card, transparent);
+  color: var(--foreground, inherit);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.pro-craft-chip[data-active="true"] {
+  background: var(--accent, transparent);
+  border-color: var(--primary, currentColor);
+}
+
+.pro-craft-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pro-craft-metrics dt {
+  font-size: 0.75rem;
+  color: var(--muted-foreground, inherit);
+}
+
+.pro-craft-metrics dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.pro-craft-stage {
+  display: grid;
+  grid-template-columns: minmax(11rem, 15rem) 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .pro-craft-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pro-craft-svg,
+.pro-craft-pad {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border, currentColor);
+  background: var(--secondary, transparent);
+  touch-action: none;
+}
+
+.pro-craft-pad {
+  aspect-ratio: 26 / 11;
+  cursor: crosshair;
+}
+
+.pro-craft-cutline-path {
+  fill: none;
+  stroke: var(--primary, currentColor);
+  stroke-width: 1.6;
+  stroke-dasharray: 4 2;
+}
+
+.pro-craft-cutline-eyelet {
+  fill: none;
+  stroke: var(--primary, currentColor);
+  stroke-width: 1.4;
+}
+
+.pro-craft-subject-fill {
+  fill: var(--muted-foreground, currentColor);
+  opacity: 0.35;
+}
+
+.pro-craft-curve-line {
+  fill: none;
+  stroke: var(--primary, currentColor);
+  stroke-width: 2.2;
+}
+
+.pro-craft-sample-dot {
+  fill: var(--foreground, currentColor);
+  opacity: 0.65;
+}
+
+.pro-craft-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pro-craft-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pro-craft-status-row,
+.pro-craft-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted-foreground, inherit);
+  font-variant-numeric: tabular-nums;
+}
+
+.pro-craft-archetype {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pro-craft-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 1rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--primary, currentColor);
+  background: var(--primary, currentColor);
+  color: var(--primary-foreground, inherit);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.pro-craft-primary-btn:active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pro-craft-tab,
+  .pro-craft-chip,
+  .pro-craft-primary-btn {
+    transition: none;
+    transform: none;
+  }
+}
