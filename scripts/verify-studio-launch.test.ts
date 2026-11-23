@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { integratedPrimaryTargetsReady } from "./lib/studio-launch-integrated-dock.mts";
 import {
   isExpectedStaticPreviewApiError,
   resolveStudioMobileDockIsolation,
   studioLaunchTouchTargetsReady,
 } from "./verify-studio-launch.mts";
+
 
 const STUDIO_URL = "http://127.0.0.1:51758/studio";
 const launchHarness = readFileSync(new URL("./verify-studio-launch.mts", import.meta.url), "utf8");
@@ -17,6 +19,27 @@ const EXPECTED_HANDSHAKE_CLOSE = [
 ].join("");
 
 describe("Studio launch static-preview diagnostics", () => {
+  it("통합 도크는 여섯 제품 도구의 44px, 중앙 터치, 좌우 경계, 겹침과 스크롤을 각각 검증한다", () => {
+    const targets = ["펜", "지우개", "브러시", "브러시 색상", "레이어 열기", "더보기 · 도구와 도움말"].map((name, index) =>
+      ({ name, width: 44, height: 44, left: index * 48, right: index * 48 + 44, top: 790, bottom: 834, centerHit: true }));
+    const sample = { targets, toolbarLeft: 0, toolbarRight: 320, scrollWidth: 320, clientWidth: 320, viewportWidth: 320, viewportHeight: 844 };
+    expect(integratedPrimaryTargetsReady(sample)).toBe(true);
+    for (const change of [{ width: 43 }, { height: 43 }, { top: -1 }, { bottom: 845 }, { left: 40 }, { right: 321 }, { centerHit: false }, { name: "다른 도구" }])
+      expect(integratedPrimaryTargetsReady({ ...sample, targets: targets.map((target, i) => i === 1 ? { ...target, ...change } : target) })).toBe(false);
+    expect(integratedPrimaryTargetsReady({ ...sample, targets: targets.slice(1) })).toBe(false);
+    expect(integratedPrimaryTargetsReady({ ...sample, scrollWidth: 330 })).toBe(false);
+  });
+  it("데스크톱 작화 화면에서 페이지 목록을 열고 실제 추가 버튼을 두 번 누른다", () => {
+    const open = launchHarness.indexOf("await position.click()");
+    const visible = launchHarness.indexOf('await pagesPane.waitFor({ state: "visible" })');
+    const addition = launchHarness.indexOf("await addBtn.click(");
+    expect(launchHarness).toContain('button.studio-drawing-page-position');
+    expect(open).toBeGreaterThan(0);
+    expect(visible).toBeGreaterThan(open);
+    expect(addition).toBeGreaterThan(visible);
+    expect(launchHarness.match(/await addBtn\.click\(/gu)).toHaveLength(2);
+    expect(launchHarness).toContain("pageDelta < 2");
+  });
   it("모바일 관리자 휴면 검사를 현재 셸의 요청 전·후 계약으로 수행한다", () => {
     expect(launchHarness).toContain("await inspectStudioMobileWorkspaceMenuDormancy(page)");
     expect(launchHarness).toContain('verifyMobileWorkspaceMenuGateDormant(page, "mobile")');

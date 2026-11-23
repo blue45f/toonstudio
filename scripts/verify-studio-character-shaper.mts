@@ -17,6 +17,7 @@ import { initializeCanvas, readPsd, type Layer } from "ag-psd";
 import { chromium, type Browser, type Download, type Page } from "playwright";
 
 import { compositeCharacterPsdLayers } from "./lib/character-psd-reference-compositor.mjs";
+import { CHARACTER_SHAPER_DIALOG as DIALOG, cameraChromeBounds, mobileChromeBounds } from "./lib/character-shaper-camera-bounds";
 import { collectStudioQaDiagnostics, installStudioQaDiagnostics } from "./lib/studio-qa-diagnostics.mjs";
 import {
   findFreePort,
@@ -32,7 +33,6 @@ const OUT_DIR =
 const RESULT_PATH = join(OUT_DIR, "character-shaper-evidence.json");
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
 const MOBILE_HINT_KEY = "toonstudio-studio-mobile-hint-dismissed";
-const DIALOG = '[data-character-shaper="true"]';
 // 개편된 데스크톱 화면은 상단 카테고리 탭(얼굴·헤어·의상·체형·포즈·소품)으로 고르고, 부위가 둘 이상인 카테고리는
 // 그 아래 세부 부위 탭(의상 → 상의·하의·신발)이 따로 나온다. data-character-shaper-rail 은 모바일 가로 레일 전용이다.
 const CATEGORY_RAIL = `${DIALOG} [data-character-category-rail="desktop"]`;
@@ -155,134 +155,6 @@ async function accessibleNameGaps(page: Page): Promise<string[]> {
     });
     return gaps;
   });
-}
-
-/** Outer overflow:hidden can hide broken children without increasing document.scrollWidth. */
-async function mobileChromeBounds(page: Page, exportOpen: boolean) {
-  return page.evaluate(({ dialogSelector, exportOpen }) => {
-    const root = document.querySelector<HTMLElement>(`${dialogSelector} [data-character-shaper-surface]`);
-    if (!root) throw new Error("character dialog surface missing");
-    const frame = root.getBoundingClientRect();
-    const violations: string[] = [];
-    const controls: { name: string; x: number; y: number; width: number; height: number }[] = [];
-    const selectors = [
-      "[data-character-shaper-summary] button",
-      "[data-character-shaper-dock] button",
-      ...(exportOpen ? ["[data-character-export-sheet] select"] : [
-        '[aria-label="뷰포트 보기 설정"] button',
-        'select[aria-label="부위·방향 확대 검사"]',
-        "[data-character-camera-selects] select",
-        "[data-character-quality-trigger]",
-      ]),
-    ];
-    const elements = new Set(selectors.flatMap((selector) => [...root.querySelectorAll<HTMLElement>(selector)]));
-    for (const element of elements) {
-      const rect = element.getBoundingClientRect();
-      const name = element.getAttribute("aria-label") || element.textContent?.trim() || element.tagName;
-      controls.push({ name, x: rect.x, y: rect.y, width: rect.width, height: rect.height });
-      if (rect.width < 43.5 || rect.height < 43.5) violations.push(`${name}: target smaller than 44px`);
-      if (rect.left < frame.left - 0.5 || rect.right > frame.right + 0.5 || rect.top < frame.top - 0.5 || rect.bottom > frame.bottom + 0.5) {
-        violations.push(`${name}: outside dialog surface`);
-      }
-      let ancestor = element.parentElement;
-      while (ancestor && root.contains(ancestor)) {
-        const style = getComputedStyle(ancestor);
-        const bounds = ancestor.getBoundingClientRect();
-        if (/(hidden|clip|auto|scroll)/u.test(style.overflowX) && (rect.left < bounds.left - 0.5 || rect.right > bounds.right + 0.5)) {
-          violations.push(`${name}: horizontally clipped by ${ancestor.tagName}`);
-        }
-        if (/(hidden|clip|auto|scroll)/u.test(style.overflowY) && (rect.top < bounds.top - 0.5 || rect.bottom > bounds.bottom + 0.5)) {
-          violations.push(`${name}: vertically clipped by ${ancestor.tagName}`);
-        }
-        ancestor = ancestor.parentElement;
-      }
-      // Check both center and near-corner taps: a floating launcher can obscure only half a button.
-      for (const [x, y] of [[rect.left + rect.width / 2, rect.top + rect.height / 2],
-        [rect.left + 6, rect.top + 6], [rect.right - 6, rect.bottom - 6]]) {
-        const hit = document.elementFromPoint(x, y);
-        if (!hit || (hit !== element && !element.contains(hit))) {
-          violations.push(`${name}: tap intercepted by ${hit?.getAttribute("aria-label") || hit?.tagName || "nothing"}`);
-          break;
-        }
-      }
-    }
-    if (!exportOpen && !root.querySelector("[data-character-quality-launcher] [data-character-quality-trigger]")) {
-      violations.push("mobile quality launcher must be in the sheet header");
-    }
-    const cameraBar = root.querySelector<HTMLElement>("[data-character-shaper-camera-bar]");
-    const sceneCanvas = root.querySelector<HTMLCanvasElement>("[data-character-shaper-viewport] canvas");
-    const barBounds = cameraBar?.getBoundingClientRect();
-    const canvasBounds = sceneCanvas?.getBoundingClientRect();
-    if (!barBounds || !canvasBounds) violations.push("mobile camera controls or scene canvas missing");
-    else if (barBounds.bottom > canvasBounds.top + 0.5) {
-      violations.push("camera controls cover the character canvas");
-    }
-    const sheet = root.querySelector<HTMLElement>("[data-character-export-sheet]");
-    if (exportOpen) {
-      if (!sheet) violations.push("export sheet missing");
-      else {
-        const bounds = sheet.getBoundingClientRect();
-        if (bounds.left < frame.left || bounds.right > frame.right || sheet.scrollWidth > sheet.clientWidth + 1) {
-          violations.push("export sheet or its content overflows the dialog");
-        }
-        const help = sheet.querySelector<HTMLElement>("[data-character-export-size-help]");
-        if (!help || help.scrollWidth > help.clientWidth + 1) violations.push("export resolution help is clipped");
-      }
-    }
-    return { width: innerWidth, exportOpen, controls, cameraBarBottom: barBounds?.bottom, canvasTop: canvasBounds?.top, canvasHeight: canvasBounds?.height, violations };
-  }, { dialogSelector: DIALOG, exportOpen });
-}
-
-/** 실제 캔버스 바깥에 카메라 도구 공간을 예약하는지 안정된 resize 뒤에 확인한다. */
-async function cameraChromeBounds(page: Page, layout: "desktop" | "tablet") {
-  await page.waitForFunction(({ dialogSelector, layout }) =>
-    document.querySelector(dialogSelector)?.getAttribute("data-character-shaper-layout") === layout,
-  { dialogSelector: DIALOG, layout });
-  await page.waitForTimeout(300);
-  return page.evaluate(async (dialogSelector) => {
-    const root = document.querySelector<HTMLElement>(dialogSelector);
-    const bars = root?.querySelectorAll<HTMLElement>("[data-character-shaper-camera-bar]");
-    const bar = bars?.item(0);
-    const canvas = root?.querySelector<HTMLCanvasElement>("[data-character-shaper-viewport] canvas");
-    if (!root || bars?.length !== 1 || !bar || !canvas) throw new Error("카메라 도구나 캐릭터 캔버스가 없거나 중복되었습니다.");
-    // 크기가 연속 세 프레임 동안 같아야 resize 이후 배치로 판정한다.
-    let previous = "";
-    let stableFrames = 0;
-    for (let frame = 0; frame < 60 && stableFrames < 3; frame++) {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      const bounds = canvas.getBoundingClientRect();
-      const signature = [bounds.x, bounds.y, bounds.width, bounds.height, bar.getBoundingClientRect().bottom].join(",");
-      stableFrames = signature === previous ? stableFrames + 1 : 0;
-      previous = signature;
-    }
-    if (stableFrames < 3) throw new Error("resize 이후 카메라 도구와 캔버스 크기가 안정되지 않았습니다.");
-    const barBounds = bar.getBoundingClientRect();
-    const canvasBounds = canvas.getBoundingClientRect();
-    const cameraButtons = root.querySelectorAll<HTMLElement>('[aria-label="카메라 프리셋"] button');
-    const cameraSelects = root.querySelectorAll<HTMLElement>("[data-character-camera-selects] select");
-    const violations: string[] = [];
-    const controls = [...cameraButtons, ...cameraSelects].map((control) => {
-      const bounds = control.getBoundingClientRect();
-      if (!bar.contains(control)) violations.push("카메라 조작 도구가 예약된 bar 바깥에 있습니다.");
-      return { name: control.getAttribute("aria-label") || control.textContent?.trim() || control.tagName,
-        x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, bottom: bounds.bottom };
-    });
-    if (cameraButtons.length !== 5 || cameraSelects.length !== 3) {
-      violations.push("카메라 프리셋이나 선택 필드가 없거나 중복되었습니다.");
-    }
-    if (canvasBounds.width <= 0 || canvasBounds.height <= 0) violations.push("캐릭터 캔버스의 면적이 없습니다.");
-    if (barBounds.bottom > canvasBounds.top + 0.5) violations.push("카메라 도구가 캐릭터 캔버스를 가립니다.");
-    for (const control of controls) {
-      if (control.bottom > canvasBounds.top + 0.5) violations.push(`${control.name}: 캐릭터 캔버스를 가립니다.`);
-      if (control.width < 43.5 || control.height < 43.5) violations.push(`${control.name}: 조작 영역이 44px보다 작습니다.`);
-      if (control.x < barBounds.left - 0.5 || control.x + control.width > barBounds.right + 0.5) {
-        violations.push(`${control.name}: 카메라 도구 영역을 벗어납니다.`);
-      }
-    }
-    return { width: innerWidth, layout: root.getAttribute("data-character-shaper-layout"),
-      cameraBarBottom: barBounds.bottom, canvasTop: canvasBounds.top,
-      canvasWidth: canvasBounds.width, canvasHeight: canvasBounds.height, controls, violations };
-  }, DIALOG);
 }
 
 async function downloadedPngStats(page: Page, path: string) {
@@ -742,12 +614,21 @@ async function main(): Promise<void> {
     invariant(!overflow, "mobile layout overflows horizontally");
     const mobileBounds: Awaited<ReturnType<typeof mobileChromeBounds>>[] = [];
     evidence.mobileControlBounds = mobileBounds;
-    const checkMobileBounds = async (exportOpen: boolean) => {
-      const result = await mobileChromeBounds(mpage, exportOpen);
+    const checkMobileBounds = async (exportOpen: boolean, cameraExtrasOpen = false) => {
+      const result = await mobileChromeBounds(mpage, exportOpen, cameraExtrasOpen);
       mobileBounds.push(result);
       invariant(result.violations.length === 0, `${result.width}px mobile controls: ${result.violations.join("; ")}`);
     };
-    await checkMobileBounds(false);
+    const checkMobileCameraSettings = async () => {
+      const expand = mpage.getByRole("button", { name: "세부 카메라 설정 펼치기" });
+      await expand.scrollIntoViewIfNeeded();
+      await checkMobileBounds(false);
+      await expand.tap();
+      await checkMobileBounds(false, true);
+      await mpage.getByRole("button", { name: "세부 카메라 설정 접기" }).tap();
+      await checkMobileBounds(false);
+    };
+    await checkMobileCameraSettings();
     await mpage.getByRole("button", { name: "내보내기 더 보기" }).click();
     await mpage.getByRole("combobox", { name: "파일 내보내기 해상도" }).selectOption("1024");
     await mpage.screenshot({ path: join(OUT_DIR, "character-mobile-export.png") });
@@ -758,7 +639,7 @@ async function main(): Promise<void> {
     invariant(await mpage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), "320px mobile export layout overflows horizontally");
     await checkMobileBounds(true);
     await mpage.getByRole("button", { name: "내보내기 더 보기" }).click();
-    await checkMobileBounds(false);
+    await checkMobileCameraSettings();
     await mpage.screenshot({ path: join(OUT_DIR, "character-mobile-320-controls.png") });
     evidence.mobileWidths = [390, 320];
     invariant(consoleErrors.length === 0, `character workflow page errors: ${consoleErrors.join("; ")}`);
