@@ -80,7 +80,7 @@ export function StudioHistogramGraph({
       <div
         data-studio-histogram-empty="true"
         className={cn(
-          "flex h-14 items-center justify-center rounded border border-dashed border-line/70 bg-card/50 text-[0.62rem] text-fg-4",
+          "flex h-14 items-center justify-center rounded border border-dashed border-line/70 bg-card/50 text-[0.62rem] text-fg-3",
           className
         )}
       >
@@ -155,7 +155,7 @@ export function StudioHistogramSection({ source, channel }: StudioHistogramSecti
   return (
     <div className="space-y-1" data-studio-histogram-section="true">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.6rem] font-semibold text-fg-4">히스토그램 ({CHANNEL_KOREAN[histogramChannel]})</p>
+        <p className="text-[0.6rem] font-semibold text-fg-3">히스토그램 ({CHANNEL_KOREAN[histogramChannel]})</p>
         <StudioToggleChip
           active={logScale}
           onClick={() => setLogScale((prev) => !prev)}
@@ -167,7 +167,7 @@ export function StudioHistogramSection({ source, channel }: StudioHistogramSecti
       </div>
       <StudioHistogramGraph histogram={histogram} channel={histogramChannel} logScale={logScale} />
       {histogram && histogram.sampledPixels > 0 ? (
-        <p className="text-[0.6rem] tabular-nums text-fg-4">
+        <p className="text-[0.6rem] tabular-nums text-fg-3">
           평균 {histogram.mean.toFixed(1)} · 중앙값 {histogram.median}
           {histogram.clippedLow > 0 ? ` · 0 잘림 ${histogram.clippedLow}` : ""}
           {histogram.clippedHigh > 0 ? ` · 255 잘림 ${histogram.clippedHigh}` : ""}

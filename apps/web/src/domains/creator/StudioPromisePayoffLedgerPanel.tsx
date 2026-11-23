@@ -496,7 +496,7 @@ export function StudioPromisePayoffLedgerPanel({
             <button
               type="button"
               onClick={addEntry}
-              className={`${BUTTON_CLASS} w-full border-accent bg-accent text-on-accent hover:bg-accent-hover`}
+              className={`${BUTTON_CLASS} w-full border-accent bg-accent text-on-accent hover:bg-accent-2`}
             >
               <Plus size={14} aria-hidden />
               새 약속 등록
@@ -586,7 +586,7 @@ export function StudioPromisePayoffLedgerPanel({
                 <button
                   type="button"
                   onClick={addEntry}
-                  className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   <Plus size={14} aria-hidden />
                   첫 약속 등록

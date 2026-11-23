@@ -252,7 +252,7 @@ export function StudioLivingInkControls({
             <span role="status" className="text-[0.58rem] text-fg-3">{stateLabel(state)}</span>
           </div>
           {materialLocked ? (
-            <p className="mb-2 rounded-lg border border-amber-400/25 bg-amber-400/8 px-2 py-1.5 text-[0.58rem] leading-relaxed text-amber-100">
+            <p className="mb-2 rounded-lg border border-warn/30 bg-warn/10 px-2 py-1.5 text-[0.58rem] leading-relaxed text-fg">
               {materialLockedReason}
             </p>
           ) : null}

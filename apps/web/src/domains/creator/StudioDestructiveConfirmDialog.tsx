@@ -46,14 +46,14 @@ const TONE = Object.freeze({
     icon: AlertTriangle,
     badge: "실행 취소 가능",
     shell: "border-warn/40 bg-warn/10 text-warn",
-    confirm: "bg-accent text-on-accent hover:bg-accent-hover",
+    confirm: "bg-accent text-on-accent hover:bg-accent-2",
     defaultConfirmLabel: "실행",
   },
   "document-untouched": {
     icon: Info,
     badge: "문서 변경 없음",
     shell: "border-accent/35 bg-accent-soft/55 text-accent",
-    confirm: "bg-accent text-on-accent hover:bg-accent-hover",
+    confirm: "bg-accent text-on-accent hover:bg-accent-2",
     defaultConfirmLabel: "계속",
   },
 } satisfies Record<

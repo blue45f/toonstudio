@@ -1175,7 +1175,7 @@ export function StudioCommentsPanel({
                   <button
                     type="submit"
                     disabled={!composerAnchorValid || !canAddThread || !newComment.trim()}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
                   >
                     <Send size={13} aria-hidden />
                     등록
@@ -1223,7 +1223,7 @@ export function StudioCommentsPanel({
                   setComposerExpanded(true);
                   setError(null);
                 }}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
               >
                 <Plus size={13} aria-hidden />
                 현재 선택에 댓글
@@ -1602,7 +1602,7 @@ export function StudioCommentsPanel({
                               <button
                                 type="submit"
                                 disabled={!editBody.trim() || editBody.trim() === thread.body}
-                                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
+                                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
                               >
                                 저장
                               </button>
@@ -1706,7 +1706,7 @@ export function StudioCommentsPanel({
                                           <button
                                             type="submit"
                                             disabled={!editBody.trim() || editBody.trim() === reply.body}
-                                            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
+                                            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
                                           >
                                             저장
                                           </button>
@@ -1929,7 +1929,7 @@ export function StudioCommentsPanel({
                               disabled={taskConversionDisabledReason !== null}
                               aria-describedby={taskConversionHelpId}
                               onClick={() => void assignToCurrentActor(thread.id)}
-                              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-raised disabled:text-fg-3 disabled:opacity-55 sm:min-h-9 pointer-coarse:min-h-11"
+                              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-raised disabled:text-fg-3 disabled:opacity-55 sm:min-h-9 pointer-coarse:min-h-11"
                             >
                               <UserRoundCheck size={13} aria-hidden />
                               {assignedToCurrentActor ? "내 작업으로 지정됨" : "내 작업으로 전환"}
@@ -2001,7 +2001,7 @@ export function StudioCommentsPanel({
                               <button
                                 type="submit"
                                 disabled={!canReply || !activeReplyBody.trim()}
-                                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
+                                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
                               >
                                 <Send size={12} aria-hidden />
                                 답글 등록
@@ -2041,7 +2041,7 @@ export function StudioCommentsPanel({
                               <button
                                 type="submit"
                                 disabled={!assigneeName.trim()}
-                                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
+                                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-9"
                               >
                                 지정
                               </button>

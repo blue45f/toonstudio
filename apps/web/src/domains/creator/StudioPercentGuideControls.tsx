@@ -131,7 +131,7 @@ export function StudioPercentGuideControls({
         <button
           type="submit"
           disabled={disabled || directPosition === null}
-          className="min-h-11 shrink-0 rounded-md bg-accent px-3 text-[0.68rem] font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 shrink-0 rounded-md bg-accent px-3 text-[0.68rem] font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
         >
           추가
         </button>

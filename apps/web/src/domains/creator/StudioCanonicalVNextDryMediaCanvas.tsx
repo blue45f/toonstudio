@@ -734,7 +734,7 @@ export function StudioCanonicalVNextDryMediaCanvas({
           aria-live="assertive"
           aria-atomic="true"
           data-studio-canonical-vnext-dry-media-unavailable="true"
-          className="pointer-events-none absolute inset-x-4 top-4 z-[31] rounded-md border border-red-400/50 bg-red-950/90 px-4 py-3 text-sm font-medium text-red-50 shadow-lg"
+          className="pointer-events-none absolute inset-x-4 top-4 z-[31] rounded-md border border-bad/50 bg-card/95 px-4 py-3 text-sm font-medium text-bad shadow-lg"
         >
           {r3c07StatusText("studio.panelStatus.r3c07.canonicalDryMedia.engineNotKept", "선택한 WebGPU 드라이 미디어 엔진을 유지하지 못했습니다. 다른 렌더러로 자동 전환하지 않았습니다.")}
           {showLastGoodSnapshot

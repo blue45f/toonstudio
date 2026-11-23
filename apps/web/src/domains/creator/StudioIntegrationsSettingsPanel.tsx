@@ -80,7 +80,7 @@ export function StudioIntegrationsSettingsPanel(_legacyProps: StudioIntegrations
       </a>
 
       <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
-        <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+        <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
           <Images size={14} />
           무료 스톡 이미지 (Unsplash)
         </div>

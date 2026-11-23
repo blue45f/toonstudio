@@ -102,7 +102,7 @@ export const StudioColorTrigger = forwardRef<HTMLButtonElement, StudioColorTrigg
             )}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-mono text-[13px] font-semibold tabular-nums text-fg-1">
+            <span className="block truncate font-mono text-[13px] font-semibold tabular-nums text-fg">
               {variant === "labeled" ? label : displayValue}
             </span>
             <span className="block truncate text-xs font-medium text-fg-3">

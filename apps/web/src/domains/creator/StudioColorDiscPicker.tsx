@@ -336,7 +336,7 @@ export function StudioColorDiscPicker({
           style={{ backgroundColor: value }}
         />
         <span className="font-mono text-xs font-medium text-fg-2">
-          H <span className="font-semibold text-fg-1">{hsv.h}°</span> · S <span className="font-semibold text-fg-1">{hsv.s}%</span> · V <span className="font-semibold text-fg-1">{hsv.v}%</span>
+          H <span className="font-semibold text-fg">{hsv.h}°</span> · S <span className="font-semibold text-fg">{hsv.s}%</span> · V <span className="font-semibold text-fg">{hsv.v}%</span>
         </span>
       </div>
     </div>

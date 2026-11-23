@@ -110,7 +110,7 @@ function Callout({ tone, children }: { tone: "info" | "warn"; children: ReactNod
     <p
       className={
         tone === "warn"
-          ? "rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-fg"
+          ? "rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs leading-relaxed text-fg"
           : "rounded-lg border border-line bg-card px-3 py-2 text-xs leading-relaxed text-fg-3"
       }
     >
@@ -532,7 +532,7 @@ function RecoveryPanel() {
             key={action.id}
             className={
               action.urgent
-                ? "rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2"
+                ? "rounded-lg border border-warn/40 bg-warn/10 px-3 py-2"
                 : "rounded-lg border border-line bg-card px-3 py-2"
             }
           >
@@ -645,7 +645,7 @@ function LicensePanel() {
               className={
                 row.gate === "bundle"
                   ? "shrink-0 rounded-full border border-line bg-panel px-2 py-0.5 text-[0.66rem] text-fg-3"
-                  : "shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[0.66rem] text-fg"
+                  : "shrink-0 rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 text-[0.66rem] text-fg"
               }
             >
               {row.gate === "bundle"

@@ -68,9 +68,9 @@ function QuickAction({ icon, eyebrow, title, description, visual, visualPosition
     <button
       type="button"
       onClick={onClick}
-      className="group flex min-h-52 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/70 p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transform-none"
+      className="group flex min-h-52 flex-col overflow-hidden rounded-2xl border border-line/70 bg-card/70 p-4 text-left transition hover:-translate-y-0.5 hover:border-accent/45 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transform-none"
     >
-      <span data-studio-help-visual="true" className="relative -mx-4 -mt-4 mb-4 block h-24 overflow-hidden border-b border-border/60 bg-muted">
+      <span data-studio-help-visual="true" className="relative -mx-4 -mt-4 mb-4 block h-24 overflow-hidden border-b border-line/60 bg-raised">
         <img
           src={visual}
           alt=""
@@ -82,15 +82,15 @@ function QuickAction({ icon, eyebrow, title, description, visual, visualPosition
         />
         <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/60 via-transparent to-white/[0.04]" />
       </span>
-      <span className="mb-4 inline-flex size-9 items-center justify-center rounded-xl bg-muted text-muted-foreground transition group-hover:bg-primary/10 group-hover:text-primary">
+      <span className="mb-4 inline-flex size-9 items-center justify-center rounded-xl bg-raised text-fg-2 transition group-hover:bg-accent/10 group-hover:text-accent">
         {icon}
       </span>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-fg-2">
         {eyebrow}
       </span>
-      <span className="mt-1 text-sm font-semibold text-foreground">{title}</span>
-      <span className="mt-2 text-xs leading-5 text-muted-foreground">{description}</span>
-      <ChevronRight className="mt-auto size-4 self-end text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
+      <span className="mt-1 text-sm font-semibold text-fg">{title}</span>
+      <span className="mt-2 text-xs leading-5 text-fg-2">{description}</span>
+      <ChevronRight className="mt-auto size-4 self-end text-fg-2 transition group-hover:translate-x-0.5 group-hover:text-accent" aria-hidden="true" />
     </button>
   );
 }
@@ -120,17 +120,17 @@ function HomePanel({
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-8 px-5 py-6 sm:px-8 sm:py-8">
-      <section className="relative grid overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/12 via-card to-card p-6 sm:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)] lg:items-center lg:gap-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 size-52 rounded-full bg-primary/10 blur-3xl" />
+      <section className="relative grid overflow-hidden rounded-3xl border border-accent/20 bg-gradient-to-br from-accent/12 via-card to-card p-6 sm:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)] lg:items-center lg:gap-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 size-52 rounded-full bg-accent/10 blur-3xl" />
         <div className="relative max-w-2xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+          <span className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
             <HelpCircle className="size-3.5" aria-hidden="true" />
             작업 흐름을 끊지 않는 도움말
           </span>
-          <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h2 className="mt-4 text-2xl font-bold tracking-tight text-fg sm:text-3xl">
             지금 막힌 지점에서 바로 해결하세요
           </h2>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-fg-2">
             현재 도구의 30초 가이드부터 증상별 점검 순서, 시스템 진단과 복구까지 한 곳에서 연결합니다.
             기능 이름을 알고 있다면 F1 명령 검색이 가장 빠릅니다.
           </p>
@@ -138,23 +138,23 @@ function HomePanel({
             <button
               type="button"
               onClick={onOpenCommandSearch}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent shadow-sm transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
             >
               <Search className="size-4" aria-hidden="true" />
               기능·설정 찾기
-              <kbd className="ml-1 rounded border border-primary-foreground/25 bg-primary-foreground/10 px-1.5 py-0.5 text-[10px] font-medium">F1</kbd>
+              <kbd className="ml-1 rounded border border-on-accent/25 bg-on-accent/10 px-1.5 py-0.5 text-[10px] font-medium">F1</kbd>
             </button>
             <button
               type="button"
               onClick={() => onViewChange("troubleshooting")}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-background/70 px-4 text-sm font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-canvas/70 px-4 text-sm font-semibold text-fg transition hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <Wrench className="size-4" aria-hidden="true" />
               증상으로 해결하기
             </button>
           </div>
         </div>
-        <div data-studio-help-hero-visual="true" className="relative mt-6 hidden min-h-56 overflow-hidden rounded-2xl border border-primary/20 bg-muted shadow-lg lg:block">
+        <div data-studio-help-hero-visual="true" className="relative mt-6 hidden min-h-56 overflow-hidden rounded-2xl border border-accent/20 bg-raised shadow-lg lg:block">
           <img
             src="/brand/production-os-workspace.svg"
             alt=""
@@ -173,21 +173,21 @@ function HomePanel({
       </section>
 
       {toolHelp ? (
-        <section aria-labelledby="current-tool-help-heading" className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <section aria-labelledby="current-tool-help-heading" className="rounded-2xl border border-line bg-card p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">지금 선택한 도구</p>
-              <h3 id="current-tool-help-heading" className="mt-1 truncate text-lg font-bold text-foreground">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">지금 선택한 도구</p>
+              <h3 id="current-tool-help-heading" className="mt-1 truncate text-lg font-bold text-fg">
                 {guide?.title ?? toolHelp.label}
               </h3>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-fg-2">
                 {guide?.summary ?? toolHelp.description}
               </p>
             </div>
             <button
               type="button"
               onClick={() => onViewChange("tool")}
-              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary transition hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-4 text-sm font-semibold text-accent transition hover:bg-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               30초 가이드
               <ChevronRight className="size-4" aria-hidden="true" />
@@ -195,9 +195,9 @@ function HomePanel({
           </div>
         </section>
       ) : (
-        <section className="rounded-2xl border border-dashed border-border bg-muted/30 p-5">
-          <p className="text-sm font-semibold text-foreground">현재 도구 정보가 아직 연결되지 않았습니다.</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        <section className="rounded-2xl border border-dashed border-line bg-raised/30 p-5">
+          <p className="text-sm font-semibold text-fg">현재 도구 정보가 아직 연결되지 않았습니다.</p>
+          <p className="mt-1 text-xs leading-5 text-fg-2">
             기능·설정 찾기에서 명령 이름을 검색하거나 증상별 해결 레시피를 사용하세요.
           </p>
         </section>
@@ -206,10 +206,10 @@ function HomePanel({
       <section aria-labelledby="help-paths-heading">
         <div className="mb-3 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">빠른 경로</p>
-            <h3 id="help-paths-heading" className="mt-1 text-lg font-bold text-foreground">목적에 맞는 도움말 열기</h3>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-fg-2">빠른 경로</p>
+            <h3 id="help-paths-heading" className="mt-1 text-lg font-bold text-fg">목적에 맞는 도움말 열기</h3>
           </div>
-          <p className="hidden text-xs text-muted-foreground sm:block">검색 · 학습 · 진단 · 복구</p>
+          <p className="hidden text-xs text-fg-2 sm:block">검색 · 학습 · 진단 · 복구</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <QuickAction
@@ -272,13 +272,13 @@ function HomePanel({
       <section aria-labelledby="popular-fixes-heading">
         <div className="mb-3 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">자주 막히는 지점</p>
-            <h3 id="popular-fixes-heading" className="mt-1 text-lg font-bold text-foreground">먼저 확인할 문제</h3>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-fg-2">자주 막히는 지점</p>
+            <h3 id="popular-fixes-heading" className="mt-1 text-lg font-bold text-fg">먼저 확인할 문제</h3>
           </div>
           <button
             type="button"
             onClick={() => onViewChange("troubleshooting")}
-            className="text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="text-xs font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             전체 보기
           </button>
@@ -289,16 +289,16 @@ function HomePanel({
               key={recipe.id}
               type="button"
               onClick={() => onOpenRecipe(recipe.id)}
-              className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/60 p-4 text-left transition hover:border-primary/35 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex items-start gap-3 rounded-2xl border border-line/70 bg-card/60 p-4 text-left transition hover:border-accent/35 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-raised text-fg-2">
                 <Wrench className="size-4" aria-hidden="true" />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-foreground">{recipe.title}</span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">{recipe.summary}</span>
+                <span className="block text-sm font-semibold text-fg">{recipe.title}</span>
+                <span className="mt-1 block text-xs leading-5 text-fg-2">{recipe.summary}</span>
               </span>
-              <ChevronRight className="ml-auto mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <ChevronRight className="ml-auto mt-1 size-4 shrink-0 text-fg-2" aria-hidden="true" />
             </button>
           ))}
         </div>
@@ -329,14 +329,14 @@ function ToolPanel({
   if (!help) {
     return (
       <div className="mx-auto flex min-h-full w-full max-w-3xl items-center px-5 py-12 sm:px-8">
-        <div className="w-full rounded-3xl border border-dashed border-border bg-card/60 p-8 text-center">
-          <HelpCircle className="mx-auto size-10 text-muted-foreground" aria-hidden="true" />
-          <h2 className="mt-4 text-xl font-bold text-foreground">{frozenStatus5Text("studio.frozenStatus5.contextHelp.toolUnknown", "현재 도구를 확인할 수 없습니다")}</h2>
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+        <div className="w-full rounded-3xl border border-dashed border-line bg-card/60 p-8 text-center">
+          <HelpCircle className="mx-auto size-10 text-fg-2" aria-hidden="true" />
+          <h2 className="mt-4 text-xl font-bold text-fg">{frozenStatus5Text("studio.frozenStatus5.contextHelp.toolUnknown", "현재 도구를 확인할 수 없습니다")}</h2>
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-fg-2">
             캔버스로 돌아가 도구를 선택한 뒤 다시 열거나, 기능·설정 검색에서 알고 있는 이름을 검색하세요.
           </p>
           <button type="button" onClick={onOpenCommandSearch}
-            className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <Search className="size-4" aria-hidden="true" />
             기능·설정 찾기
@@ -348,44 +348,44 @@ function ToolPanel({
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-5 py-6 sm:px-8 sm:py-8">
-      <header className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
-          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-primary">{guide?.eyebrow ?? "현재 도구"}</span>
+      <header className="rounded-3xl border border-accent/20 bg-gradient-to-br from-accent/10 via-card to-card p-6 sm:p-8">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-fg-2">
+          <span className="rounded-full bg-accent/10 px-2.5 py-1 text-accent">{guide?.eyebrow ?? "현재 도구"}</span>
           <span>{help.commandId}</span>
-          {help.shortcut ? <kbd className="rounded-md border border-border bg-background px-2 py-1 font-mono text-[11px] text-foreground">{help.shortcut}</kbd> : null}
+          {help.shortcut ? <kbd className="rounded-md border border-line bg-canvas px-2 py-1 font-mono text-[11px] text-fg">{help.shortcut}</kbd> : null}
         </div>
-        <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <h2 className="mt-4 text-2xl font-bold tracking-tight text-fg sm:text-3xl">
           {guide?.title ?? help.label}
         </h2>
-        {help.labelEn ? <p className="mt-1 text-sm font-medium text-muted-foreground">{help.labelEn}</p> : null}
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
+        {help.labelEn ? <p className="mt-1 text-sm font-medium text-fg-2">{help.labelEn}</p> : null}
+        <p className="mt-4 max-w-2xl text-sm leading-6 text-fg-2">
           {guide?.summary ?? help.description}
         </p>
         {guide ? (
-          <div className="mt-5 rounded-2xl border border-primary/20 bg-primary/8 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">완료하면</p>
-            <p className="mt-1 text-sm font-medium leading-6 text-foreground">{guide.outcome}</p>
+          <div className="mt-5 rounded-2xl border border-accent/20 bg-accent/8 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">완료하면</p>
+            <p className="mt-1 text-sm font-medium leading-6 text-fg">{guide.outcome}</p>
           </div>
         ) : null}
       </header>
 
       {guide ? (
         <>
-          <section aria-labelledby="quick-guide-heading" className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <section aria-labelledby="quick-guide-heading" className="rounded-2xl border border-line bg-card p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">30초 가이드</p>
-                <h3 id="quick-guide-heading" className="mt-1 text-lg font-bold text-foreground">가장 짧은 성공 경로</h3>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-fg-2">30초 가이드</p>
+                <h3 id="quick-guide-heading" className="mt-1 text-lg font-bold text-fg">가장 짧은 성공 경로</h3>
               </div>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{guide.steps.length}단계</span>
+              <span className="rounded-full bg-raised px-2.5 py-1 text-xs font-medium text-fg-2">{guide.steps.length}단계</span>
             </div>
             <ol className="mt-5 space-y-4">
               {guide.steps.map((step, index) => (
                 <li key={step.title} className="grid grid-cols-[2rem_1fr] gap-3">
-                  <span className="flex size-8 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">{index + 1}</span>
+                  <span className="flex size-8 items-center justify-center rounded-xl bg-accent/10 text-sm font-bold text-accent">{index + 1}</span>
                   <div className="pt-0.5">
-                    <p className="text-sm font-semibold text-foreground">{step.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.body}</p>
+                    <p className="text-sm font-semibold text-fg">{step.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-fg-2">{step.body}</p>
                   </div>
                 </li>
               ))}
@@ -393,35 +393,35 @@ function ToolPanel({
           </section>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <section aria-labelledby="tool-tips-heading" className="rounded-2xl border border-border bg-card p-5">
-              <h3 id="tool-tips-heading" className="text-sm font-bold text-foreground">품질을 높이는 팁</h3>
+            <section aria-labelledby="tool-tips-heading" className="rounded-2xl border border-line bg-card p-5">
+              <h3 id="tool-tips-heading" className="text-sm font-bold text-fg">품질을 높이는 팁</h3>
               <ul className="mt-3 space-y-3">
                 {guide.tips.map((tip) => (
-                  <li key={tip} className="flex gap-2 text-sm leading-6 text-muted-foreground">
-                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                  <li key={tip} className="flex gap-2 text-sm leading-6 text-fg-2">
+                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
                     {tip}
                   </li>
                 ))}
               </ul>
             </section>
-            <section aria-labelledby="tool-fixes-heading" className="rounded-2xl border border-border bg-card p-5">
-              <h3 id="tool-fixes-heading" className="text-sm font-bold text-foreground">이럴 때 확인</h3>
+            <section aria-labelledby="tool-fixes-heading" className="rounded-2xl border border-line bg-card p-5">
+              <h3 id="tool-fixes-heading" className="text-sm font-bold text-fg">이럴 때 확인</h3>
               <div className="mt-3 space-y-3">
                 {guide.troubleshooting.map((item) => (
-                  <div key={item.symptom} className="rounded-xl bg-muted/55 p-3">
-                    <p className="text-xs font-semibold text-foreground">{item.symptom}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.resolution}</p>
+                  <div key={item.symptom} className="rounded-xl bg-raised/55 p-3">
+                    <p className="text-xs font-semibold text-fg">{item.symptom}</p>
+                    <p className="mt-1 text-xs leading-5 text-fg-2">{item.resolution}</p>
                   </div>
                 ))}
               </div>
             </section>
           </div>
 
-          <section aria-labelledby="related-help-heading" className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <section aria-labelledby="related-help-heading" className="rounded-2xl border border-line bg-card p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
-              <h3 id="related-help-heading" className="text-sm font-bold text-foreground">관련 문제 해결</h3>
+              <h3 id="related-help-heading" className="text-sm font-bold text-fg">관련 문제 해결</h3>
               {guide.tutorialId ? (
-                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                <span className="rounded-full bg-raised px-2.5 py-1 text-[11px] font-medium text-fg-2">
                   튜토리얼 연결됨
                 </span>
               ) : null}
@@ -435,11 +435,11 @@ function ToolPanel({
                     key={recipe.id}
                     type="button"
                     onClick={() => onOpenRecipe(recipe.id)}
-                    className="flex items-center gap-3 rounded-xl border border-border/70 p-3 text-left transition hover:border-primary/35 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="flex items-center gap-3 rounded-xl border border-line/70 p-3 text-left transition hover:border-accent/35 hover:bg-raised/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    <Wrench className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-xs font-semibold text-foreground">{recipe.title}</span>
-                    <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <Wrench className="size-4 shrink-0 text-fg-2" aria-hidden="true" />
+                    <span className="text-xs font-semibold text-fg">{recipe.title}</span>
+                    <ChevronRight className="ml-auto size-4 shrink-0 text-fg-2" aria-hidden="true" />
                   </button>
                 );
               })}
@@ -447,9 +447,9 @@ function ToolPanel({
           </section>
         </>
       ) : (
-        <section className="rounded-2xl border border-dashed border-border bg-card/50 p-6">
-          <h3 className="text-base font-bold text-foreground">{frozenStatus5Text("studio.frozenStatus5.contextHelp.guideInPreparation", "핵심 도구 가이드를 준비 중입니다")}</h3>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        <section className="rounded-2xl border border-dashed border-line bg-card/50 p-6">
+          <h3 className="text-base font-bold text-fg">{frozenStatus5Text("studio.frozenStatus5.contextHelp.guideInPreparation", "핵심 도구 가이드를 준비 중입니다")}</h3>
+          <p className="mt-2 text-sm leading-6 text-fg-2">
             명령 설명과 별칭은 사용할 수 있으며, 상세 작성형 가이드가 없는 도구는 기능·설정 검색과 진단으로 이어집니다.
           </p>
           {help.aliases.length > 0 ? (
@@ -457,7 +457,7 @@ function ToolPanel({
               {help.aliases.map((alias) => (
                 <span
                   key={`${alias.vendor}:${alias.term}`}
-                  className="rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground"
+                  className="rounded-full border border-line bg-canvas px-2.5 py-1 text-xs text-fg-2"
                 >
                   {alias.term}
                 </span>
@@ -467,11 +467,11 @@ function ToolPanel({
         </section>
       )}
 
-      <div className="flex flex-wrap gap-2 border-t border-border pt-5">
+      <div className="flex flex-wrap gap-2 border-t border-line pt-5">
         <button
           type="button"
           onClick={onOpenCommandSearch}
-          className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="inline-flex h-9 items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-xs font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Search className="size-3.5" aria-hidden="true" />
           관련 기능 찾기
@@ -479,7 +479,7 @@ function ToolPanel({
         <button
           type="button"
           onClick={onOpenDiagnostics}
-          className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="inline-flex h-9 items-center gap-2 rounded-lg border border-line bg-canvas px-3 text-xs font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Stethoscope className="size-3.5" aria-hidden="true" />
           입력·렌더링 진단
@@ -506,23 +506,23 @@ function RecipeCard({
   readonly onRunDestination: (destination: StudioHelpRecipeDestination) => void;
 }) {
   return (
-    <article className={`rounded-2xl border bg-card p-5 transition ${emphasized ? "border-primary/55 ring-1 ring-primary/20" : "border-border"}`}>
+    <article className={`rounded-2xl border bg-card p-5 transition ${emphasized ? "border-accent/55 ring-1 ring-accent/20" : "border-line"}`}>
       <div className="flex items-start gap-3">
-        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-raised text-fg-2">
           <Wrench className="size-4" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-foreground">{recipe.title}</h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{recipe.summary}</p>
+          <h3 className="text-sm font-bold text-fg">{recipe.title}</h3>
+          <p className="mt-1 text-xs leading-5 text-fg-2">{recipe.summary}</p>
         </div>
       </div>
-      <ol className="mt-4 space-y-3 border-t border-border pt-4">
+      <ol className="mt-4 space-y-3 border-t border-line pt-4">
         {recipe.checks.map((check, index) => (
           <li key={check.title} className="grid grid-cols-[1.5rem_1fr] gap-2.5">
-            <span className="flex size-6 items-center justify-center rounded-lg bg-primary/10 text-[11px] font-bold text-primary">{index + 1}</span>
+            <span className="flex size-6 items-center justify-center rounded-lg bg-accent/10 text-[11px] font-bold text-accent">{index + 1}</span>
             <div>
-              <p className="text-xs font-semibold text-foreground">{check.title}</p>
-              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{check.body}</p>
+              <p className="text-xs font-semibold text-fg">{check.title}</p>
+              <p className="mt-0.5 text-xs leading-5 text-fg-2">{check.body}</p>
             </div>
           </li>
         ))}
@@ -531,7 +531,7 @@ function RecipeCard({
         <button
           type="button"
           onClick={() => onRunDestination(recipe.primaryAction)}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {recipe.primaryAction.label}
           <ChevronRight className="size-3.5" aria-hidden="true" />
@@ -540,7 +540,7 @@ function RecipeCard({
           <button
             type="button"
             onClick={() => onRunDestination(recipe.secondaryAction!)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line bg-canvas px-3 text-xs font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {recipe.secondaryAction.label}
           </button>
@@ -561,9 +561,9 @@ function TroubleshootingPanel({
   return (
     <div className="mx-auto w-full max-w-4xl px-5 py-6 sm:px-8 sm:py-8">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Troubleshooting</p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-foreground">증상부터 찾는 문제 해결</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">Troubleshooting</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-fg">증상부터 찾는 문제 해결</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-fg-2">
           기능 이름을 몰라도 괜찮습니다. 보이는 증상을 검색한 뒤 위에서 아래 순서로 확인하면 원인을 빠르게 좁힐 수 있습니다.
         </p>
       </header>
@@ -571,24 +571,24 @@ function TroubleshootingPanel({
       <label className="mt-6 block">
         <span className="sr-only">문제 해결 검색</span>
         <span className="relative block">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-2" aria-hidden="true" />
           <input
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             type="search"
             placeholder="예: 선이 안 보여요, 채우기가 새요, 저장 복구"
-            className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="h-11 w-full rounded-xl border border-line bg-canvas pl-10 pr-4 text-sm text-fg outline-none placeholder:text-fg-2 focus:border-accent focus:ring-2 focus:ring-accent/20"
           />
         </span>
       </label>
 
-      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center justify-between text-xs text-fg-2">
         <span>{recipes.length}개의 해결 경로</span>
         {query ? (
           <button
             type="button"
             onClick={() => onQueryChange("")}
-            className="font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="font-semibold text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             검색 초기화
           </button>
@@ -607,10 +607,10 @@ function TroubleshootingPanel({
           ))}
         </div>
       ) : (
-        <div className="mt-8 rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center">
-          <Search className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
-          <p className="mt-3 text-sm font-semibold text-foreground">{frozenStatus5Text("studio.frozenStatus5.contextHelp.noRecipes", "일치하는 해결 레시피가 없습니다")}</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">더 짧은 증상으로 검색하거나 F1 기능·설정 검색을 사용하세요.</p>
+        <div className="mt-8 rounded-2xl border border-dashed border-line bg-raised/30 p-8 text-center">
+          <Search className="mx-auto size-8 text-fg-2" aria-hidden="true" />
+          <p className="mt-3 text-sm font-semibold text-fg">{frozenStatus5Text("studio.frozenStatus5.contextHelp.noRecipes", "일치하는 해결 레시피가 없습니다")}</p>
+          <p className="mt-1 text-xs leading-5 text-fg-2">더 짧은 증상으로 검색하거나 F1 기능·설정 검색을 사용하세요.</p>
         </div>
       )}
     </div>
@@ -762,32 +762,32 @@ export function StudioContextHelpDialog({
         aria-modal="true"
         aria-labelledby="studio-context-help-title"
         tabIndex={-1}
-        className="flex h-[min(900px,94vh)] w-[min(1180px,96vw)] min-w-0 flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl outline-none"
+        className="flex h-[min(900px,94vh)] w-[min(1180px,96vw)] min-w-0 flex-col overflow-hidden rounded-3xl border border-line bg-canvas shadow-2xl outline-none"
       >
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-4 sm:px-5">
-          <span className="inline-flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-4 sm:px-5">
+          <span className="inline-flex size-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
             <HelpCircle className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">ToonStudio Help</p>
-            <h1 id="studio-context-help-title" className="truncate text-sm font-bold text-foreground">{title}</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-fg-2">ToonStudio Help</p>
+            <h1 id="studio-context-help-title" className="truncate text-sm font-bold text-fg">{title}</h1>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
               onClick={openCommandSearch}
-              className="hidden h-9 items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 text-xs font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:inline-flex"
+              className="hidden h-9 items-center gap-2 rounded-lg border border-line bg-raised/50 px-3 text-xs font-semibold text-fg transition hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex"
             >
               <Search className="size-3.5" aria-hidden="true" />
               기능 찾기
-              <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground">F1</kbd>
+              <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5 text-[10px] text-fg-2">F1</kbd>
             </button>
             <button
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
               aria-label="도움말 닫기"
-              className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-flex size-9 items-center justify-center rounded-lg text-fg-2 transition hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <X className="size-5" aria-hidden="true" />
             </button>
@@ -795,7 +795,7 @@ export function StudioContextHelpDialog({
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-muted/20 p-3 md:flex" aria-label="도움말 탐색">
+          <aside className="hidden w-56 shrink-0 flex-col border-r border-line bg-raised/20 p-3 md:flex" aria-label="도움말 탐색">
             <nav className="space-y-1">
               {internalNav.map((item) => (
                 <button
@@ -803,21 +803,21 @@ export function StudioContextHelpDialog({
                   type="button"
                   onClick={() => setView(item.id)}
                   aria-current={view === item.id ? "page" : undefined}
-                  className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${view === item.id ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                  className={`flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${view === item.id ? "bg-accent/12 text-accent" : "text-fg-2 hover:bg-raised hover:text-fg"}`}
                 >
                   {item.icon}
                   {item.label}
                 </button>
               ))}
             </nav>
-            <div className="my-3 border-t border-border" />
+            <div className="my-3 border-t border-line" />
             <nav className="space-y-1" aria-label="지원 도구">
               {sectionNav.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => onOpenSection(item.id)}
-                  className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-fg-2 transition hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   {item.icon}
                   {item.label}
@@ -828,22 +828,22 @@ export function StudioContextHelpDialog({
             <button
               type="button"
               onClick={openManual}
-              className="mt-auto flex items-center gap-2 rounded-xl border border-border bg-background p-3 text-left text-xs font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="mt-auto flex items-center gap-2 rounded-xl border border-line bg-canvas p-3 text-left text-xs font-semibold text-fg transition hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
-              <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
+              <ExternalLink className="size-4 text-fg-2" aria-hidden="true" />
               사용자 설명서
             </button>
           </aside>
 
           <div className="min-w-0 flex-1 overflow-y-auto overscroll-contain">
-            <div className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-border bg-background/95 p-2 backdrop-blur md:hidden" aria-label="도움말 탐색">
+            <div className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-line bg-canvas/95 p-2 backdrop-blur md:hidden" aria-label="도움말 탐색">
               {internalNav.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setView(item.id)}
                   aria-current={view === item.id ? "page" : undefined}
-                  className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${view === item.id ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+                  className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${view === item.id ? "bg-accent/12 text-accent" : "text-fg-2 hover:bg-raised"}`}
                 >
                   {item.icon}
                   {item.label}

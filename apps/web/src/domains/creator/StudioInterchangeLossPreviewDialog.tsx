@@ -485,7 +485,7 @@ export function StudioInterchangeLossPreviewDialog({
                 if (!confirmDisabled) onConfirm(compositeSelected ? `${selectedChoice?.id ?? "new-page"}:composite` : selectedChoice?.id ?? null);
               }}
               className={cn(
-                "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 text-xs font-bold text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-45",
+                "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 text-xs font-bold text-on-accent hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-45",
                 STUDIO_EASE,
                 STUDIO_FOCUS_RING,
               )}
