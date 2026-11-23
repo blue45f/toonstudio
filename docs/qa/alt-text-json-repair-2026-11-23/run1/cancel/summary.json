@@ -1,0 +1,21 @@
+{
+  "pass": false,
+  "device": "desktop",
+  "mode": "cancel",
+  "managedCalls": 0,
+  "repairDelivery": null,
+  "total": 3,
+  "syntheticAuthReads": 0,
+  "blockedOrigins": {
+    "GET https://deny-proof.invalid": 1,
+    "GET http://127.0.0.1:47634": 1
+  },
+  "blockedApi": {},
+  "failedResources": [
+    [
+      "net::ERR_CONNECTION_REFUSED /studio/canvas",
+      1
+    ]
+  ],
+  "nonApiHttpErrors": []
+}

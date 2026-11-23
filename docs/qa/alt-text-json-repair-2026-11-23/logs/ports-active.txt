@@ -1,0 +1,2 @@
+COMMAND   PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    <pid> <local-user>   <fd>  IPv4 <device>      0t0  TCP 127.0.0.1:47631 (LISTEN)

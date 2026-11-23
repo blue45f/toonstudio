@@ -1,0 +1,351 @@
+[
+  {
+    "step": "대화상자를 열었을 때",
+    "time": "2026-11-23T02:06:14.922Z",
+    "messagesPosts": 0,
+    "expected": 0
+  },
+  {
+    "step": "기준 원고 픽셀 읽기",
+    "time": "2026-11-23T02:06:23.305Z",
+    "messagesPosts": 0,
+    "expected": 0,
+    "pixelsBefore": {
+      "width": 1045,
+      "height": 1568,
+      "rgbaHash": "6b404c933b46c78e645193fc89f11c6aab2d1b2d9770b96138fecd310200f273"
+    },
+    "baseline": {
+      "key": "toonstudio-studio-autosave:v12:ai-qa-synthetic:new",
+      "savedAt": "2026-11-23T02:05:58.887Z",
+      "drawCount": 1,
+      "drawIds": [
+        "75859db8-c878-4fad-90a0-c7f8ef614c80"
+      ],
+      "pageDigest": "cbde59abf5c78a2b4fef16082dd26e7408956ec5d03d53083e40843c91054cc0",
+      "containsAorB": false
+    }
+  },
+  {
+    "step": "A 선택 및 실행 전",
+    "time": "2026-11-23T02:06:24.092Z",
+    "messagesPosts": 0,
+    "expected": 0,
+    "inputWidth": 96
+  },
+  {
+    "step": "A 한 번 클릭 후 첫 요청과 자동 형식 복구",
+    "time": "2026-11-23T02:06:26.012Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "explicitA": 1,
+    "requestKinds": [
+      "A-initial",
+      "A-repair"
+    ]
+  },
+  {
+    "step": "복구 응답 대기",
+    "time": "2026-11-23T02:06:26.302Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "status": "이미지를 보고 설명을 쓰는 중이에요. 보통 10~30초 걸려요. · 1초 경과",
+    "hold": "held"
+  },
+  {
+    "step": "사용자가 복구 중단",
+    "time": "2026-11-23T02:06:26.635Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "status": "설명 만들기를 중단했어요. 필요하면 다시 시도해 주세요."
+  },
+  {
+    "step": "B 선택 후 실행 전",
+    "time": "2026-11-23T02:06:26.882Z",
+    "messagesPosts": 2,
+    "expected": 2
+  },
+  {
+    "step": "늦은 복구 반환 뒤 B 미실행",
+    "time": "2026-11-23T02:06:29.101Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "response": "fulfilled",
+    "durable": {
+      "key": "toonstudio-studio-autosave:v12:ai-qa-synthetic:new",
+      "savedAt": "2026-11-23T02:06:05.056Z",
+      "drawCount": 1,
+      "drawIds": [
+        "75859db8-c878-4fad-90a0-c7f8ef614c80"
+      ],
+      "pageDigest": "cbde59abf5c78a2b4fef16082dd26e7408956ec5d03d53083e40843c91054cc0",
+      "containsAorB": false
+    }
+  },
+  {
+    "step": "결과 표시 후 자동 재전송 관찰",
+    "time": "2026-11-23T02:06:31.721Z",
+    "messagesPosts": 3,
+    "expected": 3,
+    "expectedShort": "QA-B-새설명",
+    "observed": {
+      "samples": 428,
+      "staleA": 0,
+      "malformed": 0,
+      "firstShort": "QA-B-새설명"
+    }
+  },
+  {
+    "step": "입력·복구 전송 계약 확인",
+    "time": "2026-11-23T02:06:31.724Z",
+    "messagesPosts": 3,
+    "wire": {
+      "mode": "cancel",
+      "count": 3,
+      "markerSha256": "1a5d12c8b7fda7b3e70d96ef871d538e24bf10ac5257d124f7028b4969e015ae",
+      "invalidJsonSha256": "86887622e23c31c296cf1cb91198c78c8706d6dedf8dae7e36042919db62d4d6",
+      "calls": [
+        {
+          "n": 1,
+          "mode": "cancel",
+          "kind": "A-initial",
+          "responseDisposition": "fulfilled",
+          "roles": [
+            "user"
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "sha256": "528e1753585d8f03601912bfd9d56030e2fe088733deeae49db1b257023b6665",
+              "blocks": [
+                {
+                  "type": "image",
+                  "messageIndex": 0,
+                  "blockIndex": 0,
+                  "mime": "image/png",
+                  "byteLength": 411,
+                  "base64Length": 548,
+                  "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+                  "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+                },
+                {
+                  "type": "text",
+                  "sha256": "df25050c82d36a62df6dacfcf84aca6f6348f95502452d5963bb5fec47322a0b",
+                  "length": 102
+                }
+              ]
+            }
+          ],
+          "images": [
+            {
+              "messageIndex": 0,
+              "blockIndex": 0,
+              "mime": "image/png",
+              "byteLength": 411,
+              "base64Length": 548,
+              "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+              "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+            }
+          ],
+          "bodySha256": "e22db4ba84a8858e01dde86c708d32c9b55a1e0db550e1be3931ea41e587c25d",
+          "systemSha256": "c170d05d8b4d309ee3daa75d67a0f84d682fe1f9bfe1a68281baddab1d5886ce",
+          "schemaSha256": "a5addd70e2b18751086c88f434adbff4b529d59789e1944f235957b7e519e19e",
+          "originalMessagesSha256": "70847086b351daa3080db274df4d51b7deec63d48a8c84301ae6dc3ebdfd1117",
+          "idempotencyKeySha256": "b25681534cb5f54462555b388229ca6e647a48ae1c5893193a6bb992133fc927",
+          "sameSystemAsA": null,
+          "sameSchemaAsA": null,
+          "sameOriginalMessagesAsA": null,
+          "sameImageBytesAsA": null,
+          "invalidJsonEchoExact": false,
+          "containsInvalidMarker": false,
+          "repairInstructionPresent": false,
+          "idempotencyKeyChanged": null,
+          "responseKind": "valid-envelope-truncated-json",
+          "responseTextSha256": "86887622e23c31c296cf1cb91198c78c8706d6dedf8dae7e36042919db62d4d6"
+        },
+        {
+          "n": 2,
+          "mode": "cancel",
+          "kind": "A-repair",
+          "responseDisposition": "fulfilled",
+          "roles": [
+            "user",
+            "assistant",
+            "user"
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "sha256": "528e1753585d8f03601912bfd9d56030e2fe088733deeae49db1b257023b6665",
+              "blocks": [
+                {
+                  "type": "image",
+                  "messageIndex": 0,
+                  "blockIndex": 0,
+                  "mime": "image/png",
+                  "byteLength": 411,
+                  "base64Length": 548,
+                  "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+                  "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+                },
+                {
+                  "type": "text",
+                  "sha256": "df25050c82d36a62df6dacfcf84aca6f6348f95502452d5963bb5fec47322a0b",
+                  "length": 102
+                }
+              ]
+            },
+            {
+              "role": "assistant",
+              "sha256": "ae9598e04566005a598dae217ea24fab7d5fee9959c4af51bdbb94588017db62",
+              "blocks": [
+                {
+                  "type": "text",
+                  "sha256": "86887622e23c31c296cf1cb91198c78c8706d6dedf8dae7e36042919db62d4d6",
+                  "length": 72
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "sha256": "6e5c6785ae0b3b0490008f433013dfd9e43bec89e45ae87ee1275d6f4958b440",
+              "blocks": [
+                {
+                  "type": "text",
+                  "sha256": "05149278aab7c6efed02d9f6cf96449e361b0e366f0e1e5063f27f737ebb69ca",
+                  "length": 207
+                }
+              ]
+            }
+          ],
+          "images": [
+            {
+              "messageIndex": 0,
+              "blockIndex": 0,
+              "mime": "image/png",
+              "byteLength": 411,
+              "base64Length": 548,
+              "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+              "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+            }
+          ],
+          "bodySha256": "102b3320308af768a65e1dae27f513966ee1fce33f3b3ec7d698089fe810b246",
+          "systemSha256": "c170d05d8b4d309ee3daa75d67a0f84d682fe1f9bfe1a68281baddab1d5886ce",
+          "schemaSha256": "a5addd70e2b18751086c88f434adbff4b529d59789e1944f235957b7e519e19e",
+          "originalMessagesSha256": "70847086b351daa3080db274df4d51b7deec63d48a8c84301ae6dc3ebdfd1117",
+          "idempotencyKeySha256": "34f9171fcdfd19a5d9fec33095e21d4e489259013d9810fa23260b47bd43658b",
+          "sameSystemAsA": true,
+          "sameSchemaAsA": true,
+          "sameOriginalMessagesAsA": true,
+          "sameImageBytesAsA": true,
+          "invalidJsonEchoExact": true,
+          "containsInvalidMarker": true,
+          "repairInstructionPresent": true,
+          "idempotencyKeyChanged": true,
+          "responseKind": "valid-envelope-valid-json",
+          "responseTextSha256": "da9feb62c43271a1574da3c6845d1dfde76cf8beb0af297280d6f52059ce416d"
+        },
+        {
+          "n": 3,
+          "mode": "cancel",
+          "kind": "B-explicit",
+          "responseDisposition": "fulfilled",
+          "roles": [
+            "user"
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "sha256": "6d30ed28cfb05a7b7216c9176a11a9a62971c8d031486e2d90cf30e73a0422ff",
+              "blocks": [
+                {
+                  "type": "image",
+                  "messageIndex": 0,
+                  "blockIndex": 0,
+                  "mime": "image/png",
+                  "byteLength": 451,
+                  "base64Length": 604,
+                  "sha256": "a4c590d244f16e7ac27dd664c07ac02f66aa690a86679b971f9ab94c8d3d2882",
+                  "base64Sha256": "248555fe6f794feff2a5ef0b46967fef44290558670405b5f64007d05666303c"
+                },
+                {
+                  "type": "text",
+                  "sha256": "71c9df57b5042d2b738814ca25bbd87e599c0ef587094d584872cc8771298483",
+                  "length": 103
+                }
+              ]
+            }
+          ],
+          "images": [
+            {
+              "messageIndex": 0,
+              "blockIndex": 0,
+              "mime": "image/png",
+              "byteLength": 451,
+              "base64Length": 604,
+              "sha256": "a4c590d244f16e7ac27dd664c07ac02f66aa690a86679b971f9ab94c8d3d2882",
+              "base64Sha256": "248555fe6f794feff2a5ef0b46967fef44290558670405b5f64007d05666303c"
+            }
+          ],
+          "bodySha256": "7d8511c2d355c353a4b63d6cb110cadbbc9dd2e5102c2c7e83a20edecfd12c38",
+          "systemSha256": "c170d05d8b4d309ee3daa75d67a0f84d682fe1f9bfe1a68281baddab1d5886ce",
+          "schemaSha256": "a5addd70e2b18751086c88f434adbff4b529d59789e1944f235957b7e519e19e",
+          "originalMessagesSha256": "c8bd7117ab6c92547e933fc7a98558267bdffca4adab6269ba3ddfabc3c85571",
+          "idempotencyKeySha256": "0cd3bd3ade05e04be18ee3fa2c47d6cc4dffc0537701d8a53b5d1a802dc248ae",
+          "sameSystemAsA": true,
+          "sameSchemaAsA": true,
+          "sameOriginalMessagesAsA": false,
+          "sameImageBytesAsA": false,
+          "invalidJsonEchoExact": false,
+          "containsInvalidMarker": false,
+          "repairInstructionPresent": false,
+          "idempotencyKeyChanged": true,
+          "responseKind": "valid-envelope-valid-json",
+          "responseTextSha256": "ddcdffedb43b460850a94b22fffe90b6e192c30e4f65e54692d887090a1ea6b0"
+        }
+      ]
+    }
+  },
+  {
+    "step": "응답 후 저장·그림 확인",
+    "time": "2026-11-23T02:06:41.681Z",
+    "messagesPosts": 3,
+    "expected": 3,
+    "saved": {
+      "key": "toonstudio-studio-autosave:v12:ai-qa-synthetic:new",
+      "savedAt": "2026-11-23T02:06:05.056Z",
+      "drawCount": 1,
+      "drawIds": [
+        "75859db8-c878-4fad-90a0-c7f8ef614c80"
+      ],
+      "pageDigest": "cbde59abf5c78a2b4fef16082dd26e7408956ec5d03d53083e40843c91054cc0",
+      "containsAorB": false
+    },
+    "pixelsAfter": {
+      "width": 1045,
+      "height": 1568,
+      "rgbaHash": "6b404c933b46c78e645193fc89f11c6aab2d1b2d9770b96138fecd310200f273"
+    }
+  },
+  {
+    "step": "동일 원고 재열기 후 자동 생성",
+    "time": "2026-11-23T02:08:27.154Z",
+    "messagesPosts": 3,
+    "expected": 3,
+    "reopened": {
+      "key": "toonstudio-studio-autosave:v12:ai-qa-synthetic:new",
+      "savedAt": "2026-11-23T02:06:05.056Z",
+      "drawCount": 1,
+      "drawIds": [
+        "75859db8-c878-4fad-90a0-c7f8ef614c80"
+      ],
+      "pageDigest": "cbde59abf5c78a2b4fef16082dd26e7408956ec5d03d53083e40843c91054cc0",
+      "containsAorB": false
+    },
+    "pixelsReopened": {
+      "width": 1045,
+      "height": 1568,
+      "rgbaHash": "6b404c933b46c78e645193fc89f11c6aab2d1b2d9770b96138fecd310200f273"
+    }
+  }
+]
