@@ -11,7 +11,10 @@ import { chromium, type Page } from "playwright";
 
 import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosave";
 
+import { isStudioLifecycleDocumentPublicationReady } from "./lib/studio-lifecycle-capture-policy.mjs";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
+
+import type Konva from "konva";
 
 const origin = new URL(process.env.STUDIO_PEN_ORIGIN ?? "http://127.0.0.1:5173");
 assert.ok(["127.0.0.1", "localhost", "[::1]"].includes(origin.hostname), "로컬 Studio 주소가 필요합니다.");
@@ -21,35 +24,68 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 1000
 interface Crop { x: number; y: number; width: number; height: number }
 
 async function inkFrame(page: Page, live: boolean, crop: Crop) {
-  return page.evaluate(async ({ live, crop }) => {
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-    const canvases = live
-      ? Array.from(document.querySelectorAll<HTMLCanvasElement>('[data-studio-gpu-surface="webgpu"]'))
-      : Array.from(document.querySelectorAll<HTMLCanvasElement>('.konvajs-content canvas:not([data-studio-brush-cursor-canvas])'));
-    for (const canvas of canvases) {
-      const rect = canvas.getBoundingClientRect();
-      if (canvas.width !== 1392 || rect.width !== canvas.width || rect.height !== canvas.height) continue;
-      const scratch = document.createElement("canvas");
-      scratch.width = crop.width;
-      scratch.height = crop.height;
-      const ctx = scratch.getContext("2d")!;
-      // WebGPU와 Konva 캔버스의 동일한 원본 픽셀 영역을 읽는다. 확대나 정합 보간은 없다.
-      if (live) {
-        const image = new Image();
-        image.src = canvas.toDataURL();
-        await image.decode();
-        ctx.drawImage(image, -crop.x, -crop.y);
-      } else {
-        ctx.drawImage(canvas, -crop.x, -crop.y);
-      }
-      const bytes = Array.from(ctx.getImageData(0, 0, crop.width, crop.height).data);
-      const covered = bytes.flatMap((value, i) => i % 4 === 3 && value >= 128 ? [Math.floor(i / 4)] : []);
-      if (covered.length > 200 && covered.length < crop.width * crop.height / 2) {
-        return { x: rect.x, y: rect.y, width: canvas.width, height: canvas.height, bytes, covered };
+  const frame = await page.evaluate(async ({ live, crop }) => {
+    if (live) await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const host = document.querySelector<HTMLElement>("[data-studio-document-renderer]");
+    const stage = host?.querySelector<HTMLElement>(".konvajs-content");
+    if (!host || !stage) return null;
+    const isVisible = (node: Element) => node.checkVisibility({ visibilityProperty: true, opacityProperty: true });
+    const skia = stage.querySelector<HTMLCanvasElement>("canvas[data-studio-skia-document-surface]");
+    const publication = {
+      authorityStatus: host.dataset.studioVelloHubAuthority ?? null,
+      documentRenderer: host.dataset.studioDocumentRenderer ?? null,
+      konvaDocumentShadow: host.dataset.studioKonvaDocumentShadow ?? null,
+      skiaSurface: skia ? {
+        visibility: isVisible(skia) ? "visible" : "hidden",
+        phase: skia.dataset.studioSkiaPhase ?? null,
+        cachedItems: Number(skia.dataset.studioSkiaCachedItems ?? 0),
+      } : null,
+    };
+    let canvas: HTMLCanvasElement | null = null;
+    if (live) {
+      canvas = host.querySelector('[data-studio-gpu-active="true"] canvas[data-studio-gpu-surface="webgpu"]');
+    } else {
+      if (document.documentElement.dataset.studioStrokeFocusPhase || host.querySelector('[data-studio-gpu-pinned="true"]')) return null;
+      if (publication.documentRenderer === "skia-canvaskit-document-webgl2") {
+        canvas = skia;
+      } else if (publication.authorityStatus === "unavailable") {
+        const runtime = (window as Window & { Konva?: typeof Konva }).Konva;
+        const documentGroup = runtime?.stages.find(candidate => candidate.content === stage)?.findOne(".studio-konva-document-shadow");
+        if (documentGroup?.isVisible()) canvas = documentGroup.getLayer()?.getNativeCanvasElement() ?? null;
       }
     }
-    return null;
+    if (!canvas || !isVisible(canvas)) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width !== canvas.width || rect.height !== canvas.height) return null;
+    const scratch = document.createElement("canvas");
+    scratch.width = crop.width;
+    scratch.height = crop.height;
+    const ctx = scratch.getContext("2d")!;
+    // 확대·보간 없이 같은 viewport 픽셀을 읽는다. 커밋 표면의 상태와 RGBA는 같은 작업에서 읽는다.
+    if (live) {
+      const image = new Image();
+      image.src = canvas.toDataURL();
+      await image.decode();
+      ctx.drawImage(image, -crop.x, -crop.y);
+    } else {
+      ctx.drawImage(canvas, -crop.x, -crop.y);
+    }
+    const bytes = Array.from(ctx.getImageData(0, 0, crop.width, crop.height).data);
+    const covered = bytes.flatMap((value, i) => i % 4 === 3 && value >= 128 ? [Math.floor(i / 4)] : []);
+    if (covered.length <= 200 || covered.length >= crop.width * crop.height / 2) return null;
+    return { x: rect.x, y: rect.y, width: canvas.width, height: canvas.height, bytes, covered, publication };
   }, { live, crop });
+  return frame && (live || isStudioLifecycleDocumentPublicationReady(frame.publication)) ? frame : null;
+}
+
+async function publishedInkFrame(page: Page, crop: Crop) {
+  const result: { frame: Awaited<ReturnType<typeof inkFrame>> } = { frame: null };
+  await expect.poll(async () => {
+    result.frame = await inkFrame(page, false, crop);
+    return result.frame !== null;
+  }, { timeout: 30_000, message: "현재 원고를 게시한 표면에서 획을 읽지 못했습니다." }).toBe(true);
+  assert.ok(result.frame);
+  return result.frame;
 }
 
 function assertCoverage(source: number[], target: number[], width: number) {
@@ -96,6 +132,13 @@ try {
   const start = { x: stage.x + 278, y: stage.y + 286 };
   const crop = { x: 266, y: 274, width: 81, height: 37 };
   assert.equal(stage.width, 1392, "720px 문서를 너비 1392px에 맞춘 193.33% 조건이 필요합니다.");
+  const editor = page.locator('[data-studio-editor="true"]');
+  const undoDepth = async () => {
+    const depth = await editor.getAttribute("data-studio-history-undo-depth");
+    assert.ok(depth !== null, "원고의 되돌리기 기록을 찾지 못했습니다.");
+    return Number(depth);
+  };
+  const initialDepth = await undoDepth();
   const cdp = await context.newCDPSession(page);
   const pen = { pointerType: "pen", tiltX: 12 } as const;
   await cdp.send("Input.dispatchMouseEvent", { ...pen, type: "mousePressed", ...start, button: "left", buttons: 1, force: 0.3, clickCount: 1 });
@@ -119,23 +162,21 @@ try {
     return doc?.pagesList.flatMap(record => record.elements ?? []).find((el): el is { type: "draw"; pressures: number[]; tiltXs: number[] } =>
       typeof el === "object" && el !== null && "type" in el && el.type === "draw");
   };
+  await expect.poll(undoDepth, { timeout: 30_000 }).toBeGreaterThan(initialDepth);
   await expect.poll(readLine, { timeout: 30_000 }).toBeTruthy();
   const saved = await readLine();
   assert.ok(saved);
   assert.equal(saved.pressures.length, 14);
   assert.ok(saved.pressures[0] < 0.31 && saved.pressures.at(-1)! > 0.78);
   assert.deepEqual(saved.tiltXs, Array<number>(14).fill(12));
-  await expect.poll(async () => Boolean(await inkFrame(page, false, crop)), { timeout: 30_000 }).toBe(true);
-  const committed = await inkFrame(page, false, crop);
-  assert.ok(committed, "저장된 획이 화면에 없습니다.");
+  const committed = await publishedInkFrame(page, crop);
   assert.deepEqual([live.x, live.y, live.width], [committed.x, committed.y, committed.width]);
   assertCoverage(live.covered, committed.covered, crop.width);
   assertCoverage(committed.covered, live.covered, crop.width);
   await page.reload({ waitUntil: "commit" });
   await ready.waitFor({ timeout: 120_000 });
-  await expect.poll(async () => Boolean(await inkFrame(page, false, crop)), { timeout: 30_000 }).toBe(true);
-  const reopened = await inkFrame(page, false, crop);
-  assert.ok(reopened);
+  const reopened = await publishedInkFrame(page, crop);
+  assert.equal(reopened.publication.documentRenderer, committed.publication.documentRenderer, "재열기로 원고 표시 엔진이 달라졌습니다.");
   assert.deepEqual([reopened.x, reopened.y, reopened.width, reopened.height],
     [committed.x, committed.y, committed.width, committed.height]);
   const hash = (bytes: number[]) => createHash("sha256").update(Buffer.from(bytes)).digest("hex");
@@ -143,7 +184,7 @@ try {
     `재열기 후 동일 영역의 RGBA가 바뀌었습니다. 커밋 픽셀 ${committed.covered.length}, 재열기 픽셀 ${reopened.covered.length}`);
   assert.deepEqual(await readLine(), saved, "재열기 후 저장한 획의 필압·좌표 또는 속성이 달라졌습니다.");
   console.log(JSON.stringify({ zoom: 1392 / 720, samples: saved.pressures.length, livePixels: live.covered.length,
-    committedPixels: committed.covered.length, contourTolerancePx: 1,
+    documentRenderer: committed.publication.documentRenderer, committedPixels: committed.covered.length, contourTolerancePx: 1,
     reopenedRgbaSha256: hash(reopened.bytes) }));
 } finally {
   await context.close();
