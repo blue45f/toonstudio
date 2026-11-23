@@ -9,7 +9,7 @@ import {
   type QuickMenuActionId,
   type QuickMenuSlot,
 } from "../drawing/studio-quickmenu-and-quickshape";
-import { loadQuickMenuSlots } from "../drawing/studio-quickmenu-preferences";
+import { loadQuickMenuSlots, normalizeQuickMenuSlots } from "../drawing/studio-quickmenu-preferences";
 import { Columns2, Compass, FlipHorizontal2, Gauge, Lock, Magnet, Minus, Plus, Shapes, SlidersHorizontal, Unlock } from "lucide-react";
 import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 
@@ -43,6 +43,7 @@ import {
   StudioDrawingInputHudStrip,
   StudioDrawingWorkflowStagePills,
 } from "./StudioDrawingInputHudStrip";
+import { loadRadialQuickMenuSlots, mergeRadialQuickMenuSlots } from "./studio-radial-quickmenu-preferences";
 
 import "./StudioDrawingJewelChrome.css";
 
@@ -160,6 +161,7 @@ export function StudioDrawingQuickErgonomicsBar({
   const activeQuickShapeEnabled = s.quickShapeSnapEnabled ?? localQuickShapeEnabled;
   const [localQuickMenuSlots, setLocalQuickMenuSlots] = useState<readonly QuickMenuSlot[]>(() => loadQuickMenuSlots());
   const activeQuickMenuSlots = s.quickMenuSlots ?? localQuickMenuSlots ?? DEFAULT_QUICK_MENU_SLOTS;
+  const [radialSlots, setRadialSlots] = useState(() => loadRadialQuickMenuSlots(activeQuickMenuSlots));
   const activeQuickMenuCount = activeQuickMenuSlots.length;
   const zenFocus = s.canvasOnlyMode ?? localZenFocus;
   const pushCue = useCallback((keycap: string, label: string, value?: string) => {
@@ -745,13 +747,18 @@ export function StudioDrawingQuickErgonomicsBar({
           <LazyStudioRadialQuickWheel
             open={quickWheelOpen}
             anchor={quickWheelAnchor}
-            slots={activeQuickMenuSlots}
+            slots={mergeRadialQuickMenuSlots(activeQuickMenuSlots, radialSlots)}
             slotCount={8}
             activeToolLabel={activeBrushName}
             strokeWidth={roundedWidth}
             shortcutHint="Q"
             onSelectAction={(actionId, slot) => handleQuickWheelAction(actionId, slot.labelKo)}
-            onSlotsChange={(nextSlots) => { setLocalQuickMenuSlots(nextSlots); s.onChangeQuickMenuSlots?.(nextSlots); }}
+            onSlotsChange={(nextSlots) => {
+              setRadialSlots(nextSlots);
+              const legacySlots = normalizeQuickMenuSlots(nextSlots);
+              setLocalQuickMenuSlots(legacySlots);
+              s.onChangeQuickMenuSlots?.(legacySlots);
+            }}
             onClose={() => setQuickWheelOpen(false)}
           />
         </Suspense>
