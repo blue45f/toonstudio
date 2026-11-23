@@ -321,7 +321,9 @@ describe("StudioNibTactileVfxOverlay: Idle 0% CPU rAF · 브리지 · Reduced Mo
   it("초기 유휴 시 rAF를 시작하지 않고, 포인터 입력 시 깨어났다가 수명 만료 후 즉시 자동 정지한다", () => {
     installMatchMediaMock(false);
     const mockCtx = createMockCanvas2dContext();
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(mockCtx as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+      (() => mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    );
 
     let nextRafId = 1;
     const queuedFrames = new Map<number, FrameRequestCallback>();
@@ -412,7 +414,9 @@ describe("StudioNibTactileVfxOverlay: Idle 0% CPU rAF · 브리지 · Reduced Mo
   it("모드 브리지 구독과 prefers-reduced-motion 동적 전환 시 즉시 off 강등 및 루프 중단을 수행한다", () => {
     const mm = installMatchMediaMock(false);
     const mockCtx = createMockCanvas2dContext();
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(mockCtx as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+      (() => mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    );
     const queued = new Map<number, FrameRequestCallback>();
     let rafSeq = 1;
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
