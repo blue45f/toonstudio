@@ -1,0 +1,429 @@
+/*
+ * ToonStudio 주얼 아틀리에 컬러 스프라이트 · 4종 OKLCH 테마 · 촉각 인터랙션 스타일 정본.
+ *
+ * - 4종 원클릭 테마: sunlight-atelier · coral-pop · botanical-mint · midnight-ink
+ * - 도구별 OKLCH 액센트 링 · 잉크 번짐 오라(ts-ink-bloom-active) · 150ms 탄성 눌림(scale(0.95))
+ * - 유리 광택 스윕(ts-specular-sheen) · Scroll-Driven Reveal · 고대비 해치(ts-hc-hatch-overlay)
+ * - 모든 색상은 OKLCH 토큰으로만 선언해 TSX 원시 hex/rgb 0건을 보장한다.
+ */
+
+:root {
+  --ts-vibrant-canvas: oklch(0.982 0.012 84);
+  --ts-vibrant-surface: oklch(0.962 0.014 82);
+  --ts-vibrant-card: oklch(0.992 0.006 84);
+  --ts-vibrant-border: oklch(0.862 0.018 78);
+  --ts-vibrant-fg: oklch(0.215 0.024 64);
+  --ts-vibrant-fg-muted: oklch(0.455 0.022 68);
+  --ts-vibrant-ring: oklch(0.56 0.19 258);
+  --ts-vibrant-sheen: oklch(0.99 0.008 90 / 0.56);
+  --ts-vibrant-hatch-line: oklch(0.24 0.02 68 / 0.18);
+
+  --ts-vibrant-accent-ink: oklch(0.32 0.055 262);
+  --ts-vibrant-accent-water: oklch(0.58 0.16 226);
+  --ts-vibrant-accent-coral: oklch(0.64 0.19 28);
+  --ts-vibrant-accent-mint: oklch(0.62 0.15 162);
+  --ts-vibrant-accent-amber: oklch(0.69 0.17 66);
+  --ts-vibrant-accent-violet: oklch(0.56 0.19 296);
+  --ts-vibrant-accent-cobalt: oklch(0.54 0.19 256);
+  --ts-vibrant-accent-rose: oklch(0.61 0.19 354);
+  --ts-vibrant-accent-teal: oklch(0.58 0.14 196);
+  --ts-vibrant-accent-gold: oklch(0.71 0.16 84);
+
+  --ts-vibrant-spring-press: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ts-vibrant-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 1. 선라이트 아틀리에 (따뜻한 햇살 화실 종이 + 코발트·앰버 잉크) */
+[data-studio-vibrant-theme="sunlight-atelier"] {
+  --ts-vibrant-canvas: oklch(0.985 0.013 86);
+  --ts-vibrant-surface: oklch(0.964 0.016 84);
+  --ts-vibrant-card: oklch(0.995 0.007 86);
+  --ts-vibrant-border: oklch(0.865 0.02 80);
+  --ts-vibrant-fg: oklch(0.21 0.024 62);
+  --ts-vibrant-fg-muted: oklch(0.45 0.022 66);
+  --ts-vibrant-ring: oklch(0.55 0.19 256);
+  --ts-vibrant-sheen: oklch(0.995 0.01 92 / 0.62);
+  --ts-vibrant-hatch-line: oklch(0.24 0.024 62 / 0.18);
+
+  --ts-vibrant-accent-ink: oklch(0.3 0.055 264);
+  --ts-vibrant-accent-water: oklch(0.57 0.16 226);
+  --ts-vibrant-accent-coral: oklch(0.64 0.19 28);
+  --ts-vibrant-accent-mint: oklch(0.61 0.15 162);
+  --ts-vibrant-accent-amber: oklch(0.69 0.17 66);
+  --ts-vibrant-accent-violet: oklch(0.56 0.19 296);
+  --ts-vibrant-accent-cobalt: oklch(0.54 0.19 256);
+  --ts-vibrant-accent-rose: oklch(0.6 0.19 354);
+  --ts-vibrant-accent-teal: oklch(0.57 0.14 196);
+  --ts-vibrant-accent-gold: oklch(0.71 0.16 84);
+}
+
+/* 2. 코랄 팝 (생동감 있는 크림 화이트 + 코랄·망고·터콰이즈 주얼 팝) */
+[data-studio-vibrant-theme="coral-pop"] {
+  --ts-vibrant-canvas: oklch(0.982 0.016 32);
+  --ts-vibrant-surface: oklch(0.958 0.024 30);
+  --ts-vibrant-card: oklch(0.994 0.01 34);
+  --ts-vibrant-border: oklch(0.855 0.04 28);
+  --ts-vibrant-fg: oklch(0.22 0.036 18);
+  --ts-vibrant-fg-muted: oklch(0.46 0.034 24);
+  --ts-vibrant-ring: oklch(0.62 0.21 24);
+  --ts-vibrant-sheen: oklch(0.99 0.018 42 / 0.64);
+  --ts-vibrant-hatch-line: oklch(0.32 0.06 20 / 0.18);
+
+  --ts-vibrant-accent-ink: oklch(0.34 0.08 16);
+  --ts-vibrant-accent-water: oklch(0.61 0.16 208);
+  --ts-vibrant-accent-coral: oklch(0.63 0.22 24);
+  --ts-vibrant-accent-mint: oklch(0.64 0.16 168);
+  --ts-vibrant-accent-amber: oklch(0.72 0.18 58);
+  --ts-vibrant-accent-violet: oklch(0.58 0.21 312);
+  --ts-vibrant-accent-cobalt: oklch(0.56 0.19 250);
+  --ts-vibrant-accent-rose: oklch(0.62 0.21 356);
+  --ts-vibrant-accent-teal: oklch(0.6 0.15 190);
+  --ts-vibrant-accent-gold: oklch(0.74 0.17 78);
+}
+
+/* 3. 보태니컬 민트 (청량한 세이지 미스트 + 포레스트 잉크) */
+[data-studio-vibrant-theme="botanical-mint"] {
+  --ts-vibrant-canvas: oklch(0.976 0.016 162);
+  --ts-vibrant-surface: oklch(0.948 0.024 160);
+  --ts-vibrant-card: oklch(0.992 0.01 164);
+  --ts-vibrant-border: oklch(0.842 0.036 158);
+  --ts-vibrant-fg: oklch(0.215 0.034 162);
+  --ts-vibrant-fg-muted: oklch(0.44 0.032 162);
+  --ts-vibrant-ring: oklch(0.54 0.15 162);
+  --ts-vibrant-sheen: oklch(0.99 0.016 164 / 0.6);
+  --ts-vibrant-hatch-line: oklch(0.26 0.04 162 / 0.18);
+
+  --ts-vibrant-accent-ink: oklch(0.3 0.052 174);
+  --ts-vibrant-accent-water: oklch(0.58 0.15 212);
+  --ts-vibrant-accent-coral: oklch(0.64 0.18 32);
+  --ts-vibrant-accent-mint: oklch(0.57 0.16 158);
+  --ts-vibrant-accent-amber: oklch(0.69 0.16 74);
+  --ts-vibrant-accent-violet: oklch(0.56 0.17 294);
+  --ts-vibrant-accent-cobalt: oklch(0.54 0.16 244);
+  --ts-vibrant-accent-rose: oklch(0.6 0.17 352);
+  --ts-vibrant-accent-teal: oklch(0.55 0.15 186);
+  --ts-vibrant-accent-gold: oklch(0.7 0.15 92);
+}
+
+/* 4. 미드나잇 잉크 (깊은 야간 인디고 캔버스 + 일렉트릭 시안·앰버·로즈 주얼) */
+[data-studio-vibrant-theme="midnight-ink"] {
+  --ts-vibrant-canvas: oklch(0.185 0.028 264);
+  --ts-vibrant-surface: oklch(0.225 0.032 262);
+  --ts-vibrant-card: oklch(0.26 0.034 260);
+  --ts-vibrant-border: oklch(0.37 0.04 260);
+  --ts-vibrant-fg: oklch(0.955 0.014 264);
+  --ts-vibrant-fg-muted: oklch(0.76 0.024 262);
+  --ts-vibrant-ring: oklch(0.74 0.17 212);
+  --ts-vibrant-sheen: oklch(0.96 0.02 220 / 0.32);
+  --ts-vibrant-hatch-line: oklch(0.92 0.02 260 / 0.2);
+
+  --ts-vibrant-accent-ink: oklch(0.76 0.12 248);
+  --ts-vibrant-accent-water: oklch(0.74 0.16 216);
+  --ts-vibrant-accent-coral: oklch(0.74 0.18 28);
+  --ts-vibrant-accent-mint: oklch(0.76 0.15 162);
+  --ts-vibrant-accent-amber: oklch(0.79 0.16 74);
+  --ts-vibrant-accent-violet: oklch(0.73 0.18 296);
+  --ts-vibrant-accent-cobalt: oklch(0.72 0.17 252);
+  --ts-vibrant-accent-rose: oklch(0.73 0.18 352);
+  --ts-vibrant-accent-teal: oklch(0.75 0.14 194);
+  --ts-vibrant-accent-gold: oklch(0.82 0.15 88);
+}
+
+/* 도구별 고유 OKLCH 액센트 매핑 클래스 */
+.ts-accent-ink { --ts-sprite-accent: var(--ts-vibrant-accent-ink); }
+.ts-accent-water { --ts-sprite-accent: var(--ts-vibrant-accent-water); }
+.ts-accent-coral { --ts-sprite-accent: var(--ts-vibrant-accent-coral); }
+.ts-accent-mint { --ts-sprite-accent: var(--ts-vibrant-accent-mint); }
+.ts-accent-amber { --ts-sprite-accent: var(--ts-vibrant-accent-amber); }
+.ts-accent-violet { --ts-sprite-accent: var(--ts-vibrant-accent-violet); }
+.ts-accent-cobalt { --ts-sprite-accent: var(--ts-vibrant-accent-cobalt); }
+.ts-accent-rose { --ts-sprite-accent: var(--ts-vibrant-accent-rose); }
+.ts-accent-teal { --ts-sprite-accent: var(--ts-vibrant-accent-teal); }
+.ts-accent-gold { --ts-sprite-accent: var(--ts-vibrant-accent-gold); }
+
+/* 4종 테마 스와치(TSX 원시색 0건 유지용) */
+.ts-theme-swatch {
+  display: inline-block;
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--ts-vibrant-fg) 26%, transparent);
+}
+.ts-theme-swatch--sunlight-atelier {
+  background: linear-gradient(135deg, oklch(0.95 0.03 86) 0%, oklch(0.56 0.19 256) 100%);
+}
+.ts-theme-swatch--coral-pop {
+  background: linear-gradient(135deg, oklch(0.72 0.18 58) 0%, oklch(0.63 0.22 24) 100%);
+}
+.ts-theme-swatch--botanical-mint {
+  background: linear-gradient(135deg, oklch(0.84 0.09 162) 0%, oklch(0.55 0.16 158) 100%);
+}
+.ts-theme-swatch--midnight-ink {
+  background: linear-gradient(135deg, oklch(0.24 0.04 264) 0%, oklch(0.74 0.17 212) 100%);
+}
+
+/* 공용 주얼 스프라이트 아이콘 프레임 */
+.ts-vibrant-sprite {
+  --ts-sprite-size: 32px;
+  --ts-sprite-accent: var(--ts-vibrant-ring);
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--ts-sprite-size);
+  block-size: var(--ts-sprite-size);
+  flex-shrink: 0;
+  border-radius: calc(var(--ts-sprite-size) * 0.28);
+  isolation: isolate;
+  overflow: visible;
+  background: color-mix(in oklch, var(--ts-sprite-accent) 9%, var(--ts-vibrant-card));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--ts-sprite-accent) 34%, var(--ts-vibrant-border)),
+    0 2px 6px -2px color-mix(in oklch, var(--ts-sprite-accent) 24%, transparent);
+  transition:
+    transform 150ms var(--ts-vibrant-spring-press),
+    box-shadow 180ms var(--ts-vibrant-ease-out),
+    background-color 180ms var(--ts-vibrant-ease-out);
+}
+
+.ts-vibrant-sprite__img {
+  display: block;
+  inline-size: 86%;
+  block-size: 86%;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px color-mix(in oklch, var(--ts-vibrant-fg) 18%, transparent));
+  transition: transform 150ms var(--ts-vibrant-spring-press);
+}
+
+.ts-vibrant-sprite--animated:hover .ts-vibrant-sprite__img {
+  transform: translateY(-1px) scale(1.04);
+}
+
+/* 이미지 로드 실패 시 안전한 주얼 배지 폴백 */
+.ts-vibrant-sprite__fallback {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 88%;
+  block-size: 88%;
+  border-radius: calc(var(--ts-sprite-size) * 0.22);
+  background: linear-gradient(
+    145deg,
+    color-mix(in oklch, var(--ts-sprite-accent) 26%, var(--ts-vibrant-card)),
+    color-mix(in oklch, var(--ts-sprite-accent) 12%, var(--ts-vibrant-surface))
+  );
+  color: var(--ts-vibrant-fg);
+  font-size: clamp(0.58rem, calc(var(--ts-sprite-size) * 0.31), 0.95rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  word-break: keep-all;
+}
+
+/* 150ms 탄성 눌림 (scale(0.95)) */
+.ts-vibrant-pressable {
+  transition:
+    transform 150ms var(--ts-vibrant-spring-press),
+    box-shadow 150ms var(--ts-vibrant-ease-out),
+    border-color 150ms var(--ts-vibrant-ease-out);
+}
+
+.ts-vibrant-pressable:active,
+.ts-vibrant-sprite--animated:active {
+  transform: scale(0.95);
+}
+
+/* 잉크 번짐 오라 (ts-ink-bloom-active) */
+.ts-ink-bloom-active {
+  box-shadow:
+    inset 0 0 0 1.5px var(--ts-sprite-accent, var(--ts-vibrant-ring)),
+    0 0 0 3px color-mix(in oklch, var(--ts-sprite-accent, var(--ts-vibrant-ring)) 28%, transparent),
+    0 6px 16px -4px color-mix(in oklch, var(--ts-sprite-accent, var(--ts-vibrant-ring)) 42%, transparent);
+}
+
+.ts-ink-bloom-active::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in oklch, var(--ts-sprite-accent, var(--ts-vibrant-ring)) 38%, transparent) 0%,
+    color-mix(in oklch, var(--ts-sprite-accent, var(--ts-vibrant-ring)) 14%, transparent) 58%,
+    transparent 78%
+  );
+  animation: ts-ink-bloom-pulse 1.9s var(--ts-vibrant-ease-out) infinite;
+}
+
+@keyframes ts-ink-bloom-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.07);
+  }
+}
+
+/* 유리 광택 스윕 (ts-specular-sheen) */
+.ts-specular-sheen {
+  overflow: hidden;
+}
+
+.ts-specular-sheen::after {
+  content: "";
+  position: absolute;
+  inset: -20% -60%;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    transparent 34%,
+    var(--ts-vibrant-sheen) 50%,
+    transparent 66%
+  );
+  transform: translateX(-115%) skewX(-16deg);
+  opacity: 0;
+  transition: transform 420ms var(--ts-vibrant-ease-out), opacity 180ms ease-out;
+}
+
+.ts-specular-sheen:hover::after,
+.ts-specular-sheen:focus-visible::after,
+.ts-specular-sheen[data-active="true"]::after {
+  opacity: 1;
+  transform: translateX(115%) skewX(-16deg);
+}
+
+/* CSS Scroll-Driven 애니메이션 (@supports 가드 포함) */
+@keyframes ts-vibrant-scroll-rise {
+  from {
+    opacity: 0.18;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .ts-scroll-reveal {
+    animation: ts-vibrant-scroll-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 28%;
+  }
+}
+
+/* 고대비 패턴 오버레이 (ts-hc-hatch-overlay) */
+.ts-hc-hatch-overlay {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    var(--ts-vibrant-hatch-line) 5px 7px
+  );
+}
+
+[data-studio-high-contrast="true"] .ts-vibrant-sprite,
+[data-studio-high-contrast="true"] .ts-ink-bloom-active {
+  box-shadow: inset 0 0 0 2px var(--ts-vibrant-fg);
+}
+
+@media (prefers-contrast: more) {
+  .ts-vibrant-sprite {
+    box-shadow: inset 0 0 0 2px var(--ts-vibrant-fg);
+  }
+  .ts-hc-hatch-overlay {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 4px,
+      color-mix(in oklch, var(--ts-vibrant-fg) 26%, transparent) 4px 6px
+    );
+  }
+}
+
+@media (forced-colors: active) {
+  .ts-vibrant-sprite,
+  .ts-ink-bloom-active {
+    border: 2px solid ButtonText;
+    box-shadow: none;
+    background: Canvas;
+  }
+  .ts-ink-bloom-active::before,
+  .ts-specular-sheen::after {
+    display: none;
+  }
+}
+
+/* 아틀리에 감각 컨트롤 스트립 공용 스타일 */
+.ts-vibrant-atelier-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  border: 1px solid var(--ts-vibrant-border);
+  border-radius: 0.875rem;
+  background-color: var(--ts-vibrant-surface);
+  color: var(--ts-vibrant-fg);
+  padding: 0.625rem 0.75rem;
+  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-vibrant-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.ts-vibrant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-block-size: 44px;
+  min-inline-size: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--ts-vibrant-border);
+  background-color: var(--ts-vibrant-card);
+  color: var(--ts-vibrant-fg);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  word-break: keep-all;
+}
+
+.ts-vibrant-chip[aria-pressed="true"] {
+  border-color: var(--ts-vibrant-ring);
+  background-color: color-mix(in oklch, var(--ts-vibrant-ring) 14%, var(--ts-vibrant-card));
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ts-vibrant-ring) 24%, transparent);
+}
+
+.ts-vibrant-chip:focus-visible {
+  outline: 2px solid var(--ts-vibrant-ring);
+  outline-offset: 2px;
+}
+
+/* 모션 감소 완벽 대응 */
+@media (prefers-reduced-motion: reduce) {
+  .ts-vibrant-sprite,
+  .ts-vibrant-sprite__img,
+  .ts-vibrant-pressable,
+  .ts-ink-bloom-active::before,
+  .ts-specular-sheen::after,
+  .ts-scroll-reveal {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .ts-vibrant-pressable:active,
+  .ts-vibrant-sprite--animated:active,
+  .ts-vibrant-sprite--animated:hover .ts-vibrant-sprite__img {
+    transform: none !important;
+  }
+}
