@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { BadgeCheck, Check, CheckCircle2, Columns2, Copy, Eye, GitCompareArrows, Layers3, ScanLine, ShieldAlert, XCircle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { describeCreatorRoleLensTransition, type PreservedDraftEntry, type RoleTransitionSummary } from "./production-role-transition-model";

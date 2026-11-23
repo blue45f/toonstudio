@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { invalidateOfflinePreviewScope } from "@/domains/auth/public/session/offline-preview-scope";
-import { forgetOfflineOwnerReceipt, readOfflineOwnerReceipt } from "./studio-offline-owner-receipt";
+import { invalidateOfflinePreviewScope, OFFLINE_PREVIEW_SCOPE_KEY } from "@/domains/auth/public/session/offline-preview-scope";
+import { STUDIO_READER_CAPABILITY_HEADERS } from "@/platform/studio-reader-capabilities";
+import { forgetOfflineOwnerReceipt, offlineWorkCacheKey, readOfflineOwnerReceipt } from "./studio-offline-owner-receipt";
 
 const clock = 1_795_403_200_000;
 const signal = () => new AbortController().signal;
@@ -18,6 +19,55 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetcher);
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+it("로컬 저장에는 UUID selector 두 개와 공개 reader 헤더만 남기고 해당 작품 selector만 폐기한다", async () => {
+  const scope = "00000000-0000-4000-8000-000000000001";
+  const version = "00000000-0000-4000-8000-000000000002";
+  const readerKey = "toonstudio:offline-preview:reader:v1";
+  const workKey = `toonstudio:offline-preview:work:v1:${encodeURIComponent(workId)}`;
+  const publicReader = STUDIO_READER_CAPABILITY_HEADERS["x-studio-reader-capabilities"];
+  localStorage.setItem("studio-project-document", "unchanged-document");
+  localStorage.setItem(offlineWorkCacheKey("other"), "other-selector");
+  const write = vi.spyOn(Storage.prototype, "setItem");
+  const remove = vi.spyOn(Storage.prototype, "removeItem");
+  const random = vi.spyOn(crypto, "randomUUID").mockReturnValueOnce(scope).mockReturnValueOnce(version);
+
+  expect(await readOfflineOwnerReceipt(workId, signal(), true)).toEqual(receipt);
+  expect(write.mock.calls).toEqual([
+    [OFFLINE_PREVIEW_SCOPE_KEY, scope], [workKey, version], [readerKey, publicReader],
+  ]);
+  expect(random).toHaveBeenCalledTimes(2);
+  expect(localStorage.getItem(workKey)).toBe(version);
+  expect(await readOfflineOwnerReceipt(workId, signal())).toEqual(receipt);
+  expect(await readOfflineOwnerReceipt(workId, signal(), true)).toEqual(receipt);
+  expect(write).toHaveBeenCalledTimes(3);
+  expect(random).toHaveBeenCalledTimes(2);
+
+  forgetOfflineOwnerReceipt(workId);
+  expect(remove.mock.calls).toEqual([[workKey]]);
+  expect(localStorage.getItem(workKey)).toBeNull();
+  expect(localStorage.getItem(OFFLINE_PREVIEW_SCOPE_KEY)).toBe(scope);
+  expect(localStorage.getItem(readerKey)).toBe(publicReader);
+  expect(localStorage.getItem(offlineWorkCacheKey("other"))).toBe("other-selector");
+  expect(localStorage.getItem("studio-project-document")).toBe("unchanged-document");
+});
+
+it("로컬 키의 위조된 소유권 영수증은 쿠키별 HTTP 캐시 증거를 대신하지 못한다", async () => {
+  const forged = JSON.stringify({ ...receipt, userId: "forged-owner", role: "owner" });
+  localStorage.setItem(OFFLINE_PREVIEW_SCOPE_KEY, "forged-scope");
+  localStorage.setItem(offlineWorkCacheKey(workId), forged);
+  localStorage.setItem("toonstudio:offline-preview:reader:v1", forged);
+  const write = vi.spyOn(Storage.prototype, "setItem");
+  fetcher.mockRejectedValueOnce(new TypeError("cache miss"));
+
+  expect(await readOfflineOwnerReceipt(workId, signal())).toBeNull();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(fetcher.mock.calls[0]?.[1]).toMatchObject({
+    cache: "only-if-cached", credentials: "same-origin", mode: "same-origin",
+    headers: STUDIO_READER_CAPABILITY_HEADERS,
+  });
+  expect(write).not.toHaveBeenCalled();
+});
 
 it("확인된 원고의 오프라인 열람은 같은 origin·쿠키·URL의 브라우저 캐시로만 조회한다", async () => {
   expect(await readOfflineOwnerReceipt(workId, signal())).toBeNull();

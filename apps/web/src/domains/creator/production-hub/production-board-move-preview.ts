@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { transitionProductionTaskBatch } from "@toonstudio/contracts/production-workflow";
 import type {
   ProductionProjectAggregate,

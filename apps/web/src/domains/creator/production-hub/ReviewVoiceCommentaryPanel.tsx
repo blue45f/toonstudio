@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { getAuthUserId, listeners, type Session } from "@/domains/auth/public/session/auth-session-state";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { MapPin, Mic, Pause, Play, Square } from "lucide-react";

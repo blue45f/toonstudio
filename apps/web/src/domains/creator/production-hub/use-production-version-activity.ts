@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";

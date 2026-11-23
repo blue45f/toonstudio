@@ -1,4 +1,5 @@
 /** 회차 음성 해설의 세션 보관·서버 읽기·화면 연결을 소유한다. */
+import "./production-hub-i18n";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 import { getAuthUserId, listeners, type Session } from "@/domains/auth/public/session/auth-session-state";

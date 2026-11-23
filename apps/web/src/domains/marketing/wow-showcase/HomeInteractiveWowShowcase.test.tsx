@@ -33,7 +33,7 @@ function createMockCanvas2dContext() {
     font: "",
     textAlign: "start",
     textBaseline: "alphabetic",
-  };
+  } satisfies Partial<CanvasRenderingContext2D>;
 }
 
 function renderShowcase(lang: "ko" | "en" = "ko") {
@@ -78,9 +78,13 @@ describe("HomeInteractiveWowShowcase", () => {
 
   it("2D 컨텍스트가 있을 때 실시간 드로잉·분광 혼색 시연·4컷 스탬프·지우기가 실제 캔버스에 그려진다", () => {
     const mockCtx = createMockCanvas2dContext();
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-      (() => mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext,
-    );
+    // WebGPU 선언 병합과 무관하게 실제 2D 오버로드로 spy 타입을 고정한다.
+    const canvas2d: {
+      getContext(contextId: "2d", options?: CanvasRenderingContext2DSettings): Pick<CanvasRenderingContext2D, keyof typeof mockCtx> | null;
+    } = HTMLCanvasElement.prototype;
+    vi.spyOn(canvas2d, "getContext").mockImplementation((contextId) => contextId === "2d" ? mockCtx : null);
+
+    expect(document.createElement("canvas").getContext("webgl")).toBeNull();
 
     renderShowcase("ko");
     const canvas = screen.getByTestId("hwow-live-canvas");

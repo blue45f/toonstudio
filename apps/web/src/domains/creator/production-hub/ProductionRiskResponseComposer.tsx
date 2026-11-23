@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useT } from "@/shared/lib/i18n";
 import { useRef, useState, type FormEvent } from "react";
 import type { ProductionProjectAggregate, ProductionRisk, ProductionRiskResponse } from "@toonstudio/core/production";

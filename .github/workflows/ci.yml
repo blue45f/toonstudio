@@ -398,6 +398,7 @@ jobs:
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/cinematic-v9/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/world-v2/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/props/' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/vibrant-sprites/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/office-cast-v2/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/office-themes-v1/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/toon-office-v1/characters/' || '' }}

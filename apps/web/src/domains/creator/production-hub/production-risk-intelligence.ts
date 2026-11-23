@@ -6,7 +6,7 @@ import {
   type ProductionTaskStatus,
   type ScopeRef,
 } from "@toonstudio/core/production";
-
+import "./production-hub-i18n";
 import type { ProductionOperationsOverview } from "./production-episode-operations";
 
 const DAY_MS = 86_400_000;

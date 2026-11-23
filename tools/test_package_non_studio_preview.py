@@ -18,9 +18,11 @@ class PreviewPackageTests(unittest.TestCase):
             kept = ["index.html", "assets/public-AbCd1234.js", "assets/opencv-public-demo-AbCd1234.js",
                     "assets/main-AbCd1234.css", "fonts/public.woff2", "brand/public.webp", "data/catalog/01.json",
                     "i18n/ko/common.json", "locales/en.json", "catalog/index.json", "assets/studio-bg3d-physics.worker-public-demo-AbCd1234.js",
-                    "assets/studio-offline-branch.worker-public-demo-AbCd1234.js"]
+                    "assets/studio-offline-branch.worker-public-demo-AbCd1234.js",
+                    "assets/studio-bg3d-babylon-runtime-public-demo-AbCd1234.js"]
             omitted = ["assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
                        "assets/studio-bg3d-physics.worker-AbCd1234.js", "assets/studio-offline-branch.worker-AbCd1234.js",
+                       "assets/studio-bg3d-babylon-runtime-AbCd1234.js",
                        "assets/3d/unused.png", "i18n/studio/unused.json"]
             before = {}
             for name in kept + omitted:
