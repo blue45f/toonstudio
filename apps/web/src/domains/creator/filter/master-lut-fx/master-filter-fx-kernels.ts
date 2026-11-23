@@ -340,40 +340,49 @@ function applyAnamorphicLensFlare(
 ): Uint8ClampedArray {
   const out = new Uint8ClampedArray(input.length);
   const bright = new Float32Array(width * height);
-  for (let i = 0; i < width * height; i += 1) {
-    const idx = i * 4;
-    const l = srgbLuma((input[idx] ?? 0) / 255, (input[idx + 1] ?? 0) / 255, (input[idx + 2] ?? 0) / 255);
-    bright[i] = smoothstep(0.58, 0.96, l);
+  const rowPeak = new Float32Array(height);
+  for (let y = 0; y < height; y += 1) {
+    let peak = 0;
+    for (let x = 0; x < width; x += 1) {
+      const i = y * width + x;
+      const idx = i * 4;
+      const l = srgbLuma((input[idx] ?? 0) / 255, (input[idx + 1] ?? 0) / 255, (input[idx + 2] ?? 0) / 255);
+      // 순수 스페큘러 광원(태양·하이라이트 점)만 추출해 시네마 수평 스트릭 형성
+      const bVal = smoothstep(0.86, 0.985, l);
+      bright[i] = bVal;
+      if (bVal > peak) peak = bVal;
+    }
+    rowPeak[y] = peak;
   }
 
-  const streakRadius = Math.max(3, Math.min(36, Math.round(width * 0.24)));
+  const streakRadius = Math.max(4, Math.min(54, Math.round(width * 0.44)));
   for (let y = 0; y < height; y += 1) {
     const row = y * width;
+    const bandBoost = Math.pow(rowPeak[y] ?? 0, 2.4) * 0.56;
     for (let x = 0; x < width; x += 1) {
       let acc = 0;
       let weightSum = 0;
       for (let dx = -streakRadius; dx <= streakRadius; dx += 1) {
         const sx = Math.min(width - 1, Math.max(0, x + dx));
-        const w = Math.exp(-Math.abs(dx) / Math.max(1.5, streakRadius * 0.32));
+        const w = Math.exp(-Math.abs(dx) / Math.max(2, streakRadius * 0.45));
         acc += (bright[row + sx] ?? 0) * w;
         weightSum += w;
       }
-      const streak = weightSum > 0 ? acc / weightSum : 0;
+      const streak = (weightSum > 0 ? acc / weightSum : 0) * 1.9 + bandBoost;
 
       const idx = (row + x) * 4;
-      const r0 = (input[idx] ?? 0) / 255;
-      const g0 = (input[idx + 1] ?? 0) / 255;
-      const b0 = (input[idx + 2] ?? 0) / 255;
+      const r0 = ((input[idx] ?? 0) / 255) * 0.82;
+      const g0 = ((input[idx + 1] ?? 0) / 255) * 0.87;
+      const b0 = ((input[idx + 2] ?? 0) / 255) * 0.94;
       const a0 = input[idx + 3] ?? 255;
 
-      // Iconic blue-cyan anamorphic coating flare blended via Screen
-      const fr = streak * 0.45;
-      const fg = streak * 0.78;
-      const fb = streak * 1.15;
+      const fr = clamp01(streak * 0.22);
+      const fg = clamp01(streak * 0.84);
+      const fb = clamp01(streak * 1.42);
 
-      out[idx] = clampByte(clamp01(1 - (1 - r0) * (1 - clamp01(fr))) * 255);
-      out[idx + 1] = clampByte(clamp01(1 - (1 - g0) * (1 - clamp01(fg))) * 255);
-      out[idx + 2] = clampByte(clamp01(1 - (1 - b0) * (1 - clamp01(fb))) * 255);
+      out[idx] = clampByte(clamp01(1 - (1 - r0) * (1 - fr)) * 255);
+      out[idx + 1] = clampByte(clamp01(1 - (1 - g0) * (1 - fg)) * 255);
+      out[idx + 2] = clampByte(clamp01(1 - (1 - b0) * (1 - fb)) * 255);
       out[idx + 3] = a0;
     }
   }
@@ -481,16 +490,16 @@ function applyDreamGlowBloom(
     brightRgb[i * 3 + 2] = b * mask;
   }
 
-  const radius = Math.max(1, Math.min(6, Math.round(Math.min(width, height) * 0.045)));
-  const blurred = separableGaussianBlurRgb(brightRgb, width, height, radius, radius * 0.6);
+  const radius = Math.max(2, Math.min(8, Math.round(Math.min(width, height) * 0.065)));
+  const blurred = separableGaussianBlurRgb(brightRgb, width, height, radius, radius * 0.65);
 
   for (let i = 0; i < pixelCount; i += 1) {
     const idx = i * 4;
     const r0 = (input[idx] ?? 0) / 255;
     const g0 = (input[idx + 1] ?? 0) / 255;
     const b0 = (input[idx + 2] ?? 0) / 255;
-    const br = clamp01((blurred[i * 3] ?? 0) * 0.85);
-    const bg = clamp01((blurred[i * 3 + 1] ?? 0) * 0.82);
+    const br = clamp01((blurred[i * 3] ?? 0) * 1.15);
+    const bg = clamp01((blurred[i * 3 + 1] ?? 0) * 1.02);
     const bb = clamp01((blurred[i * 3 + 2] ?? 0) * 0.92);
 
     out[idx] = clampByte(clamp01(1 - (1 - r0) * (1 - br)) * 255);
@@ -507,14 +516,16 @@ function applySoftBokehHighlight(
   height: number,
 ): Uint8ClampedArray {
   const out = new Uint8ClampedArray(input.length);
-  const radius = Math.max(1, Math.min(4, Math.round(Math.min(width, height) * 0.03)));
+  const radius = Math.max(2, Math.min(6, Math.round(Math.min(width, height) * 0.055)));
 
-  // Precompute circular aperture disc offsets
-  const offsets: Array<readonly [number, number]> = [];
+  // Precompute circular aperture disc offsets with optical outer-ring boost
+  const offsets: Array<readonly [number, number, number]> = [];
   for (let dy = -radius; dy <= radius; dy += 1) {
     for (let dx = -radius; dx <= radius; dx += 1) {
-      if (dx * dx + dy * dy <= radius * radius + 0.25) {
-        offsets.push([dx, dy]);
+      const dist = Math.hypot(dx, dy);
+      if (dist <= radius + 0.35) {
+        const ringGain = dist >= radius * 0.62 ? 1.55 : 0.85;
+        offsets.push([dx, dy, ringGain]);
       }
     }
   }
@@ -534,7 +545,7 @@ function applySoftBokehHighlight(
         const g = sg / 255;
         const b = sb / 255;
         const l = srgbLuma(r, g, b);
-        const specularW = 0.25 + Math.pow(l, 2.4) * 4.5;
+        const specularW = (0.12 + Math.pow(l, 3.2) * 10.5) * pair[2];
         wr += r * specularW;
         wg += g * specularW;
         wb += b * specularW;
@@ -549,10 +560,10 @@ function applySoftBokehHighlight(
       const bg = wSum > 0 ? wg / wSum : g0;
       const bb = wSum > 0 ? wb / wSum : b0;
 
-      // Preserve crisp core while adding dreamy bokeh lift
-      const r = clamp01(lerp(r0, Math.max(r0, br), 0.72) + 0.025);
-      const g = clamp01(lerp(g0, Math.max(g0, bg), 0.72) + 0.02);
-      const b = clamp01(lerp(b0, Math.max(b0, bb), 0.72) + 0.03);
+      // Creamy defocused aperture blur + luminous specular bokeh rings
+      const r = clamp01(lerp(r0 * 0.9, Math.max(br, r0), 0.86));
+      const g = clamp01(lerp(g0 * 0.9, Math.max(bg, g0), 0.86));
+      const b = clamp01(lerp(b0 * 0.94, Math.max(bb, b0), 0.86));
 
       out[idx] = clampByte(r * 255);
       out[idx + 1] = clampByte(g * 255);
