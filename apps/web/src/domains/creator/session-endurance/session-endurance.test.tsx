@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudioDraftSaveCenter } from "../StudioDraftSaveCenter";
 import { createStudioOpfsMemoryFileSystem, isStudioOpfsError } from "../studio-opfs-filesystem";
 import { resetStudioReliabilityStatus } from "../studio-reliability-status-store";
+import { StudioMenubarStatusSlots } from "../studio-shell/StudioMenubarStatusSlots";
 import {
   createDefaultHistoryOpfsSpillStore,
   createGpuResourceLeakTracker,
@@ -442,6 +443,68 @@ describe("history-opfs-spill-store", () => {
 });
 
 describe("StudioEnduranceGuardChip", () => {
+  it("데스크톱 상태 자리에 칩을 싣고 본문 포털의 진단을 닫으면 실제 칩으로 초점을 돌린다", () => {
+    const tracker = createGpuResourceLeakTracker();
+    const historyStore = createHistoryOpfsSpillStore({ sessionId: "menubar-endurance" });
+    const Harness = ({ slot }: { readonly slot: boolean }) => <>
+      <header data-testid="endurance-header">{slot ? <StudioMenubarStatusSlots ids={["endurance"]} /> : null}</header>
+      <main data-testid="endurance-source"><StudioEnduranceGuardChip tracker={tracker} historyStore={historyStore} /></main>
+    </>;
+    const view = render(<Harness slot />);
+    const header = screen.getByTestId("endurance-header");
+    const source = screen.getByTestId("endurance-source");
+    let trigger = screen.getByRole("button", { name: /^세션 자가 진단:/u });
+    expect(header.contains(trigger)).toBe(true);
+    expect(source.contains(trigger)).toBe(false);
+    expect(trigger.getAttribute("data-endurance-compact")).toBe("true");
+
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog", { name: "장시간 세션 자가 진단" });
+    expect(dialog.parentElement).toBe(document.body);
+    expect(header.contains(dialog)).toBe(false);
+    expect(within(dialog).getByText("VRAM · GPU 자원")).not.toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "세션 자가 진단 닫기" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+
+    // 상단 바가 언마운트되어도 같은 진단이 사라지거나 중복되지 않는다.
+    view.rerender(<Harness slot={false} />);
+    trigger = screen.getByRole("button", { name: /^세션 자가 진단:/u });
+    expect(source.contains(trigger)).toBe(true);
+    expect(screen.getAllByRole("button", { name: /^세션 자가 진단:/u })).toHaveLength(1);
+    fireEvent.click(trigger);
+    expect(source.contains(screen.getByRole("dialog"))).toBe(true);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.activeElement).toBe(trigger);
+
+    view.rerender(<Harness slot />);
+    expect(header.contains(screen.getByRole("button", { name: /^세션 자가 진단:/u }))).toBe(true);
+    expect(screen.getAllByRole("button", { name: /^세션 자가 진단:/u })).toHaveLength(1);
+  });
+
+  it.each([
+    { name: "모바일 몰입", mobileImmersive: true, canvasOnlyMode: false },
+    { name: "캔버스 전용", mobileImmersive: false, canvasOnlyMode: true },
+  ])("$name 화면은 남아 있는 데스크톱 자리 대신 기존 부유 진단을 유지한다", (mode) => {
+    render(<>
+      <header data-testid="endurance-header"><StudioMenubarStatusSlots ids={["endurance"]} /></header>
+      <main data-testid="endurance-source"><StudioEnduranceGuardChip
+        tracker={createGpuResourceLeakTracker()}
+        historyStore={createHistoryOpfsSpillStore({ sessionId: mode.name })}
+        mobileImmersive={mode.mobileImmersive}
+        canvasOnlyMode={mode.canvasOnlyMode}
+      /></main>
+    </>);
+    const trigger = screen.getByRole("button", { name: /^세션 자가 진단:/u });
+    const source = screen.getByTestId("endurance-source");
+    expect(source.contains(trigger)).toBe(true);
+    expect(screen.getByTestId("endurance-header").contains(trigger)).toBe(false);
+    fireEvent.click(trigger);
+    expect(source.contains(screen.getByRole("dialog"))).toBe(true);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("기본 접힘 상태를 유지하고 토글·임계치 표시·1클릭 GPU 캐시 정리·Escape 닫기를 검증한다", async () => {
     const tracker = createGpuResourceLeakTracker({
       vramBudgetBytes: 100 * 1024 * 1024,

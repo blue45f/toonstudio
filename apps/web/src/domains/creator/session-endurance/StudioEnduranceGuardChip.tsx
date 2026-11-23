@@ -15,10 +15,16 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/shared/lib/utils";
 import { formatStudioOpfsBytes } from "../studio-opfs-filesystem";
+import {
+  useStudioMenubarPopoverPosition,
+  useStudioMenubarStatusSlot,
+} from "../studio-shell/studio-menubar-status-slot";
 import {
   getSharedGpuResourceLeakTracker,
   type EnduranceHealthStatus,
@@ -138,9 +144,12 @@ export function StudioEnduranceGuardChip({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const dialogId = useId();
+  const menubarSlot = useStudioMenubarStatusSlot("endurance");
+  const inline = menubarSlot !== null && !mobileImmersive && !canvasOnlyMode;
+  const popoverPosition = useStudioMenubarPopoverPosition(triggerRef, inline && open);
 
   const overallStatus = worstStatus(gpu.overallStatus, history.status);
-  const compactIconOnly = canvasOnlyMode && overallStatus === "healthy" && !open;
+  const compactIconOnly = inline || (canvasOnlyMode && overallStatus === "healthy" && !open);
   const statusLabel = STATUS_LABEL_KO[overallStatus];
 
   const handleClose = useCallback(() => {
@@ -178,20 +187,23 @@ export function StudioEnduranceGuardChip({
     };
   }, [handleClose, open]);
 
-  return (
+  const renderPanel = (panel: ReactNode) => inline ? createPortal(panel, document.body) : panel;
+  const content = (
     <div
       data-studio-endurance-guard="true"
       data-endurance-status={overallStatus}
+      data-studio-endurance-placement={inline ? "menubar" : "floating"}
       className={cn(
-        "pointer-events-auto fixed left-[max(0.75rem,env(safe-area-inset-left))] z-40 [word-break:keep-all]",
-        !mobileImmersive && "bottom-[max(0.75rem,env(safe-area-inset-bottom))]",
+        "pointer-events-auto [word-break:keep-all]",
+        inline ? "relative flex shrink-0" : "fixed left-[max(0.75rem,env(safe-area-inset-left))] z-40",
+        !inline && !mobileImmersive && "bottom-[max(0.75rem,env(safe-area-inset-bottom))]",
         className,
       )}
       style={mobileImmersive ? {
         bottom: "calc(max(var(--studio-canvas-bottom-inset, 7rem), var(--studio-mobile-dock-measured-height, 0px), var(--service-status-overlay-clearance, 0px), env(safe-area-inset-bottom)) + 0.75rem)",
       } : undefined}
     >
-      {open ? (
+      {open && (!inline || popoverPosition) ? renderPanel(
         <div
           ref={panelRef}
           id={dialogId}
@@ -200,7 +212,15 @@ export function StudioEnduranceGuardChip({
           aria-labelledby={`${dialogId}-title`}
           aria-describedby={`${dialogId}-desc`}
           data-studio-endurance-panel="true"
-          className="mb-2 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-panel p-4 text-fg shadow-xl [word-break:keep-all]"
+          className={cn(
+            "w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-panel p-4 text-fg shadow-xl [word-break:keep-all]",
+            inline ? "fixed z-[100] overflow-y-auto" : "mb-2",
+          )}
+          style={inline && popoverPosition ? {
+            ...popoverPosition,
+            maxHeight: typeof popoverPosition.top === "number"
+              ? `calc(100dvh - ${popoverPosition.top}px - 0.75rem)` : undefined,
+          } : undefined}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -396,4 +416,5 @@ export function StudioEnduranceGuardChip({
       </button>
     </div>
   );
+  return inline && menubarSlot ? createPortal(content, menubarSlot) : content;
 }
