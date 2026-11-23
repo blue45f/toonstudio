@@ -459,7 +459,7 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@eslint/js": "^10.0.1",
-    "@heejun/eslint-config": "^4.0.0",
+    "@heejun/eslint-config": "^5.0.0",
     "@lhci/cli": "0.16.1",
     "@playwright/test": "1.65.0",
     "@rolldown/plugin-babel": "^0.3.1",
