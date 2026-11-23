@@ -96,7 +96,7 @@ export async function waitForEditorSettled(page: Page): Promise<void> {
     })
     .toBe(0);
   const connectionState = page.locator('[data-service-degraded-banner]:visible').or(
-    page.getByRole("status").filter({ hasText: "오프라인 · 기기 저장. 서버 연결 없이 작업 중이에요" }),
+    page.getByRole("status").filter({ hasText: "오프라인. 서버 연결 없이 작업 중이에요" }),
   );
   await expect(connectionState.first()).toBeVisible({ timeout: 45_000 });
   await settleLayout(page);

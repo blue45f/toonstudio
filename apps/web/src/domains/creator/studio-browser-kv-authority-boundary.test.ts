@@ -357,6 +357,10 @@ const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-cleanup", "offlineWorkCacheKey(workId)", 1, CLEANUP_ONLY, "studio-offline-owner-receipt.test.ts가 해당 작품의 캐시 selector만 제거하고 다른 원고·scope·공개 reader 설정을 보존함을 검증한다. 아래 변이 검사는 쓰기 전환·다른 키·추가 호출을 거부한다."),
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-write", "OFFLINE_PREVIEW_SCOPE_KEY", 1, "계정 전환 때 폐기하는 불투명 HTTP 캐시 namespace UUID 한 개다. 사용자·원고 본문·권한·만료 영수증은 기록하지 않으며 쿠키별 서버 응답만 열람 근거가 된다.", "studio-offline-owner-receipt.test.ts가 정확한 키의 UUID 쓰기·재조회 시 쓰기 없음·위조 로컬 영수증의 접근 불가를 검증하고, 기존 쿠키·TTL·세션 전환 검사를 유지한다."),
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-write", "key", 1, "offlineWorkCacheKey(workId)의 작품별 캐시 selector UUID 한 개다. 원고 본문이나 소유권 영수증을 저장하지 않으며 거부된 작품의 selector는 별도 삭제한다.", "studio-offline-owner-receipt.test.ts가 work:v1 키와 UUID payload·정확한 호출 수를 고정한다. StudioOfflineOwnerPreview.test.tsx는 서버 영수증과 맞는 OPFS/SQLite 원고·버전만 읽기 전용으로 연다."),
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-write", '"toonstudio:offline-preview:reader:v1"', 1, "초기 로더에 전달하는 정적 공개 reader capability 헤더만 기록한다. 세션 쿠키·사용자·원고·권한 영수증을 담지 않으며 이 문자열 자체는 접근 권한을 부여하지 않는다.", "studio-offline-owner-receipt.test.ts가 공개 헤더와 동일한 payload만 쓰고 위조 값으로 권한을 얻지 못함을 검증한다. API controller 검사는 cookie-only·owner·세션/권한 만료 조건을 유지한다."),
   // 2026-11-22: UI 프리셋·명시 주입 호환 저장소·SHA-256 내용 주소 지정 L2 캐시만 정확한 호출 수로 등록한다.
   allow("apps/web/src/domains/creator/camera-angles-pro/webtoon-camera-angles.ts", "local-storage-write", '"toonstudio.camera-angles-pro.bookmarks.v1"', 1, "3D 카메라 앵글 북마크(최대 64건) UI 프리셋 목록만 저장하는 기기 로컬 편의 상태이며 원고·장면·SQLite 정본을 소유하지 않는다.", "camera-angles-pro.test.tsx가 64건 한도·필드 검증(isValidBookmarkRecord) 기반 북마크 저장·복원과 저장 불가 시 빈 배열 기본값 복귀를 검증한다."),
   allow("apps/web/src/domains/creator/continuity-bible/continuity-bible-model.ts", "durable-storage-write", '`${STORAGE_PREFIX}${state.projectId}`', 1, "명시 주입된 Storage 포트로 작품별 작화 일관성 체크시트(상처·소품·복장 메모) 로컬 작업 사본만 저장하며 원고 캔버스·서버 정본을 대체하지 않는다.", "continuity-bible.test.tsx가 주입 storage 기반 projectId별 체크시트 저장·복원 및 마크다운 내보내기를 검증하고 storage 미주입 시 메모리 상태로 동작한다."),
@@ -970,8 +974,9 @@ describe("Studio browser-KV authority boundary", () => {
       }
     }
   });
-  it("추가 검토한 생성·인계·제작 메모·배지의 허용은 소유자·키·종류·호출 수를 넘지 않는다", () => {
+  it("추가 검토한 생성·인계·제작 메모·배지·캐시 selector의 허용은 소유자·키·종류·호출 수를 넘지 않는다", () => {
     for (const relativePath of [
+      "offline/studio-offline-owner-receipt.ts",
       "ai/studio-ai-generation-queue-store.ts",
       "bg3d/studio-bg3d-live-ink-bake-bridge.ts",
       "fresh-ideas/serialization-pace-model.ts",
