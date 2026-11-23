@@ -457,3 +457,27 @@
     transform: none !important;
   }
 }
+
+/* ── PWA Window Controls Overlay (WCO) 상단 안전 여백 변수 ──────────────── *
+ * 일반 브라우저·standalone 모드에서는 0px 기본값을 유지해 기존 레이아웃을 변경하지 않으며,
+ * desktop PWA WCO 표시 모드에서만 OS 제목 표시줄 안전 영역을 CSS 변수로 노출한다.
+ */
+:root {
+  --wco-titlebar-x: 0px;
+  --wco-titlebar-y: 0px;
+  --wco-titlebar-width: 100%;
+  --wco-titlebar-height: 0px;
+  --wco-safe-top: 0px;
+  --wco-safe-left: 0px;
+}
+
+@media (display-mode: window-controls-overlay) {
+  :root {
+    --wco-titlebar-x: env(titlebar-area-x, 0px);
+    --wco-titlebar-y: env(titlebar-area-y, 0px);
+    --wco-titlebar-width: env(titlebar-area-width, 100%);
+    --wco-titlebar-height: env(titlebar-area-height, 0px);
+    --wco-safe-top: env(titlebar-area-height, 0px);
+    --wco-safe-left: env(titlebar-area-x, 0px);
+  }
+}
