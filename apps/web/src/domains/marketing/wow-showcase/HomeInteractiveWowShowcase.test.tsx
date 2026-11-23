@@ -33,7 +33,7 @@ function createMockCanvas2dContext() {
     font: "",
     textAlign: "start",
     textBaseline: "alphabetic",
-  };
+  } satisfies Partial<CanvasRenderingContext2D>;
 }
 
 function renderShowcase(lang: "ko" | "en" = "ko") {
@@ -78,7 +78,8 @@ describe("HomeInteractiveWowShowcase", () => {
 
   it("2D 컨텍스트가 있을 때 실시간 드로잉·분광 혼색 시연·4컷 스탬프·지우기가 실제 캔버스에 그려진다", () => {
     const mockCtx = createMockCanvas2dContext();
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(mockCtx as unknown as CanvasRenderingContext2D);
+    const canvas2d: { getContext(id: "2d"): Partial<CanvasRenderingContext2D> | null } = HTMLCanvasElement.prototype;
+    vi.spyOn(canvas2d, "getContext").mockImplementation((id: string) => id === "2d" ? mockCtx : null);
 
     renderShowcase("ko");
     const canvas = screen.getByTestId("hwow-live-canvas");
