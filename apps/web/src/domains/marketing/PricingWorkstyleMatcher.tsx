@@ -10,6 +10,7 @@ import { ArrowRight, Check, Minus, Plus, SlidersHorizontal, Sparkles, Users } fr
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
+import { VibrantPageIdentityBanner } from "@/shared/ui/vibrant-identity/VibrantPageIdentityBanner";
 
 import {
   clampCollaborators,
@@ -58,12 +59,19 @@ export function PricingWorkstyleMatcher({
   };
 
   return (
-    <section
-      data-testid="pricing-workstyle-matcher"
-      data-tone={match.tone}
-      aria-label={t("3초 작업 스타일 맞춤 등급 진단기", "3-second workstyle tier matcher")}
-      className="pricing-matcher mb-6"
-    >
+    <>
+      <VibrantPageIdentityBanner
+        pageId="pricing"
+        compact
+        activeStep={1}
+        className="mb-5"
+      />
+      <section
+        data-testid="pricing-workstyle-matcher"
+        data-tone={match.tone}
+        aria-label={t("3초 작업 스타일 맞춤 등급 진단기", "3-second workstyle tier matcher")}
+        className="pricing-matcher mb-6"
+      >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="shrink-0 text-accent" aria-hidden="true" />
@@ -232,5 +240,6 @@ export function PricingWorkstyleMatcher({
         </dl>
       </div>
     </section>
+    </>
   );
 }

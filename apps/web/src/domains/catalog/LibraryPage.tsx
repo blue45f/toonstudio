@@ -9,6 +9,7 @@ import { MySpaceModuleChrome } from "@/shared/components/my-space-module-chrome"
 import { Container } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
+import { VibrantPageIdentityBanner } from "@/shared/ui/vibrant-identity/VibrantPageIdentityBanner";
 import {
   translateCurrentStaticSourceText,
   useBilingual,
@@ -54,6 +55,13 @@ export function LibraryPage() {
       </header>
 
       <LibraryReadingMomentumBar />
+
+      <VibrantPageIdentityBanner
+        pageId="library"
+        compact
+        activeStep={tab === "taste" ? 2 : 1}
+        className="mb-5"
+      />
 
       <LibraryView
         initialTab={tab}

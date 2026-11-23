@@ -46,6 +46,7 @@ import {
 import Link from "@/shared/navigation/router-link";
 import { COMMUNITY_PROMOTION_LEAGUE_TIERS } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
+import { VibrantPageIdentityBanner } from "@/shared/ui/vibrant-identity/VibrantPageIdentityBanner";
 
 const SCOPES = ["title", "author", "pencafe"] as const;
 type SectionViewId = "feed" | "league" | "promote" | "all";
@@ -378,6 +379,13 @@ export function CommunityPage() {
           </Link>
         </div>
       </header>
+
+      <VibrantPageIdentityBanner
+        pageId="community"
+        compact
+        activeStep={sectionView === "promote" ? 2 : 1}
+        className="mt-4"
+      />
 
       <div className="mt-2">
         <p className="sr-only">{t(COPY.tagline)}</p>
