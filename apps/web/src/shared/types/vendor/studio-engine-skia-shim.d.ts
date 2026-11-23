@@ -53,6 +53,10 @@ export type {
 export interface SkiaDocumentRendererOptions {
   readonly maxPictureBytes?: number;
   readonly onContextLost?: () => void;
+  readonly initialContextIdle?: {
+    readonly isPenDown: () => boolean;
+    readonly scheduleIdle: (callback: () => void) => () => void;
+  };
   readonly loadFontData?: (
     font: import("../../../../../../packages/studio-engine-skia/src/document-contract").SkiaDocumentFontSource,
     signal: AbortSignal,
