@@ -1,6 +1,7 @@
 import {
   Box,
   Compass,
+  Cuboid,
   FileSpreadsheet,
   Film,
   GitBranch,
@@ -13,6 +14,7 @@ import {
   PenLine,
   Presentation,
   Shapes,
+  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   Wand2,
@@ -98,6 +100,16 @@ const LazyWebtoonViralPromoPanel = lazy(() =>
     default: m.WebtoonViralPromoPanel,
   })),
 );
+const LazyAutoQaCollabHubPanel = lazy(() =>
+  import("./AutoQaCollabHubPanel").then((m) => ({
+    default: m.AutoQaCollabHubPanel,
+  })),
+);
+const LazyCsp3dUpgradeHubPanel = lazy(() =>
+  import("./Csp3dUpgradeHubPanel").then((m) => ({
+    default: m.Csp3dUpgradeHubPanel,
+  })),
+);
 
 export type PptProDrawingTabId =
   | "layout"
@@ -117,7 +129,9 @@ export type PptProDrawingTabId =
   | "redline"
   | "relief"
   | "storyGrowth"
-  | "viralPromo";
+  | "viralPromo"
+  | "qaReviewHub"
+  | "csp3dProHub";
 
 interface SuiteTabDescriptor {
   readonly id: PptProDrawingTabId;
@@ -216,6 +230,16 @@ const SUITE_TABS: readonly SuiteTabDescriptor[] = [
     label: "웹툰 바이럴 홍보·팬덤·IP 수익",
     description: "1클릭 반응형 홍보 랜딩 HTML·SNS 3종 티저 카드·독자 리액션/투표 위젯·투명 수식 기반 글로벌 IP 수익 시뮬레이터",
   },
+  {
+    id: "qaReviewHub",
+    label: "자동 검수 10종·사람 협업 결재",
+    description: "미채색 구멍/붉은펜 재검수·2D↔3D 조화·스마트 안전분할·360px·다국어·컬러/설정집·7단계 결재선·블라인드 링크·SLA",
+  },
+  {
+    id: "csp3dProHub",
+    label: "퍼펫 변형·3D 직접 페인팅·손/STL·워터마크",
+    description: "2D MLS 퍼펫 변형·3D UV 4층 직접 페인팅·15관절 3D 손/가중치/FFD/STL/Auto-LOD·비가시 Anti-AI 워터마크·속도 곡선",
+  },
 ];
 
 function SuiteTabIcon({ id }: { readonly id: PptProDrawingTabId }) {
@@ -256,6 +280,10 @@ function SuiteTabIcon({ id }: { readonly id: PptProDrawingTabId }) {
       return <GitBranch size={16} aria-hidden="true" />;
     case "viralPromo":
       return <Megaphone size={16} aria-hidden="true" />;
+    case "qaReviewHub":
+      return <ShieldCheck size={16} aria-hidden="true" />;
+    case "csp3dProHub":
+      return <Cuboid size={16} aria-hidden="true" />;
   }
 }
 
@@ -355,6 +383,8 @@ export function StudioPptProDrawingPanel({
           {activeTab === "relief" ? <LazyCreatorReliefAutopilotPanel /> : null}
           {activeTab === "storyGrowth" ? <LazyStoryGrowthInspirerPanel /> : null}
           {activeTab === "viralPromo" ? <LazyWebtoonViralPromoPanel /> : null}
+          {activeTab === "qaReviewHub" ? <LazyAutoQaCollabHubPanel /> : null}
+          {activeTab === "csp3dProHub" ? <LazyCsp3dUpgradeHubPanel /> : null}
         </Suspense>
       </div>
     </section>
