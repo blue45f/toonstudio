@@ -15,7 +15,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState, type PointerEvent } from "react";
+import { useEffect, useState, type PointerEvent, type WheelEvent } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -29,21 +29,35 @@ import {
   assignQuickMenuSlot,
   DEFAULT_QUICK_MENU_SLOTS,
   QUICK_MENU_ACTION_LABELS_KO,
-  resolveQuickMenuSlotFromDrag,
   type QuickMenuActionId,
   type QuickMenuSlot,
 } from "../drawing/studio-quickmenu-and-quickshape";
 import {
   ALL_QUICK_MENU_ACTION_IDS,
+  normalizeQuickMenuSlots,
   saveQuickMenuSlots,
 } from "../drawing/studio-quickmenu-preferences";
+import {
+  DEFAULT_JEWEL_8_WHEEL_SLOTS,
+  expandSlotsToJewelEight,
+  resolveJewelCategoryForQuickAction,
+  resolveRadialWheelSlotFromDrag,
+  type StudioRadialQuickWheelSlot,
+} from "./studio-drawing-ergonomics-presets";
+import { loadRadialQuickMenuSlots, saveRadialQuickMenuExtraSlots } from "./studio-radial-quickmenu-preferences";
+
+import "./StudioDrawingJewelChrome.css";
 
 export interface StudioRadialQuickWheelProps {
   readonly open: boolean;
   readonly anchor?: { readonly x: number; readonly y: number } | null;
-  readonly slots?: readonly QuickMenuSlot[];
-  readonly onSelectAction: (actionId: QuickMenuActionId, slot: QuickMenuSlot) => void;
-  readonly onSlotsChange?: (nextSlots: readonly QuickMenuSlot[]) => void;
+  readonly slots?: readonly StudioRadialQuickWheelSlot[];
+  readonly slotCount?: 6 | 8;
+  readonly activeToolLabel?: string;
+  readonly strokeWidth?: number;
+  readonly shortcutHint?: string;
+  readonly onSelectAction: (actionId: QuickMenuActionId, slot: StudioRadialQuickWheelSlot) => void;
+  readonly onSlotsChange?: (nextSlots: readonly StudioRadialQuickWheelSlot[]) => void;
   readonly onClose: () => void;
 }
 
@@ -60,20 +74,24 @@ const ACTION_ICONS: Readonly<Record<QuickMenuActionId, LucideIcon>> = {
   "clear-layer": Trash2,
 };
 
-const WHEEL_SIZE = 184;
-const WHEEL_CENTER = WHEEL_SIZE / 2;
-const SECTOR_RADIUS = 64;
-const DEADZONE_PX = 24;
-
-function polarSectorPosition(index: number): { readonly left: number; readonly top: number } {
-  const angleRad = ((index * 60 - 90) * Math.PI) / 180;
+function polarSectorPosition(
+  index: number,
+  total: number,
+  wheelCenter: number,
+  sectorRadius: number,
+): { readonly left: number; readonly top: number } {
+  const stepDeg = 360 / Math.max(1, total);
+  const angleRad = ((index * stepDeg - 90) * Math.PI) / 180;
   return {
-    left: Math.round(WHEEL_CENTER + Math.cos(angleRad) * SECTOR_RADIUS),
-    top: Math.round(WHEEL_CENTER + Math.sin(angleRad) * SECTOR_RADIUS),
+    left: Math.round(wheelCenter + Math.cos(angleRad) * sectorRadius),
+    top: Math.round(wheelCenter + Math.sin(angleRad) * sectorRadius),
   };
 }
 
-function clampAnchor(anchor: { readonly x: number; readonly y: number } | null | undefined): {
+function clampAnchor(
+  anchor: { readonly x: number; readonly y: number } | null | undefined,
+  wheelSize: number,
+): {
   readonly x: number;
   readonly y: number;
   readonly wheelScale: number;
@@ -82,8 +100,8 @@ function clampAnchor(anchor: { readonly x: number; readonly y: number } | null |
   const vw = typeof window !== "undefined" && window.innerWidth > 0 ? window.innerWidth : 1280;
   const vh = typeof window !== "undefined" && window.innerHeight > 0 ? window.innerHeight : 800;
   // 220px 워치·320px 초소형 모바일에서도 휠·하단 상태바가 잘리지 않도록 반경을 안전하게 축소·클램프한다.
-  const wheelScale = vw < 360 ? Math.max(0.76, (vw - 24) / (WHEEL_SIZE + 24)) : 1;
-  const effectiveSize = Math.ceil(WHEEL_SIZE * wheelScale);
+  const wheelScale = vw < 360 ? Math.max(0.76, (vw - 24) / (wheelSize + 24)) : 1;
+  const effectiveSize = Math.ceil(wheelSize * wheelScale);
   const fallbackX = Math.round(vw / 2);
   const fallbackY = Math.round(vh / 2);
   const rawX = anchor && Number.isFinite(anchor.x) ? anchor.x : fallbackX;
@@ -103,40 +121,56 @@ function clampAnchor(anchor: { readonly x: number; readonly y: number } | null |
   };
 }
 
-function sectorWedgePath(index: number): string {
-  const startDeg = index * 60 - 120;
-  const endDeg = startDeg + 60;
-  const rInner = DEADZONE_PX + 2;
-  const rOuter = WHEEL_CENTER - 4;
+function sectorWedgePath(
+  index: number,
+  total: number,
+  wheelCenter: number,
+  deadzonePx: number,
+): string {
+  const stepDeg = 360 / Math.max(1, total);
+  const startDeg = index * stepDeg - 90 - stepDeg / 2;
+  const endDeg = startDeg + stepDeg;
+  const rInner = deadzonePx + 2;
+  const rOuter = wheelCenter - 4;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const x1 = WHEEL_CENTER + rOuter * Math.cos(toRad(startDeg));
-  const y1 = WHEEL_CENTER + rOuter * Math.sin(toRad(startDeg));
-  const x2 = WHEEL_CENTER + rOuter * Math.cos(toRad(endDeg));
-  const y2 = WHEEL_CENTER + rOuter * Math.sin(toRad(endDeg));
-  const x3 = WHEEL_CENTER + rInner * Math.cos(toRad(endDeg));
-  const y3 = WHEEL_CENTER + rInner * Math.sin(toRad(endDeg));
-  const x4 = WHEEL_CENTER + rInner * Math.cos(toRad(startDeg));
-  const y4 = WHEEL_CENTER + rInner * Math.sin(toRad(startDeg));
+  const x1 = wheelCenter + rOuter * Math.cos(toRad(startDeg));
+  const y1 = wheelCenter + rOuter * Math.sin(toRad(startDeg));
+  const x2 = wheelCenter + rOuter * Math.cos(toRad(endDeg));
+  const y2 = wheelCenter + rOuter * Math.sin(toRad(endDeg));
+  const x3 = wheelCenter + rInner * Math.cos(toRad(endDeg));
+  const y3 = wheelCenter + rInner * Math.sin(toRad(endDeg));
+  const x4 = wheelCenter + rInner * Math.cos(toRad(startDeg));
+  const y4 = wheelCenter + rInner * Math.sin(toRad(startDeg));
   return `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${rOuter} ${rOuter} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${x3.toFixed(1)} ${y3.toFixed(1)} A ${rInner} ${rInner} 0 0 0 ${x4.toFixed(1)} ${y4.toFixed(1)} Z`;
 }
 
 /**
- * 184×184px 동심원 6섹터 방사형 퀵 휠 (T2 QuickMenu).
- * Q키·우클릭 홀드 드래그(24px 데드존)·숫자 1~6·방향키·Esc 실행과 6슬롯 커스텀 편집·저장을 지원한다.
+ * 동심원 6/8섹터 주얼 방사형 퀵 휠 (T2 QuickMenu + Wave 13 Jewel Upgrade).
+ * Q키·우클릭 홀드 드래그·숫자 1~8·마우스 휠 슬롯 회전·방향키·Esc 실행과 커스텀 슬롯 편집을 지원한다.
  */
 export function StudioRadialQuickWheel({
   open,
   anchor,
   slots,
+  slotCount,
+  activeToolLabel,
+  strokeWidth,
+  shortcutHint = "Q",
   onSelectAction,
   onSlotsChange,
   onClose,
 }: StudioRadialQuickWheelProps) {
   const bt = useBilingual("StudioRadialQuickWheel");
+  const isEightSlot = slotCount === 8 || (slots !== undefined && slots.length > 6);
+  const wheelSize = isEightSlot ? 224 : 184;
+  const wheelCenter = wheelSize / 2;
+  const sectorRadius = isEightSlot ? 80 : 64;
+  const deadzonePx = isEightSlot ? 34 : 24;
+
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [flickOrigin, setFlickOrigin] = useState<{ readonly x: number; readonly y: number } | null>(null);
   const [editingSlots, setEditingSlots] = useState(false);
-  const [editingSlotIndex, setEditingSlotIndex] = useState<QuickMenuSlot["index"]>(0);
+  const [editingSlotIndex, setEditingSlotIndex] = useState<number>(0);
   const [bloomed, setBloomed] = useState(false);
 
   useEffect(() => {
@@ -154,12 +188,30 @@ export function StudioRadialQuickWheel({
       }
     };
   }, [open]);
-  const [uncontrolledSlots, setUncontrolledSlots] = useState<readonly QuickMenuSlot[]>(
-    () => slots ?? DEFAULT_QUICK_MENU_SLOTS,
+
+  const [uncontrolledSlots, setUncontrolledSlots] = useState<readonly StudioRadialQuickWheelSlot[]>(
+    () => {
+      if (slots) {
+        return isEightSlot ? expandSlotsToJewelEight(slots) : slots.slice(0, 6);
+      }
+      return isEightSlot ? loadRadialQuickMenuSlots() : DEFAULT_QUICK_MENU_SLOTS;
+    },
   );
 
-  const effectiveSlots = (slots ?? uncontrolledSlots).slice(0, 6);
-  const clamped = clampAnchor(anchor);
+  const effectiveSlots: readonly StudioRadialQuickWheelSlot[] = slots
+    ? isEightSlot
+      ? expandSlotsToJewelEight(slots)
+      : slots.slice(0, 6)
+    : isEightSlot
+      ? expandSlotsToJewelEight(uncontrolledSlots)
+      : uncontrolledSlots.slice(0, 6);
+
+  const totalSlots = effectiveSlots.length;
+  const clamped = clampAnchor(anchor, wheelSize);
+  const roundedStrokeWidth =
+    typeof strokeWidth === "number" && Number.isFinite(strokeWidth)
+      ? Math.max(1, Math.round(strokeWidth))
+      : null;
 
   useEffect(() => {
     if (!open) {
@@ -180,7 +232,7 @@ export function StudioRadialQuickWheel({
         return;
       }
       if (editingSlots) return;
-      if (/^[1-6]$/u.test(event.key)) {
+      if (/^[1-8]$/u.test(event.key)) {
         const idx = Number(event.key) - 1;
         const picked = effectiveSlots[idx];
         if (picked) {
@@ -198,7 +250,9 @@ export function StudioRadialQuickWheel({
       if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
         event.preventDefault();
         setActiveIndex((prev) =>
-          prev === null ? effectiveSlots.length - 1 : (prev - 1 + effectiveSlots.length) % effectiveSlots.length,
+          prev === null
+            ? effectiveSlots.length - 1
+            : (prev - 1 + effectiveSlots.length) % effectiveSlots.length,
         );
         return;
       }
@@ -221,14 +275,28 @@ export function StudioRadialQuickWheel({
   const activeSlot = activeIndex !== null ? effectiveSlots[activeIndex] ?? null : null;
   const editingSlot = effectiveSlots[editingSlotIndex] ?? effectiveSlots[0]!;
 
-  const commitSlotUpdate = (nextSlots: readonly QuickMenuSlot[]) => {
+  const commitSlotUpdate = (nextSlots: readonly StudioRadialQuickWheelSlot[]) => {
     setUncontrolledSlots(nextSlots);
-    saveQuickMenuSlots(nextSlots);
+    saveQuickMenuSlots(normalizeQuickMenuSlots(nextSlots));
+    if (isEightSlot) saveRadialQuickMenuExtraSlots(nextSlots);
     onSlotsChange?.(nextSlots);
   };
 
   const handleAssignSlotAction = (actionId: QuickMenuActionId) => {
-    const nextSlots = assignQuickMenuSlot(effectiveSlots, editingSlotIndex, actionId);
+    if (editingSlotIndex < 6 && !isEightSlot) {
+      const nextSlots = assignQuickMenuSlot(
+        effectiveSlots as readonly QuickMenuSlot[],
+        editingSlotIndex as QuickMenuSlot["index"],
+        actionId,
+      );
+      commitSlotUpdate(nextSlots);
+      return;
+    }
+    const nextSlots = effectiveSlots.map((slot, idx) =>
+      idx === editingSlotIndex
+        ? { index: idx, actionId, labelKo: QUICK_MENU_ACTION_LABELS_KO[actionId] }
+        : slot,
+    );
     commitSlotUpdate(nextSlots);
   };
 
@@ -249,7 +317,7 @@ export function StudioRadialQuickWheel({
     const origin = flickOrigin ?? clamped;
     const dx = event.clientX - origin.x;
     const dy = event.clientY - origin.y;
-    const resolved = resolveQuickMenuSlotFromDrag(effectiveSlots, dx, dy, DEADZONE_PX);
+    const resolved = resolveRadialWheelSlotFromDrag(effectiveSlots, dx, dy, deadzonePx);
     setActiveIndex(resolved ? resolved.index : null);
   };
 
@@ -257,13 +325,31 @@ export function StudioRadialQuickWheel({
     if (editingSlots || !flickOrigin) return;
     const dx = event.clientX - flickOrigin.x;
     const dy = event.clientY - flickOrigin.y;
-    const resolved = resolveQuickMenuSlotFromDrag(effectiveSlots, dx, dy, DEADZONE_PX);
+    const resolved = resolveRadialWheelSlotFromDrag(effectiveSlots, dx, dy, deadzonePx);
     setFlickOrigin(null);
     if (resolved) {
       onSelectAction(resolved.actionId, resolved);
       onClose();
     }
   };
+
+  const handleWheelRotate = (event: WheelEvent<HTMLDivElement>) => {
+    if (editingSlots || event.deltaY === 0 || effectiveSlots.length === 0) return;
+    event.preventDefault();
+    const step = event.deltaY > 0 ? 1 : -1;
+    setActiveIndex((prev) => {
+      if (prev === null) {
+        return step > 0 ? 0 : effectiveSlots.length - 1;
+      }
+      return (prev + step + effectiveSlots.length) % effectiveSlots.length;
+    });
+  };
+
+  const centerToolText = activeToolLabel?.trim() || bt("펜", "Pen");
+  const centerReadoutSummary =
+    roundedStrokeWidth !== null
+      ? `${centerToolText} · ${roundedStrokeWidth}px · ${shortcutHint}`
+      : `${centerToolText} · ${shortcutHint}`;
 
   return (
     <div
@@ -283,17 +369,19 @@ export function StudioRadialQuickWheel({
         role="menu"
         aria-label={bt("빠른 도구 방사형 휠", "Radial quick tool wheel")}
         data-studio-radial-quick-wheel="true"
+        data-studio-radial-slot-count={totalSlots}
         data-active-slot={activeSlot ? activeSlot.actionId : ""}
         data-editing-slots={editingSlots ? "true" : "false"}
         data-hud-collision-free="true"
         onPointerDown={handleWheelPointerDown}
         onPointerMove={handleWheelPointerMove}
         onPointerUp={handleWheelPointerUp}
+        onWheel={handleWheelRotate}
         style={{
           left: `${clamped.x}px`,
           top: `${clamped.y}px`,
-          width: `${WHEEL_SIZE}px`,
-          height: `${WHEEL_SIZE}px`,
+          width: `${wheelSize}px`,
+          height: `${wheelSize}px`,
           transform: `translate(-50%, -50%) scale(${bloomed ? clamped.wheelScale : clamped.wheelScale * 0.9})`,
         }}
         className={cn(
@@ -302,9 +390,9 @@ export function StudioRadialQuickWheel({
         )}
       >
         <svg
-          width={WHEEL_SIZE}
-          height={WHEEL_SIZE}
-          viewBox={`0 0 ${WHEEL_SIZE} ${WHEEL_SIZE}`}
+          width={wheelSize}
+          height={wheelSize}
+          viewBox={`0 0 ${wheelSize} ${wheelSize}`}
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
         >
@@ -312,12 +400,15 @@ export function StudioRadialQuickWheel({
             const highlighted = editingSlots
               ? editingSlotIndex === index
               : activeIndex === index;
+            const jewelCategory = resolveJewelCategoryForQuickAction(slot.actionId);
             return (
               <path
                 key={`${slot.index}-${slot.actionId}`}
-                d={sectorWedgePath(index)}
+                d={sectorWedgePath(index, totalSlots, wheelCenter, deadzonePx)}
+                data-jewel-category={jewelCategory}
+                data-jewel-highlighted={highlighted ? "true" : "false"}
                 className={cn(
-                  "stroke-line transition-colors duration-100 motion-reduce:transition-none",
+                  "studio-jewel-wheel-wedge stroke-line transition-colors duration-100 motion-reduce:transition-none",
                   highlighted ? "fill-accent-soft stroke-accent" : "fill-transparent",
                 )}
                 strokeWidth={highlighted ? 1.5 : 1}
@@ -325,9 +416,9 @@ export function StudioRadialQuickWheel({
             );
           })}
           <circle
-            cx={WHEEL_CENTER}
-            cy={WHEEL_CENTER}
-            r={DEADZONE_PX}
+            cx={wheelCenter}
+            cy={wheelCenter}
+            r={deadzonePx}
             className="fill-card stroke-line-strong"
             strokeWidth={1}
           />
@@ -336,7 +427,8 @@ export function StudioRadialQuickWheel({
         {effectiveSlots.map((slot, index) => {
           const Icon = ACTION_ICONS[slot.actionId];
           const sprite = resolveVibrantSpriteForQuickAction(slot.actionId);
-          const pos = polarSectorPosition(index);
+          const jewelCategory = resolveJewelCategoryForQuickAction(slot.actionId);
+          const pos = polarSectorPosition(index, totalSlots, wheelCenter, sectorRadius);
           const highlighted = editingSlots
             ? editingSlotIndex === index
             : activeIndex === index;
@@ -347,6 +439,7 @@ export function StudioRadialQuickWheel({
               role="menuitem"
               data-studio-radial-slot={slot.actionId}
               data-slot-index={slot.index}
+              data-jewel-category={jewelCategory}
               data-vibrant-accent={sprite.accent}
               data-vibrant-active={highlighted ? "true" : "false"}
               aria-label={`${index + 1}. ${slot.labelKo}`}
@@ -360,7 +453,7 @@ export function StudioRadialQuickWheel({
               onClick={(event) => {
                 event.stopPropagation();
                 if (editingSlots) {
-                  setEditingSlotIndex(slot.index);
+                  setEditingSlotIndex(index);
                   return;
                 }
                 onSelectAction(slot.actionId, slot);
@@ -369,13 +462,13 @@ export function StudioRadialQuickWheel({
               style={{
                 left: `${pos.left}px`,
                 top: `${pos.top}px`,
-                transitionDelay: `${index * 24}ms`,
+                transitionDelay: `${index * 20}ms`,
               }}
               className={cn(
-                "studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-fg transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.94] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
+                "studio-jewel-wheel-slot studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-fg transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.94] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
                 !bloomed && "scale-75 opacity-0",
                 bloomed && (highlighted
-                  ? "scale-105 opacity-100 border-accent bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-2))] text-on-accent shadow-[0_0_0_4px_color-mix(in_oklch,var(--color-accent)_26%,transparent)]"
+                  ? "scale-105 opacity-100 border-accent text-on-accent"
                   : "scale-100 opacity-100 border-transparent bg-transparent text-fg-2 hover:border-line-strong hover:bg-raised/70 hover:text-fg"),
               )}
             >
@@ -391,19 +484,45 @@ export function StudioRadialQuickWheel({
           );
         })}
 
+        {/* 중앙 주얼 허브: 현재 활성 도구·굵기·단축키 힌트 및 44×44 닫기 */}
         <button
           type="button"
+          data-studio-radial-center-hud="true"
           aria-label={bt("방사형 휠 닫기", "Close radial wheel")}
+          title={`${centerReadoutSummary} · ${bt("클릭해 휠 닫기 (Esc)", "Click to close (Esc)")}`}
           onClick={onClose}
-          className="studio-vibrant-touch-target studio-vibrant-press absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-fg-3 transition-colors duration-100 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
+          className={cn(
+            "studio-jewel-wheel-center-hud studio-vibrant-touch-target studio-vibrant-press absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full text-center text-fg transition-colors duration-100 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none",
+            isEightSlot ? "size-16 px-1" : "size-11",
+          )}
         >
-          <X size={14} strokeWidth={1.75} aria-hidden="true" />
+          {activeToolLabel || roundedStrokeWidth !== null ? (
+            <>
+              <span
+                data-studio-radial-center-tool="true"
+                className="max-w-full truncate text-xs font-semibold leading-tight text-fg"
+              >
+                {centerToolText}
+              </span>
+              <span
+                data-studio-radial-center-meta="true"
+                className="studio-vibrant-tabular max-w-full truncate text-xs leading-tight text-fg-2"
+              >
+                {roundedStrokeWidth !== null ? `${roundedStrokeWidth}px · ${shortcutHint}` : shortcutHint}
+              </span>
+            </>
+          ) : (
+            <>
+              <X size={14} strokeWidth={1.75} aria-hidden="true" />
+              <span className="sr-only">{centerReadoutSummary}</span>
+            </>
+          )}
         </button>
 
         <div className="absolute -bottom-12 left-1/2 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5">
           <div
             aria-live="polite"
-            className="studio-vibrant-tabular pointer-events-none max-w-[min(12rem,calc(100vw-8.5rem))] truncate rounded-lg border border-line-strong bg-panel/95 px-2.5 py-1 text-center text-xs font-semibold tabular-nums text-fg shadow-[var(--atelier-elevation-dock)] break-keep"
+            className="studio-vibrant-tabular pointer-events-none max-w-[min(14rem,calc(100vw-8.5rem))] truncate rounded-lg border border-line-strong bg-panel/95 px-2.5 py-1 text-center text-xs font-semibold tabular-nums text-fg shadow-[var(--atelier-elevation-dock)] break-keep"
           >
             {editingSlots
               ? bt(
@@ -412,7 +531,10 @@ export function StudioRadialQuickWheel({
                 )
               : activeSlot
                 ? `${activeSlot.index + 1} · ${activeSlot.labelKo}`
-                : bt("1~6 키 · 드래그로 실행 · Esc 닫기", "Press 1–6 or drag · Esc to close")}
+                : bt(
+                    `1~${totalSlots} 키 · 휠 회전 · ${shortcutHint} · Esc`,
+                    `1–${totalSlots} keys · Wheel · ${shortcutHint} · Esc`,
+                  )}
           </div>
           <button
             type="button"
@@ -438,7 +560,7 @@ export function StudioRadialQuickWheel({
         {editingSlots ? (
           <div
             role="region"
-            aria-label={bt("빠른 메뉴 6슬롯 편집", "Customize 6 QuickMenu slots")}
+            aria-label={bt(`빠른 메뉴 ${totalSlots}슬롯 편집`, `Customize ${totalSlots} QuickMenu slots`)}
             data-studio-radial-edit-panel="true"
             onPointerDown={(event) => event.stopPropagation()}
             className="studio-vibrant-surface studio-vibrant-keep-all absolute left-1/2 top-[calc(100%+3.5rem)] z-20 w-[min(18rem,calc(100vw-16px))] -translate-x-1/2 rounded-2xl border border-line-strong bg-panel p-3 text-fg shadow-[var(--atelier-elevation-floating)] break-keep"
@@ -450,7 +572,9 @@ export function StudioRadialQuickWheel({
               <button
                 type="button"
                 data-studio-radial-reset-slots="true"
-                onClick={() => commitSlotUpdate(DEFAULT_QUICK_MENU_SLOTS)}
+                onClick={() =>
+                  commitSlotUpdate(isEightSlot ? DEFAULT_JEWEL_8_WHEEL_SLOTS : DEFAULT_QUICK_MENU_SLOTS)
+                }
                 className="studio-vibrant-touch-target studio-vibrant-press inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-[transform,background-color] duration-150 hover:bg-raised hover:text-fg active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all]"
               >
                 <RotateCcw size={12} aria-hidden="true" />

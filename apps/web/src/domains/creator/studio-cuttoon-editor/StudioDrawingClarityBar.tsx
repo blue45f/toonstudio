@@ -26,6 +26,7 @@ import { useStudioDrawingClarity, type StudioDrawingClarityPanel } from "./Studi
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 import "./StudioDrawingClarity.css";
+import "./StudioDrawingJewelChrome.css";
 
 const LazyStudioDrawingClarityExport = lazyRetry(
   () => import("./StudioDrawingClarityExport").then((module) => ({ default: module.StudioDrawingClarityExport })),

@@ -367,3 +367,131 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 
 .studio-drawing-selected-tools{display:none}
 .studio-drawing-clarity-context-row:has(> .studio-drawing-selection-slot:not(:empty))>.studio-drawing-selected-tools{display:flex;flex:none;align-items:center;gap:.25rem}
+
+/* Wave 13 Track 5: Jewel Canvas-Max — 계열별 주얼 OKLCH 시맨틱 컬러 · 동심원 라운드 · 1px 상단 광학 림 · 그리기 중 자동 후퇴 · 왼손잡이 미러 */
+:root{
+  --studio-jewel-radius-outer:var(--atelier-radius-outer,14px);
+  --studio-jewel-padding:4px;
+  --studio-jewel-radius-inner:calc(var(--studio-jewel-radius-outer) - var(--studio-jewel-padding));
+}
+.studio-drawing-clarity-rail [data-studio-rail-tool-id]{--studio-jewel-ink:var(--color-accent)}
+.studio-drawing-clarity-rail :is([data-studio-rail-tool-id="pen"],[data-studio-rail-tool-id="pixel-pencil"],[data-studio-rail-tool-id="smart-shape"],[data-studio-rail-tool-id="shape-rect"],[data-studio-rail-tool-id="shape-ellipse"]){
+  --studio-jewel-ink:color-mix(in oklch,var(--color-accent) 82%,oklch(0.64 0.21 268));
+}
+.studio-drawing-clarity-rail :is([data-studio-rail-tool-id="blend"],[data-studio-rail-tool-id="wet-mix"],[data-studio-rail-tool-id="liquify"]){
+  --studio-jewel-ink:oklch(0.66 0.19 218);
+}
+.studio-drawing-clarity-rail [data-studio-rail-tool-id="eraser"]{
+  --studio-jewel-ink:oklch(0.66 0.19 14);
+}
+.studio-drawing-clarity-rail :is([data-studio-rail-tool-id="color"],[data-studio-rail-tool-id="fill"],[data-studio-rail-tool-id="lasso-fill"],[data-studio-rail-tool-id="eyedropper"],[data-studio-rail-tool-id="dodge-burn"]){
+  --studio-jewel-ink:oklch(0.68 0.19 42);
+}
+.studio-drawing-clarity-rail :is([data-studio-rail-tool-id="layers"],[data-studio-rail-tool-id="reference"]){
+  --studio-jewel-ink:oklch(0.65 0.17 248);
+}
+.studio-drawing-clarity-rail :is([data-studio-rail-tool-id="select"],[data-studio-rail-tool-id="transform"],[data-studio-rail-tool-id="marquee-rect"],[data-studio-rail-tool-id="marquee-circle"],[data-studio-rail-tool-id="lasso"],[data-studio-rail-tool-id="crop"],[data-studio-rail-tool-id="cut-split"]){
+  --studio-jewel-ink:color-mix(in oklch,var(--color-good) 80%,oklch(0.65 0.17 156));
+}
+.studio-drawing-clarity-rail :is([data-studio-rail-tool-id="bubble"],[data-studio-rail-tool-id="text"],[data-studio-rail-tool-id="comment"],[data-studio-rail-tool-id="pin-comment"]){
+  --studio-jewel-ink:oklch(0.66 0.2 344);
+}
+.studio-drawing-clarity-rail :is([data-studio-rail-tool-id="bg3d"],[data-studio-rail-tool-id="hybrid-dcc"],[data-studio-rail-tool-id="perspective"],[data-studio-rail-tool-id="mannequin3d"],[data-studio-rail-tool-id="vrm3d"],[data-studio-rail-tool-id="character-shaper"]){
+  --studio-jewel-ink:color-mix(in oklch,var(--color-cool) 78%,oklch(0.64 0.18 192));
+}
+.studio-drawing-clarity-rail [data-studio-rail-tool-id="frame-anim"]{
+  --studio-jewel-ink:oklch(0.68 0.19 294);
+}
+#studio-app-shell .studio-drawing-clarity-rail .studio-drawing-clarity-tools>[data-studio-rail-tool-id]{
+  border-radius:var(--studio-jewel-radius-inner,10px)!important;
+  box-shadow:inset 0 1px 0 color-mix(in oklch,var(--studio-jewel-ink) 16%,transparent)!important;
+  transition:background-color 150ms cubic-bezier(.22,1,.36,1),border-color 150ms cubic-bezier(.22,1,.36,1),color 150ms cubic-bezier(.22,1,.36,1),box-shadow 150ms cubic-bezier(.22,1,.36,1);
+}
+#studio-app-shell .studio-drawing-clarity-rail .studio-drawing-clarity-tools>[data-studio-rail-tool-id]:hover:not(:disabled){
+  border-color:color-mix(in oklch,var(--studio-jewel-ink) 38%,var(--color-line))!important;
+  background:color-mix(in oklch,var(--studio-jewel-ink) 13%,var(--color-raised))!important;
+  color:var(--color-fg)!important;
+  box-shadow:inset 0 1px 0 color-mix(in oklch,var(--studio-jewel-ink) 38%,var(--color-panel))!important;
+}
+#studio-app-shell .studio-drawing-clarity-rail .studio-drawing-clarity-tools>[data-studio-rail-tool-id]:is([aria-pressed=true],[aria-expanded=true]){
+  border-color:color-mix(in oklch,var(--studio-jewel-ink) 56%,var(--color-line))!important;
+  background:color-mix(in oklch,var(--studio-jewel-ink) 18%,var(--color-panel))!important;
+  color:var(--studio-jewel-ink)!important;
+  box-shadow:inset 0 1px 0 color-mix(in oklch,var(--studio-jewel-ink) 46%,var(--color-panel)),0 0 0 1px color-mix(in oklch,var(--studio-jewel-ink) 24%,transparent)!important;
+}
+#studio-app-shell .studio-drawing-clarity-rail .studio-drawing-clarity-tools>[data-studio-rail-tool-id]:is([aria-pressed=true],[aria-expanded=true])::before{
+  content:"";position:absolute;inset:7px auto 7px 2px;border-radius:2px;background:none;
+  border-inline-start:3px solid var(--studio-jewel-ink);
+  box-shadow:0 0 6px color-mix(in oklch,var(--studio-jewel-ink) 48%,transparent);
+}
+
+/* 한 줄 가로폭 정밀 압축 · 동심원 캡슐 · 우상단 비충돌 max-width · 그리기 중 자동 후퇴(Breathing Auto-Recede) */
+.studio-drawing-ergonomics-bar{gap:2px}
+.studio-drawing-ergonomics-chip,.studio-drawing-stage-pill{gap:4px;padding:0 6px;border-radius:var(--studio-jewel-radius-inner,10px)}
+.studio-drawing-stepper-btn,.studio-drawing-stepper-readout{border-radius:var(--studio-jewel-radius-inner,10px)}
+.studio-drawing-stepper[data-studio-brush-width-wheel="true"]{cursor:ns-resize}
+.studio-drawing-input-hud-strip{display:inline-flex;flex:none;align-items:center;gap:2px;padding-inline-start:4px;border-inline-start:1px solid var(--color-line)}
+.studio-drawing-aux-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:color-mix(in oklch,var(--color-accent) 20%,var(--color-card));color:var(--color-accent);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.studio-drawing-zen-chip[aria-pressed="true"]{border-color:color-mix(in oklch,var(--color-accent) 60%,var(--color-line-strong));background:color-mix(in oklch,var(--color-accent) 18%,var(--color-panel));color:var(--color-accent);font-weight:700}
+.studio-drawing-ergonomics-bar[data-studio-compact-aux-collapsed="true"] [data-studio-aux-control="true"]{display:none}
+
+@media (min-width: 1024px) {
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    top:50px;left:56px;right:20px;gap:3px;padding:0 4px;
+    max-width:calc(100% - 76px);
+    border-radius:var(--studio-jewel-radius-outer,14px);
+    box-shadow:inset 0 1px 0 color-mix(in oklch,var(--color-fg) 14%,transparent),var(--atelier-elevation-dock,0 8px 22px -10px color-mix(in oklch,var(--color-fg) 18%,transparent));
+    transition:opacity 180ms cubic-bezier(.22,1,.36,1);
+  }
+  #studio-app-shell[data-studio-stroke-active="true"] .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    opacity:0.24;
+    pointer-events:none;
+  }
+  #studio-app-shell[data-studio-zen-focus="true"] .studio-drawing-clarity-rail{
+    opacity:0.18;
+    transition:opacity 180ms cubic-bezier(.22,1,.36,1);
+  }
+  #studio-app-shell[data-studio-zen-focus="true"] .studio-drawing-clarity-rail:is(:hover,:focus-within){
+    opacity:1;
+  }
+  #studio-app-shell[data-studio-zen-focus="true"] [data-studio-aux-control="true"]{
+    display:none;
+  }
+}
+
+/* 왼손잡이 미러 레이아웃: 도구 레일 우측(order: 2) 이동 · 보석 인디케이터 및 플로팅 스트립 미러링 */
+#studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) .studio-drawing-clarity-rail{
+  order:2;
+  border-inline-end:0;
+  border-inline-start:1px solid var(--color-line);
+}
+#studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) .studio-drawing-clarity-rail .studio-drawing-clarity-tools>[data-studio-rail-tool-id]:is([aria-pressed=true],[aria-expanded=true])::before{
+  inset:7px 2px 7px auto;
+  border-inline-start:0;
+  border-inline-end:3px solid var(--studio-jewel-ink);
+}
+@media (min-width: 1024px) {
+  #studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    left:20px;
+    right:56px;
+  }
+  #studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) :is(.studio-drawing-clarity-pane--brush,.studio-drawing-clarity-pane--pages){
+    left:auto;
+    right:48px;
+    border-right:0;
+    border-left:1px solid var(--color-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context),
+  #studio-app-shell[data-studio-zen-focus="true"] .studio-drawing-clarity-rail{
+    transition:none!important;
+  }
+}
+@media (forced-colors: active) {
+  #studio-app-shell .studio-drawing-clarity-rail .studio-drawing-clarity-tools>[data-studio-rail-tool-id]:is([aria-pressed=true],[aria-expanded=true])::before{
+    border-color:Highlight;
+    box-shadow:none;
+  }
+}
