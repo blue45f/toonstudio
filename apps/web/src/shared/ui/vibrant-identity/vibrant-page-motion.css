@@ -199,13 +199,13 @@
   color: var(--color-fg);
   text-decoration: none;
   word-break: keep-all;
-  transition: transform 180ms var(--vp-ease), border-color 180ms var(--vp-ease), background-color 180ms var(--vp-ease);
+  transition: translate 180ms var(--ease-spring-snappy, var(--vp-spring)), scale 180ms var(--ease-spring-snappy, var(--vp-spring)), border-color 180ms var(--vp-ease), background-color 180ms var(--vp-ease), box-shadow 180ms var(--vp-ease);
 }
 
 .vp-flow-chip[aria-current="step"] { border-color: var(--vp-mood-accent); background: var(--vp-mood-chip-bg); }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .vp-flow-chip:hover { transform: translateY(-1px); border-color: var(--vp-mood-accent); background: var(--color-raised); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vp-flow-chip:hover { translate: 0 -2px; border-color: var(--vp-mood-accent); background: var(--color-raised); box-shadow: var(--motion-lift-shadow, none); }
 }
 
 .vp-flow-chip:focus-visible,
@@ -262,6 +262,9 @@
 }
 
 .vp-cta-primary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
   border-radius: 0.6875rem;
@@ -270,12 +273,20 @@
   color: var(--color-on-accent);
   font-size: 0.8125rem;
   font-weight: 700;
-  transition: transform 160ms var(--vp-ease), filter 160ms var(--vp-ease);
+  transition: scale var(--motion-base, 200ms) var(--ease-spring-snappy, var(--vp-spring)), translate 160ms var(--vp-ease), background-color 160ms var(--vp-ease), border-color 160ms var(--vp-ease);
 }
 
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .vp-cta-primary:hover { transform: translateY(-1px); filter: brightness(1.06); }
-  .vp-cta-primary:active { transform: scale(0.98); }
+.vp-cta-primary > svg:last-child,
+.vp-quick-link > svg:last-child { transition: translate var(--motion-base, 200ms) var(--ease-spring-snappy, var(--vp-spring)); }
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .vp-cta-primary:hover { translate: 0 -1px; background: var(--color-accent-2, var(--color-accent)); border-color: var(--color-accent-2, var(--color-accent)); }
+  .vp-cta-primary:hover > svg:last-child,
+  .vp-quick-link:hover > svg:last-child { translate: 3px 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vp-cta-primary:active, .vp-cta-secondary:active, .vp-flow-chip:active, .vp-quick-link:active { scale: 0.975; transition-duration: var(--motion-press, 110ms); }
 }
 
 .vp-cta-secondary {
@@ -287,7 +298,7 @@
   color: var(--color-fg);
   font-size: 0.8125rem;
   font-weight: 600;
-  transition: border-color 160ms var(--vp-ease), background-color 160ms var(--vp-ease);
+  transition: scale var(--motion-base, 200ms) var(--ease-spring-snappy, var(--vp-spring)), border-color 160ms var(--vp-ease), background-color 160ms var(--vp-ease);
 }
 
 .vp-cta-secondary:hover { border-color: var(--color-accent); background: var(--color-raised); }
@@ -301,7 +312,7 @@
   color: var(--color-fg-2);
   font-size: 0.75rem;
   font-weight: 600;
-  transition: border-color 160ms var(--vp-ease), color 160ms var(--vp-ease), background-color 160ms var(--vp-ease);
+  transition: scale var(--motion-base, 200ms) var(--ease-spring-snappy, var(--vp-spring)), border-color 160ms var(--vp-ease), color 160ms var(--vp-ease), background-color 160ms var(--vp-ease);
 }
 
 .vp-quick-link:hover { border-color: var(--vp-mood-accent); color: var(--color-fg); background: var(--color-raised); }
@@ -411,21 +422,17 @@
 
 /* ── 모션 감소 & 고대비(forced-colors: active / contrast 테마) ──────── */
 @media (prefers-reduced-motion: reduce) {
-  .vp-banner, .vp-banner *, .vp-banner *::before,
-  .vp-empty, .vp-empty *, .vp-empty *::before {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
+  .vp-banner, .vp-banner *, .vp-banner *::before, .vp-banner *::after,
+  .vp-empty, .vp-empty *, .vp-empty *::before, .vp-empty *::after {
+    animation: none !important; transition: none !important; scale: none !important; translate: none !important; rotate: none !important; transform: none !important;
   }
 }
 
 :root[data-design-theme="contrast"] .vp-banner,
-:root[data-design-theme="contrast"] .vp-empty {
-  background: var(--color-card);
-  border: 2px solid var(--color-line-strong);
-  box-shadow: none;
-}
-:root[data-design-theme="contrast"] .vp-specular-sheen::before { display: none; }
+:root[data-design-theme="contrast"] .vp-empty { background: var(--color-card); border: 2px solid var(--color-line-strong); box-shadow: none; }
+:root[data-design-theme="contrast"] :is(.vp-banner, .vp-banner *, .vp-empty, .vp-empty *) { animation: none !important; transition: none !important; scale: none !important; translate: none !important; transform: none !important; }
+:root[data-design-theme="contrast"] .vp-specular-sheen::before,
+:root[data-design-theme="contrast"] .vp-cta-primary::after { display: none !important; }
 :root[data-design-theme="contrast"] .vp-flow-chip,
 :root[data-design-theme="contrast"] .vp-quick-link,
 :root[data-design-theme="contrast"] .vp-cta-secondary { border-width: 2px; border-color: var(--color-line-strong); }
@@ -434,13 +441,10 @@
   .vp-banner, .vp-empty, .vp-emblem-stage, .vp-empty-medallion,
   .vp-flow-chip, .vp-quick-link, .vp-role-badge, .vp-step-index,
   .vp-cta-primary, .vp-cta-secondary {
-    background: Canvas;
-    color: CanvasText;
-    border: 1px solid CanvasText;
-    box-shadow: none;
-    forced-color-adjust: auto;
+    background: Canvas; color: CanvasText; border: 1px solid CanvasText; box-shadow: none; forced-color-adjust: auto;
   }
-  .vp-specular-sheen::before { display: none; }
+  .vp-banner, .vp-banner *, .vp-empty, .vp-empty * { animation: none !important; transition: none !important; scale: none !important; translate: none !important; transform: none !important; }
+  .vp-specular-sheen::before, .vp-cta-primary::after { display: none !important; }
   .vp-cta-primary, .vp-flow-chip[aria-current="step"] { border: 2px solid Highlight; }
   .vp-role-dot { background: Highlight; box-shadow: none; }
 }

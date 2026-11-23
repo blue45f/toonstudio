@@ -199,7 +199,7 @@ export function VibrantPageIdentityBanner({
                 <BannerLink
                   href={step.href}
                   ariaCurrent={isActive ? "step" : undefined}
-                  className="vp-flow-chip"
+                  className="vp-flow-chip fx-press"
                 >
                   <span className="vp-step-index" aria-hidden="true">
                     {stepIndexLabel}
@@ -224,7 +224,7 @@ export function VibrantPageIdentityBanner({
           style={{ "--vp-stagger-i": 4 } as CSSProperties}
         >
           <div className="vp-cta-group">
-            <BannerLink href={primaryHref} className="vp-cta-primary">
+            <BannerLink href={primaryHref} className="vp-cta-primary fx-press fx-sheen ink-arrow">
               <span>{primaryLabel}</span>
               <ArrowRight size={15} strokeWidth={1.75} aria-hidden="true" />
             </BannerLink>
@@ -239,7 +239,7 @@ export function VibrantPageIdentityBanner({
                 <BannerLink
                   key={quickLink.id}
                   href={quickLink.href}
-                  className="vp-quick-link"
+                  className="vp-quick-link fx-press ink-arrow"
                 >
                   <span>
                     {compact

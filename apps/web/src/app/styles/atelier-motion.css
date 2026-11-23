@@ -1,54 +1,224 @@
 /* Starlight Atelier 물리 모션·택타일 상호작용 정본.
- * GPU 합성 속성(scale, translate, opacity)만 전이하며 레이아웃 속성(top/left/height)과 transition-all을 금지한다.
- * 첫 프레임 명암비 무결성(Axe WCAG AA)을 위해 <details> 본문 초기 불투명도는 1을 유지한다.
+ * GPU 합성 속성(scale, translate, rotate, transform, opacity)만 모션에 사용하며
+ * 레이아웃 속성(top/left/width/height/margin/padding)과 transition-all을 금지한다.
+ * 첫 프레임 명암비 무결성(Axe WCAG AA)을 위해 <details> 본문·탭 초기 불투명도는 1을 유지한다.
  */
 :root {
+  --motion-press: 110ms;
   --motion-fast: 140ms;
   --motion-base: 200ms;
   --motion-gentle: 280ms;
+  --motion-sheen: 640ms;
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring-gentle: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring-snappy: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-lift-shadow:
+    var(--atelier-specular-top, inset 0 1px 0 color-mix(in oklch, var(--color-fg) 10%, transparent)),
+    var(--elevation-1, 0 0.625rem 1.625rem -0.75rem color-mix(in oklch, var(--color-fg) 11%, transparent));
 }
 
 @media (max-width: 767px) {
   :root {
+    --motion-press: 110ms;
     --motion-fast: 110ms;
     --motion-base: 160ms;
     --motion-gentle: 220ms;
+    --motion-sheen: 520ms;
+  }
+}
+
+@keyframes atelier-tab-settle {
+  from {
+    scale: 0.97;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+@keyframes atelier-tab-icon-pop {
+  from {
+    scale: 0.9;
+    rotate: -6deg;
+  }
+  to {
+    scale: 1;
+    rotate: 0deg;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .fx-press {
+  /* ── 1. 쫀득한 스프링 클릭 피드백 (마우스·터치·펜 110ms 고속 응답) ───── */
+  .fx-press,
+  .fx-sheen,
+  .site-header__create,
+  .site-footer__create,
+  .rd-clarity-start,
+  [role="tab"]:not(:disabled):not([aria-disabled="true"]),
+  details > summary,
+  :where(#main-content button:not(:disabled):not([aria-disabled="true"]):not([role="switch"]):not([role="slider"]):not([data-no-press="true"])) {
     transition:
-      scale var(--motion-fast) var(--ease-spring-gentle),
+      scale var(--motion-base) var(--ease-spring-snappy),
+      translate var(--motion-fast) var(--ease-out-expo),
+      opacity var(--motion-fast) var(--ease-out-expo),
       background-color var(--motion-fast) var(--ease-out-expo),
       border-color var(--motion-fast) var(--ease-out-expo),
       color var(--motion-fast) var(--ease-out-expo);
   }
 
   .fx-press:active:not(:disabled):not([aria-disabled="true"]),
-  #main-content button:not(:disabled):not([aria-disabled="true"]):not([role="switch"]):not([role="slider"]):active {
-    scale: 0.98;
+  .fx-sheen:active:not(:disabled):not([aria-disabled="true"]),
+  .site-header__create:active:not(:disabled):not([aria-disabled="true"]),
+  .site-footer__create:active:not(:disabled):not([aria-disabled="true"]),
+  .rd-clarity-start:active:not(:disabled):not([aria-disabled="true"]),
+  [role="tab"]:active:not(:disabled):not([aria-disabled="true"]),
+  a.ink-arrow:active:not([aria-disabled="true"]),
+  :where(#main-content button:not(:disabled):not([aria-disabled="true"]):not([role="switch"]):not([role="slider"]):not([data-no-press="true"])):active {
+    scale: 0.975;
+    transition-duration: var(--motion-press);
   }
 
-  .fx-lift {
+  /* 레거시 transform: scale(0.98) 규칙과 이중 축소가 합성되지 않도록 단일 scale 프레스로 통일한다. */
+  .site-footer a.site-footer__create:active:not([aria-disabled="true"]),
+  .reference-dashboard .rd-clarity-actions > a.rd-clarity-start:active:not([aria-disabled="true"]) {
+    scale: 0.975;
+    transform: none;
+    transition-duration: var(--motion-press);
+  }
+
+  details > summary:active:not([aria-disabled="true"]) {
+    scale: 0.985;
+    transition-duration: var(--motion-press);
+  }
+
+  /* ── 2. 카드 마그네틱 리프트 + 내부 아이콘 미세 도약 ─────────────────── */
+  .fx-lift,
+  .ink-frame:not([data-no-motion="true"]),
+  .ts-showcase-sprite-card:not([data-no-motion="true"]),
+  .rd-v2-card:not([data-no-motion="true"]) {
     transition:
-      translate var(--motion-base) var(--ease-spring-gentle),
-      scale var(--motion-fast) var(--ease-spring-gentle),
+      translate var(--motion-base) var(--ease-spring-snappy),
+      scale var(--motion-base) var(--ease-spring-snappy),
       border-color var(--motion-base) var(--ease-out-expo),
       background-color var(--motion-base) var(--ease-out-expo),
       box-shadow var(--motion-base) var(--ease-out-expo);
   }
 
+  :is(a, button).ink-frame:not(.fx-press):active:not(:disabled):not([aria-disabled="true"]),
+  :is(a, button).fx-lift:not(.fx-press):active:not(:disabled):not([aria-disabled="true"]),
+  .rd-v2-card:active:not(:disabled):not([aria-disabled="true"]) {
+    translate: 0 0;
+    scale: 0.985;
+    transition-duration: var(--motion-press);
+  }
+
+  .ink-arrow svg:last-child,
+  .rd-v2-card .rd-v2-card-icon > svg,
+  .ts-showcase-sprite-card img {
+    transition:
+      translate var(--motion-base) var(--ease-spring-snappy),
+      scale var(--motion-base) var(--ease-spring-snappy);
+  }
+
   @media (hover: hover) and (pointer: fine) {
-    .fx-lift:hover:not(:disabled):not([aria-disabled="true"]) {
+    .fx-lift:hover:not(:disabled):not([aria-disabled="true"]),
+    .ink-frame:hover:not(:disabled):not([aria-disabled="true"]),
+    .ts-showcase-sprite-card:hover:not(:disabled):not([aria-disabled="true"]),
+    .rd-v2-card:hover:not(:disabled):not([aria-disabled="true"]) {
       translate: 0 -2px;
+      box-shadow: var(--motion-lift-shadow);
+    }
+
+    /* 쇼케이스 카드의 레거시 transform: translateY(-2px)와 이중 상승하지 않도록 translate 단일 경로로 통합한다. */
+    .ts-showcase-sprite-card:hover:not(:disabled):not([aria-disabled="true"]) {
+      transform: none;
+    }
+
+    .ink-arrow:hover:not(:disabled):not([aria-disabled="true"]) svg:last-child,
+    .ink-arrow:focus-visible:not(:disabled):not([aria-disabled="true"]) svg:last-child {
+      translate: 3px 0;
+      transform: none;
+    }
+
+    .rd-v2-card:hover:not(:disabled):not([aria-disabled="true"]) .rd-v2-card-icon > svg:last-child,
+    .rd-v2-card:focus-visible:not(:disabled):not([aria-disabled="true"]) .rd-v2-card-icon > svg:last-child {
+      translate: 0 -2px;
+      scale: 1.05;
+      transform: none;
+    }
+
+    .ts-showcase-sprite-card:hover:not(:disabled):not([aria-disabled="true"]) img {
+      translate: 0 -2px;
+      scale: 1.04;
     }
   }
 
+  /* ── 3. Primary CTA 스페큘러 쉬머 글라이드 (transform 전용 GPU 스위프) ── */
+  .fx-sheen,
+  .site-header__create,
+  .site-footer__create,
+  .rd-clarity-start {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .fx-sheen::after,
+  .site-header__create::after,
+  .site-footer__create::after,
+  .rd-clarity-start::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      110deg,
+      transparent 34%,
+      color-mix(in oklch, var(--color-on-accent) 26%, transparent) 50%,
+      transparent 66%
+    );
+    transform: translate3d(-125%, 0, 0);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .fx-sheen:hover:not(:disabled):not([aria-disabled="true"])::after,
+    .site-header__create:hover:not(:disabled):not([aria-disabled="true"])::after,
+    .site-footer__create:hover:not(:disabled):not([aria-disabled="true"])::after,
+    .rd-clarity-start:hover:not(:disabled):not([aria-disabled="true"])::after,
+    .fx-sheen:focus-visible::after,
+    .site-header__create:focus-visible::after,
+    .site-footer__create:focus-visible::after,
+    .rd-clarity-start:focus-visible::after {
+      transform: translate3d(125%, 0, 0);
+      transition: transform var(--motion-sheen) var(--ease-out-expo);
+    }
+  }
+
+  /* ── 4. 탭·토글·접이식 부드러운 전개 (첫 프레임 opacity: 1 유지) ───────── */
+  [role="tab"][aria-selected="true"] {
+    animation: atelier-tab-settle var(--motion-base) var(--ease-spring-snappy);
+  }
+
+  [role="tab"][aria-selected="true"] > svg:first-child {
+    animation: atelier-tab-icon-pop var(--motion-base) var(--ease-spring-snappy);
+  }
+
   details > summary > svg:last-child {
-    transition: transform var(--motion-fast) var(--ease-out-expo);
+    transition:
+      transform var(--motion-base) var(--ease-spring-snappy),
+      rotate var(--motion-base) var(--ease-spring-snappy),
+      translate var(--motion-fast) var(--ease-out-expo);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    details:not([open]) > summary:hover > svg:last-child {
+      rotate: 10deg;
+      translate: 0 1px;
+    }
+
+    details[open] > summary:hover > svg:last-child {
+      translate: 0 -1px;
+    }
   }
 
   details[open] > :not(summary) {
@@ -58,10 +228,11 @@
 
   @starting-style {
     details[open] > :not(summary) {
-      translate: 0 3px;
+      translate: 0 4px;
     }
   }
 
+  /* ── 5. Top-Layer Dialog · Popover GPU 진입 ───────────────────────────── */
   dialog[open],
   [popover]:is(:popover-open, .\:popover-open) {
     opacity: 1;
@@ -98,22 +269,191 @@
   }
 }
 
+/* ── 접근성 해제 1: OS 모션 감소 선호 (prefers-reduced-motion: reduce) ──── */
 @media (prefers-reduced-motion: reduce) {
   .fx-press,
   .fx-lift,
-  details > summary > svg:last-child,
+  .fx-sheen,
+  .site-header__create,
+  .site-footer__create,
+  .rd-clarity-start,
+  .ink-frame,
+  .ts-showcase-sprite-card,
+  .ts-showcase-sprite-card img,
+  .rd-v2-card,
+  .rd-v2-card .rd-v2-card-icon > svg,
+  .ink-arrow svg:last-child,
+  [role="tab"],
+  [role="tab"][aria-selected="true"],
+  [role="tab"][aria-selected="true"] > svg:first-child,
+  details > summary,
   details[open] > :not(summary),
   dialog,
   dialog::backdrop,
   [popover],
   [popover]::backdrop {
+    animation: none !important;
     transition: none !important;
     scale: none !important;
     translate: none !important;
+    rotate: none !important;
+    transform: none !important;
+  }
+
+  #main-content button {
+    animation: none !important;
+    transition: none !important;
+    scale: none !important;
+  }
+
+  details > summary > svg:last-child {
+    animation: none !important;
+    transition: none !important;
+    translate: none !important;
+  }
+
+  details:not([open]) > summary:hover > svg:last-child {
+    rotate: none !important;
+    translate: none !important;
+  }
+
+  .fx-sheen::after,
+  .site-header__create::after,
+  .site-footer__create::after,
+  .rd-clarity-start::after {
+    display: none !important;
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }
 
-:root[data-design-theme="contrast"] :is(.fx-press, .fx-lift, dialog, [popover]) {
+/* ── 접근성 해제 2: 앱 고대비 테마 (contrast) ────────────────────────────── */
+:root[data-design-theme="contrast"] {
+  --motion-lift-shadow: none;
+}
+
+:root[data-design-theme="contrast"] :is(
+  .fx-press,
+  .fx-lift,
+  .fx-sheen,
+  .site-header__create,
+  .site-footer__create,
+  .rd-clarity-start,
+  .ink-frame,
+  .ts-showcase-sprite-card,
+  .ts-showcase-sprite-card img,
+  .rd-v2-card,
+  .rd-v2-card .rd-v2-card-icon > svg,
+  .ink-arrow svg:last-child,
+  [role="tab"],
+  [role="tab"][aria-selected="true"],
+  [role="tab"][aria-selected="true"] > svg:first-child,
+  details > summary,
+  details[open] > :not(summary),
+  dialog,
+  [popover]
+),
+:root[data-design-theme="contrast"] dialog::backdrop,
+:root[data-design-theme="contrast"] [popover]::backdrop {
+  animation: none !important;
+  transition: none !important;
   scale: none !important;
   translate: none !important;
+  rotate: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-design-theme="contrast"] #main-content button {
+  animation: none !important;
+  transition: none !important;
+  scale: none !important;
+}
+
+:root[data-design-theme="contrast"] details > summary > svg:last-child {
+  animation: none !important;
+  transition: none !important;
+  translate: none !important;
+}
+
+:root[data-design-theme="contrast"] details:not([open]) > summary:hover > svg:last-child {
+  rotate: none !important;
+  translate: none !important;
+}
+
+:root[data-design-theme="contrast"] :is(
+  .fx-sheen,
+  .site-header__create,
+  .site-footer__create,
+  .rd-clarity-start
+)::after {
+  display: none !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* ── 접근성 해제 3: OS 강제 색상 모드 (forced-colors: active) ───────────── */
+@media (forced-colors: active) {
+  :root {
+    --motion-lift-shadow: none;
+  }
+
+  .fx-press,
+  .fx-lift,
+  .fx-sheen,
+  .site-header__create,
+  .site-footer__create,
+  .rd-clarity-start,
+  .ink-frame,
+  .ts-showcase-sprite-card,
+  .ts-showcase-sprite-card img,
+  .rd-v2-card,
+  .rd-v2-card .rd-v2-card-icon > svg,
+  .ink-arrow svg:last-child,
+  [role="tab"],
+  [role="tab"][aria-selected="true"],
+  [role="tab"][aria-selected="true"] > svg:first-child,
+  details > summary,
+  details[open] > :not(summary),
+  dialog,
+  dialog::backdrop,
+  [popover],
+  [popover]::backdrop {
+    animation: none !important;
+    transition: none !important;
+    scale: none !important;
+    translate: none !important;
+    rotate: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  #main-content button {
+    animation: none !important;
+    transition: none !important;
+    scale: none !important;
+  }
+
+  details > summary > svg:last-child {
+    animation: none !important;
+    transition: none !important;
+    translate: none !important;
+  }
+
+  details:not([open]) > summary:hover > svg:last-child {
+    rotate: none !important;
+    translate: none !important;
+  }
+
+  .fx-sheen::after,
+  .site-header__create::after,
+  .site-footer__create::after,
+  .rd-clarity-start::after {
+    display: none !important;
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
