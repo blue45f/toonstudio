@@ -11,22 +11,29 @@ import { useMemo, useState, type ReactElement } from "react";
 
 import {
   GOVERNANCE_TIER_ORDER,
+  KOREAN_10STAGE_WEBTOON_PIPELINE,
   RBAC_ACTION_LABELS,
   SAMPLE_CUT_PAYOUT_ENTRIES,
+  SAMPLE_KOREAN_10STAGE_CUT_RECORDS,
   SAMPLE_SLA_WORKLOAD_CUTS,
   STUDIO_GOVERNANCE_TIERS,
   STUDIO_RBAC_ROLES,
   WEBTOON_8_STAGE_PIPELINE,
   WORKSPACE_HIERARCHY_LEVELS,
+  applyCut10StageHandoff,
   calculateCutPayoutLedger,
   createOutsourceSandboxPackage,
   detectPipelineBottlenecks,
+  evaluateCut10StageHandoff,
   evaluateRbacPermission,
   evaluateStageHandoffGate,
   executeCutBatonHandoff,
+  getKorean10StageSpec,
   getPipelineStageSpec,
   verifyOutsourceReturnBundle,
+  type CutHandoffRecord,
   type CutPipelineRuntimeState,
+  type Korean10StageId,
   type PipelineStageId,
   type StudioGovernanceTierId,
   type StudioRbacActionId,
@@ -74,6 +81,10 @@ export function StudioPipelineGovernanceBoard({
   initialTierId = "studio-8",
   selectedCutId = "CUT-12-014",
 }: StudioPipelineGovernanceBoardProps): ReactElement {
+  const [pipelineStandard, setPipelineStandard] = useState<"8stage" | "10stage">("8stage");
+  const [cut10Record, setCut10Record] = useState<CutHandoffRecord>(
+    () => SAMPLE_KOREAN_10STAGE_CUT_RECORDS[0],
+  );
   const [cutState, setCutState] = useState<CutPipelineRuntimeState>(() => ({
     cutId: selectedCutId,
     currentStageId: "lineart",
@@ -108,6 +119,36 @@ export function StudioPipelineGovernanceBoard({
     [biblePaletteValid, closedRegionsValid, currentStageSpec.requiredLayerPrefix, cutState.currentStageId, cutState.cutId, highResValid, namingValid, zeroMissingBom],
   );
   const gateEval = useMemo(() => evaluateStageHandoffGate(gateInput), [gateInput]);
+  const current10StageSpec = getKorean10StageSpec(cut10Record.currentStageId);
+  const effectiveCut10Record = useMemo<CutHandoffRecord>(() => {
+    const activeLayerName = namingValid
+      ? `${current10StageSpec.requiredLayerPrefix}MAIN`
+      : "레이어 1";
+    const others = cut10Record.layers.filter((l) => l.stageId !== cut10Record.currentStageId);
+    return {
+      ...cut10Record,
+      layers: [
+        ...others,
+        {
+          layerId: `layer-${cut10Record.currentStageId}`,
+          layerName: activeLayerName,
+          stageId: cut10Record.currentStageId,
+          locked: false,
+          lockMode: "editable",
+        },
+      ],
+      widthPx: highResValid ? 1600 : 1080,
+      dpi: highResValid ? 350 : 150,
+      openLineGapCount: closedRegionsValid ? 0 : 3,
+      biblePaletteMatchPercent: biblePaletteValid ? 98 : 79,
+      rightsBomPassed: zeroMissingBom,
+      missingRightsBomCount: zeroMissingBom ? 0 : 2,
+    };
+  }, [biblePaletteValid, closedRegionsValid, current10StageSpec.requiredLayerPrefix, cut10Record, highResValid, namingValid, zeroMissingBom]);
+  const cut10Eval = useMemo(
+    () => evaluateCut10StageHandoff(effectiveCut10Record),
+    [effectiveCut10Record],
+  );
 
   const [tierId, setTierId] = useState<StudioGovernanceTierId>(initialTierId);
   const [rbacRoleId, setRbacRoleId] = useState<StudioRbacRoleId>("outsource-guest");
@@ -150,7 +191,117 @@ export function StudioPipelineGovernanceBoard({
     );
   };
 
+  const handleOneClick10StageHandoff = (): void => {
+    const result = applyCut10StageHandoff(effectiveCut10Record, "2026-11-23T12:20:00Z");
+    if (result.transitioned) setCut10Record(result.nextRecord);
+  };
+
+  const handleSelect10StagePreview = (stageId: Korean10StageId): void => {
+    setCut10Record((prev) => ({ ...prev, currentStageId: stageId }));
+  };
+
   if (mode === "pipeline") {
+    if (pipelineStandard === "10stage") {
+      return (
+        <div data-testid="academy-pipeline-board" className="arc-grid-2">
+          <article className="arc-card" style={{ gridColumn: "1 / -1" }}>
+            <div className="arc-section-head">
+              <div>
+                <h3 className="arc-section-title">한국 실무 10단계 컷 분업 파이프라인 · 바통 게이트</h3>
+                <p className="arc-meta">
+                  현재 컷 <strong className="arc-num">{effectiveCut10Record.cutId}</strong> — 선화 열린 틈새 0건·Rights BOM 통과 시
+                  이전 공정 레이어가 자동 잠금(`locked: true`)되고 외주 3.3%(10원 미만 절사) 원고료가 확정됩니다.
+                </p>
+              </div>
+              <div className="arc-chip-row" role="group" aria-label="파이프라인 공정 기준 선택">
+                <button type="button" data-testid="pipeline-mode-8stage" className="arc-chip" aria-pressed={false} onClick={() => setPipelineStandard("8stage")}>8단계 표준</button>
+                <button type="button" data-testid="pipeline-mode-10stage" className="arc-chip" aria-pressed={true} onClick={() => setPipelineStandard("10stage")}>한국 실무 10단계</button>
+              </div>
+            </div>
+            <div className="arc-stage-strip" role="list" aria-label="한국 웹툰 10단계 컷 공정">
+              {KOREAN_10STAGE_WEBTOON_PIPELINE.map((stage) => {
+                const isCurrent = cut10Record.currentStageId === stage.id;
+                const isLocked = cut10Record.layers.some((l) => l.stageId === stage.id && l.locked);
+                const state = isCurrent ? "active" : isLocked ? "locked" : "queued";
+                return (
+                  <button
+                    key={stage.id}
+                    type="button"
+                    data-testid={`pipeline-10stage-${stage.id}`}
+                    data-stage-state={state}
+                    onClick={() => handleSelect10StagePreview(stage.id)}
+                    className="arc-stage-node"
+                  >
+                    <span className="arc-section-head">
+                      <img src={stage.spritePath} alt="" width={24} height={24} aria-hidden="true" className="arc-sprite-sm" />
+                      <span className="arc-pill arc-num">{isLocked ? "잠금" : isCurrent ? "열림" : `SLA ${stage.defaultSlaHours}h`}</span>
+                    </span>
+                    <strong className="arc-num">{stage.labelKo}</strong>
+                    <span className="arc-meta">{stage.handoffSummaryKo}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </article>
+
+          <article className="arc-card" data-testid="pipeline-10stage-gate-panel">
+            <div className="arc-section-head">
+              <div>
+                <h3 className="arc-section-title">10단계 바통 인계 검수 ({current10StageSpec.labelKo})</h3>
+                <p className="arc-meta">{cut10Eval.summaryKo}</p>
+              </div>
+              <span data-testid="pipeline-10stage-score" className={cut10Eval.passed ? "arc-pill arc-pill-good arc-num" : "arc-pill arc-pill-bad arc-num"}>
+                {cut10Eval.passed ? "인계 가능" : "차단됨"} · {cut10Eval.scorePercent}%
+              </span>
+            </div>
+            <div className="arc-chip-row" role="group" aria-label="10단계 검수 조건 토글">
+              <button type="button" className="arc-chip" aria-pressed={namingValid} onClick={() => setNamingValid((v) => !v)}>표준 레이어명</button>
+              <button type="button" className="arc-chip" aria-pressed={closedRegionsValid} onClick={() => setClosedRegionsValid((v) => !v)}>선화 틈새 0건</button>
+              <button type="button" className="arc-chip" aria-pressed={zeroMissingBom} onClick={() => setZeroMissingBom((v) => !v)}>Rights BOM 통과</button>
+              <button type="button" className="arc-chip" aria-pressed={biblePaletteValid} onClick={() => setBiblePaletteValid((v) => !v)}>바이블 팔레트</button>
+            </div>
+            <ul className="arc-list">
+              {cut10Eval.checks.map((check) => (
+                <li key={check.checkId} className="arc-subcard">
+                  <div className="arc-section-head">
+                    <strong>{check.labelKo}</strong>
+                    <span className={check.passed ? "arc-pill arc-pill-good" : "arc-pill arc-pill-bad"}>{check.passed ? "통과" : "차단"}</span>
+                  </div>
+                  <p className="arc-meta">{check.detailKo}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="arc-actions">
+              <button type="button" data-testid="pipeline-10stage-handoff-btn" disabled={!cut10Eval.canHandoff} onClick={handleOneClick10StageHandoff} className="arc-btn arc-btn-primary">
+                <CheckCircle2 size={16} aria-hidden="true" />
+                원클릭 10단계 바통 인계
+                <ArrowRight size={15} aria-hidden="true" />
+              </button>
+            </div>
+          </article>
+
+          <article className="arc-card" data-testid="pipeline-10stage-payout-panel">
+            <h3 className="arc-section-title">자동 레이어 잠금 & 컷당 3.3% 원천징수 정산</h3>
+            <div className="arc-grid-3">
+              <div className="arc-subcard"><span className="arc-meta">컷 세전 원고료</span><strong className="arc-num">{formatKrw(cut10Eval.payout.grossKrw)}</strong></div>
+              <div className="arc-subcard"><span className="arc-meta">3.3% 절사 세액</span><strong className="arc-num">-{formatKrw(cut10Eval.payout.totalWithholdingTaxKrw)}</strong></div>
+              <div className="arc-subcard"><span className="arc-meta">실수령 예상액</span><strong className="arc-num">{formatKrw(cut10Eval.payout.netPayableKrw)}</strong></div>
+            </div>
+            <ul className="arc-list" aria-label="10단계 레이어 잠금 예정 목록">
+              {cut10Eval.updatedLayers.map((layer) => (
+                <li key={layer.layerId} className="arc-subcard">
+                  <div className="arc-section-head">
+                    <strong className="arc-num">{layer.layerName}</strong>
+                    <span className={layer.locked ? "arc-pill arc-pill-good" : "arc-pill"}>{layer.locked ? "locked: true (읽기 전용)" : "편집 가능"}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </article>
+        </div>
+      );
+    }
+
     return (
       <div data-testid="academy-pipeline-board" className="arc-grid-2">
         <article className="arc-card" style={{ gridColumn: "1 / -1" }}>
@@ -162,9 +313,13 @@ export function StudioPipelineGovernanceBoard({
                 Read-Only 자동 잠금되고 다음 담당 공정만 즉시 개방됩니다.
               </p>
             </div>
-            <span className="arc-pill arc-pill-accent arc-num">
-              잠금 완료 {cutState.lockedReadOnlyStageIds.length} / {WEBTOON_8_STAGE_PIPELINE.length}공정
-            </span>
+            <div className="arc-chip-row" role="group" aria-label="파이프라인 공정 기준 선택">
+              <button type="button" data-testid="pipeline-mode-8stage" className="arc-chip" aria-pressed={true} onClick={() => setPipelineStandard("8stage")}>8단계 표준</button>
+              <button type="button" data-testid="pipeline-mode-10stage" className="arc-chip" aria-pressed={false} onClick={() => setPipelineStandard("10stage")}>한국 실무 10단계</button>
+              <span className="arc-pill arc-pill-accent arc-num">
+                잠금 완료 {cutState.lockedReadOnlyStageIds.length} / {WEBTOON_8_STAGE_PIPELINE.length}공정
+              </span>
+            </div>
           </div>
           <div className="arc-stage-strip" role="list" aria-label="8단계 웹툰 분업 공정">
             {WEBTOON_8_STAGE_PIPELINE.map((stage) => {

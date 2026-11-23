@@ -568,3 +568,28 @@ export function detectPipelineBottlenecks(
   stageAlerts.sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]);
   return { overallSeverity, totalMonitoredCuts: cuts.length, totalOverdueCuts, maxEstimatedDelayHours, stageAlerts };
 }
+
+export {
+  KOREAN_10STAGE_ORDER,
+  KOREAN_10STAGE_WEBTOON_PIPELINE,
+  SAMPLE_KOREAN_10STAGE_CUT_RECORDS,
+  aggregateCut10StagePayoutLedger,
+  applyCut10StageHandoff,
+  calculateWithholding33Truncated10,
+  evaluateCut10StageHandoff,
+  getKorean10StageOrder,
+  getKorean10StageSpec,
+  getNextKorean10StageId,
+} from "./korean-10stage-cut-handoff";
+export type {
+  Cut10StageAssigneePayout,
+  Cut10StageCheckId,
+  Cut10StageCheckResult,
+  Cut10StageHandoffEvaluation,
+  Cut10StagePayoutLedger,
+  CutHandoffRecord,
+  CutLayerLockState,
+  Korean10StageId,
+  Korean10StageSpec,
+  Withholding33TaxBreakdown,
+} from "./korean-10stage-cut-handoff";

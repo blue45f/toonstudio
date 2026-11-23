@@ -24,8 +24,6 @@ export type BenchmarkToolId =
   | "blender"
   | "ibispaint";
 
-export type CellGrade = "lead" | "strong" | "partial" | "none";
-
 export type BenchmarkStatus =
   | "current"
   | "partial"
@@ -33,6 +31,8 @@ export type BenchmarkStatus =
   | "native-strength"
   | "limited"
   | "none";
+
+export type CellGrade = "lead" | "strong" | "partial" | "limited" | "none";
 
 export type BenchmarkAxisId =
   | "install-device"
