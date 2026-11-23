@@ -1002,6 +1002,7 @@ scripts/prepare-cloudflare-static-assets.test.ts
 scripts/prepare-ir-present-narration.test.ts
 scripts/prepare-managed-database-bootstrap.test.mjs
 scripts/production-database-connection.test.mjs
+scripts/production-hub-i18n-boundary.test.mjs
 scripts/provision-cloudflare-free-data-plane.test.mjs
 scripts/provision-gcp-free-data-plane.test.mjs
 scripts/rebuild-creator-bundle-local-ingest.test.mjs
