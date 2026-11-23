@@ -1,0 +1,590 @@
+/* 빈칸 제로 스마트 기본값 · 의도 안내 UI + 대형 웹툰 스튜디오 PM 컨베이어 · 정산 · 사전 QC 스타일
+ * OKLCH 토큰 전용(원시 HEX 0건), >= 44px 터치 타겟, keep-all, tabular-nums, 고대비 & 모션감소 준수. */
+
+.ts-pm-console,
+.ts-smart-field {
+  --pm-surface: var(--unified-panel, var(--color-panel, oklch(0.18 0.015 260)));
+  --pm-card: var(--unified-card, var(--color-card, oklch(0.22 0.018 260)));
+  --pm-raised: var(--unified-raised, var(--color-raised, oklch(0.26 0.02 260)));
+  --pm-line: var(--unified-line, var(--color-line, oklch(0.36 0.02 260)));
+  --pm-fg: var(--unified-fg, var(--color-fg, oklch(0.95 0.01 260)));
+  --pm-fg-2: var(--unified-fg-2, var(--color-fg-2, oklch(0.79 0.015 260)));
+  --pm-fg-3: var(--unified-fg-3, var(--color-fg-3, oklch(0.66 0.015 260)));
+
+  --pm-accent: var(--unified-accent, var(--color-accent, oklch(0.68 0.16 250)));
+  --pm-accent-soft: oklch(0.34 0.08 250 / 0.34);
+  --pm-on-accent: var(--color-on-accent, oklch(0.98 0.005 260));
+  --pm-good-bg: oklch(0.31 0.08 156 / 0.28);
+  --pm-good-border: oklch(0.68 0.15 156 / 0.62);
+  --pm-good-fg: oklch(0.87 0.12 156);
+  --pm-warn-bg: oklch(0.36 0.09 78 / 0.28);
+  --pm-warn-border: oklch(0.76 0.15 78 / 0.64);
+  --pm-warn-fg: oklch(0.9 0.12 78);
+  --pm-bad-bg: oklch(0.33 0.12 24 / 0.3);
+  --pm-bad-border: oklch(0.7 0.18 24 / 0.66);
+  --pm-bad-fg: oklch(0.88 0.13 24);
+  word-break: keep-all;
+}
+
+:root[data-theme="light"] .ts-pm-console,
+:root[data-design-theme="light"] .ts-pm-console,
+:root[data-design-theme="aurora"] .ts-pm-console,
+:root[data-design-theme="blossom"] .ts-pm-console,
+:root[data-design-theme="sepia"] .ts-pm-console,
+:root[data-theme="light"] .ts-smart-field,
+:root[data-design-theme="light"] .ts-smart-field,
+:root[data-design-theme="aurora"] .ts-smart-field,
+:root[data-design-theme="blossom"] .ts-smart-field,
+:root[data-design-theme="sepia"] .ts-smart-field {
+  --pm-accent-soft: oklch(0.92 0.05 250);
+  --pm-good-bg: oklch(0.93 0.05 156);
+  --pm-good-border: oklch(0.5 0.14 156 / 0.5);
+  --pm-good-fg: oklch(0.3 0.12 156);
+  --pm-warn-bg: oklch(0.94 0.06 80);
+  --pm-warn-border: oklch(0.54 0.14 78 / 0.52);
+  --pm-warn-fg: oklch(0.34 0.11 72);
+  --pm-bad-bg: oklch(0.93 0.06 24);
+  --pm-bad-border: oklch(0.54 0.17 24 / 0.52);
+  --pm-bad-fg: oklch(0.36 0.15 24);
+}
+
+.ts-pm-console {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.15rem;
+  border-radius: 16px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-surface);
+  color: var(--pm-fg);
+}
+
+.ts-pm-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--pm-line);
+}
+
+@media (min-width: 768px) {
+  .ts-pm-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.ts-pm-hero-id {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.ts-pm-emblem {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-raised);
+  object-fit: contain;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.ts-pm-sprite-sm {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ts-pm-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.ts-pm-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--pm-fg-2);
+}
+
+.ts-pm-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ts-pm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.68rem;
+  border-radius: 999px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-raised);
+  color: var(--pm-fg);
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-pm-pill[data-tone="good"] {
+  border-color: var(--pm-good-border);
+  background: var(--pm-good-bg);
+  color: var(--pm-good-fg);
+}
+
+.ts-pm-pill[data-tone="warn"] {
+  border-color: var(--pm-warn-border);
+  background: var(--pm-warn-bg);
+  color: var(--pm-warn-fg);
+}
+
+.ts-pm-pill[data-tone="bad"] {
+  border-color: var(--pm-bad-border);
+  background: var(--pm-bad-bg);
+  color: var(--pm-bad-fg);
+}
+
+.ts-pm-pill[data-tone="accent"] {
+  border-color: var(--pm-accent);
+  background: var(--pm-accent-soft);
+  color: var(--pm-fg);
+}
+
+.ts-pm-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ts-pm-tab,
+.ts-pm-btn,
+.ts-pm-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 0.9rem;
+  border-radius: 11px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-card);
+  color: var(--pm-fg);
+  font-size: 0.81rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 100ms ease;
+}
+
+.ts-pm-tab:hover,
+.ts-pm-btn:hover,
+.ts-pm-chip-btn:hover {
+  background: var(--pm-raised);
+}
+
+.ts-pm-tab[aria-selected="true"],
+.ts-pm-chip-btn[aria-pressed="true"] {
+  border-color: var(--pm-accent);
+  background: var(--pm-accent-soft);
+  color: var(--pm-fg);
+}
+
+.ts-pm-btn[data-variant="primary"] {
+  border-color: var(--pm-accent);
+  background: var(--pm-accent);
+  color: var(--pm-on-accent);
+}
+
+.ts-pm-btn[data-variant="good"] {
+  border-color: var(--pm-good-border);
+  background: var(--pm-good-bg);
+  color: var(--pm-good-fg);
+}
+
+.ts-pm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ts-pm-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+@media (min-width: 900px) {
+  .ts-pm-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ts-pm-kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.78rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-card);
+}
+
+.ts-pm-kpi-label {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--pm-fg-3);
+}
+
+.ts-pm-kpi-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-pm-kpi-note {
+  font-size: 0.72rem;
+  color: var(--pm-fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-pm-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+@media (min-width: 860px) {
+  .ts-pm-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ts-pm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.95rem;
+  border-radius: 14px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-card);
+}
+
+.ts-pm-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ts-pm-card-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.ts-pm-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-pm-input,
+.ts-pm-select,
+.ts-pm-textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-surface);
+  color: var(--pm-fg);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-pm-textarea {
+  min-height: 68px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* 공용 스마트 필드 가이드 카드 */
+.ts-smart-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  border-radius: 13px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-card);
+  color: var(--pm-fg);
+}
+
+.ts-smart-field[data-empty="true"] {
+  border-color: var(--pm-warn-border);
+}
+
+.ts-smart-field__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.ts-smart-field__label {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--pm-fg);
+}
+
+.ts-smart-field__intent {
+  margin: 0;
+  font-size: 0.77rem;
+  line-height: 1.45;
+  color: var(--pm-fg-2);
+}
+
+.ts-smart-field__why {
+  margin: 0;
+  padding: 0.42rem 0.65rem;
+  border-radius: 9px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-raised);
+  font-size: 0.75rem;
+  line-height: 1.42;
+  color: var(--pm-fg-2);
+}
+
+.ts-smart-field__control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.ts-smart-field__control-wrap {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.ts-smart-field__alts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ts-smart-field__guard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--pm-warn-border);
+  background: var(--pm-warn-bg);
+  color: var(--pm-warn-fg);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+/* 컨베이어 · 정산 · QC 리스트 */
+.ts-pm-intent-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border-radius: 14px;
+  border: 1px solid var(--pm-accent);
+  background: var(--pm-accent-soft);
+}
+
+.ts-pm-intent-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
+.ts-pm-intent-row .ts-pm-input {
+  flex: 1 1 260px;
+}
+
+.ts-pm-lane-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 780px) {
+  .ts-pm-lane-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ts-pm-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  border-radius: 13px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-surface);
+}
+
+.ts-pm-lane[data-status="critical"] {
+  border-color: var(--pm-bad-border);
+}
+
+.ts-pm-lane[data-status="delayed"] {
+  border-color: var(--pm-warn-border);
+}
+
+.ts-pm-meter {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--pm-raised);
+  overflow: hidden;
+}
+
+.ts-pm-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--pm-accent);
+  transition: width 180ms ease;
+}
+
+.ts-pm-meter-fill[data-tone="good"] {
+  background: var(--pm-good-border);
+}
+
+.ts-pm-meter-fill[data-tone="warn"] {
+  background: var(--pm-warn-border);
+}
+
+.ts-pm-meter-fill[data-tone="bad"] {
+  background: var(--pm-bad-border);
+}
+
+.ts-pm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ts-pm-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.72rem 0.8rem;
+  border-radius: 11px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-surface);
+  font-size: 0.79rem;
+}
+
+.ts-pm-list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.ts-pm-diff-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (min-width: 720px) {
+  .ts-pm-diff-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ts-pm-field-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--pm-fg-2);
+}
+
+.ts-pm-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ts-pm-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.35rem 0.72rem;
+  border-radius: 10px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-surface);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ts-pm-notice {
+  margin: 0;
+  padding: 0.62rem 0.82rem;
+  border-radius: 10px;
+  border: 1px solid var(--pm-good-border);
+  background: var(--pm-good-bg);
+  color: var(--pm-good-fg);
+  font-size: 0.79rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-pm-tab,
+  .ts-pm-btn,
+  .ts-pm-chip-btn,
+  .ts-pm-meter-fill {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .ts-pm-console,
+  .ts-pm-card,
+  .ts-smart-field,
+  .ts-pm-tab,
+  .ts-pm-btn,
+  .ts-pm-chip-btn,
+  .ts-pm-pill,
+  .ts-pm-lane {
+    border: 1px solid CanvasText;
+    forced-color-adjust: auto;
+  }
+
+  .ts-pm-tab[aria-selected="true"],
+  .ts-pm-chip-btn[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+  }
+}
+
+[data-studio-high-contrast="true"] .ts-pm-console,
+[data-studio-high-contrast="true"] .ts-smart-field {
+  --pm-line: var(--color-fg, oklch(0.98 0 0));
+  --pm-fg-2: var(--color-fg, oklch(0.98 0 0));
+}
