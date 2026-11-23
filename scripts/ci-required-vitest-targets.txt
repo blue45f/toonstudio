@@ -618,6 +618,7 @@ apps/web/src/domains/creator/panel-detect/ui/panel-import-copy.test.ts
 apps/web/src/domains/creator/panel-detect/ui/panel-import-i18n-contract.test.ts
 apps/web/src/domains/creator/panel-detect/ui/panel-import-styles.test.ts
 apps/web/src/domains/creator/panel-detect/ui/panel-import-translation-privacy.test.tsx
+apps/web/src/domains/creator/pro-craft-engines/pro-craft-engines.test.tsx
 apps/web/src/domains/creator/production-hub
 apps/web/src/domains/creator/production-hub/ProductionContractReview.test.tsx
 apps/web/src/domains/creator/production-hub/ProductionNotificationPolicyEditor.test.tsx
@@ -643,6 +644,7 @@ apps/web/src/domains/creator/render/studio-raster-thumbnail-source.test.ts
 apps/web/src/domains/creator/render/studio-thumbnail-native-blend.test.tsx
 apps/web/src/domains/creator/render/studio-webgpu-advanced-live-integration.test.ts
 apps/web/src/domains/creator/render/studio-webgpu-live-receipt-starvation.test.ts
+apps/web/src/domains/creator/render/worker-wasm-offload/worker-wasm-offload.test.ts
 apps/web/src/domains/creator/review-capture
 apps/web/src/domains/creator/review-export
 apps/web/src/domains/creator/review-handoff
