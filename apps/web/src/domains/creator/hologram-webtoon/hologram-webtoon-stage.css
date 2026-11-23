@@ -1,0 +1,732 @@
+/* 홀로그램 공간 웹툰(Holographic Multi-Plane WebXR) 인터랙티브 5-평면 스테이지 스타일.
+ * 모든 색상은 ToonStudio 의미 토큰(var(--color-*), var(--unified-*))과 color-mix(in oklch, ...)로만 표현하며
+ * 원시 색 리터럴과 포괄 전환 축약을 금지한다.
+ */
+
+.holo-stage-root {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--atelier-radius-outer, 14px);
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  color: var(--color-fg);
+  box-shadow: var(--atelier-elevation-dock, none);
+}
+
+.holo-stage-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.holo-stage-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.holo-stage-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.holo-stage-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+}
+
+.holo-stage-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-fg-2);
+}
+
+.holo-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.holo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background: var(--color-raised);
+  color: var(--color-fg-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.holo-badge[data-tone="good"] {
+  border-color: color-mix(in oklch, var(--color-good) 48%, var(--color-line));
+  background: color-mix(in oklch, var(--color-good) 14%, var(--color-raised));
+  color: var(--color-good);
+}
+
+.holo-badge[data-tone="warn"] {
+  border-color: color-mix(in oklch, var(--color-warn) 52%, var(--color-line));
+  background: color-mix(in oklch, var(--color-warn) 16%, var(--color-raised));
+  color: var(--color-warn);
+}
+
+.holo-badge[data-tone="bad"] {
+  border-color: color-mix(in oklch, var(--color-bad) 52%, var(--color-line));
+  background: color-mix(in oklch, var(--color-bad) 16%, var(--color-raised));
+  color: var(--color-bad);
+}
+
+.holo-badge[data-tone="accent"] {
+  border-color: color-mix(in oklch, var(--color-accent) 48%, var(--color-line));
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* 씬 프리셋 바 & 뷰 모드 탭 */
+.holo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.holo-preset-group,
+.holo-mode-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.holo-pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.375rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 120ms ease-out;
+}
+
+.holo-pill-button:hover {
+  border-color: var(--color-line-strong);
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+
+.holo-pill-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.holo-pill-button[aria-selected="true"],
+.holo-pill-button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+  box-shadow: var(--atelier-active-bevel, none);
+}
+
+.holo-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    color 140ms ease-out,
+    transform 120ms ease-out;
+}
+
+.holo-action-button:hover:not(:disabled) {
+  background: var(--color-raised);
+  border-color: var(--color-accent);
+}
+
+.holo-action-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.holo-action-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.holo-action-button[data-variant="primary"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.holo-action-button[data-variant="primary"]:hover:not(:disabled) {
+  background: var(--color-accent-2);
+}
+
+.holo-action-button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+
+/* 메인 워크스페이스 2열 레이아웃 */
+.holo-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(17.5rem, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .holo-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 좌측: 인터랙티브 5-평면 극장 */
+.holo-theater-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.holo-stage-tabpanel {
+  width: 100%;
+}
+
+.holo-stage-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 640 / 420;
+  border-radius: var(--atelier-radius-outer, 14px);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-canvas);
+  overflow: hidden;
+  perspective: 1100px;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  box-shadow: var(--elevation-1, none);
+}
+
+.holo-stage-frame:active {
+  cursor: grabbing;
+}
+
+.holo-stage-frame:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.holo-stage-frame[data-reduced-motion="true"] {
+  cursor: default;
+}
+
+.holo-viewport-scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  overflow: hidden;
+}
+
+.holo-plane-layer {
+  position: absolute;
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  transform-origin: center center;
+  will-change: transform, filter;
+  pointer-events: none;
+  transition: transform 80ms linear, filter 120ms ease-out, opacity 120ms ease-out;
+}
+
+.holo-plane-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.holo-plane-dialogue {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.holo-plane-sfx {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+/* 프리즘 홀로포일 굴절 오버레이 */
+.holo-prism-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: linear-gradient(
+    var(--holo-sheen-angle, 128deg),
+    transparent 12%,
+    color-mix(in oklch, var(--color-cool) 36%, transparent) 34%,
+    color-mix(in oklch, var(--color-accent) 40%, transparent) 50%,
+    color-mix(in oklch, var(--color-warn) 32%, transparent) 66%,
+    transparent 88%
+  );
+  opacity: var(--holo-sheen-opacity, 0.35);
+  transition: opacity 140ms ease-out;
+}
+
+.holo-stage-hud {
+  position: absolute;
+  inset-inline: 0.75rem;
+  bottom: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.holo-hud-chip {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--color-line-strong) 75%, transparent);
+  background: color-mix(in oklch, var(--color-canvas) 84%, transparent);
+  color: var(--color-fg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* WebXR 좌·우안 스테레오 (SBS) */
+.holo-stereo-sbs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  height: 100%;
+  background: var(--color-canvas);
+}
+
+.holo-stereo-eye-pane {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-right: 1px solid var(--color-line-strong);
+}
+
+.holo-stereo-eye-pane:last-child {
+  border-right: none;
+}
+
+.holo-eye-tag {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 20;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-line-strong);
+  background: color-mix(in oklch, var(--color-canvas) 88%, transparent);
+  color: var(--color-fg);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 애너글리프 3D 입체 레이어 */
+.holo-anaglyph-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+  background: var(--color-canvas);
+}
+
+.holo-anaglyph-eye {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.holo-anaglyph-eye[data-channel="left"] {
+  opacity: 0.78;
+  filter: sepia(0.35) saturate(1.45) hue-rotate(-36deg);
+}
+
+.holo-anaglyph-eye[data-channel="right"] {
+  opacity: 0.78;
+  mix-blend-mode: screen;
+  filter: sepia(0.25) saturate(1.45) hue-rotate(155deg);
+}
+
+.holo-anaglyph-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+}
+
+.holo-anaglyph-tint[data-channel="left"] {
+  background: var(--color-bad);
+}
+
+.holo-anaglyph-tint[data-channel="right"] {
+  background: var(--color-cool);
+}
+
+/* 라이트필드 Quilt 32-뷰 프리뷰 */
+.holo-quilt-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.75rem;
+  background: var(--color-canvas);
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .holo-quilt-shell {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+}
+
+.holo-quilt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+.holo-quilt-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.2rem;
+  border-radius: 5px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    color 120ms ease-out;
+}
+
+.holo-quilt-cell:hover {
+  border-color: var(--color-cool);
+  color: var(--color-fg);
+}
+
+.holo-quilt-cell:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.holo-quilt-cell[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+
+.holo-quilt-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.holo-quilt-preview-box {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 10rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-line-strong);
+  overflow: hidden;
+  background: var(--color-panel);
+}
+
+.holo-quilt-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.holo-quilt-meta dt {
+  color: var(--color-fg-3);
+}
+
+.holo-quilt-meta dd {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+/* 스테이지 하단 상호작용 바 */
+.holo-stage-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+}
+
+.holo-stage-controls-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.holo-stage-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-fg-2);
+}
+
+/* 우측: 깊이 및 광학 제어 인스펙터 */
+.holo-inspector-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.holo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--atelier-radius-inner, 10px);
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+}
+
+.holo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.holo-card-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.holo-slider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.holo-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.holo-slider-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.holo-slider-label {
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.holo-slider-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fg-2);
+}
+
+.holo-range-input {
+  width: 100%;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.holo-range-input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* 눈피로 안전 시차 게이지 */
+.holo-comfort-meter-track {
+  position: relative;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--color-raised);
+  border: 1px solid var(--color-line);
+  overflow: hidden;
+}
+
+.holo-comfort-meter-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  transform-origin: left center;
+  transition: transform 140ms ease-out, background-color 140ms ease-out;
+}
+
+.holo-comfort-meter-fill[data-status="safe"] {
+  background: var(--color-good);
+}
+
+.holo-comfort-meter-fill[data-status="caution"] {
+  background: var(--color-warn);
+}
+
+.holo-comfort-meter-fill[data-status="clamped"] {
+  background: var(--color-bad);
+}
+
+.holo-comfort-caption {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--color-fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 매니페스트 내보내기 & 프리뷰 */
+.holo-manifest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.holo-manifest-preview {
+  margin: 0;
+  max-height: 12rem;
+  overflow: auto;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-line);
+  background: var(--color-canvas);
+  color: var(--color-fg-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.holo-export-notice {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-good);
+}
+
+/* Reduced Motion 완전 준수 */
+.holo-stage-root[data-reduced-motion="true"] .holo-plane-layer,
+.holo-stage-root[data-reduced-motion="true"] .holo-prism-sheen,
+.holo-stage-root[data-reduced-motion="true"] .holo-pill-button,
+.holo-stage-root[data-reduced-motion="true"] .holo-action-button,
+.holo-stage-root[data-reduced-motion="true"] .holo-quilt-cell,
+.holo-stage-root[data-reduced-motion="true"] .holo-comfort-meter-fill {
+  transition: none;
+}
+
+.holo-stage-root[data-reduced-motion="true"] .holo-prism-sheen {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holo-plane-layer,
+  .holo-prism-sheen,
+  .holo-pill-button,
+  .holo-action-button,
+  .holo-quilt-cell,
+  .holo-comfort-meter-fill {
+    transition: none;
+  }
+
+  .holo-prism-sheen {
+    opacity: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .holo-stage-root,
+  .holo-stage-frame,
+  .holo-card,
+  .holo-pill-button,
+  .holo-action-button {
+    forced-color-adjust: auto;
+    border-color: CanvasText;
+  }
+
+  .holo-prism-sheen {
+    display: none;
+  }
+}
