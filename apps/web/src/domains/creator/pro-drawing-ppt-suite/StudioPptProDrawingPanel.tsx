@@ -1,10 +1,12 @@
 import {
   Box,
   Compass,
+  Cpu,
   Cuboid,
   FileSpreadsheet,
   Film,
   GitBranch,
+  Globe,
   LayoutGrid,
   LayoutTemplate,
   Megaphone,
@@ -16,6 +18,7 @@ import {
   Shapes,
   ShieldCheck,
   SlidersHorizontal,
+  Smartphone,
   Sparkles,
   Wand2,
   Wrench,
@@ -110,6 +113,21 @@ const LazyCsp3dUpgradeHubPanel = lazy(() =>
     default: m.Csp3dUpgradeHubPanel,
   })),
 );
+const LazyBrushWasm3dFrontierHubPanel = lazy(() =>
+  import("./BrushWasm3dFrontierHubPanel").then((m) => ({
+    default: m.BrushWasm3dFrontierHubPanel,
+  })),
+);
+const LazyOpenEcosystemWorkflowHubPanel = lazy(() =>
+  import("./OpenEcosystemWorkflowHubPanel").then((m) => ({
+    default: m.OpenEcosystemWorkflowHubPanel,
+  })),
+);
+const LazyCreatorLabHardwareHubPanel = lazy(() =>
+  import("./CreatorLabHardwareHubPanel").then((m) => ({
+    default: m.CreatorLabHardwareHubPanel,
+  })),
+);
 
 export type PptProDrawingTabId =
   | "layout"
@@ -131,7 +149,10 @@ export type PptProDrawingTabId =
   | "storyGrowth"
   | "viralPromo"
   | "qaReviewHub"
-  | "csp3dProHub";
+  | "csp3dProHub"
+  | "frontierEngineHub"
+  | "openEcosystemHub"
+  | "creatorHardwareHub";
 
 interface SuiteTabDescriptor {
   readonly id: PptProDrawingTabId;
@@ -240,6 +261,21 @@ const SUITE_TABS: readonly SuiteTabDescriptor[] = [
     label: "퍼펫 변형·3D 직접 페인팅·손/STL·워터마크",
     description: "2D MLS 퍼펫 변형·3D UV 4층 직접 페인팅·15관절 3D 손/가중치/FFD/STL/Auto-LOD·비가시 Anti-AI 워터마크·속도 곡선",
   },
+  {
+    id: "frontierEngineHub",
+    label: "물리 브러시·Rust Wasm64·3D NPR·HDR",
+    description: "6대 물리 브러시·Rust Wasm64(memory64)·3D BVH/LOD/Instancing/NPR·하이브리드 획·건조기·HDR·실시간 엔진 오라클",
+  },
+  {
+    id: "openEcosystemHub",
+    label: "개방형 BYOT·C2PA·다이나믹 워크플로우",
+    description: "다이나믹 워크플로우 DAG·Jira/Slack/BYOT CSP·C2PA 2.1·7대 플랫폼 출고·양방향 리플로우·스펙트럼 실드·CP 50작품 Fleet",
+  },
+  {
+    id: "creatorHardwareHub",
+    label: "색역·시선·굿즈·BGM·태블릿·XR 기기",
+    description: "4분할 색역 ΔE·시선/OKLCH 리라이팅·굿즈 칼선·1~5화 이탈/BGM·태블릿 7하드웨어·Mac/iPad/워치/AR/VR 공간 허브",
+  },
 ];
 
 function SuiteTabIcon({ id }: { readonly id: PptProDrawingTabId }) {
@@ -284,6 +320,12 @@ function SuiteTabIcon({ id }: { readonly id: PptProDrawingTabId }) {
       return <ShieldCheck size={16} aria-hidden="true" />;
     case "csp3dProHub":
       return <Cuboid size={16} aria-hidden="true" />;
+    case "frontierEngineHub":
+      return <Cpu size={16} aria-hidden="true" />;
+    case "openEcosystemHub":
+      return <Globe size={16} aria-hidden="true" />;
+    case "creatorHardwareHub":
+      return <Smartphone size={16} aria-hidden="true" />;
   }
 }
 
@@ -385,6 +427,9 @@ export function StudioPptProDrawingPanel({
           {activeTab === "viralPromo" ? <LazyWebtoonViralPromoPanel /> : null}
           {activeTab === "qaReviewHub" ? <LazyAutoQaCollabHubPanel /> : null}
           {activeTab === "csp3dProHub" ? <LazyCsp3dUpgradeHubPanel /> : null}
+          {activeTab === "frontierEngineHub" ? <LazyBrushWasm3dFrontierHubPanel /> : null}
+          {activeTab === "openEcosystemHub" ? <LazyOpenEcosystemWorkflowHubPanel /> : null}
+          {activeTab === "creatorHardwareHub" ? <LazyCreatorLabHardwareHubPanel /> : null}
         </Suspense>
       </div>
     </section>
