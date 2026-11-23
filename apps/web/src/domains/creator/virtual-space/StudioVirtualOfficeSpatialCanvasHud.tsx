@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   getDynamicCreatorPersonaSpec,
   renderDynamicCreatorSpriteDataUri,
@@ -85,6 +86,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
   reducedMotion: reducedMotionProp,
   pomodoroNowMs,
 }: StudioVirtualOfficeSpatialCanvasHudProps) {
+  const bt = useBilingual("StudioVirtualOfficeSpatialCanvasHud");
   const [hudState, setHudState] = useState<SpatialCanvasHudState>(() =>
     createDefaultSpatialCanvasHudState(),
   );
@@ -196,7 +198,10 @@ export function StudioVirtualOfficeSpatialCanvasHud({
 
   return (
     <section
-      aria-label="REA 역공학 기반 인터랙티브 공간 플로어 레이더 및 글래스모피즘 플로팅 HUD"
+      aria-label={bt(
+        "가상 스튜디오 공간 플로어 맵 및 빠른 작업 도구",
+        "Virtual studio floor map and quick workspace controls",
+      )}
       data-testid="studio-virtual-office-spatial-canvas-hud"
       data-viewport-class={hudSafeOffset.viewportClass}
       data-minimap-bottom-offset={hudSafeOffset.minimapBottomOffsetPx}
@@ -245,10 +250,13 @@ export function StudioVirtualOfficeSpatialCanvasHud({
             <span>{activePreset.labelKo}</span>
             <span className="tabular-nums opacity-80">({activePreset.colorTempKelvin}K)</span>
           </span>
-          <span className="rounded-md border border-line bg-panel px-2 py-0.5 text-[11px] text-fg-2 tabular-nums">
-            REA UI 토큰: Blur {REA_VIRTUAL_OFFICE_UX_TOKEN_LEDGER.backdropBlurCount} · Spring{" "}
-            {REA_VIRTUAL_OFFICE_UX_TOKEN_LEDGER.cubicBezierSpringCount} · Keyframes{" "}
-            {REA_VIRTUAL_OFFICE_UX_TOKEN_LEDGER.keyframeAnimationCount}
+          <span
+            data-testid="spatial-hud-status-badge"
+            className="rounded-md border border-line bg-panel px-2 py-0.5 text-[11px] text-fg-2"
+          >
+            {reducedMotion
+              ? bt("작업실 실시간 동기화 · 모션 줄이기 적용", "Studio live sync · Reduced motion on")
+              : bt("작업실 실시간 동기화 · 부드러운 모션 활성", "Studio live sync · Smooth motion on")}
           </span>
           <button
             type="button"
@@ -649,7 +657,7 @@ export function StudioVirtualOfficeSpatialCanvasHud({
               aria-pressed={hudState.dockFocusHelmetOn}
               onClick={() => {
                 setHudState((prev) => toggleFloatingDockControl(prev, "focus-helmet"));
-                setHudToastKo("Teemyco 초집중 원고 헬멧(자동 방해금지) 착용 상태를 전환했습니다.");
+                setHudToastKo("초집중 원고 헬멧(자동 방해금지) 착용 상태를 전환했습니다.");
               }}
               className={`rounded-lg border px-2.5 py-1 transition ${
                 hudState.dockFocusHelmetOn

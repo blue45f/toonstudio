@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useI18n } from "@/shared/lib/i18n-core";
 
 import { StudioVirtualOfficeSpatialCanvasHud } from "./StudioVirtualOfficeSpatialCanvasHud";
 import { StudioVirtualSpacePomodoroRoomBar } from "./StudioVirtualSpacePomodoroRoomBar";
@@ -28,6 +29,7 @@ import {
 
 afterEach(() => {
   cleanup();
+  useI18n.getState().setLang("ko");
   vi.restoreAllMocks();
 });
 
@@ -397,5 +399,50 @@ describe("StudioVirtualSpacePomodoroRoomBar & StudioVirtualOfficeSpatialCanvasHu
     // 포모도로 공동 마감실 좌석 토글이 HUD 토스트와 연결된다.
     fireEvent.click(screen.getByTestId("seat-status-creator-self-feedback-welcome"));
     expect(screen.getByTestId("spatial-hud-toast").textContent).toContain("피드백 환영");
+
+    // 사용자 HUD에는 내부 개발자 용어("REA UI 토큰" 등)가 노출되지 않는다.
+    expect(hud.textContent).not.toContain("REA UI 토큰");
+    expect(hud.textContent).not.toContain("REA 역공학");
+    expect(hud.getAttribute("aria-label")).not.toContain("REA");
+    expect(screen.getByTestId("spatial-hud-status-badge").textContent).toBe(
+      "작업실 실시간 동기화 · 모션 줄이기 적용",
+    );
+  });
+
+  it("StudioVirtualOfficeSpatialCanvasHud는 내부 개발자 용어 없이 한국어/영어 작업실 동기화 상태를 표시한다", () => {
+    const { rerender } = render(
+      <StudioVirtualOfficeSpatialCanvasHud
+        reducedMotion={false}
+        pomodoroNowMs={HOUR_BASE_MS}
+      />,
+    );
+
+    const hud = screen.getByTestId("studio-virtual-office-spatial-canvas-hud");
+    expect(hud.textContent).not.toContain("REA UI 토큰");
+    expect(hud.textContent).not.toContain("Blur 103");
+    expect(hud.textContent).not.toContain("Spring 205");
+    expect(hud.textContent).not.toContain("Keyframes 346");
+    expect(screen.getByTestId("spatial-hud-status-badge").textContent).toBe(
+      "작업실 실시간 동기화 · 부드러운 모션 활성",
+    );
+
+    fireEvent.click(screen.getByTestId("spatial-dock-helmet-btn"));
+    expect(screen.getByTestId("spatial-hud-toast").textContent).not.toContain("Teemyco");
+
+    act(() => {
+      useI18n.getState().setLang("en");
+    });
+    rerender(
+      <StudioVirtualOfficeSpatialCanvasHud
+        reducedMotion={false}
+        pomodoroNowMs={HOUR_BASE_MS}
+      />,
+    );
+    expect(screen.getByTestId("spatial-hud-status-badge").textContent).toBe(
+      "Studio live sync · Smooth motion on",
+    );
+    expect(hud.getAttribute("aria-label")).toBe(
+      "Virtual studio floor map and quick workspace controls",
+    );
   });
 });

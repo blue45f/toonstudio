@@ -335,10 +335,16 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     );
   });
 
-  it("REA UI/UX 공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 글래스모피즘 독 · ⌘K 공간 커맨드 런처를 제어한다", () => {
+  it("공간 플로어 레이더 캔버스 · 지향성 음성 콘 SVG · 플로팅 퀵 컨트롤 독 · ⌘K 공간 커맨드 런처를 제어하고 내부 개발자 용어를 노출하지 않는다", () => {
     render(<StudioVirtualOfficeEnterpriseSuite />);
 
-    expect(screen.getByTestId("studio-virtual-office-spatial-canvas-hud")).toBeTruthy();
+    const spatialHud = screen.getByTestId("studio-virtual-office-spatial-canvas-hud");
+    expect(spatialHud).toBeTruthy();
+    expect(spatialHud.textContent).not.toContain("REA UI 토큰");
+    expect(spatialHud.getAttribute("aria-label")).not.toContain("REA");
+    expect(screen.getByTestId("spatial-hud-status-badge").textContent).toContain(
+      "작업실 실시간 동기화",
+    );
     expect(screen.getByTestId("spatial-voice-cone-svg")).toBeTruthy();
     expect(screen.getByTestId("spatial-illustrated-floor-backdrop")).toBeTruthy();
     expect(screen.getByTestId("spatial-companion-mascot-follower")).toBeTruthy();
