@@ -37,6 +37,7 @@ import {
   startSafeViewTransition,
 } from "./nextgen-web-platform-enhancer";
 import { BENCHMARK_PAGE_COPY } from "./showcase-ui-copy";
+import { StudioNextGenInnovationsStrip } from "./StudioNextGenInnovationsStrip";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -502,7 +503,10 @@ export function StudioCompetitorBenchmarkPage() {
           </div>
         </section>
 
-        {/* 6. 관련 허브 이동 */}
+        {/* 6. 차세대 4대 돌파 혁신 아키텍처 */}
+        <StudioNextGenInnovationsStrip locale={locale} />
+
+        {/* 7. 관련 허브 이동 */}
         <nav
           aria-label={copy.footerNavAria}
           className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-panel p-5"
