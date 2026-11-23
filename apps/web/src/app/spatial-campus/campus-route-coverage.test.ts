@@ -55,6 +55,18 @@ describe("campus route authority coverage", () => {
   it("does not turn an unknown future route into a fake plaza page", () => {
     expect(campusBinding("future-unregistered", "/unknown")).toBeNull();
   });
+  it.each([
+    ["catalog-compare-studio", "/compare/studio", "legal-about-technology-benchmarks", "/about/technology/benchmarks"],
+    ["catalog-tech", "/tech", "legal-about-technology", "/about/technology"],
+  ])("%s는 기존 기술 안내와 같은 공개 학습실이며 민감한 검색값은 보호한다", (id, pathname, referenceId, referencePath) => {
+    expect(routes.find((route) => route.id === id)).toEqual({ id, path: pathname });
+    expect(campusBinding(referenceId, referencePath))
+      .toMatchObject({ districtId: "academy", surface: "room", private: false });
+    expect(campusBinding(id, pathname))
+      .toEqual({ routeId: id, districtId: "academy", surface: "room", private: false });
+    expect(campusBinding(id, pathname, "?shareToken=private-token"))
+      .toEqual({ routeId: id, districtId: "academy", surface: "protected", private: false });
+  });
   it("MCP·CLI 연동 안내는 제작 도구 학습실에 속하고 Studio 표시 보호를 유지한다", () => {
     expect(routes.find((route) => route.id === "creator-studio-mcp"))
       .toEqual({ id: "creator-studio-mcp", path: "/studio/mcp" });

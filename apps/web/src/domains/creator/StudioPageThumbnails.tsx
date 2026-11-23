@@ -154,6 +154,7 @@ function renderThumbNode(node: ThumbNode, pixelScale: number | null, nativeBlend
     case "polyline":
       return (
         <polyline
+          data-element-id={node.key}
           key={node.key}
           points={node.points}
           fill="none"
@@ -168,6 +169,7 @@ function renderThumbNode(node: ThumbNode, pixelScale: number | null, nativeBlend
     case "path":
       return (
         <path
+          data-element-id={node.key}
           key={node.key}
           d={node.d}
           fill={node.fill ?? "none"}
@@ -239,8 +241,10 @@ function useStudioThumbnailPresentationWindow(): {
 export function StudioPageThumbnail({
   page,
   className,
+  localImagesOnly = false,
 }: {
   page: ThumbPageLike;
+  localImagesOnly?: boolean;
   className?: string;
 }): ReactElement {
   const { nearViewport, rootRef } = useStudioThumbnailPresentationWindow();
@@ -277,7 +281,7 @@ export function StudioPageThumbnail({
           </defs>
         ) : null}
         <rect x={0} y={0} width={CANVAS_W} height={canvasH} fill={hasGradient ? `url(#${gradientId})` : page.bg} />
-        {nodes.map((node) => node.kind === "image" && !nearViewport
+        {nodes.map((node) => node.kind === "image" && (!nearViewport || (localImagesOnly && !/^(?:data:image\/|blob:|studio-opfs-cas:)/u.test(node.src)))
           ? null
           : renderThumbNode(node, pixelScale, nativeBlends.get(node.key)))}
       </svg>

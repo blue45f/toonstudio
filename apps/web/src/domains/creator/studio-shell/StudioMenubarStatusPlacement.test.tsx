@@ -131,7 +131,7 @@ describe("desktop menubar status placement", () => {
     expect(root.className).toContain("fixed");
     expect(root.className).toContain("top-[calc(5.25rem+env(safe-area-inset-top))]");
     // 오프라인 문구가 이미 상태에 들어 있으므로 연결 배지를 겹쳐 달지 않는다.
-    const trigger = screen.getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" });
+    const trigger = screen.getByRole("button", { name: "저장 상태: 오프라인" });
     expect(trigger.textContent?.match(/오프라인/gu)).toHaveLength(1);
   });
 
@@ -152,7 +152,7 @@ describe("desktop menubar status placement", () => {
     expect(root.getAttribute("data-studio-shell-force-visible")).toBe("true");
     expect(root.className).not.toContain("fixed");
 
-    const trigger = screen.getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" });
+    const trigger = screen.getByRole("button", { name: "저장 상태: 오프라인" });
     expect(trigger.getAttribute("data-studio-draft-save-trigger")).toBe("menubar");
     fireEvent.click(trigger);
 
@@ -193,7 +193,7 @@ describe("desktop menubar status placement", () => {
     setOnline(false);
     const view = render(<><ClarityMobileSaveSlot /><SaveCenter mobileImmersive /></>);
     const host = screen.getByTestId("mobile-save-slot");
-    const trigger = within(host).getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" });
+    const trigger = within(host).getByRole("button", { name: "저장 상태: 오프라인" });
     expect(host.contains(saveRoot())).toBe(true);
     expect(saveRoot().getAttribute("data-studio-draft-save-placement")).toBe("menubar");
     expect(saveRoot().getAttribute("data-studio-shell-inline-docked")).toBe("true");

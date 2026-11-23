@@ -52,7 +52,7 @@ describe("StudioDraftSaveCenter reload-safe outbox", () => {
     }));
     render(<StudioDraftSaveCenter {...defaultProps} onSaveDraft={onSaveDraft} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인" }));
     fireEvent.click(screen.getByRole("button", { name: "연결 후 저장 예약" }));
 
     expect(screen.getByText("서버 저장 예약 보존 중")).not.toBeNull();
@@ -166,7 +166,7 @@ describe("StudioDraftSaveCenter reload-safe outbox", () => {
     setOnline(false);
     const onSaveDraft = vi.fn(() => Promise.reject(new Error("서버 초안 저장에 실패했습니다.")));
     render(<StudioDraftSaveCenter {...defaultProps} onSaveDraft={onSaveDraft} />);
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인" }));
     fireEvent.click(screen.getByRole("button", { name: "연결 후 저장 예약" }));
 
     act(() => {
@@ -191,7 +191,7 @@ describe("StudioDraftSaveCenter reload-safe outbox", () => {
   it("keeps the queue visible when neither receipt deletion nor invalidation is possible", () => {
     setOnline(false);
     render(<StudioDraftSaveCenter {...defaultProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인" }));
     fireEvent.click(screen.getByRole("button", { name: "연결 후 저장 예약" }));
 
     vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {

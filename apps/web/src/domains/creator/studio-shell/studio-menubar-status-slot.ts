@@ -7,14 +7,14 @@ import {
 } from "react";
 
 /**
- * 데스크톱 상단 바(메뉴바 동작 영역)에 저장·동기화 상태를 싣기 위한 자리.
+ * 데스크톱 상단 바(메뉴바 동작 영역)에 저장·동기화·세션 상태를 싣기 위한 자리.
  *
  * 저장 센터와 동기화 도우미는 메뉴바와 다른 렌더 가지(lazy 청크)에 있어 부모를 공유하지 않는다.
- * 메뉴바가 이 자리를 등록하면 두 상태 칩은 캔버스·인스펙터 위에 떠 있지 않고 상단 바 안에
+ * 메뉴바가 이 자리를 등록하면 상태 칩은 캔버스·인스펙터 위에 떠 있지 않고 상단 바 안에
  * 포털로 들어간다(Figma식 저장 상태). 메뉴바가 없는 화면(모바일·캔버스 전용·몰입)에서는
  * 자리가 없으므로 기존 부유 칩으로 남는다.
  */
-export type StudioMenubarStatusSlotId = "sync" | "save";
+export type StudioMenubarStatusSlotId = "sync" | "save" | "endurance";
 
 const slots = new Map<StudioMenubarStatusSlotId, HTMLElement>();
 const listeners = new Set<() => void>();
@@ -52,6 +52,7 @@ export const STUDIO_MENUBAR_STATUS_SLOT_REFS: Readonly<
 > = Object.freeze({
   sync: createSlotRef("sync"),
   save: createSlotRef("save"),
+  endurance: createSlotRef("endurance"),
 });
 
 /** 등록된 상단 바 자리. 없으면 null(부유 칩으로 그린다). */

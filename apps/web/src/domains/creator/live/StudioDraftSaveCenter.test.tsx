@@ -180,7 +180,7 @@ describe("StudioDraftSaveCenter", () => {
   it("queues one save while offline and replays it when connectivity returns", async () => {
     setOnline(false);
     const actions = renderCenter();
-    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태: 오프라인" }));
     fireEvent.click(screen.getByRole("button", { name: "연결 후 저장 예약" }));
 
     expect(actions.onSaveDraft).not.toHaveBeenCalled();

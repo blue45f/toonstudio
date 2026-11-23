@@ -6,6 +6,7 @@ import { recoverInterruptedStudioAiOperations } from "./ai/studio-ai-provenance-
 import { requireStudioDrawingPointerTransport } from "./brush/studio-drawing-pointer-transport";
 import {
   LEGACY_STUDIO_AUTOSAVE_KEY,
+  readStudioAutosave,
   serializeStudioAutosaveBackup,
   studioLifecycleAutosaveSidecarKey,
   studioSharedAutosaveCompatibility,
@@ -54,6 +55,20 @@ type StudioPublishPackSettings = ReturnType<typeof normalizeStudioPublishPackSet
 type StudioReleaseScheduleRuntime = Awaited<
   ReturnType<typeof loadStudioReleaseScheduleRuntime>
 >;
+
+/** 영속 원본 조회가 실패한 경우 호환 백업은 내보내기용 후보로만 남긴다. */
+export function readStudioCompatibilityRecovery(key: string): StudioAutosaveRecoveryCandidate | null {
+  try {
+    const saved = readStudioAutosave(globalThis.localStorage, key, false);
+    if (!saved) return null;
+    return Object.freeze({
+      key: saved.key, authority: "browser-storage-compatibility",
+      savedAt: saved.payload.savedAt, sequence: null, revision: null, payload: saved.payload,
+    });
+  } catch {
+    return null;
+  }
+}
 
 /** 대기 획 배치 ref — StudioPage 가 들고 있는 (timer 포함) 형태 그대로. */
 type StudioPendingStrokeCommitsRef = MutableRefObject<

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { StudioLiveCollaborationQuickControls } from "../live/StudioLiveCollaborationQuickControls";
+import { StudioOfflineOwnerPreview } from "../offline/StudioOfflineOwnerPreview";
 import { creatorWorkHref } from "../publishing/showcase-links";
 import { StudioLivePresenceDockConnected } from "../studio-page-lazy-ui";
 import { adoptMissingPage } from "../studio-pages";
@@ -290,6 +291,9 @@ export function renderStudioCanvasStickyBanners({
             </button>
           </div>
         </div>
+      ) : null}
+      {sourceHydrationPending && workId && !remixId && !workHydrationUnsupportedFormat ? (
+        <StudioOfflineOwnerPreview workId={workId} onReconnect={onRetrySourceHydration} />
       ) : null}
       {sourceHydrationPending || collaborationDocumentUnavailable ? (
         <div id={inputNoticeId} role="status" className="sticky left-0 top-0 z-20 grid min-h-[15rem] w-full place-items-center px-6 py-10 text-center lg:min-h-[20rem]">

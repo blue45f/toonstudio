@@ -21,6 +21,7 @@ export default defineConfig({
   },
   webServer: {
     command: "pnpm exec vite --config apps/web/vite.config.ts --host 127.0.0.1 --port 5347 --strictPort",
+    env: { TOONSTUDIO_VITE_STUDIO_HEADER_WARMUP: "1" },
     cwd: "../..",
     url: "http://127.0.0.1:5347",
     reuseExistingServer: !process.env.CI,

@@ -213,6 +213,8 @@ jobs:
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          CI: '1'
+          NODE_OPTIONS: --max-old-space-size=12288
           TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail

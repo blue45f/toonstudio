@@ -125,7 +125,7 @@ export function PwaConnectionPulse() {
     return (
       <PulseBadge state="offline">
         <WifiOff size={16} aria-hidden="true" />
-        <span>{bi("오프라인 — 작업은 기기에 저장돼요", "Offline — work saves on-device")}</span>
+        <span>{bi("오프라인", "Offline")}</span>
       </PulseBadge>
     );
   }

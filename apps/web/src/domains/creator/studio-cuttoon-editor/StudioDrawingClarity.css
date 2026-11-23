@@ -285,7 +285,7 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 .studio-drawing-workflow-step:active:not(:disabled){transform:scale(.96)}
 .studio-drawing-workflow-step[aria-pressed=true]{border-color:color-mix(in oklch,var(--stage-ink) 52%,var(--color-line));background:color-mix(in oklch,var(--stage-ink) 16%,var(--color-panel));color:var(--stage-ink);font-weight:700;box-shadow:0 0 0 1px color-mix(in oklch,var(--stage-ink) 28%,transparent)}
 .studio-drawing-workflow-step:disabled{opacity:.45;cursor:not-allowed}
-@media (min-width: 1180px) and (max-width: 1365px) {
+@media (min-width: 1180px) and (max-width: 1599px) {
   .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header){gap:4px}
   .studio-drawing-clarity-header :is(.studio-drawing-omnibox,.studio-drawing-clarity-compact-btn,.studio-drawing-clarity-share,.studio-drawing-clarity-export){gap:4px;padding-inline:8px}
   .studio-drawing-omnibox>kbd{display:none}

@@ -6,6 +6,7 @@ import {
   type SetStateAction,
 } from "react";
 
+import { forgetOfflineOwnerReceipt } from "../../offline/studio-offline-owner-receipt";
 import { isStudioEditorAsyncScopeCurrent } from "../../studio-editor-scope";
 
 import type { StudioSharedDocument } from "../../studio-shared-document-client";
@@ -73,6 +74,7 @@ export function useStudioSharedDocumentRevalidation({
         if (!requestIsCurrent()) return;
         const fresh = await getStudioSharedDocumentMeta(workId, controller.signal);
         if (!requestIsCurrent()) return;
+        if (fresh.role !== "owner") forgetOfflineOwnerReceipt(workId);
         const revisionChanged = fresh.revision !== sharedDocument.revision;
         let roleNotice: string | null = null;
         if (sharedDocument.role !== fresh.role || sharedDocument.access !== fresh.access) {
@@ -117,8 +119,11 @@ export function useStudioSharedDocumentRevalidation({
             "다른 팀원이 새 revision을 저장했습니다. 로컬 원고를 내보낸 뒤 공동 문서를 다시 열어 병합해 주세요.",
           );
         }
-      } catch {
+      } catch (error) {
         if (!requestIsCurrent()) return;
+        if (error instanceof Error && "status" in error && [401, 403, 404].some(status => status === error.status)) {
+          forgetOfflineOwnerReceipt(workId);
+        }
         lockMutationsEvent();
         setSharedDocumentScope((current) =>
           current

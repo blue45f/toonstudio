@@ -12,7 +12,8 @@
 //
 // 어떻게 재는가:
 //   범위를 서로 겹치지 않는 샤드로 나누고, 샤드마다 type-coverage CLI를 별도 프로세스로 실행한다.
-//   프로세스마다 프로그램을 새로 읽으므로 샤드당 힙은 분석한 소스 양에 비례해 약 6GB 안에 머문다.
+//   프로세스마다 프로그램을 새로 읽고, 분석 대상 파일에서 누적되는 체커 캐시를 다음 샤드로 넘기지 않는다.
+//   2026-11-23 studio-rest의 9000MB OOM 이후 이 논리 그룹은 소스 바이트 예산으로 추가 분할한다.
 //   CLI의 --json-output 결과(정확/전체 식별자 수)를 모두 더해 CLI와 같은 방식(소수 둘째 자리 내림)으로
 //   퍼센트를 구하고, 임계값과 비교한다.
 //
@@ -22,17 +23,22 @@
 // 사용(저장소 루트, 의존성 설치 후):
 //   node scripts/type-coverage-shards.mjs                      # 모든 샤드를 차례로 실행하고 합산(약 30분)
 //   node scripts/type-coverage-shards.mjs --shard studio-root  # 선택한 샤드만(합산도 선택한 샤드끼리)
-//   node scripts/type-coverage-shards.mjs --list               # 실행하지 않고 샤드와 CLI 인자만 출력(dry-run)
+//   node scripts/type-coverage-shards.mjs --shard studio-rest  # 나머지 Studio 하위 샤드 전체(기존 이름 유지)
+//   node scripts/type-coverage-shards.mjs --list               # 실행하지 않고 샤드·CLI 인자·입력 범위 요약 출력
 // 환경변수: TYPE_COVERAGE_HEAP_MB(샤드 프로세스 힙 상한, 기본 9000).
 // 부작용: 없음(읽기 전용). 메모리를 크게 쓰므로 한 번에 하나만 실행한다.
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { assertCompleteCoverage, partitionFiles } from "./typecheck-shards.mjs";
+
 export const STUDIO_DOMAIN = "apps/web/src/domains/creator";
+export const STUDIO_REST_MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+const MAX_FILE_ARGUMENT_BYTES = 256 * 1024;
 
 /** 소스 양이 커서 별도 샤드로 뺀 Studio 하위 도메인(합쳐서 Studio 소스의 약 37%). */
 export const STUDIO_ENGINE_DIRECTORIES = Object.freeze([
@@ -93,6 +99,86 @@ export function shardOf(file) {
   return STUDIO_ENGINE_DIRECTORIES.includes(rest.slice(0, slash)) ? "studio-engines" : "studio-rest";
 }
 
+/**
+ * 프로그램/체커를 만들지 않고 나머지 Studio의 실제 소스 파일과 바이트 수를 수집한다.
+ * tsconfig가 제외한 테스트도 다른 소스에서 import하면 측정 대상이 될 수 있어 여기서는 빼지 않는다.
+ * 실제 측정 여부는 이전과 동일한 type-coverage 프로그램이 결정한다.
+ */
+export function inventoryStudioRestFiles(root) {
+  const domain = resolve(root, STUDIO_DOMAIN);
+  if (!existsSync(domain)) return [];
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolute = resolve(directory, entry.name);
+      const file = relative(root, absolute).split("\\").join("/");
+      if (entry.isSymbolicLink()) {
+        throw new Error(`샤드 입력의 심볼릭 링크를 확인해야 합니다: ${file}`);
+      }
+      if (entry.isDirectory()) {
+        if (entry.name !== "node_modules"
+          && !(directory === domain && STUDIO_ENGINE_DIRECTORIES.includes(entry.name))) visit(absolute);
+      } else if (entry.isFile() && shardOf(file) === "studio-rest"
+        && /\.(?:[cm]?[jt]sx?|jsonc?)$/u.test(file)) {
+        files.push({ path: file, bytes: statSync(absolute).size });
+      }
+    }
+  };
+  visit(domain);
+  return files.sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0);
+}
+
+/** 논리 studio-rest 그룹을 소스 양과 CLI 인자 크기가 모두 제한된 실행 샤드로 펼친다. */
+export function splitStudioRest(files, maxSourceBytes = STUDIO_REST_MAX_SOURCE_BYTES) {
+  if (!Number.isSafeInteger(maxSourceBytes) || maxSourceBytes < 1) {
+    throw new Error("Studio 나머지 샤드의 소스 바이트 예산은 양의 정수여야 합니다.");
+  }
+  const sorted = [...files].sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0);
+  for (const file of sorted) {
+    if (shardOf(file.path) !== "studio-rest" || !Number.isSafeInteger(file.bytes) || file.bytes < 0) {
+      throw new Error(`잘못된 Studio 나머지 샤드 입력: ${String(file.path)}`);
+    }
+    if (file.bytes > maxSourceBytes) {
+      throw new Error(`소스 파일 하나가 샤드 예산(${maxSourceBytes} bytes)을 초과합니다: ${file.path}`);
+    }
+  }
+  const byPath = new Map(sorted.map((file) => [file.path, file]));
+  const groups = partitionFiles({ files: sorted, options: {} }, maxSourceBytes)
+    .flatMap((group) => partitionFiles({
+      options: {},
+      files: group.map((file) => ({ path: file, bytes: Buffer.byteLength(file) + 1 })),
+    }, MAX_FILE_ARGUMENT_BYTES));
+  assertCompleteCoverage(sorted.map((file) => file.path), groups);
+  return groups.map((group, index) => {
+    const sourceBytes = group.reduce((sum, file) => sum + byPath.get(file).bytes, 0);
+    return Object.freeze({
+      name: `studio-rest-${String(index + 1).padStart(3, "0")}`,
+      parent: "studio-rest",
+      description: `나머지 Studio 하위 도메인 · 입력 ${group.length}개 · ${sourceBytes} bytes`,
+      ignoreFiles: SHARDS.find((shard) => shard.name === "studio-rest").ignoreFiles,
+      files: Object.freeze(group),
+      sourceBytes,
+    });
+  });
+}
+
+export function executionShards(root, maxSourceBytes = STUDIO_REST_MAX_SOURCE_BYTES) {
+  return [
+    ...SHARDS.filter((shard) => shard.name !== "studio-rest"),
+    ...splitStudioRest(inventoryStudioRestFiles(root), maxSourceBytes),
+  ];
+}
+
+/** 원래 논리 이름은 하위 샤드 전체를 선택하며, 이름과 별칭을 함께 지정해도 중복 실행하지 않는다. */
+export function selectShards(shards, selected) {
+  for (const name of selected) {
+    if (!shards.some((shard) => shard.name === name || shard.parent === name)) {
+      throw new Error(`알 수 없는 샤드 또는 입력이 없는 샤드: ${name} (사용 가능: ${SHARD_NAMES.join(", ")}, studio-rest-NNN)`);
+    }
+  }
+  return shards.filter((shard) => selected.includes(shard.name) || selected.includes(shard.parent));
+}
+
 /** 임계값은 package.json 의 check:type-coverage 스크립트 한 곳에서만 읽는다. */
 export function typeCoverageFloor(packageJson) {
   const script = packageJson?.scripts?.["check:type-coverage"];
@@ -107,6 +193,8 @@ export function typeCoverageFloor(packageJson) {
 export function shardArguments(shard) {
   const args = ["--json-output"];
   for (const pattern of shard.ignoreFiles ?? []) args.push("--ignore-files", pattern);
+  // type-coverage의 공식 CLI 파일 선택자는 '--' 뒤의 원문 경로다. 프로젝트·지표 옵션은 그대로 둔다.
+  if (shard.files) args.push("--", ...shard.files);
   return args;
 }
 
@@ -143,9 +231,7 @@ function parseCliArguments(argv) {
       list = true;
     } else if (argument === "--shard") {
       const name = argv[index + 1];
-      if (!SHARD_NAMES.includes(name)) {
-        throw new Error(`알 수 없는 샤드: ${String(name)} (사용 가능: ${SHARD_NAMES.join(", ")})`);
-      }
+      if (!name || name.startsWith("--")) throw new Error("--shard 뒤에 샤드 이름을 지정하세요.");
       selected.push(name);
       index += 1;
     } else {
@@ -174,7 +260,7 @@ function measureShard(shard, { root, heapMegabytes }) {
     const output = String(result.stdout ?? "").trim().slice(-500);
     throw new Error(
       `샤드 ${shard.name} 측정이 실패했습니다(종료 코드 ${String(result.status ?? result.signal)}, ${seconds}초). `
-      + "종료 코드 134 는 힙 부족이므로 TYPE_COVERAGE_HEAP_MB 를 올리거나 샤드를 더 잘게 나눕니다."
+      + "종료 코드 134 는 힙 부족이므로 분석할 소스 샤드를 더 잘게 나눕니다."
       + (output === "" ? "" : `\n${output}`),
     );
   }
@@ -193,15 +279,23 @@ function formatShardLine(result) {
   return `  ${result.name.padEnd(15)} (${result.correctCount} / ${result.totalCount}) ${percent}  ${result.seconds}초`;
 }
 
-export function main(argv, { root = resolve(dirname(fileURLToPath(import.meta.url)), "..") } = {}) {
+export function main(argv, {
+  root = resolve(dirname(fileURLToPath(import.meta.url)), ".."),
+  maxSourceBytes = STUDIO_REST_MAX_SOURCE_BYTES,
+} = {}) {
   const { list, selected } = parseCliArguments(argv);
   const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
   const floor = typeCoverageFloor(packageJson);
-  const shards = SHARDS.filter((shard) => selected.includes(shard.name));
+  const planned = executionShards(root, maxSourceBytes);
+  const shards = selectShards(planned, selected);
 
   if (list) {
     for (const shard of shards) {
-      console.log(`${shard.name}\t${shard.description}\ttype-coverage ${shardArguments(shard).join(" ")}`);
+      const args = shardArguments({ ...shard, files: undefined }).join(" ");
+      const files = shard.files
+        ? ` -- <${shard.files.length}개 파일: ${shard.files[0]} … ${shard.files.at(-1)}>`
+        : "";
+      console.log(`${shard.name}\t${shard.description}\ttype-coverage ${args}${files}`);
     }
     return 0;
   }
@@ -217,7 +311,7 @@ export function main(argv, { root = resolve(dirname(fileURLToPath(import.meta.ur
   }
 
   const summary = summarize(results, floor);
-  const label = shards.length === SHARDS.length ? "전체 범위" : `선택한 샤드(${shards.map((shard) => shard.name).join(", ")})`;
+  const label = shards.length === planned.length ? "전체 범위" : `선택한 샤드(${shards.map((shard) => shard.name).join(", ")})`;
   console.log(`${label}: (${summary.correctCount} / ${summary.totalCount}) ${summary.percent.toFixed(2)}%`);
   if (!summary.passed) {
     console.error(`type-coverage 비율(${summary.percent.toFixed(2)}%)이 임계값(${floor}%)보다 낮습니다.`);

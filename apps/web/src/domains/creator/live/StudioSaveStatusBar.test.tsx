@@ -97,6 +97,13 @@ describe("StudioSaveStatusBar", () => {
     expect(screen.getByRole("status").textContent).toMatch(/^모든 변경이 이 기기에 저장됐습니다\.$|^All changes saved on this device\.$/u);
   });
 
+  it("최근 변경이 저장되기 전에 오프라인으로 바뀌면 연결 끊김만 알린다", () => {
+    const pending = status({ pendingOperationsCount: 1, cloudSyncStatus: "pending" });
+    const { rerender } = render(<StudioSaveStatusBar status={pending} connectivity={connectivity("online")} />);
+    rerender(<StudioSaveStatusBar status={pending} connectivity={connectivity("offline")} />);
+    expect(screen.getByRole("status").textContent).toMatch(/^(?:연결이 끊겼습니다|Connection lost)\.$/u);
+  });
+
   it("연결 복구를 서버 저장 확인으로 알리지 않는다", () => {
     const { rerender } = render(<StudioSaveStatusBar status={status()} connectivity={connectivity("online")} />);
     rerender(<StudioSaveStatusBar status={status()} connectivity={connectivity("offline")} />);

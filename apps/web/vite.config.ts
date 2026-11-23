@@ -15,6 +15,7 @@ import { compactBootstrapAssets } from "./config/compact-bootstrap-assets";
 import { createStudioManualChunks } from "./config/vite-manual-chunks";
 import { pigmentLicenseBoundaryPlugin } from "./config/vite-pigment-license-boundary";
 import { adminQualityEntryPlugin } from "./config/vite-admin-quality-entry";
+import { studioHeaderWarmup } from "./config/vite-studio-header-warmup";
 import { STUDIO_I18N_NAMESPACES } from "./src/shared/lib/i18n-asset-manifest";
 import {
   STUDIO_SERVICE_WORKER_STATIC_CRITICAL_URLS,
@@ -770,6 +771,7 @@ export default defineConfig(({ command, mode }) => ({
   },
   server: {
     port: 5173,
+    warmup: studioHeaderWarmup(process.env.TOONSTUDIO_VITE_STUDIO_HEADER_WARMUP),
     // 감사 산출물과 임시 검증 DB의 쓰기는 앱 소스 HMR 대상이 아니다. 로컬/VM E2E 와처 한도 회피용 opt-in 비활성화도 지원한다.
     watch: process.env.TOONSTUDIO_VITE_DISABLE_WATCH === "1" ? null : {
       ignored: ["**/.qa/**"],

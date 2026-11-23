@@ -9,6 +9,7 @@ import { projectStudioMainMenuToSevenStandardGroups } from "../studio-main-menu-
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { StudioDocumentChromeSlot } from "../studio-shell/StudioDocumentChromeSlot";
+import { StudioMenubarStatusSlots } from "../studio-shell/StudioMenubarStatusSlots";
 import { installStudioCommandExecutionBindings } from "../studio-command-execution-registry";
 import { useStudioDrawingCommandPresentation } from "./useStudioDrawingCommandPresentation";
 import { createStudioDrawingClarityCommandBindings, studioDrawingCommandDestination } from "./StudioDrawingClarityCommands";
@@ -206,6 +207,7 @@ function StudioDrawingClarityDesktopBar({
         <StudioToolArtwork tool="history" /><span>{bt("수정이력", "History")}</span>
       </button>
       <StudioDrawingClaritySaveButton session={s} />
+      <StudioMenubarStatusSlots ids={["endurance"]} />
       <button type="button" data-studio-share-invite-trigger="true" className="studio-drawing-clarity-button studio-drawing-clarity-share" onClick={(event) => onOpenShare(event.currentTarget)}>
         <StudioToolArtwork tool="share" /><span>{bt("공유·초대", "Share & Invite")}</span>
       </button>

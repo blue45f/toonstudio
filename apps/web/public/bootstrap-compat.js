@@ -98,3 +98,88 @@
     document.addEventListener("DOMContentLoaded", state.readyListener, false);
   }
 })();
+
+// 오프라인 새 탭에서는 앱 모듈을 읽기 전에 현재 쿠키에 해당하는 HTTP 캐시를 조회한다.
+(function () {
+  "use strict";
+  if (typeof window === "undefined" || !window.navigator || window.navigator.onLine !== false ||
+      document.visibilityState === "hidden" || typeof AbortController !== "function") return;
+  var route = /^\/studio\/work\/([A-Za-z0-9_-]+)\/canvas$/.exec(window.location.pathname);
+  if (!route) return;
+  function discard(reason) {
+    controller.abort(reason);
+    window.clearTimeout(timer);
+    if (window.__toonstudioTakeOfflineOwnerResponse === take) delete window.__toonstudioTakeOfflineOwnerResponse;
+  }
+  function current() {
+    return !events.aborted && window.navigator.onLine === false && document.visibilityState !== "hidden" &&
+      window.location.pathname === route[0] && Date.now() < expiresAt && storage.getItem(scopeKey) === scope &&
+      storage.getItem(versionKey) === version && storage.getItem(readerKey) === reader;
+  }
+
+  function take(href, capability, signal) {
+    if (href !== url.href || capability !== reader || signal.aborted || !current()) return null;
+    return ready.then(function (response) {
+      if (!response || signal.aborted || !current()) return null;
+      // StrictMode의 취소된 첫 읽기가 다음 effect의 응답을 소비하지 않게 한다.
+      return { response: response.clone(), consume: function () {
+        if (signal.aborted || !current()) return false;
+        discard();
+        return true;
+      } };
+    });
+  }
+
+  try {
+    var id = route[1];
+    var prefix = "toonstudio:offline-preview:";
+    var scopeKey = prefix + "scope:v1";
+    var versionKey = prefix + "work:v1:" + id;
+    var readerKey = prefix + "reader:v1";
+    var storage = window.localStorage;
+    var scope = storage.getItem(scopeKey);
+    var version = storage.getItem(versionKey);
+    var reader = storage.getItem(readerKey);
+    if (!scope || !version || !reader) return;
+    var url = new URL("/api/creator/works/" + id + "/team/document/offline-owner-receipt", window.location.origin);
+    url.searchParams.set("scope", scope);
+    url.searchParams.set("v", version);
+    var controller = new AbortController();
+    var events = controller.signal;
+    var ageLimit = 300000;
+    var expiresAt = Date.now() + ageLimit;
+    var timer = window.setTimeout(discard, ageLimit);
+
+    var ready = fetch(url, {
+      mode: "same-origin", credentials: "same-origin", redirect: "error", cache: "only-if-cached",
+      signal: events, headers: { "x-studio-reader-capabilities": reader }
+    }).then(function (response) {
+      if (!response.ok || !current()) return null;
+      return response.clone().json().then(function (data) {
+        var now = Date.now();
+        if (!current() || !data || !Number.isSafeInteger(data.expiresAt) ||
+            data.expiresAt <= now || data.expiresAt > now + ageLimit) return null;
+        expiresAt = data.expiresAt;
+        window.clearTimeout(timer);
+        timer = window.setTimeout(discard, expiresAt - now);
+        return response;
+      });
+    }).catch(function () { return null; });
+
+    window.__toonstudioTakeOfflineOwnerResponse = take;
+    var options = { signal: events };
+    window.addEventListener(scopeKey, discard, options);
+    window.addEventListener("online", discard, options);
+    window.addEventListener("pagehide", discard, options);
+    window.addEventListener("popstate", discard, options);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") discard();
+    }, options);
+    window.addEventListener("storage", function (event) {
+      if (event.key === null || event.key === scopeKey || event.key === versionKey || event.key === readerKey) discard();
+    }, options);
+  } catch (error) {
+    // 저장소나 캐시 사용이 제한된 브라우저에서는 앱의 기존 잠금을 유지한다.
+    if (controller) discard(error);
+  }
+})();
