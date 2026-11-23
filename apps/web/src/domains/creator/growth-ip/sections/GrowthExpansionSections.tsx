@@ -1,6 +1,7 @@
 // 판권 제안 CRM · IP 확장 스튜디오 · SNS 공유 · 사용 환경과 앱 설치 · 교육 과정 섹션.
 import { BookOpen, Clapperboard, Copy, ExternalLink, GraduationCap, MonitorCheck, Plus, Scale, Share2 } from "lucide-react";
 import { StudioFreshIdeasV2WorkbenchCard } from "../../fresh-ideas/StudioFreshIdeasV2WorkbenchCard";
+import { StudioIpMarketAndInteractiveGuideHub } from "../../ip-market-guide-hub";
 import { StudioIpExpansionPanel } from "../../storyworld/StudioIpExpansionPanel";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -424,6 +425,13 @@ export function EducationSection({ state, update, notify, notice }: GrowthSectio
             )) : <EmptyNote>{bi("확인한 교육기관·과정을 등록하면 여기에 모입니다.", "Verified programs you record appear here.")}</EmptyNote>}
           </div>
         </div>
+      </div>
+      <div className="mt-6 border-t border-line pt-6">
+        <StudioIpMarketAndInteractiveGuideHub
+          initialProjectTitle={state.synopsis.title || "신작 IP 프로젝트"}
+          initialTab="interactive-guide"
+          onStatusNotice={notify}
+        />
       </div>
     </GrowthSection>
   );

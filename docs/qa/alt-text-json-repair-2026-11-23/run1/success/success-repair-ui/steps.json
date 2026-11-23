@@ -1,0 +1,255 @@
+[
+  {
+    "step": "대화상자를 열었을 때",
+    "time": "2026-11-22T18:34:25.549Z",
+    "messagesPosts": 0,
+    "expected": 0
+  },
+  {
+    "step": "기준 원고 픽셀 읽기",
+    "time": "2026-11-22T18:34:28.061Z",
+    "messagesPosts": 0,
+    "expected": 0,
+    "pixelsBefore": {
+      "width": 1045,
+      "height": 1568,
+      "rgbaHash": "2c96d9f7249088620748de439b83a51260dcd213081a41aeb0e156ac0a69c212"
+    },
+    "baseline": {
+      "key": "toonstudio-studio-autosave:v12:ai-qa-synthetic:new",
+      "savedAt": "2026-11-22T18:34:19.333Z",
+      "drawCount": 1,
+      "drawIds": [
+        "be2313c1-0ab3-4723-93c3-1ca47e02854c"
+      ],
+      "pageDigest": "18e38ec52ea44c1597e2443fa3c0c52ee4e249b40740259a4fd355d70bee4a14",
+      "containsAorB": false
+    }
+  },
+  {
+    "step": "A 선택 및 실행 전",
+    "time": "2026-11-22T18:34:28.613Z",
+    "messagesPosts": 0,
+    "expected": 0,
+    "inputWidth": 96
+  },
+  {
+    "step": "A 한 번 클릭 후 첫 요청과 자동 형식 복구",
+    "time": "2026-11-22T18:34:29.432Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "explicitA": 1,
+    "requestKinds": [
+      "A-initial",
+      "A-repair"
+    ]
+  },
+  {
+    "step": "결과 표시 후 자동 재전송 관찰",
+    "time": "2026-11-22T18:34:31.192Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "expectedShort": "QA-A-복구설명",
+    "observed": {
+      "samples": 110,
+      "staleA": 0,
+      "malformed": 0,
+      "firstShort": "QA-A-복구설명"
+    }
+  },
+  {
+    "step": "입력·복구 전송 계약 확인",
+    "time": "2026-11-22T18:34:31.192Z",
+    "messagesPosts": 2,
+    "wire": {
+      "mode": "success",
+      "count": 2,
+      "markerSha256": "8db35dbfb054aae5143e86106a8d23c26a2e994aeb80f91dd7039c0dad3807c5",
+      "invalidJsonSha256": "003b71fe842f0746d66cce26936bf66f0912f38adcd1955eb1c46b85a0ce5c85",
+      "calls": [
+        {
+          "n": 1,
+          "mode": "success",
+          "kind": "A-initial",
+          "responseDisposition": "fulfilled",
+          "roles": [
+            "user"
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "sha256": "528e1753585d8f03601912bfd9d56030e2fe088733deeae49db1b257023b6665",
+              "blocks": [
+                {
+                  "type": "image",
+                  "messageIndex": 0,
+                  "blockIndex": 0,
+                  "mime": "image/png",
+                  "byteLength": 411,
+                  "base64Length": 548,
+                  "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+                  "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+                },
+                {
+                  "type": "text",
+                  "sha256": "df25050c82d36a62df6dacfcf84aca6f6348f95502452d5963bb5fec47322a0b",
+                  "length": 102
+                }
+              ]
+            }
+          ],
+          "images": [
+            {
+              "messageIndex": 0,
+              "blockIndex": 0,
+              "mime": "image/png",
+              "byteLength": 411,
+              "base64Length": 548,
+              "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+              "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+            }
+          ],
+          "bodySha256": "e22db4ba84a8858e01dde86c708d32c9b55a1e0db550e1be3931ea41e587c25d",
+          "systemSha256": "c170d05d8b4d309ee3daa75d67a0f84d682fe1f9bfe1a68281baddab1d5886ce",
+          "schemaSha256": "a5addd70e2b18751086c88f434adbff4b529d59789e1944f235957b7e519e19e",
+          "originalMessagesSha256": "70847086b351daa3080db274df4d51b7deec63d48a8c84301ae6dc3ebdfd1117",
+          "idempotencyKeySha256": "7e81bc1cbc252fb26cdde0de83fbdc7650e018da53e69858cf087fa655897da4",
+          "sameSystemAsA": null,
+          "sameSchemaAsA": null,
+          "sameOriginalMessagesAsA": null,
+          "sameImageBytesAsA": null,
+          "invalidJsonEchoExact": false,
+          "containsInvalidMarker": false,
+          "repairInstructionPresent": false,
+          "idempotencyKeyChanged": null,
+          "responseKind": "valid-envelope-truncated-json",
+          "responseTextSha256": "003b71fe842f0746d66cce26936bf66f0912f38adcd1955eb1c46b85a0ce5c85"
+        },
+        {
+          "n": 2,
+          "mode": "success",
+          "kind": "A-repair",
+          "responseDisposition": "fulfilled",
+          "roles": [
+            "user",
+            "assistant",
+            "user"
+          ],
+          "messages": [
+            {
+              "role": "user",
+              "sha256": "528e1753585d8f03601912bfd9d56030e2fe088733deeae49db1b257023b6665",
+              "blocks": [
+                {
+                  "type": "image",
+                  "messageIndex": 0,
+                  "blockIndex": 0,
+                  "mime": "image/png",
+                  "byteLength": 411,
+                  "base64Length": 548,
+                  "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+                  "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+                },
+                {
+                  "type": "text",
+                  "sha256": "df25050c82d36a62df6dacfcf84aca6f6348f95502452d5963bb5fec47322a0b",
+                  "length": 102
+                }
+              ]
+            },
+            {
+              "role": "assistant",
+              "sha256": "66bba39bf0bbf0d38139e39cfbaee343e8a07ebbce4970a0c5d28c01526dcd57",
+              "blocks": [
+                {
+                  "type": "text",
+                  "sha256": "003b71fe842f0746d66cce26936bf66f0912f38adcd1955eb1c46b85a0ce5c85",
+                  "length": 72
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "sha256": "6e5c6785ae0b3b0490008f433013dfd9e43bec89e45ae87ee1275d6f4958b440",
+              "blocks": [
+                {
+                  "type": "text",
+                  "sha256": "05149278aab7c6efed02d9f6cf96449e361b0e366f0e1e5063f27f737ebb69ca",
+                  "length": 207
+                }
+              ]
+            }
+          ],
+          "images": [
+            {
+              "messageIndex": 0,
+              "blockIndex": 0,
+              "mime": "image/png",
+              "byteLength": 411,
+              "base64Length": 548,
+              "sha256": "3b68d98847c0a5e7a6134eb0ff10b46928e04568a83fda96bfeecf349f85651b",
+              "base64Sha256": "561f87fad2d459d1c0a434eed8edf4241197c7e93557408352e8080855962e52"
+            }
+          ],
+          "bodySha256": "0dc65f158e71f7e284b3057ab434feb2008193371b8058ed9f0c0eb6e9decbbf",
+          "systemSha256": "c170d05d8b4d309ee3daa75d67a0f84d682fe1f9bfe1a68281baddab1d5886ce",
+          "schemaSha256": "a5addd70e2b18751086c88f434adbff4b529d59789e1944f235957b7e519e19e",
+          "originalMessagesSha256": "70847086b351daa3080db274df4d51b7deec63d48a8c84301ae6dc3ebdfd1117",
+          "idempotencyKeySha256": "baa59e4e7b85e4777aa9edf914c8fcd74d083e7289f1f5f3143f7575f04fb175",
+          "sameSystemAsA": true,
+          "sameSchemaAsA": true,
+          "sameOriginalMessagesAsA": true,
+          "sameImageBytesAsA": true,
+          "invalidJsonEchoExact": true,
+          "containsInvalidMarker": true,
+          "repairInstructionPresent": true,
+          "idempotencyKeyChanged": true,
+          "responseKind": "valid-envelope-valid-json",
+          "responseTextSha256": "da9feb62c43271a1574da3c6845d1dfde76cf8beb0af297280d6f52059ce416d"
+        }
+      ]
+    }
+  },
+  {
+    "step": "응답 후 저장·그림 확인",
+    "time": "2026-11-22T18:34:36.677Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "saved": {
+      "key": "toonstudio-studio-autosave:v12:ai-qa-synthetic:new",
+      "savedAt": "2026-11-22T18:34:22.895Z",
+      "drawCount": 1,
+      "drawIds": [
+        "be2313c1-0ab3-4723-93c3-1ca47e02854c"
+      ],
+      "pageDigest": "18e38ec52ea44c1597e2443fa3c0c52ee4e249b40740259a4fd355d70bee4a14",
+      "containsAorB": false
+    },
+    "pixelsAfter": {
+      "width": 1045,
+      "height": 1568,
+      "rgbaHash": "2c96d9f7249088620748de439b83a51260dcd213081a41aeb0e156ac0a69c212"
+    }
+  },
+  {
+    "step": "동일 원고 재열기 후 자동 생성",
+    "time": "2026-11-22T18:34:53.606Z",
+    "messagesPosts": 2,
+    "expected": 2,
+    "reopened": {
+      "key": "toonstudio-studio-autosave:v12:ai-qa-synthetic:new",
+      "savedAt": "2026-11-22T18:34:43.919Z",
+      "drawCount": 1,
+      "drawIds": [
+        "be2313c1-0ab3-4723-93c3-1ca47e02854c"
+      ],
+      "pageDigest": "18e38ec52ea44c1597e2443fa3c0c52ee4e249b40740259a4fd355d70bee4a14",
+      "containsAorB": false
+    },
+    "pixelsReopened": {
+      "width": 1045,
+      "height": 1568,
+      "rgbaHash": "2c96d9f7249088620748de439b83a51260dcd213081a41aeb0e156ac0a69c212"
+    }
+  }
+]
