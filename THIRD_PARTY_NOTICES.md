@@ -37,7 +37,7 @@ obscure, or claim ownership of these libraries.
 | `unicode-ident` data tables | 1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 | <https://github.com/dtolnay/unicode-ident/tree/1.0.24> |
 | Vello CPU stack (`vello_cpu`, Parley, HarfRust, Skrifa and transitive crates) | feature-locked Cargo graph | per-crate SPDX expressions | <https://github.com/linebender/vello> |
 | Vello GPU stack (`vello`, `vello_hybrid`, Velato, `vello_svg`, usvg, wgpu and transitive crates) | `hybrid,lottie,svg` feature-locked Cargo graph | per-crate SPDX expressions | <https://github.com/linebender/vello> |
-| `@thorvg/webcanvas` / ThorVG WebAssembly | 1.1.2 | MIT | <https://github.com/thorvg/thorvg.web> |
+| `@thorvg/webcanvas` / ThorVG WebAssembly | 1.1.4 | MIT | <https://github.com/thorvg/thorvg.web/tree/4ff27c6b57a2bb6162941cb62aba3f82b0c4af79> |
 | `google/ink` mesh subset | 1.1.0 / `1d0daba661f3035f42f3649b8e6a0061b47aa759` | Apache-2.0 | <https://github.com/google/ink> |
 | `google/ink-stroke-modeler` | 0.1.0 / `f2388813b0b25bc3e33d143d369a8367ab2e30c8` | Apache-2.0 | <https://github.com/google/ink-stroke-modeler> |
 | `abseil-cpp` linked into Google Ink WASM | 20260526.0 and 20250512.0 | Apache-2.0 | <https://github.com/abseil/abseil-cpp> |
@@ -205,7 +205,8 @@ release rebuild is byte-identical to the checked-in JS, types and WASM.
 
 The checked-in ThorVG WebCanvas artifact is a lazy, explicit SVG/Lottie specialist provider.
 `packages/studio-engine-thorvg/wasm/thorvg.wasm` is copied byte-for-byte from
-`@thorvg/webcanvas@1.1.2`, its SHA-256 is pinned in the adjacent
+`dist/thorvg.wasm` in `@thorvg/webcanvas@1.1.4`, which also supplies the
+single-threaded `dist/webcanvas.esm.js` entry point. Its SHA-256 is pinned in the adjacent
 `INTEGRITY.sha256`, and the package's MIT attribution is preserved in
 `packages/studio-engine-thorvg/NOTICE`. The provider never becomes the document
 authority and never retries a failed WebGPU/WebGL/software selection through a

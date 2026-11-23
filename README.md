@@ -162,7 +162,7 @@ renderer-neutral canonical 모델을 권위로 두고, 아래 엔진을 교체 �
 | `konva` + `react-konva` | 오브젝트·텍스트·말풍선의 선택/변형/히트테스트 overlay — 문서나 브러시 픽셀 권위는 맡지 않음 |
 | `paper` + `polygon-clipping` | Bézier 교차·스무딩·단순화·부울·경로 기하 계산(화면 renderer가 아닌 동적 격리 vector geometry provider) |
 | Vello 0.10 Classic + `vello_hybrid` 0.2 | 같은 StudioGpuFabric `GPUDevice`를 채택하는 명시 선택형 벡터 provider. Classic과 실제 sparse-strip Hybrid는 별도 backend이며, 지원하지 않는 text·mask·filter 조합은 GPU 제출 전에 fail-closed되고 다른 엔진으로 자동 재시도하지 않음 |
-| `@thorvg/webcanvas` 1.1.2 | Vello strict SVG subset 밖의 안전한 filter·mask·text 및 Lottie를 위한 lazy 전문 provider. SVG/Lottie 보안·크기 감사를 먼저 통과하고 WebGPU/WebGL/software 중 하나를 작업 전에 고정하며, 문서 권위나 자동 폴백을 갖지 않음 |
+| `@thorvg/webcanvas` 1.1.4 | Vello strict SVG subset 밖의 안전한 filter·mask·text 및 Lottie를 위한 lazy 전문 provider. SVG/Lottie 보안·크기 감사를 먼저 통과하고 WebGPU/WebGL/software 중 하나를 작업 전에 고정하며, 문서 권위나 자동 폴백을 갖지 않음 |
 | `perfect-freehand` | 필압을 가진 centerline을 연속 잉크 outline으로 변환하는 실시간 geometry provider — 합성·질감·히스토리는 맡지 않음 |
 | `lazy-brush` | 정밀 모드에서만 선택하는 입력 leash/손떨림 보정 — 기본 펜 입력에는 지연을 추가하지 않으며 예측 포인트가 상태를 오염시키지 않음 |
 | `roughjs` | 문서에 저장한 seed로 결정적으로 재생하는 손그림 도형 renderer — 자유곡선 브러시 권위는 맡지 않음 |

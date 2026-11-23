@@ -20,8 +20,7 @@ const PKG_DIR = join(ROOT, "crates", "studio-engine-vello", "pkg");
 // V12 lane 2 (ADR-0011): separate GPU artifact built with
 // `wasm-pack build --target web --release --out-dir pkg-gpu -- --features hybrid,lottie,svg`.
 const PKG_GPU_DIR = join(ROOT, "crates", "studio-engine-vello", "pkg-gpu");
-// V14 E13: bounded ThorVG WebCanvas specialist provider. The vendored WASM
-// is copied byte-for-byte from @thorvg/webcanvas@1.1.2 and hash-pinned.
+// 기본 ESM과 같은 @thorvg/webcanvas 배포본의 단일 스레드 WASM을 검증한다.
 const THORVG_WASM_DIR = join(
   ROOT,
   "packages",
@@ -95,7 +94,7 @@ verifyPkgIntegrity(
 verifyPkgIntegrity(
   THORVG_WASM_DIR,
   "thorvg-webcanvas",
-  "copy thorvg.wasm from @thorvg/webcanvas@1.1.2 and refresh INTEGRITY.sha256",
+  "설치된 @thorvg/webcanvas의 dist/thorvg.wasm을 복사하고 INTEGRITY.sha256을 갱신하세요",
 );
 verifyPkgIntegrity(
   INK_MODELER_DIR,
@@ -153,6 +152,7 @@ const test = spawnSync(
     "packages/studio-engine-registry",
     "packages/studio-command-registry",
     "packages/studio-engine-skia",
+    "packages/studio-engine-thorvg/src/runtime.test.ts",
     "packages/studio-engine-vello",
     "packages/studio-brush-platform",
     "packages/studio-format-gateway",
