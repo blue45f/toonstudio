@@ -27,6 +27,8 @@ import {
   type WatermarkSessionPurpose,
 } from "./ost-sync-premiere-and-trust";
 
+import Link from "@/shared/navigation/router-link";
+
 const ALL_EMOTION_TAGS: readonly CutEmotionTag[] = [
   "calm",
   "romance",
@@ -78,7 +80,7 @@ export function OstPremiereHeatmapTabPanel({
                 <p className="ts-gop-subtitle">{ostMix.mixSummaryKo}</p>
               </div>
             </div>
-            <a
+            <Link
               href={ostMix.audioWorkshopHref}
               className="ts-gop-ost-cta"
               data-testid="gop-ost-panel-cta"
@@ -86,7 +88,7 @@ export function OstPremiereHeatmapTabPanel({
               <Music2 size={15} aria-hidden="true" />
               웹 OST 제작실로 직행
               <ExternalLink size={13} aria-hidden="true" />
-            </a>
+            </Link>
           </div>
 
           <label className="ts-gop-label">

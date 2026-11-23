@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { PublishSpecAutoOptimizeSection } from "../publish/PublishSpecAutoOptimizeSection";
@@ -266,7 +267,11 @@ describe("인간 작화 증명서 · 포렌식 워터마크 · 작가 손목/마
 
 describe("StudioGlobalOstPremiereHub 3탭 UI 및 PublishSpecAutoOptimizeSection 실연결", () => {
   it("3개 탭 전환·/studio/assets/audio 컬러 CTA·20개국 일괄 선택·OST 감정 전환·작화 증명·건강 코치가 동작한다", () => {
-    render(<StudioGlobalOstPremiereHub episodeTitle="테스트 회차 12화" />);
+    render(
+      <MemoryRouter initialEntries={["/studio/work-rain-barrier"]}>
+        <StudioGlobalOstPremiereHub episodeTitle="테스트 회차 12화" />
+      </MemoryRouter>,
+    );
 
     const headerCta = screen.getByTestId("gop-header-ost-workshop-cta") as HTMLAnchorElement;
     expect(headerCta.getAttribute("href")).toBe("/studio/assets/audio");
@@ -302,19 +307,21 @@ describe("StudioGlobalOstPremiereHub 3탭 UI 및 PublishSpecAutoOptimizeSection 
 
   it("PublishSpecAutoOptimizeSection의 접힘 details를 열면 StudioGlobalOstPremiereHub가 안전하게 마운트된다", () => {
     render(
-      <PublishSpecAutoOptimizeSection
-        canvasWidth={800}
-        canvasHeight={2000}
-        exportScale={1}
-        exportFormat="jpg"
-        exportPresetId={null}
-        exportTitle="검증용 웹툰 1화"
-        pageCount={1}
-        busy={false}
-        canExport={true}
-        pageIndices={[0]}
-        capturePages={async () => ({ pages: [], indices: [], rangeLabel: "1페이지" })}
-      />,
+      <MemoryRouter initialEntries={["/studio/work-rain-barrier"]}>
+        <PublishSpecAutoOptimizeSection
+          canvasWidth={800}
+          canvasHeight={2000}
+          exportScale={1}
+          exportFormat="jpg"
+          exportPresetId={null}
+          exportTitle="검증용 웹툰 1화"
+          pageCount={1}
+          busy={false}
+          canExport={true}
+          pageIndices={[0]}
+          capturePages={async () => ({ pages: [], indices: [], rangeLabel: "1페이지" })}
+        />
+      </MemoryRouter>,
     );
 
     const disclosure = screen.getByTestId(

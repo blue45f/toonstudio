@@ -289,9 +289,9 @@ export function WebtoonCutScene({ panelSrc, caption }: { panelSrc: string; capti
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // 세로 원고 컷을 위→아래로 부드럽게 패닝
+  // Smoothly pan the vertical comic cut from top to bottom
   const panY = interpolate(frame, [0, 120], [0, -180], { extrapolateRight: "clamp" });
-  // 말풍선 팝업 스프링 (결정론적 프레임 물리)
+  // Deterministic spring pop-in for the speech balloon
   const bubbleScale = spring({ frame: Math.max(0, frame - 18), fps, config: { damping: 14, stiffness: 180 } });
 
   return (
@@ -335,14 +335,14 @@ export function LiveProductTourStage({ fallbackToMp4 }: { fallbackToMp4: boolean
     subtitle: bi("저장소 `tools/media/brand-film`에서 실제로 실행 가능한 검증·렌더 명령", "Real runnable commands from tools/media/brand-film/package.json"),
     language: "bash",
     sourceRef: "tools/media/brand-film/package.json",
-    code: `# 1. 의존성 설치 및 타입 검증
+    code: `# 1. Install dependencies and run typecheck
 npm --prefix tools/media/brand-film ci
 npm --prefix tools/media/brand-film run typecheck
 
-# 2. 브라우저 인터랙티브 Remotion Studio 프리뷰 열기
+# 2. Launch interactive Remotion Studio preview in the browser
 npm --prefix tools/media/brand-film run studio
 
-# 3. 16:9 / 9:16 / 1:1 / 헤더 MP4 + VTT + SHA-256 매니페스트 렌더
+# 3. Render 16:9 / 9:16 / 1:1 / header MP4 + VTT + SHA-256 manifest
 npm --prefix tools/media/brand-film run render -- landscape
 npm --prefix tools/media/brand-film run render:product-tour`,
   },
@@ -397,7 +397,7 @@ export const AI_HARNESS_PILLARS: readonly AiHarnessPillar[] = [
   {
     id: "cleanroom-ghidra-rea",
     title: bi("병렬 워크트리 스웜 & 클린룸 Ghidra REA", "Parallel Worktree Swarms & Clean-Room Ghidra REA"),
-    command: "REA_ANALYSIS_PROVIDER=ghidra (오픈소스 강제 · 파일 소유권 분리)",
+    command: "REA_ANALYSIS_PROVIDER=ghidra --provider ghidra",
     detail: bi(
       "트랙별 전용 Git worktree와 겹치지 않는 파일 소유권으로 병렬 구현하고, 공개 UX 벤치마킹 시 오픈소스 Ghidra만 허용합니다.",
       "Disjoint file ownership across parallel Git worktrees plus strict open-source Ghidra clean-room policy.",

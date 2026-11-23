@@ -264,8 +264,11 @@ export function createComputePressureMonitor(options: {
     return Object.freeze({ supported: false, stop: () => undefined });
   }
 
+  let stopped = false;
+
   try {
     const observer = new ObserverCtor((records) => {
+      if (stopped) return;
       const latest = records[records.length - 1];
       if (latest) options.onChange(latest.state);
     });
@@ -273,11 +276,15 @@ export function createComputePressureMonitor(options: {
       sampleInterval: clamp(options.sampleIntervalMs ?? 1_000, 250, 10_000),
     });
     if (maybePromise && typeof maybePromise.catch === "function") {
-      maybePromise.catch(() => options.onChange("unavailable"));
+      maybePromise.catch(() => {
+        if (!stopped) options.onChange("unavailable");
+      });
     }
     return Object.freeze({
       supported: true,
       stop: () => {
+        if (stopped) return;
+        stopped = true;
         try {
           observer.disconnect();
         } catch {
@@ -286,7 +293,7 @@ export function createComputePressureMonitor(options: {
       },
     });
   } catch {
-    options.onChange("unavailable");
+    if (!stopped) options.onChange("unavailable");
     return Object.freeze({ supported: false, stop: () => undefined });
   }
 }

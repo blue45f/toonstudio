@@ -15,6 +15,8 @@ import {
   computeSpectralBlendPreview,
 } from "./studio-spectral-blend-preview";
 
+import "./studio-vibrant-chrome.css";
+
 export interface StudioSpectralBlendPreviewChipProps {
   /** 현재 선택된 전경색 HEX (#rrggbb). */
   readonly foregroundHex: string;
@@ -30,16 +32,6 @@ export interface StudioSpectralBlendPreviewChipProps {
   readonly onPickMixedColor?: (hex: string) => void;
   readonly compact?: boolean;
 }
-
-const BAND_BAR_TONES: readonly [string, string, string, string, string, string, string] = [
-  "oklch(0.56 0.14 275)",
-  "oklch(0.60 0.15 248)",
-  "oklch(0.68 0.12 195)",
-  "oklch(0.66 0.14 150)",
-  "oklch(0.78 0.14 95)",
-  "oklch(0.68 0.15 48)",
-  "oklch(0.56 0.16 28)",
-];
 
 export function StudioSpectralBlendPreviewChip({
   foregroundHex,
@@ -175,17 +167,20 @@ export function StudioSpectralBlendPreviewChip({
             role="img"
             aria-label={`7밴드 분광 반사율 분포 (${preview.wavelengthsNm[0]}~${preview.wavelengthsNm[6]}nm)`}
           >
-            {preview.spectralBands.map((reflectance, index) => (
-              <span
-                key={preview.wavelengthsNm[index]}
-                aria-hidden="true"
-                className="w-1.5 rounded-t-xs"
-                style={{
-                  height: `${Math.max(18, Math.round(reflectance * 100))}%`,
-                  backgroundColor: BAND_BAR_TONES[index],
-                }}
-              />
-            ))}
+            {preview.spectralBands.map((reflectance, index) => {
+              const wavelengthNm = preview.wavelengthsNm[index];
+              return (
+                <span
+                  key={wavelengthNm}
+                  aria-hidden="true"
+                  data-spectral-band={wavelengthNm}
+                  className="studio-spectral-band-bar w-1.5 rounded-t-xs"
+                  style={{
+                    height: `${Math.max(18, Math.round(reflectance * 100))}%`,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       ) : null}

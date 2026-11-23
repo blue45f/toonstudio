@@ -130,7 +130,7 @@ export interface StudioFoleyTriggerResult {
   readonly channel: StudioFoleyChannelId;
   readonly effectiveGain: number;
   readonly profile: StudioFoleySynthesisProfile;
-  readonly reason: "played" | "muted" | "zero-gain" | "no-audio-context" | "rate-limited";
+  readonly reason: "played" | "muted" | "zero-gain" | "no-audio-context" | "rate-limited" | "suspended";
 }
 
 function clamp01(value: number): number {
@@ -292,6 +292,8 @@ export class StudioFoleyAudioEngine {
   private noiseBuffer: AudioBuffer | null = null;
   private ambienceSource: AudioBufferSourceNode | null = null;
   private ambienceFilter: BiquadFilterNode | null = null;
+  private activeVoiceCleanups = new Set<() => void>();
+  private resumeInFlight = false;
   private disposed = false;
 
   private preset: StudioFoleyPresetId;
@@ -385,11 +387,20 @@ export class StudioFoleyAudioEngine {
     }
 
     const ctx = this.ensureContext();
-    if (!ctx || !this.channelGains) {
+    if (!ctx || !this.channelGains || ctx.state === "closed") {
       return { played: false, soundId, channel, effectiveGain, profile, reason: "no-audio-context" };
     }
-    if (ctx.state === "suspended" && typeof ctx.resume === "function") {
-      void ctx.resume().catch(() => undefined);
+    if (ctx.state === "suspended") {
+      // suspended 상태에서 보이스를 누적하면 resume 직후 t=0 동시 폭주·클리핑이 발생하므로 재생을 건너뛰고 복귀만 요청한다.
+      if (!this.resumeInFlight && typeof ctx.resume === "function") {
+        this.resumeInFlight = true;
+        void Promise.resolve(ctx.resume())
+          .catch(() => undefined)
+          .finally(() => {
+            this.resumeInFlight = false;
+          });
+      }
+      return { played: false, soundId, channel, effectiveGain: 0, profile, reason: "suspended" };
     }
 
     this.lastTriggerAtMs.set(soundId, now);
@@ -444,7 +455,12 @@ export class StudioFoleyAudioEngine {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.resumeInFlight = false;
     this.stopAmbience();
+    for (const cleanupVoice of [...this.activeVoiceCleanups]) {
+      cleanupVoice();
+    }
+    this.activeVoiceCleanups.clear();
     this.lastTriggerAtMs.clear();
     if (this.channelGains) {
       for (const gain of Object.values(this.channelGains)) {
@@ -532,6 +548,41 @@ export class StudioFoleyAudioEngine {
     env.gain.exponentialRampToValueAtTime(0.0001, endTime);
     env.connect(destination);
 
+    const ownedNodes = new Set<AudioNode>([env]);
+    const safeDisconnect = (node: AudioNode | null | undefined): void => {
+      if (!node || !ownedNodes.has(node)) return;
+      ownedNodes.delete(node);
+      try {
+        node.disconnect();
+      } catch {
+        // 이미 해제됨
+      }
+    };
+
+    let pendingSources = 0;
+    let voiceCleaned = false;
+
+    const cleanupVoice = (): void => {
+      if (voiceCleaned) return;
+      voiceCleaned = true;
+      this.activeVoiceCleanups.delete(cleanupVoice);
+      for (const node of [...ownedNodes]) {
+        safeDisconnect(node);
+      }
+    };
+
+    const onSourceEnded = (sourceNodes: readonly AudioNode[]): void => {
+      for (const node of sourceNodes) {
+        safeDisconnect(node);
+      }
+      pendingSources = Math.max(0, pendingSources - 1);
+      if (pendingSources === 0) {
+        cleanupVoice();
+      }
+    };
+
+    this.activeVoiceCleanups.add(cleanupVoice);
+
     if (profile.mode !== "tone-sweep") {
       const buffer = this.ensureNoiseBuffer(ctx);
       if (buffer) {
@@ -544,6 +595,13 @@ export class StudioFoleyAudioEngine {
         filter.Q.setValueAtTime(profile.filterQ, startTime);
         noise.connect(filter);
         filter.connect(env);
+        ownedNodes.add(noise);
+        ownedNodes.add(filter);
+        pendingSources += 1;
+        noise.onended = () => {
+          noise.onended = null;
+          onSourceEnded([noise, filter]);
+        };
         noise.start(startTime);
         noise.stop(endTime + 0.01);
       }
@@ -560,8 +618,19 @@ export class StudioFoleyAudioEngine {
       toneGain.gain.setValueAtTime(profile.mode === "tone-sweep" ? 1 : 0.34, startTime);
       osc.connect(toneGain);
       toneGain.connect(env);
+      ownedNodes.add(osc);
+      ownedNodes.add(toneGain);
+      pendingSources += 1;
+      osc.onended = () => {
+        osc.onended = null;
+        onSourceEnded([osc, toneGain]);
+      };
       osc.start(startTime);
       osc.stop(endTime + 0.01);
+    }
+
+    if (pendingSources === 0) {
+      cleanupVoice();
     }
   }
 }

@@ -140,11 +140,26 @@ export function TechLlmMcpApiPanel({ locale }: { readonly locale: "ko" | "en" })
           <div className="rounded-2xl border border-line bg-card p-4 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-fg">{selectedClient.vendor}</h3>
-              <span className="ts-status-pill ts-status-good">
-                {pick(selectedClient.freeTierBadge, locale)}
-              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="ts-status-pill ts-status-good">
+                  {pick(selectedClient.freeTierBadge, locale)}
+                </span>
+                <span
+                  data-testid="llm-client-contract-badge"
+                  className="ts-status-pill ts-status-warn"
+                >
+                  {selectedClient.protocol === "mcp-stdio-jsonrpc-2.0"
+                    ? (locale === "ko" ? "로컬 CLI 스키마 · 계약 프리뷰" : "Local CLI Schema · Contract Preview")
+                    : (locale === "ko" ? "계약 프리뷰 (Target Spec)" : "Contract Preview (Target Spec)")}
+                </span>
+              </div>
             </div>
             <p className="text-xs leading-5 text-fg-2">{pick(selectedClient.summary, locale)}</p>
+            <p className="rounded-xl border border-line/60 bg-raised px-3 py-2 text-[11px] leading-5 text-fg-2">
+              {locale === "ko"
+                ? "현재 제공: 로컬 CLI 스키마 생성·매니페스트 조회(`--client`, `--mcp-manifest`) | 목표 계약(Target Spec): 상시 JSON-RPC stdio 데몬 및 원격 HTTP MCP 서버"
+                : "Current: Local CLI config & manifest schema (`--client`, `--mcp-manifest`) | Target Spec: persistent JSON-RPC stdio daemon & remote HTTP MCP server"}
+            </p>
             <dl className="space-y-1.5 border-t border-line/60 pt-2.5 text-xs">
               <div className="flex items-center justify-between gap-2">
                 <dt className="text-fg-3">{locale === "ko" ? "전송 프로토콜" : "Transport"}</dt>
@@ -208,19 +223,37 @@ export function TechLlmMcpApiPanel({ locale }: { readonly locale: "ko" | "en" })
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <code className="font-mono text-sm font-bold text-fg">{selectedTool.name}</code>
-              <span
-                className={cn(
-                  "ts-status-pill",
-                  selectedTool.readOnly ? "ts-status-good" : "ts-status-warn",
-                )}
-              >
-                {selectedTool.readOnly
-                  ? (locale === "ko" ? "읽기 전용 (안전)" : "Read-only")
-                  : (locale === "ko" ? "쓰기 · Dry-Run 기본" : "Write · Dry-Run default")}
-              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  data-testid="mcp-tool-contract-badge"
+                  className={cn(
+                    "ts-status-pill",
+                    selectedTool.contractStatus === "local-cli" ? "ts-status-good" : "ts-status-warn",
+                  )}
+                >
+                  {selectedTool.contractStatus === "local-cli"
+                    ? (locale === "ko" ? "로컬 CLI 실행 가능" : "Runnable Local CLI")
+                    : (locale === "ko" ? "REST 계약 프리뷰 (Target Spec)" : "REST Target Spec (Preview)")}
+                </span>
+                <span
+                  className={cn(
+                    "ts-status-pill",
+                    selectedTool.readOnly ? "ts-status-good" : "ts-status-warn",
+                  )}
+                >
+                  {selectedTool.readOnly
+                    ? (locale === "ko" ? "읽기 전용 (안전)" : "Read-only")
+                    : (locale === "ko" ? "쓰기 · Dry-Run 기본" : "Write · Dry-Run default")}
+                </span>
+              </div>
             </div>
             <p className="text-xs leading-5 text-fg-2">{pick(selectedTool.summary, locale)}</p>
             <p className="rounded-xl bg-raised px-3 py-1.5 font-mono text-[11px] text-cool">
+              <span className="mr-2 font-sans font-semibold text-fg-3">
+                {selectedTool.contractStatus === "local-cli"
+                  ? (locale === "ko" ? "[로컬 CLI]" : "[Local CLI]")
+                  : (locale === "ko" ? "[Target Spec 계약 프리뷰]" : "[Target Spec Preview]")}
+              </span>
               {selectedTool.restMirror}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">

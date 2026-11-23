@@ -2,9 +2,9 @@
 /**
  * 툰스튜디오 범용 멀티-LLM CLI · MCP 브리지 설정 생성기 & 장시간 드로잉 소크 벤치마크.
  *
- * 지원 클라이언트:
- *   gemini-cli, claude-code, codex-cli, gpt-desktop, meta-llama, mistral-muse,
- *   cursor, windsurf, ollama-local, openrouter-bridge
+ * 지원 클라이언트 (9종):
+ *   gemini-cli, claude-code, codex-cli, meta-llama, mistral-muse,
+ *   cursor, windsurf, openrouter-bridge, ollama-local
  *
  * 사용 예:
  *   node scripts/toonstudio-llm-mcp-cli.mjs --list-clients --json
@@ -12,7 +12,9 @@
  *   node scripts/toonstudio-llm-mcp-cli.mjs --bench-stroke --strokes 10000 --json
  */
 
+import path from "node:path";
 import { performance } from "node:perf_hooks";
+import { pathToFileURL } from "node:url";
 
 export const SUPPORTED_LLM_MCP_CLIENTS = Object.freeze([
   {
@@ -144,6 +146,17 @@ export function buildClientMcpConfig(clientId, options = {}) {
   };
 }
 
+function parseBoundedInt(value, fallback, min, max) {
+  if (value === undefined || value === null || (typeof value === "string" && value.trim() === "")) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(min, Math.min(max, Math.trunc(parsed)));
+}
+
 /**
  * 장시간 드로잉 소크 벤치마크:
  * - 고정 Float32Array 링 버퍼(객체 할당 0)
@@ -151,8 +164,8 @@ export function buildClientMcpConfig(clientId, options = {}) {
  * - Delta Undo 링(상한 20단계, 초과분 OPFS 스필 카운트)
  */
 export function runLongStrokeEnduranceBenchmark(options = {}) {
-  const strokes = Math.max(100, Math.min(50_000, Number(options.strokes ?? 10_000)));
-  const pointsPerStroke = Math.max(8, Math.min(128, Number(options.pointsPerStroke ?? 32)));
+  const strokes = parseBoundedInt(options.strokes, 10_000, 100, 50_000);
+  const pointsPerStroke = parseBoundedInt(options.pointsPerStroke, 32, 8, 128);
   const tileSize = 256;
   const canvasWidth = 3840;
   const canvasHeight = 2160;
@@ -267,8 +280,9 @@ function main(argv) {
   }
 
   if (args.has("--bench-stroke")) {
-    const strokes = Number(valueOf("--strokes") ?? 10_000);
-    const report = runLongStrokeEnduranceBenchmark({ strokes });
+    const strokes = valueOf("--strokes");
+    const pointsPerStroke = valueOf("--points-per-stroke");
+    const report = runLongStrokeEnduranceBenchmark({ strokes, pointsPerStroke });
     console.log(JSON.stringify(report, null, 2));
     if (!report.passed) process.exitCode = 1;
     return;
@@ -278,6 +292,6 @@ function main(argv) {
   console.log(JSON.stringify(buildClientMcpConfig(clientId), null, 2));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   main(process.argv.slice(2));
 }

@@ -147,6 +147,26 @@ function sanitizeCutCount(value: number): number {
   return Math.floor(value);
 }
 
+function sanitizeKrwAmount(value: number): number {
+  if (!Number.isFinite(value) || value < 0) return 0;
+  return Math.round(value);
+}
+
+/**
+ * 한국 소득세법·지방세법 원천징수 기준(국고금 관리법 10원 미만 절사):
+ * - 사업소득세: 총 지급액의 3% 산출 후 10원 미만 절사
+ * - 지방소득세: 산출 소득세의 10% 산출 후 10원 미만 절사
+ */
+function calculateKoreanFreelancerWithholdingKrw(grossAmountKrw: number): {
+  readonly incomeTaxKrw: number;
+  readonly localIncomeTaxKrw: number;
+} {
+  const safeGross = sanitizeKrwAmount(grossAmountKrw);
+  const incomeTaxKrw = Math.floor((safeGross * 3) / 1_000) * 10;
+  const localIncomeTaxKrw = Math.floor(incomeTaxKrw / 100) * 10;
+  return { incomeTaxKrw, localIncomeTaxKrw };
+}
+
 /**
  * 컷 난이도 가중치(0.8x / 1.0x / 1.4x / 1.8x) × 공정 단가 × 프리랜서(3.3%) / 사업자(VAT 10%) 정산 계산기.
  */
@@ -158,7 +178,7 @@ export function calculateWeightedStudioSettlement(
     const standard = sanitizeCutCount(entry.cuts.standard);
     const actionDetail = sanitizeCutCount(entry.cuts.actionDetail);
     const crowdBg = sanitizeCutCount(entry.cuts.crowdBg);
-    const baseRate = Math.max(0, Math.round(entry.baseRatePerCutKrw));
+    const baseRate = sanitizeKrwAmount(entry.baseRatePerCutKrw);
 
     const rawCutCount = simple + standard + actionDetail + crowdBg;
     const weightedCutCount =
@@ -168,8 +188,9 @@ export function calculateWeightedStudioSettlement(
     const fairnessDeltaKrw = grossAmountKrw - flatComparisonKrw;
 
     const isFreelancer = entry.taxMode === "freelancer-3.3";
-    const incomeTaxKrw = isFreelancer ? Math.round(grossAmountKrw * 0.03) : 0;
-    const localIncomeTaxKrw = isFreelancer ? Math.round(grossAmountKrw * 0.003) : 0;
+    const { incomeTaxKrw, localIncomeTaxKrw } = isFreelancer
+      ? calculateKoreanFreelancerWithholdingKrw(grossAmountKrw)
+      : { incomeTaxKrw: 0, localIncomeTaxKrw: 0 };
     const withholdingTaxKrw = incomeTaxKrw + localIncomeTaxKrw;
     const vatKrw = isFreelancer ? 0 : Math.round(grossAmountKrw * 0.1);
     const invoiceTotalKrw = grossAmountKrw + vatKrw;
