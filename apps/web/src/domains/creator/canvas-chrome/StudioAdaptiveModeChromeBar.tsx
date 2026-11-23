@@ -19,6 +19,16 @@ import {
 } from "react";
 
 import type { StudioAdaptiveModeId } from "./studio-adaptive-mode-profiles";
+import {
+  STUDIO_Z_LAYERS,
+  resolveCollisionFreeHudRects,
+  resolveResponsiveHudSpacing,
+} from "./studio-hud-collision-guard";
+import {
+  resolveVibrantSpriteForAdaptiveMode,
+  resolveVibrantSpriteForAdaptiveTool,
+} from "./studio-vibrant-sprite-catalog";
+import { StudioVibrantToolArtwork } from "./StudioVibrantToolArtwork";
 import { useAdaptiveFloatingChrome } from "./useAdaptiveFloatingChrome";
 
 export interface StudioAdaptiveModeChromeBarProps {
@@ -143,6 +153,36 @@ export function StudioAdaptiveModeChromeBar({
 
   const dockSideLabelKo =
     chrome.floatingPanelSnap.dockSide === "left" ? "좌측 도크 스냅" : "우측 도크 스냅";
+  const responsiveSpacing = resolveResponsiveHudSpacing(chrome.state.viewportWidthPx);
+  const hudCollisionLayout = resolveCollisionFreeHudRects(
+    [
+      {
+        id: "adaptive-mode-bar",
+        priority: 90,
+        rect: {
+          x: responsiveSpacing.paddingPx,
+          y: responsiveSpacing.paddingPx,
+          width: Math.min(540, Math.max(200, chrome.state.viewportWidthPx - responsiveSpacing.paddingPx * 2)),
+          height: 52,
+        },
+      },
+      {
+        id: "adaptive-floating-dock",
+        priority: 75,
+        collapsible: true,
+        rect: {
+          x: chrome.floatingPanelSnap.snappedX,
+          y: chrome.floatingPanelSnap.snappedY,
+          width: Math.max(48, chrome.floatingPanelSnap.effectivePanelWidthPx),
+          height: 220,
+        },
+      },
+    ],
+    {
+      widthPx: chrome.state.viewportWidthPx,
+      heightPx: chrome.state.viewportHeightPx,
+    },
+  );
 
   return (
     <section
@@ -153,7 +193,11 @@ export function StudioAdaptiveModeChromeBar({
       data-dock-side={chrome.floatingPanelSnap.dockSide}
       data-viewport-tier={chrome.floatingPanelSnap.viewportTier}
       data-overlaps-center={chrome.floatingPanelSnap.overlapsCanvasCenterAfter ? "true" : "false"}
-      className="rounded-xl border border-line bg-card p-3 text-fg"
+      data-studio-z-layer={STUDIO_Z_LAYERS.adaptiveModeBar}
+      data-hud-collision-free={hudCollisionLayout.zeroOverlapGuaranteed ? "true" : "false"}
+      data-hud-spacing-tier={responsiveSpacing.tier}
+      style={{ zIndex: STUDIO_Z_LAYERS.adaptiveModeBar }}
+      className="studio-vibrant-surface studio-vibrant-keep-all rounded-xl border border-line bg-card p-3 text-fg"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
         <div className="min-w-0">
@@ -169,14 +213,14 @@ export function StudioAdaptiveModeChromeBar({
           <span
             data-testid="adaptive-chrome-occupancy"
             data-occupancy-passed={chrome.modeViewportOccupancy.passed ? "true" : "false"}
-            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-2.5 font-semibold tabular-nums text-fg [word-break:keep-all]"
+            className="studio-vibrant-tabular inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-2.5 font-semibold tabular-nums text-fg [word-break:keep-all]"
           >
             캔버스 점유 {chrome.modeViewportOccupancy.percent}%
           </span>
           <span
             data-testid="adaptive-chrome-cls"
             data-cls-zero={chrome.lastModeSwitchCls.isClsZero ? "true" : "false"}
-            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-2.5 font-semibold tabular-nums text-fg-2 [word-break:keep-all]"
+            className="studio-vibrant-tabular inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-2.5 font-semibold tabular-nums text-fg-2 [word-break:keep-all]"
           >
             CLS {chrome.lastModeSwitchCls.clsScore} 고정
           </span>
@@ -184,7 +228,7 @@ export function StudioAdaptiveModeChromeBar({
             data-testid="adaptive-chrome-dock-status"
             data-dock-side={chrome.floatingPanelSnap.dockSide}
             data-compact-docked={chrome.floatingPanelSnap.compactDocked ? "true" : "false"}
-            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-2.5 font-medium tabular-nums text-fg-2 [word-break:keep-all]"
+            className="studio-vibrant-tabular inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-2.5 font-medium tabular-nums text-fg-2 [word-break:keep-all]"
           >
             {chrome.floatingPanelSnap.dockSide === "left" ? (
               <PanelLeft size={14} aria-hidden="true" />
@@ -207,6 +251,7 @@ export function StudioAdaptiveModeChromeBar({
         >
           {chrome.modes.map((modeItem, index) => {
             const selected = modeItem.id === chrome.activeMode;
+            const modeSprite = resolveVibrantSpriteForAdaptiveMode(modeItem.id);
             return (
               <button
                 key={modeItem.id}
@@ -220,6 +265,8 @@ export function StudioAdaptiveModeChromeBar({
                 aria-controls="adaptive-mode-primary-panel"
                 tabIndex={selected ? 0 : -1}
                 data-testid={`adaptive-mode-tab-${modeItem.id}`}
+                data-vibrant-accent={modeSprite.accent}
+                data-vibrant-active={selected ? "true" : "false"}
                 onClick={() => handleModeSwitch(modeItem.id)}
                 onKeyDown={(event) => {
                   if (event.key === "Escape") {
@@ -228,13 +275,19 @@ export function StudioAdaptiveModeChromeBar({
                   }
                   handleTabKeyDown(event, index);
                 }}
-                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
+                className={`studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
                   selected
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg"
                 }`}
               >
-                {modeItem.labelKo}
+                <StudioVibrantToolArtwork
+                  spriteId={modeSprite.spriteId}
+                  accent={modeSprite.accent}
+                  size={18}
+                  active={selected}
+                />
+                <span>{modeItem.labelKo}</span>
               </button>
             );
           })}
@@ -245,9 +298,11 @@ export function StudioAdaptiveModeChromeBar({
           aria-label={chrome.toggleLabel}
           aria-pressed={chrome.enabled}
           data-testid="adaptive-chrome-autohide-toggle"
+          data-vibrant-accent="neutral"
+          data-vibrant-active={chrome.enabled ? "true" : "false"}
           onClick={chrome.toggleEnabled}
           onKeyDown={handleEscapeKey}
-          className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
+          className={`studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
             chrome.enabled
               ? "border-accent bg-accent-soft text-accent"
               : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg"
@@ -278,23 +333,32 @@ export function StudioAdaptiveModeChromeBar({
         >
           {activeProfile.primaryTools.map((tool) => {
             const active = tool.id === effectiveSelectedToolId;
+            const toolSprite = resolveVibrantSpriteForAdaptiveTool(tool.id, chrome.activeMode);
             return (
               <button
                 key={tool.id}
                 type="button"
                 aria-pressed={active}
                 data-testid={`adaptive-primary-tool-${tool.id}`}
+                data-vibrant-accent={toolSprite.accent}
+                data-vibrant-active={active ? "true" : "false"}
                 onClick={() => handlePickTool(tool.id, tool.labelKo)}
                 onKeyDown={handleEscapeKey}
-                className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
+                className={`studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
                   active
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line bg-card text-fg hover:bg-raised"
                 }`}
               >
+                <StudioVibrantToolArtwork
+                  spriteId={toolSprite.spriteId}
+                  accent={toolSprite.accent}
+                  size={18}
+                  active={active}
+                />
                 <span>{tool.labelKo}</span>
                 {tool.shortcutHint ? (
-                  <kbd className="rounded border border-line bg-panel px-1 py-0.5 font-mono text-[10px] text-fg-2">
+                  <kbd className="rounded border border-line bg-panel px-1 py-0.5 font-mono text-xs tabular-nums text-fg-2">
                     {tool.shortcutHint}
                   </kbd>
                 ) : null}
@@ -316,7 +380,7 @@ export function StudioAdaptiveModeChromeBar({
             ref={summaryRef}
             data-testid="adaptive-chrome-aux-summary"
             onKeyDown={handleEscapeKey}
-            className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all]"
+            className="studio-vibrant-touch-target flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:bg-raised hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all]"
           >
             <span>
               {activeProfile.auxiliaryDrawerLabelKo} ({activeProfile.auxiliaryTools.length})
@@ -336,21 +400,30 @@ export function StudioAdaptiveModeChromeBar({
           >
             {activeProfile.auxiliaryTools.map((tool) => {
               const active = tool.id === effectiveSelectedToolId;
+              const auxSprite = resolveVibrantSpriteForAdaptiveTool(tool.id, chrome.activeMode);
               return (
                 <button
                   key={tool.id}
                   type="button"
                   aria-pressed={active}
                   data-testid={`adaptive-aux-tool-${tool.id}`}
+                  data-vibrant-accent={auxSprite.accent}
+                  data-vibrant-active={active ? "true" : "false"}
                   onClick={() => handlePickTool(tool.id, tool.labelKo)}
                   onKeyDown={handleEscapeKey}
-                  className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
+                  className={`studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [word-break:keep-all] ${
                     active
                       ? "border-accent bg-accent-soft text-accent"
                       : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg"
                   }`}
                 >
-                  {tool.labelKo}
+                  <StudioVibrantToolArtwork
+                    spriteId={auxSprite.spriteId}
+                    accent={auxSprite.accent}
+                    size={16}
+                    active={active}
+                  />
+                  <span>{tool.labelKo}</span>
                 </button>
               );
             })}
