@@ -95,9 +95,12 @@ export async function waitForEditorSettled(page: Page): Promise<void> {
       message: "지연 로딩 중인 조각(aria-busy)이 끝나지 않았어요",
     })
     .toBe(0);
-  const connectionState = page.locator('[data-service-degraded-banner]:visible').or(
-    page.getByRole("status").filter({ hasText: "오프라인 · 기기 저장. 서버 연결 없이 작업 중이에요" }),
-  );
+  // 그리기 명확도 상단바에서는 절전 해제 웜업 배너를 상세 팝오버에 두고, 요약 슬롯에는
+  // `[data-studio-draft-save-attention]`("연결 복구 후 재시도")가 대신 정착한다.
+  const connectionState = page
+    .locator('[data-service-degraded-banner]:visible')
+    .or(page.locator('[data-studio-draft-save-attention]:visible'))
+    .or(page.getByRole("status").filter({ hasText: "오프라인 · 기기 저장. 서버 연결 없이 작업 중이에요" }));
   await expect(connectionState.first()).toBeVisible({ timeout: 45_000 });
   await settleLayout(page);
 }

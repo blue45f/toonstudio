@@ -682,6 +682,42 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/virtual-space/hud/space-dock-model.ts", "local-storage-write", '"toonspectrum:virtual-space-active-dcc:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts", "local-storage-write", '"toonstudio:office2d:my-seat-v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/virtual-space/office2d/office2d-stage-extensions.ts", "local-storage-write", '"toonstudio:office2d:sound-muted-v1"', 1, UI_ONLY, UI_PROOF),
+
+  // 2026-11-23 CI 복구 검토: 오프라인 소유자 프리뷰 영수증(9b6417f2cc)은 원고나 인증 토큰을 localStorage에
+  // 저장하지 않고, HTTP 캐시(Vary: Cookie + HttpOnly 쿠키 검증)를 선택하는 불투명 UUID 셀렉터와 공개 reader
+  // 능력 헤더 문자열만 기록·정리한다. 만료 시각과 쿠키 검증은 서버 영수증이 전담한다.
+  allow(
+    "apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts",
+    "local-storage-cleanup",
+    "offlineWorkCacheKey(workId)",
+    1,
+    CLEANUP_ONLY,
+    "studio-offline-owner-receipt.test.ts와 studio-offline-owner-bootstrap.test.ts가 401/403/404 또는 명시적 무효화 시 작품별 캐시 버전 셀렉터 키만 제거함을 검증한다.",
+  ),
+  allow(
+    "apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts",
+    "local-storage-write",
+    "OFFLINE_PREVIEW_SCOPE_KEY",
+    1,
+    OPTIONAL_LOCAL_TOOL_STATE,
+    "studio-offline-owner-receipt.test.ts와 studio-offline-owner-bootstrap.test.ts가 불투명 랜덤 UUID scope 셀렉터만 저장하고 원고·토큰 권한을 부여하지 않음을 검증한다.",
+  ),
+  allow(
+    "apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts",
+    "local-storage-write",
+    "key",
+    1,
+    OPTIONAL_LOCAL_TOOL_STATE,
+    "studio-offline-owner-receipt.test.ts가 작품별 불투명 랜덤 UUID HTTP 캐시 버전 셀렉터만 저장하고 실제 소유자 판정은 Vary: Cookie 서버 영수증과 expiresAt으로 검증함을 보장한다.",
+  ),
+  allow(
+    "apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts",
+    "local-storage-write",
+    '"toonstudio:offline-preview:reader:v1"',
+    1,
+    OPTIONAL_LOCAL_TOOL_STATE,
+    "studio-offline-owner-bootstrap.test.ts가 초기 로더용 공개 STUDIO_READER_CAPABILITY_HEADERS 문자열만 기록하며 사용자 신원·권한은 HttpOnly 쿠키로만 확인함을 검증한다.",
+  ),
 ]);
 
 function allowanceId(value: Pick<BrowserKvFinding | BrowserKvAllowance, "file" | "kind" | "key">) {
