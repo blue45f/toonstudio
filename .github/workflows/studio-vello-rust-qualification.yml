@@ -1,0 +1,605 @@
+name: Runtime dependency recovery and Vello qualification
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - .github/workflows/studio-vello-rust-qualification.yml
+      - scripts/lib/vello-qualification-artifacts.py
+      - scripts/lib/test_vello_qualification_artifacts.py
+      - crates/studio-engine-vello/**
+      - crates/vendor/**
+      - packages/studio-engine-vello/**
+      - scripts/generate-third-party-notices.mjs
+      - scripts/__tests__/generate-third-party-notices.test.mjs
+      - tests/benchmarks/harness/text-vertical-quality.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vello-rust-qualification-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  # Root replaces both placeholders with the reviewed source checkpoint.
+  # That checkpoint must already contain the helper and its contract tests.
+  SOURCE_COMMIT: "3ddb1401276f8da5929d3e9c05a4e185ae0dc3dc"
+  SOURCE_TREE: "3c9105572e8b093d3f640a2f11904a644ecf54de"
+  RUSTUP_TOOLCHAIN: "1.97.1"
+  CARGO_BUILD_JOBS: "2"
+  NODE_OPTIONS: --max-old-space-size=4096
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  native-and-wasm:
+    if: >-
+      github.repository == 'blue45f/toonstudio' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'chore/runtime-finalization-qualification-20261123' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    # GitHub permissions are job-scoped. Build/test shell steps do not receive
+    # GITHUB_TOKEN; checkout does not persist its credentials.
+    permissions:
+      contents: write
+    outputs:
+      manifest_sha: ${{ steps.preserve.outputs.manifest_sha }}
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/vello-qualification-target
+      XDG_RUNTIME_DIR: ${{ runner.temp }}/vello-qualification-xdg
+    steps:
+      - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
+        shell: bash
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${ImageOS:-}" != ubuntu24 || "${TOONSTUDIO_CI_RUNNER_ENVIRONMENT:-}" != github-hosted || "${TOONSTUDIO_CI_RUNNER_OS:-}" != Linux ]] || [[ "$(uname -s)" != Linux ]]; then
+            printf 'SDK 정리는 GitHub 호스팅 Ubuntu 24.04에서만 허용합니다.\n' >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_WORKSPACE:-}" != /* ]]; then
+            printf '절대 작업공간 경로가 필요합니다.\n' >&2
+            exit 1
+          fi
+          workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          for target in "$GITHUB_WORKSPACE" "$workspace" /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            component=$target
+            while [[ "$component" != / ]]; do
+              if test -L "$component"; then
+                printf '심볼릭 링크 경로는 정리할 수 없습니다: %s\n' "$component" >&2
+                exit 1
+              fi
+              component=${component%/*}
+              component=${component:-/}
+            done
+          done
+          for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            if [[ "$workspace" == / || "$workspace" == "$target" || "$workspace" == "$target/"* || "$target" == "$workspace/"* ]]; then
+              printf '작업공간과 SDK 경로가 겹칩니다: %s\n' "$target" >&2
+              exit 1
+            fi
+          done
+          report_disk() {
+            local disk_usage disk_row
+            disk_usage=$(df -P -B1 "$workspace")
+            printf '%s\n' "$disk_usage"
+            df -Pi "$workspace"
+            disk_row=${disk_usage#*$'\n'}
+            if [[ "$disk_row" == "$disk_usage" ]]; then
+              printf '디스크 여유 측정 행이 없습니다.\n' >&2
+              exit 1
+            fi
+            read -r _ _ _ available_bytes _ <<< "$disk_row"
+            if [[ ! "$available_bytes" =~ ^[0-9]{1,18}$ ]]; then
+              printf '디스크 여유 바이트가 정수가 아닙니다.\n' >&2
+              exit 1
+            fi
+            available_bytes=$((10#$available_bytes))
+            for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+              if test -e "$target"; then
+                du -s -B1 -- "$target"
+              else
+                printf 'SDK 경로 없음: %s\n' "$target"
+              fi
+            done
+          }
+          printf 'SDK 정리 전 디스크 상태\n'
+          report_disk
+          sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk
+          printf 'SDK 정리 후 디스크 상태\n'
+          report_disk
+          if (( available_bytes < 21474836480 )); then
+            printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.SOURCE_COMMIT }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Confirm the immutable source checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$SOURCE_TREE"
+          test -z "$(git status --porcelain)"
+          python3 scripts/lib/test_vello_qualification_artifacts.py
+          git show --no-patch --format=fuller HEAD
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "24.16.0"
+      - name: Prepare the exact official Rust and wasm-pack tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component rustfmt,clippy --target wasm32-unknown-unknown
+          rustc --version --verbose
+          cargo --version
+          test "$(rustc --version | cut -d ' ' -f 2)" = 1.97.1
+          mkdir -p "$RUNNER_TEMP/vello-tools/bin"
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/wasm-pack.tar.gz" \
+            https://github.com/wasm-bindgen/wasm-pack/releases/download/v0.15.0/wasm-pack-v0.15.0-x86_64-unknown-linux-musl.tar.gz
+          printf '%s  %s\n' c09f971ecaed9a2efc80fdcea7a00ef6b53c7fadc8c57d1f61b53a6aa66b668a "$RUNNER_TEMP/wasm-pack.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/wasm-pack.tar.gz" -C "$RUNNER_TEMP/vello-tools"
+          install "$RUNNER_TEMP/vello-tools/wasm-pack-v0.15.0-x86_64-unknown-linux-musl/wasm-pack" "$RUNNER_TEMP/vello-tools/bin/wasm-pack"
+          "$RUNNER_TEMP/vello-tools/bin/wasm-pack" --version
+          printf '%s\n' "$RUNNER_TEMP/vello-tools/bin" >> "$GITHUB_PATH"
+          node --test scripts/ci-ubuntu-apt-mirrors.test.mjs
+          sudo env \
+            GITHUB_ACTIONS="${GITHUB_ACTIONS:?}" \
+            RUNNER_ENVIRONMENT="${RUNNER_ENVIRONMENT:?}" \
+            RUNNER_OS="${RUNNER_OS:?}" \
+            RUNNER_ARCH="${RUNNER_ARCH:?}" \
+            ImageOS="${ImageOS:?}" \
+            "$(command -v node)" scripts/ci-ubuntu-apt-mirrors.mjs
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            pkg-config libfontconfig1-dev libfreetype6-dev libegl1-mesa-dev mesa-vulkan-drivers
+          install -d -m 700 "$XDG_RUNTIME_DIR"
+      - name: Recover canonical formatting with Rust 1.97.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path crates/studio-engine-vello/Cargo.toml --all
+          python3 scripts/lib/vello-qualification-artifacts.py check-changes format
+          cargo fmt --manifest-path crates/studio-engine-vello/Cargo.toml --all --check
+          git diff --stat
+      - name: Run every native target and feature
+        working-directory: crates/studio-engine-vello
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fetch --locked
+          cargo clippy --locked --offline --all-targets --all-features -- -D warnings
+          cargo test --locked --offline --all-targets --all-features -- --test-threads=2 --nocapture
+          cargo clean --profile dev
+      - name: Generate and install the combined lock with pnpm 11.4.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          test "$(corepack pnpm --version)" = 11.4.0
+          corepack pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          corepack pnpm install --frozen-lockfile --prefer-offline
+          node --input-type=module - <<'JS'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { readFileSync } from "node:fs";
+          import { parse } from "yaml";
+          const before = parse(execFileSync("git", ["show", "HEAD:pnpm-lock.yaml"], { encoding: "utf8" }));
+          const after = parse(readFileSync("pnpm-lock.yaml", "utf8"));
+          const metadata = (lock) => Object.fromEntries(
+            Object.entries(lock).filter(([key]) => !["importers", "packages", "snapshots"].includes(key)),
+          );
+          assert.deepEqual(metadata(after), metadata(before), "Lock settings, overrides or patches changed");
+          const selectedPackage = (name) => /^@(?:mediapipe\/tasks-vision|thorvg\/webcanvas)@/u.test(name);
+          const unrelatedPackages = (value = {}) => Object.fromEntries(
+            Object.entries(value).filter(([key]) => !selectedPackage(key)),
+          );
+          for (const section of ["packages", "snapshots"]) {
+            assert.deepEqual(unrelatedPackages(after[section]), unrelatedPackages(before[section]), section + ": unrelated resolution changed");
+          }
+          const resolved = [
+            [".", "@mediapipe/tasks-vision", "^1.2.3", "1.2.3"],
+            [".", "@mediapipe/tasks-vision-nosimd", "npm:@mediapipe/tasks-vision@0.10.35", "@mediapipe/tasks-vision@0.10.35"],
+            ["apps/character-lab", "@mediapipe/tasks-vision", "^1.2.3", "1.2.3"],
+            ["packages/studio-engine-thorvg", "@thorvg/webcanvas", "1.1.4", "1.1.4"],
+          ];
+          for (const [importer, dependency, specifier, version] of resolved) {
+            assert.deepEqual(after.importers[importer].dependencies[dependency], { specifier, version });
+          }
+          const unrelatedImporters = (lock) => {
+            const copy = structuredClone(lock.importers);
+            for (const [importer, dependency] of resolved) {
+              delete copy[importer].dependencies[dependency];
+            }
+            return copy;
+          };
+          assert.deepEqual(unrelatedImporters(after), unrelatedImporters(before), "Unrelated workspace importers changed");
+          const eslint = after.importers["."].devDependencies["@heejun/eslint-config"];
+          assert.equal(eslint.specifier, "^5.0.0");
+          assert.match(eslint.version, /^5\.0\.0(?:\(|$)/u);
+          const eslintSnapshots = Object.entries(after.snapshots).filter(
+            ([key]) => /^@heejun\/eslint-config@5\.0\.0(?:\(|$)/u.test(key),
+          );
+          assert.ok(eslintSnapshots.length > 0, "The restored ESLint 5 snapshot is missing");
+          for (const [, snapshot] of eslintSnapshots) {
+            assert.match(snapshot.dependencies["eslint-plugin-import-x"], /^4\.18\.1(?:\(|$)/u);
+            assert.match(snapshot.dependencies["eslint-plugin-react-refresh"], /^0\.5\.8(?:\(|$)/u);
+          }
+          console.log(JSON.stringify({ pnpm: "11.4.0", resolved, unrelatedGraphAndImportersUnchanged: true, eslint }));
+          JS
+          df -P -B1 "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+      - name: Recover the exact official ThorVG 1.1.4 WASM bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/thorvg-webcanvas-1.1.4.tgz" \
+            https://registry.npmjs.org/@thorvg/webcanvas/-/webcanvas-1.1.4.tgz
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import io
+          import json
+          import os
+          from pathlib import Path
+          import tarfile
+          archive = (Path(os.environ["RUNNER_TEMP"]) / "thorvg-webcanvas-1.1.4.tgz").read_bytes()
+          expected_sri = "tyS2HP6F8X/+zYjrFKIfLKlls4jL/17+ESE6RI0YgvBi/64pdvyb8ODC7Ibna42276R36QG4aCVfG03O9B3nOQ=="
+          if len(archive) != 1793013 or base64.b64encode(hashlib.sha512(archive).digest()).decode() != expected_sri:
+              raise SystemExit("Official ThorVG 1.1.4 archive identity mismatch")
+          with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as package:
+              member = package.getmember("package/dist/thorvg.wasm")
+              if not member.isfile():
+                  raise SystemExit("ThorVG WASM is not a regular archive member")
+              wasm = package.extractfile(member).read()
+              metadata = json.load(package.extractfile("package/package.json"))
+          if metadata.get("name") != "@thorvg/webcanvas" or metadata.get("version") != "1.1.4":
+              raise SystemExit("ThorVG package identity mismatch")
+          expected_sha = "0b4fd4628eec1843c47602ececdd416215f1e1ae397c108552cda3710507a962"
+          if len(wasm) != 903904 or hashlib.sha256(wasm).hexdigest() != expected_sha:
+              raise SystemExit("Official ThorVG 1.1.4 WASM identity mismatch")
+          installed = Path("packages/studio-engine-thorvg/node_modules/@thorvg/webcanvas/dist/thorvg.wasm")
+          if installed.read_bytes() != wasm:
+              raise SystemExit("Frozen installed ThorVG WASM differs from the official archive")
+          destination = Path("packages/studio-engine-thorvg/wasm")
+          (destination / "thorvg.wasm").write_bytes(wasm)
+          (destination / "INTEGRITY.sha256").write_text(f"{expected_sha}  thorvg.wasm\n")
+          print(f"ThorVG official archive: {len(archive)} bytes; installed/vendored WASM: {len(wasm)} bytes; SHA256 {expected_sha}")
+          PY
+      - name: Rebuild both shipped WASM packages without hand editing
+        working-directory: crates/studio-engine-vello
+        shell: bash
+        env:
+          RUSTFLAGS: "-C target-feature=+simd128"
+        run: |
+          set -euo pipefail
+          wasm-pack build --target web --release --out-dir pkg -- --locked --offline
+          wasm-pack build --target web --release --out-dir pkg-gpu -- --features hybrid,lottie,svg --locked --offline
+      - name: Regenerate exact Vello integrity and license provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/lib/vello-qualification-artifacts.py integrity
+          node --input-type=module -e '
+            const notices = await import("./scripts/generate-third-party-notices.mjs");
+            notices.refreshVelloThirdPartyNotices();
+            const result = notices.validateShippedEngineNotices();
+            console.log(JSON.stringify(result.vello.inventory.artifacts.map(({id, packages}) => ({id, externalCrates: packages.length}))));
+          '
+          corepack pnpm exec vitest run scripts/__tests__/generate-third-party-notices.test.mjs --maxWorkers=1
+          corepack pnpm audit:licenses
+          corepack pnpm audit:security
+          python3 scripts/lib/vello-qualification-artifacts.py check-changes build
+      - name: Preserve only allowlisted build blobs
+        id: preserve
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/lib/vello-qualification-artifacts.py upload build
+
+  macos-cpu-and-text:
+    needs: native-and-wasm
+    runs-on: macos-15
+    timeout-minutes: 70
+    permissions:
+      contents: write
+    env:
+      CARGO_BUILD_JOBS: "1"
+      BUILD_MANIFEST_SHA: ${{ needs.native-and-wasm.outputs.manifest_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.SOURCE_COMMIT }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Restore the identical qualified build bytes
+        env:
+          BUILD_MANIFEST_SHA: ${{ needs.native-and-wasm.outputs.manifest_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$SOURCE_TREE"
+          test -z "$(git status --porcelain)"
+          python3 scripts/lib/test_vello_qualification_artifacts.py
+          python3 scripts/lib/vello-qualification-artifacts.py restore "$BUILD_MANIFEST_SHA"
+      - name: Check the existing macOS font identity contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          sw_vers
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          inputs = (
+              ("AppleGothic.ttf", 15255648, "def69dc2b5e12746049a5dcb189f95341ec460589f47587938567313af3020b1"),
+              ("Arial Unicode.ttf", 23278008, "876af2cd4854644e7f3e7feb2f688997fdb3343c6df6693611209c9dfb47ccec"),
+          )
+          for name, expected_size, expected_sha in inputs:
+              path = Path("/System/Library/Fonts/Supplemental") / name
+              data = path.read_bytes()
+              actual_sha = hashlib.sha256(data).hexdigest()
+              print(f"{path}: {len(data)} bytes, SHA256 {actual_sha}")
+              if len(data) != expected_size or actual_sha != expected_sha:
+                  raise SystemExit(f"Existing font qualification contract is not satisfied: {path}")
+          PY
+      - name: Run the complete native text target including both macOS-only cases
+        working-directory: crates/studio-engine-vello
+        shell: bash
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/vello-macos-text-target
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component rustfmt
+          rustc --version --verbose
+          test "$(rustc --version | cut -d ' ' -f 2)" = 1.97.1
+          cargo fmt --all --check
+          cargo fetch --locked
+          cargo test --test text --all-features --locked --offline -- --test-threads=1 --nocapture
+          cargo clean --profile dev
+          df -Pk "$GITHUB_WORKSPACE"
+          df -Pi "$GITHUB_WORKSPACE"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "24.16.0"
+      - name: Install the frozen workspace and its exact Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          test "$(corepack pnpm --version)" = 11.4.0
+          corepack pnpm install --frozen-lockfile --prefer-offline
+          corepack pnpm exec playwright install chromium
+      - name: Build the exact official HarfBuzz 14.6.0 reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install meson ninja pkgconf freetype glib
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/harfbuzz.tar.xz" \
+            https://github.com/harfbuzz/harfbuzz/releases/download/14.6.0/harfbuzz-14.6.0.tar.xz
+          printf '%s  %s\n' d07a007327277708a2a73ae437887cdbaf282937f6d03ca5467723e9099af586 "$RUNNER_TEMP/harfbuzz.tar.xz" | shasum --algorithm 256 --check
+          tar -xf "$RUNNER_TEMP/harfbuzz.tar.xz" -C "$RUNNER_TEMP"
+          meson setup "$RUNNER_TEMP/harfbuzz-build" "$RUNNER_TEMP/harfbuzz-14.6.0" \
+            --prefix "$RUNNER_TEMP/harfbuzz-installed" --buildtype release \
+            -Dtests=disabled -Ddocs=disabled -Dintrospection=disabled
+          meson compile -C "$RUNNER_TEMP/harfbuzz-build" -j 2
+          meson install -C "$RUNNER_TEMP/harfbuzz-build"
+          ln -sfn "$RUNNER_TEMP/harfbuzz-installed/bin/hb-shape" /opt/homebrew/bin/hb-shape
+          /opt/homebrew/bin/hb-shape --version
+          test "$(/opt/homebrew/bin/hb-shape --version | head -n 1)" = "hb-shape (HarfBuzz) 14.6.0"
+      - name: Generate fresh CPU and product text evidence
+        id: text
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          paths = (
+              "tests/benchmarks/results/text-vertical-quality.json",
+              "tests/corpus/text/golden/vertical-quality-product.png",
+              "tests/corpus/text/golden/vertical-quality-engine-vello.png",
+              "tests/corpus/text/golden/vertical-quality-engine-skia.png",
+          )
+          for path in paths:
+              Path(path).unlink()
+          PY
+          corepack pnpm exec tsx tests/benchmarks/harness/text-vertical-quality.ts
+          python3 scripts/lib/vello-qualification-artifacts.py check-changes macos
+      - name: Run the unchanged full JS/WASM and visual contracts
+        id: qualification
+        run: corepack pnpm verify:studio-engine
+      - name: Preserve fresh golden evidence with its actual qualification result
+        if: always() && steps.text.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          MACOS_QUALIFICATION_RESULT: ${{ steps.qualification.outcome == 'success' && 'macos-cpu-text-passed' || 'macos-cpu-text-failed' }}
+        run: python3 scripts/lib/vello-qualification-artifacts.py upload macos
+
+  runtime-browsers:
+    needs: native-and-wasm
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    env:
+      BUILD_MANIFEST_SHA: ${{ needs.native-and-wasm.outputs.manifest_sha }}
+      XDG_RUNTIME_DIR: ${{ runner.temp }}/runtime-browser-qualification-xdg
+    steps:
+      - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
+        shell: bash
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux || "${ImageOS:-}" != ubuntu24 || "${TOONSTUDIO_CI_RUNNER_ENVIRONMENT:-}" != github-hosted || "${TOONSTUDIO_CI_RUNNER_OS:-}" != Linux ]] || [[ "$(uname -s)" != Linux ]]; then
+            printf 'SDK 정리는 GitHub 호스팅 Ubuntu 24.04에서만 허용합니다.\n' >&2
+            exit 1
+          fi
+          if [[ "${GITHUB_WORKSPACE:-}" != /* ]]; then
+            printf '절대 작업공간 경로가 필요합니다.\n' >&2
+            exit 1
+          fi
+          workspace=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          for target in "$GITHUB_WORKSPACE" "$workspace" /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            component=$target
+            while [[ "$component" != / ]]; do
+              if test -L "$component"; then
+                printf '심볼릭 링크 경로는 정리할 수 없습니다: %s\n' "$component" >&2
+                exit 1
+              fi
+              component=${component%/*}
+              component=${component:-/}
+            done
+          done
+          for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+            if [[ "$workspace" == / || "$workspace" == "$target" || "$workspace" == "$target/"* || "$target" == "$workspace/"* ]]; then
+              printf '작업공간과 SDK 경로가 겹칩니다: %s\n' "$target" >&2
+              exit 1
+            fi
+          done
+          report_disk() {
+            local disk_usage disk_row
+            disk_usage=$(df -P -B1 "$workspace")
+            printf '%s\n' "$disk_usage"
+            df -Pi "$workspace"
+            disk_row=${disk_usage#*$'\n'}
+            if [[ "$disk_row" == "$disk_usage" ]]; then
+              printf '디스크 여유 측정 행이 없습니다.\n' >&2
+              exit 1
+            fi
+            read -r _ _ _ available_bytes _ <<< "$disk_row"
+            if [[ ! "$available_bytes" =~ ^[0-9]{1,18}$ ]]; then
+              printf '디스크 여유 바이트가 정수가 아닙니다.\n' >&2
+              exit 1
+            fi
+            available_bytes=$((10#$available_bytes))
+            for target in /usr/local/lib/android/sdk /usr/share/dotnet/sdk; do
+              if test -e "$target"; then
+                du -s -B1 -- "$target"
+              else
+                printf 'SDK 경로 없음: %s\n' "$target"
+              fi
+            done
+          }
+          printf 'SDK 정리 전 디스크 상태\n'
+          report_disk
+          sudo rm -rf -- /usr/local/lib/android/sdk /usr/share/dotnet/sdk
+          printf 'SDK 정리 후 디스크 상태\n'
+          report_disk
+          if (( available_bytes < 21474836480 )); then
+            printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.SOURCE_COMMIT }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: 고정 소스와 Linux 생성물의 동일 tree 복원
+        id: runtime_restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$SOURCE_TREE"
+          test -z "$(git status --porcelain)"
+          python3 scripts/lib/vello-qualification-artifacts.py restore "$BUILD_MANIFEST_SHA"
+          git show --no-patch --format=fuller HEAD
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "24.16.0"
+      - name: 복원한 lock으로 pnpm 11.4.0 전체 의존성 설치
+        id: runtime_install
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          test "$(corepack pnpm --version)" = 11.4.0
+          corepack pnpm install --frozen-lockfile --prefer-offline
+      - name: MediaPipe 실제 변경 10개와 Vello WASM 어댑터 회귀
+        id: runtime_units
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm exec vitest run \
+            apps/web/src/domains/creator/layer/studio-layer-lift-mediapipe-inference.test.ts \
+            apps/web/src/domains/creator/scene-3d/studio-mannequin-hand-tracking.test.ts \
+            apps/web/src/domains/creator/scene-3d/studio-mannequin-webcam-tracking.test.ts \
+            apps/web/src/domains/creator/studio-bg-remove.test.ts \
+            apps/web/src/domains/creator/studio-mediapipe-vision-assets.test.ts \
+            apps/web/src/domains/creator/studio-mediapipe-vision-init-arbiter.test.ts \
+            apps/web/src/domains/creator/vrm/studio-mediapipe-vision-init-boundary.test.ts \
+            apps/web/src/domains/creator/vrm/studio-vrm-webcam-tracking.test.ts \
+            apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts \
+            scripts/verify-studio-mediapipe-browser.test.mjs \
+            packages/studio-engine-vello/src/__tests__/vello-adapter.test.ts \
+            --maxWorkers=1 --reporter=verbose
+      - name: 네트워크 차단 판정과 기존 CI 실행·입력 계약
+        if: ${{ !cancelled() && steps.runtime_install.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test \
+            scripts/verify-studio-mediapipe-browser.test.mjs \
+            scripts/ci-executed-gates.test.mjs \
+            scripts/ci-checkout-inputs.test.mjs
+      - name: 공식 Ubuntu 미러와 canonical Chromium·Vulkan 준비
+        id: runtime_browser_prepare
+        if: ${{ !cancelled() && steps.runtime_install.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test scripts/ci-ubuntu-apt-mirrors.test.mjs
+          sudo env \
+            GITHUB_ACTIONS="${GITHUB_ACTIONS:?}" \
+            RUNNER_ENVIRONMENT="${RUNNER_ENVIRONMENT:?}" \
+            RUNNER_OS="${RUNNER_OS:?}" \
+            RUNNER_ARCH="${RUNNER_ARCH:?}" \
+            ImageOS="${ImageOS:?}" \
+            "$(command -v node)" scripts/ci-ubuntu-apt-mirrors.mjs
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            libegl1-mesa-dev mesa-vulkan-drivers
+          install -d -m 700 "$XDG_RUNTIME_DIR"
+          test -z "${THORVG_CHROMIUM_EXECUTABLE_PATH:-}"
+          corepack pnpm exec playwright install --with-deps chromium
+      - name: ThorVG 실제 32회 수명주기와 동시 소유자 2개 검증
+        if: ${{ !cancelled() && steps.runtime_browser_prepare.outcome == 'success' }}
+        shell: bash
+        run: corepack pnpm run verify:studio-thorvg-browser --reporter=verbose --silent=false
+      - name: MediaPipe 실제 4개 모델·추론·해제·CSP 시나리오 검증
+        if: ${{ !cancelled() && steps.runtime_browser_prepare.outcome == 'success' }}
+        shell: bash
+        run: corepack pnpm run verify:studio-mediapipe-browser
+      - name: 실제 MediaPipe 보고서를 제한된 크기로 로그에 보존
+        if: always()
+        shell: bash
+        run: |
+          node --input-type=module - <<'JS'
+          import { closeSync, existsSync, openSync, readSync, statSync } from "node:fs";
+          const path = "artifacts/studio-mediapipe-browser/report.json";
+          if (!existsSync(path)) {
+            console.log("MediaPipe 보고서가 없습니다. 이전 단계 결과를 확인해야 합니다.");
+          } else {
+            const bytes = statSync(path).size;
+            const limit = 262144;
+            const descriptor = openSync(path, "r");
+            try {
+              const buffer = Buffer.alloc(Math.min(bytes, limit));
+              const read = readSync(descriptor, buffer, 0, buffer.length, 0);
+              console.log(buffer.subarray(0, read).toString("utf8"));
+              if (bytes > limit) console.log("보고서 로그는 " + limit + "/" + bytes + "바이트로 제한했습니다.");
+            } finally {
+              closeSync(descriptor);
+            }
+          }
+          JS
