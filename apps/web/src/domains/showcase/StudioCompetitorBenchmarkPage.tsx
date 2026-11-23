@@ -37,6 +37,7 @@ import {
   startSafeViewTransition,
 } from "./nextgen-web-platform-enhancer";
 import { BENCHMARK_PAGE_COPY } from "./showcase-ui-copy";
+import { StudioBrushFilterMatrixSection } from "./StudioBrushFilterMatrixSection";
 import { StudioNextGenInnovationsStrip } from "./StudioNextGenInnovationsStrip";
 
 import { Container } from "@/shared/components/section";
@@ -503,7 +504,10 @@ export function StudioCompetitorBenchmarkPage() {
           </div>
         </section>
 
-        {/* 6. 차세대 4대 돌파 혁신 아키텍처 */}
+        {/* 6. 브러시·필터 58종 경쟁사 대조 · 실측 성능 · 3D 셰이퍼 돌파 로드맵 */}
+        <StudioBrushFilterMatrixSection locale={locale} />
+
+        {/* 7. 차세대 4대 돌파 혁신 아키텍처 */}
         <StudioNextGenInnovationsStrip locale={locale} />
 
         {/* 7. 관련 허브 이동 */}

@@ -162,8 +162,10 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
                 {copy.badge}
               </span>
               <h2 id={titleId} className="sr-only">{copy.title}</h2>
-              <p aria-hidden="true" className="text-xs font-black leading-5 text-fg sm:text-sm">
-                {korean ? "중요 작업은 별도 백업하세요" : "Keep a separate backup"}
+              <p aria-hidden="true" className="text-xs font-black leading-5 text-fg sm:text-sm [word-break:keep-all]">
+                {korean
+                  ? "베타 기간 중 데이터가 초기화될 수 있어요 · 중요 작업은 백업하세요"
+                  : "Beta data may be reset · Back up important work"}
               </p>
             </div>
             <p className="mt-1 hidden text-[0.68rem] leading-5 text-fg-2 lg:block">{copy.intro}</p>
