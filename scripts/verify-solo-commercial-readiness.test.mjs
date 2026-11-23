@@ -187,6 +187,37 @@ describe("verify-solo-commercial-readiness (1인 기업 상용 라이선스·Ope
     });
   });
 
+  test("의존성 없는 가드를 먼저 실행하고 YAML 계약 테스트 전에 잠긴 개발 의존성을 설치한다", () => {
+    const workflowPath = path.join(REPO_ROOT, ".github/workflows/openssf-scorecard.yml");
+    const parsed = parseYaml(readFileSync(workflowPath, "utf8"));
+    const steps = parsed.jobs?.["solo-commercial-readiness"]?.steps ?? [];
+    const guardIndex = steps.findIndex((step) =>
+      step.run?.startsWith("node scripts/verify-solo-commercial-readiness.mjs "),
+    );
+    const pnpmIndex = steps.findIndex((step) =>
+      step.uses?.startsWith("pnpm/action-setup@"),
+    );
+    const installIndex = steps.findIndex((step) =>
+      /\bpnpm\b[^\n]*\binstall\b/u.test(step.run ?? ""),
+    );
+    const testIndex = steps.findIndex((step) =>
+      step.run === "node --test scripts/verify-solo-commercial-readiness.test.mjs",
+    );
+
+    assert.ok(guardIndex >= 0, "설치 전 독립 실행 가드가 필요합니다");
+    assert.ok(pnpmIndex > guardIndex, "기존 가드를 의존성 설치 없이 먼저 실행해야 합니다");
+    assert.ok(installIndex > pnpmIndex, "pnpm 준비 후 테스트 의존성을 설치해야 합니다");
+    assert.ok(testIndex > installIndex, "YAML을 사용하는 Node 테스트 전에 의존성 설치가 필요합니다");
+    assert.match(steps[pnpmIndex].uses, /@[a-f0-9]{40}$/u, "pnpm 준비 액션은 SHA로 고정합니다");
+    assert.equal(steps[pnpmIndex].with?.run_install, false, "중복 자동 설치를 하지 않습니다");
+    assert.match(steps[installIndex].run, /--filter\s+toonstudio\b/u);
+    assert.match(steps[installIndex].run, /--dev\b/u, "계약 검사에 필요한 개발 의존성만 설치합니다");
+    assert.match(steps[installIndex].run, /--frozen-lockfile\b/u, "기존 잠금 버전을 사용해야 합니다");
+    assert.match(steps[installIndex].run, /--ignore-scripts\b/u, "불필요한 설치 후 빌드를 실행하지 않습니다");
+    assert.equal(steps[installIndex]["continue-on-error"], undefined);
+    assert.equal(steps[testIndex]["continue-on-error"], undefined);
+  });
+
   test(".github/workflows/openssf-scorecard.yml은 주간 오프피크 schedule+dispatch 전용·최소 권한·retention-days: 5·SARIF 업로드 계약을 만족한다", () => {
     const workflowPath = path.join(REPO_ROOT, ".github/workflows/openssf-scorecard.yml");
     const source = readFileSync(workflowPath, "utf8");

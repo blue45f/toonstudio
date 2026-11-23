@@ -68,6 +68,14 @@ jobs:
       - name: Run solo commercial readiness guard
         run: node scripts/verify-solo-commercial-readiness.mjs --out solo-commercial-readiness.json
 
+      - name: YAML 계약 테스트용 pnpm 준비
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+        with:
+          run_install: false
+
+      - name: 잠긴 개발 의존성을 설치 스크립트 없이 준비
+        run: pnpm --filter toonstudio install --dev --frozen-lockfile --prefer-offline --ignore-scripts
+
       - name: Run solo commercial readiness contract tests
         run: node --test scripts/verify-solo-commercial-readiness.test.mjs
 

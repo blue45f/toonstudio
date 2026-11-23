@@ -33,6 +33,8 @@ import {
   type Page,
 } from "playwright";
 
+import { STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_RESPONSE_BYTES as GLB_RESPONSE_BUDGET_BYTES } from "../apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-glb-export-worker-protocol";
+
 import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
 import { openStudioLayerNavigator } from "./lib/studio-shell-interactions";
 import { openStudioProjectCenter } from "./lib/studio-verifier-entry-points";
@@ -43,7 +45,6 @@ import {
 } from "./lib/studio-verify-preview-harness.mjs";
 
 export const STUDIO_HYBRID_DCC_INTEGRATION_REPORT_SCHEMA_VERSION = 3 as const;
-
 const SCRATCH =
   process.env.TOONSPECTRUM_HYBRID_DCC_VERIFY_DIR
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
@@ -57,7 +58,6 @@ const HYBRID_DCC_OPFS_ROOT = "toonstudio-hybrid-dcc-v1";
 const GLB_MAGIC = 0x46546c67;
 const GLB_VERSION = 2;
 const GLB_MINIMUM_BYTES = 20;
-const GLB_RESPONSE_BUDGET_BYTES = 100 * 1024 * 1024;
 const GLB_MAX_REPORT_ISSUES = 4_096;
 const GLB_MAX_ISSUE_IDS = 1_024;
 const TARGET_TRANSFORM = Object.freeze({

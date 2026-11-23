@@ -378,36 +378,95 @@ function evaluateFeelAxis(familyId, guardMod) {
   return { score, max: 20, radiusSpan, taperRatio: tailR / Math.max(1e-4, midR), tiltRatio: tiltedR / Math.max(1e-4, uprightR), jitterRms: rmsOut, notes };
 }
 
-/** 축 3·4·5: 10,000점 장시간 획 성능 + 입력 누락 0건 + 메모리/GC 안정성 */
-function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
-  const notes3 = [];
-  const notes4 = [];
-  const notes5 = [];
+export const BRUSH_SOAK_TIMING_SAMPLE_COUNT = 7;
+export const BRUSH_SOAK_TIMING_MIN_WINDOW_MS = 10;
+const BRUSH_SOAK_TIMING_WARMUP_STROKES = 16;
+const BRUSH_SOAK_TIMING_MAX_STROKES_PER_SAMPLE = 512;
 
-  // JIT 예열 (2,000점) — 콜드 컴파일/티어업 노이즈 제거
-  const warm = guardMod.createBrushStrokeSoakGuard({ familyId, baseSizePx: 18 });
-  const reusableSample = { x: 0, y: 0, pressure01: 0.6, tilt01: 0.35, timestampMs: 0 };
-  for (let i = 0; i < 2_000; i += 1) {
-    reusableSample.x = i * 2.5;
-    reusableSample.y = 60 + Math.sin(i * 0.05) * 18;
-    reusableSample.timestampMs = i * 4;
-    warm.push(reusableSample);
+function assertUsableSoakWindow({ earlyMs, lateMs }) {
+  if (!Number.isFinite(earlyMs) || !Number.isFinite(lateMs) || earlyMs <= 0 || lateMs <= 0) {
+    throw new Error(`장획 측정 시간이 유효하지 않습니다: earlyMs=${earlyMs}, lateMs=${lateMs}`);
   }
-  warm.finish();
+}
 
-  // 10,000점 연속 획 실측 (앞 10% [0..999] vs 뒤 10% [9000..9999], 7회 반복 하위 2번째 값으로
-  // 단측 양(+) OS 선점 노이즈 배제 — 실제 O(N^2) 저하는 모든 반복에서 그대로 10x+ 유지됨)
-  const earlySamples = [];
-  const lateSamples = [];
+/** 다른 실행의 앞·뒤 최솟값을 합성하지 않고, 실제로 함께 측정한 7개 배율의 중앙값을 사용한다. */
+export function summarizeBrushSoakTimingSamples(timingSamples) {
+  if (timingSamples.length !== BRUSH_SOAK_TIMING_SAMPLE_COUNT) {
+    throw new Error(`장획 측정에는 ${BRUSH_SOAK_TIMING_SAMPLE_COUNT}개 짝 표본이 필요합니다.`);
+  }
+  const ratios = timingSamples.map((sample) => {
+    assertUsableSoakWindow(sample);
+    return sample.lateMs / sample.earlyMs;
+  }).sort((a, b) => a - b);
+  return { lateEarlyRatio: ratios[Math.floor(ratios.length / 2)] };
+}
+
+/**
+ * 동일한 10,000점 측정 루프를 예열한 뒤, 앞·뒤 창이 각각 10ms 이상이 될 때까지 완전한 획을 누적한다.
+ * 반복 조건에는 합격 기준이나 배율을 사용하지 않는다. 7개 표본을 항상 전부 수집하며,
+ * 빠른 시계·작업량에서도 상한에 도달하면 통과 처리 대신 측정 실패를 반환한다.
+ */
+export function measureBrushSoakTiming(takeStroke) {
+  for (let warmup = 0; warmup < BRUSH_SOAK_TIMING_WARMUP_STROKES; warmup += 1) takeStroke();
+  const timingSamples = [];
   const meanFrames = [];
   const p99Frames = [];
   let finalDiag = null;
   const heapBefore = process.memoryUsage().heapUsed;
 
-  for (let run = 0; run < 7; run += 1) {
+  for (let run = 0; run < BRUSH_SOAK_TIMING_SAMPLE_COUNT; run += 1) {
+    let earlyMs = 0;
+    let lateMs = 0;
+    let strokes = 0;
+    let frameMeanSum = 0;
+    let p99FrameMs = 0;
+    do {
+      const stroke = takeStroke();
+      assertUsableSoakWindow(stroke);
+      earlyMs += stroke.earlyMs;
+      lateMs += stroke.lateMs;
+      frameMeanSum += stroke.avgFrameMs;
+      p99FrameMs = Math.max(p99FrameMs, stroke.p99FrameMs);
+      finalDiag = stroke.diagnostics;
+      strokes += 1;
+    } while (
+      (earlyMs < BRUSH_SOAK_TIMING_MIN_WINDOW_MS || lateMs < BRUSH_SOAK_TIMING_MIN_WINDOW_MS)
+      && strokes < BRUSH_SOAK_TIMING_MAX_STROKES_PER_SAMPLE
+    );
+    if (earlyMs < BRUSH_SOAK_TIMING_MIN_WINDOW_MS || lateMs < BRUSH_SOAK_TIMING_MIN_WINDOW_MS) {
+      throw new Error(`장획 측정 창이 ${BRUSH_SOAK_TIMING_MIN_WINDOW_MS}ms에 도달하지 못했습니다: ${JSON.stringify({ run: run + 1, strokes, earlyMs, lateMs })}`);
+    }
+    // 각 창의 원시 합계와 획 수를 실행 순서대로 보존한다. 양쪽 모두 같은 획 수이므로 배율은 그대로다.
+    timingSamples.push({ run: run + 1, strokes, earlyMs, lateMs });
+    meanFrames.push(frameMeanSum / strokes);
+    // 누적 표본 안에서 느린 획의 프레임을 평균으로 감추지 않는다.
+    p99Frames.push(p99FrameMs);
+  }
+  const heapDeltaMb = Math.max(0, (process.memoryUsage().heapUsed - heapBefore) / (1024 * 1024));
+  meanFrames.sort((a, b) => a - b);
+  p99Frames.sort((a, b) => a - b);
+  return {
+    ...summarizeBrushSoakTimingSamples(timingSamples),
+    timingSamples,
+    avgFrameMs: meanFrames[1],
+    p99FrameMs: p99Frames[1],
+    finalDiag,
+    heapDeltaMb,
+  };
+}
+
+/** 축 3·4·5: 10,000점 장시간 획 성능 + 입력 누락 0건 + 메모리/GC 안정성 */
+function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
+  const notes3 = [];
+  const notes4 = [];
+  const notes5 = [];
+  const reusableSample = { x: 0, y: 0, pressure01: 0.6, tilt01: 0.35, timestampMs: 0 };
+  const frameTimes = new Float64Array(500);
+  const takeStroke = () => {
     const g = guardMod.createBrushStrokeSoakGuard({ familyId, baseSizePx: 18 });
-    const chunkMs = [];
-    const frameTimes = [];
+    let earlyMs = 0;
+    let lateMs = 0;
+    let frameMsSum = 0;
     for (let c = 0; c < 10; c += 1) {
       const tChunk0 = performance.now();
       for (let f = 0; f < 50; f += 1) {
@@ -421,34 +480,27 @@ function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
           reusableSample.timestampMs = i * 4;
           g.push(reusableSample);
         }
-        frameTimes.push(performance.now() - tFrame0);
+        const elapsedFrameMs = performance.now() - tFrame0;
+        frameTimes[c * 50 + f] = elapsedFrameMs;
+        frameMsSum += elapsedFrameMs;
       }
-      chunkMs.push(performance.now() - tChunk0);
+      const chunkMs = performance.now() - tChunk0;
+      if (c === 0) earlyMs = chunkMs;
+      if (c === 9) lateMs = chunkMs;
     }
     g.finish();
-    finalDiag = g.getDiagnostics();
-    earlySamples.push(chunkMs[0]);
-    lateSamples.push(chunkMs[9]);
-    frameTimes.sort((a, b) => a - b);
-    meanFrames.push(frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length);
-    p99Frames.push(frameTimes[Math.min(frameTimes.length - 1, Math.floor(frameTimes.length * 0.99))]);
-  }
-  const heapDeltaMb = Math.max(0, (process.memoryUsage().heapUsed - heapBefore) / (1024 * 1024));
-  // 시간·힙 측정이 끝난 뒤 정렬 전의 실행 순서와 앞·뒤 표본 짝을 보존한다.
-  const timingSamples = earlySamples.map((earlyMs, index) => ({
-    run: index + 1,
-    earlyMs,
-    lateMs: lateSamples[index],
-  }));
-  earlySamples.sort((a, b) => a - b);
-  lateSamples.sort((a, b) => a - b);
-  meanFrames.sort((a, b) => a - b);
-  p99Frames.sort((a, b) => a - b);
-  const trimmedEarlyMs = Math.max(0.25, earlySamples[1]);
-  const trimmedLateMs = lateSamples[1];
-  const lateEarlyRatio = trimmedLateMs / trimmedEarlyMs;
-  const avgFrameMs = meanFrames[1];
-  const p99FrameMs = p99Frames[1];
+    frameTimes.sort();
+    return {
+      earlyMs,
+      lateMs,
+      avgFrameMs: frameMsSum / frameTimes.length,
+      p99FrameMs: frameTimes[Math.floor(frameTimes.length * 0.99)],
+      diagnostics: g.getDiagnostics(),
+    };
+  };
+  const {
+    lateEarlyRatio, avgFrameMs, p99FrameMs, timingSamples, finalDiag, heapDeltaMb,
+  } = measureBrushSoakTiming(takeStroke);
 
   // 축 3 점수 (20점)
   let perfScore = 0;
@@ -522,7 +574,7 @@ function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
   else notes5.push(`버퍼 재사용/힙 안정성 미달(reused=${stampCheck.reusedBuffer}, deltaMb=${heapDeltaMb.toFixed(2)})`);
 
   return {
-    perf: { score: perfScore, max: 20, lateEarlyRatio, avgFrameMs, p99FrameMs, notes: notes3 },
+    perf: { score: perfScore, max: 20, lateEarlyRatio, avgFrameMs, p99FrameMs, timingSamples, notes: notes3 },
     zeroDrop: { score: zeroDropScore, max: 20, emittedDabs: finalDiag?.emittedDabs ?? 0, nanOutputCount: finalDiag?.nanOutputCount ?? 0, notes: notes4 },
     memory: { score: memScore, max: 20, retainedHistoryPoints: finalDiag?.retainedHistoryPoints ?? 0, peakRetainedBytes: finalDiag?.peakRetainedBytes ?? 0, tileCacheHitRate: cacheStats.hitRate, heapDeltaMb, notes: notes5 },
   };
@@ -598,6 +650,12 @@ export async function evaluateAllBrushesCompetitorScore() {
         rimRoughness: Number(Math.max(visual.low.rimRoughness, visual.high.rimRoughness).toFixed(3)),
         lateEarlyRatio: Number(soak.perf.lateEarlyRatio.toFixed(2)),
         avgFrameMs: Number(soak.perf.avgFrameMs.toFixed(3)),
+        p99FrameMs: Number(soak.perf.p99FrameMs.toFixed(3)),
+        soakTiming: {
+          warmupStrokes: BRUSH_SOAK_TIMING_WARMUP_STROKES,
+          minWindowMs: BRUSH_SOAK_TIMING_MIN_WINDOW_MS,
+          samples: soak.perf.timingSamples,
+        },
         emittedDabs10k: soak.zeroDrop.emittedDabs,
         nanCount: soak.zeroDrop.nanOutputCount,
         retainedHistory: soak.memory.retainedHistoryPoints,

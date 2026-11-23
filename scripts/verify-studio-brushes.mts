@@ -59,11 +59,11 @@ import {
 import { studioBrushPresetUsesIntentionalDiscreteCarrier } from "../apps/web/src/domains/creator/brush/studio-brush-carrier-quality";
 import {
   STUDIO_ALL_BRUSH_CATALOG_ITEMS,
+  STUDIO_CANONICAL_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS,
   STUDIO_ERASER_BRUSH_CATALOG_ITEMS,
   STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS,
   STUDIO_LISTED_ERASER_BRUSH_CATALOG_ITEMS,
   STUDIO_LIBRARY_ALL_BRUSH_CATALOG_ITEMS,
-  STUDIO_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS,
   STUDIO_PAINT_BRUSH_CATALOG_ITEMS,
   type StudioBrushCatalogItem,
 } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
@@ -1879,7 +1879,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
     if (!skipUiCatalogMatch) {
       await assertUiBrushCatalogMatchesProductCatalog(
         firstCatalog,
-        STUDIO_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS,
+        STUDIO_CANONICAL_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS,
         "paint",
       );
     } else {
@@ -4616,14 +4616,14 @@ async function runMobileTouchAudit(browser: Browser, studioUrl: string): Promise
     invariant(await catalog.count() === 1, "mobile opened more than one built-in catalogue session");
     await catalog.getByRole("tab", { name: "전체", exact: true }).click();
     // 가상화된 격자는 마운트된 창만 DOM 에 있다. 스크롤 끝에서만 재면 마지막 몇 줄뿐이라 "컨트롤이 너무
-    // 적다"로 실패하므로 터치 타깃도 창마다 모아 합친다(전체 349개 항목의 44px 감사를 그대로 유지).
+    // 적다"로 실패하므로 정본 카탈로그 전체의 터치 타깃을 창마다 모아 44px 기준으로 감사한다.
     const targetsByKey = new Map<string, CatalogTouchTarget>();
     const selectionCount = (await collectVirtualizedBrushSelections(catalog, async () => {
       for (const target of await readCatalogTouchTargets(catalog)) {
         targetsByKey.set(`${target.owner}|${target.label}|${target.width}x${target.height}`, target);
       }
     })).length;
-    const expectedCatalogCount = STUDIO_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS.length;
+    const expectedCatalogCount = STUDIO_CANONICAL_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS.length;
     invariant(
       selectionCount === expectedCatalogCount,
       `mobile paint catalogue exposes ${selectionCount}/${expectedCatalogCount} brush choices`,

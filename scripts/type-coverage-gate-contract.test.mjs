@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -10,8 +10,13 @@ import {
   SHARD_NAMES,
   STUDIO_DOMAIN,
   STUDIO_ENGINE_DIRECTORIES,
+  STUDIO_REST_MAX_SOURCE_BYTES,
+  executionShards,
+  inventoryStudioRestFiles,
+  selectShards,
   shardArguments,
   shardOf,
+  splitStudioRest,
   summarize,
   typeCoverageFloor,
   withHeapLimit,
@@ -230,6 +235,78 @@ test("shardOf puts every path in exactly one shard and keeps lookalike directori
   }
 });
 
+test("studio-rest는 입력 순서와 무관하게 바이트 상한 안에서 모든 파일을 정확히 한 번 배정한다", () => {
+  const files = [
+    { path: `${STUDIO_DOMAIN}/future-domain/c.ts`, bytes: 8 },
+    { path: `${STUDIO_DOMAIN}/ai/a.ts`, bytes: 5 },
+    { path: `${STUDIO_DOMAIN}/brush-lab/b.test.ts`, bytes: 4 },
+    { path: `${STUDIO_DOMAIN}/future-domain/d.json`, bytes: 1 },
+  ];
+  const shards = splitStudioRest(files, 8);
+  assert.deepEqual(shards, splitStudioRest([...files].reverse(), 8));
+  assert.deepEqual(shards.flatMap((shard) => shard.files), files.map((file) => file.path).sort());
+  assert.equal(new Set(shards.flatMap((shard) => shard.files)).size, files.length);
+  assert.ok(shards.every((shard) => shard.sourceBytes <= 8 && shard.parent === "studio-rest"));
+  assert.equal(shards.reduce((total, shard) => total + shard.sourceBytes, 0), 18);
+  for (const shard of shards) {
+    const args = shardArguments(shard);
+    assert.deepEqual(args.slice(args.indexOf("--") + 1), shard.files);
+    assert.deepEqual(shard.ignoreFiles, SHARDS.find((entry) => entry.name === "studio-rest").ignoreFiles);
+  }
+  assert.throws(() => splitStudioRest([...files, files[0]], 8), /중복/u);
+  assert.throws(() => splitStudioRest(files, 7), /파일 하나가 샤드 예산/u);
+  assert.throws(() => splitStudioRest(files, 0), /양의 정수/u);
+  assert.throws(() => splitStudioRest([{ path: "outside.ts", bytes: 1 }]), /잘못된/u);
+  assert.throws(() => splitStudioRest([{ path: files[0].path, bytes: NaN }]), /잘못된/u);
+});
+
+test("파일 목록은 새 도메인·import 가능한 테스트·선언·JSON을 보존하고 기존 다른 그룹과 겹치지 않는다", () => {
+  const root = mkdtempSync(join(tmpdir(), "type-coverage-inventory-"));
+  const restPaths = [
+    "ai/source.ts", "ai/imported.test.ts", "new-domain/types.d.ts", "new-domain/data.json",
+    "new-domain/[literal]+entry.mts", "node_modules-adapter/source.ts",
+  ];
+  try {
+    for (const name of [...restPaths, "StudioRoot.tsx", "brush/engine.ts", "bg3d/nested/engine.ts", "new-domain/readme.md", "new-domain/node_modules/vendor/index.ts"]) {
+      const file = join(root, STUDIO_DOMAIN, name);
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, "export const value = 1;\n");
+    }
+    const files = inventoryStudioRestFiles(root);
+    assert.deepEqual(files.map((file) => file.path), restPaths.map((file) => `${STUDIO_DOMAIN}/${file}`).sort());
+    assert.ok(files.every((file) => file.bytes === 24));
+    const planned = executionShards(root, 48);
+    assert.equal(planned.filter((shard) => shard.parent === "studio-rest").length, 3);
+    const selected = selectShards(planned, ["studio-rest", "studio-rest-001", "studio-rest"]);
+    assert.deepEqual(selected.flatMap((shard) => shard.files), files.map((file) => file.path));
+    assert.deepEqual(selectShards(planned, ["studio-rest-002"]), [planned[4]]);
+    assert.throws(() => selectShards(planned, ["studio-rest-999"]), /알 수 없는 샤드/u);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("작은 파일이 많아져도 파일 인자가 프로세스 전달 예산을 넘지 않는다", () => {
+  const files = Array.from({ length: 2500 }, (_, index) => ({
+    path: `${STUDIO_DOMAIN}/future-domain/${String(index).padStart(4, "0")}-${"x".repeat(180)}.ts`,
+    bytes: 1,
+  }));
+  const shards = splitStudioRest(files);
+  assert.ok(shards.length > 1, "소스 바이트 외에 인자 길이로도 나눠야 합니다");
+  assert.deepEqual(shards.flatMap((shard) => shard.files), files.map((file) => file.path));
+  assert.ok(shards.every((shard) => shard.files.reduce((total, file) => total + Buffer.byteLength(file) + 1, 0) <= 256 * 1024));
+});
+
+test("현재 studio-rest 실행 계획도 전체 입력을 빠짐없이 바이트 상한 안에 넣는다", () => {
+  const files = inventoryStudioRestFiles(repositoryRoot);
+  const planned = executionShards(repositoryRoot);
+  const rest = selectShards(planned, ["studio-rest"]);
+  assert.ok(rest.length > 1, "단일 studio-rest 프로세스로 되돌아가면 안 됩니다");
+  assert.deepEqual(rest.flatMap((shard) => shard.files), files.map((file) => file.path));
+  assert.ok(rest.every((shard) => shard.sourceBytes <= STUDIO_REST_MAX_SOURCE_BYTES));
+  assert.ok(rest.every((shard) => shardArguments(shard).every((arg) => !arg.startsWith("--at-least"))));
+});
+
 test("summarize sums identifiers across shards and floors the percentage like the CLI", () => {
   assert.deepEqual(summarize([{ correctCount: 949, totalCount: 1000 }], 95), {
     correctCount: 949,
@@ -267,9 +344,11 @@ test("the runner lists shards without measuring and rejects unknown shards", () 
   });
   assert.equal(listed.status, 0, listed.stderr);
   const lines = listed.stdout.trim().split("\n");
-  assert.equal(lines.length, SHARD_NAMES.length);
-  SHARD_NAMES.forEach((name, index) => assert.ok(lines[index].startsWith(`${name}\t`), lines[index]));
+  const plannedNames = executionShards(repositoryRoot).map((shard) => shard.name);
+  assert.equal(lines.length, plannedNames.length);
+  plannedNames.forEach((name, index) => assert.ok(lines[index].startsWith(`${name}\t`), lines[index]));
   assert.ok(lines.every((line) => line.includes("type-coverage --json-output")));
+  assert.ok(lines.filter((line) => line.startsWith("studio-rest-")).every((line) => / -- <\d+개 파일: .+ … .+>$/u.test(line)));
 
   const single = spawnSync(process.execPath, [shardScript, "--list", "--shard", "studio-root"], {
     cwd: repositoryRoot,
@@ -278,6 +357,15 @@ test("the runner lists shards without measuring and rejects unknown shards", () 
   });
   assert.equal(single.status, 0, single.stderr);
   assert.equal(single.stdout.trim().split("\n").length, 1);
+
+  const alias = spawnSync(process.execPath, [shardScript, "--list", "--shard", "studio-rest"], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    timeout: 20_000,
+  });
+  assert.equal(alias.status, 0, alias.stderr);
+  assert.deepEqual(alias.stdout.trim().split("\n").map((line) => line.split("\t")[0]),
+    plannedNames.filter((name) => name.startsWith("studio-rest-")));
 
   const unknown = spawnSync(process.execPath, [shardScript, "--shard", "nope"], {
     cwd: repositoryRoot,
@@ -297,17 +385,22 @@ function withFakeTypeCoverage(run, { counts, exitCode = 0, floor = 90 }) {
       join(root, "package.json"),
       JSON.stringify({ scripts: { "check:type-coverage": `type-coverage --at-least ${floor}` } }),
     );
+    for (const file of FAKE_REST_FILES) {
+      mkdirSync(dirname(join(root, file)), { recursive: true });
+      writeFileSync(join(root, file), "export const x = 1;");
+    }
     const binDirectory = join(root, "node_modules", "type-coverage", "bin");
     mkdirSync(binDirectory, { recursive: true });
     writeFileSync(
       join(root, "node_modules", "type-coverage", "package.json"),
       JSON.stringify({ name: "type-coverage", version: "0.0.0" }),
     );
-    // 샤드를 구분하는 키: 첫 번째 --ignore-files 패턴(core 는 패턴 없음).
+    // 파일 하위 샤드는 '--' 뒤의 원문 파일 목록으로, 나머지는 기존 무시 패턴으로 구분한다.
     writeFileSync(
       join(binDirectory, "type-coverage"),
       `const args = process.argv.slice(2);
-const key = args.includes("--ignore-files") ? args[args.indexOf("--ignore-files") + 1] : "core";
+const key = args.includes("--") ? args.slice(args.indexOf("--") + 1).join("|")
+  : args.includes("--ignore-files") ? args[args.indexOf("--ignore-files") + 1] : "core";
 const counts = ${JSON.stringify(counts)};
 if (${exitCode} !== 0) { console.log(JSON.stringify({ succeeded: false, error: "boom" })); process.exit(${exitCode}); }
 const [correctCount, totalCount] = counts[key] ?? [0, 0];
@@ -320,10 +413,10 @@ console.log(JSON.stringify({ succeeded: true, correctCount, totalCount, args }))
   }
 }
 
-function runShardMain(root, argv) {
+function runShardMain(root, argv, options = {}) {
   const script = `
     import { main } from ${JSON.stringify(shardScript)};
-    try { process.exitCode = main(${JSON.stringify(argv)}, { root: ${JSON.stringify(root)} }); }
+    try { process.exitCode = main(${JSON.stringify(argv)}, ${JSON.stringify({ root, ...options })}); }
     catch (error) { console.error(error.message); process.exitCode = 1; }
   `;
   return spawnSync(process.execPath, ["--input-type=module", "-e", script], {
@@ -333,11 +426,14 @@ function runShardMain(root, argv) {
   });
 }
 
+const FAKE_REST_FILES = [`${STUDIO_DOMAIN}/ai/a.ts`, `${STUDIO_DOMAIN}/ai/b.ts`];
 const FAKE_SHARD_COUNTS = {
   core: [900, 900],
   [SHARDS[1].ignoreFiles[0]]: [95, 100],
   [SHARDS[2].ignoreFiles[0]]: [190, 200],
-  [SHARDS[3].ignoreFiles[0]]: [90, 100],
+  [FAKE_REST_FILES.join("|")]: [90, 100],
+  [FAKE_REST_FILES[0]]: [45, 50],
+  [FAKE_REST_FILES[1]]: [45, 50],
 };
 
 test("the runner measures each shard in its own process and sums the identifier counts", () => {
@@ -347,7 +443,21 @@ test("the runner measures each shard in its own process and sums the identifier 
     // (900 + 95 + 190 + 90) / (900 + 100 + 200 + 100) = 1275 / 1300 = 98.07%
     assert.match(result.stdout, /전체 범위: \(1275 \/ 1300\) 98\.07%/u);
     assert.match(result.stdout, /type-coverage success\./u);
-    for (const name of SHARD_NAMES) assert.match(result.stdout, new RegExp(`- ${name}:`, "u"));
+    for (const name of executionShards(root).map((shard) => shard.name)) {
+      assert.match(result.stdout, new RegExp(`- ${name}:`, "u"));
+    }
+  }, { counts: FAKE_SHARD_COUNTS });
+});
+
+test("나머지 샤드 분할 전후 식별자 합계와 전체 임계값 판정은 같고 별칭 중복 지정도 한 번만 측정한다", () => {
+  withFakeTypeCoverage((root) => {
+    const split = runShardMain(root, [], { maxSourceBytes: 20 });
+    assert.equal(split.status, 0, split.stderr);
+    assert.match(split.stdout, /전체 범위: \(1275 \/ 1300\) 98\.07%/u);
+    const selected = runShardMain(root, ["--shard", "studio-rest", "--shard", "studio-rest-001"], { maxSourceBytes: 20 });
+    assert.equal(selected.status, 0, selected.stderr);
+    assert.match(selected.stdout, /선택한 샤드\(studio-rest-001, studio-rest-002\): \(90 \/ 100\) 90\.00%/u);
+    assert.equal((selected.stdout.match(/- studio-rest-001:/gu) ?? []).length, 1);
   }, { counts: FAKE_SHARD_COUNTS });
 });
 
@@ -401,6 +511,8 @@ if (process.env.VITEST) {
 
     const ignoredBy = (shard, file) =>
       (shard.ignoreFiles ?? packageJson.typeCoverage.ignoreFiles).some((pattern) => minimatch(file, pattern));
+    const planned = executionShards(repositoryRoot);
+    const fileSets = new Map(planned.filter((shard) => shard.files).map((shard) => [shard.name, new Set(shard.files)]));
     const tracked = execFileSync("git", ["ls-files", "-z"], {
       cwd: repositoryRoot,
       encoding: "utf8",
@@ -413,6 +525,9 @@ if (process.env.VITEST) {
     for (const file of tracked) {
       const analyzers = SHARDS.filter((shard) => !ignoredBy(shard, file)).map((shard) => shard.name);
       assert.deepEqual(analyzers, [shardOf(file)], file);
+      const actual = planned.filter((shard) => (!shard.files || fileSets.get(shard.name).has(file)) && !ignoredBy(shard, file));
+      assert.equal(actual.length, 1, `${file}: 실행 샤드에서도 정확히 한 번 포함되어야 합니다`);
+      assert.equal(actual[0].parent ?? actual[0].name, shardOf(file), file);
     }
   });
 }

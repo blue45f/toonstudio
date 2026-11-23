@@ -184,11 +184,12 @@ export function StudioEnduranceGuardChip({
       data-endurance-status={overallStatus}
       className={cn(
         "pointer-events-auto fixed left-[max(0.75rem,env(safe-area-inset-left))] z-40 [word-break:keep-all]",
-        mobileImmersive
-          ? "bottom-[calc(4.75rem+env(safe-area-inset-bottom))]"
-          : "bottom-[max(0.75rem,env(safe-area-inset-bottom))]",
+        !mobileImmersive && "bottom-[max(0.75rem,env(safe-area-inset-bottom))]",
         className,
       )}
+      style={mobileImmersive ? {
+        bottom: "calc(max(var(--studio-canvas-bottom-inset, 7rem), var(--studio-mobile-dock-measured-height, 0px), var(--service-status-overlay-clearance, 0px), env(safe-area-inset-bottom)) + 0.75rem)",
+      } : undefined}
     >
       {open ? (
         <div
