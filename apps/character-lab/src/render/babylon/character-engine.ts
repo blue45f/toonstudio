@@ -521,7 +521,7 @@ export class BabylonCharacterEngine
     this.framing = framing;
     const width = this.engine.getRenderWidth();
     const height = this.engine.getRenderHeight();
-    const bounds = this.rig ? computeRigBounds(this.rig) : null;
+    const bounds = this.rig ? computeRigBounds(this.rig, framing.mode) : null;
     this.character.applyFraming(this.character.camera, framing, bounds, height > 0 ? width / height : 1);
     this.gaze.update();
   }

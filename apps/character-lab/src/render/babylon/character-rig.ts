@@ -8,6 +8,9 @@
  *   모델 공간 델타이므로 local = Rp⁻¹ ∘ pose ∘ Rp ∘ restLocal (Rp = 부모 본의 절대 rest 회전). 두 식은 rest가
  *   전부 항등이면 같다. 본 회전은 TransformNode.rotationQuaternion으로 적용한다(본은 노드에 링크).
  */
+import { BoundingBox } from "@babylonjs/core/Culling/boundingBox.js";
+import { extractMinAndMax } from "@babylonjs/core/Maths/math.functions.js";
+
 import { IDENTITY_QUAT, PROPORTION_KEYS, clampProportion } from "../../contracts";
 import { qConjugate, qMultiply, qNormalize } from "../../shared/math";
 import { resolvePartColorHex } from "../material-presets";
@@ -22,6 +25,7 @@ import { pinMorphInfluencerCount } from "./morph-shader-pin";
 import type {
   ApplyPlan,
   ApplyReceipt,
+  CameraFraming,
   CapsuleCollider,
   ChainAnchor,
   HumanoidBoneName,
@@ -172,15 +176,27 @@ export function isKitPart(rig: Pick<CharacterRig, "kind"> | null, part: Pick<Rig
   return rig?.kind === "kit" || part.tint !== undefined;
 }
 
-/** 가시 메시의 월드 AABB 합집합(없으면 null). 스키닝 적용 전 bind 포즈 기준. 런타임 스테이지/부속 소품(extra:*)은 카메라 프레이밍 중심을 흔들지 않도록 제외한다. */
-export function computeRigBounds(rig: CharacterRig): WorldBounds | null {
+/** 전신은 현재 포즈의 표면에 맞춘다. 얼굴·상반신의 기준점과 렌더러의 컬링 경계는 유지한다. */
+export function computeRigBounds(rig: CharacterRig, mode: CameraFraming["mode"]): WorldBounds | null {
   const coreParts = rig.parts.filter((part) => !part.id.startsWith("extra:") && part.visible && !part.forceHidden);
   const targetMeshes = coreParts.length > 0 ? coreParts.flatMap((part) => part.meshes) : rigVisibleMeshes(rig, { includeOutlines: false });
   const boxes: Array<{ min: Vec3; max: Vec3 }> = [];
+  const prepared = new Set<Skeleton>();
   for (const mesh of targetMeshes) {
     if (mesh.getTotalVertices() === 0) continue;
-    mesh.computeWorldMatrix(true);
-    const box = mesh.getBoundingInfo().boundingBox;
+    const world = mesh.computeWorldMatrix(true);
+    let box = mesh.getBoundingInfo().boundingBox;
+    if (mode === "full-body" && (mesh.skeleton || mesh.morphTargetManager?.numInfluencers)) {
+      if (mesh.skeleton && !prepared.has(mesh.skeleton)) {
+        mesh.skeleton.prepare(true);
+        prepared.add(mesh.skeleton);
+      }
+      const positions = mesh.getPositionData(Boolean(mesh.skeleton), Boolean(mesh.morphTargetManager));
+      if (positions?.length) {
+        const { minimum, maximum } = extractMinAndMax(positions, 0, positions.length / 3);
+        box = new BoundingBox(minimum, maximum, world);
+      }
+    }
     boxes.push({ min: fromVector3(box.minimumWorld), max: fromVector3(box.maximumWorld) });
   }
   return unionAabb(boxes);

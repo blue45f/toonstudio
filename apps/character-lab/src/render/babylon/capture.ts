@@ -402,7 +402,7 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
   const targetAspect = width / height;
   /** 프레이밍은 렌더 직전(일시 적용 뒤)에 계산한다: 플랜의 가시성·포즈가 bounds에 반영되도록. RTT 크기가 비정방형(예: 320×512 웹툰 컷)이어도 메인 캔버스 종횡비로 찌그러지지 않게 목표 종횡비 투영 행렬을 고정한다. */
   const frame = (pass: RenderPassId): readonly Mesh[] => {
-    deps.character.applyFraming(camera, options.framing, computeRigBounds(deps.rig), targetAspect);
+    deps.character.applyFraming(camera, options.framing, computeRigBounds(deps.rig, options.framing.mode), targetAspect);
     camera.getViewMatrix(true);
     const maxZ = camera.ignoreCameraMaxZ ? 0 : camera.maxZ;
     const reverseDepth = engine.useReverseDepthBuffer;
