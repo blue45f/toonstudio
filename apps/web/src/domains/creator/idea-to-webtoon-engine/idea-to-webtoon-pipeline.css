@@ -1,0 +1,740 @@
+/* 아이디어 → 완성 웹툰 6단계 멀티모달 파이프라인 디렉터 워크벤치
+ * Calm Studio Editor 시맨틱 토큰 전용 (명시적 속성 전이 · reduced-motion 준수) */
+
+.i2w-shell {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 1.25rem;
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+}
+
+.i2w-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background-color: var(--color-accent);
+  pointer-events: none;
+}
+
+.i2w-shell :is(h2, h3, h4, p, button, label, span, li) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.i2w-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.i2w-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+}
+
+.i2w-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 820px) {
+  .i2w-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.i2w-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+}
+
+.i2w-title {
+  margin: 0.25rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--color-fg);
+}
+
+.i2w-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+.i2w-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.i2w-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--color-line);
+  border-radius: 9999px;
+  background-color: var(--color-raised);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-fg-2);
+}
+
+.i2w-pill--good {
+  border-color: var(--color-good);
+  background-color: var(--color-good-soft);
+  color: var(--color-good);
+}
+
+.i2w-pill--warn {
+  border-color: var(--color-warn);
+  background-color: var(--color-warning-soft);
+  color: var(--color-warn);
+}
+
+.i2w-pill--bad {
+  border-color: var(--color-bad);
+  background-color: var(--color-bad-soft);
+  color: var(--color-bad);
+}
+
+.i2w-pill--cool {
+  border-color: var(--color-cool);
+  background-color: var(--color-info-soft);
+  color: var(--color-cool);
+}
+
+.i2w-pill--accent {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.i2w-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background-color: var(--color-card);
+  padding: 1rem;
+}
+
+.i2w-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.i2w-section-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.i2w-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.i2w-input-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-fg-2);
+}
+
+.i2w-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+@media (min-width: 720px) {
+  .i2w-input-row {
+    flex-direction: row;
+    align-items: stretch;
+  }
+}
+
+.i2w-input {
+  flex: 1 1 auto;
+  min-height: 44px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 0.75rem;
+  background-color: var(--color-canvas);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  color: var(--color-fg);
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.i2w-input::placeholder {
+  color: var(--color-fg-3);
+}
+
+.i2w-input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-color: var(--color-accent);
+}
+
+.i2w-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background-color: var(--color-raised);
+  padding: 0.55rem 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.i2w-btn:hover:not(:disabled) {
+  border-color: var(--color-line-strong);
+  background-color: var(--color-panel);
+}
+
+.i2w-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.i2w-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.i2w-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.i2w-btn--primary {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.i2w-btn--primary:hover:not(:disabled) {
+  border-color: var(--color-accent-2);
+  background-color: var(--color-accent-2);
+}
+
+.i2w-btn--good {
+  border-color: var(--color-good);
+  background-color: var(--color-good-soft);
+  color: var(--color-good);
+}
+
+.i2w-btn--warn {
+  border-color: var(--color-warn);
+  background-color: var(--color-warning-soft);
+  color: var(--color-warn);
+}
+
+.i2w-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.i2w-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background-color: var(--color-panel);
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-2);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.i2w-chip:hover {
+  border-color: var(--color-line-strong);
+  color: var(--color-fg);
+}
+
+.i2w-chip[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+
+.i2w-chip:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.i2w-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+}
+
+@media (min-width: 860px) {
+  .i2w-controls-grid {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+.i2w-control-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-fg-3);
+}
+
+/* 6단계 멀티에이전트 진행 스테퍼 */
+.i2w-stepper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 0.625rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.i2w-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.85rem;
+  background-color: var(--color-panel);
+  padding: 0.75rem;
+}
+
+.i2w-step-card--warning {
+  border-color: var(--color-warn);
+  background-color: var(--color-warning-soft);
+}
+
+.i2w-step-card--repaired {
+  border-color: var(--color-good);
+  background-color: var(--color-good-soft);
+}
+
+.i2w-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-fg-3);
+}
+
+.i2w-step-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.i2w-step-summary {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-fg-2);
+}
+
+/* 서사 비트 시트 */
+.i2w-beat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+  gap: 0.75rem;
+}
+
+.i2w-beat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.85rem;
+  background-color: var(--color-panel);
+  padding: 0.85rem;
+}
+
+.i2w-beat-card--cliff {
+  border-color: var(--color-accent);
+}
+
+.i2w-meter-track {
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: var(--color-raised);
+}
+
+.i2w-meter-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--color-accent);
+  transition: width 180ms ease;
+}
+
+/* 캐릭터 DNA 락 카드 */
+.i2w-dna-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.85rem;
+}
+
+.i2w-dna-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.9rem;
+  background-color: var(--color-panel);
+  padding: 0.95rem;
+}
+
+.i2w-dna-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.i2w-dna-name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-fg);
+}
+
+.i2w-dna-hash {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  color: var(--color-fg-3);
+}
+
+.i2w-dna-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-fg-2);
+}
+
+.i2w-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.i2w-swatch-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-radius: 9999px;
+  background-color: var(--color-card);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  color: var(--color-fg-2);
+}
+
+.i2w-swatch-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line-strong);
+  flex-shrink: 0;
+}
+
+.i2w-swatch-dot--accent {
+  background-color: var(--color-accent);
+}
+
+.i2w-swatch-dot--cool {
+  background-color: var(--color-cool);
+}
+
+.i2w-swatch-dot--good {
+  background-color: var(--color-good);
+}
+
+.i2w-swatch-dot--warn {
+  background-color: var(--color-warn);
+}
+
+.i2w-swatch-dot--bad {
+  background-color: var(--color-bad);
+}
+
+.i2w-swatch-dot--raised {
+  background-color: var(--color-raised);
+}
+
+.i2w-swatch-dot--fg-muted {
+  background-color: var(--color-fg-2);
+}
+
+/* 세로 스크롤 컷 연출 미리보기 */
+.i2w-strip-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.i2w-gutter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px dashed var(--color-line);
+  border-radius: 0.5rem;
+  background-color: var(--color-canvas);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  color: var(--color-fg-3);
+}
+
+.i2w-gutter-bar--expanded {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  padding-block: 0.55rem;
+}
+
+.i2w-gutter-bar--compressed {
+  border-color: var(--color-cool);
+  color: var(--color-cool);
+  padding-block: 0.15rem;
+}
+
+.i2w-panel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.85rem;
+  background-color: var(--color-panel);
+  padding: 0.85rem;
+}
+
+.i2w-panel-card--cliff {
+  border-color: var(--color-accent);
+}
+
+.i2w-panel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.i2w-dialogue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.i2w-bubble {
+  border: 1px solid var(--color-line);
+  border-radius: 0.7rem;
+  background-color: var(--color-card);
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-fg);
+}
+
+.i2w-bubble-speaker {
+  font-weight: 700;
+  color: var(--color-cool);
+  margin-right: 0.4rem;
+}
+
+/* 연속성 감사 패널 */
+.i2w-audit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.i2w-finding-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.i2w-finding-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background-color: var(--color-panel);
+  padding: 0.7rem 0.85rem;
+}
+
+.i2w-finding-item--error {
+  border-color: var(--color-bad);
+  background-color: var(--color-bad-soft);
+}
+
+.i2w-finding-item--warning {
+  border-color: var(--color-warn);
+  background-color: var(--color-warning-soft);
+}
+
+.i2w-finding-fix {
+  font-size: 0.76rem;
+  color: var(--color-fg-2);
+}
+
+/* 적응형 OST SVG 곡선 그래프 */
+.i2w-ost-svg-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 0.85rem;
+  background-color: var(--color-canvas);
+  padding: 0.75rem;
+}
+
+.i2w-ost-svg {
+  display: block;
+  width: 100%;
+  min-width: 440px;
+  height: auto;
+}
+
+.i2w-ost-grid-line {
+  stroke: var(--color-line);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.i2w-ost-crossfade {
+  stroke: var(--color-cool);
+  stroke-width: 1.25;
+  stroke-dasharray: 3 3;
+}
+
+.i2w-ost-curve {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.i2w-ost-point {
+  fill: var(--color-panel);
+  stroke: var(--color-accent);
+  stroke-width: 2.25;
+}
+
+.i2w-ost-point--cliff {
+  fill: var(--color-accent);
+  stroke: var(--color-fg);
+  stroke-width: 2;
+}
+
+.i2w-ost-label {
+  fill: var(--color-fg-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.i2w-ost-cue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.65rem;
+}
+
+.i2w-ost-cue-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.8rem;
+  background-color: var(--color-panel);
+  padding: 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Stage 6 JSON 내보내기 */
+.i2w-json-pre {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background-color: var(--color-canvas);
+  padding: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+
+.i2w-status-banner {
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background-color: var(--color-raised);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.8125rem;
+  color: var(--color-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .i2w-input,
+  .i2w-btn,
+  .i2w-chip,
+  .i2w-meter-fill {
+    transition: none;
+  }
+
+  .i2w-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
