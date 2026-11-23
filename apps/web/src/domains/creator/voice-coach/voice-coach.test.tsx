@@ -9,25 +9,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import {
-  DEFAULT_VOICE_COACH_COOLDOWN_MS,
   EARCON_CHORD_PROFILES,
+  playCoachAcousticEarcon,
+} from "./acoustic-earcon-synth";
+import {
+  VoiceCoachCooldownGuard,
+  planExpressiveUtterance,
+  synthesizeWithNeuralFallback,
+} from "./expressive-prosody-engine";
+import {
+  checkNeuralProviderAvailability,
+  createVoiceCoachPlaybackController,
+  type SpeechSynthesisLike,
+  type SpeechUtteranceLike,
+} from "./neural-voice-adapters";
+import { StudioVoiceCoachPanel } from "./StudioVoiceCoachPanel";
+import {
+  DEFAULT_VOICE_COACH_COOLDOWN_MS,
   NEURAL_VOICE_PROVIDER_IDS,
-  StudioVoiceCoachPanel,
   VOICE_COACH_EMOTION_TONES,
   VOICE_COACH_MOMENT_CATALOG,
   VOICE_COACH_MOMENT_IDS,
   VOICE_COACH_PERSONAS,
-  VoiceCoachCooldownGuard,
-  checkNeuralProviderAvailability,
   createDefaultNeuralProviderConfig,
-  createVoiceCoachPlaybackController,
   getVoiceCoachMomentScript,
-  planExpressiveUtterance,
-  playCoachAcousticEarcon,
-  synthesizeWithNeuralFallback,
-  type SpeechSynthesisLike,
-  type SpeechUtteranceLike,
-} from "./index";
+} from "./voice-coach-types";
 
 const HANGUL_REGEX = /[가-힣ㄱ-ㅎㅏ-ㅣ]/u;
 
