@@ -410,6 +410,53 @@
   }
 }
 
+/* 모바일 터치 드래그앤드롭 · 자기장 드롭 타깃 · 스크롤 격리 유틸리티 (OKLCH 전용, 원시 HEX 0건) */
+[data-touch-scroll-zone="contain"] {
+  overscroll-behavior: contain;
+}
+
+[data-touch-draggable="true"] {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: contain;
+  cursor: grab;
+  transition:
+    transform var(--ts-motion-fast) var(--ts-motion-ease),
+    box-shadow var(--ts-motion-fast) var(--ts-motion-ease),
+    border-color var(--ts-motion-fast) var(--ts-motion-ease),
+    outline-color var(--ts-motion-fast) var(--ts-motion-ease);
+}
+
+[data-touch-dragging="true"] {
+  transform: scale(1.03) translateZ(0);
+  box-shadow:
+    0 14px 28px -8px oklch(0.12 0.01 260 / 0.28),
+    0 0 0 1px color-mix(in oklch, var(--color-accent, var(--ts-spectrum-creation)) 42%, var(--color-line));
+  cursor: grabbing;
+  will-change: transform;
+  z-index: 30;
+}
+
+[data-touch-drop-target="active"] {
+  outline: 2px solid var(--color-accent, var(--ts-spectrum-creation));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-accent, var(--ts-spectrum-creation)) 22%, transparent);
+  background-color: color-mix(in oklch, var(--color-accent, var(--ts-spectrum-creation)) 10%, var(--color-panel));
+  transition:
+    outline-color var(--ts-motion-fast) var(--ts-motion-ease),
+    box-shadow var(--ts-motion-fast) var(--ts-motion-ease),
+    background-color var(--ts-motion-fast) var(--ts-motion-ease);
+}
+
+:root[data-design-theme="contrast"] :is([data-touch-dragging="true"], [data-touch-drop-target="active"]) {
+  transform: none;
+  box-shadow: none;
+  outline: 2px solid var(--color-accent, var(--ts-spectrum-creation));
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .site-header,
   .site-header__primary-link,
@@ -417,11 +464,18 @@
   [data-role-journey-bar],
   [data-role-journey-bar] :is(a, button),
   [data-spectrum-reveal],
+  [data-touch-draggable="true"],
+  [data-touch-dragging="true"],
+  [data-touch-drop-target="active"],
   dialog[open] {
     animation: none !important;
     animation-timeline: auto !important;
     transition: none !important;
     transform: none !important;
+  }
+  [data-touch-dragging="true"] {
+    outline: 2px solid var(--color-accent, var(--ts-spectrum-creation));
+    outline-offset: 2px;
   }
 }
 
@@ -441,5 +495,11 @@
     border-color: Highlight;
     background: Highlight;
     color: HighlightText;
+  }
+  [data-touch-dragging="true"],
+  [data-touch-drop-target="active"] {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
   }
 }
