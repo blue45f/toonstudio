@@ -47,13 +47,11 @@ import {
   formatNum,
   formatWon,
 } from "./components/admin-client";
-import { AdminGateFallback } from "./components/admin-gate";
-import { useAdminGate } from "./components/admin-gate-state";
+import { useAdminGate, useAdminToast } from "./components/admin-gate-state";
 import { AdminToastProvider } from "./components/AdminToast";
-import { useAdminToast } from "./components/use-admin-toast";
 
 import { ReadRequestScope } from "@/platform/read-request-scope";
-import { AdminDialog, AdminEmptyState } from "./components/admin-ui";
+import { AdminDialog, AdminEmptyState, AdminGateFallback } from "./components/admin-ui";
 import { Container } from "@/shared/components/section";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

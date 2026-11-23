@@ -20,3 +20,7 @@ registerI18nLocaleEntries("en", {
   "studio.bg3dSurfacePaint.hiddenReason": "You cannot paint on a hidden shape. Show it again with the eye icon in the layer list, then paint.",
   "studio.bg3dSurfacePaint.busyReason": "You can paint once capture, loading or the physics preview has finished.",
 });
+
+export function ensureStudioBg3dSurfacePaintI18n(): void {
+  // 모듈 평가 시 이미 표면 그리기 ko/en 사전을 등록한다.
+}

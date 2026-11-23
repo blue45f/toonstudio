@@ -11,7 +11,7 @@
 
 import { useT } from "@/shared/lib/i18n";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
-import "./publish-status-i18n";
+import { ensurePublishStatusI18n } from "./publish-status-i18n";
 import { useMemo, useState } from "react";
 
 import { downloadBlob, type ExportFormat } from "../export/studio-export";
@@ -27,6 +27,8 @@ import {
   type PublishSpecPresetId,
 } from "./spec-validator";
 import { generatePublishThumbnails } from "./thumbnail-generator";
+
+ensurePublishStatusI18n();
 
 export interface PublishSpecAutoOptimizeSectionProps {
   canvasWidth: number;

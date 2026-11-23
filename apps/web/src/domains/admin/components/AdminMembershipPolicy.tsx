@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import "../admin-i18n-loader";
 import { adminButtonClass, adminFetch, type AdminApiError } from "./admin-client";
@@ -218,7 +218,13 @@ const creatorLevels = [
 const trustLevels = ["new", "verified", "trusted", "restricted"];
 const sellerLevels = ["none", "starter", "verified", "professional"];
 
-export function AdminMembershipPolicy({ uid }: { uid: string }) {
+export function AdminMembershipPolicy({
+  uid,
+  paidOperationsSlot,
+}: {
+  uid: string;
+  paidOperationsSlot?: ReactNode;
+}) {
   const t = useT();
   const [policy, setPolicy] = useState<PolicyState | null>(null);
   const [policyError, setPolicyError] = useState<string | null>(null);
@@ -442,7 +448,7 @@ export function AdminMembershipPolicy({ uid }: { uid: string }) {
       ) : null}
 
       <div className="mt-5">
-        <AdminPaidOperationsToggle uid={uid} />
+        {paidOperationsSlot ?? <AdminPaidOperationsToggle uid={uid} />}
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-2">

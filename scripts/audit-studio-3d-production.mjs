@@ -14,6 +14,8 @@ import {
 export const DEFAULT_STUDIO_3D_AUDIT_URL = "https://www.toonstudio.cloud/studio";
 export const DEFAULT_STUDIO_3D_AUDIT_OUTPUT = "artifacts/studio-3d-production-audit";
 export const DEFAULT_STUDIO_3D_SURFACE_SETTLE_MS = 10_000;
+export const DEFAULT_STUDIO_3D_QUIET_WINDOW_MS = 600;
+export const DEFAULT_STUDIO_3D_PRE_NAV_SETTLE_MAX_MS = 6_000;
 export const DEFAULT_STUDIO_3D_AUDIT_TARGETS = Object.freeze([
   Object.freeze({ name: "desktop", viewport: Object.freeze({ width: 1_440, height: 1_000 }), deviceScaleFactor: 1 }),
   Object.freeze({ name: "retina", viewport: Object.freeze({ width: 1_440, height: 1_000 }), deviceScaleFactor: 2 }),
@@ -207,6 +209,68 @@ export function groupStudio3dFailedRequests(failedRequests = [], httpErrors = []
   });
 }
 
+export function splitStudio3dFailedRequestGroups(groupedSummary) {
+  const groups = Array.isArray(groupedSummary?.groups) ? groupedSummary.groups : [];
+  return Object.freeze({
+    actionableGroups: Object.freeze(groups.filter((group) => Boolean(group?.actionable))),
+    nonBlockingAbortedGroups: Object.freeze(groups.filter((group) => !group?.actionable)),
+  });
+}
+
+export function createInFlightRequestTracker(page, { now = () => Date.now() } = {}) {
+  const pending = new Set();
+  const onRequest = (request) => { pending.add(request); };
+  const onDone = (request) => { pending.delete(request); };
+  page.on("request", onRequest);
+  page.on("requestfinished", onDone);
+  page.on("requestfailed", onDone);
+
+  const summarize = (initialPending, startedAt) => {
+    const remainingPending = pending.size;
+    return Object.freeze({
+      initialPending,
+      remainingPending,
+      drainedCount: Math.max(0, initialPending - remainingPending),
+      elapsedMs: Math.max(0, now() - startedAt),
+      quiescent: remainingPending === 0,
+    });
+  };
+
+  const waitForQuiescence = async ({
+    timeoutMs = DEFAULT_STUDIO_3D_PRE_NAV_SETTLE_MAX_MS,
+    quietWindowMs = DEFAULT_STUDIO_3D_QUIET_WINDOW_MS,
+    pollIntervalMs = 50,
+  } = {}) => {
+    const startedAt = now();
+    const initialPending = pending.size;
+    if (timeoutMs <= 0) return summarize(initialPending, startedAt);
+    let quietSince = pending.size === 0 ? startedAt : null;
+    const effectiveQuietWindow = Math.min(Math.max(0, quietWindowMs), timeoutMs);
+    while (now() - startedAt < timeoutMs) {
+      const currentNow = now();
+      if (pending.size === 0) {
+        if (quietSince === null) quietSince = currentNow;
+        if (currentNow - quietSince >= effectiveQuietWindow) return summarize(initialPending, startedAt);
+      } else {
+        quietSince = null;
+      }
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+    return summarize(initialPending, startedAt);
+  };
+
+  return Object.freeze({
+    pendingCount: () => pending.size,
+    waitForQuiescence,
+    dispose: () => {
+      page.off?.("request", onRequest);
+      page.off?.("requestfinished", onDone);
+      page.off?.("requestfailed", onDone);
+      pending.clear();
+    },
+  });
+}
+
 export function parseStudio3dAuditArgs(argv = process.argv.slice(2)) {
   let url = DEFAULT_STUDIO_3D_AUDIT_URL;
   let output = DEFAULT_STUDIO_3D_AUDIT_OUTPUT;
@@ -354,13 +418,39 @@ async function inspectPage(page, target) {
   }, { deviceScaleFactor: target.deviceScaleFactor, keywords: ENTRYPOINT_KEYWORDS });
 }
 
-async function waitForSurfaceSettle(page, settleTimeoutMs) {
-  if (settleTimeoutMs <= 0) return;
+async function waitForSurfaceSettle(page, settleTimeoutMs, tracker = null) {
+  if (settleTimeoutMs <= 0) return null;
   await page.waitForLoadState("load", { timeout: Math.min(5_000, settleTimeoutMs) }).catch(() => undefined);
   await page.waitForLoadState("networkidle", { timeout: settleTimeoutMs }).catch(() => undefined);
+  if (!tracker) return null;
+  return tracker.waitForQuiescence({
+    timeoutMs: Math.min(settleTimeoutMs, DEFAULT_STUDIO_3D_PRE_NAV_SETTLE_MAX_MS),
+    quietWindowMs: DEFAULT_STUDIO_3D_QUIET_WINDOW_MS,
+  });
 }
 
-async function openFirstUseful3dSurface(page, baseUrl, settleTimeoutMs, setPhase) {
+function attachPageAuditListeners(page, { consoleErrors, pageErrors, failedRequests, httpErrors }, getPhase) {
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => pageErrors.push(String(error?.stack || error)));
+  page.on("requestfailed", (request) => {
+    failedRequests.push({
+      url: request.url(),
+      method: request.method(),
+      resourceType: request.resourceType(),
+      error: request.failure()?.errorText ?? "unknown",
+      phase: getPhase(),
+    });
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 400 && !response.url().toLowerCase().includes("favicon")) {
+      httpErrors.push({ url: response.url(), status: response.status() });
+    }
+  });
+}
+
+async function openFirstUseful3dSurface(page, baseUrl, settleTimeoutMs, setPhase, tracker) {
   const candidates = page.locator('button, a, [role="button"], [role="tab"], [role="menuitem"]');
   const count = Math.min(await candidates.count(), 300);
   for (let index = 0; index < count; index += 1) {
@@ -379,7 +469,7 @@ async function openFirstUseful3dSurface(page, baseUrl, settleTimeoutMs, setPhase
       const hasVisibleCanvas = await page.locator("canvas:visible").count().catch(() => 0);
       if (hasVisibleCanvas > 0 || page.url() !== baseUrl) {
         setPhase("surface-settle");
-        await waitForSurfaceSettle(page, settleTimeoutMs);
+        await waitForSurfaceSettle(page, settleTimeoutMs, tracker);
         return { text, location: page.url() };
       }
     } catch {
@@ -389,7 +479,7 @@ async function openFirstUseful3dSurface(page, baseUrl, settleTimeoutMs, setPhase
   return null;
 }
 
-async function auditCharacterWebglCanvas(page, target, baseUrl, settleTimeoutMs, setPhase) {
+async function auditCharacterWebglCanvas(page, target, baseUrl, settleTimeoutMs, setPhase, tracker) {
   let characterUrl;
   try {
     const parsed = new URL(baseUrl);
@@ -408,7 +498,7 @@ async function auditCharacterWebglCanvas(page, target, baseUrl, settleTimeoutMs,
       .first()
       .waitFor({ state: "visible", timeout: 30_000 })
       .catch(() => undefined);
-    await waitForSurfaceSettle(page, Math.min(settleTimeoutMs, 6_000));
+    await waitForSurfaceSettle(page, Math.min(settleTimeoutMs, DEFAULT_STUDIO_3D_PRE_NAV_SETTLE_MAX_MS), tracker);
     await page.waitForTimeout(1_000);
     const inspected = await inspectPage(page, target);
     const classifiedCanvases = (inspected.canvases ?? []).map(classifyStudio3dCanvas);
@@ -432,6 +522,12 @@ async function auditCharacterWebglCanvas(page, target, baseUrl, settleTimeoutMs,
 export function buildStudio3dAuditMarkdown(report) {
   const { summary, failures, targets, url, generatedAt } = report;
   const maxGroupsPerTarget = 20;
+  const overallFailed = report.failedRequestBreakdown ?? groupStudio3dFailedRequests(
+    (targets ?? []).flatMap((item) => item.failedRequests ?? []),
+    (targets ?? []).flatMap((item) => item.httpErrors ?? []),
+  );
+  const formatGroupLine = (group) =>
+    `- [${group.actionable ? "ACTIONABLE" : "NON-BLOCKING"}][${group.category}] ${group.count}× ${group.method} ${group.pathname} (${group.resourceType}, ${group.error}, phase=${group.phases.join(",")})`;
   return [
     "# ToonStudio 3D production visual audit",
     "",
@@ -443,12 +539,15 @@ export function buildStudio3dAuditMarkdown(report) {
     `- Broken visible images: ${summary.brokenImages}`,
     `- Potentially upscaled visible images: ${summary.upscaledImages}`,
     `- Undersized visible canvas bitmaps: ${summary.blurryCanvases}`,
+    `- Actionable failed requests: ${overallFailed.actionableCount} (HTTP 4xx/5xx: ${overallFailed.httpErrorCount})`,
+    `- Non-blocking aborted requests (ERR_ABORTED): ${overallFailed.abortedCount}`,
     `- Targets with WebGL: ${summary.webglTargets}/${targets.length}`,
     `- Maximum visible 3D entrypoints: ${summary.threeDEntrypoints}`,
     "",
     ...(failures.length > 0 ? ["## Blocking findings", "", ...failures.map((item) => `- ${item}`), ""] : []),
     ...targets.flatMap((target) => {
       const grouped = target.failedRequestSummary ?? groupStudio3dFailedRequests(target.failedRequests, target.httpErrors);
+      const { actionableGroups, nonBlockingAbortedGroups } = splitStudio3dFailedRequestGroups(grouped);
       const lines = [
         `## ${target.name}`,
         "",
@@ -462,23 +561,24 @@ export function buildStudio3dAuditMarkdown(report) {
         `- Failed requests: ${target.failedRequests.length}`,
         `- Failed request breakdown: aborted(ERR_ABORTED)=${grouped.abortedCount}, actionable(network/policy)=${grouped.actionableCount}, httpErrors(4xx/5xx)=${grouped.httpErrorCount}`,
       ];
-      if (grouped.groups.length > 0) {
-        lines.push("", "### Failed request groups", "");
-        for (const group of grouped.groups.slice(0, maxGroupsPerTarget)) {
-          const scopeLabel = group.actionable ? "ACTIONABLE" : "NON-BLOCKING";
-          lines.push(
-            `- [${scopeLabel}][${group.category}] ${group.count}× ${group.method} ${group.pathname} (${group.resourceType}, ${group.error}, phase=${group.phases.join(",")})`,
-          );
+      if (target.preNavigationSettle) {
+        const settle = target.preNavigationSettle;
+        lines.push(`- Pre-navigation settle: quiescent=${settle.quiescent}, drained=${settle.drainedCount}, remaining=${settle.remainingPending}, elapsed=${settle.elapsedMs}ms`);
+      }
+      if (actionableGroups.length > 0) {
+        lines.push("", "### Actionable request failures", "", ...actionableGroups.slice(0, maxGroupsPerTarget).map(formatGroupLine));
+        if (actionableGroups.length > maxGroupsPerTarget) {
+          lines.push(`- ...외 ${actionableGroups.length - maxGroupsPerTarget}개 그룹 (report.json 전체 목록 참조)`);
         }
-        if (grouped.groups.length > maxGroupsPerTarget) {
-          lines.push(`- ...외 ${grouped.groups.length - maxGroupsPerTarget}개 그룹 (report.json 전체 목록 참조)`);
+      }
+      if (nonBlockingAbortedGroups.length > 0) {
+        lines.push("", "### Non-blocking aborted requests (ERR_ABORTED)", "", ...nonBlockingAbortedGroups.slice(0, maxGroupsPerTarget).map(formatGroupLine));
+        if (nonBlockingAbortedGroups.length > maxGroupsPerTarget) {
+          lines.push(`- ...외 ${nonBlockingAbortedGroups.length - maxGroupsPerTarget}개 그룹 (report.json 전체 목록 참조)`);
         }
       }
       if (grouped.httpErrors.length > 0) {
-        lines.push("", "### HTTP 4xx/5xx errors", "");
-        for (const httpErr of grouped.httpErrors.slice(0, maxGroupsPerTarget)) {
-          lines.push(`- [HTTP ${httpErr.status}] ${httpErr.pathname}`);
-        }
+        lines.push("", "### HTTP 4xx/5xx errors", "", ...grouped.httpErrors.slice(0, maxGroupsPerTarget).map((httpErr) => `- [HTTP ${httpErr.status}] ${httpErr.pathname}`));
       }
       lines.push("");
       return lines;
@@ -519,38 +619,18 @@ export async function runStudio3dProductionAudit(options) {
         reducedMotion: "reduce",
       });
       const page = await context.newPage();
-      const consoleErrors = [];
-      const pageErrors = [];
-      const failedRequests = [];
-      const httpErrors = [];
+      const buckets = { consoleErrors: [], pageErrors: [], failedRequests: [], httpErrors: [] };
       let currentPhase = "studio-root";
       const setPhase = (nextPhase) => {
         currentPhase = nextPhase;
       };
-
-      page.on("console", (message) => {
-        if (message.type() === "error") consoleErrors.push(message.text());
-      });
-      page.on("pageerror", (error) => pageErrors.push(String(error?.stack || error)));
-      page.on("requestfailed", (request) => {
-        failedRequests.push({
-          url: request.url(),
-          method: request.method(),
-          resourceType: request.resourceType(),
-          error: request.failure()?.errorText ?? "unknown",
-          phase: currentPhase,
-        });
-      });
-      page.on("response", (response) => {
-        if (response.status() >= 400 && !response.url().toLowerCase().includes("favicon")) {
-          httpErrors.push({ url: response.url(), status: response.status() });
-        }
-      });
+      const surfaceTracker = createInFlightRequestTracker(page);
+      attachPageAuditListeners(page, buckets, () => currentPhase);
 
       let navigationError = null;
       try {
         await page.goto(options.url, { waitUntil: "domcontentloaded", timeout: 120_000 });
-        await waitForSurfaceSettle(page, Math.min(options.settleTimeoutMs, 6_000));
+        await waitForSurfaceSettle(page, Math.min(options.settleTimeoutMs, DEFAULT_STUDIO_3D_PRE_NAV_SETTLE_MAX_MS), surfaceTracker);
         await page.waitForTimeout(2_000);
       } catch (error) {
         navigationError = String(error?.stack || error);
@@ -564,10 +644,11 @@ export async function runStudio3dProductionAudit(options) {
       let rootAudit = null;
       let openedSurface = null;
       let surfaceAudit = null;
+      let preNavigationSettle = null;
       let characterCanvasAudit = null;
       if (!navigationError) {
         rootAudit = await inspectPage(page, target);
-        openedSurface = await openFirstUseful3dSurface(page, options.url, options.settleTimeoutMs, setPhase);
+        openedSurface = await openFirstUseful3dSurface(page, options.url, options.settleTimeoutMs, setPhase, surfaceTracker);
         if (openedSurface) {
           await page.screenshot({
             path: path.join(options.outputDir, `${target.name}-3d-surface.png`),
@@ -575,14 +656,45 @@ export async function runStudio3dProductionAudit(options) {
           }).catch(() => undefined);
           surfaceAudit = await inspectPage(page, target);
         }
-        characterCanvasAudit = await auditCharacterWebglCanvas(page, target, options.url, options.settleTimeoutMs, setPhase);
-        if (characterCanvasAudit?.relevantCanvases > 0) {
-          await page.screenshot({
-            path: path.join(options.outputDir, `${target.name}-character-webgl.png`),
-            fullPage: false,
-          }).catch(() => undefined);
+        setPhase("pre-navigation-settle");
+        preNavigationSettle = await surfaceTracker.waitForQuiescence({
+          timeoutMs: Math.min(options.settleTimeoutMs, DEFAULT_STUDIO_3D_PRE_NAV_SETTLE_MAX_MS),
+          quietWindowMs: DEFAULT_STUDIO_3D_QUIET_WINDOW_MS,
+        });
+        const characterPage = await context.newPage();
+        const characterTracker = createInFlightRequestTracker(characterPage);
+        attachPageAuditListeners(characterPage, buckets, () => currentPhase);
+        try {
+          characterCanvasAudit = await auditCharacterWebglCanvas(
+            characterPage,
+            target,
+            options.url,
+            options.settleTimeoutMs,
+            setPhase,
+            characterTracker,
+          );
+          if (characterCanvasAudit?.relevantCanvases > 0) {
+            await characterPage.screenshot({
+              path: path.join(options.outputDir, `${target.name}-character-webgl.png`),
+              fullPage: false,
+            }).catch(() => undefined);
+          }
+          await characterTracker.waitForQuiescence({
+            timeoutMs: Math.min(options.settleTimeoutMs, 3_000),
+            quietWindowMs: DEFAULT_STUDIO_3D_QUIET_WINDOW_MS,
+          });
+        } finally {
+          characterTracker.dispose();
+          await characterPage.close().catch(() => undefined);
+        }
+        if (surfaceTracker.pendingCount() > 0) {
+          await surfaceTracker.waitForQuiescence({
+            timeoutMs: Math.min(options.settleTimeoutMs, 3_000),
+            quietWindowMs: DEFAULT_STUDIO_3D_QUIET_WINDOW_MS,
+          });
         }
       }
+      surfaceTracker.dispose();
 
       const audit = surfaceAudit ?? rootAudit ?? {
         canvases: [],
@@ -594,12 +706,13 @@ export async function runStudio3dProductionAudit(options) {
         ...(audit.canvases ?? []).map(classifyStudio3dCanvas),
         ...(characterCanvasAudit?.canvases ?? []),
       ];
-      const failedRequestSummary = groupStudio3dFailedRequests(failedRequests, httpErrors);
+      const failedRequestSummary = groupStudio3dFailedRequests(buckets.failedRequests, buckets.httpErrors);
 
       targetReports.push({
         ...target,
         navigationError,
         openedSurface,
+        preNavigationSettle,
         characterCanvasAudit: characterCanvasAudit
           ? {
               url: characterCanvasAudit.url,
@@ -615,11 +728,11 @@ export async function runStudio3dProductionAudit(options) {
         threeDEntrypoints: rootAudit?.threeDEntrypoints ?? [],
         canvases: mergedCanvases,
         images: (audit.images ?? []).map(classifyStudio3dImage),
-        consoleErrors,
-        pageErrors,
-        failedRequests,
+        consoleErrors: buckets.consoleErrors,
+        pageErrors: buckets.pageErrors,
+        failedRequests: buckets.failedRequests,
         failedRequestSummary,
-        httpErrors,
+        httpErrors: buckets.httpErrors,
       });
       await context.close();
     }

@@ -25,7 +25,7 @@ import {
 
 import { adminButtonClass, adminFetch, formatDate } from "./admin-client";
 import { AdminDialog, AdminEmptyState } from "./admin-ui";
-import { useAdminToast } from "./use-admin-toast";
+import { useAdminToast } from "./admin-gate-state";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";

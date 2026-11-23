@@ -1,7 +1,7 @@
 import { BookOpenCheck, Clapperboard, LayoutGrid, MapPin, Pencil, Shapes, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useT } from "@/shared/lib/i18n";
-import "./storyworld-status-i18n";
+import { ensureStoryworldStatusI18n } from "./storyworld-status-i18n";
 
 import type { StoryworldProject } from "./studio-storyworld-causality";
 import {
@@ -9,6 +9,8 @@ import {
   type StoryworldBoard,
   type StoryworldBoardElementKind,
 } from "./studio-storyworld-board";
+
+ensureStoryworldStatusI18n();
 
 const KIND_LABELS: Readonly<Record<StoryworldBoardElementKind, string>> = {
   character: "캐릭터",

@@ -1,7 +1,7 @@
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 
-import { ToastContext, type ToastMessage, type ToastType } from "./use-admin-toast";
+import { ToastContext, type ToastMessage, type ToastType } from "./admin-gate-state";
 import { useT } from "@/shared/lib/i18n";
 
 export function AdminToastProvider({ children }: { children: React.ReactNode }) {

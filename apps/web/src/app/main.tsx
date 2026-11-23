@@ -1,5 +1,5 @@
-import "../platform/browser/polyfills"; // 최상단 브라우저 API 폴리필 보완
-import "../platform/browser/storage-migrate"; // 스토어 hydrate 전에 레거시 키 이관
+import { ensureBrowserPolyfills } from "../platform/browser/polyfills"; // 최상단 브라우저 API 폴리필 보완
+import { ensureLegacyStorageMigrated } from "../platform/browser/storage-migrate"; // 스토어 hydrate 전에 레거시 키 이관
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -10,7 +10,7 @@ import { getNextgenLabSettingsSnapshot } from "../shared/lib/nextgen-lab-setting
 import { installSpeculationRules, runWhenDocumentActivated, STUDIO_PRERENDER_URLS } from "../shared/lib/speculation-rules";
 import { initializeCreatorContinuity } from "../shared/lib/creator-continuity-store";
 import { initializePwaInstallCapture } from "../shared/lib/pwa-install-store";
-import "../shared/lib/programmatic-reload-hmr";
+import { ensureProgrammaticReloadHmr } from "../shared/lib/programmatic-reload-hmr";
 
 import App from "./App";
 import { ensureSerifWebFontForRoute } from "./serif-webfont";
@@ -24,6 +24,10 @@ import "./styles/product-journey-readability.css";
 import "./styles/reference-visual-system.css";
 import "./styles/atelier-motion.css";
 import "./styles/ink-motion.css";
+
+ensureBrowserPolyfills();
+ensureLegacyStorageMigrated();
+ensureProgrammaticReloadHmr();
 
 // 401 문구의 게스트·세션 구분은 도메인 인증 상태를 읽는다. 플랫폼 오류 모듈은 도메인을 import하지 않으므로
 // 앱 진입점에서 판정 함수를 등록한다.

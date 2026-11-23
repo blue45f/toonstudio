@@ -24,3 +24,7 @@ registerI18nLocaleEntries("en", {
   "studio.legacyPigment.denied": "Your current editing permissions do not allow conversion. Originals are unchanged.",
   "studio.legacyPigment.failed": "Could not create pigment copies. Originals are unchanged.",
 });
+
+export function ensureLegacyPigmentStrokeStatusI18n(): void {
+  // 모듈 평가 시 이미 이전 혼색 획 ko/en 상태 사전을 등록한다.
+}

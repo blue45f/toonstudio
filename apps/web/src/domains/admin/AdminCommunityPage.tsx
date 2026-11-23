@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 
 import { loadAdminI18nLocale } from "./admin-i18n-loader";
 import { adminFetch, type AdminApiError } from "./components/admin-client";
-import { AdminEmptyState } from "./components/admin-ui";
-import { AdminGateFallback } from "./components/admin-gate";
+import { AdminEmptyState, AdminGateFallback } from "./components/admin-ui";
 import { useAdminGate } from "./components/admin-gate-state";
 import { CreatorMarketplaceModerationBoard } from "./components/CreatorMarketplaceModerationBoard";
 

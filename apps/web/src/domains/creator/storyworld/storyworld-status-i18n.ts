@@ -111,3 +111,7 @@ registerI18nLocaleEntries("en", {
   "studio.storyworldStatus.scope.severityWarning": "Warning",
   "studio.storyworldStatus.scope.severitySuggestion": "Suggestion",
 });
+
+export function ensureStoryworldStatusI18n(): void {
+  // 모듈 평가 시 이미 ko/en 상태 문구 사전을 등록한다.
+}
