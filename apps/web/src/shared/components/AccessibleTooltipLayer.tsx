@@ -10,12 +10,16 @@ import {
 import { createPortal } from "react-dom";
 
 import { resolveTooltipPlacementAvoidingPopup, tooltipArrowStyle, tooltipSideStyle, type TooltipPlacement } from "./accessible-tooltip-placement";
+import { actionScopeBadgeClass, resolvePredictableActionPreview, type ActionScope } from "./predictable-action-previews";
 
 type TooltipSource = Readonly<{
   target: HTMLElement;
   title: string;
   description?: string;
   shortcut?: string;
+  actionBadge?: string;
+  actionScope?: ActionScope;
+  reversible?: boolean;
   reducedMotion: boolean;
 }>;
 
@@ -28,7 +32,8 @@ const TOUCH_HOLD_DELAY_MS = 520;
 const TOUCH_MOVE_TOLERANCE_PX = 10;
 const QUICK_ACCESS_DESKTOP_SELECTOR = '[data-studio-quick-access-surface="true"][data-mobile="false"]';
 const CANDIDATE_SELECTOR = [
-  "[data-tooltip]", "[data-app-tooltip]", "[title]", "button[aria-label]", "a[aria-label]",
+  "[data-tooltip]", "[data-app-tooltip]", "[data-action-preview]", "[data-tooltip-outcome]", "[title]",
+  "button[aria-label]", "a[aria-label]",
   '[role="button"][aria-label]', '[role="tab"][aria-label]', '[role="menuitem"][aria-label]',
   '[role="switch"][aria-label]', '[role="checkbox"][aria-label]', '[role="radio"][aria-label]',
   '[role="option"][aria-label]',
@@ -84,55 +89,6 @@ function targetPrefersReducedMotion(target: HTMLElement): boolean {
   return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
-function contextualDescription(target: HTMLElement): string | undefined {
-  const explicit = cleanCopy(
-    target.getAttribute("data-tooltip-description") ?? target.getAttribute("aria-description"),
-  );
-  if (explicit) return explicit;
-
-  const korean = isKoreanDocument();
-  const disabledReason = cleanCopy(target.getAttribute("data-tooltip-disabled-reason"));
-  if (disabledReason) return disabledReason;
-  if (target.hasAttribute("disabled") || target.getAttribute("aria-disabled") === "true") {
-    return korean ? "현재 사용할 수 없습니다." : "Unavailable right now.";
-  }
-
-  const pressed = target.getAttribute("aria-pressed");
-  if (pressed === "true") {
-    return korean ? "현재 선택되어 있습니다. 누르면 해제합니다." : "Selected. Activate to turn it off.";
-  }
-  if (pressed === "false") {
-    return korean ? "누르면 선택합니다." : "Activate to select.";
-  }
-
-  const checked = target.getAttribute("aria-checked");
-  if (checked === "true") {
-    return korean ? "현재 켜져 있습니다. 누르면 끕니다." : "On. Activate to turn it off.";
-  }
-  if (checked === "false") {
-    return korean ? "현재 꺼져 있습니다. 누르면 켭니다." : "Off. Activate to turn it on.";
-  }
-
-  const expanded = target.getAttribute("aria-expanded");
-  const isNavigationLink = target instanceof HTMLAnchorElement && target.hasAttribute("href");
-  if (!isNavigationLink && expanded === "true") {
-    return korean ? "현재 열려 있습니다. 누르면 닫습니다." : "Open. Activate to close.";
-  }
-  if (!isNavigationLink && expanded === "false") {
-    return korean ? "누르면 관련 메뉴나 패널을 엽니다." : "Activate to open the related menu or panel.";
-  }
-
-  const selected = target.getAttribute("aria-selected");
-  if (selected === "true") {
-    return korean ? "현재 선택된 항목입니다." : "Currently selected.";
-  }
-  if (selected === "false") {
-    return korean ? "누르면 이 항목으로 전환합니다." : "Activate to switch to this item.";
-  }
-
-  return undefined;
-}
-
 const EXCLUDED_SURFACE_SELECTOR =
   '[data-app-tooltip-exclude="true"], [data-studio-tool-hint-target="true"], [data-studio-tool-hint="true"], [data-studio-tool-hint-mode="off"]';
 
@@ -170,20 +126,32 @@ function tooltipSourceFromEventTarget(eventTarget: EventTarget | null): TooltipS
   );
   const nativeTitle = cleanCopy(target.getAttribute("title"));
   const ariaLabel = cleanCopy(target.getAttribute("aria-label"));
-  const explicit = Boolean(dataTitle || nativeTitle);
+  const hasPreviewAttr =
+    target.hasAttribute("data-action-preview") || target.hasAttribute("data-tooltip-outcome");
+  const explicit = Boolean(dataTitle || nativeTitle || hasPreviewAttr);
   if (!explicit && hasVisibleText(target)) return null;
 
-  const title = dataTitle ?? nativeTitle ?? ariaLabel;
+  const title = dataTitle ?? nativeTitle ?? ariaLabel ?? (hasPreviewAttr ? cleanCopy(target.textContent) : undefined);
   if (!title) return null;
+
+  const explicitShortcut = cleanCopy(
+    target.getAttribute("data-tooltip-shortcut") ??
+      target.getAttribute("aria-keyshortcuts"),
+  );
+  const preview = resolvePredictableActionPreview(target, {
+    title,
+    shortcut: explicitShortcut,
+    korean: isKoreanDocument(),
+  });
 
   return {
     target,
     title,
-    description: contextualDescription(target),
-    shortcut: cleanCopy(
-      target.getAttribute("data-tooltip-shortcut") ??
-        target.getAttribute("aria-keyshortcuts"),
-    ),
+    description: preview.description,
+    shortcut: preview.shortcut,
+    actionBadge: preview.actionBadge,
+    actionScope: preview.actionScope,
+    reversible: preview.reversible,
     reducedMotion: targetPrefersReducedMotion(target),
   };
 }
@@ -745,6 +713,8 @@ export function AccessibleTooltipLayer(): ReactElement | null {
       data-side={renderedPlacement.side}
       data-state={closing ? "closing" : "open"}
       data-positioned={placement ? "true" : "false"}
+      data-action-scope={active.actionScope}
+      data-reversible={active.reversible ? "true" : undefined}
       data-app-tooltip-reduced-motion={active.reducedMotion ? "true" : undefined}
       className="pointer-events-auto fixed z-[240] w-max max-w-[min(18rem,calc(100vw-1.25rem))] rounded-lg border border-line/80 bg-panel/98 px-2.5 py-2 text-left shadow-[0_18px_48px_oklch(0.06_0.01_70/0.62)] backdrop-blur-xl"
       style={style}
@@ -764,6 +734,17 @@ export function AccessibleTooltipLayer(): ReactElement | null {
         <p className="mt-1 max-w-[30ch] text-[0.7rem] leading-relaxed text-fg-2">
           {active.description}
         </p>
+      ) : null}
+      {active.actionBadge ? (
+        <span className="mt-1.5 flex items-center gap-1.5">
+          <span
+            data-app-tooltip-badge="true"
+            data-action-scope={active.actionScope ?? "custom"}
+            className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[0.625rem] font-semibold leading-none tracking-tight ${actionScopeBadgeClass(active.actionScope)}`}
+          >
+            {active.actionBadge}
+          </span>
+        </span>
       ) : null}
       <span aria-hidden data-app-tooltip-accent="true" />
     </div>
