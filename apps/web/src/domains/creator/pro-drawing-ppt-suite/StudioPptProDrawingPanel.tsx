@@ -3,8 +3,10 @@ import {
   Compass,
   FileSpreadsheet,
   Film,
+  GitBranch,
   LayoutGrid,
   LayoutTemplate,
+  Megaphone,
   Mic,
   PaintBucket,
   Palette,
@@ -13,6 +15,7 @@ import {
   Shapes,
   SlidersHorizontal,
   Sparkles,
+  Wand2,
   Wrench,
 } from "lucide-react";
 import { lazy, Suspense, useId, useState, type KeyboardEvent } from "react";
@@ -80,6 +83,21 @@ const LazyRedlineCanvasOverlayPanel = lazy(() =>
     default: m.RedlineCanvasOverlayPanel,
   })),
 );
+const LazyCreatorReliefAutopilotPanel = lazy(() =>
+  import("../creator-relief-autopilot/CreatorReliefAutopilotPanel").then((m) => ({
+    default: m.CreatorReliefAutopilotPanel,
+  })),
+);
+const LazyStoryGrowthInspirerPanel = lazy(() =>
+  import("../story-evolution-inspirer/StoryGrowthInspirerPanel").then((m) => ({
+    default: m.StoryGrowthInspirerPanel,
+  })),
+);
+const LazyWebtoonViralPromoPanel = lazy(() =>
+  import("../webtoon-viral-promo/WebtoonViralPromoPanel").then((m) => ({
+    default: m.WebtoonViralPromoPanel,
+  })),
+);
 
 export type PptProDrawingTabId =
   | "layout"
@@ -96,7 +114,10 @@ export type PptProDrawingTabId =
   | "craft"
   | "flatting"
   | "shorts"
-  | "redline";
+  | "redline"
+  | "relief"
+  | "storyGrowth"
+  | "viralPromo";
 
 interface SuiteTabDescriptor {
   readonly id: PptProDrawingTabId;
@@ -180,6 +201,21 @@ const SUITE_TABS: readonly SuiteTabDescriptor[] = [
     label: "붉은펜 검수 비출력 오버레이",
     description: "99_NONPRINT_REDLINE_OVERLAY 비출력 붉은펜 피드백 · 클릭 즉시 좌표 점프 · 출고 시 0% 자동 스트립 보장",
   },
+  {
+    id: "relief",
+    label: "작화 자동화 오토파일럿 4종",
+    description: "1줄→3구도 자동 추천, 3~24명 1점 원근 군중 실루엣, Hue-Shifted 5-톤 음영 팔레트, 대본→말풍선 자동 배치",
+  },
+  {
+    id: "storyGrowth",
+    label: "캐릭터 성장 일관성·클리셰 비틀기",
+    description: "장기 연재 시간축 흉터·연령·심리 5축 성장 vs 모순 판정 및 12종 클리셰 진단·직교 3방향 독창적 전개 영감",
+  },
+  {
+    id: "viralPromo",
+    label: "웹툰 바이럴 홍보·팬덤·IP 수익",
+    description: "1클릭 반응형 홍보 랜딩 HTML·SNS 3종 티저 카드·독자 리액션/투표 위젯·투명 수식 기반 글로벌 IP 수익 시뮬레이터",
+  },
 ];
 
 function SuiteTabIcon({ id }: { readonly id: PptProDrawingTabId }) {
@@ -214,6 +250,12 @@ function SuiteTabIcon({ id }: { readonly id: PptProDrawingTabId }) {
       return <Film size={16} aria-hidden="true" />;
     case "redline":
       return <PenLine size={16} aria-hidden="true" />;
+    case "relief":
+      return <Wand2 size={16} aria-hidden="true" />;
+    case "storyGrowth":
+      return <GitBranch size={16} aria-hidden="true" />;
+    case "viralPromo":
+      return <Megaphone size={16} aria-hidden="true" />;
   }
 }
 
@@ -310,6 +352,9 @@ export function StudioPptProDrawingPanel({
           {activeTab === "flatting" ? <LazyWebGpuFlattingWorkbenchPanel /> : null}
           {activeTab === "shorts" ? <LazyShortsMp4ExporterPanel /> : null}
           {activeTab === "redline" ? <LazyRedlineCanvasOverlayPanel /> : null}
+          {activeTab === "relief" ? <LazyCreatorReliefAutopilotPanel /> : null}
+          {activeTab === "storyGrowth" ? <LazyStoryGrowthInspirerPanel /> : null}
+          {activeTab === "viralPromo" ? <LazyWebtoonViralPromoPanel /> : null}
         </Suspense>
       </div>
     </section>
