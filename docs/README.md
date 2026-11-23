@@ -1,7 +1,7 @@
 # ToonStudio 문서 안내
 
 - 상태: **현재 문서 체계**
-- 최종 갱신: **2026-11-22**
+- 최종 갱신: **2026-11-23**
 
 ## 문서 권위 순서
 
@@ -30,6 +30,8 @@ UV 아일랜드를 한 타일로 정리하는 후속 구현은 [웹 UV 정리 �
 | `docs/adr/` | 결정 시점의 맥락과 선택 | 결정 기록으로 권위 있음 |
 | `docs/operations/`, `DEPLOY.md` | 현행 운영·배포 정본 정책과 런북 (`infrastructure-map.md`, `ai-deployment-quickstart.md` 등) | 현재 표시 문서만 권위 있음 |
 | `docs/engineering/` | 코드 구조·번들 경계 등 개발 패턴과 가드레일 해설 | 현재 표시 문서만 권위 있음(가드레일 규칙의 권위는 스크립트와 기준선) |
+| `docs/tech/` | IT 개발자·기획자용 차세대 웹 엔지니어링 기술 백서 (Remotion·WebGPU·WASM·AI 하네스·멀티디바이스·차세대 Chrome API) | 개별 문서 상단 상태 표기 우선(`current`/`target` 분리) |
+| `docs/ir/` | IR 피치덱·홍보·제휴 차별화 브리프 및 제품 기술 현황 정본 | 개별 문서 상단 상태 표기 우선(`current`/`target` 분리) |
 | `docs/engines/` | 엔진 역할·핀·품질 계약 | 생성 원장과 현재 표시 문서 우선 |
 | `docs/features/` | 기능별 현재 구현·정책 (접근성 1단계, Claude AI 보조, 잠재 안료 혼합, 필터 갤러리 등) | 현재 표시 문서만 권위 있음 |
 | `docs/asset-provenance/` | UI 폰트·3D/2D 에셋 출처·라이선스 원장([`asset-inventory.md`](asset-provenance/asset-inventory.md) 포함) | 출처·권리 원장으로 관리(정책 개정 대기 항목은 본문 명시) |
@@ -128,6 +130,12 @@ AI 보조(2026-10-22 도입, 2026-10-29부터 키 없이도 ToonStudio AI로 실
 2. [`reports/claude-ai-assist-benchmark-2026-10-22.md`](reports/claude-ai-assist-benchmark-2026-10-22.md) — 공개 페이지에서 읽은 경쟁 제품 사실, 설계 판단, 추가 AI 보조 기능 구상 10건(역사 자료)
 3. [`operations/free-ai-runtime.md`](operations/free-ai-runtime.md) — Claude 연결이 기존 BYOK 정책 안에서 어떻게 다뤄지는지(Claude 소절)
 4. [`benchmarks/ai-settings-ux-benchmark-2026-10-29.md`](benchmarks/ai-settings-ux-benchmark-2026-10-29.md) — 키 없이 시작·키 붙여넣기·여러 키·경로 표시를 비슷한 서비스와 비교한 설정 사용성 벤치마크(공개 문서 기반)
+
+차세대 웹 엔지니어링 기술 백서, 글로벌 경쟁사·멀티디바이스 벤치마크 및 IR·홍보 브리프(`2026-11-23`)는 다음 문서를 본다.
+
+1. [`tech/toonstudio-nextgen-engineering-whitepaper.md`](tech/toonstudio-nextgen-engineering-whitepaper.md) — 브라우저 올인원 단위경제, WebGPU 7밴드 KM·Rust WASM·WebAudio Foley, Remotion 구현 원리·실전 사용법, AI 스웜 하네스·자동 래칫, 멀티 디바이스 I/O, 차세대 Chrome API 27종 실전 가이드
+2. [`benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md`](benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md) — Clip Studio Paint · Procreate · Photoshop · Rebelle 7 · Blender · ibisPaint · 웨어러블/TV/XR 드로잉 UX 비교와 시나리오별 의사결정 매트릭스
+3. [`ir/toonstudio-ir-promo-differentiation-brief-2026-11.md`](ir/toonstudio-ir-promo-differentiation-brief-2026-11.md) — IR 피치덱·홍보·제휴 복붙용 핵심 메시지, 8대 기술 해자, 2026-11-23 실측 지표, `current` vs `target` 경계표 ([2026-11-22 기술 IR 정본](ir/toonstudio-ir-brief-20261122.md) 연계)
 
 ## 문서 상태 표기
 
