@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   BRUSH_SOAK_TIMING_MIN_WINDOW_MS,
@@ -10,6 +10,9 @@ import {
   analyzeStampBufferMetrics,
   evaluateAllBrushesCompetitorScore,
   measureBrushSoakTiming,
+  measureBrushRetainedHeap,
+  parseBrushScoreChildResult,
+  scoreBrushHeapStability,
   scoreVisualTextureFidelity,
   summarizeBrushSoakTimingSamples,
 } from "./verify-brush-100-competitor-score.mjs";
@@ -44,6 +47,11 @@ test("12종 전 브러시가 Krita 5.2 + CSP 3.0 5대 실측 축에서 100.0 / 1
     assert.ok(row.metrics.avgFrameMs < 16.6, `${row.familyId} 프레임 예산 초과: ${row.metrics.avgFrameMs}ms`);
     assert.ok(row.metrics.p99FrameMs < 16.6, `${row.familyId} p99 프레임 예산 초과: ${row.metrics.p99FrameMs}ms`);
     assert.equal(row.metrics.soakTiming.samples.length, BRUSH_SOAK_TIMING_SAMPLE_COUNT);
+    assert.equal(row.metrics.soakHeap.measurement, "post-gc-retained");
+    assert.ok(row.metrics.soakHeap.retainedDeltaMb >= 0 && row.metrics.soakHeap.retainedDeltaMb < 32);
+    for (const field of ["beforeRawBytes", "beforeBytes", "afterRawBytes", "afterBytes", "rawDeltaMb"]) {
+      assert.ok(Number.isFinite(row.metrics.soakHeap[field]));
+    }
     for (const [index, sample] of row.metrics.soakTiming.samples.entries()) {
       assert.equal(sample.run, index + 1);
       assert.ok(sample.strokes >= 1);
@@ -52,6 +60,80 @@ test("12종 전 브러시가 Krita 5.2 + CSP 3.0 5대 실측 축에서 100.0 / 1
     }
     assert.ok(row.metrics.emittedDabs10k >= 5000, `${row.familyId} 장획 dab 수 부족`);
     assert.ok(row.metrics.retainedHistory <= 64, `${row.familyId} 히스토리 누수`);
+  }
+});
+
+test("힙 측정: 실제 45MiB 임시 할당과 강한 참조 누수를 구분하고 32MiB 경계에서 감점한다", () => {
+  const code = [
+    "import assert from 'node:assert/strict';",
+    "import { measureBrushRetainedHeap, scoreBrushHeapStability } from " + JSON.stringify(pathToFileURL(SCRIPT_PATH).href) + ";",
+    "const transient = measureBrushRetainedHeap(() => new Array(6_000_000).fill(1).length);",
+    "assert.equal(transient.value, 6_000_000);",
+    "assert.ok((transient.heap.afterRawBytes - transient.heap.beforeBytes) / (1024 * 1024) > 40);",
+    "assert.ok(transient.heap.retainedDeltaMb < 32);",
+    "const held = [];",
+    "const retained = measureBrushRetainedHeap(() => { held.push(new Array(6_000_000).fill(1)); return held[0].length; });",
+    "assert.equal(held[0].length, 6_000_000);",
+    "assert.ok(retained.heap.retainedDeltaMb > 40);",
+    "const score = heapDeltaMb => scoreBrushHeapStability({ reusedBuffer: true, scratchPoolReuseCount: 1_001, heapDeltaMb });",
+    "assert.equal(score(transient.heap.retainedDeltaMb), 5);",
+    "assert.equal(score(retained.heap.retainedDeltaMb), 0);",
+    "assert.equal(score(32), 0);",
+    "assert.equal(score(31.999), 5);",
+    "console.log(JSON.stringify({ transient: transient.heap, retained: retained.heap }));",
+  ].join("\n");
+  const proc = spawnSync(process.execPath, ["--expose-gc", "--input-type=module", "-e", code], {
+    encoding: "utf8", timeout: 10_000,
+  });
+  assert.equal(proc.status, 0, proc.stderr + proc.stdout);
+});
+
+test("힙 측정: 버퍼 재사용과 유효한 측정값을 생략하면 힙 안정성 점수를 주지 않는다", () => {
+  const valid = { reusedBuffer: true, scratchPoolReuseCount: 1_001, heapDeltaMb: 0 };
+  assert.equal(scoreBrushHeapStability(valid), 5);
+  assert.equal(scoreBrushHeapStability({ ...valid, reusedBuffer: false }), 0);
+  assert.equal(scoreBrushHeapStability({ ...valid, scratchPoolReuseCount: 1_000 }), 0);
+  for (const heapDeltaMb of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.equal(scoreBrushHeapStability({ ...valid, heapDeltaMb }), 0);
+  }
+});
+
+test("힙 측정: 점수 미달 child JSON을 원시값까지 보존하고 crash·파싱·종료 코드 오류는 거부한다", () => {
+  const failureReport = {
+    benchmark: "krita-5.2+csp-3.0-12-family-100pt",
+    familyCount: 12, minScore: 95, avgScore: 95,
+    results: Array.from({ length: 12 }, () => ({
+      total: 95, metrics: { soakHeap: { rawDeltaMb: 48, retainedDeltaMb: 40 } },
+      notes: ["보존 힙 32MiB 초과"],
+    })),
+  };
+  const failedScore = { status: 1, signal: null, stdout: JSON.stringify(failureReport), stderr: "" };
+  assert.deepEqual(parseBrushScoreChildResult(failedScore), failureReport);
+  for (const child of [
+    { ...failedScore, status: null, signal: "SIGKILL" },
+    { ...failedScore, status: 2 },
+    { ...failedScore, error: new Error("spawn failed") },
+    { ...failedScore, stdout: "invalid JSON" },
+    { ...failedScore, status: 0 },
+    { ...failedScore, stdout: JSON.stringify({ ...failureReport, familyCount: 0 }) },
+    { ...failedScore, stdout: JSON.stringify({ ...failureReport, minScore: 100 }) },
+  ]) assert.throws(() => parseBrushScoreChildResult(child), /브러시 GC/);
+});
+
+test("힙 측정: GC 없는 worker는 측정이나 자식 프로세스 재귀로 통과하지 않는다", async () => {
+  const gcDescriptor = Object.getOwnPropertyDescriptor(globalThis, "gc");
+  const previousMarker = process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD;
+  try {
+    delete globalThis.gc;
+    process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD = "1";
+    let measured = false;
+    assert.throws(() => measureBrushRetainedHeap(() => { measured = true; }), /명시적 GC/);
+    assert.equal(measured, false);
+    await assert.rejects(evaluateAllBrushesCompetitorScore(), /재귀 실행을 중단/);
+  } finally {
+    if (gcDescriptor) Object.defineProperty(globalThis, "gc", gcDescriptor);
+    if (previousMarker === undefined) delete process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD;
+    else process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD = previousMarker;
   }
 });
 

@@ -14,12 +14,43 @@
  */
 
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import { registerHooks } from "node:module";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const GC_CHILD_MARKER = "TOONSTUDIO_BRUSH_SCORE_GC_CHILD";
+
+/** 점수 미달의 정상 JSON은 보존하되 프로세스 장애·깨진 보고서·종료 코드 불일치는 실패한다. */
+export function parseBrushScoreChildResult(child) {
+  if (child.error || child.signal || ![0, 1].includes(child.status)) {
+    throw new Error(`브러시 GC 프로세스 실패: ${child.error?.message ?? child.signal ?? child.status}; ${child.stderr ?? ""}`);
+  }
+  let report;
+  try { report = JSON.parse(child.stdout); } catch {
+    throw new Error(`브러시 GC 프로세스가 유효한 JSON 보고서를 반환하지 않았습니다: ${child.stderr ?? ""}`);
+  }
+  if (report?.benchmark !== "krita-5.2+csp-3.0-12-family-100pt"
+    || report.familyCount !== 12 || !Array.isArray(report.results) || report.results.length !== 12
+    || !Number.isFinite(report.minScore)
+    || child.status !== (report.minScore < 100 ? 1 : 0)) {
+    throw new Error("브러시 GC 프로세스의 보고서와 종료 코드가 일치하지 않습니다.");
+  }
+  return report;
+}
+
+function evaluateBrushScoreInGcProcess() {
+  if (process.env[GC_CHILD_MARKER] === "1") {
+    throw new Error("브러시 GC 자식 프로세스에 명시적 GC가 없습니다. 재귀 실행을 중단합니다.");
+  }
+  return parseBrushScoreChildResult(spawnSync(process.execPath,
+    ["--expose-gc", fileURLToPath(import.meta.url), "--json"], {
+      cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 8 * 1024 * 1024,
+      env: { ...process.env, [GC_CHILD_MARKER]: "1" },
+    }));
+}
 
 let tsHooksRegistered = false;
 function ensureTsImportHooks() {
@@ -383,6 +414,30 @@ export const BRUSH_SOAK_TIMING_MIN_WINDOW_MS = 10;
 const BRUSH_SOAK_TIMING_WARMUP_STROKES = 16;
 const BRUSH_SOAK_TIMING_MAX_STROKES_PER_SAMPLE = 512;
 
+/** 강제 GC는 작업 전후에만 실행한다. 유휴 객체와 강한 참조로 남은 힙을 따로 기록한다. */
+export function measureBrushRetainedHeap(work) {
+  if (typeof globalThis.gc !== "function") {
+    throw new Error("보존 힙 측정에는 --expose-gc로 시작한 Node의 명시적 GC가 필요합니다.");
+  }
+  const beforeRawBytes = process.memoryUsage().heapUsed;
+  globalThis.gc();
+  const beforeBytes = process.memoryUsage().heapUsed;
+  const value = work();
+  const afterRawBytes = process.memoryUsage().heapUsed;
+  globalThis.gc();
+  const afterBytes = process.memoryUsage().heapUsed;
+  return { value, heap: {
+    measurement: "post-gc-retained", beforeRawBytes, beforeBytes, afterRawBytes, afterBytes,
+    rawDeltaMb: (afterRawBytes - beforeRawBytes) / (1024 * 1024),
+    retainedDeltaMb: Math.max(0, (afterBytes - beforeBytes) / (1024 * 1024)),
+  } };
+}
+
+export function scoreBrushHeapStability({ reusedBuffer, scratchPoolReuseCount, heapDeltaMb }) {
+  return reusedBuffer && scratchPoolReuseCount > 1_000
+    && Number.isFinite(heapDeltaMb) && heapDeltaMb >= 0 && heapDeltaMb < 32 ? 5 : 0;
+}
+
 function assertUsableSoakWindow({ earlyMs, lateMs }) {
   if (!Number.isFinite(earlyMs) || !Number.isFinite(lateMs) || earlyMs <= 0 || lateMs <= 0) {
     throw new Error(`장획 측정 시간이 유효하지 않습니다: earlyMs=${earlyMs}, lateMs=${lateMs}`);
@@ -412,7 +467,6 @@ export function measureBrushSoakTiming(takeStroke) {
   const meanFrames = [];
   const p99Frames = [];
   let finalDiag = null;
-  const heapBefore = process.memoryUsage().heapUsed;
 
   for (let run = 0; run < BRUSH_SOAK_TIMING_SAMPLE_COUNT; run += 1) {
     let earlyMs = 0;
@@ -442,7 +496,6 @@ export function measureBrushSoakTiming(takeStroke) {
     // 누적 표본 안에서 느린 획의 프레임을 평균으로 감추지 않는다.
     p99Frames.push(p99FrameMs);
   }
-  const heapDeltaMb = Math.max(0, (process.memoryUsage().heapUsed - heapBefore) / (1024 * 1024));
   meanFrames.sort((a, b) => a - b);
   p99Frames.sort((a, b) => a - b);
   return {
@@ -451,7 +504,6 @@ export function measureBrushSoakTiming(takeStroke) {
     avgFrameMs: meanFrames[1],
     p99FrameMs: p99Frames[1],
     finalDiag,
-    heapDeltaMb,
   };
 }
 
@@ -498,9 +550,9 @@ function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
       diagnostics: g.getDiagnostics(),
     };
   };
-  const {
-    lateEarlyRatio, avgFrameMs, p99FrameMs, timingSamples, finalDiag, heapDeltaMb,
-  } = measureBrushSoakTiming(takeStroke);
+  const { value: timing, heap } = measureBrushRetainedHeap(() => measureBrushSoakTiming(takeStroke));
+  const { lateEarlyRatio, avgFrameMs, p99FrameMs, timingSamples, finalDiag } = timing;
+  const heapDeltaMb = heap.retainedDeltaMb;
 
   // 축 3 점수 (20점)
   let perfScore = 0;
@@ -570,18 +622,24 @@ function evaluateSoakAndReliabilityAxes(familyId, guardMod, dualMod) {
 
   const scratch = new Float32Array(64 * 64);
   const stampCheck = guardMod.renderBrushFamilyStampBuffer({ familyId, size: 64, pressure01: 0.7, seed: 7 }, scratch);
-  if (stampCheck.reusedBuffer && (finalDiag?.scratchPoolReuseCount ?? 0) > 1_000 && heapDeltaMb < 32) memScore += 5;
+  const heapScore = scoreBrushHeapStability({
+    reusedBuffer: stampCheck.reusedBuffer,
+    scratchPoolReuseCount: finalDiag?.scratchPoolReuseCount ?? 0,
+    heapDeltaMb,
+  });
+  if (heapScore === 5) memScore += heapScore;
   else notes5.push(`버퍼 재사용/힙 안정성 미달(reused=${stampCheck.reusedBuffer}, deltaMb=${heapDeltaMb.toFixed(2)})`);
 
   return {
     perf: { score: perfScore, max: 20, lateEarlyRatio, avgFrameMs, p99FrameMs, timingSamples, notes: notes3 },
     zeroDrop: { score: zeroDropScore, max: 20, emittedDabs: finalDiag?.emittedDabs ?? 0, nanOutputCount: finalDiag?.nanOutputCount ?? 0, notes: notes4 },
-    memory: { score: memScore, max: 20, retainedHistoryPoints: finalDiag?.retainedHistoryPoints ?? 0, peakRetainedBytes: finalDiag?.peakRetainedBytes ?? 0, tileCacheHitRate: cacheStats.hitRate, heapDeltaMb, notes: notes5 },
+    memory: { score: memScore, max: 20, retainedHistoryPoints: finalDiag?.retainedHistoryPoints ?? 0, peakRetainedBytes: finalDiag?.peakRetainedBytes ?? 0, tileCacheHitRate: cacheStats.hitRate, heapDeltaMb, heap, notes: notes5 },
   };
 }
 
 /** 12종 전 브러시 100점 벤치마크 실행. */
 export async function evaluateAllBrushesCompetitorScore() {
+  if (typeof globalThis.gc !== "function") return evaluateBrushScoreInGcProcess();
   const { kernels, guard, dual, natural, presets } = await loadBrushModules();
 
   // 사전 불변식 검사: 프리셋 카탈로그에 역전 필압/초저간격 폭주 없는지 확인
@@ -659,6 +717,7 @@ export async function evaluateAllBrushesCompetitorScore() {
         emittedDabs10k: soak.zeroDrop.emittedDabs,
         nanCount: soak.zeroDrop.nanOutputCount,
         retainedHistory: soak.memory.retainedHistoryPoints,
+        soakHeap: soak.memory.heap,
       },
       notes: [...visual.notes, ...feel.notes, ...soak.perf.notes, ...soak.zeroDrop.notes, ...soak.memory.notes],
     });
