@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { StudioLiveDynamicBrushOverlayHost } from "./StudioLiveInkHosts";
+import { StudioLiveDynamicBrushOverlayHost, StudioLivePressureHudPill, type StudioLivePressureStore } from "./StudioLiveInkHosts";
 
 import type { StudioLiveDynamicBrushOverlayRenderer } from "./studio-live-dynamic-brush-overlay";
 
@@ -61,5 +61,18 @@ describe("StudioLiveDynamicBrushOverlayHost presentation surfaces", () => {
 
     view.unmount();
     expect(attach).toHaveBeenLastCalledWith(null);
+  });
+});
+
+describe("StudioLivePressureHudPill", () => {
+  it("첫 필압 표본은 추가 청크를 기다리지 않고 작화 화면에 바로 표시한다", () => {
+    const store: StudioLivePressureStore = { value: null, listeners: new Set() };
+    const view = render(<StudioLivePressureHudPill store={store} />);
+    expect(view.queryByRole("meter")).toBeNull();
+    act(() => {
+      store.value = 0.42;
+      for (const notify of store.listeners) notify();
+    });
+    expect(view.getByRole("meter", { name: "실시간 필압" }).getAttribute("aria-valuenow")).toBe("42");
   });
 });

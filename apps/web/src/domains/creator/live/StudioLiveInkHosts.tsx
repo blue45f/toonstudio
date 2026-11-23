@@ -3,13 +3,13 @@
  * Loaded beside the canvas so their React wiring stays out of route bootstrap.
  */
 import {
-  Suspense,
   memo,
   useLayoutEffect,
   useRef,
   useSyncExternalStore,
 } from "react";
 
+import { StudioPressureHudMeter } from "./StudioPressureHudMeter";
 import { studioPressureHudRatio } from "../brush/studio-draw-hud";
 import { StudioHudPill } from "../studio-chrome-ui";
 
@@ -22,13 +22,6 @@ import type {
 import type { StudioLiveRetainedMediaOverlayRenderer } from "./studio-live-retained-media-overlay";
 import type { StudioLiveStampOverlayRenderer } from "./studio-live-stamp-overlay";
 import type { StudioLiveWetInkOverlayRenderer } from "./studio-live-wet-ink-overlay";
-
-import { lazyRetry } from "@/shared/lib/lazy-retry";
-
-const StudioPressureHudMeter = lazyRetry(
-  () => import("../studio-creative-visuals").then((mod) => ({ default: mod.StudioPressureHudMeter })),
-  "StudioPressureHudMeter"
-);
 
 export interface StudioLivePressureStore {
   value: number | null;
@@ -288,9 +281,7 @@ export function StudioLivePressureHudPill({ store }: { store: StudioLivePressure
   if (ratio === null) return null;
   return (
     <StudioHudPill accent>
-      <Suspense fallback={null}>
-        <StudioPressureHudMeter ratio={ratio} />
-      </Suspense>
+      <StudioPressureHudMeter ratio={ratio} />
     </StudioHudPill>
   );
 }
