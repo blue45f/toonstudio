@@ -1,0 +1,17 @@
+[package]
+name = "studio-wasm64-drawing-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "ToonStudio 순수 Rust WebAssembly 64비트(memory64) 호환 코어 드로잉 엔진 커널 (외부 크레이트 의존성 0개)"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1

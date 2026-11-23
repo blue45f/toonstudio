@@ -1,0 +1,159 @@
+//! ToonStudio 순수 Rust 드로잉 코어 엔진 (`studio-wasm64-drawing-core`).
+//!
+//! - `#![forbid(unsafe_code)]`로 메모리 안전성을 컴파일 타임에 강제한다.
+//! - 외부 `crates.io` 의존성 없이 표준 라이브러리(`std`)만으로 동작하여 오프라인·재현 가능 빌드를 보장한다.
+//! - 모든 공개 함수는 panic 대신 `Result<T, DrawingCoreError>`를 반환한다.
+
+#![forbid(unsafe_code)]
+
+use std::error::Error;
+use std::fmt;
+
+pub mod brush_kernel;
+pub mod filter_warp_kernel;
+pub mod vector_psd_tile_kernel;
+
+pub use brush_kernel::{
+    apply_impasto_lighting_rgba, mix_pigments_km, mix_pigments_km_strip, sample_world_paper_height,
+    ImpastoLightConfig, ImpastoShadingStats, PaperGrainConfig,
+};
+pub use filter_warp_kernel::{
+    gaussian_blur_rgba_masked, unsharp_mask_rgba, warp_mesh_rigid_mls, WarpPin,
+};
+pub use vector_psd_tile_kernel::{
+    parse_psd_header_streaming, vectorize_stroke_to_cubic_beziers, CubicBezierSegment,
+    PsdColorMode, PsdHeaderInfo, StrokePoint2D, SwapperStats, TileKey, TileResidencyState,
+    VectorizedStroke, VirtualTileSwapper64, TILE_DIM, TILE_RGBA_BYTES,
+};
+
+/// 코어 드로잉 엔진의 모든 연산이 공유하는 panic 없는 오류 모델.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DrawingCoreError {
+    /// 가로 또는 세로 해상도가 0이거나 크기 계산이 오버플로된 경우.
+    InvalidDimensions { width: u32, height: u32 },
+    /// RGBA 또는 마스크 버퍼 길이가 예상 크기와 다른 경우.
+    BufferLengthMismatch { expected: usize, actual: usize },
+    /// NaN, 무한대, 음수 반경 등 허용 범위를 벗어난 파라미터.
+    InvalidParameter { name: &'static str },
+    /// PSD/PSB 바이너리 시그니처(`8BPS`)가 일치하지 않는 경우.
+    InvalidPsdSignature,
+    /// PSD 버전이 1(PSD) 또는 2(PSB)가 아닌 경우.
+    UnsupportedPsdVersion(u16),
+    /// 바이너리 스트림이 필수 헤더 길이보다 짧은 경우.
+    TruncatedInput { expected_min: usize, actual: usize },
+    /// 256x256 RGBA 타일 바이트 길이가 규격과 다른 경우.
+    TileSizeMismatch { expected: usize, actual: usize },
+    /// 가상 타일 스와퍼의 상주 예산이 타일 1개 크기보다 작은 경우.
+    TileMemoryBudgetTooSmall { min_bytes: u64, requested: u64 },
+    /// 모든 상주 타일이 고정(pin)되어 LRU 퇴거가 불가능한 경우.
+    AllResidentTilesPinned,
+    /// 64비트 글로벌 가상 주소가 표현 범위를 초과한 경우.
+    VirtualAddressSpaceExhausted,
+}
+
+impl fmt::Display for DrawingCoreError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidDimensions { width, height } => {
+                write!(f, "잘못된 캔버스 크기입니다: {width}x{height}")
+            }
+            Self::BufferLengthMismatch { expected, actual } => {
+                write!(
+                    f,
+                    "버퍼 길이 불일치: 예상 {expected}바이트, 실제 {actual}바이트"
+                )
+            }
+            Self::InvalidParameter { name } => {
+                write!(f, "유효하지 않은 파라미터 값입니다: {name}")
+            }
+            Self::InvalidPsdSignature => write!(f, "유효한 PSD/PSB 시그니처(8BPS)가 아닙니다"),
+            Self::UnsupportedPsdVersion(ver) => {
+                write!(f, "지원하지 않는 PSD 버전입니다: {ver}")
+            }
+            Self::TruncatedInput {
+                expected_min,
+                actual,
+            } => write!(
+                f,
+                "입력 바이너리가 잘렸습니다: 최소 {expected_min}바이트 필요, 실제 {actual}바이트"
+            ),
+            Self::TileSizeMismatch { expected, actual } => {
+                write!(f, "타일 바이트 크기 불일치: 예상 {expected}, 실제 {actual}")
+            }
+            Self::TileMemoryBudgetTooSmall {
+                min_bytes,
+                requested,
+            } => write!(
+                f,
+                "상주 메모리 예산이 너무 작습니다: 최소 {min_bytes}바이트, 요청 {requested}바이트"
+            ),
+            Self::AllResidentTilesPinned => {
+                write!(
+                    f,
+                    "모든 상주 타일이 고정되어 있어 LRU 스왑아웃을 수행할 수 없습니다"
+                )
+            }
+            Self::VirtualAddressSpaceExhausted => {
+                write!(f, "64비트 가상 타일 주소 공간이 고갈되었습니다")
+            }
+        }
+    }
+}
+
+impl Error for DrawingCoreError {}
+
+/// 버퍼 크기 계산 시 오버플로를 방지하는 내부 공용 도우미.
+pub(crate) fn checked_pixel_count(width: u32, height: u32) -> Result<usize, DrawingCoreError> {
+    if width == 0 || height == 0 {
+        return Err(DrawingCoreError::InvalidDimensions { width, height });
+    }
+    let w = usize::try_from(width)
+        .map_err(|_| DrawingCoreError::InvalidDimensions { width, height })?;
+    let h = usize::try_from(height)
+        .map_err(|_| DrawingCoreError::InvalidDimensions { width, height })?;
+    w.checked_mul(h)
+        .ok_or(DrawingCoreError::InvalidDimensions { width, height })
+}
+
+/// RGBA 버퍼의 예상 바이트 길이를 오버플로 없이 계산한다.
+pub(crate) fn checked_rgba_len(width: u32, height: u32) -> Result<usize, DrawingCoreError> {
+    let pixels = checked_pixel_count(width, height)?;
+    pixels
+        .checked_mul(4)
+        .ok_or(DrawingCoreError::InvalidDimensions { width, height })
+}
+
+/// 코어 ABI 버전 번호를 반환한다.
+#[must_use]
+pub fn wasm_drawing_core_abi_version() -> u32 {
+    1
+}
+
+/// 패킹된 RGBA8 두 색상을 Kubelka-Munk 스펙트럼 혼색하는 스칼라 진입점.
+#[must_use]
+pub fn wasm_mix_pigments_km_packed(rgba_a: u32, rgba_b: u32, ratio: f32) -> u32 {
+    let a = rgba_a.to_le_bytes();
+    let b = rgba_b.to_le_bytes();
+    match mix_pigments_km(a, b, ratio) {
+        Ok(mixed) => u32::from_le_bytes(mixed),
+        Err(_) => rgba_a,
+    }
+}
+
+/// 월드 좌표 고정 2층 종이 높이장을 샘플링하는 스칼라 진입점.
+#[must_use]
+pub fn wasm_sample_world_paper_height(
+    world_x: f32,
+    world_y: f32,
+    grain_scale: f32,
+    seed: u32,
+) -> f32 {
+    let config = PaperGrainConfig {
+        macro_scale: grain_scale,
+        micro_scale: grain_scale * 4.0,
+        macro_weight: 0.65,
+        micro_weight: 0.35,
+        seed,
+    };
+    sample_world_paper_height(world_x, world_y, &config).unwrap_or(-1.0)
+}
