@@ -1,0 +1,684 @@
+/* 홈 첫인상 WOW 인터랙티브 라이브 아틀리에 샌드박스.
+ * OKLCH 및 앱 시맨틱 CSS 변수만 사용하며 원시 hex/rgb를 금지한다.
+ * 전이는 GPU 합성 속성(transform, opacity, scale, translate)만 사용한다.
+ */
+.home-wow-showcase {
+  --hwow-cobalt: oklch(0.52 0.19 258);
+  --hwow-saffron: oklch(0.81 0.17 86);
+  --hwow-vermilion: oklch(0.64 0.21 30);
+  --hwow-ink: oklch(0.2 0.02 268);
+  --hwow-emerald: oklch(0.62 0.18 160);
+  --hwow-paper-base: oklch(0.985 0.008 90);
+  --hwow-paper-ink: oklch(0.2 0.02 268);
+  --hwow-panel-line: oklch(0.32 0.03 265);
+  --hwow-bubble-fill: oklch(0.99 0.006 92);
+  --hwow-bubble-ink: oklch(0.18 0.02 265);
+  --hwow-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Canvas 2D getComputedStyle 참조용 별칭 */
+  --wow-pigment-cobalt: var(--hwow-cobalt);
+  --wow-pigment-saffron: var(--hwow-saffron);
+  --wow-pigment-vermilion: var(--hwow-vermilion);
+  --wow-pigment-ink: var(--hwow-ink);
+  --wow-pigment-emerald: var(--hwow-emerald);
+  --wow-canvas-paper: var(--hwow-paper-base);
+  --wow-panel-line: var(--hwow-panel-line);
+  --wow-bubble-fill: var(--hwow-bubble-fill);
+  --wow-bubble-ink: var(--hwow-bubble-ink);
+
+  position: relative;
+  margin-top: var(--layout-home-section-gap, 48px);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 90% at 8% 0%, color-mix(in oklch, var(--hwow-cobalt) 9%, transparent), transparent 54%),
+    radial-gradient(90% 80% at 96% 100%, color-mix(in oklch, var(--hwow-saffron) 10%, transparent), transparent 56%),
+    var(--color-card);
+  box-shadow: var(--atelier-elevation-dock);
+  color: var(--color-fg);
+  overflow: hidden;
+  min-width: 0;
+  max-inline-size: 100%;
+}
+
+.hwow-spectrum-rule {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--hwow-cobalt) 0%,
+    var(--hwow-emerald) 38%,
+    var(--hwow-saffron) 72%,
+    var(--hwow-vermilion) 100%
+  );
+}
+
+.hwow-inner {
+  display: grid;
+  gap: 20px;
+  padding: clamp(18px, 2.5vw, 28px);
+  min-width: 0;
+}
+
+.hwow-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr);
+  gap: 18px;
+  align-items: center;
+  min-width: 0;
+}
+
+.hwow-copy {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hwow-kicker-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.hwow-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 42%, var(--color-line));
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.hwow-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  background: var(--color-panel);
+  color: var(--color-fg-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: transform 140ms var(--hwow-ease);
+}
+
+.hwow-sound-toggle[aria-pressed="true"] {
+  border-color: var(--hwow-emerald);
+  background: color-mix(in oklch, var(--hwow-emerald) 16%, var(--color-panel));
+  color: var(--color-fg);
+}
+
+.hwow-sound-toggle:active {
+  transform: scale(0.97);
+}
+
+.reference-dashboard .hwow-copy h2 {
+  color: var(--color-fg);
+  font-size: clamp(22px, 2.3vw, 30px);
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.reference-dashboard .hwow-copy p {
+  max-width: 58ch;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.58;
+  text-wrap: pretty;
+}
+
+/* 비주얼 히어로 임팩트 배너 + 스프라이트 메달리온 */
+.hwow-hero-visual {
+  display: grid;
+  grid-template-columns: minmax(112px, 0.9fr) minmax(0, 1.35fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: var(--color-panel);
+  min-width: 0;
+}
+
+.hwow-hero-stage-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--hwow-cobalt) 12%, var(--color-canvas));
+}
+
+.reference-dashboard .hwow-hero-stage-thumb > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.hwow-sprite-medallions {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hwow-sprite-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-card);
+  min-width: 0;
+}
+
+.reference-dashboard .hwow-sprite-chip > img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  block-size: 28px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.hwow-sprite-chip > span {
+  min-width: 0;
+  color: var(--color-fg);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* 본문 2열 무대: 좌측 라이브 분광 캔버스 · 우측 촉각 팔레트 & 조명 프리셋 */
+.hwow-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.36fr) minmax(0, 0.94fr);
+  gap: 18px;
+  align-items: start;
+  min-width: 0;
+}
+
+.hwow-canvas-column {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hwow-canvas-frame {
+  --hwow-frame-paper: var(--hwow-paper-base);
+  --hwow-frame-ring: var(--color-line-strong);
+  --hwow-glaze-top: color-mix(in oklch, var(--hwow-saffron) 10%, transparent);
+  --hwow-glaze-bottom: color-mix(in oklch, var(--hwow-cobalt) 6%, transparent);
+
+  position: relative;
+  display: grid;
+  border: 1.5px solid var(--hwow-frame-ring);
+  border-radius: 16px;
+  background: var(--color-panel);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.hwow-canvas-frame[data-lighting="sunlit"] {
+  --hwow-frame-paper: oklch(0.985 0.01 92);
+  --hwow-frame-ring: color-mix(in oklch, var(--hwow-saffron) 52%, var(--color-line-strong));
+  --hwow-glaze-top: color-mix(in oklch, var(--hwow-saffron) 14%, transparent);
+  --hwow-glaze-bottom: transparent;
+}
+
+.hwow-canvas-frame[data-lighting="golden"] {
+  --hwow-frame-paper: oklch(0.96 0.036 74);
+  --hwow-frame-ring: color-mix(in oklch, var(--hwow-vermilion) 56%, var(--hwow-saffron));
+  --hwow-glaze-top: color-mix(in oklch, var(--hwow-vermilion) 18%, transparent);
+  --hwow-glaze-bottom: color-mix(in oklch, var(--hwow-saffron) 16%, transparent);
+}
+
+.hwow-canvas-frame[data-lighting="bluehour"] {
+  --hwow-frame-paper: oklch(0.91 0.028 248);
+  --hwow-frame-ring: color-mix(in oklch, var(--hwow-cobalt) 66%, var(--color-line-strong));
+  --hwow-glaze-top: color-mix(in oklch, var(--hwow-cobalt) 22%, transparent);
+  --hwow-glaze-bottom: color-mix(in oklch, var(--hwow-emerald) 14%, transparent);
+}
+
+.hwow-canvas-frame[data-lighting="ink"] {
+  --hwow-frame-paper: oklch(0.97 0.003 260);
+  --hwow-frame-ring: var(--color-fg);
+  --hwow-glaze-top: transparent;
+  --hwow-glaze-bottom: color-mix(in oklch, var(--hwow-ink) 6%, transparent);
+}
+
+.hwow-frame-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-card);
+  font-size: 12.5px;
+}
+
+.hwow-lighting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--hwow-frame-ring);
+  border-radius: 999px;
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hwow-frame-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-fg-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hwow-canvas-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 7 / 4;
+  background:
+    radial-gradient(circle at 1px 1px, color-mix(in oklch, var(--hwow-paper-ink) 8%, transparent) 1px, transparent 0) 0 0 / 16px 16px,
+    var(--hwow-frame-paper);
+  overflow: hidden;
+}
+
+.hwow-canvas-frame[data-lighting="ink"] .hwow-canvas-stage {
+  filter: grayscale(1) contrast(1.12);
+}
+
+.hwow-canvas {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.hwow-lighting-glaze {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(155deg, var(--hwow-glaze-top), transparent 48%, var(--hwow-glaze-bottom));
+  opacity: 0.9;
+  transition: opacity 220ms var(--hwow-ease);
+}
+
+.hwow-canvas-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 180ms var(--hwow-ease);
+}
+
+.hwow-canvas-hint[data-hidden="true"] {
+  opacity: 0;
+}
+
+.hwow-canvas-hint > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px dashed color-mix(in oklch, var(--hwow-paper-ink) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--hwow-paper-base) 88%, transparent);
+  color: var(--hwow-paper-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hwow-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-panel);
+  color: var(--color-fg-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hwow-status-strip[data-spectral-active="true"] {
+  border-color: color-mix(in oklch, var(--hwow-emerald) 65%, var(--color-line));
+  background: color-mix(in oklch, var(--hwow-emerald) 10%, var(--color-panel));
+  color: var(--color-fg);
+}
+
+.hwow-status-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--hwow-emerald);
+}
+
+/* 우측 컨트롤 패널 */
+.hwow-controls-column {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hwow-control-block {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-panel);
+  min-width: 0;
+}
+
+.hwow-block-label {
+  color: var(--color-fg);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.hwow-pigment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hwow-pigment-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--color-line);
+  border-radius: 11px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  transition: transform 140ms var(--hwow-ease);
+}
+
+.hwow-pigment-btn[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.hwow-pigment-btn:active {
+  transform: scale(0.97);
+}
+
+.hwow-swatch-gem {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid color-mix(in oklch, var(--color-fg) 22%, transparent);
+  border-radius: 50%;
+  background: var(--hwow-cobalt);
+}
+
+.hwow-pigment-btn[data-pigment="cobalt"] .hwow-swatch-gem {
+  background: radial-gradient(circle at 32% 28%, oklch(0.76 0.16 254), var(--hwow-cobalt) 72%);
+}
+
+.hwow-pigment-btn[data-pigment="saffron"] .hwow-swatch-gem {
+  background: radial-gradient(circle at 32% 28%, oklch(0.93 0.14 92), var(--hwow-saffron) 72%);
+}
+
+.hwow-pigment-btn[data-pigment="vermilion"] .hwow-swatch-gem {
+  background: radial-gradient(circle at 32% 28%, oklch(0.8 0.17 36), var(--hwow-vermilion) 72%);
+}
+
+.hwow-pigment-btn[data-pigment="ink"] .hwow-swatch-gem {
+  background: radial-gradient(circle at 32% 28%, oklch(0.45 0.03 268), var(--hwow-ink) 74%);
+}
+
+.hwow-demo-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.hwow-demo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: 11px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform 140ms var(--hwow-ease);
+}
+
+.hwow-demo-btn:active {
+  transform: scale(0.97);
+}
+
+.hwow-demo-btn--spectral {
+  border-color: color-mix(in oklch, var(--hwow-emerald) 60%, var(--hwow-cobalt));
+  background: linear-gradient(
+    110deg,
+    color-mix(in oklch, var(--hwow-cobalt) 14%, var(--color-card)),
+    color-mix(in oklch, var(--hwow-emerald) 16%, var(--color-card)) 52%,
+    color-mix(in oklch, var(--hwow-saffron) 18%, var(--color-card))
+  );
+}
+
+.hwow-spectral-dots {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.hwow-spectral-dots > i {
+  display: block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid var(--color-card);
+}
+
+.hwow-spectral-dots > i:nth-child(1) {
+  background: var(--hwow-cobalt);
+}
+
+.hwow-spectral-dots > i:nth-child(2) {
+  margin-left: -4px;
+  background: var(--hwow-emerald);
+}
+
+.hwow-spectral-dots > i:nth-child(3) {
+  margin-left: -4px;
+  background: var(--hwow-saffron);
+}
+
+.hwow-demo-secondary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.hwow-lighting-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.hwow-lighting-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  transition: transform 140ms var(--hwow-ease);
+}
+
+.hwow-lighting-btn[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+
+.hwow-lighting-btn:active {
+  transform: scale(0.97);
+}
+
+/* 하단 CTA 연결 바 */
+.hwow-cta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-line);
+}
+
+.hwow-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: transform 150ms var(--hwow-ease);
+}
+
+.hwow-cta:active {
+  transform: scale(0.98);
+}
+
+.hwow-cta--primary {
+  border: 1px solid transparent;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.hwow-cta--secondary {
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-panel);
+  color: var(--color-fg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hwow-pigment-btn:hover,
+  .hwow-demo-btn:hover,
+  .hwow-lighting-btn:hover,
+  .hwow-cta:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-width: 960px) {
+  .hwow-head,
+  .hwow-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 599px) {
+  .hwow-hero-visual {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hwow-pigment-grid,
+  .hwow-lighting-grid,
+  .hwow-demo-secondary-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hwow-cta-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-wow-showcase :is(button, a, .hwow-lighting-glaze, .hwow-canvas-hint) {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+:root[data-design-theme="contrast"] .home-wow-showcase {
+  border: 2px solid var(--color-fg);
+  background: var(--color-canvas);
+  box-shadow: none;
+}
+
+:root[data-design-theme="contrast"] .home-wow-showcase .hwow-lighting-glaze {
+  opacity: 0;
+}
+
+:root[data-design-theme="contrast"] .home-wow-showcase :is(button, a) {
+  border-width: 2px;
+  transition: none !important;
+  transform: none !important;
+}
+
+@media (forced-colors: active) {
+  .home-wow-showcase,
+  .hwow-canvas-frame,
+  .hwow-control-block {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .hwow-lighting-glaze {
+    display: none;
+  }
+
+  .hwow-cta--primary,
+  .hwow-pigment-btn[aria-pressed="true"],
+  .hwow-lighting-btn[aria-pressed="true"] {
+    border: 2px solid Highlight;
+  }
+}
