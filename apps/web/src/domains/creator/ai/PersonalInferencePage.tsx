@@ -10,6 +10,8 @@ import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
+import { StudioSimpleAiSetupCard } from "../ai-simple-setup";
+
 import { AiCreativeDirectorPanel } from "./AiCreativeDirectorPanel";
 import { AiStudioPageHeader, AiStudioSurfaceCards } from "./AiStudioSurfaceNav";
 import { PersonalRuntimeWorkspace } from "./PersonalRuntimeWorkspace";
@@ -138,6 +140,7 @@ export function PersonalInferencePage() {
   const aux = useUnifiedAiAuxSettings();
   const runtimeConnected = Boolean(aux.settings.creatorRuntimeBaseUrl && aux.settings.creatorRuntimeToken);
   const [runtimeOpen, setRuntimeOpen] = useState(() => runtimeConnected || RUNTIME_HASHES.includes(hash));
+  const [simpleAiSetupOpen, setSimpleAiSetupOpen] = useState(false);
   const [stageCategory, setStageCategory] = useState<AiStageCategory>("all");
 
   useEffect(() => {
@@ -160,6 +163,33 @@ export function PersonalInferencePage() {
         />
 
         <SiteArtSurfaceSpotlight cardId="nb-create-canvas" defaultLensId="recipe" compact />
+
+        <details
+          data-testid="studio-simple-ai-setup-disclosure"
+          className="group/simple-ai rounded-2xl border border-line bg-card"
+          onToggle={(event) => setSimpleAiSetupOpen(event.currentTarget.open)}
+        >
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <Sparkles className="size-4 shrink-0 text-accent" aria-hidden="true" />
+              <span className="min-w-0 [word-break:keep-all]">
+                {bt(
+                  "초보자 1초 AI 설정 · 품질 최우선 무료 토큰 자동 전환 · 소진 시 내 키 연결",
+                  "1-Second Simple AI Setup · Quality-First Free Token Waterfall · BYOK Guide",
+                )}
+              </span>
+            </span>
+            <ChevronDown
+              className="size-4 shrink-0 text-fg-3 transition-transform group-open/simple-ai:rotate-180 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
+          </summary>
+          {simpleAiSetupOpen ? (
+            <div className="border-t border-line p-3 sm:p-4">
+              <StudioSimpleAiSetupCard />
+            </div>
+          ) : null}
+        </details>
 
         <AiCreativeDirectorPanel />
 

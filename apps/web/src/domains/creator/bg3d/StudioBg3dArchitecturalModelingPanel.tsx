@@ -1,7 +1,8 @@
-import { Building2, Plus } from "lucide-react";
+import { Building2, ChevronDown, Plus } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { useT } from "@/shared/lib/i18n";
 
+import { StudioPrecision3dCraftPanel } from "../precision-3d-craft";
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import {
   buildSketchUpArchitecturalComponentPrimitives,
@@ -76,6 +77,7 @@ export function StudioBg3dArchitecturalModelingPanel({
     width: "3.6", height: "3.2", depth: "4.2", x: "0", y: "0", z: "0",
   });
   const [status, setStatus] = useState<string | null>(null);
+  const [precisionCraftOpen, setPrecisionCraftOpen] = useState(false);
   const usesDepth = kind !== "staircase-spiral";
   const usesCount =
     kind.startsWith("staircase-")
@@ -194,6 +196,23 @@ export function StudioBg3dArchitecturalModelingPanel({
         <Plus className="size-4" aria-hidden />{t("studio.bg3d.architecture.insert", "현재 3D 장면에 건축 요소 배치")}{result ? t("studio.bg3d.architecture.elementCount", { count: result.primitiveCount }, " ({count}개)") : ""}
       </button>
       <p role="status" aria-live="polite" data-testid="bg3d-architecture-status" className="text-xs text-fg-2">{status ?? t("studio.bg3d.architecture.ready", "건축 요소를 고른 뒤 치수와 배치 위치를 입력하세요.")}</p>
+      <details
+        data-testid="studio-precision-3d-craft-disclosure"
+        className="group/p3d-craft rounded-xl border border-line bg-panel"
+        onToggle={(event) => setPrecisionCraftOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          <span className="[word-break:keep-all]">
+            {t("studio.bg3d.precisionCraft.summary", "최정밀 3D 품질 엔진 · 매니폴드 0 · 베벨 · PBR · GLB 예산")}
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open/p3d-craft:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+        </summary>
+        {precisionCraftOpen ? (
+          <div className="border-t border-line p-2.5">
+            <StudioPrecision3dCraftPanel />
+          </div>
+        ) : null}
+      </details>
     </section>
   );
 }
