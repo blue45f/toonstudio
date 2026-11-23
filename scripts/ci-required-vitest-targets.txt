@@ -148,6 +148,7 @@ apps/web/config/vite-admin-quality-entry.test.ts
 apps/web/config/vite-pigment-license-boundary.test.ts
 apps/web/src/app/app-floating-controls-startup.test.ts
 apps/web/src/app/app-shell-skip-link-visibility.test.ts
+apps/web/src/app/i18n-source-coverage.test.ts
 apps/web/src/app/routes/branching-cuttoon-route.test.ts
 apps/web/src/app/routes/groups/creator-brush-lab-route-contract.test.ts
 apps/web/src/app/routes/groups/creator-poser-document-lifecycle.test.tsx
@@ -794,6 +795,7 @@ apps/web/src/domains/creator/support-chat-ai/__tests__/support-chat-ai.test.tsx
 apps/web/src/domains/creator/useStudioAdjustmentLayerCommands.test.tsx
 apps/web/src/domains/creator/useStudioOnDemandModule.test.tsx
 apps/web/src/domains/creator/vector/studio-node-edit-pointer-ownership.test.tsx
+apps/web/src/domains/creator/vibrant-studio-fx/studio-vibrant-studio-fx.test.tsx
 apps/web/src/domains/creator/virtual-space
 apps/web/src/domains/creator/virtual-space/StudioReviewPolicyHistory.test.tsx
 apps/web/src/domains/creator/virtual-space/studio-virtual-space-bundle-decor.test.ts
@@ -838,6 +840,7 @@ apps/web/src/domains/legal/technology/engineering-library-guide-areas-a.test.ts
 apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts
 apps/web/src/domains/legal/technology/engineering-seminar-lessons.test.ts
 apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts
+apps/web/src/domains/marketing/wow-showcase/HomeInteractiveWowShowcase.test.tsx
 apps/web/src/platform/creator-client.test.ts
 apps/web/src/platform/creator-role-workspace-client.test.ts
 apps/web/src/platform/creator-work-read-options.test.ts
