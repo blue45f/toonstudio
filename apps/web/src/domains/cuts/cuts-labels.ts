@@ -16,3 +16,7 @@ registerI18nLocaleEntries("en", {
   "route.cutsStudio": "Create a Cuts clip",
   "route.cutsRewards": "Cuts reward fund settlement",
 });
+
+export function ensureCutsLabels(): void {
+  // 모듈 평가 시 이미 컷츠 라우트 라벨을 등록한다.
+}

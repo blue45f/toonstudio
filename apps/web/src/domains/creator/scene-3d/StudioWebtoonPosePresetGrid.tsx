@@ -17,7 +17,7 @@ import { Download, MousePointerClick, Pin, Search, Sparkles, Upload, X } from "l
 import { useMemo, useRef, useState } from "react";
 
 import { useT } from "@/shared/lib/i18n";
-import "../studio-scene3d-status-i18n";
+import { ensureStudioScene3dStatusI18n } from "../studio-scene3d-status-i18n";
 
 import {
   StudioSectionHeader,
@@ -59,6 +59,8 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
 import type { ReactElement } from "react";
+
+ensureStudioScene3dStatusI18n();
 
 export interface StudioWebtoonPosePresetGridProps {
   /** 포즈 카드 클릭(원클릭 적용) 시 호출. preset id를 전달한다. */

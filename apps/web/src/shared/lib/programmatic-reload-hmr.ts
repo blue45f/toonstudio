@@ -5,3 +5,7 @@ if (import.meta.hot) {
     allowStudioProgrammaticReload();
   });
 }
+
+export function ensureProgrammaticReloadHmr(): void {
+  // 모듈 평가 시 이미 Vite HMR full-reload 훅을 등록한다.
+}

@@ -14,7 +14,7 @@ import {
   downloadAdminFile,
 } from "./admin-client";
 import { AdminRouteIcon } from "./admin-ui";
-import { useAdminToast } from "./use-admin-toast";
+import { useAdminToast } from "./admin-gate-state";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { usePathname, useRouter } from "@/shared/navigation/navigation";

@@ -128,4 +128,6 @@ if (typeof window !== "undefined" && !window.IntersectionObserver) {
   (window as unknown as { IntersectionObserver: typeof StubIntersectionObserver }).IntersectionObserver = StubIntersectionObserver;
 }
 
-export {};
+export function ensureBrowserPolyfills(): void {
+  // 모듈 최상단 평가 시 이미 브라우저 API 폴리필을 설치한다.
+}

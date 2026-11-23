@@ -1,5 +1,5 @@
 // 수익화 i18n 네임스페이스는 셸 번들에서 분리됨 — 페이지 평가 시점에 동기 등록한다.
-import "@/domains/monetization/public/i18n";
+import { ensureMonetizationI18n } from "@/domains/monetization/public/i18n";
 import {
   AlertTriangle,
   Bell,
@@ -29,6 +29,8 @@ import { useI18n } from "@/shared/lib/i18n-core";
 import { useApp } from "@/shared/lib/store";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { MEMBERSHIP_PLAN_POLICIES } from "@toonstudio/core/membership-wallet";
+
+ensureMonetizationI18n();
 
 function useNumberLocale(): Intl.NumberFormat {
   const lang = useI18n((state) => state.lang);

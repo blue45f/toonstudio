@@ -8,11 +8,13 @@
  */
 
 import { useT } from "@/shared/lib/i18n";
-import "./studio-bg3d-surface-paint-i18n";
+import { ensureStudioBg3dSurfacePaintI18n } from "./studio-bg3d-surface-paint-i18n";
 
 import { StudioBg3dTexturePaintPanel } from "./StudioBg3dTexturePaintPanel";
 
 import type { StudioBg3dPrimitivePaintBlock, StudioBg3dPrimitivePaintHostBag } from "./useStudioBg3dPrimitivePaintHost";
+
+ensureStudioBg3dSurfacePaintI18n();
 
 export interface StudioBg3dSurfacePaintMountHost {
   readonly primitiveTexturePaint?: StudioBg3dPrimitivePaintHostBag;

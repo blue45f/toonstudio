@@ -1,5 +1,5 @@
 // 수익화 i18n 네임스페이스는 셸 번들에서 분리됨 — 페이지 평가 시점에 동기 등록한다.
-import "@/domains/monetization/public/monetization-i18n";
+import { ensureMonetizationI18n } from "@/domains/monetization/public/i18n";
 import { BadgeCheck, Coins, Gauge, Sparkles } from "lucide-react";
 
 import { CREATOR_LEVEL_AUTO_POLICIES } from "@toonstudio/core/membership-wallet";
@@ -8,6 +8,8 @@ import type { MembershipOverview } from "@/platform/membership-wallet-client";
 import { useT } from "@/shared/lib/i18n";
 
 import { COPY, LEDGER_ACTION_KEYS, creatorLevelLabels } from "./membership-copy";
+
+ensureMonetizationI18n();
 
 /** 내 현황 탭: 현재 멤버십·포인트·크레딧·누적 활동, 최근 원장, 창작자 등급. 로그인한 사람에게만 보인다. */
 export function MembershipMePanel({ overview, formatter }: {

@@ -18,3 +18,7 @@ registerI18nLocaleEntries("en", {
   "studio.publish.status.noCapturedPages": "No captured pages. Check the range.",
   "studio.publish.status.sliceCreateFailed": "Could not create slices to optimize.",
 });
+
+export function ensurePublishStatusI18n(): void {
+  // 모듈 평가 시 이미 ko/en 상태 문구 사전을 등록한다.
+}
