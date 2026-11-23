@@ -25,8 +25,8 @@ import {
 import { sha256Hex } from "../../shared/hash";
 import { GLB_CHUNK_BIN, GLB_CHUNK_JSON, GLB_MAGIC, GLB_VERSION } from "../../testing/minimal-glb";
 
-import type { NullCapabilityOverrides } from "./null-engine-harness";
 import type { KitBaseId, KitHideableRegionId, KitJointOffsets, KitMaterial, KitMesh, KitPartPlan, KitPartSlot, KitPlan, MorphTargetName, PartRole, PresetId } from "../../contracts";
+import type { NullCapabilityOverrides } from "./null-engine-harness";
 import type { Scene } from "@babylonjs/core/scene.js";
 
 // ---------------------------------------------------------------- 저수준 GLB 빌더

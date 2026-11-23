@@ -52,11 +52,11 @@ import { buildJointIndexRemap, buildRigBones, describeJointDiff, diffJoints, isI
 import { RigBindError, rigMeshMetadata } from "./mesh-binding";
 import { chooseHairLod } from "./package-loader";
 
+import type { HumanoidBoneName, KitHideableRegionId, KitMesh, KitPartPlan, KitPlan, KitV2Mesh, MorphJointOffsets, PartIdPalette, PartRole, RecipeColorKey, SlotCapabilityMap } from "../../contracts";
 import type { CharacterRig, RigBone, RigMaterialHooks, RigPart } from "./character-rig";
 import type { JointOffsetRig } from "./joint-offset-rig";
 import type { ExpandedKitPartPlan } from "./kit-loader-v2";
 import type { BodyMaskReport } from "./kit-region-mask";
-import type { HumanoidBoneName, KitHideableRegionId, KitMesh, KitPartPlan, KitPlan, KitV2Mesh, MorphJointOffsets, PartIdPalette, PartRole, RecipeColorKey, SlotCapabilityMap } from "../../contracts";
 import type { AssetContainer } from "@babylonjs/core/assetContainer.js";
 import type { Skeleton } from "@babylonjs/core/Bones/skeleton.js";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";

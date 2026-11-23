@@ -7,7 +7,8 @@
     "^/offline-draw/cache\\.js$",
     "^/src/domains/creator/catalog/studio-catalog-preferences\\.ts$",
     "^/scripts/studio-hybrid-topology-browser\\.ts$",
-    "^/scripts/studio-material-morphology-browser\\.ts$"
+    "^/scripts/studio-material-morphology-browser\\.ts$",
+    "^/scripts/studio-mediapipe-runtime-browser\\.mts$"
   ],
   "rules": {
     "cycles": "warn"

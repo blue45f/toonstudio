@@ -11,9 +11,9 @@ import { chainInputsFromAnchors, compileChainModel, createChainState } from "./c
 import { settleChains } from "./chain-settle";
 import { createChainScratch, stepChainsInto } from "./chain-solver";
 
+import type { CapsuleCollider, ChainAnchor, ChainState, Quat, Vec3, WindInput } from "../../../contracts";
 import type { ChainBoneRotation } from "./back-solve";
 import type { ChainScratch } from "./chain-solver";
-import type { CapsuleCollider, ChainAnchor, ChainState, Quat, Vec3, WindInput } from "../../../contracts";
 
 function randomUnitVec3(prng: ReturnType<typeof createPrng>): Vec3 {
   for (let attempt = 0; attempt < 16; attempt += 1) {

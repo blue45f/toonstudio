@@ -16,9 +16,9 @@ import { CHARACTER_VERTEX_SHADER_NAME, TOON_FRAGMENT_SHADER_NAME } from "../shad
 import { acquireCaptureTarget, readCaptureTarget } from "./capture-targets";
 import { rigVisibleMeshes } from "./character-rig";
 
+import type { HairLayerSupport, HairOwnership } from "../../contracts";
 import type { CaptureDeps } from "./capture";
 import type { CharacterRig, RigPart } from "./character-rig";
-import type { HairLayerSupport, HairOwnership } from "../../contracts";
 import type { Material } from "@babylonjs/core/Materials/material.js";
 import type { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture.js";
 

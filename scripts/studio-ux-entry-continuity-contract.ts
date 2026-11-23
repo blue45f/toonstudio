@@ -312,11 +312,18 @@ const STUDIO_UX_ENTRY_CONTINUITY_PROMOTED_CONTRACTS: readonly StudioUxEntryConti
       {
         id: "cta-changed-state",
         clauses: [{
-          file: "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx",
+          file: "apps/web/src/domains/creator/studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers.ts",
           allOf: [
             "onRequestPixelSelection: () => {",
             'activatePixelSelectionToolFromInspector("rect")',
             "Esc로 취소",
+          ],
+        }, {
+          file: "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx",
+          allOf: [
+            'from "./studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers"',
+            "buildStudioLeftToolRailHandlers({",
+            "studioLeftToolRailHandlers={studioLeftToolRailHandlers}",
           ],
         }],
       },
@@ -362,11 +369,18 @@ const STUDIO_UX_ENTRY_CONTINUITY_PROMOTED_CONTRACTS: readonly StudioUxEntryConti
       {
         id: "cta-changed-state",
         clauses: [{
-          file: "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx",
+          file: "apps/web/src/domains/creator/studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers.ts",
           allOf: [
             "onRequestSelectImage: () => {",
             'setTool("select")',
             "프레임 애니메이션으로 편집할 이미지를 선택하세요 · Esc로 취소",
+          ],
+        }, {
+          file: "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx",
+          allOf: [
+            'from "./studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers"',
+            "buildStudioLeftToolRailHandlers({",
+            "studioLeftToolRailHandlers={studioLeftToolRailHandlers}",
           ],
         }],
       },

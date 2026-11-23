@@ -1,0 +1,138 @@
+{
+  "name": "툰스튜디오 · ToonStudio",
+  "short_name": "툰스튜디오",
+  "description": "기획부터 연재까지. 대본·콘티·2D·3D·소재·파일·협업·검수를 하나의 프로젝트에서 연결하는 올인원 웹툰 제작 스튜디오.",
+  "lang": "ko-KR",
+  "categories": ["productivity", "graphics_design", "entertainment"],
+  "id": "/",
+  "start_url": "/studio",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "file_handlers": [
+    {
+      "action": "/studio",
+      "name": "툰스튜디오 원고·레이어 파일 열기",
+      "launch_type": "single-client",
+      "accept": {
+        "application/vnd.toonstudio.project": [".toon", ".toonstudio"],
+        "image/openraster": [".ora"],
+        "image/vnd.adobe.photoshop": [".psd"]
+      },
+      "icons": [
+        {
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "theme_color": "#10182d",
+  "background_color": "#10182d",
+  "icons": [
+    {
+      "src": "/brand/jewel-atelier-v1/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/jewel-atelier-v1/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/jewel-atelier-v1/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/jewel-atelier-v1/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/brand/jewel-atelier-v1/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "새 작품 시작",
+      "short_name": "새 작품",
+      "description": "아이디어·대본·기존 원고에서 새 웹툰 프로젝트 시작",
+      "url": "/studio/new",
+      "icons": [
+        {
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "2D 스튜디오",
+      "short_name": "2D 작업",
+      "description": "브러시·레이어·컷·말풍선으로 웹툰 원고 제작",
+      "url": "/studio",
+      "icons": [
+        {
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "3D 배경 만들기",
+      "short_name": "3D 작업",
+      "description": "웹툰 컷에 사용할 배경·소품·카메라 장면 제작",
+      "url": "/studio/bg3d",
+      "icons": [
+        {
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "검토·연재 준비",
+      "short_name": "연재 준비",
+      "description": "승인본의 규격·권리를 검사하고 게시본 준비",
+      "url": "/studio/publish",
+      "icons": [
+        {
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x820",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "툰스튜디오 올인원 웹툰 제작 홈 (데스크톱)"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "585x1266",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "툰스튜디오 올인원 웹툰 제작 홈 (모바일)"
+    }
+  ]
+}

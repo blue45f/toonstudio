@@ -6,10 +6,10 @@ import { makeWaterKernel } from "../wet/step-water";
 
 import { PAPER_WET_FLOATS } from "./layout";
 
-import type { WetKernelValues } from "./layout";
 import type { BrushProgram } from "../presets/program-schema";
 import type { PaperField } from "../texture/paper-grain";
 import type { WetParams } from "../wet/params";
+import type { WetKernelValues } from "./layout";
 
 /**
  * 습식 서브스텝 상수의 호스트 계산(uniform `wet_kernel`로 올린다). 값의 단일 원천은 CPU 참조다:

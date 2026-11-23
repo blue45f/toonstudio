@@ -123,7 +123,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
   },
   {
     name: "@mediapipe/tasks-vision",
-    version: "0.10.35",
+    version: "1.2.3",
     license: "Apache-2.0",
     url: "https://mediapipe.dev/",
     surface: "web",
@@ -229,7 +229,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
   },
   {
     name: "@thorvg/webcanvas",
-    version: "1.1.2",
+    version: "1.1.4",
     license: "MIT",
     url: "https://www.thorvg.org/",
     surface: "web",

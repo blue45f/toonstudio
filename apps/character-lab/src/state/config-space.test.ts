@@ -17,8 +17,8 @@ import {
   measureConfigSpace,
 } from "./config-space";
 
-import type { ConfigSpaceReport } from "./config-space";
 import type { CustomCapabilities, SlotCapabilityMap } from "../contracts";
+import type { ConfigSpaceReport } from "./config-space";
 
 const CATALOG = createPresetCatalog(vocabularyCatalogEntries());
 const NO_CUSTOM = configCapabilitiesFromCustom(undefined, { look: false });

@@ -8,9 +8,9 @@ import { PhysicsProviderError, createBuiltinPbdProvider } from "./builtin-provid
 import { HAVOK_UNAVAILABLE_REASON_KO, createHavokProvider } from "./havok-provider";
 import { createRapierProvider } from "./rapier-provider";
 
+import type { DeterminismScope, PhysicsProvider, PhysicsProviderFactory, PhysicsProviderId } from "../../contracts";
 import type { PbdChainSolverOptions } from "./pbd-chain";
 import type { RapierProviderOptions } from "./rapier-provider";
-import type { DeterminismScope, PhysicsProvider, PhysicsProviderFactory, PhysicsProviderId } from "../../contracts";
 
 export interface PhysicsProviderDescriptor {
   readonly id: PhysicsProviderId;

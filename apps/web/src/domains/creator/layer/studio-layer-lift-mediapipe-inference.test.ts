@@ -25,6 +25,7 @@ function runtime(
   segment: StudioLocalForegroundSegmenterRuntime["segmenter"]["segment"],
 ): StudioLocalForegroundSegmenterRuntime {
   return {
+    providerVersion: "0.10.35",
     selectedDelegate: delegate,
     activeDelegate: delegate,
     providerSelection: delegate === "GPU"
@@ -95,6 +96,15 @@ describe("Studio Layer Lift MediaPipe inference bridge", () => {
     expect(foreground.close).toHaveBeenCalledOnce();
     expect(resultClose).toHaveBeenCalledOnce();
     expect(rasterDispose).toHaveBeenCalledOnce();
+  });
+
+  it("현재 모델 영수증은 실제 runtime의 SDK 버전을 따른다", async () => {
+    const loader = createStudioLayerLiftMediaPipeInferenceLoader({
+      loadRuntime: async () => ({ ...runtime("GPU", vi.fn()), providerVersion: "1.2.3" }),
+    });
+    const engine = await loader(new AbortController().signal);
+    expect(engine.model.providerVersion).toBe("1.2.3");
+    expect(engine.model.executionRoute).toBe("gpu");
   });
 
   it("publishes CPU only for an explicitly preselected CPU loader", async () => {

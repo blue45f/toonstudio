@@ -7,8 +7,8 @@ import { createLazyBrushStage } from "./lazy-brush";
 import { createPassthroughStage } from "./passthrough";
 import { createPenSpringStage } from "./pen-spring";
 
-import type { RawStage } from "./raw-stage";
 import type { RawSample } from "../../core/types";
+import type { RawStage } from "./raw-stage";
 
 describe("통과 단계", () => {
   it("표본을 바꾸지 않고 복사하며 flush는 비어 있다", () => {

@@ -5,8 +5,8 @@ import { fnv1a64 } from "../core/hash";
 import { buildMipChain, buildTipAtlas, TIP_KINDS_ORDERED } from "./mip-chain";
 import { generateTip, maskMean } from "./tip-generators";
 
-import type { TipMask, TipParams } from "./tip-generators";
 import type { TipKind } from "../core/types";
+import type { TipMask, TipParams } from "./tip-generators";
 
 const PARAMS: TipParams = { hardness: 0.8, aspect: 1, strands: 12, density: 0.6, frequency: 6, angle: 0.3 };
 const SEEDED: readonly TipKind[] = ["bristle-strands", "texture-stamp", "noise", "particle"];

@@ -10,8 +10,8 @@ import { DEFAULT_RECIPE_COLORS } from "../../contracts";
 import { hexToLinearRgb, linearRgbToHex } from "../../shared/color";
 import { ROLE_COLOR_KEY } from "../material-presets";
 
-import type { TintMode } from "./kit-roles";
 import type { PartRole, RecipeColorKey, RecipeColors } from "../../contracts";
+import type { TintMode } from "./kit-roles";
 
 export type Linear3 = readonly [number, number, number];
 

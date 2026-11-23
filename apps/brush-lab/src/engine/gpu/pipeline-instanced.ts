@@ -31,11 +31,11 @@ import { mapToLabImage } from "./readback";
 import { GpuTimer } from "./timing";
 import { INSTANCED_BLIT_WGSL, INSTANCED_DAB_WGSL } from "./wgsl/instanced-dab.wgsl";
 
-import type { InstParamsValues } from "./layout";
-import type { PresentPipeline } from "./present";
 import type { DabBatch } from "../core/dab-layout";
 import type { Clock, LabImage } from "../core/types";
 import type { BrushProgram } from "../presets/program-schema";
+import type { InstParamsValues } from "./layout";
+import type { PresentPipeline } from "./present";
 
 /**
  * 렌더 인스턴싱 비교 레인 런타임(webgpu-instanced).

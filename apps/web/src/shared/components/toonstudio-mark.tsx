@@ -10,7 +10,7 @@ export function ToonStudioMark({ className }: { className?: string }) {
       )}
       aria-hidden
     >
-      <img src={resolveAssetUrl("/brand/spectrum-ribbon-v2/icon-192.png")} alt="" className="size-full object-cover" decoding="async" />
+      <img src={resolveAssetUrl("/brand/jewel-atelier-v1/icon-192.png")} alt="" className="size-full object-cover" decoding="async" />
     </span>
   );
 }

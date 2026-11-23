@@ -4,8 +4,8 @@ import { WEBGPU_MIN_LIMITS } from "../../contracts";
 
 import { describeAdapter, probeGpu, selectBackend } from "./select-backend";
 
-import type { GpuAdapterLike } from "./select-backend";
 import type { GpuProbe } from "../../contracts";
+import type { GpuAdapterLike } from "./select-backend";
 
 const GOOD_LIMITS = {
   maxTextureDimension2D: 8192,

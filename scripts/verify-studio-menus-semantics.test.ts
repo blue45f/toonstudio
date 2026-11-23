@@ -97,7 +97,7 @@ function canvasProps(canvasHeight: number): StudioInspectorCanvasControlsProps {
 }
 
 describe("실제 셸에 따른 메뉴 검증의 명령 범위", () => {
-  it("현재 core 레일의 여덟 ID 및 색상·레이어 진입은 실제 제품 컴포넌트와 일치한다", () => {
+  it("현재 core 레일의 여덟 명령과 색상·레이어 두 진입을 정확히 구분한다", () => {
     render(createElement(StudioDrawingClarityCoreTools, {
       session: {
         activeSurfaceReviewLocked: false, pageEditLocked: false, canvasInteractionBlocked: false,
@@ -109,11 +109,19 @@ describe("실제 셸에 따른 메뉴 검증의 명령 범위", () => {
       v4Actions: { onSelectTool: vi.fn(), onOpenFill: vi.fn(), onOpenCutSplit: vi.fn(), onOpenBubble: vi.fn(),
         onToggleBg3d: vi.fn(), onPlacePinComment: vi.fn(), onOpenAllTools: vi.fn() },
     }));
-    expect([...document.querySelectorAll("[data-studio-rail-tool-id]")].map(tool => tool.getAttribute("data-studio-rail-tool-id")))
-      .toEqual(CLARITY_RAIL_TOOL_IDS);
+    const railIds = [...document.querySelectorAll("[data-studio-rail-tool-id]")]
+      .map(tool => tool.getAttribute("data-studio-rail-tool-id"));
+    expect(railIds).toEqual([
+      "select", "pen", "eraser", "color", "layers", "fill", "cut-split", "bubble", "bg3d", "pin-comment",
+    ]);
+    expect(railIds.filter(id => id !== "color" && id !== "layers")).toEqual(CLARITY_RAIL_TOOL_IDS);
     expect(screen.getByRole("toolbar", { name: "그리기 도구" }).getAttribute("aria-orientation")).toBe("vertical");
-    expect(screen.getByRole("button", { name: "색상", exact: true })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "레이어", exact: true })).toBeTruthy();
+    const color = screen.getByRole("button", { name: "색상" });
+    const layers = screen.getByRole("button", { name: "레이어" });
+    expect(color.getAttribute("data-studio-rail-tool-id")).toBe("color");
+    expect(layers.getAttribute("data-studio-rail-tool-id")).toBe("layers");
+    expect(color.getAttribute("aria-expanded")).toBe("false");
+    expect(layers.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("프로젝트의 18개 그룹에서도 기존 합성 메뉴의 모든 원본 그룹과 행을 그대로 검사한다", () => {

@@ -7,9 +7,9 @@ import { PaintEmitter, pressureWidth } from "./emitter";
 import { MPM_CFL_LIMIT, MPM_DEFAULTS, mpmCfl, mpmWaveSpeed, resolveMpmParams, substepsForCfl } from "./params";
 import { Mpm2D } from "./solver";
 
+import type { RawSample } from "../../core/types";
 import type { EmitterConfig } from "./emitter";
 import type { MpmParams } from "./params";
-import type { RawSample } from "../../core/types";
 
 const EMIT: EmitterConfig = {
   rowSpacingPx: 1.2,

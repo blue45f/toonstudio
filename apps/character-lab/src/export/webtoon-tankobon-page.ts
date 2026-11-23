@@ -22,6 +22,7 @@ import { bakePanelActionLines, bakePanelSfxStamp } from "./webtoon-strip-manga-f
 import { WEBTOON_MANUSCRIPT_MOODS } from "./webtoon-strip-pacing-tategaki";
 import { bakePanelHalftoneScreentone } from "./webtoon-strip-screentone";
 
+import type { CaptureProvenance, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
 import type { ExportDeps, ExportOutcome } from "./export-session";
 import type { TankobonReadingOrder } from "./webtoon-episode-cutsheet";
 import type {
@@ -38,7 +39,6 @@ import type {
   WebtoonStripScreentones,
   WebtoonStripSpeakerTarget,
 } from "./webtoon-strip-composer";
-import type { CaptureProvenance, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
 
 export const TANKOBON_READING_ORDERS = ["rtl-tankobon", "ltr-manhwa"] as const;
 

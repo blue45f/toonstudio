@@ -15,13 +15,13 @@ import { createPackagePlanRegistry } from "./package-plan-registry";
 import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
 
+import type { ApplyPlan, EngineSession, LabCommand, LabState, LabStore, PresetCatalog } from "../../contracts";
 import type { ApplyLoop, ApplyLoopSnapshot } from "./apply-loop";
 import type { KitPlanRegistry } from "./kit-plan-registry";
 import type { PackagePlanRegistry } from "./package-plan-registry";
 import type { ThumbnailScheduler } from "./thumbnail-scheduler";
 import type { UiState, UiStateStore } from "./ui-state";
 import type { ViewportRegistry } from "./viewport-registry";
-import type { ApplyPlan, EngineSession, LabCommand, LabState, LabStore, PresetCatalog } from "../../contracts";
 
 export { shallowEqual, type EqualityFn };
 

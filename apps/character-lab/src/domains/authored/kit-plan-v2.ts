@@ -36,9 +36,6 @@ import { allHaveHairFlowUv, allHavePatternUv, channelsOfMeshes, meshMaterialName
 import { selectHairLod } from "./mesh-role-mapping";
 import { joinPackageUrl } from "./package-plan";
 
-import type { KitPlanOptions, KitPlanResult, KitPlanSlots, KitPlanSource } from "./kit-plan-common";
-import type { KitPlanBase, KitPlanFile, KitPlanFileKind, KitPlanSkip, KitPlanV2 } from "./kit-plan-v2-types";
-import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
 import type {
   AccessoryAnchor,
   AccessoryInstanceId,
@@ -56,6 +53,9 @@ import type {
   PresetId,
   WardrobeLayer,
 } from "../../contracts";
+import type { KitPlanOptions, KitPlanResult, KitPlanSlots, KitPlanSource } from "./kit-plan-common";
+import type { KitPlanBase, KitPlanFile, KitPlanFileKind, KitPlanSkip, KitPlanV2 } from "./kit-plan-v2-types";
+import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
 
 interface FileSpec {
   readonly id: string;

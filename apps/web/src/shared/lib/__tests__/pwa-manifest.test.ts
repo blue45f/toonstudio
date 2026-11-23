@@ -71,7 +71,7 @@ describe("PWA manifest", () => {
     expect(maskable.map((icon) => icon.sizes).sort()).toEqual(["192x192", "512x512"]);
     for (const icon of maskable) {
       expect(icon.type).toBe("image/png");
-      expect(new URL(icon.src, appOrigin).pathname).toMatch(/^\/brand\/spectrum-ribbon-v2\//u);
+      expect(new URL(icon.src, appOrigin).pathname).toMatch(/^\/brand\/jewel-atelier-v1\//u);
       expect(existsSync(publicAssetPath(icon.src))).toBe(true);
     }
   });
@@ -100,7 +100,7 @@ describe("PWA manifest", () => {
       expect(matchRoutes(registeredRoutes, shortcut.url)).not.toBeNull();
       expect(shortcut.icons).toEqual([
         {
-          src: "/brand/spectrum-ribbon-v2/icon-192.png",
+          src: "/brand/jewel-atelier-v1/icon-192.png",
           sizes: "192x192",
           type: "image/png",
         },
@@ -140,7 +140,7 @@ describe("PWA manifest", () => {
     expect(href).toBeDefined();
     const url = new URL(href ?? "", appOrigin);
     expect(url.origin).toBe(appOrigin);
-    expect(url.pathname).toBe("/brand/spectrum-ribbon-v2/apple-touch-icon.png");
+    expect(url.pathname).toBe("/brand/jewel-atelier-v1/apple-touch-icon.png");
     expect(url.search).toBe("");
     expect(existsSync(publicAssetPath(url.href))).toBe(true);
   });

@@ -8,11 +8,11 @@ import { isLabFailure } from "../../contracts";
 import { inspectGlb } from "./glb-inspect";
 import { parseGlb } from "./glb-io";
 
+import type { KitPlan } from "../../contracts";
 import type { GlbSummary } from "./glb-inspect";
 import type { PreviewSourceKind } from "./kit-plan-adapter";
 import type { PrepareFile, PrepareResult } from "./prepare";
 import type { PreviewWarning } from "./warnings";
-import type { KitPlan } from "../../contracts";
 
 export const KIT_PREVIEW_REPORT_SCHEMA = "toonstudio.kit-preview/1";
 

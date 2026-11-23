@@ -4,8 +4,8 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 
 import { isPressureOcclusionRenderPass } from "./pressure-occlusion-pass";
 
-import type { CharacterRig, RigPart } from "./character-rig";
 import type { PartRole } from "../../contracts";
+import type { CharacterRig, RigPart } from "./character-rig";
 import type { Material } from "@babylonjs/core/Materials/material.js";
 import type { MaterialStencilState } from "@babylonjs/core/Materials/materialStencilState.js";
 import type { Observer } from "@babylonjs/core/Misc/observable.js";

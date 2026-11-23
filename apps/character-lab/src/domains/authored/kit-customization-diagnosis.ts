@@ -28,8 +28,8 @@ import { listFew } from "./kit-plan-common";
 import { isKitPlanV2 } from "./kit-plan-v2-types";
 import { meshChannels, sortChannels } from "./kit-v2-mesh-info";
 
-import type { KitPlanCustom, KitPlanFile, KitPlanV2 } from "./kit-plan-v2-types";
 import type { ChannelKey, CharacterRecipe, CustomCapabilities, KitPlan, PartScope, UnsupportedCustomization } from "../../contracts";
+import type { KitPlanCustom, KitPlanFile, KitPlanV2 } from "./kit-plan-v2-types";
 
 /** 판정에 쓰는 레시피 부분 */
 export type KitCustomizationRecipe = Pick<CharacterRecipe, "slots" | "colors" | "wardrobe" | "partParams" | "surfaces" | "hairColor" | "style">;

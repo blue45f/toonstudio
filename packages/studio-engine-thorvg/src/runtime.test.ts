@@ -1,6 +1,13 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { THORVG_WEB_VERSION } from "./audit";
 import {
+  THORVG_WASM_URL,
   ThorvgBackendConflictError,
   acquireThorvgRuntime,
   resetThorvgRuntimeForTests,
@@ -16,6 +23,16 @@ afterEach(async () => {
 });
 
 describe("ThorVG process-global runtime ownership", () => {
+  it("npm ESM과 같은 배포본의 WASM을 사용하고 그 버전을 영수증에 기록한다", () => {
+    const esmDir = dirname(fileURLToPath(import.meta.resolve("@thorvg/webcanvas")));
+    const { version } = JSON.parse(readFileSync(join(esmDir, "../package.json"), "utf8"));
+    expect(THORVG_WEB_VERSION).toBe(version);
+
+    const digest = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
+    expect(digest(readFileSync(new URL(THORVG_WASM_URL))))
+      .toBe(digest(readFileSync(join(esmDir, "thorvg.wasm"))));
+  });
+
   it("shares one immutable backend and terminates after the final release", async () => {
     const term = vi.fn();
     const namespace = { term };

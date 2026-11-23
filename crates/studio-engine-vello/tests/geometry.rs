@@ -19,7 +19,10 @@ fn fits_dense_smooth_polyline_into_sparse_cubics() {
     let fitted = fit_polyline(&points, false, 0.25).unwrap();
     let segments = segment_count(&fitted);
     // 199 line segments must collapse into a handful of editable cubics.
-    assert!(segments < 40, "expected sparse fit, got {segments} segments");
+    assert!(
+        segments < 40,
+        "expected sparse fit, got {segments} segments"
+    );
     assert!(segments >= 1);
 }
 

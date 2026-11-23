@@ -11,9 +11,9 @@ import { DEFAULT_WET_PARAMS, normalizeWetParams, WET_KERNEL, wetParamsSchema } f
 import { createWetState, WET_CH, WET_CHANNELS, WET_FLOATS_PER_TILE, wetTotals } from "./state";
 import { BAKE_MASS_TO_ALPHA, bakeWet, depositWet, snapshotConcentration, stepWet } from "./wet-reference";
 
+import type { DabInstance } from "../core/types";
 import type { WetParams } from "./params";
 import type { WetState } from "./state";
-import type { DabInstance } from "../core/types";
 
 const SIZE = 128;
 const TILES = SIZE / TILE_SIZE;

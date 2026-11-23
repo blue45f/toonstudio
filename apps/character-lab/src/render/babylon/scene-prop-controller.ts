@@ -11,6 +11,13 @@ import {
   attachStagePropToRig,
 } from "./hand-prop-attachment";
 
+import type {
+  DuoPartnerAttachment,
+  HandPropAttachment,
+  HeadPropAttachment,
+  SfxStampAttachment,
+  StagePropAttachment,
+} from "../../contracts";
 import type { CharacterRig, RigPart } from "./character-rig";
 import type {
   DuoPartnerHandle,
@@ -20,13 +27,6 @@ import type {
   SfxStampHandle,
   StagePropHandle,
 } from "./hand-prop-attachment";
-import type {
-  DuoPartnerAttachment,
-  HandPropAttachment,
-  HeadPropAttachment,
-  SfxStampAttachment,
-  StagePropAttachment,
-} from "../../contracts";
 
 interface ScenePropHost {
   readonly assertAlive: () => void;

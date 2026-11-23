@@ -8,9 +8,9 @@ import { presetById } from "../engine/presets/catalog";
 
 import { acquire2dContext, CANVAS2D_LANE, createCanvas2dLane, dabCssColor, stampDab } from "./canvas2d-lane";
 
+import type { DabInstance } from "../engine/core/types";
 import type { Canvas2dContextLike } from "./canvas2d-lane";
 import type { LaneEnvironment } from "./lane";
-import type { DabInstance } from "../engine/core/types";
 
 /**
  * canvas2d 레인 Node 계약 테스트. 실제 캔버스가 없으므로 호출을 기록하는 모의 2D 컨텍스트로

@@ -23,13 +23,6 @@ import { createThumbnailScheduler, defaultThumbnailPacing } from "./thumbnail-sc
 import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
 
-import type { ApplyLoop } from "./apply-loop";
-import type { CatalogSources } from "./catalog-registry";
-import type { KitPlanRegistry, KitPlanRegistryDeps } from "./kit-plan-registry";
-import type { PackagePlanRegistry } from "./package-plan-registry";
-import type { ThumbnailPacing, ThumbnailScheduler } from "./thumbnail-scheduler";
-import type { UiStateStore } from "./ui-state";
-import type { ViewportRegistry } from "./viewport-registry";
 import type {
   ApplyPlanner,
   BackendDecision,
@@ -50,6 +43,13 @@ import type {
   SlotCapability,
   SlotKind,
 } from "../../contracts";
+import type { ApplyLoop } from "./apply-loop";
+import type { CatalogSources } from "./catalog-registry";
+import type { KitPlanRegistry, KitPlanRegistryDeps } from "./kit-plan-registry";
+import type { PackagePlanRegistry } from "./package-plan-registry";
+import type { ThumbnailPacing, ThumbnailScheduler } from "./thumbnail-scheduler";
+import type { UiStateStore } from "./ui-state";
+import type { ViewportRegistry } from "./viewport-registry";
 import type { ComponentType } from "react";
 
 /** 영역 작업자가 만드는 패널(스펙 §6). 없는 패널은 InspectorTabs/WorkbenchLayout이 '미조립' 안내로 표시한다. */

@@ -6,8 +6,8 @@ import { PAINT_TILE_SIZE } from "../contracts";
 
 import { brushLinearColor, compositePixelLinear, createTileSnapshotSet, snapshotTile, toUndoToken, wrapUnit } from "./paint-layer";
 
-import type { MutablePaintLayer } from "./paint-layer";
 import type { PaintUndoToken } from "../contracts";
+import type { MutablePaintLayer } from "./paint-layer";
 
 export const WEBTOON_DECAL_IDS = ["beauty-mark", "blush-slash", "cross-plaster", "star-sparkle"] as const;
 export type WebtoonDecalId = (typeof WEBTOON_DECAL_IDS)[number];

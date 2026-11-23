@@ -16,9 +16,9 @@ import { QUAT_IDENTITY, degToRad, qClampAngle, qFromAxisAngle, qInverse, qMultip
 
 import { landmarkIndexOf, midpoint, preparePoseLandmarks, segmentDirection } from "./landmark-space";
 
-import type { LandmarkSpaceOptions } from "./landmark-space";
 import type { HumanoidBoneName, LandmarkApplyScope, Pose, PoseLandmark, PoseLandmarkName } from "../../contracts";
 import type { Quat, Vec3 } from "../../shared/math";
+import type { LandmarkSpaceOptions } from "./landmark-space";
 
 export interface LandmarksToPoseOptions extends LandmarkSpaceOptions {
   readonly scope: LandmarkApplyScope;

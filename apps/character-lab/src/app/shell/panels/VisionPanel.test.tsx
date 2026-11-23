@@ -10,9 +10,9 @@ import { vocabularyCatalogEntries } from "../../../testing/recipe-fixtures";
 
 import { VisionPanel, createBrowserVisionDeps } from "./VisionPanel";
 
-import type { DecodedImage, VisionPanelDeps } from "./VisionPanel";
 import type { CapturedRaster, EmbedderPort, LabCommand, ThumbnailEntry } from "../../../contracts";
 import type { HandDetectorPort, LoadedModel, PoseDetectorPort, VisionLoaders, VisionModelKey } from "../../../domains/vision/vision-ports";
+import type { DecodedImage, VisionPanelDeps } from "./VisionPanel";
 
 interface TaggedImage {
   readonly tag: number;

@@ -173,7 +173,7 @@ describe("long-form product tour contracts", () => {
     for (const retired of ["#0d0b09", "#ff743a", "#ff7a3d", "#ff8a4c", "✦"]) {
       expect(filmSource, retired).not.toContain(retired);
     }
-    for (const starlight of ["#070a14", "#11142d", "#b39bff", "#68d5ff", "brand/spectrum-ribbon-v2/icon-192.png"]) {
+    for (const starlight of ["#070a14", "#11142d", "#b39bff", "#68d5ff", "brand/jewel-atelier-v1/icon-192.png"]) {
       expect(filmSource, starlight).toContain(starlight);
     }
   });

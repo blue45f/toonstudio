@@ -8,9 +8,9 @@ import { buildKitPlan } from "./kit-plan";
 import { kitManifestFixture } from "./kit-test-fixture";
 import { baseOf, finalizeKitV2, richKitV2Json } from "./kit-v2-test-fixture";
 
+import type { AccessoryAnchor, AccessoryInstanceId, ChannelKey, CharacterRecipe, KitPlan, PresetId, Proportion, Surface } from "../../contracts";
 import type { AnyKitManifest } from "./kit-plan";
 import type { Json } from "./kit-v2-test-fixture";
-import type { AccessoryAnchor, AccessoryInstanceId, ChannelKey, CharacterRecipe, KitPlan, PresetId, Proportion, Surface } from "../../contracts";
 
 const KIT_RECIPE = createKitDefaultRecipe();
 const WORN_SLOTS = { ...KIT_RECIPE.slots, hair: "hair/soft-bob", top: "top/tee", bottom: "bottom/jeans", shoes: "shoes/sneakers" } as const;

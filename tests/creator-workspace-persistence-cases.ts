@@ -5,8 +5,8 @@ import {
   storyDraftConflicts, storyDraftView, WorkspaceConflictError, workspaceWriteError,
 } from "../apps/web/src/shared/lib/creator-workspace-persistence";
 
-import type { CreatorResourceCase } from "./creator-resources-cases";
 import type { WorkspaceLock } from "../apps/web/src/shared/lib/creator-workspace-persistence";
+import type { CreatorResourceCase } from "./creator-resources-cases";
 
 function ok(value: unknown): asserts value { if (!value) throw new Error("Assertion failed"); }
 function equal(actual: unknown, expected: unknown) {

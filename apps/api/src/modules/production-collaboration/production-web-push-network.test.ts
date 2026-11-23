@@ -21,7 +21,7 @@ const webPush = vi.hoisted(() => ({
   sendNotification: vi.fn(),
 }));
 
-vi.mock("web-push", () => ({ default: webPush }));
+vi.mock("web-push", () => webPush);
 
 // 브라우저가 실제로 발급하는 표준 푸시 서비스 endpoint. 기본 허용 목록을 그대로 통과해야 한다.
 const PUBLIC_PUSH_ENDPOINTS = [

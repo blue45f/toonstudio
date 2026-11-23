@@ -25,11 +25,11 @@ import { HAND_POSE_PRESETS, POSE_PRESETS, findHandPosePreset, findPosePreset } f
 import { createReferenceSkeleton } from "./reference-skeleton";
 import { boneAxisLocal, boneWorldPosition, composeLocalRotation, computeWorldTransforms, poseRotationFromWorld } from "./skeleton-fk";
 
-import type { DragCamera } from "./joint-drag";
-import type { WorldTransformMap } from "./skeleton-fk";
 import type { HumanoidBoneName } from "../contracts/bones";
 import type { SkeletonData } from "../contracts/mesh-data";
 import type { IkGoal, Pose, Quat, Vec3 } from "../contracts/pose";
+import type { DragCamera } from "./joint-drag";
+import type { WorldTransformMap } from "./skeleton-fk";
 
 function randomUnitVec3(prng: ReturnType<typeof createPrng>): Vec3 {
   for (let attempt = 0; attempt < 16; attempt += 1) {

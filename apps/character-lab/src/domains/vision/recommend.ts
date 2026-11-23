@@ -13,8 +13,8 @@ import { CHARACTER_SLOT_KINDS } from "../../contracts";
 import { oklabChroma, oklabHueDeg } from "./kmeans-palette";
 import { rankBySimilarity } from "./similarity";
 
-import type { PaletteEntry } from "./kmeans-palette";
 import type { Embedding, PresetCatalog, PresetId, RecipeColorKey, RecipeColors, SlotKind } from "../../contracts";
+import type { PaletteEntry } from "./kmeans-palette";
 
 export interface PresetRecommendation {
   readonly presetId: PresetId;

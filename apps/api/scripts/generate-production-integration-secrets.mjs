@@ -2,9 +2,9 @@
 
 import { randomBytes } from "node:crypto";
 
-import webPush from "web-push";
+import { generateVAPIDKeys } from "web-push";
 
-const { publicKey, privateKey } = webPush.generateVAPIDKeys();
+const { publicKey, privateKey } = generateVAPIDKeys();
 const encryptionKey = randomBytes(32).toString("base64");
 
 const lines = [

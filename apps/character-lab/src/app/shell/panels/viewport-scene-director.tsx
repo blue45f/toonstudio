@@ -18,8 +18,6 @@ import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../..
 
 import { WEBTOON_SCENE_DIRECTOR_PRESETS } from "./viewport-scene-director-presets";
 
-import type { DuoPartnerSide } from "./viewport-duo-shot-guide";
-import type { WebtoonSceneDirectorPreset, WebtoonSceneDirectorPresetId } from "./viewport-scene-director-presets";
 import type { ShadingProfile } from "../../../contracts";
 import type {
   WebtoonDialogueLocale,
@@ -44,6 +42,8 @@ import type {
   WebtoonStripSpeakerTargets,
 } from "../../../export/webtoon-strip-composer";
 import type { ShaperToonShaderId } from "../../../presets";
+import type { DuoPartnerSide } from "./viewport-duo-shot-guide";
+import type { WebtoonSceneDirectorPreset, WebtoonSceneDirectorPresetId } from "./viewport-scene-director-presets";
 
 export { WEBTOON_SCENE_DIRECTOR_PRESETS } from "./viewport-scene-director-presets";
 export type {

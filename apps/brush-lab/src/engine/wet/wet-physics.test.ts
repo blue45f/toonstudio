@@ -21,9 +21,9 @@ import { WET_MEDIA, wetMediumPreset } from "./params";
 import { wetTotals } from "./state";
 import { snapshotConcentration, stepWet } from "./wet-reference";
 
+import type { WetScene } from "../testing/wet-scenes";
 import type { WetParams } from "./params";
 import type { WetConcentrationSnapshot } from "./wet-reference";
-import type { WetScene } from "../testing/wet-scenes";
 
 /**
  * 수채·수묵·구아슈 물리(LBM 흐름층 + 3층 물 교환 + 안료 수송·침착·재습윤) 불변식 테스트. 모두 Node 결정적이다.

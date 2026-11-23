@@ -153,14 +153,21 @@ export function StudioEpisodeDeliveryPackPanel({
 
   const webtoonDocs = useMemo(
     () =>
-      documents.documents.filter(
-        (doc) =>
-          (doc.kind === "webtoon" || doc.defaultWorkspace === "comic") &&
-          doc.width !== null &&
-          doc.height !== null &&
-          doc.width > 0 &&
-          doc.height > 0,
-      ),
+      documents.documents
+        .filter(
+          (doc) =>
+            (doc.kind === "webtoon" || doc.defaultWorkspace === "comic") &&
+            doc.width !== null &&
+            doc.height !== null &&
+            doc.width > 0 &&
+            doc.height > 0,
+        )
+        .sort(
+          (left, right) =>
+            Date.parse(left.createdAt) - Date.parse(right.createdAt) ||
+            left.title.localeCompare(right.title) ||
+            left.id.localeCompare(right.id),
+        ),
     [documents.documents],
   );
 

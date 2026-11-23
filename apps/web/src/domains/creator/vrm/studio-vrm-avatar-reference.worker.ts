@@ -27,7 +27,7 @@ import {
   type StudioVrmAvatarReferenceWorkerResponse,
 } from "./studio-vrm-avatar-reference-worker-protocol";
 
-import type { ImageEmbedder as MediaPipeImageEmbedder } from "@mediapipe/tasks-vision";
+import type { StudioMediaPipeVisionImageEmbedder as MediaPipeImageEmbedder } from "../studio-mediapipe-vision-init-arbiter";
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 

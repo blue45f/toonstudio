@@ -7,12 +7,12 @@ import { createNibFlexState, stepNibFlex } from "./nib-flex";
 import { applyHysteresis, createTipContactState, stepTipContact } from "./tip-contact";
 import { velocityDeposit } from "./velocity-deposit";
 
+import type { ContactFootprint, ModeledSample } from "../core/types";
+import type { PaperField, PaperSpec } from "../texture/paper-grain";
 import type { BristleState } from "./bristle-bundle";
 import type { GraphiteState } from "./graphite-deposit";
 import type { NibFlexState } from "./nib-flex";
 import type { TipContactState } from "./tip-contact";
-import type { ContactFootprint, ModeledSample } from "../core/types";
-import type { PaperField, PaperSpec } from "../texture/paper-grain";
 
 /**
  * 팁 접촉 물리 스펙(프리셋에 직렬화되는 순수 데이터)과 고정 dt(1/240 s) 모델.

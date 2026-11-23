@@ -20,9 +20,9 @@ import {
   unsupportedMpmReason,
 } from "./mpm-paint-lane";
 
-import type { MpmPaintLaneOptions, MpmStrokeReceipt } from "./mpm-paint-lane";
 import type { LabImage, RawSample } from "../../engine/core/types";
 import type { BrushEngineLane } from "../lane";
+import type { MpmPaintLaneOptions, MpmStrokeReceipt } from "./mpm-paint-lane";
 
 const SIZE = 96;
 const INIT = { width: SIZE, height: SIZE, dpr: 1, tileSize: 16, seed: 1 } as const;

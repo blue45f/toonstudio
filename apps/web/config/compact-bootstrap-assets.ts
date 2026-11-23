@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { transformWithEsbuild } from "vite";
 
+import { compactI18nAssets } from "./compact-i18n-assets";
 import { compactOfflineDrawingHtml } from "./compact-offline-drawing-html";
 import { compactSvgStructureWhitespace } from "./compact-svg-structure";
 
@@ -59,4 +60,5 @@ export async function compactBootstrapAssets(outDir: string): Promise<void> {
     const source = await readFile(path.join(outDir, filename), "utf8");
     await writeFile(path.join(outDir, filename), compactSvgStructureWhitespace(source));
   }
+  console.info("[i18n-output-compaction]", JSON.stringify(await compactI18nAssets(outDir)));
 }

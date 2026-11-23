@@ -9,7 +9,6 @@ import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, resolveStrokeColor 
 
 import { BRISTLE_DAB_RADIUS_SCALE, BRISTLE_MAX_TARGET_ALPHA, mapProgramToBristle, unsupportedBristleReason } from "./bristle-program-mapping";
 
-import type { BristleDabResponse, BristleLaneOptions, BristleProgramMapping } from "./bristle-program-mapping";
 import type { Clock, DabInstance, LabImage, RawSample } from "../../engine/core/types";
 import type { BristleTick, BristleTickSink } from "../../engine/physics/world2d/bristle-brush";
 import type { PhysicsWorld2D } from "../../engine/physics/world2d/types";
@@ -29,6 +28,7 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "../lane";
+import type { BristleDabResponse, BristleLaneOptions, BristleProgramMapping } from "./bristle-program-mapping";
 
 /** 래스터 배치 용량(dab). 가득 차면 표면에 제출하고 비운다. */
 export const BRISTLE_BATCH_CAPACITY = 4096;

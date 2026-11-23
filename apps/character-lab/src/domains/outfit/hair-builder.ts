@@ -16,9 +16,9 @@ import { createPrng } from "../../shared/prng";
 import { MeshAccumulator, appendContouredCardStrip, appendSphereShell, appendTube, singleJoint, sphericalDirection } from "./geometry";
 import { HAIR_STYLE_SPECS } from "./hair-styles";
 
+import type { BoneData, ChainAnchor, HairStyleId, MeshPartData, MorphDelta, OutfitBuildContext, OutfitBuildResult, ScalpSurface, Vec3 } from "../../contracts";
 import type { MeshBuffers, SkinWeight4 } from "./geometry";
 import type { HairSpec, HairZoneSpec } from "./hair-styles";
-import type { BoneData, ChainAnchor, HairStyleId, MeshPartData, MorphDelta, OutfitBuildContext, OutfitBuildResult, ScalpSurface, Vec3 } from "../../contracts";
 
 /** 보조 본 인덱스 기준(VRM 55본 뒤) */
 export const OUTFIT_AUX_BONE_INDEX_BASE = HUMANOID_BONE_NAMES.length;

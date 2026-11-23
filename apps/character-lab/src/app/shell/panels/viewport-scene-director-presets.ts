@@ -2,7 +2,6 @@
  * 장르별 원클릭 풀세트 씬 디렉터 프리셋 카탈로그 (`viewport-scene-director-presets.ts`, Unslop 규약 준수):
  * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 · 옥상 황혼 독대 · 괴도 달빛 예고장 · 법정/메디컬 진실 공방 · 아이돌 앙코르 무대 · 학원 코트 결승전 9대 웹툰 씬 디렉터
  */
-import type { DuoPartnerSide, DuoShotDistanceKey } from "./viewport-duo-shot-guide";
 import type {
   DuoPartnerExpressionPreset,
   DuoPartnerStance,
@@ -27,6 +26,7 @@ import type {
   WebtoonStripSpeakerTargets,
 } from "../../../export/webtoon-strip-composer";
 import type { ShaperToonShaderId } from "../../../presets";
+import type { DuoPartnerSide, DuoShotDistanceKey } from "./viewport-duo-shot-guide";
 
 export type WebtoonSceneDirectorPresetId =
   | "director-rofan-coronation"

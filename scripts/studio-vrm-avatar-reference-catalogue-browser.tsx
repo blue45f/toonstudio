@@ -16,6 +16,7 @@ import {
 import {
   loadStudioMediaPipeVisionModule,
   runStudioMediaPipeVisionTaskCreation,
+  type StudioMediaPipeVisionImageEmbedder,
 } from "../apps/web/src/domains/creator/studio-mediapipe-vision-init-arbiter";
 import {
   disposeStudioVrmAsset,
@@ -38,7 +39,6 @@ import {
   StudioVrmAvatarForge,
 } from "../apps/web/src/domains/creator/vrm/StudioVrmAvatarForge.tsx";
 
-import type { ImageEmbedder as MediaPipeImageEmbedder } from "@mediapipe/tasks-vision";
 import type { VRM } from "@pixiv/three-vrm";
 
 export const STUDIO_VRM_AVATAR_REFERENCE_BROWSER_WIDTH = 512 as const;
@@ -152,7 +152,7 @@ type HarnessRuntime = Readonly<{
   root: Root;
   host: HTMLDivElement;
   vrm: VRM;
-  embedder: MediaPipeImageEmbedder;
+  embedder: StudioMediaPipeVisionImageEmbedder;
   cosineSimilarity: typeof import("@mediapipe/tasks-vision").ImageEmbedder.cosineSimilarity;
   wasmVariant: "simd" | "nosimd";
   wasmLoaderSha256: string;
@@ -166,9 +166,8 @@ function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-async function sha256Hex(bytes: ArrayBuffer | Uint8Array): Promise<string> {
-  const source = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  const digest = await crypto.subtle.digest("SHA-256", source);
+async function sha256Hex(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
 }
 
@@ -353,7 +352,7 @@ function renderHarness(root: Root, vrm: VRM, state: AvatarForgeState, revision: 
   );
 }
 
-async function fetchBytes(url: string): Promise<Uint8Array> {
+async function fetchBytes(url: string): Promise<Uint8Array<ArrayBuffer>> {
   const response = await fetch(url, { cache: "no-store", credentials: "same-origin" });
   invariant(response.ok, `failed to fetch ${url}: ${response.status}`);
   return new Uint8Array(await response.arrayBuffer());
@@ -375,8 +374,9 @@ async function initialize(): Promise<HarnessRuntime> {
   host.style.height = `${STUDIO_VRM_AVATAR_REFERENCE_BROWSER_HEIGHT}px`;
   document.body.appendChild(host);
 
-  const [{ FilesetResolver, ImageEmbedder }, vrm, modelAssetBuffer] = await Promise.all([
-    loadStudioMediaPipeVisionModule(),
+  const wasm = await resolveStudioMediaPipeVisionWasmFileset();
+  const [{ ImageEmbedder }, vrm, modelAssetBuffer] = await Promise.all([
+    loadStudioMediaPipeVisionModule(wasm.variant),
     loadStudioVrmAsset("/vrm/TS_Minseo_Campus.vrm"),
     fetchBytes(STUDIO_VRM_AVATAR_REFERENCE_BROWSER_MODEL_ROUTE),
   ]);
@@ -388,9 +388,6 @@ async function initialize(): Promise<HarnessRuntime> {
     await sha256Hex(modelAssetBuffer) === STUDIO_VRM_AVATAR_REFERENCE_MODEL_SHA256,
     "served MediaPipe model hash drifted",
   );
-  const wasm = await resolveStudioMediaPipeVisionWasmFileset({
-    isSimdSupported: () => FilesetResolver.isSimdSupported(false),
-  });
   const [wasmLoaderBytes, wasmBinaryBytes] = await Promise.all([
     fetchBytes(wasm.fileset.wasmLoaderPath),
     fetchBytes(wasm.fileset.wasmBinaryPath),
@@ -434,6 +431,11 @@ window.__studioVrmAvatarReferenceCatalogueAuthority = async () => {
   const debug = gl.getExtension("WEBGL_debug_renderer_info");
   const attributes = gl.getContextAttributes();
   invariant(attributes, "WebGL context attributes are unavailable");
+  const readFlag = (key: keyof BrowserAuthorityEvidence["contextAttributes"]): boolean => {
+    const value = attributes[key];
+    invariant(typeof value === "boolean", `WebGL context attribute ${key} is unavailable`);
+    return value;
+  };
   return {
     wasmVariant: runtime.wasmVariant,
     wasmLoaderSha256: runtime.wasmLoaderSha256,
@@ -446,12 +448,12 @@ window.__studioVrmAvatarReferenceCatalogueAuthority = async () => {
       ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL))
       : String(gl.getParameter(gl.RENDERER)),
     contextAttributes: {
-      alpha: attributes.alpha,
-      antialias: attributes.antialias,
-      depth: attributes.depth,
-      premultipliedAlpha: attributes.premultipliedAlpha,
-      preserveDrawingBuffer: attributes.preserveDrawingBuffer,
-      stencil: attributes.stencil,
+      alpha: readFlag("alpha"),
+      antialias: readFlag("antialias"),
+      depth: readFlag("depth"),
+      premultipliedAlpha: readFlag("premultipliedAlpha"),
+      preserveDrawingBuffer: readFlag("preserveDrawingBuffer"),
+      stencil: readFlag("stencil"),
     },
     qualityGate: QUALITY_GATE,
   };

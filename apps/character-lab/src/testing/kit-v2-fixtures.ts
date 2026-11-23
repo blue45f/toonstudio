@@ -20,8 +20,8 @@ import {
 
 import { kitManifestJson } from "./kit-fixtures";
 
-import type { KitFixtureOptions } from "./kit-fixtures";
 import type { KitManifestV2, PartRole } from "../contracts";
+import type { KitFixtureOptions } from "./kit-fixtures";
 
 type Json = Record<string, unknown>;
 

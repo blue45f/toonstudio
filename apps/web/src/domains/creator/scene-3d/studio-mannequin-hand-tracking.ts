@@ -473,11 +473,9 @@ export function getStudioMannequinHandTrackingErrorMessage(cause: unknown): stri
   return "실시간 손 인식을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
-async function resolveHandVisionWasmFileset(
-  isSimdSupported: () => Promise<boolean>,
-): Promise<StudioMediaPipeVisionWasmSelection> {
+async function resolveHandVisionWasmFileset(): Promise<StudioMediaPipeVisionWasmSelection> {
   try {
-    return await resolveStudioMediaPipeVisionWasmFileset({ isSimdSupported });
+    return await resolveStudioMediaPipeVisionWasmFileset();
   } catch (cause) {
     throw createHandNamedError(
       "StudioMannequinHandVisionWasmLoadError",
@@ -534,11 +532,11 @@ async function createStudioMannequinHandLandmarker(
 ): Promise<StudioMannequinHandLandmarker> {
   if (signal?.aborted) throw createHandDisposedError();
 
-  const { FilesetResolver, HandLandmarker } = await loadStudioMediaPipeVisionModule();
   const [visionSelection, modelAssetBuffer] = await Promise.all([
-    resolveHandVisionWasmFileset(() => FilesetResolver.isSimdSupported(false)),
+    resolveHandVisionWasmFileset(),
     fetchHandModelBuffer(signal),
   ]);
+  const { HandLandmarker } = await loadStudioMediaPipeVisionModule(visionSelection.variant);
   if (signal?.aborted) throw createHandDisposedError();
 
   const handOptions = {

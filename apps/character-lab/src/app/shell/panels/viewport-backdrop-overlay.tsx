@@ -8,9 +8,9 @@ import { useEffect, useId, useRef } from "react";
 
 import { jointLabelKo } from "./viewport-interactions";
 
+import type { EngineBackend, JointDragHandle } from "../../../contracts";
 import type { BoneLinkSegment } from "./shaper-bone-gizmo";
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
-import type { EngineBackend, JointDragHandle } from "../../../contracts";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, RefObject } from "react";
 
 export type ReferenceCutPlacement = "underlay" | "overlay";

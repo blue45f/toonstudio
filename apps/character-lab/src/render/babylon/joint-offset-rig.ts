@@ -16,9 +16,9 @@ import { featureActive, featureOff } from "../scene-features";
 
 import { toQuaternion } from "./convert";
 
-import type { CharacterRig, RigBone } from "./character-rig";
 import type { MorphJointOffsets, Vec3 } from "../../contracts";
 import type { SceneFeatureState } from "../scene-features";
+import type { CharacterRig, RigBone } from "./character-rig";
 import type { Skeleton } from "@babylonjs/core/Bones/skeleton.js";
 
 export interface JointOffsetRig {

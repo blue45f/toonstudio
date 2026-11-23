@@ -10,8 +10,8 @@
 import { isHumanoidBoneName } from "../../contracts";
 import { degToRad, qFromAxisAngle, qFromEulerXYZ, qMultiply, qNormalize, quatFromTo } from "../../shared/math";
 
-import type { KitPreviewPoseId, KitPreviewPoseRequest, PoseRotationSpec } from "./cli-args";
 import type { HumanoidBoneName, Pose, Quat, Vec3 } from "../../contracts";
+import type { KitPreviewPoseId, KitPreviewPoseRequest, PoseRotationSpec } from "./cli-args";
 
 type Side = "left" | "right";
 

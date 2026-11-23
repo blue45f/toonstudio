@@ -4,8 +4,8 @@ import { QUAT_IDENTITY, clamp, qDot, qInverse, qMultiply, qNormalize, radToDeg }
 
 import { buildSingleHandFinePose, type HandSlidersState } from "./pose-fine-limb-gaze-math";
 
-import type { HandSide } from "./pose-panel-helpers";
 import type { CharacterRecipe, HandPosePreset, HumanoidBoneName, Pose, Quat } from "../../../contracts";
+import type { HandSide } from "./pose-panel-helpers";
 
 type Side = "left" | "right";
 const FINGERS = ["Index", "Middle", "Ring", "Little"] as const;

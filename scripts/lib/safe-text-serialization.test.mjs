@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 
 import { formatMarkdownReport } from "../analyze-bundle-treeshake.mjs";
 import { renderStudioCompetitorWatchMarkdown } from "../studio-competitor-watch.mjs";
@@ -8,6 +7,10 @@ import {
   escapeMarkdownTableCell,
   serializeSafeInlineJsString,
 } from "./safe-text-serialization.mjs";
+
+const { describe, it } = process.env.VITEST
+  ? await import("vitest")
+  : await import("node:test");
 
 describe("escapeMarkdownTableCell (CodeQL #247 회귀 방지)", () => {
   it("역슬래시를 먼저 이스케이프한 뒤 파이프를 이스케이프해 셀 탈출을 차단한다", () => {

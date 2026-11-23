@@ -22,8 +22,8 @@ import {
   widthsAtSamples,
 } from "./handfeel-metrics";
 
-import type { Point } from "./handfeel-metrics";
 import type { RawSample } from "../../engine/core/types";
+import type { Point } from "./handfeel-metrics";
 
 function sample(x: number, y: number, tMs: number, pressure = 0.5): RawSample {
   return { x, y, tMs, pressure, tiltXDeg: 0, tiltYDeg: 0, twistDeg: 0, pointerType: "pen", phase: "move", source: "raw" };

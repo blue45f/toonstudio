@@ -6,8 +6,8 @@ import { CHANNEL_KEYS, parseShapeMorphName } from "../../contracts";
 
 import { shapeLabelKo } from "./custom-labels";
 
-import type { KitPlanShape } from "./kit-plan-v2-types";
 import type { ChannelKey, KitV2Material, KitV2Mesh } from "../../contracts";
+import type { KitPlanShape } from "./kit-plan-v2-types";
 
 /** 메시가 쓰는 재질 이름(단일 또는 프리미티브별) */
 export function meshMaterialNames(mesh: KitV2Mesh): readonly string[] {

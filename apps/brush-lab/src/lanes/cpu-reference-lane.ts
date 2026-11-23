@@ -5,6 +5,9 @@ import { Surface } from "../engine/raster/reference-renderer";
 
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, supportedReport } from "./lane";
 
+import type { Clock, LabImage, RawSample } from "../engine/core/types";
+import type { LatencyRecord } from "../engine/input/input-pipeline";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -19,9 +22,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { Clock, LabImage, RawSample } from "../engine/core/types";
-import type { LatencyRecord } from "../engine/input/input-pipeline";
-import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
  * CPU 참조 레인(기준선). 엔진의 `StrokePipeline`(입력→물리→dab)과 `Surface`(타일 fine 래스터·합성·습식)를

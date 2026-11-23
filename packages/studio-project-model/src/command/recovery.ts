@@ -3,10 +3,10 @@ import { projectDigest } from "../ir/project-state";
 
 import { applyProjectCommand } from "./reducer";
 
-import type { JournalStore } from "./journal-store";
 import type { JournalEntryIR, SnapshotIR } from "../ir/journal";
 import type { ProjectStateIR } from "../ir/project-state";
 import type { SceneIR } from "../ir/scene";
+import type { JournalStore } from "./journal-store";
 
 /**
  * Crash recovery (V11 §10.5 vertical slice).

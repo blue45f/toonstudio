@@ -140,8 +140,8 @@ export const LIBRARY_AREA_AI_ON_DEVICE: LibraryGuideArea = {
         "It meets the need to read webcam video and photos on the device without uploading them. The production CSP blocks external WASM, so after checking SIMD support it loads a same-origin hashed file exactly once.",
       ),
       cost: t(
-        "WASM 약 11.2MB는 같은 출처에서 받고, 모델 파일은 실행할 때 구글 저장소에서 받습니다(SHA-256 고정은 임베더 1개뿐). '전부 로컬'이 아니며 대안과 비교한 문서는 찾지 못했습니다.",
-        "About 11.2 MB of WASM comes from our origin, while model files are downloaded from Google storage at run time (only the embedder is pinned by SHA-256). It is not fully local, and we found no document comparing alternatives.",
+        "SIMD WASM 약 14.7MB(미지원 기기의 non-SIMD는 약 10.5MB)는 같은 출처에서 받고, 모델 파일은 실행할 때 구글 저장소에서 받습니다(SHA-256 고정은 임베더 1개뿐). '전부 로컬'이 아니며 대안과 비교한 문서는 찾지 못했습니다.",
+        "About 14.7 MB of SIMD WASM (10.5 MB of non-SIMD WASM on unsupported devices) comes from our origin, while model files are downloaded from Google storage at run time (only the embedder is pinned by SHA-256). It is not fully local, and we found no document comparing alternatives.",
       ),
       paths: [
         `${CREATOR}/studio-mediapipe-vision-assets.ts`,

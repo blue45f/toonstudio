@@ -19,11 +19,27 @@ class PreviewPackageTests(unittest.TestCase):
                     "assets/main-AbCd1234.css", "fonts/public.woff2", "brand/public.webp", "data/catalog/01.json",
                     "i18n/ko/common.json", "locales/en.json", "catalog/index.json", "assets/studio-bg3d-physics.worker-public-demo-AbCd1234.js",
                     "assets/studio-offline-branch.worker-public-demo-AbCd1234.js",
-                    "assets/studio-bg3d-babylon-runtime-public-demo-AbCd1234.js"]
+                    "assets/studio-bg3d-babylon-runtime-public-demo-AbCd1234.js",
+                    "assets/StudioPptProDrawingPanel-AbCd1234.js", "assets/OtherStudioPanel-AbCd1234.js"]
             omitted = ["assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
                        "assets/studio-bg3d-physics.worker-AbCd1234.js", "assets/studio-offline-branch.worker-AbCd1234.js",
                        "assets/studio-bg3d-babylon-runtime-AbCd1234.js",
                        "assets/3d/unused.png", "i18n/studio/unused.json"]
+            # 2026-11-23 production 빌드에서 확인한 고급 PPT 두 탭의 실제 출력 이름이다.
+            advanced_outputs = [
+                "AutoQaCollabHubPanel-DIAF5OdY.js", "Csp3dUpgradeHubPanel-CvEWnHKv.js",
+                "AutoQaPixelScannerPanel-DCe1JDKz.js", "AutoQaLayoutSpecPanel-BzIUUQlF.js",
+                "AutoQaContinuityPanel-BFaroA6H.js", "CollabSignoffHubPanel-B17MYUZT.js",
+                "PuppetWarpStudioPanel-BxvQnoXb.js", "Model3dSurfacePaintPanel-DhORoAVA.js",
+                "Model3dHandCustomizerPanel-C3cgKpBS.js", "CspWatermarkVelocityPanel-Cm9tp8Ki.js",
+            ]
+            omitted.extend("assets/" + name for name in advanced_outputs)
+            for name in advanced_outputs:
+                stem = name.split("-", 1)[0]
+                kept.extend([
+                    f"assets/{stem}-public-demo-AbCd1234.js", f"assets/{stem}.js",
+                    f"assets/{stem}-AbCd123.js", f"assets/{stem}-AbCd12345.js",
+                ])
             before = {}
             for name in kept + omitted:
                 path = root / name

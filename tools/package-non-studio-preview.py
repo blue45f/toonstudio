@@ -12,6 +12,15 @@ ALLOWED_SUFFIXES = {".html", ".js", ".mjs", ".css", ".json", ".svg", ".ico", ".p
 # Babylon은 bundle 소유권 검사로 단일 BG3D specialist 뒤에 격리된 엔진이다.
 # 비슷한 이름의 공개 페이지 코드와 전체 dist는 그대로 보존한다.
 STUDIO_RUNTIME_CHUNK = re.compile(r"^(?:opencv|web-ifc-api|studio-bg3d-babylon-runtime|studio-bg3d-physics\.worker|studio-offline-branch\.worker)-[A-Za-z0-9_-]{8}\.js$")
+# /create에서 열 수 있는 고급 PPT 두 탭만 비 Studio QA 사본의 범위에서 제외한다.
+# 기존 PPT 부모·다른 탭·공개 코드는 유지하며, 전체 dist와 실제 브라우저 검사는 바꾸지 않는다.
+# 두 hub는 StudioPptProDrawingPanel, 여덟 leaf는 각 hub의 선택 탭에서만 지연 로딩된다.
+STUDIO_PPT_ADVANCED_CHUNK = re.compile(
+    r"^(?:AutoQaCollabHubPanel|Csp3dUpgradeHubPanel|"
+    r"AutoQaPixelScannerPanel|AutoQaLayoutSpecPanel|AutoQaContinuityPanel|CollabSignoffHubPanel|"
+    r"PuppetWarpStudioPanel|Model3dSurfacePaintPanel|Model3dHandCustomizerPanel|CspWatermarkVelocityPanel)"
+    r"-[A-Za-z0-9_-]{8}\.js$"
+)
 
 
 def select_preview_files(root: Path) -> set[Path]:
@@ -20,7 +29,8 @@ def select_preview_files(root: Path) -> set[Path]:
     if assets.is_dir():
         files.update(path for path in assets.iterdir()
                      if path.is_file() and path.suffix in ALLOWED_SUFFIXES
-                     and not STUDIO_RUNTIME_CHUNK.fullmatch(path.name))
+                     and not STUDIO_RUNTIME_CHUNK.fullmatch(path.name)
+                     and not STUDIO_PPT_ADVANCED_CHUNK.fullmatch(path.name))
     for directory in ("brand", "fonts", "icons", "i18n", "locales"):
         path = root / directory
         if path.is_dir():

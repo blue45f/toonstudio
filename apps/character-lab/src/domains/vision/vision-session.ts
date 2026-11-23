@@ -10,8 +10,8 @@ import { failVisible, isLabFailure } from "../../contracts";
 
 import { serializeHandModel } from "./serialized-hand-model";
 
-import type { HandDetectorPort, LoadedModel, PoseDetectorPort, VisionLoaders, VisionModelKey, VisionModelStatus } from "./vision-ports";
 import type { EmbedderPort, LabFailure } from "../../contracts";
+import type { HandDetectorPort, LoadedModel, PoseDetectorPort, VisionLoaders, VisionModelKey, VisionModelStatus } from "./vision-ports";
 
 export interface VisionSessionDeps {
   readonly loaders: VisionLoaders;

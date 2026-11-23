@@ -15,8 +15,8 @@ import { createLibMypaintLane } from "./libmypaint-lane";
 import { mapProgramToMypaint } from "./mypaint-settings-map";
 import { describeExternalLaneContract, hashOf } from "./testing/external-lane-contract";
 
-import type { HokusaiRuntime } from "./hokusai-lane";
 import type { BrushProgram } from "../engine/presets/program-schema";
+import type { HokusaiRuntime } from "./hokusai-lane";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const PKG_DIR = path.join(REPO_ROOT, "packages", "studio-hokusai-wasm", "pkg");

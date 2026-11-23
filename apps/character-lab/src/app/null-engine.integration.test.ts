@@ -19,8 +19,8 @@ import { installPsdCanvasStub } from "../testing/psd-canvas-stub";
 import { composeCharacterLab } from "./composition";
 
 import type { ThumbnailRequest } from "../contracts";
-import type { LabRuntime } from "./shell/lab-runtime";
 import type { NullEngineHarness } from "../render/testing/null-engine-harness";
+import type { LabRuntime } from "./shell/lab-runtime";
 
 function canvasStub(): HTMLCanvasElement {
   return {} as HTMLCanvasElement;

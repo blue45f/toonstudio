@@ -3,7 +3,6 @@ import { labImageToPngBytes, reportFileName, serializeReport } from "../../bench
 import { compareLanes } from "../../bench/runner/ab-compare";
 import { runFixture } from "../../bench/runner/run-fixture";
 
-import type { AbComparison, RunResult } from "./bench-types";
 import type { StrokeFixture } from "../../bench/fixtures/stroke-fixtures";
 import type { BrushCertificationReport } from "../../bench/report/report-schema";
 import type { Clock, LabImage } from "../../engine/core/types";
@@ -16,6 +15,7 @@ import type {
   LaneId,
   StrokeReceipt,
 } from "../../lanes/lane";
+import type { AbComparison, RunResult } from "./bench-types";
 
 /**
  * UI가 쓰는 bench 러너·리포트 함수 묶음. 셸이 실제 bench 모듈로 한 번 구성하고

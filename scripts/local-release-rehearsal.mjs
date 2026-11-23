@@ -34,12 +34,12 @@ export const SW_STATIC_CRITICAL_URLS = Object.freeze([
   "/offline-draw/editor.js",
   "/offline-draw/cache.js",
   "/offline-draw/bootstrap.js",
-  "/brand/spectrum-ribbon-v2/manifest.webmanifest",
-  "/brand/spectrum-ribbon-v2/favicon.ico",
-  "/brand/spectrum-ribbon-v2/favicon-32.png",
-  "/brand/spectrum-ribbon-v2/favicon-96.png",
-  "/brand/spectrum-ribbon-v2/favicon.svg",
-  "/brand/spectrum-ribbon-v2/safari-pinned-tab.svg",
+  "/brand/jewel-atelier-v1/manifest.webmanifest",
+  "/brand/jewel-atelier-v1/favicon.ico",
+  "/brand/jewel-atelier-v1/favicon-32.png",
+  "/brand/jewel-atelier-v1/favicon-96.png",
+  "/brand/jewel-atelier-v1/favicon.svg",
+  "/brand/jewel-atelier-v1/safari-pinned-tab.svg",
 ]);
 
 export const REHEARSAL_GATE_IDS = Object.freeze([

@@ -5,10 +5,10 @@ import { projectDigest } from "../ir/project-state";
 import { entryCrc, recoverProject, snapshotCrc, type RecoveryReport } from "./recovery";
 import { applyProjectCommand } from "./reducer";
 
-import type { JournalStore } from "./journal-store";
 import type { CommandIR, SnapshotSlot } from "../ir/journal";
 import type { ProjectStateIR } from "../ir/project-state";
 import type { SceneIR } from "../ir/scene";
+import type { JournalStore } from "./journal-store";
 
 
 /**

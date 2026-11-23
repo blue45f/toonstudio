@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "engine": "studio-engine-vello",
   "target": "wasm32-unknown-unknown",
-  "cargoManifestSha256": "24e2f3aa6fecb13e2982290bdcdb942184c8950475396d1750725745c00b3844",
-  "cargoLockSha256": "526128da3a1df8ee28bcf1f8049a173d3bbac2cc675657c58ef151f19c51ce84",
+  "cargoManifestSha256": "84de79940e69c487ad67de49ead228f74f91366a0636c26ec62d7df9afe195de",
+  "cargoLockSha256": "1ba6cb53bb6aabbf7af2f29bc1a0ff12c51bf7110d2b696d728941d60e3df43b",
   "artifacts": [
     {
       "id": "pkg",
@@ -21,15 +21,16 @@
         "displaydoc@0.2.7",
         "euclid@0.22.14",
         "fdeflate@0.3.7",
-        "fearless_simd@0.7.0",
+        "fearless_simd@1.2.0",
+        "fearless_simd_macros@0.1.0",
         "flate2@1.1.9",
         "foldhash@0.2.0",
         "font-types@0.12.7",
         "fontique@0.13.0",
-        "glifo@0.4.0",
+        "glifo@0.5.0",
         "guillotiere@0.7.0",
         "harfrust@0.15.0",
-        "harfrust@0.16.0",
+        "harfrust@0.16.1",
         "hashbrown@0.17.1",
         "icu_collections@2.3.0",
         "icu_locale_core@2.4.0",
@@ -76,7 +77,7 @@
         "smallvec@1.16.5",
         "stable_deref_trait@1.2.1",
         "syn@2.0.119",
-        "syn@3.0.3",
+        "syn@3.0.10",
         "synstructure@0.13.2",
         "synstructure@0.14.0",
         "thiserror-impl@2.0.19",
@@ -84,8 +85,8 @@
         "tinystr@0.8.5",
         "unicode-ident@1.0.24",
         "utf8_iter@1.0.4",
-        "vello_common@0.3.0",
-        "vello_cpu@0.3.0",
+        "vello_common@0.4.0",
+        "vello_cpu@0.4.0",
         "wasm-bindgen-macro-support@0.2.129",
         "wasm-bindgen-macro@0.2.129",
         "wasm-bindgen-shared@0.2.129",
@@ -107,7 +108,7 @@
         },
         {
           "path": "pkg/studio_engine_vello_bg.wasm",
-          "sha256": "a0cced9f3da8714c1e948b61900ab70d1a242fac4f7c8533067d1d412969e46d"
+          "sha256": "8ccc427ced649f0a7d486183f973e20eb047d3b908044c7372a81c362be22782"
         }
       ]
     },
@@ -137,7 +138,8 @@
         "euclid@0.22.14",
         "fdeflate@0.3.7",
         "fearless_simd@0.4.1",
-        "fearless_simd@0.7.0",
+        "fearless_simd@1.2.0",
+        "fearless_simd_macros@0.1.0",
         "flate2@1.1.9",
         "float-cmp@0.9.0",
         "foldhash@0.2.0",
@@ -148,11 +150,11 @@
         "futures-intrusive@0.5.0",
         "futures-task@0.3.33",
         "futures-util@0.3.33",
-        "glifo@0.4.0",
+        "glifo@0.5.0",
         "guillotiere@0.7.0",
         "harfrust@0.12.0",
         "harfrust@0.15.0",
-        "harfrust@0.16.0",
+        "harfrust@0.16.1",
         "hashbrown@0.17.1",
         "icu_collections@2.3.0",
         "icu_locale_core@2.4.0",
@@ -223,7 +225,7 @@
         "svg_fmt@0.4.5",
         "svgtypes@0.16.1",
         "syn@2.0.119",
-        "syn@3.0.3",
+        "syn@3.0.10",
         "synstructure@0.13.2",
         "synstructure@0.14.0",
         "thiserror-impl@2.0.19",
@@ -241,8 +243,8 @@
         "velato@0.12.0",
         "vello@0.12.0",
         "vello_common@0.2.0",
-        "vello_common@0.3.0",
-        "vello_cpu@0.3.0",
+        "vello_common@0.4.0",
+        "vello_cpu@0.4.0",
         "vello_encoding@0.12.0",
         "vello_hybrid@0.2.0",
         "vello_shaders@0.12.0",
@@ -270,11 +272,11 @@
       "files": [
         {
           "path": "pkg-gpu/studio_engine_vello.js",
-          "sha256": "9cdbdd73f12e9a489a0bc014be87f7d7d9fe5388f09ed09d51d49a99c9ee0eec"
+          "sha256": "dc202d8cc3c2264de9854878d66f9793aa3d26bb8625604ec7d1084a9330fb4f"
         },
         {
           "path": "pkg-gpu/studio_engine_vello_bg.wasm",
-          "sha256": "83287be69a756496b5e168715ab59bed54fb4244a85644914f6fa445d046d196"
+          "sha256": "15f0ed909d1d6f76bb32bfbec3f750d9e723c040fa87cc094e5c4ddc8bb07910"
         }
       ]
     }
@@ -518,15 +520,28 @@
     },
     {
       "name": "fearless_simd",
-      "version": "0.7.0",
+      "version": "1.2.0",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "f4beca3cb2444e3304ac30843cc091f44ed58932353cd492ce740067bfce6b12",
+      "checksum": "629c9d6b6f30b5604089e0980f4d924a013aacb1654a6cdf5d3d852224f68651",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/fearless_simd",
       "licenseEvidence": "crate-or-vendored-root-files",
       "licenseDocumentDigests": [
         "0e297345cbd90f056157ad7bfc614d4bf5d13ff0d9e978711f261e17c70ff876",
         "4bf96504d6e83ce5c6fc7167f1795d9ceaa68e70ab86bc5d08ab93184262bbbe"
+      ]
+    },
+    {
+      "name": "fearless_simd_macros",
+      "version": "0.1.0",
+      "license": "Apache-2.0 OR MIT",
+      "checksum": "3e91d94c6885390b81782d7ee60fd6583b33907333a8b340de25ccf468353315",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "upstream": "https://github.com/linebender/fearless_simd",
+      "licenseEvidence": "crate-or-vendored-root-files",
+      "licenseDocumentDigests": [
+        "4bf96504d6e83ce5c6fc7167f1795d9ceaa68e70ab86bc5d08ab93184262bbbe",
+        "7781100dfdcdadda57828169731f14493cf602cbb9628a760a36c13d91957d5b"
       ]
     },
     {
@@ -658,9 +673,9 @@
     },
     {
       "name": "glifo",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "9f1218dedd5348c1b166ec3b8b3cbca49d2f527bd43b3fa072ea5123c523ed3f",
+      "checksum": "9ae2e3b09ea1cc45c994a405e4d4154901d4caa867d3e1be3a02be641f62fefa",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/vello",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -708,9 +723,9 @@
     },
     {
       "name": "harfrust",
-      "version": "0.16.0",
+      "version": "0.16.1",
       "license": "MIT",
-      "checksum": "741c9cd8fb2f39c393366b9cf13e8c31ad6adbbd9d817f0a18fe47cff36a3cca",
+      "checksum": "0690f8c81dfeca8987d8518cf1c861d7b58d43ad0cedae9184d41af236effb9c",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/harfbuzz/harfrust",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1612,9 +1627,9 @@
     },
     {
       "name": "syn",
-      "version": "3.0.3",
+      "version": "3.0.10",
       "license": "MIT OR Apache-2.0",
-      "checksum": "53e9bae58849f64dfa4f5d5ae372c8341f7305f82a3868709269343628b659a3",
+      "checksum": "4ae9ccbea3a7b0b09443036490c8f34a8b1b760fd345e5c0dae0aac718faea79",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/dtolnay/syn",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1845,9 +1860,9 @@
     },
     {
       "name": "vello_common",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "73c2fbe53548bcd25c8ff42f75a93770a8611a16b37bee56d7ef7b44e36027f1",
+      "checksum": "6d9447018538224861c1bd825471dcc67ffa973c97de666bf6296b72dbb2f166",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/vello",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -1858,9 +1873,9 @@
     },
     {
       "name": "vello_cpu",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "license": "Apache-2.0 OR MIT",
-      "checksum": "ed1fec424fbba6acf6cbc78bb526447eb77590d95f40419d598870fe37535212",
+      "checksum": "5d6b3db720c5d3aa8783cb1c042d8a77142df70bd0f742dc9005f6d6efe33ebf",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "upstream": "https://github.com/linebender/vello",
       "licenseEvidence": "crate-or-vendored-root-files",
@@ -2209,14 +2224,14 @@
       "sha256": "0e297345cbd90f056157ad7bfc614d4bf5d13ff0d9e978711f261e17c70ff876",
       "sources": [
         "https://crates.io/crates/fearless_simd/0.4.1/source/LICENSE-MIT",
-        "https://crates.io/crates/fearless_simd/0.7.0/source/LICENSE-MIT",
+        "https://crates.io/crates/fearless_simd/1.2.0/source/LICENSE-MIT",
         "https://crates.io/crates/kurbo/0.13.1/source/LICENSE-MIT",
         "https://crates.io/crates/peniko/0.6.1/source/LICENSE-MIT",
         "https://crates.io/crates/polycool/0.4.0/source/LICENSE-MIT"
       ],
       "packages": [
         "fearless_simd@0.4.1",
-        "fearless_simd@0.7.0",
+        "fearless_simd@1.2.0",
         "kurbo@0.13.1",
         "peniko@0.6.1",
         "polycool@0.4.0"
@@ -2400,7 +2415,7 @@
         "https://crates.io/crates/serde_json/1.0.154/source/LICENSE-MIT",
         "https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-MIT",
         "https://crates.io/crates/syn/2.0.119/source/LICENSE-MIT",
-        "https://crates.io/crates/syn/3.0.3/source/LICENSE-MIT",
+        "https://crates.io/crates/syn/3.0.10/source/LICENSE-MIT",
         "https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-MIT",
         "https://crates.io/crates/thiserror/2.0.19/source/LICENSE-MIT",
         "https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-MIT",
@@ -2421,7 +2436,7 @@
         "serde_json@1.0.154",
         "serde_repr@0.1.21",
         "syn@2.0.119",
-        "syn@3.0.3",
+        "syn@3.0.10",
         "thiserror-impl@2.0.19",
         "thiserror@2.0.19",
         "unicode-ident@1.0.24",
@@ -2433,12 +2448,12 @@
       "sources": [
         "https://crates.io/crates/harfrust/0.12.0/source/LICENSE",
         "https://crates.io/crates/harfrust/0.15.0/source/LICENSE",
-        "https://crates.io/crates/harfrust/0.16.0/source/LICENSE"
+        "https://crates.io/crates/harfrust/0.16.1/source/LICENSE"
       ],
       "packages": [
         "harfrust@0.12.0",
         "harfrust@0.15.0",
-        "harfrust@0.16.0"
+        "harfrust@0.16.1"
       ]
     },
     {
@@ -2529,7 +2544,8 @@
         "https://crates.io/crates/color/0.3.3/source/LICENSE-APACHE",
         "https://crates.io/crates/fdeflate/0.3.7/source/LICENSE-APACHE",
         "https://crates.io/crates/fearless_simd/0.4.1/source/LICENSE-APACHE",
-        "https://crates.io/crates/fearless_simd/0.7.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/fearless_simd/1.2.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/fearless_simd_macros/0.1.0/source/LICENSE-APACHE",
         "https://crates.io/crates/linebender_resource_handle/0.1.1/source/LICENSE-APACHE",
         "https://crates.io/crates/miniz_oxide/0.8.9/source/LICENSE-APACHE.md",
         "https://crates.io/crates/naga-types/30.0.1/source/LICENSE.APACHE",
@@ -2538,8 +2554,8 @@
         "https://crates.io/crates/usvg/0.48.1/source/LICENSE-APACHE",
         "https://crates.io/crates/vello/0.12.0/source/LICENSE-APACHE",
         "https://crates.io/crates/vello_common/0.2.0/source/LICENSE-APACHE",
-        "https://crates.io/crates/vello_common/0.3.0/source/LICENSE-APACHE",
-        "https://crates.io/crates/vello_cpu/0.3.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/vello_common/0.4.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/vello_cpu/0.4.0/source/LICENSE-APACHE",
         "https://crates.io/crates/vello_encoding/0.12.0/source/LICENSE-APACHE",
         "https://crates.io/crates/vello_shaders/0.12.0/source/LICENSE-APACHE",
         "https://crates.io/crates/vello_sparse_shaders/0.2.0/source/LICENSE-APACHE",
@@ -2549,7 +2565,8 @@
         "color@0.3.3",
         "fdeflate@0.3.7",
         "fearless_simd@0.4.1",
-        "fearless_simd@0.7.0",
+        "fearless_simd@1.2.0",
+        "fearless_simd_macros@0.1.0",
         "linebender_resource_handle@0.1.1",
         "miniz_oxide@0.8.9",
         "naga-types@30.0.1",
@@ -2561,8 +2578,8 @@
         "velato@0.12.0",
         "vello@0.12.0",
         "vello_common@0.2.0",
-        "vello_common@0.3.0",
-        "vello_cpu@0.3.0",
+        "vello_common@0.4.0",
+        "vello_cpu@0.4.0",
         "vello_encoding@0.12.0",
         "vello_hybrid@0.2.0",
         "vello_shaders@0.12.0",
@@ -2647,10 +2664,10 @@
     {
       "sha256": "738d4a3e51220f46f9cc2f53e6acfc274ab95e68a9280777a37512bec7408724",
       "sources": [
-        "https://crates.io/crates/glifo/0.4.0/source/LICENSE-MIT"
+        "https://crates.io/crates/glifo/0.5.0/source/LICENSE-MIT"
       ],
       "packages": [
-        "glifo@0.4.0"
+        "glifo@0.5.0"
       ]
     },
     {
@@ -2669,6 +2686,15 @@
       ],
       "packages": [
         "xmlwriter@0.1.0"
+      ]
+    },
+    {
+      "sha256": "7781100dfdcdadda57828169731f14493cf602cbb9628a760a36c13d91957d5b",
+      "sources": [
+        "https://crates.io/crates/fearless_simd_macros/0.1.0/source/LICENSE-MIT"
+      ],
+      "packages": [
+        "fearless_simd_macros@0.1.0"
       ]
     },
     {
@@ -2760,7 +2786,7 @@
     {
       "sha256": "85ad950cce8752f716dbf49be95b2639172cb49f291336d57f1fdc9989e38179",
       "sources": [
-        "https://crates.io/crates/glifo/0.4.0/source/LICENSE-APACHE",
+        "https://crates.io/crates/glifo/0.5.0/source/LICENSE-APACHE",
         "https://crates.io/crates/itoa/1.0.18/source/LICENSE-APACHE",
         "https://crates.io/crates/litrs/1.0.0/source/LICENSE-APACHE",
         "https://crates.io/crates/parley_engine/0.13.0/source/LICENSE-APACHE",
@@ -2772,13 +2798,13 @@
         "https://crates.io/crates/serde_json/1.0.154/source/LICENSE-APACHE",
         "https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-APACHE",
         "https://crates.io/crates/syn/2.0.119/source/LICENSE-APACHE",
-        "https://crates.io/crates/syn/3.0.3/source/LICENSE-APACHE",
+        "https://crates.io/crates/syn/3.0.10/source/LICENSE-APACHE",
         "https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-APACHE",
         "https://crates.io/crates/thiserror/2.0.19/source/LICENSE-APACHE",
         "https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-APACHE"
       ],
       "packages": [
-        "glifo@0.4.0",
+        "glifo@0.5.0",
         "itoa@1.0.18",
         "litrs@1.0.0",
         "parley_engine@0.13.0",
@@ -2790,7 +2816,7 @@
         "serde_json@1.0.154",
         "serde_repr@0.1.21",
         "syn@2.0.119",
-        "syn@3.0.3",
+        "syn@3.0.10",
         "thiserror-impl@2.0.19",
         "thiserror@2.0.19",
         "unicode-ident@1.0.24"
@@ -3084,8 +3110,8 @@
         "crates/vendor/vello-hybrid/LICENSE-MIT",
         "https://crates.io/crates/vello/0.12.0/source/LICENSE-MIT",
         "https://crates.io/crates/vello_common/0.2.0/source/LICENSE-MIT",
-        "https://crates.io/crates/vello_common/0.3.0/source/LICENSE-MIT",
-        "https://crates.io/crates/vello_cpu/0.3.0/source/LICENSE-MIT",
+        "https://crates.io/crates/vello_common/0.4.0/source/LICENSE-MIT",
+        "https://crates.io/crates/vello_cpu/0.4.0/source/LICENSE-MIT",
         "https://crates.io/crates/vello_encoding/0.12.0/source/LICENSE-MIT",
         "https://crates.io/crates/vello_shaders/0.12.0/source/LICENSE-MIT",
         "https://crates.io/crates/vello_sparse_shaders/0.2.0/source/LICENSE-MIT"
@@ -3095,8 +3121,8 @@
         "svg_fmt@0.4.5",
         "vello@0.12.0",
         "vello_common@0.2.0",
-        "vello_common@0.3.0",
-        "vello_cpu@0.3.0",
+        "vello_common@0.4.0",
+        "vello_cpu@0.4.0",
         "vello_encoding@0.12.0",
         "vello_hybrid@0.2.0",
         "vello_shaders@0.12.0",

@@ -18,8 +18,8 @@ import { createMockEngine, createMockEngineFactory } from "../testing/mock-engin
 
 import { COMPOSED_PANELS, DEFAULT_BOOT_SOURCE, composeCharacterLab, createKitShowcaseBootRecipe, uploadPaintLayers } from "./composition";
 
-import type { CompositionOverrides } from "./composition";
 import type { ThumbnailRequest } from "../contracts";
+import type { CompositionOverrides } from "./composition";
 
 /** 합성 키트를 돌려주는 가짜 로더(실제 계획 빌더·실제 영역 모듈 조립) */
 function kitOverrides(): NonNullable<CompositionOverrides["kit"]> & { readonly loads: () => number } {

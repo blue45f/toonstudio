@@ -1,5 +1,5 @@
-import type { RawStage } from "./raw-stage";
 import type { RawSample } from "../../core/types";
+import type { RawStage } from "./raw-stage";
 
 /**
  * 단계 체인 합성. 앞 단계의 출력이 뒤 단계의 입력이다. 합성 결과도 `RawStage`라서 중첩할 수 있다.

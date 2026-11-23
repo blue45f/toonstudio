@@ -28,8 +28,8 @@ import {
   setLookThumbnail,
 } from "./look-library";
 
-import type { LookLibrary, LookLibraryResult, LookStorageLike } from "./look-library";
 import type { CharacterRecipe } from "../contracts";
+import type { LookLibrary, LookLibraryResult, LookStorageLike } from "./look-library";
 
 function styled(): CharacterRecipe {
   const base = createDefaultRecipe();

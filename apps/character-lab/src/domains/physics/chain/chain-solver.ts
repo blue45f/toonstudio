@@ -13,8 +13,8 @@ import { projectParticleOutOfCapsules } from "../collision/capsule";
 import { windGustFactor } from "../core/noise";
 import { f32Length3, f32Lerp, rotateVec3ByQuat } from "../core/vec";
 
-import type { CompiledChains } from "./chain-model";
 import type { CapsuleSet, ChainState, WindInput } from "../../../contracts";
+import type { CompiledChains } from "./chain-model";
 
 const F = Math.fround;
 

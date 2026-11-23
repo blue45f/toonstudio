@@ -7,6 +7,9 @@ import { paperFor } from "../engine/raster/reference-renderer";
 
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions } from "./lane";
 
+import type { LabImage, RawSample } from "../engine/core/types";
+import type { GpuProbeResult } from "../engine/gpu/device";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -19,9 +22,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { LabImage, RawSample } from "../engine/core/types";
-import type { GpuProbeResult } from "../engine/gpu/device";
-import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
  * 비교 레인: WebGPU 렌더 인스턴싱(쿼드 1개/dab, rgba16float 하드웨어 블렌드).

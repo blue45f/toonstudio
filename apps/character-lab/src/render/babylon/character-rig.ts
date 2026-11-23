@@ -40,9 +40,9 @@ import type {
 } from "../../contracts";
 import type { WorldBounds } from "../camera-framing";
 import type { PackageHairAlbedo } from "../package-hair-color";
-import type { JointOffsetRig } from "./joint-offset-rig";
 import type { PoseConvention, RigBoneSnapshot } from "../pose-skeleton";
 import type { RigInspection, RigPartInspection } from "../rig-inspection";
+import type { JointOffsetRig } from "./joint-offset-rig";
 import type { Bone } from "@babylonjs/core/Bones/bone.js";
 import type { Skeleton } from "@babylonjs/core/Bones/skeleton.js";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";

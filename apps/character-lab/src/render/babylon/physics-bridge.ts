@@ -15,8 +15,8 @@ import { qConjugate, qMultiply, qNormalize, qRotateVec3, quatFromTo, v3Add, v3Le
 import { rigBoneWorld } from "./character-rig";
 import { fromQuaternion, toQuaternion } from "./convert";
 
-import type { CharacterRig, RigBone } from "./character-rig";
 import type { LabFailure, PhysicsProvider, PhysicsProviderFactory, PhysicsProviderId, PhysicsStatus, Quat, SettleReceipt, Vec3 } from "../../contracts";
+import type { CharacterRig, RigBone } from "./character-rig";
 
 export interface PhysicsBridge {
   /** provider 하나를 만들어 초기화하고 체인을 넘긴다. 초기화·체인 설정이 실패하면 만든 provider를 해제하고 비활성(status null)으로 되돌린 뒤 LabFailure를 던진다. */

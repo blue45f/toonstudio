@@ -43,8 +43,6 @@ import {
 import { emptyMetrics, flattenMetrics, parseReport } from "./report-schema";
 import { judge, thresholdsFor } from "./thresholds";
 
-import type { BrushCertificationReport, ReportEnvironment, ReportMetrics } from "./report-schema";
-import type { ThresholdContext } from "./thresholds";
 import type { Clock, LabImage } from "../../engine/core/types";
 import type { LatencyRecord } from "../../engine/input/input-pipeline";
 import type { BrushProgram } from "../../engine/presets/program-schema";
@@ -57,6 +55,8 @@ import type {
   StrokeReceipt,
 } from "../../lanes/lane";
 import type { StrokeFixture } from "../fixtures/stroke-fixtures";
+import type { BrushCertificationReport, ReportEnvironment, ReportMetrics } from "./report-schema";
+import type { ThresholdContext } from "./thresholds";
 
 /**
  * 인증 리포트 생성. 레인 실행 결과(이미지·영수증)와 fixture·프로그램·환경에서 지표 전부를 계산하고

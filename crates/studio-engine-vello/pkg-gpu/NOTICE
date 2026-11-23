@@ -3,7 +3,7 @@ ToonStudio studio-engine-vello third-party NOTICE
 Artifact: pkg-gpu
 Target: wasm32-unknown-unknown
 Cargo features: hybrid,lottie,svg
-Locked external crates: 147
+Locked external crates: 148
 
 This NOTICE accompanies the checked-in JavaScript/WASM artifact. Exact license
 texts are in THIRD_PARTY_LICENSES.txt and the machine-checked provenance is in
@@ -31,7 +31,8 @@ copied into the bundle and hash-locked.
 | euclid@0.22.14 | MIT OR Apache-2.0 | https://github.com/servo/euclid |
 | fdeflate@0.3.7 | MIT OR Apache-2.0 | https://github.com/image-rs/fdeflate |
 | fearless_simd@0.4.1 | Apache-2.0 OR MIT | https://github.com/linebender/fearless_simd |
-| fearless_simd@0.7.0 | Apache-2.0 OR MIT | https://github.com/linebender/fearless_simd |
+| fearless_simd@1.2.0 | Apache-2.0 OR MIT | https://github.com/linebender/fearless_simd |
+| fearless_simd_macros@0.1.0 | Apache-2.0 OR MIT | https://github.com/linebender/fearless_simd |
 | flate2@1.1.9 | MIT OR Apache-2.0 | https://github.com/rust-lang/flate2-rs |
 | float-cmp@0.9.0 | MIT | https://github.com/mikedilger/float-cmp |
 | foldhash@0.2.0 | Zlib | https://github.com/orlp/foldhash |
@@ -42,11 +43,11 @@ copied into the bundle and hash-locked.
 | futures-intrusive@0.5.0 | MIT OR Apache-2.0 | https://github.com/Matthias247/futures-intrusive |
 | futures-task@0.3.33 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs |
 | futures-util@0.3.33 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs |
-| glifo@0.4.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
+| glifo@0.5.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | guillotiere@0.7.0 | MIT/Apache-2.0 | https://github.com/nical/guillotiere |
 | harfrust@0.12.0 | MIT | https://github.com/harfbuzz/harfrust |
 | harfrust@0.15.0 | MIT | https://github.com/harfbuzz/harfrust |
-| harfrust@0.16.0 | MIT | https://github.com/harfbuzz/harfrust |
+| harfrust@0.16.1 | MIT | https://github.com/harfbuzz/harfrust |
 | hashbrown@0.17.1 | MIT OR Apache-2.0 | https://github.com/rust-lang/hashbrown |
 | icu_collections@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | icu_locale_core@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
@@ -117,7 +118,7 @@ copied into the bundle and hash-locked.
 | svg_fmt@0.4.5 | MIT/Apache-2.0 | https://github.com/nical/rust_debug |
 | svgtypes@0.16.1 | Apache-2.0 OR MIT | https://github.com/linebender/svgtypes |
 | syn@2.0.119 | MIT OR Apache-2.0 | https://github.com/dtolnay/syn |
-| syn@3.0.3 | MIT OR Apache-2.0 | https://github.com/dtolnay/syn |
+| syn@3.0.10 | MIT OR Apache-2.0 | https://github.com/dtolnay/syn |
 | synstructure@0.13.2 | MIT | https://github.com/mystor/synstructure |
 | synstructure@0.14.0 | MIT | https://github.com/mystor/synstructure |
 | thiserror-impl@2.0.19 | MIT OR Apache-2.0 | https://github.com/dtolnay/thiserror |
@@ -135,8 +136,8 @@ copied into the bundle and hash-locked.
 | velato@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/velato |
 | vello@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_common@0.2.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
-| vello_common@0.3.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
-| vello_cpu@0.3.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
+| vello_common@0.4.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
+| vello_cpu@0.4.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_encoding@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_hybrid@0.2.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_shaders@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |

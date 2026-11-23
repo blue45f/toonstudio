@@ -3,13 +3,13 @@ import { bakeDeterministicDialogueGlyphs, resolveFontStackByLocale } from "./web
 import { WEBTOON_SFX_STAMP_KO_TEXT, resolveSfxGlyphByLocale, resolveSpeakerBubblePlacement } from "./webtoon-strip-fx-options";
 import { blendPixelRgba, drawClippedLineRgba } from "./webtoon-strip-raster";
 
+import type { CapturedRaster } from "../contracts";
 import type {
   WebtoonDialogueLocale,
   WebtoonSfxStampOption,
   WebtoonStripFxLinesKind,
   WebtoonStripSpeakerTarget,
 } from "./webtoon-strip-fx-options";
-import type { CapturedRaster } from "../contracts";
 
 function deterministicHash01(index: number, seed: number): number {
   const raw = Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453;

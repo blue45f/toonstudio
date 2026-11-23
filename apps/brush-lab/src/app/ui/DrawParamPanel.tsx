@@ -11,9 +11,9 @@ import { resolveProgram } from "../state/run-compare";
 import { BrushParamFields } from "./BrushParamPanel";
 import { DrawColorPicker } from "./DrawColorPicker";
 
-import type { BrushParamBinding } from "./BrushParamPanel";
 import type { DrawPaperKind, DrawStabilizerMode } from "../state/draw-store";
 import type { LabOverrides } from "../state/lab-store";
+import type { BrushParamBinding } from "./BrushParamPanel";
 
 function isPaperKind(value: string): value is DrawPaperKind {
   return DRAW_PAPER_KINDS.some((p) => p.id === value);
