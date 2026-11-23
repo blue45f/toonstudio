@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useT } from "@/shared/lib/i18n";
 import { useState } from "react";
 import { Check, Copy, Link2, LoaderCircle } from "lucide-react";

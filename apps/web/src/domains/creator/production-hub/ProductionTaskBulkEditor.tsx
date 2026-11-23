@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { ArrowRight, CheckCheck, Eye, Save } from "lucide-react";
 import { useRef, useState } from "react";
 import type {

@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import "../studio-shell/creator-workflow-surfaces.css";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";

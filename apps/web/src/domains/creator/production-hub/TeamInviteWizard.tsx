@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useState } from "react";
 import { Check, LoaderCircle, Mail, ShieldCheck, UserRound } from "lucide-react";
 

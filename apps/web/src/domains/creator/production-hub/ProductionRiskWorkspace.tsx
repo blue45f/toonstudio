@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-
+import "./production-hub-i18n";
 import {
   evaluateProductionRisks,
   type ProductionProjectAggregate,

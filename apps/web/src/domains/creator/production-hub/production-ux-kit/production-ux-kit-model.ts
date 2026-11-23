@@ -1,3 +1,5 @@
+import "../production-hub-i18n";
+
 /**
  * 협업 UX 직관성 키트 — 순수 로직.
  *

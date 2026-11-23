@@ -9,7 +9,9 @@
  * - 3D 셰이퍼는 현재 경쟁사(VRoid Studio·CC4·MetaHuman) 대비 부족한 지점을 솔직히 인정하고 추월 로드맵을 함께 제시한다.
  */
 
-import type { BilingualText, BenchmarkToolId, CellGrade } from "./competitor-benchmark-data";
+import type { BilingualText, BenchmarkToolId } from "./competitor-benchmark-data";
+
+export type BrushFilterCellGrade = "lead" | "strong" | "partial" | "none";
 
 export interface BrushFilterCategoryRow {
   readonly id: string;
@@ -17,7 +19,7 @@ export interface BrushFilterCategoryRow {
   readonly category: BilingualText;
   readonly toonstudioSpec: BilingualText;
   readonly repoEvidence: string;
-  readonly cells: Readonly<Record<BenchmarkToolId, { readonly grade: CellGrade; readonly note: BilingualText }>>;
+  readonly cells: Readonly<Record<BenchmarkToolId, { readonly grade: BrushFilterCellGrade; readonly note: BilingualText }>>;
 }
 
 export interface QuantitativePerformanceMetric {

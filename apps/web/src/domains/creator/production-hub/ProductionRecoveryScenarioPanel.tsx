@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { stableProductionFingerprint } from "@toonstudio/core/production";
 import { formatI18nTemplate, translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";

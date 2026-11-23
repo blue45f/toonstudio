@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { Check, ClipboardCopy, LockKeyhole, ShieldCheck, UserCog } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";

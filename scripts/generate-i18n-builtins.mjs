@@ -68,6 +68,14 @@ export const LAZY_APP_BUILTIN_GROUPS = [
     target:
       "apps/web/src/domains/creator/production-hub/i18n/generated/i18n-extreview-builtins.json",
   },
+  // 제작 관리의 모든 소비 모듈이 첫 사용 전에 동기 등록한다.
+  // 초기 셸에는 포함하지 않고 public/i18n/app 의 다른 로케일 경로는 유지한다.
+  {
+    id: "production-hub",
+    namespaces: ["productionHub"],
+    target:
+      "apps/web/src/domains/creator/production-hub/i18n/generated/i18n-production-hub-builtins.json",
+  },
   {
     id: "creator-analytics",
     namespaces: ["creatorAnalytics"],

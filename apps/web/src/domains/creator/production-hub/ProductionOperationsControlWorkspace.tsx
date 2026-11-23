@@ -1,6 +1,6 @@
 import { AlertTriangle, BarChart3, Bot, CalendarDays, Coins, CheckCircle2, ClipboardList, Clock3, Copy, GitBranch, LayoutDashboard, Link2, LoaderCircle, Play, Rocket, Save, Scissors, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-
+import "./production-hub-i18n";
 import { deriveCriticalPathSchedule, derivePersonalProductionInbox, deriveProductionFinancialForecast, deriveProductionFlowAnalytics, deriveScheduleRecoveryScenarios, evaluateReleaseReadiness, type EpisodeReleasePlan, type ExternalReviewAccess, type ExternalReviewPermission, type ProductionAutomationRule, type ProductionNotification, type ProductionProjectAggregate, type ProductionSavedView, type ProductionTask, type ResourceCalendar, type ScheduleBaseline, type ScheduleRecoveryScenario } from "@toonstudio/core/production";
 
 import type { ProductionClientCommand } from "./production-api";

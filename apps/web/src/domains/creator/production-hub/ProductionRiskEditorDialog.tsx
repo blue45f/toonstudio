@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useT } from "@/shared/lib/i18n";
 import { Save, ShieldAlert, X } from "lucide-react";
 import {

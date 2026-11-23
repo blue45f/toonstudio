@@ -32,7 +32,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-
+import "./production-hub-i18n";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import { getApiErrorMessage, httpStatus } from "@/platform/api";

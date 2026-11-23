@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useCallback, useRef, useState } from "react";
 
 import { toast } from "@/shared/lib/toast-store";

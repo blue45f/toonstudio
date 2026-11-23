@@ -6,11 +6,11 @@ import {
   BRUSH_FILTER_SUMMARY_STATS,
   QUANTITATIVE_PERFORMANCE_METRICS,
   SHAPER_3D_BREAKTHROUGH_PILLARS,
+  type BrushFilterCellGrade,
 } from "./brush-filter-competitor-data";
 import {
   BENCHMARK_TOOLS,
   type BilingualText,
-  type CellGrade,
 } from "./competitor-benchmark-data";
 
 import { cn } from "@/shared/lib/utils";
@@ -19,14 +19,14 @@ function pick(text: BilingualText, locale: "ko" | "en"): string {
   return locale === "ko" ? text.ko : text.en;
 }
 
-function gradeBadgeClass(grade: CellGrade): string {
+function gradeBadgeClass(grade: BrushFilterCellGrade): string {
   if (grade === "lead") return "ts-status-pill ts-status-good";
   if (grade === "strong") return "ts-status-pill ts-status-cool";
   if (grade === "partial") return "ts-status-pill ts-status-warn";
   return "ts-status-pill ts-status-neutral";
 }
 
-function gradeLabel(grade: CellGrade, locale: "ko" | "en"): string {
+function gradeLabel(grade: BrushFilterCellGrade, locale: "ko" | "en"): string {
   if (locale === "ko") {
     if (grade === "lead") return "★ 선도";
     if (grade === "strong") return "● 강점";
