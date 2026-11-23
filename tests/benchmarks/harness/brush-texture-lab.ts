@@ -140,13 +140,13 @@ import { importMybBrush } from "../../../packages/studio-format-gateway/src/myb"
 
 import { ciede2000, encodedToLab } from "./color-lab";
 
-import type { Vec3 } from "./color-lab";
 import type { LibMypaintBrushDocument } from "../../../packages/studio-brush-platform/src/libmypaint";
 import type { LibMypaintRaw } from "../../../packages/studio-brush-platform/src/libmypaint/index";
 import type {
   HokusaiModuleLike,
   RasterStrokeSample,
 } from "../../../packages/studio-brush-platform/src/raster-compile";
+import type { Vec3 } from "./color-lab";
 
 const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
 const RESULTS_DIR = join(REPO_ROOT, "tests", "benchmarks", "results");

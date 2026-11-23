@@ -8,13 +8,13 @@ import {
 
 import { diffHeatmap } from "./diff-map";
 
-import type { RunResult } from "./run-fixture";
 import type { LabImage } from "../../engine/core/types";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { LaneId } from "../../lanes/lane";
 import type { StrokeFixture } from "../fixtures/stroke-fixtures";
 import type { PerfSummary } from "../metrics/perf-metrics";
 import type { DeltaEStats } from "../metrics/render-metrics";
+import type { RunResult } from "./run-fixture";
 
 /**
  * A/B 레인 비교(동기). 두 실행 결과는 같은 fixture·캔버스여야 하며 다르면 RangeError.

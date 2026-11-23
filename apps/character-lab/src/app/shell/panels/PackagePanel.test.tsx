@@ -22,11 +22,11 @@ import { createUiStateStore } from "../ui-state";
 
 import { PackagePanel } from "./PackagePanel";
 
-import type { PackagePanelLoader } from "./PackagePanel";
 import type { LabFailure, LabState } from "../../../contracts";
 import type { PackageFetchPort } from "../../../domains/authored/package-load-flow";
 import type { ApplyLoop } from "../apply-loop";
 import type { KitManifestRequest, KitPlanRegistry } from "../kit-plan-registry";
+import type { PackagePanelLoader } from "./PackagePanel";
 
 /**
  * jsdom 환경(web transform)에서는 `import.meta.url`이 `http://localhost/<vite root 상대 경로>`라 fileURLToPath를 쓸 수 없다.

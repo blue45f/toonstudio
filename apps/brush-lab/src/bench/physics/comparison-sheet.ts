@@ -7,10 +7,10 @@ import { createRapierBristleLane } from "../../lanes/physics/rapier-bristle-lane
 import { drawText, FONT_HEIGHT } from "./mini-font";
 import { buildStrokeSet } from "./stroke-set";
 
-import type { NamedStroke } from "./stroke-set";
 import type { Clock, LabImage } from "../../engine/core/types";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { BrushEngineLane } from "../../lanes/lane";
+import type { NamedStroke } from "./stroke-set";
 
 /**
  * 같은 획 세트를 cpu-reference·자체 PBD·Rapier로 그린 비교 시트. 타일은 흰 바탕에 합성한 sRGB 이미지다.

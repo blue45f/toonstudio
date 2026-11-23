@@ -5,9 +5,9 @@ import { samplePaper } from "../texture/paper-grain";
 import { detCos, detSin } from "./det-math";
 import { WET_PHYSICS } from "./params";
 
+import type { PaperField, PaperSpec } from "../texture/paper-grain";
 import type { WetParams } from "./params";
 import type { WetState } from "./state";
-import type { PaperField, PaperSpec } from "../texture/paper-grain";
 
 /**
  * 습식용 종이 파생 필드(절차적, 시드 고정). 설계 보충 §1.1:

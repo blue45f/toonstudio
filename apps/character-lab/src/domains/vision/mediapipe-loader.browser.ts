@@ -18,8 +18,8 @@ import { sha256Hex } from "../../shared/hash";
 import { VISION_MODEL_SPECS, createFetchModelPort, createModelWithDeadline, fetchModelAsset, withDeadline } from "./model-assets";
 import { toEmbedding } from "./similarity";
 
-import type { HandDetection, HandDetectorPort, LoadedModel, PoseDetectorPort, VisionDelegate, VisionLoaders, VisionModelKey } from "./vision-ports";
 import type { EmbedderPort, PoseLandmark } from "../../contracts";
+import type { HandDetection, HandDetectorPort, LoadedModel, PoseDetectorPort, VisionDelegate, VisionLoaders, VisionModelKey } from "./vision-ports";
 
 export interface MediaPipeLoaderOptions {
   /** 기본 CPU. GPU는 WebGL2 컨텍스트를 만든다(브라우저 미검증). */

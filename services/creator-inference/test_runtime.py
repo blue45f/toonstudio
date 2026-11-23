@@ -197,11 +197,11 @@ def _declared_requirements(manifest):
 
 
 @pytest.mark.parametrize(('manifest', 'package', 'patched', 'vulnerable'), [
-    ('requirements-models.txt', 'diffusers', '0.38.0', '0.37.0'),
+    ('requirements-models.txt', 'diffusers', '0.43.0', '0.37.0'),
     ('requirements-models.txt', 'safetensors', '0.8.0', '0.7.0'),
     ('requirements-models.txt', 'transformers', '5.22.2', '5.22.1'),
     ('requirements-models.txt', 'accelerate', '1.15.0', '1.14.0'),
-    ('requirements-test.txt', 'pytest', '9.0.3', '9.0.2'),
+    ('requirements-test.txt', 'pytest', '9.2.0', '9.0.2'),
     ('requirements-core.txt', 'fastapi', '0.161.0', '0.128.2'),
     ('requirements-core.txt', 'starlette', '1.3.1', '1.3.0'),
 ])

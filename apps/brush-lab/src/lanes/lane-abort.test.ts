@@ -21,10 +21,10 @@ import { createWebgl2InstancedLane } from "./webgl2-instanced-lane";
 import { createWebgpuComputeLane } from "./webgpu-compute-lane";
 import { createWebgpuInstancedLane } from "./webgpu-instanced-lane";
 
-import type { Canvas2dContextLike } from "./canvas2d-lane";
-import type { BrushEngineLane, LaneEnvironment } from "./lane";
 import type { LabImage, RawSample } from "../engine/core/types";
 import type { BrushProgram } from "../engine/presets/program-schema";
+import type { Canvas2dContextLike } from "./canvas2d-lane";
+import type { BrushEngineLane, LaneEnvironment } from "./lane";
 
 /**
  * `abortStroke` 레인 계약. 기준은 픽셀 해시다:

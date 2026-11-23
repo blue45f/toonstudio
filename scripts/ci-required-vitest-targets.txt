@@ -144,6 +144,7 @@ apps/character-lab/src/render/babylon-character-engine.test.ts
 apps/character-lab/src/render/babylon-hand-prop.test.ts
 apps/character-lab/src/state/apply-plan.test.ts
 apps/character-lab/src/state/history.test.ts
+apps/web/config/compact-i18n-assets.test.ts
 apps/web/config/vite-admin-quality-entry.test.ts
 apps/web/config/vite-pigment-license-boundary.test.ts
 apps/web/src/app/app-floating-controls-startup.test.ts
@@ -234,6 +235,9 @@ apps/web/src/domains/creator/assistant/webtoon-cut-pose-traits.test.ts
 apps/web/src/domains/creator/assistant/webtoon-tension-map-docs.test.ts
 apps/web/src/domains/creator/assistant/webtoon-tension-map-source.test.ts
 apps/web/src/domains/creator/assistant/webtoon-tension-map.test.ts
+apps/web/src/domains/creator/auto-qa-continuity/auto-qa-continuity.test.tsx
+apps/web/src/domains/creator/auto-qa-layout-spec/auto-qa-layout-spec.test.tsx
+apps/web/src/domains/creator/auto-qa-pixel-engine/auto-qa-pixel-engine.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dAssetLibraryPanel.names.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dAssetLibraryPanel.rights.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dAttachedTransformControls.lifecycle.test.tsx
@@ -496,11 +500,15 @@ apps/web/src/domains/creator/charm/studio-charm-popover-layout.test.ts
 apps/web/src/domains/creator/charm/studio-charm-starter-pack.test.ts
 apps/web/src/domains/creator/charm/useStudioCharmLibrary.test.tsx
 apps/web/src/domains/creator/charm/useStudioCharmPopover.test.tsx
+apps/web/src/domains/creator/collab-signoff-hub/collab-signoff-hub.test.tsx
 apps/web/src/domains/creator/color/studio-color-proof.test.ts
 apps/web/src/domains/creator/contracts/studio-bg3d-bundle-reader-version.test.ts
 apps/web/src/domains/creator/contracts/studio-legacy-pigment-archive-persistence.test.ts
 apps/web/src/domains/creator/contracts/studio-work-asset-contract.test.ts
 apps/web/src/domains/creator/creator-draft-collaboration-client.test.ts
+apps/web/src/domains/creator/csp-puppet-warp/csp-puppet-warp.test.tsx
+apps/web/src/domains/creator/csp-watermark-velocity/csp-watermark-velocity.test.tsx
+apps/web/src/domains/creator/delivery-pack/StudioEpisodeDeliveryPackPanel.test.tsx
 apps/web/src/domains/creator/ecosystem/CreatorEcosystemViewerPage.test.tsx
 apps/web/src/domains/creator/ecosystem/ReaderFeedbackForm.test.tsx
 apps/web/src/domains/creator/ecosystem/ReaderFeedbackSummaryPanel.test.tsx
@@ -538,6 +546,7 @@ apps/web/src/domains/creator/hybrid-dcc/useStudioHybridDccFaceModeling.apply.tes
 apps/web/src/domains/creator/hybrid-dcc/useStudioHybridDccFaceModeling.test.tsx
 apps/web/src/domains/creator/hyper-automation-os/hyper-automation-os.test.tsx
 apps/web/src/domains/creator/layer
+apps/web/src/domains/creator/layer/studio-layer-lift-mediapipe-inference.test.ts
 apps/web/src/domains/creator/lettering/StudioBubbleToolPopoverBody.structure.test.tsx
 apps/web/src/domains/creator/lettering/StudioDictationMicButton.test.tsx
 apps/web/src/domains/creator/lettering/StudioTranslationCharacterCardSection.test.tsx
@@ -586,6 +595,8 @@ apps/web/src/domains/creator/live/studio-scoped-write-wire.test.ts
 apps/web/src/domains/creator/localization-sync-pro/__tests__/localization-sync-pro.test.tsx
 apps/web/src/domains/creator/localization-sync-pro/__tests__/offline-sync-storage-boundary.test.tsx
 apps/web/src/domains/creator/mesh-surface/studio-mesh-surface-plan.test.ts
+apps/web/src/domains/creator/model3d-hand-customizer/model3d-hand-customizer.test.tsx
+apps/web/src/domains/creator/model3d-surface-paint/model3d-surface-paint.test.tsx
 apps/web/src/domains/creator/offline
 apps/web/src/domains/creator/page/studio-bg3d-retained-page-guard.test.ts
 apps/web/src/domains/creator/panel-detect/panel-canvas-geometry.test.ts
@@ -654,6 +665,8 @@ apps/web/src/domains/creator/review-task-completion
 apps/web/src/domains/creator/scene-3d/StudioMannequinPoserHandPose.test.tsx
 apps/web/src/domains/creator/scene-3d/studio-mannequin-foot-grounding-status-text.test.ts
 apps/web/src/domains/creator/scene-3d/studio-mannequin-hand-pose-adapter.test.ts
+apps/web/src/domains/creator/scene-3d/studio-mannequin-hand-tracking.test.ts
+apps/web/src/domains/creator/scene-3d/studio-mannequin-webcam-tracking.test.ts
 apps/web/src/domains/creator/scene3d/bg3d-six-pass
 apps/web/src/domains/creator/scene3d/integration/scene3d-inplace-controller.test.ts
 apps/web/src/domains/creator/scene3d/specialists/specialist-orchestration.test.ts
@@ -674,6 +687,7 @@ apps/web/src/domains/creator/studio-autosave-opfs-session.test.ts
 apps/web/src/domains/creator/studio-autosave-snapshot-fence.test.ts
 apps/web/src/domains/creator/studio-autosave-sqlite-store.test.ts
 apps/web/src/domains/creator/studio-batch-rename.test.ts
+apps/web/src/domains/creator/studio-bg-remove.test.ts
 apps/web/src/domains/creator/studio-blend-isolation-boundary.test.ts
 apps/web/src/domains/creator/studio-browser-kv-authority-boundary.test.ts
 apps/web/src/domains/creator/studio-bundle-asset-delivery.test.ts
@@ -703,6 +717,7 @@ apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioUnloadGuard.
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers-admission.test.ts
+apps/web/src/domains/creator/studio-cuttoon-editor/studio-drawing-jewel-ux.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-pending-stroke-pointer-lifecycle.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-touch-gesture-policy.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-workspace-applied-device.test.tsx
@@ -718,6 +733,8 @@ apps/web/src/domains/creator/studio-inspector-multi-selection-boundary.test.ts
 apps/web/src/domains/creator/studio-integration-closure.test.ts
 apps/web/src/domains/creator/studio-live-adjustment.test.ts
 apps/web/src/domains/creator/studio-marketplace-cc0-provenance.test.ts
+apps/web/src/domains/creator/studio-mediapipe-vision-assets.test.ts
+apps/web/src/domains/creator/studio-mediapipe-vision-init-arbiter.test.ts
 apps/web/src/domains/creator/studio-menubar-content-boundary.test.ts
 apps/web/src/domains/creator/studio-mobile-editing-dock-boundary.test.ts
 apps/web/src/domains/creator/studio-mobile-history-touch-gesture-host.test.ts
@@ -765,6 +782,7 @@ apps/web/src/domains/creator/studio-shell/StudioSaveStatusChromeMount.floating-s
 apps/web/src/domains/creator/studio-shell/StudioVisualGuidance.test.tsx
 apps/web/src/domains/creator/studio-shell/studio-creator-lobby-layout.contract.test.ts
 apps/web/src/domains/creator/studio-shell/studio-shell-default-safe-viewport.test.ts
+apps/web/src/domains/creator/studio-shell/studio-shell-floating-integration.test.ts
 apps/web/src/domains/creator/studio-shell/use-studio-floating-surface-layout.test.tsx
 apps/web/src/domains/creator/studio-shell/use-studio-shell-floating-target-node.test.tsx
 apps/web/src/domains/creator/studio-shell/useStudioModalSheet.details.test.ts
@@ -802,6 +820,7 @@ apps/web/src/domains/creator/virtual-space
 apps/web/src/domains/creator/virtual-space/StudioReviewPolicyHistory.test.tsx
 apps/web/src/domains/creator/virtual-space/studio-virtual-space-bundle-decor.test.ts
 apps/web/src/domains/creator/vrm/StudioVrmXpbdSkirtAttachment.test.ts
+apps/web/src/domains/creator/vrm/studio-mediapipe-vision-init-boundary.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-export-hair-rest.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-garment-skinning-fixture.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-png-worker-client.test.ts
@@ -814,6 +833,7 @@ apps/web/src/domains/creator/vrm/studio-vrm-skirt-surface-contact.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-skirt-waist-clearance.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-torso-silhouette-measure.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-wardrobe.test.ts
+apps/web/src/domains/creator/vrm/studio-vrm-webcam-tracking.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-xpbd-skirt-attachment-boundary.test.ts
 apps/web/src/domains/creator/vrm/studio-vrm-xpbd-skirt.test.ts
 apps/web/src/domains/creator/vrm/vrm-rights-derived-assets.test.ts
@@ -830,6 +850,7 @@ apps/web/src/domains/creator/workspace/studio-workspace-resume.test.ts
 apps/web/src/domains/creator/writer-room/buildStudioWriterRoomCanvasPages.test.ts
 apps/web/src/domains/creator/writer-room/studio-writer-room-capture-client.test.ts
 apps/web/src/domains/fortune/fortune-observatory-storage.test.ts
+apps/web/src/domains/integrations/PublishCenterPage.test.tsx
 apps/web/src/domains/learn/AccessibleWebtoonGuidePage.test.tsx
 apps/web/src/domains/learn/LearningContractChecklistPage.test.tsx
 apps/web/src/domains/learn/accessible-webtoon-guide-docs.test.ts
@@ -838,10 +859,13 @@ apps/web/src/domains/legal/CustomerSupportChat.test.tsx
 apps/web/src/domains/legal/SupportPage.test.tsx
 apps/web/src/domains/legal/technology/EngineeringLibrariesPage.test.tsx
 apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx
+apps/web/src/domains/legal/technology/engineering-architecture-guide-runtime.facts.test.ts
 apps/web/src/domains/legal/technology/engineering-library-guide-areas-a.test.ts
+apps/web/src/domains/legal/technology/engineering-library-guide-areas-b.test.ts
 apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts
 apps/web/src/domains/legal/technology/engineering-seminar-lessons.test.ts
 apps/web/src/domains/legal/technology/engineering-seminar-prep.test.ts
+apps/web/src/domains/legal/technology/engineering-talk-deck-content.test.ts
 apps/web/src/domains/marketing/wow-showcase/HomeInteractiveWowShowcase.test.tsx
 apps/web/src/platform/creator-client.test.ts
 apps/web/src/platform/creator-role-workspace-client.test.ts
@@ -851,6 +875,7 @@ apps/web/src/platform/use-paginated-search.test.tsx
 apps/web/src/shared/catalog/catalog-pagination.test.ts
 apps/web/src/shared/components/AccessibleTooltipLayer.test.tsx
 apps/web/src/shared/components/CreatorExperienceModeSwitch.test.tsx
+apps/web/src/shared/components/EntryIntro.test.tsx
 apps/web/src/shared/components/LanguagePicker.test.tsx
 apps/web/src/shared/components/accessible-tooltip-placement.test.ts
 apps/web/src/shared/components/comments/threaded-comment-section.hash.test.tsx
@@ -872,6 +897,7 @@ apps/web/src/shared/lib/__tests__/drawing-pwa-manifest.test.ts
 apps/web/src/shared/lib/__tests__/search.test.ts
 apps/web/src/shared/lib/creator-role-contract.test.ts
 apps/web/src/shared/lib/creator-role-workspace-contract.test.ts
+apps/web/src/shared/lib/pwa-file-launch-queue.test.ts
 apps/web/src/shared/lib/trim-trailing-slashes.test.ts
 apps/web/tests/vite-react-compiler-runtime-interop.test.ts
 apps/web/tools/browser-harnesses/plasticine-materials/browser-png-csp.test.mjs
@@ -924,9 +950,11 @@ scripts/admin-database-feature-contracts.test.mjs
 scripts/admin-nestjs-quality-database-contract.test.mjs
 scripts/admin-production-changes-database-contract.test.mjs
 scripts/admin-workspace-database-contract.test.mjs
+scripts/audit-brush-filter-visual-uniqueness.test.mjs
 scripts/bg3d-preserving-acl-contract.test.mjs
 scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
+scripts/check-product-tour-remotion-chunks.test.mjs
 scripts/check-studio-eager-graph.test.mjs
 scripts/ci-core-regression-shards.test.mjs
 scripts/cloud-deploy-onpod.test.mjs
@@ -957,8 +985,10 @@ scripts/generate-latent-pigment-model.test.ts
 scripts/ir-static-deck.test.ts
 scripts/lib/character-psd-reference-compositor.test.mjs
 scripts/lib/compact-svg-structure.test.mjs
+scripts/lib/edge-asset-cache-policy.test.mjs
 scripts/lib/path-containment.test.ts
 scripts/lib/public-home-content-hrefs.test.mjs
+scripts/lib/safe-text-serialization.test.mjs
 scripts/lib/sitewide-audit-route-inventory.test.mjs
 scripts/lib/sitewide-visual-ux-audit.test.mjs
 scripts/lib/studio-3d-production-audit-policy.test.mjs
@@ -1024,8 +1054,10 @@ scripts/studio-openai-credit-evaluation.test.ts
 scripts/studio-production-realtime.test.ts
 scripts/studio-review-local-storage-certificates.test.mjs
 scripts/studio-soak-workflow-plan.test.mjs
+scripts/studio-ux-entry-continuity-contract.test.ts
 scripts/sync-cloudflare-r2-assets.test.ts
 scripts/toonstudio-integration-disk-policy.test.mjs
+scripts/toonstudio-llm-mcp-cli.test.mjs
 scripts/ux-audit/aggregate.test.mjs
 scripts/ux-audit/cli-args.test.mjs
 scripts/ux-audit/copy-heuristics.test.mjs
@@ -1036,6 +1068,7 @@ scripts/ux-audit/render-report.test.mjs
 scripts/ux-audit/rubric.test.mjs
 scripts/ux-audit/structure-analysis.test.mjs
 scripts/ux-audit/what-if.test.mjs
+scripts/verify-brand-icons.test.mjs
 scripts/verify-latent-pigment-browser.test.mjs
 scripts/verify-render-core-origin.test.mjs
 scripts/verify-studio-3d-console.test.ts
@@ -1051,8 +1084,11 @@ scripts/verify-studio-hybrid-dcc-integration.test.ts
 scripts/verify-studio-hybrid-dcc-opfs-race.test.ts
 scripts/verify-studio-launch.test.ts
 scripts/verify-studio-living-ink-integration.test.ts
+scripts/verify-studio-mediapipe-browser.test.mjs
+scripts/verify-studio-menus-semantics.test.ts
 scripts/verify-studio-menus.test.ts
 scripts/verify-studio-soak-completion-observers.test.ts
+scripts/verify-toonstudio-master-checklist.test.mjs
 scripts/verify-typechecked-build-inputs.test.mjs
 scripts/verify-virtual-studio-art-manifest.test.mjs
 scripts/workflow-injection-policy.test.mjs

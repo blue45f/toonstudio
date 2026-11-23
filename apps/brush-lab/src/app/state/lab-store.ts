@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-import type { AbComparison, RunResult } from "./bench-types";
 import type { CapturedStroke } from "../../bench/fixtures/fixture-schema";
 import type { FixtureId } from "../../bench/fixtures/stroke-fixtures";
 import type { BrushCertificationReport } from "../../bench/report/report-schema";
@@ -8,6 +7,7 @@ import type { BrushDepositionSpec, BrushTipSpec } from "../../engine/presets/pro
 import type { SamplingFilter } from "../../engine/texture/sampling";
 import type { DabBatchReceipt, LaneCapabilityReport, LaneId, StrokeReceipt } from "../../lanes/lane";
 import type { GalleryRenderResult } from "../../platform/worker-client";
+import type { AbComparison, RunResult } from "./bench-types";
 
 /**
  * 랩 UI 상태 저장소. 외부 런타임 의존성은 React의 `useSyncExternalStore`뿐이다.

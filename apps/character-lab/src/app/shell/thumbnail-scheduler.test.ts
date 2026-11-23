@@ -6,8 +6,8 @@ import { applyPlanFixture, minimalHumanoidModelFixture } from "../../testing/rec
 
 import { createBrowserThumbnailPacing, createThumbnailScheduler, defaultThumbnailPacing } from "./thumbnail-scheduler";
 
-import type { ThumbnailPacing, ThumbnailSchedulerDeps } from "./thumbnail-scheduler";
 import type { CharacterEngine, CharacterSource, PresetId, ThumbnailEntry, ThumbnailRequest } from "../../contracts";
+import type { ThumbnailPacing, ThumbnailSchedulerDeps } from "./thumbnail-scheduler";
 
 function harness(engine: CharacterEngine | null, options: { keyVersion?: () => string; sourceFor?: ThumbnailSchedulerDeps["sourceFor"]; pacing?: ThumbnailPacing } = {}) {
   const entries = new Map<PresetId, ThumbnailEntry>();

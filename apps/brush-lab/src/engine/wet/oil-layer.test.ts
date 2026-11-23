@@ -26,8 +26,8 @@ import {
 import { wetMediumPreset } from "./params";
 import { createWetState, WET_CH, WET_EXT_CH } from "./state";
 
-import type { OilWindow } from "./oil-layer";
 import type { BrushProgram } from "../presets/program-schema";
+import type { OilWindow } from "./oil-layer";
 
 const SIZE = 64;
 

@@ -5,12 +5,12 @@ import { buildFixture } from "../fixtures/stroke-fixtures";
 
 import { buildSlotBundleInput, restRadius, runSlotBundle, SPIKE_BUNDLE, TICK_MS, uniformDts } from "./slot-bundle-scenario";
 
-import type { PathPoint, SlotBundleInput, SlotBundleParams, SlotBundleRun } from "./slot-bundle-scenario";
 import type { Clock, RawSample } from "../../engine/core/types";
 import type { BristleTickSink } from "../../engine/physics/world2d/bristle-brush";
 import type { PbdWorldOptions } from "../../engine/physics/world2d/pbd-world";
 import type { PhysicsWorld2D } from "../../engine/physics/world2d/types";
 import type { RapierModule } from "../../lanes/physics/rapier-loader";
+import type { PathPoint, SlotBundleInput, SlotBundleParams, SlotBundleRun } from "./slot-bundle-scenario";
 
 /**
  * 물리 붓털 월드 비교 지표(자체 PBD vs Rapier 2D): 틱 비용, 퍼짐 일관성(반경비 표준편차), dt 스파이크 내성, 같은 머신 결정성.

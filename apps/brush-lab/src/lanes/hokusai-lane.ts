@@ -4,10 +4,10 @@ import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 import { IsolatedStrokeLane } from "./isolated-stroke-lane";
 import { supportedReport, unavailableReport } from "./lane";
 
+import type { Rgba } from "../engine/core/types";
 import type { EngineSample } from "./isolated-stroke-lane";
 import type { LaneCapabilityReport, LaneDescriptor, LaneEnvironment, LaneId, LaneInit, LaneKind, LaneStatus } from "./lane";
 import type { MypaintMapping } from "./mypaint-settings-map";
-import type { Rgba } from "../engine/core/types";
 
 /**
  * Hokusai 비교 레인. Hokusai 0.3.0(Rust, MIT OR Apache-2.0)의 자연 매체 래스터를 `studio-hokusai-wasm` 래퍼로 쓴다.

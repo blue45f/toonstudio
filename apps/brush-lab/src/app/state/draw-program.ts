@@ -7,12 +7,12 @@ import { DRAW_PAPER_KINDS } from "./draw-store";
 import { effectiveStabilizerPct } from "./input-chain";
 import { messageOf, resolveProgram } from "./run-compare";
 
-import type { DrawFamilyFilter, DrawState } from "./draw-store";
-import type { LabOverrides } from "./lab-store";
-import type { ResolvedProgram } from "./run-compare";
 import type { OneEuroParams } from "../../engine/input/one-euro";
 import type { BrushFamily, BrushProgram } from "../../engine/presets/program-schema";
 import type { LaneCapabilityReport, LaneDescriptor, LaneId } from "../../lanes/lane";
+import type { DrawFamilyFilter, DrawState } from "./draw-store";
+import type { LabOverrides } from "./lab-store";
+import type { ResolvedProgram } from "./run-compare";
 
 /** 브러시 가족 한글 이름. `Record<BrushFamily, …>`라서 가족이 늘면 컴파일 오류로 알려 준다. */
 export const FAMILY_LABELS: Record<BrushFamily, string> = {

@@ -1,22 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
-  <title id="title">ToonStudio — Jewel Atelier Maskable Emblem</title>
+  <title id="title">ToonStudio — Spectrum Ribbon, maskable</title>
   <defs>
-    <linearGradient id="nibGold" x1="28" y1="14" x2="46" y2="34" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fde38a" />
-      <stop offset=".5" stop-color="#e5b343" />
-      <stop offset="1" stop-color="#9e6d1c" />
-    </linearGradient>
-    <linearGradient id="jewelBand" x1="12" y1="42" x2="52" y2="22" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f04a3a" />
-      <stop offset=".34" stop-color="#f5b727" />
-      <stop offset=".68" stop-color="#16a074" />
-      <stop offset="1" stop-color="#2563eb" />
+    <linearGradient id="r" x1="11" y1="10" x2="54" y2="53" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#66e7ef" />
+      <stop offset=".35" stop-color="#7184ff" />
+      <stop offset=".68" stop-color="#d879f2" />
+      <stop offset="1" stop-color="#ffb56f" />
     </linearGradient>
   </defs>
-  <rect width="64" height="64" fill="#121826" />
-  <ellipse cx="32" cy="34" rx="19" ry="9.5" transform="rotate(-24 32 34)" fill="none" stroke="url(#jewelBand)" stroke-width="4.6" />
-  <rect x="21" y="17" width="20" height="27" rx="2.2" transform="rotate(-18 31 30.5)" fill="none" stroke="#f5eee0" stroke-width="3" />
-  <path d="M45 15 31 24l-3.5 9 9-3.5L45 15Z" fill="url(#nibGold)" />
-  <line x1="44.5" y1="15.5" x2="37.5" y2="22.5" stroke="#121826" stroke-width="1.6" stroke-linecap="round" />
-  <circle cx="36.8" cy="23.2" r="2" fill="#121826" />
+  <rect width="64" height="64" fill="#10182d" />
+  <g transform="translate(7.68 7.68) scale(.76)">
+    <path d="M47 13C37 8 20 11 15 20c-5 10 10 12 20 11 12-1 18 3 14 11-4 8-18 12-31 8" fill="none" stroke="url(#r)" stroke-width="10" stroke-linecap="round" />
+    <path d="m43 39 10 9-10 10-8-3 2-9Z" fill="#fff4e9" />
+    <path d="m38 53 8-8" fill="none" stroke="#10182d" stroke-width="2.6" stroke-linecap="round" />
+    <circle cx="46" cy="45" r="2.3" fill="#10182d" />
+    <path d="m51 13 1.2 3.2 3.3 1.2-3.3 1.2-1.2 3.2-1.2-3.2-3.2-1.2 3.2-1.2Zm-35 25 .8 2.1 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8Z" fill="#fff7cf" />
+  </g>
 </svg>

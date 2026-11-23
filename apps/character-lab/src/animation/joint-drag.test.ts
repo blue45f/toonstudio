@@ -9,8 +9,8 @@ import { poseLimitViolations, swingTwistAnglesDeg } from "./joint-limits";
 import { createReferenceSkeleton } from "./reference-skeleton";
 import { boneAxisLocal, computeWorldTransforms } from "./skeleton-fk";
 
-import type { DragCamera } from "./joint-drag";
 import type { Pose, Vec3 } from "../contracts/pose";
+import type { DragCamera } from "./joint-drag";
 
 const skeleton = createReferenceSkeleton();
 /** 정면(+Z)에서 캐릭터를 보는 카메라 */

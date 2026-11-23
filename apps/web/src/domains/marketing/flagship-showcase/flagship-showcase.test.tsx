@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { readFileSync } from "node:fs";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,6 +9,7 @@ import { useI18n } from "@/shared/lib/i18n";
 import { CreatorHomeNavigation } from "../CreatorHomeNavigation";
 import { FeaturesOverviewPage } from "../FeaturesOverviewPage";
 import { HomeFlagshipInteractiveShowcase } from "./HomeFlagshipInteractiveShowcase";
+import { HomeLiveTechProofStrip } from "./HomeLiveTechProofStrip";
 import { StudioFeatureAtlasMenu } from "./StudioFeatureAtlasMenu";
 import {
   ALL_ATLAS_FEATURES,
@@ -21,6 +22,11 @@ import {
   recommendByotStack,
   TIMEMACHINE_STAGES,
 } from "./flagship-showcase-data";
+import {
+  LIVE_TECH_PROOFS,
+  PROOF_GALLERY_SHEETS,
+  runKubelkaMunk16BandBenchmark,
+} from "./live-tech-proof-data";
 
 const initialLang = useI18n.getState().lang;
 
@@ -279,14 +285,150 @@ describe("StudioFeatureAtlasMenu — 6대 영역 × 24개 핵심 기능 아틀�
   });
 });
 
+describe("Wave 30B HomeLiveTechProofStrip — 5대 실측 엔진 · 2장 실물 갤러리 · 인브라우저 벤치마크", () => {
+  it("HomeFlagshipInteractiveShowcase 최상단에 마운트되어 5대 실측 증명 칩과 상세 근거를 전환한다", () => {
+    renderShowcase("ko");
+    const strip = screen.getByTestId("home-live-tech-proof-strip");
+    const brushCanvas = screen.getByTestId("flagship-brush-canvas");
+    expect(strip.compareDocumentPosition(brushCanvas) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    expect(LIVE_TECH_PROOFS).toHaveLength(5);
+    const expectations: ReadonlyArray<readonly [string, readonly string[], string]> = [
+      ["wasm64", ["2.80ms", ">4GiB", "30×"], "/tech"],
+      ["webgpu", ["2.59ms", "복사 0회", "12종 혼합"], "/tech"],
+      ["km-foley", ["16파장", "0.0000", "64.0 MiB"], "/studio/canvas"],
+      ["bvh-npr", ["1,000소품", "10 드로우콜", "99%", "ΔE 54.35 → 0.60"], "/create"],
+      ["byot-c2pa", ["CSP/Photoshop/Jira/Slack", "C2PA 2.1", "7대 플랫폼"], "/compare/studio"],
+    ];
+
+    for (const [id, tokens, expectedHref] of expectations) {
+      const chip = within(strip).getByTestId(`live-proof-chip-${id}`);
+      fireEvent.click(chip);
+      expect(chip.getAttribute("aria-pressed")).toBe("true");
+      const detail = within(strip).getByTestId("live-proof-detail");
+      expect(detail.getAttribute("data-proof-id")).toBe(id);
+      for (const token of tokens) {
+        expect(detail.textContent).toContain(token);
+      }
+      expect(within(detail).getByTestId("live-proof-detail-cta").getAttribute("href")).toBe(expectedHref);
+    }
+  });
+
+  it("실물 렌더링 브러시 증명 시트 2장이 경량 WebP로 존재하며 lazy 로드 · 중립 프레임 · Escape 확대 모달을 제공한다", () => {
+    const assetBudgets: ReadonlyArray<readonly [string, number]> = [
+      ["apps/web/public/showcase/brush-12media-proof.webp", 260 * 1024],
+      ["apps/web/public/showcase/brush-8tips-km-proof.webp", 220 * 1024],
+    ];
+    for (const [assetPath, maxBytes] of assetBudgets) {
+      expect(existsSync(assetPath), assetPath).toBe(true);
+      expect(statSync(assetPath).size, assetPath).toBeLessThanOrEqual(maxBytes);
+    }
+
+    render(
+      <MemoryRouter>
+        <HomeLiveTechProofStrip lang="ko" />
+      </MemoryRouter>,
+    );
+
+    const gallery = screen.getByTestId("live-proof-gallery");
+    const images = within(gallery).getAllByRole("img");
+    expect(images).toHaveLength(PROOF_GALLERY_SHEETS.length);
+    expect(images.map((img) => img.getAttribute("src"))).toEqual([
+      "/showcase/brush-12media-proof.webp",
+      "/showcase/brush-8tips-km-proof.webp",
+    ]);
+    for (const img of images) {
+      expect(img.getAttribute("loading")).toBe("lazy");
+    }
+
+    const trigger = screen.getByTestId("proof-sheet-zoom-media-12");
+    expect(trigger.className).toContain("outline-1");
+    expect(trigger.className).toContain("-outline-offset-1");
+
+    fireEvent.click(trigger);
+    const modal = screen.getByTestId("proof-sheet-modal");
+    expect(modal.getAttribute("role")).toBe("dialog");
+    expect(within(modal).getByRole("img").getAttribute("src")).toBe("/showcase/brush-12media-proof.webp");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("proof-sheet-modal")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("내 브라우저에서 직접 측정해 보기 버튼이 4대 실제 런타임 체크(Wasm64·WebGPU·P3·16파장 KM)를 실행해 결과 배지를 표시한다", async () => {
+    const kmDirect = runKubelkaMunk16BandBenchmark(400);
+    expect(kmDirect.greenDominant).toBe(true);
+    expect(kmDirect.mixedOklch.startsWith("oklch(")).toBe(true);
+    expect(kmDirect.peakWavelengthNm).toBeGreaterThanOrEqual(500);
+    expect(kmDirect.peakWavelengthNm).toBeLessThanOrEqual(560);
+    expect(kmDirect.elapsedMs).toBeGreaterThan(0);
+
+    const requestAdapter = vi.fn(async () => ({ name: "mock-gpu-adapter" }));
+    Object.defineProperty(navigator, "gpu", {
+      configurable: true,
+      value: { requestAdapter },
+    });
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      matches: query === "(color-gamut: p3)",
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })));
+
+    render(
+      <MemoryRouter>
+        <HomeLiveTechProofStrip lang="ko" />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByTestId("live-tech-benchmark-btn"));
+    await waitFor(() => {
+      expect(screen.getByTestId("benchmark-badge-km")).toBeTruthy();
+    });
+
+    expect(requestAdapter).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("benchmark-badge-wasm64").getAttribute("data-state")).toMatch(/ready|fallback/u);
+    expect(screen.getByTestId("benchmark-badge-webgpu").getAttribute("data-state")).toBe("ready");
+    expect(screen.getByTestId("benchmark-badge-webgpu").textContent).toContain("WebGPU");
+    expect(screen.getByTestId("benchmark-badge-p3").getAttribute("data-state")).toBe("ready");
+    expect(screen.getByTestId("benchmark-badge-p3").textContent).toContain("Display-P3");
+    const kmBadge = screen.getByTestId("benchmark-badge-km");
+    expect(kmBadge.getAttribute("data-state")).toBe("ready");
+    expect(kmBadge.textContent).toMatch(/\d+\.\d{2}ms/u);
+    expect(kmBadge.textContent).toContain("초록 실측");
+
+    // navigator.gpu 테스트 정리
+    Reflect.deleteProperty(navigator as unknown as Record<string, unknown>, "gpu");
+  });
+});
+
 describe("Wave 20 다국어(KO/EN) 및 디자인·경계 위생 전수 검증", () => {
-  it("영어 모드에서는 쇼케이스와 기능 아틀라스 전체에 한글이 0건이다", () => {
+  it("영어 모드에서는 쇼케이스·실물 증명 스트립·확대 모달·기능 아틀라스 전체에 한글이 0건이다", async () => {
     renderShowcase("en");
     const root = screen.getByTestId("flagship-interactive-showcase");
     expect(root.textContent).not.toMatch(/[가-힣]/u);
-    for (const el of root.querySelectorAll("[aria-label], [placeholder]")) {
-      expect(`${el.getAttribute("aria-label") ?? ""}${el.getAttribute("placeholder") ?? ""}`).not.toMatch(/[가-힣]/u);
+    for (const el of root.querySelectorAll("[aria-label], [placeholder], [alt]")) {
+      const attrs = `${el.getAttribute("aria-label") ?? ""}${el.getAttribute("placeholder") ?? ""}${el.getAttribute("alt") ?? ""}`;
+      expect(attrs).not.toMatch(/[가-힣]/u);
     }
+
+    fireEvent.click(screen.getByTestId("live-tech-benchmark-btn"));
+    await waitFor(() => {
+      expect(screen.getByTestId("benchmark-badge-km")).toBeTruthy();
+    });
+    expect(root.textContent).not.toMatch(/[가-힣]/u);
+
+    fireEvent.click(screen.getByTestId("proof-sheet-zoom-tips-8-km"));
+    const proofModal = screen.getByTestId("proof-sheet-modal");
+    expect(proofModal.textContent).not.toMatch(/[가-힣]/u);
+    for (const el of proofModal.querySelectorAll("[aria-label], [alt]")) {
+      expect(`${el.getAttribute("aria-label") ?? ""}${el.getAttribute("alt") ?? ""}`).not.toMatch(/[가-힣]/u);
+    }
+    fireEvent.keyDown(window, { key: "Escape" });
 
     fireEvent.click(screen.getByTestId("feature-atlas-trigger"));
     const dialog = screen.getByRole("dialog");
@@ -299,6 +441,9 @@ describe("Wave 20 다국어(KO/EN) 및 디자인·경계 위생 전수 검증", 
   it("원시 hex/rgb/hsl 0건 · 줄 수 상한 · 비공개 creator import 0건 · '신규' 배지 0건 계약을 지킨다", () => {
     const files = [
       "apps/web/src/domains/marketing/flagship-showcase/HomeFlagshipInteractiveShowcase.tsx",
+      "apps/web/src/domains/marketing/flagship-showcase/HomeLiveTechProofStrip.tsx",
+      "apps/web/src/domains/marketing/flagship-showcase/live-tech-proof-data.ts",
+      "apps/web/src/domains/marketing/flagship-showcase/live-tech-proof-strip.css",
       "apps/web/src/domains/marketing/flagship-showcase/StudioFeatureAtlasMenu.tsx",
       "apps/web/src/domains/marketing/flagship-showcase/FlagshipWorkflowLauncherPanel.tsx",
       "apps/web/src/domains/marketing/flagship-showcase/flagship-showcase-data.ts",
@@ -310,11 +455,14 @@ describe("Wave 20 다국어(KO/EN) 및 디자인·경계 위생 전수 검증", 
     ] as const;
 
     const showcaseSrc = readFileSync(files[0], "utf8");
-    const atlasSrc = readFileSync(files[1], "utf8");
-    const cssSrc = readFileSync(files[7], "utf8");
-    const atlasCssSrc = readFileSync(files[8], "utf8");
+    const proofStripSrc = readFileSync(files[1], "utf8");
+    const proofCssSrc = readFileSync(files[3], "utf8");
+    const atlasSrc = readFileSync(files[4], "utf8");
+    const cssSrc = readFileSync(files[10], "utf8");
+    const atlasCssSrc = readFileSync(files[11], "utf8");
 
     expect(showcaseSrc.split("\n").length).toBeLessThanOrEqual(580);
+    expect(proofStripSrc.split("\n").length).toBeLessThanOrEqual(380);
     expect(atlasSrc.split("\n").length).toBeLessThanOrEqual(380);
 
     for (const file of files) {
@@ -325,19 +473,20 @@ describe("Wave 20 다국어(KO/EN) 및 디자인·경계 위생 전수 검증", 
       expect(content, `${file} private creator import`).not.toMatch(/domains\/creator\/(?!public)/u);
     }
 
-    expect(cssSrc).not.toContain("transition: all");
-    expect(cssSrc).not.toContain("transition-all");
-    expect(atlasCssSrc).not.toContain("transition: all");
-    expect(atlasCssSrc).not.toContain("transition-all");
-    expect(cssSrc).toContain("oklch(");
-    expect(cssSrc).toContain("word-break: keep-all");
-    expect(cssSrc).toContain("tabular-nums");
-    expect(cssSrc).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(cssSrc).toContain(':root[data-design-theme="contrast"]');
-    expect(cssSrc).toContain("@media (forced-colors: active)");
+    for (const styleText of [cssSrc, atlasCssSrc, proofCssSrc]) {
+      expect(styleText).not.toContain("transition: all");
+      expect(styleText).not.toContain("transition-all");
+      expect(styleText).toContain("oklch(");
+      expect(styleText).toContain("word-break: keep-all");
+      expect(styleText).toContain("tabular-nums");
+      expect(styleText).toContain("@media (prefers-reduced-motion: reduce)");
+      expect(styleText).toContain(':root[data-design-theme="contrast"]');
+      expect(styleText).toContain("@media (forced-colors: active)");
+    }
 
     // 오픈 전 '신규' 배지 slop 부재 검증
     expect(showcaseSrc).not.toMatch(/>\s*신규\s*</u);
+    expect(proofStripSrc).not.toMatch(/>\s*신규\s*</u);
     expect(atlasSrc).not.toMatch(/>\s*신규\s*</u);
   });
 });

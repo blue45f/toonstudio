@@ -2,11 +2,11 @@ import { useSyncExternalStore } from "react";
 
 import { pushRecentColor } from "./color-utils";
 
-import type { LabOverrides } from "./lab-store";
-import type { LiveStrokeTimings } from "./live-session";
 import type { BrushFamily } from "../../engine/presets/program-schema";
 import type { LaneId, StrokeReceipt } from "../../lanes/lane";
 import type { GalleryRenderResult } from "../../platform/worker-client";
+import type { LabOverrides } from "./lab-store";
+import type { LiveStrokeTimings } from "./live-session";
 
 /**
  * "그리기" 화면 상태 저장소. A/B 비교용 `lab-store`와 분리돼 있어 서로의 상태(프리셋·오버라이드·레인 A/B)를 건드리지 않는다.

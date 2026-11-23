@@ -12,8 +12,8 @@ import { SUMI_KERNEL_BYTE_LENGTH, SUMI_KERNEL_SHA256 } from "./kernel-integrity"
 import { SumiKernelSession } from "./kernel-session";
 import { loadSumiKernel } from "./loader";
 
-import type { SumiKernel } from "./loader";
 import type { DabInstance, DepositionModel } from "../core/types";
+import type { SumiKernel } from "./loader";
 
 /**
  * wasm 커널 계약 테스트(Node `WebAssembly`). 커널은 TS 참조(`raster/coverage.ts`·`tile-binning.ts`·`core/rng.ts`)와

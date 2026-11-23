@@ -1,9 +1,9 @@
 import { FAMILY_TARGETS } from "../../engine/presets/families";
 
-import type { ThresholdOp, ThresholdRule, Verdict } from "./report-schema";
 import type { BrushFamily } from "../../engine/presets/program-schema";
 import type { LaneKind } from "../../lanes/lane";
 import type { FixtureId } from "../fixtures/stroke-fixtures";
+import type { ThresholdOp, ThresholdRule, Verdict } from "./report-schema";
 
 /**
  * 임계값 표와 판정. 전역 임계값(렌더·필기감)과 가족별 임계값(`FAMILY_TARGETS`)을 병합한다.

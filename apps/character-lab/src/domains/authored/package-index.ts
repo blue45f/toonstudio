@@ -10,8 +10,8 @@ import { CHARACTER_ID_PATTERN, CHARACTER_PACKAGE_ASSET_ROOT, CHARACTER_PACKAGE_M
 
 import { AUTHORED_MANIFEST_FILENAME } from "./authored-character-manifest";
 
-import type { ManifestFormat } from "./authored-character-manifest";
 import type { CharacterPackageIndex, CharacterPackageIndexEntry, LabFailure } from "../../contracts";
+import type { ManifestFormat } from "./authored-character-manifest";
 
 export const AUTHORED_INDEX_SCHEMA_ID = "toonstudio.character-lab.authored-character-index/1";
 

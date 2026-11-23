@@ -24,13 +24,15 @@ import {
 
 const mediaPipeMocks = vi.hoisted(() => ({
   createFromOptions: vi.fn(),
-  isSimdSupported: vi.fn(),
+  createSimdFromOptions: vi.fn(),
 }));
 
 vi.mock("@mediapipe/tasks-vision", () => ({
-  FilesetResolver: {
-    isSimdSupported: mediaPipeMocks.isSimdSupported,
+  ImageSegmenter: {
+    createFromOptions: mediaPipeMocks.createSimdFromOptions,
   },
+}));
+vi.mock("@mediapipe/tasks-vision-nosimd", () => ({
   ImageSegmenter: {
     createFromOptions: mediaPipeMocks.createFromOptions,
   },
@@ -122,6 +124,7 @@ function runtime(
   activeDelegate: "GPU" | "CPU" = "GPU",
 ): StudioLocalForegroundSegmenterRuntime {
   return {
+    providerVersion: "0.10.35",
     segmenter: { segment },
     selectedDelegate: activeDelegate,
     activeDelegate,
@@ -154,7 +157,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   mediaPipeMocks.createFromOptions.mockReset();
-  mediaPipeMocks.isSimdSupported.mockReset();
+  mediaPipeMocks.createSimdFromOptions.mockReset();
 });
 
 describe("foreground pixel-alpha composition", () => {
@@ -393,7 +396,7 @@ describe("MediaPipe adapter and legacy wrapper", () => {
 
   it("fails the default GPU provider without retrying CPU", async () => {
     const images = installControlledImage({ width: 1, height: 1 });
-    mediaPipeMocks.isSimdSupported.mockResolvedValue(false);
+    vi.spyOn(WebAssembly, "validate").mockReturnValue(false);
     mediaPipeMocks.createFromOptions.mockImplementation(
       async (_vision: unknown, options: unknown) => {
         const delegate = (
@@ -423,7 +426,7 @@ describe("MediaPipe adapter and legacy wrapper", () => {
     const foreground = maskResource(1, 1, foregroundValues);
     const result = segmentationResult([foreground]);
     defaultSegmenter.segment.mockReturnValue(result);
-    mediaPipeMocks.isSimdSupported.mockResolvedValue(false);
+    vi.spyOn(WebAssembly, "validate").mockReturnValue(false);
     mediaPipeMocks.createFromOptions.mockResolvedValue(defaultSegmenter);
     const loadImage = vi.fn(async () => decodedImage(1, 1));
     const provider = createStudioLocalForegroundConfidenceProvider({
@@ -439,6 +442,11 @@ describe("MediaPipe adapter and legacy wrapper", () => {
     expect(mediaPipeMocks.createFromOptions.mock.calls.map(([, options]) =>
       (options as { baseOptions: { delegate: string } }).baseOptions.delegate,
     )).toEqual(["CPU"]);
+    expect(mediaPipeMocks.createFromOptions.mock.calls[0]?.[0]).toMatchObject({
+      wasmLoaderPath: expect.stringContaining("vision_wasm_nosimd_internal.js"),
+      wasmBinaryPath: expect.stringContaining("vision_wasm_nosimd_internal.wasm"),
+    });
+    expect(mediaPipeMocks.createSimdFromOptions).not.toHaveBeenCalled();
     expect(extracted.receipt).toMatchObject({
       providerId: "mediapipe-image-segmenter",
       providerVersion: "0.10.35",
@@ -460,6 +468,51 @@ describe("MediaPipe adapter and legacy wrapper", () => {
     expect(result.close).toHaveBeenCalledTimes(1);
   });
 
+  it("선택된 SIMD SDK 초기화 실패 후 legacy SDK나 CPU로 전환하지 않는다", async () => {
+    vi.resetModules();
+    vi.spyOn(WebAssembly, "validate").mockReturnValue(true);
+    const failure = new Error("selected SIMD factory failed");
+    mediaPipeMocks.createSimdFromOptions.mockRejectedValue(failure);
+    const fresh = await import("./studio-bg-remove");
+
+    await expect(fresh.getStudioLocalForegroundSegmenterRuntime()).rejects.toBe(failure);
+    expect(mediaPipeMocks.createSimdFromOptions).toHaveBeenCalledOnce();
+    expect(mediaPipeMocks.createSimdFromOptions.mock.calls[0]?.[1]).toMatchObject({
+      baseOptions: { delegate: "GPU" },
+    });
+    expect(mediaPipeMocks.createFromOptions).not.toHaveBeenCalled();
+  });
+
+  it("SIMD SDK와 해당 자산으로 추론한 실제 버전을 영수증에 남긴다", async () => {
+    vi.resetModules();
+    vi.spyOn(WebAssembly, "validate").mockReturnValue(true);
+    const foreground = maskResource(1, 1, new Float32Array([0.75]));
+    const result = segmentationResult([foreground]);
+    const segmenter = { segment: vi.fn(() => result) };
+    mediaPipeMocks.createSimdFromOptions.mockResolvedValue(segmenter);
+    const fresh = await import("./studio-bg-remove");
+    const provider = fresh.createStudioLocalForegroundConfidenceProvider({
+      loadImage: async () => decodedImage(1, 1),
+    });
+
+    const extracted = await provider.getForegroundConfidenceMask("data:image/png;base64,AA==");
+    expect(mediaPipeMocks.createSimdFromOptions).toHaveBeenCalledOnce();
+    expect(mediaPipeMocks.createSimdFromOptions.mock.calls[0]?.[0]).toMatchObject({
+      wasmLoaderPath: expect.stringContaining("vision_wasm_internal.js"),
+      wasmBinaryPath: expect.stringContaining("vision_wasm_internal.wasm"),
+    });
+    expect(mediaPipeMocks.createFromOptions).not.toHaveBeenCalled();
+    expect(extracted.receipt).toMatchObject({
+      providerVersion: "1.2.3",
+      activeDelegate: "GPU",
+      attemptedDelegates: ["GPU"],
+      imageUpload: false,
+    });
+    expect([...extracted.confidence]).toEqual([0.75]);
+    expect(foreground.close).toHaveBeenCalledOnce();
+    expect(result.close).toHaveBeenCalledOnce();
+  });
+
   it("validates the legacy threshold before loading an image or allocating a canvas", async () => {
     const images = installControlledImage();
     const createElement = vi.spyOn(document, "createElement");
@@ -474,7 +527,7 @@ describe("MediaPipe adapter and legacy wrapper", () => {
 
   it("rejects an oversized decoded image before canvas and ImageData allocation", async () => {
     defaultSegmenter.segment.mockClear();
-    mediaPipeMocks.isSimdSupported.mockResolvedValue(false);
+    vi.spyOn(WebAssembly, "validate").mockReturnValue(false);
     mediaPipeMocks.createFromOptions.mockResolvedValue(defaultSegmenter);
     await getStudioLocalForegroundSegmenterRuntime();
     const images = installControlledImage({

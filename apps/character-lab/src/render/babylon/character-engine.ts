@@ -49,9 +49,6 @@ import { createPostProcessStack } from "./postprocess";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 import { createScenePropController } from "./scene-prop-controller";
 
-import type { CaptureDeps, PassMaterialSet } from "./capture";
-import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
-import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan, ApplyReceipt, AuthoredPackagePlan, CameraFraming, CaptureRequest, CaptureResult, CapturedRaster,
   CharacterEngine, CharacterPickOptions, CharacterSource, DuoPartnerAttachment, EngineBackend, EngineDiagnostics,
@@ -63,19 +60,22 @@ import type { BetaFeaturePort, BetaFeatureId, BetaFeatureReport, BetaFeatureStat
 import type { SparseMorphReport } from "../glb-sparse-morph";
 import type { OpenPbrParams } from "../openpbr-mapping";
 import type { ProjectionPaintHost, ProjectionPaintPort } from "../projection-paint";
-import type { BetaController, BetaLoaders } from "./beta-controller";
-import type { MaterialFactoryOptions } from "./materials/material-factory";
-import type { NodeToonTextures } from "./materials/node-toon-material";
-import type { ToonUniformValues } from "./materials/toon-shader";
-import type { PhysicsBridge, PhysicsReceiptLike } from "./physics-bridge";
-import type { CharacterScene } from "./scene-builder";
 import type { ReadbackLane } from "../readback";
 import type { EyeballHighlightConfig, EyeballHighlightPort, EyeballHighlightState, RenderTelemetryPort } from "../render-telemetry";
 import type { PaintInspection, RigInspection, SceneInspection } from "../rig-inspection";
 import type { SceneFeatureSource } from "../scene-features";
 import type { CharacterLabRenderTelemetry } from "../style/character-verify-ai-fresh-ideas";
 import type { ViewportCameraInfo, ViewportCameraSource } from "../viewport-camera";
+import type { BetaController, BetaLoaders } from "./beta-controller";
+import type { CaptureDeps, PassMaterialSet } from "./capture";
+import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
+import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type { ProceduralIbl } from "./lighting/ibl";
+import type { MaterialFactoryOptions } from "./materials/material-factory";
+import type { NodeToonTextures } from "./materials/node-toon-material";
+import type { ToonUniformValues } from "./materials/toon-shader";
+import type { PhysicsBridge, PhysicsReceiptLike } from "./physics-bridge";
+import type { CharacterScene } from "./scene-builder";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";

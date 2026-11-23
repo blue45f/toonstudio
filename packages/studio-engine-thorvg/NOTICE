@@ -1,5 +1,38 @@
-ThorVG WebCanvas 1.1.2
-Copyright (c) the ThorVG authors
-Licensed under the MIT License.
-Source: https://github.com/thorvg/thorvg.web
-The vendored wasm/thorvg.wasm is copied byte-for-byte from @thorvg/webcanvas@1.1.2.
+ThorVG WebCanvas 1.1.4 — npm 배포본 출처
+
+배포 패키지: @thorvg/webcanvas@1.1.4 (MIT)
+npm tarball: https://registry.npmjs.org/@thorvg/webcanvas/-/webcanvas-1.1.4.tgz
+npm tarball 크기: 1793013 bytes
+npm tarball 무결성: sha512-tyS2HP6F8X/+zYjrFKIfLKlls4jL/17+ESE6RI0YgvBi/64pdvyb8ODC7Ibna42276R36QG4aCVfG03O9B3nOQ==
+npm gitHead: 4ff27c6b57a2bb6162941cb62aba3f82b0c4af79
+소스: https://github.com/thorvg/thorvg.web/tree/4ff27c6b57a2bb6162941cb62aba3f82b0c4af79
+ThorVG submodule: https://github.com/thorvg/thorvg/tree/47658a80842f3b3182aded036190edf459beabe7
+공식 build-wcanvas.yml·release-wcanvas.yml 설정: Emscripten 6.0.0, Meson 1.10.0.
+이 저장소는 npm tarball의 package/dist/thorvg.wasm을 바이트 그대로 wasm/thorvg.wasm에 복사한다.
+위 도구 버전은 고정 소스의 공식 빌드 설정을 기록하며 로컬 재빌드 결과를 주장하지 않는다.
+WASM 크기: 903904 bytes
+WASM SHA256: 0b4fd4628eec1843c47602ececdd416215f1e1ae397c108552cda3710507a962
+무결성 파일: wasm/INTEGRITY.sha256
+아래 MIT 전문은 위 고정 소스의 LICENSE를 그대로 보존한다.
+
+MIT License
+
+Copyright (c) 2023 - 2026 ThorVG Project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

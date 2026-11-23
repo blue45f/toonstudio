@@ -9,13 +9,13 @@ import { activeTilesAfterDeposit } from "../wet/active-tiles";
 import { tipAtlasFloats } from "./kernel-abi";
 import { SumiKernelSession } from "./kernel-session";
 
-import type { SumiKernel } from "./loader";
 import type { DabBatch } from "../core/dab-layout";
 import type { TipKind } from "../core/types";
 import type { RasterContext } from "../raster/fine-raster";
 import type { SurfaceOptions } from "../raster/reference-renderer";
 import type { RasterReceipt } from "../raster/stroke-layer";
 import type { TipMask } from "../texture/tip-generators";
+import type { SumiKernel } from "./loader";
 
 /**
  * wasm 커널로 타일 래스터를 하는 CPU 표면. `raster/reference-renderer.ts`의 `Surface`를 **상속**해 문서·습식 층(수채 안료·유화 물감)·

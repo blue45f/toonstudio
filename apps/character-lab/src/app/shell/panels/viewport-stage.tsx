@@ -6,9 +6,9 @@ import { DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotOverlay
 import { ViewportHud } from "./viewport-hud";
 import { ViewportMangaFxOverlay } from "./viewport-manga-fx-overlay";
 
+import type { CharacterRecipe, EngineStatus, HudSample } from "../../../contracts";
 import type { DuoShotState } from "./viewport-duo-shot-guide";
 import type { ViewportMangaFxState } from "./viewport-manga-fx-overlay";
-import type { CharacterRecipe, EngineStatus, HudSample } from "../../../contracts";
 import type { ComponentProps, ReactNode, Ref } from "react";
 
 interface ViewportStageProps {

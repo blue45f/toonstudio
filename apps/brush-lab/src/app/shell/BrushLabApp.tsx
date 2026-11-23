@@ -18,12 +18,12 @@ import { createGalleryWorkerClient } from "../workers/create-gallery-worker";
 
 import { LabContext } from "./lab-context";
 
-import type { LabContextValue } from "./lab-context";
 import type { LaneDescriptor, LaneEnvironment } from "../../lanes/lane";
 import type { GalleryRenderer } from "../../platform/worker-client";
 import type { BenchRunner } from "../state/bench-runner";
 import type { DrawStore } from "../state/draw-store";
 import type { LabStore, LabTab } from "../state/lab-store";
+import type { LabContextValue } from "./lab-context";
 import type { KeyboardEvent } from "react";
 
 export interface BrushLabAppProps {

@@ -8,8 +8,8 @@ import { penetrationRatio } from "./follow-body";
 import { ACCESSORY_SPECS, BOTTOM_SPECS, SHOES_SPECS, TOP_SPECS, buildAccessory, buildBottom, buildGarments, buildShoes, buildTop, createGarmentEnv, minimumNormalOffset } from "./garments";
 import { OUTFIT_AUX_BONE_INDEX_BASE } from "./hair-builder";
 
-import type { BodyMapping } from "./follow-body";
 import type { GarmentSelection, MeshPartData, OutfitBuildContext } from "../../contracts";
+import type { BodyMapping } from "./follow-body";
 
 const fixture = bodySurfaceFixture();
 

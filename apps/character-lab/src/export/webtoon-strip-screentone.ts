@@ -7,9 +7,9 @@
  */
 import { WEBTOON_STRIP_GUTTER_PACES } from "./webtoon-strip-pacing-tategaki";
 
+import type { CapturedRaster } from "../contracts";
 import type { WebtoonStripLayout } from "./webtoon-strip-composer";
 import type { WebtoonStripGutterPaces } from "./webtoon-strip-pacing-tategaki";
-import type { CapturedRaster } from "../contracts";
 
 export const WEBTOON_SCREENTONE_IDS = [
   "none",

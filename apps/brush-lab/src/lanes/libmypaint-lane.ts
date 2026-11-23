@@ -8,11 +8,11 @@ import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 import { IsolatedStrokeLane } from "./isolated-stroke-lane";
 import { supportedReport, unavailableReport } from "./lane";
 
+import type { LibMypaintRaw } from "../../../../packages/studio-brush-platform/src/libmypaint/index";
+import type { Rgba } from "../engine/core/types";
 import type { EngineSample } from "./isolated-stroke-lane";
 import type { LaneCapabilityReport, LaneDescriptor, LaneEnvironment, LaneId, LaneInit, LaneKind, LaneStatus } from "./lane";
 import type { MypaintMapping } from "./mypaint-settings-map";
-import type { LibMypaintRaw } from "../../../../packages/studio-brush-platform/src/libmypaint/index";
-import type { Rgba } from "../engine/core/types";
 import type { LibMypaintIncrementalStrokeSession } from "@toonstudio/studio-brush-platform/libmypaint";
 
 /**

@@ -24,7 +24,7 @@
       },
       "icons": [
         {
-          "src": "/brand/spectrum-ribbon-v2/icon-192.png",
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
           "sizes": "192x192",
           "type": "image/png"
         }
@@ -35,31 +35,31 @@
   "background_color": "#10182d",
   "icons": [
     {
-      "src": "/brand/spectrum-ribbon-v2/favicon.svg",
+      "src": "/brand/jewel-atelier-v1/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/brand/spectrum-ribbon-v2/icon-192.png",
+      "src": "/brand/jewel-atelier-v1/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/brand/spectrum-ribbon-v2/icon-512.png",
+      "src": "/brand/jewel-atelier-v1/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/brand/spectrum-ribbon-v2/icon-maskable-192.png",
+      "src": "/brand/jewel-atelier-v1/icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/brand/spectrum-ribbon-v2/icon-maskable-512.png",
+      "src": "/brand/jewel-atelier-v1/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -73,7 +73,7 @@
       "url": "/studio/new",
       "icons": [
         {
-          "src": "/brand/spectrum-ribbon-v2/icon-192.png",
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
           "sizes": "192x192",
           "type": "image/png"
         }
@@ -86,7 +86,7 @@
       "url": "/studio",
       "icons": [
         {
-          "src": "/brand/spectrum-ribbon-v2/icon-192.png",
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
           "sizes": "192x192",
           "type": "image/png"
         }
@@ -99,7 +99,7 @@
       "url": "/studio/bg3d",
       "icons": [
         {
-          "src": "/brand/spectrum-ribbon-v2/icon-192.png",
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
           "sizes": "192x192",
           "type": "image/png"
         }
@@ -112,7 +112,7 @@
       "url": "/studio/publish",
       "icons": [
         {
-          "src": "/brand/spectrum-ribbon-v2/icon-192.png",
+          "src": "/brand/jewel-atelier-v1/icon-192.png",
           "sizes": "192x192",
           "type": "image/png"
         }

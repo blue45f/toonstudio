@@ -251,8 +251,8 @@ describe("cross-renderer visual diff (CanvasKit vs vello_cpu)", () => {
           {
             harness: "tests/visual/cross-renderer-diff.test.ts",
             engines: {
-              a: "skia-canvaskit 0.41.1 (CPU surface, unpremul sRGB)",
-              b: "vello-cpu (vello_cpu 0.2.0, baseline SIMD, single thread)",
+              a: "skia-canvaskit 0.42.0 (CPU surface, unpremul sRGB)",
+              b: "vello-cpu (vello_cpu 0.4.0, baseline SIMD, single thread)",
             },
             gates: {
               scope: `symmetric 3x3-neighborhood fuzzy match, per-channel delta <= ${FUZZY_DELTA}; raw maxDelta/meanDelta/pctPixelsOver8 rows are evidence only; flat-region scenes (04-07, 09) must stay at 0`,

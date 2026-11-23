@@ -19,9 +19,9 @@ import {
 } from "./skeleton-boundary-guard";
 import { clampShaperGizmoDelta, computeJointDrag } from "./viewport-interactions";
 
-import type { ShaperPivotMode } from "./shaper-bone-gizmo";
 import type { BodyParamKey, FaceParamKey, HumanoidBoneName, IkChainId, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
+import type { ShaperPivotMode } from "./shaper-bone-gizmo";
 
 export {
   KWEBTOON_BUILTIN_ARCHETYPE_PRESETS,

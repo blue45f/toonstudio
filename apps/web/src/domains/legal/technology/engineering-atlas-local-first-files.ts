@@ -699,12 +699,12 @@ export const WEB_APP_MANIFEST_INSTALL_IDENTITY: EngineeringAtlasEntry = {
       "The main manifest uses id ‘/’, start URL /studio and display standalone, and proposes display_override in the order window-controls-overlay, standalone, minimal-ui. It declares four shortcuts (new work, 2D, 3D, publishing prep), two screenshots (desktop and mobile) and five icons (three regular, two maskable). The install events (beforeinstallprompt, appinstalled) are captured as soon as the app starts and the install dialog is shown when the user presses a button; where no event exists, as on iOS, a ‘Add to Home Screen’ guide is shown.",
     ),
     t(
-      "설치 정체성이 둘입니다. 메인 앱(id ‘/’)과 별도로 /draw-app 매니페스트(id ‘/draw-app’)가 있어 ‘툰드로잉’으로 따로 설치할 수 있고, 시작 주소는 캔버스 중심 모드(drawingShell=app&uiMode=focus…)입니다. 같은 스튜디오 엔진을 다른 신분증으로 여는 방식입니다. 반대로 file_handlers, share_target, launch_handler 같은 고급 항목은 두 매니페스트에 선언돼 있지 않습니다.",
-      "There are two install identities. Besides the main app (id ‘/’), a /draw-app manifest (id ‘/draw-app’) lets users install ‘Toon Draw’ separately, starting in a canvas-first mode (drawingShell=app&uiMode=focus and so on). It opens the same studio engine under a different identity card. Advanced members such as file_handlers, share_target and launch_handler are not declared in either manifest.",
+      "설치 정체성이 둘입니다. 메인 앱(id ‘/’)과 별도로 /draw-app 매니페스트(id ‘/draw-app’)가 있어 ‘툰드로잉’으로 따로 설치할 수 있고, 시작 주소는 캔버스 중심 모드(drawingShell=app&uiMode=focus…)입니다. 같은 스튜디오 엔진을 다른 신분증으로 여는 방식입니다. 메인 앱은 file_handlers와 launch_handler를 선언하고, 툰드로잉은 이를 별도로 선언하지 않습니다. share_target은 두 매니페스트 모두에 없습니다.",
+      "There are two install identities. Besides the main app (id ‘/’), a /draw-app manifest (id ‘/draw-app’) lets users install ‘Toon Draw’ separately, starting in a canvas-first mode (drawingShell=app&uiMode=focus and so on). It opens the same studio engine under a different identity card. The main app declares file_handlers and launch_handler; Toon Draw does not declare them separately. Neither manifest declares share_target.",
     ),
     t(
-      "주의: index.html이 연결하는 매니페스트는 /brand/spectrum-ribbon-v2/manifest.webmanifest인데, 루트 /manifest.webmanifest와 내용이 같습니다(2026-10-07 diff로 확인). 테스트는 루트 사본만 전수 검사하므로 두 파일이 갈라질 위험이 있습니다. 또 display_override 첫 항목이 창 컨트롤 오버레이인데 이를 위한 env(titlebar-area-*) CSS가 코드에 없어, 그 모드에서 상단 UI가 겹치는지는 실기로 확인하지 못했습니다.",
-      "Note: the manifest linked from index.html is /brand/spectrum-ribbon-v2/manifest.webmanifest, and it is identical to the root /manifest.webmanifest (confirmed with a diff on 2026-10-07). The tests check only the root copy in full, so the two could drift apart. Also display_override lists window-controls-overlay first, yet no env(titlebar-area-*) CSS exists in the code, and I could not check on a real device whether the top UI overlaps in that mode.",
+      "index.html은 현재 브랜드의 /brand/jewel-atelier-v1/manifest.webmanifest를 연결합니다. 루트 /manifest.webmanifest와 현재 브랜드 사본의 바이트 일치 및 file_handlers·launch_handler는 회귀 테스트로 검사합니다. 이전 Spectrum 경로는 호환용으로 보존하며 현재 PWA metadata와 별도로 관리합니다.",
+      "index.html links the current brand manifest at /brand/jewel-atelier-v1/manifest.webmanifest. Regression tests check byte equality with the root /manifest.webmanifest plus file_handlers and launch_handler. The previous Spectrum path remains available for compatibility and is maintained separately from the current PWA metadata.",
     ),
   ],
   keyPoints: [
@@ -753,7 +753,7 @@ export const WEB_APP_MANIFEST_INSTALL_IDENTITY: EngineeringAtlasEntry = {
         "메인 매니페스트가 이름·아이콘·시작 주소(/studio)·바로가기 4개·스크린샷 2장·display_override를 선언하고, index.html이 이를 연결합니다.",
         "The main manifest declares the name, icons, start URL (/studio), four shortcuts, two screenshots and display_override, and index.html links it.",
       ),
-      paths: ["apps/web/index.html", "apps/web/public/brand/spectrum-ribbon-v2/manifest.webmanifest", "apps/web/public/manifest.webmanifest"],
+      paths: ["apps/web/index.html", "apps/web/public/brand/jewel-atelier-v1/manifest.webmanifest", "apps/web/public/manifest.webmanifest"],
       route: "/",
     },
     {
@@ -882,7 +882,7 @@ export const WEB_APP_MANIFEST_INSTALL_IDENTITY: EngineeringAtlasEntry = {
   },
   technologies: ["Web App Manifest", "Service Worker", "Window Controls Overlay"],
   facts: [
-    { value: "4 · 2 · 5", label: t("메인 매니페스트의 바로가기 · 스크린샷 · 아이콘 수", "Main manifest: shortcuts, screenshots and icons"), source: "apps/web/public/brand/spectrum-ribbon-v2/manifest.webmanifest" },
+    { value: "4 · 2 · 5", label: t("메인 매니페스트의 바로가기 · 스크린샷 · 아이콘 수", "Main manifest: shortcuts, screenshots and icons"), source: "apps/web/public/brand/jewel-atelier-v1/manifest.webmanifest" },
     { value: "/ · /draw-app", label: t("두 설치 정체성의 id", "The ids of the two install identities"), source: "apps/web/public/draw-app/manifest.webmanifest" },
   ],
   reviewedAt: "2026-10-07",

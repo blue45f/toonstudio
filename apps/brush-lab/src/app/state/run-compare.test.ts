@@ -8,10 +8,10 @@ import { createMockRunner } from "../testing/mock-runner";
 import { createLabActions, createLabStore } from "./lab-store";
 import { probeAllLanes, probeLane, resolveFixture, resolveProgram, runCompare } from "./run-compare";
 
-import type { CompareDeps } from "./run-compare";
 import type { CapturedStroke } from "../../bench/fixtures/fixture-schema";
 import type { LaneDescriptor } from "../../lanes/lane";
 import type { MockLane } from "../testing/mock-lane";
+import type { CompareDeps } from "./run-compare";
 
 function deps(registry: readonly LaneDescriptor[], initial: Parameters<typeof createLabStore>[0] = {}): CompareDeps {
   const store = createLabStore({ laneA: "cpu-reference", laneB: "canvas2d", canvasSize: 64, ...initial });

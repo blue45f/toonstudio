@@ -136,6 +136,9 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     "/docs/studio-bg3d-webgpu-engine-promotion-2026-08-29.md",
     "/docs/candidates/engine-portfolio/capability-survey.md",
     "/docs/third-party/opencascade-lgpl.md",
+    "/docs/tech/toonstudio-nextgen-engineering-whitepaper.md",
+    "/docs/benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md",
+    "/docs/ir/toonstudio-ir-promo-differentiation-brief-2026-11.md",
   ];
   const owned = {
     product: ["/docs/", ...[
@@ -166,15 +169,15 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.equal(new Set(routeVisualInputs).size, 14);
   assert.ok(routeVisualInputs.every((path) => path.endsWith("/background.png")), "페이지 시각 입력은 원본 PNG 개별 파일이어야 합니다.");
   const heroSet = new Set(heroInputs);
-  assert.equal(heroSet.size, 8);
+  assert.equal(heroSet.size, 9);
   assert.ok(heroInputs.every((path) => path.endsWith(".vrm") && !path.includes("*")), "hero 모델은 정확한 개별 VRM 파일이어야 합니다.");
   const routeVisualSet = new Set(routeVisualInputs);
   const foundationDocumentSet = new Set(foundationDocumentInputs);
-  assert.equal(foundationDocumentSet.size, 16);
+  assert.equal(foundationDocumentSet.size, 19);
   assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
   assertTrackedDocumentInputs(foundationDocumentInputs, { cwd: repoRoot });
   assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !heroSet.has(path) && !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 91, 0, 1, 7]);
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 129, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 133, 0, 1, 7]);
   const declarations = [...staticJob.matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(staticJob, /persist-credentials: false/u);
   assert.match(staticJob, /sparse-checkout-cone-mode: false/u);
@@ -190,8 +193,8 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.ok(routeVisualDeclarations.every((match) => match[1] === "studio-foundation"), "페이지 시각 입력은 foundation만 소유해야 합니다.");
   assert.deepEqual(foundationDocumentDeclarations.map((match) => match[2]).sort(), [...foundationDocumentInputs].sort());
   assert.ok(foundationDocumentDeclarations.every((match) => match[1] === "studio-foundation"), "추가 문서 선언은 foundation만 소유해야 합니다.");
-  assert.equal(declarations.length, 150, "기존 111개와 vibrant 스프라이트 디렉터리 1개·hero VRM 8개·원본 PNG 14개·문서 16개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 145, "추가 스프라이트 디렉터리·VRM·PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
+  assert.equal(declarations.length, 154, "기존 111개와 vibrant 스프라이트 디렉터리 1개·hero VRM 9개·원본 PNG 14개·문서 19개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 149, "추가 스프라이트 디렉터리·VRM·PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }

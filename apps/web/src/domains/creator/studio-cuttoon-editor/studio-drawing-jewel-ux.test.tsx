@@ -1,12 +1,16 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { useState } from "react";
+import { StrictMode, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
+
+import { assignQuickMenuSlot, DEFAULT_QUICK_MENU_SLOTS, type QuickMenuSlot } from "../drawing/studio-quickmenu-and-quickshape";
+import { loadQuickMenuSlots, QUICK_MENU_STORAGE_KEY, saveQuickMenuSlots } from "../drawing/studio-quickmenu-preferences";
+import { loadRadialQuickMenuSlots, RADIAL_QUICK_MENU_EXTRA_STORAGE_KEY } from "./studio-radial-quickmenu-preferences";
 
 import {
   StudioDrawingQuickErgonomicsBar,
@@ -67,6 +71,8 @@ function createErgonomicsSession(
 }
 
 beforeEach(() => {
+  window.localStorage.removeItem(QUICK_MENU_STORAGE_KEY);
+  window.localStorage.removeItem(RADIAL_QUICK_MENU_EXTRA_STORAGE_KEY);
   useI18n.setState({ lang: "ko" });
 });
 
@@ -74,6 +80,8 @@ afterEach(() => {
   cleanup();
   document.body.innerHTML = "";
   vi.restoreAllMocks();
+  window.localStorage.removeItem(QUICK_MENU_STORAGE_KEY);
+  window.localStorage.removeItem(RADIAL_QUICK_MENU_EXTRA_STORAGE_KEY);
   useI18n.setState({ lang: "ko" });
 });
 
@@ -357,5 +365,94 @@ describe("Wave 13 Track 5 — Jewel Canvas-Max CSS · 멀티입력 · 방사형 
       expect.objectContaining({ index: 7, actionId: "redo" }),
     );
     expect(onClose).toHaveBeenCalledTimes(3);
+  });
+
+  it("제어된 6슬롯 부모에서도 7·8슬롯 편집을 한 번씩 저장하고 휠·화면 재열기 후 보존한다", async () => {
+    const initialLegacy = assignQuickMenuSlot(DEFAULT_QUICK_MENU_SLOTS, 0, "redo");
+    expect(saveQuickMenuSlots(initialLegacy)).toBe(true);
+    const onLegacyChange = vi.fn<(slots: readonly QuickMenuSlot[]) => void>();
+
+    function ControlledHarness() {
+      const [slots, setSlots] = useState(() => loadQuickMenuSlots());
+      return (
+        <StudioDrawingQuickErgonomicsBar
+          session={createErgonomicsSession({
+            quickMenuSlots: slots,
+            onChangeQuickMenuSlots: (next) => {
+              onLegacyChange(next);
+              setSlots(next);
+            },
+          })}
+        />
+      );
+    }
+
+    const mounted = render(<StrictMode><ControlledHarness /></StrictMode>);
+    fireEvent.click(screen.getByRole("button", { name: /^퀵 휠$/u }));
+    await screen.findByRole("menu", { name: "빠른 도구 방사형 휠" });
+    expect(screen.getByRole("menuitem", { name: "1. 다시 실행" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^슬롯 편집$/u }));
+    const editor = screen.getByRole("region", { name: "빠른 메뉴 8슬롯 편집" });
+    const write = vi.spyOn(Storage.prototype, "setItem");
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /^7\./u }));
+    fireEvent.click(within(editor).getByRole("button", { name: /^레이어 비우기$/u }));
+    expect(screen.getByRole("menuitem", { name: "7. 레이어 비우기" })).toBeTruthy();
+    expect(onLegacyChange).toHaveBeenCalledTimes(1);
+    expect(onLegacyChange).toHaveBeenLastCalledWith(initialLegacy);
+    expect(loadQuickMenuSlots()).toEqual(initialLegacy);
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /^8\./u }));
+    fireEvent.click(within(editor).getByRole("button", { name: /^알파 잠금$/u }));
+    expect(screen.getByRole("menuitem", { name: "8. 알파 잠금" })).toBeTruthy();
+    expect(onLegacyChange).toHaveBeenCalledTimes(2);
+    expect(onLegacyChange).toHaveBeenLastCalledWith(initialLegacy);
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /^2\./u }));
+    fireEvent.click(within(editor).getByRole("button", { name: /^스포이드$/u }));
+    const updatedLegacy = assignQuickMenuSlot(initialLegacy, 1, "eyedropper");
+    expect(onLegacyChange).toHaveBeenCalledTimes(3);
+    expect(onLegacyChange).toHaveBeenLastCalledWith(updatedLegacy);
+    expect(loadQuickMenuSlots()).toEqual(updatedLegacy);
+    expect(write.mock.calls.filter(([key]) => key === QUICK_MENU_STORAGE_KEY)).toHaveLength(3);
+    expect(write.mock.calls.filter(([key]) => key === RADIAL_QUICK_MENU_EXTRA_STORAGE_KEY)).toHaveLength(3);
+    const savedExtra: unknown = JSON.parse(window.localStorage.getItem(RADIAL_QUICK_MENU_EXTRA_STORAGE_KEY) ?? "null");
+    expect(savedExtra).toEqual([
+      { index: 6, actionId: "clear-layer" },
+      { index: 7, actionId: "toggle-alpha-lock" },
+    ]);
+
+    fireEvent.click(screen.getByRole("button", { name: /^방사형 휠 닫기$/u }));
+    expect(screen.queryByRole("menu", { name: "빠른 도구 방사형 휠" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^퀵 휠$/u }));
+    await screen.findByRole("menu", { name: "빠른 도구 방사형 휠" });
+    expect(screen.getByRole("menuitem", { name: "7. 레이어 비우기" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "8. 알파 잠금" })).toBeTruthy();
+
+    mounted.unmount();
+    render(<StrictMode><ControlledHarness /></StrictMode>);
+    fireEvent.click(screen.getByRole("button", { name: /^퀵 휠$/u }));
+    await screen.findByRole("menu", { name: "빠른 도구 방사형 휠" });
+    expect(screen.getByRole("menuitem", { name: "1. 다시 실행" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "2. 스포이드" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "7. 레이어 비우기" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "8. 알파 잠금" })).toBeTruthy();
+    expect(onLegacyChange).toHaveBeenCalledTimes(3);
+  });
+
+  it("잘못된 확장 슬롯은 기존 6슬롯 설정을 보존하고 검증된 기본 동작으로 복구한다", () => {
+    const legacy = assignQuickMenuSlot(DEFAULT_QUICK_MENU_SLOTS, 0, "redo");
+    for (const raw of [
+      "{",
+      JSON.stringify([{ index: 6, actionId: "delete-project" }, { index: 99, actionId: "undo" }]),
+    ]) {
+      window.localStorage.setItem(RADIAL_QUICK_MENU_EXTRA_STORAGE_KEY, raw);
+      const slots = loadRadialQuickMenuSlots(legacy);
+      expect(slots.slice(0, 6)).toEqual(legacy);
+      expect(slots.slice(6).map(({ actionId }) => actionId)).toEqual(["eyedropper", "merge-down"]);
+    }
+    const unavailable = loadRadialQuickMenuSlots(legacy, () => { throw new Error("차단된 설정 저장소"); });
+    expect(unavailable.slice(0, 6)).toEqual(legacy);
+    expect(unavailable.slice(6).map(({ actionId }) => actionId)).toEqual(["eyedropper", "merge-down"]);
   });
 });

@@ -16,7 +16,6 @@ import { linearToSrgb, srgbToLinear } from "../shared/color";
 
 import { clonePaintLayer, compositePixelLinear, createPaintLayer, isPaintLayerEmpty } from "./paint-layer";
 
-import type { MutablePaintLayer } from "./paint-layer";
 import type {
   PaintLayer,
   PaintPartSublayerState,
@@ -25,6 +24,7 @@ import type {
   PaintSublayerSlotState,
   PartRole,
 } from "../contracts";
+import type { MutablePaintLayer } from "./paint-layer";
 
 export {
   DEFAULT_SUBLAYER_ORDER,

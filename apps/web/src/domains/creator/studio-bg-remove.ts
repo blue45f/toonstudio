@@ -4,6 +4,7 @@ import {
   resolveStudioMediaPipeVisionWasmFileset,
   type StudioMediaPipeVisionDelegate,
   type StudioMediaPipeVisionProviderSelection,
+  type StudioMediaPipeVisionProviderVersion,
 } from "./studio-mediapipe-vision-assets";
 import {
   loadStudioMediaPipeVisionModule,
@@ -20,7 +21,7 @@ export type StudioLocalForegroundDelegate = StudioMediaPipeVisionDelegate;
 
 export interface StudioLocalForegroundModelReceipt {
   readonly providerId: "mediapipe-image-segmenter";
-  readonly providerVersion: "0.10.35";
+  readonly providerVersion: StudioMediaPipeVisionProviderVersion;
   readonly model: Readonly<{
     readonly id: "selfie-segmenter";
     readonly format: "tflite-float16";
@@ -66,6 +67,7 @@ export interface StudioLocalForegroundSegmenter {
 }
 
 export interface StudioLocalForegroundSegmenterRuntime {
+  readonly providerVersion: StudioMediaPipeVisionProviderVersion;
   readonly segmenter: StudioLocalForegroundSegmenter;
   readonly selectedDelegate: StudioLocalForegroundDelegate;
   readonly activeDelegate: StudioLocalForegroundDelegate;
@@ -240,7 +242,7 @@ function modelReceipt(
   }
   return Object.freeze({
     providerId: "mediapipe-image-segmenter",
-    providerVersion: "0.10.35",
+    providerVersion: runtime.providerVersion,
     model: SELFIE_MODEL_RECEIPT,
     execution: "local-device",
     imageUpload: false,
@@ -257,10 +259,9 @@ async function loadMediaPipeRuntime(
   delegate: StudioLocalForegroundDelegate,
   providerSelection: StudioMediaPipeVisionProviderSelection,
 ): Promise<StudioLocalForegroundSegmenterRuntime> {
-  const { FilesetResolver, ImageSegmenter } = await loadStudioMediaPipeVisionModule();
-  const { fileset: vision } = await resolveStudioMediaPipeVisionWasmFileset({
-    isSimdSupported: () => FilesetResolver.isSimdSupported(false),
-  });
+  const selection = await resolveStudioMediaPipeVisionWasmFileset();
+  const { ImageSegmenter } = await loadStudioMediaPipeVisionModule(selection.variant);
+  const vision = selection.fileset;
   const segmenter = await runStudioMediaPipeVisionTaskCreation({
     owner: "foreground-image-segmenter",
     create: () => ImageSegmenter.createFromOptions(vision, {
@@ -274,6 +275,7 @@ async function loadMediaPipeRuntime(
     }),
   });
   return Object.freeze({
+    providerVersion: selection.providerVersion,
     segmenter,
     selectedDelegate: delegate,
     activeDelegate: delegate,

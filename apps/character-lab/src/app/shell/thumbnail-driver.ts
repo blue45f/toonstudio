@@ -11,10 +11,10 @@ import { APPEARANCE_SLOT_KINDS } from "../../contracts";
 import { fnv1a64Hex } from "../../shared/hash";
 import { stableStringify } from "../../shared/stable-json";
 
+import type { CharacterRecipe, EngineSession, LabStore, PresetCatalog, PresetEntry, PresetId, ShadingMode } from "../../contracts";
 import type { ApplyLoop } from "./apply-loop";
 import type { ThumbnailScheduler } from "./thumbnail-scheduler";
 import type { UiStateStore } from "./ui-state";
-import type { CharacterRecipe, EngineSession, LabStore, PresetCatalog, PresetEntry, PresetId, ShadingMode } from "../../contracts";
 
 export interface ThumbnailDriverDeps {
   readonly store: LabStore;

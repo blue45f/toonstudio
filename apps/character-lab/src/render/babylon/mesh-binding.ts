@@ -21,8 +21,8 @@ import { addFloat32, toFloat32, toQuaternion, toVector3 } from "./convert";
 import { createJointOffsetRig } from "./joint-offset-rig";
 import { pinMorphInfluencerCount } from "./morph-shader-pin";
 
-import type { CharacterRig, RigBone, RigMaterialHooks, RigPart } from "./character-rig";
 import type { HumanoidBoneName, HumanoidModelData, LabFailure, MaterialPresetId, MeshPartData, Quat } from "../../contracts";
+import type { CharacterRig, RigBone, RigMaterialHooks, RigPart } from "./character-rig";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 

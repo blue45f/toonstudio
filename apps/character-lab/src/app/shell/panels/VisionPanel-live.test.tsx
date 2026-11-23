@@ -10,9 +10,9 @@ import { vocabularyCatalogEntries } from "../../../testing/recipe-fixtures";
 
 import { VisionPanel } from "./VisionPanel";
 
-import type { VisionPanelDeps } from "./VisionPanel";
 import type { PaintUndoToken, SlotCapabilityMap } from "../../../contracts";
 import type { HandDetection, HandDetectorPort } from "../../../domains/vision/vision-ports";
+import type { VisionPanelDeps } from "./VisionPanel";
 
 const hand = (open = false): HandDetection => ({ reportedHandedness: "Left", score: 0.87, landmarks: open ? openHandLandmarks() : fistHandLandmarks(), worldLandmarks: null });
 const paintToken = (): PaintUndoToken => ({ part: "skin", tiles: [{ x: 0, y: 0, data: new Uint8ClampedArray(64 * 64 * 4) }], tileSize: 64 });

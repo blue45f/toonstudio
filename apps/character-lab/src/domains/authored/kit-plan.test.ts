@@ -11,8 +11,8 @@ import { buildKitPlan, buildKitPlanDetailed } from "./kit-plan";
 import { isKitPlanV2 } from "./kit-plan-v2-types";
 import { kitManifestFixture, kitManifestJson } from "./kit-test-fixture";
 
-import type { KitPlanSource } from "./kit-plan";
 import type { KitPlan, LabFailure } from "../../contracts";
+import type { KitPlanSource } from "./kit-plan";
 
 const FEMALE: KitPlanSource = { kitId: KIT_DEFAULT_ID, kitVersion: 1, baseId: "female" };
 const MALE: KitPlanSource = { ...FEMALE, baseId: "male" };

@@ -13,9 +13,9 @@ import { degToRad, qFromAxisAngle, v3Normalize } from "../../shared/math";
 
 import { angleBetweenDeg, toModelSpace } from "./landmark-space";
 
-import type { LandmarkSpaceOptions } from "./landmark-space";
 import type { HandLandmarkName, HumanoidBoneName, Pose, PoseLandmark } from "../../contracts";
 import type { Quat, Vec3 } from "../../shared/math";
+import type { LandmarkSpaceOptions } from "./landmark-space";
 
 export type HandSide = "left" | "right";
 

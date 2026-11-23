@@ -5,6 +5,8 @@ import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, resolveStrokeColor 
 import { assertProgramSupported, mapProgramToMypaint } from "./mypaint-settings-map";
 import { compositeStraightFrame } from "./straight-frame-composite";
 
+import type { Clock, LabImage, RawSample, Rgba } from "../engine/core/types";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -20,8 +22,6 @@ import type {
   StrokeReceipt,
 } from "./lane";
 import type { MypaintMapping, MypaintMappingReceipt } from "./mypaint-settings-map";
-import type { Clock, LabImage, RawSample, Rgba } from "../engine/core/types";
-import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
  * 외부 래스터 엔진(libmypaint·Hokusai) 비교 레인의 공통 뼈대.

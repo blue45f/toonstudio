@@ -42,11 +42,11 @@ import { KIT_PRIMITIVE_SPLITS, buildBoneMap, compareSkeletonToKit, resolveMeshRo
 import { decideTint } from "./tint";
 import { makeWarning, sortWarnings } from "./warnings";
 
+import type { KitBaseId, KitMaterial, KitMesh, KitPartPlan, KitPartSlot, KitPlan, PartRole, RecipeColorKey, RecipeColors } from "../../contracts";
 import type { GlbImageSummary, GlbMaterialSummary, GlbMeshNodeSummary, GlbSummary } from "./glb-inspect";
 import type { ResolvedRole } from "./kit-roles";
 import type { PrepareResult, PreparedMesh } from "./prepare";
 import type { PreviewWarning } from "./warnings";
-import type { KitBaseId, KitMaterial, KitMesh, KitPartPlan, KitPartSlot, KitPlan, PartRole, RecipeColorKey, RecipeColors } from "../../contracts";
 
 /** 뷰어가 엔진에 올리는 소스 종류: kit = 엔진의 키트 소스 경로, package = 기존 병합(제작 패키지) 경로 */
 export type PreviewSourceKind = "kit" | "package";

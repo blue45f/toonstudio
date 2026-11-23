@@ -1,7 +1,7 @@
 import { generateTip } from "./tip-generators";
 
-import type { TipMask, TipParams } from "./tip-generators";
 import type { TipKind } from "../core/types";
+import type { TipMask, TipParams } from "./tip-generators";
 
 /** box 필터 2×2 다운샘플. 1×1까지. 2의 거듭제곱이 아닌 크기는 경계 텍셀을 반복한다. */
 export function buildMipChain(mask: TipMask): TipMask[] {

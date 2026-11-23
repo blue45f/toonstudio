@@ -140,4 +140,36 @@ describe("MediaPipe Vision init arbiter", () => {
     await expect(arbiter.loadModule()).resolves.toBe(fakeModule);
     expect(loader).toHaveBeenCalledTimes(2);
   });
+
+  it("선택한 variant의 실제 SDK만 반환하고 각각의 import를 재사용한다", async () => {
+    const modern = await import("@mediapipe/tasks-vision");
+    const legacy = await import("@mediapipe/tasks-vision-nosimd");
+    const arbiter = createStudioMediaPipeVisionInitArbiter();
+    const simd = arbiter.loadModule("simd");
+    const nosimd = arbiter.loadModule("nosimd");
+    expect(arbiter.loadModule("simd")).toBe(simd);
+    expect(arbiter.loadModule("nosimd")).toBe(nosimd);
+    await expect(simd).resolves.toBe(modern);
+    await expect(nosimd).resolves.toBe(legacy);
+    expect(modern.ImageSegmenter).not.toBe(legacy.ImageSegmenter);
+  });
+
+  it("한 variant의 실패가 다른 SDK cache를 지우거나 자동 전환하지 않는다", async () => {
+    const modern = await import("@mediapipe/tasks-vision");
+    const legacy = await import("@mediapipe/tasks-vision-nosimd");
+    let failNoSimd = true;
+    const loader = vi.fn(async (variant: "simd" | "nosimd"): Promise<StudioMediaPipeVisionModule> => {
+      if (variant === "nosimd" && failNoSimd) throw new Error("legacy chunk unavailable");
+      return variant === "simd" ? modern : legacy;
+    });
+    const arbiter = createStudioMediaPipeVisionInitArbiter({ loadModule: loader });
+    const simd = arbiter.loadModule("simd");
+    await expect(simd).resolves.toBe(modern);
+    await expect(arbiter.loadModule("nosimd")).rejects.toMatchObject({ code: "module-import-failed" });
+    expect(arbiter.loadModule("simd")).toBe(simd);
+    expect(loader.mock.calls).toEqual([["simd"], ["nosimd"]]);
+    failNoSimd = false;
+    await expect(arbiter.loadModule("nosimd")).resolves.toBe(legacy);
+    expect(loader.mock.calls).toEqual([["simd"], ["nosimd"], ["nosimd"]]);
+  });
 });

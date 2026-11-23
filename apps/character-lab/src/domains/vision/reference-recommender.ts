@@ -6,8 +6,8 @@
 import { opaqueRatio, rasterToRgbaImage } from "./image-sampling";
 import { recommendPresets } from "./recommend";
 
-import type { PresetRecommendationResult } from "./recommend";
 import type { CapturedRaster, Embedding, PresetCatalog, PresetId, ThumbnailEntry } from "../../contracts";
+import type { PresetRecommendationResult } from "./recommend";
 
 export interface ThumbnailEmbeddingCache {
   get(key: string): Embedding | undefined;

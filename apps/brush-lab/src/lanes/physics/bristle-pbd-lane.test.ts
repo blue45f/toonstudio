@@ -9,8 +9,8 @@ import { laneById } from "../registry";
 import { BRUSH, CONTRACT_INIT, describeBristleLaneContract, STROKE_A } from "./bristle-lane-contract";
 import { BRISTLE_PBD_LANE_ID, BristlePbdLane, createBristlePbdLane } from "./bristle-pbd-lane";
 
-import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
 import type { BrushEngineLane } from "../lane";
+import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
 
 /** 다발이 모여 털끼리 접촉하는 낮은 필압 획(압력 0.3). */
 const LOW_PRESSURE_STROKE = lineStroke(24, 64, 104, 70, 0.3, { durationMs: 300 });

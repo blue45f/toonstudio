@@ -14,11 +14,11 @@ import { createBristlePbdLane } from "./bristle-pbd-lane";
 import { mapProgramToBristle } from "./bristle-program-mapping";
 import { createRapierBristleLane } from "./rapier-bristle-lane";
 
-import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
 import type { QualityRow } from "../../bench/physics/bristle-quality-metrics";
 import type { RawSample } from "../../engine/core/types";
 import type { BristleTick } from "../../engine/physics/world2d/bristle-brush";
 import type { BrushEngineLane } from "../lane";
+import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
 
 /**
  * 붓털 물리 레인 품질 시험(BL-4a): 필압 → 폭 동적 범위, 프리셋 차이, 결정성, 압력 극단·빠른 획·긴 획의 안정성.

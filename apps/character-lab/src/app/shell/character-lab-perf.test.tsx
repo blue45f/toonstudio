@@ -40,9 +40,9 @@ import { SlotRail } from "./SlotRail";
 import { TopBar } from "./TopBar";
 import { createUiStateStore } from "./ui-state";
 
+import type { CapturedRaster } from "../../contracts";
 import type { LabPanels } from "./lab-runtime";
 import type { InspectorTabId } from "./ui-state";
-import type { CapturedRaster } from "../../contracts";
 
 const PERF_PANELS: LabPanels = {
   SlotPanel,

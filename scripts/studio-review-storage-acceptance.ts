@@ -9,8 +9,8 @@ import { decodePng } from "image-js";
 
 import { readStudioReviewQaObject } from "./studio-review-local-storage-runtime.mjs";
 
-import type { StudioReviewLocalStorageOptions } from "./studio-review-local-storage-config.mjs";
 import type { StudioVirtualSpaceReviewSubject } from "../apps/web/src/domains/creator/virtual-space/studio-virtual-space-review-subject";
+import type { StudioReviewLocalStorageOptions } from "./studio-review-local-storage-config.mjs";
 import type { BrowserContext, Page } from "playwright";
 
 export interface StudioReviewLocalStorage {

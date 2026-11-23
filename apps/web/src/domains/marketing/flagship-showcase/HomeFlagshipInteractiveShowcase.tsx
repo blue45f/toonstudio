@@ -32,6 +32,7 @@ import {
   type WatercolorPigmentId,
 } from "./flagship-showcase-data";
 import { FlagshipWorkflowLauncherPanel } from "./FlagshipWorkflowLauncherPanel";
+import { HomeLiveTechProofStrip } from "./HomeLiveTechProofStrip";
 import { StudioFeatureAtlasMenu } from "./StudioFeatureAtlasMenu";
 import "./flagship-showcase.css";
 
@@ -233,6 +234,9 @@ export function HomeFlagshipInteractiveShowcase() {
           </div>
           <StudioFeatureAtlasMenu variant="compact" />
         </header>
+
+        {/* ⓪ 최첨단 5대 실측 엔진 증명 스트립 + 인브라우저 벤치마크 + 실물 브러시 갤러리 */}
+        <HomeLiveTechProofStrip lang={lang} />
 
         {/* ① 3초 미니 물리 브러시 체험 캔버스 */}
         <article className="fsh-block" aria-labelledby="fsh-brush-title">

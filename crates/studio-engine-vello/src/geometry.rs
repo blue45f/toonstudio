@@ -22,7 +22,7 @@ use crate::render::RenderError;
 /// area-weighted deviation in scene units — larger values produce sparser,
 /// smoother control geometry.
 pub fn fit_polyline(points: &[f64], closed: bool, accuracy: f64) -> Result<BezPath, RenderError> {
-    if points.len() < 4 || points.len() % 2 != 0 {
+    if points.len() < 4 || !points.len().is_multiple_of(2) {
         return Err(RenderError::InvalidScene(format!(
             "fit_polyline requires an even coordinate count >= 4, got {}",
             points.len()
@@ -56,9 +56,9 @@ pub fn bez_path_to_path_ir_json(path: &BezPath) -> String {
         match el {
             PathEl::MoveTo(p) => verbs.push(serde_json::json!({"v":"M","x":p.x,"y":p.y})),
             PathEl::LineTo(p) => verbs.push(serde_json::json!({"v":"L","x":p.x,"y":p.y})),
-            PathEl::QuadTo(c, p) => verbs.push(
-                serde_json::json!({"v":"Q","cx":c.x,"cy":c.y,"x":p.x,"y":p.y}),
-            ),
+            PathEl::QuadTo(c, p) => {
+                verbs.push(serde_json::json!({"v":"Q","cx":c.x,"cy":c.y,"x":p.x,"y":p.y}))
+            }
             PathEl::CurveTo(c1, c2, p) => verbs.push(serde_json::json!({
                 "v":"C","c1x":c1.x,"c1y":c1.y,"c2x":c2.x,"c2y":c2.y,"x":p.x,"y":p.y
             })),

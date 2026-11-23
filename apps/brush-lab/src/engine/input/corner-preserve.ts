@@ -1,5 +1,5 @@
-import type { OneEuroParams } from "./one-euro";
 import type { Pt } from "../core/types";
+import type { OneEuroParams } from "./one-euro";
 
 /**
  * 모서리 보존. 1€ 필터는 저속·고곡률에서 모서리를 둥글리므로

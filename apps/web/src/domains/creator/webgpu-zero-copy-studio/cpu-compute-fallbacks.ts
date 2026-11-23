@@ -162,16 +162,18 @@ function hueToRgb(p: number, q: number, tIn: number): number {
   return p;
 }
 
-function applyHslGradeRgb(
+function writeHslGradedPixel(
+  target: Uint8ClampedArray,
+  p4: number,
   r: number,
   g: number,
   b: number,
   hueDeg: number,
   satDelta: number,
   lightDelta: number,
-): [number, number, number] {
-  const cmax = Math.max(r, g, b);
-  const cmin = Math.min(r, g, b);
+): void {
+  const cmax = r > g ? (r > b ? r : b) : g > b ? g : b;
+  const cmin = r < g ? (r < b ? r : b) : g < b ? g : b;
   const delta = cmax - cmin;
   let l = 0.5 * (cmax + cmin);
   let h = 0;
@@ -186,10 +188,18 @@ function applyHslGradeRgb(
   h = (((h + hueDeg / 360) % 1) + 1) % 1;
   s = clamp01(s + satDelta);
   l = clamp01(l + lightDelta);
-  if (s <= 1e-6) return [l, l, l];
+  if (s <= 1e-6) {
+    const gray = toByte(l);
+    target[p4] = gray;
+    target[p4 + 1] = gray;
+    target[p4 + 2] = gray;
+    return;
+  }
   const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
   const p = 2 * l - q;
-  return [hueToRgb(p, q, h + 1 / 3), hueToRgb(p, q, h), hueToRgb(p, q, h - 1 / 3)];
+  target[p4] = toByte(hueToRgb(p, q, h + 1 / 3));
+  target[p4 + 1] = toByte(hueToRgb(p, q, h));
+  target[p4 + 2] = toByte(hueToRgb(p, q, h - 1 / 3));
 }
 
 /** WGSL `WGSL_SEPARABLE_FILTER_GRAPH_SHADER`와 바이트 동등한 분리형 블러+언샤프+HSL 퓨전 CPU 커널. */
@@ -202,12 +212,41 @@ export function applySeparableFilterGraphCpu(
   scratch?: Float32Array,
 ): Uint8ClampedArray {
   const r = Math.max(0, Math.min(12, Math.floor(config.blurRadius)));
-  const kernel = buildGaussianKernel1D(r, config.sigma);
   const pixelCount = width * height;
-  const horiz = scratch && scratch.length >= pixelCount * 4 ? scratch : new Float32Array(pixelCount * 4);
   const target = out ?? new Uint8ClampedArray(pixelCount * 4);
   const threshold = config.unsharpThreshold ?? 0;
-  const useUnsharp = config.unsharpAmount > 0;
+  const useUnsharp = config.unsharpAmount > 0 && r > 0;
+  const useHsl =
+    config.hueShiftDeg !== 0 || config.saturationDelta !== 0 || config.lightnessDelta !== 0;
+
+  // r === 0(블러 없음)이면 2패스 컨볼루션을 건너뛰고 1패스로 바로 처리한다(힙 할당 0).
+  if (r === 0) {
+    for (let i = 0; i < pixelCount; i += 1) {
+      const p4 = i * 4;
+      if (useHsl) {
+        writeHslGradedPixel(
+          target,
+          p4,
+          srcRgba[p4] * (1 / 255),
+          srcRgba[p4 + 1] * (1 / 255),
+          srcRgba[p4 + 2] * (1 / 255),
+          config.hueShiftDeg,
+          config.saturationDelta,
+          config.lightnessDelta,
+        );
+      } else {
+        target[p4] = srcRgba[p4];
+        target[p4 + 1] = srcRgba[p4 + 1];
+        target[p4 + 2] = srcRgba[p4 + 2];
+      }
+      target[p4 + 3] = srcRgba[p4 + 3];
+    }
+    return target;
+  }
+
+  const kernel = buildGaussianKernel1D(r, config.sigma);
+  const horiz = scratch && scratch.length >= pixelCount * 4 ? scratch : new Float32Array(pixelCount * 4);
+  const inv255 = 1 / 255;
 
   for (let y = 0; y < height; y += 1) {
     const rowBase = y * width;
@@ -216,12 +255,12 @@ export function applySeparableFilterGraphCpu(
       let sg = 0;
       let sb = 0;
       for (let dx = -r; dx <= r; dx += 1) {
-        const sx = Math.min(width - 1, Math.max(0, x + dx));
+        const sx = x + dx < 0 ? 0 : x + dx >= width ? width - 1 : x + dx;
         const p4 = (rowBase + sx) * 4;
         const wt = kernel[dx + r];
-        sr += (srcRgba[p4] / 255) * wt;
-        sg += (srcRgba[p4 + 1] / 255) * wt;
-        sb += (srcRgba[p4 + 2] / 255) * wt;
+        sr += srcRgba[p4] * inv255 * wt;
+        sg += srcRgba[p4 + 1] * inv255 * wt;
+        sb += srcRgba[p4 + 2] * inv255 * wt;
       }
       const d4 = (rowBase + x) * 4;
       horiz[d4] = sr;
@@ -236,7 +275,7 @@ export function applySeparableFilterGraphCpu(
       let bg = 0;
       let bb = 0;
       for (let dy = -r; dy <= r; dy += 1) {
-        const sy = Math.min(height - 1, Math.max(0, y + dy));
+        const sy = y + dy < 0 ? 0 : y + dy >= height ? height - 1 : y + dy;
         const p4 = (sy * width + x) * 4;
         const wt = kernel[dy + r];
         br += horiz[p4] * wt;
@@ -248,9 +287,9 @@ export function applySeparableFilterGraphCpu(
       let fg = bg;
       let fb = bb;
       if (useUnsharp) {
-        const or = srcRgba[p4] / 255;
-        const og = srcRgba[p4 + 1] / 255;
-        const ob = srcRgba[p4 + 2] / 255;
+        const or = srcRgba[p4] * inv255;
+        const og = srcRgba[p4 + 1] * inv255;
+        const ob = srcRgba[p4 + 2] * inv255;
         const dr = or - br;
         const dg = og - bg;
         const db = ob - bb;
@@ -258,17 +297,22 @@ export function applySeparableFilterGraphCpu(
         fg = clamp01(og + (Math.abs(dg) >= threshold ? dg * config.unsharpAmount : 0));
         fb = clamp01(ob + (Math.abs(db) >= threshold ? db * config.unsharpAmount : 0));
       }
-      const [gr, gg, gb] = applyHslGradeRgb(
-        fr,
-        fg,
-        fb,
-        config.hueShiftDeg,
-        config.saturationDelta,
-        config.lightnessDelta,
-      );
-      target[p4] = toByte(gr);
-      target[p4 + 1] = toByte(gg);
-      target[p4 + 2] = toByte(gb);
+      if (useHsl) {
+        writeHslGradedPixel(
+          target,
+          p4,
+          fr,
+          fg,
+          fb,
+          config.hueShiftDeg,
+          config.saturationDelta,
+          config.lightnessDelta,
+        );
+      } else {
+        target[p4] = toByte(fr);
+        target[p4 + 1] = toByte(fg);
+        target[p4 + 2] = toByte(fb);
+      }
       target[p4 + 3] = srcRgba[p4 + 3];
     }
   }

@@ -7,8 +7,8 @@
  */
 import { conjugateQuat, f32Dot3, f32Length3, multiplyQuat, normalizeQuat, normalizeVec3, rotateVec3 } from "../core/vec";
 
-import type { CompiledChains } from "./chain-model";
 import type { ChainState, Quat, Vec3 } from "../../../contracts";
+import type { CompiledChains } from "./chain-model";
 
 const F = Math.fround;
 

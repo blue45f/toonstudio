@@ -7,9 +7,9 @@ import { applyBoneRotation, rigBoneWorld } from "./character-rig";
 import { fromQuaternion } from "./convert";
 import { eyeGeometryUnavailableReason } from "./eye-geometry-support";
 
-import type { CharacterRig, RigBone } from "./character-rig";
 import type { EyeGaze, EyeGazeReading } from "../../contracts/eye-gaze";
 import type { Vec3 } from "../../contracts/pose";
+import type { CharacterRig, RigBone } from "./character-rig";
 
 /** 머리·부모의 현재 포즈를 지운 모델 기준에서 시선을 계산한다. 제작 패키지의 비항등 rest 회전도 보존한다. */
 export function applyRigEyeGaze(rig: CharacterRig, gaze: EyeGaze | undefined, cameraPosition: Vec3): void {

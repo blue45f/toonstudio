@@ -39,10 +39,8 @@ fn gpu() -> Option<Gpu> {
     let adapter =
         pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
             .ok()?;
-    let (device, queue) = pollster::block_on(
-        adapter.request_device(&wgpu::DeviceDescriptor::default()),
-    )
-    .ok()?;
+    let (device, queue) =
+        pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
     let renderer = Renderer::new(
         &device,
         RendererOptions {
@@ -134,7 +132,9 @@ fn render_gpu(gpu: &mut Gpu, scene_ir: &SceneIR) -> Vec<u8> {
     gpu.queue.submit([encoder.finish()]);
     let slice = buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    gpu.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+    gpu.device
+        .poll(wgpu::PollType::wait_indefinitely())
+        .expect("poll");
     // wgpu 30: `get_mapped_range` returns a Result (infallible in wgpu 29).
     let data = slice.get_mapped_range().expect("readback mapped range");
     let mut pixels = Vec::with_capacity((width * height * 4) as usize);
@@ -211,7 +211,9 @@ fn corpus() -> Vec<(String, SceneIR)> {
 fn normalize(json: &str) -> String {
     let mut value: serde_json::Value = serde_json::from_str(json).expect("json");
     fn walk(node: &mut serde_json::Value) {
-        let Some(obj) = node.as_object_mut() else { return };
+        let Some(obj) = node.as_object_mut() else {
+            return;
+        };
         if obj.contains_key("kind") {
             let kind = obj
                 .get("kind")
@@ -221,7 +223,8 @@ fn normalize(json: &str) -> String {
             obj.entry("opacity").or_insert(serde_json::json!(1.0));
             obj.entry("blend").or_insert(serde_json::json!("src-over"));
             if kind == "fill-path" {
-                obj.entry("fillRule").or_insert(serde_json::json!("nonzero"));
+                obj.entry("fillRule")
+                    .or_insert(serde_json::json!("nonzero"));
             }
             if kind == "stroke-path" {
                 obj.entry("cap").or_insert(serde_json::json!("round"));
@@ -294,8 +297,11 @@ fn gpu_matches_cpu_on_the_vector_corpus() {
             env!("CARGO_MANIFEST_DIR"),
             "/../../tests/benchmarks/results/vello-gpu-native.json"
         );
-        std::fs::write(target, format!("{}\n", serde_json::to_string_pretty(&report).unwrap()))
-            .expect("write probe report");
+        std::fs::write(
+            target,
+            format!("{}\n", serde_json::to_string_pretty(&report).unwrap()),
+        )
+        .expect("write probe report");
         eprintln!("written: {target}");
     }
 }

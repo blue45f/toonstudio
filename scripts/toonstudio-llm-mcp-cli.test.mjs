@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { describe, it } from "node:test";
 
 import {
   SUPPORTED_LLM_MCP_CLIENTS,
@@ -9,6 +8,10 @@ import {
   buildClientMcpConfig,
   runLongStrokeEnduranceBenchmark,
 } from "./toonstudio-llm-mcp-cli.mjs";
+
+const { describe, it } = process.env.VITEST
+  ? await import("vitest")
+  : await import("node:test");
 
 describe("toonstudio universal LLM CLI/MCP bridge & long-stroke endurance benchmark", () => {
   it("Gemini·Claude·GPT/Codex·Meta Llama·Mistral/Muse·Cursor·Windsurf·OpenRouter·Ollama 9대 클라이언트 설정을 생성한다", () => {

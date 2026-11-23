@@ -8,20 +8,27 @@
   `docs/architecture/ToonStudio_V12_차세대엔진_승격게이트_매트릭스.csv`(이하 V12 매트릭스)의 라이선스 열과 대조했다.
 
 
-## 0. 현재 제품 핀과 경계 (2026-10-20)
+## 0. 현재 제품 핀과 경계 (2026-11-23)
 
-현재 `Cargo.lock` 기준 제품 핀은 Vello Classic **0.11.0**, upstream
-`vello_hybrid` **0.2.0**, `vello_cpu` **0.3.0**, `vello_svg` **0.11.0**,
+현재 `Cargo.lock` 기준 제품 핀은 Vello Classic **0.12.0**, upstream
+`vello_hybrid` **0.2.0**, `vello_cpu` **0.4.0**, `vello_svg` **0.11.0**,
 Velato **0.12.0**, usvg **0.48.1**, wgpu **30.0.1**이다. `kurbo 0.13.1`,
-`peniko 0.6.1`, Parley **0.11.0**과 vendored `wgpu-toon` 단일-device 패치는 유지한다.
-Skrifa는 **0.43.2 / 0.44.0**, HarfRust는 **0.10.0 / 0.12.0**이 잠긴다.
+`peniko 0.6.1`, Parley/Fontique **0.13.0**과 vendored `wgpu-toon` 단일-device 패치를 사용한다.
+Skrifa는 **0.44.0 / 0.49.0**, HarfRust는 **0.12.0 / 0.15.0 / 0.16.1**,
+Glifo는 **0.5.0**, naga는 **30.0.2**가 잠긴다. `vello_common`은 CPU가 소비하는
+**0.4.0**과 Hybrid의 **0.2.0**을 구분한다.
+
+CPU 0.4.0 기준선 개정은 [ADR 0004](../adr/0004-2d-baseline-canvaskit-plus-vello-cpu.md),
+전체 9개 corpus와 변경 golden 두 개의 실제 검토는
+[2026-11-23 검증 기록](vello-cpu-upgrade-2026-11-23.md)에 남긴다.
 
 2026-10-20 vello 0.11 포팅으로 §3.1의 "wgpu 30 도달 불가" 판정은 해소됐다.
 `wgpu-toon`은 wgpu **30.0.1**로 리베이스되어 TOON-PATCH 0001에 adoption
 절반만 남았고, 최신 릴리스가 구 메이저를 핀하는 세 크레이트(vello_hybrid→
 wgpu 30, velato·vello_svg→vello 0.11)는 `crates/vendor/`에 핀 이동본을
-둔다(§3.2). naga는 wgpu 30 경유 **30.0.1**이되, WGSL variant 코퍼스 검증용
-dev 핀만 캡처 세대인 29.0을 유지한다.
+둔다(§3.2). 이 문단의 포팅 연혁은 2026-10-20 기록이며, 현행 vello/naga 핀은
+위 2026-11-23 목록과 `Cargo.lock`을 따른다. WGSL variant 코퍼스 검증용 dev 핀도
+현재 naga 30.0 계열을 사용한다.
 
 브라우저 산출물(CPU `pkg`·GPU `pkg-gpu`)은 다음으로 재현한다. 두 레인 모두
 fixed SIMD를 명시 적용한다 — rustc의 wasm32 기본 타깃 기능에는 simd128이 없어
@@ -45,7 +52,7 @@ RUSTFLAGS="-C target-feature=+simd128" \
   `GPUTexture`로 반환한다. 제품 hot path CPU readback은 없다.
 - strict Vello SVG subset 밖의 안전한 filter/mask/text/Lottie는 사전 선택된 ThorVG 전문
   provider가 맡을 수 있지만, ThorVG 역시 문서 권위나 실패 후 대체 엔진이 아니다.
-- `THIRD_PARTY_INVENTORY.json`은 CPU 86개, GPU 142개 외부 Rust crate와 exact license
+- `THIRD_PARTY_INVENTORY.json`은 CPU 91개, GPU 148개 외부 Rust crate와 exact license
   bundle을 고정하고 `scripts/generate-third-party-notices.mjs --check`가 이를 검증한다.
 
 아래 V12 표와 벤치마크는 **2026-08-08 당시의 역사적 기준선**이다. 현재 버전·배포 경계는

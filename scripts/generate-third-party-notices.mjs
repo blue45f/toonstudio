@@ -20,6 +20,11 @@ import { parse as parseYaml } from "yaml";
 import { findRootLicenseFiles } from "./third-party-license-files.mjs";
 
 import {
+  ONNX_RUNTIME_MIT_NOTICE,
+  WEB_IFC_GEOKERNEL_NOTICE,
+} from "./generate-third-party-notices-npm.mjs";
+
+import {
   REVIEWED_RUST_LICENSE_EXPRESSIONS,
   VELLO_VENDORED_PACKAGE_SOURCES,
   vendoredVelloSource,
@@ -55,29 +60,29 @@ const VELLO_ARTIFACT_POLICIES = Object.freeze([
   Object.freeze({
     id: "pkg",
     features: Object.freeze([]),
-    expectedExternalPackageCount: 90,
+    expectedExternalPackageCount: 91,
     requiredPackages: Object.freeze([
-      "vello_cpu@0.3.0",
-      "vello_common@0.3.0",
+      "vello_cpu@0.4.0",
+      "vello_common@0.4.0",
       "parley@0.13.0",
-      "harfrust@0.16.0",
+      "harfrust@0.16.1",
       "skrifa@0.44.0",
     ]),
   }),
   Object.freeze({
     id: "pkg-gpu",
     features: Object.freeze(["hybrid", "lottie", "svg"]),
-    expectedExternalPackageCount: 147,
+    expectedExternalPackageCount: 148,
     requiredPackages: Object.freeze([
       "vello@0.12.0",
       "vello_hybrid@0.2.0",
-      "vello_cpu@0.3.0",
+      "vello_cpu@0.4.0",
       "velato@0.12.0",
       "vello_svg@0.11.0",
       "usvg@0.48.1",
       "wgpu@30.0.1",
       "parley@0.13.0",
-      "harfrust@0.16.0",
+      "harfrust@0.16.1",
       "skrifa@0.44.0",
     ]),
   }),
@@ -242,7 +247,7 @@ const OCCT_NPM_INTEGRITY =
 const OCCT_WASM_SHA256 =
   "6cc2f3fa1611d32ad7563f7092aa1bf58741124302630cef7d21561ecd7b7284";
 
-const REVIEWED_REMOTION_PACKAGE_VERSIONS = Object.freeze(["4.0.536", "4.0.541", "4.0.543"]);
+const REVIEWED_REMOTION_PACKAGE_VERSIONS = Object.freeze(["4.0.536", "4.0.541", "4.0.543", "4.0.545"]);
 const REMOTION_LICENSE_EXPRESSION = "Remotion License";
 const REMOTION_LICENSE_SHA256 = "709033ef7160fe12db38f1d457d20094ce425aaab6ee28caaaa8014372ff869e";
 const REVIEWED_REMOTION_LICENSE_SHA256S = new Set(["9830440ed5c55fbbbc0afcf58f292dc1c1522e9e691264a78733f1e11b2841b9", REMOTION_LICENSE_SHA256]);
@@ -360,31 +365,9 @@ const HYBRID_PROVIDER_DEPENDENCIES = Object.freeze({
   rbush: "4.0.1",
   rhino3dm: "8.35.0",
   "three-mesh-bvh": "0.9.18",
-  "web-ifc": "0.0.79",
+  "web-ifc": "0.0.80",
   xatlasjs: "0.2.0",
 });
-
-const ONNX_RUNTIME_MIT_NOTICE = `MIT License
-
-Copyright (c) Microsoft Corporation.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.`;
 
 const HOKUSAI_MIT_NOTICE = `MIT License
 
@@ -1813,6 +1796,11 @@ function collectLicenseDocuments(inventory, additionalDocuments = []) { // NOSON
     "onnxruntime-web / onnxruntime-common 1.27.0 — MIT",
     "https://github.com/microsoft/onnxruntime/blob/v1.27.0/LICENSE",
     ONNX_RUNTIME_MIT_NOTICE,
+  );
+  addDocument(
+    WEB_IFC_GEOKERNEL_NOTICE.label,
+    WEB_IFC_GEOKERNEL_NOTICE.source,
+    WEB_IFC_GEOKERNEL_NOTICE.text,
   );
   addDocument(
     "Hokusai brush/core/tile-mem 0.3.0 — MIT option",

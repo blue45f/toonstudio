@@ -49,10 +49,10 @@ describe("studio shell floating integration", () => {
   it("keeps standalone phone status lanes and editor-owned offline details without duplicate floating UI", () => {
     const saveCenter = source("StudioDraftSaveCenterImpl.tsx");
     const offline = source("offline/StudioOfflinePanel.tsx");
+    const routeCss = source("../../shared/styles/studio-route.css");
     const huddle = source("live/huddle/StudioP2pHuddleLauncher.tsx");
     const manager = source("studio-shell/StudioShellFloatingLayoutManager.tsx");
     expect(saveCenter).toContain("var(--studio-canvas-bottom-inset,7rem)+4.25rem");
-    expect(offline).toContain("var(--studio-canvas-bottom-inset,7rem)+7.5rem");
     expect(offline).toContain('const shouldShowPanel = connectivity.mode !== "online"');
     expect(offline).toContain("if (!shouldShowPanel && !editor) return null;");
     const portalStart = offline.indexOf("if (editor) return"), fallbackStart = offline.lastIndexOf("return (");
@@ -65,6 +65,14 @@ describe("studio shell floating integration", () => {
     expect(inline).toContain("</span>, modalStatusHost ?? editor.summary)");
     expect(inline).toContain("modalStatusHost ? createPortal(manualNotice, modalStatusHost) : manualNotice");
     expect(inline).not.toContain("data-studio-shell-floating-target");
+    // 독립 안내는 실측 도크와 캔버스 인셋 중 큰 여백 위에 놓고 44px 요약 타깃을 유지한다.
+    expect(standalone).toContain("bottom-[max(calc(var(--studio-canvas-bottom-inset,3.25rem)+0.75rem),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))]");
+    expect(standalone).toContain('className="min-h-11 cursor-pointer');
+    expect(routeCss).toContain("--studio-mobile-dock-compact-height: calc(64px + env(safe-area-inset-bottom));");
+    expect(routeCss).toContain("--studio-canvas-bottom-inset: max(var(--studio-mobile-dock-expanded-height), var(--studio-mobile-dock-measured-height, 0px));");
+    expect(routeCss).toContain('body:has([data-studio-mobile-editing-dock="true"]) [data-studio-shell-floating-target="offline-readiness"] {\n    bottom: calc(var(--studio-canvas-bottom-inset, 7rem) + 5rem) !important;');
+    expect(routeCss).toContain('body:has([data-studio-mobile-selection-actions="true"]) [data-studio-shell-floating-target="offline-readiness"] {\n    bottom: calc(var(--studio-canvas-bottom-inset, 7rem) + 9.5rem) !important;');
+    expect(routeCss).toContain('body:has([data-studio-mobile-sheet="draw"]:not([aria-hidden="true"])) [data-studio-shell-floating-target="offline-readiness"] {\n    bottom: min(calc(var(--studio-canvas-bottom-inset, 7rem) + var(--studio-mobile-active-draw-height, 16.5rem) + 0.75rem), calc(100dvh - env(safe-area-inset-top) - 5rem));');
     expect(standalone).toContain('data-studio-shell-floating-target="offline-readiness"');
     expect(standalone).toContain('data-studio-shell-force-visible="true"');
     expect(huddle).toContain("var(--studio-canvas-bottom-inset,7rem)+4.25rem");

@@ -20,9 +20,9 @@ import { minimalHumanoidModelFixture, presetEntryFixture } from "../../testing/r
 import { THUMBNAIL_SOURCE_CACHE_LIMIT } from "./lab-runtime";
 import { fallbackThumbnailCacheKey } from "./thumbnail-driver";
 
+import type { AuthoredPackagePlan, KitPlan, ThumbnailRequest } from "../../contracts";
 import type { KitPlanRegistryDeps } from "./kit-plan-registry";
 import type { ThumbnailPacing } from "./thumbnail-scheduler";
-import type { AuthoredPackagePlan, KitPlan, ThumbnailRequest } from "../../contracts";
 
 function canvasStub(): HTMLCanvasElement {
   return {} as HTMLCanvasElement;

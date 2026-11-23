@@ -1,6 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { sendProtectedWebhook } from "./production-webhook-network";
-import webPush from "web-push";
+import { sendNotification, setVapidDetails } from "web-push";
 import {
   classifyWebPushEndpoint,
   createPublicOnlyHttpsAgent,
@@ -137,7 +137,7 @@ async function sendWebPush(
       + "상한은 PRODUCTION_WEB_PUSH_MAX_SUBSCRIPTIONS_PER_PROJECT 로 올릴 수 있습니다(최대 1000).",
     );
   }
-  webPush.setVapidDetails(subject, publicKey, privateKey);
+  setVapidDetails(subject, publicKey, privateKey);
   const payload = JSON.stringify({
     title: notification.title,
     body: notification.body,
@@ -156,7 +156,7 @@ async function sendWebPush(
       const verdict = classifyWebPushEndpoint(subscription.endpoint, allowedHosts);
       if (verdict.kind === "rejected") throw new WebPushEndpointRejectedError();
       if (verdict.kind === "host-not-allowed") throw new WebPushHostNotAllowedError();
-      await webPush.sendNotification(
+      await sendNotification(
         {
           endpoint: verdict.url.href,
           expirationTime: subscription.expirationTime,

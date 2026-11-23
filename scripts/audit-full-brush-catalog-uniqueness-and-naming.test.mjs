@@ -50,8 +50,9 @@ test("runFullBrushCatalogAuditCli는 194종 전수 감사와 고해상도 12대 
     for (const [cat, count] of Object.entries(result.categoryDistribution)) {
       assert.ok(count > 0, `매체 카테고리 누락: ${cat}`);
     }
-    assert.ok(result.namingParityRate01 > 0.5 && result.namingParityRate01 < 1);
-    assert.ok(result.mismatchCount > 0);
+    assert.equal(result.namingParityRate01, 1);
+    assert.equal(result.alignedCount, 194);
+    assert.equal(result.mismatchCount, 0);
     assert.ok(result.duplicatePairCount > 0);
     assert.ok(result.duplicateClusterCount > 0);
     assert.equal(result.strategySeparation.allMutuallyDistinct, true);
@@ -67,7 +68,7 @@ test("runFullBrushCatalogAuditCli는 194종 전수 감사와 고해상도 12대 
   }
 });
 
-test("CLI 프로세스 --check --json --no-png가 종료 코드 0과 유효한 JSON 보고서를 출력한다", () => {
+test("CLI 프로세스 --check --json --no-png가 종료 코드 0과 100% 정합 JSON 보고서를 출력한다", () => {
   const child = spawnSync(
     process.execPath,
     ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", SCRIPT_PATH, "--check", "--json", "--no-png"],
@@ -77,7 +78,9 @@ test("CLI 프로세스 --check --json --no-png가 종료 코드 0과 유효한 J
   const parsed = JSON.parse(child.stdout);
   assert.equal(parsed.ok, true);
   assert.equal(parsed.totalBrushes, 194);
+  assert.equal(parsed.namingParityRate01, 1);
+  assert.equal(parsed.alignedCount, 194);
+  assert.equal(parsed.mismatchCount, 0);
   assert.equal(parsed.pngPath, null);
-  assert.ok(parsed.topMismatches.length > 0);
-  assert.ok(parsed.topMismatches[0].recommendedPatch);
+  assert.deepEqual(parsed.topMismatches, []);
 });

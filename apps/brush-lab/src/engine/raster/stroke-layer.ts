@@ -4,8 +4,8 @@ import { applyImpastoDabs, computeSmudgeColors, rasterizeTile, unpackAll } from 
 import { binDabs, STROKE_FLOATS_PER_TILE, TILE_SIZE } from "./tile-binning";
 import { TilePool } from "./tile-pool";
 
-import type { RasterContext } from "./fine-raster";
 import type { DabBatch } from "../core/dab-layout";
+import type { RasterContext } from "./fine-raster";
 
 export interface RasterReceipt {
   dabCount: number;

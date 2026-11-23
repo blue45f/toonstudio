@@ -4,9 +4,9 @@ import { SumiError } from "../engine/core/errors";
 
 import { KritaLane, KRITA_LANE_ID } from "./krita-lane";
 
-import type { LaneEnvironment, LaneInit } from "./lane";
 import type { RawSample } from "../engine/core/types";
 import type { BrushProgram } from "../engine/presets/program-schema";
+import type { LaneEnvironment, LaneInit } from "./lane";
 
 const env: LaneEnvironment = { clock: { now: () => 0 } };
 const init: LaneInit = { width: 64, height: 64, dpr: 1, tileSize: 16, seed: 7 };

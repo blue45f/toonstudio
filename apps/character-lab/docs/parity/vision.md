@@ -2,7 +2,7 @@
 
 상태: **current** (2026-10-01). 작업자 `vision-authored`(W7)가 소유하는 행만 적는다. core가 [`../shaper-parity-checklist.md`](../shaper-parity-checklist.md)로 집계한다.
 2026-10-28 통합 보완은 §11에 별도로 기록한다. 아래의 이전 실행 환경·테스트 수는 당시 기록이며 이번 실행 결과로 해석하지 않는다.
-이 컨테이너에는 GPU·브라우저·네트워크(모델 CDN)가 없어 **브라우저 검증 열은 전부 "미검증"**이며, Node(vitest: 순수 로직은 node 환경, 패널은 jsdom + 가짜 로더·포트 주입)로 검증한 범위만 "Node 검증" 열에 적는다.
+초기 검증은 Node에서 수행했다. 비전 모델 3종의 브라우저 검증 결과는 §6에 기록했다.
 실제 제작 패키지 2종(`public/assets/characters/`, 커밋됨)은 Node `fs` 포트로 끝까지 로드해 GLB 실측 SHA-256·능력 판정·매핑을 대조했다(§3).
 
 ## 1. 기능 행 (SHAPER 항목 × 구현/Node 검증/브라우저 검증)
@@ -25,7 +25,7 @@
 
 | SHAPER 항목 | 세부 요구 | 구현 상태 | Node 검증(테스트 파일) | 브라우저 검증 | 비고(베타·사유) |
 | --- | --- | --- | --- | --- | --- |
-| 참고 이미지 추천 | MediaPipe 지연 로더: `@mediapipe/tasks-vision` 동적 import, wasm은 패키지 서브패스 `?url` 번들, 모델 파일만 계약 `MEDIAPIPE_MODELS` CDN URL, byteLength·SHA-256 검증(세 모델 모두 고정; 값이 빠진 모델은 관측 SHA만 기록), 15 s timeout, 실패는 `VisionStatus.failed` + 사유 | 구현됨(순수 부분 Node 검증) | `model-assets.test.ts`(고정 3종 형식·고정 포즈/손의 크기·SHA 불일치 실패·미고정 경로·배지 문구·404·네트워크·타임아웃·SHA 계산 불가·`withDeadline`) | 미검증(CDN 다운로드·wasm 초기화·추론) | `mediapipe-loader.browser.ts`는 테스트 import 금지. 델리게이트는 생성 전 고정(CPU 기본), 실패 시 다른 델리게이트 자동 시도 없음 |
+| 참고 이미지 추천 | MediaPipe 지연 로더: `@mediapipe/tasks-vision` 동적 import, wasm은 패키지 서브패스 `?url` 번들, 모델 파일만 계약 `MEDIAPIPE_MODELS` CDN URL, byteLength·SHA-256 검증(세 모델 모두 고정; 값이 빠진 모델은 관측 SHA만 기록), 15 s timeout, 실패는 `VisionStatus.failed` + 사유 | 구현됨(순수 부분 Node 검증) | `model-assets.test.ts`(고정 3종 형식·고정 포즈/손의 크기·SHA 불일치 실패·미고정 경로·배지 문구·404·네트워크·타임아웃·SHA 계산 불가·`withDeadline`) | Chrome 157에서 CDN 다운로드·SIMD WASM 초기화·CPU 추론 확인(§6) | `mediapipe-loader.browser.ts`는 테스트 import 금지. 델리게이트는 생성 전 고정(CPU 기본), 실패 시 다른 델리게이트 자동 시도 없음 |
 | 참고 이미지 추천 | 모델 세션: 모델별 idle/loading/ready/failed, 한 번만 시도·자동 재시도 없음·`retry`만 재시도, 동시 요청 공유, `useSyncExternalStore` 구독 | 구현됨 | `vision-session.test.ts` | 미검증 | imageEmbedder·poseLandmarker 상태는 계약 `vision/status` 이벤트, 손 모델은 패널 내부 추적(§5 계약 변경 요청) |
 | 참고 이미지 추천 | 코사인 유사도·L2 정규화·안정 정렬 Top-K | 구현됨 | `similarity.test.ts` | — | 길이 불일치는 throw(무음 0 금지), 영벡터는 0 |
 | 참고 이미지 추천 | 프리셋 썸네일 임베딩(LabState.thumbnails ready 래스터, cacheKey LRU 캐시, 투명 썸네일 제외) vs 참고 이미지 임베딩 → 슬롯별 상위 3 추천 + coverage(후보/전체/제외 사유) | 구현됨 | `recommend.test.ts`, `reference-recommender.test.ts` | 미검증(실 임베딩 품질) | 썸네일이 없는 프리셋은 추천 불가 사유로 노출, 빈 슬롯은 빈 배열 |
@@ -116,10 +116,12 @@
 5. **animation**: 손가락 굴곡 축 규약(`fingerCurlQuat`·`thumbCurlQuat`)은 `animation/presets/rotation-dsl.ts`와 같은 식이며 테스트로 고정했다(`hand-landmarks-to-pose.test.ts`). 손목·발목 IkGoal 생성은 `ik-apply` 입력 형식이 확정되면 `landmarks-to-pose`에 추가한다.
 6. **통합 담당(빌드)**: `vite build` 시 `dist/assets`에 `vision_wasm_internal-*.wasm`·`vision_wasm_internal-*.js`가 별도 파일로 나오고 `@mediapipe/tasks-vision` 청크가 패널 청크와 분리되는지 확인(브라우저 검증 항목).
 
-## 6. 브라우저 미검증 항목(정직 표기)
+## 6. 브라우저 검증
 
-- `@mediapipe/tasks-vision` 동적 import·wasm `?url` 번들 해석·`FilesetResolver` 없이 `{ wasmLoaderPath, wasmBinaryPath }` 직접 지정 동작.
-- 모델 CDN 다운로드(CORS·크기·SHA 일치), `imageEmbedder` 고정 SHA `bbbb4c51…` 실측, pose·hand 모델은 고정한 SHA와 브라우저에서 받은 바이트가 일치하는지.
+2026-11-24에 Chrome 157에서 Character Lab의 정적 빌드를 열고 기본 CPU 델리게이트로 `createMediaPipeLoaders()`를 실행했다. 동일 출처에서 SIMD 로더와 WASM을 받았고, 공식 CDN에서 내려받은 모델 3종의 크기와 SHA-256이 계약값과 일치했다. MediaPipe의 `pose.jpg`에서 유한한 임베딩 값 1,024개와 전신 랜드마크 33개(월드 좌표 33개)를 얻었다. `woman_hands.jpg`에서는 왼손과 오른손 각각 21개를 검출했다.
+
+다음 항목은 별도 검증이 필요하다.
+
 - ImageEmbedder/PoseLandmarker/HandLandmarker 실제 추론 품질(랜드마크 좌표계·가시성 분포·손 handedness 보고), GPU 델리게이트.
 - `createImageBitmap`·canvas 디코드, `getUserMedia` 카메라·`<video>` 캡처, Blob URL 미리보기.
 - SVG 오버레이가 `<img>` 위에 정확히 겹치는지(`preserveAspectRatio` + contain).
@@ -139,7 +141,7 @@ pnpm exec eslint --max-warnings=0 apps/character-lab/src/domains/authored apps/c
 
 | 항목 | 출처 | 라이선스 |
 | --- | --- | --- |
-| MediaPipe Tasks Vision | `@mediapipe/tasks-vision` 0.10.35(직접 의존성, wasm 번들) | Apache-2.0 |
+| MediaPipe Tasks Vision | `@mediapipe/tasks-vision` 1.2.3(직접 의존성, SIMD WASM 번들) | Apache-2.0 |
 | 모델 파일 | `mobilenet_v3_small.tflite`(ImageEmbedder), `pose_landmarker_lite.task`, `hand_landmarker.task` — 공식 CDN `storage.googleapis.com/mediapipe-models`, 런타임에만 받음 | Apache-2.0(모델 카드 기준, 배포 전 재확인 항목) |
 | 랜드마크 토폴로지 | MediaPipe 공개 Pose 33점·Hand 21점 인덱스 쌍(사실) | 공개 |
 | k-means++ | Arthur & Vassilvitskii 2007(D² 가중 초기화), Lloyd 1982 | 공개 수식(자체 구현, `shared/prng` mulberry32) |

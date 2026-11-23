@@ -205,7 +205,7 @@ describe("12대 매체별 브러시 물리 전략 정본 및 동역학 모델", 
 });
 
 describe("전 브러시 카탈로그 시각 중복 · 이름↔질감 1:1 정합성 감사 엔진", () => {
-  it("실제 6대 카탈로그 100종 이상(194종)을 통합 감사하고 12대 매체 분포·중복·불일치를 실측한다", () => {
+  it("실제 6대 카탈로그 100종 이상(194종)을 통합 감사해 12대 매체 분포와 100% 이름↔질감 정합성을 실측한다", () => {
     const records = loadUnifiedBrushCatalog();
     expect(records.length).toBeGreaterThan(100);
     expect(records.length).toBe(194);
@@ -213,9 +213,10 @@ describe("전 브러시 카탈로그 시각 중복 · 이름↔질감 1:1 정합
     const report = runFullBrushCatalogAudit({ records });
     expect(report.totalBrushes).toBe(194);
     expect(report.alignedCount + report.mismatchCount).toBe(194);
-    expect(report.namingParityRate01).toBeGreaterThan(0.5);
-    expect(report.namingParityRate01).toBeLessThan(1);
-    expect(report.mismatchCount).toBeGreaterThan(0);
+    expect(report.namingParityRate01).toBe(1);
+    expect(report.alignedCount).toBe(194);
+    expect(report.mismatchCount).toBe(0);
+    expect(report.mismatchedBrushes).toHaveLength(0);
     expect(report.duplicatePairCount).toBeGreaterThan(0);
     expect(report.duplicateClusters.length).toBeGreaterThan(0);
     expect(report.strategySeparation.allMutuallyDistinct).toBe(true);
@@ -224,23 +225,9 @@ describe("전 브러시 카탈로그 시각 중복 · 이름↔질감 1:1 정합
     for (const id of BRUSH_MEDIA_CATEGORY_IDS) {
       expect(report.categoryDistribution[id]).toBeGreaterThan(0);
     }
-
-    // 모든 불일치 브러시는 자동 물리 보정 패치를 가지며, 적용 시 100% 정합 상태로 복구된다.
-    const byUid = new Map(records.map((r) => [r.uid, r]));
-    for (const mismatch of report.mismatchedBrushes) {
-      expect(mismatch.recommendedPhysicsPatch).not.toBeNull();
-      const original = byUid.get(mismatch.uid);
-      expect(original).toBeDefined();
-      if (!original || !mismatch.recommendedPhysicsPatch) continue;
-      const patched = applyRecommendedPhysicsPatch(original, mismatch.recommendedPhysicsPatch);
-      const patchedFp = synthesizeBrushFingerprint64x32(patched);
-      expect(patchedFp.pixels.length).toBe(FINGERPRINT_WIDTH * FINGERPRINT_HEIGHT);
-      const recheck = auditSingleBrushNamingParity(patched, patchedFp);
-      expect(recheck.aligned).toBe(true);
-    }
   });
 
-  it("합성 이름↔질감 불일치와 시각 중복 쌍(RMSE < 0.025)을 정확히 포착한다", () => {
+  it("합성 이름↔질감 불일치 탐지·자동 물리 패치 100% 복구 및 시각 중복 쌍(RMSE < 0.025)을 정확히 포착한다", () => {
     const brokenPencil: UnifiedBrushAuditRecord = {
       uid: "synthetic:smooth-pencil",
       id: "smooth-pencil",
@@ -285,11 +272,26 @@ describe("전 브러시 카탈로그 시각 중복 · 이름↔질감 1:1 정합
     expect(inferExpectedMediaCategory(brokenPencil).category).toBe("pencil");
     expect(inferExpectedMediaCategory(crispAirbrush).category).toBe("airbrush");
 
+    const syntheticRecords = [brokenPencil, duplicatePencil, crispAirbrush];
     const audit = runFullBrushCatalogAudit({
-      records: [brokenPencil, duplicatePencil, crispAirbrush],
+      records: syntheticRecords,
     });
     expect(audit.mismatchCount).toBe(3);
     expect(audit.duplicatePairCount).toBeGreaterThanOrEqual(1);
+
+    // 합성 불일치 픽스처 전체가 자동 물리 보정 패치를 제공하며, 적용 시 100% 정합 상태로 복구된다.
+    const byUid = new Map(syntheticRecords.map((r) => [r.uid, r]));
+    for (const mismatch of audit.mismatchedBrushes) {
+      expect(mismatch.recommendedPhysicsPatch).not.toBeNull();
+      const original = byUid.get(mismatch.uid);
+      expect(original).toBeDefined();
+      if (!original || !mismatch.recommendedPhysicsPatch) continue;
+      const patched = applyRecommendedPhysicsPatch(original, mismatch.recommendedPhysicsPatch);
+      const patchedFp = synthesizeBrushFingerprint64x32(patched);
+      expect(patchedFp.pixels.length).toBe(FINGERPRINT_WIDTH * FINGERPRINT_HEIGHT);
+      const recheck = auditSingleBrushNamingParity(patched, patchedFp);
+      expect(recheck.aligned).toBe(true);
+    }
 
     const clonePair = audit.duplicatePairs.find(
       (p) =>

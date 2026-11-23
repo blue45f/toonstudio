@@ -16,6 +16,7 @@
 //! - a shape transform (`tr`) with split position or split rotation,
 //! - non-precomposition assets (embedded images/sounds),
 //! - `Add`(16)/`HardMix`(17) blend modes.
+//!
 //! [`validate_supported`] walks the parsed schema first and converts each of
 //! those into an explicit `lottie-unsupported` error before the importer can
 //! reach its panic paths (importer internals verified against the velato

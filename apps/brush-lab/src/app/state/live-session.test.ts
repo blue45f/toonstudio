@@ -8,11 +8,11 @@ import { createMockLane, mockEnvironment } from "../testing/mock-lane";
 
 import { LiveStrokeSession } from "./live-session";
 
-import type { LiveStrokeAbort, LiveStrokeResult } from "./live-session";
 import type { LabImage } from "../../engine/core/types";
 import type { BrushEngineLane } from "../../lanes/lane";
 import type { PreviewPoint } from "../../platform/canvas-present";
 import type { MockLane } from "../testing/mock-lane";
+import type { LiveStrokeAbort, LiveStrokeResult } from "./live-session";
 
 /** 가짜 rAF: `tick()`으로 한 프레임씩 실행한다. */
 function fakeRaf() {

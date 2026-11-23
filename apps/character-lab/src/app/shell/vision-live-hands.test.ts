@@ -7,9 +7,9 @@ import { vocabularyCatalogEntries } from "../../testing/recipe-fixtures";
 
 import { createLiveHandsController } from "./vision-live-hands";
 
-import type { LiveHandFrame, LiveHandsStatus } from "./vision-live-hands";
 import type { Pose } from "../../contracts";
 import type { HandDetection, HandDetectorPort } from "../../domains/vision/vision-ports";
+import type { LiveHandFrame, LiveHandsStatus } from "./vision-live-hands";
 
 const hand = (reportedHandedness: HandDetection["reportedHandedness"] = "Left", open = false): HandDetection => ({ reportedHandedness, score: 0.81, landmarks: open ? openHandLandmarks() : fistHandLandmarks(), worldLandmarks: null });
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done; }); return { promise, resolve }; }

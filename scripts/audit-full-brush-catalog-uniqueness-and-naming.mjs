@@ -566,6 +566,11 @@ export async function runFullBrushCatalogAuditCli(argv = []) {
 
   const checkFailures = [];
   if (report.totalBrushes <= 100) checkFailures.push(`감사 대상 브러시 부족: ${report.totalBrushes}`);
+  if (report.namingParityRate01 < 0.98) {
+    checkFailures.push(
+      `이름↔질감 정합률 기준(98.0%) 미달: ${(report.namingParityRate01 * 100).toFixed(1)}% (불일치 ${report.mismatchCount}건)`,
+    );
+  }
   if (!report.strategySeparation.allMutuallyDistinct) {
     checkFailures.push(`12대 매체 전략 변별 거리 부족: ${report.strategySeparation.minDistance}`);
   }

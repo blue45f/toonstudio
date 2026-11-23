@@ -6,8 +6,8 @@
  */
 import { MEDIAPIPE_MODELS, VISION_LOAD_TIMEOUT_MS, failVisible, isLabFailure } from "../../contracts";
 
-import type { VisionDelegate, VisionModelKey } from "./vision-ports";
 import type { LabFailure } from "../../contracts";
+import type { VisionDelegate, VisionModelKey } from "./vision-ports";
 
 export interface VisionModelSpec {
   readonly key: VisionModelKey;

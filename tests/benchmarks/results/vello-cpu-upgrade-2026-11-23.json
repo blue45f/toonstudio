@@ -1,0 +1,964 @@
+{
+  "kind": "toonstudio-vello-committed-wasm-diagnostic",
+  "qualification": "diagnostic-only-no-golden-approval",
+  "sourceCommit": "9d8c84f7ffcdcfae69112d058d5c2ddbca1099e6",
+  "sourceTree": "61b4c1e3e6fc0bb26af4ae66e1dfc062bca6ac36",
+  "baselineCommit": "e4f07c147511293a347708119ae9a6af1fdcece2",
+  "baselineTree": "0c9544a4e6f77568cd64f245c27eac4fa51af665",
+  "baselineWasmGitSha": "5acd631cfee239a58d99eb70e06920afb2e58d70",
+  "candidateWasmGitSha": "1d68a44b8090cd7a99256d542c36091c25b0a873",
+  "nativeBuildManifest": "786aa28d65b0da7b8ca0752b52b0354d4bbe3ce8",
+  "baseline": {
+    "wasmSha256": "a0cced9f3da8714c1e948b61900ab70d1a242fac4f7c8533067d1d412969e46d",
+    "wasmBytes": 4850716
+  },
+  "candidate": {
+    "wasmSha256": "8ccc427ced649f0a7d486183f973e20eb047d3b908044c7372a81c362be22782",
+    "wasmBytes": 4679769
+  },
+  "canonicalFunctionsGitBlob": "86126246284dd436c6e0581e4d11c62faeba0e11",
+  "node": "v24.22.3",
+  "sceneCount": 9,
+  "allBaselineMatchCommittedGolden": true,
+  "allCandidateCrossRendererGatesPass": true,
+  "allRendersDeterministic": true,
+  "scenes": [
+    {
+      "name": "01-solid-shapes",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "af38be8644326e64c639edb688470cf4e38ad0949012030706c9913864782fdb",
+      "baseline": {
+        "name": "01-solid-shapes",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "af38be8644326e64c639edb688470cf4e38ad0949012030706c9913864782fdb",
+        "rgbaSha256": "e810442ad17b850c1481d26e68b9ee884e076dde1fd90236ada9fd6313ff49f0",
+        "pngSha256": "7ec2722ccd93aac4e90aecaa8cf395b721b53c65766410a3ba61490e994e2756",
+        "goldenPNGSha256": "7ec2722ccd93aac4e90aecaa8cf395b721b53c65766410a3ba61490e994e2756",
+        "goldenDecodedSha256": "e810442ad17b850c1481d26e68b9ee884e076dde1fd90236ada9fd6313ff49f0",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "01-solid-shapes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "01-solid-shapes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 91,
+          "meanDelta": 0.1054534912109375,
+          "pctPixelsOver8": 0.439453125,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "01-solid-shapes",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "af38be8644326e64c639edb688470cf4e38ad0949012030706c9913864782fdb",
+        "rgbaSha256": "e810442ad17b850c1481d26e68b9ee884e076dde1fd90236ada9fd6313ff49f0",
+        "pngSha256": "7ec2722ccd93aac4e90aecaa8cf395b721b53c65766410a3ba61490e994e2756",
+        "goldenPNGSha256": "7ec2722ccd93aac4e90aecaa8cf395b721b53c65766410a3ba61490e994e2756",
+        "goldenDecodedSha256": "e810442ad17b850c1481d26e68b9ee884e076dde1fd90236ada9fd6313ff49f0",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "01-solid-shapes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "01-solid-shapes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 91,
+          "meanDelta": 0.1054534912109375,
+          "pctPixelsOver8": 0.439453125,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "01-solid-shapes",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 0,
+        "meanDelta": 0,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 0,
+        "changedPixelPct": 0,
+        "channelChanges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMax": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMean": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox": null,
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "02-strokes",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "d5993703087e8e5cc5220b7275b1fc7da300908299fdae0c64a5aa36028f275b",
+      "baseline": {
+        "name": "02-strokes",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "d5993703087e8e5cc5220b7275b1fc7da300908299fdae0c64a5aa36028f275b",
+        "rgbaSha256": "53a88b0c603eb0542835713ce1d3db0873ccedf6cd0f5a0f81b4aa828a3f6eef",
+        "pngSha256": "9f38befefd36dd622ee4f574af9bf9a8485e16a384e5c4f42703fa2fa3be455d",
+        "goldenPNGSha256": "9f38befefd36dd622ee4f574af9bf9a8485e16a384e5c4f42703fa2fa3be455d",
+        "goldenDecodedSha256": "53a88b0c603eb0542835713ce1d3db0873ccedf6cd0f5a0f81b4aa828a3f6eef",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "02-strokes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "02-strokes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 63,
+          "meanDelta": 0.187164306640625,
+          "pctPixelsOver8": 1.824951171875,
+          "fuzzyMismatchPct": 0.006103515625
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "02-strokes",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "d5993703087e8e5cc5220b7275b1fc7da300908299fdae0c64a5aa36028f275b",
+        "rgbaSha256": "53a88b0c603eb0542835713ce1d3db0873ccedf6cd0f5a0f81b4aa828a3f6eef",
+        "pngSha256": "9f38befefd36dd622ee4f574af9bf9a8485e16a384e5c4f42703fa2fa3be455d",
+        "goldenPNGSha256": "9f38befefd36dd622ee4f574af9bf9a8485e16a384e5c4f42703fa2fa3be455d",
+        "goldenDecodedSha256": "53a88b0c603eb0542835713ce1d3db0873ccedf6cd0f5a0f81b4aa828a3f6eef",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "02-strokes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "02-strokes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 63,
+          "meanDelta": 0.187164306640625,
+          "pctPixelsOver8": 1.824951171875,
+          "fuzzyMismatchPct": 0.006103515625
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "02-strokes",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 0,
+        "meanDelta": 0,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 0,
+        "changedPixelPct": 0,
+        "channelChanges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMax": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMean": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox": null,
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "03-curves",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "15c089b46e1cee489faa40f41c1922cb8157c1acc002b1a0c2a6e4df3b75b92e",
+      "baseline": {
+        "name": "03-curves",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "15c089b46e1cee489faa40f41c1922cb8157c1acc002b1a0c2a6e4df3b75b92e",
+        "rgbaSha256": "b703da0f98f90bd259488b490a75c4f49f53eb8b90eafa34e5056cc4698e12e8",
+        "pngSha256": "c33b09338a2b91a1a6ea070540e63d166649ac40048ae90f1fac3f2d00685836",
+        "goldenPNGSha256": "c33b09338a2b91a1a6ea070540e63d166649ac40048ae90f1fac3f2d00685836",
+        "goldenDecodedSha256": "b703da0f98f90bd259488b490a75c4f49f53eb8b90eafa34e5056cc4698e12e8",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "03-curves",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "03-curves",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 73,
+          "meanDelta": 0.6314544677734375,
+          "pctPixelsOver8": 3.546142578125,
+          "fuzzyMismatchPct": 0.0732421875
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "03-curves",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "15c089b46e1cee489faa40f41c1922cb8157c1acc002b1a0c2a6e4df3b75b92e",
+        "rgbaSha256": "74d70d910c8ed6d859ca390985d9186d1fbc78a7984d8a8cabc22a868d2ad6a5",
+        "pngSha256": "6e300ef78039b8a9c48328e8054527b3f4596f0a30f74ddc7dbc460c06b7109e",
+        "goldenPNGSha256": "c33b09338a2b91a1a6ea070540e63d166649ac40048ae90f1fac3f2d00685836",
+        "goldenDecodedSha256": "b703da0f98f90bd259488b490a75c4f49f53eb8b90eafa34e5056cc4698e12e8",
+        "equalsCommittedGolden": false,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "03-curves",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.001861572265625,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "03-curves",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 73,
+          "meanDelta": 0.6298370361328125,
+          "pctPixelsOver8": 3.55224609375,
+          "fuzzyMismatchPct": 0.0732421875
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "03-curves",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 1,
+        "meanDelta": 0.001861572265625,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 107,
+        "changedPixelPct": 0.653076171875,
+        "channelChanges": [
+          10,
+          1,
+          5,
+          106
+        ],
+        "channelMax": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "channelMean": [
+          0.0006103515625,
+          0.00006103515625,
+          0.00030517578125,
+          0.0064697265625
+        ],
+        "bbox": [
+          34,
+          20,
+          101,
+          107
+        ],
+        "baselineNonOpaque": 106,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "04-linear-gradient",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "c6c21654b2e8910c7fbce647efff6176a65882c996595fe93fc163b9ddcf7452",
+      "baseline": {
+        "name": "04-linear-gradient",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "c6c21654b2e8910c7fbce647efff6176a65882c996595fe93fc163b9ddcf7452",
+        "rgbaSha256": "52affeb038a4721ab83bb441cb5a99b372978fdc271b32e3cbe6f24c23045e91",
+        "pngSha256": "116f90605abbe972da36df66d0b1493ae83eb3107368a4ba9456f788fca29f6e",
+        "goldenPNGSha256": "116f90605abbe972da36df66d0b1493ae83eb3107368a4ba9456f788fca29f6e",
+        "goldenDecodedSha256": "52affeb038a4721ab83bb441cb5a99b372978fdc271b32e3cbe6f24c23045e91",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "04-linear-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "04-linear-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.12060546875,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "04-linear-gradient",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "c6c21654b2e8910c7fbce647efff6176a65882c996595fe93fc163b9ddcf7452",
+        "rgbaSha256": "52affeb038a4721ab83bb441cb5a99b372978fdc271b32e3cbe6f24c23045e91",
+        "pngSha256": "116f90605abbe972da36df66d0b1493ae83eb3107368a4ba9456f788fca29f6e",
+        "goldenPNGSha256": "116f90605abbe972da36df66d0b1493ae83eb3107368a4ba9456f788fca29f6e",
+        "goldenDecodedSha256": "52affeb038a4721ab83bb441cb5a99b372978fdc271b32e3cbe6f24c23045e91",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "04-linear-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "04-linear-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.12060546875,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "04-linear-gradient",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 0,
+        "meanDelta": 0,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 0,
+        "changedPixelPct": 0,
+        "channelChanges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMax": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMean": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox": null,
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "05-radial-gradient",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "c437ebf6566ac5cdbeafc42d596638f7ac6f5b8ef86d924dec33aaa8fae8a37c",
+      "baseline": {
+        "name": "05-radial-gradient",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "c437ebf6566ac5cdbeafc42d596638f7ac6f5b8ef86d924dec33aaa8fae8a37c",
+        "rgbaSha256": "52b257e4f0478fa937a5913721383f97744ab8bbaa96c048105d260068e8bc25",
+        "pngSha256": "b451e21468857b8ffcf63a9cbf1580dbe359ec68dac8df19338620e4fba03150",
+        "goldenPNGSha256": "b451e21468857b8ffcf63a9cbf1580dbe359ec68dac8df19338620e4fba03150",
+        "goldenDecodedSha256": "52b257e4f0478fa937a5913721383f97744ab8bbaa96c048105d260068e8bc25",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "05-radial-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "05-radial-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.113372802734375,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "05-radial-gradient",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "c437ebf6566ac5cdbeafc42d596638f7ac6f5b8ef86d924dec33aaa8fae8a37c",
+        "rgbaSha256": "52b257e4f0478fa937a5913721383f97744ab8bbaa96c048105d260068e8bc25",
+        "pngSha256": "b451e21468857b8ffcf63a9cbf1580dbe359ec68dac8df19338620e4fba03150",
+        "goldenPNGSha256": "b451e21468857b8ffcf63a9cbf1580dbe359ec68dac8df19338620e4fba03150",
+        "goldenDecodedSha256": "52b257e4f0478fa937a5913721383f97744ab8bbaa96c048105d260068e8bc25",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "05-radial-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "05-radial-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.113372802734375,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "05-radial-gradient",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 0,
+        "meanDelta": 0,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 0,
+        "changedPixelPct": 0,
+        "channelChanges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMax": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMean": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox": null,
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "06-blend-modes",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "8db7fd6119bfbc25e4553dd47302b34381957f83103feb1f84ff7706cdddaf26",
+      "baseline": {
+        "name": "06-blend-modes",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "8db7fd6119bfbc25e4553dd47302b34381957f83103feb1f84ff7706cdddaf26",
+        "rgbaSha256": "db550743ed8f8ed47c4f8814cb0ef6953dc3ea9ec14750cfb09db53c5723c018",
+        "pngSha256": "2c62d575899a671ad475e9d936ff526b23e5124529a0a01e10a8fa6ecb54ca74",
+        "goldenPNGSha256": "2c62d575899a671ad475e9d936ff526b23e5124529a0a01e10a8fa6ecb54ca74",
+        "goldenDecodedSha256": "db550743ed8f8ed47c4f8814cb0ef6953dc3ea9ec14750cfb09db53c5723c018",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "06-blend-modes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "06-blend-modes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.0294189453125,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "06-blend-modes",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "8db7fd6119bfbc25e4553dd47302b34381957f83103feb1f84ff7706cdddaf26",
+        "rgbaSha256": "db550743ed8f8ed47c4f8814cb0ef6953dc3ea9ec14750cfb09db53c5723c018",
+        "pngSha256": "2c62d575899a671ad475e9d936ff526b23e5124529a0a01e10a8fa6ecb54ca74",
+        "goldenPNGSha256": "2c62d575899a671ad475e9d936ff526b23e5124529a0a01e10a8fa6ecb54ca74",
+        "goldenDecodedSha256": "db550743ed8f8ed47c4f8814cb0ef6953dc3ea9ec14750cfb09db53c5723c018",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "06-blend-modes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "06-blend-modes",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.0294189453125,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "06-blend-modes",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 0,
+        "meanDelta": 0,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 0,
+        "changedPixelPct": 0,
+        "channelChanges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMax": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMean": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox": null,
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "07-group-opacity",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "7b25023794c9c633ad80a5ee6237fcfa1427e5d3ba68373a0c7443b199a117f7",
+      "baseline": {
+        "name": "07-group-opacity",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "7b25023794c9c633ad80a5ee6237fcfa1427e5d3ba68373a0c7443b199a117f7",
+        "rgbaSha256": "f1aa78cc771a67a2989a6d674d5df7c46624ff1c86170afa1f4174373a1317c2",
+        "pngSha256": "96f0a475348f80fa3eeecdfc08ab9d9782aec7a636c2837401b31a43b35aef27",
+        "goldenPNGSha256": "96f0a475348f80fa3eeecdfc08ab9d9782aec7a636c2837401b31a43b35aef27",
+        "goldenDecodedSha256": "f1aa78cc771a67a2989a6d674d5df7c46624ff1c86170afa1f4174373a1317c2",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "07-group-opacity",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "07-group-opacity",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.265625,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "07-group-opacity",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "7b25023794c9c633ad80a5ee6237fcfa1427e5d3ba68373a0c7443b199a117f7",
+        "rgbaSha256": "f1aa78cc771a67a2989a6d674d5df7c46624ff1c86170afa1f4174373a1317c2",
+        "pngSha256": "96f0a475348f80fa3eeecdfc08ab9d9782aec7a636c2837401b31a43b35aef27",
+        "goldenPNGSha256": "96f0a475348f80fa3eeecdfc08ab9d9782aec7a636c2837401b31a43b35aef27",
+        "goldenDecodedSha256": "f1aa78cc771a67a2989a6d674d5df7c46624ff1c86170afa1f4174373a1317c2",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "07-group-opacity",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "07-group-opacity",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.265625,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "07-group-opacity",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 0,
+        "meanDelta": 0,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 0,
+        "changedPixelPct": 0,
+        "channelChanges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMax": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMean": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox": null,
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "08-dense-lineart",
+      "width": 256,
+      "height": 256,
+      "normalizedSceneSha256": "42d68539c0636c78277a577928da0352519b1bd1a3906331f0f5d653f4a09a33",
+      "baseline": {
+        "name": "08-dense-lineart",
+        "width": 256,
+        "height": 256,
+        "normalizedSceneSha256": "42d68539c0636c78277a577928da0352519b1bd1a3906331f0f5d653f4a09a33",
+        "rgbaSha256": "8b3041e548f4440acaecaa66a748efe0ef446f24d9cc80316269c60e4e150c62",
+        "pngSha256": "b4cbd181f063aecc445d5ee87769af50c6b1f934e0f7a4a84dc8190148f005e0",
+        "goldenPNGSha256": "b4cbd181f063aecc445d5ee87769af50c6b1f934e0f7a4a84dc8190148f005e0",
+        "goldenDecodedSha256": "8b3041e548f4440acaecaa66a748efe0ef446f24d9cc80316269c60e4e150c62",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "08-dense-lineart",
+          "width": 256,
+          "height": 256,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "08-dense-lineart",
+          "width": 256,
+          "height": 256,
+          "maxDelta": 207,
+          "meanDelta": 3.697559356689453,
+          "pctPixelsOver8": 18.60809326171875,
+          "fuzzyMismatchPct": 0.34332275390625
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "08-dense-lineart",
+        "width": 256,
+        "height": 256,
+        "normalizedSceneSha256": "42d68539c0636c78277a577928da0352519b1bd1a3906331f0f5d653f4a09a33",
+        "rgbaSha256": "cfd8e10653d4566f93f0c370852f4d37415ddab52e387e3096e3875ad7188e29",
+        "pngSha256": "2e8d6ab1639343f2881bde0bb4505fe9b14d3f4cc0144214d21826ea7773747c",
+        "goldenPNGSha256": "b4cbd181f063aecc445d5ee87769af50c6b1f934e0f7a4a84dc8190148f005e0",
+        "goldenDecodedSha256": "8b3041e548f4440acaecaa66a748efe0ef446f24d9cc80316269c60e4e150c62",
+        "equalsCommittedGolden": false,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "08-dense-lineart",
+          "width": 256,
+          "height": 256,
+          "maxDelta": 1,
+          "meanDelta": 0.0001983642578125,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "08-dense-lineart",
+          "width": 256,
+          "height": 256,
+          "maxDelta": 207,
+          "meanDelta": 3.697582244873047,
+          "pctPixelsOver8": 18.60809326171875,
+          "fuzzyMismatchPct": 0.34332275390625
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "08-dense-lineart",
+        "width": 256,
+        "height": 256,
+        "maxDelta": 1,
+        "meanDelta": 0.0001983642578125,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 24,
+        "changedPixelPct": 0.03662109375,
+        "channelChanges": [
+          18,
+          14,
+          20,
+          0
+        ],
+        "channelMax": [
+          1,
+          1,
+          1,
+          0
+        ],
+        "channelMean": [
+          0.000274658203125,
+          0.000213623046875,
+          0.00030517578125,
+          0
+        ],
+        "bbox": [
+          15,
+          25,
+          235,
+          243
+        ],
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    },
+    {
+      "name": "09-sweep-gradient",
+      "width": 128,
+      "height": 128,
+      "normalizedSceneSha256": "61260db337f4e99c250d10b00e1dd3725517ec6ab77a2754c61264cdb42b12e8",
+      "baseline": {
+        "name": "09-sweep-gradient",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "61260db337f4e99c250d10b00e1dd3725517ec6ab77a2754c61264cdb42b12e8",
+        "rgbaSha256": "74fec96ae22fde91771ddb164b031d426b20e11255043f626feb11f68229447c",
+        "pngSha256": "c4fcdc67ae787eb4459449583a7d803a14019dd793af9d070a6c704b2358c3ef",
+        "goldenPNGSha256": "c4fcdc67ae787eb4459449583a7d803a14019dd793af9d070a6c704b2358c3ef",
+        "goldenDecodedSha256": "74fec96ae22fde91771ddb164b031d426b20e11255043f626feb11f68229447c",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "09-sweep-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "09-sweep-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.12774658203125,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "candidate": {
+        "name": "09-sweep-gradient",
+        "width": 128,
+        "height": 128,
+        "normalizedSceneSha256": "61260db337f4e99c250d10b00e1dd3725517ec6ab77a2754c61264cdb42b12e8",
+        "rgbaSha256": "74fec96ae22fde91771ddb164b031d426b20e11255043f626feb11f68229447c",
+        "pngSha256": "c4fcdc67ae787eb4459449583a7d803a14019dd793af9d070a6c704b2358c3ef",
+        "goldenPNGSha256": "c4fcdc67ae787eb4459449583a7d803a14019dd793af9d070a6c704b2358c3ef",
+        "goldenDecodedSha256": "74fec96ae22fde91771ddb164b031d426b20e11255043f626feb11f68229447c",
+        "equalsCommittedGolden": true,
+        "deterministic": true,
+        "versusGolden": {
+          "scene": "09-sweep-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 0,
+          "meanDelta": 0,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "versusSkia": {
+          "scene": "09-sweep-gradient",
+          "width": 128,
+          "height": 128,
+          "maxDelta": 1,
+          "meanDelta": 0.12774658203125,
+          "pctPixelsOver8": 0,
+          "fuzzyMismatchPct": 0
+        },
+        "unchangedCrossRendererGatePass": true
+      },
+      "oldVersusNew": {
+        "scene": "09-sweep-gradient",
+        "width": 128,
+        "height": 128,
+        "maxDelta": 0,
+        "meanDelta": 0,
+        "pctPixelsOver8": 0,
+        "fuzzyMismatchPct": 0
+      },
+      "difference": {
+        "changedPixels": 0,
+        "changedPixelPct": 0,
+        "channelChanges": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMax": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "channelMean": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "bbox": null,
+        "baselineNonOpaque": 0,
+        "candidateNonOpaque": 0
+      },
+      "visualization": "RGB absolute delta x8; magenta marks alpha differences"
+    }
+  ]
+}

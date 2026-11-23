@@ -2,8 +2,8 @@ import { TILE_PIXELS, TILE_SIZE } from "../raster/tile-binning";
 
 import { WET_CH, WET_EXT_CH, WET_FLOATS_PER_TILE } from "./state";
 
-import type { WetState } from "./state";
 import type { BinResult } from "../raster/tile-binning";
+import type { WetState } from "./state";
 
 /**
  * 활성 타일 관리와 Jacobi 읽기용 스냅샷.

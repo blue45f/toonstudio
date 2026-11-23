@@ -7,8 +7,8 @@ import { vocabularyCatalogEntries } from "../../testing/recipe-fixtures";
 import { isSkinLike, recommendColors, recommendPresets, summarizeRecommendationsKo } from "./recommend";
 import { toEmbedding } from "./similarity";
 
-import type { PaletteEntry } from "./kmeans-palette";
 import type { Embedding, PresetId } from "../../contracts";
+import type { PaletteEntry } from "./kmeans-palette";
 
 function entry(hex: string, weight: number): PaletteEntry {
   const oklab = hexToOklab(hex);

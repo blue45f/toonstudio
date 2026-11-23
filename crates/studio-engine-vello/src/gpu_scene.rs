@@ -151,7 +151,13 @@ pub fn encode_nodes(out: &mut Scene, nodes: &[SceneNodeIR], canvas: Rect) {
             } => {
                 let layered = *blend != BlendModeIR::SrcOver;
                 if layered {
-                    out.push_layer(Fill::NonZero, to_blend(*blend), 1.0, Affine::IDENTITY, &canvas);
+                    out.push_layer(
+                        Fill::NonZero,
+                        to_blend(*blend),
+                        1.0,
+                        Affine::IDENTITY,
+                        &canvas,
+                    );
                 }
                 let rule = match fill_rule {
                     FillRuleIR::NonZero => Fill::NonZero,
@@ -181,7 +187,13 @@ pub fn encode_nodes(out: &mut Scene, nodes: &[SceneNodeIR], canvas: Rect) {
             } => {
                 let layered = *blend != BlendModeIR::SrcOver;
                 if layered {
-                    out.push_layer(Fill::NonZero, to_blend(*blend), 1.0, Affine::IDENTITY, &canvas);
+                    out.push_layer(
+                        Fill::NonZero,
+                        to_blend(*blend),
+                        1.0,
+                        Affine::IDENTITY,
+                        &canvas,
+                    );
                 }
                 let cap = match cap {
                     StrokeCapIR::Butt => Cap::Butt,

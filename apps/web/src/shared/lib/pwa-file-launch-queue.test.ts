@@ -51,14 +51,14 @@ describe("이중 PWA 매니페스트 file_handlers · launch_handler 동기화 �
   const rootManifestPath = join(process.cwd(), "apps/web/public/manifest.webmanifest");
   const brandManifestPath = join(
     process.cwd(),
-    "apps/web/public/brand/spectrum-ribbon-v2/manifest.webmanifest",
+    "apps/web/public/brand/jewel-atelier-v1/manifest.webmanifest",
   );
   const rootRaw = readFileSync(rootManifestPath, "utf8");
   const brandRaw = readFileSync(brandManifestPath, "utf8");
   const rootManifest = JSON.parse(rootRaw) as ManifestWithFileHandling;
   const brandManifest = JSON.parse(brandRaw) as ManifestWithFileHandling;
 
-  it("루트 매니페스트와 brand/spectrum-ribbon-v2 매니페스트가 바이트 단위로 일치한다", () => {
+  it("루트 매니페스트와 brand/jewel-atelier-v1 매니페스트가 바이트 단위로 일치한다", () => {
     expect(brandRaw).toBe(rootRaw);
   });
 

@@ -17,8 +17,8 @@ import {
   parseLaneStatusTable,
 } from "./registry";
 
-import type { LaneEnvironment, LaneId } from "./lane";
 import type { LaneReasonCode } from "../engine/core/errors";
+import type { LaneEnvironment, LaneId } from "./lane";
 
 const SRC_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const README = path.resolve(SRC_ROOT, "..", "README.md");

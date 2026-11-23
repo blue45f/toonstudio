@@ -16,6 +16,7 @@ describe("Studio 공용 MediaPipe Vision 자산", () => {
       loadNoSimd,
     })).resolves.toEqual({
       variant: "simd",
+      providerVersion: "1.2.3",
       fileset: SIMD,
       selectionSource: "simd-capability-probe",
       attemptedVariants: ["simd"],
@@ -53,11 +54,36 @@ describe("Studio 공용 MediaPipe Vision 자산", () => {
       loadNoSimd: async () => NO_SIMD,
     })).resolves.toEqual({
       variant: "nosimd",
+      providerVersion: "0.10.35",
       fileset: NO_SIMD,
       selectionSource: "simd-capability-probe",
       attemptedVariants: ["nosimd"],
     });
     expect(loadSimd).not.toHaveBeenCalled();
+  });
+
+  it("SDK가 지원 API를 제거해도 실제 capability 검사로 non-SIMD를 선택한다", async () => {
+    const validate = vi.spyOn(WebAssembly, "validate").mockReturnValue(false);
+    const loadSimd = vi.fn(async () => SIMD);
+    try {
+      await expect(resolveStudioMediaPipeVisionWasmFileset({
+        loadSimd,
+        loadNoSimd: async () => NO_SIMD,
+      })).resolves.toMatchObject({
+        variant: "nosimd",
+        providerVersion: "0.10.35",
+        fileset: NO_SIMD,
+        attemptedVariants: ["nosimd"],
+      });
+      expect(validate).toHaveBeenCalledOnce();
+      expect(validate).toHaveBeenCalledWith(new Uint8Array([
+        0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3,
+        2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11,
+      ]));
+      expect(loadSimd).not.toHaveBeenCalled();
+    } finally {
+      validate.mockRestore();
+    }
   });
 
   it("마네킹·VRM 얼굴/손/포즈·전경 분리가 모두 공용 로컬 자산 권위를 사용한다", () => {

@@ -1,5 +1,5 @@
 /**
- * MediaPipe Vision 0.10.35의 package-matched WASM 자산 권위.
+ * MediaPipe Vision의 SIMD 1.2.3·non-SIMD 0.10.35 SDK와 짝을 이루는 WASM 자산 권위.
  *
  * Studio의 프로덕션 CSP는 외부 script/WASM 실행을 허용하지 않는다. 모든 3D 추적·사진
  * 포즈·전경 분리가 동일한 Vite hashed same-origin 자산을 사용해야 화면별 성공/실패가
@@ -7,6 +7,7 @@
  */
 
 export type StudioMediaPipeVisionWasmVariant = "simd" | "nosimd";
+export type StudioMediaPipeVisionProviderVersion = "1.2.3" | "0.10.35";
 export type StudioMediaPipeVisionDelegate = "GPU" | "CPU";
 export type StudioMediaPipeVisionProviderSelection =
   | "product-default-gpu"
@@ -19,6 +20,7 @@ export interface StudioMediaPipeVisionWasmFileset {
 
 export interface StudioMediaPipeVisionWasmSelection {
   readonly variant: StudioMediaPipeVisionWasmVariant;
+  readonly providerVersion: StudioMediaPipeVisionProviderVersion;
   readonly fileset: StudioMediaPipeVisionWasmFileset;
   readonly selectionSource: "simd-capability-probe";
   /** The selected variant is loaded exactly once; a failed load never changes this tuple. */
@@ -30,7 +32,7 @@ export type StudioMediaPipeVisionFilesetLoader = () => Promise<
 >;
 
 export interface StudioMediaPipeVisionAssetResolverOptions {
-  readonly isSimdSupported: () => Promise<boolean>;
+  readonly isSimdSupported?: () => Promise<boolean>;
   /** 테스트/호스트 주입 경계. 앱에서는 지정하지 않는다. */
   readonly loadSimd?: StudioMediaPipeVisionFilesetLoader;
   /** 테스트/호스트 주입 경계. 앱에서는 지정하지 않는다. */
@@ -74,8 +76,8 @@ async function loadBundledSimdFileset(): Promise<StudioMediaPipeVisionWasmFilese
 
 async function loadBundledNoSimdFileset(): Promise<StudioMediaPipeVisionWasmFileset> {
   const [loaderModule, binaryModule] = await Promise.all([
-    import("@mediapipe/tasks-vision/vision_wasm_nosimd_internal.js?url"),
-    import("@mediapipe/tasks-vision/vision_wasm_nosimd_internal.wasm?url"),
+    import("@mediapipe/tasks-vision-nosimd/vision_wasm_nosimd_internal.js?url"),
+    import("@mediapipe/tasks-vision-nosimd/vision_wasm_nosimd_internal.wasm?url"),
   ]);
   return assertLocalFileset({
     wasmLoaderPath: loaderModule.default,
@@ -83,15 +85,23 @@ async function loadBundledNoSimdFileset(): Promise<StudioMediaPipeVisionWasmFile
   });
 }
 
-/** Probe once, select one variant before loading, and fail closed if either step fails. */
+/** 공식 0.10.35와 같은 SIMD 명령으로 지원 여부를 검사한다. 1.2.3은 이 API를 제공하지 않는다. */
+export async function probeStudioMediaPipeVisionSimdSupport(): Promise<boolean> {
+  return WebAssembly.validate(new Uint8Array([
+    0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3,
+    2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11,
+  ]));
+}
+
+/** 지원 여부로 한 번만 선택한다. 자산이나 초기화 실패 후 다른 SDK로 전환하지 않는다. */
 export async function resolveStudioMediaPipeVisionWasmFileset(
-  options: StudioMediaPipeVisionAssetResolverOptions,
+  options: StudioMediaPipeVisionAssetResolverOptions = {},
 ): Promise<StudioMediaPipeVisionWasmSelection> {
   const loadSimd = options.loadSimd ?? loadBundledSimdFileset;
   const loadNoSimd = options.loadNoSimd ?? loadBundledNoSimdFileset;
   let simdSupported: boolean;
   try {
-    simdSupported = await options.isSimdSupported();
+    simdSupported = await (options.isSimdSupported ?? probeStudioMediaPipeVisionSimdSupport)();
   } catch (cause) {
     throw namedAssetError(
       "Studio가 MediaPipe Vision SIMD 지원 여부를 확인하지 못했습니다.",
@@ -107,14 +117,15 @@ export async function resolveStudioMediaPipeVisionWasmFileset(
 
   const variant: StudioMediaPipeVisionWasmVariant = simdSupported ? "simd" : "nosimd";
   const loadSelected = variant === "simd" ? loadSimd : loadNoSimd;
+  const providerVersion: StudioMediaPipeVisionProviderVersion = variant === "simd" ? "1.2.3" : "0.10.35";
+  const attemptedVariants: readonly [StudioMediaPipeVisionWasmVariant] = [variant];
   try {
     return Object.freeze({
       variant,
+      providerVersion,
       fileset: assertLocalFileset(await loadSelected()),
       selectionSource: "simd-capability-probe",
-      attemptedVariants: Object.freeze([variant]) as readonly [
-        StudioMediaPipeVisionWasmVariant,
-      ],
+      attemptedVariants: Object.freeze(attemptedVariants),
     });
   } catch (cause) {
     throw namedAssetError(

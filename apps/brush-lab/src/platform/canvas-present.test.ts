@@ -23,9 +23,9 @@ import {
   validateLabImage,
 } from "./canvas-present";
 
-import type { LabImageInvalidReason } from "./canvas-present";
 import type { CanvasStubRecorder } from "../app/testing/canvas-stub";
 import type { LabImage } from "../engine/core/types";
+import type { LabImageInvalidReason } from "./canvas-present";
 
 function image(width: number, height: number, fill = 128): LabImage {
   const data = new Uint8ClampedArray(width * height * 4).fill(fill);

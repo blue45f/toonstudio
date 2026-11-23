@@ -41,6 +41,7 @@ import {
 import { createStrokeSession } from "./stroke-session";
 import { stampWebtoonDecal } from "./webtoon-decals";
 
+import type { BrushDab, BrushSettings, PaintLayer, PaintUndoTile, PaintUndoToken, PartRole } from "../contracts";
 import type { MutablePaintLayer } from "./paint-layer";
 import type { PaintPressureMode } from "./paint-pressure";
 import type {
@@ -53,7 +54,6 @@ import type {
 } from "./paint-sublayers";
 import type { PaintToolMode, StrokeSession } from "./stroke-session";
 import type { StampWebtoonDecalOptions, WebtoonDecalId } from "./webtoon-decals";
-import type { BrushDab, BrushSettings, PaintLayer, PaintUndoTile, PaintUndoToken, PartRole } from "../contracts";
 
 export type SublayerPaintGuard =
   | { readonly ok: true }

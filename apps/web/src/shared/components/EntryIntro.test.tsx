@@ -314,7 +314,7 @@ describe("EntryIntro 소스 계약", () => {
     expect(css).toContain("pointer-events: none");
     // 브랜드 마크는 저해상도 PNG가 아니라 벡터 원본을, 아트는 인트로 전용
     // 고품질 인코딩을 쓴다(공유 hero-main.webp는 홈이 그대로 쓴다).
-    expect(tsx).toContain("/brand/spectrum-ribbon-v2/favicon.svg");
+    expect(tsx).toContain("/brand/jewel-atelier-v1/favicon.svg");
     expect(tsx).not.toContain("icon-192.png");
     expect(tsx).toContain("/images/hero-main-intro.webp");
   });

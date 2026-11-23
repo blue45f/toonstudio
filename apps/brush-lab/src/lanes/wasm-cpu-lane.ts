@@ -8,6 +8,10 @@ import { WasmSurface } from "../engine/wasm/wasm-surface";
 
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, unavailableReport } from "./lane";
 
+import type { Clock, LabImage, RawSample } from "../engine/core/types";
+import type { LatencyRecord } from "../engine/input/input-pipeline";
+import type { BrushProgram } from "../engine/presets/program-schema";
+import type { SumiKernel } from "../engine/wasm/loader";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -20,10 +24,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { Clock, LabImage, RawSample } from "../engine/core/types";
-import type { LatencyRecord } from "../engine/input/input-pipeline";
-import type { BrushProgram } from "../engine/presets/program-schema";
-import type { SumiKernel } from "../engine/wasm/loader";
 
 /**
  * wasm-cpu 레인: `StrokePipeline`(TS, 입력→물리→dab) → `WasmSurface`(Rust C-ABI wasm 커널이 CSR 비닝과 타일 래스터를 수행).

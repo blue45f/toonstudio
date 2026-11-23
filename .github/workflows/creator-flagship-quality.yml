@@ -57,6 +57,8 @@ jobs:
     name: Flagship build and browser regression
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      NODE_OPTIONS: --max-old-space-size=12288
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

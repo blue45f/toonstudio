@@ -183,7 +183,11 @@ fn red_stats(pixels: &[u8], width: u32, height: u32) -> (usize, f64) {
             }
         }
     }
-    let mean_x = if count == 0 { f64::NAN } else { x_sum / count as f64 };
+    let mean_x = if count == 0 {
+        f64::NAN
+    } else {
+        x_sum / count as f64
+    };
     (count, mean_x)
 }
 
@@ -230,10 +234,7 @@ fn parse_rejects_add_blend_mode_instead_of_panicking() {
 
 /// `Result::expect_err` needs `T: Debug` and vello's `Scene` is not — unwrap
 /// the Err arm by hand.
-fn expect_scene_err(
-    result: Result<vello::Scene, String>,
-    context: &str,
-) -> String {
+fn expect_scene_err(result: Result<vello::Scene, String>, context: &str) -> String {
     match result {
         Err(error) => error,
         Ok(_) => panic!("{context}: expected an explicit error, got a scene"),
@@ -354,12 +355,24 @@ fn rotation_keyframes_actually_rotate_the_bar() {
 
     // Frame 0: horizontal 64x16 bar centered at (64,64) — (90,64) inside,
     // (64,90) outside.
-    assert!(is_blue(&start, 128, 90, 64), "frame 0: (90,64) must be inside the bar");
-    assert!(!is_blue(&start, 128, 64, 90), "frame 0: (64,90) must be outside the bar");
+    assert!(
+        is_blue(&start, 128, 90, 64),
+        "frame 0: (90,64) must be inside the bar"
+    );
+    assert!(
+        !is_blue(&start, 128, 64, 90),
+        "frame 0: (64,90) must be outside the bar"
+    );
 
     // Frame 60: rotated 90° — the probes swap.
-    assert!(is_blue(&end, 128, 64, 90), "frame 60: (64,90) must be inside the bar");
-    assert!(!is_blue(&end, 128, 90, 64), "frame 60: (90,64) must be outside the bar");
+    assert!(
+        is_blue(&end, 128, 64, 90),
+        "frame 60: (64,90) must be inside the bar"
+    );
+    assert!(
+        !is_blue(&end, 128, 90, 64),
+        "frame 60: (90,64) must be outside the bar"
+    );
 }
 
 #[test]

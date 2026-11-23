@@ -5,11 +5,11 @@ import { PHYSICS_DT_MS, PhysicsModel } from "../physics/physics-model";
 
 import { DabEmitter, MAX_TIME_DABS_PER_STEP, MIN_SPACING_PX } from "./dab-emitter";
 
-import type { DabEmitterOptions } from "./dab-emitter";
 import type { ContactFootprint, ModeledSample, PreviewSample, RawSample } from "../core/types";
 import type { InputPipelineConfig, LatencyRecord } from "../input/input-pipeline";
 import type { BrushProgram } from "../presets/program-schema";
 import type { PaperField } from "../texture/paper-grain";
+import type { DabEmitterOptions } from "./dab-emitter";
 
 /**
  * 모든 레인이 공유하는 프론트엔드(platform-baseline 제외):

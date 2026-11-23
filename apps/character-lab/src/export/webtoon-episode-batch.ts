@@ -41,6 +41,7 @@ import {
   resolveSfxGlyphByLocale,
 } from "./webtoon-strip-composer";
 
+import type { ApplyPlan, CaptureProvenance, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
 import type { ExportDeps, ExportOutcome, MotionTeaserReceiptMetrics } from "./export-session";
 import type { EpisodeCutsheetBeat, EpisodeCutsheetDirectorSnapshot } from "./webtoon-episode-cutsheet";
 import type {
@@ -52,7 +53,6 @@ import type {
   MotionTeaserSchedule,
 } from "./webtoon-motion-teaser";
 import type { ExportWebtoonVerticalStripOptions } from "./webtoon-strip-composer";
-import type { ApplyPlan, CaptureProvenance, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
 
 export interface EpisodeBatchCommonOptions {
   readonly episodeTitleKo: string;

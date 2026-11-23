@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -17,6 +16,10 @@ import {
   validateCloudflareHeadersPolicy,
   validateEdgeAssetCacheManifest,
 } from "./edge-asset-cache-policy.mjs";
+
+const { describe, it } = process.env.VITEST
+  ? await import("vitest")
+  : await import("node:test");
 
 const REPO_ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 

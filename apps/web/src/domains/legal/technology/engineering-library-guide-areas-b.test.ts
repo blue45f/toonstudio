@@ -132,7 +132,8 @@ describe("라이브러리 해설 영역 5~8 · 숫자 주장", () => {
     const claims: readonly (readonly [string, string, number, number])[] = [
       ["storage", "node_modules/@sqlite.org/sqlite-wasm/dist/sqlite3.wasm", 0.86, 0.05],
       ["ai", "node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.wasm", 29.5, 0.2],
-      ["ai", "node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm", 11.2, 0.1],
+      ["ai", "node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm", 14.7, 0.1],
+      ["ai", "node_modules/@mediapipe/tasks-vision-nosimd/wasm/vision_wasm_nosimd_internal.wasm", 10.5, 0.1],
       ["ai", "node_modules/@techstark/opencv-js/dist/opencv.js", 13.3, 0.2],
       ["ai", "apps/web/src/domains/creator/assets/tag2pix.onnx", 79.3, 0.2],
     ];
@@ -213,7 +214,7 @@ describe("라이브러리 해설 영역 5~8 · 숫자 주장", () => {
 
   it("고정된 Remotion 4 라이선스의 무료 상업 사용과 인원 미검증을 구별한다", () => {
     const manifest = JSON.parse(read("node_modules/remotion/package.json")) as { version: string };
-    expect(manifest.version).toBe("4.0.543");
+    expect(manifest.version).toBe("4.0.545");
     const license = read("node_modules/remotion/LICENSE.md");
     expect(license).toContain("- an individual");
     expect(license).toContain("- a for-profit organization with up to 3 employees");

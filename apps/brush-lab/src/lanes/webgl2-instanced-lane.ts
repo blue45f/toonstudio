@@ -7,6 +7,8 @@ import { WEBGL2_REQUIRED_EXTENSION, Webgl2InstancedRuntime } from "../engine/web
 
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, supportedReport, unavailableReport } from "./lane";
 
+import type { GpuAdapterInfo, LabImage, RawSample } from "../engine/core/types";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -20,8 +22,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { GpuAdapterInfo, LabImage, RawSample } from "../engine/core/types";
-import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
  * WebGL2 인스턴스 dab 레인(명시 선택 비교 레인). `createCanvas`로 얻은 캔버스의 webgl2 컨텍스트에서 돈다.

@@ -12,8 +12,8 @@ import { qMultiply, qNormalize } from "../../shared/math";
 
 import { fromQuaternion, fromVector3 } from "./convert";
 
-import type { RigBone } from "./character-rig";
 import type { HumanoidBoneName, Quat } from "../../contracts";
+import type { RigBone } from "./character-rig";
 import type { Bone } from "@babylonjs/core/Bones/bone.js";
 import type { Skeleton } from "@babylonjs/core/Bones/skeleton.js";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";

@@ -34,6 +34,7 @@ import {
 } from "../drawing/studio-quickmenu-and-quickshape";
 import {
   ALL_QUICK_MENU_ACTION_IDS,
+  normalizeQuickMenuSlots,
   saveQuickMenuSlots,
 } from "../drawing/studio-quickmenu-preferences";
 import {
@@ -43,6 +44,7 @@ import {
   resolveRadialWheelSlotFromDrag,
   type StudioRadialQuickWheelSlot,
 } from "./studio-drawing-ergonomics-presets";
+import { loadRadialQuickMenuSlots, saveRadialQuickMenuExtraSlots } from "./studio-radial-quickmenu-preferences";
 
 import "./StudioDrawingJewelChrome.css";
 
@@ -55,7 +57,7 @@ export interface StudioRadialQuickWheelProps {
   readonly strokeWidth?: number;
   readonly shortcutHint?: string;
   readonly onSelectAction: (actionId: QuickMenuActionId, slot: StudioRadialQuickWheelSlot) => void;
-  readonly onSlotsChange?: (nextSlots: readonly QuickMenuSlot[]) => void;
+  readonly onSlotsChange?: (nextSlots: readonly StudioRadialQuickWheelSlot[]) => void;
   readonly onClose: () => void;
 }
 
@@ -192,7 +194,7 @@ export function StudioRadialQuickWheel({
       if (slots) {
         return isEightSlot ? expandSlotsToJewelEight(slots) : slots.slice(0, 6);
       }
-      return isEightSlot ? DEFAULT_JEWEL_8_WHEEL_SLOTS : DEFAULT_QUICK_MENU_SLOTS;
+      return isEightSlot ? loadRadialQuickMenuSlots() : DEFAULT_QUICK_MENU_SLOTS;
     },
   );
 
@@ -275,13 +277,9 @@ export function StudioRadialQuickWheel({
 
   const commitSlotUpdate = (nextSlots: readonly StudioRadialQuickWheelSlot[]) => {
     setUncontrolledSlots(nextSlots);
-    const persistedSix = nextSlots.slice(0, 6).map((slot, index) => ({
-      index: index as QuickMenuSlot["index"],
-      actionId: slot.actionId,
-      labelKo: slot.labelKo,
-    }));
-    saveQuickMenuSlots(persistedSix);
-    onSlotsChange?.(persistedSix);
+    saveQuickMenuSlots(normalizeQuickMenuSlots(nextSlots));
+    if (isEightSlot) saveRadialQuickMenuExtraSlots(nextSlots);
+    onSlotsChange?.(nextSlots);
   };
 
   const handleAssignSlotAction = (actionId: QuickMenuActionId) => {

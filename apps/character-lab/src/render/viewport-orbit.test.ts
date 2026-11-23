@@ -16,8 +16,8 @@ import {
   wheelZoomRadius,
 } from "./viewport-orbit";
 
-import type { WorldBounds } from "./camera-framing";
 import type { CameraFraming } from "../contracts";
+import type { WorldBounds } from "./camera-framing";
 
 /** 키 1.65 m 인체 bbox(A 포즈, 팔 포함 폭 0.6 m) */
 const BODY: WorldBounds = { min: [-0.3, 0, -0.15], max: [0.3, 1.65, 0.15] };

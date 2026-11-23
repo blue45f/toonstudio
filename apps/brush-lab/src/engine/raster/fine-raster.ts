@@ -9,7 +9,6 @@ import { WET_CH } from "../wet/state";
 import { superellipseCoverage } from "./coverage";
 import { dabExtentPx, dabTileBounds, MAX_TILES_PER_DAB_DEFAULT, TILE_PIXELS, TILE_SIZE, tileRefs } from "./tile-binning";
 
-import type { BinResult } from "./tile-binning";
 import type { Curve } from "../core/curve";
 import type { DabBatch } from "../core/dab-layout";
 import type { DabInstance, TipKind } from "../core/types";
@@ -18,6 +17,7 @@ import type { PaperField } from "../texture/paper-grain";
 import type { TipMask } from "../texture/tip-generators";
 import type { OilCarry } from "../wet/oil-layer";
 import type { WetState, WetTile } from "../wet/state";
+import type { BinResult } from "./tile-binning";
 
 /**
  * CPU 참조 fine 래스터라이저. GPU `raster_tile`과 같은 수식·순서:

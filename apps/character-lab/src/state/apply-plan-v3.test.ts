@@ -22,8 +22,8 @@ import golden from "../testing/recipe-v2-plan-golden.json";
 
 import { createApplyPlanner, planApply } from "./apply-plan";
 
-import type { ApplyPlannerOptions, PartLayoutEntry } from "./apply-plan";
 import type { CharacterRecipe, CustomCapabilities, PresetEntry, PresetId, RecipePatch, SlotCapabilityMap } from "../contracts";
+import type { ApplyPlannerOptions, PartLayoutEntry } from "./apply-plan";
 
 interface GoldenCatalogOverride {
   readonly id: string;

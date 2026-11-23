@@ -80,10 +80,7 @@ fn to_blend(blend: BlendModeIR) -> BlendMode {
     BlendMode::new(mix, Compose::SrcOver)
 }
 
-fn gradient_stops(
-    stops: &[crate::scene::GradientStopIR],
-    opacity: f32,
-) -> Vec<(f32, Color)> {
+fn gradient_stops(stops: &[crate::scene::GradientStopIR], opacity: f32) -> Vec<(f32, Color)> {
     stops
         .iter()
         .map(|stop| (stop.offset, to_color_with_opacity(&stop.color, opacity)))
@@ -107,9 +104,8 @@ fn set_paint(ctx: &mut RenderContext, paint: &PaintIR, opacity: f32) {
             radius,
             stops,
         } => {
-            let gradient =
-                Gradient::new_radial(Point::new(center[0], center[1]), *radius as f32)
-                    .with_stops(gradient_stops(stops, opacity).as_slice());
+            let gradient = Gradient::new_radial(Point::new(center[0], center[1]), *radius as f32)
+                .with_stops(gradient_stops(stops, opacity).as_slice());
             ctx.set_paint(gradient);
         }
         PaintIR::SweepGradient {
@@ -143,7 +139,7 @@ fn collect_invalid_paints(nodes: &[SceneNodeIR], problems: &mut Vec<String>) {
             ..
         } = paint
         {
-            if !(end_angle_deg > start_angle_deg) {
+            if end_angle_deg.partial_cmp(start_angle_deg) != Some(std::cmp::Ordering::Greater) {
                 problems.push(format!(
                     "node {id}: sweep-gradient requires endAngleDeg > startAngleDeg (got {start_angle_deg}..{end_angle_deg})"
                 ));
@@ -152,8 +148,9 @@ fn collect_invalid_paints(nodes: &[SceneNodeIR], problems: &mut Vec<String>) {
     }
     for node in nodes {
         match node {
-            SceneNodeIR::FillPath { id, paint, .. }
-            | SceneNodeIR::StrokePath { id, paint, .. } => check(id, paint, problems),
+            SceneNodeIR::FillPath { id, paint, .. } | SceneNodeIR::StrokePath { id, paint, .. } => {
+                check(id, paint, problems)
+            }
             SceneNodeIR::Group { children, .. } => collect_invalid_paints(children, problems),
             SceneNodeIR::Text { .. } => {}
         }
@@ -272,7 +269,11 @@ pub fn render_scene(scene: &SceneIR) -> Result<Vec<u8>, RenderError> {
             scene.version
         )));
     }
-    if scene.width == 0 || scene.height == 0 || scene.width > u16::MAX as u32 || scene.height > u16::MAX as u32 {
+    if scene.width == 0
+        || scene.height == 0
+        || scene.width > u16::MAX as u32
+        || scene.height > u16::MAX as u32
+    {
         return Err(RenderError::InvalidScene(format!(
             "scene size out of range: {}x{}",
             scene.width, scene.height

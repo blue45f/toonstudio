@@ -19,8 +19,8 @@ import { disposePartToonMaterials } from "./character-rig";
 import { fromQuaternion, fromVector3 } from "./convert";
 import { RigBindError, rigMeshMetadata } from "./mesh-binding";
 
-import type { CharacterRig, RigBone, RigMaterialHooks, RigPart } from "./character-rig";
 import type { AuthoredPackagePlan, HumanoidBoneName, PartRole, Quat } from "../../contracts";
+import type { CharacterRig, RigBone, RigMaterialHooks, RigPart } from "./character-rig";
 import type { Bone } from "@babylonjs/core/Bones/bone.js";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { MorphTarget } from "@babylonjs/core/Morph/morphTarget.js";

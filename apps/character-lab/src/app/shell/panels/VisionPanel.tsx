@@ -24,12 +24,12 @@ import { useImageLifecycle } from "./vision-image-lifecycle";
 import { createBrowserVisionDeps } from "./vision-panel-deps";
 import { PhotoPoseSection } from "./vision-photo-pose-section";
 
-import type { DecodedImage, VisionPanelDeps } from "./vision-panel-deps";
 import type { LabFailure, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/vision/kmeans-palette";
 import type { ReferenceRecommendation } from "../../../domains/vision/reference-recommender";
 import type { VisionDelegate, VisionLoaders, VisionModelKey, VisionModelStatus } from "../../../domains/vision/vision-ports";
 import type { VisionSession } from "../../../domains/vision/vision-session";
+import type { DecodedImage, VisionPanelDeps } from "./vision-panel-deps";
 
 export { createBrowserVisionDeps } from "./vision-panel-deps";
 export type { DecodedImage, VisionPanelDeps } from "./vision-panel-deps";

@@ -311,6 +311,7 @@ export const STUDIO_PROCREATE_BRUSH_PRESETS: readonly ProcreateSilicaBrushPreset
     descriptionKo: "압력에 따라 부드러운 파스텔 결에서 짙은 벨벳 밀도로 전이되는 드로잉 브러시.",
     crafts: ["sketch", "coloring"],
     config: makeProcreatePresetConfig({
+      shape: { softness01: 0.46 },
       grain: { mode: "texturized", depth01: 0.68, depthMinimum01: 0.2 },
       rendering: { mode: "uniform-glaze", wetEdges01: 0.14 },
       applePencil: { pressureBleed01: 0.35, tiltSize01: 0.6 },
@@ -340,7 +341,8 @@ export const STUDIO_PROCREATE_BRUSH_PRESETS: readonly ProcreateSilicaBrushPreset
     config: makeProcreatePresetConfig({
       grain: { mode: "moving", movementRolling01: 0.45, depth01: 0.64 },
       rendering: { mode: "uniform-blending", wetEdges01: 0.45, burntEdges01: 0.35 },
-      wetMix: { dilution01: 0.68, charge01: 0.55, pull01: 0.62, attack01: 0.5 },
+      wetMix: { dilution01: 0.68, charge01: 0.64, pull01: 0.66, attack01: 0.5 },
+      materials3d: { roughnessScale01: 0.34 },
     }),
   },
   {
@@ -373,9 +375,10 @@ export const STUDIO_PROCREATE_BRUSH_PRESETS: readonly ProcreateSilicaBrushPreset
     descriptionKo: "거친 모래사장 입자와 스트로크 색상 변조가 어우러진 표현주의 아티스틱 브러시.",
     crafts: ["coloring", "tone"],
     config: makeProcreatePresetConfig({
-      shape: { scatter01: 0.32, count: 3 },
+      shape: { scatter01: 0.32, count: 3, softness01: 0.34 },
       grain: { mode: "moving", movementRolling01: 0.3, depth01: 0.82 },
-      wetMix: { dilution01: 0.35, pull01: 0.55, charge01: 0.65 },
+      rendering: { wetEdges01: 0.06 },
+      wetMix: { dilution01: 0.18, pull01: 0.55, charge01: 0.65 },
       colorDynamics: {
         ...DEFAULT_PROCREATE_SILICA_BRUSH_CONFIG.colorDynamics,
         strokeHue01: 0.08,
@@ -458,6 +461,7 @@ export const STUDIO_PROCREATE_BRUSH_PRESETS: readonly ProcreateSilicaBrushPreset
     descriptionKo: "기울기 임계각 이후 폭발적으로 넓어지는 목탄 면적과 파우더리한 그레인 블리드를 재현한 목탄.",
     crafts: ["sketch", "tone"],
     config: makeProcreatePresetConfig({
+      shape: { softness01: 0.38 },
       grain: { mode: "texturized", depth01: 0.86, contrast: 0.4 },
       applePencil: {
         tiltAngleThresholdDeg: 25,
@@ -503,7 +507,8 @@ export const STUDIO_PROCREATE_BRUSH_PRESETS: readonly ProcreateSilicaBrushPreset
     descriptionKo: "미세한 입자 그레인으로 일러스트 피부 질감과 필름 그레인 마감 디테일을 더하는 터치업 브러시.",
     crafts: ["tone", "effect"],
     config: makeProcreatePresetConfig({
-      grain: { mode: "texturized", scale01: 0.12, depth01: 0.9, offsetJitter: true },
+      shape: { softness01: 0.82, scatter01: 0.18 },
+      grain: { mode: "texturized", scale01: 0.12, depth01: 0.26, offsetJitter: true },
       rendering: { mode: "light-glaze" },
     }),
   },

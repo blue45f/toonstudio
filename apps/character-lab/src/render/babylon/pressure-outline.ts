@@ -35,8 +35,8 @@ import {
 } from "./pressure-garment-stencil";
 import { isPressureOcclusionRenderPass } from "./pressure-occlusion-pass";
 
-import type { CharacterRig, RigPart } from "./character-rig";
 import type { IndexRun } from "../kit-region-mask";
+import type { CharacterRig, RigPart } from "./character-rig";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 

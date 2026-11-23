@@ -13,13 +13,13 @@ import { useImageLifecycle } from "./vision-image-lifecycle";
 import { VisionLandmarkPreview } from "./vision-landmark-preview";
 import { LiveHandsControls } from "./vision-live-hands-controls";
 
-import type { VisionPoseTarget } from "./shaper-vision-ai-section";
-import type { DecodedImage, VisionPanelDeps } from "./vision-panel-deps";
 import type { LabFailure, LandmarkApplyScope } from "../../../contracts";
 import type { LandmarkSpace } from "../../../domains/vision/landmark-space";
 import type { LandmarksToPoseResult } from "../../../domains/vision/landmarks-to-pose";
 import type { HandDetection, PoseDetection } from "../../../domains/vision/vision-ports";
 import type { VisionSession } from "../../../domains/vision/vision-session";
+import type { VisionPoseTarget } from "./shaper-vision-ai-section";
+import type { DecodedImage, VisionPanelDeps } from "./vision-panel-deps";
 
 type PoseState =
   | { readonly phase: "idle" }

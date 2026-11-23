@@ -571,7 +571,7 @@ export async function trackFace(video: HTMLVideoElement, onScores: (scores: Map<
   facts: [
     { value: "34 ms", label: t("추론 시간 중앙값이 이를 넘으면 품질을 한 단계 낮춤", "Median inference time above which quality drops one tier"), source: `${VRM_DIR}/studio-vrm-tracking-quality.ts` },
     { value: "20 frames", label: t("중립 자세 보정에 쓰는 프레임 수", "Frames measured for neutral-pose calibration"), source: `${VRM_DIR}/studio-vrm-tracking-calibration.ts` },
-    { value: "0.10.35", label: t("앱이 직접 쓰는 @mediapipe/tasks-vision 설치 버전(lock 파일 기준, drei 가 끌어오는 0.10.17 은 별도)", "Installed @mediapipe/tasks-vision version the app uses directly (per the lockfile; the 0.10.17 pulled in by drei is separate)"), source: "pnpm-lock.yaml" },
+    { value: "1.2.3", label: t("SIMD용 SDK 설치 버전. SIMD 미지원 기기는 별도 0.10.35 SDK·WASM 쌍을 사용(lock 파일 기준, drei의 0.10.17은 별도)", "Installed SIMD SDK version. Devices without SIMD use the separate 0.10.35 SDK/WASM pair (per the lockfile; drei uses a separate 0.10.17)"), source: "pnpm-lock.yaml" },
   ],
   reviewedAt: "2026-10-07",
 };

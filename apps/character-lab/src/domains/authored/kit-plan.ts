@@ -16,8 +16,8 @@ import { buildKitPlanV2Detailed } from "./kit-plan-v2";
 import { selectHairLod } from "./mesh-role-mapping";
 import { joinPackageUrl } from "./package-plan";
 
-import type { AnyKitManifest, KitPlanOptions, KitPlanResult, KitPlanSlots, KitPlanSource } from "./kit-plan-common";
 import type { KitBaseId, KitManifest, KitMaterial, KitPart, KitPartPlan, KitPlan, LabFailure } from "../../contracts";
+import type { AnyKitManifest, KitPlanOptions, KitPlanResult, KitPlanSlots, KitPlanSource } from "./kit-plan-common";
 
 export { isKitManifestV2 } from "./kit-plan-common";
 export type { AnyKitManifest, KitPlanOptions, KitPlanResult, KitPlanSlots, KitPlanSource, KitPlanWardrobe } from "./kit-plan-common";

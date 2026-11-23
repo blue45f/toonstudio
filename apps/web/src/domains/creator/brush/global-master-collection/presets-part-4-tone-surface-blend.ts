@@ -334,7 +334,7 @@ export const GLOBAL_MASTER_PRESETS_PART_4: readonly GlobalMasterBrushPreset[] = 
     colorJitter: { hue: 18, saturation: 0.18, luminance: 0.08, perDab: true },
     wetness: 0.76, impastoHeight: 0.18, km7PigmentMix: 0.94, taperStart: 0.14, taperEnd: 0.22,
     pressureCurve: { gamma: 0.92, minSizeRatio: 0.34, minOpacityRatio: 0.34, velocityInfluence: -0.1, tiltShading: 0.38 },
-    spacing: 0.1, defaultSizePx: 26, defaultOpacity: 0.68,
+    spacing: 0.1, defaultSizePx: 26, defaultOpacity: 0.42,
     signatureFeelKo: "명암 경계에 따뜻한 채도 번짐(서브서피스 스캐터링)을 살짝 밀어 넣어 생기를 주는 크로마 블렌더.",
     signatureFeelEn: "Chromatic painterly blender that enriches shadow boundaries with warm subsurface color shifts.",
     defaultInkRgb: [208, 108, 132], blendBehavior: "chroma-bleed",

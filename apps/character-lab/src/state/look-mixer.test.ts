@@ -19,8 +19,8 @@ import { presetEntryFixture, vocabularyCatalogEntries } from "../testing/recipe-
 
 import { LOOK_MIXER_VERSION, mixLook, nextMixSeed, oklchHex } from "./look-mixer";
 
-import type { LookMixerInput, LookMixResult } from "./look-mixer";
 import type { AccessoryAnchor, ArtStyleId, ArtStylePack, CharacterRecipe, CustomCapabilities, LookLockGroup, PresetId } from "../contracts";
+import type { LookMixerInput, LookMixResult } from "./look-mixer";
 
 // ---------------------------------------------------------------- fixture
 

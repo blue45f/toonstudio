@@ -8,9 +8,9 @@
  */
 import { DEFAULT_SHADING, applyQualityPreset, createKitDefaultRecipe } from "../../contracts";
 
+import type { ShadingProfile } from "../../contracts";
 import type { KitPreviewQuality, KitPreviewShading, KitPreviewToonOverrides } from "./cli-args";
 import type { PreviewSourceKind } from "./kit-plan-adapter";
-import type { ShadingProfile } from "../../contracts";
 
 export interface ViewerShadingInput {
   readonly sourceKind: PreviewSourceKind;

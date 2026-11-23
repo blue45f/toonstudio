@@ -7,8 +7,8 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 
-import type { GltfValidatorApi } from "./types/gltf-validator";
 import type { RefinedAssetVerifierRuntime } from "../apps/web/tools/browser-harnesses/refined-assets-runtime";
+import type { GltfValidatorApi } from "./types/gltf-validator";
 
 type StageEntry = Record<string, unknown> & { id: string; kind?: string; path?: string; url?: string; group?: string; sha256?: string };
 type SourceAsset = { id: string; group: string; url: string; sourcePath: string; stageEntry?: StageEntry };

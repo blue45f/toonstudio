@@ -77,16 +77,16 @@ import { WET_COMPOSITE_WGSL } from "./wgsl/wet-composite.wgsl";
 import { WET_OIL_WGSL } from "./wgsl/wet-oil.wgsl";
 import { WET_WATER_WGSL } from "./wgsl/wet-water.wgsl";
 
-import type { SumiBuffers } from "./buffers";
-import type { EntryPointName, ParamScalarName, ParamsValues, WetEntryName, WetFamilyName } from "./layout";
-import type { PresentPipeline } from "./present";
-import type { TableHeaderReadback } from "./readback";
-import type { WetResources } from "./wet-bindings";
 import type { DabBatch } from "../core/dab-layout";
 import type { Clock, LabImage, TipKind } from "../core/types";
 import type { BrushProgram, BrushTipSpec } from "../presets/program-schema";
 import type { PaperField } from "../texture/paper-grain";
 import type { TipMask } from "../texture/tip-generators";
+import type { SumiBuffers } from "./buffers";
+import type { EntryPointName, ParamScalarName, ParamsValues, WetEntryName, WetFamilyName } from "./layout";
+import type { PresentPipeline } from "./present";
+import type { TableHeaderReadback } from "./readback";
+import type { WetResources } from "./wet-bindings";
 
 /**
  * Sumi WebGPU compute 타일 파이프라인 런타임(주력 레인).

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import mannequinHandTrackingSource from "../scene-3d/studio-mannequin-hand-tracking.ts?raw";
 import mannequinTrackingSource from "../scene-3d/studio-mannequin-webcam-tracking.ts?raw";
 import backgroundRemovalSource from "../studio-bg-remove.ts?raw";
 import vrmTrackingSource from "./studio-vrm-webcam-tracking.ts?raw";
 
 const sources = [
   ["VRM live/photo tracking", vrmTrackingSource],
+  ["mannequin hand tracking", mannequinHandTrackingSource],
   ["mannequin tracking", mannequinTrackingSource],
   ["foreground segmentation", backgroundRemovalSource],
 ] as const;
@@ -23,10 +25,12 @@ describe("MediaPipe Vision global initialization boundary", () => {
   it("never retries a selected task with another delegate or Wasm variant", () => {
     expect(vrmTrackingSource.match(/\.createFromOptions\(/gu)).toHaveLength(5);
     expect(mannequinTrackingSource.match(/\.createFromOptions\(/gu)).toHaveLength(1);
+    expect(mannequinHandTrackingSource.match(/\.createFromOptions\(/gu)).toHaveLength(1);
     expect(backgroundRemovalSource.match(/\.createFromOptions\(/gu)).toHaveLength(1);
     for (const source of [
       vrmTrackingSource,
       mannequinTrackingSource,
+      mannequinHandTrackingSource,
       backgroundRemovalSource,
     ]) {
       expect(source).not.toContain("falling back to CPU");
