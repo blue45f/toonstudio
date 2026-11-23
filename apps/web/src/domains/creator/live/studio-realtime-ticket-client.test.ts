@@ -24,6 +24,32 @@ const request: StudioRealtimeTicketRequest = {
 };
 
 describe("StudioRealtimeHttpTicketIssuer", () => {
+  it("오프라인 대기 중에는 입장권 타이머를 시작하지 않고 재연결 뒤 현재 세션만 발급한다", async () => {
+    const browser = Object.assign(new EventTarget(), { navigator: { onLine: false } });
+    vi.stubGlobal("window", browser);
+    try {
+      const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response("{}", { status: 200 }));
+      const timeout = vi.fn();
+      const issuer = new StudioRealtimeHttpTicketIssuer({
+        endpoint: "/api/studio-realtime/tickets", fetch, setTimeout: timeout, clearTimeout: vi.fn(),
+      });
+      const previous = new AbortController();
+      const stale = issuer.issue(request, previous.signal);
+      const active = issuer.issue(request, new AbortController().signal);
+      previous.abort();
+      await expect(stale).rejects.toMatchObject({ name: "AbortError" });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(timeout).not.toHaveBeenCalled();
+      browser.navigator.onLine = true;
+      browser.dispatchEvent(new Event("online"));
+      await expect(active).resolves.toEqual({});
+      expect(fetch).toHaveBeenCalledOnce();
+      expect(timeout).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("uses only the HttpOnly cookie boundary and keeps tickets out of URLs", async () => {
     const response = {
       version: 1,
