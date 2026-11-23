@@ -15,7 +15,7 @@ import {
   captureStudioBg3dShot,
   serializeStudioBg3dSceneDocument,
   type StudioBg3dSceneDocument,
-} from "./bg3d/studio-bg3d-scene-document";
+} from "./contracts/studio-bg3d-scene-document";
 import {
   isStudioLinked3dPassRevisionForScene,
   parseStudioLinked3dPassLocator,

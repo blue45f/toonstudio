@@ -9,7 +9,7 @@ import {
   parseStudioVrmSceneDocument,
   serializeStudioVrmSceneDocument,
   type StudioVrmSceneDocument,
-} from "../vrm/studio-vrm-scene-document";
+} from "../contracts/studio-vrm-scene-document";
 
 import type {
   StudioShared3dCharacterStageTransform,

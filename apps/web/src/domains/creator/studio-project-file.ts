@@ -19,7 +19,7 @@ import {
   migrateStudioBg3dSceneDocument,
   parseStudioBg3dSceneDocument,
   serializeStudioBg3dSceneDocument,
-} from "./bg3d/studio-bg3d-scene-document";
+} from "./contracts/studio-bg3d-scene-document";
 import { parseStudioDrawingAssistDocument } from "./brush/studio-drawing-assist-document";
 import { parseStudioDrawingPracticeDocument } from "./studio-drawing-practice-document";
 import {
@@ -41,7 +41,7 @@ import {
   migrateStudioVrmSceneDocument,
   parseStudioVrmSceneDocument,
   serializeStudioVrmSceneDocument,
-} from "./vrm/studio-vrm-scene-document";
+} from "./contracts/studio-vrm-scene-document";
 
 const STUDIO_PROJECT_MAX_ELEMENTS_PER_PAGE_OR_MASTER = 10_000;
 

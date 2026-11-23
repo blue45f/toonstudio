@@ -22,7 +22,7 @@ import type {
   StudioBg3dPoseLayer,
   StudioBg3dMorphLayer,
   StudioBg3dSceneBudgets,
-} from "./bg3d/studio-bg3d-scene-document";
+} from "./contracts/studio-bg3d-scene-document";
 import type { BgPrimitive } from "./studio-background-3d-primitives";
 
 import {
