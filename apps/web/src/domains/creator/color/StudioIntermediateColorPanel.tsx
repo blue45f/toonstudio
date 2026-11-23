@@ -185,7 +185,7 @@ export function StudioIntermediateColorPanel({
               className={cn(
                 "px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors border",
                 gridSize === size
-                  ? "bg-accent text-white border-accent font-semibold"
+                  ? "bg-accent text-on-accent border-accent font-semibold"
                   : "bg-card text-fg-2 border-line hover:text-fg hover:bg-raised",
               )}
               title={`${size}x${size} 그리드`}
@@ -199,7 +199,7 @@ export function StudioIntermediateColorPanel({
 
       {/* Preset Chips */}
       <div className="flex items-center gap-1 my-2 overflow-x-auto no-scrollbar">
-        <Sparkles size={12} className="text-amber-500 shrink-0" aria-hidden />
+        <Sparkles size={12} className="text-warn shrink-0" aria-hidden />
         {STUDIO_INTERMEDIATE_COLOR_PRESETS.map((preset) => (
           <button
             key={preset.id}

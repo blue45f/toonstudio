@@ -212,7 +212,7 @@ export function StudioPhotoLtBackgroundPanel({
       className={cn("flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3", className)}
       data-studio-photo-lt-background-panel="true"
     >
-      <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
         <Layers size={14} aria-hidden />
         {t("studio.photoLtBackground.title", "사진으로 선화 배경 만들기")}
       </div>

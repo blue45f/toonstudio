@@ -124,7 +124,7 @@ export function CreatorAnalyticsPage() {
 
   return (
     <div className="creator-analytics">
-      <section className="relative overflow-hidden border-b border-line bg-gradient-to-br from-accent/10 via-ledger to-panel">
+      <section className="relative overflow-hidden border-b border-line bg-gradient-to-br from-accent/10 via-canvas to-panel">
         <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
         <div
           className="pointer-events-none absolute -top-1/2 right-1/4 h-[44rem] w-[44rem] opacity-30 blur-3xl"

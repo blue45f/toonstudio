@@ -101,7 +101,7 @@ export function StudioFeatureOperationsPanel({
                     registration.tone === "governance"
                       ? "border-success/30 bg-success-soft/20 text-success"
                       : registration.tone === "publishing"
-                        ? "border-info/30 bg-info-soft/20 text-info"
+                        ? "border-cool/30 bg-cool/10 text-cool"
                         : "border-accent/25 bg-accent-soft text-accent",
                   )}
                 >

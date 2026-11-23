@@ -19,6 +19,9 @@ import {
 } from "./studio-bg3d-measurement";
 import { readStudioBg3dMeasurementPointFromThreeEvent } from "./studio-bg3d-measurement-three-adapter";
 
+const MEASUREMENT_DRAFT_COLOR = 0x2563eb;
+const MEASUREMENT_SAVED_COLOR = 0xf97316;
+
 function MeasurementLine({
   id,
   label,
@@ -43,7 +46,7 @@ function MeasurementLine({
     geometry.computeBoundingSphere();
   }, [endWorld, geometry, startWorld]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  const color = draft ? "#2563eb" : "#f97316";
+  const color = draft ? MEASUREMENT_DRAFT_COLOR : MEASUREMENT_SAVED_COLOR;
 
   return (
     <group>
@@ -129,7 +132,7 @@ function MeasurementGuideOverlay({
         <group position={[...startWorld]}>
           <mesh raycast={() => null} renderOrder={46}>
             <sphereGeometry args={[0.045, 12, 10]} />
-            <meshBasicMaterial color="#2563eb" depthTest={false} depthWrite={false} />
+            <meshBasicMaterial color={MEASUREMENT_DRAFT_COLOR} depthTest={false} depthWrite={false} />
           </mesh>
           <Html
             center

@@ -125,8 +125,8 @@ export function StudioEmotionStagingSuggestionPanel(
                   title={EXPRESSION_SUGGESTION_REASON_LABELS[expression.reason].ko}
                   className={
                     expression.rank === 1
-                      ? "min-h-10 rounded-full bg-accent px-4 text-sm font-bold text-white"
-                      : "min-h-10 rounded-full border border-line bg-panel px-4 text-sm font-semibold text-fg-2 hover:bg-panel-2"
+                      ? "min-h-10 rounded-full bg-accent px-4 text-sm font-bold text-on-accent"
+                      : "min-h-10 rounded-full border border-line bg-panel px-4 text-sm font-semibold text-fg-2 hover:bg-raised"
                   }
                 >
                   {props.resolveExpressionLabel?.(expression.presetId) ??
@@ -170,7 +170,7 @@ export function StudioEmotionStagingSuggestionPanel(
                       type="button"
                       onClick={() => applyPose(pose.presetId)}
                       aria-pressed={appliedPoseId === pose.presetId}
-                      className="min-h-10 shrink-0 rounded-full border border-line bg-panel px-4 text-sm font-semibold text-fg-2 hover:bg-panel-2"
+                      className="min-h-10 shrink-0 rounded-full border border-line bg-panel px-4 text-sm font-semibold text-fg-2 hover:bg-raised"
                     >
                       이 포즈 적용
                     </button>
@@ -184,7 +184,7 @@ export function StudioEmotionStagingSuggestionPanel(
             type="button"
             onClick={applyBoth}
             disabled={!topExpression || !topPose}
-            className="min-h-11 rounded-full bg-accent px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="min-h-11 rounded-full bg-accent px-4 text-sm font-bold text-on-accent disabled:cursor-not-allowed disabled:opacity-40"
           >
             추천 표정+포즈 함께 적용
           </button>

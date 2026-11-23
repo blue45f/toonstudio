@@ -2,7 +2,7 @@ import { brushStudioV6Node } from "./brush-studio-v6-engine";
 
 import type { BrushStudioV6ProviderRuntimePlan } from "./brush-studio-v6-provider-runtime";
 
-const ITEM = "rounded-xl border border-line bg-bg-2/55 p-3";
+const ITEM = "rounded-xl border border-line bg-panel/55 p-3";
 
 const BLOCKED_REASON = Object.freeze({
   "license-profile": "현재 라이선스 프로필에서 제외",

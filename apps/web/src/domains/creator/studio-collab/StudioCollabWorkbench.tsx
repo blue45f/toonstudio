@@ -81,7 +81,7 @@ export function StudioCollabWorkbench({
                 양쪽 피어에 작업 추가
               </button>
               <button type="button" onClick={exchangeVirtual}
-                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-hover">
+                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-2">
                 가상 교환 실행
               </button>
             </div>

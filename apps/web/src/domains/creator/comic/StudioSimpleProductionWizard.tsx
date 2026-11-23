@@ -44,7 +44,7 @@ const FOCUSABLE_SELECTOR =
   'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
 const NEXT_BUTTON_CLASS =
-  "ml-auto inline-flex min-h-11 min-w-24 items-center justify-center gap-1 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45";
+  "ml-auto inline-flex min-h-11 min-w-24 items-center justify-center gap-1 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45";
 const PREV_BUTTON_CLASS =
   "inline-flex min-h-11 min-w-24 items-center justify-center gap-1 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45";
 const OPTION_CLASS =
@@ -199,7 +199,7 @@ export function StudioSimpleProductionWizard({
   const content = (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-5"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-canvas/80 sm:items-center sm:p-5"
     >
       <div
         ref={dialogRef}

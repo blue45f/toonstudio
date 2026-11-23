@@ -26,7 +26,7 @@ function toBilingualLocale(locale: string): "ko" | "en" {
 const GRADE_STYLES = Object.freeze({
   A: "border-success/30 bg-success-soft/30 text-success",
   B: "border-accent/30 bg-accent-soft/30 text-accent-strong",
-  C: "border-warning/30 bg-warning-soft/30 text-warning-strong",
+  C: "border-warning/30 bg-warning-soft/30 text-warn",
   D: "border-danger/30 bg-danger-soft/30 text-danger",
 });
 
@@ -166,7 +166,7 @@ export function StudioCompatibilityReportsPanel({
                         {copyLocale === "ko" ? "손실 승인됨" : "Losses approved"}
                       </span>
                     ) : blocked ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-1 text-[0.62rem] font-bold text-warning-strong">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-1 text-[0.62rem] font-bold text-warn">
                         <AlertTriangle size={12} aria-hidden="true" />
                         {copyLocale === "ko" ? "승인 전 변환 금지" : "Blocked until approval"}
                       </span>

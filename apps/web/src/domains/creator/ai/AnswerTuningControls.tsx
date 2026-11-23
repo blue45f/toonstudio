@@ -61,11 +61,11 @@ function TuningGroup<T extends string>(props: {
             className={
               props.value === option.value
                 ? props.compact
-                  ? "min-h-9 bg-accent px-2.5 text-[0.63rem] font-bold text-white"
-                  : "min-h-9 bg-accent px-3 text-xs font-bold text-white"
+                  ? "min-h-9 bg-accent px-2.5 text-[0.63rem] font-bold text-on-accent"
+                  : "min-h-9 bg-accent px-3 text-xs font-bold text-on-accent"
                 : props.compact
-                  ? "min-h-9 bg-panel px-2.5 text-[0.63rem] font-semibold text-fg-2 hover:bg-panel-2"
-                  : "min-h-9 bg-panel px-3 text-xs font-semibold text-fg-2 hover:bg-panel-2"
+                  ? "min-h-9 bg-panel px-2.5 text-[0.63rem] font-semibold text-fg-2 hover:bg-raised"
+                  : "min-h-9 bg-panel px-3 text-xs font-semibold text-fg-2 hover:bg-raised"
             }
           >
             {option.label}

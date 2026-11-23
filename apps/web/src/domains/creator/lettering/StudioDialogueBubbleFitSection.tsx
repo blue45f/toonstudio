@@ -47,7 +47,7 @@ const KIND_LABEL: Record<BubbleFitWarningKind, string> = {
 const KIND_BADGE_CLASS: Record<BubbleFitWarningKind, string> = {
   overflow: "border-warn/45 bg-warn/10 text-fg-2",
   shrink: "border-line bg-card text-fg-3",
-  unmeasurable: "border-line bg-card text-fg-4",
+  unmeasurable: "border-line bg-card text-fg-3",
 };
 
 export function StudioDialogueBubbleFitSection({
@@ -93,7 +93,7 @@ export function StudioDialogueBubbleFitSection({
                           aria-hidden
                           className={cx(
                             "shrink-0",
-                            warning.kind === "overflow" ? "text-warn" : "text-fg-4"
+                            warning.kind === "overflow" ? "text-warn" : "text-fg-3"
                           )}
                         />
                         <span
@@ -112,12 +112,12 @@ export function StudioDialogueBubbleFitSection({
                         {warning.message}
                       </span>
                       {warning.kind === "overflow" && warning.requiredHeight != null ? (
-                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-4">
+                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-3">
                           지금 높이 {warning.boxHeight}px → 필요 높이 약 {warning.requiredHeight}px
                         </span>
                       ) : null}
                       {warning.kind === "shrink" && warning.fittedFontSize != null ? (
-                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-4">
+                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-3">
                           글자 {warning.fontSize}px → 약 {warning.fittedFontSize}px
                         </span>
                       ) : null}
@@ -131,12 +131,12 @@ export function StudioDialogueBubbleFitSection({
       )}
 
       {summary.unmeasurableCount > 0 ? (
-        <p className="text-[0.6rem] leading-snug text-fg-4">
+        <p className="text-[0.6rem] leading-snug text-fg-3">
           크기 정보가 없어 확인하지 못한 말풍선이 {summary.unmeasurableCount}개 있어요.
           "들어간다"는 뜻은 아니에요.
         </p>
       ) : null}
-      <p className="text-[0.6rem] leading-snug text-fg-4">
+      <p className="text-[0.6rem] leading-snug text-fg-3">
         실제 식자와 같은 핏 계산을 미리 돌린 예상이에요. 작품 글꼴·테마가 다르면 결과가
         달라질 수 있어요.
       </p>

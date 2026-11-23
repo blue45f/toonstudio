@@ -414,13 +414,13 @@ export function StudioVrmAvatarForgePreview({
       <title>{accessibleLabel}</title>
       <defs>
         <linearGradient id={backgroundGradientId} x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stopColor="var(--color-card, #fffaf5)" />
-          <stop offset="1" stopColor="var(--color-panel, #f3ebe3)" />
+          <stop offset="0" stopColor="var(--color-card)" />
+          <stop offset="1" stopColor="var(--color-panel)" />
         </linearGradient>
         <linearGradient id={skinGradientId} x1="0.15" x2="0.85" y1="0" y2="1">
-          <stop offset="0" stopColor="#ffe8d9" />
-          <stop offset="0.62" stopColor="#f5cdb8" />
-          <stop offset="1" stopColor="#dca98f" />
+          <stop offset="0" stopColor="var(--color-fg)" />
+          <stop offset="0.62" stopColor="var(--color-fg-2)" />
+          <stop offset="1" stopColor="var(--color-fg-3)" />
         </linearGradient>
         <linearGradient id={hairGradientId} x1="0" x2="0.9" y1="0" y2="1">
           <stop offset="0" stopColor={safe.hair.shadowColor ?? safe.hair.baseColor} />
@@ -430,18 +430,18 @@ export function StudioVrmAvatarForgePreview({
           <stop offset="1" stopColor={safe.hair.shadowColor ?? safe.hair.tipColor} />
         </linearGradient>
         <filter id={hairShadowId} x="-20%" y="-20%" width="140%" height="150%">
-          <feDropShadow dx="0" dy="1.4" floodColor="#000" floodOpacity="0.24" stdDeviation="1.1" />
+          <feDropShadow dx="0" dy="1.4" floodColor="var(--color-reader-canvas)" floodOpacity="0.24" stdDeviation="1.1" />
         </filter>
       </defs>
 
       <rect fill={`url(#${backgroundGradientId})`} height="196" rx="18" width="156" x="2" y="2" />
-      <path d="M24 184c8-22 25-35 56-35s48 13 56 35v12H24Z" fill="var(--color-raised, #ddd1c7)" />
+      <path d="M24 184c8-22 25-35 56-35s48 13 56 35v12H24Z" fill="var(--color-raised)" />
       {showBody ? (
         <g>
           <path
             d={`M${80 - shoulderHalf} 176c5-${torsoHeight * 0.45} 16-${torsoHeight * 0.75} 30-${torsoHeight * 0.82}l10 0c14 ${torsoHeight * 0.07} 25 ${torsoHeight * 0.37} 30 ${torsoHeight * 0.82}v20H${80 - shoulderHalf}Z`}
-            fill="var(--color-accent-soft, #ead7c6)"
-            stroke="var(--color-line, #8b786a)"
+            fill="var(--color-accent-soft)"
+            stroke="var(--color-line)"
             strokeLinejoin="round"
             strokeWidth="2"
           />
@@ -468,7 +468,7 @@ export function StudioVrmAvatarForgePreview({
         fill={`url(#${skinGradientId})`}
         rx="5.5"
         ry="11"
-        stroke="#b98772"
+        stroke="var(--color-fg-3)"
         strokeWidth="1.2"
       />
       <ellipse
@@ -477,7 +477,7 @@ export function StudioVrmAvatarForgePreview({
         fill={`url(#${skinGradientId})`}
         rx="5.5"
         ry="11"
-        stroke="#b98772"
+        stroke="var(--color-fg-3)"
         strokeWidth="1.2"
       />
       <ellipse
@@ -486,19 +486,19 @@ export function StudioVrmAvatarForgePreview({
         fill={`url(#${skinGradientId})`}
         rx={headWidth / 2}
         ry={headHeight / 2}
-        stroke="#9f6f5d"
+        stroke="var(--color-line-strong)"
         strokeWidth="1.6"
       />
-      <g fill="#2d2321" stroke="#2d2321" strokeLinecap="round">
+      <g fill="var(--color-canvas)" stroke="var(--color-canvas)" strokeLinecap="round">
         <path d={`M${headCx - eyeSpacing - 7} ${headCy - 6}q7-5 14 0`} fill="none" strokeWidth="2.1" />
         <path d={`M${headCx + eyeSpacing - 7} ${headCy - 6}q7-5 14 0`} fill="none" strokeWidth="2.1" />
         <ellipse cx={headCx - eyeSpacing} cy={headCy - 4.5} rx="3.2" ry="4.8" />
         <ellipse cx={headCx + eyeSpacing} cy={headCy - 4.5} rx="3.2" ry="4.8" />
-        <circle cx={headCx - eyeSpacing - 0.8} cy={headCy - 6.2} fill="#fff" r="0.9" stroke="none" />
-        <circle cx={headCx + eyeSpacing - 0.8} cy={headCy - 6.2} fill="#fff" r="0.9" stroke="none" />
+        <circle cx={headCx - eyeSpacing - 0.8} cy={headCy - 6.2} fill="var(--color-fg)" r="0.9" stroke="none" />
+        <circle cx={headCx + eyeSpacing - 0.8} cy={headCy - 6.2} fill="var(--color-fg)" r="0.9" stroke="none" />
       </g>
-      <path d={`M${headCx - 2} ${headCy + 5}q2 3 4 0`} fill="none" stroke="#b77f6b" strokeLinecap="round" strokeWidth="1.4" />
-      <path d={`M${headCx - 8} ${headCy + 18}q8 ${4 + safe.face.cheekVolume * 2} 16 0`} fill="none" stroke="#9f4f55" strokeLinecap="round" strokeWidth="1.8" />
+      <path d={`M${headCx - 2} ${headCy + 5}q2 3 4 0`} fill="none" stroke="var(--color-line-strong)" strokeLinecap="round" strokeWidth="1.4" />
+      <path d={`M${headCx - 8} ${headCy + 18}q8 ${4 + safe.face.cheekVolume * 2} 16 0`} fill="none" stroke="var(--color-bad)" strokeLinecap="round" strokeWidth="1.8" />
       <FaceAccents state={safe} cx={headCx} cy={headCy} width={headWidth} height={headHeight} />
       {safe.hair.style !== "none" ? (
         <>
@@ -518,7 +518,7 @@ export function StudioVrmAvatarForgePreview({
             data-forge-hair-detail="true"
             fill="none"
             opacity={0.18 + safe.hair.shine * 0.34}
-            stroke="#fff"
+            stroke="var(--color-fg)"
             strokeLinecap="round"
             strokeWidth="1.5"
           >
@@ -529,7 +529,7 @@ export function StudioVrmAvatarForgePreview({
             d="M56 37c13-16 39-19 54-1"
             fill="none"
             opacity={0.22 + safe.hair.shine * 0.4}
-            stroke="#fff"
+            stroke="var(--color-fg)"
             strokeLinecap="round"
             strokeWidth="4"
           />

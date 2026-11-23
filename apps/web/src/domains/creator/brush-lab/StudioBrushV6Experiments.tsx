@@ -97,7 +97,7 @@ export function StudioBrushV6Experiments({ program, reference, onPin, onRestore,
           </figure>
         </div>
         <p className="mt-3 text-xs text-fg-3">같은 궤적·필압으로 비교합니다.{reference.seed !== program.seed ? " 개성 시드도 달라졌으므로 질감 배치가 함께 바뀝니다." : " 질감 시드도 동일합니다."}</p>
-        {differences.length ? <details className="mt-3 rounded-xl border border-line bg-bg-2/55 p-3">
+        {differences.length ? <details className="mt-3 rounded-xl border border-line bg-panel/55 p-3">
           <summary className={`cursor-pointer text-xs font-bold text-fg-2 ${STUDIO_FOCUS_RING}`}>기준에서 바뀐 설정 {differences.length}개</summary>
           <dl className="mt-3 space-y-2">
             {differences.map((difference) => <div key={difference.path} className="grid gap-1 text-xs sm:grid-cols-[7.5rem_minmax(0,1fr)]">

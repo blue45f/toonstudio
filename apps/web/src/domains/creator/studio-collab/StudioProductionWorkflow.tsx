@@ -115,7 +115,7 @@ export function StudioProductionWorkflow({ initial = EMPTY_PRODUCTION_WORKFLOW, 
           <input value={episodeTitle} onChange={(event) => setEpisodeTitle(event.target.value.slice(0, 100))} maxLength={100}
             placeholder="예: 12화 — 새로운 동료" className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent" />
         </label>
-        <button type="submit" className="mt-auto inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-hover">
+        <button type="submit" className="mt-auto inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-2">
           회차 추가
         </button>
       </form>
@@ -223,7 +223,7 @@ export function StudioProductionWorkflow({ initial = EMPTY_PRODUCTION_WORKFLOW, 
                     onChange={(event) => setReviewNotes((current) => ({ ...current, [item.id]: event.target.value.slice(0, 500) }))}
                     className="min-h-11 min-w-[10rem] flex-1 rounded-lg border border-line bg-panel px-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent" />
                   <button type="button" onClick={() => apply(decideProductionReview(state, { queueId: item.id, decision: "approved", note: reviewNotes[item.id] ?? "" }))}
-                    className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-hover">
+                    className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-2">
                     승인
                   </button>
                   <button type="button" onClick={() => apply(decideProductionReview(state, { queueId: item.id, decision: "changes-requested", note: reviewNotes[item.id] ?? "" }))}
