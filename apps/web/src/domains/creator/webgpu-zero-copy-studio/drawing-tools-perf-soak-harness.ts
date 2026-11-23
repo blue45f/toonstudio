@@ -352,6 +352,20 @@ export function runComposite10FilterGraphSoak(
   const timings = new Float64Array(COMPOSITE_10_FILTER_NAMES.length);
   const checksums = new Set<number>();
 
+  // V8 콜드 JIT 컴파일 스파이크를 배제하기 위한 8×8 초소형 사전 워밍업(계측 제외)
+  const warmBuf = new Uint8ClampedArray(8 * 8 * 4);
+  const warmOut = new Uint8ClampedArray(8 * 8 * 4);
+  const warmScratch = new Float32Array(8 * 8 * 4);
+  const warmHeight = new Float32Array(8 * 8);
+  applySeparableFilterGraphCpu(8, 8, warmBuf, {
+    blurRadius: 1, unsharpAmount: 0.5, hueShiftDeg: 10, saturationDelta: 0.1, lightnessDelta: 0,
+  }, warmOut, warmScratch);
+  applyImpastoReliefCpu(8, 8, warmBuf, warmHeight, impastoCfg, warmOut);
+  compositeMultiLayerCpu(8, 8, [
+    { pixels: warmBuf, blendMode: "normal", opacity: 1 },
+    { pixels: warmBuf, blendMode: "overlay", opacity: 0.3 },
+  ], warmOut);
+
   for (let i = 0; i < COMPOSITE_10_FILTER_NAMES.length; i += 1) {
     const name = COMPOSITE_10_FILTER_NAMES[i];
     const t0 = nowMs();
