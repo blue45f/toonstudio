@@ -5,6 +5,7 @@
  * - 브라우저 영속 키-값 저장소는 일절 사용하지 않는다.
  */
 import type { StudioPaperTextureId } from "../vibrant-studio-fx/studio-paper-and-pigment-physics";
+import { dispatchLiveNibVfxSample } from "./studio-live-nib-vfx-bridge";
 import type {
   StudioFoleyAudioEngine,
   StudioFoleyAudioEngineOptions,
@@ -266,6 +267,7 @@ export class StudioLiveStrokeFoleyController {
     this.lastY = finiteOr(input.y, 0);
     this.lastTriggerMs = now;
     this.accumulatedDistPx = 0;
+    dispatchLiveNibVfxSample({ x: this.lastX, y: this.lastY, phase: "down", pressure: clamp01(input.pressure, 0.5), tiltX: finiteOr(input.tiltX, 0), tiltY: finiteOr(input.tiltY, 0), brushId: input.brushId ?? undefined, drawMode: input.drawMode ?? undefined, timestampMs: now });
     if (this.muted || this.preset === "silent-focus") return null;
 
     const contactParams = {
@@ -300,11 +302,13 @@ export class StudioLiveStrokeFoleyController {
       return null;
     }
 
-    this.accumulatedDistPx += Math.hypot(x - this.lastX, y - this.lastY);
+    const stepDistPx = Math.hypot(x - this.lastX, y - this.lastY);
+    this.accumulatedDistPx += stepDistPx;
     this.lastX = x;
     this.lastY = y;
-    if (this.muted || this.preset === "silent-focus") return null;
     const dtMs = now - this.lastTriggerMs;
+    dispatchLiveNibVfxSample({ x, y, phase: "move", pressure: clamp01(input.pressure, 0.52), tiltX: finiteOr(input.tiltX, 0), tiltY: finiteOr(input.tiltY, 0), speedPxPerMs: dtMs > 0 ? stepDistPx / Math.max(1, dtMs) : 0, brushId: input.brushId ?? undefined, drawMode: input.drawMode ?? undefined, timestampMs: now });
+    if (this.muted || this.preset === "silent-focus") return null;
     if (dtMs < this.minMoveIntervalMs || this.accumulatedDistPx < this.minMoveDistancePx) return null;
 
     const resolution = resolveStudioFoleySoundForBrush(input.brushId, input.drawMode, input.paperTexture);
@@ -323,6 +327,7 @@ export class StudioLiveStrokeFoleyController {
   }
 
   onStrokeEnd(): void {
+    if (this.strokeActive) dispatchLiveNibVfxSample({ x: this.lastX, y: this.lastY, phase: "up", timestampMs: this.latestClockMs ?? this.nowMs() });
     this.strokeActive = false;
     this.accumulatedDistPx = 0;
     this.lastTriggerMs = -Infinity;

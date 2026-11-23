@@ -21,11 +21,12 @@ import { cn } from "@/shared/lib/utils";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 const LazyStudioEdgeQuickSlidersAndHoldEyedropper = lazyRetry(
-  () =>
-    import("../drawing/StudioEdgeQuickSlidersAndHoldEyedropper").then((mod) => ({
-      default: mod.StudioEdgeQuickSlidersAndHoldEyedropper,
-    })),
+  () => import("../drawing/StudioEdgeQuickSlidersAndHoldEyedropper").then((mod) => ({ default: mod.StudioEdgeQuickSlidersAndHoldEyedropper })),
   "StudioEdgeQuickSlidersAndHoldEyedropper",
+);
+const LazyStudioNibTactileVfxOverlay = lazyRetry(
+  () => import("../brush-feel-vfx/StudioNibTactileVfxOverlay").then((mod) => ({ default: mod.StudioNibTactileVfxOverlay })),
+  "StudioNibTactileVfxOverlay",
 );
 
 export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSession) {
@@ -827,8 +828,7 @@ export function StudioCuttoonEditorCanvasColumn(s: StudioCuttoonEditorViewSessio
             s.commitPixelSelectionState(null, "clear");
           }}
         />
-
-
+        {!isExporting ? <Suspense fallback={null}><LazyStudioNibTactileVfxOverlay className="pointer-events-none absolute inset-0 z-10 h-full w-full" /></Suspense> : null}
         {pointCommentComposer ? (
           <Suspense fallback={null}>
             <StudioPointCommentComposer

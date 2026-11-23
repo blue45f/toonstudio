@@ -1,4 +1,4 @@
-import { Gauge, Volume1, Volume2, VolumeX } from "lucide-react";
+import { Gauge, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -14,6 +14,12 @@ import {
   type StudioLiveFoleyState,
   type StudioPressureCurvePreset,
 } from "./studio-live-stroke-foley-bridge";
+import {
+  cycleLiveNibVfxMode,
+  getLiveNibVfxMode,
+  subscribeLiveNibVfxMode,
+  type NibTactileVfxMode,
+} from "./studio-live-nib-vfx-bridge";
 
 export interface StudioLiveFoleyFeelControlsProps {
   readonly blocked: boolean;
@@ -40,8 +46,17 @@ function formatPressureCurveShort(
   return bt("표준", "Standard");
 }
 
+function formatNibVfxModeShort(
+  mode: NibTactileVfxMode,
+  bt: (ko: string, en: string) => string,
+): string {
+  if (mode === "vivid") return bt("생생함", "Vivid");
+  if (mode === "off") return bt("꺼짐", "Off");
+  return bt("은은함", "Subtle");
+}
+
 /**
- * 빠른 드로잉 인체공학 바의 원클릭 필기음(슥삭 Foley) · 필압 감도 커브 사이클 버튼.
+ * 빠른 드로잉 인체공학 바의 원클릭 필기음(슥삭 Foley) · 필기감 FX · 필압 감도 커브 사이클 버튼.
  * Calm Atelier 토큰(`.studio-drawing-ergonomics-chip`, 44px 터치 타깃, `word-break: keep-all`)을 따른다.
  */
 export function StudioLiveFoleyFeelControls({
@@ -55,12 +70,15 @@ export function StudioLiveFoleyFeelControls({
   const [pressureCurve, setPressureCurve] = useState<StudioPressureCurvePreset>(() =>
     getStudioPressureCurvePreset(),
   );
+  const [nibVfxMode, setNibVfxMode] = useState<NibTactileVfxMode>(() => getLiveNibVfxMode());
 
   useEffect(() => subscribeLiveFoleyState(setFoleyState), []);
   useEffect(() => subscribeStudioPressureCurve(setPressureCurve), []);
+  useEffect(() => subscribeLiveNibVfxMode(setNibVfxMode), []);
 
   const foleyShort = formatFoleyPresetShort(foleyState.preset, bt);
   const pressureShort = formatPressureCurveShort(pressureCurve, bt);
+  const nibVfxShort = formatNibVfxModeShort(nibVfxMode, bt);
   const foleyActive = !foleyState.muted && foleyState.preset !== "silent-focus";
 
   return (
@@ -88,6 +106,25 @@ export function StudioLiveFoleyFeelControls({
           <Volume1 size={15} aria-hidden />
         )}
         <span>{`${bt("필기음", "Foley")} · ${foleyShort}`}</span>
+      </button>
+
+      <button
+        type="button"
+        className="studio-drawing-ergonomics-chip [word-break:keep-all]"
+        aria-pressed={nibVfxMode !== "off"}
+        data-studio-nib-vfx-mode={nibVfxMode}
+        data-studio-aux-control="true"
+        onClick={() => {
+          const next = cycleLiveNibVfxMode();
+          onPushCue?.("V", bt("필기감 FX", "Nib VFX"), formatNibVfxModeShort(next, bt));
+        }}
+        title={bt(
+          "클릭할 때마다 실시간 필기감 이펙트(은은함 → 생생함 → 꺼짐)를 전환합니다",
+          "Cycle live tactile nib VFX overlay (Subtle → Vivid → Off)",
+        )}
+      >
+        <Sparkles size={15} aria-hidden />
+        <span>{`${bt("필기감 FX", "Nib FX")} · ${nibVfxShort}`}</span>
       </button>
 
       <button
