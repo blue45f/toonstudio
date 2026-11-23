@@ -709,13 +709,10 @@ export default defineConfig(({ command, mode }) => ({
     plugins: () => [pigmentLicenseBoundaryPlugin("worker"), threeTslVrmCompatPlugin()],
   },
   optimizeDeps: {
-    // Browser acceptance needs only the exercised route graph. Disabling discovery there avoids
-    // prebundling every heavyweight 2D/3D engine before the manuscript checks can start.
+    // 브라우저 검증은 실제로 여는 편집기의 CommonJS 의존성만 미리 변환한다.
     ...(process.env.TOONSPECTRUM_VITE_DISABLE_OPTIMIZE_DEPS === "1"
       ? {
           noDiscovery: true,
-          // React's CommonJS compatibility entries still require prebundling; all heavyweight
-          // Studio engines stay outside the acceptance startup graph.
           include: [
             "react",
             "react-dom",
@@ -734,6 +731,9 @@ export default defineConfig(({ command, mode }) => ({
             "react-konva > react-reconciler",
             "react-konva > react-reconciler/constants.js",
             "react-konva > scheduler",
+            // 원고의 3D 편집기를 처음 열 때 Fiber의 상태 선택기와 스케줄러도 ESM으로 제공한다.
+            "@react-three/fiber > zustand > use-sync-external-store/shim/with-selector.js",
+            "@react-three/fiber > scheduler",
             // 접속 모듈이 조용히 초기화 실패하지 않도록 Socket.IO 개발 경로의 CommonJS logger도 변환한다.
             "socket.io-client > debug",
             // 내보내기 엔진이 초기화 누락으로 호환 렌더러에 조용히 우회하지 않도록 한다.

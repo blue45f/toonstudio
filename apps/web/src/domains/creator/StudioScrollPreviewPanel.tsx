@@ -72,7 +72,8 @@ export interface StudioScrollPreviewPanelProps {
   currentPageId: string;
   /** 페이지 클릭 시 그 페이지로 점프 + 패널 닫기. 생략하면 클릭 핸들러 자체가 붙지 않는다
    *  (순수 열람 모드). */
-  onSelectPage?: (pageId: string) => void;
+  onSelectPage?: (pageId: string) => boolean | void;
+  onOpenFeedbackPin?: (target: ReaderFeedbackPinJumpTarget) => boolean;
   /** 초기 독자·어시스턴트 피드백 핀 목록(선택). */
   initialFeedbackPins?: readonly ReaderFeedbackPin[];
   /** 피드백 핀 목록이 변경될 때 호출되는 콜백(선택). */
@@ -238,6 +239,7 @@ export function StudioScrollPreviewPanel({
   pages,
   currentPageId,
   onSelectPage,
+  onOpenFeedbackPin,
   initialPinReturn,
   initialFeedbackPins,
   onFeedbackPinsChange,
@@ -357,7 +359,7 @@ export function StudioScrollPreviewPanel({
           ? (page.top + page.height * target.y - viewport.getBoundingClientRect().top) / viewport.clientHeight
           : 0.5;
         onJumpToFeedbackPin?.(target);
-        onSelectPage(target.pageId);
+        if ((onOpenFeedbackPin ? onOpenFeedbackPin(target) : onSelectPage(target.pageId)) === false) return;
         onClose({
           pins: feedbackPins,
           pinId: target.pinId,
@@ -570,8 +572,7 @@ export function StudioScrollPreviewPanel({
                         <button
                           type="button"
                           onClick={() => {
-                            onSelectPage(page.id);
-                            onClose();
+                            if (onSelectPage(page.id) !== false) onClose();
                           }}
                           aria-label={`${displayName} 편집하기`}
                           className="absolute inset-0 z-10 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

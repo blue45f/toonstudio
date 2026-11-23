@@ -472,6 +472,7 @@ jobs:
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-female.vrm' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-male.vrm' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-female.vrm' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-female-blazer.vrm' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-male.vrm' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-empress.vrm' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-duke.vrm' || '' }}

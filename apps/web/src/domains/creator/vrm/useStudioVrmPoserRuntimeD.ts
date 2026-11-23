@@ -38,7 +38,7 @@ import {
   queryUploadedVrmLibraryEntriesPage,
   SAMPLE_VRM_ID,
   SAMPLE_VRM_ENTRIES,
-  saveVrmThumbnail,
+  saveVrmThumbnail, savedLegacySampleVrmEntry,
   type VrmLibraryEntry,
 } from "./vrm-library";
 
@@ -374,6 +374,8 @@ export function useStudioVrmPoserRuntimeD(h: StudioVrmPoserHost): void {
         }
 
         const pending = pendingPoseDataRef.current;
+        const legacy = pending?.modelId && !pending.modelHash ? savedLegacySampleVrmEntry(pending.modelId) : null;
+        if (legacy) appendUnique(legacy);
         const findRequestedEntry = (candidates: readonly VrmLibraryEntry[]) => {
           if (pending?.modelHash) {
             return candidates.find((entry) => entry.contentHash === pending.modelHash) ?? null;

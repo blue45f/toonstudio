@@ -17,6 +17,7 @@ import {
 } from "./studio-vrm-poser-utils";
 import {
   restorePerspectiveCamera,
+  pauseStudioVrmCaptureOrbit,
   type OrbitLike,
   type CaptureState,
   type ViewportApi,
@@ -37,6 +38,7 @@ export function ViewportController({ onReady }: { onReady: (api: ViewportApi | n
 
   useEffect(() => {
     onReady({
+      pauseOrbit: () => pauseStudioVrmCaptureOrbit(controls),
       zoomBy: (factor: number) => {
         const target = controls?.target ?? new THREE.Vector3(0, 1, 0);
         const offset = camera.position.clone().sub(target);

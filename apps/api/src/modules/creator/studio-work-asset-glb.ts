@@ -5,6 +5,7 @@ const GLB_VERSION = 2;
 const GLB_JSON_CHUNK = 0x4e4f534a;
 const GLB_BIN_CHUNK = 0x004e4942;
 const GLB_MAX_JSON_BYTES = 2 * 1024 * 1024;
+export const GLB_METADATA_PREFIX_LIMIT = GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES + GLB_MAX_JSON_BYTES;
 
 function plainRecord(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -51,6 +52,13 @@ export function parseGlbJson(bytes: Uint8Array): Record<string, unknown> {
   if (chunkOffset !== bytes.byteLength || jsonChunks !== 1) {
     throw new Error("3D 에셋 장면 블록이 없습니다.");
   }
+  return parseAdmittedGlbJsonPrefix(bytes);
+}
+
+/** 업로드 검증을 마친 불변 GLB에서 장면 설명만 읽는다. 바이너리 메시 블록은 필요 없다. */
+export function parseAdmittedGlbJsonPrefix(bytes: Uint8Array): Record<string, unknown> {
+  if (bytes.byteLength < GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES) throw new Error("3D 에셋 장면 헤더가 없습니다.");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const jsonLength = view.getUint32(GLB_HEADER_BYTES, true);
   const jsonType = view.getUint32(GLB_HEADER_BYTES + 4, true);
   if (

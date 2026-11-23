@@ -36,7 +36,7 @@ import {
   type PanelTab,
 } from "./studio-vrm-poser-catalogs";
 import {
-  getErrorMessage,
+  getErrorMessage, studioVrmCaptureCameraIdentity,
 } from "./studio-vrm-poser-helpers";
 import {
   selectSharedPoseAssets,
@@ -189,7 +189,7 @@ export function useStudioVrmPoserRuntimeA(h: StudioVrmPoserHost): void {
 
   const readVrmCaptureCameraIdentity = useCallback((): string | null => {
     const camera = viewportApiRef.current?.readCamera() ?? null;
-    return camera ? JSON.stringify(camera) : null;
+    return studioVrmCaptureCameraIdentity(camera);
   }, []);
 
   const acquireVrmCaptureHelperLease = useCallback((options?: {

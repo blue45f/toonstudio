@@ -18,6 +18,7 @@ describe("explicit offline drawing pack", () => {
     expect(urls).toContain("/assets/studio-capture-readiness-hash.js");
     expect(urls).toContain("/assets/studio-project-file-hash.js");
     expect(urls).toContain("/assets/studio-pages-history-durable-runtime-hash.js");
+    expect(urls).toContain("/assets/StudioPageThumbnails-hash.js");
     expect(urls).toContain("/assets/studio-local-database.worker-hash.js");
     expect(urls).toContain("/assets/sqlite3-hash.wasm");
     expect(urls.some((url) => url.includes("unrelated-heavy"))).toBe(false);

@@ -110,6 +110,9 @@ describe("Wave V2-W3B: 셰이더·외곽선·실측 텔레메트리 100.0/100", 
 
   it("외곽선 정책: 키트 머리 윤곽선, 화면거리 보정, 알베도 유채색 선화 RGB 계산이 결정적으로 동작한다", () => {
     expect(kitHeadContourAllowed("kit", "head")).toBe(true);
+    expect(contourOutlineAllowed("package", "head", false)).toBe(false);
+    expect(contourOutlineAllowed("package", "head", true)).toBe(true);
+    expect(contourOutlineWidthScale("package", "head")).toBe(KIT_HEAD_CONTOUR_WIDTH_SCALE);
     expect(kitHeadContourAllowed("kit", "eyeball")).toBe(false);
     expect(contourOutlineAllowed("kit", "head", true)).toBe(true);
     expect(contourOutlineAllowed("kit", "head", false)).toBe(false);

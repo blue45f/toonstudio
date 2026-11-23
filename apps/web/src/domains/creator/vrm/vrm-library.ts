@@ -1,7 +1,8 @@
+import { BLOCKED_WORK_VRM_MODELS } from "@toonstudio/contracts/studio-work-vrm-cut-bundled";
 import { STUDIO_3D_LOCAL_WASM64_MAX_BYTES, resolveStudio3dUploadLimitPolicy } from "../import-safety/studio-3d-upload-limit-policy";
 import { QUATERNIUS_FANTASY_VRMS } from "./quaternius-fantasy-catalog";
 import { QUATERNIUS_MODULAR_VRMS } from "./quaternius-modular-catalog";
-import { STUDIO_VRM_HERO_V1_SAMPLES } from "./studio-vrm-hero-v1-catalog-entries";
+import { STUDIO_VRM_HERO_MANUSCRIPT_SAMPLES } from "./studio-vrm-hero-v1-catalog-entries";
 import {
   getProductStudioVrmAssetSqliteOpfsRepository,
   StudioVrmAssetRepositoryError,
@@ -177,67 +178,7 @@ type VrmThumbnailRecord = {
   updatedAt: number;
 };
 
-/**
- * 과거 번들 감사와 저장 문서 추적을 위해 차단 기록만 남기고, 배포 바이너리·신규
- * 카탈로그 제공·런타임 로드는 모두 차단한 모델. 원 라이선스를 임의로 재분류하지
- * 않고 권리 제한 사실과 사유를 별도 레코드로 보존한다.
- */
-export const BUNDLED_VRM_RIGHTS_BLOCKS: readonly BundledVrmRightsBlock[] = [
-  {
-    id: "meebit",
-    name: "미빗 (블록맨)",
-    url: "/vrm/meebit_09842.vrm",
-    status: "rights-blocked",
-    reasonCode: "redistribution-commercial-restriction",
-    notice:
-      "Meebits 보유자 이용조건은 일반 번들 재배포·상업 서비스 제공 권한으로 간주할 수 없어 카탈로그와 런타임 로드를 차단했습니다.",
-  },
-  {
-    id: "avatar-a",
-    name: "하린",
-    url: "/vrm/AvatarSample_A.vrm",
-    status: "rights-blocked",
-    reasonCode: "redistribution-commercial-restriction",
-    notice:
-      "pixiv VRoidPreset(AvatarSample A–Z) 조건은 CC0가 아니며 캐릭터 제작 서비스에서의 샘플 데이터 이용을 금지하고, 무수정 원본 파일의 번들 재배포를 허용하지 않아 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
-  },
-  {
-    id: "avatar-b",
-    name: "세라",
-    url: "/vrm/AvatarSample_B.vrm",
-    status: "rights-blocked",
-    reasonCode: "redistribution-commercial-restriction",
-    notice:
-      "pixiv VRoidPreset(AvatarSample A–Z) 조건은 CC0가 아니며 캐릭터 제작 서비스에서의 샘플 데이터 이용을 금지하고, 무수정 원본 파일의 번들 재배포를 허용하지 않아 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
-  },
-  {
-    id: "avatar-c",
-    name: "유나",
-    url: "/vrm/AvatarSample_C.vrm",
-    status: "rights-blocked",
-    reasonCode: "redistribution-commercial-restriction",
-    notice:
-      "pixiv VRoidPreset(AvatarSample A–Z) 조건은 CC0가 아니며 캐릭터 제작 서비스에서의 샘플 데이터 이용을 금지하고, 무수정 원본 파일의 번들 재배포를 허용하지 않아 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
-  },
-  {
-    id: "mio",
-    name: "미오 (인체 베이스)",
-    url: "/vrm/fem_vroid.vrm",
-    status: "rights-blocked",
-    reasonCode: "redistribution-commercial-restriction",
-    notice:
-      "파일 임베드 라이선스가 \"Other\"이고 참조 URL이 없으며 저작자가 개인(jin)으로, 원 배포 조건을 확정할 수 없어 재배포를 허용할 근거가 없으므로 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
-  },
-  {
-    id: "noa",
-    name: "노아 (인체 베이스)",
-    url: "/vrm/masc_vroid.vrm",
-    status: "rights-blocked",
-    reasonCode: "redistribution-commercial-restriction",
-    notice:
-      "파일 임베드 라이선스가 \"Other\"이고 참조 URL이 없으며 저작자가 개인(jin)으로, 원 배포 조건을 확정할 수 없어 재배포를 허용할 근거가 없으므로 카탈로그와 런타임 로드를 차단했습니다. (2026-10-14 원문 대조, public/vrm/LICENSES.md 확정 판정 참조)",
-  },
-] as const;
+export const BUNDLED_VRM_RIGHTS_BLOCKS: readonly BundledVrmRightsBlock[] = BLOCKED_WORK_VRM_MODELS;
 
 const BUNDLED_VRM_RIGHTS_BLOCK_BY_ID = new Map(
   BUNDLED_VRM_RIGHTS_BLOCKS.map((record) => [record.id, record] as const),
@@ -282,7 +223,7 @@ export function isBundledVrmUrlRightsBlocked(url: string): boolean {
 //  그 중 OldMoustache·Eugenia는 "노인" 카테고리 보강).
 export const SAMPLE_VRMS: SampleVrm[] = [
   { id: SAMPLE_VRM_ID, name: "루미", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/sample-vrm.png", url: SAMPLE_VRM_URL },
-  ...STUDIO_VRM_HERO_V1_SAMPLES,
+  ...STUDIO_VRM_HERO_MANUSCRIPT_SAMPLES,
   ...QUATERNIUS_FANTASY_VRMS,
   ...QUATERNIUS_MODULAR_VRMS,
   { id: "shion", name: "시온", thumbnailUrl: "/assets/3d/characters/thumbnails/refined-v2/shion.png", url: "/vrm/Sendagaya_Shibu.vrm" },
@@ -423,6 +364,15 @@ export function sampleVrmThumbnailUrl(id: string): string {
 export function selectableSampleVrmUrl(id: string): string | null {
   if (isBundledVrmRightsBlocked(id)) return null;
   return SAMPLE_VRMS.find((sample) => sample.id === id)?.url ?? null;
+}
+
+/** 신규 목록에서 숨긴 모델도 해당 판본으로 저장한 원고를 열 때는 원래 엔트리를 사용한다. */
+export function savedLegacySampleVrmEntry(id: string): VrmLibraryEntry | null {
+  const sample = SAMPLE_VRMS.find((entry) => entry.id === id && entry.visibility === "legacy");
+  return sample && selectableSampleVrmUrl(id) ? {
+    id, name: sample.name, source: "sample", thumbnail: sampleVrmThumbnailUrl(id),
+    createdAt: 0, updatedAt: 0, licenseNotice: sample.licenseNotice,
+  } : null;
 }
 
 function isSampleVrmId(id: string) {

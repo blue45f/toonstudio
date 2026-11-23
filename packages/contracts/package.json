@@ -182,6 +182,11 @@
       "import": "./src/studio-raster-asset-contract.ts",
       "default": "./src/studio-raster-asset-contract.ts"
     },
+    "./panel-import-rights": {
+      "types": "./src/panel-import-rights.ts",
+      "import": "./src/panel-import-rights.ts",
+      "default": "./src/panel-import-rights.ts"
+    },
     "./studio-bundle-source-credit": {
       "types": "./src/studio-bundle-source-credit.ts",
       "import": "./src/studio-bundle-source-credit.ts",

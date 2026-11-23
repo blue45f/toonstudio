@@ -10,7 +10,7 @@ import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-brid
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
 import { readProjectionPaint } from "../../../render/projection-paint";
-import { readViewportCamera } from "../../../render/viewport-camera";
+import { readViewportCamera, viewportFramingAngles } from "../../../render/viewport-camera";
 import { applyCanvasShaperViewPreset, setCanvasCameraInputStyle } from "../../../render/viewport-controls";
 import { clientToRenderPixel, viewportPixelRatio } from "../../../render/viewport-math";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";
@@ -113,7 +113,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [showHud, setShowHud] = useState(initialOverlays?.hud ?? false);
   const [framing, setFraming] = useState<CameraFraming["mode"]>(DEFAULT_FRAMING.mode);
   const [activeYawDeg, setActiveYawDeg] = useState<number | null>(null);
-  const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
+  const [activePitchDeg, setActivePitchDeg] = useState<number | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
   const [tankobonGuide, setTankobonGuide] = useState(false);
@@ -286,16 +286,18 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     (mode: CameraFraming["mode"]): void => {
       if (!engine) return;
       try {
-        engine.setCamera({ ...DEFAULT_FRAMING, mode });
+        const camera = readViewportCamera(engine);
+        const angles = camera ? viewportFramingAngles(camera) : { yawDeg: activeYawDeg ?? 0, pitchDeg: activePitchDeg ?? 0 };
+        engine.setCamera({ ...DEFAULT_FRAMING, mode, ...angles });
         setFraming(mode);
-        setActiveYawDeg(0);
-        setActivePitchDeg(0);
+        setActiveYawDeg(angles.yawDeg);
+        setActivePitchDeg(angles.pitchDeg);
         setNotice(null);
       } catch (error) {
         setNotice(failureText(error, "카메라를 바꾸지 못했습니다."));
       }
     },
-    [engine],
+    [engine, activeYawDeg, activePitchDeg],
   );
 
   const onSelectTurnaround = useCallback(

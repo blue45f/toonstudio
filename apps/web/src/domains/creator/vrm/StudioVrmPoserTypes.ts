@@ -265,11 +265,23 @@ export function applyCameraPreset(camera: THREE.Camera, preset: CameraPreset, in
 }
 
 export type OrbitLike = {
+  enabled?: boolean;
   target?: THREE.Vector3;
   minDistance?: number;
   maxDistance?: number;
   update?: () => void;
 } | null;
+
+/** 원고 캡처 직후부터 댐핑을 멈춘다. React가 잠금 상태를 반영하기 전 프레임도 포함한다. */
+export function pauseStudioVrmCaptureOrbit(controls: OrbitLike): () => void {
+  if (!controls?.enabled) return () => undefined;
+  controls.enabled = false;
+  let released = false;
+  return () => {
+    if (!released) controls.enabled = true;
+    released = true;
+  };
+}
 
 export function restorePerspectiveCamera(
   camera: THREE.Camera,
@@ -295,6 +307,7 @@ export function restorePerspectiveCamera(
 }
 
 export type ViewportApi = {
+  pauseOrbit?: () => () => void;
   zoomBy: (factor: number) => void;
   readCamera: () => StudioVrmCameraSettings | null;
   restoreCamera: (settings: StudioVrmCameraSettings) => void;

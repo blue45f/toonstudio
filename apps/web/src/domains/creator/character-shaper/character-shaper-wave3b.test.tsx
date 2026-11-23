@@ -213,6 +213,7 @@ describe("Wave V2-W3B Character Shaper 실연동 검증", () => {
     const prop = new THREE.Group();
     prop.name = "prop:glasses";
     const skinMat = new THREE.MeshBasicMaterial({ name: "SkinMat" });
+    skinMat.userData.studioVrmMaterialLocator = "gltf-material:7";
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(), skinMat);
     mesh.name = "Face";
     scene.add(garment, prop, mesh);
@@ -229,7 +230,7 @@ describe("Wave V2-W3B Character Shaper 실연동 검증", () => {
           width: 2,
           height: 2,
           pixels: new Uint8ClampedArray(16).fill(255),
-          bindings: [{ materialLocator: "SkinMat", textureSlot: "map", bindingKey: "SkinMat:map" }],
+          bindings: [{ materialLocator: "gltf-material:7", textureSlot: "baseColor", bindingKey: "gltf-material-7-baseColor" }],
         }],
       }),
     };

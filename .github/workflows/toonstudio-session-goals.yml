@@ -161,6 +161,7 @@ jobs:
             ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-female.vrm' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/romance-male.vrm' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-female.vrm' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-female-blazer.vrm' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/academy-male.vrm' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-empress.vrm' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/vrm/toonstudio-hero-v1/rofan-duke.vrm' || '' }}

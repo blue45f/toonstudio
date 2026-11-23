@@ -32,7 +32,7 @@ export function studioReviewCaptureFromOperation(operation: unknown, pin: Studio
 }
 
 /** Verify actual immutable database rows, never revision-name prefixes or client timestamps alone. */
-export function studioReviewResolutionCaptureFromRows(value: unknown) {
+export function studioReviewResolutionCaptureFromRows(value: unknown, checkSnapshot?: (snapshot: unknown) => void) {
   const row = record(value), capture = record(row?.capture), receipt = record(row?.receipt);
   const pin = studioReviewCaptureSubjectSchema.safeParse(row?.pin);
   if (!row || !capture || !receipt || !pin.success) return null;
@@ -67,6 +67,7 @@ export function studioReviewResolutionCaptureFromRows(value: unknown) {
   const base = record(row.base);
   if (!base || base.id !== intent.expectedHeadRevisionId || base.artifactId !== pin.data.artifactId
     || base.rootGraphHash !== intent.expectedHeadRootGraphHash) return null;
+  checkSnapshot?.(payload.sourceSnapshot);
   return { subject: pin.data, submissionId, sourceServerRevision: intent.sourceServerRevision, sequence,
     ...(intent.sourceRevision ? { sourceRevision: intent.sourceRevision, sourceRevisionScope: intent.sourceRevisionScope, intent } : {}) };
 }
@@ -101,8 +102,8 @@ export function studioReviewResolutionCaptureQuery(artifactId: string, reviewIds
 const captureDialect = new PgDialect();
 
 /** pg와 Drizzle이 같은 증명 쿼리를 쓰며 연결·transaction은 호출자가 유지한다. */
-export async function loadStudioReviewResolutionCaptures(client: PoolClient, artifactId: string, reviewIds: readonly string[], boundSourceOnly = false) {
+export async function loadStudioReviewResolutionCaptures(client: PoolClient, artifactId: string, reviewIds: readonly string[], boundSourceOnly = false, checkSnapshot?: (snapshot: unknown) => void) {
   const query = captureDialect.sqlToQuery(studioReviewResolutionCaptureQuery(artifactId, reviewIds, boundSourceOnly));
   const result = await client.query(query.sql, query.params);
-  return result.rows.map(studioReviewResolutionCaptureFromRows);
+  return result.rows.map((row) => studioReviewResolutionCaptureFromRows(row, checkSnapshot));
 }

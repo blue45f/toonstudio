@@ -10,6 +10,7 @@ import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
 import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
 import { archiveStudioProject, createStudioProject, STUDIO_PROJECT_LIBRARY_STORAGE_KEY, trashStudioProject } from "../studio-project-library-store";
 import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
+import * as ownerHistory from "./useStudioRecentOwnerWork";
 import { StudioProjectLibraryManagementContent } from "./StudioProjectLibraryManagementContent";
 import { StudioProjectLibraryManagementHeader } from "./StudioProjectLibraryManagementHeader";
 import { useStudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
@@ -63,6 +64,24 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     expect(container.querySelector('[data-studio-other-starts="true"]')).toBeNull();
     expect(screen.getByRole("link", { name: "새 작업" }).getAttribute("data-studio-library-primary-action")).toBe("new");
     expect(container.textContent).not.toMatch(/OPFS|SQLite|1초|오른쪽 규격/u);
+  });
+
+  it.each([
+    ["2026-11-11T00:00:00Z", true],
+    ["2026-11-13T00:00:00Z", false],
+  ] as const)("기기 원고의 마지막 열기 %s와 서버 원고를 비교해 하나만 이어하기로 둔다", (createdAt, serverFirst) => {
+    createStudioProject(window.localStorage, { id: "local-recent", title: "기기 원고", kind: "webtoon", createdAt });
+    vi.spyOn(ownerHistory, "useStudioRecentOwnerWork").mockReturnValue({
+      workId: "owner-manuscript", openedAt: Date.parse("2026-11-12T00:00:00Z"),
+    });
+    const { container } = showHeader("/studio", true);
+    const primary = container.querySelectorAll('[data-studio-library-primary-action="resume"]');
+    expect(primary).toHaveLength(1);
+    expect(primary[0]?.getAttribute("href")).toContain(serverFirst ? "/studio/work/owner-manuscript/canvas" : "/studio/p/local-recent/");
+    const server = container.querySelector("[data-studio-recent-owner-work]");
+    expect(server?.getAttribute("href")).toBe("/studio/work/owner-manuscript/canvas");
+    expect(server?.getAttribute("data-studio-library-primary-action")).toBe(serverFirst ? "resume" : null);
+    expect(screen.queryByText("작업 중인 개인 원고가 아직 없습니다")).toBeNull();
   });
 
   it.each([false, true])("저장 프로필 유무(%s)로 저장 완료 배지를 만들지 않는다", (configured) => {

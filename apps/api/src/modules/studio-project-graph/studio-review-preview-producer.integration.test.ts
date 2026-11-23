@@ -35,6 +35,7 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
   let deleteWork: typeof DeleteWork;
   const users: string[] = [];
   const stored = new Map<string, Buffer>();
+  let storage: PrivateObjectStoragePort;
   const previousDatabase = process.env.DATABASE_URL;
   const previousAdmission = process.env.STUDIO_WORK_ASSET_ADMISSION;
   const pixels = new Uint8Array([10, 20, 30, 40, 255, 0, 127, 0]);
@@ -52,7 +53,7 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     const producerServiceModule = await import("./studio-review-preview-producer.service");
     const readerModule = await import("./studio-review-preview.service");
     deleteWork = (await import("../../server/creator/works")).deleteWork;
-    const storage: PrivateObjectStoragePort = {
+    storage = {
       async verifyPrivatePurposeBuckets() { return { ready: true, privatePurposeBuckets: 3 }; },
       async uploadImmutable(input) {
         const hash = createHash("sha256").update(input.bytes).digest("hex");
@@ -747,11 +748,62 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     await expect(f.shares.view({ publicId: publicShare.share.id })).rejects.toMatchObject({ code: "revoked" });
   });
 
-  it("delivers one exact approved review and separates issue, recipient download, and acceptance", async () => {
-    const f = await capture(2), captured = await completeCapture(f.actor, f.intent), recipient = randomUUID(); users.push(recipient);
-    await pool.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [recipient, "Delivery recipient"]);
+  it("승인된 원고의 외부 셰이퍼 모델은 같은 작품에 등록한 원본으로만 사용권을 확인한다", async () => {
+    const f = await capture(1, { master: { elements: [{ id: "model", type: "image",
+      vrmScene: { model: { source: "attachment", hash: `sha256:${"a".repeat(64)}` } } }] } });
+    const captured = await completeCapture(f.actor, f.intent);
+    await graph.decideReview(f.actor, captured.subject.reviewId, { status: "approved" });
+    const { captureWithDeliveryRights } = await import("./review-delivery/review-delivery-material-rights");
+    const client = await pool.connect();
+    try {
+      await expect(captureWithDeliveryRights(client, captured.subject)).rejects.toMatchObject({
+        response: { code: "studio_review_delivery_material_rights" },
+      });
+    } finally { client.release(); }
+  });
+
+  it("delivers three approved cuts after a position-specific second-cut correction, a failed resubmission, and recipient acceptance", async () => {
+    const f = await capture(3), recipient = randomUUID(); users.push(recipient);
+    await pool.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [recipient, "합성 작가"]);
     await pool.query(`INSERT INTO creator_work_collaborator ("workId","userId",role,status,"invitationId","respondedAt")
-      VALUES ($1,$2,'commenter','active',$3,now())`, [f.input.workId, recipient, randomUUID()]);
+      VALUES ($1,$2,'editor','active',$3,now())`, [f.input.workId, recipient, randomUUID()]);
+    const initialIntent = await service.prepare(recipient, { ...f.input, intentId: randomUUID() });
+    const original = await completeCapture(recipient, initialIntent);
+    const first = await reader.read(f.actor, original.subject, null);
+    if (!first.ok || !first.previews[1]) throw new Error("두 번째 컷의 검수 이미지가 없습니다.");
+    const anchor = createStudioReviewSpatialAnchor(first.previews[1].mapping, { kind: "coordinate", frameId: "cut-1", x: 0.84, y: 0.68 });
+    if (!anchor) throw new Error("두 번째 컷의 원본 위치가 없습니다.");
+    const memo = await graph.createReviewComment(f.actor, original.subject.reviewId, { id: randomUUID(),
+      body: "2컷 배경 카메라 구도를 조정해 주세요.", severity: "note", assigneeIds: [recipient],
+      anchor: { ...anchor, artifactId: original.subject.artifactId, revisionId: original.subject.revisionId,
+        scope: { projectId: original.subject.projectId } } });
+    await graph.decideReview(f.actor, original.subject.reviewId, { status: "changes-requested" });
+    const revised = { ...f.doc, pagesList: f.doc.pagesList.map((page, index) => index !== 1 ? page
+      : { ...page, elements: [...page.elements, { type: "image", id: "bg-cut-2", bg3dScene: { camera: { fov: 45 }, nodes: [], attachments: [] } }] }) };
+    await pool.query('UPDATE creator_work SET revision=5, doc=$2::jsonb WHERE id=$1', [f.input.workId, JSON.stringify(revised)]);
+    const replacement = await service.prepare(recipient, { ...f.input, intentId: randomUUID(), sourceServerRevision: 5,
+      sourceContentDigest: studioReviewPreviewDigest(revised) });
+    const unchanged = await service.upload(recipient, replacement, 0, file());
+    const newBytes = Buffer.from(encodePng(new Image(2, 1, { data: new Uint8Array([60, 25, 85, 255, 13, 21, 55, 255]), colorModel: "RGBA" })));
+    const changed = await service.upload(recipient, replacement, 1, { buffer: newBytes, size: newBytes.length, mimetype: "image/png" });
+    const third = await service.upload(recipient, replacement, 2, file());
+    const pixelsOf = (hash: string) => {
+      const bytes = stored.get(`derived:sha256:${hash}`);
+      if (!bytes) throw new Error("검수 이미지가 없습니다.");
+      return Buffer.from(decodePng(bytes).data);
+    };
+    // 서버는 캡처마다 PNG에 다른 식별자를 넣으므로 변경 컷은 복원된 픽셀로 비교한다.
+    expect(pixelsOf(unchanged.sha256)).toEqual(pixelsOf(first.previews[0]!.sha256));
+    expect(pixelsOf(changed.sha256)).not.toEqual(pixelsOf(first.previews[1].sha256));
+    expect(pixelsOf(third.sha256)).toEqual(pixelsOf(first.previews[2]!.sha256));
+    const pages = [unchanged, changed, third].map(({ ordinal, sha256 }) => ({ ordinal, sha256 }));
+    await expect(service.complete(recipient, { intent: replacement, pages: [pages[0]!, { ordinal: 1, sha256: unchanged.sha256 }, pages[2]!] })).rejects.toThrow();
+    expect((await graph.getReview(f.actor, original.subject.reviewId)).comments).toContainEqual(expect.objectContaining({ id: memo.id, body: "2컷 배경 카메라 구도를 조정해 주세요.", status: "open" }));
+    const captured = await service.complete(recipient, { intent: replacement, pages });
+    if (captured.status !== "completed") throw new Error("수정본 제출 실패");
+    const revision = (await graph.listRevisions(recipient, replacement.artifactId)).find((entry) => entry.id === captured.subject.revisionId);
+    if (!revision?.parentIds[0]) throw new Error("수정본의 제출 이력이 없습니다.");
+    await graph.resolveReviewComment(recipient, memo.id, { status: "resolved", resolutionRevisionId: revision.parentIds[0], resolutionSourceRef: captured.subject });
     await graph.decideReview(f.actor, captured.subject.reviewId, { status: "approved" });
     const Repository = (await import("./review-delivery/review-delivery.repository")).StudioReviewDeliveryRepository;
     const deliveries = new Repository(pool), mode = "free" as const;
@@ -764,7 +816,7 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
         rightsGraphDigest, confirmed: true as const, statement } };
     const created = await deliveries.prepare(f.actor, f.input.workId, prepare);
     expect(created).toMatchObject({ id, state: "prepared", version: 0, recipient: { userId: recipient } });
-    expect(created.manifest.pages).toHaveLength(2);
+    expect(created.manifest.pages).toHaveLength(3);
     expect(created.manifest.totalPageBytes).toBe(created.manifest.pages.reduce((sum, page) => sum + page.byteLength, 0));
     for (const page of created.manifest.pages) expect(stored.get(`derived:sha256:${page.sha256}`)?.length).toBe(page.byteLength);
     expect(await deliveries.prepare(f.actor, f.input.workId, prepare)).toEqual(created);
@@ -772,9 +824,19 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     const issued = await deliveries.issue(f.actor, f.input.workId, id, { operationId: randomUUID(), expectedVersion: 0, manifestDigest: created.manifestDigest });
     expect(issued).toMatchObject({ state: "issued", version: 1 });
     const source = await deliveries.downloadSource(recipient, f.input.workId, id, { operationId: randomUUID(), expectedVersion: 1, manifestDigest: created.manifestDigest });
-    expect(source.pages).toEqual(created.manifest.pages.map(({ path: _path, ...page }) => page)); expect(source.objects).toHaveLength(2);
-    const downloadOperation = randomUUID(), archive = { sha256: "e".repeat(64), byteLength: 1234 };
-    const delivered = await deliveries.confirmDownload(recipient, f.input.workId, id, { operationId: downloadOperation, expectedVersion: 1, manifestDigest: created.manifestDigest }, archive);
+    expect(source.pages).toEqual(created.manifest.pages.map(({ path: _path, ...page }) => page)); expect(source.objects).toHaveLength(3);
+    const downloadOperation = randomUUID();
+    const DeliveryService = (await import("./review-delivery/review-delivery.service")).StudioReviewDeliveryService;
+    const delivery = new DeliveryService(deliveries, storage, async (url) => {
+      const bytes = stored.get(`derived:sha256:${new globalThis.URL(String(url)).pathname.slice(1)}`);
+      if (!bytes) throw new Error("고정된 원본 이미지를 찾을 수 없습니다.");
+      return new Response(Uint8Array.from(bytes), { headers: { "content-type": "image/png" } });
+    });
+    const result = await delivery.download(recipient, f.input.workId, id, { operationId: downloadOperation, expectedVersion: 1, manifestDigest: created.manifestDigest });
+    const archive = { sha256: createHash("sha256").update(result.bytes).digest("hex"), byteLength: result.bytes.length };
+    const delivered = result.job;
+    expect(created.manifest.pages.map((page) => page.sha256)).toEqual([unchanged.sha256, changed.sha256, third.sha256]);
+    for (const page of created.manifest.pages) expect(result.bytes.includes(stored.get(`derived:sha256:${page.sha256}`)!)).toBe(true);
     expect(delivered).toMatchObject({ state: "delivered", version: 2, archiveSha256: archive.sha256, archiveByteLength: archive.byteLength, canAccept: true });
     expect(await deliveries.confirmDownload(recipient, f.input.workId, id, { operationId: downloadOperation, expectedVersion: 1, manifestDigest: created.manifestDigest }, archive)).toEqual(delivered);
     const accepted = await deliveries.accept(recipient, f.input.workId, id, { operationId: randomUUID(), expectedVersion: 2, manifestDigest: created.manifestDigest, confirmed: true });

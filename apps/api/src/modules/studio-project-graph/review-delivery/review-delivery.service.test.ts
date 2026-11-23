@@ -59,6 +59,17 @@ describe("approved review delivery archive service", () => {
     await expect(service.download("recipient", "work", "delivery", input)).rejects.toBeInstanceOf(ServiceUnavailableException);
     expect(repository.confirmDownload).not.toHaveBeenCalled();
   });
+  it.each([
+    { ...page, sha256: "0".repeat(64) },
+    { ...page, width: 11 },
+  ])("승인된 컷과 manifest 이미지 정보가 다르면 다운로드 영수증을 남기지 않는다", async (changed) => {
+    const { service, repository, storage } = setup();
+    repository.downloadSource.mockResolvedValue({ row: { manifest }, pages: [changed], objects: [object], actorIsRecipient: true });
+    await expect(service.download("recipient", "work", "delivery", input)).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(storage.createSignedReadUrl).not.toHaveBeenCalled();
+    expect(repository.confirmDownload).not.toHaveBeenCalled();
+  });
+
   it("rejects a storage readiness failure before issuing a signed URL", async () => {
     const { service, repository, storage } = setup(); storage.verifyPrivatePurposeBuckets.mockResolvedValue({ ready: false });
     await expect(service.download("recipient", "work", "delivery", input)).rejects.toBeInstanceOf(ServiceUnavailableException);

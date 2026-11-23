@@ -40,8 +40,11 @@ describe("hull 외곽선 정책(A-5·A-9)", () => {
     for (const role of KEPT) expect(hullOutlineAllowed("kit", role), role).toBe(true);
   });
 
-  it("절차 소스와 제작 패키지는 모든 역할에 hull을 켠다(기존 거동 유지)", () => {
-    for (const kind of ["procedural", "package"] as const) for (const role of PART_ROLES) expect(hullOutlineAllowed(kind, role), `${kind}/${role}`).toBe(true);
+  it("절차 소스는 원래 윤곽을 유지하고 패키지의 머리·안구·속눈썹·눈썹은 저작된 크기로 그린다", () => {
+    for (const role of PART_ROLES) {
+      expect(hullOutlineAllowed("procedural", role)).toBe(true);
+      expect(hullOutlineAllowed("package", role), role).toBe(!["head", "eyeball", "iris", "pupil", "eye-highlight", "lash", "brow"].includes(role));
+    }
   });
 
   it("hull 폭 배율: 키트 몸만 얇게(0.5배) 그리고 나머지는 모두 1배다", () => {

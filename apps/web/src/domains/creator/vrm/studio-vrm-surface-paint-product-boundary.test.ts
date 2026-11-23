@@ -70,6 +70,9 @@ describe("VRM V12 surface-paint product boundary", () => {
       expect(poserSource).toContain(`"${reason}"`);
     }
     expect(poserSource).toContain('addEventListener("webglcontextlost"');
+    expect(poserSource).toContain('gl.domElement.addEventListener("pointerleave", cancelPointerLeave)');
+    const actor = between(poserSource, "function VrmActor({", "onLostPointerCapture={cancelTexturePaint}");
+    expect(actor).not.toContain("onPointerLeave=");
     expect(toolSource.match(/await this\.executeStroke\(\{/gu)).toHaveLength(1);
     expect(toolSource).toContain("maxOperations: this.maxOperations");
     expect(adapterSource).toContain("commit: true");

@@ -97,6 +97,7 @@ import {
   materialAtHit,
   objectBelongsToScene,
   paintWrapOptions,
+  copyPaintedTexels,
   pixelsEqual,
   resolveHitIslandAndDensity,
   sameResolvedBaseColorHit,
@@ -673,8 +674,7 @@ export class StudioVrmTexturePaintRuntime {
     return this.snapshot;
   }
 
-  exportPaintedTargets():
-    StudioVrmTexturePaintRuntimeResult<readonly StudioVrmTexturePaintExportTarget[]> {
+  exportPaintedTargets(mode: "full" | "paint-only" = "full"): StudioVrmTexturePaintRuntimeResult<readonly StudioVrmTexturePaintExportTarget[]> {
     if (this.disposed) return this.fail("disposed");
     if (this.sampling || this.filling || this.pending || this.active || this.surfaceSession) {
       return this.fail("pointer-active");
@@ -699,7 +699,7 @@ export class StudioVrmTexturePaintRuntime {
         id: target.id,
         width: target.size.width,
         height: target.size.height,
-        pixels: target.imageData.data.slice(),
+        pixels: mode === "paint-only" ? copyPaintedTexels(target.imageData.data, target.originalPixels) : target.imageData.data.slice(),
         bindings: Object.freeze(bindings),
       }));
     }

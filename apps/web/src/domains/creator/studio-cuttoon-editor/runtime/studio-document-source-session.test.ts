@@ -7,7 +7,8 @@ import { loadStudioDocumentSource, verifyStudioDocumentSourceSession } from "./s
 import type { ServerSessionSynchronization } from "@/domains/auth/public/session/auth-session-store";
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ synchronizeServerSessionState: vi.fn() }));
-const sourceApi = vi.hoisted(() => ({ getWork: vi.fn(), getShared: vi.fn() }));
+const sourceApi = vi.hoisted(() => ({ getWork: vi.fn(), getShared: vi.fn(), remember: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../offline/studio-recent-owner-work", () => ({ rememberStudioOwnerWork: sourceApi.remember }));
 vi.mock("@/platform/creator-client", () => ({ getWork: sourceApi.getWork }));
 vi.mock("../../studio-shared-document-client", () => ({ getStudioSharedDocument: sourceApi.getShared }));
 
@@ -90,6 +91,16 @@ describe("source loader가 hydration으로 전달하는 identity 경계", () => 
     expect(synchronize).toHaveBeenCalledTimes(1);
     expect(sourceApi.getShared).toHaveBeenCalledExactlyOnceWith(f.workId, f.signal);
     expect(sourceApi.getWork).not.toHaveBeenCalled();
+  });
+  it("실제로 연 서버 소유자의 원고만 계정별 최근 이력에 남긴다", async () => {
+    const f = { ...options(), authScopeKey: "source-owner" };
+    sourceApi.remember.mockClear();
+    sourceApi.getShared.mockResolvedValueOnce({ document: work, role: "editor" })
+      .mockResolvedValueOnce({ document: work, role: "owner" });
+    await loadStudioDocumentSource(f);
+    expect(sourceApi.remember).not.toHaveBeenCalled();
+    await loadStudioDocumentSource(f);
+    expect(sourceApi.remember).toHaveBeenCalledExactlyOnceWith("source-owner", f.workId, f.signal);
   });
   it("확인된 guest의 공개 원고는 기존 author와 상세 정보를 유지한다", async () => {
     synchronize.mockResolvedValue({ status: "unauthenticated", session: null });

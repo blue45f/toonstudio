@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { sha256HexPortable } from "./sha256-portable";
+
 export const STUDIO_BUNDLE_SOURCE_CREDIT_SCHEMA = "toonstudio.bundle-source-credit.v1" as const;
 export const STUDIO_BUNDLE_CC0_DEED = "https://creativecommons.org/publicdomain/zero/1.0/";
 const safeText = (maximum: number) => z.string().min(1).max(maximum).refine((value) =>
@@ -68,4 +70,22 @@ export function hasValidStudioBundleSceneCredit(type: string, props: Record<stri
     if ((key === "base:bundleSourceCredit" || key === "prop:bundleSourceCredit") && !parseStudioBundleSourceCredit(value)) return false;
   }
   return !Object.hasOwn(props, "bundleSourceCredit") || ((type === "frame" || (type === "reference" && props.elementType === "image")) && parseStudioBundleSourceCredit(props.bundleSourceCredit) !== null);
+}
+
+/** 프레임 배경을 다른 URL·색으로 교체했는데 남은 출처를 권리 허가로 사용하지 않는다. */
+export function studioBundleCreditMatchesSource(value: unknown, source: string | undefined, elementId?: string): boolean {
+  const credit = parseStudioBundleSourceCredit(value);
+  if (!credit || !source) return false;
+  if (source.startsWith("data:")) {
+    if (!/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/u.test(source)) return false;
+    const base64 = source.slice(source.indexOf(",") + 1);
+    if (base64.length > 24 * 1024 * 1024) return false;
+    try {
+      const decoded = atob(base64);
+      return credit.contentHash === `sha256:${sha256HexPortable(Uint8Array.from(decoded, (character) => character.charCodeAt(0)))}`;
+    } catch { return false; }
+  }
+  if (elementId && source === `work-asset://image/${encodeURIComponent(elementId)}`) return true;
+  if (source.startsWith("toonstudio-asset://sha256/")) return credit.contentHash === `sha256:${source.slice("toonstudio-asset://sha256/".length)}`;
+  return source === credit.renderPath;
 }

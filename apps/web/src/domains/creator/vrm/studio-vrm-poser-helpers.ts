@@ -39,8 +39,13 @@ import {
 } from "./StudioVrmJointHandles";
 import { findVrmActionSilhouettePreset } from "./vrm-action-silhouette-presets";
 
-import type { StudioVrmPoseTranslations, StudioVrmSceneDocument } from "./studio-vrm-scene-document";
+import type { StudioVrmCameraSettings, StudioVrmPoseTranslations, StudioVrmSceneDocument } from "./studio-vrm-scene-document";
 import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
+
+/** 궤도 계산의 배정밀도 잔차는 제외하고 GPU에서 구별되는 카메라 변경을 검출한다. */
+export function studioVrmCaptureCameraIdentity(camera: StudioVrmCameraSettings | null): string | null {
+  return camera ? JSON.stringify(camera, (_key, value: unknown) => typeof value === "number" ? Math.fround(value) : value) : null;
+}
 
 export function studioVrmTexturePaintSceneIdentity(
   scene: StudioVrmSceneDocument | undefined,

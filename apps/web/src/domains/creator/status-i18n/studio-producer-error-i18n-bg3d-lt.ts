@@ -35,7 +35,14 @@ function resolveProducerError(
   );
 }
 
+const staleBackgroundKey = "studio.producerError.bg3dLt.snapshotChanged";
+const staleBackgroundKo = "원고나 편집 권한이 바뀌었습니다. 현재 컷에서 배경을 다시 적용하세요.";
+export function resolveStudioBg3dSnapshotChangedError(): string {
+  return resolveProducerError(staleBackgroundKey, staleBackgroundKo);
+}
+
 registerI18nLocaleEntries("ko", {
+  [staleBackgroundKey]: staleBackgroundKo,
   "studio.producerError.bg3dLt.invalid-render-mode.renderResultFormat": "3D LT 렌더 결과 형식이 올바르지 않아요.",
   "studio.producerError.bg3dLt.invalid-render-mode.mixedModes": "분리 렌더와 통합 렌더 값이 섞여 있어요.",
   "studio.producerError.bg3dLt.invalid-render-mode.unknownLayerRole": "알 수 없는 3D LT 레이어 역할이 포함되어 있어요.",
@@ -91,6 +98,7 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  [staleBackgroundKey]: "The manuscript or your editing permissions changed. Apply the background again from the current panel.",
   "studio.producerError.bg3dLt.invalid-render-mode.renderResultFormat": "The 3D LT render result format is invalid.",
   "studio.producerError.bg3dLt.invalid-render-mode.mixedModes": "Separated and combined render values are mixed together.",
   "studio.producerError.bg3dLt.invalid-render-mode.unknownLayerRole": "An unknown 3D LT layer role is included.",

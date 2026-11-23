@@ -253,7 +253,7 @@ describe("VRM library helpers", () => {
 
   // 모든 번들 캐릭터가 검토된 용량 한도 내 고품질 3D 스튜디오 렌더링 썸네일 실파일을 갖추는지 전수 검사한다.
   it("backs every bundled character with a bounded high-quality 3D thumbnail and valid sampleVrmThumbnailUrl", () => {
-    expect(SAMPLE_VRMS.length).toBe(116);
+    expect(SAMPLE_VRMS.length).toBe(117);
 
     for (const sample of SAMPLE_VRMS) {
       expect(sample.thumbnailUrl, `${sample.id} thumbnailUrl should be defined`).toBeTruthy();

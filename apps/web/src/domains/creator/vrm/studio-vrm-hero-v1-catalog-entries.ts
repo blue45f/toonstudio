@@ -253,6 +253,14 @@ export const STUDIO_VRM_HERO_V1_SAMPLES: readonly SampleVrm[] = Object.freeze(
   STUDIO_VRM_HERO_V1_ENTRIES.map((entry) => entry.sampleVrm),
 );
 
+/** 새 원고는 재킷을 독립 채색하는 판본을 사용한다. 저장된 구판의 ID와 URL도 계속 해석한다. */
+export const STUDIO_VRM_HERO_MANUSCRIPT_SAMPLES = STUDIO_VRM_HERO_V1_SAMPLES.flatMap((sample): SampleVrm[] =>
+  sample.id === "ts-vrm-hero-v1-academy-female"
+    ? [{ ...sample, id: "ts-vrm-hero-v1-academy-female-blazer", name: "하늘 (교복 · 재킷 채색)", url: "/vrm/toonstudio-hero-v1/academy-female-blazer.vrm" },
+      { ...sample, visibility: "legacy" }]
+    : [sample],
+);
+
 export function getVrmHeroV1EntryByArchetype(
   archetypeId: VrmHeroV1ArchetypeId,
 ): StudioVrmHeroV1CatalogEntry | undefined {

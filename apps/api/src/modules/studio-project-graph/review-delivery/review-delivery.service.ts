@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { ConflictException, ForbiddenException, HttpException, Inject, Injectable, NotFoundException, Optional, ServiceUnavailableException } from "@nestjs/common";
 import { canonicalJson } from "@toonstudio/studio-project-model";
-import { reviewDeliveryManifestSchema, type ReviewDeliveryAction, type ReviewDeliveryAccept, type ReviewDeliveryPrepare } from "@toonstudio/studio-project-model/review-delivery";
+import { reviewDeliveryManifestSchema, reviewDeliveryPagePath, type ReviewDeliveryAction, type ReviewDeliveryAccept, type ReviewDeliveryPrepare } from "@toonstudio/studio-project-model/review-delivery";
 
 import { PrivateSignedReadUrlSchema, type LocatedPrivateObjectReference } from "../../../platform/adapters/private-object-storage/private-object-storage.contract";
 import { PRIVATE_OBJECT_STORAGE_PORT, type PrivateObjectStoragePort } from "../../../platform/adapters/private-object-storage/private-object-storage.port";
@@ -69,7 +69,8 @@ export class StudioReviewDeliveryService {
     const parsedManifest = reviewDeliveryManifestSchema.safeParse(source.row.manifest);
     if (!parsedManifest.success) return unavailable();
     const manifest = parsedManifest.data;
-    if (source.pages.length !== source.objects.length || source.pages.length !== manifest.pages.length) return unavailable();
+    const approvedPages = source.pages.map((page) => ({ ...page, path: reviewDeliveryPagePath(page) }));
+    if (source.pages.length !== source.objects.length || canonicalJson(approvedPages) !== canonicalJson(manifest.pages)) return unavailable();
     const pageBytes: Buffer[] = []; let total = 0;
     for (let index = 0; index < source.pages.length; index += 1) {
       signal?.throwIfAborted(); const page = source.pages[index]!, object = source.objects[index]!;

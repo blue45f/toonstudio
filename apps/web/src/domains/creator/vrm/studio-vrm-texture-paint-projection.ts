@@ -280,6 +280,20 @@ export function collectGeometryPrewarmJobs(
   return Object.freeze(jobs);
 }
 
+/** PSD 표면 레이어에는 원본과 달라진 텍셀만 남긴다. */
+export function copyPaintedTexels(painted: Uint8ClampedArray, original: Uint8ClampedArray): Uint8ClampedArray {
+  const result = new Uint8ClampedArray(painted.length);
+  for (let i = 0; i < painted.length; i += 4) {
+    if (painted[i] === original[i] && painted[i + 1] === original[i + 1]
+      && painted[i + 2] === original[i + 2] && painted[i + 3] === original[i + 3]) continue;
+    result[i] = painted[i]!;
+    result[i + 1] = painted[i + 1]!;
+    result[i + 2] = painted[i + 2]!;
+    result[i + 3] = painted[i + 3]!;
+  }
+  return result;
+}
+
 export function pixelsEqual(left: Uint8ClampedArray, right: Uint8ClampedArray): boolean {
   if (left.byteLength !== right.byteLength) return false;
   for (let index = 0; index < left.byteLength; index += 1) {

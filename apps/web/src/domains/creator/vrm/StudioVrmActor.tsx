@@ -6,12 +6,7 @@ import {
   useThree,
   type ThreeEvent,
 } from "@react-three/fiber";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 
 import {
@@ -32,10 +27,7 @@ import {
 import type {
   StudioVrmPoseTranslations,
 } from "./studio-vrm-scene-document";
-import {
-  createStudioVrmSurfacePaintTool,
-  type StudioVrmSurfacePaintToolSnapshot,
-} from "./studio-vrm-surface-paint-tool";
+import type { StudioVrmSurfacePaintToolSnapshot } from "./studio-vrm-surface-paint-tool";
 import type {
   StudioVrmTexturePaintRuntime,
 } from "./studio-vrm-texture-paint-runtime";
@@ -64,6 +56,8 @@ import {
   type StudioVrmTexturePaintPointerCaptureTarget,
   type StudioVrmTexturePaintPendingOneShotTap,
 } from "./StudioVrmViewportUtils";
+
+import { useStudioVrmSurfacePaintTool } from "./useStudioVrmSurfacePaintTool";
 
 import type {
   VRM,
@@ -153,9 +147,7 @@ export function VrmActor({
     pointerId?: number,
   ) => void>(() => undefined);
   const texturePaintSurfaceCameraPointRef = useRef(new THREE.Vector3());
-  const [texturePaintSurfaceTool] = useState(() => createStudioVrmSurfacePaintTool({
-    onSnapshot: (snapshot) => texturePaintSurfaceStateChangeRef.current(snapshot),
-  }));
+  const texturePaintSurfaceToolRef = useStudioVrmSurfacePaintTool(texturePaintSurfaceStateChangeRef);
 
   const releaseTexturePaintPendingOneShotCapture = useCallback(
     (pending: StudioVrmTexturePaintPendingOneShotTap) => {
@@ -279,10 +271,7 @@ export function VrmActor({
     texturePaintOneShotAbortRef.current?.abort();
     texturePaintOneShotAbortRef.current = null;
     texturePaintOneShotBusyRef.current = false;
-    texturePaintSurfaceTool.cancel("unmount");
-    texturePaintSurfaceTool.dispose();
-    texturePaintSurfaceStateChangeRef.current(null);
-  }, [cancelTexturePaintPendingOneShotTap, texturePaintSurfaceTool]);
+  }, [cancelTexturePaintPendingOneShotTap]);
 
   useEffect(() => {
     const releaseCapture = (pointerId: number) => {
@@ -295,6 +284,8 @@ export function VrmActor({
         // The browser may already have released capture before the fallback event arrives.
       }
     };
+    const texturePaintSurfaceTool = texturePaintSurfaceToolRef.current;
+    if (!texturePaintSurfaceTool) return;
     const finishTexturePaint = (matchingPointerId?: number) => {
       const pointerId = texturePaintPointerIdRef.current;
       if (
@@ -383,6 +374,7 @@ export function VrmActor({
       cancelTexturePaint(event.pointerId);
       cancelTexturePaintSurface("lost-capture", event.pointerId);
     };
+    // R3F는 앞쪽 메시가 전파를 막을 때 뒤쪽 메시에도 leave를 보낸다. 화면을 떠난 경우만 취소한다.
     const cancelPointerLeave = (event: PointerEvent) => {
       cancelTexturePaintSurface("pointer-leave", event.pointerId);
     };
@@ -459,7 +451,7 @@ export function VrmActor({
     finishTexturePaintPendingOneShotTap,
     gl,
     invalidate,
-    texturePaintSurfaceTool,
+    texturePaintSurfaceToolRef,
   ]);
 
   useEffect(() => {
@@ -657,8 +649,9 @@ export function VrmActor({
     }
     const runtime = texturePaintRuntimeRef.current;
     const hit = studioVrmTexturePaintHit(event);
+    const texturePaintSurfaceTool = texturePaintSurfaceToolRef.current;
     if (
-      texturePaintMutationBlockedRef.current
+      !texturePaintSurfaceTool || texturePaintMutationBlockedRef.current
       ||
       !texturePaintEnabledRef.current
       || !runtime
@@ -762,7 +755,8 @@ export function VrmActor({
         return;
       }
       const hit = studioVrmTexturePaintHit(event);
-      if (!hit) return;
+      const texturePaintSurfaceTool = texturePaintSurfaceToolRef.current;
+      if (!hit || !texturePaintSurfaceTool) return;
       const appended = texturePaintSurfaceTool.append(
         studioVrmSurfacePaintPointerSample(
           event,
@@ -812,7 +806,8 @@ export function VrmActor({
     if (texturePaintSurfacePointerIdRef.current === event.pointerId) {
       event.stopPropagation();
       const hit = studioVrmTexturePaintHit(event);
-      if (hit) {
+      const texturePaintSurfaceTool = texturePaintSurfaceToolRef.current;
+      if (hit && texturePaintSurfaceTool) {
         texturePaintSurfaceTool.append(
           studioVrmSurfacePaintPointerSample(
             event,
@@ -854,11 +849,6 @@ export function VrmActor({
       onPointerMove={moveTexturePaint}
       onPointerUp={finishTexturePaint}
       onPointerCancel={cancelTexturePaint}
-      onPointerLeave={(event: ThreeEvent<PointerEvent>) => {
-        if (texturePaintSurfacePointerIdRef.current !== event.pointerId) return;
-        event.stopPropagation();
-        cancelTexturePaintSurfaceRef.current("pointer-leave", event.pointerId);
-      }}
       onLostPointerCapture={cancelTexturePaint}
     />
   );

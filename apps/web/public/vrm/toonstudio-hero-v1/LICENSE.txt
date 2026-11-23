@@ -11,3 +11,6 @@ rofan-empress, rofan-duke, action-hunter, chibi-mascot) are procedurally authore
 original geometry and zero-moire editorial MToon 1.0 textures built directly from
 ToonStudio Character Kit v3 bases, hairs, and garments with zero third-party
 commercial assets or generative AI meshes.
+
+academy-female-blazer.vrm is a ToonStudio CC0-1.0 edition of academy-female.vrm
+with independent school blazer paint textures. See manifest.json for both hashes.

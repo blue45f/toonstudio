@@ -272,6 +272,7 @@ describe("StudioReaderFeedbackPinsWidget & StudioScrollPreviewPanel 통합", () 
     Element.prototype.scrollIntoView = scrollIntoViewMock;
     const onJumpToFeedbackPin = vi.fn();
     const onSelectPage = vi.fn();
+    const onOpenFeedbackPin = vi.fn().mockReturnValueOnce(false).mockReturnValue(true);
     const onClose = vi.fn();
 
     render(
@@ -282,6 +283,7 @@ describe("StudioReaderFeedbackPinsWidget & StudioScrollPreviewPanel 통합", () 
         currentPageId="p1"
         onSelectPage={onSelectPage}
         onJumpToFeedbackPin={onJumpToFeedbackPin}
+        onOpenFeedbackPin={onOpenFeedbackPin}
         initialFeedbackPins={[
           createReaderFeedbackPin({
             id: "pin-preview-1",
@@ -308,7 +310,10 @@ describe("StudioReaderFeedbackPinsWidget & StudioScrollPreviewPanel 통합", () 
 
     // 편집 컷 열기 버튼으로 에디터 페이지로 바로 점프한다.
     fireEvent.click(screen.getByRole("button", { name: "편집 컷 열기" }));
-    expect(onSelectPage).toHaveBeenCalledWith("p2");
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onSelectPage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "편집 컷 열기" }));
+    expect(onOpenFeedbackPin).toHaveBeenLastCalledWith(expect.objectContaining({ pageId: "p2", x: 0.45, y: 0.55 }));
     expect(onClose).toHaveBeenCalledOnce();
   });
 

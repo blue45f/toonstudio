@@ -6,6 +6,7 @@ export const STUDIO_VRM_POSER_IMPLEMENTATION_FILES = [
   "./StudioVrmViewportHelpers.tsx",
   "./StudioVrmViewportUtils.ts",
   "./StudioVrmActor.tsx",
+  "./useStudioVrmSurfacePaintTool.ts",
   "./StudioVrmPoserHost.ts",
   "./useStudioVrmPoserController.ts",
   "./useStudioVrmPoserState.ts",

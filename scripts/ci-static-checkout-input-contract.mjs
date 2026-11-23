@@ -100,7 +100,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     ...["Sendagaya_Shino", "Sendagaya_Shibu", "Kate", "Jennifer", "Erika", "Olivia", "Jimmy", "Anna", "Cyberpal"].map((id) => `/apps/web/public/vrm/${id}.vrm`),
   ];
   const heroInputs = [
-    "romance-female", "romance-male", "academy-female", "academy-male",
+    "romance-female", "romance-male", "academy-female", "academy-female-blazer", "academy-male",
     "rofan-empress", "rofan-duke", "action-hunter", "chibi-mascot",
   ].map((id) => `/apps/web/public/vrm/toonstudio-hero-v1/${id}.vrm`);
   const routeVisualInputs = [

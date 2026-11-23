@@ -285,7 +285,7 @@ import { useStudioSaveSyncSignalWiring } from "./studio-cuttoon-editor/runtime/u
 import { StudioFormalSaveDialogMount as StudioFormalSaveDialog } from "./save-first/StudioFormalSaveDialogMount";
 import { studioReviewCaptureSaveNavigation } from "./review-capture/studio-review-capture-navigation";
 import { useStudioReviewCaptureHost } from "./review-capture/useStudioReviewCaptureHost";
-import { studioEditorTargetForComment, type StudioEditorCommentTarget } from "./studio-comment-editor-selection";
+import { useStudioCommentEditorFocus } from "./review-handoff/use-studio-comment-editor-focus";
 import { isStudioCommentAnchorValidInPages } from "./studio-cuttoon-editor/studio-comment-anchor-validity";
 import { resolveStudioEditorExplicitSaveAction } from "./save-first/studio-editor-save-policy";
 import type { StudioProjectPackageSaveTarget } from "./save-first/studio-project-package";
@@ -11055,17 +11055,16 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     [pages]
   );
 
-  function selectCommentEditorTarget(target: StudioEditorCommentTarget, current?: () => boolean) {
-    return runStudioSelectCommentEditorTarget({
+  const { selectCommentEditorTarget, selectStudioCommentAnchor } = useStudioCommentEditorFocus({
+    open: scrollPreviewOpen, documentEpoch: scrollPreviewDocumentEpoch, currentPageId,
+    wrapRef, hostRef: zoomHostRef, canvasHeight: canvasH, canvasFlipH, canvasRotation,
+    select: (target, current) => runStudioSelectCommentEditorTarget({
       target, current, currentStudioProjectSnapshot, currentPageIdRef, setCurrentPageId,
       setMasterEditMode, setPointCommentAnchor, applyGroupSelectionState, setTool, setError,
       pageNotFoundMessage: t("studio.hostStatus.commentPageNotFound", "댓글이 연결된 페이지를 현재 문서에서 찾을 수 없어요."),
       targetNotFoundMessage: t("studio.hostStatus.commentTargetNotFound", "댓글이 연결된 컷 또는 요소를 현재 문서에서 찾을 수 없어요."),
-    });
-  }
-  function selectStudioCommentAnchor(anchor: StudioCommentAnchor) {
-    return selectCommentEditorTarget(studioEditorTargetForComment(anchor));
-  }
+    }),
+  });
   const studioOpenCanvasThreads = useMemo(
     () => deriveStudioOpenCanvasCommentThreads({
       studioCommentPinsHidden, studioTeamCommentsWorkId, teamCanView: studioTeamCommentCapabilities?.view,

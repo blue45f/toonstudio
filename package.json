@@ -151,6 +151,7 @@
     "verify:studio-autosave-two-tab": "tsx scripts/verify-studio-autosave-two-tab-leader.mts",
     "verify:studio-brushes": "tsx scripts/verify-studio-brushes.mts",
     "verify:studio-brush-media": "tsx scripts/verify-studio-brush-media.mts",
+    "verify:studio-pen-render-roundtrip": "tsx scripts/verify-studio-pen-render-roundtrip.mts",
     "verify:studio-brush-latency": "tsx scripts/verify-studio-brush-latency.mts",
     "verify:studio-long-stroke": "tsx scripts/verify-studio-long-stroke.mts",
     "verify:studio-brush-planner-quality": "tsx scripts/verify-studio-brush-planner-quality.mts",

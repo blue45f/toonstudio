@@ -2,17 +2,11 @@
  * Studio VRM poser runtime slice extracted from `StudioVrmPoser.tsx` (behavior unchanged).
  * The caller passes one host object; this hook destructures the original local names.
  */
-import {
-  useEffect,
-} from "react";
+import { useEffect } from "react";
 
-import {
-  planStudio3dInsertCaptureSize,
-} from "../scene-3d/studio-3d-insert-capture-plan";
+import { planStudio3dInsertCaptureSize } from "../scene-3d/studio-3d-insert-capture-plan";
 
-import {
-  createStudioVrmAuthoredFingerSnapshot,
-} from "./studio-vrm-auto-grip-authority";
+import { createStudioVrmAuthoredFingerSnapshot } from "./studio-vrm-auto-grip-authority";
 import {
   serializeAvatarForgeState,
 } from "./studio-vrm-avatar-forge";
@@ -591,8 +585,10 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
       return;
     }
     const captureVisualAuthority = captureVisualAuthorityRef.current;
+    const resumeOrbit = viewportApiRef.current?.pauseOrbit?.();
     const captureCameraIdentity = readVrmCaptureCameraIdentity();
     if (!captureVisualAuthority || !captureCameraIdentity) {
+      resumeOrbit?.();
       releaseVrmCaptureOperation("insert");
       setError(frozenStatus6Text("studio.frozenStatus6.vrmRuntimeE.captureViewNotReady", "추가할 3D 화면과 카메라가 아직 준비되지 않았습니다."));
       setStatus("ready");
@@ -614,6 +610,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     insertCaptureAbortRef.current?.abort();
     const captureController = new AbortController();
     insertCaptureAbortRef.current = captureController;
+    if (resumeOrbit) captureController.signal.addEventListener("abort", resumeOrbit, { once: true });
     const wardrobeCaptureAuthorityIsCurrent = (): boolean => (
       wardrobeAuthoredIdentityRef.current === captureWardrobeAuthoredIdentity
       && garmentEvaluationGenerationRef.current === captureGarmentEvaluationGeneration
@@ -665,6 +662,8 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
       }
     };
     const releaseCaptureMutationLocks = () => {
+      if (resumeOrbit) captureController.signal.removeEventListener("abort", resumeOrbit);
+      resumeOrbit?.();
       if (
         captureGeneration === insertCaptureGenerationRef.current
         && captureRequest === captureRequestRef.current

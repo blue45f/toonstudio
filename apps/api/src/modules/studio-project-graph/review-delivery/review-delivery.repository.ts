@@ -1,3 +1,4 @@
+import { captureWithDeliveryRights } from "./review-delivery-material-rights";
 import { createHash } from "node:crypto";
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import type { Pool, PoolClient } from "pg";
@@ -23,7 +24,7 @@ import { resolveOperationPolicy } from "@toonstudio/contracts/operation-policy";
 import { resolveCreatorCollaborationAccess } from "../../creator/creator-collaboration.policy";
 import { loadOperationPolicy, runtimeLicenseFingerprint } from "../../operation-policy/operation-policy.repository";
 import type { LocatedPrivateObjectReference } from "../../../platform/adapters/private-object-storage/private-object-storage.contract";
-import { PinnedShareError, pinnedShareCapture, pinnedShareImages, requireShareManager, shareHash } from "../pinned-share/pinned-share-storage";
+import { PinnedShareError, pinnedShareImages, requireShareManager, shareHash } from "../pinned-share/pinned-share-storage";
 
 export const STUDIO_REVIEW_DELIVERY_POOL = Symbol("STUDIO_REVIEW_DELIVERY_POOL");
 interface DeliveryRow {
@@ -162,7 +163,7 @@ export class StudioReviewDeliveryRepository {
       if (input.rights.rightsGraphDigest !== expectedRightsDigest) {
         throw new ConflictException({ code: "studio_review_delivery_rights_digest_invalid" });
       }
-      const capture = await pinnedShareCapture(client, input.subject);
+      const capture = await captureWithDeliveryRights(client, input.subject);
       if (!capture.approvalDigest || !capture.decidedAt || capture.rasters.length > 100) throw new ConflictException({ code: "studio_review_delivery_approval_required" });
       const ordinals = capture.rasters.map((_, index) => index);
       const images = await pinnedShareImages(client, input.subject, capture, ordinals);
@@ -180,7 +181,7 @@ export class StudioReviewDeliveryRepository {
   }
 
   private async assertCurrentSource(client: PoolClient, row: DeliveryRow): Promise<{ pages: ReviewDeliverySource["pages"]; objects: LocatedPrivateObjectReference[] }> {
-    const stored = reviewDeliverySourceSchema.parse(row.source), capture = await pinnedShareCapture(client, stored.subject);
+    const stored = reviewDeliverySourceSchema.parse(row.source), capture = await captureWithDeliveryRights(client, stored.subject);
     if (!capture.approvalDigest || !capture.decidedAt || capture.approvalDigest !== stored.approvalDigest || capture.decidedAt !== stored.decidedAt) {
       throw new ConflictException({ code: "studio_review_delivery_source_changed" });
     }
