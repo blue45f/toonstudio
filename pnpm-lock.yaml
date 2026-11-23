@@ -972,8 +972,8 @@ importers:
   packages/studio-engine-thorvg:
     dependencies:
       '@thorvg/webcanvas':
-        specifier: 1.1.4
-        version: 1.1.4
+        specifier: 1.1.3
+        version: 1.1.3
     devDependencies:
       '@types/node':
         specifier: ^26.6.6
@@ -4380,8 +4380,8 @@ packages:
   '@textlint/types@15.8.0':
     resolution: {integrity: sha512-Anhc6y5736YIsvqae0U6k0YmB2M/QVHkEeOv2aydAn/WIkdI69dCOiDbe3/+RagS3qstFTSFWJzNRA2lUjv19w==}
 
-  '@thorvg/webcanvas@1.1.4':
-    resolution: {integrity: sha512-tyS2HP6F8X/+zYjrFKIfLKlls4jL/17+ESE6RI0YgvBi/64pdvyb8ODC7Ibna42276R36QG4aCVfG03O9B3nOQ==}
+  '@thorvg/webcanvas@1.1.3':
+    resolution: {integrity: sha512-mTe2a9YyX0KMDM2QjtxzSR+LqjE2GCsu2uHKUTxibnVtzsIbv6U6h99w/0HtC+9XdYzzjpBP3vohQ0WFEh7odw==}
 
   '@tokenizer/inflate@0.6.1':
     resolution: {integrity: sha512-EuqSyHdOXN61cc5/rsW6uUn1TJZJGZr56jlkUbsLwVJ6uHgvwQyFkYfOCf+zzPFAYjftPk1WeJnEhpLVvzbm1A==}
@@ -12517,7 +12517,7 @@ snapshots:
     dependencies:
       '@textlint/ast-node-types': 15.8.0
 
-  '@thorvg/webcanvas@1.1.4': {}
+  '@thorvg/webcanvas@1.1.3': {}
 
   '@tokenizer/inflate@0.6.1':
     dependencies:
