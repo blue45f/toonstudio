@@ -51,6 +51,8 @@ export const STATIC_TITLES: Record<string, string> = {
   "/character-chat/manage": "route.characterChatManage",
   "/onboarding/taste": "route.recommend",
   "/compare": "route.compare",
+  "/compare/studio": "route.compareStudio",
+  "/tech": "route.techShowcase",
   "/insights": "route.insights",
   "/authors": "route.authors",
   "/news": "route.news",

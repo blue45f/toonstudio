@@ -92,5 +92,7 @@
   "route.technologyVideos": "Videolar",
   "route.terms": "Hizmet koşulları",
   "route.unknown": "Sayfa",
-  "route.offline": "Connection & on-device content"
+  "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase"
 }

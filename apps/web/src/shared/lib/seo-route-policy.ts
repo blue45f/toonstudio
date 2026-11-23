@@ -60,6 +60,7 @@ const INDEXABLE_EXACT_ROUTES = new Set([
   "/community/pencafe",
   "/community/promote",
   "/community/title",
+  "/compare/studio",
   "/contact",
   "/copyright",
   "/design",
@@ -94,6 +95,7 @@ const INDEXABLE_EXACT_ROUTES = new Set([
   "/support-creators",
   "/support-us",
   "/tags",
+  "/tech",
   "/terms",
 ]);
 

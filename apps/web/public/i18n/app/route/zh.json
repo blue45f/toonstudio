@@ -92,5 +92,7 @@
   "route.technologyVideos": "视频",
   "route.terms": "服务条款",
   "route.unknown": "页",
-  "route.offline": "Connection & on-device content"
+  "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase"
 }

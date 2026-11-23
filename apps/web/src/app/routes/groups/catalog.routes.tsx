@@ -39,6 +39,20 @@ const ComparePage = lazyRetry(
   () => import("@/domains/catalog/ComparePage").then((module) => ({ default: module.ComparePage })),
   "ComparePage",
 );
+const StudioCompetitorBenchmarkPage = lazyRetry(
+  () =>
+    import("@/domains/showcase/StudioCompetitorBenchmarkPage").then((module) => ({
+      default: module.StudioCompetitorBenchmarkPage,
+    })),
+  "StudioCompetitorBenchmarkPage",
+);
+const ToonStudioTechShowcasePage = lazyRetry(
+  () =>
+    import("@/domains/showcase/ToonStudioTechShowcasePage").then((module) => ({
+      default: module.ToonStudioTechShowcasePage,
+    })),
+  "ToonStudioTechShowcasePage",
+);
 const RandomPage = lazyRetry(
   () => import("@/domains/catalog/RandomPage").then((module) => ({ default: module.RandomPage })),
   "RandomPage",
@@ -86,6 +100,8 @@ export const catalogRoutes = defineAppRoutes([
   { id: "catalog-calendar", path: "/calendar", element: <CalendarPage /> },
   { id: "catalog-library", path: "/library", element: <LibraryPage /> },
   { id: "catalog-compare", path: "/compare", element: <ComparePage /> },
+  { id: "catalog-compare-studio", path: "/compare/studio", element: <StudioCompetitorBenchmarkPage /> },
+  { id: "catalog-tech", path: "/tech", element: <ToonStudioTechShowcasePage /> },
   { id: "catalog-random", path: "/random", element: <RandomPage /> },
   { id: "catalog-insights", path: "/insights", element: <InsightsPage /> },
   { id: "catalog-tags", path: "/tags", element: <TagsPage /> },

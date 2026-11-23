@@ -2381,6 +2381,8 @@
   "route.terms": "Tjenestevilkår",
   "route.unknown": "Side",
   "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase",
   "search.badge": "Global søgning",
   "search.title": "Et fokuseret arbejdsområde til hurtigt at finde titler",
   "search.subtitle": "Søg efter titler, skabere og tags sammen, og indsnævr resultaterne med platform- og prisfiltre.",

@@ -2381,6 +2381,8 @@
   "route.terms": "Användarvillkor",
   "route.unknown": "Sidan",
   "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase",
   "search.badge": "Global sökning",
   "search.title": "Ett fokuserat arbetsområde för att snabbt hitta titlar",
   "search.subtitle": "Sök titlar, skapare och taggar tillsammans och begränsa resultaten med plattforms- och prisfilter.",
