@@ -2,7 +2,7 @@ import { Agent } from "node:https";
 import { PassThrough, type Duplex } from "node:stream";
 import { parse as parseLegacyUrl } from "node:url";
 
-import webPush from "web-push";
+import { sendNotification } from "web-push";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { classifyWebPushEndpoint, type WebPushEndpointVerdict } from "./production-web-push-network";
@@ -13,8 +13,8 @@ import type { ClientRequestArgs } from "node:http";
 /**
  * 검증한 호스트와 web-push 가 실제로 접속하는 호스트가 어긋나지 않는지 고정하는 시험.
  *
- * web-push(3.x)는 내부에서 legacy `url.parse(href)` 로 접속 호스트·포트를 정한다. 다른 시험 파일은 web-push 를
- * 모킹하므로 WHATWG(`new URL`)로 검증한 호스트와 이 파서가 정한 호스트가 같은지는 거기서 확인되지 않는다. 여기서는
+ * web-push(4.x)는 WHATWG `new URL(href)` 로 접속 호스트·포트를 정한다. 다른 시험 파일은 web-push 를
+ * 모킹하므로 실제 전송 대상과 검증 결과를 여기서 대조하고, legacy 파서와의 차이도 보수적으로 검사한다.
  * 모킹하지 않은 web-push 에 연결 시도만 기록하는 에이전트를 물려 실제 접속 대상(host·port)을 읽는다(네트워크 연결은
  * 만들지 않는다).
  *
@@ -30,7 +30,7 @@ const ALLOWED_HOSTS = resolveWebPushPolicy({
 
 const RECORDED = "web-push-connection-recorded";
 
-// legacy url.parse 는 web-push 가 실제로 쓰는 파서라서 일부러 대조한다. Node 가 이 호출마다 내는 DEP0169 경고는
+// legacy url.parse 는 이전 버전과의 파서 차이를 교차 검증하기 위해 남긴다. Node 의 DEP0169 경고는
 // 이 파일 안에서만 끈다(다른 시험 파일의 경고 처리에는 영향을 주지 않도록 끝나면 되돌린다).
 let previousNoDeprecation: boolean | undefined;
 beforeAll(() => {
@@ -58,8 +58,7 @@ class RecordingAgent extends Agent {
 /** web-push 가 이 href 로 접속하려는 대상. */
 async function webPushConnectionTarget(href: string): Promise<{ host: string | null; port: number } | undefined> {
   const agent = new RecordingAgent();
-  await webPush
-    .sendNotification({ endpoint: href, keys: { p256dh: "p", auth: "a" } }, null, { agent, timeout: 1_000 })
+  await sendNotification({ endpoint: href, keys: { p256dh: "p", auth: "a" } }, null, { agent, timeout: 1_000 })
     .catch(() => undefined);
   agent.destroy();
   return agent.targets[0];
