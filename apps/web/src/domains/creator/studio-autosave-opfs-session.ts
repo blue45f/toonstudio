@@ -107,6 +107,7 @@ export type StudioAutosaveRecoveryCandidate = Readonly<{
 
 export type StudioAutosaveReconciliation = Readonly<{
   candidate: StudioAutosaveRecoveryCandidate | null;
+  emptyReadIncomplete?: boolean;
   compatibilityCandidate: StudioAutosaveRecoveryCandidate | null;
   authority: StudioAutosaveRecoveryAuthority | null;
   durability: "durable" | "compatibility-only" | "none";
@@ -884,18 +885,22 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
     }
   }
 
+  if (compatibilityCandidate && (!winner || (
+    winner.state === "cleared" && timestamp(compatibilityCandidate.savedAt) > timestamp(winner.savedAt)
+  ))) {
+    return Object.freeze({
+      candidate: compatibilityCandidate,
+      compatibilityCandidate,
+      authority: "browser-storage-compatibility",
+      durability: "compatibility-only",
+      migratedToOpfs,
+    });
+  }
+  const emptyReadIncomplete = (input.session && !opfsReadable) || (input.sqlite && !sqliteReadable);
   if (!winner) {
-    if (compatibilityCandidate) {
-      return Object.freeze({
-        candidate: compatibilityCandidate,
-        compatibilityCandidate,
-        authority: "browser-storage-compatibility",
-        durability: "compatibility-only",
-        migratedToOpfs: false,
-      });
-    }
     return Object.freeze({
       candidate: null,
+      ...(emptyReadIncomplete && { emptyReadIncomplete: true }),
       compatibilityCandidate: null,
       authority: opfsReadable
         ? "opfs-journal"
@@ -908,17 +913,6 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
   }
 
   if (winner.state === "cleared") {
-    const compatibilityIsNewer = compatibilityCandidate !== null
-      && timestamp(compatibilityCandidate.savedAt) > timestamp(winner.savedAt);
-    if (compatibilityIsNewer) {
-      return Object.freeze({
-        candidate: compatibilityCandidate,
-        compatibilityCandidate,
-        authority: "browser-storage-compatibility",
-        durability: "compatibility-only",
-        migratedToOpfs,
-      });
-    }
     discardAutosaveBrowserCompatibility(input.storage, input.key);
     if (winner.source === "opfs-journal" && input.sqlite) {
       try {
@@ -929,6 +923,7 @@ export async function reconcileStudioAutosaveWithOpfsPrimary(input: {
     }
     return Object.freeze({
       candidate: null,
+      ...(emptyReadIncomplete && { emptyReadIncomplete: true }),
       compatibilityCandidate: null,
       authority: winner.source,
       durability: "none",

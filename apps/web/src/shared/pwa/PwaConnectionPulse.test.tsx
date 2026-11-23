@@ -39,15 +39,15 @@ describe("PwaConnectionPulse", () => {
   it("초기 상태가 오프라인이면 pill을 보여준다", () => {
     setOnline(false);
     render(<PwaConnectionPulse />);
-    expect(screen.getByRole("status").textContent).toContain("오프라인");
+    expect(screen.getByRole("status").textContent).toBe("오프라인");
   });
 
-  it("offline 이벤트에서 pill이 나타난다", () => {
+  it("offline 이벤트에서 저장 여부를 단정하지 않고 연결 상태만 알린다", () => {
     render(<PwaConnectionPulse />);
     act(() => {
       window.dispatchEvent(new Event("offline"));
     });
-    expect(screen.getByRole("status").textContent).toContain("오프라인");
+    expect(screen.getByRole("status").textContent).toBe("오프라인");
   });
 
   it("online 이벤트에서 pill이 사라진다", () => {

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -8,6 +8,8 @@ import {
   createEmptyStudioCommentsDocument,
 } from "../studio-comments";
 
+import { StudioLiveRoom } from "./studio-live-collaboration-room";
+import { StudioLiveQuickCollaborationControls } from "./StudioLiveQuickCollaborationControls";
 import {
   projectStudioCanvasCommentPins,
   STUDIO_LIVE_PARTICIPANT_COLORS,
@@ -130,6 +132,29 @@ function mockOverlayRect(
 }
 
 describe("StudioLiveCanvasOverlay", () => {
+  it("서버 승인 없이 공동 편집 연결이 복구되면 연결 상태만 표시한다", () => {
+    const room = new StudioLiveRoom({
+      workId: "work-reconnect",
+      participant: { sessionId: "owner-session", displayName: "작가", role: "owner" },
+    });
+    const subscription = vi.spyOn(room, "subscribe");
+    const { container } = render(
+      <StudioLiveQuickCollaborationControls
+        room={room}
+        peers={[]}
+        followingSessionId={null}
+        onToggleFollow={noop}
+      />,
+    );
+    const [onRoomEvent] = subscription.mock.calls[0]!;
+    act(() => {
+      onRoomEvent({ type: "transport-status", status: { state: "disconnected", message: "offline", recoverable: true } });
+      onRoomEvent({ type: "transport-status", status: { state: "ready", message: "ready", recoverable: true } });
+    });
+
+    expect(container.querySelector("[data-studio-live-recovery-hud]")?.textContent).toBe("공동 편집 연결 복구됨");
+  });
+
   it("groups unresolved threads by anchor and follows element bounds without changing comment data", () => {
     const document = commentsFixture();
     const pins = projectStudioCanvasCommentPins({

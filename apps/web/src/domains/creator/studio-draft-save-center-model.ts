@@ -375,7 +375,7 @@ export function resolveStudioDraftSaveCenter(
   } else if (!input.isOnline) {
     phase = "offline";
     tone = "warning";
-    compactLabel = input.localRole === "leader" ? "오프라인 · 기기 저장" : "오프라인";
+    compactLabel = "오프라인";
     headline = "서버 연결 없이 작업 중이에요";
     detail = `${device.title}. ${server.detail}`;
   } else if (input.collaborationSyncPending) {

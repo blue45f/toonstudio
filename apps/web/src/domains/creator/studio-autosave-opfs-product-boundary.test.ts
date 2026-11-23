@@ -122,6 +122,8 @@ describe("Studio OPFS + SQLite autosave product boundary", () => {
 
     expect(discovery).toContain("reconcileStudioAutosaveWithOpfsPrimary");
     expect(discovery).toContain("saved = reconciliation.candidate");
+    expect(discovery).toContain("confirmedEmpty = !saved && !recoveryCheckFailed && !reconciliation.emptyReadIncomplete");
+    expect(discovery).toContain("if (confirmedEmpty) sharedRecoveryVisit?.resolve()");
     expect(discovery).toContain("autosaveRecoveryCandidateRef.current = saved");
     expect(discovery.indexOf("saved = reconciliation.candidate")).toBeLessThan(
       discovery.indexOf("setHasAutosave(Boolean(saved))"),
