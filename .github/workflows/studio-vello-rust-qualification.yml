@@ -47,10 +47,13 @@ jobs:
       contents: write
     outputs:
       manifest_sha: ${{ steps.preserve.outputs.manifest_sha }}
-    env:
-      CARGO_TARGET_DIR: ${{ runner.temp }}/vello-qualification-target
-      XDG_RUNTIME_DIR: ${{ runner.temp }}/vello-qualification-xdg
     steps:
+      - name: Initialize runner-local scratch paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'CARGO_TARGET_DIR=%s\n' "$RUNNER_TEMP/vello-qualification-target" >> "$GITHUB_ENV"
+          printf 'XDG_RUNTIME_DIR=%s\n' "$RUNNER_TEMP/vello-qualification-xdg" >> "$GITHUB_ENV"
       - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
         shell: bash
         env:
@@ -431,8 +434,12 @@ jobs:
       contents: read
     env:
       BUILD_MANIFEST_SHA: ${{ needs.native-and-wasm.outputs.manifest_sha }}
-      XDG_RUNTIME_DIR: ${{ runner.temp }}/runtime-browser-qualification-xdg
     steps:
+      - name: Initialize browser scratch path
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'XDG_RUNTIME_DIR=%s\n' "$RUNNER_TEMP/runtime-browser-qualification-xdg" >> "$GITHUB_ENV"
       - name: 체크아웃 전 미사용 SDK 정리와 디스크 여유 확인
         shell: bash
         env:
