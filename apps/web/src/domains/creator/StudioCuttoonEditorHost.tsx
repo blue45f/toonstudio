@@ -21918,7 +21918,7 @@ function clearSelectionForEdit() {
       handleStudioCrdtDocumentChange={handleStudioCrdtDocumentChange}
       handleStudioLiveEditSafetyChange={handleStudioLiveEditSafetyChange}
       handleStudioLiveRoomChange={handleStudioLiveRoomChange}
-      canvasInputStatus={studioCanvasInputStatus({ saving, documentReloadRequired, sourceHydrationPending, workHydrationFailed, collaborationDocumentUnavailable, initialRecoveryBlocked, autosaveCheckFailed, hasAutosave, collaborationDocumentLocked, reviewLocked: pageEditLocked && !masterEditMode, follower: !persistLeadershipAllowsDraw })} hardCanvasInteractionBlock={hardCanvasInteractionBlock}
+      canvasInputStatus={studioCanvasInputStatus({ saving, documentReloadRequired, sourceHydrationPending, workHydrationFailed, collaborationDocumentUnavailable, initialRecoveryBlocked, autosaveCheckFailed, hasAutosave, collaborationDocumentLocked, collaborationOperationSyncPending, reviewLocked: pageEditLocked && !masterEditMode, follower: !persistLeadershipAllowsDraw })} hardCanvasInteractionBlock={hardCanvasInteractionBlock}
       hasAutosave={hasAutosave}
       healCloneAligned={healCloneAligned}
       healCloneArmed={healCloneArmed}

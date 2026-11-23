@@ -10,6 +10,7 @@ const messages = {
   "source-error": ["원고를 열지 못했어요. 원고 불러오기를 다시 시도해 주세요.", "The manuscript could not be opened. Try loading it again."],
   unavailable: ["공동 원고에 접근할 수 없습니다. 계정과 멤버 권한을 확인해 주세요.", "This shared manuscript is unavailable. Check your account and membership."],
   reload: ["원고가 다른 곳에서 바뀌었습니다. 다시 연 뒤 편집해 주세요.", "The manuscript changed elsewhere. Reopen it to continue editing."],
+  syncing: ["공동 원고를 동기화하고 있어요. 연결이 끊겼다면 다시 연결해 주세요. 동기화가 끝나면 그릴 수 있어요.", "Syncing the shared manuscript. Reconnect if you are offline. You can draw once sync finishes."],
   "read-only": ["읽기 전용 원고입니다. 편집하려면 작품의 편집 권한이 필요합니다.", "Read-only manuscript. Editing requires permission for this work."],
   review: ["검수로 잠긴 페이지입니다. 검수 잠금을 해제한 뒤 편집해 주세요.", "This page is locked for review. Unlock it to edit."],
   follower: ["읽기 전용입니다. 이 원고를 먼저 연 탭에서 편집해 주세요.", "Read-only in this tab. Edit in the tab that opened this manuscript first."],

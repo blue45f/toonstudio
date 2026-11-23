@@ -2,7 +2,8 @@
 export function studioCanvasInputStatus(state: {
   saving: boolean; documentReloadRequired: boolean; sourceHydrationPending: boolean; workHydrationFailed: boolean;
   collaborationDocumentUnavailable: boolean; initialRecoveryBlocked: boolean; autosaveCheckFailed: boolean;
-  hasAutosave: boolean; collaborationDocumentLocked: boolean; reviewLocked: boolean; follower: boolean;
+  hasAutosave: boolean; collaborationDocumentLocked: boolean; collaborationOperationSyncPending: boolean;
+  reviewLocked: boolean; follower: boolean;
 }) {
   if (state.documentReloadRequired) return "reload";
   if (state.workHydrationFailed) return "source-error";
@@ -12,8 +13,9 @@ export function studioCanvasInputStatus(state: {
     if (state.autosaveCheckFailed) return "recovery-error";
     return state.hasAutosave ? "recovery-choice" : "recovering";
   }
-  if (state.collaborationDocumentLocked) return "read-only";
+  if (state.collaborationDocumentLocked && !state.collaborationOperationSyncPending) return "read-only";
   if (state.reviewLocked) return "review";
+  if (state.collaborationDocumentLocked) return "syncing";
   if (state.follower) return "follower";
   return state.saving ? "saving" : "ready";
 }
@@ -21,5 +23,5 @@ export function studioCanvasInputStatus(state: {
 export type StudioCanvasInputStatus = ReturnType<typeof studioCanvasInputStatus>;
 
 export function studioCanvasInputBusy(state?: StudioCanvasInputStatus): boolean {
-  return state === "loading" || state === "recovering" || state === "saving";
+  return state === "loading" || state === "recovering" || state === "syncing" || state === "saving";
 }
