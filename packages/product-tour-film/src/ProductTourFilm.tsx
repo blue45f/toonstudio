@@ -219,7 +219,7 @@ function Wordmark() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <Img
-        src={staticFile("brand/spectrum-ribbon-v2/icon-192.png")}
+        src={staticFile("brand/jewel-atelier-v1/icon-192.png")}
         style={{ width: 32, height: 32, borderRadius: 9, border: `1px solid ${STARLIGHT.line}` }}
       />
       <div style={{ fontSize: 19, fontWeight: 850, letterSpacing: "-.045em" }}>

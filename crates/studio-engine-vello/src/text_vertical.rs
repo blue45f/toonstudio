@@ -29,7 +29,7 @@
 
 use std::collections::BTreeSet;
 
-use harfrust::{Buffer, Direction, Feature, Font, Language, ShapeOptions, ShaperFont, shape};
+use harfrust::{shape, Buffer, Direction, Feature, Font, Language, ShapeOptions, ShaperFont};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider, Tag};
 use wasm_bindgen::prelude::*;
@@ -759,11 +759,7 @@ pub fn shape_text_vertical(
                 // A tate-chu-yoko run consumes exactly one vertical digit
                 // cell. Real vmtx is honored when available; otherwise this
                 // is the same deterministic 1em fallback as upright cells.
-                let advance = run
-                    .chars()
-                    .next()
-                    .map(|c| cell_advance(c))
-                    .unwrap_or(font_size);
+                let advance = run.chars().next().map(&cell_advance).unwrap_or(font_size);
                 if cursor_y > 0.0 && cursor_y + advance > max_height_px {
                     column += 1;
                     cursor_y = 0.0;

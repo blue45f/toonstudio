@@ -12,7 +12,8 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -21,7 +22,7 @@ const PKG_DIR = join(ROOT, "crates", "studio-engine-vello", "pkg");
 // `wasm-pack build --target web --release --out-dir pkg-gpu -- --features hybrid,lottie,svg`.
 const PKG_GPU_DIR = join(ROOT, "crates", "studio-engine-vello", "pkg-gpu");
 // V14 E13: bounded ThorVG WebCanvas specialist provider. The vendored WASM
-// is copied byte-for-byte from @thorvg/webcanvas@1.1.2 and hash-pinned.
+// is copied byte-for-byte from @thorvg/webcanvas@1.1.4 and hash-pinned.
 const THORVG_WASM_DIR = join(
   ROOT,
   "packages",
@@ -95,8 +96,23 @@ verifyPkgIntegrity(
 verifyPkgIntegrity(
   THORVG_WASM_DIR,
   "thorvg-webcanvas",
-  "copy thorvg.wasm from @thorvg/webcanvas@1.1.2 and refresh INTEGRITY.sha256",
+  "copy thorvg.wasm from @thorvg/webcanvas@1.1.4 and refresh INTEGRITY.sha256",
 );
+
+const thorvgRequire = createRequire(join(THORVG_WASM_DIR, "..", "package.json"));
+const thorvgDist = dirname(thorvgRequire.resolve("@thorvg/webcanvas"));
+const thorvgPackage = JSON.parse(readFileSync(join(thorvgDist, "..", "package.json"), "utf8"));
+const thorvgExpectedVersion = JSON.parse(
+  readFileSync(join(THORVG_WASM_DIR, "..", "package.json"), "utf8"),
+).dependencies["@thorvg/webcanvas"];
+if (thorvgPackage.version !== thorvgExpectedVersion) {
+  fail("ThorVG installed JS version differs from the pinned package dependency");
+}
+if (!readFileSync(join(THORVG_WASM_DIR, "thorvg.wasm"))
+  .equals(readFileSync(join(thorvgDist, "thorvg.wasm")))) {
+  fail("ThorVG vendored WASM differs from the installed @thorvg/webcanvas package");
+}
+
 verifyPkgIntegrity(
   INK_MODELER_DIR,
   "ink-modeler",

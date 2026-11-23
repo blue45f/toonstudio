@@ -364,6 +364,9 @@ jobs:
             ${{ matrix.shard == 'studio-foundation' && '/docs/studio-bg3d-webgpu-engine-promotion-2026-08-29.md' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/docs/candidates/engine-portfolio/capability-survey.md' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/docs/third-party/opencascade-lgpl.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/tech/toonstudio-nextgen-engineering-whitepaper.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/docs/ir/toonstudio-ir-promo-differentiation-brief-2026-11.md' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/drama/gpt25-bg-drama-boardroom-vertical-depth/background.png' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/romance/gpt25-bg-romance-cherry-path-vertical-depth/background.png' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/studio/generated-backgrounds/gpt25-v1/wuxia/gpt25-bg-wuxia-palace-courtyard-vertical-depth/background.png' || '' }}
@@ -891,6 +894,12 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: ThorVG 고정 WASM과 WebGPU 32회 수명주기 검증
+        if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
+        run: pnpm run verify:studio-thorvg-browser --reporter=verbose --silent=false
+      - name: MediaPipe 실제 모델·SIMD 호환·개인정보 경계 검증
+        if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
+        run: pnpm run verify:studio-mediapipe-browser
       - name: 자체 안료·23종 브러시·GPU 공개 기능 검증
         run: node scripts/verify-latent-pigment-browser.mjs
       - name: Run serious and critical accessibility smoke
@@ -906,7 +915,9 @@ jobs:
         if: always()
         with:
           name: core-admin-quality-browser-attempt-${{ github.run_attempt }}
-          path: artifacts/operation-policy-browser
+          path: |
+            artifacts/operation-policy-browser
+            artifacts/studio-mediapipe-browser/report.json
           retention-days: 7
           if-no-files-found: warn
       - name: 자체 안료 실제 제품 UI·저장·재열기·명시 전환

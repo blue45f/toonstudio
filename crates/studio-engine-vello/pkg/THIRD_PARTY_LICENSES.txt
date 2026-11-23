@@ -3,7 +3,7 @@ ToonStudio shipped Rust/WASM third-party license bundle
 Artifact: pkg
 Target: wasm32-unknown-unknown
 Cargo features: (none)
-External crates: 90
+External crates: 91
 
 The text between every BEGIN/END marker is copied verbatim from the locally
 resolved crate archive or reviewed vendored source after CRLF-to-LF and final
@@ -66,8 +66,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 0637f0b892b3d5f521eedf00e860c49ac6d4787da117e4b99f53b0cc5af25d70 -----
 
-Packages: fearless_simd@0.7.0, kurbo@0.13.1, peniko@0.6.1, polycool@0.4.0
-Sources: https://crates.io/crates/fearless_simd/0.4.1/source/LICENSE-MIT, https://crates.io/crates/fearless_simd/0.7.0/source/LICENSE-MIT, https://crates.io/crates/kurbo/0.13.1/source/LICENSE-MIT, https://crates.io/crates/peniko/0.6.1/source/LICENSE-MIT, https://crates.io/crates/polycool/0.4.0/source/LICENSE-MIT
+Packages: fearless_simd@1.2.0, kurbo@0.13.1, peniko@0.6.1, polycool@0.4.0
+Sources: https://crates.io/crates/fearless_simd/0.4.1/source/LICENSE-MIT, https://crates.io/crates/fearless_simd/1.2.0/source/LICENSE-MIT, https://crates.io/crates/kurbo/0.13.1/source/LICENSE-MIT, https://crates.io/crates/peniko/0.6.1/source/LICENSE-MIT, https://crates.io/crates/polycool/0.4.0/source/LICENSE-MIT
 ----- BEGIN LICENSE 0e297345cbd90f056157ad7bfc614d4bf5d13ff0d9e978711f261e17c70ff876 -----
 Copyright (c) 2018 Raph Levien
 
@@ -684,8 +684,8 @@ Apache License
    limitations under the License.
 ----- END LICENSE 283ea6cc2997a1a70da0049e09adf9317bb60ca1b51279b65196b83a69e1996b -----
 
-Packages: adler2@2.0.1, displaydoc@0.2.7, itoa@1.0.18, once_cell@1.21.4, proc-macro2@1.0.107, quote@1.0.47, serde@1.0.229, serde_core@1.0.229, serde_derive@1.0.229, serde_json@1.0.154, syn@2.0.119, syn@3.0.3, thiserror-impl@2.0.19, thiserror@2.0.19, unicode-ident@1.0.24, zmij@1.0.23
-Sources: https://crates.io/crates/adler2/2.0.1/source/LICENSE-MIT, https://crates.io/crates/displaydoc/0.2.7/source/LICENSE-MIT, https://crates.io/crates/itoa/1.0.18/source/LICENSE-MIT, https://crates.io/crates/once_cell/1.21.4/source/LICENSE-MIT, https://crates.io/crates/pin-project-lite/0.2.17/source/LICENSE-MIT, https://crates.io/crates/proc-macro2/1.0.107/source/LICENSE-MIT, https://crates.io/crates/quote/1.0.47/source/LICENSE-MIT, https://crates.io/crates/rustc-hash/1.1.0/source/LICENSE-MIT, https://crates.io/crates/serde/1.0.229/source/LICENSE-MIT, https://crates.io/crates/serde_core/1.0.229/source/LICENSE-MIT, https://crates.io/crates/serde_derive/1.0.229/source/LICENSE-MIT, https://crates.io/crates/serde_json/1.0.154/source/LICENSE-MIT, https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-MIT, https://crates.io/crates/syn/2.0.119/source/LICENSE-MIT, https://crates.io/crates/syn/3.0.3/source/LICENSE-MIT, https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-MIT, https://crates.io/crates/thiserror/2.0.19/source/LICENSE-MIT, https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-MIT, https://crates.io/crates/zmij/1.0.23/source/LICENSE-MIT
+Packages: adler2@2.0.1, displaydoc@0.2.7, itoa@1.0.18, once_cell@1.21.4, proc-macro2@1.0.107, quote@1.0.47, serde@1.0.229, serde_core@1.0.229, serde_derive@1.0.229, serde_json@1.0.154, syn@2.0.119, syn@3.0.10, thiserror-impl@2.0.19, thiserror@2.0.19, unicode-ident@1.0.24, zmij@1.0.23
+Sources: https://crates.io/crates/adler2/2.0.1/source/LICENSE-MIT, https://crates.io/crates/displaydoc/0.2.7/source/LICENSE-MIT, https://crates.io/crates/itoa/1.0.18/source/LICENSE-MIT, https://crates.io/crates/once_cell/1.21.4/source/LICENSE-MIT, https://crates.io/crates/pin-project-lite/0.2.17/source/LICENSE-MIT, https://crates.io/crates/proc-macro2/1.0.107/source/LICENSE-MIT, https://crates.io/crates/quote/1.0.47/source/LICENSE-MIT, https://crates.io/crates/rustc-hash/1.1.0/source/LICENSE-MIT, https://crates.io/crates/serde/1.0.229/source/LICENSE-MIT, https://crates.io/crates/serde_core/1.0.229/source/LICENSE-MIT, https://crates.io/crates/serde_derive/1.0.229/source/LICENSE-MIT, https://crates.io/crates/serde_json/1.0.154/source/LICENSE-MIT, https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-MIT, https://crates.io/crates/syn/2.0.119/source/LICENSE-MIT, https://crates.io/crates/syn/3.0.10/source/LICENSE-MIT, https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-MIT, https://crates.io/crates/thiserror/2.0.19/source/LICENSE-MIT, https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-MIT, https://crates.io/crates/zmij/1.0.23/source/LICENSE-MIT
 ----- BEGIN LICENSE 30fefc3a7d6a0041541858293bcbea2dde4caa4c0a5802f996a7f7e8c0085652 -----
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -712,8 +712,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 30fefc3a7d6a0041541858293bcbea2dde4caa4c0a5802f996a7f7e8c0085652 -----
 
-Packages: harfrust@0.15.0, harfrust@0.16.0
-Sources: https://crates.io/crates/harfrust/0.12.0/source/LICENSE, https://crates.io/crates/harfrust/0.15.0/source/LICENSE, https://crates.io/crates/harfrust/0.16.0/source/LICENSE
+Packages: harfrust@0.15.0, harfrust@0.16.1
+Sources: https://crates.io/crates/harfrust/0.12.0/source/LICENSE, https://crates.io/crates/harfrust/0.15.0/source/LICENSE, https://crates.io/crates/harfrust/0.16.1/source/LICENSE
 ----- BEGIN LICENSE 31b628c2f6d73f791cb7773205ea3de4ffb5a0fbd292316e7e8418727ce5d933 -----
 The MIT License (MIT)
 
@@ -825,8 +825,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 3bfacc197ff245b6217891d481f11cf9be791a06baa086ba1f80c80a2273e947 -----
 
-Packages: color@0.3.3, fdeflate@0.3.7, fearless_simd@0.7.0, linebender_resource_handle@0.1.1, miniz_oxide@0.8.9, vello_common@0.3.0, vello_cpu@0.3.0
-Sources: crates/vendor/velato/LICENSE-APACHE, crates/vendor/vello-hybrid/LICENSE-APACHE, crates/vendor/vello-svg/LICENSE-APACHE, crates/vendor/wgpu-toon/LICENSE.APACHE, https://crates.io/crates/color/0.3.3/source/LICENSE-APACHE, https://crates.io/crates/fdeflate/0.3.7/source/LICENSE-APACHE, https://crates.io/crates/fearless_simd/0.4.1/source/LICENSE-APACHE, https://crates.io/crates/fearless_simd/0.7.0/source/LICENSE-APACHE, https://crates.io/crates/linebender_resource_handle/0.1.1/source/LICENSE-APACHE, https://crates.io/crates/miniz_oxide/0.8.9/source/LICENSE-APACHE.md, https://crates.io/crates/naga-types/30.0.1/source/LICENSE.APACHE, https://crates.io/crates/pin-project-lite/0.2.17/source/LICENSE-APACHE, https://crates.io/crates/raw-window-handle/0.6.2/source/LICENSE-APACHE.md, https://crates.io/crates/usvg/0.48.1/source/LICENSE-APACHE, https://crates.io/crates/vello/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/vello_common/0.2.0/source/LICENSE-APACHE, https://crates.io/crates/vello_common/0.3.0/source/LICENSE-APACHE, https://crates.io/crates/vello_cpu/0.3.0/source/LICENSE-APACHE, https://crates.io/crates/vello_encoding/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/vello_shaders/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/vello_sparse_shaders/0.2.0/source/LICENSE-APACHE, https://crates.io/crates/wgpu-types/30.0.1/source/LICENSE.APACHE
+Packages: color@0.3.3, fdeflate@0.3.7, fearless_simd@1.2.0, fearless_simd_macros@0.1.0, linebender_resource_handle@0.1.1, miniz_oxide@0.8.9, vello_common@0.4.0, vello_cpu@0.4.0
+Sources: crates/vendor/velato/LICENSE-APACHE, crates/vendor/vello-hybrid/LICENSE-APACHE, crates/vendor/vello-svg/LICENSE-APACHE, crates/vendor/wgpu-toon/LICENSE.APACHE, https://crates.io/crates/color/0.3.3/source/LICENSE-APACHE, https://crates.io/crates/fdeflate/0.3.7/source/LICENSE-APACHE, https://crates.io/crates/fearless_simd/0.4.1/source/LICENSE-APACHE, https://crates.io/crates/fearless_simd/1.2.0/source/LICENSE-APACHE, https://crates.io/crates/fearless_simd_macros/0.1.0/source/LICENSE-APACHE, https://crates.io/crates/linebender_resource_handle/0.1.1/source/LICENSE-APACHE, https://crates.io/crates/miniz_oxide/0.8.9/source/LICENSE-APACHE.md, https://crates.io/crates/naga-types/30.0.1/source/LICENSE.APACHE, https://crates.io/crates/pin-project-lite/0.2.17/source/LICENSE-APACHE, https://crates.io/crates/raw-window-handle/0.6.2/source/LICENSE-APACHE.md, https://crates.io/crates/usvg/0.48.1/source/LICENSE-APACHE, https://crates.io/crates/vello/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/vello_common/0.2.0/source/LICENSE-APACHE, https://crates.io/crates/vello_common/0.4.0/source/LICENSE-APACHE, https://crates.io/crates/vello_cpu/0.4.0/source/LICENSE-APACHE, https://crates.io/crates/vello_encoding/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/vello_shaders/0.12.0/source/LICENSE-APACHE, https://crates.io/crates/vello_sparse_shaders/0.2.0/source/LICENSE-APACHE, https://crates.io/crates/wgpu-types/30.0.1/source/LICENSE.APACHE
 ----- BEGIN LICENSE 4bf96504d6e83ce5c6fc7167f1795d9ceaa68e70ab86bc5d08ab93184262bbbe -----
 Apache License
                            Version 2.0, January 2004
@@ -1306,8 +1306,8 @@ Apache License
    limitations under the License.
 ----- END LICENSE 6dc0e068dcf3a5bc8e054205b85b7720e1d49265bbc64bf515d2cf79197df69a -----
 
-Packages: glifo@0.4.0
-Sources: https://crates.io/crates/glifo/0.4.0/source/LICENSE-MIT
+Packages: glifo@0.5.0
+Sources: https://crates.io/crates/glifo/0.5.0/source/LICENSE-MIT
 ----- BEGIN LICENSE 738d4a3e51220f46f9cc2f53e6acfc274ab95e68a9280777a37512bec7408724 -----
 Copyright 2025 the Vello Authors
 
@@ -1365,6 +1365,36 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ----- END LICENSE 7427abc630365f6335b3ced8b620b6c8a87b3793edea701d15cdde01ec7a6cde -----
+
+Packages: fearless_simd_macros@0.1.0
+Sources: https://crates.io/crates/fearless_simd_macros/0.1.0/source/LICENSE-MIT
+----- BEGIN LICENSE 7781100dfdcdadda57828169731f14493cf602cbb9628a760a36c13d91957d5b -----
+Copyright (c) 2026 The Fearless SIMD authors
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+----- END LICENSE 7781100dfdcdadda57828169731f14493cf602cbb9628a760a36c13d91957d5b -----
 
 Packages: fdeflate@0.3.7
 Sources: https://crates.io/crates/fdeflate/0.3.7/source/LICENSE-MIT
@@ -1534,8 +1564,8 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ----- END LICENSE 84e1bbfebd74e4196cfa0ea5cf58e677aa24b47c6661adbb19fb07920d089d1d -----
 
-Packages: glifo@0.4.0, itoa@1.0.18, parley_engine@0.13.0, proc-macro2@1.0.107, quote@1.0.47, serde@1.0.229, serde_core@1.0.229, serde_derive@1.0.229, serde_json@1.0.154, syn@2.0.119, syn@3.0.3, thiserror-impl@2.0.19, thiserror@2.0.19, unicode-ident@1.0.24
-Sources: https://crates.io/crates/glifo/0.4.0/source/LICENSE-APACHE, https://crates.io/crates/itoa/1.0.18/source/LICENSE-APACHE, https://crates.io/crates/litrs/1.0.0/source/LICENSE-APACHE, https://crates.io/crates/parley_engine/0.13.0/source/LICENSE-APACHE, https://crates.io/crates/proc-macro2/1.0.107/source/LICENSE-APACHE, https://crates.io/crates/quote/1.0.47/source/LICENSE-APACHE, https://crates.io/crates/serde/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_core/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_derive/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_json/1.0.154/source/LICENSE-APACHE, https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-APACHE, https://crates.io/crates/syn/2.0.119/source/LICENSE-APACHE, https://crates.io/crates/syn/3.0.3/source/LICENSE-APACHE, https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/thiserror/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-APACHE
+Packages: glifo@0.5.0, itoa@1.0.18, parley_engine@0.13.0, proc-macro2@1.0.107, quote@1.0.47, serde@1.0.229, serde_core@1.0.229, serde_derive@1.0.229, serde_json@1.0.154, syn@2.0.119, syn@3.0.10, thiserror-impl@2.0.19, thiserror@2.0.19, unicode-ident@1.0.24
+Sources: https://crates.io/crates/glifo/0.5.0/source/LICENSE-APACHE, https://crates.io/crates/itoa/1.0.18/source/LICENSE-APACHE, https://crates.io/crates/litrs/1.0.0/source/LICENSE-APACHE, https://crates.io/crates/parley_engine/0.13.0/source/LICENSE-APACHE, https://crates.io/crates/proc-macro2/1.0.107/source/LICENSE-APACHE, https://crates.io/crates/quote/1.0.47/source/LICENSE-APACHE, https://crates.io/crates/serde/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_core/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_derive/1.0.229/source/LICENSE-APACHE, https://crates.io/crates/serde_json/1.0.154/source/LICENSE-APACHE, https://crates.io/crates/serde_repr/0.1.21/source/LICENSE-APACHE, https://crates.io/crates/syn/2.0.119/source/LICENSE-APACHE, https://crates.io/crates/syn/3.0.10/source/LICENSE-APACHE, https://crates.io/crates/thiserror-impl/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/thiserror/2.0.19/source/LICENSE-APACHE, https://crates.io/crates/unicode-ident/1.0.24/source/LICENSE-APACHE
 ----- BEGIN LICENSE 85ad950cce8752f716dbf49be95b2639172cb49f291336d57f1fdc9989e38179 -----
 Apache License
                         Version 2.0, January 2004
@@ -2401,8 +2431,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ----- END LICENSE b733dbc79d3d600997bfe6891153f39fcdb27d753b608dfbbcdfd6be8f9efb64 -----
 
-Packages: vello_common@0.3.0, vello_cpu@0.3.0
-Sources: crates/vendor/vello-hybrid/LICENSE-MIT, https://crates.io/crates/vello/0.12.0/source/LICENSE-MIT, https://crates.io/crates/vello_common/0.2.0/source/LICENSE-MIT, https://crates.io/crates/vello_common/0.3.0/source/LICENSE-MIT, https://crates.io/crates/vello_cpu/0.3.0/source/LICENSE-MIT, https://crates.io/crates/vello_encoding/0.12.0/source/LICENSE-MIT, https://crates.io/crates/vello_shaders/0.12.0/source/LICENSE-MIT, https://crates.io/crates/vello_sparse_shaders/0.2.0/source/LICENSE-MIT
+Packages: vello_common@0.4.0, vello_cpu@0.4.0
+Sources: crates/vendor/vello-hybrid/LICENSE-MIT, https://crates.io/crates/vello/0.12.0/source/LICENSE-MIT, https://crates.io/crates/vello_common/0.2.0/source/LICENSE-MIT, https://crates.io/crates/vello_common/0.4.0/source/LICENSE-MIT, https://crates.io/crates/vello_cpu/0.4.0/source/LICENSE-MIT, https://crates.io/crates/vello_encoding/0.12.0/source/LICENSE-MIT, https://crates.io/crates/vello_shaders/0.12.0/source/LICENSE-MIT, https://crates.io/crates/vello_sparse_shaders/0.2.0/source/LICENSE-MIT
 ----- BEGIN LICENSE bfb09da988fcf916605c85f00704c186329c87e53878cded360198824d5826f2 -----
 Copyright 2020 the Vello Authors
 

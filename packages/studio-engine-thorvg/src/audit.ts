@@ -1,4 +1,4 @@
-export const THORVG_WEB_VERSION = "1.1.2" as const;
+export const THORVG_WEB_VERSION = "1.1.4" as const;
 
 export const THORVG_ASSET_LIMITS = Object.freeze({
   maxSvgCodeUnits: 2 * 1024 * 1024,

@@ -33,7 +33,11 @@ import {
 } from "./studio-vrm-webcam-tracking";
 
 import type { StudioVrmTrackingCalibrationRepository } from "./studio-vrm-tracking-calibration-sqlite-repository";
-import type { FaceLandmarker, HandLandmarker, PoseLandmarker } from "@mediapipe/tasks-vision";
+import type {
+  StudioMediaPipeVisionFaceLandmarker as FaceLandmarker,
+  StudioMediaPipeVisionHandLandmarker as HandLandmarker,
+  StudioMediaPipeVisionPoseLandmarker as PoseLandmarker,
+} from "../studio-mediapipe-vision-init-arbiter";
 
 /** `useRef` 결과를 그대로 받되 React 타입 버전에 묶이지 않는 구조적 별칭. */
 type MutableRef<T> = { current: T };

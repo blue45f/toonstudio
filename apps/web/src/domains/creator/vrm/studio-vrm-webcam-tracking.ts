@@ -16,6 +16,9 @@ import {
 import {
   loadStudioMediaPipeVisionModule,
   runStudioMediaPipeVisionTaskCreation,
+  type StudioMediaPipeVisionFaceLandmarker as FaceLandmarker,
+  type StudioMediaPipeVisionHandLandmarker as HandLandmarker,
+  type StudioMediaPipeVisionPoseLandmarker as PoseLandmarker,
 } from "../studio-mediapipe-vision-init-arbiter";
 
 import { resolveStudioVrmExpressionConflicts } from "./studio-vrm-expression-conflict";
@@ -23,10 +26,7 @@ import { TrackingChannelFilterBank } from "./studio-vrm-one-euro";
 import { solvePoseToVrmBones } from "./studio-vrm-pose-solver";
 
 import type {
-  FaceLandmarker,
   FaceLandmarkerResult,
-  HandLandmarker,
-  PoseLandmarker,
   PoseLandmarkerResult,
 } from "@mediapipe/tasks-vision";
 
@@ -242,12 +242,9 @@ export async function initFaceLandmarker(
   const generation = faceLandmarkerGeneration;
   const pending = (async () => {
     // Dynamic import — 번들 초기 로드를 줄이기 위해 런타임에만 불러온다.
-    const { FilesetResolver, FaceLandmarker: FLM } =
-      await loadStudioMediaPipeVisionModule();
-
-    const { fileset: vision } = await resolveStudioMediaPipeVisionWasmFileset({
-      isSimdSupported: () => FilesetResolver.isSimdSupported(false),
-    });
+    const selection = await resolveStudioMediaPipeVisionWasmFileset();
+    const { FaceLandmarker: FLM } = await loadStudioMediaPipeVisionModule(selection.variant);
+    const vision = selection.fileset;
     if (generation !== faceLandmarkerGeneration) throw liveLandmarkerDisposedError("face");
 
     // 신뢰도 0.5→0.6: 저품질 프레임의 랜드마크 튐 컷.
@@ -347,11 +344,9 @@ export async function initPoseLandmarker(
 
   const generation = livePoseLandmarkerGeneration;
   const pending = (async () => {
-    const { FilesetResolver, PoseLandmarker: PLM } =
-      await loadStudioMediaPipeVisionModule();
-    const { fileset: vision } = await resolveStudioMediaPipeVisionWasmFileset({
-      isSimdSupported: () => FilesetResolver.isSimdSupported(false),
-    });
+    const selection = await resolveStudioMediaPipeVisionWasmFileset();
+    const { PoseLandmarker: PLM } = await loadStudioMediaPipeVisionModule(selection.variant);
+    const vision = selection.fileset;
     if (generation !== livePoseLandmarkerGeneration) throw liveLandmarkerDisposedError("pose");
 
     const landmarker = await runStudioMediaPipeVisionTaskCreation({
@@ -412,11 +407,9 @@ export type PhotoPoseLandmarkerFactory = (
 async function createPhotoPoseLandmarker(
   delegate: StudioMediaPipeVisionDelegate = "GPU",
 ): Promise<PoseLandmarker> {
-  const { FilesetResolver, PoseLandmarker: PLM } =
-    await loadStudioMediaPipeVisionModule();
-  const { fileset: vision } = await resolveStudioMediaPipeVisionWasmFileset({
-    isSimdSupported: () => FilesetResolver.isSimdSupported(false),
-  });
+  const selection = await resolveStudioMediaPipeVisionWasmFileset();
+  const { PoseLandmarker: PLM } = await loadStudioMediaPipeVisionModule(selection.variant);
+  const vision = selection.fileset;
   const modelAssetPath =
     "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task";
   const options = {
@@ -539,11 +532,9 @@ export type PhotoHandLandmarkerFactory = (
 async function createPhotoHandLandmarker(
   delegate: StudioMediaPipeVisionDelegate = "GPU",
 ): Promise<HandLandmarker> {
-  const { FilesetResolver, HandLandmarker: HLM } =
-    await loadStudioMediaPipeVisionModule();
-  const { fileset: vision } = await resolveStudioMediaPipeVisionWasmFileset({
-    isSimdSupported: () => FilesetResolver.isSimdSupported(false),
-  });
+  const selection = await resolveStudioMediaPipeVisionWasmFileset();
+  const { HandLandmarker: HLM } = await loadStudioMediaPipeVisionModule(selection.variant);
+  const vision = selection.fileset;
   const modelAssetPath =
     "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
   const options = {
@@ -693,11 +684,9 @@ export async function initHandLandmarker(
 
   const generation = liveHandLandmarkerGeneration;
   const pending = (async () => {
-    const { FilesetResolver, HandLandmarker: HLM } =
-      await loadStudioMediaPipeVisionModule();
-    const { fileset: vision } = await resolveStudioMediaPipeVisionWasmFileset({
-      isSimdSupported: () => FilesetResolver.isSimdSupported(false),
-    });
+    const selection = await resolveStudioMediaPipeVisionWasmFileset();
+    const { HandLandmarker: HLM } = await loadStudioMediaPipeVisionModule(selection.variant);
+    const vision = selection.fileset;
     if (generation !== liveHandLandmarkerGeneration) throw liveLandmarkerDisposedError("hand");
     const model =
       "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";

@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { constants } from "node:fs";
+import { access, lstat, readFile, writeFile, mkdir } from "node:fs/promises";
 import { cpus, platform, release } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { chromium } from "playwright";
+import { chromium, type Browser } from "playwright";
 import { createServer } from "vite";
 
 import type { TextVerticalProductProbe } from "./text-vertical-quality-browser";
@@ -23,6 +24,9 @@ const BROWSER_FONT_PATH =
   ?? "/System/Library/Fonts/Supplemental/Arial Unicode.ttf";
 const ROBOTO_PATH = join(ROOT, "tests/corpus/text/fonts/Roboto-Regular.ttf");
 const HB_SHAPE_PATH = process.env.TOON_HB_SHAPE ?? "/opt/homebrew/bin/hb-shape";
+// 앱 브라우저와 별개로 기존 텍스트 PNG를 측정한 기준 브라우저를 명시적으로 선택합니다.
+const REFERENCE_CHROMIUM_EXECUTABLE = process.env.TOON_TEXT_REFERENCE_CHROMIUM_EXECUTABLE;
+const REFERENCE_CHROMIUM_VERSION = "158.0.8127.18";
 const WASM_WARMUP = 30;
 const WASM_SAMPLE_COUNT = 160;
 const FUZZY_DELTA = 48;
@@ -80,6 +84,15 @@ async function assertGeneratedArtifactsStable() {
 }
 
 async function runBrowserProductProbe(fontBytes: Uint8Array): Promise<TextVerticalProductProbe> {
+  if (REFERENCE_CHROMIUM_EXECUTABLE !== undefined) {
+    if (!isAbsolute(REFERENCE_CHROMIUM_EXECUTABLE)) {
+      throw new Error("텍스트 기준 Chromium 실행 파일은 절대 경로여야 합니다.");
+    }
+    if (!(await lstat(REFERENCE_CHROMIUM_EXECUTABLE)).isFile()) {
+      throw new Error("텍스트 기준 Chromium 실행 파일은 심볼릭 링크가 아닌 일반 파일이어야 합니다.");
+    }
+    await access(REFERENCE_CHROMIUM_EXECUTABLE, constants.X_OK);
+  }
   const server = await createServer({
     root: ROOT,
     logLevel: "error",
@@ -101,11 +114,24 @@ async function runBrowserProductProbe(fontBytes: Uint8Array): Promise<TextVertic
     ],
     server: { host: "127.0.0.1", port: 0, strictPort: false },
   });
-  await server.listen();
-  const origin = server.resolvedUrls?.local[0];
-  if (!origin) throw new Error("Vite did not expose a local URL for the browser probe");
-  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+  let browser: Browser | undefined;
   try {
+    await server.listen();
+    const origin = server.resolvedUrls?.local[0];
+    if (!origin) throw new Error("Vite did not expose a local URL for the browser probe");
+    browser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox"],
+      ...(REFERENCE_CHROMIUM_EXECUTABLE === undefined ? {} : { executablePath: REFERENCE_CHROMIUM_EXECUTABLE }),
+    });
+    const browserVersion = browser.version();
+    if (browserVersion !== REFERENCE_CHROMIUM_VERSION) {
+      throw new Error(`텍스트 기준 Chromium 버전 불일치: ${browserVersion}, 필요 버전 ${REFERENCE_CHROMIUM_VERSION}`);
+    }
+    console.log("텍스트 기준 브라우저:", JSON.stringify({
+      executablePath: REFERENCE_CHROMIUM_EXECUTABLE ?? null,
+      browserVersion,
+    }));
     const context = await browser.newContext({ viewport: { width: 900, height: 700 }, deviceScaleFactor: 1 });
     const page = await context.newPage();
     const errors: string[] = [];
@@ -137,7 +163,7 @@ async function runBrowserProductProbe(fontBytes: Uint8Array): Promise<TextVertic
     if (errors.length > 0) throw new Error(`browser errors: ${JSON.stringify(errors)}`);
     return result;
   } finally {
-    await browser.close();
+    await browser?.close();
     await server.close();
   }
 }
@@ -377,7 +403,7 @@ async function runWasmProbe(
     harfBuzzReference,
     apiFinding: {
       skrifa: "Raw GSUB feature records expose vert/vrt2 availability without implementing substitutions.",
-      parley: "StyleProperty::FontFeatures reaches HarfRust, but Parley 0.11 fixes horizontal layout direction and exposes no vertical-direction builder API.",
+      parley: "StyleProperty::FontFeatures reaches HarfRust, but Parley 0.13.0 fixes horizontal layout direction and exposes no vertical-direction builder API.",
       selectedApproach: "direct pinned HarfRust Direction::TopToBottom shaping with explicit vert/vrt2; Skrifa outlines selected glyph ids; per-role geometry remains only for characters without a font alternate",
     },
   };
@@ -567,7 +593,7 @@ const report = {
     "AppleGothic and Arial Unicode are OS-provided local inputs and are not copied into the repository; other OS versions must rerun and record their own font hashes.",
     "The product vertical core uses Canvas measureText plus deterministic Unicode-role placement; OpenType ruby optical metrics remain outside that product geometry path.",
     "Kinsoku uses a deterministic nearest-valid-break search bounded to 32 cells; when no legal break exists inside that bound, the item is explicitly hung with overflow rather than dropped.",
-    "Parley 0.11 still exposes no vertical paragraph builder, so the bounded single-style lane invokes the same pinned HarfRust 0.10 directly with Direction::TopToBottom and explicit vert/vrt2. Skrifa outlines the returned glyph ids; only characters without a font alternate use explicit geometric punctuation fallback.",
+    "Parley 0.13.0 still exposes no vertical paragraph builder, so the bounded single-style lane invokes the same pinned HarfRust 0.16.1 directly with Direction::TopToBottom and explicit vert/vrt2. Skrifa outlines the returned glyph ids; only characters without a font alternate use explicit geometric punctuation fallback.",
     "Process RSS/heap are observable; provider-specific peak CPU/GPU allocations are not and remain null.",
   ],
 };

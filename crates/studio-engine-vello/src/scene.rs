@@ -68,10 +68,28 @@ pub enum PaintIR {
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(tag = "v")]
 pub enum PathVerbIR {
-    M { x: f64, y: f64 },
-    L { x: f64, y: f64 },
-    Q { cx: f64, cy: f64, x: f64, y: f64 },
-    C { c1x: f64, c1y: f64, c2x: f64, c2y: f64, x: f64, y: f64 },
+    M {
+        x: f64,
+        y: f64,
+    },
+    L {
+        x: f64,
+        y: f64,
+    },
+    Q {
+        cx: f64,
+        cy: f64,
+        x: f64,
+        y: f64,
+    },
+    C {
+        c1x: f64,
+        c1y: f64,
+        c2x: f64,
+        c2y: f64,
+        x: f64,
+        y: f64,
+    },
     Z,
 }
 

@@ -246,11 +246,9 @@ export async function requestStudioMannequinCameraStream(
   }
 }
 
-async function resolveLocalVisionWasmFileset(
-  isSimdSupported: () => Promise<boolean>,
-): Promise<StudioMediaPipeVisionWasmSelection> {
+async function resolveLocalVisionWasmFileset(): Promise<StudioMediaPipeVisionWasmSelection> {
   try {
-    return await resolveStudioMediaPipeVisionWasmFileset({ isSimdSupported });
+    return await resolveStudioMediaPipeVisionWasmFileset();
   } catch (cause) {
     throw createNamedError(
       "StudioMannequinVisionWasmLoadError",
@@ -307,11 +305,11 @@ async function createStudioMannequinPoseLandmarker(
 ): Promise<StudioMannequinPoseLandmarker> {
   if (signal?.aborted) throw createDisposedError();
 
-  const { FilesetResolver, PoseLandmarker } = await loadStudioMediaPipeVisionModule();
   const [visionSelection, modelAssetBuffer] = await Promise.all([
-    resolveLocalVisionWasmFileset(() => FilesetResolver.isSimdSupported(false)),
+    resolveLocalVisionWasmFileset(),
     fetchPoseModelBuffer(signal),
   ]);
+  const { PoseLandmarker } = await loadStudioMediaPipeVisionModule(visionSelection.variant);
   if (signal?.aborted) throw createDisposedError();
 
   const poseOptions = {

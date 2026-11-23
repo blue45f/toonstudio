@@ -21,14 +21,15 @@ obscure, or claim ownership of these libraries.
 | `manifold-3d` | 3.5.1 | Apache-2.0 | <https://github.com/elalish/manifold> |
 | `opencascade.js` / OpenCascade WASM | 1.1.1 | LGPL-2.1-only | <https://github.com/donalffons/opencascade.js> |
 | `rhino3dm` / openNURBS WASM | 8.32.1 | MIT | <https://github.com/mcneel/rhino3dm> |
-| `web-ifc` WASM | 0.0.77 | MPL-2.0 | <https://github.com/ThatOpen/engine_web-ifc> |
+| `web-ifc` WASM | 0.0.80 | MPL-2.0 | <https://github.com/ThatOpen/engine_web-ifc/tree/1a424038654a968d3d0655f66e132553a916c1bc> |
+| `web-ifc`에 내장된 geokernel | 0.10.0 (`web-ifc` 0.0.80) | MPL-2.0 | <https://github.com/ThatOpen/engine_web-ifc/blob/1a424038654a968d3d0655f66e132553a916c1bc/src/ts/geokernel/geokernel.js> |
 | `xatlasjs` | 0.2.0 | MIT | <https://github.com/repalash/xatlas.js> |
 | Comlink runtime embedded by `xatlasjs` | bundled in `xatlasjs` 0.2.0 | Apache-2.0 | <https://github.com/GoogleChromeLabs/comlink> |
 | `lazy-brush` | 2.0.2 | MIT | <https://github.com/dulnan/lazy-brush> |
 | `perfect-freehand` | 1.2.3 | MIT | <https://github.com/steveruizok/perfect-freehand> |
 | `p5.brush` standalone entry | 2.2.1 | MIT | <https://github.com/acamposuribe/p5.brush> |
-| `remotion` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion> |
-| `@remotion/player` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/main/packages/player> |
+| `remotion` | 4.0.545 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/f587adbd69c04c051fb2bd69ce23ae99d23d8634> |
+| `@remotion/player` | 4.0.545 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/f587adbd69c04c051fb2bd69ce23ae99d23d8634/packages/player> |
 | `p5` peer resolution for `p5.brush` | 2.3.1 | LGPL-2.1 | <https://github.com/processing/p5.js> |
 | `libtess` dependency of the resolved `p5` peer | 1.2.2 | SGI-B-2.0 | <https://github.com/brendankenny/libtess.js> |
 | `hokusai-brush`, `hokusai-core`, and `hokusai-tile-mem` | 0.3.0 | MIT OR Apache-2.0 | <https://github.com/reearth/hokusai/tree/f7e998173c0e7427b95afe0b6947e3103da60f00> |
@@ -36,7 +37,7 @@ obscure, or claim ownership of these libraries.
 | `unicode-ident` data tables | 1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 | <https://github.com/dtolnay/unicode-ident/tree/1.0.24> |
 | Vello CPU stack (`vello_cpu`, Parley, HarfRust, Skrifa and transitive crates) | feature-locked Cargo graph | per-crate SPDX expressions | <https://github.com/linebender/vello> |
 | Vello GPU stack (`vello`, `vello_hybrid`, Velato, `vello_svg`, usvg, wgpu and transitive crates) | `hybrid,lottie,svg` feature-locked Cargo graph | per-crate SPDX expressions | <https://github.com/linebender/vello> |
-| `@thorvg/webcanvas` / ThorVG WebAssembly | 1.1.2 | MIT | <https://github.com/thorvg/thorvg.web> |
+| `@thorvg/webcanvas` / ThorVG WebAssembly | 1.1.4 | MIT | <https://github.com/thorvg/thorvg.web> |
 | `google/ink` mesh subset | 1.1.0 / `1d0daba661f3035f42f3649b8e6a0061b47aa759` | Apache-2.0 | <https://github.com/google/ink> |
 | `google/ink-stroke-modeler` | 0.1.0 / `f2388813b0b25bc3e33d143d369a8367ab2e30c8` | Apache-2.0 | <https://github.com/google/ink-stroke-modeler> |
 | `abseil-cpp` linked into Google Ink WASM | 20260526.0 and 20250512.0 | Apache-2.0 | <https://github.com/abseil/abseil-cpp> |
@@ -69,7 +70,7 @@ CC BY-NC 4.0이며 <https://github.com/scrtwpns/mixbox>에서 확인할 수 있�
 참조한다. 이 소스 변경과 실제 운영 배포의 갱신 여부는 별도로 검증한다.
 
 The Product Tour runtime uses `remotion` and `@remotion/player` at exactly
-`4.0.536`. These packages use the custom Remotion License rather than a standard
+`4.0.545`. These packages use the custom Remotion License rather than a standard
 SPDX license. The Free License applies only to eligible individuals, non-profit
 or not-for-profit organizations, for-profit organizations with up to three
 employees, and qualifying evaluation use. Other for-profit organizations must
@@ -83,6 +84,13 @@ metadata shape, and verifies the exact Remotion License text SHA-256
 `709033ef7160fe12db38f1d457d20094ce425aaab6ee28caaaa8014372ff869e`.
 Any package, version, metadata, or license-text change fails the production
 notice build for fresh review.
+
+`web-ifc@0.0.80`의 정확한 upstream 소스는
+<https://github.com/ThatOpen/engine_web-ifc/tree/1a424038654a968d3d0655f66e132553a916c1bc>다.
+이 버전의 API 번들에 포함된 geokernel 0.10.0은 MPL-2.0이며,
+원문의 `Copyright (c) 2026 Quim Moya.`와 MPL-2.0 파일 고지를
+생성된 배포 고지에도 보존한다. 전체 MPL-2.0 전문은 설치된 패키지의
+`LICENSE.md`에서 수집하며, 기존 Remotion 메타데이터·라이선스 해시 검증은 유지한다.
 
 ToonStudio imports `p5.brush/standalone`; that entry is self-contained and
 does not statically import the resolved `p5` peer. The production dependency
@@ -197,7 +205,7 @@ release rebuild is byte-identical to the checked-in JS, types and WASM.
 
 The checked-in ThorVG WebCanvas artifact is a lazy, explicit SVG/Lottie specialist provider.
 `packages/studio-engine-thorvg/wasm/thorvg.wasm` is copied byte-for-byte from
-`@thorvg/webcanvas@1.1.2`, its SHA-256 is pinned in the adjacent
+`@thorvg/webcanvas@1.1.4`, its SHA-256 is pinned in the adjacent
 `INTEGRITY.sha256`, and the package's MIT attribution is preserved in
 `packages/studio-engine-thorvg/NOTICE`. The provider never becomes the document
 authority and never retries a failed WebGPU/WebGL/software selection through a
@@ -207,9 +215,9 @@ The checked-in Vello CPU and GPU artifacts have an independent fail-closed
 notice boundary. `crates/studio-engine-vello/THIRD_PARTY_INVENTORY.json`
 records the exact `wasm32-unknown-unknown` package sets, Cargo.lock checksums,
 binary hashes and package-to-license-document mapping. The CPU `pkg` inventory
-contains 85 external crates. The GPU `pkg-gpu` inventory contains the external crates for the exact
+contains 91 external crates. The GPU `pkg-gpu` inventory contains 148 external crates for the exact
 `hybrid,lottie,svg` feature set, including Vello, Vello Hybrid, Velato,
-`vello_svg`, usvg, Parley, HarfRust and all three resolved Skrifa versions.
+`vello_svg`, usvg, Parley, HarfRust and both resolved Skrifa versions.
 Both artifact directories ship a `NOTICE` and exact source-derived license
 bundle (`crates/studio-engine-vello/pkg/THIRD_PARTY_LICENSES.txt` and
 `crates/studio-engine-vello/pkg-gpu/THIRD_PARTY_LICENSES.txt`). A separate

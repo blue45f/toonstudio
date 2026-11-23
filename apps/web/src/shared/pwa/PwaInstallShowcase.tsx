@@ -27,7 +27,7 @@ import "./pwa-install-showcase.css";
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("pwa-install-showcase", ko, en);
 
-const APP_ICON_URL = resolveAssetUrl("/brand/spectrum-ribbon-v2/icon-192.png");
+const APP_ICON_URL = resolveAssetUrl("/brand/jewel-atelier-v1/icon-192.png");
 /** 기존 고화질 브랜드 이미지 재활용 — 히어로 배경용. */
 const HERO_BACKDROP_URL = resolveAssetUrl("/brand/atelier-20260927/creation-world.webp");
 

@@ -99,6 +99,32 @@ describe("generated third-party notice inventory", () => {
     ).toThrow("pnpm failed");
   });
 
+  it.each(["@remotion/player", "remotion"])(
+    "검토한 %s 4.0.545를 허용하고 미검토 버전·메타데이터는 거부한다",
+    (name) => {
+      const record = {
+        name,
+        versions: ["4.0.545"],
+        paths: [`/virtual/node_modules/${name}`],
+      };
+      const inventory = parsePnpmLicenseInventory(JSON.stringify({
+        "SEE LICENSE IN LICENSE.md": [record],
+      }));
+      expect(inventory).toEqual([{
+        ...record,
+        license: "Remotion License",
+        author: "",
+        homepage: "",
+      }]);
+      expect(() => parsePnpmLicenseInventory(JSON.stringify({
+        "SEE LICENSE IN LICENSE.md": [{ ...record, versions: ["4.0.546"] }],
+      }))).toThrow(/Reviewed license metadata changed/u);
+      expect(() => parsePnpmLicenseInventory(JSON.stringify({
+        MIT: [record],
+      }))).toThrow(/Reviewed license metadata changed/u);
+    },
+  );
+
   it("rejects unreviewed license expressions from pnpm", () => {
     expect(() =>
       parsePnpmLicenseInventory(
@@ -219,8 +245,8 @@ describe("generated third-party notice inventory", () => {
   it("validates both Vello feature inventories and every opaque WASM provenance boundary", () => {
     const result = validateShippedEngineNotices();
 
-    expect(result.vello.cpuPackageCount).toBe(90);
-    expect(result.vello.gpuPackageCount).toBe(147);
+    expect(result.vello.cpuPackageCount).toBe(91);
+    expect(result.vello.gpuPackageCount).toBe(148);
     expect(result.opaque).toHaveLength(3);
     expect(
       result.vello.inventory.artifacts.find(({ id }) => id === "pkg-gpu"),
@@ -235,11 +261,13 @@ describe("generated third-party notice inventory", () => {
       expect.arrayContaining([
         "vello@0.12.0",
         "vello_hybrid@0.2.0",
+        "vello_cpu@0.4.0",
+        "fearless_simd_macros@0.1.0",
         "velato@0.12.0",
         "vello_svg@0.11.0",
         "usvg@0.48.1",
         "parley@0.13.0",
-        "harfrust@0.16.0",
+        "harfrust@0.16.1",
         "skrifa@0.44.0",
       ]),
     );
@@ -505,7 +533,7 @@ describe("generated third-party notice inventory", () => {
     );
 
     expect(output).toMatch(
-      /^License audit passed \(\d+ pnpm entries, 90\/147 Vello CPU\/GPU crates, 3 opaque WASM inventories, \d+ license texts, \d+ npm packages without a root license file\)\.\n$/u,
+      /^License audit passed \(\d+ pnpm entries, 91\/148 Vello CPU\/GPU crates, 3 opaque WASM inventories, \d+ license texts, \d+ npm packages without a root license file\)\.\n$/u,
     );
   });
 
@@ -530,6 +558,12 @@ describe("generated third-party notice inventory", () => {
         },
       );
       const notice = readFileSync(outputPath, "utf8");
+      expect(notice).toContain("Copyright (c) Microsoft Corporation.");
+      expect(notice).toContain("web-ifc 0.0.80에 내장된 geokernel 0.10.0 — MPL-2.0");
+      expect(notice).toContain("Copyright (c) 2026 Quim Moya.");
+      expect(notice).toContain(
+        "https://github.com/ThatOpen/engine_web-ifc/blob/1a424038654a968d3d0655f66e132553a916c1bc/src/ts/geokernel/geokernel.js",
+      );
       expect(notice).toContain("## Pinned Hokusai Rust/WASM inventory");
       expect(notice).toContain(
         "| `hokusai-core` | 0.3.0 | MIT OR Apache-2.0 |",
@@ -556,7 +590,7 @@ describe("generated third-party notice inventory", () => {
       expect(notice).toContain("| `vello` | 0.12.0 | Apache-2.0 OR MIT | pkg-gpu |");
       expect(notice).toContain("| `velato` | 0.12.0 | Apache-2.0 OR MIT | pkg-gpu |");
       expect(notice).toContain("| `vello_svg` | 0.11.0 | Apache-2.0 OR MIT | pkg-gpu |");
-      expect(notice).toContain("| `harfrust` | 0.16.0 | MIT | pkg, pkg-gpu |");
+      expect(notice).toContain("| `harfrust` | 0.16.1 | MIT | pkg, pkg-gpu |");
       expect(notice).toContain("## Locked opaque WASM engine provenance");
       expect(notice).toContain("`google/ink-stroke-modeler`");
       expect(notice).toContain("`abseil-cpp`");

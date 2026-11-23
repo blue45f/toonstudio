@@ -88,7 +88,7 @@ export const velloSvgNativeProviderDescriptor: ProviderDescriptor =
     kind: "format",
     displayName: "Vello SVG native (strict subset)",
     version:
-      "vello_svg 0.11.0 / usvg 0.48.1.0 / vello 0.12.0 / vello_cpu 0.3.0",
+      "vello_svg 0.11.0 / usvg 0.48.1.0 / vello 0.12.0 / vello_cpu 0.4.0",
     license: "MIT / Apache-2.0",
     attribution: "Linebender vello_svg and usvg projects",
     maturity: "conditional",
@@ -122,7 +122,7 @@ export const velloCpuProviderDescriptor: ProviderDescriptor =
     id: "vello-cpu",
     kind: "vector-renderer",
     displayName: "Vello CPU (sparse strips)",
-    version: "vello_cpu 0.3.0 / crate 0.1.0",
+    version: "vello_cpu 0.4.0 / crate 0.1.0",
     license: "MIT / Apache-2.0",
     attribution: "Linebender Vello project",
     maturity: "conditional",
@@ -153,7 +153,7 @@ export const velloCpuProviderDescriptor: ProviderDescriptor =
     determinism: "bit-exact",
     memoryEstimateMb: 12,
     knownIssues: [
-      "upstream vello repository declares alpha status; adapter pins vello_cpu 0.3.0",
+      "upstream vello repository declares alpha status; adapter pins vello_cpu 0.4.0",
     ],
   });
 

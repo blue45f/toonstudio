@@ -90,7 +90,7 @@ function modelIdentity(
 ): StudioLayerLiftLocalForegroundInferenceEngine["model"] {
   return Object.freeze({
     providerId: "mediapipe-image-segmenter",
-    providerVersion: "0.10.35",
+    providerVersion: runtime.providerVersion,
     modelId: "selfie-segmenter",
     modelVersion: "float16-latest",
     executionRoute: runtime.activeDelegate === "GPU" ? "gpu" : "cpu-explicit",

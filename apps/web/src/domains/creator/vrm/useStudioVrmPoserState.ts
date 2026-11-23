@@ -191,10 +191,10 @@ import type {
 } from "../studio-tool-hints";
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type {
-  FaceLandmarker,
-  HandLandmarker,
-  PoseLandmarker,
-} from "@mediapipe/tasks-vision";
+  StudioMediaPipeVisionFaceLandmarker as FaceLandmarker,
+  StudioMediaPipeVisionHandLandmarker as HandLandmarker,
+  StudioMediaPipeVisionPoseLandmarker as PoseLandmarker,
+} from "../studio-mediapipe-vision-init-arbiter";
 import type {
   VRM,
   VRMHumanBoneName,

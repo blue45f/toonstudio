@@ -2,6 +2,7 @@
 //! scenes are exercised from Node against the wasm build; these tests pin the
 //! Rust-side semantics (determinism, blend math, capability rejection).
 
+use studio_engine_vello::scene::{PaintIR, SceneNodeIR};
 use studio_engine_vello::{parse_scene, render_scene, RenderError};
 
 fn scene_json(nodes: &str, background: &str) -> String {
@@ -45,7 +46,11 @@ fn background_only_scene_is_uniform() {
 
 #[test]
 fn solid_fill_covers_center_and_leaves_background() {
-    let node = fill_node(r#"{"kind":"solid","color":{"r":1,"g":0,"b":0,"a":1}}"#, 1.0, "src-over");
+    let node = fill_node(
+        r#"{"kind":"solid","color":{"r":1,"g":0,"b":0,"a":1}}"#,
+        1.0,
+        "src-over",
+    );
     let scene = parse_scene(&scene_json(&node, WHITE_BG)).unwrap();
     let pixels = render_scene(&scene).unwrap();
     assert_eq!(pixel(&pixels, 32, 16, 16), [255, 0, 0, 255]);
@@ -85,7 +90,11 @@ fn multiply_blend_darkens_white_background() {
 
 #[test]
 fn group_opacity_halves_coverage() {
-    let child = fill_node(r#"{"kind":"solid","color":{"r":0,"g":0,"b":0,"a":1}}"#, 1.0, "src-over");
+    let child = fill_node(
+        r#"{"kind":"solid","color":{"r":0,"g":0,"b":0,"a":1}}"#,
+        1.0,
+        "src-over",
+    );
     let group = format!(
         r#"{{"id":"g","kind":"group","opacity":0.5,"blend":"src-over","children":[{child}]}}"#
     );
@@ -116,8 +125,11 @@ fn full_canvas_fill(paint: &str) -> String {
 
 #[test]
 fn sweep_gradient_hits_stop_colors_at_0_and_90_degrees() {
-    let scene =
-        parse_scene(&scene_json(&full_canvas_fill(SWEEP_FULL_TURN_PAINT), WHITE_BG)).unwrap();
+    let scene = parse_scene(&scene_json(
+        &full_canvas_fill(SWEEP_FULL_TURN_PAINT),
+        WHITE_BG,
+    ))
+    .unwrap();
     let pixels = render_scene(&scene).unwrap();
     // Angle 0° is the +X ray from the center: pixel (28, 16) sits at ~2.3°,
     // still firmly inside the red..green ramp's red end.
@@ -137,8 +149,11 @@ fn sweep_gradient_hits_stop_colors_at_0_and_90_degrees() {
 
 #[test]
 fn sweep_gradient_rendering_is_bit_deterministic() {
-    let scene =
-        parse_scene(&scene_json(&full_canvas_fill(SWEEP_FULL_TURN_PAINT), WHITE_BG)).unwrap();
+    let scene = parse_scene(&scene_json(
+        &full_canvas_fill(SWEEP_FULL_TURN_PAINT),
+        WHITE_BG,
+    ))
+    .unwrap();
     let first = render_scene(&scene).unwrap();
     let second = render_scene(&scene).unwrap();
     assert_eq!(first, second);
@@ -149,15 +164,37 @@ fn degenerate_sweep_window_is_rejected_not_collapsed() {
     // vello_cpu would silently collapse end <= start to the first stop; the
     // renderer must reject it explicitly instead (canonical zod schema parity).
     let paint = r#"{"kind":"sweep-gradient","center":[16,16],"startAngleDeg":180,"endAngleDeg":180,"stops":[{"offset":0,"color":{"r":1,"g":0,"b":0,"a":1}},{"offset":1,"color":{"r":0,"g":0,"b":1,"a":1}}]}"#;
-    let scene = parse_scene(&scene_json(&full_canvas_fill(paint), WHITE_BG)).unwrap();
-    match render_scene(&scene) {
-        Err(RenderError::InvalidScene(message)) => {
-            assert!(
-                message.contains("endAngleDeg > startAngleDeg"),
-                "unexpected message: {message}"
-            );
+    for (start, end) in [
+        (180.0, 180.0),
+        (180.0, 90.0),
+        (f64::NAN, 180.0),
+        (180.0, f64::NAN),
+    ] {
+        let mut scene = parse_scene(&scene_json(&full_canvas_fill(paint), WHITE_BG)).unwrap();
+        // JSON은 NaN을 표현하지 못하므로 공개 IR을 직접 넘기는 호출도 검증한다.
+        let SceneNodeIR::FillPath {
+            paint:
+                PaintIR::SweepGradient {
+                    start_angle_deg,
+                    end_angle_deg,
+                    ..
+                },
+            ..
+        } = &mut scene.nodes[0]
+        else {
+            panic!("expected a sweep-gradient fixture");
+        };
+        *start_angle_deg = start;
+        *end_angle_deg = end;
+        match render_scene(&scene) {
+            Err(RenderError::InvalidScene(message)) => {
+                assert!(
+                    message.contains("endAngleDeg > startAngleDeg"),
+                    "unexpected message for {start}..{end}: {message}"
+                );
+            }
+            other => panic!("expected InvalidScene for {start}..{end}, got {other:?}"),
         }
-        other => panic!("expected InvalidScene, got {other:?}"),
     }
 }
 
@@ -175,7 +212,8 @@ fn text_scene_is_rejected_not_skipped() {
 
 #[test]
 fn invalid_version_is_rejected() {
-    let json = r#"{"version":10,"width":8,"height":8,"background":{"r":1,"g":1,"b":1,"a":1},"nodes":[]}"#;
+    let json =
+        r#"{"version":10,"width":8,"height":8,"background":{"r":1,"g":1,"b":1,"a":1},"nodes":[]}"#;
     let scene = parse_scene(json).unwrap();
     assert!(matches!(
         render_scene(&scene),

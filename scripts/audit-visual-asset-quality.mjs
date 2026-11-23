@@ -66,7 +66,7 @@ function dimensions(buffer, kind) {
   return null;
 }
 
-const BRAND_ALIAS_PATH = /^(?:apps\/web\/public\/(?:brand\/spectrum-ribbon-v2\/)?(?:apple-touch-icon\.png|favicon-(?:32|96)\.png|favicon\.svg|icon-(?:192|512)\.png|icon-maskable-(?:192|512)\.png|icon-maskable\.svg|safari-pinned-tab\.svg)|apps\/mobile\/shell\/icon-192\.png)$/u;
+const BRAND_ALIAS_PATH = /^(?:apps\/web\/public\/(?:brand\/spectrum-ribbon-v2\/)?(?:apple-touch-icon\.png|favicon-(?:32|96)\.png|favicon\.svg|icon-(?:192|512)\.png|icon-maskable-(?:192|512)\.png|icon-maskable\.svg|safari-pinned-tab\.svg)|apps\/web\/public\/brand\/jewel-atelier-v1\/safari-pinned-tab\.svg|apps\/mobile\/shell\/icon-192\.png)$/u;
 const LEGACY_BACKGROUND_ALIAS = /^apps\/web\/public\/assets\/studio\/backgrounds\/(webtoon_[a-z0-9_]+)\.(?:jpg|png)$/u;
 const KNOWN_ASSEMBLY_PREVIEW_COLLISION = new Set([
   "apps/web/public/assets/studio/cc0-20260906/previews/kenney-nature-cliff-block-cave-rock.png",

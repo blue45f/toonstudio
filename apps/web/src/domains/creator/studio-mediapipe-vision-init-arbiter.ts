@@ -7,6 +7,8 @@
  * touching MediaPipe's globals itself.
  */
 
+import type { StudioMediaPipeVisionWasmVariant } from "./studio-mediapipe-vision-assets";
+
 export type StudioMediaPipeVisionInitOwner =
   | "foreground-image-segmenter"
   | "mannequin-video-hand"
@@ -36,7 +38,23 @@ export class StudioMediaPipeVisionRuntimeError extends Error {
   }
 }
 
-export type StudioMediaPipeVisionModule = typeof import("@mediapipe/tasks-vision");
+/** 두 SDK가 공통으로 제공하는 factory만 노출한다. private 필드나 다른 Task까지 섞지 않는다. */
+export type StudioMediaPipeVisionModule = Pick<
+  typeof import("@mediapipe/tasks-vision-nosimd"),
+  "FaceLandmarker" | "HandLandmarker" | "PoseLandmarker" | "ImageSegmenter" | "ImageEmbedder"
+>;
+export type StudioMediaPipeVisionFaceLandmarker = Pick<
+  import("@mediapipe/tasks-vision").FaceLandmarker, "detect" | "detectForVideo" | "setOptions" | "close"
+>;
+export type StudioMediaPipeVisionHandLandmarker = Pick<
+  import("@mediapipe/tasks-vision").HandLandmarker, "detect" | "detectForVideo" | "setOptions" | "close"
+>;
+export type StudioMediaPipeVisionPoseLandmarker = Pick<
+  import("@mediapipe/tasks-vision").PoseLandmarker, "detect" | "detectForVideo" | "setOptions" | "close"
+>;
+export type StudioMediaPipeVisionImageEmbedder = Pick<
+  import("@mediapipe/tasks-vision").ImageEmbedder, "embed" | "embedForVideo" | "setOptions" | "close"
+>;
 
 export interface StudioMediaPipeVisionTaskCreationInput<T> {
   readonly owner: StudioMediaPipeVisionInitOwner;
@@ -45,12 +63,12 @@ export interface StudioMediaPipeVisionTaskCreationInput<T> {
 }
 
 export interface StudioMediaPipeVisionInitArbiter {
-  loadModule(): Promise<StudioMediaPipeVisionModule>;
+  loadModule(variant?: StudioMediaPipeVisionWasmVariant): Promise<StudioMediaPipeVisionModule>;
   runTaskCreation<T>(input: StudioMediaPipeVisionTaskCreationInput<T>): Promise<T>;
 }
 
 export interface StudioMediaPipeVisionInitArbiterOptions {
-  readonly loadModule?: () => Promise<StudioMediaPipeVisionModule>;
+  readonly loadModule?: (variant: StudioMediaPipeVisionWasmVariant) => Promise<StudioMediaPipeVisionModule>;
 }
 
 interface QueuedCreation<T> {
@@ -70,15 +88,17 @@ function abortedError(signal?: AbortSignal): StudioMediaPipeVisionRuntimeError {
   );
 }
 
-function defaultModuleLoader(): Promise<StudioMediaPipeVisionModule> {
-  return import("@mediapipe/tasks-vision");
+function defaultModuleLoader(variant: StudioMediaPipeVisionWasmVariant): Promise<StudioMediaPipeVisionModule> {
+  return variant === "simd"
+    ? import("@mediapipe/tasks-vision")
+    : import("@mediapipe/tasks-vision-nosimd");
 }
 
 export function createStudioMediaPipeVisionInitArbiter(
   options: StudioMediaPipeVisionInitArbiterOptions = {},
 ): StudioMediaPipeVisionInitArbiter {
   const loadModule = options.loadModule ?? defaultModuleLoader;
-  let modulePromise: Promise<StudioMediaPipeVisionModule> | null = null;
+  const modulePromises = new Map<StudioMediaPipeVisionWasmVariant, Promise<StudioMediaPipeVisionModule>>();
   const queue: QueuedCreation<unknown>[] = [];
   let active = false;
 
@@ -110,19 +130,20 @@ export function createStudioMediaPipeVisionInitArbiter(
   };
 
   return Object.freeze({
-    loadModule(): Promise<StudioMediaPipeVisionModule> {
-      if (modulePromise) return modulePromise;
+    loadModule(variant: StudioMediaPipeVisionWasmVariant = "simd"): Promise<StudioMediaPipeVisionModule> {
+      const existing = modulePromises.get(variant);
+      if (existing) return existing;
       const pending = Promise.resolve()
-        .then(loadModule)
+        .then(() => loadModule(variant))
         .catch((cause: unknown) => {
-          if (modulePromise === pending) modulePromise = null;
+          if (modulePromises.get(variant) === pending) modulePromises.delete(variant);
           throw new StudioMediaPipeVisionRuntimeError(
             "module-import-failed",
             "MediaPipe Vision runtime module failed to load.",
             { cause },
           );
         });
-      modulePromise = pending;
+      modulePromises.set(variant, pending);
       return pending;
     },
 
@@ -156,8 +177,10 @@ export function createStudioMediaPipeVisionInitArbiter(
 
 const productArbiter = createStudioMediaPipeVisionInitArbiter();
 
-export function loadStudioMediaPipeVisionModule(): Promise<StudioMediaPipeVisionModule> {
-  return productArbiter.loadModule();
+export function loadStudioMediaPipeVisionModule(
+  variant: StudioMediaPipeVisionWasmVariant = "simd",
+): Promise<StudioMediaPipeVisionModule> {
+  return productArbiter.loadModule(variant);
 }
 
 export function runStudioMediaPipeVisionTaskCreation<T>(

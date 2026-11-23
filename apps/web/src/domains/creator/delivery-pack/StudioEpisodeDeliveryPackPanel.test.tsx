@@ -1,12 +1,16 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { unzipSync } from "fflate";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
-import { createStudioProjectDocument } from "../studio-project-document-store";
+import {
+  createStudioProjectDocument,
+  markStudioProjectDocumentOpened,
+  readStudioProjectDocuments,
+} from "../studio-project-document-store";
 import { createStudioProject } from "../studio-project-library-store";
 import { updateStudioProjectWorkspaceState } from "../studio-project-workspace-store";
 import { DELIVERY_MANIFEST_PATH, RIGHTS_BOM_CERTIFICATE_PATH } from "./delivery-pack-bundler";
@@ -203,6 +207,7 @@ describe("StudioEpisodeDeliveryPackPanel", () => {
       kind: "webtoon",
       width: 690,
       height: 3200,
+      createdAt: "2026-11-20T03:30:00.000Z",
     });
     createStudioProjectDocument(window.localStorage, "proj-pack-batch", {
       id: "doc-batch-2",
@@ -210,7 +215,13 @@ describe("StudioEpisodeDeliveryPackPanel", () => {
       kind: "webtoon",
       width: 690,
       height: 1600,
+      createdAt: "2026-11-21T03:30:00.000Z",
     });
+    expect(
+      readStudioProjectDocuments(window.localStorage, "proj-pack-batch").documents.map(
+        (doc) => doc.id,
+      ),
+    ).toEqual(["doc-batch-2", "doc-batch-1"]);
 
     const downloads: DeliveryPackDownloadPayload[] = [];
     render(
@@ -230,5 +241,74 @@ describe("StudioEpisodeDeliveryPackPanel", () => {
       .filter((entry: { role: string }) => entry.role === "slice")
       .map((entry: { fileName: string }) => entry.fileName);
     expect(sliceNames).toEqual(["EP01_001.jpg", "EP01_002.jpg", "EP02_001.jpg"]);
+
+    act(() => {
+      markStudioProjectDocumentOpened(
+        window.localStorage,
+        "proj-pack-batch",
+        "doc-batch-1",
+        undefined,
+        { at: FIXED_TIME, target: window },
+      );
+    });
+    expect(
+      readStudioProjectDocuments(window.localStorage, "proj-pack-batch").documents.map(
+        (doc) => doc.id,
+      ),
+    ).toEqual(["doc-batch-1", "doc-batch-2"]);
+    fireEvent.click(screen.getByTestId("delivery-pack-download-manifest"));
+    expect(downloads).toHaveLength(2);
+    const reopenedManifest = JSON.parse(String(downloads[1]?.content));
+    expect(
+      reopenedManifest.files
+        .filter((entry: { role: string }) => entry.role === "slice")
+        .map((entry: { fileName: string }) => entry.fileName),
+    ).toEqual(["EP01_001.jpg", "EP01_002.jpg", "EP02_001.jpg"]);
+  });
+
+  it("생성 시각이 같은 문서는 제목과 ID 순서로 회차를 결정한다", () => {
+    createStudioProject(window.localStorage, {
+      id: "proj-pack-tied",
+      title: "동일 시각 합본",
+      kind: "webtoon",
+    });
+    for (const document of [
+      { id: "doc-tied-b", title: "2화 같은 제목", height: 1600 },
+      { id: "doc-tied-first", title: "1화 먼저", height: 3200 },
+      { id: "doc-tied-a", title: "2화 같은 제목", height: 4800 },
+    ]) {
+      createStudioProjectDocument(window.localStorage, "proj-pack-tied", {
+        ...document,
+        kind: "webtoon",
+        width: 690,
+        createdAt: FIXED_TIME,
+      });
+    }
+
+    const downloads: DeliveryPackDownloadPayload[] = [];
+    render(
+      <StudioEpisodeDeliveryPackPanel
+        projectId="proj-pack-tied"
+        locale="ko"
+        generatedAt={FIXED_TIME}
+        onDownloadFile={(payload) => downloads.push(payload)}
+      />,
+    );
+    expect(screen.getByTestId("delivery-pack-ready-summary").textContent).toContain("3화 / 6조각");
+    fireEvent.click(screen.getByTestId("delivery-pack-download-manifest"));
+    expect(downloads).toHaveLength(1);
+    const manifest = JSON.parse(String(downloads[0]?.content));
+    expect(
+      manifest.files
+        .filter((entry: { role: string }) => entry.role === "slice")
+        .map((entry: { fileName: string }) => entry.fileName),
+    ).toEqual([
+      "EP01_001.jpg",
+      "EP01_002.jpg",
+      "EP02_001.jpg",
+      "EP02_002.jpg",
+      "EP02_003.jpg",
+      "EP03_001.jpg",
+    ]);
   });
 });

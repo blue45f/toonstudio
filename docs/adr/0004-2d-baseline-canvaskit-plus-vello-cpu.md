@@ -1,8 +1,31 @@
-# ADR 0004 — 2D 기준선: CanvasKit 0.41.1(생산) + vello_cpu 0.2.0(결정적 CPU 기준선)
+# ADR 0004 — 2D 기준선: CanvasKit(생산) + vello_cpu 0.4.0(결정적 CPU 기준선)
 
 ## 상태
 
-승인 (2026-08-07)
+승인 (최초 2026-08-07, CPU 기준선 개정 2026-11-23)
+
+## 2026-11-23 개정 — current
+
+결정적 CPU 기준선을 **vello_cpu 0.4.0**으로 올린다. 이번 개정은 원래의
+0.2.0 결정과 그 뒤 제품에 반영된 0.3.0을 구분하고, 실제 0.3 WASM을 대조군으로
+전체 9개 장면을 다시 검증한 결과에 근거한다. 기존 CanvasKit 생산 역할은 유지한다.
+현재 설치 핀은 `canvaskit-wasm 0.42.0`이며, 아래 최초 결정의 0.41.1은 당시의 기록이다.
+
+- 기존 main WASM은 9개 golden 전체와 RGBA가 일치했다. 새 0.4.0 WASM은 모든 장면에서
+  반복 렌더가 동일했고, 현행 CanvasKit 교차 기준(대칭 3×3, 채널 δ≤48, 불일치 ≤0.5%,
+  04~07·09 평탄 영역 0%)을 그대로 통과했다.
+- `03-curves`의 107픽셀과 `08-dense-lineart`의 24픽셀만 달라졌다. 모든 채널의
+  최대 차이는 1/255이며, 나머지 7개 장면은 비트 단위로 동일하다. `03-curves`에서
+  불투명 배경의 alpha가 254로 떨어지던 106픽셀은 255로 복구됐다.
+- 두 변경 장면의 원본·새 출력·차분 이미지를 검토한 뒤 해당 golden 두 개만 갱신했다.
+  테스트의 픽셀 일치 요구, 허용 오차와 장면 수는 낮추지 않는다. 이 기록은 CPU corpus
+  판정이며, Mac 텍스트 기준·실브라우저·물리 GPU의 통과를 대신하지 않는다.
+
+실측 해시·전체 장면별 수치와 재검증 범위는
+[`vello-cpu-upgrade-2026-11-23.md`](../engines/vello-cpu-upgrade-2026-11-23.md)에 기록한다.
+상류 [0.4.0 릴리스](https://github.com/linebender/vello/releases/tag/sparse-strips-v0.4.0)의
+[불투명 목적지 alpha 수정](https://github.com/linebender/vello/pull/2032)과
+[곡선 평탄화 정밀도 수정](https://github.com/linebender/vello/pull/2039)을 함께 검토했다.
 
 ## 맥락
 
@@ -16,8 +39,8 @@ Phase 1의 요구는 "동일 ToonSceneIR을 CanvasKit과 Vello에서 렌더, cro
 
 ## 결정
 
-1. **CanvasKit을 버전 0.41.1로 고정해 생산 기준선으로 채택한다.** 기본 페인팅 Surface의 주 소유자이며, 마스크·혼합·텍스트(Paragraph)·실시간 필터·기준 출력(export reference)을 담당한다.
-2. **vello_cpu를 버전 0.2.0으로 고정해 결정적 CPU 기준선으로 채택한다.** 용도: cross-renderer diff의 결정적 참조, golden image 생성, GPU 장애·context-loss 복구 렌더, 백그라운드/서버 export.
+1. **CanvasKit을 생산 기준선으로 채택한다.** 최초 결정의 핀은 0.41.1이며, 현재 설치 핀은 0.42.0이다. 기본 페인팅 Surface의 주 소유자이며, 마스크·혼합·텍스트(Paragraph)·실시간 필터·기준 출력(export reference)을 담당한다.
+2. **vello_cpu를 버전 0.4.0으로 고정해 결정적 CPU 기준선으로 채택한다.** 최초 0.2.0 결정은 위 2026-11-23 개정으로 대체한다. 용도: cross-renderer diff의 결정적 참조, golden image 생성, GPU 장애·context-loss 복구 렌더, 백그라운드/서버 export.
 3. 두 기준선 버전은 명시적 ADR 개정 없이 올리지 않는다. 버전 업은 golden corpus 전체 재검증을 동반한다.
 4. **Vello Classic/Hybrid는 capability probe 후 단계 도입한다.** CapabilityRegistry가 문서·장면별로 probe(마스크·필터·글리프 캐시·메모리)를 실행해 통과 구간에만 벡터 장면 허브 소유자로 배정하고, 미통과 구간은 CanvasKit이 유지한다. "Vello의 알파 상태와 현행 제한 때문에 기능을 숨기지 않는다. CapabilityRegistry가 불안정한 구간만 다른 Provider로 보낸다"(§8).
 5. cross-renderer diff는 CanvasKit(GPU/SW) ↔ vello_cpu ↔ resvg/tiny-skia의 교차 기준 매트릭스로 운용한다(benchmark-plan.md §3).
@@ -40,6 +63,6 @@ Phase 1의 요구는 "동일 ToonSceneIR을 CanvasKit과 Vello에서 렌더, cro
 ## 재검토 조건
 
 - Vello가 알파를 벗어나 안정 릴리스를 선언하고, 벡터 corpus 벤치마크에서 CanvasKit 대비 우위가 실측될 때(벡터 장면 허브의 기본 소유자 승격 검토).
-- CanvasKit 0.41.1 또는 vello_cpu 0.2.0에 보안·치명 결함이 공개되어 버전 고정 유지가 불가능할 때(긴급 버전 업 + golden corpus 재검증).
+- 현재 고정한 CanvasKit 또는 vello_cpu에 보안·치명 결함이 공개되어 버전 고정 유지가 불가능할 때(긴급 버전 업 + golden corpus 재검증).
 - cross-renderer diff에서 두 기준선의 구조적 불일치(라운딩 이상의 차이)가 반복 검출될 때(기준선 정의 재검토).
 - WebGPU 미지원 환경 비중이 실사용 데이터에서 유의하게 높을 때(CanvasKit 단독 프로필의 공식화).

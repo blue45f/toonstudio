@@ -82,8 +82,11 @@ fn corpus_manifest_matches_wgsl_file_set() {
         );
     }
 
-    let listed: BTreeSet<String> =
-        manifest.variants.iter().map(|variant| variant.file.clone()).collect();
+    let listed: BTreeSet<String> = manifest
+        .variants
+        .iter()
+        .map(|variant| variant.file.clone())
+        .collect();
     assert_eq!(
         listed.len(),
         manifest.variants.len(),
