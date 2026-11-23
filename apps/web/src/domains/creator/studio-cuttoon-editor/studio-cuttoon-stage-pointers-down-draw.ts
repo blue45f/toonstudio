@@ -243,6 +243,7 @@ import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contra
 
 import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
+import type { StudioLiveStrokeFoleyBridgeRuntime } from "./studio-live-stroke-foley-bridge";
 
 export function bindStudioCuttoonStagePointersDownDraw(
   h: StudioCuttoonStagePointersHost,
@@ -490,13 +491,15 @@ export function bindStudioCuttoonStagePointersDownDraw(
         drawingAssistDocument.advanced,
         selected?.groupId ?? null
       );
+      const liveFoleyBridge = (globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined;
+      const strokePressureCurve = pressureCurve * (liveFoleyBridge?.getStudioPressureCurveGamma() ?? 1);
       drawingInputSettingsRef.current = {
         version: 1,
         stabilizer,
         stabilizerMode,
         postCorrection,
         preserveCorners,
-        pressureCurve,
+        pressureCurve: strokePressureCurve,
         pressureMinSize,
         stylusPressureProfile,
         drawMode: strokeDrawMode,
@@ -528,7 +531,7 @@ export function bindStudioCuttoonStagePointersDownDraw(
         stabilizer,
         stabilizerMode,
         velocitySensitivity,
-        pressureCurve,
+        pressureCurve: strokePressureCurve,
         pressureMinSize,
         stylusPressureProfile,
         positionScale: effScale,
@@ -741,6 +744,9 @@ export function bindStudioCuttoonStagePointersDownDraw(
         discardDrawingPointerSession();
         return;
       }
+      const foleyStart = { x: strokeOrigin.x, y: strokeOrigin.y, pressure, tiltX: stylus.tiltX, tiltY: stylus.tiltY, timestampMs: pointerSample.timeStamp, brushId: activeCatalogBrush.id || brush, drawMode: strokeDrawMode };
+      if (liveFoleyBridge) liveFoleyBridge.studioLiveStrokeFoley.onStrokeStart(foleyStart);
+      else void import("./studio-live-stroke-foley-bridge").then((mod) => mod.studioLiveStrokeFoley.onStrokeStart(foleyStart)).catch(() => {});
       if (strokeDrawMode === "pen" && quickShapeActive) startQuickShapeTracking(strokeOrigin);
       else stopQuickShapeTracking();
       if (h.pendingStrokeAdmissionRef?.current?.has(next.id)) {

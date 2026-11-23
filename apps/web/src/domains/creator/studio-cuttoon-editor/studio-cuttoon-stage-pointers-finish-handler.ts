@@ -42,6 +42,7 @@ import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
 import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
+import type { StudioLiveStrokeFoleyBridgeRuntime } from "./studio-live-stroke-foley-bridge";
 import type Konva from "konva";
 
 export function createStudioCuttoonStagePointerFinishHandler(
@@ -222,6 +223,7 @@ export function createStudioCuttoonStagePointerFinishHandler(
       // 이전 GPU/자연매체의 확정 표면은 이 접촉이 소유하지 않는다. 일반 표면 정리를 호출하지 않는다.
       releaseDrawingPointerSession();
       drawingRef.current = null;
+      ((globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined)?.studioLiveStrokeFoley.onStrokeEnd();
       stopQuickShapeTracking();
       scheduleLiveDrawPressure(null);
       h.endLiveResourceEdit();
@@ -578,6 +580,7 @@ export function createStudioCuttoonStagePointerFinishHandler(
       // No error or stale tool ref may strand DOM capture or a predicted RAF after the stroke ends.
       releaseDrawingPointerSession();
       drawingRef.current = null;
+      ((globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined)?.studioLiveStrokeFoley.onStrokeEnd();
       companionRuntimeRef.current?.schedulePublish();
       perspectiveRayRef.current = null;
       isometricAxisRayRef.current = null;

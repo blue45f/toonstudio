@@ -235,6 +235,7 @@ import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contra
 
 import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
+import type { StudioLiveStrokeFoleyBridgeRuntime } from "./studio-live-stroke-foley-bridge";
 
 export function bindStudioCuttoonStagePointersPublish(
   h: StudioCuttoonStagePointersHost,
@@ -451,6 +452,10 @@ export function bindStudioCuttoonStagePointersPublish(
         true,
       );
       if (drawMode === "pen" && contactPoint) noteQuickShapePointerMoved(contactPoint);
+      if (contactPoint) {
+        const foleyBridge = (globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined;
+        foleyBridge?.studioLiveStrokeFoley.onStrokeMove({ x: contactPoint.x, y: contactPoint.y, pressure: pointerEvent.pressure, tiltX: pointerEvent.tiltX, tiltY: pointerEvent.tiltY, timestampMs: pointerEvent.timeStamp, brushId: drawing.brushCatalogId ?? drawing.brush, drawMode: drawing.mode });
+      }
     },
     onRawPreviewMove: (pointerEvent) => {
       const session = requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession();
@@ -540,6 +545,7 @@ export function bindStudioCuttoonStagePointersPublish(
     },
     onDiscard: () => {
       lowLatencyPredictor?.reset();
+      ((globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined)?.studioLiveStrokeFoley.onStrokeEnd();
       if (!drawingRef.current && !requireStudioDrawingPointerTransport(drawingPointerTransportRef).getSession()) return;
       discardDrawingPointerSession();
     },

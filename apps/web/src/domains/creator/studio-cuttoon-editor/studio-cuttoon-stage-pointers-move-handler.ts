@@ -83,6 +83,7 @@ import {
 import type Konva from "konva";
 import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
+import type { StudioLiveStrokeFoleyBridgeRuntime } from "./studio-live-stroke-foley-bridge";
 import type { El } from "../studio-element-model";
 
 export function createStudioCuttoonStagePointerMoveHandler(
@@ -749,6 +750,10 @@ export function createStudioCuttoonStagePointerMoveHandler(
       return;
     }
     const stage = e.target.getStage();
+    const foleyPos = stage?.getRelativePointerPosition();
+    if (foleyPos && drawingRef.current) {
+      ((globalThis as Record<PropertyKey, unknown>)[Symbol.for("toonstudio.liveStrokeFoleyBridge")] as StudioLiveStrokeFoleyBridgeRuntime | undefined)?.studioLiveStrokeFoley.onStrokeMove({ x: foleyPos.x, y: foleyPos.y, pressure: pointerEvent.pressure, tiltX: pointerEvent.tiltX, tiltY: pointerEvent.tiltY, timestampMs: pointerEvent.timeStamp, brushId: drawingRef.current.brushCatalogId ?? drawingRef.current.brush, drawMode: drawingRef.current.mode });
+    }
     if (stage) updateActiveShapeEndpoint(stage, pointerEvent, true);
   }
   return onStageMove;

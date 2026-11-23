@@ -43,6 +43,7 @@ import {
   StudioDrawingInputHudStrip,
   StudioDrawingWorkflowStagePills,
 } from "./StudioDrawingInputHudStrip";
+import { StudioLiveFoleyFeelControls } from "./StudioLiveFoleyFeelControls";
 
 import "./StudioDrawingJewelChrome.css";
 
@@ -466,7 +467,7 @@ export function StudioDrawingQuickErgonomicsBar({
         aria-describedby={blocked && blockedReason ? blockedReasonId : undefined}
         data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
         data-studio-pressure-preset={activePressurePreset}
-        data-studio-pressure-curve={`${activePressureCurve.x1},${activePressureCurve.y1},${activePressureCurve.x2},${activePressureCurve.y2}`}
+        data-studio-pressure-bezier={`${activePressureCurve.x1},${activePressureCurve.y1},${activePressureCurve.x2},${activePressureCurve.y2}`}
         data-studio-aux-control="true"
         onClick={() => {
           const next = resolveNextPressurePreset(activePressurePreset);
@@ -481,6 +482,8 @@ export function StudioDrawingQuickErgonomicsBar({
         <Gauge size={15} aria-hidden />
         <span>{pressurePresetLabel}</span>
       </button>
+
+      <StudioLiveFoleyFeelControls blocked={blocked} blockedReason={blockedReason} blockedReasonId={blockedReasonId} onPushCue={pushCue} />
 
       <button
         type="button"
