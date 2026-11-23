@@ -376,6 +376,8 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
         expect(img.closest(".rd-clarity-art")).not.toBeNull();
       } else if (src.startsWith("/brand/luminous-atelier-20261114/icon-")) {
         expect(img.closest(".rd-clarity-journey, .rd-v2-bento")).not.toBeNull();
+      } else if (src.startsWith("/assets/studio/vibrant-sprites/")) {
+        expect(img.closest(".home-wow-showcase")).not.toBeNull();
       } else {
         expect(src).toMatch(/^\/brand\/illustrated-20260928\/(?:(hero|canvas-noir|luna|character-pink|character-blue|background-city|project-romance|project-crimson|blank-canvas|storyboard|materials|background-classroom)-(320|640)\.webp|(hero|luna)\.webp)$/u);
       }

@@ -26,6 +26,7 @@ import { HomeNowCard } from "./HomeNowCard";
 import { ServiceFlowNext } from "./public/intro-primitives";
 import { ReferenceEditorPreview } from "./ReferenceEditorPreview";
 import { HOME_EXAMPLES, HOME_LEARN_MORE, HOME_QUICK_STARTS, homeArt } from "./reference-home-content";
+import { HomeInteractiveWowShowcase } from "./wow-showcase/HomeInteractiveWowShowcase";
 import "./reference-creator-dashboard.css";
 import "./reference-creator-dashboard-hero.css";
 
@@ -272,6 +273,7 @@ export function ReferenceCreatorDashboard() {
           <Link className="rd-new-project" href="/create"><Plus size={20} strokeWidth={1.5} aria-hidden="true" /><span>{bi("작품 시작하기", "Start a work")}</span></Link>
         </div>
       </section>
+      <HomeInteractiveWowShowcase />
     </div>
     <div className="rd-discover" data-home-band="discover">
       <DiscoverHomePreview />
