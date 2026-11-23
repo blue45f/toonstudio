@@ -59,23 +59,14 @@
       "files": []
     },
     "apps/web/src/domains/creator/bg3d": {
-      "modules": 1,
-      "bytes": 82540,
-      "files": [
-        "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/character-platform": {
-      "modules": 6,
-      "bytes": 101571,
-      "files": [
-        "apps/web/src/domains/creator/character-platform/document/character-document-v3.ts",
-        "apps/web/src/domains/creator/character-platform/groom/character-groom-document.ts",
-        "apps/web/src/domains/creator/character-platform/linked-layer/character-linked-layer.ts",
-        "apps/web/src/domains/creator/character-platform/pose-v3/character-pose-v3.ts",
-        "apps/web/src/domains/creator/character-platform/surface-ink/character-geometry-stroke.ts",
-        "apps/web/src/domains/creator/character-platform/surface-ink/character-surface-ink.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/character-shaper": {
       "modules": 0,
@@ -148,11 +139,9 @@
       "files": []
     },
     "apps/web/src/domains/creator/scene-3d": {
-      "modules": 1,
-      "bytes": 6716,
-      "files": [
-        "apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/scene3d": {
       "modules": 0,
@@ -190,11 +179,9 @@
       "files": []
     },
     "apps/web/src/domains/creator/vrm": {
-      "modules": 1,
-      "bytes": 69375,
-      "files": [
-        "apps/web/src/domains/creator/vrm/studio-vrm-scene-document.ts"
-      ]
+      "modules": 0,
+      "bytes": 0,
+      "files": []
     },
     "apps/web/src/domains/creator/xr-webtoon": {
       "modules": 0,
@@ -274,7 +261,7 @@
     },
     "apps/web/src/domains/creator": {
       "modules": 535,
-      "bytes": 7637312
+      "bytes": 7474985
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -291,10 +278,6 @@
     "apps/web/src/domains/creator/assistant": {
       "modules": 3,
       "bytes": 5248
-    },
-    "apps/web/src/domains/creator/bg3d": {
-      "modules": 1,
-      "bytes": 82540
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
@@ -315,10 +298,6 @@
     "apps/web/src/domains/creator/catalog": {
       "modules": 3,
       "bytes": 30544
-    },
-    "apps/web/src/domains/creator/character-platform": {
-      "modules": 6,
-      "bytes": 101571
     },
     "apps/web/src/domains/creator/charm": {
       "modules": 1,
@@ -343,10 +322,6 @@
     "apps/web/src/domains/creator/drawing": {
       "modules": 5,
       "bytes": 65831
-    },
-    "apps/web/src/domains/creator/ecosystem": {
-      "modules": 1,
-      "bytes": 14359
     },
     "apps/web/src/domains/creator/editor-client": {
       "modules": 1,
@@ -428,10 +403,6 @@
       "modules": 8,
       "bytes": 51502
     },
-    "apps/web/src/domains/creator/scene-3d": {
-      "modules": 1,
-      "bytes": 6716
-    },
     "apps/web/src/domains/creator/selection": {
       "modules": 7,
       "bytes": 31191
@@ -475,10 +446,6 @@
     "apps/web/src/domains/creator/vector": {
       "modules": 3,
       "bytes": 23760
-    },
-    "apps/web/src/domains/creator/vrm": {
-      "modules": 1,
-      "bytes": 69375
     },
     "apps/web/src/domains/creator/writer-room": {
       "modules": 1,
@@ -729,7 +696,6 @@
     "apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.tsx": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-document.ts": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-loader.ts": 2,
-    "apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document.ts": 2,
     "apps/web/src/domains/creator/browser-translate/studio-no-auto-translate.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-material-input.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-artistry-catalog.ts": 2,
@@ -974,12 +940,6 @@
     "apps/web/src/domains/creator/catalog/studio-bundle-source-credit.ts": 2,
     "apps/web/src/domains/creator/catalog/studio-illustration-pack-manifest.json": 2,
     "apps/web/src/domains/creator/catalog/studio-illustration-pack.ts": 2,
-    "apps/web/src/domains/creator/character-platform/document/character-document-v3.ts": 2,
-    "apps/web/src/domains/creator/character-platform/groom/character-groom-document.ts": 2,
-    "apps/web/src/domains/creator/character-platform/linked-layer/character-linked-layer.ts": 2,
-    "apps/web/src/domains/creator/character-platform/pose-v3/character-pose-v3.ts": 2,
-    "apps/web/src/domains/creator/character-platform/surface-ink/character-geometry-stroke.ts": 2,
-    "apps/web/src/domains/creator/character-platform/surface-ink/character-surface-ink.ts": 2,
     "apps/web/src/domains/creator/charm/StudioCharmBarSlotLazy.tsx": 2,
     "apps/web/src/domains/creator/checkpoint/studio-checkpoints-controller.ts": 2,
     "apps/web/src/domains/creator/color/StudioColorProofContext.tsx": 2,
@@ -995,7 +955,6 @@
     "apps/web/src/domains/creator/creator-studio-links.ts": 2,
     "apps/web/src/domains/creator/drawing/studio-perspective-guide.ts": 2,
     "apps/web/src/domains/creator/drawing/studio-perspective-pen-snap.ts": 2,
-    "apps/web/src/domains/creator/ecosystem/ecosystem-content.ts": 2,
     "apps/web/src/domains/creator/editor-client/studio-left-tool-rail-client.ts": 2,
     "apps/web/src/domains/creator/export/studio-document-export-loaders.ts": 2,
     "apps/web/src/domains/creator/export/studio-document-import-progress-copy.ts": 2,
@@ -1190,7 +1149,6 @@
     "apps/web/src/domains/creator/save-first/studio-save-first-menu.ts": 2,
     "apps/web/src/domains/creator/save-first/studio-save-profile.ts": 2,
     "apps/web/src/domains/creator/save-first/studio-submission-store.ts": 2,
-    "apps/web/src/domains/creator/scene-3d/studio-3d-insert-controller.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-geometry.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-layout.ts": 2,
     "apps/web/src/domains/creator/selection/studio-object-selection-marquee.ts": 2,
@@ -1828,7 +1786,6 @@
     "apps/web/src/domains/creator/vector/studio-node-bubble-edit-controller.ts": 2,
     "apps/web/src/domains/creator/vector/studio-node-edit-pointer-session.ts": 2,
     "apps/web/src/domains/creator/vector/studio-vector-magnet-snap.ts": 2,
-    "apps/web/src/domains/creator/vrm/studio-vrm-scene-document.ts": 2,
     "apps/web/src/domains/cuts/cuts-labels.ts": 1,
     "apps/web/src/domains/newsletter/newsletter-labels.ts": 1,
     "apps/web/src/platform/api-error.ts": 3,
