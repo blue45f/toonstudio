@@ -24,6 +24,12 @@ import { getLessonState } from "./learning-paths";
 import { learnStatusText } from "./learn-status-i18n";
 import { useLearningProgress } from "./use-learning-progress";
 
+const LazyClassroomCritiqueRubricPanel = lazy(() =>
+  import("./ClassroomCritiqueRubricPanel").then((m) => ({
+    default: m.ClassroomCritiqueRubricPanel,
+  })),
+);
+
 const LazyKaistoryLearningPlatformSection = lazy(() =>
   import("./KaistoryLearningPlatformSection").then((m) => ({
     default: m.KaistoryLearningPlatformSection,
@@ -487,6 +493,10 @@ export function LearningClassroomPage() {
           </div>
         </SiteTabPanel>
       </section>
+
+      <Suspense fallback={null}>
+        <LazyClassroomCritiqueRubricPanel assignments={plan.assignments} classroomName={plan.name} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <LazyKaistoryLearningPlatformSection />

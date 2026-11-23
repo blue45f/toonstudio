@@ -3,9 +3,10 @@
  */
 
 export const ACADEMY_AND_ROLES_HUB_SUMMARY = Object.freeze({
-  titleKo: "멀티 직군 작업 특화 · 8단계 분업·거버넌스 · 툰스튜디오 아카데미",
+  titleKo: "멀티 직군 작업 특화 · 8/10단계 분업·거버넌스 · 툰스튜디오 아카데미",
   roleCount: 12,
   pipelineStageCount: 8,
+  korean10StageCount: 10,
   governanceTierCount: 7,
   academyTrackCount: 6,
   xrayLayerCount: 8,
@@ -107,6 +108,31 @@ export type {
   XrayManuscriptLayer,
   XrayStackSummary,
 } from "./toonstudio-academy-curriculum";
+
+export {
+  KOREAN_10STAGE_ORDER,
+  KOREAN_10STAGE_WEBTOON_PIPELINE,
+  SAMPLE_KOREAN_10STAGE_CUT_RECORDS,
+  aggregateCut10StagePayoutLedger,
+  applyCut10StageHandoff,
+  calculateWithholding33Truncated10,
+  evaluateCut10StageHandoff,
+  getKorean10StageOrder,
+  getKorean10StageSpec,
+  getNextKorean10StageId,
+} from "./korean-10stage-cut-handoff";
+export type {
+  Cut10StageAssigneePayout,
+  Cut10StageCheckId,
+  Cut10StageCheckResult,
+  Cut10StageHandoffEvaluation,
+  Cut10StagePayoutLedger,
+  CutHandoffRecord,
+  CutLayerLockState,
+  Korean10StageId,
+  Korean10StageSpec,
+  Withholding33TaxBreakdown,
+} from "./korean-10stage-cut-handoff";
 
 export { StudioAcademyAndRoleCraftHub } from "./StudioAcademyAndRoleCraftHub";
 export type {
