@@ -1,21 +1,33 @@
 import {
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   ExternalLink,
   GraduationCap,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Link } from "react-router-dom";
+
+import { ACADEMY_AND_ROLES_HUB_SUMMARY } from "../academy-and-roles";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useT } from "@/shared/lib/i18n";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
 
 import type { ProductionReviewCandidate } from "./production-manuscript-competitive-model";
 import type { ProductionManuscriptProcess } from "./production-manuscript-model";
+
+const LazyStudioAcademyAndRoleCraftHub = lazyRetry(
+  () =>
+    import("../academy-and-roles/StudioAcademyAndRoleCraftHub").then((module) => ({
+      default: module.StudioAcademyAndRoleCraftHub,
+    })),
+  "StudioAcademyAndRoleCraftHub",
+);
 
 type JourneyRole = "producer" | "artist" | "reviewer";
 type View = "processes" | "workbench" | "versions" | "feedback" | "delivery" | "permissions";
@@ -72,6 +84,7 @@ export function ProductionAdoptionCenter({
   const t = useT();
   const [role, setRole] = useState<JourneyRole>("producer");
   const [checked, setChecked] = useState<ReadonlySet<number>>(new Set());
+  const [academyHubOpen, setAcademyHubOpen] = useState(false);
   const steps = journey(role, editorHref, externalReviewHref);
   const toggle = (index: number) => setChecked((current) => {
     const next = new Set(current);
@@ -120,5 +133,28 @@ export function ProductionAdoptionCenter({
         <span className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-panel px-3 text-xs text-fg-2"><Clock3 className="size-4" aria-hidden="true" /> 체크 완료 {checked.size}/{steps.length}</span>
       </div>
     </section>
+    <details
+      data-testid="production-academy-role-craft-disclosure"
+      className="group/academy-roles rounded-3xl border border-line bg-card p-4 sm:p-5"
+      onToggle={(event) => setAcademyHubOpen(event.currentTarget.open)}
+    >
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-1 text-sm font-semibold text-fg outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+        <span className="flex flex-wrap items-center gap-2 [word-break:keep-all]">
+          <GraduationCap className="size-4 shrink-0 text-accent" aria-hidden="true" />
+          <span>{ACADEMY_AND_ROLES_HUB_SUMMARY.titleKo}</span>
+          <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 text-xs font-semibold tabular-nums text-fg-2">
+            {ACADEMY_AND_ROLES_HUB_SUMMARY.roleCount}직군 · {ACADEMY_AND_ROLES_HUB_SUMMARY.pipelineStageCount}단계 · {ACADEMY_AND_ROLES_HUB_SUMMARY.governanceTierCount}규모
+          </span>
+        </span>
+        <ChevronDown className="size-4 shrink-0 text-fg-3 transition-transform group-open/academy-roles:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+      </summary>
+      {academyHubOpen ? (
+        <div className="mt-4">
+          <Suspense fallback={<div className="rounded-xl border border-line bg-panel p-4 text-xs text-fg-2" aria-hidden="true" />}>
+            <LazyStudioAcademyAndRoleCraftHub />
+          </Suspense>
+        </div>
+      ) : null}
+    </details>
   </div>;
 }
