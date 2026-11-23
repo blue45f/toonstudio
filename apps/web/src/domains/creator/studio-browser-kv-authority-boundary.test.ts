@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { compact, finding, type BrowserKvAllowance, type BrowserKvFinding, type FindingKind } from "./__fixtures__/studio-browser-kv-findings";
+import { allow, compact, finding, type BrowserKvAllowance, type BrowserKvFinding } from "./__fixtures__/studio-browser-kv-findings";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = resolve(HERE, "../../../../../");
@@ -296,17 +296,6 @@ function analyzeWorkspace(): readonly BrowserKvFinding[] {
     })));
 }
 
-function allow(
-  file: string,
-  kind: FindingKind,
-  key: string,
-  occurrences: number,
-  rationale: string,
-  proof: string,
-): BrowserKvAllowance {
-  return Object.freeze({ file, kind, key, occurrences, rationale, proof });
-}
-
 const UI_ONLY =
   "UI preference, acknowledgement, tutorial, consent, recent-item, or clipboard state only; it is not project or creative-data authority.";
 const UI_PROOF =
@@ -357,6 +346,10 @@ const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-cleanup", "offlineWorkCacheKey(workId)", 1, "권한 철회를 확인한 원고의 HTTP 캐시 선택자 하나를 지운다.", "studio-offline-owner-kv-authority-boundary.test.ts가 다른 원고의 선택자와 세션 범위를 보존하는지 검사한다."),
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-write", "OFFLINE_PREVIEW_SCOPE_KEY", 1, "같은 로그인 범위의 HTTP 캐시 URL을 구분하는 무작위 UUID 한 개를 저장한다.", "studio-offline-owner-kv-authority-boundary.test.ts가 선택자 생성 시 실제 저장 키와 첫 UUID를 대조한다."),
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-write", "key", 1, "원고 ID를 인코딩한 선택자 키에 해당 원고용 무작위 캐시 버전 UUID만 기록한다.", "studio-offline-owner-kv-authority-boundary.test.ts가 인코딩한 원고 키와 두 번째 UUID를 대조한다."),
+  allow("apps/web/src/domains/creator/offline/studio-offline-owner-receipt.ts", "local-storage-write", '"toonstudio:offline-preview:reader:v1"', 1, "새 탭이 같은 저장 형식을 요청할 수 있게 공개 reader 헤더 값을 보관한다.", "studio-offline-owner-kv-authority-boundary.test.ts가 실제 저장값을 reader 헤더와 대조하고 모든 쓰기를 확인한다."),
   // 2026-11-22: UI 프리셋·명시 주입 호환 저장소·SHA-256 내용 주소 지정 L2 캐시만 정확한 호출 수로 등록한다.
   allow("apps/web/src/domains/creator/camera-angles-pro/webtoon-camera-angles.ts", "local-storage-write", '"toonstudio.camera-angles-pro.bookmarks.v1"', 1, "3D 카메라 앵글 북마크(최대 64건) UI 프리셋 목록만 저장하는 기기 로컬 편의 상태이며 원고·장면·SQLite 정본을 소유하지 않는다.", "camera-angles-pro.test.tsx가 64건 한도·필드 검증(isValidBookmarkRecord) 기반 북마크 저장·복원과 저장 불가 시 빈 배열 기본값 복귀를 검증한다."),
   allow("apps/web/src/domains/creator/continuity-bible/continuity-bible-model.ts", "durable-storage-write", '`${STORAGE_PREFIX}${state.projectId}`', 1, "명시 주입된 Storage 포트로 작품별 작화 일관성 체크시트(상처·소품·복장 메모) 로컬 작업 사본만 저장하며 원고 캔버스·서버 정본을 대체하지 않는다.", "continuity-bible.test.tsx가 주입 storage 기반 projectId별 체크시트 저장·복원 및 마크다운 내보내기를 검증하고 storage 미주입 시 메모리 상태로 동작한다."),
@@ -980,6 +973,7 @@ describe("Studio browser-KV authority boundary", () => {
       "hyper-automation-os/hyper-automation-catalog.ts",
       "support-chat-ai/support-ai-chat-client.ts",
       "localization-sync-pro/studio-offline-sync-legacy-export.ts",
+      "offline/studio-offline-owner-receipt.ts",
     ]) {
       const file = `apps/web/src/domains/creator/${relativePath}`;
       const source = readFileSync(resolve(WORKSPACE_ROOT, file), "utf8");
