@@ -495,6 +495,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
       destination("/promo-library", "홍보 영상 자료실", "Promo video library", "홍보에 쓴 생성형 AI 영상 204편을 카테고리별로 모아 미리 보고 원본을 내려받는 자료실", "Preview and download the library of 204 AI-generated promo clips, organized by category"),
       destination("/features", "기능 한눈에 보기", "Features at a glance", "툰스튜디오의 모든 기능을 카테고리별로 한눈에 확인", "Browse every ToonStudio feature by category at a glance"),
       destination("/about/compare", "경쟁 도구 7종 비교", "Competitor tool comparison", "Clip Studio Paint·Procreate·Photoshop·Rebelle·Blender·Creco·ACON3D와 기능·UX·비용 실측 대조", "Compare ToonStudio with 7 creative & webtoon tools across features, UX and cost"),
+      destination("/compare/studio", "스튜디오 도구 비교", "Studio tool benchmark", "공개 사양과 구현 근거로 제작 도구 비교", "Compare creative tools using public specifications and implementation evidence"),
       destination("/about", "서비스 소개", "About ToonStudio", "핵심 기능·제작 흐름·역할별 시작점과 소개 영상을 한눈에", "Core features, the production flow, starting points by role and intro films at a glance"),
       destination("/ir", "IR · 투자 소개", "IR · Investor brief", "핵심 메시지·제품 역량·시장·BM·검증 로드맵과 IR 영상을 발표 흐름 한 페이지로", "The pitch in one page: key message, product capabilities, market, business model, validation roadmap and the IR film"),
       destination("/business-plan", "사업계획서", "Business plan", "문제 인식·실현 가능성·성장전략·향후 발전방안", "Problem, feasibility, growth strategy and future development"),
@@ -513,6 +514,7 @@ export const SITEMAP_EXTENDED_DESTINATION_GROUPS: readonly ExtendedDestinationGr
         "기술 자료의 시작점: 읽는 길, 웹·2D·3D·저장·협업 기술과 신뢰 원칙",
         "The engineering starting point: reading routes, plus the web, 2D, 3D, storage, collaboration and trust foundations",
       ),
+      destination("/tech", "차세대 기술 쇼케이스", "Next-Gen Tech Showcase", "WebGPU·로컬 저장·협업·Remotion·AI 기술 살펴보기", "Explore WebGPU, local storage, collaboration, Remotion and AI technology"),
       destination(
         "/about/technology/architecture",
         "기술 아키텍처 해설",
