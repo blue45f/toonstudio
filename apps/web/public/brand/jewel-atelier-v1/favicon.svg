@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">ToonStudio — Jewel Atelier Nib &amp; Prismatic Ribbon</title>
+  <defs>
+    <linearGradient id="nibGold" x1="28" y1="12" x2="48" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fde38a" />
+      <stop offset=".5" stop-color="#e5b343" />
+      <stop offset="1" stop-color="#9e6d1c" />
+    </linearGradient>
+    <linearGradient id="jewelBand" x1="10" y1="42" x2="54" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f04a3a" />
+      <stop offset=".34" stop-color="#f5b727" />
+      <stop offset=".68" stop-color="#16a074" />
+      <stop offset="1" stop-color="#2563eb" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="#121826" stroke="#ede5d4" stroke-width="2" />
+  <ellipse cx="32" cy="34" rx="22" ry="11" transform="rotate(-24 32 34)" fill="none" stroke="url(#jewelBand)" stroke-width="5.2" />
+  <rect x="19" y="15" width="23" height="31" rx="2.5" transform="rotate(-18 30.5 30.5)" fill="none" stroke="#f5eee0" stroke-width="3.4" />
+  <path d="M47 13 31 23l-4 10 10-4 10-16Z" fill="url(#nibGold)" />
+  <line x1="46.5" y1="13.5" x2="38.5" y2="21.5" stroke="#121826" stroke-width="1.8" stroke-linecap="round" />
+  <circle cx="37.5" cy="22.5" r="2.2" fill="#121826" />
+  <path d="M22 36l9-9 4 4-9 9z" fill="url(#jewelBand)" />
+</svg>

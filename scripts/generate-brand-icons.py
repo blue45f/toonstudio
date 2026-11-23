@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Rebuild ToonStudio's Spectrum Ribbon icons from favicon.svg.
+"""루트 favicon.svg에서 기존 Spectrum Ribbon 아이콘을 재생성한다.
 
 Developer-only: Python 3.10+, CairoSVG 2.8.2, Pillow 11.3+ and system Cairo.
 Run from any directory: python scripts/generate-brand-icons.py [--check]
-The root copies preserve implicit browser/PWA URLs; versioned copies guarantee cache rotation.
+루트와 spectrum-ribbon-v2 호환 URL만 갱신하며 Jewel Atelier 자산은 생성하지 않는다.
 """
 from __future__ import annotations
 
@@ -91,6 +91,7 @@ def build_monochrome() -> bytes:
 def generate() -> dict[Path, bytes]:
     source = (PUBLIC / "favicon.svg").read_bytes()
     master = ET.fromstring(source)
+    assert "Spectrum Ribbon" in "".join(master.itertext()), "기존 Spectrum Ribbon 원본이 필요합니다"
     background = master.find(f"{{{SVG_NS}}}rect")
     assert background is not None and background.attrib.get("fill"), "favicon.svg needs a solid background rect"
     masked = build_maskable(master, background.attrib["fill"])
@@ -113,7 +114,8 @@ def generate() -> dict[Path, bytes]:
         offset += len(png)
     files[Path("favicon.ico")] = struct.pack("<HHH", 0, 1, len(frames)) + b"".join(entries) + b"".join(png for _, png in frames)
     versioned = {VERSIONED / path.name: content for path, content in files.items()}
-    versioned[VERSIONED / "manifest.webmanifest"] = (PUBLIC / "manifest.webmanifest").read_bytes()
+    # 현재 PWA metadata를 legacy 버전으로 복사하지 않는다. 해당 버전의 manifest만 보존한다.
+    versioned[VERSIONED / "manifest.webmanifest"] = (PUBLIC / VERSIONED / "manifest.webmanifest").read_bytes()
     return files | versioned
 
 

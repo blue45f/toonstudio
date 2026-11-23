@@ -191,7 +191,7 @@ export function EntryIntro({ once, onDone }: EntryIntroProps = {}) {
               브랜드 에셋을 직접 그린다. 192px PNG를 키워 쓰면 흐려져서, 같은 마크의
               벡터 원본(favicon.svg)을 쓴다. 워드마크는 공용 컴포넌트를 그대로 쓴다. */}
           <img
-            src={resolveAssetUrl("/brand/spectrum-ribbon-v2/favicon.svg")}
+            src={resolveAssetUrl("/brand/jewel-atelier-v1/favicon.svg")}
             alt=""
             className={styles.mark}
             decoding="async"
