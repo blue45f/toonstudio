@@ -388,28 +388,28 @@ describe("Wave 13 Track 5 — Jewel Canvas-Max CSS · 멀티입력 · 방사형 
     }
 
     const mounted = render(<StrictMode><ControlledHarness /></StrictMode>);
-    fireEvent.click(screen.getByRole("button", { name: "퀵 휠", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "퀵 휠" }));
     await screen.findByRole("menu", { name: "빠른 도구 방사형 휠" });
     expect(screen.getByRole("menuitem", { name: "1. 다시 실행" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "슬롯 편집", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "슬롯 편집" }));
     const editor = screen.getByRole("region", { name: "빠른 메뉴 8슬롯 편집" });
     const write = vi.spyOn(Storage.prototype, "setItem");
 
     fireEvent.click(screen.getByRole("menuitem", { name: /^7\./u }));
-    fireEvent.click(within(editor).getByRole("button", { name: "레이어 비우기", exact: true }));
+    fireEvent.click(within(editor).getByRole("button", { name: "레이어 비우기" }));
     expect(screen.getByRole("menuitem", { name: "7. 레이어 비우기" })).toBeTruthy();
     expect(onLegacyChange).toHaveBeenCalledTimes(1);
     expect(onLegacyChange).toHaveBeenLastCalledWith(initialLegacy);
     expect(loadQuickMenuSlots()).toEqual(initialLegacy);
 
     fireEvent.click(screen.getByRole("menuitem", { name: /^8\./u }));
-    fireEvent.click(within(editor).getByRole("button", { name: "알파 잠금", exact: true }));
+    fireEvent.click(within(editor).getByRole("button", { name: "알파 잠금" }));
     expect(screen.getByRole("menuitem", { name: "8. 알파 잠금" })).toBeTruthy();
     expect(onLegacyChange).toHaveBeenCalledTimes(2);
     expect(onLegacyChange).toHaveBeenLastCalledWith(initialLegacy);
 
     fireEvent.click(screen.getByRole("menuitem", { name: /^2\./u }));
-    fireEvent.click(within(editor).getByRole("button", { name: "스포이드", exact: true }));
+    fireEvent.click(within(editor).getByRole("button", { name: "스포이드" }));
     const updatedLegacy = assignQuickMenuSlot(initialLegacy, 1, "eyedropper");
     expect(onLegacyChange).toHaveBeenCalledTimes(3);
     expect(onLegacyChange).toHaveBeenLastCalledWith(updatedLegacy);
@@ -422,16 +422,16 @@ describe("Wave 13 Track 5 — Jewel Canvas-Max CSS · 멀티입력 · 방사형 
       { index: 7, actionId: "toggle-alpha-lock" },
     ]);
 
-    fireEvent.click(screen.getByRole("button", { name: "방사형 휠 닫기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "방사형 휠 닫기" }));
     expect(screen.queryByRole("menu", { name: "빠른 도구 방사형 휠" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "퀵 휠", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "퀵 휠" }));
     await screen.findByRole("menu", { name: "빠른 도구 방사형 휠" });
     expect(screen.getByRole("menuitem", { name: "7. 레이어 비우기" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "8. 알파 잠금" })).toBeTruthy();
 
     mounted.unmount();
     render(<StrictMode><ControlledHarness /></StrictMode>);
-    fireEvent.click(screen.getByRole("button", { name: "퀵 휠", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "퀵 휠" }));
     await screen.findByRole("menu", { name: "빠른 도구 방사형 휠" });
     expect(screen.getByRole("menuitem", { name: "1. 다시 실행" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "2. 스포이드" })).toBeTruthy();
