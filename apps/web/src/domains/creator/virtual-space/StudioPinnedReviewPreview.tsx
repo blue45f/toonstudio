@@ -33,16 +33,18 @@ export function StudioReviewImage({ preview, label, className = "block h-auto w-
   </figure>;
 }
 
-export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, notes, onPreviewsChange }: {
+export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, notes, onPreviewsChange, initialCursor, onCursorChange }: {
   readonly subject: StudioVirtualSpaceReviewSubject;
   readonly onRevoked: () => void;
   readonly annotation?: StudioReviewAnnotationControl;
   readonly notes?: readonly StudioReviewAnnotationNote[];
   readonly onPreviewsChange?: (previews: readonly StudioVirtualSpaceReviewPreview[]) => void;
+  readonly initialCursor?: string | null;
+  readonly onCursorChange?: (cursor: string | null) => void;
 }) {
   const bt = useBilingual("StudioPinnedReviewPreview");
   const [crecoViewerOpen, setCrecoViewerOpen] = useState(false);
-  const { result, cursor, setCursor, refresh } = useStudioPinnedReviewPreviews(subject, onRevoked);
+  const { result, cursor, setCursor, refresh } = useStudioPinnedReviewPreviews(subject, onRevoked, initialCursor);
   useEffect(() => {
     if (result?.ok) onPreviewsChange?.(result.previews);
   }, [onPreviewsChange, result]);
@@ -57,7 +59,7 @@ export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, note
       annotation.onSelect({ ...selected, mapping: page.mapping, expiresAt: page.expiresAt });
     }
   }, [annotation, result]);
-  const changePage = (next: string | null) => { annotation?.onSelect(null); setCursor(next); };
+  const changePage = (next: string | null) => { annotation?.onSelect(null); onCursorChange?.(next); setCursor(next); };
   return <div className="mt-4" aria-label={bt("검수본 미리보기", "Snapshot preview")}>
     {result?.ok ? <>
       {result.previews.map((preview) => (annotation || notes?.length) && preview.mapping.status === "mapped"

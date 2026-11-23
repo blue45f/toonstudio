@@ -62,7 +62,8 @@ describe("real pinned preview to spatial note integration", () => {
     fireEvent.change(screen.getByLabelText("위치 방식"), { target: { value: "coordinate" } });
     fireEvent.change(screen.getByLabelText("가로 위치 (%)"), { target: { value: "42" } });
     write();
-    mounted.rerender(<StudioPinnedReviewPanel subject={{ rootGraphHash: subject.rootGraphHash, ...Object.fromEntries(Object.entries(subject).slice(0, -1)) } as typeof subject} />);
+    const { rootGraphHash, ...identity } = subject;
+    mounted.rerender(<StudioPinnedReviewPanel subject={{ rootGraphHash, ...identity }} />);
     await reverify();
     expect(screen.getByLabelText("가로 위치 (%)")).toHaveProperty("value", "42");
     fireEvent.click(screen.getByRole("button", { name: "이 위치에 의견 연결" }));
@@ -95,6 +96,28 @@ describe("real pinned preview to spatial note integration", () => {
     expect(screen.getByRole("button", { name: "의견 저장" })).toHaveProperty("disabled", true);
     expect(screen.queryByRole("link", { name: "의견 작성으로 이동" })).toBeNull();
     expect(f.create).not.toHaveBeenCalled();
+  });
+  it("다음 묶음의 컷에 연결한 좌표도 새 미리보기가 도착한 뒤에만 저장할 수 있다", async () => {
+    const cursor = `0.${hash}`;
+    const group = (next: string | null) => ({ ok: true, subject, previews: [preview(next ? 1 : 0)], nextCursor: next ? null : cursor });
+    f.read.mockImplementation(async (_subject, next: string | null) => group(next));
+    await mount();
+    fireEvent.click(screen.getByRole("button", { name: "다음 미리보기" }));
+    await screen.findByLabelText("2페이지 의견 위치");
+    fireEvent.change(screen.getByLabelText("위치 방식"), { target: { value: "coordinate" } });
+    fireEvent.click(screen.getByRole("button", { name: "이 위치에 의견 연결" }));
+    write();
+    let complete!: (result: ReturnType<typeof group>) => void;
+    f.read.mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
+    await act(async () => { fireEvent(window, new Event("focus")); });
+    expect(f.read.mock.lastCall?.[1]).toBe(cursor);
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByRole("button", { name: "의견 저장" })).toHaveProperty("disabled", true);
+    await act(async () => { complete(group(cursor)); });
+    await screen.findByRole("link", { name: "의견 작성으로 이동" });
+    save();
+    await waitFor(() => expect(f.create).toHaveBeenCalledOnce());
+    expect(f.create.mock.lastCall?.[1].anchor.source).toMatchObject({ pageOrdinal: 1, pageId: "page-1" });
   });
   it("stores the explicit cut source and immutable review pin without inventing graph panel scope", async () => {
     await mount(); selectCut(); write(); expect(f.create).not.toHaveBeenCalled(); save();
