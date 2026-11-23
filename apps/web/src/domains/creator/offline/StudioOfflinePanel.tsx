@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useEditorStatusSlot, useServiceStatusSlot } from "@/shared/lib/modal-status-slot";
@@ -15,6 +15,10 @@ import {
   isStudioOfflineAutomationDetail,
 } from "./studio-offline-automation";
 import { useStudioConnectivity } from "./use-studio-connectivity";
+
+const OfflineConflictResolverPanel = React.lazy(
+  () => import("../offline-conflict-crdt/OfflineConflictResolverPanel"),
+);
 
 function dataSaverEnabled(): boolean {
   try {
@@ -40,6 +44,7 @@ export function StudioOfflinePanel() {
   const [technicalDetail, setTechnicalDetail] = useState<string | null>(null);
   const [manualResult, setManualResult] = useState("");
   const [customMessage, setCustomMessage] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const message = customMessage ?? bt(
     "스튜디오가 열린 뒤 현재 버전의 필수 편집 도구를 이 기기에 자동으로 준비합니다.",
     "After Studio opens, its current essential editing tools are prepared on this device automatically.",
@@ -222,6 +227,20 @@ export function StudioOfflinePanel() {
         <summary className="min-h-11 cursor-pointer content-center font-medium">{bt("문제 세부 정보", "Problem details")}</summary>
         <pre className="mb-3 whitespace-pre-wrap break-words font-sans text-xs text-fg-2">{technicalDetail}</pre>
       </details> : null}
+      {!editor && detailsOpen ? (
+        <Suspense
+          fallback={
+            <p className="mt-2 text-fg-2">
+              {bt("충돌 해결 엔진을 준비하고 있습니다…", "Preparing conflict resolver…")}
+            </p>
+          }
+        >
+          <OfflineConflictResolverPanel
+            connectivityMode={connectivity.mode}
+            localOnly={connectivity.localOnly}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 
@@ -249,6 +268,9 @@ export function StudioOfflinePanel() {
         className="rounded-full border border-line/80 bg-panel/92 px-3 py-0.5 text-xs text-fg shadow-md backdrop-blur-md transition-[border-radius,padding,box-shadow] duration-150 open:rounded-2xl open:p-3 open:shadow-xl motion-reduce:transition-none"
         data-studio-offline-panel="true"
         data-studio-local-only={connectivity.localOnly ? "true" : "false"}
+        onToggle={(event) => {
+          setDetailsOpen(event.currentTarget.open);
+        }}
       >
         <summary className="min-h-11 cursor-pointer list-none content-center whitespace-nowrap font-semibold [word-break:keep-all] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
           {summary}
