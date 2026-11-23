@@ -140,11 +140,13 @@ export function bindStudioDrawLiveSurfaces(h: StudioLiveSurfaceHost) {
         ...pendingStrokeAdmissionScopeRef.current,
         pageId: currentPageIdRef.current,
         generation: collaborationAccessRef.current.documentGeneration,
+        accessGeneration: collaborationAccessRef.current.accessGeneration,
       };
       setUnloadGuardArmed(true);
       pendingStrokeAdmission().defer({
         stroke: next,
         scope: capturedScope,
+        pendingStrokeIds: pendingStrokeCommitsRef.current?.strokes.map((stroke: DrawEl) => stroke.id),
         checkpoint: (stroke: DrawEl) => checkpointPendingStroke(stroke, capturedScope.pageId, capturedScope.generation),
         settled: (stroke: DrawEl, accepted: boolean) => releasePendingStrokeCheckpoint(stroke.id, accepted),
         recover: (stroke: DrawEl, reason: string) => {
@@ -176,6 +178,8 @@ export function bindStudioDrawLiveSurfaces(h: StudioLiveSurfaceHost) {
           );
           if (pendingGpuStrokesRef.current.length > 0 || pendingGpuDrawAuthoritiesRef.current.length > 0
             || (admission.pendingBackdrop && pendingStrokeCommitsRef.current !== null)) return false;
+          // 동기 확정 중 계정·문서·권한이 바뀐 경우에는 렌더러를 다시 열지 않는다.
+          if (!pendingStrokeAdmissionRef.current?.canResume(stroke.id)) return false;
           if (complete) {
             if (!studioCrdtDocumentRef.current && !beginLiveResourceEdit(undefined, "append-stroke")) return false;
             drawingRef.current = stroke;

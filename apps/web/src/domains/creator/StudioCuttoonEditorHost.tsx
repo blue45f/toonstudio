@@ -7763,8 +7763,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     isometricAngleDeg: number;
     advancedRuler: StudioAdvancedRuler | null;
   } | null>(null);
-  const pendingStrokeAdmissionScopeRef = useRef({ documentKey: autosaveKey, pageId: activePage.id, generation: collaborationAccessRef.current.documentGeneration });
-  pendingStrokeAdmissionScopeRef.current = { documentKey: autosaveKey, pageId: activePage.id, generation: collaborationAccessRef.current.documentGeneration };
+  const pendingStrokeAdmissionScopeRef = useRef({ documentKey: autosaveKey });
+  pendingStrokeAdmissionScopeRef.current = { documentKey: autosaveKey };
   const pendingCatalogInputRef = useRef<StudioPendingCatalogInput | null>(null);
   const [catalogSelectionRevision, setCatalogSelectionRevision] = useState(0);
   const pendingCatalogInput = useCallback((): StudioPendingCatalogInput => {
@@ -7805,7 +7805,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const pendingStrokeAdmissionRef = useRef<StudioPendingStrokeAdmissionQueue | null>(null);
   const pendingStrokeAdmission = (): StudioPendingStrokeAdmissionQueue => {
     pendingStrokeAdmissionRef.current ??= new StudioPendingStrokeAdmissionQueue({
-      currentScope: () => ({ ...pendingStrokeAdmissionScopeRef.current, pageId: currentPageIdRef.current, generation: collaborationAccessRef.current.documentGeneration }),
+      currentScope: () => ({ ...pendingStrokeAdmissionScopeRef.current, pageId: currentPageIdRef.current, generation: collaborationAccessRef.current.documentGeneration, accessGeneration: collaborationAccessRef.current.accessGeneration }),
       activeStrokeId: () => drawingRef.current?.id ?? null,
     });
     return pendingStrokeAdmissionRef.current;
@@ -12884,6 +12884,7 @@ const puppetWarpArmed =
       );
       const currentPages = currentHistory[currentIndex] ?? pages;
       const targetPage = currentPages.find((page) => page.id === batch.pageId);
+      const previousGeneration = collaborationAccessRef.current.documentGeneration;
       let committed = false;
       let baseElements: El[] = [];
       if (targetPage && !masterEditMode) {
@@ -12907,6 +12908,7 @@ const puppetWarpArmed =
       // 한 번의 커밋(=한 번의 CRDT 발행·검증) 뒤, 그 스냅샷을 획 단위 undo 항목으로 펼친다.
       // Wrapper also records the streamed-stroke provenance used by offline Undo/Redo.
       expandDeferredStrokeCommitHistory(batch);
+      pendingStrokeAdmissionRef.current?.noteCommittedPredecessors(batch.pageId, batch.strokes, previousGeneration);
       // 즉시 커밋 경로와 동일한 래스터 승격 — 배치의 각 획을 개별 작업으로 큐잉한다.
       const rasterWorkId = authorizedWorkAssetScopeId;
       const rasterDocument = studioCrdtDocumentRef.current;
