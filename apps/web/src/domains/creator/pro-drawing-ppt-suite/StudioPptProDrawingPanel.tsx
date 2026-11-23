@@ -2,10 +2,13 @@ import {
   Box,
   Compass,
   FileSpreadsheet,
+  Film,
   LayoutGrid,
   LayoutTemplate,
   Mic,
+  PaintBucket,
   Palette,
+  PenLine,
   Presentation,
   Shapes,
   SlidersHorizontal,
@@ -62,6 +65,21 @@ const LazyProCraftEnginesPanel = lazy(() =>
     default: m.ProCraftEnginesPanel,
   })),
 );
+const LazyWebGpuFlattingWorkbenchPanel = lazy(() =>
+  import("../fill/webgpu-flatting/WebGpuFlattingWorkbenchPanel").then((m) => ({
+    default: m.WebGpuFlattingWorkbenchPanel,
+  })),
+);
+const LazyShortsMp4ExporterPanel = lazy(() =>
+  import("../export/shorts-webcodecs-mp4/ShortsMp4ExporterPanel").then((m) => ({
+    default: m.ShortsMp4ExporterPanel,
+  })),
+);
+const LazyRedlineCanvasOverlayPanel = lazy(() =>
+  import("../review-redline-overlay/RedlineCanvasOverlayPanel").then((m) => ({
+    default: m.RedlineCanvasOverlayPanel,
+  })),
+);
 
 export type PptProDrawingTabId =
   | "layout"
@@ -75,7 +93,10 @@ export type PptProDrawingTabId =
   | "hologram"
   | "idea"
   | "voice"
-  | "craft";
+  | "craft"
+  | "flatting"
+  | "shorts"
+  | "redline";
 
 interface SuiteTabDescriptor {
   readonly id: PptProDrawingTabId;
@@ -141,8 +162,23 @@ const SUITE_TABS: readonly SuiteTabDescriptor[] = [
   },
   {
     id: "craft",
-    label: "2D→3D 라이팅·칼선·필압·8K",
-    description: "2D 컷→3D 3점 조명 동기화, 아크릴/스티커 칼선 SVG·CMYK, 10초 필압 보정, 4K~8K 엣지 햅틱 그리드",
+    label: "2D→3D 라이팅·칼선·필압·Wasm",
+    description: "2D 컷→3D 3점 조명 동기화, 아크릴/스티커 칼선 SVG·CMYK, 10초 필압 보정, 8K 햅틱 그리드·Wasm SIMD 워커 풀",
+  },
+  {
+    id: "flatting",
+    label: "WebGPU 틈새 닫기 자동 플랫팅",
+    description: "WGSL Compute + JFA 1~16px 열린 선화 틈새 닫기(누수 0px) · 안티앨리어싱 1px 언더-트랩 자동 채색",
+  },
+  {
+    id: "shorts",
+    label: "9:16 웹툰 숏폼 MP4 익스포터",
+    description: "브라우저 WebCodecs 하드웨어 H.264 ISO-BMFF .mp4 + 16-bit PCM WAV 믹싱 + Ken Burns 카메라 + VTT/SRT 자막",
+  },
+  {
+    id: "redline",
+    label: "붉은펜 검수 비출력 오버레이",
+    description: "99_NONPRINT_REDLINE_OVERLAY 비출력 붉은펜 피드백 · 클릭 즉시 좌표 점프 · 출고 시 0% 자동 스트립 보장",
   },
 ];
 
@@ -172,6 +208,12 @@ function SuiteTabIcon({ id }: { readonly id: PptProDrawingTabId }) {
       return <Mic size={16} aria-hidden="true" />;
     case "craft":
       return <Wrench size={16} aria-hidden="true" />;
+    case "flatting":
+      return <PaintBucket size={16} aria-hidden="true" />;
+    case "shorts":
+      return <Film size={16} aria-hidden="true" />;
+    case "redline":
+      return <PenLine size={16} aria-hidden="true" />;
   }
 }
 
@@ -265,6 +307,9 @@ export function StudioPptProDrawingPanel({
           {activeTab === "idea" ? <LazyIdeaToWebtoonPipelinePanel /> : null}
           {activeTab === "voice" ? <LazyStudioVoiceCoachPanel /> : null}
           {activeTab === "craft" ? <LazyProCraftEnginesPanel /> : null}
+          {activeTab === "flatting" ? <LazyWebGpuFlattingWorkbenchPanel /> : null}
+          {activeTab === "shorts" ? <LazyShortsMp4ExporterPanel /> : null}
+          {activeTab === "redline" ? <LazyRedlineCanvasOverlayPanel /> : null}
         </Suspense>
       </div>
     </section>
