@@ -1,5 +1,5 @@
-import type { StudioAutosavePayload } from "./studio-autosave";
-import type { ThumbElement, ThumbPageLike } from "./studio-page-thumbs";
+import type { StudioAutosavePayload } from "../studio-autosave";
+import type { ThumbElement, ThumbPageLike } from "../studio-page-thumbs";
 
 export interface PreviewCandidate {
   readonly page: ThumbPageLike;

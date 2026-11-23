@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { FakeAutosaveJournal, payload, session } from "./live/studio-autosave-opfs-test-fixtures";
-import { reconcileStudioAutosaveWithOpfsPrimary } from "./studio-autosave-opfs-session";
-import type { StudioAutosaveSqlitePort } from "./studio-autosave-sqlite-store";
+import { FakeAutosaveJournal, payload, session } from "../live/studio-autosave-opfs-test-fixtures";
+import { reconcileStudioAutosaveWithOpfsPrimary } from "../studio-autosave-opfs-session";
+import type { StudioAutosaveSqlitePort } from "../studio-autosave-sqlite-store";
 
 const key = "recovery-visit";
 const storage = { getItem: () => null, setItem: vi.fn(), removeItem: vi.fn() };

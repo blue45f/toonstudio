@@ -4,7 +4,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { StudioPageThumbnail } from "../studio-page-lazy-ui";
 import { studioAutosaveKey, studioSharedAutosaveCompatibility } from "../studio-autosave";
-import { latestStudioPreviewRecord, studioProjectPreviewFromAutosave, type PreviewCandidate } from "../studio-autosave-preview-page";
+import { latestStudioPreviewRecord, studioProjectPreviewFromAutosave, type PreviewCandidate } from "./studio-autosave-preview-page";
 import { useStudioOfflineOwnerPreviewGrant } from "./use-studio-offline-owner-preview-grant";
 
 type OwnerPreviewGrant = Pick<NonNullable<ReturnType<typeof useStudioOfflineOwnerPreviewGrant>>, "userId" | "workId" | "revision">;

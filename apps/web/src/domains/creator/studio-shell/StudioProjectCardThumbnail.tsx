@@ -10,7 +10,7 @@ import type { StudioProjectLibraryEntry } from "../studio-project-library-reader
 import { studioProjectFormatProfile } from "../studio-project-format-catalog";
 import { StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
 import { useResolvedStudioProjectThumbnailUrl } from "./useStudioProjectThumbnailUrl";
-import { latestStudioPreviewRecord, studioProjectPreviewFromAutosave, type PreviewCandidate, type PreviewDurableRecord } from "../studio-autosave-preview-page";
+import { latestStudioPreviewRecord, studioProjectPreviewFromAutosave, type PreviewCandidate, type PreviewDurableRecord } from "../offline/studio-autosave-preview-page";
 
 const MAX_PREVIEW_DOCUMENTS = 6;
 
