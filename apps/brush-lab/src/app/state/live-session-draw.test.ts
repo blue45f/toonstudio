@@ -11,11 +11,11 @@ import { createMockLane, mockEnvironment } from "../testing/mock-lane";
 
 import { LiveStrokeSession } from "./live-session";
 
-import type { LiveSessionOptions, LiveStrokeAbort, LiveStrokeResult } from "./live-session";
 import type { RawSample } from "../../engine/core/types";
 import type { RawStage } from "../../engine/input/stages/raw-stage";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type { MockLane } from "../testing/mock-lane";
+import type { LiveSessionOptions, LiveStrokeAbort, LiveStrokeResult } from "./live-session";
 
 /** 그리기 화면이 쓰는 세션 옵션(setProgram·transformSamples·skipLinear·용량 전달·획 타이밍·캡처 상실 취소). */
 

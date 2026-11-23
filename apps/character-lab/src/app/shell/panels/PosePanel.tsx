@@ -44,8 +44,8 @@ import {
   type SkeletonBoundaryOptions,
 } from "./skeleton-boundary-guard";
 
-import type { Coords, HandSide, IkStatusTone, IkTargetId } from "./pose-panel-helpers";
 import type { HandPosePreset, LabFailure, Pose, PosePreset, PoseScope, Vec3 } from "../../../contracts";
+import type { Coords, HandSide, IkStatusTone, IkTargetId } from "./pose-panel-helpers";
 
 export {
   IK_TARGET_IDS,

@@ -6,8 +6,8 @@ import { SETTLE_DEFAULTS, failVisible } from "../../contracts";
 
 import { createPbdChainSolver } from "./pbd-chain";
 
-import type { PbdChainSolver, PbdChainSolverOptions } from "./pbd-chain";
 import type { CapsuleCollider, ChainAnchor, LabFailure, PhysicsProvider, PhysicsReceipt, PhysicsStatus, Quat, SettleReceipt, Vec3, WindInput } from "../../contracts";
+import type { PbdChainSolver, PbdChainSolverOptions } from "./pbd-chain";
 
 export const BUILTIN_PBD_VERSION_LABEL = "toon-pbd 1.0 (XPBD f32, dt 1/120 ×2)";
 

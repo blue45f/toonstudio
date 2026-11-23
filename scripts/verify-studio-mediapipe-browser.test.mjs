@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
-import { verifyMediaPipeNetworkEvidence } from "./verify-studio-mediapipe-browser.mjs";
+import {
+  isForbiddenMediaPipeConnectSource,
+  verifyMediaPipeNetworkEvidence,
+} from "./verify-studio-mediapipe-browser.mjs";
 
 const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
@@ -93,6 +96,28 @@ describe("MediaPipe 실제 브라우저 egress 증거 판정", () => {
       if (mismatch === "url") evidence.cdpRequests[0].url = METRICS + "/other";
       if (mismatch === "method") evidence.cdpRequests[0].method = "GET";
       assert.throws(() => verifyMediaPipeNetworkEvidence(evidence, ALLOWED), /Network.loadingFailed/u);
+    }
+  });
+});
+
+describe("MediaPipe CSP connect-src 허용 출처 판정", () => {
+  it("'self'와 공식 모델 CDN 호스트는 허용하고 광범위·사용량 출처는 거부한다", () => {
+    for (const allowed of [
+      "'self'",
+      "https://storage.googleapis.com",
+      "https://example.com/odml.pa.googleapis.com",
+    ]) {
+      assert.equal(isForbiddenMediaPipeConnectSource(allowed), false, allowed);
+    }
+    for (const forbidden of [
+      "https://odml.pa.googleapis.com",
+      "https://*.googleapis.com",
+      "https://*.pa.googleapis.com",
+      "odml.pa.googleapis.com:443",
+      "*",
+      "https:",
+    ]) {
+      assert.equal(isForbiddenMediaPipeConnectSource(forbidden), true, forbidden);
     }
   });
 });

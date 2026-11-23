@@ -8,6 +8,12 @@ import { paperFor } from "../engine/raster/reference-renderer";
 
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions } from "./lane";
 
+import type { LaneReasonCode } from "../engine/core/errors";
+import type { LabImage, RawSample } from "../engine/core/types";
+import type { GpuProbeResult } from "../engine/gpu/device";
+import type { ExternalBinner } from "../engine/gpu/pipeline-compute";
+import type { LatencyRecord } from "../engine/input/input-pipeline";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -23,12 +29,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { LaneReasonCode } from "../engine/core/errors";
-import type { LabImage, RawSample } from "../engine/core/types";
-import type { GpuProbeResult } from "../engine/gpu/device";
-import type { ExternalBinner } from "../engine/gpu/pipeline-compute";
-import type { LatencyRecord } from "../engine/input/input-pipeline";
-import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
  * 주력 레인: Sumi WebGPU compute 타일 파이프라인.

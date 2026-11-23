@@ -2,8 +2,8 @@ import { penLagMsFromPct } from "../stabilizer-map";
 
 import { withPosition } from "./raw-stage";
 
-import type { RawStage } from "./raw-stage";
 import type { RawSample } from "../../core/types";
+import type { RawStage } from "./raw-stage";
 
 /**
  * 물리 펜(스프링-질량 펜) 입력 단계와 순수 적분기.

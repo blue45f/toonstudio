@@ -12,10 +12,10 @@ import { clampBoneRotation } from "./joint-limits";
 import { computeWorldTransforms, indexBones, poseRotationFromWorld } from "./skeleton-fk";
 import { IK_REACH_TOLERANCE, solveTwoBoneIk } from "./two-bone-ik";
 
-import type { TwoBoneIkStatus } from "./two-bone-ik";
 import type { HumanoidBoneName } from "../contracts/bones";
 import type { SkeletonData } from "../contracts/mesh-data";
 import type { IkGoal, Pose, Quat } from "../contracts/pose";
+import type { TwoBoneIkStatus } from "./two-bone-ik";
 
 export interface IkApplyResult {
   readonly pose: Pose;

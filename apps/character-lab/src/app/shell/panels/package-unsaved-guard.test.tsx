@@ -26,10 +26,10 @@ import { markCharacterWorkSaved } from "../unsaved-work";
 
 import { PackagePanel } from "./PackagePanel";
 
-import type { PackagePanelLoader } from "./PackagePanel";
 import type { LabState } from "../../../contracts";
 import type { PackageFetchPort } from "../../../domains/authored/package-load-flow";
 import type { ApplyLoop } from "../apply-loop";
+import type { PackagePanelLoader } from "./PackagePanel";
 
 function resolveAssetRoot(): string {
   const metaUrl = new URL(import.meta.url);

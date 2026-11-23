@@ -2,8 +2,8 @@ import { lazyRadiusPxFromPct } from "../stabilizer-map";
 
 import { IntervalTracker, smoothstep01, withPosition } from "./raw-stage";
 
-import type { RawStage } from "./raw-stage";
 import type { RawSample } from "../../core/types";
+import type { RawStage } from "./raw-stage";
 
 /**
  * 끈 당김(lazy-brush, pull-string) 입력 단계. 포인터와 붓 사이에 길이 `radiusPx`의 끈이 있다고 보고,

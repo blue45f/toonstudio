@@ -12,11 +12,11 @@ import {
 } from "./viewport-scene-director";
 import { resolveViewportDuoShot } from "./viewport-stage";
 
+import type { CharacterEngine, CharacterRecipe, HandPropId, HandPropSide, HeadPropId, LabCommand, StagePropId } from "../../../contracts";
 import type { DuoShotState } from "./viewport-duo-shot-guide";
 import type { ViewportHandPropControlsProps } from "./viewport-hand-prop-controls";
 import type { MangaSfxStampPreset, ViewportMangaFxState } from "./viewport-manga-fx-overlay";
 import type { StripDirectorSession, ViewportSceneDirectorControlsProps, WebtoonSceneDirectorPresetId } from "./viewport-scene-director";
-import type { CharacterEngine, CharacterRecipe, HandPropId, HandPropSide, HeadPropId, LabCommand, StagePropId } from "../../../contracts";
 import type { Dispatch, SetStateAction } from "react";
 
 interface ViewportScenePropsOptions {

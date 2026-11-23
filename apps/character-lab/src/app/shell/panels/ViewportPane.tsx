@@ -38,13 +38,13 @@ import { failureText, useViewportSceneProps } from "./viewport-scene-props";
 import { ViewportStage, resolveViewportDuoShot } from "./viewport-stage";
 import { ViewportToolbar } from "./viewport-toolbar";
 
-import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
-import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
-import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
 import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
+import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
+import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
+import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 
 export interface ViewportPaneProps {

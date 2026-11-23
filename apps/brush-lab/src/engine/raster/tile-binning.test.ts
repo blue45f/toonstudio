@@ -14,8 +14,8 @@ import {
   tileRefs,
 } from "./tile-binning";
 
-import type { BinResult, TileBounds } from "./tile-binning";
 import type { DabInstance, DepositionModel } from "../core/types";
+import type { BinResult, TileBounds } from "./tile-binning";
 
 function dab(partial: Partial<DabInstance> = {}): DabInstance {
   return {

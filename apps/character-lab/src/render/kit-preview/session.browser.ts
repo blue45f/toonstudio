@@ -32,15 +32,15 @@ import { resolveTintColors } from "./tint";
 import { VIEW_SPECS, framingForView, resolveAnchorCamera } from "./views";
 import { makeWarning, sortWarnings } from "./warnings";
 
+import type { KitPlan, LabFailure, Vec3 } from "../../contracts";
 import type { BabylonCharacterEngine } from "../babylon-character-engine";
+import type { WorldBounds } from "../camera-framing";
 import type { KitPreviewQuality, KitPreviewShading, KitPreviewToonOverrides } from "./cli-args";
 import type { KitPlanFile, PreviewSourceKind } from "./kit-plan-adapter";
 import type { ResolvedPose } from "./poses";
 import type { PrepareResult } from "./prepare";
 import type { KitPreviewFileRef, KitPreviewLoadRequest, KitPreviewLoadResult, KitPreviewRenderRequest, KitPreviewRenderResult, KitPreviewRuntimeReport, KitPreviewSourceInfo } from "./protocol";
 import type { PreviewWarning } from "./warnings";
-import type { KitPlan, LabFailure, Vec3 } from "../../contracts";
-import type { WorldBounds } from "../camera-framing";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 

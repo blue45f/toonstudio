@@ -10,9 +10,9 @@ import { kitManifestV2Json } from "../../testing/kit-v2-fixtures";
 
 import { createKitPlanRegistry } from "./kit-plan-registry";
 
-import type { KitPlanRegistryDeps } from "./kit-plan-registry";
 import type { CharacterRecipe, LabFailure } from "../../contracts";
 import type { KitFetchPort } from "../../domains/authored/kit-load-flow";
+import type { KitPlanRegistryDeps } from "./kit-plan-registry";
 
 const MANIFEST_URL = `${KIT_ASSET_ROOT}/kit.json`;
 

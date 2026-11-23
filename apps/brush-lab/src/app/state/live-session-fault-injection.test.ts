@@ -14,11 +14,11 @@ import { mockEnvironment } from "../testing/mock-lane";
 
 import { LiveStrokeSession } from "./live-session";
 
-import type { LiveSessionOptions, LiveStrokeAbort, LiveStrokeResult } from "./live-session";
 import type { LabImage } from "../../engine/core/types";
 import type { BrushEngineLane } from "../../lanes/lane";
 import type { PreviewPoint } from "../../platform/canvas-present";
 import type { FaultInjectionLane, FaultOp } from "../testing/fault-injection-lane";
+import type { LiveSessionOptions, LiveStrokeAbort, LiveStrokeResult } from "./live-session";
 
 /**
  * `LiveStrokeSession` 비동기 수명주기·결함 주입(fault-injection) 검증 스위트.

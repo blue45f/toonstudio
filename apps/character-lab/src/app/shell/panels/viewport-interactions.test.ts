@@ -43,9 +43,9 @@ import {
   visibleHandles,
 } from "./viewport-interactions";
 
-import type { ShaperHistoryStack } from "./viewport-interactions";
 import type { HumanoidBoneName, HudSample, JointDragHandle, LabFailure, Pose, Quat, SkeletonData, Vec3 } from "../../../contracts";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
+import type { ShaperHistoryStack } from "./viewport-interactions";
 
 const SKELETON = createReferenceSkeleton();
 

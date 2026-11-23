@@ -14,9 +14,9 @@ import {
 import { OneEuroFilter } from "./one-euro";
 import { predictSamples } from "./predictor";
 
+import type { ModeledSample, PreviewSample, RawSample } from "../core/types";
 import type { DeviceProfile } from "./calibration";
 import type { OneEuroParams } from "./one-euro";
-import type { ModeledSample, PreviewSample, RawSample } from "../core/types";
 
 /**
  * 입력 파이프라인 설정. 프리셋은 `Partial<InputPipelineConfig>`로 일부만 덮어쓴다.

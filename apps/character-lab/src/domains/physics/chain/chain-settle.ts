@@ -6,9 +6,9 @@ import { SETTLE_DEFAULTS } from "../../../contracts";
 
 import { createChainScratch, stepChainsInto } from "./chain-solver";
 
+import type { ChainState, SettleReceipt } from "../../../contracts";
 import type { CompiledChains } from "./chain-model";
 import type { ChainScratch, ChainStepInput } from "./chain-solver";
-import type { ChainState, SettleReceipt } from "../../../contracts";
 
 export interface SettleOptions {
   readonly maxSteps?: number;

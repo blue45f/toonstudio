@@ -14,8 +14,6 @@ import { compositeTile } from "./composite";
 import { StrokeLayer } from "./stroke-layer";
 import { TILE_PIXELS, TILE_SIZE } from "./tile-binning";
 
-import type { RasterContext } from "./fine-raster";
-import type { RasterReceipt } from "./stroke-layer";
 import type { DabBatch } from "../core/dab-layout";
 import type { LabImage, RawSample, Rgba, TipKind } from "../core/types";
 import type { BrushProgram, BrushTipSpec } from "../presets/program-schema";
@@ -24,6 +22,8 @@ import type { TipMask, TipParams } from "../texture/tip-generators";
 import type { WetParams } from "../wet/params";
 import type { WetState } from "../wet/state";
 import type { WetStepReceipt } from "../wet/wet-reference";
+import type { RasterContext } from "./fine-raster";
+import type { RasterReceipt } from "./stroke-layer";
 
 /**
  * CPU 참조 표면. 문서(선형 premultiplied f32) + 획 레이어 + 습식 상태.

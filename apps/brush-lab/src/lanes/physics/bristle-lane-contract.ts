@@ -8,11 +8,11 @@ import { splitFrames } from "../../engine/raster/reference-renderer";
 import { lineStroke, parametricStroke } from "../../engine/testing/synthetic-strokes";
 import { drawLine, expectStrokeColorContract } from "../testing/stroke-color-contract";
 
-import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
-import type { BristleLaneOptions } from "./bristle-program-mapping";
 import type { LabImage, RawSample } from "../../engine/core/types";
 import type { Surface } from "../../engine/raster/reference-renderer";
 import type { BrushEngineLane } from "../lane";
+import type { BristleStrokeReceipt } from "./bristle-dab-synthesis";
+import type { BristleLaneOptions } from "./bristle-program-mapping";
 
 /**
  * 물리 붓털 레인(자체 PBD·Rapier) 공통 계약 시험. 두 레인이 같은 붓털 다발·dab 합성을 쓰므로 같은 계약을 지켜야 한다.

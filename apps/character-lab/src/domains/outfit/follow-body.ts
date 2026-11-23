@@ -8,8 +8,8 @@
  */
 import { BODY_REGIONS, bodyRegionIndex } from "../../contracts";
 
-import type { MeshBuffers } from "./geometry";
 import type { BodyRegion, BodySurface, MorphDelta } from "../../contracts";
+import type { MeshBuffers } from "./geometry";
 
 /** 의상 정점당 4개 (몸 정점, 가중치) */
 export interface BodyMapping {

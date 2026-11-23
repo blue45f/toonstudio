@@ -25,9 +25,9 @@ import { clickStudioToolThroughUi } from "./lib/studio-tool-interactions";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
-import type { StudioInAppRuntimeError } from "./lib/studio-inapp-sweep-harness.mjs";
 import type { StudioAutosavePayload } from "../apps/web/src/domains/creator/studio-autosave";
 import type { PageState } from "../apps/web/src/domains/creator/studio-page-state";
+import type { StudioInAppRuntimeError } from "./lib/studio-inapp-sweep-harness.mjs";
 import type { ChildProcess } from "node:child_process";
 import type { Browser, BrowserContext, Page, Request as BrowserRequest } from "playwright";
 

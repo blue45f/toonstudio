@@ -8,9 +8,6 @@ import { unavailableReport } from "../../lanes/lane";
 import { applyOverrides } from "./apply-overrides";
 import { findDescriptor } from "./lane-helpers";
 
-import type { BenchRunner, BuildReportInput, ReportReference } from "./bench-runner";
-import type { RunResult } from "./bench-types";
-import type { LabActions, LabResults, LabState, LabStore } from "./lab-store";
 import type { StrokeFixture } from "../../bench/fixtures/stroke-fixtures";
 import type { BrushCertificationReport } from "../../bench/report/report-schema";
 import type { LabImage } from "../../engine/core/types";
@@ -22,6 +19,9 @@ import type {
   LaneEnvironment,
   LaneId,
 } from "../../lanes/lane";
+import type { BenchRunner, BuildReportInput, ReportReference } from "./bench-runner";
+import type { RunResult } from "./bench-types";
+import type { LabActions, LabResults, LabState, LabStore } from "./lab-store";
 
 /**
  * A/B 비교 실행 컨트롤러. 뷰는 이 모듈의 함수만 호출하고 bench 러너·레인 생명주기는 여기서만 다룬다.

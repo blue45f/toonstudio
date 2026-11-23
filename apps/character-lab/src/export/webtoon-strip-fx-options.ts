@@ -1,7 +1,7 @@
 /** 컷별 다국어 식자·발화자·말풍선·효과음 옵션과 기본 배치 규칙. */
+import type { SfxStampId } from "../contracts";
 import type { WebtoonJaWritingMode, WebtoonManuscriptMoodId } from "./webtoon-strip-pacing-tategaki";
 import type { WebtoonStripScreentones } from "./webtoon-strip-screentone";
-import type { SfxStampId } from "../contracts";
 
 export const WEBTOON_DIALOGUE_LOCALES = ["ko", "en", "ja"] as const;
 export type WebtoonDialogueLocale = (typeof WEBTOON_DIALOGUE_LOCALES)[number];

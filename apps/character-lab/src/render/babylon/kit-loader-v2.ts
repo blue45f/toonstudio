@@ -13,7 +13,6 @@ import { KIT_ALLOWED_EXTENSIONS, KIT_FORBIDDEN_EXTENSIONS, KIT_V2_ALLOWED_EXTENS
 import { identityNode, readGlbInfo } from "./kit-glb-node-info";
 import { RigBindError } from "./mesh-binding";
 
-import type { RigBone } from "./character-rig";
 import type {
   AccessoryAnchor,
   ChannelKey,
@@ -27,6 +26,7 @@ import type {
   PartRole,
   PartScope,
 } from "../../contracts";
+import type { RigBone } from "./character-rig";
 import type { AssetContainer } from "@babylonjs/core/assetContainer.js";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";

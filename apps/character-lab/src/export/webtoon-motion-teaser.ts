@@ -39,6 +39,7 @@ import {
   renderTransparentSpeechBubbleFrameLayer,
 } from "./webtoon-strip-composer";
 
+import type { CapturedRaster, CharacterEngine, CharacterRecipe, LabFailure } from "../contracts";
 import type { ExportDeps, ExportOutcome, MotionTeaserReceiptMetrics } from "./export-session";
 import type { MotionTeaserAudioTrackPcm } from "./webtoon-motion-teaser-audio";
 import type { MotionTeaserFrameSample, MotionTeaserSchedule } from "./webtoon-motion-teaser-schedule";
@@ -49,7 +50,6 @@ import type {
   WebtoonStripMangaFxOptions,
   WebtoonStripSfxStamps,
 } from "./webtoon-strip-composer";
-import type { CapturedRaster, CharacterEngine, CharacterRecipe, LabFailure } from "../contracts";
 
 export {
   DEFAULT_MOTION_TEASER_FPS,

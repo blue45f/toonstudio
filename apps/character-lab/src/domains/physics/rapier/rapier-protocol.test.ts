@@ -6,8 +6,8 @@ import { chainAnchorFixture, headColliderFixture } from "../fixtures";
 
 import { createRapierProtocolHandler, rapierRequestSchema } from "./rapier-protocol";
 
-import type { SnapshotHashProvider } from "./rapier-protocol";
 import type { PhysicsStatus, SettleReceipt } from "../../../contracts";
+import type { SnapshotHashProvider } from "./rapier-protocol";
 
 function mockProvider(log: string[]): SnapshotHashProvider {
   return {

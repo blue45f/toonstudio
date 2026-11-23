@@ -3,8 +3,8 @@ import { z } from "zod";
 import { canonicalJson } from "../../engine/core/hash";
 import { LAB_SCHEMA_VERSION } from "../../engine/core/version";
 
-import type { StrokeFixture } from "./stroke-fixtures";
 import type { RawSample } from "../../engine/core/types";
+import type { StrokeFixture } from "./stroke-fixtures";
 
 /**
  * fixture·캡처 획 JSON 스키마(import/export). 엔진 타입 `RawSample`과 구조적으로 호환되며

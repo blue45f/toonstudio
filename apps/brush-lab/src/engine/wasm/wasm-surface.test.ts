@@ -11,10 +11,10 @@ import { loadEmbeddedKernel } from "./embedded";
 import { tipAtlasFloats } from "./kernel-abi";
 import { flattenTipAtlas, WasmSurface } from "./wasm-surface";
 
-import type { SumiKernel } from "./loader";
 import type { RawSample, TipKind } from "../core/types";
 import type { BrushProgram } from "../presets/program-schema";
 import type { TipMask } from "../texture/tip-generators";
+import type { SumiKernel } from "./loader";
 
 /**
  * WasmSurface(wasm 타일 래스터) ↔ CPU 참조 Surface 일치. 같은 StrokePipeline이 만든 같은 배치를 두 표면에 먹이고

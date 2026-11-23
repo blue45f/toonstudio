@@ -14,10 +14,10 @@ import {
   std,
 } from "./lab-math";
 
-import type { PathStation } from "./lab-math";
 import type { RawSample } from "../../engine/core/types";
 import type { LatencyRecord } from "../../engine/input/input-pipeline";
 import type { DabBatchReceipt } from "../../lanes/lane";
+import type { PathStation } from "./lab-math";
 
 /**
  * 필기감 지표(순수 함수, 필기감 설계 §3). 시간은 모두 인자로 받고 전역 시계를 쓰지 않는다.

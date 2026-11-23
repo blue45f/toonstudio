@@ -1,6 +1,5 @@
 import { createMockLane } from "./mock-lane";
 
-import type { MockLaneOptions } from "./mock-lane";
 import type { LabImage, RawSample } from "../../engine/core/types";
 import type { BrushProgram } from "../../engine/presets/program-schema";
 import type {
@@ -14,6 +13,7 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "../../lanes/lane";
+import type { MockLaneOptions } from "./mock-lane";
 
 /**
  * 비동기 수명주기·결함 주입(fault-injection) 레인 픽스처.

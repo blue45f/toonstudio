@@ -2,8 +2,8 @@
 import { gradeCharacterPixelByMood } from "./webtoon-strip-composer";
 import { WEBTOON_MANUSCRIPT_MOODS } from "./webtoon-strip-pacing-tategaki";
 
-import type { WebtoonManuscriptMoodId } from "./webtoon-strip-composer";
 import type { CapturedRaster } from "../contracts";
+import type { WebtoonManuscriptMoodId } from "./webtoon-strip-composer";
 
 /** 대문자 영문·숫자·기호 3×5 비트맵 폰트 (`VOL.01`, `CONTENTS`, `CH.01`, `P.03`, `ISBN` 표기용) */
 const ASCII_BITMAP_3X5: Readonly<Record<string, readonly [number, number, number, number, number]>> = Object.freeze({

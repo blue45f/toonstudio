@@ -14,8 +14,8 @@ import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportFileName } from "./export-session";
 import { PNG_MIME, encodePng } from "./png-encoder";
 
-import type { ExportDeps, ExportOutcome } from "./export-session";
 import type { CameraFraming, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
+import type { ExportDeps, ExportOutcome } from "./export-session";
 
 export interface QuadSheetPanelSpec {
   readonly id: "front-full" | "quarter-full" | "bust-cut" | "face-closeup";

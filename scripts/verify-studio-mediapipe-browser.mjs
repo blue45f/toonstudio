@@ -38,6 +38,26 @@ export function verifyMediaPipeNetworkEvidence({ requests, cdpRequests, violatio
   return { requests, cdpRequests, violations };
 }
 
+export function isForbiddenMediaPipeConnectSource(source) {
+  const token = source.trim().toLowerCase();
+  if (!token) return false;
+  if (token === "*" || token === "https:" || token === "http:" || token === "https://*" || token === "http://*") {
+    return true;
+  }
+  const host = token
+    .replace(/^(?:https?|wss?):\/\//u, "")
+    .replace(/[/?#].*$/u, "")
+    .replace(/:(?:\d+|\*)$/u, "");
+  return (
+    host === "odml.pa.googleapis.com"
+    || host === "googleapis.com"
+    || host === "*.googleapis.com"
+    || host === "*.pa.googleapis.com"
+    || host.endsWith(".odml.pa.googleapis.com")
+    || host.endsWith(".pa.googleapis.com")
+  );
+}
+
 export async function verifyStudioMediaPipeBrowser() {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
   const evidence = resolve(root, process.env.STUDIO_MEDIAPIPE_EVIDENCE_DIR ?? "artifacts/studio-mediapipe-browser");
@@ -50,9 +70,8 @@ export async function verifyStudioMediaPipeBrowser() {
   for (const [application, policy] of [["Studio", studioPolicy], ["Character Lab", characterPolicy]]) {
     const connect = policy.split(";").map((part) => part.trim()).find((part) => part.startsWith("connect-src "));
     assert(connect, application + " connect-src 정책이 없습니다.");
-    assert(!connect.split(/\s+/u).some((source) => source === "*" || source === "https:"
-      || source.includes("odml.pa.googleapis.com") || source.includes("*.googleapis.com")),
-    application + " 사용량 전송 origin이 허용되어 있습니다.");
+    assert(!connect.split(/\s+/u).some(isForbiddenMediaPipeConnectSource),
+      application + " 사용량 전송 origin이 허용되어 있습니다.");
   }
   const report = {
     scope: "real production factories, selected SDK/WASM, actual models, inference, disposal and CSP egress",

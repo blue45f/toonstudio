@@ -6,8 +6,8 @@ import { toEmbedding } from "./similarity";
 import { toContractVisionStatus, resolveHandSide } from "./vision-ports";
 import { createVisionSession } from "./vision-session";
 
-import type { HandDetectorPort, LoadedModel, PoseDetectorPort, VisionLoaders, VisionModelKey, VisionModelStatus } from "./vision-ports";
 import type { EmbedderPort } from "../../contracts";
+import type { HandDetectorPort, LoadedModel, PoseDetectorPort, VisionLoaders, VisionModelKey, VisionModelStatus } from "./vision-ports";
 
 function loaded<Port>(key: VisionModelKey, port: Port, disposed: string[]): LoadedModel<Port> {
   return { key, port, observedSha256: "ab".repeat(32), pinned: key === "imageEmbedder", bytes: 3, license: "Apache-2.0", delegate: "CPU", dispose: () => disposed.push(key) };

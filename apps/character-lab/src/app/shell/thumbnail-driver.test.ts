@@ -8,9 +8,9 @@ import { vocabularyCatalogEntries } from "../../testing/recipe-fixtures";
 import { createThumbnailDriver, fallbackThumbnailCacheKey, presetRecipe } from "./thumbnail-driver";
 import { createUiStateStore } from "./ui-state";
 
+import type { PresetId } from "../../contracts";
 import type { ApplyLoopSnapshot } from "./apply-loop";
 import type { ThumbnailRequestOptions, ThumbnailScheduler } from "./thumbnail-scheduler";
-import type { PresetId } from "../../contracts";
 
 function schedulerSpy(): ThumbnailScheduler & { readonly requests: Array<[PresetId, ThumbnailRequestOptions | undefined]>; visible: readonly PresetId[]; cleared: number } {
   const requests: Array<[PresetId, ThumbnailRequestOptions | undefined]> = [];

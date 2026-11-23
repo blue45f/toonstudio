@@ -13,11 +13,11 @@ import { commitCapsuleSet, createCapsuleSet, resetCapsuleHistory, writeCapsule }
 import { createPhysicsReceipt, stateHashSync } from "./core/receipt";
 import { normalizeQuat, rotateVec3 } from "./core/vec";
 
+import type { CapsuleCollider, ChainAnchor, ChainState, LabFailure, PhysicsReceipt, Quat, SettleReceipt, Vec3, WindInput } from "../../contracts";
 import type { ChainBoneRotation } from "./chain/back-solve";
 import type { CompiledChains } from "./chain/chain-model";
 import type { ChainScratch, ChainStepStats } from "./chain/chain-solver";
 import type { MutableCapsuleSet } from "./collision/capsule";
-import type { CapsuleCollider, ChainAnchor, ChainState, LabFailure, PhysicsReceipt, Quat, SettleReceipt, Vec3, WindInput } from "../../contracts";
 
 export interface PbdChainSolverOptions {
   /** 서브스텝 dt(초). 기본 SETTLE_DEFAULTS.dtSeconds = 1/120 */

@@ -14,8 +14,6 @@ import { buildNearestMapping, extractOffsetShell, inheritSkinWeights, propagateB
 import { MeshAccumulator, appendCardStrip, appendContouredCardStrip, appendContouredSole, appendSphereShell, appendTube, arcPoints, blendJoints, circlePoints, singleJoint } from "./geometry";
 import { OUTFIT_AUX_BONE_INDEX_BASE } from "./hair-builder";
 
-import type { BodyMapping } from "./follow-body";
-import type { MeshBuffers, SkinWeight4 } from "./geometry";
 import type {
   AccessoryStyleId,
   BodyRegion,
@@ -36,6 +34,8 @@ import type {
   TopStyleId,
   Vec3,
 } from "../../contracts";
+import type { BodyMapping } from "./follow-body";
+import type { MeshBuffers, SkinWeight4 } from "./geometry";
 
 export interface GarmentBuild {
   readonly parts: readonly MeshPartData[];

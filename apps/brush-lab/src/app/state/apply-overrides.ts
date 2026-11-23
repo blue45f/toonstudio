@@ -2,9 +2,9 @@ import { stabilizerPctToOneEuro } from "../../engine/input/stabilizer-map";
 import { normalizeProgram } from "../../engine/presets/program-schema";
 import { DEFAULT_WET_PARAMS } from "../../engine/wet/params";
 
-import type { LabOverrides } from "./lab-store";
 import type { OneEuroParams } from "../../engine/input/one-euro";
 import type { BrushDepositionSpec, BrushProgram, BrushTipSpec } from "../../engine/presets/program-schema";
+import type { LabOverrides } from "./lab-store";
 
 /**
  * 파라미터 패널 오버라이드를 프리셋에 적용해 새 `BrushProgram`을 만든다.

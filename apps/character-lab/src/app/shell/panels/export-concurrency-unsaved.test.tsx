@@ -21,8 +21,8 @@ import { hasUnsavedCharacterWork } from "../unsaved-work";
 
 import { ExportPanel } from "./ExportPanel";
 
-import type { ExportPanelDeps } from "./ExportPanel";
 import type { AuthoredPackagePlan, EngineStatus } from "../../../contracts";
+import type { ExportPanelDeps } from "./ExportPanel";
 
 afterEach(cleanup);
 

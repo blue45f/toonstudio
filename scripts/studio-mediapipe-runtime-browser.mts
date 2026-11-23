@@ -1,10 +1,5 @@
 /** 앱의 실제 CSP에서 원래 SDK·모델·추론을 실행한다. 모델과 추론을 모의 구현으로 바꾸지 않는다. */
 import { createMediaPipeLoaders } from "../apps/character-lab/src/domains/vision/mediapipe-loader.browser";
-import { createStudioLocalForegroundConfidenceProvider } from "../apps/web/src/domains/creator/studio-bg-remove";
-import {
-  resolveStudioMediaPipeVisionWasmFileset,
-  type StudioMediaPipeVisionWasmVariant,
-} from "../apps/web/src/domains/creator/studio-mediapipe-vision-assets";
 import {
   disposeStudioMannequinHandLandmarker,
   initStudioMannequinHandLandmarker,
@@ -13,6 +8,11 @@ import {
   disposeStudioMannequinPoseLandmarker,
   initStudioMannequinPoseLandmarker,
 } from "../apps/web/src/domains/creator/scene-3d/studio-mannequin-webcam-tracking";
+import { createStudioLocalForegroundConfidenceProvider } from "../apps/web/src/domains/creator/studio-bg-remove";
+import {
+  resolveStudioMediaPipeVisionWasmFileset,
+  type StudioMediaPipeVisionWasmVariant,
+} from "../apps/web/src/domains/creator/studio-mediapipe-vision-assets";
 import { analyzeStudioVrmAvatarReferenceImage } from "../apps/web/src/domains/creator/vrm/studio-vrm-avatar-reference-inference";
 import {
   admitStudioVrmAvatarReferenceCatalogueEnvelope,

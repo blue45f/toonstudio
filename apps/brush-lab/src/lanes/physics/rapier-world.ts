@@ -1,7 +1,7 @@
 import { BODY_STATE_STRIDE, queryCircleFromState } from "../../engine/physics/world2d/types";
 
-import type { RapierModule } from "./rapier-loader";
 import type { CircleBodySpec, PhysicsWorld2D, SpringSpec, WorldTraits } from "../../engine/physics/world2d/types";
+import type { RapierModule } from "./rapier-loader";
 import type { ImpulseJoint, RigidBody, World } from "@dimforge/rapier2d-compat";
 
 /**

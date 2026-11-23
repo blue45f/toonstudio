@@ -3,6 +3,7 @@ import { projectDigest } from "../ir/project-state";
 
 import { addArtifactWithInitialRevision, createProjectGraphV3 } from "./project-graph";
 
+import type { ProjectStateIR } from "../ir/project-state";
 import type { Artifact } from "./artifact";
 import type {
   ArtifactId,
@@ -15,7 +16,6 @@ import type {
 } from "./ids";
 import type { ProjectGraphV3 } from "./project-graph";
 import type { RevisionManifest } from "./revision";
-import type { ProjectStateIR } from "../ir/project-state";
 
 export interface LegacyProjectStateShadowInput {
   readonly state: ProjectStateIR;

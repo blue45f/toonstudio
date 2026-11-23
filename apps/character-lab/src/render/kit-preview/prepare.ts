@@ -14,13 +14,13 @@ import { KIT_PRIMITIVE_SPLITS, buildBoneMap, compareSkeletonToKit, resolveMeshRo
 import { decideTint, isNearWhite } from "./tint";
 import { makeWarning, sortWarnings } from "./warnings";
 
+import type { HumanoidBoneName, PartRole, RecipeColorKey, RecipeColors } from "../../contracts";
 import type { GlbSummary } from "./glb-inspect";
 import type { JsonObject } from "./glb-io";
 import type { MergeReport } from "./glb-merge";
 import type { KitSkeletonComparison, ResolvedRole, RoleSource, TintMode } from "./kit-roles";
 import type { Linear3 } from "./tint";
 import type { PreviewWarning } from "./warnings";
-import type { HumanoidBoneName, PartRole, RecipeColorKey, RecipeColors } from "../../contracts";
 
 export interface PrepareFile {
   readonly label: string;

@@ -1,8 +1,8 @@
 import { expect } from "vitest";
 
-import type { Actor, CanvasHarness } from "./studio-six-page-test-support";
 import type { StudioReviewPreviewSubject } from "../../../apps/api/src/modules/studio-project-graph/studio-review-preview";
 import type { StudioPublishPackageManifest } from "../../../apps/web/src/domains/creator/studio-publish-package";
+import type { Actor, CanvasHarness } from "./studio-six-page-test-support";
 import type { Browser, Page } from "playwright";
 
 export interface LiveProof { synced: boolean; updateAcks: number; rejected: number }

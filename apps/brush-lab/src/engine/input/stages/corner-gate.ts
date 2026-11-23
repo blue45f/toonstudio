@@ -6,8 +6,8 @@ import {
   vertexEmitTimeMs,
 } from "../corner-preserve";
 
-import type { RawStage } from "./raw-stage";
 import type { RawSample } from "../../core/types";
+import type { RawStage } from "./raw-stage";
 
 /**
  * 코너 게이트(메타 단계): 지연형 단계(끈 당김·물리 펜 …)를 감싸 모서리를 살린다.

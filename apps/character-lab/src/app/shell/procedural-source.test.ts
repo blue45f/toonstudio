@@ -5,8 +5,8 @@ import { minimalHumanoidModelFixture } from "../../testing/recipe-fixtures";
 
 import { PROCEDURAL_BUILDER_MISSING, PROCEDURAL_SOURCE_INVALID, assertHumanoidModel, createProceduralSourceBuilder } from "./procedural-source";
 
-import type { HumanoidBuildOptions } from "./procedural-source";
 import type { HumanoidModelData, OutfitBuilderPort } from "../../contracts";
+import type { HumanoidBuildOptions } from "./procedural-source";
 
 const outfit: OutfitBuilderPort = {
   buildHair: () => EMPTY_OUTFIT_RESULT,

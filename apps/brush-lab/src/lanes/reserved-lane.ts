@@ -2,6 +2,8 @@ import { InvalidStateError, LaneUnavailableError } from "../engine/core/errors";
 
 import { emptyLaneStats, noStrokeAbortReceipt, unavailableReport } from "./lane";
 
+import type { LabImage, RawSample } from "../engine/core/types";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -16,8 +18,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { LabImage, RawSample } from "../engine/core/types";
-import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
  * 예약(reserved) 레인 스텁. 구현 파일이 아직 없는 레인 ID가 레지스트리에서 빠지지 않게 하고

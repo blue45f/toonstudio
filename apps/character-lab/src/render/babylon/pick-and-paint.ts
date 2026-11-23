@@ -18,9 +18,9 @@ import { readRigMeshMetadata } from "./mesh-binding";
 import { pickMeshes } from "./skinned-pick";
 
 
+import type { CharacterPickOptions, PaintLayer, PartRole, PickHit } from "../../contracts";
 import type { CharacterRig } from "./character-rig";
 import type { MeshPickHit } from "./skinned-pick";
-import type { CharacterPickOptions, PaintLayer, PartRole, PickHit } from "../../contracts";
 import type { Camera } from "@babylonjs/core/Cameras/camera.js";
 import type { Ray } from "@babylonjs/core/Culling/ray.js";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh.js";

@@ -6,6 +6,9 @@ import { paperFor } from "../engine/raster/reference-renderer";
 
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, strokeEmitterOptions, supportedReport, unavailableReport } from "./lane";
 
+import type { Clock, DabInstance, LabImage, RawSample } from "../engine/core/types";
+import type { LatencyRecord } from "../engine/input/input-pipeline";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -21,9 +24,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { Clock, DabInstance, LabImage, RawSample } from "../engine/core/types";
-import type { LatencyRecord } from "../engine/input/input-pipeline";
-import type { BrushProgram } from "../engine/presets/program-schema";
 
 /**
  * Canvas2D 기준 레인(비교용, 사용자가 명시 선택). 같은 StrokePipeline의 dab를 받아 타원 스탬프

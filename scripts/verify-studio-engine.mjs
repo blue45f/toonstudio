@@ -169,6 +169,7 @@ const test = spawnSync(
     "packages/studio-engine-registry",
     "packages/studio-command-registry",
     "packages/studio-engine-skia",
+    "packages/studio-engine-thorvg/src/runtime.test.ts",
     "packages/studio-engine-vello",
     "packages/studio-brush-platform",
     "packages/studio-format-gateway",

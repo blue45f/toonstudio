@@ -2,8 +2,8 @@ import { DAB_FLOATS } from "../core/dab-layout";
 
 import { SK_BIN_STATUS, SK_PARAM, SK_PARAM_COUNT, SK_STROKE_TILE_FLOATS, SK_WET_TILE_FLOATS } from "./kernel-abi";
 
-import type { SumiKernel } from "./loader";
 import type { BinResult } from "../raster/tile-binning";
+import type { SumiKernel } from "./loader";
 
 /**
  * wasm 커널 호출 세션. 호스트 쪽 TS 배열을 커널 선형 메모리 블록에 올리고 포인터를 관리한다.

@@ -8,8 +8,8 @@ import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-
 
 import { PhysicsPanel, describePhysicsStatus } from "./PhysicsPanel";
 
-import type { FrameScheduler } from "./PhysicsPanel";
 import type { LabCommand, PhysicsStatus } from "../../../contracts";
+import type { FrameScheduler } from "./PhysicsPanel";
 
 afterEach(cleanup);
 

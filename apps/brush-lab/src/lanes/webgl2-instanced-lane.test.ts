@@ -9,8 +9,8 @@ import { createMockWebgl2, createMockWebgl2Canvas } from "../engine/webgl2/testi
 import { expectDabBufferColor } from "./testing/stroke-color-contract";
 import { createWebgl2InstancedLane, WEBGL2_INSTANCED_LANE } from "./webgl2-instanced-lane";
 
-import type { LaneEnvironment } from "./lane";
 import type { MockWebgl2 } from "../engine/webgl2/testing/mock-webgl2";
+import type { LaneEnvironment } from "./lane";
 
 function envWith(mock: MockWebgl2 | null): LaneEnvironment {
   let t = 0;

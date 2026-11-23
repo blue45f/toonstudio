@@ -7,8 +7,8 @@ import { ProductionChangeEditor } from "./ProductionChangeEditor";
 import { useProductionChanges } from "./useProductionChanges";
 import "./production-change.css";
 
-import type { ChangeFilters, ChangeView } from "./production-change-list";
 import type { AdminIdentity } from "../../../platform/http/admin-identity";
+import type { ChangeFilters, ChangeView } from "./production-change-list";
 import type { RequestData, RequestRecord } from "@toonstudio/contracts/admin-production-change";
 
 const views: readonly [ChangeView, string][] = [["all", "전체 요청"], ["approval", "승인 대기"], ["conflict", "Conflict Center"], ["verification", "사후 검증"], ["guide", "기록 안내"]];

@@ -7,8 +7,8 @@ import { KIT_BASE_IDS, KIT_V2_SCHEMA_ID, failVisible, isPresetId, presetSlot } f
 
 import { compareKitCapabilities, deriveKitCapabilities } from "./kit-capability";
 
-import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
 import type { AccessoryInstance, KitBaseId, KitManifest, KitPartSlot, KitPlan, KitV2ArchetypeId, LabFailure, PresetId, SlotCapabilityMap, SlotKind } from "../../contracts";
+import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
 
 /** 계획기가 받는 manifest(v1 또는 v2 / 정규화 5아키타입 v2). `parseAnyKitManifest`·키트 로드 흐름이 만든 값이다. */
 export type AnyKitManifest = KitManifest | NormalizedKitManifestV2;

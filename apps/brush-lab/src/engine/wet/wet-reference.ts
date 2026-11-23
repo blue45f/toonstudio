@@ -9,11 +9,11 @@ import { WET_CH, WET_EXT_CH, wetTotals } from "./state";
 import { retireDriedTiles } from "./step-dry";
 import { stepWaterMedia } from "./step-water";
 
-import type { WetParams } from "./params";
-import type { WetState } from "./state";
 import type { DabBatch } from "../core/dab-layout";
 import type { BinResult } from "../raster/tile-binning";
 import type { PaperField, PaperSpec } from "../texture/paper-grain";
+import type { WetParams } from "./params";
+import type { WetState } from "./state";
 
 /**
  * 습식 CPU 참조 커널. GPU 습식 패스(수채 `wet_snapshot`→`wet_edge_delta`→`wet_step_water`→`wet_expand`→`wet_commit`, 유화 `oil_*`)는 같은 풀 레이아웃(slot·12ch + 확장 풀)을 읽고 쓰며 이 구현과 패리티를 검증한다.

@@ -19,10 +19,10 @@ import { buildKitPlan, buildKitPlanDetailed } from "./kit-plan";
 import { isKitPlanV2 } from "./kit-plan-v2-types";
 import { baseOf, finalizeKitV2, materialsOf, richKitV2Json, variantOf } from "./kit-v2-test-fixture";
 
+import type { KitManifestV2, KitPlan, LabFailure } from "../../contracts";
 import type { KitPlanSource, KitPlanWardrobe } from "./kit-plan";
 import type { KitPlanV2 } from "./kit-plan-v2-types";
 import type { Json } from "./kit-v2-test-fixture";
-import type { KitManifestV2, KitPlan, LabFailure } from "../../contracts";
 
 const FEMALE: KitPlanSource = { kitId: KIT_DEFAULT_ID, kitVersion: 1, baseId: "female" };
 const MALE: KitPlanSource = { ...FEMALE, baseId: "male" };

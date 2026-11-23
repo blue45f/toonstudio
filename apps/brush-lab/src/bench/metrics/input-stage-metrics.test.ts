@@ -8,8 +8,8 @@ import { buildFixture } from "../fixtures/stroke-fixtures";
 
 import { measureStageCase } from "./input-stage-metrics";
 
-import type { InputStageCase, InputStageMeasurement } from "./input-stage-metrics";
 import type { FixtureId } from "../fixtures/stroke-fixtures";
+import type { InputStageCase, InputStageMeasurement } from "./input-stage-metrics";
 
 /**
  * 입력 단계 비교 측정(SP-C 표 재현)을 임계 테스트로 굳힌다. 값은 Node 22 단일 스레드 직접 계산이며 결정적이다

@@ -8,12 +8,12 @@ import { ViewportMangaFxControls, clampMangaFxIntensity } from "./viewport-manga
 import { ViewportPresetSelect } from "./viewport-preset-select";
 import { ViewportSceneDirectorControls } from "./viewport-scene-director";
 
+import type { CameraFraming, DuoPartnerExpressionPreset, DuoPartnerStance, HandPropId } from "../../../contracts";
 import type { ShaperGizmoMode } from "./shaper-control-points";
 import type { DuoShotState } from "./viewport-duo-shot-guide";
 import type { ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
 import type { MangaSfxStampPreset, ViewportMangaFxState } from "./viewport-manga-fx-overlay";
 import type { WebtoonSceneDirectorPresetId } from "./viewport-scene-director";
-import type { CameraFraming, DuoPartnerExpressionPreset, DuoPartnerStance, HandPropId } from "../../../contracts";
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 
 interface StateControl<T> {

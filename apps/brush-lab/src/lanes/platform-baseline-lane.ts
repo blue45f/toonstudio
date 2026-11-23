@@ -7,6 +7,8 @@ import { SUMI_ENGINE_VERSION } from "../engine/core/version";
 
 import { abortReceipt, emptyLaneStats, noStrokeAbortReceipt, resolveStrokeColor, supportedReport } from "./lane";
 
+import type { Clock, LabImage, RawSample, Rgba } from "../engine/core/types";
+import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushEngineLane,
   DabBatchReceipt,
@@ -21,8 +23,6 @@ import type {
   StrokeOptions,
   StrokeReceipt,
 } from "./lane";
-import type { Clock, LabImage, RawSample, Rgba } from "../engine/core/types";
-import type { BrushProgram } from "../engine/presets/program-schema";
 import type {
   BrushProgramIR,
   DeviceCalibrationIR,

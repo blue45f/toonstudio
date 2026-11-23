@@ -3,6 +3,7 @@ import { resolveLocalizedBubbleAspect, resolveSpeakerBubblePlacement } from "./w
 import { splitJapaneseTategakiColumns, tryRasterizeJapaneseTategakiCanvas2d } from "./webtoon-strip-pacing-tategaki";
 import { blendPixelRgba, drawClippedLineRgba } from "./webtoon-strip-raster";
 
+import type { CapturedRaster } from "../contracts";
 import type {
   SpeakerBubblePlacement,
   WebtoonDialogueLocale,
@@ -11,7 +12,6 @@ import type {
   WebtoonStripSpeakerTarget,
 } from "./webtoon-strip-fx-options";
 import type { WebtoonJaWritingMode } from "./webtoon-strip-pacing-tategaki";
-import type { CapturedRaster } from "../contracts";
 
 const JA_KINSOKU_INLINE = new Set(["。", "、", "！", "？", "…", "ー", "っ", "ゃ", "ゅ", "ょ"]);
 

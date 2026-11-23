@@ -23,6 +23,7 @@ import {
   tokenizeShaperPresetLines,
 } from "./shaper-preset";
 
+import type { CharacterRecipe, LabFailure, PaintLayer, PaintPartSublayerState, ParseRecipeResult } from "../contracts";
 import type {
   Shaper3mfMeshObject,
   Shaper3mfModelDocument,
@@ -37,7 +38,6 @@ import type {
   ShaperPresetTransformRecord,
   ShaperServerAssetDescriptor,
 } from "./shaper-preset";
-import type { CharacterRecipe, LabFailure, PaintLayer, PaintPartSublayerState, ParseRecipeResult } from "../contracts";
 
 export const RECIPE_FILE_SUFFIX = ".character.json";
 export const RECIPE_MIME = "application/json";

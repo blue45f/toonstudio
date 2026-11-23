@@ -12,10 +12,10 @@ import {
 } from "./lab-math";
 import { deltaEStatsImages } from "./render-metrics";
 
-import type { Spectrum2D } from "./lab-math";
 import type { LabImage } from "../../engine/core/types";
 import type { PaperField } from "../../engine/texture/paper-grain";
 import type { SamplingFilter } from "../../engine/texture/sampling";
+import type { Spectrum2D } from "./lab-math";
 
 /**
  * 질감 지표(순수 함수). 스펙트럼 지표는 잉크 무게중심에 둔 N×N 창(기본 64)에서

@@ -2,8 +2,8 @@ import { canonicalJson } from "../../engine/core/hash";
 
 import { parseReport } from "./report-schema";
 
-import type { BrushCertificationReport } from "./report-schema";
 import type { LabImage } from "../../engine/core/types";
+import type { BrushCertificationReport } from "./report-schema";
 
 /**
  * 인증 리포트 직렬화·파일명·PNG 인코더(의존성 0).

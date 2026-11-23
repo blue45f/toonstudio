@@ -11,12 +11,12 @@ import {
 } from "./studio-p5-brush-real-runtime-fixture";
 
 import type {
-  StudioP5BrushContextAffinityStressResult,
-} from "./studio-p5-brush-real-runtime-protocol";
-import type {
   StudioProceduralArtisticBrushAdapterInput,
   StudioProceduralArtisticOffscreenWebGl2Surface,
 } from "../apps/web/src/domains/creator/studio-procedural-artistic-brush-provider";
+import type {
+  StudioP5BrushContextAffinityStressResult,
+} from "./studio-p5-brush-real-runtime-protocol";
 
 const CONTEXT_ATTRIBUTES = Object.freeze({
   alpha: true,

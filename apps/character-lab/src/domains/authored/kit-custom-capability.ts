@@ -32,9 +32,9 @@ import { KIT_BASE_LABELS_KO, scopeLabelKo, shapeDisplayKo } from "./custom-label
 import { isKitManifestV2, listFew } from "./kit-plan-common";
 import { allHavePatternUv, channelsOfMeshes, meshChannels, rigidMeshNames, sortChannels } from "./kit-v2-mesh-info";
 
+import type { AccessoryAnchor, AccessoryInstanceId, ChannelKey, CustomCapabilities, KitBaseId, KitManifestV2, KitV2Material, PartScope, PresetId, SlotCapability, WardrobeLayer } from "../../contracts";
 import type { AnyKitManifest, KitPlanWardrobe } from "./kit-plan-common";
 import type { KitPlanBase, KitPlanFile, KitPlanShape, KitPlanSkip } from "./kit-plan-v2-types";
-import type { AccessoryAnchor, AccessoryInstanceId, ChannelKey, CustomCapabilities, KitBaseId, KitManifestV2, KitV2Material, PartScope, PresetId, SlotCapability, WardrobeLayer } from "../../contracts";
 
 // ---------------------------------------------------------------- 공통 표기
 

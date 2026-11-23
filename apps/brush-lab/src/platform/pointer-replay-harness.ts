@@ -6,8 +6,8 @@ import {
   STALE_TAKEOVER_MS,
 } from "./pointer-capture";
 
-import type { PointerCaptureOptions } from "./pointer-capture";
 import type { PointerKind, RawSample } from "../engine/core/types";
+import type { PointerCaptureOptions } from "./pointer-capture";
 
 /**
  * 결정적 시드 기반 포인터 이벤트 스트림 생성기 및 리플레이 하네스.

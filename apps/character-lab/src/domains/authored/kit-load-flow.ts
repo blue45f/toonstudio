@@ -27,10 +27,10 @@ import { kitManifestV1View } from "./kit-v1-projection";
 import { adaptWebtoonKitV2ToKitManifestV2, isWebtoonKitV2Json } from "./kit-v2-webtoon-adapter";
 import { joinPackageUrl } from "./package-plan";
 
+import type { KitManifest, KitPlan, LabFailure } from "../../contracts";
 import type { AnyKitManifest, KitPlanOptions, KitPlanSlots, KitPlanSource } from "./kit-plan";
 import type { NormalizedKitManifestV2 } from "./kit-v2-webtoon-adapter";
 import type { PackageFetchPort } from "./package-load-flow";
-import type { KitManifest, KitPlan, LabFailure } from "../../contracts";
 
 /** 제작 패키지 로더와 같은 fetch 포트(`fetchJson`·`fetchBytes`)를 쓴다. 테스트는 가짜 포트를 넣는다. */
 export type KitFetchPort = PackageFetchPort;

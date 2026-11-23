@@ -39,10 +39,10 @@ import { classifyMeshRoles } from "./mesh-role-mapping";
 import { packagePartShapes } from "./package-part-shapes";
 import { classifyShapeKeys, faceParamPairCoverage, facsUnitsInMap, resolveShapeKeyAlias } from "./shape-key-mapping";
 
+import type { CharacterPackageManifest, CustomCapabilities, FaceParamKey, FacsUnit, PartRole, PresetId, SlotCapability, SlotCapabilityMap, SlotKind } from "../../contracts";
 import type { BoneClassification } from "./bone-name-mapping";
 import type { MeshClassification } from "./mesh-role-mapping";
 import type { ShapeKeyClassification } from "./shape-key-mapping";
-import type { CharacterPackageManifest, CustomCapabilities, FaceParamKey, FacsUnit, PartRole, PresetId, SlotCapability, SlotCapabilityMap, SlotKind } from "../../contracts";
 
 type IdentitySlot = "face-shape" | "eyes" | "nose" | "mouth" | "ears";
 

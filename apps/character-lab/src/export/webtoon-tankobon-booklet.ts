@@ -23,6 +23,7 @@ import {
 } from "./webtoon-tankobon-booklet-raster";
 import { clampWebtoonTankobonPageLayout, formatTankobonFolioLabel } from "./webtoon-tankobon-page";
 
+import type { CameraFramingMode, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
 import type { ExportDeps, ExportOutcome } from "./export-session";
 import type { EpisodeCutsheetBeat, TankobonReadingOrder } from "./webtoon-episode-cutsheet";
 import type {
@@ -31,7 +32,6 @@ import type {
   WebtoonScreentoneId,
 } from "./webtoon-strip-composer";
 import type { WebtoonTankobonPageLayout } from "./webtoon-tankobon-page";
-import type { CameraFramingMode, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
 
 export interface TankobonChapterEntry {
   readonly chapterNumber: number;

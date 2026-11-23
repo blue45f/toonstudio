@@ -6,8 +6,8 @@ import { projectParticleOutOfCapsules } from "../collision/capsule";
 import { windGustFactor } from "../core/noise";
 import { f32Length3 } from "../core/vec";
 
-import type { ClothState, CompiledCloth } from "./cloth-model";
 import type { CapsuleSet, Vec3, WindInput } from "../../../contracts";
+import type { ClothState, CompiledCloth } from "./cloth-model";
 
 const F = Math.fround;
 

@@ -7,9 +7,9 @@ import { failVisible } from "../../contracts";
 import { selectHairLod } from "./mesh-role-mapping";
 import { judgeCapabilities, mappingsFromManifest } from "./package-capability";
 
+import type { AuthoredPackagePlan, CharacterPackageManifest, LabFailure } from "../../contracts";
 import type { HairLodSelection } from "./mesh-role-mapping";
 import type { CapabilityJudgement } from "./package-capability";
-import type { AuthoredPackagePlan, CharacterPackageManifest, LabFailure } from "../../contracts";
 
 export interface VerifiedGlb {
   readonly glbSha256: string;

@@ -11,8 +11,8 @@ import { clamp, degToRad } from "../shared/math";
 
 import { DEFAULT_VERTICAL_FOV, FALLBACK_BOUNDS, resolveFraming } from "./camera-framing";
 
-import type { WorldBounds } from "./camera-framing";
 import type { CameraFraming, Vec3 } from "../contracts";
+import type { WorldBounds } from "./camera-framing";
 
 export interface OrbitLimits {
   /** 카메라–타깃 최소 거리(m). 프레이밍 대상(얼굴이면 머리) 안으로 들어가지 않는다. */

@@ -24,7 +24,6 @@ import {
 import { rigMeshMetadata } from "./mesh-binding";
 import { loadCharacterAssetContainer } from "./package-loader";
 
-import type { CharacterRig, RigPart } from "./character-rig";
 import type {
   DuoPartnerAttachment,
   DuoPartnerExpressionPreset,
@@ -37,6 +36,7 @@ import type {
   SfxStampAttachment,
   StagePropAttachment,
 } from "../../contracts";
+import type { CharacterRig, RigPart } from "./character-rig";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 

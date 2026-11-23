@@ -4,8 +4,8 @@ import { sha256Schema, studioEntityIdSchema } from "../graph/ids";
 
 import { colorIRSchema } from "./color";
 
-import type { ColorIR } from "./color";
 import type { Sha256 } from "../graph/ids";
+import type { ColorIR } from "./color";
 
 export interface VectorPointV3 {
   readonly x: number;

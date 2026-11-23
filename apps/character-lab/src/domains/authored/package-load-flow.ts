@@ -9,11 +9,11 @@ import { parseAnyCharacterManifest } from "./authored-character-manifest";
 import { parseCharacterPackageIndex } from "./package-index";
 import { buildPackagePlanDetailed, joinPackageUrl } from "./package-plan";
 
+import type { AuthoredPackagePlan, LabFailure } from "../../contracts";
 import type { AuthoredGap, AuthoredManifestConversion } from "./authored-character-manifest";
 import type { HairLodSelection } from "./mesh-role-mapping";
 import type { CapabilityJudgement } from "./package-capability";
 import type { AuthoredIndexEntry } from "./package-index";
-import type { AuthoredPackagePlan, LabFailure } from "../../contracts";
 
 export type FetchJsonResult = { readonly ok: true; readonly json: unknown } | { readonly ok: false; readonly status: number | null; readonly message: string };
 export type FetchBytesResult = { readonly ok: true; readonly bytes: Uint8Array } | { readonly ok: false; readonly status: number | null; readonly message: string };

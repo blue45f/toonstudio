@@ -4,8 +4,8 @@ import { createPenSpringStageFromPct } from "../../engine/input/stages/pen-sprin
 
 import { DEFAULT_STABILIZER_PCT } from "./draw-store";
 
-import type { DrawState } from "./draw-store";
 import type { RawStage } from "../../engine/input/stages/raw-stage";
+import type { DrawState } from "./draw-store";
 
 /**
  * 그리기 화면의 입력 방식 선택 → `RawStage` 체인. 구조: 포인터 → (마우스 압력 시뮬레이션) → **이 체인** → 레인(안쪽 Sumi 1€ 기본 경로).
