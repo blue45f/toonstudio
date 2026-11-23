@@ -353,7 +353,7 @@ describe("production editor refresh and mutation safety", () => {
     fireEvent.click(screen.getByRole("button", {name: "일정 보기"}));
     const calendar = screen.getByRole("region", {name: "제작 일정"});
     fireEvent.change(within(calendar).getByLabelText("표시할 달"), {target:{value:"2026-09"}});
-    fireEvent.click(within(calendar).getByRole("button", {name:/선화.*작화 작가/u}));
+    fireEvent.click(within(calendar).getByRole("button", { name: /^선화\s*작화 작가 · 35% · 진행 중$/u }));
     fireEvent.change(screen.getByLabelText("작업 정렬"), {target:{value:"priority"}});
     expect(v.title).toHaveProperty("value", "캘린더 왕복 입력");
     expect(v.article.querySelector("details")!.open).toBe(true);

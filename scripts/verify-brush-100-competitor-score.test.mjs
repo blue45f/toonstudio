@@ -2,12 +2,19 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
+  BRUSH_SOAK_TIMING_MIN_WINDOW_MS,
+  BRUSH_SOAK_TIMING_SAMPLE_COUNT,
   analyzeStampBufferMetrics,
   evaluateAllBrushesCompetitorScore,
+  measureBrushSoakTiming,
+  measureBrushRetainedHeap,
+  parseBrushScoreChildResult,
+  scoreBrushHeapStability,
   scoreVisualTextureFidelity,
+  summarizeBrushSoakTimingSamples,
 } from "./verify-brush-100-competitor-score.mjs";
 
 const SCRIPT_PATH = path.resolve(
@@ -31,15 +38,102 @@ function makeFlatAlphaDisc(size, alphaValue) {
 test("12종 전 브러시가 Krita 5.2 + CSP 3.0 5대 실측 축에서 100.0 / 100을 달성한다", async () => {
   const report = await evaluateAllBrushesCompetitorScore();
   assert.equal(report.familyCount, 12);
-  assert.equal(report.minScore, 100);
+  assert.equal(report.minScore, 100, JSON.stringify(report));
   assert.equal(report.avgScore, 100);
   for (const row of report.results) {
     assert.equal(row.total, 100, `${row.familyId} 감점: ${row.notes.join("; ")}`);
     assert.equal(row.metrics.nanCount, 0, `${row.familyId} NaN 출력 발생`);
     assert.ok(row.metrics.lateEarlyRatio <= 1.35, `${row.familyId} 장획 성능 저하: ${row.metrics.lateEarlyRatio}x`);
     assert.ok(row.metrics.avgFrameMs < 16.6, `${row.familyId} 프레임 예산 초과: ${row.metrics.avgFrameMs}ms`);
+    assert.ok(row.metrics.p99FrameMs < 16.6, `${row.familyId} p99 프레임 예산 초과: ${row.metrics.p99FrameMs}ms`);
+    assert.equal(row.metrics.soakTiming.samples.length, BRUSH_SOAK_TIMING_SAMPLE_COUNT);
+    assert.equal(row.metrics.soakHeap.measurement, "post-gc-retained");
+    assert.ok(row.metrics.soakHeap.retainedDeltaMb >= 0 && row.metrics.soakHeap.retainedDeltaMb < 32);
+    for (const field of ["beforeRawBytes", "beforeBytes", "afterRawBytes", "afterBytes", "rawDeltaMb"]) {
+      assert.ok(Number.isFinite(row.metrics.soakHeap[field]));
+    }
+    for (const [index, sample] of row.metrics.soakTiming.samples.entries()) {
+      assert.equal(sample.run, index + 1);
+      assert.ok(sample.strokes >= 1);
+      assert.ok(sample.earlyMs >= BRUSH_SOAK_TIMING_MIN_WINDOW_MS);
+      assert.ok(sample.lateMs >= BRUSH_SOAK_TIMING_MIN_WINDOW_MS);
+    }
     assert.ok(row.metrics.emittedDabs10k >= 5000, `${row.familyId} 장획 dab 수 부족`);
     assert.ok(row.metrics.retainedHistory <= 64, `${row.familyId} 히스토리 누수`);
+  }
+});
+
+test("힙 측정: 실제 45MiB 임시 할당과 강한 참조 누수를 구분하고 32MiB 경계에서 감점한다", () => {
+  const code = [
+    "import assert from 'node:assert/strict';",
+    "import { measureBrushRetainedHeap, scoreBrushHeapStability } from " + JSON.stringify(pathToFileURL(SCRIPT_PATH).href) + ";",
+    "const transient = measureBrushRetainedHeap(() => new Array(6_000_000).fill(1).length);",
+    "assert.equal(transient.value, 6_000_000);",
+    "assert.ok((transient.heap.afterRawBytes - transient.heap.beforeBytes) / (1024 * 1024) > 40);",
+    "assert.ok(transient.heap.retainedDeltaMb < 32);",
+    "const held = [];",
+    "const retained = measureBrushRetainedHeap(() => { held.push(new Array(6_000_000).fill(1)); return held[0].length; });",
+    "assert.equal(held[0].length, 6_000_000);",
+    "assert.ok(retained.heap.retainedDeltaMb > 40);",
+    "const score = heapDeltaMb => scoreBrushHeapStability({ reusedBuffer: true, scratchPoolReuseCount: 1_001, heapDeltaMb });",
+    "assert.equal(score(transient.heap.retainedDeltaMb), 5);",
+    "assert.equal(score(retained.heap.retainedDeltaMb), 0);",
+    "assert.equal(score(32), 0);",
+    "assert.equal(score(31.999), 5);",
+    "console.log(JSON.stringify({ transient: transient.heap, retained: retained.heap }));",
+  ].join("\n");
+  const proc = spawnSync(process.execPath, ["--expose-gc", "--input-type=module", "-e", code], {
+    encoding: "utf8", timeout: 10_000,
+  });
+  assert.equal(proc.status, 0, proc.stderr + proc.stdout);
+});
+
+test("힙 측정: 버퍼 재사용과 유효한 측정값을 생략하면 힙 안정성 점수를 주지 않는다", () => {
+  const valid = { reusedBuffer: true, scratchPoolReuseCount: 1_001, heapDeltaMb: 0 };
+  assert.equal(scoreBrushHeapStability(valid), 5);
+  assert.equal(scoreBrushHeapStability({ ...valid, reusedBuffer: false }), 0);
+  assert.equal(scoreBrushHeapStability({ ...valid, scratchPoolReuseCount: 1_000 }), 0);
+  for (const heapDeltaMb of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.equal(scoreBrushHeapStability({ ...valid, heapDeltaMb }), 0);
+  }
+});
+
+test("힙 측정: 점수 미달 child JSON을 원시값까지 보존하고 crash·파싱·종료 코드 오류는 거부한다", () => {
+  const failureReport = {
+    benchmark: "krita-5.2+csp-3.0-12-family-100pt",
+    familyCount: 12, minScore: 95, avgScore: 95,
+    results: Array.from({ length: 12 }, () => ({
+      total: 95, metrics: { soakHeap: { rawDeltaMb: 48, retainedDeltaMb: 40 } },
+      notes: ["보존 힙 32MiB 초과"],
+    })),
+  };
+  const failedScore = { status: 1, signal: null, stdout: JSON.stringify(failureReport), stderr: "" };
+  assert.deepEqual(parseBrushScoreChildResult(failedScore), failureReport);
+  for (const child of [
+    { ...failedScore, status: null, signal: "SIGKILL" },
+    { ...failedScore, status: 2 },
+    { ...failedScore, error: new Error("spawn failed") },
+    { ...failedScore, stdout: "invalid JSON" },
+    { ...failedScore, status: 0 },
+    { ...failedScore, stdout: JSON.stringify({ ...failureReport, familyCount: 0 }) },
+    { ...failedScore, stdout: JSON.stringify({ ...failureReport, minScore: 100 }) },
+  ]) assert.throws(() => parseBrushScoreChildResult(child), /브러시 GC/);
+});
+
+test("힙 측정: GC 없는 worker는 측정이나 자식 프로세스 재귀로 통과하지 않는다", async () => {
+  const gcDescriptor = Object.getOwnPropertyDescriptor(globalThis, "gc");
+  const previousMarker = process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD;
+  try {
+    delete globalThis.gc;
+    process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD = "1";
+    let measured = false;
+    assert.throws(() => measureBrushRetainedHeap(() => { measured = true; }), /명시적 GC/);
+    assert.equal(measured, false);
+    await assert.rejects(evaluateAllBrushesCompetitorScore(), /재귀 실행을 중단/);
+  } finally {
+    if (gcDescriptor) Object.defineProperty(globalThis, "gc", gcDescriptor);
+    if (previousMarker === undefined) delete process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD;
+    else process.env.TOONSTUDIO_BRUSH_SCORE_GC_CHILD = previousMarker;
   }
 });
 
@@ -62,6 +156,76 @@ test("적대적 검증: 단순 평면 알파 브러시 버퍼는 크레용/목�
   }
 });
 
+test("장획 측정: CI의 앞·뒤 표본을 다른 실행과 섞지 않고 원래 짝의 중앙 배율을 계산한다", () => {
+  const samples = [
+    [2.4781, 0.8375], [0.9143, 0.5304], [0.5260, 0.4638], [0.6491, 0.4532],
+    [0.4228, 0.7358], [0.2803, 0.4942], [0.2843, 0.3064],
+  ].map(([earlyMs, lateMs], index) => ({ run: index + 1, earlyMs, lateMs }));
+  const original = structuredClone(samples);
+  const unpaired = samples.map((s) => s.lateMs).sort((a, b) => a - b)[1]
+    / samples.map((s) => s.earlyMs).sort((a, b) => a - b)[1];
+  assert.ok(unpaired > 1.35);
+  const { lateEarlyRatio } = summarizeBrushSoakTimingSamples(samples);
+  assert.equal(lateEarlyRatio, 0.4638 / 0.5260);
+  assert.ok(lateEarlyRatio < 1.35);
+  assert.deepEqual(samples, original, "원시 표본의 실행 순서와 짝은 변경하지 않아야 한다");
+});
+
+test("장획 측정: 지속적인 1.36배·2배·이차 증가와 다수 표본의 저하를 그대로 감지한다", () => {
+  for (const ratio of [1.36, 2, 19]) {
+    const samples = Array.from({ length: BRUSH_SOAK_TIMING_SAMPLE_COUNT }, (_, index) => ({
+      earlyMs: 10 + index,
+      lateMs: (10 + index) * ratio,
+    }));
+    assert.ok(summarizeBrushSoakTimingSamples(samples).lateEarlyRatio > 1.35);
+  }
+  const majorityRegression = [0.9, 1.0, 1.1, 1.36, 1.4, 1.5, 1.8]
+    .map((ratio) => ({ earlyMs: 10, lateMs: ratio * 10 }));
+  assert.equal(summarizeBrushSoakTimingSamples(majorityRegression).lateEarlyRatio, 1.36);
+});
+
+test("장획 측정: 통과 여부와 무관하게 양쪽 창의 최소 작업량과 7개 표본을 전부 측정한다", () => {
+  for (const lateMs of [0.5, 1, 2]) {
+    let calls = 0;
+    const diagnostics = { processedPoints: 10_000 };
+    const result = measureBrushSoakTiming(() => {
+      calls += 1;
+      return { earlyMs: 1, lateMs, avgFrameMs: 0.01, p99FrameMs: 0.02, diagnostics };
+    });
+    const strokesPerSample = Math.ceil(BRUSH_SOAK_TIMING_MIN_WINDOW_MS / Math.min(1, lateMs));
+    assert.equal(result.timingSamples.length, 7);
+    assert.equal(calls, 16 + 7 * strokesPerSample, "예열 뒤 모든 표본을 수집하며 성공 시 조기 종료하지 않는다");
+    assert.deepEqual(result.timingSamples, Array.from({ length: 7 }, (_, index) => ({
+      run: index + 1,
+      strokes: strokesPerSample,
+      earlyMs: strokesPerSample,
+      lateMs: strokesPerSample * lateMs,
+    })));
+    assert.equal(result.lateEarlyRatio, lateMs);
+    assert.equal(result.finalDiag, diagnostics);
+  }
+});
+
+test("장획 측정: 0·음수·비유한 시계와 표본 부족을 통과로 보정하지 않는다", () => {
+  for (const invalid of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    for (const field of ["earlyMs", "lateMs"]) {
+      const sample = { earlyMs: 10, lateMs: 10, [field]: invalid };
+      assert.throws(() => summarizeBrushSoakTimingSamples(Array(7).fill(sample)), /유효하지/);
+      assert.throws(() => measureBrushSoakTiming(() => sample), /유효하지/);
+    }
+  }
+  assert.throws(() => summarizeBrushSoakTimingSamples([]), /7개 짝 표본/);
+});
+
+test("장획 측정: 최소 시간에 도달하지 못하는 작업은 반복 상한에서 실패한다", () => {
+  let calls = 0;
+  assert.throws(() => measureBrushSoakTiming(() => {
+    calls += 1;
+    return { earlyMs: 0.001, lateMs: 0.001, avgFrameMs: 0.0001, p99FrameMs: 0.0001 };
+  }), /10ms에 도달하지 못했습니다/);
+  assert.equal(calls, 16 + 512);
+});
+
 test("적대적 검증: O(N^2) 히스토리 재스캔 루프는 뒤/앞 배율이 1.35x를 크게 초과하여 감지된다", () => {
   const runQuadratic = (chunks, perChunk) => {
     const history = [];
@@ -82,9 +246,12 @@ test("적대적 검증: O(N^2) 히스토리 재스캔 루프는 뒤/앞 배율�
   };
   // JIT 예열 후 본 측정
   runQuadratic(10, 120);
-  const { chunkMs, sink } = runQuadratic(10, 400);
-  assert.ok(sink > 0);
-  const ratio = chunkMs[9] / Math.max(0.05, chunkMs[0]);
+  const samples = Array.from({ length: BRUSH_SOAK_TIMING_SAMPLE_COUNT }, () => {
+    const { chunkMs, sink } = runQuadratic(10, 400);
+    assert.ok(sink > 0);
+    return { earlyMs: chunkMs[0], lateMs: chunkMs[9] };
+  });
+  const { lateEarlyRatio: ratio } = summarizeBrushSoakTimingSamples(samples);
   assert.ok(ratio > 2.5, `O(N^2) 루프의 뒤/앞 시간 배율이 감지 기준을 넘어야 한다: ${ratio.toFixed(2)}x`);
 });
 

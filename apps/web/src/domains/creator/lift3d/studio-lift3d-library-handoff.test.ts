@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { Bg3dModelLibraryError } from "../bg3d/bg3d-model-library";
+import { STUDIO_BG3D_GLB_MAX_BYTES } from "../bg3d/studio-bg3d-glb-validation";
 import { StudioBg3dValidationWorkerError } from "../bg3d/studio-bg3d-glb-validation-worker-client";
 
 import { buildStudioLift3dDepthField } from "./studio-lift3d-depth";
@@ -113,7 +114,7 @@ describe("Studio Lift 3D 라이브러리 등록", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.detail).toBe(failure.message);
-    expect(result.detail).toContain("100MiB");
+    expect(result.detail).toContain(`${STUDIO_BG3D_GLB_MAX_BYTES / (1024 ** 3)}GiB`);
   });
 
   it("취소는 실패가 아니라 취소로 알린다", async () => {

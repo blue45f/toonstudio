@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_RESPONSE_BYTES } from "../apps/web/src/domains/creator/hybrid-dcc/studio-hybrid-dcc-glb-export-worker-protocol";
+
 import {
   STUDIO_HYBRID_DCC_INTEGRATION_REPORT_SCHEMA_VERSION,
   countStudioHybridDccFreshOpfsFiles,
@@ -116,7 +118,7 @@ function successfulResult(): StudioHybridDccIntegrationResult {
         kind: "export-batch",
         requestId: 1,
         inputTransport: "transferable-packed-soa-v1",
-        maxResponseBytes: 100 * 1024 * 1024,
+        maxResponseBytes: STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_RESPONSE_BYTES,
         transferCount: 1,
         payloads: [{
           assetId: ASSET_ID,
@@ -359,6 +361,39 @@ describe("Studio Hybrid DCC production-preview integration evidence", () => {
       },
     };
     expect(validateStudioHybridDccIntegrationResult(result)).toContain(
+      "shipped BG3D handoff did not prove a bounded nonempty GLB Worker response",
+    );
+  });
+
+  it("현재 Worker 응답 한도와 일치하는 요청만 수용하고 초과 응답을 거부한다", () => {
+    const base = successfulResult();
+    const worker = base.workerExport;
+    if (!worker?.request || !worker.response) throw new Error("Worker 검증 픽스처가 없습니다.");
+    expect(validateStudioHybridDccIntegrationResult(base)).toEqual([]);
+
+    const legacyBudget = {
+      ...base,
+      workerExport: { ...worker, request: { ...worker.request, maxResponseBytes: 100 * 1024 * 1024 } },
+    };
+    expect(validateStudioHybridDccIntegrationResult(legacyBudget)).toContain(
+      "shipped BG3D handoff did not prove a bounded nonempty GLB Worker response",
+    );
+
+    const byteLength = STUDIO_HYBRID_DCC_GLB_EXPORT_WORKER_MAX_RESPONSE_BYTES + 1;
+    const overBudget = {
+      ...base,
+      workerExport: {
+        ...worker,
+        response: {
+          ...worker.response,
+          totalByteLength: byteLength,
+          items: worker.response.items.map((item) => ({
+            ...item, byteLength, declaredLength: byteLength, metricsGlbByteLength: byteLength,
+          })),
+        },
+      },
+    };
+    expect(validateStudioHybridDccIntegrationResult(overBudget)).toContain(
       "shipped BG3D handoff did not prove a bounded nonempty GLB Worker response",
     );
   });

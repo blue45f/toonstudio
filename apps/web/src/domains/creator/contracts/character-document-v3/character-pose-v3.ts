@@ -454,4 +454,3 @@ export function computeShaperBoneWeightHighlightColor(input: {
     rgb: [1, gb, gb],
   };
 }
-

@@ -5,6 +5,7 @@ import {
   STUDIO_BG3D_SKP_MAIN_THREAD_MAX_BYTES,
   STUDIO_BG3D_SKP_METADATA_PASS_MAX_BYTES,
   STUDIO_BG3D_SKP_STAGES,
+  STUDIO_BG3D_SKP_STANDARD_MAX_SOURCE_BYTES,
   STUDIO_BG3D_SKP_TEXTURE_EMBED_MAX_BYTES,
   STUDIO_BG3D_SKP_TEXTURE_EMBED_MAX_COUNT,
   StudioBg3dSkpConversionError,
@@ -436,7 +437,7 @@ describe("convertStudioBg3dSkpBytes — metadata pass", () => {
 
   it("skips the second parse for very large files to protect time and memory", async () => {
     const big = createSkpHeaderBytes({ byteLength: STUDIO_BG3D_SKP_METADATA_PASS_MAX_BYTES + 1 });
-    const { conversion, fake } = options({ scene: sceneOf(), model: modelOf() }, { maxBytes: 64 * 1024 * 1024 });
+    const { conversion, fake } = options({ scene: sceneOf(), model: modelOf() }, { maxBytes: STUDIO_BG3D_SKP_STANDARD_MAX_SOURCE_BYTES });
     const { report, sceneSource } = await convertStudioBg3dSkpBytes(big, conversion);
     expect(sceneSource).toMatchObject({ status: "unavailable", reason: "metadata-pass-size-limit", manifest: null });
     expect(fake.calls.parse).toBe(0);

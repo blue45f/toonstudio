@@ -92,7 +92,7 @@ import { StudioProjectReviewActions } from "./StudioProjectReviewActions";
 import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import { StudioToolHintTarget } from "./StudioToolHint";
 import { StudioWorkspaceContextControls } from "./studio-workspaces/StudioWorkspaceContextControls";
-import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "./studio-shell/studio-menubar-status-slot";
+import { StudioMenubarStatusSlots } from "./studio-shell/StudioMenubarStatusSlots";
 import type { StudioAiProvenanceDocument } from "./ai/studio-ai-provenance";
 import type { ExportFormat } from "./export/studio-export";
 import type { PsdExportResult } from "./export/studio-psd-export";
@@ -2367,19 +2367,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
             {projectCenter}
           </div>
           {!isMobile && !mobileImmersive ? (
-            <>
-              {/* 동기화·저장 상태가 들어오는 상단 바 자리(Figma식 저장 상태). 포털 내용이 없으면 자리도 숨는다. */}
-              <div
-                ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.sync}
-                data-studio-menubar-status-slot="sync"
-                className="flex shrink-0 items-center empty:hidden"
-              />
-              <div
-                ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.save}
-                data-studio-menubar-status-slot="save"
-                className="flex shrink-0 items-center empty:hidden"
-              />
-            </>
+            <StudioMenubarStatusSlots />
           ) : null}
           <StudioToolHintTarget
             hint={{

@@ -50,10 +50,10 @@ describe("Studio brush browser harness catalogue boundary", () => {
       "const PRODUCT_BRUSH_CATALOG_COUNT = STUDIO_ALL_BRUSH_CATALOG_ITEMS.length;",
     );
     expect(harness).toContain("assertProductBrushCatalogContract()");
-    // The shipped picker is the quarantine-aware classic shelf plus every executable V6 recipe.
-    // Auditing the classic-only LISTED partition would leave the next-generation shelf uncovered.
+    // 기본 선택 목록은 비검역 기본 브러시와 V6 레시피에서 중복 별칭을 접은 정본 인벤토리다.
+    // 별칭을 포함하는 검색·재생 인벤토리와 화면에 노출하는 선택 목록의 경계를 구분한다.
     expect(harness).toContain(
-      "assertUiBrushCatalogMatchesProductCatalog(\n        firstCatalog,\n        STUDIO_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS,\n        \"paint\",\n      )",
+      "assertUiBrushCatalogMatchesProductCatalog(\n        firstCatalog,\n        STUDIO_CANONICAL_LIBRARY_PAINT_BRUSH_CATALOG_ITEMS,\n        \"paint\",\n      )",
     );
     expect(harness).toContain(
       "assertUiEraserQuickPickerMatchesProductCatalog(eraserCatalog)",
