@@ -1,0 +1,38 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.12 <qa-worktree>
+
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > toManagedAssistRequest > 시스템 블록·base64 이미지·캐시 제어를 옮기고 깊은 사고 요청은 high로 맞춘다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > toManagedAssistRequest > 도구 사용과 URL 이미지는 서버 경로 계약 밖이라 보내기 전에 막는다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 구조화 출력 스키마를 함께 보내고, 결과를 같은 Zod 스키마로 다시 검증한다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > JSON 앞뒤에 설명이 붙어 와도 객체를 꺼내 검증하고 다시 보내지 않는다
+ ✓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 스키마에 맞지 않으면 앞 답과 검증 문제를 붙여 한 번만 고쳐 달라고 한다 194ms
+ ✓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 끝이 잘린 답 안의 중첩 객체를 답으로 쓰지 않고, 복구 요청에 바깥 문법 문제를 싣는다 12ms
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 설명 속 짝 없는 괄호 뒤의 진짜 답이 스키마를 통과하면 복구 요청 없이 쓴다
+ ✓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 고친 답도 맞지 않으면 더 보내지 않고 형식 오류로 알린다 52ms
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 복구 요청이 서버에서 막혀도 처음 답의 형식 문제로 알린다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 서버 메시지 수 한도를 넘게 되면 고쳐 달라고 하지 않는다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistParse > 출력 한도에서 잘린 응답은 결과로 쓰지 않는다
+ ✓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistMessage > 응답 형식이 다르면 처리 여부를 알 수 없으므로 다시 보내지 않고 알린다 4ms
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistMessage > 무료 모델이 처리한 결과도 ToonStudio AI 표기로 돌려준다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistMessage > 같은 탭의 관리형 요청은 서버의 사용자당 단일 처리에 막히지 않게 차례로 보낸다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > runManagedAssistMessage > 차례를 기다리던 요청을 취소하면 바로 끝나고, 뒤 요청은 앞 요청이 끝난 뒤에 간다
+ ✓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 형식 복구 중 공급자 처리가 불명확해져도 그 사유를 유지하고 재전송하지 않는다 13ms
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 관리형 API의 409 응답을 한 번만 받고 사유를 구분한다 (이 AI 작업은 공급자 처리 여부를 확인 중이라 재전송하지 않았어요. 새 과금 방지를 위해 잠시 후 작업 기록을 확인해 주세요.)
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 관리형 API의 409 응답을 한 번만 받고 사유를 구분한다 (같은 AI 작업 식별자를 다른 요청에 재사용할 수 없어요.)
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 관리형 API의 409 응답을 한 번만 받고 사유를 구분한다 (이 AI 작업은 이미 공급자에서 완료되어 재전송하지 않았어요.)
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 서버 오류 0를 보조 기능 오류 코드로 바꾼다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 서버 오류 1를 보조 기능 오류 코드로 바꾼다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 서버 오류 2를 보조 기능 오류 코드로 바꾼다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 서버 오류 3를 보조 기능 오류 코드로 바꾼다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 서버 오류 4를 보조 기능 오류 코드로 바꾼다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > mapManagedAssistError > 사용자가 멈추거나 시간이 지나면 자동 재전송하지 않는다는 문구로 끝낸다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > 전송 계층의 관리형 경로 > 사용자 예산 한도와 사용량 미터를 거치지 않고 서버 경로로 보낸다
+ ↓ apps/web/src/shared/ai/assist/assist-managed-runtime.test.ts > 전송 계층의 관리형 경로 > 관리형 경로는 키 값을 담지 않는다
+
+ Test Files  1 passed (1)
+      Tests  5 passed | 22 skipped (27)
+   Start at  11:10:27
+   Duration  41.98s (transform 14.69s, setup 21.00s, import 15.35s, tests 316ms, environment 0ms)

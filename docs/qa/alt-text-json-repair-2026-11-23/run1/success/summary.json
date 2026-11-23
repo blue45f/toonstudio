@@ -1,0 +1,33 @@
+{
+  "pass": true,
+  "device": "mobile",
+  "mode": "success",
+  "managedCalls": 2,
+  "repairDelivery": null,
+  "total": 5905,
+  "syntheticAuthReads": 2,
+  "blockedOrigins": {
+    "GET https://deny-proof.invalid": 1,
+    "GET http://127.0.0.1:47634": 1,
+    "WS ws://127.0.0.1:47631": 4
+  },
+  "blockedApi": {
+    "GET /api/health/capabilities": 11,
+    "POST /api/me/merge": 14,
+    "POST /api/creator/studio-live/auth-ticket": 12,
+    "GET /api/studio-ai/status": 6,
+    "GET /api/creator/role-workspaces/global": 8,
+    "GET /api/creator/role-workspaces/draft": 8
+  },
+  "failedResources": [
+    [
+      "[vite] failed to connect to websocket.\nyour current setup:\n  (browser) 127.0.0.1:47631/ <--[HTTP]--> 127.0.0.1:47631/ (server)\n  (browser) 127.0.0.1:47631/ <--[WebSocket (failing)]--> 127.0.0.1:47631/ (server)\nCheck out your Vite ",
+      2
+    ],
+    [
+      "net::ERR_ABORTED /audio/playlist.json",
+      2
+    ]
+  ],
+  "nonApiHttpErrors": []
+}
