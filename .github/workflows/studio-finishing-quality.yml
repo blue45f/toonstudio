@@ -192,6 +192,9 @@ jobs:
       - name: Frontend and API type contracts
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # 영수증이 없을 때도 Core와 같은 호스트 상한 안에서 전체 타입 검사를 실행한다.
+          CI: '1'
+          NODE_OPTIONS: --max-old-space-size=12288
           TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail
@@ -207,6 +210,9 @@ jobs:
   finishing-quality:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
     env:
       CI: 'true'
       NODE_OPTIONS: --max-old-space-size=8192
@@ -323,10 +329,20 @@ jobs:
             apps/web/src/domains/creator/offline-branch/studio-offline-host-integration.test.ts \
             apps/web/src/domains/creator/studio-cuttoon-editor/studio-deferred-stroke-commit.test.ts \
             scripts/verify-studio-menus.test.ts
-      - name: Build the production browser surface with types and CSP checks
+      - name: Require frontend and API type contracts before the browser build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          # 재사용 검증과 fallback 모두 quality-static 및 Core의 정본 조건을 따른다.
+          CI: '1'
+          NODE_OPTIONS: --max-old-space-size=12288
+          TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail
-          pnpm run build 2>&1 | tee "$RUNNER_TEMP/finishing-quality/build.log"
+          node scripts/ci-shared-typecheck.mjs reuse-or-run 2>&1 | tee "$RUNNER_TEMP/finishing-quality/typecheck.log"
+      - name: Build the production browser surface with CSP checks
+        run: |
+          set -euo pipefail
+          pnpm run build:bundle 2>&1 | tee "$RUNNER_TEMP/finishing-quality/build.log"
           pnpm run check:studio-bundle 2>&1 | tee "$RUNNER_TEMP/finishing-quality/bundle.log"
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium

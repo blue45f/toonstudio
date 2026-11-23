@@ -47,6 +47,44 @@ test("CI는 실제 Core 성공 뒤 영수증을 만들고 두 도메인은 전�
 });
 
 
+test("finishing 두 job은 Core 예산의 타입 성공을 요구하고 browser build는 검사·CSP hook을 보존한다", () => {
+  const source = readFileSync(new URL("../.github/workflows/studio-finishing-quality.yml", import.meta.url), "utf8");
+  const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const job = (name) => source.split("\n  " + name + ":\n")[1]?.split(/\n {2}[a-z][a-z0-9-]*:\n/u)[0] ?? "";
+  const command = "node scripts/ci-shared-typecheck.mjs reuse-or-run";
+  for (const name of ["quality-static", "finishing-quality"]) {
+    const block = job(name);
+    assert(block.includes("contents: read") && block.includes("actions: read"), name);
+    const steps = block.split(/(?=^ {6}- )/mu);
+    const typeSteps = steps.filter((step) => step.includes(command));
+    assert.equal(typeSteps.length, 1, name + " 전체 타입 검사 경로는 한 번만 실행한다");
+    const [types] = typeSteps;
+    assert(types.includes("GITHUB_TOKEN: $" + "{{ github.token }}"));
+    assert(types.includes("CI: '" + CANONICAL_SETTINGS.ci + "'"));
+    assert(types.includes("NODE_OPTIONS: " + CANONICAL_SETTINGS.nodeOptions));
+    assert(types.includes("TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'"));
+    assert(types.includes("set -euo pipefail\n          " + command + " 2>&1 | tee"));
+    assert.doesNotMatch(types, /continue-on-error|^\s*if:|\|\| true/mu);
+    assert(ci.includes("NODE_OPTIONS: " + CANONICAL_SETTINGS.nodeOptions));
+    assert(ci.includes("TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'"));
+  }
+  const finishing = job("finishing-quality");
+  const build = finishing.split(/(?=^ {6}- )/mu).find((step) => step.includes("pnpm run build:bundle"));
+  assert(build, "전체 타입 검사 뒤 실제 production build가 필요하다");
+  assert(finishing.indexOf(command) < finishing.indexOf("pnpm run build:bundle"));
+  assert(build.includes("set -euo pipefail"));
+  assert(build.includes("pnpm run check:studio-bundle"));
+  assert.doesNotMatch(build, /continue-on-error|^\s*if:|\|\| true/mu);
+  assert.doesNotMatch(finishing, /pnpm run build(?!:)/u, "8GiB web 타입 검사를 build에서 중복 실행하지 않는다");
+  assert(finishing.indexOf("pnpm run build:bundle") < finishing.indexOf("pnpm exec tsx scripts/verify-studio-menus-ci.mjs"));
+  const { scripts } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(scripts["prebuild:bundle"], "pnpm run prebuild");
+  assert.equal(scripts["postbuild:bundle"], "pnpm run postbuild");
+  assert.match(scripts["build:bundle"], /vite build --config apps\/web\/vite\.config\.ts/u);
+  assert.match(scripts.postbuild, /generate-third-party-notices\.mjs/u);
+  assert.match(scripts.postbuild, /verify-static-csp\.mjs dist\/index\.html/u);
+});
+
 const fingerprint = {
   runtime: { platform: "linux", arch: "x64", imageOS: "ubuntu24" },
   source: { sha: "a".repeat(40) },
