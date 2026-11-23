@@ -2251,13 +2251,13 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const studioWorkAssetRenderProjection = useMemo(
     () => projectStudioWorkAssetPageForRender<El>({
       pageId: activePage.id,
-      elements: activePage.elements,
+      elements: activePage.elements, groups: activePage.groups,
       references: studioWorkAssetReferences,
       hydrationRevision: studioWorkAssetHydrationRevision,
       resolveState: (reference) => studioWorkAssetHydrator.get(reference),
     }),
     [
-      activePage.elements,
+      activePage.elements, activePage.groups,
       activePage.id,
       studioWorkAssetHydrationRevision,
       studioWorkAssetHydrator,

@@ -2,6 +2,8 @@
 import type { StudioWorkAssetReference } from "./studio-work-asset-client";
 import type { StudioWorkAssetHydrationState } from "./studio-work-asset-hydrator";
 import { isStudioCrdtBg3dImageReferenceForElement } from "./live/studio-crdt-bg3d-image-reference";
+import { isEffectivelyHidden, type LayerGroup } from "./studio-layers";
+import { isStudioCrdtProjectionTopologyReference } from "@toonstudio/contracts/studio-crdt-authoring/element-projection";
 
 import {
   parseStudioWorkAssetSourceUri,
@@ -10,9 +12,11 @@ import {
 } from "@/shared/lib/studio-work-asset-contract";
 
 const WORK_ASSET_TYPES = new Set<string>(STUDIO_WORK_ASSET_TYPES);
+export const STUDIO_WORK_ASSET_PLACEHOLDER_NODE = "studio-work-asset-placeholder";
 
 export interface StudioWorkAssetSceneRecordLike {
   id: string;
+  layerId?: string;
   pageId: string;
   orderIndex: number;
   deleted: boolean;
@@ -26,6 +30,8 @@ export interface StudioWorkAssetSceneReference {
   pageId: string;
   orderIndex: number;
   reference: StudioWorkAssetReference;
+  hidden?: boolean;
+  groupId?: string;
 }
 
 export interface StudioWorkAssetRenderPlaceholder {
@@ -125,7 +131,7 @@ export function collectStudioWorkAssetSceneReferences(
       record.deleted ||
       record.payload.type !== "reference" ||
       !isWorkAssetType(elementType) ||
-      Object.keys(record.payload.props).length === 1 ||
+      isStudioCrdtProjectionTopologyReference(record.payload) ||
       isStudioCrdtBg3dImageReferenceForElement(record.id, record.payload.props)
     ) {
       continue;
@@ -135,6 +141,8 @@ export function collectStudioWorkAssetSceneReferences(
       pageId: record.pageId,
       orderIndex: record.orderIndex,
       reference,
+      ...(record.payload.props.hidden === true ? { hidden: true } : {}),
+      ...(record.layerId && record.layerId !== "page-root" ? { groupId: record.layerId } : {}),
     });
   }
   // 원고에 영수증 주소가 먼저 기록될 수 있다. 삭제나 형식 변경은 CRDT가 계속 결정한다.
@@ -147,8 +155,8 @@ export function collectStudioWorkAssetSceneReferences(
       const key = studioWorkAssetReferenceKey(reference);
       if (unique.has(key)) continue;
       const record = canonical.get(element.id);
-      if (record && (record.deleted || record.pageId !== page.id || record.payload.type !== "reference" ||
-        record.payload.props.elementType !== "image" || Object.keys(record.payload.props).length !== 1)) continue;
+      if (record && (record.deleted || record.pageId !== page.id || record.payload.props.elementType !== "image" ||
+        !isStudioCrdtProjectionTopologyReference(record.payload))) continue;
       unique.set(key, { reference, pageId: page.id, orderIndex });
     }
   }
@@ -170,6 +178,7 @@ export function areStudioWorkAssetSceneReferencesEqual(
     return Boolean(
       other && candidate.pageId === other.pageId &&
       candidate.orderIndex === other.orderIndex &&
+      candidate.hidden === other.hidden && candidate.groupId === other.groupId &&
       candidate.reference.assetId === other.reference.assetId &&
       candidate.reference.elementType === other.reference.elementType
     );
@@ -240,6 +249,7 @@ export function projectStudioWorkAssetPageForRender<
 >(input: {
   pageId: string;
   elements: readonly TElement[];
+  groups?: LayerGroup[];
   references: readonly StudioWorkAssetSceneReference[];
   hydrationRevision: number;
   resolveState: (reference: StudioWorkAssetReference) => StudioWorkAssetHydrationState | null;
@@ -267,15 +277,14 @@ export function projectStudioWorkAssetPageForRender<
     }
     // Once the authoritative CRDT topology declares this ID a work asset, no unverified local
     // data/file URL may stand in for it. Only the exact admitted server body can become renderable.
-    placeholders.push(placeholderFor(
-      sceneReference,
-      state,
-      element as unknown as Record<string, unknown>
-    ));
+    if (!isEffectivelyHidden(element, input.groups ?? [])) {
+      placeholders.push(placeholderFor(sceneReference, state, element as unknown as Record<string, unknown>));
+    }
   }
 
   for (const sceneReference of references) {
     if (represented.has(sceneReference.reference.assetId)) continue;
+    if (isEffectivelyHidden({ ...sceneReference, id: sceneReference.reference.assetId }, input.groups ?? [])) continue;
     const state = exactState(input.resolveState(sceneReference.reference), sceneReference.reference);
     if (state?.status === "ready" && state.source.type === "image") {
       elements.push({ ...state.source, src: state.resourceUrl } as unknown as TElement);

@@ -17,7 +17,7 @@ import {
 import { resizableNodeProps } from "./studio-node-props";
 
 import type { FocusLinesEl, FrameEl, SpeedLinesEl } from "./studio-element-model";
-import type { StudioWorkAssetRenderPlaceholder } from "./studio-work-asset-render-projection";
+import { STUDIO_WORK_ASSET_PLACEHOLDER_NODE, type StudioWorkAssetRenderPlaceholder } from "./studio-work-asset-render-projection";
 import type Konva from "konva";
 
 export function StudioWorkAssetPlaceholderNode({
@@ -36,6 +36,7 @@ export function StudioWorkAssetPlaceholderNode({
   return (
     <Group
       key={`work-asset-placeholder:${placeholder.elementType}:${placeholder.assetId}`}
+      name={STUDIO_WORK_ASSET_PLACEHOLDER_NODE}
       x={placeholder.x}
       y={placeholder.y}
       rotation={placeholder.rotation}

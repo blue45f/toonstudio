@@ -907,7 +907,7 @@ export function StudioCanvasViewportDocumentLayer({
                     {!hasLiveAdjustments ? masterUnderlay : null}
                     {mainEls}
                     {!masterEditMode
-                      ? studioWorkAssetRenderPlaceholders.map((placeholder) => (
+                      ? studioWorkAssetRenderPlaceholders.filter((item) => !localHiddenElementIds.has(item.assetId)).map((placeholder) => (
                           <StudioWorkAssetPlaceholderNode
                             key={`${placeholder.elementType}:${placeholder.assetId}`}
                             placeholder={placeholder}

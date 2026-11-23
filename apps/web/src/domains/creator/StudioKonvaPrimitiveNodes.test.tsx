@@ -362,7 +362,7 @@ describe("StudioWorkAssetPlaceholderNode", () => {
       strokeWidth: 0.75,
     });
     expect(konvaCapture.texts.map((props) => props.text)).toEqual(["공유 에셋", "동기화 완료"]);
-    expect(konvaCapture.groups[0]).toMatchObject({ listening: false, rotation: 5, x: 10, y: 20 });
+    expect(konvaCapture.groups[0]).toMatchObject({ name: "studio-work-asset-placeholder", listening: false, rotation: 5, x: 10, y: 20 });
   });
 });
 
