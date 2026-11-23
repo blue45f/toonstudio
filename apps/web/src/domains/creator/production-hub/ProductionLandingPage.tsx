@@ -67,6 +67,8 @@ import { useApp } from "@/shared/lib/store";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
+import { VibrantPageIdentityBanner } from "@/shared/ui/vibrant-identity/VibrantPageIdentityBanner";
+import { VibrantVisualEmptyState } from "@/shared/ui/vibrant-identity/VibrantVisualEmptyState";
 
 const SAMPLE_BASE = "/production/projects/sample-project";
 
@@ -329,7 +331,22 @@ function PortfolioSection({
                   </Link>
                 );
               })}
-              {inboxItems.length === 0 ? <div className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3 sm:col-span-2 md:col-span-3 xl:col-span-4">{bt("현재 배정된 조치 업무가 없습니다.", "Nothing assigned to you right now.")}</div> : null}
+              {inboxItems.length === 0 ? (
+                <VibrantVisualEmptyState
+                  pageId="production"
+                  compact
+                  className="sm:col-span-2 md:col-span-3 xl:col-span-4"
+                  title={bt("현재 배정된 조치 업무가 없습니다.", "Nothing assigned to you right now.")}
+                  description={bt(
+                    "공정 보드에서 새 담당을 배정하거나 샘플 프로젝트 흐름을 미리 점검해 보세요.",
+                    "Assign upcoming tasks on the process board or preview the sample project flow.",
+                  )}
+                  primaryAction={{
+                    label: bt("샘플 공정 보드 열기", "Open sample board"),
+                    href: `${SAMPLE_BASE}/production`,
+                  }}
+                />
+              ) : null}
             </div>
           </div>
           <div className="rounded-2xl border border-line bg-panel p-4">
@@ -557,7 +574,12 @@ export function ProductionLandingPage() {
         ];
       })} />
       <div className="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
-
+        <VibrantPageIdentityBanner
+          pageId="production"
+          compact
+          activeStep={userId ? 2 : 1}
+          className="mb-6"
+        />
 
         {userId ? (
           <>

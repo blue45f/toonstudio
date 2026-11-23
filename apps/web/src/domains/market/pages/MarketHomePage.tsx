@@ -1,10 +1,8 @@
 import {
   AlertTriangle,
   ArrowRight,
-  PackageSearch,
   RefreshCw,
   Store,
-  Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation } from "react-router-dom";
@@ -58,6 +56,8 @@ import {
   useMetaDescription,
   usePageSocialMeta,
 } from "@/shared/seo/use-document-title";
+import { VibrantPageIdentityBanner } from "@/shared/ui/vibrant-identity/VibrantPageIdentityBanner";
+import { VibrantVisualEmptyState } from "@/shared/ui/vibrant-identity/VibrantVisualEmptyState";
 import "./market-home-visual.css";
 
 const MOBILE_RECENT_LIMIT = 6;
@@ -353,6 +353,13 @@ export function MarketHomePage() {
               onSelectGoal={handleSelectBeginnerGoal}
               onClearGoal={handleClearBeginnerGoal}
             />
+
+            <VibrantPageIdentityBanner
+              pageId="market"
+              compact
+              activeStep={1}
+              className="mt-4"
+            />
           </Container>
 
           <Container size="wide" className="pb-10 pt-7 sm:pb-12 sm:pt-8">
@@ -495,87 +502,50 @@ export function MarketHomePage() {
                 />
 
                 {!latest.loading && hasLatestItems && presetFilteredItems.length === 0 ? (
-                  <div
+                  <VibrantVisualEmptyState
+                    pageId="market"
+                    compact
                     role="status"
-                    className="mt-6 rounded-[16px] border border-dashed border-line bg-panel p-6 text-center"
-                  >
-                    <PackageSearch className="mx-auto size-7 text-fg-3" aria-hidden="true" />
-                    <h3 className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
-                      {t("선택한 유형의 최근 소재가 없어요", "No recent materials match this type")}
-                    </h3>
-                    <p className="mt-1.5 text-sm text-fg-2 [word-break:keep-all]">
-                      {t(
-                        "최근 공개된 소재 안에서 찾은 결과입니다. 전체 카탈로그에서 더 찾아보거나 유형을 바꿔 보세요.",
-                        "These results cover recently published materials. Browse the full catalog or choose another type.",
-                      )}
-                    </p>
-                    <div className="mt-4 flex flex-wrap justify-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleClearBeginnerGoal();
-                          allPresetRef.current?.focus({ preventScroll: true });
-                        }}
-                        className={buttonClass({
-                          variant: "solid",
-                          size: "md",
-                          className: "min-h-11 min-w-11 rounded-[9px]",
-                        })}
-                      >
-                        {t("최근 소재 전체 보기", "Show all recent materials")}
-                      </button>
-                      <Link
-                        href="/market/browse"
-                        className={buttonClass({
-                          variant: "outline",
-                          size: "md",
-                          className: "min-h-11 min-w-11 rounded-[9px]",
-                        })}
-                      >
-                        {t("전체 에셋 카탈로그", "Full asset catalog")}
-                      </Link>
-                    </div>
-                  </div>
+                    className="mt-6"
+                    title={t("선택한 유형의 최근 소재가 없어요", "No recent materials match this type")}
+                    description={t(
+                      "최근 공개된 소재 안에서 찾은 결과입니다. 전체 카탈로그에서 더 찾아보거나 유형을 바꿔 보세요.",
+                      "These results cover recently published materials. Browse the full catalog or choose another type.",
+                    )}
+                    primaryAction={{
+                      label: t("최근 소재 전체 보기", "Show all recent materials"),
+                      onClick: () => {
+                        handleClearBeginnerGoal();
+                        allPresetRef.current?.focus({ preventScroll: true });
+                      },
+                    }}
+                    secondaryAction={{
+                      label: t("전체 에셋 카탈로그", "Full asset catalog"),
+                      href: "/market/browse",
+                    }}
+                  />
                 ) : null}
 
                 {!latest.loading && latest.items.length === 0 ? (
-                  <div className="mt-6 rounded-[16px] border border-dashed border-line bg-panel p-8 text-center sm:p-10">
-                    <div className="mx-auto flex size-11 items-center justify-center rounded-[10px] bg-raised text-fg-3">
-                      <PackageSearch className="size-5" aria-hidden="true" />
-                    </div>
-                    <h3 className="mt-3 text-base font-semibold text-fg [word-break:keep-all]">
-                      {t("아직 공유된 리소스가 없어요", "No shared resources yet")}
-                    </h3>
-                    <p className="mx-auto mt-1.5 max-w-md text-sm text-fg-2 [word-break:keep-all]">
-                      {t(
-                        "공개 마켓 소재와 별개로 기본 무료 제작 소재는 회원가입 없이 사용할 수 있습니다. 원본 파일과 사용 조건을 확인한 뒤 내 편집기로 가져오세요.",
-                        "Separately from public market materials, the built-in free production materials are available without signing up. Check the source files and terms, then bring them into your editor.",
-                      )}
-                    </p>
-                    <div className="mt-5 flex flex-wrap justify-center gap-2.5">
-                      <Link
-                        href="/studio/assets?view=essentials"
-                        className={buttonClass({
-                          variant: "solid",
-                          size: "sm",
-                          className: "min-h-11 min-w-11 rounded-[9px]",
-                        })}
-                      >
-                        {t("기본 무료 소재 사용하기", "Use built-in free materials")}
-                      </Link>
-                      <Link
-                        href="/studio?assetMarket=community&communityView=share"
-                        className={buttonClass({
-                          variant: "outline",
-                          size: "sm",
-                          className: "min-h-11 min-w-11 rounded-[9px]",
-                        })}
-                      >
-                        <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
-                        {t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio")}
-                      </Link>
-                    </div>
-                  </div>
+                  <VibrantVisualEmptyState
+                    pageId="market"
+                    role="region"
+                    showStepHints
+                    className="mt-6"
+                    title={t("아직 공유된 리소스가 없어요", "No shared resources yet")}
+                    description={t(
+                      "공개 마켓 소재와 별개로 기본 무료 제작 소재는 회원가입 없이 사용할 수 있습니다. 원본 파일과 사용 조건을 확인한 뒤 내 편집기로 가져오세요.",
+                      "Separately from public market materials, the built-in free production materials are available without signing up. Check the source files and terms, then bring them into your editor.",
+                    )}
+                    primaryAction={{
+                      label: t("기본 무료 소재 사용하기", "Use built-in free materials"),
+                      href: "/studio/assets?view=essentials",
+                    }}
+                    secondaryAction={{
+                      label: t("Studio에서 첫 리소스 공유하기", "Share your first resource from Studio"),
+                      href: "/studio?assetMarket=community&communityView=share",
+                    }}
+                  />
                 ) : null}
               </>
             )}
