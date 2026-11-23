@@ -2,7 +2,7 @@ import { isUsableStudioShell } from "./studio-service-worker-navigation";
 
 import {
   STUDIO_OFFLINE_MAX_RESOURCES,
-  normalizeStudioOfflineAssetUrl,
+  isStudioOfflineShellFontPath, normalizeStudioOfflineAssetUrl, STUDIO_OFFLINE_TOOL_ICONS,
   type StudioOfflinePreparationReport,
 } from "../../shared/lib/studio-offline-protocol";
 
@@ -37,6 +37,8 @@ function usable(url: string, response: Response, shellUrls: readonly string[]): 
   if (mime.includes("text/html") && !STANDALONE_OFFLINE_HTML_URLS.has(url)) return false;
   if (/\.m?js$/u.test(url) && !/(?:javascript|ecmascript)/u.test(mime)) return false;
   if (url.endsWith(".css") && !mime.includes("text/css")) return false;
+  if (isStudioOfflineShellFontPath(url) && url.endsWith(".woff2") && !mime.includes("font/woff2")) return false;
+  if (STUDIO_OFFLINE_TOOL_ICONS.includes(url) && !mime.includes("image/webp")) return false;
   if (url.endsWith(".json") && !mime.includes("json")) return false;
   if (url.endsWith(".wasm") && !mime.includes("application/wasm")) return false;
   if (/\.worker-[A-Za-z0-9_-]+\.js$/u.test(url)

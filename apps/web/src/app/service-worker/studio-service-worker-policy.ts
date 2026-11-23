@@ -22,6 +22,8 @@
  *    verb is network-only.
  */
 
+import { isStudioOfflineShellFontPath, STUDIO_OFFLINE_TOOL_ICONS } from "../../shared/lib/studio-offline-protocol";
+
 /** Shared prefix so the kill-switch can find *every* cache this app owns. */
 export const STUDIO_SERVICE_WORKER_CACHE_PREFIX = "toonstudio-sw-";
 
@@ -184,6 +186,7 @@ export function classifyStudioServiceWorkerRequest(
 
   // The library manifest is mutable; keep an offline snapshot but revalidate it.
   if (pathname === "/assets/studio/cc0-20260906/manifest.json") return "catalog-data";
+  if (isStudioOfflineShellFontPath(pathname) || STUDIO_OFFLINE_TOOL_ICONS.includes(pathname)) return "immutable-asset";
   if (pathname.startsWith("/assets/")) {
     return isHeavyAssetPath(pathname) ? "heavy-asset" : "immutable-asset";
   }

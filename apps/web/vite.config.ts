@@ -1,7 +1,7 @@
-import { collectStudioOfflineDrawingUrls } from "./src/app/service-worker/studio-service-worker-drawing-plan";
+import { collectBuiltStudioOfflineDrawingUrls } from "./config/studio-offline-drawing-assets";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, URL } from "node:url";
@@ -518,7 +518,7 @@ function studioServiceWorkerPlugin(): Plugin {
         );
       }
 
-      const offlineUrls = collectStudioOfflineDrawingUrls(manifest, readdirSync(path.join(outDir, "assets")));
+      const offlineUrls = collectBuiltStudioOfflineDrawingUrls(manifest, outDir);
       const offlineBytes = offlineUrls.reduce((total, url) => total + (sizeOf(url) ?? 0), 0);
       if (offlineUrls.length > 1024 || offlineBytes > 32 * 1024 * 1024) {
         throw new Error("Offline drawing pack exceeds budget");

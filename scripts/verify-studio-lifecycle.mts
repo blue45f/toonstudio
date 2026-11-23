@@ -41,6 +41,7 @@ import { openStudioExportPanel, visibleStudioControl } from "./lib/studio-shell-
 import {
   enabledStudioHistoryControl,
 } from "./lib/studio-verify-history-controls.mjs";
+import { prepareOfflineLifecycle } from "./lib/studio-verify-offline-readiness";
 import { isStudioStaticPreviewReadinessUnavailable } from "./lib/studio-verify-preview-errors.mjs";
 import {
   cleanScratchDir,
@@ -472,16 +473,6 @@ function cleanScratch(): void {
 }
 
 const VERIFY_OFFLINE_DRAWING = process.env.TOONSPECTRUM_VERIFY_OFFLINE_DRAWING === "1";
-
-async function prepareOfflineLifecycle(page: Page): Promise<void> {
-  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), undefined, { timeout: 20_000 });
-  const panel = page.locator('[data-studio-offline-panel="true"]');
-  await panel.locator("summary").click();
-  await panel.getByRole("button", { name: /오프라인 리소스 준비|리소스 다시 확인/u }).click();
-  await panel.getByRole("status").filter({ hasText: /현재 불러온 리소스 \d+개를 확인했습니다/u })
-    .waitFor({ state: "visible", timeout: 50_000 });
-  await panel.locator("summary").click();
-}
 
 async function runLifecycle(browser: Browser, origin: string): Promise<LifecycleResult> {
   // /studio is the project home; draw/undo/reload/export exercise the explicit canvas route.
