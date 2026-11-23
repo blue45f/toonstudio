@@ -1,5 +1,6 @@
 // 가상 스튜디오 경험 페이지의 순수 헬퍼 — 쿼리 기반 초기 패널 판정과 지점 거리.
 // StudioVirtualSpacePage.tsx에서 분리한 모듈 스코프 상수·함수 묶음이다.
+import { resolveSpaceDeepLinkZone } from "./hud/space-zone-workflow";
 import { writeStudioVirtualSpaceLastPosition } from "./studio-virtual-space-last-position";
 import type {
   StudioVirtualSpacePoint,
@@ -21,7 +22,8 @@ export function initialPanel(search: string): StudioVirtualWorkspacePanel | null
   const query = new URLSearchParams(search);
   if (query.get("activity") === "people") return "people";
   if (query.get("activity") === "board") return "board";
-  return query.has("session") || query.get("activity") === "sessions" ? "sessions" : null;
+  if (query.has("session") || query.get("activity") === "sessions") return "sessions";
+  return resolveSpaceDeepLinkZone(search)?.panel ?? null;
 }
 
 export function distanceBetween(left: StudioVirtualSpacePoint, right: StudioVirtualSpacePoint): number {
