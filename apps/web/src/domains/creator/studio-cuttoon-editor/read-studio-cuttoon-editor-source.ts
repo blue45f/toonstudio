@@ -93,6 +93,18 @@ export function readStudioPageCompositionSource(): string {
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-server-revision-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-viewport-lifecycle-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-workspace-surface-helpers.ts"),
+    // Wave 6(2026-11-23) 호스트 4차 안전 분리 도메인 헬퍼 11종 — 합성 경계 검사에 포함한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-ai-generation-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-asset-and-authority-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-async-actions.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-content-insert-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-live-ink-and-gpu-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-pixel-and-retouch-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-redo-and-history-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-surface-handlers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-tool-memory-and-brush-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-ui-effects-and-resize-helpers.ts"),
   ]
     .map((filePath) => readFileSync(filePath, "utf8"))
     .join("\n");
@@ -201,6 +213,18 @@ export function readStudioCuttoonEditorSource(): string {
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-server-revision-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-viewport-lifecycle-helpers.ts"),
     resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave5-workspace-surface-helpers.ts"),
+    // Wave 6(2026-11-23) 호스트 4차 안전 분리 도메인 헬퍼 11종 — 호스트 본문 앞에 배치한다.
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-ai-generation-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-asset-and-authority-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-async-actions.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-content-insert-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-live-ink-and-gpu-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-pixel-and-retouch-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-redo-and-history-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-surface-handlers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-tool-memory-and-brush-helpers.ts"),
+    resolve(baseDir, "../studio-cuttoon-edit/studio-host-wave6-ui-effects-and-resize-helpers.ts"),
     resolve(baseDir, "../StudioCuttoonEditorHost.tsx"),
     resolve(baseDir, "../canvas/studio-canvas-viewport-input.ts"),
     resolve(baseDir, "../StudioPage.tsx"),
