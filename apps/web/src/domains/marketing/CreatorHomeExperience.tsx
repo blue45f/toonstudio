@@ -20,6 +20,13 @@ const LazyComicIntroHost = lazyRetry(
   () => import("./comic-intro/ComicIntroHost").then((module) => ({ default: module.ComicIntroHost })),
   "ComicIntroHost",
 );
+const LazyHomeFlagshipInteractiveShowcase = lazyRetry(
+  () =>
+    import("./flagship-showcase/HomeFlagshipInteractiveShowcase").then((module) => ({
+      default: module.HomeFlagshipInteractiveShowcase,
+    })),
+  "HomeFlagshipInteractiveShowcase",
+);
 
 /** Public front door. Historical introduction anchors keep their documented destination. */
 export function CreatorHomeExperience() {
@@ -40,6 +47,11 @@ export function CreatorHomeExperience() {
       lang={language}
     >
       {!introduction && <ReferenceCreatorDashboard />}
+      {!introduction && (
+        <Suspense fallback={null}>
+          <LazyHomeFlagshipInteractiveShowcase />
+        </Suspense>
+      )}
       {introduction ? (
         <Suspense fallback={null}>
           <LazyCreatorStudioIntroduction />

@@ -12,6 +12,7 @@ import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle, useMetaDescription } from "@/shared/seo/use-document-title";
 
 import { FEATURES_AMBIENT_CLIP } from "./brand-clips";
+import { StudioFeatureAtlasMenu } from "./flagship-showcase/StudioFeatureAtlasMenu";
 import { featureOverviewCategoryClip } from "./tool-clips";
 import {
   FEATURE_OVERVIEW_CATEGORIES,
@@ -184,6 +185,7 @@ export function FeaturesOverviewPage() {
         art={sitePageHeaderArtFor("/features")}
         actions={
           <>
+            <StudioFeatureAtlasMenu variant="page" />
             <Link href="/studio/new" className={buttonClass({ size: "md", className: "min-h-11" })}>
               {copy.start}
             </Link>

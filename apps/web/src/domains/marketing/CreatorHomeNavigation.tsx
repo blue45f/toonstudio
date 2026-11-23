@@ -1,7 +1,9 @@
 import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { useI18n } from "@/shared/lib/i18n";
 import { type ReactNode } from "react";
 
 import { CREATOR_HOME_SECTIONS, focusCreatorSection, isPlainCreatorJump, type CreatorHomeSectionId } from "./creator-home-navigation";
+import { StudioFeatureAtlasMenu } from "./flagship-showcase/StudioFeatureAtlasMenu";
 import { useCreatorHomeSectionNavigation } from "./use-creator-home-section-navigation";
 import "./creator-home-navigation.css";
 
@@ -27,20 +29,25 @@ export function CreatorSectionLink({ sectionId, className, children }: {
   );
 }
 
-export function CreatorHomeNavigation({ locale: _locale }: { locale: "ko" | "en" }) {
+export function CreatorHomeNavigation({ locale }: { locale: "ko" | "en" }) {
   useBilingualI18nRevision();
   useCreatorHomeSectionNavigation();
+  const storeLang = useI18n((state) => state.lang);
+  const atlasLocale: "ko" | "en" = storeLang.toLowerCase().startsWith("en") ? "en" : locale;
 
   const label = bi("툰스튜디오 소개 바로가기", "Explore the ToonStudio introduction");
   return (
     <nav className="ch-jump-nav" aria-label={label}>
       <span className="ch-jump-label">{bi("필요한 곳으로 바로 이동하세요.", "Jump to the part you need.")}</span>
-      <div className="ch-jump-links">
-        {CREATOR_HOME_SECTIONS.map((section) => (
-          <CreatorSectionLink key={section.id} sectionId={section.id}>
-            {bi((section).ko, (section).en)}<span aria-hidden="true">↘</span>
-          </CreatorSectionLink>
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="ch-jump-links">
+          {CREATOR_HOME_SECTIONS.map((section) => (
+            <CreatorSectionLink key={section.id} sectionId={section.id}>
+              {bi((section).ko, (section).en)}<span aria-hidden="true">↘</span>
+            </CreatorSectionLink>
+          ))}
+        </div>
+        <StudioFeatureAtlasMenu variant="nav" locale={atlasLocale} />
       </div>
     </nav>
   );

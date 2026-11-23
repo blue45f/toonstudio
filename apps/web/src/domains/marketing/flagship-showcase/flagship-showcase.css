@@ -1,0 +1,777 @@
+/* Wave 20 플래그십 쇼케이스 & 기능 아틀라스 스타일 (Calm Atelier 시맨틱 토큰 + OKLCH 전용).
+ * 전이는 명시된 속성에만 제한한다.
+ */
+.fsh-root {
+  --fsh-cobalt: oklch(0.51 0.2 256);
+  --fsh-saffron: oklch(0.81 0.18 92);
+  --fsh-emerald: oklch(0.61 0.19 152);
+  --fsh-terracotta: oklch(0.58 0.19 34);
+  --fsh-ink: oklch(0.2 0.02 262);
+  --fsh-paper: oklch(0.985 0.009 88);
+  --fsh-paper-tooth: oklch(0.972 0.013 86);
+  --fsh-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  width: 100%;
+  max-width: var(--layout-content-app, 1280px);
+  margin-inline: auto;
+  margin-top: var(--layout-home-section-gap, 48px);
+  padding: 0 max(var(--site-page-gutter, var(--layout-gutter, 1rem)), env(safe-area-inset-right)) 32px max(var(--site-page-gutter, var(--layout-gutter, 1rem)), env(safe-area-inset-left));
+  color: var(--color-fg);
+  font-family: var(--font-sans), sans-serif;
+  overflow-x: clip;
+  max-inline-size: 100%;
+}
+
+.fsh-root :is(h2, h3, h4, p, span, strong, small, a, button, label, li) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.fsh-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.fsh-shell {
+  display: grid;
+  gap: 28px;
+  padding: clamp(18px, 2.6vw, 32px);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 22px;
+  background: var(--color-card);
+  box-shadow: var(--atelier-elevation-dock);
+  min-width: 0;
+}
+
+.fsh-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.fsh-header-copy {
+  display: grid;
+  gap: 8px;
+  max-width: 62ch;
+}
+
+.fsh-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 4px 11px;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 40%, var(--color-line));
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.fsh-header-copy h2 {
+  margin: 0;
+  font-size: clamp(22px, 2.5vw, 32px);
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: -0.025em;
+  color: var(--color-fg);
+}
+
+.fsh-header-copy p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+
+.fsh-block {
+  display: grid;
+  gap: 14px;
+  padding: clamp(14px, 2vw, 22px);
+  border: 1px solid var(--color-line);
+  border-radius: 18px;
+  background: var(--color-panel);
+  min-width: 0;
+}
+
+.fsh-block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fsh-block-title {
+  display: grid;
+  gap: 4px;
+}
+
+.fsh-block-title h3 {
+  margin: 0;
+  font-size: clamp(17px, 1.7vw, 21px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+}
+
+.fsh-block-title p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+/* ① 3초 미니 물리 브러시 체험 */
+.fsh-brush-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.fsh-canvas-card {
+  display: grid;
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: 14px;
+  background: var(--color-card);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.fsh-canvas-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-panel);
+  font-size: 12.5px;
+  color: var(--color-fg-2);
+}
+
+.fsh-canvas-meta strong {
+  color: var(--color-fg);
+}
+
+.fsh-canvas-stage {
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in oklch, var(--fsh-ink) 2.5%, transparent) 0 1px,
+      transparent 1px 16px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--fsh-ink) 2%, transparent) 0 1px,
+      transparent 1px 16px
+    ),
+    var(--fsh-paper);
+}
+
+.fsh-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.fsh-canvas-hint {
+  position: absolute;
+  inset: auto 12px 12px 12px;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 6px 11px;
+  border: 1px solid color-mix(in oklch, var(--fsh-ink) 16%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--fsh-paper) 92%, transparent);
+  color: var(--fsh-ink);
+  font-size: 12px;
+  font-weight: 600;
+  transition: opacity 160ms var(--fsh-ease);
+}
+
+.fsh-canvas-hint[data-hidden="true"] {
+  opacity: 0;
+}
+
+.fsh-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.fsh-status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
+
+.fsh-status-line[data-mixed="true"] .fsh-status-dot {
+  background: var(--fsh-emerald);
+}
+
+.fsh-brush-controls {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fsh-brush-list {
+  display: grid;
+  gap: 7px;
+}
+
+.fsh-brush-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 11px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 140ms var(--fsh-ease), background-color 140ms var(--fsh-ease), transform 140ms var(--fsh-ease);
+}
+
+.fsh-brush-btn[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.fsh-brush-badge {
+  flex: none;
+  padding: 3px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-panel);
+  color: var(--color-fg-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.fsh-brush-btn[aria-pressed="true"] .fsh-brush-badge {
+  border-color: color-mix(in oklch, var(--color-accent) 45%, var(--color-line));
+  color: var(--color-accent);
+}
+
+.fsh-watercolor-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in oklch, var(--fsh-emerald) 35%, var(--color-line));
+  border-radius: 11px;
+  background: color-mix(in oklch, var(--fsh-emerald) 7%, var(--color-card));
+}
+
+.fsh-pigment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fsh-pigment-chip[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.fsh-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+}
+
+.fsh-swatch--cobalt { background: var(--fsh-cobalt); }
+.fsh-swatch--saffron { background: var(--fsh-saffron); }
+
+.fsh-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fsh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 140ms var(--fsh-ease), border-color 140ms var(--fsh-ease), background-color 140ms var(--fsh-ease);
+}
+
+.fsh-btn--primary {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.fsh-btn--emerald {
+  border-color: color-mix(in oklch, var(--fsh-emerald) 48%, var(--color-line));
+  background: color-mix(in oklch, var(--fsh-emerald) 14%, var(--color-card));
+  color: var(--color-fg);
+}
+
+/* ② Before / After 3모드 비교 슬라이더 */
+.fsh-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fsh-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 140ms var(--fsh-ease), background-color 140ms var(--fsh-ease), color 140ms var(--fsh-ease);
+}
+
+.fsh-pill[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+
+.fsh-compare-stage {
+  position: relative;
+  border: 1.5px solid var(--color-line-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--fsh-paper);
+  aspect-ratio: 520 / 220;
+  touch-action: pan-y;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.fsh-compare-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.fsh-compare-layer--after {
+  clip-path: inset(0 0 0 var(--fsh-split, 50%));
+}
+
+.fsh-compare-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fsh-svg-paper-flat { fill: oklch(0.98 0.004 90); }
+.fsh-svg-paper-tooth { fill: var(--fsh-paper-tooth); }
+
+.fsh-compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--fsh-split, 50%);
+  width: 2px;
+  background: var(--color-accent);
+  pointer-events: none;
+}
+
+.fsh-compare-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--color-accent);
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fsh-compare-tag {
+  position: absolute;
+  top: 10px;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in oklch, var(--fsh-ink) 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--fsh-paper) 92%, transparent);
+  color: var(--fsh-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.fsh-compare-tag--before { left: 10px; }
+.fsh-compare-tag--after { right: 10px; }
+
+.fsh-slider-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--color-fg-2);
+}
+
+.fsh-range {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.fsh-compare-captions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fsh-compare-caption {
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 11px;
+  background: var(--color-card);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+
+.fsh-compare-caption strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--color-fg);
+}
+
+/* ③ 6대 플래그십 엔진 함축 카드 그리드 */
+.fsh-engines-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fsh-engine-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 15px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-card);
+  min-width: 0;
+}
+
+.fsh-engine-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fsh-engine-num {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.fsh-engine-spec {
+  padding: 3px 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-panel);
+  color: var(--color-fg-3);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.fsh-engine-card h4 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.38;
+  color: var(--color-fg);
+}
+
+.fsh-engine-card p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+  flex: 1;
+}
+
+.fsh-engine-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ④ 직군별 런처 + 7단계 타임머신 + BYOT 1분 조합 */
+.fsh-trio-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.fsh-role-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-card);
+}
+
+.fsh-role-features {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fsh-role-feature-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-panel);
+  color: var(--color-fg);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.fsh-role-feature-link small {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-fg-3);
+  font-size: 11.5px;
+}
+
+.fsh-split-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.fsh-subcard {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  background: var(--color-card);
+  align-content: start;
+}
+
+.fsh-stage-steps {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.fsh-stage-btn {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  background: var(--color-panel);
+  color: var(--color-fg-2);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.fsh-stage-btn[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-fg);
+}
+
+.fsh-stage-detail {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 11px;
+  background: var(--color-panel);
+  font-size: 13px;
+}
+
+.fsh-byot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.fsh-byot-tool {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-panel);
+  color: var(--color-fg);
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.fsh-byot-tool[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.fsh-byot-result {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 11px;
+  background: var(--color-panel);
+  font-size: 13px;
+}
+
+.fsh-byot-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+
+.fsh-root :is(button, a, input):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 960px) {
+  .fsh-brush-layout,
+  .fsh-engines-grid,
+  .fsh-split-two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .fsh-compare-captions,
+  .fsh-role-features {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fsh-stage-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .fsh-byot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fsh-root :is(button, a, .fsh-canvas-hint) {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+:root[data-design-theme="contrast"] .fsh-shell,
+:root[data-design-theme="contrast"] .fsh-block {
+  border-width: 2px;
+  box-shadow: none;
+}
+
+@media (forced-colors: active) {
+  .fsh-shell,
+  .fsh-block,
+  .fsh-engine-card {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .fsh-btn--primary,
+  .fsh-brush-btn[aria-pressed="true"],
+  .fsh-pill[aria-pressed="true"],
+  .fsh-stage-btn[aria-pressed="true"],
+  .fsh-byot-tool[aria-pressed="true"] {
+    border: 2px solid Highlight;
+  }
+}

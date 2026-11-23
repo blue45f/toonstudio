@@ -1,0 +1,36 @@
+/* 3모드 Before / After 비교 SVG 전용 OKLCH 시맨틱 스타일. */
+.fsh-compare-svg { display: block; width: 100%; height: 100%; }
+.fsh-svg-paper-flat { fill: oklch(0.98 0.004 90); }
+.fsh-svg-paper-tooth { fill: oklch(0.972 0.013 86); }
+.fsh-svg-tooth-guide { stroke: oklch(0.74 0.02 85); }
+.fsh-svg-flat-blue { fill: none; stroke: oklch(0.55 0.16 258 / 0.85); }
+.fsh-svg-flat-yellow { fill: none; stroke: oklch(0.82 0.14 96 / 0.78); }
+.fsh-svg-muddy-mix { fill: oklch(0.62 0.03 95 / 0.92); }
+.fsh-svg-flat-pencil { fill: none; stroke: oklch(0.42 0.01 260); }
+.fsh-svg-km-blue { fill: none; stroke: oklch(0.51 0.2 256 / 0.76); }
+.fsh-svg-km-yellow { fill: none; stroke: oklch(0.83 0.18 92 / 0.8); }
+.fsh-svg-km-emerald { fill: oklch(0.62 0.2 152 / 0.88); }
+.fsh-svg-pencil-core { fill: none; stroke: oklch(0.22 0.02 260); }
+.fsh-svg-pencil-grain { fill: none; stroke: oklch(0.32 0.02 260 / 0.55); }
+.fsh-svg-mesh-bg { fill: oklch(0.28 0.015 260); }
+.fsh-svg-mesh-floor { fill: oklch(0.36 0.012 260); stroke: oklch(0.62 0.01 260); }
+.fsh-svg-mesh-wall-l { fill: oklch(0.45 0.012 260); stroke: oklch(0.68 0.01 260); }
+.fsh-svg-mesh-wall-r { fill: oklch(0.39 0.012 260); stroke: oklch(0.68 0.01 260); }
+.fsh-svg-mesh-wire { stroke: oklch(0.62 0.01 260 / 0.65); }
+.fsh-svg-mesh-win { fill: oklch(0.55 0.01 260); stroke: oklch(0.72 0.01 260); }
+.fsh-svg-npr-bg { fill: oklch(0.95 0.02 88); }
+.fsh-svg-npr-floor { fill: oklch(0.86 0.04 75); }
+.fsh-svg-npr-wall-l { fill: oklch(0.92 0.03 82); }
+.fsh-svg-npr-wall-r { fill: oklch(0.82 0.045 248); }
+.fsh-svg-npr-win { fill: oklch(0.97 0.05 90); stroke: oklch(0.2 0.025 262); }
+.fsh-svg-npr-light { fill: oklch(0.95 0.08 88 / 0.45); }
+.fsh-svg-npr-ink { fill: none; stroke: oklch(0.18 0.025 262); }
+.fsh-svg-qa-frame { fill: oklch(0.96 0.012 90); stroke: oklch(0.22 0.02 260); }
+.fsh-svg-qa-frame-clean { fill: oklch(0.98 0.008 90); stroke: oklch(0.18 0.02 260); }
+.fsh-svg-qa-char { fill: oklch(0.68 0.14 252); stroke: oklch(0.18 0.02 260); }
+.fsh-svg-qa-pinhole { fill: oklch(0.99 0.005 90); }
+.fsh-svg-qa-warn { fill: none; stroke: oklch(0.58 0.22 25); }
+.fsh-svg-qa-bleed { stroke: oklch(0.68 0.14 252); }
+.fsh-svg-qa-safe { fill: none; stroke: oklch(0.62 0.16 155 / 0.55); }
+.fsh-svg-qa-pass { fill: oklch(0.58 0.18 154); }
+.fsh-svg-qa-check { fill: none; stroke: oklch(0.99 0.005 90); }
