@@ -82,7 +82,7 @@ export const GLOBAL_MASTER_PRESETS_PART_3: readonly GlobalMasterBrushPreset[] = 
     freeByDefault: true,
     tipProfile: { shape: "dry-board-marker", aspectRatio: 0.38, angleDeg: -22, hardness: 0.86, bristleCount: 7, bristleJitter: 0.44, followDirection: true, ribbonWidthFactor: 1.52 },
     dualTipProfile: { enabled: true, shape: "dry-crack", blendMode: "subtract", scaleRatio: 0.92, spacingRatio: 0.94, rotationOffsetDeg: 0, opacity: 0.44 },
-    grainTexture: { kind: "smooth-bristol", scale: 1.36, contrast: 0.58, depth: 0.46, invert: false, paperAbsorption: 0.26 },
+    grainTexture: { kind: "smooth-bristol", scale: 1.36, contrast: 0.24, depth: 0.22, invert: false, paperAbsorption: 0.26 },
     scattering: { scatterX: 0.04, scatterY: 0.02, count: 1, countJitter: 0.12, bothAxes: false },
     rotationJitter: 0.05,
     colorJitter: { hue: 1, saturation: 0.04, luminance: 0.12, perDab: true },
@@ -91,7 +91,7 @@ export const GLOBAL_MASTER_PRESETS_PART_3: readonly GlobalMasterBrushPreset[] = 
     spacing: 0.1, defaultSizePx: 22, defaultOpacity: 0.88,
     signatureFeelKo: "잉크가 살짝 마른 펠트 촉이 만드는 거친 스트리크와 러프 스케치 질감.",
     signatureFeelEn: "Streaky half-dry felt nib that adds expressive speed grain to thumbnail layouts and sketches.",
-    defaultInkRgb: [36, 44, 58], blendBehavior: "normal",
+    defaultInkRgb: [36, 44, 58], blendBehavior: "multiply",
     searchKeywords: ["건조마커", "보드마커", "러프", "드라이마커", "dry marker", "streaky"],
   },
   {

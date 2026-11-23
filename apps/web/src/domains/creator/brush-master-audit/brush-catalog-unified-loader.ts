@@ -344,6 +344,8 @@ function fromP5(spec: P5BrushPresetSpec): UnifiedBrushAuditRecord {
 }
 
 function fromIbisMediBang(spec: ComicRibbonStampPresetSpec): UnifiedBrushAuditRecord {
+  const physics = spec.physics;
+  const operation: BrushOperationKind = physics?.operation ?? "paint";
   return Object.freeze({
     uid: `universal-ibis-medibang:${spec.id}`,
     id: spec.id,
@@ -351,21 +353,21 @@ function fromIbisMediBang(spec: ComicRibbonStampPresetSpec): UnifiedBrushAuditRe
     nameKo: spec.labelKo,
     nameEn: spec.id.replace(/-/gu, " "),
     rawCategory: spec.isRibbonChain ? `${spec.sourceApp}-ribbon` : spec.sourceApp,
-    operation: "paint",
+    operation,
     aspectRatio: spec.alignToTangent ? 0.68 : 1,
     spacingRatio: clamp01(spec.spacingRatio),
     scatter01: spec.isRibbonChain ? clamp01(spec.spacingRatio * 0.6) : 0.05,
     taper01: clamp01(spec.pressureSizeRange01[1] - spec.pressureSizeRange01[0]),
     features: Object.freeze({
-      toothContrast: 0.08,
-      edgeRoughness: spec.isRibbonChain ? 0.28 : 0.1,
-      edgeSharpness: 0.82,
-      wetBleed: 0.05,
-      impastoHeight: 0,
-      opacityCoverage: 0.88,
-      multiplyStacking: 0.14,
-      smudgePickup: 0.05,
-      liftStrength: 0,
+      toothContrast: clamp01(physics?.toothContrast01 ?? 0.08),
+      edgeRoughness: clamp01(physics?.edgeRoughness01 ?? (spec.isRibbonChain ? 0.28 : 0.1)),
+      edgeSharpness: clamp01(physics?.edgeSharpness01 ?? 0.82),
+      wetBleed: clamp01(physics?.wetBleed01 ?? 0.05),
+      impastoHeight: clamp01(physics?.impastoHeight01 ?? 0),
+      opacityCoverage: clamp01(physics?.opacityCoverage01 ?? 0.88),
+      multiplyStacking: clamp01(physics?.multiplyStacking01 ?? 0.14),
+      smudgePickup: clamp01(physics?.smudgePickup01 ?? 0.05),
+      liftStrength: operation === "erase" ? 0.85 : 0,
       bristleSpread: normalizeBristleSpread(spec.nozzleCycleCount, spec.alignToTangent ? 0.45 : 0.15),
     }),
   });

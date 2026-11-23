@@ -346,7 +346,7 @@ export function evaluateCspBrushTexel(
     }
     case "airbrush-mist": {
       if (r >= 1) return { alpha: 0, height: 0, shadeDelta: 0, mixRatio: 0, paperHeight: 1, isScatter: false };
-      const falloff = brush.hardness01 < 0.35 ? Math.exp(-(r * r) * 4.4) : smoothstep(1, 0.22, r) ** 1.18;
+      const falloff = brush.hardness01 < 0.22 ? Math.exp(-(r * r) * 4.4) : smoothstep(1, 0.22, r) ** 1.18;
       const alpha = clamp01(falloff * (0.92 + 0.08 * studioOssValueNoise2d(wx * 3.8, wy * 3.8, seed ^ 0xd11)) * brush.opacity01 * (0.45 + pressure01 * 0.55));
       return { alpha, height: 0, shadeDelta: 0, mixRatio: colorMix * 0.18, paperHeight: 1, isScatter: false };
     }

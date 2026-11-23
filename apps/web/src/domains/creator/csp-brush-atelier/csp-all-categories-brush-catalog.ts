@@ -564,7 +564,7 @@ export const CSP_ALL_36_BRUSH_CATALOG: readonly CspProBrushSpec[] = Object.freez
     id: "csp-hard-airbrush", category: "airbrush", nameKo: "단단한 에어브러시", nameEn: "Hard Airbrush",
     summaryKo: "중심 코어 밀도가 높고 외곽이 깔끔하게 떨어지는 셀 채색 광원·림라이트용 에어브러시",
     paperGrain: "none", textureKernel: "airbrush-mist",
-    defaultSizePx: 48, spacingRatio: 0.1, hardness01: 0.68, opacity01: 0.88,
+    defaultSizePx: 48, spacingRatio: 0.1, hardness01: 0.28, opacity01: 0.88,
     pressureSizeRange: [0.42, 1.28], pressureOpacityRange: [0.24, 0.94], pressureGamma: 0.9,
     tiltExpandMax: 1.36, taperStart01: 0.44, taperEnd01: 0.48, stabilizerLevel: 38,
     paperToothStrength01: 0.08, bristleCount: 0, bristleAnisotropy: 1.08,
