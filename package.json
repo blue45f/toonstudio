@@ -8,6 +8,7 @@
     "pnpm": ">=11"
   },
   "scripts": {
+    "scripts:help": "node scripts/repo-scripts-catalog.mjs",
     "music:local": "node scripts/toonstudio-music-local.mjs",
     "prepare": "node scripts/prepare-git-hooks.mjs",
     "harness:doctor": "node scripts/agent-harness.mjs doctor",
