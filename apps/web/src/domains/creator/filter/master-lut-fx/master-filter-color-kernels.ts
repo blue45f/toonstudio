@@ -343,6 +343,7 @@ interface ColorGradeRecipe {
   readonly specialMode?:
     | "sunset-horizon"
     | "horror-crimson"
+    | "sakura-petals"
     | "rainy-streaks"
     | "silver-mono"
     | "cross-process";
@@ -350,33 +351,33 @@ interface ColorGradeRecipe {
 
 const COLOR_GRADE_RECIPES: Readonly<Record<ColorLutFilterId, ColorGradeRecipe>> = Object.freeze({
   "golden-sunset": {
-    matrix: [1.14, 0.08, -0.04, 0.04, 0.98, -0.02, -0.06, 0.02, 0.82],
-    shadowTint: [0.06, -0.02, 0.08],
-    midTint: [0.12, 0.04, -0.08],
-    highlightTint: [0.18, 0.1, -0.14],
-    lift: 0.02,
-    gamma: 0.94,
-    gain: 1.06,
-    contrast: 0.14,
-    saturation: 1.18,
-    grainAmount: 0.015,
-    vignetteAmount: 0.12,
-    softBloomAmount: 0.18,
+    matrix: [1.18, 0.06, -0.06, 0.02, 0.86, -0.04, -0.08, 0.0, 0.66],
+    shadowTint: [0.1, -0.04, 0.09],
+    midTint: [0.18, 0.01, -0.14],
+    highlightTint: [0.24, 0.06, -0.22],
+    lift: 0.01,
+    gamma: 0.96,
+    gain: 1.08,
+    contrast: 0.18,
+    saturation: 1.24,
+    grainAmount: 0.018,
+    vignetteAmount: 0.18,
+    softBloomAmount: 0.22,
     specialMode: "sunset-horizon",
   },
   "dawn-blue-hour": {
-    matrix: [0.84, 0.02, 0.08, 0.01, 0.95, 0.08, 0.04, 0.1, 1.16],
-    shadowTint: [-0.06, 0.02, 0.14],
-    midTint: [-0.04, 0.04, 0.11],
-    highlightTint: [0.06, 0.08, 0.12],
-    lift: 0.03,
-    gamma: 1.04,
-    gain: 0.96,
-    contrast: 0.1,
-    saturation: 0.9,
-    grainAmount: 0.012,
-    vignetteAmount: 0.14,
-    softBloomAmount: 0.1,
+    matrix: [0.76, 0.0, 0.1, -0.02, 0.9, 0.12, 0.06, 0.12, 1.24],
+    shadowTint: [-0.11, 0.01, 0.22],
+    midTint: [-0.08, 0.04, 0.18],
+    highlightTint: [-0.02, 0.08, 0.16],
+    lift: 0.01,
+    gamma: 1.12,
+    gain: 0.91,
+    contrast: 0.14,
+    saturation: 0.92,
+    grainAmount: 0.015,
+    vignetteAmount: 0.2,
+    softBloomAmount: 0.12,
   },
   "memory-sepia": {
     matrix: [0.393, 0.769, 0.189, 0.349, 0.686, 0.168, 0.272, 0.534, 0.131],
@@ -393,18 +394,18 @@ const COLOR_GRADE_RECIPES: Readonly<Record<ColorLutFilterId, ColorGradeRecipe>> 
     softBloomAmount: 0,
   },
   "rofan-dreamy-pastel": {
-    matrix: [1.05, 0.06, 0.04, 0.03, 0.98, 0.05, 0.05, 0.04, 1.06],
-    shadowTint: [0.1, 0.05, 0.13],
-    midTint: [0.08, 0.05, 0.09],
-    highlightTint: [0.12, 0.08, 0.1],
-    lift: 0.11,
-    gamma: 0.88,
-    gain: 1.04,
-    contrast: -0.14,
-    saturation: 0.88,
+    matrix: [0.98, 0.04, 0.1, 0.02, 0.94, 0.08, 0.1, 0.06, 1.14],
+    shadowTint: [0.11, 0.05, 0.22],
+    midTint: [0.08, 0.04, 0.16],
+    highlightTint: [0.14, 0.1, 0.16],
+    lift: 0.15,
+    gamma: 0.84,
+    gain: 1.02,
+    contrast: -0.22,
+    saturation: 0.82,
     grainAmount: 0.01,
     vignetteAmount: 0,
-    softBloomAmount: 0.34,
+    softBloomAmount: 0.42,
   },
   "neon-cyberpunk": {
     matrix: [1.14, -0.08, 0.16, -0.06, 0.94, 0.12, 0.14, 0.08, 1.18],
@@ -436,86 +437,87 @@ const COLOR_GRADE_RECIPES: Readonly<Record<ColorLutFilterId, ColorGradeRecipe>> 
     specialMode: "horror-crimson",
   },
   "sakura-spring-glow": {
-    matrix: [1.08, 0.05, 0.02, 0.02, 1.0, 0.03, 0.04, 0.03, 1.04],
-    shadowTint: [0.06, 0.02, 0.07],
-    midTint: [0.1, 0.04, 0.07],
-    highlightTint: [0.16, 0.08, 0.11],
-    lift: 0.07,
-    gamma: 0.91,
-    gain: 1.05,
-    contrast: -0.04,
-    saturation: 1.06,
+    matrix: [1.16, 0.04, 0.02, 0.04, 0.92, 0.0, 0.08, -0.02, 0.92],
+    shadowTint: [0.1, -0.01, 0.05],
+    midTint: [0.18, 0.01, 0.06],
+    highlightTint: [0.24, 0.06, 0.1],
+    lift: 0.04,
+    gamma: 0.92,
+    gain: 1.06,
+    contrast: 0.06,
+    saturation: 1.2,
     grainAmount: 0.008,
     vignetteAmount: 0,
-    softBloomAmount: 0.32,
+    softBloomAmount: 0.34,
+    specialMode: "sakura-petals",
   },
   "rainy-mood-tone": {
-    matrix: [0.85, 0.08, 0.06, 0.04, 0.93, 0.07, 0.06, 0.11, 1.02],
-    shadowTint: [-0.05, 0.01, 0.07],
-    midTint: [-0.04, 0.02, 0.07],
-    highlightTint: [-0.02, 0.03, 0.06],
+    matrix: [0.8, 0.1, 0.08, 0.04, 0.92, 0.08, 0.06, 0.14, 1.02],
+    shadowTint: [-0.08, 0.01, 0.06],
+    midTint: [-0.06, 0.02, 0.06],
+    highlightTint: [-0.04, 0.02, 0.05],
     lift: 0.02,
-    gamma: 1.06,
-    gain: 0.93,
-    contrast: 0.08,
-    saturation: 0.66,
-    grainAmount: 0.025,
-    vignetteAmount: 0.18,
+    gamma: 1.1,
+    gain: 0.89,
+    contrast: 0.1,
+    saturation: 0.46,
+    grainAmount: 0.03,
+    vignetteAmount: 0.24,
     softBloomAmount: 0,
     specialMode: "rainy-streaks",
   },
   "kodak-portra-lut": {
-    matrix: [1.06, 0.04, -0.02, 0.02, 1.01, -0.01, -0.02, 0.03, 0.94],
-    shadowTint: [0.01, 0.02, 0.03],
-    midTint: [0.05, 0.02, -0.02],
-    highlightTint: [0.07, 0.05, 0.01],
-    lift: 0.04,
+    matrix: [1.11, 0.04, -0.03, 0.02, 1.02, -0.02, -0.03, 0.03, 0.94],
+    shadowTint: [0.02, 0.02, -0.01],
+    midTint: [0.08, 0.04, -0.04],
+    highlightTint: [0.1, 0.07, -0.02],
+    lift: 0.05,
     gamma: 0.96,
-    gain: 1.01,
-    contrast: 0.1,
-    saturation: 0.96,
-    grainAmount: 0.032,
-    vignetteAmount: 0.1,
+    gain: 1.02,
+    contrast: 0.14,
+    saturation: 1.06,
+    grainAmount: 0.044,
+    vignetteAmount: 0.16,
     softBloomAmount: 0,
   },
   "fuji-velvia-anime": {
-    matrix: [1.14, -0.06, -0.02, -0.04, 1.12, -0.02, -0.04, 0.04, 1.14],
-    shadowTint: [-0.03, 0.01, 0.05],
-    midTint: [0.02, 0.04, 0.03],
-    highlightTint: [0.04, 0.03, 0.05],
-    lift: -0.02,
-    gamma: 0.95,
-    gain: 1.06,
-    contrast: 0.24,
-    saturation: 1.36,
+    matrix: [1.16, -0.08, -0.02, -0.04, 1.14, -0.02, -0.04, 0.04, 1.16],
+    shadowTint: [-0.04, 0.01, 0.06],
+    midTint: [0.03, 0.05, 0.04],
+    highlightTint: [0.05, 0.04, 0.06],
+    lift: -0.04,
+    gamma: 0.94,
+    gain: 1.08,
+    contrast: 0.3,
+    saturation: 1.46,
     grainAmount: 0.014,
-    vignetteAmount: 0.08,
+    vignetteAmount: 0.1,
     softBloomAmount: 0.08,
   },
   "teal-orange-cinema": {
-    matrix: [1.1, 0.04, -0.08, -0.02, 1.0, 0.02, -0.08, 0.06, 1.06],
-    shadowTint: [-0.11, 0.05, 0.11],
-    midTint: [0.04, 0.01, -0.03],
-    highlightTint: [0.16, 0.07, -0.12],
-    lift: 0.01,
-    gamma: 1.0,
-    gain: 1.04,
-    contrast: 0.22,
-    saturation: 1.12,
-    grainAmount: 0.022,
-    vignetteAmount: 0.18,
+    matrix: [1.16, 0.05, -0.12, -0.04, 1.0, 0.04, -0.12, 0.08, 1.1],
+    shadowTint: [-0.18, 0.08, 0.16],
+    midTint: [0.06, 0.01, -0.05],
+    highlightTint: [0.24, 0.09, -0.18],
+    lift: -0.01,
+    gamma: 1.02,
+    gain: 1.06,
+    contrast: 0.32,
+    saturation: 1.2,
+    grainAmount: 0.024,
+    vignetteAmount: 0.26,
     softBloomAmount: 0,
   },
   "pastel-ghibli": {
-    matrix: [1.02, 0.05, -0.01, 0.02, 1.04, 0.01, 0.01, 0.05, 0.98],
-    shadowTint: [0.03, 0.06, 0.07],
-    midTint: [0.04, 0.06, 0.02],
-    highlightTint: [0.1, 0.09, 0.02],
-    lift: 0.06,
-    gamma: 0.91,
-    gain: 1.02,
-    contrast: -0.08,
-    saturation: 1.05,
+    matrix: [0.98, 0.08, -0.02, 0.02, 1.12, 0.0, 0.0, 0.06, 0.92],
+    shadowTint: [0.01, 0.09, 0.06],
+    midTint: [0.03, 0.11, -0.04],
+    highlightTint: [0.14, 0.12, -0.03],
+    lift: 0.04,
+    gamma: 0.92,
+    gain: 1.04,
+    contrast: 0.04,
+    saturation: 1.24,
     grainAmount: 0.015,
     vignetteAmount: 0.04,
     softBloomAmount: 0.16,
@@ -647,10 +649,16 @@ export function applyColorLutMasterFilter(
 
       // 5. Special LUT / Webtoon Mood spatial-tonal characteristics
       if (recipe.specialMode === "sunset-horizon") {
-        const horizon = smoothstep(0.15, 0.85, 1 - ny);
-        r = clamp01(r + horizon * 0.09);
-        g = clamp01(g + horizon * 0.045);
-        b = clamp01(b - horizon * 0.03);
+        const horizon = smoothstep(0.1, 0.9, 1 - ny);
+        r = clamp01(r + horizon * 0.15);
+        g = clamp01(g + horizon * 0.01 - (1 - horizon) * 0.04);
+        b = clamp01(b - horizon * 0.14);
+      } else if (recipe.specialMode === "sakura-petals") {
+        const petalWave = Math.sin(nx * 19 + ny * 9 + seed * 0.03) * Math.cos(nx * 7 - ny * 15);
+        const petalGlow = smoothstep(0.55, 0.94, petalWave) * smoothstep(0.9, 0.05, ny) * 0.28;
+        r = clamp01(r + petalGlow * 1.1);
+        g = clamp01(g + petalGlow * 0.56);
+        b = clamp01(b + petalGlow * 0.78);
       } else if (recipe.specialMode === "horror-crimson") {
         const redness = clamp01((r0 - Math.max(g0, b0) - 0.14) * 3.2);
         if (redness > 0) {
@@ -659,12 +667,12 @@ export function applyColorLutMasterFilter(
           b = clamp01(lerp(b, b0 * 0.25, redness * 0.78));
         }
       } else if (recipe.specialMode === "rainy-streaks") {
-        const diag = Math.floor(x * 0.9 + y * 0.22);
-        const streakSeed = hash2d(diag, Math.floor(y * 0.08), seed + 71);
-        const streakMask = streakSeed > 0.88 ? (streakSeed - 0.88) / 0.12 : 0;
-        const rainLight = streakMask * 0.16;
-        r = clamp01(r + rainLight * 0.82);
-        g = clamp01(g + rainLight * 0.92);
+        const diag = Math.floor(x * 0.85 + y * 0.24);
+        const streakSeed = hash2d(diag, Math.floor(y * 0.07), seed + 71);
+        const streakMask = streakSeed > 0.82 ? (streakSeed - 0.82) / 0.18 : 0;
+        const rainLight = streakMask * 0.24;
+        r = clamp01(r + rainLight * 0.78);
+        g = clamp01(g + rainLight * 0.9);
         b = clamp01(b + rainLight);
       } else if (recipe.specialMode === "silver-mono") {
         const mono = srgbLuma(r, g, b);

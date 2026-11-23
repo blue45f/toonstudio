@@ -10,6 +10,8 @@ import {
 import { loadLocalSystemFontsForLettering } from "../lettering/local-system-font-bridge";
 import { computeResponsiveHapticGrid } from "../render/uhd-edge-grid/responsive-haptic-grid";
 import { computeUhdEdgeRenderPlan } from "../render/uhd-edge-grid/uhd-dpr-tile-budgeter";
+import { StudioComputeWorkerPool } from "../render/worker-wasm-offload/offscreen-worker-pool";
+import { probeWasmSimdAndWorkerSupport } from "../render/worker-wasm-offload/wasm-simd-pixel-kernel";
 
 import { extract3dLightingRigFrom2dCut } from "./cut-to-3d-lighting-matcher";
 import { generateDieCutSvgFromAlpha, runCmykPrintPreflight } from "./goods-print-cutline-preflight";
@@ -106,14 +108,34 @@ export function ProCraftEnginesPanel() {
   const [uhdZoom, setUhdZoom] = useState(1.5);
   const [launchedFileCount, setLaunchedFileCount] = useState(0);
   const [localFontSummary, setLocalFontSummary] = useState<string>("");
+  const [wasmBenchSummary, setWasmBenchSummary] = useState<string>("");
 
   const wcoState = useMemo(() => readWindowControlsOverlayState(), []);
+  const wasmSupport = useMemo(() => probeWasmSimdAndWorkerSupport(), []);
 
   useEffect(() => {
     return installPwaLaunchQueueConsumer((files) => {
       setLaunchedFileCount(files.length);
     });
   }, []);
+
+  const handleRunWasmWorkerBench = () => {
+    const pool = new StudioComputeWorkerPool({ maxWorkers: 2 });
+    const rgba = buildDemoCutRgba(lightingScene);
+    void pool
+      .submit({ type: "wasm-alpha-threshold", rgba, width: 64, height: 64, mode: "luma", threshold: 128 })
+      .then((res) => {
+        const telemetry = pool.getTelemetry();
+        setWasmBenchSummary(
+          isEn
+            ? `Backend ${res.backend} · ${res.elapsedMs.toFixed(2)}ms · zero-copy ${telemetry.totalTransferredBytes}B`
+            : `백엔드 ${res.backend} · ${res.elapsedMs.toFixed(2)}ms · 제로-카피 ${telemetry.totalTransferredBytes}B`,
+        );
+      })
+      .finally(() => {
+        pool.dispose();
+      });
+  };
 
   const handleProbeLocalFonts = () => {
     void loadLocalSystemFontsForLettering().then((result) => {
@@ -635,12 +657,22 @@ export function ProCraftEnginesPanel() {
                   {wcoState.visible ? "WCO Active" : isEn ? "Standard Window" : "표준 창"} · {launchedFileCount}
                 </dd>
               </div>
+              <div>
+                <dt>{isEn ? "Wasm SIMD128 · Workers" : "Wasm SIMD128 · 워커"}</dt>
+                <dd>
+                  {wasmSupport.wasmSimd128 ? "SIMD128" : "Wasm"} · {wasmSupport.recommendedPoolSize}T
+                </dd>
+              </div>
             </dl>
             <div className="pro-craft-row">
               <button type="button" className="pro-craft-chip" onClick={handleProbeLocalFonts}>
                 <span>{isEn ? "Check Local System Fonts (Rights BOM)" : "로컬 PC 폰트 · Rights BOM 점검"}</span>
               </button>
+              <button type="button" className="pro-craft-chip" onClick={handleRunWasmWorkerBench}>
+                <span>{isEn ? "Run Wasm SIMD Worker Offload Test" : "Wasm SIMD 워커 오프로드 실측"}</span>
+              </button>
               {localFontSummary ? <span className="pro-craft-meta">{localFontSummary}</span> : null}
+              {wasmBenchSummary ? <span className="pro-craft-meta">{wasmBenchSummary}</span> : null}
             </div>
           </div>
         </div>

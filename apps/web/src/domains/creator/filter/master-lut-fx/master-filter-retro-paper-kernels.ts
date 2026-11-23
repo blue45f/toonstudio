@@ -220,19 +220,20 @@ function applyHanjiFiberOverlay(
       const g0 = (input[idx + 1] ?? 0) / 255;
       const b0 = (input[idx + 2] ?? 0) / 255;
 
-      const tooth = fbm2d(x * 0.24, y * 0.24, seed + 11, 3);
-      const warpA = valueNoise2d(x * 0.05, y * 0.05, seed + 23) * 6;
-      const fiberA = Math.pow(Math.abs(Math.sin((x * 0.22 + y * 0.08 + warpA) * 1.3)), 14);
-      const fiberB = Math.pow(Math.abs(Math.sin((x * 0.09 - y * 0.26 + warpA * 0.7) * 1.1)), 16);
-      const fiberHighlight = clamp01((fiberA + fiberB) * 0.55);
+      const tooth = fbm2d(x * 0.22, y * 0.22, seed + 11, 3);
+      const warpA = valueNoise2d(x * 0.055, y * 0.055, seed + 23) * 6.5;
+      const fiberA = Math.pow(Math.abs(Math.sin((x * 0.2 + y * 0.09 + warpA) * 1.35)), 10);
+      const fiberB = Math.pow(Math.abs(Math.sin((x * 0.08 - y * 0.24 + warpA * 0.75) * 1.15)), 12);
+      const fiberHighlight = clamp01((fiberA + fiberB) * 0.78);
 
-      const paperTintR = 0.96 - (tooth - 0.5) * 0.14 + fiberHighlight * 0.09;
-      const paperTintG = 0.93 - (tooth - 0.5) * 0.15 + fiberHighlight * 0.08;
-      const paperTintB = 0.85 - (tooth - 0.5) * 0.16 + fiberHighlight * 0.06;
+      // 따뜻한 황토빛 전통 닥나무 한지 색조 + 선명한 긴 닥섬유 가닥
+      const paperTintR = 0.99 - (tooth - 0.5) * 0.18 + fiberHighlight * 0.14;
+      const paperTintG = 0.91 - (tooth - 0.5) * 0.19 + fiberHighlight * 0.11;
+      const paperTintB = 0.74 - (tooth - 0.5) * 0.2 + fiberHighlight * 0.06;
 
-      out[idx] = clampByte(clamp01(r0 * paperTintR + fiberHighlight * 0.06) * 255);
-      out[idx + 1] = clampByte(clamp01(g0 * paperTintG + fiberHighlight * 0.05) * 255);
-      out[idx + 2] = clampByte(clamp01(b0 * paperTintB + fiberHighlight * 0.03) * 255);
+      out[idx] = clampByte(clamp01(r0 * paperTintR + fiberHighlight * 0.11) * 255);
+      out[idx + 1] = clampByte(clamp01(g0 * paperTintG + fiberHighlight * 0.09) * 255);
+      out[idx + 2] = clampByte(clamp01(b0 * paperTintB + fiberHighlight * 0.05) * 255);
       out[idx + 3] = input[idx + 3] ?? 255;
     }
   }
@@ -246,7 +247,7 @@ function applyRoughWatercolorPaper(
   seed: number,
 ): Uint8ClampedArray {
   const out = new Uint8ClampedArray(input.length);
-  const scale = 0.34;
+  const scale = 0.36;
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -259,13 +260,14 @@ function applyRoughWatercolorPaper(
       const hx = fbm2d((x + 1) * scale, y * scale, seed + 61, 3);
       const hy = fbm2d(x * scale, (y + 1) * scale, seed + 61, 3);
 
-      const relief = (h0 - hx) * 0.42 + (h0 - hy) * 0.42;
-      const valleyPool = (0.5 - h0) * 0.18;
+      // 300g 냉압 코튼 황목 수채지: 선명한 측면광 요철 + 골짜기 안료 침전
+      const relief = (h0 - hx) * 0.85 + (h0 - hy) * 0.85;
+      const valleyPool = (0.5 - h0) * 0.36;
       const mod = 1 + relief + valleyPool;
 
-      out[idx] = clampByte(clamp01(r0 * mod * 0.98 + 0.015) * 255);
-      out[idx + 1] = clampByte(clamp01(g0 * mod * 0.97 + 0.012) * 255);
-      out[idx + 2] = clampByte(clamp01(b0 * mod * 0.93 + 0.005) * 255);
+      out[idx] = clampByte(clamp01(r0 * mod * 0.94 + 0.03) * 255);
+      out[idx + 1] = clampByte(clamp01(g0 * mod * 0.97 + 0.032) * 255);
+      out[idx + 2] = clampByte(clamp01(b0 * mod * 1.02 + 0.035) * 255);
       out[idx + 3] = input[idx + 3] ?? 255;
     }
   }
@@ -279,7 +281,7 @@ function applyLinenCanvasWeave(
   seed: number,
 ): Uint8ClampedArray {
   const out = new Uint8ClampedArray(input.length);
-  const freq = 1.45;
+  const freq = 1.55;
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -288,15 +290,16 @@ function applyLinenCanvasWeave(
       const g0 = (input[idx + 1] ?? 0) / 255;
       const b0 = (input[idx + 2] ?? 0) / 255;
 
-      const jitter = (valueNoise2d(x * 0.18, y * 0.18, seed + 91) - 0.5) * 0.35;
+      const jitter = (valueNoise2d(x * 0.18, y * 0.18, seed + 91) - 0.5) * 0.32;
       const warp = Math.cos((x + jitter) * freq);
       const weft = Math.cos((y - jitter) * freq);
       const overUnder = Math.sin(x * freq * 0.5) * Math.sin(y * freq * 0.5);
-      const weaveRelief = (warp * 0.36 + weft * 0.36 + overUnder * 0.28) * 0.16;
+      const weaveRelief = (warp * 0.38 + weft * 0.38 + overUnder * 0.24) * 0.3;
 
-      out[idx] = clampByte(clamp01(r0 * (0.98 + weaveRelief) + weaveRelief * 0.08) * 255);
-      out[idx + 1] = clampByte(clamp01(g0 * (0.97 + weaveRelief) + weaveRelief * 0.07) * 255);
-      out[idx + 2] = clampByte(clamp01(b0 * (0.94 + weaveRelief) + weaveRelief * 0.05) * 255);
+      // 거친 미표백 유화 린넨 캔버스: 뚜렷한 날실·씨실 교차 음영과 따뜻한 회갈색 바탕
+      out[idx] = clampByte(clamp01(r0 * (0.93 + weaveRelief) + weaveRelief * 0.12) * 255);
+      out[idx + 1] = clampByte(clamp01(g0 * (0.89 + weaveRelief) + weaveRelief * 0.1) * 255);
+      out[idx + 2] = clampByte(clamp01(b0 * (0.84 + weaveRelief) + weaveRelief * 0.08) * 255);
       out[idx + 3] = input[idx + 3] ?? 255;
     }
   }

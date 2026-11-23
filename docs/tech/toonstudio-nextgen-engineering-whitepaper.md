@@ -3,7 +3,7 @@
 > **"설치 0초의 브라우저 탭 하나에 WebGPU 분광 물감, Rust WASM 자연매체, 결정론적 Remotion 영상 파이프라인, WebHID 왼손 다이얼, 차세대 크롬 플랫폼 API까지 어떻게 다 우겨 넣었을까?"**
 
 - **문서 상태**: `current` (2026-11-23 저장소 실측 기준, 단 각 장·표마다 `current` / `migration` / `target` 경계를 엄격히 분리 표기)
-- **작성 기준일**: `2026-11-23` (기준 브랜치 `main` 커밋 `1190c4dda9`)
+- **작성 기준일**: `2026-11-23` (Wave 8~10 `main` 반영 + Wave 11 병렬 통합 트랙 기준)
 - **대상 독자**: 프런트엔드·그래픽스·시스템 엔지니어, 테크니컬 프로덕트 매니저(PM), 웹툰 프로덕션 파이프라인 설계자
 - **정직성 원칙**: 이 백서의 모든 코드 경로, 셰이더 상수, 거버넌스 수치는 실제 저장소 소스와 검증 스크립트에 근거한다. 아직 구현되지 않은 차세대 디바이스·API 계획은 `target`으로 분리하며, 완성된 기능처럼 포장하지 않는다.
 
@@ -17,6 +17,12 @@
 4. [AI 활용 개발 스킬 & 에이전트 하네스 엔지니어링](#4-ai-활용-개발-스킬--에이전트-하네스-엔지니어링)
 5. [멀티 디바이스 & 주변기기 I/O 생태계](#5-멀티-디바이스--주변기기-io-생태계)
 6. [차세대 크롬(Chrome) 웹 플랫폼 API 실전 가이드](#6-차세대-크롬chrome-웹-플랫폼-api-실전-가이드)
+7. [범용 9-LLM CLI · MCP 브리지 & 장시간 10,000획 지구력 검증](#7-범용-9-llm-cli--mcp-브리지--장시간-10000획-지구력-검증-current)
+8. [컴퓨터과학·그래픽스 논문 근거 & Wave 6·7 래칫 스냅샷](#8-컴퓨터과학그래픽스-논문-근거--wave-67-래칫-스냅샷-2026-11-23)
+9. [Wave 8·9·10·11 차세대 기술 총괄 아키텍처 (발표용 마스터 요약)](#9-wave-891011-차세대-기술-총괄-아키텍처-발표용-마스터-요약)
+10. [풀스택 유·무료 라이브러리 전수 비교 & 클린룸 내재화 전략](#10-풀스택-유무료-라이브러리-전수-비교--클린룸-내재화-전략)
+    - 10.5 [루트 설정 파일 · 스크립트 · ENV 그룹핑 맵](#105-루트-설정-파일--스크립트--env-그룹핑-맵-current)
+11. [연관 정본 문서](#11-연관-정본-문서)
 
 ---
 
@@ -525,8 +531,130 @@ monitor.disconnect();
 
 ---
 
-## 9. 연관 정본 문서
+## 9. Wave 8·9·10·11 차세대 기술 총괄 아키텍처 (발표용 마스터 요약)
 
+Wave 1~7이 "브라우저 안에 설치 0초의 드로잉·3D·협업·게이트 기반"을 세웠다면, **Wave 8~11**은 웹툰 제작·디자인·발표·협업·교육·출고·하드웨어 가속까지 **단일 로컬-퍼스트 브라우저 OS**로 완성하는 기술 도약이다. 외부 발표나 기술 세미나에서 바로 한 장으로 설명할 수 있도록 `current`(현재 `main` 반영 완료), `migration`(Wave 11 병렬 통합 트랙), `target`(의도적 비도입·후속 경계)을 엄격히 분리해 정리한다.
+
+```mermaid
+flowchart TD
+  subgraph W8["Wave 8: 감각 UX · 브랜드 · 가상 아틀리에 (current)"]
+    UX["예측 가능 리치 툴팁 · 촉각 마이크로 모션<br/>모바일 자기장 스냅 물리 · 가상 스튜디오 6스테이션"]
+  end
+
+  subgraph W9["Wave 9: 올인원 프로 제작 스위트 (current · 전부 ₩0 로컬)"]
+    BF["무료 502 선택 브러시(640 등록)<br/>+ 183 실제 RGBA/3D LUT 필터"]
+    DocDesign["제로 의존성 바이너리 .pptx OOXML<br/>+ Canva·Figma·Excalidraw 디자인 에디터"]
+    SpatialAI["5-평면 홀로그램 WebXR · 4K~8K UHD 햅틱 그리드<br/>아이디어→웹툰 6단계 · 감정 음성 코치/이어콘"]
+    CraftSync["HLC+VectorClock 타일 CRDT 무손실 병합<br/>2D→3D 자동 라이팅 · 굿즈 칼선 SVG · 10초 필압 보정"]
+  end
+
+  subgraph W10["Wave 10: OS 네이티브 PWA · 한국 실무/교육 폐루프 (current)"]
+    OS["PWA file_handlers · WCO 안전여백<br/>로컬 폰트 Rights BOM 감사"]
+    KR["한국 웹툰 10단계 컷 바통 · 3.3% 원천징수 정산<br/>교실 5축 실기 루브릭 · 포트폴리오 폐루프"]
+  end
+
+  subgraph W11["Wave 11: GPU·Wasm SIMD·WebCodecs·붉은펜·DX (migration 병렬 트랙 + current)"]
+    Compute["WebGPU Compute 자동 플랫팅/JFA(1~16px)<br/>Wasm SIMD128 + OffscreenCanvas 제로카피 풀"]
+    Ship["하드웨어 WebCodecs MP4 + WAV 9:16 숏폼<br/>비출력 붉은펜 오버레이 · 브러시/필터 전수 픽셀 감사"]
+    DX["package.json 336개 10대 그룹 CLI (current)<br/>루트 설정·ENV 맵 · 기술 백서 통합"]
+  end
+
+  W8 --> W9 --> W10 --> W11
+```
+
+### 9.1 Wave 8·9·10·11 핵심 기술 총괄 매트릭스 (`current` · `migration` · `target`)
+
+| Wave | 기술 영역 | 상태 | 핵심 구현 원리 및 발표 포인트 | 저장소 근거 경로 |
+| --- | --- | --- | --- | --- |
+| **Wave 8** | **촉각 UX · 예측 툴팁 · 가상 스튜디오 6스테이션** | `current` | 주얼 아틀리에 브랜드 아이콘 팔레트 최적화(`−617 KB`), 호버 전 결과를 보여 주는 리치 액션 프리뷰 툴팁, CSS 촉각 쉬머 모션, 모바일 자기장 스냅·드래그 물리, 재질별 Web Audio 발걸음 음향 | [`predictable-action-previews.ts`](../../apps/web/src/shared/components/predictable-action-previews.ts), [`atelier-motion.css`](../../apps/web/src/app/styles/atelier-motion.css), [`touch-drag-physics.ts`](../../apps/web/src/shared/lib/tactile-touch-audio/touch-drag-physics.ts), [`virtual-atelier-stations-engine.ts`](../../apps/web/src/domains/creator/virtual-space/interactive-atelier-stations/virtual-atelier-stations-engine.ts) |
+| **Wave 9** | **무료 502종 선택 브러시 + 183종 실제 RGBA/3D LUT 필터** | `current` | **전부 100% 무료(₩0)**: 브러시 502종 선택(Core+Pro 246 + MyPaint CC0 196 + 글로벌 시그니처 60 · 전체 등록 640종), 필터 183종(스튜디오 86 + Photoshop-Web 61 + 마스터 LUT/웹툰 36) + RGBA16F 비파괴 노드 11종 + KM7 안료 필터 4종 | [`global-master-brush-catalog.ts`](../../apps/web/src/domains/creator/brush/global-master-collection/global-master-brush-catalog.ts), [`master-filter-lut-catalog.ts`](../../apps/web/src/domains/creator/filter/master-lut-fx/master-filter-lut-catalog.ts), [`brush-filter-competitor-data.ts`](../../apps/web/src/domains/showcase/brush-filter-competitor-data.ts) |
+| **Wave 9** | **제로 의존성 바이너리 `.pptx` OOXML 엔진** | `current` | 외부 유료/무거운 SDK 없이 순수 TypeScript ZIP(CRC-32) + ISO/IEC 29500 OOXML 바이너리 생성·가져오기. PowerPoint·Keynote·LibreOffice 호환 SmartArt·네이티브 차트·표·슬라이드 애니메이션 | [`ooxml-pptx-builder.ts`](../../apps/web/src/domains/creator/pro-drawing-ppt-suite/pptx-ooxml/ooxml-pptx-builder.ts), [`ooxml-pptx-parser.ts`](../../apps/web/src/domains/creator/pro-drawing-ppt-suite/pptx-ooxml/ooxml-pptx-parser.ts) |
+| **Wave 9** | **미리캔버스·Canva·Figma·Excalidraw 올인원 웹 디자인 에디터** | `current` | 14종 실전 포맷 원클릭 앵커 리플로(매직 리사이즈), Figma Auto-Layout 제약 솔버 & 마스터-인스턴스 오버라이드 전파, Excalidraw 손그림 스케치 패스, 브랜드 키트·포토 프레임 | [`magic-resize-engine.ts`](../../apps/web/src/domains/creator/design-editor-suite/magic-resize-engine.ts), [`figma-autolayout-engine.ts`](../../apps/web/src/domains/creator/design-editor-suite/figma-autolayout-engine.ts), [`excalidraw-sketch-path.ts`](../../apps/web/src/domains/creator/design-editor-suite/excalidraw-sketch-path.ts) |
+| **Wave 9** | **HLC + VectorClock 256×256 타일 CRDT 무손실 병합** | `current` | Kulkarni et al.(2014) Hybrid Logical Clock + Vector Clock 기반 오프라인 다중 기기 편집 충돌 자동 해결. 교환·결합·멱등 결합 반격자(Join-Semilattice)로 단절 후 재접속 시 1타일 손실 없이 병합 | [`hlc-vector-clock.ts`](../../apps/web/src/domains/creator/offline-conflict-crdt/hlc-vector-clock.ts), [`tile-layer-crdt-merger.ts`](../../apps/web/src/domains/creator/offline-conflict-crdt/tile-layer-crdt-merger.ts) |
+| **Wave 9** | **4K~8K UHD 엣지 렌더링 · 반응형 햅틱 그리드** | `current` | 125%·150%·175% 비정수 DPR에서도 1물리픽셀 헤어라인·타일 경계를 정수 정렬하고 VRAM 타일 예산을 관리하며, 25~800% 줌 적응형(`metric`·`webtoon-gutter`·`golden-ratio`) 햅틱 그리드 제공 | [`uhd-dpr-tile-budgeter.ts`](../../apps/web/src/domains/creator/render/uhd-edge-grid/uhd-dpr-tile-budgeter.ts), [`responsive-haptic-grid.ts`](../../apps/web/src/domains/creator/render/uhd-edge-grid/responsive-haptic-grid.ts) |
+| **Wave 9** | **홀로그램 5-평면 오프액시스 WebXR 공간 웹툰** | `current` | 화면 기준면(`z=0`, Zero-Parallax) 전·후방 5개 깊이 평면에 비대칭 절두체(Off-Axis Projection) 시차를 적용해 마우스·자이로·WebXR 헤드셋에서 입체 웹툰 무대 연출 | [`hologram-spatial-projection.ts`](../../apps/web/src/domains/creator/hologram-webtoon/hologram-spatial-projection.ts) |
+| **Wave 9** | **아이디어 → 웹툰 6단계 멀티에이전트 & 연속성 감사** | `current` | 서사 비트 → 캐릭터 시트 → 컷 콘티 → 연출 → 식자 → 연속성 감사까지 6단계 결정론 파이프라인과 장르 팩(판타지·무협·느와르·코미디·스릴러) 오케스트레이션 | [`idea-to-episode-pipeline.ts`](../../apps/web/src/domains/creator/idea-to-webtoon-engine/idea-to-episode-pipeline.ts), [`idea-to-episode-continuity.ts`](../../apps/web/src/domains/creator/idea-to-webtoon-engine/idea-to-episode-continuity.ts) |
+| **Wave 9** | **감정·상황 적응형 음성 코치 & 어쿠스틱 이어콘** | `current` | 한/영 문장 운율·호흡 분할 플래너 + 5종 감정 톤 Web Audio 마림바·셀레스타 5음계 어쿠스틱 이어콘 프리큐(외부 MP3 0바이트) + 뉴럴 음성 어댑터 | [`expressive-prosody-engine.ts`](../../apps/web/src/domains/creator/voice-coach/expressive-prosody-engine.ts), [`acoustic-earcon-synth.ts`](../../apps/web/src/domains/creator/voice-coach/acoustic-earcon-synth.ts), [`neural-voice-adapters.ts`](../../apps/web/src/domains/creator/voice-coach/neural-voice-adapters.ts) |
+| **Wave 9** | **2D→3D 자동 라이팅 · 굿즈 칼선 SVG · 10초 필압 보정** | `current` | 2D 컷 RGBA에서 주광·보조광·림라이트 색온도를 추출해 3D 씬 조명에 동기화, 알파 Distance-Field+RDP로 아크릴 키링/스티커 칼선 SVG·CMYK 프리플라이트 생성, 10초 시필로 3차 베지어 필압 커브·펜촉 마모 개인 보정 | [`cut-to-3d-lighting-matcher.ts`](../../apps/web/src/domains/creator/pro-craft-engines/cut-to-3d-lighting-matcher.ts), [`goods-print-cutline-preflight.ts`](../../apps/web/src/domains/creator/pro-craft-engines/goods-print-cutline-preflight.ts), [`stylus-pressure-calibrator.ts`](../../apps/web/src/domains/creator/pro-craft-engines/stylus-pressure-calibrator.ts) |
+| **Wave 10** | **OS 네이티브 PWA `file_handlers` · WCO · 로컬 폰트 Rights BOM** | `current` | OS 파일 탐색기 더블클릭 직결(`window.launchQueue`), Window Controls Overlay 안전여백, `window.queryLocalFonts()` ↔ 상업 라이선스 자동 감사·경고 브리지 | [`pwa-file-launch-queue.ts`](../../apps/web/src/shared/lib/pwa-file-launch-queue.ts), [`local-system-font-bridge.ts`](../../apps/web/src/domains/creator/lettering/local-system-font-bridge.ts), [`manifest.webmanifest`](../../apps/web/public/manifest.webmanifest) |
+| **Wave 10** | **한국 웹툰 10단계 컷 바통 · 교실 5축 실기 루브릭** | `current` | 한국 실무 10단계 공정 바통 검증 + 외주 3.3% 원천징수(10원 미만 절사) 정산, 교실 과제→제출→붉은펜·음성 첨삭→5축 루브릭→학기 포트폴리오 폐루프 및 가상 스튜디오 개인 마감 직행 | [`korean-10stage-cut-handoff.ts`](../../apps/web/src/domains/creator/academy-and-roles/korean-10stage-cut-handoff.ts), [`classroom-critique-rubric.ts`](../../apps/web/src/domains/learn/classroom-critique-rubric.ts) |
+| **Wave 11** | **WebGPU Compute 자동 플랫팅 · Jump-Flooding(JFA) · 1~16px 틈새 닫기** | `current` (CPU 0~12px 기반) / `migration` (WGSL Compute 트랙) | 기존 형태학 갭 클로징([`studio-lineart-gap-closing.ts`](../../apps/web/src/domains/creator/fill/studio-lineart-gap-closing.ts))을 WGSL `@compute @workgroup_size(16,16)` 3종 셰이더(`gap_close_dilate`·`jump_flood_step`·`flatting_region_fill`) + WebGPU Subgroups 프로브 + TypedArray 완전 동치 폴백으로 확장 | 기반: [`studio-lineart-gap-closing.ts`](../../apps/web/src/domains/creator/fill/studio-lineart-gap-closing.ts) · 통합 트랙: `apps/web/src/domains/creator/fill/webgpu-flatting/` |
+| **Wave 11** | **Wasm SIMD128 바이너리 커널 + Web Worker/`OffscreenCanvas` 제로카피 풀** | `migration` (Wave 11 병렬 트랙) | 41바이트 표준 `v128` SIMD `WebAssembly.validate()` 프로브 + 인라인 Wasm 선형 메모리 픽셀 커널 + `Transferable ArrayBuffer` 제로카피 워커 풀(크래시 자동 재기동·`AbortSignal` 취소) | 통합 트랙: `apps/web/src/domains/creator/render/worker-wasm-offload/` |
+| **Wave 11** | **브라우저 ₩0 하드웨어 WebCodecs MP4 + WAV 오디오 믹스 9:16 숏폼** | `current` (기반 멀티플렉서) / `migration` (9:16 완결 트랙) | 기존 WebCodecs ISO-BMFF 멀티플렉서([`studio-webcodecs-mp4.ts`](../../apps/web/src/domains/creator/studio-webcodecs-mp4.ts), [`webcodecs-cuts-exporter.ts`](../../apps/web/src/domains/creator/nextgen-web-platform/webcodecs-cuts-exporter.ts))를 실배선해 실제 재생 가능한 `.mp4` + 16-bit RIFF/WAVE `.wav` + `.vtt`/`.srt` 완결 출력 | 기반: [`studio-webcodecs-mp4.ts`](../../apps/web/src/domains/creator/studio-webcodecs-mp4.ts) · 통합 트랙: `apps/web/src/domains/creator/export/shorts-webcodecs-mp4/` |
+| **Wave 11** | **PD·강사 비출력(`99_NONPRINT_REDLINE_OVERLAY`) 붉은펜 오버레이 양방향 동기화** | `migration` (Wave 11 병렬 트랙) | 컷 좌표 핀 클릭 시 뷰포트 자동 점프, 붉은펜 수정 완료 상태와 검수 보드 즉시 동기화, PNG/PSD/웹툰 출고 시 비출력 레이어 **0픽셀 강제 필터링** 가드 | 통합 트랙: `apps/web/src/domains/creator/review-redline-overlay/` |
+| **Wave 11** | **60종 브러시 × 36종 필터 전수 픽셀 변별력 감사 & DX 스크립트 카탈로그** | `migration` (픽셀 감사) / `current` (DX CLI·가이드) | 브러시 1,770쌍·필터 630쌍 픽셀 RMSE 전수 감사 및 컨택트시트 검증(`scripts/audit-brush-filter-visual-uniqueness.mjs`), `package.json` 336개 스크립트 10대 한글 그룹 CLI([`scripts/repo-scripts-catalog.mjs`](../../scripts/repo-scripts-catalog.mjs)) | [`scripts/repo-scripts-catalog.mjs`](../../scripts/repo-scripts-catalog.mjs), [`repo-scripts-and-configs-guide.md`](../engineering/repo-scripts-and-configs-guide.md) |
+| **비도입 경계** | **원격 유료 GPU 렌더팜 · 서버 FFmpeg 팜 · 4인+ Remotion 전환 · 실기기 XR/폴더블 QA** | `target` (의도적 비도입/후속) | ₩0 로컬 우선 단위경제 수호를 위해 원격 GPU 렌더팜·서버 트랜스코딩 클러스터는 도입하지 않음. 팀 4인 이상 전환 시 Remotion 라이선스/런타임 전환 및 실기기 양안·힌지 QA를 후속 관문으로 유지 | [1인 기업 상용화 라이선스 감사](../legal/solo-founder-commercial-license-audit-20261122.md) |
+
+---
+
+## 10. 풀스택 유·무료 라이브러리 전수 비교 & 클린룸 내재화 전략
+
+웹 기반 창작 도구가 네이티브 데스크톱 DCC와 정면 승부하려면 **(1) 검증된 퍼미시브(MIT/Apache-2.0/BSD/MPL-2.0) 오픈소스 엔진을 정확히 조합**하고, **(2) 독점 상용 SDK가 쥐고 있는 핵심 기능은 합법적 공개 논문(SIGGRAPH/EGSR/IEEE)과 오픈 국제 표준(ISO/W3C/Khronos)만으로 클린룸 내재화**하는 투트랙 전략이 필수다.
+
+### 10.1 무료 퍼미시브(MIT / Apache-2.0 / BSD / MPL-2.0) 최강 풀스택 인벤토리
+
+| 라이브러리 / 엔진 | 라이선스 | ToonStudio 적용 상태 (2026-11-23 실측) | 핵심 강점 및 풀스택 역할 |
+| --- | --- | --- | --- |
+| **Vello** (`crates/studio-engine-vello`) / **Tiny-Skia** · **Lyon** | Apache-2.0 / MIT (Tiny-Skia: BSD-3) | `current` (`Vello` 통합 · `packages/studio-engine-vello`) / `target` (`Tiny-Skia`·`Lyon` 경량 폴백) | GPU Compute 기반 초고속 2D 벡터/경로 안티앨리어싱 렌더러. `Lyon` 경로 테셀레이션 + `Tiny-Skia` 결정론 CPU 폴백과 조합해 GPU 없는 기기까지 2D 품질 통일 |
+| **ThorVG** (`@toonstudio/studio-engine-thorvg`) | MIT | `current` (`packages/studio-engine-thorvg`) | 초경량 C++/WASM 벡터·SVG·Lottie 런타임. 복잡한 UI 모션·스탬프·벡터 이펙트를 저메모리로 결정론 렌더링 |
+| **Meshoptimizer** · **Draco** · **KTX2** | MIT / Apache-2.0 | `current` (`meshoptimizer@1.3.0`, `ktx2-encoder@0.6.0`, `@gltf-transform/*@4.5.1`) | 3D 배경·VRM 에셋 정점 캐시 최적화, 지오메트리 압축, GPU 네이티브 텍스처(BasisU/KTX2) 초고속 스트리밍으로 브라우저 VRAM 점유 60~80% 절감 |
+| **Rapier2D / Rapier3D** | Apache-2.0 | `current` (`@dimforge/rapier3d-deterministic-compat@0.21.0`) | Rust/WASM 결정론 물리 엔진. 3D 배경 소품 배치·충돌, 캐릭터 망토·소품 물리, 2D 파티클 상호작용을 프레임 재현성 100%로 실행 |
+| **HarfBuzz** · **Parley** | MIT / Apache-2.0 | `current` (`harfbuzzjs@1.6.4`) / `target` (`Parley` Rust 통합) | `HarfBuzz`로 한글·일본어·아랍어 OpenType 자간/커닝/세로쓰기 셰이핑 수행. 향후 Linebender `Parley`를 Vello와 결합해 다단 말풍선 리치 텍스트 레이아웃 고도화 |
+| **Yjs** · **Automerge** · **Loro** | MIT | `current` (`yjs@13.6.33`, `@automerge/automerge@3.5.0`) / `target` (`Loro` 평가 후보) | `Yjs`(Cloudflare DO 실시간 협업) + `Automerge`(오프라인 브랜치) + 자체 HLC/VectorClock 타일 CRDT 운용. `Loro`(Rust/WASM Fugue+Movable Tree CRDT)는 복잡한 중첩 레이어 트리 동시 이동 최적화 후보 |
+| **TypeGPU** | MIT | `target` (WGSL 파이프라인 고도화 후보) | TypeScript에서 WGSL 버퍼 레이아웃·바인드 그룹·셰이더 타입을 컴파일 시점에 검증해 96바이트 유니폼 정렬 실수나 바인딩 불일치를 원천 차단 |
+| **Resvg** (`@resvg/resvg-wasm`) | MPL-2.0 (무수정 안전) | `current` (`@resvg/resvg-wasm@2.6.2`) | 브라우저 간 SVG 렌더링 편차를 없애는 Rust/WASM 결정론 SVG→RGBA 래스터라이저(말풍선·굿즈 칼선·인쇄물 정확 출력) |
+| **ONNX Runtime Web** (`WebGPU` / `WebNN` / `Wasm SIMD`) | MIT | `current` (`onnxruntime-web@1.31.1`, `@huggingface/transformers@4.3.2`) | 서버 GPU 과금 ₩0으로 브라우저 로컬에서 세그멘테이션·깊이 추정·업스케일·포즈 추론을 WebGPU/WebNN/SIMD128로 실행 |
+| **핵심 보완 퍼미시브 스택** | MIT / BSD-3 / Apache-2.0 | `current` (`package.json` 설치 완료) | `canvaskit-wasm@0.42.0`(Skia retained 벡터/PDF/CMYK), `three@0.187.0` + `@babylonjs/core@9.36.0` + `manifold-3d@3.5.1`(3D/불리언), `@sqlite.org/sqlite-wasm@3.53.0`(OPFS 권위 DB), `ag-psd@31.0.1`·`pdf-lib`·`pdfjs-dist`·`fflate`·`es-hangul` |
+
+> **라이선스 가드레일 (`current`)**: `pnpm run audit:licenses`가 매 빌드 시 비상업(`CC BY-NC`, 예: `mixbox`) 및 미승인 강카피레프트(`GPL`/`AGPL`) 유입을 자동 차단한다. `opencascade.js`(LGPL-2.1)는 비수정 지연 로드 동적 경계로 격리하고, `remotion`(직원 3인 이하 무료)은 4인 이상 전환 시 라이선스/런타임 전환 경계를 문서로 고정했다([상용화 라이선스 감사 리포트](../legal/solo-founder-commercial-license-audit-20261122.md)).
+
+### 10.2 상용 유료 라이브러리 벤치마크 vs 합법적 클린룸 수학·오픈 표준 내재화 매핑표
+
+> **클린룸 내재화 4대 절대 원칙**:
+> 1. 타사 상용 SDK·앱의 소스 코드, 바이너리 역컴파일 코드, 독점 LUT·가중치·에셋을 **단 1바이트도 복사하지 않는다**.
+> 2. DRM, 라이선스 키 검증, 암호화 파일 포맷의 보호 장치를 **절대 우회하지 않는다**.
+> 3. 오직 **공개 학술 논문(SIGGRAPH · EGSR · IEEE)**과 **오픈 국제 표준(ISO · W3C · Khronos)**의 수학적 원리만으로 클린룸 TypeScript / WGSL / Rust WASM을 독자 설계한다.
+> 4. 모든 내재화 엔진은 결정론 단위 테스트와 픽셀/기하 불변식으로 독립 검증한다.
+
+| 상용 유료 벤치마크 | 업계 대표 기능 | 합법적 공개 논문 · 오픈 표준 근거 | ToonStudio 클린룸 수학 내재화 아키텍처 | 현재 상태 |
+| --- | --- | --- | --- | --- |
+| **Clip Studio Paint(CSP) 엔진** | 벡터 선화 교차 지우개, 틈새 닫기 플랫팅, 듀얼 브러시 | Yuksel et al.(2011, 구심 Catmull-Rom), R-Tree 공간 색인(Guttman 1984, `rbush`), Jump Flooding Algorithm(Rong & Tan 2006), 오픈 PSD/SVG 규격 | Skia WebGL2 retained 벡터 선화 + 구심 Catmull-Rom 1프레임 예측 + 형태학/WGSL JFA 틈새 닫기 플랫팅 + `ag-psd` 상호운용 | `current` (선화·예측·CPU 갭클로징) · `migration` (WGSL JFA) |
+| **Rebelle 유체·안료 엔진** | 수채화 젖은 번짐, 감산 안료 혼색, 2.5D 임파스토 질감 | Kubelka & Munk(1931, 2-플럭스 분광 반사), Chu & Tai(SIGGRAPH 2005, MoXi 수묵 유체 격자 볼츠만), 2.5D 높이맵 법선 음영 | 독자 7밴드 분광 KM WGSL(`studio-webgpu-km7-*`, `mixbox` 0바이트) + Hokusai Rust WASM 자연매체 + 젖은 종이 엣지 블룸([`studio-wet-edge-bloom-v1.ts`](../../apps/web/src/domains/creator/brush/studio-wet-edge-bloom-v1.ts)) | `current` (KM7·Hokusai·블룸) · `target` (실시간 LBM 유체) |
+| **Live2D Cubism SDK** | 2D 일러스트 2.5D 메쉬 워프, 표정 파라미터 리깅 | Delaunay 삼각분할, ARAP(As-Rigid-As-Possible, Igarashi et al. SIGGRAPH 2005), Mean Value Coordinates(Floater 2003), 오픈 VRM 1.0 규격 | 현재 3D 아바타 표정·립싱크는 오픈 VRM 1.0(`@pixiv/three-vrm`)으로 완전 구현; 2D 파츠 메쉬 워프는 ARAP+MVC 기반 독립 2D 리깅 그래프로 설계 | `current` (VRM 1.0 표정/추적) · `target` (2D ARAP 메쉬 워프) |
+| **Spine 2D** | 2D 본(Bone) 스켈레탈 애니메이션, IK, 메쉬 스키닝 | FABRIK(Aristidou & Lasenby 2011, `closed-chain-ik`), Linear Blend Skinning(LBS) · Dual Quaternion Skinning(Kavan et al. 2007), glTF 2.0 스킨 규격 | 3D 본·IK·포즈 시퀀서는 Three.js + `closed-chain-ik`으로 운용; 2D 컷 리깅 애니메이션은 LBS/FABRIK 기반 JSON 결정론 키프레임 트랙으로 확장 가능 | `current` (3D IK/포즈) · `target` (2D 본 스키닝 타임라인) |
+| **ZBrush ZRemesher** | 고폴리곤 조각의 자동 쿼드(Quad) 리토폴로지 | Instant Meshes(Jakob et al., SIGGRAPH Asia 2015, Field-Aligned Quad Remeshing), QuadriFlow(Huang et al. 2018), MikkTSpace 접선 표준 | `meshoptimizer` + `three-mesh-bvh` + `manifold-3d` + `xatlasjs` 기반 웹 메시 정리·UV 패킹 운영; 방향장(RoSy/PoSy) 기반 자동 쿼드 리메셔는 Rust WASM 확장 후보 | `current` (메시 최적화·UV·불리언) · `target` (WASM 쿼드 리메셔) |
+| **Adobe Substance 3D** | 비파괴 노드 기반 절차적 PBR 텍스처 합성 | Disney Principled BRDF(Burley 2012), Khronos glTF 2.0 PBR · MaterialX 오픈 규격, Perlin/Simplex/Worley 절차적 노이즈 + Sobel 법선 추출 | WebGPU/GLSL 절차적 노이즈·스크린톤·KTX2 텍스처 파이프라인 및 2D→3D 라이팅 매처 운영; 범용 노드 DAG 재질 그래프 편집기는 후속 확장 | `current` (셰이더·KTX2·라이팅) · `target` (MaterialX DAG 편집기) |
+| **Apryse(PDFTron) PDF SDK** | 상업 인쇄용 CMYK PDF/X 생성, ICC 프로파일, 폰트 임베딩 | ISO 32000 PDF 표준, ICC v4 컬러 프로파일 명세, OpenType/HarfBuzz 규격 | `canvaskit-wasm` + `pdf-lib` + `pdfjs-dist` 기반 자체 CMYK 색변환·ICC 프로파일·PDF 벡터 적합성 라이터([`studio-canvaskit-cmyk-core.ts`](../../apps/web/src/domains/creator/render/studio-canvaskit-cmyk-core.ts), [`studio-canvaskit-pdf-vector.ts`](../../apps/web/src/domains/creator/render/studio-canvaskit-pdf-vector.ts)) | `current` |
+| **IMG.LY CE.SDK** | 템플릿 기반 웹 디자인 에디터, 자동 리사이즈, 브랜드 키트 | W3C CSS Flexbox 제약 레이아웃 수학, SVG 2.0 / ISO 29500 OOXML 표준 | 외부 SDK 0바이트로 자체 매직 리사이즈 14종, Auto-Layout 제약 솔버, 마스터-인스턴스, 브랜드 키트, 제로 의존성 `.pptx` OOXML 엔진 구현 | `current` |
+| **Wacom Ink SDK (WILL)** | 고속 필압·기울기 보정, 왼손 리모컨, 잉크 스트로크 직렬화 | W3C Pointer Events Level 3(`getCoalescedEvents`/`getPredictedEvents`), USB HID 표준(WebHID), W3C InkML 개념 모델 | Chrome WebHID 3대 왼손 다이얼 바이너리 파서([`studio-webhid-left-hand-device.ts`](../../apps/web/src/domains/creator/drawing/studio-webhid-left-hand-device.ts)) + 10초 3차 베지어 필압 보정기([`stylus-pressure-calibrator.ts`](../../apps/web/src/domains/creator/pro-craft-engines/stylus-pressure-calibrator.ts)) + OPFS 바이너리 스풀 | `current` |
+
+### 10.5 루트 설정 파일 · 스크립트 · ENV 그룹핑 맵 (`current`)
+
+대규모 모노레포(7개 앱 · 14개 패키지 · `package.json` **336개 스크립트** · `scripts/` **1,641개 파일**)를 신규 개발자나 발표 청중이 한눈에 파악할 수 있도록, 기존 CI·계약 테스트 호환성을 1건도 깨지 않고 **카탈로그 CLI + 그룹핑 지도**로 정리했다(상세 정본: [`docs/engineering/repo-scripts-and-configs-guide.md`](../engineering/repo-scripts-and-configs-guide.md)).
+
+```bash
+# 실행 위치: 저장소 루트 (읽기 전용, 부작용 없음)
+pnpm run scripts:help                     # 핵심 10줄 퀵스타트(배포 1줄 명령 포함) + 10대 한글 그룹 요약
+pnpm run scripts:help -- --group deploy   # 3. 배포·클라우드(1줄 명령) 50개 전체 조회
+pnpm run scripts:help -- --search webgpu  # 스크립트명·명령·한글 설명 통합 검색
+pnpm run scripts:help -- --json           # 자동화·도구 연동용 구조화 JSON 출력
+```
+
+| 분류 영역 | 핵심 파일 / 규모 (2026-11-23 실측) | 그룹 요약 및 운영 원칙 |
+| --- | --- | --- |
+| **`package.json` 336개 스크립트** | [`package.json`](../../package.json) · [`scripts/repo-scripts-catalog.mjs`](../../scripts/repo-scripts-catalog.mjs) | **10대 한글 그룹**(`1. 개발·실행` 18 · `2. 빌드·번들·프리캐시` 24 · `3. 배포·클라우드` 50 · `4. 타입·린트·아키텍처` 34 · `5. 핵심 테스트` 24 · `6. 스튜디오·브러시·3D` 119 · `7. 문서·i18n·카탈로그` 15 · `8. 보안·라이선스·감사` 24 · `9. DB·API·로컬스택` 16 · `10. 하네스·기타` 12). 기존 스크립트 이름 삭제·개명 금지 |
+| **TypeScript (`tsconfig*.json`)** | 루트 8종 + `apps/*`·`packages/*` | 루트 `tsconfig.json`(기본) · `tsconfig.packages.json`(Project References) · 5종 도메인 집중 프로파일(`toonstudio-core`/`ui`/`bg3d-runtime`/`learning`/`market-scope`) · `tsconfig.type-coverage.json`(95% 게이트) |
+| **Vite · CSS · 워크스페이스** | `apps/web/vite.config.ts` 외 앱별 3종 · `vite.feedback-review.config.ts` · `postcss.config.mjs` · `turbo.json` | 루트 `vite.config.ts` 금지(앱 소유 강제), 수동 청크 분할(`apps/web/config/vite-manual-chunks.ts`), Tailwind v4 PostCSS |
+| **Vitest · Playwright** | 루트 Vitest 6종 · `playwright.config.ts` + `config/playwright/` 29종 | 단위(`vitest.config.ts`) vs 직렬 성능 예산(`vitest.perf.config.ts`) 분리로 타이밍 간섭 차단, 특화 E2E 29종은 `config/playwright/` 집중 관리 |
+| **ESLint · 품질 · 훅** | `eslint.config.mjs` · `eslint.legacy-exceptions.json` · `knip.json` · `lighthouserc.json` · `.secretlintrc.json` · `commitlint.config.cjs` | Flat ESLint 10 + React 19 Compiler + `@shadcn/lint` OKLCH 검사, Knip 데드코드·순환 참조, Husky pre-commit/commit-msg/pre-push 자동 게이트 |
+| **ENV 환경변수 지도** | Git 추적: `.env.example`, `.env.production`, `config/env/*.env.example` (5종) / 비추적 로컬: `.env.infrastructure.local` 등 | **실제 비밀값 문서·Git 절대 미기재(`AGENTS.md` §9)**. `.env.production`은 공개 `VITE_*` 플래그만 유지, 배포 비밀은 `.env.infrastructure.local`(`0600`)에서 `pnpm run deploy:auth:sync`로만 GitHub Environment에 단계별 주입 |
+| **`scripts/` 디렉터리** | 전체 **1,641개** = 최상위 **1,033개** + 하위 19폴더 **608개** (`git ls-files scripts/`) | 최상위: `verify-*`(353) · `studio-*`(161) · `audit/check/validate-*`(61) · `ci/run-*`(53) · `generate-*`(50) · `deploy/cloudflare/local-*`(34) · 기타(321) / 하위: `lib/`(315) · `blender/`(105) · `ux-audit/`(33) · `experiments/`(29) · `local-fullstack/`(28) |
+
+---
+
+## 11. 연관 정본 문서
+
+- **저장소 스크립트·설정·ENV 그룹핑 정본 가이드**: [저장소 스크립트(336개) · 루트 설정 파일 · ENV 그룹핑 가이드](../engineering/repo-scripts-and-configs-guide.md)
 - **경쟁 도구·멀티디바이스 심층 벤치마크**: [글로벌 경쟁사 및 멀티디바이스 드로잉 UX 벤치마크 보고서 (2026-11)](../benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md)
 - **IR·홍보·제휴 차별화 브리프**: [ToonStudio IR · 홍보 · 제휴 차별화 브리프 (2026-11)](../ir/toonstudio-ir-promo-differentiation-brief-2026-11.md)
 - **기술 IR 현황 정본 (2026-11-22)**: [ToonStudio IR · 제품 기술 현황 브리프](../ir/toonstudio-ir-brief-20261122.md)
