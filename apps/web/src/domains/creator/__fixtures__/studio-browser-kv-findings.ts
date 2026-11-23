@@ -26,6 +26,17 @@ export interface BrowserKvAllowance {
   readonly proof: string;
 }
 
+export function allow(
+  file: string,
+  kind: FindingKind,
+  key: string,
+  occurrences: number,
+  rationale: string,
+  proof: string,
+): BrowserKvAllowance {
+  return Object.freeze({ file, kind, key, occurrences, rationale, proof });
+}
+
 export function compact(value: string): string {
   return value.replace(/\s+/gu, "");
 }

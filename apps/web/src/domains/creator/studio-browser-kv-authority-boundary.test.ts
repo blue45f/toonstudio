@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { compact, finding, type BrowserKvAllowance, type BrowserKvFinding, type FindingKind } from "./__fixtures__/studio-browser-kv-findings";
+import { allow, compact, finding, type BrowserKvAllowance, type BrowserKvFinding } from "./__fixtures__/studio-browser-kv-findings";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = resolve(HERE, "../../../../../");
@@ -294,17 +294,6 @@ function analyzeWorkspace(): readonly BrowserKvFinding[] {
       const file = slash(relative(WORKSPACE_ROOT, absolute));
       return analyzeBrowserKvSource(file, readFileSync(absolute, "utf8"));
     })));
-}
-
-function allow(
-  file: string,
-  kind: FindingKind,
-  key: string,
-  occurrences: number,
-  rationale: string,
-  proof: string,
-): BrowserKvAllowance {
-  return Object.freeze({ file, kind, key, occurrences, rationale, proof });
 }
 
 const UI_ONLY =

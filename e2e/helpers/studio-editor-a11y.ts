@@ -95,11 +95,13 @@ export async function waitForEditorSettled(page: Page): Promise<void> {
       message: "지연 로딩 중인 조각(aria-busy)이 끝나지 않았어요",
     })
     .toBe(0);
+  const status = page.getByRole("status");
   const connectionState = page.locator('[data-service-degraded-banner]:visible').or(
-    page.getByRole("status").filter({ hasText: "오프라인. 서버 연결 없이 작업 중이에요" }),
+    status.filter({ hasText: /^오프라인\. 서버 연결 없이 작업 중이에요$/u }),
   );
   await expect(connectionState.first()).toBeVisible({ timeout: 45_000 });
   await settleLayout(page);
+  await expect(status.filter({ hasText: "오프라인 · 기기 저장. 서버 연결 없이 작업 중이에요" })).toHaveCount(0);
 }
 
 /**
