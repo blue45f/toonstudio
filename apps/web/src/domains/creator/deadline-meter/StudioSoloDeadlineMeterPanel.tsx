@@ -36,6 +36,8 @@ import {
   type SoloDeadlineMeterState,
 } from "./deadline-meter-engine";
 
+import { StudioLargePmConveyorConsole } from "../smart-defaults-pm-ops";
+
 import { cn } from "@/shared/lib/utils";
 
 export interface StudioSoloDeadlineMeterPanelProps {
@@ -73,6 +75,7 @@ export function StudioSoloDeadlineMeterPanel({
   const [manualMinutesInput, setManualMinutesInput] = useState("45");
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [pmConveyorOpen, setPmConveyorOpen] = useState<boolean>(false);
 
   const runningTimer = state.activeTimer?.running ?? false;
   useEffect(() => {
@@ -455,6 +458,27 @@ export function StudioSoloDeadlineMeterPanel({
           {statusNotice}
         </p>
       ) : null}
+
+      <details
+        className="rounded-xl border border-line bg-panel p-3"
+        data-testid="deadline-meter-pm-conveyor-details"
+        open={pmConveyorOpen}
+        onToggle={(event) => setPmConveyorOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-xs font-bold text-fg [word-break:keep-all]">
+          <span>
+            대형 스튜디오 PM 3~4화차 로테이션 · 난이도 정산 · 사전 QC &amp; 빈칸 제로 스마트 기본값 콘솔 열기
+          </span>
+          <span className="text-[0.6875rem] font-semibold text-fg-3">
+            {pmConveyorOpen ? "접기" : "펼치기"}
+          </span>
+        </summary>
+        {pmConveyorOpen ? (
+          <div className="mt-3">
+            <StudioLargePmConveyorConsole />
+          </div>
+        ) : null}
+      </details>
     </section>
   );
 }
