@@ -2381,6 +2381,8 @@
   "route.terms": "Zerbitzuaren baldintzak",
   "route.unknown": "Orria",
   "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase",
   "search.badge": "Bilaketa globala",
   "search.title": "Lan-espazio zentratu bat izenburuak azkar aurkitzeko",
   "search.subtitle": "Bilatu izenburuak, sortzaileak eta etiketak elkarrekin eta emaitzak estutu plataforma eta prezio filtroekin.",

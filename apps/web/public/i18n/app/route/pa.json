@@ -92,5 +92,7 @@
   "route.technologyVideos": "ਵੀਡੀਓ",
   "route.terms": "ਸੇਵਾ ਦੀਆਂ ਸ਼ਰਤਾਂ",
   "route.unknown": "ਸਫ਼ਾ",
-  "route.offline": "Connection & on-device content"
+  "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase"
 }

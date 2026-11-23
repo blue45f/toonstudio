@@ -1,0 +1,203 @@
+/*
+ * ToonStudio 경쟁사 벤치마크(`/compare/studio`) & 기술 쇼케이스(`/tech`)
+ * 차세대 크롬 웹 플랫폼 모션 · OKLCH 시맨틱 상태 칩 · 고대비/모션감소 계약 시트.
+ *
+ * DESIGN.md 규약 준수:
+ * - 원시 hex/rgb 없이 모든 색상을 --color-* / --ui-palette-* 의미 토큰에서 파생한다.
+ * - Scroll-Driven Animations는 @supports + prefers-reduced-motion 가드로 점진적 향상한다.
+ * - forced-colors / prefers-contrast: more / [data-showcase-high-contrast="true"]에서
+ *   장식 블러·글로우를 끄고 2px 선명한 경계선으로 대비를 보장한다.
+ */
+
+.ts-showcase-root {
+  word-break: keep-all;
+  font-variant-numeric: tabular-nums;
+}
+
+.ts-showcase-stage {
+  view-transition-name: ts-showcase-stage;
+}
+
+::view-transition-old(ts-showcase-stage),
+::view-transition-new(ts-showcase-stage) {
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ts-showcase-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  background:
+    radial-gradient(circle at 88% 18%, color-mix(in oklch, var(--color-accent) 18%, transparent), transparent 46%),
+    radial-gradient(circle at 12% 92%, color-mix(in oklch, var(--color-cool) 16%, transparent), transparent 48%),
+    var(--color-panel);
+}
+
+.ts-showcase-emblem-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 34%, var(--color-line));
+  background:
+    radial-gradient(circle at 50% 35%, color-mix(in oklch, var(--color-accent-2) 18%, transparent), transparent 68%),
+    var(--color-card);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease;
+}
+
+.ts-showcase-emblem-frame:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-accent);
+}
+
+.ts-showcase-sprite-card {
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease;
+}
+
+.ts-showcase-sprite-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-line-strong);
+}
+
+/* 시맨틱 상태 배지 (색상 외에 아이콘·텍스트 병기 필수) */
+.ts-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.ts-status-good {
+  border-color: color-mix(in oklch, var(--color-good) 52%, var(--color-line));
+  background: color-mix(in oklch, var(--color-good) 14%, var(--color-card));
+  color: var(--color-good);
+}
+
+.ts-status-warn {
+  border-color: color-mix(in oklch, var(--color-warn) 52%, var(--color-line));
+  background: color-mix(in oklch, var(--color-warn) 14%, var(--color-card));
+  color: var(--color-warn);
+}
+
+.ts-status-cool {
+  border-color: color-mix(in oklch, var(--color-cool) 52%, var(--color-line));
+  background: color-mix(in oklch, var(--color-cool) 14%, var(--color-card));
+  color: var(--color-cool);
+}
+
+.ts-status-accent {
+  border-color: color-mix(in oklch, var(--color-accent) 52%, var(--color-line));
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.ts-status-neutral {
+  border-color: var(--color-line-strong);
+  background: var(--color-raised);
+  color: var(--color-fg-2);
+}
+
+.ts-status-muted {
+  border-color: var(--color-line);
+  background: var(--color-panel);
+  color: var(--color-fg-3);
+}
+
+.ts-probe-dot {
+  display: inline-block;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.ts-probe-dot-on {
+  background: var(--color-good);
+}
+
+.ts-probe-dot-fallback {
+  background: var(--color-warn);
+}
+
+/* 크롬 CSS Scroll-Driven Animations 점진적 향상 */
+@keyframes ts-showcase-scroll-reveal {
+  from {
+    opacity: 0.35;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ts-showcase-reveal {
+      animation-name: ts-showcase-scroll-reveal;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 24%;
+    }
+  }
+}
+
+/* 사용자 수동 고대비 토글 + OS 고대비/강제색상 모드 완전 대응 */
+.ts-showcase-root[data-showcase-high-contrast="true"] .ts-showcase-hero,
+.ts-showcase-root[data-showcase-high-contrast="true"] .ts-showcase-emblem-frame,
+.ts-showcase-root[data-showcase-high-contrast="true"] .ts-showcase-sprite-card,
+.ts-showcase-root[data-showcase-high-contrast="true"] .ts-status-pill {
+  background-image: none;
+  border-width: 2px;
+  border-color: var(--color-fg);
+}
+
+.ts-showcase-root[data-showcase-high-contrast="true"] .ts-showcase-hero {
+  background-color: var(--color-canvas);
+}
+
+.ts-showcase-root[data-showcase-high-contrast="true"] .ts-showcase-sprite-card {
+  background-color: var(--color-panel);
+}
+
+.ts-showcase-root[data-showcase-high-contrast="true"] .ts-status-pill {
+  color: var(--color-fg);
+  background-color: var(--color-raised);
+}
+
+@media (prefers-contrast: more), (forced-colors: active) {
+  .ts-showcase-hero,
+  .ts-showcase-emblem-frame,
+  .ts-showcase-sprite-card,
+  .ts-status-pill {
+    background-image: none !important;
+    box-shadow: none !important;
+    border-width: 2px;
+  }
+
+  .ts-showcase-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-showcase-reveal,
+  .ts-showcase-emblem-frame,
+  .ts-showcase-sprite-card,
+  ::view-transition-old(ts-showcase-stage),
+  ::view-transition-new(ts-showcase-stage) {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

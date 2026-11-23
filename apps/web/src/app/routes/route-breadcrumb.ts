@@ -67,6 +67,8 @@ const CURATED_TRAILS: Record<string, AppBreadcrumbItem[]> = {
   "/collaborate": [HOME, { ko: "구인·의뢰", en: "Collaboration" }],
   "/team/recruiting": [HOME, { ko: "협업", en: "Team", href: "/team" }, { ko: "인재·지원 관리", en: "Recruiting" }],
   "/about/compare": trail(ABOUT, "경쟁사 비교", "Competitor comparison"),
+  "/compare/studio": [HOME, { ko: "작품 비교", en: "Compare", href: "/compare" }, { ko: "스튜디오 도구 벤치마크", en: "Studio tool benchmark" }],
+  "/tech": [HOME, { ko: "차세대 기술 쇼케이스", en: "Next-Gen Tech Showcase" }],
   "/about/workflow": trail(ABOUT, "제작 과정", "Workflow"),
   "/about/principles": trail(ABOUT, "제품 원칙", "Principles"),
   "/about/technology": [HOME, ABOUT, { ko: "기술", en: "Technology" }],
