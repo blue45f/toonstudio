@@ -67,6 +67,7 @@ overrides:
   basic-ftp@<6.2.4: 6.2.4
   argparse@<2: 2.0.1
   extract-zip@<=2.0.1: file:patches/extract-zip-disabled
+  i18next@<26.3.4: 26.3.4
 
 patchedDependencies:
   '@gltf-transform/functions@4.4.2': 6e750bb844d4b21f5b7ead6ab2063a25ce63953173b1553355c0ad6b2682fe69
@@ -307,7 +308,7 @@ importers:
         version: 1.3.0(patch_hash=68b4e19d0b31d0fad5f13ae1e86d54b0e45a31ddc749fee45735a5dd5b01ddf1)
       p5.brush:
         specifier: 2.2.1
-        version: 2.2.1(patch_hash=6b307bc36f52c10edfb448c81f93799eeba30e77015abf4031960ce9907a78cb)(p5@2.3.1)
+        version: 2.2.1(patch_hash=6b307bc36f52c10edfb448c81f93799eeba30e77015abf4031960ce9907a78cb)(p5@2.3.1(typescript@6.0.3))
       paper:
         specifier: 0.17.0
         version: 0.17.0
@@ -6581,8 +6582,13 @@ packages:
   i18next-browser-languagedetector@4.3.1:
     resolution: {integrity: sha512-KIToAzf8zwWvacgnRwJp63ase26o24AuNUlfNVJ5YZAFmdGhsJpmFClxXPuk9rv1FMI4lnc8zLSqgZPEZMrW4g==}
 
-  i18next@19.9.2:
-    resolution: {integrity: sha512-0i6cuo6ER6usEOtKajUUDj92zlG+KArFia0857xxiEHAQcUwh/RtOQocui1LPJwunSYT574Pk64aNva1kwtxZg==}
+  i18next@26.3.4:
+    resolution: {integrity: sha512-pa7m0d7pBDqGHZxljT+WPFeyFgQ7P7SciPPo1tTqYuO0z4sqADYhwnBESmmGp/wEof1inwdls/k8ZgTg8rxFHA==}
+    peerDependencies:
+      typescript: ^5 || ^6
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   iconv-lite@0.4.24:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
@@ -14862,9 +14868,9 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.14
 
-  i18next@19.9.2:
-    dependencies:
-      '@babel/runtime': 7.29.14
+  i18next@26.3.4(typescript@6.0.3):
+    optionalDependencies:
+      typescript: 6.0.3
 
   iconv-lite@0.4.24:
     dependencies:
@@ -16142,12 +16148,12 @@ snapshots:
 
   p-try@2.2.0: {}
 
-  p5.brush@2.2.1(patch_hash=6b307bc36f52c10edfb448c81f93799eeba30e77015abf4031960ce9907a78cb)(p5@2.3.1):
+  p5.brush@2.2.1(patch_hash=6b307bc36f52c10edfb448c81f93799eeba30e77015abf4031960ce9907a78cb)(p5@2.3.1(typescript@6.0.3)):
     dependencies:
-      p5: 2.3.1
+      p5: 2.3.1(typescript@6.0.3)
       simplex-noise: 4.0.3
 
-  p5@2.3.1:
+  p5@2.3.1(typescript@6.0.3):
     dependencies:
       '@davepagurek/bezier-path': 0.0.7
       '@japont/unicode-range': 1.0.0
@@ -16156,12 +16162,14 @@ snapshots:
       colorjs.io: 0.6.1
       escodegen: 2.1.0
       gifenc: 1.0.3
-      i18next: 19.9.2
+      i18next: 26.3.4(typescript@6.0.3)
       i18next-browser-languagedetector: 4.3.1
       libtess: 1.2.2
       omggif: 1.0.10
       pako: 2.2.0
       zod: 4.6.7
+    transitivePeerDependencies:
+      - typescript
 
   pac-proxy-agent@9.1.0:
     dependencies:
