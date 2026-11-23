@@ -178,7 +178,7 @@ function EmptySearch({ onOpenCommandSearch }: { onOpenCommandSearch: () => void 
       <button
         type="button"
         onClick={onOpenCommandSearch}
-        className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-contrast transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <Command size={16} aria-hidden />
         F1 기능·설정 찾기 열기
@@ -322,7 +322,7 @@ function GuidedHelpHome({
                 onClick={() => onOpenArticle(initialArticle.id)}
                 className="group flex min-h-24 w-full items-center gap-4 rounded-2xl border border-accent/35 bg-accent-soft/20 p-4 text-left transition-colors hover:border-accent/60 hover:bg-accent-soft/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-contrast shadow-sm">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent text-on-accent shadow-sm">
                   <Paintbrush size={21} aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -463,7 +463,7 @@ function GuidedHelpArticle({
         <ol className="mt-2 grid gap-2 lg:grid-cols-3">
           {article.steps.map((step, index) => (
             <li key={step.title} className="rounded-xl border border-line bg-card p-3.5">
-              <span className="flex size-7 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-contrast">
+              <span className="flex size-7 items-center justify-center rounded-full bg-accent text-xs font-bold text-on-accent">
                 {index + 1}
               </span>
               <h4 className="mt-3 text-sm font-semibold text-fg">{step.title}</h4>
@@ -570,7 +570,7 @@ function GuidedHelpArticle({
         <button
           type="button"
           onClick={() => onRunAction(article.primaryAction)}
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-contrast transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {article.primaryAction.type === "manual" ? <ExternalLink size={16} aria-hidden /> : <ChevronRight size={16} aria-hidden />}
           {article.primaryAction.label}

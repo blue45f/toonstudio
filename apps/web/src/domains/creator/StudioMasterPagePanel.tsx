@@ -190,7 +190,7 @@ export function StudioMasterPagePanel({
                 masterCount === 0
                   ? "cursor-not-allowed border-line bg-card text-fg-3 opacity-60"
                   : confirmClear
-                    ? "border-red-500/60 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                    ? "border-bad/60 bg-bad/10 text-bad hover:bg-bad/20"
                     : "border-line bg-card text-fg-2 hover:bg-raised"
               )}
             >

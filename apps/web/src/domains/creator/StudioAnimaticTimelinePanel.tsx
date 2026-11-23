@@ -772,7 +772,7 @@ export function StudioAnimaticTimelinePanel({
                 <p className="text-[0.68rem] font-semibold text-fg">
                   페이지·컷 타임라인
                 </p>
-                <span className="text-[0.6rem] text-fg-4">
+                <span className="text-[0.6rem] text-fg-3">
                   좌우로 밀어 탐색
                 </span>
               </div>
@@ -812,7 +812,7 @@ export function StudioAnimaticTimelinePanel({
                           {formatDuration(durationMs)} ·{" "}
                           {TRANSITION_SHORT_LABELS[segment.transition.kind]}
                         </span>
-                        <span className="mt-1 block text-[0.58rem] text-fg-4">
+                        <span className="mt-1 block text-[0.58rem] text-fg-3">
                           cue {segment.cues.length}개 ·{" "}
                           {segmentPlan
                             ? `${segmentPlan.startFrame + 1}–${segmentPlan.endFrame + 1}f`
@@ -917,7 +917,7 @@ export function StudioAnimaticTimelinePanel({
                   <p className="truncate text-[0.72rem] font-bold text-fg">
                     {selectedSegment.label}
                   </p>
-                  <p className="mt-0.5 text-[0.6rem] text-fg-4">
+                  <p className="mt-0.5 text-[0.6rem] text-fg-3">
                     {selectedSegment.pageId}
                     {selectedSegment.cutId
                       ? ` · ${selectedSegment.cutId}`
@@ -1113,7 +1113,7 @@ export function StudioAnimaticTimelinePanel({
                     </div>
                   </div>
                   {selectedSegment.cues.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-line px-2.5 py-3 text-center text-[0.64rem] text-fg-4">
+                    <p className="rounded-xl border border-dashed border-line px-2.5 py-3 text-center text-[0.64rem] text-fg-3">
                       cue는 소리를 재생하지 않고 타이밍 메타데이터만 표시합니다.
                     </p>
                   ) : (
@@ -1298,7 +1298,7 @@ export function StudioAnimaticTimelinePanel({
             </button>
           </div>
         </div>
-        <p className="mt-1.5 flex items-center gap-1 text-[0.58rem] leading-relaxed text-fg-4">
+        <p className="mt-1.5 flex items-center gap-1 text-[0.58rem] leading-relaxed text-fg-3">
           <Check size={10} aria-hidden />
           편집 결정과 cue만 저장하며 이미지·음성·영상 데이터는 복제하지 않습니다.
         </p>

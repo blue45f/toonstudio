@@ -184,7 +184,7 @@ export function StudioQuickActionsCustomizationSheet({
         <button
           type="button"
           onClick={onDone}
-          className="min-h-11 w-full rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="min-h-11 w-full rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           구성 완료
         </button>

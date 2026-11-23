@@ -108,7 +108,7 @@ export function StudioColorPalettePanel({
     <div className="flex flex-col gap-2.5 rounded-2xl border border-white/10 bg-panel/70 p-3.5 shadow-md backdrop-blur-md">
       {/* Header with Title and Count Selector */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-fg-1">
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-fg">
           {busy ? <Loader2 size={15} className="animate-spin text-accent" /> : <Palette size={15} className="text-accent" />}
           <span>이미지 주요 색상</span>
           {colors.length > 0 && (
@@ -128,7 +128,7 @@ export function StudioColorPalettePanel({
               className={`rounded-md px-2 py-0.5 font-medium transition-all ${
                 sampleCount === cnt
                   ? "bg-accent text-on-accent font-semibold shadow-sm"
-                  : "text-fg-3 hover:text-fg-1"
+                  : "text-fg-3 hover:text-fg"
               }`}
             >
               {cnt}색
@@ -190,7 +190,7 @@ export function StudioColorPalettePanel({
                       />
                     ) : null}
                   </span>
-                  <span className="font-mono text-[0.62rem] text-fg-3 group-hover:text-fg-1 tracking-tight">
+                  <span className="font-mono text-[0.62rem] text-fg-3 group-hover:text-fg tracking-tight">
                     {isCopied ? "복사됨" : copyFailed ? panelStatusText("studio.panelStatus.colorPalette.copyFailed", "복사 실패") : hex}
                   </span>
                 </button>

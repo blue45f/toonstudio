@@ -35,7 +35,7 @@ function SeasonArcBoard({ document }: { readonly document: StudioSeasonArcBibleD
   const summary = useMemo(() => summarizeSeasonArcDocument(document), [document]);
   return (
     <div className="mt-3 space-y-3">
-      <p className="rounded-xl bg-surface-2 px-3 py-2 text-xs leading-relaxed text-fg-2">
+      <p className="rounded-xl bg-raised px-3 py-2 text-xs leading-relaxed text-fg-2">
         {summary.lines[1]}
         <span className="mt-1 block font-semibold text-fg">{summary.lines[2]}</span>
       </p>
@@ -167,7 +167,7 @@ export function StudioBibleDocumentsPanel({
                 aria-selected={active}
                 onClick={() => setPurpose(candidate)}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
-                  active ? "bg-fg text-bg" : "bg-surface-2 text-fg-2"
+                  active ? "bg-fg text-bg" : "bg-raised text-fg-2"
                 }`}
               >
                 <Icon size={13} aria-hidden />
@@ -204,7 +204,7 @@ export function StudioBibleDocumentsPanel({
                 <div className="flex flex-wrap items-baseline gap-2">
                   <h4 className="text-sm font-black text-fg">{document.title}</h4>
                   {/* 버전·작성 시즌 표기 — 모든 산출물에 강제 표시 */}
-                  <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-bold text-fg-2">
+                  <span className="rounded-full bg-raised px-2 py-0.5 text-[11px] font-bold text-fg-2">
                     {formatBibleDocumentStampLine(document.stamp)}
                   </span>
                   {onSelectDocument ? (

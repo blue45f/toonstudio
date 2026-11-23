@@ -76,7 +76,7 @@ export function StudioOnnxUpscalePanel({
       className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3"
       data-studio-onnx-upscale-panel="true"
     >
-      <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
         <Scaling size={14} className="text-accent" aria-hidden />
         AI 업스케일 (기기)
       </div>

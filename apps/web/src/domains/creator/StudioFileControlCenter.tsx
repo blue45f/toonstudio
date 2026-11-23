@@ -320,7 +320,7 @@ function FileReport({
           data-project-center-control="true"
           data-project-keep-open
           onClick={() => onOpenImporter(actionId)}
-          className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 text-[0.68rem] font-bold text-accent-contrast transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 text-[0.68rem] font-bold text-on-accent transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Upload size={14} aria-hidden />
           {studioFileControlAction(actionId).label} 열기
@@ -572,8 +572,8 @@ export function StudioFileControlCenter(): ReactElement {
               className={cn(
                 "rounded-full border px-2 py-1 text-[0.58rem] font-bold",
                 online
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                  ? "border-good/30 bg-good/10 text-good"
+                  : "border-warn/30 bg-warn/10 text-warn",
               )}
             >
               {online ? "온라인" : "오프라인"}

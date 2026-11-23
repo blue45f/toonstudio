@@ -108,7 +108,7 @@ export function StudioColorSlidersPanel({
               className={`min-h-9 min-w-12 flex-1 rounded-lg px-1 py-1 text-xs pointer-coarse:min-h-11 font-medium uppercase transition-all ${
                 isActive
                   ? "bg-card text-accent font-semibold shadow-sm border border-accent/40"
-                  : "text-fg-3 hover:text-fg-1"
+                  : "text-fg-3 hover:text-fg"
               }`}
             >
               {labels[space]}

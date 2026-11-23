@@ -68,7 +68,7 @@ export function Studio2dScenePreview({ scene, disabled, onPick, onClose }: {
             <button type="button" aria-pressed={pixelView} disabled={status !== "ready"} onClick={() => { setPixelView((value) => !value); if (!pixelView) viewportRef.current?.focus(); }}
               className="rounded-lg border border-line px-3 py-1.5 disabled:opacity-40">{pixelView ? translateCurrentStaticSourceText("domains.creator.Studio2dScenePreview", "ko", "화면에 맞추기") : translateCurrentStaticSourceText("domains.creator.Studio2dScenePreview", "ko", "원본 픽셀 보기")}</button>
           </div>
-          <div ref={viewportRef} role="region" className="max-h-[55dvh] overflow-auto rounded-lg bg-neutral-950" tabIndex={-1}
+          <div ref={viewportRef} role="region" className="max-h-[55dvh] overflow-auto rounded-lg bg-reader-canvas" tabIndex={-1}
             aria-label={translateCurrentStaticSourceText("domains.creator.Studio2dScenePreview", "ko", "배경 원본 이미지 영역")}>
             <img key={imageKey} ref={imageRef} src={studio2dImageSource(scene)} alt={title} decoding="async"
               className={pixelView ? translateCurrentStaticSourceText("domains.creator.Studio2dScenePreview", "en", "block max-w-none") : translateCurrentStaticSourceText("domains.creator.Studio2dScenePreview", "en", "mx-auto block max-h-[55dvh] max-w-full object-contain")}

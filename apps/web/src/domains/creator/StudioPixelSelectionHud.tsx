@@ -250,7 +250,7 @@ export const StudioPixelSelectionHud = memo(function StudioPixelSelectionHud({
             className={cn(
               "min-h-7 rounded-md px-2 text-[0.62rem] font-medium transition pointer-coarse:min-h-10",
               operation === candidate.id
-                ? "bg-accent text-accent-foreground shadow-sm"
+                ? "bg-accent text-on-accent shadow-sm"
                 : "text-fg-3 hover:bg-accent/10 hover:text-fg",
               "disabled:cursor-not-allowed disabled:opacity-40",
             )}

@@ -471,7 +471,7 @@ export function StudioRevisionCompareView({
                 type="button"
                 onClick={onRequestRestore}
                 disabled={!restoreMeaningful || restoring}
-                className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent-2 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <RotateCcw size={14} aria-hidden /> 이 버전 복원
               </button>
