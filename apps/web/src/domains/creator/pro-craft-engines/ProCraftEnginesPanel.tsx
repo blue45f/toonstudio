@@ -1,8 +1,13 @@
 import { Download, Grid3x3, Lightbulb, PenTool, Printer, RefreshCw, Sparkles } from "lucide-react";
-import { useMemo, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useState, type PointerEvent } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
+import {
+  installPwaLaunchQueueConsumer,
+  readWindowControlsOverlayState,
+} from "@/shared/lib/pwa-file-launch-queue";
 
+import { loadLocalSystemFontsForLettering } from "../lettering/local-system-font-bridge";
 import { computeResponsiveHapticGrid } from "../render/uhd-edge-grid/responsive-haptic-grid";
 import { computeUhdEdgeRenderPlan } from "../render/uhd-edge-grid/uhd-dpr-tile-budgeter";
 
@@ -99,6 +104,26 @@ export function ProCraftEnginesPanel() {
   const [nibMedia, setNibMedia] = useState<"dip-pen" | "oriental-brush" | "graphite-pencil">("oriental-brush");
   const [uhdDpr, setUhdDpr] = useState<1.25 | 2 | 3>(2);
   const [uhdZoom, setUhdZoom] = useState(1.5);
+  const [launchedFileCount, setLaunchedFileCount] = useState(0);
+  const [localFontSummary, setLocalFontSummary] = useState<string>("");
+
+  const wcoState = useMemo(() => readWindowControlsOverlayState(), []);
+
+  useEffect(() => {
+    return installPwaLaunchQueueConsumer((files) => {
+      setLaunchedFileCount(files.length);
+    });
+  }, []);
+
+  const handleProbeLocalFonts = () => {
+    void loadLocalSystemFontsForLettering().then((result) => {
+      setLocalFontSummary(
+        isEn
+          ? `${result.fonts.length} fonts (${result.source}) · Rights BOM check active`
+          : `시스템 폰트 ${result.fonts.length}종 (${result.source}) · Rights BOM 라이선스 경고 연동`,
+      );
+    });
+  };
 
   const uhdPlan = useMemo(
     () =>
@@ -604,7 +629,19 @@ export function ProCraftEnginesPanel() {
                 <dt>{isEn ? "Haptic Snap State" : "자석 스냅 상태"}</dt>
                 <dd>{hapticGrid.snap.isSnapped ? hapticGrid.haptic.axisLabel ?? "SNAP" : isEn ? "Free" : "자유 이동"}</dd>
               </div>
+              <div>
+                <dt>{isEn ? "OS PWA File / WCO" : "OS PWA 파일·WCO"}</dt>
+                <dd>
+                  {wcoState.visible ? "WCO Active" : isEn ? "Standard Window" : "표준 창"} · {launchedFileCount}
+                </dd>
+              </div>
             </dl>
+            <div className="pro-craft-row">
+              <button type="button" className="pro-craft-chip" onClick={handleProbeLocalFonts}>
+                <span>{isEn ? "Check Local System Fonts (Rights BOM)" : "로컬 PC 폰트 · Rights BOM 점검"}</span>
+              </button>
+              {localFontSummary ? <span className="pro-craft-meta">{localFontSummary}</span> : null}
+            </div>
           </div>
         </div>
       ) : null}
