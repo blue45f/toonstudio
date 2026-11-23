@@ -8,7 +8,7 @@
  * order against 14.69 process-first. An ordering convention inside one file would be silently
  * breakable by anyone adding a test above; a separate file is the enforcement.
  */
-import { vi } from "vitest";
+import { expect, vi } from "vitest";
 
 import {
   normalizeStudioBrushDynamicsSettings,
@@ -413,6 +413,58 @@ export function attachedRenderer(surface: StudioLiveInkSurface = SURFACE) {
   renderer.attach({ activeCanvas, presentationCanvas, settledCanvas });
   renderer.setSurface(surface);
   return { activeCanvas, presentationCanvas, renderer, settledCanvas };
+}
+
+/**
+ * CPU 예산 사례의 화면 복사는 호출 영수증으로 기록하고, 검증은 측정 구간 뒤에 수행한다.
+ * 기본 recorder의 누적 마크 객체 복제는 실제 Canvas의 지정 픽셀 영역 복사와 다른 O(n) 작업이다.
+ * active 마크·settled 스냅샷과 clear/save/restore는 그대로 두며, 일반 의미 검사는 기본 recorder를 쓴다.
+ * 이 Node fixture는 동기 JavaScript 작업을 검사하며 네이티브 래스터·GPU 비용을 측정하지 않는다.
+ */
+export function recordPresentationCopyCommands(
+  presentationCanvas: RecordingCanvas,
+  expectedSource: RecordingCanvas,
+  expectedOpacity: number,
+): () => void {
+  const context = presentationCanvas.getContext("2d");
+  if (!context) throw new Error("화면 복사 명령을 기록할 2D context가 없습니다.");
+  const originalDrawImage = context.drawImage;
+  const copies: Array<{
+    readonly source: CanvasImageSource;
+    readonly coordinates: readonly number[];
+    readonly opacity: number;
+    readonly compositeOperation: GlobalCompositeOperation;
+  }> = [];
+  context.drawImage = (source: CanvasImageSource, ...coordinates: number[]) => {
+    copies.push({
+      source, coordinates, opacity: context.globalAlpha,
+      compositeOperation: context.globalCompositeOperation,
+    });
+  };
+  return () => {
+    try {
+      expect(copies.length, "실제 화면 복사 호출이 있어야 합니다").toBeGreaterThan(0);
+      for (const copy of copies) {
+        expect(copy.source).toBe(expectedSource);
+        expect(copy.coordinates).toHaveLength(8);
+        expect(copy.coordinates.every(Number.isFinite)).toBe(true);
+        expect(copy.coordinates.slice(0, 4)).toEqual(copy.coordinates.slice(4));
+        const [x = Number.NaN, y = Number.NaN, width = Number.NaN, height = Number.NaN] = copy.coordinates;
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(y).toBeGreaterThanOrEqual(0);
+        expect(width).toBeGreaterThan(0);
+        expect(height).toBeGreaterThan(0);
+        expect(x + width).toBeLessThanOrEqual(expectedSource.width);
+        expect(y + height).toBeLessThanOrEqual(expectedSource.height);
+        expect(x + width).toBeLessThanOrEqual(presentationCanvas.width);
+        expect(y + height).toBeLessThanOrEqual(presentationCanvas.height);
+        expect(copy.opacity).toBe(expectedOpacity);
+        expect(copy.compositeOperation).toBe("source-over");
+      }
+    } finally {
+      context.drawImage = originalDrawImage;
+    }
+  };
 }
 
 /* ------------------------------------------------------------------------------------------

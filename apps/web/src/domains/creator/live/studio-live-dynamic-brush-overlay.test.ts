@@ -71,6 +71,7 @@ import {
   complexDynamics,
   drawElement,
   recordingCanvas,
+  recordPresentationCopyCommands,
   SURFACE,
   type RecordedEllipse,
 } from "./studio-live-dynamic-brush-overlay.fixture";
@@ -1609,7 +1610,8 @@ describe("StudioLiveDynamicBrushOverlayRenderer", () => {
     let lastRenderer: ReturnType<typeof attachedRenderer>["renderer"] | null = null;
 
     for (let pass = 0; pass < APPEND_BUDGET_PASSES; pass += 1) {
-    const { activeCanvas, renderer } = attachedRenderer();
+    const { activeCanvas, presentationCanvas, renderer } = attachedRenderer();
+    const verifyPresentationCopies = recordPresentationCopyCommands(presentationCanvas, activeCanvas, element.opacity ?? 1);
     lastRenderer = renderer;
     expect(renderer.begin(firstChunk).status).toBe("started");
 
@@ -1691,6 +1693,7 @@ describe("StudioLiveDynamicBrushOverlayRenderer", () => {
       }
     }
 
+    verifyPresentationCopies();
     // Keep the fastest complete pass, not the fastest frames from different passes.
     appendCpuPasses.push({
       mainThreadMaxMs: passMaxAppendMainThreadCpuMs,
