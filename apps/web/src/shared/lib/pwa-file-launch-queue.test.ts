@@ -130,9 +130,11 @@ describe("extractPwaLaunchFileExtension & classifyPwaLaunchFileFormat", () => {
 
 describe("installPwaLaunchQueueConsumer", () => {
   it("window.launchQueue.setConsumer로 전달된 파일을 포맷별로 분류해 전달하고 정리 함수로 해제한다", async () => {
-    let registeredConsumer: ((params: LaunchParamsLike) => void | Promise<void>) | null = null;
+    const holder: { consumer: ((params: LaunchParamsLike) => void | Promise<void>) | null } = {
+      consumer: null,
+    };
     const setConsumer = vi.fn((consumer: (params: LaunchParamsLike) => void | Promise<void>) => {
-      registeredConsumer = consumer;
+      holder.consumer = consumer;
     });
     const received: Array<readonly PwaLaunchFileEntry[]> = [];
 
@@ -144,9 +146,9 @@ describe("installPwaLaunchQueueConsumer", () => {
     );
 
     expect(setConsumer).toHaveBeenCalledTimes(1);
-    expect(registeredConsumer).not.toBeNull();
+    expect(holder.consumer).not.toBeNull();
 
-    registeredConsumer?.({
+    holder.consumer?.({
       targetURL: "https://www.toonstudio.cloud/studio",
       files: [
         makeFakeHandle("ep12.toon"),
@@ -180,7 +182,7 @@ describe("installPwaLaunchQueueConsumer", () => {
 
     // 정리 함수 호출 이후에는 추가 전달을 무시한다.
     dispose();
-    registeredConsumer?.({
+    holder.consumer?.({
       targetURL: "https://www.toonstudio.cloud/studio",
       files: [makeFakeHandle("after-dispose.toon")],
     });
@@ -198,7 +200,9 @@ describe("installPwaLaunchQueueConsumer", () => {
   });
 
   it("비동기 콜백 오류를 onError로 안전하게 전달하고 빈 파일 목록은 무시한다", async () => {
-    let registeredConsumer: ((params: LaunchParamsLike) => void | Promise<void>) | null = null;
+    const holder: { consumer: ((params: LaunchParamsLike) => void | Promise<void>) | null } = {
+      consumer: null,
+    };
     const onError = vi.fn();
     const onFiles = vi.fn(async () => {
       throw new Error("import failed");
@@ -208,17 +212,17 @@ describe("installPwaLaunchQueueConsumer", () => {
       targetWindow: {
         launchQueue: {
           setConsumer: (consumer) => {
-            registeredConsumer = consumer;
+            holder.consumer = consumer;
           },
         },
       },
       onError,
     });
 
-    registeredConsumer?.({ targetURL: "/studio", files: [] });
+    holder.consumer?.({ targetURL: "/studio", files: [] });
     expect(onFiles).not.toHaveBeenCalled();
 
-    registeredConsumer?.({ targetURL: "/studio", files: [makeFakeHandle("broken.psd")] });
+    holder.consumer?.({ targetURL: "/studio", files: [makeFakeHandle("broken.psd")] });
     await vi.waitFor(() => {
       expect(onError).toHaveBeenCalledTimes(1);
     });

@@ -119,8 +119,8 @@ export function ProCraftEnginesPanel() {
     void loadLocalSystemFontsForLettering().then((result) => {
       setLocalFontSummary(
         isEn
-          ? `${result.fonts.length} fonts (${result.source}) · Rights BOM check active`
-          : `시스템 폰트 ${result.fonts.length}종 (${result.source}) · Rights BOM 라이선스 경고 연동`,
+          ? `${result.fonts.length} fonts (${result.status}) · Rights BOM check active`
+          : `시스템 폰트 ${result.fonts.length}종 (${result.status}) · Rights BOM 라이선스 경고 연동`,
       );
     });
   };
