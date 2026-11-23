@@ -24,6 +24,29 @@ import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import type { StudioContextMiniDockMode } from "./StudioContextMiniDock";
 import type { StudioShortcutHudCue } from "./StudioVisualShortcutHud";
+import {
+  countActiveAuxiliaryTools,
+  formatPressurePresetLabel,
+  formatStabilizerLabel,
+  readStudioShellHandedness,
+  resolveNextPressurePreset,
+  resolveNextSymmetryMode,
+  stepBrushWidth,
+  stepBrushWidthFromWheel,
+  syncStudioShellHandedness,
+  syncStudioShellZenFocus,
+  toggleDrawingHandedness,
+  type StudioDrawingErgonomicsSymmetryType,
+  type StudioDrawingHandedness,
+} from "./studio-drawing-ergonomics-presets";
+import {
+  StudioDrawingInputHudStrip,
+  StudioDrawingWorkflowStagePills,
+} from "./StudioDrawingInputHudStrip";
+
+import "./StudioDrawingJewelChrome.css";
+
+export type { StudioDrawingErgonomicsSymmetryType };
 
 const LazyStudioRadialQuickWheel = lazyRetry(
   () => import("./StudioRadialQuickWheel").then((module) => ({ default: module.StudioRadialQuickWheel })),
@@ -37,14 +60,6 @@ const LazyStudioVisualShortcutHud = lazyRetry(
   () => import("./StudioVisualShortcutHud").then((module) => ({ default: module.StudioVisualShortcutHud })),
   "StudioVisualShortcutHud",
 );
-
-export type StudioDrawingErgonomicsSymmetryType =
-  | "none"
-  | "vertical"
-  | "horizontal"
-  | "radial"
-  | "kaleidoscope"
-  | "silk";
 
 export type StudioDrawingErgonomicsSession = Pick<
   StudioCuttoonEditorViewSession,
@@ -116,69 +131,11 @@ export type StudioDrawingErgonomicsSession = Pick<
   readonly undo?: () => void;
   readonly redo?: () => void;
   readonly setEyedropperActive?: (next: boolean) => void;
+  readonly canvasOnlyMode?: boolean;
+  readonly setCanvasOnlyMode?: (action: boolean | ((current: boolean) => boolean)) => void;
 };
 
-const SYMMETRY_CYCLE_ORDER: readonly StudioDrawingErgonomicsSymmetryType[] = [
-  "none",
-  "vertical",
-  "horizontal",
-  "radial",
-  "kaleidoscope",
-  "silk",
-];
-
-const PRESSURE_PRESET_CYCLE_ORDER: readonly PressureCurvePresetId[] = [
-  "linear",
-  "soft-ink",
-  "firm-gpen",
-  "expressive-brush",
-];
-
-function resolveNextPressurePreset(current: PressureCurvePresetId): PressureCurvePresetId {
-  const index = PRESSURE_PRESET_CYCLE_ORDER.indexOf(current);
-  if (index < 0) return "soft-ink";
-  return PRESSURE_PRESET_CYCLE_ORDER[(index + 1) % PRESSURE_PRESET_CYCLE_ORDER.length] ?? "linear";
-}
-
-function formatPressurePresetLabel(
-  preset: PressureCurvePresetId,
-  bt: (ko: string, en: string) => string,
-): string {
-  if (preset === "soft-ink") return bt("필압 부드러움", "Pressure soft");
-  if (preset === "firm-gpen") return bt("필압 단단한 G펜", "Pressure firm G-Pen");
-  if (preset === "expressive-brush") return bt("필압 강약 강조", "Pressure expressive");
-  return bt("필압 표준", "Pressure linear");
-}
-
-function resolveNextSymmetryMode(current: string | undefined): StudioDrawingErgonomicsSymmetryType {
-  if (!current || current === "off" || current === "none") {
-    return "vertical";
-  }
-  const index = SYMMETRY_CYCLE_ORDER.indexOf(current as StudioDrawingErgonomicsSymmetryType);
-  if (index < 0) {
-    return "none";
-  }
-  return SYMMETRY_CYCLE_ORDER[(index + 1) % SYMMETRY_CYCLE_ORDER.length] ?? "none";
-}
-
-function stepBrushWidth(current: number, direction: -1 | 1): number {
-  const rounded = Math.max(1, Math.round(Number.isFinite(current) ? current : 4));
-  const delta = rounded >= 24 ? 6 : rounded >= 10 ? 3 : rounded >= 4 ? 2 : 1;
-  return Math.max(1, Math.min(200, rounded + direction * delta));
-}
-
-function formatStabilizerLabel(
-  value: number,
-  bt: (ko: string, en: string) => string,
-): string {
-  const safe = Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
-  if (safe <= 0) return bt("보정 꺼짐", "Stabilizer off");
-  if (safe === 1) return bt("보정 약함", "Stabilizer low");
-  if (safe === 2) return bt("보정 표준", "Stabilizer std");
-  return bt("보정 강함", "Stabilizer high");
-}
-
-/** 현재 브러시와 두께를 먼저 배치하고 제작 단계 바로가기는 같은 줄 끝에 둔다. */
+/** 현재 브러시와 두께를 먼저 배치하고 제작 단계 바로가기·멀티 입력 HUD를 같은 줄 끝에 둔다. */
 export function StudioDrawingQuickErgonomicsBar({
   session: s,
 }: {
@@ -191,6 +148,9 @@ export function StudioDrawingQuickErgonomicsBar({
   const [quickWheelOpen, setQuickWheelOpen] = useState(false);
   const [quickWheelAnchor, setQuickWheelAnchor] = useState<{ readonly x: number; readonly y: number } | null>(null);
   const [miniDockOpen, setMiniDockOpen] = useState(false);
+  const [auxCollapsed, setAuxCollapsed] = useState(false);
+  const [localZenFocus, setLocalZenFocus] = useState(false);
+  const [handedness, setHandedness] = useState<StudioDrawingHandedness>(() => readStudioShellHandedness());
   const [shortcutCue, setShortcutCue] = useState<StudioShortcutHudCue | null>(null);
   const quickWheelTriggerRef = useRef<HTMLButtonElement>(null);
   const miniDockTriggerRef = useRef<HTMLButtonElement>(null);
@@ -201,6 +161,7 @@ export function StudioDrawingQuickErgonomicsBar({
   const [localQuickMenuSlots, setLocalQuickMenuSlots] = useState<readonly QuickMenuSlot[]>(() => loadQuickMenuSlots());
   const activeQuickMenuSlots = s.quickMenuSlots ?? localQuickMenuSlots ?? DEFAULT_QUICK_MENU_SLOTS;
   const activeQuickMenuCount = activeQuickMenuSlots.length;
+  const zenFocus = s.canvasOnlyMode ?? localZenFocus;
   const pushCue = useCallback((keycap: string, label: string, value?: string) => {
     setShortcutCue({ id: Date.now() + Math.random(), keycap, label, value });
   }, []);
@@ -258,6 +219,44 @@ export function StudioDrawingQuickErgonomicsBar({
   const stabilizerSafe = Math.max(0, Math.min(3, Math.round(Number.isFinite(s.stabilizer) ? s.stabilizer : 0)));
   const stabilizerLabel = formatStabilizerLabel(s.stabilizer, bt);
   const optionsLiveSummary = `${bt("현재 도구", "Current tool")} ${activeBrushName}, ${bt("두께", "Size")} ${roundedWidth}px, ${bt("불투명도", "Opacity")} ${opacityPercent}%, ${stabilizerLabel}, ${bt("배율", "Zoom")} ${zoomPercent}%`;
+  const activeAuxCount = countActiveAuxiliaryTools({
+    stabilizer: stabilizerSafe,
+    pressurePreset: activePressurePreset,
+    quickShapeEnabled: activeQuickShapeEnabled,
+    sizeLocked,
+    canvasFlipH: Boolean(s.canvasFlipH),
+    symmetryType: s.symmetryType,
+    perspectiveRulerActive: s.perspectiveRulerActive,
+    showWebtoonGuides: s.showWebtoonGuides,
+  });
+
+  useEffect(() => {
+    syncStudioShellZenFocus(zenFocus);
+    return () => {
+      syncStudioShellZenFocus(false);
+    };
+  }, [zenFocus]);
+
+  const handleToggleZenFocus = useCallback(() => {
+    const next = !zenFocus;
+    setLocalZenFocus(next);
+    syncStudioShellZenFocus(next);
+    s.setCanvasOnlyMode?.(next);
+    pushCue("Z", bt("Zen 집중", "Zen focus"), next ? bt("켜짐", "On") : bt("꺼짐", "Off"));
+  }, [bt, pushCue, s, zenFocus]);
+
+  const handleToggleHandedness = useCallback(() => {
+    setHandedness((prev) => {
+      const next = toggleDrawingHandedness(prev);
+      syncStudioShellHandedness(next);
+      pushCue(
+        "L",
+        bt("레일 방향", "Rail side"),
+        next === "left" ? bt("왼손(우측)", "Left (Right rail)") : bt("오른손(좌측)", "Right (Left rail)"),
+      );
+      return next;
+    });
+  }, [bt, pushCue]);
 
   const resetZoomToActualPixel = useCallback(() => {
     if (zoomDisabled) return;
@@ -314,6 +313,9 @@ export function StudioDrawingQuickErgonomicsBar({
       data-studio-quick-ergonomics="true"
       data-studio-draw-options="true"
       data-studio-active-draw-mode={activeDrawMode}
+      data-studio-compact-aux-collapsed={auxCollapsed ? "true" : "false"}
+      data-studio-zen-focus={zenFocus ? "true" : "false"}
+      data-studio-handedness={handedness}
     >
       <button
         type="button"
@@ -359,6 +361,16 @@ export function StudioDrawingQuickErgonomicsBar({
         className="studio-drawing-stepper"
         role="group"
         aria-label={bt("브러시 두께 빠른 조절", "Quick brush size control")}
+        data-studio-brush-width-wheel="true"
+        onWheel={(event) => {
+          if (blocked || event.deltaY === 0) return;
+          event.preventDefault();
+          s.setStrokeWidth((current) => {
+            const next = stepBrushWidthFromWheel(current, event.deltaY, event.shiftKey);
+            pushCue("Wheel", bt("브러시 두께", "Brush size"), `${next}px`);
+            return next;
+          });
+        }}
       >
         <button
           type="button"
@@ -380,7 +392,10 @@ export function StudioDrawingQuickErgonomicsBar({
           onClick={(event) => clarity?.open("brush", event.currentTarget)}
           aria-label={`${bt("현재 브러시 두께", "Current brush size")} ${roundedWidth}px`}
           aria-expanded={clarity?.panel === "brush"}
-          title={bt("클릭해 펜·브러시 세부 설정 열기", "Open detailed brush settings")}
+          title={bt(
+            "클릭해 펜·브러시 세부 설정 열기 · 마우스 휠로 즉시 두께 조절",
+            "Open detailed brush settings · Scroll wheel to adjust size",
+          )}
         >
           <span>{bt("두께", "Size")} {roundedWidth}px</span>
         </button>
@@ -452,6 +467,7 @@ export function StudioDrawingQuickErgonomicsBar({
         data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
         data-studio-pressure-preset={activePressurePreset}
         data-studio-pressure-curve={`${activePressureCurve.x1},${activePressureCurve.y1},${activePressureCurve.x2},${activePressureCurve.y2}`}
+        data-studio-aux-control="true"
         onClick={() => {
           const next = resolveNextPressurePreset(activePressurePreset);
           setLocalPressurePreset(next);
@@ -475,6 +491,7 @@ export function StudioDrawingQuickErgonomicsBar({
         data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
         data-studio-quickshape-snap={activeQuickShapeEnabled ? "true" : "false"}
         data-studio-quickmenu-slot-count={activeQuickMenuCount}
+        data-studio-aux-control="true"
         onClick={() => {
           const next = !activeQuickShapeEnabled;
           setLocalQuickShapeEnabled(next);
@@ -494,6 +511,7 @@ export function StudioDrawingQuickErgonomicsBar({
           type="button"
           className="studio-drawing-ergonomics-chip"
           aria-pressed={sizeLocked}
+          data-studio-aux-control="true"
           onClick={() => s.studioOptionsBarsHandlers?.toggleSizeLock?.()}
           title={bt("브러시를 바꿔도 현재 두께를 유지합니다", "Keep current brush size when switching brushes")}
         >
@@ -506,6 +524,7 @@ export function StudioDrawingQuickErgonomicsBar({
         type="button"
         className="studio-drawing-ergonomics-chip"
         aria-pressed={Boolean(s.canvasFlipH)}
+        data-studio-aux-control="true"
         onClick={() => {
           if (s.studioOptionsBarsHandlers?.flipCanvasHorizontal) {
             s.studioOptionsBarsHandlers.flipCanvasHorizontal();
@@ -527,6 +546,7 @@ export function StudioDrawingQuickErgonomicsBar({
           s.symmetryType !== "off" &&
           s.symmetryType !== "none"
         }
+        data-studio-aux-control="true"
         onClick={() => {
           s.changeStudioSymmetryType?.(resolveNextSymmetryMode(s.symmetryType));
         }}
@@ -548,6 +568,7 @@ export function StudioDrawingQuickErgonomicsBar({
           aria-describedby={blocked && blockedReason ? blockedReasonId : undefined}
           data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
           data-studio-perspective-snap-quick-toggle="true"
+          data-studio-aux-control="true"
           onClick={() => s.setPerspectiveRulerActive?.((active) => !active)}
           title={blocked && blockedReason ? blockedReason : bt(
             "원근 자 스냅 켜기/끄기 · 소실점 방사선에 펜·직선을 자동 정렬합니다",
@@ -566,6 +587,7 @@ export function StudioDrawingQuickErgonomicsBar({
       <button
         type="button"
         className="studio-drawing-ergonomics-chip"
+        data-studio-aux-control="true"
         onClick={(event) => s.studioOptionsBarsHandlers?.openBrushStudio?.(event.currentTarget)}
         title={bt("서브픽셀 테이퍼·습식 안료 브러시 랩 열기", "Open Brush Lab studio")}
       >
@@ -584,6 +606,7 @@ export function StudioDrawingQuickErgonomicsBar({
         type="button"
         className="studio-drawing-ergonomics-chip"
         aria-pressed={s.showWebtoonGuides}
+        data-studio-aux-control="true"
         onClick={() => s.setShowWebtoonGuides((visible) => !visible)}
         title={bt("모바일 독자 가독 폭(690·720px)과 세이프 영역 가이드를 캔버스에 표시합니다", "Toggle mobile reader safe-width guides (690/720px)")}
       >
@@ -604,70 +627,19 @@ export function StudioDrawingQuickErgonomicsBar({
       >
         <span>{zoomPercent}%</span>
       </button>
-      <div
-        className="studio-drawing-stage-pills"
-        role="group"
-        aria-label={bt("웹툰 제작 5단계 바로가기", "5-stage webtoon workflow shortcuts")}
-      >
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          aria-pressed={clarity?.panel === "pages"}
-          onClick={(event) => clarity?.open("pages", event.currentTarget)}
-        >
-          <span>{bt("① 콘티·컷", "1. Storyboard")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          disabled={blocked}
-          aria-pressed={s.tool === "draw" && s.drawMode !== "eraser"}
-          aria-describedby={blocked && blockedReason ? blockedReasonId : undefined}
-          data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
-          title={blocked && blockedReason ? blockedReason : undefined}
-          onClick={() => s.activatePrimaryCanvasTool("draw", "pen")}
-        >
-          <span>{bt("② 선화·펜터치", "2. Line & Ink")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          aria-pressed={clarity?.panel === "brush"}
-          onClick={(event) => clarity?.open("brush", event.currentTarget)}
-        >
-          <img
-            src="/brand/luminous-atelier-20261114/icon-studio-layers-color.webp"
-            alt=""
-            width={18}
-            height={18}
-            aria-hidden="true"
-          />
-          <span>{bt("③ 채색·톤", "3. Color & Tone")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill studio-drawing-stage-pill--3d"
-          aria-pressed={s.bg3dOpen}
-          onClick={() => s.studioLeftToolRailHandlers.toggleBg3dEditor()}
-        >
-          <img
-            src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
-            alt=""
-            width={18}
-            height={18}
-            aria-hidden="true"
-          />
-          <span>{bt("④ 3D 배경", "4. 3D Stage")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill"
-          aria-pressed={s.exportMenuOpen}
-          onClick={() => s.setExportMenuOpen(true)}
-        >
-          <span>{bt("⑤ 마감·출고", "5. Publish")}</span>
-        </button>
-      </div>
+      <StudioDrawingWorkflowStagePills
+        activePanel={clarity?.panel}
+        onOpenPanel={clarity?.open}
+        blocked={blocked}
+        blockedReason={blockedReason}
+        blockedReasonId={blockedReasonId}
+        drawingLineActive={s.tool === "draw" && s.drawMode !== "eraser"}
+        onActivatePen={() => s.activatePrimaryCanvasTool("draw", "pen")}
+        bg3dOpen={s.bg3dOpen}
+        onToggleBg3d={() => s.studioLeftToolRailHandlers.toggleBg3dEditor()}
+        exportMenuOpen={s.exportMenuOpen}
+        onOpenExportMenu={() => s.setExportMenuOpen(true)}
+      />
 
       <button
         ref={quickWheelTriggerRef}
@@ -703,6 +675,18 @@ export function StudioDrawingQuickErgonomicsBar({
         <SlidersHorizontal size={15} aria-hidden />
         <span>{bt("미니 독", "Mini dock")}</span>
       </button>
+
+      <StudioDrawingInputHudStrip
+        activeAuxCount={activeAuxCount}
+        auxCollapsed={auxCollapsed}
+        onToggleAuxCollapsed={() => setAuxCollapsed((prev) => !prev)}
+        zenFocus={zenFocus}
+        onToggleZenFocus={handleToggleZenFocus}
+        handedness={handedness}
+        onToggleHandedness={handleToggleHandedness}
+        tool={s.tool}
+        blocked={blocked}
+      />
 
       {miniDockOpen ? (
         <Suspense fallback={null}>
@@ -762,6 +746,10 @@ export function StudioDrawingQuickErgonomicsBar({
             open={quickWheelOpen}
             anchor={quickWheelAnchor}
             slots={activeQuickMenuSlots}
+            slotCount={8}
+            activeToolLabel={activeBrushName}
+            strokeWidth={roundedWidth}
+            shortcutHint="Q"
             onSelectAction={(actionId, slot) => handleQuickWheelAction(actionId, slot.labelKo)}
             onSlotsChange={(nextSlots) => { setLocalQuickMenuSlots(nextSlots); s.onChangeQuickMenuSlots?.(nextSlots); }}
             onClose={() => setQuickWheelOpen(false)}

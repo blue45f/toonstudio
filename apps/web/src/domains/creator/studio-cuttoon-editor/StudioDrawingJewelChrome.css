@@ -1,0 +1,126 @@
+/*
+ * Wave 13 Track 5 — Jewel Canvas-Max 광학 글래스 림 및 방사형 퀵 휠 주얼 카테고리 링.
+ * 원시 색상 및 전속성 전환 없이 100% OKLCH · 시맨틱 토큰만 사용한다.
+ */
+
+:root {
+  --studio-jewel-cat-history: oklch(0.66 0.19 266);
+  --studio-jewel-cat-transform: oklch(0.66 0.17 158);
+  --studio-jewel-cat-layer: oklch(0.65 0.17 242);
+  --studio-jewel-cat-color: oklch(0.69 0.19 44);
+  --studio-jewel-cat-view: oklch(0.65 0.17 196);
+}
+
+/* 데스크톱 플로팅 컨텍스트 바: 광학 글래스 림(-webkit-backdrop-filter + backdrop-filter 쌍) */
+@media (min-width: 1024px) {
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) {
+    background: color-mix(in oklch, var(--color-panel) 84%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(1.18);
+    backdrop-filter: blur(14px) saturate(1.18);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklch, var(--color-fg) 15%, transparent),
+      inset 0 -1px 0 color-mix(in oklch, var(--color-line-strong) 42%, transparent),
+      var(
+        --atelier-elevation-dock,
+        0 10px 26px -12px color-mix(in oklch, var(--color-fg) 22%, transparent)
+      );
+  }
+}
+
+/* 방사형 퀵 휠: 주얼 광학 글래스 셸 및 카테고리별 액센트 링 */
+[data-studio-radial-quick-wheel="true"] {
+  background: color-mix(in oklch, var(--color-panel) 88%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.22);
+  backdrop-filter: blur(16px) saturate(1.22);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 18%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--color-accent) 20%, transparent),
+    var(
+      --atelier-elevation-floating,
+      0 18px 40px -16px color-mix(in oklch, var(--color-fg) 28%, transparent)
+    );
+}
+
+.studio-jewel-wheel-slot[data-jewel-category="history"],
+.studio-jewel-wheel-wedge[data-jewel-category="history"] {
+  --studio-jewel-wheel-ring: var(--studio-jewel-cat-history);
+}
+
+.studio-jewel-wheel-slot[data-jewel-category="transform"],
+.studio-jewel-wheel-wedge[data-jewel-category="transform"] {
+  --studio-jewel-wheel-ring: var(--studio-jewel-cat-transform);
+}
+
+.studio-jewel-wheel-slot[data-jewel-category="layer"],
+.studio-jewel-wheel-wedge[data-jewel-category="layer"] {
+  --studio-jewel-wheel-ring: var(--studio-jewel-cat-layer);
+}
+
+.studio-jewel-wheel-slot[data-jewel-category="color"],
+.studio-jewel-wheel-wedge[data-jewel-category="color"] {
+  --studio-jewel-wheel-ring: var(--studio-jewel-cat-color);
+}
+
+.studio-jewel-wheel-slot[data-jewel-category="view"],
+.studio-jewel-wheel-wedge[data-jewel-category="view"] {
+  --studio-jewel-wheel-ring: var(--studio-jewel-cat-view);
+}
+
+.studio-jewel-wheel-slot {
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--studio-jewel-wheel-ring, var(--color-accent)) 36%, transparent),
+    0 0 0 1.5px color-mix(in oklch, var(--studio-jewel-wheel-ring, var(--color-accent)) 42%, transparent);
+}
+
+.studio-jewel-wheel-slot[data-vibrant-active="true"] {
+  border-color: var(--studio-jewel-wheel-ring, var(--color-accent));
+  background: color-mix(in oklch, var(--studio-jewel-wheel-ring, var(--color-accent)) 84%, var(--color-panel));
+  color: var(--color-on-accent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-on-accent) 40%, transparent),
+    0 0 0 3px color-mix(in oklch, var(--studio-jewel-wheel-ring, var(--color-accent)) 30%, transparent),
+    0 8px 18px -6px color-mix(in oklch, var(--studio-jewel-wheel-ring, var(--color-accent)) 56%, transparent);
+}
+
+.studio-jewel-wheel-wedge[data-jewel-highlighted="true"] {
+  fill: color-mix(in oklch, var(--studio-jewel-wheel-ring, var(--color-accent)) 18%, transparent);
+  stroke: var(--studio-jewel-wheel-ring, var(--color-accent));
+}
+
+.studio-jewel-wheel-center-hud {
+  border: 1px solid color-mix(in oklch, var(--color-accent) 34%, var(--color-line-strong));
+  background: color-mix(in oklch, var(--color-card) 92%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 14%, transparent),
+    0 4px 12px -6px color-mix(in oklch, var(--color-fg) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-studio-radial-quick-wheel="true"],
+  .studio-jewel-wheel-slot,
+  .studio-jewel-wheel-wedge {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context),
+  [data-studio-radial-quick-wheel="true"] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: Canvas !important;
+    border-color: CanvasText !important;
+    box-shadow: none !important;
+  }
+
+  .studio-jewel-wheel-slot {
+    border-color: ButtonText !important;
+    box-shadow: none !important;
+  }
+
+  .studio-jewel-wheel-slot[data-vibrant-active="true"] {
+    border-color: Highlight !important;
+    outline: 2px solid Highlight;
+  }
+}

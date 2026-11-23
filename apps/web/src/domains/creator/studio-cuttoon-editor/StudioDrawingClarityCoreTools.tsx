@@ -144,6 +144,7 @@ export function StudioDrawingClarityCoreTools({ session: s, onOpenLayers, v4Acti
       </RailCommand>
       <button
         type="button"
+        data-studio-rail-tool-id="color"
         data-studio-rail-core-group="true"
         className="studio-drawing-clarity-button"
         disabled={blocked}
@@ -162,6 +163,7 @@ export function StudioDrawingClarityCoreTools({ session: s, onOpenLayers, v4Acti
       {onOpenLayers ? (
         <button
           type="button"
+          data-studio-rail-tool-id="layers"
           data-studio-rail-core-group="true"
           className="studio-drawing-clarity-button"
           aria-expanded={s.clarityPanel === "layers"}
