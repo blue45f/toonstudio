@@ -6,6 +6,7 @@ import { AlertCircle, History, LayoutGrid, RotateCcw, Star } from "lucide-react"
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
 
 import { planNeonBrushPasses } from "../studio-fx-brush";
+import { prepareStudioFoleyOnToolClick } from "../studio-cuttoon-editor/studio-foley-tool-gesture";
 import { STUDIO_FOCUS_RING, STUDIO_EASE } from "../studio-panel-ui";
 
 import {
@@ -546,6 +547,7 @@ export function StudioBrushTray({
               aria-label={`${sourceLabel} 브러시 ${item.name} · ${engineLaneLabel ? `${engineLaneLabel} · ` : ""}${kindLabel} — ${item.hint}`}
               title={`${sourceLabel} · ${engineLaneLabel ? `${engineLaneLabel} · ` : ""}${kindLabel} · ${item.name} — ${item.hint}`}
               onClick={() => handleSelectItem(item)}
+              onClickCapture={prepareStudioFoleyOnToolClick}
               onPointerEnter={() => {
                 if (isStudioV6BrushCatalogId(item.id) && !cachedV6TrayRuntime) {
                   void loadStudioV6TrayRuntime().catch(() => undefined);

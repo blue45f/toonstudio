@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18n } from "@/shared/lib/i18n";
 
 import { createStudioFoleyAudioEngine } from "../vibrant-studio-fx/studio-procedural-foley-audio";
+import { prepareStudioFoleyOnToolClick } from "./studio-foley-tool-gesture";
 import {
   StudioDrawingQuickErgonomicsBar,
   type StudioDrawingErgonomicsSession,
@@ -19,6 +20,7 @@ import {
   cycleStudioPressureCurvePreset,
   extractCoalescedPointerSamples,
   getLiveFoleyState,
+  getStudioLiveStrokeFoleyController,
   getStudioPressureCurveGamma,
   getStudioPressureCurvePreset,
   resolveStudioFoleySoundForBrush,
@@ -176,6 +178,66 @@ afterEach(() => {
 });
 
 describe("Studio live stroke Foley & feel bridge", () => {
+  it("신뢰된 도구 선택 클릭만 이미 등록된 Foley에 전달한다", () => {
+    const prepare = vi.spyOn(getStudioLiveStrokeFoleyController(), "prewarmContextFromGesture").mockImplementation(() => {});
+    const activation = { isActive: false };
+    vi.spyOn(window, "navigator", "get").mockReturnValue(Object.create(navigator, {
+      userActivation: { value: activation },
+    }) as Navigator);
+    prepareStudioFoleyOnToolClick({ type: "click", isTrusted: true });
+    activation.isActive = true;
+    prepareStudioFoleyOnToolClick({ type: "click", isTrusted: false });
+    prepareStudioFoleyOnToolClick({ type: "pointerenter", isTrusted: true });
+    expect(prepare).not.toHaveBeenCalled();
+    prepareStudioFoleyOnToolClick({ type: "click", isTrusted: true });
+    expect(prepare).toHaveBeenCalledOnce();
+  });
+
+  it("도구 선택에서는 소리 없이 한 번 준비하고 첫 획은 같은 장치로 한 번 재생한다", () => {
+    const audio = createMockAudioContext("suspended");
+    const factory = vi.fn(() => audio.ctx);
+    const engineFactory = vi.fn(createStudioFoleyAudioEngine);
+    const controller = new StudioLiveStrokeFoleyController({ audioContextFactory: factory, engineFactory });
+
+    controller.prewarmContextFromGesture();
+    controller.prewarmContextFromGesture();
+    expect(factory).toHaveBeenCalledOnce();
+    expect(audio.resume).toHaveBeenCalledOnce();
+    expect(engineFactory).not.toHaveBeenCalled();
+    expect(audio.ctx.createOscillator).not.toHaveBeenCalled();
+    expect(audio.ctx.createBufferSource).not.toHaveBeenCalled();
+    expect(controller.getState().activeSoundId).toBeNull();
+
+    controller.toggleMute();
+    const input = { x: 5, y: 10, pressure: 0.6, brushId: "gpen" };
+    expect(controller.onStrokeStart(input)).toBeNull();
+    expect(engineFactory).not.toHaveBeenCalled();
+    controller.onStrokeEnd();
+    controller.toggleMute();
+    expect(controller.onStrokeStart(input)).toMatchObject({ played: true, soundId: "gpen-ink" });
+    expect(factory).toHaveBeenCalledOnce();
+    expect(engineFactory).toHaveBeenCalledOnce();
+    controller.dispose();
+    expect(audio.close).toHaveBeenCalledOnce();
+  });
+
+  it("무음과 종료 상태에서는 장치를 열지 않고, 도구 선택 때 장치가 없으면 첫 획에서 다시 준비한다", () => {
+    const audio = createMockAudioContext();
+    const factory = vi.fn<() => AudioContext | null>(() => audio.ctx).mockReturnValueOnce(null);
+    const controller = new StudioLiveStrokeFoleyController({
+      initialPreset: "silent-focus", audioContextFactory: factory, engineFactory: createStudioFoleyAudioEngine,
+    });
+    controller.prewarmContextFromGesture();
+    expect(factory).not.toHaveBeenCalled();
+    controller.toggleMute();
+    controller.prewarmContextFromGesture();
+    expect(factory).toHaveBeenCalledOnce();
+    expect(controller.onStrokeStart({ x: 1, y: 2, brushId: "gpen" })?.played).toBe(true);
+    controller.dispose();
+    controller.prewarmContextFromGesture();
+    expect(factory).toHaveBeenCalledTimes(2);
+  });
+
   it("전 브러시 계열(연필/색연필/크레파스/목탄/G펜/수채/마커/유화/에어브러시/지우개)을 물리 마찰음·종이 결에 정확히 매핑한다", () => {
     // 연필/색연필/크레파스/목탄/파스텔 -> graphite-pencil + 종이 결 차별화
     expect(resolveStudioFoleySoundForBrush("pencil")).toEqual({

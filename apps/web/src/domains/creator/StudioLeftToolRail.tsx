@@ -15,7 +15,7 @@ import { createPortal } from "react-dom";
 import { StudioVibrantToolArtwork } from "./canvas-chrome/StudioVibrantToolArtwork";
 import { STUDIO_Z_LAYERS, resolveSafePopoverAnchor } from "./canvas-chrome/studio-hud-collision-guard";
 import { getVibrantSpriteSrc, resolveVibrantSpriteForRailTool } from "./canvas-chrome/studio-vibrant-sprite-catalog";
-
+import { prepareStudioFoleyOnToolClick } from "./studio-cuttoon-editor/studio-foley-tool-gesture";
 import { StudioEditorClientProvider, useEditorSelector, useStudioEditorClient } from "./editor-client";
 import {
   STUDIO_LEFT_TOOL_RAIL_COMMANDS, type StudioLeftToolRailActionArguments, type StudioLeftToolRailActionName,
@@ -42,8 +42,7 @@ import { cn } from "@/shared/lib/utils";
 type StudioRailToolDefinition = StudioRailToolButtonProps & { [key: `data-${string}`]: string | boolean | undefined };
 
 const RASTER_RETOUCH_AUTO_TARGET_GUIDANCE = STUDIO_RETOUCH_EDITABLE_COPY_NOTE;
-const STUDIO_CANVAS_IMAGE_ACCEPT =
-  "image/*,.bmp,.dib,.tga,.icb,.vda,.vst,.ppm,.pam,.qoi,.tif,.tiff";
+const STUDIO_CANVAS_IMAGE_ACCEPT = "image/*,.bmp,.dib,.tga,.icb,.vda,.vst,.ppm,.pam,.qoi,.tif,.tiff";
 const STUDIO_RAIL_MORE_GAP_PX = 4;
 const STUDIO_RAIL_MORE_MARGIN_PX = 8;
 const STUDIO_RAIL_MORE_MAX_HEIGHT_PX = 43 * 16;
@@ -638,6 +637,7 @@ function StudioLeftToolRailConnected({ pinnedToolHost }: Pick<StudioLeftToolRail
 "disabled": activeSurfaceReviewLocked,
 "unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
 "grouped": true,
+"onClickCapture": prepareStudioFoleyOnToolClick,
 "onClick": () => activateDrawTool("pen")
 },
 "pixel-pencil": {

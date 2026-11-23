@@ -5,6 +5,7 @@
  * - 브라우저 영속 키-값 저장소는 일절 사용하지 않는다.
  */
 import type { StudioPaperTextureId } from "../vibrant-studio-fx/studio-paper-and-pigment-physics";
+import { LIVE_FOLEY_BRIDGE_SYMBOL } from "./studio-foley-tool-gesture";
 import { dispatchLiveNibVfxSample } from "./studio-live-nib-vfx-bridge";
 import type {
   StudioFoleyAudioEngine,
@@ -74,7 +75,6 @@ export interface StudioLiveStrokeFoleyControllerOptions {
 
 const DEFAULT_MIN_MOVE_INTERVAL_MS = 36;
 const DEFAULT_MIN_MOVE_DISTANCE_PX = 2.5;
-const LIVE_FOLEY_BRIDGE_SYMBOL = Symbol.for("toonstudio.liveStrokeFoleyBridge");
 
 const clamp01 = (v: unknown, fb = 0): number =>
   typeof v === "number" && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fb;
@@ -348,8 +348,8 @@ export class StudioLiveStrokeFoleyController {
     this.engineLoadPromise = null;
   }
 
-  private prewarmContextFromGesture(): void {
-    if (this.engine || this.prewarmedContext) return;
+  prewarmContextFromGesture(): void {
+    if (this.disposed || this.muted || this.engine || this.prewarmedContext) return;
     const ctx = this.audioContextFactory();
     if (!ctx) return;
     this.prewarmedContext = ctx;
