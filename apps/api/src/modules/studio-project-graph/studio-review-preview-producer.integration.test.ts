@@ -108,11 +108,12 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     capture: () => capture(1), completeCapture,
   });
 
-  async function capture(pageCount = 2, extension: Record<string, unknown> = {}) {
+  async function capture(pageCount = 2, extension: Record<string, unknown> = {},
+    pageElements: (ordinal: number) => Record<string, unknown>[] = () => []) {
     const actor = randomUUID(), workId = randomUUID(); users.push(actor);
     await pool.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [actor, "Review capture integration"]);
     const doc = { ...extension, version: 3, width: 2, pagesList: Array.from({ length: pageCount }, (_, index) => ({ id: `page-${index}`, canvasH: 1,
-      elements: [{ id: `cut-${index}`, type: "frame", x: 0, y: 0, width: 1, height: 1 }] })) };
+      elements: [{ id: `cut-${index}`, type: "frame", x: 0, y: 0, width: 1, height: 1 }, ...pageElements(index)] })) };
     await pool.query('INSERT INTO creator_work (id,"userId",title,doc,revision) VALUES ($1,$2,$3,$4::jsonb,4)', [workId, actor, "Review source", JSON.stringify(doc)]);
     const input: StudioReviewPreviewCapture = { intentId: randomUUID(), workId, sourceServerRevision: 4, sourceContentDigest: studioReviewPreviewDigest(doc), pageCount,
       title: "Pinned review", deviceId: "test-device", createdAt: new Date().toISOString() };
@@ -120,10 +121,10 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     return { actor, input, intent, doc };
   }
 
-  async function completeCapture(actor: string, intent: StudioReviewPreviewIntent) {
+  async function completeCapture(actor: string, intent: StudioReviewPreviewIntent, pageFile: (ordinal: number) => ReturnType<typeof file> = file) {
     const pages = [];
     for (let ordinal = 0; ordinal < intent.pageCount; ordinal += 1) {
-      const page = await service.upload(actor, intent, ordinal, file());
+      const page = await service.upload(actor, intent, ordinal, pageFile(ordinal));
       pages.push({ ordinal, sha256: page.sha256 });
     }
     const result = await service.complete(actor, { intent, pages });
@@ -762,31 +763,48 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     } finally { client.release(); }
   });
 
-  it("delivers three approved cuts after a position-specific second-cut correction, a failed resubmission, and recipient acceptance", async () => {
-    const f = await capture(3), recipient = randomUUID(); users.push(recipient);
+  it("2컷의 위치 메모에 따라 포즈·카메라를 고친 원고만 납품하고 다른 컷과 손선을 보존한다", async () => {
+    const request = "2컷에서 하늘을 손드는 포즈로 바꾸고 배경 카메라를 넓혀 주세요.";
+    const background = (fovDegrees: number) => ({ type: "image", id: "bg-2",
+      bg3dScene: { camera: { fovDegrees }, nodes: [], attachments: [] } });
+    const actor = (raised: boolean) => ({ type: "image", id: "haneul-cut-2", hidden: raised,
+      vrmScene: { model: { source: "bundled", id: "ts-vrm-hero-v1-academy-female" },
+        pose: { bones: { rightUpperArm: { rotation: raised ? [0.174, 0.534, -0.617] : [-0.153, 0.226, 1.189] } } } } });
+    const ink = (ordinal: number) => ({ type: "draw", id: `hand-${ordinal + 1}`, kind: "freehand", mode: "pen",
+      brush: "round", points: [0, 0, 0.4, 0.6], pressures: [0.5, 0.5], stroke: "#342a25", strokeWidth: 0.1 });
+    const f = await capture(3, {}, (ordinal) => ordinal === 1
+      ? [background(50), ink(ordinal), actor(false)] : [ink(ordinal)]);
+    // 각 컷은 서로 다른 배경색을, 첫 픽셀은 같은 불투명 손선 색을 가진 서버 검사용 PNG다.
+    const pageImage = (shade: number) => {
+      const buffer = Buffer.from(encodePng(new Image(2, 1, { colorModel: "RGBA",
+        data: new Uint8Array([52, 42, 37, 255, shade, 67, 89, 255]) })));
+      return { buffer, size: buffer.length, mimetype: "image/png" };
+    };
+    const originalPage = (ordinal: number) => pageImage(32 + 48 * ordinal);
+    const recipient = randomUUID(); users.push(recipient);
     await pool.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [recipient, "합성 작가"]);
     await pool.query(`INSERT INTO creator_work_collaborator ("workId","userId",role,status,"invitationId","respondedAt")
       VALUES ($1,$2,'editor','active',$3,now())`, [f.input.workId, recipient, randomUUID()]);
     const initialIntent = await service.prepare(recipient, { ...f.input, intentId: randomUUID() });
-    const original = await completeCapture(recipient, initialIntent);
+    const original = await completeCapture(recipient, initialIntent, originalPage);
     const first = await reader.read(f.actor, original.subject, null);
     if (!first.ok || !first.previews[1]) throw new Error("두 번째 컷의 검수 이미지가 없습니다.");
     const anchor = createStudioReviewSpatialAnchor(first.previews[1].mapping, { kind: "coordinate", frameId: "cut-1", x: 0.84, y: 0.68 });
     if (!anchor) throw new Error("두 번째 컷의 원본 위치가 없습니다.");
     const memo = await graph.createReviewComment(f.actor, original.subject.reviewId, { id: randomUUID(),
-      body: "2컷 배경 카메라 구도를 조정해 주세요.", severity: "note", assigneeIds: [recipient],
+      body: request, severity: "note", assigneeIds: [recipient],
       anchor: { ...anchor, artifactId: original.subject.artifactId, revisionId: original.subject.revisionId,
         scope: { projectId: original.subject.projectId } } });
     await graph.decideReview(f.actor, original.subject.reviewId, { status: "changes-requested" });
     const revised = { ...f.doc, pagesList: f.doc.pagesList.map((page, index) => index !== 1 ? page
-      : { ...page, elements: [...page.elements, { type: "image", id: "bg-cut-2", bg3dScene: { camera: { fov: 45 }, nodes: [], attachments: [] } }] }) };
+      : { ...page, elements: page.elements.map((el) => el.id === "bg-2" ? background(90)
+        : el.id === "haneul-cut-2" ? actor(true) : el) }) };
     await pool.query('UPDATE creator_work SET revision=5, doc=$2::jsonb WHERE id=$1', [f.input.workId, JSON.stringify(revised)]);
     const replacement = await service.prepare(recipient, { ...f.input, intentId: randomUUID(), sourceServerRevision: 5,
       sourceContentDigest: studioReviewPreviewDigest(revised) });
-    const unchanged = await service.upload(recipient, replacement, 0, file());
-    const newBytes = Buffer.from(encodePng(new Image(2, 1, { data: new Uint8Array([60, 25, 85, 255, 13, 21, 55, 255]), colorModel: "RGBA" })));
-    const changed = await service.upload(recipient, replacement, 1, { buffer: newBytes, size: newBytes.length, mimetype: "image/png" });
-    const third = await service.upload(recipient, replacement, 2, file());
+    const unchanged = await service.upload(recipient, replacement, 0, originalPage(0));
+    const changed = await service.upload(recipient, replacement, 1, pageImage(179));
+    const third = await service.upload(recipient, replacement, 2, originalPage(2));
     const pixelsOf = (hash: string) => {
       const bytes = stored.get(`derived:sha256:${hash}`);
       if (!bytes) throw new Error("검수 이미지가 없습니다.");
@@ -796,9 +814,14 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     expect(pixelsOf(unchanged.sha256)).toEqual(pixelsOf(first.previews[0]!.sha256));
     expect(pixelsOf(changed.sha256)).not.toEqual(pixelsOf(first.previews[1].sha256));
     expect(pixelsOf(third.sha256)).toEqual(pixelsOf(first.previews[2]!.sha256));
+    expect(pixelsOf(unchanged.sha256)).not.toEqual(pixelsOf(third.sha256));
+    expect(pixelsOf(changed.sha256).subarray(0, 4)).toEqual(pixelsOf(first.previews[1].sha256).subarray(0, 4));
     const pages = [unchanged, changed, third].map(({ ordinal, sha256 }) => ({ ordinal, sha256 }));
     await expect(service.complete(recipient, { intent: replacement, pages: [pages[0]!, { ordinal: 1, sha256: unchanged.sha256 }, pages[2]!] })).rejects.toThrow();
-    expect((await graph.getReview(f.actor, original.subject.reviewId)).comments).toContainEqual(expect.objectContaining({ id: memo.id, body: "2컷 배경 카메라 구도를 조정해 주세요.", status: "open" }));
+    await expect(service.complete(recipient, { intent: replacement, pages: [
+      { ordinal: 0, sha256: third.sha256 }, pages[1]!, { ordinal: 2, sha256: unchanged.sha256 },
+    ] })).rejects.toThrow();
+    expect((await graph.getReview(f.actor, original.subject.reviewId)).comments).toContainEqual(expect.objectContaining({ id: memo.id, body: request, status: "open" }));
     const captured = await service.complete(recipient, { intent: replacement, pages });
     if (captured.status !== "completed") throw new Error("수정본 제출 실패");
     const revision = (await graph.listRevisions(recipient, replacement.artifactId)).find((entry) => entry.id === captured.subject.revisionId);
