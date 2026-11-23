@@ -37,6 +37,9 @@ test("CI는 실제 Core 성공 뒤 영수증을 만들고 두 도메인은 전�
   }
   const feedback = workflow("feedback-community-validation");
   assert(feedback.includes("id: types\n        continue-on-error: true"));
+  const feedbackTypes = feedback.split(/(?=^ {6}- )/mu).find((step) => step.includes("id: types\n"));
+  assert(feedbackTypes?.includes("CI: '" + CANONICAL_SETTINGS.ci + "'"));
+  assert(feedbackTypes?.includes("NODE_OPTIONS: " + CANONICAL_SETTINGS.nodeOptions));
   assert(feedback.includes("TYPES: ${{ steps.types.outcome }}"));
   assert(feedback.includes("if os.environ.get(key) != 'success'"));
   assert(feedback.includes("pnpm run build:bundle 2>&1 | tee artifacts/feedback/production-build.log"));

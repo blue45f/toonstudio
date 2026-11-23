@@ -292,16 +292,34 @@ describe("ToonStudioTechShowcasePage (/tech)", () => {
     fireEvent.click(screen.getByTestId("tech-view-transition-demo"));
     expect(screen.getByTestId("tech-probe-runtime-banner").textContent).toContain("#1");
 
+    // 탭 5: 범용 9-LLM · CLI · MCP · API 가이드
+    fireEvent.click(screen.getByTestId("tech-tab-llm-mcp-api"));
+    expect(screen.getByTestId("tech-panel-llm-mcp-api")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("llm-client-claude-code"));
+    expect(screen.getByTestId("llm-client-config-json").textContent).toContain("claude-code");
+    fireEvent.click(screen.getByTestId("mcp-tool-studio_stroke_endurance_bench"));
+    expect(screen.getByTestId("mcp-tool-detail").textContent).toContain("10000");
+
+    // 탭 6: 최신 논문 근거 & 전 페이지 UI/UX 설계
+    fireEvent.click(screen.getByTestId("tech-tab-papers-rd"));
+    expect(screen.getByTestId("tech-panel-papers-rd")).toBeTruthy();
+    expect(screen.getByTestId("research-paper-kubelka-munk-1931")).toBeTruthy();
+    expect(screen.getByTestId("sitewide-ux-axis-route-transition-choreography")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("paper-filter-crdt"));
+    expect(screen.getByTestId("research-paper-yata-yjs-2016")).toBeTruthy();
+
     // 고대비 토글
     const hcButton = screen.getByTestId("tech-high-contrast-toggle");
     fireEvent.click(hcButton);
     expect(root.getAttribute("data-showcase-high-contrast")).toBe("true");
 
-    // 영문 전환 시 한글 잔류 0건
+    // 영문 전환 시 전 탭 한글 잔류 0건
     act(() => {
       useI18n.getState().setLang("en");
     });
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Next-Gen Web, Remotion & AI Engineering Showcase");
+    expect(root.textContent).not.toMatch(/[\uAC00-\uD7A3]/u);
+    fireEvent.click(screen.getByTestId("tech-tab-llm-mcp-api"));
     expect(root.textContent).not.toMatch(/[\uAC00-\uD7A3]/u);
   });
 });

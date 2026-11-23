@@ -236,17 +236,17 @@ export function StudioOfflinePanel() {
 
   return (
     <aside
-      className="fixed bottom-[max(calc(var(--studio-canvas-bottom-inset,7rem)+7.5rem),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))] right-3 z-40 max-w-[min(25rem,calc(100vw-1.5rem))]"
+      className="fixed bottom-[max(calc(var(--studio-canvas-bottom-inset,3.25rem)+0.75rem),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))] right-3 z-40 max-w-[min(22rem,calc(100vw-1.5rem))]"
       aria-label="스튜디오 연결 및 오프라인 작업 안내"
       data-studio-shell-floating-target="offline-readiness"
       data-studio-shell-force-visible="true"
     >
       <details
-        className="rounded-xl border border-line bg-panel p-3 text-xs text-fg shadow-lg"
+        className="rounded-full border border-line/80 bg-panel/92 px-3 py-0.5 text-xs text-fg shadow-md backdrop-blur-md transition-[border-radius,padding,box-shadow] duration-150 open:rounded-2xl open:p-3 open:shadow-xl motion-reduce:transition-none"
         data-studio-offline-panel="true"
         data-studio-local-only={connectivity.localOnly ? "true" : "false"}
       >
-        <summary className="min-h-11 cursor-pointer content-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <summary className="min-h-11 cursor-pointer list-none content-center whitespace-nowrap font-semibold [word-break:keep-all] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
           {summary}
         </summary>
         {content}

@@ -118,8 +118,10 @@ export function SiteFooter() {
             {META_LINKS.map((link) => <Link key={link.href} href={link.href}>{t(link.key)}</Link>)}
             {/* /pricing 페이지는 routes 팀이 제공. 푸터에서 요금제 진입점을 유지한다. */}
             <Link href="/pricing">{bi("요금제", "Pricing")}</Link>
-            {/* 제품 투어(/product-tour), 브랜드 필름(/brand-film), 홍보 영상 자료실(/promo-library) 진입점을 푸터에서도 유지한다. */}
+            {/* 제품 투어(/product-tour), 브랜드 필름(/brand-film), 홍보 영상 자료실(/promo-library), 비교(/compare/studio), 기술·API(/tech) 진입점을 푸터에서도 유지한다. */}
             <Link href="/product-tour">{bi("제품 투어", "Product tour")}</Link>
+            <Link href="/compare/studio">{bi("경쟁 도구 비교", "Compare tools")}</Link>
+            <Link href="/tech">{bi("차세대 기술 · MCP API", "Tech · MCP API")}</Link>
             <Link href="/brand-film">{bi("브랜드 필름", "Brand film")}</Link>
             <Link href="/promo-library">{bi("홍보 영상 자료실", "Promo video library")}</Link>
             <Link href="/install">{bi("앱 설치", "Install app")}</Link>

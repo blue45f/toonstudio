@@ -160,10 +160,11 @@ describe("Studio 3D insert controller boundary", () => {
 
     expect(
       page.valueImports.filter(
-        (specifier) => specifier === "./scene-3d/studio-3d-insert-controller"
+        (specifier) => specifier === "./contracts/studio-3d-insert-controller"
       )
-    ).toEqual(["./scene-3d/studio-3d-insert-controller"]);
-    expect(page.dynamicImports).not.toContain("./scene-3d/studio-3d-insert-controller");
+    ).toEqual(["./contracts/studio-3d-insert-controller"]);
+    expect(page.dynamicImports).not.toContain("./contracts/studio-3d-insert-controller");
+    expect(page.allImports).not.toContain("./scene-3d/studio-3d-insert-controller");
     // 삽입 결과 타입은 래칫 분리로 어댑터가 소비한다 — 타입 계약의 소유만 어댑터로 옮겨 단언한다.
     const insertAdapter = moduleShape(
       "../studio-cuttoon-editor/studio-cuttoon-bg3d-insert.ts"

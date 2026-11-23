@@ -220,7 +220,7 @@ import { StudioCuttoonEditorView } from "./studio-cuttoon-editor/StudioCuttoonEd
 import { createStudioScopedHistory, routeStudioCompanionHistory } from "./studio-collab/studio-scoped-history";
 import { canStartStudioScopedDrawing, type StudioScopedCanvasBoundary } from "./studio-collab/studio-scoped-drawing-boundary";
 import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
-import { applyStudioBg3dInsertResult, applyStudioVrmInsertResult } from "./scene-3d/studio-3d-insert-controller";
+import { applyStudioBg3dInsertResult, applyStudioVrmInsertResult } from "./contracts/studio-3d-insert-controller";
 import {
   planStudioActiveStrokeUnmountRecovery,
   runStudioDrawingUnmountLifecycle,

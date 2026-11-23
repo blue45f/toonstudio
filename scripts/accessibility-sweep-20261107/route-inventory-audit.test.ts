@@ -115,13 +115,13 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
     },
   );
 
-  it("현재 라우트 전체(선언 325건, 구체 확장 453건, 와일드카드 위임 5건)를 누락 없이 인벤토리화한다", async () => {
+  it("현재 라우트 전체(선언 327건, 구체 확장 455건, 와일드카드 위임 5건)를 누락 없이 인벤토리화한다", async () => {
     const report = await auditSitewideRouteInventory(REPO_ROOT);
 
-    expect(report.counts.appRouteDeclarations).toBe(325);
+    expect(report.counts.appRouteDeclarations).toBe(327);
     // Studio 정본의 /studio/canvas/poser 별칭을 독립 경로로 더하고 기존 경로와 중복 제거한다.
     // MCP·CLI 안내는 편집기 와일드카드와 별개인 /studio/mcp 앱 라우트로 포함한다.
-    expect(report.counts.expandedRoutes).toBe(453);
+    expect(report.counts.expandedRoutes).toBe(455);
     expect(report.counts.wildcardExclusions).toBe(5);
     expect(report.counts.studioRegistrationsAndAliases).toBe(55);
     expect(report.counts.studioManifestRoutes).toBeGreaterThanOrEqual(45);
@@ -142,8 +142,8 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
       expect(fs.statSync(path.join(REPO_ROOT, source)).isFile()).toBe(true);
     }
 
-    expect(report.allExpandedRoutes).toHaveLength(453);
-    expect(new Set(report.allExpandedRoutes).size).toBe(453);
+    expect(report.allExpandedRoutes).toHaveLength(455);
+    expect(new Set(report.allExpandedRoutes).size).toBe(455);
 
     for (const route of report.allExpandedRoutes) {
       expect(route.startsWith("/")).toBe(true);
@@ -163,6 +163,8 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
     expect(report.allExpandedRoutes).toContain("/sitemap/all");
     expect(report.allExpandedRoutes).toContain("/sitemap/visual-audit");
     expect(report.allExpandedRoutes).toContain("/discover");
+    expect(report.allExpandedRoutes).toContain("/compare/studio");
+    expect(report.allExpandedRoutes).toContain("/tech");
     expect(report.allExpandedRoutes).toContain("/community");
     expect(report.allExpandedRoutes).toContain("/market");
     expect(report.allExpandedRoutes).toContain("/learn");

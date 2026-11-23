@@ -505,7 +505,27 @@ monitor.disconnect();
 
 ---
 
-## 7. 연관 정본 문서
+## 7. 범용 9-LLM CLI · MCP 브리지 & 장시간 10,000획 지구력 검증 (`current`)
+
+특정 AI 공급사에 종속되지 않고 창작자와 개발자가 원하는 모델을 자유롭게 연결할 수 있도록 [`scripts/toonstudio-llm-mcp-cli.mjs`](../../scripts/toonstudio-llm-mcp-cli.mjs)와 라이브 가이드(`/tech` → **범용 LLM · CLI · MCP · API** 탭)를 통합했다.
+
+- **9대 LLM/IDE 클라이언트 원클릭 설정 생성**: `gemini-cli`, `claude-code`, `codex-cli`, `meta-llama`, `mistral-muse`, `cursor`, `windsurf`, `openrouter-bridge`, `ollama-local`(₩0 오프라인 폴백).
+- **10종 MCP 도구 & 5종 `toon://` 리소스**: `studio_canvas_inspect`, `studio_canvas_apply_action`, `studio_pm_conveyor_status`, `studio_pm_handoff_cut`, `studio_settlement_preview`, `studio_asset_smart_search`, `studio_vrm_autofit_audit`, `studio_remotion_render_plan`, `studio_export_platform_qc`, `studio_stroke_endurance_bench`. 쓰기 동작은 기본 `TOONSTUDIO_MCP_DRY_RUN=1`로 보호된다.
+- **10,000획 장시간 드로잉 지구력 실측 (`2026-11-23`, Node 24 로컬 실행)**:
+  - 고정 `Float32Array` 링 버퍼(객체 할당 0) + `256px` Dirty-Tile LRU 상한(`128타일`) + Delta Undo 상한(`20단계`, 초과분 `9,980건` OPFS 스필) 조합으로 `3840×2160` 캔버스 기준 **총 `14.04 ms` · `p50 0.0009 ms` · `p95 0.005 ms` · `p99 0.0061 ms` · 힙 증가 `+0.74 MB`**(60fps 프레임 예산 `16.6 ms` 통과).
+
+## 8. 컴퓨터과학·그래픽스 논문 근거 & Wave 6·7 래칫 스냅샷 (`2026-11-23`)
+
+- **핵심 학술 근거 매핑 (`/tech` 논문 탭)**: Kubelka & Munk(1931, 7밴드 WGSL 분광 혼색) · Ink & Switch(2019, Local-First OPFS SQLite) · Nicolaescu et al.(2016, YATA/Yjs CRDT) · Yuksel et al.(2011, 구심 Catmull-Rom 스타일러스 예측) · Vaidyanathan et al.(SIGGRAPH 2023, NTC R&D) · W3C WebAssembly Memory64 & Compute Pressure API.
+- **Wave 6·7 최종 잠금 래칫 (`2026-11-23`)**:
+  - 저장소 전역 엄격 린트(`lint:strict`): **0 오류 · 0 경고** (`lintStrictMaxWarnings: 490 → 1`)
+  - Studio 진입 그래프 금지 도메인: **`0 / 41`** (`지연 무효화 모듈 0개`)
+  - `StudioCuttoonEditorHost.tsx` 분해: **`29,365줄 → 22,836줄`**, 거대 소스 초과분 **`−11,182줄`**, 미연결 고아 모듈 **`−20건`**(`664 → 644`)
+  - 전 페이지 UI/UX 통일: **44종 투명 WebP 주얼 아틀리에 스프라이트**, 캡슐형 오프라인 배지(`StudioOfflinePanel.tsx`), 2px 잉크 도착 헤어라인(`RouteEnterMotion.tsx`), 푸터 `/compare/studio`·`/tech` 직행 진입점 통합.
+
+---
+
+## 9. 연관 정본 문서
 
 - **경쟁 도구·멀티디바이스 심층 벤치마크**: [글로벌 경쟁사 및 멀티디바이스 드로잉 UX 벤치마크 보고서 (2026-11)](../benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md)
 - **IR·홍보·제휴 차별화 브리프**: [ToonStudio IR · 홍보 · 제휴 차별화 브리프 (2026-11)](../ir/toonstudio-ir-promo-differentiation-brief-2026-11.md)
