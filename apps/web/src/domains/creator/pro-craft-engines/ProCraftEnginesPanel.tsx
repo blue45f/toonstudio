@@ -10,6 +10,7 @@ import {
 import { loadLocalSystemFontsForLettering } from "../lettering/local-system-font-bridge";
 import { computeResponsiveHapticGrid } from "../render/uhd-edge-grid/responsive-haptic-grid";
 import { computeUhdEdgeRenderPlan } from "../render/uhd-edge-grid/uhd-dpr-tile-budgeter";
+import { toExactArrayBuffer } from "../render/worker-wasm-offload/compute-job-executor";
 import { StudioComputeWorkerPool } from "../render/worker-wasm-offload/offscreen-worker-pool";
 import { probeWasmSimdAndWorkerSupport } from "../render/worker-wasm-offload/wasm-simd-pixel-kernel";
 
@@ -121,15 +122,15 @@ export function ProCraftEnginesPanel() {
 
   const handleRunWasmWorkerBench = () => {
     const pool = new StudioComputeWorkerPool({ maxWorkers: 2 });
-    const rgba = buildDemoCutRgba(lightingScene);
+    const rgba = toExactArrayBuffer(buildDemoCutRgba(lightingScene));
     void pool
-      .submit({ type: "wasm-alpha-threshold", rgba, width: 64, height: 64, mode: "luma", threshold: 128 })
+      .runJob({ type: "wasm-alpha-threshold" as const, rgba, width: 64, height: 64, mode: "luma", threshold: 128 })
       .then((res) => {
         const telemetry = pool.getTelemetry();
         setWasmBenchSummary(
           isEn
-            ? `Backend ${res.backend} · ${res.elapsedMs.toFixed(2)}ms · zero-copy ${telemetry.totalTransferredBytes}B`
-            : `백엔드 ${res.backend} · ${res.elapsedMs.toFixed(2)}ms · 제로-카피 ${telemetry.totalTransferredBytes}B`,
+            ? `Backend ${res.wasmBackend} · ${res.elapsedMs.toFixed(2)}ms · zero-copy ${telemetry.zeroCopyBytesTransferred}B`
+            : `백엔드 ${res.wasmBackend} · ${res.elapsedMs.toFixed(2)}ms · 제로-카피 ${telemetry.zeroCopyBytesTransferred}B`,
         );
       })
       .finally(() => {

@@ -393,7 +393,7 @@ function createCanvasFrameForShorts(
     canvas.height = timeline.height;
   }
   const ctx = canvas.getContext("2d");
-  if (ctx) {
+  if (ctx && "fillRect" in ctx) {
     ctx.fillStyle = "rgb(20, 22, 28)";
     ctx.fillRect(0, 0, timeline.width, timeline.height);
     ctx.save();
