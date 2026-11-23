@@ -12,6 +12,12 @@ import {
   mapStudioBrushAliasPressure,
   studioBrushAliasEffectiveDiameter,
 } from "../brush/studio-brush-alias-profile";
+import {
+  resolveStudioRetainedCalligraphyRenderInput,
+  resolveStudioRetainedEraserRenderInput,
+  resolveStudioRetainedHighlighterTapInput,
+  resolveStudioRetainedPencilRenderInput,
+} from "../brush/studio-brush-antigrid-parity";
 import { resolveStudioBrushRuntimeProgramSet } from "../brush/studio-brush-composition-runtime";
 import { resolveStudioCalligraphyRenderTip } from "../brush/studio-calligraphy-nib-profile";
 import { planStudioCalligraphyRibbon } from "../brush/studio-calligraphy-ribbon";
@@ -60,7 +66,6 @@ import {
   decideStudioNativeLiveSurfaceResolution,
   type StudioNativeLiveSurfaceResolutionDecision,
 } from "../studio-low-latency-canvas";
-import { STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1 } from "../studio-material-pressure-model";
 import {
   createStudioIncrementalRetainedMediaCurveBuilder,
   planStudioRetainedMediaTapDab,
@@ -70,7 +75,11 @@ import {
 import { planStudioRetainedMediaRibbon } from "../studio-retained-media-ribbon";
 
 import { paintStudioLivePencilProgram, type StudioLivePencilPaintCommand } from "./studio-live-pencil-paint-program";
-import { paintStudioLiveRetainedRoundStroke } from "./studio-live-retained-stroke-paint";
+import {
+  paintStudioLiveRetainedCalligraphyRun,
+  paintStudioLiveRetainedEllipticalTap,
+  paintStudioLiveRetainedRoundStroke,
+} from "./studio-live-retained-stroke-paint";
 
 import type { DrawEl } from "../studio-element-model";
 import type { StudioLiveInkSurface } from "./studio-live-ink-overlay";
@@ -527,7 +536,9 @@ export class StudioLiveRetainedMediaOverlayRenderer {
     // Only a stationary pencil tap needs its screen-space visibility hint replaced at release.
     // Travel keeps its issued paint program: rebuilding thousands of points here stalls input.
     if (this.active.kind === "highlighter"
-      || (this.active.kind === "pencil" && this.active.paintedSourceSegments === 0)) {
+      || ((this.active.kind === "pencil" || this.active.kind === "calligraphy")
+        && this.active.paintedSourceSegments === 0)
+      || (this.active.kind === "eraser" && (this.surface?.documentScale ?? 1) < 1)) {
       clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
       const fullActive: ActiveRetainedStroke = {
         id: element.id,
@@ -692,9 +703,9 @@ export class StudioLiveRetainedMediaOverlayRenderer {
       return this.paintPencilSuffix(active, element, target, finalize);
     }
     if (active.kind === "calligraphy") {
-      return this.paintCalligraphySuffix(active, element, target);
+      return this.paintCalligraphySuffix(active, element, target, finalize);
     }
-    if (active.kind === "eraser") return this.paintEraserSuffix(active, element, target);
+    if (active.kind === "eraser") return this.paintEraserSuffix(active, element, target, finalize);
     return this.paintHighlighterSuffix(active, element, target);
   }
 
@@ -842,15 +853,15 @@ export class StudioLiveRetainedMediaOverlayRenderer {
         paintStudioLivePencilProgram(context, [command]);
         if (target === this.activeContext) (active.pencilProgram ??= []).push(command);
       };
-      const brush = element.brush ?? "pencil";
-      const width = studioBrushAliasEffectiveDiameter(brush, Math.max(1, element.strokeWidth));
+      const pencilInput = resolveStudioRetainedPencilRenderInput(element);
+      const { brush, width, points: pencilPoints, tension, canonicalPressures } = pencilInput;
       const profile = resolveStudioRetainedMediaPressureProfileId(brush) ?? "pencil";
       // 이동한 획은 다시 탭이 될 수 없으므로(점은 append 전용), 선분을 이미 칠했다면 탭
       // 판정의 전점 스캔 O(n)을 건너뛴다 — 판정 결과는 그 경우 항상 null이다.
       const tap = active.paintedSourceSegments === 0
         ? planStudioRetainedMediaTapDab(
-            flatFinitePoints(element),
-            element.pressures,
+            pencilPoints,
+            canonicalPressures,
             profile,
             { minimumDiameterRatio: element.materialMinimumDiameterRatio },
           )
@@ -907,13 +918,11 @@ export class StudioLiveRetainedMediaOverlayRenderer {
         const builder = curves[passIndex]
           ??= createStudioIncrementalRetainedMediaCurveBuilder(
             profile,
-            { minimumDiameterRatio: element.materialMinimumDiameterRatio },
+            { tension, minimumDiameterRatio: element.materialMinimumDiameterRatio },
           );
         const passCurve = builder.append(
-          studioPencilAliasPassPoints(element.points, pass.jitterRadius),
-          element.materialPressureModel === STUDIO_MATERIAL_PRESSURE_MODEL_CANONICAL_V1
-            ? element.pressures
-            : undefined,
+          studioPencilAliasPassPoints(pencilPoints, pass.jitterRadius),
+          canonicalPressures,
         );
         return {
           pass,
@@ -1017,7 +1026,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
           issue({
             kind: "stroke", color: element.stroke, width: liveWidth,
             alpha: inherited * Math.min(1, element.opacity ?? 1),
-            coordinates: element.points.slice(from * 2, validPointCount * 2),
+            coordinates: pencilPoints.slice(from * 2, validPointCount * 2),
           });
         }
       }
@@ -1033,31 +1042,36 @@ export class StudioLiveRetainedMediaOverlayRenderer {
     active: ActiveRetainedStroke,
     element: DrawEl,
     target: CanvasRenderingContext2D | null,
+    finalize = false,
   ): boolean {
     const context = this.prepared(target);
     if (!context) return false;
     try {
-      const rawPointCount = Math.floor(element.points.length / 2);
+      const calInput = resolveStudioRetainedCalligraphyRenderInput(element);
+      const rawPointCount = Math.floor(calInput.points.length / 2);
       if (rawPointCount === 0) return true;
-      const firstX = finiteCoordinate(element.points[0]);
-      const firstY = finiteCoordinate(element.points[1]);
-      if (firstX === null || firstY === null) return true;
-      const brush = element.brush ?? "calligraphy";
-      const width = studioBrushAliasEffectiveDiameter(brush, Math.max(1, element.strokeWidth));
+      const firstX = calInput.points[0]!;
+      const firstY = calInput.points[1]!;
+      const { brush, width, points: calPoints, tapEllipse } = calInput;
       if (rawPointCount === 1) {
         if (active.paintedSourceSegments > 0 || active.paintedPencilMarks > 0) return true;
-        const radius = studioLiveVisibleTapDocumentRadius(
-          Math.max(0.5, width * 0.18),
-          this.surface?.documentScale ?? 1,
-        );
-        context.fillStyle = element.stroke;
-        context.globalAlpha = Math.min(1, element.opacity ?? 1);
-        context.beginPath();
-        context.arc(firstX, firstY, radius, 0, Math.PI * 2);
-        context.fill();
-        // 탭은 아직 어떤 **구간도** 칠하지 않았다. 여기서 1을 세워 두면 아래 suffix 가
-        // 첫 구간을 이미 칠한 것으로 오해하고 건너뛴다. 탭 재진입은 paintedPencilMarks 가
-        // 막으므로 이 값은 0으로 남겨야 정확하다.
+        const scale = this.surface?.documentScale ?? 1;
+        const liveDraft = target === this.activeContext && !finalize;
+        const radiusX = liveDraft
+          ? studioLiveVisibleTapDocumentRadius(tapEllipse.radiusX, scale)
+          : tapEllipse.radiusX;
+        const radiusY = liveDraft
+          ? studioLiveVisibleTapDocumentRadius(tapEllipse.radiusY, scale)
+          : tapEllipse.radiusY;
+        paintStudioLiveRetainedEllipticalTap(context, {
+          x: firstX,
+          y: firstY,
+          radiusX,
+          radiusY,
+          angleRadians: tapEllipse.angleRadians,
+          color: element.stroke,
+          opacity: Math.min(1, element.opacity ?? 1),
+        });
         active.paintedPencilMarks = 1;
         return true;
       }
@@ -1066,10 +1080,6 @@ export class StudioLiveRetainedMediaOverlayRenderer {
         clearStudioLiveOverlayCanvas(this.activeContext, this.activeCanvas);
         active.paintedPencilMarks = 0;
       }
-      // 증분 빌더: 이동마다 전체 스트로크의 선분을 다시 세우던 O(n)/이동을 새 점 수에만
-      // 비례하게 만든다. 필압·스타일러스는 나란한 인덱스별 접근자로 넘겨 배열 재구성
-      // O(n)도 제거한다(빌더는 새 인덱스에서만 호출한다). 아래 suffix 리본과 짝을 이뤄
-      // 이동당 비용이 스트로크 길이와 무관해진다.
       const builder = active.calligraphySegments
         ??= createStudioIncrementalCalligraphySegmentBuilder(
           width,
@@ -1077,7 +1087,7 @@ export class StudioLiveRetainedMediaOverlayRenderer {
         );
       const { pressures, tiltXs, tiltYs, twists } = element;
       const segments = builder.append(
-        element.points,
+        calPoints,
         (index) => mapStudioBrushAliasPressure(brush, pressures?.[index], 0.5),
         (index) => ({
           pointerType: "pen" as const,
@@ -1086,16 +1096,16 @@ export class StudioLiveRetainedMediaOverlayRenderer {
           twist: twists?.[index],
         }),
       );
-      // 아직 칠하지 않은 구간만 계획한다. 경계 구간을 다시 넣으면 그 구간이 프레임마다 한 번
-      // 더 칠해져 반투명 획의 알파가 1-(1-a)^2 로 쌓였다 — 같은 파일의 연필 경로가 실측으로
-      // 잡아낸 것과 같은 결함이다(라이브 86.3 vs 커밋 70.0). 다시 넣어도 조인이 더 덮이지도
-      // 않는다: run 의 outline 은 구간별 커버리지 폴리곤의 합집합이고 각 구간이 자기 양 끝
-      // nib 발자국을 이미 내므로, 경계의 앞 구간 몫은 직전 프레임이 이미 칠했다.
       const start = active.paintedSourceSegments;
       const ribbon = planStudioCalligraphyRibbon(segments.slice(start));
       context.fillStyle = element.stroke;
       context.globalAlpha = Math.min(1, element.opacity ?? 1);
-      for (const run of ribbon.runs) this.fillOutline(context, run.outlinePoints);
+      for (const run of ribbon.runs) {
+        paintStudioLiveRetainedCalligraphyRun(context, run, {
+          includeStartCap: start === 0,
+          includeEndCap: finalize,
+        });
+      }
       active.paintedSourceSegments = segments.length;
       active.paintedPencilMarks = Math.max(active.paintedPencilMarks, 1);
       return true;
@@ -1125,14 +1135,15 @@ export class StudioLiveRetainedMediaOverlayRenderer {
       context.globalCompositeOperation = composite;
       context.fillStyle = element.stroke;
       if (pairs.length === 1) {
+        const tapInput = resolveStudioRetainedHighlighterTapInput(element, width);
         const tap = planStudioHighlighterWashTap({
           brushId,
           x: pairs[0]!.x,
           y: pairs[0]!.y,
-          width,
-          opacityScale: element.opacity ?? 1,
+          width: tapInput.tapWidth,
+          opacityScale: tapInput.opacityScale,
         });
-        context.globalAlpha = Math.min(1, (element.opacity ?? 1) * tap.opacityScale);
+        context.globalAlpha = Math.min(1, tapInput.elementOpacity * tap.opacityScale);
         context.beginPath();
         traceStudioHighlighterWashPlan(context, tap);
         context.fill();
@@ -1191,27 +1202,32 @@ export class StudioLiveRetainedMediaOverlayRenderer {
     active: ActiveRetainedStroke,
     element: DrawEl,
     target: CanvasRenderingContext2D | null,
+    finalize = false,
   ): boolean {
     const context = this.prepared(target);
     if (!context) return false;
     try {
-      const pairs = pairsFromElement(element);
-      if (pairs.length === 0) return true;
-      const width = Math.max(1, element.strokeWidth);
+      const eraserInput = resolveStudioRetainedEraserRenderInput(element);
+      const { pairs, width: docWidth, opacity } = eraserInput;
+      if (pairs.length === 0 || active.paintedSourceSegments >= pairs.length) return true;
       const start = active.paintedSourceSegments === 0
         ? 0
         : Math.max(0, active.paintedSourceSegments - 1);
+      const liveDraft = target === this.activeContext && !finalize;
+      const width = liveDraft
+        ? Math.max(
+            docWidth,
+            2 * studioLiveVisibleTapDocumentRadius(docWidth / 2, this.surface?.documentScale ?? 1),
+          )
+        : docWidth;
       paintStudioLiveRetainedRoundStroke(
         context,
         pairs,
         start,
         {
           stroke: "rgba(0,0,0,1)",
-          width: Math.max(
-            width,
-            2 * studioLiveVisibleTapDocumentRadius(width / 2, this.surface?.documentScale ?? 1),
-          ),
-          opacity: 1,
+          width,
+          opacity,
           composite: "destination-out",
         },
       );
@@ -1235,24 +1251,6 @@ export class StudioLiveRetainedMediaOverlayRenderer {
         this.activePaintedOntoSettled = true;
       }
     }
-  }
-
-  private fillOutline(
-    context: CanvasRenderingContext2D,
-    points: readonly number[],
-  ): void {
-    const [firstX, firstY, ...rest] = points;
-    if (firstX === undefined || firstY === undefined) return;
-    context.beginPath();
-    context.moveTo(firstX, firstY);
-    for (let offset = 0; offset < rest.length; offset += 2) {
-      const x = rest[offset];
-      const y = rest[offset + 1];
-      if (x === undefined || y === undefined) break;
-      context.lineTo(x, y);
-    }
-    context.closePath();
-    context.fill();
   }
 
   private flattenActiveToSettled(): boolean {

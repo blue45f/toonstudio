@@ -8,6 +8,11 @@
  */
 
 import {
+  computeStudioBrushAntiGridSampleJitter,
+  studioBrushTipUsesAnalyticSoftFalloff,
+  studioDynamicBrushUsesFullTextureAuthority,
+} from "./brush/studio-brush-antigrid-parity";
+import {
   isStudioDynamicBrushCausalDepositPipeline,
   isStudioSoftFalloffLinearAccumulationProgramPin,
   type NormalizedStudioBrushDynamicsSettings,
@@ -772,23 +777,6 @@ function proceduralSoftTipFalloffExponent(
   return 1.4 + tip.softness * 2.2;
 }
 
-function tipUsesAnalyticSoftFalloff(
-  tip: NormalizedStudioBrushTipSettings,
-  primary: boolean,
-  dualBrush: NormalizedStudioBrushDynamicsSettings["dualBrush"],
-  fullTextureAuthority: boolean,
-): boolean {
-  const activeDual = primary && studioBrushDualBrushIsActive(dualBrush);
-  return tip.shape === "soft"
-    && tip.alphaMapBase64 === null
-    // Any enabled dual tip is a single precomposed full alpha map. Splitting a screen union into
-    // an analytic carrier plus a sampled secondary changed command count and could reveal circles.
-    && (
-      !activeDual
-      || (!fullTextureAuthority && dualBrush?.blendMode === "screen")
-    );
-}
-
 /** Path2D memo for frozen carrier ribbons, keyed by ribbon identity (see the paint path below). */
 const RIBBON_PATH_CACHE = new WeakMap<object, Path2D>();
 
@@ -1183,9 +1171,7 @@ export function planStudioDynamicBrushCoverageMarks(
   ];
   const grainActive = dynamics.grain.amount > 0;
   const dualBrush = dynamics.dualBrush;
-  const fullTextureAuthority = isStudioDynamicBrushCausalDepositPipeline(
-    dynamics.depositPipeline,
-  );
+  const fullTextureAuthority = studioDynamicBrushUsesFullTextureAuthority(dynamics);
   const decomposedLegacyScreenDual = !fullTextureAuthority
     && studioBrushDualBrushIsActive(dualBrush)
     && dualBrush?.blendMode === "screen"
@@ -1199,7 +1185,7 @@ export function planStudioDynamicBrushCoverageMarks(
       : null;
   const tipUsesAnalyticFalloff = tipDefinitions.map((tip, tipIndex) => (
     r8GrainSampler === null
-    && tipUsesAnalyticSoftFalloff(
+    && studioBrushTipUsesAnalyticSoftFalloff(
         tip,
         tipIndex === 0,
         dualBrush,
@@ -1495,31 +1481,31 @@ export function planStudioDynamicBrushCoverageMarks(
       const appendSampledTipMap = (
         sampledDab: StudioBrushComposableDab,
         alphaMap: StudioBrushTipAlphaMap,
+        tipChannel = tipIndex,
       ): "ok" | "invalid-mark" | "mark-budget" => {
         let failure: "invalid-mark" | "mark-budget" | null = null;
+        let sampleOrdinal = 0;
+        const dabOrdinal = composedDab.index ?? paperCompositionDabIndex;
         visitStudioBrushTipStampSamples(
           sampledDab,
           alphaMap,
           (dx, dy, alpha, radius) => {
             if (failure) return;
-            const sampleX = sampledDab.x + dx;
-            const sampleY = sampledDab.y + dy;
+            const antiGrid = computeStudioBrushAntiGridSampleJitter({
+              seed: dynamicSeed, dabOrdinal, tipIndex: tipChannel, sampleOrdinal,
+              stampGrid, sampleRadius: radius, dabSize: sampledDab.size, dabRoundness: sampledDab.roundness,
+            });
+            sampleOrdinal += 1;
+            const sampleX = sampledDab.x + dx + antiGrid.jitterX;
+            const sampleY = sampledDab.y + dy + antiGrid.jitterY;
             const sampledMark: StudioDynamicBrushCoverageMark = {
-              x: sampleX,
-              y: sampleY,
-              radiusX: radius,
-              radiusY: radius,
+              x: sampleX, y: sampleY, radiusX: antiGrid.radius, radiusY: antiGrid.radius,
               angleRadians: 0,
-              alpha: clampAlpha(
-                depositionAlpha * alpha * grainAt(sampleX, sampleY),
-              ),
+              alpha: clampAlpha(depositionAlpha * alpha * grainAt(sampleX, sampleY)),
               color: dabColor,
             };
-            if (!markIsValid(sampledMark)) {
-              failure = "invalid-mark";
-            } else if (!appendMark(sampledMark)) {
-              failure = "mark-budget";
-            }
+            if (!markIsValid(sampledMark)) failure = "invalid-mark";
+            else if (!appendMark(sampledMark)) failure = "mark-budget";
           },
           { grid: stampGrid },
         );
@@ -1611,6 +1597,7 @@ export function planStudioDynamicBrushCoverageMarks(
         return appendSampledTipMap(
           secondaryDab,
           decomposedLegacyScreenDual.alphaMap,
+          tipIndex + 16,
         );
       }
 

@@ -179,34 +179,12 @@ interface StudioBrushTipStampUnitSample {
 }
 
 /**
- * How far a sub-dab is displaced from its lattice node, and how much its size varies.
- *
- * The stamp used to be a rigid `grid x grid` axis-aligned lattice - default 9x9, up to 81 nodes -
- * with ONE `sampleRadius` shared by every node, built once and rubber-stamped at every dab of every
- * stroke with nothing but the dab angle changing. Position came from a grid, size was constant, and
- * only alpha varied. A texture whose only variation is alpha over a regular lattice does not read
- * as grain; it reads as a printed screen, and this is the single tip path behind dry media, pencil,
- * spray, splatter, charcoal and chalk - the largest brush population in the product.
- *
- * Both values are hashed from the node's own lattice coordinates, so the whole sample set is still
- * a pure function of (map, grid) and stays in the existing cache. Nothing is computed per dab and
- * live, replay and SVG keep reading the identical sample list.
- *
- * The displacement is bounded well inside the cell. Nodes sit `1 / half` apart in unit coordinates
- * and each sub-dab has radius `0.72` of a cell, so neighbours overlap by 1.44 diameters against a
- * spacing of 1.0; a third of a cell of jitter breaks the alignment without opening holes.
+ * 샘플드 팁 격자 노드의 정적 변위·반지름 편차.
+ * `(map, grid)` 순수 함수로 캐시되며, `grid=3` 소격자에서 표본 수가 늘어 라이브 예산을
+ * 넘지 않도록 절대 반지름 상한(`TIP_SAMPLE_JITTER_MAX_RADII`)을 둔다.
+ * 대브 간 반복 격자 억제는 커버리지 렌더러의 R2 블루노이즈 서브픽셀 지터가 담당한다.
  */
 const TIP_SAMPLE_JITTER_CELLS = 0.34;
-/**
- * Absolute ceiling on that displacement, in tip radii.
- *
- * A third of a CELL is modest at grid 9 (0.085 radii) and enormous at grid 3, where one cell is the
- * whole tip. The small grids are also the LOD the live budget falls back to on long strokes, and
- * unbounded jitter there moved samples into higher-alpha regions, raised the grid-3 sample count
- * 3 -> 5, and pushed the smallest grid past the live mark budget - so a long charcoal stroke could
- * no longer step down at all. There is no visible lattice at 9 nodes to break in the first place;
- * the artifact this fixes lives at 81.
- */
 const TIP_SAMPLE_JITTER_MAX_RADII = 0.09;
 const TIP_SAMPLE_RADIUS_VARIATION = 0.22;
 
@@ -528,13 +506,24 @@ export function sampleStudioBrushTipProceduralAlpha(
     }
     case "sponge": {
       if (radius >= 1) return 0;
-      // Coarse cellular pores remain deterministic across Canvas, SVG and collaboration replay.
-      const cellX = Math.floor((nx + 1) * 6);
-      const cellY = Math.floor((ny + 1) * 6);
-      const pore = hashUnit(cellX, cellY, 0x76d4_4b91);
-      const mottling = 0.18 + 0.82 * Math.pow(pore, 0.55 + soft * 0.8);
-      const body = Math.pow(1 - radius, 0.28 + soft * 0.75);
-      return clamp01(body * mottling);
+      // 황금각 회전 보로노이 기공으로 정방 체커보드 격자 없이 결정론적 스펀지 질감을 만든다.
+      const sx = (nx * 0.832_050_3 - ny * 0.554_700_2 + 1.37) * 5.2;
+      const sy = (nx * 0.554_700_2 + ny * 0.832_050_3 + 1.37) * 5.2;
+      const ix = Math.floor(sx);
+      const iy = Math.floor(sy);
+      let d2 = 4;
+      for (let oy = -1; oy <= 1; oy += 1) {
+        for (let ox = -1; ox <= 1; ox += 1) {
+          const cx = ix + ox;
+          const cy = iy + oy;
+          const dx = cx + 0.15 + 0.7 * hashUnit(cx, cy, 0x76d4_4b91) - sx;
+          const dy = cy + 0.15 + 0.7 * hashUnit(cx, cy, 0x4b91_76d4) - sy;
+          const cur = dx * dx + dy * dy;
+          if (cur < d2) d2 = cur;
+        }
+      }
+      const pore = clamp01(Math.sqrt(d2) * 1.15);
+      return clamp01(Math.pow(1 - radius, 0.28 + soft * 0.75) * (0.24 + 0.76 * Math.pow(pore, 0.55 + soft * 0.8)));
     }
     case "sumi": {
       // Slightly asymmetric, ragged ink belly inspired by a loaded sumi brush.

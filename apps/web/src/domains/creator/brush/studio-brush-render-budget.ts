@@ -8,16 +8,23 @@
  */
 
 import {
+  studioBrushTipUsesAnalyticSoftFalloff,
+  studioDynamicBrushHasActiveR8Grain,
+  studioDynamicBrushUsesFullTextureAuthority,
+} from "./studio-brush-antigrid-parity";
+import {
   isStudioDynamicBrushCausalDepositPipeline,
   studioDynamicBrushDepositPipelineUsesContinuation,
   type NormalizedStudioBrushDynamicsSettings,
 } from "./studio-brush-dynamics";
 import {
   composeStudioBrushDualTipAlphaMap,
+  studioBrushDualBrushIsActive,
   studioBrushDualTipUsesSolidEllipse,
 } from "./studio-brush-tip-composition";
 import {
   countStudioBrushTipStampSamples,
+  studioBrushTipUsesSolidEllipse,
   type NormalizedStudioBrushTipSettings,
 } from "./studio-brush-tip-stamp";
 
@@ -267,10 +274,28 @@ function studioBrushTipMarkCount(
   tip: NormalizedStudioBrushTipSettings,
   grainActive: boolean,
   grid: StudioDynamicBrushRenderStampGrid,
-  dualBrush?: unknown
+  dualBrush: NormalizedStudioBrushDynamicsSettings["dualBrush"] | undefined,
+  primary: boolean,
 ): number {
   // 듀얼 브러시(1차 팁 전용)가 활성이면 합성 맵 기준으로 샘플 수를 센다 — 비활성 시 기존과 동일.
   if (!grainActive && studioBrushDualTipUsesSolidEllipse(tip, dualBrush)) return 1;
+  if (studioBrushTipUsesAnalyticSoftFalloff(tip, primary, dualBrush, false)) {
+    // 해석적 방사형 소프트 팁은 그레인이 켜져 있어도 1회 drawImage 명령으로 내려간다.
+    if (
+      primary
+      && studioBrushDualBrushIsActive(dualBrush)
+      && dualBrush?.blendMode === "screen"
+    ) {
+      const secondaryTip = dualBrush.tip;
+      const secondaryMarks =
+        (secondaryTip.shape === "soft" && secondaryTip.alphaMapBase64 === null)
+        || studioBrushTipUsesSolidEllipse(secondaryTip)
+          ? 1
+          : countStudioBrushTipStampSamples(secondaryTip, { grid });
+      return 1 + secondaryMarks;
+    }
+    return 1;
+  }
   const alphaMap = composeStudioBrushDualTipAlphaMap(tip, dualBrush);
   return countStudioBrushTipStampSamples(tip, { alphaMap, grid });
 }
@@ -281,18 +306,24 @@ export function countStudioDynamicBrushMarksPerDab(
   grid: StudioDynamicBrushRenderStampGrid
 ): number {
   if (
-    isStudioDynamicBrushCausalDepositPipeline(settings.depositPipeline)
+    studioDynamicBrushUsesFullTextureAuthority(settings)
+    || studioDynamicBrushHasActiveR8Grain(settings)
   ) {
-    // Causal pipelines carry each solid, analytic or full alpha-map tip as one affine command. The
-    // dual tip is precomposed into the primary map; each enabled extra layer contributes one more.
-    // `grid` remains serialized for legacy replay but does not reduce a causal texture to circles.
+    // 풀해상도 텍스처 스탬프(인과·고해상도 커스텀·파라미터 팁)와 활성 R8 페이퍼 그레인은
+    // 활성 팁 레이어당 1회 `drawImage` 명령으로 실행되며 정방 원격자로 전개되지 않는다.
     return 1 + settings.tipLayers.filter((layer) => layer.opacity > 0).length;
   }
   const grainActive = settings.grain.amount > 0;
-  let marks = studioBrushTipMarkCount(settings.tip, grainActive, grid, settings.dualBrush);
+  let marks = studioBrushTipMarkCount(
+    settings.tip,
+    grainActive,
+    grid,
+    settings.dualBrush,
+    true,
+  );
   for (const layer of settings.tipLayers) {
     if (layer.opacity <= 0) continue;
-    marks += studioBrushTipMarkCount(layer.tip, grainActive, grid);
+    marks += studioBrushTipMarkCount(layer.tip, grainActive, grid, undefined, false);
   }
   return Math.max(1, marks);
 }

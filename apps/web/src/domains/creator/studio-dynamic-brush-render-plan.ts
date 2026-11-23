@@ -6,6 +6,7 @@
  * future GPU path from copying StudioDrawNode's causal-v2/v3, symmetry and work-budget policy.
  */
 
+import { resolveStudioDynamicBrushRenderPlanMarkBudget } from "./brush/studio-brush-antigrid-parity";
 import {
   DEFAULT_STUDIO_DYNAMIC_BRUSH_MAX_DABS,
   isStudioDynamicBrushCausalDepositPipeline,
@@ -16,6 +17,7 @@ import {
   studioDynamicBrushDepositPipelineUsesContinuation,
 } from "./brush/studio-brush-dynamics";
 import {
+  countStudioDynamicBrushMarksPerDab,
   planStudioDynamicBrushRenderBudget,
   STUDIO_DYNAMIC_BRUSH_CAUSAL_CONTINUATION_MARK_BUDGET,
   STUDIO_DYNAMIC_BRUSH_CAUSAL_MARK_BUDGET,
@@ -293,17 +295,26 @@ export function planStudioDynamicBrushRender(
     ? segmentedDabCount(causalDabSegments)
     : baseDabs.length;
   const symmetryTransforms = studioBrushSymmetryTransforms(element.symmetry);
-  const markBudget = usesCausalDepositPlan
-    ? studioDynamicBrushDepositPipelineUsesContinuation(dynamics.depositPipeline)
-      ? STUDIO_DYNAMIC_BRUSH_CAUSAL_CONTINUATION_MARK_BUDGET
-      : STUDIO_DYNAMIC_BRUSH_CAUSAL_MARK_BUDGET
-    : activeDraft
-      ? STUDIO_DYNAMIC_BRUSH_LIVE_MARK_BUDGET
-      : STUDIO_DYNAMIC_BRUSH_COMMITTED_MARK_BUDGET;
   const coverageBudget = resolveStudioDynamicBrushCoverageBudgetContract(
     materialIdentity,
     dynamics,
   );
+  const enabledTipCount =
+    1 + coverageBudget.settings.tipLayers.filter((layer) => layer.opacity > 0).length;
+  const singleCallRasterParity =
+    countStudioDynamicBrushMarksPerDab(coverageBudget.settings, 7) <= enabledTipCount;
+  const markBudget = resolveStudioDynamicBrushRenderPlanMarkBudget({
+    dynamics,
+    usesCausalDepositPlan,
+    activeDraft,
+    singleCallRasterParity,
+    budgets: {
+      live: STUDIO_DYNAMIC_BRUSH_LIVE_MARK_BUDGET,
+      committed: STUDIO_DYNAMIC_BRUSH_COMMITTED_MARK_BUDGET,
+      causal: STUDIO_DYNAMIC_BRUSH_CAUSAL_MARK_BUDGET,
+      causalContinuation: STUDIO_DYNAMIC_BRUSH_CAUSAL_CONTINUATION_MARK_BUDGET,
+    },
+  });
   const renderBudget = planStudioDynamicBrushRenderBudget({
     settings: coverageBudget.settings,
     dabCount: baseDabCount,
