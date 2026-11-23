@@ -11,12 +11,18 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { useState, type CSSProperties } from "react";
+import { lazy, Suspense, useState, type CSSProperties } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
 import { BeginnerInstantComicWizard } from "./beginner-quickstart/BeginnerInstantComicWizard";
+
+const LazyAllInOneCreatorSuite = lazy(() =>
+  import("../pro-drawing-ppt-suite/StudioPptProDrawingPanel").then((m) => ({
+    default: m.StudioPptProDrawingPanel,
+  })),
+);
 
 interface CreateStartGrandAtelierSectionProps {
   readonly storyHref: string;
@@ -96,6 +102,7 @@ export function CreateStartGrandAtelierSection({
   const [customDpi, setCustomDpi] = useState<300 | 350>(300);
   const [teamCollab, setTeamCollab] = useState(true);
   const [proToolsOpen, setProToolsOpen] = useState(false);
+  const [allInOneSuiteOpen, setAllInOneSuiteOpen] = useState(false);
 
   const safeWidth = Math.min(8000, Math.max(320, Number.isFinite(customWidth) ? customWidth : 800));
   const safeHeight = Math.min(40000, Math.max(320, Number.isFinite(customHeight) ? customHeight : 12800));
@@ -392,6 +399,45 @@ export function CreateStartGrandAtelierSection({
             </Link>
           </div>
         </section>
+      </details>
+
+      <details
+        open={allInOneSuiteOpen}
+        onToggle={(event) => setAllInOneSuiteOpen(event.currentTarget.open)}
+        data-testid="create-allinone-pro-suite-disclosure"
+        className="mt-4 rounded-2xl border border-line bg-card/85 p-3.5 transition-colors hover:border-line-strong"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-2 py-1 text-left">
+          <div>
+            <p className="text-xs font-semibold text-accent">
+              {bt("무료 올인원 확장 스위트", "Free All-in-One Creator Suite")}
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-fg [word-break:keep-all]">
+              {bt(
+                "PPTX · 미리캔버스/Figma 디자인 · 무료 브러시 502 · 필터 183 · 홀로그램 · 아이디어→웹툰 · 음성 코치",
+                "PPTX · MiriCanvas/Figma Design · 502 Free Brushes · 183 Filters · Hologram · Idea-to-Webtoon · Voice Coach",
+              )}
+            </p>
+          </div>
+          <ChevronDown
+            size={18}
+            aria-hidden="true"
+            className={`shrink-0 text-fg-3 transition-transform duration-150 ${allInOneSuiteOpen ? "rotate-180" : ""}`}
+          />
+        </summary>
+        {allInOneSuiteOpen ? (
+          <div className="mt-3">
+            <Suspense
+              fallback={
+                <p className="py-4 text-center text-xs text-fg-3">
+                  {bt("올인원 프로 스위트를 불러오는 중입니다…", "Loading All-in-One Pro Suite...")}
+                </p>
+              }
+            >
+              <LazyAllInOneCreatorSuite initialTab="design" />
+            </Suspense>
+          </div>
+        ) : null}
       </details>
     </div>
   );

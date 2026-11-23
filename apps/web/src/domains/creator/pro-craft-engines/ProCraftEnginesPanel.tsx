@@ -1,7 +1,10 @@
-import { Download, Lightbulb, PenTool, Printer, RefreshCw, Sparkles } from "lucide-react";
+import { Download, Grid3x3, Lightbulb, PenTool, Printer, RefreshCw, Sparkles } from "lucide-react";
 import { useMemo, useState, type PointerEvent } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
+
+import { computeResponsiveHapticGrid } from "../render/uhd-edge-grid/responsive-haptic-grid";
+import { computeUhdEdgeRenderPlan } from "../render/uhd-edge-grid/uhd-dpr-tile-budgeter";
 
 import { extract3dLightingRigFrom2dCut } from "./cut-to-3d-lighting-matcher";
 import { generateDieCutSvgFromAlpha, runCmykPrintPreflight } from "./goods-print-cutline-preflight";
@@ -13,7 +16,7 @@ import {
 } from "./stylus-pressure-calibrator";
 import "./pro-craft-engines.css";
 
-type CraftSubTab = "lighting" | "cutline" | "stylus";
+type CraftSubTab = "lighting" | "cutline" | "stylus" | "uhd";
 type LightingScenePreset = "sunset" | "moonlight" | "neon-alley";
 type GoodsSubjectPreset = "mascot-badge" | "sword-charm";
 
@@ -94,6 +97,37 @@ export function ProCraftEnginesPanel() {
   const [strokeMeters, setStrokeMeters] = useState(14);
   const [dipMeters, setDipMeters] = useState(0.9);
   const [nibMedia, setNibMedia] = useState<"dip-pen" | "oriental-brush" | "graphite-pencil">("oriental-brush");
+  const [uhdDpr, setUhdDpr] = useState<1.25 | 2 | 3>(2);
+  const [uhdZoom, setUhdZoom] = useState(1.5);
+
+  const uhdPlan = useMemo(
+    () =>
+      computeUhdEdgeRenderPlan({
+        viewportCssWidth: 1920,
+        viewportCssHeight: 1080,
+        devicePixelRatio: uhdDpr,
+        zoom: uhdZoom,
+        panVelocityX: 420,
+        panVelocityY: -120,
+        vramBudgetMiB: 512,
+        tileSizePx: 256,
+      }),
+    [uhdDpr, uhdZoom],
+  );
+
+  const hapticGrid = useMemo(
+    () =>
+      computeResponsiveHapticGrid({
+        zoom: uhdZoom,
+        viewportWidth: 1280,
+        viewportHeight: 720,
+        mode: "webtoon-gutter",
+        pointerX: 640,
+        pointerY: 360,
+        previousAxisKey: null,
+      }),
+    [uhdZoom],
+  );
 
   const lightingRig = useMemo(
     () => extract3dLightingRigFrom2dCut(buildDemoCutRgba(lightingScene), 64, 64),
@@ -249,6 +283,16 @@ export function ProCraftEnginesPanel() {
         >
           <PenTool size={15} aria-hidden="true" />
           <span>{isEn ? "Stylus & Nib Wear" : "10초 필압 · 펜촉 마모"}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "uhd"}
+          className="pro-craft-tab"
+          onClick={() => setTab("uhd")}
+        >
+          <Grid3x3 size={15} aria-hidden="true" />
+          <span>{isEn ? "4K~8K Edge & Haptic Grid" : "4K~8K 엣지 · 햅틱 그리드"}</span>
         </button>
       </div>
 
@@ -494,6 +538,73 @@ export function ProCraftEnginesPanel() {
                 </label>
               </div>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {tab === "uhd" ? (
+        <div className="pro-craft-grid" data-testid="pro-craft-uhd-tab">
+          <div className="pro-craft-card">
+            <div className="pro-craft-row">
+              {([1.25, 2, 3] as const).map((dprOption) => (
+                <button
+                  key={dprOption}
+                  type="button"
+                  className="pro-craft-chip"
+                  data-active={uhdDpr === dprOption}
+                  onClick={() => setUhdDpr(dprOption)}
+                >
+                  {dprOption === 1.25
+                    ? isEn
+                      ? "125% Fractional DPR"
+                      : "125% 비정수 DPR"
+                    : dprOption === 2
+                      ? isEn
+                        ? "4K/5K Retina (2x)"
+                        : "4K/5K 레티나 (2x)"
+                      : isEn
+                        ? "8K Studio (3x)"
+                        : "8K 스튜디오 (3x)"}
+                </button>
+              ))}
+            </div>
+            <label className="pro-craft-slider">
+              <span>{isEn ? `Canvas Zoom (${Math.round(uhdZoom * 100)}%)` : `캔버스 배율 (${Math.round(uhdZoom * 100)}%)`}</span>
+              <input
+                type="range"
+                min={0.5}
+                max={6}
+                step={0.25}
+                value={uhdZoom}
+                onChange={(e) => setUhdZoom(Number(e.target.value))}
+              />
+            </label>
+            <dl className="pro-craft-metrics">
+              <div>
+                <dt>{isEn ? "Effective Backing DPR" : "실효 백킹 DPR"}</dt>
+                <dd>{uhdPlan.effectiveBackingDpr}x</dd>
+              </div>
+              <div>
+                <dt>{isEn ? "1px Crisp Hairline" : "1px 선명 엣지 폭"}</dt>
+                <dd>{uhdPlan.hairlineStrokeWidthCss.toFixed(3)} css px</dd>
+              </div>
+              <div>
+                <dt>{isEn ? "Tile VRAM Usage" : "예상 타일 VRAM"}</dt>
+                <dd>{uhdPlan.memory.totalEstimatedVramMiB.toFixed(1)} MiB</dd>
+              </div>
+              <div>
+                <dt>{isEn ? "Prefetch Ring Tiles" : "속도 예측 프리페치 타일"}</dt>
+                <dd>{uhdPlan.prefetchTiles.length}</dd>
+              </div>
+              <div>
+                <dt>{isEn ? "Grid Subdivision" : "적응형 그리드 간격"}</dt>
+                <dd>{(hapticGrid.minObservedSpacingPx ?? hapticGrid.minSpacingPx).toFixed(1)} px</dd>
+              </div>
+              <div>
+                <dt>{isEn ? "Haptic Snap State" : "자석 스냅 상태"}</dt>
+                <dd>{hapticGrid.snap.isSnapped ? hapticGrid.haptic.axisLabel ?? "SNAP" : isEn ? "Free" : "자유 이동"}</dd>
+              </div>
+            </dl>
           </div>
         </div>
       ) : null}
