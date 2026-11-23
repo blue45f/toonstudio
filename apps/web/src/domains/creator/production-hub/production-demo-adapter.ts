@@ -6,6 +6,7 @@
  *   서버·다른 사용자·다른 기기에는 저장되지 않는다.
  * - 명령 처리는 서버 계약과 같은 공정 검증(`validateProductionWorkflowMutation`)을 통과해야 한다.
  */
+import "./production-hub-i18n";
 import { buildProductionWorkflowTasks, transitionProductionTaskBatch, validateProductionWorkflowMutation, validateProductionWorkflowProfile } from "@toonstudio/contracts/production-workflow";
 import {
   applyProductionStudioRevisionLink,

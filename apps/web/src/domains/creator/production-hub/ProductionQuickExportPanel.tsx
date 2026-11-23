@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { CheckCircle2, Download, FileArchive, LoaderCircle, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 

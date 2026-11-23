@@ -13,6 +13,7 @@ import "@/domains/admin/admin-i18n-loader";
 import "@/domains/catalog/guide-i18n";
 import "@/domains/creator/analytics/creator-analytics-i18n";
 import "@/domains/creator/production-hub/extreview-i18n";
+import "@/domains/creator/production-hub/production-hub-i18n";
 import "@/domains/legal/copyright-i18n";
 import "@/domains/monetization/monetization-i18n";
 import "@/shared/components/search-i18n";

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
+
+import { StudioComputeWorkerPool } from "../render/worker-wasm-offload/offscreen-worker-pool";
 
 import { ProCraftEnginesPanel } from "./ProCraftEnginesPanel";
 import { extract3dLightingRigFrom2dCut } from "./cut-to-3d-lighting-matcher";
@@ -20,6 +22,11 @@ import {
 describe("pro-craft-engines: 2D->3D 라이팅 매칭 · 굿즈 칼선/CMYK · 개인 필압 캘리브레이션", () => {
   beforeEach(() => {
     useI18n.setState({ lang: "ko" });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("2D 컷의 좌상단 따뜻한 광원과 우하단 차가운 그림자를 3D 3점 조명 방위각/고도각/색온도로 정확히 추정한다", () => {
@@ -141,6 +148,88 @@ describe("pro-craft-engines: 2D->3D 라이팅 매칭 · 굿즈 칼선/CMYK · �
     expect(freshNib.inkLoadRemaining).toBe(1);
     expect(dryWornNib.nibSharpness).toBeLessThan(0.6);
     expect(dryWornNib.recommendedDryBrushScratch).toBeGreaterThan(0.8);
+  });
+
+  it.each(["ko", "en"] as const)("Wasm 실측 버튼이 실제 폴백 연산과 정확한 버퍼 입출력량을 표시하고 풀을 정리한다 (%s)", async (lang) => {
+    vi.stubGlobal("Worker", undefined);
+    useI18n.setState({ lang });
+    const runJob = vi.spyOn(StudioComputeWorkerPool.prototype, "runJob");
+    const getTelemetry = vi.spyOn(StudioComputeWorkerPool.prototype, "getTelemetry");
+    const dispose = vi.spyOn(StudioComputeWorkerPool.prototype, "dispose");
+    render(<ProCraftEnginesPanel />);
+
+    fireEvent.click(screen.getByRole("tab", { name: /4K~8K/ }));
+    fireEvent.click(screen.getByRole("button", {
+      name: lang === "en" ? "Run Wasm SIMD Worker Offload Test" : "Wasm SIMD 워커 오프로드 실측",
+    }));
+
+    await waitFor(() => expect(dispose).toHaveBeenCalledTimes(1));
+    expect(runJob).toHaveBeenCalledTimes(1);
+    const input = runJob.mock.calls[0]?.[0];
+    if (input?.type !== "wasm-alpha-threshold") {
+      throw new Error("Wasm 픽셀 작업이 제출되지 않았습니다.");
+    }
+    expect(input).toMatchObject({ width: 64, height: 64, mode: "luma", threshold: 128 });
+    expect(input.rgba).toBeInstanceOf(ArrayBuffer);
+    expect(input.rgba.byteLength).toBe(16_384);
+
+    const execution = runJob.mock.results[0];
+    if (execution?.type !== "return") {
+      throw new Error("실제 풀의 비동기 실행 결과가 없습니다.");
+    }
+    const result = await execution.value;
+    if (result.type !== "wasm-alpha-threshold") {
+      throw new Error("Wasm 픽셀 작업 결과가 아닙니다.");
+    }
+    expect(result.rgba).toBeInstanceOf(ArrayBuffer);
+    expect(result.rgba.byteLength).toBe(16_384);
+    expect(result.totalPixelCount).toBe(4_096);
+    expect(result.matchedPixelCount).toBeGreaterThan(0);
+    expect(result.matchedPixelCount).toBeLessThan(result.totalPixelCount);
+    expect(result.elapsedMs).toBeGreaterThanOrEqual(0);
+
+    expect(getTelemetry).toHaveBeenCalledTimes(1);
+    const snapshot = getTelemetry.mock.results[0];
+    if (snapshot?.type !== "return") {
+      throw new Error("완료된 풀의 텔레메트리가 없습니다.");
+    }
+    const telemetry = snapshot.value;
+    expect(telemetry).toMatchObject({
+      completedJobs: 1,
+      failedJobs: 0,
+      spawnedWorkers: 0,
+      zeroCopyBytesTransferred: 32_768,
+    });
+    expect(telemetry.backendTier.startsWith("main-")).toBe(true);
+    const backendLabel = lang === "en" ? "Backend" : "백엔드";
+    const bufferLabel = lang === "en" ? "Buffer I/O" : "버퍼 입출력";
+    expect(screen.getByRole("status").textContent).toBe(
+      `${backendLabel} ${result.wasmBackend} (${telemetry.backendTier}) · ${result.elapsedMs.toFixed(2)}ms · ${bufferLabel} 32768B`,
+    );
+  });
+
+  it.each(["ko", "en"] as const)("Wasm 실측 실패를 안내하고 거절된 작업의 풀을 정리한다 (%s)", async (lang) => {
+    vi.stubGlobal("Worker", undefined);
+    useI18n.setState({ lang });
+    const runJob = vi.spyOn(StudioComputeWorkerPool.prototype, "runJob")
+      .mockRejectedValueOnce(new Error("forced worker failure"));
+    const getTelemetry = vi.spyOn(StudioComputeWorkerPool.prototype, "getTelemetry");
+    const dispose = vi.spyOn(StudioComputeWorkerPool.prototype, "dispose");
+    render(<ProCraftEnginesPanel />);
+
+    fireEvent.click(screen.getByRole("tab", { name: /4K~8K/ }));
+    fireEvent.click(screen.getByRole("button", {
+      name: lang === "en" ? "Run Wasm SIMD Worker Offload Test" : "Wasm SIMD 워커 오프로드 실측",
+    }));
+
+    await waitFor(() => expect(dispose).toHaveBeenCalledTimes(1));
+    expect(runJob).toHaveBeenCalledTimes(1);
+    expect(getTelemetry).not.toHaveBeenCalled();
+    expect(screen.getByRole("status").textContent).toBe(
+      lang === "en"
+        ? "Wasm worker offload failed. Please try again."
+        : "Wasm 워커 오프로드에 실패했습니다. 다시 시도해 주세요.",
+    );
   });
 
   it("ProCraftEnginesPanel이 3개 탭 전환과 EN 모드 한글 0자를 만족한다", () => {

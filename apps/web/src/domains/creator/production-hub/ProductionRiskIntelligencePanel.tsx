@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import {
   AlertTriangle,
   ArrowRight,

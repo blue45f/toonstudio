@@ -27,7 +27,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-
+import "./production-hub-i18n";
 import type {
   CutPlan,
   EpisodePlan,

@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 import { getAuthSession, getAuthSessionRevision, listeners } from "@/domains/auth/public/session/auth-session-state";

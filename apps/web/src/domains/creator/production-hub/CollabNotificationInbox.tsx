@@ -1,3 +1,4 @@
+import "./production-hub-i18n";
 import { useT } from "@/shared/lib/i18n";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";

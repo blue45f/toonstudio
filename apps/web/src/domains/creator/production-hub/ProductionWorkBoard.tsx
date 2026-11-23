@@ -3,7 +3,7 @@ import "./production-workboard.css";
 import { Filter } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
+import "./production-hub-i18n";
 import { type ProductionProjectAggregate, type ProductionSavedView, type ProductionTask, type ProductionTaskStatus } from "@toonstudio/core/production";
 
 import { BoardColumns } from "./board/BoardColumns";

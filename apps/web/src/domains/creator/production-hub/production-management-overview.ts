@@ -10,7 +10,7 @@ import {
   type ProductionTaskStatus,
   type RoleAssignment,
 } from "@toonstudio/core/production";
-
+import "./production-hub-i18n";
 import {
   deriveProductionOperationsOverview,
   type EpisodeDeadlineHealth,

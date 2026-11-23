@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-
+import "./production-hub-i18n";
 import {
   PRODUCTION_DEPARTMENTS,  PRODUCTION_ROLE_LABELS,
   WEBTOON_PRODUCTION_PIPELINE,
