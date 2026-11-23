@@ -15,6 +15,7 @@ import { ensurePublishStatusI18n } from "./publish-status-i18n";
 import { useMemo, useState } from "react";
 
 import { downloadBlob, type ExportFormat } from "../export/studio-export";
+import { StudioGlobalOstPremiereHub } from "../global-ost-premiere";
 import { autoOptimizeEpisodeImage } from "./auto-slicer";
 import {
   PublishSpecChecklistPanel,
@@ -78,6 +79,7 @@ export function PublishSpecAutoOptimizeSection({
   );
   const [optimizing, setOptimizing] = useState(false);
   const [status, setStatus] = useState<PublishSpecChecklistStatus | null>(null);
+  const [globalHubOpen, setGlobalHubOpen] = useState(false);
 
   const preset = PUBLISH_SPEC_PRESETS[presetId];
   const rows = useMemo(
@@ -173,14 +175,38 @@ export function PublishSpecAutoOptimizeSection({
   };
 
   return (
-    <PublishSpecChecklistPanel
-      presetId={presetId}
-      onPresetChange={setPresetId}
-      rows={rows}
-      busy={optimizing || busy}
-      canOptimize={canOptimize}
-      status={status}
-      onAutoOptimize={() => void runAutoOptimize()}
-    />
+    <div className="space-y-2.5">
+      <PublishSpecChecklistPanel
+        presetId={presetId}
+        onPresetChange={setPresetId}
+        rows={rows}
+        busy={optimizing || busy}
+        canOptimize={canOptimize}
+        status={status}
+        onAutoOptimize={() => void runAutoOptimize()}
+      />
+      <details
+        className="rounded-xl border border-line/70 bg-card/40 p-2"
+        data-testid="publish-global-ost-premiere-details"
+        open={globalHubOpen}
+        onToggle={(event) => setGlobalHubOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-xs font-bold text-fg [word-break:keep-all]">
+          <span>
+            글로벌 20개국 SFX · @캐릭터 바이블 · 웹 OST 시사회 · 작화 증명 허브
+          </span>
+          <span className="shrink-0 text-xs font-semibold text-fg-2">
+            {globalHubOpen ? "접기" : "펼치기"}
+          </span>
+        </summary>
+        {globalHubOpen ? (
+          <div className="mt-2.5">
+            <StudioGlobalOstPremiereHub
+              episodeTitle={exportTitle.trim() || undefined}
+            />
+          </div>
+        ) : null}
+      </details>
+    </div>
   );
 }
