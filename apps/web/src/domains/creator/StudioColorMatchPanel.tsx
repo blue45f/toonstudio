@@ -302,7 +302,7 @@ export function StudioColorMatchPanel({
             value={clipSigma}
             aria-label="색 변화 범위"
             onChange={(e) => setClipSigma(Number(e.target.value))}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+            className="h-6 w-full cursor-pointer accent-accent"
           />
         </div>
 

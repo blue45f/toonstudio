@@ -31,6 +31,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { StudioErgonomicsSettingsSection } from "./ergonomics/StudioErgonomicsSettingsSection";
+import { StudioNextGenPerfTelemetryCard } from "./nextgen-perf-engine";
 import {
   STUDIO_APP_SETTINGS_TABS,
   studioAppSettingsTabLabel,
@@ -569,6 +570,8 @@ export function StudioAppSettingsPanel({
               </div>
             </Card>
           </div>
+
+          <StudioNextGenPerfTelemetryCard reduceMotion={settings.other.reduceMotion} />
         </div>
 
         <footer className="flex items-center gap-2 border-t border-line px-4 py-3">

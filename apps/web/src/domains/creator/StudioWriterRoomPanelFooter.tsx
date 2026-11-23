@@ -51,7 +51,7 @@ export function StudioWriterRoomPanelFooter({
         <button
           type="button"
           onClick={() => onSelectStage(next)}
-          className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-hover hover:text-on-accent sm:flex-none`}
+          className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-2 hover:text-on-accent sm:flex-none`}
         >
           다음 <ArrowRight size={14} aria-hidden />
         </button>
@@ -59,7 +59,7 @@ export function StudioWriterRoomPanelFooter({
         <button
           type="button"
           onClick={onClose}
-          className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-hover hover:text-on-accent sm:flex-none`}
+          className={`${BUTTON_CLASS} flex-1 bg-accent text-on-accent hover:border-accent hover:bg-accent-2 hover:text-on-accent sm:flex-none`}
         >
           Writer Room 닫기
         </button>

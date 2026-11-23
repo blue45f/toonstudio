@@ -8,7 +8,7 @@ import { ChevronDown, Layers } from "lucide-react";
 import { useId, useState } from "react";
 
 import { useT } from "@/shared/lib/i18n";
-import "./studio-bg3d-room-builder-i18n";
+import { ensureStudioBg3dRoomBuilderI18n } from "./studio-bg3d-room-builder-i18n";
 
 import { TemplateRangeControl, TemplateToggleRow } from "./StudioBg3dTemplateControls";
 import {
@@ -36,6 +36,8 @@ import {
 import { cx } from "@/shared/lib/cx";
 
 import type { StudioBg3dRoomOpening, StudioBg3dRoomSpec } from "./studio-bg3d-room-builder";
+
+ensureStudioBg3dRoomBuilderI18n();
 
 type Translate = ReturnType<typeof useT>;
 

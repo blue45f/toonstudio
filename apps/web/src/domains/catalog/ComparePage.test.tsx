@@ -62,5 +62,8 @@ describe("ComparePage REA multi-axis comparison & cohort retention simulator", (
     expect(status.textContent).toContain("Global Simulrelease & DB Rating Delta");
     expect(status.textContent).toContain("Ep 10 Paid Lock-In Window");
     expect(bar.textContent).not.toMatch(/[\uAC00-\uD7A3]/u);
+
+    expect(screen.getByTestId("compare-hub-link-studio-benchmark").getAttribute("href")).toBe("/compare/studio");
+    expect(screen.getByTestId("compare-hub-link-tech-showcase").getAttribute("href")).toBe("/tech");
   });
 });

@@ -2,9 +2,9 @@ import { useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { useEffect } from "react";
 
 import "./reference-labels";
-import "@/domains/cuts/cuts-labels";
-import "@/domains/newsletter/newsletter-labels";
-import "@/domains/character-chat/character-chat-labels";
+import { ensureCutsLabels } from "@/domains/cuts/cuts-labels";
+import { ensureNewsletterLabels } from "@/domains/newsletter/newsletter-labels";
+import { ensureCharacterChatLabels } from "@/domains/character-chat/character-chat-labels";
 import { shouldAppRouterOwnDocumentTitle } from "./app-route-title-ownership";
 import { CREATOR_RESOURCE_TITLES } from "./creator-resource-titles";
 
@@ -14,6 +14,10 @@ import { resolveSiteRouteAuthority } from "@/shared/lib/site-route-authority";
 import { canonicalSitePath } from "@/shared/lib/site-route-metadata";
 import { isStudioRoutePathname } from "@/domains/creator/studio-workspace-route";
 import { PRODUCT_IDENTITY, resolveProductLocale, type ProductLocale } from "@/shared/lib/product-identity";
+
+ensureCutsLabels();
+ensureNewsletterLabels();
+ensureCharacterChatLabels();
 
 // Static route browser titles. Detail pages that own richer content titles remain responsible for
 // updating the document, while this table still provides an accessible route-level fallback.
@@ -51,6 +55,8 @@ export const STATIC_TITLES: Record<string, string> = {
   "/character-chat/manage": "route.characterChatManage",
   "/onboarding/taste": "route.recommend",
   "/compare": "route.compare",
+  "/compare/studio": "route.compareStudio",
+  "/tech": "route.techShowcase",
   "/insights": "route.insights",
   "/authors": "route.authors",
   "/news": "route.news",

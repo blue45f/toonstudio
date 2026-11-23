@@ -545,7 +545,7 @@ export function StudioWriterRoomCollectionHeader({
       <button
         type="button"
         onClick={onAdd}
-        className={`${BUTTON_CLASS} bg-accent text-on-accent hover:border-accent hover:bg-accent-hover hover:text-on-accent`}
+        className={`${BUTTON_CLASS} bg-accent text-on-accent hover:border-accent hover:bg-accent-2 hover:text-on-accent`}
       >
         <Plus size={14} aria-hidden /> {addLabel}
       </button>
@@ -1685,7 +1685,7 @@ export function StudioWriterRoomPanel({
                 type="button"
                 onClick={() => void requestAi()}
                 disabled={effectiveAiBusy}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-55"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-55"
               >
                 {effectiveAiBusy ? (
                   <LoaderCircle size={14} className="animate-spin motion-reduce:animate-none" aria-hidden />

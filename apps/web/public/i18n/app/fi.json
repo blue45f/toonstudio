@@ -2381,6 +2381,8 @@
   "route.terms": "Palvelun ehdot",
   "route.unknown": "Sivu",
   "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase",
   "search.badge": "Yleishaku",
   "search.title": "Keskitetty työtila teosten nopeaan löytämiseen",
   "search.subtitle": "Hae teoksia, tekijöitä ja tunnisteita yhdessä ja rajaa tuloksia alusta- ja hintasuodattimilla.",

@@ -8,7 +8,7 @@ import { AdminQuickPalette } from "./AdminQuickPalette";
 
 const api = vi.hoisted(() => ({ fetch: vi.fn(), download: vi.fn(), toast: vi.fn() }));
 vi.mock("./admin-client", () => ({ adminFetchText: api.fetch, downloadAdminFile: api.download }));
-vi.mock("./use-admin-toast", () => ({ useAdminToast: () => ({ showToast: api.toast }) }));
+vi.mock("./admin-gate-state", () => ({ useAdminToast: () => ({ showToast: api.toast }) }));
 vi.mock("@/shared/lib/i18n", () => ({ useI18n: () => "en", useT: () => (key: string) => key }));
 
 const scrollDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollIntoView");

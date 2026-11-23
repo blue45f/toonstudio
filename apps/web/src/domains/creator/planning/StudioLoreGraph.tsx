@@ -43,13 +43,13 @@ const NODE_KIND_LABELS: Readonly<Record<LoreGraphNodeKind, string>> = {
 
 /** 종류를 색으로도 구분한다 — 단, 색만으로 구분하지 않고 범례·라벨을 함께 둔다. */
 const NODE_KIND_COLORS: Readonly<Record<LoreGraphNodeKind, string>> = {
-  place: "#2563eb",
-  faction: "#7c3aed",
-  species: "#059669",
-  artifact: "#d97706",
-  rule: "#dc2626",
-  event: "#0891b2",
-  character: "#111827",
+  place: "var(--color-cool)",
+  faction: "var(--color-accent)",
+  species: "var(--color-good)",
+  artifact: "var(--color-warn)",
+  rule: "var(--color-bad)",
+  event: "var(--color-accent-2)",
+  character: "var(--color-fg)",
 };
 
 function graphLabel(label: string): string {
@@ -84,7 +84,7 @@ function GraphCanvas({
               key={`${edge.kind}:${edge.fromNodeId}->${edge.toNodeId}`}
               d={edge.path}
               fill="none"
-              stroke={active ? "#111827" : "#9ca3af"}
+              stroke={active ? "var(--color-fg)" : "var(--color-line-strong)"}
               strokeWidth={active ? 2.4 : 1.2}
               strokeDasharray={edge.kind === "character" ? "5 4" : undefined}
             />
@@ -104,10 +104,10 @@ function GraphCanvas({
                 cy={node.y}
                 r={selected ? 10 : 8}
                 fill={NODE_KIND_COLORS[node.kind]}
-                stroke={selected ? "#111827" : "#ffffff"}
+                stroke={selected ? "var(--color-fg)" : "var(--color-card)"}
                 strokeWidth={selected ? 2.4 : 1.4}
               />
-              <text x={node.x + 14} y={node.y + 4} fontSize={13} fill="#111827">
+              <text x={node.x + 14} y={node.y + 4} fontSize={13} fill="var(--color-fg)">
                 {graphLabel(node.label)}
               </text>
             </g>

@@ -1,0 +1,290 @@
+/*
+ * 드로잉 스튜디오 컬러 스프라이트 크롬 · CSS Anchor Positioning · OKLCH 액센트 링 ·
+ * 잉크 블룸 · 150ms 탄성 눌림 · 한글 가독성(keep-all/tabular-nums) · 고대비 규칙.
+ *
+ * 원시 hex/rgb 없이 OKLCH 및 DESIGN.md 시맨틱 토큰만 사용한다.
+ */
+
+:root {
+  --studio-z-canvas: 0;
+  --studio-z-canvas-overlay: 10;
+  --studio-z-tool-rail: 30;
+  --studio-z-top-context-bar: 40;
+  --studio-z-adaptive-mode-bar: 45;
+  --studio-z-docked-panel: 50;
+  --studio-z-floating-hud: 60;
+  --studio-z-popover: 75;
+  --studio-z-creation-palette: 85;
+  --studio-z-rail-more: 90;
+  --studio-z-radial-wheel: 95;
+  --studio-z-modal-dialog: 100;
+  --studio-z-toast-alert: 110;
+
+  --studio-vibrant-ring-ink: oklch(0.64 0.21 268);
+  --studio-vibrant-ring-brush: oklch(0.66 0.19 218);
+  --studio-vibrant-ring-color: oklch(0.67 0.2 38);
+  --studio-vibrant-ring-select: oklch(0.65 0.17 156);
+  --studio-vibrant-ring-lettering: oklch(0.66 0.21 344);
+  --studio-vibrant-ring-bg3d: oklch(0.64 0.18 192);
+  --studio-vibrant-ring-vrm: oklch(0.64 0.2 308);
+  --studio-vibrant-ring-ai: oklch(0.68 0.19 294);
+  --studio-vibrant-ring-layers: oklch(0.66 0.16 246);
+  --studio-vibrant-ring-neutral: var(--color-accent, oklch(0.62 0.17 265));
+  --studio-vibrant-ring: var(--studio-vibrant-ring-neutral);
+  --studio-vibrant-bloom-shadow: oklch(0.14 0.02 268 / 0.28);
+}
+
+/* 도구 카테고리별 OKLCH 액센트 링 토큰 매핑 */
+[data-vibrant-accent="ink"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-ink);
+}
+
+[data-vibrant-accent="brush"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-brush);
+}
+
+[data-vibrant-accent="color"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-color);
+}
+
+[data-vibrant-accent="select"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-select);
+}
+
+[data-vibrant-accent="lettering"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-lettering);
+}
+
+[data-vibrant-accent="bg3d"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-bg3d);
+}
+
+[data-vibrant-accent="vrm"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-vrm);
+}
+
+[data-vibrant-accent="ai"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-ai);
+}
+
+[data-vibrant-accent="layers"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-layers);
+}
+
+[data-vibrant-accent="neutral"] {
+  --studio-vibrant-ring: var(--studio-vibrant-ring-neutral);
+}
+
+/* 한글 텍스트 깨짐 방지 · 수치 정렬 · 최소 44px 터치 타깃 */
+.studio-vibrant-keep-all {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.studio-vibrant-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-vibrant-touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* 150ms 탄성 눌림(Elastic Tactile Press) + 잉크 블룸 활성 효과 */
+.studio-vibrant-press {
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+
+.studio-vibrant-press:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.studio-vibrant-ink-bloom {
+  position: relative;
+  isolation: isolate;
+}
+
+.studio-vibrant-ink-bloom[data-vibrant-active="true"],
+.studio-vibrant-ink-bloom[aria-pressed="true"],
+.studio-vibrant-ink-bloom[aria-selected="true"] {
+  border-color: var(--studio-vibrant-ring);
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--studio-vibrant-ring) 32%, transparent),
+    0 6px 16px -6px color-mix(in oklch, var(--studio-vibrant-ring) 46%, transparent),
+    inset 0 1px 0 color-mix(in oklch, var(--studio-vibrant-ring) 26%, transparent);
+}
+
+.studio-vibrant-ink-bloom[data-vibrant-active="true"]::before,
+.studio-vibrant-ink-bloom[aria-pressed="true"]::before,
+.studio-vibrant-ink-bloom[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in oklch, var(--studio-vibrant-ring) 24%, transparent) 0%,
+    transparent 72%
+  );
+}
+
+/* 컬러 스프라이트 아트워크 컴포넌트 */
+.studio-vibrant-artwork {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 0.625rem;
+  isolation: isolate;
+  user-select: none;
+  pointer-events: none;
+}
+
+.studio-vibrant-artwork__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: saturate(1.12) drop-shadow(0 2px 4px var(--studio-vibrant-bloom-shadow));
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), filter 150ms ease;
+}
+
+.studio-vibrant-artwork[data-vibrant-active="true"] .studio-vibrant-artwork__img {
+  filter:
+    saturate(1.25)
+    drop-shadow(0 0 8px color-mix(in oklch, var(--studio-vibrant-ring) 55%, transparent));
+}
+
+.studio-vibrant-artwork__fallback {
+  display: inline-grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  border: 1px solid color-mix(in oklch, var(--studio-vibrant-ring) 45%, transparent);
+  background: color-mix(in oklch, var(--studio-vibrant-ring) 14%, transparent);
+  color: var(--color-fg);
+}
+
+/* 좌측 도구 레일 버튼 위에 44종 컬러 스프라이트 레이어링 (studio-chrome-ui 수정 없이 적용) */
+.studio-vibrant-rail-btn {
+  min-width: 44px;
+  min-height: 44px;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.studio-vibrant-rail-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.studio-vibrant-rail-btn[data-vibrant-tool-sprite] .studio-premium-tool-glyph {
+  position: relative;
+}
+
+.studio-vibrant-rail-btn[data-vibrant-tool-sprite] .studio-premium-tool-glyph::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: 2;
+  border-radius: 0.5rem;
+  background-image: var(--studio-vibrant-sprite-url);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+  filter: saturate(1.14) drop-shadow(0 1px 3px var(--studio-vibrant-bloom-shadow));
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), filter 150ms ease;
+}
+
+.studio-vibrant-rail-btn[data-vibrant-tool-sprite] .studio-premium-tool-glyph > .studio-tool-art {
+  opacity: 0.08;
+}
+
+.studio-vibrant-rail-btn[aria-pressed="true"] .studio-premium-tool-glyph::after {
+  filter:
+    saturate(1.26)
+    drop-shadow(0 0 8px color-mix(in oklch, var(--studio-vibrant-ring) 58%, transparent));
+}
+
+/* CSS Anchor Positioning + Popover 안전 배치 */
+@supports (anchor-name: --a) {
+  .studio-vibrant-anchor-trigger {
+    anchor-name: var(--studio-anchor-name, --studio-vibrant-trigger);
+  }
+
+  .studio-vibrant-anchored-popover {
+    position-anchor: var(--studio-anchor-name, --studio-vibrant-trigger);
+    position-try-fallbacks: flip-inline, flip-block, flip-inline flip-block;
+    position-visibility: anchors-visible;
+  }
+}
+
+/* 고대비 모드 (앱 토글 data-studio-high-contrast + OS forced-colors) */
+[data-studio-high-contrast="true"] .studio-vibrant-surface,
+[data-studio-high-contrast="true"] .studio-vibrant-rail-btn,
+[data-studio-high-contrast="true"] .studio-vibrant-ink-bloom {
+  border-width: 2px;
+  border-color: var(--color-fg);
+  color: var(--color-fg);
+}
+
+[data-studio-high-contrast="true"] .studio-vibrant-ink-bloom[data-vibrant-active="true"],
+[data-studio-high-contrast="true"] .studio-vibrant-ink-bloom[aria-pressed="true"],
+[data-studio-high-contrast="true"] .studio-vibrant-ink-bloom[aria-selected="true"] {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+@media (forced-colors: active) {
+  .studio-vibrant-surface,
+  .studio-vibrant-rail-btn,
+  .studio-vibrant-ink-bloom,
+  .studio-vibrant-anchored-popover {
+    border: 2px solid CanvasText !important;
+    background: Canvas !important;
+    color: CanvasText !important;
+    box-shadow: none !important;
+  }
+
+  .studio-vibrant-ink-bloom[data-vibrant-active="true"],
+  .studio-vibrant-ink-bloom[aria-pressed="true"],
+  .studio-vibrant-ink-bloom[aria-selected="true"] {
+    border-color: Highlight !important;
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+  }
+
+  .studio-vibrant-rail-btn:focus-visible,
+  .studio-vibrant-ink-bloom:focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px;
+  }
+}
+
+/* 모션 민감 사용자 대응 (prefers-reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  .studio-vibrant-press,
+  .studio-vibrant-rail-btn,
+  .studio-vibrant-artwork__img,
+  .studio-vibrant-rail-btn[data-vibrant-tool-sprite] .studio-premium-tool-glyph::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .studio-vibrant-press:active:not(:disabled),
+  .studio-vibrant-rail-btn:active:not(:disabled) {
+    transform: none !important;
+  }
+}

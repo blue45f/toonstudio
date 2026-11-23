@@ -9,7 +9,7 @@
 import {
   serializeStudioBg3dSceneDocument,
   type StudioBg3dSceneDocument,
-} from "./bg3d/studio-bg3d-scene-document";
+} from "./contracts/studio-bg3d-scene-document";
 import { sha256HexPortable } from "./studio-sha256";
 
 import type { StudioBackground3DLtLayer } from "./scene-3d/studio-3d-insert-contract";

@@ -60,4 +60,9 @@ describe("route title resolution", () => {
   it("retains useful dynamic labels for creator pages", () => {
     expect(resolveRouteTitle("/author/%EA%B9%80%ED%9D%AC%EC%A4%80", translate)).toBe("김희준");
   });
+
+  it("resolves static titles for studio benchmark and next-gen tech showcase routes", () => {
+    expect(resolveRouteTitle("/compare/studio", translate)).toBe("route.compareStudio");
+    expect(resolveRouteTitle("/tech", translate)).toBe("route.techShowcase");
+  });
 });

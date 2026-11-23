@@ -7,9 +7,11 @@ import type { El } from "../studio-element-model";
 import type { LayerGroup } from "../studio-layers";
 import type { StudioEditorMutationTicket } from "../studio-editor-scope";
 import type { PageState } from "../studio-page-state";
-import "./studio-legacy-pigment-stroke-status-i18n";
+import { ensureLegacyPigmentStrokeStatusI18n } from "./studio-legacy-pigment-stroke-status-i18n";
 import { hasVisibleLegacyMixboxStrokes } from "../brush-lab/brush-studio-v6-legacy-pigment";
 import type { StudioCuttoonEditorViewSession } from "../studio-cuttoon-editor/StudioCuttoonEditorViewSession";
+
+ensureLegacyPigmentStrokeStatusI18n();
 
 type MigrationSession = Pick<StudioCuttoonEditorViewSession, "elements" | "groups" | "currentPageId" | "pagesHi" | "currentPageIdRef" | "pagesHiRef" | "canvasInteractionBlocked" | "collaborationDocumentLocked" | "collaborationDocumentUnavailable" | "activeSurfaceReviewLocked" | "masterEditMode" | "activePage" | "master" | "setMasterEditMode" | "captureStudioMutationTicket" | "canApplyStudioMutation" | "commit">;
 

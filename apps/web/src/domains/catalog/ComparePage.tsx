@@ -1,4 +1,4 @@
-import { Scale, Swords } from "lucide-react";
+import { ArrowRight, Scale, Swords } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -152,6 +152,72 @@ export function ComparePage() {
           className="inline-flex min-h-11 items-center rounded-xl border border-accent/50 bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent"
         >
           {bt("경쟁 도구 7종 비교 보기", "View 7-tool comparison")}
+        </Link>
+      </div>
+      <div
+        data-testid="compare-showcase-color-cards"
+        className="mb-5 grid gap-3 md:grid-cols-2"
+      >
+        <Link
+          href="/compare/studio"
+          data-testid="compare-hub-link-studio-benchmark"
+          className="group flex min-h-11 items-center gap-4 rounded-2xl border border-accent/50 bg-accent-soft/60 p-4 transition-colors hover:border-accent hover:bg-accent-soft"
+        >
+          <img
+            src="/assets/studio/vibrant-sprites/emblem-benchmark.webp"
+            alt=""
+            aria-hidden="true"
+            width={56}
+            height={56}
+            decoding="async"
+            className="h-14 w-14 shrink-0 object-contain"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[11px] font-bold tracking-[0.1em] text-accent uppercase">
+              STUDIO BENCHMARK · 7 AXES
+            </p>
+            <p className="mt-0.5 break-keep text-sm font-bold text-fg">
+              {bt("ToonStudio vs 글로벌 제작 도구 6종 벤치마크", "ToonStudio vs. 6 Global Studio Tools Benchmark")}
+            </p>
+            <p className="mt-0.5 break-keep text-xs leading-5 text-fg-2">
+              {bt(
+                "CSP·Procreate·Photoshop·Rebelle 7·Blender·ibisPaint 공개 스펙 비교 + 라이브 브라우저 신호등",
+                "Official-spec matrix vs CSP, Procreate, Photoshop, Rebelle 7, Blender & ibisPaint + live API probe",
+              )}
+            </p>
+          </div>
+          <ArrowRight size={18} className="shrink-0 text-accent transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </Link>
+
+        <Link
+          href="/tech"
+          data-testid="compare-hub-link-tech-showcase"
+          className="group flex min-h-11 items-center gap-4 rounded-2xl border border-cool/50 bg-cool/10 p-4 transition-colors hover:border-cool hover:bg-cool/15"
+        >
+          <img
+            src="/assets/studio/vibrant-sprites/emblem-tech-lab.webp"
+            alt=""
+            aria-hidden="true"
+            width={56}
+            height={56}
+            decoding="async"
+            className="h-14 w-14 shrink-0 object-contain"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[11px] font-bold tracking-[0.1em] text-cool uppercase">
+              NEXT-GEN WEB · REMOTION · AI
+            </p>
+            <p className="mt-0.5 break-keep text-sm font-bold text-fg">
+              {bt("개발자용 차세대 웹·Remotion·AI 기술 쇼케이스", "Next-Gen Web, Remotion & AI Engineering Showcase")}
+            </p>
+            <p className="mt-0.5 break-keep text-xs leading-5 text-fg-2">
+              {bt(
+                "WebGPU·SQLite OPFS·Remotion 코드 레시피·AI 스웜 하네스·차세대 크롬 웹 API 8선 체험",
+                "WebGPU, SQLite OPFS, Remotion code recipes, AI harness & 8 live Chrome Web APIs",
+              )}
+            </p>
+          </div>
+          <ArrowRight size={18} className="shrink-0 text-cool transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
         </Link>
       </div>
       <section

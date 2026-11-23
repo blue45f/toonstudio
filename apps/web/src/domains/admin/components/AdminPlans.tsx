@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   AdminMembershipOperations,
   AdminMembershipPolicy,
+  AdminPaidOperationsToggle,
 } from "./AdminMembershipPolicy";
 import {
   adminButtonClass,
@@ -253,7 +254,10 @@ export function AdminPlans({ uid }: { uid: string }) {
         </>
       )}
 
-      <AdminMembershipPolicy uid={uid} />
+      <AdminMembershipPolicy
+        uid={uid}
+        paidOperationsSlot={<AdminPaidOperationsToggle uid={uid} />}
+      />
       <AdminMembershipOperations uid={uid} />
     </div>
   );

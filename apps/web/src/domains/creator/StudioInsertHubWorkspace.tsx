@@ -836,7 +836,7 @@ export function StudioInsertHubWorkspace({
                     data-studio-insert-entry={entry.id}
                     className="group min-w-0 overflow-hidden rounded-xl border border-line bg-card transition-colors hover:border-accent/45"
                   >
-                    <div className="relative grid aspect-[4/3] place-items-center overflow-hidden bg-[oklch(0.94_0.01_78)] p-2 dark:bg-neutral-800">
+                    <div className="relative grid aspect-[4/3] place-items-center overflow-hidden bg-raised p-2">
                       <EntryPreview entry={entry} />
                       <span className="absolute left-1.5 top-1.5 rounded-full border border-line bg-panel/95 px-2 py-0.5 text-[0.52rem] font-black text-fg-2">
                         {entry.categoryLabel}

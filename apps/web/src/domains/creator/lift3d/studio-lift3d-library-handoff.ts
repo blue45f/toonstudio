@@ -17,7 +17,7 @@ import {
   type Bg3dModelVerificationOptions,
   type Bg3dVerifiedStoredRecord,
 } from "../bg3d/bg3d-model-library";
-import { STUDIO_BG3D_GLB_MIME } from "../bg3d/studio-bg3d-scene-document";
+import { STUDIO_BG3D_GLB_MIME } from "../contracts/studio-bg3d-scene-document";
 
 import type { StudioLift3dGlbFile } from "./studio-lift3d-glb";
 

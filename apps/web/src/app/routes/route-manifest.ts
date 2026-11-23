@@ -128,6 +128,8 @@ export const appRoutes: AppRouteMeta[] = [
   { path: "/authors", label: "route.authors", canonicalSurfaceId: "discover", surfaceRole: "작가 — 작가 목록을 둘러보는 표면", tier: "directory", stage: "discover" },
   { path: "/news", label: "route.news", canonicalSurfaceId: "discover", surfaceRole: "뉴스 — 플랫폼과 업계 소식을 전하는 표면", tier: "directory", stage: "discover" },
   { path: "/compare", label: "route.compare", canonicalSurfaceId: "discover", surfaceRole: "비교 — 작품을 나란히 비교하는 표면", tier: "directory", stage: "discover" },
+  { path: "/compare/studio", label: "route.compareStudio", canonicalSurfaceId: "discover", surfaceRole: "제작 도구 비교 — 툰스튜디오와 글로벌 제작 도구 6종을 공개 스펙 기준으로 대조하는 표면", tier: "contextual", stage: "discover" },
+  { path: "/tech", label: "route.techShowcase", canonicalSurfaceId: "support", surfaceRole: "기술 쇼케이스 — WebGPU·OPFS·Remotion·AI 하네스·차세대 크롬 웹 API를 체험하는 개발자 표면", tier: "contextual", stage: "support" },
   { path: "/insights", label: "route.insights", canonicalSurfaceId: "discover", surfaceRole: "인사이트 — 창작·시장 지표를 보는 표면", tier: "directory", stage: "operate" },
   { path: "/guide", label: "route.guide", canonicalSurfaceId: "discover", surfaceRole: "가이드 — 서비스 이용법을 안내하는 표면", tier: "directory", stage: "support" },
   { path: "/fortune", label: "route.fortune", canonicalSurfaceId: "discover", surfaceRole: "운세 — 재미로 보는 오늘의 운세 표면", tier: "directory", stage: "discover" },

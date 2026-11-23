@@ -69,7 +69,7 @@ export function StudioScrollRhythmSfxStrip({
                     page.sfxCount === 0
                       ? "border-dashed border-fg-3/60"
                       : dense
-                        ? "border-amber-500/70"
+                        ? "border-warn/70"
                         : "border-line",
                     onSelectPage && "cursor-pointer hover:border-accent/60",
                   )}
@@ -78,7 +78,7 @@ export function StudioScrollRhythmSfxStrip({
                   {page.sfxCount > 0 && maxSfxPerScreen > 0 ? (
                     <span
                       aria-hidden
-                      className="absolute inset-x-0 bottom-0 bg-amber-400/70"
+                      className="absolute inset-x-0 bottom-0 bg-warn/70"
                       style={{
                         height: `${Math.max(8, Math.round((page.sfxPerScreen / maxSfxPerScreen) * 100))}%`,
                       }}

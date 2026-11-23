@@ -45,6 +45,7 @@ import {
 import { useApiResource } from "@/platform/use-api-resource";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { cn } from "@/shared/lib/utils";
+import { VibrantPageIdentityBanner } from "@/shared/ui/vibrant-identity/VibrantPageIdentityBanner";
 
 import {
   DiscoverTagTriggerFinderCard,
@@ -513,6 +514,13 @@ export function DiscoverHubPage() {
           </Suspense>
         </div>
       </section>
+
+      <VibrantPageIdentityBanner
+        pageId="discover"
+        compact
+        activeStep={1}
+        className="mt-6"
+      />
 
       <SiteDisclosure
         className="discover-hub-track-disclosure mt-6"

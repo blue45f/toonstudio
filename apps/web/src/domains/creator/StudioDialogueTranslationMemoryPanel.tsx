@@ -694,7 +694,7 @@ export function StudioDialogueTranslationMemoryPanel({
             >
               번역문 초안
             </label>
-            <span className="text-[0.6rem] tabular-nums text-fg-4">
+            <span className="text-[0.6rem] tabular-nums text-fg-3">
               {translationDraft.length.toLocaleString("ko-KR")} /{" "}
               {STUDIO_TRANSLATION_MEMORY_MAX_TRANSLATION_CHARS.toLocaleString(
                 "ko-KR"
@@ -714,7 +714,7 @@ export function StudioDialogueTranslationMemoryPanel({
             }
             rows={3}
             placeholder="검토할 번역문을 입력하세요."
-            className="w-full resize-y rounded-xl border border-line bg-panel px-2.5 py-2 text-[0.7rem] leading-relaxed text-fg outline-none placeholder:text-fg-4 focus:border-accent"
+            className="w-full resize-y rounded-xl border border-line bg-panel px-2.5 py-2 text-[0.7rem] leading-relaxed text-fg outline-none placeholder:text-fg-3 focus:border-accent"
           />
           <button
             type="button"

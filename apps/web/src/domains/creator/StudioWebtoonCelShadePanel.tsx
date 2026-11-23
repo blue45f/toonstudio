@@ -109,7 +109,7 @@ export function StudioWebtoonCelShadePanel({
           className={`flex-1 rounded-lg py-1 text-[0.65rem] font-medium transition-all ${
             subTab === "hue-shift"
               ? "bg-card text-accent font-semibold shadow-sm border border-accent/40"
-              : "text-fg-3 hover:text-fg-1"
+              : "text-fg-3 hover:text-fg"
           }`}
         >
           쿨톤 음영 생성기
@@ -123,7 +123,7 @@ export function StudioWebtoonCelShadePanel({
           className={`flex-1 rounded-lg py-1 text-[0.65rem] font-medium transition-all ${
             subTab === "skin-tones"
               ? "bg-card text-accent font-semibold shadow-sm border border-accent/40"
-              : "text-fg-3 hover:text-fg-1"
+              : "text-fg-3 hover:text-fg"
           }`}
         >
           인물 피부톤 프리셋
@@ -218,7 +218,7 @@ export function StudioWebtoonCelShadePanel({
                 className="flex flex-col gap-1.5 rounded-xl border border-line/80 bg-card/60 p-2 transition-colors hover:border-line-strong hover:bg-card"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[0.66rem] font-semibold text-fg-1">{preset.name}</span>
+                  <span className="text-[0.66rem] font-semibold text-fg">{preset.name}</span>
                   <span className="rounded bg-raised px-1.5 py-0.5 text-[0.56rem] text-fg-3">{preset.role}</span>
                 </div>
                 <div

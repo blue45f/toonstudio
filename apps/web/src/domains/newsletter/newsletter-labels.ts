@@ -14,3 +14,7 @@ registerI18nLocaleEntries("en", {
   "route.newsletter": "Newsletter",
   "route.newsletterCompose": "Send a newsletter",
 });
+
+export function ensureNewsletterLabels(): void {
+  // 모듈 평가 시 이미 뉴스레터 라우트 라벨을 등록한다.
+}

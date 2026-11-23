@@ -1,10 +1,16 @@
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
+import { StudioVibrantToolArtwork } from "./canvas-chrome/StudioVibrantToolArtwork";
+import {
+  resolveSafePopoverAnchor,
+  STUDIO_Z_LAYERS,
+} from "./canvas-chrome/studio-hud-collision-guard";
+import { resolveVibrantSpriteForCreationMode } from "./canvas-chrome/studio-vibrant-sprite-catalog";
 import {
   StudioQuickMigrateWizard,
   type QuickMigrateAppliedBundle,
@@ -14,15 +20,12 @@ import {
   type StudioCreationMode,
 } from "./studio-creation-mode";
 
-const ICON_ROOT = "/brand/toonstudio-premium-icons";
-
 interface StudioCreationModeDefinition {
   readonly id: StudioCreationMode;
   readonly labelKo: string;
   readonly labelEn: string;
   readonly descriptionKo: string;
   readonly descriptionEn: string;
-  readonly art: string;
   readonly accent: string;
 }
 /**
@@ -36,7 +39,6 @@ const CREATION_MODES: readonly StudioCreationModeDefinition[] = [
     labelEn: "Drawing",
     descriptionKo: "브러시·선화·채색",
     descriptionEn: "Brushes, line art, color",
-    art: "canvas.webp",
     accent: "violet",
   },
   {
@@ -45,7 +47,6 @@ const CREATION_MODES: readonly StudioCreationModeDefinition[] = [
     labelEn: "Story",
     descriptionKo: "컷·대사·말풍선",
     descriptionEn: "Panels, dialogue, balloons",
-    art: "story.webp",
     accent: "blue",
   },
   {
@@ -54,7 +55,6 @@ const CREATION_MODES: readonly StudioCreationModeDefinition[] = [
     labelEn: "Characters",
     descriptionKo: "3D 캐릭터·포즈·의상",
     descriptionEn: "3D characters, poses, outfits",
-    art: "character.webp",
     accent: "pink",
   },
   {
@@ -63,7 +63,6 @@ const CREATION_MODES: readonly StudioCreationModeDefinition[] = [
     labelEn: "Backgrounds",
     descriptionKo: "장면·원근·3D 배경",
     descriptionEn: "Scenes, perspective, 3D",
-    art: "background.webp",
     accent: "cyan",
   },
   {
@@ -72,7 +71,6 @@ const CREATION_MODES: readonly StudioCreationModeDefinition[] = [
     labelEn: "Assets",
     descriptionKo: "소재·이미지·참고",
     descriptionEn: "Materials, images, references",
-    art: "assets.webp",
     accent: "amber",
   },
   {
@@ -81,7 +79,6 @@ const CREATION_MODES: readonly StudioCreationModeDefinition[] = [
     labelEn: "AI director",
     descriptionKo: "구도·연출·생성",
     descriptionEn: "Composition, direction, generation",
-    art: "ai-director.webp",
     accent: "aurora",
   },
 ] as const;
@@ -95,20 +92,27 @@ interface StudioCreationModeLauncherProps {
 interface PalettePosition {
   readonly left: number;
   readonly top: number;
+  readonly zIndex: number;
 }
 function resolvePalettePosition(trigger: HTMLElement): PalettePosition {
   const rect = trigger.getBoundingClientRect();
-  const width = Math.min(430, Math.max(320, window.innerWidth - 24));
-  const estimatedHeight = 392;
-  const left = Math.min(
-    Math.max(12, rect.right + 12),
-    Math.max(12, window.innerWidth - width - 12),
-  );
-  const top = Math.min(
-    Math.max(12, rect.top - 4),
-    Math.max(12, window.innerHeight - estimatedHeight - 12),
-  );
-  return { left, top };
+  const vw = window.innerWidth > 0 ? window.innerWidth : 1280;
+  const vh = window.innerHeight > 0 ? window.innerHeight : 800;
+  const width = Math.min(430, Math.max(260, vw - 24));
+  const estimatedHeight = Math.min(420, Math.max(240, vh - 24));
+  const anchored = resolveSafePopoverAnchor({
+    triggerRect: {
+      x: rect.left,
+      y: rect.top,
+      width: Math.max(44, rect.width),
+      height: Math.max(44, rect.height),
+    },
+    popoverSize: { width, height: estimatedHeight },
+    viewport: { widthPx: vw, heightPx: vh },
+    preferredSide: "right",
+    zLayer: "creationModePalette",
+  });
+  return { left: anchored.left, top: anchored.top, zIndex: anchored.zIndex };
 }
 
 export function StudioCreationModeLauncher({
@@ -122,7 +126,11 @@ export function StudioCreationModeLauncher({
   const paletteRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [migrateWizardOpen, setMigrateWizardOpen] = useState(false);
-  const [position, setPosition] = useState<PalettePosition>({ left: 82, top: 84 });
+  const [position, setPosition] = useState<PalettePosition>({
+    left: 82,
+    top: 84,
+    zIndex: STUDIO_Z_LAYERS.creationModePalette,
+  });
 
   const runMode = useCallback((mode: StudioCreationMode) => {
     onSelectMode(mode);
@@ -185,7 +193,12 @@ export function StudioCreationModeLauncher({
       <button
         ref={triggerRef}
         type="button"
-        className={cn("studio-creation-mode-trigger", className)}
+        className={cn(
+          "studio-creation-mode-trigger studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press studio-vibrant-anchor-trigger studio-vibrant-keep-all",
+          className,
+        )}
+        data-vibrant-accent="ink"
+        data-vibrant-active={open ? "true" : "false"}
         aria-label={triggerLabel}
         title={triggerHint}
         aria-expanded={open}
@@ -194,13 +207,12 @@ export function StudioCreationModeLauncher({
         onClick={toggle}
       >
         <span className="studio-creation-mode-trigger__art" aria-hidden="true">
-          <img src={`${ICON_ROOT}/create.webp`} alt="" />
+          <StudioVibrantToolArtwork spriteId="emblem-studio" accent="ink" size={28} active={open} />
         </span>
         <span className="studio-creation-mode-trigger__copy">
           <strong>{bt("만들기", "Create")}</strong>
           <small>{bt("작업 모드", "Work mode")}</small>
         </span>
-        <Sparkles size={13} aria-hidden="true" />
       </button>
 
       {open && typeof document !== "undefined" ? createPortal(
@@ -210,9 +222,11 @@ export function StudioCreationModeLauncher({
           role="dialog"
           aria-modal="false"
           aria-labelledby={titleId}
-          className="studio-creation-mode-palette"
-          style={{ left: position.left, top: position.top }}
+          className="studio-creation-mode-palette studio-vibrant-surface studio-vibrant-keep-all studio-vibrant-anchored-popover"
+          style={{ left: position.left, top: position.top, zIndex: position.zIndex }}
           data-studio-creation-mode-palette="true"
+          data-studio-z-layer={STUDIO_Z_LAYERS.creationModePalette}
+          data-hud-collision-free="true"
         >
           <header className="studio-creation-mode-palette__header">
             <div>
@@ -223,46 +237,60 @@ export function StudioCreationModeLauncher({
             <button
               type="button"
               aria-label={bt("작업 모드 닫기", "Close work modes")}
+              className="studio-vibrant-touch-target studio-vibrant-press min-h-11 min-w-11"
               onClick={() => setOpen(false)}
             >
               <X size={18} aria-hidden="true" />
             </button>
           </header>
           <div className="studio-creation-mode-palette__grid">
-            {CREATION_MODES.map((mode) => (
-              <button
-                key={mode.id}
-                type="button"
-                data-studio-creation-mode={mode.id}
-                data-accent={mode.accent}
-                onClick={() => runMode(mode.id)}
-              >
-                <span className="studio-creation-mode-palette__art" aria-hidden="true">
-                  <img src={`${ICON_ROOT}/${mode.art}`} alt="" />
-                </span>
-                <span className="studio-creation-mode-palette__copy">
-                  <strong>{bt(mode.labelKo, mode.labelEn)}</strong>
-                  <small>{bt(mode.descriptionKo, mode.descriptionEn)}</small>
-                </span>
-                <span className="studio-creation-mode-palette__arrow" aria-hidden="true">↗</span>
-              </button>
-            ))}
+            {CREATION_MODES.map((mode) => {
+              const sprite = resolveVibrantSpriteForCreationMode(mode.id);
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  data-studio-creation-mode={mode.id}
+                  data-accent={mode.accent}
+                  data-vibrant-accent={sprite.accent}
+                  className="studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press studio-vibrant-keep-all min-h-11"
+                  onClick={() => runMode(mode.id)}
+                >
+                  <span className="studio-creation-mode-palette__art" aria-hidden="true">
+                    <StudioVibrantToolArtwork
+                      spriteId={sprite.spriteId}
+                      accent={sprite.accent}
+                      size={36}
+                    />
+                  </span>
+                  <span className="studio-creation-mode-palette__copy">
+                    <strong>{bt(mode.labelKo, mode.labelEn)}</strong>
+                    <small>{bt(mode.descriptionKo, mode.descriptionEn)}</small>
+                  </span>
+                  <span className="studio-creation-mode-palette__arrow" aria-hidden="true">↗</span>
+                </button>
+              );
+            })}
           </div>
           <div className="mt-3 border-t border-line pt-3">
             <button
               type="button"
               data-studio-quick-migrate-trigger="true"
+              data-vibrant-accent="ai"
               onClick={() => {
                 setOpen(false);
                 setMigrateWizardOpen(true);
               }}
-              className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-line-strong bg-raised px-3.5 py-2.5 text-left text-xs font-medium text-fg transition-colors hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none [word-break:keep-all]"
+              className="studio-vibrant-touch-target studio-vibrant-press flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-line-strong bg-raised px-3.5 py-2.5 text-left text-xs font-medium text-fg transition-colors hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none [word-break:keep-all]"
             >
-              <span>
-                {bt(
-                  "타 툴 30초 정착 · 단축키 & 7밴드 브러시 매핑",
-                  "30s quick migrate · shortcuts & 7-band brushes",
-                )}
+              <span className="flex items-center gap-2">
+                <StudioVibrantToolArtwork spriteId="tech-webgpu" accent="ai" size={20} />
+                <span>
+                  {bt(
+                    "타 툴 30초 정착 · 단축키 & 7밴드 브러시 매핑",
+                    "30s quick migrate · shortcuts & 7-band brushes",
+                  )}
+                </span>
               </span>
               <span aria-hidden="true">→</span>
             </button>

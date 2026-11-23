@@ -99,7 +99,7 @@ export function StudioOnnxLineExtractPanel({
       className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3"
       data-studio-onnx-line-extract-panel="true"
     >
-      <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
         <PencilLine size={14} className="text-accent" aria-hidden />
         사진에서 선 추출
       </div>
@@ -121,7 +121,7 @@ export function StudioOnnxLineExtractPanel({
               className={
                 developPresetId === preset.id
                   ? "rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-on-accent disabled:opacity-60"
-                  : "rounded-full border border-line bg-card px-2.5 py-1 text-xs text-fg-2 transition-colors hover:text-fg-1 disabled:opacity-60"
+                  : "rounded-full border border-line bg-card px-2.5 py-1 text-xs text-fg-2 transition-colors hover:text-fg disabled:opacity-60"
               }
             >
               {preset.label}

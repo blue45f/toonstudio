@@ -92,5 +92,7 @@
   "route.technologyVideos": "Vidéos",
   "route.terms": "Conditions d'utilisation",
   "route.unknown": "Pages",
-  "route.offline": "Connection & on-device content"
+  "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase"
 }

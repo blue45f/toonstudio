@@ -22,3 +22,7 @@ registerI18nLocaleEntries("en", {
   "studio.scene3dStatus.posePresetGrid.fileReadFailed": "Could not read the file. Try again.",
   "studio.scene3dStatus.posePresetGrid.noMatchingPoses": "No poses match the conditions. Try different filters or a different search term.",
 });
+
+export function ensureStudioScene3dStatusI18n(): void {
+  // 모듈 평가 시 이미 scene-3d ko/en 상태 사전을 등록한다.
+}

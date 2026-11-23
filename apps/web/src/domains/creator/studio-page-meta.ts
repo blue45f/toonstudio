@@ -25,7 +25,7 @@ import {
 } from "./studio-anim-tracks";
 import { copyStudioSmartShapeSnapshot } from "./studio-smart-shape-copy";
 import { STUDIO_UPLOAD_DESKTOP_MAX_DECODED_PIXELS } from "./studio-upload-image-safety";
-import { serializeStudioVrmSceneDocument } from "./vrm/studio-vrm-scene-document";
+import { serializeStudioVrmSceneDocument } from "./contracts/studio-vrm-scene-document";
 
 import type { LayerGroup } from "./studio-layers";
 

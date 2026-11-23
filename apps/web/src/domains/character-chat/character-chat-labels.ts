@@ -15,3 +15,7 @@ registerI18nLocaleEntries("en", {
   "route.characterChat": "Character Talk",
   "route.characterChatManage": "Manage Character Chats",
 });
+
+export function ensureCharacterChatLabels(): void {
+  // 모듈 평가 시 이미 캐릭터 토크 라우트 라벨을 등록한다.
+}

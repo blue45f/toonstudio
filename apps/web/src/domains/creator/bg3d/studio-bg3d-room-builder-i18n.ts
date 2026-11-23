@@ -113,3 +113,7 @@ registerI18nLocaleEntries("en", {
   "studio.bg3dRoomBuilder.chairRail": "Chair rail",
   "studio.bg3dRoomBuilder.trimHelp": "Trim attaches to the inner wall faces and breaks at doors and windows. Walls lower than 2 m only get a baseboard.",
 });
+
+export function ensureStudioBg3dRoomBuilderI18n(): void {
+  // 모듈 평가 시 이미 방 만들기 ko/en 사전을 등록한다.
+}

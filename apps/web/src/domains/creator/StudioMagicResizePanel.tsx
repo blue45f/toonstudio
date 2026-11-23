@@ -117,8 +117,10 @@ export function StudioMagicResizePanel({
                   width={27}
                   height={27}
                   rx={5}
-                  fill="oklch(0.2 0.01 66 / 0.45)"
-                  stroke="oklch(0.35 0.012 64 / 0.4)"
+                  fill="var(--color-card)"
+                  fillOpacity={0.45}
+                  stroke="var(--color-line)"
+                  strokeOpacity={0.4}
                 />
                 <rect
                   x={preview.x * (28 / 40)}
@@ -126,7 +128,8 @@ export function StudioMagicResizePanel({
                   width={preview.w * (28 / 40)}
                   height={preview.h * (28 / 40)}
                   rx={2}
-                  fill={active ? "oklch(0.72 0.185 42)" : "oklch(0.62 0.08 42 / 0.75)"}
+                  fill="var(--color-accent)"
+                  fillOpacity={active ? 1 : 0.75}
                 />
               </svg>
               <span className="min-w-0">

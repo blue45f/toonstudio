@@ -92,5 +92,7 @@
   "route.technologyVideos": "వీడియోలు",
   "route.terms": "సేవ యొక్క నిబంధనలు",
   "route.unknown": "పేజీ",
-  "route.offline": "Connection & on-device content"
+  "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase"
 }

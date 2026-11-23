@@ -92,5 +92,7 @@
   "route.technologyVideos": "காணொளிகள்",
   "route.terms": "சேவை விதிமுறைகள்",
   "route.unknown": "பக்கம்",
-  "route.offline": "Connection & on-device content"
+  "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase"
 }

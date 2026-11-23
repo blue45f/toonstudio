@@ -61,7 +61,7 @@ export function StudioLineCleanupPanel({
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-line bg-panel/50 p-3">
-      <div className="flex items-center gap-1.5 text-sm font-medium text-fg-1">
+      <div className="flex items-center gap-1.5 text-sm font-medium text-fg">
         <PenTool size={14} />
         스케치 선화 정리
       </div>

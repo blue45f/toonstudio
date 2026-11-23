@@ -21,9 +21,9 @@ import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { Container } from "@/shared/components/section";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
-// 제공자 등록을 위해 트랙 index를 로드한다 (side-effect import).
-import "@/domains/monetization/tipping";
-import "@/domains/monetization/membership";
+// 제공자 등록을 위해 트랙 index를 로드한다.
+import { tipRevenueProvider } from "@/domains/monetization/tipping";
+import { membershipRevenueProvider } from "@/domains/monetization/membership";
 
 import {
   lastNMonths,
@@ -47,6 +47,8 @@ import { PayoutDialog } from "../components/PayoutDialog";
 import { CreatorRevenueSimulatorPanel } from "../components/CreatorRevenueSimulatorPanel";
 import { EpisodeTipRanking } from "@/domains/monetization/tipping/components/EpisodeTipRanking";
 import { CreatorMonetizationNav } from "../../components/CreatorMonetizationNav";
+
+void [tipRevenueProvider, membershipRevenueProvider];
 
 type PeriodKey = "month" | "3m" | "6m";
 

@@ -463,7 +463,7 @@ export function StudioProceduralArtisticBrushPanel({
           }
           className={cn(
             "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent",
-            "transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-raised disabled:text-fg-3",
+            "transition-colors hover:bg-accent-2 disabled:cursor-not-allowed disabled:bg-raised disabled:text-fg-3",
             STUDIO_FOCUS_RING,
           )}
         >

@@ -4,7 +4,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import type { AdminTabKey } from "../admin-console-model";
 import { loadAdminI18nLocale } from "../admin-i18n-loader";
-import { AdminGateFallback } from "../components/admin-gate";
+import { AdminGateFallback } from "../components/admin-ui";
 import {
   AdminGateOverrideProvider,
   useAdminGate,

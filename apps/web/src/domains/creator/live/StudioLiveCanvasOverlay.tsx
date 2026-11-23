@@ -1077,7 +1077,7 @@ export function StudioLiveCanvasOverlay({
                   <polyline
                     points={pointsString}
                     fill="none"
-                    stroke="white"
+                    stroke="var(--color-fg)"
                     strokeWidth={eraserOutline + 2}
                     strokeLinecap="round"
                     strokeLinejoin="round"

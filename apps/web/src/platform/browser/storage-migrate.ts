@@ -39,3 +39,7 @@ export function migrateLegacyStorageKeys() {
 }
 
 migrateLegacyStorageKeys();
+
+export function ensureLegacyStorageMigrated(): void {
+  // 모듈 최상단 평가 시 이미 구 브랜드(webdex) 키 이관을 완료한다.
+}

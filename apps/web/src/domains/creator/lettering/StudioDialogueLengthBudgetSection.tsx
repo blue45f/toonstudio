@@ -74,7 +74,7 @@ export function StudioDialogueLengthBudgetSection({
             <span className="rounded-full border border-line px-1.5 py-px text-[0.55rem] font-semibold tabular-nums text-fg-3">
               {formatExpansionRate(total.rate)} · {formatExpansionPercent(total.rate)}
             </span>
-            <span className="rounded-full border border-line px-1.5 py-px text-[0.55rem] text-fg-4">
+            <span className="rounded-full border border-line px-1.5 py-px text-[0.55rem] text-fg-3">
               {total.rateSource === "measured"
                 ? `작품 실측 ${total.sampleCount}건`
                 : "기본값"}
@@ -124,7 +124,7 @@ export function StudioDialogueLengthBudgetSection({
                           aria-hidden
                           className={cx(
                             "shrink-0",
-                            warning.kind === "overflow" ? "text-warn" : "text-fg-4"
+                            warning.kind === "overflow" ? "text-warn" : "text-fg-3"
                           )}
                         />
                         <span
@@ -146,16 +146,16 @@ export function StudioDialogueLengthBudgetSection({
                         {warning.message}
                       </span>
                       {warning.kind === "overflow" && warning.predictedHeight != null ? (
-                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-4">
+                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-3">
                           지금 높이 {warning.boxHeight}px → 필요 높이 약 {warning.predictedHeight}px
                         </span>
                       ) : null}
                       {warning.kind === "shrink" && warning.fittedFontSize != null ? (
-                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-4">
+                        <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-3">
                           글자 {warning.fontSize}px → 약 {warning.fittedFontSize}px
                         </span>
                       ) : null}
-                      <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-4">
+                      <span className="mt-0.5 block text-[0.58rem] tabular-nums text-fg-3">
                         팽창률 {formatExpansionRate(warning.rate)} (
                         {warning.rateSource === "measured" ? "작품 실측" : "기본값"})
                       </span>
@@ -169,24 +169,24 @@ export function StudioDialogueLengthBudgetSection({
       )}
 
       {summary.unmeasurableCount > 0 ? (
-        <p className="text-[0.6rem] leading-snug text-fg-4">
+        <p className="text-[0.6rem] leading-snug text-fg-3">
           크기 정보가 없어 번역 넘침을 확인하지 못한 말풍선이 {summary.unmeasurableCount}개
           있어요. "들어간다"는 뜻은 아니에요.
         </p>
       ) : null}
       {summary.verticalCount > 0 ? (
-        <p className="text-[0.6rem] leading-snug text-fg-4">
+        <p className="text-[0.6rem] leading-snug text-fg-3">
           세로쓰기 말풍선 {summary.verticalCount}개는 예상 길이만 계산했어요(넘침 판정은
           가로쓰기 기준이에요).
         </p>
       ) : null}
       {summary.sourceUncertainCount > 0 ? (
-        <p className="text-[0.6rem] leading-snug text-fg-4">
+        <p className="text-[0.6rem] leading-snug text-fg-3">
           번역은 있지만 원문이 기록되지 않아 예산에서 제외한 대사가{" "}
           {summary.sourceUncertainCount}개 있어요.
         </p>
       ) : null}
-      <p className="text-[0.6rem] leading-snug text-fg-4">
+      <p className="text-[0.6rem] leading-snug text-fg-3">
         예상 길이는 글자 수 기준의 보수적 추정이에요. 실제 번역이 쌓이면 팽창률이 작품
         실측값으로 자동 보정돼요.
       </p>

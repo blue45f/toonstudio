@@ -459,7 +459,7 @@ function AddRelationshipForm({ bible, entry, ...callbacks }: AddRelationshipForm
         <button
           type="button"
           onClick={add}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Plus size={13} aria-hidden /> 추가
         </button>
@@ -885,7 +885,7 @@ export function StudioCharacterBiblePanel({
                 type="button"
                 onClick={addCharacter}
                 disabled={bible.characters.length >= STUDIO_CHARACTER_BIBLE_MAX_CHARACTERS}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Plus size={14} aria-hidden /> 추가
               </button>
@@ -965,7 +965,7 @@ export function StudioCharacterBiblePanel({
                   <button
                     type="button"
                     onClick={addCharacter}
-                    className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
                     <Plus size={14} aria-hidden /> 첫 캐릭터 만들기
                   </button>

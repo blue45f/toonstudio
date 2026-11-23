@@ -176,7 +176,7 @@ function CurveCoordinateInput({
         }}
         className={cn(
           "h-full min-w-0 bg-transparent text-right text-xs font-semibold tabular-nums text-fg outline-none",
-          readOnly && "cursor-not-allowed text-fg-4",
+          readOnly && "cursor-not-allowed text-fg-3",
         )}
       />
     </label>
@@ -502,7 +502,7 @@ export function StudioCurvePanel({
         {activeChannel !== "master" && !identityByChannel.master && (
           <polyline
             points={toPolyPoints(master)}
-            className="stroke-fg-4/50"
+            className="stroke-fg-3/50"
             strokeWidth={1}
             fill="none"
             strokeLinejoin="round"
@@ -575,7 +575,7 @@ export function StudioCurvePanel({
           <p className="text-[0.66rem] font-semibold text-fg-2">
             선택한 점 {selectedIndex + 1}/{curve.length}
           </p>
-          <span className="text-[0.6rem] font-semibold text-fg-4">{channelLabel} 채널</span>
+          <span className="text-[0.6rem] font-semibold text-fg-3">{channelLabel} 채널</span>
         </div>
         <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
           <CurveCoordinateInput
@@ -622,14 +622,14 @@ export function StudioCurvePanel({
             점 삭제
           </button>
         </div>
-        <p id={endpointHintId} className="mt-2 text-[0.6rem] leading-relaxed text-fg-4">
+        <p id={endpointHintId} className="mt-2 text-[0.6rem] leading-relaxed text-fg-3">
           {selectedPointIsEndpoint
             ? "첫 점과 마지막 점의 X 위치는 고정되며 Y만 조절할 수 있습니다."
             : "X와 Y를 직접 입력하거나 화살표 키로 미세 조절할 수 있습니다."}
         </p>
       </div>
 
-      <p id={instructionsId} className="text-[0.6rem] leading-relaxed text-fg-4">
+      <p id={instructionsId} className="text-[0.6rem] leading-relaxed text-fg-3">
         그래프의 빈 곳을 클릭하면 그 자리에 점이 생기고 그대로 드래그됩니다. 점 위를 더블클릭하면 삭제됩니다. 점을 선택한 뒤 화살표 키로 1, Shift+화살표로 10씩 이동합니다. 점 추가 버튼은 가장 넓은 구간의 중간에 배치되며 채널마다 최대 {STUDIO_CURVE_MAX_CONTROL_POINTS}개까지 사용할 수 있습니다.
       </p>
     </div>

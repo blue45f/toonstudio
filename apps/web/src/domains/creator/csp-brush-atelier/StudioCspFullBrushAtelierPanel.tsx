@@ -20,6 +20,18 @@ import {
   samplePaperSubstrateHeight,
   synthesizeCspBrushPhysicalStamp,
 } from "./csp-procedural-texture-synthesizer";
+import {
+  STUDIO_FOLEY_PRESETS,
+  STUDIO_VIBRANT_THEMES,
+  StudioVibrantSpriteIcon,
+  createStudioFoleyAudioEngine,
+  getStudioVibrantSprite,
+  resolveStudioToolSpriteId,
+  triggerTactileHapticDetent,
+  type StudioFoleyAudioEngine,
+  type StudioFoleyPresetId,
+  type StudioVibrantThemeId,
+} from "../vibrant-studio-fx";
 
 export interface StudioCspFullBrushAtelierPanelProps {
   readonly initialBrushId?: CspBrushId;
@@ -83,13 +95,20 @@ export function StudioCspFullBrushAtelierPanel({
   const [tiltPct, setTiltPct] = useState(22);
   const [appliedBrushId, setAppliedBrushId] = useState<CspBrushId | null>(null);
   const [soakResult, setSoakResult] = useState<CspStroke10kBudgetResult | null>(null);
+  const [vibrantTheme, setVibrantTheme] = useState<StudioVibrantThemeId>("sunlight-atelier");
+  const [foleyPreset, setFoleyPreset] = useState<StudioFoleyPresetId>("quiet-atelier");
 
   const strokeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const stampCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const foleyEngineRef = useRef<StudioFoleyAudioEngine | null>(null);
 
   const selectedBrush = useMemo<CspProBrushSpec>(
     () => getCspBrushById(selectedBrushId) ?? CSP_ALL_36_BRUSH_CATALOG[0]!,
     [selectedBrushId],
+  );
+  const selectedSpriteId = useMemo(
+    () => resolveStudioToolSpriteId(selectedBrush.id, resolveStudioToolSpriteId(selectedBrush.category)),
+    [selectedBrush.id, selectedBrush.category],
   );
 
   const effectivePaperToothPct = paperToothPct ?? Math.round(selectedBrush.paperToothStrength01 * 100);
@@ -155,11 +174,50 @@ export function StudioCspFullBrushAtelierPanel({
     );
   }, [strokePreview, stampPreview]);
 
+  useEffect(() => {
+    return () => {
+      foleyEngineRef.current?.dispose();
+      foleyEngineRef.current = null;
+    };
+  }, []);
+
+  const ensureFoleyEngine = (): StudioFoleyAudioEngine => {
+    if (!foleyEngineRef.current) {
+      foleyEngineRef.current = createStudioFoleyAudioEngine({ initialPreset: foleyPreset });
+    }
+    return foleyEngineRef.current;
+  };
+
+  const handleSelectVibrantTheme = (nextTheme: StudioVibrantThemeId) => {
+    setVibrantTheme(nextTheme);
+    ensureFoleyEngine().triggerSound("magnetic-detent", { pressure01: 0.45 });
+    triggerTactileHapticDetent("detent-tick");
+  };
+
+  const handleSelectFoleyPreset = (nextPreset: StudioFoleyPresetId) => {
+    setFoleyPreset(nextPreset);
+    const engine = ensureFoleyEngine();
+    engine.applyPreset(nextPreset);
+    if (nextPreset !== "silent-focus") {
+      engine.triggerSound(getStudioVibrantSprite(selectedSpriteId).foleySoundId, {
+        pressure01: pressurePct / 100,
+        tilt01: tiltPct / 100,
+      });
+    }
+    triggerTactileHapticDetent("detent-tick");
+  };
+
   const handleSelectBrush = (brush: CspProBrushSpec) => {
     setSelectedBrushId(brush.id);
     setPaperToothPct(null);
     setColorMixPct(null);
     setSoakResult(null);
+    const nextSpriteId = resolveStudioToolSpriteId(brush.id, resolveStudioToolSpriteId(brush.category));
+    ensureFoleyEngine().triggerSound(getStudioVibrantSprite(nextSpriteId).foleySoundId, {
+      pressure01: pressurePct / 100,
+      tilt01: tiltPct / 100,
+    });
+    triggerTactileHapticDetent("brush-grain");
   };
 
   const handleResetTuning = () => {
@@ -176,6 +234,8 @@ export function StudioCspFullBrushAtelierPanel({
 
   const handleApplyCurrentBrush = () => {
     setAppliedBrushId(selectedBrush.id);
+    ensureFoleyEngine().triggerSound("panel-snap", { pressure01: 0.72 });
+    triggerTactileHapticDetent("ink-bloom");
     onApplyBrush?.(selectedBrush);
   };
 
@@ -187,6 +247,7 @@ export function StudioCspFullBrushAtelierPanel({
     <section
       className="cba-shell"
       data-testid="studio-csp-full-brush-atelier-panel"
+      data-studio-vibrant-theme={vibrantTheme}
       aria-label="클립스튜디오 9대 카테고리 36종 풀 브러시 아틀리에"
     >
       <div className="cba-body">
@@ -210,6 +271,40 @@ export function StudioCspFullBrushAtelierPanel({
             <span className="cba-badge cba-badge-good">10,000점 O(1) 무지연 예산</span>
           </div>
         </header>
+
+        <div
+          className="ts-vibrant-atelier-strip"
+          data-testid="csp-vibrant-sensory-strip"
+          aria-label="아틀리에 OKLCH 컬러 테마 및 물리 Foley 음향 설정"
+        >
+          <div className="ts-vibrant-chip-group" role="group" aria-label="4종 아틀리에 컬러 테마">
+            {STUDIO_VIBRANT_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                type="button"
+                aria-pressed={vibrantTheme === theme.id}
+                className="ts-vibrant-chip ts-vibrant-pressable"
+                onClick={() => handleSelectVibrantTheme(theme.id)}
+              >
+                <span className={`ts-theme-swatch ${theme.swatchClass}`} aria-hidden="true" />
+                {theme.labelKo}
+              </button>
+            ))}
+          </div>
+          <div className="ts-vibrant-chip-group" role="group" aria-label="물리 Foley 오디오 프리셋">
+            {(["quiet-atelier", "lively-asmr", "silent-focus"] as const).map((presetId) => (
+              <button
+                key={presetId}
+                type="button"
+                aria-pressed={foleyPreset === presetId}
+                className="ts-vibrant-chip ts-vibrant-pressable"
+                onClick={() => handleSelectFoleyPreset(presetId)}
+              >
+                {STUDIO_FOLEY_PRESETS[presetId].labelKo}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="cba-toolbar">
           <div className="cba-search-row">
@@ -350,9 +445,18 @@ export function StudioCspFullBrushAtelierPanel({
           >
             <div className="cba-inspector-head">
               <div className="cba-card-top">
-                <h3 className="cba-inspector-title" data-testid="csp-inspector-brush-name">
-                  {selectedBrush.nameKo}
-                </h3>
+                <span className="cba-card-name-wrap">
+                  <StudioVibrantSpriteIcon
+                    spriteId={selectedSpriteId}
+                    size="md"
+                    active
+                    animated
+                    ariaLabel={`${selectedBrush.nameKo} 주얼 스프라이트`}
+                  />
+                  <h3 className="cba-inspector-title" data-testid="csp-inspector-brush-name">
+                    {selectedBrush.nameKo}
+                  </h3>
+                </span>
                 <span className="cba-badge">
                   {CATEGORY_LABEL_MAP.get(selectedBrush.category) ?? selectedBrush.category}
                 </span>

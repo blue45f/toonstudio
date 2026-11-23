@@ -200,7 +200,7 @@ function QuickComicPreflightPanel({
             <button
               type="button"
               onClick={onApplyRecommendation}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <Sparkles size={15} aria-hidden="true" />
               추천 레이아웃 적용
@@ -880,7 +880,7 @@ export function StudioQuickComicWizard({
             <button
               type="button"
               onClick={goNext}
-              className="ml-auto inline-flex min-h-11 min-w-24 items-center justify-center gap-1 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="ml-auto inline-flex min-h-11 min-w-24 items-center justify-center gap-1 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               다음
               <ChevronRight size={17} aria-hidden="true" />
@@ -890,7 +890,7 @@ export function StudioQuickComicWizard({
               type="button"
               onClick={applyPlan}
               disabled={!canApply}
-              className="ml-auto inline-flex min-h-11 min-w-28 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
+              className="ml-auto inline-flex min-h-11 min-w-28 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-45"
             >
               <Check size={17} aria-hidden="true" />
               페이지 적용

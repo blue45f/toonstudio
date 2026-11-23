@@ -14,6 +14,8 @@ import { SitePurposeGraphic } from "@/shared/components/SiteMenuDestinations";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
+import { VibrantPageIdentityBanner } from "@/shared/ui/vibrant-identity/VibrantPageIdentityBanner";
+import { VibrantVisualEmptyState } from "@/shared/ui/vibrant-identity/VibrantVisualEmptyState";
 
 import "./sitemap-menu.css";
 
@@ -191,6 +193,13 @@ export function SitemapPage() {
       <p>{bt("모든 기능을 명확한 실무 이름과 초성·동의어 검색으로 한 화면에서 바로 실행하세요.", "Find and launch every studio, collaboration, market, and account feature right on one screen.")}</p>
     </header>
 
+    <VibrantPageIdentityBanner
+      pageId="guide-map"
+      compact
+      activeStep={normalizedQuery ? 2 : 1}
+      className="mb-5"
+    />
+
     <nav className="sitemap-menu-start" aria-label={bt("바로 시작", "Quick start")}>
       <MenuDestination item={SITE_NAVIGATION_ITEMS.make} />
       <MenuDestination item={SITE_NAVIGATION_ITEMS.studio} />
@@ -287,19 +296,28 @@ export function SitemapPage() {
           );
         })
       ) : (
-        <div className="sitemap-v4-empty">
-          <p>{bt("일치하는 기능이 없습니다. 검색어를 지우거나 전체 보기를 눌러 주세요.", "No features match your filter.")}</p>
-          <button
-            type="button"
-            onClick={() => {
+        <VibrantVisualEmptyState
+          pageId="guide-map"
+          compact
+          showStepHints
+          className="sitemap-v4-empty"
+          title={bt("일치하는 기능이 없습니다", "No matching features found")}
+          description={bt(
+            "일치하는 기능이 없습니다. 검색어를 지우거나 전체 보기를 눌러 주세요.",
+            "No features match your filter. Clear the query or view all categories.",
+          )}
+          primaryAction={{
+            label: bt("필터 초기화", "Reset filter"),
+            onClick: () => {
               setSearchQuery("");
               setActiveGroupId("all");
-            }}
-            className="sitemap-v4-chip is-active"
-          >
-            {bt("필터 초기화", "Reset filter")}
-          </button>
-        </div>
+            },
+          }}
+          secondaryAction={{
+            label: bt("전체 디렉터리 보기", "Browse full directory"),
+            href: "/sitemap/all",
+          }}
+        />
       )}
     </section>
 

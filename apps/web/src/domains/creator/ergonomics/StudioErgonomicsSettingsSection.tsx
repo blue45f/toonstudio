@@ -8,8 +8,11 @@
  * PR #2863 수정 파일과 충돌하지 않도록 설정 홈(`StudioAppSettingsPanel`)과
  * 일반 설정 편집기(`StudioAppSettingsEditor`)에만 깔끔하게 연결한다.
  */
-import { Coffee, Hand, MoonStar, RotateCcw, ShieldCheck } from "lucide-react";
-import { useEffect, useState, type ReactElement } from "react";
+import { ChevronDown, Coffee, Hand, MonitorSmartphone, MoonStar, RotateCcw, ShieldCheck } from "lucide-react";
+import { Suspense, useEffect, useState, type ReactElement } from "react";
+
+import { MULTI_DEVICE_HUB_SUMMARY } from "../multi-device-ecosystem";
+import { StudioPenCadenceBadge } from "../touch-gestures/StudioPenCadenceBadge";
 
 import {
   STUDIO_NIGHT_COMFORT_PRESETS,
@@ -36,13 +39,20 @@ import {
   triggerStudioRestNudgePreview,
   type StudioRestNudgeState,
 } from "./studio-rest-nudge-timer";
-import { StudioPenCadenceBadge } from "../touch-gestures/StudioPenCadenceBadge";
-
 import { StudioRestNudgeBar } from "./StudioRestNudgeBar";
 
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { cn } from "@/shared/lib/utils";
 
 import "./studio-ergonomics.css";
+
+const LazyStudioMultiDeviceEcosystemHub = lazyRetry(
+  () =>
+    import("../multi-device-ecosystem/StudioMultiDeviceEcosystemHub").then((module) => ({
+      default: module.StudioMultiDeviceEcosystemHub,
+    })),
+  "StudioMultiDeviceEcosystemHub",
+);
 
 export interface StudioErgonomicsSettingsSectionProps {
   /** 세부 설정 탭 안에서 좁게 표시할 때 true. */
@@ -77,6 +87,7 @@ export function StudioErgonomicsSettingsSection({
 
   const [previewState, setPreviewState] = useState<StudioRestNudgeState | null>(null);
   const [previewNowMs, setPreviewNowMs] = useState<number>(0);
+  const [multiDeviceOpen, setMultiDeviceOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!previewState || (previewState.phase !== "resting" && previewState.phase !== "completed")) {
@@ -321,6 +332,40 @@ export function StudioErgonomicsSettingsSection({
       </div>
 
       <StudioPenCadenceBadge compact={compact} reduceMotion={reduceMotion} />
+
+      <details
+        data-testid="studio-multidevice-ecosystem-disclosure"
+        className="group/multidevice rounded-xl border border-line bg-panel"
+        onToggle={(event) => setMultiDeviceOpen(event.currentTarget.open)}
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2">
+            <MonitorSmartphone className="size-4 shrink-0 text-accent" aria-hidden />
+            <span className="min-w-0 [word-break:keep-all]">
+              {MULTI_DEVICE_HUB_SUMMARY.titleKo} ({MULTI_DEVICE_HUB_SUMMARY.formFactorCount}단계 폼팩터)
+            </span>
+          </span>
+          <ChevronDown
+            className="size-4 shrink-0 text-fg-3 transition-transform group-open/multidevice:rotate-180 motion-reduce:transition-none"
+            aria-hidden
+          />
+        </summary>
+        {multiDeviceOpen ? (
+          <div className="border-t border-line p-3">
+            <Suspense
+              fallback={
+                <div role="status" className="rounded-xl border border-line bg-card p-3 text-xs text-fg-2">
+                  멀티 디바이스 생태계 제어 허브를 불러오는 중입니다.
+                </div>
+              }
+            >
+              <LazyStudioMultiDeviceEcosystemHub
+                initialHandedness={prefs.handedness === "left-handed" ? "left" : "right"}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+      </details>
 
       {previewState ? (
         <div data-studio-ergonomics-rest-preview-host="true">

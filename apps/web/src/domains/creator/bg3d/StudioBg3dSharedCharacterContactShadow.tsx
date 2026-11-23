@@ -13,6 +13,7 @@ const EMPTY_GROUNDING_RESULTS = Object.freeze({}) as Readonly<
 >;
 const pendingTextureDisposals = new WeakMap<THREE.Texture, object>();
 const ignoreContactShadowRaycast: THREE.Mesh["raycast"] = () => undefined;
+const CONTACT_SHADOW_OCCLUSION_COLOR = 0x171310;
 
 function cancelScheduledTextureDisposal(texture: THREE.Texture): void {
   pendingTextureDisposals.delete(texture);
@@ -80,7 +81,7 @@ export default function StudioBg3dSharedCharacterContactShadow({
           <meshBasicMaterial
             alphaMap={alphaMap}
             blending={THREE.NormalBlending}
-            color="#171310"
+            color={CONTACT_SHADOW_OCCLUSION_COLOR}
             depthTest
             depthWrite={false}
             opacity={lobe.opacity}

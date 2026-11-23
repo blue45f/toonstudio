@@ -1,4 +1,4 @@
-import { serializeStudioBg3dSceneDocument, type StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
+import { serializeStudioBg3dSceneDocument, type StudioBg3dSceneDocument } from "./contracts/studio-bg3d-scene-document";
 import { sha256HexPortable } from "./studio-sha256";
 import {
   resolveExactStudioShared3dCharacterIdentity,
@@ -6,7 +6,7 @@ import {
 } from "./runtime-leaves/studio-shared-3d-character-identity";
 
 import type { StudioShared3dElementSource } from "./studio-shared-3d-scene-bridge";
-import type { StudioVrmSceneDocument } from "./vrm/studio-vrm-scene-document";
+import type { StudioVrmSceneDocument } from "./contracts/studio-vrm-scene-document";
 
 export const STUDIO_SHARED_3D_STAGE_DOCUMENT_KIND =
   "toonstudio.studio-shared-3d-stage" as const;

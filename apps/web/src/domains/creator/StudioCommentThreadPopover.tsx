@@ -959,7 +959,7 @@ export function StudioCommentThreadPopover({
                 <button
                   type="submit"
                   disabled={!replyAllowed || busy || !replyBody.trim()}
-                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors duration-150 hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-bold text-on-accent transition-colors duration-150 hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
                 >
                   {pendingMutation === "reply" || submitting ? (
                     <LoaderCircle size={13} className="animate-spin motion-reduce:animate-none" aria-hidden />

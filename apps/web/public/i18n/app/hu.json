@@ -2381,6 +2381,8 @@
   "route.terms": "Felhasználási feltételek",
   "route.unknown": "Oldal",
   "route.offline": "Connection & on-device content",
+  "route.compareStudio": "Studio tool benchmark",
+  "route.techShowcase": "Next-Gen Tech Showcase",
   "search.badge": "Globális keresés",
   "search.title": "Fókuszált munkaterület művek gyors megtalálásához",
   "search.subtitle": "Keress műveket, alkotókat és címkéket együtt, és szűkítsd az eredményeket platform- és árszűrőkkel.",

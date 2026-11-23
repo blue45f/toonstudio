@@ -145,7 +145,7 @@ export function StudioDialogueVoiceSection({
 
   if (characters.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.62rem] leading-relaxed text-fg-4">
+      <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.62rem] leading-relaxed text-fg-3">
         {t("studio.brushCanvasStatus.lettering.voiceNoCharacters", "캐릭터 정보가 없어 말투 지문을 만들 수 없어요. 스토리 바이블에 캐릭터를 등록하면 캐릭터별 말투를 모아요.")}
       </p>
     );
@@ -153,7 +153,7 @@ export function StudioDialogueVoiceSection({
 
   return (
     <div className="space-y-2">
-      <p className="text-[0.62rem] leading-relaxed text-fg-4" role="status">
+      <p className="text-[0.62rem] leading-relaxed text-fg-3" role="status">
         말투 지문 {readyCount}명 · 확인할 제안 {deviations.length}건. 제안은
         제안일 뿐, 대사를 자동으로 고치지 않아요.
       </p>
@@ -171,7 +171,7 @@ export function StudioDialogueVoiceSection({
             >
               <div className="flex items-baseline justify-between gap-2">
                 <h4 className="text-[0.68rem] font-bold text-fg">{name}</h4>
-                <span className="shrink-0 text-[0.56rem] tabular-nums text-fg-4">
+                <span className="shrink-0 text-[0.56rem] tabular-nums text-fg-3">
                   {fingerprint
                     ? `대사 ${fingerprint.sampleLineCount}개 · 화자 확인 ${percent(fingerprint.attributionRatio)}`
                     : `대사 ${profile.eligibility.characterLineCount}개 · 화자 확인 ${percent(profile.eligibility.attributionRatio)}`}
@@ -192,7 +192,7 @@ export function StudioDialogueVoiceSection({
                   </p>
                   {fingerprint.signaturePhrases.length > 0 ? (
                     <p className="flex flex-wrap items-center gap-1">
-                      <span className="text-[0.56rem] font-medium text-fg-4">대표 표현</span>
+                      <span className="text-[0.56rem] font-medium text-fg-3">대표 표현</span>
                       {fingerprint.signaturePhrases.slice(0, 5).map((entry) => (
                         <span
                           key={entry.phrase}
@@ -228,7 +228,7 @@ export function StudioDialogueVoiceSection({
       {/* 회차 예외 현황 — 켜진 예외는 언제든 해제할 수 있게 항상 보여 준다. */}
       {exceptedEpisodeIds.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1" aria-label="말투 예외로 지정한 회차">
-          <span className="text-[0.56rem] font-medium text-fg-4">예외 회차</span>
+          <span className="text-[0.56rem] font-medium text-fg-3">예외 회차</span>
           {exceptedEpisodeIds.map((episodeId) => (
             <button
               key={episodeId}
@@ -312,7 +312,7 @@ export function StudioDialogueVoiceSection({
         </p>
       ) : null}
       {deviations.length > 20 ? (
-        <p className="text-[0.56rem] text-fg-4">
+        <p className="text-[0.56rem] text-fg-3">
           제안이 많아 앞의 20건만 보여줘요. 무시하거나 회차를 예외로 지정하면
           다음 제안이 올라와요.
         </p>

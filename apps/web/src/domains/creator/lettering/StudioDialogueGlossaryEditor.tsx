@@ -30,7 +30,7 @@ export type StudioDialogueGlossaryEditorProps = {
 };
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-card px-2 py-1.5 text-[0.7rem] text-fg outline-none transition-colors placeholder:text-fg-4 focus:border-accent/50";
+  "w-full rounded-lg border border-line bg-card px-2 py-1.5 text-[0.7rem] text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent/50";
 
 const modeButtonClass = (active: boolean) =>
   cx(
@@ -125,7 +125,7 @@ export function StudioDialogueGlossaryEditor({
       ) : (
         <div className="space-y-1.5">
           {rows.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.62rem] leading-relaxed text-fg-4">
+            <p className="rounded-lg border border-dashed border-line px-2 py-3 text-center text-[0.62rem] leading-relaxed text-fg-3">
               {t("studio.brushCanvasStatus.lettering.glossaryEmpty", "등록된 규칙이 없어요. 행을 추가하거나 텍스트 모드에서 “원문: 정본” 형식으로 입력하세요.")}
             </p>
           ) : (
@@ -140,7 +140,7 @@ export function StudioDialogueGlossaryEditor({
                     aria-label={`${index + 1}번째 규칙 원문 표기`}
                     className={cx(inputClass, "py-1")}
                   />
-                  <span className="shrink-0 text-[0.62rem] text-fg-4" aria-hidden>
+                  <span className="shrink-0 text-[0.62rem] text-fg-3" aria-hidden>
                     →
                   </span>
                   <input
@@ -181,7 +181,7 @@ export function StudioDialogueGlossaryEditor({
               </p>
               <ul className="mt-0.5 space-y-0.5">
                 {memoLines.map((line, index) => (
-                  <li key={index} className="truncate text-[0.6rem] text-fg-4" title={line}>
+                  <li key={index} className="truncate text-[0.6rem] text-fg-3" title={line}>
                     {line}
                   </li>
                 ))}

@@ -28,7 +28,6 @@ import { cn } from "@/shared/lib/utils";
 import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
 
-import "./admin-shell.css";
 import "./admin-visual-v2.css";
 
 const SIDEBAR_STORAGE_KEY = "toonstudio.admin.sidebar.collapsed.v1";

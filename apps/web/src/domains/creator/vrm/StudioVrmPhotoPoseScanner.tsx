@@ -369,7 +369,7 @@ function SkeletonPreview({
       {imageUrl ? (
         <>
           <image href={imageUrl} width="100" height="100" preserveAspectRatio="xMidYMid slice" />
-          <rect width="100" height="100" fill="oklch(0.08 0.01 250 / 0.28)" />
+          <rect width="100" height="100" fill="var(--color-reader-canvas)" fillOpacity="0.28" />
         </>
       ) : null}
       {SKELETON_CONNECTIONS.map(([fromIndex, toIndex]) => {

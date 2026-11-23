@@ -78,7 +78,7 @@ function Handoff({ bindings, navigation, request }: Props & { readonly request: 
       : snapshot.phase === "cancelled" ? bt("위치 확인을 중단했어요. 다시 눌러 확인할 수 있어요.", "Location verification stopped. Select again to retry.")
         : bt("현재 저장본과 검수본이 같을 때 의견의 페이지·컷·요소를 선택해요.", "Select the comment’s page, cut or element when this manuscript matches the review.");
   return <aside aria-label={bt("검수 의견 위치", "Review comment location")}
-    className="fixed bottom-4 left-1/2 z-50 w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border bg-background p-4 shadow-lg">
+    className="fixed bottom-4 left-1/2 z-50 w-[min(34rem,calc(100vw-2rem))] -translate-x-1/2 rounded-xl border bg-canvas p-4 shadow-lg">
     <p role="status" className="text-sm">{detail}</p>
     <div className="mt-3 flex flex-wrap gap-2">
       <Button type="button" size="sm" className="min-h-11" disabled={checking} onClick={start}>
