@@ -60,6 +60,11 @@ jobs:
           python-version: '3.12'
       - run: npm install --prefix /tmp/creator-test typescript@6.0.3
       - run: python -m pip install -r services/creator-inference/requirements-test.txt
+      - name: 모델 의존성 해석 검증
+        run: >-
+          python -m pip install --dry-run --ignore-installed
+          --report creator-model-resolution.json
+          -r services/creator-inference/requirements-models.txt
       - run: python -m playwright install --with-deps chromium
       - name: Actual pure contracts and worker test bundle
         env:
@@ -82,6 +87,7 @@ jobs:
           path: |
             creator-*-test-results.json
             creator-cpu-tests.xml
+            creator-model-resolution.json
             creator-runtime-results/
           retention-days: 7
   integration:
