@@ -1,0 +1,719 @@
+/* PD·강사 붉은펜 검수 ↔ 드로잉 캔버스 최상단 비출력(Non-Export) 오버레이 패널
+ * 시맨틱 디자인 토큰(--color-*) 전용 · 원시 hex 0건 · 명시적 transition 속성만 사용 · >= 44x44px 터치 타깃 */
+
+.rlo-shell {
+  --rlo-canvas: var(--color-canvas);
+  --rlo-panel: var(--color-panel);
+  --rlo-card: var(--color-card);
+  --rlo-raised: var(--color-raised);
+  --rlo-line: var(--color-line);
+  --rlo-line-strong: var(--color-line-strong);
+  --rlo-fg: var(--color-fg);
+  --rlo-fg-2: var(--color-fg-2);
+  --rlo-fg-3: var(--color-fg-3);
+  --rlo-accent: var(--color-accent);
+  --rlo-on-accent: var(--color-on-accent);
+  --rlo-redline: var(--color-bad);
+  --rlo-guide: var(--color-cool);
+  --rlo-callout: var(--color-warn);
+  --rlo-good: var(--color-good);
+  --rlo-warn: var(--color-warn);
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--rlo-line);
+  border-radius: 16px;
+  background-color: var(--rlo-panel);
+  color: var(--rlo-fg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rlo-shell :is(h2, h3, h4, p, span, button, label, li, input, select) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.rlo-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 헤더 및 출고 안전 보증 배지 */
+.rlo-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rlo-line);
+}
+
+.rlo-header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.rlo-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--rlo-redline);
+}
+
+.rlo-title {
+  margin: 0;
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--rlo-fg);
+}
+
+.rlo-subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--rlo-fg-2);
+  max-width: 68ch;
+}
+
+.rlo-header-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.rlo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--rlo-line);
+  background-color: var(--rlo-card);
+  color: var(--rlo-fg-2);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.rlo-pill-safe {
+  border-color: color-mix(in oklch, var(--rlo-good) 52%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-good) 14%, var(--rlo-card));
+  color: var(--rlo-good);
+}
+
+.rlo-pill-open {
+  border-color: color-mix(in oklch, var(--rlo-redline) 52%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-redline) 12%, var(--rlo-card));
+  color: var(--rlo-redline);
+}
+
+.rlo-pill-progress {
+  border-color: color-mix(in oklch, var(--rlo-warn) 54%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-warn) 14%, var(--rlo-card));
+  color: var(--rlo-warn);
+}
+
+.rlo-pill-accent {
+  border-color: color-mix(in oklch, var(--rlo-accent) 48%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-accent) 12%, var(--rlo-card));
+  color: var(--rlo-accent);
+}
+
+.rlo-layer-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+/* 상단 오버레이 제어 바 */
+.rlo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 12px;
+  background-color: var(--rlo-card);
+}
+
+.rlo-toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.rlo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 13px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 10px;
+  background-color: var(--rlo-panel);
+  color: var(--rlo-fg);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease;
+}
+
+.rlo-btn:hover {
+  border-color: color-mix(in oklch, var(--rlo-accent) 62%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-accent) 9%, var(--rlo-panel));
+}
+
+.rlo-btn:focus-visible,
+.rlo-slider:focus-visible,
+.rlo-input:focus-visible,
+.rlo-select:focus-visible,
+.rlo-pin-marker:focus-visible {
+  outline: 2px solid var(--rlo-accent);
+  outline-offset: 2px;
+}
+
+.rlo-btn[aria-pressed="true"],
+.rlo-btn-primary {
+  border-color: var(--rlo-accent);
+  background-color: var(--rlo-accent);
+  color: var(--rlo-on-accent);
+}
+
+.rlo-btn-redline[aria-pressed="true"] {
+  border-color: var(--rlo-redline);
+  background-color: color-mix(in oklch, var(--rlo-redline) 16%, var(--rlo-panel));
+  color: var(--rlo-redline);
+}
+
+.rlo-btn-resolve {
+  border-color: color-mix(in oklch, var(--rlo-good) 58%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-good) 14%, var(--rlo-panel));
+  color: var(--rlo-good);
+}
+
+.rlo-btn-resolve:hover {
+  border-color: var(--rlo-good);
+  background-color: color-mix(in oklch, var(--rlo-good) 22%, var(--rlo-panel));
+}
+
+.rlo-opacity-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 10px;
+  background-color: var(--rlo-panel);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rlo-fg-2);
+}
+
+.rlo-slider {
+  width: 112px;
+  accent-color: var(--rlo-redline);
+  cursor: pointer;
+}
+
+/* 메인 2열 스튜디오 워크스페이스 */
+.rlo-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.rlo-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rlo-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 14px;
+  background-color: var(--rlo-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rlo-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rlo-card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rlo-fg);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 컷 선택 탭 */
+.rlo-cut-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 컷 캔버스 프리뷰 + 비출력 SVG 오버레이 스테이지 */
+.rlo-stage-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--rlo-line-strong);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--rlo-canvas);
+  user-select: none;
+}
+
+.rlo-stage-frame[data-mode="place"] {
+  cursor: crosshair;
+  border-color: var(--rlo-redline);
+}
+
+.rlo-artwork-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.rlo-artwork-frame {
+  fill: var(--rlo-panel);
+  stroke: var(--rlo-line);
+  stroke-width: 1.5;
+}
+
+.rlo-artwork-guide {
+  fill: none;
+  stroke: color-mix(in oklch, var(--rlo-line-strong) 45%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.rlo-artwork-sketch {
+  fill: color-mix(in oklch, var(--rlo-raised) 55%, transparent);
+  stroke: var(--rlo-line-strong);
+  stroke-width: 1.8;
+}
+
+.rlo-artwork-balloon {
+  fill: var(--rlo-card);
+  stroke: var(--rlo-fg-3);
+  stroke-width: 1.6;
+}
+
+.rlo-nonprint-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.rlo-stroke-path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rlo-stroke-critical {
+  stroke: var(--rlo-redline);
+}
+
+.rlo-stroke-guide {
+  stroke: var(--rlo-guide);
+}
+
+.rlo-stroke-callout {
+  stroke: var(--rlo-callout);
+}
+
+.rlo-stroke-resolved {
+  stroke: var(--rlo-good);
+  stroke-dasharray: 5 5;
+  opacity: 0.55;
+}
+
+.rlo-stage-watermark {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 3;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklch, var(--rlo-redline) 42%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-panel) 88%, transparent);
+  color: var(--rlo-fg-2);
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.rlo-stage-hit-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  cursor: inherit;
+}
+
+.rlo-jump-reticle {
+  position: absolute;
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  border: 2px dashed var(--rlo-accent);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.rlo-draft-dot {
+  position: absolute;
+  z-index: 3;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--rlo-redline);
+  border-radius: 999px;
+  background-color: color-mix(in oklch, var(--rlo-redline) 28%, var(--rlo-card));
+  pointer-events: none;
+}
+
+.rlo-pin-marker {
+  position: absolute;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.rlo-pin-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid var(--rlo-panel);
+  background-color: var(--rlo-redline);
+  color: var(--rlo-on-accent);
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+
+.rlo-pin-marker[data-status="in-progress"] .rlo-pin-badge {
+  background-color: var(--rlo-warn);
+}
+
+.rlo-pin-marker[data-status="resolved"] .rlo-pin-badge,
+.rlo-pin-marker[data-status="verified"] .rlo-pin-badge {
+  background-color: var(--rlo-good);
+}
+
+.rlo-pin-marker[data-selected="true"] .rlo-pin-badge {
+  transform: scale(1.16);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--rlo-accent) 45%, transparent);
+}
+
+/* 뷰포트 자동 점프 계측 바 */
+.rlo-jump-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 10px;
+  background-color: var(--rlo-panel);
+  font-size: 12px;
+  color: var(--rlo-fg-2);
+}
+
+.rlo-jump-coords {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--rlo-fg);
+  font-weight: 700;
+}
+
+/* 새 핀 추가 폼 */
+.rlo-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklch, var(--rlo-redline) 42%, var(--rlo-line));
+  border-radius: 12px;
+  background-color: var(--rlo-panel);
+}
+
+.rlo-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rlo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rlo-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rlo-fg-2);
+}
+
+.rlo-input,
+.rlo-select {
+  min-height: 44px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 11px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 9px;
+  background-color: var(--rlo-card);
+  color: var(--rlo-fg);
+  font-size: 13px;
+}
+
+/* 공정별 진행률 필터 바 */
+.rlo-stage-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rlo-stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 11px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 10px;
+  background-color: var(--rlo-panel);
+  color: var(--rlo-fg-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.rlo-stage-chip[aria-pressed="true"] {
+  border-color: var(--rlo-accent);
+  background-color: color-mix(in oklch, var(--rlo-accent) 14%, var(--rlo-panel));
+  color: var(--rlo-accent);
+}
+
+/* 동기화 스레드 카드 목록 */
+.rlo-thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rlo-thread-item {
+  padding: 12px 14px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 12px;
+  background-color: var(--rlo-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.rlo-thread-item[data-selected="true"] {
+  border-color: var(--rlo-accent);
+  background-color: color-mix(in oklch, var(--rlo-accent) 7%, var(--rlo-panel));
+}
+
+.rlo-thread-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rlo-thread-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rlo-fg);
+}
+
+.rlo-thread-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--rlo-fg-2);
+}
+
+.rlo-thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--rlo-fg-3);
+}
+
+.rlo-voice-box {
+  padding: 8px 10px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 9px;
+  background-color: var(--rlo-card);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rlo-thread-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 출고 안전 레이어 감사 테이블 */
+.rlo-audit-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rlo-audit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 9px;
+  background-color: var(--rlo-panel);
+  font-size: 12px;
+}
+
+.rlo-audit-row[data-stripped="true"] {
+  border-color: color-mix(in oklch, var(--rlo-redline) 46%, var(--rlo-line));
+  background-color: color-mix(in oklch, var(--rlo-redline) 8%, var(--rlo-panel));
+}
+
+.rlo-live-status {
+  padding: 10px 12px;
+  border: 1px solid var(--rlo-line);
+  border-radius: 10px;
+  background-color: var(--rlo-card);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--rlo-fg-2);
+}
+
+@media (max-width: 959px) {
+  .rlo-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .rlo-shell {
+    padding: 14px;
+  }
+
+  .rlo-form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rlo-btn,
+  .rlo-nonprint-layer,
+  .rlo-pin-badge,
+  .rlo-stage-chip,
+  .rlo-thread-item {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .rlo-shell,
+  .rlo-card,
+  .rlo-btn,
+  .rlo-pill,
+  .rlo-thread-item {
+    forced-color-adjust: auto;
+  }
+}
