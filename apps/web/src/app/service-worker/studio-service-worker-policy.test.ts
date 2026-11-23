@@ -126,6 +126,11 @@ describe("classifyStudioServiceWorkerRequest", () => {
   it("classifies each asset family", () => {
     const cases: ReadonlyArray<readonly [string, string]> = [
       ["/assets/index-abc123.js", "immutable-asset"],
+      ["/fonts/pretendard/v1.3.9/PretendardVariable.subset.81.woff2", "immutable-asset"],
+      ["/fonts/space-grotesk/v22/space-grotesk.css", "immutable-asset"],
+      ["/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp", "immutable-asset"],
+      ["/fonts/unversioned/unknown.woff2", "passthrough"],
+      ["/brand/luminous-atelier-20261114/unrelated.webp", "passthrough"],
       ["/assets/studio/cc0-20260906/manifest.json", "catalog-data"],
       ["/assets/studio/cc0-20260906/manifest.json?v=diversity-20260913", "catalog-data"],
       ["/assets/studio/cc0-20260906/assets/example/model.glb", "immutable-asset"],
