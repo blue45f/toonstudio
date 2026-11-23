@@ -1,0 +1,133 @@
+/**
+ * 멀티 디바이스 생태계 통합 제어 · 체험 모듈 공개 배럴 (`multi-device-ecosystem`).
+ */
+
+export {
+  DEVICE_FORM_FACTOR_ORDER,
+  DEVICE_FORM_FACTOR_PROFILES,
+  MULTI_DEVICE_HUB_SUMMARY,
+  MULTI_DEVICE_SPRITE_PATHS,
+  TV_STORYBOARD_TILES,
+  classifyDeviceFormFactor,
+  computeFoldableHingeAvoidance,
+  createMultiDeviceSyncBridge,
+  moveTvSpatialFocusIndex,
+  readBrowserViewportMetrics,
+  resolveHandednessLayout,
+} from "./device-form-factor-engine";
+export type {
+  BroadcastChannelLike,
+  BrowserViewportProbeEnv,
+  DeviceChromeDensity,
+  DeviceFormFactorCategory,
+  DeviceFormFactorClassification,
+  DeviceFormFactorId,
+  DeviceFormFactorProfile,
+  DeviceHandedness,
+  DevicePointerClass,
+  DeviceRect,
+  DeviceViewportMetrics,
+  FoldableHingeAvoidancePlan,
+  FoldablePosture,
+  HandednessMirrorLayout,
+  HingeAxis,
+  MultiDevicePeerInfo,
+  MultiDeviceSpriteKey,
+  MultiDeviceSyncBridge,
+  MultiDeviceSyncBridgeOptions,
+  MultiDeviceSyncEnvelope,
+  MultiDeviceSyncPayload,
+  TvDpadDirection,
+  TvMirrorModeId,
+  TvStoryboardTile,
+} from "./device-form-factor-engine";
+
+export {
+  FOOT_PEDAL_MAPPINGS,
+  GAMEPAD_LEFT_HAND_MAPPINGS,
+  PEN_SIDE_BUTTON_ACTION_LABELS,
+  PEN_SIDE_BUTTON_PRESETS,
+  STYLUS_PRESSURE_PRESETS,
+  WEBHID_CONTROLLER_PRESETS,
+  WEBMIDI_CC_BINDINGS,
+  appendSpatialRibbonPoint,
+  computeMouseVelocityTaper,
+  createArSmartGlassTracingState,
+  createWebXrDirectorSession,
+  createWebcamQuickHudAdapter,
+  detectBrowserHardwareAndNextGenCapabilities,
+  evaluateBarrelTwist,
+  evaluateStylusPressureCurve,
+  evaluateStylusTiltShading,
+  interpretGamepadSnapshot,
+  interpretMidiControlChange,
+  interpretTouchscreenGesture,
+  interpretTrackpadGesture,
+  resolveFootPedalEvent,
+  resolvePenSideButtonAction,
+  resolveWebHidPresetCommand,
+  setWebXrDirectorMode,
+  snapRotationWithMagnet,
+  updateArTracingState,
+} from "./peripheral-input-orchestrator";
+export type {
+  ArSmartGlassTracingState,
+  BarrelTwistResult,
+  BrowserHardwareCapabilityItem,
+  BrowserHardwareCapabilityReport,
+  BrowserHardwareProbeEnv,
+  FootPedalBinding,
+  FootPedalSlot,
+  GamepadInterpretedCommand,
+  GamepadLeftHandBinding,
+  GamepadSnapshotInput,
+  HardwareCapabilityStatus,
+  MagneticRotationSnapResult,
+  MidiControlChangeResult,
+  MouseVelocityTaperInput,
+  MouseVelocityTaperResult,
+  PenSideButtonActionId,
+  PenSideButtonMapping,
+  PenSideButtonPreset,
+  PenSideButtonSlot,
+  PressureCurvePresetId,
+  SpatialRibbonPoint,
+  StylusPressureCurveConfig,
+  StylusPressureResult,
+  StylusTiltShadingResult,
+  TouchscreenGestureActionId,
+  TouchscreenGestureInput,
+  TouchscreenGestureResult,
+  TrackpadGestureInput,
+  TrackpadGestureResult,
+  WebHidControlBinding,
+  WebHidControllerPreset,
+  WebHidControllerPresetId,
+  WebMidiKnobBinding,
+  WebXrDirectorSessionState,
+  WebXrSessionMode,
+  WebcamQuickHudAdapter,
+  WebcamQuickHudSignal,
+  WebcamQuickHudState,
+} from "./peripheral-input-orchestrator";
+
+export { StudioSmartwatchCompanionView } from "./StudioSmartwatchCompanionView";
+export type {
+  StudioSmartwatchCompanionViewProps,
+  VoiceBubbleTone,
+  WatchCrownTarget,
+  WatchShapeMode,
+  WatchSwatchId,
+} from "./StudioSmartwatchCompanionView";
+
+export { StudioSmartTvModeView } from "./StudioSmartTvModeView";
+export type {
+  StudioSmartTvModeViewProps,
+  TvPairingStatus,
+} from "./StudioSmartTvModeView";
+
+export { StudioMultiDeviceEcosystemHub } from "./StudioMultiDeviceEcosystemHub";
+export type {
+  MultiDeviceHubTabId,
+  StudioMultiDeviceEcosystemHubProps,
+} from "./StudioMultiDeviceEcosystemHub";
