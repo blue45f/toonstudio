@@ -234,6 +234,9 @@ apps/web/src/domains/creator/assistant/webtoon-cut-pose-traits.test.ts
 apps/web/src/domains/creator/assistant/webtoon-tension-map-docs.test.ts
 apps/web/src/domains/creator/assistant/webtoon-tension-map-source.test.ts
 apps/web/src/domains/creator/assistant/webtoon-tension-map.test.ts
+apps/web/src/domains/creator/auto-qa-continuity/auto-qa-continuity.test.tsx
+apps/web/src/domains/creator/auto-qa-layout-spec/auto-qa-layout-spec.test.tsx
+apps/web/src/domains/creator/auto-qa-pixel-engine/auto-qa-pixel-engine.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dAssetLibraryPanel.names.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dAssetLibraryPanel.rights.test.tsx
 apps/web/src/domains/creator/bg3d/StudioBg3dAttachedTransformControls.lifecycle.test.tsx
@@ -496,11 +499,14 @@ apps/web/src/domains/creator/charm/studio-charm-popover-layout.test.ts
 apps/web/src/domains/creator/charm/studio-charm-starter-pack.test.ts
 apps/web/src/domains/creator/charm/useStudioCharmLibrary.test.tsx
 apps/web/src/domains/creator/charm/useStudioCharmPopover.test.tsx
+apps/web/src/domains/creator/collab-signoff-hub/collab-signoff-hub.test.tsx
 apps/web/src/domains/creator/color/studio-color-proof.test.ts
 apps/web/src/domains/creator/contracts/studio-bg3d-bundle-reader-version.test.ts
 apps/web/src/domains/creator/contracts/studio-legacy-pigment-archive-persistence.test.ts
 apps/web/src/domains/creator/contracts/studio-work-asset-contract.test.ts
 apps/web/src/domains/creator/creator-draft-collaboration-client.test.ts
+apps/web/src/domains/creator/csp-puppet-warp/csp-puppet-warp.test.tsx
+apps/web/src/domains/creator/csp-watermark-velocity/csp-watermark-velocity.test.tsx
 apps/web/src/domains/creator/ecosystem/CreatorEcosystemViewerPage.test.tsx
 apps/web/src/domains/creator/ecosystem/ReaderFeedbackForm.test.tsx
 apps/web/src/domains/creator/ecosystem/ReaderFeedbackSummaryPanel.test.tsx
@@ -586,6 +592,8 @@ apps/web/src/domains/creator/live/studio-scoped-write-wire.test.ts
 apps/web/src/domains/creator/localization-sync-pro/__tests__/localization-sync-pro.test.tsx
 apps/web/src/domains/creator/localization-sync-pro/__tests__/offline-sync-storage-boundary.test.tsx
 apps/web/src/domains/creator/mesh-surface/studio-mesh-surface-plan.test.ts
+apps/web/src/domains/creator/model3d-hand-customizer/model3d-hand-customizer.test.tsx
+apps/web/src/domains/creator/model3d-surface-paint/model3d-surface-paint.test.tsx
 apps/web/src/domains/creator/offline
 apps/web/src/domains/creator/page/studio-bg3d-retained-page-guard.test.ts
 apps/web/src/domains/creator/panel-detect/panel-canvas-geometry.test.ts
@@ -703,6 +711,7 @@ apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioUnloadGuard.
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal-sequence-identity.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-command-journal.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers-admission.test.ts
+apps/web/src/domains/creator/studio-cuttoon-editor/studio-drawing-jewel-ux.test.tsx
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-pending-stroke-pointer-lifecycle.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-touch-gesture-policy.test.ts
 apps/web/src/domains/creator/studio-cuttoon-editor/studio-workspace-applied-device.test.tsx
@@ -838,6 +847,7 @@ apps/web/src/domains/legal/CustomerSupportChat.test.tsx
 apps/web/src/domains/legal/SupportPage.test.tsx
 apps/web/src/domains/legal/technology/EngineeringLibrariesPage.test.tsx
 apps/web/src/domains/legal/technology/EngineeringLicensesPage.test.tsx
+apps/web/src/domains/legal/technology/engineering-architecture-guide-runtime.facts.test.ts
 apps/web/src/domains/legal/technology/engineering-library-guide-areas-a.test.ts
 apps/web/src/domains/legal/technology/engineering-license-inventory.test.ts
 apps/web/src/domains/legal/technology/engineering-seminar-lessons.test.ts
