@@ -20,6 +20,12 @@ import { useEffect, useState, type PointerEvent } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import {
+  STUDIO_Z_LAYERS,
+  resolveSafePopoverAnchor,
+} from "../canvas-chrome/studio-hud-collision-guard";
+import { resolveVibrantSpriteForQuickAction } from "../canvas-chrome/studio-vibrant-sprite-catalog";
+import { StudioVibrantToolArtwork } from "../canvas-chrome/StudioVibrantToolArtwork";
+import {
   assignQuickMenuSlot,
   DEFAULT_QUICK_MENU_SLOTS,
   QUICK_MENU_ACTION_LABELS_KO,
@@ -71,22 +77,29 @@ function clampAnchor(anchor: { readonly x: number; readonly y: number } | null |
   readonly x: number;
   readonly y: number;
   readonly wheelScale: number;
+  readonly zIndex: number;
 } {
   const vw = typeof window !== "undefined" && window.innerWidth > 0 ? window.innerWidth : 1280;
   const vh = typeof window !== "undefined" && window.innerHeight > 0 ? window.innerHeight : 800;
-  // 320px 초소형 모바일 화면에서도 휠·하단 상태바가 잘리지 않도록 반경을 안전하게 축소·클램프한다.
-  const wheelScale = vw < 360 ? Math.max(0.84, (vw - 32) / (WHEEL_SIZE + 24)) : 1;
-  const effectiveHalf = Math.ceil((WHEEL_SIZE * wheelScale) / 2);
-  const marginX = Math.min(Math.floor(vw / 2) - 4, effectiveHalf + 12);
-  const marginY = Math.min(Math.floor(vh / 2) - 4, effectiveHalf + 24);
+  // 220px 워치·320px 초소형 모바일에서도 휠·하단 상태바가 잘리지 않도록 반경을 안전하게 축소·클램프한다.
+  const wheelScale = vw < 360 ? Math.max(0.76, (vw - 24) / (WHEEL_SIZE + 24)) : 1;
+  const effectiveSize = Math.ceil(WHEEL_SIZE * wheelScale);
   const fallbackX = Math.round(vw / 2);
   const fallbackY = Math.round(vh / 2);
   const rawX = anchor && Number.isFinite(anchor.x) ? anchor.x : fallbackX;
   const rawY = anchor && Number.isFinite(anchor.y) ? anchor.y : fallbackY;
+  const safe = resolveSafePopoverAnchor({
+    triggerRect: { x: rawX, y: rawY, width: 1, height: 1 },
+    popoverSize: { width: effectiveSize + 24, height: effectiveSize + 48 },
+    viewport: { widthPx: vw, heightPx: vh },
+    preferredSide: "center",
+    zLayer: "radialQuickWheel",
+  });
   return {
-    x: Math.max(marginX, Math.min(vw - marginX, rawX)),
-    y: Math.max(marginY, Math.min(vh - marginY, rawY)),
+    x: Math.round(safe.left + safe.width / 2),
+    y: Math.round(safe.top + safe.height / 2),
     wheelScale,
+    zIndex: safe.zIndex,
   };
 }
 
@@ -255,6 +268,8 @@ export function StudioRadialQuickWheel({
   return (
     <div
       data-studio-radial-quick-wheel-backdrop="true"
+      data-studio-z-layer={STUDIO_Z_LAYERS.radialQuickWheel}
+      style={{ zIndex: clamped.zIndex }}
       className="fixed inset-0 z-[95]"
     >
       <button
@@ -270,6 +285,7 @@ export function StudioRadialQuickWheel({
         data-studio-radial-quick-wheel="true"
         data-active-slot={activeSlot ? activeSlot.actionId : ""}
         data-editing-slots={editingSlots ? "true" : "false"}
+        data-hud-collision-free="true"
         onPointerDown={handleWheelPointerDown}
         onPointerMove={handleWheelPointerMove}
         onPointerUp={handleWheelPointerUp}
@@ -281,7 +297,7 @@ export function StudioRadialQuickWheel({
           transform: `translate(-50%, -50%) scale(${bloomed ? clamped.wheelScale : clamped.wheelScale * 0.9})`,
         }}
         className={cn(
-          "fixed select-none rounded-full border border-line-strong bg-panel/95 shadow-[var(--atelier-elevation-floating)] transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:transform-none",
+          "studio-vibrant-surface studio-vibrant-keep-all fixed select-none rounded-full border border-line-strong bg-panel/95 shadow-[var(--atelier-elevation-floating)] transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:transform-none",
           bloomed ? "opacity-100" : "opacity-0",
         )}
       >
@@ -319,6 +335,7 @@ export function StudioRadialQuickWheel({
 
         {effectiveSlots.map((slot, index) => {
           const Icon = ACTION_ICONS[slot.actionId];
+          const sprite = resolveVibrantSpriteForQuickAction(slot.actionId);
           const pos = polarSectorPosition(index);
           const highlighted = editingSlots
             ? editingSlotIndex === index
@@ -330,6 +347,8 @@ export function StudioRadialQuickWheel({
               role="menuitem"
               data-studio-radial-slot={slot.actionId}
               data-slot-index={slot.index}
+              data-vibrant-accent={sprite.accent}
+              data-vibrant-active={highlighted ? "true" : "false"}
               aria-label={`${index + 1}. ${slot.labelKo}`}
               title={`${slot.labelKo} (${index + 1})`}
               onMouseEnter={() => {
@@ -353,14 +372,20 @@ export function StudioRadialQuickWheel({
                 transitionDelay: `${index * 24}ms`,
               }}
               className={cn(
-                "absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-fg transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.94] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
+                "studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-fg transition-[transform,opacity,background-color,border-color,color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.94] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
                 !bloomed && "scale-75 opacity-0",
                 bloomed && (highlighted
                   ? "scale-105 opacity-100 border-accent bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-2))] text-on-accent shadow-[0_0_0_4px_color-mix(in_oklch,var(--color-accent)_26%,transparent)]"
                   : "scale-100 opacity-100 border-transparent bg-transparent text-fg-2 hover:border-line-strong hover:bg-raised/70 hover:text-fg"),
               )}
             >
-              <Icon size={16} strokeWidth={1.7} aria-hidden="true" />
+              <StudioVibrantToolArtwork
+                spriteId={sprite.spriteId}
+                accent={sprite.accent}
+                size={22}
+                active={highlighted}
+                fallback={<Icon size={16} strokeWidth={1.7} aria-hidden="true" />}
+              />
               <span className="sr-only">{slot.labelKo}</span>
             </button>
           );
@@ -370,7 +395,7 @@ export function StudioRadialQuickWheel({
           type="button"
           aria-label={bt("방사형 휠 닫기", "Close radial wheel")}
           onClick={onClose}
-          className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-fg-3 transition-colors duration-100 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
+          className="studio-vibrant-touch-target studio-vibrant-press absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-fg-3 transition-colors duration-100 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
         >
           <X size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
@@ -378,7 +403,7 @@ export function StudioRadialQuickWheel({
         <div className="absolute -bottom-12 left-1/2 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5">
           <div
             aria-live="polite"
-            className="pointer-events-none max-w-[min(12rem,calc(100vw-8.5rem))] truncate rounded-lg border border-line-strong bg-panel/95 px-2.5 py-1 text-center text-xs font-semibold text-fg shadow-[var(--atelier-elevation-dock)] break-keep"
+            className="studio-vibrant-tabular pointer-events-none max-w-[min(12rem,calc(100vw-8.5rem))] truncate rounded-lg border border-line-strong bg-panel/95 px-2.5 py-1 text-center text-xs font-semibold tabular-nums text-fg shadow-[var(--atelier-elevation-dock)] break-keep"
           >
             {editingSlots
               ? bt(
@@ -399,7 +424,7 @@ export function StudioRadialQuickWheel({
               setEditingSlots((prev) => !prev);
             }}
             className={cn(
-              "inline-flex min-h-11 items-center gap-1 rounded-lg border px-2.5 text-xs font-semibold shadow-[var(--atelier-elevation-dock)] transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
+              "studio-vibrant-touch-target studio-vibrant-press inline-flex min-h-11 items-center gap-1 rounded-lg border px-2.5 text-xs font-semibold shadow-[var(--atelier-elevation-dock)] transition-[transform,background-color,border-color,color] duration-150 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all]",
               editingSlots
                 ? "border-accent bg-accent text-on-accent"
                 : "border-line-strong bg-panel/95 text-fg-2 hover:bg-raised hover:text-fg",
@@ -416,17 +441,17 @@ export function StudioRadialQuickWheel({
             aria-label={bt("빠른 메뉴 6슬롯 편집", "Customize 6 QuickMenu slots")}
             data-studio-radial-edit-panel="true"
             onPointerDown={(event) => event.stopPropagation()}
-            className="absolute left-1/2 top-[calc(100%+3.5rem)] z-20 w-[min(18rem,calc(100vw-16px))] -translate-x-1/2 rounded-2xl border border-line-strong bg-panel p-3 text-fg shadow-[var(--atelier-elevation-floating)] break-keep"
+            className="studio-vibrant-surface studio-vibrant-keep-all absolute left-1/2 top-[calc(100%+3.5rem)] z-20 w-[min(18rem,calc(100vw-16px))] -translate-x-1/2 rounded-2xl border border-line-strong bg-panel p-3 text-fg shadow-[var(--atelier-elevation-floating)] break-keep"
           >
             <div className="flex items-center justify-between gap-2 border-b border-line/70 pb-2">
-              <span className="text-xs font-bold text-fg">
+              <span className="text-xs font-bold tabular-nums text-fg">
                 {bt(`슬롯 ${editingSlotIndex + 1} 동작 선택`, `Assign slot ${editingSlotIndex + 1}`)}
               </span>
               <button
                 type="button"
                 data-studio-radial-reset-slots="true"
                 onClick={() => commitSlotUpdate(DEFAULT_QUICK_MENU_SLOTS)}
-                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-[transform,background-color] duration-150 hover:bg-raised hover:text-fg active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
+                className="studio-vibrant-touch-target studio-vibrant-press inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-[transform,background-color] duration-150 hover:bg-raised hover:text-fg active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all]"
               >
                 <RotateCcw size={12} aria-hidden="true" />
                 {bt("기본값", "Reset")}
@@ -436,22 +461,31 @@ export function StudioRadialQuickWheel({
             <div className="mt-2 grid grid-cols-2 gap-1.5" role="group" aria-label={bt("할당할 동작 목록", "Available actions")}>
               {ALL_QUICK_MENU_ACTION_IDS.map((actionId) => {
                 const Icon = ACTION_ICONS[actionId];
+                const sprite = resolveVibrantSpriteForQuickAction(actionId);
                 const assigned = editingSlot.actionId === actionId;
                 return (
                   <button
                     key={actionId}
                     type="button"
                     data-studio-radial-assign-action={actionId}
+                    data-vibrant-accent={sprite.accent}
+                    data-vibrant-active={assigned ? "true" : "false"}
                     aria-pressed={assigned}
                     onClick={() => handleAssignSlotAction(actionId)}
                     className={cn(
-                      "flex min-h-11 items-center gap-1.5 rounded-xl border px-2 text-left text-[0.72rem] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      "studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press flex min-h-11 items-center gap-1.5 rounded-xl border px-2 text-left text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]",
                       assigned
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
                     )}
                   >
-                    <Icon size={13} className="shrink-0" aria-hidden="true" />
+                    <StudioVibrantToolArtwork
+                      spriteId={sprite.spriteId}
+                      accent={sprite.accent}
+                      size={18}
+                      active={assigned}
+                      fallback={<Icon size={13} className="shrink-0" aria-hidden="true" />}
+                    />
                     <span className="truncate">{QUICK_MENU_ACTION_LABELS_KO[actionId]}</span>
                   </button>
                 );

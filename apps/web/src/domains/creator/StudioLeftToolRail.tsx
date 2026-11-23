@@ -3,94 +3,37 @@ import { preloadStudioAllToolsCatalog } from "./studio-all-tools-catalog-loader"
 import { studioProjectRailVisibleIds, studioDrawingPinnedToolbar, STUDIO_DRAWING_RAIL_FIXED_IDS, pinAllStudioToolbarTools, pinStudioToolbarTools, unpinStudioToolbarTools } from "./studio-toolbar-configuration";
 import { subscribeStudioAllTools } from "./studio-toolbar-channel";
 import {
-  Box,
-  Boxes,
-  Circle,
-  CircleDashed,
-  Crop,
-  Droplets,
-  Eraser,
-  Film,
-  Hand,
-  ImagePlus,
-  Lasso,
-  Maximize2,
-  MessageCircle,
-  MessageSquare,
-  MousePointer2,
-  Move,
-  PaintBucket,
-  Paintbrush,
-  Grid3X3,
-  Pencil,
-  PersonStanding,
-  PictureInPicture2,
-  Pipette,
-  Settings2,
-  Search,
-  ScanLine,
-  RotateCw,
-  X,
-  Shapes,
-  Sparkles,
-  Square,
-  SquareDashedMousePointer,
-  Sun,
-  Triangle,
-  Type as TypeIcon,
-  UsersRound,
-  Wind,
+  Box, Boxes, Circle, CircleDashed, Crop, Droplets, Eraser, Film, Hand, ImagePlus,
+  Lasso, Maximize2, MessageCircle, MessageSquare, MousePointer2, Move, PaintBucket,
+  Paintbrush, Grid3X3, Pencil, PersonStanding, PictureInPicture2, Pipette, Settings2,
+  Search, ScanLine, RotateCw, X, Shapes, Sparkles, Square, SquareDashedMousePointer,
+  Sun, Triangle, Type as TypeIcon, UsersRound, Wind,
 } from "lucide-react";
-import { Fragment, memo, useCallback, useEffect, useId, useRef, useState, type SetStateAction } from "react";
+import { Fragment, memo, useCallback, useEffect, useId, useRef, useState, type CSSProperties, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 
+import { StudioVibrantToolArtwork } from "./canvas-chrome/StudioVibrantToolArtwork";
+import { STUDIO_Z_LAYERS, resolveSafePopoverAnchor } from "./canvas-chrome/studio-hud-collision-guard";
+import { getVibrantSpriteSrc, resolveVibrantSpriteForRailTool } from "./canvas-chrome/studio-vibrant-sprite-catalog";
+
+import { StudioEditorClientProvider, useEditorSelector, useStudioEditorClient } from "./editor-client";
 import {
-  StudioEditorClientProvider,
-  useEditorSelector,
-  useStudioEditorClient,
-} from "./editor-client";
-import {
-  STUDIO_LEFT_TOOL_RAIL_COMMANDS,
-  type StudioLeftToolRailActionArguments,
-  type StudioLeftToolRailActionName,
-  type StudioLeftToolRailClient,
-  type StudioLeftToolRailHandlersContract,
-  type StudioLeftToolRailSnapshot,
+  STUDIO_LEFT_TOOL_RAIL_COMMANDS, type StudioLeftToolRailActionArguments, type StudioLeftToolRailActionName,
+  type StudioLeftToolRailClient, type StudioLeftToolRailHandlersContract, type StudioLeftToolRailSnapshot,
 } from "./editor-client/studio-left-tool-rail-client";
 import { preloadStudioRasterRetouchRuntime } from "./render/studio-raster-retouch-preload";
-import {
-  STUDIO_RAIL_TOOL_CATALOG,
-  type StudioRailToolId,
-  type StudioToolbarPreferences,
-  formatStudioShortcutChord,
-} from "./studio-app-settings";
-import {
-  STUDIO_CHROME_RAIL_TOOL_GROUPS,
-  studioChromeRailGroupLabel,
-} from "./studio-chrome-ia-map";
-import {
-  StudioRailDivider,
-  StudioRailToolButton,
-  StudioVerticalToolRail,
-} from "./studio-chrome-ui";
+import { STUDIO_RAIL_TOOL_CATALOG, type StudioRailToolId, type StudioToolbarPreferences, formatStudioShortcutChord } from "./studio-app-settings";
+import { STUDIO_CHROME_RAIL_TOOL_GROUPS, studioChromeRailGroupLabel } from "./studio-chrome-ia-map";
+import { StudioRailDivider, StudioRailToolButton, StudioVerticalToolRail, type StudioRailToolButtonProps } from "./studio-chrome-ui";
 import { StudioCreationModeLauncher } from "./StudioCreationModeLauncher";
 import type { StudioCreationMode } from "./studio-creation-mode";
-import {
-  resolveStudioRailMorePosition,
-  type StudioRailMorePosition,
-  type StudioRailMoreViewport,
-} from "./studio-left-tool-rail-position";
+import { resolveStudioRailMorePosition, type StudioRailMorePosition, type StudioRailMoreViewport } from "./studio-left-tool-rail-position";
 import { preloadStudioReferencePanel } from "./studio-page-lazy-ui";
-import {
-  STUDIO_RETOUCH_EDITABLE_COPY_NOTE,
-  studioRetouchToolHelp,
-} from "./studio-retouch-help";
+import { STUDIO_RETOUCH_EDITABLE_COPY_NOTE, studioRetouchToolHelp } from "./studio-retouch-help";
 import { imageEditLockReason, rasterRetouchAutoTargetUnavailableReason, reviewLockReason } from "./status-i18n/studio-lock-reason-i18n";
 import { isSelectionUsable } from "./studio-selection-tools";
 import { suppressNextStudioToolHintFocus } from "./studio-tool-hint-focus-suppression";
 import { studioUiDensityAllows } from "./studio-ui-density";
-import type { StudioRailToolButtonProps } from "./studio-chrome-ui";
-
 import type { DrawMode, DrawShapeKind } from "./studio-editor-tool-model";
 
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
@@ -165,12 +108,37 @@ function measureStudioRailMorePosition(
   const availableOnLeft = trigger.left - viewportLeft
     - STUDIO_RAIL_MORE_MARGIN_PX - STUDIO_RAIL_MORE_GAP_PX;
 
+  const preferredLeft = availableOnRight < measuredWidth && availableOnLeft >= measuredWidth
+    ? trigger.left - STUDIO_RAIL_MORE_GAP_PX - measuredWidth
+    : resolved.left;
+  const safe = resolveSafePopoverAnchor({
+    triggerRect: { x: trigger.left, y: Math.max(0, trigger.bottom - 44), width: Math.max(44, trigger.right - trigger.left), height: 44 },
+    popoverSize: { width: measuredWidth, height: measuredHeight },
+    viewport: { widthPx: viewport.width, heightPx: viewport.height },
+    preferredSide: availableOnRight < measuredWidth && availableOnLeft >= measuredWidth ? "left" : "right",
+    zLayer: "railMoreDialog",
+  });
+
   return {
     ...resolved,
-    left: availableOnRight < measuredWidth && availableOnLeft >= measuredWidth
-      ? trigger.left - STUDIO_RAIL_MORE_GAP_PX - measuredWidth
-      : resolved.left,
+    left: viewport.width < 480 ? safe.left : preferredLeft,
     maxHeight,
+  };
+}
+
+function buildVibrantRailToolProps(id: StudioRailToolId, def: StudioRailToolDefinition) {
+  const sprite = resolveVibrantSpriteForRailTool(id);
+  const style = {
+    ...(def.style ?? {}),
+    "--studio-vibrant-sprite-url": `url("${getVibrantSpriteSrc(sprite.spriteId)}")`,
+  } as CSSProperties;
+  return {
+    ...def,
+    className: cn(def.className, "studio-vibrant-rail-btn studio-vibrant-touch-target studio-vibrant-ink-bloom"),
+    "data-vibrant-tool-sprite": sprite.spriteId,
+    "data-vibrant-accent": sprite.accent,
+    "data-vibrant-active": def.active ? "true" : "false",
+    style,
   };
 }
 
@@ -1111,8 +1079,9 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
       <button type="button" id={railMoreTriggerId}
         onMouseEnter={preloadStudioAllToolsCatalog} onFocus={preloadStudioAllToolsCatalog}
         aria-label="전체 도구" aria-controls={railMoreOpen ? railMoreDialogId : undefined}
-        aria-expanded={railMoreOpen} aria-haspopup="dialog"
-        className="flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-lg text-fg-2 hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent"
+        aria-expanded={railMoreOpen} aria-haspopup="dialog" data-vibrant-accent="layers"
+        data-vibrant-active={railMoreOpen ? "true" : "false"}
+        className="studio-vibrant-touch-target studio-vibrant-ink-bloom studio-vibrant-press studio-vibrant-anchor-trigger studio-vibrant-keep-all flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-lg text-fg-2 hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent"
         onClick={() => {
           externalTriggerRef.current = null;
           if (!railMoreOpen) {
@@ -1121,18 +1090,23 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
             if (rect) setRailMorePosition(measureStudioRailMorePosition(rect));
           }
           setRailMoreOpen((value) => !value);
-        }}><Search size={18} aria-hidden /><span className="text-xs">전체</span></button>
-      <button type="button" aria-label="도구막대 구성" className="flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-lg text-fg-2 hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent"
-        onClick={openConfiguration}><Settings2 size={18} aria-hidden /><span className="text-xs">구성</span></button>
+        }}><StudioVibrantToolArtwork spriteId="tool-layers" accent="layers" size={18} active={railMoreOpen} fallback={<Search size={18} aria-hidden />} /><span className="text-xs">전체</span></button>
+      <button type="button" aria-label="도구막대 구성" data-vibrant-accent="neutral"
+        className="studio-vibrant-touch-target studio-vibrant-press studio-vibrant-keep-all flex min-h-12 w-full flex-col items-center justify-center gap-1 rounded-lg text-fg-2 hover:bg-raised focus-visible:ring-2 focus-visible:ring-accent"
+        onClick={openConfiguration}><StudioVibrantToolArtwork spriteId="tool-ruler" accent="neutral" size={18} fallback={<Settings2 size={18} aria-hidden />} /><span className="text-xs">구성</span></button>
       {railMoreOpen && typeof document !== "undefined" ? createPortal(
         <div ref={railMoreDialogRef} id={railMoreDialogId} role="dialog" aria-modal="false"
           aria-labelledby={railMoreTitleId} tabIndex={-1} data-studio-shortcut-boundary="true"
-          className="fixed z-[90] flex w-[26rem] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl border border-line bg-panel p-3 shadow-xl"
-          style={{ left: railMorePosition.left, top: railMorePosition.top, maxHeight: railMorePosition.maxHeight }}>
+          data-studio-z-layer={STUDIO_Z_LAYERS.railMoreDialog} data-hud-collision-free="true"
+          className="fixed z-[90] studio-vibrant-surface studio-vibrant-keep-all studio-vibrant-anchored-popover flex w-[26rem] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl border border-line bg-panel p-3 shadow-xl"
+          style={{ left: railMorePosition.left, top: railMorePosition.top, maxHeight: railMorePosition.maxHeight, zIndex: STUDIO_Z_LAYERS.railMoreDialog }}>
           <header className="mb-2 flex shrink-0 items-center justify-between gap-2">
-            <div><h2 id={railMoreTitleId} className="text-sm font-semibold">전체 도구</h2>
-              <p className="text-xs text-fg-2" aria-live="polite">고정 {visibleRailIds.length} · 전체 {STUDIO_RAIL_TOOL_CATALOG.length}</p></div>
-            <button type="button" aria-label="전체 도구 닫기" onClick={closeRailMoreAndRestoreFocus} className="grid size-11 place-items-center rounded-lg hover:bg-raised"><X size={18} aria-hidden /></button>
+            <div className="flex items-center gap-2">
+              <StudioVibrantToolArtwork spriteId="emblem-studio" accent="ink" size={22} active />
+              <div><h2 id={railMoreTitleId} className="text-sm font-semibold">전체 도구</h2>
+                <p className="text-xs tabular-nums text-fg-2" aria-live="polite">고정 {visibleRailIds.length} · 전체 {STUDIO_RAIL_TOOL_CATALOG.length}</p></div>
+            </div>
+            <button type="button" aria-label="전체 도구 닫기" onClick={closeRailMoreAndRestoreFocus} className="studio-vibrant-touch-target studio-vibrant-press grid size-11 place-items-center rounded-lg hover:bg-raised"><X size={18} aria-hidden /></button>
           </header>
           <div className="min-h-0 overflow-y-auto overscroll-contain">
             <StudioAllToolsCatalog definitions={railToolDefinitions} pinned={visibleRailIds} fixed={pinnedToolHost ? STUDIO_DRAWING_RAIL_FIXED_IDS : undefined} query={railMoreQuery} onQuery={setRailMoreQuery}
@@ -1140,10 +1114,10 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
               onUsed={closeRailMoreAndRestoreFocus} />
           </div>
           <footer className="mt-2 flex shrink-0 flex-wrap gap-2 border-t border-line pt-2">
-            <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs" onClick={() => changePins(pinAllStudioToolbarTools(toolbar))}>모든 도구 고정</button>
-            {toolbarBeforeShowAll ? <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs"
+            <button type="button" className="studio-vibrant-touch-target studio-vibrant-press min-h-11 rounded-lg border border-line px-3 text-xs [word-break:keep-all]" onClick={() => changePins(pinAllStudioToolbarTools(toolbar))}>모든 도구 고정</button>
+            {toolbarBeforeShowAll ? <button type="button" className="studio-vibrant-touch-target studio-vibrant-press min-h-11 rounded-lg border border-line px-3 text-xs [word-break:keep-all]"
               onClick={() => changePins(toolbarBeforeShowAll, true)}>이전 구성</button> : null}
-            <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-xs" onClick={openConfiguration}>구성 편집</button>
+            <button type="button" className="studio-vibrant-touch-target studio-vibrant-press min-h-11 rounded-lg border border-line px-3 text-xs [word-break:keep-all]" onClick={openConfiguration}>구성 편집</button>
           </footer>
         </div>, document.body) : null}
     </div>
@@ -1155,15 +1129,15 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
       aria-label="캔버스 이미지 파일 선택" className="sr-only" tabIndex={-1}
       onChange={onPickImage} disabled={activeSurfaceReviewLocked} />
     {pinnedToolHost && createPortal(visibleRailIds.filter(id => !STUDIO_DRAWING_RAIL_FIXED_IDS.includes(id)).map(id =>
-      <StudioRailToolButton key={id} {...railToolDefinitions[id]} data-studio-rail-tool-id={id} showLabel />), pinnedToolHost)}
+      <StudioRailToolButton key={id} {...buildVibrantRailToolProps(id, railToolDefinitions[id])} data-studio-rail-tool-id={id} showLabel />), pinnedToolHost)}
     {!pinnedToolHost && studioUiDensityAllows(uiDensityMode, "tool-rail") && !canvasOnlyMode ? (
-      <StudioVerticalToolRail className={cn(mobileImmersive && "hidden")} view={appSettings.toolbar.view} footer={railMoreFooter}>
+      <StudioVerticalToolRail className={cn("studio-vibrant-surface studio-vibrant-keep-all", mobileImmersive && "hidden")} view={appSettings.toolbar.view} footer={railMoreFooter}>
         <StudioCreationModeLauncher onSelectMode={openCreationMode} />
         <StudioRailDivider data-studio-rail-group-divider="creator-modes" label="제작 모드" />
         {currentToolId && !visibleRailIds.includes(currentToolId) ? (
           <div className="col-span-full w-full border-b border-line pb-2" data-studio-unpinned-current-tool={currentToolId}>
             <span className="block text-center text-xs text-fg-2">현재</span>
-            <StudioRailToolButton {...railToolDefinitions[currentToolId]} data-studio-rail-tool-id={undefined} data-studio-current-tool-id={currentToolId} showLabel={appSettings.toolbar.view === "list"} />
+            <StudioRailToolButton {...buildVibrantRailToolProps(currentToolId, railToolDefinitions[currentToolId])} data-studio-rail-tool-id={undefined} data-studio-current-tool-id={currentToolId} showLabel={appSettings.toolbar.view === "list"} />
           </div>
         ) : null}
         {visibleRailIds.map((id, index) => {
@@ -1172,7 +1146,7 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
           const startsGroup = group && (!previousId || !(group.toolIds as readonly StudioRailToolId[]).includes(previousId));
           return <Fragment key={id}>
             {startsGroup && appSettings.toolbar.view !== "double" ? <StudioRailDivider data-studio-rail-group-divider={group.id} label={studioChromeRailGroupLabel(group.id)} /> : null}
-            <StudioRailToolButton {...railToolDefinitions[id]} data-studio-rail-tool-id={id} showLabel={appSettings.toolbar.view === "list"} />
+            <StudioRailToolButton {...buildVibrantRailToolProps(id, railToolDefinitions[id])} data-studio-rail-tool-id={id} showLabel={appSettings.toolbar.view === "list"} />
           </Fragment>;
         })}
       </StudioVerticalToolRail>
