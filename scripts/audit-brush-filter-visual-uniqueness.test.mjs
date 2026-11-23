@@ -10,7 +10,6 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -20,6 +19,10 @@ import {
   parseCliArgs,
   runBrushFilterVisualAudit,
 } from "./audit-brush-filter-visual-uniqueness.mjs";
+
+const { describe, it } = process.env.VITEST
+  ? await import("vitest")
+  : await import("node:test");
 
 const SCRIPT_PATH = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

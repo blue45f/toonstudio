@@ -88,4 +88,35 @@ describe("Studio conditional-entry continuity contract", () => {
       ok: false,
     }));
   });
+  it.each(["pixel-transform-selection", "frame-animation-selected-image"] as const)(
+    "%s의 추출된 CTA 또는 Host 연결이 사라지면 상태 전환을 거부한다",
+    (id) => {
+      const helperPath = "apps/web/src/domains/creator/studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers.ts";
+      const hostPath = "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx";
+      const contract = STUDIO_UX_ENTRY_CONTINUITY_CONTRACTS.find((candidate) => candidate.id === id);
+      if (!contract) throw new Error(`진입 계약 누락: ${id}`);
+      const handler = id === "pixel-transform-selection"
+        ? "onRequestPixelSelection: () => {"
+        : "onRequestSelectImage: () => {";
+      for (const [file, needle] of [
+        [helperPath, handler],
+        [hostPath, 'from "./studio-cuttoon-edit/studio-host-wave6-surface-and-comment-helpers"'],
+        [hostPath, "buildStudioLeftToolRailHandlers({"],
+        [hostPath, "studioLeftToolRailHandlers={studioLeftToolRailHandlers}"],
+      ] as const) {
+        const sources = new Map(sourceMap());
+        const original = sources.get(file);
+        if (original === undefined) throw new Error(`진입 계약 소스 누락: ${file}`);
+        expect(original.split(needle)).toHaveLength(2);
+        sources.set(file, original.replace(needle, ""));
+        const result = auditStudioUxEntryContinuity(contract, sources);
+        expect(result).toMatchObject({ ok: false, score: 80, passedCheckpoints: 4 });
+        expect(result.checkpoints).toContainEqual(expect.objectContaining({
+          id: "cta-changed-state",
+          ok: false,
+        }));
+      }
+    },
+  );
+
 });

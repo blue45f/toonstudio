@@ -49,7 +49,10 @@ export async function assertRailTools(page: Page): Promise<string[]> {
   const failures: string[] = [];
   const editor = await visibleStudioControl(page.locator('[data-studio-editor="true"]'), "Studio 편집기");
   const project = await editor.getAttribute("data-studio-drawing-clarity") === "true";
-  const firstRunIds = project ? CLARITY_RAIL_TOOL_IDS : FIRST_RUN_RAIL_TOOL_IDS;
+  // 여덟 명령과 별도 색상·레이어 진입을 모두 정확한 초기 재고와 누적 보존 검사에 포함한다.
+  const firstRunIds = project
+    ? [...CLARITY_RAIL_TOOL_IDS, "color", "layers"]
+    : FIRST_RUN_RAIL_TOOL_IDS;
 
   const initialIds = await rail.locator("[data-studio-rail-tool-id]")
     .evaluateAll((tools) => tools.map((tool) => tool.getAttribute("data-studio-rail-tool-id")));

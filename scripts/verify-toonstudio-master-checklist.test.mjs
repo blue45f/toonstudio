@@ -11,7 +11,6 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -23,6 +22,10 @@ import {
   parseCliArgs,
   runMasterChecklist,
 } from "./verify-toonstudio-master-checklist.mjs";
+
+const { describe, it } = process.env.VITEST
+  ? await import("vitest")
+  : await import("node:test");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = path.join(__dirname, "verify-toonstudio-master-checklist.mjs");
