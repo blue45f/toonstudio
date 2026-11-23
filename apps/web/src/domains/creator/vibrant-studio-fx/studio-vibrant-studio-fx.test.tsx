@@ -503,7 +503,7 @@ describe("4. StudioFoleyAudioEngine 물리 모델링 오디오 합성 · 3채널
     engine.dispose();
 
     // 2) suspended 상태에서는 resume()만 중복 없이 요청하고 보이스 노드를 쌓지 않는다
-    let resolveResume: (() => void) | null = null;
+    let resolveResume = null as (() => void) | null;
     const suspendedMock = createMockAudioContext("suspended");
     (suspendedMock.ctx.resume as ReturnType<typeof vi.fn>).mockImplementation(
       () =>

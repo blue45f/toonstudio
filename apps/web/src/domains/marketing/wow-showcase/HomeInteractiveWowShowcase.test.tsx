@@ -78,7 +78,9 @@ describe("HomeInteractiveWowShowcase", () => {
 
   it("2D 컨텍스트가 있을 때 실시간 드로잉·분광 혼색 시연·4컷 스탬프·지우기가 실제 캔버스에 그려진다", () => {
     const mockCtx = createMockCanvas2dContext();
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(mockCtx as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+      (() => mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    );
 
     renderShowcase("ko");
     const canvas = screen.getByTestId("hwow-live-canvas");

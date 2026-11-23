@@ -32,6 +32,8 @@ export type BenchmarkStatus =
   | "limited"
   | "none";
 
+export type CellGrade = "lead" | "strong" | "partial" | "limited" | "none";
+
 export type BenchmarkAxisId =
   | "install-device"
   | "drawing-pigment"
