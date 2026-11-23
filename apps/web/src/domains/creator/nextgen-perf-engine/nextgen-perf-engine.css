@@ -1,0 +1,435 @@
+/* 차세대 크롬 성능 엔진 진단 HUD & 8K 메모리 예산 시뮬레이터 스타일시트.
+ * OKLCH 시맨틱 토큰 · 44×44px 터치 타겟 · tabular-nums · keep-all · reduced-motion · forced-colors 준수. */
+
+.ngp-card {
+  --ngp-good-bg: oklch(0.32 0.08 156 / 0.24);
+  --ngp-good-border: oklch(0.68 0.14 156 / 0.56);
+  --ngp-good-fg: oklch(0.86 0.12 156);
+  --ngp-good-dot: oklch(0.74 0.17 154);
+
+  --ngp-warn-bg: oklch(0.38 0.09 78 / 0.24);
+  --ngp-warn-border: oklch(0.74 0.14 78 / 0.58);
+  --ngp-warn-fg: oklch(0.9 0.12 78);
+  --ngp-warn-dot: oklch(0.78 0.16 76);
+
+  --ngp-bad-bg: oklch(0.34 0.11 22 / 0.26);
+  --ngp-bad-border: oklch(0.68 0.17 22 / 0.62);
+  --ngp-bad-fg: oklch(0.86 0.14 22);
+  --ngp-bad-dot: oklch(0.68 0.2 25);
+
+  --ngp-info-bg: oklch(0.34 0.08 250 / 0.24);
+  --ngp-info-border: oklch(0.68 0.13 250 / 0.56);
+  --ngp-info-fg: oklch(0.86 0.11 250);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background-color: var(--color-panel);
+  color: var(--color-fg);
+  padding: 1rem;
+}
+
+:root[data-theme="light"] .ngp-card,
+:root[data-design-theme="light"] .ngp-card,
+:root[data-design-theme="aurora"] .ngp-card,
+:root[data-design-theme="blossom"] .ngp-card,
+:root[data-design-theme="sepia"] .ngp-card {
+  --ngp-good-bg: oklch(0.93 0.05 156);
+  --ngp-good-border: oklch(0.5 0.13 156 / 0.48);
+  --ngp-good-fg: oklch(0.3 0.11 156);
+  --ngp-good-dot: oklch(0.54 0.16 154);
+
+  --ngp-warn-bg: oklch(0.94 0.06 82);
+  --ngp-warn-border: oklch(0.54 0.13 78 / 0.48);
+  --ngp-warn-fg: oklch(0.34 0.11 72);
+  --ngp-warn-dot: oklch(0.62 0.15 76);
+
+  --ngp-bad-bg: oklch(0.93 0.05 22);
+  --ngp-bad-border: oklch(0.52 0.16 22 / 0.48);
+  --ngp-bad-fg: oklch(0.36 0.15 22);
+  --ngp-bad-dot: oklch(0.56 0.2 25);
+
+  --ngp-info-bg: oklch(0.93 0.04 250);
+  --ngp-info-border: oklch(0.5 0.13 250 / 0.48);
+  --ngp-info-fg: oklch(0.33 0.12 250);
+}
+
+.ngp-card :is(h3, h4, p, button, dt, dd, span, label) {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.ngp-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.ngp-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .ngp-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.ngp-header-lead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.ngp-sprite-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  border-radius: 0.875rem;
+  border: 1px solid var(--ngp-info-border);
+  background: var(--ngp-info-bg);
+  padding: 0.25rem;
+}
+
+.ngp-sprite-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.ngp-title-wrap {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ngp-kicker {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ngp-info-fg);
+}
+
+.ngp-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--color-fg);
+}
+
+.ngp-subtitle {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--color-fg-2);
+}
+
+.ngp-score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: flex-start;
+  border-radius: 999px;
+  border: 1px solid var(--ngp-info-border);
+  background: var(--ngp-info-bg);
+  color: var(--ngp-info-fg);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .ngp-score-pill {
+    align-self: center;
+  }
+}
+
+.ngp-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .ngp-signal-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ngp-signal-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  padding: 0.6rem 0.7rem;
+}
+
+.ngp-signal-item--good {
+  border-color: var(--ngp-good-border);
+  background: var(--ngp-good-bg);
+}
+
+.ngp-signal-item--warn {
+  border-color: var(--ngp-warn-border);
+  background: var(--ngp-warn-bg);
+}
+
+.ngp-signal-item--bad {
+  border-color: var(--ngp-bad-border);
+  background: var(--ngp-bad-bg);
+}
+
+.ngp-signal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ngp-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.ngp-dot--good {
+  background: var(--ngp-good-dot);
+}
+
+.ngp-dot--warn {
+  background: var(--ngp-warn-dot);
+}
+
+.ngp-dot--bad {
+  background: var(--ngp-bad-dot);
+}
+
+.ngp-signal-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.ngp-signal-state {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.ngp-signal-state--good {
+  color: var(--ngp-good-fg);
+}
+
+.ngp-signal-state--warn {
+  color: var(--ngp-warn-fg);
+}
+
+.ngp-signal-state--bad {
+  color: var(--ngp-bad-fg);
+}
+
+.ngp-signal-detail {
+  margin: 0;
+  font-size: 0.65rem;
+  line-height: 1.35;
+  color: var(--color-fg-2);
+}
+
+.ngp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  padding: 0.85rem;
+}
+
+.ngp-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ngp-panel-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.ngp-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ngp-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  color: var(--color-fg-2);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ngp-chip-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-fg);
+}
+
+.ngp-chip-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.ngp-chip-btn--active {
+  border-color: var(--ngp-info-border);
+  background: var(--ngp-info-bg);
+  color: var(--ngp-info-fg);
+  font-weight: 700;
+}
+
+.ngp-meter-track {
+  position: relative;
+  height: 0.55rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+
+.ngp-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ngp-meter-fill--good {
+  background: var(--ngp-good-dot);
+}
+
+.ngp-meter-fill--warn {
+  background: var(--ngp-warn-dot);
+}
+
+.ngp-meter-fill--bad {
+  background: var(--ngp-bad-dot);
+}
+
+.ngp-metrics-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .ngp-metrics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ngp-metric-box {
+  border-radius: 0.65rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  padding: 0.55rem 0.65rem;
+}
+
+.ngp-metric-box dt {
+  font-size: 0.66rem;
+  color: var(--color-fg-3);
+}
+
+.ngp-metric-box dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.ngp-summary-note {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.48;
+  color: var(--color-fg-2);
+}
+
+.ngp-split-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .ngp-split-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ngp-chip-btn,
+  .ngp-meter-fill {
+    transition: none;
+  }
+}
+
+[data-ngp-reduce-motion="true"] .ngp-chip-btn,
+[data-ngp-reduce-motion="true"] .ngp-meter-fill {
+  transition: none;
+}
+
+@media (forced-colors: active) {
+  .ngp-card,
+  .ngp-panel,
+  .ngp-signal-item,
+  .ngp-metric-box,
+  .ngp-chip-btn {
+    border: 1px solid ButtonBorder;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .ngp-chip-btn--active,
+  .ngp-meter-fill {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
