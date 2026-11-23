@@ -105,6 +105,11 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: 의존성 보안·라이선스 감사
+        run: |
+          set -euo pipefail
+          pnpm run audit:security
+          pnpm run audit:licenses
       - name: 전체 타입 검사와 빌드 입력 기록
         id: types
         run: |

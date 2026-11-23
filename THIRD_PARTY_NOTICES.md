@@ -21,14 +21,15 @@ obscure, or claim ownership of these libraries.
 | `manifold-3d` | 3.5.1 | Apache-2.0 | <https://github.com/elalish/manifold> |
 | `opencascade.js` / OpenCascade WASM | 1.1.1 | LGPL-2.1-only | <https://github.com/donalffons/opencascade.js> |
 | `rhino3dm` / openNURBS WASM | 8.32.1 | MIT | <https://github.com/mcneel/rhino3dm> |
-| `web-ifc` WASM | 0.0.77 | MPL-2.0 | <https://github.com/ThatOpen/engine_web-ifc> |
+| `web-ifc` WASM | 0.0.80 | MPL-2.0 | <https://github.com/ThatOpen/engine_web-ifc/tree/1a424038654a968d3d0655f66e132553a916c1bc> |
+| `web-ifc`에 내장된 geokernel | 0.10.0 (`web-ifc` 0.0.80) | MPL-2.0 | <https://github.com/ThatOpen/engine_web-ifc/blob/1a424038654a968d3d0655f66e132553a916c1bc/src/ts/geokernel/geokernel.js> |
 | `xatlasjs` | 0.2.0 | MIT | <https://github.com/repalash/xatlas.js> |
 | Comlink runtime embedded by `xatlasjs` | bundled in `xatlasjs` 0.2.0 | Apache-2.0 | <https://github.com/GoogleChromeLabs/comlink> |
 | `lazy-brush` | 2.0.2 | MIT | <https://github.com/dulnan/lazy-brush> |
 | `perfect-freehand` | 1.2.3 | MIT | <https://github.com/steveruizok/perfect-freehand> |
 | `p5.brush` standalone entry | 2.2.1 | MIT | <https://github.com/acamposuribe/p5.brush> |
-| `remotion` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion> |
-| `@remotion/player` | 4.0.536 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/main/packages/player> |
+| `remotion` | 4.0.545 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/f587adbd69c04c051fb2bd69ce23ae99d23d8634> |
+| `@remotion/player` | 4.0.545 | Remotion License — eligibility-based free use or Company License | <https://github.com/remotion-dev/remotion/tree/f587adbd69c04c051fb2bd69ce23ae99d23d8634/packages/player> |
 | `p5` peer resolution for `p5.brush` | 2.3.1 | LGPL-2.1 | <https://github.com/processing/p5.js> |
 | `libtess` dependency of the resolved `p5` peer | 1.2.2 | SGI-B-2.0 | <https://github.com/brendankenny/libtess.js> |
 | `hokusai-brush`, `hokusai-core`, and `hokusai-tile-mem` | 0.3.0 | MIT OR Apache-2.0 | <https://github.com/reearth/hokusai/tree/f7e998173c0e7427b95afe0b6947e3103da60f00> |
@@ -69,7 +70,7 @@ CC BY-NC 4.0이며 <https://github.com/scrtwpns/mixbox>에서 확인할 수 있�
 참조한다. 이 소스 변경과 실제 운영 배포의 갱신 여부는 별도로 검증한다.
 
 The Product Tour runtime uses `remotion` and `@remotion/player` at exactly
-`4.0.536`. These packages use the custom Remotion License rather than a standard
+`4.0.545`. These packages use the custom Remotion License rather than a standard
 SPDX license. The Free License applies only to eligible individuals, non-profit
 or not-for-profit organizations, for-profit organizations with up to three
 employees, and qualifying evaluation use. Other for-profit organizations must
@@ -83,6 +84,13 @@ metadata shape, and verifies the exact Remotion License text SHA-256
 `709033ef7160fe12db38f1d457d20094ce425aaab6ee28caaaa8014372ff869e`.
 Any package, version, metadata, or license-text change fails the production
 notice build for fresh review.
+
+`web-ifc@0.0.80`의 정확한 upstream 소스는
+<https://github.com/ThatOpen/engine_web-ifc/tree/1a424038654a968d3d0655f66e132553a916c1bc>다.
+이 버전의 API 번들에 포함된 geokernel 0.10.0은 MPL-2.0이며,
+원문의 `Copyright (c) 2026 Quim Moya.`와 MPL-2.0 파일 고지를
+생성된 배포 고지에도 보존한다. 전체 MPL-2.0 전문은 설치된 패키지의
+`LICENSE.md`에서 수집하며, 기존 Remotion 메타데이터·라이선스 해시 검증은 유지한다.
 
 ToonStudio imports `p5.brush/standalone`; that entry is self-contained and
 does not statically import the resolved `p5` peer. The production dependency

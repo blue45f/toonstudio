@@ -99,6 +99,32 @@ describe("generated third-party notice inventory", () => {
     ).toThrow("pnpm failed");
   });
 
+  it.each(["@remotion/player", "remotion"])(
+    "검토한 %s 4.0.545를 허용하고 미검토 버전·메타데이터는 거부한다",
+    (name) => {
+      const record = {
+        name,
+        versions: ["4.0.545"],
+        paths: [`/virtual/node_modules/${name}`],
+      };
+      const inventory = parsePnpmLicenseInventory(JSON.stringify({
+        "SEE LICENSE IN LICENSE.md": [record],
+      }));
+      expect(inventory).toEqual([{
+        ...record,
+        license: "Remotion License",
+        author: "",
+        homepage: "",
+      }]);
+      expect(() => parsePnpmLicenseInventory(JSON.stringify({
+        "SEE LICENSE IN LICENSE.md": [{ ...record, versions: ["4.0.546"] }],
+      }))).toThrow(/Reviewed license metadata changed/u);
+      expect(() => parsePnpmLicenseInventory(JSON.stringify({
+        MIT: [record],
+      }))).toThrow(/Reviewed license metadata changed/u);
+    },
+  );
+
   it("rejects unreviewed license expressions from pnpm", () => {
     expect(() =>
       parsePnpmLicenseInventory(
@@ -530,6 +556,12 @@ describe("generated third-party notice inventory", () => {
         },
       );
       const notice = readFileSync(outputPath, "utf8");
+      expect(notice).toContain("Copyright (c) Microsoft Corporation.");
+      expect(notice).toContain("web-ifc 0.0.80에 내장된 geokernel 0.10.0 — MPL-2.0");
+      expect(notice).toContain("Copyright (c) 2026 Quim Moya.");
+      expect(notice).toContain(
+        "https://github.com/ThatOpen/engine_web-ifc/blob/1a424038654a968d3d0655f66e132553a916c1bc/src/ts/geokernel/geokernel.js",
+      );
       expect(notice).toContain("## Pinned Hokusai Rust/WASM inventory");
       expect(notice).toContain(
         "| `hokusai-core` | 0.3.0 | MIT OR Apache-2.0 |",
