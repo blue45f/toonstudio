@@ -1,4 +1,5 @@
 import { StudioHandoffEnvelopeController, StudioHandoffEnvelopeService } from "./studio-handoff-envelope.controller";
+import { CreatorOfflineOwnerReceiptController } from "./creator-offline-owner-receipt.controller";
 import { StudioHandoffEnvelopeRepository } from "./studio-handoff-envelope.repository";
 import { StudioScopedWriteController, StudioScopedWriteService } from "./studio-scoped-write.controller";
 import { StudioScopedWriteRepository } from "./studio-scoped-write.repository";
@@ -94,6 +95,7 @@ const privateObjectStorageModule =
   ],
   controllers: [
     CreatorController,
+    CreatorOfflineOwnerReceiptController,
     CreatorRoleWorkspaceController,
     StudioLiveAuthTicketController,
     StudioRasterAssetController,

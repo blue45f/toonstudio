@@ -110,10 +110,7 @@ export function StudioSaveStatusBar({
         "Save could not be confirmed. Please retry before closing this page.",
       ));
     } else if (kind === "connection-lost") {
-      setAnnouncement(bi(
-        "연결이 끊겼습니다. 작업은 이 기기에 계속 저장됩니다.",
-        "Connection lost. Your work keeps saving on this device.",
-      ));
+      setAnnouncement(bi("연결이 끊겼습니다.", "Connection lost."));
     } else if (kind === "recovered") {
       setAnnouncement(hasLocalReceipt
         ? bi(

@@ -2,6 +2,7 @@ import { synchronizeServerSessionState } from "@/domains/auth/public/session/aut
 
 import type { WorkDetail } from "@/platform/creator-client";
 
+import { forgetOfflineOwnerReceipt, readOfflineOwnerReceipt } from "../../offline/studio-offline-owner-receipt";
 import type { StudioSharedDocument } from "../../studio-shared-document-client";
 
 interface StudioDocumentSourceSession {
@@ -49,7 +50,20 @@ export async function loadStudioDocumentSource(options: StudioDocumentSourceSess
     const { getStudioSharedDocument } = await import("../../studio-shared-document-client");
     signal.throwIfAborted();
     if (!isCurrent()) return null;
-    const shared = await getStudioSharedDocument(workId, signal);
+    let shared: StudioSharedDocument;
+    try {
+      shared = await getStudioSharedDocument(workId, signal);
+    } catch (error) {
+      if (!signal.aborted && isCurrent() && error instanceof Error && "status" in error
+        && [401, 403, 404].some(status => status === error.status)) forgetOfflineOwnerReceipt(workId);
+      throw error;
+    }
+    if (!isCurrent() || signal.aborted) return null;
+    if (shared.role === "owner") {
+      void readOfflineOwnerReceipt(workId, signal, true);
+    } else {
+      forgetOfflineOwnerReceipt(workId);
+    }
     return { work: shared.document, remixAuthorName: "", shared, detail: null };
   }
   const { getWork } = await import("@/platform/creator-client");

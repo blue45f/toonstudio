@@ -1,3 +1,4 @@
+import { invalidateOfflinePreviewScope } from "./offline-preview-scope";
 import {
   clientTokenExpiresAt,
   clearLegacyLocalSessionStorage,
@@ -86,6 +87,7 @@ function transitionSession(
 ): Session {
   const previousSession = currentSession;
   const normalized = persist ? persistClientSession(session) : normalizeClientSession(session);
+  if (persist && (!normalized || previousSession?.user.id !== normalized.user.id)) invalidateOfflinePreviewScope();
   currentSession = normalized;
   if (normalized !== null) lastUnauthorizedDropHadSession = false;
   sessionRevision += 1;

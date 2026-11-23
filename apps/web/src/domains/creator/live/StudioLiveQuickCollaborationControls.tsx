@@ -135,15 +135,12 @@ export function StudioLiveQuickCollaborationControls({
         }
         if (event.status.state === "ready" && sawDisconnectRef.current) {
           sawDisconnectRef.current = false;
-          const syncedAt = Date.now();
-          rollingSummaryRef.current?.recordReconnect(syncedAt);
+          rollingSummaryRef.current?.recordReconnect(Date.now());
           const localCommitLabel =
             lastLocalCommitRef.current !== null
               ? ` · 로컬 저장 ${formatClockTime(lastLocalCommitRef.current)}`
               : "";
-          setRecoveryBadge(
-            `동기화 복구됨 · 유실 0획${localCommitLabel} · 동기화 ${formatClockTime(syncedAt)}`,
-          );
+          setRecoveryBadge(`공동 편집 연결 복구됨${localCommitLabel}`);
           if (recoveryTimerRef.current !== null) {
             globalThis.clearTimeout(recoveryTimerRef.current);
           }

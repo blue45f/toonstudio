@@ -272,7 +272,6 @@ import {
 } from "./studio-assets";
 import {
   LEGACY_STUDIO_AUTOSAVE_KEY,
-  readStudioAutosave,
   studioLifecycleAutosaveSidecarKey,
   studioSharedAutosaveCompatibility,
   type StudioAutosavePayload,
@@ -687,6 +686,7 @@ import {
   downloadStudioAutosaveBackup,
   guardStudioDocumentReplacement,
   requestStudioAutosaveClear,
+  readStudioCompatibilityRecovery,
   restoreStudioAutosaveRecovery,
 } from "./studio-page-autosave-runtime";
 import {
@@ -1131,6 +1131,7 @@ import { useStudioProDrawPrefs } from "./useStudioProDrawPrefs";
 import { useStudioProjectArchiveOrchestration } from "./useStudioProjectArchiveOrchestration";
 import { studioProjectBackupUnavailableReason } from "./save-first/backup-readiness";
 import { createStudioInitialRecoveryAdmission, guardStudioInitialRecoveryPointer } from "./save-first/initial-recovery";
+import { useStudioSharedRecoveryVisit } from "./save-first/use-studio-shared-recovery-visit";
 import { useStudioRasterExportOrchestration } from "./useStudioRasterExportOrchestration";
 import { StudioPendingStrokeAdmissionQueue } from "./live/studio-pending-stroke-admission";
 import { hasUnpersistedStudioPendingStrokeCheckpoints } from "./studio-rejected-stroke-recovery";
@@ -3489,6 +3490,9 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   // B covers standalone local drafts only; shared/scoped writers retain their existing policy.
   const initialRecoveryLocalDraft = Boolean(studioRoute.draftId) && !workId && !remixId
     && !expectsSharedDocument && !joinedStudioLiveJam;
+  const sharedRecoveryVisit = useStudioSharedRecoveryVisit(
+    autosaveKey, studioAuthUserId, workId, sharedDocument?.revision, sharedDocument?.access === "edit",
+  );
   const [initialRecoveryChecked, setInitialRecoveryChecked] = useState(false);
   const [initialRecoveryAdmission] = useState(() => createStudioInitialRecoveryAdmission(
     initialRecoveryLocalDraft ? autosaveKey : null,
@@ -6535,6 +6539,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       setAutosaveChecked(true);
       return;
     }
+    if (sharedRecoveryVisit?.resolved()) return;
     setAutosaveCheckFailed(false);
     setAutosaveCheckedDocumentKey(null);
     setAutosaveChecked(false);
@@ -6547,6 +6552,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
           | import("./studio-autosave-opfs-session").StudioAutosaveRecoveryCandidate
           | null;
         let recoveryCheckFailed: boolean;
+        let confirmedEmpty = false;
         try {
           const [
             { reconcileStudioAutosaveWithOpfsPrimary },
@@ -6566,27 +6572,9 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
           });
           saved = reconciliation.candidate;
           recoveryCheckFailed = reconciliation.authority === null;
+          confirmedEmpty = !saved && !recoveryCheckFailed && !reconciliation.emptyReadIncomplete;
         } catch (cause) {
-          let compatibility: ReturnType<typeof readStudioAutosave> = null;
-          try {
-            compatibility = readStudioAutosave(
-              globalThis.localStorage,
-              autosaveKey,
-              false,
-            );
-          } catch {
-            // localStorage is compatibility-only; denial must not fabricate a recovery candidate.
-          }
-          saved = compatibility
-            ? Object.freeze({
-                key: compatibility.key,
-                authority: "browser-storage-compatibility" as const,
-                savedAt: compatibility.payload.savedAt,
-                sequence: null,
-                revision: null,
-                payload: compatibility.payload,
-              })
-            : null;
+          saved = readStudioCompatibilityRecovery(autosaveKey);
           recoveryCheckFailed = saved === null;
           reportStudioSaveAuthorityDegraded(cause);
           if (import.meta.env.DEV) {
@@ -6596,6 +6584,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         if (cancelled) return;
         setInitialRecoveryChecked(!recoveryCheckFailed);
         autosaveRecoveryCandidateRef.current = saved;
+        if (confirmedEmpty) sharedRecoveryVisit?.resolve();
         const compatibilityOnly =
           saved?.authority === "browser-storage-compatibility";
         const compatibility =
@@ -6636,9 +6625,15 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     collaborationDocumentLocked,
     remixId,
     sharedDocument,
+    sharedRecoveryVisit,
     workHydrated,
     workId,
   ]);
+
+  function setRecoveryAvailable(available: boolean) {
+    if (!available) sharedRecoveryVisit?.resolve();
+    setHasAutosave(available);
+  }
 
   // Autosave runtime owns these actions; wrappers preserve effect dependency tracking.
   function prepareStudioDocumentReplacement(
@@ -6683,7 +6678,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       setCurrentPageId: (next) => setCurrentPageId(next),
       setDescription,
       setError: (message) => setError(message),
-      setHasAutosave,
+      setHasAutosave: setRecoveryAvailable,
       setMaster,
       setPagesHi,
       setPagesHistory,
@@ -6725,7 +6720,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       }),
       remixId,
       setAutosaveRestoreBlockedReason,
-      setHasAutosave,
+      setHasAutosave: setRecoveryAvailable,
       workId,
     });
   }

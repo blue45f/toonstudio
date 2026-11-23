@@ -85,11 +85,12 @@ describe("resolveStudioDraftSaveCenter", () => {
     expect(model.saveActionLabel).toBe("초안 저장 계속");
   });
 
-  it("does not call an offline document cloud-saved", () => {
+  it("오프라인에서 쓰기 권한만 있는 원고에 기기 저장이나 서버 저장을 알리지 않는다", () => {
     const model = resolveStudioDraftSaveCenter(input({ isOnline: false }));
 
     expect(model.phase).toBe("offline");
-    expect(model.compactLabel).toBe("오프라인 · 기기 저장");
+    expect(model.compactLabel).toBe("오프라인");
+    expect(model.ariaLiveMessage).toBe("오프라인. 서버 연결 없이 작업 중이에요");
     expect(model.server.title).toBe("서버는 오프라인");
     expect(model.saveActionLabel).toBe("연결 후 저장 예약");
     expect(model.saveActionDisabled).toBe(false);
