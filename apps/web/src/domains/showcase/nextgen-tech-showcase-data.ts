@@ -8,7 +8,13 @@
 
 import type { BilingualText } from "./competitor-benchmark-data";
 
-export type TechTabId = "architecture" | "remotion" | "ai-skills" | "chrome-apis";
+export type TechTabId =
+  | "architecture"
+  | "remotion"
+  | "ai-skills"
+  | "chrome-apis"
+  | "llm-mcp-api"
+  | "papers-rd";
 
 export interface TechArchitectureCard {
   readonly id: string;

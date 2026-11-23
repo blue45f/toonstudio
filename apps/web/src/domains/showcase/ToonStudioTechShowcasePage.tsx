@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  BookOpen,
   Bot,
   Check,
   CheckCircle2,
@@ -10,6 +11,7 @@ import {
   Film,
   Gauge,
   Layers,
+  Plug,
   RefreshCw,
   Scale,
   Sparkles,
@@ -35,6 +37,10 @@ import {
   type ViewTransitionResult,
 } from "./nextgen-web-platform-enhancer";
 import { TECH_SHOWCASE_PAGE_COPY } from "./showcase-ui-copy";
+import {
+  TechLlmMcpApiPanel,
+  TechResearchPapersAndUxPanel,
+} from "./TechLlmMcpAndResearchTabs";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -128,6 +134,8 @@ export function ToonStudioTechShowcasePage() {
     { id: "remotion", label: copy.tabRemotion, icon: Film },
     { id: "ai-skills", label: copy.tabAiSkills, icon: Bot },
     { id: "chrome-apis", label: copy.tabChromeApis, icon: Gauge },
+    { id: "llm-mcp-api", label: copy.tabLlmMcpApi, icon: Plug },
+    { id: "papers-rd", label: copy.tabPapersRd, icon: BookOpen },
   ];
 
   return (
@@ -562,6 +570,9 @@ export function ToonStudioTechShowcasePage() {
               </div>
             </section>
           ) : null}
+
+          {activeTab === "llm-mcp-api" ? <TechLlmMcpApiPanel locale={locale} /> : null}
+          {activeTab === "papers-rd" ? <TechResearchPapersAndUxPanel locale={locale} /> : null}
         </div>
 
         {/* 4. 하단 크로스 링크 */}

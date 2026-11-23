@@ -122,6 +122,8 @@ export const TECH_SHOWCASE_PAGE_COPY = {
     tabRemotion: "Remotion 파이프라인",
     tabAiSkills: "AI 개발 스킬",
     tabChromeApis: "차세대 크롬 API 라이브 프로브",
+    tabLlmMcpApi: "범용 LLM · CLI · MCP · API",
+    tabPapersRd: "논문 근거 · 전 페이지 UX 설계",
     archHeading: "ToonStudio 8대 핵심 엔지니어링 아키텍처",
     archSubtitle:
       "모든 카드는 실제 저장소 경로와 실행 계약을 기준으로 정리했습니다. 구현 완료와 점진 확장 영역을 명확히 구분합니다.",
@@ -170,6 +172,8 @@ export const TECH_SHOWCASE_PAGE_COPY = {
     tabRemotion: "Remotion Pipeline",
     tabAiSkills: "AI Dev Skills",
     tabChromeApis: "Next-Gen Chrome API Probe",
+    tabLlmMcpApi: "Universal LLM · CLI · MCP · API",
+    tabPapersRd: "Papers · Sitewide UX Architecture",
     archHeading: "8 Core Engineering Pillars Behind ToonStudio",
     archSubtitle:
       "Every card links to verified repository modules and explicitly separates Current implementations from Expanding tracks.",
