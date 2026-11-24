@@ -86,7 +86,7 @@ export interface StudioDraftSaveCenterProps {
   readonly workId?: string | null;
   readonly workHydrated?: boolean;
   readonly workHydrationFailed?: boolean;
-  readonly offlineReadOnlyPreview?: boolean;
+  readonly offlinePreviewPhase?: StudioDraftSaveCenterInput["offlinePreviewPhase"];
   readonly pendingSaveIntent?: "draft" | "published" | null;
   readonly loadedWork?: StudioDraftSaveWorkView | null;
   readonly sharedDocument?: StudioDraftSaveSharedDocumentView | null;
@@ -187,7 +187,7 @@ export function StudioDraftSaveCenter({
   workId = null,
   workHydrated = true,
   workHydrationFailed = false,
-  offlineReadOnlyPreview = false,
+  offlinePreviewPhase,
   pendingSaveIntent = null,
   loadedWork = null,
   sharedDocument = null,
@@ -256,7 +256,7 @@ export function StudioDraftSaveCenter({
     isOnline,
     hydrated: workHydrated,
     hydrationFailed: workHydrationFailed,
-    offlineReadOnlyPreview,
+    offlinePreviewPhase,
     metadataRequired: pendingSaveIntent === "draft",
     saving,
     deferredSave,
@@ -285,7 +285,7 @@ export function StudioDraftSaveCenter({
     durableSaveIntent.entry,
     hasServerDocument,
     isOnline,
-    offlineReadOnlyPreview,
+    offlinePreviewPhase,
     lastServerSaveAt,
     pendingSaveIntent,
     reliability.save,

@@ -46,14 +46,25 @@ const failedStorageSignal = {
 };
 
 describe("resolveStudioDraftSaveCenter", () => {
+  it("오프라인 사본을 확인하는 동안 저장 완료나 불러오기 실패를 표시하지 않는다", () => {
+    const cold = input({ isOnline: false, hydrated: false, hydrationFailed: true, offlinePreviewPhase: "checking" });
+    expect(resolveStudioDraftSaveCenter(cold)).toMatchObject({
+      phase: "loading", tone: "progress", compactLabel: "기기 사본 확인 중",
+      saveActionLabel: "기기 사본 확인 중", saveActionDisabled: true,
+      server: { title: "오프라인" }, device: { title: "기기 사본 확인 중" },
+    });
+    expect(resolveStudioDraftSaveCenter(cold, (_ko, en) => en).compactLabel).toBe("Checking the on-device copy");
+    expect(resolveStudioDraftSaveCenter({ ...cold, isOnline: true }).phase).toBe("load-risk");
+  });
+
   it("확인한 오프라인 기기 사본을 읽기 전용으로 안내하고 서버 저장은 계속 잠근다", () => {
-    const coldDraft = input({ isOnline: false, hydrated: false, hydrationFailed: true, offlineReadOnlyPreview: true });
+    const coldDraft = input({ isOnline: false, hydrated: false, hydrationFailed: true, offlinePreviewPhase: "visible" });
     const status = resolveStudioDraftSaveCenter(coldDraft);
     expect(status).toMatchObject({
       phase: "offline", compactLabel: "읽기 전용", saveActionDisabled: true,
       device: { title: "기기에 저장된 원고" }, server: { title: "오프라인" },
     });
-    expect(resolveStudioDraftSaveCenter({ ...coldDraft, offlineReadOnlyPreview: false })).toMatchObject({
+    expect(resolveStudioDraftSaveCenter({ ...coldDraft, offlinePreviewPhase: undefined })).toMatchObject({
       phase: "load-risk", primaryAction: "versions", saveActionLabel: "버전·복구 열기",
     });
     const english = resolveStudioDraftSaveCenter(coldDraft, (_ko, en) => en);

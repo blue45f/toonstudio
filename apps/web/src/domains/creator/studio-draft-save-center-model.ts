@@ -1,3 +1,4 @@
+import type { StudioOfflinePreviewPhase } from "./offline/studio-offline-owner-preview-visibility";
 /**
  * Draft-save status projection for the Studio chrome.
  *
@@ -61,7 +62,7 @@ export interface StudioDraftSaveCenterInput {
   readonly isOnline: boolean;
   readonly hydrated: boolean;
   readonly hydrationFailed: boolean;
-  readonly offlineReadOnlyPreview?: boolean;
+  readonly offlinePreviewPhase?: StudioOfflinePreviewPhase;
   readonly metadataRequired: boolean;
   readonly saving: boolean;
   readonly durableSaveIntentPending?: boolean;
@@ -306,15 +307,19 @@ export function resolveStudioDraftSaveCenter(
   t: (ko: string, en: string) => string = (ko) => ko,
 ): StudioDraftSaveCenterViewModel {
   const localRisk = hasLocalDurabilityRisk(input);
-  const showingPreview = input.offlineReadOnlyPreview && !input.isOnline && !input.hydrated;
-  const device: StudioDraftSaveStatusSection = showingPreview && !localRisk
+  const preview = !input.isOnline && !input.hydrated ? input.offlinePreviewPhase : undefined;
+  const checkingLabel = preview === "checking" ? t("기기 사본 확인 중", "Checking the on-device copy") : null;
+  const previewLabel = checkingLabel ?? (preview === "visible" ? t("읽기 전용", "Read-only") : null);
+  const device: StudioDraftSaveStatusSection = checkingLabel && !localRisk
+    ? { tone: "progress", title: checkingLabel, detail: t("원고의 열람 권한과 기기 사본을 확인하고 있어요.", "Checking access to this manuscript and its on-device copy.") }
+    : preview === "visible" && !localRisk
     ? {
       tone: "neutral",
       title: t("기기에 저장된 원고", "On-device manuscript"),
       detail: t("저장된 사본을 읽기 전용으로 열었어요.", "The saved copy is open in read-only mode."),
     }
     : deviceSection(input);
-  const server: StudioDraftSaveStatusSection = showingPreview
+  const server: StudioDraftSaveStatusSection = preview
     ? {
       tone: "neutral",
       title: t("오프라인", "Offline"),
@@ -333,13 +338,13 @@ export function resolveStudioDraftSaveCenter(
   let headline: string;
   let detail: string;
 
-  if (showingPreview && !localRisk) {
-    phase = "offline";
-    tone = "neutral";
-    compactLabel = t("읽기 전용", "Read-only");
-    headline = device.title;
+  if (previewLabel && !localRisk) {
+    phase = preview === "checking" ? "loading" : "offline";
+    tone = device.tone;
+    compactLabel = previewLabel;
+    headline = preview === "checking" ? device.detail : device.title;
     detail = server.detail;
-  } else if (input.hydrationFailed && !showingPreview) {
+  } else if (input.hydrationFailed && !preview) {
     phase = "load-risk";
     tone = "danger";
     compactLabel = "원고 복구 확인";
@@ -483,7 +488,7 @@ export function resolveStudioDraftSaveCenter(
     device,
     server,
     primaryAction,
-    saveActionLabel: showingPreview ? t("읽기 전용", "Read-only") : saveActionLabel,
+    saveActionLabel: previewLabel ?? saveActionLabel,
     saveActionDisabled,
     canOpenVersions: true,
     shouldPromoteBackup: localRisk

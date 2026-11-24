@@ -3,28 +3,35 @@ import { getAuthUserId, listeners } from "@/domains/auth/public/session/auth-ses
 import { OFFLINE_PREVIEW_SCOPE_KEY } from "@/domains/auth/public/session/offline-preview-scope";
 import { offlineWorkCacheKey, readOfflineOwnerReceipt, type StudioOfflineOwnerReceipt } from "./studio-offline-owner-receipt";
 
-export function useStudioOfflineOwnerPreviewGrant(workId: string): StudioOfflineOwnerReceipt | null {
-  const [receipt, setReceipt] = useState<StudioOfflineOwnerReceipt | null>(null);
+/** undefined는 현재 원고의 영수증을 조회 중, null은 열람할 수 없음을 뜻한다. */
+export function useStudioOfflineOwnerPreviewGrant(workId: string): StudioOfflineOwnerReceipt | null | undefined {
+  const [result, setResult] = useState<{ workId: string; receipt: StudioOfflineOwnerReceipt | null }>();
   useEffect(() => {
     let timer: number | undefined;
     let request: AbortController | undefined;
     function clear() {
       request?.abort();
       window.clearTimeout(timer);
-      setReceipt(null);
+      setResult({ workId, receipt: null });
     }
     function check() {
       clear();
       if (navigator.onLine || document.visibilityState === "hidden" || !workId) return;
       const controller = new AbortController();
       request = controller;
+      setResult(undefined);
       void readOfflineOwnerReceipt(workId, controller.signal).then(value => {
         const actor = getAuthUserId();
-        if (!value || controller.signal.aborted || navigator.onLine || (actor && actor !== value.userId)) return;
-        const remaining = value.expiresAt - Date.now();
-        if (remaining <= 0) return;
-        setReceipt(value);
+        if (controller.signal.aborted) return;
+        const remaining = value ? value.expiresAt - Date.now() : 0;
+        if (!value || navigator.onLine || (actor && actor !== value.userId) || remaining <= 0) {
+          clear();
+          return;
+        }
+        setResult({ workId, receipt: value });
         timer = window.setTimeout(clear, remaining);
+      }, () => {
+        if (!controller.signal.aborted) clear();
       });
     }
     function changed(event: StorageEvent) {
@@ -54,6 +61,9 @@ export function useStudioOfflineOwnerPreviewGrant(workId: string): StudioOffline
       window.removeEventListener("focus", check);
     };
   }, [workId]);
+  if (!workId || typeof document === "undefined" || navigator.onLine || document.visibilityState === "hidden") return null;
+  if (result?.workId !== workId) return undefined;
+  const { receipt } = result;
   const actor = getAuthUserId();
-  return receipt && !navigator.onLine && receipt.workId === workId && (!actor || actor === receipt.userId) ? receipt : null;
+  return receipt && receipt.workId === workId && (!actor || actor === receipt.userId) ? receipt : null;
 }

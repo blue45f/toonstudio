@@ -1,4 +1,11 @@
 import { createContext } from "react";
 
-/** 실제로 표시된 기기 사본의 원고 ID만 편집기 상태 영역에 알린다. */
-export const StudioOfflineOwnerPreviewVisibility = createContext<((workId: string | null) => void) | null>(null);
+export type StudioOfflinePreviewPhase = "checking" | "visible";
+
+export interface StudioOfflinePreviewDisplay {
+  readonly workId: string;
+  readonly phase: StudioOfflinePreviewPhase;
+}
+
+/** 상태 영역은 현재 화면의 사본 확인 안내 또는 실제 읽기 전용 그림을 따른다. */
+export const StudioOfflineOwnerPreviewVisibility = createContext<((display: StudioOfflinePreviewDisplay | null) => void) | null>(null);

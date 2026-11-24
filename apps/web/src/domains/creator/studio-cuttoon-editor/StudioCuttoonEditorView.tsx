@@ -20,7 +20,7 @@ import { StudioWorkspaceNavigator } from "../StudioWorkspaceNavigator";
 import { Container } from "@/shared/components/container";
 import { cn } from "@/shared/lib/utils";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
-import { StudioOfflineOwnerPreviewVisibility } from "../offline/studio-offline-owner-preview-visibility";
+import { StudioOfflineOwnerPreviewVisibility, type StudioOfflinePreviewDisplay } from "../offline/studio-offline-owner-preview-visibility";
 import { StudioCuttoonEditorChrome } from "./StudioCuttoonEditorChrome";
 import { StudioCuttoonEditorDialogs } from "./StudioCuttoonEditorDialogs";
 import { StudioCuttoonEditorHosts } from "./StudioCuttoonEditorHosts";
@@ -58,9 +58,10 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
 
 function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity();
-  const [previewWorkId, setPreviewWorkId] = useState<string | null>(null);
-  const offlineReadOnlyPreview = previewWorkId !== null && previewWorkId === s.workId && s.sourceHydrationPending;
-  const visibleError = offlineReadOnlyPreview && s.error === s.workHydrationError ? null : s.error;
+  const [previewDisplay, setPreviewDisplay] = useState<StudioOfflinePreviewDisplay | null>(null);
+  const offlinePreviewPhase = previewDisplay && previewDisplay.workId === s.workId && s.sourceHydrationPending
+    ? previewDisplay.phase : undefined;
+  const visibleError = offlinePreviewPhase && s.error === s.workHydrationError ? null : s.error;
   const {
     activePage,
     appSettings,
@@ -243,7 +244,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
           workId={s.workId}
           workHydrated={s.workHydrated}
           workHydrationFailed={s.workHydrationFailed}
-          offlineReadOnlyPreview={offlineReadOnlyPreview}
+          offlinePreviewPhase={offlinePreviewPhase}
           pendingSaveIntent={s.pendingSaveIntent}
           loadedWork={s.loadedWork}
           sharedDocument={s.sharedDocument}
@@ -265,7 +266,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         />
         </Suspense>
         {s.scopedWriteRuntime ? <StudioScopedWriteTargetPicker runtime={s.scopedWriteRuntime} currentPageId={s.currentPageId} onPage={s.setCurrentPageId} onLayer={s.onScopedWriteLayer} onDraw={() => { s.activatePrimaryCanvasTool("draw", "pen"); }} /> : null}
-        <StudioOfflineOwnerPreviewVisibility.Provider value={setPreviewWorkId}>
+        <StudioOfflineOwnerPreviewVisibility.Provider value={setPreviewDisplay}>
           <StudioCuttoonEditorWorkspace {...s} />
         </StudioOfflineOwnerPreviewVisibility.Provider>
         {s.contextMenu.visible && <Suspense fallback={null}><StudioCuttoonEditorContextMenu {...s} /></Suspense>}

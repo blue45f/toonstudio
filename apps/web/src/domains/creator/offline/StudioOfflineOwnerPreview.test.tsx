@@ -61,20 +61,37 @@ describe("오프라인 본인 원고 미리보기", () => {
       </StudioOfflineOwnerPreviewVisibility.Provider>
     );
     const view = render(content());
-    expect(screen.getByRole("alert")).toBeTruthy();
-    expect(visible).not.toHaveBeenCalled();
+    expect(screen.getByRole("status").textContent).toBe("기기 사본 확인 중");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(visible).toHaveBeenLastCalledWith({ workId, phase: "checking" });
     await act(async () => { finishRead(saved); });
     const figure = await screen.findByRole("figure");
     expect(figure.id).toBe("source-status");
     expect(figure.querySelectorAll("polyline")).toHaveLength(10);
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(visible).toHaveBeenLastCalledWith(workId);
+    expect(visible).toHaveBeenLastCalledWith({ workId, phase: "visible" });
 
     io.grant.mockReturnValue(null);
     view.rerender(content());
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.queryByRole("figure")).toBeNull();
     expect(visible).toHaveBeenLastCalledWith(null);
+  });
+
+  it("권한 확인과 사본 조회가 끝날 때까지 기다리고 두 저장소가 비어 있으면 실패 안내를 복원한다", async () => {
+    io.grant.mockReturnValue(undefined);
+    const read = Promise.withResolvers<null>();
+    io.read.mockReturnValue(read.promise);
+    const content = () => <StudioOfflineOwnerPreview workId={workId}><p role="alert">원고를 열지 못했어요</p></StudioOfflineOwnerPreview>;
+    const view = render(content());
+    expect(screen.getByRole("status").textContent).toBe("기기 사본 확인 중");
+    expect(io.open).not.toHaveBeenCalled();
+    io.grant.mockReturnValue(owner);
+    view.rerender(content());
+    expect(screen.queryByRole("alert")).toBeNull();
+    await act(async () => { read.resolve(null); });
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.queryByText("기기 사본 확인 중")).toBeNull();
   });
 
   it.each(["opfs", "sqlite"])("%s 영속본에서 같은 원고의 실제 10획을 읽기 전용으로 그린다", async (source) => {
