@@ -88,6 +88,16 @@ const LazyStudioFeatureAtlasPanel = lazy(async () => {
   const m = await import("../studio-feature-atlas/StudioFeatureAtlasPanel");
   return { default: m.StudioFeatureAtlasPanel };
 });
+const LazyStudioHandcraftedAtelierPanel = lazy(async () => {
+  await import("../handcrafted-atelier-feel");
+  const m = await import("../handcrafted-atelier-feel/StudioHandcraftedAtelierPanel");
+  return { default: m.StudioHandcraftedAtelierPanel };
+});
+const LazyStudioOnboardingDioramaPanel = lazy(async () => {
+  await import("../onboarding-diorama-craft");
+  const m = await import("../onboarding-diorama-craft/StudioOnboardingDioramaPanel");
+  return { default: m.StudioOnboardingDioramaPanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -106,7 +116,9 @@ type CreatorLabTabId =
   | "cameraLensBlocking"
   | "spatialStage"
   | "canvasOrbitalUx"
-  | "featureAtlas";
+  | "featureAtlas"
+  | "handcraftedAtelier"
+  | "onboardingDiorama";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -130,6 +142,8 @@ const CREATOR_LAB_TABS: readonly {
   { id: "spatialStage", labelKo: "가상 스튜디오 3D HRTF·공간 라이트박스", labelEn: "Virtual Studio 3D HRTF · Spatial Desk" },
   { id: "canvasOrbitalUx", labelKo: "오비탈 휠·⌘K·태블릿 듀얼·모바일 도크", labelEn: "Orbital Wheel · ⌘K · Tablet/Mobile UX" },
   { id: "featureAtlas", labelKo: "전체 기능 아틀라스·10분 실습·8대 쇼케이스", labelEn: "Feature Atlas · 10-Min Manual · Showcase" },
+  { id: "handcraftedAtelier", labelKo: "수공예 아날로그 지터·물리 관성·적응형 워크벤치", labelEn: "Analog Jitter · Tactile Physics · Adaptive Bench" },
+  { id: "onboardingDiorama", labelKo: "절차적 2.5D 온보딩 디오라마·창작자 맞춤 매처", labelEn: "2.5D Onboarding Diorama · Creator Matcher" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -168,6 +182,10 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Compass size={15} aria-hidden="true" />;
     case "featureAtlas":
       return <CheckCircle2 size={15} aria-hidden="true" />;
+    case "handcraftedAtelier":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "onboardingDiorama":
+      return <Camera size={15} aria-hidden="true" />;
   }
 }
 
@@ -233,6 +251,8 @@ export function CreatorLabHardwareHubPanel() {
           {active === "spatialStage" ? <LazyStudioSpatialStagePanel /> : null}
           {active === "canvasOrbitalUx" ? <LazyStudioCanvasOrbitalUxPanel /> : null}
           {active === "featureAtlas" ? <LazyStudioFeatureAtlasPanel /> : null}
+          {active === "handcraftedAtelier" ? <LazyStudioHandcraftedAtelierPanel /> : null}
+          {active === "onboardingDiorama" ? <LazyStudioOnboardingDioramaPanel /> : null}
         </Suspense>
       </div>
     </section>
