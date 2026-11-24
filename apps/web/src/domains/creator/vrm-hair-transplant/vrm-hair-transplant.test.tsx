@@ -533,9 +533,22 @@ describe("크로스 VRM 실물 헤어 추출 · 두개골 정렬 · 본 웨이�
 });
 
 describe("StudioVrmHairTransplantPanel UI 렌더링 · 인터랙션 · 정책 위생 검증", () => {
-  it("필수 props 0개로 단독 렌더링되며 쇼케이스 도너·타깃 비율 전환·슬라이더·원클릭 이식/원복이 동작한다", () => {
+  it("props 없이 열면 계획 계산만 수행하고 실제 씬 적용 성공을 표시하지 않는다", () => {
+    render(<StudioVrmHairTransplantPanel />);
+    expect(screen.getByTestId("vrm-hair-apply-btn").textContent).toBe("이식 계획 계산");
+    expect(screen.getByTestId("vrm-hair-physics-status").textContent).toContain("물리 업데이트는 연결되지 않았습니다");
+    fireEvent.click(screen.getByTestId("vrm-hair-apply-btn"));
+    expect(screen.getByTestId("vrm-hair-plan-status").textContent).toContain("3D 씬 미반영");
+    expect(screen.queryByTestId("vrm-hair-applied-status")).toBeNull();
+    expect(screen.queryByText(/이식 적용 완료/u)).toBeNull();
+    expect(screen.getByTestId("vrm-hair-rollback-btn").textContent).toBe("계획 지우기");
+  });
+
+  it("쇼케이스 프리셋 전환·슬라이더·계획 계산/지우기를 지원하며 실제 적용 콜백은 호출하지 않는다", () => {
+    const onPlan = vi.fn<(manifest: VrmHairTransplantManifest) => void>();
     const onApply = vi.fn<(manifest: VrmHairTransplantManifest) => void>();
-    render(<StudioVrmHairTransplantPanel onApplyTransplant={onApply} />);
+    const onLiveHandleChange = vi.fn<(handle: VrmHairTransplantResultHandle | null) => void>();
+    render(<StudioVrmHairTransplantPanel onPlanCalculated={onPlan} onApplyTransplant={onApply} onLiveHandleChange={onLiveHandleChange} />);
 
     expect(screen.getByTestId("vrm-hair-transplant-panel")).toBeTruthy();
     expect(screen.getByTestId("vrm-hair-donor-lumi-long-straight")).toBeTruthy();
@@ -561,16 +574,20 @@ describe("StudioVrmHairTransplantPanel UI 렌더링 · 인터랙션 · 정책 �
     fireEvent.change(screen.getByTestId("vrm-hair-offset-y-slider"), { target: { value: "4" } });
     expect(screen.getByTestId("vrm-hair-manifest-signature").textContent).not.toBe(sigBefore);
 
-    // 원클릭 이식 실행 및 매니페스트 콜백·원복 검증.
+    // 계획 계산 콜백은 실제 이식 및 라이브 핸들 콜백과 구분한다.
     fireEvent.click(screen.getByTestId("vrm-hair-apply-btn"));
-    expect(onApply).toHaveBeenCalledTimes(1);
-    const applied = onApply.mock.calls[0]![0];
-    expect(applied.donorId).toBe("seoyeon-wave");
-    expect(applied.targetProportionId).toBe("sd-chibi-30");
-    expect(screen.getByTestId("vrm-hair-applied-status")).toBeTruthy();
+    expect(onPlan).toHaveBeenCalledTimes(1);
+    const planned = onPlan.mock.calls[0]?.[0];
+    expect(planned?.donorId).toBe("seoyeon-wave");
+    expect(planned?.targetProportionId).toBe("sd-chibi-30");
+    expect(onApply).not.toHaveBeenCalled();
+    expect(onLiveHandleChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId("vrm-hair-plan-status").textContent).toContain("3D 씬 미반영");
+    expect(screen.queryByTestId("vrm-hair-applied-status")).toBeNull();
 
     fireEvent.click(screen.getByTestId("vrm-hair-rollback-btn"));
-    expect(screen.queryByTestId("vrm-hair-applied-status")).toBeNull();
+    expect(screen.queryByTestId("vrm-hair-plan-status")).toBeNull();
+    expect(onLiveHandleChange).not.toHaveBeenCalled();
   });
 
   it("라이브 donorVrm / targetVrm 연결 시 UI 버튼으로 실제 3D 이식 및 원복을 수행한다", () => {
@@ -602,10 +619,12 @@ describe("StudioVrmHairTransplantPanel UI 렌더링 · 인터랙션 · 정책 �
     });
 
     const handles: (VrmHairTransplantResultHandle | null)[] = [];
+    const onApply = vi.fn<(manifest: VrmHairTransplantManifest) => void>();
     render(
       <StudioVrmHairTransplantPanel
         donorVrm={donor.vrm}
         targetVrm={target.vrm}
+        onApplyTransplant={onApply}
         onLiveHandleChange={(h) => handles.push(h)}
       />,
     );
@@ -613,11 +632,54 @@ describe("StudioVrmHairTransplantPanel UI 렌더링 · 인터랙션 · 정책 �
     fireEvent.click(screen.getByTestId("vrm-hair-apply-btn"));
     expect(target.hairMesh.visible).toBe(false);
     expect(handles.at(-1)?.isDisposed()).toBe(false);
+    expect(onApply).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("vrm-hair-applied-status").textContent).toContain("현재 3D 씬 반영됨");
+    expect(screen.queryByTestId("vrm-hair-plan-status")).toBeNull();
 
     fireEvent.click(screen.getByTestId("vrm-hair-rollback-btn"));
     expect(target.hairMesh.visible).toBe(true);
     expect(handles.at(-1)).toBeNull();
 
+    donor.dispose();
+    target.dispose();
+  });
+
+  it("실제 이식 후 재적용이 실패하면 폐기된 핸들과 이전 성공 상태·콜백을 함께 정리한다", () => {
+    const rigParams = {
+      name: "RetryDonor", metaVersion: "0" as const, headY: 1.44,
+      crownHeightM: 0.21, skullWidthM: 0.166, skullDepthM: 0.18,
+      hairDropBelowHeadM: 0.32, hairBaseColorRgb: [0.3, 0.4, 0.72] as const,
+      bodyShadeRgb: [0.8, 0.82, 0.92] as const, bodyToony: 0.88,
+      hairMeshName: "Hair_RetryDonor",
+    };
+    const donor = buildSyntheticVrmRig(rigParams);
+    const target = buildSyntheticVrmRig({ ...rigParams, name: "RetryTarget", metaVersion: "1", hairMeshName: "Hair_RetryTarget" });
+    const handles: (VrmHairTransplantResultHandle | null)[] = [];
+    const onApply = vi.fn<(manifest: VrmHairTransplantManifest) => void>();
+    const onPlan = vi.fn<(manifest: VrmHairTransplantManifest) => void>();
+    render(<StudioVrmHairTransplantPanel donorVrm={donor.vrm} targetVrm={target.vrm} onApplyTransplant={onApply} onPlanCalculated={onPlan} onLiveHandleChange={(handle) => handles.push(handle)} />);
+
+    fireEvent.click(screen.getByTestId("vrm-hair-apply-btn"));
+    const firstHandle = handles.at(-1);
+    expect(firstHandle?.isDisposed()).toBe(false);
+    expect(target.hairMesh.visible).toBe(false);
+    expect(screen.getByTestId("vrm-hair-applied-status")).toBeTruthy();
+
+    // 도너 헤어가 더는 존재하지 않는 실제 엔진 오류 경로를 재현한다.
+    donor.hairMesh.removeFromParent();
+    fireEvent.click(screen.getByTestId("vrm-hair-apply-btn"));
+    expect(firstHandle?.isDisposed()).toBe(true);
+    expect(firstHandle?.rootGroup.parent).toBeNull();
+    expect(handles).toHaveLength(2);
+    expect(handles.at(-1)).toBeNull();
+    expect(target.hairMesh.visible).toBe(true);
+    expect(screen.getByRole("alert").textContent).toContain("도너 VRM에서 이식 가능한 헤어 메시를 찾지 못했습니다");
+    expect(screen.queryByTestId("vrm-hair-applied-status")).toBeNull();
+    expect(screen.queryByTestId("vrm-hair-plan-status")).toBeNull();
+    expect(onApply).toHaveBeenCalledTimes(1);
+    expect(onPlan).not.toHaveBeenCalled();
+
+    donor.vrm.scene.add(donor.hairMesh);
     donor.dispose();
     target.dispose();
   });
