@@ -1,4 +1,4 @@
-import { CheckCircle2, Globe2, LayoutList, Palette, ScanSearch, Sparkles } from "lucide-react";
+import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, Palette, ScanSearch, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -33,8 +33,26 @@ const LazyVirtualSpaceLivingPanel = lazy(async () => {
   const m = await import("../virtual-space-living/StudioVirtualSpaceLivingPanel");
   return { default: m.StudioVirtualSpaceLivingPanel };
 });
+const LazyRenderFarmVcsPanel = lazy(async () => {
+  await import("../distributed-render-semantic-vcs");
+  const m = await import("../distributed-render-semantic-vcs/StudioRenderFarmVcsPanel");
+  return { default: m.StudioRenderFarmVcsPanel };
+});
+const LazyMovingtoonReelsPanel = lazy(async () => {
+  await import("../movingtoon-reels-studio");
+  const m = await import("../movingtoon-reels-studio/StudioMovingtoonReelsPanel");
+  return { default: m.StudioMovingtoonReelsPanel };
+});
 
-type QaHubTabId = "pixel" | "layout" | "continuity" | "signoff" | "storySimulpub" | "virtualLiving";
+type QaHubTabId =
+  | "pixel"
+  | "layout"
+  | "continuity"
+  | "signoff"
+  | "storySimulpub"
+  | "virtualLiving"
+  | "renderFarmVcs"
+  | "movingtoonReels";
 
 const QA_HUB_TABS: readonly {
   readonly id: QaHubTabId;
@@ -47,6 +65,8 @@ const QA_HUB_TABS: readonly {
   { id: "signoff", labelKo: "7단계 결재선·부분승인·블라인드·SLA", labelEn: "7-Stage Signoff · Blind Link · SLA" },
   { id: "storySimulpub", labelKo: "인과·리플로우·무결성 예제", labelEn: "Causality · Reflow · Integrity Examples" },
   { id: "virtualLiving", labelKo: "방·아바타·분위기 물리 예제", labelEn: "Room · Avatar · Atmosphere Examples" },
+  { id: "renderFarmVcs", labelKo: "렌더 일정·컷 병합 메모리 예제", labelEn: "Render Scheduling · Cut Merge Memory Examples" },
+  { id: "movingtoonReels", labelKo: "무빙툰 좌표·비트·자막 문자열 예제", labelEn: "Moving-Toon Coordinates · Beats · Subtitle Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -63,6 +83,10 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <Globe2 size={15} aria-hidden="true" />;
     case "virtualLiving":
       return <Sparkles size={15} aria-hidden="true" />;
+    case "renderFarmVcs":
+      return <GitBranch size={15} aria-hidden="true" />;
+    case "movingtoonReels":
+      return <Clapperboard size={15} aria-hidden="true" />;
   }
 }
 
@@ -117,6 +141,8 @@ export function AutoQaCollabHubPanel() {
           {active === "signoff" ? <LazyCollabSignoffHubPanel /> : null}
           {active === "storySimulpub" ? <LazyStorySimulpubPanel /> : null}
           {active === "virtualLiving" ? <LazyVirtualSpaceLivingPanel /> : null}
+          {active === "renderFarmVcs" ? <LazyRenderFarmVcsPanel /> : null}
+          {active === "movingtoonReels" ? <LazyMovingtoonReelsPanel /> : null}
         </Suspense>
       </div>
     </section>
