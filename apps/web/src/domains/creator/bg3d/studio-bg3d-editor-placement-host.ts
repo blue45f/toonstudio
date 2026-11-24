@@ -7,38 +7,24 @@ import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { Bg3dTemplateLibraryEntry, Bg3dVerifiedStoredRecord, BgCustomModelInstance, BgPrimitive, ModelRootCacheEntry, StudioBg3dModalSession, StudioBg3dPlacementPointerTarget, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dSceneDocument, StudioGeneric3dSourceFormat } from "./studio-bg3d-editor-runtime-bindings";
 import { orderStudioBg3dHierarchySelectionRootsFirst } from "./studio-bg3d-template-instance";
 import { nameNewStudioBg3dCustomModel } from "./studio-bg3d-instance-naming";
+import { reuseVerifiedSceneAttachmentId } from "./studio-bg3d-verified-scene-placement";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { loadStudioBg3dMetricAttachment, measureStudioBg3dPlacementAsset, scaleStudioBg3dMetricPlacementAsset, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
 import { copyStudioBg3dMetricInstanceScale, StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
 import {
   allocateStudioBg3dMeasurementTemplateNodeIds, assertStudioBg3dTemplateHydration,
-  mergeStudioBg3dTemplateAttachmentMaps, prepareStudioBg3dMeasurementTemplateInsertion,
+  hasStudioBg3dTemplateContent, mergeStudioBg3dTemplateAttachmentMaps, prepareStudioBg3dMeasurementTemplateInsertion,
 } from "./studio-bg3d-measurement-template";
 
 export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
   const {
     THREE, OrbitControls, OrthographicCamera, PerspectiveCamera, TransformControls, View,
-    Canvas, useThree, Aperture, Boxes, Camera, ChevronDown, CircleDashed, Copy, Crosshair, Eye,
-    EyeOff, Globe, Hexagon, Home, Layers, LayoutTemplate, Loader2, LocateFixed, Lock, Magnet,
-    Maximize2, Move, MoveDown, PencilLine, Redo2, RotateCcw, RotateCw, Ruler, Save, ScanLine,
     Scissors, Trash2, SunMoon, Undo2, Unlock, Upload, WandSparkles, X, ZoomIn, ZoomOut,
-    Suspense, useEffect, useEffectEvent, useCallback, useLayoutEffect, useRef, useState,
-    Fragment, lazy, createPortal, flushSync, createStudioBg3dAiMethodReferenceCapture,
-    COMPOSITE_CATEGORIES, COMPOSITE_CATEGORY_LABELS, COMPOSITE_PRESETS,
     instantiateCompositePreset, cloneBgCustomModelInstances, createBgCustomModelInstance,
-    duplicateBgCustomModelInstance, isStudioBg3dThreeTwoBoneIkChainSupported,
     measureBg3dObjectSize, parseBg3dSceneWithModelsFromDataUrl, StudioBg3dThreeOperationError,
-    clonePrimitives, createPrimitive, duplicatePrimitive, PRIMITIVE_DEFS, BG_SCENE_TEMPLATES,
-    instantiateSceneTemplate, BG_SKY_PRESETS, getSkyPreset, normalizePanoramaRotationDegrees,
-    createStudioGeneric3dRightsFromAttachment, createStudioGeneric3dVerifiedManifest,
     createStudioGeneric3dPoseProxies, mergeStudioGeneric3dWorkflowMaps,
     normalizeStudioGeneric3dClassification, normalizeStudioGeneric3dSourceFormat,
     parseStudioGeneric3dWorkflowMetadata, createTwoBoneDefaultPoleTarget,
-    createStudioShared3dCharacterShadowEntity, StudioGeneric3dModelModePanel,
-    StudioToolHintTarget, useStudioBg3dSharedCharacterStatus, useStudioModalSheet,
-    snapshotStudioBg3dLiveAnimationPlayback, STUDIO_BG3D_ARTIFACT_CAPTURE_VERSION,
-    STUDIO_BG3D_BEAUTY_RGBA8_PROFILE, STUDIO_BG3D_DEPTH_FLOAT32_PROFILE,
-    STUDIO_BG3D_NORMAL_PROFILE, STUDIO_BG3D_STABLE_ID_PROFILE,
     normalizeStudioBg3dArtifactCaptureResultV2, copyStudioBg3dBundledEnvironmentLibraryEntries,
     isStudioBg3dViewportControlTarget, readStudioBg3dObjectWorldBounds,
     readStudioBg3dWorldSurfaceHit, fitStudioBg3dCameraToBounds,
@@ -578,7 +564,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
     }
   }
   h.addCustomModelToScene = addCustomModelToScene;
-  async function applyUserTemplate(entry: Bg3dTemplateLibraryEntry) {
+  async function applyUserTemplate(entry: Bg3dTemplateLibraryEntry, mode?: "verified-scene"): Promise<boolean> {
     if (
       applyingTemplateId !== null ||
       isRestoringScene ||
@@ -586,10 +572,10 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
       captureInFlightRef.current ||
       isStudioBg3dPhysicsTransientPhase(physicsPhaseRef.current)
     ) {
-      return;
+      return false;
     }
     const session = modalAssetSessionRef.current;
-    if (!session || !isModalAssetSessionCurrent(session)) return;
+    if (!session || !isModalAssetSessionCurrent(session)) return false;
     const templateOwnedCacheEntries = new Map<string, ModelRootCacheEntry>();
     let committed = false;
     const cleanupUncommittedTemplateCache = () => {
@@ -637,7 +623,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           if (!templateNodeIds) throw new Error("template-instance-id");
           let templateNodeOrdinal = 0;
           const instantiated = await instantiateBg3dTemplateDocument(
-            entry.document,
+            mode === "verified-scene" ? reuseVerifiedSceneAttachmentId(entry.document, attachmentByStorageModelIdRef.current) : entry.document,
             occupiedNodeIds,
             () => templateNodeIds[templateNodeOrdinal++] ?? "",
           );
@@ -757,9 +743,14 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
             attachmentByStorageModelId: bindings.attachments,
           });
           if (captureInFlightRef.current) throw new Error("template-capture-in-flight");
-          h.commitImmediateHistoryTransition(next.primitives, next.customModels, next.includesMeasurements ? next.document : current.document, next.before, next.includesMeasurements
+          const useSceneCamera = mode === "verified-scene" && !hasStudioBg3dTemplateContent(current);
+          const document = useSceneCamera ? { ...next.document, camera: prepared.templateDocument.camera }
+            : next.includesMeasurements ? next.document : current.document;
+          const before = useSceneCamera ? { ...next.before, document: studioBg3dHistoryDocumentAtView(next.before.document,
+            viewportApiRef.current?.readView() ?? current.document.camera) } : next.before;
+          h.commitImmediateHistoryTransition(next.primitives, next.customModels, document, before, next.includesMeasurements
             ? { commandId: "studio.bg3d.measurements.apply-template", label: "측정 안내선과 템플릿 적용", source: "menu" }
-            : { commandId: "studio.bg3d.template.apply-user", label: "사용자 템플릿 배치", source: "menu" });
+            : { commandId: "studio.bg3d.template.apply-user", label: "사용자 템플릿 배치", source: "menu", ...(useSceneCamera ? { preserveBeforeCamera: true } : {}) });
 
           attachmentByStorageModelIdRef.current.clear();
           storageModelIdByAttachmentIdRef.current.clear();
@@ -772,8 +763,9 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
           replaceCanonicalDocumentState({
             primitives: next.primitives,
             customModels: next.customModels,
-            ...(next.includesMeasurements ? { document: next.document } : {}),
+            ...(next.includesMeasurements || useSceneCamera ? { document } : {}),
           });
+          if (useSceneCamera) applyOrDeferStudioBg3dHistoryCamera(viewportApiRef.current, pendingInitialCameraRef, document.camera);
           if (insertedIds.length > 0) {
             const insertedEntities = [...prepared.primitives, ...prepared.customModels];
             setSelectedIds(new Set(
@@ -802,6 +794,7 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
         setApplyingTemplateId(null);
       });
     }
+    return committed;
   }
   h.applyUserTemplate = applyUserTemplate;
 }

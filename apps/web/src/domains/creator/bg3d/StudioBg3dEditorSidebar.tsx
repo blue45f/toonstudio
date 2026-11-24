@@ -23,6 +23,10 @@ import { bg3dPanelStatusText } from "../studio-bg3d-panel-status-i18n";
 import { useT } from "@/shared/lib/i18n";
 import { hasStudioBg3dTemplateContent } from "./studio-bg3d-measurement-template";
 
+const LazyVerifiedScenesPanel = createSidebarLazy(() =>
+  import("./StudioBg3dVerifiedScenesPanel").then(module => ({ default: module.StudioBg3dVerifiedScenesPanel })),
+);
+
 const LazySidebarCharacterCompositePanel = createSidebarLazy(() =>
   import("./StudioBg3dCharacterCompositePanel").then((m) => ({
     default: m.StudioBg3dCharacterCompositePanel,
@@ -616,6 +620,11 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                       onResetAllTemplateInstances={h.resetAllTemplateInstances}
                       onDeleteTemplateInstance={h.deleteTemplateInstance}
                       onDeleteAllTemplateInstances={h.deleteAllTemplateInstances}
+                    />
+                    <LazyVerifiedScenesPanel
+                      disabled={isRestoringScene || isUploadingModel || isSavingTemplate || applyingTemplateId !== null}
+                      onApply={entry => applyUserTemplate(entry, "verified-scene")}
+                      onLinked={() => setModelsPanelActivated(false)}
                     />
                     <StudioBg3dUserTemplateLibraryPanel
                       entries={templateLibrary}
