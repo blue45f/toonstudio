@@ -150,30 +150,55 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
         data-studio-beta-notice="true"
         data-stable-contrast="true"
         data-studio-beta-notice-mode="compact"
-        className="pointer-events-auto grid w-[min(31rem,calc(100vw-1.5rem))] grid-cols-[minmax(0,1fr)_auto] overflow-hidden sm:block rounded-2xl border border-warning/45 bg-panel/95 text-fg shadow-[0_20px_70px_oklch(0.05_0.02_265/0.55)] backdrop-blur-xl"
+        className="pointer-events-auto flex w-[min(31rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-warning/45 bg-panel/95 text-fg shadow-[0_12px_36px_oklch(0.05_0.02_265/0.42)] backdrop-blur-xl"
       >
-        <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5 p-2.5 sm:gap-3 sm:px-4 sm:py-3">
-          <span className="grid size-8 shrink-0 place-items-center rounded-xl border border-warning/40 bg-warning-soft text-warning">
-            <AlertTriangle size={20} aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-warning/40 bg-warning-soft px-2 py-0.5 text-[0.62rem] font-black tracking-[0.08em] text-warning">
-                {copy.badge}
-              </span>
-              <h2 id={titleId} className="sr-only">{copy.title}</h2>
-              <p aria-hidden="true" className="text-xs font-black leading-5 text-fg sm:text-sm [word-break:keep-all]">
-                {korean
-                  ? "베타 기간 중 데이터가 초기화될 수 있어요 · 중요 작업은 백업하세요"
-                  : "Beta data may be reset · Back up important work"}
-              </p>
-            </div>
-            <p className="mt-1 hidden text-[0.68rem] leading-5 text-fg-2 lg:block">{copy.intro}</p>
+        <div
+          data-studio-beta-notice-bar="true"
+          className="flex min-w-0 items-center justify-between gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3 sm:py-1.5"
+        >
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+            <span className="inline-flex w-fit items-center gap-1 rounded-full border border-warning/40 bg-warning-soft px-1.5 py-0.5 text-[0.62rem] font-black leading-none tracking-[0.06em] text-warning">
+              <AlertTriangle size={12} aria-hidden />
+              <span>{copy.badge}</span>
+            </span>
+            <h2 id={titleId} className="sr-only">{copy.title}</h2>
+            <p
+              aria-hidden="true"
+              className="truncate text-[0.7rem] font-bold leading-4 text-fg sm:text-xs [word-break:keep-all]"
+            >
+              {korean
+                ? "데이터 초기화 가능 · 백업 권장"
+                : "Beta data may reset · Back up work"}
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+            <button
+              type="button"
+              aria-expanded={detailsOpen}
+              aria-controls={detailsId}
+              onClick={() => setDetailsOpen((current) => !current)}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-line bg-card px-0 text-xs font-bold text-fg-2 transition hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:px-2.5"
+            >
+              {detailsOpen ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+              <span className="sr-only sm:not-sr-only">{detailsOpen ? copy.hideDetails : copy.showDetails}</span>
+            </button>
+            <button
+              type="button"
+              aria-label={copy.action}
+              data-studio-beta-notice-acknowledge="true"
+              onClick={acknowledge}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-accent px-2.5 text-xs font-black text-on-accent shadow-sm transition hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:px-3"
+            >
+              <span className="sm:hidden">{korean ? "확인" : "OK"}</span>
+              <span className="hidden sm:inline">{copy.action}</span>
+            </button>
           </div>
         </div>
 
         {detailsOpen ? (
-          <div id={detailsId} className="col-span-2 grid max-h-[55dvh] gap-2 overflow-y-auto border-t border-line/70 px-3.5 py-3 sm:px-4">
+          <div id={detailsId} className="grid max-h-[55dvh] gap-2 overflow-y-auto border-t border-line/70 px-3.5 py-3 sm:px-4">
+            <p className="text-[0.72rem] leading-5 text-fg-2 [word-break:keep-all]">{copy.intro}</p>
             {notices.map(({ icon: Icon, title, body, tone }) => (
               <section key={title} className="flex gap-2.5 rounded-xl border border-line bg-card/75 p-3">
                 <span aria-hidden className={`grid size-8 shrink-0 place-items-center rounded-lg border ${tone}`}>
@@ -191,29 +216,6 @@ export function StudioBetaNoticeGate({ pathname }: StudioBetaNoticeGateProps) {
             <p className="text-center text-[0.68rem] leading-4 text-fg-2">{copy.revision}</p>
           </div>
         ) : null}
-
-        <div className="col-start-2 row-start-1 flex items-center gap-1 border-l border-line/70 bg-card/45 p-2 sm:flex sm:border-l-0 sm:border-t sm:justify-end sm:gap-2 sm:px-4">
-          <button
-            type="button"
-            aria-expanded={detailsOpen}
-            aria-controls={detailsId}
-            onClick={() => setDetailsOpen((current) => !current)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 transition hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            {detailsOpen ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
-            <span className="sr-only sm:not-sr-only">{detailsOpen ? copy.hideDetails : copy.showDetails}</span>
-          </button>
-          <button
-            type="button"
-            aria-label={copy.action}
-            data-studio-beta-notice-acknowledge="true"
-            onClick={acknowledge}
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-4 text-xs font-black text-on-accent shadow-sm transition hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <span className="sm:hidden">{korean ? "확인" : "OK"}</span>
-            <span className="hidden sm:inline">{copy.action}</span>
-          </button>
-        </div>
       </aside>
     </div>
   );

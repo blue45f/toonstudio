@@ -78,10 +78,21 @@ const LazyStudioVrmLookdevGoldenPanel = lazy(async () => {
   const m = await import("../vrm-lookdev-golden/StudioVrmLookdevGoldenPanel");
   return { default: m.StudioVrmLookdevGoldenPanel };
 });
+const LazyStudioBrush3dExtremePanel = lazy(async () => {
+  await import("../brush-3d-extreme-lab");
+  const m = await import("../brush-3d-extreme-lab/StudioBrush3dExtremePanel");
+  return { default: m.StudioBrush3dExtremePanel };
+});
+const LazyStudioWebgpuCrowdDirectorPanel = lazy(async () => {
+  await import("../webgpu-crowd-director");
+  const m = await import("../webgpu-crowd-director/StudioWebgpuCrowdDirectorPanel");
+  return { default: m.StudioWebgpuCrowdDirectorPanel };
+});
 
 type FrontierTabId =
   | "brushPhysics"
   | "brushCustomLab"
+  | "brush3dExtreme"
   | "wasm64Core"
   | "wasm64Hotpath"
   | "scene3dNpr"
@@ -91,6 +102,7 @@ type FrontierTabId =
   | "vectorInkProj"
   | "webgpuNextgen"
   | "webgpuXpbdLight"
+  | "webgpuCrowd"
   | "webnnPigment"
   | "drawingFrontier"
   | "visualOracle"
@@ -113,6 +125,7 @@ const FRONTIER_TABS: readonly {
 }[] = [
   { id: "brushPhysics", labelKo: "물리 브러시·종이 높이장·임파스토", labelEn: "Physical Brush · Paper · Impasto" },
   { id: "brushCustomLab", labelKo: "커스텀 브러시 랩 · .tsbrush", labelEn: "Custom Brush Lab · .tsbrush" },
+  { id: "brush3dExtreme", labelKo: "극한 2.5D 임파스토·Face SDF·6패스·IK", labelEn: "2.5D Impasto · Face SDF · 6-Pass · IK" },
   { id: "wasm64Core", labelKo: "Rust + Wasm64(memory64) 코어", labelEn: "Rust + Wasm64 Core Engine" },
   { id: "wasm64Hotpath", labelKo: "실물 Rust .wasm 핫패스", labelEn: "Live Rust .wasm Hotpath" },
   { id: "scene3dNpr", labelKo: "3D Wasm64 BVH·LOD·NPR 룩뎁", labelEn: "3D Wasm64 BVH · LOD · NPR" },
@@ -122,6 +135,7 @@ const FRONTIER_TABS: readonly {
   { id: "vectorInkProj", labelKo: "3D → G펜 벡터 잉크 투영", labelEn: "3D → G-Pen Vector Ink" },
   { id: "webgpuNextgen", labelKo: "제로카피 · LOD · P2P · 카나리", labelEn: "Zero-Copy · LOD · P2P · Canary" },
   { id: "webgpuXpbdLight", labelKo: "XPBD 물리·CPU 광원 베이크", labelEn: "XPBD Physics · CPU Light Bake" },
+  { id: "webgpuCrowd", labelKo: "군중 배치 CPU 미리보기·GPU 계약", labelEn: "CPU Crowd Preview · GPU Contract" },
   { id: "webnnPigment", labelKo: "CPU 선화·안료 혼색·컷 규칙", labelEn: "CPU Lineart · Pigment Mix · Cut Rules" },
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
@@ -183,6 +197,30 @@ const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
       { src: "/assets/atelier/onboarding/episode-publish.webp", labelKo: "회차·단행본 출고", labelEn: "Episode Publish" },
     ],
   },
+  {
+    id: "jewels",
+    titleKo: "주얼 아틀리에 3D 에나멜 도구 아이콘 6종",
+    titleEn: "6 Jewel Atelier 3D Enamel Tool Icons",
+    items: [
+      { src: "/assets/atelier/jewels/jewel-drawing-nib.webp", labelKo: "드로잉 잉크 닙", labelEn: "Drawing Ink Nib" },
+      { src: "/assets/atelier/jewels/jewel-pigment-cup.webp", labelKo: "광학 안료 혼색", labelEn: "Optical Pigment" },
+      { src: "/assets/atelier/jewels/jewel-character-bust.webp", labelKo: "3D 캐릭터 셰이퍼", labelEn: "3D Character Shaper" },
+      { src: "/assets/atelier/jewels/jewel-studio-cube.webp", labelKo: "가상 스튜디오·배경", labelEn: "Virtual Studio" },
+      { src: "/assets/atelier/jewels/jewel-acoustic-fork.webp", labelKo: "물리 음향·Foley", labelEn: "Physical Audio" },
+      { src: "/assets/atelier/jewels/jewel-reels-slate.webp", labelKo: "4K 무빙툰·출고", labelEn: "4K Reels & Export" },
+    ],
+  },
+  {
+    id: "backgrounds",
+    titleKo: "웹툰 3D 배경 쇼케이스 4종",
+    titleEn: "4 Webtoon 3D Background Showcases",
+    items: [
+      { src: "/assets/atelier/backgrounds/bg-seoul-crosswalk.webp", labelKo: "노을 도심 횡단보도", labelEn: "Golden Crosswalk" },
+      { src: "/assets/atelier/backgrounds/bg-school-hallway.webp", labelKo: "햇살 고교 복도", labelEn: "Sunlit School Hallway" },
+      { src: "/assets/atelier/backgrounds/bg-fantasy-courtyard.webp", labelKo: "판타지 석조 아치", labelEn: "Fantasy Courtyard" },
+      { src: "/assets/atelier/backgrounds/bg-rainy-bookstore.webp", labelKo: "비 오는 밤 서점 골목", labelEn: "Rainy Night Alley" },
+    ],
+  },
 ];
 
 function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
@@ -191,6 +229,8 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Sparkles size={15} aria-hidden="true" />;
     case "brushCustomLab":
       return <SlidersHorizontal size={15} aria-hidden="true" />;
+    case "brush3dExtreme":
+      return <PenTool size={15} aria-hidden="true" />;
     case "wasm64Core":
       return <Cpu size={15} aria-hidden="true" />;
     case "wasm64Hotpath":
@@ -209,6 +249,8 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Server size={15} aria-hidden="true" />;
     case "webgpuXpbdLight":
       return <Zap size={15} aria-hidden="true" />;
+    case "webgpuCrowd":
+      return <Layers size={15} aria-hidden="true" />;
     case "webnnPigment":
       return <Palette size={15} aria-hidden="true" />;
     case "drawingFrontier":
@@ -364,6 +406,7 @@ export function BrushWasm3dFrontierHubPanel() {
           >
             {active === "brushPhysics" ? <LazyStudioBrushPhysicsProPanel /> : null}
             {active === "brushCustomLab" ? <LazyStudioBrushCustomLabPanel /> : null}
+            {active === "brush3dExtreme" ? <LazyStudioBrush3dExtremePanel /> : null}
             {active === "wasm64Core" ? <LazyStudioWasm64EngineHubPanel /> : null}
             {active === "wasm64Hotpath" ? <LazyStudioWasm64HotpathPanel /> : null}
             {active === "scene3dNpr" ? <LazyStudio3dWasm64LookdevPanel /> : null}
@@ -373,6 +416,7 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "vectorInkProj" ? <LazyStudioVectorInkProjectionPanel /> : null}
             {active === "webgpuNextgen" ? <LazyStudioWebGpuNextgenRuntimePanel /> : null}
             {active === "webgpuXpbdLight" ? <LazyStudioWebgpuXpbdLightingPanel /> : null}
+            {active === "webgpuCrowd" ? <LazyStudioWebgpuCrowdDirectorPanel /> : null}
             {active === "webnnPigment" ? <LazyStudioWebnnPigmentDirectorPanel /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
@@ -389,7 +433,7 @@ export function BrushWasm3dFrontierHubPanel() {
               : "아틀리에 실물 화구 · 종이결 · 가상 스튜디오 6종 · 온보딩 비주얼 팩"}
           </span>
           <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[11px] font-semibold tabular-nums text-fg-2">
-            20 WebP
+            30 WebP
           </span>
         </summary>
         <div className="mt-3 flex flex-col gap-3">

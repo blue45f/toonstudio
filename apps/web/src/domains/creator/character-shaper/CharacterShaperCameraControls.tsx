@@ -161,7 +161,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
             onChange={(event) => {
               if (event.target.value) h.setActiveCameraId(event.target.value);
             }}
-            className={cn(selectClass, "max-w-[9.5rem]")}
+            className={cn(selectClass, "max-w-[10.5rem]")}
           >
             <option value="" disabled>부위·방향 확대 검사</option>
             {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
@@ -173,7 +173,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
             disabled={disabled}
             value={String(focalMm)}
             onChange={(event) => handleFocalChange(Number(event.currentTarget.value))}
-            className={cn(selectClass, "max-w-[7.5rem]")}
+            className={cn(selectClass, "max-w-[8.5rem]")}
           >
             {SHAPER_CAMERA_FOCAL_PRESETS.map((lens) => (
               <option key={lens.focalMm} value={String(lens.focalMm)}>
@@ -210,7 +210,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
           onChange={(event) => {
             if (event.target.value) h.setActiveCameraId(event.target.value);
           }}
-          className={cn(selectClass, "max-w-full md:max-w-[9.5rem]")}
+          className={cn(selectClass, "max-w-full md:max-w-[10.5rem]")}
         >
           <option value="" disabled>부위·방향 확대 검사</option>
           {STUDIO_VRM_INSPECTION_VIEWS.map((view) => <option key={view.id} value={view.id}>{view.label}</option>)}
@@ -222,7 +222,7 @@ export function CharacterShaperCameraControls({ h, compact }: Pick<CharacterShap
           disabled={disabled}
           value={String(focalMm)}
           onChange={(event) => handleFocalChange(Number(event.currentTarget.value))}
-          className={cn(selectClass, "max-w-full md:max-w-[7.5rem]")}
+          className={cn(selectClass, "max-w-full md:max-w-[8.5rem]")}
         >
           {SHAPER_CAMERA_FOCAL_PRESETS.map((lens) => (
             <option key={lens.focalMm} value={String(lens.focalMm)}>
@@ -242,7 +242,7 @@ const SESSION_SELECT = cn(
   STUDIO_FOCUS_RING,
 );
 const COMPACT_PILL_SELECT = cn(
-  "min-h-11 max-w-[9.5rem] shrink-0 rounded-xl border border-line/70 bg-card px-2.5 text-xs font-medium text-fg disabled:opacity-40",
+  "min-h-11 min-w-0 max-w-full shrink-0 rounded-xl border border-line/70 bg-card px-2.5 text-xs font-medium text-fg disabled:opacity-40 md:w-auto md:max-w-[12.5rem]",
   STUDIO_FOCUS_RING,
 );
 
@@ -262,15 +262,19 @@ export function CharacterShaperCameraStyleSelect({
       <span className="sr-only">{bt("카메라 조작", "Camera controls")}</span>
       <select
         aria-label={workbench ? bt("3D 카메라 조작 스타일", "3D camera control style") : bt("카메라 조작 방식", "Camera control style")}
+        title={bt(
+          "기본: 우클릭 회전 · 중간 버튼 이동 / Blender: 중간 버튼 회전 / 3ds Max: Alt+중간 버튼 회전",
+          "Default: right orbit, middle pan / Blender: middle orbit / 3ds Max: Alt+middle orbit",
+        )}
         data-testid={workbench ? "workbench-camera-style-select" : "shaper-camera-style-select"}
         disabled={disabled || !settings}
         value={settings?.cameraStyle ?? "unity"}
         onChange={(event) => settings?.setCameraStyle(event.currentTarget.value as ShaperCameraControlStyle)}
-        className={compactPill ? COMPACT_PILL_SELECT : SESSION_SELECT}
+        className={compactPill ? cn(COMPACT_PILL_SELECT, "w-full") : SESSION_SELECT}
       >
-        <option value="unity">{bt("기본 · 우클릭 회전 / 중간 버튼 이동", "Default · right orbit / middle pan")}</option>
+        <option value="unity">{bt("기본 · 우클릭 회전", "Default · right orbit")}</option>
         <option value="blender">{bt("중간 버튼 회전", "Middle-button orbit")}</option>
-        <option value="max">{bt("3ds Max · Alt+중간 버튼 회전", "3ds Max · Alt+middle orbit")}</option>
+        <option value="max">{bt("3ds Max · Alt+중간 회전", "3ds Max · Alt+middle")}</option>
       </select>
       {!settings && !compactPill ? (
         <span className="block">{bt("셰이퍼 작업실에서만 조작 방식을 바꿀 수 있습니다.", "Control styles are available in the Shaper workspace.")}</span>
@@ -307,7 +311,7 @@ export function CharacterShaperGazeSelect({
           const next = event.currentTarget.value;
           if (isCharacterShaperGazeMode(next)) settings?.setGazeMode(next);
         }}
-        className={compactPill ? COMPACT_PILL_SELECT : SESSION_SELECT}
+        className={compactPill ? cn(COMPACT_PILL_SELECT, "flex-1 md:flex-none") : SESSION_SELECT}
       >
         <option value="cam">{bt("시선: 카메라 응시", "Gaze: follow camera")}</option>
         <option value="fix">{bt("시선: 정면 고정 (F10)", "Gaze: fixed forward (F10)")}</option>

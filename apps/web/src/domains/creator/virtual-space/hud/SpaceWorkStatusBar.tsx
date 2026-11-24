@@ -69,14 +69,14 @@ export const SpaceWorkStatusBar = memo(function SpaceWorkStatusBar({
               key={item.id}
               type="button"
               data-testid={`work-status-btn-${item.id}`}
-              className="space-work-status-bar__chip"
+              className="space-work-status-bar__chip shrink-0 whitespace-nowrap"
               aria-pressed={active}
               style={{ "--work-status-accent": item.accentOklch } as CSSProperties}
               onClick={() => onSelectStatus(item.id)}
             >
-              <span className="space-work-status-bar__dot" aria-hidden="true" />
-              <span aria-hidden="true">{item.glyph}</span>
-              <span>{label}</span>
+              <span className="space-work-status-bar__dot shrink-0" aria-hidden="true" />
+              <span className="shrink-0" aria-hidden="true">{item.glyph}</span>
+              <span className="whitespace-nowrap">{label}</span>
             </button>
           );
         })}
@@ -89,18 +89,18 @@ export const SpaceWorkStatusBar = memo(function SpaceWorkStatusBar({
           <button
             type="button"
             data-testid="space-focus-sprint-btn"
-            className="space-work-status-bar__action"
+            className="space-work-status-bar__action shrink-0 whitespace-nowrap"
             onClick={onStartFocusSprint}
             title={bt("25분 웹툰 집중 스프린트 시작", "Start a 25-minute webtoon focus sprint")}
           >
-            <Timer size={14} aria-hidden="true" />
-            <span>{bt("25분 집중", "25m focus")}</span>
+            <Timer size={14} className="shrink-0" aria-hidden="true" />
+            <span className="whitespace-nowrap">{bt("25분 집중", "25m focus")}</span>
           </button>
         ) : null}
         <button
           type="button"
           data-testid={focusActive ? "space-focus-complete-btn" : "space-milestone-check-btn"}
-          className="space-work-status-bar__action space-work-status-bar__action--celebrate"
+          className="space-work-status-bar__action space-work-status-bar__action--celebrate shrink-0 whitespace-nowrap"
           onClick={onCompleteCheckpoint}
           title={
             focusActive
@@ -108,8 +108,8 @@ export const SpaceWorkStatusBar = memo(function SpaceWorkStatusBar({
               : bt("현재 공정 체크포인트 완료 기록", "Record production checkpoint completion")
           }
         >
-          <CheckCircle2 size={14} aria-hidden="true" />
-          <span>{focusActive ? bt("집중 완료", "Finish sprint") : bt("공정 체크", "Check off")}</span>
+          <CheckCircle2 size={14} className="shrink-0" aria-hidden="true" />
+          <span className="whitespace-nowrap">{focusActive ? bt("집중 완료", "Finish sprint") : bt("공정 체크", "Check off")}</span>
         </button>
       </div>
     </div>
