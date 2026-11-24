@@ -37,7 +37,7 @@ afterEach(() => {
 describe("StudioReliabilityStatusRail — rejected stroke recovery", () => {
   it("shows nothing until a provider rejects a finished stroke", () => {
     render(<StudioReliabilityStatusRail />);
-    expect(document.querySelector("[data-studio-rejected-stroke-notice]")).toBeNull();
+    expect(document.querySelector("[data-studio-rejected-stroke-actions]")).toBeNull();
   });
 
   it("offers an explicit restore and a dismiss for a parked stroke", () => {
@@ -53,7 +53,10 @@ describe("StudioReliabilityStatusRail — rejected stroke recovery", () => {
     });
 
     const notice = document.querySelector("[data-studio-rejected-stroke-notice]");
-    expect(notice).not.toBeNull();
+    const recoveryActions = document.querySelector("[data-studio-rejected-stroke-actions]");
+    const cornerHud = document.querySelector("[data-studio-reliability-status-rail]");
+    expect(recoveryActions?.contains(notice)).toBe(true);
+    expect(cornerHud?.contains(notice)).toBe(false);
     expect(notice?.getAttribute("data-studio-rejected-stroke-id")).toBe("rejected-1");
     expect(notice?.textContent).toContain("WebGPU 라이브 잉크");
     expect(notice?.textContent).toContain("그린 획은 보존돼 있습니다");
@@ -77,9 +80,10 @@ describe("StudioReliabilityStatusRail — rejected stroke recovery", () => {
     expect(restorer.mock.calls[0]?.[0]).toMatchObject({ id: "rejected-1", pageId: "page-1" });
     expect(getStudioRejectedStrokeRecords()).toHaveLength(0);
     expect(document.querySelector("[data-studio-rejected-stroke-notice]")).toBeNull();
-    expect(document.querySelector("[data-studio-rejected-stroke-outcome]")?.textContent).toContain(
-      "획을 문서에 복구했습니다",
-    );
+    const outcome = recoveryActions?.querySelector("[data-studio-rejected-stroke-outcome]");
+    expect(outcome?.textContent).toContain("획을 문서에 복구했습니다");
+    expect(outcome?.closest(".pointer-events-none")).toBe(recoveryActions);
+    expect(outcome?.closest(".pointer-events-auto")).toBeNull();
   });
 
   it("keeps a refused restore and lets the user throw the stroke away", () => {

@@ -46,6 +46,39 @@ const failedStorageSignal = {
 };
 
 describe("resolveStudioDraftSaveCenter", () => {
+  it("오프라인 사본을 확인하는 동안 저장 완료나 불러오기 실패를 표시하지 않는다", () => {
+    const cold = input({ isOnline: false, hydrated: false, hydrationFailed: true, offlinePreviewPhase: "checking" });
+    expect(resolveStudioDraftSaveCenter(cold)).toMatchObject({
+      phase: "loading", tone: "progress", compactLabel: "기기 사본 확인 중",
+      saveActionLabel: "기기 사본 확인 중", saveActionDisabled: true,
+      server: { title: "오프라인" }, device: { title: "기기 사본 확인 중" },
+    });
+    expect(resolveStudioDraftSaveCenter(cold, (_ko, en) => en).compactLabel).toBe("Checking the on-device copy");
+    expect(resolveStudioDraftSaveCenter({ ...cold, isOnline: true }).phase).toBe("load-risk");
+  });
+
+  it("확인한 오프라인 기기 사본을 읽기 전용으로 안내하고 서버 저장은 계속 잠근다", () => {
+    const coldDraft = input({ isOnline: false, hydrated: false, hydrationFailed: true, offlinePreviewPhase: "visible" });
+    const status = resolveStudioDraftSaveCenter(coldDraft);
+    expect(status).toMatchObject({
+      phase: "offline", compactLabel: "읽기 전용", saveActionDisabled: true,
+      device: { title: "기기에 저장된 원고" }, server: { title: "오프라인" },
+    });
+    expect(resolveStudioDraftSaveCenter({ ...coldDraft, offlinePreviewPhase: undefined })).toMatchObject({
+      phase: "load-risk", primaryAction: "versions", saveActionLabel: "버전·복구 열기",
+    });
+    const english = resolveStudioDraftSaveCenter(coldDraft, (_ko, en) => en);
+    expect(english).toMatchObject({
+      compactLabel: "Read-only", headline: "On-device manuscript", saveActionLabel: "Read-only",
+      device: { detail: "The saved copy is open in read-only mode." }, server: { title: "Offline" },
+    });
+    const storageFailure = { level: "failed", title: "기기 저장 실패", at: 10 } as const;
+    expect(resolveStudioDraftSaveCenter({ ...coldDraft, storageSignal: storageFailure })).toMatchObject({
+      phase: "local-risk", primaryAction: "save", saveActionLabel: "읽기 전용", saveActionDisabled: true,
+    });
+    expect(resolveStudioDraftSaveCenter({ ...coldDraft, isOnline: true }).phase).toBe("load-risk");
+  });
+
   it("keeps device recovery and server revision as separate saved authorities", () => {
     const model = resolveStudioDraftSaveCenter(input());
 

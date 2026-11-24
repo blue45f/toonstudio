@@ -1,14 +1,5 @@
 import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
-import {
-  Cloud,
-  Database,
-  Download,
-  History,
-  Loader2,
-  RefreshCw,
-  Save,
-  X,
-} from "lucide-react";
+import { Cloud, Database, Download, History, Loader2, RefreshCw, Save, X } from "lucide-react";
 import {
   lazy,
   Suspense,
@@ -95,6 +86,7 @@ export interface StudioDraftSaveCenterProps {
   readonly workId?: string | null;
   readonly workHydrated?: boolean;
   readonly workHydrationFailed?: boolean;
+  readonly offlinePreviewPhase?: StudioDraftSaveCenterInput["offlinePreviewPhase"];
   readonly pendingSaveIntent?: "draft" | "published" | null;
   readonly loadedWork?: StudioDraftSaveWorkView | null;
   readonly sharedDocument?: StudioDraftSaveSharedDocumentView | null;
@@ -195,6 +187,7 @@ export function StudioDraftSaveCenter({
   workId = null,
   workHydrated = true,
   workHydrationFailed = false,
+  offlinePreviewPhase,
   pendingSaveIntent = null,
   loadedWork = null,
   sharedDocument = null,
@@ -263,6 +256,7 @@ export function StudioDraftSaveCenter({
     isOnline,
     hydrated: workHydrated,
     hydrationFailed: workHydrationFailed,
+    offlinePreviewPhase,
     metadataRequired: pendingSaveIntent === "draft",
     saving,
     deferredSave,
@@ -291,6 +285,7 @@ export function StudioDraftSaveCenter({
     durableSaveIntent.entry,
     hasServerDocument,
     isOnline,
+    offlinePreviewPhase,
     lastServerSaveAt,
     pendingSaveIntent,
     reliability.save,
@@ -304,7 +299,7 @@ export function StudioDraftSaveCenter({
     workHydrated,
     workHydrationFailed,
   ]);
-  const model = useMemo(() => resolveStudioDraftSaveCenter(input), [input]);
+  const model = useMemo(() => resolveStudioDraftSaveCenter(input, bt), [input, bt]);
   const anchorAtBottom = mobileImmersive || canvasOnlyMode;
   // 데스크톱 또는 명시한 모바일 저장 자리에만 배치한다. 캔버스 전용 모드는 기존 부유 버튼을 유지한다.
   const menubarSlot = useStudioMenubarStatusSlot("save");
