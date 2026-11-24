@@ -1,7 +1,7 @@
 # ToonStudio 아키텍처
 
 - 상태: **현재 구조 + 진행 중인 마이그레이션**
-- 최종 갱신: **2026-11-22**
+- 최종 갱신: **2026-11-24**
 - 적용 범위: 저장소 구조, 애플리케이션 경계, 공유 패키지, 테스트·도구·문서 소유권
 
 ## 1. 권위 순서
@@ -273,7 +273,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 185 |
+| API `platform/database` 파일 | 186 |
 | `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
@@ -400,3 +400,14 @@ DTO·승인·상태 전이·증빙 최신성 규칙을 공유한다. 기존 CI·
 - DB 마이그레이션 원장은 `0133_production_division_os.sql`을 포함해 총 **133개** numbered SQL(`scripts/production-database-migrations.manifest` 133행 일치)이며, `apiDatabaseFiles` 상한 `185/185`와 기존 불변 SQL `0001`~`0132`를 유지한다. (`2026-10-29` 운영 onpod DB 조회 시점 113개 적용 이후의 `0114`~`0133` 운영 반영은 별도 승인 대기.)
 - CI 큐·캐시 최적화: 비필수 보조 워크플로 25개를 `push: main`에서 분리해 오프피크 주간 분산 `schedule`·`workflow_dispatch`로 전환했고(기존 PR 게이트 유지, `scripts/ci-queue-and-typecheck-cache.test.mjs`), `scripts/typecheck-shards.mjs` 체크포인트 캐시·16GiB 힙 큐 백프레셔와 `scripts/lib/static-gen-cache.mjs` 기반 SHA-256 스킵 캐시(`catalog:gen`, `i18n:builtins:gen`)를 연동했다.
 - 배포 안전 가드: `pnpm run deploy:cloud -- --smart` 변경 영역 자동 선별(`scripts/lib/deploy-change-scope.mjs`), 배포 전 드리프트 점검(`scripts/lib/deploy-preflight-drift.mjs`), 배포 직후 스모크·안전 롤백 명령 안내(`scripts/verify-production-post-deploy-smoke.mjs`)를 추가했다. 운영 배포와 인프라 변경은 별도 승인 절차를 따른다.
+
+2026-11-24 상태: **migration — 1R 최종 제출 점검의 네이티브 관리자 통합**.
+사용자가 요청한 개인별 제출 점검의 본문·불변 감사·멱등 영수증을 기존 운영 보드와 섞지 않고
+보관하기 위해 `0134_admin_final_submission.sql` 한 파일을 추가한다. DB 접근과 권한 검증은
+`modules/final-submission`이 소유하고, SQL은 [현재 API 경계](docs/architecture/api-current-boundaries.md)의
+단일 migration 소유권 및 운영 러너의 경로·순서·전수 검증에 따라 `platform/database/migrations`에 둔다.
+기존 불변 SQL `0001`~`0133`과 체크섬은 변경하지 않는다. 이미 승인된 전용 저장 기능에 필요한
+필수 선언 파일 하나만 `apiDatabaseFiles`에 185→186으로 반영하며 여유 파일 수를 추가하지 않는다.
+다른 소스·경계·파일 크기 예산, migration 경로·순서 검증과 CI 필수 게이트는 그대로 유지한다.
+리뷰 DB 준비는 새 SQL과 여섯 개의 이력 보호 트리거를 함께 검증한다. 이 소스 구현과 격리 DB
+검증은 운영 DB 적용·onpod 이미지 교체·실제 제출·원본 문서 수정의 승인을 포함하지 않는다.

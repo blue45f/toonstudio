@@ -11,6 +11,7 @@ import { buildProductionCapabilityVerificationSql, loadHealthReadinessContract }
 import { buildAdminRuntimeAclSql, buildAdminCloudWorkboardRuntimeAclSql, buildAdminNestjsQualityRuntimeAclSql } from "./admin-database-contract.mjs";
 import { buildAiOperationsRuntimeAclSql } from "./ai-operations-database-contract.mjs";
 import { buildAdminWorkspaceRuntimeAclSql } from "./admin-workspace-database-contract.mjs";
+import { buildFinalSubmissionRuntimeAclSql } from "./admin-final-submission-database-contract.mjs";
 import { buildFeedbackRuntimeAclSql } from "./feedback-database-contract.mjs";
 import { buildCommunityCafeRuntimeAclSql } from "./community-cafe-database-contract.mjs";
 import { buildHiringRuntimeAclSql } from "./creator-hiring-database-contract.mjs";
@@ -206,6 +207,7 @@ export function buildManagedRuntimeAclSql(role) {
     migrations.buildCreatorRoleWorkspaceRuntimeAclSql, migrations.buildPersonalCloudRuntimeAclSql,
     migrations.buildCommunityCommentRuntimeAclSql, migrations.buildMessagingRuntimeAclSql,
     buildCustomerSupportRuntimeAclSql, buildAiOperationsRuntimeAclSql, buildAdminRuntimeAclSql, buildAdminCloudWorkboardRuntimeAclSql, buildAdminWorkspaceRuntimeAclSql, buildAdminNestjsQualityRuntimeAclSql, buildFeedbackRuntimeAclSql, buildCommunityCafeRuntimeAclSql,
+    buildFinalSubmissionRuntimeAclSql,
     migrations.buildRuntimeCutoverLedgerAclSql, migrations.buildMembershipRuntimeAclSql,
     buildHiringRuntimeAclSql, buildHiringAutomationRuntimeAclSql, buildFortuneSnapshotRuntimeAclSql,
     buildCareerConfirmationRuntimeAclSql, buildProductionOperationsRuntimeAclSql,

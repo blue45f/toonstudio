@@ -30,7 +30,7 @@ describe("클라우드 작업 편집·가져오기", () => {
     render(<CloudWorkEditor {...props} />);
     fireEvent.change(screen.getByLabelText("현재 상태"), { target: { value: "검증 완료" } });
     fireEvent.click(screen.getByRole("button", { name: "작업 기록 저장" }));
-    expect((await screen.findByRole("alert")).textContent).toContain("확인 시각과 근거가 필요");
+    expect((await screen.findByRole("alert")).textContent).toContain("모든 필수 검증 통과 또는 적용 제외 사유");
     expect(props.onSave).not.toHaveBeenCalled();
   });
   it("409 편집본을 보존하고 최신 작업과 명시적으로 비교한 후 재저장한다", async () => {

@@ -1793,6 +1793,11 @@ function collectLicenseDocuments(inventory, additionalDocuments = []) { // NOSON
   }
 
   addDocument(
+    "@thorvg/webcanvas / ThorVG core — MIT",
+    "packages/studio-engine-thorvg/NOTICE",
+    readFileSync(join(REPOSITORY_ROOT, "packages/studio-engine-thorvg/NOTICE"), "utf8"),
+  );
+  addDocument(
     "onnxruntime-web / onnxruntime-common 1.27.0 — MIT",
     "https://github.com/microsoft/onnxruntime/blob/v1.27.0/LICENSE",
     ONNX_RUNTIME_MIT_NOTICE,

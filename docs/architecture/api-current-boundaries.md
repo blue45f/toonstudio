@@ -1,6 +1,6 @@
 # API 현재 폴더 경계
 
-> 현재 기준일: 2026-09-27
+> 현재 기준일: 2026-11-24
 
 ## 목표
 
@@ -35,6 +35,20 @@ Drizzle 정의를 소유한다. 같은 파일의 `ADMIN_SCHEMA_COLUMNS_SQL`·`AD
 기존 관리자 테이블의 읽기 전용 정합성 검사이며, health readiness·DB 통합 테스트·운영 migration의
 권한 검사 스크립트가 함께 소비한다. 보드의 권한·이력 불변성 검사는 전용 DB 계약을 유지한다.
 DDL은 기존과 같이 `platform/database/migrations`의 순차 migration으로만 적용한다.
+
+## 1R 최종 제출 점검 저장 (migration, 2026-11-24)
+
+`modules/final-submission`은 현재 활성 관리자·운영자의 개인 보드 접근과 저장을 소유한다.
+본문·불변 감사·멱등 영수증의 세 테이블은 추가형
+`platform/database/migrations/0134_admin_final_submission.sql`이 선언한다.
+운영 migration 러너와 배포 전 드리프트 검사는 이 정본 디렉터리의 순서·전수 목록을 강제하므로,
+파일 수를 줄이기 위해 SQL을 도메인 모듈로 옮기거나 기존 migration에 합치지 않는다.
+
+사용자가 요청한 전용 영속 저장에 필요한 불변 SQL 한 파일만 파일 수 원장의
+`apiDatabaseFiles`에 185→186으로 반영한다. 기존 SQL `0001`~`0133`과 체크섬, 다른 예산과
+검증 기준은 유지한다. CI 리뷰 DB 준비에도 migration과 여섯 이력 보호 트리거를 등록한다.
+소스 통합·격리 DB 검증 이후 운영 DB 적용과 onpod 이미지 교체는 별도 승인 대기이며,
+요청 처리나 앱 시작에서 DDL을 실행하지 않는다.
 
 ## 남은 server 전환
 

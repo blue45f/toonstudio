@@ -149,6 +149,13 @@ const ADMIN_PREPARATION_CARDS: readonly AdminPreparationCardSpec[] = [
     primaryLabelKey: "admin.businessPlan.open",
     secondaryLink: { href: "/admin/platform/ai-operations/", label: "AI·인프라 운영 보드" },
   },
+  {
+    id: "admin-final-submission-title",
+    titleKey: "admin.finalSubmission.title",
+    descriptionKey: "admin.finalSubmission.description",
+    primaryHref: "/admin/growth/business-plan/?view=final-submission",
+    primaryLabelKey: "admin.finalSubmission.open",
+  },
 ];
 
 /** 독립 Admin 문서로 이동하여 사용자 Web의 라우터·번들 경계를 유지한다. */

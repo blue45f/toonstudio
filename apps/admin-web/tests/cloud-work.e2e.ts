@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { blankTask, emptyBoard } from "@toonstudio/contracts/admin-cloud-workboard";
+import { blankTask, emptyBoard, inputTime } from "@toonstudio/contracts/admin-cloud-workboard";
 
 import type { Board, CloudWorkboardSave, Task } from "@toonstudio/contracts/admin-cloud-workboard";
 
@@ -73,7 +73,7 @@ test("새 관리자 보드는 빈 상태로 시작하고 저장소 실패와 운
   expect(server.gets).toBe(readsBeforeRoleChange);
 });
 
-test("필터·칸반·중복 비교·승인 보기와 네 편집 탭을 보존하며 기록 API만 호출한다", async ({ page }, testInfo) => {
+test("필터·칸반·중복 비교·검증·승인 보기와 다섯 편집 탭을 보존하며 기록 API만 호출한다", async ({ page }, testInfo) => {
   const first = sampleTask();
   const second: Task = { ...sampleTask("TEST-002", "배포 전 검토"), action: "외부 배포", stage: "승인 대기", scope: "샘플 환경", risks: { ...first.risks, deployBlock: "감지" } };
   const server = await fixture(page, { ...emptyBoard(), tasks: [first, second] });
@@ -88,6 +88,9 @@ test("필터·칸반·중복 비교·승인 보기와 네 편집 탭을 보존�
   await page.getByRole("button", { name: "변경 비교", exact: true }).click();
   await expect(page.locator(".cw-comparison-card")).toHaveCount(2);
   await expect(page.getByText("같은 변경 그룹 TEST-002 · 내용 비교 필요", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "검증 단계", exact: true }).click();
+  await expect(page.locator(".cw-verification-table tbody tr")).toHaveCount(2);
+  await expect(page.getByRole("columnheader", { name: "병합 후 테스트", exact: true })).toBeVisible();
   await page.locator(".cw-sidebar").getByRole("button", { name: /^승인 대기/u }).click();
   await expect(page.locator(".cw-approval-card")).toHaveCount(1);
   await expect(page.getByText("샘플 환경", { exact: true })).toBeVisible();
@@ -106,14 +109,21 @@ test("필터·칸반·중복 비교·승인 보기와 네 편집 탭을 보존�
   await dialog.getByLabel("근거 1 제목", { exact: true }).fill("브라우저 검증 근거");
   await dialog.getByLabel("근거 1 URL", { exact: true }).fill("https://example.com/evidence");
   await dialog.getByLabel("근거 1 확인 내용", { exact: true }).fill("검토 대상이 존재함을 확인한 샘플");
+  await dialog.getByLabel("근거 1 대상 전체 SHA", { exact: true }).fill(first.remoteSha);
+  await dialog.getByLabel("근거 1 확인 시각 (KST)", { exact: true }).fill(inputTime(new Date().toISOString()));
   await dialog.getByRole("button", { name: "로그 추가", exact: true }).click();
   await dialog.getByLabel("로그 1 이름", { exact: true }).fill("샘플 로그");
   await dialog.getByLabel("로그 1 URL", { exact: true }).fill("https://example.com/log");
+  await dialog.getByRole("tab", { name: "검증·정리", exact: true }).click();
+  await dialog.getByRole("button", { name: "기본 단계 추가", exact: true }).click();
+  await dialog.getByRole("tab", { name: "운영·신호", exact: true }).click();
+  await dialog.getByRole("checkbox", { name: "회귀 근거: 브라우저 검증 근거", exact: true }).check();
   await dialog.getByRole("button", { name: "작업 기록 저장", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   expect(server.writes).toHaveLength(1);
   expect(server.board.tasks[0]).toMatchObject({ action: "코드 수정", stage: "승인 대기", scope: "관리자 화면 검토", risks: { regression: "감지" }, verifiedAt: "" });
   expect(server.board.snapshotAt).toBe("");
+  expect(server.board.tasks[0].verificationChecks).toHaveLength(5);
   expect(server.requests).toEqual(["POST /api/admin/cloud-workboard"]);
   await page.getByRole("button", { name: "활동 기록", exact: true }).click();
   await expect(page.getByText("서버 저장 이력", { exact: true })).toBeVisible();
@@ -139,6 +149,8 @@ test("Sites JSON을 검토 후 병합하고 과거 감사 이력을 서버 이�
   expect(server.board.tasks.map(item => item.title)).toEqual(["가져온 작업", "가져온 새 작업"]);
   expect(server.board.audit.map(item => item.id)).toContain("server-existing");
   expect(server.board.audit.map(item => item.id)).not.toContain("external-history");
+  expect(server.board.sourceHistory?.map(item => item.id)).toContain("external-history");
+  expect(server.writes[0]?.importHistory).toBe(true);
   expect(server.board.snapshotAt).toBe(incoming.snapshotAt);
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "내보내기", exact: true }).click();

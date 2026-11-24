@@ -24,4 +24,10 @@ describe("클라우드 작업 관리자 API 어댑터", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ board: emptyBoard(), revision: -1, storedAt: null })));
     await expect(loadCloudWorkboard()).rejects.toThrow(/형식/u);
   });
+  it("명시적으로 검토한 이력 가져오기만 서버에 이전 모드로 전달한다", async () => {
+    const value = { board: emptyBoard(), revision: 1, storedAt: null };
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(value)));
+    await saveCloudWorkboard(value.board, 0, "67a2d3ea-8a7f-4b37-9b73-c05bf1cb44a7", undefined, true);
+    expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toMatchObject({ importHistory: true, expectedRevision: 0 });
+  });
 });

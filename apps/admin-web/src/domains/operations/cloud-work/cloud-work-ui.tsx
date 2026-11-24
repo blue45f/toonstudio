@@ -1,4 +1,4 @@
-import { freshness, matchingCI, safeUrl, stageTone } from "@toonstudio/contracts/admin-cloud-workboard";
+import { effectiveCI, safeUrl, stageTone } from "@toonstudio/contracts/admin-cloud-workboard";
 import { useEffect, useId, useRef } from "react";
 
 import type { Task } from "@toonstudio/contracts/admin-cloud-workboard";
@@ -38,9 +38,9 @@ export function WorkStage({ value }: { value: string }) {
 }
 
 export function WorkCiBadge({ task, now }: { task: Task; now: number }) {
-  if (task.ciStatus !== "미확인" && freshness(task, now) !== "24시간 내 확인") return <WorkBadge>CI 미확인 · 재확인</WorkBadge>;
-  const tone = task.ciStatus.includes("실패") ? "red" : task.ciStatus === "통과" && matchingCI(task) ? "green" : task.ciStatus === "대기·실행 중" ? "blue" : "gray";
-  const text = task.ciStatus === "통과" && !matchingCI(task) ? "다른 SHA 통과" : task.ciStatus === "미확인" ? "CI 미확인" : `CI ${task.ciStatus}`;
+  const status = effectiveCI(task, now);
+  const tone = status.includes("실패") ? "red" : status === "통과" ? "green" : status === "대기·실행 중" ? "blue" : "gray";
+  const text = status === "미확인" && task.ciStatus !== "미확인" ? "CI 미확인 · 재확인" : `CI ${status}`;
   return <WorkBadge tone={tone}>{text}</WorkBadge>;
 }
 

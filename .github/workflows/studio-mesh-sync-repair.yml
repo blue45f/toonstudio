@@ -92,6 +92,7 @@ jobs:
         run: node --test scripts/studio-mesh-sync-typecheck-policy.test.mjs
       - name: 웹·API 전체 타입 검사
         env:
+          NODE_OPTIONS: --max-old-space-size=12288
           TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: pnpm run typecheck
 
