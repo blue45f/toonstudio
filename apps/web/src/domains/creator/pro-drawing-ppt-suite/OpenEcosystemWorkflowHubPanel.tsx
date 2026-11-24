@@ -63,6 +63,11 @@ const LazyStudioWebcodecsOpfsPanel = lazy(async () => {
   const m = await import("../webcodecs-opfs-engine/StudioWebcodecsOpfsPanel");
   return { default: m.StudioWebcodecsOpfsPanel };
 });
+const LazyStudioAiLatentStoryboardPanel = lazy(async () => {
+  await import("../ai-latent-storyboard");
+  const m = await import("../ai-latent-storyboard/StudioAiLatentStoryboardPanel");
+  return { default: m.StudioAiLatentStoryboardPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -76,7 +81,8 @@ type EcosystemTabId =
   | "autoStyleDna"
   | "styleShaderPack"
   | "episodeColorScript"
-  | "webcodecsOpfs";
+  | "webcodecsOpfs"
+  | "aiLatentConti";
 
 const ECOSYSTEM_TABS: readonly {
   readonly id: EcosystemTabId;
@@ -95,6 +101,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "styleShaderPack", labelKo: "팀 화풍·WGSL 팩 서명 교환 (.tspack)", labelEn: "Team Style & WGSL Pack (.tspack)" },
   { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
   { id: "webcodecsOpfs", labelKo: "WebCodecs 4K·희소 타일·OPFS 버전", labelEn: "WebCodecs 4K · Sparse Tile · OPFS VCS" },
+  { id: "aiLatentConti", labelKo: "화풍 DNA 일치화·대본 자동 콘티·브러시", labelEn: "Style DNA · Script-to-Conti · Smart Brush" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -123,6 +130,8 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Palette size={15} aria-hidden="true" />;
     case "webcodecsOpfs":
       return <Workflow size={15} aria-hidden="true" />;
+    case "aiLatentConti":
+      return <Wand2 size={15} aria-hidden="true" />;
   }
 }
 
@@ -183,6 +192,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "styleShaderPack" ? <LazyStudioStyleShaderPackExchangePanel /> : null}
           {active === "episodeColorScript" ? <LazyStudioEpisodeColorScriptPanel /> : null}
           {active === "webcodecsOpfs" ? <LazyStudioWebcodecsOpfsPanel /> : null}
+          {active === "aiLatentConti" ? <LazyStudioAiLatentStoryboardPanel /> : null}
         </Suspense>
       </div>
     </section>
