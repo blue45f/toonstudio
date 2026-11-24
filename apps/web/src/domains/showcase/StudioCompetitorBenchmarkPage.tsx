@@ -225,7 +225,11 @@ export function StudioCompetitorBenchmarkPage() {
               <p className="mt-1 text-xs leading-5 text-fg-2 sm:text-sm">{copy.probeSubtitle}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span data-testid="benchmark-probe-summary" role="status" className="ts-status-pill ts-status-cool">
+              <span
+                data-testid="benchmark-probe-summary"
+                role="status"
+                className="ts-status-pill ts-status-cool shrink-0 whitespace-nowrap"
+              >
                 {tierLabel} ({probe.supportedCount}/{probe.totalCount})
               </span>
               <button
@@ -247,15 +251,21 @@ export function StudioCompetitorBenchmarkPage() {
                 data-testid={`benchmark-probe-item-${item.id}`}
                 className="rounded-2xl border border-line bg-card px-3.5 py-3"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-2 text-xs font-bold text-fg">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="inline-flex min-w-0 items-center gap-2 text-xs font-bold leading-4 text-fg">
                     <span
-                      className={cn("ts-probe-dot", item.supported ? "ts-probe-dot-on" : "ts-probe-dot-fallback")}
+                      className={cn("ts-probe-dot shrink-0", item.supported ? "ts-probe-dot-on" : "ts-probe-dot-fallback")}
                       aria-hidden="true"
                     />
-                    {item.name}
+                    <span className="min-w-0">{item.name}</span>
                   </span>
-                  <span className={cn("text-[11px] font-bold", item.supported ? "text-good" : "text-warn")}>
+                  <span
+                    data-testid={`benchmark-probe-status-${item.id}`}
+                    className={cn(
+                      "shrink-0 whitespace-nowrap text-[11px] font-bold leading-4",
+                      item.supported ? "text-good" : "text-warn",
+                    )}
+                  >
                     {item.supported ? copy.probeSupported : copy.probeFallback}
                   </span>
                 </div>
@@ -430,7 +440,7 @@ export function StudioCompetitorBenchmarkPage() {
                           <h4 className="text-sm font-bold text-fg">{tool.name}</h4>
                           <p className="text-[11px] text-fg-3">{pick(tool.category, locale)}</p>
                         </div>
-                        <span className={cn("ts-status-pill shrink-0", meta.toneClass)}>
+                        <span className={cn("ts-status-pill shrink-0 whitespace-nowrap", meta.toneClass)}>
                           <span aria-hidden="true">{renderStatusSymbol(cell.status)}</span>
                           {pick(meta.label, locale)}
                         </span>
@@ -491,7 +501,7 @@ export function StudioCompetitorBenchmarkPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <h3 className="text-sm font-bold text-fg">{pick(device.name, locale)}</h3>
-                      <span className={cn("ts-status-pill", meta.toneClass)}>
+                      <span className={cn("ts-status-pill shrink-0 whitespace-nowrap", meta.toneClass)}>
                         {pick(meta.label, locale)}
                       </span>
                     </div>

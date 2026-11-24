@@ -208,6 +208,12 @@ describe("StudioCompetitorBenchmarkPage (/compare/studio)", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("ToonStudio vs 글로벌 제작 도구 6종");
     expect(screen.getByTestId("benchmark-live-probe")).toBeTruthy();
 
+    for (const api of NEXTGEN_CHROME_API_SPECS) {
+      const badge = screen.getByTestId(`benchmark-probe-status-${api.id}`);
+      expect(badge.className).toContain("shrink-0");
+      expect(badge.className).toContain("whitespace-nowrap");
+    }
+
     for (const tool of BENCHMARK_TOOLS) {
       expect(screen.getByTestId(`benchmark-tool-cell-${tool.id}`)).toBeTruthy();
     }

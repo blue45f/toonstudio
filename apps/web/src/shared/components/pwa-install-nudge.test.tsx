@@ -121,4 +121,29 @@ describe("PwaInstallNudge", () => {
       expect(screen.queryByRole("status")).toBeNull();
     },
   );
+
+  it.each([
+    "/studio",
+    "/studio/canvas",
+    "/studio/space",
+    "/compare",
+    "/compare/studio",
+    "/tech",
+    "/tech/roadmap",
+  ])(
+    "hides on active workspace and showcase route %s even when installable",
+    async (path) => {
+      const { useI18n } = await import("@/shared/lib/i18n");
+      useI18n.getState().setLang("ko");
+      const { PwaInstallNudge } = await import("./pwa-install-nudge");
+
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <PwaInstallNudge />
+        </MemoryRouter>,
+      );
+      act(dispatchInstallability);
+      expect(screen.queryByRole("status")).toBeNull();
+    },
+  );
 });

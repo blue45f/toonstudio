@@ -40,13 +40,21 @@ export function PwaInstallNudge() {
   );
   const [dismissed, setDismissed] = useState(readInstallNudgeDismissal);
 
-  // Market browsing is content-first; the install prompt competes with discovery chrome there.
-  // The creator home keeps the prompt, but CSS moves it above the mobile bottom navigation.
-  const hideOnMarket = pathname === "/market" || pathname.startsWith("/market/");
+  // 마켓·스튜디오 작업실·비교/기술 쇼케이스에서는 상단 툴바나 히어로 아트워크를 가리지 않도록 설치 안내를 숨긴다.
+  // 크리에이터 홈은 안내를 유지하되 CSS로 모바일 하단 탐색 바 위에 배치한다.
+  const normalizedPath = pathname.toLowerCase().replace(/\/+$/u, "") || "/";
+  const hideOnMarket = normalizedPath === "/market" || normalizedPath.startsWith("/market/");
+  const hideOnActiveWorkspaces =
+    normalizedPath === "/studio"
+    || normalizedPath.startsWith("/studio/")
+    || normalizedPath === "/compare"
+    || normalizedPath.startsWith("/compare/")
+    || normalizedPath === "/tech"
+    || normalizedPath.startsWith("/tech/");
   const iosManualInstall = pwa.platform === "ios" && !pwa.standalone;
   const promptAvailable = pwa.status === "available";
 
-  if (hideOnMarket || (!promptAvailable && !iosManualInstall) || dismissed) return null;
+  if (hideOnMarket || hideOnActiveWorkspaces || (!promptAvailable && !iosManualInstall) || dismissed) return null;
 
   const title = iosManualInstall
     ? bi("툰스튜디오를 홈 화면에 추가하세요", "Add ToonStudio to your Home Screen")

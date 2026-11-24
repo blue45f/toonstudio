@@ -209,6 +209,26 @@ describe("집중 스프린트 완료 체크 · OKLCH 축하 리본 · Web Audio 
     expect(workStatusCss).toContain("font-variant-numeric: tabular-nums");
     expect(workStatusCss).toContain("word-break: keep-all");
     expect(workStatusCss).toContain("prefers-reduced-motion: reduce");
+    expect(workStatusCss).toContain("width: max-content;");
+    expect(workStatusCss).toContain("flex-wrap: wrap;");
+    expect(workStatusCss).not.toContain("overflow-x: auto;");
+  });
+
+  it("업무 상태 칩과 25분 집중·공정 체크 버튼이 줄바꿈·축소 없이 완전한 글자를 유지한다", () => {
+    render(<WorkStatusHarness />);
+    for (const status of STUDIO_WEBTOON_WORK_STATUSES) {
+      const chip = screen.getByTestId(`work-status-btn-${status.id}`);
+      expect(chip.className).toContain("shrink-0");
+      expect(chip.className).toContain("whitespace-nowrap");
+    }
+    const focusBtn = screen.getByTestId("space-focus-sprint-btn");
+    const milestoneBtn = screen.getByTestId("space-milestone-check-btn");
+    expect(focusBtn.textContent).toContain("25분 집중");
+    expect(focusBtn.className).toContain("shrink-0");
+    expect(focusBtn.className).toContain("whitespace-nowrap");
+    expect(milestoneBtn.textContent).toContain("공정 체크");
+    expect(milestoneBtn.className).toContain("shrink-0");
+    expect(milestoneBtn.className).toContain("whitespace-nowrap");
   });
 });
 
