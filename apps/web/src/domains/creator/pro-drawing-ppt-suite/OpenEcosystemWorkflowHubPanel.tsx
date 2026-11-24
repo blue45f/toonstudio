@@ -68,6 +68,10 @@ const LazyStudioAiLatentStoryboardPanel = lazy(async () => {
   const m = await import("../ai-latent-storyboard/StudioAiLatentStoryboardPanel");
   return { default: m.StudioAiLatentStoryboardPanel };
 });
+const LazyStudioStorySimulpubPanel = lazy(async () => {
+  const m = await import("../story-simulpub-provenance");
+  return { default: m.StudioStorySimulpubPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -82,6 +86,7 @@ type EcosystemTabId =
   | "styleShaderPack"
   | "episodeColorScript"
   | "webcodecsOpfs"
+  | "storySimulpub"
   | "aiLatentConti";
 
 const ECOSYSTEM_TABS: readonly {
@@ -102,6 +107,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
   { id: "webcodecsOpfs", labelKo: "코덱 지원 점검·희소 타일·OPFS 버전", labelEn: "Codec Support Probe · Sparse Tile · OPFS VCS" },
   { id: "aiLatentConti", labelKo: "색 변환 예제·대본 분석·브러시 추천", labelEn: "Color Example · Script Parser · Brush Suggestions" },
+  { id: "storySimulpub", labelKo: "인과·리플로우·무결성 예제", labelEn: "Causality · Reflow · Integrity Examples" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -132,6 +138,8 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Workflow size={15} aria-hidden="true" />;
     case "aiLatentConti":
       return <Wand2 size={15} aria-hidden="true" />;
+    case "storySimulpub":
+      return <BookOpen size={15} aria-hidden="true" />;
   }
 }
 
@@ -193,6 +201,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "episodeColorScript" ? <LazyStudioEpisodeColorScriptPanel /> : null}
           {active === "webcodecsOpfs" ? <LazyStudioWebcodecsOpfsPanel /> : null}
           {active === "aiLatentConti" ? <LazyStudioAiLatentStoryboardPanel /> : null}
+          {active === "storySimulpub" ? <LazyStudioStorySimulpubPanel /> : null}
         </Suspense>
       </div>
     </section>

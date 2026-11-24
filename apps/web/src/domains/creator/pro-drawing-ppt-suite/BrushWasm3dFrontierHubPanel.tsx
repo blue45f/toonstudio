@@ -88,6 +88,14 @@ const LazyStudioWebgpuCrowdDirectorPanel = lazy(async () => {
   const m = await import("../webgpu-crowd-director/StudioWebgpuCrowdDirectorPanel");
   return { default: m.StudioWebgpuCrowdDirectorPanel };
 });
+const LazyStudioProCommercialPanel = lazy(async () => {
+  const m = await import("../pro-commercial-suite");
+  return { default: m.StudioProCommercialPanel };
+});
+const LazyStudioCharlabCspSurpassPanel = lazy(async () => {
+  const m = await import("../charlab-csp-surpass");
+  return { default: m.StudioCharlabCspSurpassPanel };
+});
 
 type FrontierTabId =
   | "brushPhysics"
@@ -103,6 +111,8 @@ type FrontierTabId =
   | "webgpuNextgen"
   | "webgpuXpbdLight"
   | "webgpuCrowd"
+  | "proCommercial"
+  | "charlabCsp"
   | "webnnPigment"
   | "drawingFrontier"
   | "visualOracle"
@@ -136,6 +146,8 @@ const FRONTIER_TABS: readonly {
   { id: "webgpuNextgen", labelKo: "제로카피 · LOD · P2P · 카나리", labelEn: "Zero-Copy · LOD · P2P · Canary" },
   { id: "webgpuXpbdLight", labelKo: "XPBD 물리·CPU 광원 베이크", labelEn: "XPBD Physics · CPU Light Bake" },
   { id: "webgpuCrowd", labelKo: "군중 배치 계산·미리보기", labelEn: "Crowd Layout · Preview" },
+  { id: "proCommercial", labelKo: "리라이트·식자·투고 구성 예제", labelEn: "Relight · Lettering · Submission Examples" },
+  { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
   { id: "webnnPigment", labelKo: "CPU 선화·안료 혼색·컷 규칙", labelEn: "CPU Lineart · Pigment Mix · Cut Rules" },
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
@@ -251,6 +263,10 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Zap size={15} aria-hidden="true" />;
     case "webgpuCrowd":
       return <Layers size={15} aria-hidden="true" />;
+    case "proCommercial":
+      return <Palette size={15} aria-hidden="true" />;
+    case "charlabCsp":
+      return <PenTool size={15} aria-hidden="true" />;
     case "webnnPigment":
       return <Palette size={15} aria-hidden="true" />;
     case "drawingFrontier":
@@ -417,6 +433,8 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "webgpuNextgen" ? <LazyStudioWebGpuNextgenRuntimePanel /> : null}
             {active === "webgpuXpbdLight" ? <LazyStudioWebgpuXpbdLightingPanel /> : null}
             {active === "webgpuCrowd" ? <LazyStudioWebgpuCrowdDirectorPanel /> : null}
+            {active === "proCommercial" ? <LazyStudioProCommercialPanel /> : null}
+            {active === "charlabCsp" ? <LazyStudioCharlabCspSurpassPanel /> : null}
             {active === "webnnPigment" ? <LazyStudioWebnnPigmentDirectorPanel /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
