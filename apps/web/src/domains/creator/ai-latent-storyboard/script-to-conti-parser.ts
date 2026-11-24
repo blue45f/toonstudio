@@ -412,6 +412,7 @@ export function parseKoreanScriptToConti(scriptText: string, options: ScriptToCo
   let sceneTitle = "씬 1";
   let nextIsOpening = true;
   let current: RawCutDraft | null = null;
+  const active = (): RawCutDraft | null => current;
 
   const flush = (): void => {
     if (!current) return;
@@ -437,29 +438,32 @@ export function parseKoreanScriptToConti(scriptText: string, options: ScriptToCo
       continue;
     }
     if (tok.kind === "stage-direction") {
-      if (current && (current.balloonTokens.length > 0 || current.sfxList.length > 0)) flush();
+      const cur = active();
+      if (cur && (cur.balloonTokens.length > 0 || cur.sfxList.length > 0)) flush();
       ensure().stageDirections.push(tok.text);
       continue;
     }
     if (tok.kind === "sfx") {
       const intensity = tok.sfxIntensity ?? "medium";
-      if (current && current.balloonTokens.length > 0 && intensity === "impact") flush();
+      const cur = active();
+      if (cur && cur.balloonTokens.length > 0 && intensity === "impact") flush();
       ensure().sfxList.push({ text: tok.text, intensity });
       continue;
     }
     // 장면 도입 설정 지문(와이드/부감) 직후 대사가 시작되면 설정 컷과 인물 대사 컷을 자연스럽게 분리
+    const cur = active();
     if (
-      current &&
-      current.isSceneOpening &&
-      current.stageDirections.length > 0 &&
-      current.balloonTokens.length === 0 &&
+      cur &&
+      cur.isSceneOpening &&
+      cur.stageDirections.length > 0 &&
+      cur.balloonTokens.length === 0 &&
       tok.kind === "dialogue" &&
-      (WIDE_SHOT_RE.test(current.stageDirections.join(" ")) || BIRDS_EYE_RE.test(current.stageDirections.join(" ")))
+      (WIDE_SHOT_RE.test(cur.stageDirections.join(" ")) || BIRDS_EYE_RE.test(cur.stageDirections.join(" ")))
     ) {
       flush();
-    } else if (current && current.balloonTokens.length >= maxBalloonsPerCut) {
+    } else if (cur && cur.balloonTokens.length >= maxBalloonsPerCut) {
       flush();
-    } else if (current && tok.kind === "inner-thought" && current.balloonTokens.some((b) => b.kind === "dialogue")) {
+    } else if (cur && tok.kind === "inner-thought" && cur.balloonTokens.some((b) => b.kind === "dialogue")) {
       flush();
     }
     ensure().balloonTokens.push(tok);

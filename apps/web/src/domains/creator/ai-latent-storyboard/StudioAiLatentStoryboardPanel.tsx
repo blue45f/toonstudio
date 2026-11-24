@@ -93,7 +93,7 @@ export function StudioAiLatentStoryboardPanel({
   onContiGenerated,
   onStyleHarmonized,
   onBrushRecommended,
-}: StudioAiLatentStoryboardPanelProps = {}): ReactElement {
+}: StudioAiLatentStoryboardPanelProps): ReactElement {
   const uid = useId();
   const storeLang = useI18n((s) => s.lang);
   const isEn = (locale ?? (storeLang.toLowerCase().startsWith("en") ? "en" : "ko")) === "en";

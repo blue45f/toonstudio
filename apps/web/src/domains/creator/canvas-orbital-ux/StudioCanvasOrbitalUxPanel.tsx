@@ -95,7 +95,7 @@ export function StudioCanvasOrbitalUxPanel({
   initialToolContext = "brush",
   onSectorSelected,
   onCommandExecuted,
-}: StudioCanvasOrbitalUxPanelProps = {}): ReactElement {
+}: StudioCanvasOrbitalUxPanelProps): ReactElement {
   const paletteInputId = useId();
 
   const [deviceMode, setDeviceMode] = useState<ErgonomicDeviceMode>(initialDeviceMode);
