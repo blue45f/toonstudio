@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -13,10 +13,15 @@ import { buildZeroWalkShortcuts, spaceZoneWorkItems } from "./space-zone-workflo
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 const drawerSource = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "SpaceTopLeftWorkDrawer.tsx"),
+  "utf8",
+);
+const drawerCss = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "space-top-left-work-drawer.css"),
   "utf8",
 );
 
@@ -62,6 +67,104 @@ function renderDrawer(overrides?: Partial<SpaceTopLeftWorkDrawerProps>) {
 }
 
 describe("SpaceTopLeftWorkDrawer (좌상단 단일 접이식 작업 도구 드로어)", () => {
+  it("가로로 겹치는 채팅의 실제 윗변을 보호하고 재배치·닫힘 때 점유 높이를 갱신·정리한다", async () => {
+    vi.stubGlobal("innerHeight", 390);
+    let chatBounds = new DOMRect(8, 279, 90, 44);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains("space-chat")) return chatBounds;
+      if (this.classList.contains("space-work-tools-drawer")) return new DOMRect(8, 192, 544, 135);
+      return new DOMRect();
+    });
+    const onChat = vi.fn();
+    render(
+      <MemoryRouter>
+        <div className="space-hud">
+          <div className="space-hud__slot--top-left" data-testid="top-left-slot">
+            <SpaceTopLeftWorkDrawer {...createProps()} />
+          </div>
+          <div className="space-chat"><button onClick={onChat}>말걸기</button></div>
+        </div>
+      </MemoryRouter>,
+    );
+    const toggle = screen.getByTestId("space-work-tools-toggle");
+    const slot = screen.getByTestId("top-left-slot");
+    fireEvent.click(toggle);
+    expect(slot.style.getPropertyValue("--space-work-tools-chat-clearance")).toBe("111px");
+    chatBounds = new DOMRect(600, 279, 90, 44);
+    fireEvent.resize(window);
+    await waitFor(() => expect(slot.style.getPropertyValue("--space-work-tools-chat-clearance")).toBe("0px"));
+    chatBounds = new DOMRect(8, 249, 90, 74);
+    fireEvent.resize(window);
+    await waitFor(() => expect(slot.style.getPropertyValue("--space-work-tools-chat-clearance")).toBe("141px"));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(slot.style.getPropertyValue("--space-work-tools-chat-clearance")).toBe("");
+    expect(document.activeElement).toBe(toggle);
+    fireEvent.click(screen.getByRole("button", { name: "말걸기" }));
+    expect(onChat).toHaveBeenCalledOnce();
+  });
+
+  it("드로어만 남은 세로 공간에서 스크롤하고 상단 형제와 44px 조작부는 압축하지 않는다", () => {
+    render(
+      <MemoryRouter>
+        <style>{drawerCss}</style>
+        <div className="space-hud__slot--top-left" data-testid="top-left-slot">
+          <div data-testid="location-control">현재 위치</div>
+          <SpaceTopLeftWorkDrawer {...createProps()} />
+        </div>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByTestId("space-work-tools-toggle"));
+    const drawer = screen.getByTestId("space-work-tools-drawer");
+    const style = getComputedStyle(drawer);
+    expect(style.overflowY).toBe("auto");
+    expect(style.minBlockSize).toBe("0px");
+    expect(style.flexShrink).toBe("1");
+    expect(getComputedStyle(screen.getByTestId("location-control")).flexShrink).toBe("0");
+    const header = drawer.querySelector("header");
+    if (!header) throw new Error("드로어 헤더가 없습니다.");
+    expect(getComputedStyle(header).flexShrink).toBe("0");
+    const limit = getComputedStyle(screen.getByTestId("top-left-slot")).maxBlockSize;
+    expect(limit).toContain("100dvh");
+    expect(limit).toContain("--space-safe-top");
+    expect(limit).toContain("--immersive-dock-clearance");
+    expect(limit).toContain("--space-work-tools-chat-clearance");
+    for (const control of drawer.querySelectorAll("button, a")) {
+      const minimum = getComputedStyle(control).minHeight;
+      expect(minimum).toContain("max(44px,");
+      expect(minimum).toContain("--site-control-size");
+    }
+  });
+
+  it("낮은 높이의 기본 구역 바 숨김을 유지하면서 열린 드로어의 구역 액션은 표시하고 실행한다", () => {
+    const onPanel = vi.fn();
+    const props = createProps({
+      personal: false,
+      zoneWorkKind: "meeting",
+      zoneWorkItems: spaceZoneWorkItems("meeting", { projectId: "work-1", productionProjectId: null, personal: false }),
+      onPanel,
+    });
+    const { container } = render(
+      <MemoryRouter>
+        {/* 가로 휴대폰에서 활성화되는 기존 숨김 선언을 직접 적용해 CSS 우선순위를 검증한다. */}
+        <style>{`.space-zone-workbar { display: none; } ${drawerCss}`}</style>
+        <SpaceTopLeftWorkDrawer {...props} />
+      </MemoryRouter>,
+    );
+    const ambientBar = container.querySelector(".space-zone-workbar");
+    if (!ambientBar) throw new Error("기본 구역 바가 없습니다.");
+    expect(getComputedStyle(ambientBar).display).toBe("none");
+    fireEvent.click(screen.getByTestId("space-work-tools-toggle"));
+    const drawer = screen.getByTestId("space-work-tools-drawer");
+    const zone = within(drawer).getByRole("navigation", { name: "회의실에서 바로" });
+    expect(getComputedStyle(zone).display).toBe("grid");
+    fireEvent.click(within(zone).getByRole("button", { name: "피드백·검수함" }));
+    expect(onPanel).toHaveBeenCalledExactlyOnceWith("work");
+    expect(screen.queryByTestId("space-work-tools-drawer")).toBeNull();
+    const collapsedBar = container.querySelector(".space-zone-workbar");
+    if (!collapsedBar) throw new Error("접힌 상태의 구역 바가 없습니다.");
+    expect(getComputedStyle(collapsedBar).display).toBe("none");
+  });
+
   it("기본 상태는 접힘(open=false)이며 활성 업무 상태 라벨 배지를 단일 토글 버튼에 표시한다", () => {
     const { container } = renderDrawer({ workStatusId: "storyboard" });
 

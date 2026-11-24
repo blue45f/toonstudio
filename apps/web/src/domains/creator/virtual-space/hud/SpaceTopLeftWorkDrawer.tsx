@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, PenTool, Presentation, SlidersHorizontal, StickyNote, X } from "lucide-react";
-import { memo, useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -17,6 +17,7 @@ import type {
   SpaceZoneWorkKind,
   ZeroWalkShortcutItem,
 } from "./space-zone-workflow";
+import "./space-top-left-work-drawer.css";
 
 export interface SpaceTopLeftWorkDrawerProps {
   /** 좌상단 도구 행 왼쪽에 고정 배치하는 컨트롤(프로필 팝오버·마감 카운트다운). */
@@ -95,6 +96,60 @@ export const SpaceTopLeftWorkDrawer = memo(function SpaceTopLeftWorkDrawer({
   const hasZoneItems = Boolean(zoneWorkKind && zoneWorkItems.length > 0);
   const hasZeroWalk = zeroWalkShortcuts.length > 0;
   const showZoneSection = hasZoneItems || hasZeroWalk;
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const drawer = drawerRef.current;
+    const hud = drawer?.closest<HTMLElement>(".space-hud");
+    const slot = drawer?.closest<HTMLElement>(".space-hud__slot--top-left");
+    if (!drawer || !hud || !slot) return undefined;
+    const property = "--space-work-tools-chat-clearance";
+    const previous = slot.style.getPropertyValue(property);
+    let frame = 0;
+    let observedChat: HTMLElement | null = null;
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
+
+    function publish() {
+      frame = 0;
+      const chat = hud.querySelector<HTMLElement>(".space-chat");
+      if (chat !== observedChat) {
+        if (observedChat) observer?.unobserve(observedChat);
+        observedChat = chat;
+        if (chat) observer?.observe(chat);
+      }
+      const drawerRect = drawer.getBoundingClientRect();
+      const chatRect = chat?.getBoundingClientRect();
+      const chatStyle = chat ? window.getComputedStyle(chat) : null;
+      const overlaps = chatRect && chatRect.width > 0 && chatRect.height > 0
+        && chatStyle?.display !== "none" && chatStyle?.visibility !== "hidden"
+        && chatRect.left < drawerRect.right && chatRect.right > drawerRect.left;
+      // 채팅의 실제 윗변을 보호하되, 가로로 겹치지 않는 조작부는 높이 예산에서 빼지 않는다.
+      const clearance = overlaps ? Math.max(0, Math.ceil(window.innerHeight - chatRect.top)) : 0;
+      const value = `${clearance}px`;
+      if (slot.style.getPropertyValue(property) !== value) slot.style.setProperty(property, value);
+    }
+
+    function schedule() {
+      if (frame) return;
+      if (typeof requestAnimationFrame === "function") frame = requestAnimationFrame(publish);
+      else publish();
+    }
+
+    observer?.observe(hud);
+    observer?.observe(slot);
+    const mutations = typeof MutationObserver === "undefined" ? null : new MutationObserver(schedule);
+    mutations?.observe(hud, { childList: true, subtree: true });
+    window.addEventListener("resize", schedule);
+    publish();
+    return () => {
+      observer?.disconnect();
+      mutations?.disconnect();
+      window.removeEventListener("resize", schedule);
+      if (frame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
+      if (previous) slot.style.setProperty(property, previous);
+      else slot.style.removeProperty(property);
+    };
+  }, [open]);
 
   const closeAndFocusToggle = useCallback(() => {
     setOpen(false);
@@ -228,7 +283,7 @@ export const SpaceTopLeftWorkDrawer = memo(function SpaceTopLeftWorkDrawer({
           data-testid="space-work-tools-drawer"
           data-space-interactive="true"
           aria-label={bt("작업 도구 패널", "Work tools drawer")}
-          className="flex w-full max-w-[min(34rem,calc(100vw-1.5rem))] flex-col gap-3 rounded-2xl border border-line bg-panel/95 p-3 text-xs text-fg shadow-xl backdrop-blur-md break-keep"
+          className="space-work-tools-drawer flex w-full max-w-[min(34rem,calc(100vw-1.5rem))] flex-col gap-3 rounded-2xl border border-line bg-panel/95 p-3 text-xs text-fg shadow-xl backdrop-blur-md break-keep"
         >
           <header className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-bold tracking-wide text-fg-2">
