@@ -1,4 +1,4 @@
-import { LifeBuoy, PenTool, Presentation, StickyNote } from "lucide-react";
+import { LifeBuoy } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ComponentProps } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -51,9 +51,9 @@ import { SpaceSidePanel } from "./hud/SpaceSidePanel";
 import { SpaceToasts } from "./hud/SpaceToasts";
 import { SpaceTownBanner } from "./hud/SpaceTownBanner";
 import { SpaceWorkLauncher } from "./hud/SpaceWorkLauncher";
-import { SpaceCelebrationRibbon, SpaceWorkStatusBar } from "./hud/SpaceWorkStatusBar";
+import { SpaceTopLeftWorkDrawer } from "./hud/SpaceTopLeftWorkDrawer";
+import { SpaceCelebrationRibbon } from "./hud/SpaceWorkStatusBar";
 import { SpaceZoneSplash, type SpaceZoneSplashInput } from "./hud/SpaceZoneSplash";
-import { SpaceZoneWorkbar } from "./hud/SpaceZoneWorkbar";
 import { SpaceZoomControls } from "./hud/SpaceZoomControls";
 import { VirtualSpaceSidePanelContent } from "./hud/VirtualSpaceSidePanelContent";
 import { VirtualSpaceStagePopovers, type SoloBoardTab } from "./hud/VirtualSpaceStagePopovers";
@@ -656,36 +656,26 @@ export function VirtualSpaceExperience({
                 pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} engineMode={authoringMode ? undefined : engineMode}
                 onToggleEngineMode={() => { const next = engineMode === "3d" ? "2d" : "3d"; setEngineMode(next); writeStudioVirtualPreferredEngineMode(next); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, next) }, { replace: true }); }}
                 onQuickAction={handleAtelierPulseAction} onOpenSearch={() => { overlays.setDockPopover(null); overlays.setSearchOpen(true); }} />
-              <div className="space-top-tools-row" data-space-interactive="true">
-                <SpaceInlineProfilePopover nickname={localName} onNicknameChange={onNicknameChange} permissions={permissions} roomControl={roomControl}
-                  onHostAction={dispatchHostAction} onOpenInvite={() => overlays.setInviteOpen(true)} onOpenAvatarCustomize={() => overlays.setPanel("build")}
-                  peers={snapshot.peers.map((p) => ({ sessionId: p.participant.sessionId, displayName: p.participant.displayName }))} />
-                {!touch ? <SpaceDeadlineCountdownWidget deadlines={yjsSpace.state.deadlines} compact /> : null}
-                {personal ? (
-                  <div className="flex items-center gap-1" data-space-interactive="true">
-                    <button type="button" data-testid="space-quick-whiteboard-btn" onClick={() => setSoloBoardOpen((c) => (c === "whiteboard" ? null : "whiteboard"))} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
-                      <PenTool size={14} aria-hidden />{bt("화이트보드", "Board")}
-                    </button>
-                    <button type="button" data-testid="space-quick-stickies-btn" onClick={() => setSoloBoardOpen((c) => (c === "stickies" ? null : "stickies"))} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
-                      <StickyNote size={14} aria-hidden />{bt("포스트잇", "Stickies")}
-                    </button>
-                    <button type="button" data-testid="space-quick-annotation-btn" onClick={() => setSoloBoardOpen((c) => (c === "annotation" ? null : "annotation"))} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
-                      <Presentation size={14} aria-hidden />{bt("실시간 주석", "Annotate")}
-                    </button>
-                  </div>
-                ) : !touch ? (
-                  <button type="button" data-testid="space-quick-whiteboard-btn" onClick={() => overlays.togglePanel("board")} className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-panel/95 px-3 text-xs font-medium text-fg shadow-sm hover:border-accent">
-                    <PenTool size={14} aria-hidden />{bt("화이트보드", "Board")}
-                  </button>
-                ) : null}
-              </div>
-              {worldRuntime.worldReady && !authoringMode ? (
-                <SpaceWorkStatusBar activeStatusId={workStatusId} onSelectStatus={handleSelectWorkStatus} focusActive={focusActive && focusSession.phase !== "break"}
-                  onStartFocusSprint={startFocusPulse} onCompleteCheckpoint={() => { if (focusSession.phase === "running" || focusSession.phase === "paused") completeFocusSprintNow(); else triggerCelebration("milestone-check"); }} />
-              ) : null}
+              <SpaceTopLeftWorkDrawer
+                leadingTools={<>
+                  <SpaceInlineProfilePopover nickname={localName} onNicknameChange={onNicknameChange} permissions={permissions} roomControl={roomControl}
+                    onHostAction={dispatchHostAction} onOpenInvite={() => overlays.setInviteOpen(true)} onOpenAvatarCustomize={() => overlays.setPanel("build")}
+                    peers={snapshot.peers.map((p) => ({ sessionId: p.participant.sessionId, displayName: p.participant.displayName }))} />
+                  {!touch ? <SpaceDeadlineCountdownWidget deadlines={yjsSpace.state.deadlines} compact /> : null}
+                </>}
+                personal={personal} worldReady={worldRuntime.worldReady} authoringMode={authoringMode}
+                soloBoardOpen={soloBoardOpen} onToggleSoloBoard={(tab) => setSoloBoardOpen((c) => (c === tab ? null : tab))}
+                teamBoardOpen={overlays.panel === "board"} onToggleTeamBoard={() => overlays.togglePanel("board")}
+                teamAnnotationOpen={overlays.panel === "annotation"} onToggleTeamAnnotation={() => overlays.togglePanel("annotation")}
+                workStatusId={workStatusId} onSelectWorkStatus={handleSelectWorkStatus}
+                focusActive={focusActive && focusSession.phase !== "break"} onStartFocusSprint={startFocusPulse}
+                onCompleteCheckpoint={() => { if (focusSession.phase === "running" || focusSession.phase === "paused") completeFocusSprintNow(); else triggerCelebration("milestone-check"); }}
+                zoneWorkKind={zoneWorkKind} zoneWorkItems={zoneWorkItems} pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null}
+                zeroWalkShortcuts={zeroWalkShortcuts} onPanel={overlays.setPanel} onCowork={() => overlays.openCowork(null)}
+                onShare={shareScreenNearby} onPulseAction={handleAtelierPulseAction} onZeroWalkShortcut={handleZeroWalkShortcut}
+              />
               {homeHeader}
               {worldRuntime.worldReady && overlays.tourOpen ? <StudioVirtualSpaceMiniTour progress={overlays.tourProgress} touch={touch} onDone={overlays.finishMiniTour} /> : null}
-              <SpaceZoneWorkbar kind={zoneWorkKind} items={zoneWorkItems} pulse={worldRuntime.worldReady && !authoringMode ? atelierPulse : null} zeroWalkShortcuts={zeroWalkShortcuts} onPanel={overlays.setPanel} onCowork={() => overlays.openCowork(null)} onShare={shareScreenNearby} onPulseAction={handleAtelierPulseAction} onZeroWalkShortcut={handleZeroWalkShortcut} />
               <StudioVirtualSpaceSilentZoneBadge zone={socialAndMedia.silentZone.zone} mutedByZone={socialAndMedia.silentZone.mutedByZone} />
             </>
           }
@@ -785,7 +775,7 @@ export function VirtualSpaceExperience({
 }
 
 export function StudioVirtualSpacePage(
-  props: Omit<ComponentProps<typeof StudioVirtualSpacePageRoot>, "Experience"> = {},
+  props: Omit<ComponentProps<typeof StudioVirtualSpacePageRoot>, "Experience">,
 ) {
   return <StudioVirtualSpacePageRoot {...props} Experience={VirtualSpaceExperience} />;
 }
