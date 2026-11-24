@@ -1,4 +1,4 @@
-import { CheckCircle2, LayoutList, Palette, ScanSearch } from "lucide-react";
+import { CheckCircle2, Globe2, LayoutList, Palette, ScanSearch, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -23,8 +23,18 @@ const LazyCollabSignoffHubPanel = lazy(() =>
     default: m.CollabSignoffHubPanel,
   })),
 );
+const LazyStorySimulpubPanel = lazy(async () => {
+  await import("../story-simulpub-provenance");
+  const m = await import("../story-simulpub-provenance/StudioStorySimulpubPanel");
+  return { default: m.StudioStorySimulpubPanel };
+});
+const LazyVirtualSpaceLivingPanel = lazy(async () => {
+  await import("../virtual-space-living");
+  const m = await import("../virtual-space-living/StudioVirtualSpaceLivingPanel");
+  return { default: m.StudioVirtualSpaceLivingPanel };
+});
 
-type QaHubTabId = "pixel" | "layout" | "continuity" | "signoff";
+type QaHubTabId = "pixel" | "layout" | "continuity" | "signoff" | "storySimulpub" | "virtualLiving";
 
 const QA_HUB_TABS: readonly {
   readonly id: QaHubTabId;
@@ -35,6 +45,8 @@ const QA_HUB_TABS: readonly {
   { id: "layout", labelKo: "스마트 안전분할·360px·다국어·0-Defect", labelEn: "Safe-Slice · 360px · i18n · 0-Defect" },
   { id: "continuity", labelKo: "컬러 스크립트·설정집 대조", labelEn: "Color Script · Bible Checker" },
   { id: "signoff", labelKo: "7단계 결재선·부분승인·블라인드·SLA", labelEn: "7-Stage Signoff · Blind Link · SLA" },
+  { id: "storySimulpub", labelKo: "복선 인과 감사·5개국 리플로우·C2PA·스크롤 히트맵", labelEn: "Causality · 5-Lang Reflow · C2PA · Scroll Heatmap" },
+  { id: "virtualLiving", labelKo: "가상 스튜디오 2.5D 스프링·날씨 VFX·아바타·6테마 방", labelEn: "Virtual Studio 2.5D · VFX · Avatar · 6 Rooms" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -47,6 +59,10 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <Palette size={15} aria-hidden="true" />;
     case "signoff":
       return <CheckCircle2 size={15} aria-hidden="true" />;
+    case "storySimulpub":
+      return <Globe2 size={15} aria-hidden="true" />;
+    case "virtualLiving":
+      return <Sparkles size={15} aria-hidden="true" />;
   }
 }
 
@@ -99,6 +115,8 @@ export function AutoQaCollabHubPanel() {
           {active === "layout" ? <LazyAutoQaLayoutSpecPanel /> : null}
           {active === "continuity" ? <LazyAutoQaContinuityPanel /> : null}
           {active === "signoff" ? <LazyCollabSignoffHubPanel /> : null}
+          {active === "storySimulpub" ? <LazyStorySimulpubPanel /> : null}
+          {active === "virtualLiving" ? <LazyVirtualSpaceLivingPanel /> : null}
         </Suspense>
       </div>
     </section>
