@@ -42,11 +42,7 @@ const reactCompilerRuntimeInteropModule = path.resolve(
 const reactCompilerRuntimeCommonJsModule = nodeRequire.resolve("react/compiler-runtime");
 
 const apiTarget = process.env.NEST_API_URL ?? "http://127.0.0.1:4001";
-// Chunks that must never be pulled into the entry document's <link rel="modulepreload"> set.
-// A modulepreload is a highest-priority fetch on every route, so anything here competes with the
-// entry script and the render-blocking stylesheet for the first round trip.
-// "i18n" covers the shared dictionary chunk and the route i18n loaders: translations resolve
-// through an explicit ko/en fallback chain, so nothing on the critical path blocks on them.
+// 첫 화면의 스크립트·스타일과 대역폭을 다투는 청크. 번역은 ko/en 폴백으로 불러온다.
 const ENTRY_PRELOAD_EXCLUSIONS = [
   "studio-konva-runtime",
   "StudioVrmPoser",
@@ -751,7 +747,11 @@ export default defineConfig(({ command, mode }) => ({
     // CI reads this graph to enforce the mobile Studio's initial-JS budgets and lazy-only engines.
     manifest: true,
     modulePreload: {
-      resolveDependencies(_filename, deps, context) {
+      resolveDependencies(filename, deps, context) {
+        // 첫 획에서 필기음 JS는 import()가 직접 요청한다. head에 링크를 추가하면 문서의 :has()가 다시 계산된다.
+        if (context.hostType === "js" && path.posix.basename(filename).startsWith("studio-procedural-foley-audio-")) {
+          return deps.filter((dep) => !dep.endsWith(".js"));
+        }
         if (context.hostType !== "html") return deps;
         return deps.filter((dep) => !ENTRY_PRELOAD_EXCLUSIONS.some((chunkName) => dep.includes(chunkName)));
       },
