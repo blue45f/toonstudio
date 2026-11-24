@@ -88,10 +88,6 @@ const LazyStudioFeatureAtlasPanel = lazy(async () => {
   const m = await import("../studio-feature-atlas/StudioFeatureAtlasPanel");
   return { default: m.StudioFeatureAtlasPanel };
 });
-const LazyStudioVirtualSpaceLivingPanel = lazy(async () => {
-  const m = await import("../virtual-space-living");
-  return { default: m.StudioVirtualSpaceLivingPanel };
-});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -110,7 +106,6 @@ type CreatorLabTabId =
   | "cameraLensBlocking"
   | "spatialStage"
   | "canvasOrbitalUx"
-  | "virtualSpaceLiving"
   | "featureAtlas";
 
 const CREATOR_LAB_TABS: readonly {
@@ -135,7 +130,6 @@ const CREATOR_LAB_TABS: readonly {
   { id: "spatialStage", labelKo: "가상 스튜디오 3D HRTF·공간 라이트박스", labelEn: "Virtual Studio 3D HRTF · Spatial Desk" },
   { id: "canvasOrbitalUx", labelKo: "휠·명령 구성·기기 UX 예제", labelEn: "Wheel & Command Examples · Device UX" },
   { id: "featureAtlas", labelKo: "기능 안내·실습·계산 예제", labelEn: "Feature Guide · Walkthroughs · Computation Examples" },
-  { id: "virtualSpaceLiving", labelKo: "방·아바타·분위기 물리 예제", labelEn: "Room · Avatar · Atmosphere Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -174,8 +168,6 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Compass size={15} aria-hidden="true" />;
     case "featureAtlas":
       return <CheckCircle2 size={15} aria-hidden="true" />;
-    case "virtualSpaceLiving":
-      return <Glasses size={15} aria-hidden="true" />;
   }
 }
 
@@ -241,7 +233,6 @@ export function CreatorLabHardwareHubPanel() {
           {active === "spatialStage" ? <LazyStudioSpatialStagePanel /> : null}
           {active === "canvasOrbitalUx" ? <LazyStudioCanvasOrbitalUxPanel /> : null}
           {active === "featureAtlas" ? <LazyStudioFeatureAtlasPanel /> : null}
-          {active === "virtualSpaceLiving" ? <LazyStudioVirtualSpaceLivingPanel /> : null}
         </Suspense>
       </div>
     </section>

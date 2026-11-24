@@ -45,8 +45,8 @@ const QA_HUB_TABS: readonly {
   { id: "layout", labelKo: "스마트 안전분할·360px·다국어·0-Defect", labelEn: "Safe-Slice · 360px · i18n · 0-Defect" },
   { id: "continuity", labelKo: "컬러 스크립트·설정집 대조", labelEn: "Color Script · Bible Checker" },
   { id: "signoff", labelKo: "7단계 결재선·부분승인·블라인드·SLA", labelEn: "7-Stage Signoff · Blind Link · SLA" },
-  { id: "storySimulpub", labelKo: "복선 인과 감사·5개국 리플로우·C2PA·스크롤 히트맵", labelEn: "Causality · 5-Lang Reflow · C2PA · Scroll Heatmap" },
-  { id: "virtualLiving", labelKo: "가상 스튜디오 2.5D 스프링·날씨 VFX·아바타·6테마 방", labelEn: "Virtual Studio 2.5D · VFX · Avatar · 6 Rooms" },
+  { id: "storySimulpub", labelKo: "인과·리플로우·무결성 예제", labelEn: "Causality · Reflow · Integrity Examples" },
+  { id: "virtualLiving", labelKo: "방·아바타·분위기 물리 예제", labelEn: "Room · Avatar · Atmosphere Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {

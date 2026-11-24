@@ -45,8 +45,8 @@ const CSP3D_TABS: readonly {
   { id: "surface3d", labelKo: "3D 표면 직접 페인팅·4층 UV", labelEn: "3D Surface Paint · 4-Layer UV" },
   { id: "hand3d", labelKo: "15관절 3D 손·가중치·STL·LOD", labelEn: "15-Joint 3D Hand · Weights · STL · LOD" },
   { id: "watermark", labelKo: "비가시 워터마크·속도곡선·경계블러", labelEn: "Anti-AI Watermark · Velocity · Safe Blur" },
-  { id: "commercialPro", labelKo: "상업 연재 8대 엔진 (3층 리라이트·컷돌파·굿즈·매크로)", labelEn: "Pro Commercial 8-Suite (Relight · Breakout · Goods · Macro)" },
-  { id: "charlabCsp", labelKo: "캐릭터 라이브 링크·벡터 지우개·QuickShape·수채화·워치", labelEn: "Char Live Link · Vector Eraser · QuickShape · Watch" },
+  { id: "commercialPro", labelKo: "리라이트·식자·투고 구성 예제", labelEn: "Relight · Lettering · Submission Examples" },
+  { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
