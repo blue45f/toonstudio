@@ -21,6 +21,7 @@ import {
 export interface OpfsSnapshotVcsTabProps {
   readonly onNotify: (message: string) => void;
   readonly onBackendReady?: (backend: VfsBackendKind) => void;
+  readonly onBackendUnavailable?: () => void;
 }
 
 interface VcsViewState {
@@ -47,6 +48,15 @@ function formatBytesKo(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${bytes} B`;
+}
+
+function operationFailureKo(operation: string, error: unknown): string {
+  const detail = error instanceof Error ? error.message : String(error);
+  const reason =
+    typeof error === "object" && error !== null && "name" in error && error.name === "QuotaExceededError"
+      ? "저장 공간이 부족합니다. 기기 공간을 확보한 뒤 다시 시도해 주세요."
+      : detail;
+  return `${operation} 실패: ${reason}`;
 }
 
 function buildViewState(
@@ -76,10 +86,14 @@ function buildViewState(
 export function OpfsSnapshotVcsTab({
   onNotify,
   onBackendReady,
+  onBackendUnavailable,
 }: OpfsSnapshotVcsTabProps): ReactElement {
   const uid = useId();
   const engineRef = useRef<OpfsSnapshotVcsEngine | null>(null);
   const initializationRef = useRef<ReturnType<typeof createSeededWebtoonVcs> | null>(null);
+  const [initializationAttempt, setInitializationAttempt] = useState(0);
+  const mutationInProgressRef = useRef(false);
+  const [pendingOperation, setPendingOperation] = useState<string | null>(null);
   const seqRef = useRef<number>(3);
   const [newBranchName, setNewBranchName] = useState<string>("alt-lighting");
   const [commitMessage, setCommitMessage] = useState<string>("펜선 하이라이트 보정");
@@ -98,47 +112,91 @@ export function OpfsSnapshotVcsTab({
 
   useEffect(() => {
     let active = true;
+    onBackendUnavailable?.();
     initializationRef.current ??= createOpfsVfsAdapter({ namespaceDir: "toonstudio-vcs-panel" })
       .then((adapter) => createSeededWebtoonVcs(adapter));
-    void initializationRef.current
-      .then(({ engine, latestSnapshot }) => {
+    void initializationRef.current.then(
+      ({ engine, latestSnapshot }) => {
         if (!active) return;
         engineRef.current = engine;
         onBackendReady?.(engine.backendKind);
         setView(buildViewState(engine, latestSnapshot));
-      })
-      .catch((error: unknown) => {
+        if (initializationAttempt > 0) onNotify("저장소에 다시 연결했습니다.");
+      },
+      (error: unknown) => {
         if (!active) return;
+        initializationRef.current = null;
+        const errorKo = operationFailureKo("OPFS 초기화", error);
         setView((prev) => ({
           ...prev,
-          ready: true,
-          errorKo: `OPFS 초기화 오류: ${error instanceof Error ? error.message : String(error)}`,
+          ready: false,
+          errorKo,
         }));
-      });
+        onNotify(errorKo);
+      },
+    );
     return () => {
       active = false;
     };
-  }, [onBackendReady]);
+  }, [onBackendReady, onBackendUnavailable, onNotify, initializationAttempt]);
+
+  const reportFailure = (operation: string, error: unknown): void => {
+    const errorKo = operationFailureKo(operation, error);
+    setView((prev) => ({ ...prev, errorKo }));
+    onNotify(errorKo);
+  };
+
+  const handleRetryInitialization = (): void => {
+    setView((prev) => ({ ...prev, errorKo: null }));
+    setInitializationAttempt((attempt) => attempt + 1);
+  };
+
+  const beginOperation = (operation: string): boolean => {
+    if (mutationInProgressRef.current) return false;
+    mutationInProgressRef.current = true;
+    setPendingOperation(operation);
+    return true;
+  };
+
+  const finishOperation = (): void => {
+    mutationInProgressRef.current = false;
+    setPendingOperation(null);
+  };
 
   const handleCreateBranch = async (): Promise<void> => {
     const engine = engineRef.current;
     const candidate = newBranchName.trim();
-    if (!engine || !candidate) return;
+    if (!engine || !candidate || !beginOperation("브랜치 분기")) return;
+    let created = false;
+    let snap: VcsProjectSnapshot | null;
     try {
       await engine.createBranch(candidate);
-      const snap = await engine.checkoutBranch(candidate);
-      setView(buildViewState(engine, snap ?? view.latestSnapshot));
-      setNewBranchName("");
-      onNotify(`"${candidate}" 브랜치를 분기하고 체크아웃했습니다.`);
+      created = true;
+      snap = await engine.checkoutBranch(candidate);
     } catch (error: unknown) {
-      onNotify(error instanceof Error ? error.message : String(error));
+      if (created) setView(buildViewState(engine, view.latestSnapshot));
+      reportFailure(created ? `"${candidate}" 브랜치 생성 후 전환` : "브랜치 분기", error);
+      return;
+    } finally {
+      finishOperation();
     }
+    setView(buildViewState(engine, snap ?? view.latestSnapshot));
+    setNewBranchName("");
+    onNotify(`"${candidate}" 브랜치를 분기하고 체크아웃했습니다.`);
   };
 
   const handleSwitchBranch = async (branchName: string): Promise<void> => {
     const engine = engineRef.current;
-    if (!engine) return;
-    const snap = await engine.checkoutBranch(branchName);
+    if (!engine || !beginOperation("브랜치 전환")) return;
+    let snap: VcsProjectSnapshot | null;
+    try {
+      snap = await engine.checkoutBranch(branchName);
+    } catch (error: unknown) {
+      reportFailure("브랜치 전환", error);
+      return;
+    } finally {
+      finishOperation();
+    }
     setView(buildViewState(engine, snap));
     onNotify(`"${branchName}" 브랜치로 전환했습니다.`);
   };
@@ -146,9 +204,8 @@ export function OpfsSnapshotVcsTab({
   const handleCommitSnapshot = async (): Promise<void> => {
     const engine = engineRef.current;
     const current = view.latestSnapshot;
-    if (!engine || !current) return;
+    if (!engine || !current || !beginOperation("스냅샷 저장")) return;
     const seq = seqRef.current;
-    seqRef.current += 1;
 
     let nextLayers = [...current.layers];
     if (mutationKind === "edit-lineart") {
@@ -175,7 +232,16 @@ export function OpfsSnapshotVcsTab({
 
     const nextSnapshot: VcsProjectSnapshot = { ...current, layers: nextLayers };
     const message = commitMessage.trim() || `스냅샷 커밋 #${seq}`;
-    const committed = await engine.commit(nextSnapshot, { message });
+    let committed: VcsCommitObject;
+    try {
+      committed = await engine.commit(nextSnapshot, { message });
+    } catch (error: unknown) {
+      reportFailure("스냅샷 저장", error);
+      return;
+    } finally {
+      finishOperation();
+    }
+    seqRef.current += 1;
     setView(buildViewState(engine, nextSnapshot, committed.id));
     setCommitMessage("");
     onNotify(
@@ -185,24 +251,42 @@ export function OpfsSnapshotVcsTab({
 
   const handleRollbackCommit = async (targetId: string): Promise<void> => {
     const engine = engineRef.current;
-    if (!engine) return;
-    const result = await engine.rollbackToCommit(targetId);
+    if (!engine || !beginOperation("스냅샷 롤백")) return;
+    let result: Awaited<ReturnType<OpfsSnapshotVcsEngine["rollbackToCommit"]>>;
+    try {
+      result = await engine.rollbackToCommit(targetId);
+    } catch (error: unknown) {
+      reportFailure("스냅샷 롤백", error);
+      return;
+    } finally {
+      finishOperation();
+    }
     setView(buildViewState(engine, result.restoredSnapshot, result.rollbackCommit?.id ?? targetId));
     onNotify(`커밋 ${targetId} 상태로 무손실 롤백을 완료했습니다(청크 무결성 검증 통과).`);
   };
 
   const handleSelectCommitDiff = (commitId: string): void => {
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine || mutationInProgressRef.current) return;
     setView(buildViewState(engine, view.latestSnapshot, commitId));
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" aria-busy={pendingOperation !== null}>
+      {pendingOperation ? (
+        <p aria-live="polite" className="text-xs text-fg-2">
+          {pendingOperation} 중입니다. 완료 후 다음 작업을 할 수 있습니다.
+        </p>
+      ) : null}
       {view.errorKo ? (
-        <p className="rounded-lg border border-bad/40 bg-bad/15 px-3 py-2 text-xs text-bad">
+        <p role="alert" className="rounded-lg border border-bad/40 bg-bad/15 px-3 py-2 text-xs text-bad">
           {view.errorKo}
         </p>
+      ) : null}
+      {!view.ready && view.errorKo ? (
+        <button type="button" onClick={handleRetryInitialization} className={BTN_OUTLINE}>
+          저장소 다시 연결
+        </button>
       ) : null}
 
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
@@ -244,6 +328,7 @@ export function OpfsSnapshotVcsTab({
                 key={br.name}
                 type="button"
                 aria-pressed={br.isCurrent}
+                disabled={pendingOperation !== null}
                 onClick={() => {
                   void handleSwitchBranch(br.name);
                 }}
@@ -265,6 +350,7 @@ export function OpfsSnapshotVcsTab({
                 id={`${uid}-branch-name`}
                 type="text"
                 value={newBranchName}
+                disabled={pendingOperation !== null}
                 onChange={(event) => setNewBranchName(event.target.value)}
                 placeholder="예: alt-lighting"
                 className={`min-h-11 rounded-lg border border-line bg-canvas px-3 text-xs text-fg ${FOCUS_RING}`}
@@ -272,7 +358,7 @@ export function OpfsSnapshotVcsTab({
             </div>
             <button
               type="button"
-              disabled={!view.ready || newBranchName.trim().length === 0}
+              disabled={!view.ready || pendingOperation !== null || newBranchName.trim().length === 0}
               onClick={() => {
                 void handleCreateBranch();
               }}
@@ -294,6 +380,7 @@ export function OpfsSnapshotVcsTab({
                 id={`${uid}-commit-msg`}
                 type="text"
                 value={commitMessage}
+                disabled={pendingOperation !== null}
                 onChange={(event) => setCommitMessage(event.target.value)}
                 placeholder="변경 사항 설명"
                 className={`min-h-11 rounded-lg border border-line bg-canvas px-3 text-xs text-fg ${FOCUS_RING}`}
@@ -306,6 +393,7 @@ export function OpfsSnapshotVcsTab({
               <select
                 id={`${uid}-layer-mut`}
                 value={mutationKind}
+                disabled={pendingOperation !== null}
                 onChange={(event) => setMutationKind(event.target.value as LayerMutationKind)}
                 className={`min-h-11 rounded-lg border border-line bg-canvas px-3 text-xs text-fg ${FOCUS_RING}`}
               >
@@ -317,7 +405,7 @@ export function OpfsSnapshotVcsTab({
           </div>
           <button
             type="button"
-            disabled={!view.ready}
+            disabled={!view.ready || pendingOperation !== null}
             onClick={() => {
               void handleCommitSnapshot();
             }}
@@ -346,6 +434,7 @@ export function OpfsSnapshotVcsTab({
                 >
                   <button
                     type="button"
+                    disabled={pendingOperation !== null}
                     onClick={() => handleSelectCommitDiff(commit.id)}
                     className={`min-h-11 w-full min-w-0 cursor-pointer text-left sm:w-auto sm:flex-1 ${FOCUS_RING}`}
                   >
@@ -366,6 +455,7 @@ export function OpfsSnapshotVcsTab({
                   ) : (
                     <button
                       type="button"
+                      disabled={pendingOperation !== null}
                       onClick={() => {
                         void handleRollbackCommit(commit.id);
                       }}

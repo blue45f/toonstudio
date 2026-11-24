@@ -45,7 +45,7 @@ export function StudioWebcodecsOpfsPanel({
   const uid = useId();
   const [activeTab, setActiveTab] = useState<WebcodecsOpfsTabId>(initialTab);
   const [noticeText, setNoticeText] = useState<string>("");
-  const [backendKind, setBackendKind] = useState<VfsBackendKind>("memory-vfs");
+  const [backendKind, setBackendKind] = useState<VfsBackendKind | null>(null);
 
   const handleNotify = useCallback((message: string) => {
     setNoticeText(message);
@@ -53,6 +53,10 @@ export function StudioWebcodecsOpfsPanel({
 
   const handleBackendReady = useCallback((kind: VfsBackendKind) => {
     setBackendKind(kind);
+  }, []);
+
+  const handleBackendUnavailable = useCallback(() => {
+    setBackendKind(null);
   }, []);
 
   const handleTabKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
@@ -90,7 +94,13 @@ export function StudioWebcodecsOpfsPanel({
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-raised px-2.5 py-1 font-semibold text-fg-2">
             <HardDrive className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>{backendKind === "opfs" ? "OPFS 영구 저장소 활성" : "메모리 VFS 안전 폴백"}</span>
+            <span>
+              {backendKind === null
+                ? "저장소 연결 미확인"
+                : backendKind === "opfs"
+                  ? "OPFS 영구 저장소 활성"
+                  : "메모리 VFS 안전 폴백"}
+            </span>
           </span>
         </div>
       </header>
@@ -137,7 +147,11 @@ export function StudioWebcodecsOpfsPanel({
         {activeTab === "reels" ? <WebcodecsReelsTab onNotify={handleNotify} /> : null}
         {activeTab === "sparse-tiles" ? <SparseTileKalmanTab /> : null}
         {activeTab === "opfs-vcs" ? (
-          <OpfsSnapshotVcsTab onNotify={handleNotify} onBackendReady={handleBackendReady} />
+          <OpfsSnapshotVcsTab
+            onNotify={handleNotify}
+            onBackendReady={handleBackendReady}
+            onBackendUnavailable={handleBackendUnavailable}
+          />
         ) : null}
       </div>
     </section>
