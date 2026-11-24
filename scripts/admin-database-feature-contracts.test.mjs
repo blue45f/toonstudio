@@ -29,7 +29,7 @@ describe("관리자 기능 DB 연결 순서", () => {
   it("관리자와 작업 보드의 권한을 각각 복구한 직후 검증한다", () => {
     const execute = vi.fn();
     applyAdminDatabaseFeatureContracts(execute, "test_runtime");
-    expect(execute).toHaveBeenCalledTimes(10);
+    expect(execute).toHaveBeenCalledTimes(12);
     const statements = execute.mock.calls.map(([sql]) => sql);
     expect(withoutPrivilegeLookupValues(statements[0])).toMatch(privilegeWrite);
     expect(withoutPrivilegeLookupValues(statements[1])).not.toMatch(privilegeWrite);
@@ -57,6 +57,11 @@ describe("관리자 기능 DB 연결 순서", () => {
     expect(statements[8]).not.toMatch(/GRANT[^;]*(?:DELETE|TRUNCATE)/u);
     expect(statements[9]).toContain("Production change runtime privileges are incompatible");
     expect(withoutPrivilegeLookupValues(statements[9])).not.toMatch(privilegeWrite);
+    expect(statements[10]).toContain("admin_final_submission_receipt");
+    expect(statements[10]).toContain("toonstudio.final_submission_owner");
+    expect(statements[10]).not.toMatch(/GRANT[^;]*(?:DELETE|TRUNCATE)/u);
+    expect(statements[11]).toContain("final submission runtime privileges are incompatible");
+    expect(withoutPrivilegeLookupValues(statements[11])).not.toMatch(privilegeWrite);
   });
   it("읽기 전용 검증은 모든 관리자 저장소 진단을 합친다", () => {
     const sql = buildAdminDatabaseFeatureCapabilitySql("test_runtime");
@@ -69,6 +74,7 @@ describe("관리자 기능 DB 연결 순서", () => {
     expect(sql).toContain("admin_nestjs_quality_history");
     expect(sql).toContain("admin_production_change_audit");
     expect(sql).toContain("Production change runtime privileges are incompatible");
+    expect(sql).toContain("final submission runtime privileges are incompatible");
     expect(sql).toContain("' WITH GRANT OPTION'");
     expect(withoutPrivilegeLookupValues(sql)).not.toMatch(privilegeWrite);
     for (const command of [
@@ -77,7 +83,7 @@ describe("관리자 기능 DB 연결 순서", () => {
       "REVOKE GRANT OPTION FOR SELECT ON TABLE public.admin_workspace FROM test_runtime;",
     ]) expect(withoutPrivilegeLookupValues(command)).toMatch(privilegeWrite);
   });
-  it.each([2, 4, 6, 8, 10])("%i번째 권한 검증이 실패하면 다음 저장소 권한 변경을 실행하지 않는다", (failureStep) => {
+  it.each([2, 4, 6, 8, 10, 12])("%i번째 권한 검증이 실패하면 다음 저장소 권한 변경을 실행하지 않는다", (failureStep) => {
     const execute = vi.fn(() => {
       if (execute.mock.calls.length === failureStep) throw new Error("verification failed");
     });
