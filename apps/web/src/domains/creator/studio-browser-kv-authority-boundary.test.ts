@@ -6,6 +6,8 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { allow, compact, finding, type BrowserKvAllowance, type BrowserKvFinding } from "./__fixtures__/studio-browser-kv-findings";
+import { browserKvDeleteCases } from "./__fixtures__/studio-browser-kv-delete-cases";
+import { createMemoryMapReceiverCheck, receiverAndMethod } from "./__fixtures__/studio-browser-kv-receiver";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = resolve(HERE, "../../../../../");
@@ -103,29 +105,6 @@ function scriptKind(file: string): ts.ScriptKind {
   return ts.ScriptKind.TS;
 }
 
-function receiverAndMethod(
-  expression: ts.LeftHandSideExpression,
-  sourceFile: ts.SourceFile,
-): { readonly receiver: string; readonly method: string } | null {
-  if (ts.isPropertyAccessExpression(expression)) {
-    return {
-      receiver: compact(expression.expression.getText(sourceFile)),
-      method: expression.name.text,
-    };
-  }
-  if (
-    ts.isElementAccessExpression(expression)
-    && expression.argumentExpression
-    && ts.isStringLiteralLike(expression.argumentExpression)
-  ) {
-    return {
-      receiver: compact(expression.expression.getText(sourceFile)),
-      method: expression.argumentExpression.text,
-    };
-  }
-  return null;
-}
-
 function unwrapExpression(expression: ts.Expression): ts.Expression {
   let current = expression;
   while (
@@ -155,7 +134,9 @@ function collectStorageBindings(sourceFile: ts.SourceFile) {
   const localStorageAliases = new Set(["localStorage"]);
   const sessionStorageAliases = new Set(["sessionStorage"]);
   const candidates = new Map<string, Set<string>>();
+  let hasMapConstructor = false;
   const visit = (node: ts.Node): void => {
+    if (ts.isNewExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "Map") hasMapConstructor = true;
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
       const name = node.name.text;
       const initializer = compact(unwrapExpression(node.initializer).getText(sourceFile));
@@ -171,7 +152,7 @@ function collectStorageBindings(sourceFile: ts.SourceFile) {
   const initializers = new Map([...candidates]
     .filter(([, values]) => values.size === 1)
     .map(([name, values]) => [name, [...values][0]!] as const));
-  return { localStorageAliases, sessionStorageAliases, initializers };
+  return { localStorageAliases, sessionStorageAliases, initializers, hasMapConstructor };
 }
 
 function resolvedKeyText(
@@ -219,7 +200,8 @@ function analyzeBrowserKvSource(file: string, source: string): readonly BrowserK
     true,
     scriptKind(file),
   );
-  const { localStorageAliases, sessionStorageAliases, initializers } = collectStorageBindings(sourceFile);
+  const { localStorageAliases, sessionStorageAliases, initializers, hasMapConstructor } = collectStorageBindings(sourceFile);
+  const isMemoryMapReceiver = hasMapConstructor ? createMemoryMapReceiverCheck(sourceFile) : undefined;
   const findings: BrowserKvFinding[] = [];
   const compactSource = compact(source);
   const wrapperModule =
@@ -271,6 +253,7 @@ function analyzeBrowserKvSource(file: string, source: string): readonly BrowserK
         call?.method === "delete"
         && (wrapperModule || /\b(?:IDBDatabase|IDBObjectStore|indexedDB)\b/u.test(source))
         && /(?:db|store|table|transaction)/iu.test(call.receiver)
+        && !isMemoryMapReceiver?.(call.expression)
       ) {
         findings.push(finding(file, sourceFile, node, "indexeddb-cleanup", "delete"));
       } else if (
@@ -357,7 +340,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/genre-skeleton-pro/genre-skeleton-engine.ts", "durable-storage-write", '`${STORAGE_PREFIX}${projectId}`', 1, "명시 주입된 Storage 포트로 작품별 장르 뼈대 선택·목표 컷 수·폭·클리프행어 4개 UI 설정값만 저장하며 원고·회차 정본을 소유하지 않는다.", "genre-skeleton-pro.test.tsx가 닫힌 장르 열거형·수치 클램프 기반 설정 왕복을 검증하며, 실제 회차 반영은 onSavePlan 콜백 경로와 분리되어 있다."),
   allow("apps/web/src/domains/creator/local-render-cache/hybrid-tier-cache-adapters.ts", "indexeddb-open", "dbName", 1, "OPFS 미지원 환경용 SHA-256 내용 주소 지정 L2 불변 에셋 캐시(LRU 축출·재수신 가능)이며 원고·프로젝트 정본 저장소가 아니다.", "local-render-cache.test.ts가 L3→L2→L1 승격·SHA-256 무결성 거절·LRU 축출을 검증하며, 캐시 삭제 시 R2 L3에서 무손실 복구된다."),
   allow("apps/web/src/domains/creator/local-render-cache/hybrid-tier-cache-adapters.ts", "indexeddb-write", "put", 2, "L2 SHA-256 불변 에셋 캐시 항목 저장 및 LRU 접근 시각(lastAccessedAtMs) 갱신 전용 쓰기이며 원고·프로젝트 정본을 기록하지 않는다.", "createIndexedDbCacheAdapter의 put 호출 2곳(put·touch)만 고정하며, 모든 바이트는 SHA-256 검증된 재생성 가능 캐시 사본으로 제한된다."),
-  allow("apps/web/src/domains/creator/local-render-cache/hybrid-tier-cache-adapters.ts", "indexeddb-cleanup", "delete", 2, CLEANUP_ONLY, "인메모리 Map 어댑터(L224)와 IndexedDB L2 캐시 어댑터(L414)의 sha256 단건 삭제 정리 호출 2곳만 허용하며 새 권위를 생성하지 않는다."),
+  allow("apps/web/src/domains/creator/local-render-cache/hybrid-tier-cache-adapters.ts", "indexeddb-cleanup", "delete", 1, CLEANUP_ONLY, "IndexedDB L2 캐시 어댑터의 쓰기 트랜잭션에서 sha256 키 한 건을 삭제하는 호출만 허용한다."),
   allow("apps/web/src/domains/creator/sfx-typo-pro/sfx-typo-engine.ts", "local-storage-write", '`${SFX_LIBRARY_STORAGE_PREFIX}${projectId}`', 1, "작품별 자주 쓰는 SFX 타이포 벡터 스탬프 UI 프리셋(최대 48건)만 로컬 저장하며 캔버스 배치·원고 문서·SQLite 정본을 소유하지 않는다.", "sfx-typo-pro.test.tsx가 최대 48건 스탬프 저장·복원과 XML 이스케이프를 검증하며, 저장 불가 시 메모리 프리셋과 SVG 생성이 독립 동작한다."),
   allow("apps/web/src/domains/creator/hyper-automation-os/hyper-automation-catalog.ts", "local-storage-write", '"toonstudio.hyper-auto.artist-autonomy-presets.v1"', 1, "아홉 공정의 0~99 자율도와 설정 이름·id만 담는 기기 UI 프리셋이다. 파이프라인 산출물·원고·레이어·실행 이력과 SQLite 저장 성공을 소유하지 않는다.", "hyper-automation-os.test.tsx가 실제 저장·재읽기, 닫힌 공정 필드, 추가 원고 필드 제외, 손상 원본·quota·무시된 쓰기 보존과 현재 화면 설정의 저장 실패 안내를 검증한다."),
   allow("apps/web/src/domains/creator/support-chat-ai/support-ai-chat-client.ts", "local-storage-write", '"toonstudio:ai-support-handoff:v1"', 1, "사용자가 명시 준비한 최근 문의 한 건의 최대64KiB 인계 사본이다. 실제 지원 브리프는 현재 값 콜백으로 전달하고 이 키는 원고·상담 전체·티켓 접수 정본이 아니다.", "support-chat-ai.test.tsx가 닫힌 인계 필드와 재읽기, 원고·대화 필드 제외, 크기·형식·기존 손상 사본 보존 및 quota·무시된 쓰기 실패를 검증한다. 화면 전달 경로는 저장 실패와 분리돼 있다."),
@@ -719,6 +702,11 @@ function unauthorizedFindings(
 }
 
 describe("Studio browser-KV authority boundary", () => {
+  it.each(browserKvDeleteCases)("$name", ({ source, expected }) => {
+    const findings = analyzeBrowserKvSource("studio-kv-delete.ts", source);
+    expect(findings.map(({ kind, call }) => ({ kind, call }))).toEqual(expected);
+  });
+
   it("keeps companion layout and presentation-safe product paths free of localStorage authority", () => {
     for (const source of [COMPANION_PAGE_SOURCE, COMPANION_LAYOUT_HOOK_SOURCE]) {
       expect(source).not.toContain("localStorage");
