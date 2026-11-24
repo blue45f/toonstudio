@@ -70,6 +70,7 @@ apps/api/src/modules/creator/studio-scoped-write.repository.test.ts
 apps/api/src/modules/creator/studio-writer-room-capture.repository.test.ts
 apps/api/src/modules/creator/user-facing-error.test.ts
 apps/api/src/modules/customer-support
+apps/api/src/modules/final-submission
 apps/api/src/modules/fortune/fortune.controller.test.ts
 apps/api/src/modules/health/health-analytics-readiness.test.ts
 apps/api/src/modules/integration-platform/integration-runtime.access.test.ts
@@ -912,6 +913,7 @@ packages/contracts/src/admin-production-change.test.ts
 packages/contracts/src/admin-workspace
 packages/contracts/src/ai-operations.test.ts
 packages/contracts/src/business-plan/business-plan.test.ts
+packages/contracts/src/final-submission
 packages/contracts/src/production-workflow.test.ts
 packages/contracts/src/studio-legacy-pigment-archive.test.ts
 packages/contracts/src/studio-linked-3d-correction.test.ts
@@ -947,6 +949,7 @@ scripts/__tests__/generate-third-party-notices.test.mjs
 scripts/accessibility-sweep-20261107/route-inventory-audit.test.ts
 scripts/admin-database-contract.test.mjs
 scripts/admin-database-feature-contracts.test.mjs
+scripts/admin-final-submission-database-contract.test.mjs
 scripts/admin-nestjs-quality-database-contract.test.mjs
 scripts/admin-production-changes-database-contract.test.mjs
 scripts/admin-workspace-database-contract.test.mjs
