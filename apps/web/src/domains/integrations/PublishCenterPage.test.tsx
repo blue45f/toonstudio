@@ -416,7 +416,7 @@ describe("게시 정보 준비의 단계·복귀 계약", () => {
 
   it("결과에서 Back하면 파일을 다시 찾을 수 있고 입력 수정 시 이전 결과를 폐기한다", async () => {
     renderPage(undefined, true); await prepareInputs(); fireEvent.click(prepareButton()); await preparedFiles();
-    expect(document.activeElement?.id).toBe("publish-step-heading-files");
+    await waitFor(() => expect(document.activeElement?.id).toBe("publish-step-heading-files"));
     fireEvent.click(screen.getByRole("button", { name: "브라우저 뒤로" }));
     await waitFor(() => expect(stepButton(2).getAttribute("aria-current")).toBe("step"));
     expect(screen.getByRole("button", { name: "준비된 파일 다시 보기" })).toBeTruthy();
