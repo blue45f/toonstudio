@@ -60,9 +60,9 @@ function model0(commercial: string, actor = "Everyone", license = "CC0") {
     commercialUssageName: commercial, violentUssageName: "Disallow", sexualUssageName: "Disallow" } } });
 }
 
-function actorConsent(actor: "author" | "separately-licensed-person" | "other") {
+function actorConsent(actor: "author" | "separately-licensed-person" | "other", confirmedAttributionTexts: string[] = []) {
   return createStudioVrmProjectArchiveUseContextReceipt({ confirmedByUser: true, avatarPermissionBasis: actor,
-    confirmedAttributionTexts: [], excessivelyViolent: "absent", excessivelySexual: "absent", politicalOrReligious: "absent", antisocialOrHate: "absent" });
+    confirmedAttributionTexts, excessivelyViolent: "absent", excessivelySexual: "absent", politicalOrReligious: "absent", antisocialOrHate: "absent" });
 }
 
 it("상업 허용과 배우 사용 범위를 각각 확인한다", () => {
@@ -103,18 +103,37 @@ it("CC0 번들 권리 기록은 승인 원고에 배치한 이미지·프레임�
   await expect(verifyReviewDeliveryMaterialReferences(client, "work-b", refs)).rejects.toThrow();
 });
 
-it("팀 이미지 앵커와 같은 작품·컷의 봉인 장면에서만 배우의 허용 범위를 읽는다", async () => {
+function sealedVrmCut(payload: Buffer) {
   const anchor = "vrmcut-11111111-1111-8111-a111-111111111111";
-  const payload = model0("Allow", "OnlyAuthor"), hash = createHash("sha256").update(payload).digest("hex");
+  const hash = createHash("sha256").update(payload).digest("hex");
   const sceneText = JSON.stringify({ nodes: [], pinnedVersionedCut: { source: { linkedVrm: { characters: [
     { vrmScene: { model: { source: "attachment", hash: `sha256:${hash}` } } },
   ] } } } });
-  const row = { sceneText, sceneSha256: createHash("sha256").update(sceneText).digest("hex"), rights: actorConsent("author") };
+  const row = { sceneText, sceneSha256: createHash("sha256").update(sceneText).digest("hex") };
+  const refs = assertReviewDeliveryMaterialRights(doc({ type: "image", id: anchor, src: `work-asset://image/${anchor}` }));
+  return { anchor, row, refs };
+}
+
+it("상업 이용과 배우 사용이 허용된 첨부 VRM도 필수 출처를 확인한 컷만 납품한다", async () => {
+  const payload = model0("Allow", "Everyone", "CC_BY");
+  const { row, refs } = sealedVrmCut(payload);
+  const verify = (confirmedAttributionTexts: string[]) => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ ...row, rights: actorConsent("other", confirmedAttributionTexts) }] })
+      .mockResolvedValueOnce({ rows: [{ payload }] });
+    return verifyReviewDeliveryMaterialReferences({ query } as unknown as PoolClient, "work-a", refs);
+  };
+  await expect(verify([])).rejects.toMatchObject({ response: { code: "studio_review_delivery_material_rights" } });
+  await expect(verify(["작업실 인물 · 작가 · CC_BY"])).resolves.toBeUndefined();
+});
+
+it("팀 이미지 앵커와 같은 작품·컷의 봉인 장면에서만 배우의 허용 범위를 읽는다", async () => {
+  const payload = model0("Allow", "OnlyAuthor");
+  const { anchor, row, refs } = sealedVrmCut(payload);
   const query = vi.fn()
-    .mockResolvedValueOnce({ rows: [row] }).mockResolvedValueOnce({ rows: [{ payload }] })
+    .mockResolvedValueOnce({ rows: [{ ...row, rights: actorConsent("author") }] }).mockResolvedValueOnce({ rows: [{ payload }] })
     .mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ ...row, rights: actorConsent("other") }] })
     .mockResolvedValueOnce({ rows: [{ payload }] }).mockResolvedValueOnce({ rows: [{ ...row, sceneText: "{}" }] });
-  const refs = assertReviewDeliveryMaterialRights(doc({ type: "image", id: anchor, src: `work-asset://image/${anchor}` }));
   const client = { query } as unknown as PoolClient;
   await expect(verifyReviewDeliveryMaterialReferences(client, "work-a", refs)).resolves.toBeUndefined();
   expect(query).toHaveBeenCalledWith(expect.stringContaining('cut."pageId"=$2'), ["work-a", "cut-2", anchor]);
