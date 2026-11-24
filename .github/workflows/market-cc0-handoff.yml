@@ -51,7 +51,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - name: Verify source identities, legacy behavior and real browser persistence
         env:
-          NODE_OPTIONS: --max-old-space-size=8192
+          NODE_OPTIONS: --max-old-space-size=12288
           TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'
         run: |
           set -euo pipefail

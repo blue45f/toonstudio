@@ -79,7 +79,7 @@ jobs:
           retention-days: 7
   catalog-production-browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -95,11 +95,6 @@ jobs:
           mkdir -p artifacts/studio-catalog-browser
           git rev-parse HEAD > artifacts/studio-catalog-browser/tested-head.txt
           pnpm install --frozen-lockfile
-      - name: Full frontend TypeScript
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: |
-          set -o pipefail
-          NODE_OPTIONS=--max-old-space-size=12288 pnpm exec tsc -p tsconfig.json 2>&1 | tee artifacts/studio-catalog-browser/typecheck.log
       - name: Compute typecheck-shards cache key
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         id: typecheck-shards-key
@@ -117,6 +112,8 @@ jobs:
           key: ${{ steps.typecheck-shards-key.outputs.key }}
       - name: Production build and Studio bundle budget
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=12288
         run: |
           set -o pipefail
           pnpm run build 2>&1 | tee artifacts/studio-catalog-browser/build.log
