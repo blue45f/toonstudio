@@ -22,6 +22,7 @@ import {
   StudioVrmLookdevGoldenPanel,
   synthesizeVrmLookdevFrame,
   type CharacterTurnaroundSheetSpec,
+  type StudioVrmLookdevGoldenPanelProps,
 } from "./index";
 
 beforeEach(() => {
@@ -360,7 +361,7 @@ describe("③ 원클릭 웹툰 공식 3면 캐릭터 설정집 생성기", () =>
 
 describe("④ StudioVrmLookdevGoldenPanel 렌더링 · 상호작용 · Calm Atelier 위생", () => {
   it("props 없이 단독 렌더링되며 초기 PASS 판정과 3대 핵심 섹션을 표시한다", () => {
-    render(createElement(StudioVrmLookdevGoldenPanel));
+    render(createElement<StudioVrmLookdevGoldenPanelProps>(StudioVrmLookdevGoldenPanel));
 
     expect(screen.getByTestId("studio-vrm-lookdev-golden-panel")).toBeTruthy();
     expect(screen.getByTestId("vrm-golden-ssim-section")).toBeTruthy();
@@ -374,14 +375,27 @@ describe("④ StudioVrmLookdevGoldenPanel 렌더링 · 상호작용 · Calm Atel
 
   it("외부 RGBA가 PASS여도 실제 GPU·VRM 검증으로 표시하지 않는다", () => {
     const frame = synthesizeVrmLookdevFrame({ width: 48, height: 48 });
-    render(createElement(StudioVrmLookdevGoldenPanel, { customReferenceFrame: frame, customCandidateFrame: frame }));
+    render(createElement<StudioVrmLookdevGoldenPanelProps>(StudioVrmLookdevGoldenPanel, { customReferenceFrame: frame, customCandidateFrame: frame }));
     expect(screen.getByTestId("vrm-golden-verdict-badge").textContent).toContain("PASS");
     expect(screen.getByTestId("vrm-golden-input-source").textContent).toContain("GPU 출처는 미검증");
   });
 
+  it("외부 기준만 주면 그 기준에서 만든 예제 후보임을 구분한다", () => {
+    const frame = synthesizeVrmLookdevFrame({ width: 48, height: 48 });
+    render(createElement<StudioVrmLookdevGoldenPanelProps>(StudioVrmLookdevGoldenPanel, { customReferenceFrame: frame }));
+    expect(screen.getByTestId("vrm-golden-input-source").textContent).toContain("외부 기준 RGBA");
+    expect(screen.getByTestId("vrm-golden-input-source").textContent).toContain("기준에서 만든 결함 예제");
+  });
+
+  it("외부 후보만 주면 합성 기준과 비교했음을 구분한다", () => {
+    const frame = synthesizeVrmLookdevFrame({ width: 48, height: 48 });
+    render(createElement<StudioVrmLookdevGoldenPanelProps>(StudioVrmLookdevGoldenPanel, { customCandidateFrame: frame }));
+    expect(screen.getByTestId("vrm-golden-input-source").textContent).toContain("합성 기준·외부 후보 RGBA");
+  });
+
   it("결함 시나리오 버튼 전환 시 밀키 백화·암부 뭉개짐·셰이더 오류 FAIL 판정과 콜백이 실시간 동작한다", () => {
     const onGateEvaluate = vi.fn();
-    render(createElement(StudioVrmLookdevGoldenPanel, { onGateEvaluate }));
+    render(createElement<StudioVrmLookdevGoldenPanelProps>(StudioVrmLookdevGoldenPanel, { onGateEvaluate }));
 
     fireEvent.click(screen.getByTestId("vrm-golden-fault-milky-washout"));
     expect(screen.getByTestId("vrm-golden-verdict-badge").textContent).toContain("FAIL");
@@ -400,7 +414,7 @@ describe("④ StudioVrmLookdevGoldenPanel 렌더링 · 상호작용 · Calm Atel
 
   it("표정 프리셋·관절 슬라이더·신장 눈금자·원클릭 설정집 빌드 상호작용이 정상 반영된다", () => {
     const onSheetGenerate = vi.fn();
-    render(createElement(StudioVrmLookdevGoldenPanel, { onSheetGenerate }));
+    render(createElement<StudioVrmLookdevGoldenPanelProps>(StudioVrmLookdevGoldenPanel, { onSheetGenerate }));
 
     fireEvent.click(screen.getByTestId("vrm-golden-expr-neutral"));
     expect(screen.getByTestId("vrm-golden-max-z-value").textContent).toBe("+0.00 mm");

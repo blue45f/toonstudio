@@ -306,8 +306,8 @@ export function StudioWebnnPigmentDirectorPanel({
     <section
       data-testid="webnn-pigment-director-panel"
       aria-label={pick(
-        "온디바이스 WebNN 선화 보정 · 물리 혼색 · 컷 연출 어시스트",
-        "On-Device WebNN Lineart, Kubelka-Munk Pigment & Cut Director",
+        "CPU 선화 보정 · 물리 혼색 · 규칙 기반 컷 진단",
+        "CPU Lineart, Kubelka-Munk Pigment and Rule-Based Cut Diagnosis",
       )}
       className={`space-y-4 rounded-xl border border-border bg-panel p-4 text-foreground [word-break:keep-all] ${className ?? ""}`}
     >
@@ -474,7 +474,7 @@ export function StudioWebnnPigmentDirectorPanel({
               height={LINEART_CANVAS_H}
               role="img"
               data-testid="webnn-lineart-canvas"
-              aria-label={pick("러프 선화 원본과 WebNN 정선화·열린 틈 닫기 결과 비교 캔버스", "Comparison canvas of rough strokes and stabilized Bezier lineart with closed gaps")}
+              aria-label={pick("러프 선화 원본과 CPU 선화 보정·열린 틈 닫기 결과 비교 캔버스", "Comparison canvas of rough strokes and CPU-stabilized Bezier lineart with closed gaps")}
               className="h-44 w-full rounded-md border border-line bg-canvas object-contain"
             />
             <figcaption className="grid grid-cols-2 gap-2 pt-1 text-xs sm:grid-cols-4">

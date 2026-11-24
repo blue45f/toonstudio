@@ -278,11 +278,18 @@ export function StudioVrmLookdevGoldenPanel({
   }, []);
 
   const histMax = Math.max(0.01, ...gateReport.candidateHistogram.luminanceBins);
+  const inputSourceLabel = customReferenceFrame && customCandidateFrame
+    ? pick("외부 기준·후보 RGBA · 렌더러와 GPU 출처는 미검증", "External reference/candidate RGBA · Renderer/GPU provenance unverified")
+    : customReferenceFrame
+      ? pick("외부 기준 RGBA · 후보는 기준에서 만든 결함 예제 · 렌더러와 GPU 출처는 미검증", "External reference RGBA · Candidate is a derived fault example · Renderer/GPU provenance unverified")
+      : customCandidateFrame
+        ? pick("합성 기준·외부 후보 RGBA · 렌더러와 GPU 출처는 미검증", "Synthetic reference/external candidate RGBA · Renderer/GPU provenance unverified")
+        : pick("합성 RGBA 예제 검사 · 실제 캐릭터의 검증 결과가 아닙니다", "Synthetic RGBA example · Not a live character verification");
 
   return (
     <section
       data-testid="studio-vrm-lookdev-golden-panel"
-      aria-label={pick("Headless WebGL 골든 SSIM 회귀 오라클 및 3면 캐릭터 설정집", "Headless WebGL Golden SSIM Oracle & 3-View Character Sheet")}
+      aria-label={pick("RGBA SSIM 검사와 예제 3면 캐릭터 시트", "RGBA SSIM Check and Example Character Turnaround")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -315,9 +322,7 @@ export function StudioVrmLookdevGoldenPanel({
               "Checks supplied RGBA/logs and calculates example hair, wrinkle, and turnaround diagrams. No WebGL capture, live VRM verification, or scene changes.",
             )}
           </p>
-          <p data-testid="vrm-golden-input-source" className="text-xs text-fg-2">{customCandidateFrame
-            ? pick("외부 RGBA 입력 · 렌더러와 GPU 출처는 미검증", "External RGBA input · Renderer/GPU provenance unverified")
-            : pick("합성 RGBA 예제 검사 · 실제 캐릭터의 검증 결과가 아닙니다", "Synthetic RGBA example · Not a live character verification")}</p>
+          <p data-testid="vrm-golden-input-source" className="text-xs text-fg-2">{inputSourceLabel}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
