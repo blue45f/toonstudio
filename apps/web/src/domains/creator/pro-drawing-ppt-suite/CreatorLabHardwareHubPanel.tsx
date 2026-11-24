@@ -73,6 +73,11 @@ const LazyStudioCameraLensBlockingPanel = lazy(async () => {
   const m = await import("../camera-lens-blocking-director/StudioCameraLensBlockingPanel");
   return { default: m.StudioCameraLensBlockingPanel };
 });
+const LazyStudioSpatialStagePanel = lazy(async () => {
+  await import("../virtual-space-spatial");
+  const m = await import("../virtual-space-spatial/StudioSpatialStagePanel");
+  return { default: m.StudioSpatialStagePanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -88,7 +93,8 @@ type CreatorLabTabId =
   | "sketchTo3d"
   | "cutRhythmPromo"
   | "voiceBalloon"
-  | "cameraLensBlocking";
+  | "cameraLensBlocking"
+  | "spatialStage";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -109,6 +115,7 @@ const CREATOR_LAB_TABS: readonly {
   { id: "cutRhythmPromo", labelKo: "컷 리듬 → 2.5D 무빙툰·15초 프로모", labelEn: "Cut Rhythm → 2.5D Moving-Toon Promo" },
   { id: "voiceBalloon", labelKo: "음성 운율 → 말풍선 자동 조판", labelEn: "Voice Prosody → Speech Balloons" },
   { id: "cameraLensBlocking", labelKo: "3D 시네마 렌즈·180° 카메라 연출", labelEn: "3D Cinema Lens · 180° Blocking" },
+  { id: "spatialStage", labelKo: "가상 스튜디오 3D HRTF·공간 라이트박스", labelEn: "Virtual Studio 3D HRTF · Spatial Desk" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -141,6 +148,8 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <MessageSquareText size={15} aria-hidden="true" />;
     case "cameraLensBlocking":
       return <Compass size={15} aria-hidden="true" />;
+    case "spatialStage":
+      return <Music size={15} aria-hidden="true" />;
   }
 }
 
@@ -203,6 +212,7 @@ export function CreatorLabHardwareHubPanel() {
           {active === "cutRhythmPromo" ? <LazyStudioCutRhythmPromoDirectorPanel /> : null}
           {active === "voiceBalloon" ? <LazyStudioVoiceToBalloonPanel /> : null}
           {active === "cameraLensBlocking" ? <LazyStudioCameraLensBlockingPanel /> : null}
+          {active === "spatialStage" ? <LazyStudioSpatialStagePanel /> : null}
         </Suspense>
       </div>
     </section>
