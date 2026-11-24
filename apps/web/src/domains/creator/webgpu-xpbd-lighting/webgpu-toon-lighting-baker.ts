@@ -1,9 +1,9 @@
 /**
- * WebGPU `@compute` Signed-Distance-Field(SDF) 실시간 광원 근사화 & 2D/3D 단일 물리 광원 리그 베이크 엔진.
+ * CPU Signed-Distance-Field(SDF) 광원 근사화와 2D/3D 공통 광원 설정 계산기.
  *
  * - 2D 배경 컷의 주광원 방위각·고도각·색온도(K)와 3D VRM 캐릭터의 툰 셀 램프·림라이트·
  *   OKLCH 바닥 바운스 컬러·투영 그림자 각도를 단일 물리 광원 리그로 일치시켜 이질감을 제거한다.
- * - WGSL `@compute` 셰이더(`TOON_SDF_RAYMARCH_WGSL`)와 결정론적 CPU SDF 폴백 베이크를 제공한다.
+ * - WGSL 소스와 CPU 베이크를 제공한다. GPU 컴파일·디스패치 및 실제 VRM·원고 적용은 수행하지 않는다.
  */
 
 import {
@@ -130,7 +130,9 @@ export interface Unified2d3dLightRigResult {
   readonly sdfFieldHeight: number;
   readonly sdfSamples: readonly SdfRaymarchSample[];
   readonly bakeHashHex: string;
-  readonly backend: "webgpu-compute-ready" | "cpu-sdf-fallback";
+  readonly backend: "cpu-sdf";
+  /** WebGPU API 노출 여부이며 어댑터·기기 가용성이나 GPU 실행을 보증하지 않는다. */
+  readonly webGpuApiAvailable: boolean;
 }
 
 export interface ToonLightingPreset {
@@ -742,7 +744,8 @@ export function bakeToonSdfLighting(
     sdfFieldHeight: gridSize,
     sdfSamples: Object.freeze(sdfSamples),
     bakeHashHex: computeBakeHashHex(input, sdfSamples),
-    backend: hasWebGpu ? "webgpu-compute-ready" : "cpu-sdf-fallback",
+    backend: "cpu-sdf",
+    webGpuApiAvailable: hasWebGpu,
   });
 }
 

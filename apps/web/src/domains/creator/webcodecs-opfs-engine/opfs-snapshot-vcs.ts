@@ -354,8 +354,8 @@ export class OpfsSnapshotVcsEngine {
     if (baseCommitId !== null && !this.commitCatalog.has(baseCommitId)) {
       throw new Error(`기준 커밋을 찾을 수 없습니다: "${baseCommitId}"`);
     }
-    this.branchHeads.set(safeName, baseCommitId);
     await this.vfs.writeFile(`refs/heads/${safeName}`, TEXT_ENCODER.encode(baseCommitId ?? ""));
+    this.branchHeads.set(safeName, baseCommitId);
     return {
       name: safeName,
       headCommitId: baseCommitId,
@@ -370,10 +370,11 @@ export class OpfsSnapshotVcsEngine {
     if (!this.branchHeads.has(safeName)) {
       throw new Error(`존재하지 않는 브랜치입니다: "${safeName}"`);
     }
-    this.activeBranch = safeName;
-    await this.vfs.writeFile("HEAD", TEXT_ENCODER.encode(safeName));
     const headId = this.branchHeads.get(safeName) ?? null;
-    return headId ? this.restoreCommit(headId) : null;
+    const snapshot = headId ? await this.restoreCommit(headId) : null;
+    await this.vfs.writeFile("HEAD", TEXT_ENCODER.encode(safeName));
+    this.activeBranch = safeName;
+    return snapshot;
   }
 
   /** 지정 커밋의 모든 레이어 바이너리를 청크 저장소에서 무손실 재조립한다. */
@@ -427,8 +428,8 @@ export class OpfsSnapshotVcsEngine {
     const shouldCreateCommit = options?.createRollbackCommit ?? true;
 
     if (!shouldCreateCommit) {
-      this.branchHeads.set(this.activeBranch, targetCommitId);
       await this.vfs.writeFile(`refs/heads/${this.activeBranch}`, TEXT_ENCODER.encode(targetCommitId));
+      this.branchHeads.set(this.activeBranch, targetCommitId);
       return { targetCommitId, restoredSnapshot, rollbackCommit: null, verifiedIntegrity: true };
     }
 
@@ -639,12 +640,22 @@ export function makeDeterministicLayerPayload(byteLength: number, seed: number):
   return out;
 }
 
-/** 인터랙티브 패널·데모용 3레이어 초기 웹툰 프로젝트 저장소를 시드한다. */
+/** 기존 작업을 먼저 복구하며, 비어 있는 예제 저장소에만 초기 데이터를 추가한다. */
 export async function createSeededWebtoonVcs(
   adapter?: OpfsVfsAdapter,
 ): Promise<{ readonly engine: OpfsSnapshotVcsEngine; readonly latestSnapshot: VcsProjectSnapshot }> {
   const engine = new OpfsSnapshotVcsEngine({ adapter, chunkSizeBytes: 8192, hashAlgorithm: "sha-256" });
   await engine.init("main");
+
+  const head = engine.currentHeadCommitId;
+  if (head) {
+    const integrity = await engine.verifyIntegrity(head);
+    if (!integrity.valid) throw new Error("기존 저장본의 청크가 손상되었습니다. 예제로 덮어쓰지 않습니다.");
+    return { engine, latestSnapshot: await engine.restoreCommit(head) };
+  }
+  if (engine.getStorageStats().commitCount > 0) {
+    throw new Error("현재 브랜치의 저장본을 확인할 수 없습니다. 기존 이력을 보존합니다.");
+  }
 
   const bgBytes = makeDeterministicLayerPayload(32_768, 101);
   const lineBytesV1 = makeDeterministicLayerPayload(24_576, 202);

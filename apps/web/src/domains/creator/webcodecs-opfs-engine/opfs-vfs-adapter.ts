@@ -1,7 +1,7 @@
 /**
  * OPFS(`navigator.storage.getDirectory`) 어댑터 · 메모리 VFS 폴백 · 콘텐츠 주소 해싱(FNV-1a / SHA-256).
  *
- * - 브라우저 OPFS를 기본 영구 저장소로 사용하고 미지원/테스트 런타임에서는 메모리 VFS로 안전 폴백한다.
+ * - OPFS API가 없는 런타임만 메모리를 사용한다. 접근·용량 오류는 호출자에게 전달한다.
  * - WebCrypto SHA-256과 순수 TypeScript 결정적 SHA-256 폴백 및 고속 64비트 FNV-1a 해시를 제공한다.
  */
 
@@ -11,6 +11,7 @@ export type VcsHashAlgorithm = "sha-256" | "fnv1a-64";
 export interface OpfsWritableLike {
   write(data: Uint8Array | ArrayBuffer | string): Promise<void>;
   close(): Promise<void>;
+  abort?: () => Promise<void>;
 }
 
 export interface OpfsFileHandleLike {
@@ -165,6 +166,10 @@ export function normalizeVfsRelPath(relPath: string): string {
     .join("/");
 }
 
+function isNotFoundError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "name" in error && error.name === "NotFoundError";
+}
+
 /** 테스트·미지원 브라우저용 메모리 VFS 어댑터(웹 스토리지 비사용). */
 export class InMemoryVfsAdapter implements OpfsVfsAdapter {
   readonly backendKind: VfsBackendKind = "memory-vfs";
@@ -220,8 +225,9 @@ export class BrowserOpfsVfsAdapter implements OpfsVfsAdapter {
     for (const seg of parts) {
       try {
         current = await current.getDirectoryHandle(seg, { create });
-      } catch {
-        return null;
+      } catch (error) {
+        if (!create && isNotFoundError(error)) return null;
+        throw error;
       }
     }
     return { dir: current, fileName };
@@ -234,20 +240,29 @@ export class BrowserOpfsVfsAdapter implements OpfsVfsAdapter {
       const fh = await resolved.dir.getFileHandle(resolved.fileName, { create: false });
       const file = await fh.getFile();
       return new Uint8Array(await file.arrayBuffer());
-    } catch {
-      return null;
+    } catch (error) {
+      if (isNotFoundError(error)) return null;
+      throw error;
     }
   }
 
   async writeFile(relPath: string, data: Uint8Array): Promise<void> {
     const resolved = await this.resolveParent(relPath, true);
-    if (!resolved) return;
+    if (!resolved) throw new Error("저장할 파일 경로가 비어 있습니다.");
     const fh = await resolved.dir.getFileHandle(resolved.fileName, { create: true });
     const writable = await fh.createWritable();
     try {
       await writable.write(new Uint8Array(data));
-    } finally {
       await writable.close();
+    } catch (error) {
+      if (writable.abort) {
+        try {
+          await writable.abort();
+        } catch (abortError) {
+          throw new AggregateError([error, abortError], "파일 저장과 중단에 실패했습니다.", { cause: abortError });
+        }
+      }
+      throw error;
     }
   }
 
@@ -256,8 +271,8 @@ export class BrowserOpfsVfsAdapter implements OpfsVfsAdapter {
     if (!resolved) return;
     try {
       await resolved.dir.removeEntry(resolved.fileName);
-    } catch {
-      // 이미 삭제된 파일은 무시한다.
+    } catch (error) {
+      if (!isNotFoundError(error)) throw error;
     }
   }
 
@@ -267,8 +282,9 @@ export class BrowserOpfsVfsAdapter implements OpfsVfsAdapter {
     try {
       await resolved.dir.getFileHandle(resolved.fileName, { create: false });
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      if (isNotFoundError(error)) return false;
+      throw error;
     }
   }
 
@@ -278,8 +294,9 @@ export class BrowserOpfsVfsAdapter implements OpfsVfsAdapter {
     for (const seg of parts) {
       try {
         current = await current.getDirectoryHandle(seg, { create: false });
-      } catch {
-        return [];
+      } catch (error) {
+        if (isNotFoundError(error)) return [];
+        throw error;
       }
     }
     if (typeof current.keys !== "function") return [];
@@ -297,7 +314,7 @@ interface NavigatorStorageHost {
   };
 }
 
-/** OPFS 루트 디렉터리를 탐지하고 미지원 환경에서는 메모리 VFS로 안전 폴백한다. */
+/** OPFS API가 없을 때만 메모리를 선택하고, 기존 저장소의 접근·용량 오류는 보존한다. */
 export async function createOpfsVfsAdapter(options?: {
   readonly namespaceDir?: string;
   readonly getDirectoryOverride?: () => Promise<OpfsDirectoryHandleLike>;
@@ -307,12 +324,8 @@ export async function createOpfsVfsAdapter(options?: {
   if (typeof getter !== "function") {
     return new InMemoryVfsAdapter();
   }
-  try {
-    const root = await getter();
-    const ns = normalizeVfsRelPath(options?.namespaceDir ?? "toonstudio-vcs");
-    const target = ns.length > 0 ? await root.getDirectoryHandle(ns, { create: true }) : root;
-    return new BrowserOpfsVfsAdapter(target);
-  } catch {
-    return new InMemoryVfsAdapter();
-  }
+  const root = await getter();
+  const ns = normalizeVfsRelPath(options?.namespaceDir ?? "toonstudio-vcs");
+  const target = ns.length > 0 ? await root.getDirectoryHandle(ns, { create: true }) : root;
+  return new BrowserOpfsVfsAdapter(target);
 }

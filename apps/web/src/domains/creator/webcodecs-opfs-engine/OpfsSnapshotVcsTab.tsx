@@ -79,6 +79,7 @@ export function OpfsSnapshotVcsTab({
 }: OpfsSnapshotVcsTabProps): ReactElement {
   const uid = useId();
   const engineRef = useRef<OpfsSnapshotVcsEngine | null>(null);
+  const initializationRef = useRef<ReturnType<typeof createSeededWebtoonVcs> | null>(null);
   const seqRef = useRef<number>(3);
   const [newBranchName, setNewBranchName] = useState<string>("alt-lighting");
   const [commitMessage, setCommitMessage] = useState<string>("펜선 하이라이트 보정");
@@ -97,8 +98,9 @@ export function OpfsSnapshotVcsTab({
 
   useEffect(() => {
     let active = true;
-    void createOpfsVfsAdapter({ namespaceDir: "toonstudio-vcs-panel" })
-      .then((adapter) => createSeededWebtoonVcs(adapter))
+    initializationRef.current ??= createOpfsVfsAdapter({ namespaceDir: "toonstudio-vcs-panel" })
+      .then((adapter) => createSeededWebtoonVcs(adapter));
+    void initializationRef.current
       .then(({ engine, latestSnapshot }) => {
         if (!active) return;
         engineRef.current = engine;

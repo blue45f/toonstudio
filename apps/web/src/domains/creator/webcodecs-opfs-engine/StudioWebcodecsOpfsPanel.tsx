@@ -72,21 +72,21 @@ export function StudioWebcodecsOpfsPanel({
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-1 text-[11px] font-semibold text-accent">
             <Cpu className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>로컬 퍼스트 4K 무빙툰 · 희소 타일 · OPFS 버전 관리</span>
+            <span>코덱 프로브 · 희소 타일 · OPFS 버전 관리</span>
           </div>
           <h2 id={`${uid}-title`} className="text-base font-bold tracking-tight text-fg md:text-lg">
-            WebCodecs 릴스 인코더 · 무한 캔버스 희소 타일 · OPFS 스냅샷 VCS
+            WebCodecs 설정·샘플 점검 · 희소 타일 · OPFS 스냅샷 VCS
           </h2>
           <p className="max-w-2xl text-xs leading-relaxed text-fg-2">
-            브라우저 하드웨어 VideoEncoder로 서버 비용 0원 4K/60fps 무빙툰을 생성하고, 256×256 희소
-            타일 벡터·2D 칼만 지연 예측·콘텐츠 주소 중복제거 Git 스냅샷을 한곳에서 점검합니다.
+            코덱 설정 지원과 64×64 합성 샘플을 점검합니다. 영상 파일은 생성하지 않습니다.
+            희소 타일·2D 칼만 예측·OPFS 버전 관리는 예제 데이터로 확인합니다.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1.5 rounded-md border border-good/40 bg-good/15 px-2.5 py-1 font-semibold text-good">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>서버 인코딩 비용 0원</span>
+            <span>프로브 서버 호출 없음</span>
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-raised px-2.5 py-1 font-semibold text-fg-2">
             <HardDrive className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />

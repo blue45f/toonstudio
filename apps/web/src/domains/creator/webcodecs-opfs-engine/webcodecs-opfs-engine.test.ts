@@ -97,14 +97,14 @@ function createMockOpfsDirectory(): OpfsDirectoryHandleLike {
     async getDirectoryHandle(name, options) {
       const existing = subdirs.get(name);
       if (existing) return existing;
-      if (!options?.create) throw new Error(`Directory not found: ${name}`);
+      if (!options?.create) throw new DOMException(`Directory not found: ${name}`, "NotFoundError");
       const created = createMockOpfsDirectory();
       subdirs.set(name, created);
       return created;
     },
     async getFileHandle(name, options) {
       if (!files.has(name) && !options?.create) {
-        throw new Error(`File not found: ${name}`);
+        throw new DOMException(`File not found: ${name}`, "NotFoundError");
       }
       if (!files.has(name)) files.set(name, new Uint8Array(0));
       return makeFileHandle(name);
@@ -126,7 +126,7 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
     vi.restoreAllMocks();
   });
 
-  it("1. WebCodecs H.264/AV1/VP9 하드웨어 가속 프로브 및 0원 서버 비용 리포트를 산출한다", async () => {
+  it("1. 코덱 프로파일 지원 여부를 진단하고 근거 없는 비용 절감액을 만들지 않는다", async () => {
     const mockAdapter: WebCodecsRuntimeAdapter = {
       isConfigSupported: async (cfg) => ({
         supported:
@@ -142,10 +142,11 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
     expect(report.serverCostKrwPerMinute).toBe(0);
     expect(report.entries).toHaveLength(3);
     expect(report.entries[0]?.hardwareSupported).toBe(true);
+    expect(report.cloudGpuSavingsKrwPer10Min).toBeNull();
     expect(report.estimatedMegabytesFor15s).toBeGreaterThan(10);
   });
 
-  it("2. WebCodecs 미지원 환경에서 예외 없이 프레임 시퀀스 폴백으로 완주한다", async () => {
+  it("2. WebCodecs 미지원 환경에서는 포즈만 보간하고 인코딩·출력 성공을 보고하지 않는다", async () => {
     const timeline = findMovingToonPresetById("rooftop-sakura-duel");
     const encoder = new MovingToonReelsEncoder();
     const result = await encoder.encodeTimeline(timeline, {
@@ -155,8 +156,13 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
     });
 
     expect(result.mode).toBe("fallback-frame-sequence");
-    expect(result.encodedFrames).toBe(24);
-    expect(result.keyFrameCount).toBeGreaterThanOrEqual(1);
+    expect(result.purpose).toBe("synthetic-encoder-probe");
+    expect(result.outputProduced).toBe(false);
+    expect(result.status).toBe("unsupported");
+    expect(result.encodedFrames).toBe(0);
+    expect(result.keyFrameCount).toBe(0);
+    expect(result.totalEncodedBytes).toBe(0);
+    expect(result.chunkSummaryBytes).toEqual([]);
     expect(result.serverCostKrw).toBe(0);
     expect(result.fallbackReasonKo).toContain("VideoEncoder");
     expect(result.samplePoses.length).toBeGreaterThan(0);
@@ -200,6 +206,8 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
     let closedFrameCount = 0;
     let outputCallback: ((chunk: EncodedChunkLike) => void) | null = null;
     let queueSize = 0;
+    const configure = vi.fn();
+    const inputSizes: number[][] = [];
 
     const hwAdapter: WebCodecsRuntimeAdapter = {
       isConfigSupported: async (cfg) => ({
@@ -212,7 +220,7 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
             return queueSize;
           },
           state: "configured",
-          configure: vi.fn(),
+          configure,
           encode: (frame, opts) => {
             queueSize += 1;
             outputCallback?.({
@@ -226,12 +234,10 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
           close: vi.fn(),
         };
       },
-      createVideoFrame: ({ timestampUs }) => ({
-        timestamp: timestampUs,
-        close: () => {
-          closedFrameCount += 1;
-        },
-      }),
+      createVideoFrame: ({ timestampUs, width, height, rgbaBytes }) => {
+        inputSizes.push([width, height, rgbaBytes.byteLength]);
+        return { timestamp: timestampUs, close: () => { closedFrameCount += 1; } };
+      },
     };
 
     const timeline = findMovingToonPresetById("subway-reveal-shorts");
@@ -247,10 +253,58 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
     });
 
     expect(res.mode).toBe("webcodecs-hardware");
+    expect(res.status).toBe("completed");
+    expect(res.outputProduced).toBe(false);
+    expect(res.preset.width).toBe(2160);
+    expect(res.sampleFrameWidth).toBe(64);
+    expect(res.sampleFrameHeight).toBe(64);
+    expect(configure).toHaveBeenCalledWith(expect.objectContaining({ width: 64, height: 64 }));
+    expect(inputSizes).toHaveLength(65);
+    expect(inputSizes.every((size) => size.join(",") === "64,64,16384")).toBe(true);
     expect(res.encodedFrames).toBe(65);
     expect(res.keyFrameCount).toBe(3); // frame 0, 30, 60
     expect(closedFrameCount).toBe(65);
     expect(res.droppedFrames).toBe(0);
+  });
+
+  it("인코더 오류·취소 시 실패 상태를 남기고 프레임·인코더를 해제한다", async () => {
+    const closeFrame = vi.fn();
+    const closeEncoder = vi.fn();
+    const adapter: WebCodecsRuntimeAdapter = {
+      isConfigSupported: async () => ({ supported: true }),
+      createVideoFrame: ({ timestampUs }) => ({ timestamp: timestampUs, close: closeFrame }),
+      createEncoder: ({ error }) => ({
+        encodeQueueSize: 0, state: "configured", configure: () => {},
+        encode: () => { error(new Error("synthetic codec failure")); },
+        flush: async () => {}, close: closeEncoder,
+      }),
+    };
+    const encoder = new MovingToonReelsEncoder();
+    const timeline = findMovingToonPresetById("rooftop-sakura-duel");
+    const failed = await encoder.encodeTimeline(timeline, { adapter, maxFramesToEncode: 2 });
+    expect(failed.status).toBe("failed");
+    expect(failed.outputProduced).toBe(false);
+    expect(failed.encodedFrames).toBe(0);
+    expect(failed.totalEncodedBytes).toBe(0);
+    expect(failed.fallbackReasonKo).toContain("synthetic codec failure");
+    expect(closeFrame).toHaveBeenCalledTimes(1);
+    expect(closeEncoder).toHaveBeenCalledTimes(1);
+
+    const emptyAdapter: WebCodecsRuntimeAdapter = {
+      ...adapter,
+      createEncoder: () => ({ encodeQueueSize: 0, state: "configured", configure: () => {}, encode: () => {}, flush: async () => {}, close: () => {} }),
+    };
+    const empty = await encoder.encodeTimeline(timeline, { adapter: emptyAdapter, maxFramesToEncode: 1 });
+    expect(empty.status).toBe("failed");
+    expect(empty.encodedFrames).toBe(0);
+    expect(empty.outputProduced).toBe(false);
+
+    const controller = new AbortController();
+    controller.abort();
+    const cancelled = await encoder.encodeTimeline(timeline, { adapter: null, signal: controller.signal });
+    expect(cancelled.status).toBe("cancelled");
+    expect(cancelled.encodedFrames).toBe(0);
+    expect(cancelled.outputProduced).toBe(false);
   });
 
   it("5. 무한 캔버스 희소 타일은 화면 밖 타일을 0개 할당하고 밀집 캔버스 대비 95% 이상 메모리를 절감한다", () => {
@@ -556,12 +610,17 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
   it("15. StudioWebcodecsOpfsPanel이 3개 탭과 인코딩·800% 희소 타일·OPFS 브랜치/롤백 인터랙션을 정상 렌더링한다", async () => {
     render(createElement(StudioWebcodecsOpfsPanel));
 
-    // 탭 1: 릴스 인코딩 검증
-    expect(screen.getByText("서버 인코딩 비용 0원")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "4K/60fps 릴스 인코딩 검증" }));
+    // 탭 1: 미지원 프로브를 실제 영상 출력 완료와 구분한다.
+    expect(screen.getByText("프로브 서버 호출 없음")).toBeTruthy();
+    expect(screen.getByText(/영상 파일은 생성하지 않습니다/)).toBeTruthy();
+    expect(screen.queryByText(/1,800원 절감/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "64×64 합성 샘플 코덱 프로브" }));
     await waitFor(() => {
-      expect(screen.getByRole("status").textContent).toContain("인코딩 완료");
+      expect(screen.getByRole("status").textContent).toContain("프로브 미지원");
     });
+    expect(screen.getByText("인코딩된 합성 샘플: 0f")).toBeTruthy();
+    expect(screen.getByText("샘플 청크 크기 합계: 0 B")).toBeTruthy();
+    expect(screen.queryByText(/인코딩 완료|최근 인코딩 검증 완료/)).toBeNull();
 
     // 탭 2: 희소 타일 & 2D 칼만 예측
     fireEvent.click(screen.getByRole("tab", { name: "희소 타일 · 2D 칼만 예측" }));
@@ -594,6 +653,15 @@ describe("webcodecs-opfs-engine: WebCodecs 4K 무빙툰 · 희소 타일 래스�
     await waitFor(() => {
       expect(screen.getByRole("status").textContent).toContain("무손실 롤백을 완료했습니다");
     });
+  });
+
+  it("프로브 실행 예외를 화면에 알리고 완료 카드와 영상 성공 표시를 남기지 않는다", async () => {
+    vi.spyOn(MovingToonReelsEncoder.prototype, "encodeTimeline").mockRejectedValue(new Error("synthetic initialization failure"));
+    render(createElement(StudioWebcodecsOpfsPanel));
+    fireEvent.click(screen.getByRole("button", { name: "64×64 합성 샘플 코덱 프로브" }));
+    await waitFor(() => { expect(screen.getByRole("alert").textContent).toContain("synthetic initialization failure"); });
+    expect(screen.getByRole("status").textContent).toContain("프로브 실패");
+    expect(screen.queryByText(/인코딩 완료|합성 샘플 프로브 완료/)).toBeNull();
   });
 
   it("16. 모듈 소스 전체가 800줄 이하이며 원시 색상·웹 스토리지·금지 패턴을 포함하지 않는다", () => {
