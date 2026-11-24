@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { resolveCharacterShaperGazeForPosePreset } from "../character-shaper/character-shaper-camera-runtime";
 import {
   EXPRESSION_PRESETS,
   EXTRA_POSE_PRESETS,
@@ -12,9 +13,11 @@ import {
   RELAXED_FINGER_CURL_MIN_DEG,
   VRM_STANDARD_EXPRESSIONS,
   type PoseDirectionTarget,
+  type PoseGazeIntent,
   type PoseVec3,
   type StudioPosePreset,
 } from "../studio-pose-presets";
+import { clampStudioVrmJointRotation } from "./studio-vrm-joint-limits";
 import { POSE_PRESETS } from "./studio-vrm-poser-utils";
 import { computeLightingUniforms, serializeFullVrmState, type BodyScale, type LightingParams } from "./studio-vrm-poser-utils";
 
@@ -420,5 +423,219 @@ describe("new poser helpers (finger/scale/lighting/fullstate)", () => {
     const full = serializeFullVrmState({ lighting: {intensity:1.5} as any, env: "floor" as any });
     expect(full.version).toBe(3);
     expect(full.lighting?.intensity).toBe(1.5);
+  });
+});
+
+describe("Wave 36C: 쇄골 연동·척추 S커브·손가락 곡률·시선 의도 회귀 검증", () => {
+  const ALL_POSES: readonly StudioPosePreset[] = [...NATURAL_IDLE_POSES, ...EXTRA_POSE_PRESETS];
+  const BY_ID = new Map(ALL_POSES.map((pose) => [pose.id, pose]));
+
+  function armElevationDeg(direction: PoseDirectionTarget | undefined): number {
+    const vec = directionTuple(direction);
+    if (!vec) return 0;
+    const len = Math.hypot(vec[0], vec[1], vec[2]);
+    if (len <= 1e-6) return 0;
+    return (Math.acos(Math.min(1, Math.max(-1, -vec[1] / len))) * 180) / Math.PI;
+  }
+
+  it("40° 초과 상완 거상 시 모든 프리셋이 해부학적 쇄골 상승(좌 +Z / 우 -Z, 8~18°)과 관절 한계를 준수한다", () => {
+    let coupledCount = 0;
+    for (const pose of ALL_POSES) {
+      for (const side of ["left", "right"] as const) {
+        const elev = armElevationDeg(pose.bones[`${side}UpperArm`]?.direction);
+        const shoulderName = `${side}Shoulder` as const;
+        const rot = pose.bones[shoulderName]?.rotation;
+        expect(rot, `${pose.id}.${shoulderName} missing`).toBeDefined();
+        if (!rot) continue;
+
+        const clamped = clampStudioVrmJointRotation(shoulderName, rot);
+        expect(rot[0], `${pose.id}.${shoulderName} X limit`).toBeCloseTo(clamped[0], 5);
+        expect(rot[1], `${pose.id}.${shoulderName} Y limit`).toBeCloseTo(clamped[1], 5);
+        expect(rot[2], `${pose.id}.${shoulderName} Z limit`).toBeCloseTo(clamped[2], 5);
+
+        const sideSign = side === "left" ? 1 : -1;
+        const liftDeg = sideSign * toDegrees(rot[2]);
+        if (elev > 40) {
+          coupledCount += 1;
+          expect(liftDeg, `${pose.id}.${shoulderName} elev=${elev.toFixed(1)}°`).toBeGreaterThanOrEqual(7.9);
+          expect(liftDeg, `${pose.id}.${shoulderName} elev=${elev.toFixed(1)}°`).toBeLessThanOrEqual(18.1);
+        } else {
+          // 자연 하수 팔(<=40°)은 과도한 으쓱 없이 이완(-5.1°..+0.1°) 범위를 유지한다.
+          expect(liftDeg, `${pose.id}.${shoulderName} resting`).toBeGreaterThanOrEqual(-5.1);
+          expect(liftDeg, `${pose.id}.${shoulderName} resting`).toBeLessThanOrEqual(0.1);
+        }
+      }
+    }
+    expect(coupledCount).toBeGreaterThanOrEqual(60);
+
+    // 머리 위 만세/기지개/주먹 들기는 허리 손/스마트폰보다 쇄골 상승량이 명확히 크다.
+    const banzaiLift = toDegrees(BY_ID.get("xp_banzai")!.bones.leftShoulder!.rotation![2]);
+    const stretchLift = toDegrees(BY_ID.get("xp_stretch")!.bones.leftShoulder!.rotation![2]);
+    const fistUpLift = -toDegrees(BY_ID.get("xp_fist_up")!.bones.rightShoulder!.rotation![2]);
+    const hipsHandLift = toDegrees(BY_ID.get("xp_hands_on_hips")!.bones.leftShoulder!.rotation![2]);
+    expect(banzaiLift).toBeGreaterThanOrEqual(15);
+    expect(stretchLift).toBeGreaterThanOrEqual(15);
+    expect(fistUpLift).toBeGreaterThanOrEqual(15);
+    expect(banzaiLift).toBeGreaterThan(hipsHandLift + 4);
+  });
+
+  it("일상·감정·착석 포즈는 골반-척추 반대 기울임(콘트라포스토)과 S커브를 갖고, 의도적 정면 대칭 포즈는 수평을 유지한다", () => {
+    const contrappostoIds = [
+      "xp_wave_greeting", "xp_idle_relax", "xp_hands_on_hips", "xp_one_hand_hip",
+      "xp_chair_sit", "xp_kneel", "xp_finger_heart", "xp_shrug", "xp_phone_look",
+      "xp_chin_rest", "xp_hands_behind", "xp_thumbs_up", "xp_victory", "xp_phone_selfie",
+      "xp_cool_lean", "xp_lean_wall", "xp_side_lean", "xp_wait_line", "xp_present",
+      "xp_think_chin", "xp_blush_cover", "xp_hold_heart", "xp_teary", "xp_cry",
+    ];
+    for (const id of contrappostoIds) {
+      const pose = BY_ID.get(id)!;
+      expect(pose, `missing ${id}`).toBeDefined();
+      const hipsRoll = toDegrees(pose.bones.hips?.rotation?.[2] ?? 0);
+      const torsoCounterRoll = toDegrees(
+        (pose.bones.spine?.rotation?.[2] ?? 0) + (pose.bones.chest?.rotation?.[2] ?? 0),
+      );
+      expect(Math.abs(hipsRoll), `${id} hips roll`).toBeGreaterThanOrEqual(0.9);
+      expect(Math.sign(torsoCounterRoll), `${id} spine+chest counter roll`).toBe(-Math.sign(hipsRoll));
+    }
+
+    // 모든 확장 포즈는 최소 3개 이상의 코어 본(hips/spine/chest/neck/head)에 자연 회전을 가진다.
+    const coreBones = ["hips", "spine", "chest", "neck", "head"] as const;
+    for (const pose of EXTRA_POSE_PRESETS) {
+      const activeCore = coreBones.filter((bone) =>
+        (pose.bones[bone]?.rotation ?? [0, 0, 0]).some((rad) => Math.abs(rad) > 1e-4),
+      );
+      expect(activeCore.length, `${pose.id} wooden torso`).toBeGreaterThanOrEqual(3);
+    }
+
+    // 정면 대칭 포즈는 좌우 쏠림 없이 시상면 S커브/숙임만 유지한다.
+    for (const id of ["xp_banzai", "xp_polite_bow", "xp_bow_deep", "xp_meditate", "xp_salutation"]) {
+      const pose = BY_ID.get(id)!;
+      expect(pose.bones.hips?.rotation?.[2] ?? 0, `${id} hips roll`).toBe(0);
+      expect(pose.bones.spine?.rotation?.[2] ?? 0, `${id} spine roll`).toBe(0);
+      expect(pose.bones.chest?.rotation?.[2] ?? 0, `${id} chest roll`).toBe(0);
+    }
+
+    // 양손 전방 작업/감정 포즈에서 오른팔이 등 뒤(z < 0)로 꺾이는 회귀가 없어야 한다.
+    for (const id of [
+      "xp_typing", "xp_reading", "xp_hug_self", "xp_guard", "xp_meditate",
+      "xp_shock", "xp_laugh", "xp_victory", "xp_cheer_both", "xp_stretch",
+    ]) {
+      const pose = BY_ID.get(id)!;
+      const leftZ = directionTuple(pose.bones.leftUpperArm?.direction)?.[2] ?? 0;
+      const rightZ = directionTuple(pose.bones.rightUpperArm?.direction)?.[2] ?? 0;
+      expect(leftZ, `${id} leftUpperArm.z`).toBeGreaterThan(0);
+      expect(rightZ, `${id} rightUpperArm.z`).toBeGreaterThan(0);
+    }
+  });
+
+  it("전체 72종 포즈에 30개 손가락 본이 채워지고 릴랙스·제스처 손가락 곡률 규약(+Z 굽힘)을 만족한다", () => {
+    for (const pose of ALL_POSES) {
+      for (const boneName of POSER_FINGER_BONES) {
+        const rot = pose.bones[boneName]?.rotation;
+        expect(rot, `${pose.id} missing ${boneName}`).toBeDefined();
+        expect(rot?.every(Number.isFinite), `${pose.id}:${boneName} finite`).toBe(true);
+      }
+      for (const side of ["left", "right"] as const) {
+        let nonThumbCurlSum = 0;
+        for (const boneName of POSER_FINGER_BONES) {
+          if (!boneName.startsWith(side) || boneName.includes("Thumb")) continue;
+          const deg = toDegrees(pose.bones[boneName]!.rotation![2]);
+          expect(deg, `${pose.id}:${boneName} hyperextended`).toBeGreaterThan(0);
+          expect(deg, `${pose.id}:${boneName} over-flexed`).toBeLessThanOrEqual(96);
+          nonThumbCurlSum += deg;
+        }
+        // 손가락 전체 합이 양수여야 applyFingerRotations의 극성 정렬과 일관되며 뻣뻣한 일자 손을 막는다.
+        expect(nonThumbCurlSum, `${pose.id}:${side} curl sum`).toBeGreaterThan(60);
+      }
+    }
+
+    // 주요 제스처 포즈 손 모양 검증
+    for (const id of ["xp_guard_up", "xp_punch", "xp_fist_up", "xp_sprint", "xp_cheer_both"]) {
+      const middlePip = toDegrees(BY_ID.get(id)!.bones.rightMiddleIntermediate!.rotation![2]);
+      expect(middlePip, `${id} fist curl`).toBeGreaterThanOrEqual(75);
+    }
+    for (const id of ["xp_double_v", "xp_victory"]) {
+      const pose = BY_ID.get(id)!;
+      expect(toDegrees(pose.bones.rightIndexIntermediate!.rotation![2])).toBeLessThanOrEqual(10);
+      expect(toDegrees(pose.bones.rightMiddleIntermediate!.rotation![2])).toBeLessThanOrEqual(10);
+      expect(toDegrees(pose.bones.rightRingIntermediate!.rotation![2])).toBeGreaterThanOrEqual(75);
+      expect(toDegrees(pose.bones.rightIndexProximal!.rotation![1])).toBeGreaterThan(5);
+      expect(toDegrees(pose.bones.rightMiddleProximal!.rotation![1])).toBeLessThan(-2);
+    }
+    for (const id of ["xp_point_you", "xp_point_forward"]) {
+      const pose = BY_ID.get(id)!;
+      expect(toDegrees(pose.bones.rightIndexIntermediate!.rotation![2])).toBeLessThanOrEqual(10);
+      expect(toDegrees(pose.bones.rightMiddleIntermediate!.rotation![2])).toBeGreaterThanOrEqual(75);
+    }
+    const thumbsUp = BY_ID.get("xp_thumbs_up")!;
+    expect(toDegrees(thumbsUp.bones.rightIndexIntermediate!.rotation![2])).toBeGreaterThanOrEqual(75);
+    expect(toDegrees(thumbsUp.bones.rightThumbMetacarpal!.rotation![1])).toBeLessThan(-10);
+
+    // 릴랙스 기본 손 포즈는 RELAXED_FINGER_CURL_MIN_DEG..MAX_DEG 범위를 유지한다.
+    for (const id of ["xp_idle_relax", "xp_chair_sit", "xp_hands_behind", "xp_polite_bow"]) {
+      const pose = BY_ID.get(id)!;
+      const middlePip = toDegrees(pose.bones.rightMiddleIntermediate!.rotation![2]);
+      expect(middlePip, `${id} relaxed curl`).toBeGreaterThanOrEqual(RELAXED_FINGER_CURL_MIN_DEG - 0.1);
+      expect(middlePip, `${id} relaxed curl`).toBeLessThanOrEqual(RELAXED_FINGER_CURL_MAX_DEG + 0.1);
+    }
+  });
+
+  it("18종 이상 포즈에 연기 의도에 맞는 gazeIntent가 정의되고 CharacterShaper 시선 컨트롤러와 정합된다", () => {
+    const withGaze = ALL_POSES.filter((pose) => Boolean(pose.gazeIntent));
+    expect(withGaze.length).toBeGreaterThanOrEqual(18);
+
+    const targets = new Set<PoseGazeIntent["target"]>();
+    for (const pose of withGaze) {
+      const intent = pose.gazeIntent!;
+      targets.add(intent.target);
+      expect(Number.isFinite(intent.pitchDeg), `${pose.id} pitch`).toBe(true);
+      expect(Number.isFinite(intent.yawDeg), `${pose.id} yaw`).toBe(true);
+      expect(intent.convergence, `${pose.id} convergence`).toBeGreaterThan(0);
+      expect(intent.convergence, `${pose.id} convergence`).toBeLessThanOrEqual(1);
+
+      const resolved = resolveCharacterShaperGazeForPosePreset(pose.id);
+      expect(resolved, `${pose.id} resolved gaze`).not.toBeNull();
+      if (intent.target === "camera") {
+        expect(Math.abs(intent.yawDeg), `${pose.id} cam yaw`).toBeLessThanOrEqual(8);
+        expect(Math.abs(intent.pitchDeg), `${pose.id} cam pitch`).toBeLessThanOrEqual(6);
+        expect(resolved?.gazeMode).toBe("cam");
+      } else {
+        expect(Math.abs(intent.yawDeg), `${pose.id} world yaw`).toBeLessThanOrEqual(30);
+        expect(Math.abs(intent.pitchDeg), `${pose.id} world pitch`).toBeLessThanOrEqual(24);
+        expect(resolved?.gazeMode).toBe("world");
+      }
+    }
+    expect(targets).toEqual(new Set(["camera", "hands", "down", "forward", "side"]));
+
+    // 손 집중(폰·타이핑·요리·독서) -> world 하방 시선 + 높은 근거리 폭주
+    for (const id of ["xp_phone_look", "xp_typing", "xp_cooking", "xp_reading"]) {
+      const intent = BY_ID.get(id)!.gazeIntent!;
+      expect(intent.target, id).toBe("hands");
+      expect(intent.pitchDeg, id).toBeLessThanOrEqual(-15);
+      expect(intent.convergence, id).toBeGreaterThanOrEqual(0.6);
+      expect(resolveCharacterShaperGazeForPosePreset(id)?.gazeMode).toBe("world");
+    }
+
+    // 목례·울먹임·슬픔·졸음·기도성 하향 시선 -> down + 음수 피치
+    for (const id of ["xp_polite_bow", "xp_bow_deep", "xp_teary", "xp_cry", "xp_sad_sit", "xp_sleep_stand", "xp_hug_self", "xp_kneel", "xp_meditate"]) {
+      const intent = BY_ID.get(id)!.gazeIntent!;
+      expect(intent.target, id).toBe("down");
+      expect(intent.pitchDeg, id).toBeLessThanOrEqual(-10);
+      expect(resolveCharacterShaperGazeForPosePreset(id)?.gazeOffset.pitchDeg).toBeLessThanOrEqual(-10);
+    }
+
+    // 곁눈질·뒤돌아보기·고민·부끄러움·궁수·잠입 -> side + 명확한 측면 요
+    for (const id of ["xp_look_back", "xp_archer", "xp_sneak", "xp_chin_rest", "xp_think_chin", "xp_blush_cover", "xp_lean_wall", "xp_side_lean"]) {
+      const intent = BY_ID.get(id)!.gazeIntent!;
+      expect(intent.target, id).toBe("side");
+      expect(Math.abs(intent.yawDeg), id).toBeGreaterThanOrEqual(12);
+      expect(Math.abs(resolveCharacterShaperGazeForPosePreset(id)?.gazeOffset.yawDeg ?? 0)).toBeGreaterThanOrEqual(12);
+    }
+
+    // 인사·셀카·자신감·착석 카메라 시선 -> cam 모드
+    for (const id of ["xp_wave_greeting", "xp_finger_heart", "xp_double_v", "xp_phone_selfie", "xp_thumbs_up", "xp_victory", "xp_hands_on_hips", "xp_chair_sit"]) {
+      expect(BY_ID.get(id)!.gazeIntent?.target, id).toBe("camera");
+      expect(resolveCharacterShaperGazeForPosePreset(id)?.gazeMode, id).toBe("cam");
+    }
   });
 });
