@@ -1,4 +1,4 @@
-import { Bot, Camera, CheckCircle2, Clapperboard, Eye, Gauge, Glasses, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
+import { Bot, Camera, CheckCircle2, Clapperboard, Compass, Eye, Gauge, Glasses, MessageSquareText, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -63,6 +63,16 @@ const LazyStudioCutRhythmPromoDirectorPanel = lazy(async () => {
   const m = await import("../cut-rhythm-promo-director/StudioCutRhythmPromoDirectorPanel");
   return { default: m.StudioCutRhythmPromoDirectorPanel };
 });
+const LazyStudioVoiceToBalloonPanel = lazy(async () => {
+  await import("../voice-to-balloon-layout");
+  const m = await import("../voice-to-balloon-layout/StudioVoiceToBalloonPanel");
+  return { default: m.StudioVoiceToBalloonPanel };
+});
+const LazyStudioCameraLensBlockingPanel = lazy(async () => {
+  await import("../camera-lens-blocking-director");
+  const m = await import("../camera-lens-blocking-director/StudioCameraLensBlockingPanel");
+  return { default: m.StudioCameraLensBlockingPanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -76,7 +86,9 @@ type CreatorLabTabId =
   | "vrmNaturalRig"
   | "continuityGuard"
   | "sketchTo3d"
-  | "cutRhythmPromo";
+  | "cutRhythmPromo"
+  | "voiceBalloon"
+  | "cameraLensBlocking";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -95,6 +107,8 @@ const CREATOR_LAB_TABS: readonly {
   { id: "continuityGuard", labelKo: "60컷 자동 연속성 감시관", labelEn: "60-Cut Continuity Guard" },
   { id: "sketchTo3d", labelKo: "2D 러프 → 3D 포즈·화각·조명", labelEn: "Sketch-to-3D Stage Solver" },
   { id: "cutRhythmPromo", labelKo: "컷 리듬 → 2.5D 무빙툰·15초 프로모", labelEn: "Cut Rhythm → 2.5D Moving-Toon Promo" },
+  { id: "voiceBalloon", labelKo: "음성 운율 → 말풍선 자동 조판", labelEn: "Voice Prosody → Speech Balloons" },
+  { id: "cameraLensBlocking", labelKo: "3D 시네마 렌즈·180° 카메라 연출", labelEn: "3D Cinema Lens · 180° Blocking" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -123,6 +137,10 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Camera size={15} aria-hidden="true" />;
     case "cutRhythmPromo":
       return <Clapperboard size={15} aria-hidden="true" />;
+    case "voiceBalloon":
+      return <MessageSquareText size={15} aria-hidden="true" />;
+    case "cameraLensBlocking":
+      return <Compass size={15} aria-hidden="true" />;
   }
 }
 
@@ -183,6 +201,8 @@ export function CreatorLabHardwareHubPanel() {
           {active === "continuityGuard" ? <LazyStudioWebtoonContinuityGuardPanel /> : null}
           {active === "sketchTo3d" ? <LazyStudioSketchTo3dStagePanel /> : null}
           {active === "cutRhythmPromo" ? <LazyStudioCutRhythmPromoDirectorPanel /> : null}
+          {active === "voiceBalloon" ? <LazyStudioVoiceToBalloonPanel /> : null}
+          {active === "cameraLensBlocking" ? <LazyStudioCameraLensBlockingPanel /> : null}
         </Suspense>
       </div>
     </section>
