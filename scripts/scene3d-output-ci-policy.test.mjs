@@ -79,7 +79,7 @@ describe("Scene3D output CI inputs", () => {
       expect(job["runs-on"]).toBe("ubuntu-24.04");
       expect(job["timeout-minutes"]).toBe(minutes);
       expect(job.steps[0]).toEqual(cleanup);
-      expect(job.steps[1].uses).toBe("actions/checkout@v7");
+      expect(job.steps[1].uses).toMatch(/^actions\/checkout@[0-9a-f]{40}$/u);
       expect(job.steps.some((step) => step.run === "pnpm run build:bundle")).toBe(true);
       expect(job.steps.some((step) => step.run === "pnpm exec playwright install --with-deps chromium")).toBe(true);
     }

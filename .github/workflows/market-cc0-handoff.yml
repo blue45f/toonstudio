@@ -39,11 +39,11 @@ jobs:
     # 3MiB 약 70묶음 추산·worker 48~75초 뒤 실제 파일·브라우저 검증까지 110분을 둔다.
     timeout-minutes: 110
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -57,7 +57,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/market-cc0
           node scripts/verify-market-cc0.mjs 2>&1 | tee artifacts/market-cc0/verification.log
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: market-cc0-${{ github.run_id }}

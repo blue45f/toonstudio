@@ -86,7 +86,7 @@ jobs:
       smart_noop: ${{ steps.gate.outputs.smart_noop }}
       scope_summary: ${{ steps.gate.outputs.scope_summary }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -167,7 +167,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=12288
       RELEASE_SHA: ${{ needs.verify-release-gate.outputs.release_sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.verify-release-gate.outputs.release_sha }}
           persist-credentials: false
@@ -183,8 +183,8 @@ jobs:
             exit 1
           fi
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24.16.0
           cache: pnpm
@@ -213,7 +213,7 @@ jobs:
 
       - name: Restore typecheck-shards checkpoint cache
         if: ${{ steps.typecheck-shards-key.outputs.key != '' }}
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/typecheck-shards/report.json
           key: ${{ steps.typecheck-shards-key.outputs.key }}
@@ -261,7 +261,7 @@ jobs:
           fi
           node scripts/cloud-deploy-cloudflare.mjs --unit=static-web "${extra_args[@]}"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ always() && (inputs.deploy_web == true || needs.verify-release-gate.outputs.effective_deploy_web == 'true') }}
         with:
           name: cloudflare-web-rollback-${{ needs.verify-release-gate.outputs.release_sha }}
@@ -282,13 +282,13 @@ jobs:
       CI: "1"
       RELEASE_SHA: ${{ needs.verify-release-gate.outputs.release_sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.verify-release-gate.outputs.release_sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24.16.0
           cache: pnpm
@@ -327,13 +327,13 @@ jobs:
       IMAGE_NAME: ghcr.io/blue45f/toonspectrum-core-api
       RELEASE_SHA: ${{ needs.verify-release-gate.outputs.release_sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.verify-release-gate.outputs.release_sha }}
           persist-credentials: false
 
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -357,9 +357,9 @@ jobs:
           fi
           echo "exists=false" >> "$GITHUB_OUTPUT"
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         if: ${{ steps.check_existing.outputs.exists == 'false' }}
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         if: ${{ steps.check_existing.outputs.exists == 'false' }}
         with:
           node-version: 24.16.0
@@ -403,7 +403,7 @@ jobs:
 
       - name: Build and publish immutable API image
         if: ${{ steps.check_existing.outputs.exists == 'false' }}
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .release/image
           file: .release/image/Dockerfile
@@ -452,13 +452,13 @@ jobs:
       CI: "1"
       RELEASE_SHA: ${{ needs.verify-release-gate.outputs.release_sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.verify-release-gate.outputs.release_sha }}
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24.16.0
           cache: pnpm
@@ -497,7 +497,7 @@ jobs:
           fi
           node scripts/cloud-deploy-onpod.mjs "${args[@]}"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: onpod-api-rollback-${{ needs.verify-release-gate.outputs.release_sha }}
@@ -522,7 +522,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.verify-release-gate.outputs.release_sha }}
           persist-credentials: false

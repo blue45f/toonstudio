@@ -48,11 +48,11 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -68,7 +68,7 @@ jobs:
         run: pnpm exec eslint apps/web/src/domains/creator/studio-2d-*.ts apps/web/src/domains/creator/Studio2d*.tsx apps/web/src/domains/creator/studio-bg-scenes.ts apps/web/src/domains/creator/StudioSceneToolPopoverBody.tsx apps/web/src/domains/creator/studio-page-lazy-ui.ts scripts/studio-2d-*.mjs
       - name: Cache Playwright Chromium
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
@@ -79,7 +79,7 @@ jobs:
         run: pnpm exec playwright install-deps chromium
       - name: Validate actual component with original images in Chromium
         run: node scripts/studio-2d-browser-smoke.mjs
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: studio-2d-asset-evidence

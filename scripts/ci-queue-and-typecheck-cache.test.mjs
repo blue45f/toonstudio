@@ -129,7 +129,7 @@ test("CI typecheck 잡은 fail-closed typecheck-shards 체크포인트 캐시를
   assert.ok(preflightIndex >= 0 && preflightIndex < installIndex, "캐시·대기열 정책 테스트는 의존성 설치 전에 실행해야 합니다");
 
   const keyIndex = typecheck.indexOf("node scripts/typecheck-shards.mjs --print-cache-key");
-  const restoreIndex = typecheck.indexOf("id: typecheck-shards-cache\n        uses: actions/cache/restore@v6");
+  const restoreIndex = typecheck.indexOf("id: typecheck-shards-cache\n        uses: actions/cache/restore@");
   const runIndex = typecheck.indexOf("pnpm run typecheck\n");
   const saveIndex = typecheck.indexOf("name: Save typecheck-shards checkpoint cache on main");
   assert.ok(keyIndex > installIndex, "캐시 키 계산은 의존성 설치 뒤에 위치해야 합니다");
@@ -138,9 +138,9 @@ test("CI typecheck 잡은 fail-closed typecheck-shards 체크포인트 캐시를
   assert.match(typecheck, /path: node_modules\/\.cache\/typecheck-shards\/report\.json/u);
   assert.match(
     typecheck,
-    /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.typecheck-shards-cache\.outputs\.cache-hit != 'true'\n {8}uses: actions\/cache\/save@v6/u,
+    /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.typecheck-shards-cache\.outputs\.cache-hit != 'true'\n {8}uses: actions\/cache\/save@[0-9a-f]{40}(?: # v6)?/u,
   );
-  assert.doesNotMatch(typecheck, /uses: actions\/cache@v\d+/u);
+  assert.doesNotMatch(typecheck, /uses: actions\/cache@/u);
   assert.match(typecheck, /^ {10}TOONSTUDIO_TYPECHECK_MAX_SOURCE_BYTES: '3145728'$/mu);
 });
 
@@ -148,22 +148,22 @@ test("CI build·수동 하네스·보조 빌드 워크플로는 동일 키로 ty
   const ci = workflows["ci.yml"];
   const build = jobBlock(ci, "build");
   const buildKeyIndex = build.indexOf("node scripts/typecheck-shards.mjs --print-cache-key");
-  const buildRestoreIndex = build.indexOf("id: typecheck-shards-cache\n        uses: actions/cache/restore@v6");
+  const buildRestoreIndex = build.indexOf("id: typecheck-shards-cache\n        uses: actions/cache/restore@");
   const buildRunIndex = build.indexOf("Build API and web without repeating the required web typecheck");
   assert.ok(buildKeyIndex >= 0 && buildRestoreIndex > buildKeyIndex && buildRestoreIndex < buildRunIndex);
-  assert.doesNotMatch(build, /uses: actions\/cache\/save@v\d+|uses: actions\/cache@v\d+/u);
+  assert.doesNotMatch(build, /uses: actions\/cache\/save@|uses: actions\/cache@/u);
 
   const staticJob = jobBlock(ci, "static");
   const harnessKeyIndex = staticJob.indexOf("node scripts/typecheck-shards.mjs --print-cache-key");
-  const harnessRestoreIndex = staticJob.indexOf("id: typecheck-shards-cache\n        uses: actions/cache/restore@v6");
+  const harnessRestoreIndex = staticJob.indexOf("id: typecheck-shards-cache\n        uses: actions/cache/restore@");
   const harnessRunIndex = staticJob.indexOf("name: 수동 후보의 전체 하네스 검증");
   assert.ok(harnessKeyIndex >= 0 && harnessRestoreIndex > harnessKeyIndex && harnessRestoreIndex < harnessRunIndex);
-  assert.doesNotMatch(staticJob, /uses: actions\/cache\/save@v\d+|uses: actions\/cache@v\d+/u);
+  assert.doesNotMatch(staticJob, /uses: actions\/cache\/save@|uses: actions\/cache@/u);
 
   for (const filename of TYPECHECK_CACHE_CONSUMER_WORKFLOWS) {
     const text = workflows[filename];
     assert.ok(text.includes("node scripts/typecheck-shards.mjs --print-cache-key"), `${filename}: 캐시 키 계산 누락`);
-    assert.ok(text.includes("uses: actions/cache/restore@v6"), `${filename}: 체크포인트 복원 누락`);
+    assert.match(text, /uses: actions\/cache\/restore@[0-9a-f]{40}/u, `${filename}: 체크포인트 복원 누락`);
     assert.ok(text.includes("path: node_modules/.cache/typecheck-shards/report.json"), `${filename}: 체크포인트 경로 누락`);
   }
 });
@@ -171,7 +171,7 @@ test("CI build·수동 하네스·보조 빌드 워크플로는 동일 키로 ty
 test("CI a11y 잡은 공유 Playwright Chromium 캐시를 복원하고 main push에서만 저장하며 기존 설치 명령을 유지한다", () => {
   const ci = workflows["ci.yml"];
   const a11y = jobBlock(ci, "a11y");
-  const restoreIndex = a11y.indexOf("id: playwright-cache\n        uses: actions/cache/restore@v6");
+  const restoreIndex = a11y.indexOf("id: playwright-cache\n        uses: actions/cache/restore@");
   const installIndex = a11y.indexOf("run: pnpm exec playwright install --with-deps chromium");
   const saveIndex = a11y.indexOf("name: Save Playwright Chromium cache on main");
   assert.ok(restoreIndex >= 0 && restoreIndex < installIndex, "Playwright 캐시 복원은 Chromium 설치 전에 실행해야 합니다");
@@ -180,7 +180,7 @@ test("CI a11y 잡은 공유 Playwright Chromium 캐시를 복원하고 main push
   assert.match(a11y, /key: \$\{\{ runner\.os \}\}-\$\{\{ runner\.arch \}\}-playwright-\$\{\{ hashFiles\('pnpm-lock\.yaml'\) \}\}/u);
   assert.match(
     a11y,
-    /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.playwright-cache\.outputs\.cache-hit != 'true'\n {8}uses: actions\/cache\/save@v6/u,
+    /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' && steps\.playwright-cache\.outputs\.cache-hit != 'true'\n {8}uses: actions\/cache\/save@[0-9a-f]{40}(?: # v6)?/u,
   );
-  assert.doesNotMatch(a11y, /uses: actions\/cache@v\d+/u);
+  assert.doesNotMatch(a11y, /uses: actions\/cache@/u);
 });

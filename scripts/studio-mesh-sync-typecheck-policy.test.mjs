@@ -24,7 +24,7 @@ test("전체 타입 검사는 Core와 같은 입력·표준 명령·3MiB 묶음�
   assert.equal(job["runs-on"], core.jobs.typecheck["runs-on"]);
   assert.equal(job["timeout-minutes"], core.jobs.typecheck["timeout-minutes"]);
   assert.equal(job["timeout-minutes"], 110);
-  const checkout = (value) => value.steps.find((step) => step.uses === "actions/checkout@v7").with;
+  const checkout = (value) => value.steps.find((step) => step.uses?.startsWith("actions/checkout@")).with;
   assert.deepEqual(checkout(job), checkout(core.jobs.typecheck));
   const types = job.steps.find((step) => step.run === "pnpm run typecheck");
   assert.ok(types);

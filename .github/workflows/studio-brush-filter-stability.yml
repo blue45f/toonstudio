@@ -166,9 +166,9 @@ jobs:
             printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
             exit 1
           fi
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -220,7 +220,7 @@ jobs:
             2>&1 | tee /tmp/studio-stability-unit-evidence/tests.log
       - name: Preserve focused regression results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: studio-stability-unit-results
           path: /tmp/studio-stability-unit-evidence
@@ -231,14 +231,14 @@ jobs:
           VITE_STUDIO_AUTOMERGE_OFFLINE_BRANCH: "true"
       - name: Require the production manifest used by SQLite durability checks
         run: test -s dist/.vite/manifest.json
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: studio-stability-dist
           path: dist
           include-hidden-files: true
           retention-days: 1
       - name: Preserve the tested filter Worker separately for reproducible CPU soak tests
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: studio-stability-filter-worker
           path: |
@@ -339,9 +339,9 @@ jobs:
             printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
             exit 1
           fi
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -356,7 +356,7 @@ jobs:
           for target in .git apps/web/public node_modules dist "$RUNNER_TEMP" "${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"; do
             if test -e "$target"; then du -s -B1 -- "$target"; fi
           done
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: studio-stability-dist
           path: dist
@@ -436,7 +436,7 @@ jobs:
         run: pnpm exec tsx scripts/verify-studio-source-hydration.mts
       - name: Preserve evidence even when a product check fails
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: studio-stability-${{ matrix.suite }}
           path: /tmp/studio-stability-evidence
