@@ -15,6 +15,7 @@ import { compactBootstrapAssets } from "./config/compact-bootstrap-assets";
 import { createStudioManualChunks } from "./config/vite-manual-chunks";
 import { pigmentLicenseBoundaryPlugin } from "./config/vite-pigment-license-boundary";
 import { adminQualityEntryPlugin } from "./config/vite-admin-quality-entry";
+import { studioFoleyImportHashPlugin, studioFoleyPreloads } from "./config/vite-studio-foley-preload";
 import { studioHeaderWarmup } from "./config/vite-studio-header-warmup";
 import { STUDIO_I18N_NAMESPACES } from "./src/shared/lib/i18n-asset-manifest";
 import {
@@ -42,11 +43,7 @@ const reactCompilerRuntimeInteropModule = path.resolve(
 const reactCompilerRuntimeCommonJsModule = nodeRequire.resolve("react/compiler-runtime");
 
 const apiTarget = process.env.NEST_API_URL ?? "http://127.0.0.1:4001";
-// Chunks that must never be pulled into the entry document's <link rel="modulepreload"> set.
-// A modulepreload is a highest-priority fetch on every route, so anything here competes with the
-// entry script and the render-blocking stylesheet for the first round trip.
-// "i18n" covers the shared dictionary chunk and the route i18n loaders: translations resolve
-// through an explicit ko/en fallback chain, so nothing on the critical path blocks on them.
+// 첫 화면의 스크립트·스타일과 대역폭을 다투는 청크. 번역은 ko/en 폴백으로 불러온다.
 const ENTRY_PRELOAD_EXCLUSIONS = [
   "studio-konva-runtime",
   "StudioVrmPoser",
@@ -653,6 +650,7 @@ export default defineConfig(({ command, mode }) => ({
   ...viteServeCacheConfig(command),
   plugins: [
     pigmentLicenseBoundaryPlugin(),
+    studioFoleyImportHashPlugin(),
     threeTslVrmCompatPlugin(),
     preferImplementationOverTestModulePlugin(),
     studioCrossOriginIsolationPlugin(),
@@ -751,8 +749,8 @@ export default defineConfig(({ command, mode }) => ({
     // CI reads this graph to enforce the mobile Studio's initial-JS budgets and lazy-only engines.
     manifest: true,
     modulePreload: {
-      resolveDependencies(_filename, deps, context) {
-        if (context.hostType !== "html") return deps;
+      resolveDependencies(filename, deps, context) {
+        if (context.hostType === "js") return studioFoleyPreloads(filename, deps);
         return deps.filter((dep) => !ENTRY_PRELOAD_EXCLUSIONS.some((chunkName) => dep.includes(chunkName)));
       },
     },

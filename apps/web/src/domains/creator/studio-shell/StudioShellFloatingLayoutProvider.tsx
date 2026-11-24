@@ -48,6 +48,8 @@ import {
   isStudioShellDrawingSurfaceTarget,
 } from "./studio-shell-drawing-auto-hide";
 
+const subscribeWithoutUpdates = () => () => undefined;
+
 const SESSION_KEY = "toonspectrum:studio:shell-floating-visibility:v1";
 
 function browserSessionStorage(): Storage | null {
@@ -108,14 +110,13 @@ export function StudioShellFloatingLayoutProvider({
     studioWorkspaceArrangingSnapshot,
     () => false,
   );
-  const strokeFocusPhase = useSyncExternalStore(
-    subscribeStudioStrokeFocusActivity,
-    studioStrokeFocusActivitySnapshot,
-    () => "idle",
+  const autoHideEnabled = visibility.autoHideWhileDrawing && !arranging;
+  const strokeFocusActive = useSyncExternalStore(
+    autoHideEnabled ? subscribeStudioStrokeFocusActivity : subscribeWithoutUpdates,
+    () => autoHideEnabled && studioStrokeFocusActivitySnapshot() !== "idle",
+    () => false,
   );
-  const drawingAutoHideActive = visibility.autoHideWhileDrawing
-    && !arranging
-    && (pointerAutoHideActive || strokeFocusPhase !== "idle");
+  const drawingAutoHideActive = autoHideEnabled && (pointerAutoHideActive || strokeFocusActive);
   const drawingPointerId = useRef<number | null>(null);
   const drawingReleaseTimer = useRef<number | null>(null);
   const liveVisibility = useRef(visibility);

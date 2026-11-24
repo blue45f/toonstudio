@@ -939,21 +939,18 @@ export function StudioKbdBadge({
 }
 
 /** Concepts/Ibis compact metric pill for the status bar. */
-export function StudioHudPill({
-  children,
-  className,
-  title,
-  accent,
-}: {
+export function StudioHudPill({ children, className, title, accent, hidden }: {
   children: ReactNode;
   className?: string;
   title?: string;
   accent?: boolean;
+  hidden?: boolean;
 }): ReactElement {
   return (
     <span
       data-studio-hud-pill="true"
       title={title}
+      hidden={hidden}
       className={cn(
         // 밝은 원고 위에서도 읽히도록 프로스트 글라스(blur+saturate) 위에 얹는다 — 반투명
         // 캔버스색 단독으로는 흰 배경에서 대비가 무너졌다.
@@ -961,7 +958,8 @@ export function StudioHudPill({
         "backdrop-blur-md backdrop-saturate-150 shadow-[0_1px_2px_oklch(0.08_0.01_70/0.35),inset_0_1px_0_oklch(0.95_0.02_85/0.06)]",
         "text-[0.7rem] font-semibold tabular-nums tracking-tight text-fg-2",
         accent && "border-accent/40 bg-accent-soft/60 text-accent",
-        className
+        className,
+        hidden && "hidden"
       )}
     >
       {children}

@@ -106,7 +106,7 @@ async function downloadedText(download: Download): Promise<string> {
   return readFile(path, "utf8");
 }
 
-test("운영 범위와 일곱 전문 보드를 먼저 열고 통합 검토만 저장·재조회한다", async ({ page }) => {
+test("운영 범위와 여덟 전문 보드를 먼저 열고 통합 검토만 저장·재조회한다", async ({ page }) => {
   const fixture = await workspaceFixture(page);
   await page.goto(boardPath);
   await expect(page.getByRole("heading", { name: "사업계획·운영 작업실", exact: true })).toBeVisible();
@@ -278,7 +278,7 @@ test("저장소가 준비되지 않으면 빈 보드를 성공으로 표시하�
   await expect(page.locator(".workspace-table")).toHaveCount(0);
 });
 
-test("모바일·데스크톱에서 일곱 보드가 넘치지 않고 키보드 상세창 초점을 복원한다", async ({ page }, testInfo) => {
+test("모바일·데스크톱에서 여덟 보드가 넘치지 않고 키보드 상세창 초점을 복원한다", async ({ page }, testInfo) => {
   await workspaceFixture(page, { privateAccess: "owner" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });

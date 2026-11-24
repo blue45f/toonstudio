@@ -69,10 +69,22 @@ describe("StudioLivePressureHudPill", () => {
     const store: StudioLivePressureStore = { value: null, listeners: new Set() };
     const view = render(<StudioLivePressureHudPill store={store} />);
     expect(view.queryByRole("meter")).toBeNull();
+    const meter = view.getByRole("meter", { hidden: true });
+    const observer = new MutationObserver(() => {});
+    observer.observe(view.container, { childList: true, subtree: true });
     act(() => {
       store.value = 0.42;
       for (const notify of store.listeners) notify();
     });
-    expect(view.getByRole("meter", { name: "실시간 필압" }).getAttribute("aria-valuenow")).toBe("42");
+    expect(view.getByRole("meter", { name: "실시간 필압" })).toBe(meter);
+    expect(meter.getAttribute("aria-valuenow")).toBe("42");
+    act(() => {
+      store.value = null;
+      for (const notify of store.listeners) notify();
+    });
+    expect(view.queryByRole("meter")).toBeNull();
+    expect(view.getByRole("meter", { hidden: true })).toBe(meter);
+    expect(observer.takeRecords()).toEqual([]);
+    observer.disconnect();
   });
 });
