@@ -150,14 +150,15 @@ describe("StudioDraftOperationSyncAssistant", () => {
         message: "서버 연결 대기",
         mode: "server",
       },
-    });
+    }, { localCheckpointCount: 0 });
 
     fireEvent.click(screen.getByRole("button", {
-      name: "동기화 상태: 오프라인 · 3개 기기 보관",
+      name: "동기화 상태: 오프라인 · 변경 3건 전송 대기",
     }));
 
     expect(screen.getByRole("dialog", { name: "기기·서버 동기화" })).not.toBeNull();
-    expect(screen.getAllByText(/서버가 다시 연결될 때까지 변경 3개를 이 기기의 복구 저장소에 보관합니다/).length).toBeGreaterThan(0);
+    expect(screen.getByText("이 탭이 원고의 기기 복구 저장을 담당합니다.")).toBeTruthy();
+    expect(screen.getAllByText(/협업 변경 3건이 이 기기의 전송 대기열에 저장됐습니다/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/아직 팀 서버에 반영되지 않았습니다/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "서버 연결 다시 확인" }));
     expect(retryServer).toHaveBeenCalledTimes(1);

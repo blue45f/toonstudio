@@ -84,7 +84,7 @@ function deviceSummary(input: StudioDraftOperationSyncAssistantInput): string {
     const count = safeCount(input.localCheckpointCount);
     return count > 0
       ? `이 탭이 복구 저장을 담당하며 기기 복구 지점 ${count.toLocaleString("ko-KR")}개가 있습니다.`
-      : "이 탭이 새 변경을 이 기기에 자동으로 보호합니다.";
+      : offlineConflictText("deviceWriterRole");
   }
   if (input.localRole === "follower") {
     return "먼저 연 다른 탭이 이 기기의 복구 저장을 담당합니다.";
@@ -121,14 +121,14 @@ function operationSummary(input: StudioDraftOperationSyncAssistantInput): string
     case "unsupported-jam":
       return "이 브라우저에서는 저장 전 실시간 공동 작업을 사용할 수 없습니다.";
     case "offline-queued":
-      if (deviceProtected) {
+      if (deviceProtected && pending > 0) {
         return r3c07StatusText("studio.panelStatus.r3c07.draftSync.offlineDurableQueued", {
           count: pending.toLocaleString("ko-KR"),
-        }, "서버가 다시 연결될 때까지 변경 {count}개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.");
+        }, "협업 변경 {count}건이 이 기기의 전송 대기열에 저장됐습니다. 아직 팀 서버에 반영되지 않았습니다.");
       }
       return pending > 0
-        ? `변경 ${pending.toLocaleString("ko-KR")}개를 서버가 다시 연결될 때까지 이 기기에 보관합니다.`
-        : "서버가 다시 연결될 때까지 변경을 이 기기에 보관합니다.";
+        ? offlineConflictText("pendingLabel", { count: pending })
+        : offlineConflictText("connectionWait");
     case "retrying":
       return pending > 0
         ? `변경 ${pending.toLocaleString("ko-KR")}개를 보관한 채 팀 서버 재연결을 시도합니다.`
@@ -244,9 +244,9 @@ export function resolveStudioDraftOperationSyncAssistant(
   } else if (input.syncPhase === "offline-queued") {
     tone = "warning";
     compactLabel = pending > 0
-      ? `오프라인 · ${pending.toLocaleString("ko-KR")}개 기기 보관`
-      : "오프라인 · 기기 보관";
-    headline = "서버 연결 없이도 변경을 이 기기에 보관하고 있어요";
+      ? offlineConflictText("sendQueueLabel", { count: pending.toLocaleString("ko-KR") })
+      : offlineConflictText("offlineLabel");
+    headline = offlineConflictText("connectionWait");
     primaryAction = "retry";
   } else if (input.syncPhase === "retrying") {
     tone = "warning";

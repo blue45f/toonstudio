@@ -7,6 +7,8 @@ import type { StudioCrdtSceneGraphRuntime } from "../live/StudioLiveCollaboratio
 import type { El } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
 
+import { offlineConflictText } from "./studio-offline-conflict-i18n";
+
 export { createStudioOfflineCapableResourceLeaseController } from "./createStudioOfflineCapableResourceLeaseController";
 
 export interface StudioOfflineFrontierReconciliationInput {
@@ -149,9 +151,7 @@ export function stageStudioOfflineSceneTransition(
   if (!offlineBranch?.shouldStageSceneTransition()) return null;
   const result = offlineBranch.stageSceneTransition(previousPages, nextPages);
   if (result.staged) {
-    reportNotice(
-      "오프라인 변경을 보관하는 중입니다. 연결 후 반영 상태를 확인하세요.",
-    );
+    reportNotice(offlineConflictText("pendingNotice"));
     return true;
   }
   if (result.unsupported.length > 0) {

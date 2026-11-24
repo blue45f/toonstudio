@@ -40,7 +40,12 @@ const COPY = {
   pendingLabel: ["오프라인 변경 {count}개 반영 대기", "{count} offline changes pending"],
   pendingHeadline: ["기기에 보관한 오프라인 변경의 서버 승인을 기다립니다", "Waiting for server acknowledgement of offline changes kept on this device"],
   pendingDetail: ["오프라인 변경 {count}개가 아직 서버 승인을 받지 못했습니다. 기기 보관과 서버 반영은 서로 다른 단계입니다.", "{count} offline changes have not been acknowledged by the server. Device storage and server delivery are separate stages."],
-  serverPending: ["공유 원고 버전은 유지됩니다. 보관한 오프라인 변경의 서버 반영은 아직 확인되지 않았습니다.", "The shared manuscript version is kept. Server delivery of the offline changes has not been confirmed."],
+  sendQueueLabel: ["오프라인 · 변경 {count}건 전송 대기", "Offline · Queued updates ({count})"],
+  offlineLabel: ["오프라인", "Offline"],
+  connectionWait: ["서버 연결을 기다리고 있어요.", "Waiting for a server connection."],
+  deviceWriterRole: ["이 탭이 원고의 기기 복구 저장을 담당합니다.", "This tab handles on-device recovery saves for the manuscript."],
+  pendingNotice: ["오프라인 변경은 서버 반영을 기다리고 있어요.", "Offline changes are waiting to be sent to the server."],
+  serverPending: ["공유 원고 버전은 유지됩니다. 오프라인 변경의 서버 반영은 아직 확인되지 않았습니다.", "The shared manuscript version is kept. Server delivery of the offline changes has not been confirmed."],
   unavailable: ["현재 원고 또는 편집 권한이 달라져 이 변경을 처리할 수 없습니다.", "The manuscript or editing permission changed; this change cannot be processed now."],
 } as const;
 
