@@ -55,6 +55,14 @@ function attachRuntimeErrorCollector(page: Page): ErrorCollector {
  * 입장 로비 확인 상태(entry preference)는 의도적으로 심지 않아
  * 첫 방문자가 차단 모달 없이 즉시 무대에 진입하는지 검증한다.
  */
+async function ensureWorkToolsDrawerOpen(page: Page): Promise<void> {
+  const toggle = page.getByTestId("space-work-tools-toggle");
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+}
+
 async function installVirtualSpaceEnvironment(page: Page): Promise<void> {
   await installBetaEventDismissal(page);
   await installStudioBetaNoticeDismissal(page);
@@ -291,6 +299,7 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await pageA.keyboard.press("Escape");
 
     // 화이트보드 모달 노출, 헤더 탭으로 포스트잇 즉시 전환, Escape 닫기 확인
+    await ensureWorkToolsDrawerOpen(pageA);
     await pageA.getByTestId("space-quick-whiteboard-btn").click();
     await expect(pageA.getByTestId("space-whiteboard-panel")).toBeVisible();
     const boardDialog = pageA.getByRole("dialog", { name: "공유 화이트보드" });
@@ -300,8 +309,10 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await expect(pageA.getByTestId("space-sticky-notes-panel")).toHaveCount(0);
 
     // 포스트잇 패널을 두 탭에 열고 BroadcastChannel 실시간 Yjs 동기화 확인
+    await ensureWorkToolsDrawerOpen(pageA);
     await pageA.getByTestId("space-quick-stickies-btn").click();
     await expect(pageA.getByTestId("space-sticky-notes-panel")).toBeVisible();
+    await ensureWorkToolsDrawerOpen(pageB);
     await pageB.getByTestId("space-quick-stickies-btn").click();
     const stickiesB = pageB.getByTestId("space-sticky-notes-panel");
     await expect(stickiesB).toBeVisible();
@@ -431,6 +442,7 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await expect(page.locator('[data-office2d-stage="ready"]')).toBeVisible({ timeout: 45_000 });
 
     // 6-A. 웹툰 업무 상태 5종 1탭 전환 · 새로고침 유지 · 참가자 로스터 반영
+    await ensureWorkToolsDrawerOpen(page);
     const workBar = page.getByTestId("space-work-status-bar");
     await expect(workBar).toBeVisible();
     for (const statusId of [
@@ -456,6 +468,7 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     // 새로고침 후에도 업무 상태가 localStorage에서 그대로 복원되어야 한다.
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-office2d-stage="ready"]')).toBeVisible({ timeout: 45_000 });
+    await ensureWorkToolsDrawerOpen(page);
     await expect(page.getByTestId("work-status-btn-inking")).toHaveAttribute("aria-pressed", "true");
 
     // 6-B. 원클릭 25분 집중 스프린트 시작 -> 완료 체크 축하 리본 노출 및 닫기
@@ -492,6 +505,7 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     await expect(office2dSoundBtn).toHaveAttribute("aria-pressed", "false");
 
     // 6-E. 화이트보드 직접 그리기 -> 포스트잇 추가 -> 실시간 주석 보드 메모 입력 -> Escape 닫기
+    await ensureWorkToolsDrawerOpen(page);
     await page.getByTestId("space-quick-whiteboard-btn").click();
     const whiteboardPanel = page.getByTestId("space-whiteboard-panel");
     await expect(whiteboardPanel).toBeVisible();
@@ -539,11 +553,13 @@ test.describe("가상 스튜디오 (/studio/space) 풀 E2E 검증", () => {
     // 6-G. 2D -> 3D -> 2D 왕복 전환 시 업무 상태 & 음소거 상태 동기화 유지
     await page.getByRole("button", { name: /3D 스튜디오 공간으로 전환/u }).click();
     await expect(page.locator('[data-three-stage="active"]')).toBeVisible({ timeout: 60_000 });
+    await ensureWorkToolsDrawerOpen(page);
     await expect(page.getByTestId("work-status-btn-inking")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("three-toggle-sound-btn")).toHaveAttribute("aria-pressed", "false");
 
     await page.getByRole("button", { name: /2D 캠퍼스로 전환/u }).click();
     await expect(page.locator('[data-office2d-stage="ready"]')).toBeVisible({ timeout: 45_000 });
+    await ensureWorkToolsDrawerOpen(page);
     await expect(page.getByTestId("work-status-btn-inking")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("office2d-toggle-sound-btn")).toHaveAttribute("aria-pressed", "false");
 

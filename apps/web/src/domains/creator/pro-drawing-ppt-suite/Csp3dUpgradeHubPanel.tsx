@@ -1,4 +1,4 @@
-import { Brush, Hand, Move, ShieldCheck } from "lucide-react";
+import { Brush, Hand, Layers, Move, ShieldCheck, Watch } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -23,8 +23,18 @@ const LazyCspWatermarkVelocityPanel = lazy(() =>
     default: m.CspWatermarkVelocityPanel,
   })),
 );
+const LazyProCommercialPanel = lazy(() =>
+  import("../pro-commercial-suite").then((m) => ({
+    default: m.StudioProCommercialPanel,
+  })),
+);
+const LazyCharlabCspSurpassPanel = lazy(() =>
+  import("../charlab-csp-surpass").then((m) => ({
+    default: m.StudioCharlabCspSurpassPanel,
+  })),
+);
 
-type Csp3dTabId = "puppet" | "surface3d" | "hand3d" | "watermark";
+type Csp3dTabId = "puppet" | "surface3d" | "hand3d" | "watermark" | "commercialPro" | "charlabCsp";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -35,6 +45,24 @@ const CSP3D_TABS: readonly {
   { id: "surface3d", labelKo: "3D 표면 직접 페인팅·4층 UV", labelEn: "3D Surface Paint · 4-Layer UV" },
   { id: "hand3d", labelKo: "15관절 3D 손·가중치·STL·LOD", labelEn: "15-Joint 3D Hand · Weights · STL · LOD" },
   { id: "watermark", labelKo: "비가시 워터마크·속도곡선·경계블러", labelEn: "Anti-AI Watermark · Velocity · Safe Blur" },
+  { id: "commercialPro", labelKo: "상업 연재 8대 엔진 (3층 리라이트·컷돌파·굿즈·매크로)", labelEn: "Pro Commercial 8-Suite (Relight · Breakout · Goods · Macro)" },
+  { id: "charlabCsp", labelKo: "캐릭터 라이브 링크·벡터 지우개·QuickShape·수채화·워치", labelEn: "Char Live Link · Vector Eraser · QuickShape · Watch" },
+];
+
+const STUDIO_CRAFT_VISUAL_CARDS: readonly {
+  readonly id: string;
+  readonly src: string;
+  readonly titleKo: string;
+  readonly titleEn: string;
+}[] = [
+  { id: "relight", src: "/assets/atelier/studio-craft/studio-relight-triptych.webp", titleKo: "비파괴 3층 리라이트", titleEn: "3-Layer Relight" },
+  { id: "breakout", src: "/assets/atelier/studio-craft/studio-panel-breakout.webp", titleKo: "컷 밖 돌파 마스킹", titleEn: "Out-of-Panel Breakout" },
+  { id: "goods", src: "/assets/atelier/studio-craft/studio-goods-standee.webp", titleKo: "굿즈·아크릴 칼선", titleEn: "Goods Die-Cut" },
+  { id: "scroll", src: "/assets/atelier/studio-craft/studio-storyboard-scroll.webp", titleKo: "9:16 스크롤 콘티", titleEn: "9:16 Scroll Storyboard" },
+  { id: "height", src: "/assets/atelier/studio-craft/craft-height-turntable.webp", titleKo: "cm 키 비율 자동 맞춤", titleEn: "Metric Height Scale" },
+  { id: "watercolor", src: "/assets/atelier/studio-craft/craft-gravity-watercolor.webp", titleKo: "기울기 중력 수채화", titleEn: "Tilt Gravity Watercolor" },
+  { id: "watch", src: "/assets/atelier/studio-craft/craft-smartwatch-dial.webp", titleKo: "스마트워치 크라운 다이얼", titleEn: "SmartWatch Dial" },
+  { id: "lt", src: "/assets/atelier/studio-craft/craft-lt-courtyard-tone.webp", titleKo: "3D LT 선화·스크린톤", titleEn: "3D LT Line & Screentone" },
 ];
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
@@ -47,6 +75,10 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Hand size={15} aria-hidden="true" />;
     case "watermark":
       return <ShieldCheck size={15} aria-hidden="true" />;
+    case "commercialPro":
+      return <Layers size={15} aria-hidden="true" />;
+    case "charlabCsp":
+      return <Watch size={15} aria-hidden="true" />;
   }
 }
 
@@ -99,8 +131,37 @@ export function Csp3dUpgradeHubPanel() {
           {active === "surface3d" ? <LazyModel3dSurfacePaintPanel /> : null}
           {active === "hand3d" ? <LazyModel3dHandCustomizerPanel /> : null}
           {active === "watermark" ? <LazyCspWatermarkVelocityPanel /> : null}
+          {active === "commercialPro" ? <LazyProCommercialPanel /> : null}
+          {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
         </Suspense>
       </div>
+
+      <details className="rounded-xl border border-line bg-panel p-2.5">
+        <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+          {isEn
+            ? `Atelier Craft & Commercial Studio Visual Gallery (${STUDIO_CRAFT_VISUAL_CARDS.length})`
+            : `상업 연재·크래프트 아틀리에 비주얼 카드 (${STUDIO_CRAFT_VISUAL_CARDS.length}종)`}
+        </summary>
+        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {STUDIO_CRAFT_VISUAL_CARDS.map((card) => (
+            <figure
+              key={card.id}
+              className="overflow-hidden rounded-lg border border-line bg-card"
+            >
+              <img
+                src={card.src}
+                alt={isEn ? card.titleEn : card.titleKo}
+                loading="lazy"
+                decoding="async"
+                className="aspect-square w-full object-cover outline-1 -outline-offset-1 outline-line"
+              />
+              <figcaption className="px-2 py-1.5 text-[11px] font-medium text-fg-2 [word-break:keep-all]">
+                {isEn ? card.titleEn : card.titleKo}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </details>
     </section>
   );
 }
