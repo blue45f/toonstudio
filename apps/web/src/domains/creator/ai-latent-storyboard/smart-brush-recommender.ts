@@ -1,7 +1,7 @@
 /**
  * 문맥 기반 스마트 ToonStudio 브러시 Top-3 · Wave 37A 물리 마찰음 매체·종이결 추천기.
  *
- * - 스트로크 속도(px/s) · 필압 분산 · 곡률(0..1) · 캔버스 줌(%) · 작업 레이어 단계(`rough|lineart|flat|shading|fx`)를
+ * - 스트로크 속도(px/s) · 필압 표준편차 · 곡률(0..1) · 캔버스 줌(%) · 작업 레이어 단계(`rough|lineart|flat|shading|fx`)를
  *   온디바이스 결정론적 다요인 스코어링으로 분석한다.
  * - Wave 37A 물리 마찰음 6종 매체(`BrushFrictionMediumId`) · 5종 종이결(`StudioPaperTextureId`) ·
  *   Foley 오디오 프리셋을 자동 페어링한다.
@@ -42,7 +42,7 @@ export interface SmartBrushTelemetryInput {
   readonly layerStage: BrushLayerStage;
   /** 스트로크 평균 속도 (px/s, 20..3000). */
   readonly strokeSpeedPxPerSec: number;
-  /** 필압 표준편차/분산 지표 (0..0.40, 높을수록 강약 폭이 큼). */
+  /** 필압 표준편차 (0..0.40, 높을수록 강약 폭이 큼). 기존 필드명은 호환용으로 유지한다. */
   readonly pressureVariance: number;
   /** 정규화 스트로크 곡률 (0..1, 높을수록 급커브·세밀 디테일). */
   readonly meanCurvature: number;
@@ -124,11 +124,11 @@ export interface SmartBrushRecommendationReport {
 }
 
 export const BRUSH_LAYER_STAGES: readonly BrushLayerStageMeta[] = Object.freeze([
-  Object.freeze({ id: "rough", labelKo: "러프·콘티", labelEn: "Rough", goalKo: "빠른 구도 탐색과 제스처 스케치" }),
-  Object.freeze({ id: "lineart", labelKo: "선화·잉킹", labelEn: "Lineart", goalKo: "강약이 또렷한 웹툰 외곽선 정선화" }),
-  Object.freeze({ id: "flat", labelKo: "밑색·채우기", labelEn: "Flat", goalKo: "틈 없는 균일 채색과 빠른 면 분할" }),
-  Object.freeze({ id: "shading", labelKo: "명암·채색", labelEn: "Shading", goalKo: "입체 음영과 자연스러운 회화 질감" }),
-  Object.freeze({ id: "fx", labelKo: "효과·마감", labelEn: "FX", goalKo: "발광 림라이트·입자·스크린톤 마감" }),
+  Object.freeze<BrushLayerStageMeta>({ id: "rough", labelKo: "러프·콘티", labelEn: "Rough", goalKo: "빠른 구도 탐색과 제스처 스케치" }),
+  Object.freeze<BrushLayerStageMeta>({ id: "lineart", labelKo: "선화·잉킹", labelEn: "Lineart", goalKo: "강약이 또렷한 웹툰 외곽선 정선화" }),
+  Object.freeze<BrushLayerStageMeta>({ id: "flat", labelKo: "밑색·채우기", labelEn: "Flat", goalKo: "틈 없는 균일 채색과 빠른 면 분할" }),
+  Object.freeze<BrushLayerStageMeta>({ id: "shading", labelKo: "명암·채색", labelEn: "Shading", goalKo: "입체 음영과 자연스러운 회화 질감" }),
+  Object.freeze<BrushLayerStageMeta>({ id: "fx", labelKo: "효과·마감", labelEn: "FX", goalKo: "발광 림라이트·입자·스크린톤 마감" }),
 ]);
 
 export const SMART_BRUSH_TELEMETRY_PRESETS: Readonly<Record<BrushLayerStage, SmartBrushTelemetryInput>> = Object.freeze({
@@ -218,7 +218,7 @@ function makePairing(
 /** ToonStudio 5단계 실전 브러시 15종 카탈로그 (Wave 37A 물리 마찰음·종이결 페어링 내장). */
 export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] = Object.freeze([
   // 1) Rough (러프·콘티)
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "pencil-2b-rough",
     nameKo: "2B 콘티 연필",
     nameEn: "2B Conti Pencil",
@@ -235,7 +235,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("graphite-pencil", "graphite-pencil", "rough-cotton", 0.78, 0.05, "lively-asmr", "황목 코튼 요철과 흑연 사각거림으로 러프 선의 속도감을 살립니다."),
     strengthSummaryKo: "빠른 구도 탐색과 필압 강약 스케치에 최적화된 흑연 연필",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "charcoal-gesture",
     nameKo: "목탄 제스처 스틱",
     nameEn: "Charcoal Gesture Stick",
@@ -252,7 +252,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("charcoal-pastel", "charcoal-pastel", "rough-cotton", 0.88, 0.02, "lively-asmr", "거친 황목 코튼 300g 표면에서 동세·덩어리감을 직관적으로 잡습니다."),
     strengthSummaryKo: "넓은 덩어리와 대담한 동세를 단번에 긋는 건식 목탄",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "blue-conti-lead",
     nameKo: "샤프 블루 러프심",
     nameEn: "Blue Mechanical Lead",
@@ -271,7 +271,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
   }),
 
   // 2) Lineart (선화·잉킹)
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "gpen",
     nameKo: "G펜 (강약 필압)",
     nameEn: "G-Pen Dynamic Ink",
@@ -288,7 +288,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("gpen-nib", "gpen-ink", "manga-kent", 0.24, 0.14, "lively-asmr", "135kg 만화 켄트지 위 금속 펜촉 스크래치로 필압 강약 피드백을 강화합니다."),
     strengthSummaryKo: "필압 변화에 따라 뾰족한 인입·인출 테이퍼가 살아나는 표준 만화 펜",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "maru-pen",
     nameKo: "둥근펜 (세밀 머리카락)",
     nameEn: "Maru Detail Nib",
@@ -305,7 +305,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("gpen-nib", "gpen-ink", "smooth-bristol", 0.16, 0.12, "quiet-atelier", "매끄러운 브리스톨 표면에서 고배율 곡선 떨림 없이 세선을 긋습니다."),
     strengthSummaryKo: "속눈썹·머리카락 끝·장신구 등 고곡률 세밀 선화에 특화된 세필",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "perfect-ink-liner",
     nameKo: "매끈한 모노라인 잉크",
     nameEn: "Perfect Ink Liner",
@@ -324,7 +324,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
   }),
 
   // 3) Flat (밑색·채우기)
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "alcohol-marker-flat",
     nameKo: "알코올 마커 플랫",
     nameEn: "Alcohol Marker Flat",
@@ -341,7 +341,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("alcohol-marker", "alcohol-marker", "smooth-bristol", 0.15, 0.42, "quiet-atelier", "촉촉한 펠트 글라이드와 저흡수 브리스톨로 얼룩 없는 밑색을 채웁니다."),
     strengthSummaryKo: "필압 편차가 적은 빠른 면 채색에 최적화된 불투명 플랫 마커",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "solid-fill-pen",
     nameKo: "틈새 마감 채우기 펜",
     nameEn: "Gap-Safe Fill Pen",
@@ -358,7 +358,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("alcohol-marker", "alcohol-marker", "manga-kent", 0.22, 0.3, "quiet-atelier", "켄트지의 선명한 경계 제어력으로 좁은 모서리 밑색 누락을 막습니다."),
     strengthSummaryKo: "머리카락 틈새·의상 디테일 경계를 꼼꼼히 메우는 안티앨리어싱 경계 펜",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "broad-flat-wash",
     nameKo: "광폭 배경 평붓",
     nameEn: "Broad Flat Wash",
@@ -377,7 +377,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
   }),
 
   // 4) Shading (명암·채색)
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "watercolor-sable",
     nameKo: "수채 세이블 혼색 붓",
     nameEn: "Watercolor Sable Blend",
@@ -394,7 +394,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("watercolor-brush", "watercolor-sable", "cold-press-watercolor", 0.56, 0.78, "quiet-atelier", "중목 수채화지의 모세관 번짐과 촉촉한 붓 마찰로 투명 음영을 쌓습니다."),
     strengthSummaryKo: "Kubelka-Munk 물리 혼색·웨트 엣지 표현이 살아나는 투명 수채 붓",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "oil-impasto-knife",
     nameKo: "유화 임파스토 브러시",
     nameEn: "Oil Impasto Brush",
@@ -411,7 +411,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("oil-palette-knife", "oil-impasto", "linen-canvas", 0.74, 0.36, "lively-asmr", "리넨 캔버스 교차 결의 끈적한 저항으로 붓터치 밀도를 체감합니다."),
     strengthSummaryKo: "강한 필압 대비로 유화 두께와 입체 음영을 조각하는 회화 브러시",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "soft-airbrush",
     nameKo: "소프트 그라데이션 에어브러시",
     nameEn: "Soft Gradient Airbrush",
@@ -430,7 +430,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
   }),
 
   // 5) FX (효과·마감)
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "neon-rim-glow",
     nameKo: "네온 림라이트 글로우",
     nameEn: "Neon Rim Glow",
@@ -447,7 +447,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("alcohol-marker", "airbrush", "smooth-bristol", 0.12, 0.4, "quiet-atelier", "마찰 간섭이 적은 매끄러운 글라이드로 역광 림라이트와 마법 발광선을 긋습니다."),
     strengthSummaryKo: "캐릭터 외곽 역광·스킬 발광 궤적을 한 번에 입히는 네온 글로우",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "ink-particle-splatter",
     nameKo: "입자 잉크 스플래터",
     nameEn: "Ink Particle Splatter",
@@ -464,7 +464,7 @@ export const TOONSTUDIO_SMART_BRUSH_CATALOG: readonly ToonStudioBrushProfile[] =
     pairing: makePairing("gpen-nib", "sumi-ink-brush", "manga-kent", 0.28, 0.64, "lively-asmr", "먹붓 분사 질감과 켄트지 마찰로 액션 타격 비말·파편 효과를 극대화합니다."),
     strengthSummaryKo: "고속 스트로크에 반응해 빗방울·먹물 튐·타격 파편을 뿌리는 입자 브러시",
   }),
-  Object.freeze({
+  Object.freeze<ToonStudioBrushProfile>({
     brushId: "screentone-hatch-fx",
     nameKo: "스크린톤 해칭 피니셔",
     nameEn: "Screentone Hatch Finisher",
@@ -493,7 +493,7 @@ function gaussianSim(diff: number, sigma: number): number {
   return Math.exp(-0.5 * ratio * ratio);
 }
 
-/** 원시 스타일러스 포인트 배열에서 속도·필압 분산·곡률 텔레메트리를 추출한다. */
+/** 원시 스타일러스 포인트 배열에서 속도·필압 표준편차·곡률 텔레메트리를 추출한다. */
 export function extractStrokeTelemetryFromPoints(
   points: readonly RawStrokeTelemetryPoint[],
   canvasZoomPct: number,
@@ -657,7 +657,7 @@ export function recommendSmartBrushes(rawInput: SmartBrushTelemetryInput): Smart
   ];
 
   const zoomTag = input.canvasZoomPct >= 200 ? "고배율 정밀 구간" : input.canvasZoomPct <= 85 ? "저배율 전체 구도" : "표준 작업 배율";
-  const detectedStyleSummaryKo = `${stageMeta.labelKo} · ${zoomTag}(${Math.round(input.canvasZoomPct)}%) · 속도 ${Math.round(input.strokeSpeedPxPerSec)}px/s · 필압 분산 ${input.pressureVariance.toFixed(2)} · 곡률 ${input.meanCurvature.toFixed(2)}`;
+  const detectedStyleSummaryKo = `${stageMeta.labelKo} · ${zoomTag}(${Math.round(input.canvasZoomPct)}%) · 속도 ${Math.round(input.strokeSpeedPxPerSec)}px/s · 필압 표준편차 ${input.pressureVariance.toFixed(2)} · 곡률 ${input.meanCurvature.toFixed(2)}`;
 
   return {
     input,

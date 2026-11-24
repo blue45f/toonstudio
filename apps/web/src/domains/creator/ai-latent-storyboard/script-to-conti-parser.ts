@@ -168,63 +168,40 @@ const round2 = (v: number): number => Math.round(v * 100) / 100;
 const classifySfx = (t: string): SfxIntensity => (IMPACT_SFX_RE.test(t) || t.includes("!") ? "impact" : SUBTLE_SFX_RE.test(t) ? "subtle" : "medium");
 const stripQuotes = (raw: string): string => raw.trim().replace(/^["“「『'‘]+/, "").replace(/["”」』'’]+$/, "").trim();
 
-/** 과밀 한국어 대사를 모바일 2~3줄 호흡에 맞게 자연스럽게 2개 이상의 말풍선으로 분할한다. */
+function textGraphemes(text: string): readonly string[] {
+  if (typeof Intl.Segmenter === "function") {
+    return Array.from(new Intl.Segmenter("ko", { granularity: "grapheme" }).segment(text), ({ segment }) => segment);
+  }
+  // 구형 환경에서도 UTF-16 서로게이트 쌍은 보존한다.
+  return Array.from(text);
+}
+
+/** 문장·공백을 우선하되 긴 무공백 대사도 그래핌 수 한도 안에서 끝까지 나눈다. */
 export function splitKoreanBalloonText(text: string, maxCharsPerBalloon = 32): readonly string[] {
   const clean = text.trim().replace(/\s+/g, " ");
-  if (clean.length <= maxCharsPerBalloon) return [clean];
+  const characters = textGraphemes(clean);
+  const limit = Math.max(1, Math.floor(Number.isFinite(maxCharsPerBalloon) ? maxCharsPerBalloon : 32));
+  if (characters.length <= limit) return [clean];
 
-  const sentencePieces = clean.split(/(?<=[.!?…])\s+/).map((s) => s.trim()).filter(Boolean);
-  if (sentencePieces.length >= 2) {
-    const merged: string[] = [];
-    let current = "";
-    for (const piece of sentencePieces) {
-      if (!current) current = piece;
-      else if (current.length + 1 + piece.length <= maxCharsPerBalloon) current = `${current} ${piece}`;
-      else {
-        merged.push(current);
-        current = piece;
-      }
-    }
-    if (current) merged.push(current);
-    if (merged.length >= 2 && merged.every((m) => m.length <= maxCharsPerBalloon + 14)) return merged;
-  }
-
-  const mid = Math.floor(clean.length / 2);
-  const clauseRegex = /[,，]\s+|\s+(?=(?:하지만|그러나|그리고|그래서|그런데|그러니까|우리|오늘|지금))|(?:지만|는데|니까|면|고)\s+/g;
-  let bestSplit = -1;
-  let bestDist = Infinity;
-  let m = clauseRegex.exec(clean);
-  while (m !== null) {
-    const pos = m.index + m[0].length;
-    if (pos >= 8 && pos <= clean.length - 8 && Math.abs(pos - mid) < bestDist) {
-      bestDist = Math.abs(pos - mid);
-      bestSplit = pos;
-    }
-    m = clauseRegex.exec(clean);
-  }
-  if (bestSplit === -1) {
-    for (let offset = 0; offset < mid - 4; offset += 1) {
-      if (clean[mid + offset] === " ") {
-        bestSplit = mid + offset + 1;
-        break;
-      }
-      if (clean[mid - offset] === " ") {
-        bestSplit = mid - offset + 1;
-        break;
-      }
-    }
-  }
-  if (bestSplit <= 0 || bestSplit >= clean.length) {
-    return [clean.slice(0, mid).trim(), clean.slice(mid).trim()].filter(Boolean);
-  }
-  const left = clean.slice(0, bestSplit).trim();
-  const right = clean.slice(bestSplit).trim();
   const out: string[] = [];
-  if (left.length > maxCharsPerBalloon + 16) out.push(...splitKoreanBalloonText(left, maxCharsPerBalloon));
-  else if (left) out.push(left);
-  if (right.length > maxCharsPerBalloon + 16) out.push(...splitKoreanBalloonText(right, maxCharsPerBalloon));
-  else if (right) out.push(right);
-  return out.length > 0 ? out : [clean];
+  let start = 0;
+  while (start < characters.length) {
+    let end = Math.min(start + limit, characters.length);
+    if (end < characters.length) {
+      // 한도 안의 문장·공백 경계를 우선하고, 없으면 그래핌 경계에서 자른다.
+      for (let boundary = end; boundary > start + Math.floor(limit / 2); boundary -= 1) {
+        if (/[.!?…，,\s]/u.test(characters[boundary - 1] ?? "")) {
+          end = boundary;
+          break;
+        }
+      }
+    }
+    const part = characters.slice(start, end).join("").trim();
+    if (part) out.push(part);
+    start = end;
+    while (start < characters.length && /\s/u.test(characters[start] ?? "")) start += 1;
+  }
+  return out;
 }
 
 /** 한국어 대본·웹소설 텍스트를 토큰 열(대사/지문/장면전환/SFX/속마음)로 분해한다. */
@@ -287,17 +264,7 @@ export function parseKoreanScriptTokens(scriptText: string): readonly ParsedScri
       continue;
     }
 
-    if (/^["“「『].+["”」』]$/.test(line)) {
-      const body = stripQuotes(line);
-      push({ kind: "dialogue", rawLine: line, text: body, speaker: null, deliveryCue: null, isShout: body.includes("!") });
-      continue;
-    }
-    if (/^['‘].+['’]$/.test(line)) {
-      push({ kind: "inner-thought", rawLine: line, text: stripQuotes(line), speaker: null, deliveryCue: "속마음" });
-      continue;
-    }
-
-    // 웹소설 혼합 문단 인라인 분해
+    // 단일 인용문과 웹소설 혼합 문단을 같은 경로로 분해해 지문을 보존한다.
     const inlineRegex = /(["“「『][^"”」』]+["”」』]|['‘][^'’]+['’]|\([^)]+\))/g;
     let cursor = 0;
     let foundInline = false;
@@ -369,7 +336,7 @@ function placeCutBalloonsZOrder(cutNumber: number, balloonTokens: readonly Parse
   return balloonTokens.map((tok, idx) => {
     const zOrder = idx + 1;
     const style: ContiBalloonStyle = tok.kind === "inner-thought" ? "thought" : tok.isShout ? "shout" : "speech";
-    const charCount = tok.text.length;
+    const charCount = textGraphemes(tok.text).length;
     const estimatedMobileLines = Math.max(1, Math.ceil(charCount / 13));
     const isOvercrowded = charCount > maxChars || estimatedMobileLines >= 4;
     const widthPct = Math.round(clamp(28 + Math.min(charCount, 48) * 0.52, 30, 56));
@@ -412,6 +379,7 @@ export function parseKoreanScriptToConti(scriptText: string, options: ScriptToCo
   let sceneTitle = "씬 1";
   let nextIsOpening = true;
   let current: RawCutDraft | null = null;
+  const active = (): RawCutDraft | null => current;
 
   const flush = (): void => {
     if (!current) return;
@@ -437,29 +405,32 @@ export function parseKoreanScriptToConti(scriptText: string, options: ScriptToCo
       continue;
     }
     if (tok.kind === "stage-direction") {
-      if (current && (current.balloonTokens.length > 0 || current.sfxList.length > 0)) flush();
+      const cur = active();
+      if (cur && (cur.balloonTokens.length > 0 || cur.sfxList.length > 0)) flush();
       ensure().stageDirections.push(tok.text);
       continue;
     }
     if (tok.kind === "sfx") {
       const intensity = tok.sfxIntensity ?? "medium";
-      if (current && current.balloonTokens.length > 0 && intensity === "impact") flush();
+      const cur = active();
+      if (cur && cur.balloonTokens.length > 0 && intensity === "impact") flush();
       ensure().sfxList.push({ text: tok.text, intensity });
       continue;
     }
     // 장면 도입 설정 지문(와이드/부감) 직후 대사가 시작되면 설정 컷과 인물 대사 컷을 자연스럽게 분리
+    const cur = active();
     if (
-      current &&
-      current.isSceneOpening &&
-      current.stageDirections.length > 0 &&
-      current.balloonTokens.length === 0 &&
+      cur &&
+      cur.isSceneOpening &&
+      cur.stageDirections.length > 0 &&
+      cur.balloonTokens.length === 0 &&
       tok.kind === "dialogue" &&
-      (WIDE_SHOT_RE.test(current.stageDirections.join(" ")) || BIRDS_EYE_RE.test(current.stageDirections.join(" ")))
+      (WIDE_SHOT_RE.test(cur.stageDirections.join(" ")) || BIRDS_EYE_RE.test(cur.stageDirections.join(" ")))
     ) {
       flush();
-    } else if (current && current.balloonTokens.length >= maxBalloonsPerCut) {
+    } else if (cur && cur.balloonTokens.length >= maxBalloonsPerCut) {
       flush();
-    } else if (current && tok.kind === "inner-thought" && current.balloonTokens.some((b) => b.kind === "dialogue")) {
+    } else if (cur && tok.kind === "inner-thought" && cur.balloonTokens.some((b) => b.kind === "dialogue")) {
       flush();
     }
     ensure().balloonTokens.push(tok);
