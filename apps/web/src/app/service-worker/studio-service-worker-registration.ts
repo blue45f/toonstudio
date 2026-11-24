@@ -243,8 +243,8 @@ export function renderStudioServiceWorkerUpdatePrompt(onApply: () => Promise<voi
         button { border: 2px solid ButtonText; color: ButtonText; background: ButtonFace; forced-color-adjust: auto; }
         button:focus-visible { outline-color: Highlight; }
       }
-      @media (max-width: 560px) {
-        .card { inset-inline: 12px; inset-block-end: 12px; width: auto; grid-template-columns: auto minmax(0, 1fr); }
+      @media (max-width: 640px) {
+        .card { inset-inline: 12px; inset-block-end: calc(4.75rem + env(safe-area-inset-bottom, 0px)); width: auto; grid-template-columns: auto minmax(0, 1fr); }
         .actions { grid-column: 1 / -1; width: 100%; }
         .apply { flex: 1; }
       }
