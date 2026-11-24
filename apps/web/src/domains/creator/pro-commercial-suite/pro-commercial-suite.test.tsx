@@ -2,8 +2,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ALLOWED_MACRO_ACTIONS,
@@ -46,6 +46,11 @@ import {
   type RelightPresetId,
   type SubmissionTargetId,
 } from "./index";
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 통합 검증", () => {
   // 1. 3층 채색 리라이트 — 5종 조명 프리셋 & sRGB 안전 클램프
@@ -377,6 +382,7 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
     const doc = finalizeTsMacro(rec, "혼합 실행 테스트");
 
     const replay = replayTsMacro(doc);
+    expect(replay.scope).toBe("simulation");
     expect(replay.success).toBe(true);
     expect(replay.executedCount).toBe(2);
     expect(replay.skippedCount).toBe(1);
@@ -393,6 +399,10 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
       const preset = createPresetSubmissionInput(target);
       const manifest = buildSubmissionPackage(target, preset);
       expect(manifest.readyToSubmit).toBe(true);
+      expect(manifest.scope).toBe("input-check-only");
+      expect(manifest.filesMaterialized).toBe(false);
+      expect(manifest.files.filter((entry) => entry.role === "episode-slice")).toHaveLength(preset.sliceCount);
+      expect(JSON.parse(manifest.manifestJson).files).toEqual(manifest.files);
       expect(manifest.failCount).toBe(0);
       expect(manifest.passCount).toBe(6);
       expect(manifest.packageChecksum).toMatch(/^[0-9A-F]{8}$/);
@@ -464,7 +474,7 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
     const onSubmissionBuilt = vi.fn();
     render(<StudioProCommercialPanel initialTab="goods-macro-submission" onSubmissionBuilt={onSubmissionBuilt} />);
 
-    expect(screen.getByTestId("goods-tac-badge").textContent).toContain("인쇄 통과");
+    expect(screen.getByTestId("goods-tac-badge").textContent).toContain("샘플 입력 통과");
     fireEvent.click(screen.getByTestId("goods-ink-toggle"));
     expect(screen.getByTestId("goods-tac-badge").textContent).toContain("잉크 초과");
 
@@ -473,14 +483,83 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
 
     fireEvent.click(screen.getByTestId("macro-add-step-btn"));
     fireEvent.click(screen.getByTestId("macro-replay-btn"));
-    expect(screen.getByTestId("macro-replay-result").textContent).toContain("실행 5");
+    expect(screen.getByTestId("macro-replay-result").textContent).toContain("검토 5");
+    expect(screen.getByTestId("macro-replay-result").textContent).toContain("실제 명령 실행 없음");
 
     fireEvent.click(screen.getByTestId("submission-target-lezhin"));
     expect(onSubmissionBuilt).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("submission-ready-badge").textContent).toContain("투고 준비 완료");
+    expect(screen.getByTestId("submission-ready-badge").textContent).toContain("예제 입력 규격 통과");
+    expect(screen.getByTestId("submission-ready-badge").textContent).toContain("실제 파일 생성 없음");
 
     fireEvent.change(screen.getByTestId("submission-width-input"), { target: { value: "500" } });
     expect(screen.getByTestId("submission-ready-badge").textContent).toContain("규격 위반");
+  });
+
+  it("투고 매니페스트는 80개 분할을 전부 보존하고 잘못된 분할 수·비유한 수치·빈 이름을 명시적으로 거부한다", () => {
+    const preset = createPresetSubmissionInput("naver-webtoon");
+    const complete = buildSubmissionPackage("naver-webtoon", { ...preset, sliceCount: 80 });
+    const slices = complete.files.filter((entry) => entry.role === "episode-slice");
+    expect(slices).toHaveLength(80);
+    expect(slices[79]?.path).toContain("080.jpg");
+    for (const sliceCount of [0, -1, 1.5, 81, NaN, Infinity]) {
+      const invalid = buildSubmissionPackage("naver-webtoon", { ...preset, sliceCount });
+      expect(invalid.readyToSubmit).toBe(false);
+      expect(invalid.checks.find((check) => check.ruleId === "input")?.passed).toBe(false);
+      expect(invalid.files.some((entry) => entry.role === "episode-slice")).toBe(false);
+    }
+    for (const patch of [{ dpi: Infinity }, { topMarginPx: NaN }, { sliceSizeMb: -1 }, { seriesTitle: " " }, { authorName: "" }]) {
+      const invalid = buildSubmissionPackage("naver-webtoon", { ...preset, ...patch });
+      expect(invalid.readyToSubmit).toBe(false);
+      expect(JSON.parse(invalid.manifestJson).checks.some((check: { ruleId: string }) => check.ruleId === "input")).toBe(true);
+    }
+  });
+
+  it("잘못된 매크로 단계 입력은 예외 없이 검증 실패로 돌려준다", () => {
+    const doc = createDefaultProTsMacro();
+    for (const step of [null, 1, {}, { ...doc.steps[0], params: null }, { ...doc.steps[0], enabled: "yes" }]) {
+      const parsed = parseAndValidateTsMacro(JSON.stringify({ ...doc, steps: [step] }));
+      expect(parsed.validation.valid).toBe(false);
+      expect(parsed.document).toBeNull();
+    }
+  });
+
+  it("다른 탭에서 처음 열거나 왕복한 리라이트 캔버스에도 합성 결과를 다시 그린다", () => {
+    const context = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+    render(<StudioProCommercialPanel initialTab="goods-macro-submission" />);
+    fireEvent.click(screen.getByTestId("pro-tab-relight-breakout"));
+    const firstCanvas = screen.getByTestId("relight-preview-canvas");
+    expect(context.mock.contexts).toContain(firstCanvas);
+    fireEvent.click(screen.getByTestId("pro-tab-typography-handoff"));
+    fireEvent.click(screen.getByTestId("pro-tab-relight-breakout"));
+    const reopenedCanvas = screen.getByTestId("relight-preview-canvas");
+    expect(reopenedCanvas).not.toBe(firstCanvas);
+    expect(context.mock.contexts).toContain(reopenedCanvas);
+  });
+
+  it("합성 예제 알림의 비동기 실패·중복 억제·재시도를 처리하고 응답을 실제 적용 성공으로 표시하지 않는다", async () => {
+    const onRelightApplied = vi.fn().mockRejectedValueOnce(new Error("알림 실패")).mockResolvedValueOnce(undefined);
+    render(<StudioProCommercialPanel onRelightApplied={onRelightApplied} />);
+    const preset = screen.getByTestId("relight-preset-neon");
+    expect(screen.getByTestId("pro-commercial-scope-notice").textContent).toContain("전자서명·권리 허가 증명이 아니며");
+    fireEvent.click(preset);
+    expect(screen.getByTestId("studio-pro-commercial-panel").getAttribute("aria-busy")).toBe("true");
+    fireEvent.click(preset);
+    expect(onRelightApplied).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByTestId("pro-commercial-status").textContent).toContain("처리에 실패"));
+    fireEvent.click(preset);
+    await waitFor(() => expect(screen.getByTestId("pro-commercial-status").textContent).toContain("실제 적용·저장·출력 완료를 뜻하지 않아요"));
+    expect(onRelightApplied).toHaveBeenCalledTimes(2);
+  });
+
+  it("동기 콜백 오류를 표시하고 투고 대상 변경 시 작성한 회차 표기를 보존한다", () => {
+    const onSubmissionBuilt = vi.fn().mockImplementationOnce(() => { throw new Error("알림 오류"); });
+    render(<StudioProCommercialPanel initialTab="goods-macro-submission" onSubmissionBuilt={onSubmissionBuilt} />);
+    fireEvent.change(screen.getByLabelText("회차 표기"), { target: { value: "09화 - 직접 입력" } });
+    fireEvent.click(screen.getByTestId("submission-target-lezhin"));
+    expect(screen.getByTestId("pro-commercial-status").textContent).toContain("처리에 실패");
+    expect(screen.getByDisplayValue("09화 - 직접 입력")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("submission-target-lezhin"));
+    expect(onSubmissionBuilt).toHaveBeenCalledTimes(2);
   });
 
   // 20. 소스 위생 게이트: 800줄 이하 · 원시 색상 0건 · Web Storage/BigInt/private Map store/props={} 0건
