@@ -6,6 +6,7 @@
  * 8) 공모전·출판사(네이버·카카오·레진·단행본) 원클릭 투고 규격 검사 & 매니페스트 빌더
  */
 
+import { validateMacroDocumentHeader } from "./macro-document-header";
 import { linearRgbToOklchString, srgbByteToLinear } from "./relight-breakout-engine";
 import { computeDeterministicDigest32 } from "./typography-handoff-engine";
 
@@ -576,7 +577,7 @@ export function parseAndValidateTsMacro(rawJson: string): {
   }
 
   const candidate = parsed as Partial<TsMacroDocument>;
-  const errors: string[] = [];
+  const errors = validateMacroDocumentHeader(candidate);
   if (candidate.format !== "toonstudio.tsmacro.v1") errors.push("지원하지 않는 .tsmacro 포맷 버전입니다.");
   if (!candidate.name || typeof candidate.name !== "string") errors.push("매크로 이름(name)이 누락되었습니다.");
   if (!Array.isArray(candidate.steps) || candidate.steps.length === 0) errors.push("최소 1개 이상의 실행 단계(steps)가 필요합니다.");
@@ -669,7 +670,9 @@ export interface SubmissionEpisodeInput {
   readonly episodeLabel: string;
   readonly widthPx: number;
   readonly sliceCount: number;
+  /** 모든 분할 파일에 동일하게 적용하는 추정 MB 값이다. 최대 파일 크기가 아니다. */
   readonly sliceSizeMb: number;
+  /** sliceSizeMb × sliceCount와 일치해야 하는 분할 원고의 추정 총량이다. */
   readonly totalSizeMb: number;
   readonly topMarginPx: number;
   readonly bottomMarginPx: number;
@@ -716,14 +719,16 @@ const EPISODE_LABEL_REGEX = /^(?:EP\s?\d{1,3}|\d{1,3}권(?:\s+\d{1,3}화)?|\d{1,
 
 export function createPresetSubmissionInput(targetId: SubmissionTargetId): SubmissionEpisodeInput {
   const spec = SUBMISSION_TARGET_SPECS[targetId];
+  const sliceCount = targetId === "print-tankobon" ? 24 : 12;
+  const sliceSizeMb = Number(((spec.maxTotalSizeMb * 0.58) / sliceCount).toFixed(2));
   return {
     seriesTitle: "은월의 기록",
     authorName: "김도현",
     episodeLabel: targetId === "print-tankobon" ? "01권 01화 - 자정의 성벽" : "01화 - 자정의 성벽",
     widthPx: spec.recommendedWidthPx,
-    sliceCount: targetId === "print-tankobon" ? 24 : 12,
-    sliceSizeMb: Number((spec.maxSliceSizeMb * 0.62).toFixed(2)),
-    totalSizeMb: Number((spec.maxTotalSizeMb * 0.58).toFixed(2)),
+    sliceCount,
+    sliceSizeMb,
+    totalSizeMb: Number((sliceSizeMb * sliceCount).toFixed(6)),
     topMarginPx: spec.minVerticalMarginPx + 12,
     bottomMarginPx: spec.minVerticalMarginPx + 16,
     dpi: spec.minDpi,
@@ -734,10 +739,14 @@ export function createPresetSubmissionInput(targetId: SubmissionTargetId): Submi
 export function buildSubmissionPackage(targetId: SubmissionTargetId, input: SubmissionEpisodeInput): SubmissionPackageManifest {
   const spec = SUBMISSION_TARGET_SPECS[targetId];
   const trimmedLabel = input.episodeLabel.trim();
+  const estimatedTotalSizeMb = Number((input.sliceSizeMb * input.sliceCount).toFixed(6));
+  const totalMatchesSlices = Number.isFinite(input.totalSizeMb) && Number.isFinite(estimatedTotalSizeMb)
+    && Math.abs(input.totalSizeMb - estimatedTotalSizeMb) <= 0.000001;
+  const totalSizePassed = totalMatchesSlices && estimatedTotalSizeMb > 0 && estimatedTotalSizeMb <= spec.maxTotalSizeMb;
 
   const checks: SubmissionCheckItem[] = [
     { ruleId: "width", labelKo: "원고 가로 폭(px)", passed: input.widthPx >= spec.minWidthPx && input.widthPx <= spec.maxWidthPx, severity: input.widthPx >= spec.minWidthPx && input.widthPx <= spec.maxWidthPx ? "pass" : "error", actual: `${input.widthPx}px`, expected: `${spec.minWidthPx}~${spec.maxWidthPx}px` },
-    { ruleId: "total-size", labelKo: "회차 총 용량(MB)", passed: input.totalSizeMb > 0 && input.totalSizeMb <= spec.maxTotalSizeMb, severity: input.totalSizeMb > 0 && input.totalSizeMb <= spec.maxTotalSizeMb ? "pass" : "error", actual: `${input.totalSizeMb}MB`, expected: `<= ${spec.maxTotalSizeMb}MB` },
+    { ruleId: "total-size", labelKo: "균일 분할 추정 총량(MB)", passed: totalSizePassed, severity: totalSizePassed ? "pass" : "error", actual: `분할 합계 ${estimatedTotalSizeMb}MB / 입력 총량 ${input.totalSizeMb}MB`, expected: `분할 합계와 입력 총량 일치 · <= ${spec.maxTotalSizeMb}MB` },
     { ruleId: "slice-size", labelKo: "분할 파일당 용량(MB)", passed: input.sliceSizeMb > 0 && input.sliceSizeMb <= spec.maxSliceSizeMb, severity: input.sliceSizeMb > 0 && input.sliceSizeMb <= spec.maxSliceSizeMb ? "pass" : "error", actual: `${input.sliceSizeMb}MB`, expected: `<= ${spec.maxSliceSizeMb}MB` },
     { ruleId: "margin", labelKo: "상·하 안전 여백(px)", passed: input.topMarginPx >= spec.minVerticalMarginPx && input.bottomMarginPx >= spec.minVerticalMarginPx, severity: input.topMarginPx >= spec.minVerticalMarginPx && input.bottomMarginPx >= spec.minVerticalMarginPx ? "pass" : "error", actual: `상 ${input.topMarginPx}px / 하 ${input.bottomMarginPx}px`, expected: `각 >= ${spec.minVerticalMarginPx}px` },
     { ruleId: "episode-label", labelKo: "회차·권수 표기 규칙", passed: EPISODE_LABEL_REGEX.test(trimmedLabel), severity: EPISODE_LABEL_REGEX.test(trimmedLabel) ? "pass" : "error", actual: trimmedLabel || "(비어 있음)", expected: spec.episodeLabelExample },
@@ -768,7 +777,7 @@ export function buildSubmissionPackage(targetId: SubmissionTargetId, input: Subm
   );
 
   const packageChecksum = computeDeterministicDigest32(
-    `${targetId}|${input.seriesTitle}|${trimmedLabel}|${input.widthPx}|${input.totalSizeMb}|${passCount}/${checks.length}`,
+    `${targetId}|${input.seriesTitle}|${trimmedLabel}|${input.widthPx}|${input.sliceCount}|${input.sliceSizeMb}|${estimatedTotalSizeMb}|${input.totalSizeMb}|${passCount}/${checks.length}`,
   );
   const manifestPayload = {
     scope: "input-check-only" as const, filesMaterialized: false as const,

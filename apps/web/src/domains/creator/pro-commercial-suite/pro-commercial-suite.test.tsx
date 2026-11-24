@@ -397,6 +397,7 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
 
     for (const target of targets) {
       const preset = createPresetSubmissionInput(target);
+      expect(preset.totalSizeMb).toBeCloseTo(preset.sliceCount * preset.sliceSizeMb, 6);
       const manifest = buildSubmissionPackage(target, preset);
       expect(manifest.readyToSubmit).toBe(true);
       expect(manifest.scope).toBe("input-check-only");
@@ -497,7 +498,8 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
 
   it("투고 매니페스트는 80개 분할을 전부 보존하고 잘못된 분할 수·비유한 수치·빈 이름을 명시적으로 거부한다", () => {
     const preset = createPresetSubmissionInput("naver-webtoon");
-    const complete = buildSubmissionPackage("naver-webtoon", { ...preset, sliceCount: 80 });
+    const complete = buildSubmissionPackage("naver-webtoon", { ...preset, sliceCount: 80, sliceSizeMb: 0.1, totalSizeMb: 8 });
+    expect(complete.readyToSubmit).toBe(true);
     const slices = complete.files.filter((entry) => entry.role === "episode-slice");
     expect(slices).toHaveLength(80);
     expect(slices[79]?.path).toContain("080.jpg");
@@ -521,6 +523,46 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
       expect(parsed.validation.valid).toBe(false);
       expect(parsed.document).toBeNull();
     }
+  });
+
+  it("필수 매크로 헤더의 삭제·타입 오류·잘못된 생성 시각을 체크섬이 유효해도 거부한다", () => {
+    const doc = createDefaultProTsMacro();
+    for (const field of ["macroId", "descriptionKo", "createdAtIso"] as const) {
+      const missing: Record<string, unknown> = { ...doc };
+      delete missing[field];
+      const result = parseAndValidateTsMacro(JSON.stringify(missing));
+      expect(result.document).toBeNull();
+      expect(result.validation.valid).toBe(false);
+      expect(result.validation.errors.some((error) => error.includes(field))).toBe(true);
+      for (const value of [null, 1, {}, [], " "]) {
+        const invalid = parseAndValidateTsMacro(JSON.stringify({ ...doc, [field]: value }));
+        expect(invalid.document).toBeNull();
+        expect(invalid.validation.valid).toBe(false);
+      }
+    }
+    expect(parseAndValidateTsMacro(JSON.stringify({ ...doc, createdAtIso: "잘못된 날짜" })).validation.valid).toBe(false);
+    const valid = parseAndValidateTsMacro(serializeTsMacro(doc));
+    expect(valid.validation.valid).toBe(true);
+    expect(valid.document && replayTsMacro(valid.document).macroId).toBe(doc.macroId);
+  });
+
+  it("균일 분할 크기의 합계와 입력 총량을 맞추고 실제 추정 합계로 투고 용량 제한을 검사한다", () => {
+    const preset = createPresetSubmissionInput("print-tankobon");
+    for (const totalSizeMb of [87, 267.84]) {
+      const overLimit = buildSubmissionPackage("print-tankobon", { ...preset, sliceSizeMb: 11.16, totalSizeMb });
+      expect(overLimit.readyToSubmit).toBe(false);
+      const totalCheck = overLimit.checks.find((check) => check.ruleId === "total-size");
+      expect(totalCheck?.passed).toBe(false);
+      expect(totalCheck?.actual).toContain("분할 합계 267.84MB");
+      expect(overLimit.checks.find((check) => check.ruleId === "slice-size")?.passed).toBe(true);
+    }
+    const mismatch = buildSubmissionPackage("print-tankobon", { ...preset, sliceSizeMb: 3, totalSizeMb: 50 });
+    expect(mismatch.readyToSubmit).toBe(false);
+    expect(mismatch.checks.find((check) => check.ruleId === "total-size")?.actual).toContain("분할 합계 72MB / 입력 총량 50MB");
+    const uniform = buildSubmissionPackage("print-tankobon", { ...preset, sliceCount: 2, sliceSizeMb: 3, totalSizeMb: 6 });
+    expect(uniform.readyToSubmit).toBe(true);
+    const slices = uniform.files.filter((entry) => entry.role === "episode-slice");
+    expect(slices.reduce((sum, entry) => sum + entry.estimatedKb, 0) / 1024).toBe(6);
   });
 
   it("다른 탭에서 처음 열거나 왕복한 리라이트 캔버스에도 합성 결과를 다시 그린다", () => {
@@ -569,6 +611,7 @@ describe("pro-commercial-suite: 상업 연재 프로 웹툰 8대 전문 엔진 �
       "relight-breakout-engine.ts",
       "typography-handoff-engine.ts",
       "goods-macro-submission-engine.ts",
+      "macro-document-header.ts",
       "StudioProCommercialPanel.tsx",
       "index.ts",
     ];
