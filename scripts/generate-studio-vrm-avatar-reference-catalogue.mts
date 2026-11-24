@@ -284,6 +284,10 @@ async function readPackageVersion(name: string): Promise<string> {
   return parsed.version;
 }
 
+export function readCatalogueMediaPipeVersion(variant: BrowserAuthorityEvidence["wasmVariant"]): Promise<string> {
+  return readPackageVersion(variant === "simd" ? "@mediapipe/tasks-vision" : "@mediapipe/tasks-vision-nosimd");
+}
+
 async function hashFile(path: string): Promise<Readonly<{
   byteLength: number;
   sha256: string;
@@ -508,7 +512,6 @@ async function generateEnvelope(): Promise<Readonly<{
       readPackageVersion("three"),
       readPackageVersion("@pixiv/three-vrm"),
       readPackageVersion("@react-three/fiber"),
-      readPackageVersion("@mediapipe/tasks-vision"),
       readPackageVersion("playwright"),
     ]),
     findSwiftShaderFiles(browserRevisionRoot.path),
@@ -633,13 +636,7 @@ async function generateEnvelope(): Promise<Readonly<{
     );
 
     const browserVersion = browser.version();
-    const [
-      threeVersion,
-      threeVrmVersion,
-      reactThreeFiberVersion,
-      mediaPipeTasksVisionVersion,
-      playwrightVersion,
-    ] = packageVersions;
+    const [threeVersion, threeVrmVersion, reactThreeFiberVersion, playwrightVersion] = packageVersions;
     const authority = {
       sourceAssetId: "toonspectrum-minseo-campus",
       sourceUrl: SOURCE_URL,
@@ -682,7 +679,7 @@ async function generateEnvelope(): Promise<Readonly<{
         three: threeVersion,
         threeVrm: threeVrmVersion,
         reactThreeFiber: reactThreeFiberVersion,
-        mediaPipeTasksVision: mediaPipeTasksVisionVersion,
+        mediaPipeTasksVision: await readCatalogueMediaPipeVersion(browserEvidence.wasmVariant),
         playwright: playwrightVersion,
       },
       browser: {

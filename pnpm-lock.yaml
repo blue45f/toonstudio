@@ -118,7 +118,7 @@ importers:
         specifier: 4.3.2
         version: 4.3.2(@types/node@26.6.6)
       '@mediapipe/tasks-vision':
-        specifier: ^1.2.3
+        specifier: 1.2.3
         version: 1.2.3
       '@mediapipe/tasks-vision-nosimd':
         specifier: npm:@mediapipe/tasks-vision@0.10.35
@@ -806,7 +806,7 @@ importers:
         specifier: 0.21.0
         version: 0.21.0
       '@mediapipe/tasks-vision':
-        specifier: ^1.2.3
+        specifier: 1.2.3
         version: 1.2.3
       ag-psd:
         specifier: ^31.0.1
