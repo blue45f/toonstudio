@@ -54,6 +54,18 @@ afterEach(() => {
 });
 
 describe("오프라인 열람 영수증 수명", () => {
+  it.each(["missing", "read-error"])("조회 중에는 대기하고 %s 결과에는 열람을 끝낸다", async (outcome) => {
+    const late = Promise.withResolvers<StudioOfflineOwnerReceipt | null>();
+    io.readReceipt.mockReturnValueOnce(late.promise);
+    const { result } = renderHook(() => useStudioOfflineOwnerPreviewGrant("work-a"));
+    expect(result.current).toBeUndefined();
+    await act(async () => {
+      if (outcome === "missing") late.resolve(null);
+      else late.reject(new Error("receipt unavailable"));
+    });
+    expect(result.current).toBeNull();
+  });
+
   it("추가 입력이나 렌더 없이 만료 시각에 열람을 닫는다", async () => {
     vi.useFakeTimers();
     io.readReceipt.mockResolvedValue(receipt("work-a", Date.now() + 100));
