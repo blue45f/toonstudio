@@ -1,29 +1,45 @@
 //! ToonStudio 순수 Rust 드로잉 코어 엔진 (`studio-wasm64-drawing-core`).
 //!
-//! - `#![forbid(unsafe_code)]`로 메모리 안전성을 컴파일 타임에 강제한다.
+//! - 크레이트 전역 `#![deny(unsafe_code)]`로 모든 핵심 연산 커널을 100% 안전 Rust로 유지하며,
+//!   선형 메모리 C-ABI 포인터 경계만 `wasm_ffi` 모듈에 최소 범위로 격리한다.
 //! - 외부 `crates.io` 의존성 없이 표준 라이브러리(`std`)만으로 동작하여 오프라인·재현 가능 빌드를 보장한다.
-//! - 모든 공개 함수는 panic 대신 `Result<T, DrawingCoreError>`를 반환한다.
+//! - 모든 공개 함수는 panic 대신 `Result<T, DrawingCoreError>` 또는 안정적인 FFI 오류 코드를 반환한다.
 
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 
 use std::error::Error;
 use std::fmt;
 
 pub mod brush_kernel;
 pub mod filter_warp_kernel;
+pub mod spectral_km_kernel;
+pub mod tile_delta_kernel;
 pub mod vector_psd_tile_kernel;
+pub mod wasm_ffi;
 
 pub use brush_kernel::{
     apply_impasto_lighting_rgba, mix_pigments_km, mix_pigments_km_strip, sample_world_paper_height,
     ImpastoLightConfig, ImpastoShadingStats, PaperGrainConfig,
 };
 pub use filter_warp_kernel::{
-    gaussian_blur_rgba_masked, unsharp_mask_rgba, warp_mesh_rigid_mls, WarpPin,
+    gaussian_blur_rgba_into, gaussian_blur_rgba_masked, unsharp_mask_rgba, unsharp_mask_rgba_into,
+    warp_mesh_rigid_mls, WarpPin,
+};
+pub use spectral_km_kernel::{mix_pigments_km16, mix_pigments_km16_strip, KM_SPECTRAL_BANDS};
+pub use tile_delta_kernel::{
+    apply_xor_tile_delta_in_place, fnv1a_checksum_32, xor_tile_delta_bytes,
 };
 pub use vector_psd_tile_kernel::{
     parse_psd_header_streaming, vectorize_stroke_to_cubic_beziers, CubicBezierSegment,
     PsdColorMode, PsdHeaderInfo, StrokePoint2D, SwapperStats, TileKey, TileResidencyState,
     VectorizedStroke, VirtualTileSwapper64, TILE_DIM, TILE_RGBA_BYTES,
+};
+pub use wasm_ffi::{
+    wasm_alloc, wasm_apply_impasto_lighting_rgba, wasm_drawing_core_abi_version,
+    wasm_fnv1a_checksum, wasm_free, wasm_gaussian_blur_rgba, wasm_hotpath_capabilities,
+    wasm_mix_pigments_km16_packed, wasm_mix_pigments_km16_strip, wasm_mix_pigments_km_packed,
+    wasm_sample_world_paper_height, wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes,
+    WASM_HOTPATH_CAPABILITIES,
 };
 
 /// 코어 드로잉 엔진의 모든 연산이 공유하는 panic 없는 오류 모델.
@@ -121,39 +137,4 @@ pub(crate) fn checked_rgba_len(width: u32, height: u32) -> Result<usize, Drawing
     pixels
         .checked_mul(4)
         .ok_or(DrawingCoreError::InvalidDimensions { width, height })
-}
-
-/// 코어 ABI 버전 번호를 반환한다.
-#[must_use]
-pub fn wasm_drawing_core_abi_version() -> u32 {
-    1
-}
-
-/// 패킹된 RGBA8 두 색상을 Kubelka-Munk 스펙트럼 혼색하는 스칼라 진입점.
-#[must_use]
-pub fn wasm_mix_pigments_km_packed(rgba_a: u32, rgba_b: u32, ratio: f32) -> u32 {
-    let a = rgba_a.to_le_bytes();
-    let b = rgba_b.to_le_bytes();
-    match mix_pigments_km(a, b, ratio) {
-        Ok(mixed) => u32::from_le_bytes(mixed),
-        Err(_) => rgba_a,
-    }
-}
-
-/// 월드 좌표 고정 2층 종이 높이장을 샘플링하는 스칼라 진입점.
-#[must_use]
-pub fn wasm_sample_world_paper_height(
-    world_x: f32,
-    world_y: f32,
-    grain_scale: f32,
-    seed: u32,
-) -> f32 {
-    let config = PaperGrainConfig {
-        macro_scale: grain_scale,
-        micro_scale: grain_scale * 4.0,
-        macro_weight: 0.65,
-        micro_weight: 0.35,
-        seed,
-    };
-    sample_world_paper_height(world_x, world_y, &config).unwrap_or(-1.0)
 }

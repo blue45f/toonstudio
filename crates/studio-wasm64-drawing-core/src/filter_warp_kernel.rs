@@ -49,25 +49,170 @@ fn build_gaussian_kernel_1d(sigma: f32) -> Vec<f32> {
     weights
 }
 
-/// 선택 영역 경계 외부 번짐 0%를 보장하는 분리형(수평+수직) 가우시안 블러 커널.
-///
-/// `selection_mask`가 주어지면:
-/// - 마스크 값이 `0`인 외부 픽셀은 원본 RGBA를 비트 단위로 그대로 유지한다(외부 번짐 0%).
-/// - 마스크 값이 `> 0`인 내부 픽셀은 마스크 가중치를 곱한 커널로만 정규화 합성해
-///   선택 경계 바깥 색상이 안쪽으로 유입되지 않도록 차단한다.
-pub fn gaussian_blur_rgba_masked(
+#[derive(Clone, Copy)]
+enum UnmaskedVerticalMode {
+    Gaussian,
+    Unsharp { amount: f32, threshold: u8 },
+}
+
+fn premultiply_rgba_to_f32(rgba: &[u8]) -> Vec<f32> {
+    let mut premul = vec![0.0_f32; rgba.len()];
+    let (src_chunks, _) = rgba.as_chunks::<4>();
+    let (dst_chunks, _) = premul.as_chunks_mut::<4>();
+    for (dst, &src) in dst_chunks.iter_mut().zip(src_chunks.iter()) {
+        let a_f = f32::from(src[3]);
+        let a = a_f / 255.0;
+        dst[0] = f32::from(src[0]) * a;
+        dst[1] = f32::from(src[1]) * a;
+        dst[2] = f32::from(src[2]) * a;
+        dst[3] = a_f;
+    }
+    premul
+}
+
+#[inline(never)]
+fn run_unmasked_separable_pipeline(
     rgba: &[u8],
+    out_rgba: &mut [u8],
+    w: usize,
+    h: usize,
+    sigma: f32,
+    mode: UnmaskedVerticalMode,
+) -> usize {
+    let kernel = build_gaussian_kernel_1d(sigma);
+    let radius = kernel.len() / 2;
+    let row_stride = w * 4;
+    let premul = premultiply_rgba_to_f32(rgba);
+    let (premul_px, _) = premul.as_chunks::<4>();
+
+    // 수평 패스: 4채널 청크 뷰로 픽셀당 경계 검사를 1회로 축소하고 내부 구간은 클램핑 없이 순회한다.
+    let mut horiz = vec![0.0_f32; rgba.len()];
+    let (horiz_px, _) = horiz.as_chunks_mut::<4>();
+    let left_end = radius.min(w);
+    let right_start = w.saturating_sub(radius).max(left_end);
+    for y in 0..h {
+        let row_px = y * w;
+        let src_row = &premul_px[row_px..row_px + w];
+        let dst_row = &mut horiz_px[row_px..row_px + w];
+        for (x, dst) in dst_row.iter_mut().enumerate() {
+            let mut acc = [0.0_f32; 4];
+            if x >= left_end && x < right_start {
+                let win = &src_row[x - radius..x - radius + kernel.len()];
+                for (&px, &kw) in win.iter().zip(kernel.iter()) {
+                    acc[0] += px[0] * kw;
+                    acc[1] += px[1] * kw;
+                    acc[2] += px[2] * kw;
+                    acc[3] += px[3] * kw;
+                }
+            } else {
+                for (k_idx, &kw) in kernel.iter().enumerate() {
+                    let offset = k_idx as isize - radius as isize;
+                    let sx = (x as isize + offset).clamp(0, (w - 1) as isize) as usize;
+                    let px = src_row[sx];
+                    acc[0] += px[0] * kw;
+                    acc[1] += px[1] * kw;
+                    acc[2] += px[2] * kw;
+                    acc[3] += px[3] * kw;
+                }
+            }
+            *dst = acc;
+        }
+    }
+
+    // 수직 패스: 스캔라인 누산 버퍼로 행 단위 순차 접근을 유지하고 필요 시 언샤프를 단일 패스로 결합한다.
+    let mut row_acc = vec![0.0_f32; row_stride];
+    let mut count = 0usize;
+    for y in 0..h {
+        row_acc.fill(0.0);
+        for (k_idx, &kw) in kernel.iter().enumerate() {
+            let offset = k_idx as isize - radius as isize;
+            let sy = (y as isize + offset).clamp(0, (h - 1) as isize) as usize;
+            let src_row = &horiz[sy * row_stride..(sy + 1) * row_stride];
+            for (acc, &val) in row_acc.iter_mut().zip(src_row.iter()) {
+                *acc += val * kw;
+            }
+        }
+
+        let row_base = y * row_stride;
+        let orig_row = &rgba[row_base..row_base + row_stride];
+        let out_row = &mut out_rgba[row_base..row_base + row_stride];
+        let (acc_chunks, _) = row_acc.as_chunks::<4>();
+        let (orig_chunks, _) = orig_row.as_chunks::<4>();
+        let (out_chunks, _) = out_row.as_chunks_mut::<4>();
+
+        for ((out_px, orig_px), acc_px) in out_chunks
+            .iter_mut()
+            .zip(orig_chunks.iter())
+            .zip(acc_chunks.iter())
+        {
+            let pa = acc_px[3];
+            let alpha_norm = (pa / 255.0).clamp(0.0, 1.0);
+            let (blur_r, blur_g, blur_b) = if alpha_norm > 1e-4 {
+                (
+                    (acc_px[0] / alpha_norm).clamp(0.0, 255.0).round() as u8,
+                    (acc_px[1] / alpha_norm).clamp(0.0, 255.0).round() as u8,
+                    (acc_px[2] / alpha_norm).clamp(0.0, 255.0).round() as u8,
+                )
+            } else {
+                (0u8, 0u8, 0u8)
+            };
+
+            match mode {
+                UnmaskedVerticalMode::Gaussian => {
+                    out_px[0] = blur_r;
+                    out_px[1] = blur_g;
+                    out_px[2] = blur_b;
+                    out_px[3] = pa.clamp(0.0, 255.0).round() as u8;
+                    count += 1;
+                }
+                UnmaskedVerticalMode::Unsharp { amount, threshold } => {
+                    let thresh_f = f32::from(threshold);
+                    let blurred_rgb = [blur_r, blur_g, blur_b];
+                    let mut changed = false;
+                    for ch in 0..3 {
+                        let o = f32::from(orig_px[ch]);
+                        let b = f32::from(blurred_rgb[ch]);
+                        let diff = o - b;
+                        if diff.abs() >= thresh_f {
+                            let sharpened = (o + diff * amount).clamp(0.0, 255.0).round() as u8;
+                            if sharpened != orig_px[ch] {
+                                changed = true;
+                            }
+                            out_px[ch] = sharpened;
+                        } else {
+                            out_px[ch] = orig_px[ch];
+                        }
+                    }
+                    out_px[3] = orig_px[3];
+                    count += usize::from(changed);
+                }
+            }
+        }
+    }
+    count
+}
+
+/// 선택 영역 경계 외부 번짐 0%를 보장하는 분리형 가우시안 블러 결과를 호출자 버퍼 `out_rgba`에 기록한다.
+pub fn gaussian_blur_rgba_into(
+    rgba: &[u8],
+    selection_mask: Option<&[u8]>,
+    out_rgba: &mut [u8],
     width: u32,
     height: u32,
     sigma: f32,
-    selection_mask: Option<&[u8]>,
-) -> Result<Vec<u8>, DrawingCoreError> {
+) -> Result<usize, DrawingCoreError> {
     let pixel_count = checked_pixel_count(width, height)?;
     let expected_rgba = checked_rgba_len(width, height)?;
     if rgba.len() != expected_rgba {
         return Err(DrawingCoreError::BufferLengthMismatch {
             expected: expected_rgba,
             actual: rgba.len(),
+        });
+    }
+    if out_rgba.len() != expected_rgba {
+        return Err(DrawingCoreError::BufferLengthMismatch {
+            expected: expected_rgba,
+            actual: out_rgba.len(),
         });
     }
     if let Some(mask) = selection_mask {
@@ -82,166 +227,183 @@ pub fn gaussian_blur_rgba_masked(
         return Err(DrawingCoreError::InvalidParameter { name: "sigma" });
     }
     if sigma < 1e-4 {
-        return Ok(rgba.to_vec());
+        out_rgba.copy_from_slice(rgba);
+        return Ok(pixel_count);
     }
 
     let w = width as usize;
     let h = height as usize;
+    let Some(mask) = selection_mask else {
+        return Ok(run_unmasked_separable_pipeline(
+            rgba,
+            out_rgba,
+            w,
+            h,
+            sigma,
+            UnmaskedVerticalMode::Gaussian,
+        ));
+    };
+
     let kernel = build_gaussian_kernel_1d(sigma);
     let radius = kernel.len() / 2;
+    let premul = premultiply_rgba_to_f32(rgba);
+    let (premul_px, _) = premul.as_chunks::<4>();
+    let (rgba_px, _) = rgba.as_chunks::<4>();
 
-    // 1단계: 프리멀티플라이드 알파 float 버퍼 변환
-    let mut premul = vec![0.0_f32; expected_rgba];
-    for i in 0..pixel_count {
-        let base = i * 4;
-        let a = f32::from(rgba[base + 3]) / 255.0;
-        premul[base] = f32::from(rgba[base]) * a;
-        premul[base + 1] = f32::from(rgba[base + 1]) * a;
-        premul[base + 2] = f32::from(rgba[base + 2]) * a;
-        premul[base + 3] = f32::from(rgba[base + 3]);
-    }
-
-    // 2단계: 수평 패스 (선택 마스크 가중 정규화)
     let mut horiz = vec![0.0_f32; expected_rgba];
+    let (horiz_px, _) = horiz.as_chunks_mut::<4>();
     for y in 0..h {
         let row_offset = y * w;
         for x in 0..w {
             let px_idx = row_offset + x;
-            let dst_base = px_idx * 4;
-            if let Some(mask) = selection_mask {
-                if mask[px_idx] == 0 {
-                    horiz[dst_base..dst_base + 4].copy_from_slice(&premul[dst_base..dst_base + 4]);
-                    continue;
-                }
+            if mask[px_idx] == 0 {
+                horiz_px[px_idx] = premul_px[px_idx];
+                continue;
             }
-
-            let mut acc_r = 0.0_f32;
-            let mut acc_g = 0.0_f32;
-            let mut acc_b = 0.0_f32;
-            let mut acc_a = 0.0_f32;
+            let mut acc = [0.0_f32; 4];
             let mut w_sum = 0.0_f32;
-
             for (k_idx, &kw) in kernel.iter().enumerate() {
                 let offset = k_idx as isize - radius as isize;
                 let sx = (x as isize + offset).clamp(0, (w - 1) as isize) as usize;
                 let s_idx = row_offset + sx;
-                let m_weight = match selection_mask {
-                    Some(mask) => {
-                        let mv = mask[s_idx];
-                        if mv == 0 {
-                            continue;
-                        }
-                        f32::from(mv) / 255.0
-                    }
-                    None => 1.0,
-                };
-                let weight = kw * m_weight;
-                let s_base = s_idx * 4;
-                acc_r += premul[s_base] * weight;
-                acc_g += premul[s_base + 1] * weight;
-                acc_b += premul[s_base + 2] * weight;
-                acc_a += premul[s_base + 3] * weight;
+                let mv = mask[s_idx];
+                if mv == 0 {
+                    continue;
+                }
+                let weight = kw * (f32::from(mv) / 255.0);
+                let sp = premul_px[s_idx];
+                for c in 0..4 {
+                    acc[c] += sp[c] * weight;
+                }
                 w_sum += weight;
             }
-
-            if w_sum > 0.0 {
+            horiz_px[px_idx] = if w_sum > 0.0 {
                 let inv = 1.0 / w_sum;
-                horiz[dst_base] = acc_r * inv;
-                horiz[dst_base + 1] = acc_g * inv;
-                horiz[dst_base + 2] = acc_b * inv;
-                horiz[dst_base + 3] = acc_a * inv;
+                [acc[0] * inv, acc[1] * inv, acc[2] * inv, acc[3] * inv]
             } else {
-                horiz[dst_base..dst_base + 4].copy_from_slice(&premul[dst_base..dst_base + 4]);
-            }
+                premul_px[px_idx]
+            };
         }
     }
 
-    // 3단계: 수직 패스 + 언프리멀티플라이 RGBA8 출력
-    let mut output = vec![0u8; expected_rgba];
+    let (horiz_ro, _) = horiz.as_chunks::<4>();
+    let (out_px, _) = out_rgba.as_chunks_mut::<4>();
     for y in 0..h {
         for x in 0..w {
             let px_idx = y * w + x;
-            let dst_base = px_idx * 4;
-            let center_mask = selection_mask.map_or(255u8, |m| m[px_idx]);
+            let center_mask = mask[px_idx];
             if center_mask == 0 {
-                output[dst_base..dst_base + 4].copy_from_slice(&rgba[dst_base..dst_base + 4]);
+                out_px[px_idx] = rgba_px[px_idx];
                 continue;
             }
-
-            let mut acc_r = 0.0_f32;
-            let mut acc_g = 0.0_f32;
-            let mut acc_b = 0.0_f32;
-            let mut acc_a = 0.0_f32;
+            let mut acc = [0.0_f32; 4];
             let mut w_sum = 0.0_f32;
-
             for (k_idx, &kw) in kernel.iter().enumerate() {
                 let offset = k_idx as isize - radius as isize;
                 let sy = (y as isize + offset).clamp(0, (h - 1) as isize) as usize;
                 let s_idx = sy * w + x;
-                let m_weight = match selection_mask {
-                    Some(mask) => {
-                        let mv = mask[s_idx];
-                        if mv == 0 {
-                            continue;
-                        }
-                        f32::from(mv) / 255.0
-                    }
-                    None => 1.0,
-                };
-                let weight = kw * m_weight;
-                let s_base = s_idx * 4;
-                acc_r += horiz[s_base] * weight;
-                acc_g += horiz[s_base + 1] * weight;
-                acc_b += horiz[s_base + 2] * weight;
-                acc_a += horiz[s_base + 3] * weight;
+                let mv = mask[s_idx];
+                if mv == 0 {
+                    continue;
+                }
+                let weight = kw * (f32::from(mv) / 255.0);
+                let sp = horiz_ro[s_idx];
+                for c in 0..4 {
+                    acc[c] += sp[c] * weight;
+                }
                 w_sum += weight;
             }
-
-            let (pr, pg, pb, pa) = if w_sum > 0.0 {
+            let p = if w_sum > 0.0 {
                 let inv = 1.0 / w_sum;
-                (acc_r * inv, acc_g * inv, acc_b * inv, acc_a * inv)
+                [acc[0] * inv, acc[1] * inv, acc[2] * inv, acc[3] * inv]
             } else {
-                (
-                    premul[dst_base],
-                    premul[dst_base + 1],
-                    premul[dst_base + 2],
-                    premul[dst_base + 3],
-                )
+                premul_px[px_idx]
             };
-
-            let alpha_norm = (pa / 255.0).clamp(0.0, 1.0);
-            let (blur_r, blur_g, blur_b) = if alpha_norm > 1e-4 {
-                (
-                    (pr / alpha_norm).clamp(0.0, 255.0),
-                    (pg / alpha_norm).clamp(0.0, 255.0),
-                    (pb / alpha_norm).clamp(0.0, 255.0),
-                )
+            let alpha_norm = (p[3] / 255.0).clamp(0.0, 1.0);
+            let blur = if alpha_norm > 1e-4 {
+                [
+                    (p[0] / alpha_norm).clamp(0.0, 255.0),
+                    (p[1] / alpha_norm).clamp(0.0, 255.0),
+                    (p[2] / alpha_norm).clamp(0.0, 255.0),
+                    p[3].clamp(0.0, 255.0),
+                ]
             } else {
-                (0.0, 0.0, 0.0)
+                [0.0, 0.0, 0.0, p[3].clamp(0.0, 255.0)]
             };
-            let blur_a = pa.clamp(0.0, 255.0);
-
             if center_mask == 255 {
-                output[dst_base] = blur_r.round() as u8;
-                output[dst_base + 1] = blur_g.round() as u8;
-                output[dst_base + 2] = blur_b.round() as u8;
-                output[dst_base + 3] = blur_a.round() as u8;
+                for c in 0..4 {
+                    out_px[px_idx][c] = blur[c].round() as u8;
+                }
             } else {
                 let blend = f32::from(center_mask) / 255.0;
                 let inv_blend = 1.0 - blend;
-                output[dst_base] =
-                    (f32::from(rgba[dst_base]) * inv_blend + blur_r * blend).round() as u8;
-                output[dst_base + 1] =
-                    (f32::from(rgba[dst_base + 1]) * inv_blend + blur_g * blend).round() as u8;
-                output[dst_base + 2] =
-                    (f32::from(rgba[dst_base + 2]) * inv_blend + blur_b * blend).round() as u8;
-                output[dst_base + 3] =
-                    (f32::from(rgba[dst_base + 3]) * inv_blend + blur_a * blend).round() as u8;
+                for c in 0..4 {
+                    out_px[px_idx][c] =
+                        (f32::from(rgba_px[px_idx][c]) * inv_blend + blur[c] * blend).round() as u8;
+                }
             }
         }
     }
 
+    Ok(pixel_count)
+}
+
+/// 선택 영역 경계 외부 번짐 0%를 보장하는 분리형(수평+수직) 가우시안 블러 커널.
+pub fn gaussian_blur_rgba_masked(
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+    sigma: f32,
+    selection_mask: Option<&[u8]>,
+) -> Result<Vec<u8>, DrawingCoreError> {
+    let expected_rgba = checked_rgba_len(width, height)?;
+    let mut output = vec![0u8; expected_rgba];
+    let _ = gaussian_blur_rgba_into(rgba, selection_mask, &mut output, width, height, sigma)?;
     Ok(output)
+}
+
+/// 분리형 가우시안 기반 언샤프 마스크 결과를 호출자 버퍼 `out_rgba`에 기록하고 변경 픽셀 수를 반환한다.
+pub fn unsharp_mask_rgba_into(
+    rgba: &[u8],
+    out_rgba: &mut [u8],
+    width: u32,
+    height: u32,
+    sigma: f32,
+    amount: f32,
+    threshold: u8,
+) -> Result<usize, DrawingCoreError> {
+    let expected_rgba = checked_rgba_len(width, height)?;
+    if rgba.len() != expected_rgba {
+        return Err(DrawingCoreError::BufferLengthMismatch {
+            expected: expected_rgba,
+            actual: rgba.len(),
+        });
+    }
+    if out_rgba.len() != expected_rgba {
+        return Err(DrawingCoreError::BufferLengthMismatch {
+            expected: expected_rgba,
+            actual: out_rgba.len(),
+        });
+    }
+    if !sigma.is_finite() || sigma < 0.0 {
+        return Err(DrawingCoreError::InvalidParameter { name: "sigma" });
+    }
+    if !amount.is_finite() || amount < 0.0 {
+        return Err(DrawingCoreError::InvalidParameter { name: "amount" });
+    }
+    if amount == 0.0 || sigma < 1e-4 {
+        out_rgba.copy_from_slice(rgba);
+        return Ok(0);
+    }
+
+    Ok(run_unmasked_separable_pipeline(
+        rgba,
+        out_rgba,
+        width as usize,
+        height as usize,
+        sigma,
+        UnmaskedVerticalMode::Unsharp { amount, threshold },
+    ))
 }
 
 /// 분리형 가우시안 기반 언샤프 마스크(Unsharp Mask) 커널.
@@ -255,36 +417,9 @@ pub fn unsharp_mask_rgba(
     amount: f32,
     threshold: u8,
 ) -> Result<Vec<u8>, DrawingCoreError> {
-    if !amount.is_finite() || amount < 0.0 {
-        return Err(DrawingCoreError::InvalidParameter { name: "amount" });
-    }
-    let blurred = gaussian_blur_rgba_masked(rgba, width, height, sigma, None)?;
-    if amount == 0.0 {
-        return Ok(rgba.to_vec());
-    }
-
-    let thresh_f = f32::from(threshold);
-    let mut output = vec![0u8; rgba.len()];
-    let (out_chunks, _) = output.as_chunks_mut::<4>();
-    let (orig_chunks, _) = rgba.as_chunks::<4>();
-    let (blur_chunks, _) = blurred.as_chunks::<4>();
-    for ((out_px, orig_px), blur_px) in out_chunks
-        .iter_mut()
-        .zip(orig_chunks.iter())
-        .zip(blur_chunks.iter())
-    {
-        for ch in 0..3 {
-            let o = f32::from(orig_px[ch]);
-            let b = f32::from(blur_px[ch]);
-            let diff = o - b;
-            out_px[ch] = if diff.abs() >= thresh_f {
-                (o + diff * amount).clamp(0.0, 255.0).round() as u8
-            } else {
-                orig_px[ch]
-            };
-        }
-        out_px[3] = orig_px[3];
-    }
+    let expected_rgba = checked_rgba_len(width, height)?;
+    let mut output = vec![0u8; expected_rgba];
+    let _ = unsharp_mask_rgba_into(rgba, &mut output, width, height, sigma, amount, threshold)?;
     Ok(output)
 }
 

@@ -279,6 +279,27 @@ pub fn sample_world_paper_height(
     Ok(combined.clamp(0.0, 1.0))
 }
 
+#[inline]
+fn pow_shininess_f32(base: f32, exp: f32) -> f32 {
+    if (exp - exp.trunc()).abs() == 0.0 && (0.0..=256.0).contains(&exp) {
+        let mut n = exp as u32;
+        let mut acc = 1.0_f32;
+        let mut factor = base;
+        while n > 0 {
+            if (n & 1) != 0 {
+                acc *= factor;
+            }
+            n >>= 1;
+            if n > 0 {
+                factor *= factor;
+            }
+        }
+        acc
+    } else {
+        base.powf(exp)
+    }
+}
+
 /// 2.5D 임파스토 높이장에 3x3 Sobel 법선을 계산해 Blinn-Phong 광원 셰이딩을 RGBA8 버퍼에 적용한다.
 pub fn apply_impasto_lighting_rgba(
     rgba: &mut [u8],
@@ -380,7 +401,8 @@ pub fn apply_impasto_lighting_rgba(
             let ndoth = (nx * hx + ny * hy + nz * hz).max(0.0);
             let alpha_norm = f32::from(alpha_u8) / 255.0;
             let diffuse_factor = (light.ambient + light.diffuse_strength * ndotl).max(0.0);
-            let specular_add = light.specular_strength * ndoth.powf(light.shininess) * alpha_norm;
+            let specular_add =
+                light.specular_strength * pow_shininess_f32(ndoth, light.shininess) * alpha_norm;
 
             for ch in 0..3 {
                 let base = f32::from(rgba[idx + ch]) / 255.0;

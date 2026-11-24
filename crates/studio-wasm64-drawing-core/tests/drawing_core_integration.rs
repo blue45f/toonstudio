@@ -1,11 +1,15 @@
 //! `studio-wasm64-drawing-core` 통합 테스트 (C-ABI · 경계값 · 종단간 파이프라인 검증).
 
 use studio_wasm64_drawing_core::{
-    apply_impasto_lighting_rgba, gaussian_blur_rgba_masked, mix_pigments_km,
-    parse_psd_header_streaming, sample_world_paper_height, unsharp_mask_rgba,
-    vectorize_stroke_to_cubic_beziers, warp_mesh_rigid_mls, wasm_drawing_core_abi_version,
-    wasm_mix_pigments_km_packed, wasm_sample_world_paper_height, DrawingCoreError,
+    apply_impasto_lighting_rgba, fnv1a_checksum_32, gaussian_blur_rgba_masked, mix_pigments_km,
+    mix_pigments_km16, parse_psd_header_streaming, sample_world_paper_height, unsharp_mask_rgba,
+    vectorize_stroke_to_cubic_beziers, warp_mesh_rigid_mls, wasm_alloc,
+    wasm_apply_impasto_lighting_rgba, wasm_drawing_core_abi_version, wasm_fnv1a_checksum,
+    wasm_free, wasm_gaussian_blur_rgba, wasm_hotpath_capabilities, wasm_mix_pigments_km16_packed,
+    wasm_mix_pigments_km16_strip, wasm_mix_pigments_km_packed, wasm_sample_world_paper_height,
+    wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes, xor_tile_delta_bytes, DrawingCoreError,
     ImpastoLightConfig, PaperGrainConfig, StrokePoint2D, TileKey, VirtualTileSwapper64, WarpPin,
+    WASM_HOTPATH_CAPABILITIES,
 };
 
 #[test]
@@ -207,4 +211,107 @@ fn virtual_tile_swapper64_stress_swaps_many_tiles_losslessly() {
     // 잘못된 PSD 헤더에 대한 Display 메시지 검증
     let err = parse_psd_header_streaming(&[0u8; 32]).expect_err("bad psd");
     assert!(!err.to_string().is_empty());
+}
+
+#[test]
+fn wasm_ffi_linear_memory_exports_match_safe_kernels_and_guard_invalid_ptrs() {
+    assert_eq!(wasm_hotpath_capabilities(), WASM_HOTPATH_CAPABILITIES);
+
+    let blue = [24u8, 92, 214, 255];
+    let yellow = [245u8, 212, 28, 255];
+    let expected_km16 = mix_pigments_km16(blue, yellow, 0.5).expect("km16");
+    let packed_km16 =
+        wasm_mix_pigments_km16_packed(u32::from_le_bytes(blue), u32::from_le_bytes(yellow), 0.5);
+    assert_eq!(packed_km16.to_le_bytes(), expected_km16);
+
+    let w = 16u32;
+    let h = 16u32;
+    let len = (w * h * 4) as usize;
+    let mut src = vec![0u8; len];
+    let mut heights = vec![0.0_f32; (w * h) as usize];
+    for y in 0..h as usize {
+        for x in 0..w as usize {
+            let idx = (y * w as usize + x) * 4;
+            src[idx] = if x < 8 { 64 } else { 208 };
+            src[idx + 1] = ((x * 13 + y * 7) % 256) as u8;
+            src[idx + 2] = 150;
+            src[idx + 3] = 255;
+            heights[y * w as usize + x] = ((x as f32 - 8.0).hypot(y as f32 - 8.0) / 12.0).min(1.0);
+        }
+    }
+
+    let expected_blur = gaussian_blur_rgba_masked(&src, w, h, 1.3, None).expect("blur");
+    let expected_unsharp = unsharp_mask_rgba(&src, w, h, 1.3, 1.4, 2).expect("unsharp");
+    let mut expected_impasto = src.clone();
+    let impasto_stats = apply_impasto_lighting_rgba(
+        &mut expected_impasto,
+        &heights,
+        w,
+        h,
+        &ImpastoLightConfig::default(),
+    )
+    .expect("impasto");
+
+    let mut next_tile = src.clone();
+    next_tile[0] ^= 0x55;
+    next_tile[64] ^= 0xAA;
+    let mut expected_delta = vec![0u8; len];
+    let expected_changed =
+        xor_tile_delta_bytes(&src, &next_tile, &mut expected_delta).expect("xor");
+
+    let src_ptr = wasm_alloc(len);
+    let dst_ptr = wasm_alloc(len);
+    let next_ptr = wasm_alloc(len);
+    assert!(!src_ptr.is_null() && !dst_ptr.is_null() && !next_ptr.is_null());
+
+    // SAFETY: `wasm_alloc(len)`으로 할당한 비중첩 유효 버퍼를 대상으로 FFI 경계 동작을 검증한다.
+    unsafe {
+        std::ptr::copy_nonoverlapping(src.as_ptr(), src_ptr, len);
+        std::ptr::copy_nonoverlapping(next_tile.as_ptr(), next_ptr, len);
+
+        let blur_rc = wasm_gaussian_blur_rgba(src_ptr, std::ptr::null(), dst_ptr, w, h, 1.3);
+        assert_eq!(blur_rc, (w * h) as i32);
+        assert_eq!(
+            std::slice::from_raw_parts(dst_ptr, len),
+            expected_blur.as_slice()
+        );
+
+        let unsharp_rc = wasm_unsharp_mask_rgba(src_ptr, dst_ptr, w, h, 1.3, 1.4, 2);
+        assert!(unsharp_rc > 0);
+        assert_eq!(
+            std::slice::from_raw_parts(dst_ptr, len),
+            expected_unsharp.as_slice()
+        );
+
+        std::ptr::copy_nonoverlapping(src.as_ptr(), dst_ptr, len);
+        let impasto_rc =
+            wasm_apply_impasto_lighting_rgba(dst_ptr, heights.as_ptr(), w, h, std::ptr::null());
+        assert_eq!(impasto_rc, impasto_stats.shaded_pixels as i32);
+        assert_eq!(
+            std::slice::from_raw_parts(dst_ptr, len),
+            expected_impasto.as_slice()
+        );
+
+        let xor_rc = wasm_xor_tile_delta_bytes(src_ptr, next_ptr, dst_ptr, len as u32);
+        assert_eq!(xor_rc, expected_changed as i32);
+        assert_eq!(
+            std::slice::from_raw_parts(dst_ptr, len),
+            expected_delta.as_slice()
+        );
+        assert_eq!(
+            wasm_fnv1a_checksum(dst_ptr, len as u32),
+            fnv1a_checksum_32(&expected_delta)
+        );
+
+        let strip_rc = wasm_mix_pigments_km16_strip(dst_ptr, src_ptr, w * h, 0.5);
+        assert_eq!(strip_rc, (w * h) as i32);
+
+        // null·aliasing 방어: panic 대신 음수 오류 코드 반환 확인
+        assert!(wasm_unsharp_mask_rgba(src_ptr, src_ptr, w, h, 1.3, 1.4, 2) < 0);
+        assert!(wasm_xor_tile_delta_bytes(std::ptr::null(), next_ptr, dst_ptr, len as u32) < 0);
+
+        wasm_free(src_ptr, len);
+        wasm_free(dst_ptr, len);
+        wasm_free(next_ptr, len);
+    }
 }
