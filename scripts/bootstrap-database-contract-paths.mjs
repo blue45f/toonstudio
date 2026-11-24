@@ -27,6 +27,7 @@ export const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
   "scripts/bootstrap-forward-migration-boundary.mjs",
   "scripts/bootstrap-database-contract-paths.mjs",
   "scripts/admin-database-feature-contracts.mjs",
+  "scripts/admin-final-submission-database-contract.mjs",
   "scripts/production-database-migrations.manifest",
   "scripts/production-operations-database-contract.mjs",
   "scripts/run-production-database-migrations.mjs", "scripts/studio-bg3d-bundle-runtime-acl.mjs", "scripts/production-database-connection.mjs",

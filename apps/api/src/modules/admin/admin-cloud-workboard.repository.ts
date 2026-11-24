@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   HttpException,
@@ -10,6 +11,7 @@ import {
 } from "@nestjs/common";
 import {
   boardSchema,
+  boardUpdateError,
   cloudWorkboardResponseSchema,
   emptyBoard,
   type Board,
@@ -155,6 +157,13 @@ export class AdminCloudWorkboardRepository {
           code: "cloud_workboard_conflict", currentRevision: revision,
           message: "다른 기기에서 보드를 변경했습니다. 최신 내용을 불러온 뒤 다시 저장해주세요.",
         });
+      }
+      const stored = boardSchema.safeParse(row.payload);
+      if (!stored.success) throw unavailable();
+      // 명시적 가져오기는 원본 관측값을 보존한다. 현재 사실 표시는 공통 effective 판정으로 제한한다.
+      const validationError = input.importHistory === true ? null : boardUpdateError(board, stored.data);
+      if (validationError) {
+        throw new BadRequestException({ code: "cloud_workboard_invalid", message: validationError });
       }
       const updated = (await client.query<StoredBoard>(
         `UPDATE admin_cloud_workboard SET payload=$3::jsonb,revision=revision+1,stored_at=clock_timestamp()

@@ -35,7 +35,7 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
 }
 
 const MODULE_FILE = "admin-i18n-loader.ts";
-const PREFIXES = ["adminRest.status.", "admin.ciQuality.", "admin.workspace.", "admin.businessPlan.", "admin.productionChanges."] as const;
+const PREFIXES = ["adminRest.status.", "admin.ciQuality.", "admin.workspace.", "admin.businessPlan.", "admin.finalSubmission.", "admin.productionChanges."] as const;
 const STATUS_CONSUMERS = [
   "components/AdminIntegrations.tsx",
   "traffic/WebVitalsDashboardPage.tsx",

@@ -558,6 +558,8 @@ describe("generated third-party notice inventory", () => {
         },
       );
       const notice = readFileSync(outputPath, "utf8");
+      expect(notice).toContain("WebCanvas: Copyright (c) 2023 - 2026 ThorVG Project");
+      expect(notice).toContain("ThorVG core: Copyright (c) 2020 - 2026 ThorVG Project");
       expect(notice).toContain("Copyright (c) Microsoft Corporation.");
       expect(notice).toContain("web-ifc 0.0.80에 내장된 geokernel 0.10.0 — MPL-2.0");
       expect(notice).toContain("Copyright (c) 2026 Quim Moya.");

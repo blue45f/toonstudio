@@ -21,8 +21,9 @@ export async function saveCloudWorkboard(
   expectedRevision: number,
   mutationId: string,
   signal?: AbortSignal,
+  importHistory = false,
 ): Promise<CloudWorkboardResponse> {
   return response(await requestAdminJson<unknown>(CLOUD_WORKBOARD_PATH, {
-    body: { board, expectedRevision, mutationId }, signal,
+    body: { board, expectedRevision, mutationId, ...(importHistory ? { importHistory: true } : {}) }, signal,
   }));
 }

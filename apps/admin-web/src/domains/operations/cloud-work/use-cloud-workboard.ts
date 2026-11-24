@@ -78,13 +78,13 @@ export function useCloudWorkboard(onAccessDenied: (message: string) => void) {
     };
   }, [reload]);
 
-  const commit = useCallback(async (next: Board): Promise<boolean> => {
+  const commit = useCallback(async (next: Board, importHistory = false): Promise<boolean> => {
     if (!mounted.current || busy.current || loading || loadError || !board || conflict) return false;
     busy.current = true;
     setSaving(true);
     setSaveError("");
     const expectedRevision = revisionRef.current;
-    const fingerprint = JSON.stringify({ board: next, expectedRevision });
+    const fingerprint = JSON.stringify({ board: next, expectedRevision, importHistory });
     if (pendingSave.current?.fingerprint !== fingerprint) {
       pendingSave.current = { fingerprint, mutationId: crypto.randomUUID() };
     }
@@ -94,7 +94,7 @@ export function useCloudWorkboard(onAccessDenied: (message: string) => void) {
     controller.current = request;
     const current = ++sequence.current;
     try {
-      const result = await saveCloudWorkboard(next, expectedRevision, mutationId, request.signal);
+      const result = await saveCloudWorkboard(next, expectedRevision, mutationId, request.signal, importHistory);
       if (!mounted.current || current !== sequence.current || request.signal.aborted) return false;
       setBoard(result.board);
       setRevision(result.revision);

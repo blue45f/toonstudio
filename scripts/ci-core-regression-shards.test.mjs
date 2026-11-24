@@ -284,6 +284,33 @@ test("클라우드 보드의 계약·API·ACL은 product에서, 실제 DB는 보
     "클라우드 보드의 실제 DB 검증을 정적 shard의 skip 성공으로 대체할 수 없습니다.");
 });
 
+test("개인 제출 점검의 계약·API는 필수 정적 회귀로, 실제 DB는 보호된 PostgreSQL에서 실행한다", () => {
+  const module = "apps/api/src/modules/final-submission";
+  const contracts = "packages/contracts/src/final-submission";
+  const integration = `${module}/final-submission.integration.test.ts`;
+  assert.ok(REQUIRED_VITEST_TARGETS.includes(module), "제출 점검 API를 필수 모듈로 수집해야 합니다.");
+  assert.ok(REQUIRED_VITEST_TARGETS.includes(contracts), "제출 점검 계약을 필수 모듈로 수집해야 합니다.");
+  const execution = executionTargetsByShard();
+  const staticByShard = Object.fromEntries(SHARD_NAMES.map((name) => {
+    const selectors = expandGlobTargets(execution[name]);
+    const args = buildShardVitestArgs(selectors);
+    const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+    return [name, resolveRequiredTargets(selectors).filter((target) => !databaseOnly.includes(target))];
+  }));
+  for (const target of [
+    `${module}/final-submission.test.ts`,
+    `${contracts}/final-submission.test.ts`,
+    "scripts/admin-final-submission-database-contract.test.mjs",
+  ]) {
+    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), [shardForTarget(target)],
+      `개인 제출 점검 정적 회귀의 필수 실행 누락·중복: ${target}`);
+  }
+  assert.equal(CORE_DATABASE_VITEST_TARGETS.filter((target) => target === integration).length, 1);
+  assert.ok(resolveRequiredTargets(expandGlobTargets(execution.product)).includes(integration));
+  assert.ok(SHARD_NAMES.every((name) => !staticByShard[name].includes(integration)),
+    "실제 PostgreSQL 검증을 DB 없는 shard의 skip 성공으로 대체할 수 없습니다.");
+});
+
 test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에서 실행한다", () => {
   const selectors = expandGlobTargets(executionTargetsByShard().product);
   const executed = resolveRequiredTargets(selectors);

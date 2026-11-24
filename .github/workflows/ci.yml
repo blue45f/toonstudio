@@ -1298,6 +1298,7 @@ jobs:
           apps/api/src/modules/admin-production-changes/admin-production-changes.integration.test.ts
           apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts
           apps/api/src/modules/business-plan/business-plan.integration.test.ts
+          apps/api/src/modules/final-submission/final-submission.integration.test.ts
           apps/api/src/modules/admin/ai-operations/ai-operations.repository.integration.test.ts
           apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts
           apps/api/src/modules/admin/admin-cloud-workboard.integration.test.ts
