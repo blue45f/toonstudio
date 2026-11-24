@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EMPTY_STUDIO_LIVE_CONTEXT, StudioLiveCollaborationContext, type StudioLiveCollaborationContextValue } from "../studio-live-collaboration-context";
 import type { StudioLiveRoom, StudioLiveRoomEvent } from "../studio-live-collaboration-room";
@@ -286,6 +287,30 @@ describe("P2P launcher consent and lifetime", () => {
     expect(screen.getByRole("button", { name: "동의하고 P2P 채팅 참여" }).hasAttribute("disabled")).toBe(true);
     expect(getUserMedia).not.toHaveBeenCalled();
   });
+  it("접힌 허들은 획에 반응해 렌더하지 않고 열린 허들은 새 획에서 닫힌다", async () => {
+    environment();
+    const onRender = vi.fn();
+    render(<Profiler id="huddle" onRender={onRender}>{view(fixture())}</Profiler>);
+    await act(async () => {});
+    const trigger = screen.getByRole("button", { name: "채팅·통화" });
+    const commits: number[] = [];
+    const stroke = (pressed: boolean) => {
+      onRender.mockClear();
+      act(() => setStudioStrokeFocusActivity("canvas-stroke", pressed));
+      commits.push(onRender.mock.calls.length);
+    };
+
+    stroke(true);
+    fireEvent.click(trigger);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    stroke(false);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    stroke(true);
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    stroke(false);
+    expect(commits).toEqual([0, 0, 1, 0]);
+  });
+
   it("does not expose publishing controls to viewers", () => {
     environment(); render(view(fixture(), false));
     expect(screen.queryByRole("button", { name: "채팅·통화" })).toBeNull();
