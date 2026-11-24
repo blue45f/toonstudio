@@ -52,7 +52,7 @@ beforeEach(() => {
   useI18n.setState({ lang: "ko" });
   mockCanvasStrokeCalls = 0;
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-    () => createMockCanvasContext() as unknown as CanvasRenderingContext2D,
+    (() => createMockCanvasContext()) as unknown as typeof HTMLCanvasElement.prototype.getContext,
   );
 });
 
