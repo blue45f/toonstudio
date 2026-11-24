@@ -56,6 +56,29 @@ export interface SkiaDocumentRendererOptions {
   readonly loadImageBitmap?: SkiaDocumentImageBitmapLoader;
   readonly maxPictureBytes?: number;
   readonly onContextLost?: () => void;
+  readonly initialContextIdle?: {
+    readonly isPenDown: () => boolean;
+    readonly scheduleIdle: (callback: () => void) => () => void;
+  };
+}
+
+function waitForInitialContextIdle(
+  idle: NonNullable<SkiaDocumentRendererOptions["initialContextIdle"]>,
+  signal: AbortSignal,
+): Promise<void> {
+  return new Promise((resolve) => {
+    function finish() {
+      cancelIdle();
+      signal.removeEventListener("abort", finish);
+      resolve();
+    }
+    function check() {
+      if (signal.aborted || !idle.isPenDown()) finish();
+      else cancelIdle = idle.scheduleIdle(check);
+    }
+    let cancelIdle = idle.scheduleIdle(check);
+    signal.addEventListener("abort", finish, { once: true });
+  });
 }
 async function loadCanvasKit(): Promise<CanvasKit> {
   const { loadCanvasKitDocumentRuntime } = await import("./document-loader");
@@ -455,6 +478,13 @@ export function createSkiaDocumentRenderer(canvas: HTMLCanvasElement,
             fontCache ??= createSkiaDocumentFontCache(ck!, options.loadFontData);
             await fontCache.prepare(work.frame.items, preparation.signal);
           }
+          // WASM과 글꼴 준비 사이에 새 획이 시작될 수 있어 실제 첫 WebGL 생성 직전에 확인한다.
+          const idle = options.initialContextIdle;
+          if (gl === null && !preparation.signal.aborted && idle?.isPenDown()) {
+            await waitForInitialContextIdle(idle, preparation.signal);
+          }
+          if (failure) throw new Error(failure);
+          preparation.signal.throwIfAborted();
           let preconfiguredBackingInvalid = false;
           if (work.frame.items.some((item) => item.image)) {
             const width = Math.ceil(work.frame.width * work.frame.dpr);

@@ -9,6 +9,7 @@
 import * as THREE from "three";
 
 import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
+import { collectSceneMaterialBindings } from "../vrm/studio-vrm-texture-paint-material-bindings";
 import type { StudioVrmTexturePaintRuntime } from "../vrm/studio-vrm-texture-paint-runtime";
 import type { CharacterPaintTextureProvider } from "./character-shaper-semantic-psd";
 import type { VRM } from "@pixiv/three-vrm";
@@ -73,39 +74,6 @@ export function collectCharacterSceneAttachmentRoots(
   });
 }
 
-function findMaterialsMatchingLocator(
-  scene: THREE.Object3D,
-  materialLocator: string,
-): THREE.Material[] {
-  const matched: THREE.Material[] = [];
-  const seen = new Set<THREE.Material>();
-  if (typeof scene.traverse !== "function") return matched;
-
-  let meshIndex = 0;
-  scene.traverse((object) => {
-    const mesh = object as Partial<THREE.Mesh>;
-    if (!mesh.isMesh || !mesh.material) return;
-    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    const meshName = typeof mesh.name === "string" ? mesh.name : "";
-    materials.forEach((mat, slotIndex) => {
-      if (!mat || seen.has(mat)) return;
-      const matName = typeof mat.name === "string" ? mat.name : "";
-      const exactNameHit =
-        materialLocator === matName
-        || materialLocator === `${meshName}:${matName}`
-        || materialLocator === `${meshName}#${slotIndex}`
-        || materialLocator === `mesh[${meshIndex}]:${slotIndex}`
-        || (matName.length > 0 && materialLocator.includes(matName));
-      if (exactNameHit) {
-        seen.add(mat);
-        matched.push(mat);
-      }
-    });
-    meshIndex += 1;
-  });
-  return matched;
-}
-
 /**
  * `StudioVrmTexturePaintRuntime`에서 페인트된 타깃의 RGBA 픽셀을 읽어
  * `Map<THREE.Material, THREE.Texture>`로 제공하는 `CharacterPaintTextureProvider`를 만든다.
@@ -124,10 +92,11 @@ export function resolveCharacterSemanticSceneInputs(
   const paintTextureProvider: CharacterPaintTextureProvider | undefined =
     paintRuntime && typeof paintRuntime.exportPaintedTargets === "function"
       ? () => {
-          const exported = paintRuntime.exportPaintedTargets();
+          const exported = paintRuntime.exportPaintedTargets("paint-only");
           if (!exported.ok || exported.value.length === 0 || !scene) return null;
 
           const map = new Map<THREE.Material, THREE.Texture>();
+          const bindings = collectSceneMaterialBindings(host.vrm?.scene ?? scene);
           for (const target of exported.value) {
             const texture = new THREE.DataTexture(
               target.pixels,
@@ -141,9 +110,9 @@ export function resolveCharacterSemanticSceneInputs(
             createdTextures.push(texture);
 
             for (const binding of target.bindings) {
-              const materials = findMaterialsMatchingLocator(scene, binding.materialLocator);
-              for (const material of materials) {
-                map.set(material, texture);
+              if (binding.textureSlot !== "baseColor") continue;
+              for (const [material, descriptor] of bindings) {
+                if (descriptor.bindingKey === binding.bindingKey) map.set(material, texture);
               }
             }
           }

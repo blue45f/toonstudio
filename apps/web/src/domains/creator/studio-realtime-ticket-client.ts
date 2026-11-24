@@ -8,6 +8,7 @@ import {
 } from "./studio-realtime-provider-runtime";
 
 import { withCsrfHeader } from "@/shared/lib/csrf";
+import { runOnlineBackgroundRequest } from "@/shared/lib/online-background-request";
 import { apiPath } from "@/platform/api";
 
 const DEFAULT_TICKET_TIMEOUT_MS = 8_000;
@@ -114,6 +115,10 @@ implements StudioRealtimeTicketIssuer {
     if (!request.success) {
       throw new Error("실시간 입장권 요청이 올바르지 않습니다.");
     }
+    return runOnlineBackgroundRequest(() => this.fetchTicket(request.data, signal), signal);
+  }
+
+  private async fetchTicket(request: StudioRealtimeTicketRequest, signal: AbortSignal): Promise<unknown> {
     const controller = new AbortController();
     const abort = () => controller.abort();
     signal.addEventListener("abort", abort, { once: true });
@@ -124,7 +129,7 @@ implements StudioRealtimeTicketIssuer {
         headers: withCsrfHeader({
           "Content-Type": "application/json",
         }),
-        body: JSON.stringify(request.data),
+        body: JSON.stringify(request),
         cache: "no-store",
         credentials: "include",
         redirect: "error",

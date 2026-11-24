@@ -13,10 +13,10 @@ import { pathToFileURL } from "node:url";
 
 import { chromium, type Browser, type Locator, type Page } from "playwright";
 
-
 import { STUDIO_BRUSH_LABELS } from "../apps/web/src/domains/creator/brush/studio-brush-product-model";
 
 import { clickStudioControlAfterReadiness, waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { verifyIntegratedMobileDock, type IntegratedMobileDockResult, type MobileSheetContractResult, type VerifyMobileModalSheetOptions } from "./lib/studio-launch-integrated-dock.mts";
 import { inspectStudioMobileWorkspaceMenuDormancy, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import { isStudioStaticPreviewReadinessUnavailable } from "./lib/studio-verify-preview-errors.mjs";
 import {
@@ -229,7 +229,10 @@ interface MobileRunResult {
   dotShot: string;
 }
 
-interface MobileDockLayoutResult {
+type MobileDockLayoutResult = DetailedMobileDockLayoutResult | (IntegratedMobileDockResult & { workspaceMenu: MobileWorkspaceMenuGateResult; errCount: number });
+
+interface DetailedMobileDockLayoutResult {
+  layout: "detailed";
   width: number;
   ok: boolean;
   workspaceToggleInitiallyVisible: boolean;
@@ -247,25 +250,6 @@ interface MobileDockLayoutResult {
   shot: string;
 }
 
-interface MobileSheetContractResult {
-  id: "pages" | "props" | "brushes";
-  ok: boolean;
-  opened: boolean;
-  initialFocusReady: boolean;
-  initialFocusTargetReady: boolean;
-  backgroundIsolated: boolean;
-  tabTrapReady: boolean;
-  handleTargetReady: boolean;
-  insufficientDragStayed: boolean;
-  backdropDismissed: boolean;
-  keyboardSnapReady: boolean;
-  tapSnapReady: boolean;
-  escapeFocusRestored: boolean;
-  thresholdDragDismissed: boolean;
-  dragFocusRestored: boolean;
-  noHorizontalOverflow: boolean;
-  shot: string;
-}
 
 const VERIFY_FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -277,6 +261,7 @@ const VERIFY_FOCUSABLE_SELECTOR = [
   "iframe",
   "audio[controls]",
   "video[controls]",
+  "summary",
   "[contenteditable='true']",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
@@ -549,40 +534,31 @@ async function runOne(browser: Browser, run: number, url: string): Promise<RunRe
     throw cause;
   }
 
-  // Stable shipped observables + reliable card count for delta (page cards)
   const pageCards = page.locator('[data-testid="studio-page-item"]');
   const shell = page.locator('[data-studio-logical-w]');
 
-  // 페이지 사이드바는 leftPanelOpen 기본 true 라 보통 열려 있다. add 버튼(testid)이 안 보일 때만
-  // 명시적 "페이지 목록 펼치기" 버튼으로 연다. (기존 `button:has-text("페이지")` 토글은 접기/닫기
-  // 버튼까지 매칭해 열린 패널을 되레 닫아 run2 가 fallback 을 타던 취약성이 있어 쓰지 않는다.)
-  const addBtn = page.locator('[data-testid="studio-add-page"]');
-  if (!(await addBtn.isVisible({ timeout: 1000 }).catch(() => false))) {
-    try {
-      const expand = page.locator('button[title="페이지 목록 펼치기"]').first();
-      if (await expand.isVisible({ timeout: 800 }).catch(() => false)) {
-        await expand.click({ timeout: 600 });
-        await page.waitForTimeout(300);
-        log(`run${run}: expanded pages panel`);
-      }
-    } catch {}
+  const addBtn = page.getByTestId("studio-add-page");
+  const pagesPane = page.locator("#studio-drawing-clarity-panel-pages");
+  if (await pagesPane.count() && !(await pagesPane.isVisible())) {
+    const position = page.locator('[data-studio-floating-context-strip="true"] button.studio-drawing-page-position');
+    await position.click();
+    await pagesPane.waitFor({ state: "visible" });
   }
-  // 항상 안정적인 testid 로 페이지 추가한다(모호한 텍스트 fallback 제거 — "패널 추가" 등 오클릭 방지).
+  // 작업 단계나 사용자가 별도로 접어 둔 목록은 해당 펼치기 버튼으로 연다.
+  if (!(await addBtn.isVisible())) {
+    const expand = page.locator('button[aria-label="접힌 페이지 목록 펼치기"]:visible, button[title="페이지 목록 펼치기"]:visible').first();
+    await expand.click({ timeout: 4000 });
+  }
   await addBtn.waitFor({ state: "visible", timeout: 4000 });
 
   const beforeCount = await pageCards.count().catch(() => 0);
   log(`run${run}: beforeCount=${beforeCount}`);
 
-  // Drive the add (shipped command) multiple times to guarantee observable page increase
   await addBtn.click({ timeout: 3000 });
-  log(`run${run}: clicked add button`);
-  await page.waitForTimeout(300);
+  await pageCards.nth(beforeCount).waitFor({ state: "attached", timeout: 3000 });
   await addBtn.click({ timeout: 2000 });
-  log(`run${run}: clicked add button (2nd)`);
-
-  // Wait for structural change (more page cards)
-  await page.waitForTimeout(800);
-  const afterCount = await pageCards.count().catch(() => beforeCount);
+  await pageCards.nth(beforeCount + 1).waitFor({ state: "attached", timeout: 3000 });
+  const afterCount = await pageCards.count();
   const pageDelta = afterCount - beforeCount;
   log(`run${run}: afterCount=${afterCount} pageDelta=${pageDelta}`);
 
@@ -721,6 +697,11 @@ async function runMobileDrawing(browser: Browser, url: string): Promise<MobileRu
     .locator('[data-studio-editor="true"][data-studio-mobile-immersive="true"]')
     .waitFor({ state: "attached", timeout: 3000 });
   const workspaceMenu = await verifyMobileWorkspaceMenuGateDormant(page, "mobile");
+  const projectTools = page.locator('[data-studio-drawing-project-tools="true"]');
+  if (await projectTools.isVisible()) {
+    await projectTools.getByRole("button", { name: "프로젝트 도구 닫기", exact: true }).click();
+    await projectTools.waitFor({ state: "hidden" });
+  }
   await dismissHydratedQuickStart(page);
 
   await openMobileDrawingSettings(page, dock);
@@ -863,18 +844,19 @@ async function runMobileDrawing(browser: Browser, url: string): Promise<MobileRu
   const stageBox = await stage.boundingBox();
   const stageBeforeDot = stageBox ? await stage.screenshot() : null;
   if (stageBox) {
-    await page.mouse.click(
-      stageBox.x + stageBox.width * 0.5,
-      stageBox.y + Math.min(stageBox.height * 0.35, 240)
-    );
+    await stage.click({ position: { x: stageBox.width * 0.5, y: Math.min(stageBox.height * 0.35, 240) } });
     await page.waitForTimeout(200);
   }
-  const dotRecorded = await dock.getByRole("button", { name: "되돌리기 · 실행취소", exact: true }).isEnabled();
   const stageAfterDot = stageBox ? await stage.screenshot() : null;
   const dotRendered = Boolean(
     stageBeforeDot && stageAfterDot && !stageBeforeDot.equals(stageAfterDot)
   );
   await page.screenshot({ path: dotShot, fullPage: false });
+  const editOptions = page.locator('button[aria-controls="studio-mobile-edit-options"]');
+  if (await editOptions.isVisible() && await editOptions.getAttribute("aria-expanded") === "false") await editOptions.click();
+  const undo = page.locator('button[data-studio-primary-action="undo"]');
+  await undo.waitFor({ state: "visible" });
+  const dotRecorded = await undo.isEnabled();
 
   const ok =
     immersive &&
@@ -961,45 +943,26 @@ async function waitForLocatorFocus(page: Page, locator: Locator): Promise<boolea
 }
 
 async function verifyTabTrap(page: Page, dialog: Locator): Promise<boolean> {
-  const count = await dialog.evaluate((element, selector) => {
-    const focusable = [...element.querySelectorAll<HTMLElement>(selector)].filter((candidate) => {
+  const controls = await dialog.evaluateHandle((element, selector) =>
+    [...element.querySelectorAll<HTMLElement>(selector)].filter(candidate => {
       const style = getComputedStyle(candidate);
-      return candidate.tabIndex >= 0 &&
-        candidate.getClientRects().length > 0 &&
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        !candidate.closest("[hidden], [inert], [aria-hidden='true']");
-    });
-    focusable.at(-1)?.focus();
-    return focusable.length;
-  }, VERIFY_FOCUSABLE_SELECTOR);
-  if (count === 0) return false;
-
-  await page.keyboard.press("Tab");
-  const wrappedForward = await dialog.evaluate((element, selector) => {
-    const focusable = [...element.querySelectorAll<HTMLElement>(selector)].filter((candidate) => {
-      const style = getComputedStyle(candidate);
-      return candidate.tabIndex >= 0 &&
-        candidate.getClientRects().length > 0 &&
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        !candidate.closest("[hidden], [inert], [aria-hidden='true']");
-    });
-    return document.activeElement === focusable[0];
-  }, VERIFY_FOCUSABLE_SELECTOR);
-  await page.keyboard.press("Shift+Tab");
-  const wrappedBackward = await dialog.evaluate((element, selector) => {
-    const focusable = [...element.querySelectorAll<HTMLElement>(selector)].filter((candidate) => {
-      const style = getComputedStyle(candidate);
-      return candidate.tabIndex >= 0 &&
-        candidate.getClientRects().length > 0 &&
-        style.display !== "none" &&
-        style.visibility !== "hidden" &&
-        !candidate.closest("[hidden], [inert], [aria-hidden='true']");
-    });
-    return document.activeElement === focusable.at(-1);
-  }, VERIFY_FOCUSABLE_SELECTOR);
-  return wrappedForward && wrappedBackward;
+      if (candidate.tabIndex < 0 || !candidate.getClientRects().length || style.display === "none" || style.visibility === "hidden" ||
+        candidate.closest("[hidden], [inert], [aria-hidden='true']") || candidate.matches(":disabled")) return false;
+      // 닫힌 details 안에서는 첫 summary와 그 자손만 실제 Tab 순서에 남는다.
+      for (let details = candidate.parentElement?.closest("details"); details; details = details.parentElement?.closest("details")) {
+        if (!details.open && !details.querySelector(":scope > summary")?.contains(candidate)) return false;
+      }
+      return true;
+    }), VERIFY_FOCUSABLE_SELECTOR);
+  try {
+    if (!await controls.evaluate(items => items.length)) return false;
+    await controls.evaluate(items => items.at(-1)?.focus());
+    await page.keyboard.press("Tab");
+    const wrappedForward = await controls.evaluate(items => document.activeElement === items[0]);
+    await page.keyboard.press("Shift+Tab");
+    const wrappedBackward = await controls.evaluate(items => document.activeElement === items.at(-1));
+    return wrappedForward && wrappedBackward;
+  } finally { await controls.dispose(); }
 }
 
 async function awaitSheetOpenSettle(page: Page, sheetId: string): Promise<void> {
@@ -1043,16 +1006,6 @@ async function dragSheetHandle(
   return true;
 }
 
-interface VerifyMobileModalSheetOptions {
-  dialog: Locator;
-  dock: Locator;
-  id: MobileSheetContractResult["id"];
-  initialFocus: Locator;
-  launcher: Locator;
-  open: () => Promise<void>;
-  page: Page;
-  shot: string;
-}
 
 async function verifyMobileModalSheet({
   dialog,
@@ -1264,6 +1217,65 @@ async function verifyMobileModalSheet({
   };
 }
 
+async function verifyDockBrushSheets(page: Page, dock: Locator, width: number, sheets: MobileSheetContractResult[]) {
+  const brushDockLauncher = dock.locator('[data-studio-primary-action="draw"]');
+  await openMobileDrawingSettings(page, dock);
+  const drawDialog = page.locator('[data-studio-sheet-id="draw"]');
+  await page.waitForFunction(() =>
+    document.querySelector('[data-studio-sheet-id="draw"]')
+      ?.getAttribute("data-studio-mobile-sheet") === "draw"
+  );
+  await page.waitForTimeout(240);
+  const drawHandleBox = await drawDialog
+    .locator('[data-studio-sheet-drag-handle="true"]')
+    .boundingBox();
+  const drawSheetCanvasInteractive =
+    await drawDialog.getAttribute("aria-modal") === "false" &&
+    await drawDialog.getAttribute("data-studio-mobile-sheet") === "draw" &&
+    await page.locator('[data-studio-modal-backdrop="true"]').count() === 0 &&
+    !await page.locator(".konvajs-content").first().evaluate(
+      (canvas) => Boolean(canvas.closest("[inert]")),
+    ) &&
+    !await dock.evaluate((toolbar) => Boolean(toolbar.closest("[inert]"))) &&
+    Boolean(drawHandleBox && drawHandleBox.width >= 44 && drawHandleBox.height >= 44);
+  const managerLauncher = drawDialog.getByRole("button", { name: "저장·관리", exact: true });
+  const brushesDialog = page.locator('[data-studio-sheet-id="brushes"]');
+  sheets.push(await verifyMobileModalSheet({
+    dialog: brushesDialog,
+    dock,
+    id: "brushes",
+    initialFocus: brushesDialog.getByRole("button", { name: "브러시 관리 닫기", exact: true }),
+    launcher: managerLauncher,
+    open: async () => {
+      await revealOverflowTarget(managerLauncher);
+      const managerHandle = await managerLauncher.elementHandle();
+      if (!managerHandle) throw new Error("brush manager launcher did not mount");
+      // `visible` alone includes opacity-only and clipped states. Require the shipped control to
+      // win actual hit testing so this remains a real touch-path check rather than a forced click.
+      await page.waitForFunction((control) => {
+        const bounds = control.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          bounds.left + bounds.width / 2,
+          bounds.top + bounds.height / 2,
+        );
+        return hit === control || control.contains(hit);
+      }, managerHandle, { timeout: 3000 });
+      await managerLauncher.click();
+    },
+    page,
+    shot: join(SCRATCH, `studio-launch-mobile-sheet-brushes-${width}.png`),
+  }));
+  await drawDialog.getByRole("button", { name: "브러시 설정 닫기", exact: true }).click();
+  await page.waitForFunction(() =>
+    document.querySelector('[data-studio-sheet-id="draw"]')
+      ?.getAttribute("data-studio-mobile-sheet") !== "draw"
+  );
+  const drawFocusRestored = await waitForLocatorFocus(page, brushDockLauncher);
+
+
+  return { drawSheetCanvasInteractive, drawFocusRestored };
+}
+
 async function runMobileDockLayout(
   browser: Browser,
   url: string,
@@ -1306,6 +1318,15 @@ async function runMobileDockLayout(
   );
   await dismissHydratedQuickStart(page);
   await waitForStudioDrawingReady(page);
+  if (await dock.getAttribute("data-studio-mobile-primary-layout") === "simple") {
+    try {
+      const current = await verifyIntegratedMobileDock({ page, dock, width, shot, directory: SCRATCH, verifyModalSheet: verifyMobileModalSheet,
+        verifyBrushSheets: verifyDockBrushSheets });
+      const ok = current.ok && workspaceMenu.ok && consoleErrors.length === 0;
+      log(`mobile-dock-${width} integrated: ${JSON.stringify({ ...current, workspaceMenu: workspaceMenu.ok, consoleErrors, ok })}`);
+      return { ...current, workspaceMenu, errCount: consoleErrors.length, ok };
+    } finally { await ctx.close(); }
+  }
   // 이 케이스는 상세 작업 도크의 고정 배치 계약을 검사한다. 기본 모바일 더보기는
   // mobile-top의 동일 크기·넘침·캔버스 좌표 기준으로 따로 검증한다.
   await showStudioProjectWindowTools(page);
@@ -1447,7 +1468,6 @@ async function runMobileDockLayout(
   // Playwright/WebKit-style mobile layouts. The explicit labels are also the product's stable
   // accessibility contract, so keep the launcher identity independent of clipping geometry.
   const pagesLauncher = secondaryToolbar.locator('button[aria-label="페이지 목록 열기"]');
-  const brushDockLauncher = dock.locator('[data-studio-primary-action="draw"]');
   const pagesDialog = page.locator('[data-studio-sheet-id="pages"]');
   const propsDialog = page.locator('[data-studio-sheet-id="props"]');
   const sheets: MobileSheetContractResult[] = [];
@@ -1479,60 +1499,9 @@ async function runMobileDockLayout(
     shot: join(SCRATCH, `studio-launch-mobile-sheet-props-${width}.png`),
   }));
 
-  await openMobileDrawingSettings(page, dock);
-  const drawDialog = page.locator('[data-studio-sheet-id="draw"]');
-  await page.waitForFunction(() =>
-    document.querySelector('[data-studio-sheet-id="draw"]')
-      ?.getAttribute("data-studio-mobile-sheet") === "draw"
-  );
-  await page.waitForTimeout(240);
-  const drawHandleBox = await drawDialog
-    .locator('[data-studio-sheet-drag-handle="true"]')
-    .boundingBox();
-  const drawSheetCanvasInteractive =
-    await drawDialog.getAttribute("aria-modal") === "false" &&
-    await drawDialog.getAttribute("data-studio-mobile-sheet") === "draw" &&
-    await page.locator('[data-studio-modal-backdrop="true"]').count() === 0 &&
-    !await page.locator(".konvajs-content").first().evaluate(
-      (canvas) => Boolean(canvas.closest("[inert]")),
-    ) &&
-    !await dock.evaluate((toolbar) => Boolean(toolbar.closest("[inert]"))) &&
-    Boolean(drawHandleBox && drawHandleBox.width >= 44 && drawHandleBox.height >= 44);
-  const managerLauncher = drawDialog.getByRole("button", { name: "저장·관리", exact: true });
-  const brushesDialog = page.locator('[data-studio-sheet-id="brushes"]');
-  sheets.push(await verifyMobileModalSheet({
-    dialog: brushesDialog,
-    dock,
-    id: "brushes",
-    initialFocus: brushesDialog.getByRole("button", { name: "브러시 관리 닫기", exact: true }),
-    launcher: managerLauncher,
-    open: async () => {
-      await revealOverflowTarget(managerLauncher);
-      const managerHandle = await managerLauncher.elementHandle();
-      if (!managerHandle) throw new Error("brush manager launcher did not mount");
-      // `visible` alone includes opacity-only and clipped states. Require the shipped control to
-      // win actual hit testing so this remains a real touch-path check rather than a forced click.
-      await page.waitForFunction((control) => {
-        const bounds = control.getBoundingClientRect();
-        const hit = document.elementFromPoint(
-          bounds.left + bounds.width / 2,
-          bounds.top + bounds.height / 2,
-        );
-        return hit === control || control.contains(hit);
-      }, managerHandle, { timeout: 3000 });
-      await managerLauncher.click();
-    },
-    page,
-    shot: join(SCRATCH, `studio-launch-mobile-sheet-brushes-${width}.png`),
-  }));
-  await drawDialog.getByRole("button", { name: "브러시 설정 닫기", exact: true }).click();
-  await page.waitForFunction(() =>
-    document.querySelector('[data-studio-sheet-id="draw"]')
-      ?.getAttribute("data-studio-mobile-sheet") !== "draw"
-  );
-  const drawFocusRestored = await waitForLocatorFocus(page, brushDockLauncher);
-
+  const { drawSheetCanvasInteractive, drawFocusRestored } = await verifyDockBrushSheets(page, dock, width, sheets);
   await page.screenshot({ path: shot, fullPage: false });
+
   const ok =
     workspaceToggleInitiallyVisible &&
     panelLauncherInitiallyVisible &&
@@ -1564,8 +1533,7 @@ async function runMobileDockLayout(
   }
   await ctx.close();
   return {
-    width,
-    ok,
+    layout: "detailed", width, ok,
     workspaceToggleInitiallyVisible,
     panelLauncherInitiallyVisible,
     primaryTargetCount,

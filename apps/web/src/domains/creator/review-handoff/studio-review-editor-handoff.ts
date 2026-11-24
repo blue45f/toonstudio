@@ -21,8 +21,7 @@ export class StudioReviewEditorError extends Error {
 export interface StudioReviewEditorSnapshot {
   readonly phase: "idle" | "checking" | "selected" | "failed" | "cancelled";
   readonly reason: StudioReviewEditorFailure | null;
-  /** Coordinates/regions can locate their exact page or explicitly named cut, never a nearby object. */
-  readonly extent: "page" | "cut" | "object" | null;
+  readonly extent: "page" | "cut" | "object" | "point" | null;
 }
 export const EMPTY_STUDIO_REVIEW_EDITOR: StudioReviewEditorSnapshot = Object.freeze({ phase: "idle", reason: null, extent: null });
 export interface StudioReviewEditorDependencies {
@@ -83,7 +82,13 @@ function targetFor(authority: StudioReviewEditorAuthority): StudioEditorCommentT
     throw new StudioReviewEditorError("unmapped");
   }
   const element = mapping.page.elements.find((item) => item.id === anchor.source?.elementId);
-  return { pageId: mapping.page.id,
+  // 검수 앵커는 원고 픽셀이고 편집기 선택은 페이지 너비·높이 대비 비율이다.
+  const point = (anchor.kind === "coordinate" || anchor.kind === "region")
+    && anchor.x !== undefined && anchor.y !== undefined
+    ? { x: (anchor.x + (anchor.width ?? 0) / 2) / mapping.page.width,
+        y: (anchor.y + (anchor.height ?? 0) / 2) / mapping.page.height }
+    : undefined;
+  return { pageId: mapping.page.id, ...(point ? { point } : {}),
     ...(anchor.source.frameId ? { elementId: anchor.source.frameId, frame: true } : {}),
     ...(element ? { elementId: element.id, master: element.origin === "master" } : {}) };
 }
@@ -167,7 +172,7 @@ export class StudioReviewEditorHandoff {
       assert();
       if (!this.deps.select(target, () => current(false))) throw new StudioReviewEditorError("navigation-rejected");
       if (!current(false)) throw new StudioReviewEditorError("context-changed");
-      this.publish({ phase: "selected", reason: null, extent: target.frame ? "cut" : target.elementId ? "object" : "page" });
+      this.publish({ phase: "selected", reason: null, extent: target.point ? "point" : target.frame ? "cut" : target.elementId ? "object" : "page" });
     } catch (error) {
       if (!this.disposed && epoch === this.epoch) this.publish({ phase: "failed", extent: null,
         reason: error instanceof StudioReviewEditorError ? error.reason : "unavailable" });

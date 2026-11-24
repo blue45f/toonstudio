@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { studioAutosaveKey, type StudioAutosavePayload } from "../studio-autosave";
+import { StudioAutosaveUnsupportedVersionError, studioAutosaveKey, type StudioAutosavePayload } from "../studio-autosave";
 import { StudioOfflineOwnerPreview } from "./StudioOfflineOwnerPreview";
 
 const io = vi.hoisted(() => ({
@@ -69,6 +69,24 @@ describe("오프라인 본인 원고 미리보기", () => {
     expect(screen.queryByRole("figure")).toBeNull();
     expect(io.write).not.toHaveBeenCalled();
     expect(io.clear).not.toHaveBeenCalled();
+  });
+
+  it.each(["opfs", "sqlite"])("%s 읽기가 실패해도 다른 영속본의 마지막 획을 표시한다", async (failed) => {
+    io.sqliteRead.mockResolvedValue(saved);
+    const unreadable = failed === "opfs" ? io.read : io.sqliteRead;
+    unreadable.mockRejectedValue(new Error("영속본 읽기 실패"));
+    render(<StudioOfflineOwnerPreview workId={workId} />);
+    const figure = await screen.findByRole("figure");
+    expect(figure.querySelector('[data-element-id="stroke-10"]')).toBeTruthy();
+    expect(io.write).not.toHaveBeenCalled();
+    expect(io.clear).not.toHaveBeenCalled();
+  });
+
+  it("한 저장소에서 더 새로운 문서 형식을 발견하면 다른 저장소의 예전 획을 표시하지 않는다", async () => {
+    io.sqliteRead.mockRejectedValue(new StudioAutosaveUnsupportedVersionError(8));
+    render(<StudioOfflineOwnerPreview workId={workId} />);
+    await waitFor(() => expect(io.dispose).toHaveBeenCalled());
+    expect(screen.queryByRole("figure")).toBeNull();
   });
 
   it("소유권 증거가 없거나 다른 원고용이면 저장소를 열지 않는다", () => {

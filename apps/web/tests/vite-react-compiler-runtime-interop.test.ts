@@ -34,6 +34,16 @@ afterEach(() => {
 });
 
 describe("Vite React Compiler development policy", () => {
+  it("자동 탐색을 꺼도 원고의 3D 편집기가 Fiber의 CommonJS 의존성을 불러온다", async () => {
+    vi.stubEnv("TOONSPECTRUM_VITE_DISABLE_OPTIMIZE_DEPS", "1");
+    const { optimizeDeps } = await load("serve");
+    expect(optimizeDeps?.noDiscovery).toBe(true);
+    expect(optimizeDeps?.include).toEqual(expect.arrayContaining([
+      "@react-three/fiber > zustand > use-sync-external-store/shim/with-selector.js",
+      "@react-three/fiber > scheduler",
+    ]));
+  });
+
   it("uses an explicit worktree cache directory only while serving", async () => {
     vi.stubEnv("TOONSPECTRUM_VITE_CACHE_DIR", ".vite-cache/worktree-a");
 

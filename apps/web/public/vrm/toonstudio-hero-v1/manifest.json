@@ -371,5 +371,19 @@
       "snapshot": "snapshots/chibi-mascot.png",
       "buildSeconds": 23.16
     }
+  ],
+  "editions": [
+    {
+      "modelId": "ts-vrm-hero-v1-academy-female-blazer",
+      "file": "academy-female-blazer.vrm",
+      "sourceId": "ts-vrm-hero-v1-academy-female",
+      "sourceFile": "academy-female.vrm",
+      "sourceSha256": "da7db2e857d85c1891728cc7743d23a03eafab80581ada0cba15ee9427085c15",
+      "sha256": "733b0cf6c28f95ba5763b605ee1acbf37e2450c07bdaf5c6833630b79859a7e3",
+      "byteSize": 4805044,
+      "license": "CC0-1.0",
+      "generator": "tools/blender/character_kit/build_haneul_paint_edition.py",
+      "changes": "학교 재킷의 밑색·음영 텍스처를 양말·셔츠·구두와 분리"
+    }
   ]
 }

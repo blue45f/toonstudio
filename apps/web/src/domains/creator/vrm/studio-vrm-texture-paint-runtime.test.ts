@@ -1616,6 +1616,7 @@ describe("Studio VRM texture-paint runtime", () => {
     const source = new THREE.Texture();
     const original = rgba(8, 8, [17, 23, 31, 255]);
     const painted = rgba(8, 8, [210, 90, 40, 255]);
+    painted.set(original.subarray(0, 4));
     const scene = new THREE.Group();
     const { material, mesh } = meshWithMap(source);
     const binding = stampStudioVrmTexturePaintMaterialLocator(material, 4);
@@ -1642,6 +1643,9 @@ describe("Studio VRM texture-paint runtime", () => {
     });
     expect(canvas.canvases[0]!.frame).toEqual(painted);
     expect(material.map).toBeInstanceOf(THREE.CanvasTexture);
+    const paintOnly = unwrap(runtime.exportPaintedTargets("paint-only"))[0]!.pixels;
+    expect(paintOnly.slice(0, 4)).toEqual(new Uint8ClampedArray(4));
+    expect(paintOnly.slice(4)).toEqual(painted.slice(4));
     expect(unwrap(runtime.exportPaintedTargets())[0]?.pixels).toEqual(painted);
 
     const conflicting = painted.slice();

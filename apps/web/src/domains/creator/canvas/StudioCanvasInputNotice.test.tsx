@@ -8,7 +8,7 @@ import { StudioCanvasInputNotice } from "./StudioCanvasInputNotice";
 const ready = {
   saving: false, documentReloadRequired: false, sourceHydrationPending: false, workHydrationFailed: false,
   collaborationDocumentUnavailable: false, initialRecoveryBlocked: false, autosaveCheckFailed: false,
-  hasAutosave: false, collaborationDocumentLocked: false, reviewLocked: false, follower: false,
+  hasAutosave: false, collaborationDocumentLocked: false, collaborationOperationSyncPending: false, reviewLocked: false, follower: false,
 };
 afterEach(cleanup);
 
@@ -23,6 +23,18 @@ describe("원고 입력 안내", () => {
     expect(studioCanvasInputBusy(studioCanvasInputStatus(ready))).toBe(false);
   });
 
+  it("편집자의 동기화 대기는 재연결을 안내하고 입력을 허용하면 안내를 닫는다", () => {
+    const syncing = studioCanvasInputStatus({ ...ready, collaborationDocumentLocked: true, collaborationOperationSyncPending: true });
+    const view = render(<StudioCanvasInputNotice id="notice" status={syncing} />);
+    expect(screen.getByRole("status").textContent).toContain("다시 연결해 주세요");
+    expect(screen.getByRole("status").textContent).not.toContain("편집 권한");
+    // 로컬 새 원고에서는 실시간 채널이 준비 중이어도 기기 작화를 허용한다.
+    const local = studioCanvasInputStatus({ ...ready, collaborationOperationSyncPending: true });
+    expect(local).toBe("ready");
+    view.rerender(<StudioCanvasInputNotice id="notice" status={local} />);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it.each([
     [{ sourceHydrationPending: true }, "loading", true],
     [{ sourceHydrationPending: true, workHydrationFailed: true }, "source-error", false],
@@ -31,6 +43,9 @@ describe("원고 입력 안내", () => {
     [{ initialRecoveryBlocked: true, autosaveCheckFailed: true }, "recovery-error", false],
     [{ collaborationDocumentUnavailable: true }, "unavailable", false],
     [{ collaborationDocumentLocked: true }, "read-only", false],
+    [{ collaborationDocumentLocked: true, collaborationOperationSyncPending: true }, "syncing", true],
+    [{ collaborationDocumentLocked: true, collaborationOperationSyncPending: true, reviewLocked: true }, "review", false],
+    [{ collaborationDocumentLocked: true, reviewLocked: true }, "read-only", false],
     [{ reviewLocked: true }, "review", false], [{ follower: true }, "follower", false],
     [{ documentReloadRequired: true, saving: true }, "reload", false],
   ] as const)("%o 입력 상태에서는 %s 사유를 설명한다", (conditions, expected, busy) => {

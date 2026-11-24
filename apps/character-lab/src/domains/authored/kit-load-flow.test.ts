@@ -47,12 +47,12 @@ describe("authored/kit-load-flow — manifest", () => {
     expect(defaultKitManifestUrl("/custom/kit/")).toBe("/custom/kit/kit.json");
   });
 
-  it("2판 인물 레시피는 별도 원장을 사용하고 지정한 SHA도 그 원장에서 대조한다", async () => {
-    const url = `${KIT_ASSET_ROOT}/kit-portrait.json`;
-    const portrait = kitManifestJson({ kitVersion: 2 });
-    const { port, calls } = portOf({ [MANIFEST_URL]: kitManifestJson() }, { [url]: encode(portrait) });
-    const result = await loadKitManifestFlow(port, { ...REQUEST, kitVersion: 2, manifestSha256: OBSERVED }, { sha256: sha256Of(OBSERVED), now: 1 });
-    expect(result.ok && result.manifest.kitVersion).toBe(2);
+  it.each([[2, "kit-portrait.json"], [3, "kit-swept.json"]] as const)("%i판 인물 레시피는 해당 판의 원장에서 SHA를 대조한다", async (kitVersion, filename) => {
+    const url = `${KIT_ASSET_ROOT}/${filename}`;
+    const manifest = kitManifestJson({ kitVersion });
+    const { port, calls } = portOf({ [MANIFEST_URL]: kitManifestJson() }, { [url]: encode(manifest) });
+    const result = await loadKitManifestFlow(port, { ...REQUEST, kitVersion, manifestSha256: OBSERVED }, { sha256: sha256Of(OBSERVED), now: 1 });
+    expect(result.ok && result.manifest.kitVersion).toBe(kitVersion);
     expect(calls).toEqual({ json: [], bytes: [url] });
     const stale = await loadKitManifestFlow(port, { ...REQUEST, manifestSha256: OBSERVED }, { sha256: sha256Of(OBSERVED), now: 1 });
     expect(!stale.ok && stale.failure.code).toBe("kit-manifest-fetch-failed");

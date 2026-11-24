@@ -146,6 +146,9 @@ overrides:
   # 브라우저 설치 경로이고 Lighthouse CI 는 설치된 Chrome 을 쓴다. 취약 코드를 호출 즉시 실패하는 대체본으로 바꾼다.
   # 업스트림이 수정 릴리스를 내면 이 줄과 patches/extract-zip-disabled 를 지우고 레지스트리 버전으로 되돌린다.
   'extract-zip@<=2.0.1': 'file:patches/extract-zip-disabled'
+  # 2026-11-24: p5.brush -> p5(2.3.1) 전이 의존성 i18next@19.9.2 의 deepExtend 내장 객체 오염 DoS(GHSA-6jcc-5g8w-32mx)를
+  # 첫 공식 수정 릴리스(MIT, 무의존, Node 22 강제 없음)로 고정한다.
+  'i18next@<26.3.4': 26.3.4
 
 # eslint-plugin-jsx-a11y 6.10.2 is the current release and has not yet widened
 # its peer range for ESLint 10. The repository executes the plugin under

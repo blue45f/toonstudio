@@ -4,8 +4,17 @@ import { collectStudioOfflineDrawingUrls, DRAWING_ROOTS } from "./studio-service
 import type { StudioViteManifest } from "./studio-service-worker-precache-plan";
 
 const names = DRAWING_ROOTS;
+const skiaKey = "../../packages/studio-engine-skia/src/index.ts";
+const loader = "../../packages/studio-engine-skia/src/document-loader.ts";
+const kit = "../../node_modules/canvaskit-wasm/bin/canvaskit";
 const manifest: StudioViteManifest = {
   ...Object.fromEntries(names.map((name) => [name, { name, file: `assets/${name}-hash.js`, imports: ["shared"] }])),
+  [skiaKey]: { name: "src", file: "assets/skia.js", dynamicImports: [loader, kit + ".js", kit + ".wasm?url"] },
+  unrelated: { name: "src", file: "assets/unrelated-engine.js" },
+  [loader]: { file: "assets/document-loader.js" },
+  [kit + ".js"]: { file: "assets/kit.js" },
+  [kit + ".wasm?url"]: { file: "assets/kit-url.js" },
+  [kit + ".wasm"]: { file: "assets/kit.wasm" },
   shared: { file: "assets/shared-hash.js", css: ["assets/shared-hash.css"], dynamicImports: ["heavy"] },
   heavy: { file: "assets/unrelated-heavy.js" },
 };
@@ -18,6 +27,13 @@ describe("explicit offline drawing pack", () => {
     expect(urls).toContain("/assets/studio-capture-readiness-hash.js");
     expect(urls).toContain("/assets/studio-project-file-hash.js");
     expect(urls).toContain("/assets/studio-pages-history-durable-runtime-hash.js");
+    expect(urls).toEqual(expect.arrayContaining([
+      "/assets/StudioPageThumbnails-hash.js", "/assets/studio-lowlatency-predictor-hash.js",
+      "/assets/studio-procedural-foley-audio-hash.js", "/assets/StudioDrawingClarityExport-hash.js",
+      "/assets/studio-skia-document-export-hash.js", "/assets/studio-unified-preflight-contract-hash.js",
+      "/assets/skia.js", "/assets/document-loader.js", "/assets/kit.js", "/assets/kit-url.js", "/assets/kit.wasm",
+    ]));
+    expect(urls).not.toContain("/assets/unrelated-engine.js");
     expect(urls).toContain("/assets/studio-local-database.worker-hash.js");
     expect(urls).toContain("/assets/sqlite3-hash.wasm");
     expect(urls.some((url) => url.includes("unrelated-heavy"))).toBe(false);

@@ -156,6 +156,42 @@ describe("SiteBackgroundMusicPlayer", () => {
     vi.restoreAllMocks();
   });
 
+  it("오프라인 첫 진입에서 재생 설정을 보존하고 복구 후 게시 목록을 한 번 읽는다", async () => {
+    const online = vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(false);
+    const fetch = mockManifest();
+    mocks.enabled = true;
+    const previous = renderAt("/studio");
+    previous.unmount();
+    renderAt("/studio");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mocks.setEnabled).not.toHaveBeenCalledWith(false);
+    online.mockReturnValue(true);
+    act(() => window.dispatchEvent(new Event("online")));
+    await waitFor(() => expect(mocks.register).toHaveBeenCalled(), SLOW_MACHINE);
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(mocks.setEnabled).not.toHaveBeenCalledWith(false);
+    expect(mocks.resumeAudio).not.toHaveBeenCalled();
+  });
+
+  it("목록 요청 중 실제로 연결이 끊기면 재생 설정을 보존하고 다음 연결에서 재개한다", async () => {
+    const online = vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(true);
+    const fetch = mockManifest();
+    fetch.mockImplementationOnce(async () => {
+      online.mockReturnValue(false);
+      throw new TypeError("Failed to fetch");
+    });
+    mocks.enabled = true;
+    renderAt("/studio");
+    await act(async () => {});
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(mocks.setEnabled).not.toHaveBeenCalledWith(false);
+    online.mockReturnValue(true);
+    act(() => window.dispatchEvent(new Event("online")));
+    await waitFor(() => expect(mocks.register).toHaveBeenCalled(), SLOW_MACHINE);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(mocks.setEnabled).not.toHaveBeenCalledWith(false);
+  });
+
   it("게시된 음악이 켜지고 음소거되지 않았을 때만 공통 메뉴에 설정 켜짐을 알린다", async () => {
     const view = renderAt("/ranking");
     await catalogueReady();

@@ -3,6 +3,7 @@ import { createStudioReviewSpatialAnchor, validateStudioReviewSpatialAnchor, typ
   type StudioReviewSpatialSelection } from "@toonstudio/studio-project-model";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioReviewImageViewport } from "./StudioReviewImageViewport";
+import { initialPlacement, reviewPlacementPageKey, type StudioReviewPlacementFields, type StudioReviewPlacementMode } from "./studio-review-placement-draft";
 import { normalizeStudioReviewPenStroke, serializeStudioReviewPenStrokes, studioReviewPenStrokeBounds,
   studioReviewPenDefaultWidth, STUDIO_REVIEW_PEN_COLORS, STUDIO_REVIEW_PEN_DEFAULT_COLOR, type StudioReviewPenPoint, type StudioReviewPenStroke } from "./studio-review-pen-model";
 
@@ -19,8 +20,9 @@ export interface StudioReviewAnnotationControl {
   readonly onSelect: (selection: StudioReviewAnnotationSelection | null) => void;
   readonly disabled: boolean;
   readonly commentInputId?: string;
+  readonly placementDrafts?: ReadonlyMap<string, StudioReviewPlacementFields>;
+  readonly onPlacementChange?: (key: string, fields: StudioReviewPlacementFields) => void;
 }
-type Mode = StudioReviewSpatialSelection["kind"] | "pen";
 export interface StudioReviewAnnotationNote { readonly id: string; readonly body: string; readonly anchor: ReviewAnchor; readonly strokes?: readonly StudioReviewPenStroke[] }
 const controlClass = "min-h-11 rounded-lg border border-line bg-card px-3 text-sm disabled:opacity-50";
 
@@ -47,8 +49,16 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
   readonly notes?: readonly StudioReviewAnnotationNote[]; readonly editable?: boolean;
 }) {
   const bt = useBilingual("StudioReviewSpatialAnnotation"), id = useId();
-  const [mode, setMode] = useState<Mode>("page"), [frameId, setFrameId] = useState(""), [elementId, setElementId] = useState("");
-  const [numbers, setNumbers] = useState({ x: "50", y: "50", width: "10", height: "10" });
+  const [localFields, setLocalFields] = useState(initialPlacement);
+  const key = reviewPlacementPageKey(mapping, sha256);
+  const fields = control.placementDrafts ? control.placementDrafts.get(key) ?? initialPlacement : localFields;
+  const { mode, frameId, elementId, numbers } = fields;
+  const changeFields = (patch: Partial<StudioReviewPlacementFields>) => {
+    clear();
+    const next = { ...fields, ...patch };
+    if (control.onPlacementChange) control.onPlacementChange(key, next);
+    else setLocalFields(next);
+  };
   const [start, setStart] = useState<{ x: number; y: number; pointerId: number } | null>(null);
   const [error, setError] = useState("");
   const [highlighted, setHighlighted] = useState<ReviewAnchor | null>(null);
@@ -177,20 +187,20 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
     {editable ? <fieldset disabled={control.disabled} className="mt-3 space-y-3">
       <legend className="font-semibold">{bt("의견을 남길 위치", "Where to leave a note")}</legend>
       <label className="flex flex-wrap items-center gap-2" htmlFor={`${id}-mode`}>{bt("위치 방식", "Placement")}
-        <select id={`${id}-mode`} className={controlClass} value={mode} onChange={(event) => { clear(); setPanning(false); setMode(event.target.value as Mode); }}>
+        <select id={`${id}-mode`} className={controlClass} value={mode} onChange={(event) => { setPanning(false); changeFields({ mode: event.target.value as StudioReviewPlacementMode }); }}>
           <option value="page">{bt("이 페이지", "This page")}</option><option value="panel">{bt("컷", "Cut")}</option>
           <option value="object">{bt("요소", "Object")}</option><option value="coordinate">{bt("점", "Point")}</option><option value="region">{bt("영역", "Region")}</option>
           <option value="pen">{bt("펜(빨간펜)", "Pen (red pen)")}</option>
         </select>
       </label>
       {mode === "panel" || mode === "coordinate" || mode === "region" || mode === "pen" ? <label className="flex flex-wrap items-center gap-2" htmlFor={`${id}-frame`}>{bt("연결할 컷", "Cut to attach")}
-        <select id={`${id}-frame`} className={controlClass} value={frameId} onChange={(event) => { clear(); setFrameId(event.target.value); }}>
+        <select id={`${id}-frame`} className={controlClass} value={frameId} onChange={(event) => changeFields({ frameId: event.target.value })}>
           <option value="">{mode === "panel" ? bt("컷을 선택해 주세요", "Choose a cut") : bt("페이지 전체 범위", "Anywhere on this page")}</option>
           {page.frames.map((value, index) => <option key={value.id} value={value.id}>{bt(`컷 ${index + 1}`, `Cut ${index + 1}`)}</option>)}
         </select>
       </label> : null}
       {mode === "object" ? <label className="flex flex-wrap items-center gap-2" htmlFor={`${id}-element`}>{bt("연결할 요소", "Object to attach")}
-        <select id={`${id}-element`} className={controlClass} value={elementId} onChange={(event) => { clear(); setElementId(event.target.value); }}>
+        <select id={`${id}-element`} className={controlClass} value={elementId} onChange={(event) => changeFields({ elementId: event.target.value })}>
           <option value="">{bt("요소를 선택해 주세요", "Choose an object")}</option>
           {page.elements.map((value, index) => <option key={value.id} value={value.id}>{bt(`요소 ${index + 1}`, `Object ${index + 1}`)}{value.origin === "master" ? bt(" · 공통 요소", " · Master object") : ""}</option>)}
         </select>
@@ -200,7 +210,7 @@ export function StudioReviewSpatialAnnotation({ mapping, sha256, expiresAt, cont
         <div className="flex flex-wrap gap-3">{(["x", "y", ...(mode === "region" ? ["width", "height"] : [])] as const).map((key) => <label key={key} className="text-sm">
           {key === "x" ? bt("가로 위치 (%)", "Horizontal position (%)") : key === "y" ? bt("세로 위치 (%)", "Vertical position (%)") : key === "width" ? bt("너비 (%)", "Width (%)") : bt("높이 (%)", "Height (%)")}
           <input type="number" inputMode="decimal" min="0" max="100" step="0.1" className={`${controlClass} ml-2 w-24`} value={numbers[key as keyof typeof numbers]}
-            onChange={(event) => { clear(); setNumbers((value) => ({ ...value, [key]: event.target.value })); }} />
+            onChange={(event) => changeFields({ numbers: { ...numbers, [key]: event.target.value } })} />
         </label>)}</div>
       </> : null}
       {mode === "pen" ? <>

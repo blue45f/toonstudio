@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import {
-  KIT_BASE_IDS, KIT_DEFAULT_ID, KIT_MANIFEST_FILENAME, KIT_PORTRAIT_VERSION, KIT_V2_SCHEMA_ID,
+  KIT_BASE_IDS, KIT_DEFAULT_ID, KIT_MANIFEST_FILENAME, KIT_PORTRAIT_VERSION, KIT_SWEPT_HAIR_VERSION, KIT_V2_SCHEMA_ID,
   kitManifestFilename, kitManifestSchema, kitManifestV2Schema,
 } from "../../apps/character-lab/src/contracts/index.ts";
 
@@ -23,8 +23,8 @@ function declaredFiles(manifest) {
 }
 
 /** 같은 폴더에 출하한 등록 판만 허용하며, 다른 판의 파일도 무결성 검사를 통과해야 한다. */
-function readCompanionManifest(source, report) {
-  const filename = kitManifestFilename(KIT_DEFAULT_ID, KIT_PORTRAIT_VERSION);
+function readCompanionManifest(source, report, version) {
+  const filename = kitManifestFilename(KIT_DEFAULT_ID, version);
   const bytes = source.read(filename);
   if (bytes === null) return null;
   try {
@@ -32,7 +32,7 @@ function readCompanionManifest(source, report) {
     const schema = raw?.schema === KIT_V2_SCHEMA_ID ? kitManifestV2Schema : kitManifestSchema;
     const parsed = schema.safeParse(raw);
     if (!parsed.success) throw new Error(parsed.error.issues.slice(0, 5).map((issue) => issue.message).join("; "));
-    if (parsed.data.kitId !== KIT_DEFAULT_ID || parsed.data.kitVersion !== KIT_PORTRAIT_VERSION) {
+    if (parsed.data.kitId !== KIT_DEFAULT_ID || parsed.data.kitVersion !== version) {
       throw new Error("등록된 키트 ID·판 번호와 다릅니다.");
     }
     return { filename, manifest: parsed.data };
@@ -45,8 +45,13 @@ function readCompanionManifest(source, report) {
 export function checkKitDirectoryFiles(source, manifest, report) {
   const referenced = new Set(declaredFiles(manifest).map((file) => file.path));
   const known = new Set([KIT_MANIFEST_FILENAME, manifest.provenance.noticeFile]);
-  const companion = readCompanionManifest(source, report);
-  if (companion !== null) {
+  for (const version of [KIT_PORTRAIT_VERSION, KIT_SWEPT_HAIR_VERSION]) {
+    const companion = readCompanionManifest(source, report, version);
+    if (companion === null) continue;
+    const portraitManifest = kitManifestFilename(KIT_DEFAULT_ID, KIT_PORTRAIT_VERSION);
+    if (version === KIT_SWEPT_HAIR_VERSION && !known.has(portraitManifest)) {
+      report.error("V2", portraitManifest, "기존 2판 레시피를 다시 열 수 있도록 이전 판 명세를 함께 출하해야 합니다.");
+    }
     known.add(companion.filename);
     known.add(companion.manifest.provenance.noticeFile);
     if (source.read(companion.manifest.provenance.noticeFile) === null) {

@@ -18,7 +18,7 @@ describe("준비 대기 획의 실제 pointerup 배선", () => {
       points: [10, 20, 30, 40], pressures: [0.2, 0.8], tiltXs: [1, 2], tiltYs: [3, 4],
       sampleTimeOffsets: [0, 20], stroke: "#112233", strokeWidth: 4,
     };
-    const scope = { documentKey: "doc", pageId: "page", generation: 1 };
+    const scope = { documentKey: "doc", pageId: "page", generation: 1, accessGeneration: 0 };
     const drawingRef = { current: stroke as DrawEl | null };
     const admit = vi.fn(() => false);
     const queue = new StudioPendingStrokeAdmissionQueue({ currentScope: () => scope, activeStrokeId: () => drawingRef.current?.id ?? null });

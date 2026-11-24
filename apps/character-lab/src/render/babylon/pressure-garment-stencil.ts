@@ -99,7 +99,7 @@ export class PressureGarmentStencilController {
     this.watchNewMeshes();
     if (!enabled) return;
     const markGarment = rig.kind === "kit";
-    const markFacial = rig.kind === "kit" && options.markFacial === true;
+    const markFacial = rig.kind !== "procedural" && options.markFacial === true;
     const markHair = options.markHairInline === true;
     if (!markGarment && !markFacial && !markHair) return;
     for (const part of rig.parts) {

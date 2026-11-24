@@ -19,12 +19,14 @@ import { studioReviewRosterName, useStudioReviewRoster } from "./use-studio-revi
 import { normalizeStudioReviewAssignees, studioReviewAssigneesAllowed, studioReviewDueAt } from "./studio-review-comment-assignment";
 import { verifyStudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewVerification } from "./studio-virtual-space-review-invitation";
 import type { StudioVirtualSpaceReviewPreview } from "./studio-virtual-space-review-preview";
+import { parseStudioVirtualSpaceReviewSubject } from "./studio-virtual-space-review-subject";
 import { StudioPinnedReviewPreview } from "./StudioPinnedReviewPreview";
 import { serializeStudioReviewPenStrokes } from "./studio-review-pen-model";
 import { StudioPinnedReviewWorkflow } from "./StudioPinnedReviewWorkflow";
 import { StudioPinnedReviewComparison } from "./StudioPinnedReviewComparison";
 import { StudioReviewVoiceNotes } from "./StudioReviewVoiceNotes";
 import { StudioReviewAnnotationLocation, type StudioReviewAnnotationSelection } from "./StudioReviewSpatialAnnotation";
+import { reviewPlacementPageKey, type StudioReviewPlacementFields } from "./studio-review-placement-draft";
 
 const StudioReviewResolution = lazy(async () => ({ default: (await import("../review-resolution/StudioReviewResolution")).StudioReviewResolution }));
 const StudioReviewExport = lazy(async () => ({ default: (await import("../review-export/StudioReviewExport")).StudioReviewExport }));
@@ -46,25 +48,27 @@ export function StudioPinnedReviewPanel({
 }) {
   const session = useSession();
   const actorId = session.data?.user.id ?? null;
+  const pinned = parseStudioVirtualSpaceReviewSubject(subject);
   // Actor changes remove private pixels/notes during the same render and give
   // drafts, idempotency identities and pending writes a separate owner.
   return <PinnedReviewForActor
-    key={JSON.stringify([actorId, subject])}
+    key={JSON.stringify([actorId, pinned])}
     actorId={actorId}
-    subject={subject}
+    subject={pinned}
     resolutionRequest={resolutionRequest}
     showShareTools={showShareTools}
     showExportTools={showExportTools}
   />;
 }
 
-function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTools, showExportTools }: {
+function PinnedReviewForActor({ actorId, subject: initialSubject, resolutionRequest, showShareTools, showExportTools }: {
   readonly actorId: string | null;
   readonly subject: StudioVirtualSpaceReviewSubject | null;
   readonly resolutionRequest: StudioReviewResolutionRequest | null;
   readonly showShareTools: boolean;
   readonly showExportTools: boolean;
 }) {
+  const [subject] = useState(initialSubject);
   const bt = useBilingual("StudioPinnedReviewPanel");
   const inputId = useId();
   const [noteView, setNoteView] = useState<ReviewNoteView>("all");
@@ -72,6 +76,8 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [result, setResult] = useState<StudioVirtualSpaceReviewVerification | null>(null);
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
   const [body, setBody] = useState("");
   const [severity, setSeverity] = useState<"note" | "recommended" | "required">("note");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
@@ -81,11 +87,15 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
   const [annotation, setAnnotation] = useState<StudioReviewAnnotationSelection | null>(null);
   const [needsLocation, setNeedsLocation] = useState(false);
   const [loadedPreviews, setLoadedPreviews] = useState<readonly StudioVirtualSpaceReviewPreview[]>([]);
+  const [placementDrafts, setPlacementDrafts] = useState<ReadonlyMap<string, StudioReviewPlacementFields>>(() => new Map());
+  const [previewCursor, setPreviewCursor] = useState<string | null>(null);
+  const suspendedAnchor = useRef<Pick<StudioReviewAnnotationSelection, "anchor" | "sha256"> | null>(null);
   const roster = useStudioReviewRoster({ actorId, workId: subject?.workId ?? null, enabled: result?.ok === true,
     autoStart: result?.ok === true && result.review.comments.some((comment) => Boolean(comment.assigneeIds?.length)) });
   const annotationRef = useRef<StudioReviewAnnotationSelection | null>(null);
   const annotationGeneration = useRef(0);
   const selectAnnotation = useCallback((next: StudioReviewAnnotationSelection | null) => {
+    suspendedAnchor.current = null;
     const prior = annotationRef.current;
     if (JSON.stringify(prior?.anchor ?? null) !== JSON.stringify(next?.anchor ?? null) || prior?.sha256 !== next?.sha256) ++annotationGeneration.current;
     if (prior && !next) setNeedsLocation(true);
@@ -95,11 +105,39 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
   const generation = useRef(0);
   const readGeneration = useRef(0);
   const invalidate = useCallback(() => { ++generation.current; }, []);
+  const forgetPlacement = useCallback(() => {
+    suspendedAnchor.current = null;
+    setPlacementDrafts((prior) => prior.size ? new Map() : prior);
+    setPreviewCursor(null);
+  }, []);
+  const suspendPlacement = useCallback(() => {
+    const selected = annotationRef.current;
+    // 서명 URL·원고 매핑·펜 픽셀·쓰기 권한을 보관하지 않는다. 진행 중인 저장도 자동 재개하지 않는다.
+    const intent = selected && !busyRef.current && !selected.strokes?.length
+      ? { sha256: selected.sha256, anchor: selected.anchor } : suspendedAnchor.current;
+    setLoadedPreviews([]);
+    selectAnnotation(null);
+    suspendedAnchor.current = intent;
+  }, [selectAnnotation]);
+  const receivePreviews = useCallback((previews: readonly StudioVirtualSpaceReviewPreview[]) => {
+    setLoadedPreviews(previews);
+    const keys = new Set(previews.flatMap((page) => page.mapping.status === "mapped" ? [reviewPlacementPageKey(page.mapping, page.sha256)] : []));
+    setPlacementDrafts((prior) => [...prior.keys()].every((key) => keys.has(key)) ? prior : new Map([...prior].filter(([key]) => keys.has(key))));
+    const intent = suspendedAnchor.current;
+    if (!intent) return;
+    suspendedAnchor.current = null;
+    const page = previews.find((item) => item.sha256 === intent.sha256 && item.ordinal === intent.anchor.source.pageOrdinal);
+    if (page && page.expiresAt > Date.now() && page.mapping.status === "mapped" && validateStudioReviewSpatialAnchor(page.mapping, intent.anchor)) {
+      selectAnnotation({ ...intent, mapping: page.mapping, expiresAt: page.expiresAt });
+    }
+  }, [selectAnnotation]);
   // The mounted view relinquishes its pending UI state immediately. Old async
   // finally blocks cannot release a newer action after this generation changes.
-  const invalidateActiveView = useCallback(() => {
-    invalidate(); setBusy(false); setLoading(false); selectAnnotation(null);
-  }, [invalidate, selectAnnotation]);
+  const invalidateActiveView = useCallback((suspend = false) => {
+    invalidate(); setBusy(false); setLoading(false);
+    if (suspend) suspendPlacement();
+    else { forgetPlacement(); setLoadedPreviews([]); selectAnnotation(null); }
+  }, [forgetPlacement, invalidate, selectAnnotation, suspendPlacement]);
   // Invalidate at unmount commit, before a delayed authority promise can issue a
   // write under the next actor while passive effect cleanup is still pending.
   useLayoutEffect(() => invalidate, [invalidate]);
@@ -108,25 +146,27 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
     const own = ++readGeneration.current, scope = generation.current;
     const sessionRevision = getAuthSessionRevision();
     if (document.visibilityState === "hidden") return;
-    if (!retainCurrent) { setResult(null); selectAnnotation(null); }
+    if (!retainCurrent) { setResult(null); suspendPlacement(); }
     setLoading(true);
     const next = !actorId ? { ok: false as const, reason: "access-denied" as const }
       : subject ? await verifyStudioVirtualSpaceReviewSubject(subject, "view") : { ok: false as const, reason: "invalid-subject" as const };
     if (scope !== generation.current || own !== readGeneration.current) return;
     if (sessionRevision !== getAuthSessionRevision()) { setResult(null); setLoading(false); return; }
-    if (!next.ok || !next.project.access.comment || !["open", "changes-requested"].includes(next.review.status)) selectAnnotation(null);
+    if (!next.ok || next.expiresAt <= Date.now() || !next.project.access.comment || !["open", "changes-requested"].includes(next.review.status)) {
+      forgetPlacement(); selectAnnotation(null);
+    }
     if (next.ok && attempted.current && next.review.comments.some((comment) => comment.id === attempted.current?.input.id)) {
-      attempted.current = null; setBody(""); setAssigneeIds([]); setDue(""); selectAnnotation(null); setNeedsLocation(false);
+      attempted.current = null; suspendedAnchor.current = null; setBody(""); setAssigneeIds([]); setDue(""); selectAnnotation(null); setNeedsLocation(false);
       setNotice(translateBilingualValueForActiveLocale("StudioPinnedReviewPanel", "목록 재확인 결과 이 검수 버전에 의견이 이미 저장된 것을 확인했어요.", "Verified on refresh: your note was already saved to this review version."));
     }
     setResult(next.ok && next.expiresAt <= Date.now() ? { ok: false, reason: "unavailable" } : next); setLoading(false);
-  }, [actorId, subject, selectAnnotation]);
+  }, [actorId, forgetPlacement, selectAnnotation, subject, suspendPlacement]);
   useEffect(() => {
     setBody(""); setSeverity("note"); setAssigneeIds([]); setDue(""); setNotice(""); attempted.current = null;
     void refresh();
     const focus = () => { void refresh(); };
     const visibility = () => {
-      if (document.visibilityState === "hidden") { invalidateActiveView(); setResult(null); }
+      if (document.visibilityState === "hidden") { invalidateActiveView(true); setResult(null); }
       else void refresh();
     };
     const sessionPublished = (session: Session) => {
@@ -145,9 +185,9 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
     if (!result?.ok) return;
     const ttl = result.expiresAt - Date.now();
     const renew = setTimeout(() => { void refresh(true); }, Math.max(0, ttl - 5_000));
-    const expiry = setTimeout(() => { selectAnnotation(null); setResult(null); }, Math.max(0, ttl));
+    const expiry = setTimeout(() => { forgetPlacement(); selectAnnotation(null); setLoadedPreviews([]); setResult(null); }, Math.max(0, ttl));
     return () => { clearTimeout(renew); clearTimeout(expiry); };
-  }, [result, refresh, selectAnnotation]);
+  }, [result, refresh, selectAnnotation, forgetPlacement]);
   const save = async () => {
     if (!actorId || !subject || !body.trim() || busy || needsLocation) return;
     const own = generation.current, text = body.trim(), sessionRevision = getAuthSessionRevision();
@@ -159,7 +199,7 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       const verified = await verifyStudioVirtualSpaceReviewSubject(subject, "view");
       if (own !== generation.current || sessionRevision !== getAuthSessionRevision() || selectionOwn !== annotationGeneration.current) return;
       if (!verified.ok || !verified.project.access.comment || !["open", "changes-requested"].includes(verified.review.status)) {
-        selectAnnotation(null); setResult(verified); setNotice(bt("현재 검수본에 의견을 남길 권한이 없어요.", "You cannot comment on this review now.")); return;
+        forgetPlacement(); selectAnnotation(null); setResult(verified); setNotice(bt("현재 검수본에 의견을 남길 권한이 없어요.", "You cannot comment on this review now.")); return;
       }
       if (assigned.length) {
         try {
@@ -243,9 +283,11 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       <details className="mt-2 text-xs"><summary className="flex min-h-11 cursor-pointer items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("버전 식별 정보", "Version identity")}</summary><code className="break-all">{result.subject.rootGraphHash}</code></details>
       <StudioPinnedReviewPreview key={JSON.stringify(result.subject)} subject={subject ?? result.subject} onRevoked={() => { invalidateActiveView(); setResult({ ok: false, reason: "access-denied" }); }}
         notes={result.review.comments}
-        onPreviewsChange={setLoadedPreviews}
+        initialCursor={previewCursor} onCursorChange={(cursor) => { forgetPlacement(); setPreviewCursor(cursor); }}
+        onPreviewsChange={receivePreviews}
         annotation={result.project.access.comment && ["open", "changes-requested"].includes(result.review.status)
-          ? { selected: annotation, onSelect: selectAnnotation, disabled: busy, commentInputId: inputId } : undefined} />
+          ? { selected: annotation, onSelect: selectAnnotation, disabled: busy, commentInputId: inputId, placementDrafts,
+              onPlacementChange: (key, fields) => setPlacementDrafts((prior) => new Map(prior).set(key, fields)) } : undefined} />
       <StudioPinnedReviewComparison subject={subject ?? result.subject} title={result.review.title}
         onRevoked={() => { invalidateActiveView(); setResult({ ok: false, reason: "access-denied" }); }} />
       <StudioReviewVoiceNotes subject={result.subject} canComment={result.project.access.comment && ["open", "changes-requested"].includes(result.review.status)} />

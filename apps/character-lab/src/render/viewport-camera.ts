@@ -34,3 +34,13 @@ export function readViewportCamera(engine: unknown): ViewportCameraInfo | null {
   if (!hasViewportCamera(engine)) return null;
   return engine.viewportCamera();
 }
+
+/** 자유 회전까지 포함해 현재 시선을 프레이밍의 yaw·pitch(도)로 되돌린다. */
+export function viewportFramingAngles(camera: ViewportCameraInfo) {
+  const [x, y, z] = camera.forward;
+  const degrees = (radians: number) => Math.round(radians * (180 / Math.PI) * 1e6) / 1e6 || 0;
+  return {
+    yawDeg: degrees(Math.atan2(x, -z)),
+    pitchDeg: degrees(Math.atan2(-y, Math.hypot(x, z))),
+  };
+}

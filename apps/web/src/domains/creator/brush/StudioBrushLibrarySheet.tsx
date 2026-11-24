@@ -37,7 +37,7 @@ import { StudioFloatingSurface } from "../StudioFloatingSurface";
 import { VirtualizedBrushGrid } from "./studio-brush-virtual";
 import { useStudioFloatingSurfaceLayout } from "../use-studio-floating-surface-layout";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
-
+import { prepareStudioFoleyOnToolClick } from "../studio-cuttoon-editor/studio-foley-tool-gesture";
 import {
   filterStudioBrushCatalogItems,
   isStudioDefaultQualityBrushCatalogId,
@@ -72,7 +72,6 @@ import { isStudioV6BrushCatalogId } from "./studio-brush-v6-id";
 import { STUDIO_BRUSH_LIBRARY_TABS } from "./studio-draw-ux";
 import { StudioBrushPresetIcon } from "./StudioBrushPresetIcon";
 import { StudioNextGenBrushPreview } from "./StudioNextGenBrushPreview";
-
 
 import type { StudioToolOperation } from "../studio-brush";
 import type { StudioBrushCatalogItem } from "./studio-brush-catalog";
@@ -1653,6 +1652,7 @@ export function StudioBrushLibrarySheet({
                       void preloadStudioBrushCatalogSelection(item.id).catch(() => undefined);
                     }}
                     onClick={() => void selectCatalogItem(item)}
+                    onClickCapture={prepareStudioFoleyOnToolClick}
                     title={`${profile.engineFamilyLabel} · ${profile.traits.join(" · ")} · ${item.hint}`}
                     aria-label={`${item.name} 선택`}
                     aria-pressed={active}

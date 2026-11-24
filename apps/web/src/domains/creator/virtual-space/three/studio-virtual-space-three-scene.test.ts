@@ -11,6 +11,7 @@ import {
   isBundledVrmUrlRightsBlocked,
   SAMPLE_VRM_ENTRIES,
   SAMPLE_VRMS,
+  savedLegacySampleVrmEntry,
 } from "../../vrm/vrm-library";
 import { CAMPUS_HEIGHT, CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_WIDTH, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import {
@@ -115,11 +116,13 @@ describe("3D 가상 스튜디오 씬 아키텍처·디오라마·VRM·HDRI 검�
       expect(isVerifiedStudioThreeVrmUrl(url)).toBe(true);
       const catalogEntry = sampleByUrl.get(url);
       expect(catalogEntry).toBeDefined();
-      expect(activeIds.has(catalogEntry!.id)).toBe(true);
+      const isHeroV1 = url.startsWith("/vrm/toonstudio-hero-v1/");
+      const admittedCatalogEntry = activeIds.has(catalogEntry!.id)
+        || (isHeroV1 && catalogEntry!.visibility === "legacy" && savedLegacySampleVrmEntry(catalogEntry!.id) !== null);
+      expect(admittedCatalogEntry).toBe(true);
       expect(catalogEntry?.licenseNotice).toBeUndefined();
       expect(catalogEntry?.limitations ?? []).not.toContain("heavy-payload");
 
-      const isHeroV1 = url.startsWith("/vrm/toonstudio-hero-v1/");
       if (!isHeroV1) {
         const fileName = url.replace(/^\/vrm\//u, "");
         const licenseLines = licensesMarkdown

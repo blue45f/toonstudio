@@ -663,7 +663,7 @@ export const StudioScrollScenarioPreviewPanelStack = memo(function StudioScrollS
   scenarioSceneCountHint,
   scenarioStageLabel,
   scenarioStoryText,
-  scrollPreview: { open: scrollPreviewOpen, documentEpoch: scrollPreviewDocumentEpoch },
+  scrollPreview: { open: scrollPreviewOpen, documentEpoch: scrollPreviewDocumentEpoch, onOpenPin },
   readerPreviewOpen,
   setScenarioOpen,
   setScenarioImageReferenceDocument,
@@ -714,6 +714,7 @@ export const StudioScrollScenarioPreviewPanelStack = memo(function StudioScrollS
           <StudioScrollPreviewPanel
             key={scrollPreviewDocumentEpoch}
             open
+            onOpenFeedbackPin={onOpenPin}
             initialPinReturn={pinReturn && pinReturn.epoch === scrollPreviewDocumentEpoch ? pinReturn.point : undefined}
             onClose={(nextReturn) => {
               setPinReturn(nextReturn && { epoch: scrollPreviewDocumentEpoch, point: nextReturn });

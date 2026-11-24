@@ -70,6 +70,8 @@ function App() {
   };
 
   const insert = bindStudioBg3dRenderedImage({
+    readCurrentPage: () => currentPages().find(current => current.id === page.id),
+    activeElementsRef: { get current() { return currentPages().find(current => current.id === page.id)?.elements; } },
     setError, setStatusNotice: () => {}, elementById: new Map(page.elements.map((element) => [element.id, element])), groups: page.groups ?? [],
     patchEl: () => { throw new Error("새 삽입에서 patchEl을 호출했습니다."); }, canvasH: page.canvasH,
     addEl: () => { throw new Error("분리 삽입에서 addEl을 호출했습니다."); }, isRealtimeTeamSession: false, elements: page.elements,

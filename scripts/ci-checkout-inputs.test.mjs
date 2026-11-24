@@ -282,8 +282,8 @@ test("세션 목표 PR은 번들 VRM 정본과 related 검사가 읽는 배경 �
       thumbnails: STUDIO_VRM_HERO_V1_SAMPLES.map(({ thumbnailUrl }) => thumbnailUrl),
     }));
   `], { cwd: root, encoding: "utf8", env: fixtureGitEnvironment(root) }));
-  assert.equal(catalog.models.length, 116);
-  assert.equal(new Set(catalog.models).size, 116);
+  assert.equal(catalog.models.length, 117);
+  assert.equal(new Set(catalog.models).size, 117);
   assert.equal(catalog.hero.length, 8);
   assert.equal(catalog.thumbnails.length, 8);
 

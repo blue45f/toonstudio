@@ -5,7 +5,7 @@ import { StudioSkiaDocumentSurface } from "./StudioSkiaDocumentSurface";
 import { createStudioLiveTransformDraftStore } from "../studio-live-transform-draft-store";
 import type { StudioRenderSurfaceAuthority } from "./StudioRenderSurface";
 import type { DrawEl, El } from "../studio-element-model";
-import type { SkiaDocumentFrame, SkiaDocumentReceipt } from "@toonstudio/studio-engine-skia";
+import type { SkiaDocumentFrame, SkiaDocumentReceipt, SkiaDocumentRendererOptions } from "@toonstudio/studio-engine-skia";
 
 const mocked = vi.hoisted(() => ({
   create: vi.fn(), present: vi.fn(), snapshotPng: vi.fn(), dispose: vi.fn(),
@@ -34,6 +34,21 @@ const pen = (): El => ({ id: "ink", type: "draw", mode: "pen", kind: "freehand",
   points: [10, 10, 30, 20, 60, 40], pressures: [0.3, 0.6, 1], stroke: "#234567", strokeWidth: 12,
   sampleSpacing: 0, pressureModel: "linear-residual-path-v3", paintModel: "layered-flow-v1", opacity: 0.4,
 } as El);
+it("표시된 원고는 유지하고 처음 열 표면에만 최신 펜 상태를 제공한다", async () => {
+  const h = setup();
+  const view = render(<StudioSkiaDocumentSurface {...h.props} visible isPenDown={() => false} />);
+  await waitFor(() => expect(requests).toHaveLength(1));
+  const options: SkiaDocumentRendererOptions = mocked.create.mock.calls[0]![1];
+  expect(options.initialContextIdle?.isPenDown()).toBe(false);
+  await act(async () => { requests[0]!.finish(success(requests[0]!.frame)); });
+  const canvas = h.parent.querySelector<HTMLCanvasElement>("[data-studio-skia-document-surface]");
+  expect(canvas?.style.visibility).toBe("visible");
+  view.rerender(<StudioSkiaDocumentSurface {...h.props} visible isPenDown={() => true} />);
+  expect(options.initialContextIdle?.isPenDown()).toBe(true);
+  expect(canvas?.style.visibility).toBe("visible");
+  expect(requests).toHaveLength(1);
+  expect(mocked.create).toHaveBeenCalledOnce();
+});
 it("publishes exact receipts and waits for the owning stage before exposing pixels", async () => {
   const h = setup(); const view = render(<StudioSkiaDocumentSurface {...h.props} />);
   await waitFor(() => expect(requests).toHaveLength(1));

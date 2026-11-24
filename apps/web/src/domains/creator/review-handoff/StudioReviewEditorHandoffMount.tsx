@@ -73,7 +73,8 @@ function Handoff({ bindings, navigation, request }: Props & { readonly request: 
     : snapshot.phase === "selected" ? snapshot.extent === "object"
       ? bt("의견에 연결된 요소를 선택했어요.", "Selected the element linked to this comment.")
       : snapshot.extent === "cut" ? bt("의견에 연결된 컷을 선택했어요.", "Selected the cut linked to this comment.")
-        : bt("의견에 연결된 페이지를 열었어요. 좌표·영역은 검수본에서 확인할 수 있어요.", "Opened the comment’s page. Check the review for its exact point or region.")
+        : snapshot.extent === "point" ? bt("의견에 연결된 원고 위치를 선택했어요.", "Selected the manuscript position linked to this comment.")
+          : bt("의견에 연결된 페이지를 열었어요.", "Opened the page linked to this comment.")
     : checking ? bt("저장본과 편집 권한, 의견 위치를 확인하고 있어요.", "Checking the saved manuscript, editing access and comment location.")
       : snapshot.phase === "cancelled" ? bt("위치 확인을 중단했어요. 다시 눌러 확인할 수 있어요.", "Location verification stopped. Select again to retry.")
         : bt("현재 저장본과 검수본이 같을 때 의견의 페이지·컷·요소를 선택해요.", "Select the comment’s page, cut or element when this manuscript matches the review.");

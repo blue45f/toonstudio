@@ -1,4 +1,5 @@
 import type { StudioSkiaCameraSource } from "./studio-skia-camera-source";
+import { scheduleIdle } from "@/domains/auth/public/schedule-idle";
 import {
   planStudioSkiaRetainedCameraTranslation,
   type StudioSkiaDocumentCamera,
@@ -49,7 +50,7 @@ function applyRetainedCameraTranslation(
 /** Receipt-gated direct GPU display. Existing document, input, Undo and storage stay authoritative. */
 export function StudioSkiaDocumentSurface({ enabled, mountParent, width, height, documentWidth,
   documentHeight, dpr = 1, elements, sceneRevision, documentTransform, onAuthorityChange,
-  visible, beforePublish, cameraSource, frameTheme = "classic",
+  visible, beforePublish, cameraSource, isPenDown, frameTheme = "classic",
   canPublishOverSettledInk, onVisiblePresentation,
   liveTransformDraftStore, liveTransformDraftScope,
 }: StudioRenderSurfaceProps & {
@@ -70,11 +71,11 @@ export function StudioSkiaDocumentSurface({ enabled, mountParent, width, height,
   sink.current = onAuthorityChange;
   const [liveFrameRevision, setLiveFrameRevision] = useState(0);
   const latest = useRef({ width, height, documentWidth, documentHeight, dpr, elements,
-    sceneRevision, documentTransform, beforePublish, cameraSource, visible, frameTheme,
+    sceneRevision, documentTransform, beforePublish, cameraSource, isPenDown, visible, frameTheme,
     canPublishOverSettledInk, onVisiblePresentation, liveTransformDraftStore,
     liveTransformDraftScope, liveFrameRevision });
   latest.current = { width, height, documentWidth, documentHeight, dpr, elements,
-    sceneRevision, documentTransform, beforePublish, cameraSource, visible, frameTheme,
+    sceneRevision, documentTransform, beforePublish, cameraSource, isPenDown, visible, frameTheme,
     canPublishOverSettledInk, onVisiblePresentation, liveTransformDraftStore,
     liveTransformDraftScope, liveFrameRevision };
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -509,6 +510,7 @@ export function StudioSkiaDocumentSurface({ enabled, mountParent, width, height,
       if (!alive || generation.current !== scope) return;
       runtime = module.createSkiaDocumentRenderer(canvas, {
         loadFontData: fontSource.loadStudioSkiaDocumentFontData,
+        initialContextIdle: { isPenDown: () => latest.current.isPenDown?.() ?? false, scheduleIdle },
         onContextLost: () => {
         if (!alive || generation.current !== scope) return;
         revision.current += 1; pendingFence?.abort();

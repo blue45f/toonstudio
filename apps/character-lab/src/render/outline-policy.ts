@@ -1,7 +1,7 @@
 /**
  * 툰 hull 외곽선 정책(순수). 엔진 `applyMaterialsForMode`가 파츠 메시마다 `renderOutline`을 켤지, 얼마나 두껍게 그릴지 이 표로 정한다.
  *
- * - 절차 소스·제작 패키지: 모든 파츠 메시에 hull을 켠다(기존 거동 유지).
+ * - 절차 소스는 모든 파츠에 hull을 쓴다. 제작 패키지의 머리와 눈 파츠에는 팽창 hull을 생략한다. 필압 모드의 머리 윤곽은 눈을 보호하는 stencil 패스가 그린다.
  * - 키트 소스: 눈·입 안 계열 역할, **머리**, **속옷**(`KIT_OUTLINE_EXEMPT_ROLES`)에는 켜지 않는다. 몸(`skin`)은 켜되 더 얇게 그린다(`KIT_SKIN_OUTLINE_WIDTH_SCALE`).
  *   근거 1(A-5, 리드가 키트 뷰어로 확인): 반지름 약 12 mm 눈 메시에 4 mm hull(`TOON_OUTLINE_WIDTH`)이 붙으면 눈이 검은 고리로 덮여 공막·홍채가 보이지 않는다.
  *   입 안(치아·혀)·속눈썹·눈썹도 같은 이유로 제외한다.
@@ -41,14 +41,18 @@ export const DEFAULT_OUTLINE_REFERENCE_DISTANCE = 2.6;
 export const OUTLINE_DISTANCE_SCALE_MIN = 0.45;
 export const OUTLINE_DISTANCE_SCALE_MAX = 2.25;
 
-/** 이 리그 종류의 이 역할 메시에 hull 외곽선을 켜도 되는지. 키트의 머리·눈·입 안 계열·속옷 역할만 false다. */
+/** 홍채 바로 앞에 놓인 캐치라이트까지 팽창하면 홍채 전체가 외곽선 색으로 덮인다. */
+const PACKAGE_EYE_DETAILS: ReadonlySet<PartRole> = new Set(["eyeball", "iris", "pupil", "eye-highlight", "lash", "brow"]);
+
+/** 원본 리그의 작은 안구 파츠와 키트의 겹친 파츠에는 팽창 윤곽을 생략한다. */
 export function hullOutlineAllowed(kind: OutlineRigKind, role: PartRole): boolean {
+  if (kind === "package") return role !== "head" && !PACKAGE_EYE_DETAILS.has(role);
   return kind !== "kit" || !KIT_OUTLINE_EXEMPT_ROLES.has(role);
 }
 
-/** 키트 머리 전용 Stencil-Safe 윤곽선 패스를 허용할 역할인지 */
+/** 눈 파츠의 깊이를 가리지 않는 머리 윤곽 패스를 쓸 수 있는지 판정한다. */
 export function kitHeadContourAllowed(kind: OutlineRigKind, role: PartRole): boolean {
-  return kind === "kit" && role === "head";
+  return kind !== "procedural" && role === "head";
 }
 
 /** 필압 윤곽선(Stencil-Safe 머리 윤곽 포함)을 생성할 수 있는 역할인지 */
@@ -63,7 +67,7 @@ export function hullOutlineWidthScale(kind: OutlineRigKind, role: PartRole): num
 
 /** 필압 윤곽선 폭 배율(키트 머리는 0.65배, 키트 몸은 0.5배, 나머지는 1배). */
 export function contourOutlineWidthScale(kind: OutlineRigKind, role: PartRole): number {
-  if (kind === "kit" && role === "head") return KIT_HEAD_CONTOUR_WIDTH_SCALE;
+  if (kitHeadContourAllowed(kind, role)) return KIT_HEAD_CONTOUR_WIDTH_SCALE;
   return hullOutlineWidthScale(kind, role);
 }
 

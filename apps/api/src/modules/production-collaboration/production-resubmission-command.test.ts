@@ -29,9 +29,9 @@ function fixture(reviewerAssignmentIds: string[] = [assignmentId], capabilities 
       status: "changes-requested", inputRevisionRefs: [input], evidenceRefs: [] }],
     cutPlans: [1, 2, 3].map((order) => ({
       id: `plan-${order}`, projectId, episodeId: "episode", sceneId: "scene", cutId: `cut-${order}`, order,
-      revision: order === 2 ? 2 : 1, status: "draft", framing: "전신", camera: "고정", characterRefs: [],
+      revision: order === 2 ? 2 : 1, status: order === 2 ? "draft" : "approved", framing: "전신", camera: "고정", characterRefs: [],
       dialogueRefs: [], assetRequirementIds: [], layerRequirements: [], estimatedHours: 1, complexity: 1,
-      approvedByAssignmentIds: [], createdAt: at,
+      approvedByAssignmentIds: order === 2 ? [] : [assignmentId], createdAt: at,
     })),
     tasks: [{ id: "task", projectId, scope, processKey: "line-art", title: "세 컷 검수", status: "changes-requested",
       assignmentIds: [assignmentId], reviewerAssignmentIds, inputRevisionRefs: [input], outputDeliverableIds: ["out"],
@@ -61,6 +61,9 @@ it("현재 제출자의 수정본을 한 번만 저장하고 한국어 근거와
   const next = result.aggregate.submissions.at(-1);
   expect(next?.evidenceRefs).toContain(`resubmit-note:${encodeURIComponent(resubmit.resolutionNote)}`);
   expect(next?.evidenceRefs).toContain("resubmit-changed-cuts:cut-2");
+  const otherApprovedCuts = before.cutPlans.filter((cut) => cut.status === "approved");
+  expect(otherApprovedCuts.map((cut) => cut.cutId)).toEqual(["cut-1", "cut-3"]);
+  expect(result.aggregate.cutPlans.filter((cut) => cut.status === "approved")).toEqual(otherApprovedCuts);
   await expect(f.run(resubmit)).rejects.toBeInstanceOf(BadRequestException);
   if (!next) throw new Error("재제출 원고 없음");
   const original = ProductionCommandSchema.parse({ type: "upsert-submission", submission: next });

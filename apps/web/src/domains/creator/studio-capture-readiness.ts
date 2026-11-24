@@ -1,5 +1,6 @@
 import { parseStudioWorkAssetSourceUri } from "@toonstudio/contracts/studio-work-asset-contract";
 import type { StudioWorkAssetHydratorRuntime } from "./studio-work-asset-hydrator";
+import { STUDIO_WORK_ASSET_PLACEHOLDER_NODE } from "./studio-work-asset-render-projection";
 import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { BrushStudioV6LegacyPigmentMigrationRequiredError, hasVisibleLegacyMixboxStrokes } from "./brush-lab/brush-studio-v6-legacy-pigment";
 import { beginStudioCaptureDiagnostics, type StudioCaptureDiagnosticFields } from "./render/studio-capture-diagnostics";
@@ -46,6 +47,7 @@ export class StudioCaptureReadinessError extends Error {
 
 export interface StudioCaptureStageLike {
   batchDraw(): unknown;
+  findOne?(selector: string): unknown;
 }
 
 export interface StudioCaptureResolvedRasterSource {
@@ -642,6 +644,9 @@ export async function waitForStudioCaptureReady<
           "캡처 직전에 페이지가 바뀌어 잘못된 출력 생성을 막았어요."
         );
       }
+      if (stage.findOne?.(`.${STUDIO_WORK_ASSET_PLACEHOLDER_NODE}`)) {
+        throw new StudioCaptureReadinessError("asset-load", "표시할 공동 작업 에셋 원본이 준비되지 않았어요. 에셋을 확인한 뒤 다시 내보내 주세요.");
+      }
       document?.ready();
       diagnostics.mark("ready", observed);
       return stage;
@@ -672,8 +677,10 @@ export function collectStudioCaptureAssetSources(
   const sources: string[] = [];
   for (const document of documents) {
     if (!isRecord(document) || !Array.isArray(document.elements)) continue;
+    const hiddenGroups = new Set(Array.isArray(document.groups)
+      ? document.groups.filter(isRecord).filter((group) => group.hidden === true).map((group) => group.id) : []);
     for (const value of document.elements) {
-      if (!isRecord(value)) continue;
+      if (!isRecord(value) || value.hidden === true || (typeof value.groupId === "string" && hiddenGroups.has(value.groupId))) continue;
       for (const key of ["src", "maskSrc"] as const) {
         const source = value[key];
         if (typeof source !== "string" || !source.trim()) continue;

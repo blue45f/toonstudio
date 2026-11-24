@@ -9,6 +9,7 @@ import {
   projectStudioWorkAssetPageForRender,
   resolveStudioWorkAssetReadableImageSource,
   resolveStudioWorkAssetHydrationScope,
+  STUDIO_WORK_ASSET_PLACEHOLDER_NODE,
 } from "../studio-work-asset-render-projection";
 
 import type { StudioWorkAssetHydrationState } from "../studio-work-asset-hydrator";
@@ -72,6 +73,50 @@ const ready: StudioWorkAssetHydrationState = {
 };
 
 describe("studio work asset render projection", () => {
+  it.each([true, false])("로컬 이미지의 CRDT 가시성(%s)은 서버 자산을 요구하지 않고 원본 포즈를 보존한다", (hidden) => {
+    const actor = { id: "asset-1", type: "image", src: "data:image/png;base64,YWN0b3I=", hidden };
+    const page = { id: "page-1", elements: [actor] };
+    const topology = record({ payload: { type: "reference", props: { elementType: "image", hidden } } });
+    const references = collectStudioWorkAssetSceneReferences([topology], [page]);
+    expect(references).toEqual([]);
+    const view = projectStudioWorkAssetPageForRender({
+      pageId: page.id, elements: page.elements, references, hydrationRevision: 1,
+      resolveState: () => { throw new Error("로컬 원본의 서버 에셋을 요청함"); },
+    });
+    expect(view.elements[0]).toBe(actor);
+    expect(view.placeholders).toEqual([]);
+    expect(collectStudioCaptureAssetSources(page)).toEqual(hidden ? [] : [actor.src]);
+    expect(collectStudioWorkAssetSceneReferences([topology], [{ ...page, elements: [ready.source] }]))
+      .toEqual([{ pageId: page.id, orderIndex: 0, reference: ready.reference }]);
+  });
+
+  it.each(["element", "group"])("숨긴 서버 자산(%s)은 진단 상자나 캡처 입력에 남지 않는다", (hiddenBy) => {
+    const group = { id: "actors", name: "인물", hidden: hiddenBy === "group" };
+    const actor = { ...ready.source, groupId: group.id, hidden: hiddenBy === "element" };
+    const page = { id: "page-1", groups: [group], elements: [actor] };
+    const references = collectStudioWorkAssetSceneReferences([record({ layerId: group.id, payload: {
+      type: "reference", props: { elementType: "image", x: 10, hidden: actor.hidden },
+    } })], [page]);
+    for (const elements of [page.elements, []]) {
+      const view = projectStudioWorkAssetPageForRender({
+        pageId: page.id, elements, groups: page.groups, references, hydrationRevision: 1, resolveState: () => null,
+      });
+      expect(view.placeholders).toEqual([]);
+    }
+    expect(collectStudioCaptureAssetSources(page)).toEqual([]);
+    expect(actor.src).toBe(ready.source.src);
+  });
+
+  it("가시 진단 노드가 그려진 캔버스는 미리 읽은 로컬 본문이 있어도 캡처하지 않는다", async () => {
+    const stage = { batchDraw() {}, findOne: (selector: string) => selector === `.${STUDIO_WORK_ASSET_PLACEHOLDER_NODE}` ? {} : null };
+    const page = { id: "page-1", elements: [{ ...ready.source, src: "data:image/png;base64,YWN0b3I=" }] };
+    const options = { pageId: page.id, sourcePage: page, assetSources: collectStudioCaptureAssetSources(page),
+      getStage: () => stage, getRenderedPageId: () => page.id,
+      nextFrame: async () => {}, waitForFonts: async () => {}, preloadImage: async () => {} };
+    await expect(waitForStudioCaptureReady(options)).rejects.toMatchObject({ code: "asset-load" });
+    expect(page.elements[0]?.src).toBe("data:image/png;base64,YWN0b3I=");
+  });
+
   it("원고가 먼저 받은 에셋을 복원하고 삭제·다른 레이어 참조는 제외한다", () => {
     const page = { id: "page-1", elements: [ready.source] };
     const expected = [{ pageId: page.id, orderIndex: 0, reference: ready.reference }];

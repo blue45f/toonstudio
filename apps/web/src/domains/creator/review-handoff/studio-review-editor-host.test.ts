@@ -126,15 +126,16 @@ describe("review handoff through the actual Host authority/save projection/selec
     expect(f.applied).toHaveBeenCalledWith({ elementId: "logo", master: true, point: null });
     expect(f.controller.getSnapshot().extent).toBe("object");
   });
-  it.each(["coordinate", "region"] as const)("selects only the exact page for a %s without an explicit cut", async (kind) => {
+  it.each(["coordinate", "region"] as const)("검수 %s의 원고 좌표를 편집기의 페이지 비율로 옮긴다", async (kind) => {
     const f = fixture(), spatial = createStudioReviewSpatialAnchor(f.authority.mapping, {
       kind, x: 20, y: 30, ...(kind === "region" ? { width: 10, height: 20 } : {}),
     });
     if (!spatial) throw new Error("Fixture mapping unavailable");
     f.data.authority = { ...f.authority, anchor: { ...f.authority.anchor, ...spatial } };
     await f.controller.start(f.request);
-    expect(f.applied).toHaveBeenCalledWith({ elementId: null, master: false, point: null });
-    expect(f.controller.getSnapshot().extent).toBe("page");
+    expect(f.applied).toHaveBeenCalledWith({ elementId: null, master: false,
+      point: { pageId: "p2", x: (kind === "region" ? 25 : 20) / 800, y: (kind === "region" ? 40 : 30) / 1200 } });
+    expect(f.controller.getSnapshot().extent).toBe("point");
   });
   it("coalesces a double click, cancels late results, and explicitly retries with fresh reads", async () => {
     const f = fixture(), gate = deferred<typeof f.saved>();

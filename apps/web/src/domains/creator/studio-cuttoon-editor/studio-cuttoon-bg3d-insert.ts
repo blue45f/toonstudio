@@ -20,7 +20,7 @@ import { createCanvasImageElement } from "../studio-image-placement";
 import { isEffectivelyLocked } from "../studio-layers";
 import { commitStudioLinked3dPreparedPass, prepareStudioLinked3dLinePass } from "../studio-linked-3d-pass-transaction";
 import { detachStudioLinked3dCorrections, materializeStudioLinked3dLinePassLocator, removeStudioLinked3dRenderLinks, upsertStudioLinked3dRenderLink } from "../studio-linked-3d-render-document";
-import { resolveStudioBg3dDetachError, resolveStudioBg3dLtLayerPlanError, resolveStudioShared3dVisibilityError } from "../status-i18n/studio-producer-error-i18n-bg3d-lt";
+import { resolveStudioBg3dDetachError, resolveStudioBg3dLtLayerPlanError, resolveStudioBg3dSnapshotChangedError, resolveStudioShared3dVisibilityError } from "../status-i18n/studio-producer-error-i18n-bg3d-lt";
 import { studioCutVrmDocumentScope, studioTeamCutVrmDocumentScope } from "../studio-shared-3d-scene-runtime";
 import { studioShared3dStageEntryAsDocument } from "../studio-shared-3d-stage-collection";
 
@@ -105,10 +105,11 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       }
     }
     const originalTargetId = targetElementId;
-    const cutTicket = pinnedVrm ? bg3dMutationTicketRef.current : undefined;
-    const cutAccessCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef.current === cutTicket && canApplyStudioMutation(cutTicket)
-      && currentPageIdRef.current === activePage.id && host.activeElementsRef?.current === elements && host.readCurrentPage?.() === activePage
-      && !masterEditMode && !collaborationDocumentLocked && !pageEditLocked
+    const cutTicket = bg3dMutationTicketRef.current;
+    // 캡처와 CAS 저장은 원고 편집보다 늦게 끝날 수 있다. 계획에 쓴 페이지에서만 결과를 반영한다.
+    const snapshotIsCurrent = () => Boolean(cutTicket && bg3dMutationTicketRef.current === cutTicket && canApplyStudioMutation(cutTicket)
+      && currentPageIdRef.current === activePage.id && host.activeElementsRef.current === elements && host.readCurrentPage() === activePage);
+    const cutAccessCurrent = () => Boolean(snapshotIsCurrent() && !masterEditMode && !collaborationDocumentLocked && !pageEditLocked
       && (workId ? studioAuthUserId && workId === authorizedWorkAssetScopeId && studioCrdtOperationSyncReady
         : canStoreLocalVrmCut?.() && !scopedWriteRuntime?.authority && !authorizedWorkAssetScopeId));
     if (pinnedVrm && sixPass) {
@@ -131,6 +132,12 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       setError("6패스 묶음 v1은 일반 원고의 기본 도형 장면을 지원합니다. 문서 마스터와 외부 모델 원본은 아직 지원하지 않습니다.");
       return false;
     }
+    const canCommitSnapshot = () => {
+      if (snapshotIsCurrent()) return true;
+      setError(resolveStudioBg3dSnapshotChangedError());
+      return false;
+    };
+    if (!canCommitSnapshot()) return false;
     let nativeState: StudioBg3dSixPassBundleState | undefined = activePage.bg3dLtBundles;
     let previousBundle = targetElementId ? nativeState?.bundles.find((bundle) => bundle.bundleId === elementById.get(targetElementId)?.bg3dLtBundleId) : undefined;
     if (previousBundle && (!sixPass || result.sharedStageMutation?.kind === "unlink")) {
@@ -527,9 +534,8 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
               pages: [activePage], nextPage });
             if (authorizedWorkAssetScopeId) {
               const api = await import("../scene3d/bg3d-six-pass/studio-bg3d-six-pass-bundle-api");
-              if (pinnedVrm && !cutAccessCurrent()) throw new Error("원고나 편집 권한이 바뀌어 저장을 중단했습니다.");
               await api.sealStudioBg3dSixPassRemoteBundle({ workId: authorizedWorkAssetScopeId, prepared: bundle, authority: bundleAuthority, writeContext,
-                ...(pinnedVrm ? { signal: result.cutWorkSignal, current: cutAccessCurrent } : {}) });
+                current: pinnedVrm ? cutAccessCurrent : snapshotIsCurrent, signal: result.cutWorkSignal });
             }
           };
           durableElements = bundle.elements; bundleState = bundle.state;
@@ -555,15 +561,10 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
           ownerId: `studio-linked-3d-pass:${activePage.id}:${plan.bundleId}`,
           prepared,
           apply: () => {
-            const mutationTicket = bg3dMutationTicketRef.current;
             if (keepLocalPasses && !canStoreLocalVrmCut()) {
               throw new Error("공동 편집이 시작되어 분리 레이어를 유지한 채 갱신을 멈췄어요. 원고에서 컷을 다시 확인해 주세요.");
             }
-            if (
-              !mutationTicket || (pinnedVrm && !cutAccessCurrent())
-              || !canApplyStudioMutation(mutationTicket)
-              || currentPageIdRef.current !== activePage.id
-            ) return false;
+            if (!canCommitSnapshot() || (pinnedVrm && !cutAccessCurrent())) return false;
             // LT layers, Scene/Shot, Stage, correction reapplication/conflict projection, and CAS
             // receipt enter the existing pagesHistory/CRDT bridge as one undoable transition.
             return commit(durableElements, {

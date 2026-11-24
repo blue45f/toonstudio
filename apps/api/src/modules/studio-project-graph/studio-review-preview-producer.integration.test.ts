@@ -35,6 +35,7 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
   let deleteWork: typeof DeleteWork;
   const users: string[] = [];
   const stored = new Map<string, Buffer>();
+  let storage: PrivateObjectStoragePort;
   const previousDatabase = process.env.DATABASE_URL;
   const previousAdmission = process.env.STUDIO_WORK_ASSET_ADMISSION;
   const pixels = new Uint8Array([10, 20, 30, 40, 255, 0, 127, 0]);
@@ -52,7 +53,7 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     const producerServiceModule = await import("./studio-review-preview-producer.service");
     const readerModule = await import("./studio-review-preview.service");
     deleteWork = (await import("../../server/creator/works")).deleteWork;
-    const storage: PrivateObjectStoragePort = {
+    storage = {
       async verifyPrivatePurposeBuckets() { return { ready: true, privatePurposeBuckets: 3 }; },
       async uploadImmutable(input) {
         const hash = createHash("sha256").update(input.bytes).digest("hex");
@@ -107,11 +108,12 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     capture: () => capture(1), completeCapture,
   });
 
-  async function capture(pageCount = 2, extension: Record<string, unknown> = {}) {
+  async function capture(pageCount = 2, extension: Record<string, unknown> = {},
+    pageElements: (ordinal: number) => Record<string, unknown>[] = () => []) {
     const actor = randomUUID(), workId = randomUUID(); users.push(actor);
     await pool.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [actor, "Review capture integration"]);
     const doc = { ...extension, version: 3, width: 2, pagesList: Array.from({ length: pageCount }, (_, index) => ({ id: `page-${index}`, canvasH: 1,
-      elements: [{ id: `cut-${index}`, type: "frame", x: 0, y: 0, width: 1, height: 1 }] })) };
+      elements: [{ id: `cut-${index}`, type: "frame", x: 0, y: 0, width: 1, height: 1 }, ...pageElements(index)] })) };
     await pool.query('INSERT INTO creator_work (id,"userId",title,doc,revision) VALUES ($1,$2,$3,$4::jsonb,4)', [workId, actor, "Review source", JSON.stringify(doc)]);
     const input: StudioReviewPreviewCapture = { intentId: randomUUID(), workId, sourceServerRevision: 4, sourceContentDigest: studioReviewPreviewDigest(doc), pageCount,
       title: "Pinned review", deviceId: "test-device", createdAt: new Date().toISOString() };
@@ -119,10 +121,10 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     return { actor, input, intent, doc };
   }
 
-  async function completeCapture(actor: string, intent: StudioReviewPreviewIntent) {
+  async function completeCapture(actor: string, intent: StudioReviewPreviewIntent, pageFile: (ordinal: number) => ReturnType<typeof file> = file) {
     const pages = [];
     for (let ordinal = 0; ordinal < intent.pageCount; ordinal += 1) {
-      const page = await service.upload(actor, intent, ordinal, file());
+      const page = await service.upload(actor, intent, ordinal, pageFile(ordinal));
       pages.push({ ordinal, sha256: page.sha256 });
     }
     const result = await service.complete(actor, { intent, pages });
@@ -747,11 +749,84 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     await expect(f.shares.view({ publicId: publicShare.share.id })).rejects.toMatchObject({ code: "revoked" });
   });
 
-  it("delivers one exact approved review and separates issue, recipient download, and acceptance", async () => {
-    const f = await capture(2), captured = await completeCapture(f.actor, f.intent), recipient = randomUUID(); users.push(recipient);
-    await pool.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [recipient, "Delivery recipient"]);
+  it("승인된 원고의 외부 셰이퍼 모델은 같은 작품에 등록한 원본으로만 사용권을 확인한다", async () => {
+    const f = await capture(1, { master: { elements: [{ id: "model", type: "image",
+      vrmScene: { model: { source: "attachment", hash: `sha256:${"a".repeat(64)}` } } }] } });
+    const captured = await completeCapture(f.actor, f.intent);
+    await graph.decideReview(f.actor, captured.subject.reviewId, { status: "approved" });
+    const { captureWithDeliveryRights } = await import("./review-delivery/review-delivery-material-rights");
+    const client = await pool.connect();
+    try {
+      await expect(captureWithDeliveryRights(client, captured.subject)).rejects.toMatchObject({
+        response: { code: "studio_review_delivery_material_rights" },
+      });
+    } finally { client.release(); }
+  });
+
+  it("2컷의 위치 메모에 따라 포즈·카메라를 고친 원고만 납품하고 다른 컷과 손선을 보존한다", async () => {
+    const request = "2컷에서 하늘을 손드는 포즈로 바꾸고 배경 카메라를 넓혀 주세요.";
+    const background = (fovDegrees: number) => ({ type: "image", id: "bg-2",
+      bg3dScene: { camera: { fovDegrees }, nodes: [], attachments: [] } });
+    const actor = (raised: boolean) => ({ type: "image", id: "haneul-cut-2", hidden: raised,
+      vrmScene: { model: { source: "bundled", id: "ts-vrm-hero-v1-academy-female" },
+        pose: { bones: { rightUpperArm: { rotation: raised ? [0.174, 0.534, -0.617] : [-0.153, 0.226, 1.189] } } } } });
+    const ink = (ordinal: number) => ({ type: "draw", id: `hand-${ordinal + 1}`, kind: "freehand", mode: "pen",
+      brush: "round", points: [0, 0, 0.4, 0.6], pressures: [0.5, 0.5], stroke: "#342a25", strokeWidth: 0.1 });
+    const f = await capture(3, {}, (ordinal) => ordinal === 1
+      ? [background(50), ink(ordinal), actor(false)] : [ink(ordinal)]);
+    // 각 컷은 서로 다른 배경색을, 첫 픽셀은 같은 불투명 손선 색을 가진 서버 검사용 PNG다.
+    const pageImage = (shade: number) => {
+      const buffer = Buffer.from(encodePng(new Image(2, 1, { colorModel: "RGBA",
+        data: new Uint8Array([52, 42, 37, 255, shade, 67, 89, 255]) })));
+      return { buffer, size: buffer.length, mimetype: "image/png" };
+    };
+    const originalPage = (ordinal: number) => pageImage(32 + 48 * ordinal);
+    const recipient = randomUUID(); users.push(recipient);
+    await pool.query('INSERT INTO "user" (id,name) VALUES ($1,$2)', [recipient, "합성 작가"]);
     await pool.query(`INSERT INTO creator_work_collaborator ("workId","userId",role,status,"invitationId","respondedAt")
-      VALUES ($1,$2,'commenter','active',$3,now())`, [f.input.workId, recipient, randomUUID()]);
+      VALUES ($1,$2,'editor','active',$3,now())`, [f.input.workId, recipient, randomUUID()]);
+    const initialIntent = await service.prepare(recipient, { ...f.input, intentId: randomUUID() });
+    const original = await completeCapture(recipient, initialIntent, originalPage);
+    const first = await reader.read(f.actor, original.subject, null);
+    if (!first.ok || !first.previews[1]) throw new Error("두 번째 컷의 검수 이미지가 없습니다.");
+    const anchor = createStudioReviewSpatialAnchor(first.previews[1].mapping, { kind: "coordinate", frameId: "cut-1", x: 0.84, y: 0.68 });
+    if (!anchor) throw new Error("두 번째 컷의 원본 위치가 없습니다.");
+    const memo = await graph.createReviewComment(f.actor, original.subject.reviewId, { id: randomUUID(),
+      body: request, severity: "note", assigneeIds: [recipient],
+      anchor: { ...anchor, artifactId: original.subject.artifactId, revisionId: original.subject.revisionId,
+        scope: { projectId: original.subject.projectId } } });
+    await graph.decideReview(f.actor, original.subject.reviewId, { status: "changes-requested" });
+    const revised = { ...f.doc, pagesList: f.doc.pagesList.map((page, index) => index !== 1 ? page
+      : { ...page, elements: page.elements.map((el) => el.id === "bg-2" ? background(90)
+        : el.id === "haneul-cut-2" ? actor(true) : el) }) };
+    await pool.query('UPDATE creator_work SET revision=5, doc=$2::jsonb WHERE id=$1', [f.input.workId, JSON.stringify(revised)]);
+    const replacement = await service.prepare(recipient, { ...f.input, intentId: randomUUID(), sourceServerRevision: 5,
+      sourceContentDigest: studioReviewPreviewDigest(revised) });
+    const unchanged = await service.upload(recipient, replacement, 0, originalPage(0));
+    const changed = await service.upload(recipient, replacement, 1, pageImage(179));
+    const third = await service.upload(recipient, replacement, 2, originalPage(2));
+    const pixelsOf = (hash: string) => {
+      const bytes = stored.get(`derived:sha256:${hash}`);
+      if (!bytes) throw new Error("검수 이미지가 없습니다.");
+      return Buffer.from(decodePng(bytes).data);
+    };
+    // 서버는 캡처마다 PNG에 다른 식별자를 넣으므로 변경 컷은 복원된 픽셀로 비교한다.
+    expect(pixelsOf(unchanged.sha256)).toEqual(pixelsOf(first.previews[0]!.sha256));
+    expect(pixelsOf(changed.sha256)).not.toEqual(pixelsOf(first.previews[1].sha256));
+    expect(pixelsOf(third.sha256)).toEqual(pixelsOf(first.previews[2]!.sha256));
+    expect(pixelsOf(unchanged.sha256)).not.toEqual(pixelsOf(third.sha256));
+    expect(pixelsOf(changed.sha256).subarray(0, 4)).toEqual(pixelsOf(first.previews[1].sha256).subarray(0, 4));
+    const pages = [unchanged, changed, third].map(({ ordinal, sha256 }) => ({ ordinal, sha256 }));
+    await expect(service.complete(recipient, { intent: replacement, pages: [pages[0]!, { ordinal: 1, sha256: unchanged.sha256 }, pages[2]!] })).rejects.toThrow();
+    await expect(service.complete(recipient, { intent: replacement, pages: [
+      { ordinal: 0, sha256: third.sha256 }, pages[1]!, { ordinal: 2, sha256: unchanged.sha256 },
+    ] })).rejects.toThrow();
+    expect((await graph.getReview(f.actor, original.subject.reviewId)).comments).toContainEqual(expect.objectContaining({ id: memo.id, body: request, status: "open" }));
+    const captured = await service.complete(recipient, { intent: replacement, pages });
+    if (captured.status !== "completed") throw new Error("수정본 제출 실패");
+    const revision = (await graph.listRevisions(recipient, replacement.artifactId)).find((entry) => entry.id === captured.subject.revisionId);
+    if (!revision?.parentIds[0]) throw new Error("수정본의 제출 이력이 없습니다.");
+    await graph.resolveReviewComment(recipient, memo.id, { status: "resolved", resolutionRevisionId: revision.parentIds[0], resolutionSourceRef: captured.subject });
     await graph.decideReview(f.actor, captured.subject.reviewId, { status: "approved" });
     const Repository = (await import("./review-delivery/review-delivery.repository")).StudioReviewDeliveryRepository;
     const deliveries = new Repository(pool), mode = "free" as const;
@@ -764,7 +839,7 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
         rightsGraphDigest, confirmed: true as const, statement } };
     const created = await deliveries.prepare(f.actor, f.input.workId, prepare);
     expect(created).toMatchObject({ id, state: "prepared", version: 0, recipient: { userId: recipient } });
-    expect(created.manifest.pages).toHaveLength(2);
+    expect(created.manifest.pages).toHaveLength(3);
     expect(created.manifest.totalPageBytes).toBe(created.manifest.pages.reduce((sum, page) => sum + page.byteLength, 0));
     for (const page of created.manifest.pages) expect(stored.get(`derived:sha256:${page.sha256}`)?.length).toBe(page.byteLength);
     expect(await deliveries.prepare(f.actor, f.input.workId, prepare)).toEqual(created);
@@ -772,9 +847,19 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     const issued = await deliveries.issue(f.actor, f.input.workId, id, { operationId: randomUUID(), expectedVersion: 0, manifestDigest: created.manifestDigest });
     expect(issued).toMatchObject({ state: "issued", version: 1 });
     const source = await deliveries.downloadSource(recipient, f.input.workId, id, { operationId: randomUUID(), expectedVersion: 1, manifestDigest: created.manifestDigest });
-    expect(source.pages).toEqual(created.manifest.pages.map(({ path: _path, ...page }) => page)); expect(source.objects).toHaveLength(2);
-    const downloadOperation = randomUUID(), archive = { sha256: "e".repeat(64), byteLength: 1234 };
-    const delivered = await deliveries.confirmDownload(recipient, f.input.workId, id, { operationId: downloadOperation, expectedVersion: 1, manifestDigest: created.manifestDigest }, archive);
+    expect(source.pages).toEqual(created.manifest.pages.map(({ path: _path, ...page }) => page)); expect(source.objects).toHaveLength(3);
+    const downloadOperation = randomUUID();
+    const DeliveryService = (await import("./review-delivery/review-delivery.service")).StudioReviewDeliveryService;
+    const delivery = new DeliveryService(deliveries, storage, async (url) => {
+      const bytes = stored.get(`derived:sha256:${new globalThis.URL(String(url)).pathname.slice(1)}`);
+      if (!bytes) throw new Error("고정된 원본 이미지를 찾을 수 없습니다.");
+      return new Response(Uint8Array.from(bytes), { headers: { "content-type": "image/png" } });
+    });
+    const result = await delivery.download(recipient, f.input.workId, id, { operationId: downloadOperation, expectedVersion: 1, manifestDigest: created.manifestDigest });
+    const archive = { sha256: createHash("sha256").update(result.bytes).digest("hex"), byteLength: result.bytes.length };
+    const delivered = result.job;
+    expect(created.manifest.pages.map((page) => page.sha256)).toEqual([unchanged.sha256, changed.sha256, third.sha256]);
+    for (const page of created.manifest.pages) expect(result.bytes.includes(stored.get(`derived:sha256:${page.sha256}`)!)).toBe(true);
     expect(delivered).toMatchObject({ state: "delivered", version: 2, archiveSha256: archive.sha256, archiveByteLength: archive.byteLength, canAccept: true });
     expect(await deliveries.confirmDownload(recipient, f.input.workId, id, { operationId: downloadOperation, expectedVersion: 1, manifestDigest: created.manifestDigest }, archive)).toEqual(delivered);
     const accepted = await deliveries.accept(recipient, f.input.workId, id, { operationId: randomUUID(), expectedVersion: 2, manifestDigest: created.manifestDigest, confirmed: true });

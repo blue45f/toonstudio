@@ -330,6 +330,15 @@ describe("카메라 프레이밍", () => {
     expect(screen.getByRole("button", { name: "얼굴" }).getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("자유 회전한 측면에서 얼굴을 확대하면 실제 카메라 방향을 유지한다", () => {
+    const engine = createTestEngine();
+    engine.viewportCamera = () => ({ ...CAMERA, forward: [Math.sqrt(3) / 2, -0.5, 0] });
+    renderPane({ engine });
+    fireEvent.click(screen.getByRole("button", { name: "얼굴" }));
+    expect(engine.calls.filter((call) => call.method === "setCamera").at(-1)?.args[0])
+      .toEqual({ ...DEFAULT_FRAMING, mode: "face", yawDeg: 90, pitchDeg: 30 });
+  });
+
   it("시점 초기화 버튼은 현재 프레이밍을 다시 적용하고 엔진이 없으면 비활성이다", () => {
     const engine = createTestEngine();
     renderPane({ engine });

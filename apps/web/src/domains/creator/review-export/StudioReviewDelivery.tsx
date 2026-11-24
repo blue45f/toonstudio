@@ -12,6 +12,7 @@ import {
   listeners as sessionListeners,
 } from "@/domains/auth/public/session/auth-session-state";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
+import { isAppApiError } from "@/platform/api-error";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioVirtualSpaceVerifiedReview } from "../virtual-space/studio-virtual-space-review-invitation";
 import {
@@ -220,9 +221,12 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
       setNotice(success);
       await load();
       return true;
-    } catch {
+    } catch (error) {
       if (current(own, actor, session)) {
-        setNotice(bt(
+        setNotice(isAppApiError(error) && error.code === "studio_review_delivery_material_rights"
+          ? bt("원고에 사용한 소재의 사용권과 출처 표기를 확인하고 수정본을 다시 승인해 주세요.",
+            "Check the material licenses and attribution, then approve the revised manuscript.")
+          : bt(
           "결과를 확정하지 못했어요. 같은 요청으로 다시 시도하면 중복 처리하지 않습니다.",
           "The result could not be confirmed. Retrying the same request will not duplicate it.",
         ));

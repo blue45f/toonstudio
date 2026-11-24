@@ -37,7 +37,7 @@ import type { PresetId, SlotCapabilityMap, SlotKind } from "./slots";
 // ---------------------------------------------------------------- 식별자·경로·버전
 
 export const KIT_SCHEMA_ID = "toonstudio.character-kit/1" as const;
-export { KIT_ASSET_ROOT, KIT_CURRENT_VERSION, KIT_DEFAULT_ID, KIT_MANIFEST_FILENAME, KIT_PORTRAIT_VERSION, kitManifestFilename } from "./kit-editions";
+export { KIT_ASSET_ROOT, KIT_CURRENT_VERSION, KIT_DEFAULT_ID, KIT_MANIFEST_FILENAME, KIT_PORTRAIT_VERSION, KIT_SWEPT_HAIR_VERSION, kitManifestFilename } from "./kit-editions";
 
 export const KIT_BASE_IDS = ["female", "male"] as const;
 export type KitBaseId = (typeof KIT_BASE_IDS)[number];

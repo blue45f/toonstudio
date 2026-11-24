@@ -202,7 +202,7 @@ export interface StudioLazyPanelStackHandlers {
   requestWriterRoomAiDraft: (stage: StudioWriterRoomStage) => Promise<void>;
   restoreNamedCheckpoint: (checkpoint: StudioCheckpoint) => Promise<void>;
   restoreServerRevision: (revision: WorkRevisionSummary, comparedBaseRevision: number) => Promise<boolean>;
-  selectStudioCommentAnchor: (anchor: StudioCommentAnchor) => void;
+  selectStudioCommentAnchor: (anchor: StudioCommentAnchor) => boolean;
   setAiProvenance: (next: SetStateAction<StudioAiProvenanceDocument>) => void;
   setCharacterBible: (next: SetStateAction<StudioCharacterBible>) => void;
   setCurrentPageId: (value: SetStateAction<string>) => boolean;
@@ -341,7 +341,7 @@ export interface StudioLazyPanelStackProps extends StudioLocalVrmCutHostScope {
   scenarioSceneCountHint: number | undefined;
   scenarioStageLabel: string | null;
   scenarioStoryText: string;
-  scrollPreview: { open: boolean; documentEpoch: number };
+  scrollPreview: { open: boolean; documentEpoch: number; onOpenPin?: import("./StudioScrollPreviewPanel").StudioScrollPreviewPanelProps["onOpenFeedbackPin"] };
   readerPreviewOpen: boolean;
   serverCurrentRevision: number | undefined;
   serverRevisionError: string | null;

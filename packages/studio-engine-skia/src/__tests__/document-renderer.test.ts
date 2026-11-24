@@ -119,6 +119,56 @@ describe("persistent CanvasKit document renderer", () => {
     expect(await pending).toMatchObject({ status: "disposed" });
     expect(h.ck.GetWebGLContext).not.toHaveBeenCalled();
   });
+  it.each(["release", "dispose"] as const)("WASM 준비 중 시작한 획은 첫 WebGL 생성을 보류한다 (%s)", async (action) => {
+    const h = harness();
+    let penDown = false;
+    let load!: (ck: CanvasKit) => void;
+    const idle = new Set<() => void>();
+    const renderer = createSkiaDocumentRenderer(h.canvas, {
+      loadCanvasKit: () => new Promise((resolve) => { load = resolve; }),
+      initialContextIdle: {
+        isPenDown: () => penDown,
+        scheduleIdle: (task) => {
+          idle.add(task);
+          return () => { idle.delete(task); };
+        },
+      },
+    });
+    const runIdle = () => {
+      const tasks = [...idle];
+      idle.clear();
+      for (const task of tasks) task();
+    };
+    const first = renderer.present(h.frame);
+    penDown = true;
+    load(h.ck);
+    await Promise.resolve();
+    runIdle();
+    expect(idle.size).toBe(1);
+    expect(h.ck.GetWebGLContext).not.toHaveBeenCalled();
+    const latest = { ...h.frame, revision: {} };
+    const pending = renderer.present(latest);
+    expect(await first).toMatchObject({ status: "superseded", revision: h.frame.revision });
+    expect(h.ck.GetWebGLContext).not.toHaveBeenCalled();
+    if (action === "dispose") {
+      renderer.dispose();
+      expect(await pending).toMatchObject({ status: "disposed" });
+      expect(idle.size).toBe(0);
+      runIdle();
+      expect(h.ck.GetWebGLContext).not.toHaveBeenCalled();
+      return;
+    }
+    penDown = false;
+    runIdle();
+    expect(await pending).toMatchObject({ status: "presented", revision: latest.revision });
+    expect(h.ck.GetWebGLContext).toHaveBeenCalledOnce();
+    expect(h.surface.flush).toHaveBeenCalledOnce();
+    penDown = true;
+    expect(await renderer.present(h.frame)).toMatchObject({ status: "presented", revision: h.frame.revision });
+    expect(idle.size).toBe(0);
+    expect(h.ck.GetWebGLContext).toHaveBeenCalledOnce();
+    renderer.dispose();
+  });
   it("fails visibly on GPU loss without trying another renderer", async () => {
     const h = harness(); const lost = vi.fn();
     const renderer = createSkiaDocumentRenderer(h.canvas, { loadCanvasKit: async () => h.ck, onContextLost: lost });

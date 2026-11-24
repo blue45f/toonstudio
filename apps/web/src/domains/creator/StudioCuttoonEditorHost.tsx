@@ -285,7 +285,7 @@ import { useStudioSaveSyncSignalWiring } from "./studio-cuttoon-editor/runtime/u
 import { StudioFormalSaveDialogMount as StudioFormalSaveDialog } from "./save-first/StudioFormalSaveDialogMount";
 import { studioReviewCaptureSaveNavigation } from "./review-capture/studio-review-capture-navigation";
 import { useStudioReviewCaptureHost } from "./review-capture/useStudioReviewCaptureHost";
-import { studioEditorTargetForComment, type StudioEditorCommentTarget } from "./studio-comment-editor-selection";
+import { useStudioCommentEditorFocus } from "./review-handoff/use-studio-comment-editor-focus";
 import { isStudioCommentAnchorValidInPages } from "./studio-cuttoon-editor/studio-comment-anchor-validity";
 import { resolveStudioEditorExplicitSaveAction } from "./save-first/studio-editor-save-policy";
 import type { StudioProjectPackageSaveTarget } from "./save-first/studio-project-package";
@@ -2251,13 +2251,13 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const studioWorkAssetRenderProjection = useMemo(
     () => projectStudioWorkAssetPageForRender<El>({
       pageId: activePage.id,
-      elements: activePage.elements,
+      elements: activePage.elements, groups: activePage.groups,
       references: studioWorkAssetReferences,
       hydrationRevision: studioWorkAssetHydrationRevision,
       resolveState: (reference) => studioWorkAssetHydrator.get(reference),
     }),
     [
-      activePage.elements,
+      activePage.elements, activePage.groups,
       activePage.id,
       studioWorkAssetHydrationRevision,
       studioWorkAssetHydrator,
@@ -7763,8 +7763,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     isometricAngleDeg: number;
     advancedRuler: StudioAdvancedRuler | null;
   } | null>(null);
-  const pendingStrokeAdmissionScopeRef = useRef({ documentKey: autosaveKey, pageId: activePage.id, generation: collaborationAccessRef.current.documentGeneration });
-  pendingStrokeAdmissionScopeRef.current = { documentKey: autosaveKey, pageId: activePage.id, generation: collaborationAccessRef.current.documentGeneration };
+  const pendingStrokeAdmissionScopeRef = useRef({ documentKey: autosaveKey });
+  pendingStrokeAdmissionScopeRef.current = { documentKey: autosaveKey };
   const pendingCatalogInputRef = useRef<StudioPendingCatalogInput | null>(null);
   const [catalogSelectionRevision, setCatalogSelectionRevision] = useState(0);
   const pendingCatalogInput = useCallback((): StudioPendingCatalogInput => {
@@ -7805,7 +7805,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const pendingStrokeAdmissionRef = useRef<StudioPendingStrokeAdmissionQueue | null>(null);
   const pendingStrokeAdmission = (): StudioPendingStrokeAdmissionQueue => {
     pendingStrokeAdmissionRef.current ??= new StudioPendingStrokeAdmissionQueue({
-      currentScope: () => ({ ...pendingStrokeAdmissionScopeRef.current, pageId: currentPageIdRef.current, generation: collaborationAccessRef.current.documentGeneration }),
+      currentScope: () => ({ ...pendingStrokeAdmissionScopeRef.current, pageId: currentPageIdRef.current, generation: collaborationAccessRef.current.documentGeneration, accessGeneration: collaborationAccessRef.current.accessGeneration }),
       activeStrokeId: () => drawingRef.current?.id ?? null,
     });
     return pendingStrokeAdmissionRef.current;
@@ -8407,12 +8407,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const flushPendingStrokeCommitsRef = useRef<() => boolean>(() => true);
   const discardPendingStrokeCommitsRef = useRef<() => void>(() => {});
   // GPU 파인 획의 지연 표면 유지: 커밋 동기화 전까지 엔진에 함께 공급되는 확정 획들.
-  /**
-   * Set only while a pointer-down is completing the PREVIOUS stroke's deferred commit. The flush
-   * normally refuses to run while a stroke is armed (a commit render must never interrupt a
-   * gesture); at admission time the new stroke has not painted anything yet, and the previous
-   * stroke's idle window is over by definition.
-   */
+  // 새 획을 받는 pointerdown이 직전 획을 확정할 때만 활성화한다.
+  // 이미 그리고 있는 획의 도중에는 커밋 렌더가 끼어들 수 없다.
   const strokeAdmissionCommitFlushRef = useRef(false);
   const pendingGpuStrokesRef = useRef<StudioGpuStroke[]>([]);
   // Symmetry can fan one DrawEl out to several GPU operations. Retain that exact grouping so a
@@ -8491,31 +8487,24 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     );
   }
 
-  function persistAcceptedSelectedGpuFinalReceipt(
-    strokeId: string,
-    requestId: string,
-  ): void {
+  function persistAcceptedSelectedGpuFinalReceipt(strokeId: string, requestId: string): void {
     if (gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId) return;
     if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
     if (gpuFinalReceiptStrokeRef.current?.id === strokeId) {
-      // An asynchronous post-contact receipt still owns the pointer-down watchdog epoch. Feed the
-      // exact identity before durability work; stale receipts cannot clear this deadline.
+      // 종료 영수증이 이 획의 것일 때만 watchdog을 해제한다.
       gpuPinReceiptWatchdog().receipt(requestId);
       applyLiveStrokeBackendPresentationEffects();
     }
     globalThis.queueMicrotask(() => {
       const pending = pendingStrokeCommitsRef.current;
       const stroke = pending?.strokes.find((candidate) => candidate.id === strokeId);
-      if (!pending || !stroke) return;
+      if (!pending || !stroke || gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId) return;
       if (!hasExactSelectedGpuFinalReceipt(strokeId)) return;
-      if (gpuFinalCrdtPublishedRequestIdsRef.current.get(strokeId) !== requestId) {
+      const firstPublication = gpuFinalCrdtPublishedRequestIdsRef.current.get(strokeId) !== requestId;
+      if (firstPublication) {
         try {
-          // The pointer-release path cancelled its scheduled live suffix before it could flush.
-          // Replace/finalize the exact completed record now that the selected GPU operation has
-          // material proof; no speculative CRDT geometry becomes a durable finalized stroke.
-          studioCrdtDocumentRef.current?.replaceStroke(
-            studioDrawElementToCrdtStroke(pending.pageId, stroke),
-          );
+          // pointerup이 취소한 live suffix까지 포함한 최종 기록을 정확한 GPU 영수증으로 확정한다.
+          studioCrdtDocumentRef.current?.replaceStroke(studioDrawElementToCrdtStroke(pending.pageId, stroke));
           gpuFinalCrdtPublishedRequestIdsRef.current.set(strokeId, requestId);
         } catch (cause) {
           setError(
@@ -8528,6 +8517,17 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         }
       }
       persistPendingStrokeEmergencyAutosaveRef.current("pointerup");
+      if (!firstPublication || pending.strokes.length !== 1) return;
+      const generation = collaborationAccessRef.current.documentGeneration;
+      scheduleIdle(() => {
+        if (!editorMountedRef.current || drawingRef.current || documentSaveInFlightRef.current) return;
+        const access = collaborationAccessRef.current;
+        if (access.locked || access.documentGeneration !== generation || currentPageIdRef.current !== pending.pageId) return;
+        if (pendingStrokeCommitsRef.current !== pending || pending.strokes.length !== 1 || pending.strokes[0] !== stroke) return;
+        if (deferredStrokePostprocessControllersRef.current.has(strokeId)) return;
+        if (gpuFinalReceiptRequestIdsRef.current.get(strokeId) !== requestId || !hasExactSelectedGpuFinalReceipt(strokeId)) return;
+        flushPendingStrokeCommitsRef.current();
+      });
     });
   }
 
@@ -9444,9 +9444,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     draftPreviewStoreRef.current.setActive(null);
     setLiveDraftShapeKind(null);
   };
-  /** 마지막 획 후 이 유휴가 지나면 대기 배치를 한 번의 React 커밋으로 동기화한다.
-   *  Keep this longer than a follow-up pointerdown (verify warmup + next stroke arming) so the
-   *  39k-line page render cannot overlap the next stroke as a >=50ms long task. */
+  /** 종료 영수증을 받은 단일 GPU 획은 유휴 틈에 먼저 확정한다. 나머지 배치는 이 타이머가 처리한다. */
   const DEFERRED_STROKE_COMMIT_IDLE_MS = 2_000;
   const DEFERRED_STROKE_COMMIT_RETRY_MS = 500;
   const DEFERRED_STROKE_COMMIT_MAX_RETRIES = 4;
@@ -11055,17 +11053,16 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     [pages]
   );
 
-  function selectCommentEditorTarget(target: StudioEditorCommentTarget, current?: () => boolean) {
-    return runStudioSelectCommentEditorTarget({
+  const { selectCommentEditorTarget, selectStudioCommentAnchor } = useStudioCommentEditorFocus({
+    open: scrollPreviewOpen, documentEpoch: scrollPreviewDocumentEpoch, currentPageId,
+    wrapRef, hostRef: zoomHostRef, canvasHeight: canvasH, canvasFlipH, canvasRotation,
+    select: (target, current) => runStudioSelectCommentEditorTarget({
       target, current, currentStudioProjectSnapshot, currentPageIdRef, setCurrentPageId,
       setMasterEditMode, setPointCommentAnchor, applyGroupSelectionState, setTool, setError,
       pageNotFoundMessage: t("studio.hostStatus.commentPageNotFound", "댓글이 연결된 페이지를 현재 문서에서 찾을 수 없어요."),
       targetNotFoundMessage: t("studio.hostStatus.commentTargetNotFound", "댓글이 연결된 컷 또는 요소를 현재 문서에서 찾을 수 없어요."),
-    });
-  }
-  function selectStudioCommentAnchor(anchor: StudioCommentAnchor) {
-    return selectCommentEditorTarget(studioEditorTargetForComment(anchor));
-  }
+    }),
+  });
   const studioOpenCanvasThreads = useMemo(
     () => deriveStudioOpenCanvasCommentThreads({
       studioCommentPinsHidden, studioTeamCommentsWorkId, teamCanView: studioTeamCommentCapabilities?.view,
@@ -12887,6 +12884,7 @@ const puppetWarpArmed =
       );
       const currentPages = currentHistory[currentIndex] ?? pages;
       const targetPage = currentPages.find((page) => page.id === batch.pageId);
+      const previousGeneration = collaborationAccessRef.current.documentGeneration;
       let committed = false;
       let baseElements: El[] = [];
       if (targetPage && !masterEditMode) {
@@ -12910,6 +12908,7 @@ const puppetWarpArmed =
       // 한 번의 커밋(=한 번의 CRDT 발행·검증) 뒤, 그 스냅샷을 획 단위 undo 항목으로 펼친다.
       // Wrapper also records the streamed-stroke provenance used by offline Undo/Redo.
       expandDeferredStrokeCommitHistory(batch);
+      pendingStrokeAdmissionRef.current?.noteCommittedPredecessors(batch.pageId, batch.strokes, previousGeneration);
       // 즉시 커밋 경로와 동일한 래스터 승격 — 배치의 각 획을 개별 작업으로 큐잉한다.
       const rasterWorkId = authorizedWorkAssetScopeId;
       const rasterDocument = studioCrdtDocumentRef.current;
@@ -21919,7 +21918,7 @@ function clearSelectionForEdit() {
       handleStudioCrdtDocumentChange={handleStudioCrdtDocumentChange}
       handleStudioLiveEditSafetyChange={handleStudioLiveEditSafetyChange}
       handleStudioLiveRoomChange={handleStudioLiveRoomChange}
-      canvasInputStatus={studioCanvasInputStatus({ saving, documentReloadRequired, sourceHydrationPending, workHydrationFailed, collaborationDocumentUnavailable, initialRecoveryBlocked, autosaveCheckFailed, hasAutosave, collaborationDocumentLocked, reviewLocked: pageEditLocked && !masterEditMode, follower: !persistLeadershipAllowsDraw })} hardCanvasInteractionBlock={hardCanvasInteractionBlock}
+      canvasInputStatus={studioCanvasInputStatus({ saving, documentReloadRequired, sourceHydrationPending, workHydrationFailed, collaborationDocumentUnavailable, initialRecoveryBlocked, autosaveCheckFailed, hasAutosave, collaborationDocumentLocked, collaborationOperationSyncPending, reviewLocked: pageEditLocked && !masterEditMode, follower: !persistLeadershipAllowsDraw })} hardCanvasInteractionBlock={hardCanvasInteractionBlock}
       hasAutosave={hasAutosave}
       healCloneAligned={healCloneAligned}
       healCloneArmed={healCloneArmed}

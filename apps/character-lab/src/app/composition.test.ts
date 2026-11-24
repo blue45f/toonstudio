@@ -41,9 +41,9 @@ function canvasStub(): HTMLCanvasElement {
 }
 
 describe("app/composition", () => {
-  it("신규 착장은 실제 서 있는 자세와 2판 얼굴을 사용하고 기본 1판의 휴지 자세를 보존한다", () => {
+  it("신규 착장은 실제 서 있는 자세와 3판 헤어을 사용하고 기본 1판의 휴지 자세를 보존한다", () => {
     const fresh = createKitShowcaseBootRecipe();
-    expect(fresh.source).toMatchObject({ kind: "kit", kitVersion: 2, baseId: "female" });
+    expect(fresh.source).toMatchObject({ kind: "kit", kitVersion: 3, baseId: "female" });
     expect(fresh.slots.pose).toBe("pose/idle");
     expect(Object.keys(fresh.pose).length).toBeGreaterThan(2);
     expect(fresh.shading.mode).toBe("toon");

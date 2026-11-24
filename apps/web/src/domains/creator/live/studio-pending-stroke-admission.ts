@@ -4,11 +4,13 @@ export interface StudioPendingStrokeScope {
   readonly documentKey: string;
   readonly pageId: string;
   readonly generation: number;
+  readonly accessGeneration: number;
 }
 
 export interface StudioPendingStrokeAdmissionEntry {
   readonly stroke: DrawEl;
   readonly scope: StudioPendingStrokeScope;
+  readonly pendingStrokeIds?: readonly string[];
   /** 시작 때 고른 provider와 설정을 닫아 둔 콜백. 다른 renderer를 다시 선택하지 않는다. */
   readonly admit: (stroke: DrawEl, complete: boolean, finish?: () => void) => boolean;
   readonly recover: (stroke: DrawEl, reason: string) => void;
@@ -18,9 +20,17 @@ export interface StudioPendingStrokeAdmissionEntry {
 
 interface PendingEntry extends StudioPendingStrokeAdmissionEntry {
   stroke: DrawEl;
+  readonly predecessors: Set<string>;
+  readonly order: number;
+  expectedGeneration: number;
   complete: boolean;
   finish?: () => void;
   readonly queuedAt: number;
+}
+
+function sameInputScope(original: StudioPendingStrokeScope, current: StudioPendingStrokeScope): boolean {
+  return original.documentKey === current.documentKey && original.pageId === current.pageId
+    && original.accessGeneration === current.accessGeneration;
 }
 
 /**
@@ -30,6 +40,8 @@ interface PendingEntry extends StudioPendingStrokeAdmissionEntry {
  */
 export class StudioPendingStrokeAdmissionQueue {
   private readonly entries: PendingEntry[] = [];
+  private readonly strokeOrder = new Map<string, number>();
+  private nextOrder = 0;
   private attemptingId: string | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private disposed = false;
@@ -51,8 +63,33 @@ export class StudioPendingStrokeAdmissionQueue {
   defer(input: StudioPendingStrokeAdmissionEntry): void {
     if (this.disposed) { input.recover(input.stroke, "입력 대기열이 종료되었습니다."); return; }
     if (this.entries.some((entry) => entry.stroke.id === input.stroke.id)) return;
-    this.entries.push({ ...input, scope: { ...input.scope }, complete: false, queuedAt: this.now() });
+    if (!this.entries.length) this.strokeOrder.clear();
+    const order = ++this.nextOrder;
+    this.strokeOrder.set(input.stroke.id, order);
+    this.entries.push({ ...input, scope: { ...input.scope }, order, predecessors: new Set(input.pendingStrokeIds),
+      expectedGeneration: input.scope.generation, complete: false, queuedAt: this.now() });
     this.schedule();
+  }
+
+  /** 원고 권한으로 실제 확정한 선행 획만 그 뒤에 수집된 입력의 세대를 진행시킨다. */
+  noteCommittedPredecessors(pageId: string, strokes: readonly DrawEl[], previousGeneration: number): void {
+    if (!this.entries.length || !strokes.length) return;
+    const current = this.ports.currentScope();
+    if (current.pageId !== pageId || current.generation <= previousGeneration) return;
+    for (const entry of this.entries) {
+      if (!sameInputScope(entry.scope, current) || entry.expectedGeneration !== previousGeneration) continue;
+      if (!strokes.every(stroke => entry.predecessors.has(stroke.id) || (this.strokeOrder.get(stroke.id) ?? Infinity) < entry.order)) continue;
+      for (const stroke of strokes) entry.predecessors.delete(stroke.id);
+      entry.expectedGeneration = current.generation;
+    }
+    for (const stroke of strokes) this.strokeOrder.delete(stroke.id);
+  }
+
+  canResume(strokeId: string): boolean {
+    const entry = this.entries[0];
+    if (!entry || entry.stroke.id !== strokeId) return false;
+    const current = this.ports.currentScope();
+    return sameInputScope(entry.scope, current) && entry.expectedGeneration === current.generation;
   }
 
   update(stroke: DrawEl): void {
@@ -75,6 +112,7 @@ export class StudioPendingStrokeAdmissionQueue {
     const index = this.entries.findIndex((entry) => entry.stroke.id === strokeId);
     if (index < 0) return;
     const [entry] = this.entries.splice(index, 1);
+    this.strokeOrder.delete(strokeId);
     if (entry) {
       entry.settled?.(entry.stroke, false);
       entry.recover(structuredClone(entry.stroke), reason);
@@ -96,8 +134,7 @@ export class StudioPendingStrokeAdmissionQueue {
     if (this.disposed || this.attemptingId !== null) return;
     const entry = this.entries[0];
     if (!entry) return;
-    const scope = this.ports.currentScope();
-    if (entry.scope.documentKey !== scope.documentKey || entry.scope.pageId !== scope.pageId || entry.scope.generation !== scope.generation) {
+    if (!this.canResume(entry.stroke.id)) {
       this.cancel(entry.stroke.id, "문서 또는 페이지가 바뀌어 원래 위치의 획 복구에 보관했습니다.");
       this.schedule();
       return;
@@ -129,6 +166,7 @@ export class StudioPendingStrokeAdmissionQueue {
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = null;
     this.disposed = true;
+    this.strokeOrder.clear();
     for (const entry of this.entries.splice(0)) {
       entry.settled?.(entry.stroke, false);
       entry.recover(structuredClone(entry.stroke), "편집기가 닫혀 대기 중 원본 입력을 획 복구에 보관했습니다.");

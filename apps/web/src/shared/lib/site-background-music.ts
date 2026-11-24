@@ -1,5 +1,7 @@
 import type { BgmPlaylistEntry } from "@toonstudio/core/fx";
 
+import { runOnlineBackgroundRequest } from "./online-background-request";
+
 export type SiteOstRole = "opening" | "creator" | "story" | "action" | "romance" | "ending";
 export type SiteOstVocalMode = "vocal" | "instrumental";
 export type SiteOstProfile = "animation" | "webtoon" | "lofi" | "cinematic" | "fantasy" | "citypop";
@@ -337,15 +339,17 @@ export function resolveSiteOstTrackIndex(
   return bestIndex;
 }
 
-export async function loadSiteOstManifest(signal?: AbortSignal): Promise<readonly SiteOstTrack[]> {
-  const response = await fetch("/audio/playlist.json?catalog=prism-awakening-20260921", {
-    signal,
-    headers: { Accept: "application/json" },
-    // Revalidate mutable catalogues so a cached empty release cannot hide new masters.
-    cache: "no-cache",
-  });
-  if (!response.ok) throw new Error("사이트 OST 목록을 불러오지 못했습니다.");
-  return parseSiteBgmManifest(await response.json());
+export function loadSiteOstManifest(signal?: AbortSignal): Promise<readonly SiteOstTrack[]> {
+  return runOnlineBackgroundRequest(async () => {
+    const response = await fetch("/audio/playlist.json?catalog=prism-awakening-20260921", {
+      signal,
+      headers: { Accept: "application/json" },
+      // 변경 가능한 목록을 재검증해 새로 게시한 곡도 표시한다.
+      cache: "no-cache",
+    });
+    if (!response.ok) throw new Error("사이트 OST 목록을 불러오지 못했습니다.");
+    return parseSiteBgmManifest(await response.json());
+  }, signal);
 }
 
 export function siteOstTrackToPlaylistEntry(track: SiteOstTrack): BgmPlaylistEntry {

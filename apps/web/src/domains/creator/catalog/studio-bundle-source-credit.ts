@@ -1,12 +1,10 @@
-import { parseStudioBundleSourceCredit, requireStudioBundleSourceCredit, type StudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
-import { sha256HexPortable } from "../studio-sha256";
+import { requireStudioBundleSourceCredit, type StudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
 
 import type { StudioAsset, StudioAssetRightsMetadata } from "../studio-asset-library";
 import type { StudioBundleAsset } from "../studio-bundle-asset-delivery";
 import type { El, FrameEl, ImageEl } from "../studio-element-model";
-import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 
-export { parseStudioBundleSourceCredit, requireStudioBundleSourceCredit, type StudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
+export { parseStudioBundleSourceCredit, requireStudioBundleSourceCredit, studioBundleCreditMatchesSource, type StudioBundleSourceCredit } from "@toonstudio/contracts/studio-bundle-source-credit";
 
 export function createStudioBundleSourceCredit(asset: StudioBundleAsset, contentHash: string): StudioBundleSourceCredit {
   if (contentHash !== `sha256:${asset.sha256}`) throw new TypeError("번들 원본의 콘텐츠 해시가 다릅니다.");
@@ -53,24 +51,6 @@ export function canonicalizeStudioBundleCreditElement(value: unknown): unknown {
   const source = value.type === "image" && "src" in value ? value.src : "bg" in value ? value.bg : undefined;
   if (typeof source !== "string" || !source) throw new TypeError("번들 출처에 연결된 이미지가 없습니다.");
   return { ...value, bundleSourceCredit: credit };
-}
-
-/** 프레임 배경을 다른 URL·색으로 교체했는데 남은 출처를 권리 허가로 사용하지 않는다. */
-export function studioBundleCreditMatchesSource(value: unknown, source: string | undefined, elementId?: string): boolean {
-  const credit = parseStudioBundleSourceCredit(value);
-  if (!credit || !source) return false;
-  if (source.startsWith("data:")) {
-    if (!/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/u.test(source)) return false;
-    const base64 = source.slice(source.indexOf(",") + 1);
-    if (base64.length > 24 * 1024 * 1024) return false;
-    try {
-      const decoded = atob(base64);
-      return credit.contentHash === `sha256:${sha256HexPortable(Uint8Array.from(decoded, (character) => character.charCodeAt(0)))}`;
-    } catch { return false; }
-  }
-  if (elementId && source === `work-asset://image/${encodeURIComponent(elementId)}`) return true;
-  if (source.startsWith("toonstudio-asset://sha256/")) return credit.contentHash === `sha256:${source.slice("toonstudio-asset://sha256/".length)}`;
-  return source === credit.renderPath || source === resolveAssetUrl(credit.renderPath);
 }
 
 export function studioBundleFrameBackgroundPatch(source: { readonly bundleSourceCredit?: StudioBundleSourceCredit }, bg: string): Pick<FrameEl, "bg" | "bundleSourceCredit" | "aiProvenance"> {

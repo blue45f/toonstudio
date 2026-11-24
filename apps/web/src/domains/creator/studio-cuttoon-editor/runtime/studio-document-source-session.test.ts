@@ -7,9 +7,13 @@ import { loadStudioDocumentSource, verifyStudioDocumentSourceSession } from "./s
 import type { ServerSessionSynchronization } from "@/domains/auth/public/session/auth-session-store";
 
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ synchronizeServerSessionState: vi.fn() }));
-const sourceApi = vi.hoisted(() => ({ getWork: vi.fn(), getShared: vi.fn() }));
+const sourceApi = vi.hoisted(() => ({ getWork: vi.fn(), getShared: vi.fn(), remember: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../offline/studio-recent-owner-work", () => ({ rememberStudioEditableWork: sourceApi.remember }));
 vi.mock("@/platform/creator-client", () => ({ getWork: sourceApi.getWork }));
-vi.mock("../../studio-shared-document-client", () => ({ getStudioSharedDocument: sourceApi.getShared }));
+vi.mock("../../studio-shared-document-client", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../studio-shared-document-client")>(),
+  getStudioSharedDocument: sourceApi.getShared,
+}));
 
 const synchronize = vi.mocked(synchronizeServerSessionState);
 const authenticated: ServerSessionSynchronization = {
@@ -90,6 +94,17 @@ describe("source loader가 hydration으로 전달하는 identity 경계", () => 
     expect(synchronize).toHaveBeenCalledTimes(1);
     expect(sourceApi.getShared).toHaveBeenCalledExactlyOnceWith(f.workId, f.signal);
     expect(sourceApi.getWork).not.toHaveBeenCalled();
+  });
+  it.each([
+    ["owner", "edit", true, true], ["editor", "edit", true, false], ["editor", "edit", false, null],
+    ["viewer", "view", false, null], ["commenter", "comment", false, null],
+  ] as const)("실제로 연 %s 원고의 서버 편집 허용에 따라 계정별 최근 이력을 기록한다", async (role, access, edit, owned) => {
+    const f = { ...options(), authScopeKey: "source-actor" };
+    sourceApi.remember.mockClear();
+    sourceApi.getShared.mockResolvedValueOnce({ document: work, role, status: "active", access, capabilities: { view: true, edit } });
+    await loadStudioDocumentSource(f);
+    if (owned === null) expect(sourceApi.remember).not.toHaveBeenCalled();
+    else expect(sourceApi.remember).toHaveBeenCalledExactlyOnceWith("source-actor", f.workId, owned, f.signal);
   });
   it("확인된 guest의 공개 원고는 기존 author와 상세 정보를 유지한다", async () => {
     synchronize.mockResolvedValue({ status: "unauthenticated", session: null });

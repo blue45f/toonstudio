@@ -3,6 +3,7 @@ import { synchronizeServerSessionState } from "@/domains/auth/public/session/aut
 import type { WorkDetail } from "@/platform/creator-client";
 
 import { forgetOfflineOwnerReceipt, readOfflineOwnerReceipt } from "../../offline/studio-offline-owner-receipt";
+import { rememberStudioEditableWork } from "../../offline/studio-recent-owner-work";
 import type { StudioSharedDocument } from "../../studio-shared-document-client";
 
 interface StudioDocumentSourceSession {
@@ -47,7 +48,7 @@ export async function loadStudioDocumentSource(options: StudioDocumentSourceSess
   const { workId, authScopeKey, signal, targetId, remixId, isCurrent } = options;
   if (await verifyStudioDocumentSourceSession(options) === "identity-changed" || !isCurrent()) return null;
   if (workId && authScopeKey) {
-    const { getStudioSharedDocument } = await import("../../studio-shared-document-client");
+    const { canEditStudioSharedDocument, getStudioSharedDocument } = await import("../../studio-shared-document-client");
     signal.throwIfAborted();
     if (!isCurrent()) return null;
     let shared: StudioSharedDocument;
@@ -63,6 +64,11 @@ export async function loadStudioDocumentSource(options: StudioDocumentSourceSess
       void readOfflineOwnerReceipt(workId, signal, true);
     } else {
       forgetOfflineOwnerReceipt(workId);
+    }
+    if (shared.status === "active" && canEditStudioSharedDocument(shared)) {
+      void rememberStudioEditableWork(authScopeKey, workId, shared.role === "owner", signal).catch(() => {
+        // 기기 이력이 실패해도 서버에서 확인한 원고는 그대로 연다.
+      });
     }
     return { work: shared.document, remixAuthorName: "", shared, detail: null };
   }

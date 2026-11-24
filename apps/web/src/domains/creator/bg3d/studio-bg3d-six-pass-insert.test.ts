@@ -89,6 +89,30 @@ it("기본 도형 6패스는 realtime에서도 실제 일곱 CAS 원본·두 own
   expect(await lineAuthority.ownerRefs(`studio-linked-3d-pass:${page.id}:${bundle.bundleId}`)).toHaveLength(1);
   expect(page.elements.every((element) => element.type === "image" && element.bg3dLtBundleReference?.renderRevisionId === revision.renderRevisionId)).toBe(true);
 });
+it("배경 저장 중 들어온 손선은 보존하고 최신 컷에서 재시도하면 선택한 배경만 갱신한다", async () => {
+  const f = await fixture(true);
+  const before = f.read();
+  const stroke: El = { type: "draw", id: "artist-ink", points: [1, 2, 10, 12], stroke: "#222222", strokeWidth: 3 };
+  const independent: El = { type: "image", id: "another-background", src: f.result.compositePngDataUrl,
+    x: 10, y: 20, width: 42, height: 42, rotation: 0, bg3dScene: createDefaultStudioBg3dSceneDocument() };
+  const sixPass = f.scene.output.sixPassLt;
+  if (!sixPass) throw new Error("그림자 패스가 없습니다.");
+  const scene = normalizeStudioBg3dSceneDocument({ ...f.scene,
+    camera: { ...f.scene.camera, fovDegrees: 71 }, output: { ...f.scene.output,
+      line: { ...f.scene.output.line, widthPx: 3 }, tone: { ...f.scene.output.tone, levels: 5 },
+      sixPassLt: { ...sixPass, shadowOpacity: 0.44 } } });
+  const render = { ...f.result, bg3dScene: scene };
+  const update = f.bind()(render, f.manifest.anchorElementId);
+  const newer = { ...before, elements: [...before.elements, independent, stroke] };
+  f.restore(newer);
+  expect(await update).toBe(false);
+  expect(f.read()).toBe(newer);
+  expect(f.commit).not.toHaveBeenCalled();
+  expect(await f.bind()(render, f.manifest.anchorElementId)).toBe(true);
+  expect(f.read().elements.slice(-2)).toEqual([independent, stroke]);
+  expect(f.read().elements.find(el => el.id === f.manifest.anchorElementId)).toMatchObject({ bg3dScene: {
+    camera: { fovDegrees: 71 }, output: { line: { widthPx: 3 }, tone: { levels: 5 }, sixPassLt: { shadowOpacity: 0.44 } } } });
+});
 it("recapture는 여섯 stable ID·그룹·artist 표현과 이전 원본을 유지한다", async () => {
   const f = await fixture(true), before = f.read(), ids = before.elements.map((element) => element.id);
   expect(await f.bind()(f.result, f.manifest.anchorElementId)).toBe(true);

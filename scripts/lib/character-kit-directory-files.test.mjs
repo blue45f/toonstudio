@@ -27,14 +27,14 @@ function companionWith(change) {
 const inspect = (overrides) => verifyKit({ source: sourceWith(overrides), only: ["V2"] });
 
 describe("같은 디렉터리의 등록 키트 판 검증", () => {
-  it("출하된 두 판을 함께 읽고 미등록 파일 없이 통과한다", async () => {
+  it("출하된 세 판을 함께 읽고 미등록 파일 없이 통과한다", async () => {
     const result = await inspect();
     expect(result.ok).toBe(true);
     expect(result.findings).toEqual([]);
     expect(result.checks.V2.status).toBe("pass");
   });
 
-  it.each([portraitBasePath, portraitIrisPath])("%s 바이트 변조를 두 번째 판의 SHA로 검출한다", async (file) => {
+  it.each([portraitBasePath, portraitIrisPath, "parts/female/hair/romance-long-swept.glb"])("%s 바이트 변조를 해당 판의 SHA로 검출한다", async (file) => {
     const original = disk.read(file);
     if (original === null || original.length === 0) throw new Error(`출하 파일이 비었습니다: ${file}`);
     const corrupted = original.slice();
@@ -68,8 +68,14 @@ describe("같은 디렉터리의 등록 키트 판 검증", () => {
     ]));
   });
 
-  it("동반 명세가 없으면 인물 파일도 미등록 상태로 거부한다", async () => {
+  it("3판이 2판의 에셋을 함께 써도 2판 레시피 원장이 누락되면 거부한다", async () => {
     const result = await inspect(new Map([[companionPath, null]]));
+    expect(result.ok).toBe(false);
+    expect(result.findings).toContainEqual(expect.objectContaining({ where: companionPath }));
+  });
+
+  it("동반 명세가 없으면 인물 파일도 미등록 상태로 거부한다", async () => {
+    const result = await inspect(new Map([[companionPath, null], ["kit-swept.json", null]]));
     expect(result.ok).toBe(false);
     expect(result.findings).toEqual(expect.arrayContaining([
       expect.objectContaining({ where: portraitBasePath, message: expect.stringContaining("모르는 파일") }),

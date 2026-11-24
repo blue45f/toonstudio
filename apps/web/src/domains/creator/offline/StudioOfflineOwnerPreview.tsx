@@ -3,35 +3,45 @@ import { Suspense, useEffect, useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { StudioPageThumbnail } from "../studio-page-lazy-ui";
-import { studioAutosaveKey, studioSharedAutosaveCompatibility } from "../studio-autosave";
+import { StudioAutosaveUnsupportedVersionError, studioAutosaveKey, studioSharedAutosaveCompatibility } from "../studio-autosave";
 import { latestStudioPreviewRecord, studioProjectPreviewFromAutosave, type PreviewCandidate } from "./studio-autosave-preview-page";
 import { useStudioOfflineOwnerPreviewGrant } from "./use-studio-offline-owner-preview-grant";
 
 type OwnerPreviewGrant = Pick<NonNullable<ReturnType<typeof useStudioOfflineOwnerPreviewGrant>>, "userId" | "workId" | "revision">;
 
-async function loadSavedPage(grant: OwnerPreviewGrant, signal: AbortSignal): Promise<PreviewCandidate | null> {
-  const key = studioAutosaveKey(grant);
-  const [{ createStudioAutosaveOpfsSession }, { acquireStudioAutosaveSqliteStore }] =
-    await Promise.all([import("../studio-autosave-opfs-session"), import("../studio-autosave-sqlite-store")]);
+async function readJournal(key: string, signal: AbortSignal) {
+  const { createStudioAutosaveOpfsSession } = await import("../studio-autosave-opfs-session");
   signal.throwIfAborted();
-  const [opfs, sqlite] = await Promise.allSettled([
-    createStudioAutosaveOpfsSession(key, undefined, { readOnly: true }),
-    acquireStudioAutosaveSqliteStore(),
-  ]);
-  const session = opfs.status === "fulfilled" ? opfs.value : null;
+  const session = await createStudioAutosaveOpfsSession(key, undefined, { readOnly: true });
   try {
     signal.throwIfAborted();
-    const [journal, row] = await Promise.all([
-      session?.readLatest(signal),
-      sqlite.status === "fulfilled" ? sqlite.value.read(key) : null,
-    ]);
-    signal.throwIfAborted();
-    const saved = latestStudioPreviewRecord(journal, row);
-    if (saved?.state !== "snapshot" || !studioSharedAutosaveCompatibility(saved.payload, grant).compatible) return null;
-    return studioProjectPreviewFromAutosave(saved.payload);
+    return await session?.readLatest(signal);
   } finally {
     await session?.dispose();
   }
+}
+
+async function readSqlite(key: string, signal: AbortSignal) {
+  const { acquireStudioAutosaveSqliteStore } = await import("../studio-autosave-sqlite-store");
+  signal.throwIfAborted();
+  const store = await acquireStudioAutosaveSqliteStore();
+  signal.throwIfAborted();
+  return store.read(key);
+}
+
+async function loadSavedPage(grant: OwnerPreviewGrant, signal: AbortSignal): Promise<PreviewCandidate | null> {
+  const key = studioAutosaveKey(grant);
+  const [journal, row] = await Promise.allSettled([readJournal(key, signal), readSqlite(key, signal)]);
+  signal.throwIfAborted();
+  for (const result of [journal, row]) {
+    if (result.status === "rejected" && result.reason instanceof StudioAutosaveUnsupportedVersionError) return null;
+  }
+  const saved = latestStudioPreviewRecord(
+    journal.status === "fulfilled" ? journal.value : null,
+    row.status === "fulfilled" ? row.value : null,
+  );
+  if (saved?.state !== "snapshot" || !studioSharedAutosaveCompatibility(saved.payload, grant).compatible) return null;
+  return studioProjectPreviewFromAutosave(saved.payload);
 }
 
 function SavedPage({ grant }: { readonly grant: OwnerPreviewGrant }) {

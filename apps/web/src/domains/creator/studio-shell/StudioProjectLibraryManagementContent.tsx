@@ -12,9 +12,10 @@ import {
   StudioProjectLibraryRecoveryRow, StudioProjectSelectionCheckbox,
 } from "./StudioProjectLibraryManagementUi";
 import { StudioProjectLibraryCardActions, StudioProjectLibraryCompactCard } from "./StudioProjectLibraryCompactCard";
+import { studioCanvasHref } from "../studio-workspace-route";
 import { StudioProjectLibraryResumeCard } from "./StudioProjectLibraryResumeCard";
 import { StudioProjectLibraryFastStartStrip } from "./StudioProjectLibraryFastStartStrip";
-import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryManagementViewHref } from "./studio-project-library-management-model";
+import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryDateLabel, studioProjectLibraryManagementViewHref } from "./studio-project-library-management-model";
 import { StudioExampleProjectBanner } from "../workspace/StudioExampleProjectBanner";
 import { StudioSampleManuscriptCard } from "../workspace/StudioSampleManuscriptCard";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
@@ -36,7 +37,7 @@ export function StudioProjectLibraryManagementContent({
     busyProjectId, setSaveTarget, setDeleteRequest,
     visibleProjects, temporaryProjects, archiveProjects,
     trashProjects, restoreProjects, duplicateProject, savePackage,
-    projectOverviewHref, projectResumeTarget,
+    projectOverviewHref, projectResumeTarget, recentOwnerWork,
   } = controller;
   const [visibleActiveCount, setVisibleActiveCount] = useState(INITIAL_SECTION_PROJECT_COUNT);
   const [visibleRecoveryCount, setVisibleRecoveryCount] = useState(INITIAL_SECTION_PROJECT_COUNT);
@@ -76,9 +77,11 @@ export function StudioProjectLibraryManagementContent({
     setVisibleRecoveryCount(INITIAL_SECTION_PROJECT_COUNT);
   }, [view, query]);
 
-  const recentProject = view === "active" && !query.trim()
+  const recentLocalProject = view === "active" && !query.trim()
     ? studioLibraryRecentWork(visibleProjects, projectResumeTarget)[0] ?? null
     : null;
+  const showServerResume = recentOwnerWork && (!recentLocalProject || recentOwnerWork.openedAt > Date.parse(recentLocalProject.lastOpenedAt));
+  const recentProject = showServerResume ? null : recentLocalProject;
   const otherProjects = visibleProjects.filter((project) => project.id !== recentProject?.id);
   const shownProjects = otherProjects.slice(0, visibleActiveCount - (recentProject ? 1 : 0));
   const shownRecoveryProjects = visibleProjects.slice(0, visibleRecoveryCount);
@@ -130,7 +133,15 @@ export function StudioProjectLibraryManagementContent({
       className="grid items-stretch gap-4 lg:grid-cols-2"
     >
       <div data-studio-bento-resume="true" className="flex min-w-0 flex-col">
-        {recentProps ? (
+        {showServerResume ? (
+          <section aria-label={bi("최근 작업 빠른 이어하기", "Quick resume recent work")} data-recent-primary="true" className="flex h-full flex-col items-start justify-between gap-3 rounded-xl border border-line bg-panel p-4">
+            <h2 className="text-base font-semibold text-fg">{bi("최근 서버 원고", "Recent server manuscript")}</h2>
+            <p className="text-sm text-fg-2">{bi("마지막 열기", "Last opened")} {studioProjectLibraryDateLabel(new Date(recentOwnerWork.openedAt).toISOString(), locale)}</p>
+            <Link href={studioCanvasHref({ workId: recentOwnerWork.workId })} data-studio-recent-owner-work="true" data-studio-library-primary-action="resume" className={buttonClass({ size: "sm", className: "min-h-11 rounded-lg" })}>
+              {bi("이어서 작업", "Continue")}
+            </Link>
+          </section>
+        ) : recentProps ? (
           <StudioProjectLibraryResumeCard
             key={recentProps.project.id}
             project={recentProps.project}
@@ -170,6 +181,11 @@ export function StudioProjectLibraryManagementContent({
             </div>
           </div>
         )}
+        {recentOwnerWork && !showServerResume ? (
+          <Link href={studioCanvasHref({ workId: recentOwnerWork.workId })} data-studio-recent-owner-work="true" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-4">
+            {bi("최근 서버 원고 열기", "Open recent server manuscript")}
+          </Link>
+        ) : null}
       </div>
       <section
         aria-label={bi("빠른 작업 시작", "Quick start")}
@@ -193,7 +209,7 @@ export function StudioProjectLibraryManagementContent({
     <>
       {visibleProjects.length === 0 ? (
         view === "active" && !query ? (
-          <div className="studio-library-workspace" data-studio-project-sections="true" data-has-recent-work={false}>
+          <div className="studio-library-workspace" data-studio-project-sections="true" data-has-recent-work={Boolean(showServerResume)}>
             {homeBento}
           </div>
         ) : (
@@ -257,11 +273,11 @@ export function StudioProjectLibraryManagementContent({
           </section>
         )
       ) : view === "active" ? (
-        <div className="studio-library-workspace" data-studio-project-sections="true" data-has-recent-work={Boolean(recentProps)}>
+        <div className="studio-library-workspace" data-studio-project-sections="true" data-has-recent-work={Boolean(recentProps || showServerResume)}>
           {homeBento}
           <section className="studio-library-other-work" aria-labelledby="studio-library-work-list-title">
             <div className="studio-library-work-list-heading">
-              <h2 id="studio-library-work-list-title">{recentProps ? bi("다른 작업", "Other work") : bi("작업 목록", "Work list")}</h2>
+              <h2 id="studio-library-work-list-title">{recentProps || showServerResume ? bi("다른 작업", "Other work") : bi("작업 목록", "Work list")}</h2>
               <button type="button" aria-pressed={selectionVisible} onClick={() => {
                 if (selectionVisible) { setSelectionMode(false); setSelectedIds(new Set()); }
                 else setSelectionMode(true);

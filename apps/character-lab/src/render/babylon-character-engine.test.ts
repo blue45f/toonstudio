@@ -39,6 +39,33 @@ function toon(overrides: Partial<ShadingProfile["toon"]> = {}): ShadingProfile {
 }
 
 describe("장면 빌드", () => {
+  it("전신은 기준 자세의 바깥으로 회전한 스킨 표면까지 담는다", async () => {
+    await load();
+    const full = { ...DEFAULT_FRAMING, mode: "full-body", yawDeg: 0, pitchDeg: 0, distanceScale: 1 } as const;
+    harness.engine.setCamera(full);
+    const standing = harness.engine.viewportCamera();
+    harness.engine.applyPlan(planWith({ boneRotations: { hips: [0, 0, 1, 0] } }));
+    harness.engine.setCamera(full);
+    const turned = harness.engine.viewportCamera();
+    const hair = harness.nullEngine.scenes[0]?.getMeshByName("hair");
+    const vertices = hair?.getPositionData(true, true);
+    if (!vertices?.length) throw new Error("포즈가 적용된 머리카락 정점이 없습니다.");
+    const bottomMargin = (camera: typeof turned) => {
+      let margin = Infinity;
+      for (let i = 0; i < vertices.length; i += 3) {
+        const depth = camera.position[2] - vertices[i + 2]!;
+        const bottom = camera.position[1] - depth * Math.tan(camera.fovY / 2);
+        margin = Math.min(margin, vertices[i + 1]! - bottom);
+      }
+      return margin;
+    };
+    expect(bottomMargin(standing)).toBeLessThan(0);
+    expect(bottomMargin(turned)).toBeGreaterThan(0);
+    harness.engine.applyPlan(planWith({ boneRotations: {} }));
+    harness.engine.setCamera(full);
+    expect(harness.engine.viewportCamera().position[1]).toBeCloseTo(standing.position[1], 5);
+  });
+
   it("우수 좌표·투명 clear·KHR PBR Neutral 톤맵·카메라 2대·key/fill 광원", () => {
     const scene = harness.engine.inspectScene();
     expect(scene.rightHanded).toBe(true);

@@ -5,7 +5,7 @@ import { StudioPendingStrokeAdmissionQueue } from "./studio-pending-stroke-admis
 import type { DrawEl } from "../studio-element-model";
 import type { StudioPendingStrokeScope } from "./studio-pending-stroke-admission";
 
-const scope: StudioPendingStrokeScope = { documentKey: "doc", pageId: "page", generation: 1 };
+const scope: StudioPendingStrokeScope = { documentKey: "doc", pageId: "page", generation: 1, accessGeneration: 0 };
 function stroke(id: string): DrawEl {
   return { id, type: "draw", mode: "pen", kind: "freehand", brush: "watercolor", points: [1, 2], pressures: [0.17], tiltXs: [12], tiltYs: [-20], sampleTimeOffsets: [0], stroke: "#112233", strokeWidth: 23 };
 }
@@ -56,20 +56,66 @@ describe("같은 provider의 입력 준비 대기열", () => {
     queue.dispose();
   });
 
-  it.each(["pageId", "generation", "documentKey"] as const)("%s가 바뀌면 다른 문서에 넣지 않고 원래 복구 콜백에 보관한다", (field) => {
+  it.each(["pageId", "generation", "documentKey", "accessGeneration"] as const)("%s가 바뀌면 다른 문서에 넣지 않고 원래 복구 콜백에 보관한다", (field) => {
     let current = scope;
     const recover = vi.fn();
     const admit = vi.fn(() => true);
     const queue = new StudioPendingStrokeAdmissionQueue({ currentScope: () => current, activeStrokeId: () => null });
     queue.defer({ stroke: stroke("a"), scope, admit, recover });
     queue.complete(stroke("a"));
-    current = { ...scope, [field]: field === "generation" ? 2 : "other" };
+    current = { ...scope, [field]: typeof scope[field] === "number" ? 2 : "other" };
     queue.pump();
     expect(admit).not.toHaveBeenCalled();
     expect(recover).toHaveBeenCalledOnce();
     expect(queue.size).toBe(0);
     queue.dispose();
   });
+
+  it("먼저 그린 획의 실제 커밋만 따라 다음 두 입력을 원래 좌표와 필압으로 재생한다", () => {
+    let current = scope;
+    const queue = new StudioPendingStrokeAdmissionQueue({ currentScope: () => current, activeStrokeId: () => null });
+    const recover = vi.fn();
+    const replayed: DrawEl[] = [];
+    for (const id of ["b", "c"]) {
+      const source = { ...stroke(id), points: [1, 2, 3, 4], pressures: [0.17, 0.91], tiltXs: [12, 45] };
+      queue.defer({ stroke: source, scope, pendingStrokeIds: ["a"], recover,
+        admit: (input, complete) => { expect(complete).toBe(true); replayed.push(input); return true; } });
+      queue.complete(source);
+    }
+    current = { ...scope, generation: 3 };
+    queue.noteCommittedPredecessors("page", [stroke("a")], 1);
+    expect(queue.canResume("b")).toBe(true);
+    queue.pump();
+    current = { ...scope, generation: 5 };
+    queue.noteCommittedPredecessors("page", [stroke("b")], 3);
+    queue.pump();
+    expect(replayed.map(s => [s.id, s.points, s.pressures, s.tiltXs])).toEqual(
+      ["b", "c"].map(id => [id, [1, 2, 3, 4], [0.17, 0.91], [12, 45]]),
+    );
+    expect(recover).not.toHaveBeenCalled();
+    expect(queue.size).toBe(0);
+  });
+
+  it.each(["원격 수정이 먼저", "원격 수정이 나중", "다른 획", "섞인 배치", "접근 권한 변경", "페이지 변경", "문서 변경"])(
+    "%s인 경우 선행 커밋을 근거로 종전 입력을 승인하지 않는다", reason => {
+      let current = scope;
+      const recover = vi.fn(), admit = vi.fn(() => true);
+      const queue = new StudioPendingStrokeAdmissionQueue({ currentScope: () => current, activeStrokeId: () => null });
+      queue.defer({ stroke: stroke("b"), scope, pendingStrokeIds: ["a"], recover, admit });
+      queue.complete(stroke("b"));
+      current = { ...scope, generation: 3 };
+      if (reason === "접근 권한 변경") current = { ...current, accessGeneration: 2 };
+      if (reason === "페이지 변경") current = { ...current, pageId: "other" };
+      if (reason === "문서 변경") current = { ...current, documentKey: "other" };
+      const ids = reason === "다른 획" ? ["peer"] : reason === "섞인 배치" ? ["a", "peer"] : ["a"];
+      queue.noteCommittedPredecessors("page", ids.map(stroke), reason === "원격 수정이 먼저" ? 2 : 1);
+      if (reason === "원격 수정이 나중") current = { ...current, generation: 4 };
+      expect(queue.canResume("b")).toBe(false);
+      queue.pump();
+      expect(admit).not.toHaveBeenCalled();
+      expect(recover).toHaveBeenCalledExactlyOnceWith(stroke("b"), expect.any(String));
+    },
+  );
 
   it("실패와 시간 초과에는 다른 provider로 바꾸지 않고 완성 획 전부를 보관한다", () => {
     const recover = vi.fn();

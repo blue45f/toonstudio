@@ -15,7 +15,7 @@
  *  - 패널: 슬롯 패널 + 뷰포트(ViewportPane) + 인스펙터 9탭(파라미터·표정·포즈·물리·렌더·페인트·비전·제작 패키지·내보내기)
  */
 import { PERFORMANCE_PRESETS, findPosePreset } from "../animation/presets";
-import { KIT_DEFAULT_ID, KIT_PORTRAIT_VERSION, createDefaultRecipe, createKitDefaultRecipe } from "../contracts";
+import { KIT_DEFAULT_ID, KIT_SWEPT_HAIR_VERSION, createDefaultRecipe, createKitDefaultRecipe } from "../contracts";
 import { loadKitManifest } from "../domains/authored/kit-loader.browser";
 import { buildKitPlanDetailed } from "../domains/authored/kit-plan";
 import { GEOMETRY_SLOT_KINDS, buildHumanoidModel, geometryKeyOf } from "../domains/humanoid/humanoid-model";
@@ -110,7 +110,7 @@ export function createKitShowcaseBootRecipe(baseId: KitBaseId = "female"): Chara
   const standing = findPosePreset("idle");
   return {
     ...base,
-    source: { kind: "kit", kitId: KIT_DEFAULT_ID, baseId, kitVersion: KIT_PORTRAIT_VERSION },
+    source: { kind: "kit", kitId: KIT_DEFAULT_ID, baseId, kitVersion: KIT_SWEPT_HAIR_VERSION },
     slots: {
       ...base.slots,
       pose: "pose/idle",

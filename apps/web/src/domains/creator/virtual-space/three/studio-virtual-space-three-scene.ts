@@ -3,6 +3,9 @@ import * as THREE from "three";
 
 import { STUDIO_VRM_HERO_V1_SAMPLES } from "../../vrm/studio-vrm-hero-v1-catalog-entries";
 import { isStudioVrmProductionModelUrl } from "../../vrm/studio-vrm-model-quality";
+import { isStudioVrmTechnicallyAdmittedModel } from "../../vrm/studio-vrm-model-technical-denylist.generated";
+import { isStudioVrmProductionThumbnailUrl } from "../../vrm/studio-vrm-thumbnail-quality";
+import { isStudioVrmTechnicallyAdmittedThumbnail } from "../../vrm/studio-vrm-thumbnail-technical-denylist.generated";
 import { BUNDLED_VRM_RIGHTS_BLOCKS, SAMPLE_VRM_ENTRIES, SAMPLE_VRMS } from "../../vrm/vrm-library";
 import { CAMPUS_INTERACTIONS, CAMPUS_NPCS, CAMPUS_ZONES } from "../studio-virtual-space-campus-blueprint";
 import type { StudioVirtualSpacePoint } from "../studio-virtual-space-model";
@@ -129,6 +132,17 @@ export const STUDIO_THREE_PROPS: readonly StudioThreePropSpec[] = Object.freeze(
 
 const BUNDLED_VRM_RIGHTS_BLOCKED_URLS = new Set<string>(BUNDLED_VRM_RIGHTS_BLOCKS.map((e) => e.url));
 const ACTIVE_SAMPLE_VRM_IDS = new Set<string>(SAMPLE_VRM_ENTRIES.map((e) => e.id));
+const ADMITTED_HERO_V1_SAMPLE_IDS = new Set<string>(
+  STUDIO_VRM_HERO_V1_SAMPLES
+    .filter(
+      (sample) =>
+        isStudioVrmProductionThumbnailUrl(sample.thumbnailUrl)
+        && isStudioVrmTechnicallyAdmittedThumbnail(sample.id)
+        && isStudioVrmProductionModelUrl(sample.url)
+        && isStudioVrmTechnicallyAdmittedModel(sample.id),
+    )
+    .map((sample) => sample.id),
+);
 const SAMPLE_VRM_BY_URL = new Map(SAMPLE_VRMS.map((e) => [e.url, e] as const));
 /** `public/vrm/LICENSES.md` 상 CC0가 아닌 조건부·고지 조건부 또는 제외 대상 VRM. */
 const NON_CC0_BUNDLED_VRM_URLS = new Set<string>([
@@ -140,7 +154,10 @@ export function isVerifiedStudioThreeVrmUrl(value: unknown): value is string {
   if (!isStudioVrmProductionModelUrl(value) || !value.startsWith("/vrm/")) return false;
   if (BUNDLED_VRM_RIGHTS_BLOCKED_URLS.has(value) || NON_CC0_BUNDLED_VRM_URLS.has(value)) return false;
   const sample = SAMPLE_VRM_BY_URL.get(value);
-  return Boolean(sample && ACTIVE_SAMPLE_VRM_IDS.has(sample.id) && !sample.licenseNotice && !sample.limitations?.includes("heavy-payload"));
+  if (!sample) return false;
+  const catalogAdmitted = ACTIVE_SAMPLE_VRM_IDS.has(sample.id)
+    || (sample.visibility === "legacy" && ADMITTED_HERO_V1_SAMPLE_IDS.has(sample.id));
+  return catalogAdmitted && !sample.licenseNotice && !sample.limitations?.includes("heavy-payload");
 }
 
 const LEGACY_STUDIO_THREE_VRM_URLS = [

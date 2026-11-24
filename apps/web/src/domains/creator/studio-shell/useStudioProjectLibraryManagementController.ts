@@ -15,6 +15,7 @@ import { createStudioProjectLibraryResumeCache } from "./studio-project-library-
 import { activateStudioProjectsBulk, archiveStudioProjectsBulk, permanentlyDeleteStudioProjectsBulk, restoreStudioProjectsBulk, trashStudioProjectsBulk, type StudioProjectBulkMutationResult } from "../studio-project-library-bulk";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import { resolveStudioProjectLibraryManagementView, sortStudioProjectLibraryProjects, studioProjectIsTemporaryWork, studioProjectLibraryLocale, studioProjectLibrarySearchText, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
+import { useStudioRecentOwnerWork } from "./useStudioRecentOwnerWork";
 import { useStudioProjectLibrary } from "./useStudioProjectLibrary";
 import { useStudioSaveProfiles } from "./useStudioSaveProfiles";
 
@@ -45,6 +46,7 @@ export function useStudioProjectLibraryManagementController() {
   const library = useStudioProjectLibrary(locale, status);
   const profiles = useStudioSaveProfiles();
   const [query, setQuery] = useState("");
+  const recentOwnerWork = useStudioRecentOwnerWork(view === "active" && !query.trim() ? authUserId : null);
   const clearQuery = useCallback(() => setQuery(""), []);
   const [sort, setSort] = useState<StudioProjectLibrarySortMode>("recent");
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -454,6 +456,7 @@ export function useStudioProjectLibraryManagementController() {
   return {
     locale,
     authUserId,
+    recentOwnerWork,
     view,
     library,
     profiles,

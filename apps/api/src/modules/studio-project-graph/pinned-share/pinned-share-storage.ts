@@ -28,8 +28,8 @@ export async function requireShareManager(client: PoolClient, actorId: string, w
   return shareHash({ workId, actorId, owner: work.userId, sessionVersion: user.sessionVersion, membership: actorId === work.userId ? null : membership });
 }
 type Subject = PinnedShareCreate["subject"];
-export async function pinnedShareCapture(client: PoolClient, subject: Subject) {
-  const proofs = await loadStudioReviewResolutionCaptures(client, subject.artifactId, [subject.reviewId]);
+export async function pinnedShareCapture(client: PoolClient, subject: Subject, checkSnapshot?: (snapshot: unknown) => void) {
+  const proofs = await loadStudioReviewResolutionCaptures(client, subject.artifactId, [subject.reviewId], false, checkSnapshot);
   if (proofs.length !== 1 || !proofs[0] || canonicalJson(proofs[0].subject) !== canonicalJson(subject)) return failShare("invalid-source");
   const row = (await client.query<{ status: string; decidedBy: string | null; decidedAt: string | null; rasters: unknown }>(
     `SELECT review.status,review."decidedBy",to_char(review."decidedAt" AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "decidedAt",

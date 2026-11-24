@@ -2,6 +2,16 @@ export const STUDIO_OFFLINE_PREPARE_MESSAGE = "toonstudio-sw:prepare-offline";
 export const STUDIO_OFFLINE_STATUS_MESSAGE = "toonstudio-sw:offline-status";
 export const STUDIO_OFFLINE_MAX_RESOURCES = 1024;
 
+export const STUDIO_OFFLINE_TOOL_ICONS: readonly string[] = [
+  "/brand/luminous-atelier-20261114/icon-studio-layers-color.webp",
+  "/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp",
+  "/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp",
+];
+
+export function isStudioOfflineShellFontPath(pathname: string): boolean {
+  return /^\/fonts\/(?:pretendard|space-grotesk)\/v\d+(?:\.\d+)*\/[a-zA-Z0-9_.-]+\.(?:css|woff2)$/u.test(pathname);
+}
+
 export interface StudioOfflinePreparationReport {
   readonly schema: 1;
   readonly buildId: string;

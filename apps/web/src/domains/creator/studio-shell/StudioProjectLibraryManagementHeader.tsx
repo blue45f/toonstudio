@@ -27,7 +27,7 @@ export function StudioProjectLibraryManagementHeader({
     setSelectedIds, notice, setNotice, setDeleteRequest, listedProjects,
     viewCounts, visibleProjects, selectedProjects, allVisibleSelected,
     toggleVisibleSelection, archiveProjects, trashProjects, restoreProjects,
-    projectResumeTarget,
+    projectResumeTarget, recentOwnerWork,
   } = controller;
   const hasSearchQuery = query.trim().length > 0;
   const recentProject = view === "active" && !hasSearchQuery
@@ -37,16 +37,16 @@ export function StudioProjectLibraryManagementHeader({
     <div className="studio-library-entry-actions" data-studio-primary-entry-actions="true">
       <Link
         href={STUDIO_START_GATEWAY_HREF}
-        data-studio-library-primary-action={recentProject ? undefined : "new"}
+        data-studio-library-primary-action={recentProject || recentOwnerWork ? undefined : "new"}
         className={buttonClass({
-          variant: "solid",
+          variant: recentOwnerWork ? "outline" : "solid",
           className: "min-h-11 min-w-0 gap-2 whitespace-normal rounded-lg px-4 font-semibold",
         })}
       >
         <Plus size={16} strokeWidth={1.7} aria-hidden="true" />
         {bi("새 작업", "New work")}
       </Link>
-      {!recentProject ? (
+      {!recentProject && !recentOwnerWork ? (
         <Link
           href="/studio/import"
           className={buttonClass({
@@ -103,7 +103,7 @@ export function StudioProjectLibraryManagementHeader({
           </h1>
           <span className="studio-library-heading-ink" data-ink-enter="line" aria-hidden="true" />
           <p className="studio-library-storage-note"><Laptop size={14} strokeWidth={1.6} aria-hidden="true" />{bi("저장 위치는 작품별로 확인하세요", "Check the storage location for each work")}</p>
-          {!recentProject ? <p className="mt-1.5 text-sm leading-5 text-fg-2 [word-break:keep-all]">
+          {!recentProject && !recentOwnerWork ? <p className="mt-1.5 text-sm leading-5 text-fg-2 [word-break:keep-all]">
             {view === "active" && !hasSearchQuery && !recentProject
               ? listedProjects.length > 0
                 ? bi("개인 작업은 아직 없습니다. 아래 예제를 열어 체험할 수 있어요.", "You have no personal work yet. Try an example below.")
