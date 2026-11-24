@@ -366,6 +366,26 @@ describe("한국어 일상어·초성·영문 명령 팔레트(⌘K) · 미니�
 });
 
 describe("StudioCanvasOrbitalUxPanel 단독 렌더링 · 인터랙션 · 토큰 위생 검증", () => {
+  it("부모 폭에 맞게 축소된 휠에서도 8방향 포인터 좌표와 선택 버튼이 일치한다", () => {
+    const onSectorSelected = vi.fn();
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel, { onSectorSelected }));
+    const surface = screen.getByTestId("orbital-wheel-surface");
+    const bounds = vi.spyOn(surface, "getBoundingClientRect");
+
+    // 중첩 카드 안쪽의 좁은 폭과 기본 폭 모두 같은 방위각을 유지해야 한다.
+    for (const width of [224, 304]) {
+      bounds.mockReturnValue(new DOMRect(10, 20, width, width));
+      for (const sector of ORBITAL_WHEEL_SECTORS) {
+        const point = polarBearingToCartesian(10 + width / 2, 20 + width / 2, width * 0.3, sector.centerAngleDeg);
+        fireEvent(surface, new MouseEvent("pointermove", { bubbles: true, clientX: point.x, clientY: point.y }));
+        expect(screen.getByTestId("orbital-center-label").textContent).toBe(sector.shortLabelKo);
+        fireEvent.click(screen.getByTestId(`orbital-sector-${sector.id}`));
+        expect(onSectorSelected).toHaveBeenLastCalledWith(sector);
+      }
+    }
+    bounds.mockRestore();
+  });
+
   it("연결 없는 선택과 매직 바는 예제 구성이며 실제 원고 적용·명령 실행 성공으로 표시하지 않는다", () => {
     render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel));
     expect(screen.getByTestId("orbital-scope-notice").textContent).toContain("선택 알림만");

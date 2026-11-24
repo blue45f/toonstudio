@@ -147,12 +147,12 @@ export function StudioOrbitalWheelStage({
       <p className="text-xs text-fg-3 break-keep">
         휠의 선택·스냅 좌표를 보여 주는 예제예요. 표시된 도구와 단축키는 실제 편집기를 조작하지 않아요.
       </p>
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center justify-center gap-4">
         <div
           data-testid="orbital-wheel-surface"
           onPointerMove={handleWheelPointerMove}
           onPointerLeave={() => setHoveredPointer(null)}
-          className="relative mx-auto h-[304px] w-[304px] shrink-0 select-none"
+          className="relative mx-auto aspect-square w-full max-w-[304px] shrink-0 select-none"
         >
           <svg
             viewBox={`0 0 ${WHEEL_VIEWBOX} ${WHEEL_VIEWBOX}`}
@@ -267,7 +267,7 @@ export function StudioOrbitalWheelStage({
           })}
         </div>
 
-        <div className="flex flex-1 flex-col gap-3">
+        <div className="flex min-w-0 flex-1 basis-48 flex-col gap-3">
           <div className="space-y-1">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-semibold text-fg break-keep">

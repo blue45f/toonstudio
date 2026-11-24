@@ -56,6 +56,7 @@ export interface StudioCanvasOrbitalUxPanelProps {
 const FOCUS_RING =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 const BTN_SEG = `inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors motion-reduce:transition-none break-keep ${FOCUS_RING}`;
+const DEVICE_TAB_BTN = `inline-flex min-h-11 min-w-11 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-xs font-semibold whitespace-nowrap transition-colors motion-reduce:transition-none ${FOCUS_RING}`;
 const BTN_ACTION = `inline-flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-lg border border-line bg-card px-3 py-2 text-left text-xs font-semibold text-fg transition-colors motion-reduce:transition-none hover:border-line-strong hover:bg-raised break-keep ${FOCUS_RING}`;
 const BTN_ACTION_ACTIVE = `inline-flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-lg border border-accent bg-accent-soft px-3 py-2 text-left text-xs font-semibold text-accent transition-colors motion-reduce:transition-none break-keep ${FOCUS_RING}`;
 
@@ -257,7 +258,7 @@ export function StudioCanvasOrbitalUxPanel({
         <div
           role="tablist"
           aria-label="기기별 인체공학 모드"
-          className="grid grid-cols-3 gap-1.5 rounded-xl bg-panel p-1"
+          className="grid min-w-0 grid-cols-3 gap-1.5 rounded-xl bg-panel p-1"
         >
           {DEVICE_MODES.map((mode) => {
             const Icon = mode.icon;
@@ -274,14 +275,14 @@ export function StudioCanvasOrbitalUxPanel({
                   setDeviceMode(mode.id);
                   setStatusMessage(`${mode.labelKo} 모드(${mode.detailKo})로 전환했어요.`);
                 }}
-                className={`${BTN_SEG} ${
+                className={`${DEVICE_TAB_BTN} ${
                   selected
                     ? "border-accent bg-accent text-on-accent"
                     : "border-transparent bg-transparent text-fg-2 hover:bg-raised hover:text-fg"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{mode.labelKo}</span>
+                <span className="whitespace-nowrap">{mode.labelKo}</span>
               </button>
             );
           })}
