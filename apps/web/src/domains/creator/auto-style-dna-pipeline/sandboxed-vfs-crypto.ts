@@ -158,23 +158,23 @@ async function deriveAesGcmKey(passphrase: string, salt: Uint8Array, iterations:
 /** 크로스브라우저 순수 메모리 샌드박스 스토리지 백엔드 (Web Storage 미사용). */
 export class InMemorySandboxedBackend implements SandboxedStorageBackend {
   public readonly kind = "memory" as const;
-  private readonly store = new Map<string, Uint8Array>();
+  private readonly entries = new Map<string, Uint8Array>();
 
   public async get(key: string): Promise<Uint8Array | null> {
-    const found = this.store.get(key);
+    const found = this.entries.get(key);
     return found ? new Uint8Array(found) : null;
   }
 
   public async set(key: string, value: Uint8Array): Promise<void> {
-    this.store.set(key, new Uint8Array(value));
+    this.entries.set(key, new Uint8Array(value));
   }
 
   public async delete(key: string): Promise<void> {
-    this.store.delete(key);
+    this.entries.delete(key);
   }
 
   public async keys(): Promise<readonly string[]> {
-    return Array.from(this.store.keys()).sort();
+    return Array.from(this.entries.keys()).sort();
   }
 }
 

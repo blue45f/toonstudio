@@ -18,6 +18,7 @@ const expectedBoardLinks = [
   ["NestJS 호환성", "/admin/platform/quality/?view=nestjs"],
   ["클라우드 작업", "/admin/platform/quality/?view=cloud-work"],
   ["사업계획·제출", "/admin/growth/business-plan/"],
+  ["1R 최종 제출", "/admin/growth/business-plan/?view=final-submission"],
 ] as const;
 
 async function expectSpecialistBoardLinks(page: Page): Promise<void> {
