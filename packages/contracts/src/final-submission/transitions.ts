@@ -4,6 +4,7 @@ import type { BoardState, DocumentRecord, Task } from "./types";
 
 const identityKeys = ["fileName", "version", "fileHash", "sourceUrl"] as const;
 const platformIdentityKeys = ["fileName", "version", "hash"] as const;
+const formatEvidenceKeys = ["formatStatus", "expectedFormat", "availability", "lastConfirmedAt", "notes", "bytes"] as const;
 const taskMaterialKeys = ["fileName", "version", "docId", "category", "evidenceLinks", "attachments", "discrepancy"] as const;
 export function documentIdentityChanged(next: DocumentRecord, previous: DocumentRecord): boolean {
   return identityKeys.some((key) => next[key] !== previous[key]);
@@ -17,6 +18,7 @@ export function taskEvidenceChanged(next: Task, previous: Task): boolean {
 function relatedConfirmationChanged(task: Task, next: DocumentRecord, previous: DocumentRecord): boolean {
   if (documentIdentityChanged(next, previous)) return true;
   if (task.category === "플랫폼" || task.id === GLOBAL_PLATFORM_TASK_ID) return JSON.stringify(next.platform) !== JSON.stringify(previous.platform);
+  if (task.category === "파일 형식") return formatEvidenceKeys.some((key) => next[key] !== previous[key]);
   return task.category === "최종본" && ["candidateState", "candidateEvidence", "finalizedAt"].some((key) => next[key as keyof DocumentRecord] !== previous[key as keyof DocumentRecord]);
 }
 /** 대조 작업은 보고서·대장을 함께, 전체 접수 점검은 필수 문서 세 가지를 함께 참조한다. */
