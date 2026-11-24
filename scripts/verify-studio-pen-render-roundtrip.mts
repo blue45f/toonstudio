@@ -124,8 +124,20 @@ try {
   }
   await page.keyboard.press("Escape");
   await page.keyboard.press("b");
-  const stabilizer = page.getByRole("group", { name: "손떨림 보정 강도 조절" }).getByRole("slider");
-  await stabilizer.press("Home");
+  const stabilizerGroup = page.getByRole("group", { name: "손떨림 보정 강도 조절" });
+  await expect(stabilizerGroup).toBeVisible();
+  const stabilizer = stabilizerGroup.getByRole("slider", { includeHidden: true });
+  if (await stabilizer.isVisible()) {
+    await stabilizer.press("Home");
+  } else {
+    const presetButton = stabilizerGroup.getByRole("button");
+    await expect(presetButton).toBeVisible();
+    // 좁은 데스크톱에서는 버튼으로 꺼짐·약함·표준·강함 네 단계를 순환한다.
+    for (let step = 0; step < 3 && (await stabilizer.inputValue()) !== "0"; step++) {
+      await presetButton.click();
+    }
+    await expect(presetButton).toHaveAttribute("aria-pressed", "false");
+  }
   await expect(stabilizer).toHaveValue("0");
   const stage = await page.locator(".konvajs-content").boundingBox();
   assert.ok(stage);
