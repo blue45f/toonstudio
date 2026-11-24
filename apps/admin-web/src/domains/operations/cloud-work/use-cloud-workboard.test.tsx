@@ -67,6 +67,19 @@ describe("클라우드 작업 서버 저장 경계", () => {
     expect(hook.result.current.board).toBeNull();
     expect(denied).toHaveBeenCalledOnce();
   });
+  it("이력 가져오기 재시도는 같은 요청 ID를 쓰고 일반 편집과 구별한다", async () => {
+    const hook = renderHook(() => useCloudWorkboard(vi.fn()));
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    const next = { ...emptyBoard(), tasks: [{ ...blankTask(), title: "원본 관측 기록" }] };
+    mocks.save.mockRejectedValue(new Error("일시적인 연결 실패"));
+    await act(async () => { await hook.result.current.commit(next, true); });
+    await act(async () => { await hook.result.current.commit(next, true); });
+    expect(mocks.save.mock.calls[0]?.[4]).toBe(true);
+    expect(mocks.save.mock.calls[0]?.[2]).toBe(mocks.save.mock.calls[1]?.[2]);
+    await act(async () => { await hook.result.current.commit(next); });
+    expect(mocks.save.mock.calls[2]?.[4]).toBe(false);
+    expect(mocks.save.mock.calls[2]?.[2]).not.toBe(mocks.save.mock.calls[1]?.[2]);
+  });
   it("이전 조회의 늦은 응답은 새 조회를 덮지 않으며 unmount 뒤 응답도 무시한다", async () => {
     let finish: ((value: CloudWorkboardResponse) => void) | undefined;
     mocks.load.mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));

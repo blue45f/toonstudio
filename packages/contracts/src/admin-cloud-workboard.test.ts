@@ -5,7 +5,9 @@ import {
   cloudWorkboardResponseSchema, cloudWorkboardSaveSchema, duplicateNotes, emptyBoard,
   evidenceSchema, formatTime, freshness, inputTime, matchingCI, olderMain,
   restricted, safeUrl, sourceComparison, stampISO, taskError, taskSchema,
-  type Board, type Evidence, type Task,
+  blankCheck, boardUpdateError, currentCheckState, currentRisk, effectiveCI,
+  effectiveStage, effectiveMain, effectiveOps, mergeProof, sourceAuditSchema,
+  type Board, type Evidence, type Task, type VerificationCheck,
 } from "@toonstudio/contracts/admin-cloud-workboard";
 
 const NOW = "2026-11-18T04:00:00.000Z";
@@ -32,6 +34,11 @@ function evidence(patch: Partial<Evidence> = {}): Evidence {
 
 function board(tasks: Task[]): Board {
   return { ...emptyBoard(), tasks };
+}
+
+function check(patch: Partial<VerificationCheck> = {}): VerificationCheck {
+  return { ...blankCheck(), id: "test-check", state: "통과", subjectSha: SHA,
+    evidenceUrl: RUN, observedAt: NOW, reason: "현재 대상 SHA의 필수 검사를 확인한 합성 결과", ...patch };
 }
 
 describe("클라우드 작업 보드 공통 계약", () => {
@@ -90,12 +97,17 @@ describe("클라우드 작업 보드 공통 계약", () => {
     },
   );
 
-  it("단건 저장과 전체 가져오기가 동일한 증빙 불변식을 검사한다", () => {
+  it("이전 완료 기록은 읽되 새로운 완료 주장에는 현재 대상 검증을 요구한다", () => {
     const unverified = task({ stage: "검증 완료" });
-    expect(taskSchema.safeParse(unverified).success).toBe(false);
-    expect(boardSchema.safeParse(board([unverified])).success).toBe(false);
-    const checked = task({ stage: "검증 완료", verifiedAt: NOW, evidence: [evidence()] });
+    expect(taskSchema.safeParse(unverified).success).toBe(true);
+    expect(boardSchema.safeParse(board([unverified])).success).toBe(true);
+    expect(effectiveStage(unverified)).toBe("미확인");
+    expect(taskError(unverified)).not.toBeNull();
+    expect(boardUpdateError(board([unverified]), emptyBoard())).not.toBeNull();
+    const checked = task({ stage: "검증 완료", remoteSha: SHA, verifiedAt: NOW, verificationChecks: [check()] });
     expect(taskSchema.parse(checked)).toEqual(checked);
+    expect(taskError(checked)).toBeNull();
+    expect(boardUpdateError(board([checked]), emptyBoard())).toBeNull();
   });
 
   it("과거 대화와 공백 요약은 현재 검증을 대신할 수 없다", () => {
@@ -154,12 +166,14 @@ describe("클라우드 작업 보드 공통 계약", () => {
     const checked = task({ ciStatus: "통과", ciSha: SHA, ciLink: RUN, remoteSha: SHA, verifiedAt: NOW, evidence: [evidence()] });
     expect(taskError(checked)).toBeNull();
     expect(matchingCI(checked)).toBe(true);
-    expect(taskSchema.safeParse({ ...checked, evidence: [evidence({ subjectSha: OTHER_SHA })] }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...checked, evidence: [evidence({ url: `${RUN}2` })] }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...checked, evidence: [evidence({ subjectSha: "" })] }).success).toBe(false);
+    expect(taskError({ ...checked, evidence: [evidence({ subjectSha: OTHER_SHA })] })).not.toBeNull();
+    expect(taskError({ ...checked, evidence: [evidence({ url: `${RUN}2` })] })).not.toBeNull();
+    expect(taskError({ ...checked, evidence: [evidence({ subjectSha: "" })] })).not.toBeNull();
     const olderHead = { ...checked, remoteSha: OTHER_SHA };
     expect(taskSchema.safeParse(olderHead).success).toBe(true);
     expect(matchingCI(olderHead)).toBe(false);
+    expect(effectiveCI(olderHead)).toBe("미확인");
+    expect(taskError(olderHead, checked)).not.toBeNull();
     expect(matchingCI({ ...checked, ciSha: SHA.toUpperCase() })).toBe(true);
   });
 
@@ -173,41 +187,48 @@ describe("클라우드 작업 보드 공통 계약", () => {
     });
     expect(taskSchema.safeParse(historical).success).toBe(true);
     expect(freshness(historical)).toBe("재확인 필요");
+    expect(effectiveCI(historical)).toBe("미확인");
+    expect(taskError(historical)).not.toBeNull();
+    expect(taskError({ ...historical, notes: "이력 메모 편집" }, historical)).toBeNull();
   });
 
   it("main 포함 판정에는 해당 main SHA의 비교 근거가 필요하다", () => {
     const link = `${REPO}/compare/${OTHER_SHA}...${SHA}`;
-    const checked = task({ mainInclusion: "현재 내용 확인", mainSha: SHA, comparisonLink: link, verifiedAt: NOW, evidence: [evidence({ url: link })] });
-    expect(taskSchema.safeParse(checked).success).toBe(true);
-    expect(taskSchema.safeParse({ ...checked, evidence: [evidence({ url: link, subjectSha: OTHER_SHA })] }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...checked, evidence: [] }).success).toBe(false);
+    const checked = task({ repo: REPO, remoteSha: OTHER_SHA, mainInclusion: "현재 내용 확인", mainSha: SHA, comparisonLink: link, comparisonNote: "해당 변경의 포함을 비교함", verifiedAt: NOW, evidence: [evidence({ url: link })] });
+    expect(taskError(checked)).toBeNull();
+    expect(taskError({ ...checked, evidence: [evidence({ url: link, subjectSha: OTHER_SHA })] })).not.toBeNull();
+    expect(taskError({ ...checked, evidence: [] })).not.toBeNull();
   });
 
   it("병합 완료 이력은 검증하되 현재 main 적용이나 배포 완료로 바꾸지 않는다", () => {
-    const merged = task({ action: "완료 이력", stage: "main 머지 완료", pr: PR, prState: "병합됨", mergedAt: BEFORE, verifiedAt: NOW, evidence: [evidence({ url: PR })] });
+    const merged = task({ repo: REPO, mergeSha: SHA, baseBranch: "main", action: "완료 이력", stage: "main 머지 완료", pr: PR, prState: "병합됨", mergedAt: BEFORE, verifiedAt: NOW, evidence: [evidence({ url: PR })] });
     const result = taskSchema.parse(merged);
+    expect(taskError(merged)).toBeNull();
     expect(result.mainInclusion).toBe("미확인");
     expect(result.deployStatus).toBe("미확인");
     expect(result.migrationStatus).toBe("미확인");
-    expect(taskSchema.safeParse({ ...merged, prState: "닫힘" }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...merged, evidence: [evidence({ url: RUN })] }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...merged, verifiedAt: OLD, evidence: [evidence({ url: PR, observedAt: OLD, occurredAt: OLD })] }).success).toBe(false);
+    expect(taskError({ ...merged, prState: "닫힘" })).not.toBeNull();
+    expect(taskError({ ...merged, evidence: [evidence({ url: RUN })] })).not.toBeNull();
+    expect(taskError({ ...merged, verifiedAt: OLD, evidence: [evidence({ url: PR, observedAt: OLD, occurredAt: OLD })] })).not.toBeNull();
   });
 
   it("배포 확인에는 동일 아티팩트 SHA·환경·배포 링크의 근거가 필요하다", () => {
-    const deployed = task({ deployStatus: "성공 이력", deploySha: SHA, deployEnvironment: "staging", deployLink: RUN, verifiedAt: NOW, evidence: [evidence()] });
-    expect(taskSchema.safeParse(deployed).success).toBe(true);
-    expect(taskSchema.safeParse({ ...deployed, deployEnvironment: "   " }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...deployed, evidence: [evidence({ subjectSha: OTHER_SHA })] }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...deployed, deployLink: "" }).success).toBe(false);
+    const deployed = task({ deployStatus: "성공 이력", deploySha: SHA, deployEnvironment: "staging", deployConfigKey: "config-v1", deployLink: RUN, verifiedAt: NOW, evidence: [evidence()] });
+    expect(taskError(deployed)).toBeNull();
+    expect(taskError({ ...deployed, deployEnvironment: "   " })).not.toBeNull();
+    expect(taskError({ ...deployed, evidence: [evidence({ subjectSha: OTHER_SHA })] })).not.toBeNull();
+    expect(taskError({ ...deployed, deployLink: "" })).not.toBeNull();
   });
 
   it.each(["migration", "account", "infra"] as const)("%s 상태 확인은 운영 근거와 범위를 요구한다", (key) => {
-    const checked = task({ [`${key}Status`]: "현재 확인", [`${key}Note`]: "합성 환경의 설정 상태", verifiedAt: NOW, evidence: [evidence({ kind: "운영 기록" })] });
-    expect(taskSchema.safeParse(checked).success).toBe(true);
-    expect(taskSchema.safeParse({ ...checked, [`${key}Note`]: "" }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...checked, evidence: [evidence({ kind: "과거 대화" })] }).success).toBe(false);
-    expect(taskSchema.safeParse({ ...checked, evidence: [evidence({ kind: "운영 기록", url: "" })] }).success).toBe(false);
+    const checked = task({ [`${key}Status`]: "현재 확인", [`${key}Note`]: "합성 환경의 설정 상태", verifiedAt: NOW,
+      mainSha: SHA, migrationTarget: "test-db", migrationIds: ["migration-test"],
+      verificationChecks: key === "migration" ? [check({ phase: "migration", environment: "test-db" })] : [],
+      evidence: [evidence({ kind: "운영 기록" })] });
+    expect(taskError(checked)).toBeNull();
+    expect(taskError({ ...checked, [`${key}Note`]: "" })).not.toBeNull();
+    expect(taskError({ ...checked, evidence: [evidence({ kind: "과거 대화" })] })).not.toBeNull();
+    expect(taskError({ ...checked, evidence: [evidence({ kind: "운영 기록", url: "" })] })).not.toBeNull();
   });
 
   it("커밋 일치와 미커밋 변경은 서로 다른 사실이다", () => {
@@ -228,11 +249,11 @@ describe("클라우드 작업 보드 공통 계약", () => {
     expect(duplicateNotes(a, [a])).toEqual([]);
   });
 
-  it("동일 환경·SHA의 성공 배포만 중복 배포 이력으로 안내한다", () => {
-    const a = task({ repo: REPO, deploySha: SHA, deployEnvironment: "production" });
-    const b = task({ id: "second", repo: REPO, deploySha: SHA, deployEnvironment: "staging", deployStatus: "성공 이력" });
+  it("동일 저장소·환경·SHA·설정의 성공 배포만 중복 배포 이력으로 안내한다", () => {
+    const a = task({ repo: REPO, deploySha: SHA, deployEnvironment: "production", deployConfigKey: "v1" });
+    const b = task({ id: "second", repo: REPO, deploySha: SHA, deployEnvironment: "staging", deployConfigKey: "v1", deployStatus: "성공 이력" });
     expect(duplicateNotes(a, [a, b])).toEqual([]);
-    expect(duplicateNotes(a, [a, { ...b, deployEnvironment: "production" }])).toContain("같은 환경·버전의 배포 이력 있음");
+    expect(duplicateNotes(a, [a, { ...b, deployEnvironment: "production", deployLink: RUN, evidence: [evidence()] }])).toContain("같은 저장소·SHA·환경·설정의 배포 이력 있음");
     expect(duplicateNotes(a, [a, { ...b, deployEnvironment: "production", deployStatus: "미확인" }])).toEqual([]);
     expect(duplicateNotes(a, [a, { ...b, deployEnvironment: "production", repo: `${REPO}-other` }])).toEqual([]);
   });
@@ -274,4 +295,159 @@ describe("클라우드 작업 보드 공통 계약", () => {
     expect(cloudWorkboardResponseSchema.safeParse({ board: emptyBoard(), revision: 0, storedAt: "" }).success).toBe(false);
     expect(cloudWorkboardResponseSchema.safeParse({ board: emptyBoard(), revision: -1, storedAt: null }).success).toBe(false);
   });
+
+  it("Sites 확장 필드를 보존하고 이전 schemaVersion 1 기록에는 미확인 기본값을 제공한다", () => {
+    const legacy: Record<string, unknown> = { ...task() };
+    for (const key of ["adminBoardUrl", "sourcePageUrl", "mergeSha", "baseBranch", "prDraft", "deployConfigKey", "migrationTarget", "migrationIds", "cleanupStatus", "worktreeCount", "unmergedBranchCount", "stashCount", "preservationNote", "preservationLink", "verificationChecks", "riskEvidenceIds"]) delete legacy[key];
+    const restored = taskSchema.parse(legacy);
+    expect(restored.verificationChecks).toEqual([]);
+    expect(restored.worktreeCount).toBeNull();
+    expect(restored.baseBranch).toBe("");
+    expect(restored.prDraft).toBeNull();
+    const imported = task({ adminBoardUrl: `${REPO}/admin`, sourcePageUrl: "https://chatgpt.com/pages/example", baseBranch: "main", prDraft: false, verificationChecks: [blankCheck("cleanup")] });
+    expect(boardSchema.parse(board([imported])).tasks[0]).toEqual(imported);
+  });
+
+  it("현재 대상이 바뀌면 이전 테스트 통과와 검증 완료를 현재 사실로 인정하지 않는다", () => {
+    const checked = task({ stage: "검증 완료", remoteSha: SHA, verifiedAt: NOW, verificationChecks: [check()] });
+    expect(effectiveStage(checked)).toBe("검증 완료");
+    const next = { ...checked, remoteSha: OTHER_SHA };
+    expect(currentCheckState(next, next.verificationChecks[0]!)).toBe("미확인");
+    expect(effectiveStage(next)).toBe("미확인");
+    expect(boardUpdateError(board([next]), board([checked]))).toContain("SHA");
+    expect(boardSchema.safeParse(board([next])).success).toBe(true);
+  });
+
+  it("지난 검증은 읽고 메모를 고칠 수 있지만 새 완료 주장에는 사용할 수 없다", () => {
+    const historical = task({ stage: "검증 완료", remoteSha: SHA, verifiedAt: OLD, verificationChecks: [check({ observedAt: OLD })] });
+    expect(boardSchema.safeParse(board([historical])).success).toBe(true);
+    expect(effectiveStage(historical)).toBe("미확인");
+    expect(taskError({ ...historical, notes: "과거 증빙 유지", updatedAt: NOW }, historical)).toBeNull();
+    expect(boardUpdateError(board([historical]), emptyBoard())).not.toBeNull();
+  });
+
+  it("해당 없음 판단도 같은 대상의 사유·링크·최신 확인 시각을 요구한다", () => {
+    const item = task({ remoteSha: SHA });
+    const excluded = check({ state: "해당 없음", reason: "이 변경에는 적용하지 않음" });
+    expect(currentCheckState(item, excluded)).toBe("해당 없음");
+    for (const patch of [{ reason: "" }, { evidenceUrl: "" }, { observedAt: OLD }, { subjectSha: OTHER_SHA }]) {
+      expect(currentCheckState(item, { ...excluded, ...patch })).toBe("미확인");
+    }
+    const post = check({ id: "post-check", phase: "post", state: "미확인" });
+    expect(effectiveStage(task({ ...item, stage: "검증 완료", verifiedAt: NOW, verificationChecks: [excluded, post] }))).toBe("미확인");
+  });
+
+  it("dependency 대상 PR의 병합을 main 병합으로 오인하지 않으며 CI 실패와 병합 사실을 분리한다", () => {
+    const merged = task({ repo: REPO, action: "완료 이력", stage: "main 머지 완료", pr: PR, prState: "병합됨", mergeSha: SHA, mergedAt: BEFORE, baseBranch: "dependency", ciStatus: "실패", evidence: [evidence({ url: PR })] });
+    expect(mergeProof(merged)).toBe(false);
+    expect(effectiveStage(merged)).toBe("미확인");
+    expect(taskError(merged)).not.toBeNull();
+    const main = { ...merged, baseBranch: "main" };
+    expect(mergeProof(main)).toBe(true);
+    expect(effectiveStage(main)).toBe("main 머지 완료");
+    expect(taskError(main)).toBeNull();
+    expect(taskError(merged, main)).not.toBeNull();
+    expect(mergeProof({ ...main, repo: `${REPO}-other` })).toBe(false);
+  });
+
+  it("main 조상 증빙에는 병합 SHA가 명시되어야 하며 일반 main 조회로 대체하지 않는다", () => {
+    const link = `${REPO}/commit/${OTHER_SHA}`;
+    const item = task({ repo: REPO, mergeSha: SHA, mainSha: OTHER_SHA, mergedAt: BEFORE, mainInclusion: "병합 이력 포함", comparisonLink: link, comparisonNote: "조상 관계 확인", evidence: [evidence({ url: link, subjectSha: OTHER_SHA })] });
+    expect(mergeProof(item)).toBe(false);
+    const compare = `${REPO}/compare/${SHA}...${OTHER_SHA}`;
+    const proven = { ...item, comparisonLink: compare, evidence: [evidence({ url: compare, subjectSha: OTHER_SHA })] };
+    expect(mergeProof(proven)).toBe(true);
+    const stale = { ...proven, mainInclusion: "현재 내용 확인" as const, evidence: [evidence({ url: compare, subjectSha: OTHER_SHA, observedAt: OLD, occurredAt: OLD })] };
+    expect(effectiveMain(stale)).toBe("미확인");
+  });
+
+  it("위험 신호는 선택한 증빙 ID와 현재 SHA가 일치하고 최신일 때만 감지로 표시한다", () => {
+    const item = task({ remoteSha: SHA, risks: { conflict: "감지", regression: "미확인", ciFailure: "미확인", deployBlock: "미확인" }, evidence: [evidence()] });
+    expect(currentRisk(item, "conflict")).toBe("미확인");
+    item.riskEvidenceIds.conflict = ["test-evidence"];
+    expect(currentRisk(item, "conflict")).toBe("감지");
+    expect(taskError(item)).toBeNull();
+    expect(currentRisk({ ...item, remoteSha: OTHER_SHA }, "conflict")).toBe("미확인");
+    expect(currentRisk({ ...item, evidence: [evidence({ observedAt: OLD, occurredAt: OLD })] }, "conflict")).toBe("미확인");
+    expect(taskError({ ...item, riskEvidenceIds: { ...item.riskEvidenceIds, conflict: [] } }, item)).not.toBeNull();
+  });
+
+  it("배포·마이그레이션 검증은 환경과 대상이 다르면 현재 확인으로 표시하지 않는다", () => {
+    const deployed = task({ deployStatus: "현재 확인", deploySha: SHA, deployEnvironment: "production", deployConfigKey: "v1", deployLink: RUN, evidence: [evidence()], verificationChecks: [check({ phase: "deploy", environment: "production" })] });
+    expect(effectiveOps(deployed, "deploy")).toBe("현재 확인");
+    expect(effectiveOps({ ...deployed, deployEnvironment: "staging" }, "deploy")).toBe("미확인");
+    expect(effectiveOps({ ...deployed, deployConfigKey: "" }, "deploy")).toBe("미확인");
+    const migration = task({ migrationStatus: "현재 확인", mainSha: SHA, migrationTarget: "database-a", migrationIds: ["0125"], verificationChecks: [check({ phase: "migration", environment: "database-a" })] });
+    expect(effectiveOps(migration, "migration")).toBe("현재 확인");
+    expect(effectiveOps({ ...migration, migrationTarget: "database-b" }, "migration")).toBe("미확인");
+  });
+
+  it("CI 건너뜀은 통과로 승격하지 않고 증빙 링크의 query 차이도 보존한다", () => {
+    const skipped = task({ ciStatus: "건너뜀", remoteSha: SHA, ciSha: SHA, ciLink: RUN, evidence: [evidence()] });
+    expect(effectiveCI(skipped)).toBe("건너뜀");
+    const unrelated = { ...skipped, ciStatus: "통과" as const, ciLink: `${RUN}?attempt=2` };
+    expect(effectiveCI(unrelated)).toBe("미확인");
+  });
+
+  it("열린 PR 후보는 같은 저장소의 작업 HEAD 또는 명시한 변경 그룹으로 비교한다", () => {
+    const a = task({ repo: REPO, remoteSha: SHA, mainSha: OTHER_SHA });
+    const b = task({ id: "peer", repo: REPO, remoteSha: SHA, mainSha: OTHER_SHA, pr: PR, prState: "열림" });
+    expect(duplicateNotes(a, [a, b]).some((note) => note.includes("열린 PR"))).toBe(true);
+    expect(duplicateNotes({ ...a, remoteSha: "" }, [{ ...a, remoteSha: "" }, { ...b, remoteSha: "" }])).toEqual([]);
+    expect(duplicateNotes(a, [a, { ...b, repo: `${REPO}-different` }])).toEqual([]);
+    expect(duplicateNotes({ ...a, changeKey: "group" }, [a, { ...b, remoteSha: OTHER_SHA, changeKey: "group" }]).some((note) => note.includes("열린 PR"))).toBe(true);
+  });
+
+  it("같은 배포 SHA·환경이어도 설정 차이는 중복이 아니며 설정 미확인은 보류한다", () => {
+    const a = task({ repo: REPO, deploySha: SHA, deployEnvironment: "production", deployConfigKey: "v1" });
+    const b = task({ id: "peer", repo: REPO, deploySha: SHA, deployEnvironment: "production", deployConfigKey: "v2", deployStatus: "성공 이력" });
+    expect(duplicateNotes(a, [a, b])).toEqual([]);
+    expect(duplicateNotes(a, [a, { ...b, deployConfigKey: "" }]).some((note) => note.includes("판정 보류"))).toBe(true);
+  });
+
+  it("Sites 원본 이력의 빈 taskId를 보존하되 서버 감사 이력으로 받지 않는다", () => {
+    const source = { id: "source-snapshot", at: NOW, taskId: "", title: "원본 스냅샷", detail: "외부에서 가져온 미검증 이력" };
+    expect(sourceAuditSchema.parse(source)).toEqual(source);
+    expect(boardSchema.parse({ ...emptyBoard(), sourceHistory: [source] }).sourceHistory).toEqual([source]);
+    expect(boardSchema.safeParse({ ...emptyBoard(), audit: [source] }).success).toBe(false);
+    expect(boardSchema.safeParse({ ...emptyBoard(), sourceHistory: Array.from({ length: 201 }, () => source) }).success).toBe(false);
+  });
+
+
+  it("운영 상태의 해당 없음은 범위와 최신 검증 없이는 미확인이며 새 저장도 차단한다", () => {
+    for (const key of ["deploy", "migration", "account", "infra", "cleanup"] as const) {
+      const item = task({ [`${key}Status`]: "해당 없음" });
+      expect(effectiveOps(item, key)).toBe("미확인");
+      expect(taskError(item)).not.toBeNull();
+    }
+    const excluded = task({ deployStatus: "해당 없음", deploySha: SHA, deployEnvironment: "production", deployConfigKey: "v1", verifiedAt: NOW,
+      verificationChecks: [check({ phase: "deploy", state: "해당 없음", environment: "production", reason: "배포 대상 변경 없음 확인" })] });
+    expect(effectiveOps(excluded, "deploy")).toBe("해당 없음");
+    expect(taskError(excluded)).toBeNull();
+    expect(effectiveOps({ ...excluded, deployEnvironment: "staging" }, "deploy")).toBe("미확인");
+    const account = task({ accountStatus: "해당 없음", accountNote: "계정 설정에 영향 없음", verifiedAt: NOW, evidence: [evidence({ kind: "운영 기록" })] });
+    expect(effectiveOps(account, "account")).toBe("해당 없음");
+    expect(taskError(account)).toBeNull();
+    expect(effectiveOps({ ...account, evidence: [evidence({ kind: "운영 기록", observedAt: OLD, occurredAt: OLD })] }, "account")).toBe("미확인");
+  });
+
+
+  it("가져오기 표식은 선택 사항이며 승인 대기 불변식이나 요청 형식을 완화하지 않는다", () => {
+    const input = { board: board([task()]), expectedRevision: 0, mutationId: MUTATION_ID };
+    expect(cloudWorkboardSaveSchema.parse(input)).toEqual(input);
+    expect(cloudWorkboardSaveSchema.parse({ ...input, importHistory: true }).importHistory).toBe(true);
+    expect(cloudWorkboardSaveSchema.safeParse({ ...input, importHistory: "true" }).success).toBe(false);
+    expect(cloudWorkboardSaveSchema.safeParse({ ...input, importHistory: true, board: board([task({ action: "브랜치 삭제", stage: "검증 완료" })]) }).success).toBe(false);
+  });
+
+  it("근거 없는 원본 main·배포 기록은 중복 후보이며 확인된 완료 이력으로 단정하지 않는다", () => {
+    const unsupported = task({ repo: REPO, mainInclusion: "병합 이력 포함" });
+    expect(effectiveMain(unsupported)).toBe("미확인");
+    expect(duplicateNotes(unsupported, [unsupported])).toEqual(["원본 main 포함 기록 · 근거 재확인"]);
+    const a = task({ repo: REPO, deploySha: SHA, deployEnvironment: "production", deployConfigKey: "v1" });
+    const b = task({ id: "peer", repo: REPO, deploySha: SHA, deployEnvironment: "production", deployConfigKey: "v1", deployStatus: "성공 이력" });
+    expect(duplicateNotes(a, [a, b])).toContain("같은 저장소·SHA·환경·설정의 배포 기록 후보 · 근거 재확인");
+    expect(duplicateNotes(a, [a, { ...b, deployLink: RUN, evidence: [evidence()] }])).toContain("같은 저장소·SHA·환경·설정의 배포 이력 있음");
+  });
+
 });

@@ -1,4 +1,4 @@
-import { blankTask, formatTime, freshness, PROJECTS, STAGES } from "@toonstudio/contracts/admin-cloud-workboard";
+import { blankTask, currentRisk, effectiveStage, formatTime, freshness, PROJECTS, STAGES } from "@toonstudio/contracts/admin-cloud-workboard";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CLOUD_WORK_IMPORT_LIMIT, DEFAULT_FILTERS, downloadWorkJson, filterWorkTasks, parseWorkImport, RISK_FILTERS, VIEW_NAMES } from "./cloud-work-helpers";
@@ -13,7 +13,7 @@ import type { WorkFilters, WorkView } from "./cloud-work-helpers";
 import type { WorkIconName } from "./cloud-work-ui";
 import type { Board, Task } from "@toonstudio/contracts/admin-cloud-workboard";
 
-const VIEW_ICONS: Record<WorkView, WorkIconName> = { board: "list", compare: "compare", approvals: "lock", activity: "history" };
+const VIEW_ICONS: Record<WorkView, WorkIconName> = { board: "list", compare: "compare", verification: "check", approvals: "lock", activity: "history" };
 
 interface Props { onAccessDenied: (message: string) => void }
 
@@ -38,9 +38,9 @@ export function CloudWorkBoard({ onAccessDenied }: Props) {
   const projects = useMemo(() => [...new Set<string>([...PROJECTS, ...(board?.tasks.map(task => task.project) ?? [])])], [board]);
   const tasks = useMemo(() => filterWorkTasks(board?.tasks ?? [], filters, now), [board, filters, now]);
   const counts = useMemo(() => ({
-    remaining: board?.tasks.filter(task => task.stage !== "main 머지 완료").length ?? 0,
-    approvals: board?.tasks.filter(task => task.stage === "승인 대기").length ?? 0,
-    risks: board?.tasks.filter(task => Object.values(task.risks).includes("감지")).length ?? 0,
+    remaining: board?.tasks.filter(task => !["검증 완료", "main 머지 완료"].includes(effectiveStage(task, now))).length ?? 0,
+    approvals: board?.tasks.filter(task => effectiveStage(task, now) === "승인 대기").length ?? 0,
+    risks: board?.tasks.filter(task => Object.keys(task.risks).some(key => currentRisk(task, key as keyof Task["risks"], now) === "감지")).length ?? 0,
     unknown: board?.tasks.filter(task => freshness(task, now) !== "24시간 내 확인").length ?? 0,
   }), [board, now]);
   const unavailable = loading || !!loadError;
@@ -85,10 +85,11 @@ export function CloudWorkBoard({ onAccessDenied }: Props) {
       </aside>
       <div className="cw-main">
         <div className="cw-toolbar"><div><h2>{VIEW_NAMES[view]}</h2><p className="cw-meta">증빙 스냅샷 {formatTime(board?.snapshotAt ?? "")} · 서버 저장 {formatTime(state.storedAt ?? "")}</p></div>
-          <div className="cw-actions"><button type="button" disabled={loading || saving} onClick={reload}><WorkIcon name="refresh" />새로고침</button><button type="button" disabled={!board} onClick={() => { if (board) downloadWorkJson(board); }}><WorkIcon name="download" />내보내기</button><button type="button" disabled={!canEdit || conflict} onClick={() => fileInput.current?.click()}><WorkIcon name="upload" />가져오기</button><button type="button" className="cw-primary" disabled={!canEdit || conflict} onClick={add}><WorkIcon name="add" />작업 추가</button></div>
+          <div className="cw-actions"><button type="button" title="저장된 보드 기록을 다시 읽습니다. 외부 시스템을 조회하지 않습니다." disabled={loading || saving} onClick={reload}><WorkIcon name="refresh" />새로고침</button><button type="button" disabled={!board} onClick={() => { if (board) downloadWorkJson(board); }}><WorkIcon name="download" />내보내기</button><button type="button" disabled={!canEdit || conflict} onClick={() => fileInput.current?.click()}><WorkIcon name="upload" />가져오기</button><button type="button" className="cw-primary" disabled={!canEdit || conflict} onClick={add}><WorkIcon name="add" />작업 추가</button></div>
         </div>
         <input className="cw-sr-only" type="file" accept="application/json,.json" ref={fileInput} aria-label="작업 보드 JSON 파일" onChange={event => { void readImport(event.target.files?.[0]); event.target.value = ""; }} />
-        <WorkCallout>코드 수정·main 병합·배포·계정·운영 데이터 변경은 승인 대기 항목으로 기록합니다. 확인하지 못한 상태는 미확인으로 유지하며, 24시간이 지난 증빙은 재확인이 필요합니다.</WorkCallout>
+        <WorkCallout>코드 수정·main 병합·배포·계정·운영 데이터 변경·브랜치 삭제·변경 폐기는 승인 대기 항목으로 기록합니다. 실시간 연동은 없으며, 24시간은 이 보드의 증빙 재확인 기준입니다.</WorkCallout>
+        <nav className="cw-operation-links" aria-label="기존 운영 기능"><strong>기존 운영 보드 연결</strong><a href="/admin/platform/operations">운영·인프라 관리</a><a href="/admin/platform/quality/">CI·QA 검증</a><a href="/admin/workspace/">통합 작업실</a><span>원본 결과와 로그를 연결해 미완료 작업만 조정합니다.</span></nav>
         {loading && <p role="status" className="cw-loading">서버 작업 기록을 불러오고 있습니다.</p>}
         {loadError && <div role="alert" className="cw-error"><strong>작업 기록 조회 실패</strong><p>{loadError}</p>{board && <p>아래는 이전에 조회한 기록입니다. 최신 기록을 불러오기 전에는 저장할 수 없습니다.</p>}<button type="button" disabled={loading} onClick={reload}>다시 불러오기</button></div>}
         {importError && <div role="alert" className="cw-error">{importError}</div>}
@@ -96,7 +97,7 @@ export function CloudWorkBoard({ onAccessDenied }: Props) {
         {saveError && !editor && !incoming && <div role="alert" className="cw-error">{saveError}</div>}
         {board && <>
           <div className="cw-metrics">
-            <button type="button" onClick={() => { setView("board"); setFilters(DEFAULT_FILTERS); }}><span>전체 / 남은 작업</span><strong>{board.tasks.length}<small> / {counts.remaining}</small></strong><span>main 병합 이력 제외</span></button>
+            <button type="button" onClick={() => { setView("board"); setFilters(DEFAULT_FILTERS); }}><span>전체 / 남은 작업</span><strong>{board.tasks.length}<small> / {counts.remaining}</small></strong><span>검증 완료·main 병합 이력 제외</span></button>
             <button type="button" onClick={() => { setView("approvals"); setFilters(DEFAULT_FILTERS); }}><span>승인 대기</span><strong>{counts.approvals}</strong><span>실행 전 범위 검토</span></button>
             <button type="button" onClick={() => { setView("board"); setFilters({ ...DEFAULT_FILTERS, risk: "위험 감지" }); }}><span>위험 신호</span><strong>{counts.risks}</strong><span>충돌 · 회귀 · CI · 배포</span></button>
             <button type="button" onClick={() => { setView("board"); setFilters({ ...DEFAULT_FILTERS, risk: "증빙 미확인·오래됨" }); }}><span>증빙 재확인</span><strong>{counts.unknown}</strong><span>미확인 또는 24시간 경과</span></button>
@@ -109,6 +110,6 @@ export function CloudWorkBoard({ onAccessDenied }: Props) {
       </div>
     </div>
     {board && editor && <CloudWorkEditor key={editor.task.id} initial={editor.task} projects={projects} openedRevision={editor.revision} revision={revision} latest={board.tasks.find(task => task.id === editor.task.id)} saving={saving} unavailable={unavailable} conflict={conflict} error={saveError} onSave={saveTask} onClose={() => setEditor(null)} onReload={reload} onBackup={task => downloadWorkJson(boardWithTask(task), true)} />}
-    {board && incoming && <CloudWorkImportDialog incoming={incoming.board} current={board} openedRevision={incoming.revision} revision={revision} saving={saving} unavailable={unavailable} conflict={conflict} error={saveError} onSave={state.commit} onClose={() => setIncoming(null)} onReload={reload} />}
+    {board && incoming && <CloudWorkImportDialog incoming={incoming.board} current={board} openedRevision={incoming.revision} revision={revision} saving={saving} unavailable={unavailable} conflict={conflict} error={saveError} onSave={next => state.commit(next, true)} onClose={() => setIncoming(null)} onReload={reload} />}
   </section>;
 }

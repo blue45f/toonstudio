@@ -81,6 +81,18 @@
 .cloud-workboard .cw-source-link:hover { text-decoration: underline; }
 .cloud-workboard .cw-spread { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .cloud-workboard .cw-cards { display: grid; gap: 14px; }
+.cloud-workboard .cw-operation-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0 18px; padding: 14px; border: 1px solid var(--cw-line); border-radius: 8px; background: var(--cw-panel); }
+.cloud-workboard .cw-operation-links > span { flex-basis: 100%; color: var(--cw-muted); font-size: 12px; }
+.cloud-workboard .cw-operation-links > a { padding: 5px 0; font-size: 13px; }
+.cloud-workboard .cw-source-history { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--cw-line); }
+.cloud-workboard .cw-verification-scroll { max-width: 100%; overflow-x: auto; margin-top: 12px; border: 1px solid var(--cw-line); border-radius: 8px; }
+.cloud-workboard .cw-verification-table { border-collapse: collapse; width: 100%; min-width: 920px; text-align: left; }
+.cloud-workboard .cw-verification-table th, .cloud-workboard .cw-verification-table td { padding: 12px; border-bottom: 1px solid var(--cw-line); vertical-align: top; font-size: 12px; }
+.cloud-workboard .cw-verification-table th { background: var(--cw-panel); color: var(--cw-muted); }
+.cloud-workboard .cw-verification-table td:first-child { min-width: 210px; max-width: 280px; }
+.cloud-workboard .cw-verification-table .cw-title-button { display: block; }
+.cloud-workboard .cw-verification-cell { flex-direction: column; align-items: flex-start; width: 100%; min-width: 108px; min-height: 72px; }
+.cloud-workboard .cw-verification-cell > span:last-child { color: var(--cw-muted); font-size: 11px; }
 .cloud-workboard .cw-comparison-card, .cloud-workboard .cw-approval-card, .cloud-workboard .cw-task-card { border: 1px solid var(--cw-line); border-radius: 9px; padding: 18px; background: var(--cw-panel); min-width: 0; overflow-wrap: anywhere; }
 .cloud-workboard .cw-comparison-card .cw-title-button, .cloud-workboard .cw-approval-card .cw-title-button { display: block; margin-top: 7px; font-size: 16px; }
 .cloud-workboard .cw-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
