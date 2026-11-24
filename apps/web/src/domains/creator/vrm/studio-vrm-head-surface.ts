@@ -140,9 +140,18 @@ export function studioVrmHeadwearSurfaceSocket(
   const facing = new THREE.Quaternion(...socket.rotationQuaternion);
   const face = new THREE.Vector3(...socket.position).applyQuaternion(facing.clone().invert());
   let position: Vec3;
+  let tiltDeg: Vec3 | null = null;
   switch (id) {
     case "cap": position = [0, crown * 0.437, 0]; break;
-    case "beret": position = [0, crown * 0.84, 0]; break;
+    case "beret":
+      // 정수리 중앙 수직 부양(0.84)을 방지하고 두상 곡면(0.74) 우측·후면에 14° 비스듬히 밀착 앉힌다.
+      position = [-Math.min(0.024, face.z * 0.2), crown * 0.74, -Math.min(0.02, face.z * 0.16)];
+      tiltDeg = [-5, 0, 14];
+      break;
+    case "glasses":
+      // 콧등 표면 기준으로 앞쪽 부양을 줄이고 눈동자 중심보다 콧대 안착점에 정밀 밀착시킨다.
+      position = [0, face.y - crown * 0.012, Math.max(0.01, face.z - 0.006)];
+      break;
     case "beanie": position = [0, crown * 0.70, 0]; break;
     case "blender_wizard_hat": position = [0, crown * 0.784, 0]; break;
     case "headphones": position = [0, face.y + 0.012, 0]; break;
@@ -161,5 +170,23 @@ export function studioVrmHeadwearSurfaceSocket(
     default: return null;
   }
   const point = new THREE.Vector3(...position).applyQuaternion(facing);
-  return { ...socket, position: point.toArray() as Vec3 };
+  if (!tiltDeg) return { ...socket, position: point.toArray() as Vec3 };
+  const tilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+    THREE.MathUtils.degToRad(tiltDeg[0]),
+    THREE.MathUtils.degToRad(tiltDeg[1]),
+    THREE.MathUtils.degToRad(tiltDeg[2]),
+    "XYZ",
+  ));
+  const orientation = facing.clone().multiply(tilt).normalize();
+  const euler = new THREE.Euler().setFromQuaternion(orientation, "XYZ");
+  return {
+    ...socket,
+    position: point.toArray() as Vec3,
+    rotationQuaternion: [orientation.x, orientation.y, orientation.z, orientation.w],
+    rotationDeg: [
+      THREE.MathUtils.radToDeg(euler.x),
+      THREE.MathUtils.radToDeg(euler.y),
+      THREE.MathUtils.radToDeg(euler.z),
+    ],
+  };
 }

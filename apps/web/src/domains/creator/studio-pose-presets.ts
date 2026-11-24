@@ -12,12 +12,13 @@ export type PoseDirectionTarget = PoseVec3 | PoseSideAwareDirection;
 export type PoseBoneSpec = { direction?: PoseDirectionTarget; rotation?: PoseVec3 };
 export type PoseBoneMapSpec = Partial<Record<VRMHumanBoneName, PoseBoneSpec>>;
 
+export interface PoseGazeIntent {
+  readonly target: "camera" | "hands" | "down" | "forward" | "side";
+  readonly pitchDeg: number; readonly yawDeg: number; readonly convergence: number;
+}
 export interface StudioPosePreset {
-  id: string;
-  label: string;
-  tone: string;
-  yOffset?: number;
-  bones: PoseBoneMapSpec;
+  id: string; label: string; tone: string; yOffset?: number;
+  gazeIntent?: PoseGazeIntent; bones: PoseBoneMapSpec;
 }
 
 export interface StudioExpressionPreset {
@@ -344,16 +345,14 @@ export function pickNaturalIdlePose(characterId: string): StudioPosePreset {
 // ── 포즈 프리셋 22종 (기본 제공 포즈와 id가 겹치지 않도록 xp_ 접두) ──────
 export const EXTRA_POSE_PRESETS: StudioPosePreset[] = [
   {
-    id: "xp_wave_greeting",
-    label: "손들어 인사",
-    tone: "반갑게 오른손을 들어 인사",
+    id: "xp_wave_greeting", label: "손들어 인사", tone: "반갑게 오른손을 들어 인사",
+    gazeIntent: { target: "camera", pitchDeg: 2, yawDeg: 4, convergence: 0.25 },
     bones: basePose({
-      spine: rotate([0, 0, d(-2)]),
-      chest: rotate([d(-2), 0, d(-1)]),
-      head: rotate([d(-2), d(-5), d(3)]),
-      rightUpperArm: aim(0.55, 0.45, 0.4),
-      rightLowerArm: aim(0.15, 0.85, 0.35),
-      rightHand: rotate([0, d(15), d(25)]),
+      hips: rotate([0, d(-2), d(2.5)]), spine: rotate([d(-1), d(2), d(-2)]), chest: rotate([d(-2), d(2), d(-1.5)]),
+      neck: rotate([d(-1), d(-2), d(1)]), head: rotate([d(-2), d(-5), d(3.5)]),
+      leftShoulder: rotate([0, 0, d(-3)]), rightShoulder: rotate([0, d(4), d(-12)]),
+      rightUpperArm: aim(0.54, 0.46, 0.36), rightLowerArm: aim(0.14, 0.88, 0.32), rightHand: rotate([d(-68), d(-6), d(4)]),
+      leftUpperLeg: aim(0.05, -1, 0.02), rightUpperLeg: aim(0.11, -0.99, 0.04),
     }),
   },
   {
@@ -605,20 +604,15 @@ export const EXTRA_POSE_PRESETS: StudioPosePreset[] = [
     }),
   },
   {
-    id: "xp_phone_look",
-    label: "스마트폰 보기",
-    tone: "폰 보며 딴청",
+    id: "xp_phone_look", label: "스마트폰 보기", tone: "폰 보며 딴청",
+    gazeIntent: { target: "hands", pitchDeg: -22, yawDeg: 0, convergence: 0.72 },
     bones: basePose({
-      spine: rotate([d(6), 0, 0]),
-      chest: rotate([d(4), 0, 0]),
-      neck: rotate([d(10), 0, 0]),
-      head: rotate([d(10), 0, 0]),
-      rightUpperArm: aim(0.28, -0.5, 0.65),
-      rightLowerArm: aim(-0.45, 0.4, 0.78),
-      rightHand: rotate([d(20), d(-15), 0]),
-      leftUpperArm: aim(0.3, -0.62, 0.5),
-      leftLowerArm: aim(-0.4, 0.25, 0.85),
-      leftHand: rotate([d(20), d(15), 0]),
+      ...relaxedFingers(22, 24),
+      hips: rotate([d(1), d(-1.5), d(1.5)]), spine: rotate([d(6), d(1), d(-1)]), chest: rotate([d(5), d(1), d(-0.5)]),
+      neck: rotate([d(9), 0, d(1)]), head: rotate([d(10), d(-1), d(2)]),
+      leftShoulder: rotate([0, d(-3), d(-2)]), rightShoulder: rotate([0, d(3), d(2)]),
+      rightUpperArm: aim(0.26, -0.58, 0.62), rightLowerArm: aim(-0.42, 0.32, 0.82), rightHand: rotate([d(-84), d(-4), d(2)]),
+      leftUpperArm: aim(0.28, -0.64, 0.54), leftLowerArm: aim(-0.38, 0.24, 0.84), leftHand: rotate([d(-80), d(4), d(-2)]),
     }),
   },
   {

@@ -345,6 +345,25 @@ describe("기존 프리셋 자연화 패스", () => {
       expect(asymmetric, `${id} should be micro-asymmetric`).toBe(true);
     }
   });
+
+  it("Wave 33B: 손들어 인사는 쇄골 상승·콘트라포스토·정면 손바닥을, 스마트폰 보기는 완화 손목·자연 시선 의도를 가진다", () => {
+    const byId = new Map(EXTRA_POSE_PRESETS.map((pose) => [pose.id, pose]));
+    const wave = byId.get("xp_wave_greeting")!;
+    expect(toDegrees(wave.bones.rightShoulder?.rotation?.[2] ?? 0)).toBeLessThanOrEqual(-10);
+    expect(Math.abs(toDegrees(wave.bones.hips?.rotation?.[2] ?? 0))).toBeGreaterThanOrEqual(2);
+    expect(Math.sign((wave.bones.spine?.rotation?.[2] ?? 0) + (wave.bones.chest?.rotation?.[2] ?? 0)))
+      .toBe(-Math.sign(wave.bones.hips?.rotation?.[2] ?? 0));
+    expect(toDegrees(wave.bones.rightHand?.rotation?.[0] ?? 0)).toBeLessThan(-50);
+    expect(wave.gazeIntent?.target).toBe("camera");
+
+    const phone = byId.get("xp_phone_look")!;
+    expect(Math.abs(toDegrees(phone.bones.leftHand?.rotation?.[1] ?? 0))).toBeLessThanOrEqual(8);
+    expect(Math.abs(toDegrees(phone.bones.rightHand?.rotation?.[1] ?? 0))).toBeLessThanOrEqual(8);
+    expect(toDegrees(phone.bones.rightHand?.rotation?.[0] ?? 0)).toBeLessThan(-65);
+    expect(phone.gazeIntent).toMatchObject({ target: "hands" });
+    expect(phone.gazeIntent!.pitchDeg).toBeLessThan(-15);
+    expect(phone.gazeIntent!.convergence).toBeGreaterThan(0.5);
+  });
 });
 
 describe("표정 프리셋(EXPRESSION_PRESETS)", () => {

@@ -167,3 +167,35 @@ describe("reviewed hanging-handle orientation", () => {
     expect(primary.up).toEqual([0, 0, 1]);
   });
 });
+
+describe("Wave 33B 베레모·안경 두상 곡면 밀착 보정", () => {
+  it("베레모는 crown * 0.74 높이·측후면 오프셋·14° 자연 기울기로 두상 곡면에 밀착한다", async () => {
+    const metrics = measureVrmPropRigMetrics(await fixture("sample.vrm"));
+    const crown = metrics.faceSocket.surfaceCrownHeight!;
+    const beretSocket = studioVrmHeadwearSurfaceSocket("beret", "head", metrics.faceSocket)!;
+    expect(beretSocket.position[1]).toBeCloseTo(crown * 0.74, 5);
+    expect(beretSocket.position[0]).toBeLessThan(-0.015);
+    expect(beretSocket.position[2]).toBeLessThan(-0.01);
+    expect(Math.abs(beretSocket.rotationDeg[2])).toBeCloseTo(14, 1);
+
+    const beretInstance = createPropInstance("beret", "beret-curve-fit")!;
+    const attached = resolvePropAttachment(propDefById("beret")!, beretInstance, metrics);
+    expect(attached.socketPosition).toEqual(beretSocket.position);
+    expect(Math.abs(attached.rotationDeg[2])).toBeCloseTo(14, 1);
+    expect(attached.scale).toBeLessThan(1.06);
+  });
+
+  it("안경은 콧대 표면 접촉으로 6mm 밀착되고 eyeDistance 기반 광학 스케일·전경각을 적용한다", async () => {
+    const metrics = measureVrmPropRigMetrics(await fixture("sample.vrm"));
+    const glassesSocket = studioVrmHeadwearSurfaceSocket("glasses", "head", metrics.faceSocket)!;
+    expect(glassesSocket.position[2]).toBeCloseTo(metrics.faceSocket.position[2] - 0.006, 5);
+    expect(glassesSocket.position[1]).toBeLessThan(metrics.faceSocket.position[1]);
+
+    const glassesInstance = createPropInstance("glasses", "glasses-bridge-fit")!;
+    const attached = resolvePropAttachment(propDefById("glasses")!, glassesInstance, metrics);
+    expect(attached.socketPosition).toEqual(glassesSocket.position);
+    expect(attached.rotationDeg[0]).toBeCloseTo(4, 1);
+    expect(attached.scale).toBeGreaterThan(0.95);
+    expect(attached.scale).toBeLessThan(1.08);
+  });
+});
