@@ -16,6 +16,7 @@ import {
   STUDIO_VRM_AVATAR_REFERENCE_ROOT,
   assertStudioVrmAvatarReferenceArtifactSize,
   parseStudioVrmAvatarReferenceGenerationMode,
+  readCatalogueMediaPipeVersion,
   serializeStudioVrmAvatarReferenceCatalogue,
   studioVrmAvatarReferenceEmbeddingSha256,
 } from "./generate-studio-vrm-avatar-reference-catalogue";
@@ -23,6 +24,13 @@ import {
 function sha256(value: Uint8Array | string): string {
   return createHash("sha256").update(value).digest("hex");
 }
+
+it.each([
+  ["simd", "1.2.3"],
+  ["nosimd", "0.10.35"],
+] as const)("카탈로그에 %s 추론에 쓰인 SDK 버전 %s를 기록한다", async (variant, version) => {
+  expect(await readCatalogueMediaPipeVersion(variant)).toBe(version);
+});
 
 describe("browser harness module boundaries", () => {
   // 517f96a1 moved studio-vrm-asset-runtime into vrm/ and rewrote this file's
