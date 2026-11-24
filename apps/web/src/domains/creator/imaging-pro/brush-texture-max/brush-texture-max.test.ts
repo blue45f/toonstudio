@@ -155,16 +155,24 @@ function mirrorImpastoWgslShade(
   return { litRgbaOut, normalAoOut };
 }
 
-function createMockAudioContext() {
+function createMockAudioContext(opts: { readonly withOscillator?: boolean } = {}) {
   const stats = {
     started: false,
     stopped: false,
     closed: false,
     connections: 0,
+    bufferLength: 0,
     gainTargets: [] as number[],
+    strokeGainTargets: [] as number[],
+    safetyGainTargets: [] as number[],
+    lfoAmpTargets: [] as number[],
+    lfoFreqTargets: [] as number[],
+    lfoStarted: false,
+    lfoStopped: false,
     bandpassFreqTargets: [] as number[],
   };
   let filterIdx = 0;
+  let gainIdx = 0;
   const makeParam = (onTarget?: (val: number) => void): FrictionAudioParamLike => ({
     value: 0,
     setTargetAtTime(target: number): void {
@@ -181,6 +189,7 @@ function createMockAudioContext() {
     state: "running",
     destination: { tag: "dest" },
     createBuffer(_channels: number, length: number) {
+      stats.bufferLength = length;
       const data = new Float32Array(length);
       return { length, getChannelData: () => data };
     },
@@ -206,12 +215,33 @@ function createMockAudioContext() {
       };
     },
     createGain() {
+      const myIdx = gainIdx;
+      gainIdx += 1;
       return {
-        gain: makeParam((v) => { stats.gainTargets.push(v); }),
+        gain: makeParam((v) => {
+          stats.gainTargets.push(v);
+          if (myIdx === 0) stats.strokeGainTargets.push(v);
+          else if (myIdx === 1) stats.safetyGainTargets.push(v);
+          else if (myIdx === 2) stats.lfoAmpTargets.push(v);
+        }),
         connect: () => { stats.connections += 1; },
         disconnect: noop,
       };
     },
+    ...(opts.withOscillator
+      ? {
+          createOscillator() {
+            return {
+              type: "sine" as OscillatorType,
+              frequency: makeParam((v) => { stats.lfoFreqTargets.push(v); }),
+              connect: () => { stats.connections += 1; },
+              start: () => { stats.lfoStarted = true; },
+              stop: () => { stats.lfoStopped = true; },
+              disconnect: noop,
+            };
+          },
+        }
+      : {}),
     async resume() { return undefined; },
     async close() { stats.closed = true; },
   };
@@ -493,20 +523,25 @@ describe("brush-texture-max: WebGPU 7밴드 분광 브러시 질감 극대화 7�
   });
 
   describe("4. 필압·속도·매체 연동 ₩0 WebAudio 절차적 마찰음 합성기", () => {
-    it("4종 매체별 주파수·Q·그릿 특성을 구별하고 극단/NaN 입력에서도 볼륨 상한 안전 가드를 강제한다", () => {
+    it("6종 매체(연필/목탄/수채/유화/G펜/알코올 마커)별 주파수·Q·그릿을 구별하고 극단/NaN 입력에서도 볼륨 상한을 강제한다", () => {
       const mediums: readonly BrushFrictionMediumId[] = [
-        "graphite-pencil", "charcoal-pastel", "watercolor-brush", "oil-palette-knife",
+        "graphite-pencil", "charcoal-pastel", "watercolor-brush", "oil-palette-knife", "gpen-nib", "alcohol-marker",
       ];
       const byMedium = Object.fromEntries(
         mediums.map((medium) => [
           medium,
           computeBrushFrictionSynthParams({
             medium, pressure: 0.7, speed: 1.6, paperRoughness: 0.75, tiltRad: 0.6,
-            wetness: medium === "watercolor-brush" ? 0.85 : 0.15, masterVolume: 0.8,
+            wetness: medium === "watercolor-brush" ? 0.85 : medium === "alcohol-marker" ? 0.35 : 0.15, masterVolume: 0.8,
           }),
         ]),
       ) as Record<BrushFrictionMediumId, ReturnType<typeof computeBrushFrictionSynthParams>>;
 
+      expect(byMedium["gpen-nib"].centerFreqHz).toBeGreaterThan(byMedium["graphite-pencil"].centerFreqHz + 600);
+      expect(byMedium["gpen-nib"].centerFreqHz).toBeGreaterThan(3000);
+      expect(byMedium["alcohol-marker"].centerFreqHz).toBeGreaterThanOrEqual(1100);
+      expect(byMedium["alcohol-marker"].centerFreqHz).toBeLessThanOrEqual(2100);
+      expect(byMedium["alcohol-marker"].grainModDepth).toBeLessThan(byMedium["charcoal-pastel"].grainModDepth - 0.35);
       expect(byMedium["graphite-pencil"].centerFreqHz).toBeGreaterThan(byMedium["watercolor-brush"].centerFreqHz + 1200);
       expect(byMedium["charcoal-pastel"].grainModDepth).toBeGreaterThan(byMedium["watercolor-brush"].grainModDepth + 0.3);
       expect(byMedium["oil-palette-knife"].qFactor).toBeGreaterThan(byMedium["charcoal-pastel"].qFactor + 1.5);
@@ -531,7 +566,7 @@ describe("brush-texture-max: WebGPU 7밴드 분광 브러시 질감 극대화 7�
       }
     });
 
-    it("기본 OFF, AudioContext 미지원/SSR 무오류, Mock AudioContext 연결·스케줄링·정리를 검증한다", () => {
+    it("기본 OFF, AudioContext 미지원/SSR 무오류, 종이결 리듬 변조(위상 추적+LFO)·청력 보호 상한(0.25)·정리를 검증한다", () => {
       let factoryCalled = 0;
       const ssr = createBrushFrictionAudioController({
         createContext: () => { factoryCalled += 1; return null; },
@@ -547,17 +582,24 @@ describe("brush-texture-max: WebGPU 7밴드 분광 브러시 질감 극대화 7�
       ssr.dispose();
       expect(ssr.getStatus()).toBe("disposed");
 
+      // 1) 최소 Mock AudioContext (createOscillator 미지원): 기존 6-연결 호환 + 위상 추적 종이결 리듬 변조 + 2.5초 버퍼
       const { ctx, stats } = createMockAudioContext();
       const live = createBrushFrictionAudioController({ createContext: () => ctx, masterVolume: 1 });
       expect(live.setEnabled(true)).toBe("running");
       expect(stats.started).toBe(true);
       expect(stats.connections).toBe(6);
+      expect(stats.bufferLength).toBeGreaterThanOrEqual(44100 * 2.4);
 
-      const active = live.updateStroke({
-        medium: "oil-palette-knife", pressure: 0.9, speed: 2.4, paperRoughness: 0.7, masterVolume: 5,
-      });
-      expect(active.targetGain).toBeGreaterThan(0);
-      expect(active.targetGain).toBeLessThanOrEqual(MAX_SAFE_FRICTION_GAIN);
+      const sampledGains: number[] = [];
+      for (let i = 0; i < 6; i += 1) {
+        const res = live.updateStroke({
+          medium: "oil-palette-knife", pressure: 0.9, speed: 2.4, paperRoughness: 0.7, masterVolume: 5,
+        });
+        sampledGains.push(res.targetGain);
+        expect(res.targetGain).toBeGreaterThan(0);
+        expect(res.targetGain).toBeLessThanOrEqual(MAX_SAFE_FRICTION_GAIN);
+      }
+      expect(new Set(sampledGains.map((g) => g.toFixed(4))).size).toBeGreaterThanOrEqual(3);
       expect(stats.gainTargets.every((g) => g <= MAX_SAFE_FRICTION_GAIN)).toBe(true);
       expect(stats.bandpassFreqTargets.length).toBeGreaterThan(0);
 
@@ -566,6 +608,26 @@ describe("brush-texture-max: WebGPU 7밴드 분광 브러시 질감 극대화 7�
       live.dispose();
       expect(stats.stopped).toBe(true);
       expect(stats.closed).toBe(true);
+
+      // 2) Full Mock AudioContext (createOscillator 지원): 실시간 종이결 LFO 연결 + 피크 합산 <= MAX_SAFE_FRICTION_GAIN
+      const full = createMockAudioContext({ withOscillator: true });
+      const lfoLive = createBrushFrictionAudioController({ createContext: () => full.ctx, masterVolume: 1 });
+      expect(lfoLive.setEnabled(true)).toBe("running");
+      expect(full.stats.lfoStarted).toBe(true);
+      const nibRes = lfoLive.updateStroke({
+        medium: "gpen-nib", pressure: 1, speed: 3.2, paperRoughness: 0.9, masterVolume: 10,
+      });
+      expect(nibRes.targetGain).toBeLessThanOrEqual(MAX_SAFE_FRICTION_GAIN);
+      expect(full.stats.strokeGainTargets.every((g) => g <= MAX_SAFE_FRICTION_GAIN)).toBe(true);
+      expect(full.stats.lfoFreqTargets[0]).toBeCloseTo(nibRes.grainModRateHz, 3);
+      const safetyCenter = full.stats.safetyGainTargets[full.stats.safetyGainTargets.length - 1] ?? 1;
+      const lfoAmp = full.stats.lfoAmpTargets[full.stats.lfoAmpTargets.length - 1] ?? 0;
+      expect(safetyCenter + lfoAmp).toBeLessThanOrEqual(1.0001);
+      expect(nibRes.targetGain * (safetyCenter + lfoAmp)).toBeLessThanOrEqual(MAX_SAFE_FRICTION_GAIN + 1e-6);
+
+      lfoLive.dispose();
+      expect(full.stats.lfoStopped).toBe(true);
+      expect(full.stats.closed).toBe(true);
     });
   });
 
