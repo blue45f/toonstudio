@@ -145,15 +145,18 @@ export function assertReviewDeliveryVrmLicense(bytes: Buffer, sealedRights?: unk
   const result = parseStudioVrmLicenseMetadata(metadata);
   if (!result.ok) return blocked();
   const receipt = result.receipt;
-  const context = isStudioVrmProjectArchiveUseContextReceipt(sealedRights)
+  const hasSealedRights = isStudioVrmProjectArchiveUseContextReceipt(sealedRights);
+  const context = hasSealedRights
     ? studioVrmProjectArchiveActionContext(sealedRights, receipt) : {};
   const policy = evaluateStudioVrmLicenseAction(receipt, "commercial-publish", {
     ...context, avatarActorBasis: receipt.avatarPermission === "everyone" ? "other" : context.avatarActorBasis,
   });
   // 작품 납품에는 발행 주체가 개인이라는 기록이 없다. 팀 제공 동의만으로 개인 전용 모델을 승인할 수 없다.
   if (!policy.reasons.some(({ code }) => code === "commercial-use-allowed")
-    || !policy.reasons.some(({ code }) => code === "avatar-permission-allowed")
-    || policy.reasons.some(({ code, effect }) => effect === "restriction" && code.endsWith("-use-prohibited"))) blocked();
+    || !policy.reasons.some(({ code }) => code === "avatar-permission-allowed")) blocked();
+  // 봉인 기록이 없는 직접 첨부는 과거 원고와의 호환을 위해 콘텐츠 분류 미확인만 허용한다.
+  if (policy.reasons.some(({ code, effect }) => effect === "restriction"
+    && (hasSealedRights || code !== "content-context-unknown"))) blocked();
 }
 
 export async function verifyReviewDeliveryMaterialReferences(client: PoolClient, workId: string, references: MaterialReferences): Promise<void> {
