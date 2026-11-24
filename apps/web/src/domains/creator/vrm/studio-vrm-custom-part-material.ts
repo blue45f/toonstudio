@@ -15,6 +15,8 @@ import {
   createStudioVrmFeatheredDiscAlphaTexture,
   createStudioVrmGarmentWeaveNormalTexture,
   createStudioVrmHairAngelRingMatcapTexture,
+  createStudioVrmHairStrandAlbedoTexture,
+  createStudioVrmHairStrandNormalTexture,
   createStudioVrmSmoothOutlineGeometry,
   createStudioVrmSpecularMatcapTexture,
   smoothStudioVrmCoincidentNormals,
@@ -36,6 +38,8 @@ export {
   createStudioVrmFeatheredDiscAlphaTexture,
   createStudioVrmGarmentWeaveNormalTexture,
   createStudioVrmHairAngelRingMatcapTexture,
+  createStudioVrmHairStrandAlbedoTexture,
+  createStudioVrmHairStrandNormalTexture,
   createStudioVrmSmoothOutlineGeometry,
   createStudioVrmSpecularMatcapTexture,
   smoothStudioVrmCoincidentNormals,
@@ -364,33 +368,39 @@ export function createStudioVrmHairMToonMaterials(
       ? `#${new THREE.Color(hair.shadowColor).lerp(new THREE.Color("#c2cae2"), 0.42).getHexString()}`
       : undefined,
   );
-  // vertexColors가 이미 결 그림자와 그라데이션을 담고 있으므로 shadeColorFactor는 맑은 셀 톤 배율로 유지한다.
-  shadeColor.copy(new THREE.Color(profile.shadeTintHex)).multiplyScalar(clamp(profile.shadeDarkness * 1.16, 0.74, 0.9));
+  // vertexColors가 기본색·결 그림자를 담고 있으므로 shadeColorFactor는 과하게 바래지 않는 선명한 셀 톤 배율로 맞춘다.
+  shadeColor.copy(new THREE.Color(profile.shadeTintHex)).multiplyScalar(clamp(profile.shadeDarkness * 1.0, 0.68, 0.8));
   if (hair.shadowColor) {
     const customShadow = new THREE.Color(hair.shadowColor);
     const hsl = { h: 0, s: 0, l: 0 };
     customShadow.getHSL(hsl);
-    shadeColor.lerp(new THREE.Color().setHSL(hsl.h, clamp(hsl.s * 0.55, 0.06, 0.48), 0.78), 0.4);
+    shadeColor.lerp(new THREE.Color().setHSL(hsl.h, clamp(hsl.s * 0.55, 0.06, 0.48), 0.72), 0.35);
   }
 
   // 헤어 외곽선은 검은 띠로 뜨지 않도록 모발 본연의 색조를 섞고 조명 반영률을 높인다.
   const outlineColor = deriveStudioVrmHarmonizedOutlineColor(baseColor, profile, hair.shadowColor)
     .lerp(baseColor.clone().multiplyScalar(0.56), 0.35);
-  const matcap = createStudioVrmHairAngelRingMatcapTexture(clamp(0.28 + shine * 0.72, 0, 1));
+  const strandAlbedo = createStudioVrmHairStrandAlbedoTexture(shine);
+  const strandNormal = createStudioVrmHairStrandNormalTexture();
+  const matcap = createStudioVrmHairAngelRingMatcapTexture(clamp(0.24 + shine * 0.76, 0, 1));
+  // 링 외부 배경이 순수 암부(0)인 이중 초승달 매트캡에 맞춰, 어두운 모발색은 깊게 유지하면서 링 대역만 선명하게 띄운다.
   const matcapFactor = tipColor
     .clone()
-    .lerp(new THREE.Color("#fffaf2"), 0.66)
-    .multiplyScalar(0.38 + shine * 0.54);
-  const rimColor = tipColor.clone().lerp(new THREE.Color(profile.rimColorHex), 0.72);
-  const hairShadingShift = clamp(profile.shadingShiftFactor - 0.05, -0.35, 0.14);
-  const hairGiEqualization = clamp(Math.max(profile.giEqualizationFactor, 0.9), 0.72, 0.96);
+    .lerp(new THREE.Color("#fff7ec"), 0.58)
+    .multiplyScalar(0.3 + shine * 0.68);
+  const rimColor = tipColor.clone().lerp(new THREE.Color(profile.rimColorHex), 0.42);
+  const hairShadingShift = clamp(profile.shadingShiftFactor - 0.04, -0.35, 0.14);
+  const hairGiEqualization = clamp(profile.giEqualizationFactor * 0.85, 0.65, 0.82);
   const hairOutlineLightingMix = clamp(Math.max(profile.outlineLightingMixFactor, 0.66), 0.25, 0.9);
-  const hairRimLightingMix = clamp(profile.rimLightingMixFactor * 0.95 + 0.08, 0.25, 0.78);
-  const hairRimFresnelPower = clamp(profile.parametricRimFresnelPowerFactor * 0.85, 2.6, 5.2);
-  const hairRimLift = clamp(profile.parametricRimLiftFactor + 0.06 + shine * 0.07, 0.08, 0.26);
+  const hairRimLightingMix = clamp(profile.rimLightingMixFactor * 0.9 + 0.06, 0.22, 0.74);
+  const hairRimFresnelPower = clamp(Math.max(profile.parametricRimFresnelPowerFactor, 4.4), 4.2, 6.2);
+  const hairRimLift = clamp(profile.parametricRimLiftFactor * 0.45 + shine * 0.04, 0.02, 0.11);
 
   const main = patchStudioVrmMToonVertexColorShader(new MToonMaterial({
     color: new THREE.Color(0xffffff),
+    map: strandAlbedo,
+    normalMap: strandNormal,
+    normalScale: new THREE.Vector2(0.45, 0.25),
     vertexColors: true,
     ignoreVertexColor: false,
     shadeColorFactor: shadeColor,
@@ -436,7 +446,7 @@ export function createStudioVrmHairMToonMaterials(
   outline.userData[STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY] = { role: "hair-outline" };
   outline.userData.toonstudioComponent = "hair";
 
-  return { main, outline, ownedTextures: [matcap] };
+  return { main, outline, ownedTextures: [matcap, strandAlbedo, strandNormal] };
 }
 
 /** 워드로브·스커트용 통합 `MToonMaterial`을 생성·갱신한다(금속 블랙 붕괴 방지 + 직조 노멀맵 + 셀 셰이딩). */

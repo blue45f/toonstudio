@@ -40,9 +40,10 @@ function clamp(value: number, min: number, max: number) {
 /**
  * 캡 껍질의 최소 두께(두개골 반경 대비). 생성 캐릭터 파이프라인(`studio-vrm-humanoid-mesh.ts` 의
  * `fitHairCapToSkull`)과 같은 규칙이다 — 볼륨 1 이하는 이 안에서만 얇아지고 살갗 밑으로는 못 간다.
- * 예전 VRM 부착 경로는 이 규칙이 없어 픽시·번 레시피(볼륨 0.86~0.96)에서 캡이 두피 안으로 들어갔다.
+ * 실측 VRM 12종(쿼터니어스 포함)의 기본/최소 피복 게이트를 모두 통과하는 최소 안전치(0.045)로 두고,
+ * 실제 렌더 전개(`refineBasePartForRender`)에서는 기본 볼륨의 껍질 두께를 약 3.0~3.5%로 밀착한다.
  */
-export const AVATAR_FORGE_CAP_MIN_SHELL = 0.05;
+export const AVATAR_FORGE_CAP_MIN_SHELL = 0.045;
 
 const FACE_MINUS_Z = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 
@@ -52,8 +53,8 @@ export interface AvatarForgeHairPlacement {
   readonly scale: THREE.Vector3;
 }
 
-/** 가닥 뿌리를 덮는 캡 껍질의 보수적 반경 배율(가장 얇은 캡 +2.5% 와 기본 캡 +5% 사이). */
-const TUCK_CAP_SHELL = 1.035;
+/** 가닥 뿌리를 덮는 캡 껍질의 보수적 반경 배율(밀착 렌더 캡 바로 아래에 뿌리를 숨긴다). */
+const TUCK_CAP_SHELL = 1.026;
 
 /**
  * 얼굴이 +z 인 정준 좌표의 두상. 배치 규칙은 전부 이 좌표에서 계산하고, VRM0(−z 얼굴)은 마지막에
@@ -312,9 +313,20 @@ export function avatarForgeHairInstance(part: AvatarForgeHairPart, fit: StudioVr
   return Object.freeze(layout.spine ? { part, matrix, spine: layout.spine } : { part, matrix });
 }
 
+const FLOWING_BACK_SHELL_IDS = new Set(["back", "wavy-back", "hime-back", "halfup-back"]);
+const SOFTENED_SIDE_PILLAR_IDS = new Set([
+  "side-left",
+  "side-right",
+  "wavy-side-left",
+  "wavy-side-right",
+  "halfup-side-left",
+  "halfup-side-right",
+]);
+
 function deriveRenderHairStrand(
   template: AvatarForgeHairPart,
-  patch: Pick<AvatarForgeHairPart, "id" | "role" | "position" | "rotation" | "scale" | "taper">,
+  patch: Pick<AvatarForgeHairPart, "id" | "role" | "position" | "rotation" | "scale" | "taper">
+    & Partial<Pick<AvatarForgeHairPart, "curl" | "wave" | "waveFrequency">>,
 ): AvatarForgeHairPart {
   return {
     ...template,
@@ -323,16 +335,64 @@ function deriveRenderHairStrand(
   };
 }
 
+function refineBasePartForRender(part: AvatarForgeHairPart): AvatarForgeHairPart {
+  // 기본 캡이 헬멧 돔처럼 부풀어 보이지 않도록 렌더 캡의 과잉 볼륨을 두상 밀착 비율(약 3.0~3.5%)로 다듬는다.
+  if (part.role === "cap") {
+    const tightCapAxis = (value: number, unitRadius: number) => {
+      const ratio = Math.abs(value) / unitRadius;
+      const tightened = ratio <= 1
+        ? clamp(0.68 * ratio, 0.55, 0.68)
+        : 0.68 + (ratio - 1) * 1.12;
+      return unitRadius * tightened;
+    };
+    return {
+      ...part,
+      scale: [
+        tightCapAxis(part.scale[0], UNIT_CAP_RADIUS[0]),
+        tightCapAxis(part.scale[1], UNIT_CAP_RADIUS[1]),
+        tightCapAxis(part.scale[2], UNIT_CAP_RADIUS[2]),
+      ],
+    };
+  }
+  // 딱딱한 직사각형 기둥처럼 보이던 기본 사이드락을 부드러운 S-웨이브·테이퍼 리본으로 다듬는다.
+  if (SOFTENED_SIDE_PILLAR_IDS.has(part.id)) {
+    return {
+      ...part,
+      scale: [part.scale[0] * 0.84, part.scale[1], part.scale[2] * 0.86],
+      taper: Math.max(part.taper, 0.56),
+      curl: Math.max(part.curl, 0.2),
+      wave: Math.max(part.wave ?? 0, 0.26),
+      waveFrequency: part.waveFrequency ?? 2.5,
+    };
+  }
+  if (part.id === "hime-lock-left" || part.id === "hime-lock-right") {
+    return {
+      ...part,
+      scale: [part.scale[0] * 0.88, part.scale[1], part.scale[2] * 0.84],
+      taper: Math.max(part.taper, 0.14),
+    };
+  }
+  // 뒷머리 타원체는 가닥 사이 빈틈을 막는 내피 코어 역할로 줄이고 외곽 실루엣은 다층 드레이프 리본이 맡는다.
+  if (part.role === "back" && part.primitive === "ellipsoid" && FLOWING_BACK_SHELL_IDS.has(part.id)) {
+    return {
+      ...part,
+      scale: [part.scale[0] * 0.88, part.scale[1] * 0.88, part.scale[2] * 0.82],
+    };
+  }
+  return part;
+}
+
 /**
  * v1 파츠 계획의 하위호환(JSON 바이트 고정)을 깨지 않으면서 실제 3D 렌더 메시의 앞머리 밀도·
- * 이마 중앙 커버리지·관자놀이~사이드락 연결을 보강하는 보조 가닥을 전개한다.
+ * 비대칭 깃털 잔머리·볼선 C-컬 잔머리·다층 사이드 커튼·뒷머리 드레이프 리본을 전개한다.
  */
 export function expandAvatarForgeHairPartsForRender(
   parts: readonly AvatarForgeHairPart[],
-  hair: Pick<AvatarForgeHairParams, "bangStyle" | "strandWidth" | "fringe" | "length">,
+  hair: Pick<AvatarForgeHairParams, "bangStyle" | "strandWidth" | "fringe" | "length">
+    & Partial<Pick<AvatarForgeHairParams, "style" | "wave" | "curl">>,
 ): AvatarForgeHairPart[] {
   if (parts.length === 0) return [];
-  const expanded: AvatarForgeHairPart[] = [...parts];
+  const expanded: AvatarForgeHairPart[] = parts.map(refineBasePartForRender);
   const w = hair.strandWidth;
   const f = hair.fringe;
   const l = hair.length;
@@ -379,17 +439,31 @@ export function expandAvatarForgeHairPartsForRender(
       pushBang("bang-sweep-temple-left", [-0.34, 0.01, 0.34], [0.05, 0, 0.08], [0.12 * w, 0.35 * f, 0.074 * w], 0.56);
       pushBang("bang-sweep-temple-right", [0.33, 0.01, 0.34], [0.05, 0, -0.06], [0.12 * w, 0.38 * f, 0.074 * w], 0.54);
     }
+
+    // 비대칭 깃털 잔머리 서브 가닥(layoutBang 중심선 경로를 타므로 VRM 12종 전체에서 0관통 보장)
+    const isBlunt = hair.bangStyle === "blunt";
+    const innerLeftLen = isBlunt ? 0.305 * f : 0.365 * f;
+    const innerRightLen = isBlunt ? 0.308 * f : 0.405 * f;
+    const innerTaper = isBlunt ? 0.58 : 0.82;
+    pushBang("bang-feather-inner-left", [-0.068, 0.04, 0.412], [0.04, 0, isBlunt ? -0.02 : -0.09], [0.072 * w, innerLeftLen, 0.056 * w], innerTaper);
+    pushBang("bang-feather-inner-right", [0.134, 0.035, 0.416], [0.04, 0, isBlunt ? 0.03 : 0.12], [0.068 * w, innerRightLen, 0.054 * w], innerTaper);
+    pushBang("bang-feather-outer-left", [-0.255, 0.01, 0.372], [0.03, 0, -0.11], [0.078 * w, (isBlunt ? 0.37 : 0.44) * f, 0.058 * w], 0.8);
+    pushBang("bang-feather-outer-right", [0.268, 0.005, 0.376], [0.03, 0, 0.13], [0.074 * w, (isBlunt ? 0.39 : 0.46) * f, 0.056 * w], 0.8);
   }
 
-  // 관자놀이~볼선을 감싸는 브리지 사이드락을 보강해 앞머리와 옆머리 사이 빈 틈(3/4 뷰 절벽)을 없앤다.
+  // 관자놀이~볼선 연결 브리지 + 안쪽 턱선 C-컬 잔머리(`cheek-wisp-left/right`)
   const leftSide = parts.find((part) => part.role === "side" && part.position[0] < 0);
   const rightSide = parts.find((part) => part.role === "side" && part.position[0] > 0);
+  const cheekWispLength = clamp(0.32 * l, 0.22, 0.44);
   if (leftSide && rightSide) {
     const bridgeY = Math.min(-0.06, leftSide.position[1] * 0.72);
-    const bridgeWidth = Math.max(0.14 * w, leftSide.scale[0] * 0.92);
-    const bridgeLength = Math.max(0.28 * l, leftSide.scale[1] * 0.78);
-    const bridgeDepth = Math.max(0.095 * w, leftSide.scale[2] * 0.78);
-    const bridgeTaper = clamp(leftSide.taper + 0.06, 0.3, 0.62);
+    const bridgeWidth = Math.max(0.125 * w, leftSide.scale[0] * 0.82);
+    const bridgeLength = Math.max(0.28 * l, leftSide.scale[1] * 0.76);
+    const bridgeDepth = Math.max(0.085 * w, leftSide.scale[2] * 0.72);
+    const bridgeTaper = clamp(leftSide.taper + 0.14, 0.44, 0.7);
+    const cheekY = Math.min(-0.11, leftSide.position[1] * 0.54);
+    const cheekCurl = Math.max(leftSide.curl, 0.26);
+    const cheekWave = Math.max(leftSide.wave ?? 0, 0.18);
     expanded.push(
       deriveRenderHairStrand(leftSide, {
         id: "temple-bridge-left",
@@ -398,6 +472,9 @@ export function expandAvatarForgeHairPartsForRender(
         rotation: [0.03, 0, 0.04],
         scale: [bridgeWidth, bridgeLength, bridgeDepth],
         taper: bridgeTaper,
+        curl: Math.max(leftSide.curl, 0.2),
+        wave: Math.max(leftSide.wave ?? 0, 0.18),
+        waveFrequency: 2.4,
       }),
       deriveRenderHairStrand(rightSide, {
         id: "temple-bridge-right",
@@ -406,6 +483,31 @@ export function expandAvatarForgeHairPartsForRender(
         rotation: [0.03, 0, -0.04],
         scale: [bridgeWidth, bridgeLength, bridgeDepth],
         taper: bridgeTaper,
+        curl: Math.max(rightSide.curl, 0.2),
+        wave: Math.max(rightSide.wave ?? 0, 0.18),
+        waveFrequency: 2.4,
+      }),
+      deriveRenderHairStrand(leftSide, {
+        id: "cheek-wisp-left",
+        role: "side",
+        position: [-0.365, cheekY, 0.225],
+        rotation: [0.04, 0, -0.09],
+        scale: [0.086 * w, cheekWispLength, 0.064 * w],
+        taper: 0.78,
+        curl: cheekCurl,
+        wave: cheekWave,
+        waveFrequency: 2.2,
+      }),
+      deriveRenderHairStrand(rightSide, {
+        id: "cheek-wisp-right",
+        role: "side",
+        position: [0.365, cheekY, 0.225],
+        rotation: [0.04, 0, 0.09],
+        scale: [0.086 * w, cheekWispLength, 0.064 * w],
+        taper: 0.78,
+        curl: cheekCurl,
+        wave: cheekWave,
+        waveFrequency: 2.2,
       }),
     );
   } else if (baseBang && hair.bangStyle !== "none") {
@@ -416,18 +518,167 @@ export function expandAvatarForgeHairPartsForRender(
         role: "side",
         position: [-0.41, -0.06, 0.18],
         rotation: [0.03, 0, 0.05],
-        scale: [0.11 * w, wispLength, 0.08 * w],
-        taper: 0.64,
+        scale: [0.105 * w, wispLength, 0.075 * w],
+        taper: 0.68,
+        curl: Math.max(baseBang.curl, 0.22),
       }),
       deriveRenderHairStrand(baseBang, {
         id: "temple-wisp-right",
         role: "side",
         position: [0.41, -0.06, 0.18],
         rotation: [0.03, 0, -0.05],
-        scale: [0.11 * w, wispLength, 0.08 * w],
-        taper: 0.64,
+        scale: [0.105 * w, wispLength, 0.075 * w],
+        taper: 0.68,
+        curl: Math.max(baseBang.curl, 0.22),
+      }),
+      deriveRenderHairStrand(baseBang, {
+        id: "cheek-wisp-left",
+        role: "side",
+        position: [-0.365, -0.1, 0.225],
+        rotation: [0.04, 0, -0.09],
+        scale: [0.082 * w, cheekWispLength * 0.85, 0.06 * w],
+        taper: 0.78,
+        curl: Math.max(baseBang.curl, 0.26),
+        wave: 0.16,
+        waveFrequency: 2.2,
+      }),
+      deriveRenderHairStrand(baseBang, {
+        id: "cheek-wisp-right",
+        role: "side",
+        position: [0.365, -0.1, 0.225],
+        rotation: [0.04, 0, 0.09],
+        scale: [0.082 * w, cheekWispLength * 0.85, 0.06 * w],
+        taper: 0.78,
+        curl: Math.max(baseBang.curl, 0.26),
+        wave: 0.16,
+        waveFrequency: 2.2,
       }),
     );
+  }
+
+  // 흐르는 스타일(웨이브·롱·보브·히메컷·반묶음): 외곽 S-웨이브 사이드 커튼 + 다층 뒷머리 드레이프 리본 전개
+  const backShell = parts.find(
+    (part) => part.role === "back" && part.primitive === "ellipsoid" && FLOWING_BACK_SHELL_IDS.has(part.id),
+  );
+  const inferredStyle = hair.style
+    ?? (backShell?.id === "wavy-back"
+      ? "wavy"
+      : backShell?.id === "hime-back"
+        ? "hime"
+        : backShell?.id === "halfup-back"
+          ? "half-up"
+          : backShell
+            ? (backShell.scale[1] > 0.65 * l ? "long" : "bob")
+            : undefined);
+  const isFlowingStyle = inferredStyle === "wavy"
+    || inferredStyle === "long"
+    || inferredStyle === "bob"
+    || inferredStyle === "hime"
+    || inferredStyle === "half-up";
+
+  if (isFlowingStyle && leftSide && rightSide) {
+    const isWavy = inferredStyle === "wavy";
+    const isBob = inferredStyle === "bob";
+    const isHime = inferredStyle === "hime";
+    const isHalfUp = inferredStyle === "half-up";
+    const flowLength = (isBob ? 0.54 : isHalfUp ? 0.72 : isWavy ? 0.92 : 0.88) * l;
+    const flowWave = isWavy
+      ? Math.max(leftSide.wave ?? 0, 0.62)
+      : isHime
+        ? Math.max(leftSide.wave ?? 0, 0.14)
+        : Math.max(leftSide.wave ?? 0, 0.28);
+    const flowFreq = isWavy ? 2.85 : 2.3;
+    const flowCurl = isWavy
+      ? Math.max(leftSide.curl, 0.34)
+      : isHime
+        ? Math.max(leftSide.curl, 0.14)
+        : Math.max(leftSide.curl, 0.24);
+    expanded.push(
+      deriveRenderHairStrand(leftSide, {
+        id: "side-flow-left",
+        role: "side",
+        position: [-0.465, -0.25 * l, -0.065],
+        rotation: [0.02, 0, 0.06],
+        scale: [0.132 * w, flowLength, 0.098 * w],
+        taper: 0.66,
+        curl: flowCurl,
+        wave: flowWave,
+        waveFrequency: flowFreq,
+      }),
+      deriveRenderHairStrand(rightSide, {
+        id: "side-flow-right",
+        role: "side",
+        position: [0.465, -0.25 * l, -0.065],
+        rotation: [0.02, 0, -0.06],
+        scale: [0.132 * w, flowLength, 0.098 * w],
+        taper: 0.66,
+        curl: flowCurl,
+        wave: flowWave,
+        waveFrequency: flowFreq,
+      }),
+      deriveRenderHairStrand(leftSide, {
+        id: "side-layer-left",
+        role: "side",
+        position: [-0.435, -0.17 * l, -0.185],
+        rotation: [0.03, 0, 0.08],
+        scale: [0.118 * w, flowLength * 0.78, 0.09 * w],
+        taper: 0.74,
+        curl: flowCurl * 0.92,
+        wave: flowWave * 0.9,
+        waveFrequency: flowFreq,
+      }),
+      deriveRenderHairStrand(rightSide, {
+        id: "side-layer-right",
+        role: "side",
+        position: [0.435, -0.17 * l, -0.185],
+        rotation: [0.03, 0, -0.08],
+        scale: [0.118 * w, flowLength * 0.78, 0.09 * w],
+        taper: 0.74,
+        curl: flowCurl * 0.92,
+        wave: flowWave * 0.9,
+        waveFrequency: flowFreq,
+      }),
+    );
+  }
+
+  if (isFlowingStyle && backShell) {
+    const isWavy = inferredStyle === "wavy";
+    const isBob = inferredStyle === "bob";
+    const isHime = inferredStyle === "hime";
+    const isHalfUp = inferredStyle === "half-up";
+    const drapeLength = Math.max(backShell.scale[1] * 1.08, (isBob ? 0.56 : isHalfUp ? 0.86 : 0.96) * l);
+    const drapeWave = isWavy
+      ? Math.max(hair.wave ?? 0, 0.56)
+      : isHime
+        ? Math.max(hair.wave ?? 0, 0.12)
+        : Math.max(hair.wave ?? 0, 0.22);
+    const drapeFreq = isWavy ? 2.7 : 2.2;
+    const drapeCurl = isWavy ? Math.max(backShell.curl, 0.28) : Math.max(backShell.curl, 0.16);
+    // 뒷머리 드레이프 리본은 Y축 180° 회전해 볼록한 앞면 광택이 뒤통수 바깥쪽(-z)을 향하게 한다.
+    const pushBackDrape = (
+      id: string,
+      position: readonly [number, number, number],
+      rotation: readonly [number, number, number],
+      scale: readonly [number, number, number],
+      taper: number,
+    ) => {
+      expanded.push(deriveRenderHairStrand(backShell, {
+        id,
+        role: "back",
+        position,
+        rotation,
+        scale,
+        taper,
+        curl: drapeCurl,
+        wave: drapeWave,
+        waveFrequency: drapeFreq,
+      }));
+    };
+    pushBackDrape("back-drape-center", [0, -0.34 * l, -0.44], [-0.06, Math.PI, 0], [0.195 * w, drapeLength * 1.03, 0.112 * w], 0.62);
+    pushBackDrape("back-drape-left", [-0.215, -0.32 * l, -0.415], [-0.05, Math.PI + 0.3, -0.04], [0.178 * w, drapeLength * 0.98, 0.106 * w], 0.66);
+    pushBackDrape("back-drape-right", [0.215, -0.32 * l, -0.415], [-0.05, Math.PI - 0.3, 0.04], [0.178 * w, drapeLength * 0.98, 0.106 * w], 0.66);
+    pushBackDrape("back-drape-outer-left", [-0.375, -0.28 * l, -0.295], [-0.04, Math.PI + 0.72, -0.05], [0.158 * w, drapeLength * 0.92, 0.098 * w], 0.7);
+    pushBackDrape("back-drape-outer-right", [0.375, -0.28 * l, -0.295], [-0.04, Math.PI - 0.72, 0.05], [0.158 * w, drapeLength * 0.92, 0.098 * w], 0.7);
   }
 
   return expanded;
@@ -447,6 +698,7 @@ export function addAvatarForgeHairParts(
   const parts = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(state), state.hair);
   const merged = mergeStudioVrmAuthoredHairGeometry(
     parts.map((part) => avatarForgeHairInstance(part, fit)),
+    { minScalpMargin: 0.004, crownCompression: 0.24, crownLatitudeMin: 0.36, earArchRelief: 0.25 },
   );
   if (!merged) return;
 

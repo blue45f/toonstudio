@@ -259,4 +259,89 @@ describe("studio-vrm-authored-hair-geometry", () => {
     expect(Array.from(geometry.getAttribute("position").array)).toEqual(before);
     geometry.dispose();
   });
+
+  it("캡 정수리 오프센터 가르마(x≈-0.18)가 두개골 바깥을 지키면서 자연스러운 골을 만들고 정점 백화를 억제한다", () => {
+    const darkCap = createStudioVrmAuthoredHairGeometry({
+      ...CLUMP,
+      id: "cap",
+      role: "cap",
+      primitive: "ellipsoid",
+      baseColor: "#352a28",
+      shadowColor: undefined,
+      tipColor: "#6b5148",
+      shine: 0.42,
+    });
+    const pos = darkCap.getAttribute("position");
+    const col = darkCap.getAttribute("color");
+    const uv = darkCap.getAttribute("uv");
+    let grooveSum = 0;
+    let grooveCount = 0;
+    let flankSum = 0;
+    let flankCount = 0;
+    let minRadius = Number.POSITIVE_INFINITY;
+    let lumSum = 0;
+    let lumMax = 0;
+    for (let i = 0; i < pos.count; i += 1) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const z = pos.getZ(i);
+      const r = Math.hypot(x, y, z);
+      minRadius = Math.min(minRadius, r);
+      const lum = 0.299 * col.getX(i) + 0.587 * col.getY(i) + 0.114 * col.getZ(i);
+      lumSum += lum;
+      lumMax = Math.max(lumMax, lum);
+      if (y > 0.55 && z > -0.2) {
+        if (Math.abs(x + 0.18) < 0.08) {
+          grooveSum += r;
+          grooveCount += 1;
+        }
+        if (Math.abs(Math.abs(x + 0.18) - 0.22) < 0.08) {
+          flankSum += r;
+          flankCount += 1;
+        }
+      }
+    }
+    expect(minRadius).toBeGreaterThanOrEqual(1.003);
+    expect(grooveCount).toBeGreaterThan(0);
+    expect(flankCount).toBeGreaterThan(0);
+    // 가르마 골이 양옆 모근 볼륨보다 명확히 낮아 헬멧형 매끈한 구 돔이 아니다.
+    expect(flankSum / flankCount - grooveSum / grooveCount).toBeGreaterThan(0.018);
+    // 어두운 밤색 모발의 정점 컬러가 뿌연 베이지로 백화되지 않고 깊은 본색을 유지한다.
+    expect(lumSum / pos.count).toBeLessThan(0.09);
+    expect(lumMax).toBeLessThan(0.2);
+    // 캡 UV는 정수리(row=0)가 v=0, 헤어라인 끝(last)이 v=1 로 가닥과 일치한다.
+    expect(uv.getY(0)).toBeCloseTo(0, 6);
+    expect(uv.getY(uv.count - 1)).toBeCloseTo(1, 6);
+    darkCap.dispose();
+  });
+
+  it("옆머리 좌/우 가닥은 얼굴 중심에 대해 대칭 S-웨이브와 안쪽 턱선 C-컬을 형성한다", () => {
+    const leftSide: AvatarForgeHairPart = {
+      ...CLUMP,
+      id: "wavy-side-left",
+      role: "side",
+      position: [-0.44, -0.26, 0.08],
+      curl: 0.28,
+      wave: 0.55,
+      waveFrequency: 2.8,
+    };
+    const rightSide: AvatarForgeHairPart = {
+      ...leftSide,
+      id: "wavy-side-right",
+      position: [0.44, -0.26, 0.08],
+    };
+    expect(resolveStudioVrmAuthoredHairClumpCenter(leftSide, 0)).toEqual([0, 0]);
+    expect(resolveStudioVrmAuthoredHairClumpCenter(rightSide, 0)).toEqual([0, 0]);
+    for (const t of [0.25, 0.5, 0.75, 0.95]) {
+      const [lx, lz] = resolveStudioVrmAuthoredHairClumpCenter(leftSide, t);
+      const [rx, rz] = resolveStudioVrmAuthoredHairClumpCenter(rightSide, t);
+      expect(lx).toBeCloseTo(-rx, 6);
+      expect(lz).toBeCloseTo(rz, 6);
+    }
+    const [tipLx] = resolveStudioVrmAuthoredHairClumpCenter({ ...leftSide, wave: 0 }, 0.92);
+    const [tipRx] = resolveStudioVrmAuthoredHairClumpCenter({ ...rightSide, wave: 0 }, 0.92);
+    // 끝단 C-컬이 양쪽 모두 얼굴 안쪽(왼쪽은 +x, 오른쪽은 -x)으로 부드럽게 감긴다.
+    expect(tipLx).toBeGreaterThan(0.05);
+    expect(tipRx).toBeLessThan(-0.05);
+  });
 });

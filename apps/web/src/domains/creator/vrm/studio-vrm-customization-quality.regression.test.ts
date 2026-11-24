@@ -130,15 +130,18 @@ function assertValidSmoothNormals(geometry: THREE.BufferGeometry, label: string)
   expect(position, `${label}: position`).toBeDefined();
   expect(normal, `${label}: normal`).toBeDefined();
   expect(normal.count, `${label}: normal count`).toBe(position.count);
+  let firstInvalid: string | null = null;
   for (let index = 0; index < normal.count; index += 1) {
     const nx = normal.getX(index);
     const ny = normal.getY(index);
     const nz = normal.getZ(index);
     const len = Math.hypot(nx, ny, nz);
-    expect(Number.isFinite(len), `${label}[${index}] finite`).toBe(true);
-    expect(len, `${label}[${index}] unit length`).toBeGreaterThan(0.95);
-    expect(len, `${label}[${index}] unit length`).toBeLessThan(1.05);
+    if (!Number.isFinite(len) || len <= 0.95 || len >= 1.05) {
+      firstInvalid = `${label}[${index}] len=${len}`;
+      break;
+    }
   }
+  expect(firstInvalid, `${label}: all ${normal.count} normals unit length`).toBeNull();
 }
 
 describe("3D 커스터마이징 품질 회귀 검증 (헤어 · 의상 · 소품 · 그룸 · 자원 정리)", () => {
@@ -305,6 +308,68 @@ describe("3D 커스터마이징 품질 회귀 검증 (헤어 · 의상 · 소품
     expect(matcapLum(defaultHairMats.main.shadeColorFactor)).toBeGreaterThanOrEqual(0.45);
     expect(defaultHairMats.outline.outlineWidthFactor).toBeLessThanOrEqual(profile.outlineWidthFactor);
     expect(defaultHairMats.outline.outlineLightingMixFactor).toBeGreaterThanOrEqual(0.6);
+    expect(defaultHairMats.main.map).toBeInstanceOf(THREE.DataTexture);
+    expect(defaultHairMats.main.normalMap).toBeInstanceOf(THREE.DataTexture);
+    expect(defaultHairMats.main.normalScale.x).toBeCloseTo(0.45, 3);
+    expect(defaultHairMats.main.normalScale.y).toBeCloseTo(0.25, 3);
+    expect(defaultHairMats.ownedTextures).toHaveLength(3);
+
+    // 모발결 알베도(256×256 sRGB, 평균 0.94~0.98) + 탄젠트 노멀 + 암부 배경 이중 초승달 매트캡 검증
+    const albedoTex = defaultHairMats.main.map as THREE.DataTexture;
+    expect(albedoTex.image.width).toBe(256);
+    expect(albedoTex.image.height).toBe(256);
+    expect(albedoTex.colorSpace).toBe(THREE.SRGBColorSpace);
+    expect(albedoTex.wrapS).toBe(THREE.RepeatWrapping);
+    expect(albedoTex.wrapT).toBe(THREE.RepeatWrapping);
+    const albedoData = albedoTex.image.data as Uint8Array;
+    let albedoSum = 0;
+    let albedoMin = 255;
+    let albedoMax = 0;
+    let rootLum = 0;
+    let midLum = 0;
+    let tipWarmDiff = 0;
+    for (let y = 0; y < 256; y += 1) {
+      for (let x = 0; x < 256; x += 1) {
+        const idx = (y * 256 + x) * 4;
+        const lum = (0.299 * albedoData[idx]! + 0.587 * albedoData[idx + 1]! + 0.114 * albedoData[idx + 2]!) / 255;
+        albedoSum += lum;
+        albedoMin = Math.min(albedoMin, albedoData[idx]!);
+        albedoMax = Math.max(albedoMax, albedoData[idx]!);
+        if (y < 16) rootLum += lum;
+        if (y >= 84 && y < 100) midLum += lum;
+        if (y >= 240) tipWarmDiff += (albedoData[idx]! - albedoData[idx + 2]!) / 255;
+      }
+    }
+    const albedoMean = albedoSum / (256 * 256);
+    expect(albedoMean).toBeGreaterThanOrEqual(0.94);
+    expect(albedoMean).toBeLessThanOrEqual(0.98);
+    expect((albedoMax - albedoMin) / 255).toBeGreaterThanOrEqual(0.16);
+    expect(rootLum / (16 * 256)).toBeLessThan(midLum / (16 * 256));
+    expect(tipWarmDiff / (16 * 256)).toBeGreaterThan(0.02);
+
+    const normalTex = defaultHairMats.main.normalMap as THREE.DataTexture;
+    expect(normalTex.image.width).toBe(256);
+    expect(normalTex.image.height).toBe(256);
+    expect(normalTex.colorSpace).toBe(THREE.NoColorSpace);
+    const normalData = normalTex.image.data as Uint8Array;
+    let normalMinX = 255;
+    let normalMaxX = 0;
+    for (let i = 0; i < normalData.length; i += 4) {
+      normalMinX = Math.min(normalMinX, normalData[i]!);
+      normalMaxX = Math.max(normalMaxX, normalData[i]!);
+    }
+    expect(normalMaxX - normalMinX).toBeGreaterThan(140);
+
+    const matcapTex = defaultHairMats.main.matcapTexture as THREE.DataTexture;
+    const mcSize = matcapTex.image.width as number;
+    const mcData = matcapTex.image.data as Uint8Array;
+    const sampleMc = (ny: number) => mcData[(Math.round((ny * 0.5 + 0.5) * (mcSize - 1)) * mcSize + Math.floor(mcSize / 2)) * 4]! / 255;
+    // 중앙 암부(0)와 주/보조 초승달 사이 어두운 골로 뿌연 회백색 안개를 제거한다.
+    expect(sampleMc(0)).toBe(0);
+    expect(sampleMc(0.3)).toBeGreaterThan(0.45);
+    expect(sampleMc(0.21)).toBeLessThan(0.05);
+    expect(sampleMc(0.125)).toBeGreaterThan(0.15);
+
     defaultHairMats.main.dispose();
     defaultHairMats.outline.dispose();
     defaultHairMats.ownedTextures.forEach((tex) => tex.dispose());

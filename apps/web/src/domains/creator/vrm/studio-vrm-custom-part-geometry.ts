@@ -6,7 +6,18 @@
 import * as THREE from "three";
 
 import { sampleStudioVrmGarmentWeave } from "./studio-vrm-garment-weave";
+import {
+  createStudioVrmHairAngelRingMatcapTexture,
+  createStudioVrmHairStrandAlbedoTexture,
+  createStudioVrmHairStrandNormalTexture,
+} from "./studio-vrm-hair-strand-textures";
 import { wardrobeFabricById, type WardrobeEquip } from "./studio-vrm-wardrobe";
+
+export {
+  createStudioVrmHairAngelRingMatcapTexture,
+  createStudioVrmHairStrandAlbedoTexture,
+  createStudioVrmHairStrandNormalTexture,
+};
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -137,46 +148,6 @@ export function createStudioVrmSmoothOutlineGeometry(
   outline.computeBoundingBox();
   outline.computeBoundingSphere();
   return outline;
-}
-
-/** 애니메 헤어 엔젤링(이중 곡선 이방성 광택) 매트캡 텍스처. */
-export function createStudioVrmHairAngelRingMatcapTexture(shine: number): THREE.DataTexture {
-  const size = 96;
-  const data = new Uint8Array(size * size * 4);
-  const strength = clamp(shine, 0, 1);
-  for (let y = 0; y < size; y += 1) {
-    const ny = (y / (size - 1)) * 2 - 1;
-    for (let x = 0; x < size; x += 1) {
-      const nx = (x / (size - 1)) * 2 - 1;
-      const r2 = nx * nx + ny * ny;
-      const offset = (y * size + x) * 4;
-      if (r2 > 1.04) {
-        data[offset] = 0;
-        data[offset + 1] = 0;
-        data[offset + 2] = 0;
-        data[offset + 3] = 255;
-        continue;
-      }
-      const arch = 0.24 - nx * nx * 0.22;
-      const primary = Math.exp(-Math.pow((ny - arch) / 0.13, 2)) * (0.55 + 0.45 * Math.cos(nx * Math.PI * 0.65));
-      const secondary = Math.exp(-Math.pow((ny - (arch - 0.22)) / 0.16, 2)) * 0.24;
-      const rimGlow = Math.pow(clamp(Math.sqrt(r2), 0, 1), 3.4) * 0.22;
-      const val = clamp((primary * 0.85 + secondary + rimGlow) * (0.28 + strength * 0.72), 0, 1);
-      const byte = Math.round(val * 255);
-      data[offset] = byte;
-      data[offset + 1] = Math.round(byte * 0.98);
-      data[offset + 2] = Math.round(byte * 0.96);
-      data[offset + 3] = 255;
-    }
-  }
-  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.UnsignedByteType);
-  texture.name = "studio-vrm-hair-angel-ring-matcap";
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
-  texture.needsUpdate = true;
-  return texture;
 }
 
 /** IBL 없는 스튜디오 뷰포트에서 금속·광택·새틴 파츠가 검게 무너지지 않도록 스튜디오 반사 매트캡을 만든다. */

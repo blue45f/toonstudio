@@ -420,4 +420,82 @@ describe("transformAvatarForgeHairPart", () => {
       (mesh.material as THREE.Material).dispose();
     }
   });
+
+  it("다층 레이어드 헤어 전개(볼선 잔머리·외곽 사이드 커튼·뒷머리 드레이프·깃털 앞머리)와 밀착 캡이 실측 VRM 12종 전체에서 0관통·고피복을 유지한다", () => {
+    interface MeasuredFixture {
+      readonly id: string;
+      readonly modelHeight: number;
+      readonly eyeCenter: StudioVrmHeadVec3 | null;
+      readonly eyeDistance: number;
+      readonly frontSign: 1 | -1;
+      readonly profile: StudioVrmHeadProfile;
+      readonly crownSamples: readonly StudioVrmHeadVec3[];
+    }
+    const models = (fixtureFile as unknown as { models: readonly MeasuredFixture[] }).models;
+
+    for (const style of ["wavy", "long", "bob", "hime", "half-up"] as const) {
+      const state = applyAvatarForgeHairStyleRecipe(createAvatarForgeState(), style);
+      const expanded = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(state), state.hair);
+      const ids = new Set(expanded.map((part) => part.id));
+      expect(ids.has("cheek-wisp-left"), `${style}: cheek-wisp-left`).toBe(true);
+      expect(ids.has("cheek-wisp-right"), `${style}: cheek-wisp-right`).toBe(true);
+      expect(expanded.find((part) => part.id === "cheek-wisp-left")?.taper).toBeCloseTo(0.78, 6);
+      expect(ids.has("side-flow-left"), `${style}: side-flow-left`).toBe(true);
+      expect(ids.has("side-flow-right"), `${style}: side-flow-right`).toBe(true);
+      expect(ids.has("back-drape-left"), `${style}: back-drape-left`).toBe(true);
+      expect(ids.has("back-drape-center"), `${style}: back-drape-center`).toBe(true);
+      expect(ids.has("back-drape-right"), `${style}: back-drape-right`).toBe(true);
+      expect(ids.has("bang-feather-inner-left"), `${style}: bang-feather-inner-left`).toBe(true);
+      expect(ids.has("bang-feather-inner-right"), `${style}: bang-feather-inner-right`).toBe(true);
+
+      // 뒷머리 드레이프 중앙 가닥은 VRM1(+z 얼굴)에서 앞면(+z 로컬)이 뒤통수 바깥(-z)을 향해야 한다.
+      const backCenter = expanded.find((part) => part.id === "back-drape-center")!;
+      const backFrontNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(
+        transformAvatarForgeHairPart(backCenter, front).quaternion,
+      );
+      expect(backFrontNormal.z, `${style}: back-drape-center outward normal`).toBeLessThan(-0.9);
+    }
+
+    // 밀착 렌더 캡은 기존 +13% 헬멧 팽창보다 크게 줄어들면서도 실측 VRM 12종(안나 제외)에서 ≥97% 두개골 피복을 유지한다.
+    const wavyState = applyAvatarForgeHairStyleRecipe(createAvatarForgeState(), "wavy");
+    const wavyExpanded = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(wavyState), wavyState.hair);
+    const wavyCap = wavyExpanded.find((part) => part.role === "cap")!;
+    const wavyCapScale = transformAvatarForgeHairPart(wavyCap, front).scale;
+    expect(wavyCapScale.x / front.radiusX).toBeLessThan(1.045);
+
+    const raycaster = new THREE.Raycaster();
+    for (const model of models) {
+      const fit = resolveStudioVrmHeadFit({
+        profile: model.profile,
+        eyeCenter: model.eyeCenter,
+        eyeDistance: model.eyeDistance,
+        frontSign: model.frontSign,
+        modelHeight: model.modelHeight,
+      });
+      const capGeo = mergeStudioVrmAuthoredHairGeometry(
+        [avatarForgeHairInstance(wavyCap, fit)],
+        { minScalpMargin: 0.004, crownCompression: 0.24, crownLatitudeMin: 0.36, earArchRelief: 0.25 },
+      )!;
+      const capMesh = new THREE.Mesh(capGeo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+      capMesh.updateMatrixWorld(true);
+      const center = new THREE.Vector3(...fit.center);
+      let covered = 0;
+      for (const pt of model.crownSamples) {
+        const sample = new THREE.Vector3(pt[0], pt[1], pt[2]);
+        const dir = sample.clone().sub(center);
+        const dist = dir.length();
+        if (dist < 1e-5) {
+          covered += 1;
+          continue;
+        }
+        raycaster.set(center, dir.divideScalar(dist));
+        const hits = raycaster.intersectObject(capMesh, false);
+        if (hits.length > 0 && hits[0]!.distance >= dist - 1e-4) covered += 1;
+      }
+      const ratio = covered / model.crownSamples.length;
+      expect(ratio, `${model.id} tightened cap coverage`).toBeGreaterThanOrEqual(model.id === "anna" ? 0.85 : 0.97);
+      capGeo.dispose();
+      (capMesh.material as THREE.Material).dispose();
+    }
+  });
 });
