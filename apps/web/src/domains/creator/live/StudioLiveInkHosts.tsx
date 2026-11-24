@@ -278,10 +278,10 @@ export function StudioLivePressureHudPill({ store }: { store: StudioLivePressure
     () => store.value
   );
   const ratio = studioPressureHudRatio(pressure);
-  if (ratio === null) return null;
+  // 첫 접촉과 해제 때 상태 바의 자식 목록을 유지해 문서 전체의 :has() 재계산을 피한다.
   return (
-    <StudioHudPill accent>
-      <StudioPressureHudMeter ratio={ratio} />
+    <StudioHudPill accent hidden={ratio === null}>
+      <StudioPressureHudMeter ratio={ratio ?? 0} />
     </StudioHudPill>
   );
 }
