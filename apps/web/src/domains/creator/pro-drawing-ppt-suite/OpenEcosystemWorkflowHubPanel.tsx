@@ -1,4 +1,4 @@
-import { BookOpen, Globe, Link2, Shield, Workflow } from "lucide-react";
+import { BookOpen, Gauge, Globe, Link2, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -28,8 +28,37 @@ const LazyStudioFleetShieldPanel = lazy(() =>
     default: m.StudioFleetShieldPanel,
   })),
 );
+const LazyStudioCollabKmSafeZonePanel = lazy(async () => {
+  await import("../collab-km-delta-sync");
+  const m = await import("../collab-km-delta-sync/StudioCollabKmSafeZonePanel");
+  return { default: m.StudioCollabKmSafeZonePanel };
+});
+const LazyStudioRightsWatermarkGatePanel = lazy(async () => {
+  await import("../rights-settlement-watermark");
+  const m = await import("../rights-settlement-watermark/StudioRightsWatermarkGatePanel");
+  return { default: m.StudioRightsWatermarkGatePanel };
+});
+const LazyStudioStreamingExportBudgeterPanel = lazy(async () => {
+  await import("../streaming-export-budgeter");
+  const m = await import("../streaming-export-budgeter/StudioStreamingExportBudgeterPanel");
+  return { default: m.StudioStreamingExportBudgeterPanel };
+});
+const LazyStudioAutoStyleDnaPipelinePanel = lazy(async () => {
+  await import("../auto-style-dna-pipeline");
+  const m = await import("../auto-style-dna-pipeline/StudioAutoStyleDnaPipelinePanel");
+  return { default: m.StudioAutoStyleDnaPipelinePanel };
+});
 
-type EcosystemTabId = "workflowDag" | "openBridge" | "standardsPublish" | "reflowDna" | "fleetShield";
+type EcosystemTabId =
+  | "workflowDag"
+  | "openBridge"
+  | "standardsPublish"
+  | "reflowDna"
+  | "fleetShield"
+  | "collabKmSafeZone"
+  | "rightsWatermark"
+  | "streamingBudget"
+  | "autoStyleDna";
 
 const ECOSYSTEM_TABS: readonly {
   readonly id: EcosystemTabId;
@@ -41,6 +70,10 @@ const ECOSYSTEM_TABS: readonly {
   { id: "standardsPublish", labelKo: "C2PA·TMS 번역·7대 플랫폼 출고", labelEn: "C2PA · TMS · 7-Platform Publish" },
   { id: "reflowDna", labelKo: "세로↔단행본 리플로우·스타일 DNA", labelEn: "Scroll↔Print Reflow · Style DNA" },
   { id: "fleetShield", labelKo: "스펙트럼 실드·2nd-Screen·Fleet 레이더", labelEn: "Spectral Shield · 2nd-Screen · Fleet" },
+  { id: "collabKmSafeZone", labelKo: "광학 혼색 델타·오프라인 메시", labelEn: "KM Delta Sync · Offline Safe-Zone" },
+  { id: "rightsWatermark", labelKo: "C2PA 정산·적응형 AI 워터마크", labelEn: "C2PA Royalty · Adaptive Watermark" },
+  { id: "streamingBudget", labelKo: "60fps 동적 스트리밍 출고 예산", labelEn: "60fps Streaming Export Budgeter" },
+  { id: "autoStyleDna", labelKo: "자동 화풍 DNA·대본3D·심의", labelEn: "Auto Style DNA · Script-to-3D · Rating" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -55,6 +88,14 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <BookOpen size={15} aria-hidden="true" />;
     case "fleetShield":
       return <Shield size={15} aria-hidden="true" />;
+    case "collabKmSafeZone":
+      return <Radio size={15} aria-hidden="true" />;
+    case "rightsWatermark":
+      return <ShieldCheck size={15} aria-hidden="true" />;
+    case "streamingBudget":
+      return <Gauge size={15} aria-hidden="true" />;
+    case "autoStyleDna":
+      return <Wand2 size={15} aria-hidden="true" />;
   }
 }
 
@@ -108,6 +149,10 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "standardsPublish" ? <LazyStudioOpenStandardsPublishPanel /> : null}
           {active === "reflowDna" ? <LazyStudioGlobalReflowDnaPanel /> : null}
           {active === "fleetShield" ? <LazyStudioFleetShieldPanel /> : null}
+          {active === "collabKmSafeZone" ? <LazyStudioCollabKmSafeZonePanel /> : null}
+          {active === "rightsWatermark" ? <LazyStudioRightsWatermarkGatePanel /> : null}
+          {active === "streamingBudget" ? <LazyStudioStreamingExportBudgeterPanel /> : null}
+          {active === "autoStyleDna" ? <LazyStudioAutoStyleDnaPipelinePanel /> : null}
         </Suspense>
       </div>
     </section>

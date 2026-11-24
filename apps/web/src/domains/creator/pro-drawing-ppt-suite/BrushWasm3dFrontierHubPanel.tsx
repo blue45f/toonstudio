@@ -1,4 +1,4 @@
-import { Box, Cpu, Layers, Sparkles, Wand2 } from "lucide-react";
+import { Box, Cpu, Eye, Layers, Palette, SlidersHorizontal, Sparkles, Wand2, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -8,23 +8,58 @@ const LazyStudioBrushPhysicsProPanel = lazy(() =>
     default: m.StudioBrushPhysicsProPanel,
   })),
 );
+const LazyStudioBrushCustomLabPanel = lazy(async () => {
+  await import("../brush-custom-lab");
+  const m = await import("../brush-custom-lab/StudioBrushCustomLabPanel");
+  return { default: m.StudioBrushCustomLabPanel };
+});
 const LazyStudioWasm64EngineHubPanel = lazy(() =>
   import("../wasm64-drawing-engine/StudioWasm64EngineHubPanel").then((m) => ({
     default: m.StudioWasm64EngineHubPanel,
   })),
 );
+const LazyStudioWasm64HotpathPanel = lazy(async () => {
+  await import("../wasm64-runtime-bridge");
+  const m = await import("../wasm64-runtime-bridge/StudioWasm64HotpathPanel");
+  return { default: m.StudioWasm64HotpathPanel };
+});
 const LazyStudio3dWasm64LookdevPanel = lazy(() =>
   import("../scene3d-wasm64-npr/Studio3dWasm64LookdevPanel").then((m) => ({
     default: m.Studio3dWasm64LookdevPanel,
   })),
 );
+const LazyStudioVrmAutoShaderTransferPanel = lazy(async () => {
+  await import("../vrm-auto-shader-transfer");
+  const m = await import("../vrm-auto-shader-transfer/StudioVrmAutoShaderTransferPanel");
+  return { default: m.StudioVrmAutoShaderTransferPanel };
+});
 const LazyStudioNextgenDrawingFrontierPanel = lazy(() =>
   import("../nextgen-drawing-frontier/StudioNextgenDrawingFrontierPanel").then((m) => ({
     default: m.StudioNextgenDrawingFrontierPanel,
   })),
 );
+const LazyStudioVisualIntegrityOraclePanel = lazy(async () => {
+  await import("../visual-integrity-oracle");
+  const m = await import("../visual-integrity-oracle/StudioVisualIntegrityOraclePanel");
+  return { default: m.StudioVisualIntegrityOraclePanel };
+});
+const LazyStudioNoCodeShaderGridPanel = lazy(async () => {
+  await import("../nocode-shader-grid");
+  const m = await import("../nocode-shader-grid/StudioNoCodeShaderGridPanel");
+  return { default: m.StudioNoCodeShaderGridPanel };
+});
 
-type FrontierTabId = "brushPhysics" | "wasm64Core" | "scene3dNpr" | "drawingFrontier" | "liveOracle";
+type FrontierTabId =
+  | "brushPhysics"
+  | "brushCustomLab"
+  | "wasm64Core"
+  | "wasm64Hotpath"
+  | "scene3dNpr"
+  | "vrmAutoShader"
+  | "drawingFrontier"
+  | "visualOracle"
+  | "nocodeShaderGrid"
+  | "liveOracle";
 
 interface OracleLiveSnapshot {
   readonly catalogBrushes: number;
@@ -41,9 +76,14 @@ const FRONTIER_TABS: readonly {
   readonly labelEn: string;
 }[] = [
   { id: "brushPhysics", labelKo: "물리 브러시·종이 높이장·임파스토", labelEn: "Physical Brush · Paper · Impasto" },
+  { id: "brushCustomLab", labelKo: "커스텀 브러시 랩 · .tsbrush", labelEn: "Custom Brush Lab · .tsbrush" },
   { id: "wasm64Core", labelKo: "Rust + Wasm64(memory64) 코어", labelEn: "Rust + Wasm64 Core Engine" },
+  { id: "wasm64Hotpath", labelKo: "실물 Rust .wasm 핫패스", labelEn: "Live Rust .wasm Hotpath" },
   { id: "scene3dNpr", labelKo: "3D Wasm64 BVH·LOD·NPR 룩뎁", labelEn: "3D Wasm64 BVH · LOD · NPR" },
+  { id: "vrmAutoShader", labelKo: "VRM 재질 DNA 상속 · 깊이 분리", labelEn: "VRM Shader DNA · Depth Split" },
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
+  { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
+  { id: "nocodeShaderGrid", labelKo: "노코드 WGSL · 분산 그리드", labelEn: "No-Code WGSL · Tile Grid" },
   { id: "liveOracle", labelKo: "실시간 엔진 오라클 (194종·KM·GPU)", labelEn: "Live Engine Oracle (194 · KM · GPU)" },
 ];
 
@@ -51,12 +91,22 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
   switch (id) {
     case "brushPhysics":
       return <Sparkles size={15} aria-hidden="true" />;
+    case "brushCustomLab":
+      return <SlidersHorizontal size={15} aria-hidden="true" />;
     case "wasm64Core":
       return <Cpu size={15} aria-hidden="true" />;
+    case "wasm64Hotpath":
+      return <Zap size={15} aria-hidden="true" />;
     case "scene3dNpr":
       return <Box size={15} aria-hidden="true" />;
+    case "vrmAutoShader":
+      return <Palette size={15} aria-hidden="true" />;
     case "drawingFrontier":
       return <Wand2 size={15} aria-hidden="true" />;
+    case "visualOracle":
+      return <Eye size={15} aria-hidden="true" />;
+    case "nocodeShaderGrid":
+      return <Layers size={15} aria-hidden="true" />;
     case "liveOracle":
       return <Layers size={15} aria-hidden="true" />;
   }
@@ -203,9 +253,14 @@ export function BrushWasm3dFrontierHubPanel() {
             }
           >
             {active === "brushPhysics" ? <LazyStudioBrushPhysicsProPanel /> : null}
+            {active === "brushCustomLab" ? <LazyStudioBrushCustomLabPanel /> : null}
             {active === "wasm64Core" ? <LazyStudioWasm64EngineHubPanel /> : null}
+            {active === "wasm64Hotpath" ? <LazyStudioWasm64HotpathPanel /> : null}
             {active === "scene3dNpr" ? <LazyStudio3dWasm64LookdevPanel /> : null}
+            {active === "vrmAutoShader" ? <LazyStudioVrmAutoShaderTransferPanel /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
+            {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
+            {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}
           </Suspense>
         )}
       </div>

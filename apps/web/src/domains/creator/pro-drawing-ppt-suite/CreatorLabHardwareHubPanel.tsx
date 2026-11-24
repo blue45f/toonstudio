@@ -1,4 +1,4 @@
-import { Eye, Gauge, Glasses, Music, Package, PenTool, Smartphone } from "lucide-react";
+import { Bot, Camera, CheckCircle2, Eye, Gauge, Glasses, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -38,6 +38,26 @@ const LazyStudioAppleGalaxyHardwarePanel = lazy(() =>
     default: m.StudioAppleGalaxyHardwarePanel,
   })),
 );
+const LazyStudioLocalCreatorCopilotPanel = lazy(async () => {
+  await import("../local-creator-copilot");
+  const m = await import("../local-creator-copilot/StudioLocalCreatorCopilotPanel");
+  return { default: m.StudioLocalCreatorCopilotPanel };
+});
+const LazyStudioVrmNaturalRigPanel = lazy(async () => {
+  await import("../vrm-natural-rig");
+  const m = await import("../vrm-natural-rig/StudioVrmNaturalRigPanel");
+  return { default: m.StudioVrmNaturalRigPanel };
+});
+const LazyStudioWebtoonContinuityGuardPanel = lazy(async () => {
+  await import("../webtoon-continuity-guard");
+  const m = await import("../webtoon-continuity-guard/StudioWebtoonContinuityGuardPanel");
+  return { default: m.StudioWebtoonContinuityGuardPanel };
+});
+const LazyStudioSketchTo3dStagePanel = lazy(async () => {
+  await import("../sketch-to-3d-stage");
+  const m = await import("../sketch-to-3d-stage/StudioSketchTo3dStagePanel");
+  return { default: m.StudioSketchTo3dStagePanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -46,7 +66,11 @@ type CreatorLabTabId =
   | "retentionBgm"
   | "stylusHardware"
   | "spatialDevices"
-  | "appleGalaxyHw";
+  | "appleGalaxyHw"
+  | "localCopilot"
+  | "vrmNaturalRig"
+  | "continuityGuard"
+  | "sketchTo3d";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -60,6 +84,10 @@ const CREATOR_LAB_TABS: readonly {
   { id: "stylusHardware", labelKo: "태블릿·디지타이저 7대 하드웨어", labelEn: "Tablet & Digitizer 7-Hardware" },
   { id: "spatialDevices", labelKo: "Mac/iPad·워치·AR 글래스·VR 스카우팅", labelEn: "Mac/iPad · Watch · AR/VR Scouting" },
   { id: "appleGalaxyHw", labelKo: "Apple·Galaxy 특화·3D 충돌·MIDI/페달", labelEn: "Apple · Galaxy · 3D Collision · MIDI" },
+  { id: "localCopilot", labelKo: "온디바이스 로컬 습관 비서", labelEn: "On-Device Local Habit Copilot" },
+  { id: "vrmNaturalRig", labelKo: "3D 쇄골·시선·소품 자연 리깅", labelEn: "3D Natural Pose & Prop Rig" },
+  { id: "continuityGuard", labelKo: "60컷 자동 연속성 감시관", labelEn: "60-Cut Continuity Guard" },
+  { id: "sketchTo3d", labelKo: "2D 러프 → 3D 포즈·화각·조명", labelEn: "Sketch-to-3D Stage Solver" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -78,6 +106,14 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Glasses size={15} aria-hidden="true" />;
     case "appleGalaxyHw":
       return <Smartphone size={15} aria-hidden="true" />;
+    case "localCopilot":
+      return <Bot size={15} aria-hidden="true" />;
+    case "vrmNaturalRig":
+      return <UserCheck size={15} aria-hidden="true" />;
+    case "continuityGuard":
+      return <CheckCircle2 size={15} aria-hidden="true" />;
+    case "sketchTo3d":
+      return <Camera size={15} aria-hidden="true" />;
   }
 }
 
@@ -133,6 +169,10 @@ export function CreatorLabHardwareHubPanel() {
           {active === "stylusHardware" ? <LazyStudioStylusDigitizerPanel /> : null}
           {active === "spatialDevices" ? <LazyStudioSpatialDeviceHubPanel /> : null}
           {active === "appleGalaxyHw" ? <LazyStudioAppleGalaxyHardwarePanel /> : null}
+          {active === "localCopilot" ? <LazyStudioLocalCreatorCopilotPanel /> : null}
+          {active === "vrmNaturalRig" ? <LazyStudioVrmNaturalRigPanel /> : null}
+          {active === "continuityGuard" ? <LazyStudioWebtoonContinuityGuardPanel /> : null}
+          {active === "sketchTo3d" ? <LazyStudioSketchTo3dStagePanel /> : null}
         </Suspense>
       </div>
     </section>
