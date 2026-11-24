@@ -375,17 +375,26 @@ describe("StudioWebnnPigmentDirectorPanel UI · 접근성 · 토큰 위생 검�
 
   beforeEach(() => {
     putImageDataSpy.mockReset();
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-      () =>
-        ({
-          createImageData: (w: number, h: number) => ({
-            width: w,
-            height: h,
-            data: new Uint8ClampedArray(w * h * 4),
-          }),
-          putImageData: putImageDataSpy,
-        }) as unknown as CanvasRenderingContext2D,
-    );
+    const mockCtx = {
+      createImageData: (widthOrImage: number | ImageData, height = 0): ImageData => {
+        const width = typeof widthOrImage === "number" ? widthOrImage : widthOrImage.width;
+        const imageHeight = typeof widthOrImage === "number" ? height : widthOrImage.height;
+        return {
+          width,
+          height: imageHeight,
+          data: new Uint8ClampedArray(width * imageHeight * 4),
+          colorSpace: "srgb",
+        };
+      },
+      putImageData: putImageDataSpy,
+    };
+    const canvas2d: {
+      getContext(
+        contextId: "2d",
+        options?: CanvasRenderingContext2DSettings,
+      ): Pick<CanvasRenderingContext2D, keyof typeof mockCtx> | null;
+    } = HTMLCanvasElement.prototype;
+    vi.spyOn(canvas2d, "getContext").mockImplementation((id) => (id === "2d" ? mockCtx : null));
   });
 
   afterEach(() => {

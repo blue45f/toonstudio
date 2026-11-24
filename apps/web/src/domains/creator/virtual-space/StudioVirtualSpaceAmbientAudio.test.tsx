@@ -80,7 +80,7 @@ describe("StudioVirtualSpaceAmbientAudio proximity section", () => {
 
     const focusSfxBtn = screen.getByTestId("studio-vspace-audition-sfx-focus-start");
     fireEvent.click(focusSfxBtn);
-    expect(screen.getByTestId("studio-vspace-sfx-audition-status").textContent).toContain("587Hz → 880Hz sine");
+    expect(screen.getByTestId("studio-vspace-sfx-audition-status").textContent).toContain("494Hz → 740Hz sine");
   });
 });
 

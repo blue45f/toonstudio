@@ -52,9 +52,9 @@ function rotr32(x: number, n: number): number {
 
 /** 64비트 FNV-1a 결정적 해시(16자리 소문자 16진 문자열). */
 export function hashBytesFnv1a64Hex(bytes: Uint8Array): string {
-  let hash = 0xcbf29ce484222325n;
-  const prime = 0x100000001b3n;
-  const mask = 0xffffffffffffffffn;
+  let hash = BigInt("0xcbf29ce484222325");
+  const prime = BigInt("0x100000001b3");
+  const mask = BigInt("0xffffffffffffffff");
   for (let i = 0; i < bytes.length; i += 1) {
     hash ^= BigInt(bytes[i] ?? 0);
     hash = (hash * prime) & mask;
