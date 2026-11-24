@@ -340,17 +340,17 @@ export function OpfsSnapshotVcsTab({
               return (
                 <li
                   key={commit.id}
-                  className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2.5 text-xs ${
+                  className={`flex flex-col items-stretch justify-between gap-2 rounded-lg border p-2.5 text-xs sm:flex-row sm:flex-wrap sm:items-center ${
                     isSelected ? "border-accent bg-accent-soft" : "border-line bg-canvas"
                   }`}
                 >
                   <button
                     type="button"
                     onClick={() => handleSelectCommitDiff(commit.id)}
-                    className={`flex-1 cursor-pointer text-left ${FOCUS_RING}`}
+                    className={`min-h-11 w-full min-w-0 cursor-pointer text-left sm:w-auto sm:flex-1 ${FOCUS_RING}`}
                   >
-                    <div className="flex items-center gap-1.5 font-semibold text-fg">
-                      <span className="font-mono text-[11px] text-accent">{commit.id}</span>
+                    <div className="flex flex-col items-start gap-1.5 font-semibold text-fg sm:flex-row sm:flex-wrap sm:items-center">
+                      <span className="font-mono text-[11px] whitespace-nowrap text-accent">{commit.id}</span>
                       <span>{commit.message}</span>
                     </div>
                     <div className="mt-0.5 text-[11px] tabular-nums text-fg-3">
@@ -360,7 +360,7 @@ export function OpfsSnapshotVcsTab({
                   </button>
 
                   {isHead ? (
-                    <span className="rounded-md border border-good/40 bg-good/15 px-2 py-1 text-[11px] font-semibold text-good">
+                    <span className="self-start rounded-md border border-good/40 bg-good/15 px-2 py-1 text-[11px] font-semibold text-good sm:self-auto">
                       HEAD
                     </span>
                   ) : (
@@ -369,7 +369,7 @@ export function OpfsSnapshotVcsTab({
                       onClick={() => {
                         void handleRollbackCommit(commit.id);
                       }}
-                      className={BTN_OUTLINE}
+                      className={`${BTN_OUTLINE} w-full sm:w-auto`}
                     >
                       <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       <span>원클릭 롤백</span>

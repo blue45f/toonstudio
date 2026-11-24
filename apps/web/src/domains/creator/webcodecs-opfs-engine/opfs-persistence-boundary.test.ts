@@ -4,6 +4,7 @@ import { createSeededWebtoonVcs, OpfsSnapshotVcsEngine, type VcsProjectSnapshot 
 import {
   BrowserOpfsVfsAdapter,
   createOpfsVfsAdapter,
+  computeContentAddressHash,
   InMemoryVfsAdapter,
   type OpfsDirectoryHandleLike,
   type OpfsFileHandleLike,
@@ -14,7 +15,8 @@ function directoryTree() {
   const directories = new Set([""]);
   const faults = new Map<string, string>();
   function fail(operation: string, path: string) {
-    const name = faults.get(`${operation}:${path}`);
+    const key = `${operation}:${path}`;
+    const name = faults.get(key) ?? [...faults].find(([pattern]) => pattern.endsWith("*") && key.startsWith(pattern.slice(0, -1)))?.[1];
     if (name) throw new DOMException("테스트 저장 실패", name);
   }
   function directory(prefix = ""): OpfsDirectoryHandleLike {
@@ -157,6 +159,96 @@ describe("OPFS 실제 저장 실패와 재열기 경계", () => {
     expect(reopened.engine.currentHeadCommitId).toBe(userCommit.id);
     expect(reopened.engine.getCommitHistory()).toEqual(history);
     expect(reopened.latestSnapshot).toEqual(userSnapshot);
+  });
+
+  it("연속 저장을 동시에 요청해도 두 승인 버전이 같은 이력에 남는다", async () => {
+    const adapter = new BrowserOpfsVfsAdapter(directoryTree().root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    const [first, second] = await Promise.all([
+      engine.commit(snapshot, { message: "연속 첫 저장" }),
+      engine.commit({ ...snapshot, title: "연속 다음 저장" }, { message: "연속 다음 저장" }),
+    ]);
+    expect(second.parentId).toBe(first.id);
+    const reopened = new OpfsSnapshotVcsEngine({ adapter });
+    await reopened.init();
+    expect(reopened.getCommitHistory().map(commit => commit.id)).toEqual([second.id, first.id]);
+  });
+
+  it("분기·전환·저장 요청이 겹쳐도 요청 순서와 이전 브랜치를 보존한다", async () => {
+    const adapter = new BrowserOpfsVfsAdapter(directoryTree().root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    const original = await engine.commit(snapshot, { message: "원본" });
+    const [, , saved] = await Promise.all([
+      engine.createBranch("alternate"),
+      engine.checkoutBranch("alternate"),
+      engine.commit({ ...snapshot, title: "다른 분기 작업" }, { message: "분기 저장" }),
+    ]);
+    expect(saved.branchName).toBe("alternate");
+    expect(saved.parentId).toBe(original.id);
+    expect(engine.currentHeadCommitId).toBe(saved.id);
+    await engine.checkoutBranch("main");
+    expect(engine.currentHeadCommitId).toBe(original.id);
+  });
+
+  it("청크 쓰기 중단 뒤 남은 빈 파일을 재시도 때 정상 데이터로 복구한다", async () => {
+    const tree = directoryTree();
+    const adapter = new BrowserOpfsVfsAdapter(tree.root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    tree.faults.set("write:objects/chunks/*", "QuotaExceededError");
+    await expect(engine.commit(snapshot, { message: "용량 부족" })).rejects.toMatchObject({ name: "QuotaExceededError" });
+    tree.faults.clear();
+    const saved = await engine.commit(snapshot, { message: "재시도" });
+    expect((await engine.verifyIntegrity(saved.id)).valid).toBe(true);
+    const reopened = new OpfsSnapshotVcsEngine({ adapter });
+    await reopened.init();
+    expect(reopened.currentHeadCommitId).toBe(saved.id);
+    expect(await reopened.restoreCommit(saved.id)).toEqual(snapshot);
+  });
+
+  it("실패한 후속 커밋의 빈 manifest가 남아도 기존 원고를 다시 연다", async () => {
+    const tree = directoryTree();
+    const adapter = new BrowserOpfsVfsAdapter(tree.root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    const original = await engine.commit(snapshot, { message: "보존할 원본" });
+    tree.faults.set("write:objects/commits/*", "QuotaExceededError");
+    await expect(engine.commit({ ...snapshot, title: "실패" }, { message: "후속 실패" }))
+      .rejects.toMatchObject({ name: "QuotaExceededError" });
+    tree.faults.clear();
+    const reopened = new OpfsSnapshotVcsEngine({ adapter });
+    await reopened.init();
+    expect(reopened.currentHeadCommitId).toBe(original.id);
+    expect(reopened.getCommitHistory()).toHaveLength(1);
+    expect(await reopened.restoreCommit(original.id)).toEqual(snapshot);
+  });
+
+  it("이미 확인한 청크도 실제 파일이 손상되면 캐시를 믿고 재사용하지 않는다", async () => {
+    const tree = directoryTree();
+    const adapter = new BrowserOpfsVfsAdapter(tree.root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    const original = await engine.commit(snapshot, { message: "원본" });
+    const chunk = await computeContentAddressHash(snapshot.layers[0]?.payload ?? new Uint8Array());
+    await adapter.writeFile(`objects/chunks/${chunk}`, new Uint8Array());
+    expect((await engine.verifyIntegrity(original.id)).valid).toBe(false);
+    const saved = await engine.commit(snapshot, { message: "조각 복구" });
+    expect((await engine.verifyIntegrity(original.id)).valid).toBe(true);
+    expect((await engine.verifyIntegrity(saved.id)).valid).toBe(true);
+  });
+
+  it("실제 저장 이력이 참조하는 빈 manifest는 예제로 덮지 않고 거절한다", async () => {
+    const tree = directoryTree();
+    const adapter = new BrowserOpfsVfsAdapter(tree.root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    const first = await engine.commit(snapshot, { message: "원본" });
+    const latest = await engine.commit({ ...snapshot, title: "최신" }, { message: "후속" });
+    await adapter.writeFile(`objects/commits/${first.id}.json`, new Uint8Array());
+    await expect(createSeededWebtoonVcs(adapter)).rejects.toThrow("기존 저장 이력이 참조하는 커밋");
+    expect(new TextDecoder().decode(tree.files.get("refs/heads/main"))).toBe(latest.id);
   });
 
   it("브랜치 전환 저장이 실패하면 이전 브랜치와 저장본을 유지한다", async () => {

@@ -26,7 +26,7 @@ const TAB_ACTIVE = `inline-flex min-h-11 cursor-pointer items-center justify-cen
 const TAB_IDLE = `inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-line bg-canvas px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-line-strong hover:bg-raised hover:text-fg ${FOCUS_RING} [word-break:keep-all]`;
 
 const TABS: readonly { readonly id: WebcodecsOpfsTabId; readonly labelKo: string }[] = [
-  { id: "reels", labelKo: "WebCodecs 4K/60fps 릴스" },
+  { id: "reels", labelKo: "코덱 설정·합성 샘플" },
   { id: "sparse-tiles", labelKo: "희소 타일 · 2D 칼만 예측" },
   { id: "opfs-vcs", labelKo: "OPFS 브랜치 · 스냅샷 복원" },
 ];

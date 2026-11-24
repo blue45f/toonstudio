@@ -184,6 +184,7 @@ export class OpfsSnapshotVcsEngine {
   private readonly commitCatalog = new Map<string, VcsCommitObject>();
   private readonly chunkByteLengths = new Map<string, number>();
   private initialized = false;
+  private mutationTail: Promise<void> = Promise.resolve();
 
   constructor(options: OpfsVcsEngineOptions = {}) {
     this.vfs = options.adapter ?? new InMemoryVfsAdapter();
@@ -228,9 +229,19 @@ export class OpfsSnapshotVcsEngine {
     const commitFiles = await this.vfs.listFiles("objects/commits");
     for (const fileName of commitFiles) {
       const bytes = await this.vfs.readFile(`objects/commits/${fileName}`);
-      if (!bytes) continue;
+      // 실패한 새 쓰기는 빈 파일만 남길 수 있다. 참조 없는 잔여물은 지우지 않는다.
+      if (!bytes || bytes.byteLength === 0) continue;
       const commit = decodeJsonBytes<VcsCommitObject>(bytes);
       this.commitCatalog.set(commit.id, commit);
+    }
+    const referencedIds = [
+      ...this.branchHeads.values(),
+      ...[...this.commitCatalog.values()].map((commit) => commit.parentId),
+    ];
+    for (const id of referencedIds) {
+      if (id && !this.commitCatalog.has(id)) {
+        throw new Error(`기존 저장 이력이 참조하는 커밋을 읽을 수 없습니다: ${id}`);
+      }
     }
 
     const chunkFiles = await this.vfs.listFiles("objects/chunks");
@@ -245,8 +256,19 @@ export class OpfsSnapshotVcsEngine {
     if (!this.initialized) await this.init(this.activeBranch);
   }
 
+  private mutate<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.mutationTail.then(operation);
+    // 실패는 반환한 Promise로 알리고, 다음 요청은 계속 처리한다.
+    this.mutationTail = result.then(() => undefined, () => undefined);
+    return result;
+  }
+
   /** 스냅샷을 청크 분할·중복제거 저장 후 현재 브랜치에 커밋한다. */
-  async commit(
+  commit(snapshot: VcsProjectSnapshot, options: { readonly message: string; readonly author?: string; readonly timestampIso?: string }): Promise<VcsCommitObject> {
+    return this.mutate(() => this.persistCommit(snapshot, options));
+  }
+
+  private async persistCommit(
     snapshot: VcsProjectSnapshot,
     options: { readonly message: string; readonly author?: string; readonly timestampIso?: string },
   ): Promise<VcsCommitObject> {
@@ -279,11 +301,15 @@ export class OpfsSnapshotVcsEngine {
         const chunkId = await computeContentAddressHash(slice, this.hashAlgorithm);
         chunkIds.push(chunkId);
         totalChunks += 1;
-        if (this.chunkByteLengths.has(chunkId) || (await this.vfs.exists(`objects/chunks/${chunkId}`))) {
+        const chunkPath = `objects/chunks/${chunkId}`;
+        const existing = await this.vfs.readFile(chunkPath);
+        const intact = existing !== null && existing.byteLength === slice.byteLength
+          && await computeContentAddressHash(existing, this.hashAlgorithm) === chunkId;
+        if (intact) {
           reusedChunks += 1;
-          if (!this.chunkByteLengths.has(chunkId)) this.chunkByteLengths.set(chunkId, slice.byteLength);
+          this.chunkByteLengths.set(chunkId, slice.byteLength);
         } else {
-          await this.vfs.writeFile(`objects/chunks/${chunkId}`, slice);
+          await this.vfs.writeFile(chunkPath, slice);
           this.chunkByteLengths.set(chunkId, slice.byteLength);
           newChunksWritten += 1;
           newPhysicalBytes += slice.byteLength;
@@ -344,7 +370,11 @@ export class OpfsSnapshotVcsEngine {
     return commitObj;
   }
 
-  async createBranch(branchName: string, fromCommitId?: string | null): Promise<VcsBranchSummary> {
+  createBranch(branchName: string, fromCommitId?: string | null): Promise<VcsBranchSummary> {
+    return this.mutate(() => this.persistBranch(branchName, fromCommitId));
+  }
+
+  private async persistBranch(branchName: string, fromCommitId?: string | null): Promise<VcsBranchSummary> {
     await this.ensureInitialized();
     const safeName = validateBranchName(branchName);
     if (this.branchHeads.has(safeName)) {
@@ -364,7 +394,11 @@ export class OpfsSnapshotVcsEngine {
     };
   }
 
-  async checkoutBranch(branchName: string): Promise<VcsProjectSnapshot | null> {
+  checkoutBranch(branchName: string): Promise<VcsProjectSnapshot | null> {
+    return this.mutate(() => this.persistCheckout(branchName));
+  }
+
+  private async persistCheckout(branchName: string): Promise<VcsProjectSnapshot | null> {
     await this.ensureInitialized();
     const safeName = validateBranchName(branchName);
     if (!this.branchHeads.has(safeName)) {
@@ -415,7 +449,11 @@ export class OpfsSnapshotVcsEngine {
   }
 
   /** 원클릭 무손실 롤백: 무결성 검증 후 대상 커밋 상태를 복원하고 이력 보존 롤백 커밋을 남긴다. */
-  async rollbackToCommit(
+  rollbackToCommit(targetCommitId: string, options?: { readonly createRollbackCommit?: boolean; readonly message?: string }): Promise<VcsRollbackResult> {
+    return this.mutate(() => this.persistRollback(targetCommitId, options));
+  }
+
+  private async persistRollback(
     targetCommitId: string,
     options?: { readonly createRollbackCommit?: boolean; readonly message?: string },
   ): Promise<VcsRollbackResult> {
@@ -434,7 +472,7 @@ export class OpfsSnapshotVcsEngine {
     }
 
     const targetMeta = this.commitCatalog.get(targetCommitId);
-    const rollbackCommit = await this.commit(restoredSnapshot, {
+    const rollbackCommit = await this.persistCommit(restoredSnapshot, {
       message: options?.message ?? `원클릭 롤백 -> ${targetCommitId} (${targetMeta?.message ?? "이전 스냅샷"})`,
     });
     return { targetCommitId, restoredSnapshot, rollbackCommit, verifiedIntegrity: true };
