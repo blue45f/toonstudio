@@ -243,14 +243,16 @@ describe("PostgreSQL integration test runner", () => {
     ).toBe("true");
   });
 
-  it("등록된 PostgreSQL 통합 스위트 36개를 직렬 실행한다", () => {
+  it("등록된 PostgreSQL 통합 스위트 36개를 한 번씩 직렬 실행한다", () => {
     expect(POSTGRES_INTEGRATION_SUITES).toHaveLength(36);
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin-production-changes/admin-production-changes.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts");
+    expect(POSTGRES_INTEGRATION_SUITES).toContain(
+      "apps/api/src/modules/final-submission/final-submission.integration.test.ts",
+    );
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin/ai-operations/ai-operations.repository.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/business-plan/business-plan.integration.test.ts");
-    expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/final-submission/final-submission.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin/admin-cloud-workboard.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/creator/studio-bg3d-bundle.repository.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/creator/studio-role-pipeline-migration.integration.test.ts");
@@ -284,10 +286,11 @@ describe("PostgreSQL integration test runner", () => {
     ).toBe(true);
 
     const vitestArguments = createVitestArguments();
-    expect(vitestArguments).toContain("--no-file-parallelism");
-    expect(
-      vitestArguments.slice(-POSTGRES_INTEGRATION_SUITES.length),
-    ).toEqual(POSTGRES_INTEGRATION_SUITES);
+    expect(vitestArguments.slice(1)).toEqual([
+      "run",
+      "--no-file-parallelism",
+      ...POSTGRES_INTEGRATION_SUITES,
+    ]);
     expect(
       vitestArguments.some((argument) => argument.includes("secret")),
     ).toBe(false);
