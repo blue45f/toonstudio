@@ -103,7 +103,7 @@ describe("ToonStudio Draw PWA", () => {
     expect(view).toContain("useStudioDrawingPresentation");
     expect(view).toContain("<StudioDrawingAppBar session={s} />");
     expect(view).toContain("<StudioCuttoonEditorWorkspace {...s} />");
-    expect(view).toContain("<StudioCuttoonEditorChrome {...s} />");
+    expect(view).toContain("<StudioCuttoonEditorChrome {...s} error={visibleError} />");
     expect(presentation).toContain('export type StudioDrawingPresentation = "integrated" | "app"');
     expect(switcher).toContain("withStudioDrawingPresentation");
     expect(appBar).toContain('studioBrushCatalogHandlers?.toggle?.("desktop-dock"');
