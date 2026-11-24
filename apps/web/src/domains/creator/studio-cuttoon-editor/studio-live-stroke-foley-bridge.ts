@@ -106,11 +106,10 @@ export function resolveStudioFoleySoundForBrush(
 
   if (mode === "eraser" || /(?:eraser|지우개)/u.test(normalized)) return pick("eraser-scrub", "manga-kent");
   if (/(?:airbrush|spray|mist|splatter|에어브러시|스프레이)/u.test(normalized)) return pick("airbrush", "smooth-bristol");
-  if (/(?:watercolor|ink-?wash|wash|sumi|수채|수묵|먹물)/u.test(normalized)) return pick("watercolor-sable", "cold-press-watercolor");
-  if (/(?:marker|highlighter|felt-?tip|neon|마커|형광펜)/u.test(normalized)) return pick("watercolor-sable", "smooth-bristol");
-  if (/(?:crayon|charcoal|pastel|chalk|dry-?media|크레파스|크레용|목탄|파스텔|초크)/u.test(normalized)) {
-    return pick("graphite-pencil", "rough-cotton");
-  }
+  if (/(?:marker|highlighter|felt-?tip|neon|마커|형광펜)/u.test(normalized)) return pick("alcohol-marker", "smooth-bristol");
+  if (/(?:sumi|india-?ink|ink-?wash|ink-?brush|fude|calligraphy-?(?:brush|fude)|수묵|먹물|먹붓|캘리붓|캘리그래피-?붓|붓펜|서예)/u.test(normalized)) return pick("sumi-ink-brush", "cold-press-watercolor");
+  if (/(?:watercolor|watery|(?:^|-)wc(?:-|$)|wash|수채)/u.test(normalized)) return pick("watercolor-sable", "cold-press-watercolor");
+  if (/(?:crayon|charcoal|pastel|chalk|dry-?media|크레파스|크레용|목탄|파스텔|초크|분필)/u.test(normalized)) return pick("charcoal-pastel", "rough-cotton");
   if (/(?:pencil|graphite|연필|흑연)/u.test(normalized)) {
     return pick("graphite-pencil", /(?:color|6b|soft|grain|erodible|색연필)/u.test(normalized) ? "cold-press-watercolor" : "manga-kent");
   }

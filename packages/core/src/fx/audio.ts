@@ -139,8 +139,8 @@ const ensureSfxBus = (ctx: AudioContext): GainNode => {
   highpass.frequency.setValueAtTime(85, ctx.currentTime);
   highpass.Q.setValueAtTime(0.55, ctx.currentTime);
   lowpass.type = "lowpass";
-  lowpass.frequency.setValueAtTime(7600, ctx.currentTime);
-  lowpass.Q.setValueAtTime(0.4, ctx.currentTime);
+  lowpass.frequency.setValueAtTime(6400, ctx.currentTime);
+  lowpass.Q.setValueAtTime(0.45, ctx.currentTime);
   compressor.threshold.setValueAtTime(-20, ctx.currentTime);
   compressor.knee.setValueAtTime(18, ctx.currentTime);
   compressor.ratio.setValueAtTime(3, ctx.currentTime);
@@ -241,373 +241,363 @@ const applyBgmGain = (): void => {
 };
 
 /* ────────────────────────────────────────────────────────────────────────── *
- * 2. 효과음(SFX) — tick / pop / success / error (전부 합성)
+ * 2. 효과음(SFX) — 물리 아틀리에 마이크로 폴리(14종 · 성형 노이즈 · 라운드-로빈 변주)
  * ────────────────────────────────────────────────────────────────────────── */
 
-/** 재생 가능한 효과음 종류. */
-export type SfxName =
-  | "tick"
-  | "pop"
-  | "success"
-  | "error"
-  | "sparkle"
-  | "woosh"
-  | "open"
-  | "close"
-  | "tab"
-  | "heart";
+export const SFX_NAMES = [
+  "tick", "pop", "success", "error", "sparkle", "woosh", "open", "close", "tab", "heart",
+  "toggle-on", "toggle-off", "confirm", "soft-warn",
+] as const;
 
-/**
- * 단일 오실레이터 톤을 soft attack/decay 엔벨로프로 마스터 버스에 재생해요(SFX 빌딩 블록).
- */
-const playTone = (
-  ctx: AudioContext,
-  output: AudioNode,
-  options: {
-    type: OscillatorType;
-    frequency: number;
-    startAt: number;
-    duration: number;
-    peak: number;
-    /** attack 비율(0~1, duration 대비). 클수록 더 부드럽게 시작. */
-    attackRatio?: number;
-    /** 끝으로 갈수록 주파수를 미끄러뜨려 '딩/뽁' 느낌(선택). */
-    glideToFrequency?: number;
-    /** 좌우 공간감(-1~1). 짧은 레이어가 한가운데 겹쳐 답답해지는 것을 방지한다. */
-    pan?: number;
-    /** 오실레이터 미세 피치(cent). 같은 음의 레이어에 자연스러운 폭을 만든다. */
-    detune?: number;
-    /** 레이어별 음색 정리용 필터. */
-    filterFrequency?: number;
-    filterType?: BiquadFilterType;
-    filterQ?: number;
-  },
-): void => {
-  const {
-    type,
-    frequency,
-    startAt,
-    duration,
-    peak,
-    attackRatio = 0.2,
-    glideToFrequency,
-    pan = 0,
-    detune = 0,
-    filterFrequency,
-    filterType = "lowpass",
-    filterQ = 0.7,
-  } = options;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(frequency, startAt);
-  osc.detune.setValueAtTime(detune, startAt);
-  if (glideToFrequency && glideToFrequency > 0) {
-    osc.frequency.exponentialRampToValueAtTime(glideToFrequency, startAt + duration);
-  }
-  const attack = Math.max(0.004, duration * attackRatio);
-  gain.gain.setValueAtTime(0.0001, startAt);
-  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), startAt + attack);
-  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
-  osc.connect(gain);
+/** 재생 가능한 전역 UI 효과음 종류(기존 10종 + 상황맞춤 확장 4종). */
+export type SfxName = (typeof SFX_NAMES)[number];
 
-  let tail: AudioNode = gain;
-  if (filterFrequency && filterFrequency > 0) {
-    const filter = ctx.createBiquadFilter();
-    filter.type = filterType;
-    filter.frequency.setValueAtTime(filterFrequency, startAt);
-    filter.Q.setValueAtTime(filterQ, startAt);
-    tail.connect(filter);
-    tail = filter;
-  }
-  if (typeof ctx.createStereoPanner === "function" && pan !== 0) {
-    const panner = ctx.createStereoPanner();
-    panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), startAt);
-    tail.connect(panner);
-    tail = panner;
-  }
-  tail.connect(output);
-  osc.start(startAt);
-  osc.stop(startAt + duration + 0.02);
+const SFX_NAME_SET: ReadonlySet<string> = new Set(SFX_NAMES);
+
+/** 문자열이 유효한 SfxName인지 판별한다. */
+export const isSfxName = (value: unknown): value is SfxName =>
+  typeof value === "string" && SFX_NAME_SET.has(value);
+
+/** 라운드-로빈 미세 변주 스냅샷(피치 ±2.5%, 팬 ±0.06). */
+export interface UiSfxVariation {
+  readonly index: number;
+  readonly pitchScale: number;
+  readonly panOffset: number;
+  readonly brightnessScale: number;
+  readonly noiseOffsetSec: number;
+}
+
+const SFX_PITCH_OFFSETS = [-0.024, 0.017, -0.011, 0.024, -0.019, 0.008, -0.006, 0.021] as const;
+const SFX_PAN_OFFSETS = [-0.056, 0.048, -0.032, 0.058, -0.044, 0.026, -0.018, 0.052] as const;
+const SFX_BRIGHT_OFFSETS = [-0.03, 0.032, -0.018, 0.028, -0.024, 0.014, -0.01, 0.025] as const;
+const SFX_NOISE_OFFSETS = [0.02, 0.14, 0.07, 0.21, 0.11, 0.26, 0.04, 0.18] as const;
+const sfxRoundRobin = new Map<SfxName, number>();
+
+/** 동일 효과음을 연속 호출할 때 자연스러운 미세 피치·패닝 변주를 순환 생성한다. */
+export const nextUiSfxVariation = (name: SfxName): UiSfxVariation => {
+  const cursor = sfxRoundRobin.get(name) ?? 0;
+  const index = cursor % SFX_PITCH_OFFSETS.length;
+  sfxRoundRobin.set(name, cursor + 1);
+  return {
+    index,
+    pitchScale: 1 + (SFX_PITCH_OFFSETS[index] ?? 0),
+    panOffset: SFX_PAN_OFFSETS[index] ?? 0,
+    brightnessScale: 1 + (SFX_BRIGHT_OFFSETS[index] ?? 0),
+    noiseOffsetSec: SFX_NOISE_OFFSETS[index] ?? 0,
+  };
 };
 
-/**
- * 종이·유리 표면을 살짝 건드린 듯한 초단 노이즈 트랜지언트.
- * 단순 오실레이터만 쓸 때 생기는 장난감 같은 전자음을 줄여준다.
- */
-const playNoiseTransient = (
-  ctx: AudioContext,
-  output: AudioNode,
-  options: {
-    startAt: number;
-    duration: number;
-    peak: number;
-    frequency: number;
-    type?: BiquadFilterType;
-    q?: number;
-    pan?: number;
-  },
-): void => {
-  const {
-    startAt,
-    duration,
-    peak,
-    frequency,
-    type = "bandpass",
-    q = 0.8,
-    pan = 0,
-  } = options;
-  const frames = Math.max(1, Math.ceil(ctx.sampleRate * duration));
-  const buffer = ctx.createBuffer(1, frames, ctx.sampleRate);
+/** 테스트 격리용 라운드-로빈 커서 초기화. */
+export const resetUiSfxVariationState = (): void => { sfxRoundRobin.clear(); };
+
+type UiNoiseKind = "velvet" | "paper" | "wood";
+interface ShapedUiNoiseBank { readonly sampleRate: number; readonly velvet: AudioBuffer; readonly paper: AudioBuffer; readonly wood: AudioBuffer; }
+const uiNoiseCache = new WeakMap<AudioContext, ShapedUiNoiseBank>();
+const nextSfxSeed = (state: number): number => {
+  let x = state >>> 0;
+  x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+  return x >>> 0;
+};
+
+const createShapedUiNoise = (ctx: AudioContext, kind: UiNoiseKind, seedInit: number): AudioBuffer => {
+  const sampleRate = Math.max(8, ctx.sampleRate || 44100);
+  const frames = Math.max(16, Math.floor(sampleRate * 0.45));
+  const buffer = ctx.createBuffer(1, frames, sampleRate);
   const data = buffer.getChannelData(0);
-  let seed = (Math.floor(startAt * 1_000_000) ^ frames ^ 0x51f15e) >>> 0;
-  for (let i = 0; i < frames; i += 1) {
-    seed ^= seed << 13;
-    seed ^= seed >>> 17;
-    seed ^= seed << 5;
-    data[i] = ((seed >>> 0) / 2147483648 - 1) * (1 - i / frames);
+  let seed = seedInit >>> 0;
+  let b0 = 0; let b1 = 0; let b2 = 0; let b3 = 0; let b4 = 0; let b5 = 0; let b6 = 0;
+  let brown = 0; let prev = 0; let peak = 0;
+  for (let i = 0; i < data.length; i += 1) {
+    seed = nextSfxSeed(seed);
+    const w = seed / 2147483648 - 1;
+    // Paul Kellet 핑크 근사(-3 dB/oct): 거친 화이트 치찰음을 걷어낸다.
+    b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759;
+    b2 = 0.96900 * b2 + w * 0.1538520; b3 = 0.86650 * b3 + w * 0.3104856;
+    b4 = 0.55000 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.0168980;
+    const pink = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+    b6 = w * 0.115926;
+    let out: number;
+    if (kind === "velvet") {
+      seed = nextSfxSeed(seed);
+      out = prev * 0.32 + (pink * 0.82 + ((seed & 7) === 0 ? w * 0.35 : 0) * 0.18) * 0.68;
+      prev = out;
+    } else if (kind === "paper") {
+      out = pink * 0.58 + (pink - prev * 0.55) * 0.42;
+      prev = pink;
+    } else {
+      brown = (brown + 0.045 * w) / 1.045;
+      out = brown * 0.65 + pink * 0.35;
+    }
+    data[i] = out;
+    const abs = Math.abs(out);
+    if (abs > peak) peak = abs;
   }
-
-  const source = ctx.createBufferSource();
-  const filter = ctx.createBiquadFilter();
-  const gain = ctx.createGain();
-  source.buffer = buffer;
-  filter.type = type;
-  filter.frequency.setValueAtTime(frequency, startAt);
-  filter.Q.setValueAtTime(q, startAt);
-  gain.gain.setValueAtTime(Math.max(0.0002, peak), startAt);
-  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
-
-  source.connect(filter);
-  filter.connect(gain);
-  let tail: AudioNode = gain;
-  if (typeof ctx.createStereoPanner === "function" && pan !== 0) {
-    const panner = ctx.createStereoPanner();
-    panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), startAt);
-    tail.connect(panner);
-    tail = panner;
+  if (peak > 1e-6) {
+    const scale = 0.88 / peak;
+    for (let i = 0; i < data.length; i += 1) data[i] = (data[i] ?? 0) * scale;
   }
-  tail.connect(output);
-  source.start(startAt);
-  source.stop(startAt + duration + 0.01);
+  return buffer;
 };
 
-/** SFX 합성 레시피 — 애니메이션 UI처럼 짧고 맑되 귀를 찌르지 않는 음색. */
-const SFX_RECIPES: Record<SfxName, (ctx: AudioContext, master: GainNode, now: number) => void> = {
-  // tick — 종이 책갈피의 촉감 + 짧은 유리 공명. 고역 피크는 SFX 버스에서 한 번 더 정리한다.
-  tick: (ctx, master, now) => {
-    playNoiseTransient(ctx, master, {
-      startAt: now,
-      duration: 0.022,
-      peak: 0.03,
-      frequency: 1750,
-      q: 0.75,
-      pan: -0.08,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 680,
-      startAt: now,
-      duration: 0.058,
-      peak: 0.064,
-      attackRatio: 0.07,
-      glideToFrequency: 610,
-      filterFrequency: 3000,
-      pan: -0.05,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 1360,
-      startAt: now + 0.004,
-      duration: 0.082,
-      peak: 0.018,
-      attackRatio: 0.08,
-      detune: 4,
-      filterFrequency: 4200,
-      pan: 0.12,
-    });
+const getShapedUiNoise = (ctx: AudioContext, kind: UiNoiseKind): AudioBuffer => {
+  const sampleRate = Math.max(8, ctx.sampleRate || 44100);
+  const cached = uiNoiseCache.get(ctx);
+  if (cached && cached.sampleRate === sampleRate) return cached[kind];
+  const bank: ShapedUiNoiseBank = {
+    sampleRate,
+    velvet: createShapedUiNoise(ctx, "velvet", 0x9e3779b9),
+    paper: createShapedUiNoise(ctx, "paper", 0x85ebca6b),
+    wood: createShapedUiNoise(ctx, "wood", 0xc2b2ae35),
+  };
+  uiNoiseCache.set(ctx, bank);
+  return bank[kind];
+};
+
+const clampSfxHz = (ctx: AudioContext, hz: number): number =>
+  Math.max(40, Math.min(Math.max(200, (ctx.sampleRate || 44100) * 0.45), hz));
+
+const setSfxParam = (param: AudioParam | undefined, value: number, time: number): void => {
+  if (!param) return;
+  if (typeof param.setValueAtTime === "function") param.setValueAtTime(value, time);
+  else param.value = value;
+};
+
+const rampSfxParam = (param: AudioParam | undefined, value: number, time: number): void => {
+  if (!param) return;
+  const safe = Math.max(0.0001, value);
+  if (typeof param.exponentialRampToValueAtTime === "function") param.exponentialRampToValueAtTime(safe, time);
+  else param.value = safe;
+};
+
+const connectSfxPan = (ctx: AudioContext, node: AudioNode, out: AudioNode, pan: number, t: number): void => {
+  const clamped = Math.max(-0.85, Math.min(0.85, pan));
+  if (typeof ctx.createStereoPanner === "function" && Math.abs(clamped) > 0.001) {
+    const panner = ctx.createStereoPanner();
+    setSfxParam(panner.pan, clamped, t);
+    node.connect(panner);
+    panner.connect(out);
+    return;
+  }
+  node.connect(out);
+};
+
+interface UiNoiseLayer {
+  readonly kind: UiNoiseKind; readonly delayMs?: number; readonly durationMs: number;
+  readonly peak: number; readonly fromHz: number; readonly midHz?: number; readonly toHz?: number;
+  readonly filterType?: BiquadFilterType; readonly q?: number; readonly attackRatio?: number;
+  readonly pan?: number; readonly offsetShift?: number;
+}
+interface UiToneLayer {
+  readonly type?: OscillatorType; readonly hz: number; readonly settleToHz?: number;
+  readonly settleMs?: number; readonly delayMs?: number; readonly durationMs: number;
+  readonly peak: number; readonly attackMs?: number; readonly lowpassHz: number;
+  readonly pan?: number; readonly detune?: number;
+}
+interface UiSfxSpec {
+  readonly noises?: readonly UiNoiseLayer[];
+  readonly tones?: readonly UiToneLayer[];
+}
+
+const UI_SFX_SPECS: Record<SfxName, UiSfxSpec> = {
+  // tick — 월넛 나무·종이 촉각 미세 탭(고역 귀찌름 제거, 라운드-로빈 미세 변주).
+  tick: {
+    noises: [{ kind: "wood", durationMs: 18, peak: 0.036, fromHz: 1480, toHz: 860, q: 1.05, pan: -0.04 }],
+    tones: [
+      { hz: 470, settleToHz: 345, settleMs: 14, durationMs: 44, peak: 0.072, attackMs: 2.5, lowpassHz: 1950 },
+      { hz: 940, settleToHz: 850, delayMs: 2, durationMs: 28, peak: 0.016, attackMs: 3, lowpassHz: 2500, pan: 0.04 },
+    ],
   },
-  // pop — 말풍선이 열리는 듯한 5도 상승. 반복 탭에도 거슬리지 않게 고역 피크를 억제한다.
-  pop: (ctx, master, now) => {
-    playTone(ctx, master, {
-      type: "triangle",
-      frequency: 392,
-      startAt: now,
-      duration: 0.13,
-      peak: 0.145,
-      attackRatio: 0.12,
-      glideToFrequency: 659.25,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 987.77,
-      startAt: now + 0.018,
-      duration: 0.075,
-      peak: 0.042,
-      attackRatio: 0.1,
-    });
+  // tab — 고급 카드/종이 탭 플릭 + 은은한 공명.
+  tab: {
+    noises: [{ kind: "paper", durationMs: 28, peak: 0.04, fromHz: 1620, toHz: 2380, q: 1.15, attackRatio: 0.16, pan: -0.07 }],
+    tones: [
+      { hz: 535, settleToHz: 585, settleMs: 22, delayMs: 3, durationMs: 60, peak: 0.056, attackMs: 3, lowpassHz: 2400 },
+      { hz: 1170, delayMs: 8, durationMs: 64, peak: 0.017, attackMs: 4, lowpassHz: 3100, detune: -3, pan: 0.09 },
+    ],
   },
-  // success — 애니메이션 아이캐치처럼 빠르게 솟는 E 메이저 펜타토닉 아르페지오.
-  success: (ctx, master, now) => {
-    const notes = [659.25, 783.99, 987.77, 1318.51];
-    notes.forEach((frequency, index) => {
-      playTone(ctx, master, {
-        type: "sine",
-        frequency,
-        startAt: now + index * 0.055,
-        duration: 0.31 - index * 0.025,
-        peak: 0.13 - index * 0.012,
-        attackRatio: 0.12,
-      });
-    });
-    // 윗배음 반짝임.
-    playTone(ctx, master, {
-      type: "triangle",
-      frequency: 2637.02,
-      startAt: now + 0.17,
-      duration: 0.2,
-      peak: 0.025,
-      attackRatio: 0.16,
-    });
+  // woosh — raw triangle 완전 제거, 벨벳·종이 노이즈 밴드패스 부드러운 공기 스윕.
+  woosh: {
+    noises: [
+      { kind: "velvet", durationMs: 175, peak: 0.095, fromHz: 280, midHz: 1120, toHz: 480, q: 1.05, attackRatio: 0.36, pan: -0.12 },
+      { kind: "paper", delayMs: 18, durationMs: 135, peak: 0.036, fromHz: 880, midHz: 1980, toHz: 940, q: 0.85, attackRatio: 0.34, pan: 0.12, offsetShift: 0.09 },
+    ],
   },
-  // error — 위협적인 버저 대신 낮게 내려앉는 단3도. 실패를 알리되 흐름을 끊지 않는다.
-  error: (ctx, master, now) => {
-    playTone(ctx, master, {
-      type: "triangle",
-      frequency: 293.66,
-      startAt: now,
-      duration: 0.18,
-      peak: 0.11,
-      attackRatio: 0.16,
-      glideToFrequency: 246.94,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 196,
-      startAt: now + 0.065,
-      duration: 0.2,
-      peak: 0.055,
-      attackRatio: 0.18,
-      glideToFrequency: 164.81,
-    });
+  // open — 나무 서랍·케이스가 열리며 울리는 따뜻한 2중 공명 + 부드러운 촉감 트랜지언트.
+  open: {
+    noises: [{ kind: "velvet", durationMs: 56, peak: 0.038, fromHz: 500, toHz: 1220, q: 0.9, attackRatio: 0.28, pan: -0.09 }],
+    tones: [
+      { hz: 329.63, settleToHz: 392, settleMs: 55, durationMs: 115, peak: 0.086, attackMs: 6, lowpassHz: 1750, pan: -0.04 },
+      { type: "triangle", hz: 587.33, delayMs: 24, durationMs: 135, peak: 0.052, attackMs: 8, lowpassHz: 1650, pan: 0.08 },
+      { hz: 880, delayMs: 34, durationMs: 105, peak: 0.018, attackMs: 8, lowpassHz: 2500, pan: 0.12 },
+    ],
   },
-  // sparkle — 애니메이션 마법 및 아이템 획득 반짝임 효과음.
-  sparkle: (ctx, master, now) => {
-    const freqs = [1046.5, 1318.51, 1567.98, 2093.0, 2637.02];
-    freqs.forEach((freq, i) => {
-      playTone(ctx, master, {
-        type: "sine",
-        frequency: freq,
-        startAt: now + i * 0.032,
-        duration: 0.22,
-        peak: 0.08 - i * 0.01,
-        attackRatio: 0.1,
-      });
-    });
+  // close — 나무 서랍·케이스가 부드럽게 안착하는 2중 댐핑 공명.
+  close: {
+    noises: [{ kind: "wood", durationMs: 46, peak: 0.044, fromHz: 1120, toHz: 380, filterType: "lowpass", q: 0.72, attackRatio: 0.16, pan: 0.07 }],
+    tones: [
+      { hz: 440, settleToHz: 329.63, settleMs: 42, durationMs: 74, peak: 0.066, attackMs: 4, lowpassHz: 1600, pan: 0.04 },
+      { hz: 246.94, settleToHz: 196, settleMs: 52, delayMs: 24, durationMs: 98, peak: 0.084, attackMs: 5, lowpassHz: 1150, pan: -0.07 },
+    ],
   },
-  // woosh — 화면 전환 및 슬라이드 연출 시 바람 스치는 소리.
-  woosh: (ctx, master, now) => {
-    playTone(ctx, master, {
-      type: "triangle",
-      frequency: 240,
-      startAt: now,
-      duration: 0.16,
-      peak: 0.08,
-      attackRatio: 0.4,
-      glideToFrequency: 680,
-    });
+  // pop — 맑은 펠트 마림바/칼림바 배음(찌르는 고역 컷).
+  pop: {
+    noises: [{ kind: "wood", durationMs: 15, peak: 0.028, fromHz: 1120, toHz: 680, q: 0.9, attackRatio: 0.15 }],
+    tones: [
+      { hz: 512, settleToHz: 493.88, settleMs: 14, durationMs: 110, peak: 0.092, attackMs: 3, lowpassHz: 2150 },
+      { hz: 246.94, durationMs: 80, peak: 0.036, attackMs: 4, lowpassHz: 980, pan: -0.05 },
+      { hz: 987.77, delayMs: 4, durationMs: 52, peak: 0.026, attackMs: 3, lowpassHz: 2700, pan: 0.08 },
+    ],
   },
-  // open — 팝업/모달/메뉴 열림 연출용 맑은 울림.
-  open: (ctx, master, now) => {
-    playTone(ctx, master, {
-      type: "triangle",
-      frequency: 523.25,
-      startAt: now,
-      duration: 0.18,
-      peak: 0.12,
-      attackRatio: 0.15,
-      glideToFrequency: 880,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 1318.51,
-      startAt: now + 0.02,
-      duration: 0.22,
-      peak: 0.06,
-      attackRatio: 0.1,
-    });
+  // heart — 따뜻한 펠트 칼림바 2음 울림.
+  heart: {
+    noises: [
+      { kind: "wood", durationMs: 14, peak: 0.02, fromHz: 1320, toHz: 840, filterType: "lowpass", pan: -0.06 },
+      { kind: "paper", delayMs: 58, durationMs: 14, peak: 0.018, fromHz: 1750, toHz: 1150, q: 0.9, pan: 0.08, offsetShift: 0.06 },
+    ],
+    tones: [
+      { hz: 587.33, durationMs: 115, peak: 0.082, attackMs: 4, lowpassHz: 2350, pan: -0.07 },
+      { hz: 1174.66, delayMs: 4, durationMs: 50, peak: 0.02, attackMs: 4, lowpassHz: 2900, pan: -0.03 },
+      { hz: 880, delayMs: 58, durationMs: 165, peak: 0.076, attackMs: 4, lowpassHz: 2750, pan: 0.09 },
+      { hz: 440, delayMs: 58, durationMs: 135, peak: 0.032, attackMs: 6, lowpassHz: 1550, pan: 0.03 },
+    ],
   },
-  // close — 팝업/모달/메뉴 닫힘 연출용 경쾌한 안착음.
-  close: (ctx, master, now) => {
-    playTone(ctx, master, {
-      type: "triangle",
-      frequency: 659.25,
-      startAt: now,
-      duration: 0.14,
-      peak: 0.1,
-      attackRatio: 0.1,
-      glideToFrequency: 440,
-    });
+  // success — 따뜻한 어쿠스틱 칼림바/펠트 피아노 화음 + 벨벳 공기감.
+  success: {
+    noises: [
+      { kind: "velvet", durationMs: 165, peak: 0.024, fromHz: 880, toHz: 1840, q: 0.8, attackRatio: 0.35 },
+      { kind: "wood", delayMs: 0, durationMs: 11, peak: 0.013, fromHz: 1350, toHz: 820, q: 0.9, pan: -0.15 },
+      { kind: "wood", delayMs: 52, durationMs: 11, peak: 0.013, fromHz: 1490, toHz: 860, q: 0.9, pan: -0.04, offsetShift: 0.04 },
+      { kind: "wood", delayMs: 104, durationMs: 11, peak: 0.013, fromHz: 1630, toHz: 900, q: 0.9, pan: 0.07, offsetShift: 0.08 },
+      { kind: "wood", delayMs: 156, durationMs: 11, peak: 0.013, fromHz: 1770, toHz: 940, q: 0.9, pan: 0.16, offsetShift: 0.12 },
+    ],
+    tones: [
+      { hz: 293.66, durationMs: 240, peak: 0.042, attackMs: 8, lowpassHz: 1150, pan: -0.06 },
+      { hz: 587.33, delayMs: 0, durationMs: 270, peak: 0.088, attackMs: 4, lowpassHz: 2600, pan: -0.15 },
+      { hz: 739.99, delayMs: 52, durationMs: 250, peak: 0.078, attackMs: 4, lowpassHz: 2840, pan: -0.04 },
+      { hz: 880, delayMs: 104, durationMs: 230, peak: 0.068, attackMs: 4, lowpassHz: 3080, pan: 0.07 },
+      { hz: 1318.51, delayMs: 156, durationMs: 210, peak: 0.058, attackMs: 4, lowpassHz: 3320, pan: 0.16 },
+    ],
   },
-  // tab — 탭 전환 및 탭 필터 클릭 시의 착붙 피드백.
-  tab: (ctx, master, now) => {
-    playNoiseTransient(ctx, master, {
-      startAt: now,
-      duration: 0.018,
-      peak: 0.022,
-      frequency: 2200,
-      q: 0.9,
-      pan: -0.1,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 659.25,
-      startAt: now,
-      duration: 0.085,
-      peak: 0.07,
-      attackRatio: 0.07,
-      glideToFrequency: 783.99,
-      filterFrequency: 3300,
-      pan: -0.06,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 1318.51,
-      startAt: now + 0.012,
-      duration: 0.11,
-      peak: 0.02,
-      attackRatio: 0.08,
-      detune: -3,
-      filterFrequency: 4700,
-      pan: 0.13,
-    });
+  // sparkle — 부드러운 어쿠스틱 칼림바·펠트 셀레스타 상행 화음 + 공기감.
+  sparkle: {
+    noises: [{ kind: "paper", durationMs: 155, peak: 0.024, fromHz: 1650, toHz: 2950, q: 0.9, attackRatio: 0.35 }],
+    tones: [
+      { hz: 659.25, delayMs: 0, durationMs: 210, peak: 0.068, attackMs: 4, lowpassHz: 3200, detune: 3, pan: -0.17 },
+      { hz: 880, delayMs: 34, durationMs: 210, peak: 0.059, attackMs: 4, lowpassHz: 3340, detune: -3, pan: -0.06 },
+      { hz: 1174.66, delayMs: 68, durationMs: 210, peak: 0.05, attackMs: 4, lowpassHz: 3480, detune: 3, pan: 0.06 },
+      { hz: 1479.98, delayMs: 102, durationMs: 210, peak: 0.041, attackMs: 4, lowpassHz: 3620, detune: -3, pan: 0.17 },
+    ],
   },
-  // heart — 좋아요/즐겨찾기 선택 시 발랄한 두근거림.
-  heart: (ctx, master, now) => {
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 587.33,
-      startAt: now,
-      duration: 0.12,
-      peak: 0.11,
-      attackRatio: 0.1,
-      glideToFrequency: 880,
-    });
-    playTone(ctx, master, {
-      type: "sine",
-      frequency: 1174.66,
-      startAt: now + 0.04,
-      duration: 0.18,
-      peak: 0.08,
-      attackRatio: 0.1,
-    });
+  // error — 거슬리지 않는 낮은 댐핑 우드 더블-탭.
+  error: {
+    noises: [
+      { kind: "wood", durationMs: 22, peak: 0.038, fromHz: 680, toHz: 410, q: 0.85, pan: -0.05 },
+      { kind: "wood", delayMs: 82, durationMs: 24, peak: 0.032, fromHz: 540, toHz: 330, q: 0.85, pan: 0.05, offsetShift: 0.08 },
+    ],
+    tones: [
+      { hz: 238, settleToHz: 196, settleMs: 36, durationMs: 74, peak: 0.088, attackMs: 4, lowpassHz: 940, pan: -0.05 },
+      { hz: 196, settleToHz: 158, settleMs: 42, delayMs: 82, durationMs: 90, peak: 0.076, attackMs: 4, lowpassHz: 820, pan: 0.05 },
+    ],
   },
+  // toggle-on / toggle-off — 나무·황동 정밀 스위치 ON(상승 래치) / OFF(하강 안착).
+  "toggle-on": {
+    noises: [{ kind: "paper", durationMs: 17, peak: 0.032, fromHz: 1850, toHz: 2420, q: 1.1, pan: 0.04 }],
+    tones: [
+      { hz: 480, settleToHz: 620, settleMs: 26, durationMs: 56, peak: 0.068, attackMs: 3, lowpassHz: 2250, pan: 0.05 },
+      { hz: 1240, delayMs: 8, durationMs: 52, peak: 0.022, attackMs: 3, lowpassHz: 2950, pan: 0.09 },
+    ],
+  },
+  "toggle-off": {
+    noises: [{ kind: "wood", durationMs: 18, peak: 0.03, fromHz: 1450, toHz: 880, q: 0.95, pan: -0.04 }],
+    tones: [
+      { hz: 555, settleToHz: 385, settleMs: 28, durationMs: 58, peak: 0.064, attackMs: 3, lowpassHz: 1850, pan: -0.05 },
+      { hz: 290, delayMs: 6, durationMs: 60, peak: 0.028, attackMs: 4, lowpassHz: 1200, pan: -0.08 },
+    ],
+  },
+  // confirm / soft-warn — 저장·완료 확신 2음 안착 / 삭제·주의 저역 우드 경고 탭.
+  confirm: {
+    noises: [{ kind: "wood", durationMs: 16, peak: 0.026, fromHz: 1380, toHz: 940, q: 0.95, pan: -0.04 }],
+    tones: [
+      { hz: 440, durationMs: 95, peak: 0.072, attackMs: 3.5, lowpassHz: 2050, pan: -0.05 },
+      { hz: 659.25, delayMs: 42, durationMs: 145, peak: 0.078, attackMs: 4, lowpassHz: 2600, pan: 0.07 },
+      { hz: 329.63, delayMs: 42, durationMs: 125, peak: 0.028, attackMs: 6, lowpassHz: 1300, pan: 0.02 },
+    ],
+  },
+  "soft-warn": {
+    noises: [{ kind: "wood", durationMs: 26, peak: 0.038, fromHz: 760, toHz: 420, filterType: "lowpass", q: 0.78, pan: -0.04 }],
+    tones: [
+      { hz: 262, settleToHz: 214, settleMs: 38, durationMs: 84, peak: 0.08, attackMs: 4, lowpassHz: 1050, pan: -0.05 },
+      { hz: 174.61, delayMs: 28, durationMs: 76, peak: 0.036, attackMs: 5, lowpassHz: 850, pan: 0.05 },
+    ],
+  },
+};
+
+/** 지정된 UI 효과음 레시피를 라운드-로빈 미세 변주와 함께 합성한다. */
+export const renderUiSfxRecipe = (
+  name: SfxName,
+  ctx: AudioContext,
+  output: AudioNode,
+  now: number,
+): UiSfxVariation => {
+  const safeName: SfxName = isSfxName(name) ? name : "tick";
+  const v = nextUiSfxVariation(safeName);
+  const spec = UI_SFX_SPECS[safeName];
+  for (const n of spec.noises ?? []) {
+    const startAt = now + (n.delayMs ?? 0) / 1000;
+    const duration = Math.max(0.008, n.durationMs / 1000);
+    const src = ctx.createBufferSource();
+    const flt = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    src.buffer = getShapedUiNoise(ctx, n.kind);
+    src.loop = true;
+    flt.type = n.filterType ?? "bandpass";
+    setSfxParam(flt.frequency, clampSfxHz(ctx, n.fromHz * v.brightnessScale), startAt);
+    if (n.midHz) rampSfxParam(flt.frequency, clampSfxHz(ctx, n.midHz * v.brightnessScale), startAt + duration * 0.48);
+    if (n.toHz) rampSfxParam(flt.frequency, clampSfxHz(ctx, n.toHz * v.brightnessScale), startAt + duration);
+    setSfxParam(flt.Q, n.q ?? 0.9, startAt);
+    const atk = Math.min(duration * 0.6, Math.max(0.0025, duration * (n.attackRatio ?? 0.14)));
+    setSfxParam(gain.gain, 0.0001, startAt);
+    rampSfxParam(gain.gain, Math.max(0.0002, n.peak), startAt + atk);
+    rampSfxParam(gain.gain, 0.0001, startAt + duration);
+    src.connect(flt);
+    flt.connect(gain);
+    connectSfxPan(ctx, gain, output, (n.pan ?? 0) + v.panOffset, startAt);
+    src.start(startAt, (v.noiseOffsetSec + (n.offsetShift ?? 0)) % 0.35);
+    src.stop(startAt + duration + 0.015);
+  }
+  for (const t of spec.tones ?? []) {
+    const startAt = now + (t.delayMs ?? 0) / 1000;
+    const duration = Math.max(0.012, t.durationMs / 1000);
+    const osc = ctx.createOscillator();
+    const flt = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    osc.type = t.type ?? "sine";
+    setSfxParam(osc.frequency, clampSfxHz(ctx, t.hz * v.pitchScale), startAt);
+    if (t.detune) setSfxParam(osc.detune, t.detune, startAt);
+    if (t.settleToHz) {
+      const settleSec = t.settleMs ? Math.min(duration, t.settleMs / 1000) : duration;
+      rampSfxParam(osc.frequency, clampSfxHz(ctx, t.settleToHz * v.pitchScale), startAt + Math.max(0.005, settleSec));
+    }
+    flt.type = "lowpass";
+    setSfxParam(flt.frequency, clampSfxHz(ctx, t.lowpassHz * v.brightnessScale), startAt);
+    setSfxParam(flt.Q, 0.65, startAt);
+    const atk = Math.min(duration * 0.45, Math.max(0.0025, (t.attackMs ?? 3.5) / 1000));
+    setSfxParam(gain.gain, 0.0001, startAt);
+    rampSfxParam(gain.gain, Math.max(0.0002, t.peak), startAt + atk);
+    rampSfxParam(gain.gain, 0.0001, startAt + duration);
+    osc.connect(flt);
+    flt.connect(gain);
+    connectSfxPan(ctx, gain, output, (t.pan ?? 0) + v.panOffset, startAt);
+    osc.start(startAt);
+    osc.stop(startAt + duration + 0.018);
+  }
+  return v;
 };
 
 /**
  * 효과음을 재생해요. SFX 비활성·mute·미지원·비브라우저면 graceful no-op.
  * 첫 제스처에서 suspended 면 언락(반환 무시 — 다음 호출부터 들려요).
- * @param name 'tick' | 'pop' | 'success' | 'error'
+ * @param name SfxName(기존 10종 + 상황맞춤 확장 4종)
  * @param volume 호출별 볼륨(0~1, 기본 1) — 마스터 볼륨에 곱해진다.
  */
 export const playSfx = (name: SfxName, volume = 1): void => {
@@ -619,12 +609,12 @@ export const playSfx = (name: SfxName, volume = 1): void => {
     const master = ensureSfxBus(ctx);
     const now = Math.max(audioNow(), ctx.currentTime) + 0.001;
     if (volume >= 1) {
-      (SFX_RECIPES[name] ?? SFX_RECIPES.tick)(ctx, master, now);
+      renderUiSfxRecipe(name, ctx, master, now);
     } else {
       const scaled = ctx.createGain();
       scaled.gain.setValueAtTime(clamp01(volume), ctx.currentTime);
       scaled.connect(master);
-      (SFX_RECIPES[name] ?? SFX_RECIPES.tick)(ctx, scaled, now);
+      renderUiSfxRecipe(name, ctx, scaled, now);
     }
   } catch {
     // 합성 실패는 조용히 무시 — UI 흐름을 막지 않아요.
