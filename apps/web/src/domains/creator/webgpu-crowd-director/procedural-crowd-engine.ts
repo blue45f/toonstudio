@@ -70,6 +70,7 @@ export {
 } from "./crowd-renderers";
 
 export {
+  CROWD_GPU_BIND_GROUP_LAYOUTS,
   encodeCrowdDrawIndexedIndirect, packCrowdInstanceBuffers, resetCrowdIndirectFrame,
   type CrowdIndirectDrawSubmission,
 } from "./crowd-gpu-buffer-contract";

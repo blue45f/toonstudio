@@ -468,6 +468,9 @@ export function getCrowdPresetById(presetId?: CrowdPresetId): CrowdPresetSpec {
  *   `atomicAdd(&indirectArgs.instanceCount, 1u)`로 단일 간접 드로우콜 인수를 갱신한다.
  * - `@vertex fn vs_crowd_instanced` + `@fragment fn fs_crowd_toon_ink`:
  *   깊이 원근 스케일링, 주인공 시선 회전, 근경 G펜 굵은 잉크 → 원경 얇은 실루엣 & 대기 페이드 출력.
+ * - group 0의 compute binding 2(storage)와 vertex binding 4(read-only-storage)는
+ *   같은 인덱스 GPUBuffer를 가리킨다. compute/render 레이아웃과 bind group을 분리하고
+ *   compute pass를 마친 뒤 render pass를 시작한다(CROWD_GPU_BIND_GROUP_LAYOUTS 계약).
  */
 export const CROWD_INSTANCING_WGSL = /* wgsl */ `
 struct CrowdCameraUniform {
@@ -509,6 +512,7 @@ struct CrowdVertexOut {
 @group(0) @binding(1) var<storage, read> instances: array<CrowdInstance>;
 @group(0) @binding(2) var<storage, read_write> visibleIndices: array<u32>;
 @group(0) @binding(3) var<storage, read_write> indirectArgs: DrawIndexedIndirectArgs;
+@group(0) @binding(4) var<storage, read> visibleIndicesForVertex: array<u32>;
 
 // 별도 dispatch를 완료한 뒤 cull을 실행한다. sceneMeta.w: 0=uncull, 1=compute-cull.
 @compute @workgroup_size(64, 1, 1)
@@ -548,7 +552,7 @@ fn vs_crowd_instanced(
   vert: CrowdVertexIn,
   @builtin(instance_index) instSlot: u32,
 ) -> CrowdVertexOut {
-  let instIdx = visibleIndices[instSlot];
+  let instIdx = visibleIndicesForVertex[instSlot];
   let inst = instances[instIdx];
 
   let vpX = camera.viewportAndHorizon.w;

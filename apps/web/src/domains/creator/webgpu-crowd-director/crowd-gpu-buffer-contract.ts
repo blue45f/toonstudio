@@ -9,6 +9,32 @@ import {
   type ResolvedCrowdGenerationOptions,
 } from "./crowd-presets-and-wgsl";
 
+/**
+ * WebGPU 호스트용 group 0 레이아웃. visibility 4=COMPUTE, 1=VERTEX이며
+ * CPU 계약 검사에서도 읽을 수 있도록 GPUShaderStage 전역을 참조하지 않는다.
+ * 동일 visible-index GPUBuffer(STORAGE)를 compute binding 2와 render binding 4에
+ * 각각 연결한다. compute pass 종료 후 render pass에서 읽으며 writable alias를
+ * render bind group에 넣지 않는다. indirect buffer는 STORAGE | INDIRECT가 필요하다.
+ * 빈 CPU pack도 GPU 버퍼를 만들 때는 각 minBindingSize 이상으로 할당한다.
+ */
+export const CROWD_GPU_BIND_GROUP_LAYOUTS = {
+  compute: {
+    entries: [
+      { binding: 0, visibility: 4, buffer: { type: "uniform", minBindingSize: 64 } },
+      { binding: 1, visibility: 4, buffer: { type: "read-only-storage", minBindingSize: 64 } },
+      { binding: 2, visibility: 4, buffer: { type: "storage", minBindingSize: 4 } },
+      { binding: 3, visibility: 4, buffer: { type: "storage", minBindingSize: 20 } },
+    ],
+  },
+  render: {
+    entries: [
+      { binding: 0, visibility: 1, buffer: { type: "uniform", minBindingSize: 64 } },
+      { binding: 1, visibility: 1, buffer: { type: "read-only-storage", minBindingSize: 64 } },
+      { binding: 4, visibility: 1, buffer: { type: "read-only-storage", minBindingSize: 4 } },
+    ],
+  },
+} satisfies Record<"compute" | "render", GPUBindGroupLayoutDescriptor>;
+
 export interface CrowdIndirectDrawSubmission {
   readonly commandEncoded: boolean;
   readonly executedOnGpu: false;

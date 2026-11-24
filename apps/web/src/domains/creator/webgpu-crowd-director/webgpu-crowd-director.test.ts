@@ -26,7 +26,11 @@ import {
   validateCrowdWgslShader,
   type CrowdPresetId,
 } from "./index";
-import { packCrowdInstanceBuffers, resetCrowdIndirectFrame } from "./procedural-crowd-engine";
+import {
+  CROWD_GPU_BIND_GROUP_LAYOUTS,
+  packCrowdInstanceBuffers,
+  resetCrowdIndirectFrame,
+} from "./procedural-crowd-engine";
 
 const RAW_COLOR_REGEX = /#[0-9a-fA-F]{3,8}\b|\brgba?\s*\(|\bhsla?\s*\(/u;
 const FORBIDDEN_STORAGE_REGEX = /\blocalStorage\b|\bsessionStorage\b/u;
@@ -286,7 +290,7 @@ describe("Wave 38D — WebGPU 인스턴싱 기반 8종 원근 절차적 군중 �
     expect(report.vertexEntryPoints).toEqual(["vs_crowd_instanced"]);
     expect(report.fragmentEntryPoints).toEqual(["fs_crowd_toon_ink"]);
     expect(report.workgroupSizes).toEqual(["64,1,1", "64,1,1"]);
-    expect(report.bindings).toHaveLength(4);
+    expect(report.bindings).toHaveLength(5);
     expect(report.structs).toEqual(
       expect.arrayContaining([
         "CrowdCameraUniform",
@@ -304,6 +308,28 @@ describe("Wave 38D — WebGPU 인스턴싱 기반 8종 원근 절차적 군중 �
     expect(invalid.balancedDelimiters).toBe(false);
     expect(invalid.hasDrawIndexedIndirectStruct).toBe(false);
     expect(invalid.errors.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("compute 쓰기·vertex 읽기 바인딩과 호스트 레이아웃을 분리한다 (GPU 컴파일 검증 아님)", () => {
+    const compute = CROWD_GPU_BIND_GROUP_LAYOUTS.compute.entries;
+    const render = CROWD_GPU_BIND_GROUP_LAYOUTS.render.entries;
+    expect(compute.map((entry) => entry.binding)).toEqual([0, 1, 2, 3]);
+    expect(render.map((entry) => entry.binding)).toEqual([0, 1, 4]);
+    expect(compute.every((entry) => entry.visibility === 4)).toBe(true);
+    expect(render.every((entry) => entry.visibility === 1)).toBe(true);
+    expect(compute.find((entry) => entry.binding === 2)?.buffer).toEqual({
+      type: "storage", minBindingSize: 4,
+    });
+    expect(render.find((entry) => entry.binding === 4)?.buffer).toEqual({
+      type: "read-only-storage", minBindingSize: 4,
+    });
+    expect(render.map((entry) => entry.buffer.type)).not.toContain("storage");
+    expect(CROWD_INSTANCING_WGSL).toContain(
+      "@binding(4) var<storage, read> visibleIndicesForVertex: array<u32>",
+    );
+    const vertexSource = CROWD_INSTANCING_WGSL.split("@vertex")[1]?.split("@fragment")[0] ?? "";
+    expect(vertexSource).toContain("visibleIndicesForVertex[instSlot]");
+    expect(vertexSource).not.toMatch(/\bvisibleIndices\b|\bindirectArgs\b/u);
   });
 
   it("10. 버퍼 패킹과 이론상 드로우콜 가정·명령 인코딩을 검증하고 GPU 실행을 주장하지 않는다", () => {
