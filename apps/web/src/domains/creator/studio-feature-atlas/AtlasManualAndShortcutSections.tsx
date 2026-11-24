@@ -13,7 +13,7 @@ import {
   Keyboard,
   RotateCcw,
 } from "lucide-react";
-import { useId, useState, type MouseEvent, type ReactElement } from "react";
+import { useId, useRef, useState, type MouseEvent, type ReactElement } from "react";
 
 import {
   CREATOR_ROLE_MANUALS,
@@ -41,12 +41,15 @@ const SHORTCUT_CATEGORIES: readonly { readonly id: ShortcutCategoryId | "all"; r
   { id: "collab-flow", labelKo: "말풍선·협업" },
 ];
 
+/** 화면 이동 요청 알림이며 실제 라우터 전환 완료를 보증하지 않는다. */
+export type AtlasNavigate = (route: AtlasRoutePath) => void | Promise<void>;
+
 export interface AtlasRouteLinkProps {
   readonly href: AtlasRoutePath;
   readonly labelKo: string;
   readonly className?: string;
   readonly testId?: string;
-  readonly onNavigate?: (route: AtlasRoutePath) => void;
+  readonly onNavigate?: AtlasNavigate;
 }
 
 export function AtlasRouteLink({
@@ -56,17 +59,45 @@ export function AtlasRouteLink({
   testId,
   onNavigate,
 }: AtlasRouteLinkProps): ReactElement {
+  const [status, setStatus] = useState<"idle" | "pending" | "notified" | "failed">("idle");
+  const pendingRef = useRef(false);
   const handleClick = (event: MouseEvent<HTMLAnchorElement>): void => {
     if (onNavigate) {
       event.preventDefault();
-      onNavigate(href);
+      if (pendingRef.current) return;
+      pendingRef.current = true;
+      const finish = (failed: boolean) => {
+        pendingRef.current = false;
+        setStatus(failed ? "failed" : "notified");
+      };
+      try {
+        const result = onNavigate(href);
+        if (result) {
+          setStatus("pending");
+          void result.then(() => finish(false), () => finish(true));
+        } else {
+          finish(false);
+        }
+      } catch {
+        finish(true);
+      }
     }
   };
   return (
-    <a href={href} onClick={handleClick} className={className} data-testid={testId}>
-      <span>{labelKo}</span>
-      <ArrowUpRight size={14} aria-hidden />
-    </a>
+    <span className="inline-flex flex-col items-start gap-1">
+      <a href={href} onClick={handleClick} className={className} data-testid={testId}
+        aria-disabled={status === "pending"} aria-busy={status === "pending"}>
+        <span>{labelKo}</span>
+        <ArrowUpRight size={14} aria-hidden />
+      </a>
+      {status !== "idle" ? (
+        <span role={status === "failed" ? "alert" : "status"} className="text-xs text-fg-2 break-keep">
+          {status === "pending" ? "이동 요청 처리 중이에요."
+            : status === "failed" ? "이동 요청에 실패했어요. 다시 눌러 주세요."
+              : "이동 알림을 전달했어요. 실제 화면 전환 결과는 이동한 화면에서 확인해 주세요."}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
@@ -76,7 +107,7 @@ export interface AtlasRoleManualSectionProps {
   readonly onSelectRole: (roleId: CreatorRoleId) => void;
   readonly onToggleStep: (roleId: CreatorRoleId, stepId: string) => void;
   readonly onResetRole: (roleId: CreatorRoleId) => void;
-  readonly onNavigate?: (route: AtlasRoutePath) => void;
+  readonly onNavigate?: AtlasNavigate;
 }
 
 export function AtlasRoleManualSection({
@@ -95,6 +126,9 @@ export function AtlasRoleManualSection({
 
   return (
     <div className="space-y-5" data-testid="atlas-manual-section">
+      <p data-testid="atlas-manual-scope-notice" className="text-xs text-fg-2 break-keep">
+        직접 체크하는 실습 메모예요. 실제 원고 작업·저장 결과를 검사하지 않으며 체크 상태는 이 패널을 닫으면 사라져요. 시간은 안내용 예상치예요.
+      </p>
       {/* 4대 역할 선택 바 */}
       <div
         className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
@@ -124,7 +158,7 @@ export function AtlasRoleManualSection({
               <span className="flex w-full items-center justify-between text-[0.72rem] text-fg-2 tabular-nums">
                 <span>{manual.totalMinutes}분 코스</span>
                 <span className={roleProgress.isAllDone ? "font-semibold text-good" : "font-medium"}>
-                  {roleProgress.completedCount}/{roleProgress.totalCount} 완료
+                  {roleProgress.completedCount}/{roleProgress.totalCount} 체크
                 </span>
               </span>
             </button>
@@ -152,7 +186,7 @@ export function AtlasRoleManualSection({
               <span className="inline-flex items-center gap-1 rounded-full border border-line bg-raised px-2.5 py-1 text-xs font-semibold text-fg-2 tabular-nums">
                 <Clock size={13} aria-hidden />
                 <span data-testid="atlas-manual-remaining-min">
-                  남은 시간 {progress.remainingMinutes}분
+                  남은 예상 시간 {progress.remainingMinutes}분
                 </span>
               </span>
             </div>
@@ -167,7 +201,7 @@ export function AtlasRoleManualSection({
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-fg tabular-nums" data-testid="atlas-manual-progress-text">
-                진행률 {progress.completionPct}% ({progress.completedCount}/{progress.totalCount}단계)
+                직접 체크한 진행률 {progress.completionPct}% ({progress.completedCount}/{progress.totalCount}단계)
               </span>
               <div className="flex items-center gap-2">
                 <AtlasRouteLink
@@ -250,7 +284,7 @@ export function AtlasRoleManualSection({
                       {checked ? (
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-good">
                           <CheckCircle2 size={14} aria-hidden />
-                          완료
+                          직접 체크함
                         </span>
                       ) : null}
                     </div>
@@ -258,7 +292,7 @@ export function AtlasRoleManualSection({
                       {step.actionGuideKo}
                     </p>
                     <p className="text-xs text-fg-3 [word-break:keep-all]">
-                      완료 결과: {step.expectedResultKo}
+                      확인할 목표: {step.expectedResultKo}
                     </p>
                   </div>
                 </div>
@@ -311,7 +345,7 @@ export function AtlasRoleManualSection({
 }
 
 export interface AtlasShortcutsAndFaqSectionProps {
-  readonly onNavigate?: (route: AtlasRoutePath) => void;
+  readonly onNavigate?: AtlasNavigate;
 }
 
 export function AtlasShortcutsAndFaqSection({

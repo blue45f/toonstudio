@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -35,6 +35,18 @@ afterEach(() => {
 });
 
 describe("툰스튜디오 7대 기능 축 및 8대 차별화 쇼케이스 카탈로그", () => {
+  it("소개 항목마다 독립 예제·기존 화면 안내를 구분하고 미측정 시간·성능·법적 보증을 주장하지 않는다", () => {
+    const entries = [...getAllStudioFeatures(), ...DIFFERENTIATOR_SHOWCASE_CARDS];
+    for (const entry of entries) {
+      expect(["standalone-example", "screen-guide"]).toContain(entry.scope);
+    }
+    expect(getAllStudioFeatures().find((entry) => entry.id === "feat-vrm-hair-transplant")?.scope).toBe("standalone-example");
+    expect(getAllStudioFeatures().find((entry) => entry.id === "feat-rights-bom-receipt")?.scope).toBe("screen-guide");
+    const claims = JSON.stringify([STUDIO_FEATURE_AXES, DIFFERENTIATOR_SHOWCASE_CARDS, CREATOR_ROLE_MANUALS]);
+    expect(claims).not.toMatch(/1초 만에|5분 안에|분쟁 위험을 원천 차단|240Hz 펜 입력|현재 구현 기준/u);
+    expect(claims).toContain("점검 기록은 법적 이용 허가나 분쟁 예방 보증이 아닙니다");
+  });
+
   it("7대 기능 축이 순서 1~7로 완비되고 모든 세부 기능과 WebP 미리보기 파일이 실제 존재한다", () => {
     expect(STUDIO_FEATURE_AXES).toHaveLength(7);
     expect(STUDIO_FEATURE_AXES.map((axis) => axis.order)).toEqual([1, 2, 3, 4, 5, 6, 7]);
@@ -255,6 +267,50 @@ describe("한국어 · 초성 · 단축키 통합 검색기 및 맥락별 FAQ", 
 });
 
 describe("StudioFeatureAtlasPanel 단독 렌더링 및 인터랙티브 UX", () => {
+  it("독립 예제·기존 화면·소개 이미지의 범위를 표시하고 수동 체크를 실제 작업 완료와 구분한다", () => {
+    render(createElement(StudioFeatureAtlasPanel));
+    expect(screen.getByTestId("atlas-scope-notice").textContent).toContain("이미지는 소개용 삽화");
+    expect(screen.getByTestId("atlas-scope-diff-vrm-hair-72pose").textContent).toContain("독립 예제 안내");
+    expect(screen.getByTestId("atlas-scope-diff-local-first-open-compare").textContent).toContain("기존 화면 안내");
+    expect(screen.getByTestId("studio-feature-atlas-panel").textContent).not.toContain("실제 구현된");
+    fireEvent.click(screen.getByTestId("atlas-tab-manual"));
+    expect(screen.getByTestId("atlas-manual-scope-notice").textContent).toContain("실제 원고 작업·저장 결과를 검사하지 않으며");
+    fireEvent.click(screen.getByTestId("atlas-step-checkbox-beg-1-canvas-gpen"));
+    expect(screen.getByTestId("atlas-manual-progress-text").textContent).toContain("직접 체크한 진행률");
+    expect(screen.getByText("직접 체크함")).toBeTruthy();
+  });
+
+  it("비동기 이동 알림은 대기 중 중복 호출을 막고 실패 후 재시도와 알림 응답만 표시한다", async () => {
+    const onNavigate = vi.fn()
+      .mockRejectedValueOnce(new Error("화면 연결 실패"))
+      .mockResolvedValueOnce(undefined);
+    render(createElement(StudioFeatureAtlasPanel, { onNavigate }));
+    const link = screen.getByTestId("atlas-diff-link-diff-vrm-hair-72pose");
+    fireEvent.click(link);
+    expect(link.getAttribute("href")).toBe("/studio/character");
+    expect(link.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByText("이동 요청 처리 중이에요.")).toBeTruthy();
+    fireEvent.click(link);
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("이동 요청에 실패"));
+    expect(link.getAttribute("aria-busy")).toBe("false");
+    fireEvent.click(link);
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("이동 알림을 전달했어요"));
+    expect(screen.getByRole("status").textContent).toContain("실제 화면 전환 결과는 이동한 화면에서 확인");
+    expect(onNavigate).toHaveBeenCalledTimes(2);
+  });
+
+  it("동기 이동 콜백 오류도 성공으로 표시하지 않고 다시 누를 수 있다", () => {
+    const onNavigate = vi.fn().mockImplementationOnce(() => { throw new Error("라우터 오류"); });
+    render(createElement(StudioFeatureAtlasPanel, { onNavigate }));
+    const link = screen.getByTestId("atlas-diff-link-diff-vrm-hair-72pose");
+    fireEvent.click(link);
+    expect(screen.getByRole("alert").textContent).toContain("이동 요청에 실패");
+    fireEvent.click(link);
+    expect(onNavigate).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("Props 없이 단독 렌더되어 8대 차별화 기술 카드와 실제 WebP 썸네일·라우트 링크를 표시한다", () => {
     render(createElement(StudioFeatureAtlasPanel));
 

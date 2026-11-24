@@ -1,6 +1,6 @@
 /**
  * Wave 38B — 캔버스 오비탈 휠 · 일상어 명령 팔레트(⌘K) · 플로팅 미니맵 ·
- * 태블릿 듀얼 휠 / 컨텍스트 매직 바 · 모바일 엄지 도크 / 엣지 스크럽 / 2.5× 루페 통합 스튜디오 패널.
+ * 태블릿 듀얼 휠 / 컨텍스트 매직 바 · 모바일 엄지 도크 / 엣지 스크럽 / 루페 배치 예제 패널.
  *
  * - Props 없이 단독 렌더 가능(모든 props optional).
  * - Calm Atelier 시맨틱 토큰 전용(원시 hex/rgb/hsl 0건 · Web Storage 0건 · 번역투 0건).
@@ -47,8 +47,10 @@ export interface StudioCanvasOrbitalUxPanelProps {
   readonly className?: string;
   readonly initialDeviceMode?: ErgonomicDeviceMode;
   readonly initialToolContext?: MagicBarToolContext;
-  readonly onSectorSelected?: (sector: OrbitalSectorDefinition) => void;
-  readonly onCommandExecuted?: (command: CanvasCommandItem) => void;
+  /** 선택 알림이며 편집기 적용이나 저장 완료를 보증하지 않는다. */
+  readonly onSectorSelected?: (sector: OrbitalSectorDefinition) => void | Promise<void>;
+  /** 기존 API 이름을 유지하되 명령 선택 알림만 전달한다. */
+  readonly onCommandExecuted?: (command: CanvasCommandItem) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -110,9 +112,38 @@ export function StudioCanvasOrbitalUxPanel({
   const [paletteQuery, setPaletteQuery] = useState("");
   const [usageHistory, setUsageHistory] = useState<readonly CommandUsageRecord[]>([]);
   const [statusMessage, setStatusMessage] = useState(
-    "오비탈 휠 섹터를 고르거나 일상어·초성으로 명령을 바로 찾아 실행해 보세요.",
+    "오비탈 휠과 명령을 골라 예제 구성을 살펴보세요. 실제 원고에는 반영하지 않아요.",
   );
+  const [callbackPending, setCallbackPending] = useState(false);
+  const callbackPendingRef = useRef(false);
   const clockStepRef = useRef(1);
+
+  const notifySelection = (message: string, callback?: () => void | Promise<void>) => {
+    if (!callback) {
+      setStatusMessage(`${message} 실제 원고에는 반영하지 않았어요.`);
+      return;
+    }
+    const finish = (failed: boolean) => {
+      callbackPendingRef.current = false;
+      setCallbackPending(false);
+      setStatusMessage(failed
+        ? `${message} 연결 알림 처리에 실패했어요. 다시 선택해 주세요.`
+        : `${message} 연결 알림 처리를 마쳤어요. 적용·저장 완료를 뜻하지 않아요.`);
+    };
+    callbackPendingRef.current = true;
+    try {
+      const result = callback();
+      if (result) {
+        setCallbackPending(true);
+        setStatusMessage(`${message} 연결 알림 처리 중이에요. 적용·저장 결과는 아직 확인하지 않았어요.`);
+        void result.then(() => finish(false), () => finish(true));
+      } else {
+        finish(false);
+      }
+    } catch {
+      finish(true);
+    }
+  };
 
   const magicBar = useMemo(
     () => resolveContextMagicBar(toolContext, activeMagicFlags),
@@ -130,26 +161,23 @@ export function StudioCanvasOrbitalUxPanel({
   );
 
   const handleSelectSector = (sector: OrbitalSectorDefinition) => {
+    if (callbackPendingRef.current) return;
     setActiveSectorId(sector.id);
+    let message = `오비탈 휠 예제 선택: ${sector.labelKo} (${sector.shortcut}).`;
     if (sector.id === "flip-horizontal") {
       setMinimapState((prev) => ({ ...prev, flippedHorizontal: !prev.flippedHorizontal }));
-      setStatusMessage("캔버스를 좌우 반전했어요. 인체와 얼굴 균형을 바로 확인해 보세요.");
+      message = "미니맵 예제의 좌우 반전을 바꿨어요.";
     } else if (sector.id === "undo") {
-      setFilmstripState((prev) => {
-        const next = stepFilmstripUndo(prev);
-        setStatusMessage(next.lastStatusKo);
-        return next;
-      });
-    } else {
-      setStatusMessage(`오비탈 휠 선택: ${sector.labelKo} (${sector.shortcut}) — ${sector.hintKo}`);
+      setFilmstripState((prev) => stepFilmstripUndo(prev));
+      message = "필름스트립 예제의 이전 단계를 선택했어요.";
     }
     if (sector.id === "brush") setToolContext("brush");
-    onSectorSelected?.(sector);
+    notifySelection(message, onSectorSelected ? () => onSectorSelected(sector) : undefined);
   };
 
   const handleMagicActionClick = (actionId: MagicBarActionId, labelKo: string, toggleable: boolean) => {
     if (!toggleable) {
-      setStatusMessage(`${labelKo} 바로 적용했어요.`);
+      setStatusMessage(`${labelKo} 예제를 선택했어요. 실제 원고에는 반영하지 않았어요.`);
       return;
     }
     setActiveMagicFlags((prev) => {
@@ -157,12 +185,13 @@ export function StudioCanvasOrbitalUxPanel({
       const turningOn = !next.has(actionId);
       if (turningOn) next.add(actionId);
       else next.delete(actionId);
-      setStatusMessage(`${labelKo} ${turningOn ? "켜짐" : "꺼짐"}`);
+      setStatusMessage(`${labelKo} 예제 설정 ${turningOn ? "켜짐" : "꺼짐"}. 실제 원고에는 반영하지 않았어요.`);
       return next;
     });
   };
 
   const handleExecuteCommand = (command: CanvasCommandItem) => {
+    if (callbackPendingRef.current) return;
     const step = clockStepRef.current;
     clockStepRef.current += 1;
     setUsageHistory((prev) => recordCommandUsage(prev, command.id, BASE_CLOCK_MS + step * 60_000));
@@ -187,27 +216,27 @@ export function StudioCanvasOrbitalUxPanel({
       setToolContext(command.relatedToolId);
     }
 
-    setStatusMessage(`명령 실행: ${command.titleKo} (${command.shortcut})`);
-    onCommandExecuted?.(command);
+    notifySelection(
+      `명령 예제 선택: ${command.titleKo} (${command.shortcut}).`,
+      onCommandExecuted ? () => onCommandExecuted(command) : undefined,
+    );
   };
 
   const handleMobileAction = (actionId: MobileThumbActionId, labelKo: string) => {
     if (actionId === "undo") {
-      setFilmstripState((prev) => {
-        const next = stepFilmstripUndo(prev);
-        setStatusMessage(`엄지 도크 되돌리기: ${next.lastStatusKo}`);
-        return next;
-      });
+      setFilmstripState((prev) => stepFilmstripUndo(prev));
+      setStatusMessage("엄지 도크에서 필름스트립 예제의 이전 단계를 선택했어요. 실제 원고에는 반영하지 않았어요.");
       return;
     }
     if (actionId === "lasso") setToolContext("lasso");
     else if (actionId === "brush") setToolContext("brush");
-    setStatusMessage(`모바일 엄지 도크 선택: ${labelKo}`);
+    setStatusMessage(`모바일 엄지 도크 예제 선택: ${labelKo}. 실제 원고에는 반영하지 않았어요.`);
   };
 
   return (
     <section
       data-testid="canvas-orbital-ux-panel"
+      aria-busy={callbackPending}
       aria-label="캔버스 오비탈 휠 및 적응형 제스처 워크벤치"
       className={`rounded-2xl border border-line bg-card p-4 text-fg sm:p-5 ${className}`}
     >
@@ -215,10 +244,13 @@ export function StudioCanvasOrbitalUxPanel({
       <header className="flex flex-col gap-3 border-b border-line/60 pb-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <h2 className="text-base font-semibold tracking-tight text-fg break-keep">
-            캔버스 오비탈 휠 · 일상어 명령 · 인체공학 작업대
+            캔버스 오비탈 휠 · 일상어 명령 · 조작 예제
           </h2>
           <p className="text-xs text-fg-2 break-keep">
-            시선 이동 없이 커서 주변 8방향 휠, 태블릿 양손 휠, 모바일 엄지 도크와 ⌘K 일상어 명령을 즉시 전환해요.
+            휠·태블릿·모바일 조작 구성을 살펴보는 독립 예제예요. 이 패널은 실제 편집기 도구·원고를 직접 바꾸거나 저장하지 않아요.
+          </p>
+          <p data-testid="orbital-scope-notice" className="text-xs text-fg-3 break-keep">
+            연결된 콜백은 선택 알림만 전달해요. 단축키 표시는 참고용이며 이 패널에서 키 입력을 실행하지 않아요.
           </p>
         </div>
 
@@ -235,6 +267,7 @@ export function StudioCanvasOrbitalUxPanel({
                 key={mode.id}
                 type="button"
                 role="tab"
+                disabled={callbackPending}
                 data-testid={`device-mode-${mode.id}`}
                 aria-selected={selected}
                 onClick={() => {
@@ -264,12 +297,12 @@ export function StudioCanvasOrbitalUxPanel({
       >
         <span className="break-keep">{statusMessage}</span>
         <span className="font-semibold text-accent tabular-nums">
-          최근 실행 {usageHistory.length}건
+          예제 명령 선택 {usageHistory.length}건
         </span>
       </div>
 
       {/* 본문 2단 구성 */}
-      <div className="mt-4 grid grid-cols-1 gap-5 xl:grid-cols-[1.12fr_0.88fr]">
+      <fieldset disabled={callbackPending} aria-label="예제 구성" className="mt-4 grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[1.12fr_0.88fr]">
         {/* 좌측 메인 스테이지 + 컨텍스트 매직 바 */}
         <div className="space-y-5">
           <StudioOrbitalWheelStage
@@ -287,7 +320,7 @@ export function StudioCanvasOrbitalUxPanel({
               <div className="space-y-0.5">
                 <h3 className="text-sm font-semibold text-fg break-keep">컨텍스트 매직 바</h3>
                 <p className="text-xs text-fg-3 break-keep">
-                  현재 도구에 꼭 필요한 핵심 4개 액션만 바로 띄워요.
+                  예제 도구별 액션 4개의 선택·토글 구성을 살펴봐요. 실제 도구에는 적용하지 않아요.
                 </p>
               </div>
               <div role="group" aria-label="매직 바 기준 도구 선택" className="flex flex-wrap gap-1.5">
@@ -441,7 +474,7 @@ export function StudioCanvasOrbitalUxPanel({
             onFilmstripStateChange={setFilmstripState}
           />
         </div>
-      </div>
+      </fieldset>
     </section>
   );
 }
