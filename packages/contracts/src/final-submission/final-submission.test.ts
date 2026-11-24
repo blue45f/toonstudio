@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  createEmptyFinalSubmissionBoard, importFinalSubmissionBoard, isFinalSubmissionDate,
+  createEmptyFinalSubmissionBoard, FINAL_SUBMISSION_IMPORT_MAX_BYTES, importFinalSubmissionBoard, isFinalSubmissionDate,
   parseFinalSubmissionBoard, reconcileFinalSubmissionBoard, STATUSES, validateBoard,
 } from "./index";
 
@@ -237,7 +237,7 @@ describe("1R 최종 제출 기록 계약", () => {
 
   it("크기 제한과 허용되지 않는 예전 상태를 거절한다", () => {
     const board = createEmptyFinalSubmissionBoard();
-    expect(importFinalSubmissionBoard({ board, extra: "x".repeat(2 * 1024 * 1024) }, 0).ok).toBe(false);
+    expect(importFinalSubmissionBoard({ board, extra: "x".repeat(FINAL_SUBMISSION_IMPORT_MAX_BYTES) }, 0).ok).toBe(false);
     expect(parseFinalSubmissionBoard({ ...board, tasks: [{ ...board.tasks[0], status: "보완 완료" }, ...board.tasks.slice(1)] }).ok).toBe(false);
   });
 });

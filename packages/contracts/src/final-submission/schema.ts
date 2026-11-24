@@ -22,7 +22,7 @@ export function isFinalSubmissionDate(value: string): boolean {
 }
 
 /** 함수·접근자·순환 참조·프로토타입 확장을 받지 않고 JSON 크기 상한을 먼저 검사한다. */
-export function checkJsonInput(value: unknown): string | null {
+export function checkJsonInput(value: unknown, maxBytes = FINAL_SUBMISSION_MAX_BYTES): string | null {
   const ancestors = new Set<object>();
   let count = 0;
   function visit(item: unknown, depth: number): boolean {
@@ -42,7 +42,7 @@ export function checkJsonInput(value: unknown): string | null {
   try {
     if (!visit(value, 0)) return "점검 보드는 확장 속성이나 순환 참조가 없는 JSON 기록이어야 합니다.";
     const text = JSON.stringify(value);
-    if (!text || new TextEncoder().encode(text).byteLength > FINAL_SUBMISSION_MAX_BYTES) return "점검 기록은 2MB 이하여야 합니다.";
+    if (!text || new TextEncoder().encode(text).byteLength > maxBytes) return `점검 기록은 ${maxBytes / 1024 / 1024}MB 이하여야 합니다.`;
     return null;
   } catch { return "점검 기록의 JSON 형식을 확인할 수 없습니다."; }
 }
