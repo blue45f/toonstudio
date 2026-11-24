@@ -15,6 +15,7 @@ import { compactBootstrapAssets } from "./config/compact-bootstrap-assets";
 import { createStudioManualChunks } from "./config/vite-manual-chunks";
 import { pigmentLicenseBoundaryPlugin } from "./config/vite-pigment-license-boundary";
 import { adminQualityEntryPlugin } from "./config/vite-admin-quality-entry";
+import { studioFoleyImportHashPlugin, studioFoleyPreloads } from "./config/vite-studio-foley-preload";
 import { studioHeaderWarmup } from "./config/vite-studio-header-warmup";
 import { STUDIO_I18N_NAMESPACES } from "./src/shared/lib/i18n-asset-manifest";
 import {
@@ -649,6 +650,7 @@ export default defineConfig(({ command, mode }) => ({
   ...viteServeCacheConfig(command),
   plugins: [
     pigmentLicenseBoundaryPlugin(),
+    studioFoleyImportHashPlugin(),
     threeTslVrmCompatPlugin(),
     preferImplementationOverTestModulePlugin(),
     studioCrossOriginIsolationPlugin(),
@@ -748,11 +750,7 @@ export default defineConfig(({ command, mode }) => ({
     manifest: true,
     modulePreload: {
       resolveDependencies(filename, deps, context) {
-        // 첫 획에서 필기음 JS는 import()가 직접 요청한다. head에 링크를 추가하면 문서의 :has()가 다시 계산된다.
-        if (context.hostType === "js" && path.posix.basename(filename).startsWith("studio-procedural-foley-audio-")) {
-          return deps.filter((dep) => !dep.endsWith(".js"));
-        }
-        if (context.hostType !== "html") return deps;
+        if (context.hostType === "js") return studioFoleyPreloads(filename, deps);
         return deps.filter((dep) => !ENTRY_PRELOAD_EXCLUSIONS.some((chunkName) => dep.includes(chunkName)));
       },
     },

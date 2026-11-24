@@ -20,3 +20,44 @@ it("첫 획의 필기음은 기본 import로 로드하고 다른 화면의 미�
   const panel = "assets/StudioPanel-abc123.js";
   expect(resolveDeps(panel, [panel, shared, css], context)).toEqual([panel, shared, css]);
 });
+
+it("불변 캐시에서 이전 필기음 호출자와 새 호출자의 URL을 구분한다", async () => {
+  const { build } = await import("vite");
+  const { studioFoleyImportHashPlugin, studioFoleyPreloads } = await import("../config/vite-studio-foley-preload");
+  const modules: Record<string, string> = {
+    "editor.js": 'export const editor = () => import("./studio-live-stroke-foley-bridge.js")',
+    "studio-live-stroke-foley-bridge.js": 'export const draw = () => import("./studio-procedural-foley-audio.js")',
+    "studio-procedural-foley-audio.js": 'export { sound } from "./paper.js"',
+    "paper.js": 'export const sound = "ink"',
+  };
+  async function bundle(native: boolean) {
+    const result = await build({
+      configFile: false, publicDir: false, logLevel: "silent",
+      plugins: [{
+        name: "foley-test-modules",
+        resolveId(id) {
+          const name = id.replace(/^\.\//u, "");
+          return Object.hasOwn(modules, name) ? name : null;
+        },
+        load(id) { return modules[id] ?? null; },
+      }, ...(native ? [studioFoleyImportHashPlugin()] : [])],
+      build: {
+        write: false, minify: false,
+        modulePreload: native ? { resolveDependencies: studioFoleyPreloads } : undefined,
+        rolldownOptions: {
+          input: "editor.js", preserveEntrySignatures: "strict",
+          output: { manualChunks: (id) => id === "paper.js" ? "paper" : undefined },
+        },
+      },
+    });
+    const output = Array.isArray(result) ? result[0] : result;
+    if (!output || !("output" in output)) throw new Error("필기음 빌드 결과가 없습니다.");
+    const bridge = output.output.find((chunk) => chunk.type === "chunk" && chunk.name === "studio-live-stroke-foley-bridge");
+    if (!bridge || bridge.type !== "chunk") throw new Error("필기음 호출자 청크가 없습니다.");
+    return bridge;
+  }
+  const original = await bundle(false);
+  const fixed = await bundle(true);
+  expect(fixed.code).not.toBe(original.code);
+  expect(fixed.fileName).not.toBe(original.fileName);
+});
