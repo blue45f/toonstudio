@@ -521,7 +521,7 @@ describe("#236 커스텀 3D 품질 일관성 & #234 SHAPER REA 완전 내재화 
             slot: entry.slot,
             label: entry.label,
             steps: [],
-            availability: { status: "available", reason: null, missing: [] },
+            availability: { status: "available" as const, reason: null, missing: [] },
           },
           reason: null,
         })),

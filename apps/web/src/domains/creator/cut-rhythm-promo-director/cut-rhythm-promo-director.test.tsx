@@ -295,7 +295,9 @@ describe("cut-rhythm-promo-director: 웹툰 컷 리듬 -> 2.5D 무빙툰 & 15초
       textBaseline: "alphabetic",
     };
 
-    vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as unknown as CanvasRenderingContext2D);
+    vi.spyOn(canvas, "getContext").mockImplementation(
+      (() => mockCtx) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    );
     const pose = evaluateParallaxCameraAtFrame(plan.parallaxTracks, plan.rhythm.climaxFrame);
     const cut = plan.rhythm.cuts.find((c) => c.id === pose.cutId)!;
 

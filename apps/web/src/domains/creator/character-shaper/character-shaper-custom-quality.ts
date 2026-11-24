@@ -410,7 +410,7 @@ export function sampleOriginalVrmHairColors(
       if (matClass.slot !== null) continue;
       const isHairMaterial =
         matClass.protected === "hair"
-        || (meshClass.protected === "hair" && (matClass.protected === null || matClass.protected === "hair"));
+        || (meshClass.protected === "hair" && matClass.protected === null);
       if (!isHairMaterial) continue;
       visited.add(raw);
 
