@@ -109,7 +109,7 @@ export const SpaceTopLeftWorkDrawer = memo(function SpaceTopLeftWorkDrawer({
     let observedChat: HTMLElement | null = null;
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
 
-    function publish() {
+    const publish = () => {
       frame = 0;
       const chat = hud.querySelector<HTMLElement>(".space-chat");
       if (chat !== observedChat) {
@@ -127,7 +127,7 @@ export const SpaceTopLeftWorkDrawer = memo(function SpaceTopLeftWorkDrawer({
       const clearance = overlaps ? Math.max(0, Math.ceil(window.innerHeight - chatRect.top)) : 0;
       const value = `${clearance}px`;
       if (slot.style.getPropertyValue(property) !== value) slot.style.setProperty(property, value);
-    }
+    };
 
     function schedule() {
       if (frame) return;
