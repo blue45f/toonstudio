@@ -23,16 +23,16 @@ const LazyCollabSignoffHubPanel = lazy(() =>
     default: m.CollabSignoffHubPanel,
   })),
 );
-const LazyStorySimulpubPanel = lazy(() =>
-  import("../story-simulpub-provenance").then((m) => ({
-    default: m.StudioStorySimulpubPanel,
-  })),
-);
-const LazyVirtualSpaceLivingPanel = lazy(() =>
-  import("../virtual-space-living").then((m) => ({
-    default: m.StudioVirtualSpaceLivingPanel,
-  })),
-);
+const LazyStorySimulpubPanel = lazy(async () => {
+  await import("../story-simulpub-provenance");
+  const m = await import("../story-simulpub-provenance/StudioStorySimulpubPanel");
+  return { default: m.StudioStorySimulpubPanel };
+});
+const LazyVirtualSpaceLivingPanel = lazy(async () => {
+  await import("../virtual-space-living");
+  const m = await import("../virtual-space-living/StudioVirtualSpaceLivingPanel");
+  return { default: m.StudioVirtualSpaceLivingPanel };
+});
 
 type QaHubTabId = "pixel" | "layout" | "continuity" | "signoff" | "storySimulpub" | "virtualLiving";
 

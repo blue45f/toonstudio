@@ -23,16 +23,16 @@ const LazyCspWatermarkVelocityPanel = lazy(() =>
     default: m.CspWatermarkVelocityPanel,
   })),
 );
-const LazyProCommercialPanel = lazy(() =>
-  import("../pro-commercial-suite").then((m) => ({
-    default: m.StudioProCommercialPanel,
-  })),
-);
-const LazyCharlabCspSurpassPanel = lazy(() =>
-  import("../charlab-csp-surpass").then((m) => ({
-    default: m.StudioCharlabCspSurpassPanel,
-  })),
-);
+const LazyProCommercialPanel = lazy(async () => {
+  await import("../pro-commercial-suite");
+  const m = await import("../pro-commercial-suite/StudioProCommercialPanel");
+  return { default: m.StudioProCommercialPanel };
+});
+const LazyCharlabCspSurpassPanel = lazy(async () => {
+  await import("../charlab-csp-surpass");
+  const m = await import("../charlab-csp-surpass/StudioCharlabCspSurpassPanel");
+  return { default: m.StudioCharlabCspSurpassPanel };
+});
 
 type Csp3dTabId = "puppet" | "surface3d" | "hand3d" | "watermark" | "commercialPro" | "charlabCsp";
 
