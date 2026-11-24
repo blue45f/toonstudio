@@ -125,7 +125,7 @@ const FRONTIER_TABS: readonly {
 }[] = [
   { id: "brushPhysics", labelKo: "물리 브러시·종이 높이장·임파스토", labelEn: "Physical Brush · Paper · Impasto" },
   { id: "brushCustomLab", labelKo: "커스텀 브러시 랩 · .tsbrush", labelEn: "Custom Brush Lab · .tsbrush" },
-  { id: "brush3dExtreme", labelKo: "극한 2.5D 임파스토·Face SDF·6패스·IK", labelEn: "2.5D Impasto · Face SDF · 6-Pass · IK" },
+  { id: "brush3dExtreme", labelKo: "브러시·3D 계산 예제", labelEn: "Brush & 3D Computation Examples" },
   { id: "wasm64Core", labelKo: "Rust + Wasm64(memory64) 코어", labelEn: "Rust + Wasm64 Core Engine" },
   { id: "wasm64Hotpath", labelKo: "실물 Rust .wasm 핫패스", labelEn: "Live Rust .wasm Hotpath" },
   { id: "scene3dNpr", labelKo: "3D Wasm64 BVH·LOD·NPR 룩뎁", labelEn: "3D Wasm64 BVH · LOD · NPR" },
@@ -135,7 +135,7 @@ const FRONTIER_TABS: readonly {
   { id: "vectorInkProj", labelKo: "3D → G펜 벡터 잉크 투영", labelEn: "3D → G-Pen Vector Ink" },
   { id: "webgpuNextgen", labelKo: "제로카피 · LOD · P2P · 카나리", labelEn: "Zero-Copy · LOD · P2P · Canary" },
   { id: "webgpuXpbdLight", labelKo: "XPBD 물리·CPU 광원 베이크", labelEn: "XPBD Physics · CPU Light Bake" },
-  { id: "webgpuCrowd", labelKo: "군중 배치 CPU 미리보기·GPU 계약", labelEn: "CPU Crowd Preview · GPU Contract" },
+  { id: "webgpuCrowd", labelKo: "군중 배치 계산·미리보기", labelEn: "Crowd Layout · Preview" },
   { id: "webnnPigment", labelKo: "CPU 선화·안료 혼색·컷 규칙", labelEn: "CPU Lineart · Pigment Mix · Cut Rules" },
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
@@ -207,7 +207,7 @@ const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
       { src: "/assets/atelier/jewels/jewel-character-bust.webp", labelKo: "3D 캐릭터 셰이퍼", labelEn: "3D Character Shaper" },
       { src: "/assets/atelier/jewels/jewel-studio-cube.webp", labelKo: "가상 스튜디오·배경", labelEn: "Virtual Studio" },
       { src: "/assets/atelier/jewels/jewel-acoustic-fork.webp", labelKo: "물리 음향·Foley", labelEn: "Physical Audio" },
-      { src: "/assets/atelier/jewels/jewel-reels-slate.webp", labelKo: "4K 무빙툰·출고", labelEn: "4K Reels & Export" },
+      { src: "/assets/atelier/jewels/jewel-reels-slate.webp", labelKo: "영상 도구·출고", labelEn: "Video Tools & Export" },
     ],
   },
   {

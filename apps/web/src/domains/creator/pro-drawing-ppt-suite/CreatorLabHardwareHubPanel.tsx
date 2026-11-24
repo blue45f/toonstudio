@@ -128,8 +128,8 @@ const CREATOR_LAB_TABS: readonly {
   { id: "voiceBalloon", labelKo: "음성 운율 → 말풍선 자동 조판", labelEn: "Voice Prosody → Speech Balloons" },
   { id: "cameraLensBlocking", labelKo: "3D 시네마 렌즈·180° 카메라 연출", labelEn: "3D Cinema Lens · 180° Blocking" },
   { id: "spatialStage", labelKo: "가상 스튜디오 3D HRTF·공간 라이트박스", labelEn: "Virtual Studio 3D HRTF · Spatial Desk" },
-  { id: "canvasOrbitalUx", labelKo: "오비탈 휠·⌘K·태블릿 듀얼·모바일 도크", labelEn: "Orbital Wheel · ⌘K · Tablet/Mobile UX" },
-  { id: "featureAtlas", labelKo: "전체 기능 아틀라스·10분 실습·8대 쇼케이스", labelEn: "Feature Atlas · 10-Min Manual · Showcase" },
+  { id: "canvasOrbitalUx", labelKo: "휠·명령 구성·기기 UX 예제", labelEn: "Wheel & Command Examples · Device UX" },
+  { id: "featureAtlas", labelKo: "기능 안내·실습·계산 예제", labelEn: "Feature Guide · Walkthroughs · Computation Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {

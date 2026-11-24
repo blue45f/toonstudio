@@ -101,7 +101,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "styleShaderPack", labelKo: "팀 화풍·WGSL 팩 서명 교환 (.tspack)", labelEn: "Team Style & WGSL Pack (.tspack)" },
   { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
   { id: "webcodecsOpfs", labelKo: "코덱 지원 점검·희소 타일·OPFS 버전", labelEn: "Codec Support Probe · Sparse Tile · OPFS VCS" },
-  { id: "aiLatentConti", labelKo: "CPU 색 변환·대본 분석·브러시 추천", labelEn: "CPU Color Transform · Script Parser · Brush Suggestions" },
+  { id: "aiLatentConti", labelKo: "색 변환 예제·대본 분석·브러시 추천", labelEn: "Color Example · Script Parser · Brush Suggestions" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
