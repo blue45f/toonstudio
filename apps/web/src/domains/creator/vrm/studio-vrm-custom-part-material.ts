@@ -327,26 +327,38 @@ export function createStudioVrmHairMToonMaterials(
 ): StudioVrmHairMaterialBundle {
   const baseColor = new THREE.Color(hair.baseColor);
   const tipColor = new THREE.Color(hair.tipColor);
+  const shine = clamp(hair.shine, 0, 1);
   const shadeColor = deriveStudioVrmHarmonizedShadeColor(
     new THREE.Color(0xffffff),
     profile,
     hair.shadowColor
-      ? `#${new THREE.Color(hair.shadowColor).lerp(new THREE.Color("#b8bfd8"), 0.36).getHexString()}`
+      ? `#${new THREE.Color(hair.shadowColor).lerp(new THREE.Color("#c2cae2"), 0.42).getHexString()}`
       : undefined,
   );
-  // vertexColors가 이미 baseColor를 담고 있으므로 shadeColorFactor는 밝기·색조 배율로 동작한다.
-  shadeColor.copy(new THREE.Color(profile.shadeTintHex)).multiplyScalar(clamp(profile.shadeDarkness * 1.06, 0.62, 0.84));
+  // vertexColors가 이미 결 그림자와 그라데이션을 담고 있으므로 shadeColorFactor는 맑은 셀 톤 배율로 유지한다.
+  shadeColor.copy(new THREE.Color(profile.shadeTintHex)).multiplyScalar(clamp(profile.shadeDarkness * 1.16, 0.74, 0.9));
   if (hair.shadowColor) {
     const customShadow = new THREE.Color(hair.shadowColor);
     const hsl = { h: 0, s: 0, l: 0 };
     customShadow.getHSL(hsl);
-    shadeColor.lerp(new THREE.Color().setHSL(hsl.h, clamp(hsl.s * 0.55, 0.05, 0.45), 0.72), 0.42);
+    shadeColor.lerp(new THREE.Color().setHSL(hsl.h, clamp(hsl.s * 0.55, 0.06, 0.48), 0.78), 0.4);
   }
 
-  const outlineColor = deriveStudioVrmHarmonizedOutlineColor(baseColor, profile, hair.shadowColor);
-  const matcap = createStudioVrmHairAngelRingMatcapTexture(hair.shine);
-  const matcapFactor = tipColor.clone().lerp(new THREE.Color("#fff9f2"), 0.55).multiplyScalar(0.18 + clamp(hair.shine, 0, 1) * 0.34);
-  const rimColor = tipColor.clone().lerp(new THREE.Color(profile.rimColorHex), 0.65);
+  // 헤어 외곽선은 검은 띠로 뜨지 않도록 모발 본연의 색조를 섞고 조명 반영률을 높인다.
+  const outlineColor = deriveStudioVrmHarmonizedOutlineColor(baseColor, profile, hair.shadowColor)
+    .lerp(baseColor.clone().multiplyScalar(0.56), 0.35);
+  const matcap = createStudioVrmHairAngelRingMatcapTexture(clamp(0.28 + shine * 0.72, 0, 1));
+  const matcapFactor = tipColor
+    .clone()
+    .lerp(new THREE.Color("#fffaf2"), 0.66)
+    .multiplyScalar(0.38 + shine * 0.54);
+  const rimColor = tipColor.clone().lerp(new THREE.Color(profile.rimColorHex), 0.72);
+  const hairShadingShift = clamp(profile.shadingShiftFactor - 0.05, -0.35, 0.14);
+  const hairGiEqualization = clamp(Math.max(profile.giEqualizationFactor, 0.9), 0.72, 0.96);
+  const hairOutlineLightingMix = clamp(Math.max(profile.outlineLightingMixFactor, 0.66), 0.25, 0.9);
+  const hairRimLightingMix = clamp(profile.rimLightingMixFactor * 0.95 + 0.08, 0.25, 0.78);
+  const hairRimFresnelPower = clamp(profile.parametricRimFresnelPowerFactor * 0.85, 2.6, 5.2);
+  const hairRimLift = clamp(profile.parametricRimLiftFactor + 0.06 + shine * 0.07, 0.08, 0.26);
 
   const main = new MToonMaterial({
     color: new THREE.Color(0xffffff),
@@ -354,18 +366,18 @@ export function createStudioVrmHairMToonMaterials(
     ignoreVertexColor: false,
     shadeColorFactor: shadeColor,
     shadingToonyFactor: profile.shadingToonyFactor,
-    shadingShiftFactor: profile.shadingShiftFactor,
-    giEqualizationFactor: profile.giEqualizationFactor,
+    shadingShiftFactor: hairShadingShift,
+    giEqualizationFactor: hairGiEqualization,
     matcapTexture: matcap,
     matcapFactor,
     parametricRimColorFactor: rimColor,
-    rimLightingMixFactor: profile.rimLightingMixFactor,
-    parametricRimFresnelPowerFactor: profile.parametricRimFresnelPowerFactor,
-    parametricRimLiftFactor: profile.parametricRimLiftFactor,
+    rimLightingMixFactor: hairRimLightingMix,
+    parametricRimFresnelPowerFactor: hairRimFresnelPower,
+    parametricRimLiftFactor: hairRimLift,
     outlineWidthMode: profile.outlineWidthMode,
     outlineWidthFactor: profile.outlineWidthFactor,
     outlineColorFactor: outlineColor,
-    outlineLightingMixFactor: profile.outlineLightingMixFactor,
+    outlineLightingMixFactor: hairOutlineLightingMix,
     side: THREE.DoubleSide,
     transparent: false,
     depthWrite: true,
@@ -382,14 +394,14 @@ export function createStudioVrmHairMToonMaterials(
     depthWrite: true,
     outlineWidthMode: profile.outlineWidthMode,
     outlineWidthFactor: profile.outlineWidthMode === "screenCoordinates"
-      ? clamp(profile.outlineWidthFactor * 0.9, 0.0009, 0.0022)
-      : clamp(profile.outlineWidthFactor * 0.95, 0.001, 0.0024),
+      ? clamp(profile.outlineWidthFactor * 0.78, 0.0008, 0.0018)
+      : clamp(profile.outlineWidthFactor * 0.8, 0.0008, 0.002),
     outlineColorFactor: outlineColor,
-    outlineLightingMixFactor: profile.outlineLightingMixFactor,
+    outlineLightingMixFactor: hairOutlineLightingMix,
     shadeColorFactor: shadeColor,
     shadingToonyFactor: profile.shadingToonyFactor,
-    shadingShiftFactor: profile.shadingShiftFactor,
-    giEqualizationFactor: profile.giEqualizationFactor,
+    shadingShiftFactor: hairShadingShift,
+    giEqualizationFactor: hairGiEqualization,
   });
   outline.name = "ToonStudioAvatarForgeHairOutline_MToon";
   outline.userData[STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY] = { role: "hair-outline" };

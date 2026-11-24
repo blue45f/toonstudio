@@ -158,12 +158,53 @@ describe("studio-vrm-authored-hair-geometry", () => {
     expect(bang.z / bang.x).toBeLessThan(0.33);
   });
 
-  it("캡 헤어라인은 이마 가운데가 가장 높고 관자놀이·옆으로 갈수록 내려간다(좌우 대칭)", () => {
-    expect(studioVrmAuthoredCapHairlineHeight(0)).toBeCloseTo(0.28, 6);
+  it("캡 헤어라인은 이마 상단 자연 위치(y≈0.14)에서 시작해 관자놀이·옆으로 부드럽게 내려간다(좌우 대칭)", () => {
+    const center = studioVrmAuthoredCapHairlineHeight(0);
+    expect(center).toBeCloseTo(0.14, 6);
+    expect(center).toBeLessThan(0.18);
+    expect(center).toBeGreaterThan(0.08);
     expect(studioVrmAuthoredCapHairlineHeight(0.5)).toBeLessThan(studioVrmAuthoredCapHairlineHeight(0.2));
     expect(studioVrmAuthoredCapHairlineHeight(0.9)).toBeLessThan(studioVrmAuthoredCapHairlineHeight(0.5));
     expect(studioVrmAuthoredCapHairlineHeight(-0.5)).toBeCloseTo(studioVrmAuthoredCapHairlineHeight(0.5), 9);
     expect(Number.isFinite(studioVrmAuthoredCapHairlineHeight(Number.NaN))).toBe(true);
+  });
+
+  it("가닥과 캡 모두 엔젤링(이방성 하이라이트) 밝기가 윤기(shine)에 비례해 살아 있고 측면에서도 끊기지 않는다", () => {
+    const matte = createStudioVrmAuthoredHairClumpGeometry({ ...CLUMP, shine: 0.05 });
+    const glossy = createStudioVrmAuthoredHairClumpGeometry({ ...CLUMP, shine: 0.85 });
+    const ridgeLum = (geometry: THREE.BufferGeometry, row: number) => {
+      const color = geometry.getAttribute("color");
+      const idx = row * 9 + 4;
+      return 0.299 * color.getX(idx) + 0.587 * color.getY(idx) + 0.114 * color.getZ(idx);
+    };
+    const glossyRing = ridgeLum(glossy, 8);
+    const glossyRoot = ridgeLum(glossy, 0);
+    const matteRing = ridgeLum(matte, 8);
+    expect(glossyRing).toBeGreaterThan(glossyRoot * 1.2);
+    expect(glossyRing).toBeGreaterThan(matteRing * 1.3);
+    matte.dispose();
+    glossy.dispose();
+
+    const cap = createStudioVrmAuthoredHairGeometry({
+      ...CLUMP,
+      id: "cap",
+      role: "cap",
+      primitive: "ellipsoid",
+      shine: 0.8,
+    });
+    const capPos = cap.getAttribute("position");
+    const capCol = cap.getAttribute("color");
+    let sideRingMax = 0;
+    let napeLowMax = 0;
+    for (let i = 0; i < capPos.count; i += 1) {
+      const x = capPos.getX(i);
+      const y = capPos.getY(i);
+      const lum = 0.299 * capCol.getX(i) + 0.587 * capCol.getY(i) + 0.114 * capCol.getZ(i);
+      if (Math.abs(x) > 0.55 && y > 0.35 && y < 0.62) sideRingMax = Math.max(sideRingMax, lum);
+      if (y < -0.5) napeLowMax = Math.max(napeLowMax, lum);
+    }
+    expect(sideRingMax).toBeGreaterThan(napeLowMax * 1.15);
+    cap.dispose();
   });
 
   it("가닥을 굽은 중심선을 따라 깐다 — 뿌리·끝이 중심선 양 끝에 오고 단면은 중심선 둘레에 머문다", () => {

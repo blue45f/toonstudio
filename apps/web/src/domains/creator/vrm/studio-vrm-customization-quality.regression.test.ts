@@ -46,6 +46,7 @@ import {
   attachStudioVrmGarmentOutlineMesh,
   createStudioVrmGarmentMToonMaterial,
   createStudioVrmGarmentWeaveNormalTexture,
+  createStudioVrmHairMToonMaterials,
   disposeStudioVrmGarmentOwnedMatcap,
   sampleStudioVrmBodyMtoonProfile,
   syncStudioVrmCustomPartToActiveVrm,
@@ -287,6 +288,28 @@ describe("3D 커스터마이징 품질 회귀 검증 (헤어 · 의상 · 소품
         texSpies.forEach((spy) => expect(spy).toHaveBeenCalledTimes(1));
       }
     }
+
+    // 교체 헤어 재질 엔젤링 밝기·셀 음영·외곽선 조화 검증 (원본 VRM 대비 어둡고 평면적인 붕괴 방지)
+    const defaultHairMats = createStudioVrmHairMToonMaterials(
+      { baseColor: "#352a28", tipColor: "#6b5148", shine: 0.42 },
+      profile,
+    );
+    const glossyHairMats = createStudioVrmHairMToonMaterials(
+      { baseColor: "#352a28", tipColor: "#6b5148", shine: 0.85 },
+      profile,
+    );
+    const matcapLum = (c: THREE.Color) => 0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
+    expect(matcapLum(defaultHairMats.main.matcapFactor)).toBeGreaterThanOrEqual(0.32);
+    expect(matcapLum(glossyHairMats.main.matcapFactor)).toBeGreaterThan(matcapLum(defaultHairMats.main.matcapFactor) * 1.3);
+    expect(matcapLum(defaultHairMats.main.shadeColorFactor)).toBeGreaterThanOrEqual(0.45);
+    expect(defaultHairMats.outline.outlineWidthFactor).toBeLessThanOrEqual(profile.outlineWidthFactor);
+    expect(defaultHairMats.outline.outlineLightingMixFactor).toBeGreaterThanOrEqual(0.6);
+    defaultHairMats.main.dispose();
+    defaultHairMats.outline.dispose();
+    defaultHairMats.ownedTextures.forEach((tex) => tex.dispose());
+    glossyHairMats.main.dispose();
+    glossyHairMats.outline.dispose();
+    glossyHairMats.ownedTextures.forEach((tex) => tex.dispose());
 
     // 얼굴 악센트 페더링 알파 맵 검증
     const blushAlpha = createStudioVrmFeatheredDiscAlphaTexture(0.78);

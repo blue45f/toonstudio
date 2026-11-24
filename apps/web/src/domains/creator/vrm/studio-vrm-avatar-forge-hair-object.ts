@@ -14,6 +14,7 @@ import {
 } from "./studio-vrm-authored-hair-geometry";
 import {
   buildAvatarForgeHairParts,
+  type AvatarForgeHairParams,
   type AvatarForgeHairPart,
   type AvatarForgeState,
 } from "./studio-vrm-avatar-forge";
@@ -174,13 +175,18 @@ function layoutBang(part: AvatarForgeHairPart, x0: number, head: CanonicalHead):
   const lengthScale = Math.abs(part.scale[1]) / 0.35;
   const hairlineAt = (x: number) => head.cy + head.ry * 1.05
     * studioVrmAuthoredCapHairlineHeight((x - head.cx) / (head.rx * 1.05));
-  const hairline = hairlineAt(x0 - Math.sign(x0 - head.cx || 1) * 0.5 * halfWidth);
-  const rootY = Math.min(head.cy + 0.8 * head.ry, hairline + 0.16 * head.ry);
+  const hairline = Math.max(
+    hairlineAt(x0),
+    hairlineAt(x0 - Math.sign(x0 - head.cx || 1) * 0.5 * halfWidth),
+  );
+  const rootY = Math.min(head.cy + 0.62 * head.ry, hairline + 0.25 * head.ry);
   // 길이 배율 0.7(레시피 기본 근처)이면 눈썹(눈 + 0.18·ry), 1 을 넘으면 눈 아래까지 내려온다.
   const tipY = Math.min(rootY - 0.2 * head.ry, head.eyeY + head.ry * (0.18 + 0.75 * (0.7 - lengthScale)));
   const visibleMid = (Math.min(rootY, hairline) + tipY) / 2;
+  // 짧은 앞머리(tipY >= hairline)에서도 flare 방향이 뒤집히지 않도록 항상 위(rootY 쪽)→아래(tipY)로 단조 증가한다.
+  const flareStart = Math.min(rootY, Math.max(hairline, tipY + 0.12 * head.ry));
   // 계획 깊이(z)가 앞쪽인 갈래일수록 살짝 앞 겹에 둔다(겹친 갈래끼리 면이 겹쳐 깜박이지 않게).
-  const layer = clamp((part.position[2] - 0.33) / 0.1, 0, 1) * 0.02 * head.rz;
+  const layer = clamp((part.position[2] - 0.32) / 0.12, 0, 1) * 0.018 * head.rz;
   const front = 0.32 * thickness;
   const back = 0.14 * thickness;
   const points: THREE.Vector3[] = [];
@@ -189,11 +195,15 @@ function layoutBang(part: AvatarForgeHairPart, x0: number, head: CanonicalHead):
     const t = index / (BANG_SPINE_SAMPLES - 1);
     const y = rootY + (tipY - rootY) * t;
     const x = x0 + drift * (visibleMid - y);
-    const flare = smoothstep(hairline, tipY, y);
-    const outside = foreheadDepth(x, y, head) + back + (0.012 + 0.04 * flare) * head.rz + layer;
-    const inside = skullFrontDepth(x, y, head, BANG_CAP_SHELL) - front - 0.004 * head.rz;
-    const underCap = smoothstep(hairline - 0.04 * head.ry, hairline + 0.1 * head.ry, y);
-    const depth = outside + (Math.min(inside, outside) - outside) * underCap;
+    const flare = smoothstep(flareStart, tipY, y);
+    const skinDepth = foreheadDepth(x, y, head);
+    // 앞머리 전 구간(뿌리~끝)은 이마 피부(foreheadDepth) 바깥을 따라 연속 곡면으로 흐른다.
+    // 예전에는 헤어라인 위에서 Math.min(inside, outside)로 두개골 안쪽으로 밀어 이마 상단이 뚫고 나왔다.
+    const outside = skinDepth + back + (0.012 + 0.032 * flare) * head.rz + layer;
+    const rootFloor = skinDepth + back + 0.005 * head.rz;
+    const capCeiling = Math.max(rootFloor, skullFrontDepth(x, y, head, BANG_CAP_SHELL) - front * 0.35);
+    const underCap = smoothstep(hairline, rootY, y);
+    const depth = outside + (Math.min(capCeiling, outside) - outside) * underCap;
     points.push(new THREE.Vector3(x, y, depth));
     normals.push(new THREE.Vector3(
       (x - head.cx) / (head.rx * head.rx),
@@ -302,6 +312,127 @@ export function avatarForgeHairInstance(part: AvatarForgeHairPart, fit: StudioVr
   return Object.freeze(layout.spine ? { part, matrix, spine: layout.spine } : { part, matrix });
 }
 
+function deriveRenderHairStrand(
+  template: AvatarForgeHairPart,
+  patch: Pick<AvatarForgeHairPart, "id" | "role" | "position" | "rotation" | "scale" | "taper">,
+): AvatarForgeHairPart {
+  return {
+    ...template,
+    ...patch,
+    primitive: "tapered-capsule",
+  };
+}
+
+/**
+ * v1 파츠 계획의 하위호환(JSON 바이트 고정)을 깨지 않으면서 실제 3D 렌더 메시의 앞머리 밀도·
+ * 이마 중앙 커버리지·관자놀이~사이드락 연결을 보강하는 보조 가닥을 전개한다.
+ */
+export function expandAvatarForgeHairPartsForRender(
+  parts: readonly AvatarForgeHairPart[],
+  hair: Pick<AvatarForgeHairParams, "bangStyle" | "strandWidth" | "fringe" | "length">,
+): AvatarForgeHairPart[] {
+  if (parts.length === 0) return [];
+  const expanded: AvatarForgeHairPart[] = [...parts];
+  const w = hair.strandWidth;
+  const f = hair.fringe;
+  const l = hair.length;
+
+  const baseBang = parts.find((part) => part.role === "bang");
+  if (baseBang && hair.bangStyle !== "none") {
+    const bangTemplate: AvatarForgeHairPart = {
+      ...baseBang,
+      accentMode: baseBang.accentMode === "inner" ? "inner" : undefined,
+      accentColor: baseBang.accentMode === "inner" ? baseBang.accentColor : undefined,
+    };
+    const pushBang = (
+      id: string,
+      position: readonly [number, number, number],
+      rotation: readonly [number, number, number],
+      scale: readonly [number, number, number],
+      taper: number,
+    ) => {
+      expanded.push(deriveRenderHairStrand(bangTemplate, { id, role: "bang", position, rotation, scale, taper }));
+    };
+
+    if (hair.bangStyle === "full") {
+      pushBang("bang-full-fill-left", [-0.105, 0.04, 0.39], [0.05, 0, -0.04], [0.145 * w, 0.36 * f, 0.076 * w], 0.46);
+      pushBang("bang-full-fill-right", [0.105, 0.04, 0.39], [0.05, 0, 0.04], [0.145 * w, 0.36 * f, 0.076 * w], 0.46);
+      pushBang("bang-full-temple-left", [-0.31, 0.01, 0.34], [0.04, 0, -0.06], [0.135 * w, 0.4 * f, 0.074 * w], 0.48);
+      pushBang("bang-full-temple-right", [0.31, 0.01, 0.34], [0.04, 0, 0.06], [0.135 * w, 0.4 * f, 0.074 * w], 0.48);
+    } else if (hair.bangStyle === "curtain") {
+      pushBang("bang-curtain-crown-left", [-0.048, 0.03, 0.395], [0.03, 0, -0.24], [0.14 * w, 0.34 * f, 0.078 * w], 0.52);
+      pushBang("bang-curtain-crown-right", [0.048, 0.03, 0.395], [0.03, 0, 0.24], [0.14 * w, 0.34 * f, 0.078 * w], 0.52);
+      pushBang("bang-curtain-temple-left", [-0.35, -0.04, 0.335], [0.02, 0, -0.05], [0.125 * w, 0.5 * f, 0.076 * w], 0.46);
+      pushBang("bang-curtain-temple-right", [0.35, -0.04, 0.335], [0.02, 0, 0.05], [0.125 * w, 0.5 * f, 0.076 * w], 0.46);
+    } else if (hair.bangStyle === "split") {
+      pushBang("bang-split-crown-left", [-0.045, 0.05, 0.395], [0.04, 0, -0.28], [0.125 * w, 0.31 * f, 0.076 * w], 0.58);
+      pushBang("bang-split-crown-right", [0.045, 0.05, 0.395], [0.04, 0, 0.28], [0.125 * w, 0.31 * f, 0.076 * w], 0.58);
+      pushBang("bang-split-temple-left", [-0.34, 0, 0.335], [0.04, 0, -0.06], [0.12 * w, 0.43 * f, 0.075 * w], 0.52);
+      pushBang("bang-split-temple-right", [0.34, 0, 0.335], [0.04, 0, 0.06], [0.12 * w, 0.43 * f, 0.075 * w], 0.52);
+    } else if (hair.bangStyle === "blunt") {
+      pushBang("bang-blunt-under-left", [-0.18, 0.05, 0.385], [0.03, 0, 0], [0.115 * w, 0.295 * f, 0.072 * w], 0.14);
+      pushBang("bang-blunt-under-right", [0.18, 0.05, 0.385], [0.03, 0, 0], [0.115 * w, 0.295 * f, 0.072 * w], 0.14);
+      pushBang("bang-blunt-temple-left", [-0.33, 0.02, 0.34], [0.03, 0, -0.06], [0.12 * w, 0.38 * f, 0.076 * w], 0.36);
+      pushBang("bang-blunt-temple-right", [0.33, 0.02, 0.34], [0.03, 0, 0.06], [0.12 * w, 0.38 * f, 0.076 * w], 0.36);
+    } else if (hair.bangStyle === "side-swept") {
+      pushBang("bang-sweep-fill-center", [0.09, 0.04, 0.395], [0.05, 0, 0.24], [0.145 * w, 0.35 * f, 0.078 * w], 0.58);
+      pushBang("bang-sweep-temple-left", [-0.34, 0.01, 0.34], [0.05, 0, 0.08], [0.12 * w, 0.35 * f, 0.074 * w], 0.56);
+      pushBang("bang-sweep-temple-right", [0.33, 0.01, 0.34], [0.05, 0, -0.06], [0.12 * w, 0.38 * f, 0.074 * w], 0.54);
+    }
+  }
+
+  // 관자놀이~볼선을 감싸는 브리지 사이드락을 보강해 앞머리와 옆머리 사이 빈 틈(3/4 뷰 절벽)을 없앤다.
+  const leftSide = parts.find((part) => part.role === "side" && part.position[0] < 0);
+  const rightSide = parts.find((part) => part.role === "side" && part.position[0] > 0);
+  if (leftSide && rightSide) {
+    const bridgeY = Math.min(-0.06, leftSide.position[1] * 0.72);
+    const bridgeWidth = Math.max(0.14 * w, leftSide.scale[0] * 0.92);
+    const bridgeLength = Math.max(0.28 * l, leftSide.scale[1] * 0.78);
+    const bridgeDepth = Math.max(0.095 * w, leftSide.scale[2] * 0.78);
+    const bridgeTaper = clamp(leftSide.taper + 0.06, 0.3, 0.62);
+    expanded.push(
+      deriveRenderHairStrand(leftSide, {
+        id: "temple-bridge-left",
+        role: "side",
+        position: [-0.41, bridgeY, 0.145],
+        rotation: [0.03, 0, 0.04],
+        scale: [bridgeWidth, bridgeLength, bridgeDepth],
+        taper: bridgeTaper,
+      }),
+      deriveRenderHairStrand(rightSide, {
+        id: "temple-bridge-right",
+        role: "side",
+        position: [0.41, bridgeY, 0.145],
+        rotation: [0.03, 0, -0.04],
+        scale: [bridgeWidth, bridgeLength, bridgeDepth],
+        taper: bridgeTaper,
+      }),
+    );
+  } else if (baseBang && hair.bangStyle !== "none") {
+    const wispLength = 0.26 * Math.min(1.1, l);
+    expanded.push(
+      deriveRenderHairStrand(baseBang, {
+        id: "temple-wisp-left",
+        role: "side",
+        position: [-0.41, -0.06, 0.18],
+        rotation: [0.03, 0, 0.05],
+        scale: [0.11 * w, wispLength, 0.08 * w],
+        taper: 0.64,
+      }),
+      deriveRenderHairStrand(baseBang, {
+        id: "temple-wisp-right",
+        role: "side",
+        position: [0.41, -0.06, 0.18],
+        rotation: [0.03, 0, -0.05],
+        scale: [0.11 * w, wispLength, 0.08 * w],
+        taper: 0.64,
+      }),
+    );
+  }
+
+  return expanded;
+}
+
 /**
  * 계획된 헤어 파츠를 두상 맞춤으로 옮겨 그룹에 붙인다. 파츠가 없으면(헤어 없음) 아무것도 붙이지 않는다.
  * 본체 VRM과 동일한 MToon 셰이딩·엔젤링 하이라이트·용접 법선 역면 외곽선을 적용해 이질감과 알파 정렬 깨짐을 막는다.
@@ -313,7 +444,7 @@ export function addAvatarForgeHairParts(
   fit: StudioVrmHeadFit,
   profile?: StudioVrmBodyMtoonProfile,
 ): void {
-  const parts = buildAvatarForgeHairParts(state);
+  const parts = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(state), state.hair);
   const merged = mergeStudioVrmAuthoredHairGeometry(
     parts.map((part) => avatarForgeHairInstance(part, fit)),
   );

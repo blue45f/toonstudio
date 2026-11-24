@@ -1,17 +1,30 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
+import fixtureFile from "./__fixtures__/studio-vrm-head-profiles.json";
 import {
   AVATAR_FORGE_CAP_MIN_SHELL,
   avatarForgeHairInstance,
+  expandAvatarForgeHairPartsForRender,
   transformAvatarForgeHairPart,
 } from "./studio-vrm-avatar-forge-hair-object";
-import { buildAvatarForgeHairParts, createAvatarForgeState } from "./studio-vrm-avatar-forge";
-import { studioVrmAuthoredCapHairlineHeight } from "./studio-vrm-authored-hair-geometry";
-import { resolveStudioVrmHeadFit } from "./studio-vrm-head-fit";
+import {
+  applyAvatarForgeHairStyleRecipe,
+  buildAvatarForgeHairParts,
+  createAvatarForgeState,
+} from "./studio-vrm-avatar-forge";
+import {
+  mergeStudioVrmAuthoredHairGeometry,
+  studioVrmAuthoredCapHairlineHeight,
+} from "./studio-vrm-authored-hair-geometry";
+import {
+  resolveStudioVrmHeadFit,
+  type StudioVrmHeadFit,
+  type StudioVrmHeadProfile,
+  type StudioVrmHeadVec3,
+} from "./studio-vrm-head-fit";
 import { collectStudioVrmHeadSkinPoints, measureStudioVrmHeadFit, resolveStudioVrmFrontSign } from "./studio-vrm-head-measure";
 
-import type { StudioVrmHeadFit } from "./studio-vrm-head-fit";
 import type { VRM } from "@pixiv/three-vrm";
 
 /**
@@ -298,5 +311,113 @@ describe("transformAvatarForgeHairPart", () => {
     const { position } = transformAvatarForgeHairPart(partOf("bob", "cap", { volume: 1 }), fit);
     expect(position.x).toBeCloseTo(fit.center[0], 9);
     expect(position.y).toBeCloseTo(fit.center[1], 9);
+  });
+
+  it("실측 VRM 12종 전체에서 앞머리 전 구간(뿌리~끝)이 foreheadDepth 바깥에 연속으로 흐르고 대머리 관통이 0건이다", () => {
+    interface MeasuredFixture {
+      readonly id: string;
+      readonly modelHeight: number;
+      readonly eyeCenter: StudioVrmHeadVec3 | null;
+      readonly eyeDistance: number;
+      readonly frontSign: 1 | -1;
+      readonly profile: StudioVrmHeadProfile;
+      readonly crownSamples: readonly StudioVrmHeadVec3[];
+    }
+    const models = (fixtureFile as unknown as { models: readonly MeasuredFixture[] }).models;
+    expect(models.length).toBeGreaterThanOrEqual(12);
+
+    const foreheadAt = (fit: StudioVrmHeadFit, cx: number, y: number) => {
+      const cz = fit.frontSign * fit.center[2];
+      const nx = (cx - fit.center[0]) / fit.radiusX;
+      const ny = (y - fit.center[1]) / fit.radiusY;
+      const skull = cz + fit.radiusZ * Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      const across = Math.sqrt(Math.max(0.15, 1 - 0.85 * nx * nx));
+      return Math.min(cz + (fit.faceFront - cz) * across, skull);
+    };
+
+    for (const model of models) {
+      const fit = resolveStudioVrmHeadFit({
+        profile: model.profile,
+        eyeCenter: model.eyeCenter,
+        eyeDistance: model.eyeDistance,
+        frontSign: model.frontSign,
+        modelHeight: model.modelHeight,
+      });
+      for (const bangStyle of ["full", "curtain", "split", "side-swept", "blunt"] as const) {
+        const state = applyAvatarForgeHairStyleRecipe(createAvatarForgeState(), "wavy");
+        state.hair.bangStyle = bangStyle;
+        const expanded = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(state), state.hair);
+        const bangs = expanded.filter((part) => part.role === "bang");
+        expect(bangs.length, `${model.id}/${bangStyle}`).toBeGreaterThanOrEqual(6);
+        for (const bang of bangs) {
+          const spine = avatarForgeHairInstance(bang, fit).spine;
+          expect(spine, `${model.id}/${bangStyle}/${bang.id}`).toBeDefined();
+          if (!spine) continue;
+          // 뿌리(index=0)부터 끝(index=last)까지 단 한 점도 foreheadDepth 안쪽으로 파고들지 않아야 한다.
+          for (const point of spine.points) {
+            const canonicalX = fit.frontSign < 0 ? 2 * fit.center[0] - point.x : point.x;
+            const depth = fit.frontSign * point.z;
+            expect(depth, `${model.id}/${bangStyle}/${bang.id}`).toBeGreaterThan(foreheadAt(fit, canonicalX, point.y));
+          }
+        }
+      }
+    }
+
+    // 루미(sample-vrm) 실측 기준: 웨이브 롱/보브에서 이마 상단 크라운 100% 차폐 + 앞머리 정점 0관통 + 가닥 겹침·관자놀이 브리지 확인
+    const lumi = models.find((item) => item.id === "sample-vrm")!;
+    const lumiFit = resolveStudioVrmHeadFit({
+      profile: lumi.profile,
+      eyeCenter: lumi.eyeCenter,
+      eyeDistance: lumi.eyeDistance,
+      frontSign: lumi.frontSign,
+      modelHeight: lumi.modelHeight,
+    });
+    const raycaster = new THREE.Raycaster();
+    const frontCrown = lumi.crownSamples.filter((pt) => pt[2] > 0.04 && pt[1] >= 0.11);
+    expect(frontCrown.length).toBeGreaterThan(10);
+
+    for (const style of ["bob", "wavy", "hime"] as const) {
+      const state = applyAvatarForgeHairStyleRecipe(createAvatarForgeState(), style);
+      const expanded = expandAvatarForgeHairPartsForRender(buildAvatarForgeHairParts(state), state.hair);
+      expect(expanded.some((part) => part.id === "temple-bridge-left")).toBe(true);
+      expect(expanded.some((part) => part.id === "temple-bridge-right")).toBe(true);
+
+      const merged = mergeStudioVrmAuthoredHairGeometry(expanded.map((part) => avatarForgeHairInstance(part, lumiFit)))!;
+      const mesh = new THREE.Mesh(merged, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+      mesh.updateMatrixWorld(true);
+      for (const sample of frontCrown) {
+        raycaster.set(new THREE.Vector3(sample[0], sample[1], 0.35), new THREE.Vector3(0, 0, -1));
+        const hits = raycaster.intersectObject(mesh, false);
+        expect(hits.length, `${style} crown hit`).toBeGreaterThan(0);
+        expect(hits[0]!.point.z, `${style} crown z`).toBeGreaterThan(sample[2]);
+      }
+
+      // 앞머리 실제 메시 정점 전체가 foreheadDepth 바깥 + 이마 가로 겹침 검증
+      const bangParts = expanded.filter((part) => part.role === "bang");
+      const bangGeo = mergeStudioVrmAuthoredHairGeometry(bangParts.map((part) => avatarForgeHairInstance(part, lumiFit)))!;
+      const pos = bangGeo.getAttribute("position");
+      for (let i = 0; i < pos.count; i += 1) {
+        expect(pos.getZ(i), `${style} bang vertex ${i}`).toBeGreaterThan(foreheadAt(lumiFit, pos.getX(i), pos.getY(i)));
+      }
+      const intervals = bangParts.map((part) => {
+        const sp = avatarForgeHairInstance(part, lumiFit).spine!;
+        const nearBrow = sp.points.reduce((best, pt) => (Math.abs(pt.y - 0.1) < Math.abs(best.y - 0.1) ? pt : best), sp.points[0]!);
+        return [nearBrow.x - sp.halfWidth * 0.72, nearBrow.x + sp.halfWidth * 0.72] as const;
+      });
+      let covered = 0;
+      let overlapped = 0;
+      for (let step = -25; step <= 25; step += 1) {
+        const x = (step / 25) * 0.072;
+        const hits = intervals.filter(([left, right]) => x >= left && x <= right).length;
+        if (hits >= 1) covered += 1;
+        if (hits >= 2) overlapped += 1;
+      }
+      expect(covered / 51, `${style} forehead coverage`).toBeGreaterThanOrEqual(0.96);
+      expect(overlapped / 51, `${style} strand overlap`).toBeGreaterThanOrEqual(0.45);
+
+      bangGeo.dispose();
+      merged.dispose();
+      (mesh.material as THREE.Material).dispose();
+    }
   });
 });

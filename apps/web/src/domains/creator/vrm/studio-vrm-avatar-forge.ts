@@ -284,18 +284,18 @@ export const AVATAR_FORGE_HAIR_STYLE_RECIPES: Readonly<
   Record<AvatarForgeHairStyle, Readonly<Partial<AvatarForgeHairParams>>>
 > = Object.freeze({
   none: Object.freeze({}),
-  short: Object.freeze({ volume: 0.94, length: 0.72, strandWidth: 0.9, fringe: 0.58, curl: 0.08, wave: 0, ahoge: 0, bangStyle: "side-swept" }),
-  bob: Object.freeze({ volume: 1, length: 0.9, strandWidth: 0.96, fringe: 0.72, curl: 0.14, wave: 0, ahoge: 0, bangStyle: "curtain" }),
-  long: Object.freeze({ volume: 1.02, length: 1.18, strandWidth: 0.94, fringe: 0.76, curl: 0.12, wave: 0.06, ahoge: 0, bangStyle: "curtain" }),
+  short: Object.freeze({ volume: 0.94, length: 0.72, strandWidth: 0.98, fringe: 0.58, curl: 0.08, wave: 0, ahoge: 0, bangStyle: "side-swept" }),
+  bob: Object.freeze({ volume: 1, length: 0.9, strandWidth: 1.04, fringe: 0.74, curl: 0.14, wave: 0, ahoge: 0, bangStyle: "curtain" }),
+  long: Object.freeze({ volume: 1.02, length: 1.18, strandWidth: 1.02, fringe: 0.76, curl: 0.12, wave: 0.06, ahoge: 0, bangStyle: "curtain" }),
   ponytail: Object.freeze({ volume: 1.02, length: 1.08, strandWidth: 0.92, fringe: 0.62, curl: 0.16, wave: 0.06, ahoge: 0, tailHeight: 0.72, bangStyle: "side-swept" }),
   twintail: Object.freeze({ volume: 1.06, length: 1.05, strandWidth: 0.9, fringe: 0.68, curl: 0.22, wave: 0.12, ahoge: 0, tailHeight: 0.7, bangStyle: "split" }),
   bun: Object.freeze({ volume: 0.96, length: 0.72, strandWidth: 0.9, fringe: 0.6, curl: 0.12, wave: 0, ahoge: 0, tailHeight: 0.7, bangStyle: "side-swept" }),
-  wavy: Object.freeze({ volume: 1.08, length: 1.18, strandWidth: 0.95, fringe: 0.74, curl: 0.28, wave: 0.58, ahoge: 0, bangStyle: "curtain" }),
+  wavy: Object.freeze({ volume: 1.08, length: 1.18, strandWidth: 1.04, fringe: 0.76, curl: 0.28, wave: 0.58, ahoge: 0, bangStyle: "curtain" }),
   braid: Object.freeze({ volume: 0.98, length: 1.12, strandWidth: 0.9, fringe: 0.64, curl: 0.08, wave: 0.05, ahoge: 0, tailHeight: 0.58, bangStyle: "split" }),
   "twin-braid": Object.freeze({ volume: 0.98, length: 1.04, strandWidth: 0.86, fringe: 0.64, curl: 0.08, wave: 0.05, ahoge: 0, tailHeight: 0.58, bangStyle: "split" }),
-  hime: Object.freeze({ volume: 1, length: 1.2, strandWidth: 0.94, fringe: 0.82, curl: 0.04, wave: 0, ahoge: 0, bangStyle: "blunt" }),
-  wolf: Object.freeze({ volume: 1.03, length: 0.86, strandWidth: 0.82, fringe: 0.62, curl: 0.12, wave: 0.05, ahoge: 0, bangStyle: "side-swept" }),
-  "half-up": Object.freeze({ volume: 1.02, length: 1.08, strandWidth: 0.92, fringe: 0.68, curl: 0.16, wave: 0.12, ahoge: 0, tailHeight: 0.68, bangStyle: "curtain" }),
+  hime: Object.freeze({ volume: 1, length: 1.2, strandWidth: 1.02, fringe: 0.82, curl: 0.04, wave: 0, ahoge: 0, bangStyle: "blunt" }),
+  wolf: Object.freeze({ volume: 1.03, length: 0.86, strandWidth: 0.88, fringe: 0.62, curl: 0.12, wave: 0.05, ahoge: 0, bangStyle: "side-swept" }),
+  "half-up": Object.freeze({ volume: 1.02, length: 1.08, strandWidth: 1, fringe: 0.68, curl: 0.16, wave: 0.12, ahoge: 0, tailHeight: 0.68, bangStyle: "curtain" }),
   pixie: Object.freeze({ volume: 0.9, length: 0.58, strandWidth: 0.72, fringe: 0.42, curl: 0.05, wave: 0, ahoge: 0, bangStyle: "side-swept" }),
 });
 
@@ -854,27 +854,27 @@ function buildBangParts(hair: AvatarForgeHairParams): AvatarForgeHairPart[] {
 
   if (hair.bangStyle === "split") {
     return [
-      hairPart(hair, "bang-split-left", "bang", "tapered-capsule", [-0.13, 0.05, 0.42], [0.05, 0, 0.3], [0.13 * w, 0.34 * f, 0.085 * w], 0.68),
-      hairPart(hair, "bang-split-right", "bang", "tapered-capsule", [0.13, 0.05, 0.42], [0.05, 0, -0.3], [0.13 * w, 0.34 * f, 0.085 * w], 0.68),
-      hairPart(hair, "bang-split-outer-left", "bang", "tapered-capsule", [-0.29, -0.01, 0.35], [0.04, 0, 0.14], [0.1 * w, 0.42 * f, 0.075 * w], 0.6),
-      hairPart(hair, "bang-split-outer-right", "bang", "tapered-capsule", [0.29, -0.01, 0.35], [0.04, 0, -0.14], [0.1 * w, 0.42 * f, 0.075 * w], 0.6),
+      hairPart(hair, "bang-split-left", "bang", "tapered-capsule", [-0.1, 0.05, 0.425], [0.04, 0, -0.24], [0.16 * w, 0.36 * f, 0.09 * w], 0.54),
+      hairPart(hair, "bang-split-right", "bang", "tapered-capsule", [0.1, 0.05, 0.425], [0.04, 0, 0.24], [0.16 * w, 0.36 * f, 0.09 * w], 0.54),
+      hairPart(hair, "bang-split-outer-left", "bang", "tapered-capsule", [-0.26, 0, 0.37], [0.04, 0, -0.1], [0.135 * w, 0.44 * f, 0.08 * w], 0.52),
+      hairPart(hair, "bang-split-outer-right", "bang", "tapered-capsule", [0.26, 0, 0.37], [0.04, 0, 0.1], [0.135 * w, 0.44 * f, 0.08 * w], 0.52),
     ];
   }
 
   if (hair.bangStyle === "side-swept") {
     return [
-      hairPart(hair, "bang-sweep-main", "bang", "tapered-capsule", [-0.06, 0.06, 0.42], [0.05, 0, 0.52], [0.16 * w, 0.4 * f, 0.09 * w], 0.66),
-      hairPart(hair, "bang-sweep-short", "bang", "tapered-capsule", [-0.27, 0.02, 0.37], [0.07, 0, 0.24], [0.09 * w, 0.24 * f, 0.07 * w], 0.76),
-      hairPart(hair, "bang-sweep-tail", "bang", "tapered-capsule", [0.23, 0, 0.38], [0.06, 0, -0.1], [0.09 * w, 0.3 * f, 0.07 * w], 0.74),
+      hairPart(hair, "bang-sweep-main", "bang", "tapered-capsule", [-0.04, 0.06, 0.43], [0.05, 0, 0.42], [0.195 * w, 0.4 * f, 0.095 * w], 0.56),
+      hairPart(hair, "bang-sweep-short", "bang", "tapered-capsule", [-0.25, 0.02, 0.38], [0.06, 0, 0.16], [0.14 * w, 0.28 * f, 0.08 * w], 0.62),
+      hairPart(hair, "bang-sweep-tail", "bang", "tapered-capsule", [0.22, 0.01, 0.39], [0.05, 0, -0.08], [0.14 * w, 0.33 * f, 0.08 * w], 0.6),
     ];
   }
 
   if (hair.bangStyle === "curtain") {
     return [
-      hairPart(hair, "bang-curtain-left", "bang", "tapered-capsule", [-0.16, 0, 0.41], [0.02, 0, 0.16], [0.12 * w, 0.52 * f, 0.085 * w], 0.5),
-      hairPart(hair, "bang-curtain-right", "bang", "tapered-capsule", [0.16, 0, 0.41], [0.02, 0, -0.16], [0.12 * w, 0.52 * f, 0.085 * w], 0.5),
-      hairPart(hair, "bang-curtain-wisp-left", "bang", "tapered-capsule", [-0.32, -0.07, 0.33], [0.02, 0, 0.1], [0.085 * w, 0.44 * f, 0.07 * w], 0.58),
-      hairPart(hair, "bang-curtain-wisp-right", "bang", "tapered-capsule", [0.32, -0.07, 0.33], [0.02, 0, -0.1], [0.085 * w, 0.44 * f, 0.07 * w], 0.58),
+      hairPart(hair, "bang-curtain-left", "bang", "tapered-capsule", [-0.14, 0.02, 0.425], [0.02, 0, -0.34], [0.16 * w, 0.48 * f, 0.092 * w], 0.44),
+      hairPart(hair, "bang-curtain-right", "bang", "tapered-capsule", [0.14, 0.02, 0.425], [0.02, 0, 0.34], [0.16 * w, 0.48 * f, 0.092 * w], 0.44),
+      hairPart(hair, "bang-curtain-wisp-left", "bang", "tapered-capsule", [-0.28, -0.05, 0.37], [0.02, 0, -0.14], [0.135 * w, 0.48 * f, 0.08 * w], 0.48),
+      hairPart(hair, "bang-curtain-wisp-right", "bang", "tapered-capsule", [0.28, -0.05, 0.37], [0.02, 0, 0.14], [0.135 * w, 0.48 * f, 0.08 * w], 0.48),
     ];
   }
 
@@ -888,9 +888,9 @@ function buildBangParts(hair: AvatarForgeHairParams): AvatarForgeHairPart[] {
           `bang-blunt-${index}`,
           "bang",
           "tapered-capsule",
-          [x, 0.05, 0.43 - Math.abs(x) * 0.18],
+          [x, 0.05, 0.435 - Math.abs(x) * 0.16 + (index % 2 === 0 ? 0.008 : 0)],
           [0.03, 0, 0],
-          [0.085 * w, 0.3 * f, 0.075 * w],
+          [0.12 * w, 0.3 * f, 0.082 * w],
           0.06
         )
       );
@@ -1016,11 +1016,11 @@ export function buildAvatarForgeHairParts(
     const spec: WaveSpec = { amount: Math.min(1, 0.45 + hair.wave * 0.55), frequency: 2.9 };
     const sideLength = 0.86 * l;
     parts.push(
-      hairPart(hair, "wavy-side-left", "side", "tapered-capsule", [-0.44, -0.26 * l, 0.03], [0, 0, 0.06], [0.16 * w, sideLength, 0.14 * w], 0.34, spec),
-      hairPart(hair, "wavy-side-right", "side", "tapered-capsule", [0.44, -0.26 * l, 0.03], [0, 0, -0.06], [0.16 * w, sideLength, 0.14 * w], 0.34, spec),
-      hairPart(hair, "wavy-back", "back", "ellipsoid", [0, -0.3 * l, -0.35], [0, 0, 0], [0.48 * v, 0.92 * l, 0.19 * v], 0.08),
-      hairPart(hair, "wavy-inner-left", "back", "tapered-capsule", [-0.24, -0.52 * l, -0.4], [0, 0, 0.03], [0.13 * w, 0.78 * l, 0.12 * w], 0.42, spec),
-      hairPart(hair, "wavy-inner-right", "back", "tapered-capsule", [0.24, -0.52 * l, -0.4], [0, 0, -0.03], [0.13 * w, 0.78 * l, 0.12 * w], 0.42, spec)
+      hairPart(hair, "wavy-side-left", "side", "tapered-capsule", [-0.44, -0.26 * l, 0.08], [0, 0, 0.06], [0.185 * w, sideLength, 0.145 * w], 0.32, spec),
+      hairPart(hair, "wavy-side-right", "side", "tapered-capsule", [0.44, -0.26 * l, 0.08], [0, 0, -0.06], [0.185 * w, sideLength, 0.145 * w], 0.32, spec),
+      hairPart(hair, "wavy-back", "back", "ellipsoid", [0, -0.3 * l, -0.35], [0, 0, 0], [0.52 * v, 0.94 * l, 0.21 * v], 0.08),
+      hairPart(hair, "wavy-inner-left", "back", "tapered-capsule", [-0.24, -0.52 * l, -0.4], [0, 0, 0.03], [0.15 * w, 0.78 * l, 0.125 * w], 0.4, spec),
+      hairPart(hair, "wavy-inner-right", "back", "tapered-capsule", [0.24, -0.52 * l, -0.4], [0, 0, -0.03], [0.15 * w, 0.78 * l, 0.125 * w], 0.4, spec)
     );
   }
 
@@ -1043,11 +1043,11 @@ export function buildAvatarForgeHairParts(
   if (hair.style === "hime") {
     // 히메컷: 턱선에서 뚝 끊기는 일자 사이드락 + 등까지 오는 긴 생머리.
     parts.push(
-      hairPart(hair, "hime-lock-left", "side", "tapered-capsule", [-0.42, -0.3 * l, 0.16], [0, 0, 0.02], [0.15 * w, 0.34 * l, 0.12 * w], 0.04),
-      hairPart(hair, "hime-lock-right", "side", "tapered-capsule", [0.42, -0.3 * l, 0.16], [0, 0, -0.02], [0.15 * w, 0.34 * l, 0.12 * w], 0.04),
+      hairPart(hair, "hime-lock-left", "side", "tapered-capsule", [-0.42, -0.3 * l, 0.16], [0, 0, 0.02], [0.165 * w, 0.34 * l, 0.125 * w], 0.04),
+      hairPart(hair, "hime-lock-right", "side", "tapered-capsule", [0.42, -0.3 * l, 0.16], [0, 0, -0.02], [0.165 * w, 0.34 * l, 0.125 * w], 0.04),
       hairPart(hair, "hime-back", "back", "ellipsoid", [0, -0.44 * l, -0.33], [0, 0, 0], [0.5 * v, 1.02 * l, 0.19 * v], 0.05),
-      hairPart(hair, "hime-back-left", "back", "tapered-capsule", [-0.3, -0.5 * l, -0.3], [0, 0, 0.02], [0.12 * w, 0.9 * l, 0.11 * w], 0.12, wave),
-      hairPart(hair, "hime-back-right", "back", "tapered-capsule", [0.3, -0.5 * l, -0.3], [0, 0, -0.02], [0.12 * w, 0.9 * l, 0.11 * w], 0.12, wave)
+      hairPart(hair, "hime-back-left", "back", "tapered-capsule", [-0.3, -0.5 * l, -0.3], [0, 0, 0.02], [0.13 * w, 0.9 * l, 0.115 * w], 0.12, wave),
+      hairPart(hair, "hime-back-right", "back", "tapered-capsule", [0.3, -0.5 * l, -0.3], [0, 0, -0.02], [0.13 * w, 0.9 * l, 0.115 * w], 0.12, wave)
     );
   }
 
@@ -1055,20 +1055,20 @@ export function buildAvatarForgeHairParts(
     // 울프컷: 윗머리 레이어 볼륨 + 목덜미에서만 길게 빠지는 얇은 가닥.
     parts.push(
       hairPart(hair, "wolf-layer", "back", "ellipsoid", [0, 0.06, -0.16], [0, 0, 0], [0.52 * v, 0.32 * v, 0.5 * v], 0.14),
-      hairPart(hair, "wolf-side-left", "side", "tapered-capsule", [-0.44, -0.08, 0.06], [0.05, 0, 0.1], [0.1 * w, 0.3 * l, 0.1 * w], 0.68, wave),
-      hairPart(hair, "wolf-side-right", "side", "tapered-capsule", [0.44, -0.08, 0.06], [0.05, 0, -0.1], [0.1 * w, 0.3 * l, 0.1 * w], 0.68, wave),
-      hairPart(hair, "wolf-nape-center", "tail", "tapered-capsule", [0, -0.5 * l, -0.44], [-0.06, 0, 0], [0.09 * w, 0.72 * l, 0.09 * w], 0.74, wave),
-      hairPart(hair, "wolf-nape-left", "tail", "tapered-capsule", [-0.19, -0.44 * l, -0.42], [-0.04, 0, 0.06], [0.075 * w, 0.62 * l, 0.075 * w], 0.78, wave),
-      hairPart(hair, "wolf-nape-right", "tail", "tapered-capsule", [0.19, -0.44 * l, -0.42], [-0.04, 0, -0.06], [0.075 * w, 0.62 * l, 0.075 * w], 0.78, wave)
+      hairPart(hair, "wolf-side-left", "side", "tapered-capsule", [-0.44, -0.08, 0.1], [0.05, 0, 0.1], [0.125 * w, 0.3 * l, 0.105 * w], 0.62, wave),
+      hairPart(hair, "wolf-side-right", "side", "tapered-capsule", [0.44, -0.08, 0.1], [0.05, 0, -0.1], [0.125 * w, 0.3 * l, 0.105 * w], 0.62, wave),
+      hairPart(hair, "wolf-nape-center", "tail", "tapered-capsule", [0, -0.5 * l, -0.44], [-0.06, 0, 0], [0.095 * w, 0.72 * l, 0.09 * w], 0.74, wave),
+      hairPart(hair, "wolf-nape-left", "tail", "tapered-capsule", [-0.19, -0.44 * l, -0.42], [-0.04, 0, 0.06], [0.08 * w, 0.62 * l, 0.075 * w], 0.78, wave),
+      hairPart(hair, "wolf-nape-right", "tail", "tapered-capsule", [0.19, -0.44 * l, -0.42], [-0.04, 0, -0.06], [0.08 * w, 0.62 * l, 0.075 * w], 0.78, wave)
     );
   }
 
   if (hair.style === "half-up") {
     parts.push(
       hairPart(hair, "halfup-knot", "bun", "sphere", [0, 0.3 * v + tailLift, -0.42], [0, 0, 0], [0.19 * v, 0.17 * v, 0.17 * v], 0),
-      hairPart(hair, "halfup-back", "back", "ellipsoid", [0, -0.3 * l, -0.34], [0, 0, 0], [0.46 * v, 0.8 * l, 0.18 * v], 0.1),
-      hairPart(hair, "halfup-side-left", "side", "tapered-capsule", [-0.43, -0.24 * l, 0.05], [0, 0, 0.05], [0.13 * w, 0.62 * l, 0.12 * w], 0.44, wave),
-      hairPart(hair, "halfup-side-right", "side", "tapered-capsule", [0.43, -0.24 * l, 0.05], [0, 0, -0.05], [0.13 * w, 0.62 * l, 0.12 * w], 0.44, wave)
+      hairPart(hair, "halfup-back", "back", "ellipsoid", [0, -0.3 * l, -0.34], [0, 0, 0], [0.48 * v, 0.82 * l, 0.19 * v], 0.1),
+      hairPart(hair, "halfup-side-left", "side", "tapered-capsule", [-0.43, -0.24 * l, 0.09], [0, 0, 0.05], [0.155 * w, 0.62 * l, 0.125 * w], 0.4, wave),
+      hairPart(hair, "halfup-side-right", "side", "tapered-capsule", [0.43, -0.24 * l, 0.09], [0, 0, -0.05], [0.155 * w, 0.62 * l, 0.125 * w], 0.4, wave)
     );
   }
 
