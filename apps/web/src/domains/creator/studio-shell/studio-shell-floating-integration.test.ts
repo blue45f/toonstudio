@@ -42,8 +42,8 @@ describe("studio shell floating integration", () => {
       .toContain('setStudioStrokeFocusActivity("canvas-stroke", true)');
     expect(source("StudioCuttoonEditorHost.tsx"))
       .toContain('setStudioStrokeFocusActivity("canvas-stroke", false)');
-    expect(source("live/huddle/StudioP2pHuddleLauncher.tsx"))
-      .toContain('strokeFocusPhase === "drawing"');
+    expect(huddle).toContain("subscribeStudioStrokeFocusActivity(");
+    expect(huddle).toContain('studioStrokeFocusActivitySnapshot() === "drawing"');
   });
 
   it("keeps standalone phone status lanes and editor-owned offline details without duplicate floating UI", () => {
