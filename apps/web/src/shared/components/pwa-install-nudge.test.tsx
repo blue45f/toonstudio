@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -146,4 +148,22 @@ describe("PwaInstallNudge", () => {
       expect(screen.queryByRole("status")).toBeNull();
     },
   );
+
+  it("데스크톱(min-width: 641px) 홈 설치 배너는 우측 상단 히어로를 피하고 우하단에 배치한다", () => {
+    const css = readFileSync(
+      path.resolve(process.cwd(), "apps/web/src/shared/components/pwa-install-nudge.css"),
+      "utf8",
+    );
+    const desktopBlockMatch = css.match(/@media\s*\(min-width:\s*641px\)\s*\{[\s\S]*?\n\}/u);
+    expect(desktopBlockMatch).not.toBeNull();
+    const desktopBlock = desktopBlockMatch?.[0] ?? "";
+    expect(desktopBlock).toContain('.pwa-install-nudge[data-surface="home"]');
+    expect(desktopBlock).toContain("top: auto;");
+    expect(desktopBlock).toContain("bottom: max(1rem, env(safe-area-inset-bottom));");
+    expect(desktopBlock).toContain("right: max(4.75rem, env(safe-area-inset-right));");
+    expect(desktopBlock).toContain("animation-name: pwa-install-nudge-enter-up;");
+    // 기존 모바일(max-width: 640px) 계약 규칙은 원형 그대로 보존된다.
+    expect(css).toContain("@media (max-width: 640px)");
+    expect(css).toContain("bottom: calc(var(--pwa-install-mobile-nav-offset) + env(safe-area-inset-bottom))");
+  });
 });

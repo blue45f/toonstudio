@@ -63,3 +63,13 @@
 @media (prefers-contrast: more) { .pwa-install-nudge { border-width: 2px; background: var(--color-panel); box-shadow: none; backdrop-filter: none; } }
 @media (prefers-reduced-motion: reduce) { .pwa-install-nudge, .pwa-install-nudge * { animation: none !important; transition: none !important; } }
 @media (forced-colors: active) { .pwa-install-nudge, .pwa-install-nudge__icon, .pwa-install-nudge__action, .pwa-install-nudge__close { border: 2px solid CanvasText; background: Canvas; color: CanvasText; box-shadow: none; forced-color-adjust: auto; } }
+
+/* 데스크톱 홈(/)에서는 우측 상단 히어로 캐릭터 일러스트를 가리지 않도록 설치 안내를 우하단(플로팅 조작 열 왼쪽)에 배치한다. */
+@media (min-width: 641px) {
+  .pwa-install-nudge[data-surface="home"] {
+    top: auto;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    right: max(4.75rem, env(safe-area-inset-right));
+    animation-name: pwa-install-nudge-enter-up;
+  }
+}
