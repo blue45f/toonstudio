@@ -111,10 +111,8 @@ export function probeWebNnLineartCapability(
       hasWebGpu,
       hasWasmSimd,
       preferredBackend: hasWebGpu ? "webnn-gpu" : "webnn-cpu",
-      supportedDeviceTypes: hasWebGpu ? ["npu", "gpu", "cpu"] : ["cpu"],
-      probeNote: hasGraphBuilder
-        ? "WebNN navigator.ml + MLGraphBuilder 감지됨 (실시간 연산 가속 가능)"
-        : "WebNN navigator.ml 감지됨 (SIMD-정렬 TypedArray 커널과 하이브리드 실행)",
+      supportedDeviceTypes: [],
+      probeNote: "WebNN API 감지 · 디바이스 컨텍스트와 그래프 실행은 미확인",
     };
   }
 
@@ -123,11 +121,11 @@ export function probeWebNnLineartCapability(
     hasGraphBuilder,
     hasWebGpu,
     hasWasmSimd,
-    preferredBackend: "cpu-simd-typedarray",
+    preferredBackend: "cpu-typedarray",
     supportedDeviceTypes: [],
     probeNote: hasWasmSimd
-      ? "WebNN 미지원 호스트 — SIMD-정렬 Float32Array 결정론적 CPU 커널로 즉시 전환"
-      : "표준 정렬 Float32Array 결정론적 CPU 커널 사용",
+      ? "WebNN 미지원 · WASM SIMD API 지원 감지 · 선화는 CPU TypedArray로 계산"
+      : "선화는 CPU TypedArray로 계산",
   };
 }
 
@@ -162,9 +160,9 @@ export async function probeWebNnLineartRuntimeAsync(options?: {
   if (confirmed.length === 0) {
     return {
       ...syncCap,
-      preferredBackend: "cpu-simd-typedarray",
+      preferredBackend: "cpu-typedarray",
       supportedDeviceTypes: [],
-      probeNote: "WebNN 컨텍스트 생성 실패 — 결정론적 SIMD-정렬 CPU 커널로 안전 폴백",
+      probeNote: "WebNN 컨텍스트 생성 실패 · 선화는 CPU TypedArray로 계산",
     };
   }
 
@@ -720,7 +718,7 @@ export function stabilizeRoughLineart(
   const elapsedMs = Math.max(0.01, nowMs() - startMs);
 
   return {
-    backend: capability.preferredBackend,
+    backend: "cpu-typedarray",
     capability,
     inputStrokeCount: strokes.length,
     inputPointCount,
@@ -747,5 +745,5 @@ export async function stabilizeRoughLineartAsync(
     preferredDeviceType: options.preferredDeviceType,
     navigatorOverride: options.navigatorOverride,
   });
-  return { ...stabilizeRoughLineart(strokes, options), backend: runtimeCap.preferredBackend, capability: runtimeCap };
+  return { ...stabilizeRoughLineart(strokes, options), capability: runtimeCap };
 }

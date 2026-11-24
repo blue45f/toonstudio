@@ -94,7 +94,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "autoStyleDna", labelKo: "자동 화풍 DNA·대본3D·심의", labelEn: "Auto Style DNA · Script-to-3D · Rating" },
   { id: "styleShaderPack", labelKo: "팀 화풍·WGSL 팩 서명 교환 (.tspack)", labelEn: "Team Style & WGSL Pack (.tspack)" },
   { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
-  { id: "webcodecsOpfs", labelKo: "WebCodecs 4K·희소 타일·OPFS 버전", labelEn: "WebCodecs 4K · Sparse Tile · OPFS VCS" },
+  { id: "webcodecsOpfs", labelKo: "코덱 지원 점검·희소 타일·OPFS 버전", labelEn: "Codec Support Probe · Sparse Tile · OPFS VCS" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {

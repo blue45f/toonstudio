@@ -92,7 +92,7 @@ export function probeOnDeviceDirectorCapability(
       adapterLabel: "Browser Built-in AI (On-Device)",
       localExecutionReady: true,
       privacyMode: "100%-ondevice-zero-upload",
-      runtimeNote: "브라우저 내장 window.ai 감지됨 — 오프라인 웹툰 연출 문법과 하이브리드 로컬 추론",
+      runtimeNote: "브라우저 내장 window.ai API 감지 · 모델 로드와 추론은 실행하지 않음",
     };
   }
   if (hasWebGpu) {
@@ -430,6 +430,8 @@ export function analyzeWebtoonCutDirection(
 
   return {
     runtime,
+    executionBackend: "offline-webtoon-grammar",
+    inferencePerformed: false,
     overallScore,
     rhythmScore: rhythm.score,
     dialogueNaturalnessScore,

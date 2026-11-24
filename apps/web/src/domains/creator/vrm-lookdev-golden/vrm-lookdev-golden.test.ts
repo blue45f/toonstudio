@@ -369,6 +369,14 @@ describe("④ StudioVrmLookdevGoldenPanel 렌더링 · 상호작용 · Calm Atel
     expect(screen.getByTestId("vrm-golden-verdict-badge").textContent).toContain("PASS");
     expect(screen.getByTestId("vrm-golden-ssim-value").textContent).toBe("1.0000");
     expect(screen.getByTestId("vrm-golden-shader-error-value").textContent).toBe("0건");
+    expect(screen.getByTestId("vrm-golden-input-source").textContent).toContain("합성 RGBA 예제");
+  });
+
+  it("외부 RGBA가 PASS여도 실제 GPU·VRM 검증으로 표시하지 않는다", () => {
+    const frame = synthesizeVrmLookdevFrame({ width: 48, height: 48 });
+    render(createElement(StudioVrmLookdevGoldenPanel, { customReferenceFrame: frame, customCandidateFrame: frame }));
+    expect(screen.getByTestId("vrm-golden-verdict-badge").textContent).toContain("PASS");
+    expect(screen.getByTestId("vrm-golden-input-source").textContent).toContain("GPU 출처는 미검증");
   });
 
   it("결함 시나리오 버튼 전환 시 밀키 백화·암부 뭉개짐·셰이더 오류 FAIL 판정과 콜백이 실시간 동작한다", () => {
