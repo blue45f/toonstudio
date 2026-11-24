@@ -11,6 +11,8 @@ import {
   importVerifiedBg3dModelsAtomicallyV12,
   type Bg3dVerifiedStoredRecord,
 } from "./bg3d-model-library";
+import { studioBg3dHistoryDocumentAtView } from "./studio-bg3d-editor-derivations";
+import { applyOrDeferStudioBg3dHistoryCamera } from "./studio-bg3d-camera-history-transition";
 import { instantiateBg3dTemplateDocument, type Bg3dTemplateLibraryEntry } from "./bg3d-template-library";
 import { bindConsumerReleaseFixture, consumerReleaseFixture, isConsumerCatalogUrl } from "./studio-bg3d-bundle-release-consumer.test-fixture";
 import { findStudioBg3dBundleAssetByHash, loadStudioBg3dBundleThemePacks, resetStudioBg3dBundleThemePacksCache } from "./studio-bg3d-bundle-theme-packs";
@@ -165,7 +167,7 @@ function rawThemePacks(record: Bg3dVerifiedStoredRecord, assetId: string) {
 }
 
 interface TemplateHost extends Record<string, unknown> {
-  applyUserTemplate?: (entry: Bg3dTemplateLibraryEntry) => Promise<void>;
+  applyUserTemplate?: (entry: Bg3dTemplateLibraryEntry, mode?: "verified-scene") => Promise<boolean>;
 }
 function templateHost(value: Awaited<ReturnType<typeof storedTemplateFixture>>) {
   const current: {
@@ -189,7 +191,12 @@ function templateHost(value: Awaited<ReturnType<typeof storedTemplateFixture>>) 
   const bind = vi.fn(bindModelAttachment);
   const hydrate = vi.fn(hydrateStudioBg3dDocumentToRuntime);
   const resolve = vi.fn(resolveBg3dModelHashV12);
+  const pendingCamera = { current: null };
   const h: TemplateHost = {
+    studioBg3dHistoryDocumentAtView,
+    applyOrDeferStudioBg3dHistoryCamera,
+    viewportApiRef: { current: null },
+    pendingInitialCameraRef: pendingCamera,
     applyingTemplateId: null,
     isRestoringScene: false,
     isUploadingModel: false,
@@ -235,7 +242,7 @@ function templateHost(value: Awaited<ReturnType<typeof storedTemplateFixture>>) 
           pointer: "fine", saveData: false, deviceMemoryGb: 8, hardwareConcurrency: 8,
         },
       }),
-    generateId: () => "template-local-seed",
+    generateId: () => crypto.randomUUID(),
     replaceCanonicalDocumentState: replacement,
     setSelectedIds: vi.fn<(ids: Set<string>) => void>(),
     setRefTick: vi.fn<(update: (previous: number) => number) => void>(),
@@ -243,11 +250,45 @@ function templateHost(value: Awaited<ReturnType<typeof storedTemplateFixture>>) 
     setError,
   };
   attachStudioBg3dEditorPlacementHost(h);
-  return { h, current, cache, pending, attachments, reverse, replacement, setError,
+  return { h, current, cache, pending, pendingCamera, commitImmediateHistoryTransition, attachments, reverse, replacement, setError,
     instantiate, match, admit, bind, hydrate, resolve };
 }
 
 describe("실제 저장 모델을 사용하는 템플릿의 로컬 원본 복원", () => {
+  it.each(["같은 첨부 ID", "새 첨부 ID"])("%s로 다시 배치할 때 기존 시점과 기기 첨부를 유지한다", async (sameId) => {
+    const value = await storedTemplateFixture();
+    const host = templateHost(value);
+    const apply = host.h.applyUserTemplate;
+    if (!apply) throw new Error("템플릿 적용 호스트가 필요합니다.");
+    const templateCamera = { ...value.entry.document.camera, fovDegrees: 41 };
+    const entry = { ...value.entry, document: { ...value.entry.document, camera: templateCamera } };
+    expect(await apply(entry, "verified-scene"), JSON.stringify(host.setError.mock.calls)).toBe(true);
+    expect(host.commitImmediateHistoryTransition).toHaveBeenLastCalledWith(expect.anything(), expect.anything(),
+      expect.objectContaining({ camera: templateCamera }), expect.objectContaining({ document: expect.objectContaining({ camera: value.destination.camera }) }),
+      expect.objectContaining({ preserveBeforeCamera: true }));
+    expect(host.current.document.camera).toEqual(templateCamera);
+    expect(host.pendingCamera.current).toEqual(templateCamera);
+
+    const originalNode = host.current.customModels[0];
+    expect(originalNode).toBeDefined();
+    const existing = { ...value.attachment, generic3dWorkflow: { sourceFormat: "glb", version: 1 } as const };
+    host.attachments.set(value.local.id, existing);
+    const originalCamera = { ...templateCamera, fovDegrees: 64 };
+    host.current.document = { ...host.current.document, camera: originalCamera, attachments: [existing] };
+    const incoming = { ...value.attachment, id: sameId === "같은 첨부 ID" ? existing.id : "another-attachment" };
+    const incomingScene = { ...entry.document, attachments: [incoming],
+      nodes: entry.document.nodes.map(node => node.kind === "model" ? { ...node, attachmentId: incoming.id } : node) };
+
+    expect(await apply({ ...entry, document: incomingScene }, "verified-scene"), JSON.stringify(host.setError.mock.calls)).toBe(true);
+    expect(host.current.document.camera).toEqual(originalCamera);
+    expect(host.current.customModels).toHaveLength(2);
+    expect(host.current.customModels[0]).toEqual(originalNode);
+    expect(host.current.customModels[1]?.id).not.toBe(originalNode?.id);
+    expect(host.current.customModels.map(model => model.modelId)).toEqual([value.local.id, value.local.id]);
+    expect([...host.attachments.values()]).toEqual([existing]);
+    expect([...host.reverse.entries()]).toEqual([[existing.id, value.local.id]]);
+  });
+
   it("같은 해시의 번들 GLB가 503이어도 SQLite/CAS의 로컬 원본을 적용한다", async () => {
     const value = await storedTemplateFixture();
     const host = templateHost(value);
