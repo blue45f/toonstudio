@@ -1,12 +1,10 @@
-import { importFinalSubmissionBoard, STATUSES } from "@toonstudio/contracts/final-submission";
+import { FINAL_SUBMISSION_IMPORT_MAX_BYTES, importFinalSubmissionBoard, STATUSES } from "@toonstudio/contracts/final-submission";
 import { useRef, useState } from "react";
 
 import { SubmissionDialog, SubmissionError, submissionDate } from "./final-submission-ui";
 
 import type { FinalSubmissionCommit } from "./final-submission-ui";
 import type { BoardState } from "@toonstudio/contracts/final-submission";
-
-const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 export function FinalSubmissionImport({ board, onCommit, onClose, disabled }: { board: BoardState; onCommit: FinalSubmissionCommit; onClose: () => void; disabled: boolean }) {
   const [raw, setRaw] = useState("");
@@ -22,7 +20,7 @@ export function FinalSubmissionImport({ board, onCommit, onClose, disabled }: { 
   function review(text: string) {
     setCandidate(null); setConfirmed(false); setError("");
     try {
-      if (new TextEncoder().encode(text).byteLength > MAX_IMPORT_BYTES) throw new Error("가져올 JSON은 2MB 이하여야 합니다.");
+      if (new TextEncoder().encode(text).byteLength > FINAL_SUBMISSION_IMPORT_MAX_BYTES) throw new Error("가져올 JSON 백업은 8MB 이하여야 합니다. 내부 점검 기록은 2MB까지 지원합니다.");
       const input: unknown = JSON.parse(text);
       const result = importFinalSubmissionBoard(input, board.revision, board.revision === 0 ? undefined : board);
       if (!result.ok) throw new Error(result.errors.join(" · "));
@@ -41,7 +39,7 @@ export function FinalSubmissionImport({ board, onCommit, onClose, disabled }: { 
         const file = event.target.files?.[0]; event.target.value = ""; const run = ++sequence.current;
         setCandidate(null); setConfirmed(false); setError("");
         if (!file) return;
-        if (file.size > MAX_IMPORT_BYTES) { setError("가져올 JSON은 2MB 이하여야 합니다."); return; }
+        if (file.size > FINAL_SUBMISSION_IMPORT_MAX_BYTES) { setError("가져올 JSON 백업은 8MB 이하여야 합니다. 내부 점검 기록은 2MB까지 지원합니다."); return; }
         try {
           const text = await file.text(); if (run !== sequence.current) return;
           setRaw(text); setFileName(file.name); review(text);

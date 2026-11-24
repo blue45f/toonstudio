@@ -523,6 +523,7 @@ describe("PostgresHealthReadinessRepository", () => {
       "../../platform/database/migrations/0066_share_analytics_events.sql",
       "../../platform/database/migrations/0077_membership_operations.sql",
       "../../platform/database/migrations/0118_customer_support.sql",
+      "../../platform/database/migrations/0134_admin_final_submission.sql",
     ].flatMap((path) => [
       ...readFileSync(new URL(path, import.meta.url), "utf8").matchAll(
         /\bCREATE TABLE(?: IF NOT EXISTS)? public\.([a-z_]+)/gu,
@@ -544,6 +545,9 @@ describe("PostgresHealthReadinessRepository", () => {
     ];
     expect(migrationRelations.toSorted()).toEqual([
       ...ASSET_PLATFORM_RELATIONS,
+      "admin_final_submission",
+      "admin_final_submission_audit",
+      "admin_final_submission_receipt",
       "creator_role_workspace_preference",
       "customer_support_ai_attempt",
       "customer_support_conversation",
