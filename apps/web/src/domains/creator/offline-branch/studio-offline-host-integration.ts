@@ -7,7 +7,7 @@ import type { StudioCrdtSceneGraphRuntime } from "../live/StudioLiveCollaboratio
 import type { El } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
 
-import { offlineConflictText } from "./studio-offline-conflict-i18n";
+import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 
 export { createStudioOfflineCapableResourceLeaseController } from "./createStudioOfflineCapableResourceLeaseController";
 
@@ -151,7 +151,8 @@ export function stageStudioOfflineSceneTransition(
   if (!offlineBranch?.shouldStageSceneTransition()) return null;
   const result = offlineBranch.stageSceneTransition(previousPages, nextPages);
   if (result.staged) {
-    reportNotice(offlineConflictText("pendingNotice"));
+    reportNotice(translateBilingualPair("studio.offlineBranch",
+      "오프라인 변경은 서버 반영을 기다리고 있어요.", "Offline changes are waiting to be sent to the server."));
     return true;
   }
   if (result.unsupported.length > 0) {

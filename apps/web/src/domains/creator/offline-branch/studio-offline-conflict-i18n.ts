@@ -44,7 +44,6 @@ const COPY = {
   offlineLabel: ["오프라인", "Offline"],
   connectionWait: ["서버 연결을 기다리고 있어요.", "Waiting for a server connection."],
   deviceWriterRole: ["이 탭이 원고의 기기 복구 저장을 담당합니다.", "This tab handles on-device recovery saves for the manuscript."],
-  pendingNotice: ["오프라인 변경은 서버 반영을 기다리고 있어요.", "Offline changes are waiting to be sent to the server."],
   serverPending: ["공유 원고 버전은 유지됩니다. 오프라인 변경의 서버 반영은 아직 확인되지 않았습니다.", "The shared manuscript version is kept. Server delivery of the offline changes has not been confirmed."],
   unavailable: ["현재 원고 또는 편집 권한이 달라져 이 변경을 처리할 수 없습니다.", "The manuscript or editing permission changed; this change cannot be processed now."],
 } as const;
