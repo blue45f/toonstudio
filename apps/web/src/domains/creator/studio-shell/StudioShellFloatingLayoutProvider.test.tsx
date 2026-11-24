@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { Profiler } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioShellFloatingLayoutProvider } from "./StudioShellFloatingLayoutProvider";
@@ -9,6 +10,7 @@ import {
   isStudioShellDrawingSurfaceTarget,
 } from "./studio-shell-drawing-auto-hide";
 import { useStudioShellFloatingLayout } from "./studio-shell-floating-layout-context";
+import { resetStudioStrokeFocusActivityForTests, setStudioStrokeFocusActivity, STUDIO_STROKE_FOCUS_SETTLE_MS } from "../studio-stroke-focus-activity";
 import { setStudioWorkspaceArranging } from "../studio-workspace-arrangement";
 
 vi.mock("./studio-shell-floating-visibility-sqlite", () => ({
@@ -36,6 +38,9 @@ function Probe() {
         data-collaboration-configured={String(shell.isConfiguredVisible("collaboration"))}
         data-collaboration-mounted={String(shell.isSurfaceMounted("collaboration"))}
       />
+      <button type="button" onClick={() => shell.setAutoHideWhileDrawing(!shell.autoHideWhileDrawing)}>
+        작화 중 자동 숨김 전환
+      </button>
       <button type="button" onClick={shell.enterFocusMode}>집중 보기</button>
       <button type="button" onClick={shell.exitFocusMode}>집중 보기 해제</button>
       <button
@@ -79,6 +84,7 @@ beforeEach(() => {
 afterEach(() => {
   setStudioWorkspaceArranging(false);
   cleanup();
+  resetStudioStrokeFocusActivityForTests();
   sessionStorage.clear();
   vi.useRealTimers();
 });
@@ -95,6 +101,51 @@ describe("Studio shell drawing auto-hide", () => {
     expect(isStudioShellDrawingSurfaceTarget(document.querySelector("#drawing"))).toBe(true);
     expect(isStudioShellDrawingSurfaceTarget(document.querySelector("#control"))).toBe(false);
     expect(isStudioShellDrawingSurfaceTarget(document.querySelector("#outside"))).toBe(false);
+  });
+
+  it.each([false, true])("자동 숨김 %s에서 획 사이에는 가시성이 바뀔 때만 커밋한다", async (enabled) => {
+    if (!enabled) sessionStorage.clear();
+    const onRender = vi.fn();
+    render(
+      <Profiler id="floating-layout" onRender={onRender}>
+        <StudioShellFloatingLayoutProvider><Probe /></StudioShellFloatingLayoutProvider>
+      </Profiler>,
+    );
+    await act(async () => {});
+    const runtime = screen.getByTestId("floating-runtime");
+    expect(runtime.dataset.autoHide).toBe(String(enabled));
+    const commits: number[] = [];
+    for (const pressed of [true, false, true, false]) {
+      onRender.mockClear();
+      act(() => setStudioStrokeFocusActivity("canvas-stroke", pressed));
+      expect(runtime.dataset.active).toBe(String(enabled));
+      commits.push(onRender.mock.calls.length);
+    }
+    onRender.mockClear();
+    act(() => vi.advanceTimersByTime(STUDIO_STROKE_FOCUS_SETTLE_MS));
+    expect(runtime.dataset.active).toBe("false");
+    commits.push(onRender.mock.calls.length);
+    expect(commits).toEqual(enabled ? [1, 0, 0, 0, 1] : [0, 0, 0, 0, 0]);
+  });
+
+  it("획이 진행되는 동안 자동 숨김 설정이나 배치 모드를 바꾸면 현재 상태를 반영한다", async () => {
+    sessionStorage.clear();
+    act(() => setStudioStrokeFocusActivity("canvas-stroke", true));
+    await act(async () => {
+      render(<StudioShellFloatingLayoutProvider><Probe /></StudioShellFloatingLayoutProvider>);
+    });
+    const runtime = screen.getByTestId("floating-runtime");
+    const toggle = screen.getByRole("button", { name: "작화 중 자동 숨김 전환" });
+    expect(runtime.dataset.active).toBe("false");
+    await act(async () => { fireEvent.click(toggle); });
+    expect(runtime.dataset.active).toBe("true");
+    act(() => setStudioWorkspaceArranging(true));
+    expect(runtime.dataset.active).toBe("false");
+    act(() => setStudioStrokeFocusActivity("canvas-stroke", false));
+    act(() => setStudioWorkspaceArranging(false));
+    expect(runtime.dataset.active).toBe("true");
+    await act(async () => { fireEvent.click(toggle); });
+    expect(runtime.dataset.active).toBe("false");
   });
 
   it("hides during pen strokes and restores after the continuation delay", () => {

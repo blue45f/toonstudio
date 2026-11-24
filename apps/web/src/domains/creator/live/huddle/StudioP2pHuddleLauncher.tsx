@@ -21,11 +21,6 @@ export default function StudioP2pHuddleLauncher({ placement = "floating", idleCh
   const live = useStudioLiveCollaboration();
   const bt = useBilingual("domains.creator.live.huddle.StudioP2pHuddleLauncher");
   const chromeTarget = useStudioChromePortalTarget(idleChromeTargetId ?? "");
-  const strokeFocusPhase = useSyncExternalStore(
-    subscribeStudioStrokeFocusActivity,
-    studioStrokeFocusActivitySnapshot,
-    () => "idle",
-  );
   const controller = useRef<StudioP2pHuddleController | null>(null);
   const cleanup = useRef<(() => void) | null>(null);
   const authority = useRef<StudioHuddleAuthority | null>(null);
@@ -101,9 +96,12 @@ export default function StudioP2pHuddleLauncher({ placement = "floating", idleCh
     setSnapshot(null); setDraft(""); setBusy(false); setProximityMedia(true);
     return disposeSession;
   }, [disposeSession, room, direct, canJoin, live.canChat]);
-  useEffect(() => {
-    if (strokeFocusPhase === "drawing") setOpen(false);
-  }, [strokeFocusPhase]);
+  useLayoutEffect(() => {
+    if (!open) return;
+    return subscribeStudioStrokeFocusActivity(() => {
+      if (studioStrokeFocusActivitySnapshot() === "drawing") setOpen(false);
+    });
+  }, [open]);
   useEffect(() => {
     const handleOpen = (event: Event) => {
       const detail = normalizeStudioP2pHuddleOpenDetail((event as CustomEvent<StudioP2pHuddleOpenDetail>).detail ?? {});
