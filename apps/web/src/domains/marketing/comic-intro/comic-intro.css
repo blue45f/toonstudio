@@ -69,6 +69,18 @@
 }
 
 .comic-panel--one {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 1.1rem 1rem 1.3rem;
+  background:
+    radial-gradient(
+      circle at 50% 24%,
+      color-mix(in oklab, var(--color-accent) 10%, var(--color-canvas)),
+      var(--color-canvas) 74%
+    );
   transform: rotate(-1.2deg);
   animation-delay: 60ms;
 }
@@ -79,6 +91,8 @@
 }
 
 .comic-panel--three {
+  isolation: isolate;
+  background: oklch(0.16 0.016 55);
   transform: rotate(-0.6deg);
   animation-delay: 1080ms;
 }
@@ -115,8 +129,36 @@
   }
 }
 
+.comic-panel-emblem-frame {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 3.35rem;
+  height: 3.35rem;
+  overflow: hidden;
+  border: 2px solid color-mix(in oklab, var(--color-fg) 26%, var(--color-line-strong, var(--color-fg)));
+  border-radius: 999px;
+  background: oklch(0.978 0.01 88);
+  box-shadow:
+    0 0.35rem 0.9rem -0.25rem color-mix(in oklab, var(--color-fg) 28%, transparent),
+    inset 0 0 0 1px oklch(0.99 0.005 88 / 0.7);
+}
+
+.comic-panel-emblem {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 48%;
+  transform: scale(1.1);
+  pointer-events: none;
+  user-select: none;
+}
+
 .comic-panel-caption {
-  padding: 1rem;
+  position: relative;
+  z-index: 1;
+  padding: 0 0.5rem;
   font-size: clamp(1.05rem, 2.6vw, 1.6rem);
   font-weight: 800;
   line-height: 1.3;
@@ -128,9 +170,11 @@
 .comic-panel-doodle {
   position: absolute;
   right: 0.75rem;
-  bottom: 0.75rem;
-  width: 5.5rem;
+  bottom: 0.65rem;
+  width: 4.75rem;
   color: var(--color-accent);
+  opacity: 0.42;
+  pointer-events: none;
 }
 
 .comic-panel-doodle path {
@@ -212,31 +256,78 @@
   }
 }
 
+/* 세 번째 컷은 노을 도심 웹툰 배경 아트 위에 부드러운 어두운 비네트와 집중선, 로고를 층위대로 얹는다. */
+.comic-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 48%;
+  filter: saturate(1.06) brightness(0.78) contrast(1.04);
+  pointer-events: none;
+  user-select: none;
+  animation: comic-art-in 760ms ease-out 1080ms both;
+}
+
+.comic-intro[data-comic-intro="short"] .comic-panel-backdrop {
+  animation-delay: 240ms;
+  animation-duration: 420ms;
+}
+
+.comic-panel-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 86% 78% at 50% 50%,
+      oklch(0.15 0.018 52 / 0.48) 0%,
+      oklch(0.13 0.016 52 / 0.68) 62%,
+      oklch(0.1 0.014 52 / 0.84) 100%
+    );
+}
+
 .comic-speedlines {
   position: absolute;
   inset: 0;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  color: var(--color-accent);
-  opacity: 0.55;
+  color: oklch(0.96 0.04 82);
+  opacity: 0.34;
+  pointer-events: none;
 }
 
 .comic-speedlines path {
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-linecap: round;
+  fill: currentColor;
+  stroke: none;
 }
 
 .comic-panel-logo {
   position: relative;
+  z-index: 3;
   display: grid;
-  gap: 0.15rem;
+  gap: 0.2rem;
+  padding: 0.65rem 1.05rem;
+  border-radius: 1rem;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 50%,
+    oklch(0.12 0.015 52 / 0.62) 0%,
+    oklch(0.12 0.015 52 / 0.24) 68%,
+    transparent 100%
+  );
   font-size: clamp(1.3rem, 3.4vw, 2.1rem);
   font-weight: 900;
   line-height: 1.15;
   text-align: center;
   word-break: keep-all;
-  color: var(--color-fg);
+  color: oklch(0.98 0.008 85);
+  text-shadow:
+    0 2px 12px oklch(0.08 0.012 52 / 0.9),
+    0 1px 2px oklch(0.08 0.012 52 / 0.96);
   opacity: 0;
   animation: comic-logo-pop 460ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   animation-delay: 1420ms;
@@ -250,7 +341,8 @@
 .comic-panel-logo span {
   font-size: 0.52em;
   font-weight: 700;
-  color: var(--color-accent);
+  letter-spacing: 0.01em;
+  color: oklch(0.93 0.065 82);
 }
 
 @keyframes comic-logo-pop {
@@ -301,6 +393,16 @@
     min-height: 8.5rem;
   }
 
+  .comic-panel--one {
+    gap: 0.4rem;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .comic-panel-emblem-frame {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
   /* 모바일에서는 키비주얼 컷만 조금 더 높여 얼굴 띠가 눌리지 않게 한다. */
   .comic-panel--two {
     min-height: 12rem;
@@ -312,9 +414,28 @@
   .comic-intro-stage,
   .comic-panel,
   .comic-panel-art,
+  .comic-panel-backdrop,
   .comic-intro-bubble,
   .comic-panel-logo {
     animation: none;
     transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .comic-panel--three {
+    background: Canvas;
+  }
+
+  .comic-panel-vignette,
+  .comic-speedlines {
+    display: none;
+  }
+
+  .comic-panel-logo,
+  .comic-panel-logo span {
+    background: Canvas;
+    color: CanvasText;
+    text-shadow: none;
   }
 }
