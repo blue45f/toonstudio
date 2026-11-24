@@ -1,45 +1,29 @@
 /**
- * 외부 파일 없이 `AudioContext`로 실시간 물리 모델링 사운드를 합성하는 Foley 엔진.
- *
- * - 10종 모델: `gpen-ink`, `graphite-pencil`, `watercolor-sable`, `oil-impasto`, `airbrush`,
- *   `eraser-scrub`, `magnetic-detent`, `bubble-pop`, `panel-snap`, `page-turn`
- * - 연동: 속도(`speed01`) · 필압(`pressure01`) · 기울기(`tilt01`) · 5종 종이 질감(`paperTexture`)
- * - 3채널 믹서(`foley`/`ui`/`ambience`) + 3프리셋(`quiet-atelier`/`lively-asmr`/`silent-focus`)
- * - 브라우저 영속 저장소 미사용.
+ * 외부 파일 없이 `AudioContext`로 실시간 물리 모델링 사운드를 합성하는 초사실 Foley 엔진.
+ * - 13종(기존 10종 + `alcohol-marker`/`charcoal-pastel`/`sumi-ink-brush`), 2.6초 3종 텍스처(`velvet`/`pink`/`gritty`) 노이즈 버퍼.
+ * - 그레인별 결정론적 황금비 랜덤 오프셋 & ±3.5% 미세 피치/포먼트 변조, 이중 대역 포먼트 + stick-slip AM + raised-cosine(클릭 0).
+ * - 나무 책상 초기 반사 `ConvolverNode` + `DynamicsCompressorNode` 리미터(mock 폴백). 브라우저 영속 저장소 미사용.
  */
-
-import {
-  getPaperToothProfile,
-  type StudioPaperTextureId,
-} from "./studio-paper-and-pigment-physics";
+import { getPaperToothProfile, type StudioPaperTextureId } from "./studio-paper-and-pigment-physics";
 
 export type StudioFoleySoundId =
-  | "gpen-ink"
-  | "graphite-pencil"
-  | "watercolor-sable"
-  | "oil-impasto"
-  | "airbrush"
-  | "eraser-scrub"
-  | "magnetic-detent"
-  | "bubble-pop"
-  | "panel-snap"
-  | "page-turn";
+  | "gpen-ink" | "graphite-pencil" | "watercolor-sable" | "oil-impasto" | "airbrush" | "eraser-scrub"
+  | "alcohol-marker" | "charcoal-pastel" | "sumi-ink-brush"
+  | "magnetic-detent" | "bubble-pop" | "panel-snap" | "page-turn";
 
 export const STUDIO_FOLEY_SOUND_IDS: readonly StudioFoleySoundId[] = Object.freeze([
-  "gpen-ink",
-  "graphite-pencil",
-  "watercolor-sable",
-  "oil-impasto",
-  "airbrush",
-  "eraser-scrub",
-  "magnetic-detent",
-  "bubble-pop",
-  "panel-snap",
-  "page-turn",
+  "gpen-ink", "graphite-pencil", "watercolor-sable", "oil-impasto", "airbrush", "eraser-scrub",
+  "alcohol-marker", "charcoal-pastel", "sumi-ink-brush",
+  "magnetic-detent", "bubble-pop", "panel-snap", "page-turn",
 ]);
 
 export type StudioFoleyChannelId = "foley" | "ui" | "ambience";
 export type StudioFoleyPresetId = "quiet-atelier" | "lively-asmr" | "silent-focus";
+export type StudioFoleyNoiseTexture = "velvet" | "pink" | "gritty";
+
+/** 기계적 반복 주기를 제거하기 위한 절차적 노이즈 버퍼 길이(초). */
+export const STUDIO_FOLEY_NOISE_BUFFER_SEC = 2.6 as const;
+const ATELIER_ROOM_IR_SEC = 0.085;
 
 export interface StudioFoleyMixerPreset {
   readonly id: StudioFoleyPresetId;
@@ -51,50 +35,30 @@ export interface StudioFoleyMixerPreset {
   readonly muted: boolean;
 }
 
-export const STUDIO_FOLEY_PRESETS: Readonly<Record<StudioFoleyPresetId, StudioFoleyMixerPreset>> =
-  Object.freeze({
-    "quiet-atelier": Object.freeze({
-      id: "quiet-atelier",
-      labelKo: "차분한 아틀리에",
-      descriptionKo: "작업 몰입을 돕는 절제된 종이 마찰음과 부드러운 도구 클릭",
-      foley: 0.42,
-      ui: 0.32,
-      ambience: 0.14,
-      muted: false,
-    }),
-    "lively-asmr": Object.freeze({
-      id: "lively-asmr",
-      labelKo: "생생한 ASMR",
-      descriptionKo: "펜촉 스크래치·수채 물결·말풍선 톡 소리가 선명한 공방 음향",
-      foley: 0.85,
-      ui: 0.68,
-      ambience: 0.32,
-      muted: false,
-    }),
-    "silent-focus": Object.freeze({
-      id: "silent-focus",
-      labelKo: "무음 집중",
-      descriptionKo: "모든 물리 Foley·UI 효과음·공간 잔향을 즉시 음소거",
-      foley: 0,
-      ui: 0,
-      ambience: 0,
-      muted: true,
-    }),
-  });
+export const STUDIO_FOLEY_PRESETS: Readonly<Record<StudioFoleyPresetId, StudioFoleyMixerPreset>> = Object.freeze({
+  "quiet-atelier": Object.freeze({
+    id: "quiet-atelier", labelKo: "차분한 아틀리에",
+    descriptionKo: "작업 몰입을 돕는 절제된 종이 마찰음과 부드러운 도구 클릭",
+    foley: 0.42, ui: 0.32, ambience: 0.14, muted: false,
+  }),
+  "lively-asmr": Object.freeze({
+    id: "lively-asmr", labelKo: "생생한 ASMR",
+    descriptionKo: "펜촉 스크래치·수채 물결·말풍선 톡 소리가 선명한 공방 음향",
+    foley: 0.85, ui: 0.68, ambience: 0.32, muted: false,
+  }),
+  "silent-focus": Object.freeze({
+    id: "silent-focus", labelKo: "무음 집중",
+    descriptionKo: "모든 물리 Foley·UI 효과음·공간 잔향을 즉시 음소거",
+    foley: 0, ui: 0, ambience: 0, muted: true,
+  }),
+});
 
-export const STUDIO_FOLEY_SOUND_CHANNELS: Readonly<Record<StudioFoleySoundId, StudioFoleyChannelId>> =
-  Object.freeze({
-    "gpen-ink": "foley",
-    "graphite-pencil": "foley",
-    "watercolor-sable": "foley",
-    "oil-impasto": "foley",
-    airbrush: "foley",
-    "eraser-scrub": "foley",
-    "magnetic-detent": "ui",
-    "bubble-pop": "ui",
-    "panel-snap": "ui",
-    "page-turn": "ui",
-  });
+export const STUDIO_FOLEY_SOUND_CHANNELS: Readonly<Record<StudioFoleySoundId, StudioFoleyChannelId>> = Object.freeze({
+  "gpen-ink": "foley", "graphite-pencil": "foley", "watercolor-sable": "foley",
+  "oil-impasto": "foley", airbrush: "foley", "eraser-scrub": "foley",
+  "alcohol-marker": "foley", "charcoal-pastel": "foley", "sumi-ink-brush": "foley",
+  "magnetic-detent": "ui", "bubble-pop": "ui", "panel-snap": "ui", "page-turn": "ui",
+});
 
 export interface StudioFoleyStrokeParams {
   readonly speed01?: number;
@@ -106,7 +70,7 @@ export interface StudioFoleyStrokeParams {
 export interface StudioFoleySynthesisProfile {
   readonly soundId: StudioFoleySoundId;
   readonly channel: StudioFoleyChannelId;
-  readonly mode: "noise-band" | "dual-noise-tone" | "tone-sweep" | "latch-transient";
+  readonly mode: "noise-band" | "dual-noise-tone" | "dual-formant-friction" | "tone-sweep" | "latch-transient";
   readonly filterType: BiquadFilterType;
   readonly baseFrequencyHz: number;
   readonly endFrequencyHz: number;
@@ -115,6 +79,14 @@ export interface StudioFoleySynthesisProfile {
   readonly peakGain: number;
   readonly harmonicHz: number | null;
   readonly paperTexture: StudioPaperTextureId;
+  readonly noiseTexture: StudioFoleyNoiseTexture;
+  readonly bodyFrequencyHz: number | null;
+  readonly bodyFilterQ: number | null;
+  readonly bodyGainRatio: number;
+  readonly stickSlipRateHz: number;
+  readonly stickSlipDepth01: number;
+  readonly attackRatio: number;
+  readonly releaseRatio: number;
 }
 
 export interface StudioFoleyMixerState {
@@ -133,13 +105,143 @@ export interface StudioFoleyTriggerResult {
   readonly reason: "played" | "muted" | "zero-gain" | "no-audio-context" | "rate-limited" | "suspended";
 }
 
-function clamp01(value: number): number {
-  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
+interface GrainVariation {
+  readonly offsetSec: number;
+  readonly pitchRate: number;
+  readonly formantScale: number;
+  readonly qScale: number;
+  readonly gainJitter: number;
+  readonly stickSlipPhaseRad: number;
 }
 
-/**
- * 사운드 종류·속도·필압·기울기·5종 종이 질감을 결정론적 Web Audio 물리 파라미터로 계산한다.
- */
+interface NoiseBufferBank {
+  readonly durationSec: number;
+  readonly buffers: Record<StudioFoleyNoiseTexture, AudioBuffer>;
+}
+
+const clamp = (v: number, min: number, max: number): number =>
+  Number.isFinite(v) ? (v < min ? min : v > max ? max : v) : min;
+const clamp01 = (v: number): number => clamp(v, 0, 1);
+
+function setParamSafe(
+  param: { value?: number; setValueAtTime?: (v: number, t: number) => void } | undefined,
+  value: number,
+  time: number,
+): void {
+  if (!param) return;
+  try {
+    if (typeof param.setValueAtTime === "function") param.setValueAtTime(value, time);
+    else param.value = value;
+  } catch { /* 부분 mock AudioParam 무시 */ }
+}
+
+/** 클릭 팝이 0인 raised-cosine(Hann) 어택·릴리즈에 속도·종이결 stick-slip 진폭 변조를 결합한다. */
+export function buildRaisedCosineStickSlipEnvelope(
+  peakGain: number,
+  durationSec: number,
+  attackRatio: number,
+  releaseRatio: number,
+  stickSlipRateHz: number,
+  stickSlipDepth01: number,
+  phaseRad = 0,
+  sampleCount = 48,
+): Float32Array {
+  const count = Math.max(8, Math.trunc(sampleCount));
+  const curve = new Float32Array(count);
+  const safePeak = clamp(peakGain, 0, 1);
+  const safeDur = Math.max(0.01, durationSec);
+  const atk = clamp(attackRatio, 0.08, 0.45);
+  const relStart = Math.max(atk, 1 - clamp(releaseRatio, 0.12, 0.55));
+  const depth = clamp(stickSlipDepth01, 0, 0.82);
+  const rate = clamp(stickSlipRateHz, 0, 160);
+
+  for (let i = 1; i < count - 1; i += 1) {
+    const u = i / (count - 1);
+    const win =
+      u < atk
+        ? 0.5 * (1 - Math.cos(Math.PI * (u / atk)))
+        : u > relStart
+          ? 0.5 * (1 + Math.cos(Math.PI * ((u - relStart) / (1 - relStart))))
+          : 1;
+    let mod = 1;
+    if (depth > 0.001 && rate > 0.5) {
+      const t = u * safeDur;
+      const tooth1 = 0.5 * (1 - Math.cos(2 * Math.PI * rate * t + phaseRad));
+      const tooth2 = 0.5 * (1 - Math.cos(2 * Math.PI * rate * 1.6180339 * t + phaseRad * 1.7));
+      mod = Math.max(0.22, 1 - depth * (0.68 * tooth1 + 0.32 * tooth2));
+    }
+    curve[i] = safePeak * win * mod;
+  }
+  return curve;
+}
+
+/** 짧은 나무 책상·공방 초기 반사음(85ms) 임펄스 응답 샘플을 결정론적으로 생성한다. */
+export function synthesizeAtelierRoomImpulseResponse(sampleRate: number): Float32Array {
+  const sr = Math.max(8000, Math.trunc(sampleRate || 44100));
+  const length = Math.max(256, Math.round(sr * ATELIER_ROOM_IR_SEC));
+  const ir = new Float32Array(length);
+  const earlyTaps: readonly (readonly [number, number])[] = [
+    [2.4, 0.46], [5.7, -0.31], [9.8, 0.24], [15.3, -0.18],
+    [22.6, 0.135], [31.8, -0.095], [44.5, 0.06], [61.0, -0.032],
+  ];
+  for (const [delayMs, amp] of earlyTaps) {
+    const idx = Math.round((delayMs / 1000) * sr);
+    if (idx >= 0 && idx < length) {
+      ir[idx] = (ir[idx] ?? 0) + amp;
+      if (idx + 1 < length) ir[idx + 1] = (ir[idx + 1] ?? 0) + amp * 0.32;
+      if (idx + 2 < length) ir[idx + 2] = (ir[idx + 2] ?? 0) + amp * 0.12;
+    }
+  }
+  let seed = 0x243f6a88;
+  let lp = 0;
+  for (let i = 0; i < length; i += 1) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    lp = lp * 0.74 + ((seed / 4294967296) * 2 - 1) * 0.26;
+    const fadeOut = i > length - 64 ? (length - 1 - i) / 64 : 1;
+    ir[i] = clamp(((ir[i] ?? 0) + lp * Math.exp(-(i / sr) / 0.022) * 0.042) * fadeOut, -0.95, 0.95);
+  }
+  return ir;
+}
+
+function fillTextureNoiseBuffer(data: Float32Array, texture: StudioFoleyNoiseTexture, seedInit: number): void {
+  const len = data.length;
+  let seed = seedInit >>> 0;
+  let b0 = 0;
+  let b1 = 0;
+  let b2 = 0;
+  let b3 = 0;
+  let smooth = 0;
+  let gritEnv = 0;
+  for (let i = 0; i < len; i += 1) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    const white = (seed / 4294967296) * 2 - 1;
+    b0 = 0.99765 * b0 + white * 0.099046;
+    b1 = 0.963 * b1 + white * 0.2965164;
+    b2 = 0.57 * b2 + white * 1.0526913;
+    const pink = (b0 + b1 + b2 + b3 + white * 0.1848) * 0.19;
+    b3 = white * 0.115926;
+
+    if (texture === "velvet") {
+      smooth = smooth * 0.64 + pink * 0.36;
+      data[i] = Math.tanh(smooth * 1.35) * 0.85;
+    } else if (texture === "pink") {
+      smooth = smooth * 0.28 + pink * 0.72;
+      data[i] = clamp(smooth * 0.95 + white * 0.1, -0.95, 0.95);
+    } else {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      const trig = seed / 4294967296;
+      gritEnv = trig > 0.976 ? (trig > 0.988 ? 1 : -1) * (0.45 + (trig - 0.976) * 18) : gritEnv * 0.42;
+      data[i] = clamp(pink * 0.66 + white * 0.18 + gritEnv * 0.48, -0.95, 0.95);
+    }
+  }
+  const fade = Math.min(256, Math.floor(len / 8));
+  for (let i = 0; i < fade; i += 1) {
+    const t = 0.5 * (1 - Math.cos((Math.PI * i) / fade));
+    data[len - fade + i] = (data[len - fade + i] ?? 0) * (1 - t) + (data[i] ?? 0) * t;
+  }
+}
+
+/** 사운드 종류·속도·필압·기울기·5종 종이 질감을 결정론적 Web Audio 물리 파라미터로 계산한다. */
 export function computeFoleySynthesisProfile(
   soundId: StudioFoleySoundId,
   params: StudioFoleyStrokeParams = {},
@@ -149,115 +251,112 @@ export function computeFoleySynthesisProfile(
   const tilt = clamp01(params.tilt01 ?? 0.22);
   const paper = getPaperToothProfile(params.paperTexture ?? "manga-kent");
   const channel = STUDIO_FOLEY_SOUND_CHANNELS[soundId];
-  const grainFactor = 0.72 + paper.acousticBrightness01 * 0.52;
-  const toothDrag = 0.7 + paper.toothDepth01 * 0.55;
+  const grainFactor = 0.84 + paper.acousticBrightness01 * 0.26;
+  const toothDrag = 0.72 + paper.toothDepth01 * 0.52;
 
-  const build = (
+  const make = (
     mode: StudioFoleySynthesisProfile["mode"],
     filterType: BiquadFilterType,
-    baseFrequencyHz: number,
-    endFrequencyHz: number,
-    filterQ: number,
-    durationSec: number,
-    peakGain: number,
-    harmonicHz: number | null,
+    baseHz: number, endHz: number, q: number, dur: number, gain: number, harmonicHz: number | null,
+    noiseTexture: StudioFoleyNoiseTexture, bodyHz: number | null, bodyQ: number | null, bodyRatio: number,
+    slipRate: number, slipDepth: number, atk = 0.25, rel = 0.44,
   ): StudioFoleySynthesisProfile => ({
-    soundId,
-    channel,
-    mode,
-    filterType,
-    baseFrequencyHz: Math.round(baseFrequencyHz),
-    endFrequencyHz: Math.round(endFrequencyHz),
-    filterQ: Number(filterQ.toFixed(2)),
-    durationSec: Number(durationSec.toFixed(3)),
-    peakGain: Number(clamp01(peakGain).toFixed(3)),
+    soundId, channel, mode, filterType, paperTexture: paper.id, noiseTexture,
+    baseFrequencyHz: Math.round(clamp(baseHz, 80, 12000)),
+    endFrequencyHz: Math.round(clamp(endHz, 60, 12000)),
+    filterQ: Number(clamp(q, 0.5, 9).toFixed(2)),
+    durationSec: Number(clamp(dur, 0.018, 0.35).toFixed(3)),
+    peakGain: Number(clamp01(gain).toFixed(3)),
     harmonicHz: harmonicHz === null ? null : Math.round(harmonicHz),
-    paperTexture: paper.id,
+    bodyFrequencyHz: bodyHz === null ? null : Math.round(bodyHz),
+    bodyFilterQ: bodyQ === null ? null : Number(bodyQ.toFixed(2)),
+    bodyGainRatio: Number(clamp(bodyRatio, 0, 1.2).toFixed(3)),
+    stickSlipRateHz: Number(clamp(slipRate, 0, 140).toFixed(1)),
+    stickSlipDepth01: Number(clamp(slipDepth, 0, 0.85).toFixed(3)),
+    attackRatio: Number(clamp(atk, 0.08, 0.45).toFixed(2)),
+    releaseRatio: Number(clamp(rel, 0.12, 0.55).toFixed(2)),
   });
 
   switch (soundId) {
-    case "gpen-ink":
-      return build(
-        "dual-noise-tone",
-        "bandpass",
-        (2150 + v * 1950 + p * 620) * grainFactor,
-        (1850 + v * 1400) * grainFactor,
-        3.4 + (1 - tilt) * 2.2 + paper.toothDepth01 * 1.4,
-        0.045 + (1 - v) * 0.035,
-        0.16 + p * 0.34 + v * 0.18,
-        980 + p * 420 + v * 280,
+    case "gpen-ink": { // 금속 촉 2.6~5.0kHz 미세 스크래치 + 펜대/잉크 흐름 중저역 공명
+      const baseHz = (2420 + v * 1580 + p * 440) * grainFactor;
+      return make(
+        "dual-formant-friction", "bandpass", baseHz, baseHz * (0.88 - v * 0.04),
+        3.1 + (1 - tilt) * 1.9 + paper.toothDepth01 * 1.1, 0.054 + (1 - v) * 0.036,
+        0.16 + p * 0.32 + v * 0.18, null, "gritty", 720 + p * 260 + v * 140, 2.4, 0.36 + p * 0.14,
+        18 + v * 62 * (0.55 + paper.toothDepth01 * 0.65), 0.22 + paper.toothDepth01 * 0.34, 0.24, 0.42,
       );
-    case "graphite-pencil":
-      return build(
-        "noise-band",
-        "bandpass",
-        (760 + paper.grainFrequencyHz * 0.85 + v * 920) * (1 - tilt * 0.28),
-        (680 + paper.grainFrequencyHz * 0.65 + v * 650) * (1 - tilt * 0.22),
-        2.2 + paper.toothDepth01 * 3.1 - tilt * 0.8,
-        0.065 + tilt * 0.04,
-        (0.18 + p * 0.36 + tilt * 0.16) * toothDrag,
-        null,
+    }
+    case "graphite-pencil": { // 흑연 사각거림 + 420Hz 나무 배럴 공명 + 기울기 음영 마찰
+      const baseHz = (1140 + paper.grainFrequencyHz * 0.72 + v * 860) * (1 - tilt * 0.32);
+      return make(
+        "dual-formant-friction", "bandpass", baseHz, baseHz * 0.87,
+        2.6 + paper.toothDepth01 * 2.4 - tilt * 1.25, 0.072 + tilt * 0.042,
+        (0.18 + p * 0.34 + tilt * 0.16) * toothDrag, null, "pink", 410 + (1 - tilt) * 48 + p * 36, 3.6, 0.44 + tilt * 0.18,
+        14 + v * 48 * (0.5 + paper.toothDepth01 * 0.8), 0.26 + paper.toothDepth01 * 0.38 + tilt * 0.12, 0.26, 0.44,
       );
-    case "watercolor-sable":
-      return build(
-        "noise-band",
-        "lowpass",
-        420 + v * 580 + paper.absorbency01 * 260,
-        320 + v * 380,
-        0.9 + paper.capillarySpread01 * 0.6,
-        0.11 + (1 - v) * 0.07,
-        0.14 + p * 0.24 + v * 0.15,
-        null,
+    }
+    case "watercolor-sable": // 모래 긁힘 0, 실키한 젖은 모필 저중역 속삭임
+      return make(
+        "dual-formant-friction", "lowpass", 390 + v * 450 + paper.absorbency01 * 180, 280 + v * 280,
+        0.72 + paper.capillarySpread01 * 0.36, 0.115 + (1 - v) * 0.065,
+        0.14 + p * 0.22 + v * 0.15, null, "velvet", 210 + v * 110 + paper.absorbency01 * 65, 1.1, 0.4,
+        8 + v * 22, 0.05 + paper.toothDepth01 * 0.07, 0.35, 0.48,
       );
-    case "oil-impasto":
-      return build(
-        "dual-noise-tone",
-        "bandpass",
-        230 + p * 240 + v * 190 + paper.toothDepth01 * 110,
-        190 + p * 160,
-        1.6 + p * 1.4,
-        0.095 + p * 0.055,
-        (0.2 + p * 0.36 + tilt * 0.14) * toothDrag,
-        145 + p * 75,
+    case "alcohol-marker": { // 촉촉한 펠트팁 1.1~2.1kHz 마찰-글라이드 포먼트 + 미세 본체 공명
+      const baseHz = 1130 + v * 660 + p * 170 + paper.acousticBrightness01 * 125;
+      return make(
+        "dual-formant-friction", "bandpass", baseHz, baseHz * 0.92,
+        1.9 + (1 - tilt) * 0.85, 0.084 + (1 - v) * 0.038, 0.16 + p * 0.24 + v * 0.16, null, "velvet",
+        490 + p * 110 + (1 - tilt) * 40, 3.1, 0.36, 11 + v * 30, 0.08 + paper.toothDepth01 * 0.13, 0.28, 0.44,
+      );
+    }
+    case "charcoal-pastel": { // 거친 목탄/초크 섬유질 드래그 + 바스락거리는 미세 입자 크래클
+      const baseHz = (960 + paper.grainFrequencyHz * 0.56 + v * 960) * (1 - tilt * 0.22);
+      return make(
+        "dual-formant-friction", "bandpass", baseHz, baseHz * 0.84,
+        1.15 + paper.toothDepth01 * 1.1 - tilt * 0.35, 0.088 + tilt * 0.045,
+        (0.2 + p * 0.34 + tilt * 0.16) * toothDrag, null, "gritty", 260 + p * 130 + paper.toothDepth01 * 90, 1.6, 0.58 + tilt * 0.16,
+        12 + v * 46 * (0.6 + paper.toothDepth01 * 0.9), 0.42 + paper.toothDepth01 * 0.34 + tilt * 0.1, 0.22, 0.42,
+      );
+    }
+    case "sumi-ink-brush": // 촉촉한 동양화 붓모 저중역 쓸림 + 모세관 유체 스윕
+      return make(
+        "dual-formant-friction", "bandpass", 360 + v * 420 + (1 - p) * 140 + paper.absorbency01 * 120,
+        280 + v * 280, 1.15 + p * 0.55, 0.108 + (1 - v) * 0.06, 0.16 + p * 0.24 + v * 0.18, null, "velvet",
+        1140 + v * 420 + paper.toothDepth01 * 240, 1.8, 0.28 + (1 - p) * 0.14,
+        10 + v * 34 * (0.5 + paper.toothDepth01 * 0.6), 0.12 + paper.toothDepth01 * 0.2, 0.3, 0.48,
+      );
+    case "oil-impasto": // 점성 높은 버터 스크래프 + 리넨 캔버스 직조 저역
+      return make(
+        "dual-formant-friction", "bandpass", 560 + p * 360 + v * 340 + paper.toothDepth01 * 180,
+        400 + p * 220, 2.1 + p * 1.4, 0.095 + p * 0.05, (0.2 + p * 0.34 + tilt * 0.14) * toothDrag, null, "gritty",
+        165 + p * 75 + paper.toothDepth01 * 55, 2.8, 0.64 + p * 0.14,
+        10 + v * 38 * (0.6 + paper.toothDepth01 * 0.7), 0.34 + paper.toothDepth01 * 0.3 + p * 0.12, 0.26, 0.44,
       );
     case "airbrush":
-      return build(
-        "noise-band",
-        "highpass",
-        1650 + p * 1100 + v * 750,
-        1450 + p * 820,
-        0.75 + v * 0.55,
-        0.12 + p * 0.06,
-        0.11 + p * 0.28,
-        null,
+      return make(
+        "dual-formant-friction", "highpass", 1820 + p * 1120 + v * 680, 1580 + p * 840,
+        0.72 + v * 0.45, 0.124 + p * 0.056, 0.11 + p * 0.26, null, "velvet",
+        920 + p * 340, 1.4, 0.22, 6 + v * 12, 0.04, 0.34, 0.46,
       );
-    case "eraser-scrub":
-      return build(
-        "noise-band",
-        "bandpass",
-        620 + v * 920 + paper.frictionCoeff * 380,
-        480 + v * 520,
-        2.8 + paper.frictionCoeff * 1.8,
-        0.075 + (1 - v) * 0.03,
-        (0.18 + p * 0.32 + v * 0.18) * toothDrag,
-        null,
+    case "eraser-scrub": // 고무-종이 이중 대역 슥슥 마찰
+      return make(
+        "dual-formant-friction", "bandpass", 820 + v * 840 + paper.frictionCoeff * 380, 620 + v * 480,
+        2.4 + paper.frictionCoeff * 1.4, 0.078 + (1 - v) * 0.032, (0.18 + p * 0.3 + v * 0.18) * toothDrag, null, "pink",
+        290 + v * 170 + p * 110, 2.2, 0.56 + p * 0.16,
+        14 + v * 40 * (0.6 + paper.frictionCoeff * 0.6), 0.3 + paper.frictionCoeff * 0.28, 0.25, 0.42,
       );
     case "magnetic-detent":
-      return build("tone-sweep", "highpass", 1380 + v * 320, 340, 1.4, 0.022, 0.24 + p * 0.16, 2420);
+      return make("tone-sweep", "highpass", 1380 + v * 320, 340, 1.4, 0.024, 0.24 + p * 0.16, 2420, "pink", null, null, 0, 0, 0, 0.14, 0.52);
     case "bubble-pop":
-      return build("tone-sweep", "bandpass", 260, 820 + p * 210, 2.1, 0.062, 0.28 + p * 0.18, 520);
+      return make("tone-sweep", "bandpass", 260, 820 + p * 210, 2.1, 0.062, 0.28 + p * 0.18, 520, "velvet", null, null, 0, 0, 0, 0.16, 0.52);
     case "panel-snap":
-      return build("latch-transient", "bandpass", 2200, 620, 3.0, 0.044, 0.32 + p * 0.16, 210);
+      return make("latch-transient", "bandpass", 2200, 620, 3.0, 0.044, 0.32 + p * 0.16, 210, "pink", null, null, 0, 0, 0, 0.14, 0.5);
     case "page-turn":
-      return build(
-        "noise-band",
-        "bandpass",
-        540 + paper.acousticBrightness01 * 240,
-        1880 + paper.acousticBrightness01 * 560,
-        1.5,
-        0.185,
-        0.22 + v * 0.22,
-        null,
+      return make(
+        "noise-band", "bandpass", 540 + paper.acousticBrightness01 * 240, 1880 + paper.acousticBrightness01 * 560,
+        1.5, 0.185, 0.22 + v * 0.22, null, "pink", null, null, 0, 8 + v * 14, 0.1, 0.24, 0.46,
       );
   }
 }
@@ -274,11 +373,7 @@ function defaultAudioContextFactory(): AudioContext | null {
   const host = globalThis as typeof globalThis & { readonly webkitAudioContext?: typeof AudioContext };
   const Ctor = host.AudioContext ?? host.webkitAudioContext;
   if (typeof Ctor !== "function") return null;
-  try {
-    return new Ctor();
-  } catch {
-    return null;
-  }
+  try { return new Ctor(); } catch { return null; }
 }
 
 export class StudioFoleyAudioEngine {
@@ -288,13 +383,18 @@ export class StudioFoleyAudioEngine {
 
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private limiterNode: DynamicsCompressorNode | null = null;
+  private roomSendGain: GainNode | null = null;
+  private roomConvolver: ConvolverNode | null = null;
+  private roomReturnFilter: BiquadFilterNode | null = null;
   private channelGains: Record<StudioFoleyChannelId, GainNode> | null = null;
-  private noiseBuffer: AudioBuffer | null = null;
+  private noiseBank: NoiseBufferBank | null = null;
   private ambienceSource: AudioBufferSourceNode | null = null;
   private ambienceFilter: BiquadFilterNode | null = null;
   private activeVoiceCleanups = new Set<() => void>();
   private resumeInFlight = false;
   private disposed = false;
+  private grainSequence = 0;
 
   private preset: StudioFoleyPresetId;
   private muted: boolean;
@@ -311,17 +411,10 @@ export class StudioFoleyAudioEngine {
     this.channels = { foley: initial.foley, ui: initial.ui, ambience: initial.ambience };
   }
 
-  getPreset(): StudioFoleyPresetId {
-    return this.preset;
-  }
+  getPreset(): StudioFoleyPresetId { return this.preset; }
 
   getMixerState(): StudioFoleyMixerState {
-    return {
-      preset: this.preset,
-      muted: this.muted,
-      channels: { ...this.channels },
-      ambienceRunning: this.ambienceSource !== null,
-    };
+    return { preset: this.preset, muted: this.muted, channels: { ...this.channels }, ambienceRunning: this.ambienceSource !== null };
   }
 
   applyPreset(presetId: StudioFoleyPresetId): StudioFoleyMixerState {
@@ -336,9 +429,7 @@ export class StudioFoleyAudioEngine {
 
   setChannelVolume(channel: StudioFoleyChannelId, volume01: number): StudioFoleyMixerState {
     this.channels[channel] = Number(clamp01(volume01).toFixed(3));
-    if (this.channels[channel] > 0 && this.preset === "silent-focus" && !this.muted) {
-      this.preset = "quiet-atelier";
-    }
+    if (this.channels[channel] > 0 && this.preset === "silent-focus" && !this.muted) this.preset = "quiet-atelier";
     this.syncGainNodes();
     return this.getMixerState();
   }
@@ -355,54 +446,37 @@ export class StudioFoleyAudioEngine {
     const ctx = this.ensureContext();
     if (!ctx) return false;
     if (ctx.state === "suspended" && typeof ctx.resume === "function") {
-      try {
-        await ctx.resume();
-      } catch {
-        return false;
-      }
+      try { await ctx.resume(); } catch { return false; }
     }
     return ctx.state === "running";
   }
 
-  triggerSound(
-    soundId: StudioFoleySoundId,
-    params: StudioFoleyStrokeParams = {},
-  ): StudioFoleyTriggerResult {
+  triggerSound(soundId: StudioFoleySoundId, params: StudioFoleyStrokeParams = {}): StudioFoleyTriggerResult {
     const profile = computeFoleySynthesisProfile(soundId, params);
     const channel = profile.channel;
-
     if (this.disposed || this.muted) {
       return { played: false, soundId, channel, effectiveGain: 0, profile, reason: "muted" };
     }
-
     const effectiveGain = Number((profile.peakGain * this.channels[channel]).toFixed(4));
     if (effectiveGain <= 0.0005) {
       return { played: false, soundId, channel, effectiveGain: 0, profile, reason: "zero-gain" };
     }
-
     const now = this.nowMs();
     const prevAt = this.lastTriggerAtMs.get(soundId);
     if (prevAt !== undefined && now - prevAt < this.minTriggerIntervalMs) {
       return { played: false, soundId, channel, effectiveGain, profile, reason: "rate-limited" };
     }
-
     const ctx = this.ensureContext();
     if (!ctx || !this.channelGains || ctx.state === "closed") {
       return { played: false, soundId, channel, effectiveGain, profile, reason: "no-audio-context" };
     }
     if (ctx.state === "suspended") {
-      // suspended 상태에서 보이스를 누적하면 resume 직후 t=0 동시 폭주·클리핑이 발생하므로 재생을 건너뛰고 복귀만 요청한다.
       if (!this.resumeInFlight && typeof ctx.resume === "function") {
         this.resumeInFlight = true;
-        void Promise.resolve(ctx.resume())
-          .catch(() => undefined)
-          .finally(() => {
-            this.resumeInFlight = false;
-          });
+        void Promise.resolve(ctx.resume()).catch(() => undefined).finally(() => { this.resumeInFlight = false; });
       }
       return { played: false, soundId, channel, effectiveGain: 0, profile, reason: "suspended" };
     }
-
     this.lastTriggerAtMs.set(soundId, now);
     this.synthesizeVoice(ctx, this.channelGains[channel], profile);
     return { played: true, soundId, channel, effectiveGain, profile, reason: "played" };
@@ -413,17 +487,16 @@ export class StudioFoleyAudioEngine {
     if (this.ambienceSource) return true;
     const ctx = this.ensureContext();
     if (!ctx || !this.channelGains) return false;
-    const buffer = this.ensureNoiseBuffer(ctx);
-    if (!buffer) return false;
+    const bank = this.ensureNoiseBank(ctx);
+    if (!bank) return false;
 
     const src = ctx.createBufferSource();
-    src.buffer = buffer;
+    src.buffer = bank.buffers.velvet;
     src.loop = true;
     const filter = ctx.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.setValueAtTime(360, ctx.currentTime);
+    filter.frequency.setValueAtTime(320, ctx.currentTime);
     filter.Q.setValueAtTime(0.65, ctx.currentTime);
-
     src.connect(filter);
     filter.connect(this.channelGains.ambience);
     src.start(ctx.currentTime);
@@ -435,18 +508,8 @@ export class StudioFoleyAudioEngine {
   stopAmbience(): void {
     for (const node of [this.ambienceSource, this.ambienceFilter]) {
       if (!node) continue;
-      if ("stop" in node) {
-        try {
-          node.stop();
-        } catch {
-          // 이미 정지됨
-        }
-      }
-      try {
-        node.disconnect();
-      } catch {
-        // 이미 해제됨
-      }
+      if ("stop" in node) { try { node.stop(); } catch { /* 이미 정지됨 */ } }
+      try { node.disconnect(); } catch { /* 이미 해제됨 */ }
     }
     this.ambienceSource = null;
     this.ambienceFilter = null;
@@ -457,34 +520,29 @@ export class StudioFoleyAudioEngine {
     this.disposed = true;
     this.resumeInFlight = false;
     this.stopAmbience();
-    for (const cleanupVoice of [...this.activeVoiceCleanups]) {
-      cleanupVoice();
-    }
+    for (const cleanupVoice of [...this.activeVoiceCleanups]) cleanupVoice();
     this.activeVoiceCleanups.clear();
     this.lastTriggerAtMs.clear();
-    if (this.channelGains) {
-      for (const gain of Object.values(this.channelGains)) {
-        try {
-          gain.disconnect();
-        } catch {
-          // 무시
-        }
-      }
-      this.channelGains = null;
+
+    const busNodes: readonly (AudioNode | null)[] = [
+      ...(this.channelGains ? Object.values(this.channelGains) : []),
+      this.roomSendGain, this.roomConvolver, this.roomReturnFilter, this.masterGain, this.limiterNode,
+    ];
+    for (const node of busNodes) {
+      if (!node) continue;
+      try { node.disconnect(); } catch { /* 이미 해제됨 */ }
     }
-    if (this.masterGain) {
-      try {
-        this.masterGain.disconnect();
-      } catch {
-        // 무시
-      }
-      this.masterGain = null;
-    }
+    this.channelGains = null;
+    this.roomSendGain = null;
+    this.roomConvolver = null;
+    this.roomReturnFilter = null;
+    this.masterGain = null;
+    this.limiterNode = null;
     if (this.ctx && typeof this.ctx.close === "function") {
       void Promise.resolve(this.ctx.close()).catch(() => undefined);
     }
     this.ctx = null;
-    this.noiseBuffer = null;
+    this.noiseBank = null;
   }
 
   private ensureContext(): AudioContext | null {
@@ -492,6 +550,7 @@ export class StudioFoleyAudioEngine {
     const created = this.contextFactory();
     if (!created) return null;
     this.ctx = created;
+
     const master = created.createGain();
     const foley = created.createGain();
     const ui = created.createGain();
@@ -499,7 +558,50 @@ export class StudioFoleyAudioEngine {
     foley.connect(master);
     ui.connect(master);
     ambience.connect(master);
-    master.connect(created.destination);
+
+    if (typeof created.createConvolver === "function") {
+      try {
+        const convolver = created.createConvolver();
+        const sr = Math.max(8000, created.sampleRate || 44100);
+        const irSamples = synthesizeAtelierRoomImpulseResponse(sr);
+        const irBuffer = created.createBuffer(1, irSamples.length, sr);
+        irBuffer.getChannelData(0).set(irSamples);
+        convolver.buffer = irBuffer;
+        const roomSend = created.createGain();
+        setParamSafe(roomSend.gain, 0.18, created.currentTime);
+        const roomReturn = created.createBiquadFilter();
+        roomReturn.type = "lowpass";
+        setParamSafe(roomReturn.frequency, 3600, created.currentTime);
+        setParamSafe(roomReturn.Q, 0.7, created.currentTime);
+        foley.connect(roomSend);
+        ui.connect(roomSend);
+        roomSend.connect(convolver);
+        convolver.connect(roomReturn);
+        roomReturn.connect(master);
+        this.roomSendGain = roomSend;
+        this.roomConvolver = convolver;
+        this.roomReturnFilter = roomReturn;
+      } catch { /* mock/제한 환경 드라이 버스 유지 */ }
+    }
+
+    let wiredLimiter = false;
+    if (typeof created.createDynamicsCompressor === "function") {
+      try {
+        const limiter = created.createDynamicsCompressor();
+        const t = created.currentTime;
+        setParamSafe(limiter.threshold, -12, t);
+        setParamSafe(limiter.knee, 18, t);
+        setParamSafe(limiter.ratio, 8, t);
+        setParamSafe(limiter.attack, 0.003, t);
+        setParamSafe(limiter.release, 0.12, t);
+        master.connect(limiter);
+        limiter.connect(created.destination);
+        this.limiterNode = limiter;
+        wiredLimiter = true;
+      } catch { wiredLimiter = false; }
+    }
+    if (!wiredLimiter) master.connect(created.destination);
+
     this.masterGain = master;
     this.channelGains = { foley, ui, ambience };
     this.syncGainNodes();
@@ -515,102 +617,142 @@ export class StudioFoleyAudioEngine {
     this.channelGains.ambience.gain.setValueAtTime(this.channels.ambience * 0.25, t);
   }
 
-  private ensureNoiseBuffer(ctx: AudioContext): AudioBuffer | null {
-    if (this.noiseBuffer) return this.noiseBuffer;
+  private ensureNoiseBank(ctx: AudioContext): NoiseBufferBank | null {
+    if (this.noiseBank) return this.noiseBank;
     const sampleRate = Math.max(8000, ctx.sampleRate || 44100);
-    const length = Math.round(sampleRate * 0.5);
-    const buffer = ctx.createBuffer(1, length, sampleRate);
-    const data = buffer.getChannelData(0);
-    let seed = 0x517cc1b7;
-    let b0 = 0;
-    let b1 = 0;
-    for (let i = 0; i < length; i += 1) {
-      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-      const white = (seed / 4294967296) * 2 - 1;
-      b0 = 0.96 * b0 + white * 0.08;
-      b1 = 0.72 * b1 + white * 0.28;
-      data[i] = Math.max(-1, Math.min(1, white * 0.55 + b1 * 0.3 + b0 * 0.15));
-    }
-    this.noiseBuffer = buffer;
-    return buffer;
+    const length = Math.round(sampleRate * STUDIO_FOLEY_NOISE_BUFFER_SEC);
+    const make = (texture: StudioFoleyNoiseTexture, seed: number): AudioBuffer => {
+      const buffer = ctx.createBuffer(1, length, sampleRate);
+      fillTextureNoiseBuffer(buffer.getChannelData(0), texture, seed);
+      return buffer;
+    };
+    this.noiseBank = {
+      durationSec: STUDIO_FOLEY_NOISE_BUFFER_SEC,
+      buffers: { velvet: make("velvet", 0x517cc1b7), pink: make("pink", 0x9e3779b9), gritty: make("gritty", 0x85ebca6b) },
+    };
+    return this.noiseBank;
   }
 
-  private synthesizeVoice(
-    ctx: AudioContext,
-    destination: GainNode,
-    profile: StudioFoleySynthesisProfile,
-  ): void {
+  private computeGrainVariation(soundId: StudioFoleySoundId, bufferDurSec: number, grainDurSec: number): GrainVariation {
+    this.grainSequence = (this.grainSequence + 1) >>> 0;
+    let h = (Math.imul(this.grainSequence, 0x9e3779b1) ^ 0x85ebca6b) >>> 0;
+    for (let i = 0; i < soundId.length; i += 1) h = Math.imul(h ^ soundId.charCodeAt(i), 0x27d4eb2d) >>> 0;
+    h = Math.imul(h ^ (h >>> 15), 0x85ebca6b) >>> 0;
+    h = (h ^ (h >>> 13)) >>> 0;
+
+    // 황금비 라운드-로빈 + 결정론적 해시 섭동으로 연속 그레인 간 오프셋 겹침·offset=0 반복 제거
+    const usableSpan = Math.max(0, bufferDurSec - grainDurSec - 0.08);
+    const goldenPos = (this.grainSequence * 0.6180339887498949 + (h & 0xffff) / 655360) % 1;
+    const offsetSec = usableSpan > 0 ? Number((goldenPos * usableSpan).toFixed(4)) : 0;
+    const u1 = (h & 0xff) / 127.5 - 1;
+    const u2 = ((h >>> 8) & 0xff) / 127.5 - 1;
+    const u3 = ((h >>> 16) & 0xff) / 127.5 - 1;
+    const u4 = ((h >>> 24) & 0xff) / 127.5 - 1;
+    return {
+      offsetSec,
+      pitchRate: Number((1 + u1 * 0.032).toFixed(4)),
+      formantScale: Number((1 + u2 * 0.035).toFixed(4)),
+      qScale: Number((1 + u3 * 0.04).toFixed(4)),
+      gainJitter: Number((1 + u4 * 0.045).toFixed(4)),
+      stickSlipPhaseRad: ((h >>> 24) / 256) * Math.PI * 2,
+    };
+  }
+
+  private scheduleGrainEnvelope(env: GainNode, startTime: number, profile: StudioFoleySynthesisProfile, variation: GrainVariation): void {
+    const dur = profile.durationSec;
+    const peak = clamp(profile.peakGain * variation.gainJitter, 0.001, 1);
+    const curve = buildRaisedCosineStickSlipEnvelope(
+      peak, dur, profile.attackRatio, profile.releaseRatio,
+      profile.stickSlipRateHz, profile.stickSlipDepth01, variation.stickSlipPhaseRad,
+    );
+    if (typeof env.gain.setValueCurveAtTime === "function") {
+      try { env.gain.setValueCurveAtTime(curve, startTime, dur); return; } catch { /* 선형 폴백 */ }
+    }
+    env.gain.setValueAtTime(0.0001, startTime);
+    env.gain.linearRampToValueAtTime(peak, startTime + dur * profile.attackRatio);
+    const midIdx = Math.min(curve.length - 2, Math.max(1, Math.round(curve.length * 0.56)));
+    env.gain.linearRampToValueAtTime(Math.max(0.0002, curve[midIdx] ?? peak * 0.85), startTime + dur * 0.56);
+    env.gain.linearRampToValueAtTime(Math.max(0.0002, peak * 0.72), startTime + dur * (1 - profile.releaseRatio));
+    env.gain.linearRampToValueAtTime(0.0001, startTime + dur);
+  }
+
+  private synthesizeVoice(ctx: AudioContext, destination: GainNode, profile: StudioFoleySynthesisProfile): void {
     const startTime = ctx.currentTime;
     const endTime = startTime + profile.durationSec;
+    const bank = profile.mode !== "tone-sweep" ? this.ensureNoiseBank(ctx) : null;
+    const variation = this.computeGrainVariation(profile.soundId, bank?.durationSec ?? STUDIO_FOLEY_NOISE_BUFFER_SEC, profile.durationSec);
+
     const env = ctx.createGain();
-    env.gain.setValueAtTime(0.0001, startTime);
-    env.gain.linearRampToValueAtTime(profile.peakGain, startTime + Math.min(0.008, profile.durationSec * 0.22));
-    env.gain.exponentialRampToValueAtTime(0.0001, endTime);
+    this.scheduleGrainEnvelope(env, startTime, profile, variation);
     env.connect(destination);
 
     const ownedNodes = new Set<AudioNode>([env]);
     const safeDisconnect = (node: AudioNode | null | undefined): void => {
       if (!node || !ownedNodes.has(node)) return;
       ownedNodes.delete(node);
-      try {
-        node.disconnect();
-      } catch {
-        // 이미 해제됨
-      }
+      try { node.disconnect(); } catch { /* 이미 해제됨 */ }
     };
 
     let pendingSources = 0;
     let voiceCleaned = false;
-
     const cleanupVoice = (): void => {
       if (voiceCleaned) return;
       voiceCleaned = true;
       this.activeVoiceCleanups.delete(cleanupVoice);
-      for (const node of [...ownedNodes]) {
-        safeDisconnect(node);
-      }
+      for (const node of [...ownedNodes]) safeDisconnect(node);
     };
-
     const onSourceEnded = (sourceNodes: readonly AudioNode[]): void => {
-      for (const node of sourceNodes) {
-        safeDisconnect(node);
-      }
+      for (const node of sourceNodes) safeDisconnect(node);
       pendingSources = Math.max(0, pendingSources - 1);
-      if (pendingSources === 0) {
-        cleanupVoice();
-      }
+      if (pendingSources === 0) cleanupVoice();
     };
-
     this.activeVoiceCleanups.add(cleanupVoice);
 
-    if (profile.mode !== "tone-sweep") {
-      const buffer = this.ensureNoiseBuffer(ctx);
-      if (buffer) {
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        const filter = ctx.createBiquadFilter();
-        filter.type = profile.filterType;
-        filter.frequency.setValueAtTime(profile.baseFrequencyHz, startTime);
-        filter.frequency.exponentialRampToValueAtTime(Math.max(60, profile.endFrequencyHz), endTime);
-        filter.Q.setValueAtTime(profile.filterQ, startTime);
-        noise.connect(filter);
-        filter.connect(env);
-        ownedNodes.add(noise);
-        ownedNodes.add(filter);
-        pendingSources += 1;
-        noise.onended = () => {
-          noise.onended = null;
-          onSourceEnded([noise, filter]);
-        };
-        noise.start(startTime);
-        noise.stop(endTime + 0.01);
+    if (profile.mode !== "tone-sweep" && bank) {
+      const noise = ctx.createBufferSource();
+      noise.buffer = bank.buffers[profile.noiseTexture];
+      setParamSafe(noise.playbackRate, variation.pitchRate, startTime);
+
+      const primaryFilter = ctx.createBiquadFilter();
+      primaryFilter.type = profile.filterType;
+      primaryFilter.frequency.setValueAtTime(clamp(profile.baseFrequencyHz * variation.formantScale, 60, 12000), startTime);
+      primaryFilter.frequency.exponentialRampToValueAtTime(clamp(profile.endFrequencyHz * variation.formantScale, 60, 12000), endTime);
+      primaryFilter.Q.setValueAtTime(clamp(profile.filterQ * variation.qScale, 0.5, 9), startTime);
+
+      noise.connect(primaryFilter);
+      primaryFilter.connect(env);
+      const voiceChain: AudioNode[] = [noise, primaryFilter];
+      ownedNodes.add(noise);
+      ownedNodes.add(primaryFilter);
+
+      if (profile.mode === "dual-formant-friction" && profile.bodyFrequencyHz !== null && profile.bodyFilterQ !== null && profile.bodyGainRatio > 0.01) {
+        const bodyFilter = ctx.createBiquadFilter();
+        bodyFilter.type = "bandpass";
+        const bodyHz = clamp(profile.bodyFrequencyHz * variation.formantScale, 80, 6000);
+        bodyFilter.frequency.setValueAtTime(bodyHz, startTime);
+        bodyFilter.frequency.exponentialRampToValueAtTime(Math.max(70, bodyHz * 0.9), endTime);
+        bodyFilter.Q.setValueAtTime(clamp(profile.bodyFilterQ * variation.qScale, 0.6, 8), startTime);
+        const bodyGain = ctx.createGain();
+        bodyGain.gain.setValueAtTime(profile.bodyGainRatio, startTime);
+        noise.connect(bodyFilter);
+        bodyFilter.connect(bodyGain);
+        bodyGain.connect(env);
+        voiceChain.push(bodyFilter, bodyGain);
+        ownedNodes.add(bodyFilter);
+        ownedNodes.add(bodyGain);
       }
+
+      pendingSources += 1;
+      noise.onended = () => { noise.onended = null; onSourceEnded(voiceChain); };
+      noise.start(startTime, variation.offsetSec);
+      noise.stop(endTime + 0.012);
     }
 
-    if (profile.mode !== "noise-band") {
+    // 오실레이터는 UI 촉각음에만 순수 sine 감쇠파로 사용(드로잉 매체 raw triangle 버즈 0)
+    if (profile.mode === "tone-sweep" || profile.mode === "latch-transient" || profile.mode === "dual-noise-tone") {
       const osc = ctx.createOscillator();
       const toneGain = ctx.createGain();
-      osc.type = profile.mode === "tone-sweep" ? "sine" : "triangle";
+      osc.type = "sine";
       const startHz = Math.max(60, profile.harmonicHz ?? profile.baseFrequencyHz);
       const stopHz = Math.max(60, profile.mode === "tone-sweep" ? profile.endFrequencyHz : startHz * 0.72);
       osc.frequency.setValueAtTime(startHz, startTime);
@@ -621,22 +763,15 @@ export class StudioFoleyAudioEngine {
       ownedNodes.add(osc);
       ownedNodes.add(toneGain);
       pendingSources += 1;
-      osc.onended = () => {
-        osc.onended = null;
-        onSourceEnded([osc, toneGain]);
-      };
+      osc.onended = () => { osc.onended = null; onSourceEnded([osc, toneGain]); };
       osc.start(startTime);
-      osc.stop(endTime + 0.01);
+      osc.stop(endTime + 0.012);
     }
 
-    if (pendingSources === 0) {
-      cleanupVoice();
-    }
+    if (pendingSources === 0) cleanupVoice();
   }
 }
 
-export function createStudioFoleyAudioEngine(
-  options: StudioFoleyAudioEngineOptions = {},
-): StudioFoleyAudioEngine {
+export function createStudioFoleyAudioEngine(options: StudioFoleyAudioEngineOptions = {}): StudioFoleyAudioEngine {
   return new StudioFoleyAudioEngine(options);
 }

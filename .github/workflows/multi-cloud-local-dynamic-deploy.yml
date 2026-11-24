@@ -32,13 +32,13 @@ jobs:
       target_matrix: ${{ steps.matrix.outputs.target }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "24"
           cache: "pnpm"
@@ -82,7 +82,7 @@ jobs:
             scripts/multi-env-dynamic-deploy.test.mjs
 
       - name: Upload Dynamic Deploy Plan & Verify AI Reports
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: multi-env-deploy-plan-and-verify-ai
           path: |
@@ -102,13 +102,13 @@ jobs:
         workspace: ${{ fromJson(needs.plan-and-verify-matrix.outputs.workspace_matrix) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "24"
           cache: "pnpm"
@@ -131,7 +131,7 @@ jobs:
         target: ${{ fromJson(needs.plan-and-verify-matrix.outputs.target_matrix) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Generate Offline Deployment Plan Preview Bundle (${{ matrix.target.id }})
         env:
@@ -157,7 +157,7 @@ jobs:
           echo "- Command preview: \`${TARGET_CMD}\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Portable Environment Plan Bundle (${{ matrix.target.id }})
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: deploy-plan-bundle-${{ matrix.target.id }}
           path: /tmp/deploy-bundle-${{ matrix.target.id }}

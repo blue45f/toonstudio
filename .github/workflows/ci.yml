@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -110,8 +110,8 @@ jobs:
             ((page += 1))
           done
           echo "file=$changed_file_path" >> "$GITHUB_OUTPUT"
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -124,7 +124,7 @@ jobs:
         run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
       - name: Restore ESLint result cache
         id: eslint-cache
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/eslint
           key: core-eslint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'eslint.config.mjs') }}-${{ github.sha }}
@@ -146,7 +146,7 @@ jobs:
         run: pnpm run verify:studio-manual-docs
       - name: Save ESLint result cache on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.eslint-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/eslint
           key: core-eslint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'eslint.config.mjs') }}-${{ github.sha }}
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 110
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
           filter: blob:none
@@ -187,8 +187,8 @@ jobs:
             /docs/AGENTS.md
             /docs/operations/agent-harness.md
             !/tests/benchmarks/results/
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -220,7 +220,7 @@ jobs:
         run: pnpm run check:studio-eager-graph
       - name: Restore TypeScript incremental state
         id: typescript-cache
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             **/*.tsbuildinfo
@@ -237,7 +237,7 @@ jobs:
             "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
       - name: Restore typecheck-shards checkpoint cache
         id: typecheck-shards-cache
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/typecheck-shards/report.json
           key: ${{ steps.typecheck-shards-key.outputs.key }}
@@ -260,7 +260,7 @@ jobs:
       - name: 완료한 Core 타입 검사 영수증 기록
         run: node scripts/ci-shared-typecheck.mjs publish "$RUNNER_TEMP/core-typecheck/receipt.json"
       - name: 동일 입력의 도메인 검사용 타입 검사 영수증 공유
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: core-typecheck-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/core-typecheck/receipt.json
@@ -268,14 +268,14 @@ jobs:
           retention-days: 1
       - name: Save TypeScript incremental state on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.typescript-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             **/*.tsbuildinfo
           key: core-ts-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'tsconfig*.json', 'apps/**/tsconfig*.json', 'deploy/**/tsconfig*.json', 'packages/**/tsconfig*.json') }}-${{ github.sha }}
       - name: Save typecheck-shards checkpoint cache on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.typecheck-shards-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/typecheck-shards/report.json
           key: ${{ steps.typecheck-shards-key.outputs.key }}
@@ -296,7 +296,7 @@ jobs:
           - studio-3d
           - studio-character
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
           filter: blob:none
@@ -512,15 +512,15 @@ jobs:
             git fetch --no-tags --filter=blob:none ${harness_history_flag:+"$harness_history_flag"} origin "$GITHUB_SHA" refs/heads/main:refs/remotes/origin/main
           fi
           node scripts/restore-documentation-checkout.mjs
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
       - name: 번들 Python 검증 환경 준비
         if: matrix.shard == 'studio-foundation'
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: '3.12'
       - name: 번들 Python 검증 의존성 설치
@@ -547,7 +547,7 @@ jobs:
       - name: Restore typecheck-shards checkpoint cache for manual harness
         if: github.event_name == 'workflow_dispatch' && matrix.shard == 'studio-editing'
         id: typecheck-shards-cache
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/typecheck-shards/report.json
           key: ${{ steps.typecheck-shards-key.outputs.key }}
@@ -633,7 +633,7 @@ jobs:
             printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
             exit 1
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: 체크아웃 후 디스크·inode 사용량 확인
@@ -654,8 +654,8 @@ jobs:
               if test -d "$store"; then du -s -B1 -- "$store"; fi
             fi
           fi
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -701,7 +701,7 @@ jobs:
           mkdir -p artifacts/core
           git rev-parse HEAD > artifacts/core/commit.txt
           pnpm run test:perf 2>&1 | tee artifacts/core/serial.log
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: core-serial-attempt-${{ github.run_attempt }}
@@ -782,7 +782,7 @@ jobs:
             printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
             exit 1
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
           filter: blob:none
@@ -826,8 +826,8 @@ jobs:
               if test -d "$store"; then du -s -B1 -- "$store"; fi
             fi
           fi
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -882,7 +882,7 @@ jobs:
             "$(command -v node)" scripts/ci-ubuntu-apt-mirrors.mjs
       - name: Restore Playwright Chromium cache
         id: playwright-cache
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
@@ -891,7 +891,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Save Playwright Chromium cache on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.playwright-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
@@ -912,7 +912,7 @@ jobs:
       - name: 관리자 CI·QA 기록·권한·JSON·모바일 브라우저 검증
         if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
         run: pnpm run test:admin:e2e
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: core-admin-quality-browser-attempt-${{ github.run_attempt }}
@@ -933,21 +933,21 @@ jobs:
           TOONSTUDIO_PIGMENT_CLIP_CONTRAST: ${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && github.ref != 'refs/heads/main' && '1' || '0' }}
           TOONSTUDIO_PIGMENT_TEST_FILTER: "${{ github.event_name == 'workflow_dispatch' && inputs.pigment_diagnostics == true && github.ref != 'refs/heads/main' && '(^| )분리 진단: V2 클리핑 교차 픽셀 의미' || '.*' }}"
         run: pnpm exec playwright test --config config/playwright/playwright.pigment-product.config.ts --project=chromium --workers=1 --retries=0 --global-timeout=540000 --grep "$TOONSTUDIO_PIGMENT_TEST_FILTER"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: core-pigment-product-workflow-attempt-${{ github.run_attempt }}
           path: .qa/mixbox-internalization/product-workflow
           retention-days: 7
           if-no-files-found: warn
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: core-production-workflows-attempt-${{ github.run_attempt }}
           path: .qa/production-workflows
           retention-days: 7
           if-no-files-found: warn
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: core-pigment-browser-attempt-${{ github.run_attempt }}
@@ -1031,7 +1031,7 @@ jobs:
             printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
             exit 1
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: 체크아웃 후 디스크·inode 사용량 확인
@@ -1052,8 +1052,8 @@ jobs:
               if test -d "$store"; then du -s -B1 -- "$store"; fi
             fi
           fi
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -1103,7 +1103,7 @@ jobs:
             "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
       - name: Restore typecheck-shards checkpoint cache
         id: typecheck-shards-cache
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/typecheck-shards/report.json
           key: ${{ steps.typecheck-shards-key.outputs.key }}
@@ -1127,7 +1127,7 @@ jobs:
           set -euo pipefail
           pnpm run test:studio-virtual-art
           pnpm run verify:studio-virtual-art
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: core-build-attempt-${{ github.run_attempt }}
@@ -1223,7 +1223,7 @@ jobs:
             printf '전체 체크아웃과 빌드에 필요한 최소 20 GiB 여유가 없습니다: %s 바이트\n' "$available_bytes" >&2
             exit 1
           fi
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - name: 체크아웃 후 디스크·inode 사용량 확인
@@ -1244,8 +1244,8 @@ jobs:
               if test -d "$store"; then du -s -B1 -- "$store"; fi
             fi
           fi
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm

@@ -2,7 +2,7 @@
  * @toonstudio/core/fx/hooks — fx 엔진을 React에 잇는 얇은 훅 모음.
  *
  * audio/particles 본체는 프레임워크 비종속이고, 이 파일만 React 를 **peer** 로 씁니다.
- * - useClickSfx()    : document 에 위임 클릭 리스너 1개를 달아 인터랙티브 요소 탭마다 'tick'.
+ * - useClickSfx()    : document 에 위임 클릭 리스너 1개를 달아 요소 맥락별 아틀리에 SFX 재생.
  * - useAmbientBgm()  : 생성형 앰비언트 BGM opt-in 토글 + 무드 로테이션 제어 + 영속 상태 구독.
  * - useAudioState()  : 오디오 상태(mute/volume/opt-in/무드) 구독(useSyncExternalStore).
  * - useFx()          : playSfx / 파티클 버스트 / 상태를 한 번에 묶은 편의 훅.
@@ -21,6 +21,7 @@ import {
   bgmSetMood,
   bgmToggle,
   getAudioState,
+  isSfxName,
   onAudioStateChange,
   playSfx,
   resumeAudio,
@@ -47,13 +48,148 @@ export function useAudioState(): AudioState {
   return useSyncExternalStore(subscribe, getAudioState, getAudioState);
 }
 
-/* ── useClickSfx — 전역 위임 클릭 'tick' ──────────────────────────────────── */
+/* ── useClickSfx — 전 페이지 상황맞춤 위임 클릭 SFX ────────────────────────── */
 
-const SFX_SELECTOR =
-  'button, a[href], [role="button"], .pressable, input[type="submit"], input[type="button"], [data-sfx]';
+const SFX_SELECTOR = [
+  "button",
+  "a[href]",
+  '[role="button"]',
+  '[role="tab"]',
+  '[role="switch"]',
+  '[role="checkbox"]',
+  '[role="radio"]',
+  '[role="menuitem"]',
+  '[role="menuitemcheckbox"]',
+  ".pressable",
+  'input[type="submit"]',
+  'input[type="button"]',
+  'input[type="checkbox"]',
+  'input[type="radio"]',
+  "summary",
+  "[data-sfx]",
+].join(", ");
+
+const DESTRUCTIVE_ACTION_RE =
+  /(삭제|제거|비우기|초기화|탈퇴|폐기|지우기|\b(delete|remove|trash|purge|discard|revoke|erase|destroy)\b)/i;
+const CLOSE_ACTION_RE =
+  /(닫기|취소|접기|숨기기|나가기|\b(close|dismiss|cancel|collapse|hide)\b)/i;
+const OPEN_ACTION_RE =
+  /(열기|펼치기|확장|더보기|상세보기|메뉴|\b(open|expand|drawer|modal|popover|menu)\b)/i;
+const CONFIRM_ACTION_RE =
+  /(저장|완료|확인|제출|적용|등록|발행|내보내기|\b(save|submit|confirm|apply|done|complete|publish|export)\b)/i;
+const HEART_ACTION_RE =
+  /(좋아요|즐겨찾기|북마크|응원|하트|\b(like|heart|favorite|favourite|bookmark|cheer)\b)/i;
 
 const isElementLike = (value: unknown): value is Element =>
   typeof (value as Element | null)?.matches === "function";
+
+const readExplicitDataSfx = (element: Element): SfxName | null => {
+  const direct = element.getAttribute("data-sfx")?.trim().toLowerCase();
+  if (isSfxName(direct)) return direct;
+  const inherited =
+    typeof element.closest === "function"
+      ? element.closest("[data-sfx]")?.getAttribute("data-sfx")?.trim().toLowerCase()
+      : undefined;
+  return isSfxName(inherited) ? inherited : null;
+};
+
+const collectSemanticText = (element: Element, tag: string): string => {
+  const parts: string[] = [];
+  const dataAction = element.getAttribute("data-action")?.trim();
+  const ariaLabel = element.getAttribute("aria-label")?.trim();
+  const title = element.getAttribute("title")?.trim();
+  if (dataAction) parts.push(dataAction);
+  if (ariaLabel) parts.push(ariaLabel);
+  if (title) parts.push(title);
+  if (tag === "input") {
+    const val = element.getAttribute("value")?.trim();
+    if (val) parts.push(val);
+  } else {
+    // 긴 카드·링크 제목에 우연히 포함된 단어 오탐을 막기 위해 짧은 라벨 텍스트만 반영한다.
+    const text = element.textContent?.replace(/\s+/g, " ").trim();
+    if (text && text.length <= 36) parts.push(text);
+  }
+  return parts.join(" ");
+};
+
+/**
+ * 클릭된 DOM 요소의 명시 속성(`[data-sfx]`)과 시맨틱 역할·맥락을 분석해
+ * 가장 자연스러운 아틀리에 UI 효과음을 결정한다.
+ *
+ * 우선순위:
+ * 1. `[data-sfx="<SfxName>"]` 명시 지정
+ * 2. `role="tab"` / `radio` → `tab`
+ * 3. `role="switch"` / `checkbox` / `<input type="checkbox">` → 상태별 `toggle-on` / `toggle-off`
+ * 4. `<summary>` → 현재 열림 여부에 따라 `close` / `open`
+ * 5. 삭제·제거(`soft-warn`) → 닫기·취소(`close`) → 열기·`aria-haspopup`(`open`) →
+ *    저장·제출·완료(`confirm`) → 좋아요·북마크(`heart`) → `aria-pressed`(`toggle-on`/`toggle-off`)
+ * 6. 기본 폴백(`fallback`, 기본 `"tick"`)
+ */
+export function resolveContextualClickSfx(
+  element: Element | null | undefined,
+  fallback: SfxName = "tick",
+): SfxName {
+  if (!element) return fallback;
+
+  const explicit = readExplicitDataSfx(element);
+  if (explicit) return explicit;
+
+  const role = element.getAttribute("role")?.trim().toLowerCase() ?? "";
+  const tag = element.tagName?.toLowerCase() ?? "";
+  const typeAttr = element.getAttribute("type")?.trim().toLowerCase() ?? "";
+
+  if (role === "tab" || role === "radio" || (tag === "input" && typeAttr === "radio")) {
+    return "tab";
+  }
+
+  if (tag === "input" && typeAttr === "checkbox") {
+    // 네이티브 checkbox는 click 이벤트 시점에 checked 값이 이미 반전되어 있다.
+    return (element as HTMLInputElement).checked ? "toggle-on" : "toggle-off";
+  }
+
+  if (role === "switch" || role === "checkbox" || role === "menuitemcheckbox") {
+    // 캡처 단계에서 React 상태 갱신 전 aria-checked를 읽으므로 false→켜짐, true→꺼짐으로 매핑한다.
+    const ariaChecked = element.getAttribute("aria-checked")?.trim().toLowerCase();
+    return ariaChecked === "true" ? "toggle-off" : "toggle-on";
+  }
+
+  if (tag === "summary") {
+    return element.parentElement?.hasAttribute("open") ? "close" : "open";
+  }
+
+  const semanticText = collectSemanticText(element, tag);
+  if (semanticText && DESTRUCTIVE_ACTION_RE.test(semanticText)) {
+    return "soft-warn";
+  }
+
+  const ariaExpanded = element.getAttribute("aria-expanded")?.trim().toLowerCase();
+  if ((semanticText && CLOSE_ACTION_RE.test(semanticText)) || ariaExpanded === "true") {
+    return "close";
+  }
+
+  const ariaHasPopup = element.getAttribute("aria-haspopup")?.trim().toLowerCase();
+  if (
+    ariaExpanded === "false" ||
+    (ariaHasPopup && ariaHasPopup !== "false") ||
+    (semanticText && OPEN_ACTION_RE.test(semanticText))
+  ) {
+    return "open";
+  }
+
+  if (typeAttr === "submit" || (semanticText && CONFIRM_ACTION_RE.test(semanticText))) {
+    return "confirm";
+  }
+
+  const ariaPressed = element.getAttribute("aria-pressed")?.trim().toLowerCase();
+  if (semanticText && HEART_ACTION_RE.test(semanticText)) {
+    return ariaPressed === "true" ? "toggle-off" : "heart";
+  }
+
+  if (ariaPressed === "false") return "toggle-on";
+  if (ariaPressed === "true") return "toggle-off";
+
+  return fallback;
+}
 
 /** 클릭 타겟(또는 조상)이 사운드 대상인지 + 비활성/제외 여부 판정. */
 const findSfxTarget = (start: EventTarget | null): Element | null => {
@@ -80,13 +216,14 @@ const CLICK_THROTTLE_MS = 30;
 export interface UseClickSfxOptions {
   /** false 면 리스너를 달지 않음(런타임 토글용). 기본 true. */
   enabled?: boolean;
-  /** 재생할 효과음(기본 'tick'). */
+  /** 상황 매칭에 걸리지 않는 일반 요소의 기본 효과음(기본 'tick'). */
   sfx?: SfxName;
 }
 
 /**
- * document 에 캡처 단계 클릭 리스너 **1개**를 달아 인터랙티브 요소 탭마다 'tick' 을 재생한다.
- * `[data-no-sfx]`·disabled 요소는 제외, 30ms 스로틀. 컴포넌트 트리 루트에서 1회만 호출하세요.
+ * document 에 캡처 단계 클릭 리스너 **1개**를 달아 인터랙티브 요소 맥락에 맞는 SFX를 재생한다.
+ * `[data-sfx]`를 최우선 존중하고 `[data-no-sfx]`·disabled 요소는 제외, 30ms 스로틀.
+ * 컴포넌트 트리 루트에서 1회만 호출하세요.
  */
 export function useClickSfx(options: UseClickSfxOptions = {}): void {
   const { enabled = true, sfx = "tick" } = options;
@@ -100,7 +237,7 @@ export function useClickSfx(options: UseClickSfxOptions = {}): void {
       if (nowMs - lastPlayedAt < CLICK_THROTTLE_MS) return;
       lastPlayedAt = nowMs;
       void resumeAudio(); // 첫 제스처 언락.
-      playSfx(sfx);
+      playSfx(resolveContextualClickSfx(target, sfx));
     };
     document.addEventListener("click", handler, { capture: true, passive: true });
     return () => document.removeEventListener("click", handler, { capture: true });

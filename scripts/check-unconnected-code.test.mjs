@@ -226,3 +226,21 @@ test("excludes dedicated test-fixture, test-support, test-utils, and __fixtures_
     "test-only-module:apps/web/src/domains/save/real-unwired.ts",
   ]);
 });
+
+test("recognizes bare side-effect imports placed before subsequent from-imports", () => {
+  const root = makeFixture({
+    [ROUTE]: [
+      `import { SaveStatusBar } from "../../domains/save/SaveStatusBar";`,
+      `export default function HomeRoute() { return <SaveStatusBar />; }`,
+    ].join("\n"),
+    "domains/save/SaveStatusBar.tsx": [
+      `import "./save-i18n";`,
+      `import { label } from "./save-label";`,
+      `export function SaveStatusBar() { return <span>{label}</span>; }`,
+    ].join("\n"),
+    "domains/save/save-i18n.ts": `export const registered = true;\n`,
+    "domains/save/save-label.ts": `export const label = "저장";\n`,
+  });
+  const report = runGate(root);
+  assert.deepEqual(findingKeys(report), []);
+});

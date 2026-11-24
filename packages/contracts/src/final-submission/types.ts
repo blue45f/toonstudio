@@ -1,6 +1,8 @@
 /** Sites와 어드민이 교환하는 제출 점검 기록. 외부 작업의 실행 권한은 포함하지 않는다. */
 export const STATUSES = ["미확인", "검토 필요", "보완 중", "승인 대기", "최종 확인"] as const;
 export const FINAL_SUBMISSION_MAX_BYTES = 2 * 1024 * 1024;
+/** 들여쓰기와 최근 저장 이력이 포함된 백업의 한도. 내부 보드는 계속 2MiB로 제한한다. */
+export const FINAL_SUBMISSION_IMPORT_MAX_BYTES = 8 * 1024 * 1024;
 export const REQUIRED_DOCUMENT_IDS = ["report", "business", "ledger"] as const;
 export const GLOBAL_PLATFORM_TASK_ID = "PLATFORM-01";
 export const REQUIRED_APPROVALS = [

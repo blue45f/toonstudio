@@ -1,4 +1,4 @@
-import { BookOpen, Gauge, Globe, Link2, PackageCheck, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { BookOpen, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -53,6 +53,21 @@ const LazyStudioStyleShaderPackExchangePanel = lazy(async () => {
   const m = await import("../style-shader-pack-exchange/StudioStyleShaderPackExchangePanel");
   return { default: m.StudioStyleShaderPackExchangePanel };
 });
+const LazyStudioEpisodeColorScriptPanel = lazy(async () => {
+  await import("../episode-color-script-harmonizer");
+  const m = await import("../episode-color-script-harmonizer/StudioEpisodeColorScriptPanel");
+  return { default: m.StudioEpisodeColorScriptPanel };
+});
+const LazyStudioWebcodecsOpfsPanel = lazy(async () => {
+  await import("../webcodecs-opfs-engine");
+  const m = await import("../webcodecs-opfs-engine/StudioWebcodecsOpfsPanel");
+  return { default: m.StudioWebcodecsOpfsPanel };
+});
+const LazyStudioAiLatentStoryboardPanel = lazy(async () => {
+  await import("../ai-latent-storyboard");
+  const m = await import("../ai-latent-storyboard/StudioAiLatentStoryboardPanel");
+  return { default: m.StudioAiLatentStoryboardPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -64,7 +79,10 @@ type EcosystemTabId =
   | "rightsWatermark"
   | "streamingBudget"
   | "autoStyleDna"
-  | "styleShaderPack";
+  | "styleShaderPack"
+  | "episodeColorScript"
+  | "webcodecsOpfs"
+  | "aiLatentConti";
 
 const ECOSYSTEM_TABS: readonly {
   readonly id: EcosystemTabId;
@@ -81,6 +99,9 @@ const ECOSYSTEM_TABS: readonly {
   { id: "streamingBudget", labelKo: "60fps 동적 스트리밍 출고 예산", labelEn: "60fps Streaming Export Budgeter" },
   { id: "autoStyleDna", labelKo: "자동 화풍 DNA·대본3D·심의", labelEn: "Auto Style DNA · Script-to-3D · Rating" },
   { id: "styleShaderPack", labelKo: "팀 화풍·WGSL 팩 서명 교환 (.tspack)", labelEn: "Team Style & WGSL Pack (.tspack)" },
+  { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
+  { id: "webcodecsOpfs", labelKo: "WebCodecs 4K·희소 타일·OPFS 버전", labelEn: "WebCodecs 4K · Sparse Tile · OPFS VCS" },
+  { id: "aiLatentConti", labelKo: "화풍 DNA 일치화·대본 자동 콘티·브러시", labelEn: "Style DNA · Script-to-Conti · Smart Brush" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -105,6 +126,12 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Wand2 size={15} aria-hidden="true" />;
     case "styleShaderPack":
       return <PackageCheck size={15} aria-hidden="true" />;
+    case "episodeColorScript":
+      return <Palette size={15} aria-hidden="true" />;
+    case "webcodecsOpfs":
+      return <Workflow size={15} aria-hidden="true" />;
+    case "aiLatentConti":
+      return <Wand2 size={15} aria-hidden="true" />;
   }
 }
 
@@ -163,6 +190,9 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "streamingBudget" ? <LazyStudioStreamingExportBudgeterPanel /> : null}
           {active === "autoStyleDna" ? <LazyStudioAutoStyleDnaPipelinePanel /> : null}
           {active === "styleShaderPack" ? <LazyStudioStyleShaderPackExchangePanel /> : null}
+          {active === "episodeColorScript" ? <LazyStudioEpisodeColorScriptPanel /> : null}
+          {active === "webcodecsOpfs" ? <LazyStudioWebcodecsOpfsPanel /> : null}
+          {active === "aiLatentConti" ? <LazyStudioAiLatentStoryboardPanel /> : null}
         </Suspense>
       </div>
     </section>

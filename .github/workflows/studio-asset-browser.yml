@@ -49,7 +49,7 @@ jobs:
         run: |
           set -o pipefail
           pnpm exec vitest run apps/web/src/domains/creator/catalog/ apps/web/src/domains/creator/studio-tool-belt-lazy-ui-boundary.test.ts apps/web/src/domains/creator/StudioElementsPanel.test.tsx apps/web/src/domains/creator/studio-elements-catalog.test.ts apps/web/src/domains/creator/studio-scene-templates.test.ts apps/web/src/domains/creator/studio-comipo-assembly.test.ts apps/web/src/domains/creator/studio-comipo-insert.test.ts 2>&1 | tee artifacts/studio-catalog-browser/tests.log
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         with:
           python-version: '3.11'
@@ -106,7 +106,7 @@ jobs:
             "$(node scripts/typecheck-shards.mjs --print-cache-key)" >> "$GITHUB_OUTPUT"
       - name: Restore typecheck-shards checkpoint cache
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/typecheck-shards/report.json
           key: ${{ steps.typecheck-shards-key.outputs.key }}
@@ -120,7 +120,7 @@ jobs:
           pnpm run check:studio-bundle 2>&1 | tee artifacts/studio-catalog-browser/bundle.log
       - name: Restore Playwright Chromium cache
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}

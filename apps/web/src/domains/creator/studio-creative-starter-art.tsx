@@ -52,7 +52,7 @@ export function StudioStarterCardArt({
   })();
 
   return (
-    <div
+    <span
       data-studio-starter-art={id}
       className={cn(
         "relative flex h-11 w-full items-center justify-center overflow-hidden rounded-lg",
@@ -61,9 +61,9 @@ export function StudioStarterCardArt({
       style={{ background: gradient }}
     >
       {/* Soft ledger grain */}
-      <div
+      <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-30"
+        className="pointer-events-none absolute inset-x-0 inset-y-0 block opacity-30"
         style={{
           backgroundImage:
             "linear-gradient(oklch(0.97 0.01 85 / 0.06) 1px, transparent 1px), linear-gradient(90deg, oklch(0.97 0.01 85 / 0.05) 1px, transparent 1px)",
@@ -158,7 +158,7 @@ export function StudioStarterCardArt({
           </>
         )}
       </svg>
-    </div>
+    </span>
   );
 }
 

@@ -8,7 +8,7 @@ const { test } = process.env.VITEST ? await import("vitest") : await import("nod
 
 test("PR related 검사는 CC0 실물 자산을 복원하고 수동 검사는 manifest만 유지한다", () => {
   const source = readFileSync(new URL("../.github/workflows/toonstudio-session-goals.yml", import.meta.url), "utf8");
-  const checkout = parse(source).jobs["focused-validation"].steps.find((step) => step.uses === "actions/checkout@v7");
+  const checkout = parse(source).jobs["focused-validation"].steps.find((step) => step.uses?.startsWith("actions/checkout@"));
   assert.equal(checkout.with.filter, "blob:none");
   assert.equal(checkout.with["persist-credentials"], false);
   assert.doesNotMatch(source, /--exclude ['"]\*\*\/studio-marketplace-cc0-catalog\.test\.ts/u);

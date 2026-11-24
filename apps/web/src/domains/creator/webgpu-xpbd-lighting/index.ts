@@ -1,0 +1,66 @@
+/**
+ * Wave 37D — WebGPU 컴퓨트 XPBD 헤어·의상 물리 충돌 + 2D/3D 레이트레이싱 근사 광원 베이크 공개 API.
+ */
+
+export {
+  DEFAULT_XPBD_CONFIG,
+  XPBD_HAIR_CLOTH_WGSL,
+  XPBD_WORKGROUP_SIZE,
+  auditCapsulePenetration,
+  buildXpbdHairClothWgsl,
+  createDefaultHumanoidCapsuleColliders,
+  createDefaultXpbdRigState,
+  packXpbdGpuBuffers,
+  runXpbdSimulation,
+  stepXpbdSimulation,
+  validateWgslComputeShader,
+  type CapsuleCollider,
+  type CapsuleColliderId,
+  type Vec3,
+  type WgslBindingDescriptor,
+  type WgslValidationReport,
+  type XpbdBendingConstraint,
+  type XpbdCollisionReport,
+  type XpbdDistanceConstraint,
+  type XpbdGpuBufferPack,
+  type XpbdParticle,
+  type XpbdSimulationConfig,
+  type XpbdSimulationState,
+  type XpbdStepMetrics,
+  type XpbdStepResult,
+  type XpbdWindConfig,
+} from "./webgpu-xpbd-solver";
+
+export {
+  DEFAULT_FLOOR_ALBEDO_OKLCH,
+  DEFAULT_PHYSICAL_LIGHT_INPUT,
+  TOON_LIGHTING_PRESETS,
+  TOON_SDF_RAYMARCH_WGSL,
+  TOON_SDF_WORKGROUP_SIZE,
+  bakeToonSdfLighting,
+  buildToonSdfRaymarchWgsl,
+  formatOklch,
+  kelvinToLinearRgb,
+  kelvinToOklch,
+  linearRgbToOklch,
+  normalizeAngleDeg,
+  oklchToLinearRgb,
+  packToonLightingUniformBuffer,
+  renderXpbdLightingPreviewCanvas,
+  type Cut2dLightMetadata,
+  type LightRigAlignmentMetrics,
+  type NormalizedPhysicalLightRigInput,
+  type OklchColor,
+  type PhysicalLightRigInput,
+  type PreviewCanvasRenderOptions,
+  type SdfRaymarchSample,
+  type ToonCelRampBand,
+  type ToonLightingPreset,
+  type Unified2d3dLightRigResult,
+  type VrmToonShaderUniforms,
+} from "./webgpu-toon-lighting-baker";
+
+export {
+  StudioWebgpuXpbdLightingPanel,
+  type StudioWebgpuXpbdLightingPanelProps,
+} from "./StudioWebgpuXpbdLightingPanel";

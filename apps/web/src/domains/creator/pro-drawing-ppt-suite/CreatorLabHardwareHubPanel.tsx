@@ -1,4 +1,4 @@
-import { Bot, Camera, CheckCircle2, Clapperboard, Eye, Gauge, Glasses, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
+import { Bot, Camera, CheckCircle2, Clapperboard, Compass, Eye, Gauge, Glasses, MessageSquareText, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -63,6 +63,31 @@ const LazyStudioCutRhythmPromoDirectorPanel = lazy(async () => {
   const m = await import("../cut-rhythm-promo-director/StudioCutRhythmPromoDirectorPanel");
   return { default: m.StudioCutRhythmPromoDirectorPanel };
 });
+const LazyStudioVoiceToBalloonPanel = lazy(async () => {
+  await import("../voice-to-balloon-layout");
+  const m = await import("../voice-to-balloon-layout/StudioVoiceToBalloonPanel");
+  return { default: m.StudioVoiceToBalloonPanel };
+});
+const LazyStudioCameraLensBlockingPanel = lazy(async () => {
+  await import("../camera-lens-blocking-director");
+  const m = await import("../camera-lens-blocking-director/StudioCameraLensBlockingPanel");
+  return { default: m.StudioCameraLensBlockingPanel };
+});
+const LazyStudioSpatialStagePanel = lazy(async () => {
+  await import("../virtual-space-spatial");
+  const m = await import("../virtual-space-spatial/StudioSpatialStagePanel");
+  return { default: m.StudioSpatialStagePanel };
+});
+const LazyStudioCanvasOrbitalUxPanel = lazy(async () => {
+  await import("../canvas-orbital-ux");
+  const m = await import("../canvas-orbital-ux/StudioCanvasOrbitalUxPanel");
+  return { default: m.StudioCanvasOrbitalUxPanel };
+});
+const LazyStudioFeatureAtlasPanel = lazy(async () => {
+  await import("../studio-feature-atlas");
+  const m = await import("../studio-feature-atlas/StudioFeatureAtlasPanel");
+  return { default: m.StudioFeatureAtlasPanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -76,7 +101,12 @@ type CreatorLabTabId =
   | "vrmNaturalRig"
   | "continuityGuard"
   | "sketchTo3d"
-  | "cutRhythmPromo";
+  | "cutRhythmPromo"
+  | "voiceBalloon"
+  | "cameraLensBlocking"
+  | "spatialStage"
+  | "canvasOrbitalUx"
+  | "featureAtlas";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -95,6 +125,11 @@ const CREATOR_LAB_TABS: readonly {
   { id: "continuityGuard", labelKo: "60컷 자동 연속성 감시관", labelEn: "60-Cut Continuity Guard" },
   { id: "sketchTo3d", labelKo: "2D 러프 → 3D 포즈·화각·조명", labelEn: "Sketch-to-3D Stage Solver" },
   { id: "cutRhythmPromo", labelKo: "컷 리듬 → 2.5D 무빙툰·15초 프로모", labelEn: "Cut Rhythm → 2.5D Moving-Toon Promo" },
+  { id: "voiceBalloon", labelKo: "음성 운율 → 말풍선 자동 조판", labelEn: "Voice Prosody → Speech Balloons" },
+  { id: "cameraLensBlocking", labelKo: "3D 시네마 렌즈·180° 카메라 연출", labelEn: "3D Cinema Lens · 180° Blocking" },
+  { id: "spatialStage", labelKo: "가상 스튜디오 3D HRTF·공간 라이트박스", labelEn: "Virtual Studio 3D HRTF · Spatial Desk" },
+  { id: "canvasOrbitalUx", labelKo: "오비탈 휠·⌘K·태블릿 듀얼·모바일 도크", labelEn: "Orbital Wheel · ⌘K · Tablet/Mobile UX" },
+  { id: "featureAtlas", labelKo: "전체 기능 아틀라스·10분 실습·8대 쇼케이스", labelEn: "Feature Atlas · 10-Min Manual · Showcase" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -123,6 +158,16 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Camera size={15} aria-hidden="true" />;
     case "cutRhythmPromo":
       return <Clapperboard size={15} aria-hidden="true" />;
+    case "voiceBalloon":
+      return <MessageSquareText size={15} aria-hidden="true" />;
+    case "cameraLensBlocking":
+      return <Compass size={15} aria-hidden="true" />;
+    case "spatialStage":
+      return <Music size={15} aria-hidden="true" />;
+    case "canvasOrbitalUx":
+      return <Compass size={15} aria-hidden="true" />;
+    case "featureAtlas":
+      return <CheckCircle2 size={15} aria-hidden="true" />;
   }
 }
 
@@ -183,6 +228,11 @@ export function CreatorLabHardwareHubPanel() {
           {active === "continuityGuard" ? <LazyStudioWebtoonContinuityGuardPanel /> : null}
           {active === "sketchTo3d" ? <LazyStudioSketchTo3dStagePanel /> : null}
           {active === "cutRhythmPromo" ? <LazyStudioCutRhythmPromoDirectorPanel /> : null}
+          {active === "voiceBalloon" ? <LazyStudioVoiceToBalloonPanel /> : null}
+          {active === "cameraLensBlocking" ? <LazyStudioCameraLensBlockingPanel /> : null}
+          {active === "spatialStage" ? <LazyStudioSpatialStagePanel /> : null}
+          {active === "canvasOrbitalUx" ? <LazyStudioCanvasOrbitalUxPanel /> : null}
+          {active === "featureAtlas" ? <LazyStudioFeatureAtlasPanel /> : null}
         </Suspense>
       </div>
     </section>

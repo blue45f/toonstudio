@@ -76,7 +76,7 @@ test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 �
   assert.deepEqual(SOURCE_MODES, { artifact: { jobMinutes: 20, workMinutes: 19 }, "fresh-source": { jobMinutes: 40, workMinutes: 39 } });
   assert.match(workflow, /source_mode:[\s\S]*default: artifact/u);
   assert.match(followupJob, /permissions:\n {6}contents: read\n {6}actions: read/u);
-  assert.match(followupJob, /actions\/download-artifact@v8/u);
+  assert.match(followupJob, /actions\/download-artifact@[0-9a-f]{40}(?: # v8)?/u);
   assert.match(followupJob, /artifact-ids: \$\{\{ inputs\.artifact_id \}\}/u);
   assert.match(followupJob, /run-id: \$\{\{ inputs\.producer_run_id \}\}/u);
   assert.match(followupJob, /digest-mismatch: error/u);

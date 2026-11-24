@@ -179,7 +179,7 @@ jobs:
             `STUDIO_QA_DEADLINE_MS=${Date.now() + 14 * 60_000}\n`
             + `TOONSPECTRUM_FOCUSED_VERIFY_DIR=${join(process.env.RUNNER_TEMP, "studio-exhaustive-regressions")}\n`);
           NODE
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
           filter: blob:none
@@ -197,8 +197,8 @@ jobs:
         run: |
           node --test scripts/run-studio-exhaustive-regressions.test.mjs
           node scripts/run-studio-exhaustive-regressions.mjs --check
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
       - run: pnpm install --frozen-lockfile --prefer-offline
@@ -237,7 +237,7 @@ jobs:
             `STUDIO_QA_DEADLINE_MS=${Date.now() + minutes * 60_000}\n`
             + `TOONSPECTRUM_FOLLOWUP_VERIFY_DIR=${join(process.env.RUNNER_TEMP, 'studio-exhaustive-followup')}\n`);
           NODE
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         timeout-minutes: 3
         with:
           persist-credentials: false
@@ -265,7 +265,7 @@ jobs:
         run: node scripts/run-studio-exhaustive-followup.mjs --provenance
       - name: 기존 production dist 한 개만 복원
         if: env.STUDIO_FOLLOWUP_SOURCE_MODE != 'fresh-source'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         timeout-minutes: ${{ fromJSON(steps.provenance.outputs.download_minutes || '6') }}
         with:
           run-id: ${{ inputs.producer_run_id }}
@@ -285,9 +285,9 @@ jobs:
       - name: production 빌드에 필요한 전체 assets·vrm 복원
         if: env.STUDIO_FOLLOWUP_SOURCE_MODE == 'fresh-source'
         run: node scripts/run-studio-exhaustive-followup.mjs --hydrate
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         timeout-minutes: 1
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         timeout-minutes: 1
         with:
           node-version: 24

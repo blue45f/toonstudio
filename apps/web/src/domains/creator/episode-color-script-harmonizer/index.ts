@@ -1,0 +1,46 @@
+export { StudioEpisodeColorScriptPanel } from "./StudioEpisodeColorScriptPanel";
+export type { StudioEpisodeColorScriptPanelProps } from "./StudioEpisodeColorScriptPanel";
+
+export {
+  DEFAULT_COLOR_AUDIT_THRESHOLDS,
+  DEFAULT_EPISODE_CUT_COUNT,
+  MAX_EPISODE_CUT_COUNT,
+  MIN_EPISODE_CUT_COUNT,
+  NARRATIVE_COLOR_TEMPLATES,
+  STORY_ACT_LABELS_KO,
+  auditEpisodeColorScript,
+  buildEpisodeColorScriptBundle,
+  clamp01,
+  computeCutLightingAndLutGrade,
+  computeDeltaEOklch,
+  evaluateCircularHueSpline,
+  evaluateMonotonicCubicSpline,
+  findNarrativeColorTemplateById,
+  formatOklchCss,
+  generateEpisodeColorScript,
+  harmonizeEpisodeColorScript,
+  normalizeHueDeg,
+  oklchToOklab,
+  renderEpisodeColorRibbonCanvas,
+  serializeEpisodeColorScriptBundle,
+  shortestHueDeltaDeg,
+  shortestSignedHueDeltaDeg,
+} from "./episode-color-script-engine";
+
+export type {
+  ColorDiscontinuityAlert,
+  ColorJumpAxis,
+  ColorJumpSeverity,
+  ColorScriptAuditThresholds,
+  CutColorScriptNode,
+  CutColorTransitionMetric,
+  CutLightingAndLutGrade,
+  EpisodeColorScriptAudit,
+  EpisodeColorScriptBundle,
+  Lut3dCornerSample,
+  NarrativeColorAnchor,
+  NarrativeColorTemplate,
+  NarrativeColorTemplateId,
+  OklchCoord,
+  StoryActKind,
+} from "./types";

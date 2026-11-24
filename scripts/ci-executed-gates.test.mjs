@@ -185,8 +185,8 @@ test("호스팅 full 검사와 Market의 SDK 정리는 실제 shell과 가짜 �
     assert.match(step, /shell: bash/u);
     assert.ok(step.includes("TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}"));
     assert.ok(step.includes("TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}"));
-    assert.ok(block.indexOf(step) < block.indexOf("uses: actions/checkout@v7"));
-    assert.match(block, /uses: actions\/setup-node@v7\n {8}with:\n {10}node-version: 24\n {10}cache: pnpm/u);
+    assert.ok(block.indexOf(step) < block.indexOf("uses: actions/checkout@"));
+    assert.match(block, /uses: actions\/setup-node@[0-9a-f]{40}(?: # v7)?\n {8}with:\n {10}node-version: 24\n {10}cache: pnpm/u);
     assert.ok(block.includes("run: pnpm install --frozen-lockfile --prefer-offline"));
     assert.doesNotMatch(block.replace(step, ""), /android|dotnet|sdkmanager|gradlew/u, "이 검사에는 제거 대상 SDK 소비자가 없어야 합니다.");
     const body = step.match(/^ {8}run: \|\n((?: {10}[^\n]*\n)+)/mu)?.[1].replace(/^ {10}/gmu, "");
@@ -298,7 +298,7 @@ test("번들 Python 회귀는 foundation에서 고정 wheel을 준비하고 두 
   const setup = named("번들 Python 검증 환경 준비");
   const install = named("번들 Python 검증 의존성 설치");
   const tests = named("번들 정규화·렌더 Python 회귀 검증");
-  assert.match(setup, /uses: actions\/setup-python@v7\n {8}with:\n {10}python-version: '3\.12'/u);
+  assert.match(setup, /uses: actions\/setup-python@[0-9a-f]{40}(?: # v7)?\n {8}with:\n {10}python-version: '3\.12'/u);
   const requirementPath = "scripts/requirements-creator-bundle-verification.txt";
   const installCommand = `python -m pip install --only-binary=:all: --require-hashes -r ${requirementPath}`;
   assert.ok(install.includes(`        run: >-\n          ${installCommand}\n`));
@@ -888,10 +888,10 @@ test("PR caches restore without paying cache-save post steps", () => {
     ["typecheck", "typescript-cache"],
   ]) {
     const block = job(name);
-    assert.match(block, new RegExp(`id: ${cacheId}\\n\\s+uses: actions/cache/restore@v\\d+`));
-    assert.match(block, /uses: actions\/cache\/save@v\d+/);
+    assert.match(block, new RegExp(`id: ${cacheId}\\n\\s+uses: actions/cache/restore@[0-9a-f]{40}(?: # v\\d+)?`));
+    assert.match(block, /uses: actions\/cache\/save@[0-9a-f]{40}(?: # v\d+)?/);
     assert.match(block, /if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/main'/);
-    assert.doesNotMatch(block, /uses: actions\/cache@v\d+/);
+    assert.doesNotMatch(block, /uses: actions\/cache@/);
   }
 });
 

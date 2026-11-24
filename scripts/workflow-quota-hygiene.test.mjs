@@ -145,4 +145,26 @@ describe("GitHub Actions 스토리지 쿼터·동시 실행 위생 정책", () =
     assert.ok(steps.indexOf(keyStep) < steps.indexOf(restoreStep));
     assert.ok(steps.indexOf(restoreStep) < steps.indexOf(buildStep));
   });
+
+  test("모든 워크플로의 외부 GitHub Action 참조는 불변 40자리 커밋 SHA로 고정한다", () => {
+    const unpinned = [];
+    for (const name of WORKFLOW_FILES) {
+      const { parsed } = loadWorkflow(name);
+      for (const [jobId, job] of Object.entries(parsed?.jobs ?? {})) {
+        if (typeof job?.uses === "string" && !job.uses.startsWith("./") && !/@[0-9a-f]{40}$/u.test(job.uses)) {
+          unpinned.push(`${name} (${jobId}): ${job.uses}`);
+        }
+        for (const step of job?.steps ?? []) {
+          if (typeof step?.uses === "string" && !step.uses.startsWith("./") && !/@[0-9a-f]{40}$/u.test(step.uses)) {
+            unpinned.push(`${name} (${jobId} / ${step.name ?? "(unnamed)"}): ${step.uses}`);
+          }
+        }
+      }
+    }
+    assert.deepEqual(
+      unpinned,
+      [],
+      `40자리 커밋 SHA로 고정되지 않은 외부 액션 참조가 있습니다:\n${unpinned.join("\n")}`,
+    );
+  });
 });

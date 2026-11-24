@@ -49,11 +49,19 @@ describe("StudioBetaNoticeGate", () => {
   it("keeps detailed risks collapsed until the author asks for them", () => {
     render(<StudioBetaNoticeGate pathname="/studio" />);
 
+    expect(document.querySelector('[data-studio-beta-notice-bar="true"]')).toBeTruthy();
+    expect(screen.queryByText(/저장 정책과 기능이 바뀔 수 있습니다/u)).toBeNull();
     expect(screen.queryByText("저장 데이터 초기화 가능")).toBeNull();
     const details = screen.getByRole("button", { name: "주의사항 자세히" });
     expect(details.getAttribute("aria-expanded")).toBe("false");
+    expect(details.className).toContain("whitespace-nowrap");
+    expect(details.className).toContain("shrink-0");
+    const acknowledge = screen.getByRole("button", { name: "확인했어요" });
+    expect(acknowledge.className).toContain("whitespace-nowrap");
+    expect(acknowledge.className).toContain("shrink-0");
 
     fireEvent.click(details);
+    expect(screen.getByText(/저장 정책과 기능이 바뀔 수 있습니다/u)).toBeTruthy();
     expect(screen.getByText("저장 데이터 초기화 가능")).toBeTruthy();
     expect(screen.getByText("기능·정책 수시 변경")).toBeTruthy();
     expect(screen.getByText("중요한 작업은 별도 백업")).toBeTruthy();

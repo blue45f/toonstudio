@@ -7,14 +7,12 @@ import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { STUDIO_DRAW_SHAPE_PICKER_KINDS as DRAW_SHAPE_PICKER_KINDS } from "./brush/studio-draw-hud";
 import { StudioToolHintTarget } from "./StudioToolHint";
 
-import { StudioStarterCardArt, type StudioStarterArtId } from "./studio-creative-starter-art";
-
 import type { StudioToolHintSpec } from "./studio-tool-hints";
 import type { ReactElement } from "react";
 
 import { cn } from "@/shared/lib/utils";
 
-export { StudioStarterCardArt, type StudioStarterArtId };
+export { StudioStarterCardArt, type StudioStarterArtId } from "./studio-creative-starter-art";
 export { StudioPressureHudMeter } from "./live/StudioPressureHudMeter";
 
 /** Re-export pure kind list for pickers (SSOT: studio-draw-hud). */

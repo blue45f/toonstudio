@@ -42,7 +42,7 @@ jobs:
       # Creator Bundle 시험은 공개 JSON·권리 원장을 읽고, PR Nature 시험은 정본 hash가 결박된 JSON 원본도 읽는다.
       # PR의 세 파생 팩은 인증이 유효한 최초 체크아웃에 포함하고 수동 검사는 manifest만 유지한다.
       - name: Checkout focused ToonStudio source
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
           fetch-depth: ${{ github.event_name != 'pull_request' && 1 || 0 }}
@@ -238,12 +238,12 @@ jobs:
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/virtual-studio/bundle-decor-v1/' || '' }}
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         with:
           version: 11.4.0
 
       - name: Set up Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
           cache: pnpm
@@ -253,7 +253,7 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Restore focused lint cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: node_modules/.cache/eslint/quick
           key: toonstudio-session-eslint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml', 'eslint.config.mjs') }}-${{ github.sha }}

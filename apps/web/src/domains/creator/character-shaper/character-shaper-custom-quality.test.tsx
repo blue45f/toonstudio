@@ -364,6 +364,10 @@ describe("#236 커스텀 3D 품질 일관성 & #234 SHAPER REA 완전 내재화 
     expect(extrasPanel.classList.contains("hidden")).toBe(false);
     fireEvent.change(screen.getByTestId("shaper-camera-focal-select"), { target: { value: "85" } });
     expect(camera.fov).toBeCloseTo(16.1, 1);
+    const cameraStyleSelect = screen.getByTestId("shaper-camera-style-select") as HTMLSelectElement;
+    const unityOption = Array.from(cameraStyleSelect.options).find((option) => option.value === "unity");
+    expect(unityOption?.textContent).toBe("기본 · 우클릭 회전");
+    expect(cameraStyleSelect.className).toContain("md:max-w-[12.5rem]");
     fireEvent.click(screen.getByTestId("shaper-front-light-toggle"));
     expect(screen.getByTestId("shaper-front-light-toggle").getAttribute("aria-pressed")).toBe("true");
     cleanup();

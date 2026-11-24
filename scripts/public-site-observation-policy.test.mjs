@@ -189,10 +189,10 @@ test('운영 관측만 직렬화·중복 억제하며 후보 회귀와 전체 �
   const production = workflow.jobs['production-observation'];
   const candidate = workflow.jobs['candidate-regression'];
   assert.deepEqual(production.concurrency, { group: 'public-site-production-observation', 'cancel-in-progress': false });
-  const restore = production.steps.find((step) => step.uses === 'actions/cache/restore@v6');
+  const restore = production.steps.find((step) => step.uses?.startsWith('actions/cache/restore@'));
   assert.equal(restore.with.key, '${{ steps.observation-window.outputs.key }}');
   assert.equal(restore.with['restore-keys'], undefined);
-  const save = production.steps.find((step) => step.uses === 'actions/cache/save@v6');
+  const save = production.steps.find((step) => step.uses?.startsWith('actions/cache/save@'));
   assert.match(save.if, /success\(\)/u);
   assert.equal(candidate.if, undefined);
   assert.equal(candidate.concurrency, undefined);

@@ -41,15 +41,15 @@ jobs:
             echo "::notice::SonarQube secrets not configured; skipping scan."
           fi
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         if: steps.secrets.outputs.configured == 'true'
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6 # NOSONAR S7637 신뢰된 1st-party 액션
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         if: steps.secrets.outputs.configured == 'true'
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         if: steps.secrets.outputs.configured == 'true'
         with:
           node-version: 24
@@ -61,7 +61,7 @@ jobs:
 
       - name: Download coverage from every CI shard
         if: steps.secrets.outputs.configured == 'true'
-        uses: actions/download-artifact@v8 # NOSONAR S7637 신뢰된 1st-party 액션
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: sonar-coverage-*
           path: coverage
@@ -76,7 +76,7 @@ jobs:
       # SonarCloud Automatic Analysis should be disabled to avoid duplicate scans.
       - name: SonarQube scan
         if: steps.secrets.outputs.configured == 'true'
-        uses: SonarSource/sonarqube-scan-action@v8 # NOSONAR S7637 신뢰된 1st-party 액션
+        uses: SonarSource/sonarqube-scan-action@70bad232163b09d998ea0707ee80c0ec80798c16 # v8
         env:
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}

@@ -15,20 +15,23 @@ describe("Character contact naturalness CI bootstrap", () => {
     const steps = workflow.jobs?.["character-hand-visual"]?.steps ?? [];
     const actionSteps = steps.filter((step) => step.uses);
 
-    expect(actionSteps.slice(0, 3).map((step) => step.uses)).toEqual([
-      "actions/checkout@v7",
-      "pnpm/action-setup@v6",
-      "actions/setup-node@v7",
+    expect(actionSteps.slice(0, 3).map((step) => step.uses?.split("@")[0])).toEqual([
+      "actions/checkout",
+      "pnpm/action-setup",
+      "actions/setup-node",
     ]);
+    for (const step of actionSteps.slice(0, 3)) {
+      expect(step.uses).toMatch(/@[0-9a-f]{40}$/u);
+    }
 
-    const setupNode = actionSteps.find((step) => step.uses === "actions/setup-node@v7");
+    const setupNode = actionSteps.find((step) => step.uses?.startsWith("actions/setup-node@"));
     expect(setupNode?.with?.cache).toBe("pnpm");
   });
 
   it("does not defer pnpm availability until after setup-node", () => {
     const steps = workflow.jobs?.["character-hand-visual"]?.steps ?? [];
-    const setupNodeIndex = steps.findIndex((step) => step.uses === "actions/setup-node@v7");
-    const pnpmSetupIndex = steps.findIndex((step) => step.uses === "pnpm/action-setup@v6");
+    const setupNodeIndex = steps.findIndex((step) => step.uses?.startsWith("actions/setup-node@"));
+    const pnpmSetupIndex = steps.findIndex((step) => step.uses?.startsWith("pnpm/action-setup@"));
 
     expect(pnpmSetupIndex).toBeGreaterThan(-1);
     expect(setupNodeIndex).toBeGreaterThan(pnpmSetupIndex);

@@ -239,8 +239,8 @@ describe("Studio live stroke Foley & feel bridge", () => {
     expect(factory).toHaveBeenCalledTimes(2);
   });
 
-  it("전 브러시 계열(연필/색연필/크레파스/목탄/G펜/수채/마커/유화/에어브러시/지우개)을 물리 마찰음·종이 결에 정확히 매핑한다", () => {
-    // 연필/색연필/크레파스/목탄/파스텔 -> graphite-pencil + 종이 결 차별화
+  it("전 브러시 계열(연필/색연필/크레파스/목탄/G펜/수채/마커/먹물·캘리붓/유화/에어브러시/지우개)을 물리 마찰음·종이 결에 정확히 매핑한다", () => {
+    // 연필/색연필 -> graphite-pencil + 종이 결 차별화
     expect(resolveStudioFoleySoundForBrush("pencil")).toEqual({
       soundId: "graphite-pencil",
       paperTexture: "manga-kent",
@@ -257,31 +257,41 @@ describe("Studio live stroke Foley & feel bridge", () => {
       soundId: "graphite-pencil",
       paperTexture: "cold-press-watercolor",
     });
-    for (const roughDry of ["crayon", "charcoal", "pastel", "oil-pastel", "chalk"]) {
+    // 목탄/파스텔/크레용/분필 -> 전용 charcoal-pastel + rough-cotton
+    for (const roughDry of ["crayon", "charcoal", "pastel", "oil-pastel", "chalk", "csp-wax-crayon", "목탄", "파스텔", "크레용"]) {
       expect(resolveStudioFoleySoundForBrush(roughDry), roughDry).toEqual({
-        soundId: "graphite-pencil",
+        soundId: "charcoal-pastel",
         paperTexture: "rough-cotton",
       });
     }
 
-    // G펜/마루펜/잉크/만년필/캘리/라이너 -> gpen-ink
-    for (const inkBrush of ["gpen", "maru-pen", "fountain-pen", "calligraphy", "fineliner", "ink-brush", "pen"]) {
+    // G펜/마루펜/만년필/금속 캘리펜/라이너 -> gpen-ink
+    for (const inkBrush of ["gpen", "maru-pen", "fountain-pen", "calligraphy", "fineliner", "pen"]) {
       expect(resolveStudioFoleySoundForBrush(inkBrush), inkBrush).toEqual({
         soundId: "gpen-ink",
         paperTexture: "manga-kent",
       });
     }
 
-    // 수채/먹물/워시 vs 마커/형광펜(파스텔 형광펜 포함!) -> watercolor-sable
-    for (const wetBrush of ["watercolor", "ink-wash", "wash-brush", "sumi"]) {
+    // 먹물/수묵/캘리붓/붓펜 -> 전용 sumi-ink-brush + cold-press-watercolor
+    for (const sumiBrush of ["sumi", "ink-wash", "ink-brush", "csp-dry-sumi", "csp-calligraphy-fude", "먹물", "수묵", "캘리붓"]) {
+      expect(resolveStudioFoleySoundForBrush(sumiBrush), sumiBrush).toEqual({
+        soundId: "sumi-ink-brush",
+        paperTexture: "cold-press-watercolor",
+      });
+    }
+
+    // 수채/워시 -> watercolor-sable
+    for (const wetBrush of ["watercolor", "wash-brush", "csp-transparent-wc", "수채"]) {
       expect(resolveStudioFoleySoundForBrush(wetBrush), wetBrush).toEqual({
         soundId: "watercolor-sable",
         paperTexture: "cold-press-watercolor",
       });
     }
-    for (const markerBrush of ["marker", "alcohol-marker", "highlighter", "pastel-highlighter"]) {
+    // 마커/형광펜(파스텔 형광펜 포함!) -> 전용 alcohol-marker + smooth-bristol
+    for (const markerBrush of ["marker", "alcohol-marker", "highlighter", "pastel-highlighter", "마커", "형광펜"]) {
       expect(resolveStudioFoleySoundForBrush(markerBrush), markerBrush).toEqual({
-        soundId: "watercolor-sable",
+        soundId: "alcohol-marker",
         paperTexture: "smooth-bristol",
       });
     }
@@ -344,7 +354,7 @@ describe("Studio live stroke Foley & feel bridge", () => {
       brushId: "crayon",
     });
     expect(mockAudio.resume).toHaveBeenCalled();
-    expect(startResult?.soundId).toBe("graphite-pencil");
+    expect(startResult?.soundId).toBe("charcoal-pastel");
     expect(startResult?.profile.paperTexture).toBe("rough-cotton");
 
     // 36ms 미만 간격은 스로틀링으로 무시
@@ -690,5 +700,39 @@ describe("Studio live stroke Foley & feel bridge", () => {
     expect(publishSrc).toContain("onStrokeEnd");
     expect(moveSrc).toContain("onStrokeMove");
     expect(finishSrc).toContain("onStrokeEnd");
+  });
+
+  it("신규 전용 매체(alcohol-marker/charcoal-pastel/sumi-ink-brush) 라이브 스트로크 합성 및 노드 정리를 보장한다", () => {
+    let clockMs = 5000;
+    const mockAudio = createMockAudioContext("running");
+    const controller = new StudioLiveStrokeFoleyController({
+      nowMs: () => clockMs,
+      audioContextFactory: () => mockAudio.ctx,
+      engineFactory: (options) => createStudioFoleyAudioEngine(options),
+    });
+
+    const cases = [
+      { brushId: "alcohol-marker", expectedSound: "alcohol-marker", expectedPaper: "smooth-bristol" },
+      { brushId: "csp-charcoal", expectedSound: "charcoal-pastel", expectedPaper: "rough-cotton" },
+      { brushId: "csp-calligraphy-fude", expectedSound: "sumi-ink-brush", expectedPaper: "cold-press-watercolor" },
+    ] as const;
+
+    for (const item of cases) {
+      clockMs += 60;
+      const start = controller.onStrokeStart({ x: 10, y: 10, pressure: 0.65, timestampMs: clockMs, brushId: item.brushId });
+      expect(start?.played).toBe(true);
+      expect(start?.soundId).toBe(item.expectedSound);
+      expect(start?.profile.paperTexture).toBe(item.expectedPaper);
+      clockMs += 45;
+      const move = controller.onStrokeMove({ x: 64, y: 22, pressure: 0.72, timestampMs: clockMs, brushId: item.brushId });
+      expect(move?.played).toBe(true);
+      expect(move?.soundId).toBe(item.expectedSound);
+      controller.onStrokeEnd();
+    }
+
+    mockAudio.flushEnded();
+    controller.dispose();
+    const leaked = mockAudio.nodes.filter((node) => node.connected && !node.disconnected);
+    expect(leaked).toHaveLength(0);
   });
 });

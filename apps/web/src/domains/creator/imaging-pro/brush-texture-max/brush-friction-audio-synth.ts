@@ -2,10 +2,11 @@
  * 필압·속도·매체 연동 ₩0 WebAudio 절차적 마찰음 합성기.
  *
  * 설계 원칙:
- * - 연필(흑연 사각거림), 목탄/파스텔(거친 긁힘), 수채 붓(부드러운 스침),
- *   유화 나이프(끈적한 저항) 4종 매체별 밴드패스 노이즈·필터 파라미터를 결정적으로 산출한다.
+ * - 6종 매체: 연필(흑연 사각거림), 목탄/파스텔(거친 긁힘), 수채 붓(부드러운 스침),
+ *   유화 나이프(끈적한 저항), G펜 촉(금속 잉크 스크래치), 알코올 마커(촉촉한 펠트 글라이드).
+ * - 2.5초 심리스 멀티폴 핑크 노이즈 버퍼 + 종이결 리듬 변조(위상 추적 변조 + LFO 지원 시 실시간 변조).
  * - 기본 OFF(옵트인 토글), `AudioContext` 미지원·SSR·Node 환경에서 100% 무오류 no-op.
- * - 청력 보호 볼륨 상한 안전 가드(`MAX_SAFE_FRICTION_GAIN = 0.25`)를 어떤 입력에서도 강제한다.
+ * - 청력 보호 볼륨 상한 안전 가드(`MAX_SAFE_FRICTION_GAIN = 0.25`)를 어떤 입력·변조에서도 강제한다.
  * - 외부 오디오 샘플/CDN/AI 비용 0원(순수 절차적 노이즈 버퍼 + BiquadFilter 체인).
  */
 
@@ -13,7 +14,9 @@ export type BrushFrictionMediumId =
   | "graphite-pencil"
   | "charcoal-pastel"
   | "watercolor-brush"
-  | "oil-palette-knife";
+  | "oil-palette-knife"
+  | "gpen-nib"
+  | "alcohol-marker";
 
 export interface BrushFrictionMediumProfile {
   readonly id: BrushFrictionMediumId;
@@ -31,10 +34,11 @@ export interface BrushFrictionMediumProfile {
   readonly noiseWarmth: number;
 }
 
-/** 청력 보호 절대 게인 상한 (어떤 입력·masterVolume에서도 초과 불가). */
+/** 청력 보호 절대 게인 상한 (어떤 입력·masterVolume·변조에서도 초과 불가). */
 export const MAX_SAFE_FRICTION_GAIN = 0.25 as const;
 export const MIN_SAFE_FRICTION_FREQ_HZ = 120 as const;
 export const MAX_SAFE_FRICTION_FREQ_HZ = 12000 as const;
+const FRICTION_NOISE_BUFFER_SEC = 2.5;
 
 export const BRUSH_FRICTION_MEDIUM_PROFILES: Readonly<
   Record<BrushFrictionMediumId, BrushFrictionMediumProfile>
@@ -94,6 +98,34 @@ export const BRUSH_FRICTION_MEDIUM_PROFILES: Readonly<
     gritDepth: 0.64,
     mediumGainCeiling: 0.22,
     noiseWarmth: 0.62,
+  }),
+  "gpen-nib": Object.freeze({
+    id: "gpen-nib",
+    label: "G펜 촉 (금속 잉크 스크래치)",
+    baseFreqHz: 3120,
+    speedFreqSpanHz: 2050,
+    pressureFreqShiftHz: 420,
+    baseQ: 3.8,
+    pressureQShift: 1.1,
+    highpassHz: 1180,
+    lowpassHz: 8800,
+    gritDepth: 0.48,
+    mediumGainCeiling: 0.19,
+    noiseWarmth: 0.12,
+  }),
+  "alcohol-marker": Object.freeze({
+    id: "alcohol-marker",
+    label: "알코올 마커 (촉촉한 펠트 글라이드)",
+    baseFreqHz: 1380,
+    speedFreqSpanHz: 680,
+    pressureFreqShiftHz: -140,
+    baseQ: 2.1,
+    pressureQShift: 0.4,
+    highpassHz: 420,
+    lowpassHz: 3600,
+    gritDepth: 0.18,
+    mediumGainCeiling: 0.16,
+    noiseWarmth: 0.64,
   }),
 });
 
@@ -162,6 +194,15 @@ export interface FrictionBufferSourceNodeLike {
   disconnect(): void;
 }
 
+export interface FrictionOscillatorNodeLike {
+  type: OscillatorType;
+  readonly frequency: FrictionAudioParamLike;
+  connect(destination: unknown): void;
+  start(when?: number): void;
+  stop(when?: number): void;
+  disconnect(): void;
+}
+
 export interface FrictionAudioBufferLike {
   readonly length: number;
   getChannelData(channel: number): Float32Array;
@@ -176,6 +217,7 @@ export interface FrictionAudioContextLike {
   createBufferSource(): FrictionBufferSourceNodeLike;
   createBiquadFilter(): FrictionBiquadFilterNodeLike;
   createGain(): FrictionGainNodeLike;
+  readonly createOscillator?: () => FrictionOscillatorNodeLike;
   resume(): Promise<void>;
   close(): Promise<void>;
 }
@@ -207,6 +249,7 @@ export interface BrushFrictionAudioController {
 }
 
 const HALF_PI = Math.PI * 0.5;
+const TWO_PI = Math.PI * 2;
 
 function clamp(v: number, lo: number, hi: number): number {
   if (!Number.isFinite(v)) return lo;
@@ -260,7 +303,11 @@ export function computeBrushFrictionSynthParams(
 
   // 종이 요철 통과 리듬(Hz)
   const grainModRateHz = clamp(4 + speed * 26 * (0.4 + 0.8 * roughness), 2, 180);
-  const grainModDepth = clamp(profile.gritDepth * (0.35 + 0.65 * roughness) * (1 + 0.25 * grazing) * (1 - 0.45 * wetness), 0, 0.85);
+  const grainModDepth = clamp(
+    profile.gritDepth * (0.35 + 0.65 * roughness) * (1 + 0.25 * grazing) * (1 - 0.45 * wetness),
+    0,
+    0.85,
+  );
 
   const mediumCeiling = Math.min(MAX_SAFE_FRICTION_GAIN, profile.mediumGainCeiling);
   const strokeEnergy = active
@@ -282,8 +329,8 @@ export function computeBrushFrictionSynthParams(
 }
 
 /**
- * 결정적 시드 기반 절차적 마찰 노이즈 버퍼를 채운다(외부 샘플 0B).
- * 화이트 노이즈와 1차 저역 통과 핑크 성분을 `warmth` 비율로 혼합한다.
+ * 결정적 시드 기반 심리스 절차적 마찰 노이즈 버퍼를 채운다(외부 샘플 0B).
+ * 3단 핑크 필터 성분과 화이트 성분을 `warmth` 비율로 혼합하고 루프 경계를 raised-cosine으로 잇는다.
  */
 export function fillProceduralFrictionNoiseBuffer(
   channelData: Float32Array,
@@ -291,16 +338,31 @@ export function fillProceduralFrictionNoiseBuffer(
   seed = 20261122,
 ): void {
   const w = clamp01(warmth);
+  const len = channelData.length;
   let state = (seed | 0) || 1337;
-  let lp = 0;
-  for (let i = 0; i < channelData.length; i += 1) {
+  let b0 = 0;
+  let b1 = 0;
+  let b2 = 0;
+  for (let i = 0; i < len; i += 1) {
     // xorshift32 결정적 PRNG
     state ^= state << 13;
     state ^= state >>> 17;
     state ^= state << 5;
     const white = ((state >>> 0) / 4294967295) * 2 - 1;
-    lp = lp * 0.84 + white * 0.16;
-    channelData[i] = clamp(white * (1 - w) + lp * w * 2.1, -0.95, 0.95);
+    b0 = 0.994 * b0 + white * 0.085;
+    b1 = 0.942 * b1 + white * 0.24;
+    b2 = 0.74 * b2 + white * 0.42;
+    const pink = (b0 + b1 + b2) * 0.48;
+    channelData[i] = clamp(white * (1 - w) * 0.78 + pink * (0.35 + w * 0.85), -0.95, 0.95);
+  }
+
+  // 심리스 루프를 위한 경계 raised-cosine 크로스페이드
+  const fade = Math.min(256, Math.floor(len / 8));
+  for (let i = 0; i < fade; i += 1) {
+    const t = 0.5 * (1 - Math.cos((Math.PI * i) / fade));
+    const head = channelData[i] ?? 0;
+    const tail = channelData[len - fade + i] ?? 0;
+    channelData[len - fade + i] = tail * (1 - t) + head * t;
   }
 }
 
@@ -323,6 +385,7 @@ function resolveDefaultAudioContext(): FrictionAudioContextLike | null {
  * WebAudio 안전 바인딩 브러시 마찰음 컨트롤러.
  * - 기본 OFF (`enabled: false`), 토글 가능.
  * - `AudioContext` 미지원/SSR 환경에서 절대 예외를 던지지 않고 무오류 no-op로 동작한다.
+ * - 종이결 리듬 변조 시에도 출력 게인은 항상 `MAX_SAFE_FRICTION_GAIN (0.25)` 이하로 유지된다.
  */
 export function createBrushFrictionAudioController(
   options: CreateBrushFrictionAudioControllerOptions = {},
@@ -339,6 +402,11 @@ export function createBrushFrictionAudioController(
   let lowpassNode: FrictionBiquadFilterNodeLike | null = null;
   let strokeGainNode: FrictionGainNodeLike | null = null;
   let safetyLimiterNode: FrictionGainNodeLike | null = null;
+  let grainLfoNode: FrictionOscillatorNodeLike | null = null;
+  let grainLfoAmpNode: FrictionGainNodeLike | null = null;
+  let grainLfoFreqNode: FrictionGainNodeLike | null = null;
+  let grainModPhaseRad = 0;
+  let lastStrokeTimeSec: number | null = null;
 
   const ensureGraph = (): boolean => {
     if (disposed || !enabled) return false;
@@ -358,7 +426,8 @@ export function createBrushFrictionAudioController(
     }
     try {
       const sampleRate = Math.max(8000, Math.trunc(created.sampleRate || 44100));
-      const buffer = created.createBuffer(1, sampleRate, sampleRate);
+      const bufferLength = Math.round(sampleRate * FRICTION_NOISE_BUFFER_SEC);
+      const buffer = created.createBuffer(1, bufferLength, sampleRate);
       fillProceduralFrictionNoiseBuffer(buffer.getChannelData(0), 0.35, 20261122);
 
       const src = created.createBufferSource();
@@ -381,7 +450,7 @@ export function createBrushFrictionAudioController(
       const strokeGain = created.createGain();
       strokeGain.gain.value = 0;
 
-      // 청력 보호 하드 리미터 노드 (상한 고정)
+      // 청력 보호 하드 리미터 노드 (상한 1.0 고정, LFO 변조 시에도 피크 <= 1.0 유지)
       const safetyGain = created.createGain();
       safetyGain.gain.value = 1;
 
@@ -393,6 +462,34 @@ export function createBrushFrictionAudioController(
       safetyGain.connect(created.destination);
       src.start(0);
 
+      // 오실레이터 지원 환경에서는 종이결 요철 리듬용 저주파 LFO를 graceful하게 연결
+      let lfoOsc: FrictionOscillatorNodeLike | null = null;
+      let lfoAmp: FrictionGainNodeLike | null = null;
+      let lfoFreq: FrictionGainNodeLike | null = null;
+      if (typeof created.createOscillator === "function") {
+        try {
+          lfoOsc = created.createOscillator();
+          lfoOsc.type = "sine";
+          lfoOsc.frequency.value = 16;
+
+          lfoAmp = created.createGain();
+          lfoAmp.gain.value = 0;
+          lfoOsc.connect(lfoAmp);
+          lfoAmp.connect(safetyGain.gain);
+
+          lfoFreq = created.createGain();
+          lfoFreq.gain.value = 0;
+          lfoOsc.connect(lfoFreq);
+          lfoFreq.connect(bp.frequency);
+
+          lfoOsc.start(0);
+        } catch {
+          lfoOsc = null;
+          lfoAmp = null;
+          lfoFreq = null;
+        }
+      }
+
       ctx = created;
       sourceNode = src;
       highpassNode = hp;
@@ -400,6 +497,9 @@ export function createBrushFrictionAudioController(
       lowpassNode = lp;
       strokeGainNode = strokeGain;
       safetyLimiterNode = safetyGain;
+      grainLfoNode = lfoOsc;
+      grainLfoAmpNode = lfoAmp;
+      grainLfoFreqNode = lfoFreq;
       status = "running";
       return true;
     } catch {
@@ -411,7 +511,14 @@ export function createBrushFrictionAudioController(
   const silence = (): void => {
     if (!ctx || !strokeGainNode) return;
     try {
-      strokeGainNode.gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+      const now = ctx.currentTime;
+      strokeGainNode.gain.setTargetAtTime(0, now, 0.02);
+      if (grainLfoAmpNode && grainLfoFreqNode && safetyLimiterNode) {
+        grainLfoAmpNode.gain.setTargetAtTime(0, now, 0.02);
+        grainLfoFreqNode.gain.setTargetAtTime(0, now, 0.02);
+        safetyLimiterNode.gain.setTargetAtTime(1, now, 0.02);
+      }
+      lastStrokeTimeSec = null;
     } catch {
       status = "disposed";
     }
@@ -475,15 +582,42 @@ export function createBrushFrictionAudioController(
         void ctx.resume().catch(() => undefined);
       }
       const now = ctx.currentTime;
-      const safeGain = clamp(computed.targetGain, 0, MAX_SAFE_FRICTION_GAIN);
+      const rawDt = lastStrokeTimeSec === null ? 0.016 : now - lastStrokeTimeSec;
+      const dtSec = rawDt > 0.0005 ? clamp(rawDt, 0.004, 0.12) : 0.016;
+      lastStrokeTimeSec = now;
+
+      // 종이결 요철 통과 리듬 변조: 감쇄형(<= 1.0) 진폭 리듬으로 청력 보호 상한을 절대 초과하지 않음
+      grainModPhaseRad = (grainModPhaseRad + TWO_PI * computed.grainModRateHz * dtSec) % TWO_PI;
+      const toothWave01 = 0.5 * (1 - Math.cos(grainModPhaseRad));
+      const gainModScale = computed.active ? 1 - computed.grainModDepth * 0.34 * toothWave01 : 1;
+      const freqModScale = computed.active ? 1 + (toothWave01 - 0.5) * computed.grainModDepth * 0.07 : 1;
+
+      const safeGain = clamp(computed.targetGain * gainModScale, 0, MAX_SAFE_FRICTION_GAIN);
+      const modulatedCenterHz = clamp(
+        computed.centerFreqHz * freqModScale,
+        MIN_SAFE_FRICTION_FREQ_HZ,
+        MAX_SAFE_FRICTION_FREQ_HZ,
+      );
+
       highpassNode.frequency.setTargetAtTime(computed.highpassCutoffHz, now, 0.015);
-      bandpassNode.frequency.setTargetAtTime(computed.centerFreqHz, now, 0.015);
+      bandpassNode.frequency.setTargetAtTime(modulatedCenterHz, now, 0.012);
       bandpassNode.Q.setTargetAtTime(computed.qFactor, now, 0.015);
       lowpassNode.frequency.setTargetAtTime(computed.lowpassCutoffHz, now, 0.015);
-      strokeGainNode.gain.setTargetAtTime(safeGain, now, 0.018);
+      strokeGainNode.gain.setTargetAtTime(safeGain, now, 0.014);
+
+      if (grainLfoNode && grainLfoAmpNode && grainLfoFreqNode && safetyLimiterNode) {
+        const lfoAmp = computed.active ? clamp(computed.grainModDepth * 0.16, 0, 0.14) : 0;
+        const lfoFreqSpan = computed.active ? clamp(computed.centerFreqHz * computed.grainModDepth * 0.045, 0, 260) : 0;
+        grainLfoNode.frequency.setTargetAtTime(computed.grainModRateHz, now, 0.015);
+        // safetyLimiter 중심값(1 - lfoAmp) + LFO(±lfoAmp) <= 1.0 이므로 총 출력은 항상 <= MAX_SAFE_FRICTION_GAIN
+        safetyLimiterNode.gain.setTargetAtTime(1 - lfoAmp, now, 0.015);
+        grainLfoAmpNode.gain.setTargetAtTime(lfoAmp, now, 0.015);
+        grainLfoFreqNode.gain.setTargetAtTime(lfoFreqSpan, now, 0.015);
+      }
 
       return {
         ...computed,
+        centerFreqHz: modulatedCenterHz,
         targetGain: safeGain,
       };
     },
@@ -500,6 +634,7 @@ export function createBrushFrictionAudioController(
       let teardownFailed = false;
       try {
         sourceNode?.stop(0);
+        grainLfoNode?.stop(0);
       } catch {
         teardownFailed = true;
       }
@@ -510,6 +645,9 @@ export function createBrushFrictionAudioController(
         lowpassNode?.disconnect();
         strokeGainNode?.disconnect();
         safetyLimiterNode?.disconnect();
+        grainLfoNode?.disconnect();
+        grainLfoAmpNode?.disconnect();
+        grainLfoFreqNode?.disconnect();
       } catch {
         teardownFailed = true;
       }
@@ -528,6 +666,10 @@ export function createBrushFrictionAudioController(
       lowpassNode = null;
       strokeGainNode = null;
       safetyLimiterNode = null;
+      grainLfoNode = null;
+      grainLfoAmpNode = null;
+      grainLfoFreqNode = null;
+      lastStrokeTimeSec = null;
     },
   };
 }

@@ -262,6 +262,12 @@ describe("StudioQuickStartPanel", () => {
       }
     }
     expect(details.querySelectorAll("[data-studio-quick-tool]")).toHaveLength(6);
+    expect(
+      Array.from(
+        details.querySelectorAll<HTMLElement>("[data-studio-starter-art]"),
+        (node) => node.getAttribute("data-studio-starter-art"),
+      ),
+    ).toEqual(["smart-shape", "brush-kit", "template", "character", "background-3d", "collab-focus"]);
   });
 
   it("limits canvas obstruction and keeps every interactive target touch-sized", () => {

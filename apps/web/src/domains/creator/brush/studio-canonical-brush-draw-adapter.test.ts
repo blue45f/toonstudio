@@ -553,8 +553,9 @@ describe("Studio DrawEl canonical brush adapter", () => {
     );
     expect(new Set(first.assets.map((asset) => asset.assetId)).size).toBe(first.assets.length);
     const effective = effectiveTipAsset(first);
+    // 보로노이 기공 스펀지 듀얼 팁(30151eae0 안티그리드 개선 + 에너지 정규화)의 결정론적 R8 합성 다이제스트.
     expect(effective.contentHash).toBe(
-      "sha256:2ac6bcc8d78189852aa5fb3c309c2a89694727d6a311c109be3326cb77f09ca6",
+      "sha256:700c3e5d38a5f970bed1c968988fa5b72b7b1dd21d5a54aed313cc55048a0c08",
     );
     expect(effective.width).toBeGreaterThan(16);
     expect(first.plan.recipe).toMatchObject({
