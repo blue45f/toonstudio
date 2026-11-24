@@ -21,6 +21,11 @@ import {
   type StudioLiveEffectKind,
   type StudioLiveEffectNode,
 } from "./studio-adjustment-effect-graph";
+import {
+  executeStudioFilterWithWasmAcceleration,
+  type StudioWasmFilterEngine,
+  type StudioWasmFilterExecutionResult,
+} from "./studio-wasm64-filter-bridge";
 
 export type StudioFinishingEffectId = "glow" | "drop-shadow" | "inflate";
 
@@ -355,5 +360,204 @@ export function buildStudioFinishingComparePreview(input: {
     removedStepNodeIds: Object.freeze(
       beforePlan.steps.map((step) => step.nodeId).filter((nodeId) => !afterIds.has(nodeId)),
     ),
+  });
+}
+
+export interface StudioFinishingPixelRenderInput {
+  readonly rgba: Uint8ClampedArray;
+  readonly width: number;
+  readonly height: number;
+  readonly effectId: StudioFinishingEffectId;
+  readonly parameters?: StudioLiveEffectNode["parameters"];
+  readonly autoWarm?: boolean;
+}
+
+export interface StudioFinishingPixelRenderResult {
+  readonly output: Uint8ClampedArray;
+  readonly width: number;
+  readonly height: number;
+  readonly effectId: StudioFinishingEffectId;
+  readonly engine: StudioWasmFilterEngine;
+  readonly durationMs: number;
+  readonly accelerated: boolean;
+}
+
+function numericFinishingParam(
+  params: StudioLiveEffectNode["parameters"] | undefined,
+  key: string,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const raw = params?.[key];
+  const value = typeof raw === "number" && Number.isFinite(raw) ? raw : fallback;
+  return Math.max(min, Math.min(max, value));
+}
+
+function clampByte(value: number): number {
+  return value <= 0 ? 0 : value >= 255 ? 255 : Math.round(value);
+}
+
+/**
+ * 원터치 마감 효과 3종(글로우·그림자·부풀림)을 실시간 Rust `.wasm` 필터 브리지
+ * (`executeStudioFilterWithWasmAcceleration`, 미로드 시 바이트 동등 JS 폴백)로 픽셀 실행한다.
+ */
+export function renderStudioFinishingEffectPixels(
+  input: StudioFinishingPixelRenderInput,
+): StudioFinishingPixelRenderResult {
+  const preset = getStudioFinishingEffectPreset(input.effectId);
+  const params = input.parameters ?? preset.parameters;
+  const { rgba, width, height, autoWarm } = input;
+  const expectedBytes = width * height * 4;
+  if (
+    !Number.isSafeInteger(width) ||
+    !Number.isSafeInteger(height) ||
+    width <= 0 ||
+    height <= 0 ||
+    rgba.length < expectedBytes
+  ) {
+    throw new RangeError(`유효하지 않은 마감 효과 RGBA 버퍼입니다: ${width}×${height}`);
+  }
+
+  if (input.effectId === "glow") {
+    const radius = numericFinishingParam(params, "radius", 18, 1, 64);
+    const strength = numericFinishingParam(params, "strength", 0.9, 0, 2);
+    const blurred = executeStudioFilterWithWasmAcceleration({
+      filter: "gaussian-blur",
+      rgba,
+      width,
+      height,
+      sigma: Math.max(0.5, Math.min(16, radius / 3)),
+      autoWarm,
+    });
+    const out = new Uint8ClampedArray(expectedBytes);
+    for (let i = 0; i < expectedBytes; i += 4) {
+      const sr = rgba[i] ?? 0;
+      const sg = rgba[i + 1] ?? 0;
+      const sb = rgba[i + 2] ?? 0;
+      const sa = rgba[i + 3] ?? 0;
+      const gr = clampByte((blurred.output[i] ?? 0) * strength);
+      const gg = clampByte((blurred.output[i + 1] ?? 0) * strength);
+      const gb = clampByte((blurred.output[i + 2] ?? 0) * strength);
+      const ga = clampByte((blurred.output[i + 3] ?? 0) * Math.min(1, strength));
+      out[i] = clampByte(255 - ((255 - sr) * (255 - gr)) / 255);
+      out[i + 1] = clampByte(255 - ((255 - sg) * (255 - gg)) / 255);
+      out[i + 2] = clampByte(255 - ((255 - sb) * (255 - gb)) / 255);
+      out[i + 3] = Math.max(sa, ga);
+    }
+    return {
+      output: out,
+      width,
+      height,
+      effectId: input.effectId,
+      engine: blurred.engine,
+      durationMs: blurred.durationMs,
+      accelerated: blurred.accelerated,
+    };
+  }
+
+  if (input.effectId === "drop-shadow") {
+    const blur = numericFinishingParam(params, "blur", 8, 1, 64);
+    const offsetX = Math.round(numericFinishingParam(params, "offsetX", 6, -128, 128));
+    const offsetY = Math.round(numericFinishingParam(params, "offsetY", 8, -128, 128));
+    const opacity = numericFinishingParam(params, "opacity", 0.5, 0, 1);
+    const shadowSource = new Uint8ClampedArray(expectedBytes);
+    for (let y = 0; y < height; y += 1) {
+      const sy = y - offsetY;
+      if (sy < 0 || sy >= height) continue;
+      for (let x = 0; x < width; x += 1) {
+        const sx = x - offsetX;
+        if (sx < 0 || sx >= width) continue;
+        const srcOff = (sy * width + sx) * 4;
+        const dstOff = (y * width + x) * 4;
+        shadowSource[dstOff + 3] = clampByte((rgba[srcOff + 3] ?? 0) * opacity);
+      }
+    }
+    const blurredShadow = executeStudioFilterWithWasmAcceleration({
+      filter: "gaussian-blur",
+      rgba: shadowSource,
+      width,
+      height,
+      sigma: Math.max(0.5, Math.min(16, blur / 2)),
+      autoWarm,
+    });
+    const out = new Uint8ClampedArray(expectedBytes);
+    for (let i = 0; i < expectedBytes; i += 4) {
+      const sa = (rgba[i + 3] ?? 0) / 255;
+      const da = (blurredShadow.output[i + 3] ?? 0) / 255;
+      const outA = sa + da * (1 - sa);
+      if (outA <= 1e-4) continue;
+      out[i] = clampByte(((rgba[i] ?? 0) * sa + (blurredShadow.output[i] ?? 0) * da * (1 - sa)) / outA);
+      out[i + 1] = clampByte(((rgba[i + 1] ?? 0) * sa + (blurredShadow.output[i + 1] ?? 0) * da * (1 - sa)) / outA);
+      out[i + 2] = clampByte(((rgba[i + 2] ?? 0) * sa + (blurredShadow.output[i + 2] ?? 0) * da * (1 - sa)) / outA);
+      out[i + 3] = clampByte(outA * 255);
+    }
+    return {
+      output: out,
+      width,
+      height,
+      effectId: input.effectId,
+      engine: blurredShadow.engine,
+      durationMs: blurredShadow.durationMs,
+      accelerated: blurredShadow.accelerated,
+    };
+  }
+
+  // inflate: 2.5D 볼록 높이장을 생성해 Rust WASM 임파스토 릴리프 셰이딩으로 입체감을 렌더링한다.
+  const amount = numericFinishingParam(params, "amount", 24, 1, 100);
+  const cx = (width - 1) * 0.5;
+  const cy = (height - 1) * 0.5;
+  const invRx = 1 / Math.max(1, width * 0.5);
+  const invRy = 1 / Math.max(1, height * 0.5);
+  const heightMap = new Float32Array(width * height);
+  for (let y = 0; y < height; y += 1) {
+    const ny = (y - cy) * invRy;
+    for (let x = 0; x < width; x += 1) {
+      const nx = (x - cx) * invRx;
+      const distSq = nx * nx + ny * ny;
+      const dome = distSq < 1 ? Math.sqrt(1 - distSq) : 0;
+      const alpha = (rgba[(y * width + x) * 4 + 3] ?? 0) / 255;
+      heightMap[y * width + x] = dome * alpha;
+    }
+  }
+  const shaded = executeStudioFilterWithWasmAcceleration({
+    filter: "impasto-relief",
+    rgba,
+    width,
+    height,
+    heightMap,
+    light: { reliefStrength: Math.max(0.4, (amount / 24) * 1.8) },
+    autoWarm,
+  });
+  return {
+    output: shaded.output,
+    width,
+    height,
+    effectId: input.effectId,
+    engine: shaded.engine,
+    durationMs: shaded.durationMs,
+    accelerated: shaded.accelerated,
+  };
+}
+
+/** 마감 단계 선명도 보정 패스를 WASM 언샤프 마스크 경로로 실행한다. */
+export function renderStudioFinishingUnsharpPass(input: {
+  readonly rgba: Uint8ClampedArray;
+  readonly width: number;
+  readonly height: number;
+  readonly sigma?: number;
+  readonly amount?: number;
+  readonly threshold?: number;
+  readonly autoWarm?: boolean;
+}): StudioWasmFilterExecutionResult {
+  return executeStudioFilterWithWasmAcceleration({
+    filter: "unsharp-mask",
+    rgba: input.rgba,
+    width: input.width,
+    height: input.height,
+    sigma: input.sigma,
+    amount: input.amount,
+    threshold: input.threshold,
+    autoWarm: input.autoWarm,
   });
 }

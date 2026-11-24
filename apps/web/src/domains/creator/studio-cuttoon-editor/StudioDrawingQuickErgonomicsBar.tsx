@@ -302,6 +302,7 @@ export function StudioDrawingQuickErgonomicsBar({
         "그리기 옵션 · 빠른 작업 동선과 브러시 보조",
         "Drawing options · Quick workflow and brush ergonomics",
       )}
+      data-own-control-size="true"
       data-studio-quick-ergonomics="true"
       data-studio-draw-options="true"
       data-studio-active-draw-mode={activeDrawMode}
@@ -345,7 +346,7 @@ export function StudioDrawingQuickErgonomicsBar({
             opacity: opacityPercent / 100,
           }}
         />
-        <span className="studio-drawing-brush-label">{bt("브러시", "Brushes")}</span><span>{activeBrushName}</span>
+        <span className="studio-drawing-brush-label">{bt("브러시", "Brushes")}</span><span className="studio-drawing-brush-name">{activeBrushName}</span>
         <StudioToolArtwork tool={activeDrawMode === "eraser" ? "eraser" : "brush"} className="studio-brush-picker-art" />
       </button>
 

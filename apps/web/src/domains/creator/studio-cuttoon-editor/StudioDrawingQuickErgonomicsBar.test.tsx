@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -416,5 +418,37 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
       expect(descId).toBeTruthy();
       expect(document.getElementById(descId!)?.textContent?.trim()).toBeTruthy();
     }
+  });
+
+  it("퀵 바 전역 줄바꿈 억제(data-own-control-size·단일 행 브러시명)와 우상단 HUD 비겹침 CSS 계약을 유지한다", () => {
+    const session = createErgonomicsSession({
+      activeCatalogBrush: { id: "smooth-pen", name: "매끈한 펜" },
+      stabilizer: 3,
+      effScale: 1.93,
+    });
+    render(<StudioDrawingQuickErgonomicsBar session={session} />);
+
+    const toolbar = screen.getByRole("toolbar", { name: /그리기 옵션/ });
+    expect(toolbar.getAttribute("data-own-control-size")).toBe("true");
+
+    const brushPill = toolbar.querySelector<HTMLButtonElement>('[data-studio-brush-active-pill="true"]');
+    expect(brushPill).toBeTruthy();
+    const brushName = brushPill?.querySelector<HTMLSpanElement>(".studio-drawing-brush-name");
+    expect(brushName?.textContent).toBe("매끈한 펜");
+
+    const clarityCss = readFileSync(
+      resolve(process.cwd(), "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css"),
+      "utf8",
+    );
+    expect(clarityCss).toContain("#studio-app-shell .studio-drawing-clarity-context-row :is(");
+    expect(clarityCss).toContain("flex-shrink:0;white-space:nowrap;overflow-wrap:normal");
+    expect(clarityCss).toContain("min-width:max-content;white-space:nowrap;overflow-wrap:normal");
+    expect(clarityCss).toContain(".studio-drawing-brush-name{");
+    expect(clarityCss).toContain("overflow:hidden;text-overflow:ellipsis;white-space:nowrap");
+    expect(clarityCss).toContain(
+      "#studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-floating-controls]{",
+    );
+    expect(clarityCss).toContain("top:3.75rem;");
+    expect(clarityCss).toContain("[data-studio-draft-save-placement=floating]{");
   });
 });

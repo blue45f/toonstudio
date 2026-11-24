@@ -80,25 +80,25 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;di
 .studio-drawing-page-position>span{flex-shrink:0}
 .studio-drawing-ergonomics-bar{display:flex;flex:1 0 auto;flex-wrap:nowrap;align-items:center;gap:4px;min-width:0}
 .studio-drawing-stage-pills{display:inline-flex;flex-shrink:0;align-items:center;gap:2px;padding-inline-start:6px;border-inline-start:1px solid var(--color-line)}
-.studio-drawing-stage-pill{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;min-width:44px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-stage-pill{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;gap:5px;min-height:44px;min-width:44px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;white-space:nowrap;overflow-wrap:normal;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
 .studio-drawing-stage-pill>img{width:18px;height:18px;border-radius:5px;object-fit:cover;flex-shrink:0}
 .studio-drawing-stage-pill:hover:not(:disabled){background:var(--color-raised);color:var(--color-fg)}
 .studio-drawing-stage-pill[aria-pressed=true]{background:var(--color-accent-soft);color:var(--color-fg);font-weight:600}
 .studio-drawing-stage-pill:disabled{opacity:.45;cursor:not-allowed}
 .studio-drawing-stepper{display:inline-flex;align-items:center;flex:none;gap:0;border-inline:1px solid var(--color-line)}
-.studio-drawing-stepper-btn,.studio-drawing-stepper-readout{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;color:var(--color-fg);font-size:12px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-stepper-btn,.studio-drawing-stepper-readout{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;min-height:44px;min-width:44px;border:0;border-radius:8px;background:transparent;color:var(--color-fg);font-size:12px;font-weight:600;white-space:nowrap;overflow-wrap:normal;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1)}
 .studio-drawing-stepper-readout{padding:0 8px;min-width:52px}
 .studio-drawing-stepper-btn:hover:not(:disabled),.studio-drawing-stepper-readout:hover:not(:disabled){background:var(--color-raised)}
 .studio-drawing-stepper-btn:disabled{opacity:.42;cursor:not-allowed}
-.studio-drawing-ergonomics-chip{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;min-width:44px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
+.studio-drawing-ergonomics-chip{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;gap:5px;min-height:44px;min-width:44px;padding:0 8px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap;overflow-wrap:normal;word-break:keep-all;cursor:pointer;transition:background-color 150ms cubic-bezier(.16,1,.3,1),color 150ms cubic-bezier(.16,1,.3,1)}
 .studio-drawing-ergonomics-chip:hover:not(:disabled){background:var(--color-raised);color:var(--color-fg)}
 .studio-drawing-ergonomics-chip[aria-pressed=true]{background:var(--color-accent-soft);color:var(--color-fg);font-weight:600}
 .studio-drawing-ergonomics-chip:disabled{opacity:.45;cursor:not-allowed}
 .studio-drawing-ergonomics-dot{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid var(--color-line-strong);flex-shrink:0}
-.studio-drawing-ergonomics-color{width:44px;height:44px;min-width:44px;padding:11px;border:0;border-radius:8px;background:transparent;cursor:pointer}
+.studio-drawing-ergonomics-color{width:44px;height:44px;min-width:44px;flex-shrink:0;padding:11px;border:0;border-radius:8px;background:transparent;cursor:pointer}
 .studio-drawing-ergonomics-color:disabled{opacity:.45;cursor:not-allowed}
 .studio-drawing-clarity-context-actions,.studio-drawing-clarity-history{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.studio-drawing-clarity-history button{min-width:44px;min-height:44px;padding:0 8px}
+.studio-drawing-clarity-history button{flex-shrink:0;min-width:44px;min-height:44px;padding:0 8px;white-space:nowrap;overflow-wrap:normal}
 .studio-drawing-clarity-mobile-context{padding-inline:8px}
 .studio-drawing-clarity-mobile-context .studio-drawing-clarity-history button{width:44px;font-size:12px}
 .studio-drawing-clarity-mobile-context .studio-drawing-clarity-history button>span{display:none}
@@ -295,7 +295,7 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 .studio-drawing-omnibox>kbd{padding:1px 5px;border:1px solid var(--color-line);border-radius:5px;background:var(--color-panel);color:var(--color-fg-2);font-family:var(--font-mono);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
 .studio-drawing-clarity-compact-btn{min-height:44px;min-width:44px;padding:0 9px;font-size:12px;white-space:nowrap}
 .studio-drawing-clarity-share{min-height:44px;padding:0 10px;border-color:var(--color-line-strong);background:var(--color-card);color:var(--color-fg);font-size:12px;font-weight:600;white-space:nowrap;box-shadow:none}
-.studio-drawing-stabilizer-group{display:inline-flex;align-items:center;gap:2px;padding-inline-end:6px;border-inline-end:1px solid var(--color-line)}
+.studio-drawing-stabilizer-group{display:inline-flex;align-items:center;flex-shrink:0;gap:2px;padding-inline-end:6px;border-inline-end:1px solid var(--color-line)}
 .studio-drawing-stabilizer-group>.studio-drawing-ergonomics-chip{border:0;background:transparent}
 .studio-drawing-stabilizer-slider{width:64px;min-height:44px;accent-color:var(--color-accent);cursor:pointer}
 /* 선택한 입력 도구는 2px 인셋 라벤더 세로선, 펼친 패널은 강조 배경, 키보드 포커스는 둘레선으로 표시한다. */
@@ -316,9 +316,17 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
   content:"";position:absolute;inset:8px auto 8px 2px;border-radius:1px;background:none;
   border-inline-start:2px solid var(--color-accent);
 }
+#studio-app-shell .studio-drawing-clarity-context-row :is(button,.studio-drawing-ergonomics-chip,.studio-drawing-stage-pill,.studio-drawing-stepper-btn,.studio-drawing-stepper-readout,.studio-drawing-page-position){
+  flex-shrink:0;white-space:nowrap;overflow-wrap:normal;word-break:keep-all;line-height:1.25;
+}
 #studio-app-shell .studio-drawing-ergonomics-bar [data-studio-brush-active-pill]{
+  flex:0 0 auto;min-width:max-content;white-space:nowrap;overflow-wrap:normal;
   border-color:var(--color-line)!important;background:transparent!important;
   color:var(--color-fg)!important;box-shadow:none!important;
+}
+.studio-drawing-brush-name{
+  display:inline-block;min-width:0;max-width:9.5rem;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal;
 }
 .studio-drawing-clarity-tools>button:focus-visible,
 .studio-drawing-ergonomics-bar :is(button,input):focus-visible{
@@ -435,30 +443,47 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 .studio-drawing-aux-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:color-mix(in oklch,var(--color-accent) 20%,var(--color-card));color:var(--color-accent);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
 .studio-drawing-zen-chip[aria-pressed="true"]{border-color:color-mix(in oklch,var(--color-accent) 60%,var(--color-line-strong));background:color-mix(in oklch,var(--color-accent) 18%,var(--color-panel));color:var(--color-accent);font-weight:700}
 .studio-drawing-ergonomics-bar[data-studio-compact-aux-collapsed="true"] [data-studio-aux-control="true"]{display:none}
-/* 1024px~1599px(1440px 포함) 데스크톱 상단 퀵 바 우측 넘침 방지: 44px 터치 타깃과 스크린리더 라벨을 유지한 채 보조 아이콘 칩을 간결 압축 */
+/* 1024px~1599px(1440px 포함) 데스크톱 상단 퀵 바 우측 넘침 방지: 44px 터치 타깃과 한 줄 라벨을 유지한 채 보조 아이콘·중복 런처를 간결 압축 */
 @media (min-width: 1024px) and (max-width: 1599px) {
-  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-page-position{padding:0 6px;max-width:110px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-page-position{padding:0 6px;gap:4px;max-width:104px}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-ergonomics-bar{gap:1px}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-ergonomics-chip{position:relative;padding:0 5px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-ergonomics-chip--zoom{padding:0 4px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-brush-name{max-width:7.5rem}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stepper-readout{position:relative;padding:0 4px;min-width:44px}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stabilizer-group{padding-inline-end:2px}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stabilizer-slider{display:none}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-clarity-history{gap:2px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-clarity-history button{gap:4px;padding:0 6px}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is(.studio-drawing-brush-label,.studio-drawing-ergonomics-compact-prefix){position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is([data-studio-compact-icon-chip="true"],[data-studio-radial-quick-dial-trigger="true"],[data-studio-handedness-toggle="true"]){position:relative;padding:0;width:44px;min-width:44px}
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is([data-studio-compact-icon-chip="true"],[data-studio-radial-quick-dial-trigger="true"],[data-studio-handedness-toggle="true"])>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+  /* 1440px 단일 행 가로 폭 여유 확보: 퀵 휠(Q)과 겹치는 중복 콤파스(Alt+Q)·미니 독 아이콘 숨김 */
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is([data-studio-radial-quick-dial-trigger="true"],[data-studio-mini-dock-toggle="true"]){display:none}
 }
-/* 1420px~1679px 구간에서는 상단 헤더의 5단계 스위처와 중복되는 퀵 바 단계 필을 숨겨 가로 여유를 확보한다. */
-@media (min-width: 1420px) and (max-width: 1679px) {
+/* 1024px~1365px(1280px 포함) 협소 데스크톱에서는 보조 저빈도 아이콘 3종을 접어 보조·Zen·되돌리기 잘림을 방지한다. */
+@media (min-width: 1024px) and (max-width: 1365px) {
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is([data-studio-nib-vfx-mode],[data-studio-perspective-snap-quick-toggle="true"],[data-studio-handedness-toggle="true"]){display:none}
+}
+/* 1024px~1679px 구간에서는 좌측 레일·상단 7메뉴/스위처와 중복되는 퀵 바 5단계 필을 숨겨 한 줄 가독성을 확보한다. */
+@media (min-width: 1024px) and (max-width: 1679px) {
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stage-pills{display:none}
 }
 
 @media (min-width: 1024px) {
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
-    top:50px;left:56px;right:20px;gap:3px;padding:0 4px;
-    max-width:calc(100% - 76px);
+    top:50px;left:54px;right:12px;gap:3px;padding:0 4px;
+    max-width:calc(100% - 66px);
     border-radius:var(--studio-jewel-radius-outer,14px);
     box-shadow:inset 0 1px 0 color-mix(in oklch,var(--color-fg) 14%,transparent),var(--atelier-elevation-dock,0 8px 22px -10px color-mix(in oklch,var(--color-fg) 18%,transparent));
     transition:opacity 180ms cubic-bezier(.22,1,.36,1);
+  }
+  /* 플로팅 퀵 바(y: 50~94px) 뒤로 우상단 협업·저장 HUD가 겹치지 않도록 퀵 바 아래 기준선으로 분리한다. */
+  #studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-floating-controls]{
+    top:3.75rem;
+  }
+  body:has(#studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true])) [data-studio-draft-save-placement=floating]{
+    top:calc(6.5rem + env(safe-area-inset-top));
   }
   #studio-app-shell[data-studio-stroke-active="true"] .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
     opacity:0.24;
@@ -489,8 +514,8 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 }
 @media (min-width: 1024px) {
   #studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
-    left:20px;
-    right:56px;
+    left:12px;
+    right:54px;
   }
   #studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) :is(.studio-drawing-clarity-pane--brush,.studio-drawing-clarity-pane--pages){
     left:auto;
