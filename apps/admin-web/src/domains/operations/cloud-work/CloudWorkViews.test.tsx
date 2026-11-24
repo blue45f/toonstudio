@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { blankTask, emptyBoard } from "@toonstudio/contracts/admin-cloud-workboard";
+import { blankCheck, blankTask, emptyBoard } from "@toonstudio/contracts/admin-cloud-workboard";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CloudWorkBoard } from "./CloudWorkBoard";
@@ -52,5 +52,24 @@ describe("서버 보드 전체 저장 이력", () => {
     fireEvent.click(within(screen.getByRole("complementary", { name: "보드 탐색" })).getByRole("button", { name: "활동 기록" }));
     expect(screen.getByText("개인 작업 보드 저장")).toBeTruthy();
     expect(screen.queryByText("아직 저장된 작업이 없습니다")).toBeNull();
+  });
+
+  it("가져온 보드 전체 출처 이력을 서버 감사 기록과 구분하여 표시한다", () => {
+    const board = { ...emptyBoard(), sourceHistory: [{ id: "import-audit", at: "", taskId: "", title: "Sites 원본 기록", detail: "직접 관측되지 않은 이전 기록" }] };
+    render(<CloudWorkViews board={board} tasks={[]} now={Date.now()} view="activity" layout="table" onEdit={vi.fn()} />);
+    expect(screen.getByText("Sites 원본 기록")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "가져온 출처 이력" })).toBeTruthy();
+    expect(screen.queryByText("서버 저장 이력")).toBeNull();
+    expect(screen.getByText(/이 서버에서 실행하거나 검증한 이력이 아닙니다/u)).toBeTruthy();
+  });
+
+  it("대상 SHA가 바뀐 검증 통과는 단계 표에서 미확인으로 표시한다", () => {
+    const now = Date.parse("2026-11-24T00:00:00Z");
+    const task = { ...blankTask(), title: "변경된 소스 검증", remoteSha: "b".repeat(40), verificationChecks: [{ ...blankCheck("pre"), label: "단위 검사", state: "통과" as const, subjectSha: "a".repeat(40), observedAt: "2026-11-23T23:00:00Z", evidenceUrl: "https://example.com/check", reason: "이전 SHA에서 통과" }] };
+    render(<CloudWorkViews board={{ ...emptyBoard(), tasks: [task] }} tasks={[task]} now={now} view="verification" layout="table" onEdit={vi.fn()} />);
+    const phase = screen.getByRole("button", { name: "변경된 소스 검증 병합 전 테스트 기록 편집" });
+    expect(within(phase).getByText("미확인")).toBeTruthy();
+    expect(within(phase).getByText("0/1 증빙 유효")).toBeTruthy();
+    expect(within(phase).queryByText("통과")).toBeNull();
   });
 });
