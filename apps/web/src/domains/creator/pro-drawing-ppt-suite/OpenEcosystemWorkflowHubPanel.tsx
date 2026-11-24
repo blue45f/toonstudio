@@ -58,6 +58,11 @@ const LazyStudioEpisodeColorScriptPanel = lazy(async () => {
   const m = await import("../episode-color-script-harmonizer/StudioEpisodeColorScriptPanel");
   return { default: m.StudioEpisodeColorScriptPanel };
 });
+const LazyStudioWebcodecsOpfsPanel = lazy(async () => {
+  await import("../webcodecs-opfs-engine");
+  const m = await import("../webcodecs-opfs-engine/StudioWebcodecsOpfsPanel");
+  return { default: m.StudioWebcodecsOpfsPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -70,7 +75,8 @@ type EcosystemTabId =
   | "streamingBudget"
   | "autoStyleDna"
   | "styleShaderPack"
-  | "episodeColorScript";
+  | "episodeColorScript"
+  | "webcodecsOpfs";
 
 const ECOSYSTEM_TABS: readonly {
   readonly id: EcosystemTabId;
@@ -88,6 +94,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "autoStyleDna", labelKo: "자동 화풍 DNA·대본3D·심의", labelEn: "Auto Style DNA · Script-to-3D · Rating" },
   { id: "styleShaderPack", labelKo: "팀 화풍·WGSL 팩 서명 교환 (.tspack)", labelEn: "Team Style & WGSL Pack (.tspack)" },
   { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
+  { id: "webcodecsOpfs", labelKo: "WebCodecs 4K·희소 타일·OPFS 버전", labelEn: "WebCodecs 4K · Sparse Tile · OPFS VCS" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -114,6 +121,8 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <PackageCheck size={15} aria-hidden="true" />;
     case "episodeColorScript":
       return <Palette size={15} aria-hidden="true" />;
+    case "webcodecsOpfs":
+      return <Workflow size={15} aria-hidden="true" />;
   }
 }
 
@@ -173,6 +182,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "autoStyleDna" ? <LazyStudioAutoStyleDnaPipelinePanel /> : null}
           {active === "styleShaderPack" ? <LazyStudioStyleShaderPackExchangePanel /> : null}
           {active === "episodeColorScript" ? <LazyStudioEpisodeColorScriptPanel /> : null}
+          {active === "webcodecsOpfs" ? <LazyStudioWebcodecsOpfsPanel /> : null}
         </Suspense>
       </div>
     </section>

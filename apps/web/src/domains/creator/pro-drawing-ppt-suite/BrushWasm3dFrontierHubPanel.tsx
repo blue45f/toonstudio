@@ -63,6 +63,21 @@ const LazyStudioWebGpuNextgenRuntimePanel = lazy(async () => {
   const m = await import("../webgpu-nextgen-runtime/StudioWebGpuNextgenRuntimePanel");
   return { default: m.StudioWebGpuNextgenRuntimePanel };
 });
+const LazyStudioWebnnPigmentDirectorPanel = lazy(async () => {
+  await import("../webnn-pigment-director");
+  const m = await import("../webnn-pigment-director/StudioWebnnPigmentDirectorPanel");
+  return { default: m.StudioWebnnPigmentDirectorPanel };
+});
+const LazyStudioWebgpuXpbdLightingPanel = lazy(async () => {
+  await import("../webgpu-xpbd-lighting");
+  const m = await import("../webgpu-xpbd-lighting/StudioWebgpuXpbdLightingPanel");
+  return { default: m.StudioWebgpuXpbdLightingPanel };
+});
+const LazyStudioVrmLookdevGoldenPanel = lazy(async () => {
+  await import("../vrm-lookdev-golden");
+  const m = await import("../vrm-lookdev-golden/StudioVrmLookdevGoldenPanel");
+  return { default: m.StudioVrmLookdevGoldenPanel };
+});
 
 type FrontierTabId =
   | "brushPhysics"
@@ -72,8 +87,11 @@ type FrontierTabId =
   | "scene3dNpr"
   | "vrmAutoShader"
   | "vrmHairTransplant"
+  | "vrmLookdevGolden"
   | "vectorInkProj"
   | "webgpuNextgen"
+  | "webgpuXpbdLight"
+  | "webnnPigment"
   | "drawingFrontier"
   | "visualOracle"
   | "nocodeShaderGrid"
@@ -100,12 +118,71 @@ const FRONTIER_TABS: readonly {
   { id: "scene3dNpr", labelKo: "3D Wasm64 BVH·LOD·NPR 룩뎁", labelEn: "3D Wasm64 BVH · LOD · NPR" },
   { id: "vrmAutoShader", labelKo: "VRM 재질 DNA 상속 · 깊이 분리", labelEn: "VRM Shader DNA · Depth Split" },
   { id: "vrmHairTransplant", labelKo: "크로스 VRM 실물 헤어 이식", labelEn: "Cross-VRM Hair Transplant" },
+  { id: "vrmLookdevGolden", labelKo: "WebGL 골든 SSIM·표정-헤어·3면 시트", labelEn: "WebGL Golden SSIM · 3-View Sheet" },
   { id: "vectorInkProj", labelKo: "3D → G펜 벡터 잉크 투영", labelEn: "3D → G-Pen Vector Ink" },
   { id: "webgpuNextgen", labelKo: "제로카피 · LOD · P2P · 카나리", labelEn: "Zero-Copy · LOD · P2P · Canary" },
+  { id: "webgpuXpbdLight", labelKo: "WebGPU XPBD 헤어·의상·2D/3D 광원", labelEn: "WebGPU XPBD · 2D/3D SDF Light" },
+  { id: "webnnPigment", labelKo: "WebNN 선화·Kubelka-Munk 혼색·연출", labelEn: "WebNN Lineart · KM Pigment · Cut AI" },
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
   { id: "nocodeShaderGrid", labelKo: "노코드 WGSL · 분산 그리드", labelEn: "No-Code WGSL · Tile Grid" },
   { id: "liveOracle", labelKo: "실시간 엔진 오라클 (194종·KM·GPU)", labelEn: "Live Engine Oracle (194 · KM · GPU)" },
+];
+
+const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
+  readonly id: string;
+  readonly titleKo: string;
+  readonly titleEn: string;
+  readonly items: readonly { readonly src: string; readonly labelKo: string; readonly labelEn: string }[];
+}[] = [
+  {
+    id: "media",
+    titleKo: "실물 화구 매크로 6종",
+    titleEn: "6 Physical Media Macros",
+    items: [
+      { src: "/assets/atelier/media/gpen-ink.webp", labelKo: "G펜 스틸 닙", labelEn: "G-Pen Steel Nib" },
+      { src: "/assets/atelier/media/graphite-pencil.webp", labelKo: "4B 흑연 연필", labelEn: "4B Graphite Pencil" },
+      { src: "/assets/atelier/media/watercolor-sable.webp", labelKo: "세이블 수채 붓", labelEn: "Sable Watercolor" },
+      { src: "/assets/atelier/media/alcohol-marker.webp", labelKo: "알코올 마커", labelEn: "Alcohol Marker" },
+      { src: "/assets/atelier/media/oil-impasto.webp", labelKo: "유화 나이프", labelEn: "Impasto Knife" },
+      { src: "/assets/atelier/media/charcoal-pastel.webp", labelKo: "목탄·황목지", labelEn: "Vine Charcoal" },
+    ],
+  },
+  {
+    id: "papers",
+    titleKo: "종이결 매크로 4종",
+    titleEn: "4 Paper Substrates",
+    items: [
+      { src: "/assets/atelier/papers/manga-kent.webp", labelKo: "만화 켄트지", labelEn: "Manga Kent" },
+      { src: "/assets/atelier/papers/cold-press-watercolor.webp", labelKo: "수채 황목지", labelEn: "Cold-Press Cotton" },
+      { src: "/assets/atelier/papers/linen-canvas.webp", labelKo: "벨기에 린넨", labelEn: "Belgian Linen" },
+      { src: "/assets/atelier/papers/korean-hanji.webp", labelKo: "전통 한지", labelEn: "Korean Hanji" },
+    ],
+  },
+  {
+    id: "spaces",
+    titleKo: "가상 스튜디오 6종 디오라마",
+    titleEn: "6 Virtual Studio Dioramas",
+    items: [
+      { src: "/assets/atelier/spaces/wood-atelier.webp", labelKo: "목재 웹툰 공방", labelEn: "Wood Atelier" },
+      { src: "/assets/atelier/spaces/rooftop-terrace.webp", labelKo: "노을 루프탑 테라스", labelEn: "Rooftop Terrace" },
+      { src: "/assets/atelier/spaces/midnight-manga-cafe.webp", labelKo: "심야 만화 북카페", labelEn: "Midnight Manga Café" },
+      { src: "/assets/atelier/spaces/reference-library.webp", labelKo: "정숙 자료실", labelEn: "Reference Library" },
+      { src: "/assets/atelier/spaces/fantasy-guild-hall.webp", labelKo: "판타지 길드홀", labelEn: "Fantasy Guild Hall" },
+      { src: "/assets/atelier/spaces/comic-gallery.webp", labelKo: "웹툰 전시 갤러리", labelEn: "Comic Gallery" },
+    ],
+  },
+  {
+    id: "onboarding",
+    titleKo: "아틀리에 온보딩 일러스트 4종",
+    titleEn: "4 Atelier Onboarding Cards",
+    items: [
+      { src: "/assets/atelier/onboarding/first-cut-desk.webp", labelKo: "첫 컷 작화 데스크", labelEn: "First Cut Desk" },
+      { src: "/assets/atelier/onboarding/character-sculpt.webp", labelKo: "3D 캐릭터 조형", labelEn: "3D Character Sculpt" },
+      { src: "/assets/atelier/onboarding/virtual-collab.webp", labelKo: "가상 스튜디오 합작", labelEn: "Virtual Studio Collab" },
+      { src: "/assets/atelier/onboarding/episode-publish.webp", labelKo: "회차·단행본 출고", labelEn: "Episode Publish" },
+    ],
+  },
 ];
 
 function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
@@ -124,10 +201,16 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Palette size={15} aria-hidden="true" />;
     case "vrmHairTransplant":
       return <Scissors size={15} aria-hidden="true" />;
+    case "vrmLookdevGolden":
+      return <Eye size={15} aria-hidden="true" />;
     case "vectorInkProj":
       return <PenTool size={15} aria-hidden="true" />;
     case "webgpuNextgen":
       return <Server size={15} aria-hidden="true" />;
+    case "webgpuXpbdLight":
+      return <Zap size={15} aria-hidden="true" />;
+    case "webnnPigment":
+      return <Palette size={15} aria-hidden="true" />;
     case "drawingFrontier":
       return <Wand2 size={15} aria-hidden="true" />;
     case "visualOracle":
@@ -286,14 +369,56 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "scene3dNpr" ? <LazyStudio3dWasm64LookdevPanel /> : null}
             {active === "vrmAutoShader" ? <LazyStudioVrmAutoShaderTransferPanel /> : null}
             {active === "vrmHairTransplant" ? <LazyStudioVrmHairTransplantPanel /> : null}
+            {active === "vrmLookdevGolden" ? <LazyStudioVrmLookdevGoldenPanel /> : null}
             {active === "vectorInkProj" ? <LazyStudioVectorInkProjectionPanel /> : null}
             {active === "webgpuNextgen" ? <LazyStudioWebGpuNextgenRuntimePanel /> : null}
+            {active === "webgpuXpbdLight" ? <LazyStudioWebgpuXpbdLightingPanel /> : null}
+            {active === "webnnPigment" ? <LazyStudioWebnnPigmentDirectorPanel /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
             {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}
           </Suspense>
         )}
       </div>
+
+      <details className="rounded-xl border border-line bg-panel p-3" data-testid="atelier-prebaked-assets-drawer">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-xs font-semibold text-fg [word-break:keep-all]">
+          <span>
+            {isEn
+              ? "Pre-Baked Atelier Visual Pack (Physical Media · Paper · 6 Spaces · Onboarding)"
+              : "아틀리에 실물 화구 · 종이결 · 가상 스튜디오 6종 · 온보딩 비주얼 팩"}
+          </span>
+          <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[11px] font-semibold tabular-nums text-fg-2">
+            20 WebP
+          </span>
+        </summary>
+        <div className="mt-3 flex flex-col gap-3">
+          {ATELIER_PREBAKED_ASSET_GROUPS.map((group) => (
+            <div key={group.id} className="flex flex-col gap-1.5">
+              <p className="text-[11px] font-semibold text-fg-2">{isEn ? group.titleEn : group.titleKo}</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6">
+                {group.items.map((item) => (
+                  <figure
+                    key={item.src}
+                    className="flex flex-col gap-1 rounded-lg border border-line bg-card p-1.5"
+                  >
+                    <img
+                      src={item.src}
+                      alt={isEn ? item.labelEn : item.labelKo}
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-square w-full rounded object-cover outline-1 -outline-offset-1 outline-border"
+                    />
+                    <figcaption className="truncate text-center text-[11px] font-medium text-fg [word-break:keep-all]">
+                      {isEn ? item.labelEn : item.labelKo}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </details>
     </section>
   );
 }
