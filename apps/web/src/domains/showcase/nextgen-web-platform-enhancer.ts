@@ -1,3 +1,5 @@
+import { buildSpeculationRulesJson, STUDIO_PRERENDER_URLS } from "@/shared/lib/speculation-rules";
+
 /**
  * 차세대 크롬 웹 플랫폼 API 점진적 향상 헬퍼:
  * - View Transitions API (`startSafeViewTransition`)
@@ -142,7 +144,7 @@ export function installSpeculationRulesOnce(
   }
 
   const existing = targetDoc.head.querySelector(
-    `script[${SPECULATION_MARKER_ATTR}="${SPECULATION_MARKER_VALUE}"]`,
+    `script[${SPECULATION_MARKER_ATTR}="${SPECULATION_MARKER_VALUE}"], script[type="speculationrules"]`,
   );
   if (existing) {
     return { installed: true, status: "already-installed", urls };
@@ -151,15 +153,19 @@ export function installSpeculationRulesOnce(
   const script = targetDoc.createElement("script");
   script.type = "speculationrules";
   script.setAttribute(SPECULATION_MARKER_ATTR, SPECULATION_MARKER_VALUE);
-  script.textContent = JSON.stringify({
-    prefetch: [
-      {
-        source: "list",
-        urls: [...urls],
-        eagerness,
-      },
-    ],
-  });
+  // 운영 정적 CSP의 script-src 해시(STUDIO_PRERENDER_URLS)와 일치하는 정본 JSON을 사용해
+  // 라이브 환경에서 인라인 Speculation Rules CSP 위반 콘솔 오류를 원천 차단한다.
+  script.textContent = options?.urls
+    ? JSON.stringify({
+        prefetch: [
+          {
+            source: "list",
+            urls: [...urls],
+            eagerness,
+          },
+        ],
+      })
+    : buildSpeculationRulesJson(STUDIO_PRERENDER_URLS);
   targetDoc.head.appendChild(script);
 
   return { installed: true, status: "installed", urls };
