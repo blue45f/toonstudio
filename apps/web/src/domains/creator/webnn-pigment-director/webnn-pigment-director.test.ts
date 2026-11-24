@@ -402,7 +402,7 @@ describe("StudioWebnnPigmentDirectorPanel UI · 접근성 · 토큰 위생 검�
             data: new Uint8ClampedArray(w * h * 4),
           }),
           putImageData: putImageDataSpy,
-        }) as unknown as CanvasRenderingContext2D,
+        }) as unknown as GPUCanvasContext,
     );
   });
 

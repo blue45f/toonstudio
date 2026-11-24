@@ -160,7 +160,7 @@ export function StudioVrmLookdevGoldenPanel({
   customShaderRecords,
   onGateEvaluate,
   onSheetGenerate,
-}: StudioVrmLookdevGoldenPanelProps = {}): ReactElement {
+}: StudioVrmLookdevGoldenPanelProps): ReactElement {
   const uid = useId();
   const storeLang = useI18n((state) => state.lang);
   const isEn = (locale ?? (storeLang.toLowerCase().startsWith("en") ? "en" : "ko")) === "en";

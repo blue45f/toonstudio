@@ -329,7 +329,7 @@ export function createSafeSpatialAudioGraph(
     return new SpatialBinauralAudioGraph({ audioContext: null, zoneId, listener });
   }
 
-  const candidate = globalThis as {
+  const candidate = globalThis as unknown as {
     AudioContext?: new () => SpatialAudioContextLike;
     webkitAudioContext?: new () => SpatialAudioContextLike;
   };
