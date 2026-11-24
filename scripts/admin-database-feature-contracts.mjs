@@ -1,4 +1,5 @@
 import { buildAdminProductionChangesCapabilitySql, buildAdminProductionChangesRuntimeAclSql } from "./admin-production-changes-database-contract.mjs";
+import { buildFinalSubmissionCapabilitySql, buildFinalSubmissionRuntimeAclSql } from "./admin-final-submission-database-contract.mjs";
 import { buildAdminNestjsQualityCapabilitySql, buildAdminNestjsQualityRuntimeAclSql, buildAdminCapabilitySql, buildAdminRuntimeAclSql, buildAdminCloudWorkboardCapabilitySql, buildAdminCloudWorkboardRuntimeAclSql } from "./admin-database-contract.mjs";
 import { buildAdminWorkspaceCapabilitySql, buildAdminWorkspaceRuntimeAclSql } from "./admin-workspace-database-contract.mjs";
 
@@ -15,6 +16,8 @@ export function applyAdminDatabaseFeatureContracts(executeSql, runtimeDatabaseRo
     buildAdminWorkspaceCapabilitySql,
     buildAdminProductionChangesRuntimeAclSql,
     buildAdminProductionChangesCapabilitySql,
+    buildFinalSubmissionRuntimeAclSql,
+    buildFinalSubmissionCapabilitySql,
   ]) {
     executeSql(buildSql(runtimeDatabaseRole));
   }
@@ -22,7 +25,7 @@ export function applyAdminDatabaseFeatureContracts(executeSql, runtimeDatabaseRo
 
 /** 읽기 검증 경로는 권한을 부여하거나 테이블을 수정하지 않는다. */
 export function buildAdminDatabaseFeatureCapabilitySql(runtimeDatabaseRole) {
-  return [buildAdminNestjsQualityCapabilitySql, buildAdminCapabilitySql, buildAdminCloudWorkboardCapabilitySql, buildAdminWorkspaceCapabilitySql, buildAdminProductionChangesCapabilitySql]
+  return [buildAdminNestjsQualityCapabilitySql, buildAdminCapabilitySql, buildAdminCloudWorkboardCapabilitySql, buildAdminWorkspaceCapabilitySql, buildAdminProductionChangesCapabilitySql, buildFinalSubmissionCapabilitySql]
     .map((buildSql) => buildSql(runtimeDatabaseRole))
     .join("\n");
 }

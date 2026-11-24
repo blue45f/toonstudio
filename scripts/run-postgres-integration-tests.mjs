@@ -30,6 +30,7 @@ export const POSTGRES_INTEGRATION_SUITES = Object.freeze([
   "apps/api/src/modules/operation-policy/operation-policy.integration.test.ts",
   "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
   "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
+  "apps/api/src/modules/final-submission/final-submission.integration.test.ts",
   "apps/api/src/modules/admin/ai-operations/ai-operations.repository.integration.test.ts",
   "apps/api/src/modules/production-collaboration/team-workspace.repository.integration.test.ts",
   "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",

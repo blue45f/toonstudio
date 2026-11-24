@@ -52,11 +52,12 @@ import {
 
 test("manifest lists every numbered SQL migration exactly once in order", () => {
   const manifest = loadMigrationManifest();
-  expect(manifest).toHaveLength(133);
+  expect(manifest).toHaveLength(134);
   expect(manifest[0].id).toBe("0001_studio_ai_usage_ledger");
   expect(manifest[130].id).toBe("0131_studio_space_poll");
-  expect(manifest.at(-1).id).toBe("0133_production_division_os");
-  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(133);
+  expect(manifest[132].id).toBe("0133_production_division_os");
+  expect(manifest.at(-1).id).toBe("0134_admin_final_submission");
+  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(134);
 });
 
 test("음성 검수 함수 복구는 기배포 0093 원문과 체크섬을 보존한다", () => {
@@ -1409,6 +1410,9 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "admin_business_plan_receipt",
     "admin_business_plan_revision",
     "admin_content_reports",
+    "admin_final_submission",
+    "admin_final_submission_audit",
+    "admin_final_submission_receipt",
     "admin_member_test_accounts",
     "admin_nestjs_quality_board",
     "admin_nestjs_quality_history",

@@ -66,6 +66,7 @@ try {
     "0128_admin_business_plan_access.sql",
     "0131_studio_space_poll.sql",
     "0132_admin_production_changes.sql",
+    "0134_admin_final_submission.sql",
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
   }
@@ -89,6 +90,12 @@ try {
     ["admin_nestjs_quality_history", "admin_nestjs_quality_history_immutable", 27, "admin_nestjs_quality_history_immutable"],
     ["admin_production_change_audit", "admin_production_change_audit_immutable", 27, "admin_production_change_evidence_immutable"],
     ["admin_production_change_capture", "admin_production_change_capture_immutable", 27, "admin_production_change_evidence_immutable"],
+    ["admin_final_submission", "admin_final_submission_delete_guard", 11, "admin_final_submission_immutable_guard"],
+    ["admin_final_submission", "admin_final_submission_truncate_guard", 34, "admin_final_submission_immutable_guard"],
+    ["admin_final_submission_audit", "admin_final_submission_audit_immutable", 27, "admin_final_submission_immutable_guard"],
+    ["admin_final_submission_audit", "admin_final_submission_audit_truncate_guard", 34, "admin_final_submission_immutable_guard"],
+    ["admin_final_submission_receipt", "admin_final_submission_receipt_immutable", 27, "admin_final_submission_immutable_guard"],
+    ["admin_final_submission_receipt", "admin_final_submission_receipt_truncate_guard", 34, "admin_final_submission_immutable_guard"],
   ];
   const adminTriggers = await pool.query(`
     SELECT relation.relname, trigger_record.tgname, trigger_record.tgtype, function_record.proname

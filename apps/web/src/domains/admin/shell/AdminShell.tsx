@@ -157,6 +157,17 @@ function AdminNavigation({
                 <AdminRouteIcon icon="plans" className="shrink-0" />
                 <span className={cn("truncate", collapsed && "sr-only")}>{t("admin.businessPlan.title")}</span>
               </a>}
+              {group.id === "growth" && <a
+                href="/admin/growth/business-plan/?view=final-submission"
+                onClick={onNavigate}
+                data-admin-final-submission-entry="true"
+                aria-label={collapsed ? t("admin.finalSubmission.title") : undefined}
+                title={collapsed ? t("admin.finalSubmission.title") : undefined}
+                className={cn("flex min-h-11 items-center gap-3 rounded-xl border border-transparent px-3 text-sm font-medium text-fg-2 hover:border-line hover:bg-raised/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent", collapsed && "justify-center px-0")}
+              >
+                <AdminRouteIcon icon="plans" className="shrink-0" />
+                <span className={cn("truncate", collapsed && "sr-only")}>{t("admin.finalSubmission.title")}</span>
+              </a>}
             </div>
           </section>
         );

@@ -541,6 +541,11 @@
       "types": "./src/studio-security-rbac.ts",
       "import": "./src/studio-security-rbac.ts",
       "default": "./src/studio-security-rbac.ts"
+    },
+    "./final-submission": {
+      "types": "./src/final-submission/index.ts",
+      "import": "./src/final-submission/index.ts",
+      "default": "./src/final-submission/index.ts"
     }
   },
   "dependencies": {
