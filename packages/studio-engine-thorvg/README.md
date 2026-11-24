@@ -9,7 +9,14 @@
 - `wasm/thorvg.wasm`은 `@thorvg/webcanvas@1.1.4`의 바이트를 그대로 복사하고 `INTEGRITY.sha256`으로 고정한다.
 - Canvas paint를 분리·dispose한 뒤 canvas/backend를 제거한다. process-global engine은 마지막 lease가 해제된 뒤 종료한다.
 
-브라우저 수명주기 검증:
+wrapper가 불러오는 기본 ESM과 `locateFile`로 연결하는 단일 스레드 WASM은 같은 npm 배포본에 들어 있다. [npm 빌드 출처 증명](https://registry.npmjs.org/-/npm/v1/attestations/@thorvg%2fwebcanvas@1.1.4)의 커밋과 배포본 무결성 값은 [NOTICE](./NOTICE)에서 확인할 수 있다.
+
+| npm 파일 | 바이트 | SHA-256 |
+| --- | ---: | --- |
+| `dist/webcanvas.esm.js` | 398262 | `c3ac4af72b509ce25b937d781d31e903d4a007c1fdb76cedea69ee49a6dad82e` |
+| `dist/thorvg.wasm` | 903904 | `0b4fd4628eec1843c47602ececdd416215f1e1ae397c108552cda3710507a962` |
+
+## 브라우저 수명주기 검증
 
 ```sh
 pnpm run verify:studio-thorvg-browser

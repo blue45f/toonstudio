@@ -13,11 +13,12 @@ ThorVG submodule: https://github.com/thorvg/thorvg/tree/47658a80842f3b3182aded03
 WASM 크기: 903904 bytes
 WASM SHA256: 0b4fd4628eec1843c47602ececdd416215f1e1ae397c108552cda3710507a962
 무결성 파일: wasm/INTEGRITY.sha256
-아래 MIT 전문은 위 고정 소스의 LICENSE를 그대로 보존한다.
+아래는 WebCanvas와 ThorVG 코어의 저작권 문구와 두 프로젝트에 공통으로 적용되는 MIT 허가문이다.
 
 MIT License
 
-Copyright (c) 2023 - 2026 ThorVG Project
+WebCanvas: Copyright (c) 2023 - 2026 ThorVG Project
+ThorVG core: Copyright (c) 2020 - 2026 ThorVG Project
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
