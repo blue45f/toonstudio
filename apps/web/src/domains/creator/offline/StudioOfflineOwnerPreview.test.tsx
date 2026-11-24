@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioAutosaveUnsupportedVersionError, studioAutosaveKey, type StudioAutosavePayload } from "../studio-autosave";
+import { StudioOfflineOwnerPreviewVisibility } from "./studio-offline-owner-preview-visibility";
 import { StudioOfflineOwnerPreview } from "./StudioOfflineOwnerPreview";
 
 const io = vi.hoisted(() => ({
@@ -29,6 +30,14 @@ const payload: StudioAutosavePayload = {
 };
 const saved = { state: "snapshot", savedAt, sequence: 3, revision: 3, payload };
 
+beforeAll(async () => {
+  await Promise.all([
+    import("../StudioPageThumbnails"),
+    import("../studio-autosave-opfs-session"),
+    import("../studio-autosave-sqlite-store"),
+  ]);
+});
+
 beforeEach(() => {
   vi.resetAllMocks();
   io.grant.mockReturnValue(owner);
@@ -40,6 +49,34 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("오프라인 본인 원고 미리보기", () => {
+  it("검증된 사본이 화면에 나타날 때만 잠금 안내를 교체하고 권한이 사라지면 되돌린다", async () => {
+    const visible = vi.fn();
+    let finishRead!: (record: typeof saved) => void;
+    io.read.mockReturnValue(new Promise<typeof saved>(resolve => { finishRead = resolve; }));
+    const content = () => (
+      <StudioOfflineOwnerPreviewVisibility.Provider value={visible}>
+        <StudioOfflineOwnerPreview workId={workId} noticeId="source-status">
+          <p role="alert" id="source-status">원고를 열지 못했어요</p>
+        </StudioOfflineOwnerPreview>
+      </StudioOfflineOwnerPreviewVisibility.Provider>
+    );
+    const view = render(content());
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(visible).not.toHaveBeenCalled();
+    await act(async () => { finishRead(saved); });
+    const figure = await screen.findByRole("figure");
+    expect(figure.id).toBe("source-status");
+    expect(figure.querySelectorAll("polyline")).toHaveLength(10);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(visible).toHaveBeenLastCalledWith(workId);
+
+    io.grant.mockReturnValue(null);
+    view.rerender(content());
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.queryByRole("figure")).toBeNull();
+    expect(visible).toHaveBeenLastCalledWith(null);
+  });
+
   it.each(["opfs", "sqlite"])("%s 영속본에서 같은 원고의 실제 10획을 읽기 전용으로 그린다", async (source) => {
     if (source === "sqlite") {
       io.read.mockResolvedValue(null);

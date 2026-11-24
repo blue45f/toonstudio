@@ -145,6 +145,15 @@ export function renderStudioCanvasStickyBanners({
   const magnificationBounds =
     resolveStudioViewMagnificationBounds(viewBaseScale);
 
+  function renderSourceNotice(notice: ReactNode) {
+    if (!sourceHydrationPending || !workId || remixId || workHydrationUnsupportedFormat) return notice;
+    return (
+      <StudioOfflineOwnerPreview workId={workId} noticeId={inputNoticeId} onReconnect={onRetrySourceHydration}>
+        {notice}
+      </StudioOfflineOwnerPreview>
+    );
+  }
+
   return (
     <Fragment>
       <div
@@ -292,10 +301,7 @@ export function renderStudioCanvasStickyBanners({
           </div>
         </div>
       ) : null}
-      {sourceHydrationPending && workId && !remixId && !workHydrationUnsupportedFormat ? (
-        <StudioOfflineOwnerPreview workId={workId} onReconnect={onRetrySourceHydration} />
-      ) : null}
-      {sourceHydrationPending || collaborationDocumentUnavailable ? (
+      {sourceHydrationPending || collaborationDocumentUnavailable ? renderSourceNotice(
         <div id={inputNoticeId} role="status" className="sticky left-0 top-0 z-20 grid min-h-[15rem] w-full place-items-center px-6 py-10 text-center lg:min-h-[20rem]">
           <span className="max-w-sm">
             <Lock size={22} className="mx-auto text-warn" aria-hidden />

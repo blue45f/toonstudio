@@ -313,71 +313,6 @@ export function StudioReliabilityStatusRail({ strokeReadNoticeInCanvas = false }
       ) : null}
 
       {rejectedStrokeStorageError && !strokeReadNoticeInCanvas ? <StudioStrokeRecoveryReadNotice message={rejectedStrokeStorageError} /> : null}
-      {rejectedStrokes.length > STUDIO_REJECTED_STROKE_RECOVERY_LIMIT ? (
-        <p role="status" className="pointer-events-auto max-w-[min(30rem,100%)] rounded-lg bg-card/95 px-2.5 py-1.5 text-xs text-fg-2">
-          복구할 획 {rejectedStrokes.length}개가 보관돼 있습니다. 최근 {STUDIO_REJECTED_STROKE_RECOVERY_LIMIT}개를 먼저 표시하며, 처리하면 다음 획이 나타납니다.
-        </p>
-      ) : null}
-      {rejectedStrokes.slice(0, STUDIO_REJECTED_STROKE_RECOVERY_LIMIT).map((record) => (
-        <div
-          key={record.id}
-          data-studio-rejected-stroke-notice
-          data-studio-rejected-stroke-id={record.id}
-          role="status"
-          aria-live="polite"
-          className="pointer-events-auto flex w-full max-w-[min(30rem,100%)] min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-warning/40 bg-warning-soft/25 px-2.5 py-1.5 text-xs text-fg-2 shadow-sm backdrop-blur-md"
-        >
-          <span className="min-w-0 flex-1 font-medium leading-relaxed">
-            {record.provider} 엔진이 획을 확정하지 못해 미리보기를 중단했습니다. 그린 획은 보존돼 있습니다
-            ({record.reason}).
-            {record.durability === "pending" ? " 기기에 복구 원본을 저장하고 있습니다." : null}
-            {record.durability === "saved" ? " 기기에 복구 원본을 저장했습니다." : null}
-            {record.storageError ? ` ${record.storageError}` : null}
-          </span>
-          {record.durability === "failed" ? (
-            <button type="button" onClick={() => retryStudioRejectedStrokePersistence(record.id)} className="min-h-11 rounded-lg px-3 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">복구 원본 저장 재시도</button>
-          ) : null}
-          <button
-            type="button"
-            data-studio-rejected-stroke-restore
-            onClick={() => {
-              const outcome = restoreStudioRejectedStroke(record.id);
-              setRejectedStrokeNotice(
-                outcome.status === "restored"
-                  ? "획을 문서에 복구했습니다."
-                  : outcome.status === "refused"
-                    ? outcome.reason
-                    : r3c07StatusText("studio.panelStatus.r3c07.reliabilityRail.recoveryUnavailable", "지금은 복구할 수 없습니다. 편집기가 준비된 뒤 다시 시도하세요."),
-              );
-            }}
-            className="ml-auto min-h-11 shrink-0 rounded-lg bg-accent/20 px-3 py-2 font-bold text-accent hover:bg-accent/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            획 복구
-          </button>
-          <button
-            type="button"
-            data-studio-rejected-stroke-dismiss
-            onClick={() => {
-              dismissStudioRejectedStroke(record.id);
-              setRejectedStrokeNotice(null);
-            }}
-            className="min-h-11 shrink-0 rounded-lg bg-line px-3 py-2 font-medium text-fg-3 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            버리기
-          </button>
-        </div>
-      ))}
-      {rejectedStrokeNotice ? (
-        <p
-          data-studio-rejected-stroke-outcome
-          role="status"
-          aria-live="polite"
-          className="pointer-events-auto w-full max-w-[min(30rem,100%)] rounded-lg border border-line bg-card/95 px-2.5 py-1.5 text-xs text-fg-2 shadow-sm backdrop-blur-md"
-        >
-          {rejectedStrokeNotice}
-        </p>
-      ) : null}
-
       {/*
        * 상시 상태 점 — 흐름 높이 0. "아무 문제 없음"을 문장으로 상시 예약하는 대신,
        * 알고 싶을 때 눌러서(마우스·탭 포커스·Enter/Space 모두) 확인하는 자리다.
@@ -407,6 +342,79 @@ export function StudioReliabilityStatusRail({ strokeReadNoticeInCanvas = false }
         </button> : null}
       </div>
     </div>
+    {(rejectedStrokes.length > 0 || rejectedStrokeNotice) && (
+      <div
+        data-studio-rejected-stroke-actions
+        className="pointer-events-none absolute inset-x-3 bottom-3 top-[min(8rem,20%)] z-30 flex items-start justify-center"
+      >
+        <div className="flex max-h-[min(100%,48dvh,24rem)] w-full max-w-[30rem] flex-col gap-2 overflow-y-auto overscroll-contain">
+          {rejectedStrokes.length > STUDIO_REJECTED_STROKE_RECOVERY_LIMIT ? (
+            <p role="status" className="pointer-events-auto max-w-[min(30rem,100%)] rounded-lg bg-card/95 px-2.5 py-1.5 text-xs text-fg-2">
+              복구할 획 {rejectedStrokes.length}개가 보관돼 있습니다. 최근 {STUDIO_REJECTED_STROKE_RECOVERY_LIMIT}개를 먼저 표시하며, 처리하면 다음 획이 나타납니다.
+            </p>
+          ) : null}
+          {rejectedStrokes.slice(0, STUDIO_REJECTED_STROKE_RECOVERY_LIMIT).map((record) => (
+            <div
+              key={record.id}
+              data-studio-rejected-stroke-notice
+              data-studio-rejected-stroke-id={record.id}
+              role="status"
+              aria-live="polite"
+              className="pointer-events-auto flex w-full max-w-[min(30rem,100%)] min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-warning/40 bg-panel px-2.5 py-1.5 text-xs text-fg-2 shadow-sm backdrop-blur-md"
+            >
+              <span className="min-w-0 flex-1 font-medium leading-relaxed">
+                {record.provider} 엔진이 획을 확정하지 못해 미리보기를 중단했습니다. 그린 획은 보존돼 있습니다
+                ({record.reason}).
+                {record.durability === "pending" ? " 기기에 복구 원본을 저장하고 있습니다." : null}
+                {record.durability === "saved" ? " 기기에 복구 원본을 저장했습니다." : null}
+                {record.storageError ? ` ${record.storageError}` : null}
+              </span>
+              {record.durability === "failed" ? (
+                <button type="button" onClick={() => retryStudioRejectedStrokePersistence(record.id)} className="min-h-11 rounded-lg px-3 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">복구 원본 저장 재시도</button>
+              ) : null}
+              <button
+                type="button"
+                data-studio-rejected-stroke-restore
+                onClick={() => {
+                  const outcome = restoreStudioRejectedStroke(record.id);
+                  setRejectedStrokeNotice(
+                    outcome.status === "restored"
+                      ? "획을 문서에 복구했습니다."
+                      : outcome.status === "refused"
+                        ? outcome.reason
+                        : r3c07StatusText("studio.panelStatus.r3c07.reliabilityRail.recoveryUnavailable", "지금은 복구할 수 없습니다. 편집기가 준비된 뒤 다시 시도하세요."),
+                  );
+                }}
+                className="ml-auto min-h-11 shrink-0 rounded-lg bg-accent/20 px-3 py-2 font-bold text-accent hover:bg-accent/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                획 복구
+              </button>
+              <button
+                type="button"
+                data-studio-rejected-stroke-dismiss
+                onClick={() => {
+                  dismissStudioRejectedStroke(record.id);
+                  setRejectedStrokeNotice(null);
+                }}
+                className="min-h-11 shrink-0 rounded-lg bg-line px-3 py-2 font-medium text-fg-3 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                버리기
+              </button>
+            </div>
+          ))}
+          {rejectedStrokeNotice ? (
+            <p
+              data-studio-rejected-stroke-outcome
+              role="status"
+              aria-live="polite"
+              className="w-full max-w-[min(30rem,100%)] rounded-lg border border-line bg-card/95 px-2.5 py-1.5 text-xs text-fg-2 shadow-sm backdrop-blur-md"
+            >
+              {rejectedStrokeNotice}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    )}
     {drawing && detailOpen && typeof document !== "undefined" ? createPortal(<StudioDrawingClarityTaskDialog id="studio-drawing-reliability-task" title={bt("저장·화면 문제 해결", "Save and display troubleshooting")} kind="reliability"
       returnFocus={() => quietLauncher ? rootRef.current?.closest('[data-studio-editor="true"]')?.querySelector<HTMLElement>('[data-studio-clarity-more-trigger="true"]') ?? null : returnTrigger.current}
       onClose={() => setDetailOpen(false)}>{() => detail}</StudioDrawingClarityTaskDialog>, document.body) : null}

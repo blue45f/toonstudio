@@ -61,6 +61,7 @@ export interface StudioDraftSaveCenterInput {
   readonly isOnline: boolean;
   readonly hydrated: boolean;
   readonly hydrationFailed: boolean;
+  readonly offlineReadOnlyPreview?: boolean;
   readonly metadataRequired: boolean;
   readonly saving: boolean;
   readonly durableSaveIntentPending?: boolean;
@@ -302,10 +303,24 @@ function serverSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatus
 
 export function resolveStudioDraftSaveCenter(
   input: StudioDraftSaveCenterInput,
+  t: (ko: string, en: string) => string = (ko) => ko,
 ): StudioDraftSaveCenterViewModel {
-  const device = deviceSection(input);
-  const server = serverSection(input);
   const localRisk = hasLocalDurabilityRisk(input);
+  const showingPreview = input.offlineReadOnlyPreview && !input.isOnline && !input.hydrated;
+  const device: StudioDraftSaveStatusSection = showingPreview && !localRisk
+    ? {
+      tone: "neutral",
+      title: t("기기에 저장된 원고", "On-device manuscript"),
+      detail: t("저장된 사본을 읽기 전용으로 열었어요.", "The saved copy is open in read-only mode."),
+    }
+    : deviceSection(input);
+  const server: StudioDraftSaveStatusSection = showingPreview
+    ? {
+      tone: "neutral",
+      title: t("오프라인", "Offline"),
+      detail: t("연결이 돌아오면 서버 원고를 다시 확인해요.", "The manuscript will be checked with the server when you reconnect."),
+    }
+    : serverSection(input);
   const hasServerRisk = server.tone === "danger";
   const serverRevision = normalizedRevision(input.serverRevision);
   const serverConflict = Boolean(
@@ -318,7 +333,13 @@ export function resolveStudioDraftSaveCenter(
   let headline: string;
   let detail: string;
 
-  if (input.hydrationFailed) {
+  if (showingPreview && !localRisk) {
+    phase = "offline";
+    tone = "neutral";
+    compactLabel = t("읽기 전용", "Read-only");
+    headline = device.title;
+    detail = server.detail;
+  } else if (input.hydrationFailed && !showingPreview) {
     phase = "load-risk";
     tone = "danger";
     compactLabel = "원고 복구 확인";
@@ -462,7 +483,7 @@ export function resolveStudioDraftSaveCenter(
     device,
     server,
     primaryAction,
-    saveActionLabel,
+    saveActionLabel: showingPreview ? t("읽기 전용", "Read-only") : saveActionLabel,
     saveActionDisabled,
     canOpenVersions: true,
     shouldPromoteBackup: localRisk

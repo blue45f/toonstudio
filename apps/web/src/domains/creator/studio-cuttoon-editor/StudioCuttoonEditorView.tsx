@@ -9,7 +9,7 @@ import { StudioColorWorkspaceProvider } from "../color/StudioColorWorkspaceConte
 import { Maximize2 } from "lucide-react";
 import { StudioLiveCollaborationProviderLazy as StudioLiveCollaborationProvider } from "../live/StudioLiveCollaborationProviderLazy";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "../studio-chrome-ui";
-import { lazy, Suspense, useLayoutEffect } from "react";
+import { lazy, Suspense, useLayoutEffect, useState } from "react";
 import { cancelPendingStudioAllTools } from "../studio-toolbar-channel";
 import { StudioHelpCenterHost } from "../StudioHelpCenterHost";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
@@ -20,6 +20,7 @@ import { StudioWorkspaceNavigator } from "../StudioWorkspaceNavigator";
 import { Container } from "@/shared/components/container";
 import { cn } from "@/shared/lib/utils";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { StudioOfflineOwnerPreviewVisibility } from "../offline/studio-offline-owner-preview-visibility";
 import { StudioCuttoonEditorChrome } from "./StudioCuttoonEditorChrome";
 import { StudioCuttoonEditorDialogs } from "./StudioCuttoonEditorDialogs";
 import { StudioCuttoonEditorHosts } from "./StudioCuttoonEditorHosts";
@@ -57,6 +58,9 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
 
 function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity();
+  const [previewWorkId, setPreviewWorkId] = useState<string | null>(null);
+  const offlineReadOnlyPreview = previewWorkId !== null && previewWorkId === s.workId && s.sourceHydrationPending;
+  const visibleError = offlineReadOnlyPreview && s.error === s.workHydrationError ? null : s.error;
   const {
     activePage,
     appSettings,
@@ -211,7 +215,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
           (isFullscreen || maximized) && "min-h-0"
         )}
       >
-        <StudioCuttoonEditorChrome {...s} />
+        <StudioCuttoonEditorChrome {...s} error={visibleError} />
         {s.saveSyncStore && !(drawingAppPresentation && !canvasOnlyMode && !mobileImmersive) ? (
           <Suspense fallback={null}>
             <StudioSaveStatusChromeMount
@@ -239,6 +243,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
           workId={s.workId}
           workHydrated={s.workHydrated}
           workHydrationFailed={s.workHydrationFailed}
+          offlineReadOnlyPreview={offlineReadOnlyPreview}
           pendingSaveIntent={s.pendingSaveIntent}
           loadedWork={s.loadedWork}
           sharedDocument={s.sharedDocument}
@@ -250,7 +255,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
           autosaveDocumentLeadership={s.autosaveDocumentLeadership}
           collaborationOperationSyncPending={s.collaborationOperationSyncPending}
           collaborationDocumentLocked={s.collaborationDocumentLocked}
-          error={s.error}
+          error={visibleError}
           mobileImmersive={s.mobileImmersive}
           canvasOnlyMode={s.canvasOnlyMode}
           onSaveDraft={() => s.studioMenubarContentHandlers.handleSave("draft")}
@@ -260,7 +265,9 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
         />
         </Suspense>
         {s.scopedWriteRuntime ? <StudioScopedWriteTargetPicker runtime={s.scopedWriteRuntime} currentPageId={s.currentPageId} onPage={s.setCurrentPageId} onLayer={s.onScopedWriteLayer} onDraw={() => { s.activatePrimaryCanvasTool("draw", "pen"); }} /> : null}
-        <StudioCuttoonEditorWorkspace {...s} />
+        <StudioOfflineOwnerPreviewVisibility.Provider value={setPreviewWorkId}>
+          <StudioCuttoonEditorWorkspace {...s} />
+        </StudioOfflineOwnerPreviewVisibility.Provider>
         {s.contextMenu.visible && <Suspense fallback={null}><StudioCuttoonEditorContextMenu {...s} /></Suspense>}
       </Container>
     {canvasOnlyMode ? (
