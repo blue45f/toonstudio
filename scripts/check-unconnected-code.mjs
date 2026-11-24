@@ -136,7 +136,8 @@ function resolveModule(fromFile, specifier, srcRoot, sourceFiles) {
 }
 
 const IMPORT_SPECIFIER_PATTERNS = [
-  /(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["']([^"']+)["']/gu,
+  /(?:^|[\r\n;])\s*import\s+["']([^"']+)["']/gu,
+  /(?:^|[\r\n;])\s*(?:import|export)\s+(?:type\s+)?[^;]*?\s+from\s+["']([^"']+)["']/gu,
   /import\(\s*["']([^"']+)["']\s*\)/gu,
 ];
 

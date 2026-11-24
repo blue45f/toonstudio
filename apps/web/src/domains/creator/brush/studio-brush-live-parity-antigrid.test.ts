@@ -720,5 +720,11 @@ describe("종이질 격자·체커보드 주기성 억제 (R2 블루노이즈 �
       }
     }
     expect(varyingNeighbors / totalChecked).toBeGreaterThan(0.95);
+    // 보로노이 기공 전환 후에도 저불투명 스펀지 브러시(bleeding-stain·cloud-billow-soft 등)의
+    // 첫 탭 가시성을 지탱하는 피크 알파 에너지가 유지되어야 한다.
+    for (const softness of [0.58, 0.645, 0.75]) {
+      const softMap = buildStudioBrushTipAlphaMap({ shape: "sponge", softness, alphaMapSize: 128 });
+      expect(Math.max(...softMap.alphas)).toBeGreaterThanOrEqual(0.88);
+    }
   });
 });

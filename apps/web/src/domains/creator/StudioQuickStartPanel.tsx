@@ -23,6 +23,7 @@ import {
   type StudioShortcutActionId,
 } from "./studio-app-settings";
 import { useStudioCanvasStartDockExpanded } from "./canvas/studio-canvas-start-dock-state";
+import { StudioStarterCardArt } from "./studio-creative-starter-art";
 import { studioDialogFocusAnchor } from "./studio-dialog-focus-return";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -584,16 +585,19 @@ export function StudioQuickStartPanel({
                     type="button"
                     onClick={(event) => item.onClick(event.currentTarget)}
                     data-studio-quick-tool={item.id}
-                    className="group flex min-h-12 touch-manipulation items-center gap-2 rounded-lg border border-line bg-card px-2.5 py-2 text-left transition-[border-color,background] duration-150 hover:border-accent/55 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+                    className="group flex min-h-12 touch-manipulation flex-col gap-1.5 rounded-lg border border-line bg-card p-2 text-left transition-[border-color,background] duration-150 hover:border-accent/55 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
                   >
-                    <span className="grid size-7 shrink-0 place-items-center rounded-md bg-raised text-fg-2 group-hover:text-accent">
-                      <Icon size={14} aria-hidden />
+                    <StudioStarterCardArt id={item.id} className="h-9" />
+                    <span className="flex w-full items-center gap-1.5">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-raised text-fg-2 group-hover:text-accent">
+                        <Icon size={13} aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[0.7rem] font-bold leading-tight text-fg [word-break:keep-all]">{item.label}</span>
+                        <span className="mt-0.5 block truncate text-[0.62rem] text-fg-3">{item.hint}</span>
+                      </span>
+                      <ChevronRight size={13} className="shrink-0 text-fg-3 group-hover:text-accent" aria-hidden />
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[0.7rem] font-bold leading-tight text-fg">{item.label}</span>
-                      <span className="mt-0.5 block truncate text-[0.62rem] text-fg-3">{item.hint}</span>
-                    </span>
-                    <ChevronRight size={13} className="shrink-0 text-fg-3 group-hover:text-accent" aria-hidden />
                   </button>
                 );
               })}

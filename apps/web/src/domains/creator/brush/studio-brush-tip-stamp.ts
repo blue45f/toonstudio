@@ -506,7 +506,7 @@ export function sampleStudioBrushTipProceduralAlpha(
     }
     case "sponge": {
       if (radius >= 1) return 0;
-      // 황금각 회전 보로노이 기공으로 정방 체커보드 격자 없이 결정론적 스펀지 질감을 만든다.
+      // 황금각 회전 보로노이 기공으로 격자를 억제하고, 거리 계수(1.35)로 기존 스펀지 피크·평균 에너지를 유지한다.
       const sx = (nx * 0.832_050_3 - ny * 0.554_700_2 + 1.37) * 5.2;
       const sy = (nx * 0.554_700_2 + ny * 0.832_050_3 + 1.37) * 5.2;
       const ix = Math.floor(sx);
@@ -522,7 +522,7 @@ export function sampleStudioBrushTipProceduralAlpha(
           if (cur < d2) d2 = cur;
         }
       }
-      const pore = clamp01(Math.sqrt(d2) * 1.15);
+      const pore = clamp01(Math.sqrt(d2) * 1.35);
       return clamp01(Math.pow(1 - radius, 0.28 + soft * 0.75) * (0.24 + 0.76 * Math.pow(pore, 0.55 + soft * 0.8)));
     }
     case "sumi": {
