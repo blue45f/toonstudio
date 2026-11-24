@@ -426,7 +426,8 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 }
 
 /* 한 줄 가로폭 정밀 압축 · 동심원 캡슐 · 우상단 비충돌 max-width · 그리기 중 자동 후퇴(Breathing Auto-Recede) */
-.studio-drawing-ergonomics-bar{gap:2px}
+.studio-drawing-ergonomics-bar{flex:1 1 auto;gap:2px;overflow-x:auto;scrollbar-width:none}
+.studio-drawing-ergonomics-bar::-webkit-scrollbar{display:none}
 .studio-drawing-ergonomics-chip,.studio-drawing-stage-pill{gap:4px;padding:0 6px;border-radius:var(--studio-jewel-radius-inner,10px)}
 .studio-drawing-stepper-btn,.studio-drawing-stepper-readout{border-radius:var(--studio-jewel-radius-inner,10px)}
 .studio-drawing-stepper[data-studio-brush-width-wheel="true"]{cursor:ns-resize}
@@ -434,6 +435,22 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 .studio-drawing-aux-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:color-mix(in oklch,var(--color-accent) 20%,var(--color-card));color:var(--color-accent);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
 .studio-drawing-zen-chip[aria-pressed="true"]{border-color:color-mix(in oklch,var(--color-accent) 60%,var(--color-line-strong));background:color-mix(in oklch,var(--color-accent) 18%,var(--color-panel));color:var(--color-accent);font-weight:700}
 .studio-drawing-ergonomics-bar[data-studio-compact-aux-collapsed="true"] [data-studio-aux-control="true"]{display:none}
+/* 1024px~1599px(1440px 포함) 데스크톱 상단 퀵 바 우측 넘침 방지: 44px 터치 타깃과 스크린리더 라벨을 유지한 채 보조 아이콘 칩을 간결 압축 */
+@media (min-width: 1024px) and (max-width: 1599px) {
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-page-position{padding:0 6px;max-width:110px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-ergonomics-bar{gap:1px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-ergonomics-chip{position:relative;padding:0 5px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stepper-readout{position:relative;padding:0 4px;min-width:44px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stabilizer-group{padding-inline-end:2px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stabilizer-slider{display:none}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is(.studio-drawing-brush-label,.studio-drawing-ergonomics-compact-prefix){position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is([data-studio-compact-icon-chip="true"],[data-studio-radial-quick-dial-trigger="true"],[data-studio-handedness-toggle="true"]){position:relative;padding:0;width:44px;min-width:44px}
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) :is([data-studio-compact-icon-chip="true"],[data-studio-radial-quick-dial-trigger="true"],[data-studio-handedness-toggle="true"])>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+}
+/* 1420px~1679px 구간에서는 상단 헤더의 5단계 스위처와 중복되는 퀵 바 단계 필을 숨겨 가로 여유를 확보한다. */
+@media (min-width: 1420px) and (max-width: 1679px) {
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) .studio-drawing-stage-pills{display:none}
+}
 
 @media (min-width: 1024px) {
   .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){

@@ -6,6 +6,7 @@ import {
   type QuickMenuSlot,
 } from "../drawing/studio-quickmenu-and-quickshape";
 import type { PressureCurvePresetId } from "../drawing/studio-pressure-curve-and-colordrop";
+import type { StudioPressureCurvePreset } from "./studio-live-stroke-foley-bridge";
 
 export type StudioDrawingErgonomicsSymmetryType =
   | "none"
@@ -129,6 +130,22 @@ export function resolveNextPressurePreset(current: PressureCurvePresetId): Press
   const index = PRESSURE_PRESET_CYCLE_ORDER.indexOf(current);
   if (index < 0) return "soft-ink";
   return PRESSURE_PRESET_CYCLE_ORDER[(index + 1) % PRESSURE_PRESET_CYCLE_ORDER.length] ?? "linear";
+}
+
+/** 베지어 필압 곡선 프리셋을 라이브 Foley·포인터 감마 필압 프리셋(standard/soft/firm)으로 매핑한다. */
+export function mapPressurePresetToFoleyCurve(
+  preset: PressureCurvePresetId | "soft" | "hard" | "s-curve",
+): StudioPressureCurvePreset {
+  if (preset === "soft-ink" || preset === "soft") return "soft";
+  if (
+    preset === "firm-gpen" ||
+    preset === "expressive-brush" ||
+    preset === "hard" ||
+    preset === "s-curve"
+  ) {
+    return "firm";
+  }
+  return "standard";
 }
 
 export function formatPressurePresetLabel(

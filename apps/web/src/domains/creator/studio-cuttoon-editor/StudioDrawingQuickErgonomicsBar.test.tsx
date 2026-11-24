@@ -15,14 +15,21 @@ import {
   type StudioDrawingErgonomicsSession,
   type StudioDrawingErgonomicsSymmetryType,
 } from "./StudioDrawingQuickErgonomicsBar";
+import { mapPressurePresetToFoleyCurve } from "./studio-drawing-ergonomics-presets";
+import {
+  getStudioPressureCurvePreset,
+  setStudioPressureCurvePreset,
+} from "./studio-live-stroke-foley-bridge";
 
 beforeEach(() => {
   useI18n.setState({ lang: "ko" });
+  setStudioPressureCurvePreset("standard");
 });
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  setStudioPressureCurvePreset("standard");
   useI18n.setState({ lang: "ko" });
 });
 
@@ -344,13 +351,18 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
     render(<StudioDrawingQuickErgonomicsBar session={session} />);
 
     const linearBtn = screen.getByRole("button", { name: "필압 표준" });
+    expect(document.querySelectorAll("[data-studio-pressure-curve]")).toHaveLength(1);
     expect(linearBtn.getAttribute("aria-pressed")).toBe("false");
     expect(linearBtn.getAttribute("data-studio-pressure-preset")).toBe("linear");
+    expect(linearBtn.getAttribute("data-studio-pressure-curve")).toBe("standard");
+    expect(getStudioPressureCurvePreset()).toBe("standard");
     fireEvent.click(linearBtn);
 
     const softBtn = screen.getByRole("button", { name: "필압 부드러움" });
     expect(softBtn.getAttribute("aria-pressed")).toBe("true");
     expect(softBtn.getAttribute("data-studio-pressure-preset")).toBe("soft-ink");
+    expect(softBtn.getAttribute("data-studio-pressure-curve")).toBe("soft");
+    expect(getStudioPressureCurvePreset()).toBe("soft");
     expect(onChangePressureCurvePreset).toHaveBeenLastCalledWith("soft-ink", {
       x1: 0.15,
       y1: 0.45,
@@ -361,15 +373,24 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
 
     const firmBtn = screen.getByRole("button", { name: "필압 단단한 G펜" });
     expect(firmBtn.getAttribute("data-studio-pressure-preset")).toBe("firm-gpen");
+    expect(firmBtn.getAttribute("data-studio-pressure-curve")).toBe("firm");
+    expect(getStudioPressureCurvePreset()).toBe("firm");
     fireEvent.click(firmBtn);
 
     const expressiveBtn = screen.getByRole("button", { name: "필압 강약 강조" });
     expect(expressiveBtn.getAttribute("data-studio-pressure-preset")).toBe("expressive-brush");
+    expect(expressiveBtn.getAttribute("data-studio-pressure-curve")).toBe("firm");
+    expect(getStudioPressureCurvePreset()).toBe("firm");
     fireEvent.click(expressiveBtn);
 
     expect(screen.getByRole("button", { name: "필압 표준" }).getAttribute("aria-pressed")).toBe(
       "false",
     );
+    expect(getStudioPressureCurvePreset()).toBe("standard");
+    expect(mapPressurePresetToFoleyCurve("linear")).toBe("standard");
+    expect(mapPressurePresetToFoleyCurve("soft")).toBe("soft");
+    expect(mapPressurePresetToFoleyCurve("hard")).toBe("firm");
+    expect(mapPressurePresetToFoleyCurve("s-curve")).toBe("firm");
 
     const quickShapeBtn = screen.getByRole("button", { name: "도형 스냅" });
     expect(quickShapeBtn.getAttribute("aria-pressed")).toBe("true");

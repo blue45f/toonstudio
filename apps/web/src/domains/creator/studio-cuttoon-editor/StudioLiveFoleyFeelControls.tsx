@@ -25,6 +25,8 @@ export interface StudioLiveFoleyFeelControlsProps {
   readonly blocked: boolean;
   readonly blockedReason?: string;
   readonly blockedReasonId: string;
+  /** 상단 퀵 바처럼 별도 필압 칩이 있을 때 중복 필압 감도 칩을 숨긴다(단독 호출 기본값 false). */
+  readonly hidePressureChip?: boolean;
   readonly onPushCue?: (keycap: string, label: string, value?: string) => void;
 }
 
@@ -63,6 +65,7 @@ export function StudioLiveFoleyFeelControls({
   blocked,
   blockedReason,
   blockedReasonId,
+  hidePressureChip = false,
   onPushCue,
 }: StudioLiveFoleyFeelControlsProps) {
   const bt = useBilingual("studio.drawingClarity");
@@ -105,7 +108,10 @@ export function StudioLiveFoleyFeelControls({
         ) : (
           <Volume1 size={15} aria-hidden />
         )}
-        <span>{`${bt("필기음", "Foley")} · ${foleyShort}`}</span>
+        <span>
+          <span className="studio-drawing-ergonomics-compact-prefix">{`${bt("필기음", "Foley")} · `}</span>
+          {foleyShort}
+        </span>
       </button>
 
       <button
@@ -114,6 +120,7 @@ export function StudioLiveFoleyFeelControls({
         aria-pressed={nibVfxMode !== "off"}
         data-studio-nib-vfx-mode={nibVfxMode}
         data-studio-aux-control="true"
+        data-studio-compact-icon-chip="true"
         onClick={() => {
           const next = cycleLiveNibVfxMode();
           onPushCue?.("V", bt("필기감 FX", "Nib VFX"), formatNibVfxModeShort(next, bt));
@@ -127,31 +134,33 @@ export function StudioLiveFoleyFeelControls({
         <span>{`${bt("필기감 FX", "Nib FX")} · ${nibVfxShort}`}</span>
       </button>
 
-      <button
-        type="button"
-        className="studio-drawing-ergonomics-chip [word-break:keep-all]"
-        disabled={blocked}
-        aria-pressed={pressureCurve !== "standard"}
-        aria-describedby={blocked && blockedReason ? blockedReasonId : undefined}
-        data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
-        data-studio-pressure-curve={pressureCurve}
-        data-studio-aux-control="true"
-        onClick={() => {
-          const next = cycleStudioPressureCurvePreset();
-          onPushCue?.("P", bt("필압 감도", "Pressure feel"), formatPressureCurveShort(next, bt));
-        }}
-        title={
-          blocked && blockedReason
-            ? blockedReason
-            : bt(
-                "클릭할 때마다 펜 필압 감도 커브(표준 → 가볍게 → 강하게)를 전환합니다",
-                "Cycle pen pressure sensitivity curve (Standard → Soft → Firm)",
-              )
-        }
-      >
-        <Gauge size={15} aria-hidden />
-        <span>{`${bt("필압 감도", "Pressure")} · ${pressureShort}`}</span>
-      </button>
+      {hidePressureChip ? null : (
+        <button
+          type="button"
+          className="studio-drawing-ergonomics-chip [word-break:keep-all]"
+          disabled={blocked}
+          aria-pressed={pressureCurve !== "standard"}
+          aria-describedby={blocked && blockedReason ? blockedReasonId : undefined}
+          data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
+          data-studio-pressure-curve={pressureCurve}
+          data-studio-aux-control="true"
+          onClick={() => {
+            const next = cycleStudioPressureCurvePreset();
+            onPushCue?.("P", bt("필압 감도", "Pressure feel"), formatPressureCurveShort(next, bt));
+          }}
+          title={
+            blocked && blockedReason
+              ? blockedReason
+              : bt(
+                  "클릭할 때마다 펜 필압 감도 커브(표준 → 가볍게 → 강하게)를 전환합니다",
+                  "Cycle pen pressure sensitivity curve (Standard → Soft → Firm)",
+                )
+          }
+        >
+          <Gauge size={15} aria-hidden />
+          <span>{`${bt("필압 감도", "Pressure")} · ${pressureShort}`}</span>
+        </button>
+      )}
     </>
   );
 }

@@ -14,6 +14,7 @@ import {
   StudioDrawingQuickErgonomicsBar,
   type StudioDrawingErgonomicsSession,
 } from "./StudioDrawingQuickErgonomicsBar";
+import { StudioLiveFoleyFeelControls } from "./StudioLiveFoleyFeelControls";
 import {
   applyStudioPressureCurve,
   cycleLiveFoleyPreset,
@@ -543,9 +544,38 @@ describe("Studio live stroke Foley & feel bridge", () => {
     expect(extractCoalescedPointerSamples(null)).toEqual([]);
   });
 
-  it("StudioDrawingQuickErgonomicsBar에서 원클릭 필기음(차분함→ASMR→무음)·필압 감도(표준→가볍게→강하게) 토글과 KO/EN·KV 금지 계약을 충족한다", () => {
+  it("StudioDrawingQuickErgonomicsBar에서 중복 필압 칩 단일화·필기음(차분함→ASMR→무음)·단독 StudioLiveFoleyFeelControls 호환·KO/EN·KV 금지 계약을 충족한다", () => {
     const session = createErgonomicsSession();
-    const { rerender } = render(createElement(StudioDrawingQuickErgonomicsBar, { session }));
+    const { rerender, unmount } = render(createElement(StudioDrawingQuickErgonomicsBar, { session }));
+
+    // 상단 퀵 바에는 중복 필압 칩이 없으며 단일 필압 버튼 하나만 존재한다.
+    const quickBarPressureButtons = document.querySelectorAll<HTMLButtonElement>("[data-studio-pressure-curve]");
+    expect(quickBarPressureButtons).toHaveLength(1);
+    const unifiedPressureBtn = quickBarPressureButtons[0]!;
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-preset")).toBe("linear");
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-curve")).toBe("standard");
+    expect(getStudioPressureCurvePreset()).toBe("standard");
+
+    // 단일 필압 버튼 순환 시 Foley 브리지 필압 프리셋(linear→standard, soft-ink→soft, firm-gpen/expressive-brush→firm)도 동시 동기화
+    fireEvent.click(unifiedPressureBtn);
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-preset")).toBe("soft-ink");
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-curve")).toBe("soft");
+    expect(getStudioPressureCurvePreset()).toBe("soft");
+
+    fireEvent.click(unifiedPressureBtn);
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-preset")).toBe("firm-gpen");
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-curve")).toBe("firm");
+    expect(getStudioPressureCurvePreset()).toBe("firm");
+
+    fireEvent.click(unifiedPressureBtn);
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-preset")).toBe("expressive-brush");
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-curve")).toBe("firm");
+    expect(getStudioPressureCurvePreset()).toBe("firm");
+
+    fireEvent.click(unifiedPressureBtn);
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-preset")).toBe("linear");
+    expect(unifiedPressureBtn.getAttribute("data-studio-pressure-curve")).toBe("standard");
+    expect(getStudioPressureCurvePreset()).toBe("standard");
 
     // 필기음 버튼 사이클: 차분함 -> ASMR -> 무음 -> 차분함
     const foleyBtn = document.querySelector<HTMLButtonElement>("[data-studio-foley-preset]")!;
@@ -568,7 +598,18 @@ describe("Studio live stroke Foley & feel bridge", () => {
     expect(foleyBtn.getAttribute("data-studio-foley-preset")).toBe("quiet-atelier");
     expect(foleyBtn.getAttribute("aria-pressed")).toBe("true");
 
-    // 필압 감도 커브 버튼 사이클: 표준 -> 가볍게 -> 강하게 -> 표준
+    // 영문 로케일 검증 (퀵 바)
+    useI18n.setState({ lang: "en" });
+    rerender(createElement(StudioDrawingQuickErgonomicsBar, { session }));
+    expect(foleyBtn.textContent).toContain("Quiet");
+    expect(screen.getByRole("toolbar", { name: /Drawing options/ })).toBeTruthy();
+    unmount();
+
+    // 단독 StudioLiveFoleyFeelControls 기본(hidePressureChip=false) 100% 호환: 표준 -> 가볍게 -> 강하게 -> 표준
+    useI18n.setState({ lang: "ko" });
+    const standalone = render(
+      createElement(StudioLiveFoleyFeelControls, { blocked: false, blockedReasonId: "test-blocked" }),
+    );
     const pressureBtn = document.querySelector<HTMLButtonElement>("[data-studio-pressure-curve]")!;
     expect(pressureBtn).toBeTruthy();
     expect(pressureBtn.getAttribute("data-studio-pressure-curve")).toBe("standard");
@@ -587,15 +628,27 @@ describe("Studio live stroke Foley & feel bridge", () => {
     expect(pressureBtn.textContent).toContain("강하게");
     expect(getStudioPressureCurvePreset()).toBe("firm");
 
-    // 영문 로케일 검증
     useI18n.setState({ lang: "en" });
-    rerender(createElement(StudioDrawingQuickErgonomicsBar, { session }));
-    expect(foleyBtn.textContent).toContain("Quiet");
+    standalone.rerender(
+      createElement(StudioLiveFoleyFeelControls, { blocked: false, blockedReasonId: "test-blocked" }),
+    );
     expect(pressureBtn.textContent).toContain("Firm");
 
     fireEvent.click(pressureBtn);
     expect(pressureBtn.getAttribute("data-studio-pressure-curve")).toBe("standard");
     expect(pressureBtn.textContent).toContain("Standard");
+
+    // hidePressureChip=true 전달 시 중복 필압 칩은 렌더하지 않고 필기음·필기감 FX만 유지
+    standalone.rerender(
+      createElement(StudioLiveFoleyFeelControls, {
+        blocked: false,
+        blockedReasonId: "test-blocked",
+        hidePressureChip: true,
+      }),
+    );
+    expect(document.querySelector("[data-studio-pressure-curve]")).toBeNull();
+    expect(document.querySelector("[data-studio-foley-preset]")).toBeTruthy();
+    expect(document.querySelector("[data-studio-nib-vfx-mode]")).toBeTruthy();
 
     // 정적 위생 검증: localStorage/sessionStorage 0건, transition-all 0건, 원시 hex 0건
     const root = process.cwd();
@@ -612,7 +665,6 @@ describe("Studio live stroke Foley & feel bridge", () => {
     expect(controlsSrc).not.toMatch(/\b(?:localStorage|sessionStorage|indexedDB)\b/u);
     expect(controlsSrc).not.toContain("transition-all");
     expect(controlsSrc.match(/#[0-9a-fA-F]{3,8}\b/gu)).toBeNull();
-    expect(screen.getByRole("toolbar", { name: /Drawing options/ })).toBeTruthy();
 
     // 포인터 핸들러 지연 연결 검증: 정적 import 없이 onStrokeStart/onStrokeMove/onStrokeEnd·필압 감마 배선 확인
     const downSrc = readFileSync(

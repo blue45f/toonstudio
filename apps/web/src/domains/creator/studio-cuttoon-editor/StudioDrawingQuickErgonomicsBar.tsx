@@ -28,6 +28,7 @@ import {
   countActiveAuxiliaryTools,
   formatPressurePresetLabel,
   formatStabilizerLabel,
+  mapPressurePresetToFoleyCurve,
   readStudioShellHandedness,
   resolveNextPressurePreset,
   resolveNextSymmetryMode,
@@ -39,11 +40,9 @@ import {
   type StudioDrawingErgonomicsSymmetryType,
   type StudioDrawingHandedness,
 } from "./studio-drawing-ergonomics-presets";
-import {
-  StudioDrawingInputHudStrip,
-  StudioDrawingWorkflowStagePills,
-} from "./StudioDrawingInputHudStrip";
+import { StudioDrawingInputHudStrip, StudioDrawingWorkflowStagePills } from "./StudioDrawingInputHudStrip";
 import { StudioLiveFoleyFeelControls } from "./StudioLiveFoleyFeelControls";
+import { setStudioPressureCurvePreset } from "./studio-live-stroke-foley-bridge";
 import { loadRadialQuickMenuSlots, mergeRadialQuickMenuSlots } from "./studio-radial-quickmenu-preferences";
 
 import "./StudioDrawingJewelChrome.css";
@@ -158,6 +157,7 @@ export function StudioDrawingQuickErgonomicsBar({
   const miniDockTriggerRef = useRef<HTMLButtonElement>(null);
   const activePressurePreset = s.pressureCurvePreset ?? localPressurePreset;
   const activePressureCurve = PRESSURE_CURVE_PRESETS[activePressurePreset];
+  const activeFoleyPressureCurve = mapPressurePresetToFoleyCurve(activePressurePreset);
   const pressurePresetLabel = formatPressurePresetLabel(activePressurePreset, bt);
   const activeQuickShapeEnabled = s.quickShapeSnapEnabled ?? localQuickShapeEnabled;
   const [localQuickMenuSlots, setLocalQuickMenuSlots] = useState<readonly QuickMenuSlot[]>(() => loadQuickMenuSlots());
@@ -168,10 +168,7 @@ export function StudioDrawingQuickErgonomicsBar({
   const pushCue = useCallback((keycap: string, label: string, value?: string) => {
     setShortcutCue({ id: Date.now() + Math.random(), keycap, label, value });
   }, []);
-  const blocked =
-    s.activeSurfaceReviewLocked ||
-    s.pageEditLocked ||
-    (s.canvasInteractionBlocked && s.scopedCanvasDrawingAvailable !== true);
+  const blocked = s.activeSurfaceReviewLocked || s.pageEditLocked || (s.canvasInteractionBlocked && s.scopedCanvasDrawingAvailable !== true);
   const blockedReason = s.activeSurfaceReviewLocked
     ? bt("검수 잠금 상태에서는 그리기 옵션을 바꿀 수 없습니다", "Drawing options are locked during review")
     : s.pageEditLocked
@@ -184,24 +181,10 @@ export function StudioDrawingQuickErgonomicsBar({
   const zoomDisabled = Boolean(s.zoomLocked || s.viewTransformSuppressed);
   const zoomDisabledReason = s.zoomLocked
     ? bt("캔버스 배율이 잠겨 있습니다", "Canvas zoom is locked")
-    : s.viewTransformSuppressed
-      ? bt("현재 보기 변환이 일시 제한되어 있습니다", "View transform is temporarily unavailable")
-      : undefined;
-  const activeDrawMode =
-    s.tool !== "draw"
-      ? "inactive"
-      : s.drawMode === "eraser"
-        ? "eraser"
-        : s.drawMode === "shape"
-          ? "shape"
-          : s.drawMode === "pixel"
-            ? "pixel"
-            : "pen";
+    : s.viewTransformSuppressed ? bt("현재 보기 변환이 일시 제한되어 있습니다", "View transform is temporarily unavailable") : undefined;
+  const activeDrawMode = s.tool !== "draw" ? "inactive" : s.drawMode === "eraser" ? "eraser" : s.drawMode === "shape" ? "shape" : s.drawMode === "pixel" ? "pixel" : "pen";
   const roundedWidth = Math.max(1, Math.round(Number.isFinite(s.strokeWidth) ? s.strokeWidth : 4));
-  const opacityPercent = Math.max(
-    1,
-    Math.min(100, Math.round((Number.isFinite(s.brushOpacity) ? (s.brushOpacity ?? 1) : 1) * 100)),
-  );
+  const opacityPercent = Math.max(1, Math.min(100, Math.round((Number.isFinite(s.brushOpacity) ? (s.brushOpacity ?? 1) : 1) * 100)));
   const activeBrushName =
     studioEraserDisplayName(s.activeCatalogBrush?.id, s.activeCatalogBrush?.name?.trim(), bt) ||
     (activeDrawMode === "eraser" ? bt("지우개", "Eraser") : bt("G펜", "G-Pen"));
@@ -232,6 +215,12 @@ export function StudioDrawingQuickErgonomicsBar({
     perspectiveRulerActive: s.perspectiveRulerActive,
     showWebtoonGuides: s.showWebtoonGuides,
   });
+
+  useEffect(() => {
+    if (s.pressureCurvePreset) {
+      setStudioPressureCurvePreset(mapPressurePresetToFoleyCurve(s.pressureCurvePreset));
+    }
+  }, [s.pressureCurvePreset]);
 
   useEffect(() => {
     syncStudioShellZenFocus(zenFocus);
@@ -469,23 +458,25 @@ export function StudioDrawingQuickErgonomicsBar({
         aria-describedby={blocked && blockedReason ? blockedReasonId : undefined}
         data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
         data-studio-pressure-preset={activePressurePreset}
+        data-studio-pressure-curve={activeFoleyPressureCurve}
         data-studio-pressure-bezier={`${activePressureCurve.x1},${activePressureCurve.y1},${activePressureCurve.x2},${activePressureCurve.y2}`}
         data-studio-aux-control="true"
         onClick={() => {
           const next = resolveNextPressurePreset(activePressurePreset);
           setLocalPressurePreset(next);
+          setStudioPressureCurvePreset(mapPressurePresetToFoleyCurve(next));
           s.onChangePressureCurvePreset?.(next, PRESSURE_CURVE_PRESETS[next]);
         }}
         title={blocked && blockedReason ? blockedReason : bt(
-          "클릭할 때마다 필압 베지어 곡선 프리셋(표준 → 부드러움 → 단단한 G펜 → 강약 강조)을 전환합니다",
-          "Cycle cubic Bezier pen pressure curve presets",
+          "클릭할 때마다 필압 베지어 곡선 및 실시간 필압 감도(표준 → 부드러움 → 단단한 G펜 → 강약 강조)를 동시 전환합니다",
+          "Cycle cubic Bezier pen pressure curve and live pressure feel",
         )}
       >
         <Gauge size={15} aria-hidden />
         <span>{pressurePresetLabel}</span>
       </button>
 
-      <StudioLiveFoleyFeelControls blocked={blocked} blockedReason={blockedReason} blockedReasonId={blockedReasonId} onPushCue={pushCue} />
+      <StudioLiveFoleyFeelControls blocked={blocked} blockedReason={blockedReason} blockedReasonId={blockedReasonId} hidePressureChip onPushCue={pushCue} />
 
       <button
         type="button"
@@ -496,7 +487,7 @@ export function StudioDrawingQuickErgonomicsBar({
         data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
         data-studio-quickshape-snap={activeQuickShapeEnabled ? "true" : "false"}
         data-studio-quickmenu-slot-count={activeQuickMenuCount}
-        data-studio-aux-control="true"
+        data-studio-aux-control="true" data-studio-compact-icon-chip="true"
         onClick={() => {
           const next = !activeQuickShapeEnabled;
           setLocalQuickShapeEnabled(next);
@@ -516,7 +507,7 @@ export function StudioDrawingQuickErgonomicsBar({
           type="button"
           className="studio-drawing-ergonomics-chip"
           aria-pressed={sizeLocked}
-          data-studio-aux-control="true"
+          data-studio-aux-control="true" data-studio-compact-icon-chip="true"
           onClick={() => s.studioOptionsBarsHandlers?.toggleSizeLock?.()}
           title={bt("브러시를 바꿔도 현재 두께를 유지합니다", "Keep current brush size when switching brushes")}
         >
@@ -529,7 +520,7 @@ export function StudioDrawingQuickErgonomicsBar({
         type="button"
         className="studio-drawing-ergonomics-chip"
         aria-pressed={Boolean(s.canvasFlipH)}
-        data-studio-aux-control="true"
+        data-studio-aux-control="true" data-studio-compact-icon-chip="true"
         onClick={() => {
           if (s.studioOptionsBarsHandlers?.flipCanvasHorizontal) {
             s.studioOptionsBarsHandlers.flipCanvasHorizontal();
@@ -551,7 +542,7 @@ export function StudioDrawingQuickErgonomicsBar({
           s.symmetryType !== "off" &&
           s.symmetryType !== "none"
         }
-        data-studio-aux-control="true"
+        data-studio-aux-control="true" data-studio-compact-icon-chip="true"
         onClick={() => {
           s.changeStudioSymmetryType?.(resolveNextSymmetryMode(s.symmetryType));
         }}
@@ -573,7 +564,7 @@ export function StudioDrawingQuickErgonomicsBar({
           aria-describedby={blocked && blockedReason ? blockedReasonId : undefined}
           data-studio-disabled-reason={blocked && blockedReason ? blockedReason : undefined}
           data-studio-perspective-snap-quick-toggle="true"
-          data-studio-aux-control="true"
+          data-studio-aux-control="true" data-studio-compact-icon-chip="true"
           onClick={() => s.setPerspectiveRulerActive?.((active) => !active)}
           title={blocked && blockedReason ? blockedReason : bt(
             "원근 자 스냅 켜기/끄기 · 소실점 방사선에 펜·직선을 자동 정렬합니다",
@@ -592,7 +583,7 @@ export function StudioDrawingQuickErgonomicsBar({
       <button
         type="button"
         className="studio-drawing-ergonomics-chip"
-        data-studio-aux-control="true"
+        data-studio-aux-control="true" data-studio-compact-icon-chip="true"
         onClick={(event) => s.studioOptionsBarsHandlers?.openBrushStudio?.(event.currentTarget)}
         title={bt("서브픽셀 테이퍼·습식 안료 브러시 랩 열기", "Open Brush Lab studio")}
       >
@@ -611,7 +602,7 @@ export function StudioDrawingQuickErgonomicsBar({
         type="button"
         className="studio-drawing-ergonomics-chip"
         aria-pressed={s.showWebtoonGuides}
-        data-studio-aux-control="true"
+        data-studio-aux-control="true" data-studio-compact-icon-chip="true"
         onClick={() => s.setShowWebtoonGuides((visible) => !visible)}
         title={bt("모바일 독자 가독 폭(690·720px)과 세이프 영역 가이드를 캔버스에 표시합니다", "Toggle mobile reader safe-width guides (690/720px)")}
       >
@@ -653,7 +644,7 @@ export function StudioDrawingQuickErgonomicsBar({
         disabled={blocked}
         aria-pressed={quickWheelOpen}
         aria-keyshortcuts="Q"
-        data-studio-quick-wheel-trigger="true"
+        data-studio-quick-wheel-trigger="true" data-studio-compact-icon-chip="true"
         onClick={(event) => {
           const rect = event.currentTarget.getBoundingClientRect();
           setQuickWheelAnchor({ x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.bottom + 112) });
@@ -673,7 +664,7 @@ export function StudioDrawingQuickErgonomicsBar({
         className="studio-drawing-ergonomics-chip"
         disabled={blocked}
         aria-pressed={miniDockOpen}
-        data-studio-mini-dock-toggle="true"
+        data-studio-mini-dock-toggle="true" data-studio-compact-icon-chip="true"
         onClick={() => setMiniDockOpen((open) => !open)}
         title={bt("상황 인식 스크러버 미니 독 열기/닫기", "Toggle context-aware scrubber mini dock")}
       >
