@@ -1,4 +1,4 @@
-import { Bot, Camera, CheckCircle2, Eye, Gauge, Glasses, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
+import { Bot, Camera, CheckCircle2, Clapperboard, Eye, Gauge, Glasses, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -58,6 +58,11 @@ const LazyStudioSketchTo3dStagePanel = lazy(async () => {
   const m = await import("../sketch-to-3d-stage/StudioSketchTo3dStagePanel");
   return { default: m.StudioSketchTo3dStagePanel };
 });
+const LazyStudioCutRhythmPromoDirectorPanel = lazy(async () => {
+  await import("../cut-rhythm-promo-director");
+  const m = await import("../cut-rhythm-promo-director/StudioCutRhythmPromoDirectorPanel");
+  return { default: m.StudioCutRhythmPromoDirectorPanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -70,7 +75,8 @@ type CreatorLabTabId =
   | "localCopilot"
   | "vrmNaturalRig"
   | "continuityGuard"
-  | "sketchTo3d";
+  | "sketchTo3d"
+  | "cutRhythmPromo";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -88,6 +94,7 @@ const CREATOR_LAB_TABS: readonly {
   { id: "vrmNaturalRig", labelKo: "3D 쇄골·시선·소품 자연 리깅", labelEn: "3D Natural Pose & Prop Rig" },
   { id: "continuityGuard", labelKo: "60컷 자동 연속성 감시관", labelEn: "60-Cut Continuity Guard" },
   { id: "sketchTo3d", labelKo: "2D 러프 → 3D 포즈·화각·조명", labelEn: "Sketch-to-3D Stage Solver" },
+  { id: "cutRhythmPromo", labelKo: "컷 리듬 → 2.5D 무빙툰·15초 프로모", labelEn: "Cut Rhythm → 2.5D Moving-Toon Promo" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -114,6 +121,8 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <CheckCircle2 size={15} aria-hidden="true" />;
     case "sketchTo3d":
       return <Camera size={15} aria-hidden="true" />;
+    case "cutRhythmPromo":
+      return <Clapperboard size={15} aria-hidden="true" />;
   }
 }
 
@@ -173,6 +182,7 @@ export function CreatorLabHardwareHubPanel() {
           {active === "vrmNaturalRig" ? <LazyStudioVrmNaturalRigPanel /> : null}
           {active === "continuityGuard" ? <LazyStudioWebtoonContinuityGuardPanel /> : null}
           {active === "sketchTo3d" ? <LazyStudioSketchTo3dStagePanel /> : null}
+          {active === "cutRhythmPromo" ? <LazyStudioCutRhythmPromoDirectorPanel /> : null}
         </Suspense>
       </div>
     </section>

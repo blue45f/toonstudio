@@ -1,4 +1,4 @@
-import { BookOpen, Gauge, Globe, Link2, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { BookOpen, Gauge, Globe, Link2, PackageCheck, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -48,6 +48,11 @@ const LazyStudioAutoStyleDnaPipelinePanel = lazy(async () => {
   const m = await import("../auto-style-dna-pipeline/StudioAutoStyleDnaPipelinePanel");
   return { default: m.StudioAutoStyleDnaPipelinePanel };
 });
+const LazyStudioStyleShaderPackExchangePanel = lazy(async () => {
+  await import("../style-shader-pack-exchange");
+  const m = await import("../style-shader-pack-exchange/StudioStyleShaderPackExchangePanel");
+  return { default: m.StudioStyleShaderPackExchangePanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -58,7 +63,8 @@ type EcosystemTabId =
   | "collabKmSafeZone"
   | "rightsWatermark"
   | "streamingBudget"
-  | "autoStyleDna";
+  | "autoStyleDna"
+  | "styleShaderPack";
 
 const ECOSYSTEM_TABS: readonly {
   readonly id: EcosystemTabId;
@@ -74,6 +80,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "rightsWatermark", labelKo: "C2PA 정산·적응형 AI 워터마크", labelEn: "C2PA Royalty · Adaptive Watermark" },
   { id: "streamingBudget", labelKo: "60fps 동적 스트리밍 출고 예산", labelEn: "60fps Streaming Export Budgeter" },
   { id: "autoStyleDna", labelKo: "자동 화풍 DNA·대본3D·심의", labelEn: "Auto Style DNA · Script-to-3D · Rating" },
+  { id: "styleShaderPack", labelKo: "팀 화풍·WGSL 팩 서명 교환 (.tspack)", labelEn: "Team Style & WGSL Pack (.tspack)" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -96,6 +103,8 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Gauge size={15} aria-hidden="true" />;
     case "autoStyleDna":
       return <Wand2 size={15} aria-hidden="true" />;
+    case "styleShaderPack":
+      return <PackageCheck size={15} aria-hidden="true" />;
   }
 }
 
@@ -153,6 +162,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "rightsWatermark" ? <LazyStudioRightsWatermarkGatePanel /> : null}
           {active === "streamingBudget" ? <LazyStudioStreamingExportBudgeterPanel /> : null}
           {active === "autoStyleDna" ? <LazyStudioAutoStyleDnaPipelinePanel /> : null}
+          {active === "styleShaderPack" ? <LazyStudioStyleShaderPackExchangePanel /> : null}
         </Suspense>
       </div>
     </section>

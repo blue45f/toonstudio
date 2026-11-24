@@ -1,4 +1,4 @@
-import { Box, Cpu, Eye, Layers, Palette, SlidersHorizontal, Sparkles, Wand2, Zap } from "lucide-react";
+import { Box, Cpu, Eye, Layers, Palette, PenTool, SlidersHorizontal, Sparkles, Wand2, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -48,6 +48,11 @@ const LazyStudioNoCodeShaderGridPanel = lazy(async () => {
   const m = await import("../nocode-shader-grid/StudioNoCodeShaderGridPanel");
   return { default: m.StudioNoCodeShaderGridPanel };
 });
+const LazyStudioVectorInkProjectionPanel = lazy(async () => {
+  await import("../vector-ink-projection");
+  const m = await import("../vector-ink-projection/StudioVectorInkProjectionPanel");
+  return { default: m.StudioVectorInkProjectionPanel };
+});
 
 type FrontierTabId =
   | "brushPhysics"
@@ -56,6 +61,7 @@ type FrontierTabId =
   | "wasm64Hotpath"
   | "scene3dNpr"
   | "vrmAutoShader"
+  | "vectorInkProj"
   | "drawingFrontier"
   | "visualOracle"
   | "nocodeShaderGrid"
@@ -81,6 +87,7 @@ const FRONTIER_TABS: readonly {
   { id: "wasm64Hotpath", labelKo: "실물 Rust .wasm 핫패스", labelEn: "Live Rust .wasm Hotpath" },
   { id: "scene3dNpr", labelKo: "3D Wasm64 BVH·LOD·NPR 룩뎁", labelEn: "3D Wasm64 BVH · LOD · NPR" },
   { id: "vrmAutoShader", labelKo: "VRM 재질 DNA 상속 · 깊이 분리", labelEn: "VRM Shader DNA · Depth Split" },
+  { id: "vectorInkProj", labelKo: "3D → G펜 벡터 잉크 투영", labelEn: "3D → G-Pen Vector Ink" },
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
   { id: "nocodeShaderGrid", labelKo: "노코드 WGSL · 분산 그리드", labelEn: "No-Code WGSL · Tile Grid" },
@@ -101,6 +108,8 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Box size={15} aria-hidden="true" />;
     case "vrmAutoShader":
       return <Palette size={15} aria-hidden="true" />;
+    case "vectorInkProj":
+      return <PenTool size={15} aria-hidden="true" />;
     case "drawingFrontier":
       return <Wand2 size={15} aria-hidden="true" />;
     case "visualOracle":
@@ -258,6 +267,7 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "wasm64Hotpath" ? <LazyStudioWasm64HotpathPanel /> : null}
             {active === "scene3dNpr" ? <LazyStudio3dWasm64LookdevPanel /> : null}
             {active === "vrmAutoShader" ? <LazyStudioVrmAutoShaderTransferPanel /> : null}
+            {active === "vectorInkProj" ? <LazyStudioVectorInkProjectionPanel /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
             {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}
