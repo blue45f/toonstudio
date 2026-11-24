@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -35,6 +35,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   cleanup();
   document.body.innerHTML = "";
   useI18n.setState({ lang: "ko" });
@@ -139,16 +140,22 @@ describe("1. Zero-Copy Linear Memory & SharedArrayBuffer Ring-Buffer Tile Bus", 
     expect(bus.getTelemetrySnapshot().checksumMismatchCount).toBe(1);
   });
 
-  it("제로카피 vs 복사 할당 벤치마크가 핫패스 힙 할당 0건·100% 절감·변조 탐지를 리포트한다", () => {
+  it("벤치마크가 버퍼 범위의 계산값·동일 버퍼 재사용·변조 탐지를 리포트한다", () => {
     const clean = runZeroCopyTileRingBenchmark({
       tileSize: 64,
       frameCount: 32,
       slotCount: 16,
       backingMode: "arraybuffer",
     });
-    expect(clean.zeroCopyHeapAllocations).toBe(0);
-    expect(clean.copyAllocHeapAllocations).toBe(64);
-    expect(clean.allocationReductionPct).toBe(100);
+    expect(clean.ringBackingBufferBytes).toBe(263232);
+    expect(clean.ringPayloadCapacityBytes).toBe(262144);
+    expect(clean.copyAllocPayloadBufferCount).toBe(64);
+    expect(clean.copyAllocPayloadBytes).toBe(1048576);
+    expect(clean.copyAllocCopiedPayloadBytes).toBe(524288);
+    expect(clean).not.toHaveProperty("zeroCopyHeapAllocations");
+    expect(clean).not.toHaveProperty("copyAllocHeapAllocations");
+    expect(clean).not.toHaveProperty("savedHeapBytes");
+    expect(clean).not.toHaveProperty("allocationReductionPct");
     expect(clean.verifiedFrames).toBe(32);
     expect(clean.checksumMismatchCount).toBe(0);
     expect(clean.allViewsZeroCopyVerified).toBe(true);
@@ -177,6 +184,42 @@ describe("1. Zero-Copy Linear Memory & SharedArrayBuffer Ring-Buffer Tile Bus", 
     const consumed = edgeBus.consumeTileZeroCopy();
     expect(consumed.ok).toBe(true);
     expect(consumed.payloadView?.[0]).toBe(42);
+  });
+
+  it.each([
+    { tileSize: 64, frameCount: 1, slotCount: 3, expectedFrames: 4, expectedSlots: 4, expectedBackingBytes: 65856 },
+    { tileSize: 128, frameCount: 8, slotCount: 17, expectedFrames: 8, expectedSlots: 32, expectedBackingBytes: 2099264 },
+    { tileSize: 256, frameCount: 16, slotCount: 16, expectedFrames: 16, expectedSlots: 16, expectedBackingBytes: 4195392 },
+  ] as const)("$tileSize 타일의 초기 링 크기와 비교 누적량에 정규화된 슬롯·프레임 수를 쓴다", ({
+    tileSize, frameCount, slotCount, expectedFrames, expectedSlots, expectedBackingBytes,
+  }) => {
+    const report = runZeroCopyTileRingBenchmark({ tileSize, frameCount, slotCount, backingMode: "arraybuffer" });
+    const payloadBytes = tileSize * tileSize * 4;
+
+    expect(report.frameCount).toBe(expectedFrames);
+    expect(report.slotCount).toBe(expectedSlots);
+    expect(report.ringBackingBufferBytes).toBe(expectedBackingBytes);
+    expect(report.ringPayloadCapacityBytes).toBe(expectedSlots * payloadBytes);
+    expect(report.copyAllocPayloadBufferCount).toBe(expectedFrames * 2);
+    expect(report.copyAllocPayloadBytes).toBe(expectedFrames * payloadBytes * 2);
+    expect(report.copyAllocCopiedPayloadBytes).toBe(expectedFrames * payloadBytes);
+    expect(report.allViewsZeroCopyVerified).toBe(true);
+  });
+
+  it("경과시간은 각 CPU 루프의 시계 차이로, 처리량은 전송 바이트와 실측 시간으로 산출한다", () => {
+    vi.spyOn(performance, "now")
+      .mockReturnValueOnce(100)
+      .mockReturnValueOnce(125)
+      .mockReturnValueOnce(200)
+      .mockReturnValueOnce(250);
+
+    const report = runZeroCopyTileRingBenchmark({ tileSize: 64, frameCount: 32, backingMode: "arraybuffer" });
+
+    expect(report.zeroCopyElapsedMs).toBe(25);
+    expect(report.copyAllocElapsedMs).toBe(50);
+    expect(report.zeroCopyThroughputMiBPerSec).toBe(20);
+    expect(report.copyAllocThroughputMiBPerSec).toBe(10);
+    expect(report.zeroCopyTilesPerSec).toBe(1280);
   });
 });
 
@@ -449,7 +492,7 @@ describe("4. StudioWebGpuNextgenRuntimePanel UI & Calm Atelier 정적 위생 검
     const tabP2p = screen.getByRole("tab", { name: /P2P CRDT·카나리 롤백 오라클/ });
 
     expect(tabRing.getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByText("핫패스 힙 할당 수")).toBeTruthy();
+    expect(screen.getByText("초기 링 버퍼 (계산)")).toBeTruthy();
 
     // 1비트 변조 주입 체크박스 토글 시 변조 탐지 메시지 확인
     const corruptCheckbox = screen.getByRole("checkbox");
@@ -479,6 +522,38 @@ describe("4. StudioWebGpuNextgenRuntimePanel UI & Calm Atelier 정적 위생 검
     // 키보드 ArrowLeft 로 탭 2 복귀 검증
     fireEvent.keyDown(tabP2p, { key: "ArrowLeft" });
     expect(tabLod.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("한글 링버퍼 화면이 계산 범위와 시간 실측을 구분하고 설정 변경에 맞춰 누적량을 갱신한다", () => {
+    render(<StudioWebGpuNextgenRuntimePanel />);
+
+    expect(screen.getByText("초기 링 버퍼 (계산)")).toBeTruthy();
+    expect(screen.getByText("Zero-Copy 처리량 (시간 실측)")).toBeTruthy();
+    expect(screen.getByText(/초기 링 버퍼는 헤더·정렬 공간을 포함/)).toBeTruthy();
+    expect(screen.getByText(/객체·뷰·콜백 할당, 전체 힙·GC·GPU 전송은 측정하지 않습니다/)).toBeTruthy();
+    expect(screen.queryByText("핫패스 힙 할당 수")).toBeNull();
+    expect(screen.queryByText(/절감 힙 메모리|100%/)).toBeNull();
+    expect(screen.getByText(/비교 경로 할당 누적: 2.00 MiB \(128 버퍼\)/)).toBeTruthy();
+    expect(screen.getByText(/비교 경로 복사 누적: 1.00 MiB/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "32 프레임" }));
+    expect(screen.getByText(/비교 경로 할당 누적: 1.00 MiB \(64 버퍼\)/)).toBeTruthy();
+    expect(screen.getByText(/비교 경로 복사 누적: 512.0 KiB/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "128×128" }));
+    expect(screen.getByText(/비교 경로 할당 누적: 4.00 MiB \(64 버퍼\)/)).toBeTruthy();
+    expect(screen.getByText(/비교 경로 복사 누적: 2.00 MiB/)).toBeTruthy();
+  });
+
+  it("영문 링버퍼 화면에도 계산 근거와 전체 힙 미측정 범위를 표시한다", () => {
+    render(<StudioWebGpuNextgenRuntimePanel locale="en" />);
+
+    expect(screen.getByText("Initial Ring Buffer (calculated)")).toBeTruthy();
+    expect(screen.getByText("Zero-Copy Throughput (timed)")).toBeTruthy();
+    expect(screen.getByText(/Buffer counts and bytes are calculated from the code path/)).toBeTruthy();
+    expect(screen.getByText(/total heap, GC and GPU transfers are not measured/)).toBeTruthy();
+    expect(screen.getByText(/Copy path cumulative allocation: 2.00 MiB \(128 buffers\)/)).toBeTruthy();
+    expect(screen.queryByText(/Hot-Path Heap Allocs|Saved heap|100%/)).toBeNull();
   });
 
   it("영어 locale prop 및 카나리 기준선 배율 롤백 회귀 케이스도 정확히 동작한다", () => {
