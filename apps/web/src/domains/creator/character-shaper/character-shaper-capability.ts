@@ -12,6 +12,7 @@ import { COSTUME_SLOT_LABELS } from "../vrm/studio-vrm-costume";
 import { collectStudioVrmCostumeMeshes } from "../vrm/studio-vrm-costume-runtime";
 import { inspectStudioVrmSemanticFaceMorphProfile } from "../vrm/studio-vrm-semantic-face-morph";
 
+import { sampleOriginalVrmHairColors } from "./character-shaper-custom-quality";
 import { canTintCharacterIris } from "./character-shaper-iris-tint";
 
 import type {
@@ -57,6 +58,7 @@ export const EMPTY_CHARACTER_CAPABILITY_PROFILE: CharacterCapabilityProfile = Ob
   propsReady: false,
   irisTintable: false,
   originalHairMeshCount: 0,
+  originalHairColors: null,
   surfacePaintReady: false,
 });
 
@@ -131,6 +133,14 @@ function safeIrisTintable(vrm: VRM): boolean {
   }
 }
 
+function safeSampleOriginalHairColors(vrm: VRM) {
+  try {
+    return sampleOriginalVrmHairColors(vrm);
+  } catch {
+    return null;
+  }
+}
+
 export function createCharacterCapabilityProfile(input: CreateCharacterCapabilityProfileInput): CharacterCapabilityProfile {
   const base = {
     status: input.status,
@@ -147,6 +157,7 @@ export function createCharacterCapabilityProfile(input: CreateCharacterCapabilit
       wardrobeMetricsReady: false,
       propsReady: false,
       irisTintable: false,
+      originalHairColors: null,
     });
   }
   const humanoid = detectHumanoid(input.vrm);
@@ -158,6 +169,7 @@ export function createCharacterCapabilityProfile(input: CreateCharacterCapabilit
     costumeSlots: Object.freeze(detectCostumeSlots(input.vrm)),
     propsReady: humanoid,
     irisTintable: safeIrisTintable(input.vrm),
+    originalHairColors: safeSampleOriginalHairColors(input.vrm),
   });
 }
 

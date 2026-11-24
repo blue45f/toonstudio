@@ -15,6 +15,7 @@ import {
   STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY,
   deriveStudioVrmHarmonizedOutlineColor,
   deriveStudioVrmHarmonizedShadeColor,
+  patchStudioVrmMToonVertexColorShader,
   sampleStudioVrmBodyMtoonProfile,
   syncStudioVrmCustomPartToActiveVrm,
   type StudioVrmBodyMtoonProfile,
@@ -71,7 +72,7 @@ function convertPbrMaterialToMToon(
       .multiplyScalar(clamp(0.22 + metalness * 0.45 + (1 - roughness) * 0.22, 0.2, 0.72))
     : new THREE.Color(0, 0, 0);
 
-  const mtoon = new MToonMaterial({
+  const mtoon = patchStudioVrmMToonVertexColorShader(new MToonMaterial({
     color: litColor,
     map: std.map ?? undefined,
     normalMap: std.normalMap ?? undefined,
@@ -101,7 +102,7 @@ function convertPbrMaterialToMToon(
     outlineWidthFactor: isTransparent ? 0 : profile.outlineWidthFactor,
     outlineColorFactor: outlineColor,
     outlineLightingMixFactor: profile.outlineLightingMixFactor,
-  });
+  }));
   mtoon.name = source.name ? `${source.name} (MToon)` : "prop-mtoon";
   mtoon.userData = {
     ...source.userData,
@@ -191,7 +192,7 @@ export function harmonizeStudioVrmPropObject(
     }
 
     if (includeOutlines && !allTransparentOrGlow && mesh.geometry) {
-      const outlineMaterial = new MToonMaterial({
+      const outlineMaterial = patchStudioVrmMToonVertexColorShader(new MToonMaterial({
         color: new THREE.Color(0xffffff),
         isOutline: true,
         side: THREE.BackSide,
@@ -207,7 +208,7 @@ export function harmonizeStudioVrmPropObject(
         shadingToonyFactor: profile.shadingToonyFactor,
         shadingShiftFactor: profile.shadingShiftFactor,
         giEqualizationFactor: profile.giEqualizationFactor,
-      });
+      }));
       outlineMaterial.name = `${mesh.name || options.propId || "prop"}:outline`;
       outlineMaterial.userData[STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY] = { role: "prop-outline" };
 

@@ -7,7 +7,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CharacterShaperCameraStyleSelect, CharacterShaperGazeSelect } from "./CharacterShaperCameraControls";
 import { CharacterShaperOrbitControls } from "./CharacterShaperOrbitControls";
 import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
-import { characterShaperOrbitMouseButtons } from "./character-shaper-camera-runtime";
+import {
+  characterShaperOrbitMouseButtons,
+  installCharacterShaperGaze,
+  resolveCharacterShaperGazeForPosePreset,
+  resolveCharacterShaperGazeFromPoseIntent,
+} from "./character-shaper-camera-runtime";
 
 import type { CharacterShaperLookAtPort } from "./character-shaper-camera-runtime";
 
@@ -102,5 +107,53 @@ describe("셰이퍼 설정과 실제 카메라 포트 연결", () => {
     expect(lookAt.target).toBe(camera);
     act(() => view.unmount());
     expect(lookAt.target).toBe(previousTarget); expect(lookAt.autoUpdate).toBe(false);
+  });
+
+  it("포즈 프리셋의 gazeIntent를 시선 모드·오프셋으로 변환하고 xp_phone_look은 아래(world), xp_wave_greeting은 카메라(cam)로 매핑한다", () => {
+    const phoneGaze = resolveCharacterShaperGazeForPosePreset("xp_phone_look");
+    expect(phoneGaze).not.toBeNull();
+    expect(phoneGaze?.gazeMode).toBe("world");
+    expect(phoneGaze?.gazeOffset.pitchDeg).toBe(-22);
+    expect(phoneGaze?.gazeOffset.pitchDeg).toBeLessThan(0);
+    expect(phoneGaze?.gazeOffset.yawDeg).toBe(0);
+
+    const waveGaze = resolveCharacterShaperGazeForPosePreset("xp_wave_greeting");
+    expect(waveGaze).not.toBeNull();
+    expect(waveGaze?.gazeMode).toBe("cam");
+    expect(Math.abs(waveGaze!.gazeOffset.yawDeg)).toBeLessThanOrEqual(8);
+    expect(Math.abs(waveGaze!.gazeOffset.pitchDeg)).toBeLessThanOrEqual(6);
+
+    // gazeIntent가 없는 포즈나 빈 입력은 null을 반환해 기존 시선을 유지한다.
+    expect(resolveCharacterShaperGazeFromPoseIntent(undefined)).toBeNull();
+    expect(resolveCharacterShaperGazeForPosePreset("default")).toBeNull();
+    expect(resolveCharacterShaperGazeForPosePreset(null)).toBeNull();
+
+    // 각도 클램프 및 방향 타깃(ground/down/up/left/right/forward) 검증
+    expect(resolveCharacterShaperGazeFromPoseIntent({ target: "ground", pitchDeg: -90, yawDeg: 80 })).toEqual({
+      gazeMode: "world",
+      gazeOffset: { yawDeg: 30, pitchDeg: -24 },
+    });
+    expect(resolveCharacterShaperGazeFromPoseIntent({ target: "down" })?.gazeOffset.pitchDeg).toBeLessThan(0);
+    expect(resolveCharacterShaperGazeFromPoseIntent({ target: "up" })?.gazeOffset.pitchDeg).toBeGreaterThan(0);
+    expect(resolveCharacterShaperGazeFromPoseIntent({ target: "left" })?.gazeOffset.yawDeg).toBeLessThan(0);
+    expect(resolveCharacterShaperGazeFromPoseIntent({ target: "right" })?.gazeOffset.yawDeg).toBeGreaterThan(0);
+    expect(resolveCharacterShaperGazeFromPoseIntent({ target: "forward", pitchDeg: 0, yawDeg: 0 })).toEqual({
+      gazeMode: "world",
+      gazeOffset: { yawDeg: 0, pitchDeg: 0 },
+    });
+
+    // 실제 LookAt 리스에 적용하면 xp_phone_look은 카메라 추종을 끄고 pitch=-22로 내려다본다.
+    const camera = new PerspectiveCamera();
+    const lookAt: CharacterShaperLookAtPort = { target: camera, autoUpdate: true, yaw: 0, pitch: 0, update: vi.fn() };
+    const lease = installCharacterShaperGaze(lookAt, camera);
+    lease.update(phoneGaze!.gazeMode, false, phoneGaze!.gazeOffset);
+    expect(lookAt.autoUpdate).toBe(false);
+    expect(lookAt.target).toBeUndefined();
+    expect(lookAt.pitch).toBe(-22);
+    expect(lookAt.yaw).toBe(0);
+    lease.update(waveGaze!.gazeMode, false, waveGaze!.gazeOffset);
+    expect(lookAt.autoUpdate).toBe(true);
+    expect(lookAt.target).toBe(camera);
+    lease.release();
   });
 });

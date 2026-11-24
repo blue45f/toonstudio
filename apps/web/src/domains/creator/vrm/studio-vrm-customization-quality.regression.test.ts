@@ -48,6 +48,7 @@ import {
   createStudioVrmGarmentWeaveNormalTexture,
   createStudioVrmHairMToonMaterials,
   disposeStudioVrmGarmentOwnedMatcap,
+  patchStudioVrmMToonVertexColorShader,
   sampleStudioVrmBodyMtoonProfile,
   syncStudioVrmCustomPartToActiveVrm,
   syncStudioVrmGarmentOutlineColor,
@@ -594,5 +595,68 @@ describe("3D 커스터마이징 품질 회귀 검증 (헤어 · 의상 · 소품
     };
     expect(resolveStudioVrmFrameLoop(idleActivity)).toBe("demand");
     expect(resolveStudioVrmFrameLoop({ ...idleActivity, capturing: true })).toBe("always");
+  });
+
+  it("Three.js r170+ WebGL MToon 정점 컬러 vec4 호환 패치가 헤어·의상·소품 모든 MToonMaterial에 멱등 적용된다", () => {
+    const { vrm } = createBodyMToonVrm({ metaVersion: "1" });
+    const profile = sampleStudioVrmBodyMtoonProfile(vrm);
+
+    const assertPatchedMToon = (material: MToonMaterial, label: string) => {
+      expect(material.fragmentShader, `${label}: raw *= vColor;`).not.toMatch(/\*=\s*vColor\s*;/u);
+      expect(material.fragmentShader, `${label}: diffuseColor vColor.rgb`).toContain("diffuseColor.rgb *= vColor.rgb;");
+      expect(material.fragmentShader, `${label}: shadeColor vColor.rgb`).toContain("material.shadeColor.rgb *= vColor.rgb;");
+      const cacheKey = material.customProgramCacheKey();
+      expect(cacheKey, `${label}: cache key suffix`).toContain("vcolor-rgb-v1");
+      expect(cacheKey.match(/vcolor-rgb-v1/gu)?.length).toBe(1);
+    };
+
+    // 1) 절차형 헤어 main + outline
+    const hairBundle = createStudioVrmHairMToonMaterials(
+      { baseColor: "#352a28", tipColor: "#6b5148", shine: 0.45 },
+      profile,
+    );
+    assertPatchedMToon(hairBundle.main, "hair-main");
+    assertPatchedMToon(hairBundle.outline, "hair-outline");
+
+    // 2) 반복 호출 멱등성 (vcolor-rgb-v1 이중 부착 금지)
+    patchStudioVrmMToonVertexColorShader(hairBundle.main);
+    patchStudioVrmMToonVertexColorShader(hairBundle.main);
+    assertPatchedMToon(hairBundle.main, "hair-main-idempotent");
+
+    hairBundle.main.dispose();
+    hairBundle.outline.dispose();
+    hairBundle.ownedTextures.forEach((tex) => tex.dispose());
+
+    // 3) 의상 main + outline
+    const armorParts = buildGarmentParts("armor", FALLBACK_WARDROBE_METRICS, 1);
+    const garmentMat = createStudioVrmGarmentMToonMaterial(armorParts[0]!, "#9aa3b2", "cotton", null, profile);
+    const garmentHost = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), garmentMat);
+    const garmentOutline = attachStudioVrmGarmentOutlineMesh(garmentHost, garmentMat, profile)!;
+    assertPatchedMToon(garmentMat, "garment-main");
+    assertPatchedMToon(garmentOutline.material as MToonMaterial, "garment-outline");
+    disposeStudioVrmGarmentOwnedMatcap(garmentMat);
+    garmentOutline.geometry.dispose();
+    (garmentOutline.material as THREE.Material).dispose();
+    garmentHost.geometry.dispose();
+    garmentMat.dispose();
+
+    // 4) 소품 하모나이저(vertexColors: true PBR 포함) + 외곽선
+    const vcGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const vcSourceMat = new THREE.MeshStandardMaterial({ color: "#4466aa", vertexColors: true });
+    const vcMesh = new THREE.Mesh(vcGeo, vcSourceMat);
+    vcMesh.name = "VertexColorProp";
+    const propGroup = new THREE.Group();
+    propGroup.add(vcMesh);
+    const cleanupProp = harmonizeStudioVrmPropObject(propGroup, vrm, { propId: "vc-prop" });
+    const harmonizedMat = vcMesh.material as unknown as MToonMaterial;
+    const propOutline = vcMesh.children.find(
+      (child) => child.userData[STUDIO_VRM_CUSTOM_PART_OUTLINE_KEY] === true,
+    ) as THREE.Mesh | undefined;
+    assertPatchedMToon(harmonizedMat, "prop-main-vc");
+    expect(propOutline).toBeDefined();
+    assertPatchedMToon(propOutline!.material as MToonMaterial, "prop-outline");
+    cleanupProp();
+    vcGeo.dispose();
+    vcSourceMat.dispose();
   });
 });

@@ -16,6 +16,7 @@ import {
   findCharacterSlotEntry,
   listCharacterSlotEntries,
 } from "./character-shaper-catalog";
+import { shouldInheritOriginalHairColors } from "./character-shaper-custom-quality";
 
 import type {
   CharacterApplyPlan,
@@ -143,8 +144,26 @@ function stepsFor(entry: CharacterSlotEntry, profile: CharacterCapabilityProfile
       return [...morphStep(ref.morphs, profile), ...expressionFloorStep(ref.expressionFloor, profile)];
     case "ears":
       return [...morphStep(ref.morphs, profile), ...earPropSteps(ref.propId, snapshot, profile)];
-    case "forge-hair":
-      return [{ kind: "forge-hair", hair: Object.freeze({ ...ref.hair }) }];
+    case "forge-hair": {
+      const inherited =
+        profile.originalHairColors
+        && shouldInheritOriginalHairColors(
+          {
+            style: snapshot.hairStyle,
+            replaceOriginal: snapshot.hairReplaceOriginal,
+            baseColor: snapshot.hairBaseColor,
+            tipColor: snapshot.hairTipColor,
+            customHairColor: snapshot.customColors.hair ?? null,
+          },
+          ref.hair,
+        )
+          ? {
+              baseColor: profile.originalHairColors.baseColor,
+              tipColor: profile.originalHairColors.tipColor,
+            }
+          : null;
+      return [{ kind: "forge-hair", hair: Object.freeze(inherited ? { ...ref.hair, ...inherited } : { ...ref.hair }) }];
+    }
     case "hair-original":
       return [{ kind: "forge-hair", hair: Object.freeze({ style: "none", replaceOriginal: false }) }];
     case "proportion":

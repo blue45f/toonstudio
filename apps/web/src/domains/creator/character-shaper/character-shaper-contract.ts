@@ -277,6 +277,11 @@ export interface CharacterSlotAvailability {
   readonly missing: readonly string[];
 }
 
+export interface CharacterOriginalHairColors {
+  readonly baseColor: string;
+  readonly tipColor: string;
+}
+
 export interface CharacterCapabilityProfile {
   readonly status: "empty" | "loading" | "ready" | "error";
   readonly modelId: string | null;
@@ -291,6 +296,8 @@ export interface CharacterCapabilityProfile {
   readonly propsReady: boolean;
   readonly irisTintable: boolean;
   readonly originalHairMeshCount: number;
+  /** Sampled base/tip hex colors from the loaded VRM's original hair meshes, when available. */
+  readonly originalHairColors?: CharacterOriginalHairColors | null;
   readonly surfacePaintReady: boolean;
 }
 

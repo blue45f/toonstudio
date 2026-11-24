@@ -47,6 +47,35 @@ export const STUDIO_VRM_CUSTOM_PART_OWNED_TEXTURES_KEY = "studioVrmCustomPartOwn
 export const STUDIO_VRM_ACTIVE_MATERIAL_FX_KEY = "__studioVrmActiveMaterialFx";
 export const STUDIO_VRM_ACTIVE_MTOON_CONTROLS_KEY = "__studioVrmActiveMtoonControls";
 
+const MTOON_VCOLOR_PATCH_CACHE_KEY_SUFFIX = ",vcolor-rgb-v1";
+const PATCHED_MTOON_MATERIALS = new WeakSet<MToonMaterial>();
+
+/**
+ * Three.js r170+에서 `USE_COLOR` 활성화 시 `vColor`가 `vec4`로 선언되지만,
+ * `@pixiv/three-vrm-materials-mtoon@3.5.5` 프래그먼트 셰이더가 `vec3 *= vColor;`를 써서
+ * WebGLProgram 컴파일 오류가 나는 문제를 패치한다(`.rgb` swizzle은 `vec3`/`vec4` 모두 유효).
+ */
+export function patchStudioVrmMToonVertexColorShader<T extends MToonMaterial>(material: T): T {
+  if (typeof material.fragmentShader === "string") {
+    material.fragmentShader = material.fragmentShader
+      .replace(/\bdiffuseColor\.rgb\s*\*=\s*vColor\s*;/gu, "diffuseColor.rgb *= vColor.rgb;")
+      .replace(/\bmaterial\.shadeColor\.rgb\s*\*=\s*vColor\s*;/gu, "material.shadeColor.rgb *= vColor.rgb;");
+  }
+  if (!PATCHED_MTOON_MATERIALS.has(material)) {
+    PATCHED_MTOON_MATERIALS.add(material);
+    const originalCacheKey = typeof material.customProgramCacheKey === "function"
+      ? material.customProgramCacheKey.bind(material)
+      : null;
+    material.customProgramCacheKey = () => {
+      const base = originalCacheKey ? originalCacheKey() : "";
+      return base.includes(MTOON_VCOLOR_PATCH_CACHE_KEY_SUFFIX)
+        ? base
+        : `${base}${MTOON_VCOLOR_PATCH_CACHE_KEY_SUFFIX}`;
+    };
+  }
+  return material;
+}
+
 export interface StudioVrmActiveMaterialFxSnapshot {
   readonly shadeColor: string | null;
   readonly outlineColor: string | null;
@@ -360,7 +389,7 @@ export function createStudioVrmHairMToonMaterials(
   const hairRimFresnelPower = clamp(profile.parametricRimFresnelPowerFactor * 0.85, 2.6, 5.2);
   const hairRimLift = clamp(profile.parametricRimLiftFactor + 0.06 + shine * 0.07, 0.08, 0.26);
 
-  const main = new MToonMaterial({
+  const main = patchStudioVrmMToonVertexColorShader(new MToonMaterial({
     color: new THREE.Color(0xffffff),
     vertexColors: true,
     ignoreVertexColor: false,
@@ -381,12 +410,12 @@ export function createStudioVrmHairMToonMaterials(
     side: THREE.DoubleSide,
     transparent: false,
     depthWrite: true,
-  });
+  }));
   main.name = "ToonStudioAvatarForgeHair_MToon";
   main.userData[STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY] = { role: "hair" };
   main.userData.toonstudioComponent = "hair";
 
-  const outline = new MToonMaterial({
+  const outline = patchStudioVrmMToonVertexColorShader(new MToonMaterial({
     color: new THREE.Color(0xffffff),
     isOutline: true,
     side: THREE.BackSide,
@@ -402,7 +431,7 @@ export function createStudioVrmHairMToonMaterials(
     shadingToonyFactor: profile.shadingToonyFactor,
     shadingShiftFactor: hairShadingShift,
     giEqualizationFactor: hairGiEqualization,
-  });
+  }));
   outline.name = "ToonStudioAvatarForgeHairOutline_MToon";
   outline.userData[STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY] = { role: "hair-outline" };
   outline.userData.toonstudioComponent = "hair";
@@ -418,11 +447,11 @@ export function createStudioVrmGarmentMToonMaterial(
   weaveNormalTexture: THREE.DataTexture | null,
   profile: StudioVrmBodyMtoonProfile = DEFAULT_STUDIO_VRM_MTOON_PROFILE,
 ): MToonMaterial {
-  const material = new MToonMaterial({
+  const material = patchStudioVrmMToonVertexColorShader(new MToonMaterial({
     side: THREE.DoubleSide,
     transparent: false,
     depthWrite: true,
-  });
+  }));
   material.name = part ? `wardrobe-mtoon:${part.bone}` : `wardrobe-mtoon:${fabricId}`;
   material.userData[STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY] = { role: "garment", profile };
   applyStudioVrmGarmentMToonStyle(material, part, itemColor, fabricId, weaveNormalTexture, profile);
@@ -514,7 +543,7 @@ export function attachStudioVrmGarmentOutlineMesh(
   profile: StudioVrmBodyMtoonProfile,
 ): THREE.Mesh | null {
   if (profile.outlineWidthMode === "none" || profile.outlineWidthFactor <= 0) return null;
-  const outlineMaterial = new MToonMaterial({
+  const outlineMaterial = patchStudioVrmMToonVertexColorShader(new MToonMaterial({
     color: new THREE.Color(0xffffff),
     isOutline: true,
     side: THREE.BackSide,
@@ -528,7 +557,7 @@ export function attachStudioVrmGarmentOutlineMesh(
     shadingToonyFactor: baseMaterial.shadingToonyFactor,
     shadingShiftFactor: baseMaterial.shadingShiftFactor,
     giEqualizationFactor: baseMaterial.giEqualizationFactor,
-  });
+  }));
   outlineMaterial.name = `${hostMesh.name || "wardrobe"}:outline`;
   outlineMaterial.userData[STUDIO_VRM_CUSTOM_PART_MATERIAL_KEY] = { role: "garment-outline", profile };
 

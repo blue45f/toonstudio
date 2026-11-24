@@ -34,7 +34,8 @@ import {
   pushCharacterShaperKeyLayer,
   reduceCharacterShaperUiState,
 } from "./character-shaper-ui-model";
-import { useCharacterShaperOutputSettings } from "./character-shaper-session-settings";
+import { resolveCharacterShaperGazeForPosePreset } from "./character-shaper-camera-runtime";
+import { useCharacterShaperOutputSettings, useCharacterShaperSessionSettings } from "./character-shaper-session-settings";
 import { CharacterShaperAxisGizmo } from "./CharacterShaperAxisGizmo";
 import { CharacterShaperCompositionGuide } from "./CharacterShaperCompositionGuide";
 import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
@@ -101,6 +102,10 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, onInse
   const layout: CharacterShaperLayout = touchLandscape || touchPortrait ? "mobile" : isDesktop ? "desktop" : isTablet ? "tablet" : "mobile";
   const [ui, dispatch] = useReducer(reduceCharacterShaperUiState, undefined, () => createCharacterShaperUiState({ mobileSheet: layout === "mobile" ? "collapsed" : "half" }));
   const { framing: outputFraming, setFraming: setOutputFraming } = useCharacterShaperOutputSettings();
+  const sessionSettings = useCharacterShaperSessionSettings();
+  const setGazeMode = sessionSettings?.setGazeMode;
+  const setGazeOffset = sessionSettings?.setGazeOffset;
+  const lastAppliedGazePoseIdRef = useRef<string | null>(null);
   const previousSheetRef = useRef<"half" | "full">("half");
   const [mobileTab, setMobileTab] = useState<MobileSheetTab>("shelf");
   const activeMobileTab = mobileTab === "view" && !touchLandscape ? "shelf" : mobileTab;
@@ -239,12 +244,33 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, onInse
     }
   };
 
+  const activePoseId = binding.snapshot.activePoseId ?? (typeof h.activePoseId === "string" && h.activePoseId.length > 0 ? h.activePoseId : null);
+
+  useEffect(() => {
+    if (!activePoseId || activePoseId === lastAppliedGazePoseIdRef.current) return;
+    lastAppliedGazePoseIdRef.current = activePoseId;
+    const resolvedGaze = resolveCharacterShaperGazeForPosePreset(activePoseId);
+    if (resolvedGaze && setGazeMode && setGazeOffset) {
+      setGazeMode(resolvedGaze.gazeMode);
+      setGazeOffset(resolvedGaze.gazeOffset);
+    }
+  }, [activePoseId, setGazeMode, setGazeOffset]);
+
   const commitEntry = (entry: CharacterSlotEntry) => {
     const result = binding.previewEntryId === entry.id && binding.commitPreview
       ? binding.commitPreview(entry)
       : binding.commit(entry);
     if (!result.ok) {
       setCommitNotice(result.reason ?? t("studio.r3c04Status.shaper.dialog.commitUnavailable", "지금은 적용할 수 없습니다."));
+      return;
+    }
+    if (entry.apply.kind === "pose") {
+      lastAppliedGazePoseIdRef.current = entry.apply.presetId;
+      const resolvedGaze = resolveCharacterShaperGazeForPosePreset(entry.apply.presetId);
+      if (resolvedGaze && setGazeMode && setGazeOffset) {
+        setGazeMode(resolvedGaze.gazeMode);
+        setGazeOffset(resolvedGaze.gazeOffset);
+      }
     }
   };
 
@@ -527,7 +553,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, onInse
           title={ui.inspectorOpen ? "정밀 조절 패널 닫기" : "정밀 조절 패널 열기"}
           onClick={() => dispatch({ type: "set-inspector", open: !ui.inspectorOpen })}
           className={cn(
-            "absolute bottom-2 right-2 z-20 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line/70 bg-panel/85 px-3 text-[0.72rem] font-semibold text-fg-2 shadow-sm backdrop-blur",
+            "absolute bottom-2 right-16 z-20 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line/70 bg-panel/85 px-3 text-[0.72rem] font-semibold text-fg-2 shadow-sm backdrop-blur",
             "transition-colors hover:bg-accent-soft hover:text-accent motion-reduce:transition-none",
             STUDIO_FOCUS_RING,
             ui.inspectorOpen && "border-accent/50 text-accent",

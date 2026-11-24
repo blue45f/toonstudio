@@ -10,10 +10,14 @@ import {
   CHARACTER_GENRE_STARTERS,
   computeOriginalCostumeHiddenKeysForWardrobe,
   computeShaperBodyMetrics,
+  deriveHarmoniousHairTipColor,
   focalLengthMmToVerticalFovDeg,
   resolveHairCommitPatch,
+  sampleOriginalVrmHairColors,
   syncCustomAttachmentQuality,
 } from "./character-shaper-custom-quality";
+import { createCharacterCapabilityProfile } from "./character-shaper-capability";
+import { findCharacterSlotEntry } from "./character-shaper-catalog";
 import { CHARACTER_SLOT_KINDS } from "./character-shaper-contract";
 import {
   applyHairSpringBoneToVrm,
@@ -25,6 +29,9 @@ import { CharacterShaperCameraControls } from "./CharacterShaperCameraControls";
 import { CharacterShaperGenreStarters } from "./CharacterShaperGenreStarters";
 import { CharacterShaperInspector } from "./CharacterShaperInspector";
 import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
+import { useCharacterShaperSessionSettings } from "./character-shaper-session-settings";
+import { CHARACTER_SHAPER_DESKTOP_QUERY } from "./character-shaper-ui-model";
+import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
 
 import type {
   CharacterCapabilityProfile,
@@ -38,6 +45,9 @@ import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 
 vi.mock("./character-shaper-preview", () => ({
   CharacterSlotPreview: () => <svg data-testid="preview" aria-hidden />,
+}));
+vi.mock("../vrm/StudioVrmPoserViewport", () => ({
+  StudioVrmPoserViewport: () => <div data-testid="viewport" />,
 }));
 
 afterEach(cleanup);
@@ -392,5 +402,190 @@ describe("#236 커스텀 3D 품질 일관성 & #234 SHAPER REA 완전 내재화 
     fireEvent.click(screen.getByTestId("shaper-shader-mode-modeling"));
     expect(screen.getByTestId("shaper-shader-mode-modeling").getAttribute("aria-pressed")).toBe("true");
     assertAllControlsNamed();
+  });
+
+  it("원본 VRM 헤어 메시·텍스처에서 모발색을 샘플링하고 원본 유지 → 절차형 전환 시 조화로운 base/tip을 상속한다", () => {
+    const scene = new THREE.Group();
+    // 1) 솔리드 컬러 원본 헤어
+    const hairMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#3b5d9a") });
+    hairMat.name = "N00_000_Hair_00_HAIR";
+    const hairMesh = new THREE.Mesh(new THREE.BoxGeometry(), hairMat);
+    hairMesh.name = "Head_4";
+
+    // 외곽선·헤어 액세서리·생성 포지 헤어는 샘플링을 오염시키지 않아야 한다.
+    const outlineMat = Object.assign(new THREE.MeshBasicMaterial({ color: new THREE.Color("#000000") }), {
+      name: "N00_000_Hair_00_HAIR (Outline)",
+      isOutline: true,
+    });
+    const outlineMesh = new THREE.Mesh(new THREE.BoxGeometry(), outlineMat);
+    outlineMesh.name = "Head_4_Outline";
+
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#ff0044") });
+    ribbonMat.name = "HairAccessory_Ribbon";
+    const ribbonMesh = new THREE.Mesh(new THREE.BoxGeometry(), ribbonMat);
+    ribbonMesh.name = "HairAccessory_Ribbon";
+
+    const forgeGroup = new THREE.Group();
+    forgeGroup.userData.toonSpectrumAvatarForge = true;
+    const forgeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#00ff00") });
+    forgeMat.name = "Hair_Generated";
+    forgeGroup.add(new THREE.Mesh(new THREE.BoxGeometry(), forgeMat));
+
+    scene.add(hairMesh, outlineMesh, ribbonMesh, forgeGroup);
+    const sampled = sampleOriginalVrmHairColors({ scene });
+    expect(sampled).not.toBeNull();
+    expect(sampled?.baseColor).toBe("#3b5d9a");
+    expect(sampled?.tipColor).toBe(deriveHarmoniousHairTipColor("#3b5d9a"));
+    expect(sampled?.tipColor).not.toBe("#3b5d9a");
+
+    // 2) VRoid 스타일 흰색 factor + RGBA 텍스처 헤어
+    const texData = new Uint8Array(4 * 4 * 4);
+    for (let i = 0; i < 16; i += 1) {
+      texData[i * 4] = 0xc7;
+      texData[i * 4 + 1] = 0x9b;
+      texData[i * 4 + 2] = 0x4b;
+      texData[i * 4 + 3] = 255;
+    }
+    const hairTex = new THREE.DataTexture(texData, 4, 4, THREE.RGBAFormat);
+    const vroidHairMat = new THREE.MeshStandardMaterial({ color: new THREE.Color("#ffffff"), map: hairTex });
+    vroidHairMat.name = "HairBack_00_HAIR";
+    const vroidScene = new THREE.Group();
+    const vroidHairMesh = new THREE.Mesh(new THREE.BoxGeometry(), vroidHairMat);
+    vroidHairMesh.name = "HairBack";
+    vroidScene.add(vroidHairMesh);
+
+    const vroidSampled = sampleOriginalVrmHairColors({ scene: vroidScene });
+    expect(vroidSampled?.baseColor).toBe("#c79b4b");
+
+    // 3) capability profile에 originalHairColors 반영 및 resolveHairCommitPatch 상속 검증
+    const profile = createCharacterCapabilityProfile({
+      vrm: { scene: vroidScene } as unknown as Parameters<typeof createCharacterCapabilityProfile>[0]["vrm"],
+      status: "ready",
+      modelId: "vroid-blonde",
+      modelName: "블론드",
+      wardrobeMetricsReady: true,
+      originalHairMeshCount: 1,
+      surfacePaintReady: true,
+    });
+    expect(profile.originalHairColors?.baseColor).toBe("#c79b4b");
+
+    const inheritedPatch = resolveHairCommitPatch(
+      { style: "wavy" },
+      { style: "none", replaceOriginal: false, baseColor: "#352a28", tipColor: "#6b5148" },
+      profile.originalHairColors,
+    );
+    expect(inheritedPatch).toEqual({
+      style: "wavy",
+      replaceOriginal: true,
+      baseColor: "#c79b4b",
+      tipColor: vroidSampled!.tipColor,
+    });
+
+    // 사용자가 직접 고른 색은 덮어쓰지 않는다.
+    const preservedPatch = resolveHairCommitPatch(
+      { style: "wavy" },
+      { style: "none", replaceOriginal: false, baseColor: "#9d174d", tipColor: "#fbcfe8" },
+      profile.originalHairColors,
+    );
+    expect(preservedPatch).toEqual({ style: "wavy", replaceOriginal: true });
+    hairTex.dispose();
+  });
+
+  it("다이얼로그에서 1280px 정밀 조절 버튼이 우측 줌 레일과 겹치지 않고(right-16 · min-h-11), 포즈 적용 시 gazeIntent가 실시간 반영된다", () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn((query: string) => ({
+      matches: query === CHARACTER_SHAPER_DESKTOP_QUERY,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+
+    try {
+      const phonePose = findCharacterSlotEntry("pose:xp_phone_look")!;
+      const wavePose = findCharacterSlotEntry("pose:xp_wave_greeting")!;
+      const binding = makeBinding();
+      const customBinding: CharacterShaperBinding = {
+        ...binding,
+        catalog: {
+          ...binding.catalog,
+          entries: [phonePose, wavePose],
+        },
+        commit: vi.fn((entry) => ({
+          ok: true,
+          plan: {
+            entryId: entry.id,
+            slot: entry.slot,
+            label: entry.label,
+            steps: [],
+            availability: { status: "available", reason: null, missing: [] },
+          },
+          reason: null,
+        })),
+      };
+      const host = {
+        status: "ready",
+        dialogRef: { current: null },
+        closeButtonRef: { current: null },
+        vrm: { scene: new THREE.Group(), lookAt: { yaw: 0, pitch: 0 } },
+        activeCameraId: "front",
+        setActiveCameraId: vi.fn(),
+        setTurntable: vi.fn(),
+        setLightingTone: vi.fn(),
+        setTransparentBackground: vi.fn(),
+        zoomViewport: vi.fn(),
+        handleViewReset: vi.fn(),
+        handlePanelTabChange: vi.fn(),
+        handleCharacterSectionChange: vi.fn(),
+        onClose: vi.fn(),
+        libraryEntries: [],
+      } as unknown as StudioVrmPoserHost;
+
+      function GazeObserver() {
+        const settings = useCharacterShaperSessionSettings();
+        return (
+          <output data-testid="gaze-observer">
+            {`${settings?.gazeMode}:${settings?.gazeOffset.yawDeg}:${settings?.gazeOffset.pitchDeg}`}
+          </output>
+        );
+      }
+
+      render(
+        <CharacterShaperSessionSettingsProvider gazeAvailable>
+          <GazeObserver />
+          <StudioCharacterShaperDialog h={host} binding={customBinding} />
+        </CharacterShaperSessionSettingsProvider>,
+      );
+
+      // 1) 정밀 조절 플로팅 버튼: 열림/닫힘 모두 right-16으로 우측 줌 레일(right-2)과 분리 + min-h-11 유지
+      const inspectorToggle = screen.getByRole("button", { name: "정밀 조절" });
+      expect(inspectorToggle.className).toContain("right-16");
+      expect(inspectorToggle.className).toContain("min-h-11");
+      expect(inspectorToggle.className).not.toContain("right-2");
+      fireEvent.click(inspectorToggle);
+      expect(inspectorToggle.getAttribute("aria-expanded")).toBe("false");
+      expect(inspectorToggle.className).toContain("right-16");
+
+      // 2) 포즈 탭에서 xp_phone_look 클릭 -> world + pitchDeg=-22, xp_wave_greeting 클릭 -> cam
+      fireEvent.click(screen.getByRole("tab", { name: "포즈" }));
+      const phoneBtn = document.querySelector<HTMLButtonElement>('[data-character-performance-entry="pose:xp_phone_look"]')
+        ?? (() => {
+          fireEvent.click(screen.getByRole("button", { name: "일상" }));
+          return document.querySelector<HTMLButtonElement>('[data-character-performance-entry="pose:xp_phone_look"]')!;
+        })();
+      expect(phoneBtn).toBeTruthy();
+      fireEvent.click(phoneBtn);
+      expect(screen.getByTestId("gaze-observer").textContent).toBe("world:0:-22");
+
+      const waveBtn = document.querySelector<HTMLButtonElement>('[data-character-performance-entry="pose:xp_wave_greeting"]')!;
+      expect(waveBtn).toBeTruthy();
+      fireEvent.click(waveBtn);
+      expect(screen.getByTestId("gaze-observer").textContent).toBe("cam:4:2");
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 });

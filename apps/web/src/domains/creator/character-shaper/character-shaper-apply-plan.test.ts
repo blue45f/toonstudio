@@ -263,3 +263,59 @@ describe("hand-pose apply-plan coverage expansion", () => {
     })).toBeNull();
   });
 });
+
+describe("원본 VRM 모발색 자동 상속 (원본 유지 → 절차형 헤어 전환)", () => {
+  const BLUE_HAIR_PROFILE: CharacterCapabilityProfile = {
+    ...FULL_PROFILE,
+    originalHairColors: { baseColor: "#3b5d9a", tipColor: "#6b85c6" },
+  };
+
+  it("원본 유지에서 기본색 그대로 절차형 헤어(웨이브 롱·보브·숏)로 전환하면 원본 VRM 모발색을 상속한다", () => {
+    for (const id of ["hair:wavy", "hair:bob", "hair:short"] as const) {
+      const planned = plan(id, snapshotWith(), BLUE_HAIR_PROFILE);
+      expect(planned.steps).toHaveLength(1);
+      const step = planned.steps[0];
+      expect(step?.kind).toBe("forge-hair");
+      if (step?.kind === "forge-hair") {
+        expect(step.hair.replaceOriginal).toBe(true);
+        expect(step.hair.baseColor).toBe("#3b5d9a");
+        expect(step.hair.tipColor).toBe("#6b85c6");
+      }
+    }
+  });
+
+  it("사용자가 이미 모발색을 지정했거나 절차형 스타일끼리 바꿀 때는 기존 사용자 색을 덮어쓰지 않는다", () => {
+    const customForgeColor = snapshotWith({ hairBaseColor: "#9d174d", hairTipColor: "#fbcfe8" });
+    const afterCustomForge = plan("hair:wavy", customForgeColor, BLUE_HAIR_PROFILE).steps[0];
+    if (afterCustomForge?.kind === "forge-hair") {
+      expect(afterCustomForge.hair.baseColor).toBeUndefined();
+      expect(afterCustomForge.hair.tipColor).toBeUndefined();
+    }
+
+    const customOriginalTint = snapshotWith({ customColors: { hair: "#8844aa" } });
+    const afterOriginalTint = plan("hair:bob", customOriginalTint, BLUE_HAIR_PROFILE).steps[0];
+    if (afterOriginalTint?.kind === "forge-hair") {
+      expect(afterOriginalTint.hair.baseColor).toBeUndefined();
+      expect(afterOriginalTint.hair.tipColor).toBeUndefined();
+    }
+
+    const alreadyProcedural = snapshotWith({ hairStyle: "wavy", hairReplaceOriginal: true });
+    const swapStyle = plan("hair:short", alreadyProcedural, BLUE_HAIR_PROFILE).steps[0];
+    if (swapStyle?.kind === "forge-hair") {
+      expect(swapStyle.hair.baseColor).toBeUndefined();
+      expect(swapStyle.hair.tipColor).toBeUndefined();
+    }
+  });
+
+  it("원본 유지로 되돌릴 때는 style='none'·replaceOriginal=false로 깨끗하게 원복한다", () => {
+    const fromWavy = snapshotWith({
+      hairStyle: "wavy",
+      hairReplaceOriginal: true,
+      hairBaseColor: "#3b5d9a",
+      hairTipColor: "#6b85c6",
+    });
+    expect(plan("hair:original", fromWavy, BLUE_HAIR_PROFILE).steps).toEqual([
+      { kind: "forge-hair", hair: { style: "none", replaceOriginal: false } },
+    ]);
+  });
+});

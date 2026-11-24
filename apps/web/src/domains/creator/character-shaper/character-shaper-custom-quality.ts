@@ -9,8 +9,11 @@
  */
 import * as THREE from "three";
 
+import { DEFAULT_AVATAR_FORGE_STATE } from "../vrm/studio-vrm-avatar-forge";
+import { classifyMeshName } from "../vrm/studio-vrm-costume";
 import { isStudioVrmMtoonMaterial } from "../vrm/studio-vrm-mtoon-brand";
 
+import type { CharacterOriginalHairColors } from "./character-shaper-contract";
 import type { AvatarForgeFaceParams, AvatarForgeHairParams } from "../vrm/studio-vrm-avatar-forge";
 import type { CostumeSlot } from "../vrm/studio-vrm-costume";
 import type { StudioVrmProportions } from "../vrm/studio-vrm-proportion-core";
@@ -253,22 +256,275 @@ const COSTUME_SLOTS_FOR_WARDROBE: Readonly<Record<WardrobeSlot, readonly Costume
   shoes: ["shoes"],
 });
 
+const HAIR_TEXTURE_SAMPLE_EDGE = 16;
+const HAIR_OUTLINE_NAME_PATTERN = /\boutline\b/iu;
+
+interface SampledHairMaterialLike {
+  readonly name?: string;
+  readonly isOutline?: boolean;
+  readonly color?: THREE.Color;
+  readonly shadeColorFactor?: THREE.Color;
+  readonly map?: {
+    readonly image?: {
+      readonly width?: number;
+      readonly height?: number;
+      readonly data?: Uint8Array | Uint8ClampedArray;
+    } | null;
+  } | null;
+  readonly userData?: Record<string, unknown>;
+}
+
+function normalizeHairMaterialName(name: string): string {
+  return name.replace(/\s*\((?:outline|instance)\)\s*/giu, " ").trim();
+}
+
+function isGeneratedOrCustomHairObject(object: THREE.Object3D): boolean {
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    const data = current.userData;
+    if (
+      data?.toonSpectrumAvatarForge === true
+      || data?.studioVrmCustomPartOutline === true
+      || typeof data?.characterAuthoringDerivative === "string"
+      || data?.characterCanonicalPart === true
+      || current.name.startsWith("wardrobe:")
+      || current.name.startsWith("prop:")
+    ) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+function sampleTextureMeanSrgb(
+  map: SampledHairMaterialLike["map"],
+): { readonly r: number; readonly g: number; readonly b: number } | null {
+  const image = map?.image;
+  if (!image) return null;
+  const width = typeof image.width === "number" ? Math.floor(image.width) : 0;
+  const height = typeof image.height === "number" ? Math.floor(image.height) : 0;
+  if (width <= 0 || height <= 0) return null;
+
+  let pixels: Uint8Array | Uint8ClampedArray | null = null;
+  let sampleW = width;
+  let sampleH = height;
+
+  if (
+    (image.data instanceof Uint8Array || image.data instanceof Uint8ClampedArray)
+    && image.data.length >= width * height * 4
+  ) {
+    pixels = image.data;
+  } else if (typeof document !== "undefined") {
+    try {
+      const canvas = document.createElement("canvas");
+      sampleW = Math.min(width, HAIR_TEXTURE_SAMPLE_EDGE);
+      sampleH = Math.min(height, HAIR_TEXTURE_SAMPLE_EDGE);
+      canvas.width = sampleW;
+      canvas.height = sampleH;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (ctx) {
+        ctx.drawImage(image as unknown as CanvasImageSource, 0, 0, sampleW, sampleH);
+        pixels = ctx.getImageData(0, 0, sampleW, sampleH).data;
+      }
+      canvas.width = 0;
+      canvas.height = 0;
+    } catch {
+      pixels = null;
+    }
+  }
+
+  if (!pixels || sampleW <= 0 || sampleH <= 0) return null;
+
+  const stepX = Math.max(1, Math.floor(sampleW / HAIR_TEXTURE_SAMPLE_EDGE));
+  const stepY = Math.max(1, Math.floor(sampleH / HAIR_TEXTURE_SAMPLE_EDGE));
+  let rSum = 0;
+  let gSum = 0;
+  let bSum = 0;
+  let count = 0;
+
+  for (let y = 0; y < sampleH; y += stepY) {
+    for (let x = 0; x < sampleW; x += stepX) {
+      const offset = (y * sampleW + x) * 4;
+      const alpha = pixels[offset + 3] ?? 255;
+      if (alpha < 128) continue;
+      rSum += (pixels[offset] ?? 0) / 255;
+      gSum += (pixels[offset + 1] ?? 0) / 255;
+      bSum += (pixels[offset + 2] ?? 0) / 255;
+      count += 1;
+    }
+  }
+  if (count === 0) return null;
+  return { r: rSum / count, g: gSum / count, b: bSum / count };
+}
+
+/** 기준 모발색에서 자연스럽게 어울리는 모발 끝(그라데이션) 색을 계산한다. */
+export function deriveHarmoniousHairTipColor(baseColorHex: string): string {
+  const color = new THREE.Color(baseColorHex);
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl, THREE.SRGBColorSpace);
+  const nextHue = (hsl.h + (hsl.l < 0.5 ? 0.012 : -0.008) + 1) % 1;
+  const nextSat = hsl.s < 0.05
+    ? hsl.s
+    : Math.min(0.88, Math.max(0.08, hsl.s * (hsl.l > 0.72 ? 0.92 : 0.96) + 0.02));
+  const nextLight = hsl.l > 0.84
+    ? Math.max(0.64, hsl.l - 0.14)
+    : hsl.l > 0.7
+      ? Math.min(0.94, hsl.l + 0.1)
+      : Math.min(0.86, hsl.l + 0.14 + (1 - hsl.l) * 0.07);
+  const tip = new THREE.Color().setHSL(nextHue, nextSat, nextLight, THREE.SRGBColorSpace);
+  return `#${tip.getHexString()}`;
+}
+
 /**
- * 절차형 헤어 스타일을 선택할 때 원본 VRM 헤어와 이중으로 겹치지 않도록 `replaceOriginal: true`를 자동 보정한다.
+ * 불러온 VRM의 원본 헤어 메시·재질에서 대표 모발 기본색과 조화로운 끝 색을 가볍게 샘플링한다.
+ * 생성된 절차형 파츠·외곽선·헤어 액세서리는 건너뛴다.
+ */
+export function sampleOriginalVrmHairColors(
+  vrm: { readonly scene?: { readonly traverse?: (cb: (obj: THREE.Object3D) => void) => void } | null } | null | undefined,
+): CharacterOriginalHairColors | null {
+  const traverse = vrm?.scene?.traverse;
+  if (!vrm?.scene || typeof traverse !== "function") return null;
+
+  const visited = new Set<object>();
+  let rTotal = 0;
+  let gTotal = 0;
+  let bTotal = 0;
+  let samples = 0;
+
+  traverse.call(vrm.scene, (node) => {
+    const mesh = node as Partial<THREE.Mesh>;
+    if (!mesh.isMesh || !mesh.material || isGeneratedOrCustomHairObject(node)) return;
+    const meshClass = classifyMeshName(typeof mesh.name === "string" ? mesh.name : "");
+    if (meshClass.slot !== null) return;
+
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const raw of materials) {
+      if (!raw || typeof raw !== "object" || visited.has(raw)) continue;
+      const mat = raw as unknown as SampledHairMaterialLike;
+      if (mat.isOutline === true || mat.userData?.studioVrmCustomPartMaterial) continue;
+      const rawName = typeof mat.name === "string" ? mat.name : "";
+      if (HAIR_OUTLINE_NAME_PATTERN.test(rawName)) continue;
+
+      const matClass = classifyMeshName(normalizeHairMaterialName(rawName));
+      if (matClass.slot !== null) continue;
+      const isHairMaterial =
+        matClass.protected === "hair"
+        || (meshClass.protected === "hair" && (matClass.protected === null || matClass.protected === "hair"));
+      if (!isHairMaterial) continue;
+      visited.add(raw);
+
+      const factor = { r: 1, g: 1, b: 1 };
+      if (mat.color?.isColor) {
+        mat.color.getRGB(factor, THREE.SRGBColorSpace);
+      }
+
+      const texMean = mat.map ? sampleTextureMeanSrgb(mat.map) : null;
+      if (texMean) {
+        rTotal += Math.min(1, Math.max(0, texMean.r * factor.r));
+        gTotal += Math.min(1, Math.max(0, texMean.g * factor.g));
+        bTotal += Math.min(1, Math.max(0, texMean.b * factor.b));
+        samples += 1;
+        continue;
+      }
+
+      const factorNearWhite = Math.min(factor.r, factor.g, factor.b) >= 0.94;
+      if (mat.map && factorNearWhite) {
+        if (mat.shadeColorFactor?.isColor) {
+          const shade = { r: 0, g: 0, b: 0 };
+          mat.shadeColorFactor.getRGB(shade, THREE.SRGBColorSpace);
+          if (Math.max(shade.r, shade.g, shade.b) > 0.06 && Math.min(shade.r, shade.g, shade.b) < 0.94) {
+            rTotal += Math.min(1, shade.r * 1.18);
+            gTotal += Math.min(1, shade.g * 1.18);
+            bTotal += Math.min(1, shade.b * 1.18);
+            samples += 1;
+          }
+        }
+        continue;
+      }
+
+      if (mat.color?.isColor) {
+        rTotal += Math.min(1, Math.max(0, factor.r));
+        gTotal += Math.min(1, Math.max(0, factor.g));
+        bTotal += Math.min(1, Math.max(0, factor.b));
+        samples += 1;
+      }
+    }
+  });
+
+  if (samples === 0) return null;
+  const mean = new THREE.Color().setRGB(
+    rTotal / samples,
+    gTotal / samples,
+    bTotal / samples,
+    THREE.SRGBColorSpace,
+  );
+  const baseColor = `#${mean.getHexString()}`;
+  return Object.freeze({
+    baseColor,
+    tipColor: deriveHarmoniousHairTipColor(baseColor),
+  });
+}
+
+/**
+ * 원본 유지 상태에서 절차형 헤어로 처음 전환할 때, 사용자가 별도 모발색을 지정하지 않았다면
+ * 원본 VRM의 모발색을 자동 상속해야 하는지 판정한다.
+ */
+export function shouldInheritOriginalHairColors(
+  current: {
+    readonly style?: string;
+    readonly replaceOriginal?: boolean;
+    readonly baseColor?: string;
+    readonly tipColor?: string;
+    readonly customHairColor?: string | null;
+  },
+  patch: Partial<AvatarForgeHairParams>,
+): boolean {
+  const fromOriginal = (current.style ?? "none") === "none" && current.replaceOriginal !== true;
+  if (!fromOriginal) return false;
+  if (typeof patch.style !== "string" || patch.style === "none") return false;
+  if (patch.baseColor !== undefined || patch.tipColor !== undefined) return false;
+  if (typeof current.customHairColor === "string" && current.customHairColor.trim().length > 0) return false;
+
+  const defaultBase = DEFAULT_AVATAR_FORGE_STATE.hair.baseColor.toLowerCase();
+  const defaultTip = DEFAULT_AVATAR_FORGE_STATE.hair.tipColor.toLowerCase();
+  const currentBase = typeof current.baseColor === "string" ? current.baseColor.trim().toLowerCase() : defaultBase;
+  const currentTip = typeof current.tipColor === "string" ? current.tipColor.trim().toLowerCase() : defaultTip;
+  return currentBase === defaultBase && currentTip === defaultTip;
+}
+
+/**
+ * 절차형 헤어 스타일을 선택할 때 원본 VRM 헤어와 이중으로 겹치지 않도록 `replaceOriginal: true`를 자동 보정하고,
+ * 원본 유지에서 처음 절차형 스타일로 전환 시 사용자가 모발색을 바꾸지 않았다면 원본 VRM 모발색을 상속한다.
  * 사용자가 명시적으로 `replaceOriginal: false`를 지정했거나 `style: "none"`(원본 유지)로 돌릴 때는 존중한다.
  */
 export function resolveHairCommitPatch(
   patch: Partial<AvatarForgeHairParams>,
-  current: { readonly style?: string; readonly replaceOriginal?: boolean },
+  current: {
+    readonly style?: string;
+    readonly replaceOriginal?: boolean;
+    readonly baseColor?: string;
+    readonly tipColor?: string;
+    readonly customHairColor?: string | null;
+  },
+  originalHairColors?: CharacterOriginalHairColors | null,
 ): Partial<AvatarForgeHairParams> {
-  if (patch.replaceOriginal !== undefined) return patch;
+  const inheritColors = originalHairColors && shouldInheritOriginalHairColors(current, patch)
+    ? { baseColor: originalHairColors.baseColor, tipColor: originalHairColors.tipColor }
+    : null;
   const nextStyle = patch.style ?? current.style ?? "none";
-  if (nextStyle === "none") return patch;
-  const activatingFromOriginal = (current.style ?? "none") === "none" && typeof patch.style === "string" && patch.style !== "none";
-  if (activatingFromOriginal) {
-    return { ...patch, replaceOriginal: true };
-  }
-  return patch;
+  const activatingFromOriginal =
+    patch.replaceOriginal === undefined
+    && nextStyle !== "none"
+    && (current.style ?? "none") === "none"
+    && typeof patch.style === "string";
+
+  if (!activatingFromOriginal && !inheritColors) return patch;
+  return {
+    ...patch,
+    ...(activatingFromOriginal ? { replaceOriginal: true } : {}),
+    ...(inheritColors ?? {}),
+  };
 }
 
 /**
