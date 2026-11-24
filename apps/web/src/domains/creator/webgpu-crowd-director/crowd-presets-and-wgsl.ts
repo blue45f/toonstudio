@@ -138,6 +138,7 @@ export interface CrowdAgentInstance {
 }
 
 export interface CrowdDrawCallMetrics {
+  readonly basis: "theoretical-instancing";
   readonly agentCount: number;
   readonly naiveDrawCalls: number;
   readonly instancedDrawCalls: number;
@@ -151,6 +152,7 @@ export interface CrowdDrawCallMetrics {
     readonly mid: number;
     readonly far: number;
   };
+  /** 고정 가정으로 계산한 호환용 값이며 실제 작업 시간 절감 측정값이 아니다. */
   readonly estimatedManualInkMinutesSaved: number;
 }
 
@@ -159,8 +161,17 @@ export interface CrowdInstanceBufferPack {
   readonly instanceStrideFloats: 16;
   readonly instanceCount: number;
   readonly instanceData: Float32Array;
+  readonly drawMode: "unculled" | "compute-culled";
+  readonly visibleIndices: Uint32Array;
   readonly indirectArgs: Uint32Array;
   readonly cameraUniform: Float32Array;
+  /** 매 프레임 reset dispatch를 마친 뒤 선택적 cull dispatch, draw 순서로 실행한다. */
+  readonly frameDispatch: {
+    readonly resetEntryPoint: "reset_crowd_indirect";
+    readonly resetWorkgroupCount: number;
+    readonly cullEntryPoint: "cull_and_build_indirect" | null;
+    readonly cullWorkgroupCount: number;
+  };
 }
 
 export interface CrowdSceneMetrics {
@@ -453,7 +464,7 @@ export function getCrowdPresetById(presetId?: CrowdPresetId): CrowdPresetSpec {
  *
  * - `CrowdInstance`는 64바이트 정렬(vec4<f32> 4개 = 16 floats).
  * - `DrawIndexedIndirectArgs`는 WebGPU `GPURenderPassEncoder.drawIndexedIndirect` 규격(20바이트, u32 5개).
- * - `@compute fn cull_and_build_indirect`: 깊이/시야각 컬링 후 가시 인스턴스 인덱스를 압축하고
+ * - `@compute fn cull_and_build_indirect`: 깊이/크기 조건 검사 후 인스턴스 인덱스를 압축하고
  *   `atomicAdd(&indirectArgs.instanceCount, 1u)`로 단일 간접 드로우콜 인수를 갱신한다.
  * - `@vertex fn vs_crowd_instanced` + `@fragment fn fs_crowd_toon_ink`:
  *   깊이 원근 스케일링, 주인공 시선 회전, 근경 G펜 굵은 잉크 → 원경 얇은 실루엣 & 대기 페이드 출력.
@@ -499,8 +510,22 @@ struct CrowdVertexOut {
 @group(0) @binding(2) var<storage, read_write> visibleIndices: array<u32>;
 @group(0) @binding(3) var<storage, read_write> indirectArgs: DrawIndexedIndirectArgs;
 
+// 별도 dispatch를 완료한 뒤 cull을 실행한다. sceneMeta.w: 0=uncull, 1=compute-cull.
+@compute @workgroup_size(64, 1, 1)
+fn reset_crowd_indirect(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let totalCount = u32(camera.sceneMeta.y);
+  let culled = camera.sceneMeta.w > 0.5;
+  if (gid.x == 0u) {
+    atomicStore(&indirectArgs.instanceCount, select(totalCount, 0u, culled));
+  }
+  if (gid.x < totalCount) {
+    visibleIndices[gid.x] = select(gid.x, 0xffffffffu, culled);
+  }
+}
+
 @compute @workgroup_size(64, 1, 1)
 fn cull_and_build_indirect(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (camera.sceneMeta.w < 0.5) { return; }
   let idx = gid.x;
   let totalCount = u32(camera.sceneMeta.y);
   if (idx >= totalCount) {
