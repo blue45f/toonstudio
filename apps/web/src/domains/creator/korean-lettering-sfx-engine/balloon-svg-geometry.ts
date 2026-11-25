@@ -68,4 +68,3 @@ export function buildBalloonSvgGeometry(
       : `M ${round2(cx + dir * rx * 0.16)} ${round2(cy + ry * 0.9)} Q ${round2(cx + dir * rx * 0.28)} ${round2(heightPx - 3)} ${round2(cx + dir * rx * 0.4)} ${round2(heightPx - 2)} Q ${round2(cx + dir * rx * 0.2)} ${round2(cy + ry * 0.96)} ${round2(cx + dir * rx * 0.04)} ${round2(cy + ry * 0.94)} Z`;
   return { outlinePath, tailPath, thoughtDots: [] };
 }
-

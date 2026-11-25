@@ -47,4 +47,3 @@ export function forwardLoraAdapter(adapter: LoraAdapterWeights, inputFeatures: F
   }
   return output;
 }
-

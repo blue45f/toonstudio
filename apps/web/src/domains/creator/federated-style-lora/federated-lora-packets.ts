@@ -174,4 +174,3 @@ export function aggregateFederatedLoraDeltas(
     roundDigestSha256: computeSha256HexFromText(JSON.stringify([fingerprint, accepted.map((packet) => [packet.packetId, packet.deviceId, packet.checksumSha256]), Array.from(aggDeltaA), Array.from(aggDeltaB)])),
   };
 }
-

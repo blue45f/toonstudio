@@ -46,4 +46,3 @@ export function useExampleNotification<T>(callback?: (value: T) => void | Promis
   }
   return { status, notify, retry, isPending: () => pendingRef.current };
 }
-
