@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
-import { ArrowRight, Cpu, Eraser, LayoutGrid, Moon, PenTool, Scale, Sparkles, Sun, Sunrise, Volume2, VolumeX } from "lucide-react";
+import { ArrowRight, Cpu, Eraser, LayoutGrid, Moon, Palette, PenTool, Scale, Sun, Sunrise, Volume2, VolumeX } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { formatI18nTemplate, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
@@ -42,14 +42,14 @@ const SPRITE_MEDALLIONS = [
 ] as const;
 
 const TONE_SPECS: Readonly<Record<ToneKey, readonly [string, number, number, number]>> = {
-  cobalt: ["--wow-pigment-cobalt", 0.52, 0.19, 258],
-  saffron: ["--wow-pigment-saffron", 0.81, 0.17, 86],
-  vermilion: ["--wow-pigment-vermilion", 0.64, 0.21, 30],
-  ink: ["--wow-pigment-ink", 0.2, 0.02, 268],
-  emerald: ["--wow-pigment-emerald", 0.62, 0.18, 160],
-  panelLine: ["--wow-panel-line", 0.32, 0.03, 265],
-  bubbleFill: ["--wow-bubble-fill", 0.99, 0.006, 92],
-  bubbleInk: ["--wow-bubble-ink", 0.18, 0.02, 265],
+  cobalt: ["--wow-pigment-cobalt", 0.56, 0.16, 245],
+  saffron: ["--wow-pigment-saffron", 0.79, 0.16, 72],
+  vermilion: ["--wow-pigment-vermilion", 0.65, 0.19, 28],
+  ink: ["--wow-pigment-ink", 0.2, 0.012, 65],
+  emerald: ["--wow-pigment-emerald", 0.64, 0.16, 158],
+  panelLine: ["--wow-panel-line", 0.3, 0.015, 65],
+  bubbleFill: ["--wow-bubble-fill", 0.988, 0.005, 85],
+  bubbleInk: ["--wow-bubble-ink", 0.18, 0.012, 65],
 };
 
 const SPECTRAL_CURVES: readonly (readonly [ToneKey, number, number, number, number, number, number, number, number, number, number])[] = [
@@ -321,17 +321,23 @@ export function HomeInteractiveWowShowcase() {
           : bi("마우스·터치·펜으로 캔버스를 문지르거나 ‘파랑+노랑 분광 혼색 시연’을 눌러 보세요.", "Drag across the canvas with mouse, pen, or touch, or click Blue + Yellow Spectral Mix.");
 
   return (
-    <section ref={rootRef} className="home-wow-showcase" data-testid="home-wow-showcase" aria-labelledby="hwow-sandbox-title">
+    <section
+      ref={rootRef}
+      className="home-wow-showcase"
+      data-testid="home-wow-showcase"
+      data-editorial-palette="spectrum-zero-violet"
+      aria-labelledby="hwow-sandbox-title"
+    >
       <span className="hwow-spectrum-rule" aria-hidden="true" />
       <div className="hwow-inner">
         <div className="hwow-head">
           <div className="hwow-copy">
             <div className="hwow-kicker-row">
               <span className="hwow-kicker">
-                <Sparkles size={14} strokeWidth={1.8} aria-hidden="true" />
+                <Palette size={14} strokeWidth={1.8} aria-hidden="true" />
                 {bi("설치 0초 · 라이브 분광 샌드박스", "Zero-install · Live Spectral Sandbox")}
               </span>
-              <button type="button" className="hwow-sound-toggle" data-testid="hwow-sound-toggle" aria-pressed={soundEnabled} onClick={() => setSoundEnabled((prev) => !prev)}>
+              <button type="button" className="hwow-sound-toggle min-h-11" data-testid="hwow-sound-toggle" aria-pressed={soundEnabled} onClick={() => setSoundEnabled((prev) => !prev)}>
                 {soundEnabled ? <Volume2 size={15} strokeWidth={1.7} aria-hidden="true" /> : <VolumeX size={15} strokeWidth={1.7} aria-hidden="true" />}
                 <span>{soundEnabled ? bi("펜촉 사운드 켜짐", "Nib sound on") : bi("펜촉 사운드 꺼짐", "Nib sound off")}</span>
               </button>
@@ -385,7 +391,7 @@ export function HomeInteractiveWowShowcase() {
               <span className="hwow-block-label">{bi("주얼 아틀리에 안료", "Jewel Atelier Pigments")}</span>
               <div className="hwow-pigment-grid" role="group" aria-label={bi("안료 색상 선택", "Choose pigment swatch")}>
                 {PIGMENTS.map((pigment) => (
-                  <button key={pigment.id} type="button" className="hwow-pigment-btn" data-pigment={pigment.id} aria-pressed={activePigment === pigment.id} onClick={() => setActivePigment(pigment.id)}>
+                  <button key={pigment.id} type="button" className="hwow-pigment-btn min-h-11" data-pigment={pigment.id} aria-pressed={activePigment === pigment.id} onClick={() => setActivePigment(pigment.id)}>
                     <span className="hwow-swatch-gem" aria-hidden="true" />
                     <span>{bi(pigment.ko, pigment.en)}</span>
                   </button>
@@ -396,16 +402,16 @@ export function HomeInteractiveWowShowcase() {
             <div className="hwow-control-block">
               <span className="hwow-block-label">{bi("원클릭 라이브 체험", "One-Click Live Demos")}</span>
               <div className="hwow-demo-actions">
-                <button type="button" className="hwow-demo-btn hwow-demo-btn--spectral" data-testid="hwow-spectral-mix-btn" onClick={runSpectralMixDemo}>
+                <button type="button" className="hwow-demo-btn hwow-demo-btn--spectral min-h-11" data-testid="hwow-spectral-mix-btn" onClick={runSpectralMixDemo}>
                   <span className="hwow-spectral-dots" aria-hidden="true"><i /><i /><i /></span>
                   <span>{bi("파랑+노랑 분광 혼색 시연", "Blue + Yellow Spectral Mix Demo")}</span>
                 </button>
                 <div className="hwow-demo-secondary-row">
-                  <button type="button" className="hwow-demo-btn" data-testid="hwow-stamp-btn" onClick={stampFourPanelLayout}>
+                  <button type="button" className="hwow-demo-btn min-h-11" data-testid="hwow-stamp-btn" onClick={stampFourPanelLayout}>
                     <LayoutGrid size={15} strokeWidth={1.7} aria-hidden="true" />
                     <span>{bi("1클릭 4컷 말풍선 스탬프", "1-Click 4-Panel Speech Stamp")}</span>
                   </button>
-                  <button type="button" className="hwow-demo-btn" data-testid="hwow-clear-btn" onClick={clearCanvas}>
+                  <button type="button" className="hwow-demo-btn min-h-11" data-testid="hwow-clear-btn" onClick={clearCanvas}>
                     <Eraser size={15} strokeWidth={1.7} aria-hidden="true" />
                     <span>{bi("지우기", "Clear")}</span>
                   </button>
@@ -419,7 +425,7 @@ export function HomeInteractiveWowShowcase() {
                 {LIGHTING_PRESETS.map((preset) => {
                   const Icon = preset.icon;
                   return (
-                    <button key={preset.id} type="button" className="hwow-lighting-btn" data-lighting-option={preset.id} aria-pressed={activeLighting === preset.id} onClick={() => setActiveLighting(preset.id)}>
+                    <button key={preset.id} type="button" className="hwow-lighting-btn min-h-11" data-lighting-option={preset.id} aria-pressed={activeLighting === preset.id} onClick={() => setActiveLighting(preset.id)}>
                       <Icon size={15} strokeWidth={1.7} aria-hidden="true" />
                       <span>{bi(preset.ko, preset.en)}</span>
                     </button>
@@ -431,9 +437,9 @@ export function HomeInteractiveWowShowcase() {
         </div>
 
         <div className="hwow-cta-bar">
-          <Link href="/studio/new?lane=blank" className="hwow-cta hwow-cta--primary ink-arrow"><span>{bi("이 감각 그대로 무료 캔버스 열기", "Open Free Canvas With This Feel")}</span><ArrowRight size={15} strokeWidth={1.8} aria-hidden="true" /></Link>
-          <Link href="/compare/studio" className="hwow-cta hwow-cta--secondary ink-arrow"><Scale size={15} strokeWidth={1.7} aria-hidden="true" /><span>{bi("글로벌 도구 6종 비교", "Compare 6 Global Studio Tools")}</span></Link>
-          <Link href="/tech" className="hwow-cta hwow-cta--secondary ink-arrow"><Cpu size={15} strokeWidth={1.7} aria-hidden="true" /><span>{bi("차세대 기술·9-LLM MCP", "Next-Gen Tech & 9-LLM MCP")}</span></Link>
+          <Link href="/studio/new?lane=blank" className="hwow-cta hwow-cta--primary ink-arrow min-h-11"><span>{bi("이 감각 그대로 무료 캔버스 열기", "Open Free Canvas With This Feel")}</span><ArrowRight size={15} strokeWidth={1.8} aria-hidden="true" /></Link>
+          <Link href="/compare/studio" className="hwow-cta hwow-cta--secondary ink-arrow min-h-11"><Scale size={15} strokeWidth={1.7} aria-hidden="true" /><span>{bi("글로벌 도구 6종 비교", "Compare 6 Global Studio Tools")}</span></Link>
+          <Link href="/tech" className="hwow-cta hwow-cta--secondary ink-arrow min-h-11"><Cpu size={15} strokeWidth={1.7} aria-hidden="true" /><span>{bi("차세대 기술·9-LLM MCP", "Next-Gen Tech & 9-LLM MCP")}</span></Link>
         </div>
       </div>
     </section>
