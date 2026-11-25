@@ -269,4 +269,42 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
     chapters: ["precision-geometry", "web-3d-dcc-pipeline"],
     atlasIds: ["opencascade-manifold-precision"],
   },
+  {
+    id: "hiz-occlusion-culling",
+    category: "spatial",
+    term: t("Hi-Z 계층적 깊이 오클루전 컬링", "Hi-Z hierarchical depth occlusion culling"),
+    definition: t(
+      "앞쪽 벽이나 큰 물체에 완전히 가려진 뒤쪽 3D 물체를 여러 해상도의 깊이 지도(피라미드)로 빠르게 찾아내, 아예 그리지 않고 건너뛰는 최적화 기법입니다.",
+      "An optimization that builds a multi-resolution depth pyramid to detect 3D objects hidden behind closer occluders and skip drawing them.",
+    ),
+    analogy: t(
+      "무대 커튼 뒤에 가려져 관객 눈에 보이지 않는 소품은 조명을 켜거나 칠하지 않는 것과 같습니다. 큰 구역부터 대충 훑어 가려졌으면 그 안의 세세한 물건은 한꺼번에 생략합니다.",
+      "Like not lighting or painting props hidden behind a stage curtain. Checking coarse regions first lets you skip an entire hidden cluster in one glance.",
+    ),
+    inToonstudio: t(
+      "crates/studio-wasm64-drawing-core/src/atelier_stage_3d_kernel.rs 의 cull_scene_frustum_and_hiz 가 64×36·5단계 보수적 소프트웨어 Hi-Z 피라미드와 6평면 프러스텀 컬링을 수행하고, prism-spatial-render-engine.ts 가 4종 웹툰 씬의 4~8단계 Hi-Z·LOD 절감 계획(참조 모델)을 계산합니다.",
+      "cull_scene_frustum_and_hiz in crates/studio-wasm64-drawing-core/src/atelier_stage_3d_kernel.rs runs 6-plane frustum culling with a 64x36 five-level conservative software Hi-Z pyramid, while prism-spatial-render-engine.ts models 4-to-8-level Hi-Z and LOD reductions across four webtoon scenes as a CPU reference model.",
+    ),
+    chapters: ["web-3d-engine", "performance-budget"],
+    atlasIds: ["three-r3f-viewport"],
+  },
+  {
+    id: "half-edge-watertight-brep",
+    category: "spatial",
+    term: t("Half-Edge 수밀 B-Rep 솔리드 위상 검증", "Half-edge watertight B-Rep topology verification"),
+    definition: t(
+      "모서리를 양방향 반쪽 모서리(half-edge) 쌍으로 연결해 구멍(경계 모서리)이나 세 면이 엉킨 비다양체 모서리가 0개인 닫힌 입체(수밀 솔리드)인지 검증하는 3D 위상 구조입니다.",
+      "A 3D topology structure pairing directed half-edges to verify that a solid is closed and watertight, with zero open boundary edges or non-manifold edges.",
+    ),
+    analogy: t(
+      "물을 부었을 때 한 방울도 새지 않는 밀폐 유리병을 검수하는 것과 같습니다. 조각마다 맞닿는 이음새를 앞뒤 한 쌍으로 대조해 틈이나 겹친 벽이 있으면 바로 잡아냅니다.",
+      "Like leak-testing a sealed glass bottle before pouring water in: checking every seam as a matched pair catches any gap or triple-joined wall right away.",
+    ),
+    inToonstudio: t(
+      "편집용 3D 메시는 studio-editable-half-edge-mesh.ts 가 정점·half-edge(next·prev·twin)·면으로 권위를 쥐고 비다양체 모서리를 사전 차단합니다. OpenCascade(studio-occt-wasm-facade.ts)의 B-Rep 결과도 boundaryEdgeCount=0·nonManifoldEdgeCount=0 인 위상 영수증(watertight)을 통과해야 문서에 들어옵니다.",
+      "Editable 3D meshes keep geometry authority in studio-editable-half-edge-mesh.ts using vertices, half-edges (next, prev, twin) and faces, blocking non-manifold edges up front. OpenCascade B-Rep results (studio-occt-wasm-facade.ts) must also pass a watertight topology receipt (boundaryEdgeCount=0, nonManifoldEdgeCount=0) before entering the document.",
+    ),
+    chapters: ["precision-geometry", "web-3d-dcc-pipeline"],
+    atlasIds: ["opencascade-manifold-precision"],
+  },
 ];
