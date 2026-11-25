@@ -64,6 +64,12 @@ function expectCurrentEvidence(text: string): void {
   expect(compact).toContain("최종마감전까지수정할수있다");
   expect(compact).toContain("2026-12-04");
   expect(compact).toContain("개인Pro월19,900원은예시가격이며미확정");
+  expect(compact).toContain("spectrum-editorial-theme.css");
+  expect(compact).toContain("120Hz프레임예산가드");
+  expect(compact).toContain("106/106GitHubActions최소권한");
+  expect(compact).toContain("rustix1.1.6");
+  expect(compact).toContain("pnpmaudit보안문제0건");
+  expect(compact).toContain("/compare/studio");
   expect(compact).not.toContain("배경생성프리셋");
 }
 

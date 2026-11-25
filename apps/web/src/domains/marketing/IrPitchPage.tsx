@@ -18,6 +18,7 @@ import {
   Mail,
   Maximize,
   Presentation,
+  ShieldCheck,
   X,
 } from "lucide-react";
 
@@ -57,6 +58,29 @@ import {
 } from "./IrQaAndLicenseSection";
 
 const SCOPE = "domains.marketing.IrPitchPage";
+
+const WAVE_45_49_MILESTONES = [
+  {
+    id: "editorial-home",
+    ko: { tag: "디자인 · 홈", title: "탈-바이올렛 85/10/5 스펙트럼 에디토리얼 & 홈 전면 재구성", detail: "spectrum-editorial-theme.css 5대 도메인 안료, ReferenceCreatorDashboard.tsx 홈 전면 재구성, 드로잉 크롬 겹침·언슬롭 23개 파일 정비를 완료했습니다." },
+    en: { tag: "Design & Home", title: "De-violet 85/10/5 Spectrum Editorial & Home Redesign", detail: "Shipped spectrum-editorial-theme.css 5-pigment tokens, ReferenceCreatorDashboard.tsx editorial home redesign, and 23-file drawing chrome unslop cleanup." },
+  },
+  {
+    id: "creator-assistants",
+    ko: { tag: "작가 승인형 AI", title: "비파괴 작가 승인형 AI·창작 어시스턴트 제품군", detail: "대사 기반 캐릭터 표정·입모양·포즈 제안, 3점 조명·역광 자동 연출, 180° 카메라 앵글 리프레이밍, 얼굴 회피 말풍선·SFX 자동 배치, 3D 소품 15관절 손 자동 그립, 1~60컷 설정집 붉은펜 드리프트 코치, 대사 한 줄 4대 원스톱 연출 체인, 화풍 스펙트럼 변환 가디언을 구현했습니다." },
+    en: { tag: "Creator-Approved AI", title: "Non-Destructive Creator-Approved AI Assistant Suite", detail: "Dialogue-driven expression/viseme/pose proposals, 3-point & rim lighting, 180° camera reframing, face-safe balloon & SFX layout, 15-joint 3D prop auto-grip, 1–60 cut model-sheet red-pen drift coach, one-line 4-advisor chain, and style spectrum guardian." },
+  },
+  {
+    id: "tactile-hardware",
+    ko: { tag: "브러시 · 기기 · 협업", title: "극한 시각 브러시 질감 & 클린룸 하드웨어·공간 생태계", detail: "종이 요철 하이트맵·갈필·습윤 에지·임파스토 + 120Hz 프레임 예산 가드, Wacom·Apple Pencil Pro·S-Pen·USB HID 0x0D 클린룸 엔진, Vision Pro WebXR·스마트 글래스·워치 멀티기기, 캔버스 핀 검수·6단계 바통터치·5대 외부 툴 오픈 브리지를 반영했습니다." },
+    en: { tag: "Brushes · Hardware", title: "Tactile Brush Physics & Cleanroom Hardware/Spatial Ecosystem", detail: "Paper-tooth heightmaps, dry bristle, wet-edge, impasto + 120Hz frame-budget guard, cleanroom Wacom/Apple Pencil Pro/S-Pen/USB HID 0x0D engine, Vision Pro WebXR/glasses/watch links, canvas pin review, 6-stage baton handoff, and 5-tool open bridge." },
+  },
+  {
+    id: "security-governance",
+    ko: { tag: "보안 · 공급망", title: "보안·공급망 거버넌스 강화", detail: "106/106 GitHub Actions 최소 권한(permissions: {}), 의존성 SHA·해시 고정, SECURITY.md 협조적 공개 절차, rustix 1.1.6 패치 및 pnpm audit 취약점 0건을 확인했습니다." },
+    en: { tag: "Security & Supply Chain", title: "Security & Supply-Chain Governance Hardening", detail: "Verified 106/106 GitHub Actions least-privilege permissions: {}, SHA/hash-pinned dependencies, SECURITY.md disclosure policy, rustix 1.1.6 patch, and 0 pnpm audit vulnerabilities." },
+  },
+] as const;
 
 
 export function IrPitchPage() {
@@ -263,9 +287,9 @@ export function IrPitchPage() {
         <ul className="grid gap-3 md:grid-cols-2">
           {[
             { ko: "아직 비어 있는 자리 — 브라우저 로컬 WebGPU·Wasm64(1 GiB 3D) + 전 공정 통합", en: "A position still open — browser-local WebGPU/Wasm64 (1 GiB 3D) + full workflow" },
-            { ko: "WebGPU 7밴드 KM 분광 안료(₩0 자체 IP) · 클린룸 자체 제작 엔진 8종", en: "WebGPU 7-band KM spectral pigment (KRW 0 IP) · 8 cleanroom engines" },
-            { ko: "베타 인프라 월 ₩0 (Cloudflare Static·R2 + 서울 onpod) · 상용 라이선스 590 통과", en: "KRW 0/mo beta infra (Cloudflare Static/R2 + Seoul onpod) · 590 license checks passed" },
-            { ko: "PostgreSQL 17 스키마 0133 · 크로스-LLM 배포 매니페스트 · 웹툰식 분업 내장", en: "PostgreSQL 17 schema 0133 · cross-LLM deploy manifest · webtoon workflow built in" },
+            { ko: "WebGPU 7밴드 KM 분광·120Hz 종이 요철/임파스토 · 클린룸 하드웨어(HID 0x0D)·자체 엔진", en: "WebGPU 7-band KM pigment · 120Hz tactile brushes · cleanroom HID 0x0D & core engines" },
+            { ko: "작가 승인형 비파괴 AI 연출 어시스턴트 8종 · 5대 외부 툴 오픈 브리지 · 6단계 바통터치", en: "8 non-destructive creator-approved AI assistants · 5-tool open bridge · 6-stage handoff" },
+            { ko: "베타 인프라 월 ₩0 · 상용 라이선스 590 통과 · 106/106 Actions 최소 권한 · pnpm audit 0건", en: "KRW 0/mo beta infra · 590 license checks · 106/106 least-privilege Actions · 0 pnpm audit vulns" },
           ].map((item) => (
             <li key={item.en} className="rounded-2xl border border-line/70 bg-card/65 p-6 font-display text-xl font-black leading-snug text-fg">{bi(item.ko, item.en)}</li>
           ))}
@@ -349,12 +373,47 @@ export function IrPitchPage() {
     ),
   ];
 
+  const renderWaveMilestones = (heading: string) => (
+    <section
+      className="ir-moat-scope ir-moat-card grid gap-4"
+      data-surface="site"
+      data-testid="ir-wave-milestones"
+      aria-label={heading}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="ir-moat-pill" data-tone="current">{bi("현재 구현 · 2026-11-25 (웨이브 45~49)", "Current Build · 2026-11-25 (Waves 45–49)")}</span>
+          <span className="ir-moat-pill" data-tone="target">{bi("매출·고객 목표와 분리", "Separate from Revenue/User Targets")}</span>
+        </div>
+        <Link href="/compare/studio" className="ir-moat-btn">
+          {bi("경쟁사 7종 9축 정직 비교", "Honest 7-tool · 9-axis comparison")}<ArrowRight size={14} aria-hidden="true" />
+        </Link>
+      </div>
+      <h2 className="break-keep text-base font-bold text-fg sm:text-lg">{heading}</h2>
+      <ul className="grid gap-3 md:grid-cols-2">
+        {WAVE_45_49_MILESTONES.map((item) => {
+          const copy = bi(item.ko, item.en);
+          return (
+            <li key={item.id} className="ir-moat-subpanel grid content-start gap-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <strong className="break-keep text-sm text-fg">{copy.title}</strong>
+                <span className="ir-moat-pill" data-tone="current">{copy.tag}</span>
+              </div>
+              <p className="break-keep text-xs leading-5 text-fg-2">{copy.detail}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+
   return (
     <Container size="wide" className={INTRO_PAGE}>
       <IrBriefLayout onPresent={openPresentation}>
       {isOverview ? (
-        <div className="mb-5">
+        <div className="mb-5 grid gap-4">
           <IrVerifiedSnapshotStrip surface="site" lang={activeLang} />
+          {renderWaveMilestones(bi("2026-11-25 코드 검증 제품·보안 마일스톤", "Code-verified product & security milestones (2026-11-25)"))}
         </div>
       ) : null}
       <IrBriefOverview />
@@ -404,6 +463,11 @@ export function IrPitchPage() {
             "The closest competitor is CRECO, a collaboration platform hardened by beta testing with large studios — it is strong at managing versions, feedback and permissions for finished outputs. ToonStudio looks one step earlier: the drawing, 3D, storyboard and AI tools live inside, so the act of making is itself the management record.",
           )}
         </p>
+        <div className="mt-4">
+          <Link href="/compare/studio" className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/50 bg-accent-soft px-4 py-2 text-sm font-bold text-accent transition-colors hover:border-accent">
+            {bi("경쟁사 7종 9축 정직 비교표 보기 (/compare/studio)", "View honest 7-tool, 9-axis benchmark (/compare/studio)")}<ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
       </IrBriefSection>
 
       <IrBriefSection id="flow">
@@ -500,6 +564,9 @@ export function IrPitchPage() {
             );
           })}
         </ul>
+        <div className="mt-6">
+          {renderWaveMilestones(bi("웨이브 45~49 최신 구현 마일스톤 (현재 구현 · 운영 성과 별도)", "Waves 45–49 current implementation milestones (distinct from business traction)"))}
+        </div>
       </IrBriefSection>
 
       <IrBriefSection id="market">
@@ -632,8 +699,17 @@ export function IrPitchPage() {
             </p>
           </div>
         </div>
-        <div className="mt-5">
+        <div className="mt-5 grid gap-4">
           <IrSoloLicenseIntegrityCard surface="site" lang={activeLang} />
+          <div className="rounded-2xl border border-line/70 bg-card/65 p-5" data-testid="ir-security-governance-update">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-fg">
+              <ShieldCheck size={16} className="shrink-0 text-accent" aria-hidden="true" />
+              {bi("2026-11-25 보안·공급망 거버넌스 강화 (실측)", "2026-11-25 Security & Supply-Chain Hardening (Verified)")}
+            </p>
+            <p className="mt-1.5 break-keep text-xs leading-6 text-fg-2">
+              {bi("106/106 GitHub Actions 최소 권한(permissions: {}), 의존성 SHA·해시 고정, SECURITY.md 협조적 취약점 공개 절차, rustix 1.1.6 패치 및 pnpm audit 취약점 0건을 자동 점검으로 유지합니다.", "Automated checks enforce 106/106 GitHub Actions least-privilege permissions: {}, SHA/hash-pinned dependencies, SECURITY.md coordinated disclosure, rustix 1.1.6 patch, and 0 pnpm audit vulnerabilities.")}
+            </p>
+          </div>
         </div>
       </IrBriefSection>
 
