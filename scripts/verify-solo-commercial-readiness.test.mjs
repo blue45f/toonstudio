@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -256,5 +256,64 @@ describe("verify-solo-commercial-readiness (1인 기업 상용 라이선스·Ope
         step.uses.startsWith("github/codeql-action/upload-sarif@"),
     );
     assert.ok(sarifUpload, "SARIF 업로드 단계가 필요합니다");
+  });
+
+  test("모든 워크플로는 최상위 쓰기 권한·비고정 npm/pip 설치·curl 파이프 실행을 허용하지 않는다", () => {
+    const workflowsDir = path.join(REPO_ROOT, ".github/workflows");
+    const files = readdirSync(workflowsDir).filter((name) => /\.ya?ml$/u.test(name)).sort();
+    const violations = [];
+
+    for (const file of files) {
+      const parsed = parseYaml(readFileSync(path.join(workflowsDir, file), "utf8"));
+      if (typeof parsed.permissions === "string") {
+        violations.push(`${file}: 문자열 최상위 permissions(${parsed.permissions}) 금지`);
+      } else {
+        for (const [scope, level] of Object.entries(parsed.permissions ?? {})) {
+          if (level === "write") {
+            violations.push(`${file}: 최상위 쓰기 권한(${scope}: write)은 잡 단위로 내려야 합니다`);
+          }
+        }
+      }
+      for (const [jobId, job] of Object.entries(parsed.jobs ?? {})) {
+        for (const step of job?.steps ?? []) {
+          if (typeof step?.run !== "string") continue;
+          for (const rawLine of step.run.split("\n")) {
+            const line = rawLine.trim();
+            if (line.startsWith("#")) continue;
+            if (/\bnpm\s+(?:install|i|update|install-test)\b/u.test(line)) {
+              violations.push(`${file} (${jobId}): 비고정 npm 설치 금지 -> ${line}`);
+            }
+            if (/\bpip3?\s+install\b/u.test(line) && !/--require-hashes\b/u.test(line)) {
+              violations.push(`${file} (${jobId}): --require-hashes 없는 pip 설치 금지 -> ${line}`);
+            }
+            if (/\b(?:curl|wget)\b[^|\n]*\|\s*(?:sudo\s+)?(?:ba|z|da|a)?sh\b/u.test(line)) {
+              violations.push(`${file} (${jobId}): 다운로드 즉시 셸 파이프 실행 금지 -> ${line}`);
+            }
+          }
+        }
+      }
+    }
+
+    assert.deepEqual(violations, [], `OpenSSF Scorecard 회귀 감지:\n${violations.join("\n")}`);
+  });
+
+  test("SECURITY.md는 비공개 취약점 제보 URL과 협조적 공개 원칙·기한을 명시하고 promo-render lockfile이 제품 버전과 일치한다", () => {
+    const policy = readFileSync(path.join(REPO_ROOT, "SECURITY.md"), "utf8");
+    assert.match(policy, /https:\/\/github\.com\/blue45f\/toonstudio\/security\/advisories\/new/u);
+    assert.match(policy, /vulnerability/iu);
+    assert.match(policy, /disclos/iu);
+    assert.match(policy, /\b90\b/u);
+
+    const promoSource = readFileSync(
+      path.join(REPO_ROOT, "apps/web/src/domains/creator/promo/promo-remotion.ts"),
+      "utf8",
+    );
+    const versionMatch = promoSource.match(/PROMO_REMOTION_VERSION\s*=\s*"([^"]+)"/u);
+    assert.ok(versionMatch?.[1], "PROMO_REMOTION_VERSION 선언이 필요합니다");
+    const promoToolPkg = JSON.parse(
+      readFileSync(path.join(REPO_ROOT, ".github/ci-tools/promo-render/package.json"), "utf8"),
+    );
+    assert.equal(promoToolPkg.dependencies.remotion, versionMatch[1]);
+    assert.equal(promoToolPkg.dependencies["@remotion/cli"], versionMatch[1]);
   });
 });

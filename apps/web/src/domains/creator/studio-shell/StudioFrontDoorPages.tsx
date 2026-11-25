@@ -114,7 +114,7 @@ function AssetCategoryTile({ card, locale: _locale }: { readonly card: FrontDoor
   return (
     <Link
       href={card.href}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-3xl border border-line bg-card transition-all hover:-translate-y-0.5 hover:border-accent/45 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transform-none"
+      className="group flex min-h-11 min-w-0 flex-col overflow-hidden rounded-3xl border border-line bg-card transition-[background-color,border-color,color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-accent/45 hover:shadow-lg active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transform-none motion-reduce:transition-none"
     >
       <span className="relative block aspect-[4/3] overflow-hidden bg-panel">
         {art ? (
@@ -128,9 +128,9 @@ function AssetCategoryTile({ card, locale: _locale }: { readonly card: FrontDoor
         ) : (
           <TypographicCover title={title} seed={card.href} className="absolute inset-0" />
         )}
-        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/45 to-transparent" />
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-canvas/65 to-transparent" />
         {card.badge ? (
-          <span className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] break-words rounded-full bg-black/45 px-2 py-0.5 text-[0.62rem] font-bold leading-4 text-white backdrop-blur-sm">
+          <span className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] break-words rounded-full border border-line/60 bg-canvas/85 px-2 py-0.5 text-[0.62rem] font-bold leading-4 text-fg backdrop-blur-sm">
             {bi((card.badge).ko, (card.badge).en)}
           </span>
         ) : null}
@@ -184,7 +184,7 @@ function AssetEssentialsPreview({ locale: _locale }: { readonly locale: StudioFr
           <li key={asset.id} className="min-w-0">
             <Link
               href="/studio/assets?view=essentials"
-              className="group block min-w-0 overflow-hidden rounded-2xl border border-line bg-card transition-all hover:-translate-y-0.5 hover:border-accent/45 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transform-none"
+              className="group block min-h-11 min-w-0 overflow-hidden rounded-2xl border border-line bg-card transition-[background-color,border-color,color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-accent/45 hover:shadow-lg active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transform-none motion-reduce:transition-none"
             >
               <span className="relative block aspect-[4/3] bg-panel">
                 <img
@@ -236,7 +236,7 @@ function PageHeader({
             const last = index === crumbs.length - 1;
             return (
               <span key={crumb.label} className="flex min-w-0 items-center gap-2">
-                {index > 0 ? <span aria-hidden="true">/</span> : null}
+                {index > 0 ? <span aria-hidden="true" className="select-none text-fg-3/60">/</span> : null}
                 {crumb.href && !last ? (
                   <Link href={crumb.href} className="inline-flex min-h-11 min-w-11 shrink-0 items-center rounded-lg px-2 font-semibold transition-colors hover:bg-raised/60 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                     {crumb.label}
@@ -291,14 +291,23 @@ export function StudioImportPage({ children }: { readonly children: ReactNode })
   return (
     <Container size="wide" className="min-w-0 pt-4 pb-7 sm:py-8">
       <header>
-        <nav aria-label={bi("현재 위치", "Current location")} className="flex flex-wrap items-center gap-2 text-sm text-fg-3">
-          <Link href="/studio" className="inline-flex min-h-11 min-w-11 items-center rounded-lg underline focus-visible:outline-2">
+        <nav
+          aria-label={bi("현재 위치", "Current location")}
+          data-studio-import-breadcrumb="true"
+          className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-fg-3"
+        >
+          <Link
+            href="/studio"
+            className="-ml-2 inline-flex min-h-11 min-w-11 shrink-0 items-center rounded-lg px-2 font-semibold text-fg-3 transition-colors duration-150 hover:bg-raised/70 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
             {bi("내 작업", "My work")}
           </Link>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">{bi("가져오기", "Import")}</span>
+          <span aria-hidden="true" className="select-none text-fg-3/60">/</span>
+          <span aria-current="page" className="min-w-0 font-semibold text-fg-2 [word-break:keep-all]">
+            {bi("가져오기", "Import")}
+          </span>
         </nav>
-        <h1 className="mt-2 break-words font-display text-3xl font-bold tracking-tight text-fg sm:text-4xl">
+        <h1 className="mt-2 break-words font-display text-3xl font-bold tracking-tight text-fg [word-break:keep-all] sm:text-4xl">
           {bi("파일 가져오기", "Import files")}
         </h1>
       </header>
@@ -324,17 +333,27 @@ export function StudioImportPage({ children }: { readonly children: ReactNode })
             body: bi("음악·효과음·음성을 애니매틱과 모션 작업에 추가합니다.", "Add music, sound effects and voice to animatics and motion work."),
           },
         ].map(({ href, icon: Icon, title, body }) => (
-          <Link key={href} href={href} className="group min-w-0 rounded-2xl border border-line bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-accent/45 hover:bg-raised motion-reduce:transform-none">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Icon size={20} aria-hidden="true" /></span>
-            <strong className="mt-4 block break-words text-sm text-fg">{title}</strong>
-            <span className="mt-1.5 block break-words text-xs leading-5 text-fg-3">{body}</span>
-            <span className="mt-4 inline-flex min-w-0 items-center gap-1 text-xs font-bold text-accent"><span className="break-words">{bi("계속", "Continue")}</span><ArrowRight size={13} className="shrink-0" aria-hidden="true" /></span>
+          <Link
+            key={href}
+            href={href}
+            data-studio-import-card="true"
+            className="group flex min-h-11 min-w-0 flex-col rounded-2xl border border-line bg-card p-5 transition-[background-color,border-color,color,transform] duration-150 hover:-translate-y-0.5 hover:border-accent/50 hover:bg-raised active:translate-y-0 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none"
+          >
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-accent/20 bg-accent-soft text-accent transition-colors duration-150 group-hover:border-accent/40 group-hover:bg-accent/15">
+              <Icon size={20} aria-hidden="true" />
+            </span>
+            <strong className="mt-4 block break-words text-sm font-bold text-fg [word-break:keep-all]">{title}</strong>
+            <span className="mt-1.5 block flex-1 break-words text-xs leading-5 text-fg-3 [word-break:keep-all]">{body}</span>
+            <span className="mt-4 inline-flex min-w-0 items-center gap-1 text-xs font-bold text-accent">
+              <span className="break-words [word-break:keep-all]">{bi("계속", "Continue")}</span>
+              <ArrowRight size={13} className="shrink-0 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transform-none" aria-hidden="true" />
+            </span>
           </Link>
         ))}
       </div>
 
       <details className="mt-5 min-w-0">
-        <summary className="min-h-11 cursor-pointer content-center rounded-md text-sm font-semibold text-fg">
+        <summary className="min-h-11 cursor-pointer content-center rounded-md text-sm font-semibold text-fg transition-colors duration-150 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]">
           {bi("파일을 가져오는 순서", "How file import works")}
         </summary>
         <StudioTaskFlow steps={steps} ariaLabel={bi("파일 가져오기 단계", "File import steps")} className="mt-3" />

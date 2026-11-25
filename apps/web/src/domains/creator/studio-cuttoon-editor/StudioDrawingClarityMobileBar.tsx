@@ -74,7 +74,7 @@ export function StudioDrawingClarityMobileBar({
       data-studio-device-guide-entry={guideSurface ?? undefined}
       className="studio-drawing-clarity-header studio-drawing-clarity-mobile-header">
       <StudioEditorReturnButton variant="lane" onReturn={returnFromStudioEditorInBrowser} />
-      <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDocumentChromeSlot /></div>
+      <div className="studio-drawing-clarity-title flex-1 min-w-0 leading-tight"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDocumentChromeSlot /></div>
       <StudioDrawingClaritySaveButton session={s} />
       <button
         type="button"
@@ -85,13 +85,13 @@ export function StudioDrawingClarityMobileBar({
           onExportTrigger?.(event.currentTarget);
           s.setExportMenuOpen(true);
         }}
-        title={bt("세로 스크롤 분할 PNG·PSD 출고", "Export draft")}
+        title={bt("원고 내보내기 (PNG·PSD)", "Export draft (PNG·PSD)")}
       >
         <span>{bt("출고", "Export")}</span>
       </button>
       <button type="button" className="studio-drawing-compact-edit-toggle"
         aria-controls="studio-mobile-edit-options" aria-expanded={editBarExpanded}
-        title={bt("페이지·검색·공유 옵션을 펼칩니다", "Toggle page, search, and share options")}
+        title={bt("페이지·검색·공유 열기", "Open page, search, and share")}
         onClick={() => setEditBarExpanded(value => !value)}>
         {bt("편집", "Edit")}<span aria-hidden="true">{editBarExpanded ? "▴" : "▾"}</span>
       </button>

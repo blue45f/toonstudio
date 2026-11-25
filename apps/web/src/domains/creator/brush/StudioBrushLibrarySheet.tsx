@@ -1920,7 +1920,7 @@ export function StudioBrushCatalogPortal({
       onToggleFavorite={onToggleFavorite}
       className={desktop
         ? "h-full w-full"
-        : "fixed pointer-events-auto inset-x-2 top-3 w-auto max-h-[calc(100dvh-1.5rem)]"}
+        : "fixed pointer-events-auto left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] top-[max(3.25rem,calc(env(safe-area-inset-top)+3rem))] z-[65] w-auto max-h-[calc(100dvh-4rem-env(safe-area-inset-top))] overscroll-contain"}
       style={desktop ? undefined : mobileStyle}
     />
   );
@@ -1936,10 +1936,10 @@ export function StudioBrushCatalogPortal({
         minHeight={420}
         maxWidth={900}
         maxHeight={1_100}
-        insetTop={76}
+        insetTop={100}
         insetRight={12}
         insetBottom={12}
-        insetLeft={12}
+        insetLeft={56}
         snapDistance={12}
         allowedDockEdges={["left", "right"]}
         onLayoutChange={setLayout}

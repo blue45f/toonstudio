@@ -125,6 +125,10 @@ describe("resolveStudioDraftSaveCenter", () => {
     expect(model.compactLabel).toBe("오프라인");
     expect(model.ariaLiveMessage).toBe("오프라인. 서버 연결 없이 작업 중이에요");
     expect(model.server.title).toBe("서버는 오프라인");
+    expect(model.detail).toBe("인터넷에 연결하면 원고를 서버에 저장할 수 있어요.");
+    expect(model.detail).toBe(model.server.detail);
+    expect(resolveStudioDraftSaveCenter(input({ isOnline: false }), (_ko, en) => en).detail)
+      .toBe("Reconnect to save the manuscript to the server.");
     expect(model.saveActionLabel).toBe("연결 후 저장 예약");
     expect(model.saveActionDisabled).toBe(false);
   });

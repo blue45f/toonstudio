@@ -1,0 +1,495 @@
+/*
+ * ToonStudio 스펙트럼 에디토리얼(Spectrum Editorial) 디자인 시스템 레이어.
+ *
+ * 85 / 10 / 5 Chromatic Discipline + Zero-Violet (hue 270~320deg 완전 배제):
+ * - 85% 무채색·따뜻한 갤러리 표면: 다크 흑단(oklch(0.145 0.005 65)) & 라이트 한지(oklch(0.98 0.006 85))
+ * - 10% 5대 도메인 아티스트 안료 시그니처:
+ *   draw(버밀리온 인주 28) · 3d(코발트 울트라마린 245) · character(마리골드 앰버 72) ·
+ *   market(비리디안 에메랄드 158) · collab(세룰리안 티얼 198)
+ * - 5% 정밀 에디토리얼 디테일: 1.5px 멀티 안료 헤어라인(.spectrum-editorial-hairline) 및
+ *   갤러리 액자 카드(.spectrum-gallery-frame)
+ *
+ * 확장 전용 계약: 기존 9개 data-design-theme(:root[data-design-theme="*"])의 원시 토큰과
+ * unified-theme-contract 별칭을 덮어쓰지 않는다. [data-spectrum-palette] 옵트인 스코프에서만
+ * --color-* 및 --unified-* 브리지를 활성화한다.
+ */
+
+:root {
+  /* 85 / 10 / 5 색채 배분 기준 토큰 */
+  --spectrum-ratio-surface: 85%;
+  --spectrum-ratio-pigment: 10%;
+  --spectrum-ratio-detail: 5%;
+
+  /* 갤러리 기준 표면 앵커 (퍼플·네이비 틴트 0%) */
+  --spectrum-gallery-ebony: oklch(0.145 0.005 65);
+  --spectrum-gallery-paper: oklch(0.98 0.006 85);
+
+  /* 5대 도메인 아티스트 안료 시그니처 (다크 갤러리 기본 기준 · WCAG AA >= 4.5:1) */
+  --spectrum-pigment-draw: oklch(0.715 0.165 28);
+  --spectrum-pigment-draw-soft: oklch(0.715 0.165 28 / 0.14);
+  --spectrum-pigment-draw-border: oklch(0.715 0.165 28 / 0.38);
+  --spectrum-pigment-draw-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-3d: oklch(0.74 0.135 245);
+  --spectrum-pigment-3d-soft: oklch(0.74 0.135 245 / 0.14);
+  --spectrum-pigment-3d-border: oklch(0.74 0.135 245 / 0.38);
+  --spectrum-pigment-3d-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-character: oklch(0.79 0.158 72);
+  --spectrum-pigment-character-soft: oklch(0.79 0.158 72 / 0.14);
+  --spectrum-pigment-character-border: oklch(0.79 0.158 72 / 0.38);
+  --spectrum-pigment-character-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-market: oklch(0.765 0.155 158);
+  --spectrum-pigment-market-soft: oklch(0.765 0.155 158 / 0.14);
+  --spectrum-pigment-market-border: oklch(0.765 0.155 158 / 0.38);
+  --spectrum-pigment-market-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-collab: oklch(0.78 0.125 198);
+  --spectrum-pigment-collab-soft: oklch(0.78 0.125 198 / 0.14);
+  --spectrum-pigment-collab-border: oklch(0.78 0.125 198 / 0.38);
+  --spectrum-pigment-collab-on: oklch(0.145 0.005 65);
+
+  /* 활성 도메인 기본 안료 */
+  --spectrum-domain-pigment: var(--spectrum-pigment-draw);
+  --spectrum-domain-pigment-soft: var(--spectrum-pigment-draw-soft);
+  --spectrum-domain-pigment-border: var(--spectrum-pigment-draw-border);
+  --spectrum-domain-pigment-on: var(--spectrum-pigment-draw-on);
+
+  /* 5% 에디토리얼 정밀 디테일 토큰 */
+  --spectrum-hairline-thickness: 1.5px;
+  --spectrum-hairline-gradient: linear-gradient(
+    90deg,
+    var(--spectrum-pigment-draw) 0%,
+    var(--spectrum-pigment-character) 25%,
+    var(--spectrum-pigment-market) 50%,
+    var(--spectrum-pigment-collab) 75%,
+    var(--spectrum-pigment-3d) 100%
+  );
+  --spectrum-frame-radius: 0.75rem;
+  --spectrum-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --spectrum-motion-duration: 180ms;
+}
+
+/* 라이트 문서 테마에서 5대 도메인 안료를 한지·종이 표면 4.5:1 이상 명도로 자동 적응 */
+:root[data-theme="light"] {
+  --spectrum-pigment-draw: oklch(0.495 0.175 28);
+  --spectrum-pigment-draw-soft: oklch(0.495 0.175 28 / 0.12);
+  --spectrum-pigment-draw-border: oklch(0.495 0.175 28 / 0.34);
+  --spectrum-pigment-draw-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-3d: oklch(0.465 0.115 245);
+  --spectrum-pigment-3d-soft: oklch(0.465 0.115 245 / 0.12);
+  --spectrum-pigment-3d-border: oklch(0.465 0.115 245 / 0.34);
+  --spectrum-pigment-3d-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-character: oklch(0.475 0.098 72);
+  --spectrum-pigment-character-soft: oklch(0.475 0.098 72 / 0.12);
+  --spectrum-pigment-character-border: oklch(0.475 0.098 72 / 0.34);
+  --spectrum-pigment-character-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-market: oklch(0.46 0.106 158);
+  --spectrum-pigment-market-soft: oklch(0.46 0.106 158 / 0.12);
+  --spectrum-pigment-market-border: oklch(0.46 0.106 158 / 0.34);
+  --spectrum-pigment-market-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-collab: oklch(0.465 0.078 198);
+  --spectrum-pigment-collab-soft: oklch(0.465 0.078 198 / 0.12);
+  --spectrum-pigment-collab-border: oklch(0.465 0.078 198 / 0.34);
+  --spectrum-pigment-collab-on: oklch(0.988 0.004 85);
+}
+
+/* ============================================================================
+ * 스코프 팔레트 1: [data-spectrum-palette="editorial-vivid"] (다크 갤러리 흑단)
+ * ============================================================================ */
+[data-spectrum-palette="editorial-vivid"] {
+  color-scheme: dark;
+
+  /* 85% 따뜻한 흑단 갤러리 표면 (퍼플·네이비 틴트 0%) */
+  --spectrum-surface-canvas: oklch(0.145 0.005 65);
+  --spectrum-surface-panel: oklch(0.175 0.006 66);
+  --spectrum-surface-card: oklch(0.205 0.006 67);
+  --spectrum-surface-raised: oklch(0.245 0.007 68);
+  --spectrum-line: oklch(0.325 0.008 68);
+  --spectrum-line-strong: oklch(0.555 0.01 68);
+  --spectrum-fg: oklch(0.962 0.006 82);
+  --spectrum-fg-2: oklch(0.79 0.009 76);
+  --spectrum-fg-3: oklch(0.685 0.01 72);
+
+  /* 10% 5대 도메인 선명 안료 시그니처 */
+  --spectrum-pigment-draw: oklch(0.715 0.165 28);
+  --spectrum-pigment-draw-soft: oklch(0.715 0.165 28 / 0.14);
+  --spectrum-pigment-draw-border: oklch(0.715 0.165 28 / 0.38);
+  --spectrum-pigment-draw-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-3d: oklch(0.74 0.135 245);
+  --spectrum-pigment-3d-soft: oklch(0.74 0.135 245 / 0.14);
+  --spectrum-pigment-3d-border: oklch(0.74 0.135 245 / 0.38);
+  --spectrum-pigment-3d-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-character: oklch(0.79 0.158 72);
+  --spectrum-pigment-character-soft: oklch(0.79 0.158 72 / 0.14);
+  --spectrum-pigment-character-border: oklch(0.79 0.158 72 / 0.38);
+  --spectrum-pigment-character-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-market: oklch(0.765 0.155 158);
+  --spectrum-pigment-market-soft: oklch(0.765 0.155 158 / 0.14);
+  --spectrum-pigment-market-border: oklch(0.765 0.155 158 / 0.38);
+  --spectrum-pigment-market-on: oklch(0.145 0.005 65);
+
+  --spectrum-pigment-collab: oklch(0.78 0.125 198);
+  --spectrum-pigment-collab-soft: oklch(0.78 0.125 198 / 0.14);
+  --spectrum-pigment-collab-border: oklch(0.78 0.125 198 / 0.38);
+  --spectrum-pigment-collab-on: oklch(0.145 0.005 65);
+
+  --spectrum-accent: var(--spectrum-pigment-draw);
+  --spectrum-accent-2: var(--spectrum-pigment-character);
+  --spectrum-accent-soft: var(--spectrum-pigment-draw-soft);
+  --spectrum-on-accent: oklch(0.145 0.005 65);
+
+  /* 스코프 내부 의미 토큰 브리지 */
+  --color-canvas: var(--spectrum-surface-canvas);
+  --color-panel: var(--spectrum-surface-panel);
+  --color-card: var(--spectrum-surface-card);
+  --color-raised: var(--spectrum-surface-raised);
+  --color-line: var(--spectrum-line);
+  --color-line-strong: var(--spectrum-line-strong);
+  --color-fg: var(--spectrum-fg);
+  --color-fg-2: var(--spectrum-fg-2);
+  --color-fg-3: var(--spectrum-fg-3);
+  --color-accent: var(--spectrum-accent);
+  --color-accent-2: var(--spectrum-accent-2);
+  --color-accent-soft: var(--spectrum-accent-soft);
+  --color-on-accent: var(--spectrum-on-accent);
+  --color-cool: var(--spectrum-pigment-3d);
+  --color-good: var(--spectrum-pigment-market);
+  --color-warn: var(--spectrum-pigment-character);
+  --color-warning: var(--spectrum-pigment-character);
+  --color-warning-soft: var(--spectrum-pigment-character-soft);
+  --color-bad: oklch(0.705 0.17 22);
+
+  --unified-canvas: var(--spectrum-surface-canvas);
+  --unified-panel: var(--spectrum-surface-panel);
+  --unified-card: var(--spectrum-surface-card);
+  --unified-raised: var(--spectrum-surface-raised);
+  --unified-line: var(--spectrum-line);
+  --unified-line-strong: var(--spectrum-line-strong);
+  --unified-fg: var(--spectrum-fg);
+  --unified-fg-2: var(--spectrum-fg-2);
+  --unified-fg-3: var(--spectrum-fg-3);
+  --unified-accent: var(--spectrum-accent);
+  --unified-accent-2: var(--spectrum-accent-2);
+  --unified-accent-soft: var(--spectrum-accent-soft);
+  --unified-on-accent: var(--spectrum-on-accent);
+
+  background-color: var(--spectrum-surface-canvas);
+  color: var(--spectrum-fg);
+}
+
+/* ============================================================================
+ * 스코프 팔레트 2: [data-spectrum-palette="editorial-paper"] (라이트 한지 페이퍼)
+ * ============================================================================ */
+[data-spectrum-palette="editorial-paper"] {
+  color-scheme: light;
+
+  /* 85% 따뜻한 한지·아카이브 페이퍼 표면 (퍼플·네이비 틴트 0%) */
+  --spectrum-surface-canvas: oklch(0.98 0.006 85);
+  --spectrum-surface-panel: oklch(0.962 0.007 84);
+  --spectrum-surface-card: oklch(0.994 0.004 85);
+  --spectrum-surface-raised: oklch(0.935 0.009 82);
+  --spectrum-line: oklch(0.865 0.01 80);
+  --spectrum-line-strong: oklch(0.575 0.012 75);
+  --spectrum-fg: oklch(0.185 0.01 65);
+  --spectrum-fg-2: oklch(0.365 0.012 68);
+  --spectrum-fg-3: oklch(0.465 0.012 70);
+
+  /* 10% 5대 도메인 딥 잉크 안료 시그니처 (한지 표면 WCAG AA >= 4.5:1) */
+  --spectrum-pigment-draw: oklch(0.495 0.175 28);
+  --spectrum-pigment-draw-soft: oklch(0.495 0.175 28 / 0.12);
+  --spectrum-pigment-draw-border: oklch(0.495 0.175 28 / 0.34);
+  --spectrum-pigment-draw-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-3d: oklch(0.465 0.115 245);
+  --spectrum-pigment-3d-soft: oklch(0.465 0.115 245 / 0.12);
+  --spectrum-pigment-3d-border: oklch(0.465 0.115 245 / 0.34);
+  --spectrum-pigment-3d-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-character: oklch(0.475 0.098 72);
+  --spectrum-pigment-character-soft: oklch(0.475 0.098 72 / 0.12);
+  --spectrum-pigment-character-border: oklch(0.475 0.098 72 / 0.34);
+  --spectrum-pigment-character-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-market: oklch(0.46 0.106 158);
+  --spectrum-pigment-market-soft: oklch(0.46 0.106 158 / 0.12);
+  --spectrum-pigment-market-border: oklch(0.46 0.106 158 / 0.34);
+  --spectrum-pigment-market-on: oklch(0.988 0.004 85);
+
+  --spectrum-pigment-collab: oklch(0.465 0.078 198);
+  --spectrum-pigment-collab-soft: oklch(0.465 0.078 198 / 0.12);
+  --spectrum-pigment-collab-border: oklch(0.465 0.078 198 / 0.34);
+  --spectrum-pigment-collab-on: oklch(0.988 0.004 85);
+
+  --spectrum-accent: var(--spectrum-pigment-draw);
+  --spectrum-accent-2: var(--spectrum-pigment-3d);
+  --spectrum-accent-soft: var(--spectrum-pigment-draw-soft);
+  --spectrum-on-accent: oklch(0.988 0.004 85);
+
+  /* 스코프 내부 의미 토큰 브리지 */
+  --color-canvas: var(--spectrum-surface-canvas);
+  --color-panel: var(--spectrum-surface-panel);
+  --color-card: var(--spectrum-surface-card);
+  --color-raised: var(--spectrum-surface-raised);
+  --color-line: var(--spectrum-line);
+  --color-line-strong: var(--spectrum-line-strong);
+  --color-fg: var(--spectrum-fg);
+  --color-fg-2: var(--spectrum-fg-2);
+  --color-fg-3: var(--spectrum-fg-3);
+  --color-accent: var(--spectrum-accent);
+  --color-accent-2: var(--spectrum-accent-2);
+  --color-accent-soft: var(--spectrum-accent-soft);
+  --color-on-accent: var(--spectrum-on-accent);
+  --color-cool: var(--spectrum-pigment-3d);
+  --color-good: var(--spectrum-pigment-market);
+  --color-warn: var(--spectrum-pigment-character);
+  --color-warning: var(--spectrum-pigment-character);
+  --color-warning-soft: var(--spectrum-pigment-character-soft);
+  --color-bad: oklch(0.48 0.175 22);
+
+  --unified-canvas: var(--spectrum-surface-canvas);
+  --unified-panel: var(--spectrum-surface-panel);
+  --unified-card: var(--spectrum-surface-card);
+  --unified-raised: var(--spectrum-surface-raised);
+  --unified-line: var(--spectrum-line);
+  --unified-line-strong: var(--spectrum-line-strong);
+  --unified-fg: var(--spectrum-fg);
+  --unified-fg-2: var(--spectrum-fg-2);
+  --unified-fg-3: var(--spectrum-fg-3);
+  --unified-accent: var(--spectrum-accent);
+  --unified-accent-2: var(--spectrum-accent-2);
+  --unified-accent-soft: var(--spectrum-accent-soft);
+  --unified-on-accent: var(--spectrum-on-accent);
+
+  background-color: var(--spectrum-surface-canvas);
+  color: var(--spectrum-fg);
+}
+
+/* ============================================================================
+ * 10% 도메인 안료 스코프 바인딩 ([data-spectrum-domain])
+ * ============================================================================ */
+[data-spectrum-domain="draw"] {
+  --spectrum-domain-pigment: var(--spectrum-pigment-draw);
+  --spectrum-domain-pigment-soft: var(--spectrum-pigment-draw-soft);
+  --spectrum-domain-pigment-border: var(--spectrum-pigment-draw-border);
+  --spectrum-domain-pigment-on: var(--spectrum-pigment-draw-on);
+}
+
+[data-spectrum-domain="3d"] {
+  --spectrum-domain-pigment: var(--spectrum-pigment-3d);
+  --spectrum-domain-pigment-soft: var(--spectrum-pigment-3d-soft);
+  --spectrum-domain-pigment-border: var(--spectrum-pigment-3d-border);
+  --spectrum-domain-pigment-on: var(--spectrum-pigment-3d-on);
+}
+
+[data-spectrum-domain="character"] {
+  --spectrum-domain-pigment: var(--spectrum-pigment-character);
+  --spectrum-domain-pigment-soft: var(--spectrum-pigment-character-soft);
+  --spectrum-domain-pigment-border: var(--spectrum-pigment-character-border);
+  --spectrum-domain-pigment-on: var(--spectrum-pigment-character-on);
+}
+
+[data-spectrum-domain="market"] {
+  --spectrum-domain-pigment: var(--spectrum-pigment-market);
+  --spectrum-domain-pigment-soft: var(--spectrum-pigment-market-soft);
+  --spectrum-domain-pigment-border: var(--spectrum-pigment-market-border);
+  --spectrum-domain-pigment-on: var(--spectrum-pigment-market-on);
+}
+
+[data-spectrum-domain="collab"] {
+  --spectrum-domain-pigment: var(--spectrum-pigment-collab);
+  --spectrum-domain-pigment-soft: var(--spectrum-pigment-collab-soft);
+  --spectrum-domain-pigment-border: var(--spectrum-pigment-collab-border);
+  --spectrum-domain-pigment-on: var(--spectrum-pigment-collab-on);
+}
+
+/* ============================================================================
+ * 5% 정밀 에디토리얼 디테일 유틸리티
+ * ============================================================================ */
+
+/* 1.5px 멀티 안료 스펙트럼 헤어라인: 글로우·블러 없는 절제된 건축 구분선 */
+.spectrum-editorial-hairline {
+  display: block;
+  width: 100%;
+  height: var(--spectrum-hairline-thickness, 1.5px);
+  border: 0;
+  margin: 0;
+  background-image: var(--spectrum-hairline-gradient);
+  background-color: var(--spectrum-domain-pigment);
+  flex-shrink: 0;
+}
+
+.spectrum-editorial-hairline[data-orientation="vertical"] {
+  width: var(--spectrum-hairline-thickness, 1.5px);
+  height: 100%;
+  min-height: 1.5rem;
+  background-image: linear-gradient(
+    180deg,
+    var(--spectrum-pigment-draw) 0%,
+    var(--spectrum-pigment-character) 25%,
+    var(--spectrum-pigment-market) 50%,
+    var(--spectrum-pigment-collab) 75%,
+    var(--spectrum-pigment-3d) 100%
+  );
+}
+
+/* 갤러리 액자 카드: 무채색 매트 표면 + 1px 건축 테두리 + 상단 1.5px 안료 시그니처 */
+.spectrum-gallery-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--spectrum-frame-radius, 0.75rem);
+  border: 1px solid var(--spectrum-line, var(--color-line));
+  background-color: var(--spectrum-surface-card, var(--color-card));
+  color: var(--spectrum-fg, var(--color-fg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--spectrum-fg, var(--color-fg)) 7%, transparent),
+    0 1px 2px color-mix(in oklch, var(--spectrum-surface-canvas, var(--color-canvas)) 36%, transparent);
+  transition:
+    border-color var(--spectrum-motion-duration, 180ms) var(--spectrum-motion-ease),
+    box-shadow var(--spectrum-motion-duration, 180ms) var(--spectrum-motion-ease);
+}
+
+.spectrum-gallery-frame::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: var(--spectrum-hairline-thickness, 1.5px);
+  background: var(--spectrum-domain-pigment);
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.spectrum-gallery-frame:hover {
+  border-color: var(--spectrum-domain-pigment-border);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--spectrum-fg, var(--color-fg)) 10%, transparent),
+    0 8px 24px -14px color-mix(in oklch, var(--spectrum-surface-canvas, var(--color-canvas)) 58%, transparent);
+}
+
+.spectrum-gallery-frame:focus-within {
+  outline: 2px solid var(--spectrum-domain-pigment);
+  outline-offset: 2px;
+}
+
+/* 에디토리얼 안료 배지: 10% 도메인 시그니처 칩 */
+.spectrum-pigment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--spectrum-domain-pigment-border);
+  background-color: var(--spectrum-domain-pigment-soft);
+  color: var(--spectrum-domain-pigment);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  word-break: keep-all;
+}
+
+/* ============================================================================
+ * 접근성 · 고대비 · 축소 모션 가드
+ * ============================================================================ */
+:root[data-design-theme="contrast"] .spectrum-gallery-frame,
+:root[data-contrast="more"] .spectrum-gallery-frame {
+  border-width: 2px;
+  border-color: var(--spectrum-line-strong, var(--color-line-strong));
+  box-shadow: none;
+}
+
+:root[data-design-theme="contrast"] .spectrum-editorial-hairline {
+  height: 2px;
+  background-image: none;
+  background-color: var(--color-line-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-spectrum-palette],
+  .spectrum-gallery-frame,
+  .spectrum-editorial-hairline,
+  .spectrum-pigment-badge {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .spectrum-gallery-frame {
+    border-width: 2px;
+    border-color: var(--spectrum-line-strong, var(--color-line-strong));
+    box-shadow: none;
+  }
+
+  .spectrum-editorial-hairline {
+    height: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  [data-spectrum-palette="editorial-vivid"],
+  [data-spectrum-palette="editorial-paper"] {
+    --spectrum-surface-canvas: Canvas;
+    --spectrum-surface-panel: Canvas;
+    --spectrum-surface-card: Canvas;
+    --spectrum-surface-raised: Canvas;
+    --spectrum-line: ButtonBorder;
+    --spectrum-line-strong: CanvasText;
+    --spectrum-fg: CanvasText;
+    --spectrum-fg-2: CanvasText;
+    --spectrum-fg-3: CanvasText;
+    --spectrum-accent: Highlight;
+    --spectrum-accent-2: Highlight;
+    --spectrum-accent-soft: Canvas;
+    --spectrum-on-accent: HighlightText;
+    --spectrum-pigment-draw: Highlight;
+    --spectrum-pigment-3d: Highlight;
+    --spectrum-pigment-character: Highlight;
+    --spectrum-pigment-market: Highlight;
+    --spectrum-pigment-collab: Highlight;
+    --spectrum-domain-pigment: Highlight;
+    --spectrum-domain-pigment-soft: Canvas;
+    --spectrum-domain-pigment-border: CanvasText;
+    --spectrum-domain-pigment-on: HighlightText;
+    background-color: Canvas;
+    color: CanvasText;
+  }
+
+  .spectrum-editorial-hairline,
+  .spectrum-editorial-hairline[data-orientation="vertical"] {
+    background-image: none;
+    background-color: Highlight;
+    forced-color-adjust: auto;
+  }
+
+  .spectrum-gallery-frame {
+    border: 2px solid CanvasText;
+    background-color: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .spectrum-gallery-frame::before {
+    background: Highlight;
+  }
+
+  .spectrum-gallery-frame:focus-within {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .spectrum-pigment-badge {
+    border-color: CanvasText;
+    background-color: Canvas;
+    color: CanvasText;
+  }
+}

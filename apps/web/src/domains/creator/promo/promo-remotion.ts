@@ -13,7 +13,7 @@ import {
 import type { PromoProject } from "./promo-model";
 
 /** Pin every Remotion package to the same version. The web app installs none of these. */
-export const PROMO_REMOTION_VERSION = "4.0.487";
+export const PROMO_REMOTION_VERSION = "4.0.545";
 export interface PromoRenderSources {
   model: string;
   canvas: string;

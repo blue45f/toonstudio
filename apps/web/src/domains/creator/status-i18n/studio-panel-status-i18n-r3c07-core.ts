@@ -16,7 +16,7 @@ import {
 
 registerI18nLocaleEntries("ko", {
   "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다.",
-  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "서버가 다시 연결될 때까지 변경 {count}개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "협업 변경 {count}건이 이 기기의 전송 대기열에 저장됐습니다. 아직 팀 서버에 반영되지 않았습니다.",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "따라 그리기 원본을 찾지 못했어요",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "내 그림은 그대로 유지됩니다. 같은 원본을 다시 가져오세요.",
   "studio.panelStatus.r3c07.onDemandModule.loadFailed": "창을 불러오지 못했습니다. 캔버스는 유지됩니다.",
@@ -42,7 +42,7 @@ registerI18nLocaleEntries("ko", {
 
 registerI18nLocaleEntries("en", {
   "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "Your manuscript is protected on the team server and in this device's recovery storage.",
-  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "Pending changes ({count}) are kept in this device's recovery storage until the server reconnects. They have not been applied to the team server yet.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "The device's send queue contains {count} collaboration updates. The team server has not acknowledged them yet.",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "Could not find the tracing original",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "Your drawing is kept as is. Import the same original again.",
   "studio.panelStatus.r3c07.onDemandModule.loadFailed": "Could not load the window. The canvas is kept.",

@@ -1,4 +1,4 @@
-import { Gauge, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
+import { Gauge, PenTool, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -97,8 +97,8 @@ export function StudioLiveFoleyFeelControls({
           onPushCue?.("F", bt("필기음", "Foley"), formatFoleyPresetShort(next.preset, bt));
         }}
         title={bt(
-          "클릭할 때마다 종이 필기음(차분함 → ASMR → 무음)을 전환합니다",
-          "Cycle live paper foley sound (Quiet → ASMR → Muted)",
+          "종이 필기음 전환 (차분함 → 생생함 → 무음)",
+          "Cycle paper sound (Quiet → Vivid → Muted)",
         )}
       >
         {foleyState.preset === "silent-focus" ? (
@@ -123,15 +123,15 @@ export function StudioLiveFoleyFeelControls({
         data-studio-compact-icon-chip="true"
         onClick={() => {
           const next = cycleLiveNibVfxMode();
-          onPushCue?.("V", bt("필기감 FX", "Nib VFX"), formatNibVfxModeShort(next, bt));
+          onPushCue?.("V", bt("펜촉 효과", "Nib feel"), formatNibVfxModeShort(next, bt));
         }}
         title={bt(
-          "클릭할 때마다 실시간 필기감 이펙트(은은함 → 생생함 → 꺼짐)를 전환합니다",
-          "Cycle live tactile nib VFX overlay (Subtle → Vivid → Off)",
+          "펜촉 필기감 효과 전환 (은은함 → 생생함 → 꺼짐)",
+          "Cycle nib tactile effect (Subtle → Vivid → Off)",
         )}
       >
-        <Sparkles size={15} aria-hidden />
-        <span>{`${bt("필기감 FX", "Nib FX")} · ${nibVfxShort}`}</span>
+        <PenTool size={15} aria-hidden />
+        <span>{`${bt("펜촉 효과", "Nib feel")} · ${nibVfxShort}`}</span>
       </button>
 
       {hidePressureChip ? null : (
@@ -152,8 +152,8 @@ export function StudioLiveFoleyFeelControls({
             blocked && blockedReason
               ? blockedReason
               : bt(
-                  "클릭할 때마다 펜 필압 감도 커브(표준 → 가볍게 → 강하게)를 전환합니다",
-                  "Cycle pen pressure sensitivity curve (Standard → Soft → Firm)",
+                  "펜 필압 감도 전환 (표준 → 가볍게 → 강하게)",
+                  "Cycle pen pressure feel (Standard → Soft → Firm)",
                 )
           }
         >

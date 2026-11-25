@@ -11,10 +11,7 @@ on:
         required: false
         default: "310"
 
-permissions:
-  actions: read
-  contents: read
-  issues: write
+permissions: {}
 
 concurrency:
   group: studio-soak-10h-${{ github.ref }}
@@ -32,6 +29,10 @@ jobs:
     name: 1/2 UX · mobile · persistence soak
     runs-on: ubuntu-latest
     timeout-minutes: 355
+    permissions:
+      actions: read
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -77,6 +78,10 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 355
+    permissions:
+      actions: read
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

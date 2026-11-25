@@ -59,7 +59,10 @@ export function StudioVisualShortcutHud({
   return (
     <div
       data-studio-visual-shortcut-hud-layer="true"
-      className={cn("pointer-events-none fixed inset-x-0 bottom-3 z-[32] flex items-end justify-between px-4", className)}
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-[max(0.75rem,calc(var(--studio-canvas-bottom-inset,0px)+0.5rem),env(safe-area-inset-bottom))] z-[32] flex items-end justify-between pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]",
+        className,
+      )}
     >
       <div className="flex items-center gap-2">
         {showZoomCapsule ? (

@@ -426,8 +426,11 @@ describe("desktop menubar status placement", () => {
 });
 
 
-function embeddedDrawingSave(overrides: Partial<ComponentProps<typeof StudioDraftSaveCenter>> = {}) {
-  render(<><StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing-embedded")} /><SaveCenter mobileImmersive {...overrides} /></>);
+function embeddedDrawingSave(
+  overrides: Partial<ComponentProps<typeof StudioDraftSaveCenter>> = {},
+  statusOverride?: ComponentProps<typeof StudioSaveSyncStatusCenter>["statusOverride"],
+) {
+  render(<><StudioSaveSyncStatusCenter presentation="drawing" statusOverride={statusOverride} journal={createEmptyOperationJournal("drawing-embedded")} /><SaveCenter mobileImmersive {...overrides} /></>);
   const dialog = document.querySelector<HTMLDialogElement>('[data-studio-drawing-save-dialog="true"]');
   if (!dialog) throw new Error("drawing save purpose screen missing");
   dialog.showModal = vi.fn(() => dialog.setAttribute("open", ""));
@@ -436,6 +439,18 @@ function embeddedDrawingSave(overrides: Partial<ComponentProps<typeof StudioDraf
 }
 
 describe("drawing save screen embeds existing draft authorities", () => {
+  it("기기 쓰기 실패 뒤 다른 기기 안내에 원고가 보관됐다고 표시하지 않는다", () => {
+    setOnline(false);
+    const dialog = embeddedDrawingSave({}, {
+      documentId: "drawing-embedded", localDurable: false, pendingOperationsCount: 1,
+      lastSavedAt: 1000, lastCheckpointAt: 1000, cloudSyncStatus: "offline", summaryText: "",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "저장 상태 열기: 저장 확인 필요" }));
+    const handoff = within(dialog).getByRole("region", { name: "다른 기기에서 이어서" });
+    expect(within(handoff).getByText("인터넷에 연결하면 원고를 서버에 저장할 수 있어요.")).toBeTruthy();
+    expect(handoff.textContent).not.toMatch(/이 기기 자동 저장|이 기기에는 계속 보관/);
+  });
+
   it("keeps backup and actual server actions in one dialog, moving version counts into named records", async () => {
     setOnline(true);
     const onSaveDraft = vi.fn(() => Promise.resolve()), onExportBackup = vi.fn(), onOpenVersions = vi.fn();

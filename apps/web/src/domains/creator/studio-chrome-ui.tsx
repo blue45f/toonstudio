@@ -826,7 +826,7 @@ export function StudioVerticalToolRail({
         buttons[next]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
       }}
       className={cn(
-        "hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-line",
+        "relative z-[20] hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-line",
         "lg:flex",
         className
       )}

@@ -230,7 +230,6 @@ export function StudioCreationModeLauncher({
         >
           <header className="studio-creation-mode-palette__header">
             <div>
-              <span>CREATOR WORKSPACES</span>
               <h2 id={titleId}>{bt("무엇을 만들까요?", "What will you make?")}</h2>
               <p>{bt("필요한 도구와 패널을 한 번에 준비합니다.", "Gets the tools and panels ready in one step.")}</p>
             </div>
@@ -287,8 +286,8 @@ export function StudioCreationModeLauncher({
                 <StudioVibrantToolArtwork spriteId="tech-webgpu" accent="ai" size={20} />
                 <span>
                   {bt(
-                    "타 툴 30초 정착 · 단축키 & 7밴드 브러시 매핑",
-                    "30s quick migrate · shortcuts & 7-band brushes",
+                    "다른 앱 단축키·브러시 가져오기",
+                    "Import shortcuts & brushes from other apps",
                   )}
                 </span>
               </span>

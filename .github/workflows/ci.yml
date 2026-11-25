@@ -423,6 +423,7 @@ jobs:
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/four-studio-themes-atlas.webp' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/cyber-neon-lab.webp' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/hanok-botanical-atelier.webp' || '' }}
+            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/atelier/spaces/' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/lofi-cat-storyhouse.webp' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v11/themes/seoul-editorial-hq.webp' || '' }}
             ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/virtual-studio/studio-art-v12/cast/action-mocap-actor-idle.webp' || '' }}

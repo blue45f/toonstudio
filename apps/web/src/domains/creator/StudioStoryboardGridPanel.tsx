@@ -67,9 +67,9 @@ export type StoryboardGridPage = ThumbPageLike & {
 };
 
 const CELL_SIZE_PRESETS = {
-  s: "grid-cols-[repeat(auto-fill,minmax(5rem,1fr))]",
-  m: "grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))]",
-  l: "grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]",
+  s: "grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))]",
+  m: "grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]",
+  l: "grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]",
 } as const;
 type CellSize = keyof typeof CELL_SIZE_PRESETS;
 type StoryboardViewMode = "sequence" | "review" | "priority";
@@ -379,7 +379,7 @@ export function StudioStoryboardGridPanel({
                   onShotTypeChange={(value) => onShotTagChange(page.id, { shotType: value })}
                   onCameraAngleChange={(value) => onShotTagChange(page.id, { cameraAngle: value })}
                   size="compact"
-                  className="relative z-20"
+                  layout={cellSize === "l" ? "row" : "stacked"} className="relative z-20"
                 />
               ) : null}
 
@@ -556,110 +556,94 @@ export function StudioStoryboardGridPanel({
       className="fixed inset-0 z-[80] bg-canvas/85 p-2 text-fg sm:p-4"
     >
       <div className="mx-auto flex h-full w-full max-w-[100rem] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line px-4 py-3">
-          <LayoutGrid size={16} className="text-accent" aria-hidden />
-          <div>
-            <h2 className="text-sm font-bold text-fg">스토리보드 컨트롤 룸</h2>
-            <p className="text-xs text-fg-3">
-              {teamReview
-                ? "시퀀스·샷 메타·검토 상태·제작 준비도를 한 화면에서 점검합니다."
-                : "페이지 순서를 한눈에 보고 정리합니다. 카드를 누르면 그 페이지로 이동합니다."}
-            </p>
-          </div>
-          <span className="text-xs text-fg-3">총 {summary.total}페이지</span>
-
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            <div className="flex items-center gap-1 rounded-md border border-line bg-card/50 p-0.5">
-              <StudioPanelChip
-                className="min-h-11 gap-1 px-2.5"
-                active={viewMode === "sequence"}
-                onClick={() => setViewMode("sequence")}
-                title="원본 순서와 샷 정보를 보는 시퀀스 뷰"
-              >
-                <LayoutGrid size={12} aria-hidden /> 시퀀스
-              </StudioPanelChip>
-              <StudioPanelChip
-                className="min-h-11 gap-1 px-2.5"
-                active={viewMode === "review"}
-                onClick={() => setViewMode("review")}
-                title="검토 상태별 작업 큐"
-              >
-                <ListChecks size={12} aria-hidden /> 검토 큐
-              </StudioPanelChip>
-              <StudioPanelChip
-                className="min-h-11 gap-1 px-2.5"
-                active={viewMode === "priority"}
-                onClick={() => setViewMode("priority")}
-                title="제작을 막는 문제부터 보는 준비도 큐"
-              >
-                <ListChecks size={12} aria-hidden /> 준비도 큐
-              </StudioPanelChip>
-            </div>
-
-            {viewMode === "sequence" ? (
-              <div className="flex items-center gap-1 rounded-md border border-line bg-card/50 p-0.5">
-                {(["s", "m", "l"] as const).map((size) => (
-                  <StudioPanelChip
-                    key={size}
-                    className="min-h-11 min-w-11"
-                    active={cellSize === size}
-                    onClick={() => setCellSize(size)}
-                    title={size === "s" ? "작게" : size === "m" ? "보통" : "크게"}
-                  >
-                    {size === "s" ? "소" : size === "m" ? "중" : "대"}
-                  </StudioPanelChip>
-                ))}
+        <div data-studio-storyboard-header="true" className="flex shrink-0 flex-col gap-2.5 border-b border-line px-4 py-3">
+          <div data-studio-storyboard-title-row="true" className="flex min-w-0 items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <LayoutGrid size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <h2 className="text-sm font-bold text-fg [word-break:keep-all]">스토리보드 컨트롤 룸</h2>
+                  <span className="text-xs tabular-nums text-fg-3">총 {summary.total}페이지</span>
+                </div>
+                <p className="text-xs text-fg-3 [word-break:keep-all]">
+                  {teamReview
+                    ? "시퀀스·샷 메타·검토 상태·제작 준비도를 한 화면에서 점검합니다."
+                    : "페이지 순서를 한눈에 보고 정리합니다. 카드를 누르면 그 페이지로 이동합니다."}
+                </p>
               </div>
-            ) : null}
-
-            <div className="flex items-center gap-1" role="group" aria-label="현재 페이지 만들기">
-              <button
-                type="button"
-                data-studio-storyboard-editor-mode="assets"
-                onClick={() => openEditorMode("assets")}
-                title="컨트롤 룸을 닫고 템플릿의 컷 배치로 현재 페이지를 나눕니다"
-                className="flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:border-accent/50 hover:bg-raised hover:text-fg"
-              >
-                <LayoutTemplate size={13} aria-hidden /> 컷 나누기
-              </button>
-              <button
-                type="button"
-                data-studio-storyboard-editor-mode="story"
-                onClick={() => openEditorMode("story")}
-                title="컨트롤 룸을 닫고 현재 페이지에 말풍선·대사를 넣습니다"
-                className="flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:border-accent/50 hover:bg-raised hover:text-fg"
-              >
-                <MessageCircle size={13} aria-hidden /> 말풍선 추가
-              </button>
             </div>
-
-            {poseEntryEnabled ? (
-              <StudioPanelChip
-                className="min-h-11 gap-1 px-2.5"
-                active={poseOpen}
-                onClick={() => setPoseOpen((current) => !current)}
-                title="선택한 컷의 장면에 맞는 포즈를 추천받아 그 컷에 바로 적용합니다"
-              >
-                <PersonStanding size={12} aria-hidden /> 포즈 추천
-              </StudioPanelChip>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={onAddPage}
-              className="flex min-h-11 min-w-11 items-center gap-1 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-on-accent hover:bg-accent-hover pointer-coarse:px-3"
-            >
-              <Plus size={12} aria-hidden /> 추가
-            </button>
             <button
               type="button"
               aria-label="닫기"
               title="닫기 (Esc)"
               onClick={onClose}
-              className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-3 transition-colors hover:bg-accent-soft hover:text-accent"
+              className="grid size-11 shrink-0 place-items-center rounded-lg border border-line bg-card text-fg-3 transition-colors hover:bg-accent-soft hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <X size={15} aria-hidden />
             </button>
+          </div>
+
+          <div data-studio-storyboard-toolbar="true" className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-start gap-2">
+              <div className="flex items-center gap-1 rounded-md border border-line bg-card/50 p-0.5">
+                <StudioPanelChip className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap px-2.5" active={viewMode === "sequence"} onClick={() => setViewMode("sequence")} title="원본 순서와 샷 정보를 보는 시퀀스 뷰">
+                  <LayoutGrid size={12} aria-hidden /> 시퀀스
+                </StudioPanelChip>
+                <StudioPanelChip className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap px-2.5" active={viewMode === "review"} onClick={() => setViewMode("review")} title="검토 상태별 작업 큐">
+                  <ListChecks size={12} aria-hidden /> 검토 큐
+                </StudioPanelChip>
+                <StudioPanelChip className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap px-2.5" active={viewMode === "priority"} onClick={() => setViewMode("priority")} title="제작을 막는 문제부터 보는 준비도 큐">
+                  <ListChecks size={12} aria-hidden /> 준비도 큐
+                </StudioPanelChip>
+              </div>
+
+              {viewMode === "sequence" ? (
+                <div className="flex items-center gap-1 rounded-md border border-line bg-card/50 p-0.5">
+                  {(["s", "m", "l"] as const).map((size) => (
+                    <StudioPanelChip key={size} className="inline-flex min-h-11 min-w-11 items-center justify-center" active={cellSize === size} onClick={() => setCellSize(size)} title={size === "s" ? "작게" : size === "m" ? "보통" : "크게"}>
+                      {size === "s" ? "소" : size === "m" ? "중" : "대"}
+                    </StudioPanelChip>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-start gap-2">
+              <div className="flex items-center gap-1" role="group" aria-label="현재 페이지 만들기">
+                <button
+                  type="button"
+                  data-studio-storyboard-editor-mode="assets"
+                  onClick={() => openEditorMode("assets")}
+                  title="컨트롤 룸을 닫고 템플릿의 컷 배치로 현재 페이지를 나눕니다"
+                  className="flex min-h-11 items-center gap-1 whitespace-nowrap rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  <LayoutTemplate size={13} aria-hidden /> 컷 나누기
+                </button>
+                <button
+                  type="button"
+                  data-studio-storyboard-editor-mode="story"
+                  onClick={() => openEditorMode("story")}
+                  title="컨트롤 룸을 닫고 현재 페이지에 말풍선·대사를 넣습니다"
+                  className="flex min-h-11 items-center gap-1 whitespace-nowrap rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  <MessageCircle size={13} aria-hidden /> 말풍선 추가
+                </button>
+              </div>
+
+              {poseEntryEnabled ? (
+                <StudioPanelChip className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap px-2.5" active={poseOpen} onClick={() => setPoseOpen((current) => !current)} title="선택한 컷의 장면에 맞는 포즈를 추천받아 그 컷에 바로 적용합니다">
+                  <PersonStanding size={12} aria-hidden /> 포즈 추천
+                </StudioPanelChip>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={onAddPage}
+                className="flex min-h-11 min-w-11 items-center gap-1 whitespace-nowrap rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent pointer-coarse:px-3"
+              >
+                <Plus size={12} aria-hidden /> 추가
+              </button>
+            </div>
           </div>
         </div>
 
@@ -734,18 +718,23 @@ export function StudioStoryboardGridPanel({
               ) : null}
             </label>
 
-            <label className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-xs text-fg-2">
-              <span className="font-semibold">상태</span>
+            <label
+              data-studio-storyboard-status-filter="true"
+              className="relative flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-panel pl-2.5 pr-0 text-xs text-fg-2 transition-colors hover:border-accent/50 focus-within:border-accent"
+            >
+              <span className="shrink-0 font-semibold text-fg-3">상태</span>
               <select
                 value={reviewFilter}
                 onChange={(event) => setReviewFilter(event.target.value as StoryboardControlFilter)}
                 aria-label="스토리보드 상태 필터"
-                className="min-h-11 bg-transparent text-xs font-semibold text-fg outline-none"
+                data-select-native="true"
+                className="-my-px min-h-11 cursor-pointer appearance-none rounded-r-lg border-0! bg-transparent! pl-0.5 pr-7 text-xs font-semibold text-fg outline-none [&>option]:bg-panel [&>option]:text-fg"
               >
                 {STORYBOARD_CONTROL_FILTERS.map((filter) => (
                   <option key={filter} value={filter}>{FILTER_LABELS[filter]}</option>
                 ))}
               </select>
+              <ChevronDown size={13} aria-hidden className="pointer-events-none absolute right-2.5 text-fg-3" />
             </label>
 
             <span className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 text-xs text-fg-3" role="status" aria-live="polite">

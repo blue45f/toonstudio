@@ -10,13 +10,14 @@ concurrency:
   group: openwiki-update
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     env:
       OPENWIKI_TELEMETRY_DISABLED: "1"
     steps:
@@ -43,7 +44,12 @@ jobs:
           fi
       - name: Install OpenWiki
         if: steps.openwiki-config.outputs.enabled == 'true'
-        run: npm install --global openwiki@0.5.2 mermaid@11.16.0 jsdom@29.1.1
+        run: |
+          mkdir -p "$RUNNER_TEMP/openwiki"
+          cp .github/ci-tools/openwiki/package.json .github/ci-tools/openwiki/package-lock.json "$RUNNER_TEMP/openwiki/"
+          npm ci --prefix "$RUNNER_TEMP/openwiki" --ignore-scripts --no-audit --no-fund
+          echo "$RUNNER_TEMP/openwiki/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "NODE_PATH=$RUNNER_TEMP/openwiki/node_modules" >> "$GITHUB_ENV"
       - name: Update repository wiki
         if: steps.openwiki-config.outputs.enabled == 'true'
         id: openwiki

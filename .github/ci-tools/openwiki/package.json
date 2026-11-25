@@ -1,0 +1,12 @@
+{
+  "name": "toonstudio-ci-tool-openwiki",
+  "private": true,
+  "dependencies": {
+    "jsdom": "30.0.0",
+    "mermaid": "12.3.0",
+    "openwiki": "0.9.0"
+  },
+  "overrides": {
+    "katex": "0.19.1"
+  }
+}
