@@ -1,0 +1,52 @@
+/**
+ * Wave 55A — 초거대 캔버스 가상 타일링 & 3계층 OPFS 가상 메모리 스와핑 엔진 공개 배럴.
+ */
+
+export {
+  ATLAS_GRID_COLS,
+  ATLAS_GRID_ROWS,
+  GIGA_CANVAS_PRESETS,
+  HARD_WATERMARK_PCT,
+  MAX_MIP_LEVEL,
+  MEMORY_BUDGET_PROFILES,
+  SOFT_WATERMARK_PCT,
+  VIRTUAL_TILE_SIZE,
+  compressTileRleDelta,
+  computeFnv1a32,
+  computeMipPyramid,
+  createInMemorySwapSlotPool,
+  decodeMorton2D,
+  decompressTileRleDelta,
+  encodeMorton2D,
+  evaluateGigaCanvasSwapState,
+  exportGigaCanvasSwapJson,
+  formatFnv1aHex,
+  generateSyntheticTileBuffer,
+  getGigaCanvasPreset,
+  getMemoryBudgetProfile,
+  selectMipLevelForZoom,
+  verifyTileSwapRoundTrip,
+  type EvidenceProvenance,
+  type GigaCanvasPresetId,
+  type GigaCanvasPresetSpec,
+  type GigaCanvasSwapEvaluation,
+  type GigaCanvasSwapInput,
+  type GigaCanvasSwapManifest,
+  type InMemorySwapSlotPool,
+  type InMemoryTileSwapSlot,
+  type MemoryBudgetGb,
+  type MemoryBudgetProfileSpec,
+  type MipLevel,
+  type MipLevelSummary,
+  type OpfsColdSwapBatch,
+  type TileSwapRoundTripInput,
+  type TileSwapRoundTripResult,
+  type VirtualTilePageEntry,
+  type VirtualTileTier,
+  type WatermarkState,
+} from "./giga-canvas-swap-engine";
+
+export {
+  StudioGigaCanvasSwapPanel,
+  type StudioGigaCanvasSwapPanelProps,
+} from "./StudioGigaCanvasSwapPanel";
