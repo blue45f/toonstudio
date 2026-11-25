@@ -519,6 +519,16 @@ describe("6. 코드 위생 · 탈-바이올렛 OKLCH · Calm Atelier 계약 자�
 
 
 describe("7. 설계 예제와 실제 실행·저장 검증 경계", () => {
+  it("셰이더 설계 자료에 실제 소스와 가정에 따른 후보를 표시한다", () => {
+    render(<StudioNativeWasmMigrationPanel locale="en" />);
+    const details = screen.getByTestId("native-migration-shader-references");
+    expect(details.querySelector("summary")?.textContent).toContain("WGSL Design and References");
+    expect(details.textContent).toContain("5 shader sources");
+    expect(details.textContent).toContain("Candidate based on assumptions");
+    expect(details.querySelectorAll("li")).toHaveLength(5);
+    expect(screen.getByTestId("native-migration-backend-candidate").textContent).toBe("webgpu-wgsl");
+  });
+
   it.each(["ko", "en"] as const)("%s 화면은 수동 기능 가정이며 실제 실행 완료를 주장하지 않는다", (locale) => {
     render(<StudioNativeWasmMigrationPanel locale={locale} />);
     const notice = screen.getByTestId("native-migration-example-notice");

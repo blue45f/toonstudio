@@ -14,6 +14,19 @@ import {
 import { useId, useMemo, useState, type ReactElement } from "react";
 
 import {
+  GPU_FRUSTUM_CULL_INDIRECT_WGSL,
+  GRAPHICS_PAPER_PIPELINE_SPECS,
+  INSTANCED_LOOP_BLINN_OBJECT_WGSL,
+} from "../render/webgpu-instanced-bvh";
+import {
+  IMPASTO_RELIEF_LIGHTING_WGSL,
+  SPARSE_TILE_BLEND_MODES,
+  SPARSE_TILE_COMPOSITE_WGSL,
+  TACTILE_PAPER_BRISTLE_COMPUTE_WGSL,
+  selectNativeRenderBackend,
+} from "../render/webgpu-tactile-pipeline";
+
+import {
   KONVA_MIGRATION_LAYERS, NATIVE_MIGRATION_SCENARIOS, WASM64_OFFSET_THRESHOLD_MB,
   evaluateRuntimeNativeCapability, exportNativeMigrationManifestJson, getMigrationScenarioPreset,
   planZeroCopyTileArena, summarizeKonvaMigrationRoadmap,
@@ -42,6 +55,16 @@ const BTN_BASE = `inline-flex min-h-11 cursor-pointer items-center justify-cente
 const BTN_SOLID = `${BTN_BASE} bg-accent px-3.5 py-2 text-on-accent hover:bg-accent-2`;
 const BTN_OUTLINE = `${BTN_BASE} border border-line bg-card px-3 py-2 text-fg hover:border-line-strong hover:bg-raised`;
 const BTN_ACTIVE = `${BTN_BASE} border border-accent bg-accent-soft px-3 py-2 text-accent`;
+
+const SHADER_SOURCES = [
+  TACTILE_PAPER_BRISTLE_COMPUTE_WGSL,
+  IMPASTO_RELIEF_LIGHTING_WGSL,
+  SPARSE_TILE_COMPOSITE_WGSL,
+  GPU_FRUSTUM_CULL_INDIRECT_WGSL,
+  INSTANCED_LOOP_BLINN_OBJECT_WGSL,
+] as const;
+
+const SHADER_SOURCE_CHARACTERS = SHADER_SOURCES.reduce((sum, shader) => sum + shader.length, 0);
 
 type FeatureFlagKey = "webgpuAvailable" | "wasmMemory64Available" | "wasmSimd128Available" | "sharedArrayBufferAvailable" | "isIosSafariWebKit";
 
@@ -213,6 +236,14 @@ export function StudioNativeWasmMigrationPanel(props: StudioNativeWasmMigrationP
 
   const activePreset = useMemo(() => (selectedPresetId === "custom" ? null : getMigrationScenarioPreset(selectedPresetId)), [selectedPresetId]);
   const evaluation = useMemo(() => evaluateRuntimeNativeCapability(runtimeInput), [runtimeInput]);
+  const backendCandidate = selectNativeRenderBackend({
+    hasWebGpu: runtimeInput.webgpuAvailable,
+    webGpuAdapterAvailable: runtimeInput.webgpuAvailable,
+    webGpuFeatures: [],
+    hasWebAssembly: runtimeInput.wasmMemory64Available || runtimeInput.wasmSimd128Available,
+    supportsWasmMemory64: runtimeInput.wasmMemory64Available,
+    supportsWasmSimd128: runtimeInput.wasmSimd128Available,
+  });
   const arenaPlan = useMemo(() => planZeroCopyTileArena(evaluation), [evaluation]);
   const roadmapSummary = useMemo(() => summarizeKonvaMigrationRoadmap(KONVA_MIGRATION_LAYERS), []);
 
@@ -517,6 +548,31 @@ export function StudioNativeWasmMigrationPanel(props: StudioNativeWasmMigrationP
           </table>
         </div>
       </div>
+
+      <details data-testid="native-migration-shader-references" className="rounded-xl border border-line bg-card p-3.5">
+        <summary className="min-h-11 cursor-pointer text-xs font-bold text-fg">
+          {pick("WGSL 설계와 참고 자료", "WGSL Design and References")}
+        </summary>
+        <div className="space-y-2 text-xs text-fg-2">
+          <p>{pick(
+            `셰이더 소스 ${SHADER_SOURCES.length}개 · ${SHADER_SOURCE_CHARACTERS.toLocaleString("ko-KR")}자 · 타일 혼합 모드 ${SPARSE_TILE_BLEND_MODES.length}종`,
+            `${SHADER_SOURCES.length} shader sources · ${SHADER_SOURCE_CHARACTERS.toLocaleString("en-US")} characters · ${SPARSE_TILE_BLEND_MODES.length} tile blend modes`,
+          )}</p>
+          <p>
+            {pick("기능 가정에 따른 후보", "Candidate based on assumptions")}
+            <span data-testid="native-migration-backend-candidate" className="ml-2 font-mono">{backendCandidate.backend}</span>
+          </p>
+          <ul className="grid list-disc gap-2 pl-4 sm:grid-cols-2">
+            {GRAPHICS_PAPER_PIPELINE_SPECS.map((spec) => (
+              <li key={spec.id}>
+                <div className="font-semibold text-fg">{spec.title}</div>
+                <div>{spec.authors} ({spec.year}) · {spec.venue}</div>
+                {!isEn && <div>{spec.koreanSummary}</div>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       {/* JSON 매니페스트 내보내기 */}
       <div className="space-y-2.5 rounded-xl border border-line bg-card p-3.5">
