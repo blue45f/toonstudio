@@ -691,12 +691,22 @@ function bubbleNodes(el: ThumbElement, ctx: ThumbBuildContext): ThumbNode[] {
 function drawNodes(el: ThumbElement, ctx: ThumbBuildContext): ThumbNode[] {
   if (el.mode === "eraser") return []; // SVG 프록시로 destination-out(지우개) 재현 불가 — 생략
   const pts = Array.isArray(el.points) ? el.points : [];
-  if (pts.length < 4) return [];
   const opacity = el.opacity ?? 1;
   const stroke = el.stroke ?? "#111111";
   const strokeWidth = clampThumbStroke(el.strokeWidth ?? 1, ctx.minStroke);
   const kind = el.kind ?? "freehand";
   const fill = el.fill ?? null;
+
+  if (pts.length < 4) {
+    if (kind !== "freehand" || pts.length !== 2 || strokeWidth <= 0) return [];
+    const [cx = NaN, cy = NaN] = pts;
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return [];
+    const radius = strokeWidth / 2;
+    return [{
+      kind: "ellipse", key: el.id, cx, cy, rx: radius, ry: radius,
+      fill: stroke, stroke: null, strokeWidth: 0, transform: null, opacity,
+    }];
+  }
 
   if (kind === "rect" || kind === "ellipse" || kind === "star" || kind === "triangle" || kind === "polygon") {
     const b = flatPointsBounds(pts);

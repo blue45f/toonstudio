@@ -395,6 +395,22 @@ describe("studio-page-thumbs — buildThumbNodes(요소 프록시)", () => {
     expect(rect.w).toBe(100);
   });
 
+  it("프리핸드 한 점은 채운 원으로 만들고 지우개와 미완성 도형은 생략한다", () => {
+    const tap = { id: "tap", type: "draw", points: [223.2, 278.1], stroke: "#7c5cfc", strokeWidth: 6, opacity: 0.7 };
+    const { nodes } = buildThumbNodes(pageWith([
+      tap,
+      { ...tap, id: "eraser", mode: "eraser" },
+      { ...tap, id: "shape", kind: "ellipse" },
+      { ...tap, id: "line", kind: "line" },
+      { ...tap, id: "incomplete", points: [223.2] },
+      { ...tap, id: "invalid", points: [NaN, 278.1] },
+    ]));
+    expect(nodes).toEqual([{
+      kind: "ellipse", key: "tap", cx: 223.2, cy: 278.1, rx: 3, ry: 3,
+      fill: "#7c5cfc", stroke: null, strokeWidth: 0, transform: null, opacity: 0.7,
+    }]);
+  });
+
   it("focusLines/speedLines: 개수 상한이 걸린 결정적 라인 path", () => {
     const { nodes } = buildThumbNodes(
       pageWith([
