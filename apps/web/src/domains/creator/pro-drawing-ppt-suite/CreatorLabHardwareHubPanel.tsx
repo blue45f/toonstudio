@@ -3,6 +3,8 @@ import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { StudioHubCalmTabNavigator } from "./StudioHubCalmTabNavigator";
+
 const LazyStudioCreatorCalibratorPanel = lazy(() =>
   import("../creator-experience-calibrator/StudioCreatorCalibratorPanel").then((m) => ({
     default: m.StudioCreatorCalibratorPanel,
@@ -206,6 +208,15 @@ const CREATOR_LAB_TABS: readonly {
   { id: "oneshotCutDirector", labelKo: "컷 구도와 대사 배치 예제", labelEn: "Panel Framing and Dialogue Layout Examples" },
 ];
 
+const CREATOR_LAB_PINNED_TABS: readonly CreatorLabTabId[] = [
+  "calibrator",
+  "signatureLab",
+  "stylusHardware",
+  "sketchTo3d",
+  "voiceBalloon",
+  "craftLauncher",
+];
+
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
   switch (id) {
     case "oneshotCutDirector":
@@ -279,30 +290,18 @@ export function CreatorLabHardwareHubPanel() {
       aria-label={isEn ? "Creator Calibration, Signature Webtoon Lab, and Hardware Hub" : "창작자 캘리브레이터 · 웹툰 시그니처 랩 · 주변기기 허브"}
       data-testid="creator-lab-hardware-hub"
     >
-      <div role="tablist" aria-label={isEn ? "Creator lab modules" : "창작 랩 및 하드웨어 모듈 선택"} className="flex flex-wrap gap-2">
-        {CREATOR_LAB_TABS.map((tab) => {
-          const selected = tab.id === active;
-          return (
-            <button
-              key={tab.id}
-              id={`${baseId}-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${baseId}-panel-${tab.id}`}
-              onClick={() => setActive(tab.id)}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold [word-break:keep-all] transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none ${
-                selected
-                  ? "border-accent bg-accent text-on-accent"
-                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"
-              }`}
-            >
-              <CreatorLabIcon id={tab.id} />
-              <span>{isEn ? tab.labelEn : tab.labelKo}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StudioHubCalmTabNavigator
+        baseId={baseId}
+        ariaLabel={isEn ? "Creator lab modules" : "창작 랩 및 하드웨어 모듈 선택"}
+        tabs={CREATOR_LAB_TABS}
+        pinnedIds={CREATOR_LAB_PINNED_TABS}
+        activeId={active}
+        onSelect={setActive}
+        renderIcon={(id) => <CreatorLabIcon id={id} />}
+        isEn={isEn}
+        searchPlaceholderKo="필압, 색역, 태블릿, 3D 포즈, 음향, 단축키 등으로 검색…"
+        searchPlaceholderEn="Search pressure, gamut, tablet, 3D pose, audio, shortcuts…"
+      />
 
       <div id={`${baseId}-panel-${active}`} role="tabpanel" aria-labelledby={`${baseId}-tab-${active}`}>
         <Suspense
