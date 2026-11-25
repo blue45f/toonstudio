@@ -118,6 +118,10 @@ const LazyStudioRustHotspotPorterPanel = lazy(() =>
   import("../rust-hotspot-parity-porter").then((module) => ({ default: module.StudioRustHotspotPorterPanel })),
 );
 
+const LazyStudioWebNnNpuThermalPanel = lazy(() =>
+  import("../webnn-npu-thermal-compiler").then((module) => ({ default: module.StudioWebNnNpuThermalPanel })),
+);
+
 type EcosystemTabId =
   | "workflowDag"
   | "openBridge"
@@ -141,7 +145,8 @@ type EcosystemTabId =
   | "heterogeneousNpu"
   | "rustFullExpansion"
   | "multicoreVello"
-  | "rustHotspotPorter";
+  | "rustHotspotPorter"
+  | "npuThermal";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -187,10 +192,13 @@ const ECOSYSTEM_TABS: readonly {
   { id: "rustFullExpansion", labelKo: "Rust WASM 전환 계획", labelEn: "Rust WASM Expansion Planning" },
   { id: "multicoreVello", labelKo: "멀티코어·Vello GPU 스케줄 예제", labelEn: "Multicore and Vello GPU Scheduling Examples" },
   { id: "rustHotspotPorter", labelKo: "Rust WASM 이식·검증 예제", labelEn: "Rust WASM Porting and Parity Exercise" },
+  { id: "npuThermal", labelKo: "NPU 그래프와 열 제어 예제", labelEn: "NPU Graph and Thermal Control Examples" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
   switch (id) {
+    case "npuThermal":
+      return <Cpu size={15} aria-hidden="true" />;
     case "heterogeneousNpu":
       return <Cpu size={15} aria-hidden="true" />;
     case "rustFullExpansion":
@@ -308,6 +316,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "rustFullExpansion" ? <LazyStudioRustExpansionArchitectPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "multicoreVello" ? <LazyStudioMulticoreVelloSchedulerPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "rustHotspotPorter" ? <LazyStudioRustHotspotPorterPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "npuThermal" ? <LazyStudioWebNnNpuThermalPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">

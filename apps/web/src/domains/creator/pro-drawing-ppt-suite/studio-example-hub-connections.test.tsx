@@ -74,6 +74,19 @@ const cases: readonly ExampleCase[] = [
   { ko: "Rust WASM 전환 계획", en: "Rust WASM Expansion Planning", panel: "studio-rust-expansion-architect-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../rust-full-expansion-planner") },
   { ko: "멀티코어·Vello GPU 스케줄 예제", en: "Multicore and Vello GPU Scheduling Examples", panel: "studio-multicore-vello-scheduler-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../multicore-gpu-vello-scheduler") },
   { ko: "Rust WASM 이식·검증 예제", en: "Rust WASM Porting and Parity Exercise", panel: "studio-rust-hotspot-porter-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../rust-hotspot-parity-porter") },
+  { ko: "타일 동기화와 병합 예제", en: "Tile Sync and Merge Examples", panel: "studio-distributed-crdt-sync-panel", Hub: AutoQaCollabHubPanel, load: () => import("../distributed-crdt-tile-sync") },
+  { ko: "대형 캔버스 타일·저장 예제", en: "Large Canvas Tile and Storage Examples", panel: "studio-giga-canvas-swap-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../giga-canvas-virtual-swap") },
+  { ko: "확대와 좌표 정밀도 예제", en: "Zoom and Coordinate Precision Examples", panel: "studio-infinite-zoom-spatial-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../infinite-zoom-spatial-gpu") },
+  { ko: "의존성 전환 계획", en: "Dependency Cutover Planning", panel: "dependency-wasm64-audit-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../dependency-wasm64-auditor") },
+  { ko: "2D 조명·그림자 예제", en: "2D Lighting and Shadow Examples", panel: "studio-webgpu-radiance-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../webgpu-radiance-cascades") },
+  { ko: "필압 곡선과 획 보정 예제", en: "Pressure Curve and Stroke Compensation Examples", panel: "studio-stylus-neural-compensation-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../stylus-neural-compensation") },
+  { ko: "절차적 에셋 미리보기", en: "Procedural Asset Preview", panel: "procedural-asset-synth-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../procedural-asset-synthesizer") },
+  { ko: "NPU 그래프와 열 제어 예제", en: "NPU Graph and Thermal Control Examples", panel: "webnn-npu-thermal-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../webnn-npu-thermal-compiler") },
+  { ko: "파라메트릭 스케치와 도면 예제", en: "Parametric Sketch and Drawing Examples", panel: "shapr3d-cad-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../shapr3d-parametric-cad") },
+  { ko: "도구 배치와 색상 대비 예제", en: "Tool Layout and Palette Contrast Examples", panel: "calm-intent-ux-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../calm-intent-ux-orchestrator") },
+  { ko: "작화 출처 원장 예제", en: "Stroke Provenance Ledger Examples", panel: "human-ink-ledger-panel", Hub: AutoQaCollabHubPanel, load: () => import("../human-ink-provenance-ledger") },
+  { ko: "셰이더 준비·영상 인코딩 계획", en: "Shader Preparation and Video Encoding Plans", panel: "studio-shader-prewarm-webcodecs-panel", Hub: AutoQaCollabHubPanel, load: () => import("../shader-prewarm-webcodecs") },
+  { ko: "컷 구도와 대사 배치 예제", en: "Panel Framing and Dialogue Layout Examples", panel: "oneshot-cut-director-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../oneshot-cut-director") },
 ];
 
 afterEach(cleanup);

@@ -103,6 +103,18 @@ const LazyStudioScrollPacingComposerPanel = lazy(() =>
   import("../scroll-pacing-tension-composer").then((module) => ({ default: module.StudioScrollPacingComposerPanel })),
 );
 
+const LazyStudioDistributedCrdtSyncPanel = lazy(() =>
+  import("../distributed-crdt-tile-sync").then((module) => ({ default: module.StudioDistributedCrdtSyncPanel })),
+);
+
+const LazyStudioHumanInkLedgerPanel = lazy(() =>
+  import("../human-ink-provenance-ledger").then((module) => ({ default: module.StudioHumanInkLedgerPanel })),
+);
+
+const LazyStudioShaderPrewarmWebCodecsPanel = lazy(() =>
+  import("../shader-prewarm-webcodecs").then((module) => ({ default: module.StudioShaderPrewarmWebCodecsPanel })),
+);
+
 type QaHubTabId =
   | "pixel"
   | "layout"
@@ -122,7 +134,10 @@ type QaHubTabId =
   | "balloonSfxProposer"
   | "modelSheetDrift"
   | "oneLineOrchestrator"
-  | "scrollPacing";
+  | "scrollPacing"
+  | "distributedTileSync"
+  | "humanInkLedger"
+  | "shaderWebCodecs";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -164,10 +179,19 @@ const QA_HUB_TABS: readonly {
   { id: "modelSheetDrift", labelKo: "컷별 설정집 대조 예제", labelEn: "Cut-by-Cut Model Sheet Examples" },
   { id: "oneLineOrchestrator", labelKo: "한 줄 연출 예제", labelEn: "One-Line Direction Examples" },
   { id: "scrollPacing", labelKo: "스크롤 컷 호흡 예제", labelEn: "Scroll Pacing Examples" },
+  { id: "distributedTileSync", labelKo: "타일 동기화와 병합 예제", labelEn: "Tile Sync and Merge Examples" },
+  { id: "humanInkLedger", labelKo: "작화 출처 원장 예제", labelEn: "Stroke Provenance Ledger Examples" },
+  { id: "shaderWebCodecs", labelKo: "셰이더 준비·영상 인코딩 계획", labelEn: "Shader Preparation and Video Encoding Plans" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
   switch (id) {
+    case "shaderWebCodecs":
+      return <Clapperboard size={15} aria-hidden="true" />;
+    case "humanInkLedger":
+      return <GitBranch size={15} aria-hidden="true" />;
+    case "distributedTileSync":
+      return <GitBranch size={15} aria-hidden="true" />;
     case "scrollPacing":
       return <LayoutList size={15} aria-hidden="true" />;
     case "oneLineOrchestrator":
@@ -273,6 +297,9 @@ export function AutoQaCollabHubPanel() {
           {active === "modelSheetDrift" ? <LazyStudioModelSheetDriftCoachPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "oneLineOrchestrator" ? <LazyStudioOneLineOrchestratorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "scrollPacing" ? <LazyStudioScrollPacingComposerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "distributedTileSync" ? <LazyStudioDistributedCrdtSyncPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "humanInkLedger" ? <LazyStudioHumanInkLedgerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "shaderWebCodecs" ? <LazyStudioShaderPrewarmWebCodecsPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">

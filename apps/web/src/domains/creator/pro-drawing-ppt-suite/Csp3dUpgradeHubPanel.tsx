@@ -112,6 +112,14 @@ const LazyStudioPapercraftUnfoldPanel = lazy(() =>
   import("../papercraft-3d-unfold-goods").then((module) => ({ default: module.StudioPapercraftUnfoldPanel })),
 );
 
+const LazyStudioProceduralAssetSynthPanel = lazy(() =>
+  import("../procedural-asset-synthesizer").then((module) => ({ default: module.StudioProceduralAssetSynthPanel })),
+);
+
+const LazyStudioShapr3dCadPanel = lazy(() =>
+  import("../shapr3d-parametric-cad").then((module) => ({ default: module.StudioShapr3dCadPanel })),
+);
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -133,7 +141,9 @@ type Csp3dTabId =
   | "styleSpectrum"
   | "dryMediaCrayonAudio"
   | "sixPhysicsBrushLab"
-  | "papercraftUnfold";
+  | "papercraftUnfold"
+  | "proceduralAssetSynth"
+  | "parametricSketch";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -161,6 +171,8 @@ const CSP3D_TABS: readonly {
   { id: "dryMediaCrayonAudio", labelKo: "크레용·연필 질감과 소리", labelEn: "Crayon and Pencil Texture · Sound" },
   { id: "sixPhysicsBrushLab", labelKo: "브러시 물리 모형 비교", labelEn: "Brush Physics Model Comparison" },
   { id: "papercraftUnfold", labelKo: "페이퍼크래프트 전개도와 접힘 미리보기", labelEn: "Papercraft Dieline and Fold Preview" },
+  { id: "proceduralAssetSynth", labelKo: "절차적 에셋 미리보기", labelEn: "Procedural Asset Preview" },
+  { id: "parametricSketch", labelKo: "파라메트릭 스케치와 도면 예제", labelEn: "Parametric Sketch and Drawing Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -181,6 +193,10 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "parametricSketch":
+      return <Box size={15} aria-hidden="true" />;
+    case "proceduralAssetSynth":
+      return <Palette size={15} aria-hidden="true" />;
     case "dryMediaCrayonAudio":
       return <Pencil size={15} aria-hidden="true" />;
     case "sixPhysicsBrushLab":
@@ -292,6 +308,8 @@ export function Csp3dUpgradeHubPanel() {
           {active === "dryMediaCrayonAudio" ? <LazyStudioDryMediaCrayonAudioPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "sixPhysicsBrushLab" ? <LazyStudioSixPhysicsBrushLabPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "papercraftUnfold" ? <LazyStudioPapercraftUnfoldPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "proceduralAssetSynth" ? <LazyStudioProceduralAssetSynthPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "parametricSketch" ? <LazyStudioShapr3dCadPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
