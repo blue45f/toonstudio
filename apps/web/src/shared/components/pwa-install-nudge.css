@@ -74,3 +74,46 @@
     animation-name: pwa-install-nudge-enter-up;
   }
 }
+
+/* 모바일(<=640px) 홈(/)에서는 히어로 일러스트와 "원고 그리기" CTA를 가리지 않도록 설치 안내를 1줄 콤팩트 바(~60px)로 축약한다. */
+@media (max-width: 640px) {
+  .pwa-install-nudge[data-surface="home"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.5rem;
+    max-height: none;
+    overflow: hidden;
+    padding: 0.5rem 0.65rem;
+  }
+  .pwa-install-nudge[data-surface="home"] .pwa-install-nudge__body {
+    display: block;
+    min-width: 0;
+    padding: 0;
+  }
+  .pwa-install-nudge[data-surface="home"] :is(.pwa-install-nudge__icon, .pwa-install-nudge__description) {
+    display: none;
+  }
+  .pwa-install-nudge[data-surface="home"] .pwa-install-nudge__title {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-wrap: nowrap;
+  }
+  .pwa-install-nudge[data-surface="home"] .pwa-install-nudge__action {
+    width: auto;
+    min-width: 4.5rem;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+  }
+  .pwa-install-nudge[data-surface="home"] .pwa-install-nudge__close {
+    position: static;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
+  }
+}

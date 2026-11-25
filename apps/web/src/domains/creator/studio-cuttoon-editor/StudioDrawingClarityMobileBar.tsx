@@ -74,7 +74,7 @@ export function StudioDrawingClarityMobileBar({
       data-studio-device-guide-entry={guideSurface ?? undefined}
       className="studio-drawing-clarity-header studio-drawing-clarity-mobile-header">
       <StudioEditorReturnButton variant="lane" onReturn={returnFromStudioEditorInBrowser} />
-      <div className="studio-drawing-clarity-title"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDocumentChromeSlot /></div>
+      <div className="studio-drawing-clarity-title flex-1 min-w-0 leading-tight"><h1 title={s.title}>{s.title.trim() || bt("제목 없는 원고", "Untitled draft")}</h1><StudioDocumentChromeSlot /></div>
       <StudioDrawingClaritySaveButton session={s} />
       <button
         type="button"

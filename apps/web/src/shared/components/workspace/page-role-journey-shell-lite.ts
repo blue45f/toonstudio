@@ -107,6 +107,7 @@ const SHELL_ROUTE_TUPLES: readonly ShellRouteTuple[] = [
   ["/studio", 2, "creation", true],
   ["/studio/comic", 2, "creation"],
   ["/studio/bg3d", 2, "three-d"],
+  ["/studio/ai-lab", 2, "three-d"],
   ["/studio/assets/characters", 2, "three-d"],
   ["/studio/assets", 2, "three-d"],
   ["/studio/publish", 2, "creation"],

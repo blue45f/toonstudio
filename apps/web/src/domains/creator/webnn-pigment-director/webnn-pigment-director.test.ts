@@ -406,6 +406,7 @@ describe("StudioWebnnPigmentDirectorPanel UI · 접근성 · 토큰 위생 검�
 
     expect(screen.getByTestId("webnn-pigment-director-panel")).toBeTruthy();
     expect(screen.getByTestId("km-pigment-canvas")).toBeTruthy();
+    expect(document.createElement("canvas").getContext("webgpu")).toBeNull();
     expect(putImageDataSpy).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("km-delta-e").textContent).toMatch(/\d+\.\d+\s*\/\s*\d+\.\d+/);
     expect(screen.getByTestId("badge-ondevice-privacy").textContent).toContain("로컬 100%");
