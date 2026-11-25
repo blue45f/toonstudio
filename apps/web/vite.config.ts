@@ -1,3 +1,4 @@
+import { localBg3dCatalogPlugin } from "./config/local-bg3d-catalog";
 import { collectBuiltStudioOfflineDrawingUrls } from "./config/studio-offline-drawing-assets";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -645,10 +646,11 @@ function bundleVisualizerPlugin(): Promise<Plugin> | null {
   );
 }
 
-export default defineConfig(({ command, mode }) => ({
+export default defineConfig(({ command, mode, isPreview }) => ({
   ...(command === "build" ? { customLogger: createStudioBuildLogger() } : {}),
   ...viteServeCacheConfig(command),
   plugins: [
+    localBg3dCatalogPlugin({ command, mode, isPreview }, process.env.TOONSTUDIO_LOCAL_SCENE_CATALOG, repositoryRoot),
     pigmentLicenseBoundaryPlugin(),
     studioFoleyImportHashPlugin(),
     threeTslVrmCompatPlugin(),
