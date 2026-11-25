@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -20,7 +20,7 @@ import {
   type ResolvedCharacterMask,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("1. 결정론적 PRNG 및 6종 웹툰 벡터 FX 엔진 (action-fx-vector-engine)", () => {
   it("createSeededPrng는 동일 시드에 대해 완전히 동일한 난수 수열을 반환하고 시드 변경 시 분기한다", () => {
@@ -288,11 +288,11 @@ describe("2. 인물 얼굴 안전 영역(characterMask) 0px 침범 감사 및 SV
     expect(guidedSvg).toContain("<rect x=\"0\" y=\"0\"");
   });
 
-  it("metrics.estimatedSvgBytes가 기본 exportActionFxSvg 출력 길이와 정확히 일치한다", () => {
+  it("metrics.estimatedSvgBytes가 한글을 포함한 SVG의 실제 UTF-8 바이트 수와 일치한다", () => {
     for (const preset of ACTION_FX_PRESET_IDS) {
       const layer = generateActionFxLayer({ preset, seed: 5555 });
       const svg = exportActionFxSvg(layer);
-      expect(layer.metrics.estimatedSvgBytes).toBe(svg.length);
+      expect(layer.metrics.estimatedSvgBytes).toBe(new TextEncoder().encode(svg).byteLength);
       expect(layer.metrics.primitiveCount).toBe(
         layer.metrics.polygonCount +
           layer.metrics.polylineCount +
@@ -365,7 +365,8 @@ describe("3. StudioActionFxLabPanel UI · 인터랙션 · 접근성 · 엄격 �
     expect(screen.getByTestId("fx-mask-audit-badge").textContent).toContain("얼굴 침범 0px");
   });
 
-  it("SVG 내보내기 미리보기 토글·가이드 포함 옵션·복사/저장 버튼과 콜백이 정상 동작한다", () => {
+  it("SVG 미리보기·가이드 옵션·복사 응답과 예제 콜백이 정상 동작한다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
     const onLayerChange = vi.fn();
     const onExportSvg = vi.fn();
     render(<StudioActionFxLabPanel onLayerChange={onLayerChange} onExportSvg={onExportSvg} />);
@@ -373,10 +374,10 @@ describe("3. StudioActionFxLabPanel UI · 인터랙션 · 접근성 · 엄격 �
     fireEvent.click(screen.getByTestId("fx-export-guides-toggle"));
     expect(screen.getByTestId("fx-svg-code-preview").textContent).toContain('data-guide="character-safe-mask"');
 
-    fireEvent.click(screen.getByTestId("fx-copy-svg-btn"));
+    await act(async () => { fireEvent.click(screen.getByTestId("fx-copy-svg-btn")); });
     expect(onExportSvg).toHaveBeenCalledTimes(1);
     expect(onExportSvg.mock.calls[0]?.[0]).toContain("<svg xmlns=");
-    expect(screen.getByTestId("fx-status-banner").textContent).toContain("복사했습니다");
+    expect(screen.getByTestId("fx-transfer-status").textContent).toContain("복사 완료");
 
     fireEvent.click(screen.getByTestId("fx-toggle-svg-preview-btn"));
     expect(screen.queryByTestId("fx-svg-code-preview")).toBeNull();
