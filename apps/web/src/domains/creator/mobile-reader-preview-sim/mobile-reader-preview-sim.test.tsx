@@ -521,13 +521,16 @@ describe("4. StudioMobileReaderPreviewPanel UI 인터랙션 & 단독 렌더", ()
 });
 
 describe("5. 코드 위생 자가 검증 (파일 줄수 · Calm Atelier 토큰 · 금지 패턴 0건)", () => {
-  it("4개 모듈 파일이 모두 800줄 이하이며 원시 색·transition-all·= {}·Storage·private Map store·BigInt 리터럴이 0건이다", () => {
+  it("모든 모듈 파일이 800줄 이하이며 원시 색·transition-all·= {}·Storage·private Map store·BigInt 리터럴이 0건이다", () => {
     const dir = path.resolve(import.meta.dirname);
     const requiredFiles = [
       "mobile-reader-sim-engine.ts",
       "StudioMobileReaderPreviewPanel.tsx",
       "index.ts",
       "mobile-reader-preview-sim.test.tsx",
+      "mobile-reader-boundaries.test.tsx",
+      "mobile-reader-input-contract.ts",
+      "use-example-delivery.ts",
     ];
 
     for (const file of requiredFiles) {
@@ -535,7 +538,7 @@ describe("5. 코드 위생 자가 검증 (파일 줄수 · Calm Atelier 토큰 �
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(allFiles.length).toBe(4);
+    expect([...allFiles].sort()).toEqual([...requiredFiles].sort());
 
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");

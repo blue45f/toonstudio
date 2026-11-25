@@ -12,7 +12,7 @@ import {
   AlertTriangle, BookOpen, CheckCircle2, Code2, Copy, FileText,
   Palette, RotateCcw, Ruler, ShieldAlert, Shirt, Smile, Users,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useId, useMemo, useState, type ReactElement } from "react";
 
 import {
   CHARACTER_SHEET_PRESETS, MAX_FOOTWEAR_BONUS_CM, MAX_HEAD_RATIO, MAX_HEIGHT_CM,
@@ -26,13 +26,15 @@ import {
   type HeightRatioMetrics, type OutfitSlotId, type PrintGamutRiskLevel,
 } from "./character-sheet-bible-engine";
 
+import { useExampleCopy, useExampleNotification } from "./use-example-delivery";
+
 export interface StudioCharacterSheetBiblePanelProps {
   readonly initialPresetId?: CharacterPresetId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onSheetChange?: (sheet: CharacterSheetBible, audit: CharacterSheetCompletenessAudit) => void;
-  readonly onExportMarkdown?: (markdown: string, sheet: CharacterSheetBible) => void;
-  readonly onExportJson?: (json: string, sheet: CharacterSheetBible) => void;
+  readonly onSheetChange?: (sheet: CharacterSheetBible, audit: CharacterSheetCompletenessAudit) => void | Promise<void>;
+  readonly onExportMarkdown?: (markdown: string, sheet: CharacterSheetBible) => void | Promise<void>;
+  readonly onExportJson?: (json: string, sheet: CharacterSheetBible) => void | Promise<void>;
 }
 
 type ExportPreviewMode = "markdown" | "json" | "hidden";
@@ -122,7 +124,7 @@ function LabeledTextInput(props: {
   return (
     <div className="space-y-1">
       <label htmlFor={id} className={`block text-[11px] font-semibold [word-break:keep-all] ${labelTone}`}>{label}</label>
-      <input id={id} data-testid={testId} type="text" value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_BASE} />
+      <input id={id} data-testid={testId} type="text" maxLength={10000} value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_BASE} />
     </div>
   );
 }
@@ -269,7 +271,9 @@ export function StudioCharacterSheetBiblePanel(props: StudioCharacterSheetBibleP
     [sheet, castEntries, locale],
   );
 
-  useEffect(() => { onSheetChange?.(sheet, audit); }, [sheet, audit, onSheetChange]);
+  const notificationPayload = useMemo(() => ({ sheet, audit }), [sheet, audit]);
+  const notification = useExampleNotification(notificationPayload, onSheetChange ? ({ sheet: nextSheet, audit: nextAudit }) => onSheetChange(nextSheet, nextAudit) : undefined);
+  const delivery = useExampleCopy<CharacterSheetBible, "markdown" | "json">({ markdown: onExportMarkdown, json: onExportJson });
 
   const activeExpression = sheet.expressions.find((c) => c.id === selectedExprId) ?? sheet.expressions[0];
   const activeOutfit = sheet.outfits.find((s) => s.id === selectedOutfitId) ?? sheet.outfits[0];
@@ -293,31 +297,20 @@ export function StudioCharacterSheetBiblePanel(props: StudioCharacterSheetBibleP
     setStatusMessage(pick(`${restored.nameKo} 설정집을 기본 원형으로 복원했습니다.`, `Restored ${restored.nameEn} bible defaults.`));
   };
 
-  const copySafely = (text: string): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(text).catch(() => undefined);
-    }
-  };
-
   const handleCopyMarkdown = (): void => {
-    onExportMarkdown?.(markdownDoc, sheet);
-    copySafely(markdownDoc);
     setExportMode("markdown");
-    setStatusMessage(pick(`어시스턴트 배포용 Markdown 설정집(${markdownDoc.length.toLocaleString("ko-KR")}자)을 복사했습니다.`, `Copied Markdown character bible (${markdownDoc.length.toLocaleString("en-US")} chars).`));
+    delivery.copy("markdown", markdownDoc, sheet);
   };
-
   const handleCopyJson = (): void => {
-    onExportJson?.(jsonDoc, sheet);
-    copySafely(jsonDoc);
     setExportMode("json");
-    setStatusMessage(pick(`설정집 JSON 패키지(${jsonDoc.length.toLocaleString("ko-KR")}B)를 복사했습니다.`, `Copied character bible JSON (${jsonDoc.length.toLocaleString("en-US")} B).`));
+    delivery.copy("json", jsonDoc, sheet);
   };
 
   const heightSliderId = `${uid}-height`;
   const ratioSliderId = `${uid}-head-ratio`;
   const footwearSliderId = `${uid}-footwear`;
   const gradeLabel = audit.grade === "production-ready"
-    ? pick("배포 가능", "Production Ready")
+    ? pick("예제 항목 충족", "Example Checklist Complete")
     : audit.grade === "review-needed"
       ? pick("검수 권장", "Review Needed")
       : pick("초안 보완 필요", "Draft Incomplete");
@@ -345,18 +338,18 @@ export function StudioCharacterSheetBiblePanel(props: StudioCharacterSheetBibleP
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
             {pick(
-              "연재 작가·어시스턴트·해외 스튜디오가 동일한 신장 비례, 표정 지침, 의상 연속성, 공식 OKLCH 채색 금지 규칙을 공유합니다.",
-              "Align artists, assistants, and partner studios on height ratios, 9-grid expressions, outfit continuity, and OKLCH color rules.",
+              "합성 캐릭터 설정집을 메모리에서 편집하는 계산·문서 예제입니다. 실제 작화·3D 생성, 원고 반영·공유 저장, ICC·인쇄 검증은 수행하지 않습니다.",
+              "An in-memory synthetic character template and document example. No artwork or 3D generation, manuscript changes, shared storage, ICC conversion, or print verification.",
             )}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" data-testid="bible-copy-markdown-btn" onClick={handleCopyMarkdown} className={BTN_SOLID}>
+          <button type="button" data-testid="bible-copy-markdown-btn" disabled={delivery.state === "pending"} onClick={handleCopyMarkdown} className={BTN_SOLID}>
             <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
             {pick("Markdown 복사", "Copy Markdown")}
           </button>
-          <button type="button" data-testid="bible-copy-json-btn" onClick={handleCopyJson} className={BTN_OUTLINE}>
+          <button type="button" data-testid="bible-copy-json-btn" disabled={delivery.state === "pending"} onClick={handleCopyJson} className={BTN_OUTLINE}>
             <Code2 className="h-4 w-4 shrink-0" aria-hidden="true" />
             {pick("JSON 복사", "Copy JSON")}
           </button>
@@ -367,6 +360,13 @@ export function StudioCharacterSheetBiblePanel(props: StudioCharacterSheetBibleP
         </div>
       </header>
 
+      <div role="status" aria-live="polite" className="space-y-2 text-xs [word-break:keep-all]">
+        {notification.pending ? <p>{pick("설정집 예제 전달 중", "Sending example sheet")}</p> : null}
+        {notification.error ? <div>{pick("설정집 전달 실패. 원고 저장은 수행하지 않습니다.", "Sheet delivery failed. No manuscript is saved.")} <button type="button" data-testid="bible-notify-retry" disabled={notification.pending} onClick={notification.retry} className={BTN_OUTLINE}>{pick("전달 재시도", "Retry delivery")}</button></div> : null}
+        {delivery.state === "pending" ? <p>{pick("클립보드 복사·예제 전달 중", "Copying and delivering example")}</p> : null}
+        {delivery.state === "error" ? <div>{pick("복사 또는 전달 실패. 완료된 복사는 반복하지 않습니다.", "Copy or delivery failed. Completed copies are not repeated.")} <button type="button" data-testid="bible-export-retry" onClick={delivery.retry} className={BTN_OUTLINE}>{pick("내보내기 재시도", "Retry export")}</button></div> : null}
+        {delivery.state === "copied" ? <p>{pick("클립보드에 복사했습니다. 원고·서버에는 저장하지 않았습니다.", "Copied to clipboard. No manuscript or server save was performed.")}</p> : null}
+      </div>
       {statusMessage ? (
         <div data-testid="bible-status-banner" role="status" aria-live="polite" className="rounded-lg border border-accent bg-accent-soft px-3.5 py-2 text-xs font-medium text-accent [word-break:keep-all]">
           {statusMessage}
@@ -610,9 +610,13 @@ export function StudioCharacterSheetBiblePanel(props: StudioCharacterSheetBibleP
               <LabeledTextInput
                 id={`${uid}-outfit-accessories`} testId="bible-outfit-accessories-input"
                 label={pick("필수 연속성 소품 (쉼표 구분)", "Key Continuity Accessories (comma-separated)")}
-                value={activeOutfit.keyAccessories.join(", ")}
+                value={activeOutfit.keyAccessories.join(",")}
                 onChange={(raw) => {
-                  const keyAccessories = raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+                  const keyAccessories = raw.split(",");
+                  if (keyAccessories.length > 64) {
+                    setStatusMessage(pick("소품은 최대 64개입니다. 기존 원문을 유지했습니다.", "Up to 64 accessories. The previous text was preserved."));
+                    return;
+                  }
                   setSheet((prev) => ({ ...prev, outfits: updateOutfitContinuitySlot(prev.outfits, activeOutfit.id, { keyAccessories }) }));
                 }}
               />
@@ -731,7 +735,7 @@ export function StudioCharacterSheetBiblePanel(props: StudioCharacterSheetBibleP
             {audit.missingItems.length === 0 ? (
               <div className="flex items-center gap-2 rounded-lg border border-good bg-good-soft px-3 py-2 text-xs font-medium text-good [word-break:keep-all]">
                 <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {pick("누락 항목 0건 — 어시스턴트 배포 준비 완료", "0 missing items — ready for studio handoff")}
+                {pick("목록 기준 누락 0건 — 실제 작화·배포 검증은 별도", "0 missing checklist items — artwork and handoff require separate validation")}
               </div>
             ) : (
               audit.missingItems.slice(0, 6).map((issue) => (

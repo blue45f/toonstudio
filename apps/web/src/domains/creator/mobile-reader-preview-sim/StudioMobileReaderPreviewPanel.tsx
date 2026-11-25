@@ -396,7 +396,7 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
           valueTone={scoreTone(audit.summary.overallReadinessScore)}
         />
         <SimMetricCard
-          testId="reader-sim-visible-viewport" label={pick("실제 컷 가시 뷰포트", "Visible Cut Viewport")}
+          testId="reader-sim-visible-viewport" label={pick("계산된 컷 가시 뷰포트", "Visible Cut Viewport")}
           value={`${audit.viewport.visibleViewportHeightPx}px`}
           subtext={pick(`전체 ${audit.device.cssHeightPx}px 중 ${audit.viewport.usableViewportRatioPct}% · 한 화면 ${audit.summary.averageCutsPerScreen}컷`, `${audit.viewport.usableViewportRatioPct}% of ${audit.device.cssHeightPx}px · ${audit.summary.averageCutsPerScreen} cuts/screen`)}
         />
@@ -416,7 +416,7 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-2.5 rounded-xl border border-line bg-canvas p-3.5">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{pick("1. 독자 실기기 4종", "1. Target Devices (4 Profiles)")}</h3>
+            <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{pick("1. 고정 기기 치수 4종", "1. Target Devices (4 Profiles)")}</h3>
             <span className="text-[11px] font-medium text-fg-3 tabular-nums">{`${audit.device.cssWidthPx}×${audit.device.cssHeightPx} · ${audit.device.aspectRatioLabel}`}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
