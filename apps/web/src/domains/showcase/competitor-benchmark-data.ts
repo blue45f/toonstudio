@@ -24,6 +24,8 @@ export type BenchmarkToolId =
   | "blender"
   | "ibispaint";
 
+export type CompetitorToolId = Exclude<BenchmarkToolId, "toonstudio">;
+
 export type BenchmarkStatus =
   | "current"
   | "partial"
@@ -34,6 +36,14 @@ export type BenchmarkStatus =
 
 export type CellGrade = "lead" | "strong" | "partial" | "limited" | "none";
 
+export type BenchmarkAxisCategoryId =
+  | "all"
+  | "drawing-tactile"
+  | "scene3d-webtoon"
+  | "collab-delivery";
+
+export type BenchmarkAxisCategory = Exclude<BenchmarkAxisCategoryId, "all">;
+
 export type BenchmarkAxisId =
   | "install-device"
   | "drawing-pigment"
@@ -41,7 +51,9 @@ export type BenchmarkAxisId =
   | "webtoon-animatic"
   | "collab-local-db"
   | "rights-delivery"
-  | "pricing-interop";
+  | "pricing-interop"
+  | "brush-tactile-perf"
+  | "nondestructive-assist";
 
 export type BenchmarkPersonaId =
   | "all"
@@ -70,12 +82,18 @@ export interface BenchmarkCell {
 export interface BenchmarkAxis {
   readonly id: BenchmarkAxisId;
   readonly order: number;
+  readonly category: BenchmarkAxisCategory;
   readonly shortLabel: BilingualText;
   readonly title: BilingualText;
   readonly summary: BilingualText;
   readonly toonStudioMaturity: "current" | "partial" | "target";
   readonly evidencePaths: readonly string[];
   readonly cells: Readonly<Record<BenchmarkToolId, BenchmarkCell>>;
+}
+
+export interface BenchmarkAxisCategoryOption {
+  readonly id: BenchmarkAxisCategoryId;
+  readonly label: BilingualText;
 }
 
 export interface BenchmarkPersonaFilter {
@@ -119,6 +137,26 @@ export const BENCHMARK_STATUS_META: Readonly<
   limited: { label: bi("제한·외부연동", "Limited / plugin"), toneClass: "ts-status-neutral" },
   none: { label: bi("미지원", "Not built-in"), toneClass: "ts-status-muted" },
 };
+
+/**
+ * 공개 스펙 등급 기반 정규화 커버리지 지수 (0~100).
+ * 실측 FPS·렌더 속도 지표가 아니며, 축별 공식 기능 지원 폭만 투명하게 도식화한다.
+ */
+export const BENCHMARK_STATUS_COVERAGE_SCORE: Readonly<Record<BenchmarkStatus, number>> = {
+  current: 100,
+  "native-strength": 100,
+  partial: 65,
+  limited: 35,
+  target: 25,
+  none: 0,
+};
+
+export const BENCHMARK_AXIS_CATEGORIES: readonly BenchmarkAxisCategoryOption[] = [
+  { id: "all", label: bi("전체", "All") },
+  { id: "drawing-tactile", label: bi("드로잉·질감", "Drawing & Tactile") },
+  { id: "scene3d-webtoon", label: bi("3D·웹툰", "3D & Webtoon") },
+  { id: "collab-delivery", label: bi("협업·출고", "Collab & Delivery") },
+];
 
 export const BENCHMARK_TOOLS: readonly BenchmarkToolProfile[] = [
   {
@@ -236,6 +274,7 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
   {
     id: "install-device",
     order: 1,
+    category: "drawing-tactile",
     shortLabel: bi("설치·멀티기기", "Zero-Install"),
     title: bi("01 · 설치 장벽 · OS 자유도 · 멀티 디바이스 입력", "01 · Zero-Install Access & Multi-Device I/O"),
     summary: bi(
@@ -260,6 +299,7 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
   {
     id: "drawing-pigment",
     order: 2,
+    category: "drawing-tactile",
     shortLabel: bi("2D 작화·분광", "2D Spectral"),
     title: bi("02 · 2D 브러시 · 분광 혼색 · 종이 질감", "02 · 2D Brush Engine, Spectral Mixing & Paper Grain"),
     summary: bi(
@@ -284,6 +324,7 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
   {
     id: "scene3d-vrm",
     order: 3,
+    category: "scene3d-webtoon",
     shortLabel: bi("3D 세트·VRM", "3D & VRM"),
     title: bi("03 · 내장 3D 배경 세트 · VRM 캐릭터 포즈 · 선화 브리지", "03 · Built-in 3D Sets, VRM Posing & Live Ink Bridge"),
     summary: bi(
@@ -308,6 +349,7 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
   {
     id: "webtoon-animatic",
     order: 4,
+    category: "scene3d-webtoon",
     shortLabel: bi("웹툰·애니매틱", "Webtoon & Video"),
     title: bi("04 · 세로 스크롤 식자 · 다국어 말풍선 · Remotion 쇼츠", "04 · Vertical Scroll Lettering & Remotion Animatics"),
     summary: bi(
@@ -332,6 +374,7 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
   {
     id: "collab-local-db",
     order: 5,
+    category: "collab-delivery",
     shortLabel: bi("협업·OPFS 저장", "Collab & OPFS"),
     title: bi("05 · 실시간 공동 작업 · 브라우저 로컬 OPFS 영속 저장", "05 · Live CRDT Collaboration & Local OPFS Persistence"),
     summary: bi(
@@ -356,6 +399,7 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
   {
     id: "rights-delivery",
     order: 6,
+    category: "collab-delivery",
     shortLabel: bi("권리 BOM·출고", "Rights BOM"),
     title: bi("06 · 상업 라이선스 자동 검증(Rights BOM) & 플랫폼 출고", "06 · Automated Commercial Rights BOM & Platform Export"),
     summary: bi(
@@ -380,6 +424,7 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
   {
     id: "pricing-interop",
     order: 7,
+    category: "collab-delivery",
     shortLabel: bi("비용·상호운용", "Cost & Interop"),
     title: bi("07 · 과금 구조 · 로컬 ₩0 단위경제 · 기존 도구 공존성", "07 · Billing Structure, KRW 0 Local Economics & Interop"),
     summary: bi(
@@ -401,6 +446,145 @@ export const BENCHMARK_AXES: readonly BenchmarkAxis[] = [
       ibispaint: cell("partial", "무료(광고/제한) + Prime", "Freemium + Prime", "입문 비용 0원 · 클라우드/소재/PC 무제한은 유료 멤버십", "Free entry with ads/limits; full cross-device access via Prime"),
     },
   },
+  {
+    id: "brush-tactile-perf",
+    order: 8,
+    category: "drawing-tactile",
+    shortLabel: bi("질감·120Hz 렌더", "Tactile · 120Hz"),
+    title: bi("08 · 브러시 물리 질감 · 120Hz 렌더링 아키텍처", "08 · Tactile Brush Physics & 120Hz Render Architecture"),
+    summary: bi(
+      "종이 요철·KM 7밴드 분광 혼색·임파스토 질감 표현과 오프스크린/WebGPU 워커 기반 고주사율 입력 아키텍처를 타사 공식 강점과 투명하게 대조합니다.",
+      "Candidly compares paper tooth, 7-band KM spectral mixing, impasto texture and offscreen/WebGPU worker high-refresh pipelines against native engines.",
+    ),
+    toonStudioMaturity: "partial",
+    evidencePaths: [
+      "apps/web/src/domains/creator/vibrant-studio-fx/studio-paper-and-pigment-physics.ts",
+      "apps/web/src/domains/creator/render/gpu-next/gpu-frame-budget-and-lru-tiles.ts",
+      "apps/web/src/domains/creator/render/gpu-next/gpu-stylus-subpixel-predictor.ts",
+    ],
+    cells: {
+      toonstudio: cell(
+        "partial",
+        "KM7·종이요철 · WebGPU 워커",
+        "KM7 · Paper · WebGPU Worker",
+        "종이 요철·KM7 분광·임파스토·고주사율 포인터 예측과 WebGPU/오프스크린 타일 파이프라인 구축 · 브라우저별 120Hz 상시 유지는 GPU·드라이버 의존",
+        "Paper tooth, KM7 spectral, impasto & subpixel pointer prediction on WebGPU/offscreen tiles; sustained 120Hz depends on browser/GPU driver",
+      ),
+      csp: cell(
+        "native-strength",
+        "네이티브 펜·듀얼 브러시",
+        "Native pen & dual brush",
+        "데스크톱·태블릿 멀티코어 네이티브 필압·손떨림 보정·종이 텍스처 합성 검증 완료 · 물리 유체 수채 번짐은 보조 수준",
+        "Proven native pen stabilization, dual brushes & paper texture blending; fluid water diffusion is lighter than dedicated fluid sims",
+      ),
+      procreate: cell(
+        "native-strength",
+        "Valkyrie 120Hz Metal 엔진",
+        "Valkyrie 120Hz Metal engine",
+        "iPad Pro ProMotion 120Hz Metal 네이티브 초저지연 필기감과 Wet Mix 지원 · iPadOS 전용으로 PC 미지원",
+        "Ultra-low latency Apple Pencil rendering on iPad ProMotion 120Hz Metal; restricted to iPadOS hardware",
+      ),
+      photoshop: cell(
+        "native-strength",
+        "GPU 가속·믹서 브러시",
+        "GPU canvas & Mixer Brush",
+        "대형 캔버스 GPU 줌·회전과 믹서 브러시·텍스처 팁 안정성 검증 · 물리 중력 수채 시뮬레이션은 미내장",
+        "Proven GPU canvas navigation and Mixer Brush on massive canvases; lacks physical gravity watercolor simulation",
+      ),
+      rebelle7: cell(
+        "native-strength",
+        "나노피그먼트·물리 유체 정본",
+        "Physical fluid & paper gold standard",
+        "실시간 중력 수채 번짐·두꺼운 유화 임파스토·초고해상도 종이 요철의 업계 기준 · 데스크톱 전용 설치 앱",
+        "Industry benchmark for gravity watercolor diffusion, thick oil impasto & physical paper grain; desktop-only app",
+      ),
+      blender: cell(
+        "limited",
+        "3D 뷰포트 스트로크 중심",
+        "3D viewport strokes",
+        "Grease Pencil 3D 선화와 3D 메쉬 텍스처 페인팅 지원 · 2D 물리 종이 요철·임파스토 캔버스 전용은 아님",
+        "Built for 3D Grease Pencil and mesh texture paint rather than 2D physical paper tooth or impasto brushes",
+      ),
+      ibispaint: cell(
+        "partial",
+        "모바일 GPU 가속·질감 오버레이",
+        "Mobile GPU & grain overlay",
+        "모바일·태블릿 OpenGL/Metal 고주사율 터치 작화와 종이 질감 오버레이 지원 · 분광 안료·물리 임파스토는 없음",
+        "Smooth mobile OpenGL/Metal stroke acceleration with paper overlays; no spectral pigment or physical impasto",
+      ),
+    },
+  },
+  {
+    id: "nondestructive-assist",
+    order: 9,
+    category: "scene3d-webtoon",
+    shortLabel: bi("비파괴 연출 어시", "Directing Assist"),
+    title: bi("09 · 비파괴 웹툰 연출 어시스턴트 (작가 승인 후 적용)", "09 · Non-Destructive Webtoon Directing Assistants (Artist-Approved)"),
+    summary: bi(
+      "대사 기반 표정·조명·180° 카메라 리프레이밍·얼굴 회피 말풍선·15관절 손 그립·1~60컷 설정집 붉은펜 코치를 작가 미리보기와 승인 후에만 비파괴로 적용하는 구조를 비교합니다.",
+      "Compares artist-approved non-destructive assistants—dialogue expression, 3-point lighting, 180-degree camera, face-avoiding balloons, 15-joint hand grips and 60-cut model-sheet red-pen audits—against manual/plugin workflows.",
+    ),
+    toonStudioMaturity: "current",
+    evidencePaths: [
+      "apps/web/src/domains/creator/char-expression-pose-advisor/char-expression-pose-engine.ts",
+      "apps/web/src/domains/creator/scene-lighting-atmosphere-advisor/scene-lighting-advisor-engine.ts",
+      "apps/web/src/domains/creator/camera-framing-continuity-coach/camera-framing-coach-engine.ts",
+      "apps/web/src/domains/creator/balloon-sfx-placement-proposer/balloon-sfx-placement-engine.ts",
+      "apps/web/src/domains/creator/hand-prop-autogrip-assistant/hand-prop-autogrip-engine.ts",
+      "apps/web/src/domains/creator/crosscut-modelsheet-drift-coach/modelsheet-drift-engine.ts",
+    ],
+    cells: {
+      toonstudio: cell(
+        "current",
+        "6종 비파괴 연출 코치 내장",
+        "6 artist-approved coaches",
+        "표정·3점 조명·180° 카메라·얼굴 회피 말풍선·15관절 손 그립·1~60컷 설정집 붉은펜 코치를 미리보기·승인 후 적용 및 즉시 원복",
+        "Built-in expression, 3-point lighting, 180-degree camera, face-avoiding balloons, 15-joint hand grip & 1-60 cut drift coach with preview & revert",
+      ),
+      csp: cell(
+        "partial",
+        "3D 포즈·핸드 스캐너(수동 검수)",
+        "3D poses & Hand Scanner",
+        "3D 인형·핸드 스캐너·말풍선 도구 완성도 높음 · 180° 카메라 연속성·얼굴 회피 자동 배치·60컷 설정집 대조는 작가 수동 검수",
+        "Polished 3D mannequins, Hand Scanner & balloons; 180-degree camera checks, face-avoiding placement & 60-cut drift audits remain manual",
+      ),
+      procreate: cell(
+        "none",
+        "단일 캔버스 수동 작화",
+        "Manual single-canvas",
+        "순수 일러스트 드로잉에 집중 · 180° 카메라 코치·말풍선 자동 배치·회차 설정집 드리프트 점검 미지원",
+        "Focused on single-canvas illustration; no 180-degree camera, balloon routing or episode model-sheet drift coach",
+      ),
+      photoshop: cell(
+        "limited",
+        "액션·외부 플러그인 의존",
+        "Actions & external plugins",
+        "조명·합성 보정은 가능하나 웹툰 180° 카메라·얼굴 회피 말풍선·15관절 그립·설정집 검수는 수동·스크립트 구성 필요",
+        "General photo lighting and actions exist, but webtoon 180-degree framing, balloon layout & continuity coaching rely on manual scripts",
+      ),
+      rebelle7: cell(
+        "none",
+        "회화 작화 전용",
+        "Painterly media only",
+        "전통 회화 질감 시뮬레이션 특화 · 웹툰 연출 어시스턴트·말풍선·설정집 코치 기능 없음",
+        "Dedicated to traditional painting simulation without comic directing, balloon placement or continuity tools",
+      ),
+      blender: cell(
+        "partial",
+        "3D 카메라·리그·외부 애드온",
+        "3D rigs & custom add-ons",
+        "3D 조명·카메라·손 리깅 역량은 막강 · 대사 연동 웹툰 연출 제안·얼굴 회피 말풍선·60컷 설정집 코치는 외부 애드온 필요",
+        "Strong 3D lights, cameras & rigging; dialogue-driven webtoon proposals, balloon routing & model-sheet audits need third-party add-ons",
+      ),
+      ibispaint: cell(
+        "limited",
+        "기본 프레임·원근 자 가이드",
+        "Basic frames & rulers",
+        "컷 분할·원근 자·기본 말풍선 지원 · 180° 카메라 코치·15관절 손 그립·60컷 비율 드리프트 점검 미지원",
+        "Provides frame divider and perspective rulers; no 180-degree framing coach, 15-joint grip or 60-cut drift audit",
+      ),
+    },
+  },
 ];
 
 export const BENCHMARK_PERSONAS: readonly BenchmarkPersonaFilter[] = [
@@ -408,7 +592,7 @@ export const BENCHMARK_PERSONAS: readonly BenchmarkPersonaFilter[] = [
     id: "solo-webtoon",
     label: bi("1인 연재 작가", "Solo Webtoon Artist"),
     tagline: bi("설치·구독 부담 없이 콘티부터 3D 배경·식자·출고까지 혼자 완주", "Go solo from rough boards to 3D sets, lettering & delivery with zero install"),
-    priorityAxes: ["install-device", "scene3d-vrm", "webtoon-animatic", "pricing-interop"],
+    priorityAxes: ["install-device", "scene3d-vrm", "webtoon-animatic", "pricing-interop", "nondestructive-assist"],
     recommendedStack: ["toonstudio", "csp"],
     whyFit: bi(
       "배경 3D 조립·말풍선 다국어·출고 검수까지 한 탭에서 이어져 도구 전환 시간을 크게 줄입니다. 기존 CSP 선화 습관이 깊다면 PSD로 왕복 조합이 가장 현실적입니다.",
@@ -423,7 +607,7 @@ export const BENCHMARK_PERSONAS: readonly BenchmarkPersonaFilter[] = [
     id: "studio-team",
     label: bi("스튜디오·분업 팀", "Webtoon Studio Team"),
     tagline: bi("선화·채색·배경·식자·PD 검수와 Rights BOM 권리 관리를 한 작업대에", "Unify lineart, color, 3D sets, PD review & Rights BOM compliance"),
-    priorityAxes: ["collab-local-db", "rights-delivery", "webtoon-animatic"],
+    priorityAxes: ["collab-local-db", "rights-delivery", "webtoon-animatic", "nondestructive-assist"],
     recommendedStack: ["toonstudio", "photoshop"],
     whyFit: bi(
       "링크 기반 협업, OPFS 오프라인 복구, 출고 직전 상업 라이선스 자동 BOM 검증으로 외주·어시스턴트 합류 시 저작권 사고와 파일 누락을 줄입니다.",
@@ -438,7 +622,7 @@ export const BENCHMARK_PERSONAS: readonly BenchmarkPersonaFilter[] = [
     id: "mobile-illustrator",
     label: bi("멀티 디바이스 크리에이터", "Multi-Device Creator"),
     tagline: bi("아이패드·태블릿·노트북·모바일을 오가며 끊김 없이 스케치와 채색", "Sketch and paint smoothly across iPad, tablet, laptop & mobile"),
-    priorityAxes: ["install-device", "drawing-pigment", "pricing-interop"],
+    priorityAxes: ["install-device", "drawing-pigment", "pricing-interop", "brush-tactile-perf"],
     recommendedStack: ["toonstudio", "procreate", "ibispaint"],
     whyFit: bi(
       "OS에 묶이지 않고 웹에서 바로 열어 작업하며, 분광 혼색과 터치 안전 UI로 이동 중 콘티·색지정 뒤 데스크톱에서 바로 이어서 마감합니다.",
@@ -453,7 +637,7 @@ export const BENCHMARK_PERSONAS: readonly BenchmarkPersonaFilter[] = [
     id: "tech-director",
     label: bi("테크니컬·3D/영상 감독", "Tech / 3D & Video Director"),
     tagline: bi("WebGPU 3D 세트 · Blender GLB 파이프라인 · Remotion 쇼츠 자동화", "WebGPU 3D staging, Blender GLB interop & Remotion shorts automation"),
-    priorityAxes: ["scene3d-vrm", "webtoon-animatic", "rights-delivery"],
+    priorityAxes: ["scene3d-vrm", "webtoon-animatic", "rights-delivery", "brush-tactile-perf"],
     recommendedStack: ["toonstudio", "blender", "rebelle7"],
     whyFit: bi(
       "Blender에서 제작한 GLB/VRM 에셋을 ToonStudio 3D 스테이지에서 웹툰 컷 선화로 바로 뽑고, Remotion React 컴포지션으로 홍보 쇼츠까지 코드 기반으로 재현합니다.",
@@ -524,4 +708,24 @@ export function getBenchmarkTool(id: BenchmarkToolId): BenchmarkToolProfile {
 export function getBenchmarkPersona(id: BenchmarkPersonaId): BenchmarkPersonaFilter | null {
   if (id === "all") return null;
   return BENCHMARK_PERSONAS.find((persona) => persona.id === id) ?? null;
+}
+
+export function getBenchmarkAxesByCategory(
+  category: BenchmarkAxisCategoryId,
+): readonly BenchmarkAxis[] {
+  if (category === "all") return BENCHMARK_AXES;
+  return BENCHMARK_AXES.filter((axis) => axis.category === category);
+}
+
+export function getToolAxisCoverageScore(axis: BenchmarkAxis, toolId: BenchmarkToolId): number {
+  return BENCHMARK_STATUS_COVERAGE_SCORE[axis.cells[toolId].status];
+}
+
+export function computeToolAverageCoverageIndex(
+  toolId: BenchmarkToolId,
+  axes: readonly BenchmarkAxis[] = BENCHMARK_AXES,
+): number {
+  if (axes.length === 0) return 0;
+  const total = axes.reduce((sum, axis) => sum + getToolAxisCoverageScore(axis, toolId), 0);
+  return Math.round(total / axes.length);
 }
