@@ -128,6 +128,11 @@ const LazyStudioAdaptiveCalmGuardPanel = lazy(async () => {
   const m = await import("../adaptive-calm-stack-guard/StudioAdaptiveCalmGuardPanel");
   return { default: m.StudioAdaptiveCalmGuardPanel };
 });
+const LazyStudioNativeWasmMigrationPanel = lazy(async () => {
+  await import("../native-wasm-migration-studio");
+  const m = await import("../native-wasm-migration-studio/StudioNativeWasmMigrationPanel");
+  return { default: m.StudioNativeWasmMigrationPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -154,7 +159,8 @@ type EcosystemTabId =
   | "proDigitizerHid"
   | "spatialWearable"
   | "focusPanHaptic"
-  | "adaptiveCalmGuard";
+  | "adaptiveCalmGuard"
+  | "nativeWasmMigration";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -202,6 +208,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "spatialWearable", labelKo: "비전 프로·스마트 글래스·워치 멀티기기 작업실", labelEn: "Vision Pro · Smart Glasses · Watch Deck" },
   { id: "focusPanHaptic", labelKo: "작업 리듬 코치·확대 포커스 패닝·펜촉 햅틱", labelEn: "Work Rhythm · Focus Auto-Pan · Nib Haptics" },
   { id: "adaptiveCalmGuard", labelKo: "문맥 UI 단순화·스마트 스태킹·기기 메모리 가드", labelEn: "Adaptive Calm UI · Smart Stack · Memory Guard" },
+  { id: "nativeWasmMigration", labelKo: "Rust WASM32·64 듀얼 타깃·WebGPU·1만 BVH 전환 제어판", labelEn: "Rust WASM32/64 Dual-Target · WebGPU · 10k BVH Migration" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -256,6 +263,8 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Focus size={15} aria-hidden="true" />;
     case "adaptiveCalmGuard":
       return <SlidersHorizontal size={15} aria-hidden="true" />;
+    case "nativeWasmMigration":
+      return <Cpu size={15} aria-hidden="true" />;
   }
 }
 
@@ -329,6 +338,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "spatialWearable" ? <LazyStudioSpatialWearablePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "focusPanHaptic" ? <LazyStudioFocusPanHapticPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "adaptiveCalmGuard" ? <LazyStudioAdaptiveCalmGuardPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "nativeWasmMigration" ? <LazyStudioNativeWasmMigrationPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

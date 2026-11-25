@@ -14,6 +14,19 @@ import {
 import { useId, useMemo, useState, type ReactElement } from "react";
 
 import {
+  GPU_FRUSTUM_CULL_INDIRECT_WGSL,
+  GRAPHICS_PAPER_PIPELINE_SPECS,
+  INSTANCED_LOOP_BLINN_OBJECT_WGSL,
+} from "../render/webgpu-instanced-bvh";
+import {
+  IMPASTO_RELIEF_LIGHTING_WGSL,
+  SPARSE_TILE_BLEND_MODES,
+  SPARSE_TILE_COMPOSITE_WGSL,
+  TACTILE_PAPER_BRISTLE_COMPUTE_WGSL,
+  selectNativeRenderBackend,
+} from "../render/webgpu-tactile-pipeline";
+
+import {
   KONVA_MIGRATION_LAYERS, NATIVE_MIGRATION_SCENARIOS, WASM64_OFFSET_THRESHOLD_MB,
   evaluateRuntimeNativeCapability, exportNativeMigrationManifestJson, getMigrationScenarioPreset,
   planZeroCopyTileArena, summarizeKonvaMigrationRoadmap,
@@ -516,6 +529,48 @@ export function StudioNativeWasmMigrationPanel(props: StudioNativeWasmMigrationP
           </table>
         </div>
       </div>
+
+      {/* 연결된 WebGPU WGSL 셰이더 5종 · 그래픽스 논문 5대 파이프라인 계약 */}
+      <details className="rounded-xl border border-line bg-card p-3.5">
+        <summary className="cursor-pointer select-none text-xs font-bold text-fg [word-break:keep-all]">
+          {pick(
+            `WebGPU WGSL 셰이더 5종 · 논문 기반 파이프라인 ${GRAPHICS_PAPER_PIPELINE_SPECS.length}건 · 희소 타일 블렌드 ${SPARSE_TILE_BLEND_MODES.length}종`,
+            `5 WebGPU WGSL Shaders · ${GRAPHICS_PAPER_PIPELINE_SPECS.length} Paper Pipelines · ${SPARSE_TILE_BLEND_MODES.length} Sparse-Tile Blend Modes`,
+          )}
+        </summary>
+        <div className="mt-2.5 space-y-2 text-xs text-fg-2">
+          <div className="flex flex-wrap gap-1.5 font-mono text-[11px] tabular-nums">
+            <span className="rounded-md border border-line bg-raised px-2 py-0.5 text-fg">
+              {selectNativeRenderBackend({
+                hasWebGpu: runtimeInput.webgpuAvailable,
+                webGpuAdapterAvailable: runtimeInput.webgpuAvailable,
+                webGpuFeatures: runtimeInput.webgpuAvailable ? ["bgra8unorm-storage"] : [],
+                hasWebAssembly: true,
+                supportsWasmMemory64: runtimeInput.wasmMemory64Available,
+                supportsWasmSimd128: runtimeInput.wasmSimd128Available,
+              }).backend}
+            </span>
+            <span className="rounded-md border border-line bg-raised px-2 py-0.5">
+              WGSL {(
+                TACTILE_PAPER_BRISTLE_COMPUTE_WGSL.length
+                + IMPASTO_RELIEF_LIGHTING_WGSL.length
+                + SPARSE_TILE_COMPOSITE_WGSL.length
+                + GPU_FRUSTUM_CULL_INDIRECT_WGSL.length
+                + INSTANCED_LOOP_BLINN_OBJECT_WGSL.length
+              ).toLocaleString()} chars
+            </span>
+          </div>
+          <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            {GRAPHICS_PAPER_PIPELINE_SPECS.map((spec) => (
+              <li key={spec.id} className="rounded-lg border border-line bg-canvas p-2.5">
+                <div className="font-semibold text-fg [word-break:keep-all]">{spec.title}</div>
+                <div className="text-[11px] text-fg-3">{spec.authors} ({spec.year}) · {spec.venue}</div>
+                <div className="mt-1 text-[11px] text-fg-2 [word-break:keep-all]">{spec.koreanSummary}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       {/* JSON 매니페스트 내보내기 */}
       <div className="space-y-2.5 rounded-xl border border-line bg-card p-3.5">
