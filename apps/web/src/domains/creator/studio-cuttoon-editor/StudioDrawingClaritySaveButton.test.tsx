@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
 import { DrawingClarityContext } from "./StudioDrawingClarityContext";
 import { StudioDrawingClaritySaveButton, type StudioDrawingClaritySaveSession } from "./StudioDrawingClaritySaveButton";
 
@@ -20,6 +21,35 @@ function session(): StudioDrawingClaritySaveSession {
 }
 
 describe("간단한 그리기의 기존 초안 저장 연결", () => {
+  it("이전 원고의 영수증이 있어도 복구 대기 획을 알리고, 복구한 원고의 영수증이 도착하면 저장을 알린다", () => {
+    const store = createStudioSaveSyncSignalStore();
+    const receipt = { savedAtMs: 100, authority: "opfs-journal" as const, sequence: 9, revision: 23, generation: 9 };
+    store.noteOnline(false);
+    store.noteDurableReceipt(receipt);
+    const value = { ...session(), saveSyncStore: store, rejectedStrokeCount: 1 };
+    const view = render(<StudioDrawingClaritySaveButton session={value} />);
+    expect(screen.getByRole("button", { name: "초안 저장", description: /원고에 반영되지 않은 획/ })).toBeTruthy();
+
+    act(() => store.noteEditGeneration(10));
+    view.rerender(<StudioDrawingClaritySaveButton session={{ ...value, rejectedStrokeCount: 0 }} />);
+    expect(screen.getByRole("button", { description: /최근 변경이 아직 이 기기에 내구 저장되지 않았습니다/ })).toBeTruthy();
+    act(() => store.noteDurableReceipt({ ...receipt, savedAtMs: 200, sequence: 10, generation: 10 }));
+    expect(screen.getByRole("button", { description: /모든 작업이 로컬에 안전하게 저장되었습니다/ })).toBeTruthy();
+  });
+
+  it("복구 대기 안내보다 실제 쓰기 실패와 편집 잠금을 우선한다", () => {
+    const store = createStudioSaveSyncSignalStore();
+    store.noteDurableReceipt({ savedAtMs: 100, authority: "sqlite-fallback", sequence: 9, revision: 23, generation: 9 });
+    const value = { ...session(), saveSyncStore: store, rejectedStrokeCount: 1 };
+    const view = render(<StudioDrawingClaritySaveButton session={value} />);
+    act(() => store.noteFailure(150));
+    expect(screen.getByRole("button", { description: /임시저장에 실패했습니다/ })).toBeTruthy();
+    act(() => store.noteLeadership("follower"));
+    expect(screen.getByRole("button", { description: /다른 탭에서 편집 중/ })).toBeTruthy();
+    view.rerender(<StudioDrawingClaritySaveButton session={{ ...value, collaborationDocumentLocked: true }} />);
+    expect(screen.getByRole("button", { description: "편집 권한을 확인해 주세요." }).matches(":disabled")).toBe(true);
+  });
+
   it("보이는 저장 문구를 포함하는 기존 초안 이름으로 원본 저장을 한 번 요청한다", () => {
     const value = session();
     render(<StudioDrawingClaritySaveButton session={value} />);
@@ -31,8 +61,8 @@ describe("간단한 그리기의 기존 초안 저장 연결", () => {
 
   it("영어의 기본 저장 이름을 중복 접두사 없이 유지한다", () => {
     copy.english = true;
-    render(<StudioDrawingClaritySaveButton session={session()} />);
-    expect(screen.getByRole("button", { name: "Save draft" }).textContent).toBe("Save");
+    render(<StudioDrawingClaritySaveButton session={{ ...session(), rejectedStrokeCount: 1 }} />);
+    expect(screen.getByRole("button", { name: "Save draft", description: /Check stroke recovery/ }).textContent).toBe("Save");
   });
 
   it("저장 중에는 현재 문구를 이름에 포함하고 재요청을 막는다", () => {
