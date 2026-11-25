@@ -350,7 +350,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
                   onClick={() => dispatchChapter(transitionDioramaChapter(diorama, { type: "select", chapterId: chapter.id }))}
                   className={`${TAB_BASE} ${selected ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg"}`}
                 >
-                  <span className="tabular-nums">{chapter.chapterNumber}.</span>
+                  <span className="shrink-0 whitespace-nowrap tabular-nums">{chapter.chapterNumber}.</span>
                   <span>{isEn ? chapter.titleEn : chapter.titleKo}</span>
                 </button>
               );

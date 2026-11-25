@@ -99,6 +99,17 @@ const LazyStudioOnboardingDioramaPanel = lazy(async () => {
   return { default: m.StudioOnboardingDioramaPanel };
 });
 
+const LazyPerfDoctorPanel = lazy(async () => {
+  await import("../studio-perf-doctor");
+  const m = await import("../studio-perf-doctor/StudioPerfDoctorPanel");
+  return { default: m.StudioPerfDoctorPanel };
+});
+const LazyErgonomicsPanel = lazy(async () => {
+  await import("../ergonomics-shortcut-master");
+  const m = await import("../ergonomics-shortcut-master/StudioErgonomicsMasterPanel");
+  return { default: m.StudioErgonomicsMasterPanel };
+});
+
 type CreatorLabTabId =
   | "calibrator"
   | "signatureLab"
@@ -118,7 +129,9 @@ type CreatorLabTabId =
   | "canvasOrbitalUx"
   | "featureAtlas"
   | "handcraftedAtelier"
-  | "onboardingDiorama";
+  | "onboardingDiorama"
+  | "perfDoctor"
+  | "ergonomics";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -144,6 +157,8 @@ const CREATOR_LAB_TABS: readonly {
   { id: "featureAtlas", labelKo: "기능 안내·실습·계산 예제", labelEn: "Feature Guide · Walkthroughs · Computation Examples" },
   { id: "handcraftedAtelier", labelKo: "지터·관성·작업대 구성 예제", labelEn: "Jitter · Inertia · Workbench Examples" },
   { id: "onboardingDiorama", labelKo: "첫 컷 구성·창작자 설정 추천 예제", labelEn: "First-Cut Layout · Creator Setting Examples" },
+  { id: "perfDoctor", labelKo: "성능 수치·설정 제안 예제", labelEn: "Performance Metrics · Setting Examples" },
+  { id: "ergonomics", labelKo: "단축키·배치 제안 예제", labelEn: "Shortcut · Layout Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -184,6 +199,10 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <CheckCircle2 size={15} aria-hidden="true" />;
     case "handcraftedAtelier":
       return <PenTool size={15} aria-hidden="true" />;
+    case "perfDoctor":
+      return <Gauge size={15} aria-hidden="true" />;
+    case "ergonomics":
+      return <UserCheck size={15} aria-hidden="true" />;
     case "onboardingDiorama":
       return <Camera size={15} aria-hidden="true" />;
   }
@@ -253,6 +272,8 @@ export function CreatorLabHardwareHubPanel() {
           {active === "featureAtlas" ? <LazyStudioFeatureAtlasPanel /> : null}
           {active === "handcraftedAtelier" ? <LazyStudioHandcraftedAtelierPanel /> : null}
           {active === "onboardingDiorama" ? <LazyStudioOnboardingDioramaPanel /> : null}
+          {active === "perfDoctor" ? <LazyPerfDoctorPanel /> : null}
+          {active === "ergonomics" ? <LazyErgonomicsPanel /> : null}
         </Suspense>
       </div>
     </section>

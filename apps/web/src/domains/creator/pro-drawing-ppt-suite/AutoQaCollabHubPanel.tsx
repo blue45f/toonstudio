@@ -44,6 +44,17 @@ const LazyMovingtoonReelsPanel = lazy(async () => {
   return { default: m.StudioMovingtoonReelsPanel };
 });
 
+const LazyCinematographyPanel = lazy(async () => {
+  await import("../webtoon-cinematography-director");
+  const m = await import("../webtoon-cinematography-director/StudioCinematographyDirectorPanel");
+  return { default: m.StudioCinematographyDirectorPanel };
+});
+const LazyColorScriptPanel = lazy(async () => {
+  await import("../color-script-accessibility-lab");
+  const m = await import("../color-script-accessibility-lab/StudioColorScriptLabPanel");
+  return { default: m.StudioColorScriptLabPanel };
+});
+
 type QaHubTabId =
   | "pixel"
   | "layout"
@@ -52,7 +63,9 @@ type QaHubTabId =
   | "storySimulpub"
   | "virtualLiving"
   | "renderFarmVcs"
-  | "movingtoonReels";
+  | "movingtoonReels"
+  | "cinematography"
+  | "colorScript";
 
 const QA_HUB_TABS: readonly {
   readonly id: QaHubTabId;
@@ -67,6 +80,8 @@ const QA_HUB_TABS: readonly {
   { id: "virtualLiving", labelKo: "방·아바타·분위기 물리 예제", labelEn: "Room · Avatar · Atmosphere Examples" },
   { id: "renderFarmVcs", labelKo: "렌더 일정·컷 병합 메모리 예제", labelEn: "Render Scheduling · Cut Merge Memory Examples" },
   { id: "movingtoonReels", labelKo: "무빙툰 좌표·비트·자막 문자열 예제", labelEn: "Moving-Toon Coordinates · Beats · Subtitle Examples" },
+  { id: "cinematography", labelKo: "카메라 투영·시선 동선 예제", labelEn: "Camera Projection · Eye-Flow Examples" },
+  { id: "colorScript", labelKo: "색상 대비·색각 변환 예제", labelEn: "Color Contrast · Vision Simulation Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -85,6 +100,10 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <Sparkles size={15} aria-hidden="true" />;
     case "renderFarmVcs":
       return <GitBranch size={15} aria-hidden="true" />;
+    case "cinematography":
+      return <Clapperboard size={15} aria-hidden="true" />;
+    case "colorScript":
+      return <Palette size={15} aria-hidden="true" />;
     case "movingtoonReels":
       return <Clapperboard size={15} aria-hidden="true" />;
   }
@@ -143,6 +162,8 @@ export function AutoQaCollabHubPanel() {
           {active === "virtualLiving" ? <LazyVirtualSpaceLivingPanel /> : null}
           {active === "renderFarmVcs" ? <LazyRenderFarmVcsPanel /> : null}
           {active === "movingtoonReels" ? <LazyMovingtoonReelsPanel /> : null}
+          {active === "cinematography" ? <LazyCinematographyPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "colorScript" ? <LazyColorScriptPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

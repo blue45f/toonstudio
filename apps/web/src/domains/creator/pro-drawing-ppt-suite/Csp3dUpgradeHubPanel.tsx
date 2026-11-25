@@ -44,6 +44,12 @@ const LazyNeuralUpscaleTexturesPanel = lazy(async () => {
   return { default: m.StudioNeuralUpscaleTexturesPanel };
 });
 
+const LazyKoreanLetteringPanel = lazy(async () => {
+  await import("../korean-lettering-sfx-engine");
+  const m = await import("../korean-lettering-sfx-engine/StudioKoreanLetteringSfxPanel");
+  return { default: m.StudioKoreanLetteringSfxPanel };
+});
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -52,7 +58,8 @@ type Csp3dTabId =
   | "commercialPro"
   | "charlabCsp"
   | "p3ColorLight"
-  | "neuralUpscale";
+  | "neuralUpscale"
+  | "koreanLettering";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -67,6 +74,7 @@ const CSP3D_TABS: readonly {
   { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
   { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
   { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
+  { id: "koreanLettering", labelKo: "한글 조판·SVG 글자 배치 예제", labelEn: "Korean Typesetting · SVG Text Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -101,6 +109,8 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Watch size={15} aria-hidden="true" />;
     case "p3ColorLight":
       return <Sun size={15} aria-hidden="true" />;
+    case "koreanLettering":
+      return <Brush size={15} aria-hidden="true" />;
     case "neuralUpscale":
       return <Wand2 size={15} aria-hidden="true" />;
   }
@@ -159,6 +169,7 @@ export function Csp3dUpgradeHubPanel() {
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
+          {active === "koreanLettering" ? <LazyKoreanLetteringPanel /> : null}
         </Suspense>
       </div>
 
