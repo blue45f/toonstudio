@@ -35,7 +35,7 @@ const FORBIDDEN_SPARKLES_REGEX = /\bSparkles\b/u;
 const FORBIDDEN_PRIVATE_STORE_MAP_REGEX =
   /\bprivate\s+(?:readonly\s+)?store\b|\bstore\s*=\s*new\s+Map\b/u;
 
-function createMockCanvas2dContext(): CanvasRenderingContext2D {
+function createMockCanvas2dContext() {
   const gradientStub = {
     addColorStop: vi.fn(),
   };
@@ -61,7 +61,14 @@ function createMockCanvas2dContext(): CanvasRenderingContext2D {
     lineCap: "butt",
     lineJoin: "miter",
     font: "",
-  } as unknown as CanvasRenderingContext2D;
+  } satisfies Partial<CanvasRenderingContext2D>;
+}
+
+function mockCanvas2dContext(canvas: HTMLCanvasElement, mockCtx = createMockCanvas2dContext()) {
+  const canvas2d: {
+    getContext(contextId: "2d"): Pick<CanvasRenderingContext2D, keyof typeof mockCtx> | null;
+  } = canvas;
+  vi.spyOn(canvas2d, "getContext").mockImplementation((id) => (id === "2d" ? mockCtx : null));
 }
 
 afterEach(() => {
@@ -338,7 +345,8 @@ describe("Wave 37D — 2D/3D 단일 물리 광원 리그 & SDF 툰 광원 베이
     canvas.width = 560;
     canvas.height = 340;
     const mockCtx = createMockCanvas2dContext();
-    vi.spyOn(canvas, "getContext").mockReturnValue(mockCtx as unknown as GPUCanvasContext);
+    mockCanvas2dContext(canvas, mockCtx);
+    expect(canvas.getContext("webgpu")).toBeNull();
 
     const sim = stepXpbdSimulation(createDefaultXpbdRigState(), DEFAULT_XPBD_CONFIG);
     const light = bakeToonSdfLighting({ azimuthDeg: 45, elevationDeg: 40, colorTempKelvin: 5200 });
@@ -356,9 +364,7 @@ describe("Wave 37D — 2D/3D 단일 물리 광원 리그 & SDF 툰 광원 베이
 
 describe("Wave 37D — StudioWebgpuXpbdLightingPanel UI 상호작용 및 Calm Atelier 위생 계약", () => {
   it("13. props 없이 단독 렌더링되고 0mm 관통·2D/3D 광원 일치·WGSL 계약 요약을 표시한다", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
-      createMockCanvas2dContext() as unknown as GPUCanvasContext,
-    );
+    mockCanvas2dContext(HTMLCanvasElement.prototype);
 
     render(createElement(StudioWebgpuXpbdLightingPanel));
     expect(screen.getByTestId("studio-webgpu-xpbd-lighting-panel")).toBeTruthy();
@@ -373,9 +379,7 @@ describe("Wave 37D — StudioWebgpuXpbdLightingPanel UI 상호작용 및 Calm At
   });
 
   it("14. 프리셋 전환·바람/강성/광원 슬라이더·셀 단계·1스텝·초기화가 실시간 반영된다", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
-      createMockCanvas2dContext() as unknown as GPUCanvasContext,
-    );
+    mockCanvas2dContext(HTMLCanvasElement.prototype);
     const onMetricsChange = vi.fn();
 
     render(createElement(StudioWebgpuXpbdLightingPanel, { onMetricsChange }));
