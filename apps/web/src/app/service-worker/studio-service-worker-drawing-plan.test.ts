@@ -50,6 +50,14 @@ describe("explicit offline drawing pack", () => {
       "/assets/mobile-dock.js", "/assets/eraser-picker.js", "/assets/eraser-plan.js",
     ]));
   });
+  it("저장 대기 기록이 있는 원고를 새 탭에서 열 수 있도록 지연 패널을 준비한다", () => {
+    const urls = collectStudioOfflineDrawingUrls({
+      ...manifest,
+      StudioDraftSaveCenter: { name: "StudioDraftSaveCenter", file: "assets/save-center.js", dynamicImports: ["StudioDurableSaveIntentPanel"] },
+      StudioDurableSaveIntentPanel: { name: "StudioDurableSaveIntentPanel", file: "assets/save-intent-panel.js" },
+    }, files);
+    expect(urls).toContain("/assets/save-intent-panel.js");
+  });
   it("fails the build instead of silently omitting a renamed core module", () => {
     expect(() => collectStudioOfflineDrawingUrls({}, files)).toThrow(/root missing/u);
   });
