@@ -9,6 +9,11 @@ publish = false
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = []
+# 확장 3D VRM 스키닝·Morton BVH·LT 선화 C-ABI 익스포트 (기본 < 48 KiB 바이너리 계약 보존)
+extended-3d = []
+
 [dependencies]
 
 [profile.release]
