@@ -334,7 +334,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
 
       {/* 1. 4장 인터랙티브 2.5D 디오라마 스테이지 */}
       <div className="space-y-3 rounded-xl border border-line bg-card p-3.5 sm:p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="grid gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-between">
           <div role="tablist" aria-label={pick("온보딩 디오라마 4장 챕터", "Onboarding Diorama Chapters")} className="grid flex-1 grid-cols-2 gap-2 lg:grid-cols-4">
             {ONBOARDING_DIORAMA_CHAPTERS.map((chapter) => {
               const selected = chapter.id === activeChapter.id;
@@ -356,7 +356,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
               );
             })}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-end gap-1.5">
             <button type="button" data-testid="chapter-prev-btn" aria-label={pick("이전 챕터", "Previous chapter")} onClick={() => dispatchChapter(transitionDioramaChapter(diorama, { type: "prev", wrap: true }))} className={BTN_OUTLINE}>
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </button>

@@ -253,9 +253,9 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
     return kind === "removed" ? pick("삭제", "Removed") : pick("수정", "Modified");
   };
 
-  const tabs: readonly { readonly id: RenderFarmVcsTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "render-farm", label: pick("6패스 분산 렌더팜 예제 · 장애복구", "6-Pass Render Farm & Failover Example"), icon: <Cpu className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "semantic-vcs", label: pick("시맨틱 브랜치 · 컷 Diff · 3-Way 병합", "Semantic Branch · Cut Diff · 3-Way Merge"), icon: <GitBranch className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: RenderFarmVcsTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "render-farm", label: pick("6패스 분산 렌더팜 예제 · 장애복구", "6-Pass Render Farm & Failover Example"), shortLabel: pick("렌더 일정", "Schedule"), icon: <Cpu className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "semantic-vcs", label: pick("시맨틱 브랜치 · 컷 Diff · 3-Way 병합", "Semantic Branch · Cut Diff · 3-Way Merge"), shortLabel: pick("컷 병합", "Cut Merge"), icon: <GitBranch className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   return (
@@ -299,12 +299,12 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={tab.label} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? ACTIVE_TONE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>

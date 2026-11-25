@@ -162,10 +162,10 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
     [workbenchState],
   );
 
-  const tabs: readonly { readonly id: HandcraftedAtelierTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "analog-jitter", label: pick("아날로그 지터·잉크 번짐", "Analog Jitter & Ink Bloom"), icon: <Feather className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "spring-theme", label: pick("물리 관성·절차적 테마", "Tactile Spring & OKLCH Theme"), icon: <Palette className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "adaptive-workbench", label: pick("적응형 워크벤치 학습", "Adaptive Workbench Learner"), icon: <Wand2 className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: HandcraftedAtelierTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "analog-jitter", label: pick("아날로그 지터·잉크 번짐", "Analog Jitter & Ink Bloom"), shortLabel: pick("필기구", "Pens"), icon: <Feather className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "spring-theme", label: pick("물리 관성·절차적 테마", "Tactile Spring & OKLCH Theme"), shortLabel: pick("관성·테마", "Motion & Theme"), icon: <Palette className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "adaptive-workbench", label: pick("적응형 워크벤치 학습", "Adaptive Workbench Learner"), shortLabel: pick("작업대", "Workbench"), icon: <Wand2 className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const handleSelectPreset = (nextPreset: AnalogArtisanPresetId): void => {
@@ -251,12 +251,12 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={tab.label} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? ACTIVE_TONE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>
