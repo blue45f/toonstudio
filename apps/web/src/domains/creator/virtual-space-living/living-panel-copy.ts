@@ -103,48 +103,49 @@ const ENGLISH_COPY: Readonly<Record<string, string>> = {
 
 interface CopyPattern {
   readonly pattern: RegExp;
+  readonly keys: readonly string[];
   readonly ko: string;
   readonly en: string;
 }
 
 // 엔진의 기존 한국어 계약은 유지하고, 화면에서만 고정 번역 키와 매개변수로 나눈다.
 const COPY_PATTERNS: readonly CopyPattern[] = [
-  { pattern: /^현재 상태: (?<label>.+)$/u, ko: "현재 상태: {label}", en: "Current state: {label}" },
-  { pattern: /^(?<label>.+) 방향으로 15프레임 관성 이동 및 2차 스프링 시뮬레이션을 실행했습니다\.$/u, ko: "{label} 방향으로 15프레임 관성 이동 및 2차 스프링 시뮬레이션을 실행했습니다.", en: "Simulated 15 frames of inertial movement and spring motion toward {label}." },
-  { pattern: /^시선 추적 목표를 '(?<label>.+)'로 전환했습니다\.$/u, ko: "시선 추적 목표를 '{label}'로 전환했습니다.", en: "Gaze target changed to '{label}'." },
-  { pattern: /^(?<label>.+) 바라보는 중$/u, ko: "{label} 바라보는 중", en: "Looking at {label}" },
-  { pattern: /^(?<label>.+) 파티클 버스트를 방출했습니다\.$/u, ko: "{label} 파티클 버스트를 방출했습니다.", en: "Emitted a {label} particle burst." },
-  { pattern: /^테마 스튜디오 '(?<label>.+)'로 전환하고 권장 광원·날씨를 맞췄습니다\.$/u, ko: "테마 스튜디오 '{label}'로 전환하고 권장 광원·날씨를 맞췄습니다.", en: "Switched to '{label}' with its suggested lighting and weather." },
-  { pattern: /^(?<label>.+) 선택됨 · (?<message>.+)$/u, ko: "{label} 선택됨 · {message}", en: "Selected {label} · {message}" },
-  { pattern: /^(?<label>.+)\((?<width>\d+)×(?<height>\d+)\)가 방 격자 경계를 벗어납니다\.$/u, ko: "{label}({width}×{height})가 방 격자 경계를 벗어납니다.", en: "{label} ({width}×{height}) extends beyond the room grid." },
-  { pattern: /^기존 배치 가구\((?<count>\d+)개\)와 겹쳐 배치할 수 없습니다\.$/u, ko: "기존 배치 가구({count}개)와 겹쳐 배치할 수 없습니다.", en: "Cannot place furniture: it overlaps {count} existing items." },
-  { pattern: /^(?<label>.+) \((?<col>\d+), (?<row>\d+)\) 배치 가능$/u, ko: "{label} ({col}, {row}) 배치 가능", en: "{label} can be placed at ({col}, {row})" },
-  { pattern: /^로컬 뽀모도로를 (?<seconds>\d+)초 진행했습니다\.$/u, ko: "로컬 뽀모도로를 {seconds}초 진행했습니다.", en: "Advanced the local Pomodoro timer by {seconds} seconds." },
-  { pattern: /^(?<label>.+)\((?<temperature>\d+)K\) 광원 프로파일을 적용했습니다\.$/u, ko: "{label}({temperature}K) 광원 프로파일을 적용했습니다.", en: "Applied the {label} ({temperature}K) lighting profile." },
-  { pattern: /^날씨·감정 파티클 프리셋을 '(?<label>.+)'로 변경했습니다\.$/u, ko: "날씨·감정 파티클 프리셋을 '{label}'로 변경했습니다.", en: "Weather and mood particles changed to '{label}'." },
-  { pattern: /^(?<label>.+) 쿨다운 진행 중 \((?<seconds>[\d.]+)초 남음\)$/u, ko: "{label} 쿨다운 진행 중 ({seconds}초 남음)", en: "{label} cooldown ({seconds} seconds remaining)" },
-  { pattern: /^(?<label>.+) \((?<clock>.+)\) 이모트를 발동했습니다\.$/u, ko: "{label} ({clock}) 이모트를 발동했습니다.", en: "Triggered {label} ({clock})." },
-  { pattern: /^로컬 뽀모도로 프리셋을 '(?<label>.+)'로 변경했습니다\.$/u, ko: "로컬 뽀모도로 프리셋을 '{label}'로 변경했습니다.", en: "Local Pomodoro preset changed to '{label}'." },
-  { pattern: /^합성 작품 '(?<work>.+)'의 (?<character>.+) 구성을 예시로 선택했습니다\. 실제 작품은 읽지 않습니다\.$/u, ko: "합성 작품 '{work}'의 {character} 구성을 예시로 선택했습니다. 실제 작품은 읽지 않습니다.", en: "Selected {character} from the synthetic work '{work}' as an example. No actual artwork is read." },
-  { pattern: /^예시 선택: (?<character>.+) \((?<work>.+) · (?<prop>.+)\)$/u, ko: "예시 선택: {character} ({work} · {prop})", en: "Selected example: {character} ({work} · {prop})" },
-  { pattern: /^(?<count>\d+)회차 스프린트 완료! 팀 긴 휴식\((?<minutes>\d+)분\)으로 전환합니다\.$/u, ko: "{count}회차 스프린트 완료! 팀 긴 휴식({minutes}분)으로 전환합니다.", en: "Sprint {count} complete! Switching to a {minutes}-minute team long break." },
-  { pattern: /^(?<count>\d+)회차 스프린트 완료! 팀 짧은 휴식\((?<minutes>\d+)분\)을 시작합니다\.$/u, ko: "{count}회차 스프린트 완료! 팀 짧은 휴식({minutes}분)을 시작합니다.", en: "Sprint {count} complete! Starting a {minutes}-minute team short break." },
-  { pattern: /^휴식 종료! 다음 팀 스프린트\((?<minutes>\d+)분\)에 돌입합니다\.$/u, ko: "휴식 종료! 다음 팀 스프린트({minutes}분)에 돌입합니다.", en: "Break over! Starting the next {minutes}-minute team sprint." },
-  { pattern: /^(?<label>.+) 가상 스튜디오 배경$/u, ko: "{label} 가상 스튜디오 배경", en: "{label} virtual studio background" },
-  { pattern: /^(?<label>.+) 스튜디오 테마 썸네일$/u, ko: "{label} 스튜디오 테마 썸네일", en: "{label} studio theme thumbnail" },
-  { pattern: /^헤어 (?<hair>[\d.]+) \/ 망토 (?<cape>[\d.]+) px$/u, ko: "헤어 {hair} / 망토 {cape} px", en: "Hair {hair} / cape {cape} px" },
-  { pattern: /^(?<temperature>\d+)K · 그림자 (?<angle>-?[\d.]+)° \((?<length>[\d.]+)px\) · (?<lux>[\d.]+) lx$/u, ko: "{temperature}K · 그림자 {angle}° ({length}px) · {lux} lx", en: "{temperature}K · shadow {angle}° ({length}px) · {lux} lx" },
-  { pattern: /^총 (?<count>\d+)개$/u, ko: "총 {count}개", en: "Total {count}" },
-  { pattern: /^(?<angle>[\d.]+)° → 섹터 #(?<index>\d+) \((?<label>.+)\)$/u, ko: "{angle}° → 섹터 #{index} ({label})", en: "{angle}° → sector #{index} ({label})" },
-  { pattern: /^대기 (?<seconds>[\d.]+)s$/u, ko: "대기 {seconds}s", en: "Wait {seconds}s" },
-  { pattern: /^누적 발동 (?<count>\d+)회 · 각 섹터 클릭 시 연결된 VFX 파티클이 함께 방출되며 개별 쿨다운이 적용됩니다\.$/u, ko: "누적 발동 {count}회 · 각 섹터 클릭 시 연결된 VFX 파티클이 함께 방출되며 개별 쿨다운이 적용됩니다.", en: "Triggered {count} times · Each sector emits its linked VFX particles and has its own cooldown." },
-  { pattern: /^정원 (?<count>\d+)명 · (?<sound>.+)$/u, ko: "정원 {count}명 · {sound}", en: "Capacity {count} · {sound}" },
-  { pattern: /^(?<count>\d+)인$/u, ko: "{count}인", en: "{count} people" },
-  { pattern: /^활성 레이어 (?<count>\d+)층$/u, ko: "활성 레이어 {count}층", en: "Active layers: {count}" },
-  { pattern: /^배치 (?<count>\d+)개$/u, ko: "배치 {count}개", en: "Placed: {count}" },
-  { pattern: /^책상 격자 (?<col>\d+)열 (?<row>\d+)행 (?<state>.+)$/u, ko: "책상 격자 {col}열 {row}행 {state}", en: "Desk grid column {col}, row {row}: {state}" },
-  { pattern: /^완료 (?<count>\d+)회 · 동기화 rev\.(?<revision>\d+)$/u, ko: "완료 {count}회 · 동기화 rev.{revision}", en: "Completed {count} · sync rev.{revision}" },
-  { pattern: /^합성 동료 예시 \((?<count>\d+)명 · 실제 연결 0명\)$/u, ko: "합성 동료 예시 ({count}명 · 실제 연결 0명)", en: "Synthetic peer examples ({count} · 0 actual connections)" },
+  { pattern: /^현재 상태: (.+)$/u, keys: ["label"], ko: "현재 상태: {label}", en: "Current state: {label}" },
+  { pattern: /^(.+) 방향으로 15프레임 관성 이동 및 2차 스프링 시뮬레이션을 실행했습니다\.$/u, keys: ["label"], ko: "{label} 방향으로 15프레임 관성 이동 및 2차 스프링 시뮬레이션을 실행했습니다.", en: "Simulated 15 frames of inertial movement and spring motion toward {label}." },
+  { pattern: /^시선 추적 목표를 '(.+)'로 전환했습니다\.$/u, keys: ["label"], ko: "시선 추적 목표를 '{label}'로 전환했습니다.", en: "Gaze target changed to '{label}'." },
+  { pattern: /^(.+) 바라보는 중$/u, keys: ["label"], ko: "{label} 바라보는 중", en: "Looking at {label}" },
+  { pattern: /^(.+) 파티클 버스트를 방출했습니다\.$/u, keys: ["label"], ko: "{label} 파티클 버스트를 방출했습니다.", en: "Emitted a {label} particle burst." },
+  { pattern: /^테마 스튜디오 '(.+)'로 전환하고 권장 광원·날씨를 맞췄습니다\.$/u, keys: ["label"], ko: "테마 스튜디오 '{label}'로 전환하고 권장 광원·날씨를 맞췄습니다.", en: "Switched to '{label}' with its suggested lighting and weather." },
+  { pattern: /^(.+) 선택됨 · (.+)$/u, keys: ["label", "message"], ko: "{label} 선택됨 · {message}", en: "Selected {label} · {message}" },
+  { pattern: /^(.+)\((\d+)×(\d+)\)가 방 격자 경계를 벗어납니다\.$/u, keys: ["label", "width", "height"], ko: "{label}({width}×{height})가 방 격자 경계를 벗어납니다.", en: "{label} ({width}×{height}) extends beyond the room grid." },
+  { pattern: /^기존 배치 가구\((\d+)개\)와 겹쳐 배치할 수 없습니다\.$/u, keys: ["count"], ko: "기존 배치 가구({count}개)와 겹쳐 배치할 수 없습니다.", en: "Cannot place furniture: it overlaps {count} existing items." },
+  { pattern: /^(.+) \((\d+), (\d+)\) 배치 가능$/u, keys: ["label", "col", "row"], ko: "{label} ({col}, {row}) 배치 가능", en: "{label} can be placed at ({col}, {row})" },
+  { pattern: /^로컬 뽀모도로를 (\d+)초 진행했습니다\.$/u, keys: ["seconds"], ko: "로컬 뽀모도로를 {seconds}초 진행했습니다.", en: "Advanced the local Pomodoro timer by {seconds} seconds." },
+  { pattern: /^(.+)\((\d+)K\) 광원 프로파일을 적용했습니다\.$/u, keys: ["label", "temperature"], ko: "{label}({temperature}K) 광원 프로파일을 적용했습니다.", en: "Applied the {label} ({temperature}K) lighting profile." },
+  { pattern: /^날씨·감정 파티클 프리셋을 '(.+)'로 변경했습니다\.$/u, keys: ["label"], ko: "날씨·감정 파티클 프리셋을 '{label}'로 변경했습니다.", en: "Weather and mood particles changed to '{label}'." },
+  { pattern: /^(.+) 쿨다운 진행 중 \(([\d.]+)초 남음\)$/u, keys: ["label", "seconds"], ko: "{label} 쿨다운 진행 중 ({seconds}초 남음)", en: "{label} cooldown ({seconds} seconds remaining)" },
+  { pattern: /^(.+) \((.+)\) 이모트를 발동했습니다\.$/u, keys: ["label", "clock"], ko: "{label} ({clock}) 이모트를 발동했습니다.", en: "Triggered {label} ({clock})." },
+  { pattern: /^로컬 뽀모도로 프리셋을 '(.+)'로 변경했습니다\.$/u, keys: ["label"], ko: "로컬 뽀모도로 프리셋을 '{label}'로 변경했습니다.", en: "Local Pomodoro preset changed to '{label}'." },
+  { pattern: /^합성 작품 '(.+)'의 (.+) 구성을 예시로 선택했습니다\. 실제 작품은 읽지 않습니다\.$/u, keys: ["work", "character"], ko: "합성 작품 '{work}'의 {character} 구성을 예시로 선택했습니다. 실제 작품은 읽지 않습니다.", en: "Selected {character} from the synthetic work '{work}' as an example. No actual artwork is read." },
+  { pattern: /^예시 선택: (.+) \((.+) · (.+)\)$/u, keys: ["character", "work", "prop"], ko: "예시 선택: {character} ({work} · {prop})", en: "Selected example: {character} ({work} · {prop})" },
+  { pattern: /^(\d+)회차 스프린트 완료! 팀 긴 휴식\((\d+)분\)으로 전환합니다\.$/u, keys: ["count", "minutes"], ko: "{count}회차 스프린트 완료! 팀 긴 휴식({minutes}분)으로 전환합니다.", en: "Sprint {count} complete! Switching to a {minutes}-minute team long break." },
+  { pattern: /^(\d+)회차 스프린트 완료! 팀 짧은 휴식\((\d+)분\)을 시작합니다\.$/u, keys: ["count", "minutes"], ko: "{count}회차 스프린트 완료! 팀 짧은 휴식({minutes}분)을 시작합니다.", en: "Sprint {count} complete! Starting a {minutes}-minute team short break." },
+  { pattern: /^휴식 종료! 다음 팀 스프린트\((\d+)분\)에 돌입합니다\.$/u, keys: ["minutes"], ko: "휴식 종료! 다음 팀 스프린트({minutes}분)에 돌입합니다.", en: "Break over! Starting the next {minutes}-minute team sprint." },
+  { pattern: /^(.+) 가상 스튜디오 배경$/u, keys: ["label"], ko: "{label} 가상 스튜디오 배경", en: "{label} virtual studio background" },
+  { pattern: /^(.+) 스튜디오 테마 썸네일$/u, keys: ["label"], ko: "{label} 스튜디오 테마 썸네일", en: "{label} studio theme thumbnail" },
+  { pattern: /^헤어 ([\d.]+) \/ 망토 ([\d.]+) px$/u, keys: ["hair", "cape"], ko: "헤어 {hair} / 망토 {cape} px", en: "Hair {hair} / cape {cape} px" },
+  { pattern: /^(\d+)K · 그림자 (-?[\d.]+)° \(([\d.]+)px\) · ([\d.]+) lx$/u, keys: ["temperature", "angle", "length", "lux"], ko: "{temperature}K · 그림자 {angle}° ({length}px) · {lux} lx", en: "{temperature}K · shadow {angle}° ({length}px) · {lux} lx" },
+  { pattern: /^총 (\d+)개$/u, keys: ["count"], ko: "총 {count}개", en: "Total {count}" },
+  { pattern: /^([\d.]+)° → 섹터 #(\d+) \((.+)\)$/u, keys: ["angle", "index", "label"], ko: "{angle}° → 섹터 #{index} ({label})", en: "{angle}° → sector #{index} ({label})" },
+  { pattern: /^대기 ([\d.]+)s$/u, keys: ["seconds"], ko: "대기 {seconds}s", en: "Wait {seconds}s" },
+  { pattern: /^누적 발동 (\d+)회 · 각 섹터 클릭 시 연결된 VFX 파티클이 함께 방출되며 개별 쿨다운이 적용됩니다\.$/u, keys: ["count"], ko: "누적 발동 {count}회 · 각 섹터 클릭 시 연결된 VFX 파티클이 함께 방출되며 개별 쿨다운이 적용됩니다.", en: "Triggered {count} times · Each sector emits its linked VFX particles and has its own cooldown." },
+  { pattern: /^정원 (\d+)명 · (.+)$/u, keys: ["count", "sound"], ko: "정원 {count}명 · {sound}", en: "Capacity {count} · {sound}" },
+  { pattern: /^(\d+)인$/u, keys: ["count"], ko: "{count}인", en: "{count} people" },
+  { pattern: /^활성 레이어 (\d+)층$/u, keys: ["count"], ko: "활성 레이어 {count}층", en: "Active layers: {count}" },
+  { pattern: /^배치 (\d+)개$/u, keys: ["count"], ko: "배치 {count}개", en: "Placed: {count}" },
+  { pattern: /^책상 격자 (\d+)열 (\d+)행 (.+)$/u, keys: ["col", "row", "state"], ko: "책상 격자 {col}열 {row}행 {state}", en: "Desk grid column {col}, row {row}: {state}" },
+  { pattern: /^완료 (\d+)회 · 동기화 rev\.(\d+)$/u, keys: ["count", "revision"], ko: "완료 {count}회 · 동기화 rev.{revision}", en: "Completed {count} · sync rev.{revision}" },
+  { pattern: /^합성 동료 예시 \((\d+)명 · 실제 연결 0명\)$/u, keys: ["count"], ko: "합성 동료 예시 ({count}명 · 실제 연결 0명)", en: "Synthetic peer examples ({count} · 0 actual connections)" },
 ];
 
 export function useLivingPanelCopy(): (source: string) => string {
@@ -153,8 +154,11 @@ export function useLivingPanelCopy(): (source: string) => string {
     if (Object.hasOwn(ENGLISH_COPY, source)) return bt(source, ENGLISH_COPY[source] ?? source);
     for (const entry of COPY_PATTERNS) {
       const match = entry.pattern.exec(source);
-      if (!match?.groups) continue;
-      const parameters = match.groups;
+      if (!match) continue;
+      const parameters: Record<string, string> = {};
+      entry.keys.forEach((key, index) => {
+        parameters[key] = match[index + 1] ?? "";
+      });
       return bt(entry.ko, entry.en).replace(/\{(\w+)\}/gu, (_placeholder, key: string) => copy(parameters[key] ?? ""));
     }
     return source;

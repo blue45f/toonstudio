@@ -41,7 +41,7 @@ describe("리빙 패널의 기존 i18n 연결", () => {
   ] as const)("한국어 %s 탭의 기본 문구를 보존한다", (initialTab, tab) => {
     const { container } = render(<StudioVirtualSpaceLivingPanel initialTab={initialTab} />);
     expect(screen.getByRole("tab", { name: tab, selected: true })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "가상 스튜디오 2.5D 리빙 엔진", exact: true })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^가상 스튜디오 2\.5D 리빙 엔진$/u })).toBeTruthy();
     expect(container.innerHTML).not.toContain("legacyUi.");
   });
 
