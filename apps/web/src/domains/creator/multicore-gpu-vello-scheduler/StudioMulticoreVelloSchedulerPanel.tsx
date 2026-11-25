@@ -14,6 +14,10 @@ import {
 import { useId, useMemo, useState, type ReactElement } from "react";
 
 import {
+  negotiateExtremeWebGpuProfile,
+  SPARSE_STRIP_HEIGHT_4,
+} from "../render/webgpu-extreme-subgroups";
+import {
   COMPUTE_PRESSURE_STATES, CORE_COUNT_PRESETS, DEFAULT_HARDWARE_CONCURRENCY,
   exportMulticoreVelloPlanJson,
   type ComputePressureState, type ExecutionLaneKind, type MulticoreVelloSchedulerPlan,
@@ -234,6 +238,16 @@ export function StudioMulticoreVelloSchedulerPanel(props: StudioMulticoreVelloSc
     [coreCount, pressureState, coopCoepIsolated, chromePreviewEnabled, targetFrameRateHz],
   );
   const { plan, json: manifestJson } = useMemo(() => exportMulticoreVelloPlanJson(currentInput), [currentInput]);
+  const extremeGpuProfile = useMemo(
+    () =>
+      negotiateExtremeWebGpuProfile(
+        chromePreviewEnabled
+          ? ["subgroups", "shader-f16", "timestamp-query", "indirect-first-instance"]
+          : ["shader-f16"],
+        { preferredStripHeight: SPARSE_STRIP_HEIGHT_4 },
+      ),
+    [chromePreviewEnabled],
+  );
 
   const commitChange = (next: SchedulerEnvironmentInput, noticeKo: string, noticeEn: string): void => {
     const { plan: nextPlan } = exportMulticoreVelloPlanJson(next);
@@ -488,7 +502,11 @@ export function StudioMulticoreVelloSchedulerPanel(props: StudioMulticoreVelloSc
             <Activity className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
             <span>{pick("Vello 6단계 GPU 멀티스레드 컴퓨트 파이프라인", "Vello 6-Stage GPU Compute Pipeline")}</span>
           </div>
-          <span className="font-mono text-[11px] text-fg-3 tabular-nums">{isEn ? velloComputeGraph.timingSourceLabelEn : velloComputeGraph.timingSourceLabelKo}</span>
+          <span className="font-mono text-[11px] text-fg-3 tabular-nums">
+            {isEn ? velloComputeGraph.timingSourceLabelEn : velloComputeGraph.timingSourceLabelKo}
+            {" · "}
+            {extremeGpuProfile.tier} ({extremeGpuProfile.spectralStorageBytesPerPixel}B/px · {extremeGpuProfile.shaders.sparseStripHeight}px strip)
+          </span>
         </div>
 
         <div className="overflow-x-auto">

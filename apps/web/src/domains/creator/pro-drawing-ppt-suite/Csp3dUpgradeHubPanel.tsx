@@ -1,4 +1,4 @@
-import { Brush, Camera, Clapperboard, Feather, Grip, Hand, Layers, Lightbulb, Move, Palette, Pipette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Camera, Clapperboard, Feather, FlaskConical, Grip, Hand, Layers, Lightbulb, Move, Palette, Pencil, Pipette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -103,6 +103,16 @@ const LazyStudioStyleSpectrumGuardianPanel = lazy(async () => {
   const m = await import("../style-spectrum-guardian/StudioStyleSpectrumGuardianPanel");
   return { default: m.StudioStyleSpectrumGuardianPanel };
 });
+const LazyStudioDryMediaCrayonAudioPanel = lazy(async () => {
+  await import("../drymedia-crayon-audio-engine");
+  const m = await import("../drymedia-crayon-audio-engine/StudioDryMediaCrayonAudioPanel");
+  return { default: m.StudioDryMediaCrayonAudioPanel };
+});
+const LazyStudioSixPhysicsBrushLabPanel = lazy(async () => {
+  await import("../six-physics-brush-lab");
+  const m = await import("../six-physics-brush-lab/StudioSixPhysicsBrushLabPanel");
+  return { default: m.StudioSixPhysicsBrushLabPanel };
+});
 
 type Csp3dTabId =
   | "puppet"
@@ -124,7 +134,9 @@ type Csp3dTabId =
   | "cameraFramingAdv"
   | "handPropAutoGrip"
   | "tactileBrushTex"
-  | "styleSpectrumGuard";
+  | "styleSpectrumGuard"
+  | "dryMediaCrayonAudio"
+  | "sixPhysicsBrushLab";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -151,6 +163,8 @@ const CSP3D_TABS: readonly {
   { id: "handPropAutoGrip", labelKo: "3D 소품 15관절 손 자동 그립 어시스턴트", labelEn: "3D Prop 15-Joint Hand Auto-Grip Assistant" },
   { id: "tactileBrushTex", labelKo: "종이 요철·갈필·습윤 에지·임파스토 120Hz 질감", labelEn: "Paper-Tooth · Dry Bristle · Wet-Edge · Impasto 120Hz" },
   { id: "styleSpectrumGuard", labelKo: "화풍 스펙트럼 추천·3D→2D 안료 변환·가디언", labelEn: "Style Spectrum · 3D-to-2D Pigment Transfer Guardian" },
+  { id: "dryMediaCrayonAudio", labelKo: "크레용·연필·갈필 이중 종이 요철·청각 Foley", labelEn: "Dry-Media Crayon · Pencil · Bristle & Foley" },
+  { id: "sixPhysicsBrushLab", labelKo: "6대 논문 독립 물리 브러시 개성 비교 랩", labelEn: "6-Paper Independent Physics Brush Lab" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -211,6 +225,10 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Feather size={15} aria-hidden="true" />;
     case "styleSpectrumGuard":
       return <Pipette size={15} aria-hidden="true" />;
+    case "dryMediaCrayonAudio":
+      return <Pencil size={15} aria-hidden="true" />;
+    case "sixPhysicsBrushLab":
+      return <FlaskConical size={15} aria-hidden="true" />;
   }
 }
 
@@ -279,6 +297,8 @@ export function Csp3dUpgradeHubPanel() {
           {active === "handPropAutoGrip" ? <LazyStudioHandPropAutoGripPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "tactileBrushTex" ? <LazyStudioTactileBrushTexturePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "styleSpectrumGuard" ? <LazyStudioStyleSpectrumGuardianPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "dryMediaCrayonAudio" ? <LazyStudioDryMediaCrayonAudioPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "sixPhysicsBrushLab" ? <LazyStudioSixPhysicsBrushLabPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

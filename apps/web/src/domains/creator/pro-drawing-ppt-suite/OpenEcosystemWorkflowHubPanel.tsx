@@ -1,4 +1,4 @@
-import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Focus, Gauge, Glasses, Globe, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Shield, ShieldCheck, SlidersHorizontal, Wand2, Workflow } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Focus, Gauge, Glasses, Globe, Layers, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Scale, Shield, ShieldCheck, SlidersHorizontal, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -133,6 +133,26 @@ const LazyStudioNativeWasmMigrationPanel = lazy(async () => {
   const m = await import("../native-wasm-migration-studio/StudioNativeWasmMigrationPanel");
   return { default: m.StudioNativeWasmMigrationPanel };
 });
+const LazyStudioHeterogeneousSiliconPanel = lazy(async () => {
+  await import("../heterogeneous-npu-runtime");
+  const m = await import("../heterogeneous-npu-runtime/StudioHeterogeneousSiliconPanel");
+  return { default: m.StudioHeterogeneousSiliconPanel };
+});
+const LazyStudioRustExpansionArchitectPanel = lazy(async () => {
+  await import("../rust-full-expansion-planner");
+  const m = await import("../rust-full-expansion-planner/StudioRustExpansionArchitectPanel");
+  return { default: m.StudioRustExpansionArchitectPanel };
+});
+const LazyStudioMulticoreVelloSchedulerPanel = lazy(async () => {
+  await import("../multicore-gpu-vello-scheduler");
+  const m = await import("../multicore-gpu-vello-scheduler/StudioMulticoreVelloSchedulerPanel");
+  return { default: m.StudioMulticoreVelloSchedulerPanel };
+});
+const LazyStudioRustHotspotPorterPanel = lazy(async () => {
+  await import("../rust-hotspot-parity-porter");
+  const m = await import("../rust-hotspot-parity-porter/StudioRustHotspotPorterPanel");
+  return { default: m.StudioRustHotspotPorterPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -160,7 +180,11 @@ type EcosystemTabId =
   | "spatialWearable"
   | "focusPanHaptic"
   | "adaptiveCalmGuard"
-  | "nativeWasmMigration";
+  | "nativeWasmMigration"
+  | "heterogeneousNpu"
+  | "rustFullExpansion"
+  | "multicoreVello"
+  | "rustHotspotPorter";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -209,6 +233,10 @@ const ECOSYSTEM_TABS: readonly {
   { id: "focusPanHaptic", labelKo: "작업 리듬 코치·확대 포커스 패닝·펜촉 햅틱", labelEn: "Work Rhythm · Focus Auto-Pan · Nib Haptics" },
   { id: "adaptiveCalmGuard", labelKo: "문맥 UI 단순화·스마트 스태킹·기기 메모리 가드", labelEn: "Adaptive Calm UI · Smart Stack · Memory Guard" },
   { id: "nativeWasmMigration", labelKo: "Rust WASM32·64 듀얼 타깃·WebGPU·1만 BVH 전환 제어판", labelEn: "Rust WASM32/64 Dual-Target · WebGPU · 10k BVH Migration" },
+  { id: "heterogeneousNpu", labelKo: "4대 실리콘(Apple·Intel·AMD·Galaxy) WebNN NPU 오케스트레이터", labelEn: "4-Silicon WebNN NPU · WebGPU f16 · SIMD Orchestrator" },
+  { id: "rustFullExpansion", labelKo: "76만 LOC 전면 Rust WASM64·WebGPU·NPU 전환 아키텍트", labelEn: "760K LOC Rust WASM64 · WebGPU · NPU Expansion Architect" },
+  { id: "multicoreVello", labelKo: "멀티코어 CPU·Vello 6단계 GPU·Chrome Preview 스케줄러", labelEn: "Multicore CPU · Vello 6-Stage GPU · Chrome Preview Scheduler" },
+  { id: "rustHotspotPorter", labelKo: "상위 5% 핫스팟 Rust WASM 전환·0-diff 동치 하네스", labelEn: "Top 5% Hotspot Rust WASM Porter · 0-Diff Parity Harness" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -265,6 +293,14 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <SlidersHorizontal size={15} aria-hidden="true" />;
     case "nativeWasmMigration":
       return <Cpu size={15} aria-hidden="true" />;
+    case "heterogeneousNpu":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "rustFullExpansion":
+      return <Layers size={15} aria-hidden="true" />;
+    case "multicoreVello":
+      return <Activity size={15} aria-hidden="true" />;
+    case "rustHotspotPorter":
+      return <Scale size={15} aria-hidden="true" />;
   }
 }
 
@@ -339,6 +375,10 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "focusPanHaptic" ? <LazyStudioFocusPanHapticPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "adaptiveCalmGuard" ? <LazyStudioAdaptiveCalmGuardPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "nativeWasmMigration" ? <LazyStudioNativeWasmMigrationPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "heterogeneousNpu" ? <LazyStudioHeterogeneousSiliconPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "rustFullExpansion" ? <LazyStudioRustExpansionArchitectPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "multicoreVello" ? <LazyStudioMulticoreVelloSchedulerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "rustHotspotPorter" ? <LazyStudioRustHotspotPorterPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
