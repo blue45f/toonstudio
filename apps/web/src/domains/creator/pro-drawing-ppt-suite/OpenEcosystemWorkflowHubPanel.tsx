@@ -1,4 +1,4 @@
-import { BookOpen, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { BookOpen, Calculator, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -69,6 +69,17 @@ const LazyStudioAiLatentStoryboardPanel = lazy(async () => {
   return { default: m.StudioAiLatentStoryboardPanel };
 });
 
+const LazyStudioCreatorMonetizationPanel = lazy(async () => {
+  await import("../creator-monetization-planner");
+  const m = await import("../creator-monetization-planner/StudioCreatorMonetizationPanel");
+  return { default: m.StudioCreatorMonetizationPanel };
+});
+const LazyStudioOfflineResiliencePanel = lazy(async () => {
+  await import("../offline-crdt-resilience");
+  const m = await import("../offline-crdt-resilience/StudioOfflineResiliencePanel");
+  return { default: m.StudioOfflineResiliencePanel };
+});
+
 type EcosystemTabId =
   | "workflowDag"
   | "openBridge"
@@ -82,7 +93,25 @@ type EcosystemTabId =
   | "styleShaderPack"
   | "episodeColorScript"
   | "webcodecsOpfs"
-  | "aiLatentConti";
+  | "aiLatentConti"
+  | "monetizationPlan"
+  | "offlineResilience";
+
+const CINEMA_ERGO_VISUAL_CARDS: readonly {
+  readonly id: string;
+  readonly src: string;
+  readonly titleKo: string;
+  readonly titleEn: string;
+}[] = [
+  { id: "balloonInk", src: "/assets/atelier/cinema-ergo/cinema-balloon-ink.webp", titleKo: "광학 말풍선·SFX 잉킹", titleEn: "Optical Balloon & SFX Inking" },
+  { id: "lensGolden", src: "/assets/atelier/cinema-ergo/cinema-lens-golden.webp", titleKo: "3D 시네마 렌즈·황금나선", titleEn: "Cinema Lenses & Golden Spiral" },
+  { id: "colorScript", src: "/assets/atelier/cinema-ergo/cinema-color-script.webp", titleKo: "4막 감정 컬러 스크립트", titleEn: "4-Act Color Script" },
+  { id: "pigmentSwatches", src: "/assets/atelier/cinema-ergo/cinema-pigment-swatches.webp", titleKo: "색상 변환 스와치 예시", titleEn: "Color Transform Swatches" },
+  { id: "ambidextrousDesk", src: "/assets/atelier/cinema-ergo/ergo-ambidextrous-desk.webp", titleKo: "왼손·양손 인체공학 데스크", titleEn: "Ambidextrous Studio Desk" },
+  { id: "localVault", src: "/assets/atelier/cinema-ergo/ergo-local-vault.webp", titleKo: "저랭크 학습 자료 보관함 예시", titleEn: "Low-Rank Learning Folio" },
+  { id: "chronometer120hz", src: "/assets/atelier/cinema-ergo/ergo-120hz-chronometer.webp", titleKo: "프레임 시간계 예시", titleEn: "Frame Timing Illustration" },
+  { id: "materialFolio", src: "/assets/atelier/cinema-ergo/ergo-material-folio.webp", titleKo: "한지·린넨·대리석 절차 재질", titleEn: "Seamless Material Folio" },
+];
 
 const ECOSYSTEM_TABS: readonly {
   readonly id: EcosystemTabId;
@@ -102,10 +131,16 @@ const ECOSYSTEM_TABS: readonly {
   { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
   { id: "webcodecsOpfs", labelKo: "코덱 지원 점검·희소 타일·OPFS 버전", labelEn: "Codec Support Probe · Sparse Tile · OPFS VCS" },
   { id: "aiLatentConti", labelKo: "색 변환 예제·대본 분석·브러시 추천", labelEn: "Color Example · Script Parser · Brush Suggestions" },
+  { id: "monetizationPlan", labelKo: "유료전환·굿즈·정산 가정 계산", labelEn: "Funnel · Goods · Settlement Estimates" },
+  { id: "offlineResilience", labelKo: "오프라인 병합·복구·잠금 예제", labelEn: "Offline Merge · Recovery · Lease Examples" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
   switch (id) {
+    case "monetizationPlan":
+      return <Calculator size={15} aria-hidden="true" />;
+    case "offlineResilience":
+      return <Database size={15} aria-hidden="true" />;
     case "workflowDag":
       return <Workflow size={15} aria-hidden="true" />;
     case "openBridge":
@@ -193,8 +228,36 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "episodeColorScript" ? <LazyStudioEpisodeColorScriptPanel /> : null}
           {active === "webcodecsOpfs" ? <LazyStudioWebcodecsOpfsPanel /> : null}
           {active === "aiLatentConti" ? <LazyStudioAiLatentStoryboardPanel /> : null}
+          {active === "monetizationPlan" ? <LazyStudioCreatorMonetizationPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "offlineResilience" ? <LazyStudioOfflineResiliencePanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
+      <details className="rounded-xl border border-line bg-panel p-2.5">
+        <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+          {isEn
+            ? `Cinematography, Ergonomics & Precision Atelier Cards (${CINEMA_ERGO_VISUAL_CARDS.length})`
+            : `시네마토그래피·인체공학·정밀 아틀리에 비주얼 카드 (${CINEMA_ERGO_VISUAL_CARDS.length}종)`}
+        </summary>
+        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {CINEMA_ERGO_VISUAL_CARDS.map((card) => (
+            <figure
+              key={card.id}
+              className="overflow-hidden rounded-lg border border-line bg-card"
+            >
+              <img
+                src={card.src}
+                alt={isEn ? card.titleEn : card.titleKo}
+                loading="lazy"
+                decoding="async"
+                className="aspect-square w-full object-cover outline-1 -outline-offset-1 outline-line"
+              />
+              <figcaption className="px-2 py-1.5 text-[11px] font-medium text-fg-2 [word-break:keep-all]">
+                {isEn ? card.titleEn : card.titleKo}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </details>
     </section>
   );
 }

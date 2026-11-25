@@ -1,4 +1,4 @@
-import { Brush, Hand, Layers, Move, ShieldCheck, Sun, Wand2, Watch } from "lucide-react";
+import { Brush, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, Wand2, Zap, Watch } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -50,6 +50,17 @@ const LazyKoreanLetteringPanel = lazy(async () => {
   return { default: m.StudioKoreanLetteringSfxPanel };
 });
 
+const LazyStudio3dLightingRigPanel = lazy(async () => {
+  await import("../studio-3d-lighting-rig");
+  const m = await import("../studio-3d-lighting-rig/Studio3dLightingRigPanel");
+  return { default: m.Studio3dLightingRigPanel };
+});
+const LazyStudioActionFxLabPanel = lazy(async () => {
+  await import("../action-fx-procedural-lab");
+  const m = await import("../action-fx-procedural-lab/StudioActionFxLabPanel");
+  return { default: m.StudioActionFxLabPanel };
+});
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -59,7 +70,9 @@ type Csp3dTabId =
   | "charlabCsp"
   | "p3ColorLight"
   | "neuralUpscale"
-  | "koreanLettering";
+  | "koreanLettering"
+  | "lightingRig3d"
+  | "actionFxLab";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -75,6 +88,8 @@ const CSP3D_TABS: readonly {
   { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
   { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
   { id: "koreanLettering", labelKo: "한글 조판·SVG 글자 배치 예제", labelEn: "Korean Typesetting · SVG Text Examples" },
+  { id: "lightingRig3d", labelKo: "하늘·조명·그림자 수치 예제", labelEn: "Sky · Lighting · Shadow Examples" },
+  { id: "actionFxLab", labelKo: "액션·로맨스 SVG 효과 예제", labelEn: "Action · Romance SVG Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -95,6 +110,10 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "lightingRig3d":
+      return <Sunrise size={15} aria-hidden="true" />;
+    case "actionFxLab":
+      return <Zap size={15} aria-hidden="true" />;
     case "puppet":
       return <Move size={15} aria-hidden="true" />;
     case "surface3d":
@@ -170,6 +189,8 @@ export function Csp3dUpgradeHubPanel() {
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
           {active === "koreanLettering" ? <LazyKoreanLetteringPanel /> : null}
+          {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "actionFxLab" ? <LazyStudioActionFxLabPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
