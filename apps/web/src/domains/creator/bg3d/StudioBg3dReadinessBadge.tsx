@@ -37,7 +37,7 @@ export function StudioBg3dReadinessBadge({
       : "border-line bg-card text-fg-2";
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex w-full min-w-0 flex-nowrap items-center justify-between gap-1.5 sm:w-auto sm:flex-wrap sm:justify-start">
       <span
         role="status"
         aria-live="polite"
@@ -48,7 +48,7 @@ export function StudioBg3dReadinessBadge({
         data-active-engine={readiness.activeEngine ?? "none"}
         title={bt(readiness.detailKo, readiness.detailEn)}
         className={studioBg3dClassNames(
-          "inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold tabular-nums",
+          "inline-flex min-h-8 min-w-0 max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold tabular-nums",
           toneClass,
         )}
       >
@@ -66,6 +66,7 @@ export function StudioBg3dReadinessBadge({
           <Cpu size={13} className="shrink-0" aria-hidden />
         )}
         <span
+          className="truncate"
           data-testid={
             exposeLegacyActiveBackendTestId ? "studio-bg3d-engine-active-backend" : undefined
           }
@@ -73,7 +74,7 @@ export function StudioBg3dReadinessBadge({
           {bt(readiness.badgeLabelKo, readiness.badgeLabelEn)}
         </span>
         {lowQualityActive && isReady ? (
-          <span className="rounded bg-panel/80 px-1.5 py-0.5 text-[0.65rem] font-semibold text-fg-2">
+          <span className="shrink-0 rounded bg-panel/80 px-1.5 py-0.5 text-xs font-semibold text-fg-2">
             {bt("저화질", "Low")}
           </span>
         ) : null}
@@ -88,10 +89,10 @@ export function StudioBg3dReadinessBadge({
           onClick={onReturnTo2d}
           className={studioBg3dClassNames(
             STUDIO_BG3D_CONTROL_BUTTON,
-            "min-h-11 min-w-11 border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg sm:px-3",
+            "min-h-11 min-w-11 shrink-0 whitespace-nowrap border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg sm:min-h-9 sm:px-3",
           )}
         >
-          <ArrowLeft size={14} aria-hidden />
+          <ArrowLeft size={14} className="shrink-0" aria-hidden />
           <span className="sm:hidden">{bt("원고로 복귀", "2D")}</span>
           <span className="hidden sm:inline">{bt("2D 원고로 복귀", "Return to 2D")}</span>
         </button>

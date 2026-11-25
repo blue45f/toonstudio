@@ -42,11 +42,11 @@
   [data-studio-bg3d-workspace] textarea { font-size: 1rem; }
 }
 @media (max-width: 1023px) {
-  /* 390px 모바일 헤더가 버튼 겹침·줄깨짐 없이 정돈된 2행 이내로 유지되도록 정밀 패딩을 준다. */
+  /* 390px 모바일 헤더를 1행(제목·간편/정밀·닫기) + 2행(상태·원고 복귀)의 2줄 이내 콤팩트 구조로 유지한다. */
   [data-studio-bg3d-workspace] [data-bg3d-workspace-header] {
     flex-wrap: wrap;
     gap: 0.375rem 0.5rem;
-    padding: 0.45rem 0.625rem;
+    padding: 0.375rem 0.625rem;
   }
   [data-studio-bg3d-workspace] [data-bg3d-workspace-header] :is(button, a) {
     white-space: nowrap;
@@ -86,6 +86,15 @@
   }
   [data-studio-bg3d-workspace] .scene-assistant :is([data-testid="studio-bg3d-engine-probing"], [data-testid="studio-bg3d-engine-unavailable"]) {
     padding: 0.75rem;
+  }
+  /* 모바일에서 중앙 복구·초기화 패널이 이미 보일 때 하단 시트의 중복 경고 아코디언을 숨겨 3중 중복을 줄인다. */
+  [data-studio-bg3d-workspace]
+    .scene-assistant:not([data-sheet-state="full"]):has([data-testid="studio-bg3d-engine-unavailable"])
+    [data-testid="studio-bg3d-assistant-error"][data-bg3d-assistant-viewport-dedupe="true"],
+  [data-studio-bg3d-workspace]
+    .scene-assistant:not([data-sheet-state="full"]):has([data-testid="studio-bg3d-engine-probing"], [data-testid="studio-bg3d-renderer-initializing"])
+    [data-testid="studio-bg3d-assistant-initializing"][data-bg3d-assistant-viewport-dedupe="true"] {
+    display: none;
   }
   [data-studio-bg3d-workspace] .scene-assistant__sheet-handle { min-height: 44px; }
   [data-studio-bg3d-workspace][data-studio-3d-keyboard-open="true"] .scene-assistant__panel {

@@ -138,6 +138,25 @@ describe("StudioSaveStatusBar", () => {
     expect(onRetrySave).toHaveBeenCalledTimes(1);
   });
 
+  it("모든 인라인 복구 버튼에 44px(min-h-11) 터치 영역을 기본 적용한다", () => {
+    const onRetrySave = vi.fn();
+    const onRecheckConnection = vi.fn();
+    render(
+      <StudioSaveStatusBar
+        status={status({ localDurable: false })}
+        connectivity={connectivity("server-unavailable")}
+        onRetrySave={onRetrySave}
+        onRecheckConnection={onRecheckConnection}
+      />,
+    );
+    const retryButton = screen.getByRole("button", { name: /다시 시도|Retry/ });
+    const recheckButton = screen.getByRole("button", { name: /연결 다시 확인|Check connection/ });
+    expect(retryButton.className).toContain("min-h-11");
+    expect(retryButton.className).not.toContain("min-h-8");
+    expect(recheckButton.className).toContain("min-h-11");
+    expect(recheckButton.className).not.toContain("min-h-8");
+  });
+
   it("shows minutes-ago after the just-now window", () => {
     const fiveMinutesAgo = Date.now() - 5 * 60_000;
     render(
