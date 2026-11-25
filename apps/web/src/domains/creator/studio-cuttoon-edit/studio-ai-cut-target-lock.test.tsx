@@ -12,10 +12,8 @@ import { STUDIO_AI_DEFAULT_SETTINGS } from "../ai/studio-ai-client";
 import { StudioAiCompositionPanel } from "../ai/StudioAiCompositionPanel";
 import type { El } from "../studio-element-model";
 import { StudioDialogueSuggestPanel } from "../StudioDialogueSuggestPanel";
-import {
-  runStudioApplyColorizeCandidate,
-  runStudioExecuteSuggestDialogueLines,
-} from "./studio-host-wave2-ai-assist-helpers";
+import { runStudioApplyColorizeCandidate } from "./studio-host-wave2-ai-assist-helpers";
+import { runStudioExecuteSuggestDialogueLines } from "./studio-host-ai-target-lock-helpers";
 
 const { suggestDialogueLinesMock, suggestSceneCompositionMock } = vi.hoisted(() => ({
   suggestDialogueLinesMock: vi.fn(),

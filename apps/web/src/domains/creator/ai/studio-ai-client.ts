@@ -502,8 +502,7 @@ export async function generateBackgroundImage(
 export async function colorizeLineArt(
   settings: StudioAiSettings,
   lineArtSrc: string,
-  prompt: string,
-  opts: { signal?: AbortSignal } = {}
+  prompt: string, opts: { signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   const trimmed = prompt.trim();
   if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.colorizePromptRequired", "채색 지시 프롬프트를 입력하세요.") };
@@ -568,8 +567,7 @@ export async function convertImageToAnimeStyle(
   settings: StudioAiSettings,
   imageSrc: string,
   extraDirection = "",
-  purpose: WebtoonStylePurposeId = "episode",
-  opts: { signal?: AbortSignal } = {}
+  purpose: WebtoonStylePurposeId = "episode", opts: { signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   if (!imageSrc) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.animeImageMissing", "변환할 이미지가 없습니다.") };
   if (!isStudioAiConfigured(settings)) {
@@ -1129,7 +1127,6 @@ export async function suggestDialogueLines(
     return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.") };
   }
   const { system, user } = buildDialogueSuggestPrompt(trimmed, opts.existingContext ?? "");
-  const effectiveTransport = opts.signal ? { ...transport, signal: opts.signal } : transport;
   const result = await postTextCompletion(settings, {
     task: "dialogue",
     // 구조화(JSON) 답변이라 길이 지시는 스키마 불변 문구로 붙는다(answer-tuning.ts 참고).
@@ -1140,7 +1137,7 @@ export async function suggestDialogueLines(
     temperature: opts.answerTuning ? answerTuningTemperature(0.8, opts.answerTuning) : 0.8, // 서로 다른 후보 여러 개가 목적 — 장면 구성 제안(0.7)보다 살짝 높여 다양성을 늘린다.
     maxTokens: opts.answerTuning ? answerTuningMaxTokens(500, opts.answerTuning) : 500,
     responseFormat: "json",
-  }, effectiveTransport);
+  }, opts.signal ? { ...transport, signal: opts.signal } : transport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
   if (!content) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.dialogueSuggestionMissing", "응답에서 대사 제안을 찾을 수 없습니다.") };

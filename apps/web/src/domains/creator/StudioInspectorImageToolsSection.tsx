@@ -66,7 +66,7 @@ export function StudioInspectorSelectedImageTools({
     inspectorInteractionPolicy, inspectorLayout, invertFilterMask, invertLayerMask, invertQuickMask,
     layerMaskBusy, layerMaskHardness, layerMaskPaintActive, layerMaskPaintMode, layerMaskRadius,
     layerMaskStrength, liquifyActive, liquifyBusy, liquifyMode, liquifyRadius, liquifyStrength,
-    onAutoColorPlanImageSize, onColorizeSelected, onQuickMaskTintColorChange, onQuickMaskTintOpacityChange,
+    onAutoColorPlanImageSize, onCancelColorize, onColorizeSelected, onQuickMaskTintColorChange, onQuickMaskTintOpacityChange,
     onTogglePixelMagneticLasso, openFeatureTutorial, openStudioFilter, openStudioLayerLift, patchEl,
     pixelBrushRadius, pixelBusy, pixelCombine, pixelMagneticLasso, pixelSel, pixelSelectionCanRedo,
     pixelSelectionCanUndo, pixelTool, polyLassoSession, puppetWarpActive, puppetWarpBusy, puppetWarpPins,
@@ -134,7 +134,7 @@ export function StudioInspectorSelectedImageTools({
                                 onPromptChange={setAiColorizePrompt}
                                 busy={aiColorizeBusy}
                                 error={aiColorizeError}
-                                onColorize={onColorizeSelected}
+                                onColorize={onColorizeSelected} onCancel={onCancelColorize}
                               />
                               <StudioAiColorizeExtras
                                 wiring={aiColorizeExtras}
@@ -145,19 +145,16 @@ export function StudioInspectorSelectedImageTools({
                                 selectedId={selected.id}
                                 selectedSrc={selected.src}
                               />
-                              <StudioOnnxColorizePanel
-                                key={selected.id}
+                              <StudioOnnxColorizePanel key={selected.id}
                                 src={selected.src}
                                 cloudConfigured={isStudioAiConfigured(aiSettings)}
                                 onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
                               />
-                              <StudioOnnxUpscalePanel
-                                key={selected.id}
+                              <StudioOnnxUpscalePanel key={selected.id}
                                 src={selected.src}
                                 onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
                               />
-                              <StudioOnnxAnimeStylePanel
-                                key={selected.id}
+                              <StudioOnnxAnimeStylePanel key={selected.id}
                                 src={selected.src}
                                 cloudConfigured={isStudioAiConfigured(aiSettings)}
                                 onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}

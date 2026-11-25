@@ -3,48 +3,36 @@ import type { MutableRefObject } from "react";
 import type { StudioAiAssistToolId } from "../ai/studio-ai-assist-ux";
 import { resolveColorizeCandidateApply } from "../ai/studio-ai-candidate-apply";
 import {
-  colorizeLineArt,
   generateStudioWriterRoomDraft,
   studioTextAiTransportForOperation,
-  suggestColorPalette,
-  suggestDialogueLines,
   type StudioAiSettings,
   type StudioTextAiProvenance,
   type StudioTextAiTransport,
 } from "../ai/studio-ai-client-lazy";
-import {
-  addColorizeCandidate,
-  type StudioAiColorizeCandidateSession,
-} from "../ai/studio-ai-colorize-candidates";
+import type { StudioAiColorizeCandidateSession } from "../ai/studio-ai-colorize-candidates";
 import type { StudioAiComicComposerHandoff } from "../ai/studio-ai-comic-composer-handoff";
-import {
-  captureStudioAiGeneratedAssetProvenance,
-  type StudioAiGeneratedAssetProvenance,
-} from "../ai/studio-ai-generated-asset-model";
-import {
-  studioImageAiProviderContext,
-  type SettleStudioAiOperationOptions,
-  type StudioAiObservableResult,
-  type StudioAiOperationProviderContext,
-  type StudioAiPendingOperationInput,
+import type { StudioAiGeneratedAssetProvenance } from "../ai/studio-ai-generated-asset-model";
+import type {
+  SettleStudioAiOperationOptions,
+  StudioAiObservableResult,
+  StudioAiOperationProviderContext,
+  StudioAiPendingOperationInput,
 } from "../ai/studio-ai-provenance-recorder";
 import {
   addReferenceAttachment,
   type StudioAiReferenceAttachment,
 } from "../ai/studio-ai-reference-attachments";
-import { collectDialogueItems } from "../lettering/studio-dialogue-batch";
-import {
-  joinDialogueContextLines,
-  type DialogueSuggestionCandidate,
-} from "../lettering/studio-dialogue-suggest";
+import type { DialogueSuggestionCandidate } from "../lettering/studio-dialogue-suggest";
 import { CANVAS_W } from "../studio-assets";
 import {
   buildStudioCharacterBiblePromptContext,
   type StudioCharacterBible,
 } from "../studio-character-bible";
-import type { El, FrameEl } from "../studio-element-model";
+import type { El, FrameEl, ImageEl } from "../studio-element-model";
+import { isEffectivelyLocked } from "../studio-layers";
+import { uid } from "../studio-id";
 import type { PageState } from "../studio-page-state";
-import type { PaletteSuggestion } from "../studio-palette-suggest";
+import type { StudioPublishAiProvenance } from "../studio-publish-preflight";
 import {
   layoutScenarioPanels,
   scenarioGenerationPreferencesFromHandoff,
@@ -208,84 +196,93 @@ export interface StudioAiDialogueLockedTarget {
   readonly originalText?: string;
 }
 
-export async function runStudioExecuteAiColorizeCandidate<TTicket>(input: {
+export function patchStudioImageElOnPage(input: {
+  readonly pageId: string;
+  readonly currentPageId: string;
   readonly elId: string;
-  readonly srcAtRequestTime: string;
-  readonly prompt: string;
-  readonly collaborationLocked: boolean;
-  readonly activePageId: string;
-  readonly aiSettings: StudioAiSettings;
-  readonly candidateSession: StudioAiColorizeCandidateSession;
-  readonly candidateProvenanceRef: MutableRefObject<Map<string, StudioAiGeneratedAssetProvenance>>;
-  readonly editorMountedRef: MutableRefObject<boolean>;
-  readonly abortRef?: MutableRefObject<AbortController | null>;
-  readonly captureMutationTicket: () => TTicket;
-  readonly canApplyMutation: (ticket: TTicket) => boolean;
-  readonly beginTrackedOperation: (
-    feature: "colorize",
-    operation: StudioTrackedAiOperationPayload,
-  ) => string;
-  readonly settleOperation: (operationId: string, result: StudioAiObservableResult) => void;
-  readonly setBusy: (busy: boolean) => void;
-  readonly setError: (error: string | null) => void;
-  readonly setSession: (session: StudioAiColorizeCandidateSession) => void;
-  readonly setTargetId: (targetId: string | null) => void;
-  readonly setTargetPageId?: (pageId: string | null) => void;
-}): Promise<void> {
-  if (input.collaborationLocked) return;
-  const mutationTicket = input.captureMutationTicket();
-  input.abortRef?.current?.abort();
-  const controller = new AbortController();
-  if (input.abortRef) input.abortRef.current = controller;
-  input.setBusy(true);
-  input.setError(null);
-  const provider = studioImageAiProviderContext(input.aiSettings);
-  const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "edited");
-  const operationId = input.beginTrackedOperation("colorize", {
-    kind: "image",
-    task: "colorize",
-    provider: provider.provider,
-    model: provider.model,
-    transport: provider.transport,
-    promptVersion: 1,
-    prompt: input.prompt,
-    target: { pageId: input.activePageId, elementId: input.elId },
-    references: [{ assetId: input.elId }],
-  });
-  const result = await colorizeLineArt(
-    input.aiSettings,
-    input.srcAtRequestTime,
-    input.prompt,
-    { signal: controller.signal },
+  readonly patch: { src: string; aiProvenance?: StudioPublishAiProvenance };
+  readonly pages: PageState[];
+  readonly patchEl: (id: string, patch: { src: string; aiProvenance?: StudioPublishAiProvenance }) => boolean;
+  readonly commitPages: (pages: PageState[]) => boolean;
+  readonly workAssetReplacementReason: (target: ImageEl, patch: Record<string, unknown>) => string | null;
+  readonly linked3dPassReplacementReason: (target: ImageEl, patch: Record<string, unknown>) => string | null;
+  readonly setError: (message: string) => void;
+}): boolean {
+  if (input.pageId === input.currentPageId) return input.patchEl(input.elId, input.patch);
+  const targetPage = input.pages.find((page) => page.id === input.pageId);
+  const target = targetPage?.elements.find((el) => el.id === input.elId);
+  if (!targetPage || !target || target.type !== "image") return false;
+  if (isEffectivelyLocked(target, targetPage.groups ?? [])) return false;
+  const workReason = input.workAssetReplacementReason(target, input.patch as Record<string, unknown>);
+  if (workReason) { input.setError(workReason); return false; }
+  const passReason = input.linked3dPassReplacementReason(target, input.patch as Record<string, unknown>);
+  if (passReason) { input.setError(passReason); return false; }
+  return input.commitPages(
+    input.pages.map((page) =>
+      page.id === input.pageId
+        ? { ...page, elements: page.elements.map((el) => (el.id === input.elId ? ({ ...el, ...input.patch } as El) : el)) }
+        : page,
+    ),
   );
-  if (input.abortRef?.current === controller) input.abortRef.current = null;
-  if (controller.signal.aborted || !input.canApplyMutation(mutationTicket)) {
-    if (input.editorMountedRef.current) input.setBusy(false);
+}
+
+export function insertStudioCrossPageCompositionNote(input: {
+  readonly pages: PageState[];
+  readonly targetPageId: string;
+  readonly text: string;
+  readonly color: string;
+  readonly commitPages: (pages: PageState[]) => boolean;
+}): void {
+  const targetPage = input.pages.find((page) => page.id === input.targetPageId);
+  if (!targetPage) return;
+  const noteEl: El = {
+    id: uid(), type: "text", text: input.text,
+    x: Math.round(CANVAS_W / 2) - 130, y: Math.round(targetPage.canvasH / 2) - 70,
+    width: 260, fontSize: 16, fill: input.color, rotation: 0,
+  };
+  input.commitPages(
+    input.pages.map((page) =>
+      page.id === input.targetPageId ? { ...page, elements: [...page.elements, noteEl] } : page,
+    ),
+  );
+}
+
+export function resolveStudioDialogueLockedTarget(
+  pages: readonly PageState[],
+  activePage: PageState,
+  selected: El | null | undefined,
+): StudioAiDialogueLockedTarget | null {
+  if (!selected || (selected.type !== "bubble" && selected.type !== "text")) return null;
+  const pageIndex = Math.max(0, pages.findIndex((page) => page.id === activePage.id));
+  return {
+    pageId: activePage.id,
+    elementId: selected.id,
+    pageLabel: activePage.name?.trim() || `${pageIndex + 1}컷`,
+    originalText: selected.text,
+  };
+}
+
+export function applyStudioLockedDialogueSuggestion(input: {
+  readonly pages: readonly PageState[];
+  readonly activePageId: string;
+  readonly selected: El | null | undefined;
+  readonly lockedTarget: StudioAiDialogueLockedTarget | null;
+  readonly candidate: DialogueSuggestionCandidate;
+  readonly patchDialogueText: (pageId: string, elementId: string, text: string) => void;
+  readonly setError: (message: string) => void;
+}): void {
+  if (input.lockedTarget) {
+    const targetPage = input.pages.find((page) => page.id === input.lockedTarget?.pageId);
+    const targetEl = targetPage?.elements.find((el) => el.id === input.lockedTarget?.elementId);
+    if (targetEl && (targetEl.type === "bubble" || targetEl.type === "text")) {
+      input.patchDialogueText(input.lockedTarget.pageId, input.lockedTarget.elementId, input.candidate.text);
+      return;
+    }
+    input.setError("원래 선택한 말풍선을 찾을 수 없어 현재 컷에 덮어쓰지 않았어요.");
     return;
   }
-  input.settleOperation(operationId, result);
-  if (!result.ok) {
-    input.setError(result.error);
-    input.setBusy(false);
-    return;
-  }
-  const candidateId = `candidate-${Date.now()}-${input.candidateSession.candidates.length}`;
-  const added = addColorizeCandidate(input.candidateSession, {
-    id: candidateId,
-    dataUrl: result.data.dataUrl,
-    prompt: input.prompt,
-    createdAt: Date.now(),
-  });
-  if (!added.ok) {
-    input.setError("채색 후보 상한(3장)에 닿았어요. 후보를 비운 뒤 다시 모아 주세요.");
-    input.setBusy(false);
-    return;
-  }
-  input.candidateProvenanceRef.current.set(candidateId, requestProvenance);
-  input.setSession(added.session);
-  input.setTargetId(input.elId);
-  input.setTargetPageId?.(input.activePageId);
-  input.setBusy(false);
+  if (!input.selected || (input.selected.type !== "bubble" && input.selected.type !== "text")) return;
+  input.patchDialogueText(input.activePageId, input.selected.id, input.candidate.text);
 }
 
 export function runStudioApplyColorizeCandidate(input: {
@@ -378,150 +375,4 @@ export function planStudioScenarioProductionImport(input: {
     nextCanvasH,
     characterDescription: input.handoff.characterDescription ?? "",
   };
-}
-
-export async function runStudioExecuteSuggestDialogueLines<TTicket = unknown>(input: {
-  readonly collaborationLocked: boolean;
-  readonly situationText: string;
-  readonly busy: boolean;
-  readonly includeContext: boolean;
-  readonly pages: PageState[];
-  readonly activePageId: string;
-  readonly aiSettings: StudioAiSettings;
-  readonly textAiTransport: StudioTextAiTransport;
-  readonly abortRef?: MutableRefObject<AbortController | null>;
-  readonly captureMutationTicket?: () => TTicket;
-  readonly canApplyMutation?: (ticket: TTicket) => boolean;
-  readonly lockedTarget?: StudioAiDialogueLockedTarget | null;
-  readonly setLockedTarget?: (target: StudioAiDialogueLockedTarget | null) => void;
-  readonly pendingProvider: () => StudioAiOperationProviderContext;
-  readonly beginTrackedOperation: (
-    feature: "dialogue",
-    operation: StudioTrackedAiOperationPayload,
-  ) => string;
-  readonly settleTextOperation: (
-    operationId: string,
-    result: StudioAiObservableResult,
-    textProvenance?: StudioTextAiProvenance,
-    aborted?: boolean,
-  ) => void;
-  readonly setBusy: (busy: boolean) => void;
-  readonly setError: (error: string | null) => void;
-  readonly setCandidates: (candidates: DialogueSuggestionCandidate[] | null) => void;
-}): Promise<void> {
-  if (input.collaborationLocked) return;
-  const situation = input.situationText.trim();
-  if (!situation || input.busy) return;
-  const mutationTicket = input.captureMutationTicket?.();
-  input.abortRef?.current?.abort();
-  const controller = new AbortController();
-  if (input.abortRef) input.abortRef.current = controller;
-  input.setLockedTarget?.(input.lockedTarget ?? null);
-  input.setBusy(true);
-  input.setError(null);
-  input.setCandidates(null);
-  const existingContext = input.includeContext
-    ? joinDialogueContextLines(
-        collectDialogueItems(input.pages)
-          .filter((item) => item.pageId === input.activePageId)
-          .map((item) => item.text),
-      )
-    : "";
-  const pendingProvider = input.pendingProvider();
-  const operationId = input.beginTrackedOperation("dialogue", {
-    kind: "text",
-    task: "dialogue",
-    provider: pendingProvider.provider,
-    model: pendingProvider.model,
-    transport: pendingProvider.transport,
-    promptVersion: 1,
-    prompt: JSON.stringify({ situation, existingContext }),
-    target: {
-      pageId: input.activePageId,
-      ...(input.lockedTarget ? { elementId: input.lockedTarget.elementId } : {}),
-    },
-    references: [],
-  });
-  try {
-    const result = await suggestDialogueLines(
-      input.aiSettings,
-      situation,
-      { existingContext, signal: controller.signal },
-      studioTextAiTransportForOperation(input.textAiTransport, operationId),
-    );
-    if (controller.signal.aborted) {
-      input.settleTextOperation(operationId, result, undefined, true);
-      return;
-    }
-    if (
-      mutationTicket !== undefined &&
-      input.canApplyMutation &&
-      !input.canApplyMutation(mutationTicket)
-    ) {
-      input.settleTextOperation(operationId, result, undefined, true);
-      return;
-    }
-    input.settleTextOperation(
-      operationId,
-      result,
-      result.ok ? result.data.textProvenance : undefined,
-    );
-    if (result.ok) input.setCandidates(result.data.candidates);
-    else input.setError(result.error);
-  } finally {
-    if (input.abortRef?.current === controller) input.abortRef.current = null;
-    input.setBusy(false);
-  }
-}
-
-export async function runStudioExecuteSuggestColorPalette(input: {
-  readonly collaborationLocked: boolean;
-  readonly moodText: string;
-  readonly busy: boolean;
-  readonly activePageId: string;
-  readonly aiSettings: StudioAiSettings;
-  readonly textAiTransport: StudioTextAiTransport;
-  readonly pendingProvider: () => StudioAiOperationProviderContext;
-  readonly beginTrackedOperation: (
-    feature: "palette",
-    operation: StudioTrackedAiOperationPayload,
-  ) => string;
-  readonly settleTextOperation: (
-    operationId: string,
-    result: StudioAiObservableResult,
-    textProvenance?: StudioTextAiProvenance,
-  ) => void;
-  readonly setBusy: (busy: boolean) => void;
-  readonly setError: (error: string | null) => void;
-  readonly setSuggestion: (suggestion: PaletteSuggestion | null) => void;
-  readonly clearSavedMessage: () => void;
-}): Promise<void> {
-  if (input.collaborationLocked) return;
-  const mood = input.moodText.trim();
-  if (!mood || input.busy) return;
-  input.setBusy(true);
-  input.setError(null);
-  input.setSuggestion(null);
-  input.clearSavedMessage();
-  const pendingProvider = input.pendingProvider();
-  const operationId = input.beginTrackedOperation("palette", {
-    kind: "text",
-    task: "palette",
-    provider: pendingProvider.provider,
-    model: pendingProvider.model,
-    transport: pendingProvider.transport,
-    promptVersion: 1,
-    prompt: mood,
-    target: { pageId: input.activePageId },
-    references: [],
-  });
-  const result = await suggestColorPalette(
-    input.aiSettings,
-    mood,
-    studioTextAiTransportForOperation(input.textAiTransport, operationId),
-  );
-  input.settleTextOperation(operationId, result, result.ok ? result.data.textProvenance : undefined);
-  if (result.ok) input.setSuggestion(result.data);
-  else input.setError(result.error);
-  input.setBusy(false);
 }

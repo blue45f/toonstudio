@@ -28,6 +28,7 @@ export function StudioAiColorizePanel({
   busy,
   error,
   onColorize,
+  onCancel,
 }: {
   configured: boolean;
   prompt: string;
@@ -35,6 +36,7 @@ export function StudioAiColorizePanel({
   busy: boolean;
   error: string | null;
   onColorize: () => void;
+  onCancel?: () => void;
 }) {
   const canRun = configured && !busy && prompt.trim().length > 0;
 
@@ -61,7 +63,7 @@ export function StudioAiColorizePanel({
             key={preset.id}
             type="button"
             title={preset.prompt}
-            disabled={!configured || busy}
+            disabled={busy}
             onClick={() => onPromptChange(preset.prompt)}
             className={cn(
               "rounded-full border border-line bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg-3",
@@ -85,7 +87,7 @@ export function StudioAiColorizePanel({
               <button
                 key={option.id}
                 type="button"
-                disabled={!configured || busy}
+                disabled={busy}
                 onClick={() => onPromptChange(compileColorizeHintPrompt(prompt, { [group.id]: option.id }))}
                 className={cn(
                   "rounded-full border border-line bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg-3",
@@ -106,7 +108,7 @@ export function StudioAiColorizePanel({
             <button
               key={palette.id}
               type="button"
-              disabled={!configured || busy}
+              disabled={busy}
               onClick={() => onPromptChange(applyColorizePalettePrompt(prompt, palette.id))}
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border border-line bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg-3",
@@ -133,23 +135,35 @@ export function StudioAiColorizePanel({
           if (e.key === "Enter" && canRun) onColorize();
         }}
         placeholder={translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "예: 파스텔톤 웹툰 셀 채색, 부드러운 그림자")}
-        disabled={!configured || busy}
+        disabled={busy}
         className="w-full rounded-lg border border-line bg-panel px-2.5 py-2 text-[0.68rem] text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent disabled:opacity-60"
       />
 
-      <button
-        type="button"
-        onClick={onColorize}
-        disabled={!canRun}
-        className={cn(
-          "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-on-accent",
-          STUDIO_EASE,
-          "hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
-        )}
-      >
-        {busy ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Wand2 size={14} aria-hidden />}
-        {busy ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "채색하는 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "선택 이미지 채색")}
-      </button>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onColorize}
+          disabled={!canRun}
+          className={cn(
+            "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-on-accent",
+            STUDIO_EASE,
+            "hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
+          )}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Wand2 size={14} aria-hidden />}
+          {busy ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "채색하는 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiColorizePanel", "ko", "선택 이미지 채색")}
+        </button>
+        {busy && onCancel ? (
+          <button
+            type="button"
+            data-testid="ai-colorize-cancel-btn"
+            onClick={onCancel}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-line bg-card px-3 py-2 text-xs font-bold text-fg-2 transition-colors hover:bg-raised"
+          >
+            취소
+          </button>
+        ) : null}
+      </div>
 
       {error ? (
         <AiRecoveryNotice
