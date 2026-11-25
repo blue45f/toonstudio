@@ -13,7 +13,7 @@ import {
   AlertTriangle, BookOpen, CheckCircle2, ChevronLeft, ChevronRight, Code2, Copy,
   FileText, Globe, RotateCcw, ShieldAlert,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import {
   AVAILABLE_RIGHTS_OPTIONS, LOGLINE_MAX_CHARS, LOGLINE_MIN_CHARS, PITCH_GENRE_METAS,
@@ -24,6 +24,10 @@ import {
   type PitchBibleReadinessAudit, type PitchEstimateRange, type PitchGenreId,
   type PitchReadinessGrade, type PitchSlideId, type SlideAuditStatus,
 } from "./global-ip-pitch-engine";
+
+import { OperationStatus } from "./OperationStatus";
+import { useExampleNotification } from "./use-example-notification";
+import { useClipboardOutput } from "./use-clipboard-output";
 
 export interface StudioGlobalIpPitchPanelProps {
   readonly initialGenreId?: PitchGenreId;
@@ -45,9 +49,9 @@ const BTN_ACTIVE = `${BTN_BASE} border border-accent bg-accent-soft px-3 py-2 te
 const INPUT_CLS = `min-h-11 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-fg placeholder:text-fg-3 transition-colors motion-reduce:transition-none hover:border-line-strong [word-break:keep-all] ${FOCUS_RING}`;
 const TEXTAREA_CLS = `min-h-20 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-xs leading-relaxed text-fg placeholder:text-fg-3 transition-colors motion-reduce:transition-none hover:border-line-strong [word-break:keep-all] ${FOCUS_RING}`;
 
-function parseNonNegNumber(raw: string, fallback: number): number {
+function parseNonNegNumber(raw: string, fallback: number, maximum = 1_000_000_000_000): number {
   const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.min(maximum, parsed) : fallback;
 }
 
 function scoreTone(score: number): string {
@@ -106,9 +110,9 @@ function TextField(props: {
     <div className="space-y-1">
       <label htmlFor={id} className="block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{label}</label>
       {multiline ? (
-        <textarea id={id} data-testid={testId} value={value} onChange={(e) => onChange(e.target.value)} className={TEXTAREA_CLS} />
+        <textarea maxLength={2048} id={id} data-testid={testId} value={value} onChange={(e) => onChange(e.target.value)} className={TEXTAREA_CLS} />
       ) : (
-        <input id={id} data-testid={testId} type="text" value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_CLS} />
+        <input maxLength={1024} id={id} data-testid={testId} type="text" value={value} onChange={(e) => onChange(e.target.value)} className={INPUT_CLS} />
       )}
     </div>
   );
@@ -185,7 +189,15 @@ export function StudioGlobalIpPitchPanel(props: StudioGlobalIpPitchPanelProps): 
   const markdownDoc = useMemo<string>(() => exportPitchBibleMarkdown(deck, audit, { locale }), [deck, audit, locale]);
   const jsonDoc = useMemo<string>(() => exportPitchBibleJson(deck, audit, { locale }), [deck, audit, locale]);
 
-  useEffect(() => { onDeckChange?.(deck, audit); }, [deck, audit, onDeckChange]);
+  const deckNotification = useExampleNotification<{ readonly deck: PitchBibleDeck; readonly audit: PitchBibleReadinessAudit }>(onDeckChange ? (value) => onDeckChange(value.deck, value.audit) : undefined);
+  const markdownNotification = useExampleNotification<{ readonly text: string; readonly deck: PitchBibleDeck }>(onExportMarkdown ? (value) => onExportMarkdown(value.text, value.deck) : undefined);
+  const jsonNotification = useExampleNotification<{ readonly text: string; readonly deck: PitchBibleDeck }>(onExportJson ? (value) => onExportJson(value.text, value.deck) : undefined);
+  const clipboard = useClipboardOutput();
+  const channels = [deckNotification, markdownNotification, jsonNotification, clipboard];
+  const busy = channels.some((channel) => channel.status === "pending");
+  const lastDeck = useRef<PitchBibleDeck | null>(null);
+  const { notify: notifyDeck } = deckNotification;
+  useEffect(() => { if (lastDeck.current !== deck) { lastDeck.current = deck; notifyDeck({ deck, audit }); } }, [deck, audit, notifyDeck]);
 
   const activeSlideIndex = Math.max(0, PITCH_SLIDE_IDS.indexOf(activeSlideId));
   const activeSlide = deck.slides[activeSlideIndex] ?? deck.slides[0];
@@ -212,24 +224,18 @@ export function StudioGlobalIpPitchPanel(props: StudioGlobalIpPitchPanelProps): 
     if (nextId) setActiveSlideId(nextId);
   };
 
-  const copySafely = (text: string): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(text).catch(() => undefined);
-    }
-  };
-
   const handleCopyMarkdown = (): void => {
-    onExportMarkdown?.(markdownDoc, deck);
-    copySafely(markdownDoc);
+    if (channels.some((channel) => channel.isPending())) return;
+    markdownNotification.notify({ text: markdownDoc, deck });
+    clipboard.notify(markdownDoc);
     setExportTab("markdown");
-    setStatusMessage(pick(`에디토리얼 Markdown 피칭 바이블(${markdownDoc.length.toLocaleString("ko-KR")}자)을 복사했습니다.`, `Copied Markdown pitch bible (${markdownDoc.length.toLocaleString("en-US")} chars).`));
   };
 
   const handleCopyJson = (): void => {
-    onExportJson?.(jsonDoc, deck);
-    copySafely(jsonDoc);
+    if (channels.some((channel) => channel.isPending())) return;
+    jsonNotification.notify({ text: jsonDoc, deck });
+    clipboard.notify(jsonDoc);
     setExportTab("json");
-    setStatusMessage(pick(`JSON 피칭 패키지(${jsonDoc.length.toLocaleString("ko-KR")}자)를 복사했습니다.`, `Copied JSON pitch package (${jsonDoc.length.toLocaleString("en-US")} chars).`));
   };
 
   const toggleAvailableRight = (rightLabel: string): void => {
@@ -359,15 +365,15 @@ export function StudioGlobalIpPitchPanel(props: StudioGlobalIpPitchPanelProps): 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <label htmlFor={`${uid}-ep-${block.id}`} className="block text-[11px] font-medium text-fg-3">{pick("부작 수", "Episodes")}</label>
-                    <input id={`${uid}-ep-${block.id}`} data-testid={`pitch-arc-episodes-${idx}`} type="number" min={1} max={24} value={block.episodeCount} onChange={(e) => setInput((p) => ({ ...p, seasonArc: { ...p.seasonArc, blocks: p.seasonArc.blocks.map((b) => (b.id === block.id ? { ...b, episodeCount: Math.round(parseNonNegNumber(e.target.value, b.episodeCount)) } : b)) } }))} className={`${INPUT_CLS} tabular-nums`} />
+                    <input id={`${uid}-ep-${block.id}`} data-testid={`pitch-arc-episodes-${idx}`} type="number" min={1} max={24} value={block.episodeCount} onChange={(e) => setInput((p) => ({ ...p, seasonArc: { ...p.seasonArc, blocks: p.seasonArc.blocks.map((b) => (b.id === block.id ? { ...b, episodeCount: Math.round(parseNonNegNumber(e.target.value, b.episodeCount, 24)) } : b)) } }))} className={`${INPUT_CLS} tabular-nums`} />
                   </div>
                   <div className="space-y-1">
                     <label htmlFor={`${uid}-cs-${block.id}`} className="block text-[11px] font-medium text-fg-3">{pick("시작 화", "Start Ch")}</label>
-                    <input id={`${uid}-cs-${block.id}`} data-testid={`pitch-arc-start-${idx}`} type="number" min={1} value={block.chapterStart} onChange={(e) => setInput((p) => ({ ...p, seasonArc: { ...p.seasonArc, blocks: p.seasonArc.blocks.map((b) => (b.id === block.id ? { ...b, chapterStart: Math.round(parseNonNegNumber(e.target.value, b.chapterStart)) } : b)) } }))} className={`${INPUT_CLS} tabular-nums`} />
+                    <input id={`${uid}-cs-${block.id}`} data-testid={`pitch-arc-start-${idx}`} type="number" min={1} value={block.chapterStart} onChange={(e) => setInput((p) => ({ ...p, seasonArc: { ...p.seasonArc, blocks: p.seasonArc.blocks.map((b) => (b.id === block.id ? { ...b, chapterStart: Math.round(parseNonNegNumber(e.target.value, b.chapterStart, 10000)) } : b)) } }))} className={`${INPUT_CLS} tabular-nums`} />
                   </div>
                   <div className="space-y-1">
                     <label htmlFor={`${uid}-ce-${block.id}`} className="block text-[11px] font-medium text-fg-3">{pick("종료 화", "End Ch")}</label>
-                    <input id={`${uid}-ce-${block.id}`} data-testid={`pitch-arc-end-${idx}`} type="number" min={1} value={block.chapterEnd} onChange={(e) => setInput((p) => ({ ...p, seasonArc: { ...p.seasonArc, blocks: p.seasonArc.blocks.map((b) => (b.id === block.id ? { ...b, chapterEnd: Math.round(parseNonNegNumber(e.target.value, b.chapterEnd)) } : b)) } }))} className={`${INPUT_CLS} tabular-nums`} />
+                    <input id={`${uid}-ce-${block.id}`} data-testid={`pitch-arc-end-${idx}`} type="number" min={1} value={block.chapterEnd} onChange={(e) => setInput((p) => ({ ...p, seasonArc: { ...p.seasonArc, blocks: p.seasonArc.blocks.map((b) => (b.id === block.id ? { ...b, chapterEnd: Math.round(parseNonNegNumber(e.target.value, b.chapterEnd, 10000)) } : b)) } }))} className={`${INPUT_CLS} tabular-nums`} />
                   </div>
                 </div>
                 <TextField id={`${uid}-as-${block.id}`} testId={`pitch-arc-summary-${idx}`} label={pick("핵심 사건", "Core Beat")} value={block.summaryKo} onChange={(v) => setInput((p) => ({ ...p, seasonArc: { ...p.seasonArc, blocks: p.seasonArc.blocks.map((b) => (b.id === block.id ? { ...b, summaryKo: v } : b)) } }))} />
@@ -405,7 +411,7 @@ export function StudioGlobalIpPitchPanel(props: StudioGlobalIpPitchPanelProps): 
             <TextField
               id={`${uid}-ott`} testId="pitch-target-ott" label={pick("적합 OTT·플랫폼 채널 (쉼표 구분)", "OTT & Platform Channels (comma-separated)")}
               value={input.targetPositioning.ottChannels.join(", ")}
-              onChange={(v) => setInput((p) => ({ ...p, targetPositioning: { ...p.targetPositioning, ottChannels: v.split(",").map((s) => s.trim()).filter((s) => s.length > 0) } }))}
+              onChange={(v) => { const channels = v.split(",").map((item) => item.trim()).filter((item) => item.length > 0); if (channels.length > 64) { setStatusMessage(pick("채널 입력 상한은 64개입니다. 기존 입력을 유지합니다.", "The channel limit is 64. Existing input is preserved.")); return; } setInput((previous) => ({ ...previous, targetPositioning: { ...previous.targetPositioning, ottChannels: channels } })); }}
             />
             <EstimateRangeEditor
               idPrefix={`${uid}-target-est`} testPrefix="pitch-target-estimate"
@@ -510,6 +516,12 @@ export function StudioGlobalIpPitchPanel(props: StudioGlobalIpPitchPanelProps): 
 
   return (
     <section data-testid="studio-global-ip-pitch-panel" className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg [word-break:keep-all] ${className ?? ""}`}>
+      <OperationStatus channel="deck" {...deckNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="markdown" {...markdownNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="json" {...jsonNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="clipboard" {...clipboard} pending={busy} isEn={isEn} />
+      <p className="text-xs text-fg-2">{pick("입력 가정으로 작성하는 CPU 기획 예제입니다. 장수·화수·문장 길이는 예제 목표이며 공식 제출 규격이 아닙니다. IP 권리·시장 실측·법률·실제 계약·제출·저장·자동 반영은 확인하거나 수행하지 않습니다.", "CPU planning example using entered assumptions. Slide, episode and text counts are example targets, not official submission rules. No IP rights, measured market data, legal status, actual contracts, submission, storage or automatic apply are verified or performed.")}</p>
+      <fieldset disabled={busy} className="contents">
       <header className="flex flex-col gap-3 border-b border-line pb-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -663,11 +675,11 @@ export function StudioGlobalIpPitchPanel(props: StudioGlobalIpPitchPanelProps): 
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" data-testid="pitch-copy-markdown-btn" onClick={handleCopyMarkdown} className={BTN_SOLID}>
+            <button type="button" data-testid="pitch-copy-markdown-btn" disabled={busy} onClick={handleCopyMarkdown} className={BTN_SOLID}>
               <Copy className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{pick("Markdown 복사", "Copy Markdown")}</span>
             </button>
-            <button type="button" data-testid="pitch-copy-json-btn" onClick={handleCopyJson} className={BTN_OUTLINE}>
+            <button type="button" data-testid="pitch-copy-json-btn" disabled={busy} onClick={handleCopyJson} className={BTN_OUTLINE}>
               <Copy className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{pick("JSON 복사", "Copy JSON")}</span>
             </button>
@@ -682,6 +694,7 @@ export function StudioGlobalIpPitchPanel(props: StudioGlobalIpPitchPanelProps): 
           </pre>
         ) : null}
       </div>
+      </fieldset>
     </section>
   );
 }
