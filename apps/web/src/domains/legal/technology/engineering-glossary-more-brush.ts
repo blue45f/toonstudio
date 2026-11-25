@@ -344,4 +344,42 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
     chapters: ["performance-budget", "performance"],
     atlasIds: ["undo-history-byte-budget"],
   },
+  {
+    id: "blue-noise-moire-free",
+    category: "brush",
+    term: t("블루노이즈 무모아레 웹툰 스크린톤", "Blue-noise moire-free webtoon screentone"),
+    definition: t(
+      "규칙적인 격자 대신 고르게 흩어진 고주파 입자(블루노이즈)와 정수 픽셀 스냅·각도 검사를 써서, 확대·축소나 모바일 화면에서 물결 무늬(모아레)가 깨지지 않게 막는 톤 기법입니다.",
+      "A screentone approach pairing evenly scattered high-frequency blue-noise patterns with integer pixel snapping and angle checks to prevent wavy moire interference on zoom or mobile screens.",
+    ),
+    analogy: t(
+      "방충망 두 장을 겹쳐 보면 이상한 물결 무늬(모아레)가 생기지만, 고운 모래를 고르게 뿌린 종이는 겹쳐도 물결이 안 생깁니다. 규칙 간격을 깨뜨려 눈을 편하게 만드는 원리입니다.",
+      "Overlapping two window screens creates distracting wavy bands (moire), whereas evenly dusted sand never does. Breaking strict grid alignment keeps tone shading clean at any zoom.",
+    ),
+    inToonstudio: t(
+      "screentone/screentone-moire-guard.ts 가 겹톤 각도 차(권장 30°·위험 15° 미만)와 120%·150% 분수 DPR 의 정수 디바이스 픽셀 스냅을 검사하고, 비주기 모래망점(sand)을 지원합니다. studio-highbit-dither.ts 의 R2 블루노이즈 디더는 구현·시험돼 있으나 내보내기 경로에는 아직 연결 전입니다.",
+      "screentone/screentone-moire-guard.ts checks stacked tone angle separation (30 deg ideal, under 15 deg high risk), snaps pitches to integer device pixels at fractional DPR (120%/150%) and pairs with non-periodic sand tones. R2 blue-noise dithering in studio-highbit-dither.ts is implemented and tested but not yet wired into export.",
+    ),
+    chapters: ["brush-engine", "brush-pipeline"],
+    atlasIds: ["drawing-quality-gates"],
+  },
+  {
+    id: "dirty-brush-pigment-pickup",
+    category: "brush",
+    term: t("더티 브러시 바닥색 픽업 · 연속 리본", "Dirty-brush pigment pickup & continuous ribbon"),
+    definition: t(
+      "붓이 지나간 자리의 바닥 물감을 붓끝에 묻혀(픽업) 현재 색과 섞어 끌고 가고, 둥근 도장 대신 이어진 리본 메시로 칠해 빠른 획에서도 구슬 끊김을 없애는 회화 브러시 기법입니다.",
+      "A painting brush technique that picks up underlying canvas pigment onto the bristles to blend with fresh paint while sweeping a continuous ribbon mesh so fast strokes never bead into dots.",
+    ),
+    analogy: t(
+      "물감이 마르기 전 캔버스 위를 붓으로 문지르면 아랫색이 붓털에 묻어 자연스럽게 꼬리를 끌고, 붓을 빨리 그어도 도장이 뚝뚝 찍히지 않고 리본처럼 매끈하게 이어지는 감각입니다.",
+      "Dragging a brush across wet paint pulls the color underneath into a trailing tail, and sweeping fast leaves a smooth ribbon of bristles instead of a dotted chain of stamps.",
+    ),
+    inToonstudio: t(
+      "brush/studio-wet-mix.ts 와 studio-oil-wet-into-wet.ts 가 도장마다 바닥색을 샘플링해 붓 웰(well)에 묻히고(pickup), 붓 로드 소모(loadDepletion)와 38·7·10밴드 쿠벨카-뭉크 분광 혼색을 적용합니다. 유화·수채 캐리어(studio-oil-ribbon-carrier.ts, studio-wet-ribbon-carrier.ts)는 획을 연속 리본 경로로 만듭니다.",
+      "brush/studio-wet-mix.ts and studio-oil-wet-into-wet.ts sample canvas pixels into a brush well (pickup), deplete fresh paint along travel (loadDepletion) and blend with 38-, 7- or 10-band Kubelka-Munk spectral math. The oil and wet carriers (studio-oil-ribbon-carrier.ts, studio-wet-ribbon-carrier.ts) turn strokes into continuous ribbon geometry.",
+    ),
+    chapters: ["brush-engine", "brush-pipeline"],
+    atlasIds: ["spectral-color-mixing-mixbox", "material-physics-paper-tooth"],
+  },
 ];

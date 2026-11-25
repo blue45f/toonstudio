@@ -251,4 +251,23 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
     chapters: ["on-device-translation", "transformers-js"],
     atlasIds: ["transformers-js-translation"],
   },
+  {
+    id: "webnn-mltensor-zero-copy",
+    category: "ai",
+    term: t("WebNN MLTensor 제로카피 NPU·TPU 추론", "WebNN MLTensor zero-copy NPU/TPU inference"),
+    definition: t(
+      "브라우저의 WebNN 표준 텐서(MLTensor)로 GPU 와 기기 내 AI 전용 칩(NPU·TPU)이 메모리를 CPU 로 복사하지 않고 바로 넘겨 추론하는 실행 경로입니다.",
+      "A WebNN execution path using MLTensor so the GPU and on-device AI chip (NPU or TPU) share tensor memory directly without copying buffers back through the CPU.",
+    ),
+    analogy: t(
+      "음식을 접시에 옮겨 담지 않고 냄비 채로 다음 조리대에 건네는 것과 같습니다. 그림 데이터를 CPU 로 되읽어 다시 포장하는 왕복 시간을 줄여 AI 필터와 열 부담을 낮춥니다.",
+      "Like sliding a pot straight to the next counter instead of ladling it into bowls and back: skipping CPU staging copies cuts latency and heat during AI filters.",
+    ),
+    inToonstudio: t(
+      "toon-silicon-engine.ts 가 Google Tensor TPU·Snapdragon·Dimensity·Exynos·Apple ANE·Intel·AMD·NVIDIA 8대 실리콘의 WebNN/MLTensor 배정표를 만들고, webnn-npu-thermal-engine.ts 가 연산 융합과 PID 열 제어 계획을 계산합니다. 현재는 아키텍처·해석 모델 단계이며, 미지원 브라우저에서는 WebGPU·WASM 으로 폴백합니다.",
+      "toon-silicon-engine.ts models WebNN/MLTensor dispatch across eight silicon families (Tensor TPU, Snapdragon, Dimensity, Exynos, Apple ANE, Intel, AMD and NVIDIA), while webnn-npu-thermal-engine.ts plans operator fusion and PID thermal control. Today these are deterministic architecture models; unsupported browsers fall back to WebGPU or WASM.",
+    ),
+    chapters: ["on-device-inference", "browser-local-compute"],
+    atlasIds: ["onnx-runtime-web-inference", "capability-detection-registry-27"],
+  },
 ];
