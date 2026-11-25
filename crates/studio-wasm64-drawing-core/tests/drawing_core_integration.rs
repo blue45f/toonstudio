@@ -324,7 +324,6 @@ fn wasm_ffi_tactile_bristle_and_tile_compositor_match_safe_kernels_and_guard_bou
     let (w, h) = (32u32, 32u32);
     let rgba_len = (w * h * 4) as usize;
     let height_len = (w * h) as usize;
-    let height_bytes = height_len * std::mem::size_of::<f32>();
 
     let color = [68u8, 112, 184, 215];
     let params_arr: [f32; TACTILE_BRUSH_FFI_PARAM_COUNT] = [
@@ -381,20 +380,15 @@ fn wasm_ffi_tactile_bristle_and_tile_compositor_match_safe_kernels_and_guard_bou
     )
     .expect("safe composite");
 
-    let rgba_ptr = wasm_alloc(rgba_len);
-    let height_ptr = wasm_alloc(height_bytes) as *mut f32;
-    let dst_ptr = wasm_alloc(rgba_len);
-    assert!(!rgba_ptr.is_null() && !height_ptr.is_null() && !dst_ptr.is_null());
+    let mut rgba = vec![0u8; rgba_len];
+    let mut heights = vec![0.0_f32; height_len];
+    let mut dst = vec![96u8; rgba_len];
 
-    // SAFETY: `wasm_alloc`으로 할당한 16바이트 정렬 비중첩 버퍼로 신규 C-ABI 경계를 검증한다.
-    unsafe {
-        std::ptr::write_bytes(rgba_ptr, 0, rgba_len);
-        std::ptr::write_bytes(height_ptr as *mut u8, 0, height_bytes);
-        std::ptr::write_bytes(dst_ptr, 96, rgba_len);
-
-        let stamp_rc = wasm_stamp_tactile_bristle(
-            rgba_ptr,
-            height_ptr,
+    // SAFETY: 두 벡터는 각각 32×32 픽셀에 필요한 길이를 가지며 매개변수 배열과 겹치지 않는다.
+    let stamp_rc = unsafe {
+        wasm_stamp_tactile_bristle(
+            rgba.as_mut_ptr(),
+            heights.as_mut_ptr(),
             w,
             h,
             PaperKind::ColdPress as u32,
@@ -402,20 +396,17 @@ fn wasm_ffi_tactile_bristle_and_tile_compositor_match_safe_kernels_and_guard_bou
             9,
             2026,
             params_arr.as_ptr(),
-        );
-        assert_eq!(stamp_rc, expected_stats.touched_pixels as i32);
-        assert_eq!(
-            std::slice::from_raw_parts(rgba_ptr, rgba_len),
-            expected_rgba.as_slice()
-        );
-        assert_eq!(
-            std::slice::from_raw_parts(height_ptr, height_len),
-            expected_h.as_slice()
-        );
+        )
+    };
+    assert_eq!(stamp_rc, expected_stats.touched_pixels as i32);
+    assert_eq!(rgba, expected_rgba);
+    assert_eq!(heights, expected_h);
 
-        let comp_rc = wasm_composite_tile_dirty_rect(
-            dst_ptr,
-            rgba_ptr,
+    // SAFETY: 입력과 출력은 RGBA 타일 한 장씩을 보관하는 별개 벡터다.
+    let comp_rc = unsafe {
+        wasm_composite_tile_dirty_rect(
+            dst.as_mut_ptr(),
+            rgba.as_ptr(),
             w,
             h,
             dirty.x,
@@ -424,14 +415,17 @@ fn wasm_ffi_tactile_bristle_and_tile_compositor_match_safe_kernels_and_guard_bou
             dirty.height,
             TileBlendMode::Overlay as u32,
             200,
-        );
-        assert_eq!(comp_rc, expected_comp_px as i32);
-        assert_eq!(
-            std::slice::from_raw_parts(dst_ptr, rgba_len),
-            comp_dst.as_slice()
-        );
+        )
+    };
+    assert_eq!(comp_rc, expected_comp_px as i32);
+    assert_eq!(dst, comp_dst);
 
-        // 잘못된 포인터·중첩·열거 코드·투명도 범위 초과 시 음수 오류 코드 반환 검증
+    let rgba_ptr = rgba.as_mut_ptr();
+    let height_ptr = heights.as_mut_ptr();
+    let dst_ptr = dst.as_mut_ptr();
+
+    // SAFETY: 각 버퍼는 이 블록 끝까지 살아 있다. FFI는 null·중첩·범위 오류를 접근 전에 거부한다.
+    unsafe {
         assert!(
             wasm_stamp_tactile_bristle(
                 std::ptr::null_mut(),
@@ -452,9 +446,5 @@ fn wasm_ffi_tactile_bristle_and_tile_compositor_match_safe_kernels_and_guard_bou
         assert!(wasm_composite_tile_dirty_rect(dst_ptr, dst_ptr, w, h, 0, 0, 4, 4, 0, 255) < 0);
         assert!(wasm_composite_tile_dirty_rect(dst_ptr, rgba_ptr, w, h, 0, 0, 4, 4, 99, 255) < 0);
         assert!(wasm_composite_tile_dirty_rect(dst_ptr, rgba_ptr, w, h, 0, 0, 4, 4, 0, 256) < 0);
-
-        wasm_free(rgba_ptr, rgba_len);
-        wasm_free(height_ptr as *mut u8, height_bytes);
-        wasm_free(dst_ptr, rgba_len);
     }
 }
