@@ -185,6 +185,7 @@ function startMasterColorize(collectCandidate = false) {
   const editorScope = { ...ticket, mounted: true, aborted: false, locked: false };
   const patchMaster = vi.fn((id: string, patch: { src: string }) => {
     master = withMasterElements(master, master.elements.map((el) => el.id === id ? { ...el, ...patch } : el));
+    editorScope.documentGeneration += 1;
     return true;
   });
   const context = {
@@ -193,6 +194,7 @@ function startMasterColorize(collectCandidate = false) {
     canApplyStudioMutation: (request: typeof ticket) => isStudioEditorMutationContinuationAllowed(request, editorScope),
   };
   const target: StudioColorizeTarget = { surface: context.requestSurface, elementId: image.id, src: image.src, ticket };
+  let candidateTarget = target;
   const candidates = {
     session: createColorizeCandidateSession(),
     provenanceById: new Map<string, StudioAiGeneratedAssetProvenance>(),
@@ -201,8 +203,8 @@ function startMasterColorize(collectCandidate = false) {
   };
   const response = Promise.withResolvers<Awaited<ReturnType<typeof colorizeLineArt>>>();
   vi.mocked(colorizeLineArt).mockReturnValueOnce(response.promise);
-  const pending = createStudioImageAiExecutors(context)
-    .executeAiColorize(target, "야간 채색", new AbortController(), collectCandidate ? candidates : undefined);
+  const executors = createStudioImageAiExecutors(context);
+  const pending = executors.executeAiColorize(target, "야간 채색", new AbortController(), collectCandidate ? candidates : undefined);
   return {
     context, candidates, image, masterMode, moveToNextPage: initial.moveToNextPage, patchMaster, target,
     replaceProject: () => { editorScope.documentGeneration += 1; },
@@ -213,15 +215,25 @@ function startMasterColorize(collectCandidate = false) {
       response.resolve({ ok: true, data: { dataUrl: generatedImage } });
       await pending;
     },
-    applyCandidate() {
+    async collectAnotherCandidate(dataUrl: string) {
       const candidateSession = candidates.setSession.mock.lastCall?.[0];
-      if (!candidateSession?.selectedId) throw new Error("테스트에서 적용할 채색 후보를 만들지 못했습니다.");
-      const selection = selectColorizeCandidate(candidateSession, candidateSession.selectedId);
+      if (!candidateSession) throw new Error("테스트에서 첫 채색 후보를 만들지 못했습니다.");
+      vi.mocked(colorizeLineArt).mockResolvedValueOnce({ ok: true, data: { dataUrl } });
+      await executors.executeAiColorize(target, "두 번째 채색", new AbortController(), { ...candidates, session: candidateSession });
+    },
+    applyCandidate(index = 0) {
+      const candidateSession = candidates.setSession.mock.lastCall?.[0];
+      const chosen = candidateSession?.candidates[index];
+      if (!candidateSession || !chosen) throw new Error("테스트에서 적용할 채색 후보를 만들지 못했습니다.");
+      const selection = selectColorizeCandidate(candidateSession, chosen.id);
       if (!selection.ok) throw new Error("테스트에서 채색 후보를 선택하지 못했습니다.");
-      applyStudioImageAiCandidate(target, context, {
+      const appliedTarget = applyStudioImageAiCandidate(candidateTarget, context, {
         candidateSession: selection.session, candidateProvenanceRef: { current: candidates.provenanceById },
         canApplyMutation: context.canApplyStudioMutation, setError: context.setFailure,
+        captureMutationTicket: () => ({ ...ticket, documentGeneration: editorScope.documentGeneration }),
       });
+      if (appliedTarget) candidateTarget = appliedTarget;
+      return appliedTarget;
     },
   };
 }
@@ -259,6 +271,46 @@ describe("마스터 이미지 AI 채색 권위", () => {
       src: generatedImage, aiProvenance: expect.objectContaining({ action: "edited" }),
     });
     expect(request.context.patchImageElOnPage).not.toHaveBeenCalled();
+  });
+
+  it("같은 세션에서 첫 적용으로 원고 세대가 바뀐 뒤에도 다른 후보를 연달아 적용한다", async () => {
+    const request = startMasterColorize(true);
+    const secondImage = "data:image/png;base64,c2Vjb25k";
+    await request.finish();
+    await request.collectAnotherCandidate(secondImage);
+    const first = request.applyCandidate();
+    request.applyCandidate(1);
+
+    expect(request.patchMaster.mock.calls.map(([, patch]) => patch.src)).toEqual([generatedImage, secondImage]);
+    expect(request.readMaster().elements[0]).toMatchObject({ id: request.image.id, src: secondImage });
+    expect(first).toMatchObject({
+      src: request.image.src, lastAppliedSrc: generatedImage,
+      ticket: { documentGeneration: ticket.documentGeneration + 1 },
+    });
+    expect(request.context.setFailure).not.toHaveBeenCalled();
+  });
+
+  it("첫 적용 뒤 같은 ID의 원본이 외부에서 교체되면 둘째 후보로 덮지 않는다", async () => {
+    const request = startMasterColorize(true);
+    await request.finish();
+    await request.collectAnotherCandidate("data:image/png;base64,c2Vjb25k");
+    request.applyCandidate();
+    request.replaceMaster([{ ...request.image, src: "replacement-outside-session" }]);
+    expect(request.applyCandidate(1)).toBeUndefined();
+
+    expect(request.patchMaster).toHaveBeenCalledTimes(1);
+    expect(request.readMaster().elements[0]).toMatchObject({ src: "replacement-outside-session" });
+    expect(request.context.setFailure).toHaveBeenCalledWith("채색 후보를 적용할 원본 이미지 레이어를 찾지 못했어요.");
+  });
+
+  it("커밋 실패 후에는 원래 소스를 기준으로 다시 적용할 수 있다", async () => {
+    const request = startMasterColorize(true);
+    await request.finish();
+    request.patchMaster.mockReturnValueOnce(false);
+    expect(request.applyCandidate()).toBeUndefined();
+    expect(request.readMaster().elements[0]).toMatchObject({ src: request.image.src });
+    request.applyCandidate();
+    expect(request.readMaster().elements[0]).toMatchObject({ src: generatedImage });
   });
 
   it.each(["원본 교체", "마스터 종료", "레이어 잠금", "원고 교체"])("%s 뒤 늦은 채색은 같은 ID를 덮지 않는다", async (change) => {

@@ -14983,10 +14983,11 @@ const puppetWarpArmed =
     const target = aiColorizeCandidateTarget;
     if (!target || !canApplyStudioMutation(target.ticket)) return;
     const engine = await import("./studio-cuttoon-edit/studio-image-ai-executors");
-    engine.applyStudioImageAiCandidate(target, imageAiSurfaceAccess, {
+    const appliedTarget = engine.applyStudioImageAiCandidate(target, imageAiSurfaceAccess, {
       candidateSession: aiColorizeCandidateSession, candidateProvenanceRef: aiColorizeCandidateProvenanceRef,
-      setError: setAiColorizeError, canApplyMutation: canApplyStudioMutation,
+      setError: setAiColorizeError, canApplyMutation: canApplyStudioMutation, captureMutationTicket: captureStudioMutationTicket,
     });
+    if (appliedTarget) setAiColorizeCandidateTarget((current) => current === target ? appliedTarget : current);
   }
   function onClearColorizeCandidates() {
     setAiColorizeCandidateSession(createColorizeCandidateSession());

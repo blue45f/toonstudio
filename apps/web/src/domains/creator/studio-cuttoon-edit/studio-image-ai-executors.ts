@@ -36,6 +36,7 @@ export interface StudioColorizeTarget {
   readonly surface: StudioImageAiSurface;
   readonly elementId: string;
   readonly src: string;
+  readonly lastAppliedSrc?: string;
   readonly ticket: StudioEditorMutationTicket;
 }
 
@@ -54,7 +55,8 @@ function isRequestSurfaceActive(surface: StudioImageAiSurface, access: StudioIma
 }
 
 function resolveColorizeTarget(target: StudioColorizeTarget, access: StudioImageAiSurfaceAccess) {
-  const { surface, elementId, src } = target;
+  const { surface, elementId } = target;
+  const src = target.lastAppliedSrc ?? target.src;
   if (!isRequestSurfaceActive(surface, access)) return;
   const page = surface.kind === "page" ? access.readCurrentPages().find((entry) => entry.id === surface.pageId) : undefined;
   const elements = surface.kind === "master" ? access.readCurrentMasterElements() : page?.elements;
@@ -71,17 +73,30 @@ function resolveColorizeTarget(target: StudioColorizeTarget, access: StudioImage
 
 export function applyStudioImageAiCandidate(
   target: StudioColorizeTarget, access: StudioImageAiSurfaceAccess,
-  { canApplyMutation, ...input }: Pick<Parameters<typeof runStudioApplyColorizeCandidate>[0], "candidateSession" | "candidateProvenanceRef" | "setError">
-    & { readonly canApplyMutation: (ticket: StudioEditorMutationTicket) => boolean },
-) {
+  { canApplyMutation, captureMutationTicket, ...input }: Pick<Parameters<typeof runStudioApplyColorizeCandidate>[0], "candidateSession" | "candidateProvenanceRef" | "setError">
+    & {
+      readonly canApplyMutation: (ticket: StudioEditorMutationTicket) => boolean;
+      readonly captureMutationTicket: () => StudioEditorMutationTicket;
+    },
+): StudioColorizeTarget | undefined {
   if (!canApplyMutation(target.ticket)) return;
   const resolved = resolveColorizeTarget(target, access);
+  let appliedTarget: StudioColorizeTarget | undefined;
   runStudioApplyColorizeCandidate({
     ...input,
     targetId: target.elementId,
     targetElement: resolved?.element,
-    patchEl: (_id, patch) => resolved?.patch(patch) ?? false,
+    patchEl: (_id, patch) => {
+      if (!resolved?.patch(patch)) return false;
+      // 이 후보가 커밋한 소스와 문서 세대만 다음 후보의 적용 기준으로 넘긴다.
+      appliedTarget = {
+        ...target, lastAppliedSrc: patch.src,
+        ticket: { ...target.ticket, documentGeneration: captureMutationTicket().documentGeneration },
+      };
+      return true;
+    },
   });
+  return appliedTarget;
 }
 
 interface StudioColorizeCandidateOutput {
