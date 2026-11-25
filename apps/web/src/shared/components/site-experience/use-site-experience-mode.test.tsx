@@ -57,7 +57,7 @@ describe("컨텍스트 없는 사이트 연출 설정", () => {
     expect(screen.getByLabelText("사이트 배경 선택").textContent).toBe("vivid");
   });
 
-  it("쓰기만 거부될 때 현재 선택은 유지하지만 저장 성공을 꾸미지 않는다", () => {
+  it("쓰기만 거부될 때 현재 선택은 유지하고 저장값은 바뀌지 않는다", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Blocked", "SecurityError"); });
     render(<PreferenceProbe />);
     fireEvent.click(screen.getByRole("button", { name: "화려하게 선택" }));
