@@ -22,6 +22,7 @@ import {
   journeyStageForNumber,
   resolvePageRoleJourney,
 } from "./page-role-journey-map";
+import { resolveShellJourneySummary } from "./page-role-journey-shell-lite";
 import { workspaceTaskRoute } from "./workspace-task-route";
 
 vi.mock("@/shared/components/open-search-button", () => ({
@@ -145,6 +146,39 @@ describe("페이지 역할 · 5단계 창작 여정 단일 지도", () => {
     ]);
     expect(resolvePageRoleJourney("/research/materials").stageNumber).toBe(4);
     expect(resolvePageRoleJourney("/research/materials").accentTone).toBe("market");
+  });
+
+  it("/studio/ai-lab을 Stage 2 AI 창작 실험실(three-d)로 정확히 분류하고 사이트 홈으로 오분류하지 않는다", () => {
+    const aiLab = resolvePageRoleJourney("/studio/ai-lab");
+    expect(aiLab.stageNumber).toBe(2);
+    expect(aiLab.stageBadgeKo).toContain("작품 제작");
+    expect(aiLab.accentTone).toBe("three-d");
+    expect(aiLab.pageLabelKo).toBe("AI 창작 실험실");
+    expect(aiLab.pageLabelEn).toBe("AI Creative Lab");
+    expect(aiLab.roleHeadlineKo).toBe("루나 AI 디렉터·생성 실험실·로컬 추론으로 장면을 구상하는 공간");
+    expect(aiLab.clearDistinctionKo).toBe("비용·데이터·라이선스 조건을 먼저 확인하고 내 컷에 선택 적용하는 실험실입니다");
+    expect(aiLab.recommendedNextSteps.map((step) => step.href)).toEqual([
+      "/studio/canvas",
+      "/studio/bg3d",
+      "/studio/character",
+    ]);
+
+    expect(resolvePageRoleJourney("/studio/ai-lab/director").pageLabelKo).toBe("AI 창작 실험실");
+    expect(resolveShellJourneySummary("/studio/ai-lab")).toMatchObject({
+      stageNumber: 2,
+      accentTone: "three-d",
+    });
+
+    const { container } = render(
+      <MemoryRouter initialEntries={["/studio/ai-lab"]}>
+        <PageRoleAndJourneyNavigator pathname="/studio/ai-lab" />
+      </MemoryRouter>,
+    );
+    const bar = container.querySelector('[data-role-journey-bar="true"]');
+    expect(bar?.getAttribute("data-journey-stage")).toBe("2");
+    expect(bar?.getAttribute("data-accent-tone")).toBe("three-d");
+    expect(bar?.textContent).toContain("AI 창작 실험실");
+    expect(bar?.textContent).not.toContain("공개 첫 화면입니다");
   });
 });
 

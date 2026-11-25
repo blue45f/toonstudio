@@ -74,6 +74,53 @@ describe("StudioStoryboardGridPanel sequence grid", () => {
     // 상단의 추가 버튼은 필터와 관계없이 남아 있다.
     expect(screen.getByRole("button", { name: "추가" })).toBeTruthy();
   });
+
+  it("keeps shot and camera angle selects stacked full-width in s/m cards and 2-column in l cards without clipping labels", () => {
+    const onShotTagChange = vi.fn();
+    render(
+      <StudioStoryboardGridPanel
+        open
+        onClose={vi.fn()}
+        pages={[page("page-1", "1페이지")]}
+        currentPageId="page-1"
+        dnd={idleDnd}
+        onSelectPage={vi.fn()}
+        onAddPage={vi.fn()}
+        onDuplicatePage={vi.fn()}
+        onDeletePage={vi.fn()}
+        canDelete={false}
+        onShotTagChange={onShotTagChange}
+      />,
+    );
+
+    const shotSelect = screen.getByLabelText("샷 타입") as HTMLSelectElement;
+    const angleSelect = screen.getByLabelText("카메라 앵글") as HTMLSelectElement;
+    const group = shotSelect.parentElement;
+
+    // 기본(중) 카드에서는 1열(stacked) + w-full min-w-0으로 "앵글" 글자가 잘리지 않는다.
+    expect(group?.getAttribute("data-shot-tag-layout")).toBe("stacked");
+    expect(group?.className).toContain("grid-cols-1");
+    expect(shotSelect.className).toContain("min-w-0");
+    expect(shotSelect.className).toContain("w-full");
+    expect(angleSelect.className).toContain("min-w-0");
+    expect(angleSelect.className).toContain("w-full");
+    expect(angleSelect.className).toContain("text-xs");
+    expect(angleSelect.className).not.toContain("text-[10px]");
+
+    fireEvent.change(shotSelect, { target: { value: "cu" } });
+    fireEvent.change(angleSelect, { target: { value: "low" } });
+    expect(onShotTagChange).toHaveBeenNthCalledWith(1, "page-1", { shotType: "cu" });
+    expect(onShotTagChange).toHaveBeenNthCalledWith(2, "page-1", { cameraAngle: "low" });
+
+    // 소 카드도 1열(stacked)을 유지한다.
+    fireEvent.click(screen.getByRole("button", { name: "소" }));
+    expect(shotSelect.parentElement?.getAttribute("data-shot-tag-layout")).toBe("stacked");
+
+    // 대 카드에서만 2열(row) 배치를 사용한다.
+    fireEvent.click(screen.getByRole("button", { name: "대" }));
+    expect(shotSelect.parentElement?.getAttribute("data-shot-tag-layout")).toBe("row");
+    expect(shotSelect.parentElement?.className).toContain("grid-cols-2");
+  });
 });
 
 describe("StudioStoryboardGridPanel solo summary", () => {

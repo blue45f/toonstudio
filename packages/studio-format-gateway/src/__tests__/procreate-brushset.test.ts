@@ -447,4 +447,29 @@ describe("Procreate .brushset importer", () => {
 
     expect(() => importProcreateBrushset(new Uint8Array([1, 2, 3, 4]))).toThrowError(ProcreateBrushsetError);
   });
+
+  it("strips trailing slashes in brushset.plist in linear time without polynomial ReDoS", () => {
+    const adversarialFolder = `${"/".repeat(100_000)}a`;
+    const manifestBytes = encodeBinaryPlist({
+      name: "Linear Slash Strip Pack",
+      brushes: [adversarialFolder, "INK-1///"],
+    });
+    const archive = buildNsKeyedArchiveBytes({
+      name: "Slash Normalized Liner",
+      maxSize: 0.1,
+      plotSpacing: 0.08,
+    });
+    const zip = buildZipArchive([
+      { path: "brushset.plist", data: manifestBytes, compress: false },
+      { path: "INK-1/Brush.archive", data: archive, compress: true },
+    ]);
+
+    const startedAt = performance.now();
+    const parsed = importProcreateBrushset(zip);
+    const elapsedMs = performance.now() - startedAt;
+
+    expect(parsed.brushes).toHaveLength(1);
+    expect(parsed.brushes[0]?.name).toBe("Slash Normalized Liner");
+    expect(elapsedMs, "대량 슬래시 매니페스트 정규화 소요(ms)").toBeLessThan(200);
+  });
 });

@@ -166,4 +166,23 @@ describe("PwaInstallNudge", () => {
     expect(css).toContain("@media (max-width: 640px)");
     expect(css).toContain("bottom: calc(var(--pwa-install-mobile-nav-offset) + env(safe-area-inset-bottom))");
   });
+
+  it("모바일(<=640px) 홈(/)에서는 히어로와 CTA를 가리지 않도록 1줄 콤팩트 바로 축약한다", () => {
+    const css = readFileSync(
+      path.resolve(process.cwd(), "apps/web/src/shared/components/pwa-install-nudge.css"),
+      "utf8",
+    );
+    const mobileBlocks = [...css.matchAll(/@media\s*\(max-width:\s*640px\)\s*\{[\s\S]*?\n\}/gu)];
+    expect(mobileBlocks.length).toBeGreaterThanOrEqual(2);
+    const slimBlock = mobileBlocks.at(-1)?.[0] ?? "";
+    expect(slimBlock).toContain('.pwa-install-nudge[data-surface="home"]');
+    expect(slimBlock).toContain("display: grid;");
+    expect(slimBlock).toContain("grid-template-columns: minmax(0, 1fr) auto auto;");
+    expect(slimBlock).toContain("align-items: center;");
+    expect(slimBlock).toContain("padding: 0.5rem 0.65rem;");
+    expect(slimBlock).toContain(":is(.pwa-install-nudge__icon, .pwa-install-nudge__description)");
+    expect(slimBlock).toContain("display: none;");
+    expect(slimBlock).toContain("text-overflow: ellipsis;");
+    expect(slimBlock).toContain("min-height: 2.75rem;");
+  });
 });

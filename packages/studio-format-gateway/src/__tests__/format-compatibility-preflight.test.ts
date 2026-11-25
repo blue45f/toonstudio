@@ -533,4 +533,40 @@ describe("축 12 · 가져오기 전 1초 사전 호환성 리포트 스캐너 (
     expect(report.requiresApproval).toBe(false);
     expect(report.fullyCompatibleLayers).toHaveLength(500);
   });
+
+  it("대량의 반복 하이픈 적대적 엔티티 ID 입력도 ReDoS 없이 50ms 이내 선형 시간에 정확히 정규화한다 (CodeQL #248)", () => {
+    const onlyDashes = "-".repeat(100_000);
+    const trailingBang = `a${"-".repeat(100_000)}!`;
+    const sandwichedDashes = `a${"-".repeat(100_000)}b`;
+
+    const measureSingleLayerId = (rawId: string) => {
+      const startedAt = performance.now();
+      const report = scanFormatCompatibilityPreflight({
+        sourceFileName: "adversarial.psd",
+        sourceFormat: "psd",
+        layers: [{ id: rawId, name: "안전_레이어", kind: "raster" }],
+      });
+      const elapsedMs = performance.now() - startedAt;
+      return {
+        entityId: report.compatibilityItems[0]?.id,
+        elapsedMs,
+      };
+    };
+
+    // JIT 워밍업으로 첫 실행 컴파일 지연을 제거해 순수 정규화 시간을 측정한다.
+    expect(measureSingleLayerId("---hero_1---").entityId).toBe("layer-hero_1-11");
+    expect(measureSingleLayerId("!!!alpha  beta!!!").entityId).toBe("layer-alpha-beta-11");
+
+    const dashesResult = measureSingleLayerId(onlyDashes);
+    expect(dashesResult.entityId).toBe("layer-11");
+    expect(dashesResult.elapsedMs, "'-'.repeat(100_000) 정규화 소요(ms)").toBeLessThan(50);
+
+    const trailingBangResult = measureSingleLayerId(trailingBang);
+    expect(trailingBangResult.entityId).toBe("layer-a-11");
+    expect(trailingBangResult.elapsedMs, "'a' + '-'.repeat(100_000) + '!' 정규화 소요(ms)").toBeLessThan(50);
+
+    const sandwichedResult = measureSingleLayerId(sandwichedDashes);
+    expect(sandwichedResult.entityId).toBe(`layer-a${"-".repeat(47)}-11`);
+    expect(sandwichedResult.elapsedMs, "'a' + '-'.repeat(100_000) + 'b' 정규화 소요(ms)").toBeLessThan(50);
+  });
 });

@@ -201,6 +201,20 @@ export function slerpQuatWxyz(
   ]);
 }
 
+const SINGLE_WHITESPACE_CHAR = /\s/;
+
+/**
+ * 문자열 끝에서부터 역방향 스캔으로 마지막 공백 문자의 인덱스를 O(n) 선형 시간에 찾는다.
+ */
+function findLastWhitespaceIndex(value: string): number {
+  for (let i = value.length - 1; i >= 0; i -= 1) {
+    if (SINGLE_WHITESPACE_CHAR.test(value[i]!)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 function extractXmlAttributes(attrString: string): Record<string, string> {
   const attrs: Record<string, string> = {};
   let cursor = 0;
@@ -209,7 +223,7 @@ function extractXmlAttributes(attrString: string): Record<string, string> {
     const eqIdx = attrString.indexOf("=", cursor);
     if (eqIdx < 0) break;
     const rawKeySegment = attrString.slice(cursor, eqIdx).trim();
-    const lastSpaceIdx = rawKeySegment.search(/\s[^\s]*$/);
+    const lastSpaceIdx = findLastWhitespaceIndex(rawKeySegment);
     const key = lastSpaceIdx >= 0 ? rawKeySegment.slice(lastSpaceIdx + 1) : rawKeySegment;
     const openQuoteIdx = attrString.indexOf('"', eqIdx + 1);
     if (openQuoteIdx < 0) break;

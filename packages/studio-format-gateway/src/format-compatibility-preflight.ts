@@ -174,8 +174,27 @@ const UNSUPPORTED_SMART_FILTER_PATTERNS = new Set([
   "motion-blur-smart",
 ]);
 
+const DASH_CHAR_CODE = 0x2d; // '-'
+
+/**
+ * 문자열 앞뒤의 연속 하이픈(`-`)을 선형 시간 O(n) 인덱스 루프로 제거한다.
+ * `/^-+|-+$/gu` 같은 끝 고정 반복 정규식은 대량의 하이픈 뒤에 다른 문자가 올 때
+ * 2차 시간 백트래킹(CodeQL `js/polynomial-redos`)을 유발하므로 사용하지 않는다.
+ */
+function trimLeadingTrailingDashes(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value.charCodeAt(start) === DASH_CHAR_CODE) {
+    start += 1;
+  }
+  while (end > start && value.charCodeAt(end - 1) === DASH_CHAR_CODE) {
+    end -= 1;
+  }
+  return start === 0 && end === value.length ? value : value.slice(start, end);
+}
+
 function sanitizeEntityId(prefix: string, raw: string, index: number): string {
-  const cleaned = raw.replace(/[^A-Za-z0-9_-]+/gu, "-").replace(/^-+|-+$/gu, "").slice(0, 48);
+  const cleaned = trimLeadingTrailingDashes(raw.replace(/[^A-Za-z0-9_-]+/gu, "-")).slice(0, 48);
   return cleaned.length > 0 ? `${prefix}-${cleaned}-${index}` : `${prefix}-${index}`;
 }
 
