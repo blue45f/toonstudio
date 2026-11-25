@@ -2,8 +2,12 @@ import type { LightingRigTweakPatch, SceneLightingAnalysisInput, SceneLightingPr
 
 export const MAX_LIGHTING_DIALOGUE_CHARACTERS = 4096;
 
+function isLightingRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 function record(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("조명 예제의 객체가 필요합니다.");
+  if (!isLightingRecord(value)) throw new TypeError("조명 예제의 객체가 필요합니다.");
   return value;
 }
 function number(source: Record<string, unknown>, key: string, min: number, max: number): number {
