@@ -1,15 +1,14 @@
 /**
  * Wave 43D — 아틀리에 프로 도구 퀵 런처 (Atelier Craft Quick-Jump Showcase) 패널.
  *
- * - 웨이브 36~42로 완성된 40종+ 전문가 엔진과 46종 사전 베이크 아틀리에 WebP 에셋을
- *   8대 창작 워크플로우 스테이션으로 탐색·실행한다.
+ * - 정적 설명 목록과 사전 제작 참고 이미지를 8대 관련 경로로 정리한다.
+ *   장치 지원·원고 적용·저장·출력의 실행 결과를 검증하지 않는다.
  * - Calm Atelier 시맨틱 토큰 전용(원시 색상 0건 · 전역 전환 미사용 · Web Storage 0건 · 빈 객체 기본 props 미사용).
  * - 5~9개 핵심 액션 예산: 상단 단계 필터 탭(전체·콘티·작화·3D·협업·출고·핀) + 검색바 + 2/4열 카드 그리드 + 라우트 프리뷰.
  */
 
 import {
   ArrowUpRight,
-  Clock,
   Compass,
   Pin,
   PinOff,
@@ -51,6 +50,7 @@ import {
   type CraftStationSpec,
   type CraftWorkflowStageId,
 } from "./atelier-craft-launcher-engine";
+import { useLauncherNotification } from "./use-launcher-notification";
 
 export interface StudioAtelierCraftLauncherPanelProps {
   readonly locale?: "ko" | "en";
@@ -60,9 +60,9 @@ export interface StudioAtelierCraftLauncherPanelProps {
   readonly initialSelectedStationId?: CraftStationId;
   readonly initialPinnedIds?: readonly CraftStationId[];
   readonly maxPinned?: number;
-  readonly onSelectStation?: (station: CraftStationSpec) => void;
-  readonly onLaunchStation?: (station: CraftStationSpec) => void;
-  readonly onPinnedChange?: (pinState: CraftLauncherPinState) => void;
+  readonly onSelectStation?: (station: CraftStationSpec) => void | Promise<void>;
+  readonly onLaunchStation?: (station: CraftStationSpec) => void | Promise<void>;
+  readonly onPinnedChange?: (pinState: CraftLauncherPinState) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -94,15 +94,15 @@ interface StationCardProps {
   readonly isSelected: boolean;
   readonly isPinned: boolean;
   readonly isEn: boolean;
-  readonly onSelect: (station: CraftStationSpec) => void;
+  readonly pending: boolean;
+  readonly onSelect: (station: CraftStationSpec) => void | Promise<void>;
   readonly onTogglePin: (stationId: CraftStationId) => void;
 }
 
 function CraftStationCard(cardProps: StationCardProps): ReactElement {
-  const { station, isSelected, isPinned, isEn, onSelect, onTogglePin } = cardProps;
+  const { station, isSelected, isPinned, isEn, pending, onSelect, onTogglePin } = cardProps;
   const title = isEn ? station.titleEn : station.titleKo;
   const stageLabel = isEn ? station.stageLabelEn : station.stageLabelKo;
-  const durationLabel = isEn ? station.estimatedStartTimeEn : station.estimatedStartTimeKo;
   const highlights = isEn ? station.highlightsEn : station.highlightsKo;
   const thumbAlt = isEn ? station.thumbnailAltEn : station.thumbnailAltKo;
 
@@ -119,6 +119,7 @@ function CraftStationCard(cardProps: StationCardProps): ReactElement {
       <button
         type="button"
         data-testid={`craft-station-select-${station.id}`}
+        disabled={pending}
         aria-pressed={isSelected}
         onClick={() => onSelect(station)}
         className={`flex flex-1 cursor-pointer flex-col text-left ${FOCUS_RING}`}
@@ -142,10 +143,6 @@ function CraftStationCard(cardProps: StationCardProps): ReactElement {
               {stageLabel}
             </span>
             <div className="flex items-center gap-1.5 text-[11px] text-fg-3 tabular-nums">
-              <span className="inline-flex items-center gap-0.5">
-                <Clock size={12} aria-hidden="true" />
-                {durationLabel}
-              </span>
               <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5 font-mono text-[10px] font-semibold text-fg-2">
                 {station.shortcutHint}
               </kbd>
@@ -177,6 +174,7 @@ function CraftStationCard(cardProps: StationCardProps): ReactElement {
         <button
           type="button"
           data-testid={`craft-station-pin-${station.id}`}
+          disabled={pending}
           aria-pressed={isPinned}
           aria-label={
             isEn
@@ -215,6 +213,10 @@ export function StudioAtelierCraftLauncherPanel(
     onPinnedChange,
   } = props;
 
+  const notification = useLauncherNotification();
+  const { notify, isPending } = notification;
+  const recipients = useRef({ onSelectStation, onLaunchStation, onPinnedChange });
+  useEffect(() => { recipients.current = { onSelectStation, onLaunchStation, onPinnedChange }; }, [onSelectStation, onLaunchStation, onPinnedChange]);
   const uid = useId();
   const sectionRef = useRef<HTMLElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -268,6 +270,7 @@ export function StudioAtelierCraftLauncherPanel(
   );
 
   const handleStageSelect = (nextStage: CraftStageFilterId): void => {
+    if (isPending()) return;
     setStageFilter(nextStage);
     if (nextStage !== "all" && nextStage !== "pinned") {
       setWorkflowStage(nextStage);
@@ -277,6 +280,7 @@ export function StudioAtelierCraftLauncherPanel(
 
   const handleSelectStation = useCallback(
     (station: CraftStationSpec): void => {
+      if (isPending()) return;
       setSelectedStationId(station.id);
       setWorkflowStage(station.stageId);
       setStatusMessage(
@@ -285,15 +289,18 @@ export function StudioAtelierCraftLauncherPanel(
           `Selected ${station.titleEn} · Route ${station.href}`,
         ),
       );
-      onSelectStation?.(station);
+      notify(() => {
+        const recipient = recipients.current.onSelectStation;
+        return recipient ? () => recipient(station) : undefined;
+      });
     },
-    [onSelectStation, pick],
+    [isPending, notify, pick],
   );
 
   const handleTogglePin = (stationId: CraftStationId): void => {
+    if (isPending()) return;
     const nextPinState = togglePinnedCraftStation(pinState, stationId);
     setPinState(nextPinState);
-    onPinnedChange?.(nextPinState);
 
     const station = getCraftStationById(stationId);
     if (nextPinState.lastAction === "limit-reached") {
@@ -305,23 +312,34 @@ export function StudioAtelierCraftLauncherPanel(
       );
       return;
     }
+    notify(() => {
+      const recipient = recipients.current.onPinnedChange;
+      return recipient ? () => recipient(nextPinState) : undefined;
+    });
     setStatusMessage(
       nextPinState.lastAction === "pinned"
-        ? pick(`${station.titleKo} 핀 고정 완료`, `Pinned ${station.titleEn}`)
-        : pick(`${station.titleKo} 핀 해제됨`, `Unpinned ${station.titleEn}`),
+        ? pick(`이 화면의 핀에 추가: ${station.titleKo}`, `Pinned in this view: ${station.titleEn}`)
+        : pick(`이 화면의 핀에서 제거: ${station.titleKo}`, `Unpinned in this view: ${station.titleEn}`),
     );
   };
 
   const handleResetFilters = (): void => {
+    if (isPending()) return;
     setStageFilter("all");
     setQuery("");
     setStatusMessage(pick("전체 8대 아틀리에 스테이션을 표시합니다.", "Showing all 8 craft stations."));
   };
 
   const handleLaunchClick = (event: MouseEvent<HTMLAnchorElement>): void => {
-    if (onLaunchStation) {
+    if (isPending()) { event.preventDefault(); return; }
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (recipients.current.onLaunchStation) {
       event.preventDefault();
-      onLaunchStation(selectedStation);
+      const station = selectedStation;
+      notify(() => {
+        const recipient = recipients.current.onLaunchStation;
+        return recipient ? () => recipient(station) : undefined;
+      });
     }
   };
 
@@ -377,6 +395,7 @@ export function StudioAtelierCraftLauncherPanel(
       ref={sectionRef}
       aria-labelledby={headingId}
       data-testid="atelier-craft-launcher-panel"
+      aria-busy={notification.pending}
       className={`space-y-4 rounded-2xl border border-line bg-canvas p-4 text-fg ${className ?? ""}`}
     >
       {/* 헤더 */}
@@ -385,10 +404,10 @@ export function StudioAtelierCraftLauncherPanel(
           <h2 id={headingId} className="text-base font-bold tracking-tight text-fg [word-break:keep-all]">
             {pick("아틀리에 프로 도구 퀵 런처", "Atelier Craft Quick-Jump Launcher")}
           </h2>
-          <p className="text-xs text-fg-2 [word-break:keep-all]">
+          <p data-testid="craft-launcher-scope" className="text-xs text-fg-2 [word-break:keep-all]">
             {pick(
-              "작업 단계에 맞는 전문 스테이션을 고르고 경로 확인 뒤 한 번에 이동합니다.",
-              "Filter by production stage, inspect the route preview, and jump straight into any station.",
+              "정적 소개 목록과 사전 제작 참고 그림입니다. 계산 예제·가정값을 포함하며 실제 GPU·OPFS 복구·원고 저장·출력의 완료를 뜻하지 않습니다. 핀은 이 화면의 메모리에만 남습니다. 관련 페이지의 경로를 확인한 뒤 이동하세요.",
+              "Static catalog descriptions and prepared reference artwork include calculation examples and assumptions. They do not confirm GPU execution, OPFS repair, manuscript saves or export. Pins remain in this view’s memory. Inspect the related page before navigating.",
             )}
           </p>
         </div>
@@ -402,18 +421,23 @@ export function StudioAtelierCraftLauncherPanel(
           </span>
           <span className="rounded-lg border border-line bg-panel px-2.5 py-1">
             {pick(
-              `전문 엔진 ${ATELIER_TOTAL_EXPERT_ENGINE_COUNT}종`,
-              `${ATELIER_TOTAL_EXPERT_ENGINE_COUNT} engines`,
+              `목록 기준 설명 ${ATELIER_TOTAL_EXPERT_ENGINE_COUNT}항목`,
+              `${ATELIER_TOTAL_EXPERT_ENGINE_COUNT} catalog descriptions`,
             )}
           </span>
           <span className="rounded-lg border border-line bg-panel px-2.5 py-1">
             {pick(
-              `아틀리에 에셋 ${ATELIER_TOTAL_BAKED_WEBP_COUNT}종`,
-              `${ATELIER_TOTAL_BAKED_WEBP_COUNT} WebP assets`,
+              `참고 그림 목록 ${ATELIER_TOTAL_BAKED_WEBP_COUNT}종`,
+              `${ATELIER_TOTAL_BAKED_WEBP_COUNT} listed reference images`,
             )}
           </span>
         </div>
       </header>
+
+      {notification.status !== "idle" && <div role={notification.status === "failed" ? "alert" : "status"} data-testid="craft-launcher-notification" className="text-xs text-fg-2">
+        {notification.pending ? pick("수신자 알림 처리 중", "Recipient notification pending") : notification.status === "failed" ? pick(`수신자 알림 실패: ${notification.error}`, `Recipient notification failed: ${notification.error}`) : pick("수신자 응답을 확인했습니다. 원고 저장·경로 이동 완료는 각 대상 화면에서 확인하세요.", "Recipient responded. Confirm manuscript saves and navigation at their destination.")}
+        {notification.status === "failed" && <button type="button" className={SECONDARY_BTN} onClick={notification.retry}>{pick("알림 다시 시도", "Retry notification")}</button>}
+      </div>}
 
       {/* 핵심 액션 바 (7개 단계/핀 필터 탭 + 1개 검색바 = 8개 액션 예산) */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -430,6 +454,7 @@ export function StudioAtelierCraftLauncherPanel(
                 type="button"
                 role="tab"
                 data-testid={`craft-stage-tab-${tab.id}`}
+                disabled={notification.pending}
                 aria-selected={active}
                 onClick={() => handleStageSelect(tab.id)}
                 className={`${TAB_BTN} ${active ? ACTIVE_TAB : IDLE_TAB}`}
@@ -505,6 +530,7 @@ export function StudioAtelierCraftLauncherPanel(
               key={item.station.id}
               type="button"
               data-testid={`craft-recommend-btn-${item.station.id}`}
+              disabled={notification.pending}
               onClick={() => handleSelectStation(item.station)}
               className={`flex min-h-11 cursor-pointer flex-col items-start justify-center gap-0.5 rounded-lg border border-line bg-card px-3 py-2 text-left transition-colors motion-reduce:transition-none hover:border-accent hover:bg-raised ${FOCUS_RING}`}
             >
@@ -549,6 +575,7 @@ export function StudioAtelierCraftLauncherPanel(
               isSelected={selectedStationId === station.id}
               isPinned={isCraftStationPinned(pinState, station.id)}
               isEn={isEn}
+              pending={notification.pending}
               onSelect={handleSelectStation}
               onTogglePin={handleTogglePin}
             />
@@ -573,6 +600,7 @@ export function StudioAtelierCraftLauncherPanel(
           <button
             type="button"
             data-testid="craft-launcher-reset-btn"
+            disabled={notification.pending}
             onClick={handleResetFilters}
             className={SECONDARY_BTN}
           >
@@ -626,25 +654,26 @@ export function StudioAtelierCraftLauncherPanel(
               </div>
               <p className="text-xs text-fg-2 [word-break:keep-all]">
                 {isEn ? selectedStation.subtitleEn : selectedStation.subtitleKo}
+                <span className="block text-fg-3">{isEn ? selectedStation.routeMeaningEn : selectedStation.routeMeaningKo}</span>
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <span className="rounded-lg border border-line bg-card px-2.5 py-2 text-[11px] text-fg-2 tabular-nums">
-              {isEn ? selectedStation.estimatedStartTimeEn : selectedStation.estimatedStartTimeKo} ·{" "}
               <kbd className="font-mono font-semibold text-fg">{selectedStation.shortcutHint}</kbd>
             </span>
             <a
               href={selectedStation.href}
               data-testid="craft-preview-launch-link"
+              aria-disabled={notification.pending}
               onClick={handleLaunchClick}
               className={PRIMARY_CTA}
             >
               <span>
                 {pick(
-                  `${selectedStation.titleKo} 열기`,
-                  `Open ${selectedStation.titleEn}`,
+                  `관련 경로 열기: ${selectedStation.titleKo}`,
+                  `Open related page: ${selectedStation.titleEn}`,
                 )}
               </span>
               <ArrowUpRight size={15} aria-hidden="true" />
