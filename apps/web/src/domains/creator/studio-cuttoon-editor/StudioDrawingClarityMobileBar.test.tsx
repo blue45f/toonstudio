@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -313,5 +315,29 @@ describe("웹 모바일 기본 상단", () => {
     act(() => { store.noteEditGeneration(4); store.noteFailure(savedAtMs + 1000); });
     expect(document.querySelector("time")?.dateTime).toBe("2026-11-12T04:32:00.000Z"); expect(screen.queryByText("이 기기에 저장됨")).toBeNull();
     act(() => store.reset("different-draft")); expect(document.querySelector("time")).toBeNull(); expect(screen.getByText("아직 기기 저장 전")).toBeTruthy();
+  });
+
+  it("태블릿(>=560px) 상단바는 제목·저장 상태를 한 줄로 정렬하고 빈 알림으로 인한 조기 말줄임과 세로 클리핑을 막는다", () => {
+    const { container } = show();
+    const titleBox = container.querySelector(".studio-drawing-clarity-title");
+    expect(titleBox?.className).toContain("flex-1");
+    expect(titleBox?.className).toContain("min-w-0");
+    expect(titleBox?.className).toContain("leading-tight");
+
+    const baseDir = path.resolve(process.cwd(), "apps/web/src/domains/creator/studio-cuttoon-editor");
+    const mobileCss = readFileSync(path.join(baseDir, "StudioDrawingMobileWorkspace.css"), "utf8");
+    const clarityCss = readFileSync(path.join(baseDir, "StudioDrawingClarity.css"), "utf8");
+
+    expect(mobileCss).toContain("@media (min-width: 560px)");
+    expect(mobileCss).toContain("flex-direction: row;");
+    expect(mobileCss).toContain("align-items: center;");
+    expect(mobileCss).toContain("gap: 0.5rem;");
+    expect(mobileCss).toContain("@media (max-width: 559px)");
+    expect(mobileCss).toContain("min-height: 48px;");
+    expect(mobileCss).toContain("[data-studio-connection-notice-summary]:empty");
+    expect(mobileCss).not.toContain("-webkit-line-clamp: 1");
+
+    expect(clarityCss).toContain("[data-studio-connection-notice-summary]:empty{display:none}");
+    expect(clarityCss).not.toContain("-webkit-line-clamp:1");
   });
 });

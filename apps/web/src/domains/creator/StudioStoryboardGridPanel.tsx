@@ -67,9 +67,9 @@ export type StoryboardGridPage = ThumbPageLike & {
 };
 
 const CELL_SIZE_PRESETS = {
-  s: "grid-cols-[repeat(auto-fill,minmax(5rem,1fr))]",
-  m: "grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))]",
-  l: "grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]",
+  s: "grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))]",
+  m: "grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]",
+  l: "grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]",
 } as const;
 type CellSize = keyof typeof CELL_SIZE_PRESETS;
 type StoryboardViewMode = "sequence" | "review" | "priority";
@@ -379,7 +379,7 @@ export function StudioStoryboardGridPanel({
                   onShotTypeChange={(value) => onShotTagChange(page.id, { shotType: value })}
                   onCameraAngleChange={(value) => onShotTagChange(page.id, { cameraAngle: value })}
                   size="compact"
-                  className="relative z-20"
+                  layout={cellSize === "l" ? "row" : "stacked"} className="relative z-20"
                 />
               ) : null}
 

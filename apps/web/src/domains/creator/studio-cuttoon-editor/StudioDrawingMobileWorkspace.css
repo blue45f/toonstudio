@@ -20,18 +20,25 @@
   overflow: hidden;
 }
 
-#studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true] > span {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true] > span:not([data-studio-connection-notice-summary]) {
+  flex: 1 1 auto;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-connection-notice-summary]:empty {
+  display: none;
 }
 
 /* 중요한 안내는 큰 글꼴의 첫 줄을 한 줄 말줄임 상자에 다시 가두지 않는다. */
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > span {
   display: block;
-  -webkit-line-clamp: unset;
+  white-space: normal;
 }
 
 /* 두 상태 문구가 있을 때 저장 아이콘을 제목 줄에 두어 안내 너비를 확보한다. */
@@ -47,6 +54,96 @@
   position: absolute;
   inset-inline-start: 0;
   top: 4px;
+}
+
+/* 좁은 모바일(<560px) 2줄 배치에서는 최소 48px 높이와 tight 행간으로 하단 클리핑을 0px로 막는다. */
+@media (max-width: 559px) {
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header {
+    height: auto;
+    min-height: 48px;
+    max-height: none;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    line-height: 1.25;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title h1 {
+    top: 4px;
+    line-height: 17px;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true] {
+    min-height: 48px;
+    max-height: 48px;
+    padding: 21px 0 5px;
+    line-height: 1.25;
+  }
+}
+
+/* 태블릿(>=560px, iPad 820px 포함): 중앙 여유 폭을 활용해 제목과 저장 상태를 한 줄로 나란히 정렬하고 세로 잘림·조기 말줄임을 없앤다. */
+@media (min-width: 560px) {
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header {
+    gap: 8px;
+    padding-inline: 10px;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 0%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title h1,
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) h1 {
+    position: static;
+    inset: auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 48%;
+    padding-inline-start: 0;
+    line-height: 1.25;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title [data-studio-document-chrome-slot],
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title [data-studio-save-status-chrome-mount],
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title [data-studio-save-sync-status-center] {
+    display: flex;
+    align-items: center;
+    flex: 1 1 0%;
+    min-width: 0;
+    width: auto;
+    height: 44px;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true],
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    max-width: 100%;
+    min-height: 44px;
+    height: 44px;
+    max-height: 44px;
+    padding: 0 6px;
+    line-height: 1.25;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true] > svg,
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > svg {
+    position: static;
+    inset: auto;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true] > span,
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > span {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-height: 44px;
+    line-height: 1.25;
+  }
 }
 
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-context {
