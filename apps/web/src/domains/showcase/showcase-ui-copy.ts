@@ -112,7 +112,7 @@ export const TECH_SHOWCASE_PAGE_COPY = {
     title: "브라우저 한 탭에 담은 차세대 웹·Remotion·AI 기술 쇼케이스",
     subtitle:
       "WebGPU 7-band 분광 브러시, SQLite WASM + OPFS 로컬 정본, Yjs CRDT, Remotion 웹툰 쇼츠 코드 레시피, 병렬 AI 스웜 하네스, 차세대 크롬 웹 API 8선까지 IT 개발자와 기획자가 흥미롭게 살펴볼 실제 아키텍처를 정리했습니다.",
-    ctaPresentationDeck: "실전 16장 기술 발표 덱 · AI · 용어집",
+    ctaPresentationDeck: "실전 18장 기술 발표 덱 · WebRTC · 희귀 웹 API 18종",
     ctaCompare: "경쟁사 벤치마크(/compare/studio)",
     ctaTour: "Remotion 제품 투어 보기",
     ctaStudio: "스튜디오 바로 열기",
@@ -141,7 +141,7 @@ export const TECH_SHOWCASE_PAGE_COPY = {
     copyUnsupported: "직접 선택해 복사하세요",
     aiHeading: "AI 에이전트 하네스 & 병렬 스웜 개발 체계",
     aiSubtitle:
-      "단순 프롬프트 의존이 아니라 단일 계약(AGENTS.md), 워크트리 격리, 자동 래칫 게이트로 품질 회귀를 원천 차단합니다.",
+      "단순 프롬프트 의존이 아니라 단일 계약(AGENTS.md), 워크트리 격리, 자동 래칫 게이트로 품질 회귀를 커밋·CI 단계에서 미리 막습니다.",
     probeHeading: "차세대 크롬(Chrome) 웹 플랫폼 API 8선 라이브 프로브",
     probeSubtitle:
       "현재 브라우저가 지원하는 차세대 웹 API를 즉시 진단하고, 미지원 환경의 안전 폴백 전략을 함께 보여줍니다.",
@@ -164,7 +164,7 @@ export const TECH_SHOWCASE_PAGE_COPY = {
     title: "Next-Gen Web, Remotion & AI Engineering Showcase in One Browser Tab",
     subtitle:
       "Explore how ToonStudio combines WebGPU 7-band spectral brushes, SQLite WASM + OPFS local persistence, Yjs CRDT, deterministic Remotion video pipelines, AI swarm ratchets and 8 next-gen Chrome Web APIs.",
-    ctaPresentationDeck: "Open 16-Slide Tech Deck · AI · Glossary",
+    ctaPresentationDeck: "Open 18-Slide Tech Deck · WebRTC · 18 Rare APIs",
     ctaCompare: "Competitor Benchmark (/compare/studio)",
     ctaTour: "Watch Remotion Product Tour",
     ctaStudio: "Open Studio Now",
@@ -215,10 +215,10 @@ export const TECH_SHOWCASE_PAGE_COPY = {
 
 export const TECH_DECK_UI_COPY = {
   ko: {
-    eyebrow: "LIVE PRESENTATION DECK · 16 SLIDES · AI · GLOSSARY",
-    heading: "실전 기술 발표 덱 · 시각 아키텍처 도식 · AI 보조 · 쉬운 용어집",
+    eyebrow: "LIVE PRESENTATION DECK · 18 SLIDES · WEBRTC · 18 RARE APIS · GLOSSARY",
+    heading: "실전 기술 발표 덱 · WebRTC 프로토콜 · 희귀 웹 API 18종 · 쉬운 용어집",
     subtitle:
-      "초안 요약이 아니라 웹사이트 화면 그대로 발표할 수 있는 16장 기술 덱입니다. 모든 슬라이드에 SVG 구조 도식, 선택 이유, ToonStudio 실제 적용처, 타 프로젝트 재사용법, 쉬운 배경지식, 발표자 대본, 실제 저장소 근거 경로를 담았습니다.",
+      "초안 요약이 아니라 웹사이트 화면 그대로 발표할 수 있는 18장 기술 덱입니다. 모든 슬라이드에 SVG 구조 도식, 선택 이유, ToonStudio 실제 적용처, 타 프로젝트 재사용법, 쉬운 배경지식, 발표자 대본, 실제 저장소 근거 경로를 담았습니다.",
     linkDeck: "전체 화면 발표 모드(/about/technology/deck)",
     linkArch: "상세 아키텍처 문서(/about/technology/architecture)",
     linkGlossary: "통합 용어집(/about/technology/glossary)",
@@ -236,9 +236,9 @@ export const TECH_DECK_UI_COPY = {
     plainBg: "비전문가도 이해하는 쉬운 배경지식",
     tradeoff: "선택과 대가 · 현재 vs 확장 경계",
     evidenceLabel: "실제 저장소 검증 경로",
-    tocSummary: "전체 16장 슬라이드 목차 빠른 점프",
+    tocSummary: "전체 18장 슬라이드 목차 빠른 점프",
     aiEyebrow: "CREATOR-SOVEREIGN AI ASSIST · 8 CORE MODULES",
-    aiHeading: "AI 보조 · 어시스턴트 8대 핵심 기술 자랑거리",
+    aiHeading: "AI 보조 · 어시스턴트 8대 핵심 엔진",
     aiSubtitle:
       "작가의 그림을 덮어쓰지 않고 비용 상한(₩0 Fail-Closed)과 온디바이스 우선 원칙으로 반복 검수·조판·연출만 비파괴로 돕는 8대 AI 엔진입니다.",
     aiModeOnDevice: "100% 온디바이스",
@@ -248,12 +248,12 @@ export const TECH_DECK_UI_COPY = {
     aiHow: "핵심 동작 원리",
     aiWhere: "적용 기능",
     aiReuse: "타 도메인 응용",
-    glossaryEyebrow: "PLAIN-LANGUAGE TECHNICAL GLOSSARY · 22 TERMS",
-    glossaryHeading: "비전문가 · 기획자 · 개발자 공용 쉬운 기술 용어집 (22선)",
+    glossaryEyebrow: "PLAIN-LANGUAGE TECHNICAL GLOSSARY · 28 TERMS",
+    glossaryHeading: "비전문가 · 기획자 · 개발자 공용 쉬운 기술 용어집 (28선)",
     glossarySubtitle:
-      "어려운 그래픽스·AI·웹 표준 용어를 일상 비유와 정확한 원리로 풀었습니다. 슬라이드 번호를 누르면 해당 발표 장표로 바로 이동합니다.",
+      "어려운 그래픽스·WebRTC·AI·웹 표준 용어를 일상 비유와 정확한 원리로 풀었습니다. 슬라이드 번호를 누르면 해당 발표 장표로 바로 이동합니다.",
     searchLabel: "기술 용어 검색",
-    searchPlaceholder: "예: 쿠벨카, CRDT, OPFS, APCA, WebNN, 리본...",
+    searchPlaceholder: "예: 쿠벨카, CRDT, WebRTC, STUN, Web Locks, APCA...",
     clearSearch: "검색 지우기",
     resultUnit: "개 용어",
     analogyLabel: "일상 비유",
@@ -263,8 +263,8 @@ export const TECH_DECK_UI_COPY = {
     emptyReset: "필터·검색 초기화",
   },
   en: {
-    eyebrow: "LIVE PRESENTATION DECK · 16 SLIDES · AI · GLOSSARY",
-    heading: "Stage-Ready 16-Slide Tech Deck, Architecture Diagrams, AI Assist & Glossary",
+    eyebrow: "LIVE PRESENTATION DECK · 18 SLIDES · WEBRTC · 18 RARE APIS · GLOSSARY",
+    heading: "Stage-Ready 18-Slide Tech Deck, WebRTC Protocol, 18 Rare Web APIs & Glossary",
     subtitle:
       "Ready to present straight from the browser. Every slide pairs a semantic SVG diagram and verified visual with why we chose the tech, where ToonStudio uses it, cross-domain reuse playbooks, plain-language background, presenter script, and real repository paths.",
     linkDeck: "Full Deck Mode (/about/technology/deck)",
@@ -284,9 +284,9 @@ export const TECH_DECK_UI_COPY = {
     plainBg: "Plain-Language Background",
     tradeoff: "Trade-offs · Current vs. Expanding Scope",
     evidenceLabel: "Verified Repository Paths",
-    tocSummary: "Jump Directly Across All 16 Slides",
+    tocSummary: "Jump Directly Across All 18 Slides",
     aiEyebrow: "CREATOR-SOVEREIGN AI ASSIST · 8 CORE MODULES",
-    aiHeading: "8 Core AI Assistant & Helper Technologies",
+    aiHeading: "8 Core AI Assistant & Helper Engines",
     aiSubtitle:
       "Built to protect artist sovereignty and zero-bill cost ceilings—offloading tedious continuity QA, lettering, color harmony, and coaching non-destructively.",
     aiModeOnDevice: "100% On-Device",
@@ -296,12 +296,12 @@ export const TECH_DECK_UI_COPY = {
     aiHow: "How It Works",
     aiWhere: "Where Used",
     aiReuse: "Cross-Domain Reuse",
-    glossaryEyebrow: "PLAIN-LANGUAGE TECHNICAL GLOSSARY · 22 TERMS",
-    glossaryHeading: "Plain-Language Tech Glossary for Creators, PMs & Engineers (22 Terms)",
+    glossaryEyebrow: "PLAIN-LANGUAGE TECHNICAL GLOSSARY · 28 TERMS",
+    glossaryHeading: "Plain-Language Tech Glossary for Creators, PMs & Engineers (28 Terms)",
     glossarySubtitle:
-      "Every graphics, AI, and web-standard term pairs an everyday analogy with exact mechanics. Click any slide badge to jump directly to that slide.",
+      "Every graphics, WebRTC, AI, and web-standard term pairs an everyday analogy with exact mechanics. Click any slide badge to jump directly to that slide.",
     searchLabel: "Search glossary terms",
-    searchPlaceholder: "Try: Kubelka, CRDT, OPFS, APCA, WebNN, Ribbon...",
+    searchPlaceholder: "Try: Kubelka, CRDT, WebRTC, STUN, Web Locks, APCA...",
     clearSearch: "Clear search",
     resultUnit: "terms",
     analogyLabel: "Everyday analogy",

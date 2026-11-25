@@ -215,7 +215,7 @@ export const HEAD_TO_HEAD_PROFILES: Readonly<Record<CompetitorToolId, HeadToHead
     competitorStrengths: [
       bi("Apple Pencil 필압과 브러시 스튜디오의 Wet Mix 설정", "Apple Pencil pressure and Wet Mix settings in Brush Studio"),
       bi("정기 구독 없는 App Store 1회 일시불 구매와 간결한 원핸드 제스처(QuickShape·ColorDrop)", "Subscription-free one-time App Store purchase paired with effortless QuickShape & ColorDrop"),
-      bi("오프라인 iPad 단독 환경에서 캔버스 몰입도를 극대화한 군더더기 없는 UI", "Minimalist, distraction-free UI tuned specifically for standalone iPad sketching"),
+      bi("오프라인 iPad 단독 환경에서 캔버스 집중도를 높인 군더더기 없는 UI", "Minimalist, distraction-free UI tuned specifically for standalone iPad sketching"),
     ],
     roundTripFormats: [".psd", ".png", ".usdz → .glb"],
     roundTripSteps: [
@@ -364,7 +364,7 @@ export const HEAD_TO_HEAD_PROFILES: Readonly<Record<CompetitorToolId, HeadToHead
     competitorId: "ibispaint",
     headline: bi("모바일 대중 입문 최강자 vs 멀티기기·3D·협업·출고 프로 워크플로우", "Mobile Accessibility Leader vs. Pro 3D, Collab & Delivery Workflow"),
     summary: bi(
-      "ibisPaint는 스마트폰·태블릿에서 가볍게 시작하는 압도적 접근성과 QR 브러시 공유 커뮤니티가 강점입니다. ToonStudio는 광고·PC 시간 제한 없이 데스크톱·태블릿 웹에서 3D 세트·분광 혼색·팀 협업·Rights BOM 출고까지 확장합니다.",
+      "ibisPaint는 스마트폰·태블릿에서 가볍게 시작하는 높은 접근성과 QR 브러시 공유 커뮤니티가 강점입니다. ToonStudio는 광고·PC 시간 제한 없이 데스크톱·태블릿 웹에서 3D 세트·분광 혼색·팀 협업·Rights BOM 출고까지 확장합니다.",
       "ibisPaint excels at approachable phone/tablet drawing with a huge QR brush community. ToonStudio scales across desktop and tablet browsers without ads or desktop time limits, adding 3D sets, KM7 spectral mixing, team collaboration and Rights BOM delivery.",
     ),
     toonstudioLeads: [

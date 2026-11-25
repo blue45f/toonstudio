@@ -284,7 +284,7 @@ export const STUDIO_NEXTGEN_CAPABILITY_CARDS: readonly StudioNextGenCapabilityCa
       "Eliminates 1px hairline blur on fractional 125-175% and 4K/5K/8K displays, enforces strict VRAM-capped DPR and velocity-directed tile prefetch, and drives a >=18px magnetic haptic grid across 25-800% zoom.",
     ),
     competitorEdge: bi(
-      "웹 브라우저의 비정수 스케일 뭉개짐과 8K/모바일 OOM을 수학적 픽셀 스냅 행렬과 결정론적 타일 예산기로 원천 차단합니다.",
+      "웹 브라우저의 비정수 스케일 뭉개짐과 8K/모바일 OOM을 수학적 픽셀 스냅 행렬과 결정론적 타일 예산기로 방지합니다.",
       "Prevents fractional-DPR subpixel blur and 8K or 256MiB mobile OOM through exact physical pixel snap matrices and deterministic tile memory budgeting.",
     ),
     repoAnchor: "apps/web/src/domains/creator/render/uhd-edge-grid/",

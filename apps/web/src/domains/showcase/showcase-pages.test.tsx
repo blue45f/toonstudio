@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -44,7 +45,7 @@ import { ToonStudioTechShowcasePage } from "./ToonStudioTechShowcasePage";
 
 import { useI18n } from "@/shared/lib/i18n";
 
-const REPO_ROOT = path.resolve(process.cwd());
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
 
 const REQUIRED_SHOWCASE_SPRITES = [
   "/assets/studio/vibrant-sprites/emblem-benchmark.webp",

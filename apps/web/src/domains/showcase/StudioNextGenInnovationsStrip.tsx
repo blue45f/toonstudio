@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, Code2, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, ChevronUp, Code2, Layers } from "lucide-react";
 import { useState } from "react";
 
 import type { BilingualText } from "./competitor-benchmark-data";
@@ -128,18 +128,18 @@ const INNOVATION_CARDS: readonly NextGenInnovationCardSpec[] = [
 
 const STRIP_COPY = {
   ko: {
-    eyebrow: "NEXT-GEN BREAKTHROUGH INNOVATIONS",
-    heading: "차세대 4대 돌파 혁신 아키텍처",
-    subtitle: "저장소에 실제 구현·마운트된 4대 핵심 돌파 엔진입니다. 카드별 상세 보기로 실제 모듈 경로와 구현 구조를 바로 확인할 수 있습니다.",
+    eyebrow: "CORE STUDIO ARCHITECTURE",
+    heading: "저장소 구현 4대 핵심 아키텍처",
+    subtitle: "저장소에 실제 구현·연결된 4대 핵심 엔진입니다. 카드별 상세 보기로 실제 모듈 경로와 구현 구조를 바로 확인할 수 있습니다.",
     toggleOpen: "구현 모듈·구조 보기",
     toggleClose: "구현 상세 접기",
     modulesLabel: "실제 저장소 모듈",
     architectureLabel: "핵심 구현 구조",
   },
   en: {
-    eyebrow: "NEXT-GEN BREAKTHROUGH INNOVATIONS",
-    heading: "4 Next-Gen Breakthrough Innovations",
-    subtitle: "Four breakthrough engines implemented and wired in this repository. Toggle any card to inspect real repository module paths, architecture notes and live links.",
+    eyebrow: "CORE STUDIO ARCHITECTURE",
+    heading: "4 Core Implemented Studio Engines",
+    subtitle: "Four core engines implemented and wired in this repository. Toggle any card to inspect real repository module paths, architecture notes and live links.",
     toggleOpen: "Inspect modules & architecture",
     toggleClose: "Hide technical details",
     modulesLabel: "Verified repository modules",
@@ -161,7 +161,7 @@ export function StudioNextGenInnovationsStrip({ locale }: StudioNextGenInnovatio
       className="ts-showcase-reveal space-y-4"
     >
       <div className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] text-accent uppercase">
-        <Sparkles size={14} aria-hidden="true" />
+        <Layers size={14} aria-hidden="true" />
         <span>{copy.eyebrow}</span>
       </div>
       <h2 id="benchmark-nextgen-innovations-heading" className="text-xl font-bold text-fg sm:text-2xl">
