@@ -2,7 +2,7 @@ import {
   StudioOnnxAnimeStylePanel,
   StudioOnnxColorizePanel,
   StudioOnnxUpscalePanel,
-} from "./studio-page-lazy-ui";
+} from "../studio-page-lazy-ui";
 
 interface StudioOnnxInspectorImageToolsProps {
   readonly src: string;

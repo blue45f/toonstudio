@@ -4,9 +4,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { useRef, useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 
-import { createEmptyStudioAiImageReferenceDocument } from "./ai/studio-ai-image-reference-roles";
-import { StudioScenarioAutoLayoutPanel, type StudioScenarioAutoLayoutPanelProps } from "./StudioScenarioAutoLayoutPanel";
-import type { ScenarioPreviewItem } from "./studio-scenario-layout";
+import { createEmptyStudioAiImageReferenceDocument } from "../ai/studio-ai-image-reference-roles";
+import { StudioScenarioAutoLayoutPanel, type StudioScenarioAutoLayoutPanelProps } from "../StudioScenarioAutoLayoutPanel";
+import type { ScenarioPreviewItem } from "../studio-scenario-layout";
 
 const PREVIEW: ScenarioPreviewItem[] = [{
   frame: { x: 24, y: 24, width: 672, height: 480 }, bubbles: [],

@@ -24,7 +24,7 @@ import { StudioRasterVectorizeButton } from "./StudioRasterVectorizeButton";
 import { StudioAiColorizeExtras } from "./ai/StudioAiColorizeExtras";
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import { StudioMagicWandPanel } from "./StudioMagicWandPanel";
-import { StudioOnnxInspectorImageTools } from "./StudioOnnxInspectorImageTools";
+import { StudioOnnxInspectorImageTools } from "./ai/StudioOnnxInspectorImageTools";
 import { StudioSelectionWorkbenchPanel } from "./StudioSelectionWorkbenchPanel";
 import { StudioRasterToolRecoveryPanel, StudioInspectorFilterLauncher, StudioInspectorPixelSelectionLauncher } from "./StudioRasterToolRecoveryPanel";
 
