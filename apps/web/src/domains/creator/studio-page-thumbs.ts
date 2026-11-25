@@ -31,7 +31,7 @@ import {
   type StudioLineSegment,
 } from "./render/studio-radial-line-geometry";
 import { isEffectivelyHidden, type LayerGroup } from "./studio-layers";
-import { clampThumbStroke, downsamplePoints } from "./studio-thumbnail-stroke";
+import { clampThumbStroke, downsamplePoints } from "./render/studio-thumbnail-stroke";
 
 export { clampThumbStroke, downsamplePoints };
 
