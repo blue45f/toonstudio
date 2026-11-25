@@ -1,3 +1,7 @@
+import { normalizeShortcutChord } from "./shortcut-chord";
+
+export { normalizeShortcutChord } from "./shortcut-chord";
+
 /**
  * 프로 단축키 리매핑(ToonStudio·CSP·Photoshop·Procreate) · OS 정규화 · 충돌 감지 ·
  * 왼손/한손 태블릿 크롬 미러 솔버 · WCAG 2.2 AAA & 한국어 가독성 감사 순수 엔진 (Wave 41F).
@@ -153,89 +157,11 @@ const BROWSER_RESERVED_CANONICAL: Readonly<Record<string, { readonly ko: string;
   "Alt+F4": { ko: "운영체제 창 닫기 단축키와 충돌합니다", en: "Conflicts with OS close-window shortcut" },
 };
 
-const KEY_ALIAS_MAP: Readonly<Record<string, string>> = {
-  space: "Space", spacebar: "Space", " ": "Space", tab: "Tab", enter: "Enter", return: "Enter",
-  esc: "Escape", escape: "Escape", backspace: "Backspace", delete: "Delete", del: "Delete",
-  bracketleft: "[", bracketright: "]", semicolon: ";", comma: ",", period: ".", slash: "/",
-  minus: "-", equal: "=", plus: "+", arrowup: "ArrowUp", arrowdown: "ArrowDown", arrowleft: "ArrowLeft", arrowright: "ArrowRight",
-};
-
 const FALLBACK_KEY_POOL: readonly string[] = [
   "Alt+1", "Alt+2", "Alt+3", "Alt+4", "Alt+5", "Alt+6", "Alt+7", "Alt+8", "Alt+9",
   "Shift+1", "Shift+2", "Shift+3", "Shift+4", "Shift+5", "Alt+A", "Alt+D", "Alt+F",
   "Alt+J", "Alt+K", "Alt+R", "Alt+W", "Mod+Alt+1", "Mod+Alt+2", "Mod+Alt+3",
 ];
-
-const isApplePlatform = (platform: ShortcutOsPlatform): boolean => platform === "mac" || platform === "ipad";
-
-function normalizeBaseKey(rawToken: string): string | null {
-  const trimmed = rawToken.trim();
-  if (!trimmed) return null;
-  const alias = KEY_ALIAS_MAP[trimmed.toLowerCase()];
-  if (alias) return alias;
-  if (/^key[a-z]$/i.test(trimmed)) return trimmed.slice(3).toUpperCase();
-  if (/^digit[0-9]$/i.test(trimmed)) return trimmed.slice(5);
-  if (/^f([1-9]|1[0-2])$/i.test(trimmed)) return trimmed.toUpperCase();
-  if (/^[a-z0-9[\];,./\-=+]$/i.test(trimmed)) return trimmed.length === 1 ? trimmed.toUpperCase() : trimmed;
-  return null;
-}
-
-const invalidChord = (raw: string, displayLabel: string, reasonKo: string, reasonEn: string): NormalizedShortcutChord => ({
-  valid: false, raw, canonical: "", platformKey: "", displayLabel, modifiers: [], key: "", reasonKo, reasonEn,
-});
-
-/** OS별 Meta(⌘)/Ctrl 기준으로 단축키 문자열을 정규화한다. */
-export function normalizeShortcutChord(
-  raw: string,
-  platform: ShortcutOsPlatform = "mac",
-  options?: { readonly preserveExplicitCtrlOnApple?: boolean },
-): NormalizedShortcutChord {
-  const cleaned = raw.trim();
-  if (!cleaned) return invalidChord(raw, "—", "단축키가 비어 있습니다.", "Shortcut chord is empty.");
-
-  const rawTokens = cleaned === "+" ? ["+"] : cleaned.split("+").map((t) => t.trim()).filter(Boolean);
-  let hasMod = false, hasMeta = false, hasCtrl = false, hasAlt = false, hasShift = false;
-  let keyToken: string | null = null;
-  for (const token of rawTokens) {
-    const lower = token.toLowerCase();
-    if (lower === "mod" || lower === "primary") hasMod = true;
-    else if (lower === "meta" || lower === "cmd" || lower === "command" || token === "⌘") hasMeta = true;
-    else if (lower === "ctrl" || lower === "control" || token === "⌃") hasCtrl = true;
-    else if (lower === "alt" || lower === "opt" || lower === "option" || token === "⌥") hasAlt = true;
-    else if (lower === "shift" || token === "⇧") hasShift = true;
-    else {
-      const normalizedKey = normalizeBaseKey(token);
-      if (!normalizedKey || keyToken !== null) {
-        return invalidChord(raw, cleaned, `인식할 수 없는 키 조합입니다: "${cleaned}"`, `Unrecognized shortcut chord: "${cleaned}"`);
-      }
-      keyToken = normalizedKey;
-    }
-  }
-  if (!keyToken) return invalidChord(raw, cleaned, "보조키 외에 실제 실행 키가 필요합니다.", "A non-modifier trigger key is required.");
-
-  const apple = isApplePlatform(platform);
-  const keepCtrl = options?.preserveExplicitCtrlOnApple === true;
-  const resolvedModifiers: NormalizedModifier[] = [];
-  const canonicalParts: string[] = [];
-  if (apple) {
-    if (hasMod || hasMeta || (!keepCtrl && hasCtrl)) { resolvedModifiers.push("Meta"); canonicalParts.push("Mod"); }
-    if (keepCtrl && hasCtrl) { resolvedModifiers.push("Ctrl"); canonicalParts.push("Ctrl"); }
-  } else if (hasMod || hasMeta || hasCtrl) {
-    resolvedModifiers.push("Ctrl"); canonicalParts.push("Mod");
-  }
-  if (hasAlt) { resolvedModifiers.push("Alt"); canonicalParts.push("Alt"); }
-  if (hasShift) { resolvedModifiers.push("Shift"); canonicalParts.push("Shift"); }
-  canonicalParts.push(keyToken);
-
-  const displayParts: string[] = resolvedModifiers.map((m) =>
-    m === "Meta" ? "⌘" : m === "Ctrl" ? (apple ? "⌃" : "Ctrl") : m === "Alt" ? (apple ? "⌥" : "Alt") : apple ? "⇧" : "Shift",
-  );
-  displayParts.push(keyToken);
-  return {
-    valid: true, raw, canonical: canonicalParts.join("+"), platformKey: [...resolvedModifiers, keyToken].join("+"),
-    displayLabel: displayParts.join("+"), modifiers: resolvedModifiers, key: keyToken, reasonKo: null, reasonEn: null,
-  };
-}
 
 /** 프리셋 기본 바인딩 사본 생성 */
 export function createShortcutBindingsFromPreset(presetId: ShortcutPresetId): Record<ShortcutCommandId, string> {
@@ -342,7 +268,7 @@ export function exportShortcutProfileJson(profile: ShortcutProfileDocument): str
   }
   return JSON.stringify({
     format: SHORTCUT_PROFILE_FORMAT, schemaVersion: SHORTCUT_PROFILE_SCHEMA_VERSION,
-    profileName: profile.profileName.trim() || "ToonStudio Custom",
+    profileName: profile.profileName.trim() ? profile.profileName : "ToonStudio Custom",
     presetId: profile.presetId, platform: profile.platform, exportedAtIso: profile.exportedAtIso,
     bindings: canonicalBindings,
   }, null, 2);
@@ -356,7 +282,7 @@ const importFail = (errorCode: ShortcutProfileImportErrorCode, messageKo: string
 export function importShortcutProfileJson(rawJson: string, fallbackPlatform: ShortcutOsPlatform = "mac"): ShortcutProfileImportResult {
   const trimmed = rawJson.trim();
   if (!trimmed) return importFail("empty-input", "가져올 JSON 문자열이 비어 있습니다.", "Import JSON payload is empty.");
-  if (trimmed.length > SHORTCUT_PROFILE_MAX_JSON_BYTES) return importFail("payload-too-large", `JSON 크기가 허용 한도(${SHORTCUT_PROFILE_MAX_JSON_BYTES}자)를 초과했습니다.`, `JSON payload exceeds ${SHORTCUT_PROFILE_MAX_JSON_BYTES} chars.`);
+  if (new TextEncoder().encode(rawJson).byteLength > SHORTCUT_PROFILE_MAX_JSON_BYTES) return importFail("payload-too-large", `JSON 크기가 허용 한도(${SHORTCUT_PROFILE_MAX_JSON_BYTES}바이트)를 초과했습니다.`, `JSON payload exceeds ${SHORTCUT_PROFILE_MAX_JSON_BYTES} bytes.`);
   let parsed: unknown;
   try { parsed = JSON.parse(trimmed); } catch { return importFail("invalid-json", "JSON 문법 오류가 있어 단축키 프로필을 해석할 수 없습니다.", "Malformed JSON syntax in shortcut profile payload."); }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return importFail("invalid-schema", "최상위 JSON 구조가 객체 형식이 아닙니다.", "Root JSON value must be an object.");
@@ -382,7 +308,7 @@ export function importShortcutProfileJson(rawJson: string, fallbackPlatform: Sho
   }
   const profile: ShortcutProfileDocument = {
     format: SHORTCUT_PROFILE_FORMAT, schemaVersion: SHORTCUT_PROFILE_SCHEMA_VERSION,
-    profileName: typeof rec.profileName === "string" && rec.profileName.trim() ? rec.profileName.trim().slice(0, 64) : "Imported Profile",
+    profileName: typeof rec.profileName === "string" && rec.profileName.trim() ? rec.profileName : "Imported Profile",
     presetId, platform,
     exportedAtIso: typeof rec.exportedAtIso === "string" && rec.exportedAtIso.trim() ? rec.exportedAtIso : "2026-11-25T00:00:00.000Z",
     bindings: merged,
@@ -418,6 +344,7 @@ export interface ThumbReachZone {
 }
 
 export interface HandednessLayoutPlan {
+  readonly scope: "example-only"; readonly actualLayoutApplied: false; readonly ergonomicRiskMeasured: false;
   readonly handMode: DominantHandMode; readonly device: StudioViewportDevice;
   readonly viewportWidthPx: number; readonly viewportHeightPx: number;
   readonly mirroredHorizontally: boolean; readonly oneHandOptimized: boolean;
@@ -510,7 +437,7 @@ export function computeHandednessLayoutPlan(input: HandednessLayoutInput): Hande
     };
   });
 
-  // 44px 단일 컨텍스트 바 + 슬림 툴레일/접이식 인스펙터 스트립 기준으로 캔버스 >= 82% 보장
+  // 고정 배치 모델의 캔버스 면적을 계산하며 실제 화면 점유율은 측정하지 않는다.
   const topBarRatio = clampNum(44 / viewportHeightPx, 0.03, 0.056);
   const dockedInspectorStrip = compactChrome ? 0.028 : 0.038;
   const leftMarginRatio = isOneHand ? (mirroredHorizontally ? 0.012 : railW + 0.014) : mirroredHorizontally ? dockedInspectorStrip + 0.01 : railW + 0.012;
@@ -534,20 +461,21 @@ export function computeHandednessLayoutPlan(input: HandednessLayoutInput): Hande
 
   const recommendationsKo = [
     mirroredHorizontally
-      ? "툴레일·슬라이더·오비탈 휠을 우측으로 반전해 왼손 필기 시 손바닥 오터치를 차단했습니다."
+      ? "툴레일·슬라이더·오비탈 휠을 우측으로 배치한 예제입니다. 오터치 방지 효과는 측정하지 않았습니다."
       : "주 조작 크롬을 좌측에 배치해 오른손 펜 작업 중 시선 이탈을 최소화합니다.",
     ...(isOneHand ? [`한손 엄지 호(반경 ${Math.round(comfortableRadiusRatio * 100)}%) 안에 자주 쓰는 도구와 실행취소를 집약했습니다.`] : []),
-    ...(palmRejectionMarginPx < 20 ? ["손바닥 보호 여백을 24px 이상으로 높이면 엣지 오터치 위험을 추가로 낮출 수 있습니다."] : []),
+    ...(palmRejectionMarginPx < 20 ? ["보호 여백을 바꾸면 가정식 지수가 달라집니다. 실제 오터치 확률을 나타내지 않습니다."] : []),
   ];
   const recommendationsEn = [
     mirroredHorizontally
-      ? "Tool rail, sliders, and orbital wheel are mirrored to the right to prevent left-palm misfires."
+      ? "Example: tool rail, sliders, and wheel on the right. Palm-rejection effectiveness is unmeasured."
       : "Primary controls stay on the left so the right drawing hand remains unobstructed.",
     ...(isOneHand ? [`Frequent tools and undo/redo are clustered inside the ${Math.round(comfortableRadiusRatio * 100)}% one-hand thumb arc.`] : []),
-    ...(palmRejectionMarginPx < 20 ? ["Raise palm-rejection margin to 24px+ to further cut edge misfires."] : []),
+    ...(palmRejectionMarginPx < 20 ? ["Changing the margin changes a heuristic index, not a measured misfire probability."] : []),
   ];
 
   return {
+    scope: "example-only", actualLayoutApplied: false, ergonomicRiskMeasured: false,
     handMode, device, viewportWidthPx, viewportHeightPx, mirroredHorizontally, oneHandOptimized: isOneHand,
     palmRejectionMarginPx, slots,
     canvasRect: { xRatio: round3(leftMarginRatio), yRatio: round3(topBarRatio), widthRatio: canvasWidthRatio, heightRatio: canvasHeightRatio },
@@ -596,13 +524,17 @@ export interface AccessibilityCheckItem {
 }
 
 export interface StudioAccessibilityAuditReport {
+  readonly scope: "provided-input-example"; readonly domAudited: false; readonly clinicalAssessmentPerformed: false;
+  readonly passesProvidedAaaChecks: boolean; readonly passesProvidedAaChecks: boolean;
   readonly grade: AccessibilityGrade; readonly overallScore: number;
-  readonly passesW3cAaa: boolean; readonly passesW3cAa: boolean;
+  readonly passesW3cAaa: false; readonly passesW3cAa: false;
   readonly touchTargetSummary: {
     readonly total: number; readonly passingAaaCount: number; readonly passingAaCount: number;
     readonly failingIds: readonly string[]; readonly minWidthPx: number; readonly minHeightPx: number; readonly minGapPx: number;
   };
-  readonly focusRingPassesAaa: boolean; readonly koreanReadabilityScore: number; readonly passesDyslexiaFriendly: boolean;
+  readonly focusRingPassesAaa: boolean; readonly koreanReadabilityScore: number;
+  /** 가독성 선호 규칙 충족 여부이며 난독 여부나 의학적 효과를 판정하지 않는다. */
+  readonly passesDyslexiaFriendly: boolean;
   readonly checks: readonly AccessibilityCheckItem[];
   readonly remediationStepsKo: readonly string[]; readonly remediationStepsEn: readonly string[];
 }
@@ -640,7 +572,7 @@ export const ACCESSIBILITY_AUDIT_PRESETS: Readonly<
     },
   },
   "dyslexia-korean": {
-    labelKo: "한국어 난독 친화 확대", labelEn: "Korean Dyslexia-Friendly",
+    labelKo: "한국어 가독성 확대 예제", labelEn: "Korean Readability Example",
     input: {
       touchTargets: makeSampleTargets([[52, 52, 12], [52, 52, 12], [56, 48, 12], [56, 56, 14]]),
       focusRing: { outlineWidthPx: 3, contrastRatio: 7.4, offsetPx: 2, usesVisibleRing: true, obscuredByStickyChrome: false },
@@ -729,8 +661,8 @@ export function auditStudioAccessibilityBudget(input: StudioAccessibilityAuditIn
     makeCheck("WCAG 2.2 SC 1.4.6", "AAA", textContrastAaaPass, "본문 텍스트 명암 대비 (AAA 7:1)", "Enhanced Text Contrast (7:1)", `${textContrast.toFixed(1)}:1`, ">= 7.0:1 (AA >= 4.5:1)", textContrastAaaPass ? "장시간 작업에서도 선명한 7:1 이상 대비를 유지합니다." : "본문 대비를 7.0:1 이상으로 상향해야 AAA 기준을 충족합니다.", textContrastAaaPass ? "Body text exceeds 7.0:1 AAA contrast." : "Raise body text contrast to >= 7.0:1 for AAA."),
     makeCheck("WCAG 2.2 SC 1.4.11", "AA", uiContrastPass, "UI 경계·아이콘 대비 (3:1)", "Non-Text UI Contrast (3:1)", `${uiContrast.toFixed(1)}:1`, ">= 3.0:1", uiContrastPass ? "입력창 경계와 슬라이더 트랙이 뚜렷이 구분됩니다." : "비텍스트 UI 경계 대비를 3.0:1 이상으로 보강하세요.", uiContrastPass ? "Borders, sliders, and icons exceed 3.0:1 contrast." : "Increase UI border and icon contrast to >= 3.0:1."),
     makeCheck("WCAG 2.2 SC 1.4.12", "AA", spacingReadabilityPass, "행간·문단 간격 탄력성", "Text Spacing Resilience", `행간 ${lineHeight.toFixed(2)} · 자간 ${letterSpacing.toFixed(2)}em`, "행간 >= 1.50 · 자간 >= 0.00em", spacingReadabilityPass ? "행간 1.5배 이상과 충분한 문단 여백으로 줄 겹침을 방지합니다." : "행간 1.5+, 자간 0em+, 문단 간격 1.8x+로 넓히세요.", spacingReadabilityPass ? "Line height and paragraph spacing prevent collisions." : "Raise line height (>=1.5), letter spacing (>=0em), and paragraph spacing (>=1.8x)."),
-    makeCheck("KR-DYSLEXIA-READ", "AAA", koreanDyslexiaPass, "한국어 난독 친화 어절·자간 가독성", "Korean Dyslexia-Friendly Readability", `${krScore}/100 · ${typo.usesKeepAllWordBreak ? "keep-all" : "break-all"} · ${Math.round(measureChars)}자/줄`, "keep-all · tabular-nums · <= 45자/줄 · 행간 >= 1.55", koreanDyslexiaPass ? "어절 줄바꿈(keep-all), 고정폭 숫자, 여유 있는 한글 행간/자간을 충족합니다." : "keep-all, tabular-nums, 좌측 정렬, 45자 이하 줄길이를 적용하세요.", koreanDyslexiaPass ? "Hangul keep-all wrapping, tabular numerals, and generous spacing are active." : "Enable keep-all, tabular-nums, left alignment, and <= 45 Hangul chars/line."),
-    makeCheck("WCAG 2.2 SC 2.3.3", "AAA", motionAaaPass, "모션 감소(prefers-reduced-motion) 존중", "Animation from Interactions (AAA)", motionAaaPass ? "모션 감소 준수" : "모션 감소 미반영", "motion-reduce 즉시 전환", motionAaaPass ? "전정 민감 사용자를 위해 비필수 전환 애니메이션을 즉시 해제합니다." : "prefers-reduced-motion 설정 시 0ms 즉시 전환을 적용하세요.", motionAaaPass ? "Non-essential transitions disable cleanly under reduced motion." : "Respect prefers-reduced-motion with instant 0ms transitions."),
+    makeCheck("KR-DYSLEXIA-READ", "AAA", koreanDyslexiaPass, "한국어 어절·자간 선호 규칙", "Korean Readability Example Readability", `${krScore}/100 · ${typo.usesKeepAllWordBreak ? "keep-all" : "break-all"} · ${Math.round(measureChars)}자/줄`, "keep-all · tabular-nums · <= 45자/줄 · 행간 >= 1.55", koreanDyslexiaPass ? "어절 줄바꿈(keep-all), 고정폭 숫자, 여유 있는 한글 행간/자간을 충족합니다." : "keep-all, tabular-nums, 좌측 정렬, 45자 이하 줄길이를 적용하세요.", koreanDyslexiaPass ? "Hangul keep-all wrapping, tabular numerals, and generous spacing are active." : "Enable keep-all, tabular-nums, left alignment, and <= 45 Hangul chars/line."),
+    makeCheck("WCAG 2.2 SC 2.3.3", "AAA", motionAaaPass, "모션 감소(prefers-reduced-motion) 존중", "Animation from Interactions (AAA)", motionAaaPass ? "모션 감소 준수" : "모션 감소 미반영", "motion-reduce 즉시 전환", motionAaaPass ? "입력값은 비필수 전환 애니메이션 감소를 가정합니다." : "prefers-reduced-motion 설정 시 0ms 즉시 전환을 적용하세요.", motionAaaPass ? "The input assumes that non-essential transitions are reduced." : "Respect prefers-reduced-motion with instant 0ms transitions."),
   ];
 
   const remediationPairs: readonly [boolean, string, string][] = [
@@ -738,16 +670,18 @@ export function auditStudioAccessibilityBudget(input: StudioAccessibilityAuditIn
     [!focusAppearancePass || !focusUnobscuredPass, "포커스 링을 2px 이상 고대비(ring-2 ring-accent)로 유지하고 고정 크롬 가림을 해제하세요.", "Apply a >= 2px high-contrast focus ring and clear sticky chrome overlap."],
     [!textContrastAaaPass || !uiContrastPass, "본문 대비를 7.0:1 이상, 비텍스트 경계 대비를 3.0:1 이상으로 조정하세요.", "Raise body contrast to >= 7.0:1 and UI border contrast to >= 3.0:1."],
     [!koreanDyslexiaPass || !spacingReadabilityPass, "한국어 가독성을 위해 행간 1.65+, 자간 +0.02em+, keep-all, tabular-nums, 45자 이내 줄길이를 활성화하세요.", "Set line-height >= 1.65, letter-spacing >= 0.02em, keep-all, tabular-nums, and <= 45 chars/line."],
-    [!motionAaaPass, "motion-reduce:transition-none을 활성화해 전정 피로를 예방하세요.", "Enable motion-reduce overrides to prevent vestibular discomfort."],
+    [!motionAaaPass, "모션을 줄이는 표시 설정을 비교하고 실제 화면에서 동작을 확인하세요.", "Compare reduced-motion preferences and verify actual screen behavior."],
   ];
   const passedCount = checks.filter((c) => c.passed).length;
-  const passesW3cAaa = checks.every((c) => c.passed);
-  const passesW3cAa = targetAaPass && textContrastAaPass && uiContrastPass && spacingReadabilityPass && input.focusRing.usesVisibleRing;
+  const passesProvidedAaaChecks = checks.every((c) => c.passed);
+  const passesProvidedAaChecks = targetAaPass && textContrastAaPass && uiContrastPass && spacingReadabilityPass && input.focusRing.usesVisibleRing;
 
   return {
-    grade: passesW3cAaa ? "AAA" : passesW3cAa ? "AA" : "FAIL",
+    scope: "provided-input-example", domAudited: false, clinicalAssessmentPerformed: false,
+    grade: passesProvidedAaaChecks ? "AAA" : passesProvidedAaChecks ? "AA" : "FAIL",
     overallScore: clampNum(Math.round((passedCount / checks.length) * 80 + krScore * 0.2), 0, 100),
-    passesW3cAaa, passesW3cAa,
+    passesProvidedAaaChecks, passesProvidedAaChecks,
+    passesW3cAaa: false, passesW3cAa: false,
     touchTargetSummary: {
       total: sanitized.length, passingAaaCount, passingAaCount, failingIds,
       minWidthPx: sanitized.length > 0 ? minWidthPx : 0, minHeightPx: sanitized.length > 0 ? minHeightPx : 0, minGapPx: sanitized.length > 0 ? minGapPx : 0,

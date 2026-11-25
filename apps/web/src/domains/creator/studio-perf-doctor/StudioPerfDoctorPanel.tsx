@@ -1,3 +1,5 @@
+import { useExampleCallback } from "./use-example-callback";
+
 /**
  * Wave 41E — 실시간 120Hz 프레임타임 프로파일러 · WebGPU/WASM/타일캐시/OPFS WAL 헬스 진단 ·
  * 자동 적응형 성능 가드레일 2탭 닥터 패널.
@@ -35,8 +37,8 @@ export interface StudioPerfDoctorPanelProps {
   readonly initialScenarioId?: PerfDoctorScenarioId;
   readonly initialTargetHz?: TargetRefreshHz;
   readonly initialProfile?: GuardrailProfileId;
-  readonly onGuardrailApplied?: (result: GuardrailApplicationResult) => void;
-  readonly onDiagnosisChange?: (diagnosis: StudioRuntimeHealthDiagnosis, analysis: FrameTimeRingAnalysis) => void;
+  readonly onGuardrailApplied?: (result: GuardrailApplicationResult) => void | Promise<void>;
+  readonly onDiagnosisChange?: (diagnosis: StudioRuntimeHealthDiagnosis, analysis: FrameTimeRingAnalysis) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -111,6 +113,7 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
     initialTargetHz = 120, initialProfile = "smooth-120hz", onGuardrailApplied, onDiagnosisChange,
   } = props;
 
+  const action = useExampleCallback();
   const uid = useId();
   const storeLang = useI18n((state) => state.lang);
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
@@ -121,7 +124,7 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
   const [targetHz, setTargetHz] = useState<TargetRefreshHz>(initialTargetHz);
   const [preferredProfile, setPreferredProfile] = useState<GuardrailProfileId>(initialProfile);
   const [snapshot, setSnapshot] = useState<StudioPerfDoctorSnapshot>(() => createPerfDoctorScenario(initialScenarioId));
-  const [baselineSnapshot, setBaselineSnapshot] = useState<StudioPerfDoctorSnapshot | null>(null);
+  const [baselineSnapshot, setBaselineSnapshot] = useState<{ readonly snapshot: StudioPerfDoctorSnapshot; readonly targetHz: TargetRefreshHz } | null>(null);
   const [disabledStepIds, setDisabledStepIds] = useState<readonly string[]>([]);
   const [lastApplied, setLastApplied] = useState<GuardrailApplicationResult | null>(null);
 
@@ -145,30 +148,29 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
   }, [activePlan.steps, disabledStepIds]);
   const maxBinCount = useMemo(() => Math.max(1, ...frameAnalysis.histogram.map((b) => b.count)), [frameAnalysis.histogram]);
 
-  const emitDiagnostics = (nextSnap: StudioPerfDoctorSnapshot, nextHz: TargetRefreshHz): void => {
+  const emitDiagnostics = (nextSnap: StudioPerfDoctorSnapshot, nextHz: TargetRefreshHz): void | Promise<void> => {
     const nextAnalysis = analyzeFrameTimeRing(nextSnap.ring, { targetHz: nextHz });
-    onDiagnosisChange?.(diagnoseStudioRuntimeHealth({ ...nextSnap.telemetry, frameAnalysis: nextAnalysis }), nextAnalysis);
+    return onDiagnosisChange?.(diagnoseStudioRuntimeHealth({ ...nextSnap.telemetry, frameAnalysis: nextAnalysis }), nextAnalysis);
   };
 
   const handleSelectScenario = (nextId: PerfDoctorScenarioId): void => {
     const fresh = createPerfDoctorScenario(nextId);
-    setScenarioId(nextId);
-    setSnapshot(fresh);
-    setBaselineSnapshot(null);
-    setDisabledStepIds([]);
-    setLastApplied(null);
-    emitDiagnostics(fresh, targetHz);
+    action.run([() => emitDiagnostics(fresh, targetHz)], () => {
+      setScenarioId(nextId);
+      setSnapshot(fresh);
+      setBaselineSnapshot(null);
+      setDisabledStepIds([]);
+      setLastApplied(null);
+    });
   };
 
   const handleSwitchTargetHz = (nextHz: TargetRefreshHz): void => {
-    setTargetHz(nextHz);
-    emitDiagnostics(snapshot, nextHz);
+    action.run([() => emitDiagnostics(snapshot, nextHz)], () => setTargetHz(nextHz));
   };
 
   const handleInjectSamples = (kind: "smooth" | "brush-spike" | "gpu-stall"): void => {
-    const nextSnap: StudioPerfDoctorSnapshot = { ...snapshot, ring: pushFrameSamples(snapshot.ring, buildInjectedBatch(kind)) };
-    setSnapshot(nextSnap);
-    emitDiagnostics(nextSnap, targetHz);
+    const nextSnap = { ...snapshot, ring: pushFrameSamples(snapshot.ring, buildInjectedBatch(kind)) };
+    action.run([() => emitDiagnostics(nextSnap, targetHz)], () => setSnapshot(nextSnap));
   };
 
   const handleResetScenario = (): void => handleSelectScenario(scenarioId);
@@ -179,22 +181,28 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
 
   const handleApplyGuardrail = (): void => {
     if (selectedStepIds.length === 0) return;
-    if (!baselineSnapshot) setBaselineSnapshot(snapshot);
+    const baseline = baselineSnapshot ?? { snapshot, targetHz };
     const result = applyGuardrailPrescription(snapshot, activePlan, selectedStepIds, targetHz);
-    setSnapshot({ ...snapshot, ring: result.nextRing, telemetry: result.nextTelemetry });
-    setTargetHz(result.targetHzAfter);
-    setLastApplied(result);
-    onGuardrailApplied?.(result);
-    onDiagnosisChange?.(result.afterDiagnosis, result.afterFrameAnalysis);
+    action.run([
+      () => onGuardrailApplied?.(result),
+      () => onDiagnosisChange?.(result.afterDiagnosis, result.afterFrameAnalysis),
+    ], () => {
+      setBaselineSnapshot(baseline);
+      setSnapshot({ ...snapshot, ring: result.nextRing, telemetry: result.nextTelemetry });
+      setTargetHz(result.targetHzAfter);
+      setLastApplied(result);
+    });
   };
 
   const handleRevertGuardrail = (): void => {
     if (!baselineSnapshot) return;
-    setSnapshot(baselineSnapshot);
-    setTargetHz(initialTargetHz);
-    setBaselineSnapshot(null);
-    setLastApplied(null);
-    emitDiagnostics(baselineSnapshot, initialTargetHz);
+    const baseline = baselineSnapshot;
+    action.run([() => emitDiagnostics(baseline.snapshot, baseline.targetHz)], () => {
+      setSnapshot(baseline.snapshot);
+      setTargetHz(baseline.targetHz);
+      setBaselineSnapshot(null);
+      setLastApplied(null);
+    });
   };
 
   const pressureLabel = (level: VramPressureLevel): string =>
@@ -203,7 +211,7 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
         : level === "pressure" ? pick("압박 (pressure)", "Pressure") : pick("임계 (critical)", "Critical");
 
   const impactLabel = (impact: GuardrailVisualImpact): string =>
-    impact === "zero" ? pick("화질 무손실", "Zero Quality Loss")
+    impact === "zero" ? pick("예제상 해상도 유지", "Model: Resolution Kept")
       : impact === "preview-only" ? pick("프리뷰만 축소", "Preview-Only Scale") : pick("60Hz 주사율 락", "60Hz Cadence Lock");
 
   const severityLabel = (severity: JankSpikeSeverity): string =>
@@ -217,21 +225,25 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
   return (
     <section
       data-testid="studio-perf-doctor-panel"
-      aria-label={pick("실시간 120Hz 프레임타임 프로파일러 및 스튜디오 성능 닥터", "Realtime 120Hz Frame-Time Profiler & Studio Performance Doctor")}
+      aria-label={pick("성능 입력 예제 분석", "Performance Input Examples")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
+      <p data-testid="perf-example-scope" className="text-xs text-fg-2">
+        {pick("독립 예제 · 실제 GPU·OPFS·프레임 측정과 앱 설정은 연결되지 않았습니다. 입력과 결과는 이 패널을 닫으면 사라집니다.", "Standalone example. No live GPU, OPFS, frame measurement, or app settings connection. Closing this panel discards its inputs and results.")}
+      </p>
+      <fieldset disabled={action.pending || action.error !== null} aria-busy={action.pending} className="min-w-0 space-y-4 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Gauge className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-fg">
-              {pick("스튜디오 성능 닥터 · 120Hz 프로파일러 & 적응형 가드레일", "Studio Perf Doctor · 120Hz Profiler & Adaptive Guardrail")}
+              {pick("성능 분석 예제 · 프레임 예산과 가드레일", "Performance Examples · Frame Budgets & Guardrails")}
             </h2>
           </div>
           <p className="text-xs text-fg-2">
             {pick(
-              "고정 길이 링버퍼로 p50/p95/p99·1% low FPS·4스테이지 비중을 계측하고 VRAM·희소 타일 캐시·OPFS WAL 압박을 화질 손실 최소화 처방으로 해소합니다.",
-              "Track p50/p95/p99, 1% low FPS, and 4 pipeline stages in a fixed ring buffer, then diagnose VRAM, sparse tile cache, and OPFS WAL lag with 1-click guardrails.",
+              "고정 시나리오의 프레임 샘플과 VRAM·타일·WAL 가정값을 계산합니다. 결과 변화는 규칙 기반 예측이며 실제 측정이나 자원 정리가 아닙니다.",
+              "Calculate fixed frame samples and assumed VRAM, tile, and WAL values. Changes are model projections, not runtime measurements or resource cleanup.",
             )}
           </p>
         </div>
@@ -572,7 +584,7 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
               <div className="flex items-center gap-1.5 text-xs text-fg-2 tabular-nums">
                 <HardDrive className="h-3.5 w-3.5 text-fg-3" aria-hidden="true" />
-                <span>{pick(`선택 단계 ${selectedStepIds.length}/${activePlan.steps.length} · 커밋 해상도 100% 보존`, `Selected ${selectedStepIds.length}/${activePlan.steps.length} steps · 100% commit resolution preserved`)}</span>
+                <span>{pick(`선택 단계 ${selectedStepIds.length}/${activePlan.steps.length} · 모델상 커밋 해상도 100%`, `Selected ${selectedStepIds.length}/${activePlan.steps.length} steps · Model commit resolution: 100%`)}</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {baselineSnapshot && (
@@ -581,7 +593,7 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
                   </button>
                 )}
                 <button type="button" data-testid="btn-apply-guardrail" disabled={selectedStepIds.length === 0} onClick={handleApplyGuardrail} className={`${ACTION_BTN} ${PRIMARY_TONE}`}>
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /><span>{pick("1클릭 처방 적용", "Apply 1-Click Guardrail")}</span>
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /><span>{pick("선택 처방 예제 계산", "Calculate Guardrail Example")}</span>
                 </button>
               </div>
             </div>
@@ -590,7 +602,7 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
               <div data-testid="guardrail-applied-banner" role="status" aria-live="polite" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-good bg-good-soft px-3 py-2 text-xs text-good tabular-nums">
                 <div className="flex items-center gap-1.5 font-semibold">
                   <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{pick(`${lastApplied.profileId === "smooth-120hz" ? "120Hz 유지 우선" : "4K 정밀 우선"} 처방 적용 완료 (${lastApplied.appliedStepIds.length}단계)`, `Applied ${lastApplied.profileId === "smooth-120hz" ? "120Hz Priority" : "4K Precision"} (${lastApplied.appliedStepIds.length} steps)`)}</span>
+                  <span>{pick(`${lastApplied.profileId === "smooth-120hz" ? "120Hz 유지 우선" : "4K 정밀 우선"} 예제 계산 완료 (${lastApplied.appliedStepIds.length}단계)`, `Calculated example: ${lastApplied.profileId === "smooth-120hz" ? "120Hz Priority" : "4K Precision"} (${lastApplied.appliedStepIds.length} steps)`)}</span>
                 </div>
                 <div className="flex flex-wrap gap-2 font-semibold">
                   <span>p99 {lastApplied.deltas.p99DeltaMs}ms</span>
@@ -605,7 +617,7 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
 
           {diagnosis.bottlenecks.length > 0 && (
             <div data-testid="bottleneck-list" className="space-y-2 rounded-xl border border-line bg-card p-3.5">
-              <h3 className="text-xs font-semibold text-fg">{pick("감지된 런타임 병목", "Detected Runtime Bottlenecks")}</h3>
+              <h3 className="text-xs font-semibold text-fg">{pick("시나리오의 병목 예제", "Scenario Bottleneck Examples")}</h3>
               <div className="space-y-2">
                 {diagnosis.bottlenecks.map((item) => (
                   <div key={item.id} className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-xs">
@@ -619,6 +631,15 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
               </div>
             </div>
           )}
+        </div>
+      )}
+      </fieldset>
+      {action.pending && <p role="status">{pick("예제 콜백 응답을 기다리고 있어요.", "Waiting for the example callback.")}</p>}
+      {action.error !== null && (
+        <div role="alert" className="space-y-2 text-xs text-bad">
+          <p>{pick("콜백을 완료하지 못했습니다. 입력과 이전 결과는 유지됩니다.", "The callback failed. Inputs and previous results are kept.")} {action.error}</p>
+          <button type="button" onClick={action.retry} className={ACTION_BTN}>{pick("같은 입력으로 다시 시도", "Retry Same Input")}</button>
+          <button type="button" onClick={action.reset} className={ACTION_BTN}>{pick("오류 닫고 수정", "Dismiss and Edit")}</button>
         </div>
       )}
     </section>
