@@ -232,10 +232,10 @@ export function StudioP3ColorLightingPanel(
     }));
   };
 
-  const tabs: readonly { readonly id: P3ColorLightingTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "gamut", label: pick("Display-P3 광색역 · 게멋 매핑", "Display-P3 Gamut"), icon: <Palette className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "softproof", label: pick("CMYK 근사 · 대비 계산", "Approximate CMYK & Contrast"), icon: <Printer className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "lighting", label: pick("CPU 합성 표면 조명 예제", "CPU Synthetic Lighting"), icon: <Sun className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: P3ColorLightingTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "gamut", label: pick("Display-P3 광색역 · 게멋 매핑", "Display-P3 Gamut"), shortLabel: pick("광색역", "P3"), icon: <Palette className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "softproof", label: pick("CMYK 근사 · 대비 계산", "Approximate CMYK & Contrast"), shortLabel: "CMYK", icon: <Printer className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "lighting", label: pick("CPU 합성 표면 조명 예제", "CPU Synthetic Lighting"), shortLabel: pick("조명", "Lighting"), icon: <Sun className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const tacBadgeTone =
@@ -287,6 +287,8 @@ export function StudioP3ColorLightingPanel(
               type="button"
               role="tab"
               aria-selected={selected}
+              aria-label={tab.label}
+              title={tab.label}
               aria-controls={`${uid}-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`${TAB_BASE} ${
@@ -296,7 +298,7 @@ export function StudioP3ColorLightingPanel(
               }`}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{tab.shortLabel}</span>
             </button>
           );
         })}
