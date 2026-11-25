@@ -9,7 +9,7 @@ import {
   AudioWaveform, CheckCircle2, Copy, FileCode2, FileText, Headphones,
   Mic, Music2, Plus, RotateCcw, SlidersHorizontal, Trash2, Volume2, Waves,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import {
   AUDIO_CUE_EPISODE_PRESETS, BGM_MOOD_CATALOG, BGM_MOOD_IDS, DEFAULT_DIALOGUE_DUCKING_DB,
@@ -21,6 +21,11 @@ import {
   type LipSyncFrame, type LipSyncViseme, type ScheduledAudioCut, type SemanticToneToken,
   type SfxCategoryId,
 } from "./audio-cue-director-engine";
+
+import { OperationStatus } from "./OperationStatus";
+import { MAX_AUDIO_CUTS, MAX_DIALOGUE_LENGTH, MAX_SFX_PER_CUT, assertAudioCueInput } from "./audio-cue-input-contract";
+import { useClipboardOutput } from "./use-clipboard-output";
+import { useExampleNotification } from "./use-example-notification";
 
 export type AudioCueExportFormat = "webvtt" | "json";
 
@@ -60,12 +65,6 @@ function visemeSegmentClass(viseme: LipSyncViseme): string {
   if (viseme === "U") return "border-accent bg-accent-soft text-accent";
   if (viseme === "M-B-P") return "border-bad bg-bad-soft text-bad";
   return "border-line bg-raised text-fg-3";
-}
-
-function copyTextSafely(value: string): void {
-  if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-    void navigator.clipboard.writeText(value).catch(() => undefined);
-  }
 }
 
 function KpiCard(cardProps: { readonly label: string; readonly value: string; readonly sub: string; readonly testId: string; readonly toneClass?: string }): ReactElement {
@@ -225,7 +224,19 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
   const webVttOutput = useMemo<string>(() => exportAudioCueWebVtt(cueSheet), [cueSheet]);
   const jsonOutput = useMemo<string>(() => exportAudioCueJson(cueSheet, { includeLipSyncFrames: false, pretty: true }), [cueSheet]);
 
-  useEffect(() => { onCueSheetChange?.(cueSheet); }, [cueSheet, onCueSheetChange]);
+  const cueNotification = useExampleNotification(onCueSheetChange);
+  const vttNotification = useExampleNotification(onCopyWebVtt);
+  const jsonNotification = useExampleNotification(onCopyJson);
+  const clipboard = useClipboardOutput();
+  const channels = [cueNotification, vttNotification, jsonNotification, clipboard];
+  const busy = channels.some((channel) => channel.status === "pending");
+  const notifyCueSheet = cueNotification.notify;
+  const lastCueSheetRef = useRef<EpisodeAudioCueSheet | null>(null);
+  useEffect(() => {
+    if (lastCueSheetRef.current === cueSheet) return;
+    lastCueSheetRef.current = cueSheet;
+    notifyCueSheet(cueSheet);
+  }, [cueSheet, notifyCueSheet]);
 
   const safeSelectedIndex = Math.min(selectedCutIndex, Math.max(0, cuts.length - 1));
   const selectedCutInput = cuts[safeSelectedIndex];
@@ -251,18 +262,25 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
     setStatusMessage(pick("오디오 큐 디렉터를 기본값(-14 LUFS · -10 dB 덕킹)으로 복원했습니다.", "Reset audio cue director to defaults."));
   };
 
-  const handleUpdateSelectedCut = (patch: Partial<AudioCueCutInput>): void => {
-    setCuts((prev) => prev.map((cut, idx) => (idx === safeSelectedIndex ? { ...cut, ...patch } : cut)));
-  };
+  function commitCuts(next: readonly AudioCueCutInput[]): boolean {
+    try {
+      assertAudioCueInput({ episodeTitle, cuts: next });
+      setCuts(next);
+      return true;
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : pick("입력을 확인하세요.", "Check the input."));
+      return false;
+    }
+  }
+  const handleUpdateSelectedCut = (patch: Partial<AudioCueCutInput>): boolean => commitCuts(cuts.map((cut, idx) => (idx === safeSelectedIndex ? { ...cut, ...patch } : cut)));
 
   const handleAddCut = (): void => {
-    const seq = cutSeq; setCutSeq((n) => n + 1);
+    if (cuts.length >= MAX_AUDIO_CUTS) { setStatusMessage(pick("컷 상한은 64개입니다.", "The cut limit is 64.")); return; }
     const nextIndex = cuts.length;
     const prevMood = cuts[cuts.length - 1]?.bgmMood ?? "mystery-pulse";
-    setCuts((prev) => [
-      ...prev,
-      { id: `cut-custom-${seq}`, label: pick(`${nextIndex + 1}컷 · 추가 연출`, `Cut ${nextIndex + 1} · Added`), panelHeightPx: 1080, speaker: pick("주인공", "Lead"), dialogue: pick("지금 바로 다음 장면으로 넘어가자!", "Move straight into the next beat!"), emotionTone: "urgent", bgmMood: prevMood, crossfadeMs: 800, sfxMarkers: [] },
-    ]);
+    const next: readonly AudioCueCutInput[] = [...cuts, { id: `cut-custom-${cutSeq}`, label: pick(`${nextIndex + 1}컷 · 추가 연출`, `Cut ${nextIndex + 1} · Added`), panelHeightPx: 1080, speaker: pick("주인공", "Lead"), dialogue: pick("지금 바로 다음 장면으로 넘어가자!", "Move straight into the next beat!"), emotionTone: "urgent", bgmMood: prevMood, crossfadeMs: 800, sfxMarkers: [] }];
+    if (!commitCuts(next)) return;
+    setCutSeq((n) => n + 1);
     setSelectedCutIndex(nextIndex); setScrubFrameIndex(0);
     setStatusMessage(pick(`${nextIndex + 1}번 컷을 큐시트에 추가했습니다.`, `Appended cut ${nextIndex + 1}.`));
   };
@@ -277,12 +295,13 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
 
   const handleAddSfxToSelectedCut = (): void => {
     if (!selectedCutInput) return;
+    if ((selectedCutInput.sfxMarkers?.length ?? 0) >= MAX_SFX_PER_CUT) { setStatusMessage(pick("컷별 SFX 상한은 32개입니다.", "The per-cut SFX limit is 32.")); return; }
     const seq = sfxSeq; setSfxSeq((n) => n + 1);
     const cat = SFX_CATEGORY_CATALOG[newSfxCategory];
     const label = newSfxLabel.trim() || (isEn ? cat.labelEn : cat.labelKo);
-    handleUpdateSelectedCut({
+    if (!handleUpdateSelectedCut({
       sfxMarkers: [...(selectedCutInput.sfxMarkers ?? []), { id: `sfx-custom-${seq}`, category: newSfxCategory, label, offsetRatio01: Math.round(Math.min(100, Math.max(0, newSfxOffsetPct))) / 100, gainDb: cat.defaultGainDb, pan: 0 }],
-    });
+    })) return;
     setNewSfxLabel("");
     setStatusMessage(pick(`'${label}' SFX 마커를 ${safeSelectedIndex + 1}컷에 추가했습니다.`, `Added SFX '${label}' to cut ${safeSelectedIndex + 1}.`));
   };
@@ -294,13 +313,15 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
   };
 
   const handleCopyWebVtt = (): void => {
-    copyTextSafely(webVttOutput); onCopyWebVtt?.(webVttOutput); setExportFormat("webvtt");
-    setStatusMessage(pick(`WebVTT 자막(${webVttOutput.length}자)을 복사했습니다.`, `Copied WebVTT captions (${webVttOutput.length} chars).`));
+    if (channels.some((channel) => channel.isPending())) return;
+    vttNotification.notify(webVttOutput); clipboard.notify(webVttOutput); setExportFormat("webvtt");
+    setStatusMessage(pick("WebVTT 출력 준비. 복사·알림 응답은 아래에서 확인하세요.", "WebVTT ready. Check copy and notification responses below."));
   };
 
   const handleCopyJson = (): void => {
-    copyTextSafely(jsonOutput); onCopyJson?.(jsonOutput); setExportFormat("json");
-    setStatusMessage(pick(`EDL/JSON 큐시트(${jsonOutput.length}자)를 복사했습니다.`, `Copied EDL/JSON cue sheet (${jsonOutput.length} chars).`));
+    if (channels.some((channel) => channel.isPending())) return;
+    jsonNotification.notify(jsonOutput); clipboard.notify(jsonOutput); setExportFormat("json");
+    setStatusMessage(pick("JSON 출력 준비. 복사·알림 응답은 아래에서 확인하세요.", "JSON ready. Check copy and notification responses below."));
   };
 
   return (
@@ -309,6 +330,7 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
       aria-label={pick("웹툰 오디오 큐 디렉터", "Webtoon Audio Cue Director")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
     >
+      <fieldset disabled={busy} className="min-w-0 space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -430,7 +452,7 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <div>
                   <label htmlFor={`${uid}-speaker`} className="mb-1 block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("화자(캐릭터)", "Speaker")}</label>
-                  <input id={`${uid}-speaker`} data-testid="audio-cue-speaker-input" type="text" value={selectedCutInput.speaker} onChange={(e) => handleUpdateSelectedCut({ speaker: e.target.value })} placeholder={pick("예: 서진", "e.g. Seojin")} className={INPUT_BASE} />
+                  <input id={`${uid}-speaker`} data-testid="audio-cue-speaker-input" type="text" maxLength={2048} value={selectedCutInput.speaker} onChange={(e) => handleUpdateSelectedCut({ speaker: e.target.value })} placeholder={pick("예: 서진", "e.g. Seojin")} className={INPUT_BASE} />
                 </div>
                 <div>
                   <label htmlFor={`${uid}-bgm`} className="mb-1 block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("BGM 무드", "BGM Mood")}</label>
@@ -444,7 +466,7 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
 
               <div>
                 <label htmlFor={`${uid}-dialogue`} className="mb-1 block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("한국어 대사 (실시간 자모 분해 · 립싱크 갱신)", "Korean Dialogue (Live Jamo Lip-Sync)")}</label>
-                <textarea id={`${uid}-dialogue`} data-testid="audio-cue-dialogue-input" rows={2} value={selectedCutInput.dialogue} onChange={(e) => { handleUpdateSelectedCut({ dialogue: e.target.value }); setScrubFrameIndex(0); }} placeholder={pick("대사를 비우면 무대사 컷으로 처리되어 BGM 덕킹이 해제됩니다.", "Leave blank for a silent cut without ducking.")} className={INPUT_BASE} />
+                <textarea id={`${uid}-dialogue`} data-testid="audio-cue-dialogue-input" maxLength={MAX_DIALOGUE_LENGTH} rows={2} value={selectedCutInput.dialogue} onChange={(e) => { handleUpdateSelectedCut({ dialogue: e.target.value }); setScrubFrameIndex(0); }} placeholder={pick("대사를 비우면 무대사 컷으로 처리되어 BGM 덕킹이 해제됩니다.", "Leave blank for a silent cut without ducking.")} className={INPUT_BASE} />
               </div>
 
               <div>
@@ -495,7 +517,7 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
                   <select aria-label={pick("SFX 종류", "SFX category")} data-testid="audio-cue-sfx-category-select" value={newSfxCategory} onChange={(e) => setNewSfxCategory(e.target.value as SfxCategoryId)} className={`${INPUT_BASE} sm:col-span-4`}>
                     {SFX_CATEGORY_IDS.map((catId) => <option key={catId} value={catId}>{isEn ? SFX_CATEGORY_CATALOG[catId].labelEn : SFX_CATEGORY_CATALOG[catId].labelKo}</option>)}
                   </select>
-                  <input aria-label={pick("SFX 이름", "SFX label")} data-testid="audio-cue-sfx-label-input" type="text" value={newSfxLabel} onChange={(e) => setNewSfxLabel(e.target.value)} placeholder={pick("SFX 설명", "SFX label")} className={`${INPUT_BASE} sm:col-span-4`} />
+                  <input aria-label={pick("SFX 이름", "SFX label")} maxLength={2048} data-testid="audio-cue-sfx-label-input" type="text" value={newSfxLabel} onChange={(e) => setNewSfxLabel(e.target.value)} placeholder={pick("SFX 설명", "SFX label")} className={`${INPUT_BASE} sm:col-span-4`} />
                   <input aria-label={pick("컷 내 위치(%)", "Cut offset %")} data-testid="audio-cue-sfx-offset-input" type="number" min={0} max={100} value={newSfxOffsetPct} onChange={(e) => setNewSfxOffsetPct(Number(e.target.value))} className={`${INPUT_BASE} font-mono tabular-nums sm:col-span-2`} />
                   <button type="button" data-testid="audio-cue-add-sfx-btn" aria-label={pick("SFX 추가", "Add SFX")} onClick={handleAddSfxToSelectedCut} className={`${BTN_OUTLINE} sm:col-span-2`}>
                     <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -597,6 +619,11 @@ export function StudioWebtoonAudioCuePanel(props: StudioWebtoonAudioCuePanelProp
         </div>
       </div>
 
+      </fieldset>
+      <OperationStatus channel="cue" status={cueNotification.status} retry={cueNotification.retry} pending={busy} isEn={isEn} />
+      <OperationStatus channel="vtt" status={vttNotification.status} retry={vttNotification.retry} pending={busy} isEn={isEn} />
+      <OperationStatus channel="json" status={jsonNotification.status} retry={jsonNotification.retry} pending={busy} isEn={isEn} />
+      <OperationStatus channel="clipboard" status={clipboard.status} retry={clipboard.retry} pending={busy} isEn={isEn} />
       {statusMessage ? (
         <div role="status" aria-live="polite" data-testid="audio-cue-status-banner" className="flex items-center gap-2 rounded-xl border border-good bg-good-soft px-3.5 py-2.5 text-xs font-semibold text-good [word-break:keep-all]">
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />

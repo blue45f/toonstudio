@@ -14,12 +14,15 @@ const root = path.resolve(import.meta.dirname, "..");
 const CATALOGUE_TIMING_TEST = "scripts/studio-brush-catalogue-perf-matrix.test.ts";
 const CATALOGUE_TIMING_HELPER = "scripts/studio-brush-catalogue-perf-matrix.ts";
 const CATALOGUE_TIMING_CALL = /\bevaluateStudioBrushCataloguePaint(?:PerfMatrix|PerfRow|Soak)\s*\(/u;
+const LONG_STROKE_AUDIT = "scripts/audit-all-brushes-long-stroke-and-mix.mjs";
 
 function measuresExecutionTime(source: string): boolean {
   return source.includes("performance.now(")
     || source.includes("process.cpuUsage(")
     || source.includes("process.threadCpuUsage(")
     || source.includes("evaluateStudioCalibrated")
+    || (source.includes('from "./audit-all-brushes-long-stroke-and-mix.mjs"')
+      && /\brunLongStrokeAndMixAudit\s*\(/u.test(source))
     || (source.includes('from "./studio-brush-catalogue-perf-matrix"')
       && CATALOGUE_TIMING_CALL.test(source));
 }
@@ -61,6 +64,15 @@ describe("execution-time budget partition", () => {
       .filter((file) => !PERF_BUDGET_TEST_FILES.includes(file));
 
     expect(stragglers, "add these to vitest.perf-budget-files.mjs").toEqual([]);
+  });
+
+  it("장획·혼합 감사의 실제 시간 예산을 필수 직렬 단계에서 실행한다", () => {
+    const testFile = LONG_STROKE_AUDIT.replace(".mjs", ".test.mjs");
+    expect(PERF_BUDGET_TEST_FILES).toContain(testFile);
+    expect(measuresExecutionTime(readFileSync(path.join(root, testFile), "utf8"))).toBe(true);
+    expect(measuresExecutionTime(readFileSync(path.join(root, LONG_STROKE_AUDIT), "utf8"))).toBe(true);
+    const parserOnly = 'import { parseCliArgs } from "./audit-all-brushes-long-stroke-and-mix.mjs"; parseCliArgs([]);';
+    expect(measuresExecutionTime(parserOnly)).toBe(false);
   });
 
   it("runs the helper-owned catalogue soak in the required quiet pass", () => {

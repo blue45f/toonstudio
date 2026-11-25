@@ -13,6 +13,8 @@
  * 순수 함수형 모듈: Web Storage · BigInt 리터럴 · private Map store · 원시 hex/rgb/hsl 색 미사용.
  */
 
+import { assertReaderAuditMatches, assertReaderCuts } from "./mobile-reader-input-contract";
+
 export type SimulationDataSourceKind = "estimate";
 export type MobileDeviceProfileId = "iphone-se-375" | "galaxy-s25-390" | "iphone-16-promax-430" | "ipad-mini-744";
 export type MobileDeviceFormFactor = "compact-phone" | "standard-phone" | "large-phone" | "tablet";
@@ -263,6 +265,7 @@ function createEstimateProvenance(noticeKo: string, noticeEn: string): EstimateP
 
 /** 초 단위 완독 시간을 한국어(예: "2분 15초") 또는 영문("2m 15s")으로 포맷한다. */
 export function formatReadDuration(totalSec: number, locale: "ko" | "en" = "ko"): string {
+  if (!Number.isFinite(totalSec)) throw new RangeError("완독 시간은 유한값이어야 합니다.");
   const safeSec = Math.max(0, Math.round(totalSec));
   const mins = Math.floor(safeSec / 60);
   const remSec = safeSec % 60;
@@ -271,14 +274,18 @@ export function formatReadDuration(totalSec: number, locale: "ko" | "en" = "ko")
   return locale === "en" ? `${mins}m ${remSec}s` : `${mins}분 ${remSec}초`;
 }
 
-/** 실기기 프로필을 ID로 조회한다. */
+/** 고정 기기 치수 프로필을 ID로 조회한다. */
 export function getMobileDeviceProfile(id: MobileDeviceProfileId): MobileDeviceProfile {
-  return MOBILE_DEVICE_PROFILES.find((item) => item.id === id) ?? MOBILE_DEVICE_PROFILES[0];
+  const profile = MOBILE_DEVICE_PROFILES.find((item) => item.id === id);
+  if (!profile) throw new TypeError("지원하지 않는 기기 프로필입니다.");
+  return profile;
 }
 
 /** 플랫폼 뷰어 크롬 프로필을 ID로 조회한다. */
 export function getReaderPlatformProfile(id: ReaderPlatformId): ReaderPlatformChromeProfile {
-  return READER_PLATFORM_PROFILES.find((item) => item.id === id) ?? READER_PLATFORM_PROFILES[0];
+  const profile = READER_PLATFORM_PROFILES.find((item) => item.id === id);
+  if (!profile) throw new TypeError("지원하지 않는 플랫폼 프로필입니다.");
+  return profile;
 }
 
 /** 기본 샘플 컷 배열의 새 복사본을 반환한다. */
@@ -323,11 +330,11 @@ function computeGlareScore(viewerTheme: ViewerThemeMode, tone: CutBackgroundTone
   return clamp(baseByTone[tone] + edgeModifier[edge], 0, 100);
 }
 
-function sanitizeCut(cut: MobileReaderCutInput, index: number): MobileReaderCutInput {
+function sanitizeCut(cut: MobileReaderCutInput): MobileReaderCutInput {
   return {
-    id: cut.id.trim() || `cut-${index + 1}`,
-    labelKo: cut.labelKo.trim() || `${index + 1}번 컷`,
-    labelEn: cut.labelEn.trim() || `Cut ${index + 1}`,
+    id: cut.id,
+    labelKo: cut.labelKo,
+    labelEn: cut.labelEn,
     cutHeightPx: Math.round(clamp(cut.cutHeightPx, 180, 3200)),
     gutterAfterPx: Math.round(clamp(cut.gutterAfterPx, 0, 900)),
     bubbleFontPx: round1(clamp(cut.bubbleFontPx, 10, 72)),
@@ -359,10 +366,13 @@ function countMaxSimultaneousCuts(cuts: readonly AuditedMobileReaderCut[], viewp
 }
 
 /**
- * 원고 컷 배열을 실기기·플랫폼·다크모드 조건에서 물리적으로 감사한다.
+ * 컷 메타데이터를 고정 기기 치수·플랫폼 크롬 가정으로 계산한다.
  * 모든 완독 시간 및 체감 예측 지표에는 `dataSourceKind: "estimate"`를 명시한다.
  */
 export function auditMobileReaderCuts(options: AuditMobileReaderCutsOptions): MobileReaderAuditResult {
+  assertReaderCuts(options.cuts);
+  if (options.chromeVisible !== undefined && typeof options.chromeVisible !== "boolean") throw new TypeError("크롬 표시 여부는 boolean이어야 합니다.");
+  if (options.viewerTheme !== undefined && !["light", "dark"].includes(options.viewerTheme)) throw new TypeError("지원하지 않는 테마입니다.");
   const device = getMobileDeviceProfile(options.deviceId ?? "iphone-se-375");
   const platform = getReaderPlatformProfile(options.platformId ?? "naver-webtoon");
   const viewerTheme: ViewerThemeMode = options.viewerTheme ?? "dark";
@@ -375,7 +385,7 @@ export function auditMobileReaderCuts(options: AuditMobileReaderCutsOptions): Mo
   const downscaleRatio = round4(Math.min(1, device.cssWidthPx / manuscriptWidthPx));
   const downscalePct = round1(downscaleRatio * 100);
   const minRecommendedManuscriptFontPx = Math.ceil(READABILITY_MIN_EFFECTIVE_FONT_PX / downscaleRatio);
-  const safeInputs = options.cuts.length > 0 ? options.cuts.map((c, i) => sanitizeCut(c, i)) : createDefaultReaderCuts();
+  const safeInputs = options.cuts.length > 0 ? options.cuts.map(sanitizeCut) : createDefaultReaderCuts();
 
   const auditedCuts: AuditedMobileReaderCut[] = [];
   let cursorY = 0;
@@ -509,8 +519,8 @@ export function auditMobileReaderCuts(options: AuditMobileReaderCutsOptions): Mo
   const projectedEpisodeReadTimeMin = round2(projectedEpisodeReadTimeSec / 60);
 
   const provenance = createEstimateProvenance(
-    "축소 가독성·눈부심 위험·완독 시간은 기기 물리 규격과 표준 독서 속도 가정을 바탕으로 산출한 추정 지표입니다.",
-    "Readability, glare risk, and reading duration are physics-based estimates derived from device dimensions and standard reading speed assumptions.",
+    "합성 컷 메타데이터·고정 기기 치수·독서 속도 가정의 계산 예제입니다. 실제 기기·플랫폼·원고 픽셀·접근성 측정이나 원고 반영·저장은 수행하지 않습니다.",
+    "A calculation example using synthetic cut metadata, fixed device dimensions, and reading speed assumptions. No physical-device, platform, artwork-pixel, or accessibility measurement, manuscript changes, or persistence.",
   );
 
   const readTimeEstimate: EstimatedEpisodeReadTime = {
@@ -595,7 +605,17 @@ export function autoFixMobileReaderCuts(options: AuditMobileReaderCutsOptions): 
  * 순수 시맨틱 `currentColor` · OKLCH 색상만 사용하는 모바일 독자 뷰어 SVG 목업을 생성한다.
  * 원시 hex / rgb / hsl 리터럴을 포함하지 않는다.
  */
+function canonicalReaderAudit(audit: MobileReaderAuditResult): MobileReaderAuditResult {
+  const expected = auditMobileReaderCuts({ cuts: audit.cuts, deviceId: audit.device.id, platformId: audit.platform.id,
+    viewerTheme: audit.viewerTheme, manuscriptWidthPx: audit.manuscriptWidthPx, chromeVisible: audit.chromeVisible,
+    readingCharsPerSec: audit.readTimeEstimate.readingCharsPerSec, scrollSpeedCssPxPerSec: audit.readTimeEstimate.scrollSpeedCssPxPerSec,
+    projectedEpisodeCutCount: audit.readTimeEstimate.projectedEpisodeCutCount });
+  assertReaderAuditMatches(audit, expected);
+  return expected;
+}
+
 export function buildMobilePreviewSvg(audit: MobileReaderAuditResult, options?: BuildMobilePreviewSvgOptions): string {
+  canonicalReaderAudit(audit);
   const isEn = options?.locale === "en";
   const showSafeZones = options?.showSafeZones ?? true;
   const isDark = audit.viewerTheme === "dark";
@@ -713,7 +733,8 @@ export function buildMobilePreviewSvg(audit: MobileReaderAuditResult, options?: 
 }
 
 /** 모바일 독자 뷰어 시뮬레이션 감사 리포트를 정형 JSON 문자열로 내보낸다. */
-export function exportMobileReaderAuditJson(audit: MobileReaderAuditResult): string {
+export function exportMobileReaderAuditJson(input: MobileReaderAuditResult): string {
+  const audit = canonicalReaderAudit(input);
   return JSON.stringify(
     {
       schemaVersion: "toonstudio.mobile-reader-preview-sim.v1",
@@ -732,7 +753,7 @@ export function exportMobileReaderAuditJson(audit: MobileReaderAuditResult): str
       viewerTheme: audit.viewerTheme, chromeVisible: audit.chromeVisible, manuscriptWidthPx: audit.manuscriptWidthPx,
       viewport: audit.viewport, readTimeEstimate: audit.readTimeEstimate, summary: audit.summary,
       cuts: audit.cuts.map((cut) => ({
-        id: cut.id, index: cut.index, labelKo: cut.labelKo, cutHeightPx: cut.cutHeightPx,
+        id: cut.id, index: cut.index, labelKo: cut.labelKo, labelEn: cut.labelEn, dialogueCharCount: cut.dialogueCharCount, cutHeightPx: cut.cutHeightPx,
         gutterAfterPx: cut.gutterAfterPx, bubbleFontPx: cut.bubbleFontPx, effectiveFontPx: cut.effectiveFontPx,
         readabilityStatus: cut.readabilityStatus, backgroundTone: cut.backgroundTone,
         edgeTreatment: cut.edgeTreatment, captionPlacement: cut.captionPlacement,

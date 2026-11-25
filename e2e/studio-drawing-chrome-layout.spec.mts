@@ -65,7 +65,10 @@ async function geometry(page: Page) {
       const rect = node.getBoundingClientRect();
       return { y: rect.y, height: rect.height };
     };
-    return { header: box("#studio-menubar"), title: box(".studio-drawing-clarity-title"), workspace: box("#studio-workspace") };
+    return {
+      header: box("#studio-menubar"), title: box(".studio-drawing-clarity-title"), workspace: box("#studio-workspace"),
+      horizontalOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
   });
 }
 
@@ -91,6 +94,7 @@ for (const mobile of [false, true]) {
       const before = await geometry(page);
       expect(before.header.height).toBe(44);
       expect(before.title.height).toBe(44);
+      expect(before.horizontalOverflow).toBe(0);
       const message = "일부 오프라인 도구 준비 필요";
       await setNotices(page, [message]);
       await expect(page.getByRole("status")).toHaveText(message);
@@ -124,6 +128,9 @@ test("좁은320 화면과 두 배 글꼴에서도 경고 전문과 복구 동작
   const summary = page.locator("button[data-studio-drawing-save-summary=true]");
   await summary.evaluate(node => { node.style.fontSize = "24px"; });
   const before = await geometry(page);
+  expect(before.header.height).toBe(44);
+  expect(before.title.height).toBe(44);
+  expect(before.horizontalOverflow).toBe(0);
   const messages = ["Offline tools could not be prepared · Check again", "Storage about 95% full · Back up your work"];
   const updateNotices = async (texts: string[]) => {
     await page.evaluate(({ event, messages }) => {

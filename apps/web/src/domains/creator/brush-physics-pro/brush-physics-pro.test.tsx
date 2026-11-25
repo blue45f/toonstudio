@@ -447,7 +447,7 @@ describe("질감 정량 자동 오라클 & StudioBrushPhysicsProPanel UI · 토�
       tiltDeg: 54,
     });
 
-    expect(report.passed).toBe(true);
+    expect(report.passed, JSON.stringify(report.checks)).toBe(true);
     expect(report.score).toBe(100);
     expect(report.checks).toHaveLength(6);
     expect(report.checks.every((check) => check.passed)).toBe(true);

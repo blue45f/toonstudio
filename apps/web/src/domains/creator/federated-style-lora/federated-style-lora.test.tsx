@@ -458,7 +458,7 @@ describe("Wave 41A: 온디바이스 차등 프라이버시 연합학습 LoRA · 
 
     expect(screen.getByTestId("federated-lora-stream-panel")).toBeTruthy();
     expect(screen.getByTestId("lora-raw-egress").textContent).toBe("0 B");
-    expect(screen.getByRole("tab", { name: /온디바이스 화풍 LoRA/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: /저랭크 MSE/ }).getAttribute("aria-selected")).toBe("true");
 
     fireEvent.click(screen.getByTestId("btn-lora-step-1"));
     expect(screen.getByTestId("lora-step-count").textContent).toContain("1");
@@ -499,11 +499,11 @@ describe("Wave 41A: 온디바이스 차등 프라이버시 연합학습 LoRA · 
 
   it("19. 영문 로케일 및 완전 무인자 단독 렌더링(<StudioFederatedLoraStreamPanel />)이 오류 없이 동작한다", () => {
     const { unmount } = render(<StudioFederatedLoraStreamPanel />);
-    expect(screen.getByTestId("zero-egress-pill").textContent).toContain("0 B");
+    expect(screen.getByTestId("zero-egress-pill").textContent).toContain("실제 DP 보증 없음");
     unmount();
 
     render(<StudioFederatedLoraStreamPanel locale="en" />);
-    expect(screen.getByTestId("btn-lora-step-1").textContent).toContain("Run 1 On-Device Step");
+    expect(screen.getByTestId("btn-lora-step-1").textContent).toContain("Run 1 CPU MSE Step");
     fireEvent.click(screen.getByTestId("tab-semantic-stream"));
     expect(screen.getByTestId("btn-stream-prefetch").textContent).toContain("Run Priority Prefetch");
   });

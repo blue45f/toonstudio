@@ -64,7 +64,8 @@ jobs:
         run: |
           mkdir -p /tmp/creator-test
           cp .github/ci-tools/typescript/package.json .github/ci-tools/typescript/package-lock.json /tmp/creator-test/
-          npm ci --prefix /tmp/creator-test --ignore-scripts --no-audit --no-fund
+          cd /tmp/creator-test
+          npm ci --ignore-scripts --no-audit --no-fund
       - run: |
           python -m pip install --only-binary=:all: --require-hashes -r .github/requirements/creator-runtime-test.txt
       - name: 모델 의존성 해석 검증

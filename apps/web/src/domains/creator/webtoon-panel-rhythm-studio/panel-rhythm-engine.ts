@@ -8,6 +8,10 @@
  * - 순수 시맨틱 `currentColor` · OKLCH SVG 세로 비트 스트립(`buildRhythmStripSvg`) 및 JSON(`exportPanelRhythmJson`)
  */
 
+import { assertExportAnalysis, normalizePanelInputs, PANEL_RHYTHM_TEMPLATE_IDS, requireChoice, requireFinite, WEBTOON_PLATFORM_IDS } from "./panel-rhythm-input-contract";
+
+export { MAX_RHYTHM_PANELS, PANEL_RHYTHM_TEMPLATE_IDS, WEBTOON_PLATFORM_IDS } from "./panel-rhythm-input-contract";
+
 export type WebtoonPlatformPresetId = "naver-800" | "kakao-690" | "global-1080";
 export type PanelRhythmTemplateId =
   | "action-3beat-impact" | "romance-silence-longscroll" | "thriller-blackout-reveal" | "slice-4cut-comedy"
@@ -103,41 +107,31 @@ export const DEFAULT_READING_CHARS_PER_SEC = 14;
 export const MONOTONE_GUTTER_TOLERANCE_PX = 20;
 export const MONOTONE_MIN_RUN_LENGTH = 3;
 
-export const WEBTOON_PLATFORM_IDS: readonly WebtoonPlatformPresetId[] = [
-  "naver-800", "kakao-690", "global-1080",
-] as const;
-
 export const WEBTOON_PLATFORM_PRESETS: readonly WebtoonPlatformSpec[] = [
   {
-    id: "naver-800", labelKo: "네이버 웹툰 표준 (800px)", labelEn: "Naver Webtoon Standard (800px)",
+    id: "naver-800", labelKo: "네이버 형식 가정 (800px)", labelEn: "Naver Layout Assumption (800px)",
     shortLabelKo: "네이버 800", shortLabelEn: "Naver 800", widthPx: 800,
     recommendedGutterMinPx: 160, recommendedGutterMaxPx: 420, idealAverageGutterPx: 260,
     viewportHeightPx: 1420, defaultScrollSpeedPxPerSec: 420,
-    pacingNoteKo: "표준 여백 160~420px · 중속 엄지 스크롤과 서사 호흡 균형에 최적화",
-    pacingNoteEn: "160-420px standard gutters balanced for narrative pacing",
+    pacingNoteKo: "예제 여백 160~420px · 중속 엄지 스크롤과 서사 호흡 균형에 최적화",
+    pacingNoteEn: "160-420px example gutters balanced for narrative pacing",
   },
   {
-    id: "kakao-690", labelKo: "카카오 모바일 쾌속 (690px)", labelEn: "Kakao Mobile Fast-Pace (690px)",
+    id: "kakao-690", labelKo: "카카오 형식 가정 (690px)", labelEn: "Kakao Layout Assumption (690px)",
     shortLabelKo: "카카오 690", shortLabelEn: "Kakao 690", widthPx: 690,
     recommendedGutterMinPx: 110, recommendedGutterMaxPx: 300, idealAverageGutterPx: 190,
     viewportHeightPx: 1240, defaultScrollSpeedPxPerSec: 460,
-    pacingNoteKo: "표준 여백 110~300px · 좁은 폭과 빠른 컷 전환으로 높은 몰입 템포 유지",
+    pacingNoteKo: "예제 여백 110~300px · 좁은 폭과 빠른 컷 전환으로 높은 몰입 템포 유지",
     pacingNoteEn: "110-300px brisk gutters tuned for rapid mobile thumb cadence",
   },
   {
-    id: "global-1080", labelKo: "글로벌 HD 시네마 (1080px)", labelEn: "Global HD Cinema (1080px)",
+    id: "global-1080", labelKo: "글로벌 HD 예제 (1080px)", labelEn: "Global HD Example (1080px)",
     shortLabelKo: "글로벌 1080", shortLabelEn: "Global 1080", widthPx: 1080,
     recommendedGutterMinPx: 200, recommendedGutterMaxPx: 520, idealAverageGutterPx: 340,
     viewportHeightPx: 1920, defaultScrollSpeedPxPerSec: 500,
-    pacingNoteKo: "표준 여백 200~520px · 고해상도 풀블리드 컷과 시네마틱 여백 연출에 적합",
+    pacingNoteKo: "예제 여백 200~520px · 고해상도 풀블리드 컷과 시네마틱 여백 연출에 적합",
     pacingNoteEn: "200-520px cinematic gutters for high-resolution global releases",
   },
-] as const;
-
-export const PANEL_RHYTHM_TEMPLATE_IDS: readonly PanelRhythmTemplateId[] = [
-  "action-3beat-impact", "romance-silence-longscroll", "thriller-blackout-reveal",
-  "slice-4cut-comedy", "flashback-sepia-overlap", "cliffhanger-ending-drop",
-  "dialogue-zigzag-banter", "panorama-wide-breather",
 ] as const;
 
 function beat(
@@ -304,11 +298,13 @@ function escapeXml(raw: string): string {
 
 /** 플랫폼 규격 프리셋을 ID로 조회한다. */
 export function getWebtoonPlatformSpec(id: WebtoonPlatformPresetId): WebtoonPlatformSpec {
+  requireChoice(id, WEBTOON_PLATFORM_IDS);
   return WEBTOON_PLATFORM_PRESETS.find((spec) => spec.id === id) ?? WEBTOON_PLATFORM_PRESETS[0];
 }
 
 /** 8대 한국 상업 웹툰 연출 리듬 템플릿을 ID로 조회한다. */
 export function getPanelRhythmTemplateSpec(id: PanelRhythmTemplateId): PanelRhythmTemplateSpec {
+  requireChoice(id, PANEL_RHYTHM_TEMPLATE_IDS);
   return PANEL_RHYTHM_TEMPLATES.find((spec) => spec.id === id) ?? PANEL_RHYTHM_TEMPLATES[0];
 }
 
@@ -423,7 +419,7 @@ function collectRhythmWarnings(
   if (narrow.length > 0) {
     push(
       "gutter-too-narrow", "warn", narrow,
-      "플랫폼 최소 여백 미달(시선 뭉개짐 위험)", "Gutters Below Platform Minimum",
+      "예제 최소 여백 미달", "Gutters Below Example Minimum",
       `${fmtKo(narrow)} 하단 여백이 ${platform.shortLabelKo} 안전선(${narrowFloor}px)보다 좁아 컷 경계가 답답할 수 있습니다.`,
       `Gutters at ${fmtEn(narrow)} fall below ${narrowFloor}px for ${platform.shortLabelEn}.`,
     );
@@ -478,22 +474,18 @@ function collectRhythmWarnings(
 
 /** 독자 엄지 스크롤 속도와 컷·여백·대사 정보로 체류 시간·침묵 호흡·긴장도 곡선·경고를 산출한다. */
 export function analyzeScrollRhythm(options: AnalyzeScrollRhythmOptions): ScrollRhythmAnalysis {
+  requireFinite([options.scrollSpeedPxPerSec ?? DEFAULT_SCROLL_SPEED_PX_PER_SEC, options.readingCharsPerSec ?? DEFAULT_READING_CHARS_PER_SEC]);
+  if (options.templateId !== undefined && options.templateId !== null) requireChoice(options.templateId, PANEL_RHYTHM_TEMPLATE_IDS);
   const platform = getWebtoonPlatformSpec(options.platformId ?? "naver-800");
   const scrollSpeedPxPerSec = Math.round(clamp(options.scrollSpeedPxPerSec ?? DEFAULT_SCROLL_SPEED_PX_PER_SEC, MIN_SCROLL_SPEED_PX_PER_SEC, MAX_SCROLL_SPEED_PX_PER_SEC));
   const readingCharsPerSec = clamp(options.readingCharsPerSec ?? DEFAULT_READING_CHARS_PER_SEC, 6, 30);
   const templateId = options.templateId ?? null;
-  const normalized: PanelBeatInput[] = options.panels.map((panel, idx) => ({
-    ...panel,
-    id: panel.id || `panel-${idx + 1}`,
-    heightPx: Math.round(clamp(panel.heightPx, 180, 3200)),
-    gutterAfterPx: Math.round(clamp(panel.gutterAfterPx, 0, 1400)),
-    dialogueCharCount: Math.round(clamp(panel.dialogueCharCount, 0, 400)),
-  }));
+  const normalized = normalizePanelInputs(options.panels);
 
   const monotone = detectMonotoneGutterRuns(normalized.map((p) => p.gutterAfterPx));
   let cursorY = 0;
   const analyzedPanels: PanelBeatAnalysis[] = normalized.map((panel, index) => {
-    const prevGutterPx = index > 0 ? normalized[index - 1]!.gutterAfterPx : null;
+    const prevGutterPx = normalized[index - 1]?.gutterAfterPx ?? null;
     const topY = cursorY;
     const bottomY = topY + panel.heightPx;
     const gutterEndY = bottomY + panel.gutterAfterPx;
@@ -573,9 +565,10 @@ export function autoBalanceGutters(
   scrollSpeedPxPerSec: number = DEFAULT_SCROLL_SPEED_PX_PER_SEC,
   templateId: PanelRhythmTemplateId | null = null,
 ): AutoBalanceGuttersResult {
+  const normalizedPanels = normalizePanelInputs(panels);
   const platform = getWebtoonPlatformSpec(platformId);
-  const beforeAnalysis = analyzeScrollRhythm({ panels, platformId, scrollSpeedPxPerSec, templateId });
-  if (panels.length === 0) return { panels: [], adjustments: [], beforeAnalysis, afterAnalysis: beforeAnalysis };
+  const beforeAnalysis = analyzeScrollRhythm({ panels: normalizedPanels, platformId, scrollSpeedPxPerSec, templateId });
+  if (normalizedPanels.length === 0) return { panels: [], adjustments: [], beforeAnalysis, afterAnalysis: beforeAnalysis };
 
   const { recommendedGutterMinPx: minG, recommendedGutterMaxPx: maxG, idealAverageGutterPx: idealG } = platform;
   const narrowFloor = Math.round(minG * 0.78);
@@ -585,9 +578,10 @@ export function autoBalanceGutters(
   const reasonsKo: string[] = [];
   const reasonsEn: string[] = [];
 
-  for (let i = 0; i < panels.length; i += 1) {
-    const panel = panels[i]!;
-    const nextPanel = panels[i + 1];
+  for (let i = 0; i < normalizedPanels.length; i += 1) {
+    const panel = normalizedPanels[i];
+    if (!panel) continue;
+    const nextPanel = normalizedPanels[i + 1];
     const current = Math.round(panel.gutterAfterPx);
     const cadence = CADENCE_MULTIPLIERS[i % CADENCE_MULTIPLIERS.length] ?? 1;
     let target = current;
@@ -606,13 +600,13 @@ export function autoBalanceGutters(
       reasonEn = "Broke 3+ monotone gutter streak with cadence contrast";
     } else if (current < narrowFloor) {
       target = snapToTen(minG * (i % 2 === 0 ? 1.0 : 1.15));
-      reasonKo = `${platform.shortLabelKo} 권장 최소 여백 확보`;
-      reasonEn = `Raised to ${platform.shortLabelEn} minimum gutter floor`;
+      reasonKo = `${platform.shortLabelKo} 예제 최소 여백 확보`;
+      reasonEn = `Raised to ${platform.shortLabelEn} example gutter floor`;
     } else if (current > voidCeiling && panel.role !== "silence" && panel.shape !== "blackout-transition") {
       target = snapToTen(maxG * 0.95);
       reasonKo = "과도한 공백 이탈 위험 완화";
       reasonEn = "Trimmed excessive void gutter to prevent reader drop-off";
-    } else if (beforeAnalysis.summary.gutterVarianceRatio < 0.16 && panels.length >= 3) {
+    } else if (beforeAnalysis.summary.gutterVarianceRatio < 0.16 && normalizedPanels.length >= 3) {
       target = clamp(snapToTen(idealG * cadence), minG, maxG);
       reasonKo = "전체 여백 편차 확장으로 스크롤 호흡 입체화";
       reasonEn = "Expanded gutter variance for richer scroll cadence";
@@ -642,7 +636,7 @@ export function autoBalanceGutters(
   }
 
   const adjustments: GutterAdjustmentRecord[] = [];
-  const nextPanels: PanelBeatInput[] = panels.map((panel, index) => {
+  const nextPanels: PanelBeatInput[] = normalizedPanels.map((panel, index) => {
     const beforeGutterPx = Math.round(panel.gutterAfterPx);
     const afterGutterPx = proposed[index] ?? beforeGutterPx;
     if (afterGutterPx !== beforeGutterPx) {
@@ -665,8 +659,18 @@ export function getTensionOklch(tensionScore: number): string {
   return tensionScore >= 50 ? "oklch(0.62 0.12 228)" : "oklch(0.56 0.05 245)";
 }
 
+function assertExportMatchesModel(analysis: ScrollRhythmAnalysis): void {
+  const model = analyzeScrollRhythm({
+    panels: analysis.panels, platformId: analysis.platform.id, templateId: analysis.templateId,
+    scrollSpeedPxPerSec: analysis.scrollSpeedPxPerSec, readingCharsPerSec: analysis.readingCharsPerSec,
+  });
+  assertExportAnalysis(analysis, model);
+}
+
 /** 순수 시맨틱 `currentColor` 및 OKLCH 문자열만 사용하는 세로 스크롤 비트 스트립 SVG를 생성한다. */
 export function buildRhythmStripSvg(analysis: ScrollRhythmAnalysis, options?: BuildRhythmStripSvgOptions): string {
+  assertExportMatchesModel(analysis);
+  requireFinite([options?.stripWidthPx ?? 300]);
   const stripW = clamp(Math.round(options?.stripWidthPx ?? 300), 220, 480);
   const showRail = options?.showTensionRail ?? true;
   const showDims = options?.showGutterDimensions ?? true;
@@ -736,6 +740,7 @@ export function buildRhythmStripSvg(analysis: ScrollRhythmAnalysis, options?: Bu
 
 /** 컷 레이아웃 좌표·여백·호흡·긴장도 분석 결과를 정형 JSON 문자열로 직렬화한다. */
 export function exportPanelRhythmJson(analysis: ScrollRhythmAnalysis): string {
+  assertExportMatchesModel(analysis);
   return JSON.stringify(
     {
       schemaVersion: "toonstudio.panel-rhythm.v1",

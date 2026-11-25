@@ -8,6 +8,8 @@
  * - 순수 OKLCH 팔레트 및 독립 SVG 문자열 익스포터(`exportActionFxSvg`)
  */
 
+import { assertExportLayer, assertGeneration, assertMask, assertPreset, assertPrimitive, assertPrimitives, finite } from "./fx-input-contract";
+
 export type ActionFxPresetId =
   | "radial-focus-lines"
   | "parallel-speed-lines"
@@ -187,11 +189,13 @@ const dist2D = (a: Point2D, b: Point2D): number => Math.hypot(a.x - b.x, a.y - b
 
 /** 프리셋 ID에 해당하는 정본 메타데이터를 조회한다. */
 export function getActionFxPresetSpec(id: ActionFxPresetId): ActionFxPresetSpec {
+  assertPreset(id);
   return ACTION_FX_PRESETS.find((item) => item.id === id) ?? ACTION_FX_PRESETS[0];
 }
 
 /** 32비트 Mulberry32 기반 결정론적 난수 생성기(0 <= x < 1). */
 export function createSeededPrng(seed: number): () => number {
+  finite([seed]);
   let state = (Math.trunc(Number.isFinite(seed) ? seed : 4201) >>> 0) || 1;
   return () => {
     state = (state + 1831565813) >>> 0;
@@ -240,10 +244,12 @@ export function measurePrimitiveIntrusion(
   primitive: ActionFxVectorPrimitive,
   mask: ResolvedCharacterMask,
 ): { readonly intrusionPx: number; readonly clearancePx: number } {
+  assertMask(mask); assertPrimitive(primitive);
   if (!mask.enabled || mask.radius <= 0) return { intrusionPx: 0, clearancePx: Number.POSITIVE_INFINITY };
   const center: Point2D = { x: mask.cx, y: mask.cy };
   const halfStroke = primitive.stroke && primitive.stroke !== "none" ? (primitive.strokeWidth ?? 0) / 2 : 0;
-  const toRes = (clearance: number) => ({ intrusionPx: clearance < 0 ? round2(-clearance) : 0, clearancePx: round2(clearance) });
+  // 양의 침범을 소수 둘째 자리에서 버려 0px 통과로 만들지 않는다.
+  const toRes = (clearance: number) => ({ intrusionPx: clearance < 0 ? Math.ceil(-clearance * 100) / 100 : 0, clearancePx: round2(clearance) });
 
   if (primitive.kind === "polygon") {
     if (primitive.points.length === 0) return { intrusionPx: 0, clearancePx: Number.POSITIVE_INFINITY };
@@ -270,6 +276,7 @@ export function verifyCharacterMaskClearance(
   primitives: readonly ActionFxVectorPrimitive[],
   mask: ResolvedCharacterMask,
 ): CharacterMaskAuditReport {
+  assertMask(mask); assertPrimitives(primitives);
   if (!mask.enabled || mask.radius <= 0) {
     return { maskEnabled: false, safeZoneGuaranteed: true, checkedPrimitiveCount: primitives.length, intrudingPrimitiveIds: [], maxIntrusionPx: 0, minClearancePx: 0 };
   }
@@ -701,23 +708,25 @@ const fmtPts = (pts: readonly Point2D[]): string => pts.map((pt) => `${pt.x},${p
 
 function serializePrimitive(p: ActionFxVectorPrimitive): string {
   const stroke = p.stroke && p.stroke !== "none" ? ` stroke="${escXml(p.stroke)}" stroke-width="${p.strokeWidth ?? 1}"` : "";
-  if (p.kind === "polygon") return `    <polygon id="${escXml(p.id)}" data-role="${p.role}" points="${fmtPts(p.points)}" fill="${escXml(p.fill)}"${stroke ? `${stroke} stroke-linejoin="round"` : ""} opacity="${p.opacity}" />`;
-  if (p.kind === "polyline") return `    <polyline id="${escXml(p.id)}" data-role="${p.role}" points="${fmtPts(p.points)}" fill="none" stroke="${escXml(p.stroke)}" stroke-width="${p.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"${p.dashArray ? ` stroke-dasharray="${escXml(p.dashArray)}"` : ""} opacity="${p.opacity}" />`;
-  if (p.kind === "circle") return `    <circle id="${escXml(p.id)}" data-role="${p.role}" cx="${p.cx}" cy="${p.cy}" r="${p.r}" fill="${escXml(p.fill)}"${stroke}${p.dashArray ? ` stroke-dasharray="${escXml(p.dashArray)}"` : ""} opacity="${p.opacity}" />`;
+  if (p.kind === "polygon") return `    <polygon id="${escXml(p.id)}" data-role="${escXml(p.role)}" points="${fmtPts(p.points)}" fill="${escXml(p.fill)}"${stroke ? `${stroke} stroke-linejoin="round"` : ""} opacity="${p.opacity}" />`;
+  if (p.kind === "polyline") return `    <polyline id="${escXml(p.id)}" data-role="${escXml(p.role)}" points="${fmtPts(p.points)}" fill="none" stroke="${escXml(p.stroke)}" stroke-width="${p.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"${p.dashArray ? ` stroke-dasharray="${escXml(p.dashArray)}"` : ""} opacity="${p.opacity}" />`;
+  if (p.kind === "circle") return `    <circle id="${escXml(p.id)}" data-role="${escXml(p.role)}" cx="${p.cx}" cy="${p.cy}" r="${p.r}" fill="${escXml(p.fill)}"${stroke}${p.dashArray ? ` stroke-dasharray="${escXml(p.dashArray)}"` : ""} opacity="${p.opacity}" />`;
   const rot = p.rotationDeg !== 0 ? ` transform="rotate(${p.rotationDeg} ${p.cx} ${p.cy})"` : "";
-  return `    <ellipse id="${escXml(p.id)}" data-role="${p.role}" cx="${p.cx}" cy="${p.cy}" rx="${p.rx}" ry="${p.ry}" fill="${escXml(p.fill)}"${stroke}${rot} opacity="${p.opacity}" />`;
+  return `    <ellipse id="${escXml(p.id)}" data-role="${escXml(p.role)}" cx="${p.cx}" cy="${p.cy}" rx="${p.rx}" ry="${p.ry}" fill="${escXml(p.fill)}"${stroke}${rot} opacity="${p.opacity}" />`;
 }
 
 /** 생성된 웹툰 액션·판타지·로맨스 벡터 레이어를 독립 순수 SVG 문자열로 직렬화한다. */
 export function exportActionFxSvg(layer: ActionFxLayerResult, options?: ExportActionFxSvgOptions): string {
   const { width, height, seed, characterMask, vanishingPointPx } = layer.resolvedOptions;
+  assertExportLayer(layer);
+  const audit = verifyCharacterMaskClearance(layer.primitives, characterMask);
   const lines: string[] = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${layer.viewBox}" width="${width}" height="${height}" role="img" aria-label="${escXml(`${layer.preset.labelKo} (${layer.preset.labelEn})`)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escXml(layer.viewBox)}" width="${width}" height="${height}" role="img" aria-label="${escXml(`${layer.preset.labelKo} (${layer.preset.labelEn})`)}">`,
     `  <title>${escXml(layer.preset.labelKo)}</title>`,
-    `  <desc>${escXml(`Preset: ${layer.preset.id} | Seed: ${seed} | MaskIntrusion: ${layer.maskAudit.maxIntrusionPx}px`)}</desc>`,
+    `  <desc>${escXml(`Preset: ${layer.preset.id} | Seed: ${seed} | MaskIntrusion: ${audit.maxIntrusionPx}px`)}</desc>`,
   ];
   if (options?.includeBackdrop) lines.push(`  <rect x="0" y="0" width="${width}" height="${height}" fill="oklch(0.155 0.008 70)" />`);
-  lines.push(`  <g data-fx-preset="${layer.preset.id}" data-seed="${seed}" data-safe-zone="${layer.maskAudit.safeZoneGuaranteed ? "verified" : "breach"}">`);
+  lines.push(`  <g data-fx-preset="${escXml(layer.preset.id)}" data-seed="${seed}" data-safe-zone="${!audit.maskEnabled ? "disabled" : audit.safeZoneGuaranteed ? "verified" : "breach"}">`);
   for (const p of layer.primitives) lines.push(serializePrimitive(p));
   lines.push("  </g>");
   if (options?.includeSafeMaskGuide && characterMask.enabled && characterMask.radius > 0) {
@@ -741,6 +750,7 @@ const PRESET_GENERATORS: Readonly<Record<ActionFxPresetId, (opts: ResolvedAction
 
 /** 6종 웹툰 프로시저럴 벡터 이펙트 레이어를 결정론적으로 생성하고 얼굴 안전 영역 침범 0px를 검증한다. */
 export function generateActionFxLayer(options: ActionFxGenerationOptions): ActionFxLayerResult {
+  assertGeneration(options);
   const preset = getActionFxPresetSpec(options.preset);
   const width = Math.round(clamp(options.width ?? DEFAULT_ACTION_FX_CANVAS.width, 320, 2400));
   const height = Math.round(clamp(options.height ?? DEFAULT_ACTION_FX_CANVAS.height, 320, 3200));
@@ -776,5 +786,5 @@ export function generateActionFxLayer(options: ActionFxGenerationOptions): Actio
       circleCount: counts.circle, ellipseCount: counts.ellipse, estimatedSvgBytes: 0,
     },
   };
-  return { ...draft, metrics: { ...draft.metrics, estimatedSvgBytes: exportActionFxSvg(draft).length } };
+  return { ...draft, metrics: { ...draft.metrics, estimatedSvgBytes: new TextEncoder().encode(exportActionFxSvg(draft)).byteLength } };
 }

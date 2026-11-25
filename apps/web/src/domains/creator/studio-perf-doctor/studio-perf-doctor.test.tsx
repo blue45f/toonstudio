@@ -478,7 +478,7 @@ describe("Wave 41E — 실시간 120Hz 프레임타임 프로파일러 · 런타
 
     fireEvent.click(tab2);
     expect(tab2.getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByTestId("btn-apply-guardrail").textContent).toContain("Apply 1-Click Guardrail");
+    expect(screen.getByTestId("btn-apply-guardrail").textContent).toContain("Calculate Guardrail Example");
     expect(screen.getByTestId("panel-runtime-health").getAttribute("role")).toBe("tabpanel");
   });
 

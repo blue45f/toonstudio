@@ -372,7 +372,8 @@ function shapeCapToScalp(
       const radialDelta = (-0.026 * partGroove + 0.02 * rootPillow) * partMask + crownRib;
       const radius = Math.hypot(nx, ny, nz);
       if (radius > 1e-6) {
-        const targetR = Math.max(1.004, radius + radialDelta);
+        // 가르마 골은 기본 반경 1.006 아래로 파지 않되, 더 얇게 정형한 입력의 반경은 보존한다.
+        const targetR = Math.max(Math.min(radius, 1.006), radius + radialDelta);
         const gain = targetR / radius;
         nx *= gain;
         ny *= gain;

@@ -89,6 +89,20 @@ const LazyStudioWebgpuCrowdDirectorPanel = lazy(async () => {
   return { default: m.StudioWebgpuCrowdDirectorPanel };
 });
 
+const LazyFederatedLoraPanel = lazy(async () => {
+  await import("../federated-style-lora");
+  const m = await import("../federated-style-lora/StudioFederatedLoraStreamPanel");
+  return { default: m.StudioFederatedLoraStreamPanel };
+});
+
+const LazyStudioTactileBrushTexturePanel = lazy(() =>
+  import("../tactile-brush-texture-studio").then((module) => ({ default: module.StudioTactileBrushTexturePanel })),
+);
+
+const LazyStudioNativeWasmMigrationPanel = lazy(() =>
+  import("../native-wasm-migration-studio").then((module) => ({ default: module.StudioNativeWasmMigrationPanel })),
+);
+
 type FrontierTabId =
   | "brushPhysics"
   | "brushCustomLab"
@@ -107,7 +121,10 @@ type FrontierTabId =
   | "drawingFrontier"
   | "visualOracle"
   | "nocodeShaderGrid"
-  | "liveOracle";
+  | "liveOracle"
+  | "federatedLora"
+  | "tactileBrush"
+  | "nativeMigrationPlan";
 
 interface OracleLiveSnapshot {
   readonly catalogBrushes: number;
@@ -141,6 +158,9 @@ const FRONTIER_TABS: readonly {
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
   { id: "nocodeShaderGrid", labelKo: "노코드 WGSL · 분산 그리드", labelEn: "No-Code WGSL · Tile Grid" },
   { id: "liveOracle", labelKo: "실시간 엔진 오라클 (194종·KM·GPU)", labelEn: "Live Engine Oracle (194 · KM · GPU)" },
+  { id: "federatedLora", labelKo: "저랭크 학습·캐시 계산 예제", labelEn: "Low-Rank Learning · Cache Examples" },
+  { id: "tactileBrush", labelKo: "브러시 질감 예제", labelEn: "Brush Texture Examples" },
+  { id: "nativeMigrationPlan", labelKo: "WASM 전환 예산 예제", labelEn: "WASM Migration Budget Examples" },
 ];
 
 const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
@@ -225,6 +245,10 @@ const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
 
 function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
   switch (id) {
+    case "nativeMigrationPlan":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "tactileBrush":
+      return <PenTool size={15} aria-hidden="true" />;
     case "brushPhysics":
       return <Sparkles size={15} aria-hidden="true" />;
     case "brushCustomLab":
@@ -259,6 +283,8 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Eye size={15} aria-hidden="true" />;
     case "nocodeShaderGrid":
       return <Layers size={15} aria-hidden="true" />;
+    case "federatedLora":
+      return <Sparkles size={15} aria-hidden="true" />;
     case "liveOracle":
       return <Layers size={15} aria-hidden="true" />;
   }
@@ -418,6 +444,9 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "webgpuXpbdLight" ? <LazyStudioWebgpuXpbdLightingPanel /> : null}
             {active === "webgpuCrowd" ? <LazyStudioWebgpuCrowdDirectorPanel /> : null}
             {active === "webnnPigment" ? <LazyStudioWebnnPigmentDirectorPanel /> : null}
+            {active === "federatedLora" ? <LazyFederatedLoraPanel /> : null}
+            {active === "tactileBrush" ? <LazyStudioTactileBrushTexturePanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "nativeMigrationPlan" ? <LazyStudioNativeWasmMigrationPanel locale={isEn ? "en" : "ko"} /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
             {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}

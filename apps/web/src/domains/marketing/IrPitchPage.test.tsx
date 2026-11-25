@@ -76,4 +76,41 @@ describe("투자 소개 목적별 페이지", () => {
     open("/ir?brief=downloads");
     expect(screen.getByText("투자자·심사위원이 가장 먼저 묻는 5가지 질문")).toBeTruthy();
   });
+  it("2026-11-25 웨이브 45~49 구현·보안 마일스톤과 /compare/studio 링크를 정직하게 동기화한다", () => {
+    open("/ir");
+    const milestones = screen.getByTestId("ir-wave-milestones");
+    expect(milestones.textContent).toContain("현재 구현 · 2026-11-25 (웨이브 45~49)");
+    expect(milestones.textContent).toContain("매출·고객 목표와 분리");
+    expect(milestones.textContent).toContain("spectrum-editorial-theme.css");
+    expect(milestones.textContent).toContain("180° 카메라 앵글 리프레이밍");
+    expect(milestones.textContent).toContain("USB HID 0x0D");
+    expect(milestones.textContent).toContain("권한 적용 범위는 최종 SHA에서 다시 확인");
+    expect(milestones.textContent).toContain("rustix 관련 패치");
+    expect(milestones.textContent).toContain("운영 보안 감사 완료를 뜻하지 않습니다");
+    expect(within(milestones).getByRole("link", { name: /제작 도구 비교 자료/ }).getAttribute("href")).toBe("/compare/studio");
+    cleanup();
+    open("/ir?brief=landscape");
+    expect(screen.getByRole("link", { name: /제작 도구 비교 자료 보기/ }).getAttribute("href")).toBe("/compare/studio");
+    cleanup();
+    open("/ir?brief=product");
+    expect(screen.getByTestId("ir-wave-milestones").textContent).toContain("120Hz 목표 프레임 예산 가드");
+    cleanup();
+    open("/ir?brief=founder");
+    expect(screen.getByTestId("ir-security-governance-update").textContent).toContain("최종 SHA에서 다시 확인");
+    cleanup();
+    useI18n.setState({ lang: "en" });
+    open("/ir");
+    const enMilestones = screen.getByTestId("ir-wave-milestones");
+    expect(enMilestones.textContent).toContain("Current Build · 2026-11-25");
+    expect(enMilestones.textContent).not.toMatch(/[가-힣]/);
+  });
+  it.each(["ko", "en"] as const)("%s 마일스톤은 실제 연결·승인·저장을 검증 완료로 표현하지 않는다", (lang) => {
+    useI18n.setState({ lang }); open("/ir");
+    const text = screen.getByTestId("ir-wave-milestones").textContent ?? "";
+    expect(text).toContain(lang === "ko" ? "계산 예제" : "calculation examples");
+    expect(text).toContain(lang === "ko" ? "합성 입력" : "synthetic inputs");
+    expect(text).toContain(lang === "ko" ? "실기기·운영 GPU 성능 미검증" : "Physical devices and production GPU performance are unverified");
+    expect(text).not.toMatch(/106\/106|0 pnpm audit vulnerabilities|pnpm audit 취약점 0건/);
+  });
+
 });

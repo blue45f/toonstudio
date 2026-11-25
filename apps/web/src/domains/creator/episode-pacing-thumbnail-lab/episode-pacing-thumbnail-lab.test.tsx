@@ -469,7 +469,7 @@ describe("4. 코드 위생 · Calm Atelier 토큰 · 파일 크기 자가 검증
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(allFiles).toHaveLength(4);
+    expect([...allFiles].sort()).toEqual(["OperationStatus.tsx", "StudioEpisodePacingThumbnailPanel.tsx", "ThumbnailControls.tsx", "episode-dialogue-contract.ts", "episode-pacing-thumbnail-engine.ts", "episode-pacing-thumbnail-lab.test.tsx", "index.ts", "pacing-boundaries.test.tsx", "thumbnail-input-contract.ts", "use-clipboard-output.ts", "use-example-notification.ts"]);
 
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");

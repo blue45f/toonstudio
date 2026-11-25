@@ -1,5 +1,5 @@
 /**
- * Wave 42C — 독립·프로 웹툰 작가 수익화 퍼널 · 굿즈 BEP · 한국 3.3%/10% 정산 · 주간 마감 번아웃 예측 3탭 플래너.
+ * Wave 42C — 독립·프로 웹툰 작가 수익화 퍼널 · 굿즈 BEP · 세율 가정 계산 · 주간 마감 번아웃 예측 3탭 플래너.
  *
  * - Calm Atelier 시맨틱 토큰 전용 (원시 hex/rgb/hsl 및 원시 팔레트 색 0건)
  * - 모든 시뮬레이션 결과에 `추정` 배지 명시 (허위 실측 통계 금지)
@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useId, useMemo, useState, type ReactElement } from "react";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 import {
   BURNOUT_SCENARIO_PRESETS, DEFAULT_GOODS_UNIT_ECONOMICS_INPUT, DEFAULT_KOREAN_SETTLEMENT_INPUT,
   DEFAULT_PAYWALL_FUNNEL_INPUT, DEFAULT_WEEKLY_BURNOUT_INPUT, GOODS_PRESETS, PAYWALL_SCENARIO_PRESETS,
@@ -22,14 +24,17 @@ import {
   type ProductionStageId, type VatContractMode,
 } from "./monetization-burnout-engine";
 
+import { ExampleNotificationStatus } from "./ExampleNotificationStatus";
+import { useExampleNotification } from "./use-example-notification";
+
 export type MonetizationPlannerTabId = "paywall" | "goods-tax" | "burnout";
 
 export interface StudioCreatorMonetizationPanelProps {
   readonly initialTab?: MonetizationPlannerTabId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onTabChange?: (tabId: MonetizationPlannerTabId) => void;
-  readonly onDelegationApply?: (stages: readonly ProductionStageId[]) => void;
+  readonly onTabChange?: (tabId: MonetizationPlannerTabId) => void | Promise<void>;
+  readonly onDelegationApply?: (stages: readonly ProductionStageId[]) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -58,6 +63,12 @@ const PAYWALL_FIELDS: readonly NumberFieldSpec<keyof PaywallFunnelInput>[] = [
   { key: "mgPerEpisodeKrw", testId: "input-mg-per-episode", labelKo: "회차당 MG (미니멈 개런티)", labelEn: "MG per Episode", min: 0, step: 100000, suffixKo: "원", suffixEn: "KRW" },
   { key: "upfrontAdvanceKrw", testId: "input-upfront-advance", labelKo: "추가 선인세·누적 MG", labelEn: "Upfront Advance / MG", min: 0, step: 500000, suffixKo: "원", suffixEn: "KRW" },
 ];
+
+const SETTLEMENT_RATE_FIELDS = [
+  { key: "nationalIncomeTaxRatePct", labelKo: "국세율 가정", labelEn: "Assumed National Tax", fallback: 3 },
+  { key: "localIncomeTaxRatePct", labelKo: "지방세율 가정", labelEn: "Assumed Local Tax", fallback: 0.3 },
+  { key: "vatRatePct", labelKo: "부가세율 가정", labelEn: "Assumed VAT", fallback: 10 },
+] as const;
 
 type GoodsNumericKey = Exclude<keyof GoodsUnitEconomicsInput, "goodsType">;
 const GOODS_FIELDS: readonly NumberFieldSpec<GoodsNumericKey>[] = [
@@ -164,11 +175,16 @@ function EstimateNoticeBar({ badgeLabel, notice }: { readonly badgeLabel: string
   );
 }
 
-/** Wave 42C 독립·프로 웹툰 작가 수익화 퍼널 · 굿즈 BEP · 한국 3.3%/10% 정산 · 주간 마감 번아웃 예측 플래너. */
+/** Wave 42C 독립·프로 웹툰 작가 수익화 퍼널 · 굿즈 BEP · 세율 가정 계산 · 주간 마감 번아웃 예측 플래너. */
 export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationPanelProps): ReactElement {
-  const { initialTab = "paywall", locale = "ko", className, onTabChange, onDelegationApply } = props;
+  const { initialTab = "paywall", locale, className, onTabChange, onDelegationApply } = props;
   const uid = useId();
-  const isEn = locale === "en";
+  const storeLang = useI18n((state) => state.lang);
+  const isEn = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "en";
+  const tabNotification = useExampleNotification(onTabChange);
+  const delegationNotification = useExampleNotification(onDelegationApply);
+  const pending = tabNotification.status === "pending" || delegationNotification.status === "pending";
+  function isPending(): boolean { return tabNotification.isPending() || delegationNotification.isPending(); }
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
 
   const [activeTab, setActiveTab] = useState<MonetizationPlannerTabId>(initialTab);
@@ -184,8 +200,9 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
   const burnoutResult = useMemo(() => forecastWeeklyBurnoutRisk({ ...burnoutInput, delegatedStages }), [burnoutInput, delegatedStages]);
 
   const selectTab = (nextTab: MonetizationPlannerTabId): void => {
+    if (isPending()) return;
     setActiveTab(nextTab);
-    onTabChange?.(nextTab);
+    tabNotification.notify(nextTab);
   };
 
   const applyGoodsPreset = (goodsType: GoodsItemType): void => {
@@ -194,27 +211,30 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
   };
 
   const toggleDelegatedStage = (stageId: ProductionStageId): void => {
+    if (isPending()) return;
     const nextStages = delegatedStages.includes(stageId)
       ? delegatedStages.filter((id) => id !== stageId)
       : [...delegatedStages, stageId];
     setDelegatedStages(nextStages);
-    onDelegationApply?.(nextStages);
+    delegationNotification.notify(nextStages);
   };
 
   const applyRecommendedDelegations = (): void => {
+    if (isPending()) return;
     const nextStages = Array.from(new Set([...delegatedStages, ...burnoutResult.recommendedDelegations.map((item) => item.stageId)]));
     setDelegatedStages(nextStages);
-    onDelegationApply?.(nextStages);
+    delegationNotification.notify(nextStages);
   };
 
   const clearDelegations = (): void => {
+    if (isPending()) return;
     setDelegatedStages([]);
-    onDelegationApply?.([]);
+    delegationNotification.notify([]);
   };
 
   const tabs: readonly { readonly id: MonetizationPlannerTabId; readonly labelKo: string; readonly labelEn: string; readonly icon: ReactElement }[] = [
     { id: "paywall", labelKo: "유료 미리보기·MG 회수", labelEn: "Paywall & MG Recoup", icon: <TrendingUp className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> },
-    { id: "goods-tax", labelKo: "굿즈 BEP·3.3%·10% 정산", labelEn: "Goods BEP & KR Tax", icon: <Package className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> },
+    { id: "goods-tax", labelKo: "굿즈 BEP·세율 가정", labelEn: "Goods BEP & KR Tax", icon: <Package className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> },
     { id: "burnout", labelKo: "주간 마감 번아웃·어시 배분", labelEn: "Burnout & Delegation", icon: <Activity className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> },
   ];
 
@@ -226,6 +246,10 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
       aria-label={pick("독립·프로 웹툰 작가 수익화·굿즈 BEP·세무 정산·주간 번아웃 예측 플래너", "Webtoon Creator Monetization, Goods BEP, KR Settlement & Weekly Burnout Planner")}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] sm:p-5 ${className ?? ""}`}
     >
+      <p data-testid="monetization-example-scope" className="rounded-lg border border-line bg-card p-3 text-xs text-fg-2">{pick("입력 가정에 따른 메모리 계산 예제입니다. 원고·계정 설정을 읽거나 저장하지 않습니다. 위임 선택은 예제 계산에만 반영되며 의학적 진단·세무 판단·실측 성과가 아닙니다.", "In-memory examples from input assumptions; documents and account settings are not read or saved. Delegation only changes this example, not medical or tax advice or measured outcomes. Inputs are not saved.")}</p>
+      <ExampleNotificationStatus status={tabNotification.status} retry={tabNotification.retry} retryTestId="retry-tab-notification" isEn={isEn} />
+      <ExampleNotificationStatus status={delegationNotification.status} retry={delegationNotification.retry} retryTestId="retry-delegation-notification" isEn={isEn} />
+      <fieldset disabled={pending} className="min-w-0 space-y-4 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -239,7 +263,7 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
             </span>
           </div>
           <h2 className="text-base font-bold text-fg sm:text-lg">
-            {pick("유료 미리보기·MG 회수 · 굿즈 손익분기 · 한국 3.3%/10% 정산 · 번아웃 예측", "Paywall & MG Recoupment · Goods BEP · KR 3.3%/10% Tax · Weekly Burnout")}
+            {pick("유료 미리보기·MG 회수 · 굿즈 손익분기 · 세율 가정 계산 · 번아웃 예측", "Paywall & MG Recoupment · Goods BEP · Assumed Tax Rates · Weekly Burnout")}
           </h2>
           <p className="max-w-3xl text-xs leading-relaxed text-fg-2">
             {pick(
@@ -474,7 +498,7 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
 
           <div className="space-y-3 rounded-xl border border-line bg-card p-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-xs font-bold text-fg">{pick("2) 한국 창작자 정산 비교: 프리랜서 3.3% vs 사업자 부가세 10% (추정)", "2) Korea Settlement: Freelancer 3.3% vs Business VAT 10% (Estimate)")}</h3>
+              <h3 className="text-xs font-bold text-fg">{pick("2) 입력 세율에 따른 원천징수·부가세 현금흐름 비교 (추정)", "2) Withholding & VAT Cashflow from Assumed Rates (Estimate)")}</h3>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button" data-testid="sync-goods-to-tax" className={`${PILL_BTN} ${IDLE_TONE}`}
@@ -519,15 +543,23 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
               </div>
             </div>
 
+            <div className="grid gap-3 sm:grid-cols-3">
+              {SETTLEMENT_RATE_FIELDS.map((field) => (
+                <NumericField key={field.key} id={`${uid}-${field.key}`} testId={`input-${field.key}`} label={pick(field.labelKo, field.labelEn)}
+                  value={settlementInput[field.key] ?? field.fallback} min={0} max={100} step={0.1} suffix="%"
+                  onChange={(value) => setSettlementInput((prev) => ({ ...prev, [field.key]: value }))} />
+              ))}
+            </div>
+            <p className="text-xs text-fg-2">{isEn ? settlementResult.provenance.noticeEn : settlementResult.provenance.noticeKo}</p>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2 rounded-xl border border-line bg-panel p-3 text-xs tabular-nums">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-fg">{pick("프리랜서 원천징수 3.3%", "Freelancer Withholding 3.3%")}</span>
-                  <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[11px] font-semibold text-fg-2">{pick("국세 3.0% + 지방세 0.3%", "3.0% + 0.3% local")}</span>
+                  <span className="font-bold text-fg">{pick(`원천징수 가정 ${settlementResult.freelancer.withholdingRatePct}%`, `Assumed Withholding ${settlementResult.freelancer.withholdingRatePct}%`)}</span>
+                  <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[11px] font-semibold text-fg-2">{`${settlementResult.freelancer.nationalIncomeTaxRatePct}% + ${settlementResult.freelancer.localIncomeTaxRatePct}%`}</span>
                 </div>
                 <dl className="space-y-1">
                   <div className="flex justify-between">
-                    <dt className="text-fg-2">{pick("원천징수 세액 (3.3%)", "Withholding Tax (3.3%)")}</dt>
+                    <dt className="text-fg-2">{pick("가정 원천징수액", "Assumed Withholding")}</dt>
                     <dd data-testid="tax-freelancer-withholding" className="font-semibold text-bad">-{formatKrw(settlementResult.freelancer.totalWithholdingTaxKrw)}</dd>
                   </div>
                   <div className="flex justify-between">
@@ -543,7 +575,7 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
 
               <div className="space-y-2 rounded-xl border border-line bg-panel p-3 text-xs tabular-nums">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-fg">{pick("일반과세 사업자 부가세 10%", "Business General VAT 10%")}</span>
+                  <span className="font-bold text-fg">{pick(`부가세 가정 ${settlementResult.businessVat.vatRatePct}%`, `Assumed VAT ${settlementResult.businessVat.vatRatePct}%`)}</span>
                   <span className="rounded-full border border-accent bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent">{pick("세금계산서·매입세액 공제", "Tax Invoice + Input Credit")}</span>
                 </div>
                 <dl className="space-y-1">
@@ -652,7 +684,7 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
                   </h4>
                   <div className="flex gap-2">
                     <button type="button" data-testid="btn-apply-recommended-delegation" disabled={burnoutResult.recommendedDelegations.length === 0} onClick={applyRecommendedDelegations} className={SOLID_BTN}>
-                      {pick("추천 위임 일괄 적용", "Apply Recommended")}
+                      {pick("예제 위임 일괄 선택", "Select Example Delegations")}
                     </button>
                     {delegatedStages.length > 0 ? (
                       <button type="button" data-testid="btn-clear-delegation" onClick={clearDelegations} className={`${PILL_BTN} ${IDLE_TONE}`}>
@@ -721,7 +753,7 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
                           aria-pressed={stage.isDelegated} onClick={() => toggleDelegatedStage(stage.stageId)}
                           className={`${PILL_BTN} ${stage.isDelegated ? SOLID_ACTIVE : IDLE_TONE}`}
                         >
-                          {stage.isDelegated ? pick("위임 중", "Delegated") : pick("직접 수행", "Author")}
+                          {stage.isDelegated ? pick("예제 위임", "Example Delegation") : pick("직접 수행", "Author")}
                         </button>
                       </div>
                     </div>
@@ -732,6 +764,7 @@ export function StudioCreatorMonetizationPanel(props: StudioCreatorMonetizationP
           </div>
         </div>
       ) : null}
+      </fieldset>
     </section>
   );
 }

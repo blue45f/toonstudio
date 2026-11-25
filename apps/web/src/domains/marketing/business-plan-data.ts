@@ -1,15 +1,40 @@
 /**
  * 사업계획서 페이지 (/business-plan) 본문 데이터.
  * 출처: 2026-11-04 고도화 초안 v11의 Q1–Q4와 붙임. 제출용 docx가 아니라
- * 사이트에서 읽는 별도 페이지용 정리본이다. 2026-11-21 근거 갱신에서는
- * 지난 일정·미검증 수량을 정정하고 검증 목표·미정 항목은 확정하지 않는다.
+ * 사이트에서 읽는 별도 페이지용 정리본이다. 2026-11-21 근거 갱신과
+ * 2026-11-25 구현 동기화에서는 지난 일정·미검증 수량을 정정하고 검증 목표·
+ * 미정 항목은 확정하지 않으며, 현재 구현 기록과 운영 성과를 엄격히 분리한다.
  * 2026-11-04 사용자 결정 반영: 팀 가격은 지금 정하지 않고 크레딧 중심으로
  * 심플하게 유지하며 사용자가 늘어난 뒤에 정한다. 해외는 번역된 언어 기준
  * 동시 오픈 방향이며, 아래 걸림돌 표의 해결 방안은 계획이다.
  */
 
 export const BUSINESS_PLAN_DOCUMENT_BASIS =
-  "원문 2026-11-04 고도화 초안 v11 · 근거 갱신 2026-11-21";
+  "원문 2026-11-04 고도화 초안 v11 · 근거 갱신 2026-11-25";
+
+/** 최종 운영 검증과 구분해서 공개하는 소스·계산 예제 기록이다. */
+export const WAVE_IMPLEMENTATION_MILESTONES = [
+  {
+    id: "editorial-home",
+    ko: { tag: "디자인 · 홈", title: "에디토리얼 테마·홈 구성", detail: "spectrum-editorial-theme.css의 테마와 ReferenceCreatorDashboard.tsx의 홈 구성을 정리했습니다. 운영 배포·화면별 접근성 검증 완료를 뜻하지 않습니다." },
+    en: { tag: "Design & Home", title: "Editorial theme and home layout", detail: "Source changes cover spectrum-editorial-theme.css and ReferenceCreatorDashboard.tsx. Production deployment and screen accessibility verification are separate." },
+  },
+  {
+    id: "creator-assistants",
+    ko: { tag: "창작 보조 계산 예제", title: "창작 보조 제안·조합 계산 예제", detail: "표정·포즈, 3점 조명, 180° 카메라 앵글 리프레이밍, 말풍선·SFX, 15관절 손 자동 그립, 설정집 비교, 원스톱 연출 체인·화풍 가디언의 계산 예제입니다. 선택·되돌리기는 메모리 상태를 바꾸며 실제 장면 적용·저장·권한 검증은 별도입니다." },
+    en: { tag: "Creator calculation examples", title: "Creative proposals and composition calculation examples", detail: "Expression and pose, 3-point lighting, 180° camera reframing, balloon/SFX, 15-joint hand grip, model-sheet comparison, orchestration and style guardian calculation examples. Selection and revert change in-memory state; actual scene changes, storage and permission enforcement are unverified." },
+  },
+  {
+    id: "tactile-hardware",
+    ko: { tag: "브러시 · 합성 입력", title: "브러시 질감·입력·공간 계산 예제", detail: "종이 요철·갈필·습윤 에지·임파스토 계산과 120Hz 목표 프레임 예산 가드를 추가했습니다. USB HID 0x0D·WebXR·핀 검수·바통터치·외부 도구 브리지는 합성 입력을 쓰는 메모리 예제를 포함합니다. 실기기·운영 GPU 성능 미검증이며, 장치 연결·팀 전달·외부 도구 적용은 별도 검증이 필요합니다." },
+    en: { tag: "Brushes & synthetic inputs", title: "Brush texture, input and spatial calculation examples", detail: "Paper-tooth, dry-bristle, wet-edge and impasto calculations include a 120Hz target frame-budget guard. USB HID 0x0D, WebXR, pin review, handoff and external-tool bridges include in-memory examples using synthetic inputs. Physical devices and production GPU performance are unverified; device access, team delivery and external-tool application require separate verification." },
+  },
+  {
+    id: "security-governance",
+    ko: { tag: "보안 · 검증 대기", title: "보안·공급망 정비 기록", detail: "워크플로 권한·의존성 고정·SECURITY.md·rustix 관련 패치를 정리한 소스 기록입니다. 취약점 수와 권한 적용 범위는 최종 SHA에서 다시 확인해야 합니다. 운영 보안 감사 완료를 뜻하지 않습니다." },
+    en: { tag: "Security verification pending", title: "Security and supply-chain source changes", detail: "Source changes cover workflow permissions, dependency pinning, SECURITY.md and rustix patches. Vulnerability counts and permission coverage require verification on the final SHA; a production security audit is not established." },
+  },
+] as const;
 
 export interface PlanTable {
   readonly caption: string;
@@ -101,8 +126,17 @@ export const BUSINESS_PLAN_SECTIONS: readonly PlanSection[] = [
     ],
     bullets: [
       "배경·캐릭터·브러시 연결과 결과 확인 기능은 개발 중 점검 항목이다. 내부 점수나 배포 예제의 테스트 수를 실제 작품 품질·운영 성능·고객 실사용 성공의 지표로 사용하지 않는다.",
+      "2026-11-25 소스·예제 기록(Wave 45~49): 테마·홈 구성, 창작 보조 계산 예제, 합성 입력·공간 예제와 보안 정비를 정리했다. 실제 장면 적용·기기 연결·권한·저장·성능·보안 검증 및 운영 배포는 별도이며 고객 실사용·매출 성과가 아니다.",
     ],
     tables: [
+      {
+        caption: "2026-11-25 현재 구현 기록 — 저장소 소스 기준 (운영 매출·고객 성과가 아니다)",
+        headers: ["구분", "소스·예제 범위 (Wave 45~49)", "검증 경계"],
+        rows: [
+          ...WAVE_IMPLEMENTATION_MILESTONES.map((item) => [item.ko.title, item.ko.detail, "소스·예제 기록 · 최종 SHA 기준 재검증 필요"]),
+          ["제작 도구 비교 자료", "/compare/studio에 비교 자료를 연결했다. 동일 조건의 실기기 성능 비교나 외부 도구 호환 인증 결과가 아니다.", "자료 연결 · 성능 실측 별도"],
+        ],
+      },
       {
         caption: "경쟁·대체 서비스 비교 — 그리기와 협업을 한 자리에서 잇는가",
         headers: ["구분", "클립스튜디오", "협업·검수 전용툴", "ToonStudio"],
@@ -230,6 +264,14 @@ export const BUSINESS_PLAN_SECTIONS: readonly PlanSection[] = [
           [
             "다중 클라우드 · 자체 환경 배포 매트릭스",
             "현재 운영은 Cloudflare 정적 웹과 onpod API·DB. 승인·검증 후 수동 배포하며, 다른 환경의 예제는 운영 성공 증거가 아니다.",
+          ],
+          [
+            "보안·공급망 관리 (2026-11-25)",
+            "워크플로 권한·의존성 고정·SECURITY.md·rustix 관련 소스 정비 기록이다. 취약점 수·권한 적용 범위는 최종 SHA에서 다시 확인해야 한다. 운영 보안 감사나 매출 성과가 아니다.",
+          ],
+          [
+            "제작 도구 비교 자료 (/compare/studio)",
+            "제작 도구 비교 자료를 연결하며 현재 구현과 향후 목표를 구분한다. 같은 조건의 실기기 비교·호환 인증 결과를 뜻하지 않는다.",
           ],
         ],
       },

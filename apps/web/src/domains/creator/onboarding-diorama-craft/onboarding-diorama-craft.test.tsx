@@ -78,15 +78,12 @@ describe("1. 4장 온보딩 디오라마 카탈로그 · 실존 WebP 자산 디�
     const assetPaths = collectAllOnboardingAtelierAssetPaths();
     expect(assetPaths.length).toBeGreaterThanOrEqual(22);
 
-    const hasFullAtelierCheckout = existsSync(path.join(REPO_PUBLIC_DIR, "assets/atelier"));
     for (const webPath of assetPaths) {
       expect(webPath.startsWith("/assets/atelier/")).toBe(true);
       expect(webPath.endsWith(".webp")).toBe(true);
-      if (hasFullAtelierCheckout) {
-        const diskPath = path.join(REPO_PUBLIC_DIR, webPath.slice(1));
-        expect(existsSync(diskPath), `Missing WebP on disk: ${diskPath}`).toBe(true);
-        expect(statSync(diskPath).size).toBeGreaterThan(1024);
-      }
+      const diskPath = path.join(REPO_PUBLIC_DIR, webPath.slice(1));
+      expect(existsSync(diskPath), `Missing WebP on disk: ${diskPath}`).toBe(true);
+      expect(statSync(diskPath).size).toBeGreaterThan(1024);
     }
 
     // 엔진 소스 내 하드코딩된 모든 /assets/atelier/*.webp 문자열까지 전수 대조
@@ -96,11 +93,9 @@ describe("1. 4장 온보딩 디오라마 카탈로그 · 실존 WebP 자산 디�
     );
     const literalMatches = engineSrc.match(/\/assets\/atelier\/[a-z0-9/-]+\.webp/gu) ?? [];
     expect(literalMatches.length).toBeGreaterThanOrEqual(22);
-    if (hasFullAtelierCheckout) {
-      for (const match of new Set(literalMatches)) {
-        const diskPath = path.join(REPO_PUBLIC_DIR, match.slice(1));
-        expect(existsSync(diskPath), `Broken literal asset path: ${match}`).toBe(true);
-      }
+    for (const match of new Set(literalMatches)) {
+      const diskPath = path.join(REPO_PUBLIC_DIR, match.slice(1));
+      expect(existsSync(diskPath), `Broken literal asset path: ${match}`).toBe(true);
     }
   });
 

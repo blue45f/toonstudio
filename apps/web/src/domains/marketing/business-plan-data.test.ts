@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
+import { BUSINESS_PLAN_DOCUMENT_BASIS, BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
 
 /** 사업계획서 페이지 본문 데이터 계약: 문항 순서·표 형태·금지 표기를 고정한다. */
 
@@ -101,4 +101,31 @@ describe("사업계획서 페이지 본문 데이터", () => {
     expect(serialized).toContain("승인·검증 후 수동 배포");
     expect(serialized).not.toMatch(/7개 환경|Vercel|171개|프리플라이트 100% 통과|96\.84|96\.74/);
   });
+
+  it("2026-11-25 웨이브 45~49 구현·보안 기록을 운영 매출·고객 성과와 분리해 반영한다", () => {
+    expect(BUSINESS_PLAN_DOCUMENT_BASIS).toContain("2026-11-25");
+    const q2 = BUSINESS_PLAN_SECTIONS.find((section) => section.id === "q2");
+    const milestoneTable = q2?.tables.find((table) => table.caption.startsWith("2026-11-25 현재 구현 기록"));
+    expect(milestoneTable?.caption).toContain("운영 매출·고객 성과가 아니다");
+    const serializedQ2 = JSON.stringify(milestoneTable);
+    expect(serializedQ2).toContain("spectrum-editorial-theme.css");
+    expect(serializedQ2).toContain("ReferenceCreatorDashboard.tsx");
+    expect(serializedQ2).toContain("180° 카메라 앵글 리프레이밍");
+    expect(serializedQ2).toContain("15관절 손 자동 그립");
+    expect(serializedQ2).toContain("120Hz 목표 프레임 예산 가드");
+    expect(serializedQ2).toContain("USB HID 0x0D");
+    expect(serializedQ2).toContain("최종 SHA 기준 재검증 필요");
+    expect(serializedQ2).toContain("rustix 관련 패치");
+    expect(serializedQ2).toContain("실제 장면 적용·저장·권한 검증은 별도");
+    expect(serializedQ2).toContain("/compare/studio");
+  });
+  it("내려받기 원본의 새 마일스톤도 예제와 미검증 성과를 구분한다", () => {
+    const table = BUSINESS_PLAN_SECTIONS.find((section) => section.id === "q2")?.tables.find((item) => item.caption.startsWith("2026-11-25 현재 구현 기록"));
+    const text = JSON.stringify(table);
+    expect(text).toContain("계산 예제"); expect(text).toContain("합성 입력");
+    expect(text).toContain("실기기·운영 GPU 성능 미검증");
+    expect(text).toContain("최종 SHA 기준 재검증 필요");
+    expect(text).not.toMatch(/106\/106|pnpm audit 보안 문제 0건/);
+  });
+
 });

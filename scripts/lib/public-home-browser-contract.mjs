@@ -78,38 +78,39 @@ async function assertPublicHomeInput(dashboard) {
   await expect(dashboard.locator(".rd-idea-submit")).toBeVisible();
 }
 
-/** Luna 제안 칩은 대화형 AI 흉내가 아니라 실제 시작 동선으로 가는 링크다. */
+/** Luna 제안 칩은 기본 접힘으로 홈 노이즈를 줄이며, 열었을 때 실제 시작 동선으로 가는 링크를 제공한다. */
 async function assertPublicHomeLuna(dashboard) {
   const help = dashboard.locator("details.rd-luna-help");
   const summary = help.locator(":scope > summary");
   const luna = help.getByRole("complementary", { name: "Luna 창작 안내" });
-  await expect(help).toHaveAttribute("open");
-  await expect(luna).toBeVisible();
+  await expect(help).not.toHaveAttribute("open");
+  await expect(luna).toBeHidden();
   await expect(summary).toHaveText(/시작이 막막한가요/u);
-  await expect(luna.getByRole("log", { name: "Luna와의 대화" })).toBeVisible();
-  assert.deepEqual(await hrefsOf(luna.locator(".rd-luna-chips a")), readHomeContentHrefs("HOME_LUNA_SUGGESTIONS"));
   await summary.scrollIntoViewIfNeeded();
   await summary.focus();
   await summary.press("Enter");
-  await expect(help).not.toHaveAttribute("open");
-  await expect(luna).toBeHidden();
-  await summary.press("Enter");
   await expect(help).toHaveAttribute("open");
   await expect(luna).toBeVisible();
+  await expect(luna.getByRole("log", { name: "Luna와의 대화" })).toBeVisible();
+  assert.deepEqual(await hrefsOf(luna.locator(".rd-luna-chips a")), readHomeContentHrefs("HOME_LUNA_SUGGESTIONS"));
   await summary.press("Escape");
   await expect(help).not.toHaveAttribute("open");
+  await expect(luna).toBeHidden();
   await expect(summary).toBeFocused();
   await summary.press("Enter");
   await expect(help).toHaveAttribute("open");
+  await expect(luna).toBeVisible();
 }
 
-/** 시작 카드·핵심 작업실·편집기 미리보기는 V4 기본 펼침 "더 알아보기" 밴드에 노출되며 키보드로 접었다 펼 수 있다. */
+/** 시작 카드·핵심 작업실·편집기 미리보기는 기본 접힘 "더 알아보기" 밴드에 정돈되며 키보드로 펼쳐 검증한다. */
 async function assertPublicHomeMore(dashboard) {
   const more = dashboard.locator("details.rd-more");
-  await expect(more).toHaveAttribute("open");
-  const summary = more.locator("summary");
+  await expect(more).not.toHaveAttribute("open");
+  const summary = more.locator(":scope > summary");
   await summary.scrollIntoViewIfNeeded();
   await summary.focus();
+  await summary.press("Enter");
+  await expect(more).toHaveAttribute("open");
   await summary.press("Enter");
   await expect(more).not.toHaveAttribute("open");
   await summary.press("Enter");

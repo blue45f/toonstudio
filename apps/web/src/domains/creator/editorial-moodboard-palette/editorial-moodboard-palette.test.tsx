@@ -495,7 +495,7 @@ describe("6. 코드 위생 자가 검증 (파일 줄수 <= 800 · Calm Atelier �
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(allFiles).toHaveLength(4);
+    expect([...allFiles].sort()).toEqual(["OperationStatus.tsx", "StudioEditorialMoodboardPanel.tsx", "editorial-moodboard-engine.ts", "editorial-moodboard-palette.test.tsx", "index.ts", "moodboard-boundaries.test.tsx", "moodboard-input-contract.ts", "moodboard-output.ts", "use-clipboard-output.ts", "use-example-notification.ts"]);
 
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");

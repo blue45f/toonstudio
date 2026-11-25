@@ -353,6 +353,7 @@ describe("Wave 37D — 2D/3D 단일 물리 광원 리그 & SDF 툰 광원 베이
     canvas.height = 340;
     const mockCtx = createMockCanvas2dContext();
     mockCanvas2dContext(canvas, mockCtx);
+    expect(canvas.getContext("webgpu")).toBeNull();
 
     const sim = stepXpbdSimulation(createDefaultXpbdRigState(), DEFAULT_XPBD_CONFIG);
     const light = bakeToonSdfLighting({ azimuthDeg: 45, elevationDeg: 40, colorTempKelvin: 5200 });

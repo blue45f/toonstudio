@@ -13,6 +13,8 @@ use std::fmt;
 pub mod brush_kernel;
 pub mod filter_warp_kernel;
 pub mod spectral_km_kernel;
+pub mod tactile_texture_kernel;
+pub mod tile_compositor_kernel;
 pub mod tile_delta_kernel;
 pub mod vector_psd_tile_kernel;
 pub mod wasm_ffi;
@@ -26,6 +28,16 @@ pub use filter_warp_kernel::{
     warp_mesh_rigid_mls, WarpPin,
 };
 pub use spectral_km_kernel::{mix_pigments_km16, mix_pigments_km16_strip, KM_SPECTRAL_BANDS};
+pub use tactile_texture_kernel::{
+    generate_paper_tile_lut, stamp_tactile_bristle_rgba, PaperKind, PaperLutStats, PaperTileLut,
+    TactileBrushParams, TactileStampStats, MAX_BRISTLE_COUNT, MIN_BRISTLE_COUNT, PAPER_TILE_DIM,
+    PAPER_TILE_LEN,
+};
+pub use tile_compositor_kernel::{
+    composite_tile_dirty_rect, AddressSpaceMode, DirtyRect, SparseTileArenaConfig,
+    SparseTileArenaPlan, TileBlendMode, COMPOSITOR_TILE_DIM, COMPOSITOR_TILE_RGBA_BYTES,
+    WASM32_ADDRESS_LIMIT_BYTES, WASM64_DEFAULT_BUDGET_BYTES,
+};
 pub use tile_delta_kernel::{
     apply_xor_tile_delta_in_place, fnv1a_checksum_32, xor_tile_delta_bytes,
 };
@@ -35,10 +47,11 @@ pub use vector_psd_tile_kernel::{
     VectorizedStroke, VirtualTileSwapper64, TILE_DIM, TILE_RGBA_BYTES,
 };
 pub use wasm_ffi::{
-    wasm_alloc, wasm_apply_impasto_lighting_rgba, wasm_drawing_core_abi_version,
-    wasm_fnv1a_checksum, wasm_free, wasm_gaussian_blur_rgba, wasm_hotpath_capabilities,
-    wasm_mix_pigments_km16_packed, wasm_mix_pigments_km16_strip, wasm_mix_pigments_km_packed,
-    wasm_sample_world_paper_height, wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes,
+    wasm_alloc, wasm_apply_impasto_lighting_rgba, wasm_composite_tile_dirty_rect,
+    wasm_drawing_core_abi_version, wasm_fnv1a_checksum, wasm_free, wasm_gaussian_blur_rgba,
+    wasm_hotpath_capabilities, wasm_mix_pigments_km16_packed, wasm_mix_pigments_km16_strip,
+    wasm_mix_pigments_km_packed, wasm_sample_world_paper_height, wasm_stamp_tactile_bristle,
+    wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes, TACTILE_BRUSH_FFI_PARAM_COUNT,
     WASM_HOTPATH_CAPABILITIES,
 };
 

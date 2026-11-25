@@ -17,8 +17,15 @@ use crate::brush_kernel::{
 };
 use crate::filter_warp_kernel::{gaussian_blur_rgba_into, unsharp_mask_rgba_into};
 use crate::spectral_km_kernel::{mix_pigments_km16, mix_pigments_km16_strip};
+use crate::tactile_texture_kernel::{
+    generate_paper_tile_lut, stamp_tactile_bristle_rgba, PaperKind, TactileBrushParams,
+};
+use crate::tile_compositor_kernel::{composite_tile_dirty_rect, DirtyRect, TileBlendMode};
 use crate::tile_delta_kernel::{fnv1a_checksum_32, xor_tile_delta_bytes};
 use crate::{checked_pixel_count, checked_rgba_len, DrawingCoreError};
+
+/// `wasm_stamp_tactile_bristle`의 `params_ptr` 배열 길이(`f32` 13개).
+pub const TACTILE_BRUSH_FFI_PARAM_COUNT: usize = 13;
 
 /// 모든 선형 메모리 할당을 16바이트 경계로 정렬해 `Uint8Array`·`Float32Array` 제로카피 뷰를 보장한다.
 const WASM_ALLOC_ALIGN: usize = 16;
@@ -43,7 +50,7 @@ fn error_to_ffi_code(err: &DrawingCoreError) -> i32 {
     }
 }
 
-#[inline]
+#[inline(never)]
 fn ranges_overlap(a_start: usize, a_len: usize, b_start: usize, b_len: usize) -> bool {
     if a_len == 0 || b_len == 0 {
         return false;
@@ -53,7 +60,7 @@ fn ranges_overlap(a_start: usize, a_len: usize, b_start: usize, b_len: usize) ->
     a_start < b_end && b_start < a_end
 }
 
-#[inline]
+#[inline(never)]
 fn count_to_i32(count: usize) -> i32 {
     i32::try_from(count).unwrap_or(i32::MAX)
 }
@@ -196,21 +203,13 @@ pub unsafe extern "C" fn wasm_gaussian_blur_rgba(
     height: u32,
     sigma: f32,
 ) -> i32 {
-    if src_ptr.is_null() || dst_ptr.is_null() {
-        return FFI_ERR_NULL_OR_ALIAS;
-    }
-    let pixel_count = match checked_pixel_count(width, height) {
+    let rgba_len = match validate_rgba_pair(dst_ptr as usize, src_ptr as usize, width, height) {
         Ok(n) => n,
-        Err(ref err) => return error_to_ffi_code(err),
+        Err(code) => return code,
     };
-    let rgba_len = match checked_rgba_len(width, height) {
-        Ok(n) => n,
-        Err(ref err) => return error_to_ffi_code(err),
-    };
-    if rgba_len > isize::MAX as usize
-        || ranges_overlap(src_ptr as usize, rgba_len, dst_ptr as usize, rgba_len)
-        || (!mask_ptr.is_null()
-            && ranges_overlap(mask_ptr as usize, pixel_count, dst_ptr as usize, rgba_len))
+    let pixel_count = rgba_len / 4;
+    if !mask_ptr.is_null()
+        && ranges_overlap(mask_ptr as usize, pixel_count, dst_ptr as usize, rgba_len)
     {
         return FFI_ERR_NULL_OR_ALIAS;
     }
@@ -233,6 +232,23 @@ pub unsafe extern "C" fn wasm_gaussian_blur_rgba(
     }
 }
 
+#[inline(never)]
+fn validate_rgba_pair(
+    dst_addr: usize,
+    src_addr: usize,
+    width: u32,
+    height: u32,
+) -> Result<usize, i32> {
+    if dst_addr == 0 || src_addr == 0 {
+        return Err(FFI_ERR_NULL_OR_ALIAS);
+    }
+    let rgba_len = checked_rgba_len(width, height).map_err(|e| error_to_ffi_code(&e))?;
+    if rgba_len > isize::MAX as usize || ranges_overlap(src_addr, rgba_len, dst_addr, rgba_len) {
+        return Err(FFI_ERR_NULL_OR_ALIAS);
+    }
+    Ok(rgba_len)
+}
+
 /// 선형 메모리 제로카피 512² 호환 언샤프 마스크 커널. 변경된 픽셀 수를 반환한다.
 ///
 /// # Safety
@@ -247,18 +263,10 @@ pub unsafe extern "C" fn wasm_unsharp_mask_rgba(
     amount: f32,
     threshold: u8,
 ) -> i32 {
-    if src_ptr.is_null() || dst_ptr.is_null() {
-        return FFI_ERR_NULL_OR_ALIAS;
-    }
-    let rgba_len = match checked_rgba_len(width, height) {
+    let rgba_len = match validate_rgba_pair(dst_ptr as usize, src_ptr as usize, width, height) {
         Ok(n) => n,
-        Err(ref err) => return error_to_ffi_code(err),
+        Err(code) => return code,
     };
-    if rgba_len > isize::MAX as usize
-        || ranges_overlap(src_ptr as usize, rgba_len, dst_ptr as usize, rgba_len)
-    {
-        return FFI_ERR_NULL_OR_ALIAS;
-    }
 
     // SAFETY: null·크기·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
     let (src, dst) = unsafe {
@@ -272,6 +280,42 @@ pub unsafe extern "C" fn wasm_unsharp_mask_rgba(
         Ok(modified) => count_to_i32(modified),
         Err(ref err) => error_to_ffi_code(err),
     }
+}
+
+#[inline(never)]
+fn validate_rgba_height_ptrs(
+    rgba_addr: usize,
+    height_addr: usize,
+    params_addr: usize,
+    width: u32,
+    height: u32,
+    params_f32_count: usize,
+) -> Result<(usize, usize), i32> {
+    if rgba_addr == 0 || height_addr == 0 {
+        return Err(FFI_ERR_NULL_OR_ALIAS);
+    }
+    let f32_align = mem::align_of::<f32>();
+    if !height_addr.is_multiple_of(f32_align)
+        || (params_addr != 0 && !params_addr.is_multiple_of(f32_align))
+    {
+        return Err(FFI_ERR_NULL_OR_ALIAS);
+    }
+    let pixel_count = checked_pixel_count(width, height).map_err(|e| error_to_ffi_code(&e))?;
+    // RGBA8 한 픽셀과 f32 높이 한 칸은 모두 4바이트다. 기존 RGBA 오버플로 오류를 유지한다.
+    let rgba_len = pixel_count
+        .checked_mul(4)
+        .ok_or(FFI_ERR_INVALID_DIMENSIONS)?;
+    let height_bytes = rgba_len;
+    let params_bytes = params_f32_count * mem::size_of::<f32>();
+    if rgba_len > isize::MAX as usize
+        || ranges_overlap(rgba_addr, rgba_len, height_addr, height_bytes)
+        || (params_addr != 0
+            && (ranges_overlap(rgba_addr, rgba_len, params_addr, params_bytes)
+                || ranges_overlap(height_addr, height_bytes, params_addr, params_bytes)))
+    {
+        return Err(FFI_ERR_NULL_OR_ALIAS);
+    }
+    Ok((pixel_count, rgba_len))
 }
 
 /// 선형 메모리 제로카피 2.5D 임파스토 Sobel 법선 Blinn-Phong 셰이딩 커널.
@@ -290,44 +334,17 @@ pub unsafe extern "C" fn wasm_apply_impasto_lighting_rgba(
     height: u32,
     light_params_ptr: *const f32,
 ) -> i32 {
-    if rgba_ptr.is_null() || height_ptr.is_null() {
-        return FFI_ERR_NULL_OR_ALIAS;
-    }
-    let f32_align = mem::align_of::<f32>();
-    if !(height_ptr as usize).is_multiple_of(f32_align)
-        || (!light_params_ptr.is_null() && !(light_params_ptr as usize).is_multiple_of(f32_align))
-    {
-        return FFI_ERR_NULL_OR_ALIAS;
-    }
-    let pixel_count = match checked_pixel_count(width, height) {
-        Ok(n) => n,
-        Err(ref err) => return error_to_ffi_code(err),
+    let (pixel_count, rgba_len) = match validate_rgba_height_ptrs(
+        rgba_ptr as usize,
+        height_ptr as usize,
+        light_params_ptr as usize,
+        width,
+        height,
+        7,
+    ) {
+        Ok(lens) => lens,
+        Err(code) => return code,
     };
-    let rgba_len = match checked_rgba_len(width, height) {
-        Ok(n) => n,
-        Err(ref err) => return error_to_ffi_code(err),
-    };
-    let Some(height_bytes) = pixel_count.checked_mul(mem::size_of::<f32>()) else {
-        return FFI_ERR_OVERFLOW;
-    };
-    if rgba_len > isize::MAX as usize
-        || height_bytes > isize::MAX as usize
-        || ranges_overlap(
-            rgba_ptr as usize,
-            rgba_len,
-            height_ptr as usize,
-            height_bytes,
-        )
-        || (!light_params_ptr.is_null()
-            && ranges_overlap(
-                rgba_ptr as usize,
-                rgba_len,
-                light_params_ptr as usize,
-                7 * mem::size_of::<f32>(),
-            ))
-    {
-        return FFI_ERR_NULL_OR_ALIAS;
-    }
 
     // SAFETY: null·정렬·크기·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
     let (rgba, height_map, light) = unsafe {
@@ -336,7 +353,7 @@ pub unsafe extern "C" fn wasm_apply_impasto_lighting_rgba(
         let cfg = if light_params_ptr.is_null() {
             ImpastoLightConfig::default()
         } else {
-            let p = slice::from_raw_parts(light_params_ptr, 7);
+            let p = *light_params_ptr.cast::<[f32; 7]>();
             ImpastoLightConfig {
                 azimuth_rad: p[0],
                 elevation_rad: p[1],
@@ -408,4 +425,141 @@ pub unsafe extern "C" fn wasm_fnv1a_checksum(ptr: *const u8, byte_len: u32) -> u
     // SAFETY: null·길이 검증 완료, 호출자가 유효 범위를 보장한다.
     let bytes = unsafe { slice::from_raw_parts(ptr, len) };
     fnv1a_checksum_32(bytes)
+}
+
+/// 선형 메모리 제로카피 5층 물리 브러시 질감 스탬퍼.
+///
+/// `params_ptr`은 null(기본값) 또는 4바이트 정렬된 13개 `f32` 배열
+/// `[cx, cy, radius, pressure, speed, tilt_x, tilt_y, direction_rad, dryness,
+///   paper_tooth_strength, paper_scale, wet_edge_strength, impasto_height]`를 가리킨다.
+/// 반환값: 0 이상은 영향을 받은 픽셀 수, 음수는 `FFI_ERR_*` 오류 코드.
+///
+/// # Safety
+/// `rgba_ptr`은 `width * height * 4`바이트, `height_ptr`은 4바이트 정렬된 `width * height`개의 `f32`,
+/// `params_ptr`은 null 또는 4바이트 정렬된 13개의 `f32` 유효 메모리이며 서로 겹치지 않아야 한다.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn wasm_stamp_tactile_bristle(
+    rgba_ptr: *mut u8,
+    height_ptr: *mut f32,
+    width: u32,
+    height: u32,
+    paper_kind: u32,
+    color_rgba_packed: u32,
+    bristle_count: u32,
+    seed: u32,
+    params_ptr: *const f32,
+) -> i32 {
+    let Some(kind) = PaperKind::from_u32(paper_kind) else {
+        return FFI_ERR_INVALID_PARAMETER;
+    };
+    let (pixel_count, rgba_len) = match validate_rgba_height_ptrs(
+        rgba_ptr as usize,
+        height_ptr as usize,
+        params_ptr as usize,
+        width,
+        height,
+        TACTILE_BRUSH_FFI_PARAM_COUNT,
+    ) {
+        Ok(lens) => lens,
+        Err(code) => return code,
+    };
+
+    // SAFETY: null·정렬·길이 오버플로·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
+    let (rgba, height_buf, params) = unsafe {
+        let rgba_slice = slice::from_raw_parts_mut(rgba_ptr, rgba_len);
+        let height_slice = slice::from_raw_parts_mut(height_ptr, pixel_count);
+        let p = if params_ptr.is_null() {
+            [
+                32.0, 32.0, 12.0, 0.72, 0.35, 0.15, 0.0, 0.0, 0.25, 0.65, 1.0, 0.4, 0.55,
+            ]
+        } else {
+            *params_ptr.cast::<[f32; TACTILE_BRUSH_FFI_PARAM_COUNT]>()
+        };
+        let cfg = TactileBrushParams {
+            cx: p[0],
+            cy: p[1],
+            radius: p[2],
+            color_rgba: color_rgba_packed.to_le_bytes(),
+            pressure: p[3],
+            speed: p[4],
+            tilt_x: p[5],
+            tilt_y: p[6],
+            direction_rad: p[7],
+            dryness: p[8],
+            bristle_count: bristle_count.min(u32::from(u8::MAX)) as u8,
+            paper_tooth_strength: p[9],
+            paper_scale: p[10],
+            wet_edge_strength: p[11],
+            impasto_height: p[12],
+            seed,
+        };
+        (rgba_slice, height_slice, cfg)
+    };
+
+    let paper_lut = generate_paper_tile_lut(kind, seed);
+    match stamp_tactile_bristle_rgba(rgba, height_buf, width, height, &paper_lut, &params) {
+        Ok(stats) => count_to_i32(stats.touched_pixels),
+        Err(ref err) => error_to_ffi_code(err),
+    }
+}
+
+/// 선형 메모리 제로카피 희소 타일 Dirty-Rect 12종 블렌드 합성기.
+///
+/// 반환값: 0 이상은 Dirty-Rect 내에서 처리된 픽셀 수, 음수는 `FFI_ERR_*` 오류 코드.
+///
+/// # Safety
+/// `dst_ptr`과 `src_ptr`은 각각 `tile_width * tile_height * 4`바이트 이상의 비중첩 유효 메모리여야 한다.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn wasm_composite_tile_dirty_rect(
+    dst_ptr: *mut u8,
+    src_ptr: *const u8,
+    tile_width: u32,
+    tile_height: u32,
+    dirty_x: u32,
+    dirty_y: u32,
+    dirty_width: u32,
+    dirty_height: u32,
+    blend_mode: u32,
+    opacity_u8: u32,
+) -> i32 {
+    let Some(mode) = TileBlendMode::from_u32(blend_mode) else {
+        return FFI_ERR_INVALID_PARAMETER;
+    };
+    if opacity_u8 > 255 {
+        return FFI_ERR_INVALID_PARAMETER;
+    }
+    let rgba_len =
+        match validate_rgba_pair(dst_ptr as usize, src_ptr as usize, tile_width, tile_height) {
+            Ok(n) => n,
+            Err(code) => return code,
+        };
+
+    // SAFETY: null·길이 오버플로·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
+    let (dst, src) = unsafe {
+        (
+            slice::from_raw_parts_mut(dst_ptr, rgba_len),
+            slice::from_raw_parts(src_ptr, rgba_len),
+        )
+    };
+
+    let dirty = DirtyRect {
+        x: dirty_x,
+        y: dirty_y,
+        width: dirty_width,
+        height: dirty_height,
+    };
+    match composite_tile_dirty_rect(
+        dst,
+        src,
+        tile_width,
+        tile_height,
+        dirty,
+        mode,
+        opacity_u8 as u8,
+    ) {
+        Ok(processed) => count_to_i32(processed),
+        Err(ref err) => error_to_ffi_code(err),
+    }
 }

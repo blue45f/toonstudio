@@ -8,7 +8,7 @@ import {
   GitMerge, HardDrive, Layers, Lock, Pause, Play, RefreshCw, RotateCcw,
   ShieldCheck, Sparkles,
 } from "lucide-react";
-import { useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -32,6 +32,8 @@ import {
   type ViewportScrollState,
 } from "./semantic-resource-streamer";
 
+import { useExampleNotification } from "./use-example-notification";
+
 export type FederatedLoraStreamTabId = "federated-lora" | "semantic-stream";
 
 export interface StudioFederatedLoraStreamPanelProps {
@@ -40,8 +42,8 @@ export interface StudioFederatedLoraStreamPanelProps {
   readonly initialTab?: FederatedLoraStreamTabId;
   readonly initialRank?: LoraRank;
   readonly initialCacheBudgetKb?: number;
-  readonly onLoraSessionChange?: (telemetry: FederatedLoraTelemetry) => void;
-  readonly onStreamCacheChange?: (telemetry: StreamCacheTelemetry) => void;
+  readonly onLoraSessionChange?: (telemetry: FederatedLoraTelemetry) => void | Promise<void>;
+  readonly onStreamCacheChange?: (telemetry: StreamCacheTelemetry) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -53,9 +55,9 @@ const IDLE_TONE = "border-line bg-card text-fg-2 hover:border-line-strong hover:
 const PRIMARY_TONE = "border-accent bg-accent text-on-accent hover:bg-accent-2";
 
 const NOISE_PRESETS = [
-  { sigma: 1.8, ko: "강한 보호 σ=1.8", en: "Strict σ=1.8" },
+  { sigma: 1.8, ko: "노이즈 가정 σ=1.8", en: "Noise σ=1.8" },
   { sigma: 1.1, ko: "균형 σ=1.1", en: "Balanced σ=1.1" },
-  { sigma: 0.7, ko: "고정밀 σ=0.7", en: "High-Fit σ=0.7" },
+  { sigma: 0.7, ko: "노이즈 가정 σ=0.7", en: "Noise σ=0.7" },
 ] as const;
 const CLIP_PRESETS: readonly number[] = [0.5, 1.0, 2.0];
 const BUDGET_PRESETS_KB: readonly number[] = [256, 512, 1024];
@@ -91,17 +93,22 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
   const pick = (ko: string, en: string): string => (isKo ? ko : en);
 
+  const notification = useExampleNotification();
+  const recipients = useRef({ onLoraSessionChange, onStreamCacheChange });
+  useEffect(() => { recipients.current = { onLoraSessionChange, onStreamCacheChange }; }, [onLoraSessionChange, onStreamCacheChange]);
   const [activeTab, setActiveTab] = useState<FederatedLoraStreamTabId>(initialTab);
   const styleSamples = useMemo(() => createDefaultOnDeviceStyleSamples(), []);
   const [selectedPreset, setSelectedPreset] = useState<StylePresetId>("ink-sharp-action");
   const [session, setSession] = useState<FederatedLoraSession>(() => createFederatedLoraSession({ rank: initialRank }));
   const [fedAvgResult, setFedAvgResult] = useState<FedAvgAggregationResult | null>(null);
   const [loraNotice, setLoraNotice] = useState<string | null>(null);
+  const [loraNoticeError, setLoraNoticeError] = useState(false);
 
   const [assets, setAssets] = useState<readonly SemanticResourceAsset[]>(() => createDefaultEpisodeStreamCatalog());
   const [viewport, setViewport] = useState<ViewportScrollState>(DEFAULT_VIEWPORT_SCROLL_STATE);
   const [cacheState, setCacheState] = useState<OpfsLruCacheState>(() => createOpfsLruCacheState(initialCacheBudgetKb * 1024));
   const [streamNotice, setStreamNotice] = useState<string | null>(null);
+  const [streamNoticeError, setStreamNoticeError] = useState(false);
 
   const activeSample = useMemo(() => styleSamples.find((s) => s.presetId === selectedPreset) ?? styleSamples[0], [selectedPreset, styleSamples]);
   const loraTelemetry = useMemo(() => computeFederatedLoraTelemetry(session), [session]);
@@ -110,18 +117,31 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
   const activeLodTier = useMemo(() => selectLodTierForZoom(viewport.zoomLevel, viewport.preferredLodOverride), [viewport.preferredLodOverride, viewport.zoomLevel]);
 
   const commitSession = (next: FederatedLoraSession, noticeText: string): void => {
+    if (notification.isPending()) return;
     setSession(next);
-    setLoraNotice(noticeText);
-    onLoraSessionChange?.(computeFederatedLoraTelemetry(next));
+    setLoraNoticeError(false);
+    setLoraNotice(pick("CPU 예제: ", "CPU example: ") + noticeText);
+    const result = computeFederatedLoraTelemetry(next);
+    notification.notify(() => {
+      const recipient = recipients.current.onLoraSessionChange;
+      return recipient ? () => recipient(result) : undefined;
+    });
   };
 
-  const commitCache = (next: OpfsLruCacheState, noticeText: string): void => {
+  const commitCache = (next: OpfsLruCacheState, noticeText: string, incomplete = false): void => {
+    if (notification.isPending()) return;
     setCacheState(next);
-    setStreamNotice(noticeText);
-    onStreamCacheChange?.(computeStreamCacheTelemetry(next));
+    setStreamNoticeError(incomplete);
+    setStreamNotice(pick("메타데이터 예제: ", "Metadata example: ") + noticeText);
+    const result = computeStreamCacheTelemetry(next);
+    notification.notify(() => {
+      const recipient = recipients.current.onStreamCacheChange;
+      return recipient ? () => recipient(result) : undefined;
+    });
   };
 
   const handleSelectRank = (rank: LoraRank): void => {
+    if (notification.isPending()) return;
     const next = createFederatedLoraSession({ rank, privacyConfig: session.privacyConfig });
     setFedAvgResult(null);
     commitSession(next, pick(`LoRA 랭크를 r=${rank} (${next.currentAdapter.parameterCount} 파라미터)로 전환했습니다.`, `Switched LoRA rank to r=${rank} (${next.currentAdapter.parameterCount} params).`));
@@ -134,6 +154,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
     commitSession({ ...session, privacyConfig: { ...session.privacyConfig, clipNormC } }, pick(`L2 그래디언트 클리핑 한계를 C=${clipNormC}로 설정했습니다.`, `Set L2 gradient clipping norm to C=${clipNormC}.`));
 
   const handleRunTrainingSteps = (count: number): void => {
+    if (notification.isPending()) return;
     if (!activeSample) return;
     let working = session;
     let blocked = false;
@@ -145,61 +166,71 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
     commitSession(
       working,
       blocked
-        ? pick("프라이버시 예산(ε) 한도에 도달해 추가 학습을 자동 중지했습니다.", "Privacy budget (ε) cap reached; training halted automatically.")
-        : pick(`온디바이스 DP-LoRA ${count}스텝 완료 · 누적 ε=${working.epsilonSpent.toFixed(2)} · 원본 외부 전송 0 B`, `Completed ${count} on-device DP-LoRA step(s) · ε=${working.epsilonSpent.toFixed(2)} · 0 B raw egress`),
+        ? pick("다음 스텝의 가정 예산(ε)이 한도를 넘으므로 가중치 변경 전에 중단했습니다.", "The next model step would exceed the assumed budget; weights are unchanged.")
+        : pick(`합성 특징 MSE ${count}스텝 계산 · 가정 ε=${working.epsilonSpent.toFixed(2)} · 실제 DP 보증 아님`, `Calculated ${count} synthetic-feature MSE step(s) · assumed ε=${working.epsilonSpent.toFixed(2)} · no DP guarantee`),
     );
   };
 
   const handleRunFedAvg = (): void => {
+    if (notification.isPending()) return;
     let working = session;
     if (working.stepCount === 0 && activeSample) working = runOnDeviceLoraStep(working, activeSample).session;
     const localPacket = exportFederatedLoraDelta(working, pick("현재 작업 기기(로컬)", "Current Device (Local)"));
     const merged = aggregateFederatedLoraDeltas(working.baseAdapter, [localPacket, ...createPeerDeviceLoraPackets(working, styleSamples)]);
     setFedAvgResult(merged);
+    if (!merged.ok) { setLoraNoticeError(true); setLoraNotice(pick("예제 병합 미완료: 수락 가능한 패킷이 없습니다.", "Example merge incomplete: no acceptable packets.")); return; }
     if (merged.ok) {
       commitSession(
         { ...working, currentAdapter: merged.mergedAdapter },
-        pick(`${merged.acceptedCount}대 기기 FedAvg 안전 병합 완료 · 다이제스트 ${merged.roundDigestSha256.slice(0, 12)}`, `Merged ${merged.acceptedCount} devices via FedAvg · digest ${merged.roundDigestSha256.slice(0, 12)}`),
+        pick(`${merged.acceptedCount}개 합성 기기 패킷의 FedAvg 계산 · 다이제스트 ${merged.roundDigestSha256.slice(0, 12)}`, `Calculated FedAvg for ${merged.acceptedCount} synthetic device packets · digest ${merged.roundDigestSha256.slice(0, 12)}`),
       );
     }
   };
 
   const handleResetLora = (): void => {
+    if (notification.isPending()) return;
     setFedAvgResult(null);
     commitSession(
       createFederatedLoraSession({ rank: session.currentAdapter.rank, privacyConfig: session.privacyConfig }),
-      pick("온디바이스 LoRA 가중치와 프라이버시 예산을 초기화했습니다.", "Reset on-device LoRA weights and privacy budget."),
+      pick("메모리 예제 가중치와 가정 예산을 초기화했습니다.", "Reset in-memory example weights and assumed budget."),
     );
   };
 
   const handleScrollMove = (direction: "up" | "down" | "idle"): void => {
+    if (notification.isPending()) return;
     const deltaY = direction === "down" ? 960 : direction === "up" ? -960 : 0;
     const maxY = Math.max(0, (assets[assets.length - 1]?.yOffsetPx ?? 6400) - 600);
     setViewport({ ...viewport, scrollY: Math.max(0, Math.min(maxY, viewport.scrollY + deltaY)), direction, scrollVelocityPxPerSec: direction === "idle" ? 0 : 720 });
   };
 
   const handleResizeBudget = (budgetKb: number): void => {
+    if (notification.isPending()) return;
     const next = resizeOpfsLruBudget(cacheState, budgetKb * 1024);
     const evictedDelta = next.evictionLog.length - cacheState.evictionLog.length;
     commitCache(
       next,
       evictedDelta > 0
-        ? pick(`OPFS 예산을 ${budgetKb} KB로 축소하며 LRU 청크 ${evictedDelta}건을 자동 축출했습니다.`, `Resized OPFS budget to ${budgetKb} KB and evicted ${evictedDelta} LRU chunk(s).`)
-        : pick(`OPFS 메모리 예산을 ${budgetKb} KB로 설정했습니다.`, `Set OPFS memory budget to ${budgetKb} KB.`),
+        ? pick(`메모리 모델 예산을 ${budgetKb} KB로 축소하며 LRU 청크 ${evictedDelta}건을 자동 축출했습니다.`, `Resized in-memory model budget to ${budgetKb} KB and evicted ${evictedDelta} LRU chunk(s).`)
+        : pick(`메모리 모델 예산을 ${budgetKb} KB로 설정했습니다.`, `Set in-memory model budget to ${budgetKb} KB.`),
     );
   };
 
   const handlePrefetchStep = (): void => {
+    if (notification.isPending()) return;
     const report = stepPrefetchStream(cacheState, assets, viewport, { maxChunksPerStep: 3 });
     commitCache(
       report.cache,
       report.fetchedKeys.length > 0
-        ? pick(`우선순위 청크 ${report.fetchedKeys.length}건 검증·캐싱 완료 (LRU 축출 ${report.evictedCount}건)`, `Verified & cached ${report.fetchedKeys.length} priority chunk(s) (${report.evictedCount} LRU evicted)`)
-        : pick("현재 뷰포트 기준 최신 시맨틱 청크가 모두 캐시되어 있습니다.", "All priority chunks for current viewport are already cached."),
+        ? pick(`우선순위 청크 ${report.fetchedKeys.length}건 합성 체크섬·메타데이터 기록 (LRU 축출 ${report.evictedCount}건)`, `Calculated checksum & metadata for ${report.fetchedKeys.length} priority chunk(s) (${report.evictedCount} LRU evicted)`)
+        : report.remainingQueueLength > 0
+          ? pick(`미완료: 예산·검증 조건으로 ${report.blockedKeys.length}건을 기록하지 못했습니다. 대기 ${report.remainingQueueLength}건.`, `Incomplete: ${report.blockedKeys.length} blocked by budget/validation; ${report.remainingQueueLength} pending.`)
+          : pick("현재 조건의 예제 청크 메타데이터가 모두 기록되어 있습니다.", "All example chunk metadata for current conditions is recorded."),
+      report.blockedKeys.length > 0,
     );
   };
 
   const handleTamperProbe = (): void => {
+    if (notification.isPending()) return;
     const targetAsset = assets[0];
     if (!targetAsset) return;
     const tampered = new Uint8Array(synthesizeDeterministicChunkPayload(targetAsset.resourceId, activeLodTier, targetAsset.version, targetAsset.lodByteSizes[activeLodTier]));
@@ -209,6 +240,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
   };
 
   const handleBumpVersion = (resourceId: string, bumpKind: SemVerBumpKind): void => {
+    if (notification.isPending()) return;
     const res = bumpAssetSemanticVersion(assets, cacheState, resourceId, bumpKind);
     setAssets(res.assets);
     const nextVerText = res.nextVersion ? formatSemanticVersion(res.nextVersion) : "";
@@ -216,9 +248,10 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
   };
 
   const handleResetCache = (): void => {
+    if (notification.isPending()) return;
     setAssets(createDefaultEpisodeStreamCatalog());
     setViewport(DEFAULT_VIEWPORT_SCROLL_STATE);
-    commitCache(createOpfsLruCacheState(cacheState.budgetBytes), pick("OPFS LRU 캐시와 뷰포트를 초기화했습니다.", "Cleared OPFS LRU cache and reset viewport."));
+    commitCache(createOpfsLruCacheState(cacheState.budgetBytes), pick("메모리 모델 LRU 캐시와 뷰포트를 초기화했습니다.", "Cleared in-memory LRU metadata and reset viewport."));
   };
 
   const reasonLabel = (reason: PrefetchReason): string => {
@@ -229,51 +262,55 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
   };
 
   const latestStep = session.stepHistory[session.stepHistory.length - 1] ?? null;
-  const tabs: readonly { readonly id: FederatedLoraStreamTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "federated-lora", label: pick("온디바이스 화풍 LoRA · DP 예산", "On-Device Style LoRA · DP Budget"), icon: <Lock className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "semantic-stream", label: pick("시맨틱 LOD 스트리밍 · OPFS LRU", "Semantic LOD Streaming · OPFS LRU"), icon: <Layers className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: FederatedLoraStreamTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "federated-lora", label: pick("저랭크 MSE · 가정 예산", "Low-Rank MSE · Assumed Budget"), shortLabel: pick("가정 학습", "Training model"), icon: <Lock className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "semantic-stream", label: pick("시맨틱 LOD 스트리밍 · 메모리 모델 LRU", "Semantic LOD · In-Memory LRU Metadata"), shortLabel: pick("메모리 캐시", "Cache model"), icon: <Layers className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   return (
     <section
       data-testid="federated-lora-stream-panel"
-      aria-label={pick("온디바이스 차등 프라이버시 연합학습 LoRA 및 시맨틱 LOD 리소스 스트리밍 워크벤치", "On-Device Privacy-First Federated LoRA & Semantic LOD Streaming Workbench")}
+      aria-label={pick("저랭크 MSE·FedAvg·LOD 메타데이터 예제", "Low-Rank MSE, FedAvg & LOD Metadata Example")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
-            <h2 className="text-sm font-semibold text-fg">{pick("프라이버시 우선 연합 화풍 LoRA · 시맨틱 LOD 동적 스트리밍", "Privacy-First Federated Style LoRA · Semantic LOD Streaming")}</h2>
+            <h2 className="text-sm font-semibold text-fg">{pick("CPU 저랭크 MSE · 합성 FedAvg · LOD 메타데이터 예제", "CPU Low-Rank MSE · Synthetic FedAvg · LOD Metadata Example")}</h2>
           </div>
           <p className="text-xs text-fg-2">
-            {pick("원본 원고 픽셀을 0바이트도 외부 전송하지 않고 온디바이스 DP-SGD 저랭크 어댑터를 학습·병합하며, 시맨틱 버전·스크롤 방향 기반 OPFS LRU 스트리밍과 SHA-256 무결성을 검증합니다.", "Train and FedAvg-merge low-rank style adapters on-device with 0-byte raw pixel egress and RDP budget tracking, paired with semver LOD streaming and SHA-256 OPFS LRU cache.")}
+            {pick("CPU·메모리에서 16차원 합성 특징의 저랭크 MSE 업데이트·고정 시드 노이즈·가정 예산·합성 기기 FedAvg와 청크 체크섬·캐시 메타데이터를 계산합니다. 실제 모델 화풍 학습·차등 프라이버시 보증·네트워크 관찰/송신·원격 기기·GPU·OPFS 영구 저장·현재 원고 적용에 연결되지 않습니다. 청크 바이트도 캐시에 보관하지 않습니다.", "CPU/in-memory examples of synthetic 16-feature low-rank MSE, fixed-seed noise, assumed budgets, synthetic-device FedAvg, chunk checksums and cache metadata. No actual model style training, DP guarantee, network observation/send, remote devices, GPU, OPFS persistence or manuscript apply is connected. Chunk bytes are not retained in the cache.")}
           </p>
         </div>
         <span data-testid="zero-egress-pill" className="inline-flex items-center gap-1.5 rounded-full border border-good bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          {pick("원본 외부 전송 0 B", "0 B Raw Egress")}
+          {pick("합성 예제 · 실제 DP 보증 없음", "Synthetic Example · No DP Guarantee")}
         </span>
       </header>
 
+      {notification.status !== "idle" && <div role={notification.status === "failed" ? "alert" : "status"} data-testid="example-notification-status" className="text-xs text-fg-2">
+        {notification.pending ? pick("예제 결과 알림 처리 중", "Example notification pending") : notification.status === "failed" ? pick(`예제 결과 알림 실패: ${notification.error}`, `Example notification failed: ${notification.error}`) : pick("핸들러 응답 확인. 실제 학습·송신·저장 완료를 뜻하지 않습니다.", "Handler responded. No training, send or persistence is confirmed.")}
+        {notification.status === "failed" && <button type="button" className={ACTION_BTN} onClick={notification.retry}>{pick("결과 알림 다시 시도", "Retry notification")}</button>}
+      </div>}
       <div role="tablist" aria-label={pick("엔진 탭", "Engine tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => {
           const selected = activeTab === tab.id;
           return (
-            <button key={tab.id} id={`${uid}-tab-${tab.id}`} type="button" role="tab" aria-selected={selected} aria-controls={`${uid}-panel-${tab.id}`} data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)} className={`${TAB_BTN} ${selected ? ACTIVE_TONE : IDLE_TONE}`}>
+            <button key={tab.id} id={`${uid}-tab-${tab.id}`} type="button" role="tab" aria-selected={selected} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`} data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)} className={`${TAB_BTN} ${selected ? ACTIVE_TONE : IDLE_TONE}`}>
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{tab.shortLabel}</span>
             </button>
           );
         })}
       </div>
 
       {activeTab === "federated-lora" ? (
-        <div id={`${uid}-panel-federated-lora`} role="tabpanel" aria-labelledby={`${uid}-tab-federated-lora`} data-testid="panel-federated-lora" className="space-y-4">
+        <fieldset disabled={notification.pending} id={`${uid}-panel-federated-lora`} role="tabpanel" aria-labelledby={`${uid}-tab-federated-lora`} data-testid="panel-federated-lora" className="min-w-0 space-y-4">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-fg-2">
-                <span>{pick("원본 픽셀 외부 유출", "Raw Pixel Egress")}</span>
+                <span>{pick("예제 패킷 원본 픽셀 필드", "Example Packet Raw Pixel Fields")}</span>
                 <ShieldCheck className="h-3.5 w-3.5 text-good" aria-hidden="true" />
               </div>
               <div data-testid="lora-raw-egress" className="text-base font-bold text-good tabular-nums">0 B</div>
@@ -281,7 +318,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
             </div>
             <div className="rounded-lg border border-line bg-card p-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-fg-2">
-                <span>{pick("누적 DP 프라이버시 예산", "DP Privacy Budget")}</span>
+                <span>{pick("누적 가정 예산 (보호 보증 아님)", "Assumed Budget (No Privacy Guarantee)")}</span>
                 <span data-testid="lora-budget-status" className={`rounded border px-1.5 py-0.5 text-xs font-semibold ${budgetTone(loraTelemetry.budgetUtilizationPct, loraTelemetry.budgetExhausted)}`}>
                   {loraTelemetry.budgetExhausted ? pick("한도 도달", "Cap Hit") : `${loraTelemetry.budgetUtilizationPct}%`}
                 </span>
@@ -299,7 +336,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
             </div>
             <div className="rounded-lg border border-line bg-card p-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-fg-2">
-                <span>{pick("온디바이스 학습 스텝", "On-Device Steps")}</span>
+                <span>{pick("CPU 예제 업데이트 스텝", "CPU Example Update Steps")}</span>
                 <CheckCircle2 className="h-3.5 w-3.5 text-cool" aria-hidden="true" />
               </div>
               <div data-testid="lora-step-count" className="text-base font-bold text-fg tabular-nums">{loraTelemetry.stepCount} {pick("스텝", "steps")}</div>
@@ -338,7 +375,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
 
           <div className="rounded-lg border border-line bg-card p-3 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-fg-2">{pick("로컬 화풍 학습 배치 선택", "Local Style Training Batch")}</span>
+              <span className="text-xs font-semibold text-fg-2">{pick("합성 특징 배치 선택", "Synthetic Feature Batch")}</span>
               <div className="flex flex-wrap gap-1.5">
                 {styleSamples.map((sample) => (
                   <button key={sample.presetId} type="button" data-testid={`btn-preset-${sample.presetId}`} onClick={() => setSelectedPreset(sample.presetId)} className={`${CHIP_BTN} ${selectedPreset === sample.presetId ? ACTIVE_TONE : IDLE_TONE}`}>{pick(sample.labelKo, sample.labelEn)}</button>
@@ -348,15 +385,15 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
             <div className="flex flex-wrap gap-2">
               <button type="button" data-testid="btn-lora-step-1" onClick={() => handleRunTrainingSteps(1)} className={`${ACTION_BTN} ${PRIMARY_TONE}`}>
                 <Play className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("1스텝 온디바이스 학습", "Run 1 On-Device Step")}</span>
+                <span>{pick("CPU MSE 예제 1스텝", "Run 1 CPU MSE Step")}</span>
               </button>
               <button type="button" data-testid="btn-lora-step-5" onClick={() => handleRunTrainingSteps(5)} className={`${ACTION_BTN} ${IDLE_TONE}`}>
                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("5스텝 연속 학습", "Run 5 Steps")}</span>
+                <span>{pick("CPU MSE 예제 5스텝", "Run 5 CPU MSE Steps")}</span>
               </button>
               <button type="button" data-testid="btn-lora-fedavg" onClick={handleRunFedAvg} className={`${ACTION_BTN} ${IDLE_TONE}`}>
                 <GitMerge className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("3기기 FedAvg 안전 병합", "FedAvg Merge (3 Devices)")}</span>
+                <span>{pick("합성 3기기 FedAvg 계산", "Calculate Synthetic 3-Device FedAvg")}</span>
               </button>
               <button type="button" data-testid="btn-lora-reset" onClick={handleResetLora} className={`${ACTION_BTN} ${IDLE_TONE}`}>
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
@@ -366,15 +403,15 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
           </div>
 
           {loraNotice ? (
-            <div data-testid="lora-notice-banner" role="status" className="flex items-center gap-2 rounded-lg border border-good bg-good-soft px-3 py-2 text-xs font-semibold text-good">
-              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <div data-testid="lora-notice-banner" role={loraNoticeError ? "alert" : "status"} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${loraNoticeError ? "border-warn bg-warning-soft text-warn" : "border-good bg-good-soft text-good"}`}>
+              {loraNoticeError ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />}
               <span>{loraNotice}</span>
             </div>
           ) : null}
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <div className="rounded-lg border border-line bg-card p-3 space-y-2">
-              <h3 className="text-xs font-semibold text-fg">{pick("최근 DP-SGD 그래디언트 클리핑 · 노이즈 감사", "Latest DP-SGD Clipping & Noise Audit")}</h3>
+              <h3 className="text-xs font-semibold text-fg">{pick("최근 예제 클리핑 · 고정 시드 노이즈", "Example Clipping & Fixed-Seed Noise")}</h3>
               {latestStep ? (
                 <div data-testid="latest-dp-step-card" className="grid grid-cols-2 gap-2 text-xs tabular-nums">
                   <div className="rounded-md border border-line bg-raised p-2">
@@ -401,7 +438,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
 
             <div data-testid="fedavg-report" className="rounded-lg border border-line bg-card p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xs font-semibold text-fg">{pick("FedAvg 다중 기기 안전 병합 리포트", "FedAvg Multi-Device Merge Report")}</h3>
+                <h3 className="text-xs font-semibold text-fg">{pick("FedAvg 합성 기기 계산 결과", "FedAvg Synthetic-Device Result")}</h3>
                 {fedAvgResult ? (
                   <span className="rounded border border-good bg-good-soft px-2 py-0.5 text-xs font-semibold text-good tabular-nums">
                     {pick(`수락 ${fedAvgResult.acceptedCount} · 격리 ${fedAvgResult.rejectedPackets.length}`, `Accepted ${fedAvgResult.acceptedCount} · Rejected ${fedAvgResult.rejectedPackets.length}`)}
@@ -422,17 +459,17 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-fg-3">{pick("다중 기기 FedAvg 안전 병합을 실행하면 태블릿·노트북·데스크톱의 DP 델타만 가중 평균해 병합합니다.", "Run FedAvg merge to securely aggregate DP deltas across desktop, tablet, and laptop.")}</p>
+                <p className="text-xs text-fg-3">{pick("보조 기기 패킷도 이 CPU 예제에서 생성합니다. 실제 기기 연결·원격 학습·송신은 없습니다.", "Peer packets are generated in this CPU example. No real device connection, remote training or send occurs.")}</p>
               )}
             </div>
           </div>
-        </div>
+        </fieldset>
       ) : (
-        <div id={`${uid}-panel-semantic-stream`} role="tabpanel" aria-labelledby={`${uid}-tab-semantic-stream`} data-testid="panel-semantic-stream" className="space-y-4">
+        <fieldset disabled={notification.pending} id={`${uid}-panel-semantic-stream`} role="tabpanel" aria-labelledby={`${uid}-tab-semantic-stream`} data-testid="panel-semantic-stream" className="min-w-0 space-y-4">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-3 space-y-1">
               <div className="flex items-center justify-between text-xs text-fg-2">
-                <span>{pick("OPFS LRU 메모리 예산", "OPFS LRU Memory")}</span>
+                <span>{pick("메모리 메타데이터 예산", "In-Memory LRU Model")}</span>
                 <HardDrive className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
               </div>
               <div data-testid="stream-memory-usage" className="text-base font-bold text-fg tabular-nums">{formatKb(streamTelemetry.usedBytes)} / {formatKb(streamTelemetry.budgetBytes)}</div>
@@ -482,7 +519,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
               </div>
             </div>
             <div className="space-y-1.5">
-              <div className="text-xs font-semibold text-fg-2">{pick("OPFS 캐시 예산", "OPFS Cache Budget")}</div>
+              <div className="text-xs font-semibold text-fg-2">{pick("메모리 모델 캐시 예산", "Metadata Cache Budget")}</div>
               <div className="flex flex-wrap gap-1.5">
                 {BUDGET_PRESETS_KB.map((kb) => (
                   <button key={kb} type="button" data-testid={`btn-budget-${kb}`} onClick={() => handleResizeBudget(kb)} className={`${CHIP_BTN} tabular-nums ${Math.round(cacheState.budgetBytes / 1024) === kb ? ACTIVE_TONE : IDLE_TONE}`}>{kb} KB</button>
@@ -507,8 +544,8 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
           </div>
 
           {streamNotice ? (
-            <div data-testid="stream-notice-banner" role="status" className="flex items-center gap-2 rounded-lg border border-good bg-good-soft px-3 py-2 text-xs font-semibold text-good">
-              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <div data-testid="stream-notice-banner" role={streamNoticeError ? "alert" : "status"} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${streamNoticeError ? "border-warn bg-warning-soft text-warn" : "border-good bg-good-soft text-good"}`}>
+              {streamNoticeError ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />}
               <span>{streamNotice}</span>
             </div>
           ) : null}
@@ -555,9 +592,9 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <div data-testid="opfs-cache-list" className="rounded-lg border border-line bg-card p-3 space-y-2">
-              <h3 className="text-xs font-semibold text-fg">{pick("OPFS 검증 완료 캐시 청크", "OPFS Verified Cached Chunks")}</h3>
+              <h3 className="text-xs font-semibold text-fg">{pick("체크섬 검증 메타데이터", "Checksum-Verified Metadata")}</h3>
               {cacheState.entries.length === 0 ? (
-                <p className="text-xs text-fg-3">{pick("프리페치를 실행하면 SHA-256 검증을 통과한 청크가 OPFS 캐시에 적재됩니다.", "Run prefetch to populate SHA-256 verified chunks into OPFS cache.")}</p>
+                <p className="text-xs text-fg-3">{pick("프리페치를 실행하면 SHA-256 검증을 통과한 청크 메타데이터만 메모리에 기록됩니다. 실제 파일은 생성되지 않습니다.", "Run prefetch to record checksum metadata in memory. No file is created.")}</p>
               ) : (
                 <div className="space-y-1.5">
                   {cacheState.entries.slice(0, 6).map((entry) => (
@@ -571,7 +608,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
             </div>
 
             <div data-testid="lru-eviction-log" className="rounded-lg border border-line bg-card p-3 space-y-2">
-              <h3 className="text-xs font-semibold text-fg">{pick("최근 OPFS LRU · 버전 축출 기록", "Recent OPFS LRU & Version Evictions")}</h3>
+              <h3 className="text-xs font-semibold text-fg">{pick("최근 메모리 모델 LRU · 버전 축출 기록", "In-Memory LRU & Version Evictions")}</h3>
               {cacheState.evictionLog.length === 0 ? (
                 <p className="text-xs text-fg-3">{pick("예산 초과 또는 major/minor 버전 갱신 시 자동 축출 내역이 표시됩니다.", "Automatic evictions from budget pressure or semver bumps appear here.")}</p>
               ) : (
@@ -586,7 +623,7 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
               )}
             </div>
           </div>
-        </div>
+        </fieldset>
       )}
     </section>
   );

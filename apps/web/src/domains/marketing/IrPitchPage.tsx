@@ -18,6 +18,7 @@ import {
   Mail,
   Maximize,
   Presentation,
+  ShieldCheck,
   X,
 } from "lucide-react";
 
@@ -56,7 +57,10 @@ import {
   IrVerifiedSnapshotStrip,
 } from "./IrQaAndLicenseSection";
 
+import { WAVE_IMPLEMENTATION_MILESTONES } from "./business-plan-data";
+
 const SCOPE = "domains.marketing.IrPitchPage";
+
 
 
 export function IrPitchPage() {
@@ -349,12 +353,47 @@ export function IrPitchPage() {
     ),
   ];
 
+  const renderWaveMilestones = (heading: string) => (
+    <section
+      className="ir-moat-scope ir-moat-card grid gap-4"
+      data-surface="site"
+      data-testid="ir-wave-milestones"
+      aria-label={heading}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="ir-moat-pill" data-tone="current">{bi("현재 구현 · 2026-11-25 (웨이브 45~49)", "Current Build · 2026-11-25 (Waves 45–49)")}</span>
+          <span className="ir-moat-pill" data-tone="target">{bi("매출·고객 목표와 분리", "Separate from Revenue/User Targets")}</span>
+        </div>
+        <Link href="/compare/studio" className="ir-moat-btn">
+          {bi("제작 도구 비교 자료", "Studio tool comparison references")}<ArrowRight size={14} aria-hidden="true" />
+        </Link>
+      </div>
+      <h2 className="break-keep text-base font-bold text-fg sm:text-lg">{heading}</h2>
+      <ul className="grid gap-3 md:grid-cols-2">
+        {WAVE_IMPLEMENTATION_MILESTONES.map((item) => {
+          const copy = bi(item.ko, item.en);
+          return (
+            <li key={item.id} className="ir-moat-subpanel grid content-start gap-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <strong className="break-keep text-sm text-fg">{copy.title}</strong>
+                <span className="ir-moat-pill" data-tone="current">{copy.tag}</span>
+              </div>
+              <p className="break-keep text-xs leading-5 text-fg-2">{copy.detail}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+
   return (
     <Container size="wide" className={INTRO_PAGE}>
       <IrBriefLayout onPresent={openPresentation}>
       {isOverview ? (
-        <div className="mb-5">
+        <div className="mb-5 grid gap-4">
           <IrVerifiedSnapshotStrip surface="site" lang={activeLang} />
+          {renderWaveMilestones(bi("2026-11-25 소스·예제 기록과 남은 검증", "Source examples and verification still required (2026-11-25)"))}
         </div>
       ) : null}
       <IrBriefOverview />
@@ -404,6 +443,11 @@ export function IrPitchPage() {
             "The closest competitor is CRECO, a collaboration platform hardened by beta testing with large studios — it is strong at managing versions, feedback and permissions for finished outputs. ToonStudio looks one step earlier: the drawing, 3D, storyboard and AI tools live inside, so the act of making is itself the management record.",
           )}
         </p>
+        <div className="mt-4">
+          <Link href="/compare/studio" className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/50 bg-accent-soft px-4 py-2 text-sm font-bold text-accent transition-colors hover:border-accent">
+            {bi("제작 도구 비교 자료 보기 (/compare/studio)", "View studio tool comparison references (/compare/studio)")}<ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
       </IrBriefSection>
 
       <IrBriefSection id="flow">
@@ -500,6 +544,9 @@ export function IrPitchPage() {
             );
           })}
         </ul>
+        <div className="mt-6">
+          {renderWaveMilestones(bi("웨이브 45~49 최신 구현 마일스톤 (현재 구현 · 운영 성과 별도)", "Waves 45–49 current implementation milestones (distinct from business traction)"))}
+        </div>
       </IrBriefSection>
 
       <IrBriefSection id="market">
@@ -632,8 +679,17 @@ export function IrPitchPage() {
             </p>
           </div>
         </div>
-        <div className="mt-5">
+        <div className="mt-5 grid gap-4">
           <IrSoloLicenseIntegrityCard surface="site" lang={activeLang} />
+          <div className="rounded-2xl border border-line/70 bg-card/65 p-5" data-testid="ir-security-governance-update">
+            <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-fg">
+              <ShieldCheck size={16} className="shrink-0 text-accent" aria-hidden="true" />
+              {bi("2026-11-25 보안·공급망 정비 기록 (최종 검증 필요)", "2026-11-25 Security source changes (final verification pending)")}
+            </p>
+            <p className="mt-1.5 break-keep text-xs leading-6 text-fg-2">
+              {bi("워크플로 권한·의존성 고정·SECURITY.md·rustix 관련 소스 정비 기록입니다. 취약점 수·권한 적용 범위는 최종 SHA에서 다시 확인해야 합니다. 운영 보안 감사 완료를 뜻하지 않습니다.", "Source changes cover workflow permissions, dependency pinning, SECURITY.md and rustix patches. Vulnerability counts and permission coverage require verification on the final SHA; a production security audit is not established.")}
+            </p>
+          </div>
         </div>
       </IrBriefSection>
 

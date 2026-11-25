@@ -7,6 +7,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
 import {
@@ -26,8 +27,10 @@ import {
   computeRgbaRegionDiff,
 } from "../apps/web/src/domains/creator/brush-baked-cache/incremental-delta-stroke-buffer.ts";
 
-const DEFAULT_PNG_PATH =
-  "/Users/hjunkim/.gemini/antigravity/brain/d47cdf47-6af8-42db-b2c5-9194377c60fa/scratch/real-media-8tips-and-km-mix-sheet.png";
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const DEFAULT_PNG_PATH = path.join(
+  REPO_ROOT, "artifacts/brush-audits/real-media-8tips-and-km-mix-sheet.png",
+);
 
 const TOTAL_STROKES = 1200;
 const CYCLE_LENGTH = 40;
@@ -428,12 +431,17 @@ function renderComparisonSheetPng(outPath, oracle) {
   return { outPath, width: W, height: H, byteLength: pngBuffer.byteLength, tipMasks };
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  const checkMode = args.includes("--check");
-  const jsonMode = args.includes("--json");
+export function parseCliArgs(args) {
   const outIdx = args.indexOf("--out");
-  const outPath = outIdx >= 0 && args[outIdx + 1] ? path.resolve(args[outIdx + 1]) : DEFAULT_PNG_PATH;
+  return {
+    checkMode: args.includes("--check"),
+    jsonMode: args.includes("--json"),
+    outPath: outIdx >= 0 && args[outIdx + 1] ? path.resolve(args[outIdx + 1]) : DEFAULT_PNG_PATH,
+  };
+}
+
+function main() {
+  const { checkMode, jsonMode, outPath } = parseCliArgs(process.argv.slice(2));
 
   const oracle = runLongSessionStressOracle();
   const sheet = renderComparisonSheetPng(outPath, oracle);
@@ -473,4 +481,4 @@ function main() {
   if (checkMode && !allPassed) process.exitCode = 1;
 }
 
-main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

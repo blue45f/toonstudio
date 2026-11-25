@@ -12,7 +12,11 @@ import {
   AlertTriangle, CheckCircle2, Code2, Copy, Layers, Palette,
   RotateCcw, ShieldAlert, ShieldCheck, SlidersHorizontal, Wand2,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
+
+import {
+  SPECTRUM_CHROMATIC_DISCIPLINE, SPECTRUM_DOMAIN_IDS, SPECTRUM_DOMAIN_PIGMENTS,
+} from "@/shared/lib/spectrum-editorial-tokens";
 
 import {
   EDITORIAL_MOODBOARD_PRESETS, PIGMENT_ROLE_IDS, PIGMENT_ROLE_LABELS, TARGET_CHROMATIC_RATIO,
@@ -22,6 +26,10 @@ import {
   type AutoRepairPaletteResult, type ChromaticAuditWarningSeverity, type ChromaticBalanceAuditReport,
   type ChromaticRatioSpec, type EditorialMoodboardPresetId, type OklchColor, type PigmentRoleId,
 } from "./editorial-moodboard-engine";
+
+import { OperationStatus } from "./OperationStatus";
+import { useExampleNotification } from "./use-example-notification";
+import { useClipboardOutput } from "./use-clipboard-output";
 
 export interface StudioEditorialMoodboardPanelProps {
   readonly initialPresetId?: EditorialMoodboardPresetId;
@@ -96,7 +104,7 @@ function EditorialPosterPreviewSvg(props: {
   const accentCss = formatOklch(p.accent.color);
   const onAccentCss = formatOklch(audit.resolvedOnAccent);
 
-  const safeHeadline = (headline.trim() || (isEn ? audit.preset.posterHeadlineEn : audit.preset.posterHeadlineKo)).slice(0, 24);
+  const safeHeadline = headline;
   const subtitle = isEn ? audit.preset.posterTaglineEn : audit.preset.posterTaglineKo;
   const ratioBarW = 364;
   const neutralW = Math.max(12, Math.round((ratioBarW * audit.ratio.normalized.neutralPct) / 100));
@@ -216,7 +224,17 @@ export function StudioEditorialMoodboardPanel(props: StudioEditorialMoodboardPan
   const cspExport = useMemo<string>(() => exportPaletteCspSwatch(audit), [audit]);
   const svgExport = useMemo<string>(() => buildEditorialPosterSvg(audit, { headline: posterHeadline, locale }), [audit, posterHeadline, locale]);
 
-  useEffect(() => { onAuditChange?.(audit); }, [audit, onAuditChange]);
+  const auditNotification = useExampleNotification(onAuditChange);
+  const cssNotification = useExampleNotification<{ readonly text: string; readonly audit: ChromaticBalanceAuditReport }>(onExportCss ? (value) => onExportCss(value.text, value.audit) : undefined);
+  const jsonNotification = useExampleNotification<{ readonly text: string; readonly audit: ChromaticBalanceAuditReport }>(onExportJson ? (value) => onExportJson(value.text, value.audit) : undefined);
+  const cspNotification = useExampleNotification<{ readonly text: string; readonly audit: ChromaticBalanceAuditReport }>(onExportCsp ? (value) => onExportCsp(value.text, value.audit) : undefined);
+  const svgNotification = useExampleNotification<{ readonly text: string; readonly audit: ChromaticBalanceAuditReport }>(onExportSvg ? (value) => onExportSvg(value.text, value.audit) : undefined);
+  const clipboard = useClipboardOutput();
+  const channels = [auditNotification, cssNotification, jsonNotification, cspNotification, svgNotification, clipboard];
+  const busy = channels.some((channel) => channel.status === "pending");
+  const lastAudit = useRef<ChromaticBalanceAuditReport | null>(null);
+  const { notify: notifyAudit } = auditNotification;
+  useEffect(() => { if (lastAudit.current !== audit) { lastAudit.current = audit; notifyAudit(audit); } }, [audit, notifyAudit]);
 
   const activePigment = audit.resolvedPigments[activePigmentRole];
 
@@ -287,27 +305,14 @@ export function StudioEditorialMoodboardPanel(props: StudioEditorialMoodboardPan
     setStatusMessage(pick("무드보드 프리셋과 5안료 설정을 초기 상태로 되돌렸습니다.", "Reset moodboard preset and 5 pigments to defaults."));
   };
 
-  const copySafely = (text: string): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(text).catch(() => undefined);
-    }
-  };
-
   const handleCopy = (kind: "css" | "json" | "csp" | "svg"): void => {
-    const payload = kind === "css" ? cssExport : kind === "json" ? jsonExport : kind === "csp" ? cspExport : svgExport;
-    if (kind === "css") onExportCss?.(payload, audit);
-    else if (kind === "json") onExportJson?.(payload, audit);
-    else if (kind === "csp") onExportCsp?.(payload, audit);
-    else onExportSvg?.(payload, audit);
-    copySafely(payload);
+    if (channels.some((channel) => channel.isPending())) return;
+    const payloads = { css: cssExport, json: jsonExport, csp: cspExport, svg: svgExport };
+    const notifications = { css: cssNotification, json: jsonNotification, csp: cspNotification, svg: svgNotification };
+    const text = payloads[kind];
+    notifications[kind].notify({ text, audit });
+    clipboard.notify(text);
     setExportTab(kind);
-    const labelMap = {
-      css: pick("OKLCH CSS 변수", "OKLCH CSS variables"),
-      json: pick("OKLCH 팔레트 JSON", "OKLCH palette JSON"),
-      csp: pick("CSP 스와치 세트", "CSP swatch set"),
-      svg: pick("에디토리얼 포스터 SVG", "editorial poster SVG"),
-    };
-    setStatusMessage(pick(`${labelMap[kind]}(${payload.length.toLocaleString("ko-KR")}B)을 복사했습니다.`, `Copied ${labelMap[kind]} (${payload.length} B).`));
   };
 
   const activeExportContent =
@@ -319,6 +324,14 @@ export function StudioEditorialMoodboardPanel(props: StudioEditorialMoodboardPan
       aria-label={pick("탈-바이올렛 8대 에디토리얼 무드보드 및 5안료 스펙트럼 팔레트 디렉터", "De-Violeted Editorial Moodboard & 5-Pigment Palette Director")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
     >
+      <OperationStatus channel="audit" {...auditNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="css" {...cssNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="json" {...jsonNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="csp" {...cspNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="svg" {...svgNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="clipboard" {...clipboard} pending={busy} isEn={isEn} />
+      <p className="text-xs text-fg-2">{pick("CPU 색상 계산 예제입니다. 실제 화면 접근성·CSP 호환성·원고 자동 반영·저장·저작권은 확인하지 않습니다. 닫으면 입력이 사라집니다.", "CPU color example only. Actual display accessibility, CSP compatibility, artwork apply, storage and rights are not verified. Inputs disappear when closed.")}</p>
+      <fieldset disabled={busy} className="contents">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -547,7 +560,7 @@ export function StudioEditorialMoodboardPanel(props: StudioEditorialMoodboardPan
             </div>
             <div className="space-y-1">
               <label htmlFor={`${uid}-headline`} className="text-xs font-medium text-fg-2">{pick("포스터 표제어 (실시간 반영)", "Poster Headline")}</label>
-              <input id={`${uid}-headline`} data-testid="moodboard-headline-input" type="text" maxLength={24} value={posterHeadline} onChange={(e) => setPosterHeadline(e.target.value)} className={`min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg ${FOCUS_RING}`} />
+              <input id={`${uid}-headline`} data-testid="moodboard-headline-input" type="text" maxLength={4096} value={posterHeadline} onChange={(e) => setPosterHeadline(e.target.value)} className={`min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg ${FOCUS_RING}`} />
             </div>
             <EditorialPosterPreviewSvg audit={audit} headline={posterHeadline} isEn={isEn} />
           </div>
@@ -555,10 +568,10 @@ export function StudioEditorialMoodboardPanel(props: StudioEditorialMoodboardPan
           <div className="space-y-3 rounded-xl bg-canvas p-4">
             <h3 className="text-sm font-bold text-fg [word-break:keep-all]">{pick("6. 팔레트 내보내기 (CSS · JSON · CSP · SVG)", "6. Export Palette (CSS · JSON · CSP · SVG)")}</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" data-testid="moodboard-copy-css-btn" onClick={() => handleCopy("css")} className={BTN_OUTLINE}><Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("CSS 변수 복사", "Copy CSS")}</button>
-              <button type="button" data-testid="moodboard-copy-json-btn" onClick={() => handleCopy("json")} className={BTN_OUTLINE}><Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("OKLCH JSON 복사", "Copy JSON")}</button>
-              <button type="button" data-testid="moodboard-copy-csp-btn" onClick={() => handleCopy("csp")} className={BTN_OUTLINE}><Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("CSP 스와치 복사", "Copy CSP")}</button>
-              <button type="button" data-testid="moodboard-copy-svg-btn" onClick={() => handleCopy("svg")} className={BTN_OUTLINE}><Code2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("포스터 SVG 복사", "Copy SVG")}</button>
+              <button type="button" data-testid="moodboard-copy-css-btn" disabled={busy} onClick={() => handleCopy("css")} className={BTN_OUTLINE}><Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("CSS 변수 복사", "Copy CSS")}</button>
+              <button type="button" data-testid="moodboard-copy-json-btn" disabled={busy} onClick={() => handleCopy("json")} className={BTN_OUTLINE}><Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("OKLCH JSON 복사", "Copy JSON")}</button>
+              <button type="button" data-testid="moodboard-copy-csp-btn" disabled={busy} onClick={() => handleCopy("csp")} className={BTN_OUTLINE}><Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("CSP 스와치 복사", "Copy CSP")}</button>
+              <button type="button" data-testid="moodboard-copy-svg-btn" disabled={busy} onClick={() => handleCopy("svg")} className={BTN_OUTLINE}><Code2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("포스터 SVG 복사", "Copy SVG")}</button>
             </div>
             <div className="flex flex-wrap gap-1.5 border-t border-line pt-3">
               {([{ id: "css", label: "CSS" }, { id: "json", label: "JSON" }, { id: "csp", label: "CSP" }, { id: "svg", label: "SVG" }, { id: "hidden", label: pick("숨김", "Hide") }] as const).map((tab) => (
@@ -573,8 +586,29 @@ export function StudioEditorialMoodboardPanel(props: StudioEditorialMoodboardPan
               </pre>
             ) : null}
           </div>
+          <details data-testid="spectrum-domain-pigment-guide" className="rounded-xl border border-line bg-canvas p-3">
+            <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+              {pick(
+                `5대 도메인 스펙트럼 안료 기준 (${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.neutralSurfaceRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.domainPigmentRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.editorialDetailRatio * 100)})`,
+                `5 Domain Spectrum Pigments (${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.neutralSurfaceRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.domainPigmentRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.editorialDetailRatio * 100)})`,
+              )}
+            </summary>
+            <ul className="mt-2.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {SPECTRUM_DOMAIN_IDS.map((domainId) => {
+                const pigment = SPECTRUM_DOMAIN_PIGMENTS[domainId];
+                return (
+                  <li key={domainId} className="flex items-center gap-2 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs">
+                    <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-line" style={{ backgroundColor: pigment.vivid.ink }} aria-hidden="true" />
+                    <span className="font-semibold text-fg [word-break:keep-all]">{isEn ? pigment.nameEn : pigment.nameKo}</span>
+                    <span className="ml-auto font-mono text-[11px] text-fg-3 tabular-nums">{pigment.hue}°</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
         </div>
       </div>
+      </fieldset>
     </section>
   );
 }

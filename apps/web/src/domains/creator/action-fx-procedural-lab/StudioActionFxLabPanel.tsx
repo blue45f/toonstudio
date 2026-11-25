@@ -12,7 +12,7 @@ import {
   Flower2, Layers, Orbit, RefreshCw, RotateCcw, ShieldCheck,
   SlidersHorizontal, Wind, Zap,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import {
   ACTION_FX_PRESETS,
@@ -26,14 +26,17 @@ import {
   type ActionFxPresetId,
   type ActionFxVectorPrimitive,
 } from "./action-fx-vector-engine";
+import { useBrowserOutput } from "./use-browser-output";
+import { useExampleNotification } from "./use-example-notification";
 
 export interface StudioActionFxLabPanelProps {
   readonly initialPreset?: ActionFxPresetId;
   readonly initialSeed?: number;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onLayerChange?: (layer: ActionFxLayerResult) => void;
-  readonly onExportSvg?: (svg: string, presetId: ActionFxPresetId) => void;
+  /** 예제 결과 알림이며 원고 적용·레이어 저장 완료 응답이 아니다. */
+  readonly onLayerChange?: (layer: ActionFxLayerResult) => void | Promise<void>;
+  readonly onExportSvg?: (svg: string, presetId: ActionFxPresetId) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -219,6 +222,12 @@ export function StudioActionFxLabPanel(props: StudioActionFxLabPanelProps): Reac
   const uid = useId();
   const isEn = locale === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
+  const layerNotification = useExampleNotification(onLayerChange);
+  const exportNotification = useExampleNotification<readonly [string, ActionFxPresetId]>(onExportSvg ? ([svg, preset]) => onExportSvg(svg, preset) : undefined);
+  const output = useBrowserOutput();
+  const notifyLayer = layerNotification.notify;
+  const busy = (): boolean => layerNotification.isPending() || exportNotification.isPending() || output.isPending();
+  const lastNotifiedLayer = useRef<ActionFxLayerResult | null>(null);
   const initialSpec = getActionFxPresetSpec(initialPreset);
 
   const [presetId, setPresetId] = useState<ActionFxPresetId>(initialSpec.id);
@@ -269,10 +278,13 @@ export function StudioActionFxLabPanel(props: StudioActionFxLabPanelProps): Reac
   );
 
   useEffect(() => {
-    onLayerChange?.(layer);
-  }, [layer, onLayerChange]);
+    if (lastNotifiedLayer.current === layer) return;
+    lastNotifiedLayer.current = layer;
+    notifyLayer(layer);
+  }, [layer, notifyLayer]);
 
   const handleSelectPreset = (nextId: ActionFxPresetId): void => {
+    if (busy()) return;
     const spec = getActionFxPresetSpec(nextId);
     setPresetId(spec.id);
     setAngleDeg(spec.defaultAngleDeg);
@@ -281,11 +293,13 @@ export function StudioActionFxLabPanel(props: StudioActionFxLabPanelProps): Reac
   };
 
   const handleRefreshSeed = (): void => {
+    if (busy()) return;
     setSeed((prev) => ((prev * 1664525 + 1013904223) >>> 0) % 899999 + 100000);
     setStatusMessage(pick("결정론적 시드를 갱신했습니다.", "Generated a new deterministic seed."));
   };
 
   const handleReset = (): void => {
+    if (busy()) return;
     const spec = getActionFxPresetSpec(presetId);
     setSeed(initialSeed);
     setDensity(spec.defaultDensity);
@@ -299,35 +313,17 @@ export function StudioActionFxLabPanel(props: StudioActionFxLabPanelProps): Reac
   };
 
   const handleCopySvg = (): void => {
-    onExportSvg?.(exportedSvg, presetId);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(exportedSvg).catch(() => undefined);
-    }
-    setStatusMessage(
-      pick(
-        `${layer.preset.labelKo} SVG(${exportedSvg.length.toLocaleString("ko-KR")}B)를 복사했습니다.`,
-        `Copied ${layer.preset.labelEn} SVG (${exportedSvg.length.toLocaleString("en-US")} B).`,
-      ),
-    );
+    if (busy()) return;
+    exportNotification.notify([exportedSvg, presetId]);
+    output.notify({ kind: "copy", text: exportedSvg });
+    setStatusMessage(pick("SVG 복사 응답을 확인하세요.", "Check the SVG copy response."));
   };
 
   const handleDownloadSvg = (): void => {
-    onExportSvg?.(exportedSvg, presetId);
-    if (typeof document !== "undefined" && typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
-      const blob = new Blob([exportedSvg], { type: "image/svg+xml;charset=utf-8" });
-      const href = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = href;
-      anchor.download = `toonstudio-${presetId}-seed-${seed}.svg`;
-      anchor.click();
-      URL.revokeObjectURL(href);
-    }
-    setStatusMessage(
-      pick(
-        `toonstudio-${presetId}-seed-${seed}.svg 파일을 내보냈습니다.`,
-        `Exported toonstudio-${presetId}-seed-${seed}.svg.`,
-      ),
-    );
+    if (busy()) return;
+    exportNotification.notify([exportedSvg, presetId]);
+    output.notify({ kind: "download", text: exportedSvg, filename: `toonstudio-${presetId}-seed-${seed}.svg` });
+    setStatusMessage(pick("브라우저 다운로드 요청 결과를 확인하세요.", "Check the browser download request."));
   };
 
   const { characterMask, vanishingPointPx } = layer.resolvedOptions;
@@ -339,8 +335,23 @@ export function StudioActionFxLabPanel(props: StudioActionFxLabPanelProps): Reac
     <section
       aria-label={pick("웹툰 액션·판타지·로맨스 프로시저럴 벡터 FX 랩", "Webtoon Procedural Vector FX Lab")}
       data-testid="studio-action-fx-lab-panel"
+      aria-busy={layerNotification.status === "pending" || exportNotification.status === "pending" || output.status === "pending"}
       className={`flex flex-col gap-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] sm:p-5 ${className ?? ""}`}
     >
+      <p data-testid="fx-scope-notice" className="text-xs text-fg-2">{pick("CPU 좌표 생성·SVG 예제입니다. 얼굴 안전 검사는 사용자가 지정한 고정 원형 마스크의 기하 경계이며 실제 얼굴 인식·픽셀 실측이 아닙니다. 실제 GPU·현재 원고 적용·레이어 영구 저장은 연결되지 않습니다. SVG 복사와 다운로드 요청은 별도로 처리하며 파일 저장 완료·출고 권리를 보증하지 않습니다.", "CPU geometry and SVG examples. Mask checks use a fixed circle, not face detection or measured pixels. No GPU, manuscript apply or persistent layer storage is connected. Clipboard and download requests are separate and do not confirm file storage or publication rights.")}</p>
+      {[{ key: "layer", notification: layerNotification, label: pick("레이어 알림 다시 시도", "Retry layer notification") }, { key: "export", notification: exportNotification, label: pick("SVG 알림 다시 시도", "Retry SVG notification") }].map(({ key, notification: n, label }) => n.status !== "idle" ? (
+        <p key={key} data-testid={`fx-notification-${key}`} role={n.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+          {n.status === "failed" ? pick("예제 알림 실패", "Example notification failed") : n.status === "pending" ? pick("예제 알림 대기 중", "Example notification pending") : n.status === "local-only" ? pick("예제 수신자 미연결", "No example receiver") : pick("예제 알림 완료", "Example notification delivered")} · {pick("실제 적용·저장 완료 아님", "No real apply or save confirmed")} {n.error}
+          {n.status === "failed" && <button type="button" onClick={n.retry} className={BTN_OUTLINE}>{label}</button>}
+        </p>
+      ) : null)}
+      {output.status !== "idle" && (
+        <p data-testid="fx-transfer-status" role={output.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+          {output.status === "failed" ? pick("브라우저 출력 실패", "Browser output failed") : output.status === "pending" ? pick("브라우저 출력 대기 중", "Browser output pending") : output.value?.kind === "copy" ? pick("SVG 복사 완료", "SVG copied") : pick("SVG 다운로드 요청 전달 · 실제 파일 저장 여부는 브라우저에서 확인하세요.", "SVG download requested; confirm file storage in the browser.")} {output.error}
+          {output.status === "failed" && <button type="button" onClick={output.retry} className={BTN_OUTLINE}>{pick("브라우저 출력 다시 시도", "Retry browser output")}</button>}
+        </p>
+      )}
+      <fieldset disabled={layerNotification.status === "pending" || exportNotification.status === "pending" || output.status === "pending"} className="m-0 min-w-0 space-y-4 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3.5">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -503,7 +514,7 @@ export function StudioActionFxLabPanel(props: StudioActionFxLabPanelProps): Reac
             />
             <FxMetricCard
               label={pick("SVG 크기", "SVG Size")}
-              value={`${(exportedSvg.length / 1024).toFixed(1)} KB`}
+              value={`${(new TextEncoder().encode(exportedSvg).byteLength / 1024).toFixed(1)} KB`}
               testId="fx-svg-size-readout"
             />
             <FxMetricCard label={pick("결정 시드", "Seed")} value={`#${seed}`} testId="fx-seed-readout" />
@@ -686,6 +697,7 @@ export function StudioActionFxLabPanel(props: StudioActionFxLabPanelProps): Reac
           {statusMessage}
         </div>
       ) : null}
+      </fieldset>
     </section>
   );
 }

@@ -99,6 +99,36 @@ const LazyStudioOnboardingDioramaPanel = lazy(async () => {
   return { default: m.StudioOnboardingDioramaPanel };
 });
 
+const LazyPerfDoctorPanel = lazy(async () => {
+  await import("../studio-perf-doctor");
+  const m = await import("../studio-perf-doctor/StudioPerfDoctorPanel");
+  return { default: m.StudioPerfDoctorPanel };
+});
+const LazyErgonomicsPanel = lazy(async () => {
+  await import("../ergonomics-shortcut-master");
+  const m = await import("../ergonomics-shortcut-master/StudioErgonomicsMasterPanel");
+  return { default: m.StudioErgonomicsMasterPanel };
+});
+
+const LazyCraftLauncherPanel = lazy(async () => {
+  await import("../atelier-craft-launcher");
+  const m = await import("../atelier-craft-launcher/StudioAtelierCraftLauncherPanel");
+  return { default: m.StudioAtelierCraftLauncherPanel };
+});
+const LazyAtelierFoleyMixerPanel = lazy(async () => {
+  await import("../atelier-foley-mixer");
+  const m = await import("../atelier-foley-mixer/StudioAtelierFoleyMixerPanel");
+  return { default: m.StudioAtelierFoleyMixerPanel };
+});
+
+const LazyStudioFocusPanHapticPanel = lazy(() =>
+  import("../focus-pan-haptic-studio").then((module) => ({ default: module.StudioFocusPanHapticPanel })),
+);
+
+const LazyStudioAdaptiveCalmGuardPanel = lazy(() =>
+  import("../adaptive-calm-stack-guard").then((module) => ({ default: module.StudioAdaptiveCalmGuardPanel })),
+);
+
 type CreatorLabTabId =
   | "calibrator"
   | "signatureLab"
@@ -118,7 +148,13 @@ type CreatorLabTabId =
   | "canvasOrbitalUx"
   | "featureAtlas"
   | "handcraftedAtelier"
-  | "onboardingDiorama";
+  | "onboardingDiorama"
+  | "perfDoctor"
+  | "ergonomics"
+  | "craftLauncher"
+  | "atelierFoley"
+  | "focusHaptics"
+  | "adaptiveCalm";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -144,10 +180,24 @@ const CREATOR_LAB_TABS: readonly {
   { id: "featureAtlas", labelKo: "기능 안내·실습·계산 예제", labelEn: "Feature Guide · Walkthroughs · Computation Examples" },
   { id: "handcraftedAtelier", labelKo: "지터·관성·작업대 구성 예제", labelEn: "Jitter · Inertia · Workbench Examples" },
   { id: "onboardingDiorama", labelKo: "첫 컷 구성·창작자 설정 추천 예제", labelEn: "First-Cut Layout · Creator Setting Examples" },
+  { id: "perfDoctor", labelKo: "성능 수치·설정 제안 예제", labelEn: "Performance Metrics · Setting Examples" },
+  { id: "ergonomics", labelKo: "단축키·배치 제안 예제", labelEn: "Shortcut · Layout Examples" },
+  { id: "craftLauncher", labelKo: "도구 탐색·작업 준비", labelEn: "Tool Finder · Work Preparation" },
+  { id: "atelierFoley", labelKo: "작업실 음향·웹 오디오", labelEn: "Atelier Sound · Web Audio" },
+  { id: "focusHaptics", labelKo: "집중·화면 이동·햅틱 예제", labelEn: "Focus · View Movement · Haptic Examples" },
+  { id: "adaptiveCalm", labelKo: "작업 도구 배치·기기 예산 예제", labelEn: "Tool Layout · Device Budget Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
   switch (id) {
+    case "adaptiveCalm":
+      return <Compass size={15} aria-hidden="true" />;
+    case "focusHaptics":
+      return <Gauge size={15} aria-hidden="true" />;
+    case "craftLauncher":
+      return <Compass size={15} aria-hidden="true" />;
+    case "atelierFoley":
+      return <Music size={15} aria-hidden="true" />;
     case "calibrator":
       return <Gauge size={15} aria-hidden="true" />;
     case "signatureLab":
@@ -184,6 +234,10 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <CheckCircle2 size={15} aria-hidden="true" />;
     case "handcraftedAtelier":
       return <PenTool size={15} aria-hidden="true" />;
+    case "perfDoctor":
+      return <Gauge size={15} aria-hidden="true" />;
+    case "ergonomics":
+      return <UserCheck size={15} aria-hidden="true" />;
     case "onboardingDiorama":
       return <Camera size={15} aria-hidden="true" />;
   }
@@ -253,6 +307,12 @@ export function CreatorLabHardwareHubPanel() {
           {active === "featureAtlas" ? <LazyStudioFeatureAtlasPanel /> : null}
           {active === "handcraftedAtelier" ? <LazyStudioHandcraftedAtelierPanel /> : null}
           {active === "onboardingDiorama" ? <LazyStudioOnboardingDioramaPanel /> : null}
+          {active === "perfDoctor" ? <LazyPerfDoctorPanel /> : null}
+          {active === "ergonomics" ? <LazyErgonomicsPanel /> : null}
+          {active === "craftLauncher" ? <LazyCraftLauncherPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "atelierFoley" ? <LazyAtelierFoleyMixerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "focusHaptics" ? <LazyStudioFocusPanHapticPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "adaptiveCalm" ? <LazyStudioAdaptiveCalmGuardPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

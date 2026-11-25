@@ -146,6 +146,79 @@ describe("OPFS 실제 저장 실패와 재열기 경계", () => {
     expect(await reopened.restoreCommit(original.id)).toEqual(snapshot);
   });
 
+  it("첫 예제 manifest 뒤 ref 저장이 실패해도 기존 객체로 재연결하고 다음 이력을 잇는다", async () => {
+    const tree = directoryTree();
+    let failNonemptyRef = true;
+    class InitialRefFailureAdapter extends BrowserOpfsVfsAdapter {
+      override async writeFile(path: string, data: Uint8Array): Promise<void> {
+        if (failNonemptyRef && path === "refs/heads/main" && data.byteLength > 0) {
+          throw new DOMException("첫 참조 저장 실패", "QuotaExceededError");
+        }
+        await super.writeFile(path, data);
+      }
+    }
+    const adapter = new InitialRefFailureAdapter(tree.root);
+    await expect(createSeededWebtoonVcs(adapter)).rejects.toMatchObject({ name: "QuotaExceededError" });
+    const manifests = [...tree.files.keys()].filter(path => path.startsWith("objects/commits/"));
+    expect(manifests).toHaveLength(1);
+    expect(tree.files.get("refs/heads/main")).toEqual(new Uint8Array());
+    const objects = new Map([...tree.files].filter(([path]) => path.startsWith("objects/")));
+    const pending = new OpfsSnapshotVcsEngine({ adapter });
+    await pending.init();
+    const id = manifests[0]?.slice("objects/commits/".length, -".json".length) ?? "";
+    const original = pending.getCommit(id);
+    expect(original).not.toBeNull();
+    const originalSnapshot = await pending.restoreCommit(id);
+    await expect(createSeededWebtoonVcs(adapter)).rejects.toMatchObject({ name: "QuotaExceededError" });
+    failNonemptyRef = false;
+
+    const recovered = await createSeededWebtoonVcs(adapter);
+    expect(recovered.engine.currentHeadCommitId).toBe(id);
+    expect(recovered.engine.getCommitHistory()).toEqual([original]);
+    expect(recovered.latestSnapshot).toEqual(originalSnapshot);
+    expect(new Map([...tree.files].filter(([path]) => path.startsWith("objects/")))).toEqual(objects);
+    expect((await recovered.engine.verifyIntegrity()).valid).toBe(true);
+    const reopened = await createSeededWebtoonVcs(adapter);
+    expect(reopened.engine.getCommitHistory()).toEqual([original]);
+    expect(reopened.latestSnapshot).toEqual(originalSnapshot);
+    const next = await reopened.engine.commit(snapshot, { message: "복구 후 사용자 저장" });
+    expect(next.parentId).toBe(id);
+    expect(reopened.engine.getCommitHistory()).toEqual([next, original]);
+    for (const [path, bytes] of objects) expect(tree.files.get(path)).toEqual(bytes);
+  });
+
+  it.each(["여러 커밋", "다른 브랜치"])("빈 현재 ref라도 %s의 이력을 임의로 선택하지 않는다", async (caseName) => {
+    const tree = directoryTree();
+    const adapter = new BrowserOpfsVfsAdapter(tree.root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    await engine.commit(snapshot, { message: "기존 사용자 작업" });
+    if (caseName === "여러 커밋") {
+      await engine.commit({ ...snapshot, title: "후속 작업" }, { message: "후속" });
+      await adapter.writeFile("refs/heads/main", new Uint8Array());
+    } else {
+      await engine.createBranch("empty", null);
+      await engine.checkoutBranch("empty");
+    }
+    const before = new Map(tree.files);
+    await expect(createSeededWebtoonVcs(adapter)).rejects.toThrow("기존 이력을 보존합니다");
+    expect(tree.files).toEqual(before);
+  });
+
+  it("참조 없는 첫 커밋도 손상된 청크를 확인하면 ref를 복구하지 않는다", async () => {
+    const tree = directoryTree();
+    const adapter = new BrowserOpfsVfsAdapter(tree.root);
+    const engine = new OpfsSnapshotVcsEngine({ adapter });
+    await engine.init();
+    await engine.commit(snapshot, { message: "첫 작업" });
+    await adapter.writeFile("refs/heads/main", new Uint8Array());
+    const chunk = await computeContentAddressHash(snapshot.layers[0]?.payload ?? new Uint8Array());
+    await adapter.writeFile(`objects/chunks/${chunk}`, new Uint8Array());
+    const before = new Map(tree.files);
+    await expect(createSeededWebtoonVcs(adapter)).rejects.toThrow("청크 무결성 검증 실패");
+    expect(tree.files).toEqual(before);
+  });
+
   it("이미 저장된 사용자 작업·선택 브랜치를 예제 데이터로 덮지 않는다", async () => {
     const adapter = new InMemoryVfsAdapter();
     const initial = await createSeededWebtoonVcs(adapter);

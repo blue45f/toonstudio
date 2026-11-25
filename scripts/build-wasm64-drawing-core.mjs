@@ -4,14 +4,15 @@
  * 재현 가능하게 컴파일해 `apps/web/public/wasm/studio-wasm64-drawing-core.wasm`(< 48 KiB)을 생성·검증한다.
  *
  * 사용법:
- *   node scripts/build-wasm64-drawing-core.mjs           # 빌드 + 복사 + 내보내기/크기/경로 검증
- *   node scripts/build-wasm64-drawing-core.mjs --check   # 체크인된 .wasm 바이너리 무결성만 검증
+ *   node scripts/build-wasm64-drawing-core.mjs           # 빌드 + 검증 + 복사
+ *   node scripts/build-wasm64-drawing-core.mjs --check   # 체크인된 .wasm 바이너리 검증
+ * Cargo 산출물이 48 KiB 이상일 때 Cargo와 Binaryen을 이어서 사용한다. 필요하면 WASM_OPT로 경로를 지정한다.
  */
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
-import { homedir } from "node:os";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -174,19 +175,52 @@ export async function verifyWasmBinary(wasmPath = PUBLIC_WASM_PATH) {
   };
 }
 
-export async function main(argv = process.argv.slice(2)) {
-  const checkOnly = argv.includes("--check");
-  if (!checkOnly) {
-    runCargoReleaseWasmBuild();
-    mkdirSync(dirname(PUBLIC_WASM_PATH), { recursive: true });
-    copyFileSync(TARGET_WASM_PATH, PUBLIC_WASM_PATH);
-    const stat = statSync(PUBLIC_WASM_PATH);
-    console.log(
-      `[wasm64-drawing-core] 복사 완료: ${relative(REPO_ROOT, PUBLIC_WASM_PATH)} (${stat.size.toLocaleString("en-US")} B)`,
-    );
+function optimizeWasmBinary(input, output) {
+  const optimizer = process.env.WASM_OPT || "wasm-opt";
+  const result = spawnSync(
+    optimizer,
+    [
+      "-Oz", "--converge", "--strip-producers",
+      "--enable-bulk-memory", "--enable-nontrapping-float-to-int", "--enable-sign-ext",
+      input, "-o", output,
+    ],
+    { cwd: REPO_ROOT, stdio: "inherit" },
+  );
+  if (result.error?.code === "ENOENT") {
+    throw new Error("48 KiB 이상인 Cargo 산출물을 최적화하려면 Binaryen wasm-opt가 필요합니다. PATH나 WASM_OPT를 확인하세요.");
   }
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`wasm-opt 실행 실패 (exit ${result.status ?? -1})`);
+  }
+}
 
-  const report = await verifyWasmBinary(PUBLIC_WASM_PATH);
+async function buildAndPublishWasm() {
+  runCargoReleaseWasmBuild();
+  let artifact = TARGET_WASM_PATH;
+  let scratch;
+  try {
+    if (statSync(artifact).size >= MAX_WASM_BYTES) {
+      scratch = mkdtempSync(join(tmpdir(), "toonstudio-drawing-core-wasm-"));
+      artifact = join(scratch, "drawing-core.wasm");
+      optimizeWasmBinary(TARGET_WASM_PATH, artifact);
+    }
+
+    const report = await verifyWasmBinary(artifact);
+    mkdirSync(dirname(PUBLIC_WASM_PATH), { recursive: true });
+    copyFileSync(artifact, PUBLIC_WASM_PATH);
+    const publicPath = relative(REPO_ROOT, PUBLIC_WASM_PATH);
+    console.log(`[wasm64-drawing-core] 복사 완료: ${publicPath} (${report.byteLength.toLocaleString("en-US")} B)`);
+    return { ...report, path: publicPath };
+  } finally {
+    if (scratch) rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+export async function main(argv = process.argv.slice(2)) {
+  const report = argv.includes("--check")
+    ? await verifyWasmBinary(PUBLIC_WASM_PATH)
+    : await buildAndPublishWasm();
   console.log(
     `[wasm64-drawing-core] 검증 통과: ${report.path} · ${report.byteLength.toLocaleString("en-US")} B (${report.kib} KiB < 48 KiB) · ABI v${report.abiVersion} · caps=0x${report.capabilities.toString(16)} · exports=${report.exportNames.length} · sha256=${report.sha256.slice(0, 16)}…`,
   );
