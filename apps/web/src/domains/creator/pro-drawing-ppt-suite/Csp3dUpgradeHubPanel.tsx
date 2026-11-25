@@ -61,6 +61,12 @@ const LazyStudioActionFxLabPanel = lazy(async () => {
   return { default: m.StudioActionFxLabPanel };
 });
 
+const LazyCharacterBiblePanel = lazy(async () => {
+  await import("../character-sheet-bible-studio");
+  const m = await import("../character-sheet-bible-studio/StudioCharacterSheetBiblePanel");
+  return { default: m.StudioCharacterSheetBiblePanel };
+});
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -72,7 +78,8 @@ type Csp3dTabId =
   | "neuralUpscale"
   | "koreanLettering"
   | "lightingRig3d"
-  | "actionFxLab";
+  | "actionFxLab"
+  | "characterBible";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -90,6 +97,7 @@ const CSP3D_TABS: readonly {
   { id: "koreanLettering", labelKo: "한글 조판·SVG 글자 배치 예제", labelEn: "Korean Typesetting · SVG Text Examples" },
   { id: "lightingRig3d", labelKo: "하늘·조명·그림자 수치 예제", labelEn: "Sky · Lighting · Shadow Examples" },
   { id: "actionFxLab", labelKo: "액션·로맨스 SVG 효과 예제", labelEn: "Action · Romance SVG Examples" },
+  { id: "characterBible", labelKo: "캐릭터 설정·표정 조판 예제", labelEn: "Character Sheet · Expression Layout Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -110,6 +118,8 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "characterBible":
+      return <Hand size={15} aria-hidden="true" />;
     case "lightingRig3d":
       return <Sunrise size={15} aria-hidden="true" />;
     case "actionFxLab":
@@ -191,6 +201,7 @@ export function Csp3dUpgradeHubPanel() {
           {active === "koreanLettering" ? <LazyKoreanLetteringPanel /> : null}
           {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "actionFxLab" ? <LazyStudioActionFxLabPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "characterBible" ? <LazyCharacterBiblePanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
