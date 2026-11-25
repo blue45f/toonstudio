@@ -251,14 +251,14 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "Rust 그래픽 라이브러리 wgpu 30.0.1에 패치 1개를 얹은 벤더 포크. 페이지가 이미 가진 GPU 장치를 wgpu가 넘겨받게 해, 그림 데이터를 CPU로 되읽지 않고 같은 장치 안에서 쓴다.",
-        "A vendored fork of the Rust graphics library wgpu 30.0.1 with one patch. It lets wgpu adopt the GPU device the page already owns, so image data is used on the same device instead of being read back to the CPU.",
+        "Rust 그래픽 라이브러리 wgpu 30.0.1에 기능 패치와 보안·도구 패치를 적용한 벤더 포크. 페이지가 이미 가진 GPU 장치를 wgpu가 넘겨받게 해, 그림 데이터를 CPU로 되읽지 않고 같은 장치 안에서 쓴다.",
+        "A vendored fork of the Rust graphics library wgpu 30.0.1 with a feature patch and a security and tooling patch. It lets wgpu adopt the GPU device the page already owns, so image data is used on the same device instead of being read back to the CPU.",
       ),
       license: same("MIT OR Apache-2.0"),
       mode: t("Rust · 벤더 포크 · 피처 뒤", "Rust · vendored fork · behind a feature"),
       note: t(
-        "변경은 모두 toon-fabric 피처 뒤에 있다. 같은 장치 안에서 쓰는 경로가 열렸고 읽은 바이트는 기존 경로와 일치한다. 속도 이득은 크기마다 달라 정본 측정(2026-09-23, Chrome 153)에서 256px 0.93배(이득 없음)·512px 3.29배·1024px 3.12배다. 옛 1.89~2.43배(2026-08-08)는 이전 기록이다. 상류 PR 근거는 못 찾았다.",
-        "Every change sits behind the toon-fabric feature. A path that uses the adopted device in place is open, and the bytes read match the old path. The speed-up varies with size: the canonical run (2026-09-23, Chrome 153) gives 0.93x at 256px (no gain), 3.29x at 512px and 3.12x at 1024px; the older 1.89x-2.43x (2026-08-08) is a prior record. We found no evidence of an upstream PR.",
+        "GPU 장치 연결은 toon-fabric을 켰을 때 사용한다. rustix 보안 업데이트와 빌드 도구 호환성 수정은 공통으로 적용한다. 같은 장치 안에서 쓰는 경로가 열렸고 읽은 바이트는 기존 경로와 일치한다. 속도 이득은 크기마다 달라 정본 측정(2026-09-23, Chrome 153)에서 256px 0.93배(이득 없음)·512px 3.29배·1024px 3.12배다. 옛 1.89~2.43배(2026-08-08)는 이전 기록이다. 상류 PR 근거는 못 찾았다.",
+        "GPU device adoption requires toon-fabric. The rustix security update and build-tool fix apply to all builds. A path that uses the adopted device in place is open, and the bytes read match the old path. The speed-up varies with size: the canonical run (2026-09-23, Chrome 153) gives 0.93x at 256px (no gain), 3.29x at 512px and 3.12x at 1024px; the older 1.89x-2.43x (2026-08-08) is a prior record. We found no evidence of an upstream PR.",
       ),
     },
     evidence: [

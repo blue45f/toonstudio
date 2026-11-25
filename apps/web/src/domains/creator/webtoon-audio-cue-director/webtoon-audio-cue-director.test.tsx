@@ -367,14 +367,14 @@ describe("3. 표준 WebVTT 자막 및 SMPTE EDL/JSON 큐시트 직렬화", () =>
     expect(vtt).toContain("[SFX: 금속 난간 강타]");
   });
 
-  it("exportAudioCueWebVtt가 대사 내 '-->' 및 줄바꿈을 안전 치환하고 옵션을 반영한다", () => {
+  it("exportAudioCueWebVtt가 대사의 구분 기호와 줄바꿈을 이스케이프하고 옵션을 반영한다", () => {
     const sheet = buildEpisodeAudioCueSheet({
       episodeTitle: "새니타이징",
       cuts: [
         makeCut({
           id: "san-1",
           speaker: "서진",
-          dialogue: "1단계 --> 2단계\n바로 돌파!",
+          dialogue: "1단계 --> 2단계 --!> 3단계\r바로 돌파!",
           sfxMarkers: [{ id: "sfx-san", category: "impact-hit", label: "충격", offsetRatio01: 0.5 }],
         }),
       ],
@@ -382,7 +382,7 @@ describe("3. 표준 WebVTT 자막 및 SMPTE EDL/JSON 큐시트 직렬화", () =>
     const vttMinimal = exportAudioCueWebVtt(sheet, { includeCueNotes: false, includeSfxCaptions: false });
     expect(vttMinimal).not.toContain("NOTE ");
     expect(vttMinimal).not.toContain("[SFX:");
-    expect(vttMinimal).toContain("<v 서진>1단계 --&gt; 2단계 바로 돌파!");
+    expect(vttMinimal).toContain("<v 서진>1단계 --&gt; 2단계 --!&gt; 3단계 바로 돌파!");
   });
 
   it("exportAudioCueJson이 유효한 EDL/JSON 구조와 BGM·VOICE·DUCK·SFX SMPTE 이벤트를 직렬화한다", () => {

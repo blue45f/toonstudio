@@ -79,8 +79,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/public-site-browser"
           cp .github/ci-tools/playwright/package.json .github/ci-tools/playwright/package-lock.json "$RUNNER_TEMP/public-site-browser/"
-          cd "$RUNNER_TEMP/public-site-browser"
-          npm ci --ignore-scripts --no-audit --no-fund
+          (cd "$RUNNER_TEMP/public-site-browser" && npm ci --ignore-scripts --no-audit --no-fund)
           node "$RUNNER_TEMP/public-site-browser/node_modules/playwright/cli.js" install --with-deps chromium
           cp scripts/audit-public-site-experience.mjs "$RUNNER_TEMP/public-site-browser/audit.mjs"
           cp scripts/public-site-observation-policy.mjs "$RUNNER_TEMP/public-site-browser/public-site-observation-policy.mjs"

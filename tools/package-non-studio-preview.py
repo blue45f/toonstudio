@@ -22,6 +22,15 @@ STUDIO_PPT_ADVANCED_CHUNK = re.compile(
     r"-[A-Za-z0-9_-]{8}\.js$"
 )
 
+# PR #2915 빌드에서 확인한 원고 편집기 전용 지연 진입점이다. 공유 vendor나 공개 shaper는 제외하지 않는다.
+# spark.module은 BG3D 전문 도구의 SplatReference -> splat-reference-runtime에서만 실제 import한다.
+# SVG worker와 Inspector도 원고 편집기 안에서만 생성·지연 로딩한다. 아래 테스트가 해당 경계를 함께 확인한다.
+STUDIO_EDITOR_ONLY_CHUNK = re.compile(
+    r"^(?:studio-legacy-editor-adapter|StudioBackground3D|StudioBg3dAdvancedWorkbenchHub|"
+    r"StudioAiSuperSuiteModal|spark\.module|studio-svg-export\.worker|StudioInspectorAside)"
+    r"-[A-Za-z0-9_-]{8}\.js$"
+)
+
 
 def select_preview_files(root: Path) -> set[Path]:
     files = {path for path in root.iterdir() if path.is_file() and path.suffix in ALLOWED_SUFFIXES}
@@ -30,7 +39,8 @@ def select_preview_files(root: Path) -> set[Path]:
         files.update(path for path in assets.iterdir()
                      if path.is_file() and path.suffix in ALLOWED_SUFFIXES
                      and not STUDIO_RUNTIME_CHUNK.fullmatch(path.name)
-                     and not STUDIO_PPT_ADVANCED_CHUNK.fullmatch(path.name))
+                     and not STUDIO_PPT_ADVANCED_CHUNK.fullmatch(path.name)
+                     and not STUDIO_EDITOR_ONLY_CHUNK.fullmatch(path.name))
     for directory in ("brand", "fonts", "icons", "i18n", "locales"):
         path = root / directory
         if path.is_dir():

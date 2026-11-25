@@ -54,6 +54,35 @@ describe("실행·버퍼·디스패치 경계", () => {
     expect(pass.dstTile).toEqual(before);
   });
 
+  it.each([
+    { source: 1.5, sourceAlpha: 1, destination: 0.25, destinationAlpha: 1, opacity: 1 },
+    { source: 1.5, sourceAlpha: 0.5, destination: 2, destinationAlpha: 0.75, opacity: 1 },
+    { source: 1.5, sourceAlpha: 1, destination: 1.25, destinationAlpha: 0.5, opacity: 0.25 },
+  ])("선형 normal은 HDR source-over를 보존한다: %o", ({ source, sourceAlpha, destination, destinationAlpha, opacity }) => {
+    const srcTile = new Float32Array([source, source, source, sourceAlpha]);
+    const dstTile = new Float32Array([destination, destination, destination, destinationAlpha]);
+    executeCpuReferenceTilePass({ stage: "sparse-composite", params: { width: 1, height: 1, blendMode: "normal", opacity, inputIsSrgb: false, outputToSrgb: false }, srcTile, dstTile });
+    const alpha = sourceAlpha * opacity;
+    const outputAlpha = alpha + destinationAlpha * (1 - alpha);
+    const expected = (source * alpha + destination * destinationAlpha * (1 - alpha)) / outputAlpha;
+    expect(dstTile[0]).toBeCloseTo(expected, 6);
+    expect(dstTile[1]).toBeCloseTo(expected, 6);
+    expect(dstTile[2]).toBeCloseTo(expected, 6);
+    expect(dstTile[3]).toBeCloseTo(outputAlpha, 6);
+  });
+
+  it("impasto의 선형 1.5를 normal 합성에서 유지하고 sRGB 출력에서만 표시 범위로 제한한다", () => {
+    const lit = new Float32Array(4);
+    executeCpuReferenceTilePass({ stage: "impasto-relief", params: { width: 1, height: 1, ambientLevel: 1.5, keyIntensity: 0, rimIntensity: 0, specularStrength: 0 }, heightIn: new Float32Array([1]), colorIn: new Float32Array([1, 0.5, 0.25, 1]), colorOut: lit });
+    expect(lit[0]).toBe(1.5);
+    const dstTile = new Float32Array([0.25, 0.25, 0.25, 1]);
+    executeCpuReferenceTilePass({ stage: "sparse-composite", params: { width: 1, height: 1, blendMode: "normal", inputIsSrgb: false, outputToSrgb: false }, srcTile: lit, dstTile });
+    expect(dstTile).toEqual(lit);
+    const display = new Float32Array([0.25, 0.25, 0.25, 1]);
+    executeCpuReferenceTilePass({ stage: "sparse-composite", params: { width: 1, height: 1, blendMode: "normal", inputIsSrgb: false, outputToSrgb: true }, srcTile: lit, dstTile: display });
+    expect(display[0]).toBeCloseTo(1, 6);
+  });
+
   it("서로 겹치는 다른 입력·출력 뷰는 계산 전에 거절한다", () => {
     const arena = new Float32Array(12).fill(0.5);
     const pass = { ...composite(), srcTile: arena.subarray(0, 8), dstTile: arena.subarray(4, 12) };

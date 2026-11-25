@@ -604,8 +604,12 @@ function executeCpuReferenceTilePassUnchecked(input: CpuReferenceTilePassInput):
         modified += 1;
         continue;
       }
-      const mixCh = (dCh: number, sCh: number) =>
-        modeCode === addCode ? (dCh * da + sCh * sa) / outA : (sCh * sa * (1 - da) + dCh * da * (1 - sa) + blendChannelCpu(clamp01(dCh), clamp01(sCh), modeCode) * sa * da) / outA;
+      const mixCh = (dCh: number, sCh: number) => {
+        // Normal은 선형 HDR을 보존한다. 0..1 예술 블렌드 입력 제한을 적용하지 않는다.
+        if (modeCode === 0) return (sCh * sa + dCh * da * (1 - sa)) / outA;
+        if (modeCode === addCode) return (dCh * da + sCh * sa) / outA;
+        return (sCh * sa * (1 - da) + dCh * da * (1 - sa) + blendChannelCpu(clamp01(dCh), clamp01(sCh), modeCode) * sa * da) / outA;
+      };
       const [outR, outG, outB] = [mixCh(dr, sr), mixCh(dg, sg), mixCh(db, sb)];
       const [finR, finG, finB] = outSrgb ? [linearToSrgbChCpu(outR), linearToSrgbChCpu(outG), linearToSrgbChCpu(outB)] : [outR, outG, outB];
       input.dstTile[base] = finR; input.dstTile[base + 1] = finG; input.dstTile[base + 2] = finB; input.dstTile[base + 3] = outA;

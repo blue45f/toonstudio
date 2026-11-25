@@ -18,14 +18,15 @@ export function subtitleContentIssues(cues: readonly SubtitleCueInput[], options
     const code = char.charCodeAt(0);
     return code < 32 && code !== 9 && code !== 10 && code !== 13;
   });
-  const unsafeBody = (text: string): boolean => text.split(/\r\n|\r|\n/).some((line) => !line.trim()) || /-->|[<>]|&[\w#]+;/.test(text) || hasControl(text);
+  const hasCueArrowOrCommentEnd = (text: string): boolean => text.includes("-->") || text.includes("--!>");
+  const unsafeBody = (text: string): boolean => text.split(/\r\n|\r|\n/).some((line) => !line.trim()) || hasCueArrowOrCommentEnd(text) || /[<>]|&[\w#]+;/.test(text) || hasControl(text);
   const addIssue = (cueId: string): void => {
     issues.push({ cueId, kind: "unsupported-content", messageKo: `${cueId}: 지원하지 않는 자막 블록·식별자·문자가 있어 생성을 중단했습니다. 원문은 유지됩니다.`, messageEn: `${cueId}: Unsupported subtitle block, identifier, or text. Source is unchanged.` });
   };
   for (const cue of cues) {
-    if (!cue.id.trim() || hasControl(cue.id) || /[\r\n]|-->|^(?:NOTE(?:[ \t].*)?|STYLE|REGION)$/.test(cue.id) || seen.has(cue.id) || unsafeBody(cue.text) || (options?.includeSpeakerLabel && cue.speaker && (/[\r\n<>]|-->|&[\w#]+;/.test(cue.speaker) || hasControl(cue.speaker)))) addIssue(cue.id);
+    if (!cue.id.trim() || hasControl(cue.id) || hasCueArrowOrCommentEnd(cue.id) || /[\r\n]|^(?:NOTE(?:[ \t].*)?|STYLE|REGION)$/.test(cue.id) || seen.has(cue.id) || unsafeBody(cue.text) || (options?.includeSpeakerLabel && cue.speaker && (hasCueArrowOrCommentEnd(cue.speaker) || /[\r\n<>]|&[\w#]+;/.test(cue.speaker) || hasControl(cue.speaker)))) addIssue(cue.id);
     seen.add(cue.id);
   }
-  if ((options?.title && (/[\r\n]|-->/.test(options.title) || hasControl(options.title))) || (options?.safeZoneLinePct !== undefined && !Number.isFinite(options.safeZoneLinePct))) addIssue("header");
+  if ((options?.title && (hasCueArrowOrCommentEnd(options.title) || /[\r\n]/.test(options.title) || hasControl(options.title))) || (options?.safeZoneLinePct !== undefined && !Number.isFinite(options.safeZoneLinePct))) addIssue("header");
   return issues;
 }

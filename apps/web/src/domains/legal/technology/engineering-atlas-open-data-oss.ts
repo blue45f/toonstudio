@@ -200,7 +200,7 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
     name: "wgpu-toon",
     title: t("복사해 한 가지만 더한 벤더 포크: 같은 GPUDevice 공유", "A vendored fork with one addition: sharing the same GPUDevice"),
     status: "experimental",
-    tagline: t("wgpu 30.0.1 를 저장소에 복사해 패치 1개를 얹고, 모든 변경을 피처 하나 뒤에 둡니다.", "wgpu 30.0.1 is copied into the repo with one patch, every change sitting behind a single feature."),
+    tagline: t("wgpu 30.0.1을 저장소에 복사해 GPU 장치 연결과 보안·도구 패치를 적용합니다.", "The repository vendors wgpu 30.0.1 with GPU device adoption and security and tooling patches."),
     background: [
       t(
         "오픈소스를 쓰다 보면 우리에게 꼭 필요한 기능이 원본에 없을 때가 있습니다. 가장 가벼운 해결은 작은 패치이고, 부족하면 원본 소스를 저장소에 복사해 고쳐 쓰는 벤더 포크가 됩니다. ToonStudio 는 그래픽 라이브러리 wgpu 30.0.1 를 crates/vendor/wgpu-toon 에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 열어 둔 GPU 작업대(GPUDevice)를 다른 도구와 함께 쓰게 하는 기능입니다(장치를 한 곳에서 빌려 쓰는 구조는 드로잉 카드 gpu-fabric-device-lease-vello 에서 다룹니다).",
@@ -220,7 +220,7 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
       ),
     ],
     keyPoints: [
-      t("wgpu 30.0.1 복사본 + 패치 1개, 모두 toon-fabric 피처 뒤", "A wgpu 30.0.1 copy plus one patch, all behind toon-fabric"),
+      t("wgpu 30.0.1 복사본과 패치 두 개. 장치 연결에 toon-fabric 사용", "A wgpu 30.0.1 copy with two patches. GPU device adoption uses toon-fabric"),
       t("같은 GPUDevice 를 공유해 CPU 왕복(readback)을 없앤다", "Sharing one GPUDevice removes the CPU round trip (readback)"),
       t("배속은 크기마다 다르다: 0.93~3.29배(2026-09-23 정본)", "Speed-up varies by size: 0.93-3.29x (canonical, 2026-09-23)"),
     ],
