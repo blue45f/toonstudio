@@ -20,8 +20,11 @@ class PreviewPackageTests(unittest.TestCase):
                     "i18n/ko/common.json", "locales/en.json", "catalog/index.json", "assets/studio-bg3d-physics.worker-public-demo-AbCd1234.js",
                     "assets/studio-offline-branch.worker-public-demo-AbCd1234.js",
                     "assets/studio-bg3d-babylon-runtime-public-demo-AbCd1234.js",
+                    "assets/spark.module-public-demo-AbCd1234.js", "assets/phaser.esm-public-demo-AbCd1234.js",
+                    "assets/StudioScene3dSplatReferencePanel-AbCd1234.js", "assets/StudioVirtualSpacePhaserCanvas-AbCd1234.js",
                     "assets/StudioPptProDrawingPanel-AbCd1234.js", "assets/OtherStudioPanel-AbCd1234.js"]
             omitted = ["assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
+                       "assets/spark.module-DIN76ddv.js", "assets/phaser.esm-BxCDEWDb.js",
                        "assets/studio-bg3d-physics.worker-AbCd1234.js", "assets/studio-offline-branch.worker-AbCd1234.js",
                        "assets/studio-bg3d-babylon-runtime-AbCd1234.js",
                        "assets/3d/unused.png", "i18n/studio/unused.json"]
