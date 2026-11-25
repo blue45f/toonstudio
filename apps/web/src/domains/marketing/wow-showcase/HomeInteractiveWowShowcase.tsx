@@ -1,9 +1,25 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
-import { ArrowRight, Cpu, Eraser, LayoutGrid, Moon, Palette, PenTool, Scale, Sun, Sunrise, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { ArrowRight, Compass, Cpu, Eraser, LayoutGrid, Moon, MoveHorizontal, Palette, PenTool, Scale, Sun, Sunrise, Volume2, VolumeX } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { formatI18nTemplate, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 
+import {
+  buildPigmentMoodStyle,
+  clampCurtainPercent,
+  DEFAULT_CURTAIN_PERCENT,
+  DEFAULT_HOME_PIGMENT_MOOD,
+  DEFAULT_STUDIO_TAILOR_MODE,
+  HOME_PIGMENT_MOODS,
+  PIPELINE_CURTAIN_STAGES,
+  resolveCurtainStage,
+  resolveHomePigmentMood,
+  resolveStudioTailorMode,
+  stepCurtainPercent,
+  STUDIO_TAILOR_MODES,
+  type HomePigmentMoodId,
+  type StudioTailorModeId,
+} from "./home-live-staging-engine";
 import "./home-wow-showcase.css";
 
 const CANVAS_WIDTH = 560;
@@ -81,7 +97,12 @@ function resolveCanvasPoint(canvas: HTMLCanvasElement, clientX: number, clientY:
   return { x: Math.max(0, Math.min(CANVAS_WIDTH, clientX)), y: Math.max(0, Math.min(CANVAS_HEIGHT, clientY)) };
 }
 
-function tryCapturePointer(element: HTMLCanvasElement, pointerId: number): boolean {
+function resolveCurtainPointerPercent(element: HTMLElement, clientX: number): number {
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 ? clampCurtainPercent(((clientX - rect.left) / rect.width) * 100) : clampCurtainPercent(clientX);
+}
+
+function tryCapturePointer(element: Element, pointerId: number): boolean {
   if (typeof element.setPointerCapture !== "function") return false;
   try {
     element.setPointerCapture(pointerId);
@@ -176,9 +197,12 @@ function paintCanvasStroke(
 
 export function HomeInteractiveWowShowcase() {
   const bi = useBilingualLocalizer("domains.marketing.HomeInteractiveWowShowcase");
+  const svgPrefix = useId();
   const rootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const curtainStageRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef(false);
+  const draggingCurtainRef = useRef(false);
   const lastPointRef = useRef<{ readonly x: number; readonly y: number } | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const lastSoundMsRef = useRef(0);
@@ -191,6 +215,9 @@ export function HomeInteractiveWowShowcase() {
   const [spectralActive, setSpectralActive] = useState(false);
   const [statusKind, setStatusKind] = useState<StatusKind>("idle");
   const [heroSrc, setHeroSrc] = useState(HERO_STAGE_PRIMARY);
+  const [curtainPercent, setCurtainPercent] = useState<number>(DEFAULT_CURTAIN_PERCENT);
+  const [activeMood, setActiveMood] = useState<HomePigmentMoodId>(DEFAULT_HOME_PIGMENT_MOOD);
+  const [activeTailorMode, setActiveTailorMode] = useState<StudioTailorModeId>(DEFAULT_STUDIO_TAILOR_MODE);
 
   useEffect(() => () => {
     const audioCtx = audioCtxRef.current;
@@ -237,6 +264,12 @@ export function HomeInteractiveWowShowcase() {
 
   const activePigmentSpec = PIGMENT_BY_ID[activePigment];
   const activeLightingSpec = LIGHTING_BY_ID[activeLighting];
+  const curtain = resolveCurtainStage(curtainPercent);
+  const activeMoodSpec = resolveHomePigmentMood(activeMood);
+  const activeTailorSpec = resolveStudioTailorMode(activeTailorMode);
+  const rootMoodStyle = buildPigmentMoodStyle(activeMood) as CSSProperties;
+  const skyGradId = `${svgPrefix}-sky`;
+  const rimGradId = `${svgPrefix}-rim`;
 
   const paintSegment = useCallback((from: { readonly x: number; readonly y: number }, to: { readonly x: number; readonly y: number }, pressure: number) => {
     const ctx = canvasRef.current?.getContext("2d");
@@ -268,6 +301,30 @@ export function HomeInteractiveWowShowcase() {
   const endDrawing = () => {
     drawingRef.current = false;
     lastPointRef.current = null;
+  };
+
+  const handleCurtainPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    const stage = curtainStageRef.current;
+    if (!stage) return;
+    draggingCurtainRef.current = true;
+    tryCapturePointer(stage, event.pointerId);
+    setCurtainPercent(resolveCurtainPointerPercent(stage, event.clientX));
+  };
+
+  const handleCurtainPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!draggingCurtainRef.current || !curtainStageRef.current) return;
+    setCurtainPercent(resolveCurtainPointerPercent(curtainStageRef.current, event.clientX));
+  };
+
+  const endCurtainDrag = () => {
+    draggingCurtainRef.current = false;
+  };
+
+  const handleCurtainKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const next = stepCurtainPercent(curtainPercent, event.key, event.shiftKey);
+    if (next === null) return;
+    event.preventDefault();
+    setCurtainPercent(next);
   };
 
   const runSpectralMixDemo = () => {
@@ -320,12 +377,21 @@ export function HomeInteractiveWowShowcase() {
           ? bi("캔버스를 깨끗하게 비웠어요. 새 장면을 자유롭게 그려 보세요.", "Canvas cleared. Ready for your next stroke.")
           : bi("마우스·터치·펜으로 캔버스를 문지르거나 ‘파랑+노랑 분광 혼색 시연’을 눌러 보세요.", "Drag across the canvas with mouse, pen, or touch, or click Blue + Yellow Spectral Mix.");
 
+  const curtainValueText = formatI18nTemplate(
+    bi("{percent}% · {step}단계 {stage}", "{percent}% · Step {step} {stage}"),
+    { percent: curtain.percent, step: curtain.stage.stepCode, stage: bi(curtain.stage.titleKo, curtain.stage.titleEn) },
+  );
+
   return (
     <section
       ref={rootRef}
       className="home-wow-showcase"
+      style={rootMoodStyle}
       data-testid="home-wow-showcase"
       data-editorial-palette="spectrum-zero-violet"
+      data-active-mood={activeMood}
+      data-curtain-stage={curtain.stage.id}
+      data-tailor-mode={activeTailorMode}
       aria-labelledby="hwow-sandbox-title"
     >
       <span className="hwow-spectrum-rule" aria-hidden="true" />
@@ -333,10 +399,7 @@ export function HomeInteractiveWowShowcase() {
         <div className="hwow-head">
           <div className="hwow-copy">
             <div className="hwow-kicker-row">
-              <span className="hwow-kicker">
-                <Palette size={14} strokeWidth={1.8} aria-hidden="true" />
-                {bi("설치 0초 · 라이브 분광 샌드박스", "Zero-install · Live Spectral Sandbox")}
-              </span>
+              <span className="hwow-kicker"><Palette size={14} strokeWidth={1.8} aria-hidden="true" />{bi("설치 0초 · 라이브 분광 샌드박스", "Zero-install · Live Spectral Sandbox")}</span>
               <button type="button" className="hwow-sound-toggle min-h-11" data-testid="hwow-sound-toggle" aria-pressed={soundEnabled} onClick={() => setSoundEnabled((prev) => !prev)}>
                 {soundEnabled ? <Volume2 size={15} strokeWidth={1.7} aria-hidden="true" /> : <VolumeX size={15} strokeWidth={1.7} aria-hidden="true" />}
                 <span>{soundEnabled ? bi("펜촉 사운드 켜짐", "Nib sound on") : bi("펜촉 사운드 꺼짐", "Nib sound off")}</span>
@@ -357,6 +420,133 @@ export function HomeInteractiveWowShowcase() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* 5대 탈-바이올렛 도메인 안료 라이브 스위처 */}
+        <div className="hwow-mood-bar" data-testid="hwow-pigment-mood-bar">
+          <div className="hwow-mood-head">
+            <span className="hwow-block-label">{bi("5대 도메인 안료 라이브 스위처", "5-Domain Live Pigment Switcher")}</span>
+            <p className="hwow-mood-note" data-testid="hwow-mood-note">
+              <strong>{bi(activeMoodSpec.nameKo, activeMoodSpec.nameEn)}</strong>{" · "}{bi(activeMoodSpec.noteKo, activeMoodSpec.noteEn)}
+            </p>
+          </div>
+          <div className="hwow-mood-row">
+            <div className="hwow-mood-swatches" role="group" aria-label={bi("5대 도메인 안료 선택", "Choose 5 domain pigments")}>
+              {HOME_PIGMENT_MOODS.map((mood) => (
+                <button key={mood.id} type="button" className="hwow-mood-btn min-h-11" data-mood={mood.id} aria-pressed={activeMood === mood.id} onClick={() => setActiveMood(mood.id)}>
+                  <span className="hwow-mood-dot" aria-hidden="true" />
+                  <span className="hwow-mood-label"><strong>{bi(mood.domainKo, mood.domainEn)}</strong><small>{bi(mood.nameKo, mood.nameEn)}</small></span>
+                </button>
+              ))}
+            </div>
+            <Link href={activeMoodSpec.ctaHref} className="hwow-mood-cta ink-arrow min-h-11" data-testid="hwow-mood-cta">
+              <span>{bi(activeMoodSpec.ctaLabelKo, activeMoodSpec.ctaLabelEn)}</span><ArrowRight size={15} strokeWidth={1.8} aria-hidden="true" />
+            </Link>
+          </div>
+        </div>
+
+        {/* 4단계 라인→완성 인터랙티브 드래그 커튼 */}
+        <div className="hwow-curtain-panel" data-testid="hwow-curtain-panel">
+          <div className="hwow-curtain-head">
+            <div className="hwow-curtain-meta">
+              <span className="hwow-curtain-step-pill" data-testid="hwow-curtain-stage-badge">
+                <span>{curtain.stage.stepCode}</span><span>{bi(curtain.stage.titleKo, curtain.stage.titleEn)}</span><span className="hwow-curtain-pct">{curtain.percent}%</span>
+              </span>
+              <p className="hwow-curtain-desc" data-testid="hwow-curtain-stage-desc">{bi(curtain.stage.summaryKo, curtain.stage.summaryEn)}</p>
+            </div>
+            <Link href={curtain.stage.routeHref} className="hwow-curtain-route ink-arrow min-h-11" data-testid="hwow-curtain-route-link">
+              <span>{bi(curtain.stage.routeLabelKo, curtain.stage.routeLabelEn)}</span><ArrowRight size={14} strokeWidth={1.8} aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div
+            ref={curtainStageRef}
+            className="hwow-curtain-stage"
+            data-testid="hwow-curtain-stage"
+            onPointerDown={handleCurtainPointerDown}
+            onPointerMove={handleCurtainPointerMove}
+            onPointerUp={endCurtainDrag}
+            onPointerCancel={endCurtainDrag}
+          >
+            <svg className="hwow-curtain-svg" viewBox="0 0 640 280" aria-hidden="true">
+              <rect className="hwow-svg-paper" width="640" height="280" />
+              <g className="hwow-svg-rough-grid">
+                <line x1="0" y1="204" x2="640" y2="204" /><line x1="320" y1="204" x2="40" y2="24" /><line x1="320" y1="204" x2="600" y2="28" />
+                <line x1="320" y1="204" x2="0" y2="262" /><line x1="320" y1="204" x2="640" y2="262" /><rect x="24" y="18" width="592" height="244" rx="8" />
+              </g>
+              <g className="hwow-svg-rough-sketch">
+                <rect x="54" y="114" width="62" height="90" /><rect x="128" y="88" width="76" height="116" /><rect x="446" y="76" width="68" height="128" /><rect x="524" y="106" width="58" height="98" />
+                <circle cx="294" cy="112" r="26" /><path d="M 244 252 Q 258 156 294 142 Q 332 152 356 252" />
+                <path d="M 304 146 Q 368 134 422 158 Q 378 176 312 164" /><path d="M 42 224 L 598 224" />
+              </g>
+            </svg>
+
+            <div className="hwow-curtain-wipe" data-testid="hwow-curtain-wipe" style={{ clipPath: `inset(0 ${100 - curtain.percent}% 0 0)` }}>
+              <svg className="hwow-curtain-svg" viewBox="0 0 640 280" aria-hidden="true">
+                <defs>
+                  <linearGradient id={skyGradId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" className="hwow-stop-sky-top" /><stop offset="68%" className="hwow-stop-sky-mid" /><stop offset="100%" className="hwow-stop-sky-low" />
+                  </linearGradient>
+                  <linearGradient id={rimGradId} x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" className="hwow-stop-rim-a" /><stop offset="100%" className="hwow-stop-rim-b" />
+                  </linearGradient>
+                </defs>
+                <rect className="hwow-svg-paper" width="640" height="280" />
+                <g className="hwow-svg-color" data-curtain-layer="color" style={{ opacity: curtain.colorLayerOpacity }}>
+                  <rect x="24" y="18" width="592" height="244" rx="8" fill={`url(#${skyGradId})`} />
+                  <ellipse cx="478" cy="84" rx="112" ry="54" className="hwow-svg-wash-sun" /><ellipse cx="144" cy="96" rx="118" ry="52" className="hwow-svg-wash-sky" />
+                  <rect x="54" y="114" width="62" height="90" className="hwow-svg-city-far" /><rect x="128" y="88" width="76" height="116" className="hwow-svg-city-mid" />
+                  <rect x="446" y="76" width="68" height="128" className="hwow-svg-city-mid" /><rect x="524" y="106" width="58" height="98" className="hwow-svg-city-far" />
+                  <rect x="24" y="204" width="592" height="58" className="hwow-svg-rooftop" />
+                  <path d="M 244 258 Q 258 156 294 142 Q 332 152 356 258 Z" className="hwow-svg-coat" />
+                  <circle cx="294" cy="112" r="25" className="hwow-svg-portrait" /><path d="M 304 144 Q 372 132 426 156 Q 382 178 308 164 Z" className="hwow-svg-scarf" />
+                </g>
+                <g className="hwow-svg-ink" data-curtain-layer="ink" style={{ opacity: curtain.inkLayerOpacity }}>
+                  <rect x="24" y="18" width="592" height="244" rx="8" />
+                  <path d="M 54 204 V 114 H 116 V 204 M 128 204 V 88 H 204 V 204 M 446 204 V 76 H 514 V 204 M 524 204 V 106 H 582 V 204" />
+                  <path d="M 24 204 H 616 M 24 224 H 616" />
+                  <path d="M 268 106 Q 272 78 302 82 Q 326 88 320 116 Q 314 138 292 138 Q 268 136 268 106 Z" />
+                  <path d="M 266 102 Q 284 74 316 84 Q 329 94 326 112" /><path d="M 244 258 Q 258 156 294 142 Q 332 152 356 258" />
+                  <path d="M 302 144 Q 372 132 426 156 Q 382 178 308 164 Z" /><path d="M 468 42 L 586 58 M 486 60 L 598 72 M 506 78 L 604 88" className="hwow-svg-speedline" />
+                </g>
+                <g className="hwow-svg-finish" data-curtain-layer="finish" style={{ opacity: curtain.finishLayerOpacity }}>
+                  <polygon points="366,18 616,18 524,262 246,262" fill={`url(#${rimGradId})`} />
+                  <path d="M 304 144 Q 372 132 426 156" className="hwow-svg-rim-stroke" />
+                  <ellipse cx="470" cy="116" rx="92" ry="30" className="hwow-svg-balloon-fill" /><polygon points="416,138 390,158 438,144" className="hwow-svg-balloon-fill" />
+                  <text x="470" y="120" textAnchor="middle" className="hwow-svg-balloon-text">{bi("이 장면, 바로 그려 볼까!", "Ready to ink this beat!")}</text>
+                  <text x="92" y="64" className="hwow-svg-sfx-text">{bi("사각—", "SWISH—")}</text>
+                </g>
+              </svg>
+            </div>
+
+            <span className="hwow-curtain-badge hwow-curtain-badge--left" aria-hidden="true">{bi(curtain.stage.titleKo, curtain.stage.titleEn)}</span>
+            <span className="hwow-curtain-badge hwow-curtain-badge--right" aria-hidden="true">{bi("러프 콘티", "Rough Draft")}</span>
+            <div className="hwow-curtain-divider" style={{ left: `${curtain.percent}%` }}>
+              <div
+                role="slider"
+                tabIndex={0}
+                className="hwow-curtain-handle min-h-11"
+                data-testid="hwow-curtain-slider"
+                aria-label={bi("라인에서 완성까지 비교 커튼", "Line to finish comparison curtain")}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={curtain.percent}
+                aria-valuetext={curtainValueText}
+                onKeyDown={handleCurtainKeyDown}
+              >
+                <MoveHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+              </div>
+            </div>
+          </div>
+
+          <div className="hwow-curtain-steps" role="group" aria-label={bi("라인에서 완성까지 4단계 선택", "Select 4 line-to-finish stages")}>
+            {PIPELINE_CURTAIN_STAGES.map((stage) => (
+              <button key={stage.id} type="button" className="hwow-curtain-step-btn min-h-11" data-stage-option={stage.id} aria-pressed={curtain.stage.id === stage.id} onClick={() => setCurtainPercent(stage.snapPercent)}>
+                <span className="hwow-step-code">{stage.stepCode}</span>
+                <span className="hwow-step-copy"><strong>{bi(stage.titleKo, stage.titleEn)}</strong><small>{stage.rangeLabel}</small></span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -381,8 +571,7 @@ export function HomeInteractiveWowShowcase() {
               </div>
             </div>
             <div className="hwow-status-strip" data-spectral-active={spectralActive ? "true" : "false"} role="status" aria-live="polite">
-              <span className="hwow-status-dot" aria-hidden="true" />
-              <span>{statusText}</span>
+              <span className="hwow-status-dot" aria-hidden="true" /><span>{statusText}</span>
             </div>
           </div>
 
@@ -392,8 +581,7 @@ export function HomeInteractiveWowShowcase() {
               <div className="hwow-pigment-grid" role="group" aria-label={bi("안료 색상 선택", "Choose pigment swatch")}>
                 {PIGMENTS.map((pigment) => (
                   <button key={pigment.id} type="button" className="hwow-pigment-btn min-h-11" data-pigment={pigment.id} aria-pressed={activePigment === pigment.id} onClick={() => setActivePigment(pigment.id)}>
-                    <span className="hwow-swatch-gem" aria-hidden="true" />
-                    <span>{bi(pigment.ko, pigment.en)}</span>
+                    <span className="hwow-swatch-gem" aria-hidden="true" /><span>{bi(pigment.ko, pigment.en)}</span>
                   </button>
                 ))}
               </div>
@@ -408,12 +596,10 @@ export function HomeInteractiveWowShowcase() {
                 </button>
                 <div className="hwow-demo-secondary-row">
                   <button type="button" className="hwow-demo-btn min-h-11" data-testid="hwow-stamp-btn" onClick={stampFourPanelLayout}>
-                    <LayoutGrid size={15} strokeWidth={1.7} aria-hidden="true" />
-                    <span>{bi("1클릭 4컷 말풍선 스탬프", "1-Click 4-Panel Speech Stamp")}</span>
+                    <LayoutGrid size={15} strokeWidth={1.7} aria-hidden="true" /><span>{bi("1클릭 4컷 말풍선 스탬프", "1-Click 4-Panel Speech Stamp")}</span>
                   </button>
                   <button type="button" className="hwow-demo-btn min-h-11" data-testid="hwow-clear-btn" onClick={clearCanvas}>
-                    <Eraser size={15} strokeWidth={1.7} aria-hidden="true" />
-                    <span>{bi("지우기", "Clear")}</span>
+                    <Eraser size={15} strokeWidth={1.7} aria-hidden="true" /><span>{bi("지우기", "Clear")}</span>
                   </button>
                 </div>
               </div>
@@ -426,13 +612,39 @@ export function HomeInteractiveWowShowcase() {
                   const Icon = preset.icon;
                   return (
                     <button key={preset.id} type="button" className="hwow-lighting-btn min-h-11" data-lighting-option={preset.id} aria-pressed={activeLighting === preset.id} onClick={() => setActiveLighting(preset.id)}>
-                      <Icon size={15} strokeWidth={1.7} aria-hidden="true" />
-                      <span>{bi(preset.ko, preset.en)}</span>
+                      <Icon size={15} strokeWidth={1.7} aria-hidden="true" /><span>{bi(preset.ko, preset.en)}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* 첫 방문자 3버튼 맞춤 작업실 필터 */}
+        <div className="hwow-tailor-panel" data-testid="hwow-tailor-panel">
+          <div className="hwow-tailor-head">
+            <div className="hwow-tailor-copy">
+              <span className="hwow-block-label hwow-tailor-kicker"><Compass size={14} strokeWidth={1.7} aria-hidden="true" />{bi("첫 방문자 맞춤 작업실 필터", "First-Visit Studio Tailor")}</span>
+              <p className="hwow-tailor-tagline" data-testid="hwow-tailor-tagline">{bi(activeTailorSpec.taglineKo, activeTailorSpec.taglineEn)}</p>
+            </div>
+            <div className="hwow-tailor-modes" role="group" aria-label={bi("작업 방식 맞춤 필터", "Filter studio by workflow")}>
+              {STUDIO_TAILOR_MODES.map((mode) => (
+                <button key={mode.id} type="button" className="hwow-tailor-btn min-h-11" data-tailor-option={mode.id} aria-pressed={activeTailorMode === mode.id} onClick={() => setActiveTailorMode(mode.id)}>
+                  {bi(mode.labelKo, mode.labelEn)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="hwow-tailor-grid" data-testid="hwow-tailor-grid">
+            {activeTailorSpec.tools.map((tool) => (
+              <Link key={tool.id} href={tool.href} className="hwow-tailor-card ink-arrow min-h-11" data-tailor-domain={tool.domain} data-testid={`hwow-tailor-card-${tool.id}`}>
+                <span className="hwow-tailor-shortcut">{bi(tool.shortcutKo, tool.shortcutEn)}</span>
+                <strong className="hwow-tailor-title">{bi(tool.titleKo, tool.titleEn)}</strong>
+                <span className="hwow-tailor-detail">{bi(tool.detailKo, tool.detailEn)}</span>
+                <span className="hwow-tailor-go" aria-hidden="true"><ArrowRight size={14} strokeWidth={1.8} /></span>
+              </Link>
+            ))}
           </div>
         </div>
 
