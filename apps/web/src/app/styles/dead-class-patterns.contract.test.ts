@@ -1,7 +1,9 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import * as ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -69,11 +71,60 @@ const BARE_FADE_IN_EXCLUDED = new Set([
   "domains/legal/technology/engineering-atlas-web-platform-surface.ts",
 ]);
 
+function isPhaseRead(node: ts.Node): boolean {
+  return (ts.isIdentifier(node) && node.text === "phase")
+    || (ts.isPropertyAccessExpression(node) && node.name.text === "phase");
+}
+
+function isPhaseType(node: ts.LiteralTypeNode): boolean {
+  let declaration = node.parent;
+  while (ts.isUnionTypeNode(declaration) || ts.isParenthesizedTypeNode(declaration)) {
+    declaration = declaration.parent;
+  }
+  if (ts.isTypeAliasDeclaration(declaration)) return declaration.name.text.endsWith("Phase");
+  return (ts.isVariableDeclaration(declaration) || ts.isPropertySignature(declaration)
+    || ts.isParameter(declaration)) && ts.isIdentifier(declaration.name) && declaration.name.text === "phase";
+}
+
+function phaseLiteralOffsets(text: string): ReadonlySet<number> {
+  const offsets = new Set<number>();
+  const source = ts.createSourceFile("fixture.tsx", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const visit = (node: ts.Node): void => {
+    if (ts.isStringLiteralLike(node) && node.text === "fade-in") {
+      const parent = node.parent;
+      const phaseAssignment = ts.isBinaryExpression(parent)
+        && [ts.SyntaxKind.EqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.EqualsEqualsEqualsToken,
+          ts.SyntaxKind.ExclamationEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken].includes(parent.operatorToken.kind)
+        && isPhaseRead(parent.left === node ? parent.right : parent.left);
+      const phaseProperty = ts.isPropertyAssignment(parent)
+        && ((ts.isIdentifier(parent.name) || ts.isStringLiteral(parent.name)) && parent.name.text === "phase");
+      const expectation = ts.isCallExpression(parent) && ts.isPropertyAccessExpression(parent.expression)
+        && ["toBe", "toEqual"].includes(parent.expression.name.text) ? parent.expression.expression : undefined;
+      const phaseExpectation = expectation && ts.isCallExpression(expectation)
+        && ts.isIdentifier(expectation.expression) && expectation.expression.text === "expect"
+        && expectation.arguments.length === 1 && expectation.arguments[0] && isPhaseRead(expectation.arguments[0]);
+      if ((ts.isLiteralTypeNode(parent) && isPhaseType(parent)) || phaseAssignment || phaseProperty || phaseExpectation) offsets.add(node.getStart(source) + 1);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return offsets;
+}
+
+function hasBareFadeInClass(text: string): boolean {
+  const candidates = [...text.matchAll(/["'`]([^"'`\n]*)["'`]/g)].filter((literal) =>
+    (literal[1] ?? "").split(/\s+/).some((token) => (token.split(":").pop() ?? token) === "fade-in"));
+  if (candidates.length === 0) return false;
+  const phaseOffsets = phaseLiteralOffsets(text);
+  return candidates.some((literal) => !phaseOffsets.has(literal.index + 1));
+}
+
 function listSourceFiles(directory: string): string[] {
-  return readdirSync(directory).flatMap((name) => {
-    const path = join(directory, name);
-    if (statSync(path).isDirectory()) return name === "node_modules" ? [] : listSourceFiles(path);
-    return /\.tsx?$/.test(name) ? [path] : [];
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    const kind = entry.isSymbolicLink() ? statSync(path) : entry;
+    if (kind.isDirectory()) return entry.name === "node_modules" ? [] : listSourceFiles(path);
+    return /\.tsx?$/.test(entry.name) ? [path] : [];
   });
 }
 
@@ -120,29 +171,49 @@ describe("죽은 클래스 패턴 계약", () => {
     }
   });
 
-  it("tailwindcss-animate 관용구 토큰이 소스에 남아 있지 않다", () => {
+  it.each([
+    'type Phase = "fade-in" | "sustain";',
+    'phase = "fade-in"; if (track.phase === "fade-in") {}',
+    'const track = { phase: "fade-in" };',
+    'expect(track.phase).toBe("fade-in");',
+  ])("상태 값은 클래스 위반으로 세지 않는다: %s", (text) => {
+    expect(hasBareFadeInClass(text)).toBe(false);
+  });
+
+  it.each([
+    'type ClassName = "fade-in" | "other";',
+    'const className = "fade-in";',
+    '<div className="fade-in" />',
+    '<div className={phase === "fade-in" ? "fade-in" : "animate-fade-in"} />',
+    'const track = { phase: "fade-in" }; const css = "fade-in";',
+    'expect(className).toBe("fade-in");',
+  ])("상태 코드와 함께 있어도 죽은 클래스는 차단한다: %s", (text) => {
+    expect(hasBareFadeInClass(text)).toBe(true);
+  });
+
+  it("tailwindcss-animate 관용구 토큰이 소스에 남아 있지 않다", async () => {
     const offenders: string[] = [];
     // animate-in / zoom-in-95 / slide-in-from-* / variant:fade-in 은 어떤 문맥에서도 클래스 관용구다.
     const alwaysDead = /\banimate-in\b|\bzoom-in-\d|\bslide-in-from-[\w-]+|(?:[a-z-]+:)fade-in\b/;
     // 값싼 사전 필터 — 바늘 중 하나라도 없는 파일은 토큰화까지 가지 않는다.
     const anyNeedle = /animate-in|fade-in|zoom-in-\d|slide-in-from-/;
-    for (const file of listSourceFiles(SRC_ROOT)) {
-      const rel = relative(SRC_ROOT, file);
-      if (rel === SELF) continue;
-      const text = readFileSync(file, "utf8");
-      if (!anyNeedle.test(text)) continue;
-      if (alwaysDead.test(text)) offenders.push(`${rel}: animate-in/zoom-in/slide-in-from/variant fade-in`);
-      if (BARE_FADE_IN_EXCLUDED.has(rel)) continue;
-      // bare fade-in: 따옴표 문자열을 토큰으로 쪼개 variant를 벗긴 뒤 정확히 fade-in인 토큰만 잡는다.
-      // animate-fade-in은 토큰이 달라 걸리지 않고, phase 식별자는 위 제외 목록이 맡는다.
-      for (const literal of text.matchAll(/["'`]([^"'`\n]*)["'`]/g)) {
-        const tokens = (literal[1] ?? "").split(/\s+/).filter(Boolean);
-        if (tokens.some((token) => (token.split(":").pop() ?? token) === "fade-in")) {
-          offenders.push(`${rel}: bare fade-in`);
-          break;
-        }
+    const files = listSourceFiles(SRC_ROOT);
+    let nextFile = 0;
+    // 같은 전체 소스를 검사하되 파일 읽기는 여덟 개로 제한해 겹친 디스크 작업을 기다린다.
+    await Promise.all(Array.from({ length: Math.min(8, files.length) }, async () => {
+      for (;;) {
+        const file = files[nextFile++];
+        if (!file) return;
+        const rel = relative(SRC_ROOT, file);
+        if (rel === SELF) continue;
+        const text = await readFile(file, "utf8");
+        if (!anyNeedle.test(text)) continue;
+        if (alwaysDead.test(text)) offenders.push(`${rel}: animate-in/zoom-in/slide-in-from/variant fade-in`);
+        if (BARE_FADE_IN_EXCLUDED.has(rel)) continue;
+        // 상태 값은 문법으로 구분한다. 같은 파일에 실제 죽은 클래스가 있으면 계속 차단한다.
+        if (hasBareFadeInClass(text)) offenders.push(`${rel}: bare fade-in`);
       }
-    }
-    expect(offenders).toEqual([]);
+    }));
+    expect(offenders.sort()).toEqual([]);
   });
 });
