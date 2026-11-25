@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -36,7 +36,7 @@ import {
   type RawPointerSample,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("1. 7대 하드웨어 프로필 카탈로그 및 지원 매트릭스", () => {
   it("7대 프로 디지타이저 프로필이 정확한 ID와 4,096~16,384 필압 단계 스펙을 제공한다", () => {
@@ -488,7 +488,9 @@ describe("6. StudioProDigitizerCalibratorPanel UI 인터랙션 및 단독 렌더
     expect(screen.getByTestId("digitizer-status-banner").textContent).toContain("복원");
   });
 
-  it("JSON 복사 콜백, 유효한 JSON 불러오기, 깨진 JSON fail-closed 경고 및 영문 로케일이 동작한다", () => {
+  it("JSON 복사 콜백, 유효한 JSON 불러오기, 깨진 JSON fail-closed 경고 및 영문 로케일이 동작한다", async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText: write } });
     const onExportJson = vi.fn();
     const onConfigChange = vi.fn();
     render(
@@ -502,7 +504,8 @@ describe("6. StudioProDigitizerCalibratorPanel UI 인터랙션 및 단독 렌더
 
     expect(onConfigChange).toHaveBeenCalled();
     fireEvent.click(screen.getByTestId("digitizer-copy-json-btn"));
-    expect(onExportJson).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportJson).toHaveBeenCalledTimes(1));
     expect(onExportJson.mock.calls[0]?.[0]).toContain(DIGITIZER_CONFIG_SCHEMA_VERSION);
 
     const textarea = screen.getByTestId("digitizer-json-textarea") as HTMLTextAreaElement;
@@ -525,20 +528,23 @@ describe("6. StudioProDigitizerCalibratorPanel UI 인터랙션 및 단독 렌더
 });
 
 describe("7. 코드 위생 및 Calm Atelier 자가 검증", () => {
-  it("4개 모듈 파일 모두 800줄 이하이며 금지 패턴(원시 색·transition-all·= {}·Storage·private Map·BigInt·Sparkles)이 0건이다", () => {
+  it("모든 모듈 파일이 800줄 이하이며 금지 패턴(원시 색·transition-all·= {}·Storage·private Map·BigInt·Sparkles)이 0건이다", () => {
     const dir = path.resolve(import.meta.dirname);
     const requiredFiles = [
       "pro-digitizer-engine.ts",
       "StudioProDigitizerCalibratorPanel.tsx",
       "index.ts",
       "pro-digitizer-hid-engine.test.tsx",
+      "digitizer-boundaries.test.tsx",
+      "digitizer-input-contract.ts",
+      "use-example-delivery.ts",
     ];
     for (const file of requiredFiles) {
       expect(existsSync(path.join(dir, file))).toBe(true);
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(allFiles).toHaveLength(4);
+    expect([...allFiles].sort()).toEqual([...requiredFiles].sort());
 
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");

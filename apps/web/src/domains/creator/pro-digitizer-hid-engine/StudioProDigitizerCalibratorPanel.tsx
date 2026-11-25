@@ -13,7 +13,7 @@ import {
   Keyboard, PenTool, Play, RotateCcw, Sliders, Trash2, Upload,
 } from "lucide-react";
 import {
-  useEffect, useId, useMemo, useRef, useState,
+  useId, useMemo, useRef, useState,
   type PointerEvent as ReactPointerEvent, type ReactElement,
 } from "react";
 
@@ -29,6 +29,8 @@ import {
   type ProDigitizerProfileId, type RawPointerSample, type ShortcutBinding,
   type StudioBindingActionId,
 } from "./pro-digitizer-engine";
+import { assertPointerBatch, MAX_POINTER_SAMPLES } from "./digitizer-input-contract";
+import { useExampleCopy, useExampleNotification } from "./use-example-delivery";
 
 export interface StudioProDigitizerCalibratorPanelProps {
   readonly initialProfileId?: ProDigitizerProfileId;
@@ -36,8 +38,8 @@ export interface StudioProDigitizerCalibratorPanelProps {
   readonly initialEnablePrediction?: boolean;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onConfigChange?: (snapshot: DigitizerCalibrationSnapshot) => void;
-  readonly onExportJson?: (json: string, snapshot: DigitizerCalibrationSnapshot) => void;
+  readonly onConfigChange?: (snapshot: DigitizerCalibrationSnapshot) => void | Promise<void>;
+  readonly onExportJson?: (json: string, snapshot: DigitizerCalibrationSnapshot) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -67,8 +69,8 @@ function pointerEventToRawSample(
 ): RawPointerSample {
   const safeW = Math.max(1, rect.width);
   const safeH = Math.max(1, rect.height);
-  const x = ((ev.clientX - rect.left) / safeW) * 320;
-  const y = ((ev.clientY - rect.top) / safeH) * 160;
+  const x = (((Number.isFinite(ev.clientX) ? ev.clientX : rect.left) - rect.left) / safeW) * 320;
+  const y = (((Number.isFinite(ev.clientY) ? ev.clientY : rect.top) - rect.top) / safeH) * 160;
   const pointerType = ev.pointerType === "touch" || ev.pointerType === "mouse" ? ev.pointerType : "pen";
   const ext = ev as PointerEvent & { readonly altitudeAngle?: number; readonly azimuthAngle?: number };
   return {
@@ -77,8 +79,8 @@ function pointerEventToRawSample(
     pressure: ev.pressure > 0 ? ev.pressure : ev.buttons > 0 ? 0.5 : 0,
     tiltX: Number.isFinite(ev.tiltX) ? ev.tiltX : 0,
     tiltY: Number.isFinite(ev.tiltY) ? ev.tiltY : 0,
-    altitudeAngle: typeof ext.altitudeAngle === "number" ? ext.altitudeAngle : undefined,
-    azimuthAngle: typeof ext.azimuthAngle === "number" ? ext.azimuthAngle : undefined,
+    altitudeAngle: Number.isFinite(ext.altitudeAngle) ? ext.altitudeAngle : undefined,
+    azimuthAngle: Number.isFinite(ext.azimuthAngle) ? ext.azimuthAngle : undefined,
     twist: Number.isFinite(ev.twist) ? ev.twist : 0,
     tangentialPressure: Number.isFinite(ev.tangentialPressure) ? ev.tangentialPressure : 0,
     isPredicted,
@@ -173,12 +175,15 @@ export function StudioProDigitizerCalibratorPanel(
   const isEn = locale === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
 
-  const [profileId, setProfileId] = useState<ProDigitizerProfileId>(initialProfileId);
+  const initialProfile = getProDigitizerProfile(initialProfileId);
+  const initialStrength = Number.isFinite(initialSmoothingStrength) ? Math.min(1, Math.max(0, initialSmoothingStrength)) : 0.35;
+  const initialPrediction = typeof initialEnablePrediction === "boolean" ? initialEnablePrediction : true;
+  const [profileId, setProfileId] = useState<ProDigitizerProfileId>(initialProfile.id);
   const [curve, setCurve] = useState<PressureCurveConfig>(
     () => createPressureCurveFromPreset(getProDigitizerProfile(initialProfileId).recommendedCurvePreset),
   );
-  const [smoothingStrength, setSmoothingStrength] = useState<number>(initialSmoothingStrength);
-  const [enablePrediction, setEnablePrediction] = useState<boolean>(initialEnablePrediction);
+  const [smoothingStrength, setSmoothingStrength] = useState<number>(initialStrength);
+  const [enablePrediction, setEnablePrediction] = useState<boolean>(initialPrediction);
   const [bindings, setBindings] = useState<readonly ShortcutBinding[]>(
     () => createDefaultShortcutBindings(initialProfileId),
   );
@@ -203,7 +208,8 @@ export function StudioProDigitizerCalibratorPanel(
   );
   const configJson = useMemo<string>(() => exportDigitizerConfigJson(snapshot), [snapshot]);
 
-  useEffect(() => { onConfigChange?.(snapshot); }, [snapshot, onConfigChange]);
+  const notification = useExampleNotification(snapshot, onConfigChange);
+  const delivery = useExampleCopy<DigitizerCalibrationSnapshot, "json">({ json: onExportJson });
 
   const lastSample = batchResult.samples[batchResult.samples.length - 1] ?? null;
   const liveTiltDeg = lastSample ? Math.round(90 - (lastSample.altitudeRad * 180) / Math.PI) : 0;
@@ -268,8 +274,9 @@ export function StudioProDigitizerCalibratorPanel(
 
   const handlePadPointerDown = (e: ReactPointerEvent<HTMLDivElement>): void => {
     const rect = e.currentTarget.getBoundingClientRect();
-    activePointerIdRef.current = e.pointerId;
     const sample = pointerEventToRawSample(e.nativeEvent, rect, false);
+    try { assertPointerBatch([sample]); } catch { setErrorMessage(pick("포인터 예제의 좌표·시각 범위를 벗어났습니다. 이전 입력을 유지합니다.", "Pointer example bounds exceeded. Previous input is preserved.")); return; }
+    activePointerIdRef.current = e.pointerId;
     setRawSamples([sample]);
   };
 
@@ -279,8 +286,10 @@ export function StudioProDigitizerCalibratorPanel(
     const coalesced = readNativePointerList(e.nativeEvent, "getCoalescedEvents");
     const predicted = readNativePointerList(e.nativeEvent, "getPredictedEvents");
     const realEvents = coalesced.length > 0 ? coalesced : [e.nativeEvent];
+    if (realEvents.length + predicted.length + Math.min(rawSamples.length, 48) > MAX_POINTER_SAMPLES) { setErrorMessage(pick("포인터 예제는 최대 4096샘플입니다. 이전 입력을 유지합니다.", "At most 4096 samples. Previous input is preserved.")); return; }
     const nextReal = realEvents.map((ev) => pointerEventToRawSample(ev, rect, false));
     const nextPred = predicted.map((ev) => pointerEventToRawSample(ev, rect, true));
+    try { assertPointerBatch([...nextReal, ...nextPred]); } catch { setErrorMessage(pick("포인터 예제 범위를 벗어났습니다. 이전 입력을 유지합니다.", "Pointer example bounds exceeded. Previous input is preserved.")); return; }
     setRawSamples((prev) => [...prev.filter((item) => !item.isPredicted).slice(-48), ...nextReal, ...nextPred]);
   };
 
@@ -295,14 +304,10 @@ export function StudioProDigitizerCalibratorPanel(
   };
 
   const handleCopyJson = (): void => {
-    onExportJson?.(configJson, snapshot);
     setJsonPanelOpen(true);
-    setImportDraft(configJson);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(configJson).catch(() => undefined);
-    }
-    setErrorMessage("");
-    setStatusMessage(pick("디지타이저 캘리브레이션 JSON을 클립보드와 미리보기에 반영했습니다.", "Copied digitizer calibration JSON snapshot."));
+    setImportDraft((previous) => previous.length > 0 ? previous : configJson);
+    setStatusMessage("");
+    delivery.copy("json", configJson, snapshot);
   };
 
   const handleImportJson = (): void => {
@@ -322,10 +327,10 @@ export function StudioProDigitizerCalibratorPanel(
 
   const handleResetAll = (): void => {
     const initialProf = getProDigitizerProfile(initialProfileId);
-    setProfileId(initialProfileId);
+    setProfileId(initialProf.id);
     setCurve(createPressureCurveFromPreset(initialProf.recommendedCurvePreset));
-    setSmoothingStrength(initialSmoothingStrength);
-    setEnablePrediction(initialEnablePrediction);
+    setSmoothingStrength(initialStrength);
+    setEnablePrediction(initialPrediction);
     setBindings(createDefaultShortcutBindings(initialProfileId));
     setRawSamples(createSimulatedTestStroke(initialProfileId));
     setLastHidReport(null);
@@ -368,10 +373,11 @@ export function StudioProDigitizerCalibratorPanel(
           <p className="text-xs text-fg-2 [word-break:keep-all]">
             {isEn ? profile.summaryEn : profile.summaryKo}
           </p>
+          <p data-testid="digitizer-example-notice" className="text-xs text-fg-3 [word-break:keep-all]">{pick("정적 기기 프로필·필압 곡선·합성 16B 패킷 계산 예제입니다. 장치 연결·설정 쓰기, 압력 단계·지연 실측·인증·원고 적용은 수행하지 않습니다. 포인터 패드는 최근 샘플 미리보기입니다.", "Static device profiles, pressure curves, and synthetic 16-byte packet examples. No device connection or configuration writes, measured pressure levels or latency, certification, or manuscript changes. The pointer pad previews recent samples.")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" data-testid="digitizer-copy-json-btn" onClick={handleCopyJson} className={BTN_SOLID}>
+          <button type="button" data-testid="digitizer-copy-json-btn" disabled={delivery.state === "pending"} onClick={handleCopyJson} className={BTN_SOLID}>
             <Copy className="h-3.5 w-3.5" aria-hidden="true" />
             {pick("JSON 복사", "Copy JSON")}
           </button>
@@ -385,6 +391,13 @@ export function StudioProDigitizerCalibratorPanel(
           </button>
         </div>
       </header>
+      <div aria-live="polite" className="space-y-1 text-xs">
+        {notification.pending ? <p>{pick("설정 예제 전달 중", "Sending example config")}</p> : null}
+        {notification.error ? <p role="alert">{pick("설정 예제 전달 실패", "Example config delivery failed")} <button type="button" data-testid="digitizer-notify-retry" disabled={notification.pending} onClick={notification.retry} className={BTN_OUTLINE}>{pick("전달 재시도", "Retry delivery")}</button></p> : null}
+        {delivery.state === "pending" ? <p>{pick("클립보드 복사·예제 전달 중", "Copying and delivering example")}</p> : null}
+        {delivery.state === "error" ? <p role="alert">{pick("복사 또는 전달 실패. 완료된 복사는 반복하지 않습니다.", "Copy or delivery failed. Completed copies are not repeated.")} <button type="button" data-testid="digitizer-copy-retry" onClick={delivery.retry} className={BTN_OUTLINE}>{pick("복사·전달 재시도", "Retry copy or delivery")}</button></p> : null}
+        {delivery.state === "copied" ? <p>{pick("클립보드에 복사했습니다. 장치·원고·서버에는 적용하거나 저장하지 않았습니다.", "Copied to clipboard. No device, manuscript, or server changes were made.")}</p> : null}
+      </div>
 
       {statusMessage ? (
         <div data-testid="digitizer-status-banner" role="status" aria-live="polite" className="flex items-center gap-2 rounded-lg border border-accent bg-accent-soft px-3.5 py-2 text-xs font-medium text-accent [word-break:keep-all]">
@@ -627,7 +640,7 @@ export function StudioProDigitizerCalibratorPanel(
             />
             <TelemetryMetricCard
               testId="digitizer-metric-latency"
-              label={pick("예측 지연 단축", "Predicted Lead")}
+              label={pick("예측 샘플 시각 차", "Predicted Timestamp Gap")}
               value={`${batchResult.metrics.predictedLatencyGainMs.toFixed(1)}ms`}
               subtext={`${batchResult.metrics.effectiveReportRateHz}Hz · ${pick("지터", "Jitter")} -${batchResult.metrics.jitterReductionPct}%`}
               valueTone={batchResult.metrics.predictedLatencyGainMs > 0 ? "text-good" : "text-fg"}

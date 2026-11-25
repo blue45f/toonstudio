@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -28,7 +28,7 @@ import {
   type CharacterArchetype,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("1. 한국어 대사·문장부호 기반 8대 감정 분류기", () => {
   it("기쁨 어휘와 물결표(~) 대사를 joy로 분류하고 신호를 기록한다", () => {
@@ -339,7 +339,7 @@ describe("5. StudioCharExpressionPoseAdvisorPanel 단독 렌더 및 상호작용
     render(<StudioCharExpressionPoseAdvisorPanel />);
 
     expect(screen.getByTestId("studio-char-expression-pose-advisor-panel")).toBeTruthy();
-    expect(screen.getByTestId("advisor-approval-badge").textContent).toContain("작가 승인 후 적용");
+    expect(screen.getByTestId("advisor-approval-badge").textContent).toContain("작가 선택 후 메모리 예제 적용");
     expect(screen.getByTestId("advisor-dialogue-input")).toBeTruthy();
     expect(screen.getByTestId("advisor-intensity-slider")).toBeTruthy();
     expect(screen.getByTestId("advisor-continuity-badge")).toBeTruthy();
@@ -414,11 +414,12 @@ describe("5. StudioCharExpressionPoseAdvisorPanel 단독 렌더 및 상호작용
     expect(screen.getByTestId("advisor-continuity-badge").getAttribute("data-severity")).toBe("smooth");
   });
 
-  it("JSON 복사 버튼·미리보기 토글 및 영문 로케일 렌더가 정상 동작한다", () => {
+  it("JSON 복사 버튼·미리보기 토글 및 영문 로케일 렌더가 정상 동작한다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
     const onExportJson = vi.fn();
     render(<StudioCharExpressionPoseAdvisorPanel locale="en" onExportJson={onExportJson} />);
 
-    expect(screen.getByTestId("advisor-approval-badge").textContent).toContain("Author Approval Required");
+    expect(screen.getByTestId("advisor-approval-badge").textContent).toContain("Author Choice · In-Memory Example");
     expect(screen.queryByTestId("advisor-json-preview")).toBeNull();
 
     fireEvent.click(screen.getByTestId("advisor-copy-json-btn"));
@@ -426,6 +427,7 @@ describe("5. StudioCharExpressionPoseAdvisorPanel 단독 렌더 및 상호작용
     expect(onExportJson.mock.calls[0]?.[0]).toContain("toonstudio.char-expression-pose-advisor.v1");
     expect(screen.getByTestId("advisor-json-preview").textContent).toContain('"topProposals"');
 
+    await waitFor(() => expect(screen.getByTestId("advisor-copy-status").textContent).toContain("Clipboard copy completed"));
     fireEvent.click(screen.getByTestId("advisor-toggle-json-btn"));
     expect(screen.queryByTestId("advisor-json-preview")).toBeNull();
   });
@@ -468,7 +470,7 @@ describe("6. 코드 위생 및 Calm Atelier 규율 자가 검증", () => {
         expect(src).toContain("[word-break:keep-all]");
         expect(src).toContain("tabular-nums");
         expect(src).toContain("min-h-11");
-        expect(src).toContain("작가 승인 후 적용");
+        expect(src).toContain("작가 선택 후 메모리 예제 적용");
       }
     }
   });

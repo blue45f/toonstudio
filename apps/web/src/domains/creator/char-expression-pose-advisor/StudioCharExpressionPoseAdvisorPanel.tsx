@@ -25,6 +25,11 @@ import {
   type VisemeId, type VrmBlendShapeWeights,
 } from "./char-expression-pose-engine";
 
+import { MAX_ADVISOR_DIALOGUE, MAX_ADVISOR_HISTORY } from "./advisor-input-contract";
+import { AdvisorOperationStatus } from "./AdvisorOperationStatus";
+import { FaceExpressionMiniSvg } from "./AdvisorFacePreview";
+import { useAdvisorClipboard, useAdvisorNotification } from "./use-advisor-notification";
+
 export interface StudioCharExpressionPoseAdvisorPanelProps {
   readonly initialDialogue?: string;
   readonly initialArchetype?: CharacterArchetype;
@@ -32,9 +37,9 @@ export interface StudioCharExpressionPoseAdvisorPanelProps {
   readonly initialPreviousCutId?: PreviousCutPresetId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onApplyProposal?: (proposal: CharacterAdjustmentProposal, session: AdvisorApplyState) => void;
-  readonly onRevertProposal?: (session: AdvisorApplyState) => void;
-  readonly onExportJson?: (json: string, session: AdvisorApplyState) => void;
+  readonly onApplyProposal?: (proposal: CharacterAdjustmentProposal, session: AdvisorApplyState) => void | Promise<void>;
+  readonly onRevertProposal?: (session: AdvisorApplyState) => void | Promise<void>;
+  readonly onExportJson?: (json: string, session: AdvisorApplyState) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -59,71 +64,6 @@ function continuityBadgeClass(severity: ContinuitySeverity): string {
 
 function formatSignedDeg(deg: number): string {
   return `${deg > 0 ? "+" : ""}${deg}°`;
-}
-
-function FaceExpressionMiniSvg(props: {
-  readonly blendShapes: VrmBlendShapeWeights;
-  readonly viseme: VisemeId;
-  readonly eyebrowTiltDeg: number;
-  readonly eyebrowLift: number;
-  readonly gazeYaw: number;
-  readonly gazePitch: number;
-  readonly testId: string;
-  readonly ariaLabel: string;
-}): ReactElement {
-  const { blendShapes, viseme, eyebrowTiltDeg, eyebrowLift, gazeYaw, gazePitch, testId, ariaLabel } = props;
-  const browY = Math.round((31 - eyebrowLift * 5.5) * 10) / 10;
-  const browDy = Math.round(Math.sin((eyebrowTiltDeg * Math.PI) / 180) * 6 * 10) / 10;
-  const eyeRy = Math.max(1.4, Math.round((4.6 - blendShapes.blink * 3.1 + blendShapes.surprised * 1.4) * 10) / 10);
-  const pupilDx = Math.round((gazeYaw / 24) * 3.2 * 10) / 10;
-  const pupilDy = Math.round((-gazePitch / 18) * 2.2 * 10) / 10;
-  const mouthSmile = (blendShapes.happy - blendShapes.sad - blendShapes.angry * 0.65) * 5.5;
-  const mouthY = 66;
-
-  let mouthEl: ReactElement;
-  if (viseme === "aa") {
-    mouthEl = <ellipse cx="56" cy={mouthY} rx="9.5" ry="7.2" fill="currentColor" fillOpacity={0.22} stroke="currentColor" strokeWidth="1.8" />;
-  } else if (viseme === "ih") {
-    mouthEl = <rect x="44" y={mouthY - 2.6} width="24" height="5.2" rx="2.6" fill="currentColor" fillOpacity={0.18} stroke="currentColor" strokeWidth="1.7" />;
-  } else if (viseme === "ou") {
-    mouthEl = <circle cx="56" cy={mouthY} r="4.6" fill="currentColor" fillOpacity={0.22} stroke="currentColor" strokeWidth="1.8" />;
-  } else if (viseme === "ee") {
-    mouthEl = <ellipse cx="56" cy={mouthY} rx="10.5" ry="4.4" fill="currentColor" fillOpacity={0.2} stroke="currentColor" strokeWidth="1.7" />;
-  } else if (viseme === "oh") {
-    mouthEl = <ellipse cx="56" cy={mouthY} rx="6.5" ry="7.4" fill="currentColor" fillOpacity={0.22} stroke="currentColor" strokeWidth="1.8" />;
-  } else {
-    const ctrlY = Math.round((mouthY + mouthSmile) * 10) / 10;
-    mouthEl = <path d={`M 45 ${mouthY} Q 56 ${ctrlY} 67 ${mouthY}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />;
-  }
-
-  return (
-    <svg
-      data-testid={testId}
-      data-viseme={viseme}
-      data-eyebrow-tilt={eyebrowTiltDeg}
-      data-gaze-yaw={gazeYaw}
-      data-gaze-pitch={gazePitch}
-      viewBox="0 0 112 92"
-      className="h-24 w-28 shrink-0 rounded-xl border border-line bg-canvas text-fg"
-      role="img"
-      aria-label={ariaLabel}
-    >
-      <path d="M 26 22 Q 56 8 86 22 L 88 54 Q 84 82 56 86 Q 28 82 24 54 Z" fill="none" stroke="currentColor" strokeOpacity={0.35} strokeWidth="1.6" />
-      <g className="text-fg">
-        <line x1="33" y1={browY - browDy} x2="49" y2={browY + browDy} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-        <line x1="63" y1={browY + browDy} x2="79" y2={browY - browDy} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      </g>
-      <g className="text-fg">
-        <ellipse cx="41" cy="46" rx="6.2" ry={eyeRy} fill="none" stroke="currentColor" strokeWidth="1.6" />
-        <ellipse cx="71" cy="46" rx="6.2" ry={eyeRy} fill="none" stroke="currentColor" strokeWidth="1.6" />
-      </g>
-      <g className="text-accent">
-        <circle cx={41 + pupilDx} cy={46 + pupilDy} r={Math.min(2.6, eyeRy * 0.65)} fill="currentColor" />
-        <circle cx={71 + pupilDx} cy={46 + pupilDy} r={Math.min(2.6, eyeRy * 0.65)} fill="currentColor" />
-      </g>
-      <g className="text-accent">{mouthEl}</g>
-    </svg>
-  );
 }
 
 function BlendShapeBarList(props: {
@@ -189,6 +129,12 @@ export function StudioCharExpressionPoseAdvisorPanel(
   );
   const [showJson, setShowJson] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const applyNotification = useAdvisorNotification(onApplyProposal ? ({ proposal, state }: { proposal: CharacterAdjustmentProposal; state: AdvisorApplyState }) => onApplyProposal(proposal, state) : undefined);
+  const revertNotification = useAdvisorNotification(onRevertProposal);
+  const exportNotification = useAdvisorNotification(onExportJson ? ({ text, state }: { text: string; state: AdvisorApplyState }) => onExportJson(text, state) : undefined);
+  const clipboard = useAdvisorClipboard();
+  const channels = [applyNotification, revertNotification, exportNotification, clipboard];
+  const busy = channels.some((channel) => channel.status === "pending");
 
   const bundle = useMemo(
     () => recommendCharacterAdjustments({ dialogue, archetype, intensity }, session.previousCut),
@@ -255,17 +201,24 @@ export function StudioCharExpressionPoseAdvisorPanel(
   };
 
   const handleApply = (proposal: CharacterAdjustmentProposal): void => {
-    const next = applyAdvisorProposal(session, proposal);
+    if (channels.some((channel) => channel.isPending())) return;
+    let next: AdvisorApplyState;
+    try { next = applyAdvisorProposal(session, proposal); } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      setStatusMessage(pick("예제 이력 상한에 도달했습니다. 현재 상태와 원본은 유지되며 되돌리기는 가능합니다.", "The example history limit was reached. Current state and baseline are preserved; revert remains available."));
+      return;
+    }
     setSession(next);
-    onApplyProposal?.(proposal, next);
-    setStatusMessage(pick(`작가 승인으로 '${proposal.titleKo}'을 비파괴 적용했습니다. 언제든 원본으로 되돌릴 수 있습니다.`, `Applied '${proposal.titleEn}' non-destructively. Baseline remains restorable.`));
+    applyNotification.notify({ proposal, state: next });
+    setStatusMessage(pick(`메모리 예제에서 선택하여 '${proposal.titleKo}'을 계산 예제에 적용했습니다. 실제 캐릭터·원고는 바꾸지 않습니다.`, `Applied '${proposal.titleEn}' to the in-memory example. No actual character or artwork is changed.`));
   };
 
   const handleRevert = (): void => {
+    if (channels.some((channel) => channel.isPending())) return;
     const next = revertAdvisorProposal(session);
     setSession(next);
-    onRevertProposal?.(next);
-    setStatusMessage(pick("원본 컷(작가 기본값) 표정·포즈·손 모양으로 되돌렸습니다.", "Reverted expression, pose, and hand gesture to original baseline."));
+    revertNotification.notify(next);
+    setStatusMessage(pick("합성 기준 스냅샷으로 메모리 예제를 되돌렸습니다. 실제 원고·저장은 확인하지 않습니다.", "Reverted the in-memory example to its synthetic baseline. Actual artwork and storage are not verified."));
   };
 
   const handleResetAll = (): void => {
@@ -278,12 +231,10 @@ export function StudioCharExpressionPoseAdvisorPanel(
   };
 
   const handleCopyJson = (): void => {
-    onExportJson?.(jsonText, session);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(jsonText).catch(() => undefined);
-    }
+    if (channels.some((channel) => channel.isPending())) return;
+    exportNotification.notify({ text: jsonText, state: session });
+    clipboard.notify(jsonText);
     setShowJson(true);
-    setStatusMessage(pick(`캐릭터 표정·포즈 추천 JSON(${jsonText.length.toLocaleString("ko-KR")}B)을 복사했습니다.`, `Copied advisor JSON payload (${jsonText.length.toLocaleString("en-US")} B).`));
   };
 
   const analysis = bundle.analysis;
@@ -316,6 +267,11 @@ export function StudioCharExpressionPoseAdvisorPanel(
       aria-label={pick("대사·감정 기반 캐릭터 표정·입모양·포즈·손 모양 어시스턴트", "Character Expression & Pose Advisor")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
     >
+      <AdvisorOperationStatus channel="apply" {...applyNotification} pending={busy} isEn={isEn} />
+      <AdvisorOperationStatus channel="revert" {...revertNotification} pending={busy} isEn={isEn} />
+      <AdvisorOperationStatus channel="export" {...exportNotification} pending={busy} isEn={isEn} />
+      <AdvisorOperationStatus channel="clipboard" {...clipboard} pending={busy} isEn={isEn} />
+      <fieldset disabled={busy} className="contents">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -328,7 +284,7 @@ export function StudioCharExpressionPoseAdvisorPanel(
               className="inline-flex items-center gap-1 rounded-full border border-good bg-good-soft px-2.5 py-0.5 text-[11px] font-semibold text-good [word-break:keep-all]"
             >
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {pick("작가 승인 후 적용", "Author Approval Required")}
+              {pick("작가 선택 후 메모리 예제 적용", "Author Choice · In-Memory Example")}
             </span>
             <span
               data-testid="advisor-session-status-badge"
@@ -342,8 +298,8 @@ export function StudioCharExpressionPoseAdvisorPanel(
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
             {pick(
-              "대사와 캐릭터 성격을 분석해 VRM 표정·입모양·상체 포즈·손 모양 3안을 제안합니다. 미리보기 후 원할 때만 1클릭으로 비파괴 교체하고 즉시 되돌릴 수 있습니다.",
-              "Analyzes dialogue and character archetype into 3 non-destructive VRM expression, viseme, pose, and hand proposals with instant baseline revert.",
+              "어휘·부호 규칙으로 표정 가중치와 고정 포즈 이름을 제안하는 CPU·SVG 계산 예제입니다. 점수는 규칙 계산값이며 AI 추론 신뢰도나 실측 품질이 아닙니다. 실제 캐릭터·VRM·3D 장면·원고·파일 변환·저장·작가 신원 확인은 수행하지 않습니다. 닫으면 입력이 사라집니다.",
+              "A CPU/SVG example using word and punctuation rules to propose weights and fixed pose names. Scores are not AI inference confidence or measured quality. No actual character, VRM, 3D scene, artwork, file conversion, storage, or author identity verification. Inputs disappear when closed.",
             )}
           </p>
         </div>
@@ -405,7 +361,7 @@ export function StudioCharExpressionPoseAdvisorPanel(
             </div>
             <textarea
               id={dialogueInputId}
-              data-testid="advisor-dialogue-input"
+              data-testid="advisor-dialogue-input" maxLength={MAX_ADVISOR_DIALOGUE}
               rows={2}
               value={dialogue}
               onChange={(e) => setDialogue(e.target.value)}
@@ -517,7 +473,7 @@ export function StudioCharExpressionPoseAdvisorPanel(
 
           <div className="grid grid-cols-2 gap-2.5">
             <div className="rounded-lg border border-line bg-card px-3 py-2">
-              <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("감지 감정 · 신뢰도", "Detected Emotion")}</div>
+              <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("감지 감정 · 규칙 점수", "Detected Emotion")}</div>
               <div data-testid="advisor-detected-emotion" className="mt-0.5 text-sm font-bold text-fg tabular-nums [word-break:keep-all]">
                 {`${isEn ? primaryEmotionMeta.labelEn : primaryEmotionMeta.labelKo} (${Math.round(analysis.confidence * 100)}%)`}
               </div>
@@ -711,7 +667,7 @@ export function StudioCharExpressionPoseAdvisorPanel(
                   </button>
                   <button
                     type="button"
-                    data-testid={`advisor-apply-btn-${proposal.rank}`}
+                    data-testid={`advisor-apply-btn-${proposal.rank}`} disabled={session.history.length >= MAX_ADVISOR_HISTORY - 1}
                     aria-pressed={isApplied}
                     onClick={() => handleApply(proposal)}
                     className={BTN_SOLID}
@@ -760,6 +716,7 @@ export function StudioCharExpressionPoseAdvisorPanel(
           </pre>
         ) : null}
       </div>
+      </fieldset>
     </section>
   );
 }

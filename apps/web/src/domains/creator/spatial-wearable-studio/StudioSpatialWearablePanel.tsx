@@ -12,10 +12,10 @@ import {
   AlertTriangle, CheckCircle2, Clock, Compass, Copy, Eye, Glasses, Info,
   Laptop, Layers, Minus, Monitor, Plus, Radio, RotateCcw, Smartphone, Tablet, Watch,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useId, useMemo, useState, type ReactElement } from "react";
 
 import {
-  AR_HUD_PRESETS, DEFAULT_LINK_BANDWIDTH_MBPS, DEFAULT_SPATIAL_RIG_INPUT,
+  AR_HUD_PRESETS, DEFAULT_LINK_BANDWIDTH_MBPS, DEFAULT_SPATIAL_RIG_INPUT, SPATIAL_DEVICE_IDS,
   DEFAULT_WEARABLE_CONTROL_STATE, MULTI_DEVICE_PRESETS, SPATIAL_DEVICE_CATALOG,
   WEARABLE_DIAL_MODES, buildArGlassesHudProfile, computeMultiDeviceTopology,
   computeSpatialCanvasRig, evaluateSessionBreakReminder, exportSpatialWearableSessionJson,
@@ -26,6 +26,8 @@ import {
   type SyncTransportMode, type TopologyConflictSeverity, type WearableDialActionResult,
   type WearableDialMode, type WearableGestureKind, type WearableStudioControlState,
 } from "./spatial-wearable-engine";
+import { validateSpatialDeviceIds } from "./spatial-input-contract";
+import { useExampleCopy, useExampleNotification } from "./use-example-delivery";
 
 export interface StudioSpatialWearablePanelProps {
   readonly initialPresetId?: MultiDevicePresetId;
@@ -35,9 +37,9 @@ export interface StudioSpatialWearablePanelProps {
   readonly initialElapsedWorkMinutes?: number;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onTopologyChange?: (topology: MultiDeviceTopologyResult) => void;
-  readonly onRigChange?: (rig: SpatialCanvasRigResult) => void;
-  readonly onExportJson?: (json: string, snapshot: SpatialWearableSessionSnapshot) => void;
+  readonly onTopologyChange?: (topology: MultiDeviceTopologyResult) => void | Promise<void>;
+  readonly onRigChange?: (rig: SpatialCanvasRigResult) => void | Promise<void>;
+  readonly onExportJson?: (json: string, snapshot: SpatialWearableSessionSnapshot) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -213,19 +215,21 @@ export function StudioSpatialWearablePanel(props: StudioSpatialWearablePanelProp
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
 
   const initialPreset = getMultiDevicePreset(initialPresetId);
+  const initialBandwidth = Number.isFinite(initialLinkBandwidthMbps) ? Math.min(2000, Math.max(5, initialLinkBandwidthMbps)) : DEFAULT_LINK_BANDWIDTH_MBPS;
+  const initialMinutes = Number.isFinite(initialElapsedWorkMinutes) ? Math.min(720, Math.max(0, initialElapsedWorkMinutes)) : 32;
   const [activeDeviceIds, setActiveDeviceIds] = useState<readonly SpatialDeviceId[]>(
-    () => (initialActiveDeviceIds ? [...initialActiveDeviceIds] : [...initialPreset.deviceIds]),
+    () => initialActiveDeviceIds ? validateSpatialDeviceIds(initialActiveDeviceIds, SPATIAL_DEVICE_IDS) : [...initialPreset.deviceIds],
   );
   const [syncTransportMode, setSyncTransportMode] = useState<SyncTransportMode>(
     () => initialTransportMode ?? initialPreset.recommendedTransport,
   );
-  const [availableLinkBandwidthMbps, setAvailableLinkBandwidthMbps] = useState<number>(initialLinkBandwidthMbps);
+  const [availableLinkBandwidthMbps, setAvailableLinkBandwidthMbps] = useState<number>(initialBandwidth);
   const [rigInput, setRigInput] = useState(DEFAULT_SPATIAL_RIG_INPUT);
   const [wearableMode, setWearableMode] = useState<WearableDialMode>("brush-size");
   const [wearableState, setWearableState] = useState<WearableStudioControlState>(DEFAULT_WEARABLE_CONTROL_STATE);
   const [precisionModifier, setPrecisionModifier] = useState<boolean>(false);
   const [lastDialAction, setLastDialAction] = useState<WearableDialActionResult | null>(null);
-  const [elapsedWorkMinutes, setElapsedWorkMinutes] = useState<number>(initialElapsedWorkMinutes);
+  const [elapsedWorkMinutes, setElapsedWorkMinutes] = useState<number>(initialMinutes);
   const [breakIntervalMinutes, setBreakIntervalMinutes] = useState<number>(50);
   const [hapticNudgeEnabled, setHapticNudgeEnabled] = useState<boolean>(true);
   const [arHudOptions, setArHudOptions] = useState<Required<ArGlassesHudOptions>>({
@@ -260,8 +264,9 @@ export function StudioSpatialWearablePanel(props: StudioSpatialWearablePanelProp
   );
   const sessionJson = useMemo(() => exportSpatialWearableSessionJson(sessionSnapshot), [sessionSnapshot]);
 
-  useEffect(() => { onTopologyChange?.(topology); }, [topology, onTopologyChange]);
-  useEffect(() => { onRigChange?.(spatialRig); }, [spatialRig, onRigChange]);
+  const topologyNotification = useExampleNotification(topology, onTopologyChange);
+  const rigNotification = useExampleNotification(spatialRig, onRigChange);
+  const delivery = useExampleCopy<SpatialWearableSessionSnapshot, "json">({ json: onExportJson });
 
   const handleApplyPreset = (presetId: MultiDevicePresetId): void => {
     const preset = getMultiDevicePreset(presetId);
@@ -299,15 +304,15 @@ export function StudioSpatialWearablePanel(props: StudioSpatialWearablePanelProp
   };
 
   const handleReset = (): void => {
-    setActiveDeviceIds(initialActiveDeviceIds ? [...initialActiveDeviceIds] : [...initialPreset.deviceIds]);
+    setActiveDeviceIds(validateSpatialDeviceIds(initialActiveDeviceIds ?? initialPreset.deviceIds, SPATIAL_DEVICE_IDS));
     setSyncTransportMode(initialTransportMode ?? initialPreset.recommendedTransport);
-    setAvailableLinkBandwidthMbps(initialLinkBandwidthMbps);
+    setAvailableLinkBandwidthMbps(initialBandwidth);
     setRigInput(DEFAULT_SPATIAL_RIG_INPUT);
     setWearableMode("brush-size");
     setWearableState(DEFAULT_WEARABLE_CONTROL_STATE);
     setPrecisionModifier(false);
     setLastDialAction(null);
-    setElapsedWorkMinutes(initialElapsedWorkMinutes);
+    setElapsedWorkMinutes(initialMinutes);
     setBreakIntervalMinutes(50);
     setHapticNudgeEnabled(true);
     setArHudOptions({ presetId: "perspective-grid-minimal", perspectiveGridType: "2-point", gridOpacityPct: 18, showDeadlineTimer: true, deadlineRemainingMinutes: 45, peripheralCorner: "top-right" });
@@ -315,12 +320,9 @@ export function StudioSpatialWearablePanel(props: StudioSpatialWearablePanelProp
   };
 
   const handleCopyJson = (): void => {
-    onExportJson?.(sessionJson, sessionSnapshot);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(sessionJson).catch(() => undefined);
-    }
     setShowJsonPreview(true);
-    setStatusMessage(pick(`세션 구성 JSON(${sessionJson.length.toLocaleString("ko-KR")}B)을 복사했습니다.`, `Copied session config JSON (${sessionJson.length.toLocaleString("en-US")} B).`));
+    setStatusMessage("");
+    delivery.copy("json", sessionJson, sessionSnapshot);
   };
 
   const hubSpec = topology.hubDeviceId ? getSpatialDeviceSpec(topology.hubDeviceId) : null;
@@ -370,12 +372,20 @@ export function StudioSpatialWearablePanel(props: StudioSpatialWearablePanelProp
             <RotateCcw className="h-4 w-4 shrink-0" aria-hidden="true" />
             {pick("초기화", "Reset")}
           </button>
-          <button type="button" data-testid="spatial-copy-json-btn" onClick={handleCopyJson} className={BTN_SOLID}>
+          <button type="button" data-testid="spatial-copy-json-btn" disabled={delivery.state === "pending"} onClick={handleCopyJson} className={BTN_SOLID}>
             <Copy className="h-4 w-4 shrink-0" aria-hidden="true" />
             {pick("구성 JSON 복사", "Copy Config JSON")}
           </button>
         </div>
       </header>
+      <div aria-live="polite" className="space-y-1 text-xs">
+        {topologyNotification.pending || rigNotification.pending ? <p>{pick("공간 예제 전달 중", "Sending spatial example")}</p> : null}
+        {topologyNotification.error ? <p role="alert">{pick("기기 조합 예제 전달 실패", "Topology example delivery failed")} <button type="button" data-testid="spatial-topology-retry" disabled={topologyNotification.pending} onClick={topologyNotification.retry} className={BTN_OUTLINE}>{pick("전달 재시도", "Retry delivery")}</button></p> : null}
+        {rigNotification.error ? <p role="alert">{pick("배치 예제 전달 실패", "Rig example delivery failed")} <button type="button" data-testid="spatial-rig-retry" disabled={rigNotification.pending} onClick={rigNotification.retry} className={BTN_OUTLINE}>{pick("전달 재시도", "Retry delivery")}</button></p> : null}
+        {delivery.state === "pending" ? <p>{pick("클립보드 복사·예제 전달 중", "Copying and delivering example")}</p> : null}
+        {delivery.state === "error" ? <p role="alert">{pick("복사 또는 전달 실패. 완료된 복사는 반복하지 않습니다.", "Copy or delivery failed. Completed copies are not repeated.")} <button type="button" data-testid="spatial-copy-retry" onClick={delivery.retry} className={BTN_OUTLINE}>{pick("복사·전달 재시도", "Retry copy or delivery")}</button></p> : null}
+        {delivery.state === "copied" ? <p>{pick("클립보드에 복사했습니다. 장치·원고·서버에는 적용하거나 저장하지 않았습니다.", "Copied to clipboard. No device, manuscript, or server changes were made.")}</p> : null}
+      </div>
 
       {statusMessage ? (
         <div data-testid="spatial-status-banner" role="status" aria-live="polite" className="rounded-lg border border-accent bg-accent-soft px-3.5 py-2 text-xs font-medium text-accent [word-break:keep-all]">

@@ -1,4 +1,4 @@
-import { Brush, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, Wand2, Zap, Watch } from "lucide-react";
+import { Brush, Hand, Layers, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -67,6 +67,17 @@ const LazyCharacterBiblePanel = lazy(async () => {
   return { default: m.StudioCharacterSheetBiblePanel };
 });
 
+const LazyStudioEditorialMoodboardPanel = lazy(async () => {
+  await import("../editorial-moodboard-palette");
+  const m = await import("../editorial-moodboard-palette/StudioEditorialMoodboardPanel");
+  return { default: m.StudioEditorialMoodboardPanel };
+});
+const LazyStudioCharExpressionPoseAdvisorPanel = lazy(async () => {
+  await import("../char-expression-pose-advisor");
+  const m = await import("../char-expression-pose-advisor/StudioCharExpressionPoseAdvisorPanel");
+  return { default: m.StudioCharExpressionPoseAdvisorPanel };
+});
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -79,7 +90,9 @@ type Csp3dTabId =
   | "koreanLettering"
   | "lightingRig3d"
   | "actionFxLab"
-  | "characterBible";
+  | "characterBible"
+  | "editorialMoodboard"
+  | "charExprAdvisor";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -98,6 +111,8 @@ const CSP3D_TABS: readonly {
   { id: "lightingRig3d", labelKo: "하늘·조명·그림자 수치 예제", labelEn: "Sky · Lighting · Shadow Examples" },
   { id: "actionFxLab", labelKo: "액션·로맨스 SVG 효과 예제", labelEn: "Action · Romance SVG Examples" },
   { id: "characterBible", labelKo: "캐릭터 설정·표정 조판 예제", labelEn: "Character Sheet · Expression Layout Examples" },
+  { id: "editorialMoodboard", labelKo: "무드보드·팔레트 예제", labelEn: "Moodboard · Palette Examples" },
+  { id: "charExprAdvisor", labelKo: "표정·포즈 제안 예제", labelEn: "Expression · Pose Suggestion Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -118,6 +133,10 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "editorialMoodboard":
+      return <Palette size={15} aria-hidden="true" />;
+    case "charExprAdvisor":
+      return <Smile size={15} aria-hidden="true" />;
     case "characterBible":
       return <Hand size={15} aria-hidden="true" />;
     case "lightingRig3d":
@@ -202,6 +221,8 @@ export function Csp3dUpgradeHubPanel() {
           {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "actionFxLab" ? <LazyStudioActionFxLabPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "characterBible" ? <LazyCharacterBiblePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "editorialMoodboard" ? <LazyStudioEditorialMoodboardPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "charExprAdvisor" ? <LazyStudioCharExpressionPoseAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
