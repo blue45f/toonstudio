@@ -1,10 +1,10 @@
 import {
   ArrowRight,
   Clock3,
+  Compass,
   Lightbulb,
   Plus,
   Upload,
-  WandSparkles,
 } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -316,8 +316,8 @@ function StudioLobbyHero() {
         <StudioPageIntro motif="pen" className="studio-lobby-hero__intro" />
         <p className="studio-lobby-hero__lead">
           {bi(
-            "스토리에서 캐릭터, 배경, 컷 연출과 연재까지 하나의 제작 흐름으로 이어집니다.",
-            "Move from story to characters, backgrounds, panel direction, and publishing in one production flow.",
+            "대본을 쓰고 캐릭터와 배경을 배치해 원고 출고까지 한 작업실에서 마칩니다.",
+            "Draft scripts, set characters and 3D scenes, and finish your episode export in one studio.",
           )}
         </p>
         <StudioLobbyIdeaForm />
@@ -331,7 +331,7 @@ function StudioLobbyHero() {
             {bi("작업 가져오기", "Import work")}
           </Link>
           <Link href={studioLobbyDirectorHref()} className={buttonClass({ variant: "quiet", size: "lg", className: "gap-2" })}>
-            <WandSparkles size={17} aria-hidden="true" />
+            <Compass size={17} aria-hidden="true" />
             {bi("AI 디렉터에게 말하기", "Ask the AI director")}
           </Link>
         </div>
@@ -435,8 +435,8 @@ function StudioLobbyRecentShelf({
           </h2>
           <p>
             {hasProjects
-              ? bi("마지막 작업 위치에서 바로 이어서 만드세요.", "Continue exactly where you left off.")
-              : bi("작품의 분위기를 먼저 고르고 빠르게 시작하세요.", "Choose a visual world and start quickly.")}
+              ? bi("마지막 작업 위치에서 바로 이어서 만드세요.", "Continue right where you left off.")
+              : bi("원하는 판형과 분위기를 골라 첫 컷을 바로 열어 보세요.", "Pick a format and mood to open your first panel.")}
           </p>
         </div>
         {hasProjects ? (
@@ -499,8 +499,8 @@ function StudioLobbyAiDirector() {
       </div>
       <p className="studio-lobby-director__bubble">
         {bi(
-          "아이디어나 장면 설명을 적으면 스토리 확장·캐릭터 설정 분석·장면 구도 추천을 글로 제안해요.",
-          "Describe an idea or a scene and get written suggestions for story, characters and composition.",
+          "떠오른 장면이나 설정을 적으면 스토리 전개, 인물 분석, 컷 구도 초안을 글로 정리해 드립니다.",
+          "Describe a scene or character idea to get written drafts for story beats, cast notes, and panel framing.",
         )}
       </p>
       <ul className="studio-lobby-director__prompts" aria-label={bi("AI 디렉터 제안 바로 열기", "Open an AI director suggestion")}>
@@ -520,7 +520,7 @@ function StudioLobbyAiDirector() {
         )}
       </p>
       <Link href={studioLobbyDirectorHref()} className={buttonClass({ className: "studio-lobby-director__cta gap-2" })}>
-        <WandSparkles size={16} aria-hidden="true" />
+        <Compass size={16} aria-hidden="true" />
         {bi("AI 디렉터 열기", "Open AI director")}
       </Link>
     </aside>
@@ -652,14 +652,14 @@ function StudioLobbyWorkflowGuide() {
           </p>
           <h2 id="studio-lobby-workflow-guide-title" className="mt-1 text-base font-bold text-fg sm:text-lg">
             {bi(
-              "웹툰 제작 5단계 워크플로 가이드 (처음 시작하는 분을 위한 추천 순서)",
-              "5-Step Webtoon Production Workflow Guide (Recommended order for beginners)",
+              "웹툰 제작 5단계 워크플로 가이드",
+              "5-Step Webtoon Production Workflow Guide",
             )}
           </h2>
           <p className="mt-1 text-xs leading-5 text-fg-2">
             {bi(
-              "막막할 때는 1단계부터 순서대로 따라가 보세요. 숙련 작가는 필요한 공정으로 바로 건너뛸 수 있습니다.",
-              "Follow from Step 1 if you are new, or jump straight to any stage if you are experienced.",
+              "처음이신 분은 1단계부터 차례로, 익숙한 분은 필요한 공정으로 바로 들어가세요.",
+              "Start at Step 1 if you are new, or jump directly to the stage you need.",
             )}
           </p>
         </div>

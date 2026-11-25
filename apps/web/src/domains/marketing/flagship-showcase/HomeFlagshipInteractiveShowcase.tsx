@@ -1,9 +1,9 @@
 import {
   ArrowRight,
+  Brush,
   Eraser,
   PenTool,
   SlidersHorizontal,
-  Sparkles,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -218,18 +218,18 @@ export function HomeFlagshipInteractiveShowcase() {
         <header className="fsh-header">
           <div className="fsh-header-copy">
             <span className="fsh-eyebrow">
-              <Sparkles size={13} strokeWidth={1.8} aria-hidden="true" />
-              {lang === "en" ? "TOONSTUDIO FLAGSHIP ARCHITECTURE" : "TOONSTUDIO 플래그십 핵심 역량"}
+              <Brush size={13} strokeWidth={1.8} aria-hidden="true" />
+              {lang === "en" ? "TOONSTUDIO ATELIER HANDS-ON" : "아틀리에 핵심 도구 체험"}
             </span>
             <h2 id="fsh-main-title">
               {lang === "en"
-                ? "Feel the engine before you open a project."
-                : "열기 전에 직접 만져보며 체감하는 ToonStudio 핵심 엔진"}
+                ? "Try the studio tools before you open a project."
+                : "프로젝트를 열기 전에 손끝으로 먼저 그려 보세요"}
             </h2>
             <p>
               {lang === "en"
-                ? "Test 5 physical brushes, slide real Before/After outputs, inspect all 6 core engines, and tailor your 7-stage studio stack right here."
-                : "물리 브러시 5종 필기감, 3모드 전후 비교, 6대 플래그십 엔진과 직군·BYOT 조합을 홈에서 바로 확인하세요."}
+                ? "Sketch with 5 physical brushes, slide real Before/After comparisons, inspect 6 core engines, and tailor your 7-stage stack right here."
+                : "물리 브러시 5종 필기감부터 전후 비교, 6가지 작업 엔진, 내 작업 방식에 맞는 도구 조합까지 여기서 바로 시험해 보세요."}
             </p>
           </div>
           <StudioFeatureAtlasMenu variant="compact" />
@@ -245,7 +245,7 @@ export function HomeFlagshipInteractiveShowcase() {
               <h3 id="fsh-brush-title">
                 {lang === "en"
                   ? "3-Second Physical Brush Test — Feel Before Opening"
-                  : "열기 전에 바로 느껴보는 필기감 · 3초 미니 물리 브러시"}
+                  : "미니 캔버스에서 바로 그어 보는 물리 브러시 5종"}
               </h3>
               <p>{pick(activeBrushSpec.feelNote, lang)}</p>
             </div>
@@ -382,7 +382,7 @@ export function HomeFlagshipInteractiveShowcase() {
           <div className="fsh-block-head">
             <div className="fsh-block-title">
               <h3 id="fsh-compare-title">
-                {lang === "en" ? "Interactive Before / After Comparison" : "좌우 드래그로 바로 비교하는 Before / After"}
+                {lang === "en" ? "Interactive Before / After Comparison" : "슬라이더를 끌어 바로 비교하는 전후 결과"}
               </h3>
               <p>{pick(activeCompareSpec.takeaway, lang)}</p>
             </div>
@@ -480,12 +480,12 @@ export function HomeFlagshipInteractiveShowcase() {
           <div className="fsh-block-head">
             <div className="fsh-block-title">
               <h3 id="fsh-engines-title">
-                {lang === "en" ? "6 Flagship Engines at a Glance" : "ToonStudio 6대 플래그십 엔진 한눈에 보기"}
+                {lang === "en" ? "6 Core Engines at a Glance" : "한 작업실에 담긴 6가지 핵심 제작 엔진"}
               </h3>
               <p>
                 {lang === "en"
                   ? "Every engine runs together in one workspace — jump straight into any subsystem."
-                  : "브러시·코어·3D NPR·자동 QA·BYOT·무빙툰까지 6대 핵심 엔진을 바로 열어 확인할 수 있습니다."}
+                  : "브러시, 3D 선화, 자동 검수, 외부 툴 연동, 무빙툰까지 원하는 도구를 바로 열어 확인하세요."}
               </p>
             </div>
           </div>

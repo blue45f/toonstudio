@@ -1,11 +1,12 @@
 import {
   ArrowRight,
   Check,
+  Feather,
+  Layers,
   Loader2,
+  PenTool,
   RotateCcw,
   ShieldCheck,
-  Sparkles,
-  WandSparkles,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -323,8 +324,8 @@ function StudioProjectAssistantPanelBody({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
           <p className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
-            <Sparkles size={14} aria-hidden="true" />{" "}
-            {bt("AI 창작 도우미 · OPENAI 서버 보조", "AI CREATIVE HELPER")}
+            <Feather size={14} aria-hidden="true" />{" "}
+            {bt("창작 보조 · 대본·컷 초안", "CREATIVE ASSISTANT")}
           </p>
           <h2
             id="project-assistant-title"
@@ -334,8 +335,8 @@ function StudioProjectAssistantPanelBody({
           </h2>
           <p className="mt-2 text-sm leading-6 text-fg-2">
             {bt(
-              "발상 5각도 확장, 대본 컷 분할, 말풍선 대사 다듬기, 마감 소개글 점검을 지원해요. 제안 결과는 원본을 덮어쓰지 않고 사본으로만 추가됩니다.",
-              "Remix ideas across 5 lenses, split scripts into panels, polish speech balloons, or check release blurbs without overwriting your original work.",
+              "아이디어 확장, 대본 컷 나누기, 말풍선 대사 손보기, 회차 소개글 점검을 돕습니다. 모든 제안은 원본을 건드리지 않고 사본으로만 덧붙입니다.",
+              "Expand story angles, split scripts into panels, polish speech balloons, or review episode blurbs—always saved as copies without overwriting originals.",
             )}
           </p>
         </div>
@@ -396,7 +397,7 @@ function StudioProjectAssistantPanelBody({
                 setStatusMessage(null);
               }}
               className={cn(
-                "min-h-10 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
+                "min-h-11 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                 active
                   ? "border-accent bg-accent-soft text-accent"
@@ -506,7 +507,7 @@ function StudioProjectAssistantPanelBody({
             {runningOpenAi ? (
               <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
             ) : (
-              <Sparkles size={16} aria-hidden="true" />
+              <PenTool size={16} aria-hidden="true" />
             )}
             {runningOpenAi
               ? bt("초안 만드는 중…", "Drafting…")
@@ -534,7 +535,7 @@ function StudioProjectAssistantPanelBody({
               className: "min-h-11 gap-2",
             })}
           >
-            <WandSparkles size={16} aria-hidden="true" />
+            <Layers size={16} aria-hidden="true" />
             {bt("편집기에서 검토", "Review in editor")}
             <ArrowRight size={15} aria-hidden="true" />
           </button>

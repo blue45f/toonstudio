@@ -19,14 +19,21 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 
 const FEATURE_ICONS = [Brush, LayoutGrid, Box, Layers] as const;
 
+const PREVIEW_STAGE_ARTWORKS = [
+  "/brand/atelier-process-960.webp",
+  "/brand/luminous-atelier-20261114/scene-hero-living-atelier.webp",
+  "/brand/atelier-world-960.webp",
+] as const;
+
 function StudioPreview({ copy, stage }: { copy: CreatorHomeCopy; stage: number }) {
   useBilingualI18nRevision();
+  const stageArtwork = PREVIEW_STAGE_ARTWORKS[stage] ?? PREVIEW_STAGE_ARTWORKS[0];
   return (
     <figure className={formatI18nTemplate(translateCurrentStaticSourceText("domains.marketing.CreatorHomePage", "en", "ch-workspace ch-workspace--{v0}"), { v0: String(copy.stages[stage].id) })} aria-label={copy.previewNote}>
       <div className="ch-windowbar"><span className="ch-windowdots" aria-hidden="true"><i /><i /><i /></span><span>{copy.preview}</span><span className="ch-window-status"><Check size={12} aria-hidden="true" /> ToonStudio</span></div>
       <div className="ch-editor">
         <div className="ch-tools" aria-hidden="true"><MousePointer2 size={17} /><span><Brush size={17} /></span><Square size={17} /><Type size={17} /><Layers size={17} /><Plus size={17} /></div>
-        <div className="ch-canvas"><div className="ch-art-title"><span>{translateCurrentStaticSourceText("domains.marketing.CreatorHomePage", "en", "CHAPTER 01")}</span><span>{copy.example}</span></div><img className="ch-scene" src="/brand/studio-scene.svg" alt="" width={720} height={560} fetchPriority="high" /><div className="ch-caption" aria-hidden="true">{stage === 1 ? translateCurrentStaticSourceText("domains.marketing.CreatorHomePage", "en", "Every story starts with a little courage.") : translateCurrentStaticSourceText("domains.marketing.CreatorHomePage", "en", "MAKE SOMETHING ONLY YOU CAN MAKE.")}</div></div>
+        <div className="ch-canvas"><div className="ch-art-title"><span>{translateCurrentStaticSourceText("domains.marketing.CreatorHomePage", "en", "CHAPTER 01")}</span><span>{copy.example}</span></div><img className="ch-scene" src={stageArtwork} alt="" width={960} height={640} decoding="async" fetchPriority="high" /><div className="ch-caption" aria-hidden="true">{stage === 1 ? translateCurrentStaticSourceText("domains.marketing.CreatorHomePage", "en", "Every story starts with a little courage.") : translateCurrentStaticSourceText("domains.marketing.CreatorHomePage", "en", "MAKE SOMETHING ONLY YOU CAN MAKE.")}</div></div>
         <div className="ch-inspector" aria-hidden="true"><span>{copy.layer}</span><div className="ch-swatches"><i /><i /><i /><i /></div><div className="ch-layer"><span />{copy.scene} 03</div><div className="ch-layer"><span />{copy.scene} 02</div><div className="ch-layer is-selected"><span />{copy.scene} 01</div><div className="ch-inspector-lines"><i /><i /><i /></div></div>
       </div>
       <figcaption className="ch-workspace-footer"><span>{copy.previewNote}</span><span>100%</span></figcaption>

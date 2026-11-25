@@ -1,4 +1,4 @@
-import { Layers, ListOrdered, Ruler, Sparkles } from "lucide-react";
+import { Gauge, Layers, ListOrdered, Ruler } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -292,7 +292,7 @@ export function StudioExportScopeSummaryCard({
         >
           <div className="flex items-center justify-between gap-2">
             <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-fg">
-              <Sparkles size={14} className="text-fg-2" aria-hidden="true" />
+              <Gauge size={14} className="text-fg-2" aria-hidden="true" />
               {bt("③ 용량 · 분할 추정치", "3. File size & slice estimate")}
             </span>
             <span className="rounded-full border border-warning/35 bg-warning-soft/20 px-2 py-0.5 text-[0.62rem] font-bold text-warning">

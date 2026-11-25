@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Palette, SlidersHorizontal } from "lucide-react";
 import React, { Suspense, useCallback, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -71,13 +71,13 @@ export function StudioCreateQuickPresetStrip({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="inline-flex items-center gap-1.5 text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
-            <Sparkles size={13} aria-hidden="true" />
-            {bt("처음 시작할 때 참고할 장르 예시", "BEGINNER QUICK STARTERS")}
+            <Palette size={13} aria-hidden="true" />
+            {bt("장르별 빠른 시작", "GENRE QUICK STARTERS")}
           </p>
           <h2 className="mt-1 text-base font-black text-fg sm:text-lg">
             {bt(
-              "복잡한 설정 없이 원하는 분위기 카드를 누르면 형식·시작점·가제가 한 번에 채워져요",
-              "Pick a mood card to prefill format, starting step, and working title in one tap",
+              "분위기 카드를 고르면 판형·시작 단계·가제가 한 번에 채워집니다.",
+              "Pick a genre mood card to prefill format, starting step, and working title.",
             )}
           </h2>
         </div>
@@ -97,7 +97,7 @@ export function StudioCreateQuickPresetStrip({
               data-testid={`studio-quick-preset-${preset.quickPresetId}`}
               onClick={() => onSelectPreset(preset)}
               className={cn(
-                "group flex min-h-11 flex-col overflow-hidden rounded-2xl border text-left transition-all motion-reduce:transform-none",
+                "group flex min-h-11 flex-col overflow-hidden rounded-2xl border text-left transition-[transform,border-color,background-color] duration-150 motion-reduce:transform-none motion-reduce:transition-none",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                 active
                   ? "border-accent bg-accent-soft/45 shadow-sm"
@@ -133,8 +133,8 @@ export function StudioCreateQuickPresetStrip({
                 <span className="mt-2.5 inline-flex items-center justify-between text-[0.68rem] font-extrabold text-accent">
                   <span>
                     {active
-                      ? bt("✓ 이 구성으로 준비됨", "✓ Preset applied")
-                      : bt("원클릭으로 채우기 →", "Apply in 1 tap →")}
+                      ? bt("이 구성으로 준비됨", "Preset applied")
+                      : bt("이 구성으로 채우기", "Apply this preset")}
                   </span>
                 </span>
               </span>
@@ -183,13 +183,13 @@ export function StudioCreateQuickPresetStrip({
           className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-1 text-sm font-extrabold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]"
         >
           <span className="inline-flex items-center gap-2">
-            <Sparkles size={15} className="shrink-0 text-accent" aria-hidden="true" />
+            <SlidersHorizontal size={15} className="shrink-0 text-accent" aria-hidden="true" />
             <span>
-              {bt("필수 1개 · AI 자동 채우기 도우미", "1-Required Field · AI Autofill Helper")}
+              {bt("핵심 입력 1개로 자동 채우기", "Auto-fill from 1 required line")}
             </span>
           </span>
           <span className="shrink-0 rounded-full border border-good/40 bg-good-soft px-2.5 py-0.5 text-xs font-bold text-good tabular-nums">
-            {bt("과금 ₩0 · 펼쳐서 사용", "₩0 Free · Expand")}
+            {bt("무료 · 펼쳐서 사용", "Free · Expand")}
           </span>
         </summary>
         {autofillOpen ? (

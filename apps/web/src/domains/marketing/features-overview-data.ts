@@ -8,7 +8,7 @@ import {
   Library,
   Megaphone,
   NotebookPen,
-  Sparkles,
+  SlidersHorizontal,
   type LucideIcon,
 } from "lucide-react";
 
@@ -187,7 +187,7 @@ export const FEATURE_OVERVIEW_CATEGORIES: readonly FeatureOverviewCategory[] = [
   },
   {
     id: "ai",
-    icon: Sparkles,
+    icon: SlidersHorizontal,
     title: { ko: "AI 도구", en: "AI tools" },
     summary: {
       ko: "생성과 보조를 맡는 AI. 무료 한도를 먼저 쓰는 것이 기본이고(서버 공유 무료 풀은 운영 설정이 반영된 공급자에서만 동작), 유료 제공자는 내 키(BYOK)를 등록해 허용할 때만 씁니다. 실험 단계 도구에는 표시가 붙습니다.",

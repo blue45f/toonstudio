@@ -179,7 +179,7 @@ export function ReferenceCreatorDashboard() {
                 <span>{bi("나의 작품으로.", "Make it your story.")}</span>
               </h1>
               <p data-ink-enter="rise" style={inkIndex(1)}>
-                {bi("기획과 콘티, 작화, 검수와 출고까지 브라우저 하나에서 이어 가요", "Planning, storyboards, inking, review and publishing in one browser tab")}
+                {bi("기획과 콘티부터 작화·검수·출고까지, 브라우저 한 탭에서 이어 가요.", "Plan, storyboard, ink, review, and export in one browser tab.")}
               </p>
               <div className="rd-clarity-actions" data-ink-enter="rise" style={inkIndex(2)}>
                 <Link className="rd-clarity-start ink-arrow min-h-11" href="/create">
@@ -436,7 +436,7 @@ export function ReferenceCreatorDashboard() {
             <i />
           </span>
           <span>{bi("더 알아보기", "Learn more")}</span>
-          <small>{bi("시작 카드·핵심 작업실·에디터 미리보기·서비스 소개", "Start cards, core studios, editor preview and introduction")}</small>
+          <small>{bi("시작 카드 · 핵심 작업실 · 에디터 미리보기 · 서비스 안내", "Start cards · Core studios · Editor preview · About")}</small>
           <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
         </summary>
         <nav id="creator-start" className="rd-quick" aria-labelledby="creator-toolkit-title">
