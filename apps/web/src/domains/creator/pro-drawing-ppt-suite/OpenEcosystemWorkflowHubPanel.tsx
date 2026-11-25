@@ -1,4 +1,4 @@
-import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Gauge, Glasses, Globe, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Focus, Gauge, Glasses, Globe, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Shield, ShieldCheck, SlidersHorizontal, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -118,6 +118,16 @@ const LazyStudioSpatialWearablePanel = lazy(async () => {
   const m = await import("../spatial-wearable-studio/StudioSpatialWearablePanel");
   return { default: m.StudioSpatialWearablePanel };
 });
+const LazyStudioFocusPanHapticPanel = lazy(async () => {
+  await import("../focus-pan-haptic-studio");
+  const m = await import("../focus-pan-haptic-studio/StudioFocusPanHapticPanel");
+  return { default: m.StudioFocusPanHapticPanel };
+});
+const LazyStudioAdaptiveCalmGuardPanel = lazy(async () => {
+  await import("../adaptive-calm-stack-guard");
+  const m = await import("../adaptive-calm-stack-guard/StudioAdaptiveCalmGuardPanel");
+  return { default: m.StudioAdaptiveCalmGuardPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -142,7 +152,9 @@ type EcosystemTabId =
   | "pacingThumbLab"
   | "globalIpPitch"
   | "proDigitizerHid"
-  | "spatialWearable";
+  | "spatialWearable"
+  | "focusPanHaptic"
+  | "adaptiveCalmGuard";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -188,6 +200,8 @@ const ECOSYSTEM_TABS: readonly {
   { id: "globalIpPitch", labelKo: "글로벌 IP·OTT·출판 12장 피칭 바이블", labelEn: "Global IP · OTT · 12-Slide Pitch Bible" },
   { id: "proDigitizerHid", labelKo: "와콤·애플펜슬 프로·S펜·HID 캘리브레이터", labelEn: "Pro Digitizer · Stylus · USB HID Calibrator" },
   { id: "spatialWearable", labelKo: "비전 프로·스마트 글래스·워치 멀티기기 작업실", labelEn: "Vision Pro · Smart Glasses · Watch Deck" },
+  { id: "focusPanHaptic", labelKo: "작업 리듬 코치·확대 포커스 패닝·펜촉 햅틱", labelEn: "Work Rhythm · Focus Auto-Pan · Nib Haptics" },
+  { id: "adaptiveCalmGuard", labelKo: "문맥 UI 단순화·스마트 스태킹·기기 메모리 가드", labelEn: "Adaptive Calm UI · Smart Stack · Memory Guard" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -238,6 +252,10 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <PenTool size={15} aria-hidden="true" />;
     case "spatialWearable":
       return <Glasses size={15} aria-hidden="true" />;
+    case "focusPanHaptic":
+      return <Focus size={15} aria-hidden="true" />;
+    case "adaptiveCalmGuard":
+      return <SlidersHorizontal size={15} aria-hidden="true" />;
   }
 }
 
@@ -309,6 +327,8 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "globalIpPitch" ? <LazyStudioGlobalIpPitchPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "proDigitizerHid" ? <LazyStudioProDigitizerCalibratorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "spatialWearable" ? <LazyStudioSpatialWearablePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "focusPanHaptic" ? <LazyStudioFocusPanHapticPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "adaptiveCalmGuard" ? <LazyStudioAdaptiveCalmGuardPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

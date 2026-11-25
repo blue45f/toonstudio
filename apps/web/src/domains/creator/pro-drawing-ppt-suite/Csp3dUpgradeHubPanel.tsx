@@ -1,4 +1,4 @@
-import { Brush, Camera, Clapperboard, Grip, Hand, Layers, Lightbulb, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Camera, Clapperboard, Feather, Grip, Hand, Layers, Lightbulb, Move, Palette, Pipette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -93,6 +93,16 @@ const LazyStudioHandPropAutoGripPanel = lazy(async () => {
   const m = await import("../hand-prop-autogrip-assistant/StudioHandPropAutoGripPanel");
   return { default: m.StudioHandPropAutoGripPanel };
 });
+const LazyStudioTactileBrushTexturePanel = lazy(async () => {
+  await import("../tactile-brush-texture-studio");
+  const m = await import("../tactile-brush-texture-studio/StudioTactileBrushTexturePanel");
+  return { default: m.StudioTactileBrushTexturePanel };
+});
+const LazyStudioStyleSpectrumGuardianPanel = lazy(async () => {
+  await import("../style-spectrum-guardian");
+  const m = await import("../style-spectrum-guardian/StudioStyleSpectrumGuardianPanel");
+  return { default: m.StudioStyleSpectrumGuardianPanel };
+});
 
 type Csp3dTabId =
   | "puppet"
@@ -112,7 +122,9 @@ type Csp3dTabId =
   | "charExprAdvisor"
   | "sceneLightingAdv"
   | "cameraFramingAdv"
-  | "handPropAutoGrip";
+  | "handPropAutoGrip"
+  | "tactileBrushTex"
+  | "styleSpectrumGuard";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -137,6 +149,8 @@ const CSP3D_TABS: readonly {
   { id: "sceneLightingAdv", labelKo: "대사·감정 컷 조명·역광·색온도 자동 연출", labelEn: "Dialogue Scene Lighting & Atmosphere Advisor" },
   { id: "cameraFramingAdv", labelKo: "시선 동선·180° 법칙 카메라 앵글 리프레이밍", labelEn: "Eyeline & 180° Camera Framing Continuity Coach" },
   { id: "handPropAutoGrip", labelKo: "3D 소품 15관절 손 자동 그립 어시스턴트", labelEn: "3D Prop 15-Joint Hand Auto-Grip Assistant" },
+  { id: "tactileBrushTex", labelKo: "종이 요철·갈필·습윤 에지·임파스토 120Hz 질감", labelEn: "Paper-Tooth · Dry Bristle · Wet-Edge · Impasto 120Hz" },
+  { id: "styleSpectrumGuard", labelKo: "화풍 스펙트럼 추천·3D→2D 안료 변환·가디언", labelEn: "Style Spectrum · 3D-to-2D Pigment Transfer Guardian" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -193,6 +207,10 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Clapperboard size={15} aria-hidden="true" />;
     case "handPropAutoGrip":
       return <Grip size={15} aria-hidden="true" />;
+    case "tactileBrushTex":
+      return <Feather size={15} aria-hidden="true" />;
+    case "styleSpectrumGuard":
+      return <Pipette size={15} aria-hidden="true" />;
   }
 }
 
@@ -259,6 +277,8 @@ export function Csp3dUpgradeHubPanel() {
           {active === "sceneLightingAdv" ? <LazyStudioSceneLightingAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "cameraFramingAdv" ? <LazyStudioCameraFramingCoachPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "handPropAutoGrip" ? <LazyStudioHandPropAutoGripPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "tactileBrushTex" ? <LazyStudioTactileBrushTexturePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "styleSpectrumGuard" ? <LazyStudioStyleSpectrumGuardianPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
