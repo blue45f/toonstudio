@@ -561,7 +561,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 30.0.1 는 toon-fabric 피처 뒤, braces 는 중첩 깊이 100 가드)", needles: ["포크는 둘", "wgpu 29.0.4", "toon-fabric", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "외부 Mixbox는 제거"],
+    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 30.0.1 벤더 패치 2개, braces 는 중첩 깊이 100 가드)", needles: ["포크는 둘", "wgpu 30.0.1", "toon-fabric", "rustix 보안 및 Clippy", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "외부 Mixbox는 제거"],
     check: () => {
       // 패치 개수는 하드코딩하지 않고 pnpm-workspace.yaml 의 patchedDependencies 에서 센다. 패치 파일 수와도 맞아야 한다.
       const count = patchedDependencyCount();
@@ -574,7 +574,17 @@ const LESSON_FACTS: readonly LessonFact[] = [
       expect(cargo).toMatch(/name = "wgpu"\s+version = "30\.0\.1"/u);
       expect(cargo).toContain("toon-fabric = []");
       expect(cargo).toContain("our upstream PR candidate");
-      expect(readdirSync(repo("crates", "vendor", "wgpu-toon", "PATCHES"))).toHaveLength(1);
+      const vendorPatches = readdirSync(repo("crates", "vendor", "wgpu-toon", "PATCHES"), { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".patch"))
+        .map((entry) => entry.name)
+        .sort();
+      expect(vendorPatches).toEqual([
+        "0001-webgpu-handle-adoption.patch",
+        "0002-rustix-security-and-clippy.patch",
+      ]);
+      expect(lesson?.script.ko).toContain(`패치 ${vendorPatches.length}개가 있습니다`);
+      expect(lesson?.script.en).toContain("has two patches");
+      expect(lesson?.script.en).toContain("the rustix security and Clippy compatibility update is independent of it");
       // braces: 취약 범위를 저장소 포크(patches/braces)로 대체하고, 포크는 중첩 깊이 100 가드를 가진다.
       expect(flat("pnpm-workspace.yaml")).toContain("'braces@>=3.0.0 <3.0.4': 'file:patches/braces'");
       expect(readText("patches", "braces", "lib", "constants.js")).toContain("MAX_DEPTH: 100,");
