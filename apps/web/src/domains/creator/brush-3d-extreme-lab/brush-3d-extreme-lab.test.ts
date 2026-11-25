@@ -75,6 +75,12 @@ function createMockCanvas2dContext(): CanvasRenderingContext2D {
   } as unknown as CanvasRenderingContext2D;
 }
 
+function mockCanvas2dPreview(context = createMockCanvas2dContext()): void {
+  const canvas2d: { getContext(contextId: "2d"): CanvasRenderingContext2D | null } =
+    HTMLCanvasElement.prototype;
+  vi.spyOn(canvas2d, "getContext").mockImplementation((id) => id === "2d" ? context : null);
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -499,12 +505,12 @@ describe("Wave 38F — 완벽 3D 6축 NPR 스위트 (Face SDF · Tapered Contour
 
 describe("Wave 38F — StudioBrush3dExtremePanel UI 상호작용 및 Calm Atelier 위생 계약", () => {
   it("17. props 없이 단독 렌더링되고 종이 프리셋·닙/마모 슬라이더·Face SDF·6패스 토글·IK/PnP 조작이 실시간 반영된다", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-      () => createMockCanvas2dContext() as unknown as GPUCanvasContext,
-    );
+    mockCanvas2dPreview();
     // 1) 완전 무인자(Props 없음) 단독 렌더링 검증
     render(createElement(StudioBrush3dExtremePanel));
-    expect(screen.getByTestId("studio-brush-3d-extreme-panel")).toBeTruthy();
+    expect(screen.getByTestId("studio-brush-3d-extreme-panel").getAttribute("aria-label")).toContain("실제 3D 씬과 원고에 미반영");
+    expect(screen.getByText(/합성 얼굴·가상 깊이\(pseudoDepth\)/)).toBeTruthy();
+    expect(screen.getByText(/실제 3D 씬을 베이크하거나 원고·모델에 반영하지 않습니다/)).toBeTruthy();
     cleanup();
 
     // 2) 콜백 연동 및 전체 UI 상호작용 검증

@@ -117,7 +117,7 @@ export function StudioMinimapFilmstripDock({
           <div className="flex items-center gap-1.5">
             <MapIcon className="h-4 w-4 text-accent" aria-hidden="true" />
             <h3 className="text-sm font-semibold text-fg break-keep">
-              플로팅 미니맵 · 명도 검수
+              미니맵 예제 · 샘플 명도 계산
             </h3>
           </div>
           <span
@@ -127,6 +127,10 @@ export function StudioMinimapFilmstripDock({
             {MINIMAP_INSPECTION_META[minimapState.inspectionMode].shortLabelKo}
           </span>
         </div>
+
+        <p data-testid="minimap-scope-notice" className="text-xs text-fg-3 break-keep">
+          도형과 고정 명도 샘플을 사용해요. 시야 좌표·점수는 예제 계산이며 현재 원고의 축소 화면이나 실측 검수 결과가 아니에요.
+        </p>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="relative mx-auto h-[180px] w-[128px] shrink-0 overflow-hidden rounded-lg border border-line bg-canvas sm:mx-0">
@@ -231,7 +235,7 @@ export function StudioMinimapFilmstripDock({
 
             <div className="rounded-lg bg-panel p-2.5 text-xs">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-fg-3">실루엣 분리 점수</span>
+                <span className="text-fg-3">샘플 실루엣 분리 점수</span>
                 <span
                   data-testid="minimap-contrast-score"
                   className="font-semibold text-good tabular-nums"
@@ -256,7 +260,7 @@ export function StudioMinimapFilmstripDock({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Film className="h-4 w-4 text-accent" aria-hidden="true" />
-            <h3 className="text-sm font-semibold text-fg break-keep">비주얼 언두 필름스트립</h3>
+            <h3 className="text-sm font-semibold text-fg break-keep">언두 필름스트립 예제</h3>
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -281,6 +285,10 @@ export function StudioMinimapFilmstripDock({
             </button>
           </div>
         </div>
+
+        <p data-testid="filmstrip-scope-notice" className="text-xs text-fg-3 break-keep">
+          미리 만든 단계와 색 띠를 선택해 보는 예제예요. 실제 편집 기록을 읽거나 원고를 되돌리지 않아요.
+        </p>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {filmstripState.entries.map((entry, idx) => {

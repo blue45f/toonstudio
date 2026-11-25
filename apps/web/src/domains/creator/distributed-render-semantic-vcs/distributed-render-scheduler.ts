@@ -1,7 +1,6 @@
 /**
- * 원클릭 6패스 분산 렌더팜 DAG 스케줄러 + 작업 훔치기(Work-Stealing) +
- * 메모리 예산 백프레셔 제어 + 결정론적 체크포인트 재개 + 초저지연 에지 상태 진단 엔진 (Wave 40D).
- * 100% 결정론적 온디바이스 상태 전이(외부 브라우저 스토리지·비결정론 난수 0건).
+ * 6패스 DAG 스케줄링·작업 훔치기·메모리 예산·체크포인트의 CPU/메모리 예제 (Wave 40D).
+ * 노드와 시간은 입력 가정값이다. GPU 제출·원격 송신·서버 ACK·영구 저장·이미지 렌더는 수행하지 않는다.
  */
 
 export type RenderPassStage = "lineart" | "flat" | "shadow" | "lighting" | "fx" | "lettering";
@@ -311,12 +310,42 @@ function getCompletedStagesFromChunks(chunks: readonly RenderChunkTask[]): Rende
   });
 }
 
-/** 6패스 DAG 청크 그래프와 초기 노드 풀로 분산 렌더팜 실행 계획을 생성한다. */
+function requireFiniteRange(value: number, label: string, min: number, max = Number.MAX_VALUE): void {
+  if (!Number.isFinite(value) || value < min || value > max) throw new RangeError(`${label}: 유한한 ${min}~${max} 값이 필요합니다.`);
+}
+
+function requireUniqueIds(ids: readonly string[], label: string): void {
+  if (ids.length === 0 || ids.some((id) => !id.trim()) || new Set(ids).size !== ids.length) {
+    throw new Error(`${label}: 비어 있지 않은 고유 ID가 필요합니다.`);
+  }
+}
+
+/** 6패스 DAG의 메모리 예제 계획을 만든다. 잘못된 입력을 완료 상태로 처리하지 않는다. */
 export function createRenderFarmPlan(
   job: RenderFarmJobSpec = DEFAULT_RENDER_FARM_JOB,
   nodes: readonly RenderComputeNode[] = DEFAULT_COMPUTE_NODES,
 ): RenderFarmState {
-  const safeTiles = Math.max(1, Math.min(4, Math.floor(job.tilesPerCut)));
+  requireUniqueIds([job.jobId], "작업");
+  requireUniqueIds(job.cutIds, "컷");
+  requireUniqueIds(nodes.map((node) => node.id), "노드");
+  requireFiniteRange(job.tilesPerCut, "컷당 타일", 1, 4);
+  if (!Number.isInteger(job.tilesPerCut)) throw new RangeError("컷당 타일은 정수여야 합니다.");
+  requireFiniteRange(job.globalMemoryBudgetMb, "전체 메모리 예산", Number.MIN_VALUE);
+  const highPct = job.backpressureHighPct ?? 80;
+  const criticalPct = job.backpressureCriticalPct ?? 92;
+  requireFiniteRange(highPct, "백프레셔 경고", Number.MIN_VALUE, 100);
+  requireFiniteRange(criticalPct, "백프레셔 상한", highPct, 100);
+  if (criticalPct === highPct) throw new RangeError("백프레셔 상한은 경고보다 커야 합니다.");
+  for (const node of nodes) {
+    requireFiniteRange(node.throughputMultiplier, "노드 처리량 배율", Number.MIN_VALUE);
+    requireFiniteRange(node.memoryBudgetMb, "노드 메모리 예산", Number.MIN_VALUE);
+    requireFiniteRange(node.maxConcurrentChunks, "노드 동시 작업 수", 1);
+    if (!Number.isInteger(node.maxConcurrentChunks)) throw new RangeError("노드 동시 작업 수는 정수여야 합니다.");
+    for (const value of [node.rttMs, node.jitterMs, node.baselineRttMs, node.baselineJitterMs]) requireFiniteRange(value, "노드 지연 가정값", 0);
+    requireFiniteRange(node.packetLossPct, "패킷 손실 가정값", 0, 100);
+    requireFiniteRange(node.thermalLoadPct, "온도 부하 가정값", 0, 100);
+  }
+  const safeTiles = job.tilesPerCut;
   const normalizedNodes: RenderComputeNode[] = nodes.map((node) => ({
     ...node, memoryUsedMb: 0, completedChunks: 0, stolenChunks: 0, failedChunks: 0,
   }));
@@ -480,6 +509,7 @@ export function diagnoseEdgeClusterHealth(nodes: readonly RenderComputeNode[]): 
 
 /** 분산 렌더팜 스케줄러를 1틱 진행한다(실행→DAG 승격→백프레셔→작업 훔치기 디스패치→자동 체크포인트). */
 export function stepRenderFarmTick(state: RenderFarmState, tickDurationMs = 120): RenderFarmState {
+  requireFiniteRange(tickDurationMs, "틱 시간", Number.MIN_VALUE);
   if (state.chunks.every((c) => c.status === "completed")) return { ...state, status: "completed" };
 
   const safeTickMs = Math.max(20, tickDurationMs);
@@ -607,6 +637,9 @@ export function runOneClickSixPassRender(
 ): RenderFarmState {
   const tickDurationMs = options?.tickDurationMs ?? 120;
   const maxTicks = options?.maxTicks ?? 120;
+  requireFiniteRange(tickDurationMs, "틱 시간", Number.MIN_VALUE);
+  requireFiniteRange(maxTicks, "최대 틱 수", 1, 10000);
+  if (!Number.isInteger(maxTicks)) throw new RangeError("최대 틱 수는 정수여야 합니다.");
   let current = initialState;
   for (let i = 0; i < maxTicks; i += 1) {
     if (current.status === "completed") break;

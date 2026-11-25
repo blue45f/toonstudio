@@ -1,13 +1,16 @@
 /**
- * Wave 40C — 실시간 웹툰 선화·애니메이션 특화 2×/4× 엣지 보존 업스케일러.
+ * Wave 40C — CPU 웹툰 선화·애니메이션 특화 2×/4× 엣지 보존 업스케일러.
  *
- * - 분리형 Lanczos-3 보간 + 로컬 2×2 원본 경계 기반 안티-링잉 클램프(할로 0%)
+ * - 분리형 Lanczos-3 보간 + 로컬 2×2 원본 경계 기반 안티-링잉 클램프
  * - Sobel 방향성 엣지 그래디언트 직교 선명화 + 접선 연속성 유지 + 선화 굵기 보존
- * - WebGPU `@compute` WGSL 셰이더(`WEBGPU_EDGE_UPSCALE_WGSL`) + 순수 TS CPU 폴백
+ * - 실행 경로는 순수 TS CPU. WGSL은 컴파일·제출하지 않는 별도 참고 코드다.
  */
 
+import { assertImageGeometry, assertRgbaBuffer, assertUpscaleFactor, premultiplyRgba, writeStraightPixel } from "./image-buffer-contract";
+
 export type UpscaleFactor = 2 | 4;
-export type UpscalerRuntimeBackend = "webgpu" | "cpu-fallback";
+export type UpscalerRuntimeBackend = "cpu";
+export type UpscalerGpuCapability = "api-present-unverified" | "unavailable";
 export type DemoWebtoonSceneId = "ink-lineart" | "cel-character" | "action-screentone";
 
 export interface RgbaImageBuffer {
@@ -50,6 +53,10 @@ export interface EdgeUpscaleMetrics {
   readonly lineWidthPreservationRatio: number;
   readonly processingTimeMs: number;
   readonly backend: UpscalerRuntimeBackend;
+  readonly gpuCapability: UpscalerGpuCapability;
+  readonly gpuExecuted: false;
+  /** 투명 입력은 RGB/알파 비율 보존을 위해 선명화·선 굵기 조정 없이 보간한다. */
+  readonly sharpeningApplied: boolean;
 }
 
 export interface WebtoonUpscaleResult {
@@ -68,6 +75,8 @@ export interface DemoWebtoonScenePreset {
 }
 
 export interface UpscalerWgslValidationReport {
+  readonly validationKind: "text-only";
+  readonly compiled: false;
   readonly valid: boolean;
   readonly entryPoints: readonly string[];
   readonly workgroupSize: string | null;
@@ -108,7 +117,7 @@ export const DEFAULT_UPSCALE_OPTIONS: ResolvedUpscaleOptions = {
   denoiseThreshold: 6,
 };
 
-/** WebGPU `@compute` 2패스 웹툰 엣지 보존 업스케일러 WGSL 셰이더. */
+/** 미연결 WGSL 참고 코드. CPU 경로와 동등성·컴파일·GPU 실행은 검증하지 않는다. */
 export const WEBGPU_EDGE_UPSCALE_WGSL = /* wgsl */ `
 struct UpscaleUniforms {
   src_width: u32, src_height: u32, dst_width: u32, dst_height: u32,
@@ -273,13 +282,13 @@ function buildLanczosTaps(srcLen: number, dstLen: number, scale: number): {
   return { indices, weights };
 }
 
-/** 현재 실행 환경의 WebGPU 가용 여부를 안전하게 판별한다. */
-export function detectUpscalerBackend(): UpscalerRuntimeBackend {
-  if (typeof navigator !== "undefined" && "gpu" in navigator) {
-    const navWithGpu = navigator as Navigator & { readonly gpu?: unknown };
-    if (navWithGpu.gpu != null) return "webgpu";
-  }
-  return "cpu-fallback";
+/** 현재 공개 연산은 WebGPU 유무와 관계없이 CPU에서 실행한다. */
+export function detectUpscalerBackend(): UpscalerRuntimeBackend { return "cpu"; }
+
+/** API 존재만 관찰한다. 어댑터·장치·컴파일·실행 성공을 뜻하지 않는다. */
+export function detectUpscalerGpuCapability(): UpscalerGpuCapability {
+  return typeof navigator !== "undefined" && "gpu" in navigator && navigator.gpu != null
+    ? "api-present-unverified" : "unavailable";
 }
 
 /** WGSL 컴퓨트 셰이더의 엔트리포인트·워크그룹·바인딩·괄호 균형을 정적 검증한다. */
@@ -313,33 +322,40 @@ export function validateUpscalerWgsl(source: string = WEBGPU_EDGE_UPSCALE_WGSL):
   if (brace !== 0 || paren !== 0) balanced = false;
   if (!balanced) errors.push("WGSL 괄호 또는 중괄호 균형이 맞지 않습니다.");
 
-  return { valid: errors.length === 0, entryPoints, workgroupSize, bindingCount, balancedDelimiters: balanced, errors };
+  return { validationKind: "text-only", compiled: false, valid: errors.length === 0, entryPoints, workgroupSize, bindingCount, balancedDelimiters: balanced, errors };
 }
 
-/** 두 동일 해상도 RGBA 버퍼 간 PSNR(dB)을 산출한다. */
+/** 동일 해상도의 premultiplied RGB와 알파 4채널 PSNR. 지각 품질·추론 정확도 지표는 아니다. */
 export function computePsnr(reference: RgbaImageBuffer, candidate: RgbaImageBuffer): number {
-  const count = Math.min(Math.floor(reference.data.length / 4), Math.floor(candidate.data.length / 4));
-  if (count <= 0) return 0;
-  let sse = 0;
-  for (let i = 0; i < count; i += 1) {
-    const k = i * 4;
-    const dr = (reference.data[k] ?? 0) - (candidate.data[k] ?? 0);
-    const dg = (reference.data[k + 1] ?? 0) - (candidate.data[k + 1] ?? 0);
-    const db = (reference.data[k + 2] ?? 0) - (candidate.data[k + 2] ?? 0);
-    sse += dr * dr + dg * dg + db * db;
+  assertRgbaBuffer(reference);
+  assertRgbaBuffer(candidate);
+  if (reference.width !== candidate.width || reference.height !== candidate.height) {
+    throw new RangeError("PSNR 비교 해상도가 일치해야 합니다.");
   }
-  const mse = sse / (count * 3);
+  const count = reference.width * reference.height;
+  let sse = 0;
+  for (let k = 0; k < count * 4; k += 4) {
+    const ra = (reference.data[k + 3] ?? 0) / 255;
+    const ca = (candidate.data[k + 3] ?? 0) / 255;
+    for (let c = 0; c < 4; c += 1) {
+      const diff = (reference.data[k + c] ?? 0) * (c < 3 ? ra : 1) -
+        (candidate.data[k + c] ?? 0) * (c < 3 ? ca : 1);
+      sse += diff * diff;
+    }
+  }
+  const mse = sse / (count * 4);
   return mse <= 1e-9 ? 99.99 : Number((10 * Math.log10((255 * 255) / mse)).toFixed(2));
 }
 
 /** RGBA 버퍼의 Sobel 엣지 선명도(평균 엣지 그래디언트 크기)를 측정한다. */
 export function measureEdgeSharpness(buffer: RgbaImageBuffer): number {
+  assertRgbaBuffer(buffer);
   const { width, height, data } = buffer;
   if (width < 3 || height < 3) return 0;
   const luma = new Float32Array(width * height);
   for (let i = 0; i < width * height; i += 1) {
     const k = i * 4;
-    luma[i] = lumaRec709(data[k] ?? 0, data[k + 1] ?? 0, data[k + 2] ?? 0);
+    luma[i] = lumaRec709(data[k] ?? 0, data[k + 1] ?? 0, data[k + 2] ?? 0) * (data[k + 3] ?? 0) / 255;
   }
   let sum = 0;
   let n = 0;
@@ -359,10 +375,14 @@ export function measureEdgeSharpness(buffer: RgbaImageBuffer): number {
 
 /** 기준 비교용 이중선형(Bilinear) 업스케일러. */
 export function bilinearUpscale(source: RgbaImageBuffer, scaleFactor: UpscaleFactor): RgbaImageBuffer {
-  const srcW = Math.max(1, Math.floor(source.width));
-  const srcH = Math.max(1, Math.floor(source.height));
+  assertRgbaBuffer(source);
+  assertUpscaleFactor(scaleFactor);
+  const srcW = source.width;
+  const srcH = source.height;
   const dstW = srcW * scaleFactor;
   const dstH = srcH * scaleFactor;
+  assertImageGeometry(dstW, dstH);
+  const data = premultiplyRgba(source.data);
   const out = new Uint8ClampedArray(dstW * dstH * 4);
   for (let dy = 0; dy < dstH; dy += 1) {
     const sy = (dy + 0.5) / scaleFactor - 0.5;
@@ -383,12 +403,14 @@ export function bilinearUpscale(source: RgbaImageBuffer, scaleFactor: UpscaleFac
       const i01 = (y1 * srcW + x0) * 4;
       const i11 = (y1 * srcW + x1) * 4;
       const o = (dy * dstW + dx) * 4;
+      const pixel = [0, 0, 0, 0];
       for (let c = 0; c < 4; c += 1) {
-        out[o + c] = Math.round(
-          (source.data[i00 + c] ?? 0) * w00 + (source.data[i10 + c] ?? 0) * w10 +
-          (source.data[i01 + c] ?? 0) * w01 + (source.data[i11 + c] ?? 0) * w11,
+        pixel[c] = (
+          (data[i00 + c] ?? 0) * w00 + (data[i10 + c] ?? 0) * w10 +
+          (data[i01 + c] ?? 0) * w01 + (data[i11 + c] ?? 0) * w11
         );
       }
+      writeStraightPixel(out, o, pixel);
     }
   }
   return { width: dstW, height: dstH, data: out };
@@ -396,8 +418,12 @@ export function bilinearUpscale(source: RgbaImageBuffer, scaleFactor: UpscaleFac
 
 /** 박스 다운샘플러(고해상도 검증 및 라운드트립 PSNR 산출용). */
 export function downsampleBox(source: RgbaImageBuffer, factor: UpscaleFactor): RgbaImageBuffer {
-  const dstW = Math.max(1, Math.floor(source.width / factor));
-  const dstH = Math.max(1, Math.floor(source.height / factor));
+  assertRgbaBuffer(source);
+  assertUpscaleFactor(factor);
+  if (source.width % factor !== 0 || source.height % factor !== 0) throw new RangeError("다운샘플 크기는 배율로 나누어져야 합니다.");
+  const dstW = source.width / factor;
+  const dstH = source.height / factor;
+  const data = premultiplyRgba(source.data);
   const out = new Uint8ClampedArray(dstW * dstH * 4);
   const invArea = 1 / (factor * factor);
   for (let y = 0; y < dstH; y += 1) {
@@ -406,11 +432,11 @@ export function downsampleBox(source: RgbaImageBuffer, factor: UpscaleFactor): R
       for (let ky = 0; ky < factor; ky += 1) {
         for (let kx = 0; kx < factor; kx += 1) {
           const k = ((y * factor + ky) * source.width + (x * factor + kx)) * 4;
-          for (let c = 0; c < 4; c += 1) acc[c] = (acc[c] ?? 0) + (source.data[k + c] ?? 0);
+          for (let c = 0; c < 4; c += 1) acc[c] = (acc[c] ?? 0) + (data[k + c] ?? 0);
         }
       }
       const o = (y * dstW + x) * 4;
-      for (let c = 0; c < 4; c += 1) out[o + c] = Math.round((acc[c] ?? 0) * invArea);
+      writeStraightPixel(out, o, acc.map((v) => v * invArea));
     }
   }
   return { width: dstW, height: dstH, data: out };
@@ -449,11 +475,14 @@ function measureDarkInkRatio(buffer: RgbaImageBuffer): number {
   const pixels = Math.floor(buffer.data.length / 4);
   if (pixels <= 0) return 0;
   let dark = 0;
+  let coverage = 0;
   for (let i = 0; i < pixels; i += 1) {
     const k = i * 4;
-    if (lumaRec709(buffer.data[k] ?? 0, buffer.data[k + 1] ?? 0, buffer.data[k + 2] ?? 0) < 112) dark += 1;
+    const alpha = (buffer.data[k + 3] ?? 0) / 255;
+    coverage += alpha;
+    if (lumaRec709(buffer.data[k] ?? 0, buffer.data[k + 1] ?? 0, buffer.data[k + 2] ?? 0) < 112) dark += alpha;
   }
-  return dark / pixels;
+  return coverage > 0 ? dark / coverage : 0;
 }
 
 /** 2×/4× 웹툰 선화·애니메이션 특화 엣지 보존 업스케일러. */
@@ -462,7 +491,11 @@ export function upscaleWebtoonBuffer(
   options?: WebtoonUpscaleOptions,
 ): WebtoonUpscaleResult {
   const startMs = typeof performance !== "undefined" ? performance.now() : Date.now();
-  const scaleFactor: UpscaleFactor = options?.scaleFactor === 4 ? 4 : 2;
+  const scaleFactor = options?.scaleFactor ?? 2;
+  assertUpscaleFactor(scaleFactor);
+  if (Object.entries(options ?? {}).some(([key, value]) => key !== "referenceHighRes" && value !== undefined && !Number.isFinite(value))) {
+    throw new RangeError("업스케일 옵션은 유한한 수여야 합니다.");
+  }
   const resolved: ResolvedUpscaleOptions = {
     scaleFactor,
     edgeSharpenStrength: clamp(options?.edgeSharpenStrength ?? DEFAULT_UPSCALE_OPTIONS.edgeSharpenStrength, 0, 1.5),
@@ -471,11 +504,22 @@ export function upscaleWebtoonBuffer(
     denoiseThreshold: clamp(options?.denoiseThreshold ?? DEFAULT_UPSCALE_OPTIONS.denoiseThreshold, 0, 64),
   };
 
-  const srcW = Math.max(1, Math.floor(source.width));
-  const srcH = Math.max(1, Math.floor(source.height));
+  assertRgbaBuffer(source);
+  assertUpscaleFactor(scaleFactor);
+  const srcW = source.width;
+  const srcH = source.height;
   const dstW = srcW * scaleFactor;
   const dstH = srcH * scaleFactor;
-  const srcData = source.data;
+  assertImageGeometry(dstW, dstH);
+  if (options?.referenceHighRes) {
+    assertRgbaBuffer(options.referenceHighRes);
+    if (options.referenceHighRes.width !== dstW || options.referenceHighRes.height !== dstH) {
+      throw new RangeError("고해상도 기준 버퍼는 출력 해상도와 같아야 합니다.");
+    }
+  }
+  const srcData = premultiplyRgba(source.data);
+  // 투명 경계에서 RGB만 선명화하면 색·알파의 비율이 달라진다. 해당 입력은 보간만 한다.
+  const opaqueSource = source.data.every((value, i) => i % 4 !== 3 || value === 255);
 
   const xTaps = buildLanczosTaps(srcW, dstW, scaleFactor);
   const horiz = new Float32Array(dstW * srcH * 4);
@@ -495,8 +539,8 @@ export function upscaleWebtoonBuffer(
 
   const yTaps = buildLanczosTaps(srcH, dstH, scaleFactor);
   const stage = new Float32Array(dstW * dstH * 4);
-  const envMin = new Uint8ClampedArray(dstW * dstH * 4);
-  const envMax = new Uint8ClampedArray(dstW * dstH * 4);
+  const envMin = new Float32Array(dstW * dstH * 4);
+  const envMax = new Float32Array(dstW * dstH * 4);
   const ar = resolved.antiRingingStrength;
 
   for (let dy = 0; dy < dstH; dy += 1) {
@@ -555,7 +599,7 @@ export function upscaleWebtoonBuffer(
       let b = stage[di + 2] ?? 0;
       const a = stage[di + 3] ?? 255;
 
-      if (sharp > 0 || thin > 0) {
+      if (opaqueSource && (sharp > 0 || thin > 0)) {
         const tl = luma[ym * dstW + xm] ?? 0;
         const tc = luma[ym * dstW + x] ?? 0;
         const tr = luma[ym * dstW + xp] ?? 0;
@@ -605,16 +649,18 @@ export function upscaleWebtoonBuffer(
         }
       }
 
-      const vals = [r, g, b, a] as const;
+      const vals = [r, g, b, a];
       let overshot = false;
       for (let c = 0; c < 4; c += 1) {
         const lo = envMin[di + c] ?? 0;
         const hi = envMax[di + c] ?? 255;
         const raw = vals[c] ?? 0;
-        const q = clampInt(Math.round(raw + (clamp(raw, lo, hi) - raw) * ar), 0, 255);
-        outData[di + c] = q;
-        if (c < 3 && (q < lo || q > hi)) overshot = true;
+        const adjusted = clamp(raw + (clamp(raw, lo, hi) - raw) * ar, 0, 255);
+        vals[c] = adjusted;
+        // 경계와 같은 premultiplied 실수 영역에서 Float32 누적 오차만 허용한다.
+        if (c < 3 && (adjusted < lo - 1e-4 || adjusted > hi + 1e-4)) overshot = true;
       }
+      writeStraightPixel(outData, di, vals);
       if (overshot) haloOvershootCount += 1;
     }
   }
@@ -646,8 +692,11 @@ export function upscaleWebtoonBuffer(
       haloOvershootCount,
       haloOvershootRate: Number((haloOvershootCount / Math.max(1, dstW * dstH)).toFixed(6)),
       lineWidthPreservationRatio: srcDark > 1e-4 ? Number((measureDarkInkRatio(output) / srcDark).toFixed(3)) : 1,
-      processingTimeMs: Number(Math.max(0.01, endMs - startMs).toFixed(2)),
+      processingTimeMs: Number(Math.max(0, endMs - startMs).toFixed(2)),
       backend: detectUpscalerBackend(),
+      gpuCapability: detectUpscalerGpuCapability(),
+      gpuExecuted: false,
+      sharpeningApplied: opaqueSource && (sharp > 0 || thin > 0),
     },
   };
 }
@@ -658,8 +707,9 @@ export function createDemoWebtoonSampleBuffer(
   width: number = 64,
   height: number = 64,
 ): RgbaImageBuffer {
-  const w = Math.max(8, Math.floor(width));
-  const h = Math.max(8, Math.floor(height));
+  assertImageGeometry(width, height);
+  const w = width;
+  const h = height;
   const data = new Uint8ClampedArray(w * h * 4);
   for (let y = 0; y < h; y += 1) {
     const ny = (y + 0.5) / h;

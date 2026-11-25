@@ -25,7 +25,7 @@ export interface SpatialAudioParamLike {
 }
 
 export interface SpatialAudioNodeLike {
-  connect: (destination: SpatialAudioNodeLike) => unknown;
+  connect(destination: SpatialAudioNodeLike): unknown;
   disconnect?: () => void;
 }
 
@@ -329,10 +329,10 @@ export function createSafeSpatialAudioGraph(
     return new SpatialBinauralAudioGraph({ audioContext: null, zoneId, listener });
   }
 
-  const candidate = globalThis as unknown as {
+  const candidate: {
     AudioContext?: new () => SpatialAudioContextLike;
     webkitAudioContext?: new () => SpatialAudioContextLike;
-  };
+  } = globalThis;
   const AudioCtor = candidate.AudioContext ?? candidate.webkitAudioContext;
 
   if (typeof AudioCtor !== "function") {

@@ -91,6 +91,9 @@ export function StudioTabletDualWheelView({
 
   return (
     <div data-testid="stage-tablet-dual-wheel" className="space-y-4">
+      <p className="text-xs text-fg-3 break-keep">
+        양손 휠의 수치·레이어·회전 구성을 살펴보는 예제예요. 실제 브러시·레이어·원고에는 반영하지 않아요.
+      </p>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1.15fr_1fr]">
         {/* 왼손 플로팅 휠 */}
         <div className="flex flex-col justify-between gap-3 rounded-xl bg-panel p-3.5">
@@ -352,6 +355,9 @@ export function StudioMobileThumbDockView({
 
   return (
     <div data-testid="stage-mobile-thumb-dock" className="space-y-4">
+      <p data-testid="mobile-scope-notice" className="text-xs text-fg-3 break-keep">
+        고정 화면 좌표로 엄지 도크와 루페의 배치를 계산해요. 원고 픽셀 확대나 기기 진동은 실행하지 않으며 햅틱은 패턴 수치만 표시해요.
+      </p>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
@@ -372,10 +378,10 @@ export function StudioMobileThumbDockView({
             data-testid="mobile-loupe-clearance"
             className="rounded-md bg-good/15 px-2.5 py-1 font-medium text-good"
           >
-            2.5× 루페 여유 {Math.max(0, loupePlacement.fingerClearancePx)}px
+            2.5× 루페 배치 예제 여유 {Math.max(0, loupePlacement.fingerClearancePx)}px
           </span>
           <span data-testid="mobile-edge-haptic" className="rounded-md bg-raised px-2.5 py-1 text-fg">
-            햅틱 {hapticLabel}
+            햅틱 패턴 예제 {hapticLabel}
           </span>
         </div>
       </div>
@@ -502,7 +508,7 @@ export function StudioMobileThumbDockView({
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
               <Crosshair className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              <span>2.5× 오프셋 루페 위치 테스트</span>
+              <span>2.5× 루페 샘플 영역 · 위치 계산</span>
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {LOUPE_SPOT_PRESETS.map((spot) => (

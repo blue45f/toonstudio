@@ -291,14 +291,14 @@ export function StudioWebnnPigmentDirectorPanel({
   const firstBalloonText = firstCut.balloons[0]?.text ?? "";
 
   const webnnBadgeLabel =
-    lineartReport.backend === "cpu-simd-typedarray"
-      ? pick("CPU SIMD-정렬 폴백", "CPU SIMD-Aligned Fallback")
+    lineartReport.backend === "cpu-typedarray"
+      ? pick("선화: CPU TypedArray", "Lineart: CPU TypedArray")
       : `WebNN (${lineartReport.backend.replace("webnn-", "").toUpperCase()})`;
   const wasmBadgeLabel = wasmRuntime.simd128Supported ? "WASM-SIMD128" : pick("TypedArray 폴백", "TypedArray Fallback");
 
   const tabs: readonly { readonly id: WebnnPigmentDirectorTab; readonly label: string; readonly icon: ReactElement }[] = [
     { id: "pigment", label: pick("Kubelka-Munk 물리 혼색", "Kubelka-Munk Mix"), icon: <Droplets className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "lineart", label: pick("WebNN 선화 보정", "WebNN Lineart"), icon: <PenTool className="h-3.5 w-3.5" aria-hidden="true" /> },
+    { id: "lineart", label: pick("CPU 선화 보정·WebNN 환경 확인", "CPU Lineart · WebNN Availability"), icon: <PenTool className="h-3.5 w-3.5" aria-hidden="true" /> },
     { id: "director", label: pick("온디바이스 컷·대사 어시스트", "Cut & Dialogue Assist"), icon: <Film className="h-3.5 w-3.5" aria-hidden="true" /> },
   ];
 
@@ -306,8 +306,8 @@ export function StudioWebnnPigmentDirectorPanel({
     <section
       data-testid="webnn-pigment-director-panel"
       aria-label={pick(
-        "온디바이스 WebNN 선화 보정 · 물리 혼색 · 컷 연출 어시스트",
-        "On-Device WebNN Lineart, Kubelka-Munk Pigment & Cut Director",
+        "CPU 선화 보정 · 물리 혼색 · 규칙 기반 컷 진단",
+        "CPU Lineart, Kubelka-Munk Pigment and Rule-Based Cut Diagnosis",
       )}
       className={`space-y-4 rounded-xl border border-border bg-panel p-4 text-foreground [word-break:keep-all] ${className ?? ""}`}
     >
@@ -316,13 +316,13 @@ export function StudioWebnnPigmentDirectorPanel({
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-fg">
-              {pick("온디바이스 WebNN 선화 · 물리 혼색 · 컷 디렉터", "On-Device WebNN Lineart · Physical Mix · Cut Director")}
+              {pick("CPU 선화 보정 · 물리 혼색 · 규칙 기반 컷 진단", "CPU Lineart · Pigment Mix · Rule-Based Cut Diagnosis")}
             </h2>
           </div>
           <p className="text-xs text-fg-2">
             {pick(
-              "외부 전송 없이 기기 안에서 실시간 선화 정선화, Kubelka-Munk 안료 혼색, 컷·대사 진단을 실행합니다.",
-              "Runs real-time lineart stabilization, Kubelka-Munk spectral mixing, and cut/dialogue coaching 100% on-device.",
+              "예제 선화는 CPU, 혼색은 안료 커널, 컷·대사는 정해진 규칙으로 계산합니다. WebNN·LLM 추론과 실제 원고 반영은 실행하지 않습니다.",
+              "Uses CPU lineart, pigment kernels, and fixed cut/dialogue rules on examples. No WebNN/LLM inference or manuscript changes.",
             )}
           </p>
         </div>
@@ -474,7 +474,7 @@ export function StudioWebnnPigmentDirectorPanel({
               height={LINEART_CANVAS_H}
               role="img"
               data-testid="webnn-lineart-canvas"
-              aria-label={pick("러프 선화 원본과 WebNN 정선화·열린 틈 닫기 결과 비교 캔버스", "Comparison canvas of rough strokes and stabilized Bezier lineart with closed gaps")}
+              aria-label={pick("러프 선화 원본과 CPU 선화 보정·열린 틈 닫기 결과 비교 캔버스", "Comparison canvas of rough strokes and CPU-stabilized Bezier lineart with closed gaps")}
               className="h-44 w-full rounded-md border border-line bg-canvas object-contain"
             />
             <figcaption className="grid grid-cols-2 gap-2 pt-1 text-xs sm:grid-cols-4">

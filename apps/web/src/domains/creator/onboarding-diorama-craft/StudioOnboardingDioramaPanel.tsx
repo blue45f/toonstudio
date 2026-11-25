@@ -10,12 +10,12 @@ import {
   ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Clock, Compass, Eye, EyeOff,
   Layers, PenTool, Play, RotateCcw, SlidersHorizontal,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type PointerEvent, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent, type ReactElement } from "react";
 
 import {
   CREATOR_DEVICE_OPTIONS, CREATOR_GENRE_OPTIONS, CREATOR_GOAL_OPTIONS, CREATOR_MEDIUM_OPTIONS,
   DEFAULT_CREATOR_MATCHER_ANSWERS, FIRST_CUT_SPRINT_STEPS, ONBOARDING_DIORAMA_CHAPTERS,
-  computeDioramaParallax, createInitialDioramaState, createInitialFirstCutSprint,
+  computeDioramaParallax, countFirstCutDialogueGraphemes, createInitialDioramaState, createInitialFirstCutSprint,
   getDioramaChapterById, matchCreatorStarterPrescription, normalizePointerInRect,
   recordFirstCutAction, summarizeFirstCutSprint, transitionDioramaChapter,
   type CreatorMatcherAnswers, type CreatorStarterPrescription, type DioramaChapterId,
@@ -29,9 +29,10 @@ export interface StudioOnboardingDioramaPanelProps {
   readonly locale?: "ko" | "en";
   readonly className?: string;
   readonly prefersReducedMotionOverride?: boolean;
-  readonly onChapterChange?: (chapter: DioramaChapterSpec) => void;
-  readonly onPrescriptionApply?: (prescription: CreatorStarterPrescription) => void;
-  readonly onSprintComplete?: (summary: FirstCutSprintSummary) => void;
+  /** 모두 예제 선택·체크 알림이며 실제 원고·설정 적용이나 저장 완료 응답이 아니다. */
+  readonly onChapterChange?: (chapter: DioramaChapterSpec) => void | Promise<void>;
+  readonly onPrescriptionApply?: (prescription: CreatorStarterPrescription) => void | Promise<void>;
+  readonly onSprintComplete?: (summary: FirstCutSprintSummary) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -158,6 +159,53 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
     medium: initialAnswers?.medium ?? DEFAULT_CREATOR_MATCHER_ANSWERS.medium,
   }));
   const [appliedBanner, setAppliedBanner] = useState<string>("");
+  const [notification, setNotification] = useState({ status: "idle", message: "" });
+  const pendingRef = useRef(false);
+  const retryRef = useRef<(() => void) | null>(null);
+
+  function notifyExample(message: string, callbacks: readonly (() => void | Promise<void>)[]): void {
+    if (pendingRef.current) return;
+    let callbackIndex = 0;
+    function finish(failed: boolean): void {
+      pendingRef.current = false;
+      if (!failed) retryRef.current = null;
+      setNotification({ status: failed ? "failed" : "notified", message: failed
+        ? pick("예제 알림 처리에 실패했어요. 다시 시도할 수 있어요.", "Example notification failed. You can retry.")
+        : `${message} ${pick("실제 적용·저장 완료를 뜻하지 않아요.", "This does not confirm applying or saving.")}` });
+    }
+    function runCallbacks(start = 0): void | Promise<void> {
+      for (let index = start; index < callbacks.length; index += 1) {
+        callbackIndex = index;
+        const result = callbacks[index]?.();
+        if (result) return result.then(() => {
+          callbackIndex = index + 1;
+          return runCallbacks(index + 1);
+        });
+        callbackIndex = index + 1;
+      }
+    }
+    retryRef.current = () => notifyExample(message, callbacks.slice(callbackIndex));
+    pendingRef.current = true;
+    try {
+      const result = runCallbacks();
+      if (result) {
+        setNotification({ status: "pending", message: pick("예제 알림 처리 중이에요.", "Processing example notification.") });
+        void result.then(() => finish(false), () => finish(true));
+      } else finish(false);
+    } catch { finish(true); }
+  }
+
+  function clearNotification(): void {
+    retryRef.current = null;
+    setNotification({ status: "idle", message: "" });
+  }
+
+  function updateAnswers(patch: Partial<CreatorMatcherAnswers>): void {
+    if (pendingRef.current) return;
+    setAnswers((prev) => ({ ...prev, ...patch }));
+    setAppliedBanner("");
+    clearNotification();
+  }
 
   const activeChapter = useMemo(() => getDioramaChapterById(diorama.activeChapterId), [diorama.activeChapterId]);
   const activeHotspot = useMemo(
@@ -177,12 +225,15 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
   );
   const prescription = useMemo(() => matchCreatorStarterPrescription(answers), [answers]);
   const sprintSummary = useMemo(() => summarizeFirstCutSprint(sprint), [sprint]);
+  const dialogueCount = useMemo(() => countFirstCutDialogueGraphemes(sprint.balloonDraftKo), [sprint.balloonDraftKo]);
   const activeSprintStep = FIRST_CUT_SPRINT_STEPS[sprint.activeStepIndex] ?? FIRST_CUT_SPRINT_STEPS[0]!;
 
   const dispatchChapter = (nextState: DioramaState): void => {
+    if (pendingRef.current) return;
     setDiorama(nextState);
     if (nextState.activeChapterId !== diorama.activeChapterId) {
-      onChapterChange?.(getDioramaChapterById(nextState.activeChapterId));
+      const chapter = getDioramaChapterById(nextState.activeChapterId);
+      notifyExample(pick("챕터 예제를 선택했어요.", "Selected a chapter example."), onChapterChange ? [() => onChapterChange(chapter)] : []);
     }
   };
 
@@ -204,21 +255,29 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
   };
 
   const dispatchSprint = (action: Parameters<typeof recordFirstCutAction>[1]): void => {
+    if (pendingRef.current) return;
+    if (action.type === "reset") clearNotification();
     const wasCompleted = sprint.status === "completed";
     const next = recordFirstCutAction(sprint, action);
     setSprint(next);
     if (!wasCompleted && next.status === "completed") {
-      onSprintComplete?.(summarizeFirstCutSprint(next));
+      const summary = summarizeFirstCutSprint(next);
+      notifyExample(pick("예제 단계 체크를 마쳤어요.", "Example steps checked."), onSprintComplete ? [() => onSprintComplete(summary)] : []);
     }
   };
 
   const handleApplyPrescription = (): void => {
-    dispatchChapter(transitionDioramaChapter(diorama, { type: "select", chapterId: prescription.recommendedChapterId }));
-    onPrescriptionApply?.(prescription);
+    if (pendingRef.current) return;
+    const next = transitionDioramaChapter(diorama, { type: "select", chapterId: prescription.recommendedChapterId });
+    setDiorama(next);
+    const callbacks: (() => void | Promise<void>)[] = [];
+    if (next.activeChapterId !== diorama.activeChapterId && onChapterChange) callbacks.push(() => onChapterChange(getDioramaChapterById(next.activeChapterId)));
+    if (onPrescriptionApply) callbacks.push(() => onPrescriptionApply(prescription));
+    notifyExample(pick("추천 구성을 선택했어요.", "Selected a suggested configuration."), callbacks);
     setAppliedBanner(
       pick(
-        `「${prescription.archetypeTitleKo}」 처방 적용 완료 · ${prescription.brush.labelKo} + ${prescription.paper.labelKo} + ${prescription.background.labelKo} → ${prescription.workspaceRoute.path}`,
-        `Applied "${prescription.archetypeTitleEn}" · ${prescription.brush.labelEn} + ${prescription.paper.labelEn} → ${prescription.workspaceRoute.path}`,
+        `「${prescription.archetypeTitleKo}」 추천 예제 선택 · ${prescription.brush.labelKo} + ${prescription.paper.labelKo} + ${prescription.background.labelKo} → ${prescription.workspaceRoute.path} (실제 설정 미반영)`,
+        `Selected example "${prescription.archetypeTitleEn}" · ${prescription.brush.labelEn} + ${prescription.paper.labelEn} → ${prescription.workspaceRoute.path} (settings unchanged)`,
       ),
     );
   };
@@ -226,6 +285,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
   return (
     <section
       data-testid="onboarding-diorama-panel"
+      aria-busy={notification.status === "pending"}
       aria-label={pick("절차적 2.5D 온보딩 디오라마 · 60초 첫 컷 체험 · 창작자 성향 맞춤 매처", "Procedural 2.5D Onboarding Diorama, 60s First Cut Sprint & Creator Style Matcher")}
       className={`space-y-5 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] sm:p-5 ${className ?? ""}`}
     >
@@ -236,13 +296,16 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
             <span>{pick("Wave 40F · 아틀리에 2.5D 온보딩 디오라마 & 맞춤 매처", "Wave 40F · Atelier 2.5D Onboarding Diorama & Matcher")}</span>
           </div>
           <h2 className="text-base font-bold text-fg sm:text-lg">
-            {pick("첫 접속 60초 온보딩 디오라마 · 창작자 성향 스타터 매처", "60-Second Onboarding Diorama & Creator Starter Matcher")}
+            {pick("온보딩 구성 예제 · 60초 합성 예산 · 스타터 매처", "Onboarding Examples · 60s Synthetic Budget · Starter Matcher")}
           </h2>
           <p className="max-w-2xl text-xs leading-relaxed text-fg-2">
             {pick(
-              "4장 디오라마로 작업 흐름을 먼저 살펴보고, 60초 첫 컷 체험과 4문항 성향 매처로 내 손에 맞는 브러시·종이·배경·작업실 경로를 바로 처방받으세요.",
-              "Explore the 4-chapter atelier diorama, run a 60-second first-cut sprint, and get an instant brush, paper, backdrop, and workspace preset.",
+              "4장 삽화와 단계 체크로 작업 순서를 살펴보고, 4문항 규칙으로 브러시·종이·배경·관련 화면 추천을 비교해요.",
+              "Explore four illustrations and example step checks, then compare brush, paper, backdrop and route suggestions from four fixed questions.",
             )}
+          </p>
+          <p data-testid="onboarding-scope-notice" className="text-xs text-fg-3">
+            {pick("소개용 삽화·고정 규칙·단계 체크 예제예요. 시간은 합성 예산이며 실제 원고·설정·기기·저장에는 연결하지 않았어요. 입력 대사는 메모리에서만 유지되며 패널을 닫거나 다시 마운트하면 사라져요. 관련 화면은 입력 보존을 위해 새 탭으로 열어요.", "Illustrations, fixed rules and step checks are examples. Times are synthetic budgets; no manuscript, settings, device or storage is connected. Dialogue exists only in memory until this panel closes or remounts. Related routes open in a new tab to preserve this input.")}
           </p>
         </div>
 
@@ -263,9 +326,15 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
         </div>
       </header>
 
+      {notification.message ? <div role={notification.status === "failed" ? "alert" : "status"} data-testid="onboarding-notification-status" className="text-xs text-fg-2">
+        {notification.message}
+        {notification.status === "failed" ? <button type="button" data-testid="onboarding-notification-retry" onClick={() => retryRef.current?.()} className={BTN_OUTLINE}>{pick("알림 다시 시도", "Retry notification")}</button> : null}
+      </div> : null}
+      <fieldset disabled={notification.status === "pending"} className="m-0 min-w-0 space-y-5 border-0 p-0">
+
       {/* 1. 4장 인터랙티브 2.5D 디오라마 스테이지 */}
       <div className="space-y-3 rounded-xl border border-line bg-card p-3.5 sm:p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="grid gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-between">
           <div role="tablist" aria-label={pick("온보딩 디오라마 4장 챕터", "Onboarding Diorama Chapters")} className="grid flex-1 grid-cols-2 gap-2 lg:grid-cols-4">
             {ONBOARDING_DIORAMA_CHAPTERS.map((chapter) => {
               const selected = chapter.id === activeChapter.id;
@@ -287,7 +356,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
               );
             })}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-end gap-1.5">
             <button type="button" data-testid="chapter-prev-btn" aria-label={pick("이전 챕터", "Previous chapter")} onClick={() => dispatchChapter(transitionDioramaChapter(diorama, { type: "prev", wrap: true }))} className={BTN_OUTLINE}>
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -387,7 +456,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
               <span className="font-mono text-[11px] text-fg-3">{activeChapter.recommendedRoute}</span>
-              <a href={activeChapter.recommendedRoute} data-testid="chapter-launch-link" className={BTN_SOLID}>
+              <a href={activeChapter.recommendedRoute} target="_blank" rel="noopener noreferrer" data-testid="chapter-launch-link" className={BTN_SOLID}>
                 <span>{isEn ? activeChapter.ctaLabelEn : activeChapter.ctaLabelKo}</span>
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
@@ -405,12 +474,12 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
               <span>{pick("60초 첫 컷 체험 시뮬레이터", "60-Second First Cut Simulator")}</span>
             </div>
             <p className="text-xs text-fg-2">
-              {pick("컷 틀 → G펜 주선 → 종이·배경 배치 → 말풍선·로컬 저장 4단계를 60초 안에 직접 눌러 체험합니다.", "Step through Frame → G-Pen Ink → Paper & Backdrop → Balloon & OPFS Save within 60 seconds.")}
+              {pick("컷 틀·펜선·배경·저장 확인 항목을 예제 상태로 체크해요. 버튼은 실제 획을 그리거나 원고를 저장하지 않아요.", "Check sample frame, ink, backdrop and save-guide steps. Buttons do not draw strokes or save a manuscript.")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 tabular-nums">
             <span data-testid="sprint-remaining-readout" className="rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-bold text-fg">
-              {pick("남은 시간", "Remaining")} {sprint.remainingSec}s / 60s
+              {pick("남은 합성 예산", "Remaining synthetic budget")} {sprint.remainingSec}s / 60s
             </span>
             <span data-testid="sprint-stroke-readout" className="rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-semibold text-fg-2">
               {pick("펜선", "Strokes")} {sprint.strokeCount}
@@ -489,6 +558,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
                 onChange={(event) => dispatchSprint({ type: "set-balloon", text: event.target.value })}
                 className={`min-h-11 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-fg ${FOCUS_RING}`}
               />
+              <p data-testid="sprint-dialogue-count" className="text-[11px] text-fg-3 tabular-nums">{dialogueCount === null ? pick("글자 수 계산 미지원 · 원문 유지", "Grapheme counting unavailable; text preserved") : pick(`입력 ${dialogueCount}글자 · 자동 절단 없음`, `${dialogueCount} graphemes; no truncation`)}</p>
             </div>
           </div>
 
@@ -507,15 +577,15 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
             <div className="flex flex-wrap gap-2">
               <button type="button" data-testid="sprint-add-stroke-btn" onClick={() => dispatchSprint({ type: "add-stroke", count: 3 })} className={BTN_OUTLINE}>
                 <PenTool className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("G펜 3획 긋기", "Draw 3 G-Pen Strokes")}</span>
+                <span>{pick("예제 획 수 +3", "Add 3 sample strokes")}</span>
               </button>
               <button type="button" data-testid="sprint-instant-complete-btn" onClick={() => dispatchSprint({ type: "complete-all-instant" })} className={BTN_SOLID}>
                 <Play className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("60초 첫 컷 원스톱 완료", "Finish 60s First Cut")}</span>
+                <span>{pick("예제 4단계 모두 체크", "Check all 4 example steps")}</span>
               </button>
               <button type="button" data-testid="sprint-reset-btn" onClick={() => dispatchSprint({ type: "reset" })} className={BTN_OUTLINE}>
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("초기화", "Reset")}</span>
+                <span>{pick("단계 초기화 · 대사 유지", "Reset steps; keep dialogue")}</span>
               </button>
             </div>
           </div>
@@ -534,10 +604,10 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
               </p>
             </div>
           </div>
-          <MatcherQuestionFieldset legend={pick("1. 주로 그리고 싶은 장르", "1. Primary Genre")} testIdPrefix="matcher-genre" options={CREATOR_GENRE_OPTIONS} selectedId={answers.genre} isEn={isEn} columnsClass="grid-cols-2" onSelect={(genre) => setAnswers((prev) => ({ ...prev, genre }))} />
-          <MatcherQuestionFieldset legend={pick("2. 오늘 가장 먼저 끝내고 싶은 목표", "2. First Session Goal")} testIdPrefix="matcher-goal" options={CREATOR_GOAL_OPTIONS} selectedId={answers.goal} isEn={isEn} columnsClass="grid-cols-2" onSelect={(goal) => setAnswers((prev) => ({ ...prev, goal }))} />
-          <MatcherQuestionFieldset legend={pick("3. 주로 쓰는 작업 기기", "3. Primary Device")} testIdPrefix="matcher-device" options={CREATOR_DEVICE_OPTIONS} selectedId={answers.device} isEn={isEn} columnsClass="grid-cols-2" onSelect={(device) => setAnswers((prev) => ({ ...prev, device }))} />
-          <MatcherQuestionFieldset legend={pick("4. 손에 가장 잘 맞는 선호 화구", "4. Preferred Drawing Medium")} testIdPrefix="matcher-medium" options={CREATOR_MEDIUM_OPTIONS} selectedId={answers.medium} isEn={isEn} columnsClass="grid-cols-2 sm:grid-cols-3" onSelect={(medium) => setAnswers((prev) => ({ ...prev, medium }))} />
+          <MatcherQuestionFieldset legend={pick("1. 주로 그리고 싶은 장르", "1. Primary Genre")} testIdPrefix="matcher-genre" options={CREATOR_GENRE_OPTIONS} selectedId={answers.genre} isEn={isEn} columnsClass="grid-cols-2" onSelect={(genre) => updateAnswers({ genre })} />
+          <MatcherQuestionFieldset legend={pick("2. 오늘 가장 먼저 끝내고 싶은 목표", "2. First Session Goal")} testIdPrefix="matcher-goal" options={CREATOR_GOAL_OPTIONS} selectedId={answers.goal} isEn={isEn} columnsClass="grid-cols-2" onSelect={(goal) => updateAnswers({ goal })} />
+          <MatcherQuestionFieldset legend={pick("3. 주로 쓰는 작업 기기", "3. Primary Device")} testIdPrefix="matcher-device" options={CREATOR_DEVICE_OPTIONS} selectedId={answers.device} isEn={isEn} columnsClass="grid-cols-2" onSelect={(device) => updateAnswers({ device })} />
+          <MatcherQuestionFieldset legend={pick("4. 손에 가장 잘 맞는 선호 화구", "4. Preferred Drawing Medium")} testIdPrefix="matcher-medium" options={CREATOR_MEDIUM_OPTIONS} selectedId={answers.medium} isEn={isEn} columnsClass="grid-cols-2 sm:grid-cols-3" onSelect={(medium) => updateAnswers({ medium })} />
         </div>
 
         <div data-testid="starter-prescription-card" className="flex flex-col justify-between gap-4 rounded-xl border border-accent/40 bg-card p-3.5 sm:p-4">
@@ -622,9 +692,9 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" data-testid="apply-prescription-btn" onClick={handleApplyPrescription} className={`${BTN_SOLID} flex-1`}>
-                <span>{pick("원클릭 처방 적용 & 챕터 동기화", "Apply Preset & Sync Chapter")}</span>
+                <span>{pick("추천 예제 선택 · 챕터 보기", "Select example & view chapter")}</span>
               </button>
-              <a href={prescription.workspaceRoute.fullHref} data-testid="launch-prescribed-workspace-link" className={BTN_OUTLINE}>
+              <a href={prescription.workspaceRoute.fullHref} target="_blank" rel="noopener noreferrer" data-testid="launch-prescribed-workspace-link" className={BTN_OUTLINE}>
                 <span>{isEn ? prescription.workspaceRoute.ctaEn : prescription.workspaceRoute.ctaKo}</span>
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
@@ -637,6 +707,7 @@ export function StudioOnboardingDioramaPanel(props: StudioOnboardingDioramaPanel
           </div>
         </div>
       </div>
+      </fieldset>
     </section>
   );
 }

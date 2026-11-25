@@ -3,6 +3,8 @@
  * WebVTT(.vtt) / SubRip(.srt) 자막 익스포터 엔진 (Wave 40E).
  */
 
+import { requireFinite, requireSampleBudget, subtitleContentIssues } from "./reels-input-guards";
+
 export type TimeSignatureId = "4/4" | "3/4" | "6/8";
 export type BeatSnapMode = "downbeat" | "beat" | "half-beat";
 export type AudioEventKind = "cut-transition" | "sfx-impact" | "camera-accent" | "title-drop";
@@ -200,7 +202,7 @@ export interface SubtitleCueInput {
 
 export interface SubtitleTimingIssue {
   readonly cueId: string;
-  readonly kind: "invalid-range" | "overlap" | "fast-reading-speed" | "empty-text";
+  readonly kind: "invalid-range" | "overlap" | "fast-reading-speed" | "empty-text" | "unsupported-content";
   readonly messageKo: string;
   readonly messageEn: string;
 }
@@ -313,7 +315,10 @@ function findNearestMarker(markers: readonly BeatGridMarker[], timeSec: number):
 
 /** BPM과 박자표에 따라 결정론적 비트·다운비트 그리드를 생성한다. */
 export function buildBpmBeatGrid(config: BpmGridConfig): BpmBeatGrid {
-  const bpm = clamp(config.bpm, 40, 240);
+  requireFinite(config.bpm, "BPM", 40, 240);
+  requireFinite(config.durationSec, "클립 길이", Number.MIN_VALUE);
+  requireFinite(config.offsetSec ?? 0, "비트 시작 위치", 0);
+  const bpm = config.bpm;
   const durationSec = Math.max(0.5, config.durationSec);
   const timeSignature: TimeSignatureId = config.timeSignature ?? "4/4";
   const offsetSec = Math.max(0, config.offsetSec ?? 0);
@@ -323,9 +328,10 @@ export function buildBpmBeatGrid(config: BpmGridConfig): BpmBeatGrid {
   const markers: BeatGridMarker[] = [];
   const downbeatTimesSec: number[] = [];
 
-  for (let index = 0; ; index += 1) {
+  const markerCount = Math.max(0, Math.floor((durationSec + 1e-6 - offsetSec) / beatIntervalSec) + 1);
+  requireSampleBudget(markerCount);
+  for (let index = 0; index < markerCount; index += 1) {
     const timeSec = offsetSec + index * beatIntervalSec;
-    if (timeSec > durationSec + 1e-6) break;
     const barNumber = Math.floor(index / beatsPerBar) + 1;
     const beatInBar = (index % beatsPerBar) + 1;
     const isDownbeat = beatInBar === 1;
@@ -459,6 +465,14 @@ export function evaluateDuckingGainAtTime(
 
 /** 대사·보이스오버·SFX 구간을 병합하여 자동 -12dB BGM 사이드체인 덕킹 커브를 생성한다. */
 export function generateBgmSidechainDuckingCurve(config: DuckingCurveConfig): BgmDuckingCurveResult {
+  requireFinite(config.durationSec, "클립 길이", Number.MIN_VALUE);
+  for (const value of [config.bgmBaseGainDb ?? -6, config.duckingDepthDb ?? DEFAULT_BGM_DUCKING_DB, config.attackMs ?? 45, config.holdMs ?? 120, config.releaseMs ?? 260]) requireFinite(value, "덕킹 가정값");
+  requireFinite(config.sampleStepMs ?? 50, "표본 간격", 10, 250);
+  for (const trigger of config.triggers) {
+    requireFinite(trigger.startSec, "트리거 시작", 0);
+    requireFinite(trigger.endSec, "트리거 종료", trigger.startSec);
+    requireFinite(trigger.customDuckDb ?? -12, "트리거 덕킹 가정값");
+  }
   const durationSec = Math.max(0.5, config.durationSec);
   const bgmBaseGainDb = config.bgmBaseGainDb ?? -6;
   const duckingDepthDb = -Math.abs(config.duckingDepthDb ?? DEFAULT_BGM_DUCKING_DB);
@@ -509,6 +523,7 @@ export function generateBgmSidechainDuckingCurve(config: DuckingCurveConfig): Bg
   const samples: DuckingCurvePoint[] = [];
   const stepSec = sampleStepMs / 1000;
   const totalSteps = Math.max(1, Math.ceil(durationSec / stepSec));
+  requireSampleBudget(totalSteps + 1);
   let gainSum = 0;
   let duckedSamples = 0;
   let minGainOffsetDb = 0;
@@ -598,12 +613,12 @@ export function evaluateLoudnessLimiterPreflight(input: LoudnessPreflightInput):
 
   const sign = recommendedMakeupGainDb >= 0 ? "+" : "";
   const summaryKo = status === "pass"
-    ? `마스터링 적합: ${masteredIntegratedLufs.toFixed(1)} LUFS / ${masteredTruePeakDbtp.toFixed(1)} dBTP (메이크업 ${sign}${recommendedMakeupGainDb.toFixed(1)}dB, 리미터 GR ${requiredLimiterReductionDb.toFixed(1)}dB)`
+    ? `입력 수치의 예상 목표 범위 충족: ${masteredIntegratedLufs.toFixed(1)} LUFS / ${masteredTruePeakDbtp.toFixed(1)} dBTP (메이크업 ${sign}${recommendedMakeupGainDb.toFixed(1)}dB, 리미터 GR ${requiredLimiterReductionDb.toFixed(1)}dB)`
     : status === "clip-risk"
       ? `클리핑 위험: True-Peak ${masteredTruePeakDbtp.toFixed(1)} dBTP가 상한(${maxTruePeakDbtp.toFixed(1)} dBTP) 초과 — 리미터를 활성화하세요.`
       : `조정 권장: 목표 ${targetIntegratedLufs.toFixed(1)} LUFS 대비 과도한 리미터 압축(GR ${requiredLimiterReductionDb.toFixed(1)}dB) 또는 라우드니스 편차 감지.`;
   const summaryEn = status === "pass"
-    ? `Broadcast pass: ${masteredIntegratedLufs.toFixed(1)} LUFS / ${masteredTruePeakDbtp.toFixed(1)} dBTP (Makeup ${sign}${recommendedMakeupGainDb.toFixed(1)}dB, Limiter GR ${requiredLimiterReductionDb.toFixed(1)}dB)`
+    ? `Estimated scalar target range met: ${masteredIntegratedLufs.toFixed(1)} LUFS / ${masteredTruePeakDbtp.toFixed(1)} dBTP (Makeup ${sign}${recommendedMakeupGainDb.toFixed(1)}dB, Limiter GR ${requiredLimiterReductionDb.toFixed(1)}dB)`
     : status === "clip-risk"
       ? `Clip risk: True-Peak ${masteredTruePeakDbtp.toFixed(1)} dBTP exceeds ${maxTruePeakDbtp.toFixed(1)} dBTP ceiling — engage limiter.`
       : `Adjustment advised: heavy limiter GR (${requiredLimiterReductionDb.toFixed(1)}dB) or LUFS drift.`;
@@ -651,7 +666,7 @@ export function validateSubtitleTiming(cues: readonly SubtitleCueInput[]): Subti
     if (trimmed.length === 0) {
       issues.push({ cueId: cue.id, kind: "empty-text", messageKo: `${cue.id}: 자막 텍스트가 비어 있습니다.`, messageEn: `${cue.id}: Subtitle text is empty.` });
     }
-    if (!Number.isFinite(cue.startSec) || !Number.isFinite(cue.endSec) || cue.startSec < 0 || cue.endSec <= cue.startSec) {
+    if (!Number.isFinite(cue.startSec) || !Number.isFinite(cue.endSec) || cue.startSec < 0 || cue.endSec <= cue.startSec || Math.round(cue.endSec * 1000) <= Math.round(cue.startSec * 1000)) {
       issues.push({ cueId: cue.id, kind: "invalid-range", messageKo: `${cue.id}: 종료 시각이 시작 시각보다 뒤여야 합니다.`, messageEn: `${cue.id}: End time must be strictly after start time.` });
       continue;
     }
@@ -691,7 +706,10 @@ export function generateSubtitleTracks(
   options?: SubtitleExportOptions,
 ): SubtitleTrackExportResult {
   const sortedCues = [...cues].sort((a, b) => a.startSec - b.startSec);
-  const validation = validateSubtitleTiming(sortedCues);
+  const timing = validateSubtitleTiming(sortedCues);
+  const contentIssues = subtitleContentIssues(sortedCues, options);
+  const validation = { ...timing, valid: timing.valid && contentIssues.length === 0, issues: [...timing.issues, ...contentIssues] };
+  if (!validation.valid) return { cueCount: cues.length, vttContent: "", srtContent: "", vttTimecodeFormatValid: false, srtTimecodeFormatValid: false, validation };
   const includeSpeaker = options?.includeSpeakerLabel ?? false;
   const linePct = options?.safeZoneLinePct !== undefined ? clamp(Math.round(options.safeZoneLinePct), 15, 92) : undefined;
 
@@ -703,9 +721,9 @@ export function generateSubtitleTracks(
   for (let i = 0; i < sortedCues.length; i += 1) {
     const cue = sortedCues[i];
     if (!cue) continue;
-    const startSec = Math.max(0, cue.startSec);
-    const endSec = Math.max(startSec + 0.05, cue.endSec);
-    const bodyText = includeSpeaker && cue.speaker ? `[${cue.speaker}] ${cue.text.trim()}` : cue.text.trim();
+    const startSec = cue.startSec;
+    const endSec = cue.endSec;
+    const bodyText = includeSpeaker && cue.speaker ? `[${cue.speaker}] ${cue.text}` : cue.text;
 
     const cueSettings = linePct !== undefined ? ` line:${linePct}% align:center` : "";
     const vttTimeLine = `${formatWebVttTimecode(startSec)} --> ${formatWebVttTimecode(endSec)}${cueSettings}`;

@@ -92,6 +92,7 @@ export interface BalloonVoiceMemoItem {
 }
 
 export interface WatchProtocolPacket {
+  /** 송신하지 않는 예제 패킷이며 지연·촉각 수치는 합성값이다. */
   readonly seq: number;
   readonly opcode: "CROWN_DELTA" | "PAD_ACTION" | "FATIGUE_ALERT" | "VOICE_MEMO";
   readonly hapticPattern: WatchHapticPattern;
@@ -306,7 +307,7 @@ export function createInitialSmartwatchState(): SmartwatchCompanionState {
     minutesSinceLastBreak: 36,
   };
   return {
-    connectedDeviceName: "Atelier Watch Ultra · BLE 5.3",
+    connectedDeviceName: "미연결 · 고정 워치 입력 예제",
     crownMode: "brush-size",
     sensitivityPreset: "balanced",
     brushSizePx: 14,
@@ -619,7 +620,7 @@ export function enqueueVoiceDialogueMemo(
   };
 }
 
-/** 말풍선 메모 큐의 선두 항목을 꺼내 현재 컷 배치 이력으로 이동한다. */
+/** 예제 상태의 큐 이동만 계산한다. 실제 원고 배치나 송신 성공 응답은 처리하지 않는다. */
 export function consumeNextBalloonMemo(
   state: SmartwatchCompanionState,
 ): { readonly state: SmartwatchCompanionState; readonly consumed: BalloonVoiceMemoItem | null } {
@@ -639,7 +640,7 @@ export function consumeNextBalloonMemo(
         seq: nextSeq,
         opcode: "VOICE_MEMO",
         hapticPattern: "double-tap",
-        payloadSummaryKo: `말풍선 배치 완료: "${head.cleanedDialogue.slice(0, 14)}"`,
+        payloadSummaryKo: `예제 메모 이동: "${head.cleanedDialogue.slice(0, 14)}" (실제 원고 미반영)`,
         estimatedBleLatencyMs: 5.5,
       },
     },

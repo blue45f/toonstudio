@@ -38,9 +38,10 @@ export type ProCommercialTabId = "relight-breakout" | "typography-handoff" | "go
 export interface StudioProCommercialPanelProps {
   readonly initialTab?: ProCommercialTabId;
   readonly className?: string;
-  readonly onRelightApplied?: (result: RelightCompositeResult) => void;
-  readonly onTokenPropagated?: (report: TokenPropagationReport) => void;
-  readonly onSubmissionBuilt?: (manifest: SubmissionPackageManifest) => void;
+  /** 합성 예제 결과 알림이며 실제 원고 적용·저장 완료 응답이 아니다. */
+  readonly onRelightApplied?: (result: RelightCompositeResult) => void | Promise<void>;
+  readonly onTokenPropagated?: (report: TokenPropagationReport) => void | Promise<void>;
+  readonly onSubmissionBuilt?: (manifest: SubmissionPackageManifest) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -125,6 +126,35 @@ export function StudioProCommercialPanel({
   const uid = useId();
   const [activeTab, setActiveTab] = useState<ProCommercialTabId>(initialTab);
   const [statusBanner, setStatusBanner] = useState<string>("");
+  const [callbackPending, setCallbackPending] = useState(false);
+  const callbackPendingRef = useRef(false);
+
+  function notifyExample(message: string, callback?: () => void | Promise<void>): void {
+    if (!callback) {
+      setStatusBanner(`${message} 실제 원고 적용·저장·파일 출력은 실행하지 않았어요.`);
+      return;
+    }
+    function finish(failed: boolean): void {
+      callbackPendingRef.current = false;
+      setCallbackPending(false);
+      setStatusBanner(failed
+        ? `${message} 예제 알림 처리에 실패했어요. 다시 선택해 주세요.`
+        : `${message} 예제 알림 처리를 마쳤어요. 실제 적용·저장·출력 완료를 뜻하지 않아요.`);
+    }
+    callbackPendingRef.current = true;
+    try {
+      const result = callback();
+      if (result) {
+        setCallbackPending(true);
+        setStatusBanner(`${message} 예제 알림 처리 중이에요. 실제 적용 결과는 확인하지 않았어요.`);
+        void result.then(() => finish(false), () => finish(true));
+      } else {
+        finish(false);
+      }
+    } catch {
+      finish(true);
+    }
+  }
 
   // 엔진 1·2 상태
   const [relightPreset, setRelightPreset] = useState<RelightPresetId>("sunset");
@@ -144,7 +174,7 @@ export function StudioProCommercialPanel({
   const activeRelightSpec = useMemo(() => getRelightPresetById(relightPreset), [relightPreset]);
   useEffect(() => {
     paintRgbaCanvas(relightCanvasRef.current, relightResult.rgba, relightResult.width, relightResult.height);
-  }, [relightResult]);
+  }, [activeTab, relightResult]);
 
   const breakoutReport = useMemo(
     () => computePanelBreakoutMasks({ ...DEFAULT_PANEL_FRAME_FIXTURE, gutterBleedPx }, breakoutLayers),
@@ -196,15 +226,15 @@ export function StudioProCommercialPanel({
   const submissionManifest = useMemo(() => buildSubmissionPackage(submissionTarget, submissionInput), [submissionInput, submissionTarget]);
 
   const handleSelectRelight = (presetId: RelightPresetId): void => {
+    if (callbackPendingRef.current) return;
     setRelightPreset(presetId);
     const next = compositeThreeLayerRelight(demoScene, presetId, { shadowStrength: shadowPct / 100, keyGain: keyGainPct / 100, bounceGain: bounceGainPct / 100, exposureBias: exposureStep / 10 });
-    onRelightApplied?.(next);
-    setStatusBanner(`3층 리라이트 프리셋을 「${getRelightPresetById(presetId).labelKo}」 조명으로 전환했습니다.`);
+    notifyExample(`합성 리라이트 예제를 「${getRelightPresetById(presetId).labelKo}」 조명으로 바꿨어요.`, onRelightApplied ? () => onRelightApplied(next) : undefined);
   };
 
   const handleToggleBreakout = (layerId: string): void => {
     setBreakoutLayers((prev) => toggleLayerBreakoutFlag(prev, layerId));
-    setStatusBanner("컷 밖 돌파 마스킹 플래그를 갱신했습니다.");
+    setStatusBanner("고정 도형의 컷 돌파 예제 플래그를 바꿨어요. 실제 원고 마스크는 바꾸지 않았어요.");
   };
 
   const handleSelectToken = (tokenId: string): void => {
@@ -220,6 +250,7 @@ export function StudioProCommercialPanel({
   };
 
   const handlePropagateToken = (): void => {
+    if (callbackPendingRef.current) return;
     const report = updateTokenAndPropagate(tokens, balloons, selectedTokenId, {
       fontFamily: draftFont, fontSizePx: draftFontSize, letterSpacingEm: draftTrackingPct / 100,
       lineHeight: draftLineHeightPct / 100, strokeWidthPx: draftStrokeTenth / 10, tailCurvature: draftTailPct / 100,
@@ -227,8 +258,7 @@ export function StudioProCommercialPanel({
     setTokens(report.updatedTokens);
     setBalloons(report.updatedBalloons);
     setLastPropagation(report);
-    onTokenPropagated?.(report);
-    setStatusBanner(report.summaryKo);
+    notifyExample(`예제 말풍선 데이터: ${report.summaryKo}`, onTokenPropagated ? () => onTokenPropagated(report) : undefined);
   };
 
   const handleAcquireLock = (): void => {
@@ -237,7 +267,7 @@ export function StudioProCommercialPanel({
     const outcome = acquireCutStageLock(handoffBoard, { cutId: selectedCutId, stage: selectedStage, holderId: member.id, holderName: member.name, leaseDurationMs: 3600000, nowMs: nextNow });
     setHandoffClockMs(nextNow);
     setHandoffBoard(outcome.state);
-    if (outcome.ok && outcome.lease) setStatusBanner(`${selectedCutId} [${getStageLabelKo(selectedStage)}] 잠금을 ${member.name} 님에게 임대했습니다.`);
+    if (outcome.ok && outcome.lease) setStatusBanner(`${selectedCutId} [${getStageLabelKo(selectedStage)}] ${member.name} 잠금 임대 예제를 계산했어요. 실제 팀 권한에는 반영하지 않았어요.`);
     else if (outcome.conflict) setStatusBanner(`충돌 감지: ${outcome.conflict.reasonKo}`);
   };
 
@@ -252,7 +282,7 @@ export function StudioProCommercialPanel({
     });
     setHandoffClockMs(nextNow);
     setHandoffBoard(outcome.state);
-    if (outcome.ok && outcome.receipt) setStatusBanner(`인수인계 영수증 ${outcome.receipt.receiptId} 발급 완료 (체크섬 ${outcome.receipt.checksum}).`);
+    if (outcome.ok && outcome.receipt) setStatusBanner(`인수인계 예제 기록 ${outcome.receipt.receiptId} (체크섬 ${outcome.receipt.checksum}). 실제 인수인계·전자서명은 실행하지 않았어요.`);
     else if (outcome.errorKo) setStatusBanner(outcome.errorKo);
   };
 
@@ -262,7 +292,7 @@ export function StudioProCommercialPanel({
     rec = recordMacroStep(rec, "export-goods-diecut", `${goodsKind === "acrylic-stand" ? "아크릴 스탠드" : "포토카드"} 칼선 패키지 출력`, { kind: goodsKind, dpi: 300 });
     const nextDoc = finalizeTsMacro(rec, macroDoc.descriptionKo);
     setMacroDoc(nextDoc);
-    setStatusBanner(`.tsmacro 단계 추가 완료 (총 ${nextDoc.steps.length}단계 · 체크섬 ${nextDoc.checksum}).`);
+    setStatusBanner(`.tsmacro 예제 단계 추가 (총 ${nextDoc.steps.length}단계 · 체크섬 ${nextDoc.checksum}). 파일을 저장하거나 출력하지 않았어요.`);
   };
 
   const handleReplayMacro = (): void => {
@@ -273,20 +303,22 @@ export function StudioProCommercialPanel({
     }
     const report = replayTsMacro(parsed.document);
     setMacroReplay(report);
-    setStatusBanner(`.tsmacro 일괄 리플레이 완료: ${report.executedCount}/${report.totalSteps}단계 실행 성공.`);
+    setStatusBanner(`.tsmacro 합성 리플레이: ${report.executedCount}/${report.totalSteps}단계 검토. 실제 명령·파일 출력은 실행하지 않았어요.`);
   };
 
   const handleSelectSubmissionTarget = (targetId: SubmissionTargetId): void => {
+    if (callbackPendingRef.current) return;
     setSubmissionTarget(targetId);
-    const preset = createPresetSubmissionInput(targetId);
+    const preset = { ...createPresetSubmissionInput(targetId), seriesTitle: submissionInput.seriesTitle, authorName: submissionInput.authorName, episodeLabel: submissionInput.episodeLabel };
     setSubmissionInput(preset);
-    onSubmissionBuilt?.(buildSubmissionPackage(targetId, preset));
-    setStatusBanner(`${SUBMISSION_TARGET_SPECS[targetId].labelKo} 규격 프로파일을 불러왔습니다.`);
+    const manifest = buildSubmissionPackage(targetId, preset);
+    notifyExample(`${SUBMISSION_TARGET_SPECS[targetId].labelKo} 예제 프로파일을 불러왔어요.`, onSubmissionBuilt ? () => onSubmissionBuilt(manifest) : undefined);
   };
 
   return (
     <section
       data-testid="studio-pro-commercial-panel"
+      aria-busy={callbackPending}
       aria-label="상업 연재 프로 웹툰 8대 전문 엔진 스튜디오"
       className={`flex flex-col gap-5 rounded-2xl border border-line bg-panel p-5 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
@@ -297,14 +329,18 @@ export function StudioProCommercialPanel({
             <h2 className="text-base font-bold text-fg">상업 연재 프로 웹툰 8대 전문 엔진</h2>
           </div>
           <p className="text-xs text-fg-2">
-            3층 비파괴 리라이트 · 컷 돌파 마스킹 · 전역 식자 토큰 · 어시 컷 잠금 핸드오프 · 굿즈 칼선/CMYK · 무드보드 LUT · .tsmacro · 플랫폼 투고팩을 온디바이스로 실행합니다.
+            합성 픽셀·고정 도형·예제 말풍선과 팀 데이터로 계산 과정을 살펴봐요. 실제 원고·팀 권한·저장·파일 출력에는 연결하지 않았어요.
+          </p>
+          <p data-testid="pro-commercial-scope-notice" className="text-xs text-fg-3">
+            콜백은 예제 결과 알림이에요. 체크섬은 전자서명·권리 허가 증명이 아니며, 투고 프로파일은 공식 최신 규격을 검증한 자료가 아니에요.
           </p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-good-soft px-3 py-1 text-xs font-semibold text-good tabular-nums">
-          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> 8대 상업 엔진 · 로컬 결정론
+          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> 8개 독립 계산 예제
         </span>
       </header>
 
+      <fieldset disabled={callbackPending} className="m-0 min-w-0 space-y-5 border-0 p-0">
       <div role="tablist" aria-label="프로 상업 스튜디오 워크벤치 탭" className="flex flex-wrap gap-2">
         {TABS.map((tab) => (
           <button
@@ -363,7 +399,7 @@ export function StudioProCommercialPanel({
           <article className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2"><Layers className="h-4 w-4 text-accent" aria-hidden="true" /><h3 className="text-sm font-bold text-fg">2. 컷 밖 돌파 마스킹 (Out-of-Panel Breakout)</h3></div>
-              <span data-testid="breakout-summary-badge" className="rounded-full bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">활성 돌파 {breakoutReport.activeBreakoutCount}개 · 수동 지우개 {breakoutReport.manualEraserStrokesSaved}획 절감</span>
+              <span data-testid="breakout-summary-badge" className="rounded-full bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">활성 돌파 {breakoutReport.activeBreakoutCount}개 · 예제 계산 {breakoutReport.manualEraserStrokesSaved}획</span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="flex flex-col gap-2">
@@ -428,7 +464,7 @@ export function StudioProCommercialPanel({
               <SliderField id={`${uid}-tail`} label="꼬리 곡률" valueText={(draftTailPct / 100).toFixed(2)} value={draftTailPct} min={-100} max={100} onChange={setDraftTailPct} />
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <button type="button" data-testid="propagate-token-btn" onClick={handlePropagateToken} className={BTN_SOLID}><Type className="h-3.5 w-3.5" aria-hidden="true" /> 회차 전체 매칭 말풍선 일괄 적용</button>
+              <button type="button" data-testid="propagate-token-btn" onClick={handlePropagateToken} className={BTN_SOLID}><Type className="h-3.5 w-3.5" aria-hidden="true" /> 예제 말풍선 데이터 일괄 변경</button>
               {lastPropagation ? <span data-testid="token-diff-summary" className="text-xs font-semibold text-good tabular-nums">{lastPropagation.summaryKo} (diff {lastPropagation.diffs.length}건)</span> : null}
             </div>
             {lastPropagation && lastPropagation.diffs.length > 0 ? (
@@ -447,7 +483,7 @@ export function StudioProCommercialPanel({
 
           <article className="flex flex-col gap-4 rounded-xl border border-line bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2"><Users className="h-4 w-4 text-accent" aria-hidden="true" /><h3 className="text-sm font-bold text-fg">4. 라이브 컷 잠금 어시스턴트 핸드오프</h3></div>
+              <div className="flex items-center gap-2"><Users className="h-4 w-4 text-accent" aria-hidden="true" /><h3 className="text-sm font-bold text-fg">4. 컷 잠금 · 핸드오프 상태 계산 예제</h3></div>
               <span className="rounded-full bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">활성 잠금 {handoffSummary.activeLeases.length} · 영수증 {handoffSummary.receiptCount} · 충돌 {handoffSummary.conflictCount}</span>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -472,7 +508,7 @@ export function StudioProCommercialPanel({
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" data-testid="acquire-lock-btn" onClick={handleAcquireLock} className={BTN_OUTLINE}><Lock className="h-3.5 w-3.5" aria-hidden="true" /> 잠금 임대 / 충돌 검사</button>
-              <button type="button" data-testid="handoff-stage-btn" onClick={handleHandoffStage} className={BTN_SOLID}><Send className="h-3.5 w-3.5" aria-hidden="true" /> 다음 공정 인수인계 & 영수증 발급</button>
+              <button type="button" data-testid="handoff-stage-btn" onClick={handleHandoffStage} className={BTN_SOLID}><Send className="h-3.5 w-3.5" aria-hidden="true" /> 다음 공정 인수인계 예제 계산</button>
             </div>
             {handoffBoard.conflicts.length > 0 ? (
               <div data-testid="handoff-conflict-alert" className="flex items-start gap-2 rounded-lg border border-bad/40 bg-bad-soft px-3 py-2 text-xs font-semibold text-bad">
@@ -510,7 +546,7 @@ export function StudioProCommercialPanel({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2"><Scissors className="h-4 w-4 text-accent" aria-hidden="true" /><h3 className="text-sm font-bold text-fg">5. 굿즈·인쇄 칼선 & CMYK 프리플라이트 (TAC &lt;= 300%)</h3></div>
               <span data-testid="goods-tac-badge" className={`rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${goodsPackage.preflight.passed ? "bg-good-soft text-good" : "bg-bad-soft text-bad"}`}>
-                최대 TAC {goodsPackage.preflight.maxTacPct}% · {goodsPackage.preflight.passed ? "인쇄 통과" : "잉크 초과"}
+                샘플 최대 TAC {goodsPackage.preflight.maxTacPct}% · {goodsPackage.preflight.passed ? "샘플 입력 통과" : "샘플 잉크 초과"}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -535,7 +571,7 @@ export function StudioProCommercialPanel({
                 <SliderField id={`${uid}-bleed`} label="인쇄 도련(mm)" valueText={`${goodsBleedMm.toFixed(1)}mm`} value={goodsBleedMm} min={2} max={5} step={0.5} onChange={setGoodsBleedMm} />
               </div>
             ) : null}
-            <p className="text-xs text-fg-2">{goodsPackage.preflight.recommendedFixKo}</p>
+            <p className="text-xs text-fg-2">{goodsPackage.preflight.recommendedFixKo} 고정 RGB 샘플의 근사 CMYK 계산이며 실제 인쇄 파일·ICC 프로파일 검수 결과가 아니에요.</p>
           </article>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -583,7 +619,7 @@ export function StudioProCommercialPanel({
               </div>
               {macroReplay ? (
                 <div data-testid="macro-replay-result" className="rounded-lg border border-good/40 bg-good-soft px-3 py-2 text-xs font-semibold text-good tabular-nums">
-                  리플레이 {macroReplay.success ? "성공" : "일부 실패"}: 실행 {macroReplay.executedCount} · 건너뜀 {macroReplay.skippedCount} · 실패 {macroReplay.failedCount}
+                  예제 단계 {macroReplay.success ? "검토 완료" : "검토 오류"}: 검토 {macroReplay.executedCount} · 건너뜀 {macroReplay.skippedCount} · 실패 {macroReplay.failedCount} · 실제 명령 실행 없음
                 </div>
               ) : null}
             </article>
@@ -591,9 +627,9 @@ export function StudioProCommercialPanel({
 
           <article className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2"><FileArchive className="h-4 w-4 text-accent" aria-hidden="true" /><h3 className="text-sm font-bold text-fg">8. 공모전·출판사 원클릭 투고 패키지 빌더</h3></div>
+              <div className="flex items-center gap-2"><FileArchive className="h-4 w-4 text-accent" aria-hidden="true" /><h3 className="text-sm font-bold text-fg">8. 투고 입력 규격 · 파일 목록 계획 예제</h3></div>
               <span data-testid="submission-ready-badge" className={`rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${submissionManifest.readyToSubmit ? "bg-good-soft text-good" : "bg-bad-soft text-bad"}`}>
-                {submissionManifest.readyToSubmit ? "투고 준비 완료" : `규격 위반 ${submissionManifest.failCount}건`} · {submissionManifest.packageChecksum}
+                {submissionManifest.readyToSubmit ? "예제 입력 규격 통과" : `규격 위반 ${submissionManifest.failCount}건`} · 실제 파일 생성 없음 · {submissionManifest.packageChecksum}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -628,6 +664,7 @@ export function StudioProCommercialPanel({
           </article>
         </div>
       ) : null}
+      </fieldset>
     </section>
   );
 }

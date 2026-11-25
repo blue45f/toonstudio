@@ -1,9 +1,9 @@
 /**
- * Wave 40B — Display-P3 광색역 컬러 매니지먼트 · CMYK 소프트프루핑 · 말풍선 WCAG/APCA 대비율 엔진.
+ * Wave 40B — Display-P3 광색역 컬러 매니지먼트 · CMYK 근사 계산 예제 · 말풍선 WCAG/APCA 대비율 엔진.
  *
  * - IEC 61966-2-1 sRGB, SMPTE EG 432-1 Display-P3(D65), CIE 1931 XYZ(D65), OKLab/OKLCH 정밀 가역 변환(< 1e-4).
  * - Display-P3 → sRGB 색상(Hue) 보존 Soft-Knee 채도 압축(`softMapP3ToSrgb`).
- * - FOGRA39 / JapanColor2001 인쇄용 CMYK 소프트프루핑 + 총잉크량(TAC) 경고 + 말풍선 WCAG 2.1/APCA 대비율 검사기.
+ * - ICC 데이터가 없는 FOGRA39 / JapanColor2001 이름의 CMYK 근사 모델 + 총잉크량(TAC) 경고 + 말풍선 WCAG 2.1/APCA 대비율 검사기.
  */
 
 export interface RgbTuple { readonly r: number; readonly g: number; readonly b: number; }
@@ -14,6 +14,7 @@ export interface CmykColor { readonly c: number; readonly m: number; readonly y:
 
 export type GamutSpaceId = "srgb" | "display-p3";
 export type PrintProfileId = "FOGRA39" | "JapanColor2001";
+/** safe는 선택한 예제 TAC 경고값 미만만 뜻하며 인쇄 적합성을 보증하지 않는다. */
 export type TacAlertLevel = "safe" | "warning" | "exceeded";
 export type ApcaBalloonGrade = "excellent-body" | "pass-balloon" | "large-sfx-only" | "fail";
 
@@ -68,6 +69,7 @@ export interface SoftProofOptions {
 }
 
 export interface TacEvaluation {
+  readonly printSafetyVerified: false;
   readonly profileId: PrintProfileId;
   readonly totalInkPercent: number;
   readonly warnPercent: number;
@@ -78,6 +80,9 @@ export interface TacEvaluation {
 }
 
 export interface CmykSoftProofResult {
+  readonly method: "heuristic-cmyk-demo";
+  readonly iccProfileApplied: false;
+  readonly printSafetyVerified: false;
   readonly profile: PrintProfileSpec;
   readonly inputSpace: GamutSpaceId;
   readonly inputColor: RgbTuple;
@@ -406,12 +411,12 @@ export function softMapP3ToSrgb(inputP3: RgbTuple, options?: SoftMapP3Options): 
   };
 }
 
-/** 유럽/한국·일본 단행본 인쇄 표준 CMYK 소프트프루핑 프로파일 명세. */
+/** 표준 이름을 참조한 수동 근사 상수. ICC 프로파일·인쇄소 보정 데이터가 아니다. */
 export const PRINT_PROFILES: Readonly<Record<PrintProfileId, PrintProfileSpec>> = {
   FOGRA39: {
     id: "FOGRA39",
-    nameKo: "FOGRA39 (유럽 코팅 아트지 · ISO 12647-2)",
-    nameEn: "FOGRA39 (ISO Coated v2 · 330% TAC)",
+    nameKo: "FOGRA39 근사 예제 (ICC 미적용)",
+    nameEn: "FOGRA39 Approximation (No ICC)",
     standardCode: "ISO 12647-2 FOGRA39",
     tacWarnPercent: 300,
     tacLimitPercent: 330,
@@ -425,8 +430,8 @@ export const PRINT_PROFILES: Readonly<Record<PrintProfileId, PrintProfileSpec>> 
   },
   JapanColor2001: {
     id: "JapanColor2001",
-    nameKo: "JapanColor2001 (한·일 단행본 코팅지)",
-    nameEn: "JapanColor2001 Coated (300% TAC)",
+    nameKo: "JapanColor2001 근사 예제 (ICC 미적용)",
+    nameEn: "JapanColor2001 Approximation (No ICC)",
     standardCode: "ISO 12647-2 JapanColor2001",
     tacWarnPercent: 280,
     tacLimitPercent: 300,
@@ -440,42 +445,48 @@ export const PRINT_PROFILES: Readonly<Record<PrintProfileId, PrintProfileSpec>> 
   },
 };
 
-/** CMYK 잉크 배합에 대한 총잉크량(TAC) 경고 및 인쇄 안전도를 판정한다. */
+/** 유효한 CMYK에 대해 예제 TAC 경고값만 비교한다. 인쇄 안전도 판정은 아니다. */
 export function evaluateCmykTac(cmyk: CmykColor, profileId: PrintProfileId): TacEvaluation {
   const profile = PRINT_PROFILES[profileId];
+  if ((profileId !== "FOGRA39" && profileId !== "JapanColor2001") || [cmyk.c, cmyk.m, cmyk.y, cmyk.k].some((v) => !Number.isFinite(v) || v < 0 || v > 1)) {
+    throw new RangeError("CMYK 채널은 0~1의 유한한 수이고 알려진 예제 프로파일이어야 합니다.");
+  }
   const totalInkPercent =
     (clamp(cmyk.c, 0, 1) + clamp(cmyk.m, 0, 1) + clamp(cmyk.y, 0, 1) + clamp(cmyk.k, 0, 1)) * 100;
 
   if (totalInkPercent > profile.tacLimitPercent) {
     return {
+      printSafetyVerified: false,
       profileId,
       totalInkPercent,
       warnPercent: profile.tacWarnPercent,
       limitPercent: profile.tacLimitPercent,
       level: "exceeded",
-      messageKo: `총잉크량 ${totalInkPercent.toFixed(1)}%로 한도(${profile.tacLimitPercent}%) 초과 — 뒷묻음·번짐 위험, GCR 상향 필요`,
-      messageEn: `TAC ${totalInkPercent.toFixed(1)}% exceeds ${profile.tacLimitPercent}% limit — raise GCR to prevent smudging`,
+      messageKo: `총잉크량 ${totalInkPercent.toFixed(1)}%로 예제 한도(${profile.tacLimitPercent}%) 초과 · 실제 인쇄 적합성 별도 확인`,
+      messageEn: `TAC ${totalInkPercent.toFixed(1)}% exceeds demo limit ${profile.tacLimitPercent}%; actual print suitability unverified`,
     };
   }
   if (totalInkPercent >= profile.tacWarnPercent) {
     return {
+      printSafetyVerified: false,
       profileId,
       totalInkPercent,
       warnPercent: profile.tacWarnPercent,
       limitPercent: profile.tacLimitPercent,
       level: "warning",
-      messageKo: `총잉크량 ${totalInkPercent.toFixed(1)}%로 주의 구간(${profile.tacWarnPercent}% 이상) — 암부 건조 여유 점검 권장`,
-      messageEn: `TAC ${totalInkPercent.toFixed(1)}% is in warning band (>= ${profile.tacWarnPercent}%) — verify shadow drying margin`,
+      messageKo: `총잉크량 ${totalInkPercent.toFixed(1)}%로 예제 주의 구간(${profile.tacWarnPercent}% 이상) · 실제 인쇄 적합성 별도 확인`,
+      messageEn: `TAC ${totalInkPercent.toFixed(1)}% is in demo warning band (>= ${profile.tacWarnPercent}%); actual print suitability unverified`,
     };
   }
   return {
+    printSafetyVerified: false,
     profileId,
     totalInkPercent,
     warnPercent: profile.tacWarnPercent,
     limitPercent: profile.tacLimitPercent,
     level: "safe",
-    messageKo: `총잉크량 ${totalInkPercent.toFixed(1)}% — ${profile.id} 단행본 인쇄 안전 범위`,
-    messageEn: `TAC ${totalInkPercent.toFixed(1)}% — within ${profile.id} print-safe envelope`,
+    messageKo: `총잉크량 ${totalInkPercent.toFixed(1)}% — 예제 TAC 경고값 미만 · 실제 인쇄 적합성 미검증`,
+    messageEn: `TAC ${totalInkPercent.toFixed(1)}% — below the demo TAC warning threshold; print suitability unverified`,
   };
 }
 
@@ -484,7 +495,7 @@ function applyDotGain(ink: number, dotGain: number): number {
   return clamp(v + dotGain * 2 * v * (1 - v), 0, 1);
 }
 
-/** Display-P3/sRGB 색상을 FOGRA39 / JapanColor2001 CMYK로 분판하고 코팅지 소프트프루핑 결과를 생성한다. */
+/** RGB를 수동 CMYK·종이색 근사식으로 계산한다. ICC 변환·인쇄 프루프·내보내기는 아니다. */
 export function softProofToCmyk(
   inputColor: RgbTuple,
   space: GamutSpaceId,
@@ -492,6 +503,11 @@ export function softProofToCmyk(
   options?: SoftProofOptions,
 ): CmykSoftProofResult {
   const profile = PRINT_PROFILES[profileId];
+  if ((profileId !== "FOGRA39" && profileId !== "JapanColor2001") || (space !== "srgb" && space !== "display-p3") ||
+      [inputColor.r, inputColor.g, inputColor.b].some((v) => !Number.isFinite(v) || v < 0 || v > 1) ||
+      Object.values(options ?? {}).some((v) => v !== undefined && !Number.isFinite(v))) {
+    throw new RangeError("CMYK 근사 계산의 RGB·프로파일·옵션 입력이 올바르지 않습니다.");
+  }
   const gcr = clamp(options?.gcrStrength ?? profile.defaultGcr, 0, 1);
   const richBlackBoost = clamp(options?.richBlackBoost ?? 0.14, 0, 0.35);
 
@@ -536,6 +552,9 @@ export function softProofToCmyk(
   const deltaEPrint = Math.hypot(origLab.L - proofedLab.L, origLab.a - proofedLab.a, origLab.b - proofedLab.b);
 
   return {
+    method: "heuristic-cmyk-demo",
+    iccProfileApplied: false,
+    printSafetyVerified: false,
     profile,
     inputSpace: space,
     inputColor: clampUnitRgb(inputColor),

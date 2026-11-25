@@ -124,6 +124,8 @@ export interface EyeFlowDiagnosticIssue {
 
 export interface CutDirectorDiagnosisReport {
   readonly runtime: OnDeviceDirectorRuntime;
+  readonly executionBackend: "offline-webtoon-grammar";
+  readonly inferencePerformed: false;
   readonly overallScore: number;
   readonly rhythmScore: number;
   readonly dialogueNaturalnessScore: number;
