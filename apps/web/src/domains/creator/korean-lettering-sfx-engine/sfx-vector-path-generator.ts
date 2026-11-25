@@ -7,6 +7,8 @@
  * - 100% 온디바이스 결정론 연산 (원시 hex/rgb/hsl·비결정 난수·브라우저 스토리지 미사용)
  */
 
+import { assertSfxInput, segmentSfxGraphemes } from "./lettering-input-contract";
+
 export type SfxEnvelopeId =
   | "impact-burst"
   | "tremble-whisper"
@@ -95,6 +97,8 @@ export interface SfxVectorOptions {
 
 export interface SfxVectorEnvelopeResult {
   readonly text: string;
+  readonly renderingKind: "font-dependent-svg-text";
+  readonly glyphOutlineGenerated: false;
   readonly envelopeId: SfxEnvelopeId;
   readonly spec: SfxEnvelopeSpec;
   readonly script: SfxScriptKind;
@@ -124,6 +128,8 @@ export interface SfxTextPreset {
   readonly labelKo: string;
   readonly labelEn: string;
   readonly text: string;
+  readonly renderingKind: "font-dependent-svg-text";
+  readonly glyphOutlineGenerated: false;
   readonly envelopeId: SfxEnvelopeId;
   readonly script: SfxScriptKind;
 }
@@ -216,6 +222,7 @@ export function detectSfxScript(text: string): SfxScriptKind {
 }
 
 function measureGlyphAspectRatio(ch: string): number {
+  if (/^\s+$/u.test(ch)) return 0.34;
   if (ch === "!" || ch === "?" || ch === "…" || ch === "." || ch === "~") return 0.56;
   const code = ch.codePointAt(0) ?? 0;
   if ((code >= 0xac00 && code <= 0xd7a3) || (code >= 0x3130 && code <= 0x318f)) return 1.0;
@@ -470,7 +477,7 @@ function buildStandaloneSemanticSvg(
         `  <g transform="${g.svgTransform}">`,
         `    <text x="${g.doubleStroke.shadowOffsetX}" y="${g.doubleStroke.shadowOffsetY}" text-anchor="middle" dominant-baseline="central" font-size="${baseFontSizePx}" font-weight="${fontWeight}" fill="currentColor" opacity="0.28">${escaped}</text>`,
         `    <text x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="${baseFontSizePx}" font-weight="${fontWeight}" fill="none" stroke="currentColor" stroke-width="${g.doubleStroke.outerStrokeWidthPx}" stroke-linejoin="round" paint-order="stroke fill">${escaped}</text>`,
-        `    <text x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="${baseFontSizePx}" font-weight="${fontWeight}" fill="currentColor">${escaped}</text>`,
+        `    <text x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="${baseFontSizePx}" font-weight="${fontWeight}" fill="var(--sfx-fill, currentColor)" stroke="var(--sfx-inner-stroke, currentColor)" stroke-width="${g.doubleStroke.innerStrokeWidthPx}" stroke-linejoin="round" paint-order="stroke fill">${escaped}</text>`,
         "  </g>",
       ].join("\n");
     })
@@ -478,7 +485,7 @@ function buildStandaloneSemanticSvg(
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" role="img">`,
-    `  <path d="${envelopeClosedPath}" fill="none" stroke="currentColor" stroke-dasharray="4 3" opacity="0.35" />`,
+    envelopeClosedPath ? `  <path d="${envelopeClosedPath}" fill="none" stroke="currentColor" stroke-dasharray="4 3" opacity="0.35" />` : "",
     accentMarkup,
     glyphMarkup,
     "</svg>",
@@ -492,6 +499,7 @@ export function generateSfxVectorEnvelope(
   text: string,
   options?: SfxVectorOptions,
 ): SfxVectorEnvelopeResult {
+  assertSfxInput(text, options);
   const envelopeId: SfxEnvelopeId = options?.envelopeId ?? "impact-burst";
   const spec = SFX_ENVELOPE_SPECS[envelopeId];
   const viewBoxWidth = round2(clamp(options?.viewBoxWidth ?? 420, 240, 960));
@@ -503,10 +511,9 @@ export function generateSfxVectorEnvelope(
   const innerStrokeWidthPx = round2(clamp(options?.innerStrokeWidthPx ?? spec.defaultInnerStrokePx, 0.5, outerStrokeWidthPx * 0.8));
   const seed = Math.floor(options?.seed ?? 41);
 
-  const normalizedText = text.trim() || spec.sampleText;
-  const script = detectSfxScript(normalizedText);
-  const rawChars = Array.from(normalizedText).filter((ch) => !/\s/u.test(ch));
-  const chars = rawChars.length > 0 ? rawChars : Array.from(spec.sampleText);
+  const normalizedText = text;
+  const script = detectSfxScript(text);
+  const chars = text.trim() ? segmentSfxGraphemes(text) : [];
   const count = chars.length;
 
   const autoFontSize = clamp(Math.round((viewBoxWidth * 0.66) / Math.max(2.6, count * 0.92)), 26, 62);
@@ -578,10 +585,11 @@ export function generateSfxVectorEnvelope(
   const minScale = scales.length > 0 ? round2(Math.min(...scales)) : 1;
   const maxScale = scales.length > 0 ? round2(Math.max(...scales)) : 1;
   const maxAbsShearDeg = glyphs.length > 0 ? round2(Math.max(...glyphs.map((g) => Math.abs(g.shearXDeg)))) : 0;
-  const totalVectorPathCount = glyphs.length * 3 + 1 + accentPaths.length;
+  // 실제 SVG의 path 수만 센다. 글자는 폰트 의존 text이며 쿼드는 안내 경계다.
+  const totalVectorPathCount = (envelopeClosedPath ? 1 : 0) + accentPaths.length;
 
   return {
-    text: normalizedText, envelopeId, spec, script, viewBoxWidth, viewBoxHeight,
+    text: normalizedText, renderingKind: "font-dependent-svg-text", glyphOutlineGenerated: false, envelopeId, spec, script, viewBoxWidth, viewBoxHeight,
     baseFontSizePx, arcIntensity, taperAmount, outerStrokeWidthPx, innerStrokeWidthPx,
     glyphs, minScale, maxScale, maxAbsShearDeg,
     envelopeUpperCurvePath, envelopeLowerCurvePath, envelopeClosedPath, accentPaths,

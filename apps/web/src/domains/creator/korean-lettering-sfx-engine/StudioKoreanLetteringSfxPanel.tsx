@@ -7,19 +7,22 @@ import {
   AlignCenter, CheckCircle2, Clock3, Columns2, Eye, MessageSquareText,
   ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Type, Wand2,
 } from "lucide-react";
-import { useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
 import {
-  BALLOON_SHAPE_IDS, BALLOON_SHAPE_SPECS, DEFAULT_BALLOON_PRESETS, typesetKoreanBalloon,
+  BALLOON_SHAPE_IDS, BALLOON_SHAPE_SPECS, DEFAULT_BALLOON_PRESETS,
   type BalloonDialoguePreset, type BalloonShapeId, type BalloonWritingMode,
   type KoreanBalloonTypesetResult, type ReadingDensityGrade,
 } from "./korean-balloon-typesetter";
 import {
-  DEFAULT_SFX_PRESETS, generateSfxVectorEnvelope, SFX_ENVELOPE_IDS, SFX_ENVELOPE_SPECS,
+  DEFAULT_SFX_PRESETS, SFX_ENVELOPE_IDS, SFX_ENVELOPE_SPECS,
   type SfxEnvelopeId, type SfxTextPreset, type SfxVectorEnvelopeResult,
 } from "./sfx-vector-path-generator";
+
+import { calculateBalloonPreview, calculateSfxPreview } from "./lettering-preview";
+import { useExampleNotification } from "./use-example-notification";
 
 export type KoreanLetteringSfxTabId = "balloon-typeset" | "sfx-vector";
 
@@ -32,8 +35,8 @@ export interface StudioKoreanLetteringSfxPanelProps {
   readonly initialDialogue?: string;
   readonly initialSfxEnvelope?: SfxEnvelopeId;
   readonly initialSfxText?: string;
-  readonly onBalloonTypeset?: (result: KoreanBalloonTypesetResult) => void;
-  readonly onSfxGenerated?: (result: SfxVectorEnvelopeResult) => void;
+  readonly onBalloonTypeset?: (result: KoreanBalloonTypesetResult) => void | Promise<void>;
+  readonly onSfxGenerated?: (result: SfxVectorEnvelopeResult) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -74,6 +77,9 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
   const pick = (ko: string, en: string): string => (isKo ? ko : en);
 
+  const notification = useExampleNotification();
+  const recipients = useRef({ onBalloonTypeset, onSfxGenerated });
+  useEffect(() => { recipients.current = { onBalloonTypeset, onSfxGenerated }; }, [onBalloonTypeset, onSfxGenerated]);
   const [activeTab, setActiveTab] = useState<KoreanLetteringSfxTabId>(initialTab);
   const [dialogueText, setDialogueText] = useState<string>(initialDialogue);
   const [balloonShape, setBalloonShape] = useState<BalloonShapeId>(initialBalloonShape);
@@ -93,15 +99,15 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
   const [showQuadGuides, setShowQuadGuides] = useState<boolean>(false);
   const [lastSfxStatus, setLastSfxStatus] = useState<string | null>(null);
 
-  const balloonResult = useMemo(
-    () => typesetKoreanBalloon(dialogueText, {
+  const balloonCalculation = useMemo(
+    () => calculateBalloonPreview(dialogueText, {
       shape: balloonShape, writingMode, balloonWidthPx, fontSizePx, preventOrphans: true,
     }),
     [dialogueText, balloonShape, writingMode, balloonWidthPx, fontSizePx],
   );
 
-  const sfxResult = useMemo(
-    () => generateSfxVectorEnvelope(sfxText, {
+  const sfxCalculation = useMemo(
+    () => calculateSfxPreview(sfxText, {
       envelopeId: sfxEnvelopeId, arcIntensity: arcPct / 100, shearMultiplier: shearPct / 100,
       taperAmount: taperPct / 100, outerStrokeWidthPx: outerStrokePx,
       innerStrokeWidthPx: Math.max(1, Math.round(outerStrokePx * 0.36 * 10) / 10),
@@ -109,42 +115,64 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
     [sfxText, sfxEnvelopeId, arcPct, shearPct, taperPct, outerStrokePx],
   );
 
+  const balloonResult = balloonCalculation.result;
+  const sfxResult = sfxCalculation.result;
+  const notifyBalloon = (calculation: ReturnType<typeof calculateBalloonPreview>): void => {
+    if (calculation.result && !calculation.result.hasLayoutOverflow && calculation.result.text.trim()) {
+      const result = calculation.result;
+      notification.notify(() => {
+        const recipient = recipients.current.onBalloonTypeset;
+        return recipient ? () => recipient(result) : undefined;
+      });
+    }
+  };
+  const notifySfx = (calculation: ReturnType<typeof calculateSfxPreview>): void => {
+    if (calculation.result && calculation.result.glyphs.length > 0) {
+      const result = calculation.result;
+      notification.notify(() => {
+        const recipient = recipients.current.onSfxGenerated;
+        return recipient ? () => recipient(result) : undefined;
+      });
+    }
+  };
+
   const handleApplyBalloonPreset = (preset: BalloonDialoguePreset): void => {
+    if (notification.isPending()) return;
     setDialogueText(preset.text);
     setBalloonShape(preset.shape);
     setWritingMode(preset.writingMode);
     setBalloonWidthPx(preset.balloonWidthPx);
     setFontSizePx(preset.fontSizePx);
-    onBalloonTypeset?.(typesetKoreanBalloon(preset.text, {
+    notifyBalloon(calculateBalloonPreview(preset.text, {
       shape: preset.shape, writingMode: preset.writingMode,
       balloonWidthPx: preset.balloonWidthPx, fontSizePx: preset.fontSizePx, preventOrphans: true,
     }));
   };
 
   const handleSelectBalloonShape = (nextShape: BalloonShapeId): void => {
+    if (notification.isPending()) return;
     setBalloonShape(nextShape);
-    onBalloonTypeset?.(typesetKoreanBalloon(dialogueText, {
+    notifyBalloon(calculateBalloonPreview(dialogueText, {
       shape: nextShape, writingMode, balloonWidthPx, fontSizePx, preventOrphans: true,
     }));
   };
 
   const handleSelectWritingMode = (nextMode: BalloonWritingMode): void => {
+    if (notification.isPending()) return;
     setWritingMode(nextMode);
-    onBalloonTypeset?.(typesetKoreanBalloon(dialogueText, {
+    notifyBalloon(calculateBalloonPreview(dialogueText, {
       shape: balloonShape, writingMode: nextMode, balloonWidthPx, fontSizePx, preventOrphans: true,
     }));
   };
 
   const handleCommitBalloon = (): void => {
-    onBalloonTypeset?.(balloonResult);
-    setLastBalloonStatus(
-      writingMode === "vertical-rl"
-        ? pick(`세로쓰기 ${balloonResult.verticalColumns.length}열 광학 조판 반영 (${balloonResult.readingTime.readingTimeSec.toFixed(2)}초)`, `Applied vertical-rl ${balloonResult.verticalColumns.length} cols (${balloonResult.readingTime.readingTimeSec.toFixed(2)}s)`)
-        : pick(`${balloonResult.lines.length}줄 다이아몬드 조판 반영 (균형 ${balloonResult.diamondBalanceScore}점)`, `Applied ${balloonResult.lines.length}-line diamond layout (score ${balloonResult.diamondBalanceScore})`),
-    );
+    if (notification.isPending() || !balloonResult || balloonResult.hasLayoutOverflow || !dialogueText.trim()) return;
+    notifyBalloon(balloonCalculation);
+    setLastBalloonStatus(pick("말풍선 예제 구성 확인. 현재 원고·저장 상태는 바뀌지 않습니다.", "Balloon example inspected. Manuscript and persistence are unchanged."));
   };
 
   const handleSelectSfxEnvelope = (nextEnvelope: SfxEnvelopeId): void => {
+    if (notification.isPending()) return;
     const spec = SFX_ENVELOPE_SPECS[nextEnvelope];
     const nextArc = Math.round(spec.defaultArcIntensity * 100);
     const nextTaper = Math.round(spec.defaultTaperAmount * 100);
@@ -153,13 +181,14 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
     setShearPct(100);
     setTaperPct(nextTaper);
     setOuterStrokePx(spec.defaultOuterStrokePx);
-    onSfxGenerated?.(generateSfxVectorEnvelope(sfxText, {
+    notifySfx(calculateSfxPreview(sfxText, {
       envelopeId: nextEnvelope, arcIntensity: nextArc / 100, shearMultiplier: 1,
       taperAmount: nextTaper / 100, outerStrokeWidthPx: spec.defaultOuterStrokePx,
     }));
   };
 
   const handleSelectSfxPreset = (preset: SfxTextPreset): void => {
+    if (notification.isPending()) return;
     const spec = SFX_ENVELOPE_SPECS[preset.envelopeId];
     const nextArc = Math.round(spec.defaultArcIntensity * 100);
     const nextTaper = Math.round(spec.defaultTaperAmount * 100);
@@ -169,17 +198,16 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
     setShearPct(100);
     setTaperPct(nextTaper);
     setOuterStrokePx(spec.defaultOuterStrokePx);
-    onSfxGenerated?.(generateSfxVectorEnvelope(preset.text, {
+    notifySfx(calculateSfxPreview(preset.text, {
       envelopeId: preset.envelopeId, arcIntensity: nextArc / 100, shearMultiplier: 1,
       taperAmount: nextTaper / 100, outerStrokeWidthPx: spec.defaultOuterStrokePx,
     }));
   };
 
   const handleCommitSfx = (): void => {
-    onSfxGenerated?.(sfxResult);
-    setLastSfxStatus(
-      pick(`${sfxResult.spec.labelKo} 벡터 경로 ${sfxResult.totalVectorPathCount}개 생성 완료`, `${sfxResult.spec.labelEn} generated (${sfxResult.totalVectorPathCount} vector paths)`),
-    );
+    if (notification.isPending() || !sfxResult || sfxResult.glyphs.length === 0) return;
+    notifySfx(sfxCalculation);
+    setLastSfxStatus(pick("폰트 의존 SVG 텍스트 예제 구성 확인. 실제 레이어 생성·저장은 연결되지 않았습니다.", "Font-dependent SVG text example inspected. No layer creation or persistence is connected."));
   };
 
   const tabs: readonly { readonly id: KoreanLetteringSfxTabId; readonly label: string; readonly icon: ReactElement }[] = [
@@ -189,8 +217,8 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
 
   const svgPadX = 16;
   const svgPadY = 22;
-  const balloonViewW = balloonResult.balloonWidthPx + svgPadX * 2;
-  const balloonViewH = balloonResult.balloonHeightPx + svgPadY * 2;
+  const balloonViewW = (balloonResult?.balloonWidthPx ?? 0) + svgPadX * 2;
+  const balloonViewH = (balloonResult?.balloonHeightPx ?? 0) + svgPadY * 2;
 
   return (
     <section
@@ -207,7 +235,7 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
             </h2>
           </div>
           <p className="text-xs text-fg-2">
-            {pick("5종 말풍선의 내접 폭 곡선(sqrt(1-y²))으로 어절을 깨지 않는 다이아몬드 조판과 세로쓰기를 계산하고, 다국어 의성어를 5종 파라메트릭 이중 외곽선 벡터로 생성합니다.", "Balance Korean eojeol lines inside 5 balloon curves sqrt(1-y²) with orphan prevention and vertical-rl layout, then sculpt 5 parametric double-stroke SFX vector envelopes.")}
+            {pick("CPU·메모리의 조판 좌표와 폰트 의존 SVG 텍스트 미리보기 예제입니다. 글자 폭·읽기 시간은 가정값이며 실제 글꼴 계측·글리프 외곽선·원근 워프·현재 원고 적용·저장·내보내기는 연결되지 않았습니다. 대사 1024자·128어절, SFX 128자까지 계산하며 한도 초과 시 원문을 유지합니다.", "CPU/in-memory layout coordinates and font-dependent SVG text examples. Widths and reading times are estimates. No font measurement, glyph outlining, perspective glyph warp, manuscript apply, persistence, or export is connected. Limits: 1024 dialogue units/128 words, 128 SFX units; source is preserved on overflow.")}
           </p>
         </div>
         <span data-testid="badge-lettering-engine-ready" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-good bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">
@@ -216,6 +244,10 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
         </span>
       </header>
 
+      {notification.status !== "idle" && <div role={notification.status === "failed" ? "alert" : "status"} data-testid="example-notification-status" className="text-xs text-fg-2">
+        {notification.pending ? pick("예제 결과 알림 처리 중", "Example notification pending") : notification.status === "failed" ? pick(`예제 결과 알림 실패: ${notification.error}`, `Example notification failed: ${notification.error}`) : pick("핸들러 응답 확인. 실제 적용·저장 완료를 뜻하지 않습니다.", "Handler responded. No apply or save is confirmed.")}
+        {notification.status === "failed" && <button type="button" className={PILL_BTN} onClick={notification.retry}>{pick("결과 알림 다시 시도", "Retry notification")}</button>}
+      </div>}
       <div role="tablist" aria-label={pick("한국어 식자 및 의성어 작업 탭", "Korean lettering and SFX tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
           <button
@@ -231,7 +263,7 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
       </div>
 
       {activeTab === "balloon-typeset" && (
-        <div role="tabpanel" id={`${uid}-panel-balloon-typeset`} aria-labelledby={`${uid}-tab-balloon-typeset`} data-testid="panel-balloon-typeset" className="space-y-4">
+        <fieldset disabled={notification.pending} role="tabpanel" id={`${uid}-panel-balloon-typeset`} aria-labelledby={`${uid}-tab-balloon-typeset`} data-testid="panel-balloon-typeset" className="min-w-0 space-y-4">
           <div className="space-y-2.5 rounded-lg border border-line bg-card p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg">
@@ -293,7 +325,7 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
             <div className="space-y-1.5 border-t border-line/60 pt-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-fg">{pick("말풍선 5종 내접 곡선 프로파일", "5 Balloon Inscribed-Curve Profiles")}</span>
-                <span className="text-[11px] text-fg-2">{isKo ? balloonResult.shapeSpec.summaryKo : balloonResult.shapeSpec.summaryEn}</span>
+                <span className="text-[11px] text-fg-2">{isKo ? BALLOON_SHAPE_SPECS[balloonShape].summaryKo : BALLOON_SHAPE_SPECS[balloonShape].summaryEn}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {BALLOON_SHAPE_IDS.map((shapeId) => (
@@ -309,22 +341,25 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
             </div>
           </div>
 
+          {balloonCalculation.error && <p role="alert" data-testid="balloon-typeset-input-error" className="text-xs text-bad">{balloonCalculation.error}</p>}
+          {balloonResult && <>
+          {balloonResult.hasLayoutOverflow && <p role="alert" data-testid="balloon-layout-overflow" className="text-xs text-bad">{pick(`예제 경계 넘침: 세로 열 높이 ${balloonResult.verticalOverflowPx}px · ${writingMode === "vertical-rl" ? "좌우/열 간격" : "가로 행 높이"} ${balloonResult.horizontalOverflowPx}px / 폭 비율 ${balloonResult.maxOverflowRatio}. 원문은 유지되며 결과 알림은 중단됩니다.`, "Example layout overflows. Source is preserved and result notification is blocked.")}</p>}
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-3">
               <div className="text-[11px] text-fg-3">{pick("다이아몬드 광학 균형", "Diamond Balance")}</div>
               <div data-testid="kpi-diamond-balance" className="mt-1 text-base font-bold text-accent tabular-nums">{balloonResult.diamondBalanceScore} / 100</div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("외톨이 1글자 행 검사", "Orphan / Widow Guard")}</div>
+              <div className="text-[11px] text-fg-3">{pick("가로 행 기준 외톨이 검사", "Horizontal-Line Orphan Check")}</div>
               <div className="mt-1 flex items-center gap-1.5">
                 <span data-testid="kpi-orphan-status" className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums ${balloonResult.orphanLineCount === 0 ? "border-good bg-good-soft text-good" : "border-warn bg-warning-soft text-warn"}`}>
                   {balloonResult.orphanLineCount === 0 ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />}
-                  {balloonResult.orphanLineCount === 0 ? pick("0행 · 방지 완료", "0 orphans · Clean") : pick(`${balloonResult.orphanLineCount}행 주의`, `${balloonResult.orphanLineCount} warning`)}
+                  {balloonResult.orphanLineCount === 0 ? pick("0행 · 검출 없음", "0 horizontal orphans detected") : pick(`${balloonResult.orphanLineCount}행 주의`, `${balloonResult.orphanLineCount} warning`)}
                 </span>
               </div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("독자 가독 시간", "Reader Time")}</div>
+              <div className="text-[11px] text-fg-3">{pick("가정 속도 기반 읽기 시간 추정", "Reading Time Estimate")}</div>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span data-testid="kpi-reading-time" className="inline-flex items-center gap-1 text-base font-bold text-fg tabular-nums">
                   <Clock3 className="h-3.5 w-3.5 text-cool" aria-hidden="true" />
@@ -402,9 +437,9 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
               </svg>
 
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <button type="button" data-testid="btn-apply-balloon-layout" onClick={handleCommitBalloon} className={`${PILL_BTN} ${SOLID_ACTIVE}`}>
+                <button type="button" data-testid="btn-apply-balloon-layout" onClick={handleCommitBalloon} disabled={balloonResult.hasLayoutOverflow || !dialogueText.trim()} className={`${PILL_BTN} ${SOLID_ACTIVE}`}>
                   <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>{pick("말풍선 조판 컷에 적용", "Apply Balloon Layout")}</span>
+                  <span>{pick("말풍선 예제 구성 확인", "Inspect Balloon Example")}</span>
                 </button>
                 {lastBalloonStatus && <span data-testid="balloon-apply-status" className="text-xs font-medium text-good tabular-nums">{lastBalloonStatus}</span>}
               </div>
@@ -448,11 +483,12 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
               )}
             </div>
           </div>
-        </div>
+          </>}
+        </fieldset>
       )}
 
       {activeTab === "sfx-vector" && (
-        <div role="tabpanel" id={`${uid}-panel-sfx-vector`} aria-labelledby={`${uid}-tab-sfx-vector`} data-testid="panel-sfx-vector" className="space-y-4">
+        <fieldset disabled={notification.pending} role="tabpanel" id={`${uid}-panel-sfx-vector`} aria-labelledby={`${uid}-tab-sfx-vector`} data-testid="panel-sfx-vector" className="min-w-0 space-y-4">
           <div className="space-y-2.5 rounded-lg border border-line bg-card p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg">
@@ -460,7 +496,7 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
                 {pick("다국어 의성어·의태어 빠른 프리셋", "Multi-Script SFX Quick Presets")}
               </span>
               <span data-testid="sfx-script-badge" className="rounded-full border border-line bg-info-soft px-2 py-0.5 text-[11px] font-semibold text-cool">
-                {scriptBadgeLabel(sfxResult.script, isKo)}
+                {sfxResult ? scriptBadgeLabel(sfxResult.script, isKo) : pick("미계산", "Not calculated")}
               </span>
             </div>
 
@@ -478,7 +514,7 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
                   {pick("의성어 텍스트 (한국어 · 영어 · 일본어)", "SFX Text (KO · EN · JA)")}
                 </label>
                 <input id={`${uid}-sfx-text-input`} data-testid="sfx-text-input" type="text" value={sfxText} onChange={(e) => setSfxText(e.target.value)} className={`min-h-11 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm font-bold text-fg ${FOCUS_RING}`} />
-                <p className="text-[11px] text-fg-2">{isKo ? sfxResult.spec.summaryKo : sfxResult.spec.summaryEn}</p>
+                <p className="text-[11px] text-fg-2">{isKo ? SFX_ENVELOPE_SPECS[sfxEnvelopeId].summaryKo : SFX_ENVELOPE_SPECS[sfxEnvelopeId].summaryEn}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 md:col-span-7">
@@ -522,6 +558,8 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
             </div>
           </div>
 
+          {sfxCalculation.error && <p role="alert" data-testid="sfx-vector-input-error" className="text-xs text-bad">{sfxCalculation.error}</p>}
+          {sfxResult && <>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-3">
               <div className="text-[11px] text-fg-3">{pick("원근 배율 범위", "Perspective Scale")}</div>
@@ -538,7 +576,7 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
               </div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("생성 벡터 경로 수", "Vector Path Nodes")}</div>
+              <div className="text-[11px] text-fg-3">{pick("장식 SVG 경로 수 (글리프 제외)", "Decorative SVG Paths (No Glyph Outlines)")}</div>
               <div data-testid="kpi-sfx-paths" className="mt-1 text-base font-bold text-fg tabular-nums">{sfxResult.totalVectorPathCount} {pick("개", "paths")}</div>
             </div>
           </div>
@@ -549,7 +587,7 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
                 <h3 className="text-xs font-semibold text-fg">{pick("이중 외곽선 · 파라메트릭 SFX 벡터 프리뷰", "Double-Stroke Parametric SFX Vector Preview")}</h3>
                 <button type="button" data-testid="btn-toggle-quad-guides" aria-pressed={showQuadGuides} onClick={() => setShowQuadGuides((prev) => !prev)} className={`${PILL_BTN} ${showQuadGuides ? ACTIVE_TONE : IDLE_TONE}`}>
                   <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>{pick("원근 워프 쿼드", "Warp Quads")}</span>
+                  <span>{pick("사각 경계 가이드", "Quad Bounds Guides")}</span>
                 </button>
               </div>
 
@@ -575,9 +613,9 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
               </svg>
 
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <button type="button" data-testid="btn-generate-sfx-layer" onClick={handleCommitSfx} className={`${PILL_BTN} ${SOLID_ACTIVE}`}>
+                <button type="button" data-testid="btn-generate-sfx-layer" onClick={handleCommitSfx} disabled={sfxResult.glyphs.length === 0} className={`${PILL_BTN} ${SOLID_ACTIVE}`}>
                   <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>{pick("SFX 벡터 레이어 확정", "Commit SFX Vector Layer")}</span>
+                  <span>{pick("SFX 텍스트 예제 구성 확인", "Inspect SFX Text Example")}</span>
                 </button>
                 {lastSfxStatus && <span data-testid="sfx-commit-status" className="text-xs font-medium text-good tabular-nums">{lastSfxStatus}</span>}
               </div>
@@ -602,7 +640,8 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
               </ul>
             </div>
           </div>
-        </div>
+          </>}
+        </fieldset>
       )}
     </section>
   );

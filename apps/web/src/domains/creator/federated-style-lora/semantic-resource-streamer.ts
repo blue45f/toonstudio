@@ -1,17 +1,23 @@
 /**
- * 시맨틱 버전(vMajor.Minor.Patch) + 컷/레이어 LOD 티어 기반 동적 리소스 스트리밍 · OPFS LRU 캐시 엔진 (Wave 41A).
+ * 시맨틱 버전·LOD 우선순위·합성 바이트 체크섬·메모리 캐시 메타데이터 예제 (Wave 41A).
  * - 순수 32비트 정수 연산 기반 결정론적 SHA-256(FIPS 180-4) 청크 무결성 검증 (BigInt 리터럴 미사용)
  * - 뷰포트 거리·스크롤 방향·줌 배율 기반 프리페치 우선순위 큐
- * - OPFS LRU 메모리 예산 초과 시 자동 축출(eviction) 및 시맨틱 버전 차등 무효화
+ * - 파일·네트워크·OPFS 작업 없이 메모리 메타데이터만 기록한다. 실제 청크 데이터 저장이 아니다.
  * - 100% 인메모리 불변 상태 모델 (브라우저 스토리지 및 private Map store 미사용)
  */
+
+import { computeSha256Hex, computeSha256HexFromText } from "./stream-sha256";
+import { assertAsset, assertBudget, assertCache, assertCatalog, assertTier, assertVersion, assertViewport, MAX_SYNTHETIC_BYTES } from "./resource-stream-contract";
+import { requireFinite, requireId, requireInteger } from "./lora-input-contract";
+
+export { computeSha256Hex, computeSha256HexFromText } from "./stream-sha256";
 
 export type ResourceLodTier = "thumb" | "working" | "print-4k";
 export type ScrollDirection = "down" | "up" | "idle";
 export type SemVerBumpKind = "major" | "minor" | "patch";
 export type PrefetchReason = "viewport-visible" | "scroll-lookahead" | "zoom-upgrade" | "version-refresh" | "background-warm";
 export type CacheChunkStatus = "valid" | "stale-patch" | "stale-minor";
-export type CacheFetchRejectReason = "sha256-mismatch" | "exceeds-total-budget";
+export type CacheFetchRejectReason = "sha256-mismatch" | "exceeds-total-budget" | "payload-size-mismatch";
 
 export interface SemanticVersion {
   readonly major: number;
@@ -91,6 +97,8 @@ export interface EvictionEvent {
 }
 
 export interface OpfsLruCacheState {
+  readonly storageKind: "in-memory-metadata";
+  readonly persistent: false;
   readonly budgetBytes: number;
   readonly usedBytes: number;
   readonly entries: readonly CachedResourceChunk[];
@@ -120,6 +128,7 @@ export interface ChunkCacheAccessResult {
 }
 
 export interface PrefetchStepReport {
+  readonly blockedKeys: readonly string[];
   readonly fetchedKeys: readonly string[];
   readonly evictedCount: number;
   readonly remainingQueueLength: number;
@@ -164,135 +173,22 @@ export const DEFAULT_VIEWPORT_SCROLL_STATE: ViewportScrollState = {
   zoomLevel: 1.0,
 };
 
-// FIPS 180-4 SHA-256 초기 해시값 · 64라운드 상수 (순수 32비트 정수)
-const SHA256_H0 = new Uint32Array([
-  0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
-]);
-const SHA256_K = new Uint32Array([
-  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
-]);
-
-function rotr32(value: number, bits: number): number {
-  return ((value >>> bits) | (value << (32 - bits))) >>> 0;
-}
-
-/** 순수 32비트 정수 연산 기반 결정론적 SHA-256 해시(64자리 소문자 hex, BigInt 미사용). */
-export function computeSha256Hex(bytes: Uint8Array): string {
-  const byteLength = bytes.length;
-  const totalLen = Math.ceil((byteLength + 9) / 64) * 64;
-  const padded = new Uint8Array(totalLen);
-  padded.set(bytes, 0);
-  padded[byteLength] = 0x80;
-
-  const bitLenLow = (byteLength << 3) >>> 0;
-  const bitLenHigh = Math.floor(byteLength / 0x20000000) >>> 0;
-  const lenOff = totalLen - 8;
-  padded[lenOff] = (bitLenHigh >>> 24) & 0xff;
-  padded[lenOff + 1] = (bitLenHigh >>> 16) & 0xff;
-  padded[lenOff + 2] = (bitLenHigh >>> 8) & 0xff;
-  padded[lenOff + 3] = bitLenHigh & 0xff;
-  padded[lenOff + 4] = (bitLenLow >>> 24) & 0xff;
-  padded[lenOff + 5] = (bitLenLow >>> 16) & 0xff;
-  padded[lenOff + 6] = (bitLenLow >>> 8) & 0xff;
-  padded[lenOff + 7] = bitLenLow & 0xff;
-
-  let h0 = SHA256_H0[0] ?? 0;
-  let h1 = SHA256_H0[1] ?? 0;
-  let h2 = SHA256_H0[2] ?? 0;
-  let h3 = SHA256_H0[3] ?? 0;
-  let h4 = SHA256_H0[4] ?? 0;
-  let h5 = SHA256_H0[5] ?? 0;
-  let h6 = SHA256_H0[6] ?? 0;
-  let h7 = SHA256_H0[7] ?? 0;
-  const w = new Uint32Array(64);
-
-  for (let offset = 0; offset < totalLen; offset += 64) {
-    for (let i = 0; i < 16; i += 1) {
-      const idx = offset + i * 4;
-      w[i] = (((padded[idx] ?? 0) << 24) | ((padded[idx + 1] ?? 0) << 16) | ((padded[idx + 2] ?? 0) << 8) | (padded[idx + 3] ?? 0)) >>> 0;
-    }
-    for (let i = 16; i < 64; i += 1) {
-      const w15 = w[i - 15] ?? 0;
-      const w2 = w[i - 2] ?? 0;
-      const s0 = (rotr32(w15, 7) ^ rotr32(w15, 18) ^ (w15 >>> 3)) >>> 0;
-      const s1 = (rotr32(w2, 17) ^ rotr32(w2, 19) ^ (w2 >>> 10)) >>> 0;
-      w[i] = ((w[i - 16] ?? 0) + s0 + (w[i - 7] ?? 0) + s1) >>> 0;
-    }
-
-    let a = h0;
-    let b = h1;
-    let c = h2;
-    let d = h3;
-    let e = h4;
-    let f = h5;
-    let g = h6;
-    let h = h7;
-
-    for (let i = 0; i < 64; i += 1) {
-      const S1 = (rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25)) >>> 0;
-      const ch = ((e & f) ^ ((~e >>> 0) & g)) >>> 0;
-      const temp1 = (h + S1 + ch + (SHA256_K[i] ?? 0) + (w[i] ?? 0)) >>> 0;
-      const S0 = (rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22)) >>> 0;
-      const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
-      const temp2 = (S0 + maj) >>> 0;
-      h = g; g = f; f = e; e = (d + temp1) >>> 0;
-      d = c; c = b; b = a; a = (temp1 + temp2) >>> 0;
-    }
-
-    h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
-    h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + h) >>> 0;
-  }
-
-  return [h0, h1, h2, h3, h4, h5, h6, h7].map((word) => word.toString(16).padStart(8, "0")).join("");
-}
-
-/** UTF-8 문자열의 결정론적 SHA-256 해시를 계산한다. */
-export function computeSha256HexFromText(text: string): string {
-  const bytes = new Uint8Array(text.length * 3);
-  let pos = 0;
-  for (let i = 0; i < text.length; i += 1) {
-    const code = text.charCodeAt(i);
-    if (code < 0x80) {
-      bytes[pos++] = code;
-    } else if (code < 0x800) {
-      bytes[pos++] = 0xc0 | (code >>> 6);
-      bytes[pos++] = 0x80 | (code & 0x3f);
-    } else if (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length) {
-      const cp = 0x10000 + (((code - 0xd800) << 10) | (text.charCodeAt(++i) - 0xdc00));
-      bytes[pos++] = 0xf0 | (cp >>> 18);
-      bytes[pos++] = 0x80 | ((cp >>> 12) & 0x3f);
-      bytes[pos++] = 0x80 | ((cp >>> 6) & 0x3f);
-      bytes[pos++] = 0x80 | (cp & 0x3f);
-    } else {
-      bytes[pos++] = 0xe0 | (code >>> 12);
-      bytes[pos++] = 0x80 | ((code >>> 6) & 0x3f);
-      bytes[pos++] = 0x80 | (code & 0x3f);
-    }
-  }
-  return computeSha256Hex(bytes.subarray(0, pos));
-}
-
 export function parseSemanticVersion(raw: string): SemanticVersion | null {
   const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(raw.trim());
   if (!match) return null;
   const major = Number(match[1]);
   const minor = Number(match[2]);
   const patch = Number(match[3]);
-  return Number.isInteger(major) && Number.isInteger(minor) && Number.isInteger(patch) ? { major, minor, patch } : null;
+  return Number.isSafeInteger(major) && Number.isSafeInteger(minor) && Number.isSafeInteger(patch) ? { major, minor, patch } : null;
 }
 
 export function formatSemanticVersion(version: SemanticVersion): string {
+  assertVersion(version);
   return `v${version.major}.${version.minor}.${version.patch}`;
 }
 
 export function compareSemanticVersions(a: SemanticVersion, b: SemanticVersion): -1 | 0 | 1 {
+  assertVersion(a); assertVersion(b);
   if (a.major !== b.major) return a.major < b.major ? -1 : 1;
   if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
   if (a.patch !== b.patch) return a.patch < b.patch ? -1 : 1;
@@ -300,21 +196,25 @@ export function compareSemanticVersions(a: SemanticVersion, b: SemanticVersion):
 }
 
 export function bumpSemanticVersion(version: SemanticVersion, kind: SemVerBumpKind): SemanticVersion {
+  assertVersion(version);
   if (kind === "major") return { major: version.major + 1, minor: 0, patch: 0 };
   if (kind === "minor") return { major: version.major, minor: version.minor + 1, patch: 0 };
   return { major: version.major, minor: version.minor, patch: version.patch + 1 };
 }
 
 export function makeResourceChunkKey(resourceId: string, tier: ResourceLodTier): string {
-  return `${resourceId}@${tier}`;
+  requireId(resourceId); assertTier(tier);
+  return JSON.stringify([resourceId, tier]);
 }
 
 export function makeOpfsChunkPath(resourceId: string, tier: ResourceLodTier, version: SemanticVersion): string {
-  return `/opfs/toonstudio/chunks/${resourceId}/${tier}/${formatSemanticVersion(version)}.bin`;
+  requireId(resourceId); assertTier(tier); assertVersion(version);
+  return `/example-path-only/toonstudio/chunks/${encodeURIComponent(resourceId)}/${tier}/${formatSemanticVersion(version)}.bin`;
 }
 
 export function selectLodTierForZoom(zoomLevel: number, override?: ResourceLodTier): ResourceLodTier {
-  if (override) return override;
+  requireFinite(zoomLevel, "줌", Number.MIN_VALUE, 64);
+  if (override) { assertTier(override); return override; }
   if (zoomLevel < LOD_TIER_SPECS.working.minZoom) return "thumb";
   return zoomLevel >= LOD_TIER_SPECS["print-4k"].minZoom ? "print-4k" : "working";
 }
@@ -326,7 +226,9 @@ export function synthesizeDeterministicChunkPayload(
   version: SemanticVersion,
   byteLength: number,
 ): Uint8Array {
-  const safeLength = Math.max(64, Math.floor(byteLength));
+  requireId(resourceId); assertTier(tier); assertVersion(version);
+  requireInteger(byteLength, "합성 바이트 수", 64, MAX_SYNTHETIC_BYTES);
+  const safeLength = byteLength;
   const payload = new Uint8Array(safeLength);
   const seedHex = computeSha256HexFromText(`${resourceId}|${tier}|${formatSemanticVersion(version)}|${safeLength}`);
   let state = (Number.parseInt(seedHex.slice(0, 8), 16) >>> 0) || 0x9e3779b9;
@@ -389,8 +291,10 @@ export function createDefaultEpisodeStreamCatalog(): readonly SemanticResourceAs
 }
 
 export function createOpfsLruCacheState(budgetBytes = 512 * 1024): OpfsLruCacheState {
+  assertBudget(budgetBytes);
   return {
-    budgetBytes: Math.max(64 * 1024, Math.floor(budgetBytes)),
+    storageKind: "in-memory-metadata", persistent: false,
+    budgetBytes,
     usedBytes: 0,
     entries: [],
     evictionLog: [],
@@ -454,8 +358,10 @@ function evictUntilUnderLimit(
 
 /** 캐시 예산을 변경하고 초과분을 LRU 순서로 즉시 자동 축출한다. */
 export function resizeOpfsLruBudget(cache: OpfsLruCacheState, nextBudgetBytes: number): OpfsLruCacheState {
-  const clampedBudget = Math.max(64 * 1024, Math.floor(nextBudgetBytes));
+  assertCache(cache); assertBudget(nextBudgetBytes);
+  const clampedBudget = nextBudgetBytes;
   const trimmed = evictUntilUnderLimit(cache.entries, cache.usedBytes, cache.accessTick, clampedBudget);
+  if (!trimmed.ok) throw new RangeError("고정된 청크 메타데이터가 새 예산보다 큽니다. 기존 상태를 유지합니다.");
   return {
     ...cache,
     budgetBytes: clampedBudget,
@@ -474,8 +380,11 @@ export function fetchAndCacheChunk(
   payloadBytes: Uint8Array,
   options?: { readonly expectedHash?: string; readonly pinned?: boolean },
 ): ChunkCacheWriteResult {
+  assertCache(cache); assertAsset(asset); assertTier(tier);
   const expectedHash = (options?.expectedHash ?? asset.lodHashes[tier]).toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(expectedHash)) throw new RangeError("기대 체크섬 형식이 올바르지 않습니다.");
   const computedHash = computeSha256Hex(payloadBytes);
+  if (payloadBytes.byteLength !== asset.lodByteSizes[tier]) return { ok: false, rejectReason: "payload-size-mismatch", computedHash, expectedHash, evictedEvents: [], cache };
 
   if (computedHash !== expectedHash) {
     return {
@@ -518,7 +427,8 @@ export function fetchAndCacheChunk(
     opfsPath: makeOpfsChunkPath(asset.resourceId, tier, asset.version),
     insertedAtTick: nextTick,
     lastAccessedTick: nextTick,
-    pinned: options?.pinned ?? false,
+    // 재기록은 기존 보호를 유지하고, 명시한 false로만 해제한다.
+    pinned: options?.pinned ?? existing?.pinned ?? false,
     status: "valid",
   };
 
@@ -547,6 +457,7 @@ export function accessCachedChunk(
   tier: ResourceLodTier,
   requiredVersion?: SemanticVersion,
 ): ChunkCacheAccessResult {
+  assertCache(cache);
   const key = makeResourceChunkKey(resourceId, tier);
   const foundIdx = cache.entries.findIndex((entry) => entry.chunkKey === key);
   const found = foundIdx >= 0 ? cache.entries[foundIdx] : undefined;
@@ -577,6 +488,7 @@ export function buildPrefetchPriorityQueue(
   cache: OpfsLruCacheState,
   options?: { readonly includeFallbackThumb?: boolean },
 ): readonly PrefetchQueueEntry[] {
+  assertCatalog(assets); assertViewport(viewport); assertCache(cache);
   const viewTop = viewport.scrollY;
   const viewBottom = viewport.scrollY + Math.max(200, viewport.viewportHeight);
   const viewCenter = (viewTop + viewBottom) * 0.5;
@@ -661,11 +573,13 @@ export function stepPrefetchStream(
   viewport: ViewportScrollState,
   options?: { readonly maxChunksPerStep?: number },
 ): PrefetchStepReport {
-  const maxChunks = Math.max(1, options?.maxChunksPerStep ?? 3);
+  const maxChunks = options?.maxChunksPerStep ?? 3;
+  requireInteger(maxChunks, "스텝당 합성 청크 수", 1, 128);
   const queue = buildPrefetchPriorityQueue(assets, viewport, cache);
   const assetById = new Map(assets.map((asset) => [asset.resourceId, asset]));
   let nextCache = cache;
   const fetchedKeys: string[] = [];
+  const blockedKeys: string[] = [];
   let evictedCount = 0;
 
   for (const item of queue) {
@@ -678,11 +592,11 @@ export function stepPrefetchStream(
     if (result.ok) {
       fetchedKeys.push(item.chunkKey);
       evictedCount += result.evictedEvents.length;
-    }
+    } else blockedKeys.push(item.chunkKey);
   }
 
   const nextQueue = buildPrefetchPriorityQueue(assets, viewport, nextCache);
-  return { fetchedKeys, evictedCount, remainingQueueLength: nextQueue.length, cache: nextCache, nextQueue };
+  return { fetchedKeys, blockedKeys, evictedCount, remainingQueueLength: nextQueue.length, cache: nextCache, nextQueue };
 }
 
 /** 리소스의 시맨틱 버전을 올리고 semver 차등 무효화 정책(major 전량·minor 고해상도·patch 스테일)을 적용한다. */
@@ -692,6 +606,7 @@ export function bumpAssetSemanticVersion(
   resourceId: string,
   bumpKind: SemVerBumpKind,
 ): SemVerInvalidationResult {
+  assertCatalog(assets); assertCache(cache); requireId(resourceId);
   const target = assets.find((asset) => asset.resourceId === resourceId);
   if (!target) {
     return { assets, cache, previousVersion: null, nextVersion: null, evictedKeys: [], markedStaleKeys: [] };
@@ -757,6 +672,7 @@ export function bumpAssetSemanticVersion(
 
 /** OPFS LRU 스트리밍 캐시의 핵심 텔레메트리를 계산한다. */
 export function computeStreamCacheTelemetry(cache: OpfsLruCacheState): StreamCacheTelemetry {
+  assertCache(cache);
   const totalLookups = cache.hits + cache.misses;
   return {
     usedBytes: cache.usedBytes,
@@ -764,7 +680,7 @@ export function computeStreamCacheTelemetry(cache: OpfsLruCacheState): StreamCac
     utilizationPct: cache.budgetBytes <= 0 ? 0 : Number(((cache.usedBytes / cache.budgetBytes) * 100).toFixed(1)),
     cachedChunkCount: cache.entries.length,
     totalEvictions: cache.evictionLog.length,
-    hitRatePct: totalLookups === 0 ? 100 : Number(((cache.hits / totalLookups) * 100).toFixed(1)),
+    hitRatePct: totalLookups === 0 ? 0 : Number(((cache.hits / totalLookups) * 100).toFixed(1)),
     verifiedWrites: cache.verifiedWrites,
     corruptionsBlocked: cache.corruptionsBlocked,
     versionInvalidations: cache.versionInvalidations,
