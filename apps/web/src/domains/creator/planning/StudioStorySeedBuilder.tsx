@@ -15,7 +15,7 @@
  * - 적용 완료: 넣었다는 확인 + 아래 기획 표면에서 이어 쓰라는 안내.
  * - 엣지: 키워드 5개 상한 안내, 미등록 장르는 폴백 키트 안내 문구.
  */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { r3c04StatusText } from "../studio-r3c04-status-i18n";
 
 import { GENRES } from "@/shared/lib/taxonomy";
@@ -37,9 +37,9 @@ import {
 const TONE_PRESETS = ["차분하게", "숨 가쁘게", "따뜻하게", "냉혹하게", "유쾌하게"] as const;
 
 /** AI 씨앗 확장: 통합 AI 경로(등록한 내 키 → ToonStudio AI 순)로 보낸다. 기획 화면 첫 로드에 서버 AI 모듈을 싣지 않는다. */
-const textAiStorySeedProvider = createTextAiStorySeedProvider(async (prompt) => {
+const textAiStorySeedProvider = createTextAiStorySeedProvider(async (prompt, options) => {
   const { completeAutomaticFreeText } = await import("../studio-server-ai-client");
-  const result = await completeAutomaticFreeText(prompt.system, prompt.user);
+  const result = await completeAutomaticFreeText(prompt.system, prompt.user, options?.signal);
   return result.ok ? { ok: true, content: result.data.content } : { ok: false, error: result.error };
 });
 const KEYWORD_LIMIT = 5;
@@ -52,21 +52,58 @@ const SETTING_KIND_LABELS: Readonly<Record<StorySeedSettingRef["kind"], string>>
 
 type SeedPhase = "editing" | "loading" | "ready" | "error" | "applied";
 
+export interface StorySeedEpisodeSnapshot {
+  readonly revision?: number;
+  readonly logline?: string;
+  readonly goal?: string;
+  readonly synopsis?: string;
+}
+
+interface LockedSeedTarget {
+  readonly episodeId?: string;
+  readonly label?: string;
+  readonly hasContent: boolean;
+  readonly snapshot: StorySeedEpisodeSnapshot | null;
+}
+
 export interface StudioStorySeedBuilderProps {
   /** 세계관 허브·캐릭터 시트에서 온 설정 인용. 주인공·무대 기본값과 출처 표시에 쓴다. */
   readonly settingRefs?: readonly StorySeedSettingRef[];
   /** 적용 대상 회차에 이미 줄거리가 있으면 덮어쓰기 확인을 거친다. */
   readonly targetHasContent?: boolean;
+  /** 현재 선택된 대상 회차 ID. 요청 시작 시점에 고정해 회차 이동 시에도 대상이 바뀌지 않는다. */
+  readonly targetEpisodeId?: string;
+  /** 현재 선택된 대상 회차 표시 이름 (예: "2화 · 빗속의 약속"). */
+  readonly targetEpisodeLabel?: string;
+  /** 원문과 제안 비교를 위한 대상 회차의 기존 기획 요약. */
+  readonly targetCurrentSnapshot?: StorySeedEpisodeSnapshot | null;
   /** 기본은 로컬 결정적 제공자. AI 제공자는 같은 계약으로 갈아 끼운다. */
   readonly provider?: StorySeedProvider;
-  readonly onApplySeed: (patch: StorySeedPlanPatch, draft: StorySeedDraft) => void;
+  /** AI 씨앗 확장 버튼에 연결되는 제공자 (기본: 서버 자동 무료/등록 키 텍스트 AI). */
+  readonly aiProvider?: StorySeedProvider;
+  readonly onApplySeed: (
+    patch: StorySeedPlanPatch,
+    draft: StorySeedDraft,
+    targetEpisodeId?: string,
+    expectedRevision?: number,
+  ) => boolean | void;
+  readonly onUndoAppliedSeed?: (targetEpisodeId: string) => false | void | {
+    readonly snapshot: StorySeedEpisodeSnapshot;
+    readonly hasContent: boolean;
+    readonly changed: boolean;
+  };
 }
 
 export function StudioStorySeedBuilder({
   settingRefs = [],
   targetHasContent = false,
+  targetEpisodeId,
+  targetEpisodeLabel,
+  targetCurrentSnapshot = null,
   provider = localStorySeedProvider,
+  aiProvider = textAiStorySeedProvider,
   onApplySeed,
+  onUndoAppliedSeed,
 }: StudioStorySeedBuilderProps) {
   const [genre, setGenre] = useState("");
   const [keywordInput, setKeywordInput] = useState("");
@@ -78,9 +115,20 @@ export function StudioStorySeedBuilder({
   const [draft, setDraft] = useState<StorySeedDraft | null>(null);
   const [loglineIndex, setLoglineIndex] = useState<0 | 1 | 2>(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
   // "다시 시도"는 방금 실패한 쪽(기본 제안·AI 확장)으로 다시 보낸다.
   const lastProviderRef = useRef<StorySeedProvider>(provider);
+  const inFlightAbortRef = useRef<AbortController | null>(null);
+  const [lockedTarget, setLockedTarget] = useState<LockedSeedTarget | null>(null);
+  const [appliedTarget, setAppliedTarget] = useState<LockedSeedTarget | null>(null);
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      inFlightAbortRef.current?.abort();
+      inFlightAbortRef.current = null;
+    };
+  }, []);
   // 설정 인용 선택: 기본은 전부 인용, 작가가 뺀 항목만 기억한다.
   // 새 설정이 허브·시트에 생기면 자동으로 인용 목록에 들어온다.
   const [deselectedSettingIds, setDeselectedSettingIds] = useState<ReadonlySet<string>>(
@@ -113,18 +161,37 @@ export function StudioStorySeedBuilder({
   };
 
   const runGenerate = async (useProvider: StorySeedProvider) => {
+    if (phase === "loading") return;
+    inFlightAbortRef.current?.abort();
+    const controller = new AbortController();
+    inFlightAbortRef.current = controller;
+    const capturedTarget: LockedSeedTarget = {
+      episodeId: targetEpisodeId,
+      label: targetEpisodeLabel,
+      hasContent: targetHasContent,
+      snapshot: targetCurrentSnapshot,
+    };
+    setLockedTarget(capturedTarget);
     lastProviderRef.current = useProvider;
     setPhase("loading");
     setConfirmOverwrite(false);
+    setStatusNotice(null);
     try {
-      const result = await useProvider.generate({
-        genre,
-        keywords,
-        tone: tone || undefined,
-        protagonist: protagonist || undefined,
-        stage: stage || undefined,
-        settingRefs: citedRefs,
-      });
+      const result = await useProvider.generate(
+        {
+          genre,
+          keywords,
+          tone: tone || undefined,
+          protagonist: protagonist || undefined,
+          stage: stage || undefined,
+          settingRefs: citedRefs,
+        },
+        { signal: controller.signal },
+      );
+      if (inFlightAbortRef.current !== controller || controller.signal.aborted) {
+        return;
+      }
+      inFlightAbortRef.current = null;
       if (!result) {
         setErrorMessage("장르를 먼저 골라 주세요.");
         setPhase("error");
@@ -134,6 +201,10 @@ export function StudioStorySeedBuilder({
       setLoglineIndex(0);
       setPhase("ready");
     } catch (error) {
+      if (inFlightAbortRef.current !== controller || controller.signal.aborted) {
+        return;
+      }
+      inFlightAbortRef.current = null;
       setErrorMessage(
         error instanceof StorySeedAiError
           ? error.message
@@ -143,15 +214,61 @@ export function StudioStorySeedBuilder({
     }
   };
 
+  const handleCancelGenerate = () => {
+    inFlightAbortRef.current?.abort();
+    inFlightAbortRef.current = null;
+    setPhase("editing");
+    setStatusNotice("씨앗 초안 생성을 취소했어요. 선택한 장르와 키워드는 그대로 남아 있습니다.");
+  };
+
+  const effectiveTarget: LockedSeedTarget = lockedTarget ?? {
+    episodeId: targetEpisodeId,
+    label: targetEpisodeLabel,
+    hasContent: targetHasContent,
+    snapshot: targetCurrentSnapshot,
+  };
+  const switchedAwayFromLockedEpisode = Boolean(
+    lockedTarget?.episodeId &&
+      targetEpisodeId &&
+      lockedTarget.episodeId !== targetEpisodeId,
+  );
+
   const handleApply = () => {
     if (!draft) return;
-    if (targetHasContent && !confirmOverwrite) {
+    if (effectiveTarget.hasContent && !confirmOverwrite) {
       setConfirmOverwrite(true);
       return;
     }
-    onApplySeed(storySeedPlanPatch(draft, loglineIndex), draft);
+    const saved = onApplySeed(
+      storySeedPlanPatch(draft, loglineIndex),
+      draft,
+      effectiveTarget.episodeId,
+      effectiveTarget.snapshot?.revision,
+    );
+    if (saved === false) {
+      setConfirmOverwrite(false);
+      return;
+    }
+    setAppliedTarget(effectiveTarget);
     setConfirmOverwrite(false);
+    setStatusNotice(null);
     setPhase("applied");
+  };
+
+  const handleUndoApply = () => {
+    if (!onUndoAppliedSeed || !appliedTarget?.episodeId) return;
+    const result = onUndoAppliedSeed(appliedTarget.episodeId);
+    if (result === false) return;
+    if (result) {
+      setLockedTarget({ ...appliedTarget, snapshot: result.snapshot, hasContent: result.hasContent });
+    }
+    setStatusNotice(
+      result && !result.changed
+        ? "이후에 수정한 회차 내용은 그대로 유지했어요."
+        : "방금 반영한 씨앗 초안만 되돌렸어요.",
+    );
+    setAppliedTarget(null);
+    setPhase("ready");
   };
 
   return (
@@ -337,11 +454,32 @@ export function StudioStorySeedBuilder({
             type="button"
             disabled={genre.trim() === "" || phase === "loading"}
             title={genre.trim() === "" ? "장르를 먼저 골라 주세요" : undefined}
-            onClick={() => void runGenerate(textAiStorySeedProvider)}
+            onClick={() => void runGenerate(aiProvider)}
+            data-testid="story-seed-ai-expand-btn"
             className="min-h-11 rounded-lg border border-accent/40 bg-accent-soft px-4 text-sm font-semibold text-accent hover:border-accent disabled:cursor-not-allowed disabled:opacity-40"
           >
             AI 씨앗 확장 만들기
           </button>
+          {phase === "loading" && (
+            <button
+              type="button"
+              data-testid="story-seed-cancel-btn"
+              onClick={handleCancelGenerate}
+              className="min-h-11 rounded-lg border border-line bg-card px-3.5 text-xs font-semibold text-fg hover:bg-raised"
+            >
+              요청 취소
+            </button>
+          )}
+          {targetEpisodeLabel && (
+            <span
+              data-testid="story-seed-target-badge"
+              className="inline-flex min-h-9 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 [word-break:keep-all]"
+            >
+              {phase === "ready" || phase === "loading"
+                ? `적용 대상 고정: ${effectiveTarget.label ?? targetEpisodeLabel}`
+                : `현재 대상: ${targetEpisodeLabel}`}
+            </span>
+          )}
           {genre.trim() === "" && (
             <span className="text-xs text-fg-3">장르를 먼저 골라 주세요.</span>
           )}
@@ -349,6 +487,11 @@ export function StudioStorySeedBuilder({
             {provider.kind === "ai" ? "AI 제안" : "기본 제안(규칙 기반) — 횟수 제한 없이 쓸 수 있어요"}
           </span>
         </div>
+        {statusNotice && (
+          <p role="status" className="text-xs font-semibold text-fg-2 [word-break:keep-all]">
+            {statusNotice}
+          </p>
+        )}
       </div>
 
       {phase === "error" && (
@@ -389,6 +532,44 @@ export function StudioStorySeedBuilder({
 
       {phase === "ready" && draft && (
         <div className="mt-4 grid gap-3">
+          {switchedAwayFromLockedEpisode && effectiveTarget.label && (
+            <p
+              role="status"
+              data-testid="story-seed-target-lock-warning"
+              className="rounded-xl border border-accent/40 bg-accent-soft/40 px-3 py-2 text-xs font-semibold text-fg [word-break:keep-all]"
+            >
+              다른 회차로 이동했지만, 이 초안은 요청을 시작한 <strong>{effectiveTarget.label}</strong>에 안전하게 고정되어 있어요.
+            </p>
+          )}
+          {effectiveTarget.snapshot &&
+            (effectiveTarget.snapshot.logline?.trim() ||
+              effectiveTarget.snapshot.synopsis?.trim()) && (
+              <div
+                data-testid="story-seed-original-vs-suggestion"
+                className="grid gap-2 rounded-xl border border-line bg-card p-3 text-xs sm:grid-cols-2 [word-break:keep-all]"
+              >
+                <div>
+                  <span className="font-bold text-fg-3">
+                    기존 원문 ({effectiveTarget.label ?? "현재 회차"})
+                  </span>
+                  {effectiveTarget.snapshot.logline?.trim() ? (
+                    <p className="mt-1 font-semibold text-fg-2">
+                      {effectiveTarget.snapshot.logline}
+                    </p>
+                  ) : null}
+                  {effectiveTarget.snapshot.synopsis?.trim() ? (
+                    <p className="mt-1 text-fg-3">{effectiveTarget.snapshot.synopsis}</p>
+                  ) : null}
+                </div>
+                <div className="border-t border-line pt-2 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
+                  <span className="font-bold text-accent">새 씨앗 제안</span>
+                  <p className="mt-1 font-semibold text-fg">
+                    {draft.loglineCandidates[loglineIndex]}
+                  </p>
+                  <p className="mt-1 text-fg-2">{draft.synopsisDraft}</p>
+                </div>
+              </div>
+            )}
           <fieldset>
             <legend className="mb-1 text-xs font-semibold text-fg-2">로그라인 후보 — 하나를 고르세요</legend>
             <div className="grid gap-1.5">
@@ -495,16 +676,33 @@ export function StudioStorySeedBuilder({
       )}
 
       {phase === "applied" && (
-        <p className="mt-3 rounded-xl border border-line bg-raised px-3 py-2 text-sm text-fg">
-          회차 기획에 넣었어요. 아래 줄거리 표면에서 전환점 골격을 채우고 다듬어 보세요.
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-raised px-3 py-2 text-sm text-fg [word-break:keep-all]">
+          <span>
+            {appliedTarget?.label
+              ? `${appliedTarget.label} 기획에 넣었어요. 아래 줄거리 표면에서 전환점 골격을 채우고 다듬어 보세요.`
+              : "회차 기획에 넣었어요. 아래 줄거리 표면에서 전환점 골격을 채우고 다듬어 보세요."}
+          </span>
+          {onUndoAppliedSeed && appliedTarget?.episodeId && (
+            <button
+              type="button"
+              data-testid="story-seed-undo-btn"
+              onClick={handleUndoApply}
+              className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-panel"
+            >
+              방금 반영만 되돌리기
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => setPhase("editing")}
-            className="ml-2 text-accent underline"
+            onClick={() => {
+              setLockedTarget(null);
+              setPhase("editing");
+            }}
+            className="text-accent underline"
           >
             새 씨앗 만들기
           </button>
-        </p>
+        </div>
       )}
     </section>
   );

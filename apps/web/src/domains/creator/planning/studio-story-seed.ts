@@ -12,6 +12,8 @@
  * 초안은 "작가가 고치고 채우는 골격"이며 완성 원고로 표기하지 않는다.
  */
 
+import type { EpisodePlanWithSynopsis } from "./studio-episode-synopsis";
+
 export interface StorySeedSettingRef {
   readonly id: string;
   readonly kind: "character" | "location" | "lore";
@@ -416,10 +418,59 @@ export function storySeedPlanPatch(
   });
 }
 
+type StorySeedEpisodeFields = StorySeedPlanPatch & Pick<EpisodePlanWithSynopsis, "seedSettingRefs">;
+
+export interface StorySeedEpisodeUpdate {
+  readonly before: EpisodePlanWithSynopsis;
+  readonly after: EpisodePlanWithSynopsis;
+  readonly fields: readonly (keyof StorySeedEpisodeFields)[];
+}
+
+export function hasStorySeedEpisodeContent(plan: EpisodePlanWithSynopsis): boolean {
+  return [
+    plan.logline, plan.goal, plan.synopsis, plan.openingHook, plan.coreConflict,
+    ...plan.turningPoints, plan.cliffhanger, plan.emotionalArc?.from, plan.emotionalArc?.to,
+  ].some((value) => Boolean(value?.trim())) ||
+    Boolean(plan.referencedSettingIds?.length || plan.seedSettingRefs?.length);
+}
+
+export function buildStorySeedEpisodeUpdate(
+  before: EpisodePlanWithSynopsis,
+  changes: StorySeedEpisodeFields,
+): StorySeedEpisodeUpdate {
+  return {
+    before,
+    after: { ...before, ...changes },
+    fields: Object.keys(changes) as (keyof StorySeedEpisodeFields)[],
+  };
+}
+
+export function restoreStorySeedEpisodeUpdate(
+  current: EpisodePlanWithSynopsis,
+  update: StorySeedEpisodeUpdate,
+): EpisodePlanWithSynopsis {
+  const matchesApplied = (key: keyof StorySeedEpisodeFields) =>
+    JSON.stringify(current[key]) === JSON.stringify(update.after[key]);
+  const settingsMatch = matchesApplied("referencedSettingIds") && matchesApplied("seedSettingRefs");
+  // 인용 ID와 이름은 한 쌍으로 되돌리고, 씨앗 반영 뒤에 직접 편집한 값은 유지한다.
+  return update.fields.reduce((next, key) => {
+    if ((key === "referencedSettingIds" || key === "seedSettingRefs") && !settingsMatch) return next;
+    if (!matchesApplied(key) || JSON.stringify(update.before[key]) === JSON.stringify(update.after[key])) return next;
+    return { ...next, [key]: update.before[key] };
+  }, current);
+}
+
 /** 제공자 계약 — 로컬 결정적 제공자가 기본, AI 제공자는 같은 모양으로 갈아 끼운다. */
+export interface StorySeedGenerateOptions {
+  readonly signal?: AbortSignal;
+}
+
 export interface StorySeedProvider {
   readonly kind: "local" | "ai";
-  generate(input: StorySeedInput): Promise<StorySeedDraft | null>;
+  generate(
+    input: StorySeedInput,
+    options?: StorySeedGenerateOptions,
+  ): Promise<StorySeedDraft | null>;
 }
 
 export const localStorySeedProvider: StorySeedProvider = {
@@ -583,10 +634,13 @@ export function parseStorySeedAiResponse(
 }
 
 /** 텍스트 AI를 한 번 부른다. 성공하면 응답 글, 실패하면 사용자에게 보여 줄 이유를 돌려준다. */
-export type StorySeedTextCompletion = (prompt: {
-  readonly system: string;
-  readonly user: string;
-}) => Promise<{ readonly ok: true; readonly content: string } | { readonly ok: false; readonly error: string }>;
+export type StorySeedTextCompletion = (
+  prompt: {
+    readonly system: string;
+    readonly user: string;
+  },
+  options?: StorySeedGenerateOptions,
+) => Promise<{ readonly ok: true; readonly content: string } | { readonly ok: false; readonly error: string }>;
 
 /** AI 확장이 결과를 내지 못했다. 규칙 기반 초안을 AI 결과처럼 꾸미지 않고 이유와 함께 알린다. */
 export class StorySeedAiError extends Error {
@@ -604,9 +658,12 @@ export class StorySeedAiError extends Error {
 export function createTextAiStorySeedProvider(complete: StorySeedTextCompletion): StorySeedProvider {
   return {
     kind: "ai",
-    async generate(input: StorySeedInput): Promise<StorySeedDraft | null> {
+    async generate(
+      input: StorySeedInput,
+      options?: StorySeedGenerateOptions,
+    ): Promise<StorySeedDraft | null> {
       if (!buildLocalStorySeed(input)) return null;
-      const result = await complete(buildStorySeedAiPrompt(input));
+      const result = await complete(buildStorySeedAiPrompt(input), options);
       if (!result.ok) throw new StorySeedAiError(result.error);
       const parsed = parseStorySeedAiResponse(result.content, input);
       if (!parsed) {
