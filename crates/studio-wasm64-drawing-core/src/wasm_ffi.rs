@@ -565,6 +565,18 @@ pub unsafe extern "C" fn wasm_composite_tile_dirty_rect(
 }
 
 #[cfg(feature = "extended-3d")]
+mod atelier_stage_3d;
+#[cfg(feature = "extended-3d")]
+pub use atelier_stage_3d::{
+    wasm_atelier_stage_3d_capabilities, wasm_cull_stage_frustum_hiz,
+    wasm_evaluate_stage_acoustics_and_lighting, wasm_resolve_stage_sphere_overlaps,
+    STAGE_AUDIO_OUT_STRIDE, STAGE_AUDIO_SOURCE_STRIDE, STAGE_CAST_SAMPLE_STRIDE,
+    STAGE_CULL_AABB_STRIDE, STAGE_CULL_CAMERA_FFI_LEN, STAGE_CULL_STATS_FFI_LEN,
+    STAGE_LIGHTING_OUT_STRIDE, STAGE_LIGHT_STRIDE, STAGE_LISTENER_FFI_LEN,
+    STAGE_SPHERE_BODY_STRIDE, WASM_ATELIER_STAGE_3D_CAPABILITIES,
+};
+
+#[cfg(feature = "extended-3d")]
 mod extended_3d;
 #[cfg(feature = "extended-3d")]
 pub use extended_3d::{
