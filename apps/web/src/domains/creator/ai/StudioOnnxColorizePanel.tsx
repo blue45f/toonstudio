@@ -167,18 +167,24 @@ export function StudioOnnxColorizePanel({
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      abortRef.current?.abort();
     };
   }, []);
 
   useEffect(() => {
+    setBusy(false);
     setPreviewSrc(null);
     setError(null);
     setLayered(null);
     setExportNote(null);
     setExportError(null);
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
   }, [src]);
 
   const selectedTags = TAG_GROUPS
@@ -200,13 +206,13 @@ export function StudioOnnxColorizePanel({
         tags: selectedTags,
         signal: controller.signal,
       });
-      if (!mountedRef.current) return;
+      if (abortRef.current !== controller || controller.signal.aborted) return;
       setPreviewSrc(result.dataUrl);
       setLayered(result);
       onResult(result.dataUrl);
     } catch (cause) {
-      if (!mountedRef.current) return;
-      if (cause instanceof Error && cause.name === "AbortError") {
+      if (abortRef.current !== controller) return;
+      if (controller.signal.aborted || (cause instanceof Error && cause.name === "AbortError")) {
         setError(T("채색을 취소했어요."));
       } else {
         setError(
@@ -216,8 +222,10 @@ export function StudioOnnxColorizePanel({
         );
       }
     } finally {
-      if (mountedRef.current) setBusy(false);
-      if (abortRef.current === controller) abortRef.current = null;
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setBusy(false);
+      }
     }
   };
 

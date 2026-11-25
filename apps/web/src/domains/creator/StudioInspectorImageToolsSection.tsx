@@ -8,7 +8,7 @@ import { studioWorkspaceDocumentIdentity } from "./studio-workspace-route";
 import { executeStudioInspectorArmedChange, executeStudioInspectorArmedToggle } from "./studio-inspector-tool-transition";
 import { LIQUIFY_RADIUS_RANGE, LIQUIFY_STRENGTH_RANGE } from "./studio-liquify-contract";
 import {
-  StudioAiColorizePanel, StudioOnnxColorizePanel, StudioOnnxAnimeStylePanel, StudioOnnxUpscalePanel,
+  StudioAiColorizePanel,
   StudioOnnxLineExtractPanel, StudioColorPalettePanel, StudioFloodFillPanel, StudioAutoColorHintsPanel,
   StudioLineCleanupPanel, StudioImageAdjustmentsPanel, StudioSelectionToolsPanel, StudioQuickMaskPanel,
   StudioSmudgePanel, StudioDodgeBurnPanel, StudioWetMixPanel, StudioLiquifyPanel, StudioHealClonePanel,
@@ -24,6 +24,7 @@ import { StudioRasterVectorizeButton } from "./StudioRasterVectorizeButton";
 import { StudioAiColorizeExtras } from "./ai/StudioAiColorizeExtras";
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import { StudioMagicWandPanel } from "./StudioMagicWandPanel";
+import { StudioOnnxInspectorImageTools } from "./ai/StudioOnnxInspectorImageTools";
 import { StudioSelectionWorkbenchPanel } from "./StudioSelectionWorkbenchPanel";
 import { StudioRasterToolRecoveryPanel, StudioInspectorFilterLauncher, StudioInspectorPixelSelectionLauncher } from "./StudioRasterToolRecoveryPanel";
 
@@ -66,7 +67,7 @@ export function StudioInspectorSelectedImageTools({
     inspectorInteractionPolicy, inspectorLayout, invertFilterMask, invertLayerMask, invertQuickMask,
     layerMaskBusy, layerMaskHardness, layerMaskPaintActive, layerMaskPaintMode, layerMaskRadius,
     layerMaskStrength, liquifyActive, liquifyBusy, liquifyMode, liquifyRadius, liquifyStrength,
-    onAutoColorPlanImageSize, onColorizeSelected, onQuickMaskTintColorChange, onQuickMaskTintOpacityChange,
+    onAutoColorPlanImageSize, onCancelColorize, onColorizeSelected, onQuickMaskTintColorChange, onQuickMaskTintOpacityChange,
     onTogglePixelMagneticLasso, openFeatureTutorial, openStudioFilter, openStudioLayerLift, patchEl,
     pixelBrushRadius, pixelBusy, pixelCombine, pixelMagneticLasso, pixelSel, pixelSelectionCanRedo,
     pixelSelectionCanUndo, pixelTool, polyLassoSession, puppetWarpActive, puppetWarpBusy, puppetWarpPins,
@@ -135,6 +136,7 @@ export function StudioInspectorSelectedImageTools({
                                 busy={aiColorizeBusy}
                                 error={aiColorizeError}
                                 onColorize={onColorizeSelected}
+                                onCancel={onCancelColorize}
                               />
                               <StudioAiColorizeExtras
                                 wiring={aiColorizeExtras}
@@ -145,16 +147,8 @@ export function StudioInspectorSelectedImageTools({
                                 selectedId={selected.id}
                                 selectedSrc={selected.src}
                               />
-                              <StudioOnnxColorizePanel
-                                src={selected.src}
-                                cloudConfigured={isStudioAiConfigured(aiSettings)}
-                                onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
-                              />
-                              <StudioOnnxUpscalePanel
-                                src={selected.src}
-                                onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
-                              />
-                              <StudioOnnxAnimeStylePanel
+                              <StudioOnnxInspectorImageTools
+                                key={selected.id}
                                 src={selected.src}
                                 cloudConfigured={isStudioAiConfigured(aiSettings)}
                                 onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}

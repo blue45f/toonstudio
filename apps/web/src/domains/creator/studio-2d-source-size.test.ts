@@ -37,7 +37,7 @@ describe("2D original aspect ratio through canvas placement", () => {
   });
   it("connects source dimensions to the production addBgScene path without eager catalog imports", () => {
     const host = readFileSync(new URL("./StudioCuttoonEditorHost.tsx", import.meta.url), "utf8");
-    const insertion = host.slice(host.indexOf("function addBgScene(bg:"), host.indexOf("function insertAiBackgroundImage("));
+    const insertion = host.slice(host.indexOf("function addBgScene(bg:"), host.indexOf("function rejectElementSourceReplacement("));
     expect(insertion).toContain("createStudio2dCanvasImage(bg, {");
     expect(insertion).not.toContain("sourceWidth: 720");
     expect(host).not.toMatch(/import[^;]*from ["']\.\/studio-2d-asset-(?:quality|manifest)/u);

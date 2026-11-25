@@ -451,6 +451,19 @@ async function postTextCompletion(
 }
 
 
+function readImageEditResult(result: StudioAiResult<unknown>): StudioAiResult<{ dataUrl: string }> {
+  if (!result.ok) return result;
+  const b64 = extractFirstB64Json(result.data);
+  if (!b64) {
+    return {
+      ok: false,
+      code: "parse_error",
+      error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다."),
+    };
+  }
+  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+}
+
 // ── 기능별 얇은 래퍼 ─────────────────────────────────────────────────────────
 
 /**
@@ -502,7 +515,8 @@ export async function generateBackgroundImage(
 export async function colorizeLineArt(
   settings: StudioAiSettings,
   lineArtSrc: string,
-  prompt: string
+  prompt: string,
+  opts: { signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   const trimmed = prompt.trim();
   if (!trimmed) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.colorizePromptRequired", "채색 지시 프롬프트를 입력하세요.") };
@@ -522,11 +536,7 @@ export async function colorizeLineArt(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
-  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 const ANIME_STYLE_EDIT_INSTRUCTION =
@@ -567,7 +577,8 @@ export async function convertImageToAnimeStyle(
   settings: StudioAiSettings,
   imageSrc: string,
   extraDirection = "",
-  purpose: WebtoonStylePurposeId = "episode"
+  purpose: WebtoonStylePurposeId = "episode",
+  opts: { signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   if (!imageSrc) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.animeImageMissing", "변환할 이미지가 없습니다.") };
   if (!isStudioAiConfigured(settings)) {
@@ -585,11 +596,7 @@ export async function convertImageToAnimeStyle(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
-  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 /**
@@ -653,11 +660,7 @@ export async function generateConsistentCharacterImage(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form, opts.signal);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
-  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 /**
@@ -885,20 +888,7 @@ export async function generateImageWithRoleReferences(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form, opts.signal);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) {
-    return {
-      ok: false,
-      code: "parse_error",
-      error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다."),
-    };
-  }
-  return {
-    ok: true,
-    data: { dataUrl: `data:image/png;base64,${b64}` },
-  };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 /** 콘티→그림 변환의 "장면 구성 제안" 시스템 프롬프트 — 완전한 이미지 생성이 아니라(기능 1과
@@ -1118,7 +1108,7 @@ export async function translateDialogueBatch(
 export async function suggestDialogueLines(
   settings: StudioAiSettings,
   situationText: string,
-  opts: { existingContext?: string; answerTuning?: AnswerTuning } = {},
+  opts: { existingContext?: string; answerTuning?: AnswerTuning; signal?: AbortSignal } = {},
   transport: StudioTextAiTransport = DEFAULT_TEXT_AI_TRANSPORT
 ): Promise<StudioAiResult<StudioTextAiData<{ candidates: DialogueSuggestionCandidate[] }>>> {
   const trimmed = situationText.trim();
@@ -1127,6 +1117,7 @@ export async function suggestDialogueLines(
     return { ok: false, code: "not_configured", error: aiErrorText("studio.aiError.client.serverLoginOrApiKeyRequired", "서버 AI에 로그인하거나 설정에서 API 키를 등록하세요.") };
   }
   const { system, user } = buildDialogueSuggestPrompt(trimmed, opts.existingContext ?? "");
+  const effectiveTransport = opts.signal ? { ...transport, signal: opts.signal } : transport;
   const result = await postTextCompletion(settings, {
     task: "dialogue",
     // 구조화(JSON) 답변이라 길이 지시는 스키마 불변 문구로 붙는다(answer-tuning.ts 참고).
@@ -1137,7 +1128,7 @@ export async function suggestDialogueLines(
     temperature: opts.answerTuning ? answerTuningTemperature(0.8, opts.answerTuning) : 0.8, // 서로 다른 후보 여러 개가 목적 — 장면 구성 제안(0.7)보다 살짝 높여 다양성을 늘린다.
     maxTokens: opts.answerTuning ? answerTuningMaxTokens(500, opts.answerTuning) : 500,
     responseFormat: "json",
-  }, transport);
+  }, effectiveTransport);
   if (!result.ok) return result;
   const content = extractFirstChatContent(result.data);
   if (!content) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.dialogueSuggestionMissing", "응답에서 대사 제안을 찾을 수 없습니다.") };

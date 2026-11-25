@@ -13,8 +13,8 @@ import {
 // (스크립트에 추가 / 선택 요소에 바로 삽입) 모두 부모가 이미 소유한 상태(dialogueScript, 선택된
 // 캔버스 요소)에 개입해야 해서, 상태를 이 컴포넌트 내부로 가져오면 오히려 부모와 자식 둘 다 같은
 // 값을 따로 들고 동기화해야 하는 이중 소유가 생긴다.
-import { Loader2, MessageSquareQuote, Plus, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Loader2, MessageSquareQuote, Plus, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { AnswerTuningControls } from "./ai/AnswerTuningControls";
 import type { AnswerTuning } from "./ai/answer-tuning";
@@ -22,13 +22,19 @@ import {
   analyzeWebtoonDialogueReadability,
   buildGlobalLocalizedDialoguePreview,
   formatDialogueSuggestionLine,
-  recommendLocalDialogueCandidates,
   type DialogueSuggestionCandidate,
 } from "./lettering/studio-dialogue-suggest";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
 import { StudioAiConnectionBadge } from "./ai/StudioAiConnectionBadge";
 import { reducedMotion } from "@/shared/hooks/use-in-view";
+
+export interface StudioDialogueSuggestTargetLock {
+  readonly pageId: string;
+  readonly elementId: string;
+  readonly pageLabel?: string;
+  readonly originalText?: string;
+}
 
 export function StudioDialogueSuggestPanel({
   configured,
@@ -43,7 +49,13 @@ export function StudioDialogueSuggestPanel({
   answerTuning,
   onAnswerTuningChange,
   onGenerate,
+  onGenerateLocally,
+  onCancel,
   canInsertToSelected,
+  lockedTarget,
+  currentPageId,
+  currentSelectedId,
+  currentSelectedOriginalText,
   onAddToScript,
   onInsertToSelected,
 }: {
@@ -66,19 +78,32 @@ export function StudioDialogueSuggestPanel({
   answerTuning?: AnswerTuning;
   onAnswerTuningChange?: (value: AnswerTuning) => void;
   onGenerate: () => void;
+  onGenerateLocally: () => void;
+  onCancel?: () => void;
   /** 캔버스에서 선택된 요소가 말풍선/텍스트라 후보를 바로 그 요소에 삽입할 수 있는 상태인지. */
   canInsertToSelected: boolean;
+  /** 생성 요청 시점에 고정된 대상 컷·말풍선. 다른 컷으로 이동해도 적용 대상이 바뀌지 않는다. */
+  lockedTarget?: StudioDialogueSuggestTargetLock | null;
+  currentPageId?: string;
+  currentSelectedId?: string | null;
+  currentSelectedOriginalText?: string | null;
   /** 후보를 "대사 한 번에" 스크립트(말풍선 탭)에 미니 문법 한 줄로 추가. */
   onAddToScript: (candidate: DialogueSuggestionCandidate) => void;
-  /** canInsertToSelected일 때만 호출 가능 — 선택된 말풍선/텍스트 요소의 텍스트를 후보로 바로 교체. */
+  /** canInsertToSelected 또는 lockedTarget일 때 호출 — 고정된 말풍선/텍스트 요소의 텍스트를 후보로 교체. */
   onInsertToSelected: (candidate: DialogueSuggestionCandidate) => void;
 }) {
-  const [localCandidates, setLocalCandidates] = useState<readonly DialogueSuggestionCandidate[] | null>(null);
-  const effectiveCandidates = candidates ?? localCandidates;
   const canGenerate = configured && !busy && situationText.trim().length > 0;
+  const switchedAwayFromLockedTarget = Boolean(
+    lockedTarget &&
+      ((currentPageId && lockedTarget.pageId !== currentPageId) ||
+        (currentSelectedId !== undefined && lockedTarget.elementId !== currentSelectedId)),
+  );
+  const effectiveCanInsert = Boolean(lockedTarget) || canInsertToSelected;
+  const effectiveOriginalText =
+    (lockedTarget ? lockedTarget.originalText : currentSelectedOriginalText)?.trim() ?? "";
   // 팔레트 패널과 동일 — 결과·에러가 fold 아래에 생긴다. 도착 시 nearest 스크롤.
   const feedbackRef = useRef<HTMLDivElement | null>(null);
-  const hasFeedback = Boolean(effectiveCandidates || error);
+  const hasFeedback = Boolean(candidates || error);
   useEffect(() => {
     if (hasFeedback) feedbackRef.current?.scrollIntoView?.({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
   }, [hasFeedback]);
@@ -133,15 +158,23 @@ export function StudioDialogueSuggestPanel({
           title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
           className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Sparkles size={14} />}
+          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <MessageSquareQuote size={14} />}
           {busy ? "구상하는 중…" : "대사 제안 받기"}
         </button>
+        {busy && onCancel ? (
+          <button
+            type="button"
+            data-testid="dialogue-suggest-cancel-btn"
+            onClick={onCancel}
+            className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-medium text-fg transition-colors hover:bg-raised"
+          >
+            <X size={13} aria-hidden="true" />
+            취소
+          </button>
+        ) : null}
         <button
           type="button"
-          onClick={() => {
-            if (busy || !situationText.trim()) return;
-            setLocalCandidates(recommendLocalDialogueCandidates(situationText));
-          }}
+          onClick={onGenerateLocally}
           disabled={busy || !situationText.trim()}
           className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60"
         >
@@ -158,9 +191,30 @@ export function StudioDialogueSuggestPanel({
           />
         ) : null}
 
-        {effectiveCandidates && effectiveCandidates.length > 0 && (
+        {candidates && candidates.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            {effectiveCandidates.map((candidate, i) => {
+            {switchedAwayFromLockedTarget && lockedTarget ? (
+              <p
+                role="status"
+                data-testid="dialogue-suggest-target-lock-banner"
+                className="rounded-lg border border-accent/40 bg-accent-soft/40 px-2.5 py-2 text-[0.65rem] font-semibold leading-relaxed text-fg [word-break:keep-all]"
+              >
+                다른 컷으로 이동했지만 적용 대상은 원래 선택한{" "}
+                <strong>{lockedTarget.pageLabel ?? "원본 컷"}</strong> 말풍선에 고정되어 있어요.
+              </p>
+            ) : null}
+            {effectiveOriginalText ? (
+              <div
+                data-testid="dialogue-suggest-original-box"
+                className="rounded-lg border border-line bg-panel px-2.5 py-2 text-[0.65rem] leading-relaxed [word-break:keep-all]"
+              >
+                <span className="font-bold text-fg-3">
+                  원문 비교 ({lockedTarget?.pageLabel ?? "선택한 말풍선"})
+                </span>
+                <p className="mt-0.5 whitespace-pre-wrap text-fg-2">“{effectiveOriginalText}”</p>
+              </div>
+            ) : null}
+            {candidates.map((candidate, i) => {
               const line = formatDialogueSuggestionLine(candidate);
               const readability = analyzeWebtoonDialogueReadability(candidate.text);
               const globalPreview = buildGlobalLocalizedDialoguePreview(candidate.text);
@@ -185,13 +239,17 @@ export function StudioDialogueSuggestPanel({
                       className="inline-flex min-h-11 items-center gap-1 rounded-md border border-line bg-panel px-2 py-1 text-[0.63rem] font-medium text-fg-2 transition-colors hover:bg-raised"
                     >
                       <Plus size={11} /> {translateCurrentStaticSourceText("domains.creator.StudioDialogueSuggestPanel", "ko", "대사 스크립트에 추가")}</button>
-                    {canInsertToSelected && (
+                    {effectiveCanInsert && (
                       <button
                         type="button"
                         onClick={() => onInsertToSelected(candidate)}
                         className="inline-flex min-h-11 items-center gap-1 rounded-md border border-line bg-panel px-2 py-1 text-[0.63rem] font-medium text-fg-2 transition-colors hover:bg-raised"
                       >
-                        <MessageSquareQuote size={11} /> {translateCurrentStaticSourceText("domains.creator.StudioDialogueSuggestPanel", "ko", "선택한 말풍선에 삽입")}</button>
+                        <MessageSquareQuote size={11} />{" "}
+                        {switchedAwayFromLockedTarget && lockedTarget?.pageLabel
+                          ? `원래 ${lockedTarget.pageLabel} 말풍선에 삽입`
+                          : translateCurrentStaticSourceText("domains.creator.StudioDialogueSuggestPanel", "ko", "선택한 말풍선에 삽입")}
+                      </button>
                     )}
                   </div>
                 </div>

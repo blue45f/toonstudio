@@ -1,9 +1,11 @@
 import type { BilingualText } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { StudioAiAssistToolId } from "../../ai/studio-ai-assist-ux";
-import type {
-  StudioOpenAiAssistMode,
-  StudioOpenAiAssistSuccess,
+import {
+  isStudioOpenAiAssistMode,
+  isValidStudioOpenAiAssistSuccess,
+  type StudioOpenAiAssistMode,
+  type StudioOpenAiAssistSuccess,
 } from "../../ai/studio-openai-creative-assist-client";
 
 export type StudioProjectAssistantSectionId =
@@ -22,66 +24,8 @@ export type AssistantSuggestionSpec = Readonly<{
   prompt: BilingualText;
 }>;
 
-const VALID_OPENAI_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
-  "idea-remix",
-  "script-to-cuts",
-  "dialogue-polish",
-  "export-preflight-coach",
-]);
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function isValidOpenAiMode(value: unknown): value is StudioOpenAiAssistMode {
-  return (
-    typeof value === "string" &&
-    VALID_OPENAI_MODES.has(value as StudioOpenAiAssistMode)
-  );
-}
-
-function isValidStoredSuccess(value: unknown): value is StudioOpenAiAssistSuccess {
-  if (!isRecord(value) || value.provider !== "openai" || typeof value.model !== "string") {
-    return false;
-  }
-  const privacy = value.privacy;
-  const quota = value.quota;
-  const result = value.result;
-  if (
-    !isRecord(privacy) ||
-    privacy.storeData !== false ||
-    typeof privacy.piiRedactedCount !== "number" ||
-    !isRecord(quota) ||
-    typeof quota.remainingDaily !== "number" ||
-    typeof quota.dailyLimit !== "number" ||
-    !isRecord(result) ||
-    !isValidOpenAiMode(result.mode) ||
-    !isRecord(result.data)
-  ) {
-    return false;
-  }
-
-  if (result.mode === "idea-remix") {
-    return typeof result.data.summary === "string" && Array.isArray(result.data.angles);
-  }
-  if (result.mode === "script-to-cuts") {
-    return (
-      typeof result.data.episodeGoal === "string" &&
-      typeof result.data.pacingTip === "string" &&
-      Array.isArray(result.data.cuts)
-    );
-  }
-  if (result.mode === "dialogue-polish") {
-    return (
-      typeof result.data.readabilityNote === "string" &&
-      Array.isArray(result.data.balloons)
-    );
-  }
-  return (
-    typeof result.data.readinessSummary === "string" &&
-    typeof result.data.episodeBlurbSuggestion === "string" &&
-    Array.isArray(result.data.checks)
-  );
 }
 
 export const STUDIO_ASSISTANT_SUGGESTIONS: Readonly<
@@ -257,11 +201,21 @@ export function defaultOpenAiModeForSection(
 }
 
 const SESSION_KEY_PREFIX = "toonstudio:assistant-draft:v1:";
+const MAX_PROMPT_CHARS = 6_000;
+// 기존 결과 저장 공간에 제출 원문 필드의 최대 JSON 이스케이프 길이를 더한다.
+const MAX_SESSION_CHARS = 64_000 + ',"submittedPrompt":""'.length + MAX_PROMPT_CHARS * 6;
 
 export interface StudioAssistantSessionSnapshot {
   readonly prompt: string;
   readonly openAiMode: StudioOpenAiAssistMode;
   readonly lastResult: StudioOpenAiAssistSuccess | null;
+  readonly submittedPrompt?: string;
+}
+
+function readSubmittedPrompt(value: unknown): string | undefined {
+  return typeof value === "string" && value.length <= MAX_PROMPT_CHARS && value.trim()
+    ? value
+    : undefined;
 }
 
 /** 명시한 null/Storage를 우선하고, 기본 브라우저 저장소 getter 거부만 안전하게 처리한다. */
@@ -282,7 +236,7 @@ export function readStudioAssistantSessionState(
   if (!storage || !projectId) return null;
   try {
     const raw = storage.getItem(`${SESSION_KEY_PREFIX}${projectId}`);
-    if (!raw || raw.length > 64_000) return null;
+    if (!raw || raw.length > MAX_SESSION_CHARS) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!isRecord(parsed)) return null;
     const prompt =
@@ -292,19 +246,21 @@ export function readStudioAssistantSessionState(
           ? parsed.inputText
           : null;
     const rawMode = parsed.openAiMode ?? parsed.mode;
-    if (prompt === null || !isValidOpenAiMode(rawMode)) {
+    if (prompt === null || !isStudioOpenAiAssistMode(rawMode)) {
       return null;
     }
-    const lastResult = isValidStoredSuccess(parsed.lastResult)
+    const lastResult = isValidStudioOpenAiAssistSuccess(parsed.lastResult)
       ? parsed.lastResult
       : null;
     if (!prompt.trim() && lastResult === null) {
       return null;
     }
+    const submittedPrompt = lastResult ? readSubmittedPrompt(parsed.submittedPrompt) : undefined;
     return {
-      prompt: prompt.slice(0, 6_000),
+      prompt: prompt.slice(0, MAX_PROMPT_CHARS),
       openAiMode: rawMode,
       lastResult,
+      ...(submittedPrompt === undefined ? {} : { submittedPrompt }),
     };
   } catch {
     return null;
@@ -317,8 +273,8 @@ export function writeStudioAssistantSessionState(
   storageOverride?: Storage | null,
 ): void {
   const storage = resolveStudioAssistantSessionStorage(storageOverride);
-  if (!storage || !projectId || !isValidOpenAiMode(snapshot.openAiMode)) return;
-  const sanitizedResult = isValidStoredSuccess(snapshot.lastResult)
+  if (!storage || !projectId || !isStudioOpenAiAssistMode(snapshot.openAiMode)) return;
+  const sanitizedResult = isValidStudioOpenAiAssistSuccess(snapshot.lastResult)
     ? snapshot.lastResult
     : null;
   if (!snapshot.prompt.trim() && sanitizedResult === null) {
@@ -329,9 +285,10 @@ export function writeStudioAssistantSessionState(
     storage.setItem(
       `${SESSION_KEY_PREFIX}${projectId}`,
       JSON.stringify({
-        prompt: snapshot.prompt.slice(0, 6_000),
+        prompt: snapshot.prompt.slice(0, MAX_PROMPT_CHARS),
         openAiMode: snapshot.openAiMode,
         lastResult: sanitizedResult,
+        submittedPrompt: sanitizedResult ? readSubmittedPrompt(snapshot.submittedPrompt) : undefined,
       }),
     );
   } catch {

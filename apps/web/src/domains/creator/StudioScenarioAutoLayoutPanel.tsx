@@ -17,20 +17,21 @@ import { useUserAi, userAiLegacySettings } from "@/shared/ai/user-ai-store";
 
 import { StudioAiComicDirectorPanel } from "./ai/StudioAiComicDirectorPanel";
 import { isStudioAiConfigured } from "./ai/studio-ai-client";
+import { scenarioImageCandidates } from "./ai/studio-scenario-candidate-workflow";
 
 import type { StudioAiComicDirectorPanelProps } from "./ai/StudioAiComicDirectorPanel";
 import type { DialogueBubbleSeed } from "./studio-dialogue";
-import type { El } from "./studio-element-model";
+import type { StudioScenarioApplyLayerImage } from "./studio-cuttoon-edit/studio-host-canvas-element-helpers";
 import type { ScenarioPreviewItem } from "./studio-scenario-layout";
 import type { ReactElement } from "react";
 
 export type StudioScenarioAutoLayoutPanelProps = StudioAiComicDirectorPanelProps;
 
 const TRANSPARENT_FRAME_BACKGROUND =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lDFQAAAAAElFTkSuQmCC";
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
 const APPLY_KEY_PREFIX = "toonspectrum:studio-ai-comic-director:committed:";
 
-type LegacyScenarioApplyDecoration = DialogueBubbleSeed | Extract<El, { type: "image" }>;
+type LegacyScenarioApplyDecoration = DialogueBubbleSeed | StudioScenarioApplyLayerImage;
 
 function nativeBubbles(item: ScenarioPreviewItem): DialogueBubbleSeed[] {
   return item.bubbles.filter(
@@ -38,11 +39,16 @@ function nativeBubbles(item: ScenarioPreviewItem): DialogueBubbleSeed[] {
   );
 }
 
-function layerApplyDecorations(item: ScenarioPreviewItem): LegacyScenarioApplyDecoration[] {
+function layerApplyDecorations(item: ScenarioPreviewItem): LegacyScenarioApplyDecoration[] | null {
   const manifest = item.layerManifest;
-  if (!manifest?.editable || manifest.layers.length === 0) return nativeBubbles(item);
-  const layerElements: Extract<El, { type: "image" }>[] = manifest.layers.map((layer) => ({
-    id: layer.id,
+  if (!manifest?.editable || !manifest.layers.length || !item.imageDataUrl) return null;
+  if (item.selectedImageCandidateId && item.selectedImageCandidateId !== manifest.sourceCandidateId) return null;
+  const hasSource = scenarioImageCandidates(item).some((candidate) =>
+    candidate.id === manifest.sourceCandidateId && candidate.imageDataUrl === item.imageDataUrl);
+  if (!hasSource || manifest.layers.some((layer) =>
+    layer.sourceCandidateId !== manifest.sourceCandidateId || !layer.imageDataUrl.trim())) return null;
+  // 각 원고 객체의 ID는 호스트가 적용 시점에 발급한다.
+  const layerElements: StudioScenarioApplyLayerImage[] = manifest.layers.map((layer) => ({
     type: "image",
     src: layer.imageDataUrl,
     x: item.frame.x,
@@ -108,25 +114,25 @@ export function StudioScenarioAutoLayoutPanel(
 
   const applyWithEditableLayers = () => {
     const sourceItems = previewRef.current;
-    if (!sourceItems) return;
+    if (!sourceItems) return false;
     const commitKey = `${APPLY_KEY_PREFIX}${applyFingerprint(props, sourceItems)}`;
-    if (globalThis.sessionStorage?.getItem(commitKey)) return;
-    globalThis.sessionStorage?.setItem(commitKey, new Date().toISOString());
+    if (globalThis.sessionStorage?.getItem(commitKey)) return false;
 
     const restore = sourceItems.map((item) => ({
       bubbles: item.bubbles,
       imageDataUrl: item.imageDataUrl,
     }));
-    const hasEditableLayers = sourceItems.some((item) => item.layerManifest?.editable);
+    const decorations = sourceItems.map(layerApplyDecorations);
+    const hasEditableLayers = decorations.some(Boolean);
     if (hasEditableLayers) {
       flushSync(() => {
-        sourceItems.forEach((item, index) => {
-          if (!item.layerManifest?.editable) return;
+        decorations.forEach((layers, index) => {
+          if (!layers) return;
           changeSceneRef.current(index, {
             // Keep the frame slot truthful but transparent; the actual artwork follows as ordinary
             // Studio image elements in background → foreground order.
             imageDataUrl: TRANSPARENT_FRAME_BACKGROUND,
-            bubbles: layerApplyDecorations(item) as unknown as ScenarioPreviewItem["bubbles"],
+            bubbles: layers as unknown as ScenarioPreviewItem["bubbles"],
           });
         });
       });
@@ -134,18 +140,16 @@ export function StudioScenarioAutoLayoutPanel(
 
     // flushSync rerenders the wrapper, so this ref now points at the host closure that sees the
     // apply-only decorations rather than the stale pre-transform preview.
-    applyRef.current();
-
-    queueMicrotask(() => {
-      // Successful legacy apply clears the preview. Restore only when it remained mounted because
-      // review lock, persistence or another document guard rejected the commit.
-      if (!previewRef.current) return;
-      globalThis.sessionStorage?.removeItem(commitKey);
-      if (!hasEditableLayers) return;
-      restore.forEach((snapshot, index) => {
-        changeSceneRef.current(index, snapshot);
-      });
-    });
+    if (applyRef.current() === false) {
+      if (hasEditableLayers) {
+        flushSync(() => restore.forEach((snapshot, index) => {
+          changeSceneRef.current(index, snapshot);
+        }));
+      }
+      return false;
+    }
+    globalThis.sessionStorage?.setItem(commitKey, new Date().toISOString());
+    return true;
   };
 
   return (

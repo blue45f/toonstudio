@@ -204,6 +204,16 @@ describe("StudioWebtoonProductionAssistPanel (8대 경쟁사 벤치마크 및 4�
       expect(screen.getByTestId("production-assist-engine-status").textContent).toContain("AI 실시간");
     });
 
+    // 대본이 같아도 분석 대상의 로케일이나 핵심 갈등이 바뀌면 이전 결과를 적용하지 않는다.
+    for (const changedProps of [{ targetLocale: "en" }, { coreConflict: "새로운 갈등" }] as const) {
+      rerender(<StudioWebtoonProductionAssistPanel scriptInput={script} {...props} {...changedProps} />);
+      expect(screen.getByTestId("production-assist-engine-status").textContent).not.toContain("AI 실시간");
+      fireEvent.click(screen.getByTestId("apply-production-assist-script-btn"));
+      expect(onApplyScript.mock.lastCall?.[0]).not.toContain("바스트 샷 로우 앵글");
+    }
+    rerender(<StudioWebtoonProductionAssistPanel scriptInput={script} {...props} />);
+    expect(screen.getByTestId("production-assist-engine-status").textContent).toContain("AI 실시간");
+
     // 분석한 대본 그대로면 2번 컷 줄 끝에 [ ]로 붙는다(대본 끝의 새 컷이 아니다).
     fireEvent.click(screen.getByTestId("apply-production-assist-script-btn"));
     expect(onApplyScript).toHaveBeenLastCalledWith(

@@ -70,10 +70,8 @@ import {
   type StudioInteractionSfxPlayer,
 } from "./studio-interaction-sfx-play";
 import {
-  colorizeLineArt,
   DEFAULT_STUDIO_AI_IMAGE_SIZE,
   generateBackgroundImage,
-  generateConsistentCharacterImage,
   generateScenarioScenes,
   isStudioAiConfigured,
   isStudioTextAiConfigured,
@@ -1335,9 +1333,11 @@ import {
 } from "./studio-cuttoon-edit/studio-host-view-and-resize-helpers";
 import {
   buildStudioTextAiSettlementOptions, planStudioScenarioProductionImport, resolveStudioAddReferenceAttachment,
-  runStudioApplyAiAssistPresetPrompt, runStudioApplyColorizeCandidate, runStudioExecuteAiColorizeCandidate,
+  cancelStudioAiRequest, runStudioApplyAiAssistPresetPrompt, runStudioApplyDialogueSuggestion,
   runStudioExecuteSuggestColorPalette, runStudioExecuteSuggestDialogueLines, runStudioWriterRoomAiDraft,
+  type StudioAiDialogueLockedTarget,
 } from "./studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers";
+import type { StudioColorizeTarget, StudioImageAiSurface } from "./studio-cuttoon-edit/studio-image-ai-executors";
 import {
   applyStudioSnapEnabledVisible, applyStudioToolOperationSnapshot, deriveStudioOptionsBarsDrawModel,
   deriveStudioSelectedForInspector, hasStudioBg3dCurrentTarget, runStudioExecuteQuickAccessCommand,
@@ -1430,8 +1430,8 @@ import {
   runStudioHandleBrushPackImportFromMenu, runStudioOpenQuickAccessPalette,
 } from "./studio-cuttoon-edit/studio-host-wave5-workspace-surface-helpers";
 import {
-  runStudioContextNoteChange, runStudioInsertAiBackgroundImage, runStudioOnGenerateAsset,
-} from "./studio-cuttoon-edit/studio-host-wave6-ai-generation-helpers";
+  runStudioContextNoteChange, runStudioOnGenerateAsset,
+} from "./studio-cuttoon-edit/studio-image-ai-intents";
 import {
   runStudioInkMeshPreviewEffect, runStudioRasterOverlayUnmountCleanup,
   runStudioRasterServerAuthorityEffect, runStudioStartFixedRateStrokePump,
@@ -12096,7 +12096,8 @@ const puppetWarpArmed =
   const [aiColorizeCandidateSession, setAiColorizeCandidateSession] = useState(() =>
     createColorizeCandidateSession(),
   );
-  const [aiColorizeCandidateTargetId, setAiColorizeCandidateTargetId] = useState<string | null>(null);
+  const [aiColorizeCandidateTarget, setAiColorizeCandidateTarget] = useState<StudioColorizeTarget | null>(null);
+  const aiColorizeAbortRef = useRef<AbortController | null>(null);
   const aiColorizeCandidateProvenanceRef = useRef(
     new Map<string, ReturnType<typeof captureStudioAiGeneratedAssetProvenance>>(),
   );
@@ -12131,6 +12132,18 @@ const puppetWarpArmed =
   const [aiDialogueSuggestCandidates, setAiDialogueSuggestCandidates] = useState<DialogueSuggestionCandidate[] | null>(
     null
   );
+  const [aiDialogueSuggestLockedTarget, setAiDialogueSuggestLockedTarget] =
+    useState<StudioAiDialogueLockedTarget | null>(null);
+  const aiBgAbortRef = useRef<AbortController | null>(null);
+  const aiCharacterAbortRef = useRef<AbortController | null>(null);
+  const aiDialogueSuggestAbortRef = useRef<AbortController | null>(null);
+  const aiPaletteSuggestAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    for (const ref of [aiBgAbortRef, aiColorizeAbortRef, aiCharacterAbortRef, aiDialogueSuggestAbortRef, aiPaletteSuggestAbortRef]) {
+      ref.current?.abort();
+      ref.current = null;
+    }
+  }, []);
   // 색상 팔레트 추천 — 결과가 색상 데이터(hex+용도 설명)라 대사/나레이션 제안과 동일한 이유로 AI 최초
   // 사용 고지(runWithAiNotice) 대상이 아니다. "저장"은 아래 saveSuggestedPaletteToLibrary에서
   // 패널과 동일한 V12 SQLite repository로 들어가며, 다음에 스타일 탭을 열 때 그 권위를 읽는다.
@@ -13146,22 +13159,7 @@ const puppetWarpArmed =
       return true;
     }
     if (isEffectivelyLocked(target, groups) && !isLayerMetadataPatch(patch)) return false;
-    const workAssetReason = studioWorkAssetSourceReplacementReason(
-      target,
-      patch as Record<string, unknown>
-    );
-    if (workAssetReason) {
-      setError(workAssetReason);
-      return false;
-    }
-    const linked3dPassReason = studioLinked3dPassSourceReplacementReason(
-      target,
-      patch as Record<string, unknown>,
-    );
-    if (linked3dPassReason) {
-      setError(linked3dPassReason);
-      return false;
-    }
+    if (rejectElementSourceReplacement(target, patch)) return false;
     // `filterMaskSurfaceId` names one immutable historical bitmap. Any patch that owns
     // `filterMaskSrc` is a new inline authority (paint/add/delete/invert/replace), so atomically
     // remove the durable reference in the same undo/CRDT transition. Keeping it would allow the
@@ -14846,77 +14844,100 @@ const puppetWarpArmed =
     return true;
   }
 
-  // AI로 생성된 배경 이미지를 삽입 — addBgScene과 동일한 배치 정책(선택된 프레임이 있으면 그 칸만,
-  // 프레임이 여럿이면 전부, 없으면 캔버스 전체 배경으로 맨 뒤에 새 요소 추가). width/height는
-  // generateBackgroundImage가 요청한 size 문자열에서 그대로 파생한 값이라 이미지 로드 없이 동기적으로
-  // 안다.
-  function insertAiBackgroundImage(
-    dataUrl: string,
-    width: number,
-    height: number,
-    aiProvenance: StudioPublishAiProvenance,
-  ): boolean {
-    return runStudioInsertAiBackgroundImage({
-      dataUrl, width, height, aiProvenance, selected: selected ?? undefined, elements, canvasH,
-      patchEl, commit, setSelectedId, setTool,
-    });
+  function rejectElementSourceReplacement(target: El, patch: Partial<El>): boolean {
+    const reason = studioWorkAssetSourceReplacementReason(target, patch as Record<string, unknown>)
+      || studioLinked3dPassSourceReplacementReason(target, patch as Record<string, unknown>);
+    if (!reason) return false;
+    setError(reason);
+    return true;
   }
 
-  // 배경 생성 실행 — 이미 runWithAiNotice로 게이팅된 상태에서만 호출된다. 실패해도 throw하지
-  // 않는다(studio-ai-client.ts 계약) — result.ok만 분기하면 된다.
-  async function executeAiBackgroundGenerate(prompt: string, size: StudioAiImageSize) {
-    if (collaborationAccessRef.current.locked) return;
-    const mutationTicket = captureStudioMutationTicket();
-    setAiBgBusy(true);
-    setAiBgError(null);
-    const provider = studioImageAiProviderContext(aiSettings);
-    const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "generated");
-    const operationId = beginTrackedStudioAiOperation("background-image", {
-      kind: "image",
-      task: "background-image",
-      provider: provider.provider,
-      model: provider.model,
-      transport: provider.transport,
-      promptVersion: 1,
-      prompt,
-      target: {
-        pageId: activePage.id,
-        ...(selected?.type === "frame" ? { elementId: selected.id } : {}),
-      },
-      requestedSize: parseStudioAiRequestedSize(size),
-      references: [],
-    });
-    const result = await generateBackgroundImage(aiSettings, prompt, { size });
-    if (!canApplyStudioMutation(mutationTicket)) {
-      if (editorMountedRef.current) setAiBgBusy(false);
-      return;
+  const aiImagePatchElRef = useRef({ pageId: activePage.id, patchEl });
+  aiImagePatchElRef.current = { pageId: activePage.id, patchEl };
+  const imageAiSurface: StudioImageAiSurface = { kind: masterEditMode ? "master" : "page", pageId: activePage.id };
+  const imageAiSurfaceAccess = {
+    masterEditModeRef, patchImageElOnPage,
+    readCurrentPages: () => pagesHistoryRef.current[pagesHiRef.current] ?? pages,
+    readCurrentMasterElements: () => activeElementsRef.current,
+    patchMasterImageEl: (...args: Parameters<typeof patchEl>) => aiImagePatchElRef.current.patchEl(...args),
+  };
+  function patchImageElOnPage(
+    pageId: string,
+    elId: string,
+    patch: { src: string; aiProvenance?: StudioPublishAiProvenance },
+  ): boolean {
+    if (masterEditModeRef.current) return false;
+    if (pageId === currentPageIdRef.current && pageId === aiImagePatchElRef.current.pageId) {
+      return aiImagePatchElRef.current.patchEl(elId, patch);
     }
-    settleTrackedStudioAiOperation(operationId, result);
-    if (!result.ok) {
-      setAiBgError(result.error);
-      setAiBgBusy(false);
-      return;
-    }
-    if (!insertAiBackgroundImage(
-      result.data.dataUrl,
-      result.data.width,
-      result.data.height,
-      requestProvenance
-    )) {
-      setAiBgError(t("studio.hostStatus.bgApplyFailed", "배경 이미지는 생성됐지만 현재 원고에 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-      setAiBgBusy(false);
-      return;
-    }
-    setAiBgBusy(false);
-    setMenu(null); // 다른 "생성 후 팝오버 닫기" 흐름(addBgScene 등)과 동일 UX.
+    const latestPages = pagesHistoryRef.current[pagesHiRef.current] ?? pages;
+    const targetPage = latestPages.find((page) => page.id === pageId);
+    const target = targetPage?.elements.find((el) => el.id === elId);
+    if (!targetPage || !target || target.type !== "image") return false;
+    if (isEffectivelyLocked(target, targetPage.groups ?? [])) return false;
+    if (rejectElementSourceReplacement(target, patch)) return false;
+    return commitPages(
+      latestPages.map((page) =>
+        page.id === pageId
+          ? {
+              ...page,
+              elements: page.elements.map((el) => (el.id === elId ? ({ ...el, ...patch } as El) : el)),
+            }
+          : page,
+      ),
+    );
   }
-  // StudioAiBackgroundPanel의 "생성" 버튼이 호출하는 진입점 — 여기서만 AI 고지 게이트를 통과시킨다
-  // (executeAiBackgroundGenerate를 직접 패널에 넘기지 않는 이유 — 고지 우회 방지).
+
+  async function runImageAiRequest(
+    kind: "background" | "colorize" | "character",
+    ticket: ReturnType<typeof captureStudioMutationTicket>,
+    execute: (
+      executors: ReturnType<typeof import("./studio-cuttoon-edit/studio-image-ai-executors").createStudioImageAiExecutors>,
+      ticket: ReturnType<typeof captureStudioMutationTicket>,
+      controller: AbortController,
+    ) => Promise<void>,
+  ) {
+    const [abortRef, setBusy, setFailure] = kind === "background" ? [aiBgAbortRef, setAiBgBusy, setAiBgError] as const
+      : kind === "colorize" ? [aiColorizeAbortRef, setAiColorizeBusy, setAiColorizeError] as const
+      : [aiCharacterAbortRef, setAiCharacterBusy, setAiCharacterError] as const;
+    if (collaborationAccessRef.current.locked || abortRef.current) return;
+    if (!canApplyStudioMutation(ticket) || masterEditModeRef.current !== (imageAiSurface.kind === "master")) return;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setBusy(true);
+    setFailure(null);
+    try {
+      const engine = await import("./studio-cuttoon-edit/studio-image-ai-executors");
+      if (controller.signal.aborted || !canApplyStudioMutation(ticket)) return;
+      await execute(engine.createStudioImageAiExecutors({
+        ...imageAiSurfaceAccess, requestSurface: imageAiSurface,
+        currentPageIdRef, selected, elements, canvasH, aiSettings, t,
+        canApplyStudioMutation: (request) => abortRef.current === controller && canApplyStudioMutation(request),
+        beginTrackedStudioAiOperation, settleTrackedStudioAiOperation,
+        addRenderedImage, patchEl, commitPages, commit, setSelectedId, setTool,
+        setFailure, setMenu,
+      }), ticket, controller);
+    } catch {
+      if (abortRef.current === controller && !controller.signal.aborted && canApplyStudioMutation(ticket)) {
+        setFailure(bi("AI 이미지 요청을 완료하지 못했어요. 다시 시도해 주세요.", "The AI image request could not finish. Try again."));
+      }
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        if (editorMountedRef.current) setBusy(false);
+      }
+    }
+  }
+  function onCancelAiBackground() { cancelStudioAiRequest(aiBgAbortRef, setAiBgBusy); }
+  // AI 이미지 생성 도구는 고지 승인을 거친 뒤 실행한다.
   function onGenerateAiBackground() {
     const prompt = aiBgPrompt.trim();
     if (!prompt || aiBgBusy || !isStudioAiConfigured(aiSettings)) return;
     setAiRecentPrompts(pushStudioAiRecentPrompt(globalThis.sessionStorage, "background", prompt));
-    runWithAiNotice(() => void executeAiBackgroundGenerate(prompt, aiBgSize));
+    const ticket = captureStudioMutationTicket();
+    runWithAiNotice(() => void runImageAiRequest("background", ticket, (engine, ticket, controller) =>
+      engine.executeAiBackgroundGenerate(prompt, aiBgSize, ticket, controller),
+    ));
   }
 
   function applyAiAssistPresetPrompt(tool: StudioAiAssistToolId, prompt: string) {
@@ -14927,99 +14948,50 @@ const puppetWarpArmed =
     });
   }
 
-  // AI 자동 채색 실행 — elId/srcAtRequestTime을 호출 시점에 캡처해 넘긴다(await 도중 선택이 바뀌어도
-  // 엉뚱한 요소를 덮어쓰지 않는다 — captureAnimFrame/bakeLiquifyStroke와 동일한 관례).
-  async function executeAiColorize(elId: string, srcAtRequestTime: string, prompt: string) {
-    if (collaborationAccessRef.current.locked) return;
-    const mutationTicket = captureStudioMutationTicket();
-    setAiColorizeBusy(true);
-    setAiColorizeError(null);
-    const provider = studioImageAiProviderContext(aiSettings);
-    const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "edited");
-    const operationId = beginTrackedStudioAiOperation("colorize", {
-      kind: "image",
-      task: "colorize",
-      provider: provider.provider,
-      model: provider.model,
-      transport: provider.transport,
-      promptVersion: 1,
-      prompt,
-      target: { pageId: activePage.id, elementId: elId },
-      references: [{ assetId: elId }],
-    });
-    const result = await colorizeLineArt(aiSettings, srcAtRequestTime, prompt);
-    if (!canApplyStudioMutation(mutationTicket)) {
-      if (editorMountedRef.current) setAiColorizeBusy(false);
-      return;
-    }
-    settleTrackedStudioAiOperation(operationId, result);
-    if (!result.ok) {
-      setAiColorizeError(result.error);
-      setAiColorizeBusy(false);
-      return;
-    }
-    const target = elementById.get(elId);
-    if (!target || target.type !== "image") {
-      setAiColorizeError(t("studio.hostStatus.colorizeSourceLayerNotFound", "채색 결과를 적용할 원본 이미지 레이어를 찾지 못했어요. 레이어를 다시 선택한 뒤 재시도해 주세요."));
-      setAiColorizeBusy(false);
-      return;
-    }
-    if (!patchEl(elId, { src: result.data.dataUrl, aiProvenance: requestProvenance })) {
-      setAiColorizeError(t("studio.hostStatus.colorizeApplyFailed", "채색 결과는 생성됐지만 이미지 레이어에 적용하지 못했어요. 레이어 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-      setAiColorizeBusy(false);
-      return;
-    }
-    setAiColorizeBusy(false);
-  }
-  // 채색 후보 모으기 — 단일 채색과 같은 호출·추적 경로를 쓰되, 결과를
-  // patchEl로 바로 덮지 않고 후보 세션에 쌓는다. 과금은 호출 1회분이다.
-  async function executeAiColorizeCandidate(elId: string, srcAtRequestTime: string, prompt: string) {
-    await runStudioExecuteAiColorizeCandidate({
-      elId, srcAtRequestTime, prompt, collaborationLocked: collaborationAccessRef.current.locked,
-      activePageId: activePage.id, aiSettings, candidateSession: aiColorizeCandidateSession,
-      candidateProvenanceRef: aiColorizeCandidateProvenanceRef, editorMountedRef,
-      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
-      beginTrackedOperation: beginTrackedStudioAiOperation, settleOperation: settleTrackedStudioAiOperation,
-      setBusy: setAiColorizeBusy, setError: setAiColorizeError, setSession: setAiColorizeCandidateSession,
-      setTargetId: setAiColorizeCandidateTargetId,
-    });
-  }
-  function onColorizeSelected() {
+  function requestColorize(collectCandidate: boolean) {
     if (!selected || selected.type !== "image" || aiColorizeBusy || !isStudioAiConfigured(aiSettings)) return;
     const basePrompt = aiColorizePrompt.trim();
     if (!basePrompt) return;
     const prompt = composeColorizeContextPrompt({ basePrompt, note: aiContextNote });
     const referenceResult = buildReferenceColorizeRequest({ prompt, attachments: aiReferenceAttachments });
     setAiReferenceWarnings(referenceResult.ok ? referenceResult.request.warnings : []);
-    const elId = selected.id;
-    const srcAtRequestTime = selected.src;
-    runWithAiNotice(() => void executeAiColorize(elId, srcAtRequestTime, prompt));
+    const target: StudioColorizeTarget = {
+      surface: imageAiSurface, elementId: selected.id, src: selected.src, ticket: captureStudioMutationTicket(),
+    };
+    const previous = aiColorizeCandidateTarget;
+    const candidateOutput = collectCandidate ? {
+      session: previous?.elementId === target.elementId && previous.src === target.src
+        && previous.surface.kind === target.surface.kind && previous.surface.pageId === target.surface.pageId
+        && previous.ticket.documentGeneration === target.ticket.documentGeneration
+        && previous.ticket.accessGeneration === target.ticket.accessGeneration
+        && previous.ticket.authScopeKey === target.ticket.authScopeKey && previous.ticket.workId === target.ticket.workId
+        ? aiColorizeCandidateSession : createColorizeCandidateSession(),
+      provenanceById: aiColorizeCandidateProvenanceRef.current,
+      setSession: setAiColorizeCandidateSession, setTarget: setAiColorizeCandidateTarget,
+    } : undefined;
+    runWithAiNotice(() => void runImageAiRequest("colorize", target.ticket, (engine, _ticket, controller) =>
+      engine.executeAiColorize(target, prompt, controller, candidateOutput),
+    ));
   }
-  function onCollectColorizeCandidate() {
-    if (!selected || selected.type !== "image" || aiColorizeBusy || !isStudioAiConfigured(aiSettings)) return;
-    const basePrompt = aiColorizePrompt.trim();
-    if (!basePrompt) return;
-    const prompt = composeColorizeContextPrompt({ basePrompt, note: aiContextNote });
-    const referenceResult = buildReferenceColorizeRequest({ prompt, attachments: aiReferenceAttachments });
-    setAiReferenceWarnings(referenceResult.ok ? referenceResult.request.warnings : []);
-    const elId = selected.id;
-    const srcAtRequestTime = selected.src;
-    runWithAiNotice(() => void executeAiColorizeCandidate(elId, srcAtRequestTime, prompt));
-  }
+  function onColorizeSelected() { requestColorize(false); }
+  function onCancelColorize() { cancelStudioAiRequest(aiColorizeAbortRef, setAiColorizeBusy); }
   function onSelectColorizeCandidate(candidateId: string) {
     const result = selectColorizeCandidate(aiColorizeCandidateSession, candidateId);
     if (result.ok) setAiColorizeCandidateSession(result.session);
   }
-  function onApplyColorizeCandidate() {
-    runStudioApplyColorizeCandidate({
-      targetId: aiColorizeCandidateTargetId, candidateSession: aiColorizeCandidateSession,
-      targetElement: aiColorizeCandidateTargetId ? elementById.get(aiColorizeCandidateTargetId) : undefined,
-      candidateProvenanceRef: aiColorizeCandidateProvenanceRef, patchEl, setError: setAiColorizeError,
+  async function onApplyColorizeCandidate() {
+    const target = aiColorizeCandidateTarget;
+    if (!target || !canApplyStudioMutation(target.ticket)) return;
+    const engine = await import("./studio-cuttoon-edit/studio-image-ai-executors");
+    const appliedTarget = engine.applyStudioImageAiCandidate(target, imageAiSurfaceAccess, {
+      candidateSession: aiColorizeCandidateSession, candidateProvenanceRef: aiColorizeCandidateProvenanceRef,
+      setError: setAiColorizeError, canApplyMutation: canApplyStudioMutation, captureMutationTicket: captureStudioMutationTicket,
     });
+    if (appliedTarget) setAiColorizeCandidateTarget((current) => current === target ? appliedTarget : current);
   }
   function onClearColorizeCandidates() {
     setAiColorizeCandidateSession(createColorizeCandidateSession());
-    setAiColorizeCandidateTargetId(null);
+    setAiColorizeCandidateTarget(null);
   }
   function onContextNoteChange(
     patch: Partial<
@@ -15042,8 +15014,8 @@ const puppetWarpArmed =
   }
   const aiColorizeExtras: StudioAiColorizeWiring = {
     candidateSession: aiColorizeCandidateSession,
-    candidateTargetId: aiColorizeCandidateTargetId,
-    onCollectCandidate: onCollectColorizeCandidate,
+    candidateTargetId: aiColorizeCandidateTarget?.elementId ?? null,
+    onCollectCandidate: () => requestColorize(true),
     onSelectCandidate: onSelectColorizeCandidate,
     onApplyCandidate: onApplyColorizeCandidate,
     onClearCandidates: onClearColorizeCandidates,
@@ -15055,54 +15027,7 @@ const puppetWarpArmed =
     onRemoveReferenceAttachment,
   };
 
-  // AI 캐릭터 일관성 생성 실행(젠툰 벤치마크) — reference id/src/size를 호출 시점에 함께 캡처해
-  // 넘긴다(await 도중 선택이 바뀌어도 엉뚱한 참고 이미지를 쓰지 않는다 — executeAiColorize와 동일
-  // 관례). colorizeLineArt와 달리 기존 요소의 src를 덮어쓰지 않고, addRenderedImage로 캔버스에 새
-  // 이미지 요소를 추가한다(참고 캐릭터의 온-캔버스 크기를 그대로 재사용 — studio-ai-client.ts
-  // generateConsistentCharacterImage 주석 참고, 생성된 이미지를 다시 디코딩해 원본 픽셀 크기를
-  // 알아낼 필요가 없다).
-  async function executeAiCharacterConsistency(
-    reference: { elementId: string; src: string; width: number; height: number },
-    prompt: string
-  ) {
-    if (collaborationAccessRef.current.locked) return;
-    const mutationTicket = captureStudioMutationTicket();
-    setAiCharacterBusy(true);
-    setAiCharacterError(null);
-    const provider = studioImageAiProviderContext(aiSettings);
-    const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "generated");
-    const operationId = beginTrackedStudioAiOperation("character-image", {
-      kind: "image",
-      task: "character-image",
-      provider: provider.provider,
-      model: provider.model,
-      transport: provider.transport,
-      promptVersion: 1,
-      prompt,
-      target: { pageId: activePage.id },
-      references: [{ assetId: reference.elementId }],
-    });
-    const result = await generateConsistentCharacterImage(aiSettings, reference.src, prompt);
-    if (!canApplyStudioMutation(mutationTicket)) {
-      if (editorMountedRef.current) setAiCharacterBusy(false);
-      return;
-    }
-    settleTrackedStudioAiOperation(operationId, result);
-    if (!result.ok) {
-      setAiCharacterError(result.error);
-      setAiCharacterBusy(false);
-      return;
-    }
-    if (!addRenderedImage(result.data.dataUrl, reference.width, reference.height, requestProvenance)) {
-      setAiCharacterError(t("studio.hostStatus.characterAddFailed", "캐릭터 이미지는 생성됐지만 현재 원고에 추가하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-      setAiCharacterBusy(false);
-      return;
-    }
-    setAiCharacterBusy(false);
-    setMenu(null); // 다른 "생성 후 팝오버 닫기" 흐름(AI 배경 생성 등)과 동일 UX.
-  }
-  // StudioAiCharacterConsistencyPanel의 "같은 캐릭터로 생성" 버튼이 호출하는 진입점 — 여기서만 AI
-  // 고지 게이트를 통과시킨다(다른 AI 이미지 생성 진입점과 동일 이유 — 고지 우회 방지).
+  function onCancelAiCharacter() { cancelStudioAiRequest(aiCharacterAbortRef, setAiCharacterBusy); }
   function onGenerateAiCharacter() {
     if (!selected || selected.type !== "image" || aiCharacterBusy || !isStudioAiConfigured(aiSettings)) return;
     const prompt = aiCharacterPrompt.trim();
@@ -15113,7 +15038,10 @@ const puppetWarpArmed =
       width: selected.width,
       height: selected.height,
     };
-    runWithAiNotice(() => void executeAiCharacterConsistency(reference, prompt));
+    const ticket = captureStudioMutationTicket();
+    runWithAiNotice(() => void runImageAiRequest("character", ticket, (engine, ticket, controller) =>
+      engine.executeAiCharacterConsistency(reference, prompt, ticket, controller),
+    ));
   }
 
   // ── 시나리오 자동 생성 ──────────────────────────────────────────────────────
@@ -15237,14 +15165,19 @@ const puppetWarpArmed =
   }
   // preview를 캔버스에 커밋 — 프레임(이미지 성공 시 bg 포함)과 말풍선을 전부 한 번에 commit해
   // undo 1회로 되돌릴 수 있게 한다(addSceneTemplate/addDialogueBubbles와 동일 관례).
-  function onApplyScenarioPreview() {
-    if (!scenarioResult || scenarioBusy || scenarioRegeneratingIndex !== null) return;
+  function onApplyScenarioPreview(): boolean {
+    if (!scenarioResult || scenarioBusy || scenarioRegeneratingIndex !== null) return false;
     if (scenarioApplyTarget === "current-page" && pageEditLocked) {
-      setError("이 페이지는 검토 잠금 상태예요. 새 페이지에 적용하거나 잠금을 해제해 주세요.");
-      return;
+      setScenarioError("이 페이지는 검토 잠금 상태예요. 새 페이지에 적용하거나 잠금을 해제해 주세요.");
+      return false;
     }
+    // 적용 시점의 페이지 프레임 아래에 겹치지 않게 배치한다.
+    const layoutForApply =
+      scenarioApplyTarget === "current-page"
+        ? relayoutScenarioDrafts(scenarioResult.items, "current-page")
+        : { items: scenarioResult.items, nextCanvasH: scenarioResult.nextCanvasH };
     const newEls: El[] = [];
-    for (const item of scenarioResult.items) {
+    for (const item of layoutForApply.items) {
       newEls.push({
         id: uid(),
         type: "frame",
@@ -15267,30 +15200,30 @@ const puppetWarpArmed =
         newEls.push({ id: uid(), ...b });
       }
     }
-    if (newEls.length === 0) return;
+    if (newEls.length === 0) return false;
     if (scenarioApplyTarget === "new-page") {
       const currentIndex = Math.max(0, pages.findIndex((page: PageState) => page.id === activePage.id));
       const nextPages = insertBlankPageAt(
         pages,
         currentIndex + 1,
         uid,
-        Math.max(1080, scenarioResult.nextCanvasH)
+        Math.max(1080, layoutForApply.nextCanvasH)
       );
       const insertedPage = nextPages[currentIndex + 1];
       const populatedPages = nextPages.map((page: PageState) =>
         page.id === insertedPage.id
-          ? { ...page, elements: newEls, canvasH: Math.max(1080, scenarioResult.nextCanvasH) }
+          ? { ...page, elements: newEls, canvasH: Math.max(1080, layoutForApply.nextCanvasH) }
           : page
       );
       if (!commitPages(populatedPages)) {
         setScenarioError(t("studio.hostStatus.scenarioNewPageApplyFailed", "새 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-        return;
+        return false;
       }
       setCurrentPageId(insertedPage.id);
     } else {
-      if (!commit([...elements, ...newEls], { canvasH: Math.max(canvasH, scenarioResult.nextCanvasH) })) {
+      if (!commit([...elements, ...newEls], { canvasH: Math.max(canvasH, layoutForApply.nextCanvasH) })) {
         setScenarioError(t("studio.hostStatus.scenarioCurrentPageApplyFailed", "현재 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-        return;
+        return false;
       }
     }
     setScenarioResult(null);
@@ -15300,6 +15233,7 @@ const puppetWarpArmed =
     setScenarioRegeneratingIndex(null);
     setScenarioOpen(false);
     setTool("select");
+    return true;
   }
   // preview를 버리고 입력 단계로 돌아간다 — 캔버스는 건드리지 않는다. 스토리 텍스트는 남겨둔다
   // (조금 고쳐서 다시 시도하기 쉽게 — 처음부터 다시 입력하게 강제하지 않는다).
@@ -15310,26 +15244,56 @@ const puppetWarpArmed =
     setScenarioRegeneratingIndex(null);
   }
 
-  // 장면 구성 제안 텍스트를 일반 텍스트 요소로 캔버스에 추가한다 — addText()와 동일한 스폰 위치 규칙
-  // (선택된 패널이 있으면 그 중앙, 없으면 캔버스 중앙), 다만 제안 텍스트는 여러 줄 불릿이라 addText
-  // 기본값(fontSize 40, width 220)보다 작은 글자 크기·넓은 폭을 쓴다.
-  function insertAiCompositionNote(text: string) {
+  // 장면 구성 제안 텍스트를 일반 텍스트 요소로 캔버스에 추가한다 — 요청 시점 컷(targetPageId)이
+  // 현재 컷과 다르면 원래 컷에 안전하게 추가해 B컷 오염을 막는다.
+  function insertAiCompositionNote(text: string, targetPageId?: string) {
+    if (targetPageId && targetPageId !== activePage.id) {
+      const targetPage = pages.find((page) => page.id === targetPageId);
+      if (!targetPage) return;
+      const noteEl: El = {
+        id: uid(), type: "text", text,
+        x: Math.round(CANVAS_W / 2) - 130, y: Math.round(targetPage.canvasH / 2) - 70,
+        width: 260, fontSize: 16, fill: color, rotation: 0,
+      };
+      commitPages(
+        pages.map((page) =>
+          page.id === targetPageId ? { ...page, elements: [...page.elements, noteEl] } : page,
+        ),
+      );
+      return;
+    }
     const [cx, cy] = spawnCenter({ width: 260, height: 140, margin: 8 });
     addEl({ id: uid(), type: "text", text, x: cx - 130, y: cy - 70, width: 260, fontSize: 16, fill: color, rotation: 0 });
   }
 
-  // 대사/나레이션 제안(BYOK) — 결과가 텍스트라 AI 최초 사용 고지(runWithAiNotice) 대상이 아니다
-  // (StudioAiCompositionPanel/executeGenerateTranslations와 동일 판단 근거). includeContext가 켜져
-  // 있으면 현재 페이지에 이미 배치된 대사(collectDialogueItems, 이 페이지로 스코프 한정 — 다른
-  // 페이지의 무관한 대사까지 섞으면 오히려 톤을 흐린다)를 시스템 프롬프트 맥락으로 함께 실어 보낸다.
-  async function executeSuggestDialogueLines() {
+  // 대사/나레이션 제안(BYOK) — 요청 시점의 컷·선택 말풍선과 원문을 고정해, 생성 중 또는 생성 뒤
+  // 다른 컷으로 이동해도 적용 대상이 바뀌지 않도록 보호한다.
+  async function executeSuggestDialogueLines(localOnly = false) {
+    const pageIndex = Math.max(0, pages.findIndex((page) => page.id === activePage.id));
+    const lockedTarget: StudioAiDialogueLockedTarget | null =
+      selected && (selected.type === "bubble" || selected.type === "text")
+        ? {
+            pageId: activePage.id,
+            elementId: selected.id,
+            pageLabel: activePage.name?.trim() || `${pageIndex + 1}컷`,
+            originalText: selected.text,
+          }
+        : null;
     await runStudioExecuteSuggestDialogueLines({
       collaborationLocked: collaborationAccessRef.current.locked, situationText: aiDialogueSuggestSituation,
-      busy: aiDialogueSuggestBusy, includeContext: aiDialogueSuggestIncludeContext, pages, activePageId: activePage.id,
-      aiSettings, textAiTransport, pendingProvider: pendingTextAiProviderContext,
+      busy: aiDialogueSuggestBusy, includeContext: aiDialogueSuggestIncludeContext, localOnly, pages, activePageId: activePage.id,
+      aiSettings, textAiTransport, abortRef: aiDialogueSuggestAbortRef,
+      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
+      lockedTarget, setLockedTarget: setAiDialogueSuggestLockedTarget,
+      pendingProvider: pendingTextAiProviderContext,
       beginTrackedOperation: beginTrackedStudioAiOperation, settleTextOperation: settleTrackedTextAiOperation,
       setBusy: setAiDialogueSuggestBusy, setError: setAiDialogueSuggestError, setCandidates: setAiDialogueSuggestCandidates,
     });
+  }
+  function cancelSuggestDialogueLines() {
+    aiDialogueSuggestAbortRef.current?.abort();
+    aiDialogueSuggestAbortRef.current = null;
+    setAiDialogueSuggestBusy(false);
   }
   // 후보를 "대사 한 번에" 스크립트(말풍선 탭의 dialogueScript)에 미니 문법 한 줄로 추가한다 — 이미
   // 입력해 둔 스크립트가 있으면 줄바꿈으로 이어붙인다(덮어쓰지 않음, 여러 후보를 골라 순서대로 쌓을
@@ -15338,27 +15302,39 @@ const puppetWarpArmed =
     const line = formatDialogueSuggestionLine(candidate);
     setDialogueScript((prev) => (prev.trim() ? `${prev}\n${line}` : line));
   }
-  // 선택된 말풍선·텍스트 요소에 후보를 바로 삽입 — 미니 문법("이름: ")이 아니라 candidate.text만
-  // 넣는다. bubble/text 요소의 text 필드는 원래도 화자 이름을 담지 않는다(studio-dialogue.ts의
-  // parseDialogueScript가 화자를 좌/우 배치에만 쓰고 text 자체엔 반영하지 않는 것과 동일한 관례 —
-  // patchDialogueText를 그대로 재사용해 이중 구현하지 않는다).
+  // 고정된 원본 말풍선·텍스트 요소에 후보를 바로 삽입한다 — A컷에서 생성 후 B컷으로 이동했더라도
+  // B컷의 선택 요소를 덮어쓰지 않고 A컷의 고정 대상 말풍선에만 패치한다.
   function insertDialogueSuggestionToSelected(candidate: DialogueSuggestionCandidate) {
-    if (!selected || (selected.type !== "bubble" && selected.type !== "text")) return;
-    patchDialogueText(activePage.id, selected.id, candidate.text);
+    const lockedTarget = aiDialogueSuggestLockedTarget;
+    const applied = runStudioApplyDialogueSuggestion({
+      pages, activePageId: activePage.id, selected, lockedTarget, text: candidate.text,
+      patchDialogueText, setError: setAiDialogueSuggestError,
+    });
+    if (applied && lockedTarget) {
+      setAiDialogueSuggestError(null);
+      setAiDialogueSuggestLockedTarget({ ...lockedTarget, lastAppliedText: candidate.text });
+    }
   }
 
   // 색상 팔레트 추천(BYOK) — studio-ai-client.suggestColorPalette 문서 참고. 결과가 색상 데이터라
   // 대사/나레이션 제안과 동일한 이유로 runWithAiNotice 게이트를 타지 않는다.
   async function executeSuggestColorPalette() {
+    const requestScope = captureStudioMutationTicket();
     await runStudioExecuteSuggestColorPalette({
       collaborationLocked: collaborationAccessRef.current.locked, moodText: aiPaletteSuggestMood,
-      busy: aiPaletteSuggestBusy, activePageId: activePage.id, aiSettings, textAiTransport,
+      busy: aiPaletteSuggestBusy, activePageId: activePage.id, aiSettings, textAiTransport, abortRef: aiPaletteSuggestAbortRef,
+      isRequestScopeCurrent: () => {
+        const current = captureStudioMutationTicket();
+        return editorMountedRef.current && current.authScopeKey === requestScope.authScopeKey
+          && current.workId === requestScope.workId && current.accessGeneration === requestScope.accessGeneration;
+      },
       pendingProvider: pendingTextAiProviderContext, beginTrackedOperation: beginTrackedStudioAiOperation,
       settleTextOperation: settleTrackedTextAiOperation, setBusy: setAiPaletteSuggestBusy,
       setError: setAiPaletteSuggestError, setSuggestion: setAiPaletteSuggestion,
       clearSavedMessage: () => setAiPaletteSuggestSavedMsg(null),
     });
   }
+  function onCancelSuggestColorPalette() { cancelStudioAiRequest(aiPaletteSuggestAbortRef, setAiPaletteSuggestBusy); }
   // 제안받은 팔레트도 패널과 동일한 V12 SQLite authority에 저장한다. 이전 브라우저 키는 읽지
   // 않으며, 내구성 쓰기가 실패하면 제안은 현재 패널 메모리에만 남고 저장 성공으로 표시하지 않는다.
   async function saveSuggestedPaletteToLibrary(suggestion: PaletteSuggestion): Promise<void> {
@@ -15530,7 +15506,7 @@ const puppetWarpArmed =
   // 배치된 대사 일괄 편집 — 순수 헬퍼가 무변경이면 입력 배열을 그대로 돌려주므로 참조 비교로 빈 커밋을 막는다.
   function patchDialogueText(pageId: string, elId: string, text: string) {
     const next = applyDialogueTextEdit(pages, pageId, elId, text);
-    if (next !== pages) commitPages(next as PageState[]);
+    return next === pages || commitPages(next as PageState[]);
   }
   // 찾아바꾸기 일괄 적용 — 여러 페이지를 한 번에 바꿔도 히스토리 1개(실행취소 1회).
   function applyDialogueReplacePlan(plan: DialogueReplacePlan) {
@@ -20795,7 +20771,7 @@ function clearSelectionForEdit() {
         handleLayerNavigatorAction, invertFilterMask, invertLayerMask, insertIsometricPrimitive,
         insertIsometricSolid, patchAdvancedRuler, moveVanishingPointById, previewVanishingPointById,
         setPerspectiveEyeLevelY, previewPerspectiveEyeLevelY, setPerspectiveLockHorizon,
-        previewIsometricOrigin, commitIsometricOrigin, onColorizeSelected, onMinimapClick,
+        previewIsometricOrigin, commitIsometricOrigin, onColorizeSelected, onCancelColorize, onMinimapClick,
         onMinimapKeyDown, openFeatureTutorial, openImagePastePicker, openStudioLayerLift,
         openStudioFilter, patchEl, patchElCoalesced, finishPatchElCoalescing,
         requestInspectorColorSample, patchPageGrade, queueBrushDelete, regenerateTemplate,
@@ -20893,6 +20869,7 @@ function clearSelectionForEdit() {
     applyStudioBackgroundFill,
     applyTemplate,
     beginTrackedStudioAiOperation,
+    cancelSuggestDialogueLines,
     deleteClip,
     disarmAllPixelTools,
     ensureRecentColorsLoaded,
@@ -20907,8 +20884,8 @@ function clearSelectionForEdit() {
     onDeleteAsset,
     onDeleteSharedAsset,
     onReportSharedAsset,
-    onGenerateAiBackground,
-    onGenerateAiCharacter,
+    onGenerateAiBackground, onCancelAiBackground,
+    onGenerateAiCharacter, onCancelAiCharacter, onCancelSuggestColorPalette,
     onGenerateAsset,
     onPickImage,
     onShareAsset,
@@ -21634,6 +21611,7 @@ function clearSelectionForEdit() {
       aiDialogueSuggestCandidates={aiDialogueSuggestCandidates}
       aiDialogueSuggestError={aiDialogueSuggestError}
       aiDialogueSuggestIncludeContext={aiDialogueSuggestIncludeContext}
+      aiDialogueSuggestLockedTarget={aiDialogueSuggestLockedTarget}
       aiDialogueSuggestSituation={aiDialogueSuggestSituation}
       aiNoticeOpen={aiNoticeOpen}
       aiPaletteSuggestBusy={aiPaletteSuggestBusy}

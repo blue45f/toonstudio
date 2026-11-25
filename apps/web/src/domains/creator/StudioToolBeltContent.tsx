@@ -195,15 +195,16 @@ export interface StudioToolBeltContentHandlers {
   applyStudioBackgroundFill: (payload: { kind: "solid" | "gradient" | "svg"; color?: string; stops?: string[]; direction?: "vertical" | "horizontal"; svg?: string; width?: number; height?: number; label?: string; presetId?: string; }) => Promise<void>;
   applyTemplate: (tpl: TemplateSpec) => void;
   beginTrackedStudioAiOperation: (scope: string, input: Omit<StudioAiPendingOperationInput, "id">) => string;
+  cancelSuggestDialogueLines?: () => void;
   deleteClip: (id: string) => Promise<void>;
   disarmAllPixelTools: () => void;
   ensureRecentColorsLoaded: () => void;
   enterCanvasOnlyMode: () => void;
   executeSuggestColorPalette: () => Promise<void>;
-  executeSuggestDialogueLines: () => Promise<void>;
+  executeSuggestDialogueLines: (localOnly?: boolean) => Promise<void>;
   fitCanvasToWidth: () => void;
   handleRenameAsset: (id: string) => Promise<void>;
-  insertAiCompositionNote: (text: string) => void;
+  insertAiCompositionNote: (text: string, targetPageId?: string) => void;
   insertClip: (clip: StudioClip) => void;
   insertDialogueSuggestionToSelected: (candidate: DialogueSuggestionCandidate) => void;
   insertStockImage: (photo: StudioStockPhoto, dataUrl: string, width: number, height: number) => void;
@@ -213,7 +214,10 @@ export interface StudioToolBeltContentHandlers {
   onDeleteSharedAsset: (id: string) => Promise<void>;
   onReportSharedAsset: (asset: SharedAssetCatalogItem, reason: CreatorAssetReportReason, details: string) => Promise<void>;
   onGenerateAiBackground: () => void;
+  onCancelAiBackground?: () => void;
   onGenerateAiCharacter: () => void;
+  onCancelAiCharacter?: () => void;
+  onCancelSuggestColorPalette?: () => void;
   onGenerateAsset: () => Promise<void>;
   onPickImage: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   onShareAsset: (asset: StudioAsset, options: StudioAssetShareOptions) => Promise<void>;
@@ -260,6 +264,7 @@ export interface StudioToolBeltContentProps {
   aiDialogueSuggestCandidates: DialogueSuggestionCandidate[] | null;
   aiDialogueSuggestError: string | null;
   aiDialogueSuggestIncludeContext: boolean;
+  aiDialogueSuggestLockedTarget?: import("./studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers").StudioAiDialogueLockedTarget | null;
   aiDialogueSuggestSituation: string;
   aiPaletteSuggestBusy: boolean;
   aiPaletteSuggestError: string | null;

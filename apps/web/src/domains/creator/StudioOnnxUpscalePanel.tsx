@@ -18,20 +18,18 @@ export function StudioOnnxUpscalePanel({
   const [error, setError] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [resultSize, setResultSize] = useState<{ width: number; height: number } | null>(null);
-  const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      abortRef.current?.abort();
-    };
-  }, []);
-
-  useEffect(() => {
+    setBusy(false);
     setPreviewSrc(null);
     setResultSize(null);
     setError(null);
     setProgress(null);
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
   }, [src]);
 
   const run = async () => {
@@ -46,28 +44,28 @@ export function StudioOnnxUpscalePanel({
       const result = await service.upscaleImageOnDevice(src, {
         signal: controller.signal,
         onProgress: (done, total) => {
-          if (mountedRef.current) setProgress({ done, total });
+          if (abortRef.current === controller && !controller.signal.aborted) setProgress({ done, total });
         },
       });
-      if (!mountedRef.current) return;
+      if (abortRef.current !== controller || controller.signal.aborted) return;
       setPreviewSrc(result.dataUrl);
       setResultSize({ width: result.width, height: result.height });
       onResult(result.dataUrl);
     } catch (cause) {
-      if (!mountedRef.current) return;
+      if (abortRef.current !== controller) return;
       setError(
-        cause instanceof Error && cause.name === "AbortError"
+        controller.signal.aborted || (cause instanceof Error && cause.name === "AbortError")
           ? "업스케일을 취소했어요."
           : cause instanceof Error
             ? cause.message
             : r3c07StatusText("studio.panelStatus.r3c07.onnxUpscale.upscaleFailed", "업스케일에 실패했어요."),
       );
     } finally {
-      if (mountedRef.current) {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
         setBusy(false);
         setProgress(null);
       }
-      if (abortRef.current === controller) abortRef.current = null;
     }
   };
 

@@ -11,7 +11,7 @@ import {
 // 전부 부모(StudioPage.tsx)가 수행한다. 저장된 팔레트는 새 타입을 발명하지 않고 기존
 // StudioPaletteLibraryPanel이 관리하는 것과 완전히 같은 StudioNamedPalette 구조로 들어간다 — 이
 // 패널은 그 타입조차 몰라도 된다(onSaveToLibrary에 PaletteSuggestion만 그대로 넘긴다).
-import { Check, Loader2, Palette, Save, Sparkles } from "lucide-react";
+import { Check, Loader2, Palette, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { AnswerTuningControls } from "./ai/AnswerTuningControls";
@@ -33,6 +33,7 @@ export function StudioPaletteSuggestPanel({
   answerTuning,
   onAnswerTuningChange,
   onGenerate,
+  onCancel,
   onSaveToLibrary,
 }: {
   configured: boolean;
@@ -51,10 +52,21 @@ export function StudioPaletteSuggestPanel({
   answerTuning?: AnswerTuning;
   onAnswerTuningChange?: (value: AnswerTuning) => void;
   onGenerate: () => void;
+  onCancel?: () => void;
   onSaveToLibrary: (suggestion: PaletteSuggestion) => void;
 }) {
   const [localSuggestion, setLocalSuggestion] = useState<PaletteSuggestion | null>(null);
-  const effectiveSuggestion = suggestion ?? localSuggestion;
+  const [preferLocalSuggestion, setPreferLocalSuggestion] = useState(false);
+  const prevSuggestionRef = useRef(suggestion);
+  useEffect(() => {
+    if (prevSuggestionRef.current !== suggestion) {
+      prevSuggestionRef.current = suggestion;
+      if (suggestion !== null) setPreferLocalSuggestion(false);
+    }
+  }, [suggestion]);
+  const effectiveSuggestion = preferLocalSuggestion
+    ? (localSuggestion ?? suggestion)
+    : (suggestion ?? localSuggestion);
   const canGenerate = configured && !busy && moodText.trim().length > 0;
   // 팝오버 높이가 화면보다 작으면 결과·에러가 fold 아래에 생긴다. 도착 시 스크롤로
   // 눈앞에 가져와야 "요청은 갔는데 아무 일도 없었다"로 오해하지 않는다.
@@ -97,19 +109,33 @@ export function StudioPaletteSuggestPanel({
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
-          onClick={onGenerate}
+          onClick={() => {
+            setPreferLocalSuggestion(false);
+            onGenerate();
+          }}
           disabled={!canGenerate}
           title={!configured ? "로그인하거나 무료 AI 경로를 연결하면 실행할 수 있어요." : undefined}
           className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Sparkles size={14} />}
+          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Palette size={14} aria-hidden />}
           {busy ? "배색을 구상하는 중…" : "팔레트 추천받기"}
         </button>
+        {busy && onCancel ? (
+          <button
+            type="button"
+            data-testid="palette-suggest-cancel-btn"
+            onClick={onCancel}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-card px-3 py-2 text-xs font-bold text-fg-2 transition-colors hover:bg-raised"
+          >
+            취소
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => {
             if (busy || !moodText.trim()) return;
             setLocalSuggestion(buildLocalWebtoonPaletteSuggestion(moodText));
+            setPreferLocalSuggestion(true);
           }}
           disabled={busy || !moodText.trim()}
           className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:bg-raised disabled:cursor-not-allowed disabled:opacity-60"

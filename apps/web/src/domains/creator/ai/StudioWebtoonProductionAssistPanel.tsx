@@ -13,11 +13,11 @@ import {
   GitCompare,
   Palette,
   ShieldCheck,
-  Sparkles,
   Volume2,
   Wand2,
+  X,
 } from "lucide-react";
-import { useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
@@ -108,6 +108,11 @@ const PRODUCTION_ASSIST_TABS: readonly {
   },
 ];
 
+interface LiveAssistResult<View> {
+  readonly view: View;
+  readonly inputId: string;
+}
+
 export interface StudioWebtoonProductionAssistPanelProps {
   readonly scriptInput: string;
   readonly storyGenre: string;
@@ -133,24 +138,15 @@ export function StudioWebtoonProductionAssistPanel({
 }: StudioWebtoonProductionAssistPanelProps): ReactElement {
   const [activeMode, setActiveMode] = useState<WebtoonProductionAssistMode>("scroll-eyepath");
   const [isRunningClaude, setIsRunningClaude] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => { abortRef.current?.abort(); abortRef.current = null; }, []);
 
-  // 스크롤 연출 결과의 컷 번호는 분석한 대본의 줄을 가리킨다. 대본을 고치거나 지문을 반영해 대본이 달라지면
-  // 낡은 컷 번호로 다른 줄에 지문을 붙이지 않도록 그 결과를 쓰지 않고 지금 대본의 분석을 보여 준다.
-  const [liveScroll, setLiveScroll] = useState<{
-    readonly view: AssistScrollEyePathView;
-    readonly script: string;
-  } | null>(null);
-  const liveScrollView = liveScroll?.script === scriptInput ? liveScroll.view : null;
-  const [liveColorView, setLiveColorView] = useState<AssistColorScriptView | null>(null);
-  const [liveContinuityView, setLiveContinuityView] =
-    useState<AssistContinuityForeshadowView | null>(null);
-  const [liveActingView, setLiveActingView] = useState<AssistActingSfxChoreographyView | null>(
-    null,
-  );
-  const [liveWardrobeView, setLiveWardrobeView] =
-    useState<AssistMultiCharacterWardrobeView | null>(null);
-  const [liveWeatherView, setLiveWeatherView] =
-    useState<AssistWeatherTimeProgressionView | null>(null);
+  const [liveScroll, setLiveScroll] = useState<LiveAssistResult<AssistScrollEyePathView> | null>(null);
+  const [liveColor, setLiveColor] = useState<LiveAssistResult<AssistColorScriptView> | null>(null);
+  const [liveContinuity, setLiveContinuity] = useState<LiveAssistResult<AssistContinuityForeshadowView> | null>(null);
+  const [liveActing, setLiveActing] = useState<LiveAssistResult<AssistActingSfxChoreographyView> | null>(null);
+  const [liveWardrobe, setLiveWardrobe] = useState<LiveAssistResult<AssistMultiCharacterWardrobeView> | null>(null);
+  const [liveWeather, setLiveWeather] = useState<LiveAssistResult<AssistWeatherTimeProgressionView> | null>(null);
 
   const assistInput: WebtoonProductionAssistInput = useMemo(
     () => ({
@@ -174,6 +170,14 @@ export function StudioWebtoonProductionAssistPanel({
       triggerWord,
     ],
   );
+
+  const assistInputId = useMemo(() => JSON.stringify(assistInput), [assistInput]);
+  const liveScrollView = liveScroll?.inputId === assistInputId ? liveScroll.view : null;
+  const liveColorView = liveColor?.inputId === assistInputId ? liveColor.view : null;
+  const liveContinuityView = liveContinuity?.inputId === assistInputId ? liveContinuity.view : null;
+  const liveActingView = liveActing?.inputId === assistInputId ? liveActing.view : null;
+  const liveWardrobeView = liveWardrobe?.inputId === assistInputId ? liveWardrobe.view : null;
+  const liveWeatherView = liveWeather?.inputId === assistInputId ? liveWeather.view : null;
 
   const parityReport = useMemo(() => evaluateWebtoonAiCompetitorParity(), []);
 
@@ -236,30 +240,45 @@ export function StudioWebtoonProductionAssistPanel({
               : currentWeatherView.model;
 
   const handleRunActiveClaudeEngine = async (): Promise<void> => {
+    if (isRunningClaude) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const requestedInputId = assistInputId;
+    const opts = { signal: controller.signal };
     setIsRunningClaude(true);
     try {
       if (activeMode === "scroll-eyepath") {
-        const res = await runAssistScrollEyePathDoctor(assistInput);
-        setLiveScroll({ view: res, script: assistInput.scriptText ?? "" });
+        const res = await runAssistScrollEyePathDoctor(assistInput, opts);
+        if (!controller.signal.aborted && abortRef.current === controller) setLiveScroll({ view: res, inputId: requestedInputId });
       } else if (activeMode === "color-script") {
-        const res = await runAssistColorScriptDirector(assistInput);
-        setLiveColorView(res);
+        const res = await runAssistColorScriptDirector(assistInput, opts);
+        if (!controller.signal.aborted && abortRef.current === controller) setLiveColor({ view: res, inputId: requestedInputId });
       } else if (activeMode === "continuity-foreshadow") {
-        const res = await runAssistContinuityForeshadowAuditor(assistInput);
-        setLiveContinuityView(res);
+        const res = await runAssistContinuityForeshadowAuditor(assistInput, opts);
+        if (!controller.signal.aborted && abortRef.current === controller) setLiveContinuity({ view: res, inputId: requestedInputId });
       } else if (activeMode === "acting-sfx") {
-        const res = await runAssistActingSfxChoreographer(assistInput);
-        setLiveActingView(res);
+        const res = await runAssistActingSfxChoreographer(assistInput, opts);
+        if (!controller.signal.aborted && abortRef.current === controller) setLiveActing({ view: res, inputId: requestedInputId });
       } else if (activeMode === "multi-character-wardrobe-lock") {
-        const res = await runAssistMultiCharacterWardrobeUniformDirector(assistInput);
-        setLiveWardrobeView(res);
+        const res = await runAssistMultiCharacterWardrobeUniformDirector(assistInput, opts);
+        if (!controller.signal.aborted && abortRef.current === controller) setLiveWardrobe({ view: res, inputId: requestedInputId });
       } else {
-        const res = await runAssistWeatherTimeProgressionContinuityDirector(assistInput);
-        setLiveWeatherView(res);
+        const res = await runAssistWeatherTimeProgressionContinuityDirector(assistInput, opts);
+        if (!controller.signal.aborted && abortRef.current === controller) setLiveWeather({ view: res, inputId: requestedInputId });
       }
     } finally {
-      setIsRunningClaude(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setIsRunningClaude(false);
+      }
     }
+  };
+
+  const handleCancelClaudeEngine = (): void => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsRunningClaude(false);
   };
 
   const handleApplyActiveStageLine = (): void => {
@@ -273,7 +292,12 @@ export function StudioWebtoonProductionAssistPanel({
         firstScrollCut.readyStageDirectionLine,
       );
       // [ ]만 붙이면 기존 컷 번호가 그대로라, 반영한 대본에서도 실시간 결과를 계속 쓴다.
-      if (liveScroll && liveScroll.script === scriptInput) setLiveScroll({ view: liveScroll.view, script: nextScript });
+      if (liveScrollView) {
+        setLiveScroll({
+          view: liveScrollView,
+          inputId: JSON.stringify({ ...assistInput, scriptText: nextScript }),
+        });
+      }
       onApplyScript(nextScript);
       return;
     }
@@ -404,6 +428,21 @@ export function StudioWebtoonProductionAssistPanel({
             <Wand2 size={10} aria-hidden="true" />
             {isRunningClaude ? "AI 감수 중..." : "AI 실시간 감수 실행"}
           </button>
+          {isRunningClaude ? (
+            <button
+              type="button"
+              data-testid="cancel-claude-production-assist-btn"
+              onClick={handleCancelClaudeEngine}
+              className={cn(
+                "inline-flex items-center gap-1 rounded border border-line bg-card px-2 py-0.5 text-[0.6rem] font-semibold text-fg hover:bg-raised",
+                STUDIO_EASE,
+                STUDIO_FOCUS_RING,
+              )}
+            >
+              <X size={10} aria-hidden="true" />
+              취소
+            </button>
+          ) : null}
           <button
             type="button"
             data-testid="apply-production-assist-script-btn"
@@ -414,7 +453,7 @@ export function StudioWebtoonProductionAssistPanel({
               STUDIO_FOCUS_RING,
             )}
           >
-            <Sparkles size={10} aria-hidden="true" />
+            <CheckCircle2 size={10} aria-hidden="true" />
             연출 지문 대본에 반영
           </button>
         </div>

@@ -56,7 +56,7 @@ import {
   studioStoryPlanningViewItem,
   type StudioProjectStoryPlanningView,
 } from "./studio-story-planning-views";
-import type { StorySeedDraft, StorySeedPlanPatch, StorySeedSettingRef } from "./studio-story-seed";
+import { buildStorySeedEpisodeUpdate, hasStorySeedEpisodeContent, restoreStorySeedEpisodeUpdate, type StorySeedDraft, type StorySeedEpisodeUpdate, type StorySeedPlanPatch, type StorySeedSettingRef } from "./studio-story-seed";
 import { buildStorySeedSettingRefs, resolveStorySeedReferencedSettings } from "./studio-story-seed-settings";
 import { createWorldLoreExamples, type StudioLoreEntry } from "./studio-world-lore";
 import { STUDIO_WORLD_LORE_UPDATED_EVENT, ensureStudioWorldLore, readStudioWorldLore, saveStudioWorldLoreEntries, type StudioWorldLoreState } from "./studio-world-lore-store";
@@ -273,7 +273,7 @@ export function StudioProjectStoryPlanning({ projectId, view, onViewChange, curr
       <StoryPlanningViewSwitcher activeView={activeView} onSelectView={selectView} />
       <div role="tabpanel" id={`story-planning-panel-${activeView}`} aria-labelledby={`story-planning-tab-${activeView}`} data-story-planning-panel={activeView}>
         {activeView === "episodes" ? (
-          <EpisodeSynopsisSurface projectId={projectId} pickedEpisodeId={pickedEpisodeId} onPickEpisode={setPickedEpisodeId} />
+          <EpisodeSynopsisSurface key={projectId} projectId={projectId} pickedEpisodeId={pickedEpisodeId} onPickEpisode={setPickedEpisodeId} />
         ) : activeView === "characters" ? (
           <CharacterSheetSurface projectId={projectId} />
         ) : (
@@ -314,13 +314,7 @@ function EpisodeSynopsisSurface({
   const [planning, setPlanning] = useProjectPlanning(projectId);
   const [source] = useProjectStorySource(projectId);
   const [lore] = useProjectWorldLore(projectId);
-
-  useEffect(() => {
-    setSaveError(null);
-    setFreshIdeasMounted(false);
-    setLivingSpecMounted(false);
-    setStorySeedNotice(null);
-  }, [projectId]);
+  const lastSeedUndoRef = useRef<StorySeedEpisodeUpdate | null>(null);
 
   const bibleCharacters = useMemo(() => source?.story.bible.characters ?? [], [source]);
   const settingRefs = useMemo<readonly StorySeedSettingRef[]>(
@@ -347,23 +341,48 @@ function EpisodeSynopsisSurface({
 
   if (!planning) return null;
 
-  const handleSavePlan = (plan: EpisodePlanWithSynopsis) => {
+  const handleSavePlan = (plan: EpisodePlanWithSynopsis, failureMessage?: string) => {
     try {
       setPlanning(saveStudioEpisodePlan(window.localStorage, projectId, plan, window));
       setSaveError(null);
       return true;
     } catch {
-      setSaveError(t("회차 기획을 저장하지 못해 원고를 열지 않았습니다. 입력은 유지됩니다. 저장 공간을 확인하고 다시 저장해 주세요.", "The episode plan could not be saved, so the manuscript was not opened. Your input is kept. Check device storage and save again."));
+      setSaveError(failureMessage ?? t("회차 기획을 저장하지 못해 원고를 열지 않았습니다. 입력은 유지됩니다. 저장 공간을 확인하고 다시 저장해 주세요.", "The episode plan could not be saved, so the manuscript was not opened. Your input is kept. Check device storage and save again."));
       return false;
     }
   };
 
-  const targetPlan = planning.plans[0];
-  const targetHasContent = Boolean(targetPlan && (targetPlan.logline.trim() || targetPlan.goal?.trim() || targetPlan.synopsis?.trim()));
-  const handleApplySeed = (patch: StorySeedPlanPatch, draft: StorySeedDraft) => {
-    if (!targetPlan) return;
-    const seedSettingRefs = resolveStorySeedReferencedSettings(settingRefs, draft.referencedSettingIds).map((ref) => ({ id: ref.id, kind: ref.kind, name: ref.name }));
-    handleSavePlan({ ...targetPlan, ...patch, seedSettingRefs });
+  const targetPlan = planning.plans.find((plan) => plan.episodeId === pickedEpisodeId) ?? planning.plans[0];
+  const readSeedTarget = (episodeId: string | undefined) =>
+    safeLoad(() => readStudioProjectPlanning(window.localStorage, projectId)?.plans.find((plan) => plan.episodeId === episodeId));
+  const refuseSeedChange = (): false => {
+    setSaveError(t("초안을 만든 회차가 바뀌었거나 사라졌습니다. 회차를 확인해 주세요.", "The episode for this draft changed or is unavailable. Check the episode."));
+    return false;
+  };
+  const saveSeedPlan = (plan: EpisodePlanWithSynopsis) => handleSavePlan(plan, t(
+    "씨앗 변경을 저장하지 못했습니다. 저장 공간을 확인한 뒤 다시 시도해 주세요.",
+    "Story seed changes could not be saved. Check device storage and try again.",
+  ));
+  const handleApplySeed = (patch: StorySeedPlanPatch, draft: StorySeedDraft, episodeId?: string, revision?: number) => {
+    const target = readSeedTarget(episodeId ?? targetPlan?.episodeId);
+    if (!target || (revision !== undefined && target.revision !== revision)) return refuseSeedChange();
+    const seedSettingRefs = resolveStorySeedReferencedSettings(settingRefs, draft.referencedSettingIds).map(({ id, kind, name }) => ({ id, kind, name }));
+    const update = buildStorySeedEpisodeUpdate(target, { ...patch, seedSettingRefs });
+    if (!saveSeedPlan(update.after)) return false;
+    lastSeedUndoRef.current = update;
+    return true;
+  };
+  const handleUndoSeed = (episodeId: string) => {
+    const update = lastSeedUndoRef.current;
+    const target = readSeedTarget(episodeId);
+    if (!target || update?.before.episodeId !== episodeId) return refuseSeedChange();
+    const restored = restoreStorySeedEpisodeUpdate(target, update);
+    const changed = restored !== target;
+    if (changed && !saveSeedPlan(restored)) return false;
+    setSaveError(null);
+    lastSeedUndoRef.current = null;
+    const { revision, logline, goal, synopsis } = restored;
+    return { snapshot: { revision: revision + Number(changed), logline, goal, synopsis }, hasContent: hasStorySeedEpisodeContent(restored), changed };
   };
 
   const reactionCard = buildReaderReactionQuoteCard(episodeMetrics);
@@ -381,7 +400,15 @@ function EpisodeSynopsisSurface({
       </div>
       {targetPlan && (
         <div className="mb-4">
-          <StudioStorySeedBuilder settingRefs={settingRefs} targetHasContent={targetHasContent} onApplySeed={handleApplySeed} />
+          <StudioStorySeedBuilder
+            settingRefs={settingRefs}
+            targetHasContent={hasStorySeedEpisodeContent(targetPlan)}
+            targetEpisodeId={targetPlan.episodeId}
+            targetEpisodeLabel={`${targetPlan.episodeNumber}화 · ${targetPlan.title.trim() || "회차 기획"}`}
+            targetCurrentSnapshot={{ revision: targetPlan.revision, logline: targetPlan.logline, goal: targetPlan.goal, synopsis: targetPlan.synopsis }}
+            onApplySeed={handleApplySeed}
+            onUndoAppliedSeed={handleUndoSeed}
+          />
         </div>
       )}
       <label className="mb-3 block text-sm font-semibold text-fg [word-break:keep-all]">

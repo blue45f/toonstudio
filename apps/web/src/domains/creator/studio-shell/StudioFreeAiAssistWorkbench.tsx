@@ -1,10 +1,12 @@
 import {
   Check,
   Copy,
+  Feather,
+  Layers,
   Loader2,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
+  X,
 } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -59,6 +61,7 @@ export function StudioFreeAiAssistWorkbench({
       FREE_AI_14_ASSIST_MODES[0].samplePromptKo,
   );
   const [running, setRunning] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [result, setResult] = useState<FreeAiZeroBillAssistResponse | null>(null);
   const [copied, setCopied] = useState(false);
   const [designStorySuitesOpen, setDesignStorySuitesOpen] = useState(false);
@@ -105,10 +108,12 @@ export function StudioFreeAiAssistWorkbench({
   };
 
   const handleRun = async () => {
+    if (running) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setRunning(true);
+    setStatusMessage(null);
     setCopied(false);
     try {
       const response = await runFreeAiZeroBillAssist(
@@ -119,15 +124,26 @@ export function StudioFreeAiAssistWorkbench({
         },
         { fetchImpl, signal: controller.signal },
       );
-      if (!controller.signal.aborted) {
+      if (abortRef.current === controller && !controller.signal.aborted) {
+        abortRef.current = null;
         setResult(response);
         void refreshQuota();
       }
     } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+      }
       if (!controller.signal.aborted) {
         setRunning(false);
       }
     }
+  };
+
+  const handleCancel = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setRunning(false);
+    setStatusMessage("무과금 AI 분석 요청을 취소했어요. 입력한 내용은 그대로 남아 있습니다.");
   };
 
   const handleCopyResult = async () => {
@@ -332,23 +348,45 @@ export function StudioFreeAiAssistWorkbench({
           <span className="text-[0.7rem] text-fg-3">
             유료 모델 호출 원천 차단 · 무료 소진 시 로컬 무과금 코치(₩0) 자동 전환
           </span>
-          <button
-            type="button"
-            disabled={running}
-            onClick={() => void handleRun()}
-            className={buttonClass({
-              variant: "solid",
-              className: "min-h-11 gap-2",
-            })}
-          >
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={running}
+              onClick={() => void handleRun()}
+              data-testid="free-ai-workbench-run-btn"
+              className={buttonClass({
+                variant: "solid",
+                className: "min-h-11 gap-2",
+              })}
+            >
+              {running ? (
+                <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              ) : (
+                <Feather size={15} aria-hidden="true" />
+              )}
+              {running ? "₩0 무료 AI 분석 중…" : "₩0 무료 AI 실행"}
+            </button>
             {running ? (
-              <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-            ) : (
-              <Sparkles size={15} aria-hidden="true" />
-            )}
-            {running ? "₩0 무료 AI 분석 중…" : "₩0 무료 AI 실행"}
-          </button>
+              <button
+                type="button"
+                data-testid="free-ai-workbench-cancel-btn"
+                onClick={handleCancel}
+                className={buttonClass({
+                  variant: "outline",
+                  className: "min-h-11 gap-1.5",
+                })}
+              >
+                <X size={15} aria-hidden="true" />
+                요청 취소
+              </button>
+            ) : null}
+          </div>
         </div>
+        {statusMessage ? (
+          <p role="status" className="text-xs font-semibold text-fg-2">
+            {statusMessage}
+          </p>
+        ) : null}
       </div>
 
       {result ? (
@@ -412,7 +450,7 @@ export function StudioFreeAiAssistWorkbench({
               className: "min-h-11 gap-1.5",
             })}
           >
-            <Sparkles size={14} aria-hidden="true" />
+            <Layers size={14} aria-hidden="true" />
             {designStorySuitesOpen ? "4대 스튜디오 랩 접기" : "4대 스튜디오 랩 열기"}
           </button>
         </div>

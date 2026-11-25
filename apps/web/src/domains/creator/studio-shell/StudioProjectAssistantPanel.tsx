@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -49,6 +49,12 @@ import { StudioOpenAiAssistResultCard } from "./StudioOpenAiAssistResultCard";
 import { updateStudioStoryPlan } from "./studio-story-plan-update";
 import { useStudioProjectFeatureSuite } from "./useStudioProjectFeatureSuite";
 
+const LazyStudioFreeAiAssistWorkbench = lazy(() =>
+  import("./StudioFreeAiAssistWorkbench").then((mod) => ({
+    default: mod.StudioFreeAiAssistWorkbench,
+  })),
+);
+
 export type StudioProjectAssistantSection = StudioProjectAssistantSectionId;
 
 interface StudioProjectAssistantPanelProps {
@@ -77,6 +83,7 @@ function editorHref(projectId: string, tool: StudioAiAssistToolId): string {
 
 function readLocalProjectContext(projectId: string): {
   readonly title?: string;
+  readonly genreOrTone?: string;
   readonly targetPlatform: StudioOpenAiTargetPlatform;
 } {
   if (typeof window === "undefined") {
@@ -99,6 +106,7 @@ function readLocalProjectContext(projectId: string): {
             : "vertical-webtoon";
     return {
       title: match?.title?.trim() || undefined,
+      genreOrTone: match?.description?.trim().slice(0, 80) || undefined,
       targetPlatform,
     };
   } catch {
@@ -153,9 +161,15 @@ function StudioProjectAssistantPanelBody({
   const [runningOpenAi, setRunningOpenAi] = useState(false);
   const modelRetired = statusInfo?.modelConfigurationError === "retired";
   const openAiConfigured = statusInfo?.configured === true && !modelRetired;
-  const [openAiResult, setOpenAiResult] = useState<StudioOpenAiAssistSuccess | null>(
-    () => initialRestored?.lastResult ?? null,
+  const [completedRequest, setCompletedRequest] = useState<{
+    result: StudioOpenAiAssistSuccess;
+    submittedPrompt?: string;
+  } | null>(
+    () => initialRestored?.lastResult
+      ? { result: initialRestored.lastResult, submittedPrompt: initialRestored.submittedPrompt }
+      : null,
   );
+  const [freeLabOpen, setFreeLabOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -179,8 +193,8 @@ function StudioProjectAssistantPanelBody({
 
   useEffect(() => {
     if (
-      !prompt.trim() ||
-      (openAiResult === null && prompt === defaultPrompt && openAiMode === defaultMode)
+      completedRequest === null &&
+      (!prompt.trim() || (prompt === defaultPrompt && openAiMode === defaultMode))
     ) {
       clearStudioAssistantSessionState(projectId);
       return;
@@ -188,9 +202,17 @@ function StudioProjectAssistantPanelBody({
     writeStudioAssistantSessionState(projectId, {
       prompt,
       openAiMode,
-      lastResult: openAiResult,
+      lastResult: completedRequest?.result ?? null,
+      submittedPrompt: completedRequest?.submittedPrompt,
     });
-  }, [projectId, prompt, openAiMode, openAiResult, defaultPrompt, defaultMode]);
+  }, [
+    projectId,
+    prompt,
+    openAiMode,
+    completedRequest,
+    defaultPrompt,
+    defaultMode,
+  ]);
 
   const chooseSuggestion = (suggestion: AssistantSuggestionSpec) => {
     setSelectedTool(suggestion.tool);
@@ -209,7 +231,7 @@ function StudioProjectAssistantPanelBody({
     setSelectedTool(first?.tool ?? "composition");
     setOpenAiMode(defaultMode);
     setPrompt(defaultPrompt);
-    setOpenAiResult(null);
+    setCompletedRequest(null);
     setError(null);
     setStatusMessage(null);
   };
@@ -258,7 +280,7 @@ function StudioProjectAssistantPanelBody({
   };
 
   const runOpenAiAssist = async () => {
-    if (modelRetired) return;
+    if (runningOpenAi || modelRetired) return;
     const trimmed = prompt.trim();
     if (!trimmed) {
       setError(
@@ -282,6 +304,7 @@ function StudioProjectAssistantPanelBody({
         mode: openAiMode,
         inputText: trimmed,
         projectTitle: localProject.title,
+        genreOrTone: localProject.genreOrTone,
         targetPlatform: localProject.targetPlatform,
       },
       { fetchImpl, signal: controller.signal },
@@ -298,22 +321,68 @@ function StudioProjectAssistantPanelBody({
       }
       return;
     }
-    setOpenAiResult(response.data);
+    setCompletedRequest({ result: response.data, submittedPrompt: trimmed });
   };
 
-  const appendBeatsToStoryPlan = (beats: readonly StudioStoryBeat[]) => {
-    suite.update((current) => ({
-      ...current,
-      storyBeats: updateStudioStoryPlan(
-        current.storyBeats,
-        beats,
-        "append",
-        Date.now().toString(36),
-      ),
-    }));
+  const appendBeatsToStoryPlan = (beats: readonly StudioStoryBeat[]): readonly string[] | null => {
+    let insertedIds: string[] = [];
+    const stamp = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const next = suite.update((current) => {
+      const nextBeats = updateStudioStoryPlan(current.storyBeats, beats, "append", stamp);
+      insertedIds = nextBeats.slice(current.storyBeats.length).map((beat) => beat.id);
+      return {
+        ...current,
+        storyBeats: nextBeats,
+      };
+    });
+    if (!next) {
+      setError(null);
+      setStatusMessage(null);
+      return null;
+    }
+    if (insertedIds.length > 0) {
+      setStatusMessage(
+        bt(
+          `기획 컷 목록 뒤에 ${insertedIds.length}컷을 사본으로 추가했어요.`,
+          `Appended ${insertedIds.length} panel beat(s) to the story plan.`,
+        ),
+      );
+    }
+    return insertedIds;
+  };
+
+  const undoAppendedBeatsFromStoryPlan = (beatIds: readonly string[]): boolean => {
+    if (beatIds.length === 0) return false;
+    const removeSet = new Set(beatIds);
+    let removedCount = 0;
+    const next = suite.update((current) => {
+      const kept = current.storyBeats
+        .filter((beat) => !removeSet.has(beat.id))
+        .map((beat, order) => ({ ...beat, order }));
+      removedCount = current.storyBeats.length - kept.length;
+      return {
+        ...current,
+        storyBeats: kept,
+      };
+    });
+    if (!next) {
+      setError(null);
+      setStatusMessage(null);
+      return false;
+    }
+    if (removedCount > 0) {
+      setStatusMessage(
+        bt(
+          `방금 추가한 ${removedCount}컷만 되돌렸어요. 기존 컷은 그대로 유지됩니다.`,
+          `Reverted only the ${removedCount} added beat(s). Existing beats remain untouched.`,
+        ),
+      );
+    }
+    return true;
   };
 
   const modeList = statusInfo?.modes ?? DEFAULT_STUDIO_OPENAI_MODES;
+  const displayedError = error ?? suite.error;
 
   return (
     <section
@@ -475,9 +544,9 @@ function StudioProjectAssistantPanelBody({
           "Example: Split a rainy bus-stop encounter into 4 webtoon panels",
         )}
       />
-      {error ? (
+      {displayedError ? (
         <p role="alert" className="mt-2 text-xs font-semibold text-danger">
-          {error}
+          {displayedError}
         </p>
       ) : null}
       {statusMessage ? (
@@ -542,12 +611,55 @@ function StudioProjectAssistantPanelBody({
         </div>
       </div>
 
-      {openAiResult ? (
+      {completedRequest ? (
         <StudioOpenAiAssistResultCard
-          response={openAiResult}
+          response={completedRequest.result}
+          originalPrompt={completedRequest.submittedPrompt}
           onAppendStoryBeats={appendBeatsToStoryPlan}
+          onUndoAppendedStoryBeats={undoAppendedBeatsFromStoryPlan}
         />
       ) : null}
+
+      <div className="mt-4 border-t border-line pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg-2 [word-break:keep-all]">
+            <ShieldCheck size={14} className="shrink-0 text-success" aria-hidden="true" />
+            {bt(
+              "OpenAI 키가 없어도 바로 쓰는 무과금 14모드 AI 랩 (유료 과금 0원 보호)",
+              "14-mode free AI lab available without an OpenAI key (zero-bill protected)",
+            )}
+          </span>
+          <button
+            type="button"
+            data-testid="toggle-free-ai-lab-btn"
+            aria-expanded={freeLabOpen}
+            onClick={() => setFreeLabOpen((prev) => !prev)}
+            className={buttonClass({
+              variant: "outline",
+              size: "sm",
+              className: "min-h-11 gap-1.5",
+            })}
+          >
+            {freeLabOpen
+              ? bt("무과금 14모드 AI 랩 닫기", "Close 14-mode free AI lab")
+              : bt("무과금 14모드 AI 랩 열기", "Open 14-mode free AI lab")}
+          </button>
+        </div>
+        {freeLabOpen ? (
+          <Suspense
+            fallback={
+              <p className="mt-3 text-xs text-fg-3">
+                {bt("무과금 AI 14모드 랩을 불러오는 중…", "Loading 14-mode free AI lab…")}
+              </p>
+            }
+          >
+            <LazyStudioFreeAiAssistWorkbench
+              projectTitle={readLocalProjectContext(projectId).title}
+              fetchImpl={fetchImpl}
+            />
+          </Suspense>
+        ) : null}
+      </div>
     </section>
   );
 }

@@ -209,7 +209,7 @@ describe("Studio ToolBelt content module boundary", () => {
     expect(toolBelt.source).not.toContain('"use no memo"');
   });
 
-  it("preserves all 76 stable handlers without key drift", () => {
+  it("preserves all 80 stable handlers without key drift", () => {
     const page = moduleShape("./StudioCuttoonEditorHost.tsx");
     const toolBelt = moduleShape("./StudioToolBeltContent.tsx");
     const handlerNames = propertyNames(
@@ -228,12 +228,18 @@ describe("Studio ToolBelt content module boundary", () => {
     // 76 = 75 + 3ef5d97d 가 더한 onSavedLocalAsset. 구매 소재를 개인 라이브러리에 저장한 뒤 호스트가
     //      loadAssetsList 로 소재 목록을 다시 읽는 선택 핸들러이며, 번들 소재 라이브러리의
     //      onSavedAsset 으로 내려간다.
+    // 77 = 76 + 진행 중인 AI 대사 요청을 중단하는 cancelSuggestDialogueLines.
+    // 80 = 77 + 배경·캐릭터 생성과 팔레트 추천을 중단하는 핸들러 3개.
     // 개수는 변경을 알아차리게 하는 래칫이고, 계약 본체는 선언된 핸들러와 호스트가 배선한 핸들러가
     // 정확히 같다는 아래 동등 단언이다.
-    expect(handlerNames).toHaveLength(76);
-    expect(wiredHandlerNames).toHaveLength(76);
+    expect(handlerNames).toHaveLength(80);
+    expect(wiredHandlerNames).toHaveLength(80);
     expect(wiredHandlerNames).toEqual(handlerNames);
     expect(handlerNames).toContain("onSavedLocalAsset");
+    expect(handlerNames).toContain("cancelSuggestDialogueLines");
+    expect(handlerNames).toEqual(
+      expect.arrayContaining(["onCancelAiBackground", "onCancelAiCharacter", "onCancelSuggestColorPalette"]),
+    );
     expect(page.source).toContain("studioToolBeltContentHandlers={studioToolBeltContentHandlers}");
   });
 
@@ -255,7 +261,7 @@ describe("Studio ToolBelt content module boundary", () => {
     expect(createModeGroups).not.toContain('setTool("draw")');
   });
 
-  it("preserves all 212 props at the single Page call site", () => {
+  it("preserves all 213 props at the single Page call site", () => {
     const editorView = moduleShape("./studio-cuttoon-editor/StudioCuttoonEditorChrome.tsx");
     const toolBelt = moduleShape("./StudioToolBeltContent.tsx");
     const propNames = propertyNames(
@@ -268,11 +274,13 @@ describe("Studio ToolBelt content module boundary", () => {
     //     + 작업 모드·첫 화면 노출 판정이 더한 선택 props 3개(workMode, uiAdvancedToolsExpanded,
     //       uiFirstScreenExposure — 호스트가 세 개 모두 배선한다. workMode 가 없으면 "all" 로 보아
     //       작업 모드 접힘이 없다).
+    // 213 = 212 + 제안 결과와 원본 컷을 연결하는 aiDialogueSuggestLockedTarget.
     // 개수는 변경을 알아차리게 하는 래칫이고, 계약 본체는 호출 지점이 선언된 props 를 하나도
     // 빠뜨리거나 더하지 않는다는 아래 동등 단언이다.
-    expect(propNames).toHaveLength(212);
-    expect(wiredPropNames).toHaveLength(212);
+    expect(propNames).toHaveLength(213);
+    expect(wiredPropNames).toHaveLength(213);
     expect(wiredPropNames).toEqual(propNames);
+    expect(propNames).toContain("aiDialogueSuggestLockedTarget");
     expect(propNames).toEqual(
       expect.arrayContaining(["workMode", "uiAdvancedToolsExpanded", "uiFirstScreenExposure"]),
     );

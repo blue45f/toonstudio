@@ -1,5 +1,5 @@
-import { ArrowDown, ArrowUp, CheckCircle2, Film, Layers, LayoutGrid, Lock, Sparkles, Wand2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, CheckCircle2, Feather, Film, Layers, LayoutGrid, Lock, Wand2 } from "lucide-react";
+import { useId, useMemo, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -90,7 +90,8 @@ export function StudioDesignStoryAi4SuitesPanel({ projectTitle, fetchImpl }: Stu
   const [showAllSixSwitch, setShowAllSixSwitch] = useState(false);
   const [writeKind, setWriteKind] = useState<MagicWriteKind>("promo-copy");
   const [magicWriteResult, setMagicWriteResult] = useState<MagicWriteResult | null>(null);
-  const [writingCopy, setWritingCopy] = useState(false);
+  const [writingCopy, setWritingCopy] = useState<"local" | "cloud" | null>(null);
+  const cloudCopyNoticeId = useId();
 
   const [figmaPrompt, setFigmaPrompt] = useState("4컷 세로 웹툰 대치 장면과 상단 말풍선 구성");
   const [figmaMode, setFigmaMode] = useState<FirstDraftMode>("webtoon-panel-grid");
@@ -156,16 +157,20 @@ export function StudioDesignStoryAi4SuitesPanel({ projectTitle, fetchImpl }: Stu
     return verifySixAngleIdentityConsistency(anchor, observations);
   }, [simulateAngleDrift]);
 
-  const handleRunMagicWrite = async () => {
-    setWritingCopy(true);
+  const handleRunMagicWrite = async (target: "local" | "cloud") => {
+    if (writingCopy) return;
+    setWritingCopy(target);
     try {
-      const response = await runMagicWriteZeroBill(
-        { kind: writeKind, promptKo: canvaPrompt, projectTitle, toneKo: activeBrandKit.toneKo, offlineOnly: !fetchImpl },
-        { fetchImpl },
-      );
+      const response = await runMagicWriteZeroBill({
+        kind: writeKind,
+        promptKo: canvaPrompt,
+        projectTitle,
+        toneKo: activeBrandKit.toneKo,
+        offlineOnly: target === "local",
+      }, { fetchImpl });
       setMagicWriteResult(response);
     } finally {
-      setWritingCopy(false);
+      setWritingCopy(null);
     }
   };
 
@@ -185,7 +190,7 @@ export function StudioDesignStoryAi4SuitesPanel({ projectTitle, fetchImpl }: Stu
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
         <div>
           <p className="inline-flex items-center gap-1.5 text-xs font-bold text-accent">
-            <Sparkles size={14} aria-hidden="true" />
+            <Feather size={14} aria-hidden="true" />
             무과금 로컬 디자인·스토리 창작 도구 (₩0)
           </p>
           <h4 id="studio-design-story-4suites-heading" className="mt-1 text-base font-extrabold text-fg">
@@ -298,10 +303,27 @@ export function StudioDesignStoryAi4SuitesPanel({ projectTitle, fetchImpl }: Stu
               <option value="sns-post">SNS 홍보글</option>
               <option value="title-ab">제목 A/B 후보</option>
             </select>
-            <button type="button" disabled={writingCopy} onClick={() => void handleRunMagicWrite()} className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5" })}>
+            <button
+              type="button"
+              disabled={writingCopy !== null}
+              onClick={() => void handleRunMagicWrite("local")}
+              className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5" })}
+            >
               <Wand2 size={14} aria-hidden="true" />
-              {writingCopy ? "카피 만드는 중…" : "₩0 홍보 카피 만들기"}
+              {writingCopy === "local" ? "이 기기에서 만드는 중…" : "이 기기에서 ₩0 홍보 카피 만들기"}
             </button>
+            <button
+              type="button"
+              disabled={writingCopy !== null}
+              aria-describedby={cloudCopyNoticeId}
+              onClick={() => void handleRunMagicWrite("cloud")}
+              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
+            >
+              {writingCopy === "cloud" ? "무료 클라우드에 요청 중…" : "무료 클라우드로 초안 만들기"}
+            </button>
+            <p id={cloudCopyNoticeId} className="basis-full text-xs leading-5 text-fg-3">
+              무료 클라우드를 고르면 문구, 작품 제목, 브랜드 말투를 서버에 보냅니다. 무료 AI를 이용할 수 없으면 이 기기에서 만듭니다.
+            </p>
           </div>
 
           {magicWriteResult ? (
@@ -312,6 +334,10 @@ export function StudioDesignStoryAi4SuitesPanel({ projectTitle, fetchImpl }: Stu
               </ul>
               <p className="mt-1.5 text-[0.7rem] text-fg-3 tabular-nums">
                 {magicWriteResult.hashtagsKo.join(" ")} · 총 {magicWriteResult.characterCount}자 · 비용 ₩0
+              </p>
+              <p role="status" className="mt-1.5 text-xs leading-5 text-fg-2">
+                {magicWriteResult.providerTier === "cloud-free" ? "무료 클라우드에서 생성" : "이 기기에서 생성"}
+                {magicWriteResult.noticeKo ? ` · ${magicWriteResult.noticeKo}` : null}
               </p>
             </div>
           ) : null}
