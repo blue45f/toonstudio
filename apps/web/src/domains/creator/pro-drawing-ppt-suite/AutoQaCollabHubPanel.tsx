@@ -1,4 +1,4 @@
-import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, LayoutList, MessageSquareText, Palette, Rows3, ScanSearch, Sparkles } from "lucide-react";
+import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, LayoutList, MessageSquareText, Palette, Rows3, ScanSearch, Smartphone, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -63,6 +63,11 @@ const LazyWebtoonPanelRhythmPanel = lazy(async () => {
   const m = await import("../webtoon-panel-rhythm-studio/StudioWebtoonPanelRhythmPanel");
   return { default: m.StudioWebtoonPanelRhythmPanel };
 });
+const LazyMobileReaderPreviewPanel = lazy(async () => {
+  await import("../mobile-reader-preview-sim");
+  const m = await import("../mobile-reader-preview-sim/StudioMobileReaderPreviewPanel");
+  return { default: m.StudioMobileReaderPreviewPanel };
+});
 
 type QaHubTabId =
   | "pixel"
@@ -76,7 +81,8 @@ type QaHubTabId =
   | "koreanLettering"
   | "colorScriptA11y"
   | "ergonomicsMaster"
-  | "panelRhythm";
+  | "panelRhythm"
+  | "mobileReaderSim";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -111,6 +117,7 @@ const QA_HUB_TABS: readonly {
   { id: "colorScriptA11y", labelKo: "4막 컬러 스크립트·LMS 색각이상·다크라이트", labelEn: "4-Act Color Script · LMS CVD · Dark/Light" },
   { id: "ergonomicsMaster", labelKo: "4대 도구 단축키·왼손 미러·WCAG 2.2 AAA", labelEn: "4-Tool Shortcuts · Left-Hand · WCAG 2.2 AAA" },
   { id: "panelRhythm", labelKo: "세로 컷 분할·여백 리듬·대사 호흡", labelEn: "Vertical Scroll Gutter & Beat Rhythm" },
+  { id: "mobileReaderSim", labelKo: "9:16 모바일 독자 뷰어·4기종 가독성 점검", labelEn: "9:16 Mobile Reader Preview · 4-Device Audit" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -139,6 +146,8 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <Accessibility size={15} aria-hidden="true" />;
     case "panelRhythm":
       return <Rows3 size={15} aria-hidden="true" />;
+    case "mobileReaderSim":
+      return <Smartphone size={15} aria-hidden="true" />;
   }
 }
 
@@ -199,6 +208,7 @@ export function AutoQaCollabHubPanel() {
           {active === "colorScriptA11y" ? <LazyColorScriptLabPanel /> : null}
           {active === "ergonomicsMaster" ? <LazyErgonomicsMasterPanel /> : null}
           {active === "panelRhythm" ? <LazyWebtoonPanelRhythmPanel /> : null}
+          {active === "mobileReaderSim" ? <LazyMobileReaderPreviewPanel /> : null}
         </Suspense>
       </div>
 

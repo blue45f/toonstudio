@@ -1,4 +1,4 @@
-import { Activity, BookOpen, Calculator, Compass, Cpu, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -93,6 +93,16 @@ const LazyStudioAtelierCraftLauncherPanel = lazy(async () => {
   const m = await import("../atelier-craft-launcher/StudioAtelierCraftLauncherPanel");
   return { default: m.StudioAtelierCraftLauncherPanel };
 });
+const LazyStudioAssistantHandoffKitPanel = lazy(async () => {
+  await import("../assistant-handoff-qa-kit");
+  const m = await import("../assistant-handoff-qa-kit/StudioAssistantHandoffKitPanel");
+  return { default: m.StudioAssistantHandoffKitPanel };
+});
+const LazyStudioEpisodePacingThumbnailPanel = lazy(async () => {
+  await import("../episode-pacing-thumbnail-lab");
+  const m = await import("../episode-pacing-thumbnail-lab/StudioEpisodePacingThumbnailPanel");
+  return { default: m.StudioEpisodePacingThumbnailPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -112,7 +122,9 @@ type EcosystemTabId =
   | "monetizationPlan"
   | "offlineResilience"
   | "perfDoctor"
-  | "craftLauncher";
+  | "craftLauncher"
+  | "assistHandoff"
+  | "pacingThumbLab";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -153,6 +165,8 @@ const ECOSYSTEM_TABS: readonly {
   { id: "offlineResilience", labelKo: "오프라인 CRDT·OPFS 패리티·멀티탭 잠금", labelEn: "Offline CRDT · OPFS Parity · Tab Lease" },
   { id: "perfDoctor", labelKo: "120Hz 프레임타임·VRAM·OPFS 닥터", labelEn: "120Hz Frame Profiler · VRAM · OPFS Doctor" },
   { id: "craftLauncher", labelKo: "8대 아틀리에 프로 도구 퀵 런처", labelEn: "8-Station Atelier Craft Launcher" },
+  { id: "assistHandoff", labelKo: "어시스턴트 분업 인수인계·레이어 검수·정산 추정", labelEn: "Assistant Handoff · Layer QA · Payout Estimate" },
+  { id: "pacingThumbLab", labelKo: "초반 3컷 대사 벽·썸네일 A/B 규칙 점검", labelEn: "Opening Hook · Dialogue Wall · Thumbnail A/B" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -193,6 +207,10 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Activity size={15} aria-hidden="true" />;
     case "craftLauncher":
       return <Compass size={15} aria-hidden="true" />;
+    case "assistHandoff":
+      return <ClipboardCheck size={15} aria-hidden="true" />;
+    case "pacingThumbLab":
+      return <BarChart3 size={15} aria-hidden="true" />;
   }
 }
 
@@ -259,6 +277,8 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "offlineResilience" ? <LazyStudioOfflineResiliencePanel /> : null}
           {active === "perfDoctor" ? <LazyStudioPerfDoctorPanel /> : null}
           {active === "craftLauncher" ? <LazyStudioAtelierCraftLauncherPanel /> : null}
+          {active === "assistHandoff" ? <LazyStudioAssistantHandoffKitPanel /> : null}
+          {active === "pacingThumbLab" ? <LazyStudioEpisodePacingThumbnailPanel /> : null}
         </Suspense>
       </div>
 
