@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { lockUserAi, setUserAiConfiguration } from "@/shared/ai/user-ai-store";
@@ -17,6 +18,8 @@ import {
   type StudioScenarioAutoLayoutPanelProps,
 } from "./StudioScenarioAutoLayoutPanel";
 
+import { applyStudioScenarioScenePatch, computeStudioScenarioDraftRelayout } from "./studio-cuttoon-edit/studio-host-canvas-element-helpers";
+import type { El, ImageEl } from "./studio-element-model";
 import type { ScenarioPreviewItem } from "./studio-scenario-layout";
 
 afterEach(() => {
@@ -337,5 +340,105 @@ describe("StudioScenarioAutoLayoutPanel BYOK 라우팅 정합성", () => {
 
     expect(screen.queryByText(/마스크 영역 수리를 연결하지 않았습니다/u)).toBeNull();
     expect(screen.getByText("먼저 사용할 후보를 선택하세요.")).toBeTruthy();
+  });
+});
+
+const FLAT_IMAGE = "data:image/png;base64,YQ==";
+const BACKGROUND_IMAGE = "data:image/png;base64,Yg==";
+const FOREGROUND_IMAGE = "data:image/png;base64,Yw==";
+const TRANSPARENT_PNG_1PX = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=";
+const existingFrame: El = { id: "existing-frame", type: "frame", x: 24, y: 60, width: 672, height: 850 };
+
+function layeredScenario(): ScenarioPreviewItem {
+  const scene = PREVIEW[0];
+  if (!scene) throw new Error("기획 시험 장면이 없습니다.");
+  return {
+    ...scene,
+    dialogue: "서하: 약속을 잊지 말아요.",
+    imageDataUrl: FLAT_IMAGE,
+    imageCandidates: [{
+      id: "active-source", inputFingerprint: "synthetic", imageDataUrl: FLAT_IMAGE,
+      createdAt: "2026-11-26T00:00:00.000Z",
+    }],
+    selectedImageCandidateId: "active-source",
+    layerManifest: {
+      version: 1, method: "manual-mask", editable: true, sourceCandidateId: "active-source",
+      createdAt: "2026-11-26T00:00:00.000Z",
+      layers: [
+        { id: "bg-artifact", name: "배경", role: "background", sourceCandidateId: "active-source", imageDataUrl: BACKGROUND_IMAGE },
+        { id: "fg-artifact", name: "전경", role: "foreground", sourceCandidateId: "active-source", imageDataUrl: FOREGROUND_IMAGE },
+      ],
+    },
+  };
+}
+
+function LayerApplyHarness({
+  item, applied,
+}: {
+  readonly item: ScenarioPreviewItem;
+  readonly applied: (afterRelayout: ScenarioPreviewItem) => void;
+}) {
+  const [preview, setPreview] = useState<ScenarioPreviewItem[] | null>([item]);
+  // 실제 호스트의 장면 수정과 최종 적용에서 같은 배치 함수를 사용한다.
+  const layoutOptions = { target: "current-page" as const, elements: [existingFrame], canvasHeight: 1080 };
+  return <StudioScenarioAutoLayoutPanel {...panelProps({
+    preview,
+    onChangeScene: (index, patch) => setPreview((current) => current ? computeStudioScenarioDraftRelayout({
+      ...layoutOptions, items: applyStudioScenarioScenePatch(current, index, patch),
+    }).items : null),
+    onApply: () => {
+      if (!preview) return;
+      const [confirmed] = computeStudioScenarioDraftRelayout({ ...layoutOptions, items: preview }).items;
+      if (!confirmed) return;
+      applied(confirmed);
+      setPreview(null);
+    },
+  })} />;
+}
+
+describe("코믹 디렉터 분리 레이어 원고 적용", () => {
+  it("호스트 배치를 두 번 거쳐도 투명 프레임 위에 배경·전경과 기본 말풍선이 각 한 번 적용된다", async () => {
+    const applied = vi.fn<(scenario: ScenarioPreviewItem) => void>();
+    render(<LayerApplyHarness item={layeredScenario()} applied={applied} />);
+    fireEvent.click(screen.getByRole("button", { name: /마감·추가/u }));
+    const apply = screen.getByRole("button", { name: "현재 페이지에 적용" });
+    fireEvent.click(apply);
+    await waitFor(() => expect(applied).toHaveBeenCalledOnce());
+
+    const committed = applied.mock.calls[0]?.[0];
+    if (!committed) throw new Error("적용된 컷이 없습니다.");
+    const all = committed.bubbles as readonly (ScenarioPreviewItem["bubbles"][number] | ImageEl)[];
+    const images = all.filter((element) => element.type === "image");
+    expect(images.map((element) => element.src)).toEqual([BACKGROUND_IMAGE, FOREGROUND_IMAGE]);
+    for (const image of images) {
+      expect(image).toMatchObject({ ...committed.frame, rotation: 0, lockAspect: true });
+      expect(image).not.toHaveProperty("id");
+    }
+    expect(committed.frame.y).toBeGreaterThanOrEqual(910);
+    expect(committed.imageDataUrl).toBe(TRANSPARENT_PNG_1PX);
+    expect(all.map((element) => element.type)).toEqual(["image", "image", "bubble"]);
+    expect(all.find((element) => element.type === "bubble")?.text).toContain("약속을 잊지 말아요.");
+    fireEvent.click(apply);
+    expect(applied).toHaveBeenCalledOnce();
+  });
+
+  it.each(["empty", "different-candidate"])("분리 이미지가 %s이면 원래 선택한 이미지를 유지한다", async (kind) => {
+    const scene = layeredScenario();
+    if (!scene.layerManifest) throw new Error("시험 장면에 레이어가 없습니다.");
+    const item = {
+      ...scene,
+      layerManifest: kind === "empty" ? { ...scene.layerManifest, layers: [] } : {
+        ...scene.layerManifest, sourceCandidateId: "different-source",
+      },
+    };
+    const applied = vi.fn<(scenario: ScenarioPreviewItem) => void>();
+    render(<LayerApplyHarness item={item} applied={applied} />);
+    fireEvent.click(screen.getByRole("button", { name: /마감·추가/u }));
+    fireEvent.click(screen.getByRole("button", { name: "현재 페이지에 적용" }));
+    await waitFor(() => expect(applied).toHaveBeenCalledOnce());
+
+    const committed = applied.mock.calls[0]?.[0];
+    expect(committed?.imageDataUrl).toBe(FLAT_IMAGE);
+    expect(committed?.bubbles.map((element) => element.type)).toEqual(["bubble"]);
   });
 });

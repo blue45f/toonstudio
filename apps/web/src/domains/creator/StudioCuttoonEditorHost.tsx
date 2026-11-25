@@ -15153,14 +15153,13 @@ const puppetWarpArmed =
   }
   // preview를 캔버스에 커밋 — 프레임(이미지 성공 시 bg 포함)과 말풍선을 전부 한 번에 commit해
   // undo 1회로 되돌릴 수 있게 한다(addSceneTemplate/addDialogueBubbles와 동일 관례).
-  function onApplyScenarioPreview() {
-    if (!scenarioResult || scenarioBusy || scenarioRegeneratingIndex !== null) return;
+  function onApplyScenarioPreview(): boolean {
+    if (!scenarioResult || scenarioBusy || scenarioRegeneratingIndex !== null) return false;
     if (scenarioApplyTarget === "current-page" && pageEditLocked) {
-      setError("이 페이지는 검토 잠금 상태예요. 새 페이지에 적용하거나 잠금을 해제해 주세요.");
-      return;
+      setScenarioError("이 페이지는 검토 잠금 상태예요. 새 페이지에 적용하거나 잠금을 해제해 주세요.");
+      return false;
     }
-    // 현재 페이지에 적용할 때는 A컷→B컷 이동 또는 기존 프레임 추가 후에도 겹치지 않도록
-    // 실제 현재 페이지의 프레임 배치 기준으로 좌표를 다시 계산한다.
+    // 적용 시점의 페이지 프레임 아래에 겹치지 않게 배치한다.
     const layoutForApply =
       scenarioApplyTarget === "current-page"
         ? relayoutScenarioDrafts(scenarioResult.items, "current-page")
@@ -15189,7 +15188,7 @@ const puppetWarpArmed =
         newEls.push({ id: uid(), ...b });
       }
     }
-    if (newEls.length === 0) return;
+    if (newEls.length === 0) return false;
     if (scenarioApplyTarget === "new-page") {
       const currentIndex = Math.max(0, pages.findIndex((page: PageState) => page.id === activePage.id));
       const nextPages = insertBlankPageAt(
@@ -15206,13 +15205,13 @@ const puppetWarpArmed =
       );
       if (!commitPages(populatedPages)) {
         setScenarioError(t("studio.hostStatus.scenarioNewPageApplyFailed", "새 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-        return;
+        return false;
       }
       setCurrentPageId(insertedPage.id);
     } else {
       if (!commit([...elements, ...newEls], { canvasH: Math.max(canvasH, layoutForApply.nextCanvasH) })) {
         setScenarioError(t("studio.hostStatus.scenarioCurrentPageApplyFailed", "현재 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-        return;
+        return false;
       }
     }
     setScenarioResult(null);
@@ -15222,6 +15221,7 @@ const puppetWarpArmed =
     setScenarioRegeneratingIndex(null);
     setScenarioOpen(false);
     setTool("select");
+    return true;
   }
   // preview를 버리고 입력 단계로 돌아간다 — 캔버스는 건드리지 않는다. 스토리 텍스트는 남겨둔다
   // (조금 고쳐서 다시 시도하기 쉽게 — 처음부터 다시 입력하게 강제하지 않는다).

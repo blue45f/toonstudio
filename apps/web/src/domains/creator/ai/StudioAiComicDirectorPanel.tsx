@@ -59,7 +59,6 @@ import type { CharacterCanonSheet } from "./canon/studio-character-canon";
 import {
   createStudioAiComicApplyDiff,
   createStudioAiComicDirectorSession,
-  studioAiComicDirectorCandidateDigest,
   updateStudioAiComicDirectorSession,
   type StudioAiComicDirectorJob,
   type StudioAiComicDirectorSessionDocument,
@@ -155,7 +154,7 @@ export interface StudioAiComicDirectorPanelProps {
   readonly onRegenerateScene: (index: number) => void;
   readonly regeneratingIndex: number | null;
   readonly onCancel: () => void;
-  readonly onApply: () => void;
+  readonly onApply: () => boolean | void;
   readonly onDiscard: () => void;
 }
 
@@ -270,6 +269,8 @@ function DirectorReviewSession({
   const [reviewFailed, setReviewFailed] = useState(false);
   const [reviewAttempt, setReviewAttempt] = useState(0);
   const operationIdRef = useRef(uid("apply"));
+  const applyPendingRef = useRef(false);
+  const [applyRejected, setApplyRejected] = useState(false);
   const api = useMemo(
     () => sessionApiClient ?? (sessionId ? createStudioAiComicDirectorApiClient() : null),
     [sessionApiClient, sessionId],
@@ -594,26 +595,34 @@ function DirectorReviewSession({
   };
 
   const approveAndApply = async () => {
-    if (revisionConflict) return;
+    if (revisionConflict || applyPendingRef.current) return;
     const storageKey = `toonspectrum:studio-ai-comic-director:apply:${applyDiff.operationId}`;
     if (sessionStorage.getItem(storageKey)) {
       setMediaMessage("같은 적용 작업은 이미 실행했습니다. 중복 추가를 막았습니다.");
       return;
     }
-    let approvedSession = session;
-    if (api && sessionId) {
-      const candidateDigest = studioAiComicDirectorCandidateDigest(items);
-      const result = await api.createApproval(sessionId, session.revision, candidateDigest);
-      if (!result.ok) {
-        setMediaMessage(result.message);
+    applyPendingRef.current = true;
+    try {
+      let approvedSession = session;
+      if (api && sessionId && !applyDiff.approved) {
+        const result = await api.createApproval(sessionId, session.revision, applyDiff.candidateDigest);
+        if (!result.ok) {
+          setMediaMessage(result.message);
+          return;
+        }
+        approvedSession = { ...session, approval: result.data };
+        setSession(approvedSession);
+      }
+      if (onApply() === false) {
+        setApplyRejected(true);
         return;
       }
-      approvedSession = { ...session, approval: result.data };
-      setSession(approvedSession);
+      sessionStorage.setItem(storageKey, new Date().toISOString());
+      setApplyRejected(false);
+      mutateLocalSession({ status: "applied", stage: "finish", approval: approvedSession.approval });
+    } finally {
+      applyPendingRef.current = false;
     }
-    sessionStorage.setItem(storageKey, new Date().toISOString());
-    onApply();
-    mutateLocalSession({ status: "applied", stage: "finish", approval: approvedSession.approval });
   };
 
   const modal = (
@@ -730,7 +739,14 @@ function DirectorReviewSession({
           </div>
         </div>
 
-        {error ? (
+        {applyRejected ? (
+          <div role="alert" className="flex flex-wrap items-center gap-2 border-t border-line bg-panel px-3 py-2">
+            <p className="text-xs text-bad">{error ?? "원고에 적용하지 못했어요. 검토한 초안은 그대로 있습니다."}</p>
+            <button type="button" disabled={busy || revisionConflict} onClick={() => void approveAndApply()} className="min-h-11 rounded-lg border border-line bg-card px-3 text-xs font-semibold">
+              원고 적용 다시 시도
+            </button>
+          </div>
+        ) : error ? (
           <div className="border-t border-line bg-panel px-3 py-2">
             <AiRecoveryNotice
               message={error}

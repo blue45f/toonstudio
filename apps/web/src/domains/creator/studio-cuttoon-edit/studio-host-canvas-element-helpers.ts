@@ -292,6 +292,8 @@ export function createStudioSpeedLinesElement(id: string): El {
   };
 }
 
+export type StudioScenarioApplyLayerImage = Omit<ImageEl, "id"> & { readonly name: string };
+
 export function computeStudioScenarioDraftRelayout(input: {
   readonly items: readonly ScenarioPreviewItem[];
   readonly target: "current-page" | "new-page";
@@ -319,11 +321,23 @@ export function computeStudioScenarioDraftRelayout(input: {
   );
   return {
     nextCanvasH: layout.nextCanvasH,
-    items: layout.panels.map((panel, index) => ({
-      ...panel,
-      ...scenarioReviewedArtwork(input.items[index]),
-      ...scenarioGenerationPreferences(input.items[index] ?? {}),
-    })),
+    items: layout.panels.map((panel, index) => {
+      const source = input.items[index];
+      const manifest = source?.layerManifest;
+      // 레거시 적용 래퍼가 말풍선 배열에 잠시 넣은 분리 이미지만 새 프레임으로 옮긴다.
+      const decorations = source?.bubbles as readonly (ScenarioPreviewItem["bubbles"][number] | StudioScenarioApplyLayerImage)[] | undefined;
+      const images = manifest?.editable ? decorations?.flatMap((item) =>
+        item.type === "image" && manifest.layers.some((layer) => layer.imageDataUrl === item.src && layer.name === item.name)
+          ? [{ ...item, ...panel.frame }]
+          : [],
+      ) ?? [] : [];
+      return {
+        ...panel,
+        ...scenarioReviewedArtwork(source),
+        ...scenarioGenerationPreferences(source ?? {}),
+        ...(images.length > 0 ? { bubbles: [...images, ...panel.bubbles] as unknown as ScenarioPreviewItem["bubbles"] } : {}),
+      };
+    }),
   };
 }
 
