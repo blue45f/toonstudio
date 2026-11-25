@@ -1,4 +1,4 @@
-import { Brush, Camera, Hand, Layers, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Camera, Clapperboard, Grip, Hand, Layers, Lightbulb, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -78,6 +78,21 @@ const LazyStudioCharExpressionPoseAdvisorPanel = lazy(async () => {
   const m = await import("../char-expression-pose-advisor/StudioCharExpressionPoseAdvisorPanel");
   return { default: m.StudioCharExpressionPoseAdvisorPanel };
 });
+const LazyStudioSceneLightingAdvisorPanel = lazy(async () => {
+  await import("../scene-lighting-atmosphere-advisor");
+  const m = await import("../scene-lighting-atmosphere-advisor/StudioSceneLightingAdvisorPanel");
+  return { default: m.StudioSceneLightingAdvisorPanel };
+});
+const LazyStudioCameraFramingCoachPanel = lazy(async () => {
+  await import("../camera-framing-continuity-coach");
+  const m = await import("../camera-framing-continuity-coach/StudioCameraFramingCoachPanel");
+  return { default: m.StudioCameraFramingCoachPanel };
+});
+const LazyStudioHandPropAutoGripPanel = lazy(async () => {
+  await import("../hand-prop-autogrip-assistant");
+  const m = await import("../hand-prop-autogrip-assistant/StudioHandPropAutoGripPanel");
+  return { default: m.StudioHandPropAutoGripPanel };
+});
 
 type Csp3dTabId =
   | "puppet"
@@ -94,7 +109,10 @@ type Csp3dTabId =
   | "foleyMixer"
   | "charSheetBible"
   | "editorialMoodboard"
-  | "charExprAdvisor";
+  | "charExprAdvisor"
+  | "sceneLightingAdv"
+  | "cameraFramingAdv"
+  | "handPropAutoGrip";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -116,6 +134,9 @@ const CSP3D_TABS: readonly {
   { id: "charSheetBible", labelKo: "캐릭터 설정집·표정 9궁도·의상 5슬롯 조판", labelEn: "Character Sheet Bible · 9-Expression · 5-Outfit" },
   { id: "editorialMoodboard", labelKo: "탈-바이올렛 에디토리얼 무드보드·5안료 팔레트", labelEn: "Zero-Violet Editorial Moodboard · 5-Pigment Palette" },
   { id: "charExprAdvisor", labelKo: "대사·감정 캐릭터 표정·입모양·포즈 자동 제안", labelEn: "Dialogue Character Expression · Mouth · Pose Advisor" },
+  { id: "sceneLightingAdv", labelKo: "대사·감정 컷 조명·역광·색온도 자동 연출", labelEn: "Dialogue Scene Lighting & Atmosphere Advisor" },
+  { id: "cameraFramingAdv", labelKo: "시선 동선·180° 법칙 카메라 앵글 리프레이밍", labelEn: "Eyeline & 180° Camera Framing Continuity Coach" },
+  { id: "handPropAutoGrip", labelKo: "3D 소품 15관절 손 자동 그립 어시스턴트", labelEn: "3D Prop 15-Joint Hand Auto-Grip Assistant" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -166,6 +187,12 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Palette size={15} aria-hidden="true" />;
     case "charExprAdvisor":
       return <Smile size={15} aria-hidden="true" />;
+    case "sceneLightingAdv":
+      return <Lightbulb size={15} aria-hidden="true" />;
+    case "cameraFramingAdv":
+      return <Clapperboard size={15} aria-hidden="true" />;
+    case "handPropAutoGrip":
+      return <Grip size={15} aria-hidden="true" />;
   }
 }
 
@@ -229,6 +256,9 @@ export function Csp3dUpgradeHubPanel() {
           {active === "charSheetBible" ? <LazyStudioCharacterSheetBiblePanel /> : null}
           {active === "editorialMoodboard" ? <LazyStudioEditorialMoodboardPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "charExprAdvisor" ? <LazyStudioCharExpressionPoseAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "sceneLightingAdv" ? <LazyStudioSceneLightingAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "cameraFramingAdv" ? <LazyStudioCameraFramingCoachPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "handPropAutoGrip" ? <LazyStudioHandPropAutoGripPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

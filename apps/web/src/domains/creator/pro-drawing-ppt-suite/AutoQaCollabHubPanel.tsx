@@ -1,4 +1,4 @@
-import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, LayoutList, MapPin, MessageSquareText, Music, Palette, Rows3, ScanSearch, Smartphone, Sparkles } from "lucide-react";
+import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, LayoutList, MapPin, MessageCircle, MessageSquareText, Music, Palette, Rows3, Ruler, ScanSearch, Smartphone, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -78,6 +78,16 @@ const LazyStudioWebtoonAudioCuePanel = lazy(async () => {
   const m = await import("../webtoon-audio-cue-director/StudioWebtoonAudioCuePanel");
   return { default: m.StudioWebtoonAudioCuePanel };
 });
+const LazyStudioBalloonSfxProposerPanel = lazy(async () => {
+  await import("../balloon-sfx-placement-proposer");
+  const m = await import("../balloon-sfx-placement-proposer/StudioBalloonSfxProposerPanel");
+  return { default: m.StudioBalloonSfxProposerPanel };
+});
+const LazyStudioModelSheetDriftCoachPanel = lazy(async () => {
+  await import("../crosscut-modelsheet-drift-coach");
+  const m = await import("../crosscut-modelsheet-drift-coach/StudioModelSheetDriftCoachPanel");
+  return { default: m.StudioModelSheetDriftCoachPanel };
+});
 
 type QaHubTabId =
   | "pixel"
@@ -94,7 +104,9 @@ type QaHubTabId =
   | "panelRhythm"
   | "mobileReaderSim"
   | "visualPinReview"
-  | "audioCueDirector";
+  | "audioCueDirector"
+  | "balloonSfxProposer"
+  | "modelSheetDrift";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -132,6 +144,8 @@ const QA_HUB_TABS: readonly {
   { id: "mobileReaderSim", labelKo: "9:16 모바일 독자 뷰어·4기종 가독성 점검", labelEn: "9:16 Mobile Reader Preview · 4-Device Audit" },
   { id: "visualPinReview", labelKo: "캔버스 핀 검수·6단계 바통터치·외부 툴 브리지", labelEn: "Canvas Pin Review · Baton Pass · Open Bridges" },
   { id: "audioCueDirector", labelKo: "한국어 립싱크 비젬·BGM·SFX 큐 디렉터", labelEn: "Korean Lip-Sync Viseme · BGM · SFX Cue Director" },
+  { id: "balloonSfxProposer", labelKo: "얼굴 회피 말풍선 꼬리·효과음(SFX) 자동 배치", labelEn: "Face-Safe Balloon Tail & SFX Auto-Placement" },
+  { id: "modelSheetDrift", labelKo: "1~60컷 설정집 비율·의상 붉은펜 드리프트 코치", labelEn: "1-60 Cut Model Sheet Drift Redline Coach" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -166,6 +180,10 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <MapPin size={15} aria-hidden="true" />;
     case "audioCueDirector":
       return <Music size={15} aria-hidden="true" />;
+    case "balloonSfxProposer":
+      return <MessageCircle size={15} aria-hidden="true" />;
+    case "modelSheetDrift":
+      return <Ruler size={15} aria-hidden="true" />;
   }
 }
 
@@ -229,6 +247,8 @@ export function AutoQaCollabHubPanel() {
           {active === "mobileReaderSim" ? <LazyMobileReaderPreviewPanel /> : null}
           {active === "visualPinReview" ? <LazyStudioVisualPinReviewPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "audioCueDirector" ? <LazyStudioWebtoonAudioCuePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "balloonSfxProposer" ? <LazyStudioBalloonSfxProposerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "modelSheetDrift" ? <LazyStudioModelSheetDriftCoachPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
