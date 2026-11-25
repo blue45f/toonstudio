@@ -1,4 +1,4 @@
-import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, LayoutList, MessageSquareText, Palette, ScanSearch, Sparkles } from "lucide-react";
+import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, Palette, ScanSearch, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -43,20 +43,16 @@ const LazyMovingtoonReelsPanel = lazy(async () => {
   const m = await import("../movingtoon-reels-studio/StudioMovingtoonReelsPanel");
   return { default: m.StudioMovingtoonReelsPanel };
 });
-const LazyKoreanLetteringSfxPanel = lazy(async () => {
-  await import("../korean-lettering-sfx-engine");
-  const m = await import("../korean-lettering-sfx-engine/StudioKoreanLetteringSfxPanel");
-  return { default: m.StudioKoreanLetteringSfxPanel };
+
+const LazyCinematographyPanel = lazy(async () => {
+  await import("../webtoon-cinematography-director");
+  const m = await import("../webtoon-cinematography-director/StudioCinematographyDirectorPanel");
+  return { default: m.StudioCinematographyDirectorPanel };
 });
-const LazyColorScriptLabPanel = lazy(async () => {
+const LazyColorScriptPanel = lazy(async () => {
   await import("../color-script-accessibility-lab");
   const m = await import("../color-script-accessibility-lab/StudioColorScriptLabPanel");
   return { default: m.StudioColorScriptLabPanel };
-});
-const LazyErgonomicsMasterPanel = lazy(async () => {
-  await import("../ergonomics-shortcut-master");
-  const m = await import("../ergonomics-shortcut-master/StudioErgonomicsMasterPanel");
-  return { default: m.StudioErgonomicsMasterPanel };
 });
 
 type QaHubTabId =
@@ -68,9 +64,8 @@ type QaHubTabId =
   | "virtualLiving"
   | "renderFarmVcs"
   | "movingtoonReels"
-  | "koreanLettering"
-  | "colorScriptA11y"
-  | "ergonomicsMaster";
+  | "cinematography"
+  | "colorScript";
 
 const QA_HUB_TABS: readonly {
   readonly id: QaHubTabId;
@@ -81,13 +76,12 @@ const QA_HUB_TABS: readonly {
   { id: "layout", labelKo: "스마트 안전분할·360px·다국어·0-Defect", labelEn: "Safe-Slice · 360px · i18n · 0-Defect" },
   { id: "continuity", labelKo: "컬러 스크립트·설정집 대조", labelEn: "Color Script · Bible Checker" },
   { id: "signoff", labelKo: "7단계 결재선·부분승인·블라인드·SLA", labelEn: "7-Stage Signoff · Blind Link · SLA" },
-  { id: "storySimulpub", labelKo: "복선 인과 감사·5개국 리플로우·C2PA·스크롤 히트맵", labelEn: "Causality · 5-Lang Reflow · C2PA · Scroll Heatmap" },
-  { id: "virtualLiving", labelKo: "가상 스튜디오 2.5D 스프링·날씨 VFX·아바타·6테마 방", labelEn: "Virtual Studio 2.5D · VFX · Avatar · 6 Rooms" },
-  { id: "renderFarmVcs", labelKo: "6패스 분산 렌더팜·시맨틱 컷 VCS", labelEn: "6-Pass Render Farm · Semantic Cut VCS" },
-  { id: "movingtoonReels", labelKo: "무빙툰 릴스 2.5D·BPM 비트싱크·자막", labelEn: "Moving-Toon Reels · Beat Sync · Subtitles" },
-  { id: "koreanLettering", labelKo: "한국어 광학 말풍선·세로쓰기·감정 SFX 벡터", labelEn: "Korean Optical Balloons · Vertical · SFX Vector" },
-  { id: "colorScriptA11y", labelKo: "4막 컬러 스크립트·LMS 색각이상·다크라이트", labelEn: "4-Act Color Script · LMS CVD · Dark/Light" },
-  { id: "ergonomicsMaster", labelKo: "4대 도구 단축키·왼손 미러·WCAG 2.2 AAA", labelEn: "4-Tool Shortcuts · Left-Hand · WCAG 2.2 AAA" },
+  { id: "storySimulpub", labelKo: "인과·리플로우·무결성 예제", labelEn: "Causality · Reflow · Integrity Examples" },
+  { id: "virtualLiving", labelKo: "방·아바타·분위기 물리 예제", labelEn: "Room · Avatar · Atmosphere Examples" },
+  { id: "renderFarmVcs", labelKo: "렌더 일정·컷 병합 메모리 예제", labelEn: "Render Scheduling · Cut Merge Memory Examples" },
+  { id: "movingtoonReels", labelKo: "무빙툰 좌표·비트·자막 문자열 예제", labelEn: "Moving-Toon Coordinates · Beats · Subtitle Examples" },
+  { id: "cinematography", labelKo: "카메라 투영·시선 동선 예제", labelEn: "Camera Projection · Eye-Flow Examples" },
+  { id: "colorScript", labelKo: "색상 대비·색각 변환 예제", labelEn: "Color Contrast · Vision Simulation Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -106,14 +100,12 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <Sparkles size={15} aria-hidden="true" />;
     case "renderFarmVcs":
       return <GitBranch size={15} aria-hidden="true" />;
+    case "cinematography":
+      return <Clapperboard size={15} aria-hidden="true" />;
+    case "colorScript":
+      return <Palette size={15} aria-hidden="true" />;
     case "movingtoonReels":
       return <Clapperboard size={15} aria-hidden="true" />;
-    case "koreanLettering":
-      return <MessageSquareText size={15} aria-hidden="true" />;
-    case "colorScriptA11y":
-      return <Eye size={15} aria-hidden="true" />;
-    case "ergonomicsMaster":
-      return <Accessibility size={15} aria-hidden="true" />;
   }
 }
 
@@ -170,9 +162,8 @@ export function AutoQaCollabHubPanel() {
           {active === "virtualLiving" ? <LazyVirtualSpaceLivingPanel /> : null}
           {active === "renderFarmVcs" ? <LazyRenderFarmVcsPanel /> : null}
           {active === "movingtoonReels" ? <LazyMovingtoonReelsPanel /> : null}
-          {active === "koreanLettering" ? <LazyKoreanLetteringSfxPanel /> : null}
-          {active === "colorScriptA11y" ? <LazyColorScriptLabPanel /> : null}
-          {active === "ergonomicsMaster" ? <LazyErgonomicsMasterPanel /> : null}
+          {active === "cinematography" ? <LazyCinematographyPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "colorScript" ? <LazyColorScriptPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

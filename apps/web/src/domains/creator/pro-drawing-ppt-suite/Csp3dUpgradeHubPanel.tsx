@@ -1,4 +1,4 @@
-import { Brush, Camera, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, Wand2, Zap, Watch } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -43,11 +43,13 @@ const LazyNeuralUpscaleTexturesPanel = lazy(async () => {
   const m = await import("../neural-upscale-textures/StudioNeuralUpscaleTexturesPanel");
   return { default: m.StudioNeuralUpscaleTexturesPanel };
 });
-const LazyCinematographyDirectorPanel = lazy(async () => {
-  await import("../webtoon-cinematography-director");
-  const m = await import("../webtoon-cinematography-director/StudioCinematographyDirectorPanel");
-  return { default: m.StudioCinematographyDirectorPanel };
+
+const LazyKoreanLetteringPanel = lazy(async () => {
+  await import("../korean-lettering-sfx-engine");
+  const m = await import("../korean-lettering-sfx-engine/StudioKoreanLetteringSfxPanel");
+  return { default: m.StudioKoreanLetteringSfxPanel };
 });
+
 const LazyStudio3dLightingRigPanel = lazy(async () => {
   await import("../studio-3d-lighting-rig");
   const m = await import("../studio-3d-lighting-rig/Studio3dLightingRigPanel");
@@ -68,7 +70,7 @@ type Csp3dTabId =
   | "charlabCsp"
   | "p3ColorLight"
   | "neuralUpscale"
-  | "cinematographyDir"
+  | "koreanLettering"
   | "lightingRig3d"
   | "actionFxLab";
 
@@ -81,13 +83,13 @@ const CSP3D_TABS: readonly {
   { id: "surface3d", labelKo: "3D 표면 직접 페인팅·4층 UV", labelEn: "3D Surface Paint · 4-Layer UV" },
   { id: "hand3d", labelKo: "15관절 3D 손·가중치·STL·LOD", labelEn: "15-Joint 3D Hand · Weights · STL · LOD" },
   { id: "watermark", labelKo: "비가시 워터마크·속도곡선·경계블러", labelEn: "Anti-AI Watermark · Velocity · Safe Blur" },
-  { id: "commercialPro", labelKo: "상업 연재 8대 엔진 (3층 리라이트·컷돌파·굿즈·매크로)", labelEn: "Pro Commercial 8-Suite (Relight · Breakout · Goods · Macro)" },
-  { id: "charlabCsp", labelKo: "캐릭터 라이브 링크·벡터 지우개·QuickShape·수채화·워치", labelEn: "Char Live Link · Vector Eraser · QuickShape · Watch" },
-  { id: "p3ColorLight", labelKo: "Display-P3 광색역·CMYK·실시간 다중 동적 조명", labelEn: "Display-P3 Gamut · CMYK · Dynamic Lighting" },
-  { id: "neuralUpscale", labelKo: "2×/4× 엣지 업스케일러·6종 절차 PBR 텍스처", labelEn: "2x/4x Edge Upscaler · 6 Seamless PBR Textures" },
-  { id: "cinematographyDir", labelKo: "3D 시네마토그래피·180도 법칙·세로 시선 유도", labelEn: "3D Cinematography · 180° Rule · Eye-Flow" },
-  { id: "lightingRig3d", labelKo: "서울 물리 하늘·3점 조명 릭·그림자 캐처", labelEn: "Seoul Physical Sky · 3-Point Rig · Shadow Catcher" },
-  { id: "actionFxLab", labelKo: "웹툰 6종 액션·마법진·로맨스 벡터 FX 랩", labelEn: "6-Preset Action & Romance Vector FX Lab" },
+  { id: "commercialPro", labelKo: "리라이트·식자·투고 구성 예제", labelEn: "Relight · Lettering · Submission Examples" },
+  { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
+  { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
+  { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
+  { id: "koreanLettering", labelKo: "한글 조판·SVG 글자 배치 예제", labelEn: "Korean Typesetting · SVG Text Examples" },
+  { id: "lightingRig3d", labelKo: "하늘·조명·그림자 수치 예제", labelEn: "Sky · Lighting · Shadow Examples" },
+  { id: "actionFxLab", labelKo: "액션·로맨스 SVG 효과 예제", labelEn: "Action · Romance SVG Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -108,6 +110,10 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "lightingRig3d":
+      return <Sunrise size={15} aria-hidden="true" />;
+    case "actionFxLab":
+      return <Zap size={15} aria-hidden="true" />;
     case "puppet":
       return <Move size={15} aria-hidden="true" />;
     case "surface3d":
@@ -122,14 +128,10 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Watch size={15} aria-hidden="true" />;
     case "p3ColorLight":
       return <Sun size={15} aria-hidden="true" />;
+    case "koreanLettering":
+      return <Brush size={15} aria-hidden="true" />;
     case "neuralUpscale":
       return <Wand2 size={15} aria-hidden="true" />;
-    case "cinematographyDir":
-      return <Camera size={15} aria-hidden="true" />;
-    case "lightingRig3d":
-      return <Sunrise size={15} aria-hidden="true" />;
-    case "actionFxLab":
-      return <Zap size={15} aria-hidden="true" />;
   }
 }
 
@@ -186,9 +188,9 @@ export function Csp3dUpgradeHubPanel() {
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
-          {active === "cinematographyDir" ? <LazyCinematographyDirectorPanel /> : null}
-          {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel /> : null}
-          {active === "actionFxLab" ? <LazyStudioActionFxLabPanel /> : null}
+          {active === "koreanLettering" ? <LazyKoreanLetteringPanel /> : null}
+          {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "actionFxLab" ? <LazyStudioActionFxLabPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

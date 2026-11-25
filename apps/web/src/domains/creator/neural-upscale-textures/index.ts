@@ -10,6 +10,7 @@ export {
   computePsnr,
   createDemoWebtoonSampleBuffer,
   detectUpscalerBackend,
+  detectUpscalerGpuCapability,
   downsampleBox,
   measureEdgeSharpness,
   upscaleWebtoonBuffer,
@@ -21,6 +22,7 @@ export {
   type RgbaImageBuffer,
   type UpscaleFactor,
   type UpscalerRuntimeBackend,
+  type UpscalerGpuCapability,
   type UpscalerWgslValidationReport,
   type WebtoonUpscaleOptions,
   type WebtoonUpscaleResult,
@@ -47,3 +49,5 @@ export {
   type TexturePreviewChannel,
   type UpscalerPreviewMode,
 } from "./StudioNeuralUpscaleTexturesPanel";
+
+export { MAX_CPU_IMAGE_PIXELS } from "./image-buffer-contract";

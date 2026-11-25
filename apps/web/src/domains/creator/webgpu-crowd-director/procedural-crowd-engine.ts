@@ -1,18 +1,16 @@
 /**
  * Wave 38D — WebGPU 인스턴싱 + 8종 원근 소실점 절차적 대규모 군중 생성 엔진.
  *
- * - 결정론적 공간 해시 Poisson-disk 비겹침 배치 (20 ~ 2,000명 `< 5ms`).
+ * - 결정론적 CPU 공간 해시 Poisson-disk 비겹침 배치 (20 ~ 2,000명).
  * - 깊이(Z) 기반 핀홀 원근 스케일링, 원거리 대기 원근 페이드, 근경 G펜 굵은 잉크 → 원경 얇은 실루엣 감쇄.
  * - 주인공 포컬 포인트(x, y)를 향한 자동 시선·몸 방향 정렬.
  * - WebGPU `drawIndexedIndirect` 64B 정렬 인스턴스 버퍼(`Float32Array`) + 20B 간접 드로우 인수 버퍼 패킹.
  */
 
 import {
-  CROWD_BASE_SILHOUETTE_INDEX_COUNT,
   CROWD_CAMERA_UNIFORM_BYTES,
   CROWD_INDIRECT_ARGS_BYTES,
   CROWD_INSTANCE_STRIDE_BYTES,
-  CROWD_INSTANCE_STRIDE_FLOATS,
   CROWD_MAX_COUNT,
   CROWD_MIN_COUNT,
   clampNumber,
@@ -22,11 +20,11 @@ import {
   type CrowdDrawCallMetrics,
   type CrowdFacingDirection,
   type CrowdGenerationOptions,
-  type CrowdInstanceBufferPack,
   type CrowdPresetSpec,
   type CrowdSceneResult,
   type ResolvedCrowdGenerationOptions,
 } from "./crowd-presets-and-wgsl";
+import { packCrowdInstanceBuffers } from "./crowd-gpu-buffer-contract";
 
 export {
   CROWD_BASE_SILHOUETTE_INDEX_COUNT,
@@ -71,13 +69,11 @@ export {
   type CrowdSvgRenderOptions,
 } from "./crowd-renderers";
 
-export interface CrowdIndirectDrawSubmission {
-  readonly executedOnGpu: boolean;
-  readonly indexCount: number;
-  readonly instanceCount: number;
-  readonly indirectByteOffset: number;
-  readonly drawCallCount: number;
-}
+export {
+  CROWD_GPU_BIND_GROUP_LAYOUTS,
+  encodeCrowdDrawIndexedIndirect, packCrowdInstanceBuffers, resetCrowdIndirectFrame,
+  type CrowdIndirectDrawSubmission,
+} from "./crowd-gpu-buffer-contract";
 
 const DEFAULT_CANVAS_WIDTH = 960;
 const DEFAULT_CANVAS_HEIGHT = 540;
@@ -397,115 +393,6 @@ function samplePerspectivePoissonPositions(
   };
 }
 
-/**
- * WebGPU `drawIndexedIndirect` 인스턴싱용 64B 정렬 인스턴스 버퍼, 20B 간접 드로우 인수 버퍼,
- * 64B 카메라 유니폼 버퍼를 패킹한다.
- */
-export function packCrowdInstanceBuffers(
-  agents: readonly CrowdAgentInstance[],
-  preset: CrowdPresetSpec,
-  options: ResolvedCrowdGenerationOptions,
-): CrowdInstanceBufferPack {
-  const count = agents.length;
-  const instanceData = new Float32Array(count * CROWD_INSTANCE_STRIDE_FLOATS);
-
-  for (let i = 0; i < count; i += 1) {
-    const agent = agents[i];
-    if (!agent) continue;
-    const base = i * CROWD_INSTANCE_STRIDE_FLOATS;
-    // vec4 worldPosAndScale (0..3)
-    instanceData[base] = agent.worldX;
-    instanceData[base + 1] = agent.worldY;
-    instanceData[base + 2] = agent.worldZ;
-    instanceData[base + 3] = agent.perspectiveScale;
-    // vec4 yawPitchDepthFade (4..7)
-    instanceData[base + 4] = agent.headYawRad;
-    instanceData[base + 5] = agent.bodyYawRad;
-    instanceData[base + 6] = agent.depth;
-    instanceData[base + 7] = agent.atmosphericFade;
-    // vec4 inkFillOklchLchA (8..11)
-    instanceData[base + 8] = agent.fillOklch.l;
-    instanceData[base + 9] = agent.fillOklch.c;
-    instanceData[base + 10] = agent.fillOklch.h;
-    instanceData[base + 11] = agent.opacity;
-    // vec4 poseOutlineLodFlags (12..15)
-    instanceData[base + 12] = agent.strokeWidthPx;
-    instanceData[base + 13] = agent.lodTier;
-    instanceData[base + 14] = agent.propVariant + (agent.seated ? 4 : 0);
-    instanceData[base + 15] = agent.stridePhase;
-  }
-
-  // WebGPU DrawIndexedIndirectArgs: [indexCount, instanceCount, firstIndex, baseVertex, firstInstance]
-  const indirectArgs = new Uint32Array([
-    CROWD_BASE_SILHOUETTE_INDEX_COUNT,
-    count,
-    0,
-    0,
-    0,
-  ]);
-
-  const cameraUniform = new Float32Array([
-    options.canvasWidth,
-    options.canvasHeight,
-    options.horizonRatio,
-    options.vanishingX,
-    options.focalPointX,
-    options.focalPointY,
-    preset.nearDistanceM,
-    preset.farDistanceM,
-    options.nearStrokeWidthPx,
-    options.farStrokeWidthPx,
-    options.strokeAttenuation,
-    options.focalAttention,
-    options.maxAtmosphericFade,
-    count,
-    preset.index,
-    preset.elevationSlope,
-  ]);
-
-  return {
-    instanceStrideBytes: CROWD_INSTANCE_STRIDE_BYTES,
-    instanceStrideFloats: CROWD_INSTANCE_STRIDE_FLOATS,
-    instanceCount: count,
-    instanceData,
-    indirectArgs,
-    cameraUniform,
-  };
-}
-
-/**
- * WebGPU `GPURenderPassEncoder.drawIndexedIndirect` 단일 드로우콜 인코더.
- * GPU 패스가 없는 헤드리스/폴백 환경에서도 안전하게 계측 결과를 반환한다.
- */
-export function encodeCrowdDrawIndexedIndirect(
-  renderPass: Pick<GPURenderPassEncoder, "drawIndexedIndirect"> | null | undefined,
-  indirectBuffer: GPUBuffer | null | undefined,
-  gpuBuffers: CrowdInstanceBufferPack,
-  indirectByteOffset = 0,
-): CrowdIndirectDrawSubmission {
-  const indexCount = gpuBuffers.indirectArgs[0] ?? CROWD_BASE_SILHOUETTE_INDEX_COUNT;
-  const instanceCount = gpuBuffers.indirectArgs[1] ?? gpuBuffers.instanceCount;
-
-  if (renderPass && indirectBuffer) {
-    renderPass.drawIndexedIndirect(indirectBuffer, indirectByteOffset);
-    return {
-      executedOnGpu: true,
-      indexCount,
-      instanceCount,
-      indirectByteOffset,
-      drawCallCount: 1,
-    };
-  }
-
-  return {
-    executedOnGpu: false,
-    indexCount,
-    instanceCount,
-    indirectByteOffset,
-    drawCallCount: instanceCount > 0 ? 1 : 0,
-  };
-}
-
 function sortIndicesByDepthDesc(
   order: Int32Array,
   worldZ: Float32Array,
@@ -754,6 +641,7 @@ export function generateProceduralCrowd(options: CrowdGenerationOptions = {}): C
     naiveDrawCalls > 0 ? ((naiveDrawCalls - instancedDrawCalls) / naiveDrawCalls) * 100 : 0;
 
   const drawCallMetrics: CrowdDrawCallMetrics = {
+    basis: "theoretical-instancing",
     agentCount: agents.length,
     naiveDrawCalls,
     instancedDrawCalls,

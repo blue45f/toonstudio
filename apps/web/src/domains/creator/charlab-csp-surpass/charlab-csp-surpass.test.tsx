@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -416,7 +416,48 @@ describe("4. StudioCharlabCspSurpassPanel 통합 UI 및 엄격 코드 위생 계
     fireEvent.click(screen.getByTestId("voice-memo-enqueue-btn"));
     expect(screen.getByTestId("voice-queue-count").textContent).toContain("2건");
     fireEvent.click(screen.getByTestId("voice-memo-consume-btn"));
-    expect(screen.getByTestId("voice-queue-count").textContent).toContain("1건");
+    expect(screen.getByTestId("voice-queue-count").textContent).toContain("2건");
+    expect(screen.getByTestId("watch-queue-status").textContent).toContain("큐에서 지우지 않았어요");
+  });
+
+  it("워치 큐의 직접 입력은 미연결 확인과 탭 왕복 뒤에도 남고 실제 연결·배치 성공으로 표시하지 않는다", () => {
+    render(<StudioCharlabCspSurpassPanel initialTab="watch-remote" />);
+    expect(screen.getByTestId("charlab-scope-notice").textContent).toContain("독립 계산 예제");
+    expect(screen.getByTestId("watch-scope-notice").textContent).toContain("BLE 연결·송신·진동");
+    expect(createInitialSmartwatchState().connectedDeviceName).toContain("미연결");
+    fireEvent.change(screen.getByTestId("voice-memo-input"), { target: { value: "다음 컷에 남겨둘 대사" } });
+    fireEvent.click(screen.getByTestId("voice-memo-enqueue-btn"));
+    fireEvent.click(screen.getByTestId("voice-memo-consume-btn"));
+    fireEvent.click(screen.getByTestId("tab-charlab"));
+    fireEvent.click(screen.getByTestId("tab-watch-remote"));
+    expect(screen.getByDisplayValue("다음 컷에 남겨둘 대사")).toBeTruthy();
+    expect(screen.getByTestId("voice-queue-count").textContent).toContain("2건");
+    expect(screen.getByText("[normal] 다음 컷에 남겨둘 대사")).toBeTruthy();
+  });
+
+  it("레지스트리 알림은 비동기 실패·중복 억제·재시도를 처리하고 실제 모델 적용과 구분한다", async () => {
+    const onLiveLinkSync = vi.fn().mockRejectedValueOnce(new Error("알림 실패")).mockResolvedValueOnce(undefined);
+    render(<StudioCharlabCspSurpassPanel onLiveLinkSync={onLiveLinkSync} />);
+    const costume = screen.getByTestId("costume-slot-torn-heavy");
+    fireEvent.click(costume);
+    expect(screen.getByTestId("charlab-csp-surpass-panel").getAttribute("aria-busy")).toBe("true");
+    fireEvent.click(costume);
+    expect(onLiveLinkSync).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByTestId("charlab-callback-status").textContent).toContain("처리에 실패"));
+    fireEvent.click(costume);
+    await waitFor(() => expect(screen.getByTestId("charlab-callback-status").textContent).toContain("실제 모델·원고 적용이나 저장 완료를 뜻하지 않아요"));
+    expect(onLiveLinkSync).toHaveBeenCalledTimes(2);
+  });
+
+  it("동기 레지스트리 알림 오류 후에도 다시 선택할 수 있다", () => {
+    const onLiveLinkSync = vi.fn().mockImplementationOnce(() => { throw new Error("알림 오류"); });
+    render(<StudioCharlabCspSurpassPanel onLiveLinkSync={onLiveLinkSync} />);
+    const costume = screen.getByTestId("costume-slot-torn-heavy");
+    fireEvent.click(costume);
+    expect(screen.getByTestId("charlab-callback-status").textContent).toContain("처리에 실패");
+    fireEvent.click(costume);
+    expect(onLiveLinkSync).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId("charlab-callback-status").textContent).toContain("실제 모델·원고 적용이나 저장 완료를 뜻하지 않아요");
   });
 
   it("엄격 규칙(모든 파일 800줄 이하 · Storage/BigInt리터럴/private Map store/원시 색/props={} 0건)을 준수한다", () => {

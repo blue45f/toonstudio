@@ -1,5 +1,5 @@
 /**
- * 온디바이스 화풍 DNA 일치화 · 한국어 대본->세로 스크롤 콘티 파서 · 스마트 브러시/종이결 추천 통합 패널.
+ * CPU 색상 계산 · 규칙 기반 콘티/브러시 추천의 합성 샘플 패널.
  *
  * - Calm Atelier 시맨틱 토큰 전용 (원시 색상 0건) · Props 없이 단독 렌더링 지원 · 100% 온디바이스 실행.
  */
@@ -33,6 +33,7 @@ import {
 import {
   parseKoreanScriptToConti,
   SCRIPT_CONTI_PRESETS,
+  type ScriptContiPreset,
   type ScriptToContiReport,
 } from "./script-to-conti-parser";
 import {
@@ -68,6 +69,13 @@ const HARMONIZER_TILE_W = 120;
 const HARMONIZER_TILE_H = 96;
 const HARMONIZER_DIVIDER_W = 2;
 const HARMONIZER_STRIP_W = HARMONIZER_TILE_W * 3 + HARMONIZER_DIVIDER_W * 2;
+const LINEART_STATUS_LABELS: Readonly<Record<StyleHarmonizationReport["lineartSyncStatus"], readonly [string, string]>> = {
+  disabled: ["선화 경계 강조 꺼짐", "Line emphasis off"],
+  "already-matched": ["기준 굵기 범위 · 경계 강조 생략", "Within width tolerance · emphasis skipped"],
+  "unsupported-thinning": ["얇게 만들기 미지원 · 경계 강조 생략", "Thinning unsupported · emphasis skipped"],
+  expanded: ["기준보다 얇은 선의 경계 강조 적용", "Thinner line emphasis applied"],
+  "skipped-overshoot": ["굵기 오차 증가 · 경계 강조 생략", "Width error would increase · emphasis skipped"],
+};
 
 function paintRgbaToCanvas(
   canvas: HTMLCanvasElement | null,
@@ -83,7 +91,7 @@ function paintRgbaToCanvas(
   ctx.putImageData(imageData, 0, 0);
 }
 
-/** 온디바이스 화풍 DNA 일치화 · 대본 자동 콘티 · 스마트 브러시 추천 스튜디오 패널. */
+/** 원고 저장·펜 입력과 분리된 임시 대본 및 합성 화풍·브러시 추천 미리보기. */
 export function StudioAiLatentStoryboardPanel({
   locale,
   className,
@@ -93,14 +101,16 @@ export function StudioAiLatentStoryboardPanel({
   onContiGenerated,
   onStyleHarmonized,
   onBrushRecommended,
-}: StudioAiLatentStoryboardPanelProps): ReactElement {
+}: StudioAiLatentStoryboardPanelProps = {}): ReactElement {
   const uid = useId();
   const storeLang = useI18n((s) => s.lang);
   const isEn = (locale ?? (storeLang.toLowerCase().startsWith("en") ? "en" : "ko")) === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
 
   const [activeTab, setActiveTab] = useState<AiLatentStoryboardTab>(initialTab);
-  const [scriptText, setScriptText] = useState<string>(SCRIPT_CONTI_PRESETS[0]!.script);
+  const [scriptPresetId, setScriptPresetId] = useState<ScriptContiPreset["id"]>("rooftop-confrontation");
+  const [scriptDrafts, setScriptDrafts] = useState<Partial<Record<ScriptContiPreset["id"], string>>>({});
+  const scriptText = scriptDrafts[scriptPresetId] ?? SCRIPT_CONTI_PRESETS.find((preset) => preset.id === scriptPresetId)?.script ?? "";
 
   const [stylePreset, setStylePreset] = useState<StylePresetId>(initialStylePreset);
   const [colorStrengthPct, setColorStrengthPct] = useState<number>(88);
@@ -179,8 +189,8 @@ export function StudioAiLatentStoryboardPanel({
 
   const tabs: readonly { readonly id: AiLatentStoryboardTab; readonly label: string; readonly icon: ReactElement }[] = [
     { id: "conti", label: pick("대본 → 세로 콘티", "Script → Conti"), icon: <FileText className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "harmonizer", label: pick("화풍 DNA 일치화", "Style DNA Match"), icon: <Palette className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "brush", label: pick("스마트 브러시 · 종이결", "Smart Brush & Paper"), icon: <Brush className="h-3.5 w-3.5" aria-hidden="true" /> },
+    { id: "harmonizer", label: pick("합성 화풍 미리보기", "Synthetic Style Preview"), icon: <Palette className="h-3.5 w-3.5" aria-hidden="true" /> },
+    { id: "brush", label: pick("규칙 기반 브러시 추천", "Rule-Based Brush Suggestions"), icon: <Brush className="h-3.5 w-3.5" aria-hidden="true" /> },
   ];
 
   const activeStyleMeta = STYLE_HARMONIZER_PRESETS.find((p) => p.id === stylePreset) ?? STYLE_HARMONIZER_PRESETS[0]!;
@@ -189,9 +199,10 @@ export function StudioAiLatentStoryboardPanel({
     <section
       data-testid="ai-latent-storyboard-panel"
       aria-label={pick(
-        "온디바이스 화풍 DNA 일치화 · 대본 자동 콘티 · 스마트 브러시 추천기",
-        "On-Device Style DNA Harmonizer, Script-to-Conti & Smart Brush Recommender",
+        "로컬 CPU 계산 · 규칙 기반 대본 콘티 · 합성 화풍과 브러시 추천 미리보기",
+        "Local CPU rules: temporary script conti, synthetic style and brush suggestion preview",
       )}
+      aria-describedby={`${uid}-execution-scope`}
       className={`space-y-4 rounded-xl border border-border bg-panel p-4 text-foreground [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -199,13 +210,13 @@ export function StudioAiLatentStoryboardPanel({
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-fg">
-              {pick("온디바이스 AI 화풍 DNA · 세로 콘티 · 스마트 브러시", "On-Device Style DNA · Vertical Conti · Smart Brush")}
+              {pick("로컬 대본 콘티 · 합성 화풍 · 브러시 추천", "Local Script Conti · Synthetic Style · Brush Suggestions")}
             </h2>
           </div>
-          <p className="text-xs text-fg-2">
+          <p id={`${uid}-execution-scope`} className="text-xs text-fg-2">
             {pick(
-              "외부 유료 API 없이 기기 안에서 대본 세로 콘티 변환, 3D 배경 화풍 일치화(ΔE00), 레이어별 브러시·종이결 추천을 실행합니다.",
-              "Deterministic on-device script-to-conti parsing, OKLCH/LUT style DNA harmonization (ΔE00), and context-aware brush pairing.",
+              "이 기기의 CPU로 색상 계산과 규칙 기반 추천을 실행합니다. 화풍은 합성 이미지, 브러시는 수동 입력으로 비교합니다. 모델 추론·실제 원고·펜·저장과 연결되어 있지 않습니다.",
+              "Local CPU color calculations and rule-based suggestions use synthetic images and manual brush inputs. No model inference, manuscript, pen or save integration is connected.",
             )}
           </p>
         </div>
@@ -215,7 +226,7 @@ export function StudioAiLatentStoryboardPanel({
           className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-good/40 bg-good/15 px-2.5 py-1 text-xs font-semibold text-good"
         >
           <Cpu className="h-3 w-3" aria-hidden="true" />
-          {pick("온디바이스 100% · API ₩0", "100% On-Device · $0 API")}
+          {pick("온디바이스 100% · CPU · API ₩0", "100% On-Device · CPU · $0 API")}
         </span>
       </header>
 
@@ -246,7 +257,7 @@ export function StudioAiLatentStoryboardPanel({
         <div role="tabpanel" id={`${uid}-panel-conti`} aria-labelledby={`${uid}-tab-conti`} data-testid="panel-conti" className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             {SCRIPT_CONTI_PRESETS.map((preset) => (
-              <button key={preset.id} type="button" data-testid={`preset-script-${preset.id}`} onClick={() => setScriptText(preset.script)} className={BTN_OUTLINE}>
+              <button key={preset.id} type="button" data-testid={`preset-script-${preset.id}`} aria-pressed={scriptPresetId === preset.id} onClick={() => setScriptPresetId(preset.id)} className={BTN_OUTLINE}>
                 {isEn ? preset.labelEn : preset.labelKo}
               </button>
             ))}
@@ -261,9 +272,19 @@ export function StudioAiLatentStoryboardPanel({
               data-testid="conti-script-textarea"
               rows={5}
               value={scriptText}
-              onChange={(e) => setScriptText(e.target.value)}
+              aria-describedby={`${uid}-draft-notice`}
+              onChange={(e) => {
+                const text = e.currentTarget.value;
+                setScriptDrafts((previous) => ({ ...previous, [scriptPresetId]: text }));
+              }}
               className={`w-full rounded-lg border border-line bg-raised px-3 py-2 text-xs leading-relaxed text-fg ${FOCUS_RING}`}
             />
+            <p id={`${uid}-draft-notice`} data-testid="conti-draft-notice" className="text-xs text-fg-2">
+              {pick(
+                "예시별 입력은 패널이 열린 동안 유지됩니다. 닫기·화면 이동·새로고침 전 대본을 따로 보관하세요. 원고에 저장되지 않습니다.",
+                "Edits stay with each example while this panel is mounted. Copy your script before closing, leaving this screen or refreshing. It is not saved to your manuscript.",
+              )}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-live="polite">
@@ -286,7 +307,7 @@ export function StudioAiLatentStoryboardPanel({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5 sm:col-span-2">
               <label htmlFor={`${uid}-style-preset`} className="block text-xs font-medium text-fg-2">
-                {pick("작가 기준 컷 화풍 DNA 프리셋", "Reference Cut Style DNA Preset")}
+                {pick("합성 기준 컷 색상 프리셋", "Synthetic Reference Color Preset")}
               </label>
               <select id={`${uid}-style-preset`} data-testid="select-style-preset" value={stylePreset} onChange={(e) => setStylePreset(e.target.value as StylePresetId)} className={SELECT_CLS}>
                 {STYLE_HARMONIZER_PRESETS.map((preset) => (
@@ -299,7 +320,7 @@ export function StudioAiLatentStoryboardPanel({
             <div className="flex items-end gap-2">
               <button type="button" data-testid="btn-oneclick-harmonize" onClick={handleApplyOneClickHarmonize} className={`${BTN_PRIMARY} flex-1`}>
                 <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
-                {pick("1클릭 일치화", "1-Click Match")}
+                {pick("샘플 보정", "Adjust Sample")}
               </button>
               <button type="button" data-testid="btn-reset-harmonize" onClick={handleResetHarmonizer} className={BTN_OUTLINE}>
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
@@ -311,16 +332,16 @@ export function StudioAiLatentStoryboardPanel({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <RangeSliderRow id={`${uid}-color-strength`} testId="slider-color-strength" label={pick("OKLCH 색조 일치", "OKLCH Match")} valueText={`${colorStrengthPct}%`} min={0} max={100} step={5} value={colorStrengthPct} onChange={setColorStrengthPct} />
             <RangeSliderRow id={`${uid}-lut-strength`} testId="slider-lut-strength" label={pick("3D LUT 톤 커브", "3D LUT Curve")} valueText={`${lutStrengthPct}%`} min={0} max={100} step={5} value={lutStrengthPct} onChange={setLutStrengthPct} />
-            <RangeSliderRow id={`${uid}-lineart-sync`} testId="slider-lineart-sync" label={pick("선화 굵기 동기화", "Line Width Sync")} valueText={`${lineartSyncPct}%`} min={0} max={100} step={5} value={lineartSyncPct} onChange={setLineartSyncPct} />
+            <RangeSliderRow id={`${uid}-lineart-sync`} testId="slider-lineart-sync" label={pick("얇은 선 경계 강조", "Thinner Line Emphasis")} valueText={`${lineartSyncPct}%`} min={0} max={100} step={5} value={lineartSyncPct} onChange={setLineartSyncPct} />
             <RangeSliderRow id={`${uid}-screentone-blend`} testId="slider-screentone-blend" label={pick("스크린톤 피치", "Screentone Blend")} valueText={`${screentoneBlendPct}%`} min={0} max={100} step={5} value={screentoneBlendPct} onChange={setScreentoneBlendPct} />
           </div>
 
           <figure className="space-y-2 rounded-lg border border-line bg-card p-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <span className="font-semibold text-fg">
-                {pick(`3분할 실시간 비교 — ${activeStyleMeta.labelKo}`, `3-Way Comparison — ${activeStyleMeta.labelEn}`)}
+                {pick(`합성 샘플 3분할 비교 — ${activeStyleMeta.labelKo}`, `Synthetic 3-Way Comparison — ${activeStyleMeta.labelEn}`)}
               </span>
-              <span className="text-fg-3">{pick("좌: 기준 컷 DNA · 중: 보정 전 3D 배경 · 우: 1클릭 일치화", "Left: Ref · Mid: 3D Raw · Right: Harmonized")}</span>
+              <span className="text-fg-3">{pick("좌: 합성 기준 컷 · 중: 합성 배경 원본 · 우: 색상 보정", "Left: Synthetic Ref · Mid: Synthetic Raw · Right: Adjusted")}</span>
             </div>
             <canvas
               ref={harmonizerCanvasRef}
@@ -328,7 +349,7 @@ export function StudioAiLatentStoryboardPanel({
               height={HARMONIZER_TILE_H}
               role="img"
               data-testid="style-harmonizer-canvas"
-              aria-label={pick("기준 컷 화풍 DNA, 보정 전 3D 배경, 일치화 결과 3분할 비교 캔버스", "Reference cut, unadjusted 3D background, and harmonized output comparison canvas")}
+              aria-label={pick("합성 기준 컷·합성 배경·CPU 색상 보정 비교. 실제 원고와 3D 렌더는 연결되지 않은 미리보기", "Synthetic reference, synthetic background and CPU color adjustment preview; no manuscript or 3D render connected")}
               className="h-36 w-full rounded-md border border-line bg-canvas object-cover"
             />
             <figcaption className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4" aria-live="polite">
@@ -338,6 +359,11 @@ export function StudioAiLatentStoryboardPanel({
               <MetricCard label={pick("3D LUT · 선화 오차", "3D LUT · Line Err")} value={`${harmonizationReport.lutGridSize}³ · ${harmonizationReport.lineartWidthErrorAfterPx}px`} testId="harmonizer-line-error" />
             </figcaption>
           </figure>
+
+          <p className="text-xs text-fg-2">{pick("얇게 만들기는 지원하지 않습니다. 굵기 오차가 커지는 경계 강조는 생략합니다.", "Thinning is unsupported. Line emphasis is skipped when width error would increase.")}</p>
+          <p data-testid="harmonizer-line-status" role="status" className="text-xs text-fg-2">
+            {pick(...LINEART_STATUS_LABELS[harmonizationReport.lineartSyncStatus])}
+          </p>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="style-dna-summary">
             <MetricCard label={pick("그림자 OKLCH 색조", "Shadow OKLCH Hue")} value={`${Math.round(referenceStyleDna.shadowOklch.h)}° · C ${referenceStyleDna.shadowOklch.c.toFixed(3)}`} />
@@ -350,6 +376,7 @@ export function StudioAiLatentStoryboardPanel({
 
       {activeTab === "brush" && (
         <div role="tabpanel" id={`${uid}-panel-brush`} aria-labelledby={`${uid}-tab-brush`} data-testid="panel-brush" className="space-y-4">
+          <p className="text-xs text-fg-2">{pick("수동 입력과 고정 후보를 비교한 추천입니다. 실제 펜·레이어 감지나 브러시·종이·소리 적용은 연결되어 있지 않습니다.", "Suggestions compare manual inputs with a fixed catalog. Live pen/layer detection and brush, paper or sound application are not connected.")}</p>
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-medium text-fg-2">
               <Layers className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
@@ -378,7 +405,7 @@ export function StudioAiLatentStoryboardPanel({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <RangeSliderRow id={`${uid}-stroke-speed`} testId="slider-stroke-speed" label={pick("스트로크 속도", "Stroke Speed")} valueText={`${telemetry.strokeSpeedPxPerSec} px/s`} min={80} max={2000} step={20} value={telemetry.strokeSpeedPxPerSec} onChange={(v) => setTelemetry((prev) => ({ ...prev, strokeSpeedPxPerSec: v }))} />
-            <RangeSliderRow id={`${uid}-pressure-var`} testId="slider-pressure-var" label={pick("필압 분산", "Pressure Variance")} valueText={telemetry.pressureVariance.toFixed(2)} min={0.01} max={0.32} step={0.01} value={telemetry.pressureVariance} onChange={(v) => setTelemetry((prev) => ({ ...prev, pressureVariance: v }))} />
+            <RangeSliderRow id={`${uid}-pressure-var`} testId="slider-pressure-var" label={pick("필압 표준편차", "Pressure Std. Dev.")} valueText={telemetry.pressureVariance.toFixed(2)} min={0.01} max={0.32} step={0.01} value={telemetry.pressureVariance} onChange={(v) => setTelemetry((prev) => ({ ...prev, pressureVariance: v }))} />
             <RangeSliderRow id={`${uid}-curvature`} testId="slider-curvature" label={pick("스트로크 곡률", "Stroke Curvature")} valueText={telemetry.meanCurvature.toFixed(2)} min={0.05} max={0.95} step={0.05} value={telemetry.meanCurvature} onChange={(v) => setTelemetry((prev) => ({ ...prev, meanCurvature: v }))} />
             <RangeSliderRow id={`${uid}-canvas-zoom`} testId="slider-canvas-zoom" label={pick("캔버스 줌", "Canvas Zoom")} valueText={`${telemetry.canvasZoomPct}%`} min={40} max={400} step={10} value={telemetry.canvasZoomPct} onChange={(v) => setTelemetry((prev) => ({ ...prev, canvasZoomPct: v }))} />
           </div>
@@ -400,7 +427,7 @@ export function StudioAiLatentStoryboardPanel({
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-good/40 bg-good/15 px-2 py-0.5 font-semibold text-good tabular-nums">
                     <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-                    {item.matchScore}%
+                    {pick("추천 점수", "Rule Score")} {item.matchScore}/100
                   </span>
                 </div>
 

@@ -1,7 +1,7 @@
 /**
  * 문맥 기반 스마트 ToonStudio 브러시 Top-3 · Wave 37A 물리 마찰음 매체·종이결 추천기.
  *
- * - 스트로크 속도(px/s) · 필압 분산 · 곡률(0..1) · 캔버스 줌(%) · 작업 레이어 단계(`rough|lineart|flat|shading|fx`)를
+ * - 스트로크 속도(px/s) · 필압 표준편차 · 곡률(0..1) · 캔버스 줌(%) · 작업 레이어 단계(`rough|lineart|flat|shading|fx`)를
  *   온디바이스 결정론적 다요인 스코어링으로 분석한다.
  * - Wave 37A 물리 마찰음 6종 매체(`BrushFrictionMediumId`) · 5종 종이결(`StudioPaperTextureId`) ·
  *   Foley 오디오 프리셋을 자동 페어링한다.
@@ -42,7 +42,7 @@ export interface SmartBrushTelemetryInput {
   readonly layerStage: BrushLayerStage;
   /** 스트로크 평균 속도 (px/s, 20..3000). */
   readonly strokeSpeedPxPerSec: number;
-  /** 필압 표준편차/분산 지표 (0..0.40, 높을수록 강약 폭이 큼). */
+  /** 필압 표준편차 (0..0.40, 높을수록 강약 폭이 큼). 기존 필드명은 호환용으로 유지한다. */
   readonly pressureVariance: number;
   /** 정규화 스트로크 곡률 (0..1, 높을수록 급커브·세밀 디테일). */
   readonly meanCurvature: number;
@@ -493,7 +493,7 @@ function gaussianSim(diff: number, sigma: number): number {
   return Math.exp(-0.5 * ratio * ratio);
 }
 
-/** 원시 스타일러스 포인트 배열에서 속도·필압 분산·곡률 텔레메트리를 추출한다. */
+/** 원시 스타일러스 포인트 배열에서 속도·필압 표준편차·곡률 텔레메트리를 추출한다. */
 export function extractStrokeTelemetryFromPoints(
   points: readonly RawStrokeTelemetryPoint[],
   canvasZoomPct: number,
@@ -657,7 +657,7 @@ export function recommendSmartBrushes(rawInput: SmartBrushTelemetryInput): Smart
   ];
 
   const zoomTag = input.canvasZoomPct >= 200 ? "고배율 정밀 구간" : input.canvasZoomPct <= 85 ? "저배율 전체 구도" : "표준 작업 배율";
-  const detectedStyleSummaryKo = `${stageMeta.labelKo} · ${zoomTag}(${Math.round(input.canvasZoomPct)}%) · 속도 ${Math.round(input.strokeSpeedPxPerSec)}px/s · 필압 분산 ${input.pressureVariance.toFixed(2)} · 곡률 ${input.meanCurvature.toFixed(2)}`;
+  const detectedStyleSummaryKo = `${stageMeta.labelKo} · ${zoomTag}(${Math.round(input.canvasZoomPct)}%) · 속도 ${Math.round(input.strokeSpeedPxPerSec)}px/s · 필압 표준편차 ${input.pressureVariance.toFixed(2)} · 곡률 ${input.meanCurvature.toFixed(2)}`;
 
   return {
     input,

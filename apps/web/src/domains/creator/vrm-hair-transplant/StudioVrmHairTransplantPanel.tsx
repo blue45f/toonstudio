@@ -45,6 +45,8 @@ export interface StudioVrmHairTransplantPanelProps {
   readonly initialTargetProportionId?: TargetHeadProportionId;
   readonly donorVrm?: VrmTransplantActorLike | null;
   readonly targetVrm?: VrmTransplantActorLike | null;
+  readonly onPlanCalculated?: (manifest: VrmHairTransplantManifest) => void;
+  /** 연결된 VRM의 실제 이식이 성공한 경우에만 계획 설정을 전달한다. */
   readonly onApplyTransplant?: (manifest: VrmHairTransplantManifest) => void;
   readonly onLiveHandleChange?: (handle: VrmHairTransplantResultHandle | null) => void;
 }
@@ -84,6 +86,7 @@ export function StudioVrmHairTransplantPanel({
   initialTargetProportionId = "korean-webtoon-72",
   donorVrm = null,
   targetVrm = null,
+  onPlanCalculated,
   onApplyTransplant,
   onLiveHandleChange,
 }: StudioVrmHairTransplantPanelProps = {}): ReactElement {
@@ -103,9 +106,12 @@ export function StudioVrmHairTransplantPanel({
   const [harmonyPct, setHarmonyPct] = useState<number>(82);
   const [replaceOriginalHair, setReplaceOriginalHair] = useState<boolean>(true);
   const [enableOutlineMesh, setEnableOutlineMesh] = useState<boolean>(true);
+  const [plannedManifest, setPlannedManifest] = useState<VrmHairTransplantManifest | null>(null);
   const [appliedManifest, setAppliedManifest] = useState<VrmHairTransplantManifest | null>(null);
   const [liveError, setLiveError] = useState<string | null>(null);
-  const [liveTransplantActive, setLiveTransplantActive] = useState<boolean>(false);
+  const hasLiveVrms = donorVrm !== null && targetVrm !== null;
+  const liveTransplantActive = appliedManifest !== null;
+  const completedManifest = appliedManifest ?? plannedManifest;
 
   const liveHandleRef = useRef<VrmHairTransplantResultHandle | null>(null);
 
@@ -148,13 +154,22 @@ export function StudioVrmHairTransplantPanel({
     tipSwayPct,
   ]);
 
+  const releaseLiveTransplant = useCallback(() => {
+    const handle = liveHandleRef.current;
+    liveHandleRef.current = null;
+    if (handle) {
+      if (!handle.isDisposed()) handle.dispose();
+      onLiveHandleChange?.(null);
+    }
+    setAppliedManifest(null);
+  }, [onLiveHandleChange]);
+
   const handleApplyTransplant = useCallback(() => {
     setLiveError(null);
+    setPlannedManifest(null);
+    releaseLiveTransplant();
     if (donorVrm && targetVrm) {
       try {
-        if (liveHandleRef.current && !liveHandleRef.current.isDisposed()) {
-          liveHandleRef.current.dispose();
-        }
         const scaleFactor = scalePct / 100;
         const handle = transplantVrmHair(donorVrm, targetVrm, {
           replaceOriginalHair,
@@ -170,7 +185,6 @@ export function StudioVrmHairTransplantPanel({
           },
         });
         liveHandleRef.current = handle;
-        setLiveTransplantActive(true);
         onLiveHandleChange?.(handle);
       } catch (err) {
         setLiveError(
@@ -182,9 +196,12 @@ export function StudioVrmHairTransplantPanel({
         );
         return;
       }
+      setAppliedManifest(manifest);
+      onApplyTransplant?.(manifest);
+    } else {
+      setPlannedManifest(manifest);
+      onPlanCalculated?.(manifest);
     }
-    setAppliedManifest(manifest);
-    onApplyTransplant?.(manifest);
   }, [
     donorVrm,
     enableOutlineMesh,
@@ -195,6 +212,8 @@ export function StudioVrmHairTransplantPanel({
     offsetZMm,
     onApplyTransplant,
     onLiveHandleChange,
+    onPlanCalculated,
+    releaseLiveTransplant,
     replaceOriginalHair,
     scalePct,
     scalpPinPct,
@@ -204,14 +223,9 @@ export function StudioVrmHairTransplantPanel({
 
   const handleRollback = useCallback(() => {
     setLiveError(null);
-    if (liveHandleRef.current && !liveHandleRef.current.isDisposed()) {
-      liveHandleRef.current.dispose();
-      liveHandleRef.current = null;
-      onLiveHandleChange?.(null);
-    }
-    setLiveTransplantActive(false);
-    setAppliedManifest(null);
-  }, [onLiveHandleChange]);
+    setPlannedManifest(null);
+    releaseLiveTransplant();
+  }, [releaseLiveTransplant]);
 
   const handleResetTuning = useCallback(() => {
     setOffsetYMm(0);
@@ -264,9 +278,12 @@ export function StudioVrmHairTransplantPanel({
           </div>
           <p className="text-xs text-fg-2">
             {pick(
-              "내장 아티스트 VRM에서 실물 UV·SpringBone 헤어를 추출해 두개골 정렬, 두피→끝단 스키닝 재매핑, MToon DNA 색조 조화를 한 번에 적용합니다.",
-              "Extracts artist-sculpted UV & SpringBone hair from built-in VRM models with skull alignment, root-to-tip skinning re-binding, and MToon DNA harmonization.",
+              hasLiveVrms ? "연결된 도너·타깃 VRM에 헤어 메시 정렬, 본 웨이트 재매핑, MToon 색조 보정을 적용합니다. 아래 프리셋은 계획 계산용입니다." : "내장 도너·타깃 프리셋으로 헤어 정렬·본 웨이트·색조 보정 계획을 계산합니다. 3D 씬에는 반영하지 않습니다.",
+              hasLiveVrms ? "Applies hair alignment, skin weights, and MToon color tuning to the connected VRMs. Presets below are for planning." : "Calculates alignment, skin-weight, and color plans from built-in presets. No 3D scene is changed.",
             )}
+          </p>
+          <p data-testid="vrm-hair-physics-status" className="text-xs text-fg-2">
+            {pick("본 웨이트와 체인 구성까지 지원합니다. SpringBone 물리 업데이트는 연결되지 않았습니다.", "Supports skin weights and bone-chain construction. SpringBone physics updates are not connected.")}
           </p>
         </div>
 
@@ -287,7 +304,7 @@ export function StudioVrmHairTransplantPanel({
             onClick={handleApplyTransplant}
           >
             <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-            {pick("원클릭 헤어 이식", "Apply Hair Transplant")}
+            {hasLiveVrms ? pick("실제 헤어 이식", "Apply Live Hair Transplant") : pick("이식 계획 계산", "Calculate Transplant Plan")}
           </button>
         </div>
       </header>
@@ -297,7 +314,7 @@ export function StudioVrmHairTransplantPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
             <Scissors className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>{pick("① 도너 VRM 실물 헤어 선택 (내장 쇼케이스)", "1. Donor VRM Hair Catalog")}</span>
+            <span>{pick("① 계획용 도너 VRM 헤어 프리셋", "1. Donor VRM Hair Planning Presets")}</span>
           </div>
           <span className="text-xs text-fg-2 tabular-nums">
             {pick(
@@ -499,7 +516,7 @@ export function StudioVrmHairTransplantPanel({
                     {`${isEn ? band.labelEn : band.labelKo} (${Math.round(band.dropRangeRatio[0] * 100)}~${Math.round(band.dropRangeRatio[1] * 100)}%)`}
                   </span>
                   <span className="text-fg-2 tabular-nums">
-                    {`head ${headPct}% · SpringBone ${swayPct}%`}
+                    {`head ${headPct}% · ${pick("보조 본", "secondary bones")} ${swayPct}%`}
                   </span>
                 </div>
                 <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-canvas">
@@ -540,7 +557,7 @@ export function StudioVrmHairTransplantPanel({
 
           <div className="space-y-1">
             <label htmlFor={tipSwayId} className="flex items-center justify-between text-xs font-medium text-fg">
-              <span>{pick("모발 끝단 SpringBone 탄성", "Tip Secondary Sway")}</span>
+              <span>{pick("모발 끝단 보조 본 웨이트", "Tip Secondary Bone Weight")}</span>
               <span className="tabular-nums text-accent">{`${tipSwayPct}%`}</span>
             </label>
             <input
@@ -678,7 +695,7 @@ export function StudioVrmHairTransplantPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
             <SlidersHorizontal className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>{pick("⑤ 이식 실행 매니페스트", "5. One-Click Transplant Manifest")}</span>
+            <span>{pick("⑤ 이식 계획과 실제 적용 상태", "5. Transplant Plan and Live Status")}</span>
           </div>
           <span data-testid="vrm-hair-manifest-signature" className="font-mono text-xs text-fg-2 tabular-nums">
             {manifest.createdSignature}
@@ -693,7 +710,7 @@ export function StudioVrmHairTransplantPanel({
             </div>
           </div>
           <div>
-            <span className="text-fg-2">{pick("가상 SpringBone", "Virtual SpringBone")}</span>
+            <span className="text-fg-2">{pick("계획된 본 체인 구성", "Planned Bone Chains")}</span>
             <div className="mt-0.5 font-semibold text-fg tabular-nums">
               {pick(
                 `${manifest.skinPreview.springChainCount}구역 · 보조 본 ${manifest.skinPreview.secondaryBoneCount}개`,
@@ -719,9 +736,9 @@ export function StudioVrmHairTransplantPanel({
           </div>
         ) : null}
 
-        {appliedManifest ? (
+        {completedManifest ? (
           <div
-            data-testid="vrm-hair-applied-status"
+            data-testid={liveTransplantActive ? "vrm-hair-applied-status" : "vrm-hair-plan-status"}
             role="status"
             aria-live="polite"
             className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-good/40 bg-good-soft px-3 py-2 text-xs text-good"
@@ -730,8 +747,8 @@ export function StudioVrmHairTransplantPanel({
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
               <span>
                 {pick(
-                  `이식 적용 완료 (${appliedManifest.donorStyleLabelKo} · ${appliedManifest.createdSignature})${liveTransplantActive ? " · 3D 씬 반영됨" : ""}`,
-                  `Transplant applied (${appliedManifest.donorStyleLabelKo} · ${appliedManifest.createdSignature})${liveTransplantActive ? " · Live 3D active" : ""}`,
+                  liveTransplantActive ? "연결된 VRM에 헤어 이식 완료 · 현재 3D 씬 반영됨" : `이식 계획 계산 완료 (${completedManifest.donorStyleLabelKo} · ${completedManifest.createdSignature}) · 3D 씬 미반영`,
+                  liveTransplantActive ? "Hair transplanted to connected VRM · Live 3D scene updated" : `Transplant plan calculated (${completedManifest.createdSignature}) · No 3D scene changes`,
                 )}
               </span>
             </div>
@@ -742,7 +759,7 @@ export function StudioVrmHairTransplantPanel({
               className={BTN_GHOST}
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-              {pick("이식 원복", "Rollback")}
+              {liveTransplantActive ? pick("이식 원복", "Rollback Transplant") : pick("계획 지우기", "Clear Plan")}
             </button>
           </div>
         ) : null}

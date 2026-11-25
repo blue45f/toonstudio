@@ -435,14 +435,14 @@ describe("Wave 41B: 한국어 어절 광학 말풍선 자동 조판 · 세로쓰
     expect(screen.getByTestId("sfx-quad-0")).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("btn-generate-sfx-layer"));
-    expect(screen.getByTestId("sfx-commit-status").textContent).toContain("벡터 경로");
+    expect(screen.getByTestId("sfx-commit-status").textContent).toContain("폰트 의존 SVG 텍스트 예제");
     expect(onSfx).toHaveBeenCalled();
   });
 
   it("20. 영문 로케일(locale='en') 지원 및 모듈 5개 파일의 정적 위생·구조 규칙을 100% 통과한다", () => {
     render(<StudioKoreanLetteringSfxPanel initialTab="sfx-vector" locale="en" />);
     expect(screen.getByTestId("sfx-script-badge").textContent).toContain("Korean (KO)");
-    expect(screen.getByTestId("btn-generate-sfx-layer").textContent).toContain("Commit SFX Vector Layer");
+    expect(screen.getByTestId("btn-generate-sfx-layer").textContent).toContain("Inspect SFX Text Example");
 
     const files = [
       "korean-balloon-typesetter.ts",

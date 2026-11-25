@@ -8,6 +8,11 @@
  * - 100% 온디바이스 결정론 연산 (브라우저 스토리지 및 비결정 난수 미사용)
  */
 
+import { buildBalloonSvgGeometry } from "./balloon-svg-geometry";
+import { assertBalloonInput, assertLetteringText, assertTokenBudget, MAX_DIALOGUE_LENGTH, segmentTextGraphemes } from "./lettering-input-contract";
+
+export { buildBalloonSvgGeometry } from "./balloon-svg-geometry";
+
 export type BalloonShapeId = "oval" | "burst" | "whisper" | "thought" | "caption";
 export type BalloonWritingMode = "horizontal-tb" | "vertical-rl";
 export type ReadingDensityGrade = "crisp" | "balanced" | "dense" | "overcrowded";
@@ -71,6 +76,9 @@ export interface KoreanBalloonTypesetResult {
   readonly lines: readonly TypesetBalloonLine[]; readonly verticalColumns: readonly VerticalBalloonColumn[];
   readonly diamondBalanceScore: number; readonly orphanLineCount: number;
   readonly orphanGuardApplied: boolean; readonly eojeolPreserved: boolean; readonly maxOverflowRatio: number;
+  readonly verticalOverflowPx: number;
+  readonly horizontalOverflowPx: number;
+  readonly hasLayoutOverflow: boolean;
   readonly readingTime: BalloonReadingTimeReport;
   readonly balloonOutlinePath: string; readonly tailPath: string;
   readonly thoughtDots: readonly ThoughtBubbleDot[]; readonly inscribedCurveGuides: readonly InscribedCurveGuide[];
@@ -175,7 +183,7 @@ export function measureOpticalCharWidthEm(ch: string): number {
 
 /** 문자열의 광학 폭(em)을 자간까지 반영해 계산한다. */
 export function measureOpticalTextWidthEm(text: string, letterSpacingEm = 0.02): number {
-  const chars = Array.from(text);
+  const chars = segmentTextGraphemes(text.normalize("NFC"));
   if (chars.length === 0) return 0;
   let width = 0;
   for (let i = 0; i < chars.length; i += 1) {
@@ -188,7 +196,7 @@ export function measureOpticalTextWidthEm(text: string, letterSpacingEm = 0.02):
 /** 공백을 제외한 가시 글자 수를 반환한다. */
 export function countVisibleGlyphs(text: string): number {
   let count = 0;
-  for (const ch of Array.from(text)) {
+  for (const ch of segmentTextGraphemes(text)) {
     if (!/\s/u.test(ch)) count += 1;
   }
   return count;
@@ -221,6 +229,7 @@ interface ParagraphTokens {
 
 /** 한국어 어절(`word-break: keep-all`)을 분리하고 금칙 문장부호를 직전 어절에 결합한다. */
 export function tokenizeKoreanEojeol(text: string, maxEmergencyTokenEm = 18): readonly ParagraphTokens[] {
+  assertLetteringText(text, MAX_DIALOGUE_LENGTH);
   const normalized = text.replaceAll("\r\n", "\n").trim();
   if (!normalized) return [];
 
@@ -248,7 +257,7 @@ export function tokenizeKoreanEojeol(text: string, maxEmergencyTokenEm = 18): re
         }
         emergencySplitUsed = true;
         let buffer = "";
-        for (const ch of Array.from(token)) {
+        for (const ch of segmentTextGraphemes(token)) {
           const next = `${buffer}${ch}`;
           if (buffer.length > 0 && measureOpticalTextWidthEm(next) > maxEmergencyTokenEm * 0.85) {
             finalTokens.push(buffer);
@@ -283,6 +292,7 @@ function solveDiamondPartitionForLineCount(
   preventOrphans: boolean,
 ): CandidateLinePartition | null {
   const n = eojeols.length;
+  assertTokenBudget(n);
   if (lineCount < 1 || lineCount > n) return null;
 
   const curved = BALLOON_SHAPE_SPECS[shape].curvedProfile;
@@ -442,7 +452,7 @@ export function estimateBalloonReadingTimeSec(text: string, shape: BalloonShapeI
 
   let baseSec = 0.35;
   let visibleGlyphCount = 0;
-  for (const ch of Array.from(trimmed)) {
+  for (const ch of segmentTextGraphemes(trimmed.normalize("NFC"))) {
     if (/\s/u.test(ch)) continue;
     visibleGlyphCount += 1;
     const code = ch.codePointAt(0) ?? 0;
@@ -464,73 +474,6 @@ export function estimateBalloonReadingTimeSec(text: string, shape: BalloonShapeI
   return { readingTimeSec, recommendedCutHoldSec, charsPerSecond, visibleGlyphCount, eojeolCount, densityGrade };
 }
 
-/** 5종 말풍선 SVG 벡터 외곽선 경로와 꼬리/구름 방울을 생성한다. */
-export function buildBalloonSvgGeometry(
-  shape: BalloonShapeId,
-  widthPx: number,
-  heightPx: number,
-  tailSide: "left" | "right" | "none" = "left",
-): { readonly outlinePath: string; readonly tailPath: string; readonly thoughtDots: readonly ThoughtBubbleDot[] } {
-  const cx = widthPx / 2;
-  const cy = heightPx / 2;
-  const rx = Math.max(24, widthPx / 2 - 10);
-  const ry = Math.max(20, heightPx / 2 - 16);
-  const dir = tailSide === "right" ? 1 : -1;
-
-  if (shape === "caption") {
-    const x = 10;
-    const y = 12;
-    const w = Math.max(40, widthPx - 20);
-    const h = Math.max(36, heightPx - 24);
-    const r = 6;
-    const outlinePath = `M ${round2(x + r)} ${round2(y)} H ${round2(x + w - r)} Q ${round2(x + w)} ${round2(y)} ${round2(x + w)} ${round2(y + r)} V ${round2(y + h - r)} Q ${round2(x + w)} ${round2(y + h)} ${round2(x + w - r)} ${round2(y + h)} H ${round2(x + r)} Q ${round2(x)} ${round2(y + h)} ${round2(x)} ${round2(y + h - r)} V ${round2(y + r)} Q ${round2(x)} ${round2(y)} ${round2(x + r)} ${round2(y)} Z`;
-    return { outlinePath, tailPath: "", thoughtDots: [] };
-  }
-
-  if (shape === "burst") {
-    const spikes = 16;
-    const points: string[] = [];
-    for (let i = 0; i < spikes * 2; i += 1) {
-      const angle = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
-      const boost = i % 2 === 0 ? 1.03 : 0.84;
-      points.push(`${i === 0 ? "M" : "L"} ${round2(cx + Math.cos(angle) * rx * boost)} ${round2(cy + Math.sin(angle) * ry * boost)}`);
-    }
-    const tailPath =
-      tailSide === "none"
-        ? ""
-        : `M ${round2(cx + dir * rx * 0.24)} ${round2(cy + ry * 0.78)} L ${round2(cx + dir * rx * 0.44)} ${round2(heightPx - 2)} L ${round2(cx + dir * rx * 0.08)} ${round2(cy + ry * 0.82)} Z`;
-    return { outlinePath: `${points.join(" ")} Z`, tailPath, thoughtDots: [] };
-  }
-
-  if (shape === "thought") {
-    const bumps = 12;
-    const segs: string[] = [];
-    for (let i = 0; i < bumps; i += 1) {
-      const a0 = (i / bumps) * Math.PI * 2;
-      const a1 = ((i + 1) / bumps) * Math.PI * 2;
-      const aMid = (a0 + a1) / 2;
-      if (i === 0) segs.push(`M ${round2(cx + Math.cos(a0) * rx * 0.92)} ${round2(cy + Math.sin(a0) * ry * 0.92)}`);
-      segs.push(`Q ${round2(cx + Math.cos(aMid) * rx * 1.1)} ${round2(cy + Math.sin(aMid) * ry * 1.1)} ${round2(cx + Math.cos(a1) * rx * 0.92)} ${round2(cy + Math.sin(a1) * ry * 0.92)}`);
-    }
-    const thoughtDots: ThoughtBubbleDot[] =
-      tailSide === "none"
-        ? []
-        : [
-            { cx: round2(cx + dir * rx * 0.28), cy: round2(cy + ry * 0.96), r: 6.5 },
-            { cx: round2(cx + dir * rx * 0.39), cy: round2(cy + ry * 1.07), r: 4.5 },
-            { cx: round2(cx + dir * rx * 0.48), cy: round2(cy + ry * 1.15), r: 3.0 },
-          ];
-    return { outlinePath: `${segs.join(" ")} Z`, tailPath: "", thoughtDots };
-  }
-
-  const outlinePath = `M ${round2(cx - rx)} ${round2(cy)} A ${round2(rx)} ${round2(ry)} 0 1 0 ${round2(cx + rx)} ${round2(cy)} A ${round2(rx)} ${round2(ry)} 0 1 0 ${round2(cx - rx)} ${round2(cy)} Z`;
-  const tailPath =
-    tailSide === "none"
-      ? ""
-      : `M ${round2(cx + dir * rx * 0.16)} ${round2(cy + ry * 0.9)} Q ${round2(cx + dir * rx * 0.28)} ${round2(heightPx - 3)} ${round2(cx + dir * rx * 0.4)} ${round2(heightPx - 2)} Q ${round2(cx + dir * rx * 0.2)} ${round2(cy + ry * 0.96)} ${round2(cx + dir * rx * 0.04)} ${round2(cy + ry * 0.94)} Z`;
-  return { outlinePath, tailPath, thoughtDots: [] };
-}
-
 interface VerticalToken {
   readonly source: string;
   readonly display: string;
@@ -539,7 +482,7 @@ interface VerticalToken {
 }
 
 function buildVerticalTokens(text: string): readonly VerticalToken[] {
-  const chars = Array.from(text.replaceAll("\r\n", "\n"));
+  const chars = segmentTextGraphemes(text.replaceAll("\r\n", "\n"));
   const tokens: VerticalToken[] = [];
   for (let i = 0; i < chars.length; i += 1) {
     const ch = chars[i] ?? "";
@@ -556,7 +499,7 @@ function buildVerticalTokens(text: string): readonly VerticalToken[] {
       continue;
     }
     const code = ch.codePointAt(0) ?? 0;
-    tokens.push({ source: ch, display: ch, rotateDeg: code >= 0x30 && code <= 0x7a ? 90 : 0, tateChuYoko: false });
+    tokens.push({ source: ch, display: ch.normalize("NFC"), rotateDeg: code >= 0x30 && code <= 0x7a ? 90 : 0, tateChuYoko: false });
   }
   return tokens;
 }
@@ -654,6 +597,7 @@ export function typesetKoreanBalloon(
   text: string,
   options?: BalloonTypesetOptions,
 ): KoreanBalloonTypesetResult {
+  assertBalloonInput(text, options);
   const shape: BalloonShapeId = options?.shape ?? "oval";
   const writingMode: BalloonWritingMode = options?.writingMode ?? "horizontal-tb";
   const shapeSpec = BALLOON_SHAPE_SPECS[shape];
@@ -668,6 +612,7 @@ export function typesetKoreanBalloon(
   const centerSafeWidthEm = centerSafeWidthPx / fontSizePx;
 
   const paragraphBlocks = tokenizeKoreanEojeol(text, Math.max(6, centerSafeWidthEm * 1.15));
+  assertTokenBudget(paragraphBlocks.reduce((sum, block) => sum + block.eojeols.length, 0));
   const eojeolPreserved = paragraphBlocks.every((block) => !block.emergencySplitUsed);
 
   const chosenGroups: (readonly string[])[] = [];
@@ -738,6 +683,20 @@ export function typesetKoreanBalloon(
       ? layoutVerticalColumns(text, shape, balloonWidthPx, balloonHeightPx, fontSizePx, lineHeightPx, opticalCenterXPx, opticalCenterYPx)
       : [];
 
+  // 세로 높이와 좌우 경계·열 겹침을 따로 검사한다. 글자 폭은 실측이 아닌 정방형 모델이다.
+  const verticalOverflowPx = verticalColumns.reduce((max, col) => {
+    const allowed = balloonHeightPx * (1 - shapeSpec.innerPaddingRatio * 2) * col.inscribedHeightFactor;
+    return Math.max(max, col.columnHeightPx - allowed);
+  }, 0);
+  const horizontalOverflowPx = writingMode === "vertical-rl"
+    ? verticalColumns.reduce((max, col, index) => {
+      const previous = verticalColumns[index - 1];
+      const sidePaddingPx = balloonWidthPx * shapeSpec.innerPaddingRatio;
+      return Math.max(max, sidePaddingPx - (col.xPx - fontSizePx / 2), col.xPx + fontSizePx / 2 - (balloonWidthPx - sidePaddingPx), previous ? fontSizePx - Math.abs(previous.xPx - col.xPx) : 0);
+    }, 0)
+    : lines.reduce((max, line) => Math.max(max, line.yPx + fontSizePx / 2 - balloonHeightPx, fontSizePx / 2 - line.yPx), 0);
+  const hasLayoutOverflow = horizontalOverflowPx > 0 || (writingMode === "vertical-rl" ? verticalOverflowPx > 0 : maxOverflowRatio > 0);
+
   const { outlinePath, tailPath, thoughtDots } = buildBalloonSvgGeometry(shape, balloonWidthPx, balloonHeightPx, tailSide);
   const inscribedCurveGuides: InscribedCurveGuide[] = [-0.72, -0.36, 0, 0.36, 0.72].map((norm) => {
     const factor = evaluateInscribedWidthFactor(shape, norm);
@@ -758,6 +717,7 @@ export function typesetKoreanBalloon(
     opticalCenterOffsetRatio: shapeSpec.opticalCenterOffsetRatio,
     opticalCenterXPx, opticalCenterYPx, lines, verticalColumns,
     diamondBalanceScore, orphanLineCount, orphanGuardApplied, eojeolPreserved, maxOverflowRatio,
+    verticalOverflowPx: round2(verticalOverflowPx), horizontalOverflowPx: round2(horizontalOverflowPx), hasLayoutOverflow,
     readingTime: estimateBalloonReadingTimeSec(text, shape),
     balloonOutlinePath: outlinePath, tailPath, thoughtDots, inscribedCurveGuides,
   };

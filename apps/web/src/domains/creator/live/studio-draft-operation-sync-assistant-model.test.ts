@@ -155,12 +155,20 @@ describe("resolveStudioDraftOperationSyncAssistant", () => {
 
     expect(model.visible).toBe(true);
     expect(model.tone).toBe("warning");
-    expect(model.compactLabel).toBe("오프라인 · 3개 기기 보관");
+    expect(model.compactLabel).toBe("오프라인 · 변경 3건 전송 대기");
     expect(model.primaryAction).toBe("retry");
-    expect(model.operationSummary).toContain("변경 3개");
-    expect(model.operationSummary).toBe("서버가 다시 연결될 때까지 변경 3개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.");
+    expect(model.ariaLiveMessage).toBe("오프라인 · 변경 3건 전송 대기. 서버 연결을 기다리고 있어요.");
+    expect(model.operationSummary).toBe("협업 변경 3건이 이 기기의 전송 대기열에 저장됐습니다. 아직 팀 서버에 반영되지 않았습니다.");
     expect(model.detail).toBe(model.operationSummary);
     expect(model.serverSummary).toContain("대기 변경이 끝난 뒤");
+  });
+
+  it("대기 변경이 없으면 기기나 서버에 저장됐다고 표시하지 않는다", () => {
+    const model = resolveStudioDraftOperationSyncAssistant(input({
+      syncPhase: "offline-queued", pendingCount: 0, persistenceDurability: "durable", editsDurablyProtected: true,
+    }));
+    expect(model.compactLabel).toBe("오프라인");
+    expect(model.detail).toBe("서버 연결을 기다리고 있어요.");
   });
 
   it.each(["checking", "degraded", "unavailable", "not-applicable"] as const)(
@@ -173,9 +181,9 @@ describe("resolveStudioDraftOperationSyncAssistant", () => {
         editsDurablyProtected: true,
       }));
 
-      expect(model.operationSummary).toBe("변경 3개를 서버가 다시 연결될 때까지 이 기기에 보관합니다.");
+      expect(model.operationSummary).toBe("오프라인 변경 3개 반영 대기");
       expect(model.detail).not.toContain("복구 저장소");
-      expect(model.compactLabel).toBe("오프라인 · 3개 기기 보관");
+      expect(model.compactLabel).toBe("오프라인 · 변경 3건 전송 대기");
       expect(model.primaryAction).toBe("retry");
     },
   );
@@ -207,7 +215,8 @@ describe("resolveStudioDraftOperationSyncAssistant", () => {
     const offline = resolveStudioDraftOperationSyncAssistant(input({ syncPhase: "offline-queued", pendingCount: 3, ...protectedInput }));
 
     expect(synced.operationSummary).toBe("Your manuscript is protected on the team server and in this device's recovery storage.");
-    expect(offline.operationSummary).toBe("Pending changes (3) are kept in this device's recovery storage until the server reconnects. They have not been applied to the team server yet.");
+    expect(offline.operationSummary).toBe("The device's send queue contains 3 collaboration updates. The team server has not acknowledged them yet.");
+    expect(offline.compactLabel).toBe("Offline · Queued updates (3)");
     expect(offline.primaryAction).toBe("retry");
     expect(offline.serverSummary).toContain("대기 변경이 끝난 뒤");
   });

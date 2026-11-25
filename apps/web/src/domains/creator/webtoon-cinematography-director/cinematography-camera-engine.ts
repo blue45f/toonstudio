@@ -7,6 +7,8 @@
  * - 삼분할(Rule of Thirds) · 황금나선(Golden Spiral) · 헤드룸/시선 여백(Lookroom) 구도 조화 점수(0~100)
  */
 
+import { assertComposition, assertRule180Input, assertShots, requireFinite, requirePositive, requireChoice, shotSignature } from "./cinematography-input-contract";
+
 export const FULL_FRAME_SENSOR_MM = { widthMm: 36, heightMm: 24, diagonalMm: Math.hypot(36, 24), cocLimitMm: 0.03 } as const;
 
 export const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
@@ -169,6 +171,9 @@ export interface Rule180AuditInput {
 }
 
 export interface Rule180AuditReport {
+  readonly scope: "calculation-example";
+  readonly sceneApplied: false;
+  readonly shotsSignature: string;
   readonly actorA: StageActor;
   readonly actorB: StageActor;
   readonly axisLengthM: number;
@@ -257,6 +262,8 @@ export function computeCocDiameterMm(
   focusDistanceM: number,
   planeDistanceM: number,
 ): number {
+  requirePositive([focalLengthMm, apertureFStop, focusDistanceM]);
+  if (planeDistanceM !== Number.POSITIVE_INFINITY) requirePositive([planeDistanceM]);
   const f = Math.max(1, focalLengthMm);
   const n = Math.max(0.7, apertureFStop);
   const sMm = Math.max(f + 10, focusDistanceM * 1000);
@@ -268,6 +275,7 @@ export function computeCocDiameterMm(
 
 /** 35mm 풀프레임 기준 핀홀 투영 화각·원근 왜곡·피사계 심도·CoC 블러 통합 계산. */
 export function computePinholeOptics(input: PinholeOpticsInput): PinholeOpticsResult {
+  for (const value of Object.values(input)) if (value !== undefined) requirePositive([value]);
   const focalLengthMm = clamp(input.focalLengthMm, 12, 400);
   const apertureFStop = clamp(input.apertureFStop, 1.0, 22);
   const focusDistanceM = clamp(input.focusDistanceM, 0.35, 100);
@@ -360,6 +368,9 @@ export function projectWorldPointToFrame(
   sensorWidthMm: number = FULL_FRAME_SENSOR_MM.widthMm,
   sensorHeightMm: number = FULL_FRAME_SENSOR_MM.heightMm,
 ): ProjectedPoint2D {
+  requireFinite([worldPoint.x, worldPoint.y, worldPoint.z, camera.position.x, camera.position.y, camera.position.z, camera.lookAt.x, camera.lookAt.y, camera.lookAt.z, camera.rollDeg ?? 0]);
+  requirePositive([focalLengthMm, sensorWidthMm, sensorHeightMm]);
+  if (Math.hypot(camera.lookAt.x - camera.position.x, camera.lookAt.y - camera.position.y, camera.lookAt.z - camera.position.z) <= EPSILON) throw new RangeError("카메라 위치와 목표는 달라야 합니다.");
   const forward = normalizeVec3({
     x: camera.lookAt.x - camera.position.x,
     y: camera.lookAt.y - camera.position.y,
@@ -391,6 +402,7 @@ export function projectWorldPointToFrame(
   const camX = dotVec3(rel, right);
   const camY = dotVec3(rel, up);
   const camZ = dotVec3(rel, forward);
+  requireFinite([camX, camY, camZ]);
   const inFront = camZ > 0.05;
   const safeZ = Math.max(0.05, Math.abs(camZ));
 
@@ -399,17 +411,20 @@ export function projectWorldPointToFrame(
   const u = 0.5 + ndcX * 0.5;
   const v = 0.5 - ndcY * 0.5;
 
+  requireFinite([u, v, ndcX, ndcY]);
   return {
     u: roundTo(u, 4), v: roundTo(v, 4), ndcX: roundTo(ndcX, 4), ndcY: roundTo(ndcY, 4),
     depthM: roundTo(camZ, 3), inFront, insideFrame: inFront && u >= 0 && u <= 1 && v >= 0 && v <= 1,
   };
 }
 
-function reflectCameraAcrossAxis(actorA: Vec2XZ, actorB: Vec2XZ, cameraPos: Vec2XZ, minClearanceM: number = 1.2): Vec2XZ {
+export function reflectCameraAcrossAxis(actorA: Vec2XZ, actorB: Vec2XZ, cameraPos: Vec2XZ, minClearanceM: number = 1.2): Vec2XZ {
+  requireFinite([actorA.x, actorA.z, actorB.x, actorB.z, cameraPos.x, cameraPos.z]);
+  requirePositive([minClearanceM]);
   const lx = actorB.x - actorA.x;
   const lz = actorB.z - actorA.z;
   const lenSq = lx * lx + lz * lz;
-  if (lenSq <= EPSILON) return { x: roundTo(cameraPos.x, 2), z: roundTo(cameraPos.z + minClearanceM, 2) };
+  if (!Number.isFinite(lenSq) || lenSq <= EPSILON * EPSILON) throw new RangeError("반사 축은 서로 다른 유한한 두 위치가 필요합니다.");
 
   const t = ((cameraPos.x - actorA.x) * lx + (cameraPos.z - actorA.z) * lz) / lenSq;
   const projX = actorA.x + t * lx;
@@ -428,6 +443,7 @@ function reflectCameraAcrossAxis(actorA: Vec2XZ, actorB: Vec2XZ, cameraPos: Vec2
 
 /** 연속 컷 180도 법칙(Line-of-Action) 축 넘침 감지기 — 외적 부호 반전 검출 및 거울 반사 대안 좌표 제안. */
 export function audit180DegreeRule(input: Rule180AuditInput): Rule180AuditReport {
+  assertRule180Input(input);
   const { actorA, actorB, shots } = input;
   const aPos = actorA.position;
   const bPos = actorB.position;
@@ -538,6 +554,7 @@ export function audit180DegreeRule(input: Rule180AuditInput): Rule180AuditReport
     : `${violations.length} axis-crossing violation(s) detected — mirror offending camera back across the axis.`;
 
   return {
+    scope: "calculation-example", sceneApplied: false, shotsSignature: shotSignature(shots),
     actorA, actorB, axisLengthM: roundTo(axisLengthM, 2), axisAngleDeg, establishedSide,
     shotAudits, violations, jumpCutCount, compliant, continuityScore, summaryKo, summaryEn,
   };
@@ -548,14 +565,18 @@ export function applySafe180CameraFixes(
   shots: readonly CameraShotSpec[],
   report: Rule180AuditReport,
 ): readonly CameraShotSpec[] {
+  assertShots(shots);
+  if (shotSignature(shots) !== report.shotsSignature) throw new RangeError("샷이 변경되었습니다. 진단을 다시 계산하세요.");
   const fixByShotId = new Map<string, Vec2XZ>();
   for (const item of report.shotAudits) {
     if (item.crossedAxis && item.suggestedSafePosition) fixByShotId.set(item.shotId, item.suggestedSafePosition);
   }
-  return shots.map((shot) => {
+  const fixed = shots.map((shot) => {
     const safePos = fixByShotId.get(shot.shotId);
-    return safePos ? { ...shot, cameraPosition: safePos } : shot;
+    return safePos ? { ...shot, cameraPosition: { ...safePos } } : shot;
   });
+  assertShots(fixed);
+  return fixed;
 }
 
 const RULE_OF_THIRDS_POINTS: readonly NormalizedPoint[] = [
@@ -580,6 +601,8 @@ export function generateGoldenSpiralPathPoints(
   height: number,
   steps: number = 64,
 ): readonly NormalizedPoint[] {
+  requirePositive([width, height, steps]);
+  requireChoice(corner, ["top-left", "top-right", "bottom-left", "bottom-right"]);
   const safeSteps = clamp(Math.round(steps), 16, 180);
   const pole = GOLDEN_SPIRAL_POLES[corner];
   const b = (2 * Math.log(GOLDEN_RATIO)) / Math.PI;
@@ -602,6 +625,7 @@ export function generateGoldenSpiralPathPoints(
 
 /** 삼분할 · 황금나선 · 헤드룸 · 시선 여백(Lookroom) 구도 조화 점수(0~100) 산출기. */
 export function evaluateCompositionHarmony(input: CompositionFrameInput): CompositionHarmonyResult {
+  assertComposition(input);
   const fx = clamp(input.subjectFocalPoint.x, 0, 1);
   const fy = clamp(input.subjectFocalPoint.y, 0, 1);
   const headTopY = clamp(input.headTopY, 0, 0.85);
@@ -719,7 +743,7 @@ export function evaluateCompositionHarmony(input: CompositionFrameInput): Compos
     recommendationsEn.push(`Align subject eyes closer to Rule-of-Thirds (${roundTo(nearestThird.x, 2)}, ${roundTo(nearestThird.y, 2)}).`);
   }
   if (recommendationsKo.length === 0) {
-    recommendationsKo.push("삼분할·황금나선·헤드룸·시선 여백 균형이 안정적입니다. 현재 구도로 즉시 연출 가능합니다.");
+    recommendationsKo.push("삼분할·황금나선·헤드룸·시선 여백 균형이 안정적입니다. 현재 예제 구도의 규칙 점수가 높습니다.");
     recommendationsEn.push("Rule-of-Thirds, Golden Spiral, headroom, and lookroom are well balanced.");
   }
 
@@ -738,54 +762,4 @@ export function evaluateCompositionHarmony(input: CompositionFrameInput): Compos
 }
 
 /** 3종 웹툰 시네마토그래피 검증 데모 씬. */
-export const DEMO_CINEMATOGRAPHY_SCENES: readonly DemoCinematographyScene[] = [
-  {
-    sceneId: "rooftop-confrontation",
-    titleKo: "옥상 대치 · 180도 축 위반 진단",
-    titleEn: "Rooftop Standoff (Axis Violation)",
-    descriptionKo: "3번째 리액션 컷에서 카메라가 시선 축을 넘어 인물 좌우가 뒤바뀌는 실수를 진단·자동 보정합니다.",
-    descriptionEn: "Shot 3 crosses the Line-of-Action and flips actor screen order; mirror-fix in one click.",
-    actorA: { id: "seo-jin", nameKo: "서진", nameEn: "Seojin", position: { x: -2.4, z: 0 } },
-    actorB: { id: "do-yoon", nameKo: "도윤", nameEn: "Doyoon", position: { x: 2.4, z: 0 } },
-    shots: [
-      { shotId: "cut-01-master", labelKo: "컷 1 · 투샷 마스터", labelEn: "Cut 1 · Two-Shot", cameraPosition: { x: 0.0, z: 4.4 }, focalLengthMm: 35 },
-      { shotId: "cut-02-ots-a", labelKo: "컷 2 · 서진 어깨너머", labelEn: "Cut 2 · OTS Seojin", cameraPosition: { x: -3.2, z: 2.5 }, focalLengthMm: 85, targetActorId: "do-yoon" },
-      { shotId: "cut-03-cross-error", labelKo: "컷 3 · 도윤 반격 (축 넘침!)", labelEn: "Cut 3 · Counter (Crossed!)", cameraPosition: { x: 3.1, z: -2.6 }, focalLengthMm: 85, targetActorId: "seo-jin" },
-      { shotId: "cut-04-closeup-a", labelKo: "컷 4 · 서진 클로즈업", labelEn: "Cut 4 · Seojin Close-Up", cameraPosition: { x: 1.4, z: 2.3 }, focalLengthMm: 135, targetActorId: "seo-jin" },
-    ],
-    defaultApertureFStop: 2.0, defaultFocusDistanceM: 3.2, defaultBackgroundDistanceM: 12.0,
-    defaultComposition: { subjectFocalPoint: { x: 0.84, y: 0.48 }, headTopY: 0.02, gazeDirection: "right", shotScale: "medium", goldenSpiralCorner: "auto" },
-  },
-  {
-    sceneId: "cafe-dialogue-ots",
-    titleKo: "카페 OTS 대화 · 정석 180도",
-    titleEn: "Cafe OTS Dialogue (Compliant)",
-    descriptionKo: "85mm·50mm 정석 180도 반구 안에서 시선 여백과 황금나선 구도를 안정적으로 유지합니다.",
-    descriptionEn: "Textbook 180° hemisphere coverage with balanced 50mm/85mm separation and clean lookroom.",
-    actorA: { id: "ha-na", nameKo: "하나", nameEn: "Hana", position: { x: -1.8, z: -0.4 } },
-    actorB: { id: "min-jae", nameKo: "민재", nameEn: "Minjae", position: { x: 1.8, z: 0.4 } },
-    shots: [
-      { shotId: "cafe-01-est", labelKo: "컷 1 · 카페 테이블 설정", labelEn: "Cut 1 · Establishing", cameraPosition: { x: -0.4, z: 4.1 }, focalLengthMm: 35 },
-      { shotId: "cafe-02-hana", labelKo: "컷 2 · 하나 리액션", labelEn: "Cut 2 · Hana Medium", cameraPosition: { x: 2.3, z: 2.4 }, focalLengthMm: 50, targetActorId: "ha-na" },
-      { shotId: "cafe-03-minjae", labelKo: "컷 3 · 민재 클로즈업", labelEn: "Cut 3 · Minjae Close-Up", cameraPosition: { x: -2.4, z: 2.1 }, focalLengthMm: 85, targetActorId: "min-jae" },
-    ],
-    defaultApertureFStop: 1.8, defaultFocusDistanceM: 2.4, defaultBackgroundDistanceM: 8.5,
-    defaultComposition: { subjectFocalPoint: { x: 0.34, y: 0.33 }, headTopY: 0.12, gazeDirection: "right", shotScale: "medium", goldenSpiralCorner: "top-left" },
-  },
-  {
-    sceneId: "alley-chase-wide",
-    titleKo: "골목 24mm 광각 추격 액션",
-    titleEn: "Alley 24mm Wide Action Chase",
-    descriptionKo: "24mm 광각의 극적 원근 과장과 고속 전환 중 발생하는 축 넘침을 점검하는 액션 시퀀스입니다.",
-    descriptionEn: "High-energy 24mm wide pursuit sequence auditing directional clarity and wide distortion.",
-    actorA: { id: "runner", nameKo: "추격자", nameEn: "Pursuer", position: { x: -3.0, z: -1.0 } },
-    actorB: { id: "target", nameKo: "도주자", nameEn: "Target", position: { x: 3.0, z: 1.0 } },
-    shots: [
-      { shotId: "chase-01-wide", labelKo: "컷 1 · 골목 광각 질주", labelEn: "Cut 1 · Wide Sprint", cameraPosition: { x: -1.1, z: 3.6 }, focalLengthMm: 24 },
-      { shotId: "chase-02-flip", labelKo: "컷 2 · 반대측 로우앵글 (축 넘침!)", labelEn: "Cut 2 · Low Angle (Crossed!)", cameraPosition: { x: 1.6, z: -3.2 }, focalLengthMm: 24 },
-      { shotId: "chase-03-tele", labelKo: "컷 3 · 135mm 망원 정면 압박", labelEn: "Cut 3 · 135mm Compression", cameraPosition: { x: 2.6, z: 3.5 }, focalLengthMm: 135 },
-    ],
-    defaultApertureFStop: 4.0, defaultFocusDistanceM: 3.8, defaultBackgroundDistanceM: 18.0,
-    defaultComposition: { subjectFocalPoint: { x: 0.66, y: 0.35 }, headTopY: 0.16, gazeDirection: "left", shotScale: "wide", goldenSpiralCorner: "top-right" },
-  },
-];
+export { DEMO_CINEMATOGRAPHY_SCENES } from "./cinematography-demo-scenes";

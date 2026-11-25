@@ -1,5 +1,5 @@
 /**
- * WebCodecs 4K/60fps 2.5D 무빙툰 릴스 진단·프리뷰·인코딩 검증 탭.
+ * WebCodecs 프로파일 설정 지원 진단 · 64×64 합성 샘플 프로브 · 타임라인 프리뷰 탭.
  */
 
 import { CheckCircle2, Play } from "lucide-react";
@@ -45,6 +45,7 @@ export function WebcodecsReelsTab({ onNotify }: WebcodecsReelsTabProps): ReactEl
   const [probeReport, setProbeReport] = useState<ReelsCodecProbeReport | null>(null);
   const [encodeResult, setEncodeResult] = useState<ReelsEncodeResult | null>(null);
   const [isEncoding, setIsEncoding] = useState<boolean>(false);
+  const [runError, setRunError] = useState<string | null>(null);
 
   const activePreset = useMemo(() => findReelsPresetById(presetId), [presetId]);
   const activeTimeline = useMemo(() => findMovingToonPresetById(timelineId), [timelineId]);
@@ -74,6 +75,8 @@ export function WebcodecsReelsTab({ onNotify }: WebcodecsReelsTabProps): ReactEl
 
   const handleRunReelsEncode = async (): Promise<void> => {
     setIsEncoding(true);
+    setRunError(null);
+    setEncodeResult(null);
     try {
       const encoder = new MovingToonReelsEncoder();
       const result = await encoder.encodeTimeline(activeTimeline, {
@@ -82,8 +85,13 @@ export function WebcodecsReelsTab({ onNotify }: WebcodecsReelsTabProps): ReactEl
       });
       setEncodeResult(result);
       onNotify(
-        `${result.preset.labelKo} ${result.encodedFrames}프레임 인코딩 완료 (${result.codecString}, 서버 비용 0원)`,
+        result.status === "completed"
+          ? `64×64 합성 샘플 ${result.encodedFrames}프레임 코덱 프로브 완료 · 영상 파일 생성 안 함`
+          : `코덱 프로브 ${result.status === "unsupported" ? "미지원" : result.status === "cancelled" ? "취소" : "실패"} · 영상 파일 생성 안 함`,
       );
+    } catch (error: unknown) {
+      setRunError(error instanceof Error ? error.message : String(error));
+      onNotify("코덱 프로브 실패 · 영상 파일 생성 안 함");
     } finally {
       setIsEncoding(false);
     }
@@ -114,20 +122,23 @@ export function WebcodecsReelsTab({ onNotify }: WebcodecsReelsTabProps): ReactEl
           className={BTN_PRIMARY}
         >
           <Play className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>{isEncoding ? "인코딩 실행 중..." : "4K/60fps 릴스 인코딩 검증"}</span>
+          <span>{isEncoding ? "합성 샘플 점검 중..." : "64×64 합성 샘플 코덱 프로브"}</span>
         </button>
       </div>
+
+      <p className="text-xs text-fg-2">선택한 해상도는 설정 지원 여부만 확인합니다. 실행 프로브는 64×64 합성 픽셀을 사용하며 실제 원고·4K 처리 성능·하드웨어 사용을 검증하지 않습니다. 영상 파일은 생성·저장하지 않습니다.</p>
+      {runError ? <p role="alert" className="text-xs text-bad">코덱 프로브 실패: {runError}</p> : null}
 
       {/* 핵심 진단 지표 */}
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <div className="rounded-xl border border-line bg-card p-3">
-          <div className="text-[11px] text-fg-3">인코딩 실행 모드</div>
+          <div className="text-[11px] text-fg-3">선택 프로파일의 설정 지원</div>
           <div className="mt-1 text-xs font-bold text-fg">
             {probeReport?.recommendedMode === "webcodecs-hardware"
-              ? "WebCodecs 하드웨어 가속"
+              ? "하드웨어 선호 설정 지원"
               : probeReport?.recommendedMode === "webcodecs-software"
-                ? "WebCodecs 소프트웨어"
-                : "안전 프레임 시퀀스 폴백"}
+                ? "소프트웨어 선호 설정 지원"
+                : "미지원 또는 확인 중"}
           </div>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
@@ -143,9 +154,9 @@ export function WebcodecsReelsTab({ onNotify }: WebcodecsReelsTabProps): ReactEl
           </div>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
-          <div className="text-[11px] text-fg-3">서버 비용 · 10분 절감액</div>
-          <div className="mt-1 text-xs font-bold tabular-nums text-good">
-            0원 · 약 {probeReport?.cloudGpuSavingsKrwPer10Min.toLocaleString("ko-KR") ?? "1,800"}원 절감
+          <div className="text-[11px] text-fg-3">실행 프로브 범위</div>
+          <div className="mt-1 text-xs font-bold text-fg">
+            64×64 합성 샘플 · 영상 출력 없음
           </div>
         </div>
       </div>
@@ -259,17 +270,20 @@ export function WebcodecsReelsTab({ onNotify }: WebcodecsReelsTabProps): ReactEl
           </ul>
 
           {encodeResult ? (
-            <div className="rounded-lg border border-good/40 bg-good/15 p-3 text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-good">
+            <div className="rounded-lg border border-line bg-canvas p-3 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-fg">
+                {encodeResult.status === "completed" ? (
                 <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>최근 인코딩 검증 완료 ({encodeResult.mode})</span>
+                ) : null}
+                <span>합성 샘플 프로브 {encodeResult.status === "completed" ? "완료" : encodeResult.status === "unsupported" ? "미지원" : encodeResult.status === "cancelled" ? "취소" : "실패"} · 영상 출력 없음</span>
               </div>
               <div className="mt-1.5 grid grid-cols-2 gap-1.5 tabular-nums text-fg">
-                <span>인코딩 프레임: {encodeResult.encodedFrames}f</span>
-                <span>키프레임(GOP): {encodeResult.keyFrameCount}개</span>
-                <span>평균 비트레이트: {encodeResult.averageBitrateMbps} Mbps</span>
-                <span>총 출력 크기: {formatBytesKo(encodeResult.totalEncodedBytes)}</span>
+                <span>인코딩된 합성 샘플: {encodeResult.encodedFrames}f</span>
+                <span>샘플 키프레임: {encodeResult.keyFrameCount}개</span>
+                <span>샘플 비트레이트: {encodeResult.averageBitrateMbps} Mbps</span>
+                <span>샘플 청크 크기 합계: {formatBytesKo(encodeResult.totalEncodedBytes)}</span>
               </div>
+              {encodeResult.fallbackReasonKo ? <p className="mt-1.5 text-fg-2">{encodeResult.fallbackReasonKo}</p> : null}
             </div>
           ) : null}
         </div>

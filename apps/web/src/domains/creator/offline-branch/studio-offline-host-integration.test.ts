@@ -186,7 +186,7 @@ describe("studio offline host integration", () => {
       runtime, previousPages, nextPages, reportNotice,
     )).toBe(true);
     expect(stageSceneTransition).toHaveBeenCalledWith(previousPages, nextPages);
-    expect(reportNotice).toHaveBeenCalledExactlyOnceWith("오프라인 변경을 보관하는 중입니다. 연결 후 반영 상태를 확인하세요.");
+    expect(reportNotice).toHaveBeenCalledExactlyOnceWith("오프라인 변경은 서버 반영을 기다리고 있어요.");
     expect(stageStudioOfflineSceneTransition(
       null, previousPages, nextPages, reportNotice,
     )).toBeNull();

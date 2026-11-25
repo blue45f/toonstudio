@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 
 import { COMIC_INTRO_ART_URL } from "./comic-intro-art";
@@ -57,20 +57,23 @@ function preloadArt(): Promise<void> {
 export function ComicIntroHost() {
   const [Overlay, setOverlay] = useState<IntroOverlayComponent | null>(null);
   const [variant, setVariant] = useState<ComicIntroProps["variant"]>("full");
+  const sessionStartedHere = useRef(false);
 
   useEffect(() => {
     // matchMedia가 없는 환경(jsdom 등)에서는 인트로를 띄우지 않는다.
     if (typeof window.matchMedia !== "function") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (sessionAlreadyShown()) return;
+    if (sessionAlreadyShown() && !sessionStartedHere.current) return;
 
     let cancelled = false;
     const start = () => {
       if (cancelled) return;
-      if (sessionAlreadyShown()) return;
+      if (sessionAlreadyShown() && !sessionStartedHere.current) return;
       // 띄우기로 확정한 시점에 세션 기록을 남긴다 — 도중에 화면을 떠나도
       // 같은 세션에서 다시 번쩍이지 않게 하기 위해서다.
       markSessionShown();
+      // StrictMode가 이 인스턴스의 effect를 재실행하면 취소된 로드를 다시 시작한다.
+      sessionStartedHere.current = true;
       let seen = false;
       try {
         seen = window.localStorage.getItem(SEEN_KEY) !== null;

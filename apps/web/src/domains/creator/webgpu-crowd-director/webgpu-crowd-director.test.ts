@@ -26,6 +26,11 @@ import {
   validateCrowdWgslShader,
   type CrowdPresetId,
 } from "./index";
+import {
+  CROWD_GPU_BIND_GROUP_LAYOUTS,
+  packCrowdInstanceBuffers,
+  resetCrowdIndirectFrame,
+} from "./procedural-crowd-engine";
 
 const RAW_COLOR_REGEX = /#[0-9a-fA-F]{3,8}\b|\brgba?\s*\(|\bhsla?\s*\(/u;
 const FORBIDDEN_STORAGE_REGEX = /\blocalStorage\b|\bsessionStorage\b/u;
@@ -76,6 +81,14 @@ function createMockCanvas2dContext(): CanvasRenderingContext2D {
     globalAlpha: 1,
     font: "",
   } as unknown as CanvasRenderingContext2D;
+}
+
+function mockCanvas2dPreview(context = createMockCanvas2dContext()): void {
+  const canvas2d: { getContext(contextId: "2d"): CanvasRenderingContext2D | null } =
+    HTMLCanvasElement.prototype;
+  vi.spyOn(canvas2d, "getContext").mockImplementation((id) =>
+    id === "2d" ? context : null,
+  );
 }
 
 afterEach(() => {
@@ -273,11 +286,11 @@ describe("Wave 38D — WebGPU 인스턴싱 기반 8종 원근 절차적 군중 �
     expect(report.balancedDelimiters).toBe(true);
     expect(report.hasDrawIndexedIndirectStruct).toBe(true);
     expect(report.errors).toEqual([]);
-    expect(report.computeEntryPoints).toEqual(["cull_and_build_indirect"]);
+    expect(report.computeEntryPoints).toEqual(["reset_crowd_indirect", "cull_and_build_indirect"]);
     expect(report.vertexEntryPoints).toEqual(["vs_crowd_instanced"]);
     expect(report.fragmentEntryPoints).toEqual(["fs_crowd_toon_ink"]);
-    expect(report.workgroupSizes).toEqual(["64,1,1"]);
-    expect(report.bindings).toHaveLength(4);
+    expect(report.workgroupSizes).toEqual(["64,1,1", "64,1,1"]);
+    expect(report.bindings).toHaveLength(5);
     expect(report.structs).toEqual(
       expect.arrayContaining([
         "CrowdCameraUniform",
@@ -297,7 +310,29 @@ describe("Wave 38D — WebGPU 인스턴싱 기반 8종 원근 절차적 군중 �
     expect(invalid.errors.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("10. 64B 정렬 인스턴스 버퍼·20B drawIndexedIndirect 버퍼·드로우콜 절감 및 GPU 패스 인코딩을 검증한다", () => {
+  it("compute 쓰기·vertex 읽기 바인딩과 호스트 레이아웃을 분리한다 (GPU 컴파일 검증 아님)", () => {
+    const compute = CROWD_GPU_BIND_GROUP_LAYOUTS.compute.entries;
+    const render = CROWD_GPU_BIND_GROUP_LAYOUTS.render.entries;
+    expect(compute.map((entry) => entry.binding)).toEqual([0, 1, 2, 3]);
+    expect(render.map((entry) => entry.binding)).toEqual([0, 1, 4]);
+    expect(compute.every((entry) => entry.visibility === 4)).toBe(true);
+    expect(render.every((entry) => entry.visibility === 1)).toBe(true);
+    expect(compute.find((entry) => entry.binding === 2)?.buffer).toEqual({
+      type: "storage", minBindingSize: 4,
+    });
+    expect(render.find((entry) => entry.binding === 4)?.buffer).toEqual({
+      type: "read-only-storage", minBindingSize: 4,
+    });
+    expect(render.map((entry) => entry.buffer.type)).not.toContain("storage");
+    expect(CROWD_INSTANCING_WGSL).toContain(
+      "@binding(4) var<storage, read> visibleIndicesForVertex: array<u32>",
+    );
+    const vertexSource = CROWD_INSTANCING_WGSL.split("@vertex")[1]?.split("@fragment")[0] ?? "";
+    expect(vertexSource).toContain("visibleIndicesForVertex[instSlot]");
+    expect(vertexSource).not.toMatch(/\bvisibleIndices\b|\bindirectArgs\b/u);
+  });
+
+  it("10. 버퍼 패킹과 이론상 드로우콜 가정·명령 인코딩을 검증하고 GPU 실행을 주장하지 않는다", () => {
     const scene = generateProceduralCrowd({ presetId: "crosswalk-rush", count: 500, seed: 404 });
     const { gpuBuffers, metrics } = scene;
 
@@ -314,6 +349,7 @@ describe("Wave 38D — WebGPU 인스턴싱 기반 8종 원근 절차적 군중 �
       0,
     ]);
 
+    expect(metrics.drawCallMetrics.basis).toBe("theoretical-instancing");
     expect(metrics.drawCallMetrics.naiveDrawCalls).toBe(1500);
     expect(metrics.drawCallMetrics.instancedDrawCalls).toBe(1);
     expect(metrics.drawCallMetrics.drawCallReductionPct).toBeGreaterThan(99.9);
@@ -322,14 +358,76 @@ describe("Wave 38D — WebGPU 인스턴싱 기반 8종 원근 절차적 군중 �
     const fakePass = { drawIndexedIndirect };
     const fakeBuffer = {} as GPUBuffer;
     const gpuSubmission = encodeCrowdDrawIndexedIndirect(fakePass, fakeBuffer, gpuBuffers, 0);
-    expect(gpuSubmission.executedOnGpu).toBe(true);
+    expect(gpuSubmission.commandEncoded).toBe(true);
+    expect(gpuSubmission.executedOnGpu).toBe(false);
     expect(gpuSubmission.drawCallCount).toBe(1);
     expect(gpuSubmission.instanceCount).toBe(500);
     expect(drawIndexedIndirect).toHaveBeenCalledWith(fakeBuffer, 0);
 
     const fallbackSubmission = encodeCrowdDrawIndexedIndirect(null, null, gpuBuffers);
+    expect(fallbackSubmission.commandEncoded).toBe(false);
     expect(fallbackSubmission.executedOnGpu).toBe(false);
+    expect(fallbackSubmission.drawCallCount).toBe(0);
     expect(fallbackSubmission.instanceCount).toBe(500);
+  });
+
+  it("uncull은 identity 인덱스·N명이며 재프레임 초기화 후에도 compute를 생략한다", () => {
+    const scene = generateProceduralCrowd({ count: 20, seed: 404 });
+    const pack = packCrowdInstanceBuffers(scene.agents, scene.preset, scene.options);
+    const identity = Array.from({ length: 20 }, (_, i) => i);
+    expect(pack.drawMode).toBe("unculled");
+    expect(pack.indirectArgs[1]).toBe(20);
+    expect(Array.from(pack.visibleIndices)).toEqual(identity);
+    expect(pack.cameraUniform[15]).toBe(0);
+    expect(pack.frameDispatch.cullEntryPoint).toBeNull();
+    expect(pack.frameDispatch.cullWorkgroupCount).toBe(0);
+    pack.indirectArgs[1] = 40;
+    pack.visibleIndices.fill(19);
+    resetCrowdIndirectFrame(pack);
+    expect(pack.indirectArgs[1]).toBe(20);
+    expect(Array.from(pack.visibleIndices)).toEqual(identity);
+  });
+
+  it("compute-cull은 매 프레임 count 0·미사용 인덱스로 시작하고 reset→cull을 별도 dispatch한다", () => {
+    const scene = generateProceduralCrowd({ count: 65, seed: 404 });
+    const pack = packCrowdInstanceBuffers(scene.agents, scene.preset, scene.options, "compute-culled");
+    expect(pack.indirectArgs[1]).toBe(0);
+    expect(Array.from(pack.visibleIndices)).toEqual(Array<number>(65).fill(0xffffffff));
+    expect(pack.cameraUniform[15]).toBe(1);
+    expect(pack.frameDispatch).toEqual({
+      resetEntryPoint: "reset_crowd_indirect", resetWorkgroupCount: 2,
+      cullEntryPoint: "cull_and_build_indirect", cullWorkgroupCount: 2,
+    });
+    // GPU readback 없이 CPU 버퍼의 재초기화 계약만 검증한다.
+    pack.indirectArgs[1] = 65;
+    pack.visibleIndices.fill(7);
+    resetCrowdIndirectFrame(pack);
+    expect(pack.indirectArgs[1]).toBe(0);
+    expect(pack.visibleIndices.every((index) => index === 0xffffffff)).toBe(true);
+    const result = encodeCrowdDrawIndexedIndirect(null, null, pack);
+    expect(result.instanceCount).toBeNull();
+    expect(result.executedOnGpu).toBe(false);
+    expect(CROWD_INSTANCING_WGSL).toContain("atomicStore(&indirectArgs.instanceCount");
+    expect(CROWD_INSTANCING_WGSL).toContain("if (camera.sceneMeta.w < 0.5) { return; }");
+  });
+
+  it("빈 버퍼도 counter를 초기화하고 GPU 명령 미인코딩이면 drawCall은 0이다", () => {
+    const scene = generateProceduralCrowd({ count: 20 });
+    for (const mode of ["unculled", "compute-culled"] as const) {
+      const pack = packCrowdInstanceBuffers([], scene.preset, scene.options, mode);
+      expect(pack.indirectArgs[1]).toBe(0);
+      expect(pack.visibleIndices).toHaveLength(0);
+      expect(pack.frameDispatch.resetWorkgroupCount).toBe(1);
+      expect(pack.frameDispatch.cullWorkgroupCount).toBe(0);
+      expect(encodeCrowdDrawIndexedIndirect(null, null, pack).drawCallCount).toBe(0);
+    }
+  });
+
+  it("인코딩 오류를 GPU 실행 성공으로 바꾸거나 숨기지 않는다", () => {
+    const scene = generateProceduralCrowd({ count: 20 });
+    const failure = new Error("encode failed");
+    const pass = { drawIndexedIndirect: vi.fn(() => { throw failure; }) };
+    expect(() => encodeCrowdDrawIndexedIndirect(pass, {} as GPUBuffer, scene.gpuBuffers)).toThrow(failure);
   });
 
   it("11. 2D 벡터 SVG 군중 레이어 출력이 유효한 XML 구조·선두께 범위·OKLCH 전용 색상을 유지한다", () => {
@@ -393,15 +491,16 @@ describe("Wave 38D — WebGPU 인스턴싱 기반 8종 원근 절차적 군중 �
 
 describe("Wave 38D — StudioWebgpuCrowdDirectorPanel 상호작용 및 위생 계약", () => {
   it("14. props 없이 단독 렌더링되고 8종 프리셋·드로우콜/SVG 지표·WGSL 인스펙터를 표시한다", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-      () => createMockCanvas2dContext() as unknown as GPUCanvasContext,
-    );
+    mockCanvas2dPreview();
 
     render(createElement(StudioWebgpuCrowdDirectorPanel));
 
     expect(screen.getByTestId("studio-webgpu-crowd-director-panel")).toBeTruthy();
     expect(screen.getByTestId("crowd-overlap-badge").textContent).toContain("겹침 0건");
     expect(screen.getByTestId("crowd-drawcall-badge").textContent).toContain("드로우콜 1회");
+    expect(screen.getByTestId("crowd-drawcall-badge").textContent).toContain("실측 아님");
+    expect(screen.getByText(/CPU로 배치하고 Canvas 2D로 그립니다/)).toBeTruthy();
+    expect(screen.getByTestId("crowd-generation-timing").textContent).toContain("CPU 배치");
     expect(screen.getByTestId("crowd-metric-svg").textContent).toContain("KB");
     expect(screen.getByTestId("crowd-metric-gpu-buffer").textContent).toContain("KB");
 
@@ -411,15 +510,15 @@ describe("Wave 38D — StudioWebgpuCrowdDirectorPanel 상호작용 및 위생 �
 
     fireEvent.click(screen.getByTestId("toggle-crowd-inspector"));
     const inspectorText = screen.getByTestId("crowd-wgsl-inspector").textContent ?? "";
+    expect(inspectorText).toContain("GPU 컴파일·실행 미검증");
+    expect(inspectorText).toContain("reset_crowd_indirect");
     expect(inspectorText).toContain("cull_and_build_indirect");
     expect(inspectorText).toContain("vs_crowd_instanced");
     expect(inspectorText).toContain("DrawIndexedIndirectArgs");
   });
 
   it("15. 프리셋 전환·슬라이더 조절·캔버스 포컬 클릭·시드 재배치·초기화가 실시간 반영된다", () => {
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-      () => createMockCanvas2dContext() as unknown as GPUCanvasContext,
-    );
+    mockCanvas2dPreview();
     const onSceneChange = vi.fn();
 
     render(createElement(StudioWebgpuCrowdDirectorPanel, { onSceneChange }));

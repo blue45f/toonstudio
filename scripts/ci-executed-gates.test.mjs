@@ -768,8 +768,15 @@ test("공통 scripts checkout은 Linux Chemy 골든과 selector를 다섯 shard�
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test("다섯 shard는 기존 48개·foundation 63개·vibrant 디렉터리 1개·hero VRM 8개·페이지 시각 14개·문서 19개 선언을 최초 checkout에서 정확히 보존한다", () => {
+test("다섯 shard는 기존 48개·foundation 63개·vibrant/Atelier 각 1개·hero VRM 9개·페이지 시각 14개·문서 19개 선언을 최초 checkout에서 정확히 보존한다", () => {
   assertStaticCheckoutInputContract(job("static"), repoRoot, job("typecheck"));
+  const atelier = "            ${{ matrix.shard == 'studio-foundation' && '/apps/web/public/assets/atelier/' || '' }}\n";
+  assert.equal(job("static").split(atelier).length, 2);
+  for (const replacement of ["", atelier.repeat(2), atelier.replace("studio-foundation", "studio-editing")]) {
+    const altered = job("static").replace(atelier, replacement);
+    assert.throws(() => assertStaticCheckoutInputContract(altered, repoRoot, job("typecheck")), { code: "ERR_ASSERTION" },
+      "Atelier 선언의 누락·중복·다른 shard 소유를 거부해야 합니다.");
+  }
   const foundationDocuments = [...job("static").matchAll(/\$\{\{ matrix\.shard == 'studio-foundation' && '(\/docs\/[^']+)' \|\| '' \}\}/gu)];
   assert.equal(foundationDocuments.length, 19, "foundation 문서 선언은 정확히 19개여야 합니다.");
 });

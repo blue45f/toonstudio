@@ -7,6 +7,8 @@
  * - Albedo RGBA + 토러스 래핑 Sobel Normal Map RGBA + Roughness R 채널 버퍼 동시 출력
  */
 
+import { assertImageGeometry, assertRgbaBuffer } from "./image-buffer-contract";
+
 export type ProceduralMaterialId =
   | "hanji-fiber"
   | "linen-weave"
@@ -466,8 +468,12 @@ export function measureTileSeamContinuity(
   height: number,
   periodicBoundaryError: number = 0,
 ): TileSeamContinuityReport {
-  const w = Math.max(2, Math.floor(width));
-  const h = Math.max(2, Math.floor(height));
+  assertRgbaBuffer({ width, height, data: rgba });
+  if (width < 2 || height < 2 || !Number.isFinite(periodicBoundaryError) || periodicBoundaryError < 0) {
+    throw new RangeError("타일 측정은 최소 2×2이고 경계 오차는 유한한 음이 아닌 수여야 합니다.");
+  }
+  const w = width;
+  const h = height;
   const inv255 = 1 / 255;
 
   let hSeamSum = 0;
@@ -576,7 +582,10 @@ export function roughnessToRgbaBuffer(
   width: number,
   height: number,
 ): Uint8ClampedArray {
-  const count = Math.min(roughnessR.length, width * height);
+  const count = assertImageGeometry(width, height);
+  if (!(roughnessR instanceof Uint8ClampedArray) || roughnessR.length !== count) {
+    throw new RangeError("거칠기 버퍼 길이는 width × height와 같아야 합니다.");
+  }
   const rgba = new Uint8ClampedArray(width * height * 4);
   for (let i = 0; i < count; i += 1) {
     const val = roughnessR[i] ?? 128;
@@ -595,13 +604,21 @@ export function synthesizeProceduralTexture(
   options?: ProceduralTextureOptions,
 ): ProceduralTextureResult {
   const startMs = typeof performance !== "undefined" ? performance.now() : Date.now();
+  if (!PROCEDURAL_MATERIAL_PRESETS.some((item) => item.id === materialId)) throw new RangeError("알 수 없는 합성 재질입니다.");
+  const requestedWidth = options?.width ?? 128;
+  const requestedHeight = options?.height ?? 128;
+  assertImageGeometry(requestedWidth, requestedHeight);
+  if (requestedWidth < 16 || requestedHeight < 16 || requestedWidth > 512 || requestedHeight > 512) throw new RangeError("합성 크기는 16~512의 정수여야 합니다.");
+  for (const value of Object.values(options ?? {})) {
+    if (value !== undefined && !Number.isFinite(value)) throw new RangeError("합성 옵션은 유한한 수여야 합니다.");
+  }
   const preset =
     PROCEDURAL_MATERIAL_PRESETS.find((item) => item.id === materialId) ??
     PROCEDURAL_MATERIAL_PRESETS[0]!;
 
   const resolved: ResolvedTextureOptions = {
-    width: clampInt(options?.width ?? 128, 16, 512),
-    height: clampInt(options?.height ?? 128, 16, 512),
+    width: requestedWidth,
+    height: requestedHeight,
     seed: clampInt(options?.seed ?? 42, 1, 999999),
     tileScale: clampInt(options?.tileScale ?? preset.defaultTileScale, 1, 6),
     normalStrength: clamp(options?.normalStrength ?? preset.defaultNormalStrength, 0.2, 6.0),
