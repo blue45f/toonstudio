@@ -161,11 +161,13 @@ function StudioProjectAssistantPanelBody({
   const [runningOpenAi, setRunningOpenAi] = useState(false);
   const modelRetired = statusInfo?.modelConfigurationError === "retired";
   const openAiConfigured = statusInfo?.configured === true && !modelRetired;
-  const [openAiResult, setOpenAiResult] = useState<StudioOpenAiAssistSuccess | null>(
-    () => initialRestored?.lastResult ?? null,
-  );
-  const [submittedPrompt, setSubmittedPrompt] = useState<string | undefined>(
-    () => (initialRestored?.lastResult ? initialRestored.prompt : undefined),
+  const [completedRequest, setCompletedRequest] = useState<{
+    result: StudioOpenAiAssistSuccess;
+    submittedPrompt?: string;
+  } | null>(
+    () => initialRestored?.lastResult
+      ? { result: initialRestored.lastResult, submittedPrompt: initialRestored.submittedPrompt }
+      : null,
   );
   const [freeLabOpen, setFreeLabOpen] = useState(false);
 
@@ -191,8 +193,8 @@ function StudioProjectAssistantPanelBody({
 
   useEffect(() => {
     if (
-      !prompt.trim() ||
-      (openAiResult === null && prompt === defaultPrompt && openAiMode === defaultMode)
+      completedRequest === null &&
+      (!prompt.trim() || (prompt === defaultPrompt && openAiMode === defaultMode))
     ) {
       clearStudioAssistantSessionState(projectId);
       return;
@@ -200,13 +202,14 @@ function StudioProjectAssistantPanelBody({
     writeStudioAssistantSessionState(projectId, {
       prompt,
       openAiMode,
-      lastResult: openAiResult,
+      lastResult: completedRequest?.result ?? null,
+      submittedPrompt: completedRequest?.submittedPrompt,
     });
   }, [
     projectId,
     prompt,
     openAiMode,
-    openAiResult,
+    completedRequest,
     defaultPrompt,
     defaultMode,
   ]);
@@ -228,8 +231,7 @@ function StudioProjectAssistantPanelBody({
     setSelectedTool(first?.tool ?? "composition");
     setOpenAiMode(defaultMode);
     setPrompt(defaultPrompt);
-    setOpenAiResult(null);
-    setSubmittedPrompt(undefined);
+    setCompletedRequest(null);
     setError(null);
     setStatusMessage(null);
   };
@@ -319,8 +321,7 @@ function StudioProjectAssistantPanelBody({
       }
       return;
     }
-    setSubmittedPrompt(trimmed);
-    setOpenAiResult(response.data);
+    setCompletedRequest({ result: response.data, submittedPrompt: trimmed });
   };
 
   const appendBeatsToStoryPlan = (beats: readonly StudioStoryBeat[]): readonly string[] | null => {
@@ -610,10 +611,10 @@ function StudioProjectAssistantPanelBody({
         </div>
       </div>
 
-      {openAiResult ? (
+      {completedRequest ? (
         <StudioOpenAiAssistResultCard
-          response={openAiResult}
-          originalPrompt={submittedPrompt}
+          response={completedRequest.result}
+          originalPrompt={completedRequest.submittedPrompt}
           onAppendStoryBeats={appendBeatsToStoryPlan}
           onUndoAppendedStoryBeats={undoAppendedBeatsFromStoryPlan}
         />

@@ -112,7 +112,27 @@ it("이전 저장본의 입력과 유효 결과를 살리고 잘못된 결과만
   storage.setItem(key, JSON.stringify(stored));
   expect(readStudioAssistantSessionState("project-a", storage)).toEqual({ ...draft, lastResult });
 
+  const submittedPrompt = "이 결과를 요청할 때 보낸 문장";
+  const restored = readStudioAssistantSessionState("project-a", storage);
+  if (!restored) throw new Error("저장된 요청이 없습니다.");
+  writeStudioAssistantSessionState("project-a", { ...restored, submittedPrompt }, storage);
+  expect(readStudioAssistantSessionState("project-a", storage)).toEqual({ ...draft, lastResult, submittedPrompt });
+
+  const escapedDraft = "\u0000".repeat(6_000);
+  const escapedSubmittedPrompt = "\u0001".repeat(6_000);
+  const escapedSnapshot = { ...restored, prompt: escapedDraft, submittedPrompt: escapedSubmittedPrompt };
+  writeStudioAssistantSessionState("project-a", escapedSnapshot, storage);
+  expect(storage.getItem(key)?.length).toBeGreaterThan(64_000);
+  expect(readStudioAssistantSessionState("project-a", storage)).toEqual(escapedSnapshot);
+
+  storage.setItem(key, JSON.stringify({ ...stored, submittedPrompt: "가".repeat(6_001) }));
+  expect(readStudioAssistantSessionState("project-a", storage)).toEqual({ ...draft, lastResult });
+
   const brokenResult = { ...lastResult.result, data: { ...lastResult.result.data, issues: [null] } };
-  storage.setItem(key, JSON.stringify({ ...stored, lastResult: { ...lastResult, result: brokenResult } }));
+  storage.setItem(key, JSON.stringify({
+    ...stored,
+    lastResult: { ...lastResult, result: brokenResult },
+    submittedPrompt,
+  }));
   expect(readStudioAssistantSessionState("project-a", storage)).toEqual(draft);
 });

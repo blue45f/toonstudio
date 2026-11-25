@@ -201,11 +201,21 @@ export function defaultOpenAiModeForSection(
 }
 
 const SESSION_KEY_PREFIX = "toonstudio:assistant-draft:v1:";
+const MAX_PROMPT_CHARS = 6_000;
+// 기존 결과 저장 공간에 제출 원문 필드의 최대 JSON 이스케이프 길이를 더한다.
+const MAX_SESSION_CHARS = 64_000 + ',"submittedPrompt":""'.length + MAX_PROMPT_CHARS * 6;
 
 export interface StudioAssistantSessionSnapshot {
   readonly prompt: string;
   readonly openAiMode: StudioOpenAiAssistMode;
   readonly lastResult: StudioOpenAiAssistSuccess | null;
+  readonly submittedPrompt?: string;
+}
+
+function readSubmittedPrompt(value: unknown): string | undefined {
+  return typeof value === "string" && value.length <= MAX_PROMPT_CHARS && value.trim()
+    ? value
+    : undefined;
 }
 
 /** 명시한 null/Storage를 우선하고, 기본 브라우저 저장소 getter 거부만 안전하게 처리한다. */
@@ -226,7 +236,7 @@ export function readStudioAssistantSessionState(
   if (!storage || !projectId) return null;
   try {
     const raw = storage.getItem(`${SESSION_KEY_PREFIX}${projectId}`);
-    if (!raw || raw.length > 64_000) return null;
+    if (!raw || raw.length > MAX_SESSION_CHARS) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!isRecord(parsed)) return null;
     const prompt =
@@ -245,10 +255,12 @@ export function readStudioAssistantSessionState(
     if (!prompt.trim() && lastResult === null) {
       return null;
     }
+    const submittedPrompt = lastResult ? readSubmittedPrompt(parsed.submittedPrompt) : undefined;
     return {
-      prompt: prompt.slice(0, 6_000),
+      prompt: prompt.slice(0, MAX_PROMPT_CHARS),
       openAiMode: rawMode,
       lastResult,
+      ...(submittedPrompt === undefined ? {} : { submittedPrompt }),
     };
   } catch {
     return null;
@@ -273,9 +285,10 @@ export function writeStudioAssistantSessionState(
     storage.setItem(
       `${SESSION_KEY_PREFIX}${projectId}`,
       JSON.stringify({
-        prompt: snapshot.prompt.slice(0, 6_000),
+        prompt: snapshot.prompt.slice(0, MAX_PROMPT_CHARS),
         openAiMode: snapshot.openAiMode,
         lastResult: sanitizedResult,
+        submittedPrompt: sanitizedResult ? readSubmittedPrompt(snapshot.submittedPrompt) : undefined,
       }),
     );
   } catch {

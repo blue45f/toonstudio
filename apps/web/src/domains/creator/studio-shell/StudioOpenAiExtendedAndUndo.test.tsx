@@ -222,10 +222,12 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
     for (const extended of EXTENDED_RESULTS) {
       expect(isValidStudioOpenAiStructuredResult(extended)).toBe(true);
       const response = makeSuccess(extended);
+      const submittedPrompt = `합성 원고 요청 (${extended.mode})`;
       writeStudioAssistantSessionState(
         `proj-${extended.mode}`,
         {
-          prompt: `합성 원고 요청 (${extended.mode})`,
+          prompt: "다음 요청을 위한 편집 중인 초안",
+          submittedPrompt,
           openAiMode: extended.mode,
           lastResult: response,
         },
@@ -237,20 +239,87 @@ describe("OpenAI 14모드 확장 렌더링·세션 복원·원문 비교·부분
       );
       expect(restored?.openAiMode).toBe(extended.mode);
       expect(restored?.lastResult?.result.mode).toBe(extended.mode);
-      expect(restored?.prompt).toBe(`합성 원고 요청 (${extended.mode})`);
+      expect(restored?.prompt).toBe("다음 요청을 위한 편집 중인 초안");
+      expect(restored?.submittedPrompt).toBe(submittedPrompt);
 
       const view = render(
         <StudioOpenAiAssistResultCard
           response={response}
-          originalPrompt={restored?.prompt}
+          originalPrompt={restored?.submittedPrompt}
         />,
       );
       expect(screen.getByTestId(`openai-extended-result-${extended.mode}`)).toBeTruthy();
       expect(screen.getByTestId("openai-original-vs-suggestion").textContent).toContain(
-        `합성 원고 요청 (${extended.mode})`,
+        submittedPrompt,
       );
       view.unmount();
     }
+  });
+
+  const comparisonProjectId = "project-original-input";
+  const originalInput = "서연의 캐릭터 바이블을 정리해 줘";
+  const statusResponse = () => Response.json({
+    configured: true,
+    provider: "openai",
+    model: "gpt-4o-mini",
+    modes: [
+      { id: "character-bible-forge", labelKo: "캐릭터 바이블 생성", descriptionKo: "캐릭터" },
+    ],
+  });
+
+  function renderComparisonPanel(fetchImpl: typeof fetch) {
+    return render(
+      <MemoryRouter>
+        <StudioProjectAssistantPanel
+          projectId={comparisonProjectId}
+          section="story"
+          locale="ko"
+          fetchImpl={fetchImpl}
+        />
+      </MemoryRouter>,
+    );
+  }
+
+  it.each(["다음 요청을 위한 별도 초안", ""])("편집 후 다시 열어도 받은 결과의 원문을 유지한다 (%j)", async (editedDraft) => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockImplementationOnce(async () => statusResponse())
+      .mockImplementationOnce(async () => Response.json(makeSuccess(EXTENDED_RESULTS[0])))
+      .mockImplementationOnce(async () => statusResponse());
+
+    const view = renderComparisonPanel(fetchMock);
+    fireEvent.click(await screen.findByTestId("openai-mode-character-bible-forge"));
+    fireEvent.change(screen.getByLabelText("요청 내용"), { target: { value: originalInput } });
+    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
+    expect((await screen.findByTestId("openai-original-vs-suggestion")).textContent).toContain(originalInput);
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({ inputText: originalInput });
+
+    fireEvent.change(screen.getByLabelText("요청 내용"), { target: { value: editedDraft } });
+    view.unmount();
+    renderComparisonPanel(fetchMock);
+
+    expect(await screen.findByTestId("openai-extended-result-character-bible-forge")).toBeTruthy();
+    expect(screen.getByLabelText<HTMLTextAreaElement>("요청 내용").value).toBe(editedDraft);
+    expect(screen.getByTestId("openai-original-vs-suggestion").textContent).toContain(originalInput);
+    expect(readStudioAssistantSessionState(comparisonProjectId)?.submittedPrompt).toBe(originalInput);
+  });
+
+  it("이전 저장본에서 제출 원문이 없으면 입력과 결과만 복원한다", async () => {
+    const editedDraft = "보낸 원문과 다른 편집 중 초안";
+    window.sessionStorage.setItem(
+      `toonstudio:assistant-draft:v1:${comparisonProjectId}`,
+      JSON.stringify({
+        prompt: editedDraft,
+        openAiMode: "character-bible-forge",
+        lastResult: makeSuccess(EXTENDED_RESULTS[0]),
+      }),
+    );
+    const fetchMock = vi.fn<typeof fetch>().mockImplementationOnce(async () => statusResponse());
+
+    renderComparisonPanel(fetchMock);
+
+    expect(await screen.findByTestId("openai-extended-result-character-bible-forge")).toBeTruthy();
+    expect(screen.getByLabelText<HTMLTextAreaElement>("요청 내용").value).toBe(editedDraft);
+    expect(screen.queryByTestId("openai-original-vs-suggestion")).toBeNull();
   });
 
   it.each(["append", "undo"])("컷 계획 %s 저장 실패 시 재시도하고 새 컷만 되돌린다", async (failedAction) => {
