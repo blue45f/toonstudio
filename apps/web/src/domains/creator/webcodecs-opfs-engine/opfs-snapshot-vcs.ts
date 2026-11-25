@@ -620,6 +620,19 @@ export class OpfsSnapshotVcsEngine {
     return this.commitCatalog.get(commitId) ?? null;
   }
 
+  /** 첫 ref 쓰기만 실패한 단일 이력을 검증해 다시 연결한다. 객체는 지우거나 재생성하지 않는다. */
+  recoverUnreferencedInitialCommit(): Promise<VcsProjectSnapshot | null> {
+    return this.mutate(async () => {
+      await this.ensureInitialized();
+      const [commit] = this.commitCatalog.values();
+      if (this.branchHeads.size !== 1 || this.currentHeadCommitId !== null
+        || this.commitCatalog.size !== 1 || !commit || commit.parentId !== null
+        || commit.branchName !== this.activeBranch) return null;
+      const recovered = await this.persistRollback(commit.id, { createRollbackCommit: false });
+      return recovered.restoredSnapshot;
+    });
+  }
+
   getCommitHistory(branchName?: string): readonly VcsCommitObject[] {
     const targetBranch = branchName ?? this.activeBranch;
     const result: VcsCommitObject[] = [];
@@ -692,6 +705,8 @@ export async function createSeededWebtoonVcs(
     return { engine, latestSnapshot: await engine.restoreCommit(head) };
   }
   if (engine.getStorageStats().commitCount > 0) {
+    const recovered = await engine.recoverUnreferencedInitialCommit();
+    if (recovered) return { engine, latestSnapshot: recovered };
     throw new Error("현재 브랜치의 저장본을 확인할 수 없습니다. 기존 이력을 보존합니다.");
   }
 

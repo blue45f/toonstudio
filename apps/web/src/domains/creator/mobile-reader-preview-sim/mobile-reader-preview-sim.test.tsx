@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -27,7 +27,7 @@ import {
   type MobileReaderCutInput,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 function makeCut(overrides: Partial<MobileReaderCutInput> & { readonly id: string }): MobileReaderCutInput {
   return {
@@ -471,7 +471,8 @@ describe("4. StudioMobileReaderPreviewPanel UI 인터랙션 & 단독 렌더", ()
     expect(screen.getByTestId("reader-sim-status-banner").textContent).toContain("복원");
   });
 
-  it("JSON·SVG 복사 버튼과 내보내기 미리보기 탭이 콜백과 스니펫을 정확히 동작시킨다", () => {
+  it("JSON·SVG 복사 버튼과 내보내기 미리보기 탭이 콜백과 스니펫을 정확히 동작시킨다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
     const onAuditChange = vi.fn();
     const onExportJson = vi.fn();
     const onExportSvg = vi.fn();
@@ -487,12 +488,12 @@ describe("4. StudioMobileReaderPreviewPanel UI 인터랙션 & 단독 렌더", ()
     expect(onAuditChange).toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId("reader-sim-copy-json-btn"));
-    expect(onExportJson).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportJson).toHaveBeenCalledTimes(1));
     expect(onExportJson.mock.calls[0]?.[0]).toContain("toonstudio.mobile-reader-preview-sim.v1");
     expect(screen.getByTestId("reader-sim-export-preview").textContent).toContain('"dataSourceKind": "estimate"');
 
     fireEvent.click(screen.getByTestId("reader-sim-copy-svg-btn"));
-    expect(onExportSvg).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportSvg).toHaveBeenCalledTimes(1));
     expect(onExportSvg.mock.calls[0]?.[0]).toContain("<svg xmlns=");
     expect(screen.getByTestId("reader-sim-export-preview").textContent).toContain("<svg xmlns=");
 

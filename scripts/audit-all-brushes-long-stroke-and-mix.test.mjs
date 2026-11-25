@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
 
 import {
   createRasterCanvas2D,
   parseCliArgs,
   runLongStrokeAndMixAudit,
 } from "./audit-all-brushes-long-stroke-and-mix.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 test("parseCliArgs가 기본값과 모든 옵션을 정확히 파싱하고 미지 인자를 거부한다", () => {
   assert.deepEqual(parseCliArgs([]), {

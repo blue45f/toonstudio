@@ -235,18 +235,20 @@ function scanPnpmLockfile(lockfileText) {
           const existing = packages.get(parsed.name) ?? new Set();
           if (parsed.version) existing.add(parsed.version);
           packages.set(parsed.name, existing);
-          // 예: p5.brush@2.2.1(...)(p5@2.3.1) 에서 p5 경유 출처 추출
-          for (const match of line.matchAll(/\(([a-z0-9@._/-]+)@([^()]+)\)/giu)) {
-            const peerName = match[1];
-            const peerVer = match[2];
-            if (peerName && peerName !== "patch_hash") {
-              const peerVers = packages.get(peerName) ?? new Set();
-              peerVers.add(peerVer);
-              packages.set(peerName, peerVers);
-              const via = peerLinks.get(peerName) ?? new Set();
-              via.add(`${parsed.name}@${parsed.version}`);
-              peerLinks.set(peerName, via);
-            }
+          // 중첩 피어는 괄호별 부모를 유지하고 patch_hash 같은 메타데이터는 제외한다.
+          const parents = [parsed];
+          for (const token of line.matchAll(/\(([^()]*)|(\))/gu)) {
+            if (token[2]) { parents.pop(); continue; }
+            const peer = parseLockfilePackageKey(token[1] ?? "");
+            const parent = parents.at(-1);
+            parents.push(peer?.version ? peer : null);
+            if (!peer?.version || !parent?.version) continue;
+            const peerVers = packages.get(peer.name) ?? new Set();
+            peerVers.add(peer.version);
+            packages.set(peer.name, peerVers);
+            const via = peerLinks.get(peer.name) ?? new Set();
+            via.add(`${parent.name}@${parent.version}`);
+            peerLinks.set(peer.name, via);
           }
         }
         continue;

@@ -3,7 +3,6 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
@@ -11,6 +10,8 @@ import {
   parseCliArgs,
   runFullBrushCatalogAuditCli,
 } from "./audit-full-brush-catalog-uniqueness-and-naming.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const SCRIPT_PATH = fileURLToPath(
   new URL("./audit-full-brush-catalog-uniqueness-and-naming.mjs", import.meta.url),
@@ -34,7 +35,7 @@ test("카탈로그 PNG 기본 경로는 호출 위치와 무관한 저장소 art
 test("장시간 감사는 import 시 실행하지 않고 저장소 PNG 기본 경로와 CLI 재지정을 제공한다", () => {
   const scriptPath = fileURLToPath(new URL("./audit-studio-long-session-stability.mjs", import.meta.url));
   // 원래 CLI의 스트레스 실행·PNG 쓰기를 테스트 import로 시작하지 않도록 먼저 확인한다.
-  assert.match(fs.readFileSync(scriptPath, "utf8"), /if \(process\.argv\[1\]/u, "CLI 직접 실행 경계가 필요합니다");
+  assert.ok(/if \(process\.argv\[1\]/u.test(fs.readFileSync(scriptPath, "utf8")), "CLI 직접 실행 경계가 필요합니다");
   const expected = path.resolve(path.dirname(scriptPath), "../artifacts/brush-audits/real-media-8tips-and-km-mix-sheet.png");
   assert.equal(parseFromOtherDirectory(scriptPath).outPath, expected);
   const relative = "toonstudio-fixture/stability.png";

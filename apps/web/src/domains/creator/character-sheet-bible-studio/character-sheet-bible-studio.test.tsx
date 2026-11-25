@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -33,7 +33,7 @@ import {
   updateOutfitContinuitySlot,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("1. 등신비·신장 3면도 눈금 계산기 및 다인 캐스트 키 비교", () => {
   it("표준 입력(180cm, 7.5등신, 굽 0cm)에서 1두신·눈높이 및 머리/어깨/허리/무릎 좌표를 정확히 계산한다", () => {
@@ -405,7 +405,8 @@ describe("5. StudioCharacterSheetBiblePanel UI 상호작용 및 단독 렌더", 
     expect(screen.getByTestId("bible-issue-missing-chip-do-not-color")).toBeTruthy();
   });
 
-  it("Markdown/JSON 복사 버튼, 미리보기 탭 전환, 영문 로케일 및 콜백이 정확히 동작한다", () => {
+  it("Markdown/JSON 복사 버튼, 미리보기 탭 전환, 영문 로케일 및 콜백이 정확히 동작한다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
     const onSheetChange = vi.fn();
     const onExportMarkdown = vi.fn();
     const onExportJson = vi.fn();
@@ -424,11 +425,11 @@ describe("5. StudioCharacterSheetBiblePanel UI 상호작용 및 단독 렌더", 
     expect(screen.getByTestId("bible-copy-markdown-btn").textContent).toContain("Copy Markdown");
 
     fireEvent.click(screen.getByTestId("bible-copy-markdown-btn"));
-    expect(onExportMarkdown).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportMarkdown).toHaveBeenCalledTimes(1));
     expect(onExportMarkdown.mock.calls[0]?.[0]).toContain("Yoon Seoyeon");
 
     fireEvent.click(screen.getByTestId("bible-copy-json-btn"));
-    expect(onExportJson).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportJson).toHaveBeenCalledTimes(1));
     expect(onExportJson.mock.calls[0]?.[0]).toContain("toonstudio.character-sheet-bible.v1");
     expect(screen.getByTestId("bible-export-preview").textContent).toContain('"schemaVersion"');
 

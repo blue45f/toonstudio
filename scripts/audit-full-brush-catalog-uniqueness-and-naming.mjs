@@ -16,8 +16,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import zlib from "node:zlib";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const DEFAULT_PNG_OUTPUT_PATH =
-  "/Users/hjunkim/.gemini/antigravity/brain/d47cdf47-6af8-42db-b2c5-9194377c60fa/scratch/all-brushes-naming-parity-and-dedupe-sheet.png";
+export const DEFAULT_PNG_OUTPUT_PATH = path.join(
+  REPO_ROOT, "artifacts/brush-audits/all-brushes-naming-parity-and-dedupe-sheet.png",
+);
 
 let tsHooksRegistered = false;
 function ensureTsImportHooks() {
