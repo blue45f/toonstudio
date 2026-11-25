@@ -19,6 +19,7 @@ import type { StudioEditorMutationTicket } from "../studio-editor-scope";
 import type { El } from "../studio-element-model";
 import { uid } from "../studio-id";
 import { createCanvasImageElement } from "../studio-image-placement";
+import { isEffectivelyLocked } from "../studio-layers";
 import type { PageState } from "../studio-page-state";
 import type { StudioPublishAiProvenance } from "../studio-publish-preflight";
 import { runStudioInsertAiBackgroundImage } from "./studio-host-wave6-ai-generation-helpers";
@@ -28,6 +29,7 @@ interface StudioImageAiExecutionContext {
   readonly currentPageIdRef: { readonly current: string };
   readonly aiColorizeAbortRef: { current: AbortController | null };
   readonly pages: readonly PageState[];
+  readonly readCurrentPages: () => readonly PageState[];
   readonly activePage: Pick<PageState, "id">;
   readonly elementById: ReadonlyMap<string, El>;
   readonly selected: El | null;
@@ -57,7 +59,7 @@ interface StudioImageAiExecutionContext {
 
 export function createStudioImageAiExecutors({
   editorMountedRef, currentPageIdRef, aiColorizeAbortRef,
-  pages, activePage, elementById, selected, elements, canvasH, aiSettings, t,
+  pages, readCurrentPages, activePage, elementById, selected, elements, canvasH, aiSettings, t,
   canApplyStudioMutation, beginTrackedStudioAiOperation, settleTrackedStudioAiOperation,
   addRenderedImage, patchImageElOnPage, patchEl, commitPages, commit, setSelectedId, setTool,
   setBusy, setFailure, setMenu,
@@ -74,17 +76,20 @@ export function createStudioImageAiExecutors({
     requestTarget?: { readonly pageId: string; readonly selectedFrameId: string | null },
   ): boolean {
     if (requestTarget && requestTarget.pageId !== currentPageIdRef.current) {
-      const targetPage = pages.find((page) => page.id === requestTarget.pageId);
+      const latestPages = readCurrentPages();
+      const targetPage = latestPages.find((page) => page.id === requestTarget.pageId);
       if (!targetPage) return false;
-      const targetFrames = targetPage.elements.filter((el) => el.type === "frame");
+      const targetFrames = targetPage.elements.filter((el) =>
+        el.type === "frame" && (requestTarget.selectedFrameId === null || el.id === requestTarget.selectedFrameId),
+      );
+      if (requestTarget.selectedFrameId !== null && targetFrames.length === 0) return false;
+      if (targetFrames.some((frame) => isEffectivelyLocked(frame, targetPage.groups ?? []))) return false;
+
       let nextElements: El[];
-      if (requestTarget.selectedFrameId && targetPage.elements.some((el) => el.id === requestTarget.selectedFrameId && el.type === "frame")) {
+      if (targetFrames.length > 0) {
+        const framesToUpdate = new Set(targetFrames);
         nextElements = targetPage.elements.map((el) =>
-          el.id === requestTarget.selectedFrameId ? ({ ...el, bg: dataUrl, aiProvenance, bundleSourceCredit: undefined } as El) : el,
-        );
-      } else if (targetFrames.length > 0) {
-        nextElements = targetPage.elements.map((el) =>
-          el.type === "frame" ? ({ ...el, bg: dataUrl, aiProvenance, bundleSourceCredit: undefined } as El) : el,
+          framesToUpdate.has(el) ? { ...el, bg: dataUrl, aiProvenance, bundleSourceCredit: undefined } : el,
         );
       } else {
         const el = createCanvasImageElement({
@@ -93,7 +98,7 @@ export function createStudioImageAiExecutors({
         });
         nextElements = [{ ...el, aiProvenance }, ...targetPage.elements];
       }
-      return commitPages(pages.map((page) => (page.id === requestTarget.pageId ? { ...page, elements: nextElements } : page)));
+      return commitPages(latestPages.map((page) => page === targetPage ? { ...page, elements: nextElements } : page));
     }
     return runStudioInsertAiBackgroundImage({
       dataUrl, width, height, aiProvenance, selected: selected ?? undefined, elements, canvasH,

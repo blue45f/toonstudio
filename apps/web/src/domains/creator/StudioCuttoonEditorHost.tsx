@@ -14905,6 +14905,7 @@ const puppetWarpArmed =
     await execute(engine.createStudioImageAiExecutors({
       editorMountedRef, currentPageIdRef, aiColorizeAbortRef,
       pages, activePage, elementById, selected, elements, canvasH, aiSettings, t,
+      readCurrentPages: () => pagesHistoryRef.current[pagesHiRef.current] ?? pages,
       canApplyStudioMutation, beginTrackedStudioAiOperation, settleTrackedStudioAiOperation,
       addRenderedImage, patchImageElOnPage, patchEl, commitPages, commit, setSelectedId, setTool,
       setBusy, setFailure, setMenu,
