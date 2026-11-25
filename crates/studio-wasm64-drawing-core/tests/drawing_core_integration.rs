@@ -1,15 +1,18 @@
 //! `studio-wasm64-drawing-core` 통합 테스트 (C-ABI · 경계값 · 종단간 파이프라인 검증).
 
 use studio_wasm64_drawing_core::{
-    apply_impasto_lighting_rgba, fnv1a_checksum_32, gaussian_blur_rgba_masked, mix_pigments_km,
-    mix_pigments_km16, parse_psd_header_streaming, sample_world_paper_height, unsharp_mask_rgba,
-    vectorize_stroke_to_cubic_beziers, warp_mesh_rigid_mls, wasm_alloc,
-    wasm_apply_impasto_lighting_rgba, wasm_drawing_core_abi_version, wasm_fnv1a_checksum,
-    wasm_free, wasm_gaussian_blur_rgba, wasm_hotpath_capabilities, wasm_mix_pigments_km16_packed,
-    wasm_mix_pigments_km16_strip, wasm_mix_pigments_km_packed, wasm_sample_world_paper_height,
-    wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes, xor_tile_delta_bytes, DrawingCoreError,
-    ImpastoLightConfig, PaperGrainConfig, StrokePoint2D, TileKey, VirtualTileSwapper64, WarpPin,
-    WASM_HOTPATH_CAPABILITIES,
+    apply_impasto_lighting_rgba, composite_tile_dirty_rect, fnv1a_checksum_32,
+    gaussian_blur_rgba_masked, generate_paper_tile_lut, mix_pigments_km, mix_pigments_km16,
+    parse_psd_header_streaming, sample_world_paper_height, stamp_tactile_bristle_rgba,
+    unsharp_mask_rgba, vectorize_stroke_to_cubic_beziers, warp_mesh_rigid_mls, wasm_alloc,
+    wasm_apply_impasto_lighting_rgba, wasm_composite_tile_dirty_rect,
+    wasm_drawing_core_abi_version, wasm_fnv1a_checksum, wasm_free, wasm_gaussian_blur_rgba,
+    wasm_hotpath_capabilities, wasm_mix_pigments_km16_packed, wasm_mix_pigments_km16_strip,
+    wasm_mix_pigments_km_packed, wasm_sample_world_paper_height, wasm_stamp_tactile_bristle,
+    wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes, xor_tile_delta_bytes, DirtyRect,
+    DrawingCoreError, ImpastoLightConfig, PaperGrainConfig, PaperKind, StrokePoint2D,
+    TactileBrushParams, TileBlendMode, TileKey, VirtualTileSwapper64, WarpPin,
+    TACTILE_BRUSH_FFI_PARAM_COUNT, WASM_HOTPATH_CAPABILITIES,
 };
 
 #[test]
@@ -313,5 +316,139 @@ fn wasm_ffi_linear_memory_exports_match_safe_kernels_and_guard_invalid_ptrs() {
         wasm_free(src_ptr, len);
         wasm_free(dst_ptr, len);
         wasm_free(next_ptr, len);
+    }
+}
+
+#[test]
+fn wasm_ffi_tactile_bristle_and_tile_compositor_match_safe_kernels_and_guard_bounds() {
+    let (w, h) = (32u32, 32u32);
+    let rgba_len = (w * h * 4) as usize;
+    let height_len = (w * h) as usize;
+    let height_bytes = height_len * std::mem::size_of::<f32>();
+
+    let color = [68u8, 112, 184, 215];
+    let params_arr: [f32; TACTILE_BRUSH_FFI_PARAM_COUNT] = [
+        16.0, 16.0, 10.0, 0.78, 0.65, 0.25, -0.1, 0.3, 0.45, 0.85, 1.0, 0.55, 0.9,
+    ];
+    let safe_params = TactileBrushParams {
+        cx: params_arr[0],
+        cy: params_arr[1],
+        radius: params_arr[2],
+        color_rgba: color,
+        pressure: params_arr[3],
+        speed: params_arr[4],
+        tilt_x: params_arr[5],
+        tilt_y: params_arr[6],
+        direction_rad: params_arr[7],
+        dryness: params_arr[8],
+        bristle_count: 9,
+        paper_tooth_strength: params_arr[9],
+        paper_scale: params_arr[10],
+        wet_edge_strength: params_arr[11],
+        impasto_height: params_arr[12],
+        seed: 2026,
+    };
+
+    let mut expected_rgba = vec![0u8; rgba_len];
+    let mut expected_h = vec![0.0_f32; height_len];
+    let lut = generate_paper_tile_lut(PaperKind::ColdPress, 2026);
+    let expected_stats =
+        stamp_tactile_bristle_rgba(&mut expected_rgba, &mut expected_h, w, h, &lut, &safe_params)
+            .expect("safe stamp");
+
+    let mut comp_dst = vec![96u8; rgba_len];
+    let comp_src = expected_rgba.clone();
+    let dirty = DirtyRect {
+        x: 6,
+        y: 8,
+        width: 18,
+        height: 14,
+    };
+    let expected_comp_px = composite_tile_dirty_rect(
+        &mut comp_dst,
+        &comp_src,
+        w,
+        h,
+        dirty,
+        TileBlendMode::Overlay,
+        200,
+    )
+    .expect("safe composite");
+
+    let rgba_ptr = wasm_alloc(rgba_len);
+    let height_ptr = wasm_alloc(height_bytes) as *mut f32;
+    let dst_ptr = wasm_alloc(rgba_len);
+    assert!(!rgba_ptr.is_null() && !height_ptr.is_null() && !dst_ptr.is_null());
+
+    // SAFETY: `wasm_alloc`으로 할당한 16바이트 정렬 비중첩 버퍼로 신규 C-ABI 경계를 검증한다.
+    unsafe {
+        std::ptr::write_bytes(rgba_ptr, 0, rgba_len);
+        std::ptr::write_bytes(height_ptr as *mut u8, 0, height_bytes);
+        std::ptr::write_bytes(dst_ptr, 96, rgba_len);
+
+        let stamp_rc = wasm_stamp_tactile_bristle(
+            rgba_ptr,
+            height_ptr,
+            w,
+            h,
+            PaperKind::ColdPress as u32,
+            u32::from_le_bytes(color),
+            9,
+            2026,
+            params_arr.as_ptr(),
+        );
+        assert_eq!(stamp_rc, expected_stats.touched_pixels as i32);
+        assert_eq!(
+            std::slice::from_raw_parts(rgba_ptr, rgba_len),
+            expected_rgba.as_slice()
+        );
+        assert_eq!(
+            std::slice::from_raw_parts(height_ptr, height_len),
+            expected_h.as_slice()
+        );
+
+        let comp_rc = wasm_composite_tile_dirty_rect(
+            dst_ptr,
+            rgba_ptr,
+            w,
+            h,
+            dirty.x,
+            dirty.y,
+            dirty.width,
+            dirty.height,
+            TileBlendMode::Overlay as u32,
+            200,
+        );
+        assert_eq!(comp_rc, expected_comp_px as i32);
+        assert_eq!(
+            std::slice::from_raw_parts(dst_ptr, rgba_len),
+            comp_dst.as_slice()
+        );
+
+        // 잘못된 포인터·중첩·열거 코드·투명도 범위 초과 시 음수 오류 코드 반환 검증
+        assert!(
+            wasm_stamp_tactile_bristle(
+                std::ptr::null_mut(),
+                height_ptr,
+                w,
+                h,
+                0,
+                0,
+                8,
+                1,
+                std::ptr::null()
+            ) < 0
+        );
+        assert!(
+            wasm_stamp_tactile_bristle(rgba_ptr, height_ptr, w, h, 99, 0, 8, 1, std::ptr::null())
+                < 0
+        );
+        assert!(wasm_composite_tile_dirty_rect(dst_ptr, dst_ptr, w, h, 0, 0, 4, 4, 0, 255) < 0);
+        assert!(wasm_composite_tile_dirty_rect(dst_ptr, rgba_ptr, w, h, 0, 0, 4, 4, 99, 255) < 0);
+        assert!(wasm_composite_tile_dirty_rect(dst_ptr, rgba_ptr, w, h, 0, 0, 4, 4, 0, 256) < 0);
+
+        wasm_free(rgba_ptr, rgba_len);
+        wasm_free(height_ptr as *mut u8, height_bytes);
+        wasm_free(dst_ptr, rgba_len);
     }
 }
