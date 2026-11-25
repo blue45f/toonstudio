@@ -14,7 +14,7 @@ import { useId, useMemo, useState, type ReactElement } from "react";
 
 import {
   applySafe180CameraFixes, audit180DegreeRule, CINEMA_FOCAL_LENGTHS, CINEMA_LENS_PRESETS,
-  computePinholeOptics, DEMO_CINEMATOGRAPHY_SCENES, evaluateCompositionHarmony, generateGoldenSpiralPathPoints,
+  reflectCameraAcrossAxis, computePinholeOptics, DEMO_CINEMATOGRAPHY_SCENES, evaluateCompositionHarmony, generateGoldenSpiralPathPoints,
   type CameraShotSpec, type CinemaFocalLengthMm, type CompositionFrameInput,
   type DemoCinematographyScene, type GazeDirection, type Rule180AuditReport, type ShotScaleId,
 } from "./cinematography-camera-engine";
@@ -24,14 +24,18 @@ import {
   type VerticalEyeFlowReport, type VerticalStripInput,
 } from "./vertical-eyeflow-verifier";
 
+import { nodeKey } from "./cinematography-input-contract";
+import { useExampleNotification } from "./use-example-notification";
+
 export type CinematographyDirectorTabId = "camera-180" | "vertical-eyeflow";
 
 export interface StudioCinematographyDirectorPanelProps {
   readonly initialTab?: CinematographyDirectorTabId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onCameraAuditChange?: (report: Rule180AuditReport) => void;
-  readonly onEyeFlowAuditChange?: (report: VerticalEyeFlowReport) => void;
+  /** 메모리 예제 결과 알림이며 실제 원고·기기·설정 적용이나 저장 완료 응답이 아니다. */
+  readonly onCameraAuditChange?: (report: Rule180AuditReport) => void | Promise<void>;
+  readonly onEyeFlowAuditChange?: (report: VerticalEyeFlowReport) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -121,6 +125,10 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
   const isEn = locale === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
 
+  const cameraNotification = useExampleNotification(onCameraAuditChange);
+  const eyeFlowNotification = useExampleNotification(onEyeFlowAuditChange);
+  const notifications = [cameraNotification, eyeFlowNotification];
+  const isPending = (): boolean => notifications.some((n) => n.isPending());
   const [activeTab, setActiveTab] = useState<CinematographyDirectorTabId>(initialTab);
   const [sceneIdx, setSceneIdx] = useState<number>(0);
   const activeScene = DEMO_CINEMATOGRAPHY_SCENES[sceneIdx] ?? FALLBACK_SCENE;
@@ -196,6 +204,7 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
   }, [eyeFlowReport]);
 
   const handleSelectScene = (nextIdx: number): void => {
+    if (isPending()) return;
     const target = DEMO_CINEMATOGRAPHY_SCENES[nextIdx] ?? FALLBACK_SCENE;
     setSceneIdx(nextIdx);
     setShots(target.shots);
@@ -205,65 +214,74 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
     setFocusDistanceM(target.defaultFocusDistanceM);
     setBackgroundDistanceM(target.defaultBackgroundDistanceM);
     setComposition(target.defaultComposition);
-    onCameraAuditChange?.(audit180DegreeRule({ actorA: target.actorA, actorB: target.actorB, shots: target.shots }));
+    cameraNotification.notify(audit180DegreeRule({ actorA: target.actorA, actorB: target.actorB, shots: target.shots }));
   };
 
   const handleSelectShot = (shot: CameraShotSpec): void => {
+    if (isPending()) return;
     setSelectedShotId(shot.shotId);
     setFocalLengthMm(shot.focalLengthMm);
   };
 
   const handleFocalSelect = (nextMm: CinemaFocalLengthMm): void => {
+    if (isPending()) return;
     setFocalLengthMm(nextMm);
     const nextShots = shots.map((s) => (s.shotId === selectedShotId ? { ...s, focalLengthMm: nextMm } : s));
     setShots(nextShots);
-    onCameraAuditChange?.(audit180DegreeRule({ actorA: activeScene.actorA, actorB: activeScene.actorB, shots: nextShots }));
+    cameraNotification.notify(audit180DegreeRule({ actorA: activeScene.actorA, actorB: activeScene.actorB, shots: nextShots }));
   };
 
   const handleFix180Crossing = (): void => {
+    if (isPending()) return;
     const fixedShots = applySafe180CameraFixes(shots, rule180Report);
     setShots(fixedShots);
-    onCameraAuditChange?.(audit180DegreeRule({ actorA: activeScene.actorA, actorB: activeScene.actorB, shots: fixedShots }));
+    cameraNotification.notify(audit180DegreeRule({ actorA: activeScene.actorA, actorB: activeScene.actorB, shots: fixedShots }));
   };
 
   const handleFlipSelectedShotSide = (): void => {
+    if (isPending()) return;
     const nextShots = shots.map((s) =>
-      s.shotId === selectedShotId ? { ...s, cameraPosition: { x: s.cameraPosition.x, z: Math.round(-s.cameraPosition.z * 100) / 100 } } : s,
+      s.shotId === selectedShotId ? { ...s, cameraPosition: reflectCameraAcrossAxis(activeScene.actorA.position, activeScene.actorB.position, s.cameraPosition) } : s,
     );
     setShots(nextShots);
-    onCameraAuditChange?.(audit180DegreeRule({ actorA: activeScene.actorA, actorB: activeScene.actorB, shots: nextShots }));
+    cameraNotification.notify(audit180DegreeRule({ actorA: activeScene.actorA, actorB: activeScene.actorB, shots: nextShots }));
   };
 
   const handleAutoReframeComposition = (): void => {
+    if (isPending()) return;
     setComposition((prev) => ({ ...prev, subjectFocalPoint: compositionResult.suggestedFocalPoint, headTopY: compositionResult.suggestedHeadTopY }));
   };
 
   const handleSelectStrip = (nextIdx: number): void => {
+    if (isPending()) return;
     const target = DEMO_VERTICAL_STRIPS[nextIdx] ?? FALLBACK_STRIP;
     setStripIdx(nextIdx);
     setWorkingStrip(target);
     setSelectedPanelId(target.panels[0]?.panelId ?? "");
-    onEyeFlowAuditChange?.(analyzeVerticalEyeFlow(target));
+    eyeFlowNotification.notify(analyzeVerticalEyeFlow(target));
   };
 
   const handleApplyEyeFlowFix = (): void => {
+    if (isPending()) return;
     const healed = applyEyeFlowPrescriptions(workingStrip, eyeFlowReport);
     setWorkingStrip(healed);
-    onEyeFlowAuditChange?.(analyzeVerticalEyeFlow(healed));
+    eyeFlowNotification.notify(analyzeVerticalEyeFlow(healed));
   };
 
   const handleResetEyeFlow = (): void => {
+    if (isPending()) return;
     setWorkingStrip(baseStrip);
-    onEyeFlowAuditChange?.(analyzeVerticalEyeFlow(baseStrip));
+    eyeFlowNotification.notify(analyzeVerticalEyeFlow(baseStrip));
   };
 
   const handleUpdatePanelGutter = (panelId: string, nextGutterPx: number): void => {
+    if (isPending()) return;
     const updated: VerticalStripInput = {
       ...workingStrip,
       panels: workingStrip.panels.map((p) => (p.panelId === panelId ? { ...p, gutterAfterPx: nextGutterPx } : p)),
     };
     setWorkingStrip(updated);
-    onEyeFlowAuditChange?.(analyzeVerticalEyeFlow(updated));
+    eyeFlowNotification.notify(analyzeVerticalEyeFlow(updated));
   };
 
   const activeGutterPanel = workingStrip.panels.find((p) => p.panelId === selectedPanelId) ?? workingStrip.panels[0];
@@ -286,6 +304,7 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
   return (
     <section
       data-testid="cinematography-director-panel"
+      aria-busy={notifications.some((n) => n.status === "pending")}
       aria-label={pick("웹툰 시네마토그래피 3D 카메라 연출 · 180도 법칙 · 세로 시선 흐름 감독 워크벤치", "Webtoon Cinematography 3D Camera, 180-Degree Rule & Eye-Flow Director")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
@@ -298,7 +317,7 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
             </h2>
           </div>
           <p className="text-xs text-fg-2">
-            {pick("35mm 풀프레임 렌즈 화각·피사계 심도와 180도 시선 축 넘침을 실시간 검증하고, 세로 스크롤 Z/S-커브 시선 역주행과 컷 여백을 자동 처방합니다.", "Audit 35mm full-frame optics, 180-degree Line-of-Action crossings, golden composition harmony, and vertical scroll Z/S eye-flow.")}
+            {pick("고정 합성 샷·콘티의 핀홀 광학, 시선 축, 구도·앵커 규칙을 CPU로 계산합니다.", "CPU calculations use fixed synthetic shots and strips for pinhole optics, axis, framing and anchor rules.")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -320,6 +339,12 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
           </span>
         </div>
       </header>
+      <p data-testid="cinematography-scope-notice" className="text-xs text-fg-2">{pick("합성 데이터와 SVG 계산 예제입니다. 점수·읽기 시간은 고정 규칙의 추정이며 독자 시선·기기 성능 실측이 아닙니다. 실제 3D 씬 카메라·원고·저장에는 반영하지 않으며 패널을 닫으면 예제 상태가 사라집니다.", "Synthetic data and SVG calculation examples. Scores and read times are rule estimates, not measured reader gaze or device performance. No real 3D camera, manuscript or storage changes; state ends when this panel closes.")}</p>
+      {notifications.map((n, i) => n.status !== "idle" ? <div key={i} data-testid={`cinema-notification-${i}`} role={n.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+        {n.status === "failed" ? pick("예제 알림 실패", "Example notification failed") : n.status === "pending" ? pick("예제 알림 대기 중", "Example notification pending") : n.status === "local-only" ? pick("메모리 예제만 변경됨 · 수신자 미연결", "Memory example changed; no receiver") : pick("예제 알림 완료", "Example notification delivered")} · {pick("실제 적용·저장 완료 아님", "No real apply or save confirmed")}
+        {n.status === "failed" ? <button type="button" onClick={n.retry} className={PILL_BTN}>{pick("예제 알림 다시 시도", "Retry example notification")}</button> : null}
+      </div> : null)}
+      <fieldset disabled={notifications.some((n) => n.status === "pending")} className="m-0 min-w-0 space-y-4 border-0 p-0">
 
       <div role="tablist" aria-label={pick("시네마토그래피 감독 작업 탭", "Cinematography Director Tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
@@ -369,7 +394,7 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
             <div className="grid gap-3 md:grid-cols-3">
               <RangeSlider id={`${uid}-aperture`} testId="slider-aperture" readoutTestId="readout-aperture" label={pick("조리개 (f-stop)", "Aperture (f-stop)")} readout={`f/${apertureFStop.toFixed(1)}`} min={1.4} max={16} step={0.2} value={apertureFStop} onChange={setApertureFStop} />
               <RangeSlider id={`${uid}-focus-dist`} testId="slider-focus-distance" readoutTestId="readout-focus-distance" label={pick("초점 거리 (피사체)", "Focus Distance")} readout={`${focusDistanceM.toFixed(1)}m`} min={0.8} max={12} step={0.2} value={focusDistanceM} onChange={setFocusDistanceM} />
-              <RangeSlider id={`${uid}-bg-dist`} testId="slider-bg-distance" readoutTestId="readout-bg-distance" label={pick("배경 거리 (CoC 측정)", "Background Distance")} readout={`${backgroundDistanceM.toFixed(1)}m`} min={2} max={30} step={0.5} value={backgroundDistanceM} onChange={setBackgroundDistanceM} />
+              <RangeSlider id={`${uid}-bg-dist`} testId="slider-bg-distance" readoutTestId="readout-bg-distance" label={pick("배경 거리 (CoC 계산)", "Background Distance")} readout={`${backgroundDistanceM.toFixed(1)}m`} min={2} max={30} step={0.5} value={backgroundDistanceM} onChange={setBackgroundDistanceM} />
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -604,15 +629,15 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
                 {stripSvgLayout.svgPathD && <path d={stripSvgLayout.svgPathD} fill="none" strokeWidth={2.2} className="stroke-accent" />}
                 {eyeFlowReport.segments.map((seg) => {
                   if (!seg.isReverseBacktrack && !seg.isPingPongRisk && !seg.isDeadTrapLink) return null;
-                  const fromPt = stripSvgLayout.scaledPoints.find((pt) => pt.nodeId === seg.fromNodeId);
-                  const toPt = stripSvgLayout.scaledPoints.find((pt) => pt.nodeId === seg.toNodeId);
+                  const fromPt = stripSvgLayout.scaledPoints.find((pt) => pt.panelId === seg.fromPanelId && pt.nodeId === seg.fromNodeId);
+                  const toPt = stripSvgLayout.scaledPoints.find((pt) => pt.panelId === seg.toPanelId && pt.nodeId === seg.toNodeId);
                   if (!fromPt || !toPt) return null;
-                  return <line key={`${seg.fromNodeId}-${seg.toNodeId}`} x1={fromPt.globalX} y1={fromPt.globalY} x2={toPt.globalX} y2={toPt.globalY} strokeDasharray="5 3" strokeWidth={2.4} className={seg.isReverseBacktrack ? "stroke-bad" : "stroke-warn"} />;
+                  return <line key={JSON.stringify([seg.fromPanelId, seg.fromNodeId, seg.toPanelId, seg.toNodeId])} x1={fromPt.globalX} y1={fromPt.globalY} x2={toPt.globalX} y2={toPt.globalY} strokeDasharray="5 3" strokeWidth={2.4} className={seg.isReverseBacktrack ? "stroke-bad" : "stroke-warn"} />;
                 })}
                 {stripSvgLayout.scaledPoints.map((pt) => {
-                  const hasDefect = eyeFlowReport.defects.some((d) => d.nodeId === pt.nodeId);
+                  const hasDefect = eyeFlowReport.defects.some((d) => d.panelId === pt.panelId && d.nodeId === pt.nodeId);
                   return (
-                    <g key={pt.nodeId}>
+                    <g key={nodeKey(pt.panelId, pt.nodeId)}>
                       {pt.gazeVector && <line x1={pt.globalX} y1={pt.globalY} x2={pt.globalX + pt.gazeVector.dx * 28} y2={pt.globalY + pt.gazeVector.dy * 28} strokeWidth={1.8} className={hasDefect ? "stroke-bad" : "stroke-cool"} />}
                       <circle cx={pt.globalX} cy={pt.globalY} r={10} strokeWidth={1.8} className={hasDefect ? "fill-bad-soft stroke-bad" : "fill-good-soft stroke-good"} />
                       <text x={pt.globalX} y={pt.globalY + 3.5} textAnchor="middle" className="fill-fg text-[9px] font-bold">{pt.stepIndex + 1}</text>
@@ -644,7 +669,7 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
                 {eyeFlowReport.anchorPrescriptions.length > 0 && (
                   <ul data-testid="anchor-prescriptions-list" className="space-y-1.5">
                     {eyeFlowReport.anchorPrescriptions.map((rx) => (
-                      <li key={rx.nodeId} className="rounded-md border border-line bg-raised px-2.5 py-2 text-xs">
+                      <li key={nodeKey(rx.panelId, rx.nodeId)} className="rounded-md border border-line bg-raised px-2.5 py-2 text-xs">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="font-semibold text-fg">{isEn ? rx.labelEn : rx.labelKo}</span>
                           <span className="font-bold text-accent tabular-nums">dx {rx.dx >= 0 ? `+${rx.dx}` : rx.dx}px · dy {rx.dy >= 0 ? `+${rx.dy}` : rx.dy}px</span>
@@ -685,6 +710,7 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
           </div>
         </div>
       )}
+      </fieldset>
     </section>
   );
 }

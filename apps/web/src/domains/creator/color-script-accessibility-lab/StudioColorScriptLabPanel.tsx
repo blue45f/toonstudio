@@ -21,16 +21,19 @@ import {
   type RgbColor, type RiskSeverity,
 } from "./colorblind-harmony-engine";
 
+import { useExampleNotification } from "./use-example-notification";
+
 export type ColorScriptLabTabId = "arc" | "cvd" | "dualViewer";
 
 export interface StudioColorScriptLabPanelProps {
   readonly initialTab?: ColorScriptLabTabId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onHarmonyRuleChange?: (rule: HarmonyRuleId) => void;
-  readonly onCvdTypeChange?: (type: ColorVisionDeficiencyType) => void;
-  readonly onApplySafeColor?: (pairId: string, suggestedHex: string) => void;
-  readonly onApplyDualViewerRepair?: (presetId: string, recommendedBorderHex: string) => void;
+  /** 메모리 예제 결과 알림이며 실제 원고·기기·설정 적용이나 저장 완료 응답이 아니다. */
+  readonly onHarmonyRuleChange?: (rule: HarmonyRuleId) => void | Promise<void>;
+  readonly onCvdTypeChange?: (type: ColorVisionDeficiencyType) => void | Promise<void>;
+  readonly onApplySafeColor?: (pairId: string, suggestedHex: string) => void | Promise<void>;
+  readonly onApplyDualViewerRepair?: (presetId: string, recommendedBorderHex: string) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -123,6 +126,12 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
   const isEn = locale === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
 
+  const harmonyNotification = useExampleNotification(onHarmonyRuleChange);
+  const cvdNotification = useExampleNotification(onCvdTypeChange);
+  const safeColorNotification = useExampleNotification(onApplySafeColor ? (value: readonly [string, string]) => onApplySafeColor(value[0], value[1]) : undefined);
+  const dualNotification = useExampleNotification(onApplyDualViewerRepair ? (value: readonly [string, string]) => onApplyDualViewerRepair(value[0], value[1]) : undefined);
+  const notifications = [harmonyNotification, cvdNotification, safeColorNotification, dualNotification];
+  const isPending = (): boolean => notifications.some((n) => n.isPending());
   const [activeTab, setActiveTab] = useState<ColorScriptLabTabId>(initialTab);
   const [arcPresetId, setArcPresetId] = useState<EmotionArcPresetId>(EPISODE_EMOTION_ARC_PRESETS[0]!.id);
   const [baseHueDeg, setBaseHueDeg] = useState<number>(EPISODE_EMOTION_ARC_PRESETS[0]!.baseHueDeg);
@@ -158,21 +167,24 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
   const borderLightness = useMemo(() => srgbToOklch(dualInput.borderColor).L, [dualInput.borderColor]);
 
   const handleSelectArcPreset = (presetId: EmotionArcPresetId): void => {
+    if (isPending()) return;
     const preset = EPISODE_EMOTION_ARC_PRESETS.find((p) => p.id === presetId) ?? EPISODE_EMOTION_ARC_PRESETS[0]!;
     setArcPresetId(preset.id);
     setBaseHueDeg(preset.baseHueDeg);
     setHarmonyRule(preset.harmonyRule);
     setBaseChroma(preset.baseChroma);
     setTensionCurve(preset.tensionCurve);
-    onHarmonyRuleChange?.(preset.harmonyRule);
+    harmonyNotification.notify(preset.harmonyRule);
   };
 
   const handleSelectHarmonyRule = (nextRule: HarmonyRuleId): void => {
+    if (isPending()) return;
     setHarmonyRule(nextRule);
-    onHarmonyRuleChange?.(nextRule);
+    harmonyNotification.notify(nextRule);
   };
 
   const handleUpdateTension = (actIndex: 0 | 1 | 2 | 3, value: number): void => {
+    if (isPending()) return;
     setTensionCurve((prev) => {
       const next: [number, number, number, number] = [prev[0], prev[1], prev[2], prev[3]];
       next[actIndex] = value;
@@ -181,33 +193,39 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
   };
 
   const handleSelectCvdType = (nextType: ColorVisionDeficiencyType): void => {
+    if (isPending()) return;
     setActiveCvdType(nextType);
-    onCvdTypeChange?.(nextType);
+    cvdNotification.notify(nextType);
   };
 
   const handleSelectPair = (pairId: string): void => {
+    if (isPending()) return;
     setActivePairId(pairId);
     setOverrideColorB(null);
   };
 
   const handleApplySafeAlternative = (): void => {
+    if (isPending()) return;
     if (!pairReport.suggestion) return;
     setOverrideColorB(pairReport.suggestion.suggestedColorB);
-    onApplySafeColor?.(effectivePair.id, pairReport.suggestion.suggestedHex);
+    safeColorNotification.notify([effectivePair.id, pairReport.suggestion.suggestedHex]);
   };
 
   const handleSelectDualPreset = (presetId: string): void => {
+    if (isPending()) return;
     const preset = DUAL_VIEWER_PANEL_PRESETS.find((p) => p.id === presetId) ?? DUAL_VIEWER_PANEL_PRESETS[0]!;
     setDualPresetId(preset.id);
     setDualInput(preset);
   };
 
   const handleBorderLightnessChange = (nextL: number): void => {
+    if (isPending()) return;
     const lch = srgbToOklch(dualInput.borderColor);
     setDualInput((prev) => ({ ...prev, borderColor: oklchToSrgb({ L: nextL, C: lch.C, h: lch.h }) }));
   };
 
   const handleApplyDualRepair = (): void => {
+    if (isPending()) return;
     const r = dualReport.repairSuggestion;
     setDualInput((prev) => ({
       ...prev,
@@ -217,7 +235,7 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
       outerHaloWidthPx: r.recommendedOuterHaloWidthPx,
       hasTransparentOutside: true,
     }));
-    onApplyDualViewerRepair?.(dualInput.id, r.recommendedBorderHex);
+    dualNotification.notify([dualInput.id, r.recommendedBorderHex]);
   };
 
   const tabs: readonly { readonly id: ColorScriptLabTabId; readonly label: string; readonly icon: ReactElement }[] = [
@@ -236,6 +254,7 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
   return (
     <section
       data-testid="color-script-a11y-panel"
+      aria-busy={notifications.some((n) => n.status === "pending")}
       aria-label={pick("회차 4막 컬러 스크립트 · 4종 색각이상 LMS 시뮬레이터 · 다크/라이트 양면 뷰어 검수 랩", "Episode 4-Act Color Script, LMS CVD Simulator & Dual-Viewer Lab")}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
@@ -243,7 +262,7 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-0.5 text-[11px] font-semibold text-fg-2">
             <Layers className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>{pick("Wave 41D · OKLCH 4막 아크 · Viénot/Brettel LMS · 양면 모바일 뷰어", "Wave 41D · OKLCH 4-Act Arc · Viénot/Brettel LMS · Dual Viewer")}</span>
+            <span>{pick("Wave 41D · OKLCH 합성 아크 · LMS 근사 모델 · 양면 SVG 예제", "Wave 41D · Synthetic OKLCH Arc · Approximate LMS Models · Dual SVG Example")}</span>
           </div>
           <h2 className="text-base font-bold text-fg">
             {pick("컬러 스크립트 · 색각이상 접근성 · 다크/라이트 경계 검수 랩", "Color Script · Color Vision Accessibility · Dual-Viewer Lab")}
@@ -253,6 +272,12 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
           {pick(`양면 점수 ${dualReport.overallScore}점 · 최저 ΔE00 ${pairReport.minDeltaE00.toFixed(1)}`, `Dual ${dualReport.overallScore}/100 · Min ΔE00 ${pairReport.minDeltaE00.toFixed(1)}`)}
         </div>
       </header>
+      <p data-testid="color-script-scope-notice" className="text-xs text-fg-2">{pick("고정 합성 색·도형을 CPU와 SVG로 비교하는 모델 계산 예제입니다. 색각 시뮬레이션·대비·경계 점수는 실제 이용자 접근성·모바일 기기·영상·원고 픽셀의 실측이나 출고 승인이 아닙니다. 실제 원고·설정·영구 저장에는 반영하지 않으며 패널을 닫으면 예제 상태가 사라집니다.", "CPU and SVG model calculations compare fixed synthetic colors and shapes. CVD, contrast and border scores are not measured user accessibility, mobile hardware, media or manuscript pixels, nor publication approval. No manuscript, settings or persistent storage changes; state ends when this panel closes.")}</p>
+      {notifications.map((n, i) => n.status !== "idle" ? <div key={i} data-testid={`color-notification-${i}`} role={n.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+        {n.status === "failed" ? pick("예제 알림 실패", "Example notification failed") : n.status === "pending" ? pick("예제 알림 대기 중", "Example notification pending") : n.status === "local-only" ? pick("메모리 예제만 변경됨 · 수신자 미연결", "Memory example changed; no receiver") : pick("예제 알림 완료", "Example notification delivered")} · {pick("실제 적용·저장 완료 아님", "No real apply or save confirmed")}
+        {n.status === "failed" ? <button type="button" onClick={n.retry} className={BTN_OUTLINE}>{pick("예제 알림 다시 시도", "Retry example notification")}</button> : null}
+      </div> : null)}
+      <fieldset disabled={notifications.some((n) => n.status === "pending")} className="m-0 min-w-0 space-y-4 border-0 p-0">
 
       <div role="tablist" aria-label={pick("컬러 스크립트 및 접근성 검수 탭", "Color Script & Accessibility Tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => {
@@ -465,7 +490,7 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden="true" />
                   <div className="space-y-1 text-xs">
                     <div className="font-bold text-fg">
-                      {pick(`안전 대체 색 제안: ${pairReport.suggestion.originalBHex} → ${pairReport.suggestion.suggestedHex}`, `Safe Replacement: ${pairReport.suggestion.originalBHex} → ${pairReport.suggestion.suggestedHex}`)}
+                      {pick(`모델 후보 색 제안: ${pairReport.suggestion.originalBHex} → ${pairReport.suggestion.suggestedHex}`, `Model Candidate: ${pairReport.suggestion.originalBHex} → ${pairReport.suggestion.suggestedHex}`)}
                     </div>
                     <p className="text-[11px] text-fg-2">{isEn ? pairReport.suggestion.reasonEn : pairReport.suggestion.reasonKo}</p>
                   </div>
@@ -474,7 +499,7 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
                   <SwatchBadgeSvg fillHex={pairReport.suggestion.suggestedHex} label={pairReport.suggestion.suggestedHex} sizeClass="h-8 w-8" />
                   <button data-testid="cvd-apply-safe-btn" type="button" onClick={handleApplySafeAlternative} className={BTN_SOLID}>
                     <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>{pick("안전 대체 색 적용", "Apply Safe Color")}</span>
+                    <span>{pick("후보 색을 예제에 적용", "Apply Safe Color")}</span>
                   </button>
                 </div>
               </div>
@@ -482,7 +507,7 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
               <div data-testid="cvd-safe-banner" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-good/40 bg-good-soft p-3 text-xs font-semibold text-good">
                 <span className="inline-flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                  {pick("적색맹·녹색맹·청황색맹·전색맹 4종 모두 안전 구분 기준을 충족합니다.", "Passes discriminability checks across all 4 color vision models.")}
+                  {pick("적색맹·녹색맹·청황색맹·전색맹 4종 모델의 예제 구분 기준을 충족합니다.", "Passes discriminability checks across all 4 color vision models.")}
                 </span>
                 {overrideColorB ? (
                   <button data-testid="cvd-reset-color-btn" type="button" onClick={() => setOverrideColorB(null)} className={BTN_OUTLINE}>
@@ -504,7 +529,7 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
                 {pick(`모바일 다크(${dualReport.darkViewer.viewerBgHex}) vs 라이트(${dualReport.lightViewer.viewerBgHex}) 양면 뷰어 검수`, `Mobile Dark (${dualReport.darkViewer.viewerBgHex}) vs Light (${dualReport.lightViewer.viewerBgHex}) Audit`)}
               </h3>
               <span data-testid="dual-viewer-score-badge" className={`rounded-md border px-2 py-0.5 text-[11px] font-bold tabular-nums ${dualGradeBadgeClass}`}>
-                {pick(`양면 가독성 ${dualReport.overallScore}점 · ${dualReport.grade === "pass" ? "양면 통과" : dualReport.grade === "caution" ? "보완 권장" : "출고 보류"}`, `Dual Score ${dualReport.overallScore}/100 · ${dualReport.grade.toUpperCase()}`)}
+                {pick(`양면 가독성 ${dualReport.overallScore}점 · ${dualReport.grade === "pass" ? "예제 기준 통과" : dualReport.grade === "caution" ? "보완 권장" : "예제 기준 미달"}`, `Dual Score ${dualReport.overallScore}/100 · ${dualReport.grade.toUpperCase()}`)}
               </span>
             </div>
 
@@ -580,19 +605,20 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-canvas p-3">
               <div className="space-y-1 text-xs">
-                <div className="font-bold text-fg">{pick("양면 안전 경계 보정 처방", "Dual-Viewer Repair Prescription")}</div>
+                <div className="font-bold text-fg">{pick("예제 경계 보정 제안", "Dual-Viewer Repair Prescription")}</div>
                 <p data-testid="dual-repair-guidance" className="text-[11px] text-fg-2">
                   {isEn ? dualReport.repairSuggestion.guidanceEn : dualReport.repairSuggestion.guidanceKo}
                 </p>
               </div>
               <button data-testid="dual-viewer-apply-repair-btn" type="button" onClick={handleApplyDualRepair} className={BTN_SOLID}>
                 <Wand2 className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("양면 안전 경계 자동 보정", "Auto-Fix Dual Border")}</span>
+                <span>{pick("예제 경계 보정", "Auto-Fix Dual Border")}</span>
               </button>
             </div>
           </div>
         </div>
       )}
+      </fieldset>
     </section>
   );
 }
