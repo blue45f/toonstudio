@@ -11,7 +11,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Code2, Copy, Eye, EyeOff,
   Moon, Plus, RotateCcw, SlidersHorizontal, Smartphone, Sun, Trash2, Wand2,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useId, useMemo, useState, type ReactElement } from "react";
 
 import {
   MANUSCRIPT_WIDTH_PRESETS, MOBILE_DEVICE_PROFILES, READABILITY_MIN_EFFECTIVE_FONT_PX,
@@ -24,6 +24,9 @@ import {
   type ReaderPlatformId, type ViewerThemeMode,
 } from "./mobile-reader-sim-engine";
 
+import { MAX_READER_CUTS } from "./mobile-reader-input-contract";
+import { useExampleCopy, useExampleNotification } from "./use-example-delivery";
+
 export interface StudioMobileReaderPreviewPanelProps {
   readonly initialDeviceId?: MobileDeviceProfileId;
   readonly initialPlatformId?: ReaderPlatformId;
@@ -33,9 +36,9 @@ export interface StudioMobileReaderPreviewPanelProps {
   readonly initialCuts?: readonly MobileReaderCutInput[];
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onAuditChange?: (audit: MobileReaderAuditResult) => void;
-  readonly onExportJson?: (json: string, audit: MobileReaderAuditResult) => void;
-  readonly onExportSvg?: (svg: string, audit: MobileReaderAuditResult) => void;
+  readonly onAuditChange?: (audit: MobileReaderAuditResult) => void | Promise<void>;
+  readonly onExportJson?: (json: string, audit: MobileReaderAuditResult) => void | Promise<void>;
+  readonly onExportSvg?: (svg: string, audit: MobileReaderAuditResult) => void | Promise<void>;
 }
 
 type ExportPreviewTab = "json" | "svg" | "hidden";
@@ -239,14 +242,15 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
   const previewSvg = useMemo<string>(() => buildMobilePreviewSvg(audit, { scrollOffsetCssPx: clampedScrollCssPx, locale }), [audit, clampedScrollCssPx, locale]);
   const reportJson = useMemo<string>(() => exportMobileReaderAuditJson(audit), [audit]);
 
-  useEffect(() => { onAuditChange?.(audit); }, [audit, onAuditChange]);
+  const notification = useExampleNotification(audit, onAuditChange);
+  const delivery = useExampleCopy<MobileReaderAuditResult, "json" | "svg">({ json: onExportJson, svg: onExportSvg });
 
   const handleSelectDevice = (nextId: MobileDeviceProfileId): void => {
     setDeviceId(nextId);
     setScrollOffsetCssPx(0);
     setLastAutoFix(null);
     const spec = getMobileDeviceProfile(nextId);
-    setStatusMessage(pick(`${spec.labelKo} 실기기 프로필로 전환했습니다.`, `Switched to ${spec.labelEn}.`));
+    setStatusMessage(pick(`${spec.labelKo} 고정 치수 프로필로 전환했습니다.`, `Switched to ${spec.labelEn}.`));
   };
 
   const handleSelectPlatform = (nextId: ReaderPlatformId): void => {
@@ -266,8 +270,11 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
   };
 
   const handleAddCut = (): void => {
-    const seq = customCutSeq;
-    setCustomCutSeq((n) => n + 1);
+    if (cuts.length >= MAX_READER_CUTS) return;
+    let seq = customCutSeq;
+    const ids = new Set(cuts.map((cut) => cut.id));
+    while (ids.has(`custom-cut-${seq}`)) seq += 1;
+    setCustomCutSeq(seq + 1);
     setCuts((prev) => [
       ...prev,
       {
@@ -294,7 +301,7 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
     setStatusMessage(
       fixed.fixes.length > 0
         ? pick(`${fixed.fixes.length}개 컷을 자동 보정했습니다 (적합도 ${fixed.beforeAudit.summary.overallReadinessScore} → ${fixed.afterAudit.summary.overallReadinessScore}).`, `Auto-fixed ${fixed.fixes.length} cuts (score ${fixed.beforeAudit.summary.overallReadinessScore} -> ${fixed.afterAudit.summary.overallReadinessScore}).`)
-        : pick("현재 모든 컷이 가독성·다크모드·하단 여백 기준을 충족합니다.", "All cuts already pass readability, glare, and bottom clearance checks."),
+        : pick("현재 모든 컷이 이 계산 예제의 가독성·여백 가정을 충족합니다.", "All cuts meet this example’s readability, glare, and clearance assumptions."),
     );
   };
 
@@ -311,24 +318,13 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
     setStatusMessage(pick("시뮬레이터 기기·플랫폼·샘플 컷을 기본값으로 복원했습니다.", "Restored simulator defaults."));
   };
 
-  const copySafely = (text: string): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(text).catch(() => undefined);
-    }
-  };
-
   const handleCopyJson = (): void => {
-    onExportJson?.(reportJson, audit);
-    copySafely(reportJson);
     setExportTab("json");
-    setStatusMessage(pick(`모바일 뷰어 감사 JSON(${reportJson.length.toLocaleString("ko-KR")}B)을 복사했습니다.`, `Copied audit JSON (${reportJson.length.toLocaleString("en-US")} B).`));
+    delivery.copy("json", reportJson, audit);
   };
-
   const handleCopySvg = (): void => {
-    onExportSvg?.(previewSvg, audit);
-    copySafely(previewSvg);
     setExportTab("svg");
-    setStatusMessage(pick(`스마트폰 목업 SVG(${previewSvg.length.toLocaleString("ko-KR")}B)를 복사했습니다.`, `Copied mockup SVG (${previewSvg.length.toLocaleString("en-US")} B).`));
+    delivery.copy("svg", previewSvg, audit);
   };
 
   const scrollSliderId = `${uid}-scroll-offset`;
@@ -344,7 +340,7 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full border border-accent bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent">
               <Smartphone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {pick("출고 전 실기기 검수", "Pre-Flight Mobile QA")}
+              {pick("고정 치수 계산 예제", "Fixed-Dimension Example")}
             </span>
             <span data-testid="reader-sim-estimate-badge" data-source-kind={audit.dataSourceKind} className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-raised px-2.5 py-0.5 text-[11px] font-semibold text-fg-2">
               <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -355,7 +351,7 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
             {pick("모바일 독자 뷰어 9:16 라이브 시뮬레이터", "Mobile Reader 9:16 Live Preview Simulator")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("노치·다크모드·하단 댓글바·말풍선 축소 가독성(11.5px 기준)을 4대 실기기와 3대 플랫폼 크롬에서 출고 전에 즉시 검증합니다.", "Verify notch safe-areas, dark-mode glare, comment bar overlap, and scaled bubble readability across 4 devices and 3 platforms.")}
+            {pick("합성 컷 메타데이터와 고정 치수로 축소 가독성·뷰어 영역을 추정합니다. 실제 기기·플랫폼·원고 픽셀 검증, 원고 반영 및 저장은 수행하지 않습니다.", "Estimate readability and viewer areas from synthetic cut metadata and fixed dimensions. No physical-device, live-platform, or artwork-pixel checks, manuscript changes, or persistence.")}
           </p>
         </div>
 
@@ -368,17 +364,24 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
             <RotateCcw className="h-4 w-4 shrink-0" aria-hidden="true" />
             {pick("초기화", "Reset")}
           </button>
-          <button type="button" data-testid="reader-sim-copy-json-btn" onClick={handleCopyJson} className={BTN_OUTLINE}>
+          <button type="button" data-testid="reader-sim-copy-json-btn" disabled={delivery.state === "pending"} onClick={handleCopyJson} className={BTN_OUTLINE}>
             <Copy className="h-4 w-4 shrink-0" aria-hidden="true" />
             {pick("JSON 복사", "Copy JSON")}
           </button>
-          <button type="button" data-testid="reader-sim-copy-svg-btn" onClick={handleCopySvg} className={BTN_OUTLINE}>
+          <button type="button" data-testid="reader-sim-copy-svg-btn" disabled={delivery.state === "pending"} onClick={handleCopySvg} className={BTN_OUTLINE}>
             <Code2 className="h-4 w-4 shrink-0" aria-hidden="true" />
             {pick("SVG 복사", "Copy SVG")}
           </button>
         </div>
       </header>
 
+      <div role="status" aria-live="polite" className="space-y-2 text-xs [word-break:keep-all]">
+        {notification.pending ? <p>{pick("예제 감사 전달 중", "Sending example audit")}</p> : null}
+        {notification.error ? <div>{pick("감사 전달 실패. 원고 저장은 수행하지 않습니다.", "Audit delivery failed. No manuscript is saved.")} <button type="button" data-testid="reader-sim-notify-retry" disabled={notification.pending} onClick={notification.retry} className={BTN_OUTLINE}>{pick("전달 재시도", "Retry delivery")}</button></div> : null}
+        {delivery.state === "pending" ? <p>{pick("클립보드 복사·예제 전달 중", "Copying and delivering example")}</p> : null}
+        {delivery.state === "error" ? <div>{pick("복사 또는 예제 전달 실패. 완료된 복사는 반복하지 않습니다.", "Copy or example delivery failed. Completed copies are not repeated.")} <button type="button" data-testid="reader-sim-export-retry" onClick={delivery.retry} className={BTN_OUTLINE}>{pick("내보내기 재시도", "Retry export")}</button></div> : null}
+        {delivery.state === "copied" ? <p>{pick("클립보드에 복사했습니다. 원고·서버에는 저장하지 않았습니다.", "Copied to clipboard. No manuscript or server save was performed.")}</p> : null}
+      </div>
       {statusMessage ? (
         <div data-testid="reader-sim-status-banner" role="status" aria-live="polite" className="rounded-lg border border-accent bg-accent-soft px-3.5 py-2 text-xs font-medium text-accent [word-break:keep-all]">
           {statusMessage}
@@ -508,7 +511,7 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
               <SlidersHorizontal className="h-4 w-4 text-accent" aria-hidden="true" />
               <span className="[word-break:keep-all]">{pick("3. 컷별 말풍선 폰트 · 하단 여백 · 경계 편집", "3. Per-Cut Bubble Font, Gutter & Edge Editor")}</span>
             </div>
-            <button type="button" data-testid="reader-sim-add-cut-btn" onClick={handleAddCut} className={BTN_OUTLINE}>
+            <button type="button" data-testid="reader-sim-add-cut-btn" disabled={cuts.length >= MAX_READER_CUTS} onClick={handleAddCut} className={BTN_OUTLINE}>
               <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {pick("컷 추가", "Add Cut")}
             </button>
@@ -597,7 +600,7 @@ export function StudioMobileReaderPreviewPanel(props: StudioMobileReaderPreviewP
 
         <aside className="space-y-3 rounded-xl border border-line bg-canvas p-3.5">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{pick("실기기 스마트폰 프레임 프리뷰", "Live Device Frame Preview")}</h3>
+            <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{pick("기기 치수 목업 예제", "Device-Dimension Mockup")}</h3>
             <span className="text-[11px] text-fg-3 tabular-nums">{`${audit.device.cssWidthPx}×${audit.device.cssHeightPx}`}</span>
           </div>
           <div className="rounded-lg border border-line bg-raised p-3">

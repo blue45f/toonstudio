@@ -70,6 +70,25 @@ describe("verify-solo-commercial-readiness (1인 기업 상용 라이선스·Ope
     assert.match(summaryText, /p5@/u);
   });
 
+  test("PNPM 중첩 피어의 버전과 직접 부모 출처를 괄호·패치 메타데이터와 구분한다", () => {
+    const cases = [
+      { key: "p5.brush@2.2.1(patch_hash=fixture)(p5@2.3.1(typescript@6.0.3))", via: "p5.brush@2.2.1" },
+      { key: "@studio/brush@1.0.0(@studio/runtime@2.0.0(p5@2.3.1(typescript@6.0.3)))", via: "@studio/runtime@2.0.0" },
+      { key: "brush-host@1.0.0(p5@2.3.1)(typescript@6.0.3)", via: "brush-host@1.0.0" },
+    ];
+    for (const { key, via } of cases) withTempFixture((dir) => {
+      writeJson(path.join(dir, "package.json"), { name: "fixture-nested-peers" });
+      writeFileSync(path.join(dir, "pnpm-lock.yaml"),
+        `lockfileVersion: '9.0'\npackages:\n  p5@2.3.1: {}\nsnapshots:\n  '${key}': {}\n`, "utf8");
+      const report = evaluateSoloCommercialReadiness({ rootDir: dir, includeNodeModules: false });
+      assert.equal(report.ok, true);
+      const p5 = report.lgplPackages.find(item => item.name === "p5");
+      assert.equal(p5?.version, "2.3.1");
+      assert.equal(p5?.installedVia, `peer/transitive via ${via}`);
+      assert.match(p5?.license ?? "", /LGPL/u);
+    });
+  });
+
   test("SPDX 분류기는 GPL·AGPL·SSPL·CC-BY-NC를 차단하고 LGPL 및 허용적 OR 이중 라이선스는 오탐하지 않는다", () => {
     assert.equal(classifyLicenseExpression("GPL-3.0-only").status, "blocked");
     assert.deepEqual(classifyLicenseExpression("GPL-3.0-only").blockedCategories, ["GPL"]);

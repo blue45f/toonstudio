@@ -2,7 +2,7 @@
  * Wave 44E — 어시스턴트·외주 분업 인수인계 패키지 & 선화·채색·식자 검수 킷 패널.
  *
  * - 5대 공정 선택 · 한국 스튜디오 7대 표준 레이어(`01_LINE`~`07_TEXT`) 실시간 감사 · 원클릭 표준명 자동 보정 미리보기
- * - 차단(blocker) 이슈 집계 · 공정 QA 체크리스트 · 컷당 단가 × 담당 컷 수 정산 시뮬레이터(추정 · 3.3% 원천징수 참고)
+ * - 차단(blocker) 이슈 집계 · 공정 QA 체크리스트 · 컷당 단가 × 담당 컷 수 정산 시뮬레이터(추정 · 가정 세액 참고)
  * - 원클릭 인수인계 브리프(Markdown / JSON) 미리보기 및 복사
  * - Calm Atelier 시맨틱 토큰 전용 (원시 색 · 광범위 트랜지션 · 기본 빈 객체 props · Web Storage 미사용)
  */
@@ -12,6 +12,11 @@ import {
   Eye, EyeOff, FileText, Layers, Lock, Plus, RotateCcw, ShieldAlert, Trash2, Unlock, Wand2,
 } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+
+import { OperationStatus } from "./OperationStatus";
+import { MAX_HANDOFF_LAYERS, uniqueHandoffId } from "./handoff-input-contract";
+import { useExampleNotification } from "./use-example-notification";
+import { useClipboardOutput } from "./use-clipboard-output";
 
 import {
   HANDOFF_STAGE_SPECS, STANDARD_LAYER_SLOTS, STANDARD_STUDIO_DPIS,
@@ -32,9 +37,9 @@ export interface StudioAssistantHandoffKitPanelProps {
   readonly initialLayers?: readonly StudioLayerInput[];
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onReadinessChange?: (report: HandoffReadinessReport) => void;
-  readonly onExportBrief?: (markdown: string, report: HandoffReadinessReport) => void;
-  readonly onExportJson?: (json: string, report: HandoffReadinessReport) => void;
+  readonly onReadinessChange?: (report: HandoffReadinessReport) => void | Promise<void>;
+  readonly onExportBrief?: (markdown: string, report: HandoffReadinessReport) => void | Promise<void>;
+  readonly onExportJson?: (json: string, report: HandoffReadinessReport) => void | Promise<void>;
 }
 
 type ExportPreviewTab = "markdown" | "json" | "hidden";
@@ -108,6 +113,8 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
   }));
   const [allocations, setAllocations] = useState<readonly StagePayoutAllocationInput[]>(() => createDefaultPayoutAllocations());
   const [includeWithholdingTax, setIncludeWithholdingTax] = useState<boolean>(true);
+  const [nationalRate, setNationalRate] = useState(3);
+  const [localRate, setLocalRate] = useState(0.3);
   const [rushMultiplierPct, setRushMultiplierPct] = useState<number>(100);
   const [projectTitle, setProjectTitle] = useState<string>("별빛 아틀리에");
   const [episodeLabel, setEpisodeLabel] = useState<string>("제14화");
@@ -125,8 +132,8 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
     [document, checkedByStage],
   );
   const payout = useMemo<AssistantPayoutEstimate>(
-    () => estimateAssistantPayout({ allocations: allocations.map((item) => ({ ...item, rushMultiplierPct })), includeWithholdingTax }),
-    [allocations, rushMultiplierPct, includeWithholdingTax],
+    () => estimateAssistantPayout({ allocations: allocations.map((item) => ({ ...item, rushMultiplierPct })), includeWithholdingTax, nationalIncomeTaxRatePct: nationalRate, localIncomeTaxRatePct: localRate }),
+    [allocations, rushMultiplierPct, includeWithholdingTax, nationalRate, localRate],
   );
   const briefContext = useMemo(() => ({
     projectTitle, episodeLabel, senderName, receiverName, dueDateIso, deliverableFormat,
@@ -137,13 +144,14 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
   const packageJson = useMemo<string>(() => exportHandoffPackageJson(briefContext), [briefContext]);
   const changedRenames = useMemo(() => readiness.layerAudit.renamePreview.filter((item) => item.changed), [readiness.layerAudit.renamePreview]);
 
-  useEffect(() => { onReadinessChange?.(readiness); }, [readiness, onReadinessChange]);
-
-  const copySafely = (text: string): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(text).catch(() => undefined);
-    }
-  };
+  const readinessNotification = useExampleNotification(onReadinessChange);
+  const markdownNotification = useExampleNotification<{ readonly text: string; readonly report: HandoffReadinessReport }>(onExportBrief ? ({ text, report }) => onExportBrief(text, report) : undefined);
+  const jsonNotification = useExampleNotification<{ readonly text: string; readonly report: HandoffReadinessReport }>(onExportJson ? ({ text, report }) => onExportJson(text, report) : undefined);
+  const clipboard = useClipboardOutput();
+  const channels = [readinessNotification, markdownNotification, jsonNotification, clipboard];
+  const busy = channels.some((channel) => channel.status === "pending");
+  const { notify: notifyReadiness } = readinessNotification;
+  useEffect(() => { notifyReadiness(readiness); }, [readiness, notifyReadiness]);
 
   const handleSelectStage = (nextStageId: HandoffStageId): void => {
     const spec = getHandoffStageSpec(nextStageId);
@@ -167,11 +175,12 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
   };
 
   const handleAddMessyLayer = (): void => {
+    if (document.layers.length >= MAX_HANDOFF_LAYERS) { setStatusMessage(pick("레이어 상한은 256개입니다.", "The layer limit is 256.")); return; }
     const seq = customLayerSeq;
     setCustomLayerSeq((n) => n + 1);
     setDocument((prev) => ({
       ...prev,
-      layers: [{ id: `custom-${seq}`, name: `레이어 ${seq} 복사본`, visible: true, locked: false, kind: "raster", opacityPct: 100, blendMode: "normal" }, ...prev.layers],
+      layers: [{ id: uniqueHandoffId(`custom-${seq}`, new Set(prev.layers.map((layer) => layer.id))), name: `레이어 ${seq} 복사본`, visible: true, locked: false, kind: "raster", opacityPct: 100, blendMode: "normal" }, ...prev.layers],
     }));
     setStatusMessage(pick(`"레이어 ${seq} 복사본"을 추가했습니다. 실시간 감사 결과를 확인하세요.`, `Added "레이어 ${seq} 복사본" for live audit.`));
   };
@@ -180,7 +189,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
     const res = applyLayerAutoFix(document, { normalizeStatesAndSpec: false });
     setDocument(res.nextDocument);
     setStatusMessage(res.renamedCount > 0
-      ? pick(`${res.renamedCount}개 레이어를 한국 스튜디오 표준명으로 보정했습니다.`, `Standardized ${res.renamedCount} layer names.`)
+      ? pick(`${res.renamedCount}개 레이어를 예제 레이어명으로 보정했습니다.`, `Standardized ${res.renamedCount} layer names.`)
       : pick("모든 레이어가 이미 표준 명명 규약을 충족합니다.", "All layers already follow standard naming."));
   };
 
@@ -210,17 +219,17 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
   };
 
   const handleCopyMarkdown = (): void => {
-    onExportBrief?.(briefMarkdown, readiness);
-    copySafely(briefMarkdown);
+    if (channels.some((channel) => channel.isPending())) return;
+    markdownNotification.notify({ text: briefMarkdown, report: readiness });
+    clipboard.notify(briefMarkdown);
     setPreviewTab("markdown");
-    setStatusMessage(pick(`인수인계 Markdown 브리프(${briefMarkdown.length.toLocaleString("ko-KR")}자)를 복사했습니다.`, `Copied Markdown brief (${briefMarkdown.length.toLocaleString("en-US")} chars).`));
   };
 
   const handleCopyJson = (): void => {
-    onExportJson?.(packageJson, readiness);
-    copySafely(packageJson);
+    if (channels.some((channel) => channel.isPending())) return;
+    jsonNotification.notify({ text: packageJson, report: readiness });
+    clipboard.notify(packageJson);
     setPreviewTab("json");
-    setStatusMessage(pick(`인수인계 패키지 JSON(${packageJson.length.toLocaleString("ko-KR")}B)을 복사했습니다.`, `Copied handoff package JSON (${packageJson.length.toLocaleString("en-US")} B).`));
   };
 
   const verdict = verdictMeta(readiness.verdict, isEn);
@@ -238,6 +247,11 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
       aria-label={pick("어시스턴트·외주 분업 인수인계 및 검수 킷", "Assistant Handoff & QA Kit")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
     >
+      <OperationStatus channel="readiness" {...readinessNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="markdown" {...markdownNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="json" {...jsonNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="clipboard" {...clipboard} pending={busy} isEn={isEn} />
+      <fieldset disabled={busy} className="contents">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -254,7 +268,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
             {pick("어시스턴트·외주 분업 인수인계 & 선화·채색·식자 검수 킷", "Assistant Handoff & Stage QA Kit")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("7대 표준 레이어 명명 규약·잠금/비표시·300/350 DPI·색공간을 자동 검증하고 공정 체크리스트·3.3% 정산 프리뷰(추정)·브리프를 묶습니다.", "Audit 7-slot layer naming, locks/visibility, 300/350 DPI & color space, stage checklists, estimated 3.3% payouts, and handoff briefs.")}
+            {pick("화면의 합성 원고와 입력 가정을 검사하는 CPU 예제입니다. 실제 파일 읽기·레이어 적용·계약·권리 확인·지급·기기 저장은 수행하지 않으며, 닫으면 입력이 사라집니다.", "CPU example for a synthetic document and entered assumptions. No actual files are read, layers applied, contracts or rights verified, payments made or device storage performed. Inputs disappear when closed.")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -412,12 +426,16 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-3 text-xs text-fg-2">
+        <label>{pick("가정 국세율 (%)", "Assumed national rate (%)")}<input aria-label={pick("가정 국세율", "Assumed national rate")} type="number" min={0} max={100} step={0.1} value={nationalRate} onChange={(event) => setNationalRate(Math.min(100, Math.max(0, Number(event.target.value) || 0)))} className={INPUT_CLS} /></label>
+        <label>{pick("가정 지방세율 (%)", "Assumed local rate (%)")}<input aria-label={pick("가정 지방세율", "Assumed local rate")} type="number" min={0} max={100 - nationalRate} step={0.1} value={localRate} onChange={(event) => setLocalRate(Math.min(100 - nationalRate, Math.max(0, Number(event.target.value) || 0)))} className={INPUT_CLS} /></label>
+      </div>
       {/* 3. 7대 표준 레이어 실시간 감사 & 원클릭 표준명 자동 보정 미리보기 */}
       <div className="space-y-3 rounded-xl border border-line bg-canvas p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{pick("3. 7대 표준 레이어 실시간 감사 & 원클릭 표준명 자동 보정 미리보기", "3. 7-Slot Layer Audit & One-Click Auto-Rename Preview")}</h3>
           <div className="flex flex-wrap items-center gap-1.5">
-            <button type="button" data-testid="handoff-add-layer-btn" onClick={handleAddMessyLayer} className={BTN_OUTLINE}><Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("임의 레이어 추가", "Add Messy Layer")}</button>
+            <button type="button" data-testid="handoff-add-layer-btn" disabled={document.layers.length >= MAX_HANDOFF_LAYERS} onClick={handleAddMessyLayer} className={BTN_OUTLINE}><Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("임의 레이어 추가", "Add Messy Layer")}</button>
             <button type="button" data-testid="handoff-apply-rename-btn" onClick={handleApplyRenameOnly} disabled={changedRenames.length === 0} className={BTN_ACTIVE}><Wand2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick(`표준명 보정 적용 (${changedRenames.length})`, `Apply Renames (${changedRenames.length})`)}</button>
           </div>
         </div>
@@ -486,7 +504,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
         </div>
       </div>
 
-      {/* 4. 어시스턴트 정산 시뮬레이터 (추정 · 3.3% 원천징수 참고) */}
+      {/* 4. 어시스턴트 정산 시뮬레이터 (추정 · 가정 세액 참고) */}
       <div className="space-y-3 rounded-xl border border-line bg-canvas p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -494,7 +512,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
             <span data-testid="handoff-payout-estimate-badge" className="rounded-full border border-warn bg-warning-soft px-2 py-0.5 text-[10px] font-bold text-warn">{isEn ? payout.badgeLabelEn : payout.badgeLabelKo}</span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <button type="button" data-testid="handoff-tax-toggle" aria-pressed={includeWithholdingTax} onClick={() => setIncludeWithholdingTax((v) => !v)} className={includeWithholdingTax ? BTN_ACTIVE : BTN_OUTLINE}>{pick("한국 3.3% 원천징수 적용", "Apply 3.3% KR Withholding")}</button>
+            <button type="button" data-testid="handoff-tax-toggle" aria-pressed={includeWithholdingTax} onClick={() => setIncludeWithholdingTax((v) => !v)} className={includeWithholdingTax ? BTN_ACTIVE : BTN_OUTLINE}>{pick("한국 가정 세액 적용", "Apply 3.3% KR Withholding")}</button>
             {RUSH_CHOICES.map((opt) => (
               <button key={opt.pct} type="button" data-testid={`handoff-rush-${opt.pct}`} aria-pressed={rushMultiplierPct === opt.pct} onClick={() => setRushMultiplierPct(opt.pct)} className={rushMultiplierPct === opt.pct ? BTN_ACTIVE : BTN_OUTLINE}>
                 {isEn ? opt.en : opt.ko}
@@ -522,7 +540,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-raised px-3 py-2 text-xs tabular-nums">
                   <div>
-                    <div className="text-[10px] text-fg-3">{pick("세전 · 3.3% 세액", "Gross · 3.3% Tax")}</div>
+                    <div className="text-[10px] text-fg-3">{pick("세전 · 가정 세액", "Gross · Assumed Tax")}</div>
                     <div className="font-semibold text-fg-2">{`${formatKrwAmount(line.grossAmountKrw, locale)} · -${formatKrwAmount(line.withholdingTaxKrw, locale)}`}</div>
                   </div>
                   <div className="text-right">
@@ -559,7 +577,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
           {metaFields.map((field) => (
             <label key={field.testId} className="space-y-1 text-[11px] text-fg-3">
               <span>{field.label}</span>
-              <input type="text" data-testid={field.testId} value={field.value} onChange={(e) => field.onChange(e.target.value)} className={field.tabular ? `${INPUT_CLS} tabular-nums` : INPUT_CLS} />
+              <input type="text" maxLength={1024} data-testid={field.testId} value={field.value} onChange={(e) => field.onChange(e.target.value)} className={field.tabular ? `${INPUT_CLS} tabular-nums` : INPUT_CLS} />
             </label>
           ))}
           <div className="space-y-1 text-[11px] text-fg-3">
@@ -573,7 +591,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
         </div>
         <label className="block space-y-1 text-[11px] text-fg-3">
           <span>{pick("메인 작가 전달 메모", "Director Notes")}</span>
-          <input type="text" data-testid="handoff-meta-notes" value={directorNotes} onChange={(e) => setDirectorNotes(e.target.value)} className={INPUT_CLS} />
+          <input type="text" maxLength={65536} data-testid="handoff-meta-notes" value={directorNotes} onChange={(e) => setDirectorNotes(e.target.value)} className={INPUT_CLS} />
         </label>
         {previewTab !== "hidden" ? (
           <pre data-testid="handoff-export-preview" className="max-h-60 overflow-auto rounded-lg border border-line bg-raised p-3 font-mono text-[11px] leading-relaxed text-fg-2">
@@ -581,6 +599,7 @@ export function StudioAssistantHandoffKitPanel(props: StudioAssistantHandoffKitP
           </pre>
         ) : null}
       </div>
+      </fieldset>
     </section>
   );
 }
