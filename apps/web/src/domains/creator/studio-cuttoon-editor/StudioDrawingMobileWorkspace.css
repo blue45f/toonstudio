@@ -57,7 +57,7 @@
   top: 4px;
 }
 
-/* 44px 안에서 제목과 큰 글씨 안내가 각각 한 줄을 쓰도록 한다. */
+/* 제목 아래 27px에는 기본 크기 안내 두 줄이나 두 배 크기 안내 한 줄이 들어간다. */
 @media (max-width: 559px) {
   .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) h1 {
     top: 0;
@@ -70,8 +70,8 @@
     padding-block: 0 1px;
   }
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > span {
-    line-height: clamp(1em, 1.25em, 27px);
-    max-height: 1lh;
+    line-height: 1.125;
+    max-height: 27px;
   }
 }
 
