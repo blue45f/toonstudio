@@ -1,5 +1,6 @@
 """실제 tar 내용·원본 보존·250 MB 실패 경계를 검사한다."""
 import importlib.util
+import json
 from pathlib import Path
 import tarfile
 import tempfile
@@ -12,6 +13,31 @@ spec.loader.exec_module(preview)
 
 
 class PreviewPackageTests(unittest.TestCase):
+    def test_omit_only_redundant_flat_admin_locale_copies(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            dictionaries = {
+                "i18n/admin/zh-hant.json": {"label": "標籤", "shared": "共用"},
+                "i18n/admin/dashboard/zh-hant.json": {"label": "標籤", "shared": "共用"},
+                "i18n/admin/audit/zh-hant.json": {"shared": "共用"},
+                "i18n/admin/fr.json": {"shared": "Tableau"},
+                "i18n/admin/dashboard/fr.json": {"shared": "Tableau"},
+                "i18n/admin/audit/fr.json": {"shared": "Audit"},
+                "i18n/admin/de.json": {"dashboard": "Start", "extra": "Nur hier"},
+                "i18n/admin/dashboard/de.json": {"dashboard": "Start"},
+                "i18n/admin/es.json": {"flag": True},
+                "i18n/admin/dashboard/es.json": {"flag": 1},
+                "i18n/admin/manifest.json": {"label": "Index"},
+                "i18n/admin/dashboard/manifest.json": {"label": "Index"},
+                "i18n/app/zh-hant.json": {"label": "標籤", "shared": "共用"},
+            }
+            for name, dictionary in dictionaries.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(dictionary), encoding="utf-8")
+            actual = {path.relative_to(root).as_posix() for path in preview.select_preview_files(root)}
+            self.assertEqual(actual, set(dictionaries) - {"i18n/admin/zh-hant.json"})
+
     def test_archive_keeps_public_dependencies_and_does_not_change_production_dist(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "dist"

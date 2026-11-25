@@ -27,6 +27,30 @@ STUDIO_PPT_ADVANCED_CHUNK = re.compile(
 )
 
 
+def is_redundant_admin_locale(flat: Path, selected: set[Path]) -> bool:
+    # 관리자 로더는 <namespace>/<locale>.json을 요청한다. 합본에만 있는 값이나 충돌은 보존한다.
+    if not re.fullmatch(r"[a-z]{2,3}(?:-[a-z0-9]+)*\.json", flat.name):
+        return False
+    parts = [path for path in flat.parent.glob(f"*/{flat.name}") if path in selected]
+    if not parts:
+        return False
+    try:
+        combined = json.loads(flat.read_text(encoding="utf-8"))
+        if not isinstance(combined, dict) or not all(isinstance(value, str) for value in combined.values()):
+            return False
+        merged = {}
+        for part in parts:
+            entries = json.loads(part.read_text(encoding="utf-8"))
+            if not isinstance(entries, dict):
+                return False
+            if any(key not in combined or combined[key] != value for key, value in entries.items()):
+                return False
+            merged.update(entries)
+        return merged == combined
+    except (ValueError, OSError):
+        return False
+
+
 def select_preview_files(root: Path) -> set[Path]:
     files = {path for path in root.iterdir() if path.is_file() and path.suffix in ALLOWED_SUFFIXES}
     # 공개 페이지도 index.html의 스크립트 태그로 이 파일을 요청한다.
@@ -49,6 +73,9 @@ def select_preview_files(root: Path) -> set[Path]:
         path = root / directory
         if path.is_dir():
             files.update(item for item in path.rglob("*.json") if item.stat().st_size < 8_000_000)
+    for flat in (root / "i18n" / "admin").glob("*.json"):
+        if flat in files and is_redundant_admin_locale(flat, files):
+            files.remove(flat)
     return files
 
 
