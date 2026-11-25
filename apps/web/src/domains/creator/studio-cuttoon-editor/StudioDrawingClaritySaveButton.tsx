@@ -16,6 +16,7 @@ export type StudioDrawingClaritySaveSession = Pick<StudioCuttoonEditorViewSessio
   "saving" | "collaborationDocumentLocked" | "collaborationLockMessage">
   & {
     readonly title?: string;
+    readonly rejectedStrokeCount?: number;
     readonly pendingSaveIntent?: StudioCuttoonEditorViewSession["pendingSaveIntent"];
     readonly saveSyncStore?: StudioSaveSyncSignalStore;
     readonly sharedDocument: Pick<NonNullable<StudioCuttoonEditorViewSession["sharedDocument"]>, "role"> | null;
@@ -36,8 +37,19 @@ export function StudioDrawingClaritySaveButton({ session: s }: {
     () => (s.saveSyncStore ? s.saveSyncStore.getSignals() : EMPTY_STUDIO_SAVE_SYNC_SIGNALS),
     () => EMPTY_STUDIO_SAVE_SYNC_SIGNALS,
   );
-  const saveSummary = s.saveSyncStore ? resolveSaveSyncStatusFromSignals(signals).summaryText : "";
-  const disabled = s.saving || (s.collaborationDocumentLocked && !scopedSave.available);
+  const permissionLocked = s.collaborationDocumentLocked && !scopedSave.available;
+  const disabled = s.saving || permissionLocked;
+  let saveSummary = s.saveSyncStore ? resolveSaveSyncStatusFromSignals(signals).summaryText : "";
+  if ((s.rejectedStrokeCount ?? 0) > 0) {
+    if (permissionLocked) {
+      saveSummary = ""; // 비활성 버튼의 title에서 편집 권한 안내를 읽는다.
+    } else if (signals.leadership !== "follower" && signals.lastFailureAtMs === null) {
+      saveSummary = bt(
+        "원고에 반영되지 않은 획이 있습니다. 획 복구를 확인하세요.",
+        "Some strokes still need to be added to the manuscript. Check stroke recovery.",
+      );
+    }
+  }
   const caption = s.saving ? bt("저장 중…", "Saving…")
     : scopedSave.pendingConfirmation ? bt("저장 상태 확인", "Check save") : bt("저장", "Save");
   const purpose = scopedSave.pendingConfirmation ? caption
