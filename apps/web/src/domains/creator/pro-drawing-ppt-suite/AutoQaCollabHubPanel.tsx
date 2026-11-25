@@ -61,6 +61,17 @@ const LazyPanelRhythmPanel = lazy(async () => {
   return { default: m.StudioWebtoonPanelRhythmPanel };
 });
 
+const LazyMobileReaderPanel = lazy(async () => {
+  await import("../mobile-reader-preview-sim");
+  const m = await import("../mobile-reader-preview-sim/StudioMobileReaderPreviewPanel");
+  return { default: m.StudioMobileReaderPreviewPanel };
+});
+const LazyPacingThumbnailPanel = lazy(async () => {
+  await import("../episode-pacing-thumbnail-lab");
+  const m = await import("../episode-pacing-thumbnail-lab/StudioEpisodePacingThumbnailPanel");
+  return { default: m.StudioEpisodePacingThumbnailPanel };
+});
+
 type QaHubTabId =
   | "pixel"
   | "layout"
@@ -72,7 +83,9 @@ type QaHubTabId =
   | "movingtoonReels"
   | "cinematography"
   | "colorScript"
-  | "panelRhythm";
+  | "panelRhythm"
+  | "mobileReader"
+  | "pacingThumbnail";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -106,10 +119,16 @@ const QA_HUB_TABS: readonly {
   { id: "cinematography", labelKo: "카메라 투영·시선 동선 예제", labelEn: "Camera Projection · Eye-Flow Examples" },
   { id: "colorScript", labelKo: "색상 대비·색각 변환 예제", labelEn: "Color Contrast · Vision Simulation Examples" },
   { id: "panelRhythm", labelKo: "컷 높이·여백·읽기 호흡 예제", labelEn: "Panel Size · Gutter · Rhythm Examples" },
+  { id: "mobileReader", labelKo: "모바일 크기·독서 가독성 예제", labelEn: "Mobile Size · Reading Legibility Examples" },
+  { id: "pacingThumbnail", labelKo: "컷 호흡·썸네일 수치 예제", labelEn: "Panel Rhythm · Thumbnail Metric Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
   switch (id) {
+    case "mobileReader":
+      return <LayoutList size={15} aria-hidden="true" />;
+    case "pacingThumbnail":
+      return <Clapperboard size={15} aria-hidden="true" />;
     case "panelRhythm":
       return <LayoutList size={15} aria-hidden="true" />;
     case "pixel":
@@ -191,6 +210,8 @@ export function AutoQaCollabHubPanel() {
           {active === "cinematography" ? <LazyCinematographyPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "colorScript" ? <LazyColorScriptPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "panelRhythm" ? <LazyPanelRhythmPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "mobileReader" ? <LazyMobileReaderPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "pacingThumbnail" ? <LazyPacingThumbnailPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">

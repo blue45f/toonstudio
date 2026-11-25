@@ -15,7 +15,7 @@ vi.mock("@/shared/lib/i18n", () => ({
   useI18n: (select: (state: { readonly lang: string }) => unknown) => select(language),
 }));
 
-// 기존 기본 탭의 렌더러는 이 검증 범위가 아니다. 새 열세 개의 모듈은 실제로 지연 로드한다.
+// 기존 기본 탭의 렌더러는 이 검증 범위가 아니다. 새 열일곱 개의 모듈은 실제로 지연 로드한다.
 vi.mock("../auto-qa-pixel-engine/AutoQaPixelScannerPanel", () => ({ AutoQaPixelScannerPanel: () => null }));
 vi.mock("../brush-physics-pro/StudioBrushPhysicsProPanel", () => ({ StudioBrushPhysicsProPanel: () => null }));
 vi.mock("../creator-experience-calibrator/StudioCreatorCalibratorPanel", () => ({ StudioCreatorCalibratorPanel: () => null }));
@@ -31,6 +31,10 @@ interface ExampleCase {
 }
 
 const cases: readonly ExampleCase[] = [
+  { ko: "모바일 크기·독서 가독성 예제", en: "Mobile Size · Reading Legibility Examples", panel: "studio-mobile-reader-preview-panel", Hub: AutoQaCollabHubPanel, load: () => import("../mobile-reader-preview-sim") },
+  { ko: "컷 호흡·썸네일 수치 예제", en: "Panel Rhythm · Thumbnail Metric Examples", panel: "studio-episode-pacing-thumbnail-panel", Hub: AutoQaCollabHubPanel, load: () => import("../episode-pacing-thumbnail-lab") },
+  { ko: "캐릭터 설정·표정 조판 예제", en: "Character Sheet · Expression Layout Examples", panel: "studio-character-sheet-bible-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../character-sheet-bible-studio") },
+  { ko: "레이어 검수·인수인계 예제", en: "Layer Review · Handoff Examples", panel: "studio-assistant-handoff-kit-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../assistant-handoff-qa-kit") },
   { ko: "도구 탐색·작업 준비", en: "Tool Finder · Work Preparation", panel: "atelier-craft-launcher-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-craft-launcher") },
   { ko: "컷 높이·여백·읽기 호흡 예제", en: "Panel Size · Gutter · Rhythm Examples", panel: "studio-webtoon-panel-rhythm-panel", Hub: AutoQaCollabHubPanel, load: () => import("../webtoon-panel-rhythm-studio") },
   { ko: "작업실 음향·웹 오디오", en: "Atelier Sound · Web Audio", panel: "atelier-foley-mixer-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-foley-mixer") },

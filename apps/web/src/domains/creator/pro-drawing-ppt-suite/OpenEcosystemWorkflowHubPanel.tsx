@@ -80,6 +80,12 @@ const LazyStudioOfflineResiliencePanel = lazy(async () => {
   return { default: m.StudioOfflineResiliencePanel };
 });
 
+const LazyAssistantHandoffPanel = lazy(async () => {
+  await import("../assistant-handoff-qa-kit");
+  const m = await import("../assistant-handoff-qa-kit/StudioAssistantHandoffKitPanel");
+  return { default: m.StudioAssistantHandoffKitPanel };
+});
+
 type EcosystemTabId =
   | "workflowDag"
   | "openBridge"
@@ -95,7 +101,8 @@ type EcosystemTabId =
   | "webcodecsOpfs"
   | "aiLatentConti"
   | "monetizationPlan"
-  | "offlineResilience";
+  | "offlineResilience"
+  | "assistantHandoff";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -133,10 +140,13 @@ const ECOSYSTEM_TABS: readonly {
   { id: "aiLatentConti", labelKo: "색 변환 예제·대본 분석·브러시 추천", labelEn: "Color Example · Script Parser · Brush Suggestions" },
   { id: "monetizationPlan", labelKo: "유료전환·굿즈·정산 가정 계산", labelEn: "Funnel · Goods · Settlement Estimates" },
   { id: "offlineResilience", labelKo: "오프라인 병합·복구·잠금 예제", labelEn: "Offline Merge · Recovery · Lease Examples" },
+  { id: "assistantHandoff", labelKo: "레이어 검수·인수인계 예제", labelEn: "Layer Review · Handoff Examples" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
   switch (id) {
+    case "assistantHandoff":
+      return <PackageCheck size={15} aria-hidden="true" />;
     case "monetizationPlan":
       return <Calculator size={15} aria-hidden="true" />;
     case "offlineResilience":
@@ -230,6 +240,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "aiLatentConti" ? <LazyStudioAiLatentStoryboardPanel /> : null}
           {active === "monetizationPlan" ? <LazyStudioCreatorMonetizationPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "offlineResilience" ? <LazyStudioOfflineResiliencePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "assistantHandoff" ? <LazyAssistantHandoffPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">
