@@ -10,6 +10,8 @@
 use std::error::Error;
 use std::fmt;
 
+#[cfg(feature = "extended-3d")]
+pub mod atelier_stage_3d_kernel;
 pub mod brush_kernel;
 pub mod filter_warp_kernel;
 pub mod simd_bvh_skinning_kernel;
@@ -22,6 +24,18 @@ pub mod vector_psd_tile_kernel;
 pub mod virtual_3d_physics_kernel;
 pub mod wasm_ffi;
 
+#[cfg(feature = "extended-3d")]
+pub use atelier_stage_3d_kernel::{
+    build_stage_view_proj_rh, cull_scene_frustum_and_hiz, cull_scene_frustum_and_hiz_into,
+    evaluate_stage_acoustics_and_lighting, hash_cell_3d, resolve_sphere_overlaps, AtelierAudioEval,
+    AtelierAudioSource, AtelierCastSample, AtelierLightKind, AtelierLightingEval,
+    AtelierListenerPose, AtelierSphereBody, AtelierStageLight, SpatialHashGrid3D,
+    SphereOverlapStats, StageAcousticsLightingStats, StageCullingConfig, StageCullingResult,
+    StageCullingStats, StageDepthRange, StageObjectAabb, DEFAULT_SPATIAL_BUCKET_COUNT,
+    DEFAULT_SPATIAL_CELL_SIZE, HIZ_CELLS, HIZ_HEIGHT, HIZ_LEVELS, HIZ_WIDTH,
+    MAX_STAGE_AUDIO_SOURCES, MAX_STAGE_CAST_SAMPLES, MAX_STAGE_LIGHTS, MAX_STAGE_OBJECTS,
+    MAX_STAGE_OCCLUDERS,
+};
 pub use brush_kernel::{
     apply_impasto_lighting_rgba, mix_pigments_km, mix_pigments_km_strip, sample_world_paper_height,
     ImpastoLightConfig, ImpastoShadingStats, PaperGrainConfig,
@@ -65,9 +79,14 @@ pub use wasm_ffi::{
 };
 #[cfg(feature = "extended-3d")]
 pub use wasm_ffi::{
-    wasm_encode_morton_2d_u32, wasm_encode_morton_3d_u32, wasm_extended_3d_capabilities,
-    wasm_extract_lt_lineart_from_gbuffer, wasm_skin_vrm_mesh_4bone_soa, LT_LINEART_FFI_PARAM_COUNT,
-    WASM_EXTENDED_3D_CAPABILITIES,
+    wasm_atelier_stage_3d_capabilities, wasm_cull_stage_frustum_hiz, wasm_encode_morton_2d_u32,
+    wasm_encode_morton_3d_u32, wasm_evaluate_stage_acoustics_and_lighting,
+    wasm_extended_3d_capabilities, wasm_extract_lt_lineart_from_gbuffer,
+    wasm_resolve_stage_sphere_overlaps, wasm_skin_vrm_mesh_4bone_soa, LT_LINEART_FFI_PARAM_COUNT,
+    STAGE_AUDIO_OUT_STRIDE, STAGE_AUDIO_SOURCE_STRIDE, STAGE_CAST_SAMPLE_STRIDE,
+    STAGE_CULL_AABB_STRIDE, STAGE_CULL_CAMERA_FFI_LEN, STAGE_CULL_STATS_FFI_LEN,
+    STAGE_LIGHTING_OUT_STRIDE, STAGE_LIGHT_STRIDE, STAGE_LISTENER_FFI_LEN,
+    STAGE_SPHERE_BODY_STRIDE, WASM_ATELIER_STAGE_3D_CAPABILITIES, WASM_EXTENDED_3D_CAPABILITIES,
 };
 
 /// 코어 드로잉 엔진의 모든 연산이 공유하는 panic 없는 오류 모델.
