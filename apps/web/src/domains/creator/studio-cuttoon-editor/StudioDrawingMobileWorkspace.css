@@ -73,6 +73,9 @@
     line-height: clamp(1em, 1.25em, 27px);
     max-height: 1lh;
   }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary] > :nth-child(2)) > span {
+    max-height: 2lh;
+  }
 }
 
 /* 태블릿(>=560px, iPad 820px 포함): 중앙 여유 폭을 활용해 제목과 저장 상태를 한 줄로 나란히 정렬하고 세로 잘림·조기 말줄임을 없앤다. */

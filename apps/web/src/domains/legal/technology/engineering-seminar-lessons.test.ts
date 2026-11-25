@@ -561,7 +561,7 @@ const LESSON_FACTS: readonly LessonFact[] = [
     },
   },
   {
-    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 30.0.1 는 toon-fabric 피처 뒤, braces 는 중첩 깊이 100 가드)", needles: ["포크는 둘", "wgpu 29.0.4", "toon-fabric", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "외부 Mixbox는 제거"],
+    lesson: "seminar-open-source", claim: "pnpm 패치 N개(pnpm-workspace.yaml 에서 센 값) + 포크 2개(wgpu 장치 공유에는 toon-fabric 필요, braces는 중첩 깊이 100 제한)", needles: ["포크는 둘", "toon-fabric", "rustix", "Clippy", "crates/vendor/wgpu-toon", "patches/braces", "깊이 100", "외부 Mixbox는 제거"],
     check: () => {
       // 패치 개수는 하드코딩하지 않고 pnpm-workspace.yaml 의 patchedDependencies 에서 센다. 패치 파일 수와도 맞아야 한다.
       const count = patchedDependencyCount();
@@ -571,10 +571,19 @@ const LESSON_FACTS: readonly LessonFact[] = [
       expect(lesson?.takeaway.ko).toContain(`패치 ${count}개와 포크 2개`);
       expect(lesson?.points[0]?.ko).toContain(`패치 ${count}개`);
       const cargo = readText("crates", "vendor", "wgpu-toon", "Cargo.toml");
-      expect(cargo).toMatch(/name = "wgpu"\s+version = "30\.0\.1"/u);
+      const version = /name = "wgpu"\s+version = "(\d+\.\d+\.\d+)"/u.exec(cargo)?.[1];
+      expect(version).toBe("30.0.1");
       expect(cargo).toContain("toon-fabric = []");
       expect(cargo).toContain("our upstream PR candidate");
-      expect(readdirSync(repo("crates", "vendor", "wgpu-toon", "PATCHES"))).toHaveLength(1);
+      const patches = readdirSync(repo("crates", "vendor", "wgpu-toon", "PATCHES")).sort();
+      expect(patches).toEqual(["0001-webgpu-handle-adoption.patch", "0002-rustix-security-and-clippy.patch"]);
+      const card = findAtlasEntry("oss-fork-wgpu-toon");
+      for (const text of [lesson?.script, card?.tagline]) {
+        expect(text?.ko).toContain(`wgpu ${version}`);
+        expect(text?.en).toContain(`wgpu ${version}`);
+        expect(text?.ko).toContain(`패치 ${patches.length}개`);
+        expect(text?.en).toContain(`${patches.length} patches`);
+      }
       // braces: 취약 범위를 저장소 포크(patches/braces)로 대체하고, 포크는 중첩 깊이 100 가드를 가진다.
       expect(flat("pnpm-workspace.yaml")).toContain("'braces@>=3.0.0 <3.0.4': 'file:patches/braces'");
       expect(readText("patches", "braces", "lib", "constants.js")).toContain("MAX_DEPTH: 100,");
