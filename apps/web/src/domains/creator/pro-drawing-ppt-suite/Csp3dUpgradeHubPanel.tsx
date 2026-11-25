@@ -3,6 +3,8 @@ import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { StudioHubCalmTabNavigator } from "./StudioHubCalmTabNavigator";
+
 const LazyPuppetWarpStudioPanel = lazy(() =>
   import("../csp-puppet-warp/PuppetWarpStudioPanel").then((m) => ({
     default: m.PuppetWarpStudioPanel,
@@ -172,7 +174,16 @@ const CSP3D_TABS: readonly {
   { id: "sixPhysicsBrushLab", labelKo: "브러시 물리 모형 비교", labelEn: "Brush Physics Model Comparison" },
   { id: "papercraftUnfold", labelKo: "페이퍼크래프트 전개도와 접힘 미리보기", labelEn: "Papercraft Dieline and Fold Preview" },
   { id: "proceduralAssetSynth", labelKo: "절차적 에셋 미리보기", labelEn: "Procedural Asset Preview" },
-  { id: "parametricSketch", labelKo: "파라메트릭 스케치와 도면 예제", labelEn: "Parametric Sketch and Drawing Examples" },
+  { id: "parametricSketch", labelKo: "아틀리에 솔리드 CAD · 파라메트릭 도면", labelEn: "Atelier Solid CAD · Parametric Drawing" },
+];
+
+const CSP3D_PINNED_TABS: readonly Csp3dTabId[] = [
+  "puppet",
+  "surface3d",
+  "hand3d",
+  "watermark",
+  "koreanLettering",
+  "parametricSketch",
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -251,39 +262,27 @@ export function Csp3dUpgradeHubPanel() {
   return (
     <section
       className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-3"
-      aria-label={isEn ? "CSP 4.0-5.0 and High-Craft 3D Customizer Hub" : "클립스튜디오 4.0~5.0 내재화 및 고품질 3D 커스텀 허브"}
+      aria-label={isEn ? "Pro Drawing and High-Craft 3D Workbench Hub" : "프로 작화·3D 워크벤치 및 고품질 3D 커스텀 허브"}
       data-testid="csp-3d-upgrade-hub-panel"
     >
-      <div role="tablist" aria-label={isEn ? "CSP 4-5 and 3D customizer engines" : "CSP 4~5 및 3D 커스텀 엔진 선택"} className="flex flex-wrap gap-2">
-        {CSP3D_TABS.map((tab) => {
-          const selected = tab.id === active;
-          return (
-            <button
-              key={tab.id}
-              id={`${baseId}-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${baseId}-panel-${tab.id}`}
-              onClick={() => setActive(tab.id)}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold [word-break:keep-all] transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none ${
-                selected
-                  ? "border-accent bg-accent text-on-accent"
-                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"
-              }`}
-            >
-              <Csp3dIcon id={tab.id} />
-              <span>{isEn ? tab.labelEn : tab.labelKo}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StudioHubCalmTabNavigator
+        baseId={baseId}
+        ariaLabel={isEn ? "Pro Drawing and 3D customizer engines" : "프로 작화·3D 커스텀 엔진 선택"}
+        tabs={CSP3D_TABS}
+        pinnedIds={CSP3D_PINNED_TABS}
+        activeId={active}
+        onSelect={setActive}
+        renderIcon={(id) => <Csp3dIcon id={id} />}
+        isEn={isEn}
+        searchPlaceholderKo="퍼펫, 3D 손, 조판, 조명, 브러시, 아틀리에 솔리드 CAD 등으로 검색…"
+        searchPlaceholderEn="Search puppet, 3D hand, lettering, lighting, Atelier Solid CAD…"
+      />
 
       <div id={`${baseId}-panel-${active}`} role="tabpanel" aria-labelledby={`${baseId}-tab-${active}`}>
         <Suspense
           fallback={
             <p className="p-4 text-xs text-fg-2">
-              {isEn ? "Loading 3D & CSP Pro studio engine..." : "3D 커스텀·CSP 프로 엔진을 불러오는 중입니다…"}
+              {isEn ? "Loading Pro Drawing & 3D studio engine..." : "프로 작화·3D 스튜디오 엔진을 불러오는 중입니다…"}
             </p>
           }
         >
@@ -314,7 +313,7 @@ export function Csp3dUpgradeHubPanel() {
       </div>
 
       <details className="rounded-xl border border-line bg-panel p-2.5">
-        <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center select-none text-xs font-semibold text-fg [word-break:keep-all]">
           {isEn
             ? `Atelier Craft & Commercial Studio Visual Gallery (${STUDIO_CRAFT_VISUAL_CARDS.length})`
             : `상업 연재·크래프트 아틀리에 비주얼 카드 (${STUDIO_CRAFT_VISUAL_CARDS.length}종)`}

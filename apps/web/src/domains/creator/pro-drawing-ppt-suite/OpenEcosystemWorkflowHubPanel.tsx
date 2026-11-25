@@ -3,6 +3,8 @@ import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { StudioHubCalmTabNavigator } from "./StudioHubCalmTabNavigator";
+
 const LazyStudioOpenEcosystemPanel = lazy(() =>
   import("../open-ecosystem-bridge/StudioOpenEcosystemPanel").then((m) => ({
     default: m.StudioOpenEcosystemPanel,
@@ -170,7 +172,7 @@ const ECOSYSTEM_TABS: readonly {
   readonly labelEn: string;
 }[] = [
   { id: "workflowDag", labelKo: "다이나믹 워크플로우 DAG·OTIO·정산", labelEn: "Dynamic Workflow DAG · OTIO · ERP" },
-  { id: "openBridge", labelKo: "BYOT(CSP/Jira/Slack)·플러그인 SDK", labelEn: "BYOT (CSP/Jira/Slack) · SDK" },
+  { id: "openBridge", labelKo: "개방형 도구 브리지(외부 작화·이슈·메신저)·SDK", labelEn: "Open Tool Bridge (External Drawing · Issue · Chat) · SDK" },
   { id: "standardsPublish", labelKo: "C2PA·TMS 번역·7대 플랫폼 출고", labelEn: "C2PA · TMS · 7-Platform Publish" },
   { id: "reflowDna", labelKo: "세로↔단행본 리플로우·스타일 DNA", labelEn: "Scroll↔Print Reflow · Style DNA" },
   { id: "fleetShield", labelKo: "스펙트럼 실드·2nd-Screen·Fleet 레이더", labelEn: "Spectral Shield · 2nd-Screen · Fleet" },
@@ -190,9 +192,18 @@ const ECOSYSTEM_TABS: readonly {
   { id: "spatialWearable", labelKo: "기기 배치·시간 예측 예제", labelEn: "Device Layout · Timing Estimate Examples" },
   { id: "heterogeneousNpu", labelKo: "기기별 NPU·GPU 배치 계획", labelEn: "Device NPU and GPU Planning" },
   { id: "rustFullExpansion", labelKo: "Rust WASM 전환 계획", labelEn: "Rust WASM Expansion Planning" },
-  { id: "multicoreVello", labelKo: "멀티코어·Vello GPU 스케줄 예제", labelEn: "Multicore and Vello GPU Scheduling Examples" },
+  { id: "multicoreVello", labelKo: "멀티코어·스펙트럼 컴퓨트 GPU 스케줄 예제", labelEn: "Multicore and SpectrumCompute GPU Scheduling Examples" },
   { id: "rustHotspotPorter", labelKo: "Rust WASM 이식·검증 예제", labelEn: "Rust WASM Porting and Parity Exercise" },
   { id: "npuThermal", labelKo: "NPU 그래프와 열 제어 예제", labelEn: "NPU Graph and Thermal Control Examples" },
+];
+
+const ECOSYSTEM_PINNED_TABS: readonly EcosystemTabId[] = [
+  "workflowDag",
+  "openBridge",
+  "standardsPublish",
+  "reflowDna",
+  "collabKmSafeZone",
+  "episodeColorScript",
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -260,30 +271,18 @@ export function OpenEcosystemWorkflowHubPanel() {
       aria-label={isEn ? "Open BYOT Ecosystem and Dynamic Workflow Hub" : "개방형 BYOT 생태계 및 다이나믹 워크플로우 허브"}
       data-testid="open-ecosystem-workflow-hub"
     >
-      <div role="tablist" aria-label={isEn ? "Ecosystem workflow modules" : "생태계 워크플로우 선택"} className="flex flex-wrap gap-2">
-        {ECOSYSTEM_TABS.map((tab) => {
-          const selected = tab.id === active;
-          return (
-            <button
-              key={tab.id}
-              id={`${baseId}-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${baseId}-panel-${tab.id}`}
-              onClick={() => setActive(tab.id)}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold [word-break:keep-all] transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none ${
-                selected
-                  ? "border-accent bg-accent text-on-accent"
-                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"
-              }`}
-            >
-              <EcosystemIcon id={tab.id} />
-              <span>{isEn ? tab.labelEn : tab.labelKo}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StudioHubCalmTabNavigator
+        baseId={baseId}
+        ariaLabel={isEn ? "Ecosystem workflow modules" : "생태계 워크플로우 선택"}
+        tabs={ECOSYSTEM_TABS}
+        pinnedIds={ECOSYSTEM_PINNED_TABS}
+        activeId={active}
+        onSelect={setActive}
+        renderIcon={(id) => <EcosystemIcon id={id} />}
+        isEn={isEn}
+        searchPlaceholderKo="출고, 리플로우, 협업, 컬러스크립트, 정산, 스펙트럼 컴퓨트 등으로 검색…"
+        searchPlaceholderEn="Search publish, reflow, collab, color script, settlement, SpectrumCompute…"
+      />
 
       <div id={`${baseId}-panel-${active}`} role="tabpanel" aria-labelledby={`${baseId}-tab-${active}`}>
         <Suspense
@@ -320,7 +319,7 @@ export function OpenEcosystemWorkflowHubPanel() {
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">
-        <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center select-none text-xs font-semibold text-fg [word-break:keep-all]">
           {isEn
             ? `Cinematography, Ergonomics & Precision Atelier Cards (${CINEMA_ERGO_VISUAL_CARDS.length})`
             : `시네마토그래피·인체공학·정밀 아틀리에 비주얼 카드 (${CINEMA_ERGO_VISUAL_CARDS.length}종)`}

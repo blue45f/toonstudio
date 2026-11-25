@@ -1,7 +1,9 @@
-import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, MapPin, MessageSquareText, Music, Palette, ScanSearch, Sparkles } from "lucide-react";
+import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, MapPin, MessageSquareText, Music, Palette, ScanSearch, SlidersHorizontal } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
+
+import { StudioHubCalmTabNavigator } from "./StudioHubCalmTabNavigator";
 
 const LazyAutoQaPixelScannerPanel = lazy(() =>
   import("../auto-qa-pixel-engine/AutoQaPixelScannerPanel").then((m) => ({
@@ -179,9 +181,18 @@ const QA_HUB_TABS: readonly {
   { id: "modelSheetDrift", labelKo: "컷별 설정집 대조 예제", labelEn: "Cut-by-Cut Model Sheet Examples" },
   { id: "oneLineOrchestrator", labelKo: "한 줄 연출 예제", labelEn: "One-Line Direction Examples" },
   { id: "scrollPacing", labelKo: "스크롤 컷 호흡 예제", labelEn: "Scroll Pacing Examples" },
-  { id: "distributedTileSync", labelKo: "타일 동기화와 병합 예제", labelEn: "Tile Sync and Merge Examples" },
+  { id: "distributedTileSync", labelKo: "협업 드로잉 타일 동기화·병합 예제", labelEn: "Collaborative Drawing Tile Sync & Merge Examples" },
   { id: "humanInkLedger", labelKo: "작화 출처 원장 예제", labelEn: "Stroke Provenance Ledger Examples" },
   { id: "shaderWebCodecs", labelKo: "셰이더 준비·영상 인코딩 계획", labelEn: "Shader Preparation and Video Encoding Plans" },
+];
+
+const QA_HUB_PINNED_TABS: readonly QaHubTabId[] = [
+  "pixel",
+  "layout",
+  "continuity",
+  "signoff",
+  "mobileReader",
+  "distributedTileSync",
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -221,7 +232,7 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
     case "storySimulpub":
       return <Globe2 size={15} aria-hidden="true" />;
     case "virtualLiving":
-      return <Sparkles size={15} aria-hidden="true" />;
+      return <SlidersHorizontal size={15} aria-hidden="true" />;
     case "renderFarmVcs":
       return <GitBranch size={15} aria-hidden="true" />;
     case "cinematography":
@@ -245,30 +256,18 @@ export function AutoQaCollabHubPanel() {
       aria-label={isEn ? "Automated QA and Collaborative Signoff Hub" : "자동 검수 10종 및 사람 협업 결재 허브"}
       data-testid="auto-qa-collab-hub-panel"
     >
-      <div role="tablist" aria-label={isEn ? "QA and review engines" : "자동·협업 검수 엔진 선택"} className="flex flex-wrap gap-2">
-        {QA_HUB_TABS.map((tab) => {
-          const selected = tab.id === active;
-          return (
-            <button
-              key={tab.id}
-              id={`${baseId}-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${baseId}-panel-${tab.id}`}
-              onClick={() => setActive(tab.id)}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold [word-break:keep-all] transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none ${
-                selected
-                  ? "border-accent bg-accent text-on-accent"
-                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"
-              }`}
-            >
-              <QaHubIcon id={tab.id} />
-              <span>{isEn ? tab.labelEn : tab.labelKo}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StudioHubCalmTabNavigator
+        baseId={baseId}
+        ariaLabel={isEn ? "QA and review engines" : "자동·협업 검수 엔진 선택"}
+        tabs={QA_HUB_TABS}
+        pinnedIds={QA_HUB_PINNED_TABS}
+        activeId={active}
+        onSelect={setActive}
+        renderIcon={(id) => <QaHubIcon id={id} />}
+        isEn={isEn}
+        searchPlaceholderKo="픽셀 검수, 결재, 360px, 설정집, 말풍선, 협업 드로잉 등으로 검색…"
+        searchPlaceholderEn="Search pixel QA, signoff, 360px, bible, balloon, collaborative drawing…"
+      />
 
       <div id={`${baseId}-panel-${active}`} role="tabpanel" aria-labelledby={`${baseId}-tab-${active}`}>
         <Suspense
@@ -303,7 +302,7 @@ export function AutoQaCollabHubPanel() {
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">
-        <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center select-none text-xs font-semibold text-fg [word-break:keep-all]">
           {isEn
             ? `Storyboard Rhythm & Analog Foley Atelier Cards (${RHYTHM_FOLEY_VISUAL_CARDS.length})`
             : `세로 컷 리듬·화실 사운드 아틀리에 비주얼 카드 (${RHYTHM_FOLEY_VISUAL_CARDS.length}종)`}
