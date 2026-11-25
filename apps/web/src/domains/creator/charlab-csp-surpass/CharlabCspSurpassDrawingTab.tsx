@@ -131,6 +131,9 @@ export function CharlabCspSurpassDrawingTab(
       aria-labelledby={`${uid}-tab-drawing-surpass`}
       className="space-y-4 [word-break:keep-all]"
     >
+      <p data-testid="drawing-scope-notice" className="text-xs text-fg-2">
+        {pick("고정 벡터·건축 메시·도형 획·픽셀 격자의 계산 예제예요. 실제 원고를 읽거나 바꾸지 않으며, 중력 입력은 슬라이더 값이고 기기 기울기 센서는 사용하지 않아요.", "Examples calculate fixed vectors, an architectural mesh, shape strokes and pixel grids. No manuscript is read or changed. Gravity uses slider values, not device tilt sensors.")}
+      </p>
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="space-y-2.5 rounded-xl border border-line bg-card p-3.5">
           <div className="flex items-center justify-between gap-2">

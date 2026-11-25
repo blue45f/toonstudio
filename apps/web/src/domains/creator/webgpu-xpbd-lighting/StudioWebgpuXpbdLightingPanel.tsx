@@ -323,17 +323,17 @@ export function StudioWebgpuXpbdLightingPanel({
   return (
     <section
       data-testid="studio-webgpu-xpbd-lighting-panel"
-      aria-label="WebGPU XPBD 헤어·의상 물리 및 2D/3D 광원 베이크 엔진"
+      aria-label="CPU XPBD 물리·SDF 광원 프리뷰와 WGSL 구조 검사"
       className={`rounded-xl border border-line bg-raised p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
             <Sun className="h-4 w-4 text-accent" aria-hidden="true" />
-            <h2>WebGPU XPBD 헤어·의상 물리 &amp; 2D/3D SDF 광원 베이크</h2>
+            <h2>CPU XPBD 물리·SDF 광원 프리뷰 · WGSL 구조 검사</h2>
           </div>
           <p className="text-xs text-fg-2">
-            5종 캡슐 콜라이더 0mm 비관통 XPBD 물리와 2D 컷·3D VRM 단일 물리 광원 리그를 실시간으로 맞춥니다.
+            예제 리그의 물리와 광원을 CPU에서 계산합니다. 실제 VRM·원고에는 반영하지 않으며 GPU 셰이더는 실행하지 않습니다.
           </p>
         </div>
 
@@ -358,7 +358,7 @@ export function StudioWebgpuXpbdLightingPanel({
             }`}
           >
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>2D·3D 광원 일치 {lightRig.alignmentMetrics.harmonyScore}/100</span>
+            <span>계산된 광원 설정 일치 {lightRig.alignmentMetrics.harmonyScore}/100</span>
           </span>
         </div>
       </header>
@@ -685,7 +685,7 @@ export function StudioWebgpuXpbdLightingPanel({
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 text-xs font-bold text-fg">
                 <Code2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>WGSL 컴퓨트 셰이더 검증</span>
+                <span>WGSL 구조 검사 (컴파일·실행 미검증)</span>
               </div>
               <button
                 type="button"
@@ -701,14 +701,15 @@ export function StudioWebgpuXpbdLightingPanel({
               <div className="rounded-md border border-line bg-canvas p-2">
                 <div className="text-[11px] text-fg-3">XPBD 솔버 WGSL</div>
                 <div className="font-semibold text-good">
-                  {xpbdWgslAudit.valid ? "검증 통과" : "오류"} · {xpbdWgslAudit.entryPoints.length}패스
+                  {xpbdWgslAudit.valid ? "구조 확인" : "오류"} · {xpbdWgslAudit.entryPoints.length}패스 · CPU 물리 실행
                 </div>
               </div>
               <div className="rounded-md border border-line bg-canvas p-2">
                 <div className="text-[11px] text-fg-3">SDF 광원 베이크 WGSL</div>
                 <div className="font-semibold text-good">
-                  {sdfWgslAudit.valid ? "검증 통과" : "오류"} · {lightRig.backend === "webgpu-compute-ready" ? "WebGPU" : "CPU 폴백"}
+                  {sdfWgslAudit.valid ? "구조 확인" : "오류"} · CPU SDF 실행
                 </div>
+                <div className="text-fg-3">{lightRig.webGpuApiAvailable ? "WebGPU API 있음 · GPU 실행 안 함" : "WebGPU API 없음 · GPU 실행 안 함"}</div>
               </div>
             </div>
             {showWgslInspector ? (

@@ -17,7 +17,7 @@ import {
 } from "./atmosphere-vfx-engine";
 import {
   AVATAR_BOTTOM_OPTIONS, AVATAR_EXPRESSION_OPTIONS, AVATAR_HAIR_OPTIONS, AVATAR_TOP_OPTIONS, DEFAULT_FURNITURE_GRID, FURNITURE_CATALOG,
-  GENRE_OUTFIT_PRESETS, POMODORO_PHASE_LABEL_KO, POMODORO_PRESET_LIST, STUDIO_PET_OPTIONS, STUDIO_THEME_ROOMS, USER_WORK_PROTAGONIST_CATALOG,
+  GENRE_OUTFIT_PRESETS, POMODORO_PHASE_LABEL_KO, POMODORO_PRESET_LIST, STUDIO_PET_OPTIONS, STUDIO_THEME_ROOMS, SYNTHETIC_WORK_PROTAGONIST_CATALOG,
   applyGenreOutfitPreset, buildAvatarRenderLayers, clearImportedProtagonist, createDefaultDeskLayout, createDefaultLayeredAvatar,
   createTeamPomodoroState, formatPomodoroClock, getEffectiveFurnitureSpan, getFurnitureCatalogItem, getPomodoroRemainingSec, getStudioThemeRoomById,
   importProtagonistToAvatar, pauseTeamPomodoro, placeFurnitureItem, removeFurnitureItem, resetTeamPomodoro, rotateFurnitureItem,
@@ -147,7 +147,7 @@ export function StudioVirtualSpaceLivingPanel({
     return stepAtmosphereParticles(spawnCoffeeSteamPlume(initial, 430, 128), 0.35);
   });
   const [wheelState, setWheelState] = useState<EmoteWheelState>(() => createEmoteWheelState());
-  const [wheelClockMs, setWheelClockMs] = useState<number>(10000);
+  const [wheelClockMs, setWheelClockMs] = useState<number>(() => performance.now());
   const [probeDelta, setProbeDelta] = useState<Vec2>({ x: 0, y: -56 });
 
   const [avatar, setAvatar] = useState<LayeredAvatarConfig>(() => createDefaultLayeredAvatar());
@@ -172,6 +172,17 @@ export function StudioVirtualSpaceLivingPanel({
     }, 1000);
     return () => window.clearInterval(timer);
   }, [pomodoro.running]);
+
+  useEffect(() => {
+    const deadline = Math.max(0, ...Object.values(wheelState.cooldownUntilMsById).map((value) => value ?? 0));
+    if (deadline <= performance.now()) return;
+    const timer = window.setInterval(() => {
+      const now = performance.now();
+      setWheelClockMs(now);
+      if (now >= deadline) window.clearInterval(timer);
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, [wheelState.cooldownUntilMsById]);
 
   const runSpriteFrames = (heading: Vec2, frames: number, nextSprint: boolean, nextGaze: Vec2 | null): void => {
     const input: SpriteControlInput = { moveX: heading.x, moveY: heading.y, sprinting: nextSprint, pointerTarget: nextGaze, peerTargets: STAGE_PEERS };
@@ -205,13 +216,12 @@ export function StudioVirtualSpaceLivingPanel({
     setStatusMessage(`${PARTICLE_KIND_LABEL_KO[kind]} 파티클 버스트를 방출했습니다.`);
   };
 
-  const handleTriggerRadialSector = (sectorIndex: number): void => {
+  const handleTriggerRadialSector = (sectorIndex: number, nextNow: number): void => {
     const sector = RADIAL_EMOTE_SECTORS[sectorIndex];
     if (sector) {
       const rad = ((sector.centerAngleDeg - 90) * Math.PI) / 180;
       setProbeDelta({ x: Math.round(Math.cos(rad) * 56), y: Math.round(Math.sin(rad) * 56) });
     }
-    const nextNow = wheelClockMs + 250;
     setWheelClockMs(nextNow);
     const result = triggerRadialEmote(wheelState, sectorIndex, nextNow);
     setWheelState(result.nextState);
@@ -253,7 +263,7 @@ export function StudioVirtualSpaceLivingPanel({
     const runningState = pomodoro.running ? pomodoro : startTeamPomodoro(pomodoro);
     const ticked = tickTeamPomodoro(runningState, deltaSec);
     setPomodoro(ticked.nextState);
-    setStatusMessage(ticked.announcementKo ?? `팀 뽀모도로를 ${deltaSec}초 진행했습니다.`);
+    setStatusMessage(ticked.announcementKo ?? `로컬 뽀모도로를 ${deltaSec}초 진행했습니다.`);
   };
 
   const hairAnchor: Vec2 = { x: sprite.position.x, y: sprite.position.y - 26 + sprite.breathOffsetPx };
@@ -268,7 +278,7 @@ export function StudioVirtualSpaceLivingPanel({
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-0.5">
           <h2 className="text-base font-bold tracking-tight text-fg [word-break:keep-all]">가상 스튜디오 2.5D 리빙 엔진</h2>
-          <p className="text-xs text-fg-2 [word-break:keep-all]">60fps 스프링 물리 · 시간/날씨 VFX · 8방사형 이모트 · 6슬롯 아바타 · 6종 테마 방 · 팀 뽀모도로</p>
+          <p className="text-xs text-fg-2 [word-break:keep-all]">버튼으로 고정 1/60초 물리 모델을 계산하는 CPU 예제입니다. 실제 60fps 측정·작품 반영·동료 연결·기기 저장은 수행하지 않으며, 닫으면 설정이 사라집니다.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 font-medium text-fg [word-break:keep-all]">
@@ -380,7 +390,7 @@ export function StudioVirtualSpaceLivingPanel({
                   data-testid="step-physics-btn"
                   onClick={() => {
                     runSpriteFrames(moveHeading, 15, sprinting, activeGazePreset.pointerTarget);
-                    setStatusMessage("60fps 물리 솔버를 15프레임(0.25초) 추가 진행했습니다.");
+                    setStatusMessage("고정 1/60초 CPU 물리 모델을 15스텝 진행했습니다. 실제 프레임 성능 측정은 아닙니다.");
                   }}
                   className={BTN_PRIMARY}
                 >
@@ -515,7 +525,7 @@ export function StudioVirtualSpaceLivingPanel({
                 {RADIAL_EMOTE_SECTORS.map((sector) => {
                   const cooldownMs = getEmoteRemainingCooldownMs(wheelState, sector.id, wheelClockMs);
                   return (
-                    <button key={sector.id} type="button" data-testid={`emote-sector-${sector.index}`} aria-label={sector.ariaLabelKo} onClick={() => handleTriggerRadialSector(sector.index)} className={`flex-col py-2 ${wheelState.activeSectorIndex === sector.index ? BTN_ACTIVE : BTN_OUTLINE}`}>
+                    <button key={sector.id} type="button" data-testid={`emote-sector-${sector.index}`} aria-label={sector.ariaLabelKo} onClick={() => handleTriggerRadialSector(sector.index, performance.now())} className={`flex-col py-2 ${wheelState.activeSectorIndex === sector.index ? BTN_ACTIVE : BTN_OUTLINE}`}>
                       <span className="text-xs font-semibold">{sector.labelKo}</span>
                       <span className="text-[11px] opacity-80 tabular-nums">{cooldownMs > 0 ? `대기 ${(cooldownMs / 1000).toFixed(1)}s` : `${sector.clockPositionKo} · ${sector.centerAngleDeg}°`}</span>
                     </button>
@@ -581,7 +591,7 @@ export function StudioVirtualSpaceLivingPanel({
               </div>
               <div className="space-y-2 rounded-lg border border-line bg-panel p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-fg [word-break:keep-all]">내 작품 주인공 불러오기</span>
+                  <span className="text-xs font-semibold text-fg [word-break:keep-all]">합성 작품 주인공 예시 선택</span>
                   {avatar.protagonistImport.active ? (
                     <button
                       type="button"
@@ -596,14 +606,14 @@ export function StudioVirtualSpaceLivingPanel({
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {USER_WORK_PROTAGONIST_CATALOG.map((work) => (
+                  {SYNTHETIC_WORK_PROTAGONIST_CATALOG.map((work) => (
                     <button
                       key={work.workId}
                       type="button"
                       data-testid={`import-protagonist-${work.workId}`}
                       onClick={() => {
                         setAvatar((prev) => importProtagonistToAvatar(prev, work));
-                        setStatusMessage(`내 작품 '${work.workTitleKo}' 주인공 ${work.characterNameKo}(${work.signaturePropKo})를 아바타에 불러왔습니다.`);
+                        setStatusMessage(`합성 작품 '${work.workTitleKo}'의 ${work.characterNameKo} 구성을 예시로 선택했습니다. 실제 작품은 읽지 않습니다.`);
                       }}
                       className={avatar.protagonistImport.workId === work.workId ? BTN_ACTIVE : BTN_OUTLINE}
                     >
@@ -613,7 +623,7 @@ export function StudioVirtualSpaceLivingPanel({
                 </div>
                 <p data-testid="protagonist-status" className="text-[11px] text-fg-2 [word-break:keep-all]">
                   {avatar.protagonistImport.active
-                    ? `연결됨: ${avatar.protagonistImport.characterNameKo} (${avatar.protagonistImport.workTitleKo} · ${avatar.protagonistImport.signaturePropKo})`
+                    ? `예시 선택: ${avatar.protagonistImport.characterNameKo} (${avatar.protagonistImport.workTitleKo} · ${avatar.protagonistImport.signaturePropKo})`
                     : "현재 기본 커스텀 아바타를 사용 중입니다."}
                 </p>
               </div>
@@ -691,7 +701,7 @@ export function StudioVirtualSpaceLivingPanel({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]">
                     <Timer className="size-3.5 text-good" aria-hidden="true" />
-                    팀 뽀모도로 스프린트 동기화
+                    로컬 뽀모도로 예제 · 네트워크 동기화 없음
                   </h3>
                   <span data-testid="pomodoro-phase-badge" className="rounded-full border border-good/40 bg-good-soft px-2.5 py-0.5 text-[11px] font-semibold text-good [word-break:keep-all]">
                     {POMODORO_PHASE_LABEL_KO[pomodoro.phase]}
@@ -710,7 +720,7 @@ export function StudioVirtualSpaceLivingPanel({
                       type="button"
                       onClick={() => {
                         setPomodoro((prev) => switchPomodoroPreset(prev, preset.id as PomodoroPresetId));
-                        setStatusMessage(`팀 뽀모도로 프리셋을 '${preset.labelKo}'로 변경했습니다.`);
+                        setStatusMessage(`로컬 뽀모도로 프리셋을 '${preset.labelKo}'로 변경했습니다.`);
                       }}
                       className={pomodoro.presetId === preset.id ? BTN_ACTIVE : BTN_OUTLINE}
                     >
@@ -724,7 +734,7 @@ export function StudioVirtualSpaceLivingPanel({
                     data-testid="pomodoro-toggle-btn"
                     onClick={() => {
                       setPomodoro((prev) => (prev.running ? pauseTeamPomodoro(prev) : startTeamPomodoro(prev)));
-                      setStatusMessage(pomodoro.running ? "팀 뽀모도로를 일시정지했습니다." : "팀 뽀모도로 스프린트를 시작했습니다.");
+                      setStatusMessage(pomodoro.running ? "로컬 뽀모도로를 일시정지했습니다." : "로컬 뽀모도로 스프린트를 시작했습니다.");
                     }}
                     className={BTN_PRIMARY}
                   >
@@ -749,7 +759,7 @@ export function StudioVirtualSpaceLivingPanel({
                     type="button"
                     onClick={() => {
                       setPomodoro((prev) => resetTeamPomodoro(prev));
-                      setStatusMessage("팀 뽀모도로 타이머를 초기화했습니다.");
+                      setStatusMessage("로컬 뽀모도로 타이머를 초기화했습니다.");
                     }}
                     className={BTN_OUTLINE}
                   >
@@ -760,7 +770,7 @@ export function StudioVirtualSpaceLivingPanel({
                 <div className="space-y-1">
                   <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-fg-3">
                     <Users className="size-3" aria-hidden="true" />
-                    동기화 참여 동료 ({pomodoro.syncedPeers.length}명)
+                    합성 동료 예시 ({pomodoro.syncedPeers.length}명 · 실제 연결 0명)
                   </p>
                   <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
                     {pomodoro.syncedPeers.map((peer) => (

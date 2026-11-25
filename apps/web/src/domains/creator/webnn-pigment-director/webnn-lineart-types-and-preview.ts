@@ -11,7 +11,7 @@ export type LineartStabilizerBackend =
   | "webnn-npu"
   | "webnn-gpu"
   | "webnn-cpu"
-  | "cpu-simd-typedarray";
+  | "cpu-typedarray";
 
 export interface WebNnContextOptionsLike {
   readonly deviceType?: WebNnDeviceType;

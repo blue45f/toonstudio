@@ -4,8 +4,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   AVATAR_SLOT_KEYS,
@@ -63,7 +63,7 @@ import {
   triggerRadialEmote,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("1. 60fps 2.5D 스프링 스프라이트 물리 엔진 (sprite-physics-engine)", () => {
   it("서브픽셀 관성 가속·전력 질주·마찰 감속·스테이지 경계 클램프를 정확히 계산한다", () => {
@@ -104,6 +104,17 @@ describe("1. 60fps 2.5D 스프링 스프라이트 물리 엔진 (sprite-physics-
     expect(step1.x).toBeGreaterThan(0.5);
     expect(step1.y).toBeGreaterThan(0.05);
     expect(Math.hypot(step1.x, step1.y)).toBeCloseTo(1, 5);
+  });
+
+  it("초기 남쪽에서 정확히 반대인 북쪽으로 전환해도 방향이 고착되지 않는다", () => {
+    const start = createLivingSpriteState();
+    const north = simulateLivingSpriteFrames(start, { moveX: 0, moveY: -1 }, 60);
+    expect(north.position.y).toBeLessThan(start.position.y);
+    expect(north.facingVector.y).toBeLessThan(-0.99);
+    expect(north.facingOctant).toBe("N");
+    let direction = { x: 1, y: 0 };
+    for (let i = 0; i < 60; i += 1) direction = smoothDirectionVector(direction, { x: -1, y: 0 }, FIXED_PHYSICS_DT_SEC, 12);
+    expect(direction.x).toBeLessThan(-0.99);
   });
 
   it("스쿼시 & 스트레치는 가속·주행·급정지·유휴 전 구간에서 부피 보존(sx * sy === 1)을 유지한다", () => {
@@ -455,6 +466,26 @@ describe("3. 아바타 · 6종 테마 스튜디오 · 가구 배치 · 팀 뽀�
     expect(synced.lastDriftMs).toBe(500);
     expect(synced.phaseElapsedSec).toBeCloseTo(120.5, 2);
   });
+  it("여러 타이머 단계를 넘은 경과 시간과 새 집중 단계의 누적 시간을 보존한다", () => {
+    const start = startTeamPomodoro(createTeamPomodoroState());
+    const advanced = tickTeamPomodoro(start, 40 * 60).nextState;
+    expect(advanced.phase).toBe("sprint");
+    expect(advanced.phaseElapsedSec).toBe(10 * 60);
+    expect(advanced.totalFocusedSec).toBe(35 * 60);
+    expect(advanced.completedSprints).toBe(1);
+    const wholeCycle = tickTeamPomodoro(start, 130 * 60).nextState;
+    expect(wholeCycle.phase).toBe("sprint");
+    expect(wholeCycle.phaseElapsedSec).toBe(0);
+    expect(wholeCycle.completedSprints).toBe(4);
+    expect(wholeCycle.totalFocusedSec).toBe(100 * 60);
+    const nearBreakEnd = { ...start, phase: "short-break" as const, phaseElapsedSec: 290, phaseDurationSec: 300 };
+    const carried = tickTeamPomodoro(nearBreakEnd, 60).nextState;
+    expect(carried.totalFocusedSec).toBe(50);
+    expect(carried.phaseElapsedSec).toBe(50);
+    expect(start.syncMode).toBe("local-demo");
+    expect(start.syncedPeers.every((peer) => !peer.synced)).toBe(true);
+  });
+
 });
 
 describe("4. StudioVirtualSpaceLivingPanel 3탭 인터랙티브 UI 및 코드 위생 계약", () => {
@@ -487,6 +518,21 @@ describe("4. StudioVirtualSpaceLivingPanel 3탭 인터랙티브 UI 및 코드 �
     // 직후 재클릭 시 쿨다운 안내
     fireEvent.click(emoteBtn);
     expect(screen.getByTestId("living-status-banner").textContent).toContain("쿨다운");
+  });
+
+  it("추가 클릭 없이 실제 경과 시간이 지나면 이모트 쿨다운 표시와 발동이 해제된다", () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const now = vi.spyOn(performance, "now").mockReturnValue(10000);
+    render(<StudioVirtualSpaceLivingPanel initialTab="atmosphere-wheel" />);
+    const button = screen.getByTestId("emote-sector-2");
+    fireEvent.click(button);
+    expect(button.textContent).toContain("대기");
+    now.mockReturnValue(10000 + ((RADIAL_EMOTE_SECTORS[2]?.cooldownSec ?? 0) + 1) * 1000);
+    act(() => vi.advanceTimersByTime(100));
+    expect(button.textContent).not.toContain("대기");
+    fireEvent.click(button);
+    expect(screen.getByTestId("living-status-banner").textContent).toContain("발동했습니다");
+    expect(screen.getByText(/실제 60fps 측정·작품 반영·동료 연결·기기 저장은 수행하지/)).toBeTruthy();
   });
 
   it("탭 3에서 6종 테마 방 WebP <img>, 내 작품 주인공 불러오기, 가구 충돌 검사, 팀 뽀모도로가 동작한다", () => {

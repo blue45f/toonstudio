@@ -113,7 +113,7 @@ export function ContiCutCard({
         <div className="mt-2.5 grid grid-cols-1 gap-3 sm:grid-cols-5">
           <div
             className="relative min-h-28 overflow-hidden rounded-md border border-line bg-canvas p-2 sm:col-span-2"
-            aria-label={pick(`${cut.cutNumber}컷 말풍선 Z 시선 배치 프리뷰`, `Cut ${cut.cutNumber} Z-order balloon layout`)}
+            aria-label={pick(`${cut.cutNumber}컷 말풍선 순서·좌표 제안 목록`, `Cut ${cut.cutNumber} balloon order and coordinate suggestions`)}
           >
             <div className="text-[11px] font-medium text-fg-3">{cut.sceneTitle}</div>
             {cut.sfxList.length > 0 && (

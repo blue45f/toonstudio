@@ -9,7 +9,7 @@ import {
   Activity, CheckCircle2, Droplets, Eye, Feather, Keyboard, Layers,
   Palette, RefreshCw, RotateCcw, ShieldCheck, Sparkles, Volume2, Wand2,
 } from "lucide-react";
-import { useId, useMemo, useState, type ReactElement } from "react";
+import { useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { Switch } from "@/shared/components/ui/switch";
 import { useI18n } from "@/shared/lib/i18n";
@@ -44,9 +44,11 @@ export interface StudioHandcraftedAtelierPanelProps {
   readonly initialMaterial?: TactileMaterialId;
   readonly initialThemeMood?: ProceduralThemeMoodId;
   readonly initialReducedMotion?: boolean;
-  readonly onAnalogProfileApplied?: (result: AnalogJitterResult) => void;
-  readonly onThemeSynthesized?: (theme: ProceduralStudioTheme) => void;
-  readonly onWorkbenchApplied?: (state: AdaptiveWorkbenchState) => void;
+  /** 예제 결과 알림이며 실제 원고·설정 적용이나 저장 완료 응답이 아니다. */
+  readonly onAnalogProfileApplied?: (result: AnalogJitterResult) => void | Promise<void>;
+  readonly onThemeSynthesized?: (theme: ProceduralStudioTheme) => void | Promise<void>;
+  /** 승인·복구·초기화된 예제 배치 상태를 알린다. */
+  readonly onWorkbenchApplied?: (state: AdaptiveWorkbenchState) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -112,6 +114,29 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
   const [themeMoodId, setThemeMoodId] = useState<ProceduralThemeMoodId>(initialThemeMood);
   const [chromaScalePct, setChromaScalePct] = useState<number>(100);
   const [workbenchState, setWorkbenchState] = useState<AdaptiveWorkbenchState>(() => createAdaptiveWorkbenchState());
+  const [notification, setNotification] = useState({ status: "idle", message: "" });
+  const pendingRef = useRef(false);
+  const retryRef = useRef<(() => void) | null>(null);
+
+  function notifyExample(message: string, callback?: () => void | Promise<void>): void {
+    if (pendingRef.current) return;
+    function finish(failed: boolean): void {
+      pendingRef.current = false;
+      if (!failed) retryRef.current = null;
+      setNotification({ status: failed ? "failed" : "notified", message: failed
+        ? `${message} ${pick("예제 알림 처리에 실패했어요. 다시 시도할 수 있어요.", "Example notification failed. You can retry.")}`
+        : `${message} ${pick("실제 원고·설정 적용이나 저장 완료를 뜻하지 않아요.", "This does not confirm applying or saving a manuscript or settings.")}` });
+    }
+    retryRef.current = () => notifyExample(message, callback);
+    pendingRef.current = true;
+    try {
+      const result = callback?.();
+      if (result) {
+        setNotification({ status: "pending", message: `${message} ${pick("예제 알림 처리 중이에요.", "Processing example notification.")}` });
+        void result.then(() => finish(false), () => finish(true));
+      } else finish(false);
+    } catch { finish(true); }
+  }
 
   const activeSampleStroke = useMemo<SampleAnalogStrokeSpec>(() => {
     const matched = DEFAULT_SAMPLE_STROKES.find((s) => s.id === sampleStrokeId);
@@ -137,49 +162,63 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
     [workbenchState],
   );
 
-  const tabs: readonly { readonly id: HandcraftedAtelierTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "analog-jitter", label: pick("아날로그 지터·잉크 번짐", "Analog Jitter & Ink Bloom"), icon: <Feather className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "spring-theme", label: pick("물리 관성·절차적 테마", "Tactile Spring & OKLCH Theme"), icon: <Palette className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "adaptive-workbench", label: pick("적응형 워크벤치 학습", "Adaptive Workbench Learner"), icon: <Wand2 className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: HandcraftedAtelierTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "analog-jitter", label: pick("아날로그 지터·잉크 번짐", "Analog Jitter & Ink Bloom"), shortLabel: pick("필기구", "Pens"), icon: <Feather className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "spring-theme", label: pick("물리 관성·절차적 테마", "Tactile Spring & OKLCH Theme"), shortLabel: pick("관성·테마", "Motion & Theme"), icon: <Palette className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "adaptive-workbench", label: pick("적응형 워크벤치 학습", "Adaptive Workbench Learner"), shortLabel: pick("작업대", "Workbench"), icon: <Wand2 className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const handleSelectPreset = (nextPreset: AnalogArtisanPresetId): void => {
+    if (pendingRef.current) return;
     setPresetId(nextPreset);
-    onAnalogProfileApplied?.(applyAnalogJitterProfile(activeSampleStroke.points, nextPreset, seed));
+    const result = applyAnalogJitterProfile(activeSampleStroke.points, nextPreset, seed);
+    notifyExample(pick("아날로그 샘플을 선택했어요.", "Selected an analog sample."), onAnalogProfileApplied ? () => onAnalogProfileApplied(result) : undefined);
   };
   const handleStepSeed = (): void => {
+    if (pendingRef.current) return;
     const nextSeed = seed + 137;
     setSeed(nextSeed);
-    onAnalogProfileApplied?.(applyAnalogJitterProfile(activeSampleStroke.points, presetId, nextSeed));
+    const result = applyAnalogJitterProfile(activeSampleStroke.points, presetId, nextSeed);
+    notifyExample(pick("샘플 시드를 바꿨어요.", "Changed the sample seed."), onAnalogProfileApplied ? () => onAnalogProfileApplied(result) : undefined);
   };
   const handleSelectThemeMood = (nextMood: ProceduralThemeMoodId): void => {
+    if (pendingRef.current) return;
     setThemeMoodId(nextMood);
-    onThemeSynthesized?.(synthesizeProceduralStudioTheme(nextMood, { chromaScale: chromaScalePct / 100 }));
+    const theme = synthesizeProceduralStudioTheme(nextMood, { chromaScale: chromaScalePct / 100 });
+    notifyExample(pick("테마 토큰 예제를 골랐어요.", "Selected example theme tokens."), onThemeSynthesized ? () => onThemeSynthesized(theme) : undefined);
   };
   const handleTapTool = (toolId: WorkbenchToolId): void => setWorkbenchState((prev) => recordToolUsage(prev, toolId));
   const handleRunScenario = (scenario: ArtistHabitScenarioSpec): void => setWorkbenchState((prev) => recordToolSequence(prev, scenario.sequence));
   const handlePreviewProposal = (): void => setWorkbenchState((prev) => previewWorkbenchProposal(prev));
   const handleApplyProposal = (): void => {
+    if (pendingRef.current) return;
     const next = applyWorkbenchProposal(workbenchState);
     setWorkbenchState(next);
-    if (next.approvalStatus === "applied") onWorkbenchApplied?.(next);
+    if (next.approvalStatus === "applied") notifyExample(pick("예제 배치를 승인했어요.", "Approved the example layout."), onWorkbenchApplied ? () => onWorkbenchApplied(next) : undefined);
   };
-  const handleRevertLayout = (): void => setWorkbenchState((prev) => revertWorkbenchLayout(prev));
+  const handleRevertLayout = (): void => {
+    if (pendingRef.current) return;
+    const next = revertWorkbenchLayout(workbenchState);
+    setWorkbenchState(next);
+    notifyExample(pick("예제 배치를 복구했어요.", "Reverted the example layout."), onWorkbenchApplied ? () => onWorkbenchApplied(next) : undefined);
+  };
   const handleDismissProposal = (): void => setWorkbenchState((prev) => dismissWorkbenchProposal(prev));
-  const handleResetWorkbench = (): void => setWorkbenchState((prev) => resetWorkbenchLearning(prev));
+  const handleResetWorkbench = (): void => {
+    if (pendingRef.current) return;
+    const next = resetWorkbenchLearning(workbenchState);
+    setWorkbenchState(next);
+    notifyExample(pick("예제 학습·배치를 초기화했어요.", "Reset example learning and layout."), onWorkbenchApplied ? () => onWorkbenchApplied(next) : undefined);
+  };
 
-  const approvalStatusLabel =
-    workbenchState.approvalStatus === "applied"
-      ? pick("승인 반영됨 · 언제든 복구 가능", "Applied (Revert Ready)")
-      : workbenchState.approvalStatus === "previewing"
-        ? pick("미리보기 중 · 실제 버튼 미이동", "Previewing (Buttons Unmoved)")
-        : workbenchState.approvalStatus === "reverted"
-          ? pick("이전 배치로 복구됨", "Reverted to Previous Layout")
-          : pick("관찰 중 · 임의 이동 없음", "Observing (No Auto-Move)");
+  let approvalStatusLabel = pick("예제 기록 중 · 임의 이동 없음", "Recording examples; no automatic moves");
+  if (workbenchState.approvalStatus === "applied") approvalStatusLabel = pick("예제 배치 승인 반영됨", "Example layout approved");
+  if (workbenchState.approvalStatus === "previewing") approvalStatusLabel = pick("예제 미리보기 · 버튼 미이동", "Example preview; buttons unmoved");
+  if (workbenchState.approvalStatus === "reverted") approvalStatusLabel = pick("예제 배치 복구됨", "Example layout reverted");
 
   return (
     <section
       data-testid="handcrafted-atelier-feel-panel"
+      aria-busy={notification.status === "pending"}
       aria-label={pick("수공예 아날로그 미학 · 물리 관성 모션 · 절차적 OKLCH 테마 · 적응형 워크벤치", "Handcrafted Analog Aesthetics, Tactile Spring Motion, Procedural OKLCH Theme, and Adaptive Workbench")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
@@ -192,25 +231,32 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
             </h2>
           </div>
           <p className="text-xs text-fg-2">
-            {pick("기계적인 벡터 균일선을 손맛 있는 잉크·종이결 선으로 다듬고, 화구 물리 관성과 WCAG AA 절차 테마, 사용자 승인 기반 습관 학습 배치를 제어합니다.", "Replace sterile vector strokes with organic ink bloom and paper grain, simulate tactile RK4 springs with WCAG AA OKLCH themes, and learn tool habits strictly opt-in.")}
+            {pick("고정 획·스프링·테마 토큰·도구 전환 규칙의 계산 예제예요. 실제 원고·앱 설정·단축키·기기·저장에는 연결하지 않았어요.", "Calculation examples use fixed strokes, springs, theme tokens and tool transitions. No manuscript, app settings, shortcuts, device or storage is connected.")}
           </p>
+          <p data-testid="handcrafted-scope-notice" className="text-xs text-fg-3">{pick("음향·촉각은 패턴 수치만 표시해요. 동선 비율은 예제 도구 인덱스 거리의 추정치이며 시간·기기 성능 실측이 아니에요. AA는 생성 토큰 쌍의 명암비 계산 범위예요. 예제 상태는 패널을 닫으면 사라져요.", "Audio and haptics are numeric patterns. Travel estimates use example tool indices, not measured time or device performance. AA refers to generated token-pair contrast calculations. Example state ends when the panel closes.")}</p>
         </div>
         <span data-testid="badge-atelier-craft-mode" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-good bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          {pick("온디바이스 수공예 엔진 · AA 대비 보증", "On-Device Craft · WCAG AA")}
+          {pick("수공예 계산 예제 · 토큰 명암비 점검", "Craft examples · Token contrast checks")}
         </span>
       </header>
+
+      {notification.message ? <div role={notification.status === "failed" ? "alert" : "status"} data-testid="handcrafted-notification-status" className="text-xs text-fg-2">
+        {notification.message}
+        {notification.status === "failed" ? <button type="button" data-testid="handcrafted-notification-retry" onClick={() => retryRef.current?.()} className={`${PILL_BTN} ${IDLE_TONE}`}>{pick("알림 다시 시도", "Retry notification")}</button> : null}
+      </div> : null}
+      <fieldset disabled={notification.status === "pending"} className="m-0 min-w-0 space-y-4 border-0 p-0">
 
       <div role="tablist" aria-label={pick("수공예 아틀리에 기능 탭", "Handcrafted atelier tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? ACTIVE_TONE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>
@@ -333,7 +379,7 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
               <div className="space-y-2 text-xs">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-md border border-line bg-raised p-2">
-                    <div className="text-[11px] text-fg-3">{pick("정착 시간", "Settle Time")}</div>
+                    <div className="text-[11px] text-fg-3">{pick("계산 정착 시간", "Simulated Settle Time")}</div>
                     <div data-testid="spring-settle-ms" className="font-bold text-fg tabular-nums">
                       {springSimulation.settleTimeMs}ms{springSimulation.settledImmediately ? pick(" (즉시 정착)", " (Instant)") : ""}
                     </div>
@@ -364,7 +410,7 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
               </div>
               <span data-testid="theme-wcag-badge" className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tabular-nums ${proceduralTheme.contrastAudit.wcagAaPassed ? "border-good bg-good-soft text-good" : "border-bad bg-bad-soft text-bad"}`}>
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                {pick(`WCAG AA 통과 · 최소 ${proceduralTheme.contrastAudit.minTextContrastRatio.toFixed(2)}:1`, `WCAG AA Pass · Min ${proceduralTheme.contrastAudit.minTextContrastRatio.toFixed(2)}:1`)}
+                {proceduralTheme.contrastAudit.wcagAaPassed ? pick("WCAG AA 통과 (토큰 쌍)", "WCAG AA Pass (token pairs)") : pick("토큰 명암비 미달", "Token contrast failed")} · {proceduralTheme.contrastAudit.minTextContrastRatio.toFixed(2)}:1
               </span>
             </div>
 
@@ -509,7 +555,7 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
                   <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                   {pick("승인 후 적용", "Approve & Apply")}
                 </button>
-                <button type="button" data-testid="btn-workbench-revert" disabled={workbenchState.appliedCount === 0} onClick={handleRevertLayout} className={`${PILL_BTN} disabled:cursor-not-allowed disabled:opacity-45 ${IDLE_TONE}`}>
+                <button type="button" data-testid="btn-workbench-revert" disabled={workbenchState.previousToolbarOrder === null} onClick={handleRevertLayout} className={`${PILL_BTN} disabled:cursor-not-allowed disabled:opacity-45 ${IDLE_TONE}`}>
                   <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                   {pick("이전 배치 복구", "Revert Layout")}
                 </button>
@@ -523,6 +569,7 @@ export function StudioHandcraftedAtelierPanel(props: StudioHandcraftedAtelierPan
           </div>
         </div>
       )}
+      </fieldset>
     </section>
   );
 }

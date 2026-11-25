@@ -1,10 +1,10 @@
 /**
- * WebCodecs 4K/60fps 2.5D 무빙툰 릴스/쇼츠 인코더 & 타임라인 프레임 스케줄러.
+ * WebCodecs 프로파일 지원 진단 · 64×64 합성 샘플 인코더 프로브 · 타임라인 스케줄러.
  *
- * - 브라우저 하드웨어 가속 `VideoEncoder`(AV1 / H.264 / VP9)를 프로브해
- *   서버 인코딩 비용 0원으로 로컬 4K/60fps 릴스를 생성한다.
+ * - 지정 해상도의 설정 지원 여부와 합성 샘플 인코딩을 별도로 점검한다.
+ *   실제 원고 프레임 입력·영상 파일 보존·내보내기는 연결되지 않았다.
  * - 키프레임 패닝·줌·깊이(`depthZ`) 2.5D 패럴랙스·결정적 감쇠 카메라 셰이크를 보간한다.
- * - WebCodecs 미지원 런타임에서는 안전하게 프레임 시퀀스 폴백으로 전환한다.
+ * - WebCodecs 미지원 시 포즈 보간만 수행하며 출력 프레임·바이트는 0으로 보고한다.
  */
 
 export type ReelsCodecFamily = "av1" | "h264" | "vp9";
@@ -101,7 +101,7 @@ export interface ReelsCodecProbeReport {
   readonly recommendedCodec: ReelsCodecCandidate | null;
   readonly entries: readonly CodecProbeEntry[];
   readonly serverCostKrwPerMinute: 0;
-  readonly cloudGpuSavingsKrwPer10Min: number;
+  readonly cloudGpuSavingsKrwPer10Min: null;
   readonly estimatedMegabytesFor15s: number;
   readonly summaryKo: string;
 }
@@ -210,6 +210,11 @@ export interface ReelsEncodeOptions {
 }
 
 export interface ReelsEncodeResult {
+  readonly purpose: "synthetic-encoder-probe";
+  readonly outputProduced: false;
+  readonly status: "completed" | "unsupported" | "failed" | "cancelled";
+  readonly sampleFrameWidth: 64;
+  readonly sampleFrameHeight: 64;
   readonly mode: ReelsEncodeExecutionMode;
   readonly codecString: string;
   readonly preset: ReelsResolutionPreset;
@@ -522,7 +527,7 @@ export async function probeWebCodecsSupport(
 ): Promise<ReelsCodecProbeReport> {
   const preset = findReelsPresetById(presetId);
   const adapter = injectedAdapter === undefined ? detectBrowserWebCodecsAdapter() : injectedAdapter;
-  const cloudGpuSavingsKrwPer10Min = preset.width >= 2160 ? 1800 : 900;
+  const cloudGpuSavingsKrwPer10Min = null;
   const makeMb15s = (bps: number): number => roundTo(((bps / 8) * 15) / (1024 * 1024), 1);
 
   if (!adapter) {
@@ -536,12 +541,12 @@ export async function probeWebCodecsSupport(
         hardwareSupported: false,
         softwareSupported: false,
         effectiveBitrateBps: Math.round(preset.targetBitrateBps * candidate.bitrateFactor),
-        statusKo: "WebCodecs 미지원 · 프레임 시퀀스 폴백",
+        statusKo: "WebCodecs 미지원 · 포즈 보간만 가능",
       })),
       serverCostKrwPerMinute: 0,
       cloudGpuSavingsKrwPer10Min,
       estimatedMegabytesFor15s: makeMb15s(preset.targetBitrateBps),
-      summaryKo: "현재 런타임에서 VideoEncoder API를 찾지 못해 안전한 2.5D 프레임 시퀀스 폴백으로 전환합니다.",
+      summaryKo: "VideoEncoder API가 없어 포즈 보간만 수행합니다. 영상·프레임 파일은 생성하지 않습니다.",
     };
   }
 
@@ -577,7 +582,7 @@ export async function probeWebCodecsSupport(
       hardwareSupported,
       softwareSupported,
       effectiveBitrateBps,
-      statusKo: hardwareSupported ? "하드웨어 가속 가능" : softwareSupported ? "소프트웨어 가속 가능" : "현재 해상도 미지원",
+      statusKo: hardwareSupported ? "하드웨어 선호 설정 지원" : softwareSupported ? "소프트웨어 선호 설정 지원" : "현재 해상도 설정 미지원",
     });
   }
 
@@ -599,8 +604,8 @@ export async function probeWebCodecsSupport(
     cloudGpuSavingsKrwPer10Min,
     estimatedMegabytesFor15s: makeMb15s(picked ? picked.effectiveBitrateBps : preset.targetBitrateBps),
     summaryKo: picked
-      ? `${picked.candidate.labelKo} ${bestHw ? "하드웨어" : "소프트웨어"} 인코더로 서버 비용 0원 로컬 인코딩이 가능합니다.`
-      : "선택한 4K/60fps 프로파일을 지원하는 WebCodecs 코덱이 없어 프레임 시퀀스 폴백으로 전환합니다.",
+      ? `${picked.candidate.labelKo} 프로파일 설정이 지원됩니다. 실제 하드웨어 사용·4K 처리 성능·영상 출력은 확인하지 않았습니다.`
+      : "선택한 프로파일 설정을 지원하는 코덱이 없습니다. 영상·프레임 파일은 생성하지 않습니다.",
   };
 }
 
@@ -630,6 +635,7 @@ function buildEncodeResult(
   preset: ReelsResolutionPreset,
   schedule: ReelsFrameSchedulePlan,
   stats: {
+    readonly status: ReelsEncodeResult["status"];
     readonly keyFrameCount: number;
     readonly droppedFrames: number;
     readonly backpressureYields: number;
@@ -642,6 +648,11 @@ function buildEncodeResult(
 ): ReelsEncodeResult {
   const renderedSec = Math.max(1 / schedule.fps, Math.max(1, stats.chunkSummaryBytes.length) / schedule.fps);
   return {
+    purpose: "synthetic-encoder-probe",
+    outputProduced: false,
+    status: stats.status,
+    sampleFrameWidth: 64,
+    sampleFrameHeight: 64,
     mode,
     codecString,
     preset,
@@ -660,7 +671,7 @@ function buildEncodeResult(
   };
 }
 
-/** 2.5D 무빙툰 타임라인을 WebCodecs(또는 안전 폴백)로 인코딩하는 프레임 스케줄러. */
+/** 합성 64×64 샘플의 코덱 동작을 점검한다. 청크 크기만 집계하며 영상 파일은 생성하지 않는다. */
 export class MovingToonReelsEncoder {
   async encodeTimeline(timeline: MovingToonTimeline, options: ReelsEncodeOptions = {}): Promise<ReelsEncodeResult> {
     const startMs = Date.now();
@@ -688,24 +699,18 @@ export class MovingToonReelsEncoder {
       typeof createVideoFrameFn === "function";
 
     if (!canEncode || !probe.recommendedCodec || !createEncoderFn || !createVideoFrameFn) {
-      let keyFrameCount = 0;
-      let totalEncodedBytes = 0;
-      const baseBytes = Math.max(4096, Math.round(preset.targetBitrateBps / 8 / Math.max(1, schedule.fps)));
       for (let i = 0; i < targetFrameCount; i += 1) {
         if (options.signal?.aborted) break;
         const pose = interpolateMovingToonFrame(timeline, i, { fps: schedule.fps, keyFrameInterval: schedule.keyFrameInterval });
         if (i % sampleStride === 0 || i === targetFrameCount - 1) samplePoses.push(pose);
-        if (pose.isKeyFrame) keyFrameCount += 1;
-        const chunkBytes = Math.round(baseBytes * (pose.isKeyFrame ? 2.4 : 0.85));
-        totalEncodedBytes += chunkBytes;
-        chunkSummaryBytes.push(chunkBytes);
-        options.onProgress?.({ encodedFrames: i + 1, totalFrames: targetFrameCount, progressRatio: (i + 1) / targetFrameCount, currentTimeMs: pose.timeMs, queueDepth: 0, mode: "fallback-frame-sequence" });
+        options.onProgress?.({ encodedFrames: 0, totalFrames: targetFrameCount, progressRatio: (i + 1) / targetFrameCount, currentTimeMs: pose.timeMs, queueDepth: 0, mode: "fallback-frame-sequence" });
       }
       return buildEncodeResult("fallback-frame-sequence", "fallback/frame-sequence-rgba", preset, schedule, {
-        keyFrameCount,
+        status: options.signal?.aborted ? "cancelled" : "unsupported",
+        keyFrameCount: 0,
         droppedFrames: 0,
         backpressureYields: 0,
-        totalEncodedBytes,
+        totalEncodedBytes: 0,
         startMs,
         fallbackReasonKo: probe.summaryKo,
         samplePoses,
@@ -734,9 +739,9 @@ export class MovingToonReelsEncoder {
     try {
       encoder.configure({
         codec: activeCodec.codecString,
-        width: preset.width,
-        height: preset.height,
-        bitrate: Math.round(preset.targetBitrateBps * activeCodec.bitrateFactor),
+        width: 64,
+        height: 64,
+        bitrate: 256_000,
         framerate: schedule.fps,
         hardwareAcceleration: probe.recommendedMode === "webcodecs-hardware" ? "prefer-hardware" : "prefer-software",
         latencyMode: "quality",
@@ -768,17 +773,20 @@ export class MovingToonReelsEncoder {
         options.onProgress?.({ encodedFrames: submitted, totalFrames: targetFrameCount, progressRatio: submitted / targetFrameCount, currentTimeMs: pose.timeMs, queueDepth: encoder.encodeQueueSize, mode: probe.recommendedMode });
       }
       if (encoderFailure === null) await encoder.flush();
+    } catch (error: unknown) {
+      encoderFailure = error;
     } finally {
       encoder.close();
     }
 
     return buildEncodeResult(probe.recommendedMode, activeCodec.codecString, preset, schedule, {
+      status: encoderFailure !== null ? "failed" : options.signal?.aborted ? "cancelled" : chunkSummaryBytes.length > 0 ? "completed" : "failed",
       keyFrameCount,
       droppedFrames,
       backpressureYields,
       totalEncodedBytes,
       startMs,
-      fallbackReasonKo: encoderFailure !== null ? `인코더 런타임 오류 감지: ${String(encoderFailure)}` : null,
+      fallbackReasonKo: encoderFailure !== null ? `인코더 런타임 오류 감지: ${String(encoderFailure)}` : chunkSummaryBytes.length === 0 ? "인코딩된 합성 샘플이 없습니다." : null,
       samplePoses,
       chunkSummaryBytes,
     });

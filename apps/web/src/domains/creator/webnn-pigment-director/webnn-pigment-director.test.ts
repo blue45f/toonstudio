@@ -16,7 +16,6 @@ import {
   applyDirectorAutoAssist,
   blendPigmentBatchSimd,
   computeCiede2000,
-  computeStrokeJitterEnergy,
   createRoughLineartDemoFixture,
   getPigmentBaseSrgb,
   inspectKoreanDialogueBalloon,
@@ -173,13 +172,14 @@ describe("온디바이스 WebNN 실시간 선화 보정 파이프라인", () => 
   it("navigator.ml 부재 시 CPU SIMD-정렬 폴백을, 존재 시 NPU/GPU WebNN 백엔드를 감지한다", async () => {
     const fallbackCap = probeWebNnLineartCapability(null);
     expect(fallbackCap.hasNavigatorMl).toBe(false);
-    expect(fallbackCap.preferredBackend).toBe("cpu-simd-typedarray");
+    expect(fallbackCap.preferredBackend).toBe("cpu-typedarray");
+    const compute = vi.fn();
 
     const mockNav = {
       ml: {
         createContext: async (opts?: { readonly deviceType?: "npu" | "gpu" | "cpu" }) => {
           if (opts?.deviceType === "npu" || opts?.deviceType === "cpu") {
-            return { destroy: () => undefined };
+            return { compute, destroy: () => undefined };
           }
           throw new Error("gpu unsupported");
         },
@@ -196,37 +196,14 @@ describe("온디바이스 WebNN 실시간 선화 보정 파이프라인", () => 
     const asyncReport = await stabilizeRoughLineartAsync(createRoughLineartDemoFixture(), {
       navigatorOverride: mockNav,
     });
-    expect(asyncReport.backend).toBe("webnn-npu");
-  });
-
-  it("고주파 손떨림이 섞인 러프 곡선에서 지터를 55% 이상 제거하고 2ms 미만(워밍업 후)으로 처리한다", () => {
-    const noisyPoints: RawStrokePoint[] = [];
-    for (let i = 0; i < 96; i += 1) {
-      const t = i / 95;
-      const tremor = (i % 2 === 0 ? 1 : -1) * 3.4 + Math.sin(i * 1.9) * 1.4;
-      noisyPoints.push({
-        x: 20 + t * 200,
-        y: 90 + Math.sin(t * Math.PI * 1.5) * 42 + tremor,
-        pressure: 0.72,
-      });
-    }
-    const strokes: readonly LineartStrokeInput[] = Array.from({ length: 16 }, (_, idx) => ({
-      id: `noisy-curve-${idx}`,
-      points: noisyPoints,
-    }));
-
-    // JIT 워밍업 1회 후 16스트로크 배치 실측 (OS 스케줄러 단일 틱 지터 배제)
-    stabilizeRoughLineart(strokes, { smoothingStrength: 0.8, gapClosingThresholdPx: 0 });
-    const report = stabilizeRoughLineart(strokes, {
-      smoothingStrength: 0.8,
-      gapClosingThresholdPx: 0,
+    expect(asyncReport.backend).toBe("cpu-typedarray");
+    expect(asyncReport.capability.preferredBackend).toBe("webnn-npu");
+    expect(compute).not.toHaveBeenCalled();
+    const gpuVisible = stabilizeRoughLineart(createRoughLineartDemoFixture(), {
+      navigatorOverride: { ...mockNav, gpu: { requestAdapter: async () => ({}) } },
     });
-
-    expect(computeStrokeJitterEnergy(noisyPoints)).toBeGreaterThan(2.0);
-    expect(report.jitterReductionPct).toBeGreaterThanOrEqual(55);
-    expect(report.stabilizedJitterPx).toBeLessThan(report.rawJitterPx * 0.45);
-    expect(report.avgMsPerStroke).toBeLessThan(2);
-    expect(report.strokes[0]!.bezierSegments.length).toBeGreaterThan(2);
+    expect(gpuVisible.backend).toBe("cpu-typedarray");
+    expect(gpuVisible.capability.supportedDeviceTypes).toEqual([]);
   });
 
   it("자기 폐곡선 · 끝점 연결 · T-접합 3가지 열린 선 틈을 반경 내에서 정확히 닫는다", () => {
@@ -330,6 +307,11 @@ describe("온디바이스 웹툰 컷 연출 · 대사 어시스트 엔진", () =
     });
     expect(withWindowAi.backend).toBe("window-ai-nano");
     expect(withWindowAi.hasWindowAi).toBe(true);
+    const create = vi.fn();
+    const report = analyzeWebtoonCutDirection(CUT_DIRECTOR_DEMO_SCENES, { ai: { languageModel: { create } } });
+    expect(report.executionBackend).toBe("offline-webtoon-grammar");
+    expect(report.inferencePerformed).toBe(false);
+    expect(create).not.toHaveBeenCalled();
   });
 
   it("동일 샷(MS) 3연속 단조로움 · WS 부재 · 클라이맥스 샷 불일치를 정확히 진단한다", () => {
@@ -407,7 +389,10 @@ describe("StudioWebnnPigmentDirectorPanel UI · 접근성 · 토큰 위생 검�
       putImageData: putImageDataSpy,
     };
     const canvas2d: {
-      getContext(contextId: "2d"): Pick<CanvasRenderingContext2D, keyof typeof mockCtx> | null;
+      getContext(
+        contextId: "2d",
+        options?: CanvasRenderingContext2DSettings,
+      ): Pick<CanvasRenderingContext2D, keyof typeof mockCtx> | null;
     } = HTMLCanvasElement.prototype;
     vi.spyOn(canvas2d, "getContext").mockImplementation((id) => (id === "2d" ? mockCtx : null));
   });

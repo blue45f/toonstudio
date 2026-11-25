@@ -126,6 +126,7 @@ function renderThumbNode(node: ThumbNode, pixelScale: number | null, nativeBlend
     case "ellipse":
       return (
         <ellipse
+          data-element-id={node.key}
           key={node.key}
           cx={node.cx}
           cy={node.cy}

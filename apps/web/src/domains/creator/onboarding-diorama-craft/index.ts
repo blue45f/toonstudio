@@ -13,6 +13,7 @@ export {
   ONBOARDING_DIORAMA_CHAPTERS,
   collectAllOnboardingAtelierAssetPaths,
   computeDioramaParallax,
+  countFirstCutDialogueGraphemes,
   createInitialDioramaState,
   createInitialFirstCutSprint,
   getDioramaChapterById,

@@ -1,8 +1,8 @@
 /**
  * 8대 핵심 차별화 기술·주변기기 쇼케이스 카드 및 실전 단축키 치트시트 정본 데이터.
  *
- * - 실제 구현된 라우트(`/studio/canvas`, `/studio/character`, `/studio/space`, `/compare/studio`, `/tech`)와
- *   사전 제작된 `/assets/atelier/{media|spaces|onboarding}/*.webp` 자산 경로만 연결한다.
+ * - 대표 화면 링크와 독립 예제 설명을 구분한다. 링크 존재는 원고 연결이나 실행 완료의 근거가 아니다.
+ * - `/assets/atelier/{media|spaces|onboarding}/*.webp`는 소개용 삽화다.
  */
 
 export type AtlasRoutePath =
@@ -24,8 +24,17 @@ export type FeatureAxisId =
 
 export type ShortcutCategoryId = "draw" | "select" | "view-cut" | "collab-flow";
 
+/** 링크가 존재한다는 사실과 개별 실험의 편집기 연결을 구분한다. */
+export type AtlasEntryScope = "standalone-example" | "screen-guide";
+
+export const ATLAS_ENTRY_SCOPE_LABELS: Readonly<Record<AtlasEntryScope, string>> = {
+  "standalone-example": "독립 예제 안내 · 실제 원고 연결 미확인",
+  "screen-guide": "기존 화면 안내 · 세부 동작은 이동 후 확인",
+};
+
 export interface DifferentiatorShowcaseCard {
   readonly id: string;
+  readonly scope: AtlasEntryScope;
   readonly order: number;
   readonly badgeKo: string;
   readonly titleKo: string;
@@ -57,34 +66,36 @@ export interface StudioShortcutEntry {
 export const DIFFERENTIATOR_SHOWCASE_CARDS: readonly DifferentiatorShowcaseCard[] = [
   {
     id: "diff-physical-foley-drawing",
+    scope: "standalone-example",
     order: 1,
     badgeKo: "차별화 01 · 오감 드로잉",
     titleKo: "실물 화구 물리 마찰음 & 종이결 캔버스",
-    headlineKo: "G펜이 켄트지를 긁는 사각임까지 필압대로 살아납니다",
+    headlineKo: "화구·종이 조합별 합성 소리 예제를 살펴봅니다",
     summaryKo:
-      "6종 실물 화구와 4종 종이결 조합마다 스트로크 속도와 필압에 따라 물리 마찰음을 실시간 합성합니다. 조용한 디지털 화면이 실제 화방 책상처럼 바뀝니다.",
-    creatorBenefitKo: "눈으로만 보던 선 굵기와 종이 질감을 귀로도 바로 느껴 필압 조절이 한결 편해집니다.",
+      "화구·종이별 합성 소리와 희소 타일·좌표 예측의 독립 예제입니다. 실제 캔버스 스트로크 연결과 입력 지연 개선을 확인한 결과는 아닙니다.",
+    creatorBenefitKo: "소리·필압 조합을 비교할 수 있습니다. 실제 작업에서의 필압 조절 효과는 별도 확인이 필요합니다.",
     axisId: "drawing-2d-foley",
     route: "/studio/canvas",
-    ctaLabelKo: "드로잉 캔버스에서 바로 체험",
+    ctaLabelKo: "관련 캔버스 화면 안내",
     imageSrc: "/assets/atelier/media/gpen-ink.webp",
     imageAltKo: "G펜 스틸 닙과 종이결 마찰 드로잉 썸네일",
     specHighlightsKo: [
       "G펜·4B 연필·수채 붓·마커·유화 나이프·목탄 6종 화구",
       "켄트지·한지·황목지·린넨 캔버스 4종 종이결 물리 마찰",
-      "무한 캔버스 256×256 희소 타일 + 1프레임 선행 예측",
+      "희소 타일 구조 · 입력 좌표 예측 계산 예제",
     ],
     keywords: ["마찰음", "G펜", "종이결", "화구", "Foley", "드로잉", "ASMR"],
   },
   {
     id: "diff-kubelka-munk-webnn",
+    scope: "standalone-example",
     order: 2,
-    badgeKo: "차별화 02 · 0원 온디바이스 광학",
+    badgeKo: "기술 02 · 온디바이스 광학 예제",
     titleKo: "실제 물감 혼색(Kubelka-Munk) & WebNN 선화 보정",
-    headlineKo: "서버 요금 0원으로 파랑+노랑이 맑은 초록으로 섞입니다",
+    headlineKo: "안료 혼색 계산과 선화 분석 실험의 범위를 살펴봅니다",
     summaryKo:
-      "단순 디지털 색 섞기처럼 탁한 회색이 되지 않도록 8밴드 안료 광학식으로 물감을 섞고, 내 기기 WebNN 엔진으로 러프 선화와 컷 구도를 바로 정리합니다.",
-    creatorBenefitKo: "클라우드 토큰 결제나 원고 외부 전송 없이 빠르고 안심되는 채색·선화 보정을 누립니다.",
+      "안료 혼색과 선화 분석을 다루는 독립 실험 항목입니다. 실제 WebNN 모델 추론과 원고 편집 연결은 각 화면에서 확인해야 합니다.",
+    creatorBenefitKo: "로컬 계산 방식을 살펴봅니다. 모델 실행·성능·보안·비용 보증을 제공하는 안내는 아닙니다.",
     axisId: "ondevice-zero-cost",
     route: "/tech",
     ctaLabelKo: "온디바이스 기술 체험실 열기",
@@ -92,83 +103,87 @@ export const DIFFERENTIATOR_SHOWCASE_CARDS: readonly DifferentiatorShowcaseCard[
     imageAltKo: "세이블 수채 붓과 Kubelka-Munk 물리 안료 혼색 썸네일",
     specHighlightsKo: [
       "8밴드 Kubelka-Munk 안료 혼색 + 종이 골짜기 침전 표현",
-      "WebNN 내 기기 러프 선화 보정 · 컷 연출 자동 진단",
-      "외부 서버 전송 0건 · 추가 AI 구독료 0원",
+      "WebNN 입력 · 러프 선화·컷 진단 실험 항목",
+      "원고 연결 · 실제 추론 실행 여부는 개별 화면 확인",
     ],
     keywords: ["Kubelka-Munk", "WebNN", "물감 혼색", "0원", "온디바이스", "선화 보정", "수채"],
   },
   {
     id: "diff-vrm-hair-72pose",
+    scope: "standalone-example",
     order: 3,
     badgeKo: "차별화 03 · 3D 인물 제작",
     titleKo: "크로스 VRM 실물 헤어 이식 & 72포즈 캐릭터 셰이퍼",
-    headlineKo: "마음에 드는 머리는 옮겨 심고, 72가지 포즈로 바로 콘티를 잡습니다",
+    headlineKo: "헤어 정렬 계획과 포즈 계산 예제를 구분해 살펴봅니다",
     summaryKo:
-      "서로 다른 3D 캐릭터의 헤어 파츠를 두개골 비율에 맞춰 자동 정렬·이식하고 툰 셰이더 색감까지 자연스럽게 이어 붙입니다. 72포즈와 3면 설정집도 즉시 꺼냅니다.",
-    creatorBenefitKo: "매 화마다 얼굴 각도와 머리 볼륨을 다시 잡는 시간을 크게 줄여 줍니다.",
+      "기본 헤어 패널은 계획 예제이며 별도로 실제 VRM을 전달해야 장면 이식을 실행합니다. 포즈·설정집의 현재 캐릭터 연결과 물리 업데이트도 별도 확인이 필요합니다.",
+    creatorBenefitKo: "헤어 계획과 포즈 구성을 비교합니다. 현재 캐릭터에 적용됐다는 뜻은 아닙니다.",
     axisId: "character-3d-bg",
     route: "/studio/character",
     ctaLabelKo: "캐릭터 셰이퍼·포즈실 열기",
     imageSrc: "/assets/atelier/onboarding/character-sculpt.webp",
     imageAltKo: "3D 캐릭터 헤어 이식과 포즈 조형 썸네일",
     specHighlightsKo: [
-      "두개골 자동 정렬 · 본 웨이트 재매핑 크로스 VRM 헤어 이식",
-      "72가지 포즈·손짓·표정 프리셋 + 관절 자연 보정",
+      "두개골 정렬 계획 · 실제 VRM 전달 시 이식 경로",
+      "포즈 목록 · 관절·접지 계산 예제",
       "정면·측면·후면 3면 설정집 & 3D→G펜 벡터 선화 투영",
     ],
     keywords: ["헤어 이식", "VRM", "72포즈", "캐릭터 셰이퍼", "3면 설정집", "포즈"],
   },
   {
     id: "diff-webgpu-xpbd-lighting",
+    scope: "standalone-example",
     order: 4,
-    badgeKo: "차별화 04 · 실시간 GPU 물리·광원",
+    badgeKo: "기술 04 · 물리·광원 계산 예제",
     titleKo: "WebGPU 헤어·의상 물리(XPBD) & 2D/3D 광원 베이크",
-    headlineKo: "바람에 날리는 머리카락과 역광 림 라이트를 브라우저에서 바로 굽습니다",
+    headlineKo: "충돌·광원 계산 예제와 실제 GPU 실행을 구분합니다",
     summaryKo:
-      "WebGPU 컴퓨트 셰이더로 머리카락과 의상이 몸체를 뚫지 않게 충돌을 계산하고, 장면 조명 각도를 돌려 2D 툰 음영과 역광 하이라이트를 즉시 반영합니다.",
-    creatorBenefitKo: "무거운 외부 3D 렌더러를 켜지 않아도 역동적인 의상 주름과 드라마틱한 조명을 맞춥니다.",
+      "헤어·의상 충돌과 광원을 다루는 독립 예제입니다. 계산 결과가 현재 장면을 바꾸거나 WebGPU에서 실행됐다는 뜻은 아닙니다.",
+    creatorBenefitKo: "충돌·광원 설정을 비교합니다. 실제 장면 연결과 렌더링 결과는 별도로 확인해야 합니다.",
     axisId: "ondevice-zero-cost",
     route: "/tech",
     ctaLabelKo: "WebGPU 물리·광원 데모 보기",
     imageSrc: "/assets/atelier/media/oil-impasto.webp",
     imageAltKo: "유화 나이프 질감과 입체 광원 표현 썸네일",
     specHighlightsKo: [
-      "WebGPU 컴퓨트 XPBD 헤어·의상 실시간 충돌 풀이",
-      "인체 캡슐 콜라이더 파고듦 방지 자동 감사",
-      "2D/3D 레이트레이싱 근사 주광·림 라이트 툰 음영 베이크",
+      "XPBD 헤어·의상 충돌 계산 예제",
+      "캡슐 콜라이더 샘플 충돌 점검",
+      "샘플 주광·림 라이트 · 툰 음영 계산 예제",
     ],
     keywords: ["WebGPU", "XPBD", "헤어 물리", "의상 물리", "광원 베이크", "조명"],
   },
   {
     id: "diff-peripherals-webhid-stylus",
+    scope: "standalone-example",
     order: 5,
-    badgeKo: "차별화 05 · 프로 주변기기 직결",
-    titleKo: "왼손 컨트롤러(WebHID) · 240Hz 스타일러스 · 스마트워치",
-    headlineKo: "쓰던 왼손 다이얼과 펜, 스마트워치까지 웹에서 그대로 손에 감깁니다",
+    badgeKo: "기술 05 · 주변기기 입력 예제",
+    titleKo: "왼손 컨트롤러(WebHID) · 스타일러스 · 스마트워치 예제",
+    headlineKo: "주변기기 매핑·입력값·메시지 예제를 살펴봅니다",
     summaryKo:
-      "TourBox·Wacom ExpressKey·Xencelabs Quick Keys를 Chrome WebHID로 바로 붙이고, 스타일러스 기울기·배럴 롤·뒷면 지우개·스마트워치 휴식/제스처까지 묶었습니다.",
-    creatorBenefitKo: "웹 기반 스튜디오에서도 데스크톱 전용 툴 못지않은 단축키 손맛과 필압 반응 속도를 유지합니다.",
+      "주변기기 매핑과 입력·워치 메시지의 실험 항목입니다. 실기기 연결, 입력 빈도와 편집기 명령 반영은 기기·브라우저별 확인이 필요합니다.",
+    creatorBenefitKo: "입력 구성과 매핑을 비교합니다. 실기기 성능이나 모든 제품의 호환성을 보증하지 않습니다.",
     axisId: "peripherals-multidevice",
     route: "/studio/canvas",
     ctaLabelKo: "캔버스 주변기기 설정 열기",
     imageSrc: "/assets/atelier/media/graphite-pencil.webp",
     imageAltKo: "4B 흑연 연필과 정밀 스타일러스·왼손 컨트롤러 연동 썸네일",
     specHighlightsKo: [
-      "TourBox·ExpressKey·Quick Keys 3종 WebHID 즉시 매핑",
-      "240Hz 필압·기울기·360° 배럴 롤·뒷면 지우개·팜 리젝션",
-      "스마트워치 BLE 컴패니언 + 태블릿·모바일·왼손잡이 미러",
+      "TourBox·ExpressKey·Quick Keys 매핑 실험 항목",
+      "필압·기울기·배럴 롤·지우개 입력 예제 · 빈도 실측 미포함",
+      "워치 메시지 · 태블릿·모바일·왼손 배치 예제",
     ],
     keywords: ["WebHID", "왼손 컨트롤러", "TourBox", "스타일러스", "스마트워치", "필압", "기울기", "주변기기"],
   },
   {
     id: "diff-virtual-studio-hrtf",
+    scope: "standalone-example",
     order: 6,
     badgeKo: "차별화 06 · 공간 음향 협업",
     titleKo: "가상 스튜디오 & 3D HRTF 공간 음향 실시간 작업실",
-    headlineKo: "옆자리 동료의 연필 소리와 라이트박스 피드백이 한 공간에 살아 있습니다",
+    headlineKo: "가상 공간 화면과 음향·피드백 실험을 안내합니다",
     summaryKo:
-      "목재 아틀리에·자료실·루프탑 등 6종 작업실에 아바타로 모여, 거리·방향·벽체 차음이 반영된 3D 공간 음향 속에서 공중 라이트박스 스토리보드를 함께 검수합니다.",
-    creatorBenefitKo: "혼자 밤샘 작업할 때의 고립감을 덜고, 어시스턴트·PD와의 컷 검수를 한 화면에서 끝냅니다.",
+      "공간 이미지와 거리·방향·차음 계산, 라이트박스 구성 예제를 소개합니다. 실제 동료 음성·원고·다중 사용자 동기화 연결은 별도 확인이 필요합니다.",
+    creatorBenefitKo: "공간·음향 구성과 협업 화면을 살펴봅니다. 팀 작업 완료를 검증하는 화면은 아닙니다.",
     axisId: "virtual-studio-spatial",
     route: "/studio/space",
     ctaLabelKo: "가상 스튜디오 입장하기",
@@ -183,33 +198,35 @@ export const DIFFERENTIATOR_SHOWCASE_CARDS: readonly DifferentiatorShowcaseCard[
   },
   {
     id: "diff-rights-bom-4k-export",
+    scope: "screen-guide",
     order: 7,
-    badgeKo: "차별화 07 · 안심 출고·무빙툰",
-    titleKo: "권리 감사 BOM 증명서 & 4K/60fps 로컬 무빙툰 출고",
-    headlineKo: "저작권 점검표부터 4K 홍보 릴스까지 마감 직전 5분 안에 끝냅니다",
+    badgeKo: "기술 07 · 권리 점검·영상 출력 안내",
+    titleKo: "권리 감사 BOM 점검 기록 & 무빙툰 출력 안내",
+    headlineKo: "권리 점검 기록과 영상 출력 조건을 각각 확인합니다",
     summaryKo:
-      "출고 직전 원고에 포함된 소재·폰트·브러시 라이선스를 자동 감사해 rights-bom-receipt.json 증명서를 발급하고, WebCodecs로 4K/60fps 무빙툰 릴스를 내 PC에서 바로 뽑습니다.",
-    creatorBenefitKo: "상업 연재 저작권 분쟁 위험을 원천 차단하고, 외부 영상 툴 없이 홍보 쇼츠까지 바로 만듭니다.",
+      "권리 BOM 출고 화면과 WebCodecs 영상 실험을 안내합니다. 점검 영수증은 이용 허가 증명서가 아니며 영상 출력 지원·성능은 장치별로 확인해야 합니다.",
+    creatorBenefitKo: "등록된 권리 근거와 출력 설정을 점검합니다. 법적 이용 허가나 분쟁 예방을 보증하지 않습니다.",
     axisId: "rights-bom-export",
     route: "/studio/canvas",
     ctaLabelKo: "원고 출고·권리 점검 보기",
     imageSrc: "/assets/atelier/onboarding/episode-publish.webp",
     imageAltKo: "권리 감사 BOM과 4K 무빙툰 출고 화면 썸네일",
     specHighlightsKo: [
-      "소재·폰트·브러시 상업 라이선스 자동 점검 & BOM 영수증 발급",
-      "브라우저 WebCodecs 4K/60fps 2.5D 무빙툰 로컬 인코딩",
+      "등록된 소재·폰트·브러시 라이선스 근거와 BOM 기록 점검",
+      "WebCodecs 영상 실험 · 4K/60fps 출력 지원 별도 확인",
       "플랫폼 세로 규격 자동 분할(Smart Slice) & 다크모드 검수",
     ],
     keywords: ["권리 BOM", "저작권", "4K", "무빙툰", "WebCodecs", "출고", "릴스"],
   },
   {
     id: "diff-local-first-open-compare",
+    scope: "screen-guide",
     order: 8,
     badgeKo: "차별화 08 · 로컬 우선·투명 비교",
     titleKo: "설치 없는 로컬 우선 스튜디오 & 글로벌 6종 투명 비교",
-    headlineKo: "가입 전 1초 만에 캔버스를 열고, 기존 6개 제작 도구와 스펙을 직접 대조합니다",
+    headlineKo: "게스트 캔버스와 제작 도구 비교 화면을 엽니다",
     summaryKo:
-      "SQLite WASM + OPFS 로컬 저장과 Git형 스냅샷 브랜치로 작업본을 내 기기에 단단히 지키면서, 글로벌 드로잉·웹툰 툴 6종과의 공개 스펙 차이를 숨김없이 보여 줍니다.",
+      "게스트 진입·로컬 저장·도구 비교 화면 안내입니다. 스냅샷 브랜치 예제와 실제 문서의 저장·복구 연결은 구분해 확인해야 합니다.",
     creatorBenefitKo: "무거운 설치나 강제 월정액 잠금 없이 작업 습관에 맞는지 직접 비교하고 결정할 수 있습니다.",
     axisId: "ondevice-zero-cost",
     route: "/compare/studio",
@@ -217,7 +234,7 @@ export const DIFFERENTIATOR_SHOWCASE_CARDS: readonly DifferentiatorShowcaseCard[
     imageSrc: "/assets/atelier/spaces/comic-gallery.webp",
     imageAltKo: "코믹 갤러리 전시 공간과 제작 도구 투명 비교 썸네일",
     specHighlightsKo: [
-      "SQLite WASM + OPFS 로컬 우선 저장 & Git형 브랜치 롤백",
+      "SQLite WASM + OPFS 저장 안내 · 브랜치 예제는 별도",
       "로그인 차단 없는 게스트 즉시 드로잉 진입",
       "글로벌 제작 도구 6종 공개 스펙·워크플로우 투명 비교",
     ],
@@ -354,7 +371,7 @@ export const STUDIO_SHORTCUT_CHEATSHEET: readonly StudioShortcutEntry[] = [
     categoryId: "view-cut",
     categoryLabelKo: "화면·연출",
     actionKo: "화면 확대 · 축소",
-    tipKo: "희소 타일 캔버스에서 800% 세밀 묘사까지 부드럽게 확대합니다.",
+    tipKo: "캔버스 확대·축소 도구입니다. 실제 확대 품질과 반응 속도는 원고·기기에 따라 확인하세요.",
     axisId: "drawing-2d-foley",
     route: "/studio/canvas",
     keywords: ["확대", "축소", "줌", "Z"],

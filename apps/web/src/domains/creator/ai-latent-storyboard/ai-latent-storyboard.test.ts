@@ -29,7 +29,9 @@ import {
   srgbToOklch,
   type BrushLayerStage,
   type RawStrokeTelemetryPoint,
+  type RgbaImageBuffer,
   type StylePresetId,
+  type StudioAiLatentStoryboardPanelProps,
 } from "./index";
 
 beforeEach(() => {
@@ -75,6 +77,39 @@ describe("한국어 웹툰 대본·웹소설 -> 세로 스크롤 콘티 파서",
     expect(report.tokenCounts["inner-thought"]).toBeGreaterThanOrEqual(1);
     expect(report.tokenCounts.sfx).toBe(1);
     expect(report.cuts.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each([
+    ['"안녕." 지우가 웃었다. "잘 가."', "dialogue"],
+    ["“안녕.” 지우가 웃었다. “잘 가.”", "dialogue"],
+    ["'안녕.' 지우가 웃었다. '잘 가.'", "inner-thought"],
+  ])("회귀: 양끝이 인용문인 혼합 문단에서도 지문을 보존한다: %s", (text, kind) => {
+    const tokens = parseKoreanScriptTokens(text);
+    expect(tokens.map((token) => token.kind)).toEqual([kind, "stage-direction", kind]);
+    expect(tokens.map((token) => token.text)).toEqual(["안녕.", "지우가 웃었다.", "잘 가."]);
+    const report = parseKoreanScriptToConti(text);
+    expect(report.cuts.flatMap((cut) => cut.stageDirections)).toEqual(["지우가 웃었다."]);
+    expect(report.cuts.flatMap((cut) => cut.balloons.map((balloon) => balloon.text))).toEqual(["안녕.", "잘 가."]);
+  });
+
+  it.each(["🙂", "👩‍👩‍👧‍👦", "e\u0301", "한"])("회귀: 긴 무공백 대사를 그래핌 경계에서 끝까지 분할한다: %s", (character) => {
+    const text = character.repeat(25);
+    const splits = splitKoreanBalloonText(text, 12);
+    expect(splits).toEqual([character.repeat(12), character.repeat(12), character]);
+    expect(splits.join("")).toBe(text);
+    for (const split of splits) expect(split).not.toMatch(/\p{Surrogate}/u);
+  });
+
+  it("Segmenter가 없는 환경에서도 서로게이트 쌍을 보존한다", () => {
+    vi.stubGlobal("Intl", { Segmenter: undefined });
+    try {
+      const text = "🙂".repeat(25);
+      const splits = splitKoreanBalloonText(text, 12);
+      expect(splits.join("")).toBe(text);
+      for (const split of splits) expect(split).not.toMatch(/\p{Surrogate}/u);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("5종 샷 크기(ECU/CU/MS/WS/Bird's-eye)와 상황별 드라마틱 여백 거터 px를 차등 산출한다", () => {
@@ -157,6 +192,61 @@ describe("한국어 웹툰 대본·웹소설 -> 세로 스크롤 콘티 파서",
 });
 
 describe("온디바이스 화풍 DNA 추출 · 3D LUT/OKLCH 일치화 · CIEDE2000(ΔE00) 엔진", () => {
+  function lineBuffer(lineWidthPx: number): RgbaImageBuffer {
+    const width = 64;
+    const height = 64;
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const value = x >= 24 && x < 24 + lineWidthPx ? 0 : 255;
+        data.set([value, value, value, 255], (y * width + x) * 4);
+      }
+    }
+    return { width, height, data };
+  }
+
+  it("회귀: 모든 보정을 끄면 흰색·검정·투명 픽셀을 포함한 RGBA 원본이 비트 단위로 보존된다", () => {
+    const target = lineBuffer(8);
+    target.data.set([34, 85, 170, 0, 16, 32, 64, 127]);
+    const original = target.data.slice();
+    const report = harmonizeBackgroundToStyleDna(extractStyleDnaFromRgba(lineBuffer(2)), target, {
+      colorStrength: 0, lutStrength: 0, lineartSyncStrength: 0, screentoneBlend: 0,
+    });
+    expect(report.harmonizedBuffer.data.every((value, index) => value === original[index])).toBe(true);
+    expect(report.harmonizedBuffer.data).not.toBe(target.data);
+    expect(target.data.every((value, index) => value === original[index])).toBe(true);
+  });
+
+  it.each([2, 8])("회귀: 기준보다 같거나 굵은 %ipx 선을 더 두껍게 만들지 않는다", (targetWidth) => {
+    const target = lineBuffer(targetWidth);
+    const report = harmonizeBackgroundToStyleDna(extractStyleDnaFromRgba(lineBuffer(2)), target, {
+      colorStrength: 0, lutStrength: 0, lineartSyncStrength: 1, screentoneBlend: 0,
+    });
+    expect(report.lineartWidthErrorAfterPx).toBeLessThanOrEqual(report.lineartWidthErrorBeforePx);
+    expect(report.harmonizedBuffer.data.every((value, index) => value === target.data[index])).toBe(true);
+    expect(report.lineartSyncStatus).toBe(targetWidth > 2 ? "unsupported-thinning" : "already-matched");
+  });
+
+  it("회귀: 로맨스 합성 샘플의 선화 확장이 기준 굵기를 지나치면 적용하지 않는다", () => {
+    const { reference, target3d } = createStyleHarmonizerDemoFixtures("romance-pastel", 120, 96);
+    const report = harmonizeBackgroundToStyleDna(extractStyleDnaFromRgba(reference), target3d, {
+      colorStrength: 0.88, lutStrength: 0.84, lineartSyncStrength: 0.72, screentoneBlend: 0.4,
+    });
+    expect(report.lineartWidthErrorAfterPx).toBeLessThanOrEqual(report.lineartWidthErrorBeforePx);
+    expect(report.lineartSyncStatus).toBe("skipped-overshoot");
+  });
+
+  it("기준보다 얇은 선의 경계 강조는 굵기 오차를 줄일 때 적용한다", () => {
+    const target = lineBuffer(2);
+    const original = target.data.slice();
+    const report = harmonizeBackgroundToStyleDna(extractStyleDnaFromRgba(lineBuffer(8)), target, {
+      colorStrength: 0, lutStrength: 0, lineartSyncStrength: 1, screentoneBlend: 0,
+    });
+    expect(report.lineartSyncStatus).toBe("expanded");
+    expect(report.lineartWidthErrorAfterPx).toBeLessThan(report.lineartWidthErrorBeforePx);
+    expect(target.data.every((value, index) => value === original[index])).toBe(true);
+  });
+
   it("OKLCH <-> sRGB 색공간 왕복 오차가 ±2 이내이며 CIEDE2000(ΔE00)이 지각 색차를 정확히 계산한다", () => {
     const samples: readonly (readonly [number, number, number])[] = [
       [240, 180, 150],
@@ -349,7 +439,7 @@ describe("StudioAiLatentStoryboardPanel UI 상호작용 · 접근성 · 토큰 �
   });
 
   it("Props 없이 단독 렌더링되며 한국어 대본 프리셋 전환 및 실시간 입력이 콘티 카드에 즉시 반영된다", () => {
-    render(createElement(StudioAiLatentStoryboardPanel));
+    render(createElement<StudioAiLatentStoryboardPanelProps>(StudioAiLatentStoryboardPanel, {}));
 
     expect(screen.getByTestId("ai-latent-storyboard-panel")).toBeTruthy();
     expect(screen.getByTestId("panel-conti")).toBeTruthy();
@@ -370,8 +460,51 @@ describe("StudioAiLatentStoryboardPanel UI 상호작용 · 접근성 · 토큰 �
     expect(screen.getByTestId("conti-cut-list").textContent).toContain("콰광!");
   });
 
+  it("회귀: 예시별 수정 대본은 예시·탭·화풍을 바꿨다가 돌아와도 유지된다", () => {
+    render(createElement<StudioAiLatentStoryboardPanelProps>(StudioAiLatentStoryboardPanel, {}));
+    const draft = '지우: "직접 쓴 대본을 보관해 줘."';
+    fireEvent.change(screen.getByTestId("conti-script-textarea"), { target: { value: draft } });
+    fireEvent.click(screen.getByTestId("preset-script-cafe-confession"));
+    const cafeDraft = '서연: "이 예시의 수정 내용도 따로 보관해."';
+    fireEvent.change(screen.getByTestId("conti-script-textarea"), { target: { value: cafeDraft } });
+    fireEvent.click(screen.getByTestId("tab-harmonizer"));
+    fireEvent.change(screen.getByTestId("select-style-preset"), { target: { value: "romance-pastel" } });
+    fireEvent.click(screen.getByTestId("tab-conti"));
+    expect(screen.getByTestId("conti-script-textarea")).toHaveProperty("value", cafeDraft);
+    fireEvent.click(screen.getByTestId("preset-script-rooftop-confrontation"));
+    expect(screen.getByTestId("conti-script-textarea")).toHaveProperty("value", draft);
+    fireEvent.click(screen.getByTestId("preset-script-cafe-confession"));
+    expect(screen.getByTestId("conti-script-textarea")).toHaveProperty("value", cafeDraft);
+  });
+
+  it("회귀: 규칙·합성 샘플·임시 입력의 실제 범위를 화면과 접근성 이름으로 안내한다", () => {
+    render(createElement<StudioAiLatentStoryboardPanelProps>(StudioAiLatentStoryboardPanel, {}));
+    expect(screen.getByTestId("ai-latent-storyboard-panel").textContent).toContain("규칙 기반");
+    expect(screen.getByTestId("ai-latent-storyboard-panel").textContent).toContain("합성 이미지");
+    expect(screen.getByTestId("conti-draft-notice").textContent).toContain("원고에 저장되지 않습니다");
+    expect(screen.getByTestId("conti-script-textarea").getAttribute("aria-describedby")).toBe(screen.getByTestId("conti-draft-notice").id);
+    fireEvent.click(screen.getByTestId("tab-harmonizer"));
+    expect(screen.getByTestId("style-harmonizer-canvas").getAttribute("aria-label")).toContain("합성");
+    expect(screen.getByTestId("panel-harmonizer").textContent).toContain("얇게 만들기");
+    fireEvent.click(screen.getByTestId("tab-brush"));
+    expect(screen.getByTestId("panel-brush").textContent).toContain("수동 입력");
+    expect(screen.getByTestId("brush-rank-1").textContent).toContain("추천 점수");
+  });
+
+  it("영문에서도 임시 입력 범위를 알리고 패널을 다시 열면 예시로 시작한다", () => {
+    const panel = render(createElement<StudioAiLatentStoryboardPanelProps>(StudioAiLatentStoryboardPanel, { locale: "en" }));
+    const draft = "temporary custom script";
+    fireEvent.change(screen.getByTestId("conti-script-textarea"), { target: { value: draft } });
+    expect(screen.getByTestId("conti-draft-notice").textContent).toContain("not saved to your manuscript");
+    expect(screen.getByTestId("ai-latent-storyboard-panel").getAttribute("aria-label")).toContain("Local CPU rules");
+    panel.unmount();
+    render(createElement<StudioAiLatentStoryboardPanelProps>(StudioAiLatentStoryboardPanel, { locale: "en" }));
+    expect(screen.getByTestId("conti-script-textarea")).not.toHaveProperty("value", draft);
+    expect(screen.getByTestId("conti-script-textarea")).toHaveProperty("value", SCRIPT_CONTI_PRESETS[0]?.script);
+  });
+
   it("화풍 DNA 일치화 탭에서 3분할 캔버스를 렌더링하고 강도 슬라이더·원본/1클릭 버튼이 ΔE00을 실시간 갱신한다", () => {
-    render(createElement(StudioAiLatentStoryboardPanel));
+    render(createElement<StudioAiLatentStoryboardPanelProps>(StudioAiLatentStoryboardPanel, {}));
 
     fireEvent.click(screen.getByTestId("tab-harmonizer"));
     expect(screen.getByTestId("panel-harmonizer")).toBeTruthy();
@@ -394,7 +527,7 @@ describe("StudioAiLatentStoryboardPanel UI 상호작용 · 접근성 · 토큰 �
   });
 
   it("스마트 브러시 탭에서 5단계 레이어 전환 시 Top-3 추천과 Wave 37A 마찰음·종이결 페어링이 즉시 바뀐다", () => {
-    render(createElement(StudioAiLatentStoryboardPanel));
+    render(createElement<StudioAiLatentStoryboardPanelProps>(StudioAiLatentStoryboardPanel, {}));
 
     fireEvent.click(screen.getByTestId("tab-brush"));
     expect(screen.getByTestId("panel-brush")).toBeTruthy();

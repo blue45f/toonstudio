@@ -1,0 +1,29 @@
+/* 상단 형제들의 실제 높이는 flex가 남은 공간에서 빼고, 하단은 도크가 게시한 실측 점유 높이를 보호한다. */
+.space-hud__slot--top-left:has(.space-work-tools-drawer) {
+  max-block-size: calc(
+    100dvh - var(--space-gutter, 12px) * 2 - var(--space-safe-top, 0px)
+    - max(var(--immersive-dock-clearance, var(--space-dock-fallback, 88px)), var(--space-work-tools-chat-clearance, 0px), var(--space-safe-bottom, 0px))
+  );
+}
+
+.space-hud__slot--top-left:has(.space-work-tools-drawer) > :not(.space-work-tools-drawer),
+.space-work-tools-drawer > * {
+  flex-shrink: 0;
+}
+
+.space-work-tools-drawer {
+  min-block-size: 0;
+  flex-shrink: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.space-work-tools-drawer :is(button, a) {
+  min-height: max(44px, var(--site-control-size, 44px));
+}
+
+/* 낮은 화면에서 기본 HUD 구역 바를 숨겨도 사용자가 연 드로어의 액션은 유지한다. */
+.space-work-tools-drawer .space-zone-workbar {
+  display: grid;
+}

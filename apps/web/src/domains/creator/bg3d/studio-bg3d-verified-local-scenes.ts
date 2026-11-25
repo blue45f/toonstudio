@@ -1,3 +1,4 @@
+import { LOCAL_BG3D_SCENES } from "./studio-bg3d-local-scene-catalog";
 import {
   DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
   STUDIO_BG3D_GLB_MIME,
@@ -24,7 +25,7 @@ const TRIPO_API_RIGHTS_NOTE = "Tripo API로 생성한 모델입니다. 로컬 �
 const VARCO_RIGHTS_NOTE = "CC BY 4.0은 원안 이미지에 적용됩니다. 3D 개발 사본은 경량화했으며 파일 재배포 권리는 미확인입니다.";
 
 /** 전체 모형이 보이는 검증 원고에서 카메라 위치와 주시점, 모델 배치를 옮겼다. */
-export const STUDIO_BG3D_VERIFIED_LOCAL_SCENES: readonly StudioBg3dVerifiedLocalScene[] = [
+const bundledScenes: readonly StudioBg3dVerifiedLocalScene[] = [
   {
     id: "apartment-lobby",
     name: "아파트 로비",
@@ -103,6 +104,11 @@ export const STUDIO_BG3D_VERIFIED_LOCAL_SCENES: readonly StudioBg3dVerifiedLocal
     rightsNote: "Tripo Studio 유료 플랜에서 텍스트로 생성한 장식 소품입니다. 이용 범위는 연결한 파일의 권리 기록을 따릅니다.",
     attributionText: null,
   },
+];
+
+export const STUDIO_BG3D_VERIFIED_LOCAL_SCENES: readonly StudioBg3dVerifiedLocalScene[] = [
+  ...bundledScenes,
+  ...LOCAL_BG3D_SCENES.filter(local => !bundledScenes.some(scene => scene.id === local.id || scene.hash === local.hash)),
 ];
 
 /** 해시·크기가 일치하는 기기 라이브러리 첨부의 권리 기록을 그대로 사용한다. */

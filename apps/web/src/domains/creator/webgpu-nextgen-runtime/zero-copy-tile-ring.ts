@@ -4,11 +4,11 @@
  * - COOP/COEP(`crossOriginIsolated`) 환경에서는 `SharedArrayBuffer` + `Atomics` acquire/release로
  *   워커-메인 스레드 간 무잠금(lock-free) SPSC 타일 전송을 수행하고, 비격리 환경에서는
  *   동일 헤더 규격의 `ArrayBuffer` 선형 메모리로 자동 폴백한다.
- * - 모든 타일 쓰기/읽기는 사전 할당된 단일 버퍼의 `subarray()` 뷰로만 슬라이싱해
- *   전송 핫패스에서 힙 할당 0건을 보장한다.
+ * - 타일 쓰기/읽기는 사전 할당된 단일 페이로드 버퍼를 재사용한다.
+ *   뷰·결과 객체·콜백 등의 할당은 별도이며 전체 힙 할당이나 GC 동작은 측정하지 않는다.
  * - 모든 프레임에 IEEE 802.3 CRC32와 FNV-1a 32-bit 이중 무결성 체크섬을 부착·검증한다.
- * - 메모리 압박(Memory Pressure) 발생 시 고수위 워터마크 초과 슬롯을 결정론적으로 회수해
- *   GC 스파이크와 GPU 스테이징 버퍼 누수를 차단한다.
+ * - 링 점유율이 고수위를 넘으면 슬롯을 결정론적으로 회수한다.
+ *   이는 링 슬롯 재사용이며 프로세스 힙이나 GPU 메모리를 해제하는 작업이 아니다.
  */
 
 export const TILE_RING_MAGIC = 0x54535242; // 'TSRB'
@@ -440,7 +440,7 @@ export class ZeroCopyTileRingBus {
     };
   }
 
-  /** 기존 소스 타일 바이트를 링 슬롯으로 커밋한다 (내부 복사 외 힙 할당 0건). */
+  /** 기존 소스 타일 바이트를 사전 할당된 링 슬롯에 복사해 커밋한다. */
   enqueueTileBytes(descriptor: TileFrameDescriptor, sourceBytes: Uint8Array): TileWriteResult {
     return this.writeTileInPlace(descriptor, sourceBytes.byteLength, (targetView) => {
       targetView.set(sourceBytes);

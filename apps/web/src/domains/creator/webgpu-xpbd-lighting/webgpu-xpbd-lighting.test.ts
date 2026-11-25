@@ -64,9 +64,15 @@ function createMockCanvas2dContext() {
   } satisfies Partial<CanvasRenderingContext2D>;
 }
 
-function mockCanvas2dContext(canvas: HTMLCanvasElement, mockCtx = createMockCanvas2dContext()) {
+function mockCanvas2dContext(
+  canvas: HTMLCanvasElement,
+  mockCtx = createMockCanvas2dContext(),
+): void {
   const canvas2d: {
-    getContext(contextId: "2d"): Pick<CanvasRenderingContext2D, keyof typeof mockCtx> | null;
+    getContext(
+      contextId: "2d",
+      options?: CanvasRenderingContext2DSettings,
+    ): Pick<CanvasRenderingContext2D, keyof typeof mockCtx> | null;
   } = canvas;
   vi.spyOn(canvas2d, "getContext").mockImplementation((id) => (id === "2d" ? mockCtx : null));
 }
@@ -74,6 +80,7 @@ function mockCanvas2dContext(canvas: HTMLCanvasElement, mockCtx = createMockCanv
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Wave 37D — WebGPU 컴퓨트 XPBD 헤어·의상 물리 충돌 엔진", () => {
@@ -363,6 +370,19 @@ describe("Wave 37D — 2D/3D 단일 물리 광원 리그 & SDF 툰 광원 베이
 });
 
 describe("Wave 37D — StudioWebgpuXpbdLightingPanel UI 상호작용 및 Calm Atelier 위생 계약", () => {
+  it.each([true, false])("WebGPU API 노출=%s 환경에서도 실제 베이크 경로는 CPU이며 GPU 실행을 주장하지 않는다", (available) => {
+    vi.stubGlobal("navigator", available ? { gpu: {} } : {});
+    mockCanvas2dContext(HTMLCanvasElement.prototype);
+    const baked = bakeToonSdfLighting({ azimuthDeg: 42, elevationDeg: 46, colorTempKelvin: 5200 }, { gridSize: 8 });
+    expect(baked.backend).toBe("cpu-sdf");
+    expect(baked.webGpuApiAvailable).toBe(available);
+    expect(baked.sdfSamples).toHaveLength(64);
+    render(createElement(StudioWebgpuXpbdLightingPanel));
+    expect(screen.getByText(/CPU SDF 실행/)).toBeTruthy();
+    expect(screen.getByText(available ? "WebGPU API 있음 · GPU 실행 안 함" : "WebGPU API 없음 · GPU 실행 안 함")).toBeTruthy();
+    expect(screen.getByText(/실제 VRM·원고에는 반영하지 않으며 GPU 셰이더는 실행하지 않습니다/)).toBeTruthy();
+    expect(screen.getByText("WGSL 구조 검사 (컴파일·실행 미검증)")).toBeTruthy();
+  });
   it("13. props 없이 단독 렌더링되고 0mm 관통·2D/3D 광원 일치·WGSL 계약 요약을 표시한다", () => {
     mockCanvas2dContext(HTMLCanvasElement.prototype);
 

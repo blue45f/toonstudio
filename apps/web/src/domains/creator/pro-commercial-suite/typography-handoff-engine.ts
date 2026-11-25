@@ -514,7 +514,7 @@ export function acquireCutStageLock(state: CutHandoffBoardState, request: Acquir
   return { ok: true, lease: newLease, state: { ...state, leases: [newLease, ...normalizedLeases] } };
 }
 
-/** 현재 공정의 잠금을 종료하고 다음 공정으로 인수인계하며 서명 체크섬 영수증을 발급한다. */
+/** 전달받은 예제 상태의 공정을 옮기고 비암호학적 체크섬 기록을 만든다. 실제 팀 권한이나 전자서명은 처리하지 않는다. */
 export function handoffCutStage(state: CutHandoffBoardState, request: HandoffCutStageRequest): HandoffCutStageOutcome {
   const normalizedLeases = expireStaleLeases(state.leases, request.nowMs);
   const stageSpec = CUT_PIPELINE_STAGES.find((s) => s.id === request.fromStage);

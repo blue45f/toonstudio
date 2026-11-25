@@ -140,10 +140,10 @@ const CREATOR_LAB_TABS: readonly {
   { id: "voiceBalloon", labelKo: "음성 운율 → 말풍선 자동 조판", labelEn: "Voice Prosody → Speech Balloons" },
   { id: "cameraLensBlocking", labelKo: "3D 시네마 렌즈·180° 카메라 연출", labelEn: "3D Cinema Lens · 180° Blocking" },
   { id: "spatialStage", labelKo: "가상 스튜디오 3D HRTF·공간 라이트박스", labelEn: "Virtual Studio 3D HRTF · Spatial Desk" },
-  { id: "canvasOrbitalUx", labelKo: "오비탈 휠·⌘K·태블릿 듀얼·모바일 도크", labelEn: "Orbital Wheel · ⌘K · Tablet/Mobile UX" },
-  { id: "featureAtlas", labelKo: "전체 기능 아틀라스·10분 실습·8대 쇼케이스", labelEn: "Feature Atlas · 10-Min Manual · Showcase" },
-  { id: "handcraftedAtelier", labelKo: "수공예 아날로그 지터·물리 관성·적응형 워크벤치", labelEn: "Analog Jitter · Tactile Physics · Adaptive Bench" },
-  { id: "onboardingDiorama", labelKo: "절차적 2.5D 온보딩 디오라마·창작자 맞춤 매처", labelEn: "2.5D Onboarding Diorama · Creator Matcher" },
+  { id: "canvasOrbitalUx", labelKo: "휠·명령 구성·기기 UX 예제", labelEn: "Wheel & Command Examples · Device UX" },
+  { id: "featureAtlas", labelKo: "기능 안내·실습·계산 예제", labelEn: "Feature Guide · Walkthroughs · Computation Examples" },
+  { id: "handcraftedAtelier", labelKo: "지터·관성·작업대 구성 예제", labelEn: "Jitter · Inertia · Workbench Examples" },
+  { id: "onboardingDiorama", labelKo: "첫 컷 구성·창작자 설정 추천 예제", labelEn: "First-Cut Layout · Creator Setting Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {

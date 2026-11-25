@@ -1,11 +1,23 @@
 /**
- * 5개국 동시 연재 말풍선 리플로우 · C2PA + DID 원화 저작권 증명 · 크롭 내성 비가시 워터마크 엔진 (Wave 39D).
+ * 5개국 동시 연재 말풍선 리플로우 · 로컬 HMAC 무결성 예제 · 크롭 내성 비가시 워터마크 엔진 (Wave 39D).
  *
  * - 5개국(`ko`, `en`, `ja`, `es`, `id`) 텍스트 팽창 계수(영어 +25%, 스페인어 +32%, 일본어 세로쓰기 tategaki) 반영
  * - 인물 얼굴·눈 안전 영역(`faceSafeBoxes`) 0px 겹침 보장 재배치 솔버
- * - 순수 32-bit FIPS 180-4 SHA-256 / RFC 2104 HMAC-SHA256 기반 C2PA + DID 증명 (BigInt 리터럴 미사용)
+ * - SHA-256 / HMAC-SHA256 기반 로컬 무결성 예제(C2PA 서명·신원 검증 아님) (BigInt 리터럴 미사용)
  * - 16×16 주기 타일 차동 체커보드 QIM 비가시 워터마크 (임의 홀수 좌표 크롭·밝기 변화 내성)
  */
+
+import { bytesToHex, computeDeterministicSha256Bytes } from "./local-integrity-demo";
+
+export {
+  computeDeterministicHmacSha256Hex, computeDeterministicSha256Bytes, computeDeterministicSha256Hex,
+  createDemoCreatorIdentity, createLocalIntegrityManifest, verifyLocalIntegrityManifest,
+  createCreatorDidIdentity, createC2paProvenanceManifest, verifyC2paProvenanceManifest,
+  type DemoCreatorIdentity, type LocalIntegrityManifestInput, type LocalIntegrityClaimPayload,
+  type LocalIntegrityManifest, type LocalIntegrityVerificationResult,
+  type CreatorDidIdentity, type C2paManifestInput, type C2paCreationClaimPayload,
+  type C2paCreationManifest, type C2paVerificationResult,
+} from "./local-integrity-demo";
 
 export type SimulpubLocale = "ko" | "en" | "ja" | "es" | "id";
 export type WritingDirection = "horizontal-tb" | "vertical-rl";
@@ -41,6 +53,7 @@ export interface SimulpubPanelLayoutInput {
   readonly faceSafeBoxes: readonly FaceSafeBox[]; readonly balloons: readonly SourceSpeechBalloon[];
 }
 export interface ReflowedBalloonResult {
+  readonly textOverflow: boolean;
   readonly balloonId: string; readonly speaker: string; readonly locale: SimulpubLocale; readonly text: string;
   readonly writingMode: WritingDirection; readonly expansionFactor: number;
   readonly originalBox: RectBox; readonly reflowedBox: RectBox; readonly effectiveFontSizePx: number;
@@ -48,6 +61,7 @@ export interface ReflowedBalloonResult {
   readonly relocatedToAvoidFace: boolean; readonly areaRatio: number;
 }
 export interface LocaleReflowSummary {
+  readonly hasTextOverflow: boolean;
   readonly locale: SimulpubLocale; readonly writingMode: WritingDirection; readonly expansionFactor: number;
   readonly balloons: readonly ReflowedBalloonResult[]; readonly maxFaceOverlapAreaPx: number;
   readonly zeroFaceOverlapGuaranteed: boolean; readonly relocatedCount: number; readonly avgDisplacementPx: number;
@@ -118,6 +132,17 @@ function computeTargetDimensions(
     width: Math.round(Math.min(maxW, Math.max(balloon.baseBox.width * Math.min(1.18, scaleLinear), expandedW))),
     height: Math.round(Math.min(maxH, Math.max(expandedH, neededH))),
   };
+}
+
+/** 폰트 렌더링 실측이 아닌 보수적인 텍스트 수용량 추정이다. */
+function textFitsBox(text: string, box: RectBox, font: number, profile: LocaleReflowProfile): boolean {
+  const columns = profile.writingMode === "vertical-rl"
+    ? Math.floor(Math.max(0, box.width - 24) / (font * profile.lineHeightRatio))
+    : Math.floor(Math.max(0, box.width - 24) / (font * profile.avgCharWidthEm));
+  const rows = profile.writingMode === "vertical-rl"
+    ? Math.floor(Math.max(0, box.height - 20) / (font * 1.06))
+    : Math.floor(Math.max(0, box.height - 20) / (font * profile.lineHeightRatio));
+  return Array.from(text.trim()).length <= columns * rows;
 }
 
 function searchCollisionFreePlacement(
@@ -198,7 +223,10 @@ export function reflowPanelForLocale(input: SimulpubPanelLayoutInput, locale: Si
         height: dims.height,
       };
       const found = searchCollisionFreePlacement(desired, input.canvasWidth, input.canvasHeight, margin, paddedFaces, placedSiblings);
-      if (found) { chosenBox = found; chosenFont = fSize; break; }
+      if (found) {
+        chosenBox = found; chosenFont = fSize;
+        if (textFitsBox(text, found, fSize, profile)) break;
+      }
     }
 
     if (!chosenBox) {
@@ -210,7 +238,10 @@ export function reflowPanelForLocale(input: SimulpubPanelLayoutInput, locale: Si
           width: Math.max(56, Math.round(dims.width * scale)), height: Math.max(44, Math.round(dims.height * scale)),
         };
         const found = searchCollisionFreePlacement(desired, input.canvasWidth, input.canvasHeight, margin, rawFaces, placedSiblings);
-        if (found) { chosenBox = found; chosenFont = fSize; break; }
+        if (found) {
+          chosenBox = found; chosenFont = fSize;
+          if (textFitsBox(text, found, fSize, profile)) break;
+        }
       }
     }
 
@@ -226,6 +257,7 @@ export function reflowPanelForLocale(input: SimulpubPanelLayoutInput, locale: Si
     placedSiblings.push(inflateRect(finalBox, 6));
     results.push({
       balloonId: balloon.balloonId, speaker: balloon.speaker, locale, text,
+      textOverflow: !textFitsBox(text, finalBox, chosenFont, profile),
       writingMode: profile.writingMode, expansionFactor: profile.expansionFactor,
       originalBox: balloon.baseBox, reflowedBox: finalBox, effectiveFontSizePx: chosenFont,
       displacementPx, faceOverlapAreaPx, siblingOverlapAreaPx,
@@ -236,6 +268,7 @@ export function reflowPanelForLocale(input: SimulpubPanelLayoutInput, locale: Si
   const maxFaceOverlapAreaPx = results.reduce((m, r) => Math.max(m, r.faceOverlapAreaPx), 0);
   return {
     locale, writingMode: profile.writingMode, expansionFactor: profile.expansionFactor, balloons: results,
+    hasTextOverflow: results.some((result) => result.textOverflow),
     maxFaceOverlapAreaPx, zeroFaceOverlapGuaranteed: maxFaceOverlapAreaPx === 0,
     relocatedCount: results.filter((r) => r.relocatedToAvoidFace).length,
     avgDisplacementPx: results.length === 0 ? 0 : Math.round((results.reduce((s, r) => s + r.displacementPx, 0) / results.length) * 10) / 10,
@@ -259,230 +292,17 @@ export function reflowPanelAllLocales(input: SimulpubPanelLayoutInput): Simulpub
 }
 
 // ============================================================================
-// C2PA + DID 원화 저작권 증명 (순수 32-bit FIPS 180-4 SHA-256 & HMAC-SHA256)
-// ============================================================================
-
-const SHA256_K = new Uint32Array([
-  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
-]);
-
-function rotr32(v: number, bits: number): number { return (v >>> bits) | (v << (32 - bits)); }
-
-function toBytes(input: string | Uint8Array | Uint8ClampedArray): Uint8Array {
-  if (typeof input === "string") return new TextEncoder().encode(input);
-  return input instanceof Uint8Array ? input : new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  let hex = "";
-  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
-  return hex;
-}
-
-/** 표준 FIPS 180-4 SHA-256 32바이트 다이제스트를 순수 32-bit 연산으로 계산한다. */
-export function computeDeterministicSha256Bytes(input: string | Uint8Array | Uint8ClampedArray): Uint8Array {
-  const bytes = toBytes(input);
-  const bitLen = bytes.length * 8;
-  const paddedLen = Math.ceil((bytes.length + 9) / 64) * 64;
-  const padded = new Uint8Array(paddedLen);
-  padded.set(bytes);
-  padded[bytes.length] = 0x80;
-  const view = new DataView(padded.buffer);
-  view.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
-  view.setUint32(paddedLen - 4, bitLen >>> 0, false);
-
-  let h0 = 0x6a09e667; let h1 = 0xbb67ae85; let h2 = 0x3c6ef372; let h3 = 0xa54ff53a;
-  let h4 = 0x510e527f; let h5 = 0x9b05688c; let h6 = 0x1f83d9ab; let h7 = 0x5be0cd19;
-  const w = new Uint32Array(64);
-
-  for (let off = 0; off < paddedLen; off += 64) {
-    for (let i = 0; i < 16; i += 1) w[i] = view.getUint32(off + i * 4, false);
-    for (let i = 16; i < 64; i += 1) {
-      const w15 = w[i - 15] ?? 0; const w2 = w[i - 2] ?? 0;
-      const s0 = rotr32(w15, 7) ^ rotr32(w15, 18) ^ (w15 >>> 3);
-      const s1 = rotr32(w2, 17) ^ rotr32(w2, 19) ^ (w2 >>> 10);
-      w[i] = ((w[i - 16] ?? 0) + s0 + (w[i - 7] ?? 0) + s1) >>> 0;
-    }
-    let a = h0; let b = h1; let c = h2; let d = h3; let e = h4; let f = h5; let g = h6; let h = h7;
-    for (let i = 0; i < 64; i += 1) {
-      const s1 = rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25);
-      const t1 = (h + s1 + ((e & f) ^ (~e & g)) + (SHA256_K[i] ?? 0) + (w[i] ?? 0)) >>> 0;
-      const s0 = rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22);
-      const t2 = (s0 + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
-      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
-    }
-    h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
-    h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + h) >>> 0;
-  }
-
-  const out = new Uint8Array(32);
-  const ov = new DataView(out.buffer);
-  [h0, h1, h2, h3, h4, h5, h6, h7].forEach((word, i) => ov.setUint32(i * 4, word, false));
-  return out;
-}
-
-/** 소문자 64자리 SHA-256 16진수 다이제스트를 반환한다. */
-export function computeDeterministicSha256Hex(input: string | Uint8Array | Uint8ClampedArray): string {
-  return bytesToHex(computeDeterministicSha256Bytes(input));
-}
-
-/** RFC 2104 HMAC-SHA256 16진수 서명을 순수 32-bit 연산으로 계산한다. */
-export function computeDeterministicHmacSha256Hex(key: string, message: string): string {
-  let keyBytes = toBytes(key);
-  if (keyBytes.length > 64) keyBytes = computeDeterministicSha256Bytes(keyBytes);
-  const ipad = new Uint8Array(64);
-  const opad = new Uint8Array(64);
-  for (let i = 0; i < 64; i += 1) {
-    const kb = keyBytes[i] ?? 0;
-    ipad[i] = kb ^ 0x36;
-    opad[i] = kb ^ 0x5c;
-  }
-  const msgBytes = toBytes(message);
-  const inner = new Uint8Array(64 + msgBytes.length);
-  inner.set(ipad, 0);
-  inner.set(msgBytes, 64);
-  const outer = new Uint8Array(96);
-  outer.set(opad, 0);
-  outer.set(computeDeterministicSha256Bytes(inner), 64);
-  return computeDeterministicSha256Hex(outer);
-}
-
-const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
-function encodeBase58Deterministic(bytes: Uint8Array): string {
-  const digits = [0];
-  for (const byte of bytes) {
-    let carry = byte;
-    for (let i = 0; i < digits.length; i += 1) {
-      const val = (digits[i] ?? 0) * 256 + carry;
-      digits[i] = val % 58;
-      carry = Math.floor(val / 58);
-    }
-    while (carry > 0) { digits.push(carry % 58); carry = Math.floor(carry / 58); }
-  }
-  let out = "";
-  for (const b of bytes) { if (b === 0) out += "1"; else break; }
-  for (let i = digits.length - 1; i >= 0; i -= 1) out += BASE58_ALPHABET[digits[i] ?? 0] ?? "1";
-  return out;
-}
-
-export interface CreatorDidIdentity {
-  readonly creatorHandle: string; readonly didWeb: string; readonly didKey: string;
-  readonly verificationMethod: string; readonly publicFingerprintHex: string;
-}
-
-/** 작가 핸들 기반 W3C DID(did:web + did:key) 식별자를 결정론적으로 생성한다. */
-export function createCreatorDidIdentity(creatorHandle: string, domain = "toonstudio.cloud"): CreatorDidIdentity {
-  const slug = creatorHandle.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "creator";
-  const keySeed = computeDeterministicSha256Bytes(`toonstudio-did-key:v1:${domain}:${slug}`);
-  const multicodec = new Uint8Array(34);
-  multicodec[0] = 0xed; multicodec[1] = 0x01; multicodec.set(keySeed, 2);
-  const didWeb = `did:web:${domain}:creators:${slug}`;
-  const fp = computeDeterministicSha256Hex(keySeed).slice(0, 16);
-  return {
-    creatorHandle: slug, didWeb, didKey: `did:key:z${encodeBase58Deterministic(multicodec)}`,
-    verificationMethod: `${didWeb}#key-${fp.slice(0, 8)}`, publicFingerprintHex: fp,
-  };
-}
-
-export interface C2paManifestInput {
-  readonly title: string; readonly episodeCode: string; readonly creatorDid: CreatorDidIdentity;
-  readonly artworkBytes: Uint8Array | Uint8ClampedArray; readonly humanStrokeCount: number;
-  readonly aiAssistedRatio: number; readonly createdAtIso: string;
-  readonly doNotTrain?: boolean; readonly signingSeed: string;
-}
-
-export interface C2paCreationClaimPayload {
-  readonly schemaVersion: "c2pa.toonstudio.claim.v2"; readonly claimId: string; readonly title: string;
-  readonly episodeCode: string; readonly createdAtIso: string; readonly softwareAgent: string;
-  readonly creatorDid: string; readonly creatorDidKey: string; readonly verificationMethod: string;
-  readonly assetSha256: string; readonly assetByteLength: number;
-  readonly assertions: {
-    readonly actions: readonly { readonly action: "c2pa.created" | "c2pa.drawn"; readonly humanStrokeCount: number; readonly aiAssistedRatio: number }[];
-    readonly dataHash: { readonly alg: "sha256"; readonly digestHex: string };
-    readonly creativeWork: { readonly authorDid: string; readonly copyrightHolder: string; readonly license: string };
-    readonly trainingMining: { readonly doNotTrain: boolean; readonly aiInferenceOptOut: boolean };
-  };
-}
-
-export interface C2paCreationManifest {
-  readonly claim: C2paCreationClaimPayload; readonly claimDigestSha256: string;
-  readonly signatureAlg: "HMAC-SHA256-DID-PROOF"; readonly signatureHex: string;
-}
-
-export interface C2paVerificationResult {
-  readonly verified: boolean; readonly assetHashMatches: boolean; readonly claimDigestMatches: boolean;
-  readonly signatureValid: boolean; readonly didFormatValid: boolean; readonly reasons: readonly string[];
-}
-
-/** C2PA 스타일 원화 저작권 클레임 매니페스트를 생성·서명한다. */
-export function createC2paProvenanceManifest(input: C2paManifestInput): C2paCreationManifest {
-  const assetSha256 = computeDeterministicSha256Hex(input.artworkBytes);
-  const idH = computeDeterministicSha256Hex(`${input.creatorDid.didWeb}:${input.episodeCode}:${assetSha256}:${input.createdAtIso}`);
-  const strokes = Math.max(0, Math.round(input.humanStrokeCount));
-  const aiRatio = Math.max(0, Math.min(1, Math.round(input.aiAssistedRatio * 1000) / 1000));
-  const optOut = input.doNotTrain ?? true;
-
-  const claim: C2paCreationClaimPayload = {
-    schemaVersion: "c2pa.toonstudio.claim.v2",
-    claimId: `urn:uuid:${idH.slice(0, 8)}-${idH.slice(8, 12)}-5${idH.slice(13, 16)}-a${idH.slice(17, 20)}-${idH.slice(20, 32)}`,
-    title: input.title, episodeCode: input.episodeCode, createdAtIso: input.createdAtIso,
-    softwareAgent: "ToonStudio Provenance Engine 2.0",
-    creatorDid: input.creatorDid.didWeb, creatorDidKey: input.creatorDid.didKey,
-    verificationMethod: input.creatorDid.verificationMethod, assetSha256, assetByteLength: input.artworkBytes.byteLength,
-    assertions: {
-      actions: [
-        { action: "c2pa.created", humanStrokeCount: strokes, aiAssistedRatio: aiRatio },
-        { action: "c2pa.drawn", humanStrokeCount: strokes, aiAssistedRatio: aiRatio },
-      ],
-      dataHash: { alg: "sha256", digestHex: assetSha256 },
-      creativeWork: { authorDid: input.creatorDid.didWeb, copyrightHolder: input.creatorDid.creatorHandle, license: "All Rights Reserved (ToonStudio Creator Provenance)" },
-      trainingMining: { doNotTrain: optOut, aiInferenceOptOut: optOut },
-    },
-  };
-  const claimDigestSha256 = computeDeterministicSha256Hex(JSON.stringify(claim));
-  const signatureHex = computeDeterministicHmacSha256Hex(`${input.signingSeed}:${input.creatorDid.publicFingerprintHex}`, claimDigestSha256);
-  return { claim, claimDigestSha256, signatureAlg: "HMAC-SHA256-DID-PROOF", signatureHex };
-}
-
-/** 원화 바이트와 C2PA 매니페스트의 무결성·서명·DID 바인딩을 검증한다. */
-export function verifyC2paProvenanceManifest(
-  manifest: C2paCreationManifest,
-  artworkBytes: Uint8Array | Uint8ClampedArray,
-  signingSeed: string,
-  creatorDid: CreatorDidIdentity,
-): C2paVerificationResult {
-  const actualHash = computeDeterministicSha256Hex(artworkBytes);
-  const assetHashMatches = actualHash === manifest.claim.assetSha256 && actualHash === manifest.claim.assertions.dataHash.digestHex;
-  const claimDigestMatches = computeDeterministicSha256Hex(JSON.stringify(manifest.claim)) === manifest.claimDigestSha256;
-  const signatureValid = computeDeterministicHmacSha256Hex(`${signingSeed}:${creatorDid.publicFingerprintHex}`, manifest.claimDigestSha256) === manifest.signatureHex;
-  const didFormatValid = manifest.claim.creatorDid.startsWith("did:web:") && manifest.claim.creatorDidKey.startsWith("did:key:z") && manifest.claim.creatorDid === creatorDid.didWeb;
-
-  const reasons: string[] = [];
-  if (!assetHashMatches) reasons.push("asset-sha256-mismatch");
-  if (!claimDigestMatches) reasons.push("claim-digest-tampered");
-  if (!signatureValid) reasons.push("signature-invalid");
-  if (!didFormatValid) reasons.push("did-binding-invalid");
-  return { verified: reasons.length === 0, assetHashMatches, claimDigestMatches, signatureValid, didFormatValid, reasons };
-}
-
-// ============================================================================
 // 크롭 내성 비가시 워터마크 (16×16 타일 차동 체커보드 64-bit 페이로드 + CRC-16)
 // ============================================================================
 
 export interface RgbaArtworkBuffer { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray; }
 export interface WatermarkEncodeResult {
+  readonly embeddingStatus: "embedded" | "unsupported-image";
   readonly watermarked: RgbaArtworkBuffer; readonly payloadHex: string; readonly creatorTagHex: string;
   readonly assetTagHex: string; readonly crc16Hex: string; readonly tileCount: number; readonly psnrDb: number;
 }
 export interface WatermarkVerifyResult {
+  readonly identityVerified: false; readonly assetIntegrityVerified: false;
   readonly detected: boolean; readonly crcValid: boolean;
   readonly creatorTagMatched: boolean | null; readonly assetTagMatched: boolean | null;
   readonly recoveredPayloadHex: string | null; readonly recoveredCreatorTagHex: string | null;
@@ -569,6 +389,7 @@ export function encodeCropResistantWatermark(
   const watermarked: RgbaArtworkBuffer = { width: source.width, height: source.height, data: out };
   return {
     watermarked, payloadHex: bytesToHex(bytes), creatorTagHex, assetTagHex, crc16Hex,
+    embeddingStatus: verifyCropResistantWatermark(watermarked, creatorDid, assetDigestHex).recoveredPayloadHex === bytesToHex(bytes) ? "embedded" : "unsupported-image",
     tileCount: Math.floor(source.width / 16) * Math.floor(source.height / 16),
     psnrDb: computeRgbaPsnrDb(source, watermarked),
   };
@@ -597,13 +418,14 @@ function sumTileBitDiff(
   return sum;
 }
 
-/** 임의 좌표로 크롭된 이미지에서도 위상 재동기화 후 64-bit 워터마크를 블라인드 복원·검증한다. */
+/** 16비트 태그와 CRC를 복원한다. 신원·원본 전체 무결성을 증명하지 않으며 모든 이미지·크롭 성공을 보장하지 않는다. */
 export function verifyCropResistantWatermark(
   buffer: RgbaArtworkBuffer,
   expectedCreatorDid?: string,
   expectedAssetDigestHex?: string,
 ): WatermarkVerifyResult {
   const empty: WatermarkVerifyResult = {
+    identityVerified: false, assetIntegrityVerified: false,
     detected: false, crcValid: false,
     creatorTagMatched: expectedCreatorDid ? false : null, assetTagMatched: expectedAssetDigestHex ? false : null,
     recoveredPayloadHex: null, recoveredCreatorTagHex: null, recoveredAssetTagHex: null,
@@ -649,6 +471,7 @@ export function verifyCropResistantWatermark(
   const recCreator = twoByteTagHex(best.bytes, 2);
   const recAsset = twoByteTagHex(best.bytes, 4);
   return {
+    identityVerified: false, assetIntegrityVerified: false,
     detected: true, crcValid: true,
     creatorTagMatched: expectedCreatorDid ? recCreator === twoByteTagHex(computeDeterministicSha256Bytes(expectedCreatorDid), 0) : null,
     assetTagMatched: expectedAssetDigestHex ? recAsset === twoByteTagHex(computeDeterministicSha256Bytes(expectedAssetDigestHex), 0) : null,

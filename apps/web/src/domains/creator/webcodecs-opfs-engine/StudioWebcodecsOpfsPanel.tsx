@@ -26,7 +26,7 @@ const TAB_ACTIVE = `inline-flex min-h-11 cursor-pointer items-center justify-cen
 const TAB_IDLE = `inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-line bg-canvas px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors motion-reduce:transition-none hover:border-line-strong hover:bg-raised hover:text-fg ${FOCUS_RING} [word-break:keep-all]`;
 
 const TABS: readonly { readonly id: WebcodecsOpfsTabId; readonly labelKo: string }[] = [
-  { id: "reels", labelKo: "WebCodecs 4K/60fps 릴스" },
+  { id: "reels", labelKo: "코덱 설정·합성 샘플" },
   { id: "sparse-tiles", labelKo: "희소 타일 · 2D 칼만 예측" },
   { id: "opfs-vcs", labelKo: "OPFS 브랜치 · 스냅샷 복원" },
 ];
@@ -45,7 +45,7 @@ export function StudioWebcodecsOpfsPanel({
   const uid = useId();
   const [activeTab, setActiveTab] = useState<WebcodecsOpfsTabId>(initialTab);
   const [noticeText, setNoticeText] = useState<string>("");
-  const [backendKind, setBackendKind] = useState<VfsBackendKind>("memory-vfs");
+  const [backendKind, setBackendKind] = useState<VfsBackendKind | null>(null);
 
   const handleNotify = useCallback((message: string) => {
     setNoticeText(message);
@@ -53,6 +53,10 @@ export function StudioWebcodecsOpfsPanel({
 
   const handleBackendReady = useCallback((kind: VfsBackendKind) => {
     setBackendKind(kind);
+  }, []);
+
+  const handleBackendUnavailable = useCallback(() => {
+    setBackendKind(null);
   }, []);
 
   const handleTabKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
@@ -72,25 +76,31 @@ export function StudioWebcodecsOpfsPanel({
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-1 text-[11px] font-semibold text-accent">
             <Cpu className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>로컬 퍼스트 4K 무빙툰 · 희소 타일 · OPFS 버전 관리</span>
+            <span>코덱 프로브 · 희소 타일 · OPFS 버전 관리</span>
           </div>
           <h2 id={`${uid}-title`} className="text-base font-bold tracking-tight text-fg md:text-lg">
-            WebCodecs 릴스 인코더 · 무한 캔버스 희소 타일 · OPFS 스냅샷 VCS
+            WebCodecs 설정·샘플 점검 · 희소 타일 · OPFS 스냅샷 VCS
           </h2>
           <p className="max-w-2xl text-xs leading-relaxed text-fg-2">
-            브라우저 하드웨어 VideoEncoder로 서버 비용 0원 4K/60fps 무빙툰을 생성하고, 256×256 희소
-            타일 벡터·2D 칼만 지연 예측·콘텐츠 주소 중복제거 Git 스냅샷을 한곳에서 점검합니다.
+            코덱 설정 지원과 64×64 합성 샘플을 점검합니다. 영상 파일은 생성하지 않습니다.
+            희소 타일·2D 칼만 예측·OPFS 버전 관리는 예제 데이터로 확인합니다.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1.5 rounded-md border border-good/40 bg-good/15 px-2.5 py-1 font-semibold text-good">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>서버 인코딩 비용 0원</span>
+            <span>프로브 서버 호출 없음</span>
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-raised px-2.5 py-1 font-semibold text-fg-2">
             <HardDrive className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>{backendKind === "opfs" ? "OPFS 영구 저장소 활성" : "메모리 VFS 안전 폴백"}</span>
+            <span>
+              {backendKind === null
+                ? "저장소 연결 미확인"
+                : backendKind === "opfs"
+                  ? "OPFS 영구 저장소 활성"
+                  : "메모리 VFS 안전 폴백"}
+            </span>
           </span>
         </div>
       </header>
@@ -137,7 +147,11 @@ export function StudioWebcodecsOpfsPanel({
         {activeTab === "reels" ? <WebcodecsReelsTab onNotify={handleNotify} /> : null}
         {activeTab === "sparse-tiles" ? <SparseTileKalmanTab /> : null}
         {activeTab === "opfs-vcs" ? (
-          <OpfsSnapshotVcsTab onNotify={handleNotify} onBackendReady={handleBackendReady} />
+          <OpfsSnapshotVcsTab
+            onNotify={handleNotify}
+            onBackendReady={handleBackendReady}
+            onBackendUnavailable={handleBackendUnavailable}
+          />
         ) : null}
       </div>
     </section>
