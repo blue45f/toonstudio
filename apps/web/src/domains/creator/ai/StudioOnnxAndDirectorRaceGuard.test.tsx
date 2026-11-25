@@ -7,6 +7,8 @@ import { STUDIO_AI_DEFAULT_SETTINGS } from "./studio-ai-client";
 import { StudioOnnxAnimeStylePanel } from "./StudioOnnxAnimeStylePanel";
 import { StudioOnnxColorizePanel } from "./StudioOnnxColorizePanel";
 import { StudioOnnxUpscalePanel } from "../StudioOnnxUpscalePanel";
+import type { StudioOnnxColorizeLayeredResult } from "../studio-onnx-colorize";
+import type { UpscaleImageOnDeviceOptions } from "../studio-onnx-upscale";
 
 const { convertImageToAnimeStyleMock, animeStyleOnDeviceMock, colorizeOnDeviceMock, upscaleOnDeviceMock } = vi.hoisted(
   () => ({
@@ -171,6 +173,82 @@ describe("인스펙터 ONNX/클라우드 AI 이미지 전환 중단·취소 가�
       expect(screen.getByRole("alert").textContent).toContain("취소했어요");
     });
     expect(onResult).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["채색", "정상 완료"],
+    ["채색", "직접 취소"],
+    ["채색", "변환 실패"],
+    ["업스케일", "정상 완료"],
+    ["업스케일", "직접 취소"],
+    ["업스케일", "변환 실패"],
+  ] as const)("%s 원본을 바꾼 뒤 새 요청의 %s 상태를 유지한다", async (tool, outcome) => {
+    const onResult = vi.fn();
+    const isUpscale = tool === "업스케일";
+    const engine = isUpscale ? upscaleOnDeviceMock : colorizeOnDeviceMock;
+    const previous = Promise.withResolvers<StudioOnnxColorizeLayeredResult>();
+    const current = Promise.withResolvers<StudioOnnxColorizeLayeredResult>();
+    const createResult = (dataUrl: string): StudioOnnxColorizeLayeredResult => ({
+      dataUrl, width: 1, height: 1, executionProvider: "wasm",
+      colorPlane: new Float32Array(3),
+      sourceRgba: new Uint8ClampedArray(4),
+      compositedRgba: new Uint8ClampedArray(4),
+    });
+    engine.mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise);
+    const renderPanel = (src: string) => isUpscale
+      ? <StudioOnnxUpscalePanel src={src} onResult={onResult} />
+      : <StudioOnnxColorizePanel src={src} cloudConfigured={false} onResult={onResult} />;
+    const startLabel = isUpscale ? "4배로 확대" : "기기에서 채색하기";
+    const busyLabel = isUpscale ? "확대하는 중… (2/4 타일)" : "채색하는 중…";
+    const { rerender } = render(renderPanel("data:image/png;base64,IMAGE_A"));
+    fireEvent.click(screen.getByRole("button", { name: startLabel }));
+    await waitFor(() => expect(engine).toHaveBeenCalledTimes(1));
+    const previousOptions: UpscaleImageOnDeviceOptions = engine.mock.calls[0]?.[1];
+
+    rerender(renderPanel("data:image/png;base64,IMAGE_B"));
+    expect(previousOptions.signal?.aborted).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: startLabel }));
+    await waitFor(() => expect(engine).toHaveBeenLastCalledWith(
+      "data:image/png;base64,IMAGE_B", expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    ));
+    const currentOptions: UpscaleImageOnDeviceOptions = engine.mock.calls[1]?.[1];
+    expect(currentOptions.signal?.aborted).toBe(false);
+
+    await act(async () => {
+      currentOptions.onProgress?.(2, 4);
+      previousOptions.onProgress?.(8, 8);
+      if (outcome !== "정상 완료") {
+        previous.reject(new Error("이전 변환 오류"));
+      } else {
+        previous.resolve(createResult("data:image/png;base64,STALE_A_RESULT"));
+      }
+    });
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(onResult).not.toHaveBeenCalled();
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: busyLabel }).disabled).toBe(true);
+    const cancelButton = screen.getByRole("button", { name: /^취소$/u });
+
+    if (outcome === "직접 취소") {
+      fireEvent.click(cancelButton);
+      expect(currentOptions.signal?.aborted).toBe(true);
+      await act(async () => { current.reject(new DOMException("사용자가 중단했습니다.", "AbortError")); });
+      expect(screen.getByRole("alert").textContent).toBe(
+        isUpscale ? "업스케일을 취소했어요." : "채색을 취소했어요.",
+      );
+      expect(onResult).not.toHaveBeenCalled();
+    } else if (outcome === "변환 실패") {
+      const failure = "현재 변환 오류";
+      await act(async () => { current.reject(new Error(failure)); });
+      expect(screen.getByRole("alert").textContent).toBe(failure);
+      expect(onResult).not.toHaveBeenCalled();
+    } else {
+      const dataUrl = "data:image/png;base64,CURRENT_B_RESULT";
+      await act(async () => { current.resolve(createResult(dataUrl)); });
+      expect(onResult).toHaveBeenCalledExactlyOnceWith(dataUrl);
+      expect(screen.queryByRole("alert")).toBeNull();
+    }
+    expect(screen.queryByRole("button", { name: /^취소$/u })).toBeNull();
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: startLabel }).disabled).toBe(false);
   });
 
   it("ONNX 기기 채색/업스케일 진행 중 src가 바뀌면 이전 AbortSignal을 중단하고 늦은 결과를 무시한다", async () => {
