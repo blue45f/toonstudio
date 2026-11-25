@@ -534,11 +534,13 @@ function buildTransformMatrices(
   return { matrix3x3, matrix4x4, cssTransform };
 }
 
-function projectBounds(baseRect: Rect2D, tx: number, ty: number, scale: number): Rect2D {
+function projectBounds(baseRect: Rect2D, tx: number, ty: number, scale: number, rotationDeg: number): Rect2D {
   const cx = baseRect.x + baseRect.width / 2;
   const cy = baseRect.y + baseRect.height / 2;
-  const scaledW = baseRect.width * scale;
-  const scaledH = baseRect.height * scale;
+  // 중심 회전 후 네 모서리를 둘러싼 경계로 회전한 가장자리까지 검사한다.
+  const rad = rotationDeg * Math.PI / 180;
+  const scaledW = Math.abs(Math.cos(rad) * baseRect.width * scale) + Math.abs(Math.sin(rad) * baseRect.height * scale);
+  const scaledH = Math.abs(Math.sin(rad) * baseRect.width * scale) + Math.abs(Math.cos(rad) * baseRect.height * scale);
   return {
     x: roundTo(cx + tx - scaledW / 2, 2),
     y: roundTo(cy + ty - scaledH / 2, 2),
@@ -558,9 +560,23 @@ export function validateSafeZoneLayout(
 
   for (const plane of planes) {
     if (!plane.safeZoneCritical) continue;
-    const planeArea = Math.max(1, plane.projectedBounds.width * plane.projectedBounds.height);
+    const bounds = plane.projectedBounds;
+    if (![bounds.x, bounds.y, bounds.width, bounds.height].every(Number.isFinite) || bounds.width <= 0 || bounds.height <= 0) {
+      throw new RangeError("주요 요소의 경계 좌표는 유한하고 크기는 양수여야 합니다.");
+    }
+    const planeArea = bounds.width * bounds.height;
     const { nudgePx } = autoFitElementToSafeZone(plane.projectedBounds, target);
 
+    const visibleArea = computeRectOverlapAreaPx2(plane.projectedBounds, { x: 0, y: 0, width: profile.widthPx, height: profile.heightPx });
+    const outsideArea = Math.max(0, planeArea - visibleArea);
+    if (outsideArea > 0.01) {
+      totalOverlapAreaPx2 = roundTo(totalOverlapAreaPx2 + outsideArea, 2);
+      issues.push({
+        planeId: plane.planeId, layerTitleKo: plane.titleKo, layerTitleEn: plane.titleEn,
+        hazardId: "viewport-outside", hazardKind: "edge-overscan", hazardLabelKo: "화면 밖 잘림", hazardLabelEn: "Outside viewport",
+        overlapAreaPx2: roundTo(outsideArea, 2), overlapRatio: roundTo(outsideArea / planeArea, 4), severity: "critical", recommendedNudgePx: nudgePx,
+      });
+    }
     for (const hazard of profile.hazards) {
       const overlapAreaPx2 = computeRectOverlapAreaPx2(plane.projectedBounds, hazard.rect);
       if (overlapAreaPx2 <= 0) continue;
@@ -601,10 +617,10 @@ export function validateSafeZoneLayout(
     warningCount,
     issues,
     summaryKo: status === "pass"
-      ? `${profile.labelKo} 세이프존 100% 통과 (주요 인물·말풍선 UI 가림 0px²)`
+      ? `${profile.labelKo} 현재 프레임 예제 경계 통과 (주요 인물·말풍선 UI 겹침·화면 이탈 0px²)`
       : `${profile.labelKo} 세이프존 침범 ${issues.length}건 감지 (치명 ${criticalCount} · 주의 ${warningCount}, 총 ${Math.round(totalOverlapAreaPx2)}px²)`,
     summaryEn: status === "pass"
-      ? `${profile.labelEn} safe zone passed (0px² UI overlap on subject/balloons)`
+      ? `${profile.labelEn} current-frame example bounds pass (0px² UI overlap or viewport clipping)`
       : `${issues.length} safe-zone collision(s) detected on ${profile.labelEn} (${criticalCount} critical, ${warningCount} warning)`,
   };
 }
@@ -617,6 +633,10 @@ export function evaluateParallaxFrame(
   scene: MovingtoonCutScene,
   options: EvaluateParallaxFrameOptions,
 ): EvaluatedParallaxFrame {
+  if ((options.fps !== 30 && options.fps !== 60) || !Number.isFinite(scene.durationSec) || scene.durationSec <= 0 ||
+      !Number.isFinite(options.frameIndex) || !Number.isFinite(options.intensity ?? 1)) {
+    throw new RangeError("프레임·길이·강도는 유한한 값이어야 하며 FPS는 30 또는 60이어야 합니다.");
+  }
   const fps = options.fps;
   const durationSec = Math.max(0.5, scene.durationSec);
   const totalFrames = Math.max(1, Math.round(durationSec * fps));
@@ -686,7 +706,7 @@ export function evaluateParallaxFrame(
       : roundTo(Math.abs(zDepth) * planeProfile.dofBlurWeight * Math.max(0.2, camera.zoom - 0.85), 2);
     const opacity = roundTo(clamp(input?.baseOpacity ?? 1.0, 0, 1), 3);
     const { matrix3x3, matrix4x4, cssTransform } = buildTransformMatrices(tx, ty, tz, planeScale, rotationDeg, focalLengthPx);
-    const projectedBounds = projectBounds(baseRect, tx, ty, planeScale);
+    const projectedBounds = projectBounds(baseRect, tx, ty, planeScale, rotationDeg);
 
     return {
       planeId, labelKo: planeProfile.labelKo, labelEn: planeProfile.labelEn,
@@ -708,13 +728,18 @@ export function evaluateParallaxFrame(
   };
 }
 
-/** 클립 전체 구간을 균일 표본 평가하여 전 프레임 세이프존 최악 침범 지점을 찾아낸다. */
+/** 지정한 표본 프레임만 검사한다. 표본 사이 프레임이나 실제 영상 출력의 안전성을 보증하지 않는다. */
 export function evaluateParallaxSequence(
   scene: MovingtoonCutScene,
   options: Omit<EvaluateParallaxFrameOptions, "frameIndex"> & { readonly sampleCount?: number },
 ): ParallaxSequenceAudit {
+  if (options.fps !== 30 && options.fps !== 60) throw new RangeError("FPS는 30 또는 60이어야 합니다.");
+  if (!Number.isFinite(scene.durationSec) || scene.durationSec <= 0 ||
+      !Number.isInteger(options.sampleCount ?? 9) || (options.sampleCount ?? 9) < 1 || (options.sampleCount ?? 9) > 1000) {
+    throw new RangeError("유효한 클립 길이와 1~1000개의 정수 표본 수가 필요합니다.");
+  }
   const totalFrames = Math.max(1, Math.round(Math.max(0.5, scene.durationSec) * options.fps));
-  const sampleCount = clamp(Math.floor(options.sampleCount ?? 9), 2, totalFrames);
+  const sampleCount = clamp(Math.floor(options.sampleCount ?? 9), 1, totalFrames);
   const frames: EvaluatedParallaxFrame[] = [];
   const offendingFrameIndices: number[] = [];
 

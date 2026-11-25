@@ -178,25 +178,39 @@ export interface SemanticVcsRepository {
 }
 
 function serializeBalloon(b: ComicBalloonNode): string {
-  return `${b.id}|${b.speaker}|${b.text}|${b.style}|${b.x},${b.y},${b.width},${b.height}|${b.fontSizePx}`;
+  return JSON.stringify([b.id, b.speaker, b.text, b.style, b.x, b.y, b.width, b.height, b.fontSizePx]);
 }
 
 function serializeLayer(l: ComicLayerNode): string {
-  return `${l.id}|${l.name}|${l.role}|${l.visible ? 1 : 0}|${l.opacity}|${l.blendMode}|${l.strokeDigest}`;
+  return JSON.stringify([l.id, l.name, l.role, l.visible, l.opacity, l.blendMode, l.strokeDigest]);
 }
 
 function serializeCutMeta(c: ComicCutNode): string {
-  return `${c.id}|${c.order}|${c.title}|${c.cameraShot}|${c.heightPx}`;
+  return JSON.stringify([c.id, c.order, c.title, c.cameraShot, c.heightPx]);
 }
 
 function serializeCutFull(c: ComicCutNode): string {
-  return `${serializeCutMeta(c)}[L:${c.layers.map(serializeLayer).join(";")}][B:${c.balloons.map(serializeBalloon).join(";")}]`;
+  return JSON.stringify([serializeCutMeta(c), c.layers.map(serializeLayer), c.balloons.map(serializeBalloon)]);
 }
 
 /** 에피소드 스냅샷의 정규화된 시맨틱 트리 해시를 결정론적으로 계산한다. */
 export function computeEpisodeTreeHash(snapshot: ComicEpisodeSnapshot): string {
+  const requireIds = (ids: readonly string[]): void => {
+    if (ids.some((id) => !id.trim()) || new Set(ids).size !== ids.length) throw new Error("스냅샷의 컷·레이어·말풍선 ID는 각 범위에서 고유하고 비어 있지 않아야 합니다.");
+  };
+  const requireNumbers = (values: readonly number[]): void => {
+    if (values.some((value) => !Number.isFinite(value))) throw new RangeError("스냅샷 수치는 유한해야 합니다.");
+  };
+  requireNumbers([snapshot.episodeNumber]);
+  requireIds(snapshot.cuts.map((cut) => cut.id));
+  for (const cut of snapshot.cuts) {
+    requireNumbers([cut.order, cut.heightPx, ...cut.layers.map((layer) => layer.opacity)]);
+    for (const balloon of cut.balloons) requireNumbers([balloon.x, balloon.y, balloon.width, balloon.height, balloon.fontSizePx]);
+    requireIds(cut.layers.map((layer) => layer.id));
+    requireIds(cut.balloons.map((balloon) => balloon.id));
+  }
   return computeDeterministicDigestHex(
-    `${snapshot.episodeId}|${snapshot.episodeNumber}|${snapshot.title}||${snapshot.cuts.map(serializeCutFull).join("##")}`,
+    JSON.stringify([snapshot.episodeId, snapshot.episodeNumber, snapshot.title, snapshot.cuts.map(serializeCutFull)]),
   );
 }
 
@@ -466,6 +480,11 @@ function summarizeLayer(l: ComicLayerNode | undefined): string {
   return l ? `${l.name} (${l.blendMode}, ${Math.round(l.opacity * 100)}%, ${l.strokeDigest})` : "(삭제됨)";
 }
 
+function createConflictId(kind: "cut" | "cut-meta" | "layer" | "balloon", cutId: string, entityId?: string): string {
+  // 구분자를 포함한 ID도 튜플 경계를 보존하며, DOM 식별자에는 공백을 넣지 않는다.
+  return `conflict-${encodeURIComponent(JSON.stringify([kind, cutId, entityId ?? null]))}`;
+}
+
 /** 3-Way 시맨틱 자동 병합 계획을 수립한다(무충돌 자동 병합 + 동시 수정 충돌 핀포인트). */
 export function planThreeWaySemanticMerge(
   repo: SemanticVcsRepository,
@@ -496,7 +515,7 @@ export function planThreeWaySemanticMerge(
       else if (oCut && tCut) {
         mergedCuts.push(oCut);
         if (serializeCutFull(oCut) !== serializeCutFull(tCut)) {
-          conflicts.push({ conflictId: `conflict-cut-${cutId}`, entityKind: "cut", cutId, entityId: cutId, path: cutId, label: oCut.title, reason: "concurrent-edit", conflictedFields: ["cut"], baseSummary: "(없음)", oursSummary: oCut.title, theirsSummary: tCut.title, oursCut: oCut, theirsCut: tCut });
+          conflicts.push({ conflictId: createConflictId("cut", cutId), entityKind: "cut", cutId, entityId: cutId, path: cutId, label: oCut.title, reason: "concurrent-edit", conflictedFields: ["cut"], baseSummary: "(없음)", oursSummary: oCut.title, theirsSummary: tCut.title, oursCut: oCut, theirsCut: tCut });
         }
       }
       continue;
@@ -505,13 +524,13 @@ export function planThreeWaySemanticMerge(
     if (!oCut && tCut) {
       if (serializeCutFull(bCut) === serializeCutFull(tCut)) { autoMergedFromOurs += 1; continue; }
       mergedCuts.push(tCut);
-      conflicts.push({ conflictId: `conflict-cut-${cutId}`, entityKind: "cut", cutId, entityId: cutId, path: cutId, label: bCut.title, reason: "modify-delete", conflictedFields: ["cut"], baseSummary: bCut.title, oursSummary: "(삭제됨)", theirsSummary: tCut.title, baseCut: bCut, theirsCut: tCut });
+      conflicts.push({ conflictId: createConflictId("cut", cutId), entityKind: "cut", cutId, entityId: cutId, path: cutId, label: bCut.title, reason: "modify-delete", conflictedFields: ["cut"], baseSummary: bCut.title, oursSummary: "(삭제됨)", theirsSummary: tCut.title, baseCut: bCut, theirsCut: tCut });
       continue;
     }
     if (oCut && !tCut) {
       if (serializeCutFull(bCut) === serializeCutFull(oCut)) { autoMergedFromTheirs += 1; continue; }
       mergedCuts.push(oCut);
-      conflicts.push({ conflictId: `conflict-cut-${cutId}`, entityKind: "cut", cutId, entityId: cutId, path: cutId, label: bCut.title, reason: "modify-delete", conflictedFields: ["cut"], baseSummary: bCut.title, oursSummary: oCut.title, theirsSummary: "(삭제됨)", baseCut: bCut, oursCut: oCut });
+      conflicts.push({ conflictId: createConflictId("cut", cutId), entityKind: "cut", cutId, entityId: cutId, path: cutId, label: bCut.title, reason: "modify-delete", conflictedFields: ["cut"], baseSummary: bCut.title, oursSummary: oCut.title, theirsSummary: "(삭제됨)", baseCut: bCut, oursCut: oCut });
       continue;
     }
     if (!oCut || !tCut) continue;
@@ -521,7 +540,7 @@ export function planThreeWaySemanticMerge(
     if (oMeta === bMeta && tMeta !== bMeta) { chosenMetaCut = tCut; autoMergedFromTheirs += 1; }
     else if (oMeta !== bMeta && tMeta === bMeta) { chosenMetaCut = oCut; autoMergedFromOurs += 1; }
     else if (oMeta !== tMeta) {
-      conflicts.push({ conflictId: `conflict-cut-meta-${cutId}`, entityKind: "cut", cutId, entityId: cutId, path: cutId, label: oCut.title, reason: "concurrent-edit", conflictedFields: diffCutMetaFields(oCut, tCut).map((f) => f.field), baseSummary: `${bCut.title} (${bCut.cameraShot})`, oursSummary: `${oCut.title} (${oCut.cameraShot})`, theirsSummary: `${tCut.title} (${tCut.cameraShot})`, baseCut: bCut, oursCut: oCut, theirsCut: tCut });
+      conflicts.push({ conflictId: createConflictId("cut-meta", cutId), entityKind: "cut", cutId, entityId: cutId, path: cutId, label: oCut.title, reason: "concurrent-edit", conflictedFields: diffCutMetaFields(oCut, tCut).map((f) => f.field), baseSummary: `${bCut.title} (${bCut.cameraShot})`, oursSummary: `${oCut.title} (${oCut.cameraShot})`, theirsSummary: `${tCut.title} (${tCut.cameraShot})`, baseCut: bCut, oursCut: oCut, theirsCut: tCut });
     }
 
     const bLayers = new Map(bCut.layers.map((l) => [l.id, l]));
@@ -536,7 +555,7 @@ export function planThreeWaySemanticMerge(
       else if (tStr === bStr) { if (oL) mergedLayers.push(oL); autoMergedFromOurs += 1; }
       else {
         if (oL) mergedLayers.push(oL); else if (tL) mergedLayers.push(tL);
-        conflicts.push({ conflictId: `conflict-layer-${cutId}-${layerId}`, entityKind: "layer", cutId, entityId: layerId, path: `${cutId}/layer/${layerId}`, label: (oL ?? tL ?? bL)?.name ?? layerId, reason: !oL || !tL ? "modify-delete" : "concurrent-edit", conflictedFields: oL && tL ? diffLayerFields(oL, tL).map((f) => f.field) : ["layer"], baseSummary: summarizeLayer(bL), oursSummary: summarizeLayer(oL), theirsSummary: summarizeLayer(tL), baseLayer: bL, oursLayer: oL, theirsLayer: tL });
+        conflicts.push({ conflictId: createConflictId("layer", cutId, layerId), entityKind: "layer", cutId, entityId: layerId, path: `${cutId}/layer/${layerId}`, label: (oL ?? tL ?? bL)?.name ?? layerId, reason: !oL || !tL ? "modify-delete" : "concurrent-edit", conflictedFields: oL && tL ? diffLayerFields(oL, tL).map((f) => f.field) : ["layer"], baseSummary: summarizeLayer(bL), oursSummary: summarizeLayer(oL), theirsSummary: summarizeLayer(tL), baseLayer: bL, oursLayer: oL, theirsLayer: tL });
       }
     }
 
@@ -552,7 +571,7 @@ export function planThreeWaySemanticMerge(
       else if (tStr === bStr) { if (oB) mergedBalloons.push(oB); autoMergedFromOurs += 1; }
       else {
         if (oB) mergedBalloons.push(oB); else if (tB) mergedBalloons.push(tB);
-        conflicts.push({ conflictId: `conflict-balloon-${cutId}-${balloonId}`, entityKind: "balloon", cutId, entityId: balloonId, path: `${cutId}/balloon/${balloonId}`, label: `${(oB ?? tB ?? bB)?.speaker ?? "화자"} 말풍선`, reason: !oB || !tB ? "modify-delete" : "concurrent-edit", conflictedFields: oB && tB ? diffBalloonFields(oB, tB).map((f) => f.field) : ["balloon"], baseSummary: summarizeBalloon(bB), oursSummary: summarizeBalloon(oB), theirsSummary: summarizeBalloon(tB), baseBalloon: bB, oursBalloon: oB, theirsBalloon: tB });
+        conflicts.push({ conflictId: createConflictId("balloon", cutId, balloonId), entityKind: "balloon", cutId, entityId: balloonId, path: `${cutId}/balloon/${balloonId}`, label: `${(oB ?? tB ?? bB)?.speaker ?? "화자"} 말풍선`, reason: !oB || !tB ? "modify-delete" : "concurrent-edit", conflictedFields: oB && tB ? diffBalloonFields(oB, tB).map((f) => f.field) : ["balloon"], baseSummary: summarizeBalloon(bB), oursSummary: summarizeBalloon(oB), theirsSummary: summarizeBalloon(tB), baseBalloon: bB, oursBalloon: oB, theirsBalloon: tB });
       }
     }
 
@@ -575,6 +594,11 @@ export function resolveMergeConflictsAndCommit(
   resolutions: readonly ConflictResolutionInput[] = [],
   options?: { readonly author?: string; readonly message?: string; readonly timestampIso?: string },
 ): { readonly repo: SemanticVcsRepository; readonly commit: SemanticCommit } {
+  // 계획 이후 어느 한쪽 HEAD라도 바뀌면 최신 원고를 덮지 않고 재계산을 요구한다.
+  if (repo.branches[plan.targetBranch]?.headCommitId !== plan.oursCommitId ||
+      repo.branches[plan.sourceBranch]?.headCommitId !== plan.theirsCommitId) {
+    throw new Error("병합 계획 이후 브랜치가 변경되었습니다. 병합 계획을 다시 계산하세요.");
+  }
   const resMap = new Map(resolutions.map((r) => [r.conflictId, r]));
   for (const conflict of plan.conflicts) {
     const res = resMap.get(conflict.conflictId);
@@ -596,7 +620,7 @@ export function resolveMergeConflictsAndCommit(
         const chosen =
           res.choice === "ours" ? conflict.oursBalloon
             : res.choice === "theirs" ? conflict.theirsBalloon
-              : template ? { ...template, speaker: res.manualSpeaker?.trim() || template.speaker, text: res.manualText?.trim() || template.text, style: res.manualStyle ?? template.style } : undefined;
+              : template ? { ...template, speaker: res.manualSpeaker ?? template.speaker, text: res.manualText ?? template.text, style: res.manualStyle ?? template.style } : undefined;
         return { ...cut, balloons: chosen ? [...rest, chosen] : rest };
       });
     } else if (conflict.entityKind === "layer") {
@@ -615,9 +639,11 @@ export function resolveMergeConflictsAndCommit(
         cuts = cuts.filter((c) => c.id !== conflict.cutId);
       } else {
         const chosen = res.choice === "ours" ? conflict.oursCut : res.choice === "theirs" ? conflict.theirsCut
-          : conflict.oursCut ? { ...conflict.oursCut, title: res.manualTitle?.trim() || conflict.oursCut.title } : conflict.theirsCut;
+          : conflict.oursCut ? { ...conflict.oursCut, title: res.manualTitle ?? conflict.oursCut.title } : conflict.theirsCut;
         if (chosen) {
-          cuts = cuts.map((c) => (c.id === conflict.cutId ? { ...c, title: chosen.title, cameraShot: chosen.cameraShot, order: chosen.order, heightPx: chosen.heightPx } : c));
+          cuts = cuts.map((c) => (c.id !== conflict.cutId ? c : conflict.conflictedFields.includes("cut")
+            ? { ...chosen, layers: [...chosen.layers], balloons: [...chosen.balloons] }
+            : { ...c, title: chosen.title, cameraShot: chosen.cameraShot, order: chosen.order, heightPx: chosen.heightPx }));
         }
       }
     }

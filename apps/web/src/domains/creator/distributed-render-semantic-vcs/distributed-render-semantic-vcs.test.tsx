@@ -486,8 +486,8 @@ describe("Wave 40D: 6패스 분산 렌더팜 스케줄러 · 에지 헬스 진�
     expect(screen.getByTestId("merge-conflict-count").textContent).toContain("충돌 1건");
 
     // manual 선택 후 대사 입력 -> 병합 커밋
-    fireEvent.click(screen.getByTestId("btn-resolve-conflict-balloon-cut-02-bal-02-a-manual"));
-    fireEvent.change(screen.getByTestId("input-manual-conflict-balloon-cut-02-bal-02-a"), {
+    fireEvent.click(screen.getByRole("button", { name: "직접 병합 (manual)" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "수동 병합 대사 입력" }), {
       target: { value: "지금 열쇠를 넘겨, 여기서 끝내자." },
     });
     fireEvent.click(screen.getByTestId("btn-apply-merge"));
@@ -508,7 +508,7 @@ describe("Wave 40D: 6패스 분산 렌더팜 스케줄러 · 에지 헬스 진�
 
   it("20. 영문 로케일 단독 렌더링 및 모듈 전체 엄격 정적 위생 규칙(800줄·무색상·무스토리지·props규칙)을 통과한다", () => {
     render(<StudioRenderFarmVcsPanel locale="en" />);
-    expect(screen.getByTestId("btn-run-six-pass").textContent).toContain("One-Click 6-Pass Run");
+    expect(screen.getByTestId("btn-run-six-pass").textContent).toContain("Calculate 6-Pass Example");
 
     const files = [
       "distributed-render-scheduler.ts",
