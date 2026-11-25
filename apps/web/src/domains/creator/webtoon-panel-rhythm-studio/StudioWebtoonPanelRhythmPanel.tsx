@@ -11,7 +11,9 @@ import {
   Activity, AlertTriangle, CheckCircle2, Code2, Copy, Gauge,
   Layers, Plus, RotateCcw, SlidersHorizontal, Trash2, Wand2,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
+
+import { useI18n } from "@/shared/lib/i18n";
 
 import {
   DEFAULT_SCROLL_SPEED_PX_PER_SEC, MAX_SCROLL_SPEED_PX_PER_SEC, MIN_SCROLL_SPEED_PX_PER_SEC,
@@ -22,6 +24,10 @@ import {
   type PanelPaceTag, type PanelRhythmTemplateId, type RhythmWarningSeverity,
   type ScrollRhythmAnalysis, type WebtoonPlatformPresetId,
 } from "./panel-rhythm-engine";
+import { MAX_RHYTHM_PANELS } from "./panel-rhythm-input-contract";
+import { RhythmOperationStatus } from "./RhythmOperationStatus";
+import { useClipboardOutput } from "./use-clipboard-output";
+import { useExampleNotification } from "./use-example-notification";
 
 export interface StudioWebtoonPanelRhythmPanelProps {
   readonly initialPlatform?: WebtoonPlatformPresetId;
@@ -29,9 +35,10 @@ export interface StudioWebtoonPanelRhythmPanelProps {
   readonly initialScrollSpeedPxPerSec?: number;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onAnalysisChange?: (analysis: ScrollRhythmAnalysis) => void;
-  readonly onExportJson?: (json: string, analysis: ScrollRhythmAnalysis) => void;
-  readonly onExportSvg?: (svg: string, analysis: ScrollRhythmAnalysis) => void;
+  /** 계산 예제 결과 알림이며 실제 원고 적용·저장 완료 응답이 아니다. */
+  readonly onAnalysisChange?: (analysis: ScrollRhythmAnalysis) => void | Promise<void>;
+  readonly onExportJson?: (json: string, analysis: ScrollRhythmAnalysis) => void | Promise<void>;
+  readonly onExportSvg?: (svg: string, analysis: ScrollRhythmAnalysis) => void | Promise<void>;
 }
 
 type ExportPreviewMode = "json" | "svg" | "hidden";
@@ -256,7 +263,7 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
     initialPlatform = "naver-800",
     initialTemplate = "action-3beat-impact",
     initialScrollSpeedPxPerSec = DEFAULT_SCROLL_SPEED_PX_PER_SEC,
-    locale = "ko",
+    locale,
     className,
     onAnalysisChange,
     onExportJson,
@@ -264,7 +271,17 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
   } = props;
 
   const uid = useId();
-  const isEn = locale === "en";
+  const storeLang = useI18n((state) => state.lang);
+  const isEn = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "en";
+  const analysisNotification = useExampleNotification(onAnalysisChange);
+  const jsonNotification = useExampleNotification<readonly [string, ScrollRhythmAnalysis]>(onExportJson ? ([text, result]) => onExportJson(text, result) : undefined);
+  const svgNotification = useExampleNotification<readonly [string, ScrollRhythmAnalysis]>(onExportSvg ? ([text, result]) => onExportSvg(text, result) : undefined);
+  const clipboard = useClipboardOutput();
+  const operations = [analysisNotification, jsonNotification, svgNotification, clipboard];
+  const pending = operations.some((operation) => operation.status === "pending");
+  function isPending(): boolean { return operations.some((operation) => operation.isPending()); }
+  const lastAnalysis = useRef<ScrollRhythmAnalysis | null>(null);
+  const notifyAnalysis = analysisNotification.notify;
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
 
   const [platformId, setPlatformId] = useState<WebtoonPlatformPresetId>(initialPlatform);
@@ -274,18 +291,23 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
   const [exportMode, setExportMode] = useState<ExportPreviewMode>("json");
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [lastBalance, setLastBalance] = useState<AutoBalanceGuttersResult | null>(null);
-  const [customPanelSeq, setCustomPanelSeq] = useState<number>(1);
+  const customPanelSeq = useRef(1);
 
   const analysis = useMemo<ScrollRhythmAnalysis>(
     () => analyzeScrollRhythm({ panels, platformId, scrollSpeedPxPerSec: scrollSpeed, templateId }),
     [panels, platformId, scrollSpeed, templateId],
   );
-  const stripSvg = useMemo<string>(() => buildRhythmStripSvg(analysis, { locale }), [analysis, locale]);
+  const stripSvg = useMemo<string>(() => buildRhythmStripSvg(analysis, { locale: isEn ? "en" : "ko" }), [analysis, isEn]);
   const layoutJson = useMemo<string>(() => exportPanelRhythmJson(analysis), [analysis]);
 
-  useEffect(() => { onAnalysisChange?.(analysis); }, [analysis, onAnalysisChange]);
+  useEffect(() => {
+    if (lastAnalysis.current === analysis) return;
+    lastAnalysis.current = analysis;
+    notifyAnalysis(analysis);
+  }, [analysis, notifyAnalysis]);
 
   const handleSelectPlatform = (nextId: WebtoonPlatformPresetId): void => {
+    if (isPending()) return;
     if (nextId === platformId) return;
     const prevSpec = getWebtoonPlatformSpec(platformId);
     const nextSpec = getWebtoonPlatformSpec(nextId);
@@ -301,6 +323,7 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
   };
 
   const handleSelectTemplate = (nextId: PanelRhythmTemplateId): void => {
+    if (isPending()) return;
     const spec = getPanelRhythmTemplateSpec(nextId);
     setTemplateId(spec.id);
     setPanels(instantiateTemplatePanels(spec.id, platformId));
@@ -310,27 +333,30 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
   };
 
   const handleUpdatePanel = (index: number, patch: Partial<Pick<PanelBeatInput, "heightPx" | "gutterAfterPx" | "dialogueCharCount">>): void => {
+    if (isPending()) return;
     setPanels((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
     setLastBalance(null);
   };
 
   const handleAddPanel = (): void => {
+    if (isPending() || panels.length >= MAX_RHYTHM_PANELS) return;
     const platform = getWebtoonPlatformSpec(platformId);
-    const nextSeq = customPanelSeq;
-    setCustomPanelSeq((n) => n + 1);
-    setPanels((prev) => [
-      ...prev,
-      {
-        id: `custom-${nextSeq}`, labelKo: `추가 컷 ${prev.length + 1}`, labelEn: `Extra Panel ${prev.length + 1}`,
+    const nextSeq = customPanelSeq.current;
+    customPanelSeq.current += 1;
+    setPanels(function appendPanel(previous): readonly PanelBeatInput[] {
+      if (previous.length >= MAX_RHYTHM_PANELS) return previous;
+      return [...previous, {
+        id: `custom-${nextSeq}`, labelKo: `추가 컷 ${previous.length + 1}`, labelEn: `Extra Panel ${previous.length + 1}`,
         role: "dialogue", heightPx: snapTen(platform.widthPx * 0.65), gutterAfterPx: platform.idealAverageGutterPx,
         dialogueCharCount: 18, shape: "standard", visualDensity: "medium",
-      },
-    ]);
+      }];
+    });
     setLastBalance(null);
     setStatusMessage(pick("새 컷을 시퀀스 끝에 추가했습니다.", "Appended a new panel to the sequence."));
   };
 
   const handleRemovePanel = (index: number): void => {
+    if (isPending()) return;
     if (panels.length <= 2) return;
     setPanels((prev) => prev.filter((_, i) => i !== index));
     setLastBalance(null);
@@ -338,6 +364,7 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
   };
 
   const handleAutoBalance = (): void => {
+    if (isPending()) return;
     const balanced = autoBalanceGutters(panels, platformId, scrollSpeed, templateId);
     setPanels(balanced.panels);
     setLastBalance(balanced);
@@ -347,11 +374,12 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
             `${balanced.adjustments.length}개 여백을 자동 보정했습니다 (리듬 점수 ${balanced.beforeAnalysis.summary.rhythmHealthScore} → ${balanced.afterAnalysis.summary.rhythmHealthScore}).`,
             `Auto-balanced ${balanced.adjustments.length} gutters (score ${balanced.beforeAnalysis.summary.rhythmHealthScore} -> ${balanced.afterAnalysis.summary.rhythmHealthScore}).`,
           )
-        : pick("현재 여백 리듬이 이미 플랫폼 권장 범위와 대비 기준을 충족합니다.", "Current gutter rhythm already meets platform guidelines."),
+        : pick("현재 예제 여백이 모델의 범위와 대비 기준을 충족합니다.", "The example gutters meet the model ranges and contrast targets."),
     );
   };
 
   const handleResetTemplate = (): void => {
+    if (isPending()) return;
     const spec = getPanelRhythmTemplateSpec(templateId);
     setPanels(instantiateTemplatePanels(templateId, platformId));
     setScrollSpeed(spec.recommendedScrollSpeedPxPerSec);
@@ -359,24 +387,20 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
     setStatusMessage(pick("현재 템플릿의 기본 컷·여백 값으로 복원했습니다.", "Restored template defaults."));
   };
 
-  const copySafely = (text: string): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(text).catch(() => undefined);
-    }
-  };
-
   const handleCopyJson = (): void => {
-    onExportJson?.(layoutJson, analysis);
-    copySafely(layoutJson);
+    if (isPending()) return;
+    jsonNotification.notify([layoutJson, analysis]);
+    clipboard.notify(layoutJson);
     setExportMode("json");
-    setStatusMessage(pick(`컷 레이아웃 JSON(${layoutJson.length.toLocaleString("ko-KR")}B)을 복사했습니다.`, `Copied panel rhythm JSON (${layoutJson.length.toLocaleString("en-US")} B).`));
+    setStatusMessage(pick("JSON 예제 알림과 클립보드 응답을 아래에서 확인하세요.", "Check the JSON example notification and clipboard response below."));
   };
 
   const handleCopySvg = (): void => {
-    onExportSvg?.(stripSvg, analysis);
-    copySafely(stripSvg);
+    if (isPending()) return;
+    svgNotification.notify([stripSvg, analysis]);
+    clipboard.notify(stripSvg);
     setExportMode("svg");
-    setStatusMessage(pick(`세로 컷 스트립 SVG(${stripSvg.length.toLocaleString("ko-KR")}B)를 복사했습니다.`, `Copied rhythm strip SVG (${stripSvg.length.toLocaleString("en-US")} B).`));
+    setStatusMessage(pick("SVG 예제 알림과 클립보드 응답을 아래에서 확인하세요.", "Check the SVG example notification and clipboard response below."));
   };
 
   const activeTemplate = getPanelRhythmTemplateSpec(templateId);
@@ -385,9 +409,16 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
   return (
     <section
       data-testid="studio-webtoon-panel-rhythm-panel"
+      aria-busy={pending}
       aria-label={pick("웹툰 세로 스크롤 컷 · 여백 리듬 스튜디오", "Webtoon Vertical Panel Rhythm Studio")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
     >
+      <p data-testid="rhythm-scope-notice" className="rounded-lg border border-line bg-panel p-3 text-xs text-fg-2">{pick("CPU 좌표·여백 계산 예제입니다. 폭·권장 여백·읽기 속도와 긴장도는 모델 가정이며 현행 플랫폼 제출 기준이나 실측 독자 반응이 아닙니다. 실제 원고를 읽거나 적용·저장하지 않으며 새로 열면 초기화됩니다.", "CPU geometry and gutter examples. Widths, gutter targets, reading speed and tension are model assumptions, not current platform requirements or measured reader responses. No manuscript is read or changed; inputs are not saved and reset on reopening.")}</p>
+      <RhythmOperationStatus channel="analysis" status={analysisNotification.status} retry={analysisNotification.retry} pending={pending} isEn={isEn} />
+      <RhythmOperationStatus channel="json" status={jsonNotification.status} retry={jsonNotification.retry} pending={pending} isEn={isEn} />
+      <RhythmOperationStatus channel="svg" status={svgNotification.status} retry={svgNotification.retry} pending={pending} isEn={isEn} />
+      <RhythmOperationStatus channel="clipboard" status={clipboard.status} retry={clipboard.retry} pending={pending} isEn={isEn} />
+      <fieldset disabled={pending} className="m-0 min-w-0 space-y-5 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -583,11 +614,12 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
                 <SlidersHorizontal className="h-4 w-4 text-accent" aria-hidden="true" />
                 <span>{pick("4. 컷별 높이 · 하단 여백 · 대사 호흡 미세조정", "4. Per-Panel Height, Gutter & Dialogue Controls")}</span>
               </div>
-              <button type="button" data-testid="rhythm-add-panel-btn" onClick={handleAddPanel} className={BTN_OUTLINE}>
+              <button type="button" data-testid="rhythm-add-panel-btn" disabled={panels.length >= MAX_RHYTHM_PANELS} onClick={handleAddPanel} className={BTN_OUTLINE}>
                 <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {pick("컷 추가", "Add Panel")}
               </button>
             </div>
+            <p className="text-[11px] text-fg-3">{pick(`현재 ${panels.length}컷 · 예제 상한 ${MAX_RHYTHM_PANELS}컷`, `${panels.length} panels · example limit ${MAX_RHYTHM_PANELS}`)}</p>
             <div className="space-y-2.5">
               {analysis.panels.map((panel) => {
                 const pace = paceBadge(panel.paceTag, isEn);
@@ -676,6 +708,7 @@ export function StudioWebtoonPanelRhythmPanel(props: StudioWebtoonPanelRhythmPan
           </pre>
         ) : null}
       </div>
+      </fieldset>
     </section>
   );
 }
