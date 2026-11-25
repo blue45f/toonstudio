@@ -82,7 +82,8 @@ jobs:
       - name: Render H.264 from exported composition
         working-directory: ${{ runner.temp }}/promo-render
         run: |
-          npm install --no-audit --no-fund
+          cp "${{ github.workspace }}/.github/ci-tools/promo-render/package-lock.json" package-lock.json
+          npm ci --no-audit --no-fund
           npm run render -- --scale=0.25 --concurrency=2
           ffprobe -v error -show_streams -show_format -of json out/promo.mp4 > out/probe.json
           python3 - <<'PY'

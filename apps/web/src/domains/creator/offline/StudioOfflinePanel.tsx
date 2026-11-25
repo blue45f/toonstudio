@@ -259,7 +259,7 @@ export function StudioOfflinePanel() {
 
   return (
     <aside
-      className="fixed bottom-[max(calc(var(--studio-canvas-bottom-inset,3.25rem)+0.75rem),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))] right-3 z-40 max-w-[min(22rem,calc(100vw-1.5rem))]"
+      className="fixed bottom-[max(calc(var(--studio-canvas-bottom-inset,3.25rem)+0.75rem),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))] right-[max(0.75rem,env(safe-area-inset-right))] z-40 max-w-[min(22rem,calc(100vw-max(1.5rem,env(safe-area-inset-left)+env(safe-area-inset-right))))]"
       aria-label={bt("스튜디오 연결 및 오프라인 작업 안내", "Studio connection and offline work guide")}
       data-studio-shell-floating-target="offline-readiness"
       data-studio-shell-force-visible="true"

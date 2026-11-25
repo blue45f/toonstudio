@@ -7,7 +7,7 @@
  *   1px 헤어라인 보더, 최소 44×44px 터치 타깃을 지킨다.
  */
 
-import { Droplets, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Droplets, SlidersHorizontal, Sun } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import {
@@ -75,9 +75,9 @@ export function StudioSpectralBlendPreviewChip({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-semibold text-fg">
             <Droplets size={14} aria-hidden="true" className="shrink-0 text-fg-2" />
-            <span className="truncate">7밴드 분광 혼색</span>
+            <span className="truncate">물감 섞임 미리보기</span>
           </div>
-          <p className="mt-0.5 truncate text-[11px] text-fg-2" data-spectral-summary="true">
+          <p className="mt-0.5 truncate text-xs text-fg-2" data-spectral-summary="true">
             {preview.summaryKo}
           </p>
         </div>
@@ -110,10 +110,10 @@ export function StudioSpectralBlendPreviewChip({
             style={{ background: wetPaperSurfaceBackground }}
           />
           <span className="min-w-0 flex-1">
-            <span className="block text-[11px] font-semibold text-fg">물리 안료</span>
+            <span className="block text-xs font-semibold text-fg">물감 섞임</span>
             <output
               data-spectral-output="km7"
-              className="block font-mono text-[11px] text-fg-2 tabular-nums"
+              className="block font-mono text-xs text-fg-2 tabular-nums"
             >
               {preview.spectralHex.toUpperCase()}
             </output>
@@ -131,10 +131,10 @@ export function StudioSpectralBlendPreviewChip({
             style={{ backgroundColor: preview.srgbLinearHex }}
           />
           <div className="min-w-0 flex-1">
-            <span className="block text-[11px] font-medium text-fg-2">일반 sRGB</span>
+            <span className="block text-xs font-medium text-fg-2">기본 섞임</span>
             <output
               data-spectral-output="srgb"
-              className="block font-mono text-[11px] text-fg-3 tabular-nums"
+              className="block font-mono text-xs text-fg-3 tabular-nums"
             >
               {preview.srgbLinearHex.toUpperCase()}
             </output>
@@ -145,7 +145,7 @@ export function StudioSpectralBlendPreviewChip({
       {/* 전경·바탕 기준점 + 7밴드 반사율 미니 바 */}
       {!compact ? (
         <div className="mt-2 flex items-center justify-between gap-2 border-t border-line/60 pt-2">
-          <div className="flex items-center gap-1.5 text-[11px] text-fg-2">
+          <div className="flex items-center gap-1.5 text-xs text-fg-2">
             <span
               aria-hidden="true"
               className="inline-block size-3.5 rounded-sm border border-line-strong"
@@ -189,7 +189,7 @@ export function StudioSpectralBlendPreviewChip({
       {controlsOpen ? (
         <div
           id={`${id}-controls`}
-          className="mt-2 space-y-2 border-t border-line/70 pt-2 text-[11px] text-fg-2"
+          className="mt-2 space-y-2 border-t border-line/70 pt-2 text-xs text-fg-2"
         >
           <label className="grid gap-1" htmlFor={`${id}-ratio`}>
             <span className="flex items-center justify-between">
@@ -226,7 +226,7 @@ export function StudioSpectralBlendPreviewChip({
           <label className="grid gap-1" htmlFor={`${id}-gloss`}>
             <span className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1">
-                <Sparkles size={12} aria-hidden="true" />
+                <Sun size={12} aria-hidden="true" />
                 종이 광택
               </span>
               <span className="font-mono tabular-nums">{glossPct}%</span>
