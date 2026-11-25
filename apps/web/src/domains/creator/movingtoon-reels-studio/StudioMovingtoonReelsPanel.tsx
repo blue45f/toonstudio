@@ -263,16 +263,16 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
     notify(onExportSubtitles ? () => onExportSubtitles({ format, result: subtitleResult }) : undefined);
   };
 
-  const tabs: readonly { readonly id: MovingtoonReelsTabId; readonly label: string; readonly icon: ReactElement }[] = [
+  const tabs: readonly { readonly id: MovingtoonReelsTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
     {
       id: "parallax-safezone",
-      label: pick("2.5D 패럴랙스 릴스 카메라 · 세이프존", "2.5D Parallax Camera & Safe-Zone"),
-      icon: <Film className="h-3.5 w-3.5" aria-hidden="true" />,
+      label: pick("2.5D 패럴랙스 릴스 카메라 · 세이프존", "2.5D Parallax Camera & Safe-Zone"), shortLabel: pick("장면·안전선", "Scene & Guides"),
+      icon: <Film className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />,
     },
     {
       id: "audio-subtitles",
-      label: pick("BPM 비트 싱크 · BGM 덕킹 · SRT/VTT 자막", "BPM Beat Sync · BGM Ducking · SRT/VTT"),
-      icon: <AudioWaveform className="h-3.5 w-3.5" aria-hidden="true" />,
+      label: pick("BPM 비트 싱크 · BGM 덕킹 · SRT/VTT 자막", "BPM Beat Sync · BGM Ducking · SRT/VTT"), shortLabel: pick("음량·자막", "Audio & Captions"),
+      icon: <AudioWaveform className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />,
     },
   ];
 
@@ -313,12 +313,12 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={tab.label} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? SOLID_ACTIVE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>

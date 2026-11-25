@@ -296,16 +296,16 @@ export function StudioNeuralUpscaleTexturesPanel(
     }
   };
 
-  const tabs: readonly { readonly id: NeuralUpscaleTexturesTabId; readonly label: string; readonly icon: ReactElement }[] = [
+  const tabs: readonly { readonly id: NeuralUpscaleTexturesTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
     {
       id: "upscaler",
-      label: pick("2×/4× 엣지보존 업스케일러", "2×/4× Edge Upscaler"),
-      icon: <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />,
+      label: pick("2×/4× 엣지보존 업스케일러", "2×/4× Edge Upscaler"), shortLabel: pick("이미지 확대", "Upscale"),
+      icon: <Maximize2 className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />,
     },
     {
       id: "textures",
-      label: pick("6종 심리스 PBR·망점 텍스처", "6 Seamless PBR & Halftone"),
-      icon: <Grid2x2 className="h-3.5 w-3.5" aria-hidden="true" />,
+      label: pick("6종 심리스 PBR·망점 텍스처", "6 Seamless PBR & Halftone"), shortLabel: pick("텍스처", "Textures"),
+      icon: <Grid2x2 className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />,
     },
   ];
 
@@ -364,12 +364,12 @@ export function StudioNeuralUpscaleTexturesPanel(
               type="button"
               role="tab"
               aria-selected={selected}
-              aria-controls={`${uid}-panel-${tab.id}`}
+              aria-label={tab.label} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`${TAB_BASE} ${selected ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg"}`}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{tab.shortLabel}</span>
             </button>
           );
         })}

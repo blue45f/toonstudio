@@ -391,7 +391,8 @@ describe("3. StudioNeuralUpscaleTexturesPanel 통합 UI 및 엄격 코드 위생
 
   it("영문 로케일(locale='en')에서 영문 라벨과 심리스 상태 문구를 정확히 렌더링한다", () => {
     render(<StudioNeuralUpscaleTexturesPanel locale="en" initialTab="textures" />);
-    expect(screen.getByTestId("tab-upscaler").textContent).toContain("Edge Upscaler");
+    expect(screen.getByTestId("tab-upscaler").textContent).toBe("Upscale");
+    expect(screen.getByRole("tab", { name: "2×/4× Edge Upscaler" })).toBe(screen.getByTestId("tab-upscaler"));
     expect(screen.getByTestId("texture-seam-status").textContent).toContain("Seamless");
   });
 
