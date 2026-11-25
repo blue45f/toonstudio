@@ -1,4 +1,4 @@
-import { Box, Cpu, Eye, Layers, Palette, PenTool, Scissors, Server, SlidersHorizontal, Sparkles, Wand2, Zap } from "lucide-react";
+import { Box, Cpu, Database, Eye, Layers, Maximize2, Palette, PenTool, Ruler, Scissors, Server, SlidersHorizontal, Sparkles, Sun, Wand2, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -88,6 +88,31 @@ const LazyStudioWebgpuCrowdDirectorPanel = lazy(async () => {
   const m = await import("../webgpu-crowd-director/StudioWebgpuCrowdDirectorPanel");
   return { default: m.StudioWebgpuCrowdDirectorPanel };
 });
+const LazyStudioGigaCanvasSwapPanel = lazy(async () => {
+  await import("../giga-canvas-virtual-swap");
+  const m = await import("../giga-canvas-virtual-swap/StudioGigaCanvasSwapPanel");
+  return { default: m.StudioGigaCanvasSwapPanel };
+});
+const LazyStudioInfiniteZoomSpatialPanel = lazy(async () => {
+  await import("../infinite-zoom-spatial-gpu");
+  const m = await import("../infinite-zoom-spatial-gpu/StudioInfiniteZoomSpatialPanel");
+  return { default: m.StudioInfiniteZoomSpatialPanel };
+});
+const LazyStudioProceduralAssetSynthPanel = lazy(async () => {
+  await import("../procedural-asset-synthesizer");
+  const m = await import("../procedural-asset-synthesizer/StudioProceduralAssetSynthPanel");
+  return { default: m.StudioProceduralAssetSynthPanel };
+});
+const LazyStudioWebGpuRadiancePanel = lazy(async () => {
+  await import("../webgpu-radiance-cascades");
+  const m = await import("../webgpu-radiance-cascades/StudioWebGpuRadiancePanel");
+  return { default: m.StudioWebGpuRadiancePanel };
+});
+const LazyStudioShapr3dCadPanel = lazy(async () => {
+  await import("../shapr3d-parametric-cad");
+  const m = await import("../shapr3d-parametric-cad/StudioShapr3dCadPanel");
+  return { default: m.StudioShapr3dCadPanel };
+});
 
 type FrontierTabId =
   | "brushPhysics"
@@ -107,6 +132,11 @@ type FrontierTabId =
   | "drawingFrontier"
   | "visualOracle"
   | "nocodeShaderGrid"
+  | "gigaCanvasSwap"
+  | "infiniteZoomGpu"
+  | "proceduralAssetSynth"
+  | "webgpuRadianceGi"
+  | "shapr3dCad"
   | "liveOracle";
 
 interface OracleLiveSnapshot {
@@ -140,6 +170,11 @@ const FRONTIER_TABS: readonly {
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
   { id: "nocodeShaderGrid", labelKo: "노코드 WGSL · 분산 그리드", labelEn: "No-Code WGSL · Tile Grid" },
+  { id: "gigaCanvasSwap", labelKo: "초거대 캔버스 Morton 타일·OPFS 스와핑", labelEn: "Giga-Canvas Morton Tile · OPFS Swap" },
+  { id: "infiniteZoomGpu", labelKo: "무한 줌 10⁷× · WebGPU Triple-Ring·Mega-Atlas", labelEn: "Infinite Zoom 10⁷× · WebGPU Ring & Atlas" },
+  { id: "proceduralAssetSynth", labelKo: "Rights-BOM 클린 절차적 웹툰 에셋 합성", labelEn: "Rights-BOM Clean Procedural Asset Synth" },
+  { id: "webgpuRadianceGi", labelKo: "전면 WebGPU Radiance Cascades GI·SDF 그림자", labelEn: "Full WebGPU Radiance Cascades GI & SDF" },
+  { id: "shapr3dCad", labelKo: "Shapr3D급 구속조건 스케처·파라메트릭 CAD·도면", labelEn: "Shapr3D-Class Constraint & Parametric CAD" },
   { id: "liveOracle", labelKo: "실시간 엔진 오라클 (194종·KM·GPU)", labelEn: "Live Engine Oracle (194 · KM · GPU)" },
 ];
 
@@ -259,6 +294,16 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Eye size={15} aria-hidden="true" />;
     case "nocodeShaderGrid":
       return <Layers size={15} aria-hidden="true" />;
+    case "gigaCanvasSwap":
+      return <Database size={15} aria-hidden="true" />;
+    case "infiniteZoomGpu":
+      return <Maximize2 size={15} aria-hidden="true" />;
+    case "proceduralAssetSynth":
+      return <Box size={15} aria-hidden="true" />;
+    case "webgpuRadianceGi":
+      return <Sun size={15} aria-hidden="true" />;
+    case "shapr3dCad":
+      return <Ruler size={15} aria-hidden="true" />;
     case "liveOracle":
       return <Layers size={15} aria-hidden="true" />;
   }
@@ -421,6 +466,11 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
             {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}
+            {active === "gigaCanvasSwap" ? <LazyStudioGigaCanvasSwapPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "infiniteZoomGpu" ? <LazyStudioInfiniteZoomSpatialPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "proceduralAssetSynth" ? <LazyStudioProceduralAssetSynthPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "webgpuRadianceGi" ? <LazyStudioWebGpuRadiancePanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "shapr3dCad" ? <LazyStudioShapr3dCadPanel locale={isEn ? "en" : "ko"} /> : null}
           </Suspense>
         )}
       </div>

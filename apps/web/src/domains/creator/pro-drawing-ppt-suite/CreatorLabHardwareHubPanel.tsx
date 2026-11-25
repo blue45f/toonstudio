@@ -1,4 +1,4 @@
-import { Bot, Camera, CheckCircle2, Clapperboard, Compass, Eye, Gauge, Glasses, MessageSquareText, Music, Package, PenTool, Smartphone, UserCheck } from "lucide-react";
+import { Bot, Camera, CheckCircle2, Clapperboard, Compass, Cpu, Eye, Gauge, Glasses, MessageSquareText, Music, Package, PenTool, SlidersHorizontal, Smartphone, UserCheck } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -98,6 +98,26 @@ const LazyStudioOnboardingDioramaPanel = lazy(async () => {
   const m = await import("../onboarding-diorama-craft/StudioOnboardingDioramaPanel");
   return { default: m.StudioOnboardingDioramaPanel };
 });
+const LazyStudioStylusNeuralCompensationPanel = lazy(async () => {
+  await import("../stylus-neural-compensation");
+  const m = await import("../stylus-neural-compensation/StudioStylusNeuralCompensationPanel");
+  return { default: m.StudioStylusNeuralCompensationPanel };
+});
+const LazyStudioWebNnNpuThermalPanel = lazy(async () => {
+  await import("../webnn-npu-thermal-compiler");
+  const m = await import("../webnn-npu-thermal-compiler/StudioWebNnNpuThermalPanel");
+  return { default: m.StudioWebNnNpuThermalPanel };
+});
+const LazyStudioCalmIntentUxPanel = lazy(async () => {
+  await import("../calm-intent-ux-orchestrator");
+  const m = await import("../calm-intent-ux-orchestrator/StudioCalmIntentUxPanel");
+  return { default: m.StudioCalmIntentUxPanel };
+});
+const LazyStudioOneshotCutDirectorPanel = lazy(async () => {
+  await import("../oneshot-cut-director");
+  const m = await import("../oneshot-cut-director/StudioOneshotCutDirectorPanel");
+  return { default: m.StudioOneshotCutDirectorPanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -118,7 +138,11 @@ type CreatorLabTabId =
   | "canvasOrbitalUx"
   | "featureAtlas"
   | "handcraftedAtelier"
-  | "onboardingDiorama";
+  | "onboardingDiorama"
+  | "stylusNeuralComp"
+  | "webnnNpuThermal"
+  | "calmIntentUx"
+  | "oneshotCutDirector";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -144,6 +168,10 @@ const CREATOR_LAB_TABS: readonly {
   { id: "featureAtlas", labelKo: "전체 기능 아틀라스·10분 실습·8대 쇼케이스", labelEn: "Feature Atlas · 10-Min Manual · Showcase" },
   { id: "handcraftedAtelier", labelKo: "수공예 아날로그 지터·물리 관성·적응형 워크벤치", labelEn: "Analog Jitter · Tactile Physics · Adaptive Bench" },
   { id: "onboardingDiorama", labelKo: "절차적 2.5D 온보딩 디오라마·창작자 맞춤 매처", labelEn: "2.5D Onboarding Diorama · Creator Matcher" },
+  { id: "stylusNeuralComp", labelKo: "16K PCHIP 스타일러스 압력·One-Euro·Micro-MLP 보정", labelEn: "16K PCHIP Stylus · One-Euro · Micro-MLP" },
+  { id: "webnnNpuThermal", labelKo: "5대 실리콘 WebNN NPU 컴파일러·PID 열 제어", labelEn: "5-Silicon WebNN NPU Compiler · PID Thermal" },
+  { id: "calmIntentUx", labelKo: "Zen 94% 화면 압축·0-용어 의도 UX·고대비 디자인", labelEn: "Zen 94% Calm UX · Zero-Jargon · High-Contrast" },
+  { id: "oneshotCutDirector", labelKo: "대사 1줄·3획 러프 → 5레이어 원샷 컷 연출기", labelEn: "One-Line · 3-Stroke → 5-Layer Cut Director" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -186,6 +214,14 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <PenTool size={15} aria-hidden="true" />;
     case "onboardingDiorama":
       return <Camera size={15} aria-hidden="true" />;
+    case "stylusNeuralComp":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "webnnNpuThermal":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "calmIntentUx":
+      return <SlidersHorizontal size={15} aria-hidden="true" />;
+    case "oneshotCutDirector":
+      return <Clapperboard size={15} aria-hidden="true" />;
   }
 }
 
@@ -253,6 +289,10 @@ export function CreatorLabHardwareHubPanel() {
           {active === "featureAtlas" ? <LazyStudioFeatureAtlasPanel /> : null}
           {active === "handcraftedAtelier" ? <LazyStudioHandcraftedAtelierPanel /> : null}
           {active === "onboardingDiorama" ? <LazyStudioOnboardingDioramaPanel /> : null}
+          {active === "stylusNeuralComp" ? <LazyStudioStylusNeuralCompensationPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "webnnNpuThermal" ? <LazyStudioWebNnNpuThermalPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "calmIntentUx" ? <LazyStudioCalmIntentUxPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "oneshotCutDirector" ? <LazyStudioOneshotCutDirectorPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

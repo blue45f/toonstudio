@@ -1,4 +1,4 @@
-import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, Layers, LayoutList, MapPin, MessageCircle, MessageSquareText, Music, Palette, Rows3, Ruler, ScanSearch, Smartphone, Sparkles, TrendingUp } from "lucide-react";
+import { Accessibility, CheckCircle2, Clapperboard, Cpu, Eye, Film, GitBranch, Globe2, Layers, LayoutList, MapPin, MessageCircle, MessageSquareText, Music, Palette, Radio, Rows3, Ruler, ScanSearch, ShieldCheck, Smartphone, Sparkles, TrendingUp } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -98,6 +98,26 @@ const LazyStudioScrollPacingComposerPanel = lazy(async () => {
   const m = await import("../scroll-pacing-tension-composer/StudioScrollPacingComposerPanel");
   return { default: m.StudioScrollPacingComposerPanel };
 });
+const LazyStudioDependencyWasm64AuditPanel = lazy(async () => {
+  await import("../dependency-wasm64-auditor");
+  const m = await import("../dependency-wasm64-auditor/StudioDependencyWasm64AuditPanel");
+  return { default: m.StudioDependencyWasm64AuditPanel };
+});
+const LazyStudioDistributedCrdtSyncPanel = lazy(async () => {
+  await import("../distributed-crdt-tile-sync");
+  const m = await import("../distributed-crdt-tile-sync/StudioDistributedCrdtSyncPanel");
+  return { default: m.StudioDistributedCrdtSyncPanel };
+});
+const LazyStudioHumanInkLedgerPanel = lazy(async () => {
+  await import("../human-ink-provenance-ledger");
+  const m = await import("../human-ink-provenance-ledger/StudioHumanInkLedgerPanel");
+  return { default: m.StudioHumanInkLedgerPanel };
+});
+const LazyStudioShaderPrewarmWebCodecsPanel = lazy(async () => {
+  await import("../shader-prewarm-webcodecs");
+  const m = await import("../shader-prewarm-webcodecs/StudioShaderPrewarmWebCodecsPanel");
+  return { default: m.StudioShaderPrewarmWebCodecsPanel };
+});
 
 type QaHubTabId =
   | "pixel"
@@ -118,7 +138,11 @@ type QaHubTabId =
   | "balloonSfxProposer"
   | "modelSheetDrift"
   | "oneLineChain"
-  | "scrollPacingComp";
+  | "scrollPacingComp"
+  | "depAuditWasm64"
+  | "crdtTileSync"
+  | "humanInkLedger"
+  | "shaderWebCodecs";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -160,6 +184,10 @@ const QA_HUB_TABS: readonly {
   { id: "modelSheetDrift", labelKo: "1~60컷 설정집 비율·의상 붉은펜 드리프트 코치", labelEn: "1-60 Cut Model Sheet Drift Redline Coach" },
   { id: "oneLineChain", labelKo: "대사 한 줄 4대 원스톱 연출 체인", labelEn: "One-Line 4-Advisor Unified Scene Chain" },
   { id: "scrollPacingComp", labelKo: "세로 스크롤 감정 곡선·컷 호흡 디렉터", labelEn: "Scroll Pacing & Tension Curve Composer" },
+  { id: "depAuditWasm64", labelKo: "실측 런타임 의존성 감사·Rust WASM64 전환", labelEn: "Measured Dep Audit · Rust WASM64 Cutover" },
+  { id: "crdtTileSync", labelKo: "실시간 분산 HLC CRDT 타일 동기화·GPU 병합", labelEn: "Distributed HLC CRDT Tile Sync & Coalesce" },
+  { id: "humanInkLedger", labelKo: "인간 작화 머클 원장·C2PA Rights-BOM 방패", labelEn: "Human Ink Merkle Ledger · C2PA Rights-BOM" },
+  { id: "shaderWebCodecs", labelKo: "WGSL 12종 3-Wave 프리컴파일·4K WebCodecs 출고", labelEn: "WGSL 3-Wave Prewarm · Local 4K WebCodecs" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -202,6 +230,14 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <Layers size={15} aria-hidden="true" />;
     case "scrollPacingComp":
       return <TrendingUp size={15} aria-hidden="true" />;
+    case "depAuditWasm64":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "crdtTileSync":
+      return <Radio size={15} aria-hidden="true" />;
+    case "humanInkLedger":
+      return <ShieldCheck size={15} aria-hidden="true" />;
+    case "shaderWebCodecs":
+      return <Film size={15} aria-hidden="true" />;
   }
 }
 
@@ -269,6 +305,10 @@ export function AutoQaCollabHubPanel() {
           {active === "modelSheetDrift" ? <LazyStudioModelSheetDriftCoachPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "oneLineChain" ? <LazyStudioOneLineOrchestratorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "scrollPacingComp" ? <LazyStudioScrollPacingComposerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "depAuditWasm64" ? <LazyStudioDependencyWasm64AuditPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "crdtTileSync" ? <LazyStudioDistributedCrdtSyncPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "humanInkLedger" ? <LazyStudioHumanInkLedgerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "shaderWebCodecs" ? <LazyStudioShaderPrewarmWebCodecsPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
