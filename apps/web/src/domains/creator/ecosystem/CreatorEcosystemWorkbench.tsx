@@ -1,5 +1,5 @@
 import { ArrowRight, CheckCircle2, Download, Languages, LockKeyhole, WandSparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
 
@@ -39,6 +39,10 @@ export function CreatorEcosystemWorkbench() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("예제 사본은 브라우저 메모리에서만 변경됩니다.");
   const [error, setError] = useState("");
+  const translateAbortRef = useRef<AbortController | null>(null);
+  const sampleIdRef = useRef(sampleId);
+  sampleIdRef.current = sampleId;
+  useEffect(() => () => { translateAbortRef.current?.abort(); translateAbortRef.current = null; }, []);
   const page = pages[0]!;
   const rows = useMemo(() => dialogueRows(pages), [pages]);
   const impacts = useMemo(() => worldImpacts(pages, released), [pages, released]);
@@ -55,6 +59,9 @@ export function CreatorEcosystemWorkbench() {
   }, [choices, worldEntity]);
 
   const resetSample = (nextId: string) => {
+    translateAbortRef.current?.abort();
+    translateAbortRef.current = null;
+    setBusy(false);
     setSampleId(nextId);
     setPages([samplePage(nextId)]);
     setDrafts([]);
@@ -77,31 +84,48 @@ export function CreatorEcosystemWorkbench() {
 
   const runAiTranslation = async () => {
     if (busy) return;
-    setBusy(true); setError("");
+    translateAbortRef.current?.abort();
     const controller = new AbortController();
+    translateAbortRef.current = controller;
+    const lockedLocale = locale;
+    const lockedSampleId = sampleId;
+    setBusy(true); setError("");
     try {
       const selected = rows.slice(0, 20);
       const request = selected.map(row => ({ id: row.elementId, text: row.source }));
       const result = await completeAutomaticFreeText(
         "Translate webtoon dialogue. Return only a JSON array of {id,text}. Preserve names and tone. Never add IDs.",
-        `Target locale: ${locale}\nDialogue:\n${JSON.stringify(request)}`,
+        `Target locale: ${lockedLocale}\nDialogue:\n${JSON.stringify(request)}`,
         controller.signal,
       );
+      if (controller.signal.aborted || translateAbortRef.current !== controller || sampleIdRef.current !== lockedSampleId) return;
       if (!result.ok) throw new Error(result.error);
       const translations = validateAiTranslations(parseAiArray(result.data.content), selected);
       const now = new Date().toISOString();
       setDrafts(current => [
-        ...current.filter(item => item.locale !== locale || !translations.some(value => value.elementId === item.elementId)),
+        ...current.filter(item => item.locale !== lockedLocale || !translations.some(value => value.elementId === item.elementId)),
         ...translations.map(value => {
           const row = selected.find(item => item.elementId === value.elementId)!;
           return { id: crypto.randomUUID(), pageId: row.pageId, elementId: row.elementId,
-            source: row.source, locale, text: value.text, approved: false, updatedAt: now } satisfies TranslationDraft;
+            source: row.source, locale: lockedLocale, text: value.text, approved: false, updatedAt: now } satisfies TranslationDraft;
         }),
       ]);
       setNotice(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.translationDraftsReceived", { count: translations.length }, "${translations.length}개 번역 초안을 받았습니다. 승인 전에는 원고에 적용하지 않습니다."));
     } catch (cause) {
+      if (controller.signal.aborted || translateAbortRef.current !== controller) return;
       setError(cause instanceof Error ? cause.message : creatorSub2StatusText("studio.creatorSub2.status.ecosystem.workbench.translationDraftFailed", "번역 초안을 만들지 못했습니다."));
-    } finally { setBusy(false); }
+    } finally {
+      if (translateAbortRef.current === controller) {
+        translateAbortRef.current = null;
+        setBusy(false);
+      }
+    }
+  };
+  const cancelAiTranslation = () => {
+    translateAbortRef.current?.abort();
+    translateAbortRef.current = null;
+    setBusy(false);
+    setNotice("번역 초안 생성을 취소했습니다.");
   };
   const applyTranslations = () => {
     const next = applyApprovedTranslations(pages, drafts, locale);
@@ -178,6 +202,7 @@ export function CreatorEcosystemWorkbench() {
               <p className="mt-1 text-xs text-fg-3">원문이 바뀌면 초안을 오래된 상태로 표시하고 승인된 항목만 적용합니다.</p></div>
             <div className="flex flex-wrap gap-2"><input className={`${CONTROL} w-24`} value={locale} maxLength={20} aria-label="번역 대상 로케일" onChange={event => setLocale(event.target.value.trim())} />
               <button type="button" className={BUTTON} disabled={busy} onClick={() => void runAiTranslation()}><WandSparkles size={15} /> 자동 무료 AI 초안</button>
+              {busy ? <button type="button" data-testid="workbench-translate-cancel-btn" className={BUTTON} onClick={cancelAiTranslation}>취소</button> : null}
               <button type="button" className={BUTTON} onClick={applyTranslations}><CheckCircle2 size={15} /> 승인본 적용</button></div>
           </div>
           <p className="mt-3 text-xs text-fg-3">자동 무료 풀을 먼저 사용합니다. 무료 한도 또는 요청 제한으로 사용할 수 없으면 <Link className="text-accent" to="/settings/ai">통합 AI 설정</Link>의 개인 무료 키 또는 로컬 AI로 이어집니다.</p>
