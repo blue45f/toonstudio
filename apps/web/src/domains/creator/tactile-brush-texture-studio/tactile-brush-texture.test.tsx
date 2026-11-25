@@ -558,20 +558,24 @@ describe("8. 라이브 비교 스튜디오 UI 패널 및 엄격 하네스 계약
     expect(screen.queryByTestId("tactile-json-preview")).toBeNull();
   });
 
-  it("소유 4개 파일 존재, 800줄 이하, 원시 색·transition-all·= {}·스토리지·private Map store·BigInt·Sparkles·번역투 0건", () => {
+  it("모듈 파일 존재, 800줄 이하, 원시 색·transition-all·= {}·스토리지·private Map store·BigInt·Sparkles·번역투 0건", () => {
     const dir = path.resolve(import.meta.dirname);
     const expected = [
       "tactile-brush-texture-engine.ts",
       "StudioTactileBrushTexturePanel.tsx",
       "index.ts",
       "tactile-brush-texture.test.tsx",
+      "tactile-brush-boundaries.test.tsx",
+      "tactile-brush-input-contract.ts",
+      "tactile-brush-recipe.ts",
+      "use-tactile-brush-delivery.ts",
     ];
     for (const file of expected) {
       expect(existsSync(path.join(dir, file))).toBe(true);
     }
 
     const files = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(files).toHaveLength(4);
+    expect(files).toHaveLength(8);
     for (const file of files) {
       const src = readFileSync(path.join(dir, file), "utf8");
       expect(src.split(/\r?\n/).length).toBeLessThanOrEqual(800);

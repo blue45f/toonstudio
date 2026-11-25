@@ -6,13 +6,15 @@ import {
   Cpu,
   ExternalLink,
   Layers,
+  MonitorSmartphone,
   RefreshCw,
   Scale,
   ShieldCheck,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { BenchmarkVisualMatrixSection } from "./BenchmarkVisualMatrixSection";
 
 import {
   BENCHMARK_AXES,
@@ -126,7 +128,7 @@ export function StudioCompetitorBenchmarkPage() {
       <div
         data-testid="studio-benchmark-page"
         data-showcase-high-contrast={highContrast ? "true" : "false"}
-        className="ts-showcase-root space-y-10 sm:space-y-12"
+        className="ts-showcase-root space-y-10 [word-break:keep-all] tabular-nums sm:space-y-12"
       >
         {/* 1. 비주얼 엠블럼 히어로 */}
         <header className="ts-showcase-hero rounded-3xl p-6 sm:p-8 lg:p-10">
@@ -181,19 +183,19 @@ export function StudioCompetitorBenchmarkPage() {
 
           <dl className="mt-8 grid grid-cols-2 gap-3 border-t border-line/70 pt-6 lg:grid-cols-4">
             <div className="rounded-2xl bg-card/85 px-4 py-3">
-              <dd className="font-display text-2xl font-bold text-fg">{BENCHMARK_TOOLS.length}</dd>
+              <dd className="font-display text-2xl font-bold tabular-nums text-fg">{BENCHMARK_TOOLS.length}</dd>
               <dt className="mt-0.5 text-xs text-fg-3">{copy.kpiTools}</dt>
             </div>
             <div className="rounded-2xl bg-card/85 px-4 py-3">
-              <dd className="font-display text-2xl font-bold text-fg">{BENCHMARK_AXES.length}</dd>
+              <dd className="font-display text-2xl font-bold tabular-nums text-fg">{BENCHMARK_AXES.length}</dd>
               <dt className="mt-0.5 text-xs text-fg-3">{copy.kpiAxes}</dt>
             </div>
             <div className="rounded-2xl bg-card/85 px-4 py-3">
-              <dd className="font-display text-2xl font-bold text-fg">{BENCHMARK_PERSONAS.length}</dd>
+              <dd className="font-display text-2xl font-bold tabular-nums text-fg">{BENCHMARK_PERSONAS.length}</dd>
               <dt className="mt-0.5 text-xs text-fg-3">{copy.kpiPersonas}</dt>
             </div>
             <div className="rounded-2xl bg-card/85 px-4 py-3">
-              <dd className="font-display text-2xl font-bold text-good">₩0</dd>
+              <dd className="font-display text-2xl font-bold tabular-nums text-good">₩0</dd>
               <dt className="mt-0.5 text-xs text-fg-3">{copy.kpiBeta}</dt>
             </div>
           </dl>
@@ -207,7 +209,10 @@ export function StudioCompetitorBenchmarkPage() {
           </div>
         </header>
 
-        {/* 2. 라이브 브라우저 하드웨어 & 차세대 API 신호등 */}
+        {/* 2. 한눈에 보는 7×9 시각 히트맵 · 1:1 맞대결 · SVG 커버리지 도표 · 툴 체인 전환 */}
+        <BenchmarkVisualMatrixSection locale={locale} onSelectAxis={handleSelectAxis} />
+
+        {/* 3. 라이브 브라우저 하드웨어 & 차세대 API 신호등 */}
         <section
           data-testid="benchmark-live-probe"
           aria-labelledby="benchmark-live-probe-heading"
@@ -366,7 +371,7 @@ export function StudioCompetitorBenchmarkPage() {
           ) : null}
         </section>
 
-        {/* 4. 7대 축 도식 비교 매트릭스 */}
+        {/* 5. 9대 축 도식 비교 매트릭스 */}
         <section
           data-testid="benchmark-matrix"
           aria-labelledby="benchmark-matrix-heading"
@@ -374,7 +379,7 @@ export function StudioCompetitorBenchmarkPage() {
         >
           <div className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] text-accent uppercase">
             <Layers size={14} aria-hidden="true" />
-            <span>7-AXIS MATRIX</span>
+            <span>9-AXIS MATRIX</span>
           </div>
           <h2 id="benchmark-matrix-heading" className="text-xl font-bold text-fg sm:text-2xl">
             {copy.matrixHeading}
@@ -472,7 +477,7 @@ export function StudioCompetitorBenchmarkPage() {
           className="ts-showcase-reveal space-y-4"
         >
           <div className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] text-cool uppercase">
-            <Sparkles size={14} aria-hidden="true" />
+            <MonitorSmartphone size={14} aria-hidden="true" />
             <span>MULTI-DEVICE SPRITE ECOSYSTEM</span>
           </div>
           <h2 id="benchmark-device-heading" className="text-xl font-bold text-fg sm:text-2xl">

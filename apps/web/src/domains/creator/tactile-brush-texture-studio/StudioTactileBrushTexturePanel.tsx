@@ -25,6 +25,7 @@ import {
   type TactileBrushConfig, type TactileBrushPreset, type TactileBrushPresetId,
   type TactileBrushSession, type TactileStampMetrics, type TargetRefreshHz,
 } from "./tactile-brush-texture-engine";
+import { useTactileBrushDelivery } from "./use-tactile-brush-delivery";
 
 export interface StudioTactileBrushTexturePanelProps {
   readonly initialBrushId?: TactileBrushPresetId;
@@ -32,6 +33,7 @@ export interface StudioTactileBrushTexturePanelProps {
   readonly locale?: "ko" | "en";
   readonly className?: string;
   readonly onApply?: (config: TactileBrushConfig, metrics: TactileStampMetrics, session: TactileBrushSession) => void;
+  readonly onRevert?: (config: TactileBrushConfig, metrics: TactileStampMetrics, session: TactileBrushSession) => void;
   readonly onExportJson?: (json: string, session: TactileBrushSession) => void;
 }
 
@@ -324,6 +326,7 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
   );
   const [showJson, setShowJson] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const delivery = useTactileBrushDelivery();
 
   const activeConfig = getActiveTactileConfig(session);
   const activeBrush = getTactileBrushPreset(activeConfig.brushId);
@@ -369,38 +372,48 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
     setSession((prev) => previewTactileBrushPatch(prev, { performanceGuardEnabled: nextGuard }));
     setStatusMessage(
       nextGuard
-        ? pick("120Hz 자동 LOD·Dirty-Rect 성능 가드를 켰습니다.", "Enabled automatic LOD & Dirty-Rect frame guard.")
-        : pick("성능 가드를 껐습니다. 초고속 이동 시 프레임 예산 초과 여부를 비교하세요.", "Disabled frame guard to inspect unguarded peak cost."),
+        ? pick("120Hz 목표 비용 모델의 LOD 가정을 켰습니다. 실제 GPU 설정은 바꾸지 않습니다.", "Enabled LOD assumptions in the 120Hz target cost model. GPU settings are unchanged.")
+        : pick("LOD 비용 가정을 껐습니다. 수식의 예상 비용만 비교합니다.", "Disabled LOD assumptions to compare analytical estimates."),
     );
   };
 
   const handleApply = (): void => {
     if (!session.canApply) return;
     const nextSession = applyTactileBrushPreview(session);
-    setSession(nextSession);
-    props.onApply?.(nextSession.committed, metrics, nextSession);
-    setStatusMessage(pick(`'${activeBrush.nameKo}' × '${activePaper.nameKo}' 질감 구성을 브러시에 적용했습니다.`, `Applied '${activeBrush.nameEn}' × '${activePaper.nameEn}' tactile recipe.`));
+    setStatusMessage("");
+    delivery.run(() => props.onApply?.(nextSession.committed, metrics, nextSession), () => {
+      setSession(nextSession);
+      setStatusMessage(pick("예제 질감 구성을 적용했습니다. 실제 브러시·원고·저장 반영은 확인하지 않습니다.", "Applied the example configuration. Real brush, manuscript and persistence changes are unverified."));
+    });
   };
 
   const handleRevert = (): void => {
     if (!session.canRevert) return;
-    setSession((prev) => revertTactileBrushSession(prev));
-    setStatusMessage(pick("직전 기준 질감 구성으로 되돌렸습니다.", "Reverted to previous committed tactile configuration."));
+    const nextSession = revertTactileBrushSession(session);
+    setStatusMessage("");
+    delivery.run(() => nextSession.committed === session.committed ? undefined
+      : props.onRevert?.(nextSession.committed, evaluateTactileStampMetrics(nextSession.committed), nextSession), () => {
+      setSession(nextSession);
+      setStatusMessage(pick("예제 구성을 되돌렸습니다. 외부 브러시 복원·저장은 확인하지 않습니다.", "Restored the example configuration. External brush restoration and saving are unverified."));
+    });
   };
 
   const handleCopyJson = (): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(recipeJson).catch(() => undefined);
-    }
     setShowJson(true);
-    props.onExportJson?.(recipeJson, session);
-    setStatusMessage(pick("브러시 질감 레시피 JSON을 복사하고 미리보기를 열었습니다.", "Copied tactile brush recipe JSON and opened preview."));
+    setStatusMessage("");
+    delivery.run(() => {
+      if (props.onExportJson) return props.onExportJson(recipeJson, session);
+      if (typeof navigator === "undefined" || typeof navigator.clipboard?.writeText !== "function") throw new Error(pick("복사를 사용할 수 없습니다. JSON 미리보기에서 직접 복사해 주세요.", "Clipboard unavailable. Copy directly from the JSON preview."));
+      return navigator.clipboard.writeText(recipeJson);
+    }, () => setStatusMessage(props.onExportJson
+      ? pick("레시피 전달 콜백을 완료했습니다. 저장 여부는 확인하지 않습니다.", "Recipe delivery callback completed. Persistence is unverified.")
+      : pick("예제 레시피 JSON을 클립보드에 복사했습니다.", "Copied example recipe JSON to the clipboard.")));
   };
 
   const statusBadgeText =
     session.status === "previewing" ? pick("미리보기 조정 중", "Previewing")
-      : session.status === "applied" ? pick(`적용됨 (${session.appliedCount}회)`, `Applied (${session.appliedCount})`)
-        : session.status === "reverted" ? pick("원복됨", "Reverted") : pick("기준 프리셋", "Baseline");
+      : session.status === "applied" ? pick(`예제 적용됨 (${session.appliedCount}회)`, `Example Applied (${session.appliedCount})`)
+        : session.status === "reverted" ? pick("예제 되돌림", "Example Reverted") : pick("예제 기준 프리셋", "Example Baseline");
 
   const budget = metrics.frameBudget;
   const gaugeFillPct = Math.min(100, Math.round(budget.utilizationPct));
@@ -409,15 +422,17 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
   return (
     <section
       data-testid="tactile-brush-texture-panel"
-      aria-label={pick("극한 브러시 질감 및 120Hz 엔진 비교 스튜디오", "Ultra-Tactile 120Hz Brush Texture Studio")}
+      aria-label={pick("브러시 질감·목표 프레임 비용 예제", "Brush Texture and Target Frame Cost Examples")}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg md:p-5 ${props.className ?? ""}`}
+      aria-busy={delivery.pending}
     >
+      <fieldset disabled={delivery.pending} className="contents space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-accent bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent [word-break:keep-all]">
               <Brush className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {pick("5층 물리 질감 × 120Hz", "5-Layer Tactile × 120Hz")}
+              {pick("5층 질감 모델 · 목표 120Hz", "5-Layer Texture Model · 120Hz Target")}
             </span>
             <span data-testid="tactile-session-status-badge" className="inline-flex items-center gap-1 rounded-full border border-line bg-card px-2.5 py-0.5 text-[11px] font-medium text-fg-2 tabular-nums [word-break:keep-all]">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
@@ -425,31 +440,32 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
             </span>
           </div>
           <h2 className="text-base font-bold tracking-tight text-fg [word-break:keep-all]">
-            {pick("극한 브러시 시각 질감 & 120Hz 성능 가드 랩", "Ultra-Tactile Brush Texture & 120Hz Guard Lab")}
+            {pick("브러시 질감 SVG · 프레임 비용 모델", "Brush Texture SVG · Frame Cost Model")}
           </h2>
-          <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("64×64 종이 하이트맵 LUT, 갈필 3~16가닥 분기, 모세관 습윤 에지, 45° 임파스토 릴리프를 비파괴로 비교하고 적용합니다.", "Compare 64×64 paper LUT tooth, 3-16 dry bristle split, wet-edge pooling, and 45° impasto relief non-destructively.")}
+          <p data-testid="tactile-example-disclosure" className="text-xs text-fg-2 [word-break:keep-all]">
+            {pick("고정 프리셋의 CPU 계산과 합성 SVG 비교 예제입니다. 실제 GPU·WGSL 실행, 120Hz 실측, 원고 픽셀 그리기·브러시·장면 저장은 수행하지 않습니다. 콜백 완료도 외부 반영·저장 확인을 뜻하지 않습니다.", "Fixed-preset CPU calculations and synthetic SVG examples. No GPU/WGSL execution, measured 120Hz, manuscript pixel drawing, brush changes or scene saving occur here. Callback completion does not verify external changes or persistence.")}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" data-testid="tactile-apply-btn" disabled={!session.canApply} onClick={handleApply} className={BTN_SOLID}>
             <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {pick("질감 적용", "Apply Texture")}
+            {pick("예제 구성 적용", "Apply Example")}
           </button>
           <button type="button" data-testid="tactile-revert-btn" disabled={!session.canRevert} onClick={handleRevert} className={BTN_OUTLINE}>
             <Undo2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {pick("되돌리기", "Revert")}
+            {pick("예제 되돌리기", "Restore Example")}
           </button>
           <button type="button" data-testid="tactile-copy-json-btn" onClick={handleCopyJson} className={BTN_OUTLINE}>
             <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {pick("레시피 JSON 복사", "Copy Recipe JSON")}
+            {props.onExportJson ? pick("레시피 JSON 전달", "Deliver Recipe JSON") : pick("레시피 JSON 복사", "Copy Recipe JSON")}
           </button>
         </div>
       </header>
 
+      {delivery.error ? <p role="alert" className="text-xs text-fg">{delivery.error} {pick("같은 버튼으로 다시 시도해 주세요.", "Use the same button to retry.")}</p> : null}
       <div role="status" aria-live="polite" data-testid="tactile-status-banner" className="rounded-lg border border-line bg-raised px-3 py-2 text-xs text-fg-2 [word-break:keep-all]">
-        {statusMessage || pick(`${activeBrush.nameKo} · ${activePaper.nameKo} 조합을 미리보는 중입니다. 슬라이더나 프리셋을 바꾸고 원할 때 적용하세요.`, `Previewing ${activeBrush.nameEn} on ${activePaper.nameEn}. Adjust sliders or presets and apply when ready.`)}
+        {delivery.pending ? pick("전달 완료를 기다리고 있습니다.", "Waiting for delivery completion.") : statusMessage || pick(`${activeBrush.nameKo} · ${activePaper.nameKo} 예제를 미리봅니다.`, `Previewing the ${activeBrush.nameEn} on ${activePaper.nameEn} example.`)}
       </div>
 
       {/* 5종 브러시 프리셋 + 4종 종이 기판 LUT */}
@@ -503,7 +519,7 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
       <div className="space-y-2 rounded-xl border border-line bg-raised p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-xs font-semibold text-fg [word-break:keep-all]">
-            {pick("평면 디지털 브러시 vs 5층 물리 질감 실시간 비교", "Flat Digital vs 5-Layer Physical Tactile Comparison")}
+            {pick("평면·질감 모델의 합성 SVG 비교", "Synthetic SVG Comparison of Flat and Textured Models")}
           </h3>
           <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-fg-2 tabular-nums">
             <span>{`${pick("봉우리 투과", "Tooth Cov")} ${Math.round(metrics.paperTooth.peakCoverageRatio * 100)}%`}</span>
@@ -572,11 +588,11 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="flex items-center gap-1.5 text-xs font-semibold text-fg [word-break:keep-all]">
                 <Gauge className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                {pick("120Hz / 60Hz 프레임 예산 가드", "120Hz / 60Hz Frame Budget Guard")}
+                {pick("120Hz / 60Hz 목표 비용 모델", "120Hz / 60Hz Target Cost Model")}
               </h3>
               <span data-testid="tactile-budget-status-badge" className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums ${budgetBadgeClass}`}>
                 {budget.withinBudget ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
-                {budget.withinBudget ? pick("예산 통과", "Within Budget") : pick("예산 초과", "Over Budget")}
+                {budget.withinBudget ? pick("모델 예산 이내", "Within Model Budget") : pick("모델 예산 초과", "Over Model Budget")}
               </span>
             </div>
 
@@ -589,7 +605,7 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
               </button>
               <button type="button" data-testid="tactile-guard-toggle-btn" aria-pressed={activeConfig.performanceGuardEnabled} onClick={handleToggleGuard} className={activeConfig.performanceGuardEnabled ? BTN_ACTIVE : BTN_OUTLINE}>
                 <Cpu className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                {activeConfig.performanceGuardEnabled ? pick("자동 LOD 가드 켜짐", "Auto LOD Guard ON") : pick("자동 LOD 가드 꺼짐", "Auto LOD Guard OFF")}
+                {activeConfig.performanceGuardEnabled ? pick("LOD 모델 켜짐", "LOD Model ON") : pick("LOD 모델 꺼짐", "LOD Model OFF")}
               </button>
             </div>
 
@@ -605,7 +621,7 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
               </div>
               <div className="grid grid-cols-3 gap-2 pt-1 text-center text-[11px] tabular-nums">
                 <div className="rounded-md border border-line bg-raised px-2 py-1.5">
-                  <div className="text-[10px] text-fg-3">{pick("아틀라스 캐시", "Atlas Cache")}</div>
+                  <div className="text-[10px] text-fg-3">{pick("모델 캐시율", "Model Cache Rate")}</div>
                   <div data-testid="tactile-cache-hit-readout" className="font-mono font-bold text-fg">{`${Math.round(budget.atlasCacheHitRate * 100)}%`}</div>
                 </div>
                 <div className="rounded-md border border-line bg-raised px-2 py-1.5">
@@ -613,7 +629,7 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
                   <div data-testid="tactile-lod-readout" className="font-mono font-bold text-fg">{`LOD ${budget.lodTier}`}</div>
                 </div>
                 <div className="rounded-md border border-line bg-raised px-2 py-1.5">
-                  <div className="text-[10px] text-fg-3">{pick("Dirty 타일", "Dirty Tiles")}</div>
+                  <div className="text-[10px] text-fg-3">{pick("모델 Dirty 타일", "Model Dirty Tiles")}</div>
                   <div className="font-mono font-bold text-fg">{`${budget.dirtyTileCount}×256px`}</div>
                 </div>
               </div>
@@ -648,6 +664,7 @@ export function StudioTactileBrushTexturePanel(props: StudioTactileBrushTextureP
           </pre>
         ) : null}
       </div>
+      </fieldset>
     </section>
   );
 }

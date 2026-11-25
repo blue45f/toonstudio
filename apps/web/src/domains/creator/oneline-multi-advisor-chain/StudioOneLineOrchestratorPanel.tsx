@@ -2,7 +2,7 @@
  * Wave 49D — 대사 한 줄 → 4대 어시스턴트 원스톱 연출 체인 (One-Line Multi-Advisor Orchestrator) 스튜디오 패널.
  *
  * - 한 줄 대사 입력 + 5종 상황 프리셋 + 통합 연출 세트 3안 원클릭 선택
- * - 4대 슬롯(표정·조명·카메라·말풍선) 독립 믹스&매치 스위처 + 미리보기·일괄 적용·개별 적용·항목별 원복·전체 원복
+ * - 4대 슬롯(표정·조명·카메라·말풍선) 독립 조합 + 메모리 예제의 미리보기·선택 반영·기록 원복
  * - 순수 시맨틱 SVG 통합 컷 연출 프리뷰(조명·카메라 3분할·인물/표정·말풍선/SFX 겹침 표시, oklch/currentColor 전용, 바이올렛 0%)
  * - 통합 컷 연출 JSON 및 한글 연출 큐시트 Markdown 미리보기·복사
  */
@@ -27,6 +27,10 @@ import {
   type AdvisorSlotKey, type OneLineOrchestratorSession, type OneLineScenarioId,
   type ResolvedOrchestratorView, type SlotCandidateIndex, type UnifiedCoherenceGrade,
 } from "./oneline-orchestrator-engine";
+
+import { assertChainDialogue } from "./chain-input-contract";
+import { useChainClipboard, useChainNotification } from "./use-chain-notification";
+import { ChainOperationStatus } from "./ChainOperationStatus";
 
 export interface StudioOneLineOrchestratorPanelProps {
   readonly initialDialogue?: string;
@@ -316,6 +320,7 @@ function SlotIcon(props: { readonly slot: AdvisorSlotKey }): ReactElement {
 
 /** 대사 한 줄 → 4대 어시스턴트 원스톱 연출 체인 스튜디오 패널. */
 export function StudioOneLineOrchestratorPanel(props: StudioOneLineOrchestratorPanelProps): ReactElement {
+  const { onApplyBundle, onExportJson } = props;
   const isEn = props.locale === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
   const initialScenario = getOneLineScenarioPreset(props.initialScenarioId);
@@ -332,11 +337,33 @@ export function StudioOneLineOrchestratorPanel(props: StudioOneLineOrchestratorP
   const [exportTab, setExportTab] = useState<"none" | "json" | "markdown">("none");
   const [statusNotice, setStatusNotice] = useState<string>("");
 
+  const applyNotification = useChainNotification<{ view: ResolvedOrchestratorView; session: OneLineOrchestratorSession }>(
+    onApplyBundle ? ({ view, session: next }) => onApplyBundle(view, next) : undefined,
+  );
+  const exportNotification = useChainNotification<{ text: string; session: OneLineOrchestratorSession }>(
+    onExportJson ? ({ text, session: next }) => onExportJson(text, next) : undefined,
+  );
+  const copyOperation = useChainClipboard();
+  const isPending = (): boolean => applyNotification.isPending() || exportNotification.isPending() || copyOperation.isPending();
+  const pending = applyNotification.status === "pending" || exportNotification.status === "pending" || copyOperation.status === "pending";
+
   const activeView = useMemo(() => resolveActiveOrchestratorView(orchestration, session), [orchestration, session]);
   const jsonText = useMemo(() => exportUnifiedSceneBundleJson(orchestration, session), [orchestration, session]);
   const markdownText = useMemo(() => exportUnifiedSceneMarkdown(orchestration, session, isEn ? "en" : "ko"), [orchestration, session, isEn]);
 
+  const handleDialogueChange = (next: string): void => {
+    if (isPending()) return;
+    try {
+      assertChainDialogue(next);
+      setDialogue(next);
+      setStatusNotice("");
+    } catch {
+      setStatusNotice(pick("입력 한도를 넘었습니다. 4096자·대사 두 구간 이내로 입력해 주세요. 기존 원문은 유지했습니다.", "Input exceeds the limit. Use up to 4096 characters and two dialogue segments. The previous text was preserved."));
+    }
+  };
+
   const handleSelectScenario = (nextId: OneLineScenarioId): void => {
+    if (isPending()) return;
     const preset = getOneLineScenarioPreset(nextId);
     const nextDialogue = isEn ? preset.defaultDialogueEn : preset.defaultDialogueKo;
     const nextOrch = orchestrateOneLineSceneBundles({ dialogue: nextDialogue, scenarioId: nextId });
@@ -347,61 +374,70 @@ export function StudioOneLineOrchestratorPanel(props: StudioOneLineOrchestratorP
   };
 
   const handleSelectBundle = (bundleIdx: SlotCandidateIndex): void => {
+    if (isPending()) return;
     const target = orchestration.unifiedBundles[bundleIdx];
     setSession(selectUnifiedBundle(session, target));
     setStatusNotice(pick(`${target.titleKo} 미리보기로 전환했습니다. 원하는 항목만 바꿔 조합할 수 있습니다.`, `Previewing ${target.titleEn}. Adjust any slot to mix and match.`));
   };
 
   const handleMixSlot = (slot: AdvisorSlotKey, index: SlotCandidateIndex): void => {
+    if (isPending()) return;
     setSession(selectSlotCandidate(session, slot, index, orchestration.unifiedBundles));
     const meta = ADVISOR_SLOT_META[slot];
     setStatusNotice(pick(`${meta.shortKo} 슬롯을 ${index + 1}안으로 미리보기 교체했습니다.`, `Switched ${meta.shortEn} slot preview to #${index + 1}.`));
   };
 
   const handleApplyAll = (): void => {
+    if (isPending()) return;
     const next = applyUnifiedSelection(session, orchestration);
     const nextView = resolveActiveOrchestratorView(orchestration, next);
     setSession(next);
-    props.onApplyBundle?.(nextView, next);
-    setStatusNotice(pick(`4대 연출 일괄 적용 완료 (${nextView.recipeLabelKo}). 항목별 원복이나 전체 되돌리기가 언제든 가능합니다.`, `Batch applied all 4 advisors (${nextView.recipeLabelEn}).`));
+    applyNotification.notify({ view: nextView, session: next });
+    setStatusNotice(pick(`메모리 예제에 4대 연출을 반영했습니다 (${nextView.recipeLabelKo}). 외부 알림 상태는 별도로 확인해 주세요.`, `Updated all 4 in-memory example slots (${nextView.recipeLabelEn}). Check the separate receiver status.`));
   };
 
   const handleApplySlot = (slot: AdvisorSlotKey): void => {
+    if (isPending()) return;
     const next = applySingleSlot(session, slot, orchestration);
     const nextView = resolveActiveOrchestratorView(orchestration, next);
     setSession(next);
-    props.onApplyBundle?.(nextView, next);
+    applyNotification.notify({ view: nextView, session: next });
     const meta = ADVISOR_SLOT_META[slot];
-    setStatusNotice(pick(`${meta.shortKo} ${next.draftSelection[slot] + 1}안을 개별 적용했습니다 (${next.appliedSlotCount}/4).`, `Applied ${meta.shortEn} #${next.draftSelection[slot] + 1} (${next.appliedSlotCount}/4).`));
+    setStatusNotice(pick(`${meta.shortKo} ${next.draftSelection[slot] + 1}안을 메모리 예제에 반영했습니다 (${next.appliedSlotCount}/4).`, `Updated in-memory ${meta.shortEn} #${next.draftSelection[slot] + 1} (${next.appliedSlotCount}/4).`));
   };
 
   const handleRevertSlot = (slot: AdvisorSlotKey): void => {
+    if (isPending()) return;
     const next = revertOrchestratorSlot(session, slot);
     setSession(next);
     const meta = ADVISOR_SLOT_META[slot];
-    setStatusNotice(pick(`${meta.shortKo} 항목만 원본으로 되돌렸습니다 (남은 적용 ${next.appliedSlotCount}/4).`, `Reverted ${meta.shortEn} slot (${next.appliedSlotCount}/4 remaining).`));
+    setStatusNotice(pick(`${meta.shortKo} 메모리 예제 기록만 되돌렸습니다 (남은 적용 ${next.appliedSlotCount}/4).`, `Reverted in-memory ${meta.shortEn} slot (${next.appliedSlotCount}/4 remaining).`));
   };
 
   const handleRevertAll = (): void => {
+    if (isPending()) return;
     setSession(revertAllOrchestratorSlots(session));
-    setStatusNotice(pick("4대 어시스턴트 적용 내역을 모두 원본 컷으로 되돌렸습니다.", "Reverted all 4 advisor slots back to the unmodified cut."));
+    setStatusNotice(pick("메모리 예제의 적용 기록을 모두 되돌렸습니다. 실제 장면 원복은 수행하지 않습니다.", "Cleared all in-memory example application records. No actual scene rollback was performed."));
   };
 
   const handleCopyExport = (kind: "json" | "markdown"): void => {
+    if (isPending()) return;
     const payload = kind === "json" ? jsonText : markdownText;
     setExportTab(kind);
-    if (kind === "json") props.onExportJson?.(payload, session);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(payload).catch(() => undefined);
-    }
+    if (kind === "json") exportNotification.notify({ text: payload, session });
+    copyOperation.notify(payload);
     setStatusNotice(kind === "json" ? pick("통합 컷 연출 JSON 패키지를 열었습니다.", "Opened unified scene JSON package.") : pick("한글 연출 큐시트 Markdown을 열었습니다.", "Opened director cue sheet Markdown."));
   };
 
-  const sessionStatusText =
-    session.status === "applied" ? pick("비파괴 일괄 적용됨 (4/4)", "Batch Applied (4/4)")
-      : session.status === "partial-applied" ? pick(`부분 적용됨 (${session.appliedSlotCount}/4)`, `Partial Applied (${session.appliedSlotCount}/4)`)
-        : session.status === "previewing" ? pick("미리보기 (미적용)", "Previewing (Unapplied)")
-          : session.status === "reverted" ? pick("원본 되돌림", "Reverted") : pick("대기 · 원본 보존", "Idle · Baseline Safe");
+  function getSessionStatusText(): string {
+    switch (session.status) {
+      case "applied": return pick("메모리 예제 적용 (4/4)", "In-memory Applied (4/4)");
+      case "partial-applied": return pick(`메모리 예제 부분 적용 (${session.appliedSlotCount}/4)`, `In-memory Partial Applied (${session.appliedSlotCount}/4)`);
+      case "previewing": return pick("미리보기 (미적용)", "Previewing (Unapplied)");
+      case "reverted": return pick("메모리 예제 원본 되돌림", "In-memory Reverted");
+      default: return pick("대기 · 메모리 예제", "Idle · In-memory Example");
+    }
+  }
 
   const getSlotOptionSummary = (slot: AdvisorSlotKey, idx: SlotCandidateIndex): { readonly title: string; readonly detail: string } => {
     if (slot === "expression") {
@@ -449,7 +485,7 @@ export function StudioOneLineOrchestratorPanel(props: StudioOneLineOrchestratorP
                   : "border-line bg-card text-fg-2"
             }`}
           >
-            {sessionStatusText}
+            {getSessionStatusText()}
           </span>
           <span data-testid="orchestrator-coherence-badge" className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold tabular-nums ${gradeBadgeClass(activeView.coherence.grade)}`}>
             {pick("정합성", "Coherence")} {activeView.coherence.overallScore}
@@ -457,6 +493,9 @@ export function StudioOneLineOrchestratorPanel(props: StudioOneLineOrchestratorP
         </div>
       </header>
 
+      <p data-testid="orchestrator-example-notice" className="mt-3 text-xs text-fg-2">{pick("메모리 예제: 네 엔진의 계산 결과를 조합합니다. 적용·되돌리기는 이 화면의 기록만 바꾸며 실제 장면·권한·파일·서버 저장은 확인하지 않습니다. 외부 콜백은 선택적 결과 알림입니다.", "In-memory example combining four calculation engines. Apply and revert affect this panel only; actual scene changes, permissions, file and server storage are not verified. Optional callbacks notify a result.")}</p>
+      <fieldset disabled={pending} className="min-w-0 border-0 p-0">
+      <legend className="sr-only">{pick("연출 계산 예제 조작", "Director calculation example controls")}</legend>
       <div className="mt-4 space-y-3">
         <div className="space-y-1.5">
           <span className="text-xs font-semibold text-fg-2">{pick("1. 상황 프리셋 5종", "1. Quick Scene Presets")}</span>
@@ -479,7 +518,7 @@ export function StudioOneLineOrchestratorPanel(props: StudioOneLineOrchestratorP
           </label>
           <input
             id={`${uid}-dialogue`} data-testid="orchestrator-dialogue-input" type="text" value={dialogue}
-            onChange={(e) => setDialogue(e.target.value)}
+            onChange={(e) => handleDialogueChange(e.target.value)}
             placeholder={pick("예: 빗소리 때문에 안 들릴지도 모르지만… 사실 오래전부터 좋아했어.", "Enter a single line of dialogue...")}
             className={`min-h-11 w-full rounded-xl border border-line bg-card px-3.5 py-2 text-sm text-fg placeholder:text-fg-3 ${FOCUS_RING}`}
           />
@@ -638,6 +677,12 @@ export function StudioOneLineOrchestratorPanel(props: StudioOneLineOrchestratorP
         </div>
       </div>
 
+      </fieldset>
+      <div className="mt-3 space-y-2">
+        <ChainOperationStatus channel="apply" status={applyNotification.status} retry={applyNotification.retry} pending={pending} isEn={isEn} />
+        <ChainOperationStatus channel="json" status={exportNotification.status} retry={exportNotification.retry} pending={pending} isEn={isEn} />
+        <ChainOperationStatus channel="clipboard" status={copyOperation.status} retry={copyOperation.retry} pending={pending} isEn={isEn} />
+      </div>
       {exportTab !== "none" ? (
         <div className="mt-4 rounded-xl border border-line bg-canvas p-3">
           <div className="mb-2 flex items-center justify-between">

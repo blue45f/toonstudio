@@ -8,6 +8,9 @@
  * - 원시 hex/rgb/hsl 0건, 바이올렛 휴(270~320°) 0%, 스토리지·BigInt·private Map store 0건
  */
 
+import { assertFiniteTactileLut, assertTactileLutShape, finiteTactileSample, matchingTactileStampOptions, normalizeTactileControls } from "./tactile-brush-input-contract";
+import { serializeTactileBrushRecipe } from "./tactile-brush-recipe";
+
 export const PAPER_GRAIN_TILE_SIZE = 64 as const;
 export const DIRTY_RECT_TILE_PX = 256 as const;
 export const FRAME_BUDGET_120HZ_MS = 8.33 as const;
@@ -139,7 +142,7 @@ export interface TactileBrushSession {
 
 function clamp(v: number, min: number, max: number): number { return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : min; }
 function roundTo(v: number, digits: number): number { const f = 10 ** digits; return Math.round(v * f) / f; }
-function normalizeHue(hue: number): number { const mod = hue % 360; return mod < 0 ? mod + 360 : mod; }
+function normalizeHue(hue: number): number { const mod = Number.isFinite(hue) ? hue % 360 : 0; return mod < 0 ? mod + 360 : mod; }
 
 /** 270~320° 보라·바이올렛 슬롭 구간 여부를 판정한다. */
 export function isVioletSlopHue(hue: number): boolean {
@@ -379,22 +382,24 @@ export function generatePaperGrainTileLut(paperId: PaperGrainId): PaperGrainTile
 
 /** 64×64 타일 LUT에서 임의의 캔버스 좌표(음수 포함)를 O(1) 비트마스크 래핑으로 조회한다. */
 export function samplePaperGrainLut(lut: PaperGrainTileLut, xPx: number, yPx: number, scale = 1): PaperGrainSample {
+  assertTactileLutShape(lut);
   const s = clamp(scale, 0.25, 8);
   const idx = ((((Math.floor(yPx / s) & 63) + 64) & 63) * lut.size) + (((Math.floor(xPx / s) & 63) + 64) & 63);
-  const nx = lut.normalX[idx] ?? 0;
-  const ny = lut.normalY[idx] ?? 0;
-  return { height: lut.height[idx] ?? 0.5, nx, ny, nz: Math.sqrt(Math.max(0.0001, 1 - nx * nx - ny * ny)) };
+  const nx = finiteTactileSample(lut.normalX[idx], 0);
+  const ny = finiteTactileSample(lut.normalY[idx], 0);
+  return { height: finiteTactileSample(lut.height[idx], 0.5), nx, ny, nz: Math.sqrt(Math.max(0.0001, 1 - nx * nx - ny * ny)) };
 }
 
 /** 종이 요철 단면 시각화를 위해 지정 행의 높이·법선 프로파일을 샘플링한다. */
 export function samplePaperCrossSection(lut: PaperGrainTileLut, rowY = 24, sampleCount = 32): readonly PaperCrossSectionPoint[] {
-  const count = Math.max(8, Math.min(64, Math.round(sampleCount)));
+  assertTactileLutShape(lut);
+  const count = Math.round(clamp(Number.isFinite(sampleCount) ? sampleCount : 32, 8, 64));
   const yi = ((Math.floor(rowY) & 63) + 64) & 63;
   const points: PaperCrossSectionPoint[] = [];
   for (let i = 0; i < count; i += 1) {
     const u = i / (count - 1);
     const idx = yi * lut.size + Math.floor(u * (lut.size - 1));
-    points.push({ u: roundTo(u, 4), height: roundTo(lut.height[idx] ?? 0.5, 4), nx: roundTo(lut.normalX[idx] ?? 0, 4), ny: roundTo(lut.normalY[idx] ?? 0, 4) });
+    points.push({ u: roundTo(u, 4), height: roundTo(finiteTactileSample(lut.height[idx], 0.5), 4), nx: roundTo(finiteTactileSample(lut.normalX[idx], 0), 4), ny: roundTo(finiteTactileSample(lut.normalY[idx], 0), 4) });
   }
   return points;
 }
@@ -432,12 +437,14 @@ function computeBudgetCosts(params: {
 
 /** 120Hz(8.33ms)/60Hz(16.67ms) 프레임 예산 계획기(Dirty-Rect·아틀라스 캐시·LOD 결정론적 비용 모델). */
 export function evaluateFrameBudgetPlan(input: FrameBudgetEvaluationInput): FrameBudgetPlan {
-  const budgetMs = input.targetRefreshHz === 120 ? FRAME_BUDGET_120HZ_MS : FRAME_BUDGET_60HZ_MS;
+  const targetRefreshHz = input.targetRefreshHz === 60 ? 60 : 120;
+  const controls = normalizeTactileControls(input.controls);
+  const budgetMs = targetRefreshHz === 120 ? FRAME_BUDGET_120HZ_MS : FRAME_BUDGET_60HZ_MS;
   const velocity = clamp(input.velocityPxPerSec, 0, 3600);
   const diameterPx = clamp(input.radiusPx, 2, 120) * 2;
   const tiltDeg = clamp(input.tiltDeg ?? 20, 0, 75);
   const rawFilaments = Math.round(clamp(input.rawFilamentCount, MIN_BRISTLE_FILAMENTS, MAX_BRISTLE_FILAMENTS));
-  const frameTravelPx = velocity / input.targetRefreshHz;
+  const frameTravelPx = velocity / targetRefreshHz;
 
   let lodTier: TactileLodTier = 0;
   if (input.guardEnabled) {
@@ -466,7 +473,7 @@ export function evaluateFrameBudgetPlan(input: FrameBudgetEvaluationInput): Fram
     );
     const stageBreakdownMs = computeBudgetCosts({
       stampsPerFrame, filamentSubStamps, dirtyTileCount, atlasCacheHitRate,
-      controls: input.controls, guardEnabled: input.guardEnabled,
+      controls, guardEnabled: input.guardEnabled,
     });
     const estimatedFrameMs = roundTo(
       stageBreakdownMs.lutLookupMs + stageBreakdownMs.bristleCompositeMs +
@@ -483,7 +490,7 @@ export function evaluateFrameBudgetPlan(input: FrameBudgetEvaluationInput): Fram
   }
   const labels = getLodLabels(lodTier);
   return {
-    targetRefreshHz: input.targetRefreshHz, budgetMs, guardEnabled: input.guardEnabled, lodTier,
+    targetRefreshHz, budgetMs, guardEnabled: input.guardEnabled, lodTier,
     lodLabelKo: labels.ko, lodLabelEn: labels.en, tileSizePx: DIRTY_RECT_TILE_PX,
     dirtyTileCount: evaluated.dirtyTileCount, atlasCacheHitRate: evaluated.atlasCacheHitRate,
     adaptiveSpacingRatio: evaluated.adaptiveSpacingRatio, stampsPerFrame: evaluated.stampsPerFrame,
@@ -520,6 +527,7 @@ export function evaluateTactileStampMetrics(input: TactileStampEvaluationInput):
   const brush = getTactileBrushPreset(input.brushId);
   const paper = getPaperGrainPreset(input.paperId);
   const lut = input.lut && input.lut.paperId === input.paperId ? input.lut : generatePaperGrainTileLut(input.paperId);
+  assertFiniteTactileLut(lut);
   const controls: TactileTextureControls = {
     paperToothStrength: roundTo(clamp(input.controls?.paperToothStrength ?? brush.defaultControls.paperToothStrength, 0, 1), 3),
     dryBristleSplit: roundTo(clamp(input.controls?.dryBristleSplit ?? brush.defaultControls.dryBristleSplit, 0, 1), 3),
@@ -533,7 +541,7 @@ export function evaluateTactileStampMetrics(input: TactileStampEvaluationInput):
   const strokeAngleDeg = Math.round(clamp(input.strokeAngleDeg ?? brush.defaultAngleDeg, -180, 180));
   const inkLoad = roundTo(clamp(input.inkLoad ?? 1 - brush.drynessBase, 0.05, 1), 3);
   const radiusPx = roundTo(clamp(input.radiusPx ?? brush.baseRadiusPx, 2, 120), 1);
-  const targetRefreshHz: TargetRefreshHz = input.targetRefreshHz ?? 120;
+  const targetRefreshHz: TargetRefreshHz = input.targetRefreshHz === 60 ? 60 : 120;
   const performanceGuardEnabled = input.performanceGuardEnabled ?? true;
 
   // 1. 종이 요철 투과: 약필압은 봉우리 스침, 강필압은 골짜기 침투
@@ -551,7 +559,7 @@ export function evaluateTactileStampMetrics(input: TactileStampEvaluationInput):
   }
   const peakCoverageRatio = roundTo(coveredCount / lut.height.length, 3);
   const valleyPenetrationRatio = valleyTotal > 0 ? roundTo(valleyHit / valleyTotal, 3) : roundTo(pressure, 3);
-  const grainContrast = roundTo(clamp(lut.peakStdDev * 3.1 * controls.paperToothStrength * (1.15 - pressure * 0.45), 0, 1), 3);
+  const grainContrast = roundTo(clamp(clamp(lut.peakStdDev, 0, 1) * 3.1 * controls.paperToothStrength * (1.15 - pressure * 0.45), 0, 1), 3);
   const effectiveOpacity = roundTo(clamp(0.24 + pressure * 0.52 + peakCoverageRatio * 0.24, 0.15, 1), 3);
 
   // 2. 멀티-필라멘트 분기 브리슬(3~16가닥) + 5. 120Hz/60Hz LOD 가드 연동
@@ -573,7 +581,7 @@ export function evaluateTactileStampMetrics(input: TactileStampEvaluationInput):
     baseSpacingRatio: brush.baseSpacingRatio, rawFilamentCount, controls, tiltDeg,
   });
   const activeFilamentCount = frameBudget.filamentSubStampsPerStamp;
-  const filaments = buildBristleFilaments(activeFilamentCount, drynessFactor, splaySpreadRatio, brush.baseRadiusPx * 0.37 + lut.peakMean * 5.2);
+  const filaments = buildBristleFilaments(activeFilamentCount, drynessFactor, splaySpreadRatio, brush.baseRadiusPx * 0.37 + clamp(lut.peakMean, 0, 1) * 5.2);
 
   // 3. 모세관 습윤 에지(활성 시 18~34% 농축 링)
   const wetEnabled = controls.wetEdgePooling > 0.02;
@@ -689,7 +697,7 @@ export function previewTactileBrushPatch(session: TactileBrushSession, patch: Ta
       wetEdgePooling: roundTo(clamp(patch.controls?.wetEdgePooling ?? base.controls.wetEdgePooling, 0, 1), 3),
       impastoRelief: roundTo(clamp(patch.controls?.impastoRelief ?? base.controls.impastoRelief, 0, 1), 3),
     },
-    targetRefreshHz: patch.targetRefreshHz ?? base.targetRefreshHz,
+    targetRefreshHz: (patch.targetRefreshHz ?? base.targetRefreshHz) === 60 ? 60 : 120,
     performanceGuardEnabled: patch.performanceGuardEnabled ?? base.performanceGuardEnabled,
     pressure: roundTo(clamp(patch.pressure ?? base.pressure, 0.05, 1), 3),
     velocityPxPerSec: Math.round(clamp(patch.velocityPxPerSec ?? base.velocityPxPerSec, 0, 3200)),
@@ -739,49 +747,21 @@ export function revertTactileBrushSession(session: TactileBrushSession): Tactile
   };
 }
 
-/** WGSL/WebGL2 스튜디오 브러시 파이프라인에 전달할 셰이더·브러시 레시피 JSON을 직렬화한다. */
+/** 현재 구성의 엔진 수치를 직렬화하며 캐시에서 확정 수치를 그대로 신뢰하지 않는다. */
 export function exportTactileBrushRecipeJson(session: TactileBrushSession, precomputedMetrics?: TactileStampMetrics): string {
-  const active = getActiveTactileConfig(session);
+  const normalize = (config: TactileBrushConfig): TactileBrushConfig => getActiveTactileConfig(
+    previewTactileBrushPatch(createTactileBrushSession(config.brushId, config.paperId), config),
+  );
+  const active = normalize(getActiveTactileConfig(session));
   const lut = generatePaperGrainTileLut(active.paperId);
-  const metrics = precomputedMetrics ?? evaluateTactileStampMetrics({
-    brushId: active.brushId, paperId: active.paperId, controls: active.controls,
-    pressure: active.pressure, velocityPxPerSec: active.velocityPxPerSec,
-    tiltDeg: active.tiltDeg, strokeAngleDeg: active.strokeAngleDeg,
-    targetRefreshHz: active.targetRefreshHz, performanceGuardEnabled: active.performanceGuardEnabled, lut,
-  });
+  const metrics = evaluateTactileStampMetrics({ ...active, ...matchingTactileStampOptions(precomputedMetrics, active), lut });
   const brush = getTactileBrushPreset(active.brushId);
   const paper = getPaperGrainPreset(active.paperId);
   const elevRad = (IMPASTO_LIGHT_ELEVATION_DEG * Math.PI) / 180;
   const azimRad = (IMPASTO_LIGHT_AZIMUTH_DEG * Math.PI) / 180;
-
-  return JSON.stringify(
-    {
-      schema: "toonstudio.tactile-brush-recipe.v1",
-      sessionStatus: session.status, appliedCount: session.appliedCount, violetFreeOklch: true,
-      brushPreset: { id: brush.id, nameKo: brush.nameKo, nameEn: brush.nameEn, pigmentOklch: formatOklch(brush.pigmentOklch), radiusPx: metrics.radiusPx },
-      paperLut: {
-        id: paper.id, nameKo: paper.nameKo, tileSize: lut.size, tileWrapping: "periodic-bitmask-o1",
-        memoryBytes: lut.memoryBytes, peakMean: lut.peakMean, peakStdDev: lut.peakStdDev,
-        valleyRatio: lut.valleyRatio, anisotropyRatio: lut.anisotropyRatio, surfaceOklch: formatOklch(paper.surfaceOklch),
-      },
-      activeConfig: active, committedConfig: session.committed,
-      shaderUniforms: {
-        uPaperToothThreshold: metrics.paperTooth.contactThreshold, uPaperGrainContrast: metrics.paperTooth.grainContrast,
-        uBristleFilamentCount: metrics.splitBristle.activeFilamentCount, uBristleSplayRatio: metrics.splitBristle.splaySpreadRatio,
-        uWetEdgeConcentrationPct: metrics.wetEdge.ringConcentrationPct, uWetEdgeRingWidthPx: metrics.wetEdge.ringWidthPx,
-        uImpastoReliefMm: metrics.impasto.ridgeThicknessMm, uImpastoBlinnSpecular: metrics.impasto.blinnSpecular,
-        uAtelierLightDir: [roundTo(Math.cos(elevRad) * Math.cos(azimRad), 4), roundTo(Math.cos(elevRad) * Math.sin(azimRad), 4), roundTo(Math.sin(elevRad), 4)],
-        uDirtyRectTilePx: DIRTY_RECT_TILE_PX,
-      },
-      frameBudgetModel: {
-        costModelSource: metrics.frameBudget.costModelSource, targetRefreshHz: metrics.frameBudget.targetRefreshHz,
-        budgetMs: metrics.frameBudget.budgetMs, estimatedFrameMs: metrics.frameBudget.estimatedFrameMs,
-        withinBudget: metrics.frameBudget.withinBudget, lodTier: metrics.frameBudget.lodTier,
-        atlasCacheHitRate: metrics.frameBudget.atlasCacheHitRate, dirtyTileCount: metrics.frameBudget.dirtyTileCount,
-        adaptiveSpacingRatio: metrics.frameBudget.adaptiveSpacingRatio,
-      },
-    },
-    null,
-    2,
-  );
+  return serializeTactileBrushRecipe({
+    session, active, committed: normalize(session.committed), metrics, lut, brush, paper,
+    pigmentCss: formatOklch(brush.pigmentOklch), surfaceCss: formatOklch(paper.surfaceOklch), dirtyTilePx: DIRTY_RECT_TILE_PX,
+    lightDirection: [roundTo(Math.cos(elevRad) * Math.cos(azimRad), 4), roundTo(Math.cos(elevRad) * Math.sin(azimRad), 4), roundTo(Math.sin(elevRad), 4)],
+  });
 }

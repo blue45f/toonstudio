@@ -28,11 +28,16 @@ import {
   type CameraFramingType, type DialogueTension, type PreviousCutCameraState, type SpeakerCount,
 } from "../camera-framing-continuity-coach";
 import {
-  BALLOON_STYLE_LABELS, DEFAULT_SAFE_MARGIN, getCutPreset, getEmotionToneMeta,
+  BALLOON_STYLE_LABELS, getCutPreset, getEmotionToneMeta,
   proposeBalloonSfxLayoutsTop3,
   type BalloonSfxLayoutProposal, type BalloonSfxRecommendationBundle, type CutPresetId,
   type DialogueItem, type EmotionTone, type ProtectedZone,
 } from "../balloon-sfx-placement-proposer";
+
+import { getOneLineScenarioPreset } from "./chain-scenarios";
+import { assertChainDialogue, assertChainSession, assertChainValues, assertChainSelection, assertChainSlot } from "./chain-input-contract";
+
+export { ONE_LINE_SCENARIO_PRESETS, getOneLineScenarioPreset } from "./chain-scenarios";
 
 export const ORCHESTRATOR_SCHEMA_VERSION = "toonstudio.oneline-multi-advisor-bundle.v1";
 
@@ -90,6 +95,7 @@ export interface UnifiedSceneBundle {
 }
 
 export interface OneLineOrchestrationResult {
+  readonly originalDialogue?: string;
   readonly dialogue: string; readonly scenario: OneLineScenarioPreset;
   readonly archetype: CharacterArchetype; readonly intensity: EmotionIntensity;
   readonly derivedBalloonTone: EmotionTone; readonly derivedCameraTension: DialogueTension;
@@ -153,80 +159,6 @@ export const ADVISOR_SLOT_META: Readonly<Record<AdvisorSlotKey, AdvisorSlotMeta>
   balloon: { key: "balloon", labelKo: "말풍선 꼬리·SFX", labelEn: "Balloon & SFX", shortKo: "말풍선", shortEn: "Balloon", sourceWave: "48C" },
 };
 
-const DEFAULT_SCENARIO: OneLineScenarioPreset = {
-  id: "rooftop-rain-confession", labelKo: "비 오는 옥상 고백", labelEn: "Rainy Rooftop Confession",
-  genreKo: "로맨스·드라마", genreEn: "Romance Drama",
-  summaryKo: "빗속 옥상에서 두근거리는 진심을 전하는 감성 투샷 연출",
-  summaryEn: "Emotional two-shot confession under rain on a dusk rooftop",
-  defaultDialogueKo: "빗소리 때문에 안 들릴지도 모르지만… 사실 오래전부터 두근거리며 좋아했어.",
-  defaultDialogueEn: "You might barely hear over the rain… my heart has been racing because I like you.",
-  speakerNameKo: "서연", speakerNameEn: "Seoyeon", archetype: "gentle", defaultIntensity: 3,
-  previousExpressionCutId: "calm-neutral", scenePresetId: "rooftop-rain", timeOfDay: "rainy-dusk",
-  previousLightingCutId: "cold-rain",
-  previousCamera: { prevSubjectSide: "left", prevGazeDirection: "left-to-right", prevShotScale: "medium", prevCameraYawDeg: 46 },
-  dialogueTension: "intimacy", speakerCount: 2, cutPresetId: "romance-twoshot", safeMargin: DEFAULT_SAFE_MARGIN,
-};
-
-export const ONE_LINE_SCENARIO_PRESETS: readonly OneLineScenarioPreset[] = [
-  DEFAULT_SCENARIO,
-  {
-    id: "chase-standoff", labelKo: "추격전 대치", labelEn: "Chase Standoff",
-    genreKo: "스릴러·추격", genreEn: "Thriller Chase",
-    summaryKo: "네온 뒷골목 막다른 길에서 추격자와 맞서는 팽팽한 대치 컷",
-    summaryEn: "Tense standoff in a wet neon alley dead-end during a chase",
-    defaultDialogueKo: "거기 서! 골목 끝 막다른 길이다, 더는 도망칠 곳 없어!!",
-    defaultDialogueEn: "Freeze! Dead end at the alley, nowhere left to run!!",
-    speakerNameKo: "강현", speakerNameEn: "Kanghyun", archetype: "stoic", defaultIntensity: 4,
-    previousExpressionCutId: "calm-neutral", scenePresetId: "chase-alley", timeOfDay: "night-neon",
-    previousLightingCutId: "neon-night",
-    previousCamera: { prevSubjectSide: "right", prevGazeDirection: "right-to-left", prevShotScale: "wide", prevCameraYawDeg: 118 },
-    dialogueTension: "confrontation", speakerCount: 2, cutPresetId: "corridor-chase", safeMargin: DEFAULT_SAFE_MARGIN,
-  },
-  {
-    id: "shock-reveal-monologue", labelKo: "충격 반전 독백", labelEn: "Shock Reveal Monologue",
-    genreKo: "미스터리·반전", genreEn: "Mystery Reveal",
-    summaryKo: "숨겨진 정체를 깨닫는 순간의 동공 흔들림과 더치 앵글 클로즈업",
-    summaryEn: "Sudden truth realization amplified by startled close-up and Dutch tilt",
-    defaultDialogueKo: "설마?! 방금 지나간 사람이 사라진 형이었다고…?!",
-    defaultDialogueEn: "No way?! The person who just walked past was my missing brother…?!",
-    speakerNameKo: "지안", speakerNameEn: "Jian", archetype: "stoic", defaultIntensity: 5,
-    previousExpressionCutId: "calm-neutral", scenePresetId: "dawn-bedroom", timeOfDay: "dawn",
-    previousLightingCutId: "neutral-day",
-    previousCamera: { prevSubjectSide: "left", prevGazeDirection: "left-to-right", prevShotScale: "medium", prevCameraYawDeg: 68 },
-    dialogueTension: "reveal", speakerCount: 1, cutPresetId: "closeup-monologue", safeMargin: DEFAULT_SAFE_MARGIN,
-  },
-  {
-    id: "sunset-classroom-reconcile", labelKo: "교실 노을 화해", labelEn: "Sunset Classroom Reconcile",
-    genreKo: "학원·청춘", genreEn: "Campus Youth",
-    summaryKo: "붉은 노을빛이 번지는 방과 후 교실에서 마음을 푸는 따뜻한 화해 컷",
-    summaryEn: "Warm golden-hour reconciliation in an after-school classroom",
-    defaultDialogueKo: "미안해, 그때는 내가 너무 성급했어. 다시 웃어줘서 정말 고마워.",
-    defaultDialogueEn: "Sorry I rushed back then. Thank you so much for smiling again.",
-    speakerNameKo: "하린", speakerNameEn: "Harin", archetype: "gentle", defaultIntensity: 3,
-    previousExpressionCutId: "deep-sadness", scenePresetId: "sunset-classroom", timeOfDay: "golden-hour",
-    previousLightingCutId: "warm-sunset",
-    previousCamera: { prevSubjectSide: "left", prevGazeDirection: "left-to-right", prevShotScale: "medium", prevCameraYawDeg: 44 },
-    dialogueTension: "intimacy", speakerCount: 2, cutPresetId: "romance-twoshot", safeMargin: DEFAULT_SAFE_MARGIN,
-  },
-  {
-    id: "action-finisher", labelKo: "액션 결정타", labelEn: "Action Finisher",
-    genreKo: "액션·판타지", genreEn: "Action Climax",
-    summaryKo: "전력을 다한 일격 순간의 로앵글 압축과 강렬한 외침·효과음 연출",
-    summaryEn: "Climactic finishing strike with low-angle punch and explosive SFX",
-    defaultDialogueKo: "지금이다! 반드시 뚫어내겠어, 이 한 방으로 끝낸다!!",
-    defaultDialogueEn: "Now! I will break straight through and finish this in one strike!!",
-    speakerNameKo: "진우", speakerNameEn: "Jinwoo", archetype: "energetic", defaultIntensity: 5,
-    previousExpressionCutId: "tense-anger", scenePresetId: "snow-duel", timeOfDay: "snow-overcast",
-    previousLightingCutId: "cold-rain",
-    previousCamera: { prevSubjectSide: "left", prevGazeDirection: "left-to-right", prevShotScale: "medium", prevCameraYawDeg: 58 },
-    dialogueTension: "impact", speakerCount: 1, cutPresetId: "action-impact", safeMargin: DEFAULT_SAFE_MARGIN,
-  },
-];
-
-export function getOneLineScenarioPreset(id?: OneLineScenarioId): OneLineScenarioPreset {
-  return ONE_LINE_SCENARIO_PRESETS.find((item) => item.id === id) ?? DEFAULT_SCENARIO;
-}
-
 const clampScore = (v: number): number => (Number.isFinite(v) ? Math.round(Math.min(100, Math.max(0, v))) : 0);
 const isSelectionEqual = (a: SlotSelectionMap, b: SlotSelectionMap): boolean =>
   a.expression === b.expression && a.lighting === b.lighting && a.camera === b.camera && a.balloon === b.balloon;
@@ -268,7 +200,7 @@ function buildDialogueItemsForBalloon(dialogue: string, scenario: OneLineScenari
   const cutPreset = getCutPreset(scenario.cutPresetId);
   const firstAnchor = cutPreset.dialogues[0];
   const secondAnchor = cutPreset.dialogues[1] ?? firstAnchor;
-  const segments = dialogue.split(/\r?\n|\s+\/\s+/u).map((p) => p.trim()).filter((p) => p.length > 0).slice(0, 2);
+  const segments = dialogue.split(/\r?\n|\s+\/\s+/u).map((p) => p.trim()).filter((p) => p.length > 0);
   const lines = segments.length > 0 ? segments : [scenario.defaultDialogueKo];
   return lines.map((text, idx) => {
     const anchor = idx === 0 ? firstAnchor : secondAnchor;
@@ -376,6 +308,7 @@ function pickBalloonIndexByStrategy(
 
 /** 대사 한 줄과 상황 프리셋으로 4대 어시스턴트(47B/48A/48B/48C)를 실제 연동해 통합 연출 3안을 즉시 생성한다. */
 export function orchestrateOneLineSceneBundles(input: OneLineOrchestrationInput): OneLineOrchestrationResult {
+  assertChainDialogue(input.dialogue);
   const scenario = getOneLineScenarioPreset(input.scenarioId);
   const dialogue = input.dialogue.trim() || scenario.defaultDialogueKo;
   const archetype = input.archetype ?? scenario.archetype;
@@ -452,6 +385,7 @@ export function orchestrateOneLineSceneBundles(input: OneLineOrchestrationInput)
   });
 
   return {
+    originalDialogue: input.dialogue.trim() ? input.dialogue : undefined,
     dialogue, scenario, archetype, intensity, derivedBalloonTone, derivedCameraTension,
     previousExpressionCut, previousLightingRig, cameraInput, protectedZones: cutPreset.protectedZones,
     dialoguesForBalloon, expressionBundle, lightingBundle, cameraProposals, balloonBundle,
@@ -461,6 +395,7 @@ export function orchestrateOneLineSceneBundles(input: OneLineOrchestrationInput)
 
 /** 4개 슬롯 선택 조합과 정확히 일치하는 통합 세트 ID를 찾는다(없으면 null = 커스텀 조합). */
 export function findMatchingBundleId(selection: SlotSelectionMap, bundles?: readonly UnifiedSceneBundle[]): UnifiedBundleId | null {
+  assertChainSelection(selection);
   if (!bundles) return null;
   for (const bundle of bundles) {
     if (isSelectionEqual(selection, bundle.slotIndices)) return bundle.id;
@@ -473,6 +408,7 @@ export function createOrchestratorSession(
   initialSelection?: SlotSelectionMap,
   bundles?: readonly UnifiedSceneBundle[],
 ): OneLineOrchestratorSession {
+  if (initialSelection) assertChainSelection(initialSelection);
   const draftSelection: SlotSelectionMap = initialSelection ?? { expression: 0, lighting: 0, camera: 0, balloon: 0 };
   return {
     status: "idle", draftSelection,
@@ -484,6 +420,8 @@ export function createOrchestratorSession(
 
 /** 3가지 통합 세트 중 하나를 원클릭 선택해 비파괴 미리보기 상태로 전환한다. */
 export function selectUnifiedBundle(session: OneLineOrchestratorSession, bundle: UnifiedSceneBundle): OneLineOrchestratorSession {
+  assertChainSession(session);
+  assertChainSelection(bundle.slotIndices);
   const entry: OrchestratorHistoryEntry = {
     step: session.history.length + 1, action: "select-bundle", slot: "all",
     labelKo: `${bundle.titleKo} 선택(미리보기)`, labelEn: `Selected ${bundle.titleEn} (preview)`,
@@ -501,6 +439,9 @@ export function selectSlotCandidate(
   index: SlotCandidateIndex,
   bundles?: readonly UnifiedSceneBundle[],
 ): OneLineOrchestratorSession {
+  assertChainSession(session);
+  assertChainSlot(slot);
+  if (index !== 0 && index !== 1 && index !== 2) throw new RangeError("지원하지 않는 후보입니다.");
   const nextSelection: SlotSelectionMap = { ...session.draftSelection, [slot]: index };
   const meta = ADVISOR_SLOT_META[slot];
   const entry: OrchestratorHistoryEntry = {
@@ -516,6 +457,7 @@ export function selectSlotCandidate(
 
 /** 비파괴 미리보기 오버레이를 켜거나 끈다(적용 상태·원본 미변경). */
 export function togglePreviewOrchestrator(session: OneLineOrchestratorSession, enabled?: boolean): OneLineOrchestratorSession {
+  assertChainSession(session);
   const nextPreview = enabled ?? !session.isPreviewing;
   const restoredStatus: OrchestratorSessionStatus =
     session.appliedSlotCount === 4 ? "applied"
@@ -529,6 +471,8 @@ export function applyUnifiedSelection(
   session: OneLineOrchestratorSession,
   orchestration: OneLineOrchestrationResult,
 ): OneLineOrchestratorSession {
+  assertChainSession(session);
+  assertChainValues(orchestration);
   const s = session.draftSelection;
   const applied: OrchestratorAppliedSlots = {
     expression: { index: s.expression, proposal: orchestration.expressionBundle.proposals[s.expression] },
@@ -554,6 +498,9 @@ export function applySingleSlot(
   slot: AdvisorSlotKey,
   orchestration: OneLineOrchestrationResult,
 ): OneLineOrchestratorSession {
+  assertChainSession(session);
+  assertChainSlot(slot);
+  assertChainValues(orchestration);
   const idx = session.draftSelection[slot];
   const nextApplied: OrchestratorAppliedSlots =
     slot === "expression" ? { ...session.applied, expression: { index: idx, proposal: orchestration.expressionBundle.proposals[idx] } }
@@ -575,6 +522,8 @@ export function applySingleSlot(
 
 /** 특정 슬롯 하나만 원본 상태로 비파괴 원복한다(나머지 슬롯 적용 유지). */
 export function revertOrchestratorSlot(session: OneLineOrchestratorSession, slot: AdvisorSlotKey): OneLineOrchestratorSession {
+  assertChainSession(session);
+  assertChainSlot(slot);
   if (session.applied[slot] === null) return session;
   const nextApplied: OrchestratorAppliedSlots = { ...session.applied, [slot]: null };
   const appliedSlotCount = countAppliedSlots(nextApplied);
@@ -592,6 +541,7 @@ export function revertOrchestratorSlot(session: OneLineOrchestratorSession, slot
 
 /** 적용된 4개 슬롯 전체를 원본 상태로 한 번에 되돌린다. */
 export function revertAllOrchestratorSlots(session: OneLineOrchestratorSession): OneLineOrchestratorSession {
+  assertChainSession(session);
   if (!session.canRevertAll && !session.isPreviewing) return session;
   const entry: OrchestratorHistoryEntry = {
     step: session.history.length + 1, action: "revert-all", slot: "all",
@@ -609,6 +559,8 @@ export function resolveActiveOrchestratorView(
   orchestration: OneLineOrchestrationResult,
   session: OneLineOrchestratorSession,
 ): ResolvedOrchestratorView {
+  assertChainValues(orchestration);
+  assertChainSession(session);
   const resolveSlot = <TProposal,>(
     candidates: readonly [TProposal, TProposal, TProposal],
     draftIdx: SlotCandidateIndex,
@@ -650,8 +602,10 @@ export function exportUnifiedSceneBundleJson(
   const rig = active.lighting.proposal.rig;
   return JSON.stringify({
     schema: ORCHESTRATOR_SCHEMA_VERSION, requiresAuthorApproval: true,
+    executionScope: "in-memory-example", sceneMutationVerified: false, persistenceVerified: false,
     violetSlopPct: active.coherence.violetSlopFree ? 0 : 100,
     input: {
+      originalDialogue: orchestration.originalDialogue,
       dialogue: orchestration.dialogue, scenarioId: orchestration.scenario.id,
       scenarioLabelKo: orchestration.scenario.labelKo, scenarioLabelEn: orchestration.scenario.labelEn,
       archetype: orchestration.archetype, intensity: orchestration.intensity,
@@ -727,6 +681,7 @@ export function exportUnifiedSceneMarkdown(
       .join("\n");
     return [
       `# Cut Director Cue Sheet — ${orchestration.scenario.labelEn}`, "",
+      "In-memory calculation example. Actual scene changes, rollback and storage were not verified.", "",
       `- **Dialogue**: "${orchestration.dialogue}"`,
       `- **Active Recipe**: ${active.recipeLabelEn}${active.isCustomMix ? " (Custom Mix)" : ""}`,
       `- **Session Status**: ${session.status} (${session.appliedSlotCount}/4 slots applied)`,
@@ -755,6 +710,7 @@ export function exportUnifiedSceneMarkdown(
     .join("\n");
   return [
     `# 컷 연출 큐시트 — ${orchestration.scenario.labelKo}`, "",
+    "메모리 계산 예제입니다. 실제 장면 변경·원복·저장은 확인하지 않았습니다.", "",
     `- **입력 대사**: "${orchestration.dialogue}"`,
     `- **현재 연출 조합**: ${active.recipeLabelKo}${active.isCustomMix ? " (커스텀 믹스)" : ""}`,
     `- **적용 상태**: ${session.status} (${session.appliedSlotCount}/4 슬롯 적용 · 작가 승인 후 적용)`,

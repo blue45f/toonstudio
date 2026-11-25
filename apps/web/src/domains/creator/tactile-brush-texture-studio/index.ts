@@ -65,3 +65,4 @@ export {
   StudioTactileBrushTexturePanel,
   type StudioTactileBrushTexturePanelProps,
 } from "./StudioTactileBrushTexturePanel";
+export type { TactileBrushReceipt } from "./use-tactile-brush-delivery";
