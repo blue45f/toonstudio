@@ -94,6 +94,7 @@ export interface FirstCutSprintState {
   readonly elapsedSec: number; readonly remainingSec: number; readonly activeStepIndex: number;
   readonly completedStepIds: readonly FirstCutStepId[]; readonly strokeCount: number;
   readonly balloonDraftKo: string; readonly canvasPreset: FirstCutCanvasPreset;
+  /** 이 계산 예제는 원고 저장을 실행하지 않으며 항상 false다. */
   readonly savedToLocalDraft: boolean; readonly progressPercent: number;
   readonly paceRating: "ready" | "ahead" | "on-track" | "overtime";
 }
@@ -109,6 +110,7 @@ export type FirstCutSprintAction =
   | { readonly type: "reset" };
 
 export interface FirstCutSprintSummary {
+  readonly scope: "example-only"; readonly timeBasis: "synthetic-budget"; readonly savedToLocalDraft: false;
   readonly completed: boolean; readonly elapsedSec: number; readonly completedCount: number;
   readonly totalSteps: number; readonly strokeCount: number; readonly canvasPreset: FirstCutCanvasPreset;
   readonly summaryKo: string; readonly summaryEn: string;
@@ -175,10 +177,10 @@ export const ONBOARDING_DIORAMA_CHAPTERS: readonly DioramaChapterSpec[] = Object
     badgeEn: "Ch.1 · First Cut",
     titleKo: "첫 컷 데스크",
     titleEn: "First Cut Desk",
-    subtitleKo: "설치·가입 대기 없이 60초 안에 첫 선화와 말풍선을 저장합니다",
-    subtitleEn: "Sketch your first ink line and balloon in 60s with zero setup friction",
-    summaryKo: "브라우저를 여는 순간 캔버스 82% 이상 시야가 펼쳐집니다. G펜 필압 보정, 종이 요철, 로컬 OPFS 저장이 첫 획부터 작동합니다.",
-    summaryEn: "Opens into an 82%+ unobstructed canvas with G-Pen stabilization, paper grain, and instant local OPFS durability.",
+    subtitleKo: "첫 선화·말풍선·저장 확인 순서를 소개하는 삽화예요",
+    subtitleEn: "An illustration introducing ink, dialogue and save checks",
+    summaryKo: "컷 작업 순서를 살펴보는 안내예요. 아래 시간은 합성 예산이며 실제 원고를 그리거나 OPFS에 저장하지 않아요.",
+    summaryEn: "Explore a sample cut workflow. Times are synthetic budgets; no manuscript is drawn or saved to OPFS here.",
     dioramaImageSrc: "/assets/atelier/onboarding/first-cut-desk.webp",
     jewelImageSrc: "/assets/atelier/jewels/jewel-drawing-nib.webp",
     ambientPaperSrc: "/assets/atelier/papers/manga-kent.webp",
@@ -191,7 +193,7 @@ export const ONBOARDING_DIORAMA_CHAPTERS: readonly DioramaChapterSpec[] = Object
     hotspots: [
       { hotspotId: "desk-nib", xPct: 26, yPct: 62, depthLayer: "foreground", labelKo: "G펜 스틸 닙", labelEn: "G-Pen Steel Nib", detailKo: "필압과 기울기에 따라 선 강약과 닙 갈라짐을 자연스럽게 살립니다.", detailEn: "Responds to pressure and tilt for crisp line weight and nib split." },
       { hotspotId: "desk-kent-sheet", xPct: 54, yPct: 48, depthLayer: "midground", labelKo: "만화 켄트 원고지", labelEn: "Manga Kent Sheet", detailKo: "잉크 번짐이 적은 매끈한 켄트지 위에 컷 가이드와 말풍선을 얹습니다.", detailEn: "Crisp panel frames and balloons over smooth manga kent paper." },
-      { hotspotId: "desk-opfs-lamp", xPct: 78, yPct: 30, depthLayer: "background", labelKo: "로컬 자동 보관", labelEn: "Local OPFS Vault", detailKo: "오프라인 상태에서도 매 획이 브라우저 로컬 저장소에 안전하게 기록됩니다.", detailEn: "Records every stroke locally in OPFS even when offline." },
+      { hotspotId: "desk-opfs-lamp", xPct: 78, yPct: 30, depthLayer: "background", labelKo: "로컬 보관 안내", labelEn: "Local Storage Guide", detailKo: "저장 결과는 실제 편집기에서 저장 후 다시 열어 확인하세요. 이 예제는 입력 대사를 영구 보관하지 않아요.", detailEn: "Verify saving by reopening the actual editor. This example does not persist dialogue." },
     ],
   },
   {
@@ -201,10 +203,10 @@ export const ONBOARDING_DIORAMA_CHAPTERS: readonly DioramaChapterSpec[] = Object
     badgeEn: "Ch.2 · Character",
     titleKo: "캐릭터 조각",
     titleEn: "Character Sculpt",
-    subtitleKo: "실제 cm 키 비율과 표정·의상을 3D 셰이퍼에서 한 번에 맞춥니다",
-    subtitleEn: "Lock real cm height ratios, expressions, and outfits in 3D Shaper",
-    summaryKo: "캐릭터를 한 번 만들어 두면 모든 컷의 시점·투시·의상 톤이 일관되게 따라옵니다. 3D 가이드 위에 바로 2D 선화를 얹습니다.",
-    summaryEn: "Build a character once and carry consistent proportions, camera angles, and palette swatches across every cut.",
+    subtitleKo: "키·표정·의상 작업을 소개하는 캐릭터 삽화예요",
+    subtitleEn: "An illustration introducing character height, expressions and outfits",
+    summaryKo: "캐릭터 작업 항목과 관련 화면을 안내해요. 이 삽화는 실제 모델이나 컷을 바꾸지 않아요.",
+    summaryEn: "Explore character workflow topics and a related route. This illustration does not change a model or cut.",
     dioramaImageSrc: "/assets/atelier/onboarding/character-sculpt.webp",
     jewelImageSrc: "/assets/atelier/jewels/jewel-character-bust.webp",
     ambientPaperSrc: "/assets/atelier/papers/linen-canvas.webp",
@@ -227,10 +229,10 @@ export const ONBOARDING_DIORAMA_CHAPTERS: readonly DioramaChapterSpec[] = Object
     badgeEn: "Ch.3 · Collab Space",
     titleKo: "가상 협업 스튜디오",
     titleEn: "Virtual Collab Studio",
-    subtitleKo: "같은 작업실 테이블에서 콘티·선화·채색 파트를 충돌 없이 주고받습니다",
-    subtitleEn: "Hand off storyboard, lineart, and color across a shared atelier table",
-    summaryKo: "6종 테마 가상 공방에서 아바타로 모여 컷별 단계 잠금을 걸고, Yjs CRDT 실시간 동기화로 깔끔하게 분업합니다.",
-    summaryEn: "Gather in 6 themed studio rooms with cut-level locks and conflict-free Yjs CRDT collaboration.",
+    subtitleKo: "콘티·선화·채색 협업 항목을 소개하는 삽화예요",
+    subtitleEn: "An illustration introducing storyboard, ink and color collaboration",
+    summaryKo: "가상 공방과 협업 작업 항목을 살펴봐요. 실제 팀 세션·잠금·원고 동기화는 연결하지 않았어요.",
+    summaryEn: "Explore studio and collaboration topics. No live team session, lock or manuscript sync is connected.",
     dioramaImageSrc: "/assets/atelier/onboarding/virtual-collab.webp",
     jewelImageSrc: "/assets/atelier/jewels/jewel-studio-cube.webp",
     ambientPaperSrc: "/assets/atelier/papers/cold-press-watercolor.webp",
@@ -243,7 +245,7 @@ export const ONBOARDING_DIORAMA_CHAPTERS: readonly DioramaChapterSpec[] = Object
     hotspots: [
       { hotspotId: "collab-table", xPct: 50, yPct: 54, depthLayer: "midground", labelKo: "공유 작화 보드", labelEn: "Shared Cut Board", detailKo: "콘티·선화·밑색·식자 담당자를 컷 단위로 한눈에 확인합니다.", detailEn: "Track storyboard, lineart, flat color, and lettering per cut." },
       { hotspotId: "collab-cube", xPct: 74, yPct: 38, depthLayer: "foreground", labelKo: "공간 룸 프리셋", labelEn: "Spatial Room Presets", detailKo: "목재 공방·심야 만화 북카페·길드홀 등 작업 분위기에 맞춰 전환합니다.", detailEn: "Switch studio mood across Wood Atelier, Midnight Café, or Guild Hall." },
-      { hotspotId: "collab-handoff", xPct: 26, yPct: 68, depthLayer: "background", labelKo: "충돌 없는 인수인계", labelEn: "Zero-Conflict Handoff", detailKo: "잠금 임대 시간과 버전 이력으로 덮어쓰기 사고를 원천 차단합니다.", detailEn: "Prevents accidental overwrites via stage locks and revision lineage." },
+      { hotspotId: "collab-handoff", xPct: 26, yPct: 68, depthLayer: "background", labelKo: "인수인계 확인 항목", labelEn: "Handoff Checks", detailKo: "실제 협업 화면에서 담당자·잠금·저장 버전을 확인하세요. 이 안내는 충돌 예방을 보증하지 않아요.", detailEn: "Check members, locks and saved versions in the actual workspace. This guide does not guarantee conflict prevention." },
     ],
   },
   {
@@ -253,10 +255,10 @@ export const ONBOARDING_DIORAMA_CHAPTERS: readonly DioramaChapterSpec[] = Object
     badgeEn: "Ch.4 · Publish & Reels",
     titleKo: "회차 출고 · 릴스",
     titleEn: "Episode Publish & Reels",
-    subtitleKo: "권리 BOM 점검부터 연재 회차 슬라이스·9:16 릴스 변환까지 한 번에 마칩니다",
-    subtitleEn: "Run Rights BOM checks, episode slicing, and 9:16 promo reels in one pass",
-    summaryKo: "사용한 브러시·폰트·배경 라이선스를 출고 전에 자동 검증하고, 세로 스크롤 원고와 9:16 모션 릴스를 동시에 패키징합니다.",
-    summaryEn: "Verify brush, font, and background licenses via Rights BOM before exporting episodes and 9:16 motion reels.",
+    subtitleKo: "권리 점검·회차 분할·릴스 출력 확인 순서를 소개해요",
+    subtitleEn: "Explore rights checks, episode slicing and reel output checks",
+    summaryKo: "출고 관련 화면을 안내하는 삽화예요. 권리 감사나 파일 출력을 실행하지 않으며 이용 허가·분쟁 예방을 보증하지 않아요.",
+    summaryEn: "This illustration links to publishing topics. It performs no rights audit or export and guarantees no usage permission or dispute prevention.",
     dioramaImageSrc: "/assets/atelier/onboarding/episode-publish.webp",
     jewelImageSrc: "/assets/atelier/jewels/jewel-reels-slate.webp",
     ambientPaperSrc: "/assets/atelier/papers/korean-hanji.webp",
@@ -278,7 +280,7 @@ export const FIRST_CUT_SPRINT_STEPS: readonly FirstCutSprintStepSpec[] = Object.
   { id: "frame-rough", order: 1, windowStartSec: 0, windowEndSec: 15, durationSec: 15, titleKo: "1단계 · 컷 틀 & 러프 가이드", titleEn: "Step 1 · Panel Frame & Rough", guideKo: "화면 비율을 고르고 인물 시선선과 구도 박스를 가볍게 잡습니다.", guideEn: "Pick the aspect ratio and lay down the eye-line and frame box.", actionLabelKo: "컷 구도 확정 (+15초)", actionLabelEn: "Lock Frame (+15s)" },
   { id: "ink-lineart", order: 2, windowStartSec: 15, windowEndSec: 30, durationSec: 15, titleKo: "2단계 · G펜 주선 & 안정화", titleEn: "Step 2 · G-Pen Lineart", guideKo: "손떨림 보정과 필압 곡선으로 깔끔한 인물 실루엣 주선을 따냅니다.", guideEn: "Trace crisp character outlines with pressure curves and stabilization.", actionLabelKo: "주선 1차 마감 (+15초)", actionLabelEn: "Finish Ink Pass (+15s)" },
   { id: "paper-mood", order: 3, windowStartSec: 30, windowEndSec: 45, durationSec: 15, titleKo: "3단계 · 종이 질감 & 시작 배경", titleEn: "Step 3 · Paper Grain & Backdrop", guideKo: "아틀리에 종이 질감과 배경 무드를 깔아 단번에 장면 공기를 만듭니다.", guideEn: "Drop in atelier paper grain and a matching scene backdrop.", actionLabelKo: "질감·배경 배치 (+15초)", actionLabelEn: "Apply Paper & Mood (+15s)" },
-  { id: "balloon-save", order: 4, windowStartSec: 45, windowEndSec: 60, durationSec: 15, titleKo: "4단계 · 첫 말풍선 & 로컬 저장", titleEn: "Step 4 · First Balloon & OPFS Save", guideKo: "핵심 대사를 말풍선에 얹고 브라우저 OPFS 로컬 초안으로 즉시 보관합니다.", guideEn: "Place the opening line in a balloon and save to local OPFS.", actionLabelKo: "말풍선 얹고 저장 완료", actionLabelEn: "Save First Cut" },
+  { id: "balloon-save", order: 4, windowStartSec: 45, windowEndSec: 60, durationSec: 15, titleKo: "4단계 · 대사 예제 & 저장 확인 안내", titleEn: "Step 4 · Dialogue Example & Save Guide", guideKo: "입력 대사를 미리 봐요. 이 패널은 저장하지 않으므로 실제 편집기의 저장·재열기 결과를 따로 확인하세요.", guideEn: "Preview dialogue here; verify saving and reopening separately in the actual editor.", actionLabelKo: "저장 확인 항목 체크", actionLabelEn: "Check Save Guide" },
 ]);
 
 export const CREATOR_GENRE_OPTIONS: readonly MatcherOptionSpec<CreatorGenreChoice>[] = Object.freeze([
@@ -529,14 +531,14 @@ export function createInitialFirstCutSprint(
 /** 60초 첫 컷 체험 시뮬레이터 상태를 순수 전이한다. */
 export function recordFirstCutAction(state: FirstCutSprintState, action: FirstCutSprintAction): FirstCutSprintState {
   const totalSteps = FIRST_CUT_SPRINT_STEPS.length;
-  if (action.type === "reset") return createInitialFirstCutSprint();
+  if (action.type === "reset") return { ...createInitialFirstCutSprint(state.balloonDraftKo), canvasPreset: state.canvasPreset };
   if (action.type === "start") {
     return state.status === "completed"
       ? state
       : { ...state, status: "running", paceRating: computeSprintPace("running", state.elapsedSec, state.completedStepIds.length) };
   }
   if (action.type === "set-canvas-preset") return { ...state, canvasPreset: action.preset };
-  if (action.type === "set-balloon") return { ...state, balloonDraftKo: action.text.slice(0, 60) };
+  if (action.type === "set-balloon") return { ...state, balloonDraftKo: action.text };
   if (action.type === "add-stroke") {
     const inc = Math.max(1, Math.round(sanitizeFinite(action.count ?? 1, 1)));
     const nextStatus = state.status === "idle" ? "running" : state.status;
@@ -560,7 +562,7 @@ export function recordFirstCutAction(state: FirstCutSprintState, action: FirstCu
       activeStepIndex: totalSteps - 1,
       completedStepIds: allIds,
       strokeCount: Math.max(state.strokeCount, 12),
-      savedToLocalDraft: true,
+      savedToLocalDraft: false,
       progressPercent: 100,
       paceRating: computeSprintPace("completed", nextElapsed, allIds.length),
     };
@@ -587,18 +589,25 @@ export function recordFirstCutAction(state: FirstCutSprintState, action: FirstCu
     activeStepIndex: nextIncompleteIdx >= 0 ? nextIncompleteIdx : totalSteps - 1,
     completedStepIds: nextCompleted,
     strokeCount: state.strokeCount + addedStrokes,
-    savedToLocalDraft: isAllDone || nextCompleted.includes("balloon-save"),
+    savedToLocalDraft: false,
     progressPercent: Math.round((nextCompleted.length / totalSteps) * 100),
     paceRating: computeSprintPace(nextStatus, nextElapsed, nextCompleted.length),
   };
 }
 
-/** 60초 첫 컷 체험 결과를 요약 리포트로 변환한다. */
+/** 원문은 제한 없이 보존하고, 지원되는 환경에서 화면상 글자 단위로 센다. */
+export function countFirstCutDialogueGraphemes(text: string): number | null {
+  if (typeof Intl.Segmenter !== "function") return null;
+  return Array.from(new Intl.Segmenter("ko", { granularity: "grapheme" }).segment(text)).length;
+}
+
+/** 합성 시간 예산과 단계 체크를 요약한다. 실제 원고 완성·저장 결과가 아니다. */
 export function summarizeFirstCutSprint(state: FirstCutSprintState): FirstCutSprintSummary {
   const totalSteps = FIRST_CUT_SPRINT_STEPS.length;
   const completedCount = state.completedStepIds.length;
   const completed = state.status === "completed" || completedCount >= totalSteps;
   return {
+    scope: "example-only", timeBasis: "synthetic-budget", savedToLocalDraft: false,
     completed,
     elapsedSec: state.elapsedSec,
     completedCount,
@@ -606,11 +615,11 @@ export function summarizeFirstCutSprint(state: FirstCutSprintState): FirstCutSpr
     strokeCount: state.strokeCount,
     canvasPreset: state.canvasPreset,
     summaryKo: completed
-      ? `${state.elapsedSec}초 만에 첫 컷 4단계 완료 · 펜선 ${state.strokeCount}획 · 로컬 OPFS 초안 저장됨`
-      : `60초 첫 컷 체험 진행 중 (${completedCount}/${totalSteps}단계 · 경과 ${state.elapsedSec}초)`,
+      ? `예제 4단계 체크 · 합성 예산 ${state.elapsedSec}초 · 예제 펜선 ${state.strokeCount}획 · 실제 원고 미저장`
+      : `예제 단계 체크 (${completedCount}/${totalSteps}단계 · 합성 예산 ${state.elapsedSec}초 · 실제 원고 미저장)`,
     summaryEn: completed
-      ? `Completed all 4 first-cut steps in ${state.elapsedSec}s · ${state.strokeCount} strokes · saved to local OPFS`
-      : `60s first-cut sprint in progress (${completedCount}/${totalSteps} steps · ${state.elapsedSec}s elapsed)`,
+      ? `4 example steps checked · ${state.elapsedSec}s synthetic budget · ${state.strokeCount} sample strokes · no manuscript saved`
+      : `Example steps (${completedCount}/${totalSteps} · ${state.elapsedSec}s synthetic budget · no manuscript saved)`,
   };
 }
 
