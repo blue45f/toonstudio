@@ -768,7 +768,7 @@ test("공통 scripts checkout은 Linux Chemy 골든과 selector를 다섯 shard�
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test("다섯 shard는 기존 48개·foundation 63개·vibrant 디렉터리 1개·hero VRM 8개·페이지 시각 14개·문서 19개 선언을 최초 checkout에서 정확히 보존한다", () => {
+test("다섯 shard는 최초 checkout에서 지정된 파일과 디렉터리를 각자 소유한 범위로 제한한다", () => {
   assertStaticCheckoutInputContract(job("static"), repoRoot, job("typecheck"));
   const foundationDocuments = [...job("static").matchAll(/\$\{\{ matrix\.shard == 'studio-foundation' && '(\/docs\/[^']+)' \|\| '' \}\}/gu)];
   assert.equal(foundationDocuments.length, 19, "foundation 문서 선언은 정확히 19개여야 합니다.");
