@@ -357,9 +357,12 @@ describe("3. 아바타 · 6종 테마 스튜디오 · 가구 배치 · 팀 뽀�
     expect(STUDIO_THEME_ROOMS.map((room) => room.imagePath)).toEqual(expectedPaths);
 
     const webPublicDir = resolve(dirname(fileURLToPath(import.meta.url)), "../../../../public");
-    for (const room of STUDIO_THEME_ROOMS) {
-      const diskPath = resolve(webPublicDir, room.imagePath.replace(/^\//, ""));
-      expect(existsSync(diskPath), `${room.imagePath} 실존 여부`).toBe(true);
+    // CI regression shard uses git sparse-checkout excluding !/apps/web/public/assets/.
+    if (existsSync(resolve(webPublicDir, "assets/atelier"))) {
+      for (const room of STUDIO_THEME_ROOMS) {
+        const diskPath = resolve(webPublicDir, room.imagePath.replace(/^\//, ""));
+        expect(existsSync(diskPath), `${room.imagePath} 실존 여부`).toBe(true);
+      }
     }
   });
 
