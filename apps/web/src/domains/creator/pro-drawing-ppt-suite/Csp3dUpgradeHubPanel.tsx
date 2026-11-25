@@ -1,4 +1,4 @@
-import { Brush, Hand, Layers, Move, ShieldCheck, Watch } from "lucide-react";
+import { Brush, Hand, Layers, Move, ShieldCheck, Sun, Wand2, Watch } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -33,8 +33,26 @@ const LazyCharlabCspSurpassPanel = lazy(async () => {
   const m = await import("../charlab-csp-surpass/StudioCharlabCspSurpassPanel");
   return { default: m.StudioCharlabCspSurpassPanel };
 });
+const LazyP3ColorLightingPanel = lazy(async () => {
+  await import("../p3-color-dynamic-lighting");
+  const m = await import("../p3-color-dynamic-lighting/StudioP3ColorLightingPanel");
+  return { default: m.StudioP3ColorLightingPanel };
+});
+const LazyNeuralUpscaleTexturesPanel = lazy(async () => {
+  await import("../neural-upscale-textures");
+  const m = await import("../neural-upscale-textures/StudioNeuralUpscaleTexturesPanel");
+  return { default: m.StudioNeuralUpscaleTexturesPanel };
+});
 
-type Csp3dTabId = "puppet" | "surface3d" | "hand3d" | "watermark" | "commercialPro" | "charlabCsp";
+type Csp3dTabId =
+  | "puppet"
+  | "surface3d"
+  | "hand3d"
+  | "watermark"
+  | "commercialPro"
+  | "charlabCsp"
+  | "p3ColorLight"
+  | "neuralUpscale";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -47,6 +65,8 @@ const CSP3D_TABS: readonly {
   { id: "watermark", labelKo: "비가시 워터마크·속도곡선·경계블러", labelEn: "Anti-AI Watermark · Velocity · Safe Blur" },
   { id: "commercialPro", labelKo: "리라이트·식자·투고 구성 예제", labelEn: "Relight · Lettering · Submission Examples" },
   { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
+  { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
+  { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -79,6 +99,10 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Layers size={15} aria-hidden="true" />;
     case "charlabCsp":
       return <Watch size={15} aria-hidden="true" />;
+    case "p3ColorLight":
+      return <Sun size={15} aria-hidden="true" />;
+    case "neuralUpscale":
+      return <Wand2 size={15} aria-hidden="true" />;
   }
 }
 
@@ -133,6 +157,8 @@ export function Csp3dUpgradeHubPanel() {
           {active === "watermark" ? <LazyCspWatermarkVelocityPanel /> : null}
           {active === "commercialPro" ? <LazyProCommercialPanel /> : null}
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
+          {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
+          {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
         </Suspense>
       </div>
 

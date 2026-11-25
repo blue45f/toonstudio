@@ -88,6 +88,16 @@ const LazyStudioFeatureAtlasPanel = lazy(async () => {
   const m = await import("../studio-feature-atlas/StudioFeatureAtlasPanel");
   return { default: m.StudioFeatureAtlasPanel };
 });
+const LazyStudioHandcraftedAtelierPanel = lazy(async () => {
+  await import("../handcrafted-atelier-feel");
+  const m = await import("../handcrafted-atelier-feel/StudioHandcraftedAtelierPanel");
+  return { default: m.StudioHandcraftedAtelierPanel };
+});
+const LazyStudioOnboardingDioramaPanel = lazy(async () => {
+  await import("../onboarding-diorama-craft");
+  const m = await import("../onboarding-diorama-craft/StudioOnboardingDioramaPanel");
+  return { default: m.StudioOnboardingDioramaPanel };
+});
 
 type CreatorLabTabId =
   | "calibrator"
@@ -106,7 +116,9 @@ type CreatorLabTabId =
   | "cameraLensBlocking"
   | "spatialStage"
   | "canvasOrbitalUx"
-  | "featureAtlas";
+  | "featureAtlas"
+  | "handcraftedAtelier"
+  | "onboardingDiorama";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -130,6 +142,8 @@ const CREATOR_LAB_TABS: readonly {
   { id: "spatialStage", labelKo: "가상 스튜디오 3D HRTF·공간 라이트박스", labelEn: "Virtual Studio 3D HRTF · Spatial Desk" },
   { id: "canvasOrbitalUx", labelKo: "휠·명령 구성·기기 UX 예제", labelEn: "Wheel & Command Examples · Device UX" },
   { id: "featureAtlas", labelKo: "기능 안내·실습·계산 예제", labelEn: "Feature Guide · Walkthroughs · Computation Examples" },
+  { id: "handcraftedAtelier", labelKo: "지터·관성·작업대 구성 예제", labelEn: "Jitter · Inertia · Workbench Examples" },
+  { id: "onboardingDiorama", labelKo: "첫 컷 구성·창작자 설정 추천 예제", labelEn: "First-Cut Layout · Creator Setting Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
@@ -168,6 +182,10 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Compass size={15} aria-hidden="true" />;
     case "featureAtlas":
       return <CheckCircle2 size={15} aria-hidden="true" />;
+    case "handcraftedAtelier":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "onboardingDiorama":
+      return <Camera size={15} aria-hidden="true" />;
   }
 }
 
@@ -233,6 +251,8 @@ export function CreatorLabHardwareHubPanel() {
           {active === "spatialStage" ? <LazyStudioSpatialStagePanel /> : null}
           {active === "canvasOrbitalUx" ? <LazyStudioCanvasOrbitalUxPanel /> : null}
           {active === "featureAtlas" ? <LazyStudioFeatureAtlasPanel /> : null}
+          {active === "handcraftedAtelier" ? <LazyStudioHandcraftedAtelierPanel /> : null}
+          {active === "onboardingDiorama" ? <LazyStudioOnboardingDioramaPanel /> : null}
         </Suspense>
       </div>
     </section>
