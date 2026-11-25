@@ -38,8 +38,19 @@ describe("Studio 가져오기 화면에 원고 이미지 도우미가 들어 있
     expect(picker.hasAttribute("accept")).toBe(false);
     expect(entry && (picker.compareDocumentPosition(entry) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
     for (const href of ["/studio/brushes", "/studio/bg3d", "/studio/assets/audio"]) {
-      expect(surface?.querySelector(`a[href="${href}"]`)).toBeTruthy();
+      const card = surface?.querySelector(`a[href="${href}"]`);
+      expect(card).toBeTruthy();
+      expect(card?.getAttribute("data-studio-import-card")).toBe("true");
+      expect(card?.className).toContain("min-h-11");
+      expect(card?.className).toContain("transition-[background-color,border-color,color,transform]");
     }
+    const breadcrumb = surface?.querySelector('[data-studio-import-breadcrumb="true"]');
+    expect(breadcrumb).toBeTruthy();
+    const homeLink = breadcrumb?.querySelector('a[href="/studio"]');
+    expect(homeLink?.className).toContain("min-h-11");
+    expect(homeLink?.className).toContain("min-w-11");
+    expect(homeLink?.className).not.toContain("underline");
+    expect(breadcrumb?.querySelector('span[aria-current="page"]')?.textContent).toBe("가져오기");
     expect(surface?.querySelector('a[href="/studio/canvas"]')).toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: "스캔한 원고에서 컷을 찾거나, 긴 원고를 카드로 나누기" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "컷 찾기 시작" })).toBeTruthy();
