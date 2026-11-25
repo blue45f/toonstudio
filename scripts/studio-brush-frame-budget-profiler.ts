@@ -238,7 +238,8 @@ export async function profileStudioBrushFrameBudget(
     let observer: PerformanceObserver | null = null;
 
     const blankCanvas = new OffscreenCanvas(blankProbeWidth, blankProbeHeight);
-    const blankContext = blankCanvas.getContext("2d", { willReadFrequently: true });
+    // GPU 레이어들을 먼저 축소 합성한 뒤, 프레임당 64×32 픽셀만 한 번 읽는다.
+    const blankContext = blankCanvas.getContext("2d", { willReadFrequently: false });
     if (!blankContext) throw new Error("frame-budget blank probe could not allocate a canvas");
     instrumentationExcludedContexts.add(blankContext);
     const sampleCompositor = (): Uint8ClampedArray => {

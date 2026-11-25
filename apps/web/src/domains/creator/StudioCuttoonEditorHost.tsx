@@ -9270,13 +9270,10 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     const finalGpuReceiptReady = finalGpuReceiptStroke !== null
       && finalGpuRequestId !== null
       && hasExactSelectedGpuFinalReceipt(finalGpuReceiptStroke.id);
-    const finalGpuReceiptMissing = preserveInk
-      && finalGpuReceiptStroke !== null
-      && !finalGpuReceiptReady;
-    if (finalGpuReceiptMissing && finalGpuReceiptStroke) {
-      // An asynchronous adapter may receipt after pointer-up. Keep the exact deadline and pending
-      // transaction alive, but expose no selected-provider pixels and no Konva substitute yet.
-      webGpuCanvasHandleRef.current?.setPinnedPresentationVisible(false);
+    if (preserveInk && finalGpuReceiptStroke && !finalGpuReceiptReady) {
+      // 마지막 append의 영수증을 기다리는 동안 같은 획에서 이미 확인한 픽셀은 유지한다.
+      // 표면을 교체했거나 첫 영수증이 없는 경우의 표시 여부도 GPU가 판단한다.
+      applyLiveStrokeBackendPresentationEffects();
     }
     const wasStampDirect = liveStampDraftDirectRef.current;
     const wasDynamicBrushDirect = liveDynamicBrushDraftDirectRef.current;
@@ -9405,10 +9402,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         if (gpuLingerRafRef.current) globalThis.cancelAnimationFrame(gpuLingerRafRef.current);
         gpuLingerRafRef.current = 0;
         markActiveLiveStrokeBackendCancelled();
-        webGpuCanvasHandleRef.current?.setPinnedPresentationVisible(false);
-      } else if (finalGpuReceiptMissing) {
-        // No exact final receipt means no selected-provider frame may be presented. The canonical
-        // document commit is the only later boundary allowed to make this DrawEl visible.
         webGpuCanvasHandleRef.current?.setPinnedPresentationVisible(false);
       }
       // preserveInk: 파인 표면은 main-layer draw 영수증이 정리한다.
