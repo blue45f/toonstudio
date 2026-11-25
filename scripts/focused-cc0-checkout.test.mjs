@@ -123,3 +123,35 @@ test("훅의 Git 환경을 격리해 임시 부모 HEAD·설정·인덱스를 �
     assert.equal(readFileSync(join(parent, "staged.txt"), "utf8"), "부모 스테이지\n");
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+
+test("제작 예제 회귀 검사는 Atelier 실물 자산을 sparse checkout에 보존한다", () => {
+  const workflow = parse(readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8"));
+  const regression = Object.values(workflow.jobs).find((job) => job.strategy?.matrix?.shard?.includes("studio-foundation"));
+  assert.ok(regression, "Studio foundation 작업이 필요합니다");
+  const checkout = regression.steps.find((step) => step.uses?.startsWith("actions/checkout@"));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "atelier-checkout-inputs-")));
+  const git = fixtureGit(root);
+  const payloads = ["spaces/wood-atelier.webp", "media/gpen-ink.webp", "onboarding/first-cut-desk.webp", "jewels/jewel-drawing-nib.webp", "backgrounds/bg-seoul-crosswalk.webp"]
+    .map((name) => `apps/web/public/assets/atelier/${name}`);
+  const unrelated = "apps/web/public/assets/unrelated/model.glb";
+  try {
+    git("init", "--quiet");
+    for (const path of [...payloads, unrelated]) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), "합성 자산\n");
+    }
+    git("add", ".");
+    git("-c", "user.name=CI Test", "-c", "user.email=ci@example.test", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture");
+    git("config", "core.sparseCheckout", "true");
+    git("config", "core.sparseCheckoutCone", "false");
+    const foundation = checkout.with["sparse-checkout"].replace(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu,
+      (_, shard, path) => shard === "studio-foundation" ? path : "");
+    for (const patterns of [foundation, focusedCheckoutStep().checkout.with["sparse-checkout"].replace(/\$\{\{ github\.event_name == 'pull_request' && '([^']+)' \|\| '' \}\}/gu, "$1")]) {
+      writeFileSync(join(root, ".git/info/sparse-checkout"), patterns);
+      git("read-tree", "-mu", "HEAD");
+      for (const path of payloads) assert.equal(existsSync(join(root, path)), true, `검증에 필요한 자산: ${path}`);
+      assert.equal(existsSync(join(root, unrelated)), false);
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

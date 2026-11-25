@@ -140,6 +140,8 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     "/docs/benchmarks/toonstudio-global-competitor-device-benchmark-2026-11.md",
     "/docs/ir/toonstudio-ir-promo-differentiation-brief-2026-11.md",
   ];
+  const atelierInputs = [`${asset}atelier/`];
+  const atelierSet = new Set(atelierInputs);
   const owned = {
     product: ["/docs/", ...[
       "3d/outfits/README.md", "studio/cc0-20260906/README.md", "3d/LICENSES.md",
@@ -154,6 +156,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
       `${asset}virtual-studio/toon-office-v1/characters/`, `${asset}studio/illustration-20260926/`,
       `${asset}studio/bundle-renders-v1/`, `${asset}studio/bundle-scenes-v1/`, `${asset}virtual-studio/bundle-decor-v1/`,
       ...foundationInputs,
+      ...atelierInputs,
       ...heroInputs,
       ...routeVisualInputs,
       ...foundationDocumentInputs,
@@ -176,12 +179,12 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.equal(foundationDocumentSet.size, 19);
   assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
   assertTrackedDocumentInputs(foundationDocumentInputs, { cwd: repoRoot });
-  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !heroSet.has(path) && !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 91, 0, 1, 7]);
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 133, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !heroSet.has(path) && !routeVisualSet.has(path) && !foundationDocumentSet.has(path) && !atelierSet.has(path)).length), [13, 91, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 134, 0, 1, 7]);
   const declarations = [...staticJob.matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(staticJob, /persist-credentials: false/u);
   assert.match(staticJob, /sparse-checkout-cone-mode: false/u);
-  const originalDeclarations = declarations.filter((match) => !heroSet.has(match[2]) && !routeVisualSet.has(match[2]) && !foundationDocumentSet.has(match[2]));
+  const originalDeclarations = declarations.filter((match) => !heroSet.has(match[2]) && !routeVisualSet.has(match[2]) && !foundationDocumentSet.has(match[2]) && !atelierSet.has(match[2]));
   const heroDeclarations = declarations.filter((match) => heroSet.has(match[2]));
   assert.deepEqual(heroDeclarations.map((match) => match[2]).sort(), [...heroInputs].sort());
   assert.ok(heroDeclarations.every((match) => match[1] === "studio-foundation"), "hero 모델은 foundation만 소유해야 합니다.");
@@ -193,8 +196,11 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.ok(routeVisualDeclarations.every((match) => match[1] === "studio-foundation"), "페이지 시각 입력은 foundation만 소유해야 합니다.");
   assert.deepEqual(foundationDocumentDeclarations.map((match) => match[2]).sort(), [...foundationDocumentInputs].sort());
   assert.ok(foundationDocumentDeclarations.every((match) => match[1] === "studio-foundation"), "추가 문서 선언은 foundation만 소유해야 합니다.");
-  assert.equal(declarations.length, 154, "기존 111개와 vibrant 스프라이트 디렉터리 1개·hero VRM 9개·원본 PNG 14개·문서 19개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 149, "추가 스프라이트 디렉터리·VRM·PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
+  const atelierDeclarations = declarations.filter((match) => atelierSet.has(match[2]));
+  assert.deepEqual(atelierDeclarations.map((match) => match[2]), atelierInputs, "Atelier 예제 아트는 정확히 한 번 선언합니다.");
+  assert.ok(atelierDeclarations.every((match) => match[1] === "studio-foundation"), "Atelier 예제 아트는 foundation만 소유합니다.");
+  assert.equal(declarations.length, 155, "기존 111개와 vibrant 스프라이트 디렉터리 1개·hero VRM 9개·원본 PNG 14개·문서 19개·Atelier 디렉터리 1개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 150, "추가 스프라이트 디렉터리·VRM·PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }
