@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 import { SiteMenuDestinations } from "./SiteMenuDestinations";
+import { CREATOR_JOURNEY_STAGES, CORE_SURFACE_QUICK_LINKS } from "./workspace/page-role-journey-map";
+import { resolveNavigationGroupsFor } from "./site-navigation";
 import { searchSiteMenu } from "./site-menu-search";
 
 afterEach(() => { cleanup(); useI18n.getState().setLang("ko"); });
@@ -36,4 +38,15 @@ describe("목적별 메뉴 검색", () => {
     expect(input).toHaveProperty("value", "");
     expect(document.querySelectorAll(".site-menu-task")).toHaveLength(7);
   });
+  it.each(["/", "/community", "/research", "/about/studio", "/market", "/help"])("%s 전체 메뉴는 각 목적지를 한 번만 표시하고 모든 기능으로 연결한다", (pathname) => {
+    const { container } = render(<MemoryRouter initialEntries={[pathname]}><SiteMenuDestinations locale="ko" currentGroupId={null} isActive={(href) => href === pathname} menuId="unique-menu" /></MemoryRouter>);
+    const hrefs = Array.from(container.querySelectorAll("a[href]"), (link) => link.getAttribute("href"));
+    expect(hrefs.filter((href) => href === "/studio")).toHaveLength(1);
+    expect(hrefs.filter((href) => href === "/create")).toHaveLength(1);
+    expect(hrefs).toHaveLength(new Set(hrefs).size);
+    const expected = new Set(["/create", ...CREATOR_JOURNEY_STAGES.map((stage) => stage.primaryHref), ...CORE_SURFACE_QUICK_LINKS.map((item) => item.href), ...resolveNavigationGroupsFor().flatMap((group) => [`/sitemap/${group.id}`, ...group.items.map((item) => item.href)])]);
+    for (const href of expected) expect(hrefs).toContain(href);
+    expect(container.querySelectorAll(".site-menu-journey__card")).toHaveLength(5);
+  });
+
 });

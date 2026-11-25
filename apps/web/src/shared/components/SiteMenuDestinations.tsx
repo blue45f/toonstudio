@@ -78,12 +78,14 @@ export function SiteMenuDestinations({
   isActive,
   menuId,
   currentPathname,
+  reservedDestinationHrefs = [],
 }: {
   readonly locale: SiteNavigationLocale;
   readonly currentGroupId: string | null;
   readonly isActive: (href: string, exact?: boolean) => boolean;
   readonly menuId: string;
   readonly currentPathname?: string;
+  readonly reservedDestinationHrefs?: readonly string[];
 }) {
   const bt = useBilingual("site-menu-destinations");
   const location = useLocation();
@@ -93,9 +95,21 @@ export function SiteMenuDestinations({
   const searching = query.trim().length > 0;
   const results = searchSiteMenu(query);
   const currentRole = resolvePageRoleJourney(activePathname);
-  const safeNextSteps = currentRole.recommendedNextSteps.filter(
-    (step) => step.href !== "/settings",
-  );
+  // 여정 카드가 먼저 목적지를 맡고, 시작 행동·바로가기·추천·목적 그룹은 같은 링크를 반복하지 않는다.
+  const occupiedHrefs = new Set([...reservedDestinationHrefs, ...CREATOR_JOURNEY_STAGES.map((stage) => stage.primaryHref)]);
+  const claimDestinations = <T extends { readonly href: string }>(items: readonly T[]): T[] => items.filter((item) => {
+    if (occupiedHrefs.has(item.href)) return false;
+    occupiedHrefs.add(item.href);
+    return true;
+  });
+  const primaryActions = claimDestinations([SITE_NAVIGATION_ITEMS.make, SITE_NAVIGATION_ITEMS.studio]);
+  const quickLinks = claimDestinations(CORE_SURFACE_QUICK_LINKS);
+  const safeNextSteps = claimDestinations(currentRole.recommendedNextSteps.filter(
+    (step) => step.href !== "/settings" && !occupiedHrefs.has(step.href),
+  ).slice(0, 2));
+  const destinationGroups = resolveNavigationGroupsFor().map((group) => ({
+    ...group, directItems: claimDestinations(group.items),
+  }));
 
   return <>
     <div className="site-menu-search">
@@ -192,7 +206,8 @@ export function SiteMenuDestinations({
           </div>
           <ol className="site-menu-journey__grid ink-cascade">
             {CREATOR_JOURNEY_STAGES.map((stage, index) => {
-              const label = isKo ? stage.shortLabelKo : stage.shortLabelEn;
+              const primaryAction = Object.values(SITE_NAVIGATION_ITEMS).find((item) => item.href === stage.primaryHref);
+              const label = primaryAction ? siteNavigationText(primaryAction.label, locale) : isKo ? stage.shortLabelKo : stage.shortLabelEn;
               const StageIcon = STAGE_ICONS[stage.stageNumber];
               const isCurrentStage = stage.stageNumber === currentRole.stageNumber;
               return (
@@ -214,7 +229,7 @@ export function SiteMenuDestinations({
                     </span>
                     <span className="site-menu-journey__text">
                       <strong>{label}</strong>
-                      <small>{isKo ? stage.subtitleKo : stage.subtitleEn}</small>
+                      <small>{primaryAction ? `${isKo ? stage.shortLabelKo : stage.shortLabelEn} · ` : ""}{isKo ? stage.subtitleKo : stage.subtitleEn}</small>
                     </span>
                   </Link>
                 </li>
@@ -226,7 +241,7 @@ export function SiteMenuDestinations({
               {bt("현재 페이지 역할", "Current page role")}: {isKo ? currentRole.roleHeadlineKo : currentRole.roleHeadlineEn}
             </p>
             <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={bt("핵심 표면 바로가기", "Core surface shortcuts")}>
-              {CORE_SURFACE_QUICK_LINKS.map((surface) => {
+              {quickLinks.map((surface) => {
                 const label = isKo ? surface.labelKo : surface.labelEn;
                 const reason = isKo ? surface.reasonKo : surface.reasonEn;
                 return (
@@ -269,8 +284,8 @@ export function SiteMenuDestinations({
           </div>
         </section>
         <div className="site-menu-purpose-section">
-          <div className="site-menu-actions">
-            {[SITE_NAVIGATION_ITEMS.make, SITE_NAVIGATION_ITEMS.studio].map((item, index) => {
+          <div className="site-menu-actions" style={primaryActions.length === 1 ? { gridTemplateColumns: "minmax(0, 1fr)" } : undefined}>
+            {primaryActions.map((item, index) => {
               const Icon = item.icon;
               const actionRole = resolvePageRoleJourney(item.href);
               return (
@@ -292,10 +307,8 @@ export function SiteMenuDestinations({
           </div>
           <p className="site-menu-task-label">{bt("목적별로 찾기 · 5단계 여정 연동", "Browse by purpose · 5-stage journey")}</p>
           <ul className="site-menu-tasks ink-cascade">
-            {resolveNavigationGroupsFor().map((group, index) => {
-              const directItems = group.items.filter(
-                (item) => item.href !== "/create" && item.href !== "/studio",
-              );
+            {destinationGroups.map((group, index) => {
+              const { directItems } = group;
               const groupStage = journeyStageForNavigationGroupId(group.id);
               return (
                 <li
