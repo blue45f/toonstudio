@@ -656,7 +656,13 @@ export function formatSmpteTimecode(ms: number, fps: number = DEFAULT_LIP_SYNC_F
 }
 
 function sanitizeWebVttText(text: string): string {
-  return text.replace(/-->/gu, "—>").replace(/\r?\n+/gu, " ").trim();
+  return text
+    .split("-->")
+    .join("—>")
+    .split("--!>")
+    .join("—!>")
+    .replace(/\r?\n+/gu, " ")
+    .trim();
 }
 
 /** 에피소드 오디오 큐시트를 표준 WebVTT(`.vtt`) 자막 문자열로 직렬화한다. */
