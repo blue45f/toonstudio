@@ -8,7 +8,7 @@ import { studioWorkspaceDocumentIdentity } from "./studio-workspace-route";
 import { executeStudioInspectorArmedChange, executeStudioInspectorArmedToggle } from "./studio-inspector-tool-transition";
 import { LIQUIFY_RADIUS_RANGE, LIQUIFY_STRENGTH_RANGE } from "./studio-liquify-contract";
 import {
-  StudioAiColorizePanel, StudioOnnxColorizePanel, StudioOnnxAnimeStylePanel, StudioOnnxUpscalePanel,
+  StudioAiColorizePanel,
   StudioOnnxLineExtractPanel, StudioColorPalettePanel, StudioFloodFillPanel, StudioAutoColorHintsPanel,
   StudioLineCleanupPanel, StudioImageAdjustmentsPanel, StudioSelectionToolsPanel, StudioQuickMaskPanel,
   StudioSmudgePanel, StudioDodgeBurnPanel, StudioWetMixPanel, StudioLiquifyPanel, StudioHealClonePanel,
@@ -24,6 +24,7 @@ import { StudioRasterVectorizeButton } from "./StudioRasterVectorizeButton";
 import { StudioAiColorizeExtras } from "./ai/StudioAiColorizeExtras";
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import { StudioMagicWandPanel } from "./StudioMagicWandPanel";
+import { StudioOnnxInspectorImageTools } from "./StudioOnnxInspectorImageTools";
 import { StudioSelectionWorkbenchPanel } from "./StudioSelectionWorkbenchPanel";
 import { StudioRasterToolRecoveryPanel, StudioInspectorFilterLauncher, StudioInspectorPixelSelectionLauncher } from "./StudioRasterToolRecoveryPanel";
 
@@ -145,18 +146,7 @@ export function StudioInspectorSelectedImageTools({
                                 selectedId={selected.id}
                                 selectedSrc={selected.src}
                               />
-                              <StudioOnnxColorizePanel
-                                key={selected.id}
-                                src={selected.src}
-                                cloudConfigured={isStudioAiConfigured(aiSettings)}
-                                onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
-                              />
-                              <StudioOnnxUpscalePanel
-                                key={selected.id}
-                                src={selected.src}
-                                onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
-                              />
-                              <StudioOnnxAnimeStylePanel
+                              <StudioOnnxInspectorImageTools
                                 key={selected.id}
                                 src={selected.src}
                                 cloudConfigured={isStudioAiConfigured(aiSettings)}

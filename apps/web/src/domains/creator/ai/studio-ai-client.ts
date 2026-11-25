@@ -451,6 +451,19 @@ async function postTextCompletion(
 }
 
 
+function readImageEditResult(result: StudioAiResult<unknown>): StudioAiResult<{ dataUrl: string }> {
+  if (!result.ok) return result;
+  const b64 = extractFirstB64Json(result.data);
+  if (!b64) {
+    return {
+      ok: false,
+      code: "parse_error",
+      error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다."),
+    };
+  }
+  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+}
+
 // ── 기능별 얇은 래퍼 ─────────────────────────────────────────────────────────
 
 /**
@@ -523,11 +536,7 @@ export async function colorizeLineArt(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form, opts.signal);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
-  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 const ANIME_STYLE_EDIT_INSTRUCTION =
@@ -587,11 +596,7 @@ export async function convertImageToAnimeStyle(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form, opts.signal);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
-  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 /**
@@ -655,11 +660,7 @@ export async function generateConsistentCharacterImage(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form, opts.signal);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };
-  return { ok: true, data: { dataUrl: `data:image/png;base64,${b64}` } };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 /**
@@ -887,20 +888,7 @@ export async function generateImageWithRoleReferences(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form, opts.signal);
-  if (!result.ok) return result;
-  const b64 = extractFirstB64Json(result.data);
-  if (!b64) {
-    return {
-      ok: false,
-      code: "parse_error",
-      error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다."),
-    };
-  }
-  return {
-    ok: true,
-    data: { dataUrl: `data:image/png;base64,${b64}` },
-  };
+  return readImageEditResult(await postImageForm(settings, form, opts.signal));
 }
 
 /** 콘티→그림 변환의 "장면 구성 제안" 시스템 프롬프트 — 완전한 이미지 생성이 아니라(기능 1과

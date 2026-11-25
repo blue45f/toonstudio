@@ -4,45 +4,31 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const fileUrl = new URL("../StudioCuttoonEditorHost.tsx", import.meta.url);
-// The scenario image executors moved verbatim into the ctx-parameterized factory module.
-const scenarioModuleUrl = new URL("./studio-scenario-image-generation.ts", import.meta.url);
 const source = readFileSync(fileUrl, "utf8");
 const modalsSource = readFileSync(
   new URL("../canvas/StudioCanvasModalsBody.tsx", import.meta.url),
   "utf8",
 );
-const file = ts.createSourceFile(
-  fileUrl.pathname,
-  source,
-  ts.ScriptTarget.Latest,
-  true,
-  ts.ScriptKind.TSX
-);
-const scenarioModuleFile = ts.createSourceFile(
-  scenarioModuleUrl.pathname,
-  readFileSync(scenarioModuleUrl, "utf8"),
-  ts.ScriptTarget.Latest,
-  true,
-  ts.ScriptKind.TS
-);
+const sourceFiles = [
+  ts.createSourceFile(fileUrl.pathname, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX),
+  ...[
+    new URL("./studio-scenario-image-generation.ts", import.meta.url),
+    new URL("../studio-cuttoon-edit/studio-image-ai-executors.ts", import.meta.url),
+  ].map((url) =>
+    ts.createSourceFile(url.pathname, readFileSync(url, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  ),
+];
 
 function functionSource(name: string): string {
-  let match: ts.FunctionDeclaration | null = null;
-  let matchFile: ts.SourceFile = file;
-  function visit(node: ts.Node): void {
-    if (ts.isFunctionDeclaration(node) && node.name?.text === name) {
-      match = node;
-      return;
-    }
-    ts.forEachChild(node, visit);
+  function find(node: ts.Node): ts.FunctionDeclaration | undefined {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === name) return node;
+    return ts.forEachChild(node, find);
   }
-  visit(file);
-  if (!match) {
-    matchFile = scenarioModuleFile;
-    visit(scenarioModuleFile);
+  for (const file of sourceFiles) {
+    const match = find(file);
+    if (match) return match.getText(file);
   }
-  if (!match) throw new Error(`Missing function ${name}`);
-  return (match as ts.FunctionDeclaration).getText(matchFile);
+  throw new Error(`Missing function ${name}`);
 }
 
 function expectInOrder(value: string, fragments: readonly string[]): void {
@@ -95,6 +81,20 @@ describe("Studio AI generated asset fail-closed boundary", () => {
     expect(value).not.toContain('transport: "server"');
   });
 
+  it("loads image executors only after AI notice and rechecks the mutation ticket before use", () => {
+    for (const name of ["onGenerateAiBackground", "requestColorize", "onGenerateAiCharacter"]) {
+      expectInOrder(functionSource(name), ["runWithAiNotice", "runImageAiRequest"]);
+    }
+    expectInOrder(functionSource("runImageAiRequest"), [
+      "captureStudioMutationTicket()",
+      "setBusy(true)",
+      "await import(",
+      "canApplyStudioMutation(ticket)",
+      "await execute(",
+    ]);
+    expect(source).not.toMatch(/^import [^{]*\{\s*createStudioImageAiExecutors\b/mu);
+  });
+
   it("captures request provenance before image awaits and never derives it after completion", () => {
     for (const functionName of [
       "executeGenerateAsset",
@@ -106,7 +106,7 @@ describe("Studio AI generated asset fail-closed boundary", () => {
     ] as const) {
       expectProvenanceBeforeFirstAwait(functionName);
     }
-    expect(source).not.toContain("currentImageAiProvenance");
+    for (const file of sourceFiles) expect(file.text).not.toContain("currentImageAiProvenance");
   });
 
   it("fails closed before recording or paying for unresolved scenario references", () => {
@@ -155,18 +155,34 @@ describe("Studio AI generated asset fail-closed boundary", () => {
     ]);
     expectInOrder(functionSource("executeAiBackgroundGenerate"), [
       "if (!insertAiBackgroundImage",
-      "setAiBgError",
+      "setFailure",
       "return;",
       "setMenu(null)",
     ]);
     expectInOrder(functionSource("executeAiCharacterConsistency"), [
-      "if (!addRenderedImage",
-      "setAiCharacterError",
+      "requestPageId !== currentPageIdRef.current",
+      "return commitPages(",
+      "addRenderedImage",
+      "if (!addedOk)",
+      "setFailure",
       "return;",
       "setMenu(null)",
     ]);
-    expect(functionSource("executeAiColorize")).toContain("if (!patchEl(elId");
-    expect(functionSource("executeAiColorize")).toContain("setAiColorizeError");
+    expectInOrder(functionSource("executeAiColorize"), [
+      "if (!patchImageElOnPage(requestPageId, elId",
+      "setFailure",
+      "return;",
+    ]);
+    expectInOrder(functionSource("patchImageElOnPage"), [
+      "if (pageId === currentPageIdRef.current) return patchEl(elId, patch);",
+      "rejectElementSourceReplacement(target, patch)",
+      "return commitPages(",
+    ]);
+    expectInOrder(functionSource("rejectElementSourceReplacement"), [
+      "studioWorkAssetSourceReplacementReason",
+      "studioLinked3dPassSourceReplacementReason",
+      "setError(reason)",
+    ]);
   });
 
   it("requires a successful document commit before dismissing a scenario preview", () => {
