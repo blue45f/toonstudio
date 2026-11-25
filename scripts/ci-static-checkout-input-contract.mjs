@@ -214,6 +214,8 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   const world = "apps/web/public/assets/virtual-studio/world/default-world.json";
   const commonManifests = [world, ...["boatyard-v1", "coast-v1", "specimen-v1", "glasshouse-v1"]
     .map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`)];
+  const atelierThemeFiles = ["comic-gallery", "fantasy-guild-hall", "midnight-manga-cafe", "reference-library", "rooftop-terrace", "wood-atelier"]
+    .map((id) => `apps/web/public/assets/atelier/spaces/${id}.webp`);
   const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin",
     "apps/web/public/vrm/toonstudio-hero-v1/unrelated.vrm",
     "apps/web/public/assets/virtual-studio/studio-art-v11/unrelated-large.webp",
@@ -221,7 +223,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   const unrelatedDocuments = ["docs/third-party/unrelated.md", "docs/adr/9999-unrelated.md", "docs/unrelated/large.bin"];
   try {
     git("init", "--quiet");
-    for (const file of [...commonManifests, ...Object.values(owned).flat().map(input), ...unrelated, ...unrelatedDocuments, "package.json"]) {
+    for (const file of [...commonManifests, ...Object.values(owned).flat().map(input), ...atelierThemeFiles, ...unrelated, ...unrelatedDocuments, "package.json"]) {
       mkdirSync(dirname(join(root, file)), { recursive: true });
       writeFileSync(join(root, file), "fixture\n");
     }
@@ -243,6 +245,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
           assert.equal(existsSync(join(root, input(path))), ownedByShard || sharedPackLicense || sharedProductDocument, `${shard}: ${owner} 입력 경계 ${path}`);
         }
       }
+      for (const file of atelierThemeFiles) assert.equal(existsSync(join(root, file)), shard === "studio-foundation", `${shard}: 작업실 테마 이미지 ${file}`);
       for (const file of unrelated) assert.equal(existsSync(join(root, file)), false, `${shard}: 무관한 대형 자산 ${file}`);
       for (const file of unrelatedDocuments) assert.equal(existsSync(join(root, file)), shard === "product", `${shard}: 기존 product 외의 무관한 문서 ${file}`);
     }
@@ -251,6 +254,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     git("read-tree", "-mu", "HEAD");
     for (const file of commonManifests) assert.ok(existsSync(join(root, file)), `typecheck: 공통 메타데이터 누락 ${file}`);
     for (const path of heroInputs) assert.equal(existsSync(join(root, input(path))), false, `typecheck: 불필요한 hero 모델 ${path}`);
+    for (const file of atelierThemeFiles) assert.equal(existsSync(join(root, file)), false, `typecheck: 불필요한 작업실 이미지 ${file}`);
     for (const path of foundationDocumentInputs) {
       assert.equal(existsSync(join(root, path.slice(1))), false, `preflight에 불필요한 문서 본문: ${path}`);
       assertTrackedDocumentInputs([path], { cwd: root, env });

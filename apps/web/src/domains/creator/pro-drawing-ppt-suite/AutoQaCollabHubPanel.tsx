@@ -74,6 +74,22 @@ type QaHubTabId =
   | "colorScript"
   | "panelRhythm";
 
+const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
+  readonly id: string;
+  readonly src: string;
+  readonly titleKo: string;
+  readonly titleEn: string;
+}[] = [
+  { id: "lighttableConti", src: "/assets/atelier/rhythm-foley/rhythm-lighttable-conti.webp", titleKo: "세로 콘티 라이트테이블", titleEn: "Vertical Conti Light-Table" },
+  { id: "gpenScreentone", src: "/assets/atelier/rhythm-foley/rhythm-gpen-screentone.webp", titleKo: "G펜·스크린톤 컷 연출", titleEn: "G-Pen & Screentone Craft" },
+  { id: "seoulShadowbox", src: "/assets/atelier/rhythm-foley/rhythm-seoul-shadowbox.webp", titleKo: "서울 야경 사선 컷 디오라마", titleEn: "Seoul Rooftop Panel Diorama" },
+  { id: "colorAccordion", src: "/assets/atelier/rhythm-foley/rhythm-color-accordion.webp", titleKo: "회차 컬러 스크립트 화첩", titleEn: "Episode Color-Script Folio" },
+  { id: "gpenMacro", src: "/assets/atelier/rhythm-foley/foley-gpen-paper-macro.webp", titleKo: "스틸 펜촉·켄트지 마찰음", titleEn: "Steel Nib & Kent Acoustics" },
+  { id: "rainyAtelier", src: "/assets/atelier/rhythm-foley/foley-rainy-atelier-lamp.webp", titleKo: "비 오는 밤 화실 앰비언스", titleEn: "Rainy Night Atelier Ambience" },
+  { id: "hanokStudy", src: "/assets/atelier/rhythm-foley/foley-hanok-inkstone-desk.webp", titleKo: "한옥 목재·먹물 서재 공간음", titleEn: "Hanok Wood & Inkstone Study" },
+  { id: "brassVuConsole", src: "/assets/atelier/rhythm-foley/foley-brass-vu-console.webp", titleKo: "황동 VU 미터·집중 타이머", titleEn: "Brass VU & Focus Console" },
+];
+
 const QA_HUB_TABS: readonly {
   readonly id: QaHubTabId;
   readonly labelKo: string;
@@ -177,6 +193,32 @@ export function AutoQaCollabHubPanel() {
           {active === "panelRhythm" ? <LazyPanelRhythmPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
+      <details className="rounded-xl border border-line bg-panel p-2.5">
+        <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+          {isEn
+            ? `Storyboard Rhythm & Analog Foley Atelier Cards (${RHYTHM_FOLEY_VISUAL_CARDS.length})`
+            : `세로 컷 리듬·화실 사운드 아틀리에 비주얼 카드 (${RHYTHM_FOLEY_VISUAL_CARDS.length}종)`}
+        </summary>
+        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {RHYTHM_FOLEY_VISUAL_CARDS.map((card) => (
+            <figure
+              key={card.id}
+              className="overflow-hidden rounded-lg border border-line bg-card"
+            >
+              <img
+                src={card.src}
+                alt={isEn ? card.titleEn : card.titleKo}
+                loading="lazy"
+                decoding="async"
+                className="aspect-square w-full object-cover outline-1 -outline-offset-1 outline-line"
+              />
+              <figcaption className="px-2 py-1.5 text-[11px] font-medium text-fg-2 [word-break:keep-all]">
+                {isEn ? card.titleEn : card.titleKo}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </details>
     </section>
   );
 }
