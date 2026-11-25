@@ -3,7 +3,7 @@ import { useState } from "react";
 import "./ir-interactive-moat.css";
 
 import type { PlanTable } from "./business-plan-data";
-import { BUSINESS_PLAN_DOCUMENT_BASIS, BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
+import { BUSINESS_PLAN_DOCUMENT_BASIS, BUSINESS_PLAN_SECTIONS, WAVE_IMPLEMENTATION_MILESTONES } from "./business-plan-data";
 import { IR_SHARED_VERIFIED_DATE } from "./ir-bizplan-shared-facts";
 import { IrInteractiveMoatShowcase } from "./IrInteractiveMoatShowcase";
 import {
@@ -19,10 +19,12 @@ import { useDocumentTitle, useMetaDescription } from "@/shared/seo/use-document-
 /**
  * 사업계획서 페이지 (/business-plan).
  * IR 페이지(/ir, /ir/present)와 같은 마케팅 도메인에 두되, 발표 플레이어가 아니라
- * 2026-11-04 초안의 Q1–Q4와 붙임에 2026-11-22 실측 근거·라이브 검증 위젯·심사 방어 Q&A를
- * 통합한 페이지다. 제출용 docx가 아니며, 팀 가격은 미결정, 검증 목표는 결과로 적지 않는다.
+ * 2026-11-04 초안의 Q1–Q4와 붙임에 2026-11-22 실측 근거·2026-11-25 웨이브 45~49 구현 마일스톤·
+ * 라이브 검증 위젯·심사 방어 Q&A를 통합한 페이지다. 제출용 docx가 아니며, 팀 가격은 미결정,
+ * 검증 목표는 결과로 적지 않는다.
  * 표의 “입력 필요” 셀은 단가를 지어내지 않았다는 뜻이지, 빈칸 오류가 아니다.
  */
+
 
 function PlanTableBlock({ table }: { table: PlanTable }) {
   return (
@@ -59,7 +61,7 @@ function PlanTableBlock({ table }: { table: PlanTable }) {
 export function BusinessPlanPage() {
   useDocumentTitle("툰스튜디오 사업계획서 · 웹툰 제작 협업 업무툴");
   useMetaDescription(
-    "툰스튜디오 사업계획서: 문제 인식, 실현 가능성, 성장전략, 향후 발전방안(PSST)과 2026-11-22 실측 근거, 7밴드 KM 분광·₩0 인프라 라이브 검증을 한 페이지에 정리했다.",
+    "툰스튜디오 사업계획서: 문제 인식, 실현 가능성, 성장전략, 향후 발전방안(PSST)과 2026-11-22 실측 근거, 2026-11-25 웨이브 45~49 구현 마일스톤, 7밴드 KM 분광·₩0 인프라 라이브 검증을 한 페이지에 정리했다.",
   );
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<"pdf" | "docx" | null>(null);
@@ -98,7 +100,7 @@ export function BusinessPlanPage() {
         />
 
         <p className="mt-3 text-sm text-fg-2">
-          {BUSINESS_PLAN_DOCUMENT_BASIS} · 페이지 라이브 실측 기준일 {IR_SHARED_VERIFIED_DATE}
+          {BUSINESS_PLAN_DOCUMENT_BASIS} · 페이지 라이브 실측 기준일 {IR_SHARED_VERIFIED_DATE} · 웨이브 45~49 구현 동기화 2026-11-25
         </p>
 
         <section
@@ -159,8 +161,14 @@ export function BusinessPlanPage() {
             </a>
           ))}
           <a
-            href="#psst-live-proof"
+            href="#psst-wave-milestones"
             className="inline-flex min-h-11 items-center rounded-xl border border-accent/50 bg-accent-soft px-3.5 py-2 text-sm font-bold text-accent transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            2026-11-25 구현 마일스톤
+          </a>
+          <a
+            href="#psst-live-proof"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-3.5 py-2 text-sm font-semibold text-fg-2 transition-colors hover:border-accent hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             실측 위젯 · 분광·₩0 원가
           </a>
@@ -170,10 +178,64 @@ export function BusinessPlanPage() {
           >
             상용 라이선스 · 심사 Q&amp;A
           </a>
+          <a
+            href="/compare/studio"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-sm font-semibold text-fg transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            제작 도구 비교 자료
+          </a>
         </nav>
 
-        <div className="mt-6">
+        <div className="mt-6 grid gap-5">
           <IrVerifiedSnapshotStrip surface="site" lang="ko" />
+
+          <section
+            id="psst-wave-milestones"
+            aria-labelledby="psst-wave-milestones-title"
+            className="ir-moat-scope ir-moat-card grid gap-4 scroll-mt-24"
+            data-surface="site"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="ir-moat-pill" data-tone="current">
+                  현재 구현 마일스톤 (2026-11-25 · 웨이브 45~49)
+                </span>
+                <span className="ir-moat-pill" data-tone="target">
+                  운영 매출·고객 검증 목표와 별개
+                </span>
+              </div>
+              <a
+                href="/compare/studio"
+                className="ir-moat-btn ir-print-hide"
+              >
+                제작 도구 비교 자료 (/compare/studio)
+              </a>
+            </div>
+            <h2
+              id="psst-wave-milestones-title"
+              className="break-keep text-lg font-bold text-fg sm:text-xl"
+            >
+              소스·계산 예제 기록과 남은 검증
+            </h2>
+            <ul className="grid gap-3 md:grid-cols-2">
+              {WAVE_IMPLEMENTATION_MILESTONES.map(({ id, ko: milestone }) => (
+                <li key={id} className="ir-moat-subpanel grid content-start gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <strong className="break-keep text-sm text-fg">{milestone.title}</strong>
+                    <span className="ir-moat-pill" data-tone="current">
+                      {milestone.tag}
+                    </span>
+                  </div>
+                  <p className="break-keep text-xs leading-5 text-fg-2">
+                    {milestone.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="break-keep border-t border-line/70 pt-3 text-xs leading-5 text-fg-2">
+              위 항목은 소스·계산 예제 기록입니다. 실제 장면 적용·저장·권한·기기·운영 GPU·보안 검증과 운영 배포를 뜻하지 않습니다. 베타 사용자 수·유료 전환율·매출은 기존 Q3·붙임 표의 가정 및 미달성 목표로 유지합니다.
+            </p>
+          </section>
         </div>
 
         {BUSINESS_PLAN_SECTIONS.map((section) => (
