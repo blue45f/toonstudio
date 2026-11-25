@@ -16,11 +16,12 @@ const { test } = process.env.VITEST ? await import("vitest") : await import("nod
 const SCRIPT_PATH = fileURLToPath(
   new URL("./audit-full-brush-catalog-uniqueness-and-naming.mjs", import.meta.url),
 );
+const OTHER_CWD = fs.realpathSync(os.tmpdir());
 
 function parseFromOtherDirectory(scriptPath, args = []) {
   const child = spawnSync(process.execPath, ["--input-type=module", "--eval",
     `const {parseCliArgs} = await import(${JSON.stringify(pathToFileURL(scriptPath).href)}); console.log(JSON.stringify(parseCliArgs(${JSON.stringify(args)})));`,
-  ], { cwd: os.tmpdir(), encoding: "utf8" });
+  ], { cwd: OTHER_CWD, encoding: "utf8" });
   assert.equal(child.status, 0, child.stderr);
   return JSON.parse(child.stdout);
 }
@@ -29,7 +30,7 @@ test("카탈로그 PNG 기본 경로는 호출 위치와 무관한 저장소 art
   const expected = path.resolve(path.dirname(SCRIPT_PATH), "../artifacts/brush-audits/all-brushes-naming-parity-and-dedupe-sheet.png");
   assert.ok(parseFromOtherDirectory(SCRIPT_PATH).outPng === expected, "저장소 기준 기본 PNG 경로가 필요합니다");
   const relative = "toonstudio-fixture/catalog.png";
-  assert.equal(parseFromOtherDirectory(SCRIPT_PATH, ["--out-png", relative]).outPng, path.resolve(os.tmpdir(), relative));
+  assert.equal(parseFromOtherDirectory(SCRIPT_PATH, ["--out-png", relative]).outPng, path.resolve(OTHER_CWD, relative));
 });
 
 test("장시간 감사는 import 시 실행하지 않고 저장소 PNG 기본 경로와 CLI 재지정을 제공한다", () => {
@@ -40,7 +41,7 @@ test("장시간 감사는 import 시 실행하지 않고 저장소 PNG 기본 �
   assert.equal(parseFromOtherDirectory(scriptPath).outPath, expected);
   const relative = "toonstudio-fixture/stability.png";
   const options = parseFromOtherDirectory(scriptPath, ["--check", "--json", "--out", relative]);
-  assert.equal(options.outPath, path.resolve(os.tmpdir(), relative));
+  assert.equal(options.outPath, path.resolve(OTHER_CWD, relative));
   assert.equal(options.checkMode, true);
   assert.equal(options.jsonMode, true);
 });

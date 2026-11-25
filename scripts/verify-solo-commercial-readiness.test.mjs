@@ -79,7 +79,7 @@ describe("verify-solo-commercial-readiness (1인 기업 상용 라이선스·Ope
     for (const { key, via } of cases) withTempFixture((dir) => {
       writeJson(path.join(dir, "package.json"), { name: "fixture-nested-peers" });
       writeFileSync(path.join(dir, "pnpm-lock.yaml"),
-        `lockfileVersion: '9.0'\npackages:\n  p5@2.3.1: {}\nsnapshots:\n  '${key}': {}\n`, "utf8");
+        `lockfileVersion: '9.0'\npackages:\n  p5@2.3.1:\n    resolution: {integrity: sha512-fixture}\nsnapshots:\n  '${key}':\n    dependencies: {}\n`, "utf8");
       const report = evaluateSoloCommercialReadiness({ rootDir: dir, includeNodeModules: false });
       assert.equal(report.ok, true);
       const p5 = report.lgplPackages.find(item => item.name === "p5");
