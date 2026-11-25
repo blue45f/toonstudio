@@ -156,7 +156,20 @@ const LazyStudioAtelierBrandRegistryPanel = lazy(() =>
   import("../atelier-brand-registry").then((module) => ({ default: module.StudioAtelierBrandRegistryPanel })),
 );
 
+const LazyStudioAtelierStageLivingPanel = lazy(() =>
+  import("../atelier-stage-living-ux").then((module) => ({ default: module.StudioAtelierStageLivingPanel })),
+);
+const LazyStudioAtelierNavFlowPanel = lazy(() =>
+  import("../atelier-navigation-flow-craft").then((module) => ({ default: module.StudioAtelierNavFlowPanel })),
+);
+const LazyStudioAtelierVibrantUiPanel = lazy(() =>
+  import("../atelier-vibrant-motion-ui").then((module) => ({ default: module.StudioAtelierVibrantUiPanel })),
+);
+
 type CreatorLabTabId =
+  | "stageLivingPreview"
+  | "navFlowPreview"
+  | "vibrantMotionPreview"
   | "calibrator"
   | "signatureLab"
   | "productionGoods"
@@ -227,6 +240,9 @@ const CREATOR_LAB_TABS: readonly {
   { id: "visualSignaturePreview", labelKo: "작업대 색상과 다이얼 미리보기", labelEn: "Workbench Colors and Dial Preview" },
   { id: "mobileThumbzonePreview", labelKo: "한 손 모바일 도구 배치 미리보기", labelEn: "One-Handed Mobile Tool Layout Preview" },
   { id: "brandRegistryAudit", labelKo: "브랜드 이름 검사", labelEn: "Brand Name Audit" },
+  { id: "stageLivingPreview", labelKo: "가상 무대 카메라와 조명 미리보기", labelEn: "Virtual Stage Camera and Lights Preview" },
+  { id: "navFlowPreview", labelKo: "작업 순서와 메뉴 배치 미리보기", labelEn: "Workflow and Navigation Preview" },
+  { id: "vibrantMotionPreview", labelKo: "작업대 색상과 움직임 미리보기", labelEn: "Workbench Colors and Motion Preview" },
 ];
 
 const CREATOR_LAB_PINNED_TABS: readonly CreatorLabTabId[] = [
@@ -246,6 +262,12 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Eye size={15} aria-hidden="true" />;
     case "mobileThumbzonePreview":
       return <Smartphone size={15} aria-hidden="true" />;
+    case "stageLivingPreview":
+      return <Camera size={15} aria-hidden="true" />;
+    case "navFlowPreview":
+      return <Compass size={15} aria-hidden="true" />;
+    case "vibrantMotionPreview":
+      return <Eye size={15} aria-hidden="true" />;
     case "brandRegistryAudit":
       return <CheckCircle2 size={15} aria-hidden="true" />;
     case "oneshotCutDirector":
@@ -372,6 +394,9 @@ export function CreatorLabHardwareHubPanel() {
           {active === "visualSignaturePreview" ? <LazyStudioAtelierVisualSignaturePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "mobileThumbzonePreview" ? <LazyStudioMobileThumbzonePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "brandRegistryAudit" ? <LazyStudioAtelierBrandRegistryPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "stageLivingPreview" ? <LazyStudioAtelierStageLivingPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "navFlowPreview" ? <LazyStudioAtelierNavFlowPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "vibrantMotionPreview" ? <LazyStudioAtelierVibrantUiPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

@@ -95,6 +95,11 @@ const cases: readonly ExampleCase[] = [
   { ko: "붓결과 종이 질감 미리보기", en: "Bristle and Paper Texture Preview", panel: "studio-atelier-ink-optical-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../atelier-ink-optical-grain") },
   { ko: "캐릭터 체형과 옷 맞춤 미리보기", en: "Character Shape and Clothing Fit Preview", panel: "atelier-cast-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-cast-customizer") },
   { ko: "칩셋별 연산 배치 계획", en: "Compute Planning by Chipset", panel: "toon-silicon-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../toon-silicon-runtime") },
+  { ko: "가상 무대 카메라와 조명 미리보기", en: "Virtual Stage Camera and Lights Preview", panel: "atelier-stage-living-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-stage-living-ux") },
+  { ko: "작업 순서와 메뉴 배치 미리보기", en: "Workflow and Navigation Preview", panel: "studio-atelier-nav-flow-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-navigation-flow-craft") },
+  { ko: "작업대 색상과 움직임 미리보기", en: "Workbench Colors and Motion Preview", panel: "atelier-vibrant-ui-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-vibrant-motion-ui") },
+  { ko: "광학 필터와 스크린톤 미리보기", en: "Optical Filter and Screentone Preview", panel: "studio-atelier-optical-filter-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-optical-filters") },
+  { ko: "입체 도면과 치수 미리보기", en: "Solid Drawing and Dimensions Preview", panel: "atelier-solid-cad-pro-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-solid-cad-pro") },
 ];
 
 afterEach(cleanup);

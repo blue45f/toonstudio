@@ -282,13 +282,13 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
     expect(within(hub).getByRole("button", { name: "실시간 오라클 실행" })).toBeTruthy();
   });
 
-  it("CreatorLabHardwareHubPanel: 32모듈을 핵심 6핀과 검색 서랍으로 제공한다", async () => {
+  it("CreatorLabHardwareHubPanel: 35개 모듈을 핵심 6핀과 검색 서랍으로 제공한다", async () => {
     await act(async () => {
       render(<CreatorLabHardwareHubPanel />);
     });
     const hub = screen.getByTestId("creator-lab-hardware-hub");
     expect(within(hub).getAllByRole("tab")).toHaveLength(6);
-    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+26종 숨김");
+    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+29종 숨김");
 
     fireEvent.change(within(hub).getByTestId("studio-hub-calm-search-input"), { target: { value: "음향" } });
     const results = within(hub).getByTestId("studio-hub-calm-search-results");
@@ -310,7 +310,7 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
     expect(hub.textContent ?? "").not.toMatch(/Vello|\bCSP\b/iu);
   });
 
-  it("Csp3dUpgradeHubPanel: 24개 모듈과 아틀리에 솔리드 CAD 진입점을 유지한다", async () => {
+  it("Csp3dUpgradeHubPanel: 26개 모듈과 아틀리에 솔리드 CAD 진입점을 유지한다", async () => {
     await act(async () => {
       render(<Csp3dUpgradeHubPanel />);
     });
@@ -318,7 +318,7 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
     expect(hub.getAttribute("aria-label")).toContain("프로 작화·3D");
     expect(hub.getAttribute("aria-label")).not.toMatch(/클립스튜디오|CSP/iu);
     expect(within(hub).getAllByRole("tab")).toHaveLength(6);
-    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+18종 숨김");
+    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+20종 숨김");
     expect(within(hub).getByRole("tab", { name: "아틀리에 솔리드 CAD · 파라메트릭 도면" })).toBeTruthy();
     expect(hub.textContent ?? "").not.toMatch(/Shapr3D|클립스튜디오|\bCSP\b/iu);
   });
@@ -333,7 +333,7 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
     expect(within(hub).getByRole("tab", { name: "협업 드로잉 타일 동기화·병합 예제" })).toBeTruthy();
   });
 
-  it("5대 프로 허브의 130개 모듈 중 초기 30개(허브당 6핀)를 노출한다", async () => {
+  it("5대 프로 허브의 135개 모듈 중 초기 30개(허브당 6핀)를 노출한다", async () => {
     await act(async () => {
       render(
         <>
@@ -353,7 +353,7 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
       (sum, el) => sum + Number(el.getAttribute("data-total-tabs") ?? "0"),
       0,
     );
-    expect(totalModules).toBe(130);
+    expect(totalModules).toBe(135);
     expect(visibleTabs.length / totalModules).toBeLessThan(0.25);
   });
 
