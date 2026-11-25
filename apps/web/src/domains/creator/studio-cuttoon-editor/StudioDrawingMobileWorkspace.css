@@ -73,6 +73,19 @@
     line-height: clamp(1em, 1.25em, 27px);
     max-height: 1lh;
   }
+
+  /* 제목 아래 두 상태는 각각 한 줄을 써도 기존 44px 터치 영역 안에 남아야 한다. */
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary] > :nth-child(2)) {
+    display: flex;
+  }
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary] > :nth-child(2)) > span {
+    line-height: 1;
+    max-height: 2lh;
+  }
+  .studio-drawing-clarity-mobile-header [data-studio-connection-notice-summary]:has(> :nth-child(2)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* 태블릿(>=560px, iPad 820px 포함): 중앙 여유 폭을 활용해 제목과 저장 상태를 한 줄로 나란히 정렬하고 세로 잘림·조기 말줄임을 없앤다. */
