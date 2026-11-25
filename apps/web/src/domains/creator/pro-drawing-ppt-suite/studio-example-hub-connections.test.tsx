@@ -15,7 +15,7 @@ vi.mock("@/shared/lib/i18n", () => ({
   useI18n: (select: (state: { readonly lang: string }) => unknown) => select(language),
 }));
 
-// 기존 기본 탭의 렌더러는 이 검증 범위가 아니다. 새 스물네 개의 모듈은 실제로 지연 로드한다.
+// 기본 탭은 대체하고, 검사 대상 모듈은 실제로 지연 로드한다.
 vi.mock("../auto-qa-pixel-engine/AutoQaPixelScannerPanel", () => ({ AutoQaPixelScannerPanel: () => null }));
 vi.mock("../brush-physics-pro/StudioBrushPhysicsProPanel", () => ({ StudioBrushPhysicsProPanel: () => null }));
 vi.mock("../creator-experience-calibrator/StudioCreatorCalibratorPanel", () => ({ StudioCreatorCalibratorPanel: () => null }));
@@ -67,6 +67,13 @@ const cases: readonly ExampleCase[] = [
   { ko: "집중·화면 이동·햅틱 예제", en: "Focus · View Movement · Haptic Examples", panel: "studio-focus-pan-haptic-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../focus-pan-haptic-studio") },
   { ko: "작업 도구 배치·기기 예산 예제", en: "Tool Layout · Device Budget Examples", panel: "studio-adaptive-calm-guard-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../adaptive-calm-stack-guard") },
   { ko: "WASM 전환 예산 예제", en: "WASM Migration Budget Examples", panel: "studio-native-wasm-migration-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../native-wasm-migration-studio") },
+  { ko: "크레용·연필 질감과 소리", en: "Crayon and Pencil Texture · Sound", panel: "drymedia-crayon-audio-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../drymedia-crayon-audio-engine") },
+  { ko: "브러시 물리 모형 비교", en: "Brush Physics Model Comparison", panel: "studio-six-physics-brush-lab", Hub: Csp3dUpgradeHubPanel, load: () => import("../six-physics-brush-lab") },
+  { ko: "페이퍼크래프트 전개도와 접힘 미리보기", en: "Papercraft Dieline and Fold Preview", panel: "papercraft-unfold-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../papercraft-3d-unfold-goods") },
+  { ko: "기기별 NPU·GPU 배치 계획", en: "Device NPU and GPU Planning", panel: "studio-heterogeneous-silicon-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../heterogeneous-npu-runtime") },
+  { ko: "Rust WASM 전환 계획", en: "Rust WASM Expansion Planning", panel: "studio-rust-expansion-architect-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../rust-full-expansion-planner") },
+  { ko: "멀티코어·Vello GPU 스케줄 예제", en: "Multicore and Vello GPU Scheduling Examples", panel: "studio-multicore-vello-scheduler-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../multicore-gpu-vello-scheduler") },
+  { ko: "Rust WASM 이식·검증 예제", en: "Rust WASM Porting and Parity Exercise", panel: "studio-rust-hotspot-porter-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../rust-hotspot-parity-porter") },
 ];
 
 afterEach(cleanup);

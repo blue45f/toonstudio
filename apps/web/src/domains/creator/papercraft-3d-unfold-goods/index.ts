@@ -1,0 +1,52 @@
+/**
+ * Wave 54B — 종이로 만드는 3D 페이퍼크래프트 전개도 & 웹툰 굿즈 디오라마 스튜디오 공개 배럴.
+ */
+
+export {
+  MOUNTAIN_FOLD_DASH,
+  PAPERCRAFT_MODEL_PRESETS,
+  PAPER_SIZE_SPECS,
+  PAPER_WEIGHT_SPECS,
+  VALLEY_FOLD_DASH,
+  VIOLET_SLOP_MAX_HUE,
+  VIOLET_SLOP_MIN_HUE,
+  evaluatePaperFoldPreview,
+  exportPapercraftDielineSvg,
+  exportPapercraftManifestJson,
+  formatOklch,
+  getPaperSizeSpec,
+  getPaperWeightSpec,
+  getPapercraftPreset,
+  isVioletSlopHue,
+  sanitizeNonVioletHue,
+  unfoldPapercraftDieline,
+  type AssemblyDifficulty,
+  type DielineEdge2D,
+  type DielinePageSummary,
+  type FoldKind,
+  type GlueTab2D,
+  type GlueTabPairIntegrity,
+  type OklchColor,
+  type PaperCompensationMetrics,
+  type PaperFoldPreviewInput,
+  type PaperFoldPreviewResult,
+  type PaperSizeId,
+  type PaperSizeSpec,
+  type PaperWeightGsm,
+  type PaperWeightSpec,
+  type PapercraftDielineResult,
+  type PapercraftFaceDef,
+  type PapercraftFaceRole,
+  type PapercraftModelPreset,
+  type PapercraftPresetId,
+  type PapercraftUnfoldInput,
+  type ProjectedFoldFace,
+  type UnfoldedFace2D,
+  type Vec2,
+  type Vec3,
+} from "./papercraft-unfold-engine";
+
+export {
+  StudioPapercraftUnfoldPanel,
+  type StudioPapercraftUnfoldPanelProps,
+} from "./StudioPapercraftUnfoldPanel";

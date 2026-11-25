@@ -1,4 +1,4 @@
-import { Brush, Camera, Hand, Layers, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
+import { Box, Brush, Camera, FlaskConical, Hand, Layers, Move, Palette, Pencil, ShieldCheck, Smile, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -100,6 +100,18 @@ const LazyStudioStyleSpectrumGuardianPanel = lazy(() =>
   import("../style-spectrum-guardian").then((module) => ({ default: module.StudioStyleSpectrumGuardianPanel })),
 );
 
+const LazyStudioDryMediaCrayonAudioPanel = lazy(() =>
+  import("../drymedia-crayon-audio-engine").then((module) => ({ default: module.StudioDryMediaCrayonAudioPanel })),
+);
+
+const LazyStudioSixPhysicsBrushLabPanel = lazy(() =>
+  import("../six-physics-brush-lab").then((module) => ({ default: module.StudioSixPhysicsBrushLabPanel })),
+);
+
+const LazyStudioPapercraftUnfoldPanel = lazy(() =>
+  import("../papercraft-3d-unfold-goods").then((module) => ({ default: module.StudioPapercraftUnfoldPanel })),
+);
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -118,7 +130,10 @@ type Csp3dTabId =
   | "sceneLightingAdv"
   | "cameraFramingAdv"
   | "handPropAutoGrip"
-  | "styleSpectrum";
+  | "styleSpectrum"
+  | "dryMediaCrayonAudio"
+  | "sixPhysicsBrushLab"
+  | "papercraftUnfold";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -143,6 +158,9 @@ const CSP3D_TABS: readonly {
   { id: "cameraFramingAdv", labelKo: "카메라 구도·시선 축 예제", labelEn: "Camera Framing · Sightline Examples" },
   { id: "handPropAutoGrip", labelKo: "손·소품 그립 제안 예제", labelEn: "Hand · Prop Grip Examples" },
   { id: "styleSpectrum", labelKo: "화풍·재질 비교 예제", labelEn: "Art Style · Material Examples" },
+  { id: "dryMediaCrayonAudio", labelKo: "크레용·연필 질감과 소리", labelEn: "Crayon and Pencil Texture · Sound" },
+  { id: "sixPhysicsBrushLab", labelKo: "브러시 물리 모형 비교", labelEn: "Brush Physics Model Comparison" },
+  { id: "papercraftUnfold", labelKo: "페이퍼크래프트 전개도와 접힘 미리보기", labelEn: "Papercraft Dieline and Fold Preview" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -163,6 +181,12 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "dryMediaCrayonAudio":
+      return <Pencil size={15} aria-hidden="true" />;
+    case "sixPhysicsBrushLab":
+      return <FlaskConical size={15} aria-hidden="true" />;
+    case "papercraftUnfold":
+      return <Box size={15} aria-hidden="true" />;
     case "styleSpectrum":
       return <Palette size={15} aria-hidden="true" />;
     case "handPropAutoGrip":
@@ -265,6 +289,9 @@ export function Csp3dUpgradeHubPanel() {
           {active === "cameraFramingAdv" ? <LazyStudioCameraFramingCoachPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "handPropAutoGrip" ? <LazyStudioHandPropAutoGripPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "styleSpectrum" ? <LazyStudioStyleSpectrumGuardianPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "dryMediaCrayonAudio" ? <LazyStudioDryMediaCrayonAudioPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "sixPhysicsBrushLab" ? <LazyStudioSixPhysicsBrushLabPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "papercraftUnfold" ? <LazyStudioPapercraftUnfoldPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
