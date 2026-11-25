@@ -568,7 +568,8 @@ export async function convertImageToAnimeStyle(
   settings: StudioAiSettings,
   imageSrc: string,
   extraDirection = "",
-  purpose: WebtoonStylePurposeId = "episode"
+  purpose: WebtoonStylePurposeId = "episode",
+  opts: { signal?: AbortSignal } = {}
 ): Promise<StudioAiResult<{ dataUrl: string }>> {
   if (!imageSrc) return { ok: false, code: "invalid_input", error: aiErrorText("studio.aiError.client.animeImageMissing", "변환할 이미지가 없습니다.") };
   if (!isStudioAiConfigured(settings)) {
@@ -586,7 +587,7 @@ export async function convertImageToAnimeStyle(
   form.set("model", settings.imageModel);
   form.set("n", "1");
   form.set("response_format", "b64_json");
-  const result = await postImageForm(settings, form);
+  const result = await postImageForm(settings, form, opts.signal);
   if (!result.ok) return result;
   const b64 = extractFirstB64Json(result.data);
   if (!b64) return { ok: false, code: "parse_error", error: aiErrorText("studio.aiError.client.imageDataMissing", "응답에서 이미지 데이터(b64_json)를 찾을 수 없습니다.") };

@@ -15344,8 +15344,14 @@ const puppetWarpArmed =
       setError("이 페이지는 검토 잠금 상태예요. 새 페이지에 적용하거나 잠금을 해제해 주세요.");
       return;
     }
+    // 현재 페이지에 적용할 때는 A컷→B컷 이동 또는 기존 프레임 추가 후에도 겹치지 않도록
+    // 실제 현재 페이지의 프레임 배치 기준으로 좌표를 다시 계산한다.
+    const layoutForApply =
+      scenarioApplyTarget === "current-page"
+        ? relayoutScenarioDrafts(scenarioResult.items, "current-page")
+        : { items: scenarioResult.items, nextCanvasH: scenarioResult.nextCanvasH };
     const newEls: El[] = [];
-    for (const item of scenarioResult.items) {
+    for (const item of layoutForApply.items) {
       newEls.push({
         id: uid(),
         type: "frame",
@@ -15375,12 +15381,12 @@ const puppetWarpArmed =
         pages,
         currentIndex + 1,
         uid,
-        Math.max(1080, scenarioResult.nextCanvasH)
+        Math.max(1080, layoutForApply.nextCanvasH)
       );
       const insertedPage = nextPages[currentIndex + 1];
       const populatedPages = nextPages.map((page: PageState) =>
         page.id === insertedPage.id
-          ? { ...page, elements: newEls, canvasH: Math.max(1080, scenarioResult.nextCanvasH) }
+          ? { ...page, elements: newEls, canvasH: Math.max(1080, layoutForApply.nextCanvasH) }
           : page
       );
       if (!commitPages(populatedPages)) {
@@ -15389,7 +15395,7 @@ const puppetWarpArmed =
       }
       setCurrentPageId(insertedPage.id);
     } else {
-      if (!commit([...elements, ...newEls], { canvasH: Math.max(canvasH, scenarioResult.nextCanvasH) })) {
+      if (!commit([...elements, ...newEls], { canvasH: Math.max(canvasH, layoutForApply.nextCanvasH) })) {
         setScenarioError(t("studio.hostStatus.scenarioCurrentPageApplyFailed", "현재 페이지에 시나리오를 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
         return;
       }

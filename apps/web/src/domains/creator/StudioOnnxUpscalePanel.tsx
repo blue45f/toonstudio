@@ -28,6 +28,9 @@ export function StudioOnnxUpscalePanel({
   }, []);
 
   useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
     setPreviewSrc(null);
     setResultSize(null);
     setError(null);
@@ -46,15 +49,15 @@ export function StudioOnnxUpscalePanel({
       const result = await service.upscaleImageOnDevice(src, {
         signal: controller.signal,
         onProgress: (done, total) => {
-          if (mountedRef.current) setProgress({ done, total });
+          if (mountedRef.current && !controller.signal.aborted) setProgress({ done, total });
         },
       });
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || controller.signal.aborted || abortRef.current !== controller) return;
       setPreviewSrc(result.dataUrl);
       setResultSize({ width: result.width, height: result.height });
       onResult(result.dataUrl);
     } catch (cause) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || abortRef.current !== controller) return;
       setError(
         cause instanceof Error && cause.name === "AbortError"
           ? "업스케일을 취소했어요."

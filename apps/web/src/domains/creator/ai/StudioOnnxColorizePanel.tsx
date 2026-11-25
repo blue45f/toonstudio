@@ -174,6 +174,9 @@ export function StudioOnnxColorizePanel({
   }, []);
 
   useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
     setPreviewSrc(null);
     setError(null);
     setLayered(null);
@@ -200,12 +203,12 @@ export function StudioOnnxColorizePanel({
         tags: selectedTags,
         signal: controller.signal,
       });
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || controller.signal.aborted || abortRef.current !== controller) return;
       setPreviewSrc(result.dataUrl);
       setLayered(result);
       onResult(result.dataUrl);
     } catch (cause) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || abortRef.current !== controller) return;
       if (cause instanceof Error && cause.name === "AbortError") {
         setError(T("채색을 취소했어요."));
       } else {
