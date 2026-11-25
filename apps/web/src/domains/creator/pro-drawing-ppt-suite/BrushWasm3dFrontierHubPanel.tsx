@@ -99,6 +99,10 @@ const LazyStudioTactileBrushTexturePanel = lazy(() =>
   import("../tactile-brush-texture-studio").then((module) => ({ default: module.StudioTactileBrushTexturePanel })),
 );
 
+const LazyStudioNativeWasmMigrationPanel = lazy(() =>
+  import("../native-wasm-migration-studio").then((module) => ({ default: module.StudioNativeWasmMigrationPanel })),
+);
+
 type FrontierTabId =
   | "brushPhysics"
   | "brushCustomLab"
@@ -119,7 +123,8 @@ type FrontierTabId =
   | "nocodeShaderGrid"
   | "liveOracle"
   | "federatedLora"
-  | "tactileBrush";
+  | "tactileBrush"
+  | "nativeMigrationPlan";
 
 interface OracleLiveSnapshot {
   readonly catalogBrushes: number;
@@ -155,6 +160,7 @@ const FRONTIER_TABS: readonly {
   { id: "liveOracle", labelKo: "실시간 엔진 오라클 (194종·KM·GPU)", labelEn: "Live Engine Oracle (194 · KM · GPU)" },
   { id: "federatedLora", labelKo: "저랭크 학습·캐시 계산 예제", labelEn: "Low-Rank Learning · Cache Examples" },
   { id: "tactileBrush", labelKo: "브러시 질감 예제", labelEn: "Brush Texture Examples" },
+  { id: "nativeMigrationPlan", labelKo: "WASM 전환 예산 예제", labelEn: "WASM Migration Budget Examples" },
 ];
 
 const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
@@ -239,6 +245,8 @@ const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
 
 function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
   switch (id) {
+    case "nativeMigrationPlan":
+      return <Cpu size={15} aria-hidden="true" />;
     case "tactileBrush":
       return <PenTool size={15} aria-hidden="true" />;
     case "brushPhysics":
@@ -438,6 +446,7 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "webnnPigment" ? <LazyStudioWebnnPigmentDirectorPanel /> : null}
             {active === "federatedLora" ? <LazyFederatedLoraPanel /> : null}
             {active === "tactileBrush" ? <LazyStudioTactileBrushTexturePanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "nativeMigrationPlan" ? <LazyStudioNativeWasmMigrationPanel locale={isEn ? "en" : "ko"} /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
             {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}

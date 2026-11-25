@@ -66,6 +66,7 @@ const cases: readonly ExampleCase[] = [
   { ko: "화풍·재질 비교 예제", en: "Art Style · Material Examples", panel: "studio-style-spectrum-guardian-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../style-spectrum-guardian") },
   { ko: "집중·화면 이동·햅틱 예제", en: "Focus · View Movement · Haptic Examples", panel: "studio-focus-pan-haptic-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../focus-pan-haptic-studio") },
   { ko: "작업 도구 배치·기기 예산 예제", en: "Tool Layout · Device Budget Examples", panel: "studio-adaptive-calm-guard-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../adaptive-calm-stack-guard") },
+  { ko: "WASM 전환 예산 예제", en: "WASM Migration Budget Examples", panel: "studio-native-wasm-migration-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../native-wasm-migration-studio") },
 ];
 
 afterEach(cleanup);
