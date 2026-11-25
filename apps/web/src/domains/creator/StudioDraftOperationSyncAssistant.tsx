@@ -462,7 +462,7 @@ export function StudioDraftOperationSyncAssistant({
           ) : null}
 
           <p className="mt-3 text-xs leading-relaxed text-fg-3">
-            기기 복구 저장, 변경 단위 서버 승인, 서버 원고 버전은 서로 다른 보호 단계입니다. 연결이 끊겨도 로컬 변경을 먼저 보관하고, 다시 연결되면 순서대로 전송합니다. 충돌이나 권한 문제가 생기면 자동 덮어쓰기 대신 버전·복구 확인 흐름을 사용합니다.
+            기기 복구 저장, 변경 단위 서버 승인, 서버 원고 버전은 서로 다른 보호 단계입니다. 충돌이나 권한 문제가 생기면 자동 덮어쓰기 대신 버전·복구 확인 흐름을 사용합니다.
           </p>
         </div>
   ) : null;
