@@ -5,7 +5,7 @@ import {
   Cpu,
   Gauge,
   Maximize2,
-  Sparkles,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -96,18 +96,18 @@ export function HomeLiveTechProofStrip({ lang: propLang }: HomeLiveTechProofStri
       <div className="ltp-top">
         <div className="ltp-heading">
           <span className="ltp-kicker">
-            <Sparkles size={13} strokeWidth={1.8} aria-hidden="true" />
-            {lang === "en" ? "MEASURED ENGINE PROOF & REAL BRUSH RENDERS" : "실측 엔진 증명 · 실물 브러시 렌더링 증거"}
+            <SlidersHorizontal size={13} strokeWidth={1.8} aria-hidden="true" />
+            {lang === "en" ? "MEASURED BENCHMARKS & REAL BRUSH SHEETS" : "실측 기록 · 실제 브러시 렌더 시트"}
           </span>
           <h3 id={headingId}>
             {lang === "en"
-              ? "Not claims — measured numbers, real brush renders, and a live test on your browser."
-              : "말뿐인 스펙이 아닌 실측 수치 · 실물 브러시 시트 · 내 브라우저 실시간 측정"}
+              ? "Measured numbers, real brush renders, and a live check on your browser."
+              : "직접 뽑은 브러시 시트와 이 브라우저의 실시간 속도 측정"}
           </h3>
           <p>
             {lang === "en"
-              ? "Inspect all 5 verified core engines, verify native Wasm64/WebGPU/P3/Kubelka-Munk right on your device, and zoom into real rendered proof sheets."
-              : "5대 핵심 엔진의 실측 근거를 눌러 확인하고, 지금 접속한 브라우저의 Wasm64·WebGPU·Display-P3·16파장 광학 혼색 속도를 직접 측정해 보세요."}
+              ? "Inspect all 5 verified core engines, test native Wasm64/WebGPU/P3/Kubelka-Munk right on your device, and zoom into real rendered proof sheets."
+              : "엔진별 실측 항목을 눌러 확인하고, 지금 쓰는 브라우저의 Wasm64·WebGPU·Display-P3·16파장 광학 혼색 속도를 바로 재어 보세요."}
           </p>
         </div>
 

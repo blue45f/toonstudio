@@ -270,25 +270,25 @@ describe("StudioHubCalmTabNavigator 공용 Calm 6-핀·검색·서랍 내비게�
 });
 
 describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 라벨 정화", () => {
-  it("BrushWasm3dFrontierHubPanel: 27개 모듈을 핵심 6핀과 검색 서랍으로 제공한다", async () => {
+  it("BrushWasm3dFrontierHubPanel: 28개 모듈을 핵심 6핀과 검색 서랍으로 제공한다", async () => {
     await act(async () => {
       render(<BrushWasm3dFrontierHubPanel />);
     });
     const hub = screen.getByTestId("brush-wasm-3d-frontier-hub");
     expect(within(hub).getAllByRole("tab")).toHaveLength(6);
-    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+21종 숨김");
+    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+22종 숨김");
 
     fireEvent.click(within(hub).getByRole("tab", { name: /실시간 엔진 오라클/ }));
     expect(within(hub).getByRole("button", { name: "실시간 오라클 실행" })).toBeTruthy();
   });
 
-  it("CreatorLabHardwareHubPanel: 35개 모듈을 핵심 6핀과 검색 서랍으로 제공한다", async () => {
+  it("CreatorLabHardwareHubPanel: 36개 모듈을 핵심 6핀과 검색 서랍으로 제공한다", async () => {
     await act(async () => {
       render(<CreatorLabHardwareHubPanel />);
     });
     const hub = screen.getByTestId("creator-lab-hardware-hub");
     expect(within(hub).getAllByRole("tab")).toHaveLength(6);
-    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+29종 숨김");
+    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+30종 숨김");
 
     fireEvent.change(within(hub).getByTestId("studio-hub-calm-search-input"), { target: { value: "음향" } });
     const results = within(hub).getByTestId("studio-hub-calm-search-results");
@@ -310,7 +310,7 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
     expect(hub.textContent ?? "").not.toMatch(/Vello|\bCSP\b/iu);
   });
 
-  it("Csp3dUpgradeHubPanel: 26개 모듈과 아틀리에 솔리드 CAD 진입점을 유지한다", async () => {
+  it("Csp3dUpgradeHubPanel: 27개 모듈과 아틀리에 솔리드 CAD 진입점을 유지한다", async () => {
     await act(async () => {
       render(<Csp3dUpgradeHubPanel />);
     });
@@ -318,22 +318,22 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
     expect(hub.getAttribute("aria-label")).toContain("프로 작화·3D");
     expect(hub.getAttribute("aria-label")).not.toMatch(/클립스튜디오|CSP/iu);
     expect(within(hub).getAllByRole("tab")).toHaveLength(6);
-    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+20종 숨김");
+    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+21종 숨김");
     expect(within(hub).getByRole("tab", { name: "아틀리에 솔리드 CAD · 파라메트릭 도면" })).toBeTruthy();
     expect(hub.textContent ?? "").not.toMatch(/Shapr3D|클립스튜디오|\bCSP\b/iu);
   });
 
-  it("AutoQaCollabHubPanel: 22모듈을 핵심 6핀 + 16서랍으로 압축하고 협업 드로잉 라벨을 반영한다", async () => {
+  it("AutoQaCollabHubPanel: 23개 모듈을 표시하고 협업 드로잉 진입점을 유지한다", async () => {
     await act(async () => {
       render(<AutoQaCollabHubPanel />);
     });
     const hub = screen.getByTestId("auto-qa-collab-hub-panel");
     expect(within(hub).getAllByRole("tab")).toHaveLength(6);
-    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+16종 숨김");
+    expect(within(hub).getByTestId("studio-hub-calm-hidden-badge").textContent).toBe("+17종 숨김");
     expect(within(hub).getByRole("tab", { name: "협업 드로잉 타일 동기화·병합 예제" })).toBeTruthy();
   });
 
-  it("5대 프로 허브의 135개 모듈 중 초기 30개(허브당 6핀)를 노출한다", async () => {
+  it("5대 프로 허브의 139개 모듈 중 초기 30개(허브당 6핀)를 노출한다", async () => {
     await act(async () => {
       render(
         <>
@@ -353,7 +353,7 @@ describe("5대 프로 허브 실물 리디자인 & ToonStudio 고유 브랜드 �
       (sum, el) => sum + Number(el.getAttribute("data-total-tabs") ?? "0"),
       0,
     );
-    expect(totalModules).toBe(135);
+    expect(totalModules).toBe(139);
     expect(visibleTabs.length / totalModules).toBeLessThan(0.25);
   });
 

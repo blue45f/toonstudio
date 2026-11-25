@@ -133,7 +133,12 @@ const LazyStudioAtelierSolidCadProPanel = lazy(() =>
   import("../atelier-solid-cad-pro").then((module) => ({ default: module.StudioAtelierSolidCadProPanel })),
 );
 
+const LazyStudioAtelierStyleOndevicePanel = lazy(() =>
+  import("../atelier-style-ondevice-ai").then((module) => ({ default: module.StudioAtelierStyleOndevicePanel })),
+);
+
 type Csp3dTabId =
+  | "stylePipelinePreview"
   | "opticalFilterPreview"
   | "solidCadPreview"
   | "castDesignPreview"
@@ -174,6 +179,7 @@ const CSP3D_TABS: readonly {
   { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
   { id: "castDesignPreview", labelKo: "캐릭터 체형과 옷 맞춤 미리보기", labelEn: "Character Shape and Clothing Fit Preview" },
   { id: "opticalFilterPreview", labelKo: "광학 필터와 스크린톤 미리보기", labelEn: "Optical Filter and Screentone Preview" },
+  { id: "stylePipelinePreview", labelKo: "화풍 변환과 기기별 연산 계획", labelEn: "Style Transformations and Device Planning" },
   { id: "solidCadPreview", labelKo: "입체 도면과 치수 미리보기", labelEn: "Solid Drawing and Dimensions Preview" },
   { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
   { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
@@ -259,6 +265,8 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <ShieldCheck size={15} aria-hidden="true" />;
     case "commercialPro":
       return <Layers size={15} aria-hidden="true" />;
+    case "stylePipelinePreview":
+      return <Palette size={15} aria-hidden="true" />;
     case "opticalFilterPreview":
       return <Sun size={15} aria-hidden="true" />;
     case "solidCadPreview":
@@ -317,6 +325,7 @@ export function Csp3dUpgradeHubPanel() {
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
           {active === "castDesignPreview" ? <LazyStudioAtelierCastPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "opticalFilterPreview" ? <LazyStudioAtelierOpticalFilterPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "stylePipelinePreview" ? <LazyStudioAtelierStyleOndevicePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "solidCadPreview" ? <LazyStudioAtelierSolidCadProPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}

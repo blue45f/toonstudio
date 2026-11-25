@@ -100,6 +100,10 @@ const cases: readonly ExampleCase[] = [
   { ko: "작업대 색상과 움직임 미리보기", en: "Workbench Colors and Motion Preview", panel: "atelier-vibrant-ui-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-vibrant-motion-ui") },
   { ko: "광학 필터와 스크린톤 미리보기", en: "Optical Filter and Screentone Preview", panel: "studio-atelier-optical-filter-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-optical-filters") },
   { ko: "입체 도면과 치수 미리보기", en: "Solid Drawing and Dimensions Preview", panel: "atelier-solid-cad-pro-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-solid-cad-pro") },
+  { ko: "작업실 사용법과 연습 순서", en: "Studio Guide and Practice Steps", panel: "atelier-manual-os-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-interactive-manual") },
+  { ko: "화풍 변환과 기기별 연산 계획", en: "Style Transformations and Device Planning", panel: "atelier-style-ondevice-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-style-ondevice-ai") },
+  { ko: "두 가지 붓끝과 연산 경로 미리보기", en: "Dual-Tip Brush and Compute Paths Preview", panel: "studio-atelier-isa-brush-ultra-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../atelier-isa-brush-ultra") },
+  { ko: "오프라인 복구와 협업 예제", en: "Offline Recovery and Collaboration Example", panel: "studio-loom-offline-collab-panel", Hub: AutoQaCollabHubPanel, load: () => import("../loom-offline-realtime-collab") },
 ];
 
 afterEach(cleanup);

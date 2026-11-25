@@ -117,7 +117,12 @@ const LazyStudioShaderPrewarmWebCodecsPanel = lazy(() =>
   import("../shader-prewarm-webcodecs").then((module) => ({ default: module.StudioShaderPrewarmWebCodecsPanel })),
 );
 
+const LazyStudioLoomOfflineCollabPanel = lazy(() =>
+  import("../loom-offline-realtime-collab").then((module) => ({ default: module.StudioLoomOfflineCollabPanel })),
+);
+
 type QaHubTabId =
+  | "loomOfflinePreview"
   | "pixel"
   | "layout"
   | "continuity"
@@ -182,6 +187,7 @@ const QA_HUB_TABS: readonly {
   { id: "oneLineOrchestrator", labelKo: "한 줄 연출 예제", labelEn: "One-Line Direction Examples" },
   { id: "scrollPacing", labelKo: "스크롤 컷 호흡 예제", labelEn: "Scroll Pacing Examples" },
   { id: "distributedTileSync", labelKo: "협업 드로잉 타일 동기화·병합 예제", labelEn: "Collaborative Drawing Tile Sync & Merge Examples" },
+  { id: "loomOfflinePreview", labelKo: "오프라인 복구와 협업 예제", labelEn: "Offline Recovery and Collaboration Example" },
   { id: "humanInkLedger", labelKo: "작화 출처 원장 예제", labelEn: "Stroke Provenance Ledger Examples" },
   { id: "shaderWebCodecs", labelKo: "셰이더 준비·영상 인코딩 계획", labelEn: "Shader Preparation and Video Encoding Plans" },
 ];
@@ -200,6 +206,8 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
     case "shaderWebCodecs":
       return <Clapperboard size={15} aria-hidden="true" />;
     case "humanInkLedger":
+      return <GitBranch size={15} aria-hidden="true" />;
+    case "loomOfflinePreview":
       return <GitBranch size={15} aria-hidden="true" />;
     case "distributedTileSync":
       return <GitBranch size={15} aria-hidden="true" />;
@@ -297,6 +305,7 @@ export function AutoQaCollabHubPanel() {
           {active === "oneLineOrchestrator" ? <LazyStudioOneLineOrchestratorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "scrollPacing" ? <LazyStudioScrollPacingComposerPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "distributedTileSync" ? <LazyStudioDistributedCrdtSyncPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "loomOfflinePreview" ? <LazyStudioLoomOfflineCollabPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "humanInkLedger" ? <LazyStudioHumanInkLedgerPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "shaderWebCodecs" ? <LazyStudioShaderPrewarmWebCodecsPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>

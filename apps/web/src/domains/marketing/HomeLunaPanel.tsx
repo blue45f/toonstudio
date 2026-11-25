@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BookOpen, Boxes, ChevronRight, Send, Sparkles, UserRound, WandSparkles, type LucideIcon } from "lucide-react";
+import { BookOpen, Boxes, ChevronRight, Compass, Feather, Send, UserRound, type LucideIcon } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import {
@@ -15,7 +15,7 @@ const LUNA_ICONS: Readonly<Record<(typeof HOME_LUNA_SUGGESTIONS)[number]["icon"]
   story: BookOpen,
   character: UserRound,
   scene: Boxes,
-  ai: WandSparkles,
+  ai: Compass,
 };
 
 /**
@@ -99,26 +99,26 @@ export function HomeLunaPanel() {
       const reply = completed.content.trim().slice(0, REPLY_MAX_LENGTH);
       pushMessage({
         role: "luna",
-        text: reply || bi("답변을 만들지 못했어요. 질문을 조금 바꿔서 다시 물어봐 주세요.", "I could not draft a reply. Try asking in a different way."),
+        text: reply || bi("답을 정리하지 못했어요. 질문을 조금 바꿔 다시 물어봐 주세요.", "I could not draft a reply. Try asking in a different way."),
       });
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") return;
       if (error instanceof UserAiTransportError && error.code === "not-configured") {
         pushMessage({
           role: "luna",
-          text: bi("아직 AI 연결이 설정되지 않아서 대화로 답할 수 없어요. AI 키를 등록하면 바로 대화할 수 있고, 그전에는 위 제안으로 시작할 수 있어요.", "AI is not connected yet, so I cannot chat. Add an AI key to talk with me, or start from a suggestion above."),
+          text: bi("아직 AI 연결이 설정되지 않아 대화로 답할 수 없어요. AI 키를 등록하면 바로 물을 수 있고, 위 제안 칩으로 곧장 시작할 수도 있어요.", "AI is not connected yet, so I cannot chat. Add an AI key to talk with me, or start from a suggestion above."),
           action: AI_KEY_ACTION,
         });
       } else if (isUserAiQuotaExhaustion(error)) {
         pushMessage({
           role: "luna",
-          text: bi("지금은 AI 사용 한도에 닿았어요. 한도가 회복되거나 내 키를 등록하면 대화를 이어 갈 수 있어요.", "The AI quota is exhausted for now. Chat resumes when it recovers or when you add your own key."),
+          text: bi("AI 사용 한도에 닿았어요. 한도가 풀리거나 내 키를 연결하면 대화를 이어 갈 수 있어요.", "The AI quota is exhausted for now. Chat resumes when it recovers or when you add your own key."),
           action: AI_KEY_ACTION,
         });
       } else {
         pushMessage({
           role: "luna",
-          text: bi("답변을 가져오지 못했어요. 잠시 후 다시 물어봐 주세요.", "I could not fetch a reply. Please ask again in a moment."),
+          text: bi("답변을 불러오지 못했어요. 잠시 뒤 다시 물어봐 주세요.", "I could not fetch a reply. Please ask again in a moment."),
         });
       }
     } finally {
@@ -134,7 +134,7 @@ export function HomeLunaPanel() {
           <img src={homeArt("luna", 320)} alt={bi("은보라색 머리의 창작 도우미 Luna", "Luna, a creative guide with silver-lilac hair")} width={96} height={96} decoding="async" />
           <strong>Luna</strong>
           <small>{bi("창작 안내", "Creative guide")}</small>
-          <Sparkles size={14} aria-hidden="true" />
+          <Feather size={14} aria-hidden="true" />
         </div>
         <div className="rd-luna-log" role="log" aria-live="polite" aria-label={bi("Luna와의 대화", "Conversation with Luna")} ref={logRef}>
           {messages.map((message) => (

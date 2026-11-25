@@ -166,7 +166,12 @@ const LazyStudioAtelierVibrantUiPanel = lazy(() =>
   import("../atelier-vibrant-motion-ui").then((module) => ({ default: module.StudioAtelierVibrantUiPanel })),
 );
 
+const LazyStudioAtelierManualOsPanel = lazy(() =>
+  import("../atelier-interactive-manual").then((module) => ({ default: module.StudioAtelierManualOsPanel })),
+);
+
 type CreatorLabTabId =
+  | "manualGuide"
   | "stageLivingPreview"
   | "navFlowPreview"
   | "vibrantMotionPreview"
@@ -242,6 +247,7 @@ const CREATOR_LAB_TABS: readonly {
   { id: "brandRegistryAudit", labelKo: "브랜드 이름 검사", labelEn: "Brand Name Audit" },
   { id: "stageLivingPreview", labelKo: "가상 무대 카메라와 조명 미리보기", labelEn: "Virtual Stage Camera and Lights Preview" },
   { id: "navFlowPreview", labelKo: "작업 순서와 메뉴 배치 미리보기", labelEn: "Workflow and Navigation Preview" },
+  { id: "manualGuide", labelKo: "작업실 사용법과 연습 순서", labelEn: "Studio Guide and Practice Steps" },
   { id: "vibrantMotionPreview", labelKo: "작업대 색상과 움직임 미리보기", labelEn: "Workbench Colors and Motion Preview" },
 ];
 
@@ -264,6 +270,8 @@ function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
       return <Smartphone size={15} aria-hidden="true" />;
     case "stageLivingPreview":
       return <Camera size={15} aria-hidden="true" />;
+    case "manualGuide":
+      return <CheckCircle2 size={15} aria-hidden="true" />;
     case "navFlowPreview":
       return <Compass size={15} aria-hidden="true" />;
     case "vibrantMotionPreview":
@@ -396,6 +404,7 @@ export function CreatorLabHardwareHubPanel() {
           {active === "brandRegistryAudit" ? <LazyStudioAtelierBrandRegistryPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "stageLivingPreview" ? <LazyStudioAtelierStageLivingPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "navFlowPreview" ? <LazyStudioAtelierNavFlowPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "manualGuide" ? <LazyStudioAtelierManualOsPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "vibrantMotionPreview" ? <LazyStudioAtelierVibrantUiPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
