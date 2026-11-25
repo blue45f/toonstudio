@@ -18,6 +18,8 @@ pub mod tactile_texture_kernel;
 pub mod tile_compositor_kernel;
 pub mod tile_delta_kernel;
 pub mod vector_psd_tile_kernel;
+#[cfg(feature = "virtual-3d-physics")]
+pub mod virtual_3d_physics_kernel;
 pub mod wasm_ffi;
 
 pub use brush_kernel::{
@@ -164,3 +166,19 @@ pub(crate) fn checked_rgba_len(width: u32, height: u32) -> Result<usize, Drawing
         .checked_mul(4)
         .ok_or(DrawingCoreError::InvalidDimensions { width, height })
 }
+
+#[cfg(feature = "virtual-3d-physics")]
+pub use virtual_3d_physics_kernel::{
+    render_foley_biquad_block, solve_finger_fabrik_chain, solve_hand_fabrik_15joints,
+    step_verlet_spring_chains_soa, FingerAngleLimits, FingerFabrikConfig, FingerIkResult,
+    FoleyBiquadState, FoleyBlockStats, FoleyDspConfig, FoleyFilterMode, HandIkResult,
+    SphereCollider, VerletSpringChainsSoa, VerletSpringConfig, VerletStepStats,
+    AUDIOWORKLET_BLOCK_FRAMES, FINGER_JOINT_COUNT, FINGER_POINT_COUNT, FOLEY_PEAK_CEILING,
+    FOLEY_TARGET_LUFS, HAND_FINGER_COUNT, HAND_TOTAL_JOINTS,
+};
+#[cfg(feature = "virtual-3d-physics")]
+pub use wasm_ffi::{
+    wasm_render_foley_biquad_block, wasm_solve_finger_fabrik_chain,
+    wasm_step_verlet_spring_chains_soa, FABRIK_FINGER_FFI_PARAM_COUNT, FOLEY_DSP_FFI_PARAM_COUNT,
+    FOLEY_DSP_FFI_STATE_LEN, VERLET_SPRING_FFI_PARAM_COUNT,
+};

@@ -1,7 +1,11 @@
 use super::*;
 
 /// 확장 3D 커널 기능 비트마스크 (`bit0`: VRM 4-본 스키닝, `bit1`: Morton 코드, `bit2`: G-Buffer LT 선화).
-pub const WASM_EXTENDED_3D_CAPABILITIES: u32 = 0x07;
+pub const WASM_EXTENDED_3D_CAPABILITIES: u32 = if cfg!(feature = "virtual-3d-physics") {
+    0x3F
+} else {
+    0x07
+};
 
 /// `wasm_extract_lt_lineart_from_gbuffer`의 `params_ptr` 배열 길이(`f32` 6개).
 pub const LT_LINEART_FFI_PARAM_COUNT: usize = 6;
@@ -35,7 +39,7 @@ pub extern "C" fn wasm_encode_morton_3d_u32(x: u32, y: u32, z: u32) -> u32 {
 }
 
 #[inline]
-fn checked_byte_len(count: usize, elem_size: usize) -> Result<usize, i32> {
+pub(super) fn checked_byte_len(count: usize, elem_size: usize) -> Result<usize, i32> {
     let bytes = count.checked_mul(elem_size).ok_or(FFI_ERR_OVERFLOW)?;
     if bytes > isize::MAX as usize {
         return Err(FFI_ERR_OVERFLOW);

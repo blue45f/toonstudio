@@ -13,6 +13,8 @@ crate-type = ["cdylib", "rlib"]
 default = []
 # 확장 3D VRM 스키닝·Morton BVH·LT 선화 C-ABI 익스포트 (기본 < 48 KiB 바이너리 계약 보존)
 extended-3d = []
+# 가상 물리·손가락 IK·Foley CPU 커널과 추가 C-ABI (기존 3D 옵션과 별도 활성화)
+virtual-3d-physics = ["extended-3d"]
 
 [dependencies]
 
