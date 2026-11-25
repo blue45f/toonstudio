@@ -123,4 +123,16 @@ describe("Clip Studio .pep (3D Pose) & .3dp (Body Proportion) XML codecs and Han
     expect(fistPose.middle[1][0]).toBeLessThan(0.75);
     expect(openPose.pinky[0][2]).toBeLessThan(-0.15);
   });
+
+  it("extracts .pep XML attributes in linear time even with massive inter-attribute whitespace", () => {
+    const padding = " ".repeat(50_000);
+    const xml = `<celsysdocument version="1.0.0"><pose${padding}alias_name="wide_pose"${padding}\tversion="1.0.0"><node id="1"${padding}name="hips_bb_" rotquat="1 0 0 0" scale="1 1 1" trans="0 94 0"/></pose></celsysdocument>`;
+    const startedAt = performance.now();
+    const parsed = parseCspPepPoseXml(xml);
+    const elapsedMs = performance.now() - startedAt;
+
+    expect(parsed.aliasName).toBe("wide_pose");
+    expect(parsed.flatBoneMap.hips_bb_?.trans[1]).toBe(94);
+    expect(elapsedMs).toBeLessThan(50);
+  });
 });

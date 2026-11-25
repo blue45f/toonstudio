@@ -36,6 +36,20 @@ import {
 
 import type { BrushProgramIR, DynamicMappingIR } from "@toonstudio/studio-project-model";
 
+const SLASH_CHAR_CODE = 0x2f; // '/'
+
+/**
+ * 매니페스트 폴더 경로 끝의 연속 슬래시(`/`)를 선형 시간 O(n) 인덱스 루프로 제거한다.
+ * `/\/+$/u` 는 앞쪽에 슬래시가 길게 이어진 입력에서 2차 시간 백트래킹을 유발한다.
+ */
+function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === SLASH_CHAR_CODE) {
+    end -= 1;
+  }
+  return end === value.length ? value : value.slice(0, end);
+}
+
 export const PROCREATE_BRUSHSET_LIMITS = Object.freeze({
   ...PROCREATE_ZIP_LIMITS,
   maxBrushes: 256,
@@ -589,7 +603,7 @@ export function importProcreateBrushset(
       if (Array.isArray(manifest.brushes)) {
         brushFolders = manifest.brushes
           .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
-          .map((entry) => entry.trim().replace(/\/+$/u, ""));
+          .map((entry) => stripTrailingSlashes(entry.trim()));
       }
     } catch (cause) {
       throw new ProcreateBrushsetError(
