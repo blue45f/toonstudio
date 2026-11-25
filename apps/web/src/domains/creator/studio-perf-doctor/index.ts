@@ -1,0 +1,71 @@
+/**
+ * Wave 41E — 실시간 120Hz 프레임타임 프로파일러 · WebGPU/WASM/타일캐시/OPFS WAL 헬스 진단 ·
+ * 자동 적응형 성능 가드레일 닥터 배럴 모듈.
+ */
+
+export {
+  DEFAULT_RING_CAPACITY,
+  FRAME_PIPELINE_STAGE_IDS,
+  JANK_THRESHOLD_120HZ_MS,
+  JANK_THRESHOLD_60HZ_MS,
+  MAX_RING_CAPACITY,
+  MIN_RING_CAPACITY,
+  PERF_DOCTOR_SCENARIO_IDS,
+  analyzeFrameTimeRing,
+  applyGuardrailPrescription,
+  createFrameTimeRingBuffer,
+  createPerfDoctorScenario,
+  diagnoseStudioRuntimeHealth,
+  pushFrameSample,
+  pushFrameSamples,
+  readFrameSamplesChronological,
+  recommendAdaptiveGuardrail,
+} from "./realtime-perf-profiler";
+
+export type {
+  AdaptiveGuardrailPlan,
+  AdaptiveGuardrailReport,
+  AnalyzeFrameTimeOptions,
+  FrameBudgetGrade,
+  FrameHistogramBin,
+  FrameJankSpikeRecord,
+  FramePipelineStageId,
+  FrameStageBreakdownMs,
+  FrameStageMetric,
+  FrameTimeRingAnalysis,
+  FrameTimeRingBuffer,
+  FrameTimeSample,
+  FrameTimeSampleInput,
+  GpuRuntimeBackend,
+  GpuVramDiagnosis,
+  GpuVramSnapshot,
+  GuardrailApplicationResult,
+  GuardrailComparisonRow,
+  GuardrailPrescriptionStep,
+  GuardrailProfileId,
+  GuardrailVisualImpact,
+  JankSpikeSeverity,
+  JankSpikeSummary,
+  OpfsWalDiagnosis,
+  OpfsWalSnapshot,
+  PerfDoctorScenarioId,
+  RecommendGuardrailInput,
+  RuntimeBottleneckFinding,
+  RuntimeHealthGrade,
+  RuntimeSubsystemId,
+  SparseTileCacheDiagnosis,
+  SparseTileCacheSnapshot,
+  StudioCanvasContextSnapshot,
+  StudioPerfDoctorSnapshot,
+  StudioRuntimeHealthDiagnosis,
+  StudioRuntimeTelemetryInput,
+  TargetRefreshHz,
+  VramPressureLevel,
+  WalCheckpointMode,
+} from "./realtime-perf-profiler";
+
+export {
+  StudioPerfDoctorPanel,
+  type StudioPerfDoctorPanelProps,
+  type StudioPerfDoctorTabId,
+} from "./StudioPerfDoctorPanel";

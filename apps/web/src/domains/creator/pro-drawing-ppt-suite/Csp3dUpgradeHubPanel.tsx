@@ -1,4 +1,4 @@
-import { Brush, Hand, Layers, Move, ShieldCheck, Sun, Wand2, Watch } from "lucide-react";
+import { Brush, Camera, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -43,6 +43,21 @@ const LazyNeuralUpscaleTexturesPanel = lazy(async () => {
   const m = await import("../neural-upscale-textures/StudioNeuralUpscaleTexturesPanel");
   return { default: m.StudioNeuralUpscaleTexturesPanel };
 });
+const LazyCinematographyDirectorPanel = lazy(async () => {
+  await import("../webtoon-cinematography-director");
+  const m = await import("../webtoon-cinematography-director/StudioCinematographyDirectorPanel");
+  return { default: m.StudioCinematographyDirectorPanel };
+});
+const LazyStudio3dLightingRigPanel = lazy(async () => {
+  await import("../studio-3d-lighting-rig");
+  const m = await import("../studio-3d-lighting-rig/Studio3dLightingRigPanel");
+  return { default: m.Studio3dLightingRigPanel };
+});
+const LazyStudioActionFxLabPanel = lazy(async () => {
+  await import("../action-fx-procedural-lab");
+  const m = await import("../action-fx-procedural-lab/StudioActionFxLabPanel");
+  return { default: m.StudioActionFxLabPanel };
+});
 
 type Csp3dTabId =
   | "puppet"
@@ -52,7 +67,10 @@ type Csp3dTabId =
   | "commercialPro"
   | "charlabCsp"
   | "p3ColorLight"
-  | "neuralUpscale";
+  | "neuralUpscale"
+  | "cinematographyDir"
+  | "lightingRig3d"
+  | "actionFxLab";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -67,6 +85,9 @@ const CSP3D_TABS: readonly {
   { id: "charlabCsp", labelKo: "캐릭터 라이브 링크·벡터 지우개·QuickShape·수채화·워치", labelEn: "Char Live Link · Vector Eraser · QuickShape · Watch" },
   { id: "p3ColorLight", labelKo: "Display-P3 광색역·CMYK·실시간 다중 동적 조명", labelEn: "Display-P3 Gamut · CMYK · Dynamic Lighting" },
   { id: "neuralUpscale", labelKo: "2×/4× 엣지 업스케일러·6종 절차 PBR 텍스처", labelEn: "2x/4x Edge Upscaler · 6 Seamless PBR Textures" },
+  { id: "cinematographyDir", labelKo: "3D 시네마토그래피·180도 법칙·세로 시선 유도", labelEn: "3D Cinematography · 180° Rule · Eye-Flow" },
+  { id: "lightingRig3d", labelKo: "서울 물리 하늘·3점 조명 릭·그림자 캐처", labelEn: "Seoul Physical Sky · 3-Point Rig · Shadow Catcher" },
+  { id: "actionFxLab", labelKo: "웹툰 6종 액션·마법진·로맨스 벡터 FX 랩", labelEn: "6-Preset Action & Romance Vector FX Lab" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -103,6 +124,12 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Sun size={15} aria-hidden="true" />;
     case "neuralUpscale":
       return <Wand2 size={15} aria-hidden="true" />;
+    case "cinematographyDir":
+      return <Camera size={15} aria-hidden="true" />;
+    case "lightingRig3d":
+      return <Sunrise size={15} aria-hidden="true" />;
+    case "actionFxLab":
+      return <Zap size={15} aria-hidden="true" />;
   }
 }
 
@@ -159,6 +186,9 @@ export function Csp3dUpgradeHubPanel() {
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
+          {active === "cinematographyDir" ? <LazyCinematographyDirectorPanel /> : null}
+          {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel /> : null}
+          {active === "actionFxLab" ? <LazyStudioActionFxLabPanel /> : null}
         </Suspense>
       </div>
 

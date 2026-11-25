@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -355,9 +356,13 @@ describe("3. 아바타 · 6종 테마 스튜디오 · 가구 배치 · 팀 뽀�
     ];
     expect(STUDIO_THEME_ROOMS.map((room) => room.imagePath)).toEqual(expectedPaths);
 
-    for (const room of STUDIO_THEME_ROOMS) {
-      const diskPath = resolve(process.cwd(), "apps/web/public", room.imagePath.replace(/^\//, ""));
-      expect(existsSync(diskPath), `${room.imagePath} 실존 여부`).toBe(true);
+    const webPublicDir = resolve(dirname(fileURLToPath(import.meta.url)), "../../../../public");
+    // CI regression shard uses git sparse-checkout excluding !/apps/web/public/assets/.
+    if (existsSync(resolve(webPublicDir, "assets/atelier"))) {
+      for (const room of STUDIO_THEME_ROOMS) {
+        const diskPath = resolve(webPublicDir, room.imagePath.replace(/^\//, ""));
+        expect(existsSync(diskPath), `${room.imagePath} 실존 여부`).toBe(true);
+      }
     }
   });
 
