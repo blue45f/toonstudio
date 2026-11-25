@@ -574,10 +574,16 @@ const LESSON_FACTS: readonly LessonFact[] = [
       expect(cargo).toMatch(/name = "wgpu"\s+version = "30\.0\.1"/u);
       expect(cargo).toContain("toon-fabric = []");
       expect(cargo).toContain("our upstream PR candidate");
-      expect(readdirSync(repo("crates", "vendor", "wgpu-toon", "PATCHES")).filter((name) => name.endsWith(".patch")).sort()).toEqual([
+      const vendorPatches = readdirSync(repo("crates", "vendor", "wgpu-toon", "PATCHES"), { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".patch"))
+        .map((entry) => entry.name)
+        .sort();
+      expect(vendorPatches).toEqual([
         "0001-webgpu-handle-adoption.patch",
         "0002-rustix-security-and-clippy.patch",
       ]);
+      expect(lesson?.script.ko).toContain("보안·빌드 도구 수정");
+      expect(lesson?.script.en).toContain("The rustix security update and build-tool fix apply to all builds.");
       // braces: 취약 범위를 저장소 포크(patches/braces)로 대체하고, 포크는 중첩 깊이 100 가드를 가진다.
       expect(flat("pnpm-workspace.yaml")).toContain("'braces@>=3.0.0 <3.0.4': 'file:patches/braces'");
       expect(readText("patches", "braces", "lib", "constants.js")).toContain("MAX_DEPTH: 100,");
