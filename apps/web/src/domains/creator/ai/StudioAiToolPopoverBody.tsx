@@ -92,6 +92,7 @@ export function StudioAiToolPopoverBody({
     aiDialogueSuggestCandidates,
     aiDialogueSuggestError,
     aiDialogueSuggestIncludeContext,
+    aiDialogueSuggestLockedTarget,
     aiDialogueSuggestSituation,
     aiPaletteSuggestBusy,
     aiPaletteSuggestError,
@@ -131,6 +132,7 @@ export function StudioAiToolPopoverBody({
     announceDrawingShortcut,
     applyAiAssistPresetPrompt,
     beginTrackedStudioAiOperation,
+    cancelSuggestDialogueLines,
     disarmAllPixelTools,
     executeSuggestColorPalette,
     executeSuggestDialogueLines,
@@ -509,6 +511,8 @@ export function StudioAiToolPopoverBody({
                       configured={textAiReady}
                       sceneText={aiCompositionDraft}
                       onSceneTextChange={setAiCompositionDraft}
+                      activePageId={activePage.id}
+                      activePageLabel={activePage.name}
                       onInsertAsNote={insertAiCompositionNote}
                       onOperationStart={(prompt) => {
                         setAiRecentPrompts(
@@ -554,8 +558,17 @@ export function StudioAiToolPopoverBody({
                         }
                         void executeSuggestDialogueLines();
                       }}
+                      onCancel={cancelSuggestDialogueLines}
                       canInsertToSelected={
                         !!selected && (selected.type === "bubble" || selected.type === "text")
+                      }
+                      lockedTarget={aiDialogueSuggestLockedTarget}
+                      currentPageId={activePage.id}
+                      currentSelectedId={selected?.id ?? null}
+                      currentSelectedOriginalText={
+                        selected && (selected.type === "bubble" || selected.type === "text")
+                          ? selected.text
+                          : null
                       }
                       onAddToScript={addDialogueSuggestionToScript}
                       onInsertToSelected={insertDialogueSuggestionToSelected}

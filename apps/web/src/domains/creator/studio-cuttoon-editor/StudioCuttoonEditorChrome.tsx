@@ -42,6 +42,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
     aiDialogueSuggestCandidates,
     aiDialogueSuggestError,
     aiDialogueSuggestIncludeContext,
+    aiDialogueSuggestLockedTarget,
     aiDialogueSuggestSituation,
     aiPaletteSuggestBusy,
     aiPaletteSuggestError,
@@ -764,6 +765,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           aiDialogueSuggestCandidates={aiDialogueSuggestCandidates}
           aiDialogueSuggestError={aiDialogueSuggestError}
           aiDialogueSuggestIncludeContext={aiDialogueSuggestIncludeContext}
+          aiDialogueSuggestLockedTarget={aiDialogueSuggestLockedTarget}
           aiDialogueSuggestSituation={aiDialogueSuggestSituation}
           aiPaletteSuggestBusy={aiPaletteSuggestBusy}
           aiPaletteSuggestError={aiPaletteSuggestError}

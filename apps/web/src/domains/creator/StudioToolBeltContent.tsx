@@ -195,6 +195,7 @@ export interface StudioToolBeltContentHandlers {
   applyStudioBackgroundFill: (payload: { kind: "solid" | "gradient" | "svg"; color?: string; stops?: string[]; direction?: "vertical" | "horizontal"; svg?: string; width?: number; height?: number; label?: string; presetId?: string; }) => Promise<void>;
   applyTemplate: (tpl: TemplateSpec) => void;
   beginTrackedStudioAiOperation: (scope: string, input: Omit<StudioAiPendingOperationInput, "id">) => string;
+  cancelSuggestDialogueLines?: () => void;
   deleteClip: (id: string) => Promise<void>;
   disarmAllPixelTools: () => void;
   ensureRecentColorsLoaded: () => void;
@@ -203,7 +204,7 @@ export interface StudioToolBeltContentHandlers {
   executeSuggestDialogueLines: () => Promise<void>;
   fitCanvasToWidth: () => void;
   handleRenameAsset: (id: string) => Promise<void>;
-  insertAiCompositionNote: (text: string) => void;
+  insertAiCompositionNote: (text: string, targetPageId?: string) => void;
   insertClip: (clip: StudioClip) => void;
   insertDialogueSuggestionToSelected: (candidate: DialogueSuggestionCandidate) => void;
   insertStockImage: (photo: StudioStockPhoto, dataUrl: string, width: number, height: number) => void;
@@ -260,6 +261,7 @@ export interface StudioToolBeltContentProps {
   aiDialogueSuggestCandidates: DialogueSuggestionCandidate[] | null;
   aiDialogueSuggestError: string | null;
   aiDialogueSuggestIncludeContext: boolean;
+  aiDialogueSuggestLockedTarget?: import("./studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers").StudioAiDialogueLockedTarget | null;
   aiDialogueSuggestSituation: string;
   aiPaletteSuggestBusy: boolean;
   aiPaletteSuggestError: string | null;

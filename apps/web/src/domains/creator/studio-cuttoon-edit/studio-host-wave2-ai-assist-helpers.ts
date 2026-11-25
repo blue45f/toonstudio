@@ -201,6 +201,13 @@ export function runStudioApplyAiAssistPresetPrompt(input: {
   }
 }
 
+export interface StudioAiDialogueLockedTarget {
+  readonly pageId: string;
+  readonly elementId: string;
+  readonly pageLabel?: string;
+  readonly originalText?: string;
+}
+
 export async function runStudioExecuteAiColorizeCandidate<TTicket>(input: {
   readonly elId: string;
   readonly srcAtRequestTime: string;
@@ -211,6 +218,7 @@ export async function runStudioExecuteAiColorizeCandidate<TTicket>(input: {
   readonly candidateSession: StudioAiColorizeCandidateSession;
   readonly candidateProvenanceRef: MutableRefObject<Map<string, StudioAiGeneratedAssetProvenance>>;
   readonly editorMountedRef: MutableRefObject<boolean>;
+  readonly abortRef?: MutableRefObject<AbortController | null>;
   readonly captureMutationTicket: () => TTicket;
   readonly canApplyMutation: (ticket: TTicket) => boolean;
   readonly beginTrackedOperation: (
@@ -222,9 +230,13 @@ export async function runStudioExecuteAiColorizeCandidate<TTicket>(input: {
   readonly setError: (error: string | null) => void;
   readonly setSession: (session: StudioAiColorizeCandidateSession) => void;
   readonly setTargetId: (targetId: string | null) => void;
+  readonly setTargetPageId?: (pageId: string | null) => void;
 }): Promise<void> {
   if (input.collaborationLocked) return;
   const mutationTicket = input.captureMutationTicket();
+  input.abortRef?.current?.abort();
+  const controller = new AbortController();
+  if (input.abortRef) input.abortRef.current = controller;
   input.setBusy(true);
   input.setError(null);
   const provider = studioImageAiProviderContext(input.aiSettings);
@@ -240,8 +252,14 @@ export async function runStudioExecuteAiColorizeCandidate<TTicket>(input: {
     target: { pageId: input.activePageId, elementId: input.elId },
     references: [{ assetId: input.elId }],
   });
-  const result = await colorizeLineArt(input.aiSettings, input.srcAtRequestTime, input.prompt);
-  if (!input.canApplyMutation(mutationTicket)) {
+  const result = await colorizeLineArt(
+    input.aiSettings,
+    input.srcAtRequestTime,
+    input.prompt,
+    { signal: controller.signal },
+  );
+  if (input.abortRef?.current === controller) input.abortRef.current = null;
+  if (controller.signal.aborted || !input.canApplyMutation(mutationTicket)) {
     if (input.editorMountedRef.current) input.setBusy(false);
     return;
   }
@@ -266,15 +284,22 @@ export async function runStudioExecuteAiColorizeCandidate<TTicket>(input: {
   input.candidateProvenanceRef.current.set(candidateId, requestProvenance);
   input.setSession(added.session);
   input.setTargetId(input.elId);
+  input.setTargetPageId?.(input.activePageId);
   input.setBusy(false);
 }
 
 export function runStudioApplyColorizeCandidate(input: {
   readonly targetId: string | null;
+  readonly targetPageId?: string | null;
   readonly candidateSession: StudioAiColorizeCandidateSession;
   readonly targetElement: El | undefined;
   readonly candidateProvenanceRef: MutableRefObject<Map<string, StudioAiGeneratedAssetProvenance>>;
   readonly patchEl: (
+    id: string,
+    patch: { src: string; aiProvenance?: StudioAiGeneratedAssetProvenance },
+  ) => boolean;
+  readonly patchElOnPage?: (
+    pageId: string,
     id: string,
     patch: { src: string; aiProvenance?: StudioAiGeneratedAssetProvenance },
   ) => boolean;
@@ -291,9 +316,13 @@ export function runStudioApplyColorizeCandidate(input: {
     return;
   }
   const provenance = input.candidateProvenanceRef.current.get(resolved.plan.candidateId);
-  const applied = provenance
-    ? input.patchEl(input.targetId, { src: resolved.plan.dataUrl, aiProvenance: provenance })
-    : input.patchEl(input.targetId, { src: resolved.plan.dataUrl });
+  const patch = provenance
+    ? { src: resolved.plan.dataUrl, aiProvenance: provenance }
+    : { src: resolved.plan.dataUrl };
+  const applied =
+    input.targetPageId && input.patchElOnPage
+      ? input.patchElOnPage(input.targetPageId, input.targetId, patch)
+      : input.patchEl(input.targetId, patch);
   if (!applied) {
     input.setError("채색 후보는 생성됐지만 이미지 레이어에 적용하지 못했어요.");
   }
@@ -351,7 +380,7 @@ export function planStudioScenarioProductionImport(input: {
   };
 }
 
-export async function runStudioExecuteSuggestDialogueLines(input: {
+export async function runStudioExecuteSuggestDialogueLines<TTicket = unknown>(input: {
   readonly collaborationLocked: boolean;
   readonly situationText: string;
   readonly busy: boolean;
@@ -360,6 +389,11 @@ export async function runStudioExecuteSuggestDialogueLines(input: {
   readonly activePageId: string;
   readonly aiSettings: StudioAiSettings;
   readonly textAiTransport: StudioTextAiTransport;
+  readonly abortRef?: MutableRefObject<AbortController | null>;
+  readonly captureMutationTicket?: () => TTicket;
+  readonly canApplyMutation?: (ticket: TTicket) => boolean;
+  readonly lockedTarget?: StudioAiDialogueLockedTarget | null;
+  readonly setLockedTarget?: (target: StudioAiDialogueLockedTarget | null) => void;
   readonly pendingProvider: () => StudioAiOperationProviderContext;
   readonly beginTrackedOperation: (
     feature: "dialogue",
@@ -369,6 +403,7 @@ export async function runStudioExecuteSuggestDialogueLines(input: {
     operationId: string,
     result: StudioAiObservableResult,
     textProvenance?: StudioTextAiProvenance,
+    aborted?: boolean,
   ) => void;
   readonly setBusy: (busy: boolean) => void;
   readonly setError: (error: string | null) => void;
@@ -377,6 +412,11 @@ export async function runStudioExecuteSuggestDialogueLines(input: {
   if (input.collaborationLocked) return;
   const situation = input.situationText.trim();
   if (!situation || input.busy) return;
+  const mutationTicket = input.captureMutationTicket?.();
+  input.abortRef?.current?.abort();
+  const controller = new AbortController();
+  if (input.abortRef) input.abortRef.current = controller;
+  input.setLockedTarget?.(input.lockedTarget ?? null);
   input.setBusy(true);
   input.setError(null);
   input.setCandidates(null);
@@ -396,19 +436,42 @@ export async function runStudioExecuteSuggestDialogueLines(input: {
     transport: pendingProvider.transport,
     promptVersion: 1,
     prompt: JSON.stringify({ situation, existingContext }),
-    target: { pageId: input.activePageId },
+    target: {
+      pageId: input.activePageId,
+      ...(input.lockedTarget ? { elementId: input.lockedTarget.elementId } : {}),
+    },
     references: [],
   });
-  const result = await suggestDialogueLines(
-    input.aiSettings,
-    situation,
-    { existingContext },
-    studioTextAiTransportForOperation(input.textAiTransport, operationId),
-  );
-  input.settleTextOperation(operationId, result, result.ok ? result.data.textProvenance : undefined);
-  if (result.ok) input.setCandidates(result.data.candidates);
-  else input.setError(result.error);
-  input.setBusy(false);
+  try {
+    const result = await suggestDialogueLines(
+      input.aiSettings,
+      situation,
+      { existingContext, signal: controller.signal },
+      studioTextAiTransportForOperation(input.textAiTransport, operationId),
+    );
+    if (controller.signal.aborted) {
+      input.settleTextOperation(operationId, result, undefined, true);
+      return;
+    }
+    if (
+      mutationTicket !== undefined &&
+      input.canApplyMutation &&
+      !input.canApplyMutation(mutationTicket)
+    ) {
+      input.settleTextOperation(operationId, result, undefined, true);
+      return;
+    }
+    input.settleTextOperation(
+      operationId,
+      result,
+      result.ok ? result.data.textProvenance : undefined,
+    );
+    if (result.ok) input.setCandidates(result.data.candidates);
+    else input.setError(result.error);
+  } finally {
+    if (input.abortRef?.current === controller) input.abortRef.current = null;
+    input.setBusy(false);
+  }
 }
 
 export async function runStudioExecuteSuggestColorPalette(input: {

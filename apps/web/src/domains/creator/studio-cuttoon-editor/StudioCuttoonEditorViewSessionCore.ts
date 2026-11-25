@@ -48,6 +48,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   aiDialogueSuggestCandidates: import("../lettering/studio-dialogue-suggest").DialogueSuggestionCandidate[] | null;
   aiDialogueSuggestError: string | null;
   aiDialogueSuggestIncludeContext: boolean;
+  aiDialogueSuggestLockedTarget?: import("../studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers").StudioAiDialogueLockedTarget | null;
   aiDialogueSuggestSituation: string;
   aiNoticeOpen: boolean;
   aiPaletteSuggestBusy: boolean;
