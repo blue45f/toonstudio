@@ -22,15 +22,13 @@ test("지속 획 검사기가 형제 캔버스의 잉크가 지워진 두 프레
         requestAnimationFrame(() => requestAnimationFrame(() => ink.fillRect(48, 64, 80, 24)));
       });
     });
-    // 옵션 생략도 false로 표시되므로 브라우저에 전달한 생성 옵션까지 확인한다.
+    // 기본값과 구분할 수 있도록 브라우저에 실제 전달한 생성 옵션을 기록한다.
     const prototype = OffscreenCanvas.prototype;
     prototype.getContext = new Proxy(prototype.getContext, {
       apply(target, canvas: OffscreenCanvas, args) {
         const context = Reflect.apply(target, canvas, args);
         if (context instanceof OffscreenCanvasRenderingContext2D) {
-          ink.canvas.dataset.readHints = JSON.stringify([
-            args[1]?.willReadFrequently, context.getContextAttributes().willReadFrequently,
-          ]);
+          ink.canvas.dataset.readFrequently = String(args[1]?.willReadFrequently);
         }
         return context;
       },
@@ -43,5 +41,5 @@ test("지속 획 검사기가 형제 캔버스의 잉크가 지워진 두 프레
   expect(result.compositorCanvasCount).toBe(2);
   expect(result.blankFrameCount).toBe(2);
   expect(result.blankFrameObservationCount).toBeGreaterThan(2);
-  expect(await page.locator("#ink").getAttribute("data-read-hints")).toBe("[false,false]");
+  expect(await page.locator("#ink").getAttribute("data-read-frequently")).toBe("false");
 });
