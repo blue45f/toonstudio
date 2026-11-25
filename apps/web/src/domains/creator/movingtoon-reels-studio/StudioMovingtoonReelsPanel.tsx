@@ -313,7 +313,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-label={tab.label} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? SOLID_ACTIVE : IDLE_TONE}`}
           >
