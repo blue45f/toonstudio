@@ -364,7 +364,7 @@ export function StudioNeuralUpscaleTexturesPanel(
               type="button"
               role="tab"
               aria-selected={selected}
-              aria-label={tab.label} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
+              aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`${TAB_BASE} ${selected ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg"}`}
             >
