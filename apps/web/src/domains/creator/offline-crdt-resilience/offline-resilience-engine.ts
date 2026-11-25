@@ -192,6 +192,12 @@ function compareLwwDesc(a: CrdtOperation, b: CrdtOperation): { readonly order: n
  * 동시 편집 충돌은 결정론적 LWW 타이브레이커 (lamport, actorId, opId)로 해결한다.
  */
 export function compactCrdtOpLog(ops: readonly CrdtOperation[]): CrdtCompactionResult {
+  if (ops.length > 512) throw new RangeError("예제 큐는 최대 512개 연산을 지원합니다.");
+  for (const op of ops) {
+    if (!Number.isSafeInteger(op.lamport) || op.lamport < 0 || !Number.isSafeInteger(op.payloadBytes) || op.payloadBytes < 0) {
+      throw new RangeError("논리 시각과 페이로드 크기는 비음수 안전 정수여야 합니다.");
+    }
+  }
   const byEntity = new Map<string, CrdtOperation[]>();
   let mergedClock: VectorClock = {};
   let originalBytes = 0;
@@ -247,12 +253,13 @@ export function compactCrdtOpLog(ops: readonly CrdtOperation[]): CrdtCompactionR
     winners.push({ ...winner, clock: entityClock });
   }
 
-  winners.sort((a, b) =>
-    a.lamport !== b.lamport ? a.lamport - b.lamport
-      : a.entityKey !== b.entityKey ? (a.entityKey < b.entityKey ? -1 : 1)
-        : a.actorId !== b.actorId ? (a.actorId < b.actorId ? -1 : 1)
-          : a.opId < b.opId ? -1 : a.opId > b.opId ? 1 : 0,
-  );
+  winners.sort(function compareWinners(a, b): number {
+    if (a.lamport !== b.lamport) return a.lamport - b.lamport;
+    for (const key of ["entityKey", "actorId", "opId"] as const) {
+      if (a[key] !== b[key]) return a[key] < b[key] ? -1 : 1;
+    }
+    return 0;
+  });
   droppedOpIds.sort();
 
   const compactedBytes = winners.reduce((sum, op) => sum + Math.max(0, Math.floor(op.payloadBytes)), 0);
@@ -362,7 +369,7 @@ function generateTileBytes(seed: number, byteSize: number): Uint8Array {
 
 /** OPFS 16K 원고 청크 4개와 단일 XOR 패리티 스트라이프를 결정론적으로 구성한다. */
 export function createDefaultManuscriptParityStripe(chunkByteSize = 256): ManuscriptParityStripe {
-  const safeSize = Math.max(16, Math.floor(chunkByteSize));
+  const safeSize = Number.isFinite(chunkByteSize) ? Math.min(65_536, Math.max(16, Math.floor(chunkByteSize))) : 256;
   const specs = [
     ["chunk-00", "16K 타일 #0 (선화·말풍선 상단)", "16K Tile #0 (Lineart & Top Balloons)", "/opfs/manuscripts/ep-42/16k-tile-00.bin", "y: 0–4096 px", 0x4200101],
     ["chunk-01", "16K 타일 #1 (주인공 클로즈업·밑색)", "16K Tile #1 (Lead Close-up & Flats)", "/opfs/manuscripts/ep-42/16k-tile-01.bin", "y: 4096–8192 px", 0x4200202],
@@ -449,6 +456,21 @@ function toChunkResult(
  * 단일 손상 청크(또는 손상 패리티)를 XOR 패리티로 비트 단위 무손실 복구한다.
  */
 export function verifyAndRepairManuscriptChunks(stripe: ManuscriptParityStripe): ManuscriptRecoveryReport {
+  if (!Number.isInteger(stripe.chunkByteSize) || stripe.chunkByteSize < 16 || stripe.chunkByteSize > 65_536 ||
+    stripe.chunks.length === 0 || stripe.chunks.length > 32 || stripe.parityData.length !== stripe.chunkByteSize ||
+    stripe.chunks.some((chunk) => chunk.data.length !== stripe.chunkByteSize)) {
+    throw new RangeError("예제 스트라이프는 16~65,536바이트 청크 최대 32개와 같은 길이의 패리티가 필요합니다.");
+  }
+  const chunkIds = new Set<string>();
+  const chunkIndices = new Set<number>();
+  for (const chunk of stripe.chunks) {
+    if (typeof chunk.chunkId !== "string" || !chunk.chunkId.trim() || chunkIds.has(chunk.chunkId) ||
+      !Number.isInteger(chunk.index) || chunk.index < 0 || chunk.index >= stripe.chunks.length || chunkIndices.has(chunk.index)) {
+      throw new RangeError("청크 ID는 비어 있지 않고 고유해야 하며 슬롯은 0부터 청크 수 미만의 고유 정수여야 합니다.");
+    }
+    chunkIds.add(chunk.chunkId);
+    chunkIndices.add(chunk.index);
+  }
   const checks: RawChunkCheck[] = stripe.chunks.map((chunk) => {
     const actualCrc32 = computeCrc32Hex(chunk.data);
     const actualSha256 = computeSha256Hex(chunk.data);
@@ -629,7 +651,7 @@ function expireLeaseIfDue(state: TabWriterLeaseState): TabWriterLeaseState {
 
 /** 3개 브라우저 탭이 열린 초기 멀티탭 단일 쓰기 잠금 상태를 생성한다. */
 export function createInitialTabWriterLeaseState(leaseTtlMs = 5000): TabWriterLeaseState {
-  const safeTtl = Math.max(1000, Math.floor(leaseTtlMs));
+  const safeTtl = Number.isFinite(leaseTtlMs) ? Math.min(60_000, Math.max(1000, Math.floor(leaseTtlMs))) : 5000;
   const mk = (tabId: string, labelKo: string, labelEn: string, role: TabLeaseRole): TabSessionState => ({
     tabId, labelKo, labelEn, role, knownFencingEpoch: 1, lastHeartbeatMs: 1000,
     pendingReadOnlyDraftCount: 0, blockedWriteAttempts: 0, acceptedWrites: 0,
@@ -655,16 +677,18 @@ export function createInitialTabWriterLeaseState(leaseTtlMs = 5000): TabWriterLe
  * 멀티탭 단일 쓰기 소유 잠금 상태기계를 한 단계 전이한다.
  * - 하트비트 TTL 만료 감지 시 구 쓰기 탭을 비파괴 읽기 전용으로 강등
  * - 새 쓰기 소유권 부여·강제 인계 시 펜싱 토큰(fencingEpoch)을 단조 증가
- * - 구 에폭/비소유 탭 쓰기는 차단(write-fenced)하되 입력 초안을 읽기 전용 임시 버퍼에 보존
+ * - 구 에폭/비소유 탭의 예제 쓰기 시도를 차단하고 횟수만 기록 (초안 내용 저장 없음)
  */
 export function stepTabWriterLease(state: TabWriterLeaseState, action: TabWriterLeaseAction): TabWriterLeaseState {
   if (action.type === "tick") {
-    return expireLeaseIfDue({ ...state, nowMs: state.nowMs + Math.max(0, Math.floor(action.deltaMs)) });
+    const delta = Number.isFinite(action.deltaMs) ? Math.min(60_000, Math.max(0, Math.floor(action.deltaMs))) : 0;
+    return expireLeaseIfDue({ ...state, nowMs: Math.min(Number.MAX_SAFE_INTEGER, state.nowMs + delta) });
   }
   const cur = expireLeaseIfDue(state);
 
   if (action.type === "register-tab") {
     if (cur.tabs.some((t) => t.tabId === action.tabId)) return cur;
+    if (cur.tabs.length >= 32) throw new RangeError("예제 탭은 최대 32개입니다.");
     const joined: TabSessionState = {
       tabId: action.tabId, labelKo: action.labelKo, labelEn: action.labelEn, role: "read-only",
       knownFencingEpoch: cur.fencingEpoch, lastHeartbeatMs: cur.nowMs,
@@ -764,7 +788,7 @@ export function stepTabWriterLease(state: TabWriterLeaseState, action: TabWriter
     ),
   }, {
     tabId: action.tabId, kind: "write-fenced", fencingEpoch: cur.fencingEpoch,
-    detailKo: `${action.tabId} 쓰기 차단(제출 Epoch #${action.submittedEpoch} ≠ 현재 #${cur.fencingEpoch}) — 초안을 읽기 전용 버퍼에 무손실 격리`,
-    detailEn: `${action.tabId} write fenced (submitted Epoch #${action.submittedEpoch} != current #${cur.fencingEpoch}) — draft safely buffered`,
+    detailKo: `${action.tabId} 쓰기 차단(제출 Epoch #${action.submittedEpoch} ≠ 현재 #${cur.fencingEpoch}) — 거부 시도 수만 메모리에 기록 (실제 초안 저장 없음)`,
+    detailEn: `${action.tabId} write fenced (submitted Epoch #${action.submittedEpoch} != current #${cur.fencingEpoch}) — attempt counted in memory; no draft persisted`,
   });
 }

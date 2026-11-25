@@ -18,6 +18,8 @@ import {
   type ArchitecturalSurfaceId, type PhysicalSkyPresetId, type RelightBridge2dPayload, type ResolvedRigLight,
   type RigLightChannel, type SkyPhaseId, type StudioRigConfig,
 } from "./hdri-sky-rig-engine";
+import { useBrowserOutput } from "./use-browser-output";
+import { useExampleNotification } from "./use-example-notification";
 
 export type Studio3dLightingRigTabId = "sky-dome" | "studio-rig";
 type FocusedLightId = ResolvedRigLight["id"];
@@ -27,8 +29,9 @@ export interface Studio3dLightingRigPanelProps {
   readonly initialPresetId?: PhysicalSkyPresetId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onPresetChange?: (presetId: PhysicalSkyPresetId) => void;
-  readonly onExportRelightBridge?: (payload: RelightBridge2dPayload, jsonText: string) => void;
+  /** CPU 예제 결과 알림이며 실제 씬 적용·저장 완료 응답이 아니다. */
+  readonly onPresetChange?: (presetId: PhysicalSkyPresetId) => void | Promise<void>;
+  readonly onExportRelightBridge?: (payload: RelightBridge2dPayload, jsonText: string) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -93,6 +96,10 @@ export function Studio3dLightingRigPanel(props: Studio3dLightingRigPanelProps): 
   const uid = useId();
   const isEn = locale === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
+  const presetNotification = useExampleNotification(onPresetChange);
+  const bridgeNotification = useExampleNotification<readonly [RelightBridge2dPayload, string]>(onExportRelightBridge ? ([payload, text]) => onExportRelightBridge(payload, text) : undefined);
+  const output = useBrowserOutput();
+  const busy = (): boolean => presetNotification.isPending() || bridgeNotification.isPending() || output.isPending();
 
   const [activeTab, setActiveTab] = useState<Studio3dLightingRigTabId>(initialTab);
   const [config, setConfig] = useState<StudioRigConfig>(() => createInitialStudioRigConfig(initialPresetId));
@@ -123,12 +130,14 @@ export function Studio3dLightingRigPanel(props: Studio3dLightingRigPanelProps): 
   }, [dailyArc.points]);
 
   const handleSelectPreset = (presetId: PhysicalSkyPresetId): void => {
+    if (busy()) return;
     setConfig(createInitialStudioRigConfig(presetId));
     setExportStatus("");
-    onPresetChange?.(presetId);
+    presetNotification.notify(presetId);
   };
 
   const handleResetPreset = (): void => {
+    if (busy()) return;
     setConfig(createInitialStudioRigConfig(config.presetId));
     setExportStatus("");
   };
@@ -151,20 +160,20 @@ export function Studio3dLightingRigPanel(props: Studio3dLightingRigPanelProps): 
   };
 
   const handleExportBridge = (): void => {
-    onExportRelightBridge?.(bridgePayload, bridgeJson);
+    if (busy()) return;
+    bridgeNotification.notify([bridgePayload, bridgeJson]);
     setExportStatus(
       pick(
-        `2D 컷 리라이트 브리지(${RELIGHT_BRIDGE_SCHEMA_VERSION}) 생성 완료 · 추천 2D 프리셋: ${bridgePayload.threeLayer2dRelight.suggestedPresetId}`,
-        `Exported 2D cut relight bridge (${RELIGHT_BRIDGE_SCHEMA_VERSION}) · 2D preset: ${bridgePayload.threeLayer2dRelight.suggestedPresetId}`,
+        `메모리 JSON 예제(${RELIGHT_BRIDGE_SCHEMA_VERSION}) · 추천 2D 프리셋: ${bridgePayload.threeLayer2dRelight.suggestedPresetId}`,
+        `In-memory JSON example (${RELIGHT_BRIDGE_SCHEMA_VERSION}) · 2D preset: ${bridgePayload.threeLayer2dRelight.suggestedPresetId}`,
       ),
     );
   };
 
   const handleCopyBridge = (): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(bridgeJson).catch(() => undefined);
-    }
-    setExportStatus(pick("조명 브리지 JSON을 클립보드 복사 준비 상태로 전환했습니다.", "Lighting bridge JSON ready in clipboard."));
+    if (busy()) return;
+    output.notify({ kind: "copy", text: bridgeJson });
+    setExportStatus(pick("JSON 복사 응답을 아래에서 확인하세요.", "Check the JSON copy response below."));
   };
 
   const stageCx = 180;
@@ -194,9 +203,24 @@ export function Studio3dLightingRigPanel(props: Studio3dLightingRigPanelProps): 
   return (
     <section
       data-testid="studio-3d-lighting-rig-panel"
+      aria-busy={presetNotification.status === "pending" || bridgeNotification.status === "pending" || output.status === "pending"}
       aria-label={pick("3D 통합 물리 하늘·스튜디오 조명 릭·그림자 캐처 워크벤치", "3D Physical Sky, Studio Lighting Rig and Shadow Catcher Workbench")}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
+      <p data-testid="lighting-scope-notice" className="text-xs text-fg-2">{pick("CPU 태양 궤적 근사·색 혼합·그림자 타원과 SVG의 계산 예제입니다. 조도·정합 점수는 모델 추정이며 실측이 아닙니다. 실제 3D 씬·GPU/HDRI 환경맵·현재 원고 적용·영구 저장에는 연결되지 않습니다. 패널을 닫으면 예제 상태가 사라집니다.", "CPU solar-path, color-mixing and shadow-ellipse calculations with SVG previews. Lux and match scores are model estimates. No real 3D scene, GPU/HDRI map, manuscript apply or persistent storage is connected; example state ends on close.")}</p>
+      {[{ key: "preset", notification: presetNotification, retryLabel: pick("프리셋 알림 다시 시도", "Retry preset notification") }, { key: "bridge", notification: bridgeNotification, retryLabel: pick("브리지 알림 다시 시도", "Retry bridge notification") }].map(({ key, notification: n, retryLabel }) => n.status !== "idle" ? (
+        <p key={key} data-testid={`lighting-notification-${key}`} role={n.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+          {n.status === "failed" ? pick("예제 알림 실패", "Example notification failed") : n.status === "pending" ? pick("예제 알림 대기 중", "Example notification pending") : n.status === "local-only" ? pick("예제 수신자 미연결", "No example receiver") : pick("예제 알림 완료", "Example notification delivered")} · {pick("실제 적용·저장 완료 아님", "No real apply or save confirmed")} {n.error}
+          {n.status === "failed" && <button type="button" onClick={n.retry} className={BTN_OUTLINE}>{retryLabel}</button>}
+        </p>
+      ) : null)}
+      {output.status !== "idle" && (
+        <p data-testid="lighting-copy-status" role={output.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+          {output.status === "failed" ? pick("JSON 복사 실패", "JSON copy failed") : output.status === "pending" ? pick("JSON 복사 대기 중", "JSON copy pending") : pick("JSON 복사 완료", "JSON copied")} {output.error}
+          {output.status === "failed" && <button type="button" onClick={output.retry} className={BTN_OUTLINE}>{pick("JSON 복사 다시 시도", "Retry JSON copy")}</button>}
+        </p>
+      )}
+      <fieldset disabled={presetNotification.status === "pending" || bridgeNotification.status === "pending" || output.status === "pending"} className="m-0 min-w-0 space-y-4 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -542,7 +566,7 @@ export function Studio3dLightingRigPanel(props: Studio3dLightingRigPanelProps): 
                 </button>
                 <button type="button" data-testid="export-relight-bridge-btn" onClick={handleExportBridge} className={BTN_SOLID}>
                   <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>{pick("2D 컷 리라이트 브리지 내보내기", "Export 2D Relight Bridge")}</span>
+                  <span>{pick("JSON 예제 결과 알림", "Notify JSON example result")}</span>
                 </button>
               </div>
             </div>
@@ -565,6 +589,7 @@ export function Studio3dLightingRigPanel(props: Studio3dLightingRigPanelProps): 
           </div>
         </div>
       )}
+      </fieldset>
     </section>
   );
 }

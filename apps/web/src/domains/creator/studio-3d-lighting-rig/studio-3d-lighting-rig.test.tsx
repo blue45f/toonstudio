@@ -71,16 +71,15 @@ describe("1. 서울(37.57°N) 계절·시각 태양 궤적 계산기 (computeSeo
     expect(noon.azimuthDeg).toBeLessThan(afternoon.azimuthDeg);
   });
 
-  it("입력 시각을 05:00~22:00 범위로 안전 클램프하고 비정상 숫자 입력을 방어한다", () => {
+  it("유한 시각은 05:00~22:00 범위로 클램프하고 NaN은 명시적으로 거부한다", () => {
     const tooEarly = computeSeoulSunPosition("summer", 1.5);
     const tooLate = computeSeoulSunPosition("summer", 25.0);
-    const nanInput = computeSeoulSunPosition("winter", Number.NaN);
 
     expect(tooEarly.hourKst).toBe(MIN_SOLAR_HOUR_KST);
     expect(tooEarly.formattedHourKst).toBe("05:00");
     expect(tooLate.hourKst).toBe(MAX_SOLAR_HOUR_KST);
     expect(tooLate.formattedHourKst).toBe("22:00");
-    expect(nanInput.hourKst).toBe(MIN_SOLAR_HOUR_KST);
+    expect(() => computeSeoulSunPosition("winter", Number.NaN)).toThrow(/유한/);
     expect(formatHourKst(17.75)).toBe("17:45");
   });
 
