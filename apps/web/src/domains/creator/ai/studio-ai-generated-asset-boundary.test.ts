@@ -187,13 +187,17 @@ describe("Studio AI generated asset fail-closed boundary", () => {
 
   it("requires a successful document commit before dismissing a scenario preview", () => {
     const applyScenario = functionSource("onApplyScenarioPreview");
-    expect(applyScenario).toContain("if (!commitPages(populatedPages))");
-    expect(applyScenario).toContain("if (!commit([...elements, ...newEls]");
     expectInOrder(applyScenario, [
+      "if (!commitPages(populatedPages))",
+      "scenarioNewPageApplyFailed",
+      "return false;",
+      "setCurrentPageId(insertedPage.id)",
       "if (!commit([...elements, ...newEls]",
-      "return;",
+      "scenarioCurrentPageApplyFailed",
+      "return false;",
       "setScenarioResult(null)",
       "setScenarioOpen(false)",
+      "return true;",
     ]);
   });
 });
