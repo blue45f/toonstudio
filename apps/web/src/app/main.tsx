@@ -24,6 +24,7 @@ import "./styles/product-journey-readability.css";
 import "./styles/reference-visual-system.css";
 import "./styles/atelier-motion.css";
 import "./styles/ink-motion.css";
+import "./styles/spectrum-editorial-theme.css";
 
 ensureBrowserPolyfills();
 ensureLegacyStorageMigrated();
