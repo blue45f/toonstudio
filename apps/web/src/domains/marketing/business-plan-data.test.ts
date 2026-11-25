@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
+import { BUSINESS_PLAN_DOCUMENT_BASIS, BUSINESS_PLAN_SECTIONS } from "./business-plan-data";
 
 /** 사업계획서 페이지 본문 데이터 계약: 문항 순서·표 형태·금지 표기를 고정한다. */
 
@@ -100,5 +100,23 @@ describe("사업계획서 페이지 본문 데이터", () => {
     expect(serialized).toContain("Cloudflare 정적 웹과 onpod API·DB");
     expect(serialized).toContain("승인·검증 후 수동 배포");
     expect(serialized).not.toMatch(/7개 환경|Vercel|171개|프리플라이트 100% 통과|96\.84|96\.74/);
+  });
+
+  it("2026-11-25 웨이브 45~49 구현·보안 기록을 운영 매출·고객 성과와 분리해 반영한다", () => {
+    expect(BUSINESS_PLAN_DOCUMENT_BASIS).toContain("2026-11-25");
+    const q2 = BUSINESS_PLAN_SECTIONS.find((section) => section.id === "q2");
+    const milestoneTable = q2?.tables.find((table) => table.caption.startsWith("2026-11-25 현재 구현 기록"));
+    expect(milestoneTable?.caption).toContain("운영 매출·고객 성과가 아니다");
+    const serializedQ2 = JSON.stringify(milestoneTable);
+    expect(serializedQ2).toContain("spectrum-editorial-theme.css");
+    expect(serializedQ2).toContain("ReferenceCreatorDashboard.tsx");
+    expect(serializedQ2).toContain("180도 카메라 각도 전환");
+    expect(serializedQ2).toContain("15관절 자동 그립");
+    expect(serializedQ2).toContain("120Hz 프레임 예산 가드");
+    expect(serializedQ2).toContain("USB HID 0x0D");
+    expect(serializedQ2).toContain("106/106 GitHub Actions 최소 권한");
+    expect(serializedQ2).toContain("rustix 1.1.6");
+    expect(serializedQ2).toContain("pnpm audit 보안 문제 0건");
+    expect(serializedQ2).toContain("/compare/studio");
   });
 });

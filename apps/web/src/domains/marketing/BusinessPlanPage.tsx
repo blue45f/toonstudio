@@ -19,10 +19,42 @@ import { useDocumentTitle, useMetaDescription } from "@/shared/seo/use-document-
 /**
  * 사업계획서 페이지 (/business-plan).
  * IR 페이지(/ir, /ir/present)와 같은 마케팅 도메인에 두되, 발표 플레이어가 아니라
- * 2026-11-04 초안의 Q1–Q4와 붙임에 2026-11-22 실측 근거·라이브 검증 위젯·심사 방어 Q&A를
- * 통합한 페이지다. 제출용 docx가 아니며, 팀 가격은 미결정, 검증 목표는 결과로 적지 않는다.
+ * 2026-11-04 초안의 Q1–Q4와 붙임에 2026-11-22 실측 근거·2026-11-25 웨이브 45~49 구현 마일스톤·
+ * 라이브 검증 위젯·심사 방어 Q&A를 통합한 페이지다. 제출용 docx가 아니며, 팀 가격은 미결정,
+ * 검증 목표는 결과로 적지 않는다.
  * 표의 “입력 필요” 셀은 단가를 지어내지 않았다는 뜻이지, 빈칸 오류가 아니다.
  */
+
+const WAVE_45_49_MILESTONES = [
+  {
+    id: "editorial-home",
+    tag: "디자인 · 홈",
+    title: "탈-바이올렛 85/10/5 스펙트럼 에디토리얼 & 홈 전면 재구성",
+    detail:
+      "5대 도메인 안료 기반 에디토리얼 디자인 시스템(spectrum-editorial-theme.css), 홈 전면 재구성(ReferenceCreatorDashboard.tsx), 드로잉 크롬 겹침·언슬롭 23개 파일 정비를 마쳤습니다.",
+  },
+  {
+    id: "nondestructive-assistants",
+    tag: "작가 승인형 AI",
+    title: "비파괴 작가 승인형 AI·창작 어시스턴트 제품군",
+    detail:
+      "대사 기반 캐릭터 표정·입모양·포즈 제안, 3점 조명·역광 자동 연출, 180° 카메라 앵글 리프레이밍, 얼굴 회피 말풍선·SFX 자동 배치, 3D 소품 15관절 손 자동 그립, 1~60컷 설정집 붉은펜 드리프트 코치, 대사 한 줄 4대 원스톱 연출 체인, 화풍 스펙트럼 변환 가디언을 작가 승인 후 적용 구조로 구현했습니다.",
+  },
+  {
+    id: "tactile-hardware-ecosystem",
+    tag: "브러시 · 하드웨어 · 협업",
+    title: "극한 시각 브러시 질감 & 클린룸 하드웨어·공간 생태계",
+    detail:
+      "종이 요철 하이트맵·갈필·습윤 에지·임파스토 + 120Hz 프레임 예산 가드, Wacom·Apple Pencil Pro·S-Pen·USB HID 0x0D 클린룸 엔진, Vision Pro WebXR·스마트 글래스·워치 멀티기기, 캔버스 핀 검수·6단계 바통터치·5대 외부 툴 오픈 브리지를 반영했습니다.",
+  },
+  {
+    id: "security-governance",
+    tag: "보안 · 공급망",
+    title: "보안·공급망 거버넌스 강화",
+    detail:
+      "106/106 GitHub Actions 최소 권한(permissions: {}), 의존성 SHA·해시 고정, SECURITY.md 협조적 공개 절차, rustix 1.1.6 패치 및 pnpm audit 취약점 0건을 코드·CI에서 검증했습니다.",
+  },
+] as const;
 
 function PlanTableBlock({ table }: { table: PlanTable }) {
   return (
@@ -59,7 +91,7 @@ function PlanTableBlock({ table }: { table: PlanTable }) {
 export function BusinessPlanPage() {
   useDocumentTitle("툰스튜디오 사업계획서 · 웹툰 제작 협업 업무툴");
   useMetaDescription(
-    "툰스튜디오 사업계획서: 문제 인식, 실현 가능성, 성장전략, 향후 발전방안(PSST)과 2026-11-22 실측 근거, 7밴드 KM 분광·₩0 인프라 라이브 검증을 한 페이지에 정리했다.",
+    "툰스튜디오 사업계획서: 문제 인식, 실현 가능성, 성장전략, 향후 발전방안(PSST)과 2026-11-22 실측 근거, 2026-11-25 웨이브 45~49 구현 마일스톤, 7밴드 KM 분광·₩0 인프라 라이브 검증을 한 페이지에 정리했다.",
   );
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<"pdf" | "docx" | null>(null);
@@ -98,7 +130,7 @@ export function BusinessPlanPage() {
         />
 
         <p className="mt-3 text-sm text-fg-2">
-          {BUSINESS_PLAN_DOCUMENT_BASIS} · 페이지 라이브 실측 기준일 {IR_SHARED_VERIFIED_DATE}
+          {BUSINESS_PLAN_DOCUMENT_BASIS} · 페이지 라이브 실측 기준일 {IR_SHARED_VERIFIED_DATE} · 웨이브 45~49 구현 동기화 2026-11-25
         </p>
 
         <section
@@ -159,8 +191,14 @@ export function BusinessPlanPage() {
             </a>
           ))}
           <a
-            href="#psst-live-proof"
+            href="#psst-wave-milestones"
             className="inline-flex min-h-11 items-center rounded-xl border border-accent/50 bg-accent-soft px-3.5 py-2 text-sm font-bold text-accent transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            2026-11-25 구현 마일스톤
+          </a>
+          <a
+            href="#psst-live-proof"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-3.5 py-2 text-sm font-semibold text-fg-2 transition-colors hover:border-accent hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             실측 위젯 · 분광·₩0 원가
           </a>
@@ -170,10 +208,64 @@ export function BusinessPlanPage() {
           >
             상용 라이선스 · 심사 Q&amp;A
           </a>
+          <a
+            href="/compare/studio"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-sm font-semibold text-fg transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            경쟁사 7종 9축 정직 비교
+          </a>
         </nav>
 
-        <div className="mt-6">
+        <div className="mt-6 grid gap-5">
           <IrVerifiedSnapshotStrip surface="site" lang="ko" />
+
+          <section
+            id="psst-wave-milestones"
+            aria-labelledby="psst-wave-milestones-title"
+            className="ir-moat-scope ir-moat-card grid gap-4 scroll-mt-24"
+            data-surface="site"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="ir-moat-pill" data-tone="current">
+                  현재 구현 마일스톤 (2026-11-25 · 웨이브 45~49)
+                </span>
+                <span className="ir-moat-pill" data-tone="target">
+                  운영 매출·고객 검증 목표와 별개
+                </span>
+              </div>
+              <a
+                href="/compare/studio"
+                className="ir-moat-btn ir-print-hide"
+              >
+                경쟁사 7종 9축 정직 비교 (/compare/studio)
+              </a>
+            </div>
+            <h2
+              id="psst-wave-milestones-title"
+              className="break-keep text-lg font-bold text-fg sm:text-xl"
+            >
+              저장소 코드·CI로 검증된 최근 제품·보안 구현 성과
+            </h2>
+            <ul className="grid gap-3 md:grid-cols-2">
+              {WAVE_45_49_MILESTONES.map((milestone) => (
+                <li key={milestone.id} className="ir-moat-subpanel grid content-start gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <strong className="break-keep text-sm text-fg">{milestone.title}</strong>
+                    <span className="ir-moat-pill" data-tone="current">
+                      {milestone.tag}
+                    </span>
+                  </div>
+                  <p className="break-keep text-xs leading-5 text-fg-2">
+                    {milestone.detail}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="break-keep border-t border-line/70 pt-3 text-xs leading-5 text-fg-2">
+              위 항목은 저장소 소스와 자동 감사로 확인된 현재 구현 기록입니다. 베타 사용자 수·유료 전환율·매출 등 사업 검증 수치는 기존 Q3·붙임 표의 가정 및 미달성 목표 틀 그대로 유지합니다.
+            </p>
+          </section>
         </div>
 
         {BUSINESS_PLAN_SECTIONS.map((section) => (

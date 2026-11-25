@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BusinessPlanPage } from "./BusinessPlanPage";
@@ -34,5 +34,28 @@ describe("사업계획서 페이지 (/business-plan)", () => {
     expect(
       screen.getByText(/1인 기업이 어떻게 이 규모\(133개 DB 마이그레이션 · 클린룸 8종 엔진\)를 유지하고 운영하나요/),
     ).toBeTruthy();
+  });
+
+  it("2026-11-25 웨이브 45~49 구현 마일스톤·보안 거버넌스와 /compare/studio 링크를 목표와 분리해 표시한다", () => {
+    render(<BusinessPlanPage />);
+
+    expect(screen.getByText(/웨이브 45~49 구현 동기화 2026-11-25/)).toBeTruthy();
+    const milestones = document.getElementById("psst-wave-milestones");
+    expect(milestones).not.toBeNull();
+    const scope = within(milestones as HTMLElement);
+    expect(scope.getByText("현재 구현 마일스톤 (2026-11-25 · 웨이브 45~49)")).toBeTruthy();
+    expect(scope.getByText("운영 매출·고객 검증 목표와 별개")).toBeTruthy();
+    expect(scope.getByText(/탈-바이올렛 85\/10\/5 스펙트럼 에디토리얼/)).toBeTruthy();
+    expect(scope.getByText(/180° 카메라 앵글 리프레이밍/)).toBeTruthy();
+    expect(scope.getByText(/15관절 손 자동 그립/)).toBeTruthy();
+    expect(scope.getByText(/120Hz 프레임 예산 가드/)).toBeTruthy();
+    expect(scope.getByText(/106\/106 GitHub Actions 최소 권한\(permissions: \{\}\)/)).toBeTruthy();
+    expect(scope.getByText(/rustix 1\.1\.6 패치 및 pnpm audit 취약점 0건/)).toBeTruthy();
+
+    const compareLinks = screen.getAllByRole("link", { name: /경쟁사 7종 9축 정직 비교/ });
+    expect(compareLinks.length).toBeGreaterThanOrEqual(2);
+    for (const link of compareLinks) {
+      expect(link.getAttribute("href")).toBe("/compare/studio");
+    }
   });
 });
