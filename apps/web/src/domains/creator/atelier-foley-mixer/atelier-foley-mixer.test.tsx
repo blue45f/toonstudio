@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -33,6 +33,8 @@ import {
   TACTILE_UI_PRESET_IDS,
   TACTILE_UI_PRESETS,
   type PreviewAudioContextLike,
+  type PreviewBufferSourceLike,
+  type PreviewOscillatorLike,
   type PreviewBiquadFilterLike,
 } from "./index";
 
@@ -55,17 +57,21 @@ function createMockAudioContext() {
       const channel = new Float32Array(len);
       return { getChannelData: () => channel };
     },
-    createBufferSource: () => ({
-      buffer: null,
+    createBufferSource: () => {
+      const source: PreviewBufferSourceLike = {
+      buffer: null, onended: null,
       connect: (dest) => {
         connectCalls.push(1);
         return dest;
       },
       start: () => { startedCount.buffer += 1; },
-      stop: () => undefined,
-    }),
-    createOscillator: () => ({
-      type: "sine",
+      stop: () => { queueMicrotask(() => source.onended?.()); },
+      };
+      return source;
+    },
+    createOscillator: () => {
+      const oscillator: PreviewOscillatorLike = {
+      type: "sine", onended: null,
       frequency: {
         value: 440,
         setValueAtTime(v) { this.value = v; },
@@ -75,8 +81,10 @@ function createMockAudioContext() {
         return dest;
       },
       start: () => { startedCount.osc += 1; },
-      stop: () => undefined,
-    }),
+      stop: () => { queueMicrotask(() => oscillator.onended?.()); },
+      };
+      return oscillator;
+    },
     createBiquadFilter: () => {
       const node: PreviewBiquadFilterLike = {
         type: "lowpass",
@@ -442,32 +450,32 @@ describe("Wave 43F: 화실 물리 사운드(Foley) & 공간 음향 마스터 믹
     expect(clamped.warnings.length).toBeGreaterThan(0);
   });
 
-  it("17. previewFoleySound는 jsdom(AudioContext 부재) 환경에서 예외 없이 unavailable-noop를 반환한다", () => {
+  it("17. previewFoleySound는 jsdom(AudioContext 부재) 환경에서 예외 없이 unavailable-noop를 반환한다", async () => {
     const graph = computeFoleyDspGraph(createDefaultFoleyMixerConfig());
-    const result = previewFoleySound(graph, { kind: "stroke" });
+    const result = await previewFoleySound(graph, { kind: "stroke" });
     expect(result.played).toBe(false);
     expect(result.status).toBe("unavailable-noop");
     expect(result.reason).toBe("no-audio-context");
   });
 
-  it("18. previewFoleySound는 안전장치 음소거 시 AudioContext 팩토리를 호출하지 않고 muted-noop를 반환한다", () => {
+  it("18. previewFoleySound는 안전장치 음소거 시 AudioContext 팩토리를 호출하지 않고 muted-noop를 반환한다", async () => {
     const factory = vi.fn(() => null);
     const graph = computeFoleyDspGraph({ ...createDefaultFoleyMixerConfig(), muted: true });
-    const result = previewFoleySound(graph, { kind: "stroke", audioContextFactory: factory });
+    const result = await previewFoleySound(graph, { kind: "stroke", audioContextFactory: factory });
     expect(result.played).toBe(false);
     expect(result.status).toBe("muted-noop");
     expect(result.reason).toBe("safety-muted");
     expect(factory).not.toHaveBeenCalled();
   });
 
-  it("19. previewFoleySound는 모의 AudioContext 주입 시 bandpass/lowpass 필터 주파수를 적용하고 played=true를 반환한다", () => {
+  it("19. previewFoleySound는 모의 AudioContext 주입 시 bandpass/lowpass 필터 주파수를 적용하고 played=true를 반환한다", async () => {
     const mock = createMockAudioContext();
     const graph = computeFoleyDspGraph(
       { ...createDefaultFoleyMixerConfig(), toolId: "alcohol-marker-squeak", paperId: "hanji-mulberry" },
       { pressure01: 0.75, velocity01: 0.8 },
     );
 
-    const strokeRes = previewFoleySound(graph, { kind: "stroke", audioContextFactory: () => mock.ctx });
+    const strokeRes = await previewFoleySound(graph, { kind: "stroke", audioContextFactory: () => mock.ctx });
     expect(strokeRes.played).toBe(true);
     expect(strokeRes.status).toBe("played");
     expect(mock.startedCount.buffer).toBe(1);
@@ -475,7 +483,7 @@ describe("Wave 43F: 화실 물리 사운드(Foley) & 공간 음향 마스터 믹
     expect(mock.filters[0]?.frequency.value).toBe(graph.friction.centerFrequencyHz);
     expect(mock.filters[1]?.frequency.value).toBe(graph.friction.lpfCutoffHz);
 
-    const tactileRes = previewFoleySound(graph, { kind: "tactile-ui", audioContextFactory: () => mock.ctx });
+    const tactileRes = await previewFoleySound(graph, { kind: "tactile-ui", audioContextFactory: () => mock.ctx });
     expect(tactileRes.played).toBe(true);
     expect(mock.startedCount.osc).toBe(1);
   });
@@ -522,14 +530,14 @@ describe("Wave 43F: 화실 물리 사운드(Foley) & 공간 음향 마스터 믹
     expect(screen.getByTestId("readout-ambience-lufs").textContent).toContain("무음");
   });
 
-  it("23. 1클릭 사운드 시연·프리셋 JSON 내보내기/불러오기·초기화 및 영문 로케일 렌더링이 동작한다", () => {
+  it("23. 1클릭 사운드 시연·프리셋 JSON 내보내기/불러오기·초기화 및 영문 로케일 렌더링이 동작한다", async () => {
     const onPreview = vi.fn();
     const onExport = vi.fn();
     render(<StudioAtelierFoleyMixerPanel onPreviewResult={onPreview} onExportJson={onExport} />);
 
-    fireEvent.click(screen.getByTestId("btn-preview-stroke"));
+    await act(async () => { fireEvent.click(screen.getByTestId("btn-preview-stroke")); });
     expect(onPreview).toHaveBeenCalledWith(expect.objectContaining({ status: "unavailable-noop", played: false }));
-    expect(screen.getByTestId("mixer-notice-banner").textContent).toContain("unavailable-noop");
+    expect(screen.getByTestId("foley-playback-status").textContent).toContain("unavailable-noop");
 
     fireEvent.click(screen.getByTestId("tool-btn-impasto-palette-knife"));
     fireEvent.click(screen.getByTestId("btn-export-preset"));

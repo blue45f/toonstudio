@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -30,7 +30,7 @@ import {
   type EpisodeCutMetric,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 function makeCleanCut(archetypeId: "romance-lead" | "action-hero" | "school-boy" | "fantasy-sidekick", cutNumber = 1): EpisodeCutMetric {
   const spec = getModelSheetSpec(archetypeId);
@@ -429,17 +429,20 @@ describe("5. StudioModelSheetDriftCoachPanel UI 인터랙션 및 SVG 붉은 펜 
     expect(screen.getByTestId("kpi-applied-count").textContent).toBe("0");
   });
 
-  it("Markdown 및 JSON 리포트 복사 버튼이 콜백을 호출하고 미리보기를 토글한다", () => {
+  it("Markdown 및 JSON 리포트 복사 버튼이 ACK 뒤 콜백을 호출하고 미리보기를 토글한다", async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText: write } });
     const onExport = vi.fn();
     render(<StudioModelSheetDriftCoachPanel onExportReport={onExport} />);
 
     expect(screen.queryByTestId("drift-report-preview")).toBeNull();
     fireEvent.click(screen.getByTestId("export-markdown-btn"));
-    expect(onExport).toHaveBeenCalledWith("markdown", expect.stringContaining("# 회차 캐릭터"), expect.any(Object));
+    await waitFor(() => expect(onExport).toHaveBeenCalledWith("markdown", expect.stringContaining("# 회차 캐릭터"), expect.any(Object)));
     expect(screen.getByTestId("drift-report-preview").getAttribute("data-format")).toBe("markdown");
 
     fireEvent.click(screen.getByTestId("export-json-btn"));
-    expect(onExport).toHaveBeenCalledWith("json", expect.stringContaining("toonstudio.crosscut-modelsheet-drift-coach.v1"), expect.any(Object));
+    await waitFor(() => expect(onExport).toHaveBeenCalledWith("json", expect.stringContaining("toonstudio.crosscut-modelsheet-drift-coach.v1"), expect.any(Object)));
+    expect(write).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId("drift-report-preview").getAttribute("data-format")).toBe("json");
 
     fireEvent.click(screen.getByTestId("toggle-report-preview-btn"));
@@ -454,13 +457,18 @@ describe("5. StudioModelSheetDriftCoachPanel UI 인터랙션 및 SVG 붉은 펜 
 });
 
 describe("6. 코드 위생 · 탈-바이올렛 OKLCH · Calm Atelier 계약 자가 검증", () => {
-  it("4개 소유 파일 800줄 이하 및 금지 패턴(원시 색·transition-all·= {}·스토리지·private Map store·BigInt·Sparkles) 0건", () => {
+  it("9개 소유 파일 800줄 이하 및 금지 패턴(원시 색·transition-all·= {}·스토리지·private Map store·BigInt·Sparkles) 0건", () => {
     const dir = path.resolve(import.meta.dirname);
     const required = [
       "modelsheet-drift-engine.ts",
       "StudioModelSheetDriftCoachPanel.tsx",
       "index.ts",
       "modelsheet-drift-coach.test.tsx",
+      "drift-boundaries.test.tsx",
+      "drift-input-contract.ts",
+      "drift-report-export.ts",
+      "use-drift-notification.ts",
+      "use-drift-copy.ts",
     ];
     for (const file of required) {
       expect(existsSync(path.join(dir, file))).toBe(true);

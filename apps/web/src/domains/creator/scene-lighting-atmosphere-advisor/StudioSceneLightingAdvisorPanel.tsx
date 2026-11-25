@@ -12,6 +12,10 @@ import {
   GitCompare, Lamp, MessageSquareText, RotateCcw, ShieldCheck, SlidersHorizontal, Sun, Undo2,
 } from "lucide-react";
 import { useId, useMemo, useState, type ReactElement } from "react";
+import { lightingDialogueSnippet } from "./lighting-input-contract";
+import { useExampleCopy } from "./use-lighting-copy";
+import { useExampleNotification } from "./use-lighting-notification";
+import { LightingCopyStatus, LightingInputError, LightingOperationStatus } from "./LightingOperationStatus";
 
 import {
   PREVIOUS_CUT_LIGHTING_PRESETS, SCENE_EMOTIONS, SCENE_LOCATION_PRESETS, SCENE_TIME_OF_DAY_PRESETS,
@@ -30,9 +34,9 @@ export interface StudioSceneLightingAdvisorPanelProps {
   readonly initialTimeOfDay?: SceneTimeOfDay;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onApply?: (proposal: SceneLightingProposal, session: SceneLightingSession) => void;
-  readonly onRevert?: (session: SceneLightingSession) => void;
-  readonly onExportJson?: (json: string, session: SceneLightingSession) => void;
+  readonly onApply?: (proposal: SceneLightingProposal, session: SceneLightingSession) => void | Promise<void>;
+  readonly onRevert?: (session: SceneLightingSession) => void | Promise<void>;
+  readonly onExportJson?: (json: string, session: SceneLightingSession) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -134,7 +138,7 @@ function CutMoodBackdropPreviewSvg(props: {
   const shadowSkin = formatOklch({ l: Math.max(0.14, 0.42 - rig.atmosphere.shadowContrastRatio * 0.03), c: 0.03, h: rig.atmosphere.backdropOklch.h });
 
   const keyFromLeft = rig.keyLight.azimuthDeg <= 0;
-  const snippet = (dialogue.replace(/\([^)]*\)/gu, "").trim() || (isEn ? "Stand right there." : "여기서 끝내자.")).slice(0, 18);
+  const snippet = lightingDialogueSnippet(dialogue);
 
   return (
     <svg
@@ -218,10 +222,14 @@ export function StudioSceneLightingAdvisorPanel(
   const [showJson, setShowJson] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
 
-  const bundle = useMemo(
-    () => proposeSceneLightingTop3({ dialogue, timeOfDay, scenePresetId }, session.previousCutRig),
+  const calculation = useMemo(
+    () => {
+      try { return { bundle: proposeSceneLightingTop3({ dialogue, timeOfDay, scenePresetId }, session.previousCutRig), error: "" }; }
+      catch (error) { return { bundle: null, error: error instanceof Error ? error.message : "조명 예제를 계산할 수 없습니다. 원문은 유지됩니다." }; }
+    },
     [dialogue, timeOfDay, scenePresetId, session.previousCutRig],
   );
+  const bundle = calculation.bundle;
 
   const activeRig = session.previewRig ?? session.currentRig;
   const activeReadability = useMemo(() => auditLightingReadability(activeRig), [activeRig]);
@@ -229,7 +237,12 @@ export function StudioSceneLightingAdvisorPanel(
     () => compareLightingCuts(session.previousCutRig, activeRig),
     [session.previousCutRig, activeRig],
   );
-  const jsonText = useMemo(() => exportLightingRigJson(session, bundle), [session, bundle]);
+  const jsonText = useMemo(() => exportLightingRigJson(session, bundle ?? undefined), [session, bundle]);
+  const applyDelivery = useExampleNotification<{ proposal: SceneLightingProposal; session: SceneLightingSession }>(props.onApply ? value => props.onApply?.(value.proposal, value.session) : undefined);
+  const revertDelivery = useExampleNotification(props.onRevert);
+  const copyDelivery = useExampleCopy<SceneLightingSession, "json">({ json: props.onExportJson });
+  const pending = applyDelivery.status === "pending" || revertDelivery.status === "pending" || copyDelivery.state === "pending";
+  const isPending = (): boolean => applyDelivery.isPending() || revertDelivery.isPending() || copyDelivery.isPending();
 
   const handleSelectScenePreset = (nextPresetId: SceneLocationPresetId): void => {
     const meta = getSceneLocationPreset(nextPresetId);
@@ -268,17 +281,19 @@ export function StudioSceneLightingAdvisorPanel(
   };
 
   const handleApply = (proposal: SceneLightingProposal): void => {
+    if (isPending()) return;
     const next = applyLightingProposal(session, proposal);
     setSession(next);
-    props.onApply?.(proposal, next);
-    setStatusMessage(pick(`작가 승인으로 '${proposal.titleKo}' 조명을 비파괴 적용했습니다.`, `Applied '${proposal.titleEn}' non-destructively.`));
+    applyDelivery.notify({ proposal, session: next });
+    setStatusMessage(pick(`'${proposal.titleKo}' 메모리 조명 예제를 선택했습니다.`, `Selected the '${proposal.titleEn}' in-memory lighting example.`));
   };
 
   const handleRevert = (): void => {
+    if (isPending()) return;
     const next = revertLightingProposal(session);
     setSession(next);
-    props.onRevert?.(next);
-    setStatusMessage(pick("작가 원본 기본 조명으로 1클릭 되돌렸습니다.", "Reverted lighting rig to original baseline."));
+    revertDelivery.notify(next);
+    setStatusMessage(pick("메모리 예제를 초기 조명으로 되돌렸습니다.", "Reverted the in-memory example to its baseline."));
   };
 
   const handleTweak = (patch: LightingRigTweakPatch): void => {
@@ -295,32 +310,26 @@ export function StudioSceneLightingAdvisorPanel(
   };
 
   const handleCopyJson = (): void => {
-    props.onExportJson?.(jsonText, session);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(jsonText).catch(() => undefined);
-    }
+    if (isPending()) return;
+    copyDelivery.copy("json", jsonText, session);
     setShowJson(true);
-    setStatusMessage(
-      pick(
-        `Three.js·Blender 3D 조명 릭 JSON(${jsonText.length.toLocaleString("ko-KR")}B)을 복사했습니다.`,
-        `Copied Three.js/Blender 3D rig JSON (${jsonText.length.toLocaleString("en-US")} B).`,
-      ),
-    );
+    setStatusMessage("");
   };
 
+  if (!bundle) return <LightingInputError dialogue={dialogue} onChange={setDialogue} message={calculation.error} isEn={isEn} />;
   const primaryEmo = getSceneEmotionMeta(bundle.analysis.primaryEmotion);
   const secondaryEmo = getSceneEmotionMeta(bundle.analysis.secondaryEmotion);
   const dialogueInputId = `${uid}-dialogue`;
 
   const sessionStateLabel =
     session.status === "applied"
-      ? pick("비파괴 적용됨", "Applied (Revertible)")
+      ? pick("메모리 예제: 비파괴 적용됨", "In-memory example applied (Revertible)")
       : session.status === "tweaked"
-        ? pick("미세 조정 적용됨", "Tweaked (Revertible)")
+        ? pick("메모리 예제: 미세 조정 적용됨", "In-memory example tweaked (Revertible)")
         : session.status === "previewing"
           ? pick("미리보기 중", "Previewing")
           : session.status === "reverted"
-            ? pick("원본 되돌림 완료", "Reverted")
+            ? pick("메모리 예제: 원본 되돌림 완료", "In-memory example reverted")
             : pick("원본 유지 중", "Baseline Intact");
 
   const gradeLabel =
@@ -336,6 +345,11 @@ export function StudioSceneLightingAdvisorPanel(
       aria-label={pick("컷 감정·조명 자동 연출 제안기", "Scene Lighting & Atmosphere Advisor")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${props.className ?? ""}`}
     >
+      <p data-testid="lighting-example-scope" className="text-xs text-fg-2">{pick("CPU·메모리 조명 구성 예제입니다. 대사 어휘 규칙과 매개변수로 만든 수치이며 실제 원고의 얼굴·말풍선 픽셀, GPU, 장면 반영·저장, Three.js·Blender 호환성을 확인하지 않습니다.", "CPU and in-memory lighting example using dialogue keywords and parameters. Artwork pixels, GPU rendering, scene changes, storage and Three.js/Blender compatibility are not verified.")}</p>
+      <LightingOperationStatus channel="apply" {...applyDelivery} pending={pending} isEn={isEn} />
+      <LightingOperationStatus channel="revert" {...revertDelivery} pending={pending} isEn={isEn} />
+      <LightingCopyStatus {...copyDelivery} pending={pending} isEn={isEn} />
+      <fieldset disabled={pending} className="contents">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -431,7 +445,7 @@ export function StudioSceneLightingAdvisorPanel(
               data-testid="lighting-dialogue-input"
               rows={2}
               value={dialogue}
-              onChange={(e) => setDialogue(e.target.value)}
+              onChange={(e) => { setDialogue(e.target.value); setSession(prev => previewLightingProposal(prev, null)); }}
               placeholder={pick("예: (거센 빗줄기) 여기서 끝내자. 더는 물러설 곳 없어.", "Enter dialogue or stage direction...")}
               className={`min-h-11 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-fg placeholder:text-fg-3 [word-break:keep-all] ${FOCUS_RING}`}
             />
@@ -624,7 +638,7 @@ export function StudioSceneLightingAdvisorPanel(
                       </h4>
                     </div>
                     <span className="text-xs font-bold text-fg-2 tabular-nums">
-                      {`${Math.round(proposal.confidence * 100)}%`}
+                      {`${pick("규칙 점수", "Rule score")} ${Math.round(proposal.confidence * 100)}%`}
                     </span>
                   </div>
 
@@ -733,6 +747,7 @@ export function StudioSceneLightingAdvisorPanel(
           </pre>
         ) : null}
       </div>
+      </fieldset>
     </section>
   );
 }

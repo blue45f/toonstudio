@@ -3,7 +3,7 @@
  *
  * - 외부 API 호출 0건, 100% 브라우저/Node 온디바이스 TypedArray 결정론적 연산.
  * - 기준 컷 RGBA 버퍼에서 OKLCH 그림자 색조·하이라이트 색온도(K)·선화 굵기 분포·스크린톤 피치·채도 대역을 추출한다.
- * - 17×17×17 3D LUT 삼선형 보간 + OKLCH 색조 매칭 + Sobel 기반 선화 굵기 동기화를 적용하고
+ * - 17×17×17 3D LUT 삼선형 보간 + OKLCH 색조 매칭 + 얇은 선의 Sobel 경계 강조를 적용하고
  *   보정 전/후 CIEDE2000(ΔE00) 지각 색차 축소량을 실측한다.
  */
 
@@ -92,7 +92,7 @@ export interface StyleHarmonizationOptions {
   readonly colorStrength?: number;
   /** 3D LUT 명도·톤 커브 일치 강도 (0..1, 기본 0.80). */
   readonly lutStrength?: number;
-  /** Sobel 엣지 선화 굵기 동기화 강도 (0..1, 기본 0.70). */
+  /** 기준보다 얇은 선의 Sobel 경계 강조 강도. 얇게 만들기는 미지원 (0..1, 기본 0.70). */
   readonly lineartSyncStrength?: number;
   /** 기준 컷 스크린톤 피치 오버레이 강도 (0..1, 기본 0.35). */
   readonly screentoneBlend?: number;
@@ -119,6 +119,8 @@ export interface StyleHarmonizationReport {
   readonly deltaE00ReductionPct: number;
   readonly lineartWidthErrorBeforePx: number;
   readonly lineartWidthErrorAfterPx: number;
+  /** 선화 강조 단계의 상태. 뒤에 적용하는 스크린톤의 선폭 영향과 구분한다. */
+  readonly lineartSyncStatus: "disabled" | "already-matched" | "unsupported-thinning" | "expanded" | "skipped-overshoot";
   readonly screentoneApplied: boolean;
   readonly elapsedMs: number;
 }
@@ -331,7 +333,7 @@ function buildStyleHarmonizationLut3d(
         const refA = ws * refDna.shadowOklab.a + wm * refDna.midtoneOklab.a + wh * refDna.highlightOklab.a;
         const refB = ws * refDna.shadowOklab.b + wm * refDna.midtoneOklab.b + wh * refDna.highlightOklab.b;
 
-        const outL = clampNum(ok.l + lutStrength * inkDamp * (refL - srcL), 0.01, 0.99);
+        const outL = clampNum(ok.l + lutStrength * inkDamp * (refL - srcL), 0, 1);
         const outA = srcA + (ok.a - srcA) * residualScale + colorStrength * inkDamp * (refA - srcA);
         const outB = srcB + (ok.b - srcB) * residualScale + colorStrength * inkDamp * (refB - srcB);
 
@@ -382,7 +384,16 @@ function sampleLut3dTrilinear(lut: Float32Array, gridSize: number, r: number, g:
   return out;
 }
 
-/** 기준 컷 화풍 DNA를 3D 배경 렌더 RGBA 버퍼에 1클릭 일치화하고 ΔE00 실측 리포트를 반환한다. */
+function measureLineWidth(data: Uint8ClampedArray, width: number, height: number): number {
+  const luma = new Float32Array(width * height);
+  for (let i = 0; i < luma.length; i += 1) {
+    const off = i * 4;
+    luma[i] = (0.299 * (data[off] ?? 0) + 0.587 * (data[off + 1] ?? 0) + 0.114 * (data[off + 2] ?? 0)) / 255;
+  }
+  return analyzeLineartWidth(luma, computeSobelMagnitude(luma, width, height), width, height).meanPx;
+}
+
+/** 기준 RGBA 색상에 맞춘 CPU 보정과 선화 강조의 적용·생략 상태를 반환한다. */
 export function harmonizeBackgroundToStyleDna(
   referenceDna: ArtistStyleDna,
   targetBuffer: RgbaImageBuffer,
@@ -409,40 +420,57 @@ export function harmonizeBackgroundToStyleDna(
     const g = data[off + 1] ?? 0;
     const b = data[off + 2] ?? 0;
     srcLuma[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    const [nr, ng, nb] = sampleLut3dTrilinear(lutTable, lutGridSize, r, g, b);
+    const [nr, ng, nb]: readonly [number, number, number] = colorStrength === 0 && lutStrength === 0
+      ? [r, g, b]
+      : sampleLut3dTrilinear(lutTable, lutGridSize, r, g, b);
     outData[off] = nr;
     outData[off + 1] = ng;
     outData[off + 2] = nb;
     outData[off + 3] = data[off + 3] ?? 255;
   }
 
+  let lineartSyncStatus: StyleHarmonizationReport["lineartSyncStatus"] = "disabled";
   if (lineartSyncStrength > 0.01) {
-    const edgeMag = computeSobelMagnitude(srcLuma, width, height);
-    const widthDiff = referenceDna.lineartWidthDistribution.meanPx - beforeDna.lineartWidthDistribution.meanPx;
-    const dilateRadius = widthDiff > 0.45 ? Math.min(2, Math.max(1, Math.round(widthDiff * 0.55))) : 0;
-    const [inkR, inkG, inkB] = oklchToSrgb({
-      l: Math.min(0.11, referenceDna.shadowOklch.l * 0.45),
-      c: Math.min(0.035, referenceDna.shadowOklch.c * 0.5),
-      h: referenceDna.shadowOklch.h,
-    });
-    for (let y = 1; y < height - 1; y += 1) {
-      for (let x = 1; x < width - 1; x += 1) {
-        const mag = edgeMag[y * width + x] ?? 0;
-        if (mag < 0.42) continue;
-        const edgeAlpha = clampNum((mag - 0.35) * 0.9 * lineartSyncStrength, 0, 0.92);
-        for (let dy = -dilateRadius; dy <= dilateRadius; dy += 1) {
-          const ny = y + dy;
-          if (ny < 0 || ny >= height) continue;
-          for (let dx = -dilateRadius; dx <= dilateRadius; dx += 1) {
-            const nx = x + dx;
-            if (nx < 0 || nx >= width || dx * dx + dy * dy > dilateRadius * dilateRadius + 0.35) continue;
-            const off = (ny * width + nx) * 4;
-            const wBlend = edgeAlpha * (dx === 0 && dy === 0 ? 1 : 0.72);
-            outData[off] = Math.round((outData[off] ?? 0) * (1 - wBlend) + inkR * wBlend);
-            outData[off + 1] = Math.round((outData[off + 1] ?? 0) * (1 - wBlend) + inkG * wBlend);
-            outData[off + 2] = Math.round((outData[off + 2] ?? 0) * (1 - wBlend) + inkB * wBlend);
+    const referenceWidth = referenceDna.lineartWidthDistribution.meanPx;
+    const baseWidth = measureLineWidth(outData, width, height);
+    const widthDiff = referenceWidth - baseWidth;
+    lineartSyncStatus = widthDiff < -0.45 ? "unsupported-thinning" : "already-matched";
+    if (widthDiff > 0.45) {
+      const beforeExpansion = outData.slice();
+      const edgeMag = computeSobelMagnitude(srcLuma, width, height);
+      const dilateRadius = Math.min(2, Math.max(1, Math.round(widthDiff * 0.55)));
+      const [inkR, inkG, inkB] = oklchToSrgb({
+        l: Math.min(0.11, referenceDna.shadowOklch.l * 0.45),
+        c: Math.min(0.035, referenceDna.shadowOklch.c * 0.5),
+        h: referenceDna.shadowOklch.h,
+      });
+      for (let y = 1; y < height - 1; y += 1) {
+        for (let x = 1; x < width - 1; x += 1) {
+          const mag = edgeMag[y * width + x] ?? 0;
+          if (mag < 0.42) continue;
+          const edgeAlpha = clampNum((mag - 0.35) * 0.9 * lineartSyncStrength, 0, 0.92);
+          for (let dy = -dilateRadius; dy <= dilateRadius; dy += 1) {
+            const ny = y + dy;
+            if (ny < 0 || ny >= height) continue;
+            for (let dx = -dilateRadius; dx <= dilateRadius; dx += 1) {
+              const nx = x + dx;
+              if (nx < 0 || nx >= width || dx * dx + dy * dy > dilateRadius * dilateRadius + 0.35) continue;
+              const off = (ny * width + nx) * 4;
+              const wBlend = edgeAlpha * (dx === 0 && dy === 0 ? 1 : 0.72);
+              outData[off] = Math.round((outData[off] ?? 0) * (1 - wBlend) + inkR * wBlend);
+              outData[off + 1] = Math.round((outData[off + 1] ?? 0) * (1 - wBlend) + inkG * wBlend);
+              outData[off + 2] = Math.round((outData[off + 2] ?? 0) * (1 - wBlend) + inkB * wBlend);
+            }
           }
         }
+      }
+      // 픽셀 단위 확장이 기준 굵기를 지나치면 색상 보정 직후 버퍼로 되돌린다.
+      const expandedWidth = measureLineWidth(outData, width, height);
+      if (Math.abs(expandedWidth - referenceWidth) >= Math.abs(baseWidth - referenceWidth)) {
+        outData.set(beforeExpansion);
+        lineartSyncStatus = "skipped-overshoot";
+      } else {
+        lineartSyncStatus = "expanded";
       }
     }
   }
@@ -501,6 +529,7 @@ export function harmonizeBackgroundToStyleDna(
     deltaE00ReductionPct: meanDeltaE00Before > 0.01 ? round2((deltaE00Reduction / meanDeltaE00Before) * 100) : 0,
     lineartWidthErrorBeforePx: round2(Math.abs(beforeDna.lineartWidthDistribution.meanPx - referenceDna.lineartWidthDistribution.meanPx)),
     lineartWidthErrorAfterPx: round2(Math.abs(afterDna.lineartWidthDistribution.meanPx - referenceDna.lineartWidthDistribution.meanPx)),
+    lineartSyncStatus,
     screentoneApplied,
     elapsedMs: round2(typeof performance !== "undefined" ? performance.now() - start : 0),
   };

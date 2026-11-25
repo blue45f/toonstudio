@@ -1,3 +1,5 @@
+import { assertPitchInput, assertPitchSnapshot, assertSeasonBlocks, MAX_PITCH_AMOUNT } from "./pitch-input-contract";
+
 /**
  * Wave 45D — 글로벌 IP·OTT·출판 피칭 바이블 자동 조판 스튜디오 엔진.
  *
@@ -166,9 +168,9 @@ export interface PitchBibleReadinessAudit {
 export interface PitchExportOptions { readonly locale?: "ko" | "en"; }
 
 export const ESTIMATE_DISCLAIMER_KO =
-  "시장 규모·예산 범위 및 완성도 점수는 실측 확정치가 아닌 기획 단계 추정(estimate)입니다. 계약 전 파트너 실사 검증이 필요합니다.";
+  "시장 규모·예산 범위 및 완성도 점수는 실측 확정치가 아닌 기획 단계 추정(estimate)입니다. 계약 전 파트너 실사 검증이 필요합니다. IP 권리·법률·제출·저장 또는 실제 자동 반영을 확인하는 도구가 아닙니다.";
 export const ESTIMATE_DISCLAIMER_EN =
-  "Market ranges, budget bands, and readiness scores are planning estimates (dataSourceKind: estimate), not audited commercial figures.";
+  "Market ranges, budget bands, and readiness scores are planning estimates (dataSourceKind: estimate), not audited commercial figures. IP rights, legal status, submission, storage and actual automatic apply are not verified.";
 
 export const PITCH_GENRE_METAS: readonly PitchGenreMeta[] = [
   { id: "action-fantasy", labelKo: "액션 판타지", labelEn: "Action Fantasy", summaryKo: "하이컨셉 세계관·12부작 시즌 액션·애니/게임 확장 중심", summaryEn: "High-concept worldbuilding, 12-ep season action, anime & game expansion" },
@@ -206,7 +208,7 @@ const EXAGGERATION_RULES: readonly ExaggerationRule[] = [
 ];
 
 function sanitizeNonNeg(value: number, fallback: number): number {
-  return Number.isFinite(value) && value >= 0 ? Math.round(value * 10) / 10 : fallback;
+  return Number.isFinite(value) && value >= 0 ? Math.round(Math.min(MAX_PITCH_AMOUNT, value) * 10) / 10 : fallback;
 }
 
 export function createPitchEstimateRange(params: {
@@ -511,9 +513,14 @@ export function createPitchBibleStarter(genreId: PitchGenreId = "action-fantasy"
 }
 
 export function computeSeasonArcTotals(blocks: readonly SeasonArcBlock[]): SeasonArcTotals {
+  assertSeasonBlocks(blocks);
+  let nextChapter = 1;
+  let contiguous = true;
   let totalEpisodes = 0;
   let totalChapters = 0;
   for (const b of blocks) {
+    if (b.chapterStart !== nextChapter || b.chapterEnd < b.chapterStart) contiguous = false;
+    nextChapter = b.chapterEnd + 1;
     if (Number.isFinite(b.episodeCount) && b.episodeCount > 0) totalEpisodes += Math.round(b.episodeCount);
     if (Number.isFinite(b.chapterStart) && Number.isFinite(b.chapterEnd) && b.chapterEnd >= b.chapterStart && b.chapterStart > 0) {
       totalChapters += Math.round(b.chapterEnd - b.chapterStart + 1);
@@ -522,11 +529,12 @@ export function computeSeasonArcTotals(blocks: readonly SeasonArcBlock[]): Seaso
   return {
     blockCount: blocks.length, totalEpisodes, totalChapters,
     targetEpisodes: TARGET_SEASON_EPISODES, targetChapters: TARGET_SEASON_CHAPTERS,
-    matchesStandard12x60: totalEpisodes === TARGET_SEASON_EPISODES && totalChapters === TARGET_SEASON_CHAPTERS,
+    matchesStandard12x60: contiguous && totalEpisodes === TARGET_SEASON_EPISODES && totalChapters === TARGET_SEASON_CHAPTERS,
   };
 }
 
 export function buildPitchBibleDeck(input: PitchBibleInput): PitchBibleDeck {
+  assertPitchInput(input);
   const n: PitchBibleInput = {
     ...input,
     targetPositioning: { ...input.targetPositioning, addressableRangeEstimate: cloneEstimateRange(input.targetPositioning.addressableRangeEstimate) },
@@ -591,6 +599,7 @@ function collectSlideNarrativeTexts(i: PitchBibleInput): readonly { readonly sli
 
 export function auditPitchBibleReadiness(deckOrInput: PitchBibleDeck | PitchBibleInput): PitchBibleReadinessAudit {
   const deck = isDeck(deckOrInput) ? deckOrInput : buildPitchBibleDeck(deckOrInput);
+  assertPitchSnapshot(deck);
   const { input, loglineValidation, seasonTotals } = deck;
   const issues: PitchAuditIssue[] = [];
   let deduction = 0;
@@ -614,7 +623,7 @@ export function auditPitchBibleReadiness(deckOrInput: PitchBibleDeck | PitchBibl
   const completeChars = input.coreCharacters.filter((c) => c.nameKo.trim().length >= 1 && c.desireKo.trim().length >= 4 && c.fatalFlawKo.trim().length >= 4 && c.seasonArcKo.trim().length >= 4);
   if (input.coreCharacters.length < RECOMMENDED_CORE_CHARACTERS || completeChars.length < RECOMMENDED_CORE_CHARACTERS) {
     const isBlocker = completeChars.length < 2;
-    pushIssue({ id: "incomplete-core-characters", code: "incomplete-core-characters", severity: isBlocker ? "blocker" : "warning", category: "missing", slideId: "core-characters", titleKo: `핵심 캐릭터 4인 구성 미달 (${completeChars.length}/4 완료)`, titleEn: `Core cast incomplete (${completeChars.length}/4 ready)`, detailKo: "글로벌 OTT·출판 피칭은 4인의 욕망·결함·시즌 아크가 완비되어야 합니다.", detailEn: "Pitch bibles require 4 core characters with desire, flaw, and arc.", fixHintKo: "05 핵심 캐릭터 4인 슬라이드에서 빈 욕망·결함·시즌 아크를 채우세요.", fixHintEn: "Complete desire, flaw, and arc for all 4 characters on Slide 05." }, isBlocker ? 14 : 8);
+    pushIssue({ id: "incomplete-core-characters", code: "incomplete-core-characters", severity: isBlocker ? "blocker" : "warning", category: "missing", slideId: "core-characters", titleKo: `핵심 캐릭터 4인 구성 미달 (${completeChars.length}/4 완료)`, titleEn: `Core cast incomplete (${completeChars.length}/4 ready)`, detailKo: "이 예제는 4인의 욕망·결함·시즌 아크를 점검합니다. 공식 제출 규격을 뜻하지 않습니다.", detailEn: "This example checks 4 core characters with desire, flaw and arc; this is not an official submission rule.", fixHintKo: "05 핵심 캐릭터 4인 슬라이드에서 빈 욕망·결함·시즌 아크를 채우세요.", fixHintEn: "Complete desire, flaw, and arc for all 4 characters on Slide 05." }, isBlocker ? 14 : 8);
   }
   if (input.seasonArc.blocks.length === 0) {
     pushIssue({ id: "missing-season-arc", code: "missing-season-arc", severity: "blocker", category: "missing", slideId: "season-arc", titleKo: "시즌 1 에피소드 아크 누락", titleEn: "Missing Season 1 arc", detailKo: "시즌 1 구성 블록이 비어 있습니다.", detailEn: "Season 1 episode arc blocks are empty.", fixHintKo: "06 시즌 1 아크에 12부작/60화 대응 구성을 입력하세요.", fixHintEn: "Add 12-ep / 60-ch arc blocks on Slide 06." }, 14);
@@ -696,89 +705,4 @@ export function auditPitchBibleReadiness(deckOrInput: PitchBibleDeck | PitchBibl
   };
 }
 
-export function exportPitchBibleMarkdown(deck: PitchBibleDeck, auditInput?: PitchBibleReadinessAudit, options?: PitchExportOptions): string {
-  const audit = auditInput ?? auditPitchBibleReadiness(deck);
-  const isEn = options?.locale === "en";
-  const { input, loglineValidation, seasonTotals } = deck;
-  const loc = isEn ? "en" : "ko";
-  return [
-    `# ${isEn ? input.cover.titleEn : input.cover.titleKo} — ${isEn ? "Global IP Pitch Bible (12 Slides)" : "글로벌 IP 피칭 바이블 (12장)"}`, "",
-    `> dataSourceKind: \`${deck.dataSourceKind}\` (${isEn ? "Estimate" : "추정"}) — ${isEn ? deck.estimateDisclaimerEn : deck.estimateDisclaimerKo}`, "",
-    `## 01. ${isEn ? "Cover" : "표지"}`,
-    `- **${isEn ? "Title" : "작품명"}**: ${input.cover.titleKo} / ${input.cover.titleEn}`,
-    `- **${isEn ? "Tagline" : "태그라인"}**: ${input.cover.taglineKo}`,
-    `- **${isEn ? "Genre & Format" : "장르·포맷"}**: ${input.cover.genreBadgeKo} | ${input.cover.formatTargetKo}`,
-    `- **${isEn ? "Studio & Status" : "스튜디오·현황"}**: ${input.cover.studioName} (${input.cover.serializationStatusKo})`,
-    `- **${isEn ? "Version" : "버전"}**: ${input.cover.versionLabel} (${input.cover.updatedDateIso})`, "",
-    `## 02. ${isEn ? "Logline (25-45 Char Check)" : "로그라인 (25~45자 검증)"}`,
-    `- **${isEn ? "Logline" : "핵심 로그라인"}**: ${loglineValidation.trimmed}`,
-    `- **${isEn ? "Length Audit" : "글자수 검증"}**: ${loglineValidation.charCount}${isEn ? " chars" : "자"} (${isEn ? loglineValidation.messageEn : loglineValidation.messageKo})`,
-    `- **${isEn ? "High-Concept Hook" : "하이컨셉 후크"}**: ${input.logline.highConceptHookKo}`, "",
-    `## 03. ${isEn ? "Creative Intent" : "기획 의도"}`,
-    `- **${isEn ? "Origin" : "창작 출발점"}**: ${input.creativeIntent.originMotifKo}`,
-    `- **${isEn ? "Universal Theme" : "글로벌 보편 정서"}**: ${input.creativeIntent.universalThemeKo}`,
-    `- **${isEn ? "Timeliness" : "시의성"}**: ${input.creativeIntent.globalTimelinessKo}`,
-    `- **${isEn ? "Director Promise" : "연출 약속"}**: ${input.creativeIntent.directorPromiseKo}`, "",
-    `## 04. ${isEn ? "World Rules" : "세계관 규칙"}`,
-    `- **${isEn ? "Setting" : "공간·시대 배경"}**: ${input.worldRules.settingSummaryKo}`,
-    `- **${isEn ? "Conflict Engine" : "갈등 메커니즘"}**: ${input.worldRules.conflictMechanismKo}`,
-    ...input.worldRules.rules.map((r, idx) => `- **${idx + 1}. ${r.titleKo}**: ${r.ruleKo} _(${isEn ? "Cost" : "대가"}: ${r.costLimitKo})_`), "",
-    `## 05. ${isEn ? "4 Core Characters" : "핵심 캐릭터 4인"}`,
-    `| ${isEn ? "Name" : "이름"} | ${isEn ? "Role" : "역할"} | ${isEn ? "Desire" : "핵심 욕망"} | ${isEn ? "Flaw" : "치명적 결함"} | ${isEn ? "Season 1 Arc" : "시즌 1 변화 아크"} |`,
-    "| --- | --- | --- | --- | --- |",
-    ...input.coreCharacters.map((c) => `| ${c.nameKo} | ${c.roleKo} | ${c.desireKo} | ${c.fatalFlawKo} | ${c.seasonArcKo} |`), "",
-    `## 06. ${isEn ? "Season 1 Arc (12 Episodes / 60 Chapters)" : "시즌 1 에피소드 아크 (12부작 / 60화)"}`,
-    `- **${isEn ? "Season Title" : "시즌 부제"}**: ${input.seasonArc.seasonTitleKo} (${seasonTotals.totalEpisodes}${isEn ? " ep" : "부작"} / ${seasonTotals.totalChapters}${isEn ? " ch" : "화"})`,
-    `- **${isEn ? "Mapping" : "변환 구조"}**: ${input.seasonArc.formatNoteKo}`,
-    `| ${isEn ? "Act" : "막"} | ${isEn ? "Episodes" : "부작"} | ${isEn ? "Chapters" : "웹툰 화수"} | ${isEn ? "Summary" : "핵심 사건"} | ${isEn ? "Cliffhanger" : "클리프행어"} |`,
-    "| --- | --- | --- | --- | --- |",
-    ...input.seasonArc.blocks.map((b) => `| ${b.actLabelKo} | ${b.episodeRangeLabel} (${b.episodeCount}) | ${b.chapterStart}~${b.chapterEnd}화 | ${b.summaryKo} | ${b.cliffhangerKo} |`),
-    `- **${isEn ? "Season 2 Hook" : "시즌 2 확장 훅"}**: ${input.seasonArc.season2HookKo}`, "",
-    `## 07. ${isEn ? "Visual Tone & Manner" : "비주얼 톤앤매너"}`,
-    `- **${isEn ? "Art Style" : "작화 스타일"}**: ${input.visualTone.artStyleKo}`,
-    `- **${isEn ? "Lighting" : "조명·명암 기조"}**: ${input.visualTone.lightingMoodKo}`,
-    `- **${isEn ? "Camera Grammar" : "카메라 연출"}**: ${input.visualTone.cameraGrammarKo}`,
-    `- **OKLCH Palette**: ${input.visualTone.paletteNotes.map((p) => `${p.roleKo} \`${p.oklchSpec}\` (${p.usageKo})`).join(" / ")}`, "",
-    `## 08. ${isEn ? "Target Audience & OTT Positioning [Estimate]" : "타깃 독자·OTT 포지셔닝 [추정]"}`,
-    `- **${isEn ? "Primary Audience" : "코어 타깃"}**: ${input.targetPositioning.primaryAudienceKo}`,
-    `- **${isEn ? "Secondary Audience" : "확장 타깃"}**: ${input.targetPositioning.secondaryAudienceKo}`,
-    `- **OTT/Platforms**: ${input.targetPositioning.ottChannels.join(", ")}`,
-    `- **${isEn ? "Publishing Markets" : "출판 권역"}**: ${input.targetPositioning.publishingMarkets.join(", ")}`,
-    `- **${isEn ? "Estimated Pool" : "타깃 풀 범위 [추정]"}**: ${formatEstimateRangeLabel(input.targetPositioning.addressableRangeEstimate, loc)} — ${isEn ? input.targetPositioning.addressableRangeEstimate.assumptionEn : input.targetPositioning.addressableRangeEstimate.assumptionKo}`, "",
-    `## 09. ${isEn ? "Comparable Positioning" : "유사 흥행 비교 구도"}`,
-    `- **${isEn ? "Formula" : "비교 공식"}**: ${input.compPositioning.positioningFormulaKo}`,
-    `| ${isEn ? "Reference Axis" : "레퍼런스 축"} | ${isEn ? "Medium" : "매체"} | ${isEn ? "Shared DNA" : "공통 문법"} | ${isEn ? "Differentiation" : "차별화 포인트"} |`,
-    "| --- | --- | --- | --- |",
-    ...input.compPositioning.entries.map((e) => `| ${e.referenceTitleKo} | ${e.mediumKo} | ${e.sharedAxisKo} | ${e.differentiationKo} |`), "",
-    `## 10. ${isEn ? "Secondary Rights Expansion Map [Estimate]" : "2차 판권 확장 맵 (단행본·굿즈·애니·게임) [추정]"}`,
-    `- **${isEn ? "Expansion Thesis" : "확장 전략"}**: ${input.secondaryRights.expansionThesisKo}`,
-    `| ${isEn ? "Track" : "판권 축"} | ${isEn ? "Window" : "전개 시점"} | ${isEn ? "Partner" : "권장 파트너"} | ${isEn ? "Deliverable" : "핵심 산출물"} | ${isEn ? "Budget Band [Estimate]" : "추정 예산 범위 [추정]"} |`,
-    "| --- | --- | --- | --- | --- |",
-    ...input.secondaryRights.tracks.map((t) => `| ${isEn ? t.labelEn : t.labelKo} | ${t.windowLabelKo} | ${t.partnerTypeKo} | ${t.deliverableKo} | ${formatEstimateRangeLabel(t.budgetRangeEstimate, loc)} |`), "",
-    `## 11. ${isEn ? "Production Schedule [Estimate]" : "제작 일정 [추정]"}`,
-    `- **${isEn ? "Cadence" : "제작 리듬"}**: ${input.productionSchedule.cadenceSummaryKo}`,
-    `- **${isEn ? "Total Budget Band [Estimate]" : "총 제작 예산 범위 [추정]"}**: ${formatEstimateRangeLabel(input.productionSchedule.totalBudgetEstimate, loc)} — ${isEn ? input.productionSchedule.totalBudgetEstimate.assumptionEn : input.productionSchedule.totalBudgetEstimate.assumptionKo}`,
-    ...input.productionSchedule.milestones.map((m) => `- **${m.timeframeKo} · ${m.phaseKo}**: ${m.deliverableGateKo} (${m.ownerKo})`), "",
-    `## 12. ${isEn ? "Collaboration & Contact" : "협업 문의"}`,
-    `- **${isEn ? "Rights Holder" : "권리 보유"}**: ${input.contact.rightsHolderKo}`,
-    `- **${isEn ? "Representative" : "담당자"}**: ${input.contact.representativeKo} (${input.contact.contactEmail})`,
-    `- **${isEn ? "Available Rights" : "협의 가능 판권"}**: ${input.contact.availableRights.join(", ")}`,
-    `- **${isEn ? "Ready Materials" : "열람 가능 자료"}**: ${input.contact.materialsReadyKo}`, "",
-    `## ${isEn ? "Readiness Audit Summary [Estimate]" : "피칭 완성도 감사 요약 [추정]"}`,
-    `- **${isEn ? "Score" : "완성도 점수"}**: ${audit.score}/100 (${audit.grade}) · dataSourceKind: \`${audit.dataSourceKind}\``,
-    `- **${isEn ? "Findings" : "진단 결과"}**: ${isEn ? "Blockers" : "차단"} ${audit.blockerCount} / ${isEn ? "Warnings" : "경고"} ${audit.warningCount} / ${isEn ? "Exaggeration flags" : "과장 감지"} ${audit.exaggerationIssues.length}`,
-    ...(audit.issues.length > 0
-      ? audit.issues.map((i) => `- [${i.severity.toUpperCase()}] (${i.slideId}) ${isEn ? i.titleEn : i.titleKo} — ${isEn ? i.fixHintEn : i.fixHintKo}`)
-      : [`- ${isEn ? "No blocking or exaggeration issues detected." : "누락 및 과장 경고 없이 피칭 준비 기준을 충족합니다."}`]),
-  ].join("\n");
-}
-
-export function exportPitchBibleJson(deck: PitchBibleDeck, auditInput?: PitchBibleReadinessAudit, options?: PitchExportOptions): string {
-  const audit = auditInput ?? auditPitchBibleReadiness(deck);
-  return JSON.stringify({
-    schemaVersion: PITCH_BIBLE_SCHEMA_VERSION, locale: options?.locale ?? "ko",
-    dataSourceKind: PITCH_DATA_SOURCE_KIND, badgeLabelKo: "추정", badgeLabelEn: "Estimate",
-    estimateDisclaimerKo: ESTIMATE_DISCLAIMER_KO, estimateDisclaimerEn: ESTIMATE_DISCLAIMER_EN,
-    deck, audit,
-  }, null, 2);
-}
+export { exportPitchBibleMarkdown, exportPitchBibleJson } from "./pitch-output";

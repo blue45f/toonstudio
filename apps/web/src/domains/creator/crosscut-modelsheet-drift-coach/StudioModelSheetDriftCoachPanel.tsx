@@ -12,6 +12,8 @@ import {
   FileText, History, RotateCcw, Ruler, ScanSearch, ShieldCheck, SlidersHorizontal, Undo2,
 } from "lucide-react";
 import { useId, useMemo, useState, type ReactElement } from "react";
+import { useDriftNotification } from "./use-drift-notification";
+import { useDriftCopy } from "./use-drift-copy";
 
 import {
   DRIFT_METRIC_KEYS, DRIFT_METRIC_META, HAIR_PART_OPTIONS, MODEL_SHEET_ARCHETYPES,
@@ -29,13 +31,13 @@ export interface StudioModelSheetDriftCoachPanelProps {
   readonly initialArchetypeId?: ModelSheetArchetypeId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onApplyFix?: (candidate: CutCorrectionCandidate, session: DriftCoachSessionState) => void;
-  readonly onRevertFix?: (cutNumber: number | "all", session: DriftCoachSessionState) => void;
+  readonly onApplyFix?: (candidate: CutCorrectionCandidate, session: DriftCoachSessionState) => void | Promise<void>;
+  readonly onRevertFix?: (cutNumber: number | "all", session: DriftCoachSessionState) => void | Promise<void>;
   readonly onExportReport?: (
     format: "markdown" | "json",
     content: string,
     audit: EpisodeModelSheetAuditReport,
-  ) => void;
+  ) => void | Promise<void>;
 }
 
 type CutFilterMode = "all" | "flagged" | "applied";
@@ -283,6 +285,15 @@ export function StudioModelSheetDriftCoachPanel(
 
   const markdownReport = useMemo(() => exportDriftReportMarkdown({ audit: auditReport, session, locale }), [auditReport, session, locale]);
   const jsonReport = useMemo(() => exportDriftReportJson({ audit: auditReport, session }), [auditReport, session]);
+  const applyDelivery = useDriftNotification<{ candidate: CutCorrectionCandidate; session: DriftCoachSessionState }>(onApplyFix ? value => onApplyFix(value.candidate, value.session) : undefined);
+  const revertDelivery = useDriftNotification<{ cutNumber: number | "all"; session: DriftCoachSessionState }>(onRevertFix ? value => onRevertFix(value.cutNumber, value.session) : undefined);
+  const copyDelivery = useDriftCopy<EpisodeModelSheetAuditReport, "markdown" | "json">({
+    markdown: onExportReport ? (text, audit) => onExportReport("markdown", text, audit) : undefined,
+    json: onExportReport ? (text, audit) => onExportReport("json", text, audit) : undefined,
+  });
+  const pending = applyDelivery.status === "pending" || revertDelivery.status === "pending" || copyDelivery.state === "pending";
+  const isPending = (): boolean => applyDelivery.isPending() || revertDelivery.isPending() || copyDelivery.isPending();
+
 
   const handleChangeArchetype = (archetypeId: ModelSheetArchetypeId): void => {
     const nextSession = createDriftCoachSession(archetypeId, 60);
@@ -308,35 +319,35 @@ export function StudioModelSheetDriftCoachPanel(
   };
 
   const handleApplyCandidate = (candidate: CutCorrectionCandidate): void => {
+    if (isPending()) return;
     const next = applyCutCorrection(session, selectedCut.cutNumber, candidate);
     setSession(next);
-    onApplyFix?.(candidate, next);
-    setStatusMessage(pick(`${selectedCut.cutNumber}컷에 '${candidate.titleKo}'를 비파괴 반영했습니다. 원복 버튼으로 언제든 되돌릴 수 있습니다.`, `Applied '${candidate.titleEn}' non-destructively to Cut #${selectedCut.cutNumber}.`));
+    applyDelivery.notify({ candidate, session: next });
+    setStatusMessage(pick(`${selectedCut.cutNumber}컷에 '${candidate.titleKo}'를 메모리 예제를 선택했습니다. 실제 원고는 수정하지 않습니다.`, `Selected the '${candidate.titleEn}' in-memory example for Cut #${selectedCut.cutNumber}.`));
   };
 
   const handleRevertSelected = (): void => {
-    if (!appliedRecord) return;
+    if (isPending() || !appliedRecord) return;
     const next = revertCutCorrection(session, selectedCut.cutNumber);
     setSession(next);
-    onRevertFix?.(selectedCut.cutNumber, next);
-    setStatusMessage(pick(`${selectedCut.cutNumber}컷을 보정 전 원본 비율로 되돌렸습니다.`, `Reverted Cut #${selectedCut.cutNumber} to its pre-fix baseline.`));
+    revertDelivery.notify({ cutNumber: selectedCut.cutNumber, session: next });
+    setStatusMessage(pick(`${selectedCut.cutNumber}컷을 메모리 보정 전 비율로 되돌렸습니다.`, `Reverted Cut #${selectedCut.cutNumber} to its pre-fix baseline.`));
   };
 
   const handleRevertAll = (): void => {
+    if (isPending()) return;
     const next = revertAllCutCorrections(session);
     setSession(next);
-    onRevertFix?.("all", next);
-    setStatusMessage(pick("전체 60컷을 초기 스캔 상태로 원복했습니다.", "Reverted all 60 cuts to initial scan baseline."));
+    revertDelivery.notify({ cutNumber: "all", session: next });
+    setStatusMessage(pick("메모리 예제 60컷을 초기 수치로 원복했습니다.", "Reverted all 60 cuts to initial scan baseline."));
   };
 
   const handleCopyReport = (format: "markdown" | "json"): void => {
+    if (isPending()) return;
     const content = format === "markdown" ? markdownReport : jsonReport;
     setReportPreview(format);
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(content).catch(() => undefined);
-    }
-    onExportReport?.(format, content, auditReport);
-    setStatusMessage(format === "markdown" ? pick("Markdown 검수 리포트를 클립보드에 복사했습니다.", "Copied Markdown QA report to clipboard.") : pick("JSON 검수 리포트를 클립보드에 복사했습니다.", "Copied JSON QA report to clipboard."));
+    copyDelivery.copy(format, content, auditReport);
+    setStatusMessage("");
   };
 
   return (
@@ -345,6 +356,16 @@ export function StudioModelSheetDriftCoachPanel(
       aria-label={pick("화차 간 캐릭터 작화·비율 흔들림 감지기", "Cross-Cut Model Sheet Drift Coach")}
       className={`space-y-5 rounded-2xl border border-line bg-panel p-4 text-fg sm:p-5 ${className ?? ""}`}
     >
+      <p data-testid="drift-example-scope" className="text-xs text-fg-2">{pick("CPU·메모리 숫자 비교 예제입니다. 생성한 컷 비율과 소품 목록만 비교하며 실제 이미지 분석·원고 보정·레이어 추가·영구저장은 하지 않습니다. 점수는 예제 규칙의 계산값입니다.", "CPU and in-memory metric example. It compares generated proportions and prop lists; no image analysis, artwork edits, layer creation or persistent storage is performed. Scores use example rules.")}</p>
+      {([["apply", applyDelivery], ["revert", revertDelivery]] as const).map(([channel, delivery]) => delivery.status === "idle" ? null : <div key={channel} data-testid={`drift-delivery-${channel}`} role={delivery.status === "failed" ? "alert" : "status"} className="space-y-2 text-xs text-fg-2">
+        <p>{delivery.status === "local-only" ? pick("수신자 미연결. 메모리 예제만 바뀌었습니다.", "No receiver connected. Only the in-memory example changed.") : delivery.status === "pending" ? pick("예제 수신자 응답 대기 중입니다.", "Waiting for the example receiver.") : delivery.status === "failed" ? pick("예제 알림 실패. 같은 결과를 다시 알릴 수 있습니다.", "Example notification failed. Retry the same result.") : pick("예제 알림 완료. 실제 원고 반영·저장은 확인하지 않습니다.", "Example notified; artwork changes and storage were not verified.")}</p>
+        {delivery.status === "failed" ? <button type="button" data-testid={`drift-retry-${channel}`} disabled={pending} onClick={delivery.retry} className={BTN_OUTLINE}>{pick("같은 예제 알림 재시도", "Retry the same notification")}</button> : null}
+      </div>)}
+      {copyDelivery.state !== "idle" ? <div data-testid="drift-copy-status" role={copyDelivery.state === "error" ? "alert" : "status"} className="space-y-2 text-xs text-fg-2">
+        <p>{copyDelivery.state === "pending" ? pick("클립보드·예제 알림 응답 대기 중입니다.", "Waiting for clipboard and example notification.") : copyDelivery.state === "error" ? pick("복사 또는 예제 알림 실패. 완료된 복사는 반복하지 않습니다.", "Copy or notification failed; completed copies are not repeated.") : pick(`클립보드 복사 완료 (${copyDelivery.bytes.toLocaleString("ko-KR")} B). 실제 원고 저장은 확인하지 않습니다.`, `Clipboard copy completed (${copyDelivery.bytes.toLocaleString("en-US")} B). Artwork storage was not verified.`)}</p>
+        {copyDelivery.state === "error" ? <button type="button" data-testid="drift-copy-retry" disabled={pending} onClick={copyDelivery.retry} className={BTN_OUTLINE}>{pick("같은 리포트 복사·알림 재시도", "Retry the same report")}</button> : null}
+      </div> : null}
+      <fieldset disabled={pending} className="contents">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -578,7 +599,11 @@ export function StudioModelSheetDriftCoachPanel(
             <div className="space-y-2.5">
               {top3Candidates.map((candidate) => {
                 const isPreviewing = session.previewCandidateId === candidate.id;
-                const isAppliedThis = appliedRecord?.strategy === candidate.strategy;
+                const isAppliedThis = appliedRecord?.strategy === candidate.strategy
+                  && DRIFT_METRIC_KEYS.every(key => selectedCut[key] === appliedRecord.appliedCut[key])
+                  && selectedCut.hairPartSide === appliedRecord.appliedCut.hairPartSide
+                  && selectedCut.presentAccessories.length === appliedRecord.appliedCut.presentAccessories.length
+                  && selectedCut.presentAccessories.every(id => appliedRecord.appliedCut.presentAccessories.includes(id));
                 const actions = isEn ? candidate.overlayActionsEn : candidate.overlayActionsKo;
                 return (
                   <article
@@ -611,7 +636,7 @@ export function StudioModelSheetDriftCoachPanel(
                       </button>
                       <button type="button" data-testid={`proposal-apply-btn-${candidate.rank}`} onClick={() => handleApplyCandidate(candidate)} className={BTN_SOLID}>
                         <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span>{isAppliedThis ? pick("다시 적용", "Re-apply") : pick("비파괴 적용", "Apply Fix")}</span>
+                        <span>{isAppliedThis ? pick("예제 다시 선택", "Select Example Again") : pick("메모리 예제 선택", "Select Example")}</span>
                       </button>
                       {isAppliedThis && (
                         <button type="button" data-testid={`proposal-revert-btn-${candidate.rank}`} onClick={handleRevertSelected} className={BTN_OUTLINE}>
@@ -673,6 +698,7 @@ export function StudioModelSheetDriftCoachPanel(
         </div>
       </div>
 
+      </fieldset>
       {statusMessage && (
         <div role="status" aria-live="polite" data-testid="drift-coach-status" className="rounded-lg border border-line bg-raised px-3 py-2 text-xs text-fg-2 [word-break:keep-all]">
           {statusMessage}

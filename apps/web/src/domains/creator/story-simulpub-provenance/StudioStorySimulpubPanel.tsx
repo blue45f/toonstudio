@@ -1,5 +1,5 @@
 /**
- * 스토리 개연성 인과 감사관 · 5개국 동시 연재 리플로우 & C2PA/DID 원화증명 · 독자 스크롤 히트맵 3탭 패널 (Wave 39D).
+ * 스토리 개연성 인과 감사관 · 5개국 동시 연재 리플로우 & 로컬 HMAC 무결성 예제 · 독자 스크롤 히트맵 3탭 패널 (Wave 39D).
  * Calm Atelier 시맨틱 토큰 전용(원시 색상 0건) · Props 없이 단독 렌더링 지원 · 100% 온디바이스 결정론 연산.
  */
 
@@ -20,9 +20,9 @@ import {
   type DropOffRiskBand, type ScrollPacingHeatmapReport,
 } from "./scroll-pacing-heatmap-engine";
 import {
-  createC2paProvenanceManifest, createCreatorDidIdentity, createSyntheticArtworkRgba, cropRgbaBuffer,
+  createLocalIntegrityManifest, createDemoCreatorIdentity, createSyntheticArtworkRgba, cropRgbaBuffer,
   DEFAULT_SIMULPUB_PANEL_INPUT, encodeCropResistantWatermark, LOCALE_EXPANSION_PROFILES,
-  reflowPanelAllLocales, SIMULPUB_LOCALES, verifyC2paProvenanceManifest, verifyCropResistantWatermark,
+  reflowPanelAllLocales, SIMULPUB_LOCALES, verifyLocalIntegrityManifest, verifyCropResistantWatermark,
   type SimulpubLocale, type SimulpubReflowReport,
 } from "./simulpub-reflow-provenance";
 
@@ -79,7 +79,7 @@ function applyBrightnessShift(
   return { width: source.width, height: source.height, data: shifted };
 }
 
-/** 스토리 개연성 인과 감사 · 5개국 동시 연재 리플로우 & C2PA 증명 · 독자 스크롤 히트맵 통합 패널. */
+/** 스토리 개연성 인과 감사 · 5개국 동시 연재 리플로우 & 로컬 무결성 예제 · 독자 스크롤 히트맵 통합 패널. */
 export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): ReactElement {
   const {
     locale, className, initialTab = "causality", initialSimulpubLocale = "es",
@@ -109,17 +109,17 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
   const activeLocaleProfile = LOCALE_EXPANSION_PROFILES[selectedLocale];
 
   const provenanceState = useMemo(() => {
-    const signingSeed = "toonstudio-local-creator-seed-2026";
-    const did = createCreatorDidIdentity(creatorHandle);
+    const signingSeed = "public-synthetic-demo-key-not-a-secret";
+    const did = createDemoCreatorIdentity(creatorHandle);
     const artwork = createSyntheticArtworkRgba(96, 96);
-    const manifest = createC2paProvenanceManifest({
+    const manifest = createLocalIntegrityManifest({
       title: DEFAULT_SIMULPUB_PANEL_INPUT.titleKo, episodeCode: "EP.12", creatorDid: did,
       artworkBytes: artwork.data, humanStrokeCount: 1482, aiAssistedRatio: 0.04,
-      createdAtIso: "2026-11-24T12:00:00.000Z", doNotTrain: true, signingSeed,
+      createdAtIso: "2026-11-24T12:00:00.000Z", doNotTrain: true, signingSeed, dataOrigin: "synthetic-example",
     });
     const verifyBytes = new Uint8ClampedArray(artwork.data);
     if (simulateTamper && verifyBytes.length > 0) verifyBytes[0] = ((verifyBytes[0] ?? 0) + 7) & 0xff;
-    const c2paCheck = verifyC2paProvenanceManifest(manifest, verifyBytes, signingSeed, did);
+    const integrityCheck = verifyLocalIntegrityManifest(manifest, verifyBytes, signingSeed, did);
 
     const encoded = encodeCropResistantWatermark(artwork, did.didWeb, manifest.claim.assetSha256, 5);
     const probeBuffer =
@@ -129,7 +129,7 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
           ? applyBrightnessShift(cropRgbaBuffer(encoded.watermarked, 17, 21, 56, 56), 14)
           : encoded.watermarked;
     const wmCheck = verifyCropResistantWatermark(probeBuffer, did.didWeb, manifest.claim.assetSha256);
-    return { did, manifest, c2paCheck, encoded, wmCheck };
+    return { did, manifest, integrityCheck, encoded, wmCheck };
   }, [creatorHandle, simulateTamper, watermarkMode]);
 
   const activeEpisodePreset = DEFAULT_SCROLL_EPISODE_PRESETS[selectedEpisodeIdx] ?? DEFAULT_SCROLL_EPISODE_PRESETS[0];
@@ -145,8 +145,8 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
 
   const tabs: readonly { readonly id: StorySimulpubTabId; readonly label: string; readonly icon: ReactElement }[] = [
     { id: "causality", label: pick("복선·모순 인과 감사", "Narrative Causality Audit"), icon: <GitBranch className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "simulpub", label: pick("5개국 리플로우·C2PA 원화증명", "5-Locale Reflow & C2PA"), icon: <Globe2 className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "heatmap", label: pick("독자 스크롤 히트맵", "Reader Scroll Heatmap"), icon: <Activity className="h-3.5 w-3.5" aria-hidden="true" /> },
+    { id: "simulpub", label: pick("5개국 리플로우·로컬 무결성 예제", "5-Locale Reflow & Local Integrity"), icon: <Globe2 className="h-3.5 w-3.5" aria-hidden="true" /> },
+    { id: "heatmap", label: pick("스크롤 피로 규칙 예제", "Scroll Pacing Rule Example"), icon: <Activity className="h-3.5 w-3.5" aria-hidden="true" /> },
   ];
 
   const handleSelectDataset = (mode: "audit-issues" | "clean-fixed"): void => {
@@ -167,7 +167,7 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
   return (
     <section
       data-testid="story-simulpub-provenance-panel"
-      aria-label={pick("스토리 개연성 인과 감사 · 5개국 동시 연재 리플로우 & C2PA 원화증명 · 독자 스크롤 히트맵", "Story Causality, 5-Locale Reflow & C2PA, Reader Scroll Heatmap")}
+      aria-label={pick("스토리 개연성 인과 감사 · 5개국 동시 연재 리플로우 & 로컬 무결성 예제 · 독자 스크롤 히트맵", "Story Causality, 5-Locale Reflow & Local Integrity, Reader Scroll Heatmap")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -175,16 +175,16 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-fg">
-              {pick("스토리 인과 감사관 · 5개국 리플로우 · C2PA 원화증명 · 스크롤 히트맵", "Story Causality · 5-Locale Reflow · C2PA Provenance · Scroll Heatmap")}
+              {pick("스토리 인과 감사관 · 5개국 리플로우 · 로컬 무결성 예제 · 스크롤 히트맵", "Story Causality · 5-Locale Reflow · Local Integrity Demo · Scroll Heatmap")}
             </h2>
           </div>
           <p className="text-xs text-fg-2">
-            {pick("연재 원고의 복선·인물 지식·외형 모순을 감사하고, 5개국 얼굴 무침범 리플로우·DID/C2PA 원화 증명·모바일 9:16 스크롤 피로를 출고 전 일괄 검증합니다.", "Audit Chekhov DAGs and knowledge gaps, verify 0px face-safe 5-locale reflow with C2PA/DID watermarking, and simulate 9:16 scroll drop-off.")}
+            {pick("합성 대본·번역·96×96 이미지의 CPU 계산 예제입니다. 실제 원고 읽기·반영·영구 저장·외부 통신은 없으며 C2PA 서명·신원·저작권을 증명하지 않습니다.", "Synthetic script, translation and 96x96 image CPU examples. No manuscript access, changes, persistence or external calls; no C2PA signature, identity or copyright attestation.")}
           </p>
         </div>
         <span data-testid="badge-provenance-ready" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-good bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          {pick("온디바이스 검증 · 0px 얼굴 보호", "On-Device Audit · 0px Face Guard")}
+          {pick("합성 데이터 예제 · 사각형 겹침 검사", "Synthetic Examples · Rectangle Overlap Check")}
         </span>
       </header>
 
@@ -310,7 +310,7 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
             </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div data-testid="simulpub-canvas-preview" className="relative h-72 w-full overflow-hidden rounded-lg border border-line bg-canvas">
+              <div data-testid="simulpub-canvas-preview" aria-label={pick("합성 번역 말풍선 위치도 · 실제 폰트 조판 미검증", "Synthetic Balloon Layout Diagram · Font Layout Unverified")} className="relative h-72 w-full overflow-hidden rounded-lg border border-line bg-canvas">
                 {DEFAULT_SIMULPUB_PANEL_INPUT.faceSafeBoxes.map((face) => (
                   <div
                     key={face.id}
@@ -364,7 +364,9 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
                       </div>
                       <div className="mt-0.5 text-[11px] text-fg-2 tabular-nums">
                         {b.reflowedBox.width}×{b.reflowedBox.height}px · {b.effectiveFontSizePx}px · {pick("이동", "Shift")} {b.displacementPx}px
+                        {b.textOverflow ? pick(" · 텍스트 넘침: 재조판 필요", " · Text overflow: reflow required") : pick(" · 추정 수용량 내", " · Within estimated capacity")}
                       </div>
+                      <p className="mt-1 whitespace-pre-wrap break-words text-fg-2">{b.text}</p>
                     </li>
                   ))}
                 </ul>
@@ -376,25 +378,26 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <Fingerprint className="h-4 w-4 text-accent" aria-hidden="true" />
-                <h3 className="text-xs font-semibold text-fg">{pick("C2PA + DID 원화 저작권 증명 · 크롭 내성 워터마크", "C2PA + DID Provenance & Crop-Resistant Watermark")}</h3>
+                <h3 className="text-xs font-semibold text-fg">{pick("공개 예제 키의 로컬 HMAC 검사 · 워터마크 예제", "Public Demo-Key HMAC Check & Watermark Example")}</h3>
               </div>
               <span
-                data-testid="c2pa-verify-status"
-                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${provenanceState.c2paCheck.verified ? "border-good bg-good-soft text-good" : "border-bad bg-bad-soft text-bad"}`}
+                data-testid="integrity-verify-status"
+                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${provenanceState.integrityCheck.integrityMatches ? "border-good bg-good-soft text-good" : "border-bad bg-bad-soft text-bad"}`}
               >
-                {provenanceState.c2paCheck.verified ? <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> : <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />}
-                {provenanceState.c2paCheck.verified ? pick("C2PA 서명·원화 해시 검증 통과", "C2PA Signature & Hash Verified") : pick("원화 변조 감지됨 (검증 실패)", "Artwork Tampering Detected")}
+                {provenanceState.integrityCheck.integrityMatches ? <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> : <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />}
+                {provenanceState.integrityCheck.integrityMatches ? pick("합성 이미지·JSON·HMAC 일치 (C2PA 미지원)", "Synthetic Image, JSON & HMAC Match (No C2PA)") : pick("합성 이미지 무결성 불일치", "Synthetic Image Integrity Mismatch")}
               </span>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <label htmlFor={`${uid}-creator-handle`} className="block text-[11px] font-medium text-fg-2">{pick("작가 DID 핸들", "Creator DID Handle")}</label>
+                <label htmlFor={`${uid}-creator-handle`} className="block text-[11px] font-medium text-fg-2">{pick("예시 식별자 핸들", "Example Identity Handle")}</label>
                 <input
                   id={`${uid}-creator-handle`} type="text" value={creatorHandle}
                   onChange={(e) => setCreatorHandle(e.target.value)}
                   className={`min-h-11 w-full rounded-lg border border-line bg-raised px-3 py-2 text-xs text-fg ${FOCUS_RING}`}
                 />
+                <p className="text-[11px] text-fg-3">{pick("96×96 합성 이미지, 획수 1482·AI 비율 4%·생성일은 고정 예시입니다.", "Synthetic 96x96 image; 1482 strokes, 4% AI ratio and creation date are fixed examples.")}</p>
                 <div className="space-y-1 rounded-md border border-line bg-raised p-2 text-[11px] text-fg-2">
                   <div className="truncate font-mono text-fg" data-testid="creator-did-web">{provenanceState.did.didWeb}</div>
                   <div className="truncate font-mono text-fg-3">SHA-256: {provenanceState.manifest.claim.assetSha256.slice(0, 32)}...</div>
@@ -404,7 +407,7 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
                   className={`${PILL_BTN} w-full ${simulateTamper ? "border-bad bg-bad-soft text-bad" : IDLE_TONE}`}
                 >
                   <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-                  {simulateTamper ? pick("원화 1바이트 변조 복구하기", "Restore Original Artwork Bytes") : pick("원화 1바이트 변조 시뮬레이션", "Simulate 1-Byte Artwork Tamper")}
+                  {simulateTamper ? pick("합성 이미지 바이트 되돌리기", "Restore Synthetic Image Bytes") : pick("합성 이미지 1바이트 변경", "Change One Synthetic Image Byte")}
                 </button>
               </div>
 
@@ -426,8 +429,8 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
                 <div data-testid="watermark-verify-summary" className="space-y-1 rounded-md border border-line bg-raised p-2.5 text-[11px] tabular-nums">
                   <div className="flex items-center justify-between">
                     <span className="text-fg-2">{pick("워터마크 복원", "Watermark Recovery")}</span>
-                    <span className={provenanceState.wmCheck.detected && provenanceState.wmCheck.crcValid ? "font-semibold text-good" : "font-semibold text-bad"}>
-                      {provenanceState.wmCheck.detected && provenanceState.wmCheck.crcValid ? pick("CRC-16 일치 · 작가 확인", "CRC-16 Valid · Verified") : pick("미검출", "Not Detected")}
+                    <span className={provenanceState.encoded.embeddingStatus === "embedded" && provenanceState.wmCheck.detected && provenanceState.wmCheck.crcValid && provenanceState.wmCheck.creatorTagMatched === true && provenanceState.wmCheck.assetTagMatched === true ? "font-semibold text-good" : "font-semibold text-bad"}>
+                      {provenanceState.encoded.embeddingStatus === "embedded" && provenanceState.wmCheck.detected && provenanceState.wmCheck.crcValid && provenanceState.wmCheck.creatorTagMatched === true && provenanceState.wmCheck.assetTagMatched === true ? pick("CRC-16·예시 태그 일치 (신원 미검증)", "CRC-16 & Example Tags Match (Identity Unverified)") : pick("미검출 또는 기록 불가 이미지", "Not Detected or Unsupported Image")}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-fg-2">
@@ -474,7 +477,7 @@ export function StudioStorySimulpubPanel(props: StudioStorySimulpubPanelProps): 
               <div data-testid="heatmap-cliffhanger-score" className="mt-1 text-lg font-bold text-accent tabular-nums">{heatmapReport.cliffhangerHookScore} / 100</div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("예상 완독 잔존율", "Est. Retention")}</div>
+              <div className="text-[11px] text-fg-3">{pick("규칙 모델 잔존율 (실측 아님)", "Rule-Model Retention (Not Measured)")}</div>
               <div className="mt-1 text-lg font-bold text-good tabular-nums">{heatmapReport.estimatedCompletionRetentionPct}%</div>
             </div>
           </div>

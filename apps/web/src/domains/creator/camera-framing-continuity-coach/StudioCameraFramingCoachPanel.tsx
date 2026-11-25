@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { useId, useMemo, useState, type ReactElement } from "react";
 
+import { useAdvisorClipboard, useAdvisorNotification } from "../char-expression-pose-advisor/use-advisor-notification";
+import { MAX_CAMERA_DIALOGUE_LENGTH } from "./camera-input-contract";
+
 import {
   CAMERA_COACH_SCENE_PRESETS, DIALOGUE_TENSION_OPTIONS,
   FOCAL_LENGTH_MAX_MM, FOCAL_LENGTH_MIN_MM, GAZE_DIRECTION_OPTIONS,
@@ -34,9 +37,9 @@ export interface StudioCameraFramingCoachPanelProps {
   readonly initialTension?: DialogueTension;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onApply?: (proposal: CameraFramingProposal, session: CameraCoachSessionState) => void;
-  readonly onRevert?: (session: CameraCoachSessionState) => void;
-  readonly onExportJson?: (json: string, session: CameraCoachSessionState) => void;
+  readonly onApply?: (proposal: CameraFramingProposal, session: CameraCoachSessionState) => void | Promise<void>;
+  readonly onRevert?: (session: CameraCoachSessionState) => void | Promise<void>;
+  readonly onExportJson?: (json: string, session: CameraCoachSessionState) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -333,13 +336,35 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
   );
   const [showJson, setShowJson] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [appliedInput, setAppliedInput] = useState<CameraFramingCoachInput | null>(null);
+  const apply = useAdvisorNotification(onApply ? (job: { proposal: CameraFramingProposal; session: CameraCoachSessionState }) => onApply(job.proposal, job.session) : undefined);
+  const revert = useAdvisorNotification(onRevert);
+  const deliverJson = useAdvisorNotification(onExportJson ? (job: { text: string; session: CameraCoachSessionState }) => onExportJson(job.text, job.session) : undefined);
+  const clipboard = useAdvisorClipboard();
+  const delivery = [["apply", apply], ["revert", revert], ["json", deliverJson], ["clipboard", clipboard]] as const;
+  const isBusy = () => delivery.some(([, channel]) => channel.isPending());
+  const busy = delivery.some(([, channel]) => channel.status === "pending");
+
+  function changeInput(patch: Partial<CameraFramingCoachInput>): void {
+    if (isBusy()) return;
+    if (patch.dialogueText !== undefined && patch.dialogueText.length > MAX_CAMERA_DIALOGUE_LENGTH) {
+      setStatusMessage(pick("대사가 너무 깁니다. 이전 입력을 유지합니다.", "The dialogue is too long. The previous text is preserved."));
+      return;
+    }
+    setInput((prev) => ({ ...prev, ...patch }));
+    setSession((prev) => prev.previewingProposalId ? previewCameraProposal(resetCameraRigFineTune(prev), prev.previewingProposalId) : prev);
+    setStatusMessage("");
+  }
+
 
   const top3 = useMemo(() => proposeCameraFramingsTop3(input), [input]);
   const activeView = useMemo(() => resolveEffectiveCameraView(input, top3, session), [input, top3, session]);
   const jsonText = useMemo(() => exportCameraRigJson({ sceneId, input, session, activeView, top3 }), [sceneId, input, session, activeView, top3]);
 
   const handleSelectPreset = (nextId: CameraCoachScenePresetId): void => {
+    if (isBusy()) return;
     const preset = getCameraCoachScenePreset(nextId);
+    setAppliedInput(null);
     setSceneId(preset.id);
     setInput(preset.input);
     setSession(createCameraCoachSession({
@@ -351,6 +376,7 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
   };
 
   const handleTogglePreview = (proposal: CameraFramingProposal): void => {
+    if (isBusy()) return;
     const next = previewCameraProposal(session, proposal.id);
     setSession(next);
     setStatusMessage(
@@ -361,17 +387,21 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
   };
 
   const handleApplyProposal = (proposal: CameraFramingProposal): void => {
+    if (isBusy()) return;
     const next = applyCameraProposal(session, proposal);
     setSession(next);
-    onApply?.(proposal, next);
-    setStatusMessage(pick(`'${proposal.titleKo}' 구도를 현재 컷에 적용했습니다. 언제든 원복할 수 있습니다.`, `Applied '${proposal.titleEn}' to current cut.`));
+    setAppliedInput(input);
+    apply.notify({ proposal, session: next });
+    setStatusMessage(pick("선택한 구도를 메모리 예제에 적용했습니다.", "Applied the selected framing to the in-memory example."));
   };
 
   const handleRevert = (): void => {
+    if (isBusy()) return;
     const next = revertCameraProposal(session);
     setSession(next);
-    onRevert?.(next);
-    setStatusMessage(pick("적용한 카메라 구도를 원본 컷으로 되돌렸습니다.", "Reverted camera framing to original cut."));
+    setAppliedInput(null);
+    revert.notify(next);
+    setStatusMessage(pick("예제 구도를 처음 상태로 되돌렸습니다.", "Restored the initial example framing."));
   };
 
   const handleToggleAxisCross = (): void => {
@@ -391,12 +421,11 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
   };
 
   const handleExportJson = (): void => {
+    if (isBusy()) return;
     setShowJson(true);
-    onExportJson?.(jsonText, session);
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(jsonText).catch(() => undefined);
-    }
-    setStatusMessage(pick("카메라 릭 JSON을 생성했습니다.", "Exported camera rig JSON."));
+    deliverJson.notify({ text: jsonText, session });
+    clipboard.notify(jsonText);
+    setStatusMessage(pick("카메라 구도 예제 JSON을 열었습니다.", "Opened the camera framing example JSON."));
   };
 
   const hasActivePreview = Boolean(session.previewingProposalId && top3.some((p) => p.id === session.previewingProposalId));
@@ -406,8 +435,8 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
       : session.status;
   const sessionStatusLabel =
     effectiveSessionStatus === "previewing" ? pick("미리보기 중", "Previewing")
-      : effectiveSessionStatus === "applied" ? pick("적용됨", "Applied")
-        : effectiveSessionStatus === "reverted" ? pick("원복됨", "Reverted") : pick("대기(원본 유지)", "Idle (Original)");
+      : effectiveSessionStatus === "applied" ? pick("예제에 적용됨", "Applied in Example")
+        : effectiveSessionStatus === "reverted" ? pick("예제 원복됨", "Example Reverted") : pick("대기(원본 유지)", "Idle (Original)");
 
   const audit = activeView.continuityAudit;
   const auditLabel =
@@ -436,17 +465,17 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
           </div>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
             {pick(
-              "직전 컷 시선 축과 180° 법칙을 기준으로 월선 위험을 감지하고, 대사 긴장도에 맞는 Top-3 비파괴 구도 가이드를 제안합니다.",
-              "Detects 180° action-axis violations from the prior cut and proposes Top-3 non-destructive camera framing guides.",
+              "직전 컷과 대사를 바탕으로 시선 축과 구도를 계산하는 SVG 예제입니다. 적용과 원복은 예제 안에서만 작동합니다. 실제 컷·장면·저장 상태는 이 화면에서 바꾸지 않습니다.",
+              "This SVG example calculates sightlines and framing from the previous cut and dialogue. Apply and revert change the example in memory. The actual cut, scene, and saved data stay unchanged.",
             )}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" data-testid="camera-revert-btn" disabled={!session.appliedProposalId} onClick={handleRevert} className={BTN_OUTLINE}>
+          <button type="button" data-testid="camera-revert-btn" disabled={busy || !session.appliedProposalId} onClick={handleRevert} className={BTN_OUTLINE}>
             <Undo2 className="h-4 w-4" aria-hidden="true" />{pick("원본 되돌리기", "Revert Cut")}
           </button>
-          <button type="button" data-testid="camera-copy-json-btn" onClick={handleExportJson} className={BTN_SOLID}>
+          <button type="button" data-testid="camera-copy-json-btn" disabled={busy} onClick={handleExportJson} className={BTN_SOLID}>
             <Copy className="h-4 w-4" aria-hidden="true" />{pick("JSON 내보내기", "Export JSON")}
           </button>
           <button type="button" data-testid="camera-toggle-json-btn" aria-expanded={showJson} onClick={() => setShowJson((prev) => !prev)} className={BTN_OUTLINE}>
@@ -454,6 +483,22 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
           </button>
         </div>
       </header>
+
+      {delivery.map(([kind, channel]) => {
+        if (channel.status === "idle") return null;
+        const copy = kind === "clipboard";
+        const message = channel.status === "pending" ? pick("응답 대기 중", "Waiting for response")
+          : channel.status === "failed" ? (copy ? pick("JSON 복사 실패", "JSON copy failed") : pick("예제 전달 실패", "Example delivery failed"))
+          : channel.status === "local-only" ? pick("수신자 미연결", "No receiver connected")
+          : copy ? pick("JSON 복사 완료", "JSON copied") : pick("예제 전달 완료", "Example delivered");
+        const label = kind === "apply" ? pick("예제 적용", "Example apply")
+          : kind === "revert" ? pick("예제 원복", "Example revert")
+          : copy ? pick("클립보드", "Clipboard") : "JSON";
+        return <div key={kind} data-testid={`camera-delivery-${kind}`} role={channel.status === "failed" ? "alert" : "status"} className="mt-2 text-xs text-fg-2">
+          <span>{label} · {message}</span>
+          {channel.status === "failed" ? <button type="button" data-testid={`camera-retry-${kind}`} disabled={busy} onClick={channel.retry} className={BTN_OUTLINE}>{pick("같은 결과 다시 시도", "Retry same result")}</button> : null}
+        </div>;
+      })}
 
       <div className="mt-4 space-y-2">
         <div className="text-xs font-semibold text-fg-2 [word-break:keep-all]">{pick("상황 프리셋 5종", "5 Quick Scene Presets")}</div>
@@ -513,22 +558,22 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
             <div className="grid gap-2.5 sm:grid-cols-2">
               <div className="space-y-1">
                 <div className="text-[11px] font-medium text-fg-2">{pick("직전 피사체 위치", "Prev Subject Side")}</div>
-                <OptionButtonGroup options={SUBJECT_SIDE_OPTIONS} activeId={input.prevSubjectSide} testIdPrefix="camera-prev-side" isEn={isEn} onSelect={(id) => setInput((prev) => ({ ...prev, prevSubjectSide: id }))} />
+                <OptionButtonGroup options={SUBJECT_SIDE_OPTIONS} activeId={input.prevSubjectSide} testIdPrefix="camera-prev-side" isEn={isEn} onSelect={(id) => changeInput({ prevSubjectSide: id })} />
               </div>
               <div className="space-y-1">
                 <div className="text-[11px] font-medium text-fg-2">{pick("직전 시선 방향", "Prev Gaze Direction")}</div>
-                <OptionButtonGroup options={GAZE_DIRECTION_OPTIONS} activeId={input.prevGazeDirection} testIdPrefix="camera-prev-gaze" isEn={isEn} onSelect={(id) => setInput((prev) => ({ ...prev, prevGazeDirection: id }))} />
+                <OptionButtonGroup options={GAZE_DIRECTION_OPTIONS} activeId={input.prevGazeDirection} testIdPrefix="camera-prev-gaze" isEn={isEn} onSelect={(id) => changeInput({ prevGazeDirection: id })} />
               </div>
             </div>
             <div className="space-y-1">
               <div className="text-[11px] font-medium text-fg-2">{pick("직전 샷 스케일", "Prev Shot Scale")}</div>
-              <OptionButtonGroup options={SHOT_SCALE_OPTIONS} activeId={input.prevShotScale} testIdPrefix="camera-prev-scale" isEn={isEn} onSelect={(id) => setInput((prev) => ({ ...prev, prevShotScale: id }))} />
+              <OptionButtonGroup options={SHOT_SCALE_OPTIONS} activeId={input.prevShotScale} testIdPrefix="camera-prev-scale" isEn={isEn} onSelect={(id) => changeInput({ prevShotScale: id })} />
             </div>
             <SliderControlRow
               id={`${uid}-prev-yaw`} testId="camera-prev-yaw-slider" readoutTestId="camera-prev-yaw-readout"
               label={pick("직전 카메라 방위각 (Yaw)", "Prev Camera Yaw")} readout={signedDeg(input.prevCameraYawDeg)}
               min={-165} max={165} value={input.prevCameraYawDeg}
-              onChange={(val) => setInput((prev) => ({ ...prev, prevCameraYawDeg: val }))}
+              onChange={(val) => changeInput({ prevCameraYawDeg: val })}
             />
           </div>
 
@@ -536,20 +581,20 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-bold text-fg [word-break:keep-all]">{pick("현재 컷 연출 의도", "Current Cut Intent")}</span>
               <div className="flex items-center gap-1.5">
-                <button type="button" data-testid="camera-speaker-1" aria-pressed={input.speakerCount === 1} onClick={() => setInput((prev) => ({ ...prev, speakerCount: 1 }))} className={input.speakerCount === 1 ? BTN_ACTIVE : BTN_OUTLINE}>
+                <button type="button" data-testid="camera-speaker-1" aria-pressed={input.speakerCount === 1} onClick={() => changeInput({ speakerCount: 1 })} className={input.speakerCount === 1 ? BTN_ACTIVE : BTN_OUTLINE}>
                   <User className="h-3.5 w-3.5" aria-hidden="true" />{pick("1인 컷", "Solo")}
                 </button>
-                <button type="button" data-testid="camera-speaker-2" aria-pressed={input.speakerCount === 2} onClick={() => setInput((prev) => ({ ...prev, speakerCount: 2 }))} className={input.speakerCount === 2 ? BTN_ACTIVE : BTN_OUTLINE}>
+                <button type="button" data-testid="camera-speaker-2" aria-pressed={input.speakerCount === 2} onClick={() => changeInput({ speakerCount: 2 })} className={input.speakerCount === 2 ? BTN_ACTIVE : BTN_OUTLINE}>
                   <Users className="h-3.5 w-3.5" aria-hidden="true" />{pick("2인 대화", "2 Speakers")}
                 </button>
               </div>
             </div>
-            <OptionButtonGroup options={DIALOGUE_TENSION_OPTIONS} activeId={input.dialogueTension} testIdPrefix="camera-tension" isEn={isEn} onSelect={(id) => setInput((prev) => ({ ...prev, dialogueTension: id }))} />
+            <OptionButtonGroup options={DIALOGUE_TENSION_OPTIONS} activeId={input.dialogueTension} testIdPrefix="camera-tension" isEn={isEn} onSelect={(id) => changeInput({ dialogueTension: id })} />
             <div className="space-y-1">
               <label htmlFor={`${uid}-dialogue`} className="block text-[11px] font-medium text-fg-2 [word-break:keep-all]">{pick("현재 컷 대사", "Current Cut Dialogue")}</label>
-              <input
-                id={`${uid}-dialogue`} data-testid="camera-dialogue-input" type="text" value={input.dialogueText}
-                onChange={(e) => setInput((prev) => ({ ...prev, dialogueText: e.target.value }))}
+              <textarea
+                id={`${uid}-dialogue`} data-testid="camera-dialogue-input" rows={2} maxLength={MAX_CAMERA_DIALOGUE_LENGTH} value={input.dialogueText}
+                onChange={(e) => changeInput({ dialogueText: e.target.value })}
                 placeholder={pick("대사를 입력하면 구도 적합도가 즉시 갱신됩니다.", "Enter dialogue to score framing guides...")}
                 className={`min-h-11 w-full rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg ${FOCUS_RING}`}
               />
@@ -593,13 +638,13 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
       <div className="mt-5 space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-bold text-fg [word-break:keep-all]">{pick("비파괴 Top-3 구도 고스트 가이드", "Top-3 Non-Destructive Framing Guides")}</h3>
-          <span className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("모든 제안안은 180° 안전 반구를 유지합니다.", "Every proposal preserves the active 180° safe hemisphere.")}</span>
+          <span className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("제안별 연속성 결과를 확인하세요.", "Check the continuity result for each suggestion.")}</span>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
           {top3.map((proposal) => {
             const isPreviewing = session.previewingProposalId === proposal.id;
-            const isApplied = session.appliedProposalId === proposal.id;
+            const isApplied = appliedInput === input && session.appliedProposalId === proposal.id;
             return (
               <article
                 key={proposal.id} data-testid={`camera-proposal-card-${proposal.rank}`} data-framing-type={proposal.framingType}
@@ -609,7 +654,7 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-md bg-card px-2 py-0.5 font-mono text-[11px] font-bold text-accent tabular-nums">{`#${proposal.rank} · ${proposal.score}%`}</span>
+                    <span className="rounded-md bg-card px-2 py-0.5 font-mono text-[11px] font-bold text-accent tabular-nums">{`#${proposal.rank} · ${proposal.score}/100`}</span>
                     <span className="rounded-full border border-good bg-good-soft px-2 py-0.5 text-[10px] font-semibold text-good">{isEn ? proposal.badgeEn : proposal.badgeKo}</span>
                   </div>
                   <h4 className="text-sm font-bold text-fg [word-break:keep-all]">{isEn ? proposal.titleEn : proposal.titleKo}</h4>
@@ -626,7 +671,7 @@ export function StudioCameraFramingCoachPanel(props: StudioCameraFramingCoachPan
                   <button type="button" data-testid={`camera-preview-btn-${proposal.rank}`} aria-pressed={isPreviewing} onClick={() => handleTogglePreview(proposal)} className={isPreviewing ? BTN_ACTIVE : BTN_OUTLINE}>
                     <Eye className="h-3.5 w-3.5" aria-hidden="true" />{isPreviewing ? pick("미리보기 중", "Previewing") : pick("미리보기", "Preview")}
                   </button>
-                  <button type="button" data-testid={`camera-apply-btn-${proposal.rank}`} onClick={() => handleApplyProposal(proposal)} className={BTN_SOLID}>
+                  <button type="button" data-testid={`camera-apply-btn-${proposal.rank}`} disabled={busy} onClick={() => handleApplyProposal(proposal)} className={BTN_SOLID}>
                     <Check className="h-3.5 w-3.5" aria-hidden="true" />{isApplied ? pick("재적용", "Re-Apply") : pick("적용", "Apply")}
                   </button>
                   {isApplied ? (

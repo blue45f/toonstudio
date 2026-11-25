@@ -6,6 +6,8 @@
  * - 순수 TypeScript 결정론적 연산(Web Storage · private Map store · BigInt 리터럴 · raw color 0건).
  */
 
+import { assertHidEncodeInput, assertHidProjection, assertPointerBatch, MAX_DIGITIZER_JSON_CHARS, validateDigitizerConfig } from "./digitizer-input-contract";
+
 export const DIGITIZER_CONFIG_SCHEMA_VERSION = "toonstudio.pro-digitizer-hid-engine.v1" as const;
 export const USB_HID_USAGE_PAGE_DIGITIZER = 0x0d as const;
 export const USB_HID_STANDARD_PEN_REPORT_ID = 0x02 as const;
@@ -395,6 +397,7 @@ export function evaluatePressureCurve(rawPressure: number, curve: PressureCurveC
 }
 
 export function samplePressureCurvePoints(curve: PressureCurveConfig, segments = 32): readonly PressureBezierPoint[] {
+  if (!Number.isFinite(segments)) throw new RangeError("곡선 샘플 수는 유한값이어야 합니다.");
   const count = Math.max(4, Math.min(128, Math.round(segments)));
   const points: PressureBezierPoint[] = [];
   for (let i = 0; i <= count; i += 1) {
@@ -447,6 +450,7 @@ function resolveSpherical(sample: RawPointerSample): { readonly altitudeRad: num
 export function normalizePointerSampleBatch(
   rawSamples: readonly RawPointerSample[], options: NormalizePointerBatchOptions,
 ): NormalizedPointerBatchResult {
+  assertPointerBatch(rawSamples);
   const profile = getProDigitizerProfile(options.profileId);
   const smoothing = clamp(options.smoothingStrength ?? 0.35, 0, 1);
   const enablePrediction = options.enablePrediction ?? true;
@@ -505,6 +509,8 @@ export function normalizePointerSampleBatch(
     const tiltDeg = clamp(90 - (altitudeRad * 180) / Math.PI, 0, 90);
     const tiltShadingFactor = profile.capabilities.altitudeAzimuth && profile.maxTiltDeg > 0
       ? roundTo(clamp((tiltDeg - 10) / Math.max(15, profile.maxTiltDeg - 10), 0, 1), 4) : 0;
+    const roundedVelocity = roundTo(velocityPxPerSec, 1);
+    if (!Number.isFinite(velocityPxPerSec) || !Number.isFinite(roundedVelocity)) throw new RangeError("샘플 시각 차의 속도를 유한 수치로 표현할 수 없습니다.");
 
     normalized.push({
       rawX: roundTo(rawX, 3), rawY: roundTo(rawY, 3), x: roundTo(outX, 3), y: roundTo(outY, 3),
@@ -515,12 +521,15 @@ export function normalizePointerSampleBatch(
       barrelRollDeg: sample.twist !== undefined ? normalizeAngleDeg(sample.twist) : 0,
       barrelRollNative: profile.capabilities.barrelRoll,
       tangentialPressure: roundTo(clamp(sample.tangentialPressure ?? 0, -1, 1), 4),
-      velocityPxPerSec: roundTo(velocityPxPerSec, 1), isPredicted,
+      velocityPxPerSec: roundedVelocity, isPredicted,
       pointerType: sample.pointerType ?? (profile.formFactor === "force-trackpad" ? "touch" : "pen"),
     });
   }
 
   const avgDelta = positiveDeltasMs.length > 0 ? positiveDeltasMs.reduce((s, v) => s + v, 0) / positiveDeltasMs.length : 0;
+  const reportRate = avgDelta > 0 ? 1000 / avgDelta : 0;
+  const effectiveReportRateHz = roundTo(reportRate, 1);
+  if (!Number.isFinite(reportRate) || !Number.isFinite(effectiveReportRateHz)) throw new RangeError("샘플 시각 차의 리포트율을 유한 수치로 표현할 수 없습니다.");
   const rawJitter = computeMeanSecondDifference(rawCoords);
   const smoothJitter = computeMeanSecondDifference(smoothCoords);
   const lastSample = normalized[normalized.length - 1];
@@ -528,7 +537,7 @@ export function normalizePointerSampleBatch(
     profileId: profile.id, samples: normalized,
     metrics: {
       inputCount: rawSamples.length, coalescedCount, predictedCount, droppedPredictedCount,
-      effectiveReportRateHz: avgDelta > 0 ? roundTo(1000 / avgDelta, 1) : 0,
+      effectiveReportRateHz,
       jitterReductionPct: smoothing === 0 || rawJitter < 1e-6 ? 0 : roundTo(clamp(((rawJitter - smoothJitter) / rawJitter) * 100, 0, 100), 1),
       predictedLatencyGainMs: lastCoalescedTs !== null && lastPredictedTs !== null && lastPredictedTs > lastCoalescedTs ? roundTo(lastPredictedTs - lastCoalescedTs, 2) : 0,
       averageCalibratedPressure: normalized.length > 0 ? roundTo(normalized.reduce((s, v) => s + v.calibratedPressure, 0) / normalized.length, 4) : 0,
@@ -595,8 +604,9 @@ export function parseStandardHidDigitizerReport(buffer: unknown): HidDigitizerPa
   };
 }
 
-/** 표준 16바이트 USB HID Digitizer (Usage Page 0x0D) 리포트 패킷을 결정론적으로 인코딩한다. */
+/** 공개 usage 용어를 사용한 합성 16바이트 예제다. 실제 장치의 report descriptor를 해석하지 않는다. */
 export function encodeStandardHidDigitizerReport(input: HidDigitizerReportEncodeInput): Uint8Array {
+  assertHidEncodeInput(input);
   const bytes = new Uint8Array(USB_HID_STANDARD_REPORT_MIN_BYTES);
   bytes[0] = (input.reportId ?? USB_HID_STANDARD_PEN_REPORT_ID) & 0xff;
   bytes[1] = (input.tipSwitch ? 0x01 : 0) | (input.barrelSwitch ? 0x02 : 0) | (input.secondaryBarrelSwitch ? 0x04 : 0)
@@ -620,6 +630,7 @@ export function encodeStandardHidDigitizerReport(input: HidDigitizerReportEncode
 export function hidReportToRawPointerSample(
   report: ParsedHidDigitizerReport, viewportWidthPx: number, viewportHeightPx: number, timestampMs: number,
 ): RawPointerSample {
+  assertHidProjection(report, viewportWidthPx, viewportHeightPx, timestampMs);
   return {
     x: roundTo(report.xNorm * Math.max(1, viewportWidthPx), 2),
     y: roundTo(report.yNorm * Math.max(1, viewportHeightPx), 2),
@@ -703,65 +714,29 @@ export function createSimulatedTestStroke(profileId: ProDigitizerProfileId): rea
   return samples;
 }
 
+const CONFIG_RULES = { schema: DIGITIZER_CONFIG_SCHEMA_VERSION, profiles: PRO_DIGITIZER_IDS,
+  curves: PRESSURE_CURVE_PRESET_IDS, triggers: CONTROL_TRIGGER_KINDS, actions: STUDIO_BINDING_ACTION_IDS };
+
 export function exportDigitizerConfigJson(snapshot: DigitizerCalibrationSnapshot): string {
-  const profile = getProDigitizerProfile(snapshot.profileId);
-  return JSON.stringify({
-    schema: DIGITIZER_CONFIG_SCHEMA_VERSION,
-    standards: profile.openStandards,
-    profileId: profile.id,
-    curve: snapshot.curve,
-    smoothingStrength: roundTo(clamp(snapshot.smoothingStrength, 0, 1), 3),
-    enablePrediction: Boolean(snapshot.enablePrediction),
-    bindings: snapshot.bindings,
-    provenance: { cleanRoomStandardOnly: true, hidUsagePageHex: "0x0D", noteKo: "공개 표준(W3C Pointer Events Level 3 · USB HID Page 0x0D) 기반 설정 스냅샷입니다." },
+  const result = validateDigitizerConfig({ schema: DIGITIZER_CONFIG_SCHEMA_VERSION, ...snapshot }, CONFIG_RULES);
+  if (!result.ok) throw new TypeError(result.messageKo);
+  const config = result.config;
+  const profile = getProDigitizerProfile(config.profileId);
+  const json = JSON.stringify({ schema: DIGITIZER_CONFIG_SCHEMA_VERSION, standards: profile.openStandards, ...config,
+    provenance: { dataSourceKind: "example", hardwareVerified: false, deviceConnected: false,
+      latencyMeasured: false, packetLayout: "synthetic-16-byte", cleanRoomStandardOnly: true,
+      hidUsagePageHex: "0x0D", noteKo: "정적 프로필·곡선·합성 패킷 예제입니다. 실제 장치 호환·압력 단계·지연·인증을 검증하지 않습니다." },
   }, null, 2);
+  if (json.length > MAX_DIGITIZER_JSON_CHARS) throw new RangeError("JSON 예제 한도를 초과했습니다. 원문을 줄이거나 잘라내지 않습니다.");
+  return json;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
-function isUnitNumber(value: unknown): value is number { return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1; }
-function failImport(errorCode: ImportConfigErrorCode, messageKo: string, messageEn: string): ImportDigitizerConfigResult { return { ok: false, errorCode, messageKo, messageEn }; }
-
-/** JSON 설정을 엄격하게 검증해 불러온다(오류 시 fail-closed). */
+/** JSON 문법과 지원 모델을 검증한다. 실패한 원문을 자르거나 기본값으로 교체하지 않는다. */
 export function importDigitizerConfigJson(rawJson: string): ImportDigitizerConfigResult {
-  let parsed: unknown;
-  try { parsed = JSON.parse(rawJson); } catch { return failImport("INVALID_JSON", "JSON 문법을 해석할 수 없습니다.", "Malformed JSON payload."); }
-  if (!isRecord(parsed) || parsed.schema !== DIGITIZER_CONFIG_SCHEMA_VERSION) return failImport("INVALID_SCHEMA", `지원하지 않는 스키마입니다 (${DIGITIZER_CONFIG_SCHEMA_VERSION} 필수).`, `Unsupported schema (expected ${DIGITIZER_CONFIG_SCHEMA_VERSION}).`);
-  const profileId = parsed.profileId;
-  if (typeof profileId !== "string" || !PRO_DIGITIZER_IDS.includes(profileId as ProDigitizerProfileId)) return failImport("INVALID_PROFILE_ID", "알 수 없는 하드웨어 프로필 ID입니다.", "Unknown hardware profileId.");
-  const rc = parsed.curve;
-  if (
-    !isRecord(rc) || typeof rc.presetId !== "string" || !PRESSURE_CURVE_PRESET_IDS.includes(rc.presetId as PressureCurvePresetId) ||
-    !isRecord(rc.p1) || !isRecord(rc.p2) ||
-    !isUnitNumber(rc.p1.x) || !isUnitNumber(rc.p1.y) || !isUnitNumber(rc.p2.x) || !isUnitNumber(rc.p2.y) ||
-    !isUnitNumber(rc.deadzoneMin) || !isUnitNumber(rc.saturationMax) || !isUnitNumber(rc.outputMin) || !isUnitNumber(rc.outputMax) ||
-    rc.deadzoneMin >= rc.saturationMax || rc.outputMin >= rc.outputMax
-  ) return failImport("INVALID_CURVE", "필압 베지어 곡선 제어점 또는 데드존 범위가 유효하지 않습니다.", "Invalid pressure curve control points or deadzone.");
-  if (!isUnitNumber(parsed.smoothingStrength) || typeof parsed.enablePrediction !== "boolean") return failImport("INVALID_SETTINGS", "지터 억제 강도(0~1) 또는 예측 설정 값이 잘못되었습니다.", "Invalid smoothingStrength or enablePrediction flag.");
-  if (!Array.isArray(parsed.bindings)) return failImport("INVALID_BINDINGS", "단축키 바인딩 목록은 배열이어야 합니다.", "Bindings must be an array.");
-  const validatedBindings: ShortcutBinding[] = [];
-  for (const item of parsed.bindings) {
-    if (
-      !isRecord(item) || typeof item.id !== "string" || item.id.trim().length === 0 ||
-      typeof item.triggerKind !== "string" || !CONTROL_TRIGGER_KINDS.includes(item.triggerKind as ControlTriggerKind) ||
-      typeof item.triggerCode !== "string" || typeof item.triggerLabelKo !== "string" || typeof item.triggerLabelEn !== "string" ||
-      typeof item.actionId !== "string" || !STUDIO_BINDING_ACTION_IDS.includes(item.actionId as StudioBindingActionId) ||
-      typeof item.enabled !== "boolean"
-    ) return failImport("INVALID_BINDINGS", "유효하지 않은 단축키 바인딩 항목이 있습니다.", "Invalid shortcut binding entry.");
-    validatedBindings.push({
-      id: item.id, triggerKind: item.triggerKind as ControlTriggerKind, triggerCode: item.triggerCode,
-      triggerLabelKo: item.triggerLabelKo, triggerLabelEn: item.triggerLabelEn,
-      actionId: item.actionId as StudioBindingActionId, enabled: item.enabled,
-    });
-  }
-  return {
-    ok: true,
-    config: {
-      profileId: profileId as ProDigitizerProfileId,
-      curve: {
-        presetId: rc.presetId as PressureCurvePresetId, p1: { x: rc.p1.x, y: rc.p1.y }, p2: { x: rc.p2.x, y: rc.p2.y },
-        deadzoneMin: rc.deadzoneMin, saturationMax: rc.saturationMax, outputMin: rc.outputMin, outputMax: rc.outputMax,
-      },
-      smoothingStrength: parsed.smoothingStrength, enablePrediction: parsed.enablePrediction, bindings: validatedBindings,
-    },
+  if (typeof rawJson !== "string" || rawJson.length > MAX_DIGITIZER_JSON_CHARS) return {
+    ok: false, errorCode: "INVALID_JSON", messageKo: "JSON 예제는 최대 1048576자입니다.", messageEn: "JSON is limited to 1048576 characters.",
   };
+  let parsed: unknown;
+  try { parsed = JSON.parse(rawJson); } catch { return { ok: false, errorCode: "INVALID_JSON", messageKo: "JSON 문법을 해석할 수 없습니다.", messageEn: "Malformed JSON payload." }; }
+  return validateDigitizerConfig(parsed, CONFIG_RULES);
 }

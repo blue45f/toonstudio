@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -17,6 +17,7 @@ import {
   StudioOnboardingDioramaPanel,
   collectAllOnboardingAtelierAssetPaths,
   computeDioramaParallax,
+  countFirstCutDialogueGraphemes,
   createInitialDioramaState,
   createInitialFirstCutSprint,
   getDioramaChapterById,
@@ -77,15 +78,12 @@ describe("1. 4장 온보딩 디오라마 카탈로그 · 실존 WebP 자산 디�
     const assetPaths = collectAllOnboardingAtelierAssetPaths();
     expect(assetPaths.length).toBeGreaterThanOrEqual(22);
 
-    const hasFullAtelierCheckout = existsSync(path.join(REPO_PUBLIC_DIR, "assets/atelier"));
     for (const webPath of assetPaths) {
       expect(webPath.startsWith("/assets/atelier/")).toBe(true);
       expect(webPath.endsWith(".webp")).toBe(true);
-      if (hasFullAtelierCheckout) {
-        const diskPath = path.join(REPO_PUBLIC_DIR, webPath.slice(1));
-        expect(existsSync(diskPath), `Missing WebP on disk: ${diskPath}`).toBe(true);
-        expect(statSync(diskPath).size).toBeGreaterThan(1024);
-      }
+      const diskPath = path.join(REPO_PUBLIC_DIR, webPath.slice(1));
+      expect(existsSync(diskPath), `Missing WebP on disk: ${diskPath}`).toBe(true);
+      expect(statSync(diskPath).size).toBeGreaterThan(1024);
     }
 
     // 엔진 소스 내 하드코딩된 모든 /assets/atelier/*.webp 문자열까지 전수 대조
@@ -95,11 +93,9 @@ describe("1. 4장 온보딩 디오라마 카탈로그 · 실존 WebP 자산 디�
     );
     const literalMatches = engineSrc.match(/\/assets\/atelier\/[a-z0-9/-]+\.webp/gu) ?? [];
     expect(literalMatches.length).toBeGreaterThanOrEqual(22);
-    if (hasFullAtelierCheckout) {
-      for (const match of new Set(literalMatches)) {
-        const diskPath = path.join(REPO_PUBLIC_DIR, match.slice(1));
-        expect(existsSync(diskPath), `Broken literal asset path: ${match}`).toBe(true);
-      }
+    for (const match of new Set(literalMatches)) {
+      const diskPath = path.join(REPO_PUBLIC_DIR, match.slice(1));
+      expect(existsSync(diskPath), `Broken literal asset path: ${match}`).toBe(true);
     }
   });
 
@@ -237,7 +233,7 @@ describe("2. 2.5D 포인터 틸트 패럴랙스 솔버 (computeDioramaParallax)"
 });
 
 describe("3. 60초 첫 컷 체험 시뮬레이터", () => {
-  it("4단계 × 15초 = 60초 예산 구조를 갖추고 순차 완료 시 100% 진행·OPFS 저장 상태를 기록한다", () => {
+  it("4단계 × 15초 합성 예산으로 체크하며 실제 OPFS 저장 완료로 기록하지 않는다", () => {
     expect(FIRST_CUT_SPRINT_STEPS).toHaveLength(4);
     expect(FIRST_CUT_SPRINT_STEPS.reduce((acc, s) => acc + s.durationSec, 0)).toBe(60);
 
@@ -263,10 +259,14 @@ describe("3. 60초 첫 컷 체험 시뮬레이터", () => {
     expect(sprint.progressPercent).toBe(100);
     expect(sprint.elapsedSec).toBe(48);
     expect(sprint.remainingSec).toBe(12);
-    expect(sprint.savedToLocalDraft).toBe(true);
+    expect(sprint.savedToLocalDraft).toBe(false);
 
     const summary = summarizeFirstCutSprint(sprint);
     expect(summary.completed).toBe(true);
+    expect(summary.scope).toBe("example-only");
+    expect(summary.timeBasis).toBe("synthetic-budget");
+    expect(summary.savedToLocalDraft).toBe(false);
+    expect(summary.summaryKo).toContain("실제 원고 미저장");
     expect(summary.completedCount).toBe(4);
     expect(summary.summaryKo).toContain("48초");
     expect(summary.summaryEn).toContain("48s");
@@ -282,13 +282,27 @@ describe("3. 60초 첫 컷 체험 시뮬레이터", () => {
     sprint = recordFirstCutAction(sprint, { type: "complete-all-instant" });
     expect(sprint.status).toBe("completed");
     expect(sprint.progressPercent).toBe(100);
-    expect(sprint.savedToLocalDraft).toBe(true);
+    expect(sprint.savedToLocalDraft).toBe(false);
 
     sprint = recordFirstCutAction(sprint, { type: "reset" });
     expect(sprint.status).toBe("idle");
     expect(sprint.elapsedSec).toBe(0);
     expect(sprint.completedStepIds).toEqual([]);
     expect(sprint.savedToLocalDraft).toBe(false);
+  });
+
+  it("60자를 넘는 대사와 이모지·결합문자는 원문 그대로 유지하며 단계 초기화도 대사와 비율을 보존한다", () => {
+    const dialogue = `${"가".repeat(59)}😀👨‍👩‍👧‍👦e\u0301${"뒤".repeat(30)}`;
+    let sprint = recordFirstCutAction(createInitialFirstCutSprint(), { type: "set-balloon", text: dialogue });
+    sprint = recordFirstCutAction(sprint, { type: "set-canvas-preset", preset: "square-1-1" });
+    sprint = recordFirstCutAction(sprint, { type: "complete-all-instant" });
+    expect(sprint.balloonDraftKo).toBe(dialogue);
+    expect(countFirstCutDialogueGraphemes(dialogue)).toBe(92);
+    const reset = recordFirstCutAction(sprint, { type: "reset" });
+    expect(reset.balloonDraftKo).toBe(dialogue);
+    expect(reset.canvasPreset).toBe("square-1-1");
+    expect(reset.completedStepIds).toEqual([]);
+    expect(reset.savedToLocalDraft).toBe(false);
   });
 });
 
@@ -547,6 +561,72 @@ describe("5. StudioOnboardingDioramaPanel 통합 UI · 인터랙션 · 접근성
       "Episode Publish & Reels",
     );
     expect(screen.getByTestId("prescription-fit-score").textContent).toContain("Rule Fit");
+  });
+
+  it("초안은 자동 절단하지 않고 예제·미저장 범위를 표시하며 관련 링크는 새 탭으로 연다", () => {
+    render(<StudioOnboardingDioramaPanel />);
+    const dialogue = `${"가".repeat(59)}😀👨‍👩‍👧‍👦e\u0301${"뒤".repeat(30)}`;
+    fireEvent.change(screen.getByTestId("sprint-balloon-input"), { target: { value: dialogue } });
+    expect(screen.getByDisplayValue(dialogue)).toBeTruthy();
+    expect(screen.getByTestId("sprint-dialogue-count").textContent).toContain("92글자");
+    fireEvent.click(screen.getByTestId("sprint-instant-complete-btn"));
+    expect(screen.getByTestId("sprint-status-text").textContent).toContain("합성 예산 48초");
+    expect(screen.getByTestId("sprint-status-text").textContent).toContain("실제 원고 미저장");
+    fireEvent.click(screen.getByTestId("sprint-reset-btn"));
+    expect(screen.getByDisplayValue(dialogue)).toBeTruthy();
+    expect(screen.getByTestId("onboarding-scope-notice").textContent).toContain("다시 마운트하면 사라져요");
+    for (const id of ["chapter-launch-link", "launch-prescribed-workspace-link"]) {
+      expect(screen.getByTestId(id).getAttribute("target")).toBe("_blank");
+      expect(screen.getByTestId(id).getAttribute("rel")).toBe("noopener noreferrer");
+    }
+  });
+
+  it("완료 알림 대기 중 중복·초기화를 막고 실패 후 단계 초기화는 과거 재시도를 지운다", async () => {
+    const onSprintComplete = vi.fn().mockRejectedValueOnce(new Error("알림 실패")).mockResolvedValueOnce(undefined);
+    render(<StudioOnboardingDioramaPanel onSprintComplete={onSprintComplete} />);
+    fireEvent.change(screen.getByTestId("sprint-balloon-input"), { target: { value: "남겨둘 대사😀" } });
+    fireEvent.click(screen.getByTestId("sprint-instant-complete-btn"));
+    expect(screen.getByTestId("onboarding-diorama-panel").getAttribute("aria-busy")).toBe("true");
+    fireEvent.click(screen.getByTestId("sprint-instant-complete-btn"));
+    fireEvent.click(screen.getByTestId("sprint-reset-btn"));
+    expect(onSprintComplete).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("sprint-progress-bar").getAttribute("style")).toContain("100%");
+    await waitFor(() => expect(screen.getByTestId("onboarding-notification-status").textContent).toContain("처리에 실패"));
+    fireEvent.click(screen.getByTestId("sprint-reset-btn"));
+    expect(screen.queryByTestId("onboarding-notification-retry")).toBeNull();
+    expect(screen.getByDisplayValue("남겨둘 대사😀")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("sprint-instant-complete-btn"));
+    await waitFor(() => expect(screen.getByTestId("onboarding-notification-status").textContent).toContain("실제 적용·저장 완료를 뜻하지 않아요"));
+    expect(onSprintComplete).toHaveBeenCalledTimes(2);
+  });
+
+  it("처방 알림 재시도는 이미 전달한 챕터 알림을 중복 실행하지 않으며 응답은 실제 설정 적용과 구분한다", async () => {
+    const onChapterChange = vi.fn().mockResolvedValue(undefined);
+    const onPrescriptionApply = vi.fn().mockRejectedValueOnce(new Error("알림 실패")).mockResolvedValueOnce(undefined);
+    render(<StudioOnboardingDioramaPanel onChapterChange={onChapterChange} onPrescriptionApply={onPrescriptionApply} />);
+    fireEvent.click(screen.getByTestId("matcher-goal-team-collab-workflow"));
+    fireEvent.click(screen.getByTestId("apply-prescription-btn"));
+    fireEvent.click(screen.getByTestId("apply-prescription-btn"));
+    await waitFor(() => expect(screen.getByTestId("onboarding-notification-status").textContent).toContain("처리에 실패"));
+    expect(onChapterChange).toHaveBeenCalledTimes(1);
+    expect(onPrescriptionApply).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId("onboarding-notification-retry"));
+    await waitFor(() => expect(screen.getByTestId("onboarding-notification-status").textContent).toContain("실제 적용·저장 완료를 뜻하지 않아요"));
+    expect(onChapterChange).toHaveBeenCalledTimes(1);
+    expect(onPrescriptionApply).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId("prescription-applied-banner").textContent).toContain("실제 설정 미반영");
+    fireEvent.click(screen.getByTestId("matcher-medium-charcoal-pastel"));
+    expect(screen.queryByTestId("prescription-applied-banner")).toBeNull();
+  });
+
+  it("동기 챕터 알림 오류도 표시하고 선택한 예제의 알림을 다시 시도한다", () => {
+    const onChapterChange = vi.fn().mockImplementationOnce(() => { throw new Error("알림 오류"); });
+    render(<StudioOnboardingDioramaPanel onChapterChange={onChapterChange} />);
+    fireEvent.click(screen.getByTestId("chapter-next-btn"));
+    expect(screen.getByTestId("onboarding-notification-status").textContent).toContain("처리에 실패");
+    fireEvent.click(screen.getByTestId("onboarding-notification-retry"));
+    expect(onChapterChange).toHaveBeenCalledTimes(2);
+    expect(onChapterChange.mock.calls[0]?.[0]).toEqual(onChapterChange.mock.calls[1]?.[0]);
   });
 });
 

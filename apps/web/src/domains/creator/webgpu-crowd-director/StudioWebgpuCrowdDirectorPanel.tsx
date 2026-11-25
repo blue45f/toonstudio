@@ -251,17 +251,17 @@ export function StudioWebgpuCrowdDirectorPanel({
   return (
     <section
       data-testid="studio-webgpu-crowd-director-panel"
-      aria-label="WebGPU 인스턴싱 원근 군중 생성기"
+      aria-label="CPU 원근 군중 미리보기 · WebGPU 버퍼 계약 예제"
       className={`rounded-xl border border-line bg-raised p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
             <Users className="h-4 w-4 text-accent" aria-hidden="true" />
-            <h2>WebGPU 인스턴싱 원근 군중 생성기</h2>
+            <h2>CPU 원근 군중 미리보기</h2>
           </div>
           <p className="text-xs text-fg-2">
-            Poisson-disk 비겹침 원근 배치와 단일 drawIndexedIndirect 인스턴싱으로 웹툰 대규모 군중 컷을 즉시 생성합니다.
+            CPU로 배치하고 Canvas 2D로 그립니다. WebGPU 버퍼는 계약 예제이며 GPU 실행·성능은 측정하지 않습니다. 원고에는 자동 반영되지 않습니다.
           </p>
         </div>
 
@@ -284,8 +284,8 @@ export function StudioWebgpuCrowdDirectorPanel({
           >
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             <span>
-              드로우콜 {drawCallMetrics.instancedDrawCalls}회 ·{" "}
-              {drawCallMetrics.drawCallReductionPct.toFixed(2)}% 절감
+              가정: 드로우콜 {drawCallMetrics.instancedDrawCalls}회 ·{" "}
+              {drawCallMetrics.drawCallReductionPct.toFixed(2)}% 절감 (실측 아님)
             </span>
           </span>
         </div>
@@ -337,7 +337,7 @@ export function StudioWebgpuCrowdDirectorPanel({
                 data-testid="crowd-generation-timing"
                 className="font-semibold text-fg-2 tabular-nums"
               >
-                {metrics.placedCount}명 · {metrics.generationTimeMs.toFixed(2)}ms
+                {metrics.placedCount}명 · CPU 배치 {metrics.generationTimeMs.toFixed(2)}ms (그리기 제외)
               </span>
             </div>
 
@@ -346,7 +346,7 @@ export function StudioWebgpuCrowdDirectorPanel({
               data-testid="crowd-preview-canvas"
               width={640}
               height={360}
-              aria-label="원근 소실점 대규모 군중 실시간 프리뷰 캔버스"
+              aria-label="CPU 배치 결과를 그리는 Canvas 2D 군중 미리보기"
               onPointerDown={(event) => {
                 draggingFocalRef.current = true;
                 updateFocalFromPointer(event);
@@ -412,18 +412,18 @@ export function StudioWebgpuCrowdDirectorPanel({
             </div>
           </div>
 
-          {/* 핵심 지표 요약(실측 데이터 기반) */}
+          {/* CPU 결과와 이론상 인스턴싱 가정을 구분한다. */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div
               data-testid="crowd-metric-drawcalls"
               className="rounded-lg border border-line bg-card p-2.5"
             >
-              <div className="text-[11px] font-medium text-fg-3">드로우콜 절감</div>
+              <div className="text-[11px] font-medium text-fg-3">드로우콜 가정 (인물당 3회 → 전체 1회)</div>
               <div className="mt-0.5 text-sm font-bold text-fg tabular-nums">
                 {drawCallMetrics.naiveDrawCalls} → {drawCallMetrics.instancedDrawCalls}회
               </div>
               <div className="text-[11px] text-good tabular-nums">
-                {drawCallMetrics.drawCallReductionPct.toFixed(2)}% 감축
+                {drawCallMetrics.drawCallReductionPct.toFixed(2)}% 감축 가정 · 실측 아님
               </div>
             </div>
 
@@ -602,7 +602,7 @@ export function StudioWebgpuCrowdDirectorPanel({
         >
           <div className="space-y-1.5">
             <div className="font-semibold text-fg">
-              WebGPU drawIndexedIndirect WGSL 검증 ({wgslReport.valid ? "통과" : "오류"})
+              WGSL 텍스트 정적 검사 ({wgslReport.valid ? "통과" : "오류"}) · GPU 컴파일·실행 미검증
             </div>
             <p className="text-fg-2">
               진입점: {wgslReport.entryPoints.join(", ")} · 워크그룹:{" "}
@@ -622,8 +622,7 @@ export function StudioWebgpuCrowdDirectorPanel({
             </div>
             <p className="text-fg-2 tabular-nums">
               크기 {formatKilobytes(svgLayer.byteLength)} · 최소/최대 선두께{" "}
-              {svgLayer.minStrokeWidthPx.toFixed(2)}px ~ {svgLayer.maxStrokeWidthPx.toFixed(2)}px ·
-              예상 수작업 절감 약 {drawCallMetrics.estimatedManualInkMinutesSaved}분(추정)
+              {svgLayer.minStrokeWidthPx.toFixed(2)}px ~ {svgLayer.maxStrokeWidthPx.toFixed(2)}px
             </p>
             <pre className="max-h-24 overflow-auto rounded-lg border border-line bg-panel p-2 text-[11px] text-fg-2">
               {svgLayer.svgMarkup.slice(0, 420)}

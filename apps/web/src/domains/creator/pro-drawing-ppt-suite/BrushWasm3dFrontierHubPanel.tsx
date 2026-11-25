@@ -89,6 +89,12 @@ const LazyStudioWebgpuCrowdDirectorPanel = lazy(async () => {
   return { default: m.StudioWebgpuCrowdDirectorPanel };
 });
 
+const LazyFederatedLoraPanel = lazy(async () => {
+  await import("../federated-style-lora");
+  const m = await import("../federated-style-lora/StudioFederatedLoraStreamPanel");
+  return { default: m.StudioFederatedLoraStreamPanel };
+});
+
 type FrontierTabId =
   | "brushPhysics"
   | "brushCustomLab"
@@ -107,7 +113,8 @@ type FrontierTabId =
   | "drawingFrontier"
   | "visualOracle"
   | "nocodeShaderGrid"
-  | "liveOracle";
+  | "liveOracle"
+  | "federatedLora";
 
 interface OracleLiveSnapshot {
   readonly catalogBrushes: number;
@@ -125,22 +132,23 @@ const FRONTIER_TABS: readonly {
 }[] = [
   { id: "brushPhysics", labelKo: "물리 브러시·종이 높이장·임파스토", labelEn: "Physical Brush · Paper · Impasto" },
   { id: "brushCustomLab", labelKo: "커스텀 브러시 랩 · .tsbrush", labelEn: "Custom Brush Lab · .tsbrush" },
-  { id: "brush3dExtreme", labelKo: "극한 2.5D 임파스토·Face SDF·6패스·IK", labelEn: "2.5D Impasto · Face SDF · 6-Pass · IK" },
+  { id: "brush3dExtreme", labelKo: "브러시·3D 계산 예제", labelEn: "Brush & 3D Computation Examples" },
   { id: "wasm64Core", labelKo: "Rust + Wasm64(memory64) 코어", labelEn: "Rust + Wasm64 Core Engine" },
   { id: "wasm64Hotpath", labelKo: "실물 Rust .wasm 핫패스", labelEn: "Live Rust .wasm Hotpath" },
   { id: "scene3dNpr", labelKo: "3D Wasm64 BVH·LOD·NPR 룩뎁", labelEn: "3D Wasm64 BVH · LOD · NPR" },
   { id: "vrmAutoShader", labelKo: "VRM 재질 DNA 상속 · 깊이 분리", labelEn: "VRM Shader DNA · Depth Split" },
-  { id: "vrmHairTransplant", labelKo: "크로스 VRM 실물 헤어 이식", labelEn: "Cross-VRM Hair Transplant" },
-  { id: "vrmLookdevGolden", labelKo: "WebGL 골든 SSIM·표정-헤어·3면 시트", labelEn: "WebGL Golden SSIM · 3-View Sheet" },
+  { id: "vrmHairTransplant", labelKo: "헤어 정렬 계획·VRM 이식 엔진", labelEn: "Hair Alignment Plan · VRM Transplant Engine" },
+  { id: "vrmLookdevGolden", labelKo: "RGBA SSIM·헤어·3면 시트 예제", labelEn: "RGBA SSIM · Hair · Example Turnaround" },
   { id: "vectorInkProj", labelKo: "3D → G펜 벡터 잉크 투영", labelEn: "3D → G-Pen Vector Ink" },
   { id: "webgpuNextgen", labelKo: "제로카피 · LOD · P2P · 카나리", labelEn: "Zero-Copy · LOD · P2P · Canary" },
-  { id: "webgpuXpbdLight", labelKo: "WebGPU XPBD 헤어·의상·2D/3D 광원", labelEn: "WebGPU XPBD · 2D/3D SDF Light" },
-  { id: "webgpuCrowd", labelKo: "WebGPU 원근 대규모 군중 생성기", labelEn: "WebGPU Perspective Crowd Director" },
-  { id: "webnnPigment", labelKo: "WebNN 선화·Kubelka-Munk 혼색·연출", labelEn: "WebNN Lineart · KM Pigment · Cut AI" },
+  { id: "webgpuXpbdLight", labelKo: "XPBD 물리·CPU 광원 베이크", labelEn: "XPBD Physics · CPU Light Bake" },
+  { id: "webgpuCrowd", labelKo: "군중 배치 계산·미리보기", labelEn: "Crowd Layout · Preview" },
+  { id: "webnnPigment", labelKo: "CPU 선화·안료 혼색·컷 규칙", labelEn: "CPU Lineart · Pigment Mix · Cut Rules" },
   { id: "drawingFrontier", labelKo: "하이브리드 획·건조기·HDR·심의", labelEn: "Hybrid Stroke · Dryer · HDR" },
   { id: "visualOracle", labelKo: "시각 무결성 오라클 (SSIM·ΔE)", labelEn: "Visual Integrity Oracle (SSIM·ΔE)" },
   { id: "nocodeShaderGrid", labelKo: "노코드 WGSL · 분산 그리드", labelEn: "No-Code WGSL · Tile Grid" },
   { id: "liveOracle", labelKo: "실시간 엔진 오라클 (194종·KM·GPU)", labelEn: "Live Engine Oracle (194 · KM · GPU)" },
+  { id: "federatedLora", labelKo: "저랭크 학습·캐시 계산 예제", labelEn: "Low-Rank Learning · Cache Examples" },
 ];
 
 const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
@@ -207,7 +215,7 @@ const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
       { src: "/assets/atelier/jewels/jewel-character-bust.webp", labelKo: "3D 캐릭터 셰이퍼", labelEn: "3D Character Shaper" },
       { src: "/assets/atelier/jewels/jewel-studio-cube.webp", labelKo: "가상 스튜디오·배경", labelEn: "Virtual Studio" },
       { src: "/assets/atelier/jewels/jewel-acoustic-fork.webp", labelKo: "물리 음향·Foley", labelEn: "Physical Audio" },
-      { src: "/assets/atelier/jewels/jewel-reels-slate.webp", labelKo: "4K 무빙툰·출고", labelEn: "4K Reels & Export" },
+      { src: "/assets/atelier/jewels/jewel-reels-slate.webp", labelKo: "영상 도구·출고", labelEn: "Video Tools & Export" },
     ],
   },
   {
@@ -259,6 +267,8 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Eye size={15} aria-hidden="true" />;
     case "nocodeShaderGrid":
       return <Layers size={15} aria-hidden="true" />;
+    case "federatedLora":
+      return <Sparkles size={15} aria-hidden="true" />;
     case "liveOracle":
       return <Layers size={15} aria-hidden="true" />;
   }
@@ -418,6 +428,7 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "webgpuXpbdLight" ? <LazyStudioWebgpuXpbdLightingPanel /> : null}
             {active === "webgpuCrowd" ? <LazyStudioWebgpuCrowdDirectorPanel /> : null}
             {active === "webnnPigment" ? <LazyStudioWebnnPigmentDirectorPanel /> : null}
+            {active === "federatedLora" ? <LazyFederatedLoraPanel /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
             {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}

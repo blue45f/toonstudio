@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -40,6 +40,7 @@ import {
   toggleMobileHandedness,
   type MagicBarActionId,
   type MagicBarToolContext,
+  type StudioCanvasOrbitalUxPanelProps,
 } from "./index";
 
 afterEach(() => {
@@ -365,9 +366,82 @@ describe("한국어 일상어·초성·영문 명령 팔레트(⌘K) · 미니�
 });
 
 describe("StudioCanvasOrbitalUxPanel 단독 렌더링 · 인터랙션 · 토큰 위생 검증", () => {
+  it("부모 폭에 맞게 축소된 휠에서도 8방향 포인터 좌표와 선택 버튼이 일치한다", () => {
+    const onSectorSelected = vi.fn();
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel, { onSectorSelected }));
+    const surface = screen.getByTestId("orbital-wheel-surface");
+    const bounds = vi.spyOn(surface, "getBoundingClientRect");
+
+    // 중첩 카드 안쪽의 좁은 폭과 기본 폭 모두 같은 방위각을 유지해야 한다.
+    for (const width of [224, 304]) {
+      bounds.mockReturnValue(new DOMRect(10, 20, width, width));
+      for (const sector of ORBITAL_WHEEL_SECTORS) {
+        const point = polarBearingToCartesian(10 + width / 2, 20 + width / 2, width * 0.3, sector.centerAngleDeg);
+        fireEvent(surface, new MouseEvent("pointermove", { bubbles: true, clientX: point.x, clientY: point.y }));
+        expect(screen.getByTestId("orbital-center-label").textContent).toBe(sector.shortLabelKo);
+        fireEvent.click(screen.getByTestId(`orbital-sector-${sector.id}`));
+        expect(onSectorSelected).toHaveBeenLastCalledWith(sector);
+      }
+    }
+    bounds.mockRestore();
+  });
+
+  it("연결 없는 선택과 매직 바는 예제 구성이며 실제 원고 적용·명령 실행 성공으로 표시하지 않는다", () => {
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel));
+    expect(screen.getByTestId("orbital-scope-notice").textContent).toContain("선택 알림만");
+    fireEvent.click(screen.getByTestId("orbital-sector-flip-horizontal"));
+    expect(screen.getByTestId("orbital-status-banner").textContent).toContain("미니맵 예제");
+    expect(screen.getByTestId("orbital-status-banner").textContent).toContain("실제 원고에는 반영하지 않았어요");
+    fireEvent.click(screen.getByTestId("magic-action-color-drop-fill"));
+    expect(screen.getByTestId("orbital-status-banner").textContent).toContain("예제를 선택했어요");
+    fireEvent.change(screen.getByTestId("command-palette-input"), { target: { value: "ㅅㄸ" } });
+    fireEvent.click(screen.getByTestId("palette-result-stabilize-line"));
+    const status = screen.getByTestId("orbital-status-banner").textContent;
+    expect(status).toContain("명령 예제 선택");
+    expect(status).toContain("실제 원고에는 반영하지 않았어요");
+    expect(status).not.toMatch(/바로 적용했어요|명령 실행:/u);
+    expect(screen.getByTestId("minimap-scope-notice").textContent).toContain("고정 명도 샘플");
+    expect(screen.getByTestId("filmstrip-scope-notice").textContent).toContain("실제 편집 기록을 읽거나 원고를 되돌리지 않아요");
+    fireEvent.click(screen.getByTestId("device-mode-mobile"));
+    expect(screen.getByTestId("mobile-scope-notice").textContent).toContain("원고 픽셀 확대나 기기 진동은 실행하지 않으며");
+  });
+
+  it("비동기 명령 알림의 대기·실패·재시도를 처리하고 성공 응답도 적용·저장 완료와 구분한다", async () => {
+    const onCommandExecuted = vi.fn()
+      .mockRejectedValueOnce(new Error("연결 실패"))
+      .mockResolvedValueOnce(undefined);
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel, { onCommandExecuted }));
+    fireEvent.change(screen.getByTestId("command-palette-input"), { target: { value: "ㅅㄸ" } });
+    const command = screen.getByTestId("palette-result-stabilize-line");
+    fireEvent.click(command);
+    expect(screen.getByTestId("canvas-orbital-ux-panel").getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("orbital-status-banner").textContent).toContain("연결 알림 처리 중");
+    fireEvent.click(command);
+    expect(onCommandExecuted).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByTestId("orbital-status-banner").textContent).toContain("처리에 실패"));
+    expect(screen.getByTestId("canvas-orbital-ux-panel").getAttribute("aria-busy")).toBe("false");
+    fireEvent.click(command);
+    await waitFor(() => expect(screen.getByTestId("orbital-status-banner").textContent).toContain("적용·저장 완료를 뜻하지 않아요"));
+    expect(onCommandExecuted).toHaveBeenCalledTimes(2);
+  });
+
+  it("섹터 알림의 동기 오류와 비동기 응답도 실제 적용 성공으로 오인하지 않는다", async () => {
+    const onSectorSelected = vi.fn()
+      .mockImplementationOnce(() => { throw new Error("선택 알림 오류"); })
+      .mockResolvedValueOnce(undefined);
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel, { onSectorSelected }));
+    const sector = screen.getByTestId("orbital-sector-brush");
+    fireEvent.click(sector);
+    expect(screen.getByTestId("orbital-status-banner").textContent).toContain("처리에 실패");
+    fireEvent.click(sector);
+    expect(screen.getByTestId("orbital-status-banner").textContent).toContain("연결 알림 처리 중");
+    await waitFor(() => expect(screen.getByTestId("orbital-status-banner").textContent).toContain("적용·저장 완료를 뜻하지 않아요"));
+    expect(onSectorSelected).toHaveBeenCalledTimes(2);
+  });
+
   it("12. Props 없이 단독 렌더되고 8분할 SVG 오비탈 휠 섹터 클릭이 즉시 상태와 콜백에 반영된다", () => {
     const onSectorSelected = vi.fn();
-    render(createElement(StudioCanvasOrbitalUxPanel, { onSectorSelected }));
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel, { onSectorSelected }));
 
     expect(screen.getByTestId("canvas-orbital-ux-panel")).toBeTruthy();
     expect(screen.getByTestId("orbital-wheel-svg")).toBeTruthy();
@@ -379,12 +453,12 @@ describe("StudioCanvasOrbitalUxPanel 단독 렌더링 · 인터랙션 · 토큰 
 
     // Props 전혀 없이 호출해도 오류 없이 렌더된다
     cleanup();
-    render(createElement(StudioCanvasOrbitalUxPanel));
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel));
     expect(screen.getByTestId("stage-desktop-orbital")).toBeTruthy();
   });
 
   it("13. 데스크톱 · 태블릿 듀얼 휠 · 모바일 엄지 도크(1탭 반전/2.5× 루페) 3종 모드 전환이 정상 작동한다", () => {
-    render(createElement(StudioCanvasOrbitalUxPanel));
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel));
 
     // 태블릿 모드로 전환 후 좌/우 휠 조작
     fireEvent.click(screen.getByTestId("device-mode-tablet"));
@@ -408,7 +482,7 @@ describe("StudioCanvasOrbitalUxPanel 단독 렌더링 · 인터랙션 · 토큰 
 
   it("14. 컨텍스트 매직 바 4도구 전환과 실시간 초성(`ㅅㄸ`)·일상어 명령 팔레트 검색 및 필름스트립 점프가 연동된다", () => {
     const onCommandExecuted = vi.fn();
-    render(createElement(StudioCanvasOrbitalUxPanel, { onCommandExecuted }));
+    render(createElement<StudioCanvasOrbitalUxPanelProps>(StudioCanvasOrbitalUxPanel, { onCommandExecuted }));
 
     // 매직 바를 3D 모델 → 말풍선으로 전환해 핵심 4액션 교체 확인
     fireEvent.click(screen.getByTestId("magic-tool-3d-model"));

@@ -228,6 +228,22 @@ describe("StudioVirtualSpaceSoundEngine", () => {
     suspended.engine.dispose();
   });
 
+  it("집중 차임은 494Hz와 740Hz 정현파를 64ms 간격으로 시작한다", () => {
+    const f = fixture();
+    const start = f.context.currentTime;
+    f.engine.playSfx("focus-start");
+
+    expect(f.oscillators.map((osc) => ({
+      wave: osc.type,
+      frequency: osc.frequency.setValueAtTime.mock.calls,
+      start: osc.start.mock.calls,
+    }))).toEqual([
+      { wave: "sine", frequency: [[494, start]], start: [[start]] },
+      { wave: "sine", frequency: [[740, start + 0.064]], start: [[start + 0.064]] },
+    ]);
+    f.engine.dispose();
+  });
+
   it("SFX는 거리 게인이 0이면 침묵하고, 종류별 스로틀을 지킨다", () => {
     const f = fixture();
     f.engine.playSfx("peer-join", 0);

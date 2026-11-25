@@ -17,7 +17,6 @@ import { useState, type ReactElement } from "react";
 import {
   acknowledgeBreakCompleted,
   applyDigitalCrownDelta,
-  consumeNextBalloonMemo,
   createInitialSmartwatchState,
   DEMO_VOICE_MEMO_PRESETS,
   enqueueVoiceDialogueMemo,
@@ -69,6 +68,7 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
     createInitialSmartwatchState(),
   );
   const [voiceDraft, setVoiceDraft] = useState<string>("지금 당장 돌아와!");
+  const [queueMessage, setQueueMessage] = useState("");
 
   const handleCrownSpin = (deltaDeg: number, velocity: number): void => {
     setWatchState((prev) =>
@@ -87,12 +87,15 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
       aria-labelledby={`${uid}-tab-watch-remote`}
       className="space-y-4 [word-break:keep-all]"
     >
+      <p data-testid="watch-scope-notice" className="text-xs text-fg-2">
+        {pick("고정 워치 상태·크라운 입력·촉각 패턴·획 통계·전사 텍스트를 계산하는 예제예요. BLE 연결·송신·진동·마이크 녹음·음성 인식·실제 캔버스 명령은 실행하지 않아요. 피로 점수는 합성 통계이며 신체 상태 측정값이 아니에요.", "These examples calculate fixed watch state, crown input, haptics, stroke metrics and transcript text. BLE, transmission, vibration, recording, speech recognition and live canvas commands are not connected. Fatigue scores use synthetic metrics.")}
+      </p>
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="space-y-3 rounded-xl border border-line bg-card p-3.5">
           <div className="flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <Watch className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              <span>{pick("디지털 크라운 가변 감도 제어", "Digital Crown Variable Control")}</span>
+              <span>{pick("디지털 크라운 입력 계산 예제", "Digital Crown Input Example")}</span>
             </h3>
             <span data-testid="watch-crown-value" className="text-xs font-bold text-accent tabular-nums">
               {pick("브러시", "Brush")} {watchState.brushSizePx}px · {pick("줌", "Zoom")} {watchState.canvasZoomPct}%
@@ -137,7 +140,7 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
 
           <div className="border-t border-line pt-3">
             <div className="mb-2 flex items-center justify-between text-xs">
-              <span className="font-bold text-fg">{pick("4버튼 촉각 액션 패드", "4-Button Tactile Pad")}</span>
+              <span className="font-bold text-fg">{pick("4버튼 상태 · 촉각 패턴 예제", "4-Button State & Haptic Examples")}</span>
               <span data-testid="watch-pad-state" className="text-fg-2 tabular-nums">
                 Undo {watchState.undoStackDepth} · Redo {watchState.redoStackDepth} ·{" "}
                 {watchState.canvasFlippedHorizontal ? pick("좌우반전 ON", "Flipped ON") : pick("정방향", "Normal")}
@@ -169,7 +172,7 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
           <div className="flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <Activity className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              <span>{pick("손목 피로 휴식 코치", "Wrist Fatigue Coach")}</span>
+              <span>{pick("합성 획 통계 · 휴식 지표 예제", "Synthetic Stroke & Break Metrics")}</span>
             </h3>
             <span
               data-testid="wrist-fatigue-badge"
@@ -210,7 +213,7 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
               className={BTN_PRIMARY}
             >
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{pick("5분 휴식 완료", "Complete 5m Break")}</span>
+              <span>{pick("5분 휴식 가정 계산", "Simulate 5m Break")}</span>
             </button>
           </div>
 
@@ -218,7 +221,7 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5 font-bold text-fg">
                 <Mic className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>{pick("3초 음성 대사 → 말풍선 메모 큐", "3s Voice → Balloon Memo Queue")}</span>
+                <span>{pick("전사 텍스트 → 예제 메모 큐", "Transcript → Example Memo Queue")}</span>
               </span>
               <span data-testid="voice-queue-count" className="font-semibold text-fg-2 tabular-nums">
                 {pick(`대기 ${watchState.balloonMemoQueue.length}건`, `${watchState.balloonMemoQueue.length} queued`)}
@@ -226,7 +229,7 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
             </div>
             <div className="flex gap-2">
               <label htmlFor={`${uid}-voice-input`} className="sr-only">
-                {pick("3초 음성 대사 텍스트", "3s Voice Dialogue Transcript")}
+                {pick("예제 대사 텍스트 (길이 2.4초 가정)", "Example Dialogue (Assumed 2.4s)")}
               </label>
               <input
                 id={`${uid}-voice-input`}
@@ -242,7 +245,7 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
                 onClick={() => handleAddVoiceMemo(voiceDraft, 2.4, "강서준")}
                 className={BTN_PRIMARY}
               >
-                {pick("3초 적재", "Queue 3s")}
+                {pick("예제 큐에 추가", "Queue Example")}
               </button>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -259,12 +262,13 @@ export function CharlabCspSurpassWatchTab(props: CharlabCspSurpassWatchTabProps)
               <button
                 data-testid="voice-memo-consume-btn"
                 type="button"
-                onClick={() => setWatchState((prev) => consumeNextBalloonMemo(prev).state)}
+                onClick={() => setQueueMessage(pick("실제 원고에 연결되지 않아 메모를 배치하거나 큐에서 지우지 않았어요. 입력 메모는 패널을 닫기 전까지 유지해요.", "No manuscript is connected, so no memo was placed or removed. Memos stay until this panel closes."))}
                 className={BTN_OUTLINE}
               >
-                {pick("현재 컷에 배치", "Place Next")}
+                {pick("예제 큐 · 연결 상태 확인", "Check Example Queue & Connection")}
               </button>
             </div>
+            {queueMessage ? <p role="status" data-testid="watch-queue-status" className="text-xs text-fg-2">{queueMessage}</p> : null}
             <ul className="space-y-1 text-xs">
               {watchState.balloonMemoQueue.map((memo) => (
                 <li

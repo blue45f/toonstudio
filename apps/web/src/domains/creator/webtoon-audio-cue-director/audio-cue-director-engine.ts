@@ -1,3 +1,5 @@
+import { assertAudioCueInput, assertKoreanLipSyncInput, MAX_LIP_SYNC_FRAMES } from "./audio-cue-input-contract";
+
 /**
  * Wave 45C — 웹툰 오디오 큐 디렉터 순수 엔진.
  *
@@ -14,9 +16,9 @@ export const AUDIO_CUE_DATA_SOURCE_KIND = "estimate" as const;
 export type AudioCueDataSourceKind = typeof AUDIO_CUE_DATA_SOURCE_KIND;
 
 export const ESTIMATE_NOTICE_KO =
-  "규칙 기반 추정(estimate) 타이밍·음압 큐시트입니다. 실제 성우 녹음·마스터링 파형 계측 시 최종 타임코드를 보정하세요.";
+  "규칙 기반 추정(estimate) 큐시트입니다. 실제 오디오를 재생·합성하거나 저장하지 않습니다. 성우 녹음·파형 계측 후 최종 타임코드를 보정하세요.";
 export const ESTIMATE_NOTICE_EN =
-  "Rule-based estimate cue sheet. Re-conform final timecodes against recorded voice and mastered audio stems.";
+  "Rule-based estimate cue sheet; no audio playback, synthesis or storage. Re-conform final timecodes against recorded voice and mastered audio stems.";
 
 export const HANGUL_SYLLABLE_START = 0xac00;
 export const HANGUL_SYLLABLE_END = 0xd7a3;
@@ -173,7 +175,7 @@ export interface EpisodeAudioCueSummary {
 export interface EpisodeAudioCueSheet {
   readonly schemaVersion: "webtoon-audio-cue-sheet/v1";
   readonly dataSourceKind: AudioCueDataSourceKind; readonly estimateNoticeKo: string; readonly estimateNoticeEn: string;
-  readonly episodeTitle: string; readonly episodeNumber: number; readonly fps: number;
+  readonly episodeTitle: string; readonly originalEpisodeTitle?: string; readonly episodeNumber: number; readonly fps: number;
   readonly targetLufs: number; readonly dialogueDuckingDb: number;
   readonly duckingAttackMs: number; readonly duckingReleaseMs: number;
   readonly totalDurationMs: number; readonly totalPanelHeightPx: number;
@@ -388,6 +390,7 @@ function pushHangulSlices(slices: RawVisemeSlice[], decomposed: DecomposedHangul
 
 /** 한국어 대사 음절을 7대 립싱크 비젬(`A`/`E`/`I`/`O`/`U`/`M-B-P`/`REST`) 프레임 시퀀스로 합성한다. */
 export function synthesizeKoreanLipSyncTimeline(input: KoreanLipSyncInput): KoreanLipSyncTimeline {
+  assertKoreanLipSyncInput(input);
   const emotionTone: SpeechEmotionTone = input.emotionTone ?? "calm";
   const toneProfile = EMOTION_TONE_PROFILES[emotionTone];
   const baseSyllablesPerSecond = round2(clamp(input.syllablesPerSecond ?? DEFAULT_SYLLABLES_PER_SECOND, 1.5, 10));
@@ -395,12 +398,12 @@ export function synthesizeKoreanLipSyncTimeline(input: KoreanLipSyncInput): Kore
   const fps = Math.round(clamp(input.fps ?? DEFAULT_LIP_SYNC_FPS, 12, 60));
   const startTimeMs = round1(Math.max(0, input.startTimeMs ?? 0));
   const trimmedText = input.text.trim();
-  const speaker = (input.speaker ?? "").trim();
+  const speaker = input.speaker ?? "";
 
   if (trimmedText.length === 0) {
     return {
       dataSourceKind: AUDIO_CUE_DATA_SOURCE_KIND, estimateNoticeKo: ESTIMATE_NOTICE_KO, estimateNoticeEn: ESTIMATE_NOTICE_EN,
-      text: "", speaker, emotionTone, baseSyllablesPerSecond, effectiveSyllablesPerSecond, fps,
+      text: input.text, speaker, emotionTone, baseSyllablesPerSecond, effectiveSyllablesPerSecond, fps,
       startTimeMs, endTimeMs: startTimeMs, durationMs: 0, totalFrames: 0, hangulSyllableCount: 0,
       hasSpokenDialogue: false, decomposedSyllables: [], segments: [], frames: [], visemeDistribution: createEmptyVisemeDistribution(),
     };
@@ -447,7 +450,7 @@ export function synthesizeKoreanLipSyncTimeline(input: KoreanLipSyncInput): Kore
   }
 
   if (rawSlices.length === 0) {
-    rawSlices.push({ viseme: "REST", phase: "rest", sourceChar: trimmedText[0] ?? "", durationMs: syllableDurationMs * 0.6 });
+    rawSlices.push({ viseme: "REST", phase: "rest", sourceChar: Array.from(trimmedText)[0] ?? "", durationMs: syllableDurationMs * 0.6 });
   } else if (rawSlices[rawSlices.length - 1]?.viseme !== "REST") {
     rawSlices.push({ viseme: "REST", phase: "rest", sourceChar: "", durationMs: Math.max(1000 / fps, syllableDurationMs * 0.35 * toneProfile.pauseScale) });
   }
@@ -465,15 +468,20 @@ export function synthesizeKoreanLipSyncTimeline(input: KoreanLipSyncInput): Kore
   const durationMs = round1(Math.max(0, endTimeMs - startTimeMs));
   const frameStepMs = 1000 / fps;
   const totalFrames = Math.max(1, Math.ceil((durationMs * fps) / 1000));
+  if (totalFrames > MAX_LIP_SYNC_FRAMES) throw new RangeError("립싱크 프레임 상한을 넘었습니다.");
   const distribution = createEmptyVisemeDistribution();
   const frames: LipSyncFrame[] = [];
 
+  let segmentCursor = 0;
   for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
     const fStart = startTimeMs + frameIndex * frameStepMs;
     const fEnd = fStart + frameStepMs;
     let bestSegment = segments[segments.length - 1];
     let bestOverlap = -1;
-    for (const seg of segments) {
+    while (segmentCursor < segments.length - 1 && (segments[segmentCursor]?.endMs ?? 0) <= fStart) segmentCursor += 1;
+    for (let candidate = segmentCursor; candidate < segments.length; candidate += 1) {
+      const seg = segments[candidate];
+      if (!seg || seg.startMs >= fEnd) break;
       const overlap = Math.min(fEnd, seg.endMs) - Math.max(fStart, seg.startMs);
       if (overlap > bestOverlap) { bestOverlap = overlap; bestSegment = seg; }
     }
@@ -490,7 +498,7 @@ export function synthesizeKoreanLipSyncTimeline(input: KoreanLipSyncInput): Kore
 
   return {
     dataSourceKind: AUDIO_CUE_DATA_SOURCE_KIND, estimateNoticeKo: ESTIMATE_NOTICE_KO, estimateNoticeEn: ESTIMATE_NOTICE_EN,
-    text: trimmedText, speaker, emotionTone, baseSyllablesPerSecond, effectiveSyllablesPerSecond, fps,
+    text: input.text, speaker, emotionTone, baseSyllablesPerSecond, effectiveSyllablesPerSecond, fps,
     startTimeMs, endTimeMs, durationMs, totalFrames, hangulSyllableCount: decomposedSyllables.length,
     hasSpokenDialogue: spokenUnits > 0, decomposedSyllables, segments, frames, visemeDistribution: distribution,
   };
@@ -503,6 +511,7 @@ function resolveCrossfadeCurve(crossfadeMs: number, toMood: BgmMoodId): BgmCross
 
 /** 컷별 스크롤 진행률(`0..100%`) 기반 BGM 무드 전환(`-14 LUFS`, 대사 `-10dB` 자동 덕킹) 및 SFX 히트 마커 큐시트를 구축한다. */
 export function buildEpisodeAudioCueSheet(input: EpisodeAudioCueSheetInput): EpisodeAudioCueSheet {
+  assertAudioCueInput(input);
   const fps = Math.round(clamp(input.fps ?? DEFAULT_LIP_SYNC_FPS, 12, 60));
   const targetLufs = round1(clamp(input.targetLufs ?? TARGET_BGM_LUFS, -24, -8));
   const dialogueDuckingDb = round1(clamp(input.dialogueDuckingDb ?? DEFAULT_DIALOGUE_DUCKING_DB, -24, -3));
@@ -510,7 +519,7 @@ export function buildEpisodeAudioCueSheet(input: EpisodeAudioCueSheetInput): Epi
   const duckingReleaseMs = Math.round(clamp(input.duckingReleaseMs ?? DEFAULT_DUCKING_RELEASE_MS, 40, 1200));
   const defaultSps = round2(clamp(input.defaultSyllablesPerSecond ?? DEFAULT_SYLLABLES_PER_SECOND, 1.5, 10));
   const episodeNumber = Math.max(1, Math.round(input.episodeNumber ?? 1));
-  const episodeTitle = input.episodeTitle.trim() || "무제 에피소드";
+  const episodeTitle = input.episodeTitle.trim() ? input.episodeTitle : "무제 에피소드";
 
   const sanitizedHeights = input.cuts.map((cut) => Math.max(240, Math.round(Number.isFinite(cut.panelHeightPx) ? cut.panelHeightPx : 1000)));
   const totalPanelHeightPx = sanitizedHeights.reduce((acc, h) => acc + h, 0);
@@ -583,7 +592,7 @@ export function buildEpisodeAudioCueSheet(input: EpisodeAudioCueSheetInput): Epi
       const durationMs = Math.round(clamp(marker.durationMs ?? cat.defaultDurationMs, 80, 6000));
       const event: ScheduledSfxEvent = {
         eventId: marker.id || `sfx-${cutIndex + 1}-${mIdx + 1}`, cutId: cut.id, cutIndex,
-        category: marker.category, label: marker.label.trim() || cat.labelKo, offsetRatio01,
+        category: marker.category, label: marker.label, offsetRatio01,
         triggerScrollPct, triggerTimeMs, endTimeMs: round1(triggerTimeMs + durationMs), durationMs,
         gainDb: round1(clamp(marker.gainDb ?? cat.defaultGainDb, -24, 0)),
         pan: round2(clamp(marker.pan ?? 0, -1, 1)), peakLimitDbfs: cat.peakLimitDbfs,
@@ -593,13 +602,14 @@ export function buildEpisodeAudioCueSheet(input: EpisodeAudioCueSheetInput): Epi
     });
 
     totalLipSyncFrames += lipSync.totalFrames;
+    if (totalLipSyncFrames > 300000) throw new RangeError("에피소드 립싱크 프레임 상한을 넘었습니다.");
     totalHangulSyllables += lipSync.hangulSyllableCount;
     for (const viseme of LIP_SYNC_VISEMES) aggregateDistribution[viseme] += lipSync.visemeDistribution[viseme];
 
     scheduledCuts.push({
-      cutId: cut.id, cutIndex, label: cut.label.trim() || `${cutIndex + 1}컷`, panelHeightPx,
+      cutId: cut.id, cutIndex, label: cut.label, panelHeightPx,
       scrollStartPct, scrollEndPct, startTimeMs: cutStartMs, endTimeMs: cutEndMs, durationMs: cutDurationMs,
-      bgmMood: cut.bgmMood, crossfadeMs, speaker: cut.speaker.trim(), dialogue: cut.dialogue.trim(),
+      bgmMood: cut.bgmMood, crossfadeMs, speaker: cut.speaker, dialogue: cut.dialogue,
       emotionTone: cut.emotionTone, bgmTargetLufs, bgmDuckedLufs, isDuckingActive, lipSync, sfxEvents: cutSfxEvents,
     });
   }
@@ -621,7 +631,7 @@ export function buildEpisodeAudioCueSheet(input: EpisodeAudioCueSheetInput): Epi
   return {
     schemaVersion: "webtoon-audio-cue-sheet/v1", dataSourceKind: AUDIO_CUE_DATA_SOURCE_KIND,
     estimateNoticeKo: ESTIMATE_NOTICE_KO, estimateNoticeEn: ESTIMATE_NOTICE_EN,
-    episodeTitle, episodeNumber, fps, targetLufs, dialogueDuckingDb, duckingAttackMs, duckingReleaseMs,
+    episodeTitle, originalEpisodeTitle: input.episodeTitle, episodeNumber, fps, targetLufs, dialogueDuckingDb, duckingAttackMs, duckingReleaseMs,
     totalDurationMs, totalPanelHeightPx, cuts: scheduledCuts, bgmTransitions, duckingEnvelopes, sfxSchedule,
     summary: {
       cutCount: scheduledCuts.length, spokenCutCount, bgmTransitionCount: bgmTransitions.length,
@@ -655,123 +665,4 @@ export function formatSmpteTimecode(ms: number, fps: number = DEFAULT_LIP_SYNC_F
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(frames).padStart(2, "0")}`;
 }
 
-function sanitizeWebVttText(text: string): string {
-  return text.replace(/-->/gu, "—>").replace(/\r?\n+/gu, " ").trim();
-}
-
-/** 에피소드 오디오 큐시트를 표준 WebVTT(`.vtt`) 자막 문자열로 직렬화한다. */
-export function exportAudioCueWebVtt(cueSheet: EpisodeAudioCueSheet, options?: ExportWebVttOptions): string {
-  const includeCueNotes = options?.includeCueNotes ?? true;
-  const includeSfxCaptions = options?.includeSfxCaptions ?? true;
-  const lines: string[] = ["WEBVTT", ""];
-
-  if (includeCueNotes) {
-    lines.push(
-      `NOTE ${sanitizeWebVttText(cueSheet.episodeTitle)} | dataSourceKind=${cueSheet.dataSourceKind} | target=${cueSheet.targetLufs} LUFS | ducking=${cueSheet.dialogueDuckingDb} dB | fps=${cueSheet.fps}`,
-      "",
-    );
-  }
-
-  let cueNumber = 1;
-  for (const cut of cueSheet.cuts) {
-    if (cut.lipSync.hasSpokenDialogue && cut.dialogue.length > 0) {
-      const startTs = formatWebVttTimestamp(cut.lipSync.startTimeMs);
-      const endTs = formatWebVttTimestamp(Math.max(cut.lipSync.startTimeMs + 100, cut.lipSync.endTimeMs));
-      if (includeCueNotes) {
-        lines.push(`NOTE cut=${cut.cutId} scroll=${cut.scrollStartPct}%..${cut.scrollEndPct}% mood=${cut.bgmMood} tone=${cut.emotionTone} duck=${cut.isDuckingActive ? `${cueSheet.dialogueDuckingDb}dB` : "0dB"}`);
-      }
-      lines.push(String(cueNumber), `${startTs} --> ${endTs}`, `<v ${sanitizeWebVttText(cut.speaker || "화자")}>${sanitizeWebVttText(cut.dialogue)}`, "");
-      cueNumber += 1;
-    }
-    if (includeSfxCaptions) {
-      for (const sfx of cut.sfxEvents) {
-        const startTs = formatWebVttTimestamp(sfx.triggerTimeMs);
-        const endTs = formatWebVttTimestamp(Math.max(sfx.triggerTimeMs + 120, sfx.endTimeMs));
-        lines.push(String(cueNumber), `${startTs} --> ${endTs}`, `[SFX: ${sanitizeWebVttText(sfx.label)}]`, "");
-        cueNumber += 1;
-      }
-    }
-  }
-
-  return `${lines.join("\n").trimEnd()}\n`;
-}
-
-/** 에피소드 오디오 큐시트를 SMPTE 타임코드 기반 EDL/JSON 문자열로 직렬화한다. */
-export function exportAudioCueJson(cueSheet: EpisodeAudioCueSheet, options?: ExportAudioCueJsonOptions): string {
-  const includeLipSyncFrames = options?.includeLipSyncFrames ?? false;
-  const pretty = options?.pretty ?? true;
-  const edlEvents: AudioCueEdlEvent[] = [];
-  let edlIndex = 1;
-
-  for (const tr of cueSheet.bgmTransitions) {
-    const outMs = tr.triggerTimeMs + Math.max(100, tr.crossfadeMs);
-    edlEvents.push({
-      edlIndex: edlIndex++, track: "BGM", cutId: tr.cutId, cutIndex: tr.cutIndex, triggerScrollPct: tr.triggerScrollPct,
-      inTimeMs: tr.triggerTimeMs, outTimeMs: round1(outMs),
-      inTimecode: formatSmpteTimecode(tr.triggerTimeMs, cueSheet.fps), outTimecode: formatSmpteTimecode(outMs, cueSheet.fps),
-      label: `${tr.fromMood ?? "START"} -> ${tr.toMood}`, detail: `crossfade=${tr.crossfadeMs}ms curve=${tr.curve} target=${tr.targetLufs}LUFS`,
-    });
-  }
-  for (const cut of cueSheet.cuts) {
-    if (cut.lipSync.hasSpokenDialogue) {
-      edlEvents.push({
-        edlIndex: edlIndex++, track: "VOICE", cutId: cut.cutId, cutIndex: cut.cutIndex, triggerScrollPct: cut.scrollStartPct,
-        inTimeMs: cut.lipSync.startTimeMs, outTimeMs: cut.lipSync.endTimeMs,
-        inTimecode: formatSmpteTimecode(cut.lipSync.startTimeMs, cueSheet.fps), outTimecode: formatSmpteTimecode(cut.lipSync.endTimeMs, cueSheet.fps),
-        label: `${cut.speaker || "화자"} (${cut.emotionTone})`, detail: `syllables=${cut.lipSync.hangulSyllableCount} frames=${cut.lipSync.totalFrames}`,
-      });
-    }
-  }
-  for (const env of cueSheet.duckingEnvelopes) {
-    edlEvents.push({
-      edlIndex: edlIndex++, track: "DUCK", cutId: env.cutId, cutIndex: env.cutIndex, triggerScrollPct: env.triggerScrollPct,
-      inTimeMs: env.startTimeMs, outTimeMs: env.endTimeMs,
-      inTimecode: formatSmpteTimecode(env.startTimeMs, cueSheet.fps), outTimecode: formatSmpteTimecode(env.endTimeMs, cueSheet.fps),
-      label: `BGM Duck ${env.duckingDb}dB`, detail: `base=${env.baseLufs}LUFS ducked=${env.duckedLufs}LUFS attack=${env.attackMs}ms release=${env.releaseMs}ms`,
-    });
-  }
-  for (const sfx of cueSheet.sfxSchedule) {
-    edlEvents.push({
-      edlIndex: edlIndex++, track: "SFX", cutId: sfx.cutId, cutIndex: sfx.cutIndex, triggerScrollPct: sfx.triggerScrollPct,
-      inTimeMs: sfx.triggerTimeMs, outTimeMs: sfx.endTimeMs,
-      inTimecode: formatSmpteTimecode(sfx.triggerTimeMs, cueSheet.fps), outTimecode: formatSmpteTimecode(sfx.endTimeMs, cueSheet.fps),
-      label: sfx.label, detail: `category=${sfx.category} gain=${sfx.gainDb}dB pan=${sfx.pan} peakLimit=${sfx.peakLimitDbfs}dBFS`,
-    });
-  }
-
-  edlEvents.sort((a, b) => a.inTimeMs - b.inTimeMs || a.edlIndex - b.edlIndex);
-
-  const payload = {
-    schemaVersion: "webtoon-audio-cue-edl/v1" as const,
-    dataSourceKind: cueSheet.dataSourceKind,
-    estimateNoticeKo: cueSheet.estimateNoticeKo,
-    metadata: {
-      episodeTitle: cueSheet.episodeTitle, episodeNumber: cueSheet.episodeNumber, fps: cueSheet.fps,
-      targetLufs: cueSheet.targetLufs, dialogueDuckingDb: cueSheet.dialogueDuckingDb,
-      duckingAttackMs: cueSheet.duckingAttackMs, duckingReleaseMs: cueSheet.duckingReleaseMs,
-      totalDurationMs: cueSheet.totalDurationMs, totalDurationTimecode: formatSmpteTimecode(cueSheet.totalDurationMs, cueSheet.fps),
-      totalPanelHeightPx: cueSheet.totalPanelHeightPx,
-    },
-    summary: cueSheet.summary,
-    edlEvents: edlEvents.map((ev, idx) => ({ ...ev, edlIndex: idx + 1 })),
-    bgmTransitions: cueSheet.bgmTransitions,
-    duckingEnvelopes: cueSheet.duckingEnvelopes,
-    sfxSchedule: cueSheet.sfxSchedule,
-    cuts: cueSheet.cuts.map((cut) => ({
-      cutId: cut.cutId, cutIndex: cut.cutIndex, label: cut.label,
-      scrollStartPct: cut.scrollStartPct, scrollEndPct: cut.scrollEndPct,
-      inTimecode: formatSmpteTimecode(cut.startTimeMs, cueSheet.fps), outTimecode: formatSmpteTimecode(cut.endTimeMs, cueSheet.fps),
-      bgmMood: cut.bgmMood, crossfadeMs: cut.crossfadeMs, speaker: cut.speaker, dialogue: cut.dialogue,
-      emotionTone: cut.emotionTone, bgmTargetLufs: cut.bgmTargetLufs, bgmDuckedLufs: cut.bgmDuckedLufs, isDuckingActive: cut.isDuckingActive,
-      lipSync: {
-        dataSourceKind: cut.lipSync.dataSourceKind, hangulSyllableCount: cut.lipSync.hangulSyllableCount,
-        totalFrames: cut.lipSync.totalFrames, effectiveSyllablesPerSecond: cut.lipSync.effectiveSyllablesPerSecond,
-        visemeDistribution: cut.lipSync.visemeDistribution, segments: cut.lipSync.segments,
-        ...(includeLipSyncFrames ? { frames: cut.lipSync.frames } : {}),
-      },
-      sfxEvents: cut.sfxEvents,
-    })),
-  };
-
-  return JSON.stringify(payload, null, pretty ? 2 : 0);
-}
+export { exportAudioCueWebVtt, exportAudioCueJson } from "./audio-cue-output";

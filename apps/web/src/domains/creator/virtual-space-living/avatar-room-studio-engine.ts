@@ -145,6 +145,7 @@ export interface PomodoroSyncPeer {
 }
 
 export interface TeamPomodoroState {
+  readonly syncMode: "local-demo";
   readonly roomSessionId: string;
   readonly hostNameKo: string;
   readonly presetId: PomodoroPresetId;
@@ -233,19 +234,22 @@ export const STUDIO_PET_OPTIONS: readonly StudioPetSpec[] = [
   { id: "shiba-nap", labelKo: "낮잠 시바견", companionActionKo: "뽀모도로 종료 종소리에 기지개", seatPreferenceKo: "창가 햇살 방석" },
 ] as const;
 
-export const USER_WORK_PROTAGONIST_CATALOG: readonly ProtagonistWorkSource[] = [
+export const SYNTHETIC_WORK_PROTAGONIST_CATALOG: readonly ProtagonistWorkSource[] = [
   { workId: "work-starlight-ink", workTitleKo: "별빛 잉크의 연대기", characterNameKo: "서연우", episodeTagKo: "12화 채색 작업 중", recommendedGenrePresetId: "fantasy-mage", hairId: "half-up-long", expressionId: "idea-spark", signaturePropKo: "별자리 만년필" },
   { workId: "work-seoul-2099", workTitleKo: "네온 비 오는 종로 2099", characterNameKo: "강하진", episodeTagKo: "7화 선화 마감", recommendedGenrePresetId: "cyber-ink", hairId: "comma-two-block", expressionId: "deadline-focus", signaturePropKo: "홀로그램 스케치패드" },
   { workId: "work-autumn-campus", workTitleKo: "은행잎 떨어진 미술관 앞", characterNameKo: "윤다혜", episodeTagKo: "3화 콘티 점검", recommendedGenrePresetId: "campus-romance", hairId: "natural-wave", expressionId: "calm-smile", signaturePropKo: "크로키 수첩" },
 ] as const;
 
+/** @deprecated 실제 사용자 작품이 아닌 합성 카탈로그다. */
+export const USER_WORK_PROTAGONIST_CATALOG = SYNTHETIC_WORK_PROTAGONIST_CATALOG;
+
 export const STUDIO_THEME_ROOMS: readonly StudioThemeRoomSpec[] = [
-  { id: "wood-atelier", nameKo: "원목 아틀리에", subtitleKo: "따뜻한 자작나무 책상과 채광창이 어우러진 기본 개인 작업실", imagePath: "/assets/atelier/spaces/wood-atelier.webp", recommendedTimeOfDay: "day", recommendedWeather: "clear-breeze", ambientSoundKo: "종이 펜 사각임 · 28 dB", capacityCount: 4, gridCols: 12, gridRows: 8 },
-  { id: "rooftop-terrace", nameKo: "루프탑 테라스", subtitleKo: "노을 바람과 벚꽃 잎이 스치는 개방형 야외 드로잉 데크", imagePath: "/assets/atelier/spaces/rooftop-terrace.webp", recommendedTimeOfDay: "sunset", recommendedWeather: "spring-blossom", ambientSoundKo: "산들바람 · 32 dB", capacityCount: 6, gridCols: 12, gridRows: 8 },
-  { id: "midnight-manga-cafe", nameKo: "심야 만화카페", subtitleKo: "빗소리 들리는 창가 부스와 은은한 스탠드 조명의 야간 마감 공간", imagePath: "/assets/atelier/spaces/midnight-manga-cafe.webp", recommendedTimeOfDay: "night", recommendedWeather: "rainy-window", ambientSoundKo: "창가 빗소리 · 35 dB", capacityCount: 8, gridCols: 12, gridRows: 8 },
-  { id: "reference-library", nameKo: "자료 아카이브 서재", subtitleKo: "화보집과 해부학 서가가 둘러싼 고요한 레퍼런스 연구실", imagePath: "/assets/atelier/spaces/reference-library.webp", recommendedTimeOfDay: "dawn", recommendedWeather: "deep-focus", ambientSoundKo: "책장 넘김 · 22 dB", capacityCount: 4, gridCols: 12, gridRows: 8 },
-  { id: "fantasy-guild-hall", nameKo: "판타지 길드 홀", subtitleKo: "팀 연재 회의를 위한 원탁과 촛불 샹들리에 합동 스튜디오", imagePath: "/assets/atelier/spaces/fantasy-guild-hall.webp", recommendedTimeOfDay: "sunset", recommendedWeather: "deep-focus", ambientSoundKo: "벽난로 장작 · 36 dB", capacityCount: 12, gridCols: 12, gridRows: 8 },
-  { id: "comic-gallery", nameKo: "원화 코믹 갤러리", subtitleKo: "완성 원고를 전시하고 독자·동료 피드백을 나누는 쇼케이스 홀", imagePath: "/assets/atelier/spaces/comic-gallery.webp", recommendedTimeOfDay: "day", recommendedWeather: "clear-breeze", ambientSoundKo: "전시장 정적 · 24 dB", capacityCount: 10, gridCols: 12, gridRows: 8 },
+  { id: "wood-atelier", nameKo: "원목 아틀리에", subtitleKo: "따뜻한 자작나무 책상과 채광창이 어우러진 기본 개인 작업실", imagePath: "/assets/atelier/spaces/wood-atelier.webp", recommendedTimeOfDay: "day", recommendedWeather: "clear-breeze", ambientSoundKo: "종이 펜 사각임 (음향 설명 예시)", capacityCount: 4, gridCols: 12, gridRows: 8 },
+  { id: "rooftop-terrace", nameKo: "루프탑 테라스", subtitleKo: "노을 바람과 벚꽃 잎이 스치는 개방형 야외 드로잉 데크", imagePath: "/assets/atelier/spaces/rooftop-terrace.webp", recommendedTimeOfDay: "sunset", recommendedWeather: "spring-blossom", ambientSoundKo: "산들바람 (음향 설명 예시)", capacityCount: 6, gridCols: 12, gridRows: 8 },
+  { id: "midnight-manga-cafe", nameKo: "심야 만화카페", subtitleKo: "빗소리 들리는 창가 부스와 은은한 스탠드 조명의 야간 마감 공간", imagePath: "/assets/atelier/spaces/midnight-manga-cafe.webp", recommendedTimeOfDay: "night", recommendedWeather: "rainy-window", ambientSoundKo: "창가 빗소리 (음향 설명 예시)", capacityCount: 8, gridCols: 12, gridRows: 8 },
+  { id: "reference-library", nameKo: "자료 아카이브 서재", subtitleKo: "화보집과 해부학 서가가 둘러싼 고요한 레퍼런스 연구실", imagePath: "/assets/atelier/spaces/reference-library.webp", recommendedTimeOfDay: "dawn", recommendedWeather: "deep-focus", ambientSoundKo: "책장 넘김 (음향 설명 예시)", capacityCount: 4, gridCols: 12, gridRows: 8 },
+  { id: "fantasy-guild-hall", nameKo: "판타지 길드 홀", subtitleKo: "팀 연재 회의를 위한 원탁과 촛불 샹들리에 합동 스튜디오", imagePath: "/assets/atelier/spaces/fantasy-guild-hall.webp", recommendedTimeOfDay: "sunset", recommendedWeather: "deep-focus", ambientSoundKo: "벽난로 장작 (음향 설명 예시)", capacityCount: 12, gridCols: 12, gridRows: 8 },
+  { id: "comic-gallery", nameKo: "원화 코믹 갤러리", subtitleKo: "완성 원고를 전시하고 독자·동료 피드백을 나누는 쇼케이스 홀", imagePath: "/assets/atelier/spaces/comic-gallery.webp", recommendedTimeOfDay: "day", recommendedWeather: "clear-breeze", ambientSoundKo: "전시장 정적 (음향 설명 예시)", capacityCount: 10, gridCols: 12, gridRows: 8 },
 ] as const;
 
 export const DEFAULT_FURNITURE_GRID: FurnitureGridSpec = { cols: 12, rows: 8, cellSizePx: 40 };
@@ -522,6 +526,7 @@ export function createTeamPomodoroState(
 ): TeamPomodoroState {
   const preset = POMODORO_PRESETS[presetId];
   return {
+    syncMode: "local-demo",
     roomSessionId,
     hostNameKo: "방장 · 원화 작가",
     presetId,
@@ -534,9 +539,9 @@ export function createTeamPomodoroState(
     syncRevision: 1,
     lastDriftMs: 0,
     syncedPeers: [
-      { peerId: "peer-line", nameKo: "민서 · 선화 어시", taskKo: "12화 14~22컷 펜선", synced: true },
-      { peerId: "peer-color", nameKo: "도윤 · 채색 담당", taskKo: "노을 배경 톤 보정", synced: true },
-      { peerId: "peer-bg", nameKo: "하린 · 3D 배경", taskKo: "서재 책장 라이팅", synced: true },
+      { peerId: "peer-line", nameKo: "민서 · 선화 어시 예시", taskKo: "12화 14~22컷 펜선", synced: false },
+      { peerId: "peer-color", nameKo: "도윤 · 채색 담당 예시", taskKo: "노을 배경 톤 보정", synced: false },
+      { peerId: "peer-bg", nameKo: "하린 · 3D 배경 예시", taskKo: "서재 책장 라이팅", synced: false },
     ],
   };
 }
@@ -601,26 +606,38 @@ export function tickTeamPomodoro(state: TeamPomodoroState, deltaSec: number): Po
   if (!state.running || deltaSec <= 0 || !Number.isFinite(deltaSec)) {
     return { nextState: state, phaseTransitioned: false, previousPhase: state.phase, announcementKo: null };
   }
-  const remaining = Math.max(0, state.phaseDurationSec - state.phaseElapsedSec);
-  const focusedGain = state.phase === "sprint" ? Math.min(deltaSec, remaining) : 0;
-
-  if (deltaSec >= remaining) {
-    const transitioned = advanceToNextPomodoroPhase({ ...state, totalFocusedSec: state.totalFocusedSec + focusedGain });
-    const carrySec = deltaSec - remaining;
-    if (carrySec > 0 && carrySec < transitioned.nextState.phaseDurationSec) {
-      return { ...transitioned, nextState: { ...transitioned.nextState, phaseElapsedSec: carrySec } };
+  let next = state;
+  let carrySec = deltaSec;
+  let phaseTransitioned = false;
+  let announcementKo: string | null = null;
+  while (carrySec > 0) {
+    const preset = POMODORO_PRESETS[next.presetId];
+    const cycle = preset.longBreakEverySprints;
+    const cycleSec = cycle * preset.sprintDurationSec + (cycle - 1) * preset.shortBreakDurationSec + preset.longBreakDurationSec;
+    if (next.phase === "sprint" && next.phaseElapsedSec === 0 && carrySec >= cycleSec) {
+      const cycles = Math.floor(carrySec / cycleSec);
+      next = { ...next, completedSprints: next.completedSprints + cycles * cycle,
+        totalFocusedSec: next.totalFocusedSec + cycles * cycle * preset.sprintDurationSec,
+        syncRevision: next.syncRevision + cycles * cycle * 2 };
+      carrySec %= cycleSec;
+      phaseTransitioned = true;
+      if (carrySec === 0) break;
     }
-    return transitioned;
+    const remaining = Math.max(0, next.phaseDurationSec - next.phaseElapsedSec);
+    const consumed = Math.min(carrySec, remaining);
+    next = { ...next, phaseElapsedSec: next.phaseElapsedSec + consumed,
+      totalFocusedSec: next.totalFocusedSec + (next.phase === "sprint" ? consumed : 0) };
+    carrySec -= consumed;
+    if (next.phaseElapsedSec < next.phaseDurationSec) break;
+    const transition = advanceToNextPomodoroPhase(next);
+    next = transition.nextState;
+    phaseTransitioned = true;
+    announcementKo = transition.announcementKo;
   }
-  return {
-    nextState: { ...state, phaseElapsedSec: state.phaseElapsedSec + deltaSec, totalFocusedSec: state.totalFocusedSec + focusedGain },
-    phaseTransitioned: false,
-    previousPhase: state.phase,
-    announcementKo: null,
-  };
+  return { nextState: next, phaseTransitioned, previousPhase: state.phase, announcementKo };
 }
 
-/** 호스트 동기화 패킷을 반영하고 네트워크 지연 기반 시계 드리프트(ms)를 보정한다. */
+/** 전달받은 예시 패킷의 시간 차를 보정한다. 네트워크 수신·호스트 인증은 수행하지 않는다. */
 export function applyTeamPomodoroSyncPacket(
   localState: TeamPomodoroState,
   packet: TeamPomodoroSyncPacket,

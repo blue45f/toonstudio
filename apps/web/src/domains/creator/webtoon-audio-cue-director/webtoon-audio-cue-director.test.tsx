@@ -382,7 +382,7 @@ describe("3. 표준 WebVTT 자막 및 SMPTE EDL/JSON 큐시트 직렬화", () =>
     const vttMinimal = exportAudioCueWebVtt(sheet, { includeCueNotes: false, includeSfxCaptions: false });
     expect(vttMinimal).not.toContain("NOTE ");
     expect(vttMinimal).not.toContain("[SFX:");
-    expect(vttMinimal).toContain("<v 서진>1단계 —> 2단계 바로 돌파!");
+    expect(vttMinimal).toContain("<v 서진>1단계 --&gt; 2단계 바로 돌파!");
   });
 
   it("exportAudioCueJson이 유효한 EDL/JSON 구조와 BGM·VOICE·DUCK·SFX SMPTE 이벤트를 직렬화한다", () => {
@@ -509,7 +509,7 @@ describe("4. StudioWebtoonAudioCuePanel UI 단독 렌더 · 인터랙션 · 코�
     expect(onCueSheetChange.mock.calls[0]?.[0]?.dataSourceKind).toBe("estimate");
   });
 
-  it("4개 파일 존재, 각 800줄 이하, 금지 패턴 0건 및 Calm Atelier 필수 토큰을 충족한다", () => {
+  it("모듈 파일 목록, 각 800줄 이하, 금지 패턴 0건 및 Calm Atelier 필수 토큰을 충족한다", () => {
     const dir = path.resolve(import.meta.dirname);
     const requiredFiles = [
       "audio-cue-director-engine.ts",
@@ -522,7 +522,7 @@ describe("4. StudioWebtoonAudioCuePanel UI 단독 렌더 · 인터랙션 · 코�
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(allFiles).toHaveLength(4);
+    expect(allFiles.sort()).toEqual(["OperationStatus.tsx", "StudioWebtoonAudioCuePanel.tsx", "audio-cue-boundaries.test.tsx", "audio-cue-director-engine.ts", "audio-cue-input-contract.ts", "audio-cue-output.ts", "index.ts", "use-clipboard-output.ts", "use-example-notification.ts", "webtoon-audio-cue-director.test.tsx"]);
 
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");

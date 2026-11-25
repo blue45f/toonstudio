@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { COMIC_INTRO_ART_URL } from "./comic-intro-art";
@@ -167,6 +168,14 @@ describe("ComicIntro", () => {
 });
 
 describe("ComicIntroHost", () => {
+  it("StrictMode의 effect 재실행 뒤에도 첫 오프닝을 표시한다", async () => {
+    render(<StrictMode><ComicIntroHost /></StrictMode>);
+    const skip = await screen.findByRole("button", { name: "건너뛰기" }, { timeout: 3000 });
+    expect(screen.getByRole("dialog", { name: "인트로" }).getAttribute("data-comic-intro")).toBe("full");
+    fireEvent.click(skip);
+    expect(window.localStorage.getItem(SEEN_KEY)).toBe("1");
+  });
+
   it("처음 방문이면 풀 버전을 띄우고 끝나면 본 것으로 기록한다", async () => {
     render(<ComicIntroHost />);
     const skip = await screen.findByRole("button", { name: "건너뛰기" }, { timeout: 3000 });

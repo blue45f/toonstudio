@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -30,7 +30,7 @@ import {
   updateLightingPreviousCut,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("1. 대사·지문·시간대·장소 기반 6대 감정 벡터 분석기", () => {
   it("빗속 옥상 대치 대사를 tension 주감정으로 분류하고 지문·어휘 신호를 기록한다", () => {
@@ -492,7 +492,9 @@ describe("6. StudioSceneLightingAdvisorPanel UI · 인터랙션 · 접근성 검
     expect(screen.getByTestId("lighting-slider-rim-intensity-readout").textContent).toBe("2.10");
   });
 
-  it("전 컷 비교 전환, 3D 릭 JSON 미리보기·복사 및 영문 로케일 렌더가 정상 동작한다", () => {
+  it("전 컷 비교 전환, 3D 릭 JSON 미리보기·복사 및 영문 로케일 렌더가 정상 동작한다", async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText: write } });
     const onExportJson = vi.fn();
     render(<StudioSceneLightingAdvisorPanel locale="en" onExportJson={onExportJson} />);
     expect(screen.getByTestId("lighting-approval-badge").textContent).toContain("Author Approval Required");
@@ -503,7 +505,8 @@ describe("6. StudioSceneLightingAdvisorPanel UI · 인터랙션 · 접근성 검
     expect(screen.getByTestId("lighting-cut-compare-summary").textContent).toContain("Key");
 
     fireEvent.click(screen.getByTestId("lighting-copy-json-btn"));
-    expect(onExportJson).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportJson).toHaveBeenCalledTimes(1));
     expect(onExportJson.mock.calls[0]?.[0]).toContain("toonstudio.scene-lighting-rig.v1");
     expect(screen.getByTestId("lighting-json-preview").textContent).toContain('"threeJs"');
 
@@ -513,19 +516,22 @@ describe("6. StudioSceneLightingAdvisorPanel UI · 인터랙션 · 접근성 검
 });
 
 describe("7. 엄격 품질·하네스 계약 및 Calm Atelier 자가 검증", () => {
-  it("4개 소유 파일 존재, 전 파일 800줄 이하 및 금지 패턴(원시 색·transition-all·= {}·스토리지·private Map store·BigInt·Sparkles) 0건", () => {
+  it("소유 파일 존재, 전 파일 800줄 이하 및 금지 패턴(원시 색·transition-all·= {}·스토리지·private Map store·BigInt·Sparkles) 0건", () => {
     const dir = path.resolve(import.meta.dirname);
     const requiredFiles = [
       "scene-lighting-advisor-engine.ts",
       "StudioSceneLightingAdvisorPanel.tsx",
       "index.ts",
       "scene-lighting-advisor.test.tsx",
+      "lighting-boundaries.test.tsx", "lighting-input-contract.ts", "use-lighting-copy.ts",
+      "use-lighting-notification.ts", "LightingOperationStatus.tsx",
     ];
     for (const file of requiredFiles) {
       expect(existsSync(path.join(dir, file))).toBe(true);
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
+    expect([...allFiles].sort()).toEqual([...requiredFiles].sort());
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");
       expect(src.split(/\r?\n/).length).toBeLessThanOrEqual(800);

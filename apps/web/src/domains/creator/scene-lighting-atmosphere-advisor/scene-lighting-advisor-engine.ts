@@ -2,10 +2,12 @@
  * Wave 48A — 컷 감정·조명 자동 연출 제안기 (Scene Lighting & Atmosphere Advisor) 순수 결정론적 엔진.
  *
  * - 대사/지문 + 6대 시간대 + 6대 장소/장르 프리셋 분석으로 6대 감정 벡터(긴장·설렘·분노·고독·환희·서스펜스) 산출
- * - 비파괴 Top-3 3점 조명·분위기 연출안 제안(`proposeSceneLightingTop3`), 탈-바이올렛 OKLCH 안료(270~320° 0%) 보장
+ * - 비파괴 Top-3 3점 조명·분위기 구성 예제 제안(`proposeSceneLightingTop3`), 생성 제안은 탈-바이올렛 OKLCH 안료 사용
  * - 인물 얼굴 명암 대비비 및 대사 말풍선 영역 배경 명도 자동 점검(`auditLightingReadability`)
  * - 비파괴 미리보기·적용·되돌리기·미세 조정·전 컷 비교 상태 머신 및 Three.js/Blender 연동 JSON 내보내기
  */
+
+import { assertLightingBundle, assertLightingInput, assertLightingPatch, assertLightingProposal, assertLightingSession, validateLightingRig } from "./lighting-input-contract";
 
 export type SceneTimeOfDay = "dawn" | "day" | "golden-hour" | "rainy-dusk" | "night-neon" | "snow-overcast";
 export type SceneLocationPresetId =
@@ -355,7 +357,8 @@ export function getPreviousCutLightingPreset(id: PreviousCutLightingPresetId): P
 
 /** 대사/지문 + 시간대 + 장소/장르 프리셋을 분석해 6대 감정 벡터를 산출한다. */
 export function analyzeSceneLightingEmotion(input: SceneLightingAnalysisInput): SceneLightingEmotionAnalysis {
-  const dialogue = input.dialogue.trim();
+  assertLightingInput(input);
+  const dialogue = input.dialogue;
   const scenePresetId: SceneLocationPresetId = input.scenePresetId ?? "rooftop-rain";
   const preset = getSceneLocationPreset(scenePresetId);
   const timeOfDay: SceneTimeOfDay = input.timeOfDay ?? preset.defaultTimeOfDay;
@@ -380,13 +383,13 @@ export function analyzeSceneLightingEmotion(input: SceneLightingAnalysisInput): 
     }
   }
 
-  if (/\([^)]*(?:비|빗|번개|바람|눈보라|칼|총)[^)]*\)/u.test(dialogue)) {
+  if (/\([^()]*(?:비|빗|번개|바람|눈보라|칼|총)[^()]*\)/u.test(dialogue)) {
     scores.tension += 1.05; scores.suspense += 0.55; signals.push("지문:악천후·대치");
   }
-  if (/\([^)]*(?:노을|햇살|창가|커튼|달빛)[^)]*\)/u.test(dialogue)) {
+  if (/\([^()]*(?:노을|햇살|창가|커튼|달빛)[^()]*\)/u.test(dialogue)) {
     scores.flutter += 0.85; scores.solitude += 0.45; signals.push("지문:자연광");
   }
-  if (/\([^)]*(?:발소리|어둠|골목|그림자)[^)]*\)/u.test(dialogue)) {
+  if (/\([^()]*(?:발소리|어둠|골목|그림자)[^()]*\)/u.test(dialogue)) {
     scores.suspense += 1.2; scores.tension += 0.5; signals.push("지문:추격·암부");
   }
   if (/[?!]{2,}/u.test(dialogue) && dialogue.includes("?") && dialogue.includes("!")) {
@@ -422,7 +425,8 @@ export function analyzeSceneLightingEmotion(input: SceneLightingAnalysisInput): 
 }
 
 /** 인물 얼굴 명암 대비비와 대사 말풍선 영역 배경 명도를 점검해 경고·권고를 산출한다. */
-export function auditLightingReadability(rig: SceneLightingRig): LightingReadabilityAudit {
+export function auditLightingReadability(input: SceneLightingRig): LightingReadabilityAudit {
+  const rig = validateLightingRig(input);
   const faceContrastRatio = rig.atmosphere.shadowContrastRatio;
   const faceContrastStatus: FaceContrastStatus =
     faceContrastRatio < 1.85 ? "flat" : faceContrastRatio > 7.2 ? "harsh" : "optimal";
@@ -471,8 +475,8 @@ export function auditLightingReadability(rig: SceneLightingRig): LightingReadabi
   }
 
   if (warningsKo.length === 0) {
-    recommendationsKo.push("얼굴 명암과 말풍선 배경 명도가 모두 안정 범위입니다. 바로 컷에 적용해도 무리가 없습니다.");
-    recommendationsEn.push("Both facial contrast and bubble-zone luminance sit in safe ranges for direct use.");
+    recommendationsKo.push("입력한 조명 매개변수 예제에서는 두 지표가 기준 범위입니다. 실제 원고의 얼굴·말풍선 영역은 별도로 확인하세요.");
+    recommendationsEn.push("Both parameter-based example metrics meet the model thresholds. Check the actual artwork's face and dialogue areas separately.");
   }
 
   const overallGrade: ReadabilityGrade =
@@ -500,7 +504,8 @@ export function auditLightingReadability(rig: SceneLightingRig): LightingReadabi
 }
 
 /** 전 컷 조명과 현재 컷 조명을 비교해 색온도·대비비·명도 연속성을 진단한다. */
-export function compareLightingCuts(previousRig: SceneLightingRig, activeRig: SceneLightingRig): LightingCutComparison {
+export function compareLightingCuts(previousInput: SceneLightingRig, activeInput: SceneLightingRig): LightingCutComparison {
+  const previousRig = validateLightingRig(previousInput), activeRig = validateLightingRig(activeInput);
   const keyKelvinDeltaK = Math.round(activeRig.keyLight.kelvin - previousRig.keyLight.kelvin);
   const contrastDelta = round2(activeRig.atmosphere.shadowContrastRatio - previousRig.atmosphere.shadowContrastRatio);
   const luminanceDelta = round2(activeRig.atmosphere.ambientLuminance - previousRig.atmosphere.ambientLuminance);
@@ -587,8 +592,9 @@ export function proposeSceneLightingTop3(
     backdropOklch: { l: safeBubbleLum, c: round2(timeMeta.backdropOklch.c * 0.85), h: timeMeta.backdropOklch.h },
   });
 
+  const proposalKey = JSON.stringify([analysis.scenePresetId, analysis.timeOfDay, analysis.primaryEmotion, analysis.secondaryEmotion]);
   const p1: SceneLightingProposal = {
-    id: `lighting-p1-${analysis.scenePresetId}-${analysis.timeOfDay}-${analysis.primaryEmotion}`, rank: 1, variant: "cinematic-key",
+    id: `lighting-p1-${proposalKey}`, rank: 1, variant: "cinematic-key",
     titleKo: "정석 시네마틱 3점 연출", titleEn: "Cinematic 3-Point Key",
     confidence: clamp01(Math.max(0.8, analysis.confidence)), rig: rig1,
     reasonKo: `${preset.labelKo}(${timeMeta.labelKo}) ${primaryEmo.labelKo} 장면에 ${describeKelvinToneKo(rig1.keyLight.kelvin)} 키라이트와 ${rig1.rimLight.pigmentNameKo} 림라이트로 ${primaryEmo.moodPhraseKo}합니다.`,
@@ -597,7 +603,7 @@ export function proposeSceneLightingTop3(
   };
 
   const p2: SceneLightingProposal = {
-    id: `lighting-p2-${analysis.scenePresetId}-${analysis.timeOfDay}-rim`, rank: 2, variant: "dramatic-rim",
+    id: `lighting-p2-${proposalKey}`, rank: 2, variant: "dramatic-rim",
     titleKo: "고대비 역광·림 강조안", titleEn: "Dramatic Rim Contrast",
     confidence: clamp01(Math.max(0.71, p1.confidence - 0.06)), rig: rig2,
     reasonKo: `필라이트 비율을 ${Math.round(rig2.fillLight.fillRatio * 100)}%로 낮추고 ${rig2.rimLight.pigmentNameKo} 림라이트(${rig2.rimLight.intensity.toFixed(1)})와 안개 광선을 키워 클라이맥스 실루엣을 극대화합니다.`,
@@ -606,7 +612,7 @@ export function proposeSceneLightingTop3(
   };
 
   const p3: SceneLightingProposal = {
-    id: `lighting-p3-${analysis.scenePresetId}-${analysis.timeOfDay}-soft`, rank: 3, variant: "readable-soft",
+    id: `lighting-p3-${proposalKey}`, rank: 3, variant: "readable-soft",
     titleKo: "대사·표정 가독성 우선안", titleEn: "Dialogue & Face Readability",
     confidence: clamp01(Math.max(0.66, p2.confidence - 0.05)), rig: rig3,
     reasonKo: `얼굴 대비비(${rig3.atmosphere.shadowContrastRatio.toFixed(1)}:1)와 말풍선 영역 명도(${Math.round(rig3.atmosphere.ambientLuminance * 100)}%)를 안정권에 맞춰 대사량이 많은 컷에서도 표정과 글자가 선명하게 읽힙니다.`,
@@ -631,7 +637,7 @@ export function createLightingSession(initialBaseline?: SceneLightingRig, previo
     fogDensity: 0.12, volumetricStrength: 0.16, ambientLuminance: 0.52, backdropOklch: { l: 0.52, c: 0.03, h: 224 },
   });
   return {
-    baselineRig: defaultBaseline, currentRig: defaultBaseline, previousCutRig: previousCut ?? DEFAULT_PREV_CUT_PRESET.rig,
+    baselineRig: validateLightingRig(defaultBaseline), currentRig: validateLightingRig(defaultBaseline), previousCutRig: validateLightingRig(previousCut ?? DEFAULT_PREV_CUT_PRESET.rig),
     previewingProposalId: null, previewRig: null, appliedProposalId: null,
     status: "idle", isTweaked: false, canRevert: false, history: [],
   };
@@ -639,6 +645,8 @@ export function createLightingSession(initialBaseline?: SceneLightingRig, previo
 
 /** 제안안을 비파괴 미리보기한다(원본·적용 릭은 건드리지 않음). 동일 ID 재호출 또는 null이면 해제. */
 export function previewLightingProposal(session: SceneLightingSession, proposal: SceneLightingProposal | null): SceneLightingSession {
+  assertLightingSession(session);
+  if (proposal) assertLightingProposal(proposal);
   if (!proposal || session.previewingProposalId === proposal.id) {
     const restored: LightingSessionStatus = session.isTweaked ? "tweaked" : session.appliedProposalId || session.canRevert ? "applied" : "idle";
     return { ...session, previewingProposalId: null, previewRig: null, status: restored };
@@ -648,6 +656,7 @@ export function previewLightingProposal(session: SceneLightingSession, proposal:
 
 /** 작가 승인으로 선택한 조명 제안을 비파괴 적용한다(baselineRig 보존). */
 export function applyLightingProposal(session: SceneLightingSession, proposal: SceneLightingProposal): SceneLightingSession {
+  assertLightingSession(session); assertLightingProposal(proposal);
   return {
     ...session,
     currentRig: proposal.rig, previewingProposalId: null, previewRig: null,
@@ -658,6 +667,7 @@ export function applyLightingProposal(session: SceneLightingSession, proposal: S
 
 /** 적용·미세조정한 조명을 원본 baselineRig로 1클릭 복원한다. */
 export function revertLightingProposal(session: SceneLightingSession): SceneLightingSession {
+  assertLightingSession(session);
   return {
     ...session,
     currentRig: session.baselineRig, previewingProposalId: null, previewRig: null,
@@ -668,6 +678,7 @@ export function revertLightingProposal(session: SceneLightingSession): SceneLigh
 
 /** 키·필·림 강도 및 색온도(K)·안개 밀도를 비파괴 미세 조정한다. */
 export function tweakLightingRig(session: SceneLightingSession, patch: LightingRigTweakPatch): SceneLightingSession {
+  assertLightingSession(session); assertLightingPatch(patch);
   const base = session.previewRig ?? session.currentRig;
   const nextRig = buildRig({
     labelKo: base.labelKo.includes("미세 조정") ? base.labelKo : `${base.labelKo} · 미세 조정`,
@@ -691,7 +702,8 @@ export function tweakLightingRig(session: SceneLightingSession, patch: LightingR
 
 /** 전 컷 기준 조명을 교체한다. */
 export function updateLightingPreviousCut(session: SceneLightingSession, previousCutRig: SceneLightingRig): SceneLightingSession {
-  return { ...session, previousCutRig };
+  assertLightingSession(session);
+  return { ...session, previousCutRig: validateLightingRig(previousCutRig) };
 }
 
 function sphericalToCartesianThreeJs(azimuthDeg: number, elevationDeg: number, radius = 8): readonly [number, number, number] {
@@ -706,7 +718,9 @@ export function exportLightingRigJson(
   session: SceneLightingSession,
   bundle?: SceneLightingProposalBundle,
 ): string {
-  const activeRig = session.previewRig ?? session.currentRig;
+  assertLightingSession(session);
+  if (bundle) assertLightingBundle(bundle);
+  const activeRig = validateLightingRig(session.previewRig ?? session.currentRig);
   const readabilityAudit = auditLightingReadability(activeRig);
   const previousCutComparison = compareLightingCuts(session.previousCutRig, activeRig);
 
@@ -717,7 +731,9 @@ export function exportLightingRigJson(
   const payload = {
     schema: "toonstudio.scene-lighting-rig.v1",
     requiresAuthorApproval: true,
-    violetSlopPct: 0,
+    dataSourceKind: "cpu-calculation-example", sceneApplied: false, rendererCompatibilityVerified: false,
+    analysisScope: "latest-proposal-input",
+    violetSlopPct: round2([activeRig.keyLight.colorOklch, activeRig.fillLight.colorOklch, activeRig.rimLight.pigmentOklch, activeRig.atmosphere.backdropOklch].filter(color => isVioletSlopHue(color.h)).length * 25),
     sessionStatus: session.status,
     appliedProposalId: session.appliedProposalId,
     isTweaked: session.isTweaked,
@@ -726,7 +742,11 @@ export function exportLightingRigJson(
       ? {
           scenePresetId: bundle.analysis.scenePresetId, timeOfDay: bundle.analysis.timeOfDay,
           primaryEmotion: bundle.analysis.primaryEmotion, secondaryEmotion: bundle.analysis.secondaryEmotion,
-          emotionVector: bundle.analysis.emotionVector,
+          emotionVector: {
+            tension: bundle.analysis.emotionVector.tension, flutter: bundle.analysis.emotionVector.flutter,
+            anger: bundle.analysis.emotionVector.anger, solitude: bundle.analysis.emotionVector.solitude,
+            elation: bundle.analysis.emotionVector.elation, suspense: bundle.analysis.emotionVector.suspense,
+          },
         }
       : null,
     activeRig: {

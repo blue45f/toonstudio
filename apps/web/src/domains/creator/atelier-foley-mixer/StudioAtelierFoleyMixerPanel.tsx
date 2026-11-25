@@ -16,12 +16,15 @@ import {
   applyAmbiencePresetToConfig, ATELIER_AMBIENCE_IDS, ATELIER_AMBIENCE_PROFILES,
   computeFoleyDspGraph, createDefaultFoleyMixerConfig, DRAWING_TOOL_FOLEY_IDS,
   DRAWING_TOOL_FOLEY_PROFILES, PAPER_RESONANCE_IDS, PAPER_RESONANCE_PROFILES,
-  parseFoleyMixerPreset, previewFoleySound, serializeFoleyMixerPreset, SILENCE_FLOOR_DB,
+  parseFoleyMixerPreset, serializeFoleyMixerPreset, SILENCE_FLOOR_DB,
   TACTILE_UI_PRESET_IDS, TACTILE_UI_PRESETS,
   type AtelierAmbienceId, type DrawingToolFoleyId, type FoleyDspGraph, type FoleyMixerConfig,
-  type FoleyPreviewKind, type FoleyPreviewResult, type PaperResonanceId,
+  type FoleyPreviewKind, type FoleyPreviewResult, type FoleyStrokeTelemetry, type PaperResonanceId,
   type PreviewAudioContextLike, type TactileUiPresetId,
 } from "./atelier-foley-mixer-engine";
+import { useExampleNotification } from "./use-example-notification";
+import { useBrowserOutput } from "./use-browser-output";
+import { useFoleyPreview } from "./use-foley-preview";
 
 export interface StudioAtelierFoleyMixerPanelProps {
   readonly locale?: "ko" | "en";
@@ -30,9 +33,9 @@ export interface StudioAtelierFoleyMixerPanelProps {
   readonly initialPressure01?: number;
   readonly initialVelocity01?: number;
   readonly audioContextFactory?: () => PreviewAudioContextLike | null;
-  readonly onConfigChange?: (config: FoleyMixerConfig, graph: FoleyDspGraph) => void;
-  readonly onPreviewResult?: (result: FoleyPreviewResult) => void;
-  readonly onExportJson?: (json: string) => void;
+  readonly onConfigChange?: (config: FoleyMixerConfig, graph: FoleyDspGraph) => void | Promise<void>;
+  readonly onPreviewResult?: (result: FoleyPreviewResult) => void | Promise<void>;
+  readonly onExportJson?: (json: string) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -126,6 +129,15 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
   const pick = (ko: string, en: string): string => (isKo ? ko : en);
 
+  const configNotification = useExampleNotification<readonly [FoleyMixerConfig, FoleyDspGraph]>(onConfigChange ? ([next, graph]) => onConfigChange(next, graph) : undefined);
+  const previewNotification = useExampleNotification(onPreviewResult);
+  const exportNotification = useExampleNotification(onExportJson);
+  const copy = useBrowserOutput();
+  const player = useFoleyPreview(audioContextFactory, previewNotification.notify);
+  const pending = [configNotification, previewNotification, exportNotification, copy].some((item) => item.status === "pending");
+  const isPending = (): boolean => [configNotification, previewNotification, exportNotification, copy].some((item) => item.isPending());
+  const playerPending = player.phase === "preparing" || player.phase === "playing";
+
   const [config, setConfig] = useState<FoleyMixerConfig>(() => initialConfig ?? createDefaultFoleyMixerConfig());
   const [pressure01, setPressure01] = useState<number>(initialPressure01);
   const [velocity01, setVelocity01] = useState<number>(initialVelocity01);
@@ -137,9 +149,12 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
     [config, pressure01, velocity01],
   );
 
-  const commitConfig = (next: FoleyMixerConfig): void => {
+  const commitConfig = (next: FoleyMixerConfig, stroke?: FoleyStrokeTelemetry): void => {
+    if (isPending()) return;
+    player.stop();
+    const graph = computeFoleyDspGraph(next, stroke ?? { pressure01, velocity01 });
     setConfig(next);
-    onConfigChange?.(next, computeFoleyDspGraph(next, { pressure01, velocity01 }));
+    configNotification.notify([next, graph]);
   };
 
   const handleSelectTool = (toolId: DrawingToolFoleyId): void => {
@@ -166,58 +181,26 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
   };
 
   const handlePreview = (kind: FoleyPreviewKind): void => {
-    const result = previewFoleySound(dspGraph, { kind, audioContextFactory });
-    onPreviewResult?.(result);
-    const kindLabel =
-      kind === "stroke"
-        ? pick("화구 마찰음", "Tool friction")
-        : kind === "ambience"
-          ? pick("화실 앰비언스", "Atelier ambience")
-          : pick("촉각 UI 피드백", "Tactile UI click");
-
-    if (result.status === "played") {
-      setNotice({
-        tone: "good",
-        text: pick(
-          `${kindLabel} 시연 재생 완료 (${result.durationMs}ms · ${result.peakDb.toFixed(1)} dBFS)`,
-          `Played ${kindLabel} preview (${result.durationMs}ms · ${result.peakDb.toFixed(1)} dBFS)`,
-        ),
-      });
-    } else if (result.status === "muted-noop") {
-      setNotice({
-        tone: "warn",
-        text: pick(
-          `${kindLabel} 시연이 음소거 또는 안전장치(${result.reason})로 차단되었습니다.`,
-          `${kindLabel} preview suppressed by mute/safety guard (${result.reason}).`,
-        ),
-      });
-    } else {
-      setNotice({
-        tone: "warn",
-        text: pick(
-          `현재 환경에서 Web Audio 출력을 사용할 수 없어 무해 대기(${result.status})로 처리했습니다.`,
-          `Web Audio output unavailable in this environment (${result.status}).`,
-        ),
-      });
-    }
+    if (isPending() || player.isPending()) return;
+    void player.play(dspGraph, kind);
   };
 
   const handleExportPreset = (): void => {
+    if (isPending()) return;
     const toolLabel = DRAWING_TOOL_FOLEY_PROFILES[config.toolId].labelEn;
     const paperLabel = PAPER_RESONANCE_PROFILES[config.paperId].labelEn;
     const serialized = serializeFoleyMixerPreset(config, `${toolLabel} on ${paperLabel}`);
     setPresetJson(serialized);
-    onExportJson?.(serialized);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(serialized).catch(() => undefined);
-    }
+    exportNotification.notify(serialized);
+    copy.notify({ kind: "copy", text: serialized });
     setNotice({
       tone: "good",
-      text: pick("현재 화실 사운드 믹서 프리셋을 v1 JSON으로 내보냈습니다.", "Exported atelier foley preset as v1 JSON."),
+      text: pick("메모리 설정의 v1 JSON을 생성했습니다. 알림과 복사 응답은 별도로 확인하세요.", "Created an in-memory v1 JSON preset. Check notification and clipboard responses separately."),
     });
   };
 
   const handleImportPreset = (): void => {
+    if (isPending()) return;
     const parsed = parseFoleyMixerPreset(presetJson);
     if (!parsed.ok) {
       setNotice({ tone: "bad", text: isKo ? parsed.messageKo : parsed.messageEn });
@@ -227,18 +210,20 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
     setNotice({
       tone: "good",
       text: pick(
-        `프리셋 "${parsed.preset.name}" 적용 완료${parsed.warnings.length > 0 ? ` (보정 ${parsed.warnings.length}건)` : ""}`,
-        `Applied preset "${parsed.preset.name}"${parsed.warnings.length > 0 ? ` (${parsed.warnings.length} clamped)` : ""}`,
+        `프리셋 "${parsed.preset.name}"을 메모리 예제에 불러옴${parsed.warnings.length > 0 ? ` (보정 ${parsed.warnings.length}건)` : ""}`,
+        `Loaded preset "${parsed.preset.name}" into this in-memory example${parsed.warnings.length > 0 ? ` (${parsed.warnings.length} clamped)` : ""}`,
       ),
     });
   };
 
   const handleReset = (): void => {
+    if (isPending()) return;
+    player.stop();
     const fresh = createDefaultFoleyMixerConfig();
     setPressure01(0.68);
     setVelocity01(0.56);
     setPresetJson("");
-    commitConfig(fresh);
+    commitConfig(fresh, { pressure01: 0.68, velocity01: 0.56 });
     setNotice({ tone: "good", text: pick("화실 사운드 마스터 믹서를 기본값으로 되돌렸습니다.", "Reset atelier foley mixer to defaults.") });
   };
 
@@ -257,9 +242,27 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
   return (
     <section
       data-testid="atelier-foley-mixer-panel"
+      aria-busy={pending || playerPending}
       aria-label={pick("화실 물리 사운드 및 공간 음향 마스터 믹서 콘솔", "Atelier Physical Foley & Spatial Ambience Master Mixer Console")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
+      <p data-testid="foley-scope-notice" className="text-xs text-fg-2">{pick("DSP·LUFS·진동 수치는 모델 추정입니다. 버튼으로 Web Audio 원샷을 실제 시작하며 종료 신호와 자체 자원 정리를 확인합니다. 실제 펜 입력·상시 앰비언스·기기 햅틱·원고 설정 저장에는 연결되지 않았고 청취 음량을 실측하지 않습니다.", "DSP, LUFS and vibration values are model estimates. Buttons start real Web Audio one-shots and observe completion and owned-resource cleanup. No live pen input, continuous ambience, device haptics or manuscript settings storage is connected; listening volume is not measured.")}</p>
+      {[{ key: "config", value: configNotification, label: pick("설정 알림 다시 시도", "Retry config notification") }, { key: "preview", value: previewNotification, label: pick("시연 결과 알림 다시 시도", "Retry preview notification") }, { key: "export", value: exportNotification, label: pick("JSON 알림 다시 시도", "Retry JSON notification") }].map(({ key, value: n, label }) => n.status !== "idle" ? (
+        <p key={key} data-testid={`foley-notification-${key}`} role={n.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+          {n.status === "failed" ? pick("예제 결과 알림 실패", "Example notification failed") : n.status === "pending" ? pick("예제 결과 알림 대기 중", "Example notification pending") : n.status === "local-only" ? pick("예제 수신자 미연결", "No example receiver") : pick("예제 결과 알림 완료", "Example notification delivered")} · {pick("실제 원고 설정·저장 완료 아님", "No manuscript settings or save confirmed")} {n.error}
+          {n.status === "failed" && <button type="button" onClick={n.retry} className={BTN_BASE}>{label}</button>}
+        </p>
+      ) : null)}
+      {copy.status !== "idle" && <p data-testid="foley-copy-status" role={copy.status === "failed" ? "alert" : "status"} className="text-xs text-fg-2">
+        {copy.status === "failed" ? pick("JSON 복사 실패", "JSON copy failed") : copy.status === "pending" ? pick("JSON 복사 대기 중", "JSON copy pending") : pick("JSON 복사 완료", "JSON copied")} {copy.error}
+        {copy.status === "failed" && <button type="button" onClick={copy.retry} className={BTN_BASE}>{pick("JSON 복사 다시 시도", "Retry JSON copy")}</button>}
+      </p>}
+      {player.phase !== "idle" && <p data-testid="foley-playback-status" role={player.phase === "error" ? "alert" : "status"} className="text-xs text-fg-2">
+        {player.phase === "preparing" ? pick("오디오 시작 대기 중", "Waiting for audio start") : player.phase === "playing" ? pick("원샷 재생 중 · 종료 미확인", "One-shot playing; end not yet observed") : player.phase === "ended" ? pick("원샷 종료 신호·자원 정리 확인", "One-shot ended and resources cleaned") : player.phase === "stopped" ? pick("원샷 시연 중지", "One-shot stopped") : player.phase === "noop" ? pick("안전장치·무음으로 재생하지 않음", "Muted by safety or zero gain") : pick("원샷 시연 실패", "One-shot failed")} {player.result?.status} {player.result?.reason}
+        {playerPending && <button type="button" onClick={player.stop} className={BTN_BASE}>{pick("시연 중지", "Stop preview")}</button>}
+        {player.canRetry && <button type="button" onClick={() => { if (!isPending()) player.retry(); }} disabled={pending} className={BTN_BASE}>{pick("같은 시연 다시 시도", "Retry same preview")}</button>}
+      </p>}
+      <fieldset disabled={pending} className="m-0 min-w-0 space-y-4 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -465,7 +468,7 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
               valueLabel={`${formatPercent(pressure01)} (γ→${formatPercent(dspGraph.stroke.pressureCurveGain01)})`}
               min={0} max={1} step={0.01}
               value={pressure01}
-              onChange={setPressure01}
+              onChange={(value) => { player.stop(); setPressure01(value); }}
             />
             <MixerSliderRow
               id={`${uid}-stroke-velocity`}
@@ -474,7 +477,7 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
               valueLabel={formatPercent(velocity01)}
               min={0} max={1} step={0.01}
               value={velocity01}
-              onChange={setVelocity01}
+              onChange={(value) => { player.stop(); setVelocity01(value); }}
             />
           </div>
         </div>
@@ -569,7 +572,7 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
             <button
               type="button"
               data-testid="btn-preview-stroke"
-              onClick={() => handlePreview("stroke")}
+              disabled={playerPending} onClick={() => handlePreview("stroke")}
               className={`${BTN_BASE} flex-1 ${PRIMARY_TONE}`}
             >
               <Play className="h-3.5 w-3.5" aria-hidden="true" />
@@ -578,7 +581,7 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
             <button
               type="button"
               data-testid="btn-preview-ambience"
-              onClick={() => handlePreview("ambience")}
+              disabled={playerPending} onClick={() => handlePreview("ambience")}
               className={`${BTN_BASE} ${IDLE_TONE}`}
             >
               <Waves className="h-3.5 w-3.5" aria-hidden="true" />
@@ -587,7 +590,7 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
             <button
               type="button"
               data-testid="btn-preview-tactile"
-              onClick={() => handlePreview("tactile-ui")}
+              disabled={playerPending} onClick={() => handlePreview("tactile-ui")}
               className={`${BTN_BASE} ${IDLE_TONE}`}
             >
               <Radio className="h-3.5 w-3.5" aria-hidden="true" />
@@ -646,6 +649,7 @@ export function StudioAtelierFoleyMixerPanel(props: StudioAtelierFoleyMixerPanel
           <span>{notice.text}</span>
         </div>
       ) : null}
+      </fieldset>
     </section>
   );
 }

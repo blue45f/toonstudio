@@ -3,6 +3,7 @@
  * 이종 매체 물리 상호작용(왁스 레지스트 / 떡지우개 / 찰필) · 256×256 더티 타일 증분 합성 풀.
  */
 
+import { DirtyTilePaintedCoverage } from "./dirty-tile-painted-coverage";
 import {
   PAPER_PRESETS, getWorldPaperHeightfieldTile, samplePaperHeightFast,
   type DualBrushDabStampParams, type PaperPresetId,
@@ -562,6 +563,7 @@ export class DirtyTileCompositor256 {
   private readonly paperTileTemplate: Uint8ClampedArray;
   private readonly layers: InternalTileLayer[] = [];
   private readonly layerIndexById = new Map<string, InternalTileLayer>();
+  private readonly paintedCoverage = new DirtyTilePaintedCoverage();
   private readonly compositedTiles = new Map<number, Uint8ClampedArray>();
   private readonly dirtyTileIndices = new Set<number>();
   private readonly tileLatencySamplesMs: number[] = [];
@@ -673,6 +675,7 @@ export class DirtyTileCompositor256 {
             }
           }
         }
+        this.paintedCoverage.record(tileBuf, lMinX, lMinY, lMaxX, lMaxY);
         if (!this.dirtyTileIndices.has(tileIndex)) { this.dirtyTileIndices.add(tileIndex); dirtyAdded += 1; }
       }
     }
@@ -697,21 +700,7 @@ export class DirtyTileCompositor256 {
         if (!src) continue;
         const layerOpacity = layer.opacity;
         const isMultiply = layer.blendMode === "multiply";
-        for (let i = 0; i < DIRTY_TILE_BYTES; i += 4) {
-          const rawA = src[i + 3] ?? 0;
-          if (rawA === 0) continue;
-          const a = (rawA / 255) * layerOpacity;
-          const invA = 1 - a;
-          const dR = dst[i] ?? 255;
-          const dG = dst[i + 1] ?? 255;
-          const dB = dst[i + 2] ?? 255;
-          const sR = src[i] ?? 0;
-          const sG = src[i + 1] ?? 0;
-          const sB = src[i + 2] ?? 0;
-          dst[i] = (dR * invA + (isMultiply ? (dR * sR) / 255 : sR) * a) | 0;
-          dst[i + 1] = (dG * invA + (isMultiply ? (dG * sG) / 255 : sG) * a) | 0;
-          dst[i + 2] = (dB * invA + (isMultiply ? (dB * sB) / 255 : sB) * a) | 0;
-        }
+        this.paintedCoverage.composite(src, dst, DIRTY_TILE_SIZE, layerOpacity, isMultiply);
       }
     }
     const elapsedMs = performance.now() - startMs;

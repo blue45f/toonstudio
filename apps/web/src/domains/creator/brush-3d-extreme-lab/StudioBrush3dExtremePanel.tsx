@@ -393,17 +393,17 @@ export function StudioBrush3dExtremePanel({
   return (
     <section
       data-testid="studio-brush-3d-extreme-panel"
-      aria-label="극한 브러시 2.5D 질감 및 완벽 3D NPR 6패스 스튜디오"
+      aria-label="CPU 브러시 질감 및 합성 얼굴 NPR 6패스 예제 · 실제 3D 씬과 원고에 미반영"
       className={`rounded-xl border border-line bg-raised p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
             <Paintbrush className="h-4 w-4 text-accent" aria-hidden="true" />
-            <h2>극한 브러시 6축 &amp; 완벽 3D NPR 6패스 실험실</h2>
+            <h2>CPU 브러시 질감 &amp; 합성 얼굴 NPR 실험실</h2>
           </div>
           <p className="text-xs text-fg-2">
-            3채널 종이결·2.5D 임파스토·G펜 닙 갈라짐 물리와 얼굴 SDF·6패스 2D 분리 베이크·Contact-Lock IK를 한 화면에서 검증합니다.
+            CPU에서 브러시 질감과 합성 얼굴·가상 깊이(pseudoDepth) 6패스·IK/PnP 예제를 계산합니다. 실제 3D 씬을 베이크하거나 원고·모델에 반영하지 않습니다.
           </p>
         </div>
 
@@ -583,7 +583,7 @@ export function StudioBrush3dExtremePanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="flex items-center gap-1.5 text-xs font-bold text-fg">
               <Sun className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              <span>완벽 3D 6축 · Face Shadow SDF &amp; 6패스 베이크</span>
+              <span>CPU 합성 얼굴 · Face Shadow SDF &amp; 6패스 예제</span>
             </h3>
             <div className="flex items-center gap-1.5">
               <button
@@ -613,7 +613,7 @@ export function StudioBrush3dExtremePanel({
               data-testid="face-sixpass-canvas"
               width={420}
               height={230}
-              aria-label="얼굴 Face Shadow SDF 6패스 합성 및 Contact-Lock IK 프리뷰 캔버스"
+              aria-label="합성 얼굴·가상 깊이 6패스와 데모 골격 IK의 CPU 미리보기 · 실제 3D 씬 아님"
               onPointerDown={(event) => {
                 isDraggingFaceLightRef.current = true;
                 updateFaceLightFromPointer(event);
@@ -661,7 +661,7 @@ export function StudioBrush3dExtremePanel({
           <div className="space-y-2 rounded-lg border border-line bg-panel p-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold text-fg">
-                3D → 2D 6패스 분리 레이어 토글
+                합성 얼굴 CPU 예제 6패스 토글
               </span>
               <div className="flex items-center gap-1.5">
                 <button

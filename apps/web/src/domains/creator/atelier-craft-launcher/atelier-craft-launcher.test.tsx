@@ -72,8 +72,9 @@ describe("Wave 43D: 아틀리에 프로 도구 퀵 런처 (Atelier Craft Quick-J
       expect(station.highlightsKo).toHaveLength(3);
       expect(station.highlightsEn).toHaveLength(3);
       expect(station.shortcutHint.startsWith("Alt+")).toBe(true);
-      expect(station.estimatedStartSeconds).toBeGreaterThan(0);
-      expect(station.estimatedStartTimeKo).toContain("시작");
+      expect(station.scope).toBe("catalog-reference");
+      expect(station.routeMeaningKo).not.toBe("");
+      expect(station).not.toHaveProperty("estimatedStartSeconds");
     }
   });
 
@@ -91,8 +92,8 @@ describe("Wave 43D: 아틀리에 프로 도구 퀵 런처 (Atelier Craft Quick-J
       expect(allowedPrefixRe.test(assetPath), `허용되지 않은 에셋 경로: ${assetPath}`).toBe(true);
     }
 
-    const engineSrc = readFileSync(resolve(MODULE_DIR, "atelier-craft-launcher-engine.ts"), "utf8");
-    const literalPaths = engineSrc.match(/\/assets\/atelier\/[a-z0-9/-]+\.webp/gu) ?? [];
+    const catalogSrc = readFileSync(resolve(MODULE_DIR, "atelier-craft-catalog.ts"), "utf8");
+    const literalPaths = catalogSrc.match(/\/assets\/atelier\/[a-z0-9/-]+\.webp/gu) ?? [];
     expect(new Set(literalPaths).size).toBe(16);
 
     const atelierRootDir = resolve(WEB_PUBLIC_DIR, "assets/atelier");
@@ -451,13 +452,17 @@ describe("Wave 43D: 아틀리에 프로 도구 퀵 런처 (Atelier Craft Quick-J
     );
     expect(screen.getByTestId("craft-stage-tab-all").textContent).toContain("All");
     expect(screen.getByTestId("craft-preview-launch-link").textContent).toContain(
-      "Open Drawing · Physical Ink",
+      "Open related page: Drawing · Physical Ink",
     );
   });
 
-  it("24. 모듈 4개 파일 정적 위생 자가 검증(<=800줄·무스토리지·원시색0건·전역전환0건·props={} 0건·번역투0건)", () => {
+  it("24. 모듈 파일 정적 위생 자가 검증(<=800줄·무스토리지·원시색0건·전역전환0건·props={} 0건·번역투0건)", () => {
     const files = [
       "atelier-craft-launcher-engine.ts",
+      "atelier-craft-catalog.ts",
+      "launcher-input-contract.ts",
+      "use-launcher-notification.ts",
+      "launcher-boundaries.test.tsx",
       "StudioAtelierCraftLauncherPanel.tsx",
       "index.ts",
       "atelier-craft-launcher.test.tsx",

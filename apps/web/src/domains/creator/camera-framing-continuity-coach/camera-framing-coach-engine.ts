@@ -7,6 +7,8 @@
  * - 비파괴 미리보기·적용·되돌리기 상태 머신과 카메라 릭 JSON 내보내기를 제공한다.
  */
 
+import { assertCameraCut, assertCameraData, assertCameraInput, assertCameraProposals } from "./camera-input-contract";
+
 export type SubjectScreenSide = "left" | "center" | "right";
 export type GazeDirection = "left-to-right" | "right-to-left" | "camera" | "down";
 export type ShotScale = "wide" | "medium" | "closeup" | "extreme-closeup";
@@ -347,6 +349,8 @@ function computeRecommendedSafeYaw(prevYaw: number, nextYaw: number, prevHemisph
 
 /** 180° 법칙(Action Axis) 월선 감지 엔진. 방위각 차이·반구 월선·좌우 반전·시선 정합성을 판정한다. */
 export function auditCameraContinuity(input: CameraContinuityAuditInput): CameraContinuityAuditReport {
+  assertCameraCut(input);
+  assertCameraCut({ prevCameraYawDeg: input.nextCameraYawDeg, prevSubjectSide: input.nextSubjectSide, prevGazeDirection: input.nextGazeDirection, prevShotScale: input.nextShotScale ?? input.prevShotScale });
   const prevYawDeg = normalizeYawDeg(input.prevCameraYawDeg);
   const nextYawDeg = normalizeYawDeg(input.nextCameraYawDeg);
   const yawDeltaDeg = shortestYawDeltaDeg(prevYawDeg, nextYawDeg);
@@ -558,6 +562,7 @@ export function buildCompositionGeometry(params: {
 
 /** 180° 법칙을 유지하면서 현재 대사 긴장도·화자 수·직전 컷 흐름에 맞는 Top-3 비파괴 구도 가이드를 산출한다. */
 export function proposeCameraFramingsTop3(input: CameraFramingCoachInput): readonly CameraFramingProposal[] {
+  assertCameraInput(input);
   const signals = analyzeDialogueSignals(input.dialogueText);
   const prevScaleOrder = getShotScaleOrder(input.prevShotScale);
 
@@ -623,6 +628,7 @@ export function clampCameraRigPose(rig: CameraRigPose): CameraRigPose {
 
 /** 비파괴 세션 초기 상태를 생성한다. */
 export function createCameraCoachSession(initialCut?: Partial<CameraCutSnapshot>): CameraCoachSessionState {
+  assertCameraData(initialCut);
   const original: CameraCutSnapshot = {
     labelKo: initialCut?.labelKo ?? "원본 컷 (미적용)", labelEn: initialCut?.labelEn ?? "Original Cut (Unmodified)",
     framingType: initialCut?.framingType ?? "original", shotScale: initialCut?.shotScale ?? "medium",
@@ -650,6 +656,7 @@ export function applyCameraProposal(
   proposal: CameraFramingProposal,
   overrides?: Partial<CameraRigPose>,
 ): CameraCoachSessionState {
+  assertCameraData({ session, proposal, overrides });
   const merged = overrides ?? session.rigOverrides;
   const rig = clampCameraRigPose({
     focalLengthMm: merged.focalLengthMm ?? proposal.cameraRig.focalLengthMm,
@@ -726,6 +733,9 @@ export function resolveEffectiveCameraView(
   top3: readonly CameraFramingProposal[],
   session: CameraCoachSessionState,
 ): ResolvedCameraCoachView {
+  assertCameraInput(input);
+  assertCameraData({ top3, session });
+  assertCameraProposals(top3);
   const base = pickBaseView(top3, session);
 
   const effectiveYaw = session.simulateAxisCross ? mirrorYawAcrossActionAxis(input.prevCameraYawDeg) : (session.rigOverrides.yawDeg ?? base.rig.yawDeg);
@@ -760,9 +770,12 @@ export function resolveEffectiveCameraView(
 
 /** 카메라 릭·180° 연속성 감사·Top-3 제안을 스튜디오 연동용 JSON 문자열로 내보낸다. */
 export function exportCameraRigJson({ sceneId, input, session, activeView, top3 }: CameraRigExportPayload): string {
+  assertCameraInput(input);
+  assertCameraData({ sceneId, session, activeView, top3 });
+  assertCameraProposals(top3);
   return JSON.stringify({
     schema: "toonstudio.camera-framing-continuity-coach.v1",
-    sceneId, sessionStatus: session.status, simulateAxisCross: session.simulateAxisCross,
+    source: "camera-framing-example", sceneId, sessionStatus: session.status, simulateAxisCross: session.simulateAxisCross,
     previousCut: {
       subjectSide: input.prevSubjectSide, gazeDirection: input.prevGazeDirection,
       shotScale: input.prevShotScale, cameraYawDeg: normalizeYawDeg(input.prevCameraYawDeg),

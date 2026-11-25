@@ -212,31 +212,6 @@ function parseLockfilePackageKey(rawKey) {
   return { name: base.slice(0, lastAt), version: base.slice(lastAt + 1) };
 }
 
-function extractLockfilePeerRefs(line) {
-  const refs = [];
-  let idx = line.indexOf("(");
-  while (idx >= 0) {
-    const start = idx + 1;
-    let end = start;
-    while (end < line.length && line[end] !== "(" && line[end] !== ")") {
-      end += 1;
-    }
-    if (end > start && (line[end] === "(" || line[end] === ")")) {
-      const token = line.slice(start, end);
-      const sep = token.lastIndexOf("@");
-      if (sep > 0 && sep + 1 < token.length) {
-        const name = token.slice(0, sep);
-        const version = token.slice(sep + 1);
-        if (name !== "patch_hash" && !name.includes("=")) {
-          refs.push({ name, version });
-        }
-      }
-    }
-    idx = line.indexOf("(", start);
-  }
-  return refs;
-}
-
 function scanPnpmLockfile(lockfileText) {
   const packages = new Map();
   const peerLinks = new Map();
@@ -260,14 +235,20 @@ function scanPnpmLockfile(lockfileText) {
           const existing = packages.get(parsed.name) ?? new Set();
           if (parsed.version) existing.add(parsed.version);
           packages.set(parsed.name, existing);
-          // 예: p5.brush@2.2.1(...)(p5@2.3.1(typescript@6.0.3))에서 중첩 피어 포함 경유 출처 추출
-          for (const { name: peerName, version: peerVer } of extractLockfilePeerRefs(line)) {
-            const peerVers = packages.get(peerName) ?? new Set();
-            peerVers.add(peerVer);
-            packages.set(peerName, peerVers);
-            const via = peerLinks.get(peerName) ?? new Set();
-            via.add(`${parsed.name}@${parsed.version}`);
-            peerLinks.set(peerName, via);
+          // 중첩 피어는 괄호별 부모를 유지하고 patch_hash 같은 메타데이터는 제외한다.
+          const parents = [parsed];
+          for (const token of line.matchAll(/\(([^()]*)|(\))/gu)) {
+            if (token[2]) { parents.pop(); continue; }
+            const peer = parseLockfilePackageKey(token[1] ?? "");
+            const parent = parents.at(-1);
+            parents.push(peer?.version ? peer : null);
+            if (!peer?.version || !parent?.version) continue;
+            const peerVers = packages.get(peer.name) ?? new Set();
+            peerVers.add(peer.version);
+            packages.set(peer.name, peerVers);
+            const via = peerLinks.get(peer.name) ?? new Set();
+            via.add(`${parent.name}@${parent.version}`);
+            peerLinks.set(peer.name, via);
           }
         }
         continue;

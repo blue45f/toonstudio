@@ -505,7 +505,7 @@ describe("6. 코드 위생·탈-바이올렛·Calm Atelier 자가 검증", () =>
     }
 
     const files = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(files).toHaveLength(4);
+    expect(files.sort()).toEqual(["CutPlacementPreviewSvg.tsx", "PlacementOperationStatus.tsx", "StudioBalloonSfxProposerPanel.tsx", "balloon-sfx-placement-engine.ts", "balloon-sfx-placement.test.tsx", "index.ts", "placement-boundaries.test.tsx", "placement-input-contract.ts", "placement-output.ts", "use-placement-notification.ts"]);
     for (const file of files) {
       const src = readFileSync(path.join(dir, file), "utf8");
       expect(src.split(/\r?\n/).length).toBeLessThanOrEqual(800);
@@ -538,8 +538,8 @@ describe("6. 코드 위생·탈-바이올렛·Calm Atelier 자가 검증", () =>
 
   it("패널·엔진 내 모든 oklch 색상이 바이올렛 휴(270~320°)를 0% 사용한다", () => {
     const dir = path.resolve(import.meta.dirname);
-    const engineSrc = readFileSync(path.join(dir, "balloon-sfx-placement-engine.ts"), "utf8");
-    const panelSrc = readFileSync(path.join(dir, "StudioBalloonSfxProposerPanel.tsx"), "utf8");
+    const engineSrc = readFileSync(path.join(dir, "placement-output.ts"), "utf8");
+    const panelSrc = readFileSync(path.join(dir, "CutPlacementPreviewSvg.tsx"), "utf8");
     expect(engineSrc).toContain("oklch(");
     expect(panelSrc).toContain("oklch(");
     assertZeroVioletOklch(engineSrc);

@@ -23,6 +23,7 @@ import {
   type FingerId, type GripIntent, type HandGripMetrics, type HandGripSessionState,
   type HandPropGripProposal, type HandPropId, type HandRigPose15, type HandSide, type PenetrationRisk,
 } from "./hand-prop-autogrip-engine";
+import { useHandGripDelivery } from "./use-hand-grip-delivery";
 
 export interface StudioHandPropAutoGripPanelProps {
   readonly initialPropId?: HandPropId;
@@ -30,6 +31,7 @@ export interface StudioHandPropAutoGripPanelProps {
   readonly initialGripIntent?: GripIntent;
   readonly locale?: "ko" | "en";
   readonly className?: string;
+  // 기존 void 콜백과 호환된다. Promise 완료를 기다리며 { accepted: false } 반환은 거절로 처리한다.
   readonly onApply?: (proposal: HandPropGripProposal, pose: HandRigPose15, session: HandGripSessionState) => void;
   readonly onRevert?: (session: HandGripSessionState) => void;
   readonly onExportJson?: (json: string, session: HandGripSessionState) => void;
@@ -264,6 +266,8 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
   const [showBaselinePreview, setShowBaselinePreview] = useState<boolean>(false);
   const [showJson, setShowJson] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const delivery = useHandGripDelivery();
+  const selectionMatchesSession = session.current.propId === propId && session.current.handSide === handSide && session.current.intent === intent;
 
   const bundle = useMemo(() => proposeHandPropGripsTop3({ propId, handSide, intent }), [propId, handSide, intent]);
   const propSpec = useMemo(() => getHandPropSpec(propId), [propId]);
@@ -293,13 +297,23 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
     () => evaluateHandPropPoseMetrics(activePose, propSpec, handSide, intent),
     [activePose, handSide, intent, propSpec],
   );
+  const exportSession = useMemo<HandGripSessionState>(() => {
+    if (selectionMatchesSession && !previewProposal && !hasActiveTweaks(tweaks) && (session.status === "applied" || showBaselinePreview)) return session;
+    const baseline = createBaselineHandSnapshot(propId, handSide, intent);
+    return {
+      ...createHandGripSessionState(baseline),
+      current: { ...baseline, pose: activePose, ...activeMetrics, labelKo: "미적용 예제 포즈", labelEn: "Unapplied Example Pose" },
+      previewingProposalId: showBaselinePreview ? null : activeProposal.id,
+      status: "previewing",
+    };
+  }, [selectionMatchesSession, previewProposal, tweaks, session, showBaselinePreview, propId, handSide, intent, activePose, activeMetrics, activeProposal.id]);
   const jsonText = useMemo(
     () =>
       exportHandGripRigJson({
-        prop: propSpec, handSide, intent, pose: activePose, metrics: activeMetrics, session,
-        activeProposalId: previewProposal?.id ?? session.appliedProposalId ?? activeProposal.id,
+        prop: propSpec, handSide, intent, pose: activePose, metrics: activeMetrics, session: exportSession,
+        activeProposalId: showBaselinePreview ? null : activeProposal.id,
       }),
-    [activeMetrics, activePose, activeProposal.id, handSide, intent, previewProposal?.id, propSpec, session],
+    [activeMetrics, activePose, activeProposal.id, handSide, intent, propSpec, exportSession, showBaselinePreview],
   );
 
   const handleSelectProp = (nextPropId: HandPropId): void => {
@@ -335,7 +349,7 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
     setShowBaselinePreview(false);
     setStatusMessage(
       next.previewingProposalId
-        ? pick(`'${proposal.titleKo}' 미리보기 중입니다. 원본 손 포즈는 아직 바뀌지 않았습니다.`, `Previewing '${proposal.titleEn}'. Baseline hand pose remains untouched.`)
+        ? pick(`'${proposal.titleKo}' 예제 미리보기 중입니다. 기준 예제 포즈는 유지합니다.`, `Previewing '${proposal.titleEn}'. The example baseline is unchanged.`)
         : pick("미리보기를 닫았습니다.", "Closed grip preview."),
     );
   };
@@ -343,39 +357,46 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
   const handleApplyProposal = (proposal: HandPropGripProposal): void => {
     const poseToCommit = activeProposal.id === proposal.id && hasActiveTweaks(tweaks) ? activePose : proposal.pose;
     const next = applyHandGripProposal(session, proposal, poseToCommit);
-    setSession(next);
-    setTweaks(ZERO_TWEAKS);
-    setShowBaselinePreview(false);
-    onApply?.(proposal, poseToCommit, next);
-    setStatusMessage(pick(`작가 승인으로 '${proposal.titleKo}'을 비파괴 적용했습니다. 언제든 원본으로 되돌릴 수 있습니다.`, `Applied '${proposal.titleEn}' non-destructively. Baseline remains restorable.`));
+    setStatusMessage("");
+    delivery.run(() => onApply?.(proposal, poseToCommit, next), () => {
+      setSession(next); setTweaks(ZERO_TWEAKS); setShowBaselinePreview(false);
+      setStatusMessage(pick("선택한 예제 포즈를 적용했습니다. 외부 3D 장면 변경·저장은 확인하지 않습니다.", "Applied the example pose. External 3D scene changes and saving are unverified."));
+    });
   };
 
   const handleRevert = (): void => {
     const next = revertHandGripProposal(session);
-    setSession(next);
-    setTweaks(ZERO_TWEAKS);
-    setShowBaselinePreview(true);
-    onRevert?.(next);
-    setStatusMessage(pick("원본 컷의 기본 손 포즈로 되돌렸습니다.", "Reverted hand rig to the original baseline pose."));
+    setStatusMessage("");
+    delivery.run(() => onRevert?.(next), () => {
+      setSession(next); setTweaks(ZERO_TWEAKS); setShowBaselinePreview(true);
+      setPropId(next.current.propId); setHandSide(next.current.handSide); setIntent(next.current.intent);
+      setStatusMessage(pick("예제 기준 손으로 되돌렸습니다. 실제 원본 복원·저장은 확인하지 않습니다.", "Restored the example baseline. Original scene restoration and saving are unverified."));
+    });
   };
 
   const handleResetAll = (): void => {
+    setStatusMessage("");
+    delivery.run(() => session.canRevert ? onRevert?.(revertHandGripProposal(session)) : undefined, () => {
     setPropId(initialPropId);
     setHandSide(initialHandSide);
     setIntent(initialGripIntent);
     setTweaks(ZERO_TWEAKS);
     setShowBaselinePreview(false);
     setSession(createHandGripSessionState(createBaselineHandSnapshot(initialPropId, initialHandSide, initialGripIntent)));
-    setStatusMessage(pick("소품 선택, 관절 보정, 적용 상태를 초기값으로 복원했습니다.", "Reset prop selection, fine tweaks, and session state."));
+    setStatusMessage(pick("소품·관절·적용 예제를 초기화했습니다.", "Reset prop, joint, and application examples."));
+    });
   };
 
   const handleCopyJson = (): void => {
-    onExportJson?.(jsonText, session);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(jsonText).catch(() => undefined);
-    }
     setShowJson(true);
-    setStatusMessage(pick(`15관절 핸드 리깅 JSON(${jsonText.length.toLocaleString("ko-KR")}B)을 내보냈습니다.`, `Exported 15-joint hand rig JSON (${jsonText.length.toLocaleString("en-US")} B).`));
+    setStatusMessage("");
+    delivery.run(() => {
+      if (onExportJson) return onExportJson(jsonText, exportSession);
+      if (typeof navigator === "undefined" || typeof navigator.clipboard?.writeText !== "function") throw new Error(pick("복사를 사용할 수 없습니다. JSON 미리보기에서 직접 복사해 주세요.", "Clipboard unavailable. Copy from the JSON preview."));
+      return navigator.clipboard.writeText(jsonText);
+    }, () => setStatusMessage(onExportJson
+      ? pick("JSON 전달 콜백을 완료했습니다. 저장 여부는 확인하지 않습니다.", "JSON delivery callback completed. Persistence is unverified.")
+      : pick("예제 리깅 JSON을 클립보드에 복사했습니다.", "Copied the example rig JSON to the clipboard.")));
   };
 
   const updateFingerDelta = (finger: FingerId, value: number): void => {
@@ -383,15 +404,15 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
     setTweaks((prev) => ({ ...prev, fingers: { ...prev.fingers, [finger]: value } }));
   };
 
-  const sessionStateLabel = session.status === "applied"
-    ? pick("비파괴 적용됨", "Applied (Revertible)")
+  const sessionStateLabel = hasActiveTweaks(tweaks) ? pick("미적용 관절 보정", "Unapplied Joint Tweaks") : !selectionMatchesSession && session.canRevert ? pick("이전 대상 예제 적용 이력", "Previous example target applied") : session.status === "applied"
+    ? pick("예제 적용됨", "Example Applied")
     : session.status === "previewing"
       ? pick("미리보기 중", "Previewing")
       : session.status === "reverted"
-        ? pick("원본 되돌림 완료", "Reverted to Baseline")
-        : pick("원본 유지 중", "Baseline Intact");
+      ? pick("예제 기준 되돌림 완료", "Example Baseline Restored")
+        : pick("예제 기준 유지 중", "Example Baseline Intact");
 
-  const activeStageLabel = showBaselinePreview
+  const activeStageLabel = hasActiveTweaks(tweaks) ? pick("미적용 예제 관절 보정", "Unapplied Example Joint Tweaks") : showBaselinePreview
     ? (isEn ? session.current.labelEn : session.current.labelKo)
     : previewProposal
       ? pick(`미리보기 (미적용) · ${previewProposal.titleKo}`, `Previewing (Uncommitted) · ${previewProposal.titleEn}`)
@@ -403,7 +424,7 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
     ? pick("관통 주의", "Overlap Risk")
     : activeMetrics.penetrationRisk === "tight"
       ? pick("밀착 경계", "Tight Clearance")
-      : pick("관통 없음", "Collision Clear");
+      : pick("각도 기준 위험 낮음 · 메시 미검증", "Low Angle Risk · Mesh Unchecked");
 
   const wristSliders = [
     { key: "wristFlexionDelta" as const, testId: "autogrip-slider-wrist-flexion", labelKo: "손목 굴곡", labelEn: "Wrist Flexion", actualDeg: activePose.wrist.flexionDeg, delta: tweaks.wristFlexionDelta, min: -35, max: 35 },
@@ -416,7 +437,9 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
       data-testid="studio-hand-prop-autogrip-panel"
       aria-label={pick("손·소품 상호작용 자동 그립 제안기", "Hand-to-Prop Auto-Grip Assistant")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
+      aria-busy={delivery.pending}
     >
+      <fieldset disabled={delivery.pending} className="contents space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -435,10 +458,10 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
           <h2 className="text-lg font-bold tracking-tight text-fg [word-break:keep-all]">
             {pick("3D 소품 기반 15관절 손 파지 자동 제안 및 관절 미세 보정", "3D Prop 15-Joint Hand Auto-Grip & Joint Micro-Tweak")}
           </h2>
-          <p className="text-xs text-fg-2 [word-break:keep-all]">
+          <p data-testid="autogrip-example-disclosure" className="text-xs text-fg-2 [word-break:keep-all]">
             {pick(
-              "웹툰 실전 3D 소품 8종의 물리 지름과 충돌 반경을 계산해 관통 없는 Top-3 손 파지안을 제안합니다. 미리보기 후 선택 적용하고 언제든 원본 손으로 되돌릴 수 있습니다.",
-              "Computes collision-aware Top-3 15-joint hand grips for 8 webtoon props with non-destructive preview, selective apply, and instant revert.",
+              "고정 소품 8종과 관절 각도로 계산하는 합성 SVG 예제입니다. 실제 3D 메시·캐릭터 원본을 읽거나 충돌·장면 적용·원고 저장을 검증하지 않습니다. 콜백 완료도 외부 반영·저장 확인을 뜻하지 않습니다.",
+              "Synthetic SVG examples using 8 fixed props and joint angles. Real 3D meshes and original characters are not read; collisions, scene application and manuscript saving are unverified. Callback completion does not confirm external changes or persistence.",
             )}
           </p>
         </div>
@@ -446,7 +469,7 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" data-testid="autogrip-revert-btn" disabled={!session.canRevert} onClick={handleRevert} className={BTN_OUTLINE}>
             <Undo2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {pick("원본 되돌리기", "Revert")}
+            {pick("예제 기준 되돌리기", "Restore Example")}
           </button>
           <button type="button" data-testid="autogrip-export-json-btn" onClick={handleCopyJson} className={BTN_SOLID}>
             <Code2 className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -459,9 +482,10 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
         </div>
       </header>
 
-      {statusMessage ? (
+      {delivery.error ? <p role="alert" className="text-xs text-fg">{delivery.error} {pick("같은 버튼을 다시 눌러 재시도해 주세요.", "Use the same button to retry.")}</p> : null}
+      {statusMessage || delivery.pending ? (
         <div data-testid="autogrip-status-banner" role="status" aria-live="polite" className="rounded-lg border border-accent bg-accent-soft px-3.5 py-2 text-xs font-medium text-accent [word-break:keep-all]">
-          {statusMessage}
+          {delivery.pending ? pick("연결 요청의 완료를 기다리고 있습니다.", "Waiting for callback completion.") : statusMessage}
         </div>
       ) : null}
 
@@ -639,11 +663,11 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
 
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-lg border border-line bg-card px-2.5 py-2">
-              <div className="text-[10px] text-fg-3 [word-break:keep-all]">{pick("접촉점", "Contacts")}</div>
+              <div className="text-[10px] text-fg-3 [word-break:keep-all]">{pick("추정 접촉 손가락", "Estimated Contact Fingers")}</div>
               <div data-testid="autogrip-metric-contacts" className="mt-0.5 text-sm font-bold text-fg tabular-nums">{`${activeMetrics.contactPoints} / 5`}</div>
             </div>
             <div className="rounded-lg border border-line bg-card px-2.5 py-2">
-              <div className="text-[10px] text-fg-3 [word-break:keep-all]">{pick("관통 회피", "Clearance")}</div>
+              <div className="text-[10px] text-fg-3 [word-break:keep-all]">{pick("각도 적합 추정", "Estimated Angle Fit")}</div>
               <div data-testid="autogrip-metric-clearance" className="mt-0.5 text-sm font-bold text-fg tabular-nums">{`${activeMetrics.clearanceScore}점`}</div>
             </div>
             <div className="rounded-lg border border-line bg-card px-2.5 py-2">
@@ -662,7 +686,7 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-fg [word-break:keep-all]">{pick("Top-3 비파괴 파지 제안 (선택 시에만 적용)", "Top-3 Non-Destructive Grip Proposals")}</h3>
           <span className="text-[11px] text-fg-3 tabular-nums [word-break:keep-all]">
-            {pick(`15관절 해부학 안전 범위 자동 클램프 · ${handSide === "left" ? "왼손" : "오른손"} 기준`, `15-joint anatomical clamp active · ${handSide} hand`)}
+            {pick(`정의된 15관절 범위 제한 · ${handSide === "left" ? "왼손" : "오른손"} 예제`, `Defined 15-joint limits · ${handSide} hand example`)}
           </span>
         </div>
 
@@ -694,7 +718,7 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
 
                   <div className="grid grid-cols-2 gap-2 text-[11px] tabular-nums">
                     <div className="rounded-lg border border-line bg-card px-2.5 py-1.5">
-                      <span className="text-fg-3">{pick("충돌 회피", "Clearance")}</span>
+                      <span className="text-fg-3">{pick("각도 적합 추정", "Estimated Angle Fit")}</span>
                       <div className="font-mono font-bold text-fg">{`${proposal.clearanceScore} / 100`}</div>
                     </div>
                     <div className="rounded-lg border border-line bg-card px-2.5 py-1.5">
@@ -754,6 +778,7 @@ export function StudioHandPropAutoGripPanel(props: StudioHandPropAutoGripPanelPr
           </pre>
         ) : null}
       </div>
+      </fieldset>
     </section>
   );
 }

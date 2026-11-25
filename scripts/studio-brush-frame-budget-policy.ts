@@ -282,9 +282,9 @@ export interface StudioBrushFrameRuntimeSample {
   readonly pointerDispatchBoundary: StudioBrushPointerDispatchBoundary | null;
   readonly legacyPointerDispatch?: { readonly method: "capture-to-microtask-legacy"; readonly pointerAppendDurationsMs: readonly number[]; readonly pointerUpMainThreadMs: number | null };
   readonly pointerUpToFirstFrameMs: number | null;
-  /** Frames sampled after ink first became visible in the compositor route. */
+  /** 축소 합성한 캔버스 비트맵에서 잉크를 처음 검출한 뒤의 표본 수. */
   readonly blankFrameObservationCount: number;
-  /** Observed compositor frames that returned to the pre-stroke baseline after ink was visible. */
+  /** 잉크 검출 후 획을 그리기 전 값으로 돌아간 비트맵 표본 수. 화면 소실은 별도 표시 프레임으로 확인한다. */
   readonly blankFrameCount: number;
   /** Product-sealed canonical provider route exposed by the active selection receipt. */
   readonly observedProviderRoute: string | null;
@@ -813,13 +813,13 @@ export function evaluateStudioBrushFrameBudget(
     add(
       "error",
       "blank-frame-profile-missing",
-      `${metrics.id}: no post-ink compositor frame was sampled`,
+      `${metrics.id}: 잉크 검출 이후 캔버스 합성 표본이 없습니다`,
     );
   } else if (summary.blankFrameCount !== 0) {
     add(
       "error",
       "blank-frame",
-      `${metrics.id}: observed ${summary.blankFrameCount} blank compositor frames`,
+      `${metrics.id}: 잉크 검출 후 획 이전 값으로 돌아간 캔버스 합성 표본 ${summary.blankFrameCount}개`,
     );
   }
 

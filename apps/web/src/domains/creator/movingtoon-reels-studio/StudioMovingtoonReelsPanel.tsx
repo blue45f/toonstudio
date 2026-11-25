@@ -4,10 +4,10 @@
  */
 
 import {
-  AudioWaveform, Camera, CheckCircle2, Download, Film, Gauge,
+  AudioWaveform, Camera, CheckCircle2, Film, Gauge,
   Layers, Music2, ShieldAlert, ShieldCheck, SlidersHorizontal, Sparkles, Subtitles,
 } from "lucide-react";
-import { useId, useMemo, useState, type ReactElement } from "react";
+import { useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -34,8 +34,8 @@ export interface StudioMovingtoonReelsPanelProps {
   readonly initialAspectTarget?: ReelsAspectTarget;
   readonly initialFps?: MovingtoonFrameRate;
   readonly initialBpm?: number;
-  readonly onParallaxEvaluated?: (frame: EvaluatedParallaxFrame) => void;
-  readonly onExportSubtitles?: (payload: { readonly format: SubtitleFormatId; readonly result: SubtitleTrackExportResult }) => void;
+  readonly onParallaxEvaluated?: (frame: EvaluatedParallaxFrame) => void | Promise<void>;
+  readonly onExportSubtitles?: (payload: { readonly format: SubtitleFormatId; readonly result: SubtitleTrackExportResult }) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -85,6 +85,27 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
   const storeLang = useI18n((state) => state.lang);
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
   const pick = (ko: string, en: string): string => (isKo ? ko : en);
+
+  const callbackBusy = useRef(false);
+  const retryCallback = useRef<(() => void | Promise<void>) | null>(null);
+  const [callbackStatus, setCallbackStatus] = useState<"idle" | "pending" | "notified" | "failed">("idle");
+  const [callbackError, setCallbackError] = useState<string | null>(null);
+  // 예제 결과 알림만 재시도한다. 실패 때 계산이나 메모리 커밋을 다시 실행하지 않는다.
+  const notify = (action: (() => void | Promise<void>) | undefined): void => {
+    if (!action || callbackBusy.current) return;
+    callbackBusy.current = true;
+    retryCallback.current = action;
+    setCallbackStatus("pending");
+    setCallbackError(null);
+    const done = (): void => { callbackBusy.current = false; retryCallback.current = null; setCallbackStatus("notified"); };
+    const failed = (error: unknown): void => {
+      callbackBusy.current = false;
+      setCallbackStatus("failed");
+      setCallbackError(error instanceof Error ? error.message : pick("연결 핸들러가 실패했습니다.", "Connected handler failed."));
+    };
+    try { const result = action(); if (result) void result.then(done, failed); else done(); }
+    catch (error) { failed(error); }
+  };
 
   const [activeTab, setActiveTab] = useState<MovingtoonReelsTabId>(initialTab);
   const [sceneIdx, setSceneIdx] = useState<number>(0);
@@ -184,30 +205,34 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
   }, [duckingCurve.samples]);
 
   const handleSelectScene = (idx: number): void => {
+    if (callbackBusy.current) return;
     setSceneIdx(idx);
     setSafeOffsets({});
     const nextScene = DEFAULT_MOVINGTOON_SCENES[idx] ?? fallbackScene;
-    onParallaxEvaluated?.(evaluateParallaxFrame(nextScene, {
+    notify(onParallaxEvaluated ? () => onParallaxEvaluated(evaluateParallaxFrame(nextScene, {
       presetId, frameIndex: clampedFrameIdx, fps, aspectTarget, reducedMotion,
-    }));
+    })) : undefined);
   };
 
   const handleSelectAspect = (nextTarget: ReelsAspectTarget): void => {
+    if (callbackBusy.current) return;
     setAspectTarget(nextTarget);
     setSafeOffsets({});
-    onParallaxEvaluated?.(evaluateParallaxFrame(fallbackScene, {
+    notify(onParallaxEvaluated ? () => onParallaxEvaluated(evaluateParallaxFrame(fallbackScene, {
       presetId, frameIndex: clampedFrameIdx, fps, aspectTarget: nextTarget, reducedMotion,
-    }));
+    })) : undefined);
   };
 
   const handleSelectPreset = (nextPreset: MovingtoonCameraPresetId): void => {
+    if (callbackBusy.current) return;
     setPresetId(nextPreset);
-    onParallaxEvaluated?.(evaluateParallaxFrame(fallbackScene, {
+    notify(onParallaxEvaluated ? () => onParallaxEvaluated(evaluateParallaxFrame(fallbackScene, {
       presetId: nextPreset, frameIndex: clampedFrameIdx, fps, aspectTarget, reducedMotion, extraSafeOffsetByPlane: safeOffsets,
-    }));
+    })) : undefined);
   };
 
   const handleAutoFitSafeZone = (): void => {
+    if (callbackBusy.current) return;
     const nextOffsets: Partial<Record<ParallaxDepthPlaneId, { readonly dx: number; readonly dy: number }>> = { ...safeOffsets };
     for (const plane of evaluatedFrame.planes) {
       if (!plane.safeZoneCritical) continue;
@@ -224,28 +249,30 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
     const updated = evaluateParallaxFrame(fallbackScene, {
       presetId, frameIndex: clampedFrameIdx, fps, aspectTarget, reducedMotion, extraSafeOffsetByPlane: nextOffsets,
     });
-    onParallaxEvaluated?.(updated);
+    notify(onParallaxEvaluated ? () => onParallaxEvaluated(updated) : undefined);
   };
 
   const handleExportSubtitles = (): void => {
-    onExportSubtitles?.({ format: subtitleFormat, result: subtitleResult });
-    setLastExportLabel(
-      subtitleFormat === "vtt"
-        ? pick(`WebVTT(.vtt) ${subtitleResult.cueCount}개 큐 출고 준비 완료`, `WebVTT (.vtt) ${subtitleResult.cueCount} cues ready`)
-        : pick(`SubRip(.srt) ${subtitleResult.cueCount}개 큐 출고 준비 완료`, `SubRip (.srt) ${subtitleResult.cueCount} cues ready`),
-    );
+    if (callbackBusy.current) return;
+    if (!subtitleResult.validation.valid || !subtitleResult.vttTimecodeFormatValid || !subtitleResult.srtTimecodeFormatValid) {
+      setLastExportLabel(pick("자막 검증 실패: 원문을 확인하세요.", "Subtitle validation failed. Check the source."));
+      return;
+    }
+    const format = subtitleFormat;
+    setLastExportLabel(pick(`${format === "vtt" ? "WebVTT (.vtt)" : "SubRip (.srt)"} 문자열 생성됨. 파일 저장·다운로드는 수행하지 않습니다.`, `${format === "vtt" ? "WebVTT (.vtt)" : "SubRip (.srt)"} text generated. No file save or download is performed.`));
+    notify(onExportSubtitles ? () => onExportSubtitles({ format, result: subtitleResult }) : undefined);
   };
 
-  const tabs: readonly { readonly id: MovingtoonReelsTabId; readonly label: string; readonly icon: ReactElement }[] = [
+  const tabs: readonly { readonly id: MovingtoonReelsTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
     {
       id: "parallax-safezone",
-      label: pick("2.5D 패럴랙스 릴스 카메라 · 세이프존", "2.5D Parallax Camera & Safe-Zone"),
-      icon: <Film className="h-3.5 w-3.5" aria-hidden="true" />,
+      label: pick("2.5D 패럴랙스 릴스 카메라 · 세이프존", "2.5D Parallax Camera & Safe-Zone"), shortLabel: pick("장면·안전선", "Scene & Guides"),
+      icon: <Film className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />,
     },
     {
       id: "audio-subtitles",
-      label: pick("BPM 비트 싱크 · BGM 덕킹 · SRT/VTT 자막", "BPM Beat Sync · BGM Ducking · SRT/VTT"),
-      icon: <AudioWaveform className="h-3.5 w-3.5" aria-hidden="true" />,
+      label: pick("BPM 비트 싱크 · BGM 덕킹 · SRT/VTT 자막", "BPM Beat Sync · BGM Ducking · SRT/VTT"), shortLabel: pick("음량·자막", "Audio & Captions"),
+      icon: <AudioWaveform className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />,
     },
   ];
 
@@ -254,7 +281,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
   return (
     <section
       data-testid="movingtoon-reels-studio-panel"
-      aria-label={pick("실시간 무빙툰 릴스/쇼츠 2.5D 패럴랙스 · BPM 비트 싱크 · 자막 출고 스튜디오", "Movingtoon Reels 2.5D Parallax, BPM Beat Mastering & Subtitle Studio")}
+      aria-label={pick("패럴랙스·오디오 수치·자막 문자열 예제", "Parallax, Audio Scalar & Subtitle Text Example")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -262,35 +289,42 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-fg">
-              {pick("무빙툰 릴스/쇼츠 동시 출고 · 2.5D 패럴랙스 · BPM 오디오 마스터링", "Movingtoon Reels/Shorts · 2.5D Parallax · BPM Mastering")}
+              {pick("무빙툰 좌표·오디오 수치·자막 문자열 예제", "Movingtoon Coordinates · Audio Scalars · Subtitle Text Example")}
             </h2>
           </div>
           <p className="text-xs text-fg-2">
-            {pick("5층 깊이 패럴랙스 카메라와 9:16·16:9 세이프존을 실시간 검증하고, BPM 다운비트 스냅·-12dB BGM 덕킹·-14 LUFS 리미터·SRT/VTT 자막을 한 번에 출고합니다.", "Verify 5-plane 2.5D parallax matrices and 9:16/16:9 safe zones, then master BPM downbeat sync, -12dB ducking, -14 LUFS limiting, and SRT/VTT subtitles.")}
+            {pick("예제 장면의 변환 좌표·표본 경계와 가정 음량 수치, 자막 문자열을 CPU와 메모리에서 계산합니다. 현재 원고·GPU 렌더·PCM 오디오·MP4 인코딩·송신·영구 저장·파일 다운로드에 연결되지 않습니다.", "CPU/in-memory calculations of example scene coordinates, sampled bounds, assumed audio levels, and subtitle text. No current-manuscript binding, GPU render, PCM audio processing, MP4 encoding, sending, persistence, or file download.")}
           </p>
         </div>
         <span data-testid="badge-reels-engine-ready" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-good bg-good-soft px-2.5 py-1 text-xs font-semibold text-good tabular-nums">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          {pick(`${fps}fps · 5층 2.5D · -14 LUFS`, `${fps}fps · 5-Plane 2.5D · -14 LUFS`)}
+          {pick(`${fps}fps 좌표 표본 · 목표 -14 LUFS`, `${fps}fps coordinates · target -14 LUFS`)}
         </span>
       </header>
+
+      {callbackStatus !== "idle" && (
+        <div role={callbackStatus === "failed" ? "alert" : "status"} data-testid="example-callback-status" className="rounded-lg border border-line bg-card p-3 text-xs text-fg">
+          {callbackStatus === "pending" ? pick("연결 핸들러 응답 대기 중", "Waiting for connected handler") : callbackStatus === "failed" ? pick(`결과 알림 실패: ${callbackError}`, `Result notification failed: ${callbackError}`) : pick("연결 핸들러가 응답했습니다. 실제 저장·실행·출고 완료를 뜻하지 않습니다.", "Handler responded. This does not confirm persistence, execution, or delivery.")}
+          {callbackStatus === "failed" && <button type="button" className={PILL_BTN} onClick={() => notify(retryCallback.current ?? undefined)}>{pick("결과 알림 다시 시도", "Retry notification")}</button>}
+        </div>
+      )}
 
       <div role="tablist" aria-label={pick("무빙툰 릴스 작업 탭", "Movingtoon Reels Workbench Tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? SOLID_ACTIVE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>
 
       {activeTab === "parallax-safezone" && (
-        <div role="tabpanel" id={`${uid}-panel-parallax-safezone`} aria-labelledby={`${uid}-tab-parallax-safezone`} data-testid="panel-parallax-safezone" className="space-y-4">
+        <fieldset disabled={callbackStatus === "pending"} aria-busy={callbackStatus === "pending"} role="tabpanel" id={`${uid}-panel-parallax-safezone`} aria-labelledby={`${uid}-tab-parallax-safezone`} data-testid="panel-parallax-safezone" className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-card p-3">
             <div className="flex flex-wrap gap-2">
               {DEFAULT_MOVINGTOON_SCENES.map((scene, idx) => (
@@ -351,7 +385,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
             <div className="space-y-2 rounded-lg border border-line bg-card p-3">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
                 <SlidersHorizontal className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>{pick("출고 화면비 · 플랫폼 세이프존 프로파일", "Aspect Ratio & Platform Safe-Zone")}</span>
+                <span>{pick("예제 화면비 · 플랫폼 경계 가정값", "Example Aspect & Assumed Platform Bounds")}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {ASPECT_TARGETS.map((target) => {
@@ -392,7 +426,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
               </div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("세이프존 판정", "Safe-Zone Status")}</div>
+              <div className="text-[11px] text-fg-3">{pick("현재 프레임 경계 판정", "Current-Frame Bounds")}</div>
               <div className="mt-1 flex items-center gap-1.5">
                 <span data-testid="safezone-status-badge" className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums ${safeZoneTone(evaluatedFrame.safeZone.status)}`}>
                   {evaluatedFrame.safeZone.passed ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -401,13 +435,13 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
               </div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("전 구간 표본 검사", "Full-Clip Sample Audit")}</div>
+              <div className="text-[11px] text-fg-3">{pick("9개 표본 검사 (전 프레임 아님)", "9-Frame Sample Audit (Not All Frames)")}</div>
               <div data-testid="sequence-audit-readout" className="mt-1 text-sm font-bold text-fg tabular-nums">
                 {sequenceAudit.offendingFrameIndices.length} / {sequenceAudit.sampledFrameCount} {pick("프레임 침범", "frames hit")}
               </div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("출고 해상도", "Output Resolution")}</div>
+              <div className="text-[11px] text-fg-3">{pick("예제 좌표계 크기", "Example Coordinate Size")}</div>
               <div className="mt-1 text-sm font-bold text-fg tabular-nums">
                 {aspectProfile.widthPx}×{aspectProfile.heightPx} ({aspectProfile.aspectRatioLabel})
               </div>
@@ -418,7 +452,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
             <div className="space-y-2 rounded-lg border border-line bg-card p-3 lg:col-span-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-xs font-semibold text-fg">
-                  {pick("실시간 2.5D 프리뷰 · 세이프존 오버레이", "Live 2.5D Stage & Safe-Zone Overlay")}
+                  {pick("투영 경계 사각형 예제 · 실제 그림·회전·블러 렌더 없음", "Projected Bounds Diagram · No Image, Rotation, or Blur Render")}
                 </h3>
                 {!evaluatedFrame.safeZone.passed && (
                   <button
@@ -426,7 +460,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
                     className={`${PILL_BTN} ${SOLID_ACTIVE}`}
                   >
                     <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>{pick("세이프존 자동 보정 적용", "Auto-Fit Safe Zone")}</span>
+                    <span>{pick("예제 경계 위치 보정", "Adjust Example Bounds")}</span>
                   </button>
                 )}
               </div>
@@ -489,7 +523,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
                 </ul>
               ) : (
                 <div data-testid="safezone-clean-banner" className="rounded-md border border-good bg-good-soft px-2.5 py-2 text-xs font-semibold text-good">
-                  {pick("우측 좋아요 레일·하단 캡션·플레이어 바 가림 0건 — 릴스/쇼츠 즉시 출고 가능", "0 UI overlaps across action rails & captions — ready for export")}
+                  {pick("현재 프레임 예제 경계 통과. 표본 사이 프레임과 실제 영상은 검증하지 않았습니다.", "Current-frame example bounds pass. Unsampled frames and actual video are unverified.")}
                 </div>
               )}
             </div>
@@ -523,11 +557,11 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
               </ul>
             </div>
           </div>
-        </div>
+        </fieldset>
       )}
 
       {activeTab === "audio-subtitles" && (
-        <div role="tabpanel" id={`${uid}-panel-audio-subtitles`} aria-labelledby={`${uid}-tab-audio-subtitles`} data-testid="panel-audio-subtitles" className="space-y-4">
+        <fieldset disabled={callbackStatus === "pending"} aria-busy={callbackStatus === "pending"} role="tabpanel" id={`${uid}-panel-audio-subtitles`} aria-labelledby={`${uid}-tab-audio-subtitles`} data-testid="panel-audio-subtitles" className="min-w-0 space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-2.5 rounded-lg border border-line bg-card p-3">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
@@ -625,16 +659,16 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
               </div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("마스터 통합 라우드니스", "Master Integrated LUFS")}</div>
+              <div className="text-[11px] text-fg-3">{pick("가정 수치의 예상 LUFS", "Estimated Scalar LUFS")}</div>
               <div data-testid="kpi-master-lufs" className="mt-1 text-sm font-bold text-fg tabular-nums">
                 {loudnessReport.masteredIntegratedLufs.toFixed(1)} LUFS
               </div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("True-Peak 리미터 프리플라이트", "True-Peak Limiter Preflight")}</div>
+              <div className="text-[11px] text-fg-3">{pick("입력 수치 기반 피크 추정", "Scalar Peak Estimate")}</div>
               <div className="mt-1">
                 <span data-testid="kpi-true-peak-badge" className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums ${loudnessTone(loudnessReport.status)}`}>
-                  {loudnessReport.masteredTruePeakDbtp.toFixed(1)} dBTP · {loudnessReport.status === "pass" ? pick("적합", "Pass") : loudnessReport.status === "adjust" ? pick("조정", "Adjust") : pick("클리핑 위험", "Clip Risk")}
+                  {loudnessReport.masteredTruePeakDbtp.toFixed(1)} dBTP · {loudnessReport.status === "pass" ? pick("예상 범위 충족", "Estimated Pass") : loudnessReport.status === "adjust" ? pick("조정", "Adjust") : pick("클리핑 위험", "Clip Risk")}
                 </span>
               </div>
             </div>
@@ -688,7 +722,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
                 <Subtitles className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>{pick("WebVTT(.vtt) · SubRip(.srt) 자막 트랙 익스포터", "WebVTT (.vtt) & SubRip (.srt) Subtitle Exporter")}</span>
+                <span>{pick("WebVTT(.vtt) · SubRip(.srt) 문자열 생성기", "WebVTT (.vtt) & SubRip (.srt) Text Generator")}</span>
               </div>
               <span data-testid="subtitle-validation-badge" className="inline-flex items-center gap-1 rounded-full border border-good bg-good-soft px-2.5 py-0.5 text-xs font-semibold text-good tabular-nums">
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -711,9 +745,9 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
               <button type="button" data-testid="btn-toggle-speaker" aria-pressed={includeSpeaker} onClick={() => setIncludeSpeaker((p) => !p)} className={`${PILL_BTN} ${includeSpeaker ? ACTIVE_TONE : IDLE_TONE}`}>
                 {pick("화자 표기", "Speaker Tag")}: {includeSpeaker ? "ON" : "OFF"}
               </button>
-              <button type="button" data-testid="btn-export-subtitles" onClick={handleExportSubtitles} className={`${PILL_BTN} ${SOLID_ACTIVE}`}>
-                <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{pick("자막 트랙 출고 확정", "Export Subtitle Track")}</span>
+              <button type="button" data-testid="btn-export-subtitles" onClick={handleExportSubtitles} disabled={!subtitleResult.validation.valid || !subtitleResult.vttTimecodeFormatValid || !subtitleResult.srtTimecodeFormatValid} className={`${PILL_BTN} ${SOLID_ACTIVE}`}>
+                <Subtitles className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{onExportSubtitles ? pick("자막 문자열 알림", "Notify Subtitle Text") : pick("자막 문자열 확인", "Inspect Subtitle Text")}</span>
               </button>
             </div>
 
@@ -727,7 +761,7 @@ export function StudioMovingtoonReelsPanel(props: StudioMovingtoonReelsPanelProp
               {subtitleFormat === "vtt" ? subtitleResult.vttContent : subtitleResult.srtContent}
             </pre>
           </div>
-        </div>
+        </fieldset>
       )}
     </section>
   );

@@ -8,7 +8,7 @@ import {
   GitMerge, HardDrive, Layers, MessageSquare, Play, RefreshCw, RotateCcw,
   Server, ShieldCheck, Sparkles, Zap,
 } from "lucide-react";
-import { useId, useMemo, useState, type ReactElement } from "react";
+import { useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -36,8 +36,8 @@ export interface StudioRenderFarmVcsPanelProps {
   readonly className?: string;
   readonly initialTab?: RenderFarmVcsTabId;
   readonly initialMemoryBudgetMb?: number;
-  readonly onRenderTelemetryChange?: (telemetry: RenderFarmTelemetry) => void;
-  readonly onRepositoryChange?: (repo: SemanticVcsRepository) => void;
+  readonly onRenderTelemetryChange?: (telemetry: RenderFarmTelemetry) => void | Promise<void>;
+  readonly onRepositoryChange?: (repo: SemanticVcsRepository) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -87,6 +87,27 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
   const pick = (ko: string, en: string): string => (isKo ? ko : en);
 
+  const callbackBusy = useRef(false);
+  const retryCallback = useRef<(() => void | Promise<void>) | null>(null);
+  const [callbackStatus, setCallbackStatus] = useState<"idle" | "pending" | "notified" | "failed">("idle");
+  const [callbackError, setCallbackError] = useState<string | null>(null);
+  // 예제 결과 알림만 재시도한다. 실패 때 계산이나 메모리 커밋을 다시 실행하지 않는다.
+  const notify = (action: (() => void | Promise<void>) | undefined): void => {
+    if (!action || callbackBusy.current) return;
+    callbackBusy.current = true;
+    retryCallback.current = action;
+    setCallbackStatus("pending");
+    setCallbackError(null);
+    const done = (): void => { callbackBusy.current = false; retryCallback.current = null; setCallbackStatus("notified"); };
+    const failed = (error: unknown): void => {
+      callbackBusy.current = false;
+      setCallbackStatus("failed");
+      setCallbackError(error instanceof Error ? error.message : pick("연결 핸들러가 실패했습니다.", "Connected handler failed."));
+    };
+    try { const result = action(); if (result) void result.then(done, failed); else done(); }
+    catch (error) { failed(error); }
+  };
+
   const [activeTab, setActiveTab] = useState<RenderFarmVcsTabId>(initialTab);
   const [memoryBudgetMb, setMemoryBudgetMb] = useState<number>(initialMemoryBudgetMb);
   const [farmState, setFarmState] = useState<RenderFarmState>(() =>
@@ -98,6 +119,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
   const [resolutionChoices, setResolutionChoices] = useState<Readonly<Record<string, MergeResolutionChoice>>>({});
   const [manualTexts, setManualTexts] = useState<Readonly<Record<string, string>>>({});
   const [vcsNotice, setVcsNotice] = useState<string | null>(null);
+  const [vcsError, setVcsError] = useState(false);
 
   const dagValidation = useMemo(() => validateRenderPassDag(), []);
   const telemetry = useMemo<RenderFarmTelemetry>(() => computeRenderFarmTelemetry(farmState), [farmState]);
@@ -123,14 +145,17 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
   }, [effectiveCompareBranch, repo]);
 
   const updateFarm = (next: RenderFarmState): void => {
+    if (callbackBusy.current) return;
     setFarmState(next);
-    onRenderTelemetryChange?.(computeRenderFarmTelemetry(next));
+    notify(onRenderTelemetryChange ? () => onRenderTelemetryChange(computeRenderFarmTelemetry(next)) : undefined);
   };
 
   const updateRepo = (next: SemanticVcsRepository, noticeText: string): void => {
+    if (callbackBusy.current) return;
     setRepo(next);
-    setVcsNotice(noticeText);
-    onRepositoryChange?.(next);
+    setVcsError(false);
+    setVcsNotice(pick("메모리 예제: ", "In-memory example: ") + noticeText);
+    notify(onRepositoryChange ? () => onRepositoryChange(next) : undefined);
   };
 
   const handleBudgetMode = (budgetMb: number): void => {
@@ -159,6 +184,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
       switchToNew: true,
     });
     if (next === repo) {
+      setVcsError(true);
       setVcsNotice(pick("이미 존재하거나 유효하지 않은 브랜치 이름입니다.", "Branch already exists or name is invalid."));
       return;
     }
@@ -189,10 +215,12 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
     const resolutions: ConflictResolutionInput[] = mergePlan.conflicts.map((conflict) => {
       const choice: MergeResolutionChoice = resolutionChoices[conflict.conflictId] ?? "ours";
       const fallbackManual = conflict.oursBalloon?.text ?? conflict.theirsBalloon?.text ?? pick("병합 수정 대사", "Merged line");
-      const manualText = manualTexts[conflict.conflictId]?.trim() || fallbackManual;
+      const manualText = manualTexts[conflict.conflictId] ?? fallbackManual;
       return { conflictId: conflict.conflictId, choice, manualText };
     });
-    const merged = resolveMergeConflictsAndCommit(repo, mergePlan, resolutions);
+    let merged: ReturnType<typeof resolveMergeConflictsAndCommit>;
+    try { merged = resolveMergeConflictsAndCommit(repo, mergePlan, resolutions); }
+    catch (error) { setVcsError(true); setVcsNotice(error instanceof Error ? error.message : pick("병합 실패", "Merge failed")); return; }
     setResolutionChoices({});
     setManualTexts({});
     updateRepo(
@@ -225,15 +253,15 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
     return kind === "removed" ? pick("삭제", "Removed") : pick("수정", "Modified");
   };
 
-  const tabs: readonly { readonly id: RenderFarmVcsTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "render-farm", label: pick("6패스 분산 렌더팜 · 장애복구", "6-Pass Render Farm & Failover"), icon: <Cpu className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "semantic-vcs", label: pick("시맨틱 브랜치 · 컷 Diff · 3-Way 병합", "Semantic Branch · Cut Diff · 3-Way Merge"), icon: <GitBranch className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: RenderFarmVcsTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "render-farm", label: pick("6패스 분산 렌더팜 예제 · 장애복구", "6-Pass Render Farm & Failover Example"), shortLabel: pick("렌더 일정", "Schedule"), icon: <Cpu className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "semantic-vcs", label: pick("시맨틱 브랜치 · 컷 Diff · 3-Way 병합", "Semantic Branch · Cut Diff · 3-Way Merge"), shortLabel: pick("컷 병합", "Cut Merge"), icon: <GitBranch className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   return (
     <section
       data-testid="renderfarm-semantic-vcs-panel"
-      aria-label={pick("원클릭 6패스 분산 렌더팜 스케줄러 및 웹툰 시맨틱 버전 제어", "One-Click 6-Pass Distributed Render Farm & Semantic Comic VCS")}
+      aria-label={pick("6패스 스케줄러·시맨틱 VCS 메모리 예제", "6-Pass Scheduler & Semantic VCS In-Memory Example")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -241,13 +269,13 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-fg">
-              {pick("분산 6패스 렌더팜 · 에지 헬스 진단 · 컷·말풍선 시맨틱 VCS", "6-Pass Distributed Render Farm · Edge Health · Semantic Cut VCS")}
+              {pick("6패스 스케줄링 · 가정 노드 진단 · 시맨틱 VCS 예제", "6-Pass Scheduling · Assumed Nodes · Semantic VCS Example")}
             </h2>
           </div>
           <p className="text-xs text-fg-2">
             {pick(
-              "선화→밑색→그림자→조명→특수효과→식자 6패스 DAG를 작업 훔치기와 메모리 백프레셔로 분산 렌더링하고, 컷·레이어·말풍선 단위 3-Way 병합과 결정론적 롤백을 수행합니다.",
-              "Run 6-pass DAG rendering with work-stealing, memory backpressure, checkpoint failover, and cut/layer/balloon 3-way semantic version control.",
+              "CPU와 메모리에서 예제 DAG·장애복구·3-Way 병합을 계산합니다. 노드·RTT·처리량·메모리 수치는 가정값과 모델 계산이며 실측이 아닙니다. 현재 원고, GPU 렌더, 원격 송신·서버 ACK, OPFS 영구 저장에 연결되지 않습니다.",
+              "CPU/in-memory examples of DAG scheduling, failover, and 3-way merge. Nodes, RTT, throughput, and memory are assumptions/model calculations, not measurements. No current-manuscript binding, GPU rendering, remote send/server ACK, or OPFS persistence.",
             )}
           </p>
         </div>
@@ -256,29 +284,36 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
           className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums ${gradeTone(telemetry.edgeHealth.grade)}`}
         >
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          {pick(`에지 ${telemetry.edgeHealth.grade}등급 · ${repo.activeBranch}`, `Edge ${telemetry.edgeHealth.grade} · ${repo.activeBranch}`)}
+          {pick(`가정 노드 ${telemetry.edgeHealth.grade}등급 · ${repo.activeBranch}`, `Assumed nodes ${telemetry.edgeHealth.grade} · ${repo.activeBranch}`)}
         </span>
       </header>
+
+      {callbackStatus !== "idle" && (
+        <div role={callbackStatus === "failed" ? "alert" : "status"} data-testid="example-callback-status" className="rounded-lg border border-line bg-card p-3 text-xs text-fg">
+          {callbackStatus === "pending" ? pick("연결 핸들러 응답 대기 중", "Waiting for connected handler") : callbackStatus === "failed" ? pick(`결과 알림 실패: ${callbackError}`, `Result notification failed: ${callbackError}`) : pick("연결 핸들러가 응답했습니다. 실제 저장·실행·출고 완료를 뜻하지 않습니다.", "Handler responded. This does not confirm persistence, execution, or delivery.")}
+          {callbackStatus === "failed" && <button type="button" className={ACTION_BTN} onClick={() => notify(retryCallback.current ?? undefined)}>{pick("결과 알림 다시 시도", "Retry notification")}</button>}
+        </div>
+      )}
 
       <div role="tablist" aria-label={pick("렌더팜 및 시맨틱 VCS 탭", "Render farm and semantic VCS tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? ACTIVE_TONE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>
 
       {activeTab === "render-farm" && (
-        <div role="tabpanel" id={`${uid}-panel-render-farm`} aria-labelledby={`${uid}-tab-render-farm`} data-testid="panel-render-farm" className="space-y-4">
+        <fieldset disabled={callbackStatus === "pending"} aria-busy={callbackStatus === "pending"} role="tabpanel" id={`${uid}-panel-render-farm`} aria-labelledby={`${uid}-tab-render-farm`} data-testid="panel-render-farm" className="min-w-0 space-y-4">
           <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-xs text-fg-3">{pick("6패스 전체 진행률 / ETA", "6-Pass Progress / ETA")}</div>
+              <div className="text-xs text-fg-3">{pick("예제 진행률 / 계산 ETA", "Example Progress / Model ETA")}</div>
               <div data-testid="farm-progress-pct" className="mt-1 text-base font-bold text-fg tabular-nums">
                 {telemetry.overallProgressPct}% · {formatEtaMs(telemetry.estimatedRemainingMs, isKo)}
               </div>
@@ -288,7 +323,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
             </div>
 
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-xs text-fg-3">{pick("처리량 · 작업 훔치기", "Throughput · Work-Steals")}</div>
+              <div className="text-xs text-fg-3">{pick("가정 처리량 · 작업 훔치기", "Model Throughput · Work-Steals")}</div>
               <div data-testid="farm-throughput" className="mt-1 text-base font-bold text-fg tabular-nums">
                 {telemetry.throughputChunksPerSec} {pick("청크/초", "ch/s")}
               </div>
@@ -314,7 +349,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
 
             <div className="rounded-lg border border-line bg-card p-3">
               <div className="flex items-center justify-between gap-1 text-xs text-fg-3">
-                <span>{pick("초저지연 에지 진단", "Ultra-Low Edge Health")}</span>
+                <span>{pick("가정 RTT 진단", "Assumed RTT Diagnostics")}</span>
                 <span data-testid="edge-grade-badge" className={`rounded border px-1.5 py-0.5 text-xs font-semibold ${gradeTone(telemetry.edgeHealth.grade)}`}>
                   {telemetry.edgeHealth.grade}
                 </span>
@@ -331,7 +366,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" data-testid="btn-run-six-pass" onClick={handleRunSixPass} className={`${ACTION_BTN} ${PRIMARY_TONE}`}>
               <Play className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{pick("원클릭 6패스 실행", "One-Click 6-Pass Run")}</span>
+              <span>{pick("6패스 예제 계산", "Calculate 6-Pass Example")}</span>
             </button>
             <button type="button" data-testid="btn-step-tick" onClick={handleStepTick} className={`${ACTION_BTN} ${IDLE_TONE}`}>
               <Zap className="h-3.5 w-3.5" aria-hidden="true" />
@@ -339,7 +374,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
             </button>
             <button type="button" data-testid="btn-save-checkpoint" onClick={handleSaveCheckpoint} className={`${ACTION_BTN} ${IDLE_TONE}`}>
               <HardDrive className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{pick("체크포인트 저장", "Save Checkpoint")}</span>
+              <span>{pick("메모리 체크포인트 기록", "Record In-Memory Checkpoint")}</span>
             </button>
             <button type="button" data-testid="btn-reset-farm" onClick={handleResetFarm} className={`${ACTION_BTN} ${IDLE_TONE}`}>
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
@@ -401,7 +436,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-1.5 text-xs font-semibold text-fg">
                 <Server className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>{pick("분산 WebGPU · 에지 노드 헬스 진단 및 장애 주입", "Distributed WebGPU & Edge Node Diagnostics")}</span>
+                <span>{pick("가정 WebGPU·에지 노드 상태 및 장애 예제", "Assumed WebGPU/Edge Node State & Failure Example")}</span>
               </h3>
               <span className="text-xs text-fg-3 tabular-nums">
                 {pick(`평균 지터 ${telemetry.edgeHealth.avgJitterMs}ms`, `Avg Jitter ${telemetry.edgeHealth.avgJitterMs}ms`)}
@@ -445,12 +480,12 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
             <div className="flex items-center justify-between text-xs font-semibold text-fg">
               <span>{pick("결정론적 체크포인트 및 재개 지점", "Deterministic Checkpoints & Resume")}</span>
               <span data-testid="checkpoint-count" className="text-fg-2 tabular-nums">
-                {farmState.checkpoints.length}{pick("개 저장됨", " saved")}
+                {farmState.checkpoints.length}{pick("개 메모리에 기록됨", " recorded in memory")}
               </span>
             </div>
             {farmState.checkpoints.length === 0 ? (
               <p className="text-xs text-fg-3">
-                {pick("패스가 완료되거나 '체크포인트 저장'을 누르면 결정론 해시 기반 재개 스냅샷이 기록됩니다.", "Complete a pass or save a checkpoint to record a deterministic resume snapshot.")}
+                {pick("패스가 완료되거나 '메모리 체크포인트 기록'을 누르면 결정론 해시 기반 재개 스냅샷이 기록됩니다.", "Complete a pass or save a checkpoint to record a deterministic resume snapshot.")}
               </p>
             ) : (
               <div className="space-y-1.5">
@@ -475,14 +510,14 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
               </div>
             )}
           </div>
-        </div>
+        </fieldset>
       )}
 
       {activeTab === "semantic-vcs" && (
-        <div role="tabpanel" id={`${uid}-panel-semantic-vcs`} aria-labelledby={`${uid}-tab-semantic-vcs`} data-testid="panel-semantic-vcs" className="space-y-4">
+        <fieldset disabled={callbackStatus === "pending"} aria-busy={callbackStatus === "pending"} role="tabpanel" id={`${uid}-panel-semantic-vcs`} aria-labelledby={`${uid}-tab-semantic-vcs`} data-testid="panel-semantic-vcs" className="min-w-0 space-y-4">
           {vcsNotice && (
-            <div data-testid="vcs-notice-banner" role="status" className="flex items-center gap-2 rounded-lg border border-good bg-good-soft px-3 py-2 text-xs font-semibold text-good">
-              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <div data-testid="vcs-notice-banner" role={vcsError ? "alert" : "status"} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${vcsError ? "border-bad bg-bad-soft text-bad" : "border-good bg-good-soft text-good"}`}>
+              {vcsError ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />}
               <span>{vcsNotice}</span>
             </div>
           )}
@@ -722,7 +757,7 @@ export function StudioRenderFarmVcsPanel(props: StudioRenderFarmVcsPanelProps): 
               ))}
             </div>
           </div>
-        </div>
+        </fieldset>
       )}
     </section>
   );

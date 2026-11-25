@@ -1,12 +1,17 @@
 /**
- * 온디바이스 차등 프라이버시(DP-SGD) 화풍 LoRA 학습 · FedAvg 다중 기기 안전 병합 엔진 (Wave 41A).
+ * CPU 저랭크 MSE 업데이트·결정론 노이즈·가정 예산·FedAvg 수치 예제 (Wave 41A).
  * - 순수 TypeScript Float32Array 저랭크 어댑터(ΔW = (alpha / r) · A · B, rank r = 4 | 8 | 16)
- * - 원본 원고 픽셀 0-byte raw egress 보증(픽셀은 로컬 메모리에서만 특징 추출 후 폐기)
+ * - 원본은 읽기만 하며 패킷에 넣지 않는다. 네트워크 관찰·원격 학습·DP 보증·원고 적용은 없다.
  * - L2 그래디언트 클리핑 + 결정론적 가우시안 노이즈 + Rényi DP(RDP) 누적 예산(epsilon, delta) 회계
  * - FedAvg 샘플 가중 다중 기기 델타 병합 + SHA-256/노름 비잔틴 방어 검증
  */
 
-import { computeSha256Hex, computeSha256HexFromText } from "./semantic-resource-streamer";
+import { computeEffectiveDeltaW, computeFloat32L2Norm, forwardLoraAdapter } from "./lora-math";
+import { assertPrivacyConfig, assertTrainingInput, requireFinite, requireId, requireInteger } from "./lora-input-contract";
+import { exportFederatedLoraDelta } from "./federated-lora-packets";
+
+export { computeEffectiveDeltaW, computeFloat32L2Norm, forwardLoraAdapter } from "./lora-math";
+export { aggregateFederatedLoraDeltas, exportFederatedLoraDelta, verifyZeroRawEgress } from "./federated-lora-packets";
 
 export type LoraRank = 4 | 8 | 16;
 export type StylePresetId = "ink-sharp-action" | "pastel-romance-wash" | "noir-crosshatch";
@@ -81,7 +86,8 @@ export interface ZeroRawEgressAudit {
   readonly rawPixelBytesTransmitted: 0;
   readonly deltaPayloadBytes: number;
   readonly containsRawPixels: false;
-  readonly privacyGuarantee: "dp-sgd-gradient-only";
+  readonly privacyGuarantee: "unverified-deterministic-example";
+  readonly privacyVerified: false;
 }
 
 export interface FederatedLoraDeltaPacket {
@@ -89,6 +95,7 @@ export interface FederatedLoraDeltaPacket {
   readonly deviceId: string;
   readonly deviceLabel: string;
   readonly baseAdapterId: string;
+  readonly baseFingerprintSha256: string;
   readonly inDim: number;
   readonly outDim: number;
   readonly rank: LoraRank;
@@ -107,6 +114,8 @@ export interface FederatedLoraDeltaPacket {
 }
 
 export interface ZeroRawEgressVerification {
+  readonly verificationKind: "packet-shape-and-checksum-only";
+  readonly privacyVerified: false;
   readonly valid: boolean;
   readonly reasons: readonly string[];
 }
@@ -196,9 +205,12 @@ function logAddExp(a: number, b: number): number {
   return !Number.isFinite(hi) || !Number.isFinite(lo) ? hi : hi + Math.log1p(Math.exp(lo - hi));
 }
 
-/** 단일 DP-SGD 스텝의 차수별 Rényi DP(RDP) 증가량을 계산한다. */
+/** 가정 RDP 비용을 계산한다. 결정론 예제이며 실제 프라이버시 회계를 검증한 것이 아니다. */
 export function computeStepRdpIncrement(orderAlpha: number, noiseMultiplier: number, samplingRate: number): number {
-  const sigma = Math.max(0.05, noiseMultiplier);
+  requireFinite(orderAlpha, "RDP 차수", 2, 64);
+  requireFinite(noiseMultiplier, "노이즈 가정값", 0.05, 100);
+  requireFinite(samplingRate, "샘플링 가정값", 1e-4, 1);
+  const sigma = noiseMultiplier;
   const q = Math.min(1, Math.max(1e-4, samplingRate));
   const fullGaussianRdp = orderAlpha / (2 * sigma * sigma);
   if (q >= 0.9999) return fullGaussianRdp;
@@ -208,7 +220,10 @@ export function computeStepRdpIncrement(orderAlpha: number, noiseMultiplier: num
 
 /** 누적 RDP 벡터에서 주어진 delta에 대한 최소 epsilon을 계산한다. */
 export function convertRdpToEpsilon(rdpTotals: readonly number[], delta: number, stepCount: number): number {
-  if (stepCount <= 0) return 0;
+  requireInteger(stepCount, "스텝", 0, 1000000);
+  requireFinite(delta, "delta 가정값", 1e-12, 0.1);
+  if (rdpTotals.length !== RDP_ORDERS.length || rdpTotals.some((value) => !Number.isFinite(value) || value < 0)) throw new RangeError("RDP 가정 벡터가 올바르지 않습니다.");
+  if (stepCount === 0) return 0;
   const logInvDelta = Math.log(1 / Math.min(0.1, Math.max(1e-12, delta)));
   let bestEpsilon = Number.POSITIVE_INFINITY;
   for (let i = 0; i < RDP_ORDERS.length; i += 1) {
@@ -216,15 +231,6 @@ export function convertRdpToEpsilon(rdpTotals: readonly number[], delta: number,
     if (candidate < bestEpsilon) bestEpsilon = candidate;
   }
   return Number.isFinite(bestEpsilon) ? Number(Math.max(0, bestEpsilon).toFixed(4)) : 0;
-}
-
-export function computeFloat32L2Norm(arr: Float32Array): number {
-  let sumSq = 0;
-  for (let i = 0; i < arr.length; i += 1) {
-    const v = arr[i] ?? 0;
-    sumSq += v * v;
-  }
-  return Math.sqrt(sumSq);
 }
 
 /** 저랭크 어댑터(ΔW = (alpha / r) · A · B)를 결정론적으로 초기화한다(B=0으로 초기 ΔW=0). */
@@ -237,10 +243,15 @@ export function createLoraAdapterWeights(options?: {
   readonly seed?: number;
 }): LoraAdapterWeights {
   const rank: LoraRank = options?.rank ?? 8;
-  const inDim = Math.max(4, options?.inDim ?? DEFAULT_LORA_IN_DIM);
-  const outDim = Math.max(4, options?.outDim ?? DEFAULT_LORA_OUT_DIM);
+  if (!LORA_VALID_RANKS.includes(rank)) throw new RangeError("지원하지 않는 랭크입니다.");
+  const inDim = options?.inDim ?? DEFAULT_LORA_IN_DIM;
+  const outDim = options?.outDim ?? DEFAULT_LORA_OUT_DIM;
+  requireInteger(inDim, "입력 차원", 1, 256);
+  requireInteger(outDim, "출력 차원", 1, 256);
   const alpha = options?.alpha ?? rank * 2;
   const seed = options?.seed ?? 4101;
+  requireInteger(seed, "시드", 0, 0xffffffff);
+  requireFinite(alpha, "alpha", Number.MIN_VALUE, 256);
   const rng = createDeterministicRng(seed ^ (rank * 0x9e3779b9));
   const stdA = 1 / Math.sqrt(inDim);
   const matrixA = new Float32Array(outDim * rank);
@@ -259,40 +270,6 @@ export function createLoraAdapterWeights(options?: {
   };
 }
 
-/** 유효 저랭크 변화 행렬 ΔW = (alpha / r) · (A · B)와 프로베니우스 노름을 계산한다. */
-export function computeEffectiveDeltaW(adapter: LoraAdapterWeights): { readonly deltaW: Float32Array; readonly frobeniusNorm: number } {
-  const { inDim, outDim, rank, alpha, matrixA, matrixB } = adapter;
-  const scale = alpha / rank;
-  const deltaW = new Float32Array(outDim * inDim);
-  for (let row = 0; row < outDim; row += 1) {
-    for (let col = 0; col < inDim; col += 1) {
-      let acc = 0;
-      for (let r = 0; r < rank; r += 1) acc += (matrixA[row * rank + r] ?? 0) * (matrixB[r * inDim + col] ?? 0);
-      deltaW[row * inDim + col] = acc * scale;
-    }
-  }
-  return { deltaW, frobeniusNorm: computeFloat32L2Norm(deltaW) };
-}
-
-/** 어댑터 순전파 y = base(x) + (alpha / r) · A · (B · x)를 계산한다. */
-export function forwardLoraAdapter(adapter: LoraAdapterWeights, inputFeatures: Float32Array): Float32Array {
-  const { inDim, outDim, rank, alpha, matrixA, matrixB } = adapter;
-  const scale = alpha / rank;
-  const hidden = new Float32Array(rank);
-  for (let r = 0; r < rank; r += 1) {
-    let acc = 0;
-    for (let j = 0; j < inDim; j += 1) acc += (matrixB[r * inDim + j] ?? 0) * (inputFeatures[j] ?? 0);
-    hidden[r] = acc;
-  }
-  const output = new Float32Array(outDim);
-  for (let i = 0; i < outDim; i += 1) {
-    let deltaAcc = 0;
-    for (let r = 0; r < rank; r += 1) deltaAcc += (matrixA[i * rank + r] ?? 0) * (hidden[r] ?? 0);
-    output[i] = (inputFeatures[i % inDim] ?? 0) + scale * deltaAcc;
-  }
-  return output;
-}
-
 /** 원본 RGBA 원고 패치에서 온디바이스 화풍 특징 벡터만 추출한다(원본 픽셀 미보관·미전송). */
 export function extractOnDeviceStyleSample(
   pixelRgba: Uint8ClampedArray,
@@ -300,8 +277,13 @@ export function extractOnDeviceStyleSample(
   height: number,
   meta: { readonly sampleId: string; readonly presetId: StylePresetId; readonly labelKo: string; readonly labelEn: string; readonly strokeBatchCount?: number },
 ): OnDeviceStyleSample {
-  const safeW = Math.max(2, Math.floor(width));
-  const safeH = Math.max(2, Math.floor(height));
+  requireInteger(width, "RGBA 너비", 1, 1024);
+  requireInteger(height, "RGBA 높이", 1, 1024);
+  if (pixelRgba.length !== width * height * 4) throw new RangeError("RGBA 길이가 해상도와 일치해야 합니다.");
+  requireId(meta.sampleId);
+  requireInteger(meta.strokeBatchCount ?? 8, "배치 수", 1, 1000000);
+  const safeW = width;
+  const safeH = height;
   const totalPixels = safeW * safeH;
   const luma = new Float32Array(totalPixels);
   let ink = 0; let mid = 0; let high = 0; let sumR = 0; let sumG = 0; let sumB = 0;
@@ -387,7 +369,7 @@ export function createDefaultOnDeviceStyleSamples(): readonly OnDeviceStyleSampl
   });
 }
 
-/** 온디바이스 차등 프라이버시 LoRA 학습 세션을 생성한다. */
+/** CPU 저랭크 MSE·고정 시드 노이즈 예제 세션을 생성한다. */
 export function createFederatedLoraSession(options?: {
   readonly sessionId?: string;
   readonly deviceId?: string;
@@ -397,6 +379,12 @@ export function createFederatedLoraSession(options?: {
 }): FederatedLoraSession {
   const rank: LoraRank = options?.rank ?? 8;
   const seed = options?.seed ?? 4101;
+  const privacyConfig: DpPrivacyConfig = { ...DEFAULT_DP_PRIVACY_CONFIG };
+  for (const [key, value] of Object.entries(options?.privacyConfig ?? {})) {
+    if (value !== undefined) Object.assign(privacyConfig, { [key]: value });
+  }
+  assertPrivacyConfig(privacyConfig);
+  requireId(options?.sessionId ?? "example-session"); requireId(options?.deviceId ?? "example-device");
   const baseAdapter = createLoraAdapterWeights({ rank, seed });
   const currentAdapter: LoraAdapterWeights = {
     ...baseAdapter,
@@ -410,7 +398,7 @@ export function createFederatedLoraSession(options?: {
     seed,
     baseAdapter,
     currentAdapter,
-    privacyConfig: { ...DEFAULT_DP_PRIVACY_CONFIG, ...options?.privacyConfig },
+    privacyConfig,
     stepCount: 0,
     totalSamplesProcessed: 0,
     rdpAccountantTotals: RDP_ORDERS.map(() => 0),
@@ -432,19 +420,30 @@ function computeMseLoss(pred: Float32Array, target: Float32Array): number {
   return 0.5 * (sum / Math.max(1, pred.length));
 }
 
-/** 온디바이스 DP-SGD LoRA 1스텝: 역전파 → L2 클리핑 → 결정론 가우시안 노이즈 → RDP 예산 회계. */
+/** 합성 특징 MSE 1스텝: 역전파 → 클리핑 → 고정 시드 노이즈 → 가정 예산. 실제 DP 보증은 없다. */
 export function runOnDeviceLoraStep(
   session: FederatedLoraSession,
   sample: OnDeviceStyleSample,
 ): { readonly session: FederatedLoraSession; readonly record: LoraTrainingStepRecord } {
+  assertTrainingInput(session, sample);
   const { currentAdapter, privacyConfig } = session;
   const { inDim, outDim, rank, alpha, matrixA, matrixB } = currentAdapter;
   const scale = alpha / rank;
 
-  if (privacyConfig.enforceBudgetCap && session.budgetExhausted) {
+  const nextRdpTotals = RDP_ORDERS.map(
+    (alphaOrder, idx) =>
+      (session.rdpAccountantTotals[idx] ?? 0) +
+      computeStepRdpIncrement(alphaOrder, privacyConfig.noiseMultiplier, privacyConfig.samplingRate),
+  );
+  const epsilonSpent = convertRdpToEpsilon(nextRdpTotals, privacyConfig.delta, session.stepCount + 1);
+  const budgetLimit = Math.max(0.1, privacyConfig.budgetLimitEpsilon);
+  const budgetUtilizationPct = Number(Math.min(100, (epsilonSpent / budgetLimit) * 100).toFixed(1));
+  const budgetExhausted = epsilonSpent >= budgetLimit;
+
+  if (privacyConfig.enforceBudgetCap && (session.epsilonSpent >= budgetLimit || epsilonSpent > budgetLimit)) {
     const lossNow = Number(computeMseLoss(forwardLoraAdapter(currentAdapter, sample.features), sample.targetModulation).toFixed(6));
     return {
-      session,
+      session: session.budgetExhausted ? session : { ...session, budgetExhausted: true },
       record: {
         stepIndex: session.stepCount,
         sampleId: sample.sampleId,
@@ -527,15 +526,6 @@ export function runOnDeviceLoraStep(
   const nextAdapter: LoraAdapterWeights = { ...currentAdapter, matrixA: nextA, matrixB: nextB };
   const lossAfter = computeMseLoss(forwardLoraAdapter(nextAdapter, sample.features), sample.targetModulation);
   const effectiveDeltaWNorm = computeEffectiveDeltaW(nextAdapter).frobeniusNorm;
-  const nextRdpTotals = RDP_ORDERS.map(
-    (alphaOrder, idx) =>
-      (session.rdpAccountantTotals[idx] ?? 0) +
-      computeStepRdpIncrement(alphaOrder, privacyConfig.noiseMultiplier, privacyConfig.samplingRate),
-  );
-  const epsilonSpent = convertRdpToEpsilon(nextRdpTotals, privacyConfig.delta, nextStepIndex);
-  const budgetLimit = Math.max(0.1, privacyConfig.budgetLimitEpsilon);
-  const budgetUtilizationPct = Number(Math.min(100, (epsilonSpent / budgetLimit) * 100).toFixed(1));
-  const budgetExhausted = epsilonSpent >= budgetLimit;
 
   const record: LoraTrainingStepRecord = {
     stepIndex: nextStepIndex,
@@ -571,161 +561,7 @@ export function runOnDeviceLoraStep(
   };
 }
 
-function computeDeltaPacketChecksum(
-  baseAdapterId: string,
-  deviceId: string,
-  rank: LoraRank,
-  sampleCount: number,
-  deltaA: Float32Array,
-  deltaB: Float32Array,
-): string {
-  const headerDigest = computeSha256HexFromText(`${baseAdapterId}|${deviceId}|r${rank}|n${sampleCount}|${deltaA.length}|${deltaB.length}`);
-  const byteView = new Uint8Array((deltaA.length + deltaB.length) * 4 + 32);
-  for (let i = 0; i < 32; i += 1) byteView[i] = Number.parseInt(headerDigest.slice(i * 2, i * 2 + 2), 16) & 0xff;
-  const view = new DataView(byteView.buffer, 32);
-  let offset = 0;
-  for (let i = 0; i < deltaA.length; i += 1) { view.setFloat32(offset, deltaA[i] ?? 0, true); offset += 4; }
-  for (let i = 0; i < deltaB.length; i += 1) { view.setFloat32(offset, deltaB[i] ?? 0, true); offset += 4; }
-  return computeSha256Hex(byteView);
-}
-
-/** 온디바이스 세션에서 원본 픽셀 0바이트·델타 전용 연합학습 패킷을 추출한다. */
-export function exportFederatedLoraDelta(session: FederatedLoraSession, deviceLabel = "메인 작업실 데스크톱"): FederatedLoraDeltaPacket {
-  const { baseAdapter, currentAdapter, privacyConfig } = session;
-  const deltaA = new Float32Array(currentAdapter.matrixA.length);
-  const deltaB = new Float32Array(currentAdapter.matrixB.length);
-  for (let i = 0; i < deltaA.length; i += 1) deltaA[i] = (currentAdapter.matrixA[i] ?? 0) - (baseAdapter.matrixA[i] ?? 0);
-  for (let i = 0; i < deltaB.length; i += 1) deltaB[i] = (currentAdapter.matrixB[i] ?? 0) - (baseAdapter.matrixB[i] ?? 0);
-
-  const sampleCount = Math.max(1, session.totalSamplesProcessed);
-  const checksumSha256 = computeDeltaPacketChecksum(baseAdapter.adapterId, session.deviceId, currentAdapter.rank, sampleCount, deltaA, deltaB);
-  return {
-    packetId: `pkt-${session.deviceId}-s${session.stepCount}-${checksumSha256.slice(0, 8)}`,
-    deviceId: session.deviceId,
-    deviceLabel,
-    baseAdapterId: baseAdapter.adapterId,
-    inDim: currentAdapter.inDim,
-    outDim: currentAdapter.outDim,
-    rank: currentAdapter.rank,
-    alpha: currentAdapter.alpha,
-    sampleCount,
-    stepsCompleted: session.stepCount,
-    epsilonSpent: session.epsilonSpent,
-    delta: privacyConfig.delta,
-    clipNormC: privacyConfig.clipNormC,
-    noiseMultiplier: privacyConfig.noiseMultiplier,
-    deltaA,
-    deltaB,
-    deltaL2Norm: Number(Math.sqrt(computeFloat32L2Norm(deltaA) ** 2 + computeFloat32L2Norm(deltaB) ** 2).toFixed(6)),
-    checksumSha256,
-    egressAudit: {
-      rawPixelBytesTransmitted: 0,
-      deltaPayloadBytes: (deltaA.length + deltaB.length) * 4,
-      containsRawPixels: false,
-      privacyGuarantee: "dp-sgd-gradient-only",
-    },
-  };
-}
-
-const FORBIDDEN_RAW_PIXEL_KEYS: readonly string[] = ["pixels", "pixelRgba", "imageData", "rawCanvas", "rawManuscript"];
-
-/** 연합 델타 패킷이 0-byte raw pixel egress 및 SHA-256 무결성 규칙을 만족하는지 검증한다. */
-export function verifyZeroRawEgress(packet: FederatedLoraDeltaPacket): ZeroRawEgressVerification {
-  const reasons: string[] = [];
-  if (packet.egressAudit.rawPixelBytesTransmitted !== 0) reasons.push("raw-pixel-bytes-nonzero");
-  if (packet.egressAudit.containsRawPixels !== false) reasons.push("contains-raw-pixels-flag");
-
-  const rawRecord = packet as unknown as Readonly<Record<string, unknown>>;
-  for (const key of FORBIDDEN_RAW_PIXEL_KEYS) {
-    if (key in rawRecord && rawRecord[key] !== undefined) reasons.push(`forbidden-key:${key}`);
-  }
-  if (packet.deltaA.length !== packet.outDim * packet.rank || packet.deltaB.length !== packet.rank * packet.inDim) {
-    reasons.push("dimension-length-mismatch");
-  }
-  if (packet.egressAudit.deltaPayloadBytes !== (packet.deltaA.length + packet.deltaB.length) * 4) {
-    reasons.push("delta-payload-bytes-mismatch");
-  }
-  if (packet.deltaA.some((v) => !Number.isFinite(v))) reasons.push("non-finite-deltaA");
-  if (packet.deltaB.some((v) => !Number.isFinite(v))) reasons.push("non-finite-deltaB");
-
-  const recomputed = computeDeltaPacketChecksum(
-    packet.baseAdapterId, packet.deviceId, packet.rank, packet.sampleCount, packet.deltaA, packet.deltaB,
-  );
-  if (recomputed !== packet.checksumSha256) reasons.push("checksum-sha256-mismatch");
-  return { valid: reasons.length === 0, reasons };
-}
-
-/** FedAvg 다중 기기 안전한 델타 병합(랭크·무결성·노름 비잔틴 방어 및 샘플 수 가중 평균). */
-export function aggregateFederatedLoraDeltas(
-  baseAdapter: LoraAdapterWeights,
-  packets: readonly FederatedLoraDeltaPacket[],
-  options?: { readonly maxAllowedDeltaNorm?: number },
-): FedAvgAggregationResult {
-  const maxNorm = options?.maxAllowedDeltaNorm ?? 25.0;
-  const accepted: FederatedLoraDeltaPacket[] = [];
-  const rejectedPackets: RejectedDeltaPacketRecord[] = [];
-
-  for (const packet of packets) {
-    const reasons: string[] = [];
-    if (packet.rank !== baseAdapter.rank || packet.inDim !== baseAdapter.inDim || packet.outDim !== baseAdapter.outDim) {
-      reasons.push("adapter-shape-mismatch");
-    }
-    if (packet.sampleCount <= 0 || !Number.isFinite(packet.sampleCount)) reasons.push("invalid-sample-count");
-    const egressCheck = verifyZeroRawEgress(packet);
-    if (!egressCheck.valid) reasons.push(...egressCheck.reasons);
-    const computedNorm = Math.sqrt(computeFloat32L2Norm(packet.deltaA) ** 2 + computeFloat32L2Norm(packet.deltaB) ** 2);
-    if (!Number.isFinite(computedNorm) || computedNorm > maxNorm) reasons.push("delta-norm-exceeds-guard");
-
-    if (reasons.length > 0) rejectedPackets.push({ packetId: packet.packetId, deviceId: packet.deviceId, reasons });
-    else accepted.push(packet);
-  }
-
-  if (accepted.length === 0) {
-    return {
-      ok: false,
-      mergedAdapter: { ...baseAdapter, matrixA: new Float32Array(baseAdapter.matrixA), matrixB: new Float32Array(baseAdapter.matrixB) },
-      effectiveDeltaWNorm: Number(computeEffectiveDeltaW(baseAdapter).frobeniusNorm.toFixed(6)),
-      acceptedCount: 0,
-      rejectedPackets,
-      contributions: [],
-      totalSamplesMerged: 0,
-      rawPixelBytesTransmitted: 0,
-      roundDigestSha256: computeSha256HexFromText(`fedavg-empty|${baseAdapter.adapterId}`),
-    };
-  }
-
-  const totalSamplesMerged = accepted.reduce((sum, pkt) => sum + pkt.sampleCount, 0);
-  const aggDeltaA = new Float32Array(baseAdapter.matrixA.length);
-  const aggDeltaB = new Float32Array(baseAdapter.matrixB.length);
-  const contributions: DeviceContributionWeight[] = accepted.map((pkt) => {
-    const weightRatio = pkt.sampleCount / totalSamplesMerged;
-    for (let i = 0; i < aggDeltaA.length; i += 1) aggDeltaA[i] = (aggDeltaA[i] ?? 0) + weightRatio * (pkt.deltaA[i] ?? 0);
-    for (let i = 0; i < aggDeltaB.length; i += 1) aggDeltaB[i] = (aggDeltaB[i] ?? 0) + weightRatio * (pkt.deltaB[i] ?? 0);
-    return { deviceId: pkt.deviceId, deviceLabel: pkt.deviceLabel, sampleCount: pkt.sampleCount, weightRatio: Number(weightRatio.toFixed(4)), epsilonSpent: pkt.epsilonSpent };
-  });
-
-  const mergedA = new Float32Array(baseAdapter.matrixA.length);
-  const mergedB = new Float32Array(baseAdapter.matrixB.length);
-  for (let i = 0; i < mergedA.length; i += 1) mergedA[i] = (baseAdapter.matrixA[i] ?? 0) + (aggDeltaA[i] ?? 0);
-  for (let i = 0; i < mergedB.length; i += 1) mergedB[i] = (baseAdapter.matrixB[i] ?? 0) + (aggDeltaB[i] ?? 0);
-
-  const mergedAdapter: LoraAdapterWeights = { ...baseAdapter, matrixA: mergedA, matrixB: mergedB };
-  return {
-    ok: true,
-    mergedAdapter,
-    effectiveDeltaWNorm: Number(computeEffectiveDeltaW(mergedAdapter).frobeniusNorm.toFixed(6)),
-    acceptedCount: accepted.length,
-    rejectedPackets,
-    contributions,
-    totalSamplesMerged,
-    rawPixelBytesTransmitted: 0,
-    roundDigestSha256: computeDeltaPacketChecksum(
-      baseAdapter.adapterId, accepted.map((p) => p.deviceId).join("+"), baseAdapter.rank, totalSamplesMerged, aggDeltaA, aggDeltaB,
-    ),
-  };
-}
-
-/** 동일 창작자의 보조 기기에서 생성된 온디바이스 DP-LoRA 델타 패킷을 결정론적으로 생성한다. */
+/** 보조 기기 역할의 합성 패킷을 이 CPU에서 만든다. 원격 연결·학습은 수행하지 않는다. */
 export function createPeerDeviceLoraPackets(
   baseSession: FederatedLoraSession,
   samples: readonly OnDeviceStyleSample[],

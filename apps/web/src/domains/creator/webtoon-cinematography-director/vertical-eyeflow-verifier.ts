@@ -6,6 +6,8 @@
  * - 말풍선 앵커 최적 이동량(dx, dy) 및 컷 여백(Gutter) 리듬 처방 + 원클릭 자동 보정(`applyEyeFlowPrescriptions`)
  */
 
+import { assertStrip, nodeKey, requireFinite, requireUnique, stripSignature } from "./cinematography-input-contract";
+
 export type EyeFlowNodeKind = "speech-balloon" | "character-gaze" | "action-vector" | "sfx-anchor";
 export type PanelPacingIntent = "fast-action" | "dialogue-rhythm" | "emotional-pause" | "cliffhanger-reveal";
 export type EyeFlowDefectKind = "reverse-backtrack" | "ping-pong-fatigue" | "dead-trap";
@@ -136,6 +138,9 @@ export interface GutterPrescription {
 }
 
 export interface VerticalEyeFlowReport {
+  readonly scope: "calculation-example";
+  readonly humanMeasured: false;
+  readonly inputSignature: string;
   readonly stripId: string;
   readonly stripWidthPx: number;
   readonly totalHeightPx: number;
@@ -194,7 +199,8 @@ function normalizeVector2D(v: Vector2D): Vector2D {
 
 /** 세로 스크롤 웹툰 연속 컷의 시선 유도(Z/S-커브)·역주행·핑퐁·시선 막힘·여백 리듬 종합 분석. */
 export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFlowReport {
-  const stripWidthPx = Math.max(320, strip.stripWidthPx);
+  assertStrip(strip);
+  const stripWidthPx = strip.stripWidthPx;
   const sortedPanels = [...strip.panels].sort((a, b) => a.order - b.order);
 
   const resolvedPanels: ResolvedPanelLayout[] = [];
@@ -204,9 +210,9 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
   for (let pIdx = 0; pIdx < sortedPanels.length; pIdx += 1) {
     const panel = sortedPanels[pIdx];
     if (!panel) continue;
-    const width = Math.max(320, panel.width || stripWidthPx);
-    const height = Math.max(180, panel.height);
-    const gutter = Math.max(0, panel.gutterAfterPx);
+    const width = panel.width;
+    const height = panel.height;
+    const gutter = panel.gutterAfterPx;
 
     resolvedPanels.push({
       panelId: panel.panelId, order: panel.order, titleKo: panel.titleKo, titleEn: panel.titleEn,
@@ -233,11 +239,13 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
   const segments: EyeFlowSegmentMetric[] = [];
 
   const upsertPrescription = (next: BalloonAnchorPrescription): void => {
-    const existing = prescriptionMap.get(next.nodeId);
-    if (!existing) { prescriptionMap.set(next.nodeId, next); return; }
-    const mergedX = clamp(existing.currentLocal.x + existing.dx + next.dx, stripWidthPx * MIN_SAFE_MARGIN_X_RATIO, stripWidthPx * MAX_SAFE_MARGIN_X_RATIO);
+    const existing = prescriptionMap.get(nodeKey(next.panelId, next.nodeId));
+    if (!existing) { prescriptionMap.set(nodeKey(next.panelId, next.nodeId), next); return; }
+    const panel = resolvedPanels.find((candidate) => candidate.panelId === next.panelId);
+    if (!panel) throw new RangeError("처방 대상 패널을 찾을 수 없습니다.");
+    const mergedX = clamp(existing.currentLocal.x + existing.dx + next.dx, panel.width * MIN_SAFE_MARGIN_X_RATIO, panel.width * MAX_SAFE_MARGIN_X_RATIO);
     const mergedY = clamp(existing.currentLocal.y + existing.dy + next.dy, MIN_SAFE_MARGIN_Y_PX, Math.max(MIN_SAFE_MARGIN_Y_PX + 20, existing.targetLocal.y));
-    prescriptionMap.set(next.nodeId, {
+    prescriptionMap.set(nodeKey(next.panelId, next.nodeId), {
       ...existing,
       dx: roundTo(mergedX - existing.currentLocal.x, 1),
       dy: roundTo(mergedY - existing.currentLocal.y, 1),
@@ -276,7 +284,7 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
           reverseJumpCount += 1;
           const upwardPx = Math.round(Math.abs(dy));
           defects.push({
-            defectId: `rev-${prev.nodeId}-${curr.nodeId}`,
+            defectId: JSON.stringify(["rev", prev.panelId, prev.nodeId, curr.panelId, curr.nodeId]),
             kind: "reverse-backtrack",
             severity: upwardPx >= 45 ? "critical" : "warning",
             panelId: curr.panelId, nodeId: curr.nodeId, relatedNodeId: prev.nodeId,
@@ -311,7 +319,7 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
             pingPongCount += 1;
             const swingPct = Math.round(spanRatio * 100);
             defects.push({
-              defectId: `pingpong-${prev.nodeId}-${curr.nodeId}`,
+              defectId: JSON.stringify(["pingpong", prev.panelId, prev.nodeId, curr.panelId, curr.nodeId]),
               kind: "ping-pong-fatigue",
               severity: spanRatio >= 0.6 ? "critical" : "warning",
               panelId: curr.panelId, nodeId: curr.nodeId, relatedNodeId: prev.nodeId,
@@ -319,7 +327,10 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
               messageEn: `Horizontal ping-pong fatigue: ${swingPct}% strip-width whip from "${prev.labelEn}" to "${curr.labelEn}".`,
             });
 
-            const corridorTargetX = curr.localX > curr.panelWidth * 0.5 ? curr.panelWidth * 0.66 : curr.panelWidth * 0.34;
+            const corridorTargetX = clamp(
+              prev.localX + Math.sign(dx) * Math.min(Math.abs(dx), stripWidthPx * 0.4),
+              curr.panelWidth * MIN_SAFE_MARGIN_X_RATIO, curr.panelWidth * MAX_SAFE_MARGIN_X_RATIO,
+            );
             const dxFix = roundTo(corridorTargetX - curr.localX, 1);
             const dyLift = curr.panelId === prev.panelId && dy >= 0 && dy < 72
               ? roundTo(clamp(curr.localY + (78 - dy), MIN_SAFE_MARGIN_Y_PX, curr.panelHeight - MIN_SAFE_MARGIN_Y_PX) - curr.localY, 1)
@@ -357,7 +368,7 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
         nodeTrapped = true;
         deadTrapCount += 1;
         defects.push({
-          defectId: `trap-gaze-${curr.nodeId}`,
+          defectId: JSON.stringify(["gaze", curr.panelId, curr.nodeId]),
           kind: "dead-trap",
           severity: alignment < -0.48 || upwardTrap ? "critical" : "warning",
           panelId: curr.panelId, nodeId: curr.nodeId, relatedNodeId: next.nodeId,
@@ -381,7 +392,7 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
     if (!nodeTrapped && (curr.localX < curr.panelWidth * 0.09 || curr.localX > curr.panelWidth * 0.91 || curr.localY > curr.panelHeight - 26)) {
       deadTrapCount += 1;
       defects.push({
-        defectId: `trap-margin-${curr.nodeId}`,
+        defectId: JSON.stringify(["margin", curr.panelId, curr.nodeId]),
         kind: "dead-trap", severity: "warning", panelId: curr.panelId, nodeId: curr.nodeId,
         messageKo: `모서리 시선 막힘: "${curr.labelKo}"가 컷 경계 끝단에 밀착해 다음 컷으로의 시선 탈출을 가로막습니다.`,
         messageEn: `Edge dead trap: "${curr.labelEn}" is pinned against the panel border, blocking clean exit flow.`,
@@ -399,9 +410,9 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
     }
   }
 
-  const deadTrapNodeIds = new Set(defects.filter((d) => d.kind === "dead-trap").map((d) => d.nodeId));
+  const deadTrapNodeIds = new Set(defects.filter((d) => d.kind === "dead-trap").map((d) => nodeKey(d.panelId, d.nodeId)));
   const annotatedSegments: readonly EyeFlowSegmentMetric[] = segments.map((seg) =>
-    deadTrapNodeIds.has(seg.fromNodeId) ? { ...seg, isDeadTrapLink: true } : seg,
+    deadTrapNodeIds.has(nodeKey(seg.fromPanelId, seg.fromNodeId)) ? { ...seg, isDeadTrapLink: true } : seg,
   );
 
   const gutterPrescriptions: GutterPrescription[] = [];
@@ -460,6 +471,7 @@ export function analyzeVerticalEyeFlow(strip: VerticalStripInput): VerticalEyeFl
       : `Detected ${defects.length} eye-flow defect(s) (${reverseJumpCount} reverse, ${pingPongCount} ping-pong, ${deadTrapCount} trap) and ${gutterIssueCount} gutter fix(es).`;
 
   return {
+    scope: "calculation-example", humanMeasured: false, inputSignature: stripSignature(strip),
     stripId: strip.stripId, stripWidthPx, totalHeightPx, panels: resolvedPanels, pathPoints,
     segments: annotatedSegments, defects, anchorPrescriptions: Array.from(prescriptionMap.values()),
     gutterPrescriptions, curvePattern, flowScore, grade, reverseJumpCount, pingPongCount,
@@ -472,73 +484,33 @@ export function applyEyeFlowPrescriptions(
   strip: VerticalStripInput,
   providedReport?: VerticalEyeFlowReport,
 ): VerticalStripInput {
+  assertStrip(strip);
   const report = providedReport ?? analyzeVerticalEyeFlow(strip);
-  const anchorById = new Map<string, BalloonAnchorPrescription>(report.anchorPrescriptions.map((p) => [p.nodeId, p]));
-  const gutterByPanel = new Map<string, number>(report.gutterPrescriptions.map((g) => [g.panelId, g.recommendedGutterPx]));
-
-  const nextPanels: WebtoonPanelSpec[] = strip.panels.map((panel) => {
-    const safeMinX = panel.width * 0.27;
-    const safeMaxX = panel.width * 0.73;
-    const safeMaxY = Math.max(MIN_SAFE_MARGIN_Y_PX + 24, panel.height - MIN_SAFE_MARGIN_Y_PX);
-
-    const sorted = [...panel.nodes].sort((a, b) => a.readingOrder - b.readingOrder);
-    const updatedNodes: EyeFlowNode[] = [];
-    let prevY = MIN_SAFE_MARGIN_Y_PX - 56;
-
-    for (let idx = 0; idx < sorted.length; idx += 1) {
-      const node = sorted[idx];
-      if (!node) continue;
-      const rx = anchorById.get(node.id);
-      let nextX = clamp(rx ? rx.targetLocal.x : node.x, safeMinX, safeMaxX);
-      let nextY = clamp(rx ? rx.targetLocal.y : node.y, MIN_SAFE_MARGIN_Y_PX, safeMaxY);
-      if (idx > 0 && nextY < prevY + 56) nextY = clamp(prevY + 62, MIN_SAFE_MARGIN_Y_PX, safeMaxY);
-      const prevNode = updatedNodes[idx - 1];
-      if (prevNode && Math.abs(nextX - prevNode.x) > panel.width * 0.44) {
-        nextX = clamp(prevNode.x + (nextX >= prevNode.x ? 1 : -1) * panel.width * 0.36, safeMinX, safeMaxX);
-      }
-      prevY = nextY;
-      updatedNodes.push({
-        ...node, x: roundTo(nextX, 1), y: roundTo(nextY, 1),
-        gazeVector: rx?.recommendedGazeVector ?? node.gazeVector,
-      });
-    }
-
-    return { ...panel, gutterAfterPx: gutterByPanel.get(panel.panelId) ?? panel.gutterAfterPx, nodes: updatedNodes };
-  });
-
-  const flatNodes: { readonly panelIdx: number; readonly nodeIdx: number; readonly gx: number; readonly gy: number }[] = [];
-  let cursorY = 0;
-  for (let pIdx = 0; pIdx < nextPanels.length; pIdx += 1) {
-    const p = nextPanels[pIdx];
-    if (!p) continue;
-    for (let nIdx = 0; nIdx < p.nodes.length; nIdx += 1) {
-      const n = p.nodes[nIdx];
-      if (n) flatNodes.push({ panelIdx: pIdx, nodeIdx: nIdx, gx: n.x, gy: cursorY + n.y });
-    }
-    cursorY += p.height + (pIdx < nextPanels.length - 1 ? p.gutterAfterPx : 0);
-  }
-
-  for (let i = 0; i < flatNodes.length - 1; i += 1) {
-    const curRef = flatNodes[i];
-    const nxtRef = flatNodes[i + 1];
-    if (!curRef || !nxtRef) continue;
-    const panel = nextPanels[curRef.panelIdx];
-    const node = panel?.nodes[curRef.nodeIdx];
-    if (!panel || !node?.gazeVector) continue;
-
-    const toNext = normalizeVector2D({ dx: nxtRef.gx - curRef.gx, dy: Math.max(30, nxtRef.gy - curRef.gy) });
-    const curHat = normalizeVector2D(node.gazeVector);
-    if (curHat.dx * toNext.dx + curHat.dy * toNext.dy < 0.25 || curHat.dy < -0.1) {
-      nextPanels[curRef.panelIdx] = {
-        ...panel,
-        nodes: panel.nodes.map((n, idx) =>
-          idx === curRef.nodeIdx ? { ...n, gazeVector: { dx: roundTo(toNext.dx, 2), dy: roundTo(toNext.dy, 2) } } : n,
-        ),
-      };
+  if (report.inputSignature !== stripSignature(strip)) throw new RangeError("콘티가 변경되었습니다. 처방을 다시 계산하세요.");
+  requireUnique(report.anchorPrescriptions.map((p) => nodeKey(p.panelId, p.nodeId)));
+  requireUnique(report.gutterPrescriptions.map((g) => g.panelId));
+  for (const rx of report.anchorPrescriptions) {
+    const panel = strip.panels.find((p) => p.panelId === rx.panelId);
+    const node = panel?.nodes.find((n) => n.id === rx.nodeId);
+    requireFinite([rx.currentLocal.x, rx.currentLocal.y, rx.targetLocal.x, rx.targetLocal.y, rx.dx, rx.dy]);
+    if (!panel || !node || Math.abs(node.x - rx.currentLocal.x) > 0.051 || Math.abs(node.y - rx.currentLocal.y) > 0.051 ||
+        rx.targetLocal.x < 0 || rx.targetLocal.x > panel.width || rx.targetLocal.y < 0 || rx.targetLocal.y > panel.height) {
+      throw new RangeError("처방 대상·원본 좌표·목표 범위가 일치하지 않습니다.");
     }
   }
-
-  return { ...strip, panels: nextPanels };
+  const anchors = new Map(report.anchorPrescriptions.map((p) => [nodeKey(p.panelId, p.nodeId), p]));
+  const gutters = new Map(report.gutterPrescriptions.map((g) => [g.panelId, g]));
+  const result = { ...strip, panels: strip.panels.map((panel) => {
+    const gutter = gutters.get(panel.panelId);
+    if (gutter && (!Number.isFinite(gutter.recommendedGutterPx) || gutter.recommendedGutterPx < 0 || gutter.currentGutterPx !== panel.gutterAfterPx)) throw new RangeError("여백 처방이 유효하지 않습니다.");
+    return { ...panel, gutterAfterPx: gutter?.recommendedGutterPx ?? panel.gutterAfterPx, nodes: panel.nodes.map((node) => {
+      const rx = anchors.get(nodeKey(panel.panelId, node.id));
+      return rx ? { ...node, x: rx.targetLocal.x, y: rx.targetLocal.y,
+        ...(rx.recommendedGazeVector ? { gazeVector: { ...rx.recommendedGazeVector } } : {}) } : node;
+    }) };
+  }) };
+  assertStrip(result);
+  return result;
 }
 
 /** 전역 시선 앵커 점열로부터 부드러운 3차 베지어 SVG 경로 문자열(`M ... C ...`) 생성. */

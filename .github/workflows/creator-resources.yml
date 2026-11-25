@@ -76,7 +76,8 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/creator-checker"
           cp .github/ci-tools/creator-checker/package.json .github/ci-tools/creator-checker/package-lock.json "$RUNNER_TEMP/creator-checker/"
-          npm ci --prefix "$RUNNER_TEMP/creator-checker" --ignore-scripts --no-audit --no-fund
+          cd "$RUNNER_TEMP/creator-checker"
+          npm ci --ignore-scripts --no-audit --no-fund
       - name: Strict types and provider/storage/export regression cases
         run: NODE_PATH="$RUNNER_TEMP/creator-checker/node_modules" node scripts/check-creator-resources.mjs
       - name: Install Chromium for real cross-tab persistence checks

@@ -1,10 +1,12 @@
+import { assertHandoffDocument, assertLayerInputs, MAX_HANDOFF_LAYERS, uniqueHandoffId } from "./handoff-input-contract";
+
 /**
  * Wave 44E — 어시스턴트·외주 분업 인수인계 패키지 & 선화·채색·식자 검수 킷 엔진.
  *
  * - 한국 웹툰 스튜디오 7대 표준 레이어 명명 규약(`01_LINE`..`07_TEXT`) 자동 검증기 (`auditLayerNamingConvention`)
  * - 원클릭 표준명 자동 보정 미리보기 및 일괄 정리 (`buildLayerRenamePreview`, `applyLayerAutoFix`)
  * - 5대 공정(`lineart`, `flat-color`, `shading`, `background-3d`, `lettering`) 체크리스트 + 차단 이슈 집계 (`evaluateHandoffReadiness`)
- * - 컷당 단가 × 공정별 담당 컷 수 기반 어시스턴트 정산 프리뷰 (`estimateAssistantPayout`, `dataSourceKind: "estimate"`, 3.3% 원천징수 참고 계산)
+ * - 컷당 단가 × 공정별 담당 컷 수 기반 어시스턴트 정산 프리뷰 (`estimateAssistantPayout`, `dataSourceKind: "estimate"`, 사용자 입력 세율 가정 계산)
  * - 원클릭 인수인계 브리프(Markdown/JSON) 생성 (`buildHandoffBriefMarkdown`, `exportHandoffPackageJson`)
  *
  * 순수 함수형 모듈: Web Storage · private Map store · BigInt 리터럴 · 원시 색상 리터럴 미사용.
@@ -131,6 +133,7 @@ export interface StagePayoutAllocationInput {
 export interface AssistantPayoutInput {
   readonly allocations: readonly StagePayoutAllocationInput[];
   readonly includeWithholdingTax?: boolean;
+  readonly nationalIncomeTaxRatePct?: number; readonly localIncomeTaxRatePct?: number;
 }
 
 export interface StagePayoutLineEstimate {
@@ -285,10 +288,6 @@ const STACK_DEPTH_ORDER: Readonly<Record<StandardLayerCode, number>> = {
   "07_TEXT": 1, "06_SFX": 2, "04_LIGHT": 3, "01_LINE": 4, "03_SHADOW": 5, "02_BASE": 6, "05_BG3D": 7,
 };
 
-function clampFinite(value: number, fallback: number, min: number, max: number): number {
-  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
-}
-
 export function getStandardLayerSlotSpec(code: StandardLayerCode): StandardLayerSlotSpec {
   return STANDARD_LAYER_SLOTS.find((slot) => slot.code === code) ?? STANDARD_LAYER_SLOTS[0]!;
 }
@@ -353,6 +352,7 @@ function inferLayerCodeForRename(
 export function buildLayerRenamePreview(
   layers: readonly StudioLayerInput[], stageId: HandoffStageId,
 ): readonly LayerRenamePreviewItem[] {
+  assertLayerInputs(layers);
   const stageSpec = getHandoffStageSpec(stageId);
   const alreadyPresent = new Set<StandardLayerCode>();
   const reservedStandardNames = new Set<string>();
@@ -409,8 +409,9 @@ export function buildLayerRenamePreview(
 
 /** 한국 웹툰 스튜디오 7대 표준 레이어 명명 규약 · 잠금/비표시 실수 · 300/350 DPI · 색공간을 자동 검증한다. */
 export function auditLayerNamingConvention(input: LayerAuditDocumentInput): LayerAuditResult {
+  assertHandoffDocument(input);
   const stageSpec = getHandoffStageSpec(input.stageId);
-  const dpi = Math.round(clampFinite(input.dpi, 72, 1, 2400));
+  const dpi = input.dpi;
   const expectedDpi: StandardStudioDpi | null = input.expectedDpi === 350 ? 350 : input.expectedDpi === 300 ? 300 : null;
   const expectedColorSpace: DocumentColorSpace = input.expectedColorSpace ?? "sRGB";
   const colorSpace: DocumentColorSpace = input.colorSpace;
@@ -513,6 +514,7 @@ export function applyLayerAutoFix(
   document: LayerAuditDocumentInput,
   options?: { readonly normalizeStatesAndSpec?: boolean },
 ): HandoffAutoFixResult {
+  assertHandoffDocument(document);
   const normalizeAll = options?.normalizeStatesAndSpec ?? true;
   const stageSpec = getHandoffStageSpec(document.stageId);
   const preview = buildLayerRenamePreview(document.layers, stageSpec.id);
@@ -541,11 +543,15 @@ export function applyLayerAutoFix(
     const present = new Set<StandardLayerCode>(
       updatedLayers.map((l) => parseStandardLayerCode(l.name)).filter((c): c is StandardLayerCode => c !== null),
     );
+    const usedIds = new Set(updatedLayers.map((layer) => layer.id));
     for (const reqCode of stageSpec.requiredLayers) {
       if (!present.has(reqCode)) {
+        if (updatedLayers.length >= MAX_HANDOFF_LAYERS) throw new RangeError("필수 레이어 추가 시 256개 상한을 넘습니다.");
         const slot = getStandardLayerSlotSpec(reqCode);
+        const id = uniqueHandoffId(`auto-${reqCode.toLowerCase()}`, usedIds);
+        usedIds.add(id);
         updatedLayers.push({
-          id: `auto-${reqCode.toLowerCase()}`, name: reqCode, visible: true,
+          id, name: reqCode, visible: true,
           locked: stageSpec.editableTargetLayers.includes(reqCode) ? false : stageSpec.upstreamLockedLayers.includes(reqCode),
           kind: reqCode === "07_TEXT" ? "text" : reqCode === "05_BG3D" ? "3d" : "raster",
           opacityPct: 100, blendMode: slot.recommendedBlendMode,
@@ -582,6 +588,8 @@ export function applyLayerAutoFix(
 export function evaluateHandoffReadiness(input: HandoffReadinessInput): HandoffReadinessReport {
   const stage = getHandoffStageSpec(input.document.stageId);
   const layerAudit = auditLayerNamingConvention(input.document);
+  if (input.checkedChecklistIds.length > 256 || (input.customBlockers?.length ?? 0) > 256) throw new RangeError("체크리스트·추가 이슈 상한은 256개입니다.");
+  if (input.customBlockers?.some((note) => note.length > 4096)) throw new RangeError("추가 이슈 문구 상한은 4096자입니다.");
   const checkedSet = new Set(input.checkedChecklistIds);
   const checklistItems: EvaluatedChecklistItem[] = stage.checklist.map((item) => {
     const checked = checkedSet.has(item.id);
@@ -621,129 +629,7 @@ export function evaluateHandoffReadiness(input: HandoffReadinessInput): HandoffR
   };
 }
 
-/** 컷당 단가 × 공정별 담당 컷 수 + 한국 3.3% 원천징수 참고 계산 기반 어시스턴트 정산 프리뷰(추정)를 산출한다. */
-export function estimateAssistantPayout(input: AssistantPayoutInput): AssistantPayoutEstimate {
-  const includeWithholdingTax = input.includeWithholdingTax ?? true;
-  const lines: StagePayoutLineEstimate[] = input.allocations.map((item) => {
-    const stage = getHandoffStageSpec(item.stageId);
-    const cutCount = Math.round(clampFinite(item.cutCount, 0, 0, 1000));
-    const ratePerCutKrw = Math.round(clampFinite(item.ratePerCutKrw, 0, 0, 5_000_000));
-    const rushMultiplierPct = Math.round(clampFinite(item.rushMultiplierPct ?? 100, 100, 100, 250));
-    const baseSubtotalKrw = cutCount * ratePerCutKrw;
-    const rushSurchargeKrw = Math.round(baseSubtotalKrw * ((rushMultiplierPct - 100) / 100));
-    const grossAmountKrw = baseSubtotalKrw + rushSurchargeKrw;
-    const nationalIncomeTaxKrw = includeWithholdingTax ? Math.round(grossAmountKrw * 0.03) : 0;
-    const localIncomeTaxKrw = includeWithholdingTax ? Math.round(grossAmountKrw * 0.003) : 0;
-    const withholdingTaxKrw = nationalIncomeTaxKrw + localIncomeTaxKrw;
-    return {
-      stageId: stage.id, labelKo: stage.labelKo, labelEn: stage.labelEn,
-      assigneeName: item.assigneeName?.trim() || `${stage.shortLabelKo} 담당`,
-      cutCount, ratePerCutKrw, rushMultiplierPct, baseSubtotalKrw, rushSurchargeKrw,
-      grossAmountKrw, nationalIncomeTaxKrw, localIncomeTaxKrw, withholdingTaxKrw,
-      netPayoutKrw: Math.max(0, grossAmountKrw - withholdingTaxKrw),
-    };
-  });
-
-  const totalCuts = lines.reduce((s, l) => s + l.cutCount, 0);
-  const activeStageCount = lines.filter((l) => l.cutCount > 0 && l.grossAmountKrw > 0).length;
-  const totalBaseSubtotalKrw = lines.reduce((s, l) => s + l.baseSubtotalKrw, 0);
-  const totalRushSurchargeKrw = lines.reduce((s, l) => s + l.rushSurchargeKrw, 0);
-  const totalGrossAmountKrw = lines.reduce((s, l) => s + l.grossAmountKrw, 0);
-  const totalNationalIncomeTaxKrw = lines.reduce((s, l) => s + l.nationalIncomeTaxKrw, 0);
-  const totalLocalIncomeTaxKrw = lines.reduce((s, l) => s + l.localIncomeTaxKrw, 0);
-  const totalWithholdingTaxKrw = totalNationalIncomeTaxKrw + totalLocalIncomeTaxKrw;
-  const totalNetPayoutKrw = Math.max(0, totalGrossAmountKrw - totalWithholdingTaxKrw);
-
-  return {
-    dataSourceKind: "estimate", badgeLabelKo: "추정", badgeLabelEn: "Estimate", includeWithholdingTax,
-    withholdingRatePct: includeWithholdingTax ? 3.3 : 0,
-    nationalIncomeTaxRatePct: includeWithholdingTax ? 3.0 : 0,
-    localIncomeTaxRatePct: includeWithholdingTax ? 0.3 : 0,
-    lines, totalCuts, activeStageCount, totalBaseSubtotalKrw, totalRushSurchargeKrw, totalGrossAmountKrw,
-    totalNationalIncomeTaxKrw, totalLocalIncomeTaxKrw, totalWithholdingTaxKrw, totalNetPayoutKrw,
-    averageGrossPerCutKrw: totalCuts > 0 ? Math.round(totalGrossAmountKrw / totalCuts) : 0,
-    estimateNoticeKo: "입력된 공정별 컷 수·컷당 단가 가정 기반 추정 정산표입니다. 실제 계약 단가와 수정비 조항에 따라 달라질 수 있습니다.",
-    estimateNoticeEn: "Estimated payout preview from entered cut counts and per-cut rates. Verify against signed terms.",
-    taxDisclaimerKo: "한국 프리랜서 사업소득 3.3%(소득세 3.0% + 지방소득세 0.3%) 참고 추정치입니다. 원단위 절사·세금계산서·원천징수 신고는 홈택스 및 세무사 기준을 따르세요.",
-    taxDisclaimerEn: "Reference estimate using Korea 3.3% freelancer withholding (3.0% income + 0.3% local). Consult a tax advisor for filing.",
-  };
-}
-
-/** 원클릭 인수인계 브리프(Markdown)를 생성한다. */
-export function buildHandoffBriefMarkdown(context: HandoffBriefContext): string {
-  const isEn = context.locale === "en";
-  const t = (ko: string, en: string): string => (isEn ? en : ko);
-  const { readiness, payout } = context;
-  const verdictText = readiness.verdict === "ready"
-    ? t("출고 가능", "READY FOR HANDOFF")
-    : readiness.verdict === "ready-with-warnings" ? t("경고 확인 후 출고", "READY WITH WARNINGS") : t("출고 차단 (보완 필요)", "BLOCKED (FIX REQUIRED)");
-  const changed = readiness.layerAudit.renamePreview.filter((item) => item.changed);
-
-  const lines: string[] = [
-    t(`# 어시스턴트 인수인계 브리프 — ${context.projectTitle} (${context.episodeLabel})`, `# Assistant Handoff Brief — ${context.projectTitle} (${context.episodeLabel})`),
-    "",
-    t(`- **대상 공정**: ${readiness.stage.labelKo}`, `- **Stage**: ${readiness.stage.labelEn}`),
-    t(`- **발신 / 수신**: ${context.senderName} → ${context.receiverName}`, `- **From / To**: ${context.senderName} -> ${context.receiverName}`),
-    t(`- **마감일 / 전달 포맷**: ${context.dueDateIso} / ${context.deliverableFormat}`, `- **Due Date / Format**: ${context.dueDateIso} / ${context.deliverableFormat}`),
-    t(`- **원고 규격**: ${readiness.layerAudit.dpi} DPI · ${readiness.layerAudit.colorSpace}`, `- **Document Spec**: ${readiness.layerAudit.dpi} DPI · ${readiness.layerAudit.colorSpace}`),
-    t(`- **검수 판정**: ${verdictText} (준비도 ${readiness.readinessScore}/100 · 차단 ${readiness.blockerCount}건 · 경고 ${readiness.warningCount}건)`, `- **QA Verdict**: ${verdictText} (Score ${readiness.readinessScore}/100 · Blockers ${readiness.blockerCount} · Warnings ${readiness.warningCount})`),
-    "", t("## 1. 차단 이슈 (출고 전 필수 보완)", "## 1. Blocking Issues"),
-    ...(readiness.blockers.length === 0
-      ? [t("- 없음 (차단 이슈 0건).", "- None (0 blockers).")]
-      : readiness.blockers.map((b) => t(`- **[차단]** ${b.titleKo} — ${b.actionKo}`, `- **[BLOCKER]** ${b.titleEn} — ${b.actionEn}`))),
-    "", t("## 2. 7대 표준 레이어 감사 & 자동 보정 미리보기", "## 2. Standard Layer Audit & Auto-Rename Preview"),
-    ...(changed.length === 0
-      ? [t("- 모든 레이어가 `01_LINE`~`07_TEXT` 표준 규약과 일치합니다.", "- All layers follow `01_LINE`..`07_TEXT` convention.")]
-      : changed.map((c) => t(`- \`${c.beforeName}\` → \`${c.afterName}\` (${c.reasonKo})`, `- \`${c.beforeName}\` -> \`${c.afterName}\` (${c.reasonEn})`))),
-    "", t("## 3. 공정 QA 체크리스트", "## 3. Stage QA Checklist"),
-    ...readiness.checklistItems.map((i) => `- ${i.checked ? "[x]" : "[ ]"} ${i.isBlocker ? t("[필수 차단]", "[BLOCKER]") : t("[권장]", "[RECOMMENDED]")} ${t(i.titleKo, i.titleEn)}`),
-    "", t(`## 4. 어시스턴트 정산 프리뷰 [${payout.badgeLabelKo}]`, `## 4. Assistant Payout Preview [${payout.badgeLabelEn}]`),
-    t("| 공정 | 담당 | 컷 수 | 컷당 단가 | 세전 합계(추정) | 3.3% 원천징수 | 실지급액(추정) |", "| Stage | Assignee | Cuts | Rate | Gross (Est.) | 3.3% Tax | Net Payout (Est.) |"),
-    "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
-    ...payout.lines.filter((r) => r.cutCount > 0 || r.grossAmountKrw > 0).map((r) =>
-      `| ${t(r.labelKo, r.labelEn)} | ${r.assigneeName} | ${r.cutCount} | ${formatKrwAmount(r.ratePerCutKrw, context.locale)} | ${formatKrwAmount(r.grossAmountKrw, context.locale)} | ${formatKrwAmount(r.withholdingTaxKrw, context.locale)} | ${formatKrwAmount(r.netPayoutKrw, context.locale)} |`),
-    "",
-    t(
-      `- **총 합계(추정)**: ${payout.totalCuts}컷 · 세전 ${formatKrwAmount(payout.totalGrossAmountKrw)} · 원천징수(${payout.withholdingRatePct}%) ${formatKrwAmount(payout.totalWithholdingTaxKrw)} · 예상 실지급 ${formatKrwAmount(payout.totalNetPayoutKrw)}`,
-      `- **Total Cuts**: ${payout.totalCuts} cuts · **Gross**: ${formatKrwAmount(payout.totalGrossAmountKrw, "en")} · **Withholding (${payout.withholdingRatePct}%)**: ${formatKrwAmount(payout.totalWithholdingTaxKrw, "en")} · **Estimated Net**: ${formatKrwAmount(payout.totalNetPayoutKrw, "en")}`,
-    ),
-    `> ${t(payout.taxDisclaimerKo, payout.taxDisclaimerEn)}`,
-  ];
-
-  if (context.notes && context.notes.trim().length > 0) {
-    lines.push("", t("## 5. 메인 작가 전달 메모", "## 5. Director Notes"), context.notes.trim());
-  }
-  return lines.join("\n");
-}
-
-/** 인수인계 패키지 전체 스냅샷을 스키마 버전이 포함된 JSON 문자열로 직렬화한다. */
-export function exportHandoffPackageJson(context: HandoffBriefContext): string {
-  const { readiness, payout } = context;
-  return JSON.stringify({
-    schemaVersion: "toonstudio.assistant-handoff-kit.v1",
-    dataSourceKind: payout.dataSourceKind,
-    metadata: {
-      projectTitle: context.projectTitle, episodeLabel: context.episodeLabel,
-      senderName: context.senderName, receiverName: context.receiverName,
-      dueDateIso: context.dueDateIso, deliverableFormat: context.deliverableFormat,
-      notes: context.notes?.trim() ?? "",
-    },
-    stage: { id: readiness.stage.id, labelKo: readiness.stage.labelKo, labelEn: readiness.stage.labelEn, requiredLayers: readiness.stage.requiredLayers },
-    documentSpec: {
-      dpi: readiness.layerAudit.dpi, expectedDpi: readiness.layerAudit.expectedDpi, dpiValid: readiness.layerAudit.dpiValid,
-      colorSpace: readiness.layerAudit.colorSpace, expectedColorSpace: readiness.layerAudit.expectedColorSpace, colorSpaceValid: readiness.layerAudit.colorSpaceValid,
-    },
-    readiness: {
-      verdict: readiness.verdict, readinessScore: readiness.readinessScore,
-      blockerCount: readiness.blockerCount, warningCount: readiness.warningCount,
-      standardCompliancePct: readiness.layerAudit.standardCompliancePct, checklistCompletionPct: readiness.checklistCompletionPct,
-      missingRequiredCodes: readiness.layerAudit.missingRequiredCodes, blockers: readiness.blockers, warnings: readiness.warnings,
-      checklist: readiness.checklistItems.map((item) => ({ id: item.id, checked: item.checked, isBlocker: item.isBlocker, blocksHandoff: item.blocksHandoff })),
-    },
-    layerRenamePlan: readiness.layerAudit.renamePreview,
-    payoutEstimate: payout,
-  }, null, 2);
-}
+export { estimateAssistantPayout, buildHandoffBriefMarkdown, exportHandoffPackageJson } from "./handoff-output";
 
 /** 실무에서 자주 발생하는 레이어 실수(임의 이름·숨김·미잠금 등)가 포함된 공정별 기본 데모 문서를 생성한다. */
 export function createSampleHandoffDocument(

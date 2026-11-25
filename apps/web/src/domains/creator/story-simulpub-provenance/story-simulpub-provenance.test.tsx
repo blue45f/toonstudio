@@ -14,8 +14,10 @@ import {
   computeDeterministicHmacSha256Hex,
   computeDeterministicSha256Hex,
   computeRectOverlapArea,
-  createC2paProvenanceManifest,
-  createCreatorDidIdentity,
+  createLocalIntegrityManifest,
+  createC2paProvenanceManifest as createLegacyManifest,
+  verifyC2paProvenanceManifest as verifyLegacyManifest,
+  createDemoCreatorIdentity,
   createSyntheticArtworkRgba,
   cropRgbaBuffer,
   DEFAULT_NARRATIVE_CAUSALITY_DATASET,
@@ -25,10 +27,11 @@ import {
   evaluateScrollBeatAtPosition,
   LOCALE_EXPANSION_PROFILES,
   reflowPanelAllLocales,
+  reflowPanelForLocale,
   SIMULPUB_LOCALES,
   simulateScrollPacingHeatmap,
   StudioStorySimulpubPanel,
-  verifyC2paProvenanceManifest,
+  verifyLocalIntegrityManifest,
   verifyCropResistantWatermark,
   type NarrativeCausalityDataset,
   type SimulpubPanelLayoutInput,
@@ -39,7 +42,7 @@ const MODULE_DIR = resolve(
   "apps/web/src/domains/creator/story-simulpub-provenance",
 );
 
-describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & C2PA 원화증명 · 독자 스크롤 히트맵", () => {
+describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & 로컬 HMAC 예제 · 독자 스크롤 히트맵", () => {
   beforeEach(() => {
     useI18n.setState({ lang: "ko" });
   });
@@ -297,20 +300,20 @@ describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & C2PA �
       "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843",
     );
 
-    const didA = createCreatorDidIdentity("Atelier Han!");
-    const didB = createCreatorDidIdentity("Atelier Han!");
-    expect(didA.didWeb).toBe("did:web:toonstudio.cloud:creators:atelier-han");
-    expect(didA.didKey.startsWith("did:key:z")).toBe(true);
+    const didA = createDemoCreatorIdentity("Atelier Han!");
+    const didB = createDemoCreatorIdentity("Atelier Han!");
+    expect(didA.didWeb).toBe("did:example:toonstudio.cloud:creators:atelier-han");
+    expect(didA.didKey.startsWith("demo-hash:")).toBe(true);
     expect(didA.verificationMethod).toContain(`${didA.didWeb}#key-`);
     expect(didA.didKey).toBe(didB.didKey);
   });
 
-  it("10. C2PA 크리에이션 클레임 매니페스트는 원본 통과 및 원화 1바이트·메타데이터 변조를 즉시 차단한다", () => {
-    const did = createCreatorDidIdentity("seojun-studio");
+  it("10. 로컬 HMAC 매니페스트는 원본 통과 및 원화 1바이트·메타데이터 변조를 즉시 차단한다", () => {
+    const did = createDemoCreatorIdentity("seojun-studio");
     const artwork = createSyntheticArtworkRgba(64, 64);
     const seed = "creator-signing-seed-alpha";
 
-    const manifest = createC2paProvenanceManifest({
+    const manifest = createLocalIntegrityManifest({
       title: "검은 시계탑 12화",
       episodeCode: "EP.12",
       creatorDid: did,
@@ -322,46 +325,91 @@ describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & C2PA �
       signingSeed: seed,
     });
 
-    expect(manifest.claim.schemaVersion).toBe("c2pa.toonstudio.claim.v2");
+    expect(manifest.claim.schemaVersion).toBe("toonstudio.local-integrity-demo.v1");
     expect(manifest.claim.assertions.trainingMining.doNotTrain).toBe(true);
 
-    const ok = verifyC2paProvenanceManifest(manifest, artwork.data, seed, did);
-    expect(ok.verified).toBe(true);
+    const ok = verifyLocalIntegrityManifest(manifest, artwork.data, seed, did);
+    expect(ok.integrityMatches).toBe(true);
+    expect(ok.c2paVerified).toBe(false);
+    expect(ok.identityVerified).toBe(false);
+    expect(ok.copyrightVerified).toBe(false);
+    expect(manifest.c2paSupported).toBe(false);
+    expect(manifest.verificationScope).toBe("local-hmac-integrity-only");
+    expect(manifest.claim.inputClaimsVerified).toBe(false);
+    expect(manifest.claim.dataOrigin).toBe("caller-provided-unverified");
+    expect(JSON.stringify(manifest)).not.toContain("c2pa.created");
     expect(ok.reasons).toHaveLength(0);
+    expect(verifyLegacyManifest(manifest, artwork.data, seed, did)).toEqual(ok);
+    expect("verified" in ok).toBe(false);
+    expect(createLegacyManifest({
+      title: "합성", episodeCode: "demo", creatorDid: did, artworkBytes: artwork.data,
+      humanStrokeCount: 0, aiAssistedRatio: 0, createdAtIso: "2026-11-25T00:00:00.000Z", signingSeed: seed,
+    }).c2paSupported).toBe(false);
 
     // 1바이트 원화 변조 탐지
     const tamperedBytes = new Uint8ClampedArray(artwork.data);
     tamperedBytes[128] = ((tamperedBytes[128] ?? 0) + 1) & 0xff;
-    const tamperedArtworkCheck = verifyC2paProvenanceManifest(manifest, tamperedBytes, seed, did);
-    expect(tamperedArtworkCheck.verified).toBe(false);
+    const tamperedArtworkCheck = verifyLocalIntegrityManifest(manifest, tamperedBytes, seed, did);
+    expect(tamperedArtworkCheck.integrityMatches).toBe(false);
     expect(tamperedArtworkCheck.assetHashMatches).toBe(false);
     expect(tamperedArtworkCheck.reasons).toContain("asset-sha256-mismatch");
 
-    // 메타데이터 변조 및 잘못된 서명 키 탐지
+    // 메타데이터 변경 및 잘못된 HMAC 키 탐지
     const tamperedManifest = {
       ...manifest,
       claim: { ...manifest.claim, title: "도용된 제목" },
     };
-    const metaCheck = verifyC2paProvenanceManifest(tamperedManifest, artwork.data, seed, did);
-    expect(metaCheck.verified).toBe(false);
+    const metaCheck = verifyLocalIntegrityManifest(tamperedManifest, artwork.data, seed, did);
+    expect(metaCheck.integrityMatches).toBe(false);
     expect(metaCheck.claimDigestMatches).toBe(false);
 
-    const wrongKeyCheck = verifyC2paProvenanceManifest(manifest, artwork.data, "wrong-seed", did);
-    expect(wrongKeyCheck.verified).toBe(false);
-    expect(wrongKeyCheck.signatureValid).toBe(false);
+    const wrongKeyCheck = verifyLocalIntegrityManifest(manifest, artwork.data, "wrong-seed", did);
+    expect(wrongKeyCheck.integrityMatches).toBe(false);
+    expect(wrongKeyCheck.hmacMatches).toBe(false);
+  });
+
+  it("긴 번역문을 잘라 성공으로 보고하지 않고 텍스트 넘침 상태와 전체 내용을 보존한다", () => {
+    const text = "가".repeat(1000);
+    const input: SimulpubPanelLayoutInput = {
+      panelId: "overflow", titleKo: "넘침", titleEn: "Overflow", canvasWidth: 100, canvasHeight: 100,
+      faceSafeBoxes: [], balloons: [{ balloonId: "long", speaker: "예시", fontSizePx: 16,
+        baseBox: { x: 16, y: 16, width: 60, height: 36 },
+        translations: { ko: text, en: text, ja: text, es: text, id: text } }],
+    };
+    const summary = reflowPanelForLocale(input, "ko");
+    expect(summary.zeroFaceOverlapGuaranteed).toBe(true);
+    expect(summary.hasTextOverflow).toBe(true);
+    expect(summary.balloons[0]?.textOverflow).toBe(true);
+    expect(summary.balloons[0]?.text).toBe(text);
+  });
+
+  it("고주파 이미지에서 기록할 수 없는 워터마크는 unsupported-image로 반환하고 원본을 보존한다", () => {
+    const data = new Uint8ClampedArray(16 * 16 * 4);
+    for (let y = 0; y < 16; y += 1) for (let x = 0; x < 16; x += 1) {
+      const offset = (y * 16 + x) * 4;
+      data[offset + 2] = (x + y) % 2 === 0 ? 0 : 255;
+      data[offset + 3] = 255;
+    }
+    const before = data.slice();
+    const result = encodeCropResistantWatermark({ width: 16, height: 16, data }, "demo", "digest");
+    expect(result.embeddingStatus).toBe("unsupported-image");
+    expect(data).toEqual(before);
   });
 
   it("11. 비가시 워터마크 인코딩은 높은 화질(PSNR > 34dB)을 유지하며 전체 원화에서 64-bit 페이로드를 정확히 복원한다", () => {
     const artwork = createSyntheticArtworkRgba(128, 128);
-    const did = createCreatorDidIdentity("kim-author");
+    const did = createDemoCreatorIdentity("kim-author");
     const assetHash = computeDeterministicSha256Hex(artwork.data);
 
     const encoded = encodeCropResistantWatermark(artwork, did.didWeb, assetHash, 5);
+    expect(encoded.embeddingStatus).toBe("embedded");
     expect(encoded.psnrDb).toBeGreaterThan(34);
     expect(encoded.tileCount).toBe(64);
     expect(encoded.payloadHex).toMatch(/^[0-9a-f]{16}$/);
 
     const verified = verifyCropResistantWatermark(encoded.watermarked, did.didWeb, assetHash);
+    expect(verified.identityVerified).toBe(false);
+    expect(verified.assetIntegrityVerified).toBe(false);
     expect(verified.detected).toBe(true);
     expect(verified.crcValid).toBe(true);
     expect(verified.creatorTagMatched).toBe(true);
@@ -369,11 +417,15 @@ describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & C2PA �
     expect(verified.recoveredPayloadHex).toBe(encoded.payloadHex);
     expect(verified.detectedPhaseX).toBe(0);
     expect(verified.detectedPhaseY).toBe(0);
+    const wrongCreator = verifyCropResistantWatermark(encoded.watermarked, "unrelated-demo", assetHash);
+    expect(wrongCreator.crcValid).toBe(true);
+    expect(wrongCreator.creatorTagMatched).toBe(false);
+    expect(wrongCreator.identityVerified).toBe(false);
   });
 
   it("12. 임의 홀수 좌표 크롭(23,37) 및 밝기 보정(+14) 후에도 위상 재동기화로 워터마크를 복원하고 미삽입 원화는 거절한다", () => {
     const artwork = createSyntheticArtworkRgba(128, 128);
-    const did = createCreatorDidIdentity("kim-author");
+    const did = createDemoCreatorIdentity("kim-author");
     const assetHash = computeDeterministicSha256Hex(artwork.data);
     const encoded = encodeCropResistantWatermark(artwork, did.didWeb, assetHash, 5);
 
@@ -503,11 +555,13 @@ describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & C2PA �
     expect(onAudited).toHaveBeenCalledTimes(1);
   });
 
-  it("17. 탭 2에서 일본어 세로쓰기(vertical-rl) 전환·0px 얼굴 보호 배지·C2PA 1바이트 변조 감지·워터마크 크롭 검증이 동작한다", () => {
+  it("17. 탭 2에서 일본어 세로쓰기(vertical-rl) 전환·0px 얼굴 보호 배지·합성 이미지 무결성 검사·워터마크 크롭 검증이 동작한다", () => {
     render(<StudioStorySimulpubPanel />);
 
     fireEvent.click(screen.getByTestId("tab-simulpub"));
     expect(screen.getByTestId("panel-simulpub")).toBeTruthy();
+    expect(screen.getByText(/합성 대본·번역·96×96 이미지의 CPU 계산 예제/)).toBeTruthy();
+    expect(screen.getByTestId("integrity-verify-status").textContent).toContain("C2PA 미지원");
     expect(screen.getByTestId("simulpub-face-overlap-badge").textContent).toContain("0px");
 
     // 일본어 전환 -> 세로쓰기(vertical-rl) 확인
@@ -521,14 +575,14 @@ describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & C2PA �
     fireEvent.click(screen.getByTestId("locale-btn-es"));
     expect(screen.getByTestId("simulpub-expansion-factor").textContent).toBe("×1.32");
 
-    // C2PA 원화 1바이트 변조 시뮬레이션 -> 검증 실패 전환 확인
-    expect(screen.getByTestId("c2pa-verify-status").textContent).toContain("통과");
+    // 합성 이미지 1바이트 변경 시뮬레이션 -> 검증 실패 전환 확인
+    expect(screen.getByTestId("integrity-verify-status").textContent).toContain("HMAC 일치");
     fireEvent.click(screen.getByTestId("btn-toggle-tamper"));
-    expect(screen.getByTestId("c2pa-verify-status").textContent).toContain("변조 감지");
+    expect(screen.getByTestId("integrity-verify-status").textContent).toContain("무결성 불일치");
 
     // 크롭+밝기 모드 전환 -> 워터마크 CRC-16 복원 확인
     fireEvent.click(screen.getByTestId("btn-wm-crop-bright"));
-    expect(screen.getByTestId("watermark-verify-summary").textContent).toContain("CRC-16 일치");
+    expect(screen.getByTestId("watermark-verify-summary").textContent).toContain("CRC-16·예시 태그 일치");
   });
 
   it("18. 탭 3 히트맵·스크롤 비트 슬라이더·영문 로케일 및 모듈 전체 정적 위생 규칙(800줄·무색상·무스토리지·props규칙)을 통과한다", () => {
@@ -551,6 +605,7 @@ describe("Wave 39D: 스토리 인과 감사관 · 5개국 리플로우 & C2PA �
     const files = [
       "narrative-causality-engine.ts",
       "simulpub-reflow-provenance.ts",
+      "local-integrity-demo.ts",
       "scroll-pacing-heatmap-engine.ts",
       "StudioStorySimulpubPanel.tsx",
       "index.ts",

@@ -328,7 +328,7 @@ function maxSafeCurlForProp(prop: HandPropSpec, finger: FingerId): number {
   return round1(68 + clamp((44 - prop.diameterMm) * 0.68, 0, 22));
 }
 
-/** 현재 15관절 포즈와 소품 충돌 반경으로 접촉점 수(2~5)·관통 회피 점수(0~100)·실루엣 가독성을 계산한다. */
+/** 고정 소품·관절 각도로 접촉 손가락(0~5)과 적합도를 추정한다. 실제 메시 충돌 검사는 아니다. */
 export function evaluateHandPropPoseMetrics(
   pose: HandRigPose15, prop: HandPropSpec, _handSide: HandSide, intent: GripIntent,
 ): HandGripMetrics {
@@ -364,13 +364,8 @@ export function evaluateHandPropPoseMetrics(
   }
   totalFitPenalty += Math.max(0, thumbOppDiff - 18) * 0.35;
 
-  const normalizedContacts = [...activeContacts];
-  for (const fallbackFinger of profile.primaryContactFingers) {
-    if (normalizedContacts.length >= 2) break;
-    if (!normalizedContacts.includes(fallbackFinger)) normalizedContacts.push(fallbackFinger);
-  }
-  const finalContacts = normalizedContacts.slice(0, 5);
-  const contactPoints = Math.round(clamp(finalContacts.length, 2, 5));
+  const finalContacts = activeContacts.slice(0, 5);
+  const contactPoints = finalContacts.length;
 
   const clearanceScore = Math.round(clamp(97 - totalPenetrationPenalty - totalFitPenalty * 0.6, 0, 100));
   const penetrationRisk: PenetrationRisk = clearanceScore >= 78 ? "none" : clearanceScore >= 58 ? "tight" : "overlap";
@@ -501,8 +496,8 @@ function describeProposal(
     return {
       titleKo: `안정 밀착 · ${prop.labelKo}`,
       titleEn: `Natural Fit · ${prop.labelEn}`,
-      descriptionKo: `${sideKo} 기준 지름 ${prop.diameterMm}mm에 맞춰 ${metrics.contactPoints}개 접촉점을 고르게 배분했습니다. ${intentMeta.labelKo} 컷에서 관통 없이 바로 쓰기 좋습니다.`,
-      descriptionEn: `Balances ${metrics.contactPoints} contacts for the ${prop.diameterMm}mm ${prop.labelEn.toLowerCase()} with ${sideEn.toLowerCase()}-hand clearance.`,
+      descriptionKo: `${sideKo}·지름 ${prop.diameterMm}mm의 고정 예제에서 ${metrics.contactPoints}개 접촉 손가락을 추정합니다. ${intentMeta.labelKo} 각도 후보이며 실제 접촉·관통은 검증하지 않았습니다.`,
+      descriptionEn: `Estimates ${metrics.contactPoints} contact fingers for a fixed ${prop.diameterMm}mm ${sideEn.toLowerCase()}-hand example. Actual contact and mesh penetration are unverified.`,
     };
   }
   if (variant === "camera-silhouette") {
@@ -595,7 +590,7 @@ export function createBaselineHandSnapshot(
   const prop = getHandPropSpec(propId);
   const metrics = evaluateHandPropPoseMetrics(NEUTRAL_OPEN_HAND_POSE, prop, handSide, intent);
   return {
-    labelKo: "원본 컷 · 기본 펼친 손", labelEn: "Baseline Cut · Neutral Open Hand",
+    labelKo: "예제 기준 · 기본 펼친 손", labelEn: "Example Baseline · Neutral Open Hand",
     propId, handSide, intent, pose: clampHandRigPose(NEUTRAL_OPEN_HAND_POSE),
     contactPoints: metrics.contactPoints, contactFingers: metrics.contactFingers,
     clearanceScore: metrics.clearanceScore, silhouetteScore: metrics.silhouetteScore,
@@ -658,22 +653,31 @@ export function revertHandGripProposal(session: HandGripSessionState): HandGripS
 export function exportHandGripRigJson(input: HandGripRigExportInput): string {
   const clampedPose = clampHandRigPose(input.pose);
   const joints15 = flattenHandJoints15(clampedPose, input.handSide);
+  const prefix = `grip-${input.prop.id}-${input.handSide}-${input.intent}-`;
+  const belongsToTarget = (id: string | null | undefined): id is string => typeof id === "string" && id.startsWith(prefix);
+  const activeId = input.activeProposalId === undefined ? input.session.appliedProposalId : input.activeProposalId;
+  const current = input.session.current;
+  const matchesCurrent = current.propId === input.prop.id && current.handSide === input.handSide && current.intent === input.intent
+    && JSON.stringify(clampHandRigPose(current.pose)) === JSON.stringify(clampedPose);
+  const appliedId = matchesCurrent && belongsToTarget(input.session.appliedProposalId) ? input.session.appliedProposalId : null;
+  const metrics = evaluateHandPropPoseMetrics(clampedPose, input.prop, input.handSide, input.intent);
   const payload = {
     schemaVersion: "toonstudio.hand-prop-autogrip.v1",
     nonDestructivePolicy: "author-approval-required",
+    execution: { source: "synthetic-catalog", meshCollisionChecked: false, sceneMutationVerified: false, persistenceVerified: false },
     handSide: input.handSide,
     mirrorSign: input.handSide === "left" ? -1 : 1,
     intent: input.intent,
-    activeProposalId: input.activeProposalId ?? input.session.appliedProposalId ?? null,
+    activeProposalId: belongsToTarget(activeId) ? activeId : null,
     prop: {
       id: input.prop.id, labelKo: input.prop.labelKo, labelEn: input.prop.labelEn,
       gripType: input.prop.gripType, diameterMm: input.prop.diameterMm,
       thicknessMm: input.prop.thicknessMm, collisionRadiusMm: input.prop.collisionRadiusMm,
     },
     metrics: {
-      contactPoints: input.metrics.contactPoints, contactFingers: input.metrics.contactFingers,
-      clearanceScore: input.metrics.clearanceScore, silhouetteScore: input.metrics.silhouetteScore,
-      overallScore: input.metrics.overallScore, penetrationRisk: input.metrics.penetrationRisk,
+      contactPoints: metrics.contactPoints, contactFingers: metrics.contactFingers,
+      clearanceScore: metrics.clearanceScore, silhouetteScore: metrics.silhouetteScore,
+      overallScore: metrics.overallScore, penetrationRisk: metrics.penetrationRisk,
     },
     rig15: {
       jointCount: joints15.length,
@@ -688,9 +692,9 @@ export function exportHandGripRigJson(input: HandGripRigExportInput): string {
       joints: joints15,
     },
     session: {
-      status: input.session.status, canRevert: input.session.canRevert,
-      appliedProposalId: input.session.appliedProposalId,
-      previewingProposalId: input.session.previewingProposalId,
+      status: matchesCurrent ? input.session.status : "previewing", canRevert: matchesCurrent && input.session.canRevert,
+      appliedProposalId: appliedId,
+      previewingProposalId: belongsToTarget(input.session.previewingProposalId) ? input.session.previewingProposalId : null,
       historyCount: input.session.history.length,
     },
   };

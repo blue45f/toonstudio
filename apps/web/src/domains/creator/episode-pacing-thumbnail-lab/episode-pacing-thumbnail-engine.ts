@@ -1,3 +1,8 @@
+import { assertEpisodeCuts, countDialogueChars, suggestBalloonTextSplit, uniqueEpisodeId } from "./episode-dialogue-contract";
+import { assertDiagnosticSnapshot, assertOklchColor, assertThumbnailInputs, requireFinitePacing } from "./thumbnail-input-contract";
+
+export { countDialogueChars, suggestBalloonTextSplit, applySplitSuggestionToCuts } from "./episode-dialogue-contract";
+
 /**
  * Wave 44F — 독자 이탈 휴리스틱 · 대사 벽 감지 · 썸네일 A/B 주목도 진단 엔진.
  *
@@ -13,8 +18,8 @@ export const BALLOON_MAX_CHARS = 42;
 export const CUT_BALLOON_WARNING_MIN = 4;
 export const OPENING_HOOK_CUT_COUNT = 3;
 export const MIN_THUMBNAIL_TITLE_PX = 10;
-export const HEURISTIC_DISCLAIMER_KO = "모든 흡인력·이탈 위험·썸네일 주목도 점수는 실측 독자 로그가 아닌 규칙 기반 휴리스틱 추정치입니다.";
-export const HEURISTIC_DISCLAIMER_EN = "All hook, drop-off risk, and thumbnail attention scores are rule-based heuristic estimates, not measured reader telemetry.";
+export const HEURISTIC_DISCLAIMER_KO = "모든 점수는 실측 독자 로그가 아닌 규칙 기반 휴리스틱 추정치입니다. 플랫폼 크기·대비 근사·배지 배치는 예시이며 현행 공식 규격을 확인하지 않습니다.";
+export const HEURISTIC_DISCLAIMER_EN = "All hook, drop-off risk, and thumbnail attention scores are rule-based heuristic estimates, not measured reader telemetry. Platform sizes, contrast approximations and badge placement are examples, not current platform requirements.";
 
 export type CutEmotionState = "neutral" | "curious" | "tense" | "shock" | "anger" | "warmth" | "sorrow" | "resolve";
 export type CutActionShift = "none" | "subtle" | "clear" | "impact";
@@ -47,6 +52,7 @@ export interface DialogueSplitSuggestion {
   readonly id: string; readonly cutIndex: number; readonly cutId: string; readonly balloonId: string | null;
   readonly reason: DialogueWallReason; readonly originalText: string | null;
   readonly suggestedChunks: readonly string[]; readonly recommendedCutSplitIndex: number | null;
+  readonly sourceBalloons?: readonly DialogueBalloonInput[];
   readonly adviceKo: string; readonly adviceEn: string;
 }
 export interface EpisodeCutAudit {
@@ -274,83 +280,6 @@ export const getThumbnailPlatformSpec = (id: ThumbnailPlatformId): ThumbnailPlat
 export const getThumbnailTonePreset = (id: ThumbnailTonePresetId): ThumbnailTonePreset => THUMBNAIL_TONE_PRESETS.find((p) => p.id === id) ?? DEFAULT_TONE_PRESET;
 export const getEpisodeHookPreset = (id: EpisodePresetId): EpisodeHookPreset => EPISODE_HOOK_PRESETS.find((p) => p.id === id) ?? DEFAULT_EPISODE_PRESET;
 
-/** 말풍선 유효 글자 수 및 한글 글자 수 계산. */
-export function countDialogueChars(text: string): { readonly charCount: number; readonly hangulCharCount: number } {
-  const normalized = text.trim().replace(/\r?\n/gu, " ").replace(/\s+/gu, " ");
-  const hangulMatches = normalized.match(/[가-힣ㄱ-ㅎㅏ-ㅣ]/gu);
-  return { charCount: normalized.length, hangulCharCount: hangulMatches ? hangulMatches.length : 0 };
-}
-
-/** 42자 초과 말풍선 텍스트를 읽기 호흡에 맞춰 복수 말풍선 초안으로 결정론적 분할한다. */
-export function suggestBalloonTextSplit(text: string, maxChars: number = BALLOON_MAX_CHARS): readonly string[] {
-  const limit = Math.max(12, Math.floor(maxChars));
-  const normalized = text.trim().replace(/\r?\n/gu, " ").replace(/\s+/gu, " ");
-  if (!normalized) return [];
-  if (normalized.length <= limit) return [normalized];
-  const targetLen = Math.max(12, Math.min(limit, Math.floor(limit * 0.86)));
-  const clauses = normalized.split(/(?<=[.!?…~,])\s+/u).map((p) => p.trim()).filter(Boolean);
-  const chunks: string[] = [];
-
-  const splitHard = (seg: string): void => {
-    const words = seg.split(/\s+/u).filter(Boolean);
-    if (words.length <= 1) {
-      for (let i = 0; i < seg.length; i += targetLen) chunks.push(seg.slice(i, i + targetLen));
-      return;
-    }
-    let cur = "";
-    for (const w of words) {
-      if (w.length > limit) {
-        if (cur) { chunks.push(cur); cur = ""; }
-        for (let i = 0; i < w.length; i += targetLen) chunks.push(w.slice(i, i + targetLen));
-      } else if (!cur || cur.length + 1 + w.length <= targetLen) {
-        cur = cur ? `${cur} ${w}` : w;
-      } else {
-        chunks.push(cur); cur = w;
-      }
-    }
-    if (cur) chunks.push(cur);
-  };
-
-  let buf = "";
-  for (const clause of clauses) {
-    if (clause.length > limit) { if (buf) { chunks.push(buf); buf = ""; } splitHard(clause); }
-    else if (!buf || buf.length + 1 + clause.length <= targetLen) buf = buf ? `${buf} ${clause}` : clause;
-    else { chunks.push(buf); buf = clause; }
-  }
-  if (buf) chunks.push(buf);
-  return chunks;
-}
-
-/** 분할 제안을 실제 컷·말풍선 배열에 1클릭 적용한다. */
-export function applySplitSuggestionToCuts(cuts: readonly EpisodeCutInput[], suggestion: DialogueSplitSuggestion): readonly EpisodeCutInput[] {
-  const target = cuts[suggestion.cutIndex];
-  if (!target) return cuts;
-  const splitCut = (items: readonly DialogueBalloonInput[], splitAt: number, suffixKo: string, suffixEn: string): readonly EpisodeCutInput[] => {
-    const second: EpisodeCutInput = {
-      ...target, id: `${target.id}-split`, labelKo: `${target.labelKo} (${suffixKo})`, labelEn: `${target.labelEn} (${suffixEn})`,
-      role: "reaction",
-      actionShift: target.actionShift === "none" ? "subtle" : target.actionShift, balloons: items.slice(splitAt),
-    };
-    return [...cuts.slice(0, suggestion.cutIndex), { ...target, balloons: items.slice(0, splitAt) }, second, ...cuts.slice(suggestion.cutIndex + 1)];
-  };
-
-  if (suggestion.reason === "balloon-over-42-chars" && suggestion.balloonId) {
-    const expanded: DialogueBalloonInput[] = [];
-    for (const b of target.balloons) {
-      if (b.id !== suggestion.balloonId) expanded.push(b);
-      else (suggestion.suggestedChunks.length > 0 ? suggestion.suggestedChunks : suggestBalloonTextSplit(b.text))
-        .forEach((piece, idx) => expanded.push({ id: `${b.id}-s${idx + 1}`, speaker: b.speaker, kind: b.kind, text: piece }));
-    }
-    return expanded.length < CUT_BALLOON_WARNING_MIN
-      ? cuts.map((c, idx) => (idx === suggestion.cutIndex ? { ...c, balloons: expanded } : c))
-      : splitCut(expanded, Math.ceil(expanded.length / 2), "분할 호흡", "Split Beat");
-  }
-  if (suggestion.reason === "cut-over-4-balloons" && target.balloons.length >= 2) {
-    return splitCut(target.balloons, clamp(suggestion.recommendedCutSplitIndex ?? Math.ceil(target.balloons.length / 2), 1, target.balloons.length - 1), "분할 컷", "Split Cut");
-  }
-  return cuts;
-}
-
 const mkWarn = (
   code: PacingWarningCode, severity: WarningSeverity, affectedCutIndices: readonly number[],
   titleKo: string, titleEn: string, detailKo: string, detailEn: string, prescriptionKo: string, prescriptionEn: string,
@@ -358,13 +287,22 @@ const mkWarn = (
 
 /** 초반 3컷 흡인력, 말풍선 텍스트 벽(42자 초과 / 컷당 4개 이상), 클리프행어 긴장도를 규칙 기반으로 진단한다. */
 export function analyzeEpisodeHookAndDensity(options: AnalyzeEpisodeHookOptions): EpisodeHookDensityAnalysis {
-  const maxCharsPerBalloon = Math.max(12, Math.floor(options.maxCharsPerBalloon ?? BALLOON_MAX_CHARS));
-  const balloonWarningThreshold = Math.max(2, Math.floor(options.balloonWarningThreshold ?? CUT_BALLOON_WARNING_MIN));
+  assertEpisodeCuts(options.cuts);
+  requireFinitePacing([options.maxCharsPerBalloon ?? BALLOON_MAX_CHARS, options.balloonWarningThreshold ?? CUT_BALLOON_WARNING_MIN]);
+  if ((options.episodeTitle?.length ?? 0) > 4096) throw new RangeError("회차 제목 상한은 4096자입니다.");
+  const maxCharsPerBalloon = Math.min(256, Math.max(12, Math.floor(options.maxCharsPerBalloon ?? BALLOON_MAX_CHARS)));
+  const balloonWarningThreshold = Math.min(32, Math.max(2, Math.floor(options.balloonWarningThreshold ?? CUT_BALLOON_WARNING_MIN)));
   const episodeTitle = options.episodeTitle?.trim() || "회차 초고";
   const cuts = options.cuts;
 
   const warnings: EpisodePacingWarning[] = [];
   const splitSuggestions: DialogueSplitSuggestion[] = [];
+  const suggestionIds = new Set<string>();
+  function nextSuggestionId(base: string): string {
+    const id = uniqueEpisodeId(base, suggestionIds);
+    suggestionIds.add(id);
+    return id;
+  }
   const auditedCuts: EpisodeCutAudit[] = [];
   let totalBalloons = 0; let totalChars = 0; let dialogueWallCutCount = 0;
   let overlongBalloonCount = 0; let overcrowdedCutCount = 0; let runningRetention = 100;
@@ -383,8 +321,8 @@ export function analyzeEpisodeHookAndDensity(options: AnalyzeEpisodeHookOptions)
       if (exceedsCharLimit) {
         cutOverlongCount += 1; overlongBalloonCount += 1;
         splitSuggestions.push({
-          id: `split-${cut.id}-${balloon.id}`, cutIndex: index, cutId: cut.id, balloonId: balloon.id,
-          reason: "balloon-over-42-chars", originalText: balloon.text.trim(), suggestedChunks, recommendedCutSplitIndex: null,
+          id: nextSuggestionId(`split-${cut.id}-${balloon.id}`), cutIndex: index, cutId: cut.id, balloonId: balloon.id,
+          reason: "balloon-over-42-chars", originalText: balloon.text, suggestedChunks, recommendedCutSplitIndex: null,
           adviceKo: `${index + 1}컷 '${balloon.speaker}' 말풍선이 ${charCount}자(${maxCharsPerBalloon}자 초과)입니다. ${suggestedChunks.length}개 말풍선으로 분할하세요.`,
           adviceEn: `Cut ${index + 1} '${balloon.speaker}' balloon has ${charCount} chars (limit ${maxCharsPerBalloon}). Split into ${suggestedChunks.length} bubbles.`,
         });
@@ -398,8 +336,9 @@ export function analyzeEpisodeHookAndDensity(options: AnalyzeEpisodeHookOptions)
       overcrowdedCutCount += 1;
       const splitPoint = Math.ceil(balloonAudits.length / 2);
       splitSuggestions.push({
-        id: `split-cut-${cut.id}`, cutIndex: index, cutId: cut.id, balloonId: null,
+        id: nextSuggestionId(`split-cut-${cut.id}`), cutIndex: index, cutId: cut.id, balloonId: null,
         reason: "cut-over-4-balloons", originalText: null, suggestedChunks: [], recommendedCutSplitIndex: splitPoint,
+        sourceBalloons: cut.balloons.map(({ id, speaker, kind, text }) => ({ id, speaker, kind, text })),
         adviceKo: `${index + 1}컷에 말풍선이 ${balloonAudits.length}개 몰려 있습니다. 1~${splitPoint}번 유지, ${splitPoint + 1}~${balloonAudits.length}번은 반응 컷으로 분리하세요.`,
         adviceEn: `Cut ${index + 1} packs ${balloonAudits.length} balloons. Keep 1-${splitPoint} and move ${splitPoint + 1}-${balloonAudits.length} to a reaction cut.`,
       });
@@ -546,6 +485,7 @@ export function analyzeEpisodeHookAndDensity(options: AnalyzeEpisodeHookOptions)
 
 /** OKLCH -> OKLab -> 선형 sRGB 상대 휘도(Y: 0..1) 계산. */
 export function oklchToRelativeLuminance(color: OklchColor): number {
+  assertOklchColor(color);
   const l = clamp(color.l, 0, 1); const c = clamp(color.c, 0, 0.37);
   const rad = ((color.h % 360) * Math.PI) / 180;
   const a = c * Math.cos(rad); const b = c * Math.sin(rad);
@@ -612,6 +552,7 @@ export function evaluateThumbnailOnPlatform(
   activeBadges: readonly ThumbnailBadgeKind[] = THUMBNAIL_BADGE_KINDS,
   badgeCornerOverrides?: Partial<Record<ThumbnailBadgeKind, BadgeCorner>>,
 ): ThumbnailPlatformCandidateAudit {
+  assertThumbnailInputs(candidate, activeBadges);
   const platform = getThumbnailPlatformSpec(platformId);
   const srcW = Math.max(200, candidate.sourceWidthPx); const srcH = Math.max(200, candidate.sourceHeightPx);
   const srcAspect = srcW / srcH; const dstAspect = platform.widthPx / platform.heightPx;
@@ -731,6 +672,8 @@ export function compareThumbnailCandidates(options: CompareThumbnailCandidatesOp
 
 /** 회차 초반 3컷 진단과 3종 썸네일 A/B 비교 결과를 복사 가능한 마크다운 리포트로 직렬화한다. */
 export function buildLabDiagnosticReportMarkdown(pacing: EpisodeHookDensityAnalysis, thumb: ThumbnailAbComparisonResult, locale: "ko" | "en" = "ko"): string {
+  assertDiagnosticSnapshot(pacing);
+  assertDiagnosticSnapshot(thumb);
   const isEn = locale === "en";
   const lines: string[] = [
     isEn ? `# Episode Pacing & Thumbnail A/B Report (${pacing.episodeTitle})` : `# 회차 초반 흡인력 · 대사 벽 · 썸네일 A/B 진단 리포트 (${pacing.episodeTitle})`,

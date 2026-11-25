@@ -1,4 +1,4 @@
-import { Brush, Camera, Clapperboard, Grip, Hand, Layers, Lightbulb, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Camera, Hand, Layers, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -43,11 +43,13 @@ const LazyNeuralUpscaleTexturesPanel = lazy(async () => {
   const m = await import("../neural-upscale-textures/StudioNeuralUpscaleTexturesPanel");
   return { default: m.StudioNeuralUpscaleTexturesPanel };
 });
-const LazyCinematographyDirectorPanel = lazy(async () => {
-  await import("../webtoon-cinematography-director");
-  const m = await import("../webtoon-cinematography-director/StudioCinematographyDirectorPanel");
-  return { default: m.StudioCinematographyDirectorPanel };
+
+const LazyKoreanLetteringPanel = lazy(async () => {
+  await import("../korean-lettering-sfx-engine");
+  const m = await import("../korean-lettering-sfx-engine/StudioKoreanLetteringSfxPanel");
+  return { default: m.StudioKoreanLetteringSfxPanel };
 });
+
 const LazyStudio3dLightingRigPanel = lazy(async () => {
   await import("../studio-3d-lighting-rig");
   const m = await import("../studio-3d-lighting-rig/Studio3dLightingRigPanel");
@@ -58,16 +60,13 @@ const LazyStudioActionFxLabPanel = lazy(async () => {
   const m = await import("../action-fx-procedural-lab/StudioActionFxLabPanel");
   return { default: m.StudioActionFxLabPanel };
 });
-const LazyStudioAtelierFoleyMixerPanel = lazy(async () => {
-  await import("../atelier-foley-mixer");
-  const m = await import("../atelier-foley-mixer/StudioAtelierFoleyMixerPanel");
-  return { default: m.StudioAtelierFoleyMixerPanel };
-});
-const LazyStudioCharacterSheetBiblePanel = lazy(async () => {
+
+const LazyCharacterBiblePanel = lazy(async () => {
   await import("../character-sheet-bible-studio");
   const m = await import("../character-sheet-bible-studio/StudioCharacterSheetBiblePanel");
   return { default: m.StudioCharacterSheetBiblePanel };
 });
+
 const LazyStudioEditorialMoodboardPanel = lazy(async () => {
   await import("../editorial-moodboard-palette");
   const m = await import("../editorial-moodboard-palette/StudioEditorialMoodboardPanel");
@@ -78,16 +77,19 @@ const LazyStudioCharExpressionPoseAdvisorPanel = lazy(async () => {
   const m = await import("../char-expression-pose-advisor/StudioCharExpressionPoseAdvisorPanel");
   return { default: m.StudioCharExpressionPoseAdvisorPanel };
 });
+
 const LazyStudioSceneLightingAdvisorPanel = lazy(async () => {
   await import("../scene-lighting-atmosphere-advisor");
   const m = await import("../scene-lighting-atmosphere-advisor/StudioSceneLightingAdvisorPanel");
   return { default: m.StudioSceneLightingAdvisorPanel };
 });
+
 const LazyStudioCameraFramingCoachPanel = lazy(async () => {
   await import("../camera-framing-continuity-coach");
   const m = await import("../camera-framing-continuity-coach/StudioCameraFramingCoachPanel");
   return { default: m.StudioCameraFramingCoachPanel };
 });
+
 const LazyStudioHandPropAutoGripPanel = lazy(async () => {
   await import("../hand-prop-autogrip-assistant");
   const m = await import("../hand-prop-autogrip-assistant/StudioHandPropAutoGripPanel");
@@ -103,11 +105,10 @@ type Csp3dTabId =
   | "charlabCsp"
   | "p3ColorLight"
   | "neuralUpscale"
-  | "cinematographyDir"
+  | "koreanLettering"
   | "lightingRig3d"
   | "actionFxLab"
-  | "foleyMixer"
-  | "charSheetBible"
+  | "characterBible"
   | "editorialMoodboard"
   | "charExprAdvisor"
   | "sceneLightingAdv"
@@ -123,20 +124,19 @@ const CSP3D_TABS: readonly {
   { id: "surface3d", labelKo: "3D 표면 직접 페인팅·4층 UV", labelEn: "3D Surface Paint · 4-Layer UV" },
   { id: "hand3d", labelKo: "15관절 3D 손·가중치·STL·LOD", labelEn: "15-Joint 3D Hand · Weights · STL · LOD" },
   { id: "watermark", labelKo: "비가시 워터마크·속도곡선·경계블러", labelEn: "Anti-AI Watermark · Velocity · Safe Blur" },
-  { id: "commercialPro", labelKo: "상업 연재 8대 엔진 (3층 리라이트·컷돌파·굿즈·매크로)", labelEn: "Pro Commercial 8-Suite (Relight · Breakout · Goods · Macro)" },
-  { id: "charlabCsp", labelKo: "캐릭터 라이브 링크·벡터 지우개·QuickShape·수채화·워치", labelEn: "Char Live Link · Vector Eraser · QuickShape · Watch" },
-  { id: "p3ColorLight", labelKo: "Display-P3 광색역·CMYK·실시간 다중 동적 조명", labelEn: "Display-P3 Gamut · CMYK · Dynamic Lighting" },
-  { id: "neuralUpscale", labelKo: "2×/4× 엣지 업스케일러·6종 절차 PBR 텍스처", labelEn: "2x/4x Edge Upscaler · 6 Seamless PBR Textures" },
-  { id: "cinematographyDir", labelKo: "3D 시네마토그래피·180도 법칙·세로 시선 유도", labelEn: "3D Cinematography · 180° Rule · Eye-Flow" },
-  { id: "lightingRig3d", labelKo: "서울 물리 하늘·3점 조명 릭·그림자 캐처", labelEn: "Seoul Physical Sky · 3-Point Rig · Shadow Catcher" },
-  { id: "actionFxLab", labelKo: "웹툰 6종 액션·마법진·로맨스 벡터 FX 랩", labelEn: "6-Preset Action & Romance Vector FX Lab" },
-  { id: "foleyMixer", labelKo: "화실 물리 사운드(Foley)·-24 LUFS 공간 음향 믹서", labelEn: "Atelier Physical Foley · -24 LUFS Acoustic Mixer" },
-  { id: "charSheetBible", labelKo: "캐릭터 설정집·표정 9궁도·의상 5슬롯 조판", labelEn: "Character Sheet Bible · 9-Expression · 5-Outfit" },
-  { id: "editorialMoodboard", labelKo: "탈-바이올렛 에디토리얼 무드보드·5안료 팔레트", labelEn: "Zero-Violet Editorial Moodboard · 5-Pigment Palette" },
-  { id: "charExprAdvisor", labelKo: "대사·감정 캐릭터 표정·입모양·포즈 자동 제안", labelEn: "Dialogue Character Expression · Mouth · Pose Advisor" },
-  { id: "sceneLightingAdv", labelKo: "대사·감정 컷 조명·역광·색온도 자동 연출", labelEn: "Dialogue Scene Lighting & Atmosphere Advisor" },
-  { id: "cameraFramingAdv", labelKo: "시선 동선·180° 법칙 카메라 앵글 리프레이밍", labelEn: "Eyeline & 180° Camera Framing Continuity Coach" },
-  { id: "handPropAutoGrip", labelKo: "3D 소품 15관절 손 자동 그립 어시스턴트", labelEn: "3D Prop 15-Joint Hand Auto-Grip Assistant" },
+  { id: "commercialPro", labelKo: "리라이트·식자·투고 구성 예제", labelEn: "Relight · Lettering · Submission Examples" },
+  { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
+  { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
+  { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
+  { id: "koreanLettering", labelKo: "한글 조판·SVG 글자 배치 예제", labelEn: "Korean Typesetting · SVG Text Examples" },
+  { id: "lightingRig3d", labelKo: "하늘·조명·그림자 수치 예제", labelEn: "Sky · Lighting · Shadow Examples" },
+  { id: "actionFxLab", labelKo: "액션·로맨스 SVG 효과 예제", labelEn: "Action · Romance SVG Examples" },
+  { id: "characterBible", labelKo: "캐릭터 설정·표정 조판 예제", labelEn: "Character Sheet · Expression Layout Examples" },
+  { id: "editorialMoodboard", labelKo: "무드보드·팔레트 예제", labelEn: "Moodboard · Palette Examples" },
+  { id: "charExprAdvisor", labelKo: "표정·포즈 제안 예제", labelEn: "Expression · Pose Suggestion Examples" },
+  { id: "sceneLightingAdv", labelKo: "컷 조명·색온도 제안 예제", labelEn: "Scene Lighting · Color Temperature Examples" },
+  { id: "cameraFramingAdv", labelKo: "카메라 구도·시선 축 예제", labelEn: "Camera Framing · Sightline Examples" },
+  { id: "handPropAutoGrip", labelKo: "손·소품 그립 제안 예제", labelEn: "Hand · Prop Grip Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -157,6 +157,22 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "handPropAutoGrip":
+      return <Hand size={15} aria-hidden="true" />;
+    case "cameraFramingAdv":
+      return <Camera size={15} aria-hidden="true" />;
+    case "sceneLightingAdv":
+      return <Sun size={15} aria-hidden="true" />;
+    case "editorialMoodboard":
+      return <Palette size={15} aria-hidden="true" />;
+    case "charExprAdvisor":
+      return <Smile size={15} aria-hidden="true" />;
+    case "characterBible":
+      return <Hand size={15} aria-hidden="true" />;
+    case "lightingRig3d":
+      return <Sunrise size={15} aria-hidden="true" />;
+    case "actionFxLab":
+      return <Zap size={15} aria-hidden="true" />;
     case "puppet":
       return <Move size={15} aria-hidden="true" />;
     case "surface3d":
@@ -171,28 +187,10 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Watch size={15} aria-hidden="true" />;
     case "p3ColorLight":
       return <Sun size={15} aria-hidden="true" />;
+    case "koreanLettering":
+      return <Brush size={15} aria-hidden="true" />;
     case "neuralUpscale":
       return <Wand2 size={15} aria-hidden="true" />;
-    case "cinematographyDir":
-      return <Camera size={15} aria-hidden="true" />;
-    case "lightingRig3d":
-      return <Sunrise size={15} aria-hidden="true" />;
-    case "actionFxLab":
-      return <Zap size={15} aria-hidden="true" />;
-    case "foleyMixer":
-      return <Volume2 size={15} aria-hidden="true" />;
-    case "charSheetBible":
-      return <UserSquare2 size={15} aria-hidden="true" />;
-    case "editorialMoodboard":
-      return <Palette size={15} aria-hidden="true" />;
-    case "charExprAdvisor":
-      return <Smile size={15} aria-hidden="true" />;
-    case "sceneLightingAdv":
-      return <Lightbulb size={15} aria-hidden="true" />;
-    case "cameraFramingAdv":
-      return <Clapperboard size={15} aria-hidden="true" />;
-    case "handPropAutoGrip":
-      return <Grip size={15} aria-hidden="true" />;
   }
 }
 
@@ -249,11 +247,10 @@ export function Csp3dUpgradeHubPanel() {
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
-          {active === "cinematographyDir" ? <LazyCinematographyDirectorPanel /> : null}
-          {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel /> : null}
-          {active === "actionFxLab" ? <LazyStudioActionFxLabPanel /> : null}
-          {active === "foleyMixer" ? <LazyStudioAtelierFoleyMixerPanel /> : null}
-          {active === "charSheetBible" ? <LazyStudioCharacterSheetBiblePanel /> : null}
+          {active === "koreanLettering" ? <LazyKoreanLetteringPanel /> : null}
+          {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "actionFxLab" ? <LazyStudioActionFxLabPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "characterBible" ? <LazyCharacterBiblePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "editorialMoodboard" ? <LazyStudioEditorialMoodboardPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "charExprAdvisor" ? <LazyStudioCharExpressionPoseAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "sceneLightingAdv" ? <LazyStudioSceneLightingAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}

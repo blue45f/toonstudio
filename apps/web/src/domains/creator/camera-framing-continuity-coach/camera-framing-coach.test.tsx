@@ -497,9 +497,11 @@ describe("6. 하네스·탈-바이올렛·Calm Atelier 코드 위생 자가 검�
     "StudioCameraFramingCoachPanel.tsx",
     "index.ts",
     "camera-framing-coach.test.tsx",
+    "camera-coach-boundaries.test.tsx",
+    "camera-input-contract.ts",
   ];
 
-  it("4개 소유 파일이 모두 존재하며 각각 800줄 이하이다", () => {
+  it("6개 소유 파일이 모두 존재하며 각각 800줄 이하이다", () => {
     const present = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
     expect(present.sort()).toEqual([...ownedFiles].sort());
     for (const file of ownedFiles) {

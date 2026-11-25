@@ -8,6 +8,7 @@
 import { Clock, CloudRain, Compass, Grid2x2, Pause, Play, RotateCcw, RotateCw, SkipForward, Sparkles, Sun, Timer, Trash2, UserCheck, Users } from "lucide-react";
 import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
 
+import { useLivingPanelCopy } from "./living-panel-copy";
 import {
   PARTICLE_KIND_LABEL_KO, PARTICLE_LAYER_LABEL_KO, RADIAL_EMOTE_SECTORS, TIME_OF_DAY_LIST, TIME_OF_DAY_PROFILES, WEATHER_MOOD_LIST,
   computeDirectionalShadowVector, createAtmosphereParticleSystem, createEmoteWheelState, getEmoteRemainingCooldownMs, mapPointerDeltaToRadialSector,
@@ -17,7 +18,7 @@ import {
 } from "./atmosphere-vfx-engine";
 import {
   AVATAR_BOTTOM_OPTIONS, AVATAR_EXPRESSION_OPTIONS, AVATAR_HAIR_OPTIONS, AVATAR_TOP_OPTIONS, DEFAULT_FURNITURE_GRID, FURNITURE_CATALOG,
-  GENRE_OUTFIT_PRESETS, POMODORO_PHASE_LABEL_KO, POMODORO_PRESET_LIST, STUDIO_PET_OPTIONS, STUDIO_THEME_ROOMS, USER_WORK_PROTAGONIST_CATALOG,
+  GENRE_OUTFIT_PRESETS, POMODORO_PHASE_LABEL_KO, POMODORO_PRESET_LIST, STUDIO_PET_OPTIONS, STUDIO_THEME_ROOMS, SYNTHETIC_WORK_PROTAGONIST_CATALOG,
   applyGenreOutfitPreset, buildAvatarRenderLayers, clearImportedProtagonist, createDefaultDeskLayout, createDefaultLayeredAvatar,
   createTeamPomodoroState, formatPomodoroClock, getEffectiveFurnitureSpan, getFurnitureCatalogItem, getPomodoroRemainingSec, getStudioThemeRoomById,
   importProtagonistToAvatar, pauseTeamPomodoro, placeFurnitureItem, removeFurnitureItem, resetTeamPomodoro, rotateFurnitureItem,
@@ -131,6 +132,7 @@ export function StudioVirtualSpaceLivingPanel({
   initialRoomId = "wood-atelier",
   className,
 }: StudioVirtualSpaceLivingPanelProps): ReactElement {
+  const copy = useLivingPanelCopy();
   const uid = useId();
   const [activeTab, setActiveTab] = useState<LivingStudioTabId>(initialTab);
   const [selectedRoomId, setSelectedRoomId] = useState<StudioThemeRoomId>(initialRoomId);
@@ -147,7 +149,7 @@ export function StudioVirtualSpaceLivingPanel({
     return stepAtmosphereParticles(spawnCoffeeSteamPlume(initial, 430, 128), 0.35);
   });
   const [wheelState, setWheelState] = useState<EmoteWheelState>(() => createEmoteWheelState());
-  const [wheelClockMs, setWheelClockMs] = useState<number>(10000);
+  const [wheelClockMs, setWheelClockMs] = useState<number>(() => performance.now());
   const [probeDelta, setProbeDelta] = useState<Vec2>({ x: 0, y: -56 });
 
   const [avatar, setAvatar] = useState<LayeredAvatarConfig>(() => createDefaultLayeredAvatar());
@@ -172,6 +174,17 @@ export function StudioVirtualSpaceLivingPanel({
     }, 1000);
     return () => window.clearInterval(timer);
   }, [pomodoro.running]);
+
+  useEffect(() => {
+    const deadline = Math.max(0, ...Object.values(wheelState.cooldownUntilMsById).map((value) => value ?? 0));
+    if (deadline <= performance.now()) return;
+    const timer = window.setInterval(() => {
+      const now = performance.now();
+      setWheelClockMs(now);
+      if (now >= deadline) window.clearInterval(timer);
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, [wheelState.cooldownUntilMsById]);
 
   const runSpriteFrames = (heading: Vec2, frames: number, nextSprint: boolean, nextGaze: Vec2 | null): void => {
     const input: SpriteControlInput = { moveX: heading.x, moveY: heading.y, sprinting: nextSprint, pointerTarget: nextGaze, peerTargets: STAGE_PEERS };
@@ -205,13 +218,12 @@ export function StudioVirtualSpaceLivingPanel({
     setStatusMessage(`${PARTICLE_KIND_LABEL_KO[kind]} 파티클 버스트를 방출했습니다.`);
   };
 
-  const handleTriggerRadialSector = (sectorIndex: number): void => {
+  const handleTriggerRadialSector = (sectorIndex: number, nextNow: number): void => {
     const sector = RADIAL_EMOTE_SECTORS[sectorIndex];
     if (sector) {
       const rad = ((sector.centerAngleDeg - 90) * Math.PI) / 180;
       setProbeDelta({ x: Math.round(Math.cos(rad) * 56), y: Math.round(Math.sin(rad) * 56) });
     }
-    const nextNow = wheelClockMs + 250;
     setWheelClockMs(nextNow);
     const result = triggerRadialEmote(wheelState, sectorIndex, nextNow);
     setWheelState(result.nextState);
@@ -253,7 +265,7 @@ export function StudioVirtualSpaceLivingPanel({
     const runningState = pomodoro.running ? pomodoro : startTeamPomodoro(pomodoro);
     const ticked = tickTeamPomodoro(runningState, deltaSec);
     setPomodoro(ticked.nextState);
-    setStatusMessage(ticked.announcementKo ?? `팀 뽀모도로를 ${deltaSec}초 진행했습니다.`);
+    setStatusMessage(ticked.announcementKo ?? `로컬 뽀모도로를 ${deltaSec}초 진행했습니다.`);
   };
 
   const hairAnchor: Vec2 = { x: sprite.position.x, y: sprite.position.y - 26 + sprite.breathOffsetPx };
@@ -264,42 +276,42 @@ export function StudioVirtualSpaceLivingPanel({
   const capeLagPx = Math.round(Math.hypot(capeTip.x - capeAnchor.x, capeTip.y - capeAnchor.y) * 10) / 10;
 
   return (
-    <section aria-label="가상 스튜디오 2.5D 리빙 엔진 워크벤치" className={`space-y-4 rounded-xl border border-line bg-canvas p-4 text-fg ${className ?? ""}`}>
+    <section aria-label={copy("가상 스튜디오 2.5D 리빙 엔진 워크벤치")} className={`space-y-4 rounded-xl border border-line bg-canvas p-4 text-fg ${className ?? ""}`}>
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-0.5">
-          <h2 className="text-base font-bold tracking-tight text-fg [word-break:keep-all]">가상 스튜디오 2.5D 리빙 엔진</h2>
-          <p className="text-xs text-fg-2 [word-break:keep-all]">60fps 스프링 물리 · 시간/날씨 VFX · 8방사형 이모트 · 6슬롯 아바타 · 6종 테마 방 · 팀 뽀모도로</p>
+          <h2 className="text-base font-bold tracking-tight text-fg [word-break:keep-all]">{copy("가상 스튜디오 2.5D 리빙 엔진")}</h2>
+          <p className="text-xs text-fg-2 [word-break:keep-all]">{copy("버튼으로 고정 1/60초 물리 모델을 계산하는 CPU 예제입니다. 실제 60fps 측정·작품 반영·동료 연결·기기 저장은 수행하지 않으며, 닫으면 설정이 사라집니다.")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 font-medium text-fg [word-break:keep-all]">
             <Sparkles className="size-3.5 text-accent" aria-hidden="true" />
-            {activeRoom.nameKo}
+            {copy(activeRoom.nameKo)}
           </span>
           <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium tabular-nums [word-break:keep-all] ${lightingProfile.semanticBadgeClass}`}>
             <Sun className="size-3.5" aria-hidden="true" />
-            {lightingProfile.shortLabelKo} · {lightingProfile.colorTemperatureK}K
+            {copy(lightingProfile.shortLabelKo)} · {lightingProfile.colorTemperatureK}K
           </span>
         </div>
       </header>
 
-      <div role="tablist" aria-label="가상 스튜디오 리빙 엔진 기능 탭" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div role="tablist" aria-label={copy("가상 스튜디오 리빙 엔진 기능 탭")} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {TABS.map((tab) => (
           <button key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`} data-testid={tab.testId} aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`} onClick={() => setActiveTab(tab.id)} className={activeTab === tab.id ? BTN_ACTIVE : BTN_OUTLINE}>
-            {tab.labelKo}
+            {copy(tab.labelKo)}
           </button>
         ))}
       </div>
 
       <div role="status" aria-live="polite" data-testid="living-status-banner" className="rounded-lg border border-line bg-panel px-3 py-2 text-xs text-fg-2 [word-break:keep-all]">
-        {statusMessage}
+        {copy(statusMessage)}
       </div>
 
       {activeTab === "sprite-physics" ? (
         <div role="tabpanel" id={`${uid}-panel-sprite-physics`} aria-labelledby={`${uid}-tab-sprite-physics`} className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="space-y-3 lg:col-span-7">
             <div className="relative overflow-hidden rounded-xl border border-line bg-panel">
-              <img src={activeRoom.imagePath} alt={`${activeRoom.nameKo} 가상 스튜디오 배경`} className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25" />
-              <svg role="img" aria-label="2.5D 스프링 캐릭터 물리 스테이지 프리뷰" viewBox="0 0 560 320" className="relative z-10 block h-auto w-full">
+              <img src={activeRoom.imagePath} alt={copy(`${activeRoom.nameKo} 가상 스튜디오 배경`)} className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25" />
+              <svg role="img" aria-label={copy("2.5D 스프링 캐릭터 물리 스테이지 프리뷰")} viewBox="0 0 560 320" className="relative z-10 block h-auto w-full">
                 {[80, 160, 240].map((gy) => (
                   <line key={`r-${gy}`} x1={32} y1={gy} x2={528} y2={gy} className="stroke-line/60" strokeWidth={0.8} />
                 ))}
@@ -309,7 +321,7 @@ export function StudioVirtualSpaceLivingPanel({
                 {STAGE_PEERS.map((peer) => (
                   <g key={peer.id} transform={`translate(${peer.position.x}, ${peer.position.y})`}>
                     <circle r={12} className="fill-card stroke-cool" strokeWidth={1.5} />
-                    <text y={25} textAnchor="middle" className="fill-fg-2 text-[10px] font-medium">{peer.labelKo}</text>
+                    <text y={25} textAnchor="middle" className="fill-fg-2 text-[10px] font-medium">{copy(peer.labelKo)}</text>
                   </g>
                 ))}
                 {sprite.afterimageTrail.map((ghost, idx) => (
@@ -332,20 +344,20 @@ export function StudioVirtualSpaceLivingPanel({
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-line bg-card p-2.5">
-                <p className="text-[11px] text-fg-3">관성 속도 · 8방위</p>
-                <p data-testid="telemetry-speed" className="text-sm font-bold text-fg tabular-nums">{sprite.speedPxPerSec.toFixed(1)} px/s · {OCTANT_LABEL_KO[sprite.facingOctant]}</p>
+                <p className="text-[11px] text-fg-3">{copy("관성 속도 · 8방위")}</p>
+                <p data-testid="telemetry-speed" className="text-sm font-bold text-fg tabular-nums">{sprite.speedPxPerSec.toFixed(1)} px/s · {copy(OCTANT_LABEL_KO[sprite.facingOctant])}</p>
               </div>
               <div className="rounded-lg border border-line bg-card p-2.5">
-                <p className="text-[11px] text-fg-3">스쿼시·스트레치 (부피)</p>
+                <p className="text-[11px] text-fg-3">{copy("스쿼시·스트레치 (부피)")}</p>
                 <p data-testid="telemetry-squash" className="text-sm font-bold text-accent tabular-nums">{sprite.squashStretch.scaleX.toFixed(3)}×{sprite.squashStretch.scaleY.toFixed(3)} = {sprite.squashStretch.volumeProduct.toFixed(3)}</p>
               </div>
               <div className="rounded-lg border border-line bg-card p-2.5">
-                <p className="text-[11px] text-fg-3">시선각 · 눈꺼풀</p>
+                <p className="text-[11px] text-fg-3">{copy("시선각 · 눈꺼풀")}</p>
                 <p data-testid="telemetry-gaze" className="text-sm font-bold text-fg tabular-nums">{sprite.gaze.gazeAngleDeg.toFixed(1)}° · {Math.round(sprite.blink.eyelidOpenness * 100)}%</p>
               </div>
               <div className="rounded-lg border border-line bg-card p-2.5">
-                <p className="text-[11px] text-fg-3">2차 스프링 변위</p>
-                <p data-testid="telemetry-spring" className="text-sm font-bold text-fg tabular-nums">헤어 {hairLagPx} / 망토 {capeLagPx} px</p>
+                <p className="text-[11px] text-fg-3">{copy("2차 스프링 변위")}</p>
+                <p data-testid="telemetry-spring" className="text-sm font-bold text-fg tabular-nums">{copy(`헤어 ${hairLagPx} / 망토 ${capeLagPx} px`)}</p>
               </div>
             </div>
           </div>
@@ -353,7 +365,7 @@ export function StudioVirtualSpaceLivingPanel({
           <div className="space-y-3 lg:col-span-5">
             <div className="space-y-3 rounded-xl border border-line bg-card p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xs font-bold text-fg [word-break:keep-all]">8방향 관성 이동 패드</h3>
+                <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{copy("8방향 관성 이동 패드")}</h3>
                 <button
                   type="button"
                   aria-pressed={sprinting}
@@ -364,13 +376,13 @@ export function StudioVirtualSpaceLivingPanel({
                   }}
                   className={sprinting ? BTN_ACTIVE : BTN_OUTLINE}
                 >
-                  전력 질주 {sprinting ? "ON" : "OFF"}
+                  {copy("전력 질주")} {sprinting ? "ON" : "OFF"}
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
                 {DIRECTION_PAD.map((dir) => (
                   <button key={dir.id} type="button" data-testid={`dir-${dir.id}`} onClick={() => handleDirectionClick(dir.moveX, dir.moveY, dir.labelKo)} className={moveHeading.x === dir.moveX && moveHeading.y === dir.moveY ? BTN_ACTIVE : BTN_OUTLINE}>
-                    {dir.labelKo}
+                    {copy(dir.labelKo)}
                   </button>
                 ))}
               </div>
@@ -380,12 +392,12 @@ export function StudioVirtualSpaceLivingPanel({
                   data-testid="step-physics-btn"
                   onClick={() => {
                     runSpriteFrames(moveHeading, 15, sprinting, activeGazePreset.pointerTarget);
-                    setStatusMessage("60fps 물리 솔버를 15프레임(0.25초) 추가 진행했습니다.");
+                    setStatusMessage("고정 1/60초 CPU 물리 모델을 15스텝 진행했습니다. 실제 프레임 성능 측정은 아닙니다.");
                   }}
                   className={BTN_PRIMARY}
                 >
                   <Compass className="size-3.5" aria-hidden="true" />
-                  15프레임 진행
+                  {copy("15프레임 진행")}
                 </button>
                 <button
                   type="button"
@@ -397,18 +409,18 @@ export function StudioVirtualSpaceLivingPanel({
                   className={BTN_OUTLINE}
                 >
                   <RotateCcw className="size-3.5" aria-hidden="true" />
-                  초기화
+                  {copy("초기화")}
                 </button>
               </div>
             </div>
 
             <div className="space-y-2.5 rounded-xl border border-line bg-card p-3.5">
-              <h3 className="text-xs font-bold text-fg [word-break:keep-all]">포인터·동료 시선 추적 대상</h3>
-              <p className="text-xs text-fg-2 [word-break:keep-all]">현재 상태: {sprite.gaze.targetLabelKo}</p>
+              <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{copy("포인터·동료 시선 추적 대상")}</h3>
+              <p className="text-xs text-fg-2 [word-break:keep-all]">{copy(`현재 상태: ${sprite.gaze.targetLabelKo}`)}</p>
               <div className="grid grid-cols-2 gap-1.5">
                 {GAZE_PRESETS.map((preset) => (
                   <button key={preset.id} type="button" onClick={() => handleSelectGaze(preset.id)} className={gazePresetId === preset.id ? BTN_ACTIVE : BTN_OUTLINE}>
-                    {preset.labelKo}
+                    {copy(preset.labelKo)}
                   </button>
                 ))}
               </div>
@@ -423,10 +435,10 @@ export function StudioVirtualSpaceLivingPanel({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]">
                 <Clock className="size-3.5 text-accent" aria-hidden="true" />
-                시간대 4종 광원 색온도 · 그림자 각도 프로파일
+                {copy("시간대 4종 광원 색온도 · 그림자 각도 프로파일")}
               </h3>
               <span data-testid="lighting-readout" className="text-xs font-semibold text-fg tabular-nums">
-                {lightingProfile.colorTemperatureK}K · 그림자 {lightingProfile.shadowAngleDeg}° ({shadowProjection.lengthPx}px) · {lightingProfile.ambientLux} lx
+                {copy(`${lightingProfile.colorTemperatureK}K · 그림자 ${lightingProfile.shadowAngleDeg}° (${shadowProjection.lengthPx}px) · ${lightingProfile.ambientLux} lx`)}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -442,12 +454,12 @@ export function StudioVirtualSpaceLivingPanel({
                   }}
                   className={timeOfDay === prof.id ? BTN_ACTIVE : BTN_OUTLINE}
                 >
-                  <span>{prof.shortLabelKo}</span>
+                  <span>{copy(prof.shortLabelKo)}</span>
                   <span className="text-[11px] opacity-80 tabular-nums">{prof.colorTemperatureK}K</span>
                 </button>
               ))}
             </div>
-            <p className="text-xs text-fg-2 [word-break:keep-all]">{lightingProfile.moodDescriptionKo}</p>
+            <p className="text-xs text-fg-2 [word-break:keep-all]">{copy(lightingProfile.moodDescriptionKo)}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -455,10 +467,10 @@ export function StudioVirtualSpaceLivingPanel({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]">
                   <CloudRain className="size-3.5 text-cool" aria-hidden="true" />
-                  날씨·감정 멀티레이어 파티클
+                  {copy("날씨·감정 멀티레이어 파티클")}
                 </h3>
                 <span data-testid="particle-total" className="text-xs font-semibold text-fg tabular-nums">
-                  총 {particleSummary.total}개 ({PARTICLE_LAYER_LABEL_KO.background} {particleSummary.byLayer.background} · {PARTICLE_LAYER_LABEL_KO.midground} {particleSummary.byLayer.midground} · {PARTICLE_LAYER_LABEL_KO.foreground} {particleSummary.byLayer.foreground})
+                  {copy(`총 ${particleSummary.total}개`)} ({copy(PARTICLE_LAYER_LABEL_KO.background)} {particleSummary.byLayer.background} · {copy(PARTICLE_LAYER_LABEL_KO.midground)} {particleSummary.byLayer.midground} · {copy(PARTICLE_LAYER_LABEL_KO.foreground)} {particleSummary.byLayer.foreground})
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
@@ -473,11 +485,11 @@ export function StudioVirtualSpaceLivingPanel({
                     }}
                     className={particles.weatherPreset === preset.id ? BTN_ACTIVE : BTN_OUTLINE}
                   >
-                    {preset.labelKo}
+                    {copy(preset.labelKo)}
                   </button>
                 ))}
               </div>
-              <svg role="img" aria-label="멀티레이어 날씨 및 감정 파티클 시뮬레이션 뷰" viewBox="0 0 560 180" className={`block h-auto w-full rounded-lg border ${lightingProfile.semanticSurfaceClass}`}>
+              <svg role="img" aria-label={copy("멀티레이어 날씨 및 감정 파티클 시뮬레이션 뷰")} viewBox="0 0 560 180" className={`block h-auto w-full rounded-lg border ${lightingProfile.semanticSurfaceClass}`}>
                 {particles.particles.map((p) => {
                   const yScaled = Math.max(8, Math.min(172, (p.y / particles.viewportHeight) * 180));
                   if (p.kind === "focus-aura-ring") return <circle key={p.id} cx={p.x} cy={yScaled} r={p.radiusPx} opacity={p.opacity} className="fill-none stroke-accent" strokeWidth={2} />;
@@ -488,7 +500,7 @@ export function StudioVirtualSpaceLivingPanel({
               <div className="flex flex-wrap gap-1.5">
                 {(Object.keys(PARTICLE_KIND_LABEL_KO) as AtmosphereParticleKind[]).map((kind) => (
                   <button key={kind} type="button" data-testid={`burst-${kind}`} onClick={() => handleBurstParticle(kind)} className={BTN_OUTLINE}>
-                    +{PARTICLE_KIND_LABEL_KO[kind]}
+                    +{copy(PARTICLE_KIND_LABEL_KO[kind])}
                   </button>
                 ))}
                 <button
@@ -499,31 +511,31 @@ export function StudioVirtualSpaceLivingPanel({
                   }}
                   className={BTN_PRIMARY}
                 >
-                  0.25초 진행
+                  {copy("0.25초 진행")}
                 </button>
               </div>
             </div>
 
             <div className="space-y-3 rounded-xl border border-line bg-card p-3.5 lg:col-span-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-xs font-bold text-fg [word-break:keep-all]">8섹터 방사형 이모트/액션 휠</h3>
+                <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{copy("8섹터 방사형 이모트/액션 휠")}</h3>
                 <span data-testid="wheel-angle-readout" className="text-xs text-fg-2 tabular-nums">
-                  {probeMapping.sector ? `${probeMapping.angleFromNorthDeg}° → 섹터 #${probeMapping.sector.index} (${probeMapping.sector.labelKo})` : "중앙 데드존"}
+                  {copy(probeMapping.sector ? `${probeMapping.angleFromNorthDeg}° → 섹터 #${probeMapping.sector.index} (${probeMapping.sector.labelKo})` : "중앙 데드존")}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                 {RADIAL_EMOTE_SECTORS.map((sector) => {
                   const cooldownMs = getEmoteRemainingCooldownMs(wheelState, sector.id, wheelClockMs);
                   return (
-                    <button key={sector.id} type="button" data-testid={`emote-sector-${sector.index}`} aria-label={sector.ariaLabelKo} onClick={() => handleTriggerRadialSector(sector.index)} className={`flex-col py-2 ${wheelState.activeSectorIndex === sector.index ? BTN_ACTIVE : BTN_OUTLINE}`}>
-                      <span className="text-xs font-semibold">{sector.labelKo}</span>
-                      <span className="text-[11px] opacity-80 tabular-nums">{cooldownMs > 0 ? `대기 ${(cooldownMs / 1000).toFixed(1)}s` : `${sector.clockPositionKo} · ${sector.centerAngleDeg}°`}</span>
+                    <button key={sector.id} type="button" data-testid={`emote-sector-${sector.index}`} aria-label={copy(sector.ariaLabelKo)} onClick={() => handleTriggerRadialSector(sector.index, performance.now())} className={`flex-col py-2 ${wheelState.activeSectorIndex === sector.index ? BTN_ACTIVE : BTN_OUTLINE}`}>
+                      <span className="text-xs font-semibold">{copy(sector.labelKo)}</span>
+                      <span className="text-[11px] opacity-80 tabular-nums">{cooldownMs > 0 ? copy(`대기 ${(cooldownMs / 1000).toFixed(1)}s`) : `${copy(sector.clockPositionKo)} · ${sector.centerAngleDeg}°`}</span>
                     </button>
                   );
                 })}
               </div>
               <p className="text-[11px] text-fg-3 [word-break:keep-all]">
-                누적 발동 <span className="font-semibold text-fg tabular-nums">{wheelState.triggerCount}</span>회 · 각 섹터 클릭 시 연결된 VFX 파티클이 함께 방출되며 개별 쿨다운이 적용됩니다.
+                {copy("누적 발동")} <span className="font-semibold text-fg tabular-nums">{wheelState.triggerCount}</span>{copy("회 · 각 섹터 클릭 시 연결된 VFX 파티클이 함께 방출되며 개별 쿨다운이 적용됩니다.")}
               </p>
             </div>
           </div>
@@ -534,8 +546,8 @@ export function StudioVirtualSpaceLivingPanel({
         <div role="tabpanel" id={`${uid}-panel-avatar-room-pomodoro`} aria-labelledby={`${uid}-tab-avatar-room-pomodoro`} className="space-y-4">
           <div className="space-y-2.5 rounded-xl border border-line bg-card p-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-xs font-bold text-fg [word-break:keep-all]">6종 테마 스튜디오 카탈로그 (사전 베이크 WebP)</h3>
-              <span className="text-xs text-fg-2 tabular-nums">정원 {activeRoom.capacityCount}명 · {activeRoom.ambientSoundKo}</span>
+              <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{copy("6종 테마 스튜디오 카탈로그 (사전 베이크 WebP)")}</h3>
+              <span className="text-xs text-fg-2 tabular-nums">{copy(`정원 ${activeRoom.capacityCount}명 · ${activeRoom.ambientSoundKo}`)}</span>
             </div>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {STUDIO_THEME_ROOMS.map((room) => (
@@ -549,13 +561,13 @@ export function StudioVirtualSpaceLivingPanel({
                     room.id === selectedRoomId ? "border-accent bg-accent-soft" : "border-line bg-panel hover:border-line-strong"
                   }`}
                 >
-                  <img src={room.imagePath} alt={`${room.nameKo} 스튜디오 테마 썸네일`} loading="lazy" className="h-28 w-full object-cover" />
+                  <img src={room.imagePath} alt={copy(`${room.nameKo} 스튜디오 테마 썸네일`)} loading="lazy" className="h-28 w-full object-cover" />
                   <div className="space-y-1 p-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-fg [word-break:keep-all]">{room.nameKo}</span>
-                      <span className="text-[11px] text-fg-3 tabular-nums">{room.capacityCount}인</span>
+                      <span className="text-xs font-bold text-fg [word-break:keep-all]">{copy(room.nameKo)}</span>
+                      <span className="text-[11px] text-fg-3 tabular-nums">{copy(`${room.capacityCount}인`)}</span>
                     </div>
-                    <p className="text-[11px] text-fg-2 [word-break:keep-all]">{room.subtitleKo}</p>
+                    <p className="text-[11px] text-fg-2 [word-break:keep-all]">{copy(room.subtitleKo)}</p>
                   </div>
                 </button>
               ))}
@@ -567,21 +579,21 @@ export function StudioVirtualSpaceLivingPanel({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]">
                   <UserCheck className="size-3.5 text-accent" aria-hidden="true" />
-                  6슬롯 레이어드 아바타 커스터마이저
+                  {copy("6슬롯 레이어드 아바타 커스터마이저")}
                 </h3>
-                <span className="text-[11px] text-fg-3 tabular-nums">활성 레이어 {avatarLayers.length}층</span>
+                <span className="text-[11px] text-fg-3 tabular-nums">{copy(`활성 레이어 ${avatarLayers.length}층`)}</span>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
-                <AvatarSlotSelect id={`${uid}-hair`} label="1. 헤어" value={avatar.hair} options={AVATAR_HAIR_OPTIONS.map((o) => ({ id: o.id, label: o.labelKo }))} onChange={(v) => setAvatar((p) => ({ ...p, hair: v }))} />
-                <AvatarSlotSelect id={`${uid}-expr`} label="2. 표정" value={avatar.expression} options={AVATAR_EXPRESSION_OPTIONS.map((o) => ({ id: o.id, label: o.labelKo }))} onChange={(v) => setAvatar((p) => ({ ...p, expression: v }))} />
-                <AvatarSlotSelect id={`${uid}-top`} label="3. 상의" value={avatar.top} options={AVATAR_TOP_OPTIONS.map((o) => ({ id: o.id, label: o.labelKo }))} onChange={(v) => setAvatar((p) => ({ ...p, top: v }))} />
-                <AvatarSlotSelect id={`${uid}-bottom`} label="4. 하의" value={avatar.bottom} options={AVATAR_BOTTOM_OPTIONS.map((o) => ({ id: o.id, label: o.labelKo }))} onChange={(v) => setAvatar((p) => ({ ...p, bottom: v }))} />
-                <AvatarSlotSelect id={`${uid}-genre`} label="5. 장르 의상 프리셋 (6종)" value={avatar.genreOutfitPreset} options={GENRE_OUTFIT_PRESETS.map((o) => ({ id: o.id, label: `${o.labelKo} (${o.genreTagKo})` }))} onChange={(v) => setAvatar((p) => applyGenreOutfitPreset(p, v as GenreOutfitPresetId, true))} />
-                <AvatarSlotSelect id={`${uid}-pet`} label="6. 스튜디오 반려동물 (4종)" value={avatar.studioPet} options={STUDIO_PET_OPTIONS.map((o) => ({ id: o.id, label: o.labelKo }))} onChange={(v) => setAvatar((p) => ({ ...p, studioPet: v as StudioPetId }))} />
+                <AvatarSlotSelect id={`${uid}-hair`} label={copy("1. 헤어")} value={avatar.hair} options={AVATAR_HAIR_OPTIONS.map((o) => ({ id: o.id, label: copy(o.labelKo) }))} onChange={(v) => setAvatar((p) => ({ ...p, hair: v }))} />
+                <AvatarSlotSelect id={`${uid}-expr`} label={copy("2. 표정")} value={avatar.expression} options={AVATAR_EXPRESSION_OPTIONS.map((o) => ({ id: o.id, label: copy(o.labelKo) }))} onChange={(v) => setAvatar((p) => ({ ...p, expression: v }))} />
+                <AvatarSlotSelect id={`${uid}-top`} label={copy("3. 상의")} value={avatar.top} options={AVATAR_TOP_OPTIONS.map((o) => ({ id: o.id, label: copy(o.labelKo) }))} onChange={(v) => setAvatar((p) => ({ ...p, top: v }))} />
+                <AvatarSlotSelect id={`${uid}-bottom`} label={copy("4. 하의")} value={avatar.bottom} options={AVATAR_BOTTOM_OPTIONS.map((o) => ({ id: o.id, label: copy(o.labelKo) }))} onChange={(v) => setAvatar((p) => ({ ...p, bottom: v }))} />
+                <AvatarSlotSelect id={`${uid}-genre`} label={copy("5. 장르 의상 프리셋 (6종)")} value={avatar.genreOutfitPreset} options={GENRE_OUTFIT_PRESETS.map((o) => ({ id: o.id, label: `${copy(o.labelKo)} (${copy(o.genreTagKo)})` }))} onChange={(v) => setAvatar((p) => applyGenreOutfitPreset(p, v as GenreOutfitPresetId, true))} />
+                <AvatarSlotSelect id={`${uid}-pet`} label={copy("6. 스튜디오 반려동물 (4종)")} value={avatar.studioPet} options={STUDIO_PET_OPTIONS.map((o) => ({ id: o.id, label: copy(o.labelKo) }))} onChange={(v) => setAvatar((p) => ({ ...p, studioPet: v as StudioPetId }))} />
               </div>
               <div className="space-y-2 rounded-lg border border-line bg-panel p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-fg [word-break:keep-all]">내 작품 주인공 불러오기</span>
+                  <span className="text-xs font-semibold text-fg [word-break:keep-all]">{copy("합성 작품 주인공 예시 선택")}</span>
                   {avatar.protagonistImport.active ? (
                     <button
                       type="button"
@@ -591,30 +603,30 @@ export function StudioVirtualSpaceLivingPanel({
                       }}
                       className={BTN_OUTLINE}
                     >
-                      주인공 해제
+                      {copy("주인공 해제")}
                     </button>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {USER_WORK_PROTAGONIST_CATALOG.map((work) => (
+                  {SYNTHETIC_WORK_PROTAGONIST_CATALOG.map((work) => (
                     <button
                       key={work.workId}
                       type="button"
                       data-testid={`import-protagonist-${work.workId}`}
                       onClick={() => {
                         setAvatar((prev) => importProtagonistToAvatar(prev, work));
-                        setStatusMessage(`내 작품 '${work.workTitleKo}' 주인공 ${work.characterNameKo}(${work.signaturePropKo})를 아바타에 불러왔습니다.`);
+                        setStatusMessage(`합성 작품 '${work.workTitleKo}'의 ${work.characterNameKo} 구성을 예시로 선택했습니다. 실제 작품은 읽지 않습니다.`);
                       }}
                       className={avatar.protagonistImport.workId === work.workId ? BTN_ACTIVE : BTN_OUTLINE}
                     >
-                      {work.characterNameKo} · {work.workTitleKo}
+                      {copy(work.characterNameKo)} · {copy(work.workTitleKo)}
                     </button>
                   ))}
                 </div>
                 <p data-testid="protagonist-status" className="text-[11px] text-fg-2 [word-break:keep-all]">
-                  {avatar.protagonistImport.active
-                    ? `연결됨: ${avatar.protagonistImport.characterNameKo} (${avatar.protagonistImport.workTitleKo} · ${avatar.protagonistImport.signaturePropKo})`
-                    : "현재 기본 커스텀 아바타를 사용 중입니다."}
+                  {copy(avatar.protagonistImport.active
+                    ? `예시 선택: ${avatar.protagonistImport.characterNameKo} (${avatar.protagonistImport.workTitleKo} · ${avatar.protagonistImport.signaturePropKo})`
+                    : "현재 기본 커스텀 아바타를 사용 중입니다.")}
                 </p>
               </div>
             </div>
@@ -624,15 +636,15 @@ export function StudioVirtualSpaceLivingPanel({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]">
                     <Grid2x2 className="size-3.5 text-accent" aria-hidden="true" />
-                    그리드 스냅 책상 가구 배치 (12×8)
+                    {copy("그리드 스냅 책상 가구 배치 (12×8)")}
                   </h3>
-                  <span className="text-xs text-fg-2 tabular-nums">배치 {placedFurniture.length}개</span>
+                  <span className="text-xs text-fg-2 tabular-nums">{copy(`배치 ${placedFurniture.length}개`)}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label htmlFor={`${uid}-furn-catalog`} className="sr-only">배치할 가구 선택</label>
+                  <label htmlFor={`${uid}-furn-catalog`} className="sr-only">{copy("배치할 가구 선택")}</label>
                   <select id={`${uid}-furn-catalog`} value={selectedCatalogId} onChange={(e) => setSelectedCatalogId(e.target.value)} className={`${SELECT_CLASS} max-w-52`}>
                     {FURNITURE_CATALOG.map((item) => (
-                      <option key={item.catalogId} value={item.catalogId}>{item.nameKo} ({item.widthCells}×{item.heightCells})</option>
+                      <option key={item.catalogId} value={item.catalogId}>{copy(item.nameKo)} ({item.widthCells}×{item.heightCells})</option>
                     ))}
                   </select>
                   <button
@@ -646,7 +658,7 @@ export function StudioVirtualSpaceLivingPanel({
                     className={BTN_OUTLINE}
                   >
                     <RotateCw className="size-3.5" aria-hidden="true" />
-                    90° 회전
+                    {copy("90° 회전")}
                   </button>
                   <button
                     type="button"
@@ -660,7 +672,7 @@ export function StudioVirtualSpaceLivingPanel({
                     className={BTN_OUTLINE}
                   >
                     <Trash2 className="size-3.5" aria-hidden="true" />
-                    제거
+                    {copy("제거")}
                   </button>
                 </div>
                 <div className="grid grid-cols-12 gap-0.5 rounded-lg border border-line bg-panel p-1.5">
@@ -674,7 +686,7 @@ export function StudioVirtualSpaceLivingPanel({
                         key={`cell-${col}-${row}`}
                         type="button"
                         data-testid={`grid-cell-${col}-${row}`}
-                        aria-label={`책상 격자 ${col}열 ${row}행 ${occupant ? "가구 점유됨" : "비어 있음"}`}
+                        aria-label={copy(`책상 격자 ${col}열 ${row}행 ${occupant ? "가구 점유됨" : "비어 있음"}`)}
                         onClick={() => handleGridCellClick(col, row)}
                         className={`h-6 cursor-pointer rounded-sm border text-[9px] font-semibold transition-colors motion-reduce:transition-none ${FOCUS_RING} ${
                           isSel ? "border-accent bg-accent text-on-accent" : occupant ? "border-accent/40 bg-accent-soft text-accent" : "border-line/60 bg-card text-fg-3 hover:bg-raised"
@@ -691,17 +703,17 @@ export function StudioVirtualSpaceLivingPanel({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]">
                     <Timer className="size-3.5 text-good" aria-hidden="true" />
-                    팀 뽀모도로 스프린트 동기화
+                    {copy("로컬 뽀모도로 예제 · 네트워크 동기화 없음")}
                   </h3>
                   <span data-testid="pomodoro-phase-badge" className="rounded-full border border-good/40 bg-good-soft px-2.5 py-0.5 text-[11px] font-semibold text-good [word-break:keep-all]">
-                    {POMODORO_PHASE_LABEL_KO[pomodoro.phase]}
+                    {copy(POMODORO_PHASE_LABEL_KO[pomodoro.phase])}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-baseline justify-between gap-3 rounded-lg border border-line bg-panel px-3.5 py-2.5">
                   <span data-testid="pomodoro-clock" className="text-2xl font-bold tracking-tight text-fg tabular-nums">
                     {formatPomodoroClock(getPomodoroRemainingSec(pomodoro))}
                   </span>
-                  <span className="text-xs text-fg-2 tabular-nums">완료 {pomodoro.completedSprints}회 · 동기화 rev.{pomodoro.syncRevision}</span>
+                  <span className="text-xs text-fg-2 tabular-nums">{copy(`완료 ${pomodoro.completedSprints}회 · 동기화 rev.${pomodoro.syncRevision}`)}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {POMODORO_PRESET_LIST.map((preset) => (
@@ -710,11 +722,11 @@ export function StudioVirtualSpaceLivingPanel({
                       type="button"
                       onClick={() => {
                         setPomodoro((prev) => switchPomodoroPreset(prev, preset.id as PomodoroPresetId));
-                        setStatusMessage(`팀 뽀모도로 프리셋을 '${preset.labelKo}'로 변경했습니다.`);
+                        setStatusMessage(`로컬 뽀모도로 프리셋을 '${preset.labelKo}'로 변경했습니다.`);
                       }}
                       className={pomodoro.presetId === preset.id ? BTN_ACTIVE : BTN_OUTLINE}
                     >
-                      {preset.labelKo}
+                      {copy(preset.labelKo)}
                     </button>
                   ))}
                 </div>
@@ -724,14 +736,14 @@ export function StudioVirtualSpaceLivingPanel({
                     data-testid="pomodoro-toggle-btn"
                     onClick={() => {
                       setPomodoro((prev) => (prev.running ? pauseTeamPomodoro(prev) : startTeamPomodoro(prev)));
-                      setStatusMessage(pomodoro.running ? "팀 뽀모도로를 일시정지했습니다." : "팀 뽀모도로 스프린트를 시작했습니다.");
+                      setStatusMessage(pomodoro.running ? "로컬 뽀모도로를 일시정지했습니다." : "로컬 뽀모도로 스프린트를 시작했습니다.");
                     }}
                     className={BTN_PRIMARY}
                   >
                     {pomodoro.running ? <Pause className="size-3.5" aria-hidden="true" /> : <Play className="size-3.5" aria-hidden="true" />}
-                    {pomodoro.running ? "일시정지" : "스프린트 시작"}
+                    {copy(pomodoro.running ? "일시정지" : "스프린트 시작")}
                   </button>
-                  <button type="button" data-testid="pomodoro-step-btn" onClick={() => handleStepPomodoro(60)} className={BTN_OUTLINE}>+60초</button>
+                  <button type="button" data-testid="pomodoro-step-btn" onClick={() => handleStepPomodoro(60)} className={BTN_OUTLINE}>{copy("+60초")}</button>
                   <button
                     type="button"
                     data-testid="pomodoro-skip-btn"
@@ -743,30 +755,30 @@ export function StudioVirtualSpaceLivingPanel({
                     className={BTN_OUTLINE}
                   >
                     <SkipForward className="size-3.5" aria-hidden="true" />
-                    다음 단계
+                    {copy("다음 단계")}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setPomodoro((prev) => resetTeamPomodoro(prev));
-                      setStatusMessage("팀 뽀모도로 타이머를 초기화했습니다.");
+                      setStatusMessage("로컬 뽀모도로 타이머를 초기화했습니다.");
                     }}
                     className={BTN_OUTLINE}
                   >
                     <RotateCcw className="size-3.5" aria-hidden="true" />
-                    초기화
+                    {copy("초기화")}
                   </button>
                 </div>
                 <div className="space-y-1">
                   <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-fg-3">
                     <Users className="size-3" aria-hidden="true" />
-                    동기화 참여 동료 ({pomodoro.syncedPeers.length}명)
+                    {copy(`합성 동료 예시 (${pomodoro.syncedPeers.length}명 · 실제 연결 0명)`)}
                   </p>
                   <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
                     {pomodoro.syncedPeers.map((peer) => (
                       <div key={peer.peerId} className="rounded-md border border-line bg-panel px-2 py-1.5 text-[11px]">
-                        <p className="font-semibold text-fg [word-break:keep-all]">{peer.nameKo}</p>
-                        <p className="text-fg-3 [word-break:keep-all]">{peer.taskKo}</p>
+                        <p className="font-semibold text-fg [word-break:keep-all]">{copy(peer.nameKo)}</p>
+                        <p className="text-fg-3 [word-break:keep-all]">{copy(peer.taskKo)}</p>
                       </div>
                     ))}
                   </div>

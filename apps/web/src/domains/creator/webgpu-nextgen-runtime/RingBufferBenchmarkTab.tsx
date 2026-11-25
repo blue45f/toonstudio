@@ -204,28 +204,31 @@ export function RingBufferBenchmarkTab({ isKo }: RingBufferBenchmarkTabProps): R
         </div>
       </div>
 
-      {/* 핵심 실측 KPI 카드 4종 */}
+      {/* 버퍼 구조 계산 · 시간 실측 · 무결성 결과 */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-1 rounded-lg border border-line bg-canvas p-3">
           <div className="flex items-center justify-between gap-2 text-xs text-fg-3">
-            <span>{pick("핫패스 힙 할당 수", "Hot-Path Heap Allocs")}</span>
+            <span>{pick("초기 링 버퍼 (계산)", "Initial Ring Buffer (calculated)")}</span>
             <ShieldCheck className="h-3.5 w-3.5 text-good" aria-hidden="true" />
           </div>
           <div className="text-lg font-bold text-good tabular-nums">
-            {report.zeroCopyHeapAllocations}{" "}
-            <span className="text-xs font-normal text-fg-3">
-              vs {report.copyAllocHeapAllocations} {pick("복사 경로", "copy path")}
-            </span>
+            {formatBytes(report.ringBackingBufferBytes)}
           </div>
           <p className="text-xs text-fg-2 tabular-nums">
-            {pick("절감 힙 메모리", "Saved heap")}: {formatBytes(report.savedHeapBytes)} (
-            {report.allocationReductionPct}%)
+            {pick("페이로드 용량", "Payload capacity")}: {formatBytes(report.ringPayloadCapacityBytes)}
+          </p>
+          <p className="text-xs text-fg-2 tabular-nums">
+            {pick("비교 경로 할당 누적", "Copy path cumulative allocation")}: {formatBytes(report.copyAllocPayloadBytes)}{" "}
+            ({report.copyAllocPayloadBufferCount} {pick("버퍼", "buffers")})
+          </p>
+          <p className="text-xs text-fg-2 tabular-nums">
+            {pick("비교 경로 복사 누적", "Copy path cumulative copies")}: {formatBytes(report.copyAllocCopiedPayloadBytes)}
           </p>
         </div>
 
         <div className="flex flex-col gap-1 rounded-lg border border-line bg-canvas p-3">
           <div className="flex items-center justify-between gap-2 text-xs text-fg-3">
-            <span>{pick("Zero-Copy 처리량", "Zero-Copy Throughput")}</span>
+            <span>{pick("Zero-Copy 처리량 (시간 실측)", "Zero-Copy Throughput (timed)")}</span>
             <Activity className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
           </div>
           <div className="text-lg font-bold text-fg tabular-nums">
@@ -234,6 +237,10 @@ export function RingBufferBenchmarkTab({ isKo }: RingBufferBenchmarkTabProps): R
           <p className="text-xs text-fg-2 tabular-nums">
             {Math.round(report.zeroCopyTilesPerSec).toLocaleString()} tiles/s ·{" "}
             {report.zeroCopyElapsedMs.toFixed(2)} ms
+          </p>
+          <p className="text-xs text-fg-2 tabular-nums">
+            {pick("비교 복사 경로", "Copy path")}: {report.copyAllocThroughputMiBPerSec.toFixed(1)} MiB/s ·{" "}
+            {report.copyAllocElapsedMs.toFixed(2)} ms
           </p>
         </div>
 
@@ -275,6 +282,13 @@ export function RingBufferBenchmarkTab({ isKo }: RingBufferBenchmarkTabProps): R
           </p>
         </div>
       </div>
+
+      <p className="text-xs text-fg-2">
+        {pick(
+          "버퍼 수·바이트는 코드 경로 기준 계산값입니다. 초기 링 버퍼는 헤더·정렬 공간을 포함하고, 비교 경로는 프레임마다 페이로드 버퍼 2개를 할당하고 1회 복사한 누적량입니다. 시간·처리량은 현재 스레드의 CPU 루프 실측입니다. 객체·뷰·콜백 할당, 전체 힙·GC·GPU 전송은 측정하지 않습니다.",
+          "Buffer counts and bytes are calculated from the code path. The initial ring buffer includes headers and alignment; the copy path totals two payload buffer allocations and one copy per frame. Timing and throughput come from CPU loops on the current thread. Object, view and callback allocations, total heap, GC and GPU transfers are not measured.",
+        )}
+      </p>
 
       {/* 메모리 압박 풀 회수 상세 리포트 */}
       <div className="flex flex-col gap-2 rounded-lg border border-line bg-canvas p-3.5">

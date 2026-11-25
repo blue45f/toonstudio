@@ -18,7 +18,7 @@ function receipt(requestId: string): StudioGpuFrameReceipt {
 }
 
 describe("Studio live-stroke shared GPU surface authority", () => {
-  it("does not let a receipted older stroke reveal a surface mutated for a newer request", () => {
+  it("펜을 뗀 뒤 같은 획의 확인된 픽셀을 유지하고 다음 획의 표면 교체 시 숨긴다", () => {
     const setPinnedPresentationVisible = vi.fn();
     const currentSurfaceRequest = { current: null as string | null };
     const audit = createStudioLiveStrokeGpuAudit({
@@ -52,7 +52,15 @@ describe("Studio live-stroke shared GPU surface authority", () => {
     expect(audit.gpuPinReceiptWatchdog().receipt("frame:a")).toBe(true);
     audit.applyLiveStrokeBackendPresentationEffects();
     expect(setPinnedPresentationVisible).toHaveBeenLastCalledWith(true);
+
+    expect(audit.prepareLiveStrokeGpuSubmission("stroke-a", "append")).toBe(true);
+    expect(audit.registerLiveStrokeGpuRequest("stroke-a", "frame:a-tail", "append")).toBe(true);
+    currentSurfaceRequest.current = "frame:a-tail";
+    audit.armGpuPinnedRequestWatchdog("frame:a-tail");
     expect(audit.sealLiveStrokeBackendAudit("stroke-a")).toBe(true);
+    audit.applyLiveStrokeBackendPresentationEffects();
+    expect(audit.gpuPinReceiptWatchdog().hasExactReceipt("frame:a-tail")).toBe(false);
+    expect(setPinnedPresentationVisible).toHaveBeenLastCalledWith(true);
 
     expect(audit.beginLiveStrokeBackendAudit("stroke-b", "webgpu")).toBe(true);
     expect(audit.prepareLiveStrokeGpuSubmission("stroke-b")).toBe(true);

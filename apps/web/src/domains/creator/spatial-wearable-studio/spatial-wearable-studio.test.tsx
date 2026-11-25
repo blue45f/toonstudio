@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -33,7 +33,7 @@ import {
   type SpatialWearableSessionSnapshot,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 function makeSnapshot(overrides?: Partial<SpatialWearableSessionSnapshot>): SpatialWearableSessionSnapshot {
   return {
@@ -483,7 +483,9 @@ describe("5. StudioSpatialWearablePanel UI · 상호작용 · 접근성", () => 
     expect(screen.getByTestId("spatial-break-message").textContent).toContain("5분");
   });
 
-  it("AR HUD 프리셋·JSON 복사·미리보기 접기·초기화 버튼과 콜백이 정상 동작한다", () => {
+  it("AR HUD 프리셋·JSON 복사·미리보기 접기·초기화 버튼과 콜백이 정상 동작한다", async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText: write } });
     const onTopologyChange = vi.fn();
     const onRigChange = vi.fn();
     const onExportJson = vi.fn();
@@ -502,7 +504,8 @@ describe("5. StudioSpatialWearablePanel UI · 상호작용 · 접근성", () => 
     expect(screen.getByTestId("spatial-ar-occlusion-badge").textContent).toContain("2.1%");
 
     fireEvent.click(screen.getByTestId("spatial-copy-json-btn"));
-    expect(onExportJson).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportJson).toHaveBeenCalledTimes(1));
     expect(onExportJson.mock.calls[0]?.[0]).toContain(SPATIAL_WEARABLE_SCHEMA_ID);
     expect(screen.getByTestId("spatial-json-preview").textContent).toContain('"dataSourceKind": "estimate"');
 
@@ -529,20 +532,23 @@ describe("5. StudioSpatialWearablePanel UI · 상호작용 · 접근성", () => 
 });
 
 describe("6. 코드 위생 자가 검증 (파일 줄수 <= 800 · Calm Atelier 토큰 · 금지 패턴 0건)", () => {
-  it("4개 모듈 파일이 모두 800줄 이하이며 원시 색·transition-all·= {}·Storage·private Map store·BigInt·Sparkles가 0건이다", () => {
+  it("모든 모듈 파일이 800줄 이하이며 원시 색·transition-all·= {}·Storage·private Map store·BigInt·Sparkles가 0건이다", () => {
     const dir = path.resolve(import.meta.dirname);
     const requiredFiles = [
       "spatial-wearable-engine.ts",
       "StudioSpatialWearablePanel.tsx",
       "index.ts",
       "spatial-wearable-studio.test.tsx",
+      "spatial-boundaries.test.tsx",
+      "spatial-input-contract.ts",
+      "use-example-delivery.ts",
     ];
     for (const file of requiredFiles) {
       expect(existsSync(path.join(dir, file))).toBe(true);
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(allFiles.length).toBe(4);
+    expect([...allFiles].sort()).toEqual([...requiredFiles].sort());
 
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");

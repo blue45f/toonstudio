@@ -407,14 +407,14 @@ describe("6. StudioColorScriptLabPanel 3탭 인터랙티브 UI 및 엄격 규칙
     );
 
     expect(screen.getByTestId("dual-viewer-preview-svg")).toBeTruthy();
-    expect(screen.getByTestId("dual-viewer-score-badge").textContent).toContain("출고 보류");
+    expect(screen.getByTestId("dual-viewer-score-badge").textContent).toContain("예제 기준 미달");
 
     fireEvent.click(screen.getByTestId("dual-preset-white-matte-halo"));
     expect(screen.getByTestId("dual-dark-audit").textContent).toContain("위험");
 
     fireEvent.click(screen.getByTestId("dual-viewer-apply-repair-btn"));
     expect(onApplyDualViewerRepair).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("dual-viewer-score-badge").textContent).toContain("양면 통과");
+    expect(screen.getByTestId("dual-viewer-score-badge").textContent).toContain("예제 기준 통과");
   });
 
   it("엄격 규칙(800줄 이하 · Storage/BigInt/private Map store/원시 색상/inline style/props={} 0건 · 시맨틱 토큰)을 준수한다", () => {

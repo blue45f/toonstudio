@@ -10,18 +10,24 @@ import {
   Activity, AlertTriangle, Award, CheckCircle2, Copy, Crop, Eye, EyeOff,
   Layers, MessageSquareWarning, Plus, RotateCcw, Scissors, SlidersHorizontal, Trash2,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import {
   BALLOON_MAX_CHARS, CUT_BALLOON_WARNING_MIN, DEFAULT_THUMBNAIL_CANDIDATE_A, DEFAULT_THUMBNAIL_CANDIDATE_B,
-  EPISODE_HOOK_PRESETS, MIN_THUMBNAIL_TITLE_PX, THUMBNAIL_BADGE_KINDS, THUMBNAIL_PLATFORM_SPECS, THUMBNAIL_TONE_PRESETS,
+  EPISODE_HOOK_PRESETS, THUMBNAIL_BADGE_KINDS, THUMBNAIL_PLATFORM_SPECS,
   analyzeEpisodeHookAndDensity, applySplitSuggestionToCuts, buildLabDiagnosticReportMarkdown, compareThumbnailCandidates,
   getEpisodeHookPreset, getThumbnailTonePreset,
   type CutActionShift, type CutEmotionState, type DialogueSplitSuggestion, type EndingHookKind,
   type EpisodeCutInput, type EpisodeHookDensityAnalysis, type EpisodePresetId,
   type ThumbnailAbComparisonResult, type ThumbnailBadgeKind, type ThumbnailCandidateInput,
-  type ThumbnailPlatformCandidateAudit, type ThumbnailPlatformId, type ThumbnailTonePresetId, type WarningSeverity,
+  type ThumbnailPlatformId, type ThumbnailTonePresetId, type WarningSeverity,
 } from "./episode-pacing-thumbnail-engine";
+
+import { CandidateControlCard } from "./ThumbnailControls";
+import { OperationStatus } from "./OperationStatus";
+import { MAX_EPISODE_CUTS, MAX_CUT_BALLOONS, MAX_BALLOON_TEXT, MAX_EPISODE_TEXT, uniqueEpisodeId } from "./episode-dialogue-contract";
+import { useExampleNotification } from "./use-example-notification";
+import { useClipboardOutput } from "./use-clipboard-output";
 
 export type EpisodePacingThumbnailTabId = "pacing-hook" | "thumbnail-ab";
 
@@ -31,9 +37,9 @@ export interface StudioEpisodePacingThumbnailPanelProps {
   readonly initialPlatform?: ThumbnailPlatformId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onPacingAnalysisChange?: (analysis: EpisodeHookDensityAnalysis) => void;
-  readonly onThumbnailComparisonChange?: (comparison: ThumbnailAbComparisonResult) => void;
-  readonly onCopyReport?: (markdown: string) => void;
+  readonly onPacingAnalysisChange?: (analysis: EpisodeHookDensityAnalysis) => void | Promise<void>;
+  readonly onThumbnailComparisonChange?: (comparison: ThumbnailAbComparisonResult) => void | Promise<void>;
+  readonly onCopyReport?: (markdown: string) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -61,20 +67,6 @@ const ENDING_HOOK_OPTIONS: readonly { readonly id: EndingHookKind; readonly ko: 
 const scoreTone = (score: number): string => (score >= 78 ? "text-good" : score >= 56 ? "text-warn" : "text-bad");
 const severityTone = (severity: WarningSeverity): string =>
   severity === "critical" ? "border-bad bg-bad-soft text-bad" : severity === "warn" ? "border-warn bg-warning-soft text-warn" : "border-cool bg-info-soft text-cool";
-
-function surfaceBackdropClass(token: "dark" | "cool" | "paper" | "muted" | "accent"): string {
-  if (token === "dark") return "text-fg";
-  if (token === "cool") return "text-cool";
-  if (token === "paper") return "text-canvas";
-  if (token === "accent") return "text-accent";
-  return "text-raised";
-}
-
-function surfaceTitleClass(token: "light" | "dark" | "accent"): string {
-  if (token === "dark") return "text-fg";
-  if (token === "accent") return "text-accent";
-  return "text-canvas";
-}
 
 function MetricCard(props: { readonly label: string; readonly value: string; readonly sub: string; readonly testId: string; readonly tone?: string }): ReactElement {
   const { label, value, sub, testId, tone = "text-fg" } = props;
@@ -132,212 +124,6 @@ function RetentionCurveSvg(props: { readonly analysis: EpisodeHookDensityAnalysi
   );
 }
 
-function ThumbnailCropPreviewSvg(props: {
-  readonly candidate: ThumbnailCandidateInput;
-  readonly audit: ThumbnailPlatformCandidateAudit;
-  readonly showOverlays: boolean;
-  readonly isEn: boolean;
-}): ReactElement {
-  const { candidate, audit, showOverlays, isEn } = props;
-  const { platform, projectedFaceRect, projectedEyeBandRect, projectedTitleRect, badgePlacements, badgeCollisions } = audit;
-  const tone = getThumbnailTonePreset(candidate.tonePresetId);
-  const clipId = `thumb-clip-${candidate.id}-${platform.id}`;
-  const eyeCollided = badgeCollisions.some((c) => c.target === "eyes");
-  const titleCollided = badgeCollisions.some((c) => c.target === "title");
-  const collidedBadges = new Set(badgeCollisions.map((c) => c.badge));
-  const faceCx = projectedFaceRect.x + projectedFaceRect.width * 0.5;
-  const faceCy = projectedFaceRect.y + projectedFaceRect.height * 0.5;
-  const eyeY = projectedEyeBandRect.y + projectedEyeBandRect.height * 0.5;
-  const safeM = platform.safeMarginPx;
-
-  return (
-    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-raised p-3">
-      <div className="flex w-full items-center justify-between text-[11px] text-fg-3 tabular-nums">
-        <span className="font-semibold text-fg-2">{isEn ? platform.labelEn : platform.labelKo}</span>
-        <span>{`${platform.widthPx}×${platform.heightPx}px · ${audit.scaleFactor}×`}</span>
-      </div>
-      <svg
-        data-testid={`thumb-preview-svg-${candidate.id}`}
-        data-platform={platform.id}
-        data-score={audit.totalScore}
-        data-eye-clipped={audit.eyeClipped ? "true" : "false"}
-        data-title-px={audit.scaledTitleFontPx}
-        viewBox={`0 0 ${platform.widthPx} ${platform.heightPx}`}
-        width={platform.widthPx}
-        height={platform.heightPx}
-        className="max-w-full rounded-lg border border-line-strong text-fg"
-        role="img"
-        aria-label={isEn ? `Candidate ${candidate.id} ${platform.labelEn} reduced crop preview` : `후보 ${candidate.id} ${platform.labelKo} 축소 크롭 프리뷰`}
-      >
-        <defs><clipPath id={clipId}><rect x="0" y="0" width={platform.widthPx} height={platform.heightPx} rx="4" /></clipPath></defs>
-        <g clipPath={`url(#${clipId})`}>
-          <rect x="0" y="0" width={platform.widthPx} height={platform.heightPx} className={surfaceBackdropClass(tone.backdropSurfaceToken)} fill="currentColor" fillOpacity={tone.backdropSurfaceToken === "paper" ? 1 : 0.9} />
-          <ellipse cx={faceCx} cy={projectedFaceRect.y + projectedFaceRect.height * 1.38} rx={projectedFaceRect.width * 0.85} ry={projectedFaceRect.height * 0.62} className="text-fg-2" fill="currentColor" fillOpacity={0.28} />
-          <ellipse cx={faceCx} cy={faceCy} rx={Math.max(4, projectedFaceRect.width * 0.48)} ry={Math.max(5, projectedFaceRect.height * 0.5)} className={tone.backdropSurfaceToken === "paper" ? "text-fg-2" : "text-canvas"} fill="currentColor" fillOpacity={0.26} />
-          <rect x={projectedFaceRect.x} y={projectedFaceRect.y} width={projectedFaceRect.width} height={projectedFaceRect.height} rx="4" className={audit.faceClipped ? "text-warn" : "text-good"} fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 2" />
-          <rect x={projectedEyeBandRect.x} y={projectedEyeBandRect.y} width={projectedEyeBandRect.width} height={projectedEyeBandRect.height} rx="2" className={audit.eyeClipped || eyeCollided ? "text-bad" : "text-good"} fill="currentColor" fillOpacity={audit.eyeClipped || eyeCollided ? 0.42 : 0.22} stroke="currentColor" strokeWidth="1" />
-          <circle cx={faceCx - projectedFaceRect.width * 0.16} cy={eyeY} r={Math.max(1.8, Math.min(3.4, projectedFaceRect.width * 0.06))} className={audit.eyeClipped || eyeCollided ? "text-bad" : "text-fg"} fill="currentColor" />
-          <circle cx={faceCx + projectedFaceRect.width * 0.16} cy={eyeY} r={Math.max(1.8, Math.min(3.4, projectedFaceRect.width * 0.06))} className={audit.eyeClipped || eyeCollided ? "text-bad" : "text-fg"} fill="currentColor" />
-
-          {candidate.hasTitleScrim ? (
-            <rect x={Math.max(0, projectedTitleRect.x - 4)} y={Math.max(0, projectedTitleRect.y - 2)} width={projectedTitleRect.width + 8} height={projectedTitleRect.height + 4} rx="3" className={tone.titleSurfaceToken === "dark" ? "text-canvas" : "text-fg"} fill="currentColor" fillOpacity={0.78} />
-          ) : null}
-          <rect x={projectedTitleRect.x} y={projectedTitleRect.y} width={projectedTitleRect.width} height={projectedTitleRect.height} rx="2" className={!audit.titleMeetsMinHeight || titleCollided ? "text-bad" : "text-accent"} fill="none" stroke="currentColor" strokeOpacity={0.75} strokeWidth="1" strokeDasharray={!audit.titleMeetsMinHeight || titleCollided ? "2 2" : undefined} />
-          <text
-            x={projectedTitleRect.x + projectedTitleRect.width * 0.5}
-            y={projectedTitleRect.y + projectedTitleRect.height * 0.68}
-            textAnchor="middle"
-            fontSize={Math.max(7, Math.min(22, audit.scaledTitleFontPx))}
-            fontWeight="800"
-            className={surfaceTitleClass(tone.titleSurfaceToken)}
-            fill="currentColor"
-          >
-            {candidate.titleText.trim() || (isEn ? "Title" : "작품명")}
-          </text>
-
-          {showOverlays ? (
-            <g data-testid={`thumb-overlay-group-${candidate.id}`}>
-              <rect x={safeM} y={safeM} width={platform.widthPx - safeM * 2} height={platform.heightPx - safeM * 2} rx="3" className="text-warn" fill="none" stroke="currentColor" strokeOpacity={0.65} strokeWidth="1" strokeDasharray="4 3" />
-              {badgePlacements.map((p) => {
-                const hit = collidedBadges.has(p.badge);
-                return (
-                  <g key={`${p.badge}-${p.corner}`} data-testid={`thumb-badge-${candidate.id}-${p.badge}`} data-collided={hit ? "true" : "false"}>
-                    <rect x={p.rect.x} y={p.rect.y} width={p.rect.width} height={p.rect.height} rx="3" className={hit ? "text-bad" : p.badge === "19" ? "text-warn" : "text-accent"} fill="currentColor" fillOpacity={0.92} />
-                    <text x={p.rect.x + p.rect.width * 0.5} y={p.rect.y + p.rect.height * 0.72} textAnchor="middle" fontSize="9" fontWeight="800" className="text-canvas" fill="currentColor">{p.badge}</text>
-                    {hit ? <rect x={p.rect.x - 1.5} y={p.rect.y - 1.5} width={p.rect.width + 3} height={p.rect.height + 3} rx="4" className="text-bad" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 2" /> : null}
-                  </g>
-                );
-              })}
-            </g>
-          ) : null}
-        </g>
-      </svg>
-    </div>
-  );
-}
-
-function CandidateControlCard(props: {
-  readonly candidate: ThumbnailCandidateInput;
-  readonly audit: ThumbnailPlatformCandidateAudit;
-  readonly allPrescriptionsCount: number;
-  readonly showOverlays: boolean;
-  readonly isWinner: boolean;
-  readonly isEn: boolean;
-  readonly uid: string;
-  readonly onChange: (patch: Partial<ThumbnailCandidateInput>) => void;
-  readonly onSelectTone: (toneId: ThumbnailTonePresetId) => void;
-}): ReactElement {
-  const { candidate, audit, allPrescriptionsCount, showOverlays, isWinner, isEn, uid, onChange, onSelectTone } = props;
-  const pick = (ko: string, en: string): string => (isEn ? en : ko);
-  const titleId = `${uid}-title-${candidate.id}`;
-  const toneId = `${uid}-tone-${candidate.id}`;
-  const fxId = `${uid}-fx-${candidate.id}`;
-  const fyId = `${uid}-fy-${candidate.id}`;
-  const zoomId = `${uid}-zoom-${candidate.id}`;
-  const fontId = `${uid}-font-${candidate.id}`;
-
-  return (
-    <div data-testid={`thumb-candidate-card-${candidate.id}`} className={`space-y-3 rounded-xl border p-4 ${isWinner ? "border-accent bg-card" : "border-line bg-canvas"}`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${isWinner ? "bg-accent text-on-accent" : "bg-raised text-fg"}`}>
-            {pick(`후보 ${candidate.id}`, `Candidate ${candidate.id}`)}
-          </span>
-          <span className="text-xs font-bold text-fg [word-break:keep-all]">{isEn ? candidate.labelEn : candidate.labelKo}</span>
-        </div>
-        <span data-testid={`thumb-platform-score-${candidate.id}`} className={`text-sm font-bold tabular-nums ${scoreTone(audit.totalScore)}`}>
-          {`${audit.totalScore} / 100`}
-        </span>
-      </div>
-
-      <ThumbnailCropPreviewSvg candidate={candidate} audit={audit} showOverlays={showOverlays} isEn={isEn} />
-
-      <div className="grid grid-cols-2 gap-2 text-[11px] tabular-nums sm:grid-cols-4">
-        <div className="rounded-lg border border-line bg-raised px-2.5 py-1.5">
-          <div className="text-fg-3">{pick("축소 타이틀", "Scaled Title")}</div>
-          <div data-testid={`thumb-title-px-${candidate.id}`} className={`font-bold ${audit.titleMeetsMinHeight ? "text-good" : "text-bad"}`}>
-            {`${audit.scaledTitleFontPx}px ${audit.titleMeetsMinHeight ? "OK" : `<${MIN_THUMBNAIL_TITLE_PX}`}`}
-          </div>
-        </div>
-        <div className="rounded-lg border border-line bg-raised px-2.5 py-1.5">
-          <div className="text-fg-3">{pick("WCAG · APCA", "WCAG · APCA")}</div>
-          <div data-testid={`thumb-contrast-${candidate.id}`} className={`font-bold ${audit.contrast.grade === "fail" ? "text-bad" : audit.contrast.grade === "borderline" ? "text-warn" : "text-good"}`}>
-            {`${audit.contrast.wcagContrastRatio}:1 · Lc ${audit.contrast.apcaAbsLc}`}
-          </div>
-        </div>
-        <div className="rounded-lg border border-line bg-raised px-2.5 py-1.5">
-          <div className="text-fg-3">{pick("눈·얼굴 노출", "Eye / Face")}</div>
-          <div className={`font-bold ${audit.eyeClipped ? "text-bad" : audit.faceClipped ? "text-warn" : "text-good"}`}>
-            {`${Math.round(audit.eyeVisibleRatio * 100)}% / ${Math.round(audit.faceVisibleRatio * 100)}%`}
-          </div>
-        </div>
-        <div className="rounded-lg border border-line bg-raised px-2.5 py-1.5">
-          <div className="text-fg-3">{pick("배지 충돌", "Badge Hits")}</div>
-          <div data-testid={`thumb-badge-hits-${candidate.id}`} className={`font-bold ${audit.badgeCollisions.length > 0 ? "text-bad" : "text-good"}`}>
-            {pick(`${audit.badgeCollisions.length}건`, `${audit.badgeCollisions.length}`)}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-2.5 sm:grid-cols-2">
-        <div className="space-y-1">
-          <label htmlFor={titleId} className="block text-[11px] font-medium text-fg-2">{pick("타이틀 문구", "Title Text")}</label>
-          <input id={titleId} data-testid={`thumb-title-input-${candidate.id}`} type="text" value={candidate.titleText} onChange={(e) => onChange({ titleText: e.target.value })} className={`min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg ${FOCUS_RING}`} />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor={toneId} className="block text-[11px] font-medium text-fg-2">{pick("배경·타이틀 톤 (OKLCH)", "Tone Preset (OKLCH)")}</label>
-          <select id={toneId} data-testid={`thumb-tone-select-${candidate.id}`} value={candidate.tonePresetId} onChange={(e) => onSelectTone(e.target.value as ThumbnailTonePresetId)} className={`min-h-11 w-full rounded-lg border border-line bg-card px-2.5 text-xs text-fg ${FOCUS_RING}`}>
-            {THUMBNAIL_TONE_PRESETS.map((preset) => <option key={preset.id} value={preset.id}>{isEn ? preset.labelEn : preset.labelKo}</option>)}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid gap-2.5 sm:grid-cols-2">
-        <div className="space-y-1">
-          <div className="flex justify-between text-[11px]"><label htmlFor={fxId} className="text-fg-2">{pick("크롭 초점 X", "Focal X")}</label><span className="font-semibold tabular-nums">{candidate.focalX.toFixed(2)}</span></div>
-          <input id={fxId} data-testid={`thumb-focal-x-${candidate.id}`} type="range" min={0.1} max={0.9} step={0.02} value={candidate.focalX} onChange={(e) => onChange({ focalX: Number(e.target.value) })} className={`h-2 w-full cursor-pointer accent-accent ${FOCUS_RING}`} />
-        </div>
-        <div className="space-y-1">
-          <div className="flex justify-between text-[11px]"><label htmlFor={fyId} className="text-fg-2">{pick("크롭 초점 Y", "Focal Y")}</label><span className="font-semibold tabular-nums">{candidate.focalY.toFixed(2)}</span></div>
-          <input id={fyId} data-testid={`thumb-focal-y-${candidate.id}`} type="range" min={0.1} max={0.9} step={0.02} value={candidate.focalY} onChange={(e) => onChange({ focalY: Number(e.target.value) })} className={`h-2 w-full cursor-pointer accent-accent ${FOCUS_RING}`} />
-        </div>
-        <div className="space-y-1">
-          <div className="flex justify-between text-[11px]"><label htmlFor={zoomId} className="text-fg-2">{pick("확대 줌", "Zoom")}</label><span className="font-semibold tabular-nums">{`${candidate.zoom.toFixed(2)}×`}</span></div>
-          <input id={zoomId} data-testid={`thumb-zoom-${candidate.id}`} type="range" min={1} max={2} step={0.04} value={candidate.zoom} onChange={(e) => onChange({ zoom: Number(e.target.value) })} className={`h-2 w-full cursor-pointer accent-accent ${FOCUS_RING}`} />
-        </div>
-        <div className="space-y-1">
-          <div className="flex justify-between text-[11px]"><label htmlFor={fontId} className="text-fg-2">{pick("원본 타이틀 폰트", "Source Font")}</label><span className="font-semibold tabular-nums">{`${candidate.sourceTitleFontPx}px`}</span></div>
-          <input id={fontId} data-testid={`thumb-font-${candidate.id}`} type="range" min={36} max={120} step={2} value={candidate.sourceTitleFontPx} onChange={(e) => onChange({ sourceTitleFontPx: Number(e.target.value) })} className={`h-2 w-full cursor-pointer accent-accent ${FOCUS_RING}`} />
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button type="button" data-testid={`thumb-scrim-toggle-${candidate.id}`} aria-pressed={candidate.hasTitleScrim} onClick={() => onChange({ hasTitleScrim: !candidate.hasTitleScrim })} className={candidate.hasTitleScrim ? BTN_ACTIVE : BTN_OUTLINE}>
-          {candidate.hasTitleScrim ? pick("타이틀 스크림 ON", "Title Scrim ON") : pick("타이틀 스크림 OFF", "Title Scrim OFF")}
-        </button>
-        <span className="text-[11px] text-fg-3 tabular-nums [word-break:keep-all]">
-          {pick(`3규격 누적 개선 처방 ${allPrescriptionsCount}건`, `${allPrescriptionsCount} prescriptions across 3 specs`)}
-        </span>
-      </div>
-
-      <div data-testid={`thumb-prescriptions-${candidate.id}`} className="space-y-1.5">
-        {audit.prescriptions.length === 0 ? (
-          <div className="flex items-center gap-1.5 rounded-lg border border-good bg-good-soft px-3 py-2 text-xs font-medium text-good [word-break:keep-all]">
-            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{pick("현재 플랫폼 규격에서 안전영역·타이틀·대비 기준을 모두 충족합니다.", "Passes framing, badge safety, title size, and contrast on this spec.")}</span>
-          </div>
-        ) : (
-          audit.prescriptions.map((rx) => (
-            <div key={rx.id} className={`rounded-lg border px-3 py-2 text-xs [word-break:keep-all] ${severityTone(rx.severity)}`}>
-              {isEn ? rx.messageEn : rx.messageKo}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
 /** 독자 이탈 휴리스틱 · 대사 벽 감지 · 썸네일 A/B 주목도 스튜디오 패널. */
 export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThumbnailPanelProps): ReactElement {
   const {
@@ -359,8 +145,6 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
   const [presetId, setPresetId] = useState<EpisodePresetId>(initialPreset);
   const [cuts, setCuts] = useState<readonly EpisodeCutInput[]>(() => getEpisodeHookPreset(initialPreset).cuts);
   const [episodeTitle, setEpisodeTitle] = useState<string>(() => getEpisodeHookPreset(initialPreset).episodeTitle);
-  const [cutSeq, setCutSeq] = useState<number>(1);
-  const [balloonSeq, setBalloonSeq] = useState<number>(1);
 
   const [focusedPlatform, setFocusedPlatform] = useState<ThumbnailPlatformId>(initialPlatform);
   const [activeBadges, setActiveBadges] = useState<readonly ThumbnailBadgeKind[]>(THUMBNAIL_BADGE_KINDS);
@@ -384,8 +168,18 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
     [locale, pacingAnalysis, thumbComparison],
   );
 
-  useEffect(() => { onPacingAnalysisChange?.(pacingAnalysis); }, [onPacingAnalysisChange, pacingAnalysis]);
-  useEffect(() => { onThumbnailComparisonChange?.(thumbComparison); }, [onThumbnailComparisonChange, thumbComparison]);
+  const pacingNotification = useExampleNotification(onPacingAnalysisChange);
+  const thumbnailNotification = useExampleNotification(onThumbnailComparisonChange);
+  const reportNotification = useExampleNotification(onCopyReport);
+  const clipboard = useClipboardOutput();
+  const channels = [pacingNotification, thumbnailNotification, reportNotification, clipboard];
+  const busy = channels.some((channel) => channel.status === "pending");
+  const lastPacing = useRef<EpisodeHookDensityAnalysis | null>(null);
+  const lastThumbnail = useRef<ThumbnailAbComparisonResult | null>(null);
+  const { notify: notifyPacing } = pacingNotification;
+  const { notify: notifyThumbnail } = thumbnailNotification;
+  useEffect(() => { if (lastPacing.current !== pacingAnalysis) { lastPacing.current = pacingAnalysis; notifyPacing(pacingAnalysis); } }, [pacingAnalysis, notifyPacing]);
+  useEffect(() => { if (lastThumbnail.current !== thumbComparison) { lastThumbnail.current = thumbComparison; notifyThumbnail(thumbComparison); } }, [thumbComparison, notifyThumbnail]);
 
   const focusedRow = thumbComparison.platforms.find((p) => p.platform.id === focusedPlatform) ?? thumbComparison.platforms[0];
 
@@ -399,19 +193,24 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
     setCuts((prev) => prev.map((cut, idx) => (idx === cutIndex ? { ...cut, ...patch } : cut)));
   };
 
+  const totalText = cuts.reduce((sum, cut) => sum + cut.balloons.reduce((length, balloon) => length + balloon.text.length, 0), 0);
   const handleUpdateBalloonText = (cutIndex: number, balloonId: string, text: string): void => {
+    const original = cuts[cutIndex]?.balloons.find((balloon) => balloon.id === balloonId);
+    if (!original) return;
+    if (text.length > MAX_BALLOON_TEXT || totalText - original.text.length + text.length > MAX_EPISODE_TEXT) { setStatusMessage(pick("대사 입력 상한을 넘었습니다. 기존 원문은 유지됩니다.", "Dialogue input exceeds the limit. The existing text is preserved.")); return; }
     setCuts((prev) => prev.map((cut, idx) => (idx !== cutIndex ? cut : {
       ...cut, balloons: cut.balloons.map((b) => (b.id === balloonId ? { ...b, text } : b)),
     })));
   };
 
   const handleAddBalloon = (cutIndex: number): void => {
-    const seq = balloonSeq;
-    setBalloonSeq((n) => n + 1);
-    setCuts((prev) => prev.map((cut, idx) => (idx !== cutIndex ? cut : {
-      ...cut,
-      balloons: [...cut.balloons, { id: `b-add-${seq}`, speaker: pick("인물", "Speaker"), kind: "speech", text: pick("새 대사를 입력하세요.", "New dialogue line.") }],
-    })));
+    const text = pick("새 대사를 입력하세요.", "New dialogue line.");
+    if (totalText + text.length > MAX_EPISODE_TEXT) { setStatusMessage(pick("회차 대사 상한에 도달했습니다.", "The episode dialogue limit has been reached.")); return; }
+    setCuts((prev) => prev.map((cut, index) => {
+      if (index !== cutIndex || cut.balloons.length >= MAX_CUT_BALLOONS) return cut;
+      const id = uniqueEpisodeId("b-add", new Set(prev.flatMap((item) => item.balloons.map((balloon) => balloon.id))));
+      return { ...cut, balloons: [...cut.balloons, { id, speaker: pick("인물", "Speaker"), kind: "speech", text }] };
+    }));
   };
 
   const handleRemoveBalloon = (cutIndex: number, balloonId: string): void => {
@@ -419,17 +218,14 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
   };
 
   const handleAddCut = (): void => {
-    const seq = cutSeq;
-    setCutSeq((n) => n + 1);
-    setCuts((prev) => [
-      ...prev,
-      {
-        id: `cut-add-${seq}`, labelKo: `${prev.length + 1}컷 · 추가 컷`, labelEn: `Cut ${prev.length + 1} · Added`,
-        role: "reaction", emotion: "tense", actionShift: "clear", tensionLevel: 68, endingHookKind: "question",
-        balloons: [{ id: `b-cut-${seq}`, speaker: pick("주인공", "Lead"), kind: "speech", text: pick("잠깐, 이 흔적은 뭐지?", "Wait, what is this trace?") }],
-      },
-    ]);
-    setStatusMessage(pick("새 컷을 시퀀스 끝에 추가했습니다.", "Appended a new cut."));
+    const text = pick("잠깐, 이 흔적은 뭐지?", "Wait, what is this trace?");
+    if (cuts.length >= MAX_EPISODE_CUTS || totalText + text.length > MAX_EPISODE_TEXT) { setStatusMessage(pick("회차 예제 상한에 도달했습니다.", "The episode example limit has been reached.")); return; }
+    setCuts((prev) => {
+      if (prev.length >= MAX_EPISODE_CUTS) return prev;
+      const id = uniqueEpisodeId("cut-add", new Set(prev.map((cut) => cut.id)));
+      return [...prev, { id, labelKo: `${prev.length + 1}컷 · 추가 컷`, labelEn: `Cut ${prev.length + 1} · Added`, role: "reaction", emotion: "tense", actionShift: "clear", tensionLevel: 68, endingHookKind: "question", balloons: [{ id: `${id}-b`, speaker: pick("주인공", "Lead"), kind: "speech", text }] }];
+    });
+    setStatusMessage(pick("메모리 예제 끝에 새 컷을 추가했습니다.", "Appended a cut to the in-memory example."));
   };
 
   const handleRemoveCut = (cutIndex: number): void => {
@@ -439,8 +235,13 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
   };
 
   const handleApplySplit = (suggestion: DialogueSplitSuggestion): void => {
-    setCuts((prev) => applySplitSuggestionToCuts(prev, suggestion));
-    setStatusMessage(pick(`${suggestion.cutIndex + 1}컷 대사 벽 분할 제안을 적용했습니다.`, `Applied dialogue split for Cut ${suggestion.cutIndex + 1}.`));
+    try {
+      const next = applySplitSuggestionToCuts(cuts, suggestion);
+      setCuts(next);
+      setStatusMessage(next === cuts ? pick("원문이 바뀌어 오래된 분할 제안을 적용하지 않았습니다.", "The source changed; the stale split was not applied.") : pick("분할 제안 초안을 메모리 예제에 적용했습니다. 실제 원고는 바꾸지 않습니다.", "Applied a split draft to the in-memory example. Actual artwork is unchanged."));
+    } catch {
+      setStatusMessage(pick("예제 상한으로 분할할 수 없습니다. 원문은 유지됩니다.", "The split exceeds example limits. The original text is preserved."));
+    }
   };
 
   const handleToggleBadge = (badge: ThumbnailBadgeKind): void => {
@@ -463,12 +264,10 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
   };
 
   const handleCopyReport = (): void => {
-    onCopyReport?.(reportMarkdown);
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(reportMarkdown).catch(() => undefined);
-    }
+    if (channels.some((channel) => channel.isPending())) return;
+    reportNotification.notify(reportMarkdown);
+    clipboard.notify(reportMarkdown);
     setShowReportPreview(true);
-    setStatusMessage(pick(`진단 리포트(${reportMarkdown.length.toLocaleString("ko-KR")}자)를 복사했습니다.`, `Copied diagnostic report (${reportMarkdown.length} chars).`));
   };
 
   const pacingTabId = `${uid}-tab-pacing`;
@@ -482,6 +281,11 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
       aria-label={pick("독자 이탈 휴리스틱 · 대사 벽 · 썸네일 A/B 스튜디오 랩", "Episode Pacing & Thumbnail A/B Studio Lab")}
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
     >
+      <OperationStatus channel="analysis" {...pacingNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="thumbnail" {...thumbnailNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="report" {...reportNotification} pending={busy} isEn={isEn} />
+      <OperationStatus channel="clipboard" {...clipboard} pending={busy} isEn={isEn} />
+      <fieldset disabled={busy} className="contents">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -498,7 +302,7 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
             {pick("초반 3컷 흡인력 · 대사 벽 감지 · 썸네일 A/B 안전영역 스튜디오", "Opening 3-Cut Hook, Dialogue Wall & Thumbnail A/B Lab")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {isEn ? pacingAnalysis.heuristicDisclaimerEn : pacingAnalysis.heuristicDisclaimerKo}
+            {isEn ? pacingAnalysis.heuristicDisclaimerEn : pacingAnalysis.heuristicDisclaimerKo} {pick("CPU·합성 예제이며 실제 독자 분석·이미지 인식·원고 반영·저장·저작권 확인은 하지 않습니다. 닫으면 입력이 사라집니다.", "CPU and synthetic example only: no actual reader telemetry, image recognition, artwork apply, storage or rights verification. Inputs disappear when closed.")}
           </p>
         </div>
 
@@ -540,7 +344,7 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
                 </button>
               ))}
             </div>
-            <button type="button" data-testid="pacing-add-cut-btn" onClick={handleAddCut} className={BTN_OUTLINE}>
+            <button type="button" data-testid="pacing-add-cut-btn" disabled={cuts.length >= MAX_EPISODE_CUTS} onClick={handleAddCut} className={BTN_OUTLINE}>
               <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {pick("컷 추가", "Add Cut")}
             </button>
@@ -636,7 +440,7 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
                       <span className={`text-[11px] font-semibold tabular-nums ${cut.balloonCount >= CUT_BALLOON_WARNING_MIN ? "text-bad" : "text-fg-2"}`}>
                         {pick(`말풍선 ${cut.balloonCount}개 · ${cut.totalCharCount}자`, `${cut.balloonCount} bubbles · ${cut.totalCharCount}ch`)}
                       </span>
-                      <button type="button" data-testid={`cut-add-balloon-${cut.index}`} onClick={() => handleAddBalloon(cut.index)} className={BTN_OUTLINE}>
+                      <button type="button" data-testid={`cut-add-balloon-${cut.index}`} disabled={cut.balloonCount >= MAX_CUT_BALLOONS} onClick={() => handleAddBalloon(cut.index)} className={BTN_OUTLINE}>
                         <Plus className="h-3.5 w-3.5" aria-hidden="true" />{pick("말풍선", "Bubble")}
                       </button>
                       <button type="button" data-testid={`cut-remove-${cut.index}`} disabled={cuts.length <= 1} aria-label={pick(`${cut.index + 1}컷 삭제`, `Delete cut ${cut.index + 1}`)} onClick={() => handleRemoveCut(cut.index)} className={`inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg border border-line bg-card text-fg-3 transition-colors motion-reduce:transition-none hover:border-bad hover:text-bad disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS_RING}`}>
@@ -689,7 +493,7 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
                               </button>
                             </div>
                           </div>
-                          <textarea id={bInputId} data-testid={`balloon-text-${cut.index}-${bIdx}`} rows={2} value={balloon.text} onChange={(e) => handleUpdateBalloonText(cut.index, balloon.id, e.target.value)} className={`w-full rounded-lg border bg-canvas px-2.5 py-2 text-xs text-fg [word-break:keep-all] ${balloon.exceedsCharLimit ? "border-bad" : "border-line"} ${FOCUS_RING}`} />
+                          <textarea id={bInputId} data-testid={`balloon-text-${cut.index}-${bIdx}`} rows={2} maxLength={MAX_BALLOON_TEXT} value={balloon.text} onChange={(e) => handleUpdateBalloonText(cut.index, balloon.id, e.target.value)} className={`w-full rounded-lg border bg-canvas px-2.5 py-2 text-xs text-fg [word-break:keep-all] ${balloon.exceedsCharLimit ? "border-bad" : "border-line"} ${FOCUS_RING}`} />
                         </div>
                       );
                     })}
@@ -783,6 +587,7 @@ export function StudioEpisodePacingThumbnailPanel(props: StudioEpisodePacingThum
           </pre>
         </div>
       ) : null}
+      </fieldset>
     </section>
   );
 }

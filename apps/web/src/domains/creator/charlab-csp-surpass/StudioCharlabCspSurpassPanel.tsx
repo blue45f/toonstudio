@@ -5,7 +5,7 @@
  */
 
 import { Link2, Palette, PenTool, SlidersHorizontal, Users, Watch } from "lucide-react";
-import { useId, useMemo, useState, type ReactElement } from "react";
+import { useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import {
   createDemoCharacterLiveLinkRegistry,
@@ -26,7 +26,8 @@ export interface StudioCharlabCspSurpassPanelProps {
   readonly initialTab?: CharlabCspSurpassTabId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onLiveLinkSync?: (summary: string) => void;
+  /** 예제 레지스트리 변경 알림이며 실제 모델·원고 적용 완료 응답이 아니다. */
+  readonly onLiveLinkSync?: (summary: string) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -50,6 +51,36 @@ export function StudioCharlabCspSurpassPanel(
   );
   const [selectedCharId, setSelectedCharId] = useState<string>("seojun-184");
   const [selectedIkId, setSelectedIkId] = useState<string>(DEMO_IK_ANCHOR_PRESETS[0]!.anchorId);
+  const [callbackMessage, setCallbackMessage] = useState("");
+  const [callbackPending, setCallbackPending] = useState(false);
+  const callbackPendingRef = useRef(false);
+
+  function notifyExample(summary: string): void {
+    if (!onLiveLinkSync) {
+      setCallbackMessage("예제 데이터만 바꿨어요. 실제 모델·원고에는 반영하지 않았어요.");
+      return;
+    }
+    function finish(failed: boolean): void {
+      callbackPendingRef.current = false;
+      setCallbackPending(false);
+      setCallbackMessage(failed
+        ? "예제 알림 처리에 실패했어요. 다시 선택해 주세요."
+        : "예제 알림을 전달했어요. 실제 모델·원고 적용이나 저장 완료를 뜻하지 않아요.");
+    }
+    callbackPendingRef.current = true;
+    try {
+      const result = onLiveLinkSync(summary);
+      if (result) {
+        setCallbackPending(true);
+        setCallbackMessage("예제 알림 처리 중이에요. 실제 모델·원고 적용 결과는 확인하지 않았어요.");
+        void result.then(() => finish(false), () => finish(true));
+      } else {
+        finish(false);
+      }
+    } catch {
+      finish(true);
+    }
+  }
 
   const activeProfile = useMemo(
     () =>
@@ -85,19 +116,21 @@ export function StudioCharlabCspSurpassPanel(
   const paletteReport = useMemo(() => extractCharacterOklchSwatches(activeProfile), [activeProfile]);
 
   const handleSwitchCostumeSlot = (slotId: CostumeBattleDamageSlotId): void => {
+    if (callbackPendingRef.current) return;
     const res = propagateCharacterLiveLink(registry, activeProfile.characterId, {
       activeSlotId: slotId,
     });
     setRegistry(res.registry);
-    onLiveLinkSync?.(res.registry.lastSyncSummary);
+    notifyExample(res.registry.lastSyncSummary);
   };
 
   const handleAdjustCharacterHeight = (heightCm: number): void => {
+    if (callbackPendingRef.current) return;
     const res = propagateCharacterLiveLink(registry, activeProfile.characterId, {
       realHeightCm: heightCm,
     });
     setRegistry(res.registry);
-    onLiveLinkSync?.(res.registry.lastSyncSummary);
+    notifyExample(res.registry.lastSyncSummary);
   };
 
   const tabs: readonly {
@@ -127,6 +160,7 @@ export function StudioCharlabCspSurpassPanel(
   return (
     <section
       data-testid="charlab-csp-surpass-panel"
+      aria-busy={callbackPending}
       aria-label={pick(
         "캐릭터 랩스 라이브 링크 · CSP 돌파 드로잉 · 스마트워치 리모컨 스튜디오 패널",
         "Character Labs Live-Link, Drawing Surpass & Smartwatch Companion Panel",
@@ -150,9 +184,12 @@ export function StudioCharlabCspSurpassPanel(
               "Character Live-Link · Precision Drawing · Watch Remote",
             )}
           </h2>
+          <p data-testid="charlab-scope-notice" className="text-xs text-fg-2">
+            {pick("고정 캐릭터·벡터·메시·픽셀·워치 입력을 사용하는 독립 계산 예제예요. 실제 모델·원고·편집기·저장·기기 연결·송신에는 연결하지 않았어요. 수치와 LOCK은 예제 계산 결과예요.", "Independent examples use fixed characters, vectors, meshes, pixels and watch inputs. No live model, manuscript, editor, storage, device connection or transmission is connected. Metrics and LOCK describe sample calculations.")}
+          </p>
         </div>
         <div className="rounded-lg border border-good/40 bg-good-soft px-2.5 py-1.5 text-xs font-semibold text-good tabular-nums">
-          {pick("로컬 온디바이스 엔진 준비 완료", "On-Device Engine Ready")}
+          {pick("독립 계산 예제", "Independent Examples")}
         </div>
       </header>
 
@@ -182,6 +219,8 @@ export function StudioCharlabCspSurpassPanel(
         })}
       </div>
 
+      {callbackMessage ? <p role="status" data-testid="charlab-callback-status" className="text-xs text-fg-2">{callbackMessage}</p> : null}
+
       {activeTab === "charlab" && (
         <div
           id={`${uid}-panel-charlab`}
@@ -206,7 +245,7 @@ export function StudioCharlabCspSurpassPanel(
                 ))}
               </div>
               <span data-testid="live-link-sync-status" className="text-xs font-medium text-fg-2">
-                {registry.lastSyncSummary}
+                {pick("예제 레지스트리: ", "Sample registry: ")}{registry.lastSyncSummary}
               </span>
             </div>
 
@@ -218,6 +257,7 @@ export function StudioCharlabCspSurpassPanel(
                     key={slot.slotId}
                     data-testid={`costume-slot-${slot.slotId}`}
                     type="button"
+                    disabled={callbackPending}
                     aria-pressed={isActive}
                     onClick={() => handleSwitchCostumeSlot(slot.slotId)}
                     className={`${isActive ? BTN_ACTIVE : BTN_OUTLINE} justify-between px-2.5`}
@@ -233,7 +273,7 @@ export function StudioCharlabCspSurpassPanel(
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <label htmlFor={`${uid}-char-height`} className="font-semibold text-fg">
-                    {pick("선택 캐릭터 실제 키 (cm)", "Selected Character Real Height (cm)")}
+                    {pick("예제 캐릭터 키 (cm)", "Sample Character Height (cm)")}
                   </label>
                   <span data-testid="selected-height-readout" className="font-bold text-accent tabular-nums">
                     {activeProfile.realHeightCm} cm
@@ -243,6 +283,7 @@ export function StudioCharlabCspSurpassPanel(
                   id={`${uid}-char-height`}
                   data-testid="char-height-slider"
                   type="range"
+                  disabled={callbackPending}
                   min={140}
                   max={210}
                   step={1}
@@ -358,7 +399,7 @@ export function StudioCharlabCspSurpassPanel(
       )}
 
       {activeTab === "drawing-surpass" && <CharlabCspSurpassDrawingTab uid={uid} isEn={isEn} />}
-      {activeTab === "watch-remote" && <CharlabCspSurpassWatchTab uid={uid} isEn={isEn} />}
+      <div hidden={activeTab !== "watch-remote"}><CharlabCspSurpassWatchTab uid={uid} isEn={isEn} /></div>
     </section>
   );
 }

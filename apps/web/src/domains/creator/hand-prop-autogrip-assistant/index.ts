@@ -56,3 +56,4 @@ export {
   StudioHandPropAutoGripPanel,
   type StudioHandPropAutoGripPanelProps,
 } from "./StudioHandPropAutoGripPanel";
+export type { HandGripCallbackResult, HandGripReceipt } from "./use-hand-grip-delivery";

@@ -1,3 +1,4 @@
+import { getNextgenLabSettingsSnapshot } from "@/shared/lib/nextgen-lab-settings";
 import { buildSpeculationRulesJson, STUDIO_PRERENDER_URLS } from "@/shared/lib/speculation-rules";
 
 /**
@@ -22,8 +23,10 @@ export interface SpeculationRulesOptions {
 }
 
 export interface SpeculationRulesInstallResult {
+  /** DOM 주입·재사용 여부이며 브라우저의 선행 요청 실행을 보증하지 않는다. */
   readonly installed: boolean;
-  readonly status: "installed" | "already-installed" | "unsupported" | "no-document";
+  readonly status: "installed" | "already-installed" | "disabled" | "unsupported" | "no-document";
+  /** 이 호출이 주입·재사용한 list 규칙의 URL. 미주입·해석 불가이면 비어 있다. */
   readonly urls: readonly string[];
 }
 
@@ -36,6 +39,7 @@ export interface MotionContrastPreferences {
 const SPECULATION_MARKER_ATTR = "data-toonstudio-speculation";
 const SPECULATION_MARKER_VALUE = "showcase-prefetch";
 
+/** @deprecated 호환용 prefetch 목록. 기본 동작은 정본 STUDIO_PRERENDER_URLS를 사용한다. */
 export const DEFAULT_SHOWCASE_PREFETCH_URLS: readonly string[] = [
   "/compare/studio",
   "/tech",
@@ -112,18 +116,44 @@ export function startSafeViewTransition(
   }
 }
 
+function readExistingSpeculationUrls(script: Element): readonly string[] {
+  try {
+    const parsed: unknown = JSON.parse(script.textContent ?? "");
+    if (typeof parsed !== "object" || parsed === null) return [];
+    const rules = parsed as Record<string, unknown>;
+    const urls = new Set<string>();
+    for (const mode of ["prefetch", "prerender"]) {
+      const entries: unknown = rules[mode];
+      if (!Array.isArray(entries)) continue;
+      for (const entry of entries) {
+        if (typeof entry !== "object" || entry === null) continue;
+        const targets: unknown = (entry as Record<string, unknown>).urls;
+        if (!Array.isArray(targets)) continue;
+        for (const url of targets) if (typeof url === "string") urls.add(url);
+      }
+    }
+    return [...urls];
+  } catch {
+    return [];
+  }
+}
+
 /**
- * 크롬 Speculation Rules API를 지원할 때 안전 프리페치 규칙을 `<head>`에 1회만 주입한다.
+ * 기본 동작은 사용자 설정을 따르는 정본 /studio prerender이며 명시한 urls는 기존 prefetch를 유지한다.
  */
 export function installSpeculationRulesOnce(
   options?: SpeculationRulesOptions,
 ): SpeculationRulesInstallResult {
-  const urls = options?.urls ?? DEFAULT_SHOWCASE_PREFETCH_URLS;
+  const urls = options?.urls ?? STUDIO_PRERENDER_URLS;
   const eagerness = options?.eagerness ?? "moderate";
   const targetDoc = options?.doc ?? (typeof document !== "undefined" ? document : undefined);
 
   if (!targetDoc?.head) {
-    return { installed: false, status: "no-document", urls };
+    return { installed: false, status: "no-document", urls: [] };
+  }
+
+  if (!options?.urls && !getNextgenLabSettingsSnapshot().studioPrerender) {
+    return { installed: false, status: "disabled", urls: [] };
   }
 
   const supportsSpeculation =
@@ -140,14 +170,14 @@ export function installSpeculationRulesOnce(
     });
 
   if (!supportsSpeculation("speculationrules")) {
-    return { installed: false, status: "unsupported", urls };
+    return { installed: false, status: "unsupported", urls: [] };
   }
 
   const existing = targetDoc.head.querySelector(
     `script[${SPECULATION_MARKER_ATTR}="${SPECULATION_MARKER_VALUE}"], script[type="speculationrules"]`,
   );
   if (existing) {
-    return { installed: true, status: "already-installed", urls };
+    return { installed: true, status: "already-installed", urls: readExistingSpeculationUrls(existing) };
   }
 
   const script = targetDoc.createElement("script");

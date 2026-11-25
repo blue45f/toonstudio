@@ -47,6 +47,33 @@ afterEach(() => {
   ThumbnailIntersectionObserver.instances.length = 0;
 });
 
+it("기기 원고 미리보기에서 앞선 9획과 복구한 펜 점의 ID와 위치를 유지한다", () => {
+  const lines = Array.from({ length: 9 }, (_, i) => ({
+    id: `stroke-${i}`, type: "draw", points: [0, i, 20, i], stroke: "#7c5cfc", strokeWidth: 6,
+  }));
+  const tap = {
+    id: "recovered-tap", type: "draw", kind: "freehand", mode: "pen",
+    points: [223.2, 278.1], stroke: "#7c5cfc", strokeWidth: 6, opacity: 0.7,
+  };
+  const elements = [...lines, tap];
+  const { container } = render(
+    <StudioPageThumbnail
+      localImagesOnly
+      page={{ id: "page-1", bg: "#fff", bgGrad: null, canvasH: 1080, elements }}
+    />,
+  );
+
+  const strokes = Array.from(container.querySelectorAll("svg [data-element-id]"));
+  expect(strokes.map((node) => node.getAttribute("data-element-id"))).toEqual(elements.map((el) => el.id));
+  const dot = container.querySelector('ellipse[data-element-id="recovered-tap"]');
+  expect(dot?.getAttribute("cx")).toBe("223.2");
+  expect(dot?.getAttribute("cy")).toBe("278.1");
+  expect(dot?.getAttribute("rx")).toBe("3");
+  expect(dot?.getAttribute("ry")).toBe("3");
+  expect(dot?.getAttribute("fill")).toBe("#7c5cfc");
+  expect(dot?.getAttribute("opacity")).toBe("0.7");
+});
+
 describe("StudioPageThumbnail work assets", () => {
   it("renders an inert collaboration placeholder instead of an invalid SVG image href", () => {
     const html = renderToStaticMarkup(

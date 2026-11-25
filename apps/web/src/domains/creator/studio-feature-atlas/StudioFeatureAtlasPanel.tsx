@@ -21,6 +21,7 @@ import {
   AtlasRoleManualSection,
   AtlasRouteLink,
   AtlasShortcutsAndFaqSection,
+  type AtlasNavigate,
 } from "./AtlasManualAndShortcutSections";
 import {
   CREATOR_ROLE_MANUALS,
@@ -30,9 +31,9 @@ import {
 } from "./interactive-manual-engine";
 import {
   DIFFERENTIATOR_SHOWCASE_CARDS,
+  ATLAS_ENTRY_SCOPE_LABELS,
   STUDIO_FEATURE_AXES,
   getAtlasCatalogSummary,
-  type AtlasRoutePath,
   type FeatureAxisId,
 } from "./studio-feature-catalog";
 
@@ -43,7 +44,7 @@ export interface StudioFeatureAtlasPanelProps {
   readonly initialRoleId?: CreatorRoleId;
   readonly initialAxisId?: FeatureAxisId | "all";
   readonly className?: string;
-  readonly onNavigate?: (route: AtlasRoutePath) => void;
+  readonly onNavigate?: AtlasNavigate;
 }
 
 const FOCUS_RING =
@@ -168,11 +169,15 @@ export function StudioFeatureAtlasPanel({
               id={`${uid}-heading`}
               className="text-lg font-bold tracking-tight text-fg sm:text-xl [word-break:keep-all]"
             >
-              그리기부터 3D·협업·안심 출고까지, 지금 바로 쓸 수 있는 기능 지도
+              그리기부터 3D·협업·출고까지, 화면과 실험 예제 안내
             </h2>
             <p className="text-xs leading-relaxed text-fg-2 sm:text-sm [word-break:keep-all]">
-              실제 구현된 {summary.axisCount}대 기능 축({summary.featureCount}개 기능), {summary.differentiatorCount}대 차별화 기술·주변기기,{" "}
-              {CREATOR_ROLE_MANUALS.length}대 창작자 역할별 10분 실습을 한곳에 모았습니다.
+              {summary.axisCount}대 기능 축의 {summary.featureCount}개 소개 항목, {summary.differentiatorCount}개 기술·주변기기 카드,{" "}
+              {CREATOR_ROLE_MANUALS.length}가지 역할별 실습 체크리스트를 모았습니다. 항목 수는 구현 완료 기능 수가 아니에요.
+            </p>
+            <p data-testid="atlas-scope-notice" className="text-xs text-fg-3 [word-break:keep-all]">
+              독립 예제와 기존 화면 링크를 구분해 안내해요. 링크는 대표 화면으로 이동하며 소개된 예제의 실제 원고 연결을 보증하지 않아요.
+              이미지는 소개용 삽화이며 현재 실행 화면이 아니에요. 실습 시간은 예상치이며 실제 성능을 측정한 값이 아니에요.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -279,6 +284,7 @@ export function StudioFeatureAtlasPanel({
                         <div className="space-y-1.5">
                           <span className="text-[0.72rem] font-semibold text-accent">{card.badgeKo}</span>
                           <h4 className="text-sm font-bold text-fg [word-break:keep-all]">{card.titleKo}</h4>
+                          <p className="text-xs font-semibold text-fg-3">{ATLAS_ENTRY_SCOPE_LABELS[card.scope]}</p>
                           <p className="text-xs leading-relaxed text-fg-2 [word-break:keep-all]">{card.summaryKo}</p>
                         </div>
                         <div>
@@ -316,10 +322,11 @@ export function StudioFeatureAtlasPanel({
                             ))}
                           </div>
                           <h4 className="text-sm font-bold text-fg [word-break:keep-all]">{feature.titleKo}</h4>
+                          <p className="text-xs font-semibold text-fg-3">{ATLAS_ENTRY_SCOPE_LABELS[feature.scope]}</p>
                           <p className="text-xs leading-relaxed text-fg-2 [word-break:keep-all]">{feature.summaryKo}</p>
                         </div>
                         <div>
-                          <AtlasRouteLink href={feature.route} labelKo="기능 화면 열기" onNavigate={onNavigate} />
+                          <AtlasRouteLink href={feature.route} labelKo="관련 화면 안내" onNavigate={onNavigate} />
                         </div>
                       </article>
                     ))}
@@ -439,6 +446,9 @@ export function StudioFeatureAtlasPanel({
                       <h3 className="text-base font-bold leading-snug text-fg [word-break:keep-all]">
                         {card.titleKo}
                       </h3>
+                      <p data-testid={`atlas-scope-${card.id}`} className="text-xs font-semibold text-fg-3">
+                        {ATLAS_ENTRY_SCOPE_LABELS[card.scope]}
+                      </p>
                       <p className="text-xs font-semibold text-fg [word-break:keep-all]">
                         {card.headlineKo}
                       </p>
@@ -446,7 +456,7 @@ export function StudioFeatureAtlasPanel({
                         {card.summaryKo}
                       </p>
                       <p className="rounded-lg border border-line bg-raised px-3 py-2 text-xs text-fg-2 [word-break:keep-all]">
-                        작가에게 좋은 점: {card.creatorBenefitKo}
+                        살펴볼 점: {card.creatorBenefitKo}
                       </p>
                       <ul className="space-y-1 pt-0.5 text-xs text-fg-2 [word-break:keep-all]">
                         {card.specHighlightsKo.map((item) => (
@@ -578,6 +588,7 @@ export function StudioFeatureAtlasPanel({
                             <h4 className="text-sm font-bold text-fg [word-break:keep-all]">
                               {feature.titleKo}
                             </h4>
+                            <p className="text-xs font-semibold text-fg-3">{ATLAS_ENTRY_SCOPE_LABELS[feature.scope]}</p>
                             <p className="text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
                               {feature.summaryKo}
                             </p>
@@ -585,7 +596,7 @@ export function StudioFeatureAtlasPanel({
                           <div>
                             <AtlasRouteLink
                               href={feature.route}
-                              labelKo="바로 사용하기"
+                              labelKo="관련 화면 안내"
                               onNavigate={onNavigate}
                             />
                           </div>

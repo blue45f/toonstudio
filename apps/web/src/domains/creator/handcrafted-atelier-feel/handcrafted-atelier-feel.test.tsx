@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -490,6 +490,56 @@ describe("Wave 40A: 수공예 아날로그 미학 · 물리 관성 모션 · 절
     expect(screen.getByText(/Tactile Instrument RK4 Spring Simulator/)).toBeTruthy();
     expect(screen.getByTestId("theme-wcag-badge").textContent).toContain("WCAG AA Pass");
     expect(screen.getByRole("switch")).toBeTruthy();
+  });
+
+  it("아날로그 예제 알림은 비동기 실패·중복 억제·재시도를 처리하고 실제 적용 성공으로 표시하지 않는다", async () => {
+    const onAnalogProfileApplied = vi.fn().mockRejectedValueOnce(new Error("알림 실패")).mockResolvedValueOnce(undefined);
+    render(<StudioHandcraftedAtelierPanel onAnalogProfileApplied={onAnalogProfileApplied} />);
+    expect(screen.getByTestId("handcrafted-scope-notice").textContent).toContain("시간·기기 성능 실측이 아니에요");
+    const preset = screen.getByTestId("preset-btn-gpen-manuscript");
+    fireEvent.click(preset);
+    expect(screen.getByTestId("handcrafted-atelier-feel-panel").getAttribute("aria-busy")).toBe("true");
+    fireEvent.click(preset);
+    expect(onAnalogProfileApplied).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByTestId("handcrafted-notification-status").textContent).toContain("처리에 실패"));
+    fireEvent.click(screen.getByTestId("handcrafted-notification-retry"));
+    await waitFor(() => expect(screen.getByTestId("handcrafted-notification-status").textContent).toContain("실제 원고·설정 적용이나 저장 완료를 뜻하지 않아요"));
+    expect(onAnalogProfileApplied).toHaveBeenCalledTimes(2);
+    expect(onAnalogProfileApplied.mock.calls[0]?.[0]).toEqual(onAnalogProfileApplied.mock.calls[1]?.[0]);
+  });
+
+  it("동기 테마 알림 오류를 다시 시도하며 토큰 명암비 계산 범위를 표시한다", () => {
+    const onThemeSynthesized = vi.fn().mockImplementationOnce(() => { throw new Error("알림 오류"); });
+    render(<StudioHandcraftedAtelierPanel initialTab="spring-theme" onThemeSynthesized={onThemeSynthesized} />);
+    fireEvent.click(screen.getByTestId("theme-mood-fantasy-parchment"));
+    expect(screen.getByTestId("handcrafted-notification-status").textContent).toContain("처리에 실패");
+    fireEvent.click(screen.getByTestId("handcrafted-notification-retry"));
+    expect(onThemeSynthesized).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId("theme-wcag-badge").textContent).toContain("토큰 쌍");
+  });
+
+  it("승인 알림 재시도는 배치를 다시 적용하지 않고 복구·초기화도 예제 상태를 알린다", async () => {
+    const onWorkbenchApplied = vi.fn().mockRejectedValueOnce(new Error("알림 실패")).mockResolvedValue(undefined);
+    render(<StudioHandcraftedAtelierPanel initialTab="adaptive-workbench" onWorkbenchApplied={onWorkbenchApplied} />);
+    fireEvent.click(screen.getByTestId("scenario-btn-watercolor-shading"));
+    fireEvent.click(screen.getByTestId("btn-workbench-apply"));
+    fireEvent.click(screen.getByTestId("btn-workbench-reset"));
+    expect(onWorkbenchApplied).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.getByTestId("handcrafted-notification-status").textContent).toContain("처리에 실패"));
+    fireEvent.click(screen.getByTestId("handcrafted-notification-retry"));
+    await waitFor(() => expect(screen.getByTestId("handcrafted-atelier-feel-panel").getAttribute("aria-busy")).toBe("false"));
+    expect(onWorkbenchApplied).toHaveBeenCalledTimes(2);
+    expect(onWorkbenchApplied.mock.calls[0]?.[0]?.appliedCount).toBe(1);
+    expect(onWorkbenchApplied.mock.calls[1]?.[0]?.appliedCount).toBe(1);
+    fireEvent.click(screen.getByTestId("btn-workbench-revert"));
+    await waitFor(() => expect(screen.getByTestId("handcrafted-atelier-feel-panel").getAttribute("aria-busy")).toBe("false"));
+    expect(onWorkbenchApplied.mock.calls[2]?.[0]?.approvalStatus).toBe("reverted");
+    expect(screen.getByTestId("btn-workbench-revert").hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByTestId("btn-workbench-reset"));
+    await waitFor(() => expect(screen.getByTestId("handcrafted-atelier-feel-panel").getAttribute("aria-busy")).toBe("false"));
+    expect(onWorkbenchApplied.mock.calls[3]?.[0]?.approvalStatus).toBe("idle");
+    expect(onWorkbenchApplied.mock.calls[3]?.[0]?.appliedCount).toBe(0);
+    expect(screen.queryByTestId("handcrafted-notification-retry")).toBeNull();
   });
 
   it("20. 모듈 전체 정적 위생 규칙(800줄 이하·무스토리지·무BigInt·무비공개저장소·패널 무원시색·props규칙)을 통과한다", () => {

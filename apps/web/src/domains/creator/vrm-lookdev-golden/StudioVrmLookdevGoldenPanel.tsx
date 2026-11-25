@@ -160,7 +160,7 @@ export function StudioVrmLookdevGoldenPanel({
   customShaderRecords,
   onGateEvaluate,
   onSheetGenerate,
-}: StudioVrmLookdevGoldenPanelProps): ReactElement {
+}: StudioVrmLookdevGoldenPanelProps = {}): ReactElement {
   const uid = useId();
   const storeLang = useI18n((state) => state.lang);
   const isEn = (locale ?? (storeLang.toLowerCase().startsWith("en") ? "en" : "ko")) === "en";
@@ -278,11 +278,18 @@ export function StudioVrmLookdevGoldenPanel({
   }, []);
 
   const histMax = Math.max(0.01, ...gateReport.candidateHistogram.luminanceBins);
+  const inputSourceLabel = customReferenceFrame && customCandidateFrame
+    ? pick("외부 기준·후보 RGBA · 렌더러와 GPU 출처는 미검증", "External reference/candidate RGBA · Renderer/GPU provenance unverified")
+    : customReferenceFrame
+      ? pick("외부 기준 RGBA · 후보는 기준에서 만든 결함 예제 · 렌더러와 GPU 출처는 미검증", "External reference RGBA · Candidate is a derived fault example · Renderer/GPU provenance unverified")
+      : customCandidateFrame
+        ? pick("합성 기준·외부 후보 RGBA · 렌더러와 GPU 출처는 미검증", "Synthetic reference/external candidate RGBA · Renderer/GPU provenance unverified")
+        : pick("합성 RGBA 예제 검사 · 실제 캐릭터의 검증 결과가 아닙니다", "Synthetic RGBA example · Not a live character verification");
 
   return (
     <section
       data-testid="studio-vrm-lookdev-golden-panel"
-      aria-label={pick("Headless WebGL 골든 SSIM 회귀 오라클 및 3면 캐릭터 설정집", "Headless WebGL Golden SSIM Oracle & 3-View Character Sheet")}
+      aria-label={pick("RGBA SSIM 검사와 예제 3면 캐릭터 시트", "RGBA SSIM Check and Example Character Turnaround")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -290,7 +297,7 @@ export function StudioVrmLookdevGoldenPanel({
           <div className="flex flex-wrap items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-bold text-fg">
-              {pick("WebGL 골든 SSIM 오라클 · 표정-헤어·주름 · 3면 설정집", "WebGL Golden SSIM Oracle · Hair/Wrinkle · Turnaround")}
+              {pick("RGBA SSIM 검사 · 표정-헤어·주름 · 예제 3면 시트", "RGBA SSIM Check · Hair/Wrinkle · Example Turnaround")}
             </h2>
             <span
               data-testid="vrm-golden-verdict-badge"
@@ -311,10 +318,11 @@ export function StudioVrmLookdevGoldenPanel({
           </div>
           <p className="text-xs text-fg-2">
             {pick(
-              "3D 캐릭터·헤어 시각 회귀(SSIM·백화·암부·실루엣·셰이더 0오류)와 표정-앞머리 회피·포즈 주름·공식 3면 설정집을 통합 검증합니다.",
-              "Deterministic SSIM/washout/dark-collapse/zero-shader-error oracle plus expression-bangs clearance, pose wrinkles, and 1-click turnaround sheet.",
+              "입력 RGBA와 셰이더 로그를 검사하고 예제 수치로 표정·주름·3면 도식을 계산합니다. WebGL 캡처·실제 VRM 검증과 3D 씬 반영은 실행하지 않습니다.",
+              "Checks supplied RGBA/logs and calculates example hair, wrinkle, and turnaround diagrams. No WebGL capture, live VRM verification, or scene changes.",
             )}
           </p>
+          <p data-testid="vrm-golden-input-source" className="text-xs text-fg-2">{inputSourceLabel}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -334,7 +342,7 @@ export function StudioVrmLookdevGoldenPanel({
             className={BTN_PRIMARY}
           >
             <FileCode2 className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>{pick("1클릭 3면 설정집 빌드", "Build 3-View Sheet")}</span>
+            <span>{pick("예제 3면 시트 계산", "Calculate Example Turnaround")}</span>
           </button>
         </div>
       </header>
@@ -344,7 +352,7 @@ export function StudioVrmLookdevGoldenPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
             <Layers className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>{pick("① Headless WebGL 골든 SSIM 자동 회귀 오라클", "1. Headless WebGL Golden SSIM Regression Oracle")}</span>
+            <span>{pick("① 입력 RGBA 골든 SSIM 검사", "1. Supplied RGBA Golden SSIM Check")}</span>
           </div>
           <span className="text-[11px] text-fg-2 tabular-nums">
             {`${referenceFrame.width}×${referenceFrame.height} RGBA · ${gateReport.windowCount} windows`}
@@ -403,7 +411,7 @@ export function StudioVrmLookdevGoldenPanel({
           </div>
 
           <div className="rounded-md border border-line bg-raised p-2.5">
-            <div className="text-[11px] text-fg-2">{pick("WebGL 셰이더 오류", "Shader Errors")}</div>
+            <div className="text-[11px] text-fg-2">{pick("입력 셰이더 로그 오류", "Supplied Shader Log Errors")}</div>
             <div
               data-testid="vrm-golden-shader-error-value"
               className={`mt-0.5 text-base font-bold tabular-nums ${gateReport.shaderErrorCount > 0 ? "text-bad" : "text-good"}`}

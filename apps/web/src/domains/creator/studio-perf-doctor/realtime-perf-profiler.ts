@@ -1,169 +1,45 @@
-/**
- * Wave 41E — 실시간 120Hz/60Hz 프레임타임 프로파일러 · WebGPU/WASM/타일캐시/OPFS WAL 헬스 진단기 ·
- * 자동 적응형 성능 가드레일 닥터 엔진 (100% 결정론 순수 함수 · 외부 스토리지 미사용).
- */
+import { assertFrameRing, assertSimulationInput } from "./perf-doctor-input";
 
-export type TargetRefreshHz = 120 | 60;
-export type FramePipelineStageId = "input" | "brushWasm" | "webgpuComposite" | "uiReact";
-export type JankSpikeSeverity = "minor" | "moderate" | "severe";
-export type FrameBudgetGrade = "optimal" | "guarded" | "janky" | "stalled";
-export type VramPressureLevel = "nominal" | "warm" | "pressure" | "critical";
-export type GpuRuntimeBackend = "webgpu" | "webgl2" | "skia-cpu";
-export type WalCheckpointMode = "PASSIVE" | "FULL" | "TRUNCATE";
-export type RuntimeHealthGrade = "S" | "A" | "B" | "C" | "D";
-export type RuntimeSubsystemId = "frame-budget" | "vram" | "tile-cache" | "opfs-wal";
-export type GuardrailProfileId = "smooth-120hz" | "precision-4k";
-export type GuardrailVisualImpact = "zero" | "preview-only" | "cadence";
-export type PerfDoctorScenarioId = "nominal-120hz" | "brush-jank-warm" | "vram-tile-pressure" | "critical-opfs-stall";
+import {
+  type TargetRefreshHz,
+  type FramePipelineStageId,
+  type JankSpikeSeverity,
+  type FrameBudgetGrade,
+  type VramPressureLevel,
+  type WalCheckpointMode,
+  type RuntimeHealthGrade,
+  type GuardrailProfileId,
+  type PerfDoctorScenarioId,
+  JANK_THRESHOLD_120HZ_MS,
+  JANK_THRESHOLD_60HZ_MS,
+  DEFAULT_RING_CAPACITY,
+  MIN_RING_CAPACITY,
+  MAX_RING_CAPACITY,
+  FRAME_PIPELINE_STAGE_IDS,
+  type FrameStageBreakdownMs,
+  type FrameTimeSampleInput,
+  type FrameTimeSample,
+  type FrameTimeRingBuffer,
+  type AnalyzeFrameTimeOptions,
+  type FrameJankSpikeRecord,
+  type FrameStageMetric,
+  type FrameTimeRingAnalysis,
+  type StudioRuntimeTelemetryInput,
+  type SparseTileCacheDiagnosis,
+  type GpuVramDiagnosis,
+  type OpfsWalDiagnosis,
+  type RuntimeBottleneckFinding,
+  type StudioRuntimeHealthDiagnosis,
+  type GuardrailPrescriptionStep,
+  type AdaptiveGuardrailPlan,
+  type GuardrailComparisonRow,
+  type RecommendGuardrailInput,
+  type AdaptiveGuardrailReport,
+  type StudioPerfDoctorSnapshot,
+  type GuardrailApplicationResult,
+} from "./perf-doctor-contracts";
 
-export const JANK_THRESHOLD_120HZ_MS = 8.33;
-export const JANK_THRESHOLD_60HZ_MS = 16.67;
-export const DEFAULT_RING_CAPACITY = 120;
-export const MIN_RING_CAPACITY = 16;
-export const MAX_RING_CAPACITY = 2048;
-
-export const FRAME_PIPELINE_STAGE_IDS: readonly FramePipelineStageId[] = [
-  "input", "brushWasm", "webgpuComposite", "uiReact",
-];
-export const PERF_DOCTOR_SCENARIO_IDS: readonly PerfDoctorScenarioId[] = [
-  "nominal-120hz", "brush-jank-warm", "vram-tile-pressure", "critical-opfs-stall",
-];
-
-export interface FrameStageBreakdownMs {
-  readonly input: number; readonly brushWasm: number; readonly webgpuComposite: number; readonly uiReact: number;
-}
-export interface FrameTimeSampleInput {
-  readonly timestampMs?: number; readonly totalMs?: number; readonly stages: FrameStageBreakdownMs;
-}
-export interface FrameTimeSample {
-  readonly frameIndex: number; readonly timestampMs: number; readonly totalMs: number; readonly stages: FrameStageBreakdownMs;
-}
-export interface FrameTimeRingBuffer {
-  readonly capacity: number; readonly writeIndex: number; readonly size: number; readonly totalRecorded: number;
-  readonly slots: readonly (FrameTimeSample | null)[];
-}
-export interface AnalyzeFrameTimeOptions {
-  readonly targetHz?: TargetRefreshHz; readonly spikeThresholdMs?: number;
-}
-export interface FrameJankSpikeRecord {
-  readonly frameIndex: number; readonly totalMs: number; readonly overBudgetMs: number;
-  readonly severity: JankSpikeSeverity; readonly dominantStage: FramePipelineStageId;
-}
-export interface JankSpikeSummary {
-  readonly thresholdMs: number; readonly over833MsCount: number; readonly totalSpikes: number; readonly jankRatePct: number;
-  readonly minorCount: number; readonly moderateCount: number; readonly severeCount: number; readonly longestStreak: number;
-  readonly topSpikes: readonly FrameJankSpikeRecord[];
-}
-export interface FrameStageMetric {
-  readonly stageId: FramePipelineStageId; readonly meanMs: number; readonly p95Ms: number; readonly maxMs: number;
-  readonly sharePct: number; readonly spikeAttributionCount: number;
-}
-export interface FrameHistogramBin {
-  readonly id: string; readonly label: string; readonly minMs: number; readonly maxMs: number | null;
-  readonly count: number; readonly ratioPct: number; readonly isOverBudget: boolean;
-}
-export interface FrameTimeRingAnalysis {
-  readonly sampleCount: number; readonly capacity: number; readonly totalRecorded: number;
-  readonly targetHz: TargetRefreshHz; readonly budgetMs: number;
-  readonly meanMs: number; readonly minMs: number; readonly maxMs: number; readonly stdDevMs: number;
-  readonly p50Ms: number; readonly p95Ms: number; readonly p99Ms: number;
-  readonly averageFps: number; readonly onePercentLowFps: number;
-  readonly jank: JankSpikeSummary;
-  readonly stages: Readonly<Record<FramePipelineStageId, FrameStageMetric>>;
-  readonly overheadMeanMs: number; readonly overheadSharePct: number; readonly dominantStage: FramePipelineStageId;
-  readonly histogram: readonly FrameHistogramBin[];
-  readonly recentWindowMs: readonly number[];
-  readonly grade: FrameBudgetGrade; readonly withinTargetBudget: boolean;
-}
-export interface SparseTileCacheSnapshot {
-  readonly tileHits: number; readonly tileMisses: number; readonly residentTiles: number; readonly maxResidentTiles: number;
-  readonly evictionsPerSec: number; readonly dirtyTilesQueued: number; readonly tileSizePx: 256 | 512;
-}
-export interface GpuVramSnapshot {
-  readonly allocatedMb: number; readonly budgetMb: number; readonly textureAtlasMb: number;
-  readonly renderTargetMb: number; readonly stagingBufferMb: number; readonly deviceLostCount: number;
-  readonly backend: GpuRuntimeBackend;
-}
-export interface OpfsWalSnapshot {
-  readonly usedBytes: number; readonly quotaBytes: number; readonly walSizeBytes: number;
-  readonly walFramesPending: number; readonly lastCheckpointDelayMs: number; readonly avgCheckpointDelayMs: number;
-  readonly checkpointBlocked: boolean;
-}
-export interface StudioCanvasContextSnapshot {
-  readonly canvasWidthPx: number; readonly canvasHeightPx: number; readonly layerCount: number;
-  readonly activeBrushRadiusPx: number; readonly dpr: number;
-}
-export interface StudioRuntimeTelemetryInput {
-  readonly tileCache: SparseTileCacheSnapshot; readonly vram: GpuVramSnapshot; readonly opfsWal: OpfsWalSnapshot;
-  readonly canvasContext?: StudioCanvasContextSnapshot; readonly frameAnalysis?: FrameTimeRingAnalysis;
-}
-export interface SparseTileCacheDiagnosis extends Omit<SparseTileCacheSnapshot, "tileHits" | "tileMisses"> {
-  readonly hitRatePct: number; readonly missRatePct: number; readonly occupancyPct: number;
-  readonly thrashingDetected: boolean; readonly level: VramPressureLevel;
-}
-export interface GpuVramDiagnosis extends GpuVramSnapshot {
-  readonly freeMb: number; readonly utilizationPct: number; readonly level: VramPressureLevel;
-}
-export interface OpfsWalDiagnosis {
-  readonly usedMb: number; readonly quotaMb: number; readonly freeMb: number; readonly quotaUsagePct: number;
-  readonly walSizeMb: number; readonly walFramesPending: number; readonly lastCheckpointDelayMs: number;
-  readonly avgCheckpointDelayMs: number; readonly checkpointBlocked: boolean;
-  readonly recommendedCheckpointMode: WalCheckpointMode; readonly level: VramPressureLevel;
-}
-export interface RuntimeBottleneckFinding {
-  readonly id: string; readonly subsystem: RuntimeSubsystemId; readonly severity: VramPressureLevel;
-  readonly metricText: string; readonly titleKo: string; readonly titleEn: string;
-  readonly detailKo: string; readonly detailEn: string;
-}
-export interface StudioRuntimeHealthDiagnosis {
-  readonly overallLevel: VramPressureLevel; readonly healthScore: number; readonly healthGrade: RuntimeHealthGrade;
-  readonly vram: GpuVramDiagnosis; readonly tileCache: SparseTileCacheDiagnosis; readonly opfsWal: OpfsWalDiagnosis;
-  readonly bottlenecks: readonly RuntimeBottleneckFinding[]; readonly requiresIntervention: boolean;
-}
-export interface GuardrailPrescriptionStep {
-  readonly id: string; readonly order: number; readonly subsystem: RuntimeSubsystemId; readonly visualImpact: GuardrailVisualImpact;
-  readonly titleKo: string; readonly titleEn: string; readonly actionKo: string; readonly actionEn: string;
-  readonly estimatedP99ReductionMs: number; readonly estimatedVramReleaseMb: number;
-  readonly estimatedTileHitGainPct: number; readonly estimatedWalReductionMs: number; readonly recommended: boolean;
-}
-export interface AdaptiveGuardrailPlan {
-  readonly profileId: GuardrailProfileId; readonly titleKo: string; readonly titleEn: string;
-  readonly taglineKo: string; readonly taglineEn: string; readonly targetRefreshHz: TargetRefreshHz;
-  readonly strokeResolutionScale: number; readonly commitResolutionScale: number; readonly visualFidelityScore: number;
-  readonly projectedP99Ms: number; readonly projectedFps: number; readonly projectedVramUsagePct: number;
-  readonly projectedVramSavingsMb: number; readonly projectedTileHitRatePct: number; readonly projectedWalDelayMs: number;
-  readonly steps: readonly GuardrailPrescriptionStep[];
-  readonly tradeoffSummaryKo: string; readonly tradeoffSummaryEn: string;
-}
-export interface GuardrailComparisonRow {
-  readonly id: string; readonly labelKo: string; readonly labelEn: string;
-  readonly smooth120HzValue: string; readonly precision4KValue: string; readonly winner: GuardrailProfileId | "tie";
-}
-export interface RecommendGuardrailInput {
-  readonly diagnosis: StudioRuntimeHealthDiagnosis; readonly frameAnalysis?: FrameTimeRingAnalysis;
-  readonly preferredProfile?: GuardrailProfileId; readonly canvasContext?: StudioCanvasContextSnapshot;
-}
-export interface AdaptiveGuardrailReport {
-  readonly escalationTier: 0 | 1 | 2 | 3; readonly preferredProfile: GuardrailProfileId;
-  readonly autoRecommendedProfile: GuardrailProfileId; readonly activePlan: AdaptiveGuardrailPlan;
-  readonly smooth120Hz: AdaptiveGuardrailPlan; readonly precision4K: AdaptiveGuardrailPlan;
-  readonly comparisonRows: readonly GuardrailComparisonRow[];
-}
-export interface StudioPerfDoctorSnapshot {
-  readonly scenarioId: PerfDoctorScenarioId; readonly labelKo: string; readonly labelEn: string;
-  readonly summaryKo: string; readonly summaryEn: string;
-  readonly ring: FrameTimeRingBuffer; readonly telemetry: StudioRuntimeTelemetryInput;
-}
-export interface GuardrailApplicationResult {
-  readonly appliedStepIds: readonly string[]; readonly profileId: GuardrailProfileId; readonly targetHzAfter: TargetRefreshHz;
-  readonly nextRing: FrameTimeRingBuffer; readonly nextTelemetry: StudioRuntimeTelemetryInput;
-  readonly beforeFrameAnalysis: FrameTimeRingAnalysis; readonly afterFrameAnalysis: FrameTimeRingAnalysis;
-  readonly beforeDiagnosis: StudioRuntimeHealthDiagnosis; readonly afterDiagnosis: StudioRuntimeHealthDiagnosis;
-  readonly deltas: {
-    readonly p99DeltaMs: number; readonly vramPctDelta: number; readonly tileHitPctDelta: number;
-    readonly walDelayDeltaMs: number; readonly healthScoreDelta: number;
-  };
-}
+export * from "./perf-doctor-contracts";
 
 const PRESSURE_RANK: Readonly<Record<VramPressureLevel, number>> = { nominal: 0, warm: 1, pressure: 2, critical: 3 };
 const BYTES_PER_MB = 1024 * 1024;
@@ -178,7 +54,7 @@ const HISTOGRAM_BINS: readonly { readonly id: string; readonly label: string; re
 ];
 
 const clamp = (v: number, lo: number, hi: number): number => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo);
-const nonNeg = (v: number | undefined): number => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0);
+const nonNeg = (v: number | undefined): number => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.min(v, Number.MAX_SAFE_INTEGER) : 0);
 const roundTo = (v: number, d = 2): number => (Number.isFinite(v) ? Math.round(v * Math.pow(10, d)) / Math.pow(10, d) : 0);
 const maxPressure = (a: VramPressureLevel, b: VramPressureLevel): VramPressureLevel => (PRESSURE_RANK[a] >= PRESSURE_RANK[b] ? a : b);
 
@@ -216,6 +92,7 @@ export function createFrameTimeRingBuffer(capacity: number = DEFAULT_RING_CAPACI
 
 /** 여러 프레임 샘플을 고정 길이 링버퍼에 불변 기록한다. */
 export function pushFrameSamples(ring: FrameTimeRingBuffer, samples: readonly FrameTimeSampleInput[]): FrameTimeRingBuffer {
+  assertFrameRing(ring);
   if (samples.length === 0) return ring;
   const nextSlots = ring.slots.slice();
   let writeIndex = ring.writeIndex;
@@ -225,6 +102,7 @@ export function pushFrameSamples(ring: FrameTimeRingBuffer, samples: readonly Fr
     const stages = sanitizeStages(sample.stages);
     const stageSum = stages.input + stages.brushWasm + stages.webgpuComposite + stages.uiReact;
     const totalMs = roundTo(Math.max(nonNeg(sample.totalMs), stageSum), 3);
+    if (totalRecorded === Number.MAX_SAFE_INTEGER) throw new RangeError("Frame counter exhausted");
     totalRecorded += 1;
     const timestampMs =
       typeof sample.timestampMs === "number" && Number.isFinite(sample.timestampMs)
@@ -244,6 +122,7 @@ export function pushFrameSample(ring: FrameTimeRingBuffer, sample: FrameTimeSamp
 
 /** 링버퍼 샘플을 가장 오래된 순서부터 시간순으로 반환한다. */
 export function readFrameSamplesChronological(ring: FrameTimeRingBuffer): readonly FrameTimeSample[] {
+  assertFrameRing(ring);
   if (ring.size === 0) return [];
   const startIdx = ring.size < ring.capacity ? 0 : ring.writeIndex;
   const ordered: FrameTimeSample[] = [];
@@ -264,13 +143,19 @@ export function analyzeFrameTimeRing(
   options?: AnalyzeFrameTimeOptions,
 ): FrameTimeRingAnalysis {
   const targetHz: TargetRefreshHz = options?.targetHz ?? 120;
+  if (targetHz !== 60 && targetHz !== 120) throw new RangeError("Target Hz must be 60 or 120");
   const budgetMs = targetHz === 120 ? JANK_THRESHOLD_120HZ_MS : JANK_THRESHOLD_60HZ_MS;
   const thresholdMs =
     typeof options?.spikeThresholdMs === "number" && Number.isFinite(options.spikeThresholdMs) && options.spikeThresholdMs > 0
       ? roundTo(options.spikeThresholdMs, 2)
       : budgetMs;
 
-  const samples = isRingBuffer(source) ? readFrameSamplesChronological(source) : source;
+  const rawSamples = isRingBuffer(source) ? readFrameSamplesChronological(source) : source;
+  const samples = rawSamples.map((sample) => {
+    const stages = sanitizeStages(sample.stages);
+    const stageSum = stages.input + stages.brushWasm + stages.webgpuComposite + stages.uiReact;
+    return { ...sample, frameIndex: nonNeg(sample.frameIndex), timestampMs: nonNeg(sample.timestampMs), stages, totalMs: roundTo(Math.max(nonNeg(sample.totalMs), stageSum), 3) };
+  });
   const capacity = isRingBuffer(source) ? source.capacity : Math.max(samples.length, DEFAULT_RING_CAPACITY);
   const totalRecorded = isRingBuffer(source) ? source.totalRecorded : samples.length;
   const emptyStages: Record<FramePipelineStageId, FrameStageMetric> = {
@@ -282,6 +167,7 @@ export function analyzeFrameTimeRing(
 
   if (samples.length === 0) {
     return {
+      measurementVerified: false, dataSource: "provided-samples",
       sampleCount: 0, capacity, totalRecorded, targetHz, budgetMs,
       meanMs: 0, minMs: 0, maxMs: 0, stdDevMs: 0, p50Ms: 0, p95Ms: 0, p99Ms: 0, averageFps: 0, onePercentLowFps: 0,
       jank: { thresholdMs, over833MsCount: 0, totalSpikes: 0, jankRatePct: 0, minorCount: 0, moderateCount: 0, severeCount: 0, longestStreak: 0, topSpikes: [] },
@@ -365,6 +251,7 @@ export function analyzeFrameTimeRing(
         : totalSpikes > 0 || p99Ms > thresholdMs ? "guarded" : "optimal";
 
   return {
+    measurementVerified: false, dataSource: "provided-samples",
     sampleCount: samples.length, capacity, totalRecorded, targetHz, budgetMs: roundTo(budgetMs, 2),
     meanMs: roundTo(meanMs, 2), minMs: roundTo(sorted[0] ?? 0, 2), maxMs: roundTo(sorted[sorted.length - 1] ?? 0, 2),
     stdDevMs: roundTo(stdDevMs, 2), p50Ms: roundTo(p50Ms, 2), p95Ms: roundTo(p95Ms, 2), p99Ms: roundTo(p99Ms, 2),
@@ -499,7 +386,7 @@ export function diagnoseStudioRuntimeHealth(input: StudioRuntimeTelemetryInput):
   const healthGrade: RuntimeHealthGrade =
     healthScore >= 90 ? "S" : healthScore >= 78 ? "A" : healthScore >= 64 ? "B" : healthScore >= 48 ? "C" : "D";
 
-  return { overallLevel, healthScore, healthGrade, vram, tileCache, opfsWal, bottlenecks, requiresIntervention: overallLevel === "pressure" || overallLevel === "critical" };
+  return { runtimeMeasured: false, scope: "provided-input-model", overallLevel, healthScore, healthGrade, vram, tileCache, opfsWal, bottlenecks, requiresIntervention: overallLevel === "pressure" || overallLevel === "critical" };
 }
 
 function buildGuardrailPlan(
@@ -519,8 +406,8 @@ function buildGuardrailPlan(
       id: `${profileId}-wal-checkpoint`, order: 1, subsystem: "opfs-wal", visualImpact: "zero",
       titleKo: `SQLite WAL 유휴 ${diagnosis.opfsWal.recommendedCheckpointMode} 체크포인트`,
       titleEn: `Idle SQLite WAL ${diagnosis.opfsWal.recommendedCheckpointMode} Checkpoint`,
-      actionKo: "스트로크 종료 직후 비차단 WAL 체크포인트와 임시 스냅샷 정리를 실행해 디스크 스톨을 제거합니다.",
-      actionEn: "Flush pending WAL frames between strokes and prune stale snapshots with zero visual change.",
+      actionKo: "WAL 지연과 용량을 가정식으로 줄여 계산합니다. 실제 체크포인트나 스냅샷 삭제는 실행하지 않습니다.",
+      actionEn: "Model lower WAL delay and size. No checkpoint or snapshot deletion is performed.",
       estimatedP99ReductionMs: walNeed ? roundTo(Math.min(4.2, diagnosis.opfsWal.lastCheckpointDelayMs * 0.014), 2) : 0.2,
       estimatedVramReleaseMb: 0, estimatedTileHitGainPct: 0,
       estimatedWalReductionMs: walNeed ? roundTo(diagnosis.opfsWal.lastCheckpointDelayMs * 0.72, 1) : 4,
@@ -530,8 +417,8 @@ function buildGuardrailPlan(
       id: `${profileId}-tile-hud-hygiene`, order: 2, subsystem: "tile-cache", visualImpact: "zero",
       titleKo: "비가시 타일 LRU 회수 · 드로잉 중 HUD 갱신 배칭",
       titleEn: "Offscreen Tile LRU Trim & Stroke HUD Batching",
-      actionKo: "뷰포트 밖 희소 타일을 압축하고 펜 이동 중 React HUD 갱신을 30Hz로 배칭해 화질 손실 없이 여유를 확보합니다.",
-      actionEn: "Compress off-viewport sparse tiles and batch React inspector updates to 30Hz while drawing.",
+      actionKo: "타일 회수와 HUD 배칭을 가정한 지연·메모리 예측값입니다. 실제 타일과 HUD를 변경하지 않습니다.",
+      actionEn: "Project latency and memory under assumed tile cleanup and HUD batching; actual resources are unchanged.",
       estimatedP99ReductionMs: roundTo((frameNeed ? 1.8 : 0.4) + (tileNeed ? 1.1 : 0), 2),
       estimatedVramReleaseMb: roundTo(Math.max(48, diagnosis.vram.textureAtlasMb * 0.16), 1),
       estimatedTileHitGainPct: tileNeed ? roundTo(Math.min(18, (96 - diagnosis.tileCache.hitRatePct) * 0.55), 1) : 1.5,
@@ -542,8 +429,8 @@ function buildGuardrailPlan(
           id: "smooth-120hz-stroke-proxy", order: 3, subsystem: "frame-budget", visualImpact: "preview-only",
           titleKo: `스트로크 중 ${Math.round(strokeScale * 100)}% 동적 프리뷰 (펜 떼면 100% 원해상도 커밋)`,
           titleEn: `${Math.round(strokeScale * 100)}% Dynamic Stroke Preview (100% Full-Res Commit)`,
-          actionKo: "펜 이동 중에만 합성 프리뷰 배율을 조정하고 포인터 업 즉시 100% 원해상도로 커밋해 120Hz 체감을 사수합니다.",
-          actionEn: "Scale composite preview only during pointer motion and commit 100% full ink resolution on lift.",
+          actionKo: "프리뷰 배율과 원해상도 커밋을 가정한 계산입니다. 실제 스트로크·해상도·주사율은 변경하지 않습니다.",
+          actionEn: "Calculate an assumed preview/commit scale. No real strokes, resolution, or refresh rate are changed.",
           estimatedP99ReductionMs: tier >= 2 ? roundTo(tier === 3 ? 5.6 : 3.2, 2) : 1.1,
           estimatedVramReleaseMb: roundTo(diagnosis.vram.renderTargetMb * (tier >= 3 ? 0.34 : 0.22), 1),
           estimatedTileHitGainPct: tileNeed ? 6.5 : 1.0, estimatedWalReductionMs: 0,
@@ -554,11 +441,11 @@ function buildGuardrailPlan(
           titleKo: tier >= 2 ? "4K 100% 원해상도 고정 · 60Hz 안정 락 + 언두 OPFS 오프로드" : "4K 100% 원해상도 유지 · 스테이징 버퍼 압축",
           titleEn: tier >= 2 ? "Lock 4K 100% Native · Steady 60Hz & Undo OPFS Offload" : "Keep 4K 100% Native · Staging Compaction",
           actionKo: tier >= 2
-            ? "캔버스 배율을 100%로 고정해 선화·망점 정밀도를 지키고 주사율만 60Hz(16.67ms)로 전환하며 언두 스냅샷을 OPFS로 이관합니다."
-            : "원해상도 4K 캔버스를 유지하고 미사용 WebGPU 스테이징 버퍼만 회수합니다.",
+            ? "60Hz 목표와 OPFS 이관을 가정해 계산합니다. 실제 캔버스·언두·OPFS는 변경하지 않습니다."
+            : "스테이징 버퍼 회수를 가정한 계산입니다. 실제 GPU 버퍼는 해제하지 않습니다.",
           actionEn: tier >= 2
-            ? "Keep 100% 4K pixel precision by locking 60Hz cadence (16.67ms) and spilling cold undo tiles to OPFS."
-            : "Keep 4K native canvas intact while reclaiming idle WebGPU staging buffers.",
+            ? "Model a 60Hz target and OPFS offload; actual canvas, undo, and OPFS data are unchanged."
+            : "Model staging-buffer cleanup without releasing actual GPU buffers.",
           estimatedP99ReductionMs: tier >= 2 ? roundTo(tier === 3 ? 3.8 : 2.1, 2) : 0.7,
           estimatedVramReleaseMb: roundTo(diagnosis.vram.stagingBufferMb * 0.48 + diagnosis.vram.textureAtlasMb * (tier >= 3 ? 0.24 : 0.14), 1),
           estimatedTileHitGainPct: tileNeed ? 8.5 : 1.5,
@@ -581,11 +468,12 @@ function buildGuardrailPlan(
     profileId === "precision-4k" ? (tier >= 3 ? 98 : 100) : tier >= 3 ? 91 : tier === 2 ? 95 : tier === 1 ? 98 : 100;
 
   return {
+    projectionBasis: "fixed-heuristic",
     profileId,
     titleKo: profileId === "smooth-120hz" ? "120Hz 유지 우선" : "4K 정밀 우선",
     titleEn: profileId === "smooth-120hz" ? "Maintain 120Hz Priority" : "4K Precision Priority",
-    taglineKo: profileId === "smooth-120hz" ? "펜 추종 8.33ms 이하 사수 · 커밋 시 100% 원해상도 복원" : "선화·망점 100% 원해상도 고정 · VRAM 회수 및 60Hz 안정 락",
-    taglineEn: profileId === "smooth-120hz" ? "Guard sub-8.33ms pen response with 100% full-res commit" : "Keep 100% native 4K precision with VRAM offload & 60Hz lock",
+    taglineKo: profileId === "smooth-120hz" ? "예제 목표 8.33ms · 모델상 커밋 배율 100%" : "선화·망점 100% 원해상도 고정 · VRAM 회수 및 60Hz 안정 락",
+    taglineEn: profileId === "smooth-120hz" ? "Example target: 8.33ms; modeled commit scale: 100%" : "Keep 100% native 4K precision with VRAM offload & 60Hz lock",
     targetRefreshHz, strokeResolutionScale: strokeScale, commitResolutionScale: 1, visualFidelityScore,
     projectedP99Ms, projectedFps, projectedVramUsagePct, projectedVramSavingsMb: roundTo(vramRel, 1),
     projectedTileHitRatePct: roundTo(clamp(diagnosis.tileCache.hitRatePct + tileGain, 0, 99.5), 1),
@@ -595,7 +483,7 @@ function buildGuardrailPlan(
       profileId === "smooth-120hz"
         ? strokeScale < 1
           ? `스트로크 중에만 프리뷰를 ${Math.round(strokeScale * 100)}%로 낮추고 펜을 떼면 100% 원해상도로 커밋합니다.`
-          : "화질 손실 없이 WAL 체크포인트와 비가시 타일 정리만으로 120Hz 여유를 확보합니다."
+          : "WAL·타일 정리를 가정한 120Hz 목표 예측입니다. 실측 결과가 아닙니다."
         : targetRefreshHz === 60
           ? "4K 100% 픽셀 정밀도를 지키는 대신 주사율 목표를 안정 60Hz(16.67ms)로 전환하고 VRAM을 회수합니다."
           : "4K 100% 원해상도와 120Hz를 모두 유지하면서 스테이징 버퍼만 정리합니다.",
@@ -603,7 +491,7 @@ function buildGuardrailPlan(
       profileId === "smooth-120hz"
         ? strokeScale < 1
           ? `Previews strokes at ${Math.round(strokeScale * 100)}% during drag and commits 100% native ink on lift.`
-          : "Secures 120Hz headroom purely through WAL checkpointing and offscreen tile hygiene."
+          : "Project a 120Hz target under assumed WAL and tile cleanup; this is not measured."
         : targetRefreshHz === 60
           ? "Preserves 100% 4K sharpness by locking stable 60Hz cadence (16.67ms) and reclaiming VRAM."
           : "Maintains both 100% native 4K and 120Hz while compacting idle staging buffers.",
@@ -626,7 +514,7 @@ export function recommendAdaptiveGuardrail(input: RecommendGuardrailInput): Adap
     { id: "cmp-p99", labelKo: "처방 후 예상 p99", labelEn: "Projected p99", smooth120HzValue: `${smooth120Hz.projectedP99Ms.toFixed(2)} ms`, precision4KValue: `${precision4K.projectedP99Ms.toFixed(2)} ms`, winner: smooth120Hz.projectedP99Ms === precision4K.projectedP99Ms ? "tie" : smooth120Hz.projectedP99Ms < precision4K.projectedP99Ms ? "smooth-120hz" : "precision-4k" },
     { id: "cmp-scale", labelKo: "스트로크 / 커밋 해상도", labelEn: "Stroke / Commit Scale", smooth120HzValue: `${Math.round(smooth120Hz.strokeResolutionScale * 100)}% / 100%`, precision4KValue: `${Math.round(precision4K.strokeResolutionScale * 100)}% / 100%`, winner: smooth120Hz.strokeResolutionScale < precision4K.strokeResolutionScale ? "precision-4k" : "tie" },
     { id: "cmp-vram", labelKo: "예상 VRAM 절감", labelEn: "Projected VRAM Relief", smooth120HzValue: `-${smooth120Hz.projectedVramSavingsMb.toFixed(0)} MB (${smooth120Hz.projectedVramUsagePct}%)`, precision4KValue: `-${precision4K.projectedVramSavingsMb.toFixed(0)} MB (${precision4K.projectedVramUsagePct}%)`, winner: smooth120Hz.projectedVramSavingsMb === precision4K.projectedVramSavingsMb ? "tie" : precision4K.projectedVramSavingsMb > smooth120Hz.projectedVramSavingsMb ? "precision-4k" : "smooth-120hz" },
-    { id: "cmp-fidelity", labelKo: "화질 보존 지수", labelEn: "Visual Fidelity Score", smooth120HzValue: `${smooth120Hz.visualFidelityScore} / 100`, precision4KValue: `${precision4K.visualFidelityScore} / 100`, winner: precision4K.visualFidelityScore === smooth120Hz.visualFidelityScore ? "tie" : precision4K.visualFidelityScore > smooth120Hz.visualFidelityScore ? "precision-4k" : "smooth-120hz" },
+    { id: "cmp-fidelity", labelKo: "가정식 화질 지수", labelEn: "Heuristic Fidelity Index", smooth120HzValue: `${smooth120Hz.visualFidelityScore} / 100`, precision4KValue: `${precision4K.visualFidelityScore} / 100`, winner: precision4K.visualFidelityScore === smooth120Hz.visualFidelityScore ? "tie" : precision4K.visualFidelityScore > smooth120Hz.visualFidelityScore ? "precision-4k" : "smooth-120hz" },
   ];
 
   return {
@@ -643,22 +531,35 @@ export function applyGuardrailPrescription(
   enabledStepIds?: readonly string[],
   currentTargetHz: TargetRefreshHz = 120,
 ): GuardrailApplicationResult {
+  assertSimulationInput(snapshot, plan);
   const allowed = new Set(enabledStepIds ?? plan.steps.filter((s) => s.recommended).map((s) => s.id));
   const applied = plan.steps.filter((s) => allowed.has(s.id));
   const beforeFrame = analyzeFrameTimeRing(snapshot.ring, { targetHz: currentTargetHz });
   const beforeDiag = diagnoseStudioRuntimeHealth({ ...snapshot.telemetry, frameAnalysis: beforeFrame });
+
+  if (applied.length === 0) {
+    return {
+      scope: "example-only", runtimeApplied: false,
+      appliedStepIds: [], profileId: plan.profileId, targetHzAfter: currentTargetHz,
+      nextRing: snapshot.ring, nextTelemetry: snapshot.telemetry,
+      beforeFrameAnalysis: beforeFrame, afterFrameAnalysis: beforeFrame,
+      beforeDiagnosis: beforeDiag, afterDiagnosis: beforeDiag,
+      deltas: { p99DeltaMs: 0, vramPctDelta: 0, tileHitPctDelta: 0, walDelayDeltaMs: 0, healthScoreDelta: 0 },
+    };
+  }
 
   const p99Drop = applied.reduce((a, s) => a + s.estimatedP99ReductionMs, 0);
   const vramRel = applied.reduce((a, s) => a + s.estimatedVramReleaseMb, 0);
   const tileGain = applied.reduce((a, s) => a + s.estimatedTileHitGainPct, 0);
   const walDrop = applied.reduce((a, s) => a + s.estimatedWalReductionMs, 0);
   const ratio = beforeFrame.p99Ms > 0 ? clamp(1 - p99Drop / Math.max(beforeFrame.p99Ms, 8), 0.42, 1) : 1;
-  const uiBatched = applied.some((s) => s.subsystem === "tile-cache");
-  const walFlushed = applied.some((s) => s.subsystem === "opfs-wal");
+  const uiBatched = applied.some((s) => s.subsystem === "tile-cache" && s.estimatedP99ReductionMs > 0);
+  const walFlushed = applied.some((s) => s.subsystem === "opfs-wal" && s.estimatedWalReductionMs > 0);
 
-  const nextRing = pushFrameSamples(
-    createFrameTimeRingBuffer(snapshot.ring.capacity),
-    readFrameSamplesChronological(snapshot.ring).map((sample) => {
+  const nextRing: FrameTimeRingBuffer = p99Drop > 0 ? {
+    ...snapshot.ring,
+    slots: snapshot.ring.slots.map((sample) => {
+      if (!sample) return null;
       const stages: FrameStageBreakdownMs = {
         input: roundTo(sample.stages.input * Math.min(1, ratio + 0.15), 3),
         brushWasm: roundTo(sample.stages.brushWasm * (plan.profileId === "smooth-120hz" ? ratio : Math.min(1, ratio + 0.08)), 3),
@@ -666,30 +567,52 @@ export function applyGuardrailPrescription(
         uiReact: roundTo(sample.stages.uiReact * (uiBatched ? 0.65 : 1), 3),
       };
       const stageSum = stages.input + stages.brushWasm + stages.webgpuComposite + stages.uiReact;
-      return { timestampMs: sample.timestampMs, totalMs: roundTo(Math.max(stageSum, sample.totalMs * ratio), 3), stages };
+      return { ...sample, totalMs: roundTo(Math.max(stageSum, sample.totalMs * ratio), 3), stages };
     }),
-  );
+  } : snapshot.ring;
 
   const prevVram = snapshot.telemetry.vram;
-  const nextAlloc = roundTo(Math.max(120, prevVram.allocatedMb - vramRel), 1);
+  const nextAlloc = roundTo(Math.max(0, prevVram.allocatedMb - vramRel), 1);
   const vramScale = prevVram.allocatedMb > 0 ? nextAlloc / prevVram.allocatedMb : 1;
   const prevTile = snapshot.telemetry.tileCache;
-  const lookups = Math.max(1, prevTile.tileHits + prevTile.tileMisses);
+  const lookups = prevTile.tileHits + prevTile.tileMisses;
   const nextHits = Math.round(lookups * (clamp(beforeDiag.tileCache.hitRatePct + tileGain, 0, 99.4) / 100));
   const prevWal = snapshot.telemetry.opfsWal;
 
   const nextTelemetry: StudioRuntimeTelemetryInput = {
     canvasContext: snapshot.telemetry.canvasContext,
-    vram: { ...prevVram, allocatedMb: nextAlloc, textureAtlasMb: roundTo(prevVram.textureAtlasMb * vramScale, 1), renderTargetMb: roundTo(prevVram.renderTargetMb * vramScale, 1), stagingBufferMb: roundTo(prevVram.stagingBufferMb * Math.max(0.45, vramScale - 0.1), 1), deviceLostCount: 0 },
-    tileCache: { ...prevTile, tileHits: nextHits, tileMisses: Math.max(0, lookups - nextHits), residentTiles: Math.max(64, Math.round(prevTile.residentTiles * (vramRel > 0 ? 0.82 : 0.94))), evictionsPerSec: roundTo(Math.max(1.2, prevTile.evictionsPerSec * (tileGain > 0 ? 0.35 : 0.85)), 1), dirtyTilesQueued: Math.max(2, Math.round(prevTile.dirtyTilesQueued * (tileGain > 0 ? 0.32 : 0.8))) },
-    opfsWal: { ...prevWal, usedBytes: walFlushed ? Math.round(prevWal.usedBytes * 0.84) : prevWal.usedBytes, walSizeBytes: walFlushed ? Math.round(prevWal.walSizeBytes * 0.18) : prevWal.walSizeBytes, walFramesPending: walFlushed ? Math.max(12, Math.round(prevWal.walFramesPending * 0.12)) : prevWal.walFramesPending, lastCheckpointDelayMs: roundTo(Math.max(8, prevWal.lastCheckpointDelayMs - walDrop), 1), avgCheckpointDelayMs: roundTo(Math.max(6, prevWal.avgCheckpointDelayMs - walDrop * 0.65), 1), checkpointBlocked: walFlushed ? false : prevWal.checkpointBlocked },
+    vram: vramRel > 0 ? {
+      ...prevVram,
+      allocatedMb: nextAlloc,
+      textureAtlasMb: roundTo(prevVram.textureAtlasMb * vramScale, 1),
+      renderTargetMb: roundTo(prevVram.renderTargetMb * vramScale, 1),
+      stagingBufferMb: roundTo(prevVram.stagingBufferMb * vramScale, 1),
+    } : prevVram,
+    tileCache: tileGain > 0 ? {
+      ...prevTile,
+      tileHits: nextHits, tileMisses: Math.max(0, lookups - nextHits),
+      residentTiles: Math.max(0, Math.round(prevTile.residentTiles * (vramRel > 0 ? 0.82 : 0.94))),
+      evictionsPerSec: roundTo(prevTile.evictionsPerSec * (tileGain > 0 ? 0.35 : 0.85), 1),
+      dirtyTilesQueued: Math.max(0, Math.round(prevTile.dirtyTilesQueued * (tileGain > 0 ? 0.32 : 0.8))),
+    } : prevTile,
+    opfsWal: walFlushed || walDrop > 0 ? {
+      ...prevWal,
+      usedBytes: walFlushed ? Math.round(prevWal.usedBytes * 0.84) : prevWal.usedBytes,
+      walSizeBytes: walFlushed ? Math.round(prevWal.walSizeBytes * 0.18) : prevWal.walSizeBytes,
+      walFramesPending: walFlushed ? Math.round(prevWal.walFramesPending * 0.12) : prevWal.walFramesPending,
+      lastCheckpointDelayMs: roundTo(Math.max(0, prevWal.lastCheckpointDelayMs - walDrop), 1),
+      avgCheckpointDelayMs: roundTo(Math.max(0, prevWal.avgCheckpointDelayMs - walDrop * 0.65), 1),
+      checkpointBlocked: walFlushed ? false : prevWal.checkpointBlocked,
+    } : prevWal,
   };
 
-  const targetHzAfter: TargetRefreshHz = applied.length > 0 ? plan.targetRefreshHz : currentTargetHz;
+  const cadenceSelected = applied.some((step) => step.visualImpact === "cadence" || step.subsystem === "frame-budget");
+  const targetHzAfter = cadenceSelected ? plan.targetRefreshHz : currentTargetHz;
   const afterFrame = analyzeFrameTimeRing(nextRing, { targetHz: targetHzAfter });
   const afterDiag = diagnoseStudioRuntimeHealth({ ...nextTelemetry, frameAnalysis: afterFrame });
 
   return {
+    scope: "example-only", runtimeApplied: false,
     appliedStepIds: applied.map((s) => s.id), profileId: plan.profileId, targetHzAfter, nextRing, nextTelemetry,
     beforeFrameAnalysis: beforeFrame, afterFrameAnalysis: afterFrame, beforeDiagnosis: beforeDiag, afterDiagnosis: afterDiag,
     deltas: {
@@ -785,6 +708,7 @@ export function createPerfDoctorScenario(
     samples.push({ timestampMs: roundTo((i + 1) * JANK_THRESHOLD_120HZ_MS, 2), totalMs: roundTo(stages.input + stages.brushWasm + stages.webgpuComposite + stages.uiReact + overhead, 3), stages });
   }
   return {
+    source: "synthetic",
     scenarioId, labelKo: bp.labelKo, labelEn: bp.labelEn, summaryKo: bp.summaryKo, summaryEn: bp.summaryEn,
     ring: pushFrameSamples(createFrameTimeRingBuffer(ringCapacity), samples), telemetry: bp.telemetry,
   };

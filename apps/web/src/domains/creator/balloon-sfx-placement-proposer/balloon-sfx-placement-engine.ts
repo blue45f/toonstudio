@@ -1,3 +1,5 @@
+import { assertPlacementGridInput, assertPlacementInput, assertPlacementExport } from "./placement-input-contract";
+
 /**
  * Wave 48C — 얼굴 회피 네거티브 스페이스 & 세로 스크롤 읽기 순서 기반
  * 말풍선 꼬리·한글 효과음(SFX) 자리 자동 추천 엔진.
@@ -43,7 +45,7 @@ export interface PlacedSfx { readonly text: string; readonly tone: EmotionTone; 
 export interface LayoutProposalMetrics { readonly faceOcclusionPct: number; readonly totalProtectedOcclusionPct: number; readonly readingOrderValid: boolean; readonly marginBalanceScore: number; readonly balloonOverlapCount: number; readonly overallScore: number }
 export interface BalloonSfxLayoutProposal { readonly id: string; readonly rank: 1 | 2 | 3; readonly strategyId: LayoutStrategyId; readonly titleKo: string; readonly titleEn: string; readonly summaryKo: string; readonly summaryEn: string; readonly balloons: readonly PlacedBalloon[]; readonly sfx: PlacedSfx; readonly metrics: LayoutProposalMetrics; readonly warningsKo: readonly string[]; readonly warningsEn: readonly string[] }
 export interface ProposeLayoutsInput { readonly canvasWidth?: number; readonly canvasHeight?: number; readonly safeMargin?: number; readonly protectedZones: readonly ProtectedZone[]; readonly dialogues: readonly DialogueItem[] }
-export interface BalloonSfxRecommendationBundle { readonly canvasWidth: number; readonly canvasHeight: number; readonly safeMargin: number; readonly grid: NegativeSpaceGrid; readonly proposals: readonly [BalloonSfxLayoutProposal, BalloonSfxLayoutProposal, BalloonSfxLayoutProposal] }
+export interface BalloonSfxRecommendationBundle { readonly sourceDialogues?: readonly DialogueItem[]; readonly canvasWidth: number; readonly canvasHeight: number; readonly safeMargin: number; readonly grid: NegativeSpaceGrid; readonly proposals: readonly [BalloonSfxLayoutProposal, BalloonSfxLayoutProposal, BalloonSfxLayoutProposal] }
 export interface CutLayoutSnapshot { readonly labelKo: string; readonly labelEn: string; readonly proposalId: string | null; readonly strategyId: LayoutStrategyId | null; readonly balloons: readonly PlacedBalloon[]; readonly sfx: PlacedSfx | null; readonly faceOcclusionPct: number; readonly readingOrderValid: boolean; readonly marginBalanceScore: number }
 export interface PlacementSessionState { readonly status: PlacementSessionStatus; readonly baseline: CutLayoutSnapshot; readonly current: CutLayoutSnapshot; readonly previewingProposalId: string | null; readonly appliedProposalId: string | null; readonly canRevert: boolean; readonly revision: number }
 export interface EmotionToneMeta { readonly id: EmotionTone; readonly labelKo: string; readonly labelEn: string; readonly defaultStyle: BalloonStyle; readonly tailStyle: TailStyle; readonly sfxPool: readonly string[]; readonly accentStyle: SfxAccentStyle }
@@ -203,8 +205,6 @@ const round1 = (v: number): number => Math.round(v * 10) / 10;
 const expandRect = (b: RectBox, pad: number): RectBox => ({ x: b.x - pad, y: b.y - pad, width: b.width + pad * 2, height: b.height + pad * 2 });
 const boxCenter = (b: RectBox): Point2D => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
 const isFaceCritical = (zone: ProtectedZone): boolean => zone.kind === "face" || zone.kind === "eyes";
-const escapeXml = (raw: string): string =>
-  raw.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
 
 export function clampSafeMargin(margin: number): number {
   return Number.isFinite(margin) ? Math.round(clamp(margin, MIN_SAFE_MARGIN, MAX_SAFE_MARGIN)) : DEFAULT_SAFE_MARGIN;
@@ -234,11 +234,12 @@ function computeZoneOcclusionPct(boxes: readonly RectBox[], zones: readonly Prot
     for (const box of boxes) overlap += rectIntersectionArea(box, zone.box);
     totalOverlapArea += Math.min(zArea, overlap);
   }
-  return totalZoneArea <= 0 ? 0 : round1(clamp((totalOverlapArea / totalZoneArea) * 100, 0, 100));
+  return totalZoneArea <= 0 || totalOverlapArea <= 0 ? 0 : Math.max(0.1, round1(clamp((totalOverlapArea / totalZoneArea) * 100, 0, 100)));
 }
 
 /** 800×1200 컷의 2D 네거티브 스페이스 점수 그리드를 순수 결정론적으로 계산한다. */
 export function computeNegativeSpaceGrid(input: NegativeSpaceGridInput): NegativeSpaceGrid {
+  assertPlacementGridInput(input);
   const canvasWidth = Math.max(320, Math.round(input.canvasWidth ?? DEFAULT_CUT_WIDTH));
   const canvasHeight = Math.max(480, Math.round(input.canvasHeight ?? DEFAULT_CUT_HEIGHT));
   const safeMargin = clampSafeMargin(input.safeMargin ?? DEFAULT_SAFE_MARGIN);
@@ -270,8 +271,8 @@ export function computeNegativeSpaceGrid(input: NegativeSpaceGridInput): Negativ
         }
       }
 
-      const occlusionRatio = round1(clamp(rawOverlap, 0, 1) * 100) / 100;
-      const faceOcclusionRatio = round1(clamp(faceOverlap, 0, 1) * 100) / 100;
+      const occlusionRatio = rawOverlap > 0 ? Math.max(0.001, round1(clamp(rawOverlap, 0, 1) * 100) / 100) : 0;
+      const faceOcclusionRatio = faceOverlap > 0 ? Math.max(0.001, round1(clamp(faceOverlap, 0, 1) * 100) / 100) : 0;
       const edgeClearance = Math.min(box.x, box.y, canvasWidth - (box.x + box.width), canvasHeight - (box.y + box.height));
       const safeMarginScore = edgeClearance >= safeMargin ? 1 : clamp((edgeClearance + cellWidth * 0.35) / Math.max(1, safeMargin + cellWidth * 0.35), 0.1, 0.85);
       const mouthProximityScore = input.focusMouth
@@ -544,6 +545,7 @@ function placeSfxInNegativeSpace(
 
 /** 비파괴 Top-3 말풍선·꼬리·한글 SFX 배치안을 결정론적으로 생성한다. */
 export function proposeBalloonSfxLayoutsTop3(input: ProposeLayoutsInput): BalloonSfxRecommendationBundle {
+  assertPlacementInput(input);
   const canvasWidth = Math.max(320, Math.round(input.canvasWidth ?? DEFAULT_CUT_WIDTH));
   const canvasHeight = Math.max(480, Math.round(input.canvasHeight ?? DEFAULT_CUT_HEIGHT));
   const safeMargin = clampSafeMargin(input.safeMargin ?? DEFAULT_SAFE_MARGIN);
@@ -615,7 +617,7 @@ export function proposeBalloonSfxLayoutsTop3(input: ProposeLayoutsInput): Balloo
 
   const [first, second, third] = ranked;
   if (!first || !second || !third) throw new Error("Top-3 proposals failed to materialize.");
-  return { canvasWidth, canvasHeight, safeMargin, grid, proposals: [first, second, third] };
+  return { sourceDialogues: input.dialogues.map((item) => ({ id: item.id, speakerNameKo: item.speakerNameKo, speakerNameEn: item.speakerNameEn, text: item.text, mouthX: item.mouthX, mouthY: item.mouthY, emotion: item.emotion })), canvasWidth, canvasHeight, safeMargin, grid, proposals: [first, second, third] };
 }
 
 export function createBaselineSnapshot(): CutLayoutSnapshot {
@@ -626,6 +628,7 @@ export function createBaselineSnapshot(): CutLayoutSnapshot {
 }
 
 export function snapshotFromProposal(p: BalloonSfxLayoutProposal): CutLayoutSnapshot {
+  assertPlacementExport(p);
   return {
     labelKo: `${p.rank}안 · ${p.titleKo} 적용됨`, labelEn: `Applied · #${p.rank} ${p.titleEn}`,
     proposalId: p.id, strategyId: p.strategyId, balloons: p.balloons, sfx: p.sfx,
@@ -635,128 +638,26 @@ export function snapshotFromProposal(p: BalloonSfxLayoutProposal): CutLayoutSnap
 
 export function createPlacementSessionState(baseline?: CutLayoutSnapshot): PlacementSessionState {
   const base = baseline ?? createBaselineSnapshot();
+  assertPlacementExport(base);
   return { status: "baseline", baseline: base, current: base, previewingProposalId: null, appliedProposalId: null, canRevert: false, revision: 0 };
 }
 
 export function previewLayoutProposal(state: PlacementSessionState, proposalId: string | null): PlacementSessionState {
+  assertPlacementExport(state);
   const nextPreviewId = proposalId && state.previewingProposalId === proposalId ? null : proposalId;
   const status: PlacementSessionStatus = nextPreviewId ? "previewing" : state.appliedProposalId ? "applied" : state.status === "reverted" ? "reverted" : "baseline";
   return { ...state, status, previewingProposalId: nextPreviewId };
 }
 
 export function applyLayoutProposal(state: PlacementSessionState, proposal: BalloonSfxLayoutProposal): PlacementSessionState {
+  assertPlacementExport(state);
   return { ...state, status: "applied", current: snapshotFromProposal(proposal), previewingProposalId: null, appliedProposalId: proposal.id, canRevert: true, revision: state.revision + 1 };
 }
 
 export function revertLayoutProposal(state: PlacementSessionState): PlacementSessionState {
+  assertPlacementExport(state);
   if (!state.canRevert && !state.previewingProposalId) return state;
   return { ...state, status: "reverted", current: state.baseline, previewingProposalId: null, appliedProposalId: null, canRevert: false, revision: state.revision + 1 };
 }
 
-export function exportLayoutProposalJson(payload: {
-  readonly presetId: CutPresetId; readonly safeMargin: number; readonly protectedZones: readonly ProtectedZone[];
-  readonly bundle: BalloonSfxRecommendationBundle; readonly session: PlacementSessionState;
-}): string {
-  return JSON.stringify({
-    schema: PROPOSER_SCHEMA_VERSION,
-    presetId: payload.presetId,
-    canvas: { width: payload.bundle.canvasWidth, height: payload.bundle.canvasHeight, safeMargin: payload.safeMargin },
-    negativeSpaceSummary: { cols: payload.bundle.grid.cols, rows: payload.bundle.grid.rows, averageScore: payload.bundle.grid.averageScore, openCellRatio: payload.bundle.grid.openCellRatio },
-    protectedZones: payload.protectedZones,
-    session: { status: payload.session.status, appliedProposalId: payload.session.appliedProposalId, previewingProposalId: payload.session.previewingProposalId, canRevert: payload.session.canRevert, revision: payload.session.revision },
-    topProposals: payload.bundle.proposals,
-  }, null, 2);
-}
-
-/** 말풍선 외곽선 SVG path 문자열을 스타일별로 생성한다. */
-export function buildBalloonOutlinePath(box: RectBox, style: BalloonStyle): string {
-  const { x, y, width, height } = box;
-  const cx = x + width / 2;
-  const cy = y + height / 2;
-  const rx = width / 2;
-  const ry = height / 2;
-
-  if (style === "shout-burst") {
-    const pts: string[] = [];
-    for (let i = 0; i < 16; i += 1) {
-      const a = (i / 16) * Math.PI * 2;
-      const mul = i % 2 === 0 ? 1.04 : 0.86;
-      pts.push(`${Math.round(cx + Math.cos(a) * rx * mul)} ${Math.round(cy + Math.sin(a) * ry * mul)}`);
-    }
-    return `M ${pts.join(" L ")} Z`;
-  }
-  if (style === "tension-jagged") {
-    return `M ${Math.round(x + 10)} ${Math.round(y)} L ${Math.round(x + width - 4)} ${Math.round(y + 5)} L ${Math.round(x + width)} ${Math.round(y + height - 10)} L ${Math.round(x + 6)} ${Math.round(y + height)} Z`;
-  }
-  if (style === "thought-cloud") {
-    const segs: string[] = [];
-    for (let i = 0; i < 10; i += 1) {
-      const a0 = (i / 10) * Math.PI * 2;
-      const aMid = ((i + 0.5) / 10) * Math.PI * 2;
-      const a1 = ((i + 1) / 10) * Math.PI * 2;
-      segs.push(
-        `${i === 0 ? `M ${Math.round(cx + Math.cos(a0) * rx * 0.92)} ${Math.round(cy + Math.sin(a0) * ry * 0.9)} ` : ""}Q ${Math.round(cx + Math.cos(aMid) * rx * 1.07)} ${Math.round(cy + Math.sin(aMid) * ry * 1.08)} ${Math.round(cx + Math.cos(a1) * rx * 0.92)} ${Math.round(cy + Math.sin(a1) * ry * 0.9)}`,
-      );
-    }
-    return `${segs.join(" ")} Z`;
-  }
-  const r = Math.round(Math.min(rx, ry, 34));
-  return `M ${Math.round(x + r)} ${Math.round(y)} H ${Math.round(x + width - r)} Q ${Math.round(x + width)} ${Math.round(y)} ${Math.round(x + width)} ${Math.round(y + r)} V ${Math.round(y + height - r)} Q ${Math.round(x + width)} ${Math.round(y + height)} ${Math.round(x + width - r)} ${Math.round(y + height)} H ${Math.round(x + r)} Q ${Math.round(x)} ${Math.round(y + height)} ${Math.round(x)} ${Math.round(y + height - r)} V ${Math.round(y + r)} Q ${Math.round(x)} ${Math.round(y)} ${Math.round(x + r)} ${Math.round(y)} Z`;
-}
-
-/** 제안 배치안을 oklch/currentColor 전용 독립 800×1200 SVG 문자열로 내보낸다. */
-export function exportLayoutProposalSvg(input: {
-  readonly canvasWidth?: number; readonly canvasHeight?: number; readonly safeMargin: number;
-  readonly protectedZones: readonly ProtectedZone[]; readonly proposal: BalloonSfxLayoutProposal | null; readonly showProtectedZones?: boolean;
-}): string {
-  const w = input.canvasWidth ?? DEFAULT_CUT_WIDTH;
-  const h = input.canvasHeight ?? DEFAULT_CUT_HEIGHT;
-  const m = clampSafeMargin(input.safeMargin);
-  const lines: string[] = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">`,
-    `  <rect x="0" y="0" width="${w}" height="${h}" fill="oklch(0.97 0.008 82)" stroke="oklch(0.32 0.015 55)" stroke-width="4" />`,
-    `  <rect x="${m}" y="${m}" width="${w - m * 2}" height="${h - m * 2}" fill="none" stroke="oklch(0.55 0.09 224 / 0.45)" stroke-dasharray="10 8" stroke-width="2" />`,
-  ];
-
-  if (input.showProtectedZones ?? true) {
-    for (const zone of input.protectedZones) {
-      const stroke = isFaceCritical(zone) ? "oklch(0.58 0.17 28)" : "oklch(0.64 0.13 72)";
-      const fill = isFaceCritical(zone) ? "oklch(0.58 0.17 28 / 0.08)" : "oklch(0.64 0.13 72 / 0.08)";
-      lines.push(
-        `  <rect x="${zone.box.x}" y="${zone.box.y}" width="${zone.box.width}" height="${zone.box.height}" rx="10" fill="${fill}" stroke="${stroke}" stroke-dasharray="8 6" stroke-width="2.2" />`,
-        `  <text x="${zone.box.x + 8}" y="${zone.box.y + 20}" fill="${stroke}" font-size="14" font-weight="600">${escapeXml(zone.labelKo)}</text>`,
-      );
-    }
-  }
-
-  if (input.proposal) {
-    const sfxColorMap: Readonly<Record<SfxAccentStyle, string>> = {
-      impact: "oklch(0.54 0.19 26)", pulse: "oklch(0.58 0.17 16)", whisper: "oklch(0.46 0.11 224)", tension: "oklch(0.28 0.03 55)",
-    };
-    for (const b of input.proposal.balloons) {
-      const dash = b.style === "whisper-dashed" ? ' stroke-dasharray="8 6"' : "";
-      if (b.tailStyle === "thought-dots") {
-        lines.push(
-          `  <circle cx="${Math.round((b.tailOriginX * 2 + b.tailTipX) / 3)}" cy="${Math.round((b.tailOriginY * 2 + b.tailTipY) / 3)}" r="8" fill="oklch(0.99 0.004 82)" stroke="oklch(0.24 0.015 55)" stroke-width="2.4" />`,
-          `  <circle cx="${Math.round((b.tailOriginX + b.tailTipX * 2) / 3)}" cy="${Math.round((b.tailOriginY + b.tailTipY * 2) / 3)}" r="5" fill="oklch(0.99 0.004 82)" stroke="oklch(0.24 0.015 55)" stroke-width="2.2" />`,
-        );
-      } else {
-        lines.push(`  <polygon points="${b.tailBaseLeftX},${b.tailBaseLeftY} ${b.tailTipX},${b.tailTipY} ${b.tailBaseRightX},${b.tailBaseRightY}" fill="oklch(0.99 0.004 82)" stroke="oklch(0.24 0.015 55)" stroke-width="2.5" stroke-linejoin="round" />`);
-      }
-      lines.push(
-        `  <path d="${buildBalloonOutlinePath(b.box, b.style)}" fill="oklch(0.99 0.004 82)" stroke="oklch(0.24 0.015 55)" stroke-width="2.8"${dash} />`,
-        `  <circle cx="${b.box.x + 18}" cy="${b.box.y + 18}" r="14" fill="oklch(0.54 0.14 246)" />`,
-        `  <text x="${b.box.x + 18}" y="${b.box.y + 23}" text-anchor="middle" fill="oklch(0.98 0.005 82)" font-size="14" font-weight="700">${b.order}</text>`,
-        `  <text x="${Math.round(b.box.x + b.box.width / 2)}" y="${Math.round(b.box.y + b.box.height / 2 + 5)}" text-anchor="middle" fill="oklch(0.22 0.015 55)" font-size="18" font-weight="600">${escapeXml(b.text)}</text>`,
-      );
-    }
-    const sfx = input.proposal.sfx;
-    lines.push(
-      `  <g transform="translate(${sfx.centerX}, ${sfx.centerY}) rotate(${sfx.rotationDeg})">`,
-      `    <text x="0" y="0" text-anchor="middle" dominant-baseline="central" fill="${sfxColorMap[sfx.accentStyle]}" stroke="oklch(0.98 0.005 82)" stroke-width="6" paint-order="stroke" font-size="${sfx.fontSize}" font-weight="900">${escapeXml(sfx.text)}</text>`,
-      "  </g>",
-    );
-  }
-  lines.push("</svg>");
-  return lines.join("\n");
-}
+export { exportLayoutProposalJson, exportLayoutProposalSvg, buildBalloonOutlinePath } from "./placement-output";

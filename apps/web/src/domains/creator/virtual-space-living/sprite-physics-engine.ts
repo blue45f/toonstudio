@@ -188,16 +188,14 @@ export function smoothDirectionVector(current: Vec2, target: Vec2, dtSec: number
   const tx = target.x / targetMag;
   const ty = target.y / targetMag;
   const alpha = 1 - Math.exp(-Math.max(0.1, smoothRate) * clampScalar(dtSec, 0, MAX_PHYSICS_DT_SEC));
-  let nx = current.x + (tx - current.x) * alpha;
-  let ny = current.y + (ty - current.y) * alpha;
-  const mag = Math.hypot(nx, ny);
-  if (mag < 1e-4) {
-    nx = tx - ty * 0.05;
-    ny = ty + tx * 0.05;
-    const fallbackMag = Math.hypot(nx, ny) || 1;
-    return { x: nx / fallbackMag, y: ny / fallbackMag };
-  }
-  return { x: nx / mag, y: ny / mag };
+  if (Math.hypot(current.x, current.y) < 1e-5) return { x: tx, y: ty };
+  const fromAngle = Math.atan2(current.y, current.x);
+  const targetAngle = Math.atan2(ty, tx);
+  let delta = Math.atan2(Math.sin(targetAngle - fromAngle), Math.cos(targetAngle - fromAngle));
+  // 정확한 반대 방향은 항상 같은 회전 방향을 택해 정규화 보간의 고착을 피한다.
+  if (Math.abs(Math.abs(delta) - Math.PI) < 1e-9) delta = Math.PI;
+  const angle = fromAngle + delta * alpha;
+  return { x: Math.cos(angle), y: Math.sin(angle) };
 }
 
 /**

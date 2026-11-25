@@ -9,6 +9,9 @@
  * - 2D 컷 리라이트 엔진용 버전드 JSON 조명 브리지 익스포터(`export2dCutRelightBridge`).
  */
 
+import { assertAtmosphere, assertRig, assertSun, choice, finite, flags, SEASON_IDS, SKY_PRESET_IDS, SURFACE_IDS } from "./lighting-input-contract";
+import { isRelightBridge } from "./relight-bridge-contract";
+
 export const SEOUL_LATITUDE_DEG = 37.5665 as const;
 export const SEOUL_LATITUDE_DISPLAY = 37.57 as const;
 export const SEOUL_LONGITUDE_DEG = 126.978 as const;
@@ -208,6 +211,7 @@ function linearRgbToOklch(lin: RgbTuple): OklchColor {
 }
 
 export function formatOklchCss(oklch: OklchColor, alpha?: number): string {
+  finite([oklch.L, oklch.C, oklch.h, alpha ?? 1]);
   const l = roundTo(clamp(oklch.L, 0, 1), 3);
   const c = roundTo(clamp(oklch.C, 0, 0.4), 3);
   const h = roundTo(normalizeAngle360(oklch.h), 1);
@@ -228,6 +232,7 @@ function mixLinearRgb(a: RgbTuple, b: RgbTuple, tInput: number): RgbTuple {
 
 /** 2200K~10000K 색온도를 Planckian 흑체 복사 근사로 선형 RGB·OKLCH 스와치로 변환한다. */
 export function kelvinToOklchColor(kelvinInput: number): ColorSwatch {
+  finite([kelvinInput]);
   const kelvin = clamp(kelvinInput, MIN_RIG_KELVIN, MAX_RIG_KELVIN);
   const temp = kelvin / 100;
   const r255 = temp <= 66 ? 255 : 329.698727446 * Math.pow(temp - 60, -0.1332047592);
@@ -244,6 +249,7 @@ export function kelvinToOklchColor(kelvinInput: number): ColorSwatch {
 
 /** 방위각(0°=북, 90°=동, 180°=남, 270°=서)·고도각을 Y-Up 3D 단위 방향 벡터로 변환한다. */
 export function sphericalAnglesToVec3(azimuthDeg: number, elevationDeg: number): Vec3 {
+  finite([azimuthDeg, elevationDeg]);
   const az = degToRad(normalizeAngle360(azimuthDeg));
   const el = degToRad(clamp(elevationDeg, -89.5, 89.5));
   const cosEl = Math.cos(el);
@@ -251,6 +257,7 @@ export function sphericalAnglesToVec3(azimuthDeg: number, elevationDeg: number):
 }
 
 export function formatHourKst(hourInput: number): string {
+  finite([hourInput]);
   const totalMinutes = Math.round(clamp(hourInput, MIN_SOLAR_HOUR_KST, MAX_SOLAR_HOUR_KST) * 60);
   return `${String(Math.floor(totalMinutes / 60)).padStart(2, "0")}:${String(totalMinutes % 60).padStart(2, "0")}`;
 }
@@ -264,6 +271,7 @@ function getCompassLabels(azimuthDeg: number): { readonly ko: string; readonly e
 }
 
 export function getSeasonSpec(season: SeoulSeasonId): SeoulSeasonSpec {
+  choice(season, SEASON_IDS);
   return SEOUL_SEASONS.find((s) => s.id === season) ?? {
     id: "spring", labelKo: "봄 (춘분)", labelEn: "Spring Equinox", dayOfYear: 80, solarTermKo: "춘분", solarTermEn: "Vernal",
   };
@@ -278,6 +286,7 @@ export function computeSeoulSunPosition(
   hourKstInput: number,
   options?: { readonly latitudeDeg?: number; readonly longitudeDeg?: number },
 ): SeoulSunPosition {
+  finite([hourKstInput, options?.latitudeDeg ?? SEOUL_LATITUDE_DEG, options?.longitudeDeg ?? SEOUL_LONGITUDE_DEG]);
   const seasonSpec = getSeasonSpec(season);
   const hourKst = clamp(hourKstInput, MIN_SOLAR_HOUR_KST, MAX_SOLAR_HOUR_KST);
   const latitudeDeg = clamp(options?.latitudeDeg ?? SEOUL_LATITUDE_DEG, -66, 66);
@@ -338,6 +347,7 @@ export function computeSeoulSunPosition(
 
 /** 05:00~22:00 서울 일간 태양 궤적 포인트를 샘플링하고 일출·남중·일몰 요약을 산출한다. */
 export function sampleSeoulDailyArc(season: SeoulSeasonId, stepMinutes = 30): SeoulDailyArcSummary {
+  choice(season, SEASON_IDS); finite([stepMinutes]);
   const stepHours = clamp(stepMinutes, 10, 120) / 60;
   const points: SeoulSunPosition[] = [];
   for (let h = MIN_SOLAR_HOUR_KST; h <= MAX_SOLAR_HOUR_KST + 1e-6; h += stepHours) {
@@ -371,6 +381,7 @@ export function sampleSeoulDailyArc(season: SeoulSeasonId, stepMinutes = 30): Se
 
 /** 태양 위치와 레일리·미·오존·운량 파라미터로 물리 하늘 돔 색채(OKLCH)와 조도를 계산한다. */
 export function evaluatePhysicalSkyAtmosphere(sun: SeoulSunPosition, params: AtmosphericScatteringParams): AtmosphericSkyEvaluation {
+  assertSun(sun); assertAtmosphere(params);
   const rayleigh = clamp(params.rayleighCoeff, 0.2, 2.5);
   const mie = clamp(params.mieCoeff, 0.001, 0.08);
   const turbidity = clamp(params.turbidity, 1, 10);
@@ -519,12 +530,14 @@ export const PHYSICAL_SKY_PRESETS: readonly PhysicalSkyPreset[] = [
 ];
 
 export function getPhysicalSkyPresetById(id: PhysicalSkyPresetId): PhysicalSkyPreset {
+  choice(id, SKY_PRESET_IDS);
   const found = PHYSICAL_SKY_PRESETS.find((p) => p.id === id) ?? PHYSICAL_SKY_PRESETS[0];
   if (found) return found;
   throw new Error("PHYSICAL_SKY_PRESETS must not be empty");
 }
 
 export function getArchitecturalSurfaceById(id: ArchitecturalSurfaceId): ArchitecturalSurfaceSpec {
+  choice(id, SURFACE_IDS);
   const found = ARCHITECTURAL_SURFACES.find((s) => s.id === id) ?? ARCHITECTURAL_SURFACES[0];
   if (found) return found;
   throw new Error("ARCHITECTURAL_SURFACES must not be empty");
@@ -543,6 +556,8 @@ export function computeShadowCatcherProjection(input: {
   readonly cloudCoverage: number;
 }): ShadowCatcherProjection {
   const { shadowCatcher, keyLight, sky } = input;
+  finite([...Object.values(shadowCatcher).filter((value): value is number => typeof value === "number"), keyLight.intensity, keyLight.elevationDeg, keyLight.azimuthDeg, keyLight.softness, input.cloudCoverage, sky.zenith.linear.r, sky.zenith.linear.g, sky.zenith.linear.b]);
+  flags([shadowCatcher.enabled, keyLight.enabled]);
   const cloud = clamp(input.cloudCoverage, 0, 1);
   const heightM = clamp(shadowCatcher.subjectHeightM, 0.4, 3.2);
   const radiusM = clamp(shadowCatcher.subjectRadiusM, 0.12, 1.2);
@@ -627,6 +642,7 @@ function resolveChannelLight(
 
 /** 3D 배경·캐릭터 통합 물리 하늘 + 3점 조명 + 건축 바운스 + 그림자 캐처를 통합 평가한다. */
 export function evaluateStudioLightingRig(config: StudioRigConfig): StudioLightingRigEvaluation {
+  assertRig(config);
   const sun = computeSeoulSunPosition(config.season, config.hourKst);
   const sky = evaluatePhysicalSkyAtmosphere(sun, config.atmosphere);
   const bounceSurface = getArchitecturalSurfaceById(config.bounce.surfaceMaterial);
@@ -713,7 +729,7 @@ export function export2dCutRelightBridge(config: StudioRigConfig): RelightBridge
     sky: {
       presetId: config.presetId, presetNameKo: preset.nameKo, skyPhase: evalRig.sun.skyPhase,
       sunElevationDeg: evalRig.sun.elevationDeg, sunAzimuthDeg: evalRig.sun.azimuthDeg,
-      turbidity: roundTo(config.atmosphere.turbidity, 2), cloudCoverage: roundTo(config.atmosphere.cloudCoverage, 2),
+      turbidity: roundTo(clamp(config.atmosphere.turbidity, 1, 10), 2), cloudCoverage: roundTo(clamp(config.atmosphere.cloudCoverage, 0, 1), 2),
       zenithOklch: evalRig.sky.zenith.oklchCss, horizonOklch: evalRig.sky.horizon.oklchCss,
       groundBounceOklch: evalRig.sky.groundBounce.oklchCss, hemisphereIrradianceLux: evalRig.sky.hemisphereIrradianceLux,
     },
@@ -754,14 +770,10 @@ export function serialize2dCutRelightBridgeJson(config: StudioRigConfig): string
 /** 2D 컷 리라이트 JSON 브리지 문자열의 스키마·광원 배열·그림자 캐처 무결성을 검증한다. */
 export function validate2dCutRelightBridge(jsonText: string): RelightBridgeValidationResult {
   try {
+    if (jsonText.length > 65536) return { valid: false, errorKo: "조명 예제 JSON의 지원 길이를 넘었습니다.", payload: null };
     const parsed: unknown = JSON.parse(jsonText);
-    if (!parsed || typeof parsed !== "object") return { valid: false, errorKo: "JSON 객체 형식이 아닙니다.", payload: null };
-    const c = parsed as Partial<RelightBridge2dPayload>;
-    if (c.schemaVersion !== RELIGHT_BRIDGE_SCHEMA_VERSION) return { valid: false, errorKo: "지원하지 않는 조명 브리지 스키마 버전입니다.", payload: null };
-    if (c.sourceEngine !== "studio-3d-lighting-rig") return { valid: false, errorKo: "출처 엔진 식별자가 일치하지 않습니다.", payload: null };
-    if (!Array.isArray(c.dynamicLights) || c.dynamicLights.length !== 4) return { valid: false, errorKo: "4종 통합 광원(Key/Fill/Rim/Bounce) 슬롯이 누락되었습니다.", payload: null };
-    if (!c.threeLayer2dRelight || !c.shadowCatcher || !c.sky || !c.location) return { valid: false, errorKo: "2D 리라이트·하늘·그림자 캐처 필수 필드가 누락되었습니다.", payload: null };
-    return { valid: true, errorKo: null, payload: c as RelightBridge2dPayload };
+    if (!isRelightBridge(parsed)) return { valid: false, errorKo: "조명 브리지 필수 구조·범위·광원 슬롯이 올바르지 않습니다.", payload: null };
+    return { valid: true, errorKo: null, payload: parsed };
   } catch {
     return { valid: false, errorKo: "JSON 구문 파싱에 실패했습니다.", payload: null };
   }

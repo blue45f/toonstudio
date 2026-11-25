@@ -1,3 +1,5 @@
+import { useExampleCallback } from "./use-example-callback";
+
 /**
  * 프로 단축키 리매핑(4대 도구 프리셋·OS 정규화·충돌 감지기) · 왼손/한손 태블릿 미러 레이아웃 ·
  * WCAG 2.2 AAA & 한국어 가독성 감사 3탭 마스터 패널 (Wave 41F).
@@ -42,9 +44,9 @@ export interface StudioErgonomicsMasterPanelProps {
     presetId: ShortcutPresetId,
     bindings: Readonly<Record<ShortcutCommandId, string>>,
     report: ShortcutConflictReport,
-  ) => void;
-  readonly onHandednessPlanChanged?: (plan: HandednessLayoutPlan) => void;
-  readonly onAccessibilityAudited?: (report: StudioAccessibilityAuditReport) => void;
+  ) => void | Promise<void>;
+  readonly onHandednessPlanChanged?: (plan: HandednessLayoutPlan) => void | Promise<void>;
+  readonly onAccessibilityAudited?: (report: StudioAccessibilityAuditReport) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -97,6 +99,7 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
     onShortcutProfileChanged, onHandednessPlanChanged, onAccessibilityAudited,
   } = props;
 
+  const action = useExampleCallback();
   const uid = useId();
   const storeLang = useI18n((state) => state.lang);
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
@@ -109,6 +112,7 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
   const [bindings, setBindings] = useState<Record<ShortcutCommandId, string>>(() => createShortcutBindingsFromPreset(initialPresetId));
   const [selectedCommandId, setSelectedCommandId] = useState<ShortcutCommandId>("brush");
   const [draftChord, setDraftChord] = useState<string>(() => SHORTCUT_PRESETS[initialPresetId].bindings.brush);
+  const [profileName, setProfileName] = useState(`${SHORTCUT_PRESETS[initialPresetId].labelEn} Custom`);
   const [jsonBuffer, setJsonBuffer] = useState<string>("");
   const [jsonNotice, setJsonNotice] = useState<{ readonly tone: "good" | "bad"; readonly text: string } | null>(null);
 
@@ -131,22 +135,23 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
   );
   const auditReport = useMemo<StudioAccessibilityAuditReport>(() => auditStudioAccessibilityBudget(auditInput), [auditInput]);
 
-  const emitShortcutChange = (nextPreset: ShortcutPresetId, nextBindings: Readonly<Record<ShortcutCommandId, string>>, nextOs: ShortcutOsPlatform): void => {
-    onShortcutProfileChanged?.(nextPreset, nextBindings, detectShortcutConflicts(nextBindings, nextOs));
+  const emitShortcutChange = (nextPreset: ShortcutPresetId, nextBindings: Readonly<Record<ShortcutCommandId, string>>, nextOs: ShortcutOsPlatform): void | Promise<void> => {
+    return onShortcutProfileChanged?.(nextPreset, nextBindings, detectShortcutConflicts(nextBindings, nextOs));
   };
 
   const handleSelectPreset = (nextPreset: ShortcutPresetId): void => {
     const nextBindings = createShortcutBindingsFromPreset(nextPreset);
-    setPresetId(nextPreset);
-    setBindings(nextBindings);
-    setDraftChord(nextBindings[selectedCommandId]);
-    setJsonNotice(null);
-    emitShortcutChange(nextPreset, nextBindings, platform);
+    action.run([() => emitShortcutChange(nextPreset, nextBindings, platform)], () => {
+      setPresetId(nextPreset);
+      setProfileName(`${SHORTCUT_PRESETS[nextPreset].labelEn} Custom`);
+      setBindings(nextBindings);
+      setDraftChord(nextBindings[selectedCommandId]);
+      setJsonNotice(null);
+    });
   };
 
   const handleSelectPlatform = (nextOs: ShortcutOsPlatform): void => {
-    setPlatform(nextOs);
-    emitShortcutChange(presetId, bindings, nextOs);
+    action.run([() => emitShortcutChange(presetId, bindings, nextOs)], () => setPlatform(nextOs));
   };
 
   const handleSelectCommand = (cmdId: ShortcutCommandId): void => {
@@ -156,23 +161,24 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
 
   const handleApplyDraftChord = (): void => {
     const nextBindings = remapShortcutCommand(bindings, selectedCommandId, draftChord, platform);
-    setBindings(nextBindings);
-    setDraftChord(nextBindings[selectedCommandId]);
-    emitShortcutChange(presetId, nextBindings, platform);
+    action.run([() => emitShortcutChange(presetId, nextBindings, platform)], () => {
+      setBindings(nextBindings);
+      setDraftChord(nextBindings[selectedCommandId]);
+    });
   };
 
   const handleAutoResolveConflicts = (): void => {
     const resolved = autoResolveShortcutConflicts(bindings, presetId, platform);
-    setBindings(resolved);
-    setDraftChord(resolved[selectedCommandId]);
-    emitShortcutChange(presetId, resolved, platform);
+    action.run([() => emitShortcutChange(presetId, resolved, platform)], () => {
+      setBindings(resolved);
+      setDraftChord(resolved[selectedCommandId]);
+    });
   };
 
   const handleExportJson = (): void => {
     const serialized = exportShortcutProfileJson({
       format: "toonstudio.ergonomics.shortcuts.v1", schemaVersion: 1,
-      profileName: `${SHORTCUT_PRESETS[presetId].labelEn} Custom`,
-      presetId, platform, exportedAtIso: "2026-11-25T00:00:00.000Z", bindings,
+      profileName, presetId, platform, exportedAtIso: new Date().toISOString(), bindings,
     });
     setJsonBuffer(serialized);
     setJsonNotice({ tone: "good", text: pick("현재 20종 단축키 프로필을 v1 JSON으로 직렬화했습니다.", "Exported 20 commands as v1 profile JSON.") });
@@ -185,48 +191,51 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
       return;
     }
     const nextBindings = { ...result.profile.bindings };
-    setPresetId(result.profile.presetId);
-    setPlatform(result.profile.platform);
-    setBindings(nextBindings);
-    setDraftChord(nextBindings[selectedCommandId]);
-    setJsonNotice({
-      tone: "good",
-      text: pick(
-        `프로필 "${result.profile.profileName}" 가져오기 완료 (충돌 ${result.conflicts.errorCount}건 · 경고 ${result.warnings.length}건)`,
-        `Imported "${result.profile.profileName}" (${result.conflicts.errorCount} errors · ${result.warnings.length} warnings)`,
-      ),
+    action.run([() => onShortcutProfileChanged?.(result.profile.presetId, nextBindings, result.conflicts)], () => {
+      setPresetId(result.profile.presetId);
+      setProfileName(result.profile.profileName);
+      setPlatform(result.profile.platform);
+      setBindings(nextBindings);
+      setDraftChord(nextBindings[selectedCommandId]);
+      setJsonNotice({
+        tone: "good",
+        text: pick(
+          `프로필 "${result.profile.profileName}" 예제 가져오기 완료 (충돌 ${result.conflicts.errorCount}건 · 경고 ${result.warnings.length}건)`,
+          `Imported example "${result.profile.profileName}" (${result.conflicts.errorCount} errors · ${result.warnings.length} warnings)`,
+        ),
+      });
     });
-    onShortcutProfileChanged?.(result.profile.presetId, nextBindings, result.conflicts);
   };
 
   const updateHandedness = (nextMode: DominantHandMode, nextDevice: StudioViewportDevice, nextPalm: number, nextCompact: boolean): void => {
-    setHandMode(nextMode);
-    setDevice(nextDevice);
-    setPalmMarginPx(nextPalm);
-    setCompactChrome(nextCompact);
-    onHandednessPlanChanged?.(computeHandednessLayoutPlan({ handMode: nextMode, device: nextDevice, palmRejectionMarginPx: nextPalm, compactChrome: nextCompact }));
+    const plan = computeHandednessLayoutPlan({ handMode: nextMode, device: nextDevice, palmRejectionMarginPx: nextPalm, compactChrome: nextCompact });
+    action.run([() => onHandednessPlanChanged?.(plan)], () => {
+      setHandMode(nextMode);
+      setDevice(nextDevice);
+      setPalmMarginPx(nextPalm);
+      setCompactChrome(nextCompact);
+    });
   };
 
-  const updateAuditInput = (nextInput: StudioAccessibilityAuditInput): void => {
-    setAuditInput(nextInput);
-    onAccessibilityAudited?.(auditStudioAccessibilityBudget(nextInput));
+  const updateAuditInput = (nextInput: StudioAccessibilityAuditInput, nextPreset?: AccessibilityAuditPresetId): void => {
+    action.run([() => onAccessibilityAudited?.(auditStudioAccessibilityBudget(nextInput))], () => {
+      setAuditInput(nextInput);
+      if (nextPreset) setA11yPresetId(nextPreset);
+    });
   };
 
   const handleSelectA11yPreset = (nextId: AccessibilityAuditPresetId): void => {
-    setA11yPresetId(nextId);
-    updateAuditInput(ACCESSIBILITY_AUDIT_PRESETS[nextId].input);
+    updateAuditInput(ACCESSIBILITY_AUDIT_PRESETS[nextId].input, nextId);
   };
 
   const handleApplyAaaFix = (): void => {
-    const fixed = applyAaaRemediation(auditInput);
-    setA11yPresetId("atelier-aaa");
-    updateAuditInput(fixed);
+    updateAuditInput(applyAaaRemediation(auditInput), "atelier-aaa");
   };
 
-  const tabs: readonly { readonly id: ErgonomicsMasterTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "shortcuts", label: pick("4대 단축키 리매핑·충돌", "4-Tool Shortcuts & Conflicts"), icon: <Keyboard className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "handedness", label: pick("왼손·한손 태블릿 미러", "Left-Hand & Tablet Mirror"), icon: <Hand className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "accessibility", label: pick("WCAG 2.2 AAA·가독성", "WCAG 2.2 AAA & Readability"), icon: <Accessibility className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: ErgonomicsMasterTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "shortcuts", label: pick("4대 단축키 리매핑·충돌", "4-Tool Shortcuts & Conflicts"), shortLabel: pick("단축키", "Shortcuts"), icon: <Keyboard className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "handedness", label: pick("왼손·한손 태블릿 미러", "Left-Hand & Tablet Mirror"), shortLabel: pick("도구 배치", "Layout"), icon: <Hand className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "accessibility", label: pick("접근성 입력값 예제", "Accessibility Input Examples"), shortLabel: pick("가독성", "Readability"), icon: <Accessibility className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const selectedCommandSpec = SHORTCUT_COMMANDS.find((c) => c.id === selectedCommandId) ?? SHORTCUT_COMMANDS[0];
@@ -235,27 +244,31 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
   return (
     <section
       data-testid="ergonomics-shortcut-master-panel"
-      aria-label={pick("프로 단축키 리매핑 · 왼손잡이 미러 레이아웃 · WCAG 2.2 AAA 접근성 마스터", "Pro Shortcut Remapping, Left-Handed Mirror Layout, and WCAG 2.2 AAA Accessibility Master")}
+      aria-label={pick("단축키·왼손 배치·가독성 입력 예제", "Shortcut, Handedness Layout & Readability Examples")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
+      <p data-testid="ergonomics-example-scope" className="text-xs text-fg-2">
+        {pick("독립 예제 · OS·기기를 탐지하지 않으며 실제 단축키·앱 설정·손바닥 방지를 변경하지 않습니다. DOM 접근성 검사와 의료·난독 진단이 아닙니다. 입력은 닫으면 사라지므로 필요한 JSON은 복사해 주세요.", "Standalone example. No OS/device detection or real shortcuts, app settings, or palm rejection changes. This is not a DOM accessibility or medical assessment. Closing discards inputs; copy any JSON you need.")}
+      </p>
+      <fieldset disabled={action.pending || action.error !== null} aria-busy={action.pending} className="min-w-0 space-y-4 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
             <h2 className="text-sm font-semibold text-fg">
-              {pick("인체공학 단축키 마스터 · 왼손/한손 미러 · WCAG 2.2 AAA 감사", "Ergonomics Shortcut Master · Handedness Mirror · WCAG 2.2 AAA Audit")}
+              {pick("단축키·배치·가독성 입력 예제", "Shortcut, Layout & Readability Input Examples")}
             </h2>
           </div>
           <p className="text-xs text-fg-2">
             {pick(
-              "ToonStudio·CSP·Photoshop·Procreate 4대 단축키와 OS별 ⌘/Ctrl 충돌을 실시간 검증하고, 왼손/한손 태블릿 크롬 미러와 한국어 난독 친화 AAA 기준을 제어합니다.",
-              "Remap 4 industry keymaps with OS-aware ⌘/Ctrl conflict detection, mirror studio chrome for left/one-hand tablets, and audit WCAG 2.2 AAA Korean readability.",
+              "도구별 단축키 예제를 정규화하고, 고정 화면 크기와 타이포그래피 입력값으로 배치·가독성 규칙을 비교합니다.",
+              "Normalize example keymaps and compare layout and readability rules using fixed viewport and typography inputs.",
             )}
           </p>
         </div>
         <span data-testid="badge-ergonomics-grade" className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums ${gradeBadgeClass(auditReport.grade)}`}>
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          {pick(`WCAG 2.2 ${auditReport.grade} · ${auditReport.overallScore}점`, `WCAG 2.2 ${auditReport.grade} · ${auditReport.overallScore}/100`)}
+          {pick(`입력 예제 ${auditReport.grade} · ${auditReport.overallScore}점`, `Example ${auditReport.grade} · ${auditReport.overallScore}/100`)}
         </span>
       </header>
 
@@ -263,11 +276,11 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? ACTIVE_TONE : IDLE_TONE}`}
           >
-            {tab.icon}<span>{tab.label}</span>
+            {tab.icon}<span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>
@@ -306,7 +319,7 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
               <span>
                 {conflictReport.hasBlockingConflicts
                   ? pick(`차단 충돌 ${conflictReport.errorCount}건 감지됨 · 즉시 자동 정리 가능`, `${conflictReport.errorCount} blocking shortcut conflicts detected`)
-                  : pick(`충돌 0건 안전 · ${conflictReport.boundCount}/${conflictReport.totalCommands} 명령 매핑 완료 (${PLATFORM_LABELS[platform]})`, `0 conflicts · ${conflictReport.boundCount}/${conflictReport.totalCommands} commands bound (${PLATFORM_LABELS[platform]})`)}
+                  : pick(`예제 충돌 0건 · ${conflictReport.boundCount}/${conflictReport.totalCommands} 명령 매핑 완료 (${PLATFORM_LABELS[platform]})`, `0 example conflicts · ${conflictReport.boundCount}/${conflictReport.totalCommands} commands bound (${PLATFORM_LABELS[platform]})`)}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -333,7 +346,7 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
                 />
               </div>
               <button type="button" data-testid="btn-apply-chord" onClick={handleApplyDraftChord} className={`${PILL_BTN} ${ACTIVE_TONE}`}>
-                {pick("단축키 적용", "Apply Chord")}
+                {pick("예제 단축키 변경", "Change Example Chord")}
               </button>
             </div>
 
@@ -430,21 +443,21 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
 
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("엄지 도달 커버리지", "Thumb Arc Coverage")}</div>
+              <div className="text-[11px] text-fg-3">{pick("가정식 엄지 도달 비율", "Model Thumb Coverage")}</div>
               <div data-testid="metric-thumb-coverage" className="mt-1 text-lg font-bold text-accent tabular-nums">{handednessPlan.thumbReachCoveragePct.toFixed(1)}%</div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("캔버스 뷰포트 점유율", "Canvas Viewport Share")}</div>
+              <div className="text-[11px] text-fg-3">{pick("예제 캔버스 면적", "Example Canvas Share")}</div>
               <div data-testid="metric-canvas-share" className={`mt-1 text-lg font-bold tabular-nums ${handednessPlan.meetsCanvasBudget ? "text-good" : "text-warn"}`}>{handednessPlan.canvasViewportSharePct.toFixed(1)}%</div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3">{pick("손바닥 오터치 위험", "Palm Misfire Risk")}</div>
+              <div className="text-[11px] text-fg-3">{pick("가정식 오터치 지수", "Model Palm Index")}</div>
               <div data-testid="metric-palm-risk" className="mt-1 text-lg font-bold text-cool tabular-nums">{handednessPlan.palmCollisionRiskPct.toFixed(1)}%</div>
             </div>
             <div className="rounded-lg border border-line bg-card p-3">
               <div className="text-[11px] text-fg-3">{pick("좌우 미러 상태", "Mirror Orientation")}</div>
               <div data-testid="metric-mirror-state" className="mt-1 text-sm font-bold text-fg">
-                {handednessPlan.mirroredHorizontally ? pick("우측 조작 미러 활성", "Mirrored Right") : pick("좌측 조작 표준", "Standard Left")}
+                {handednessPlan.mirroredHorizontally ? pick("우측 배치 예제", "Example: Mirrored Right") : pick("좌측 조작 표준", "Standard Left")}
               </div>
             </div>
           </div>
@@ -486,9 +499,9 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
         <div role="tabpanel" id={`${uid}-panel-accessibility`} aria-labelledby={`${uid}-tab-accessibility`} data-testid="panel-accessibility" className="space-y-4">
           <div className="space-y-3 rounded-lg border border-line bg-card p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-xs font-semibold text-fg">{pick("WCAG 2.2 AAA · 한국어 가독성 감사 프리셋", "WCAG 2.2 AAA & Korean Readability Presets")}</h3>
+              <h3 className="text-xs font-semibold text-fg">{pick("가독성 기준 입력 프리셋", "Readability Input Presets")}</h3>
               <button type="button" data-testid="btn-apply-aaa-remediation" onClick={handleApplyAaaFix} className={`${PILL_BTN} ${ACTIVE_TONE}`}>
-                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />{pick("원클릭 AAA 자동 보정", "One-Click AAA Fix")}
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />{pick("예제 입력값 보정", "Adjust Example Inputs")}
               </button>
             </div>
 
@@ -543,7 +556,7 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-2 rounded-lg border border-line bg-card p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-fg">{pick("WCAG 2.2 기준 항목별 판정", "WCAG 2.2 Criteria Audit")}</span>
+                <span className="text-xs font-semibold text-fg">{pick("참고 기준별 입력값 판정", "Input Checks Against Reference Rules")}</span>
                 <span data-testid="a11y-grade-pill" className={`rounded-full border px-2 py-0.5 text-[11px] font-bold tabular-nums ${gradeBadgeClass(auditReport.grade)}`}>
                   {auditReport.grade} · {auditReport.overallScore}/100
                 </span>
@@ -583,8 +596,8 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
                 className="rounded-lg border border-line bg-canvas p-3 text-fg"
               >
                 {pick(
-                  "마감 직전 밤샘 원고에서도 한글 어절이 중간에 끊기지 않고, 44px 이상 터치 타깃과 2px 고대비 포커스 링으로 오동작 없이 작업 흐름을 지킵니다.",
-                  "Hangul phrases wrap cleanly without mid-word breaks while 44px touch targets and 2px high-contrast focus rings keep long sessions fatigue-free.",
+                  "한글 어절 줄바꿈과 글자 간격을 비교하는 예제입니다. 버튼 크기·포커스 링·모션 처리는 실제 화면에서 별도로 확인해야 합니다.",
+                  "This sample compares Hangul wrapping and spacing. Target size, focus rings, and motion behavior require separate checks in the actual screen.",
                 )}
               </div>
               {auditReport.remediationStepsKo.length > 0 ? (
@@ -594,11 +607,20 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
                 </div>
               ) : (
                 <div className="rounded-md border border-good bg-good-soft p-2.5 text-xs font-medium text-good">
-                  {pick("모든 WCAG 2.2 AAA 터치 타깃·포커스 링·한국어 가독성 항목을 100% 충족했습니다.", "All WCAG 2.2 AAA touch targets, focus rings, and Korean readability checks passed.")}
+                  {pick("입력한 예제 항목이 이 계산의 기준을 충족합니다. 앱 전체의 WCAG 준수나 의학적 효과를 인증하지 않습니다.", "The provided example fields meet these model rules. This does not certify app-wide WCAG compliance or medical effects.")}
                 </div>
               )}
             </div>
           </div>
+        </div>
+      )}
+      </fieldset>
+      {action.pending && <p role="status">{pick("예제 콜백 응답을 기다리고 있어요.", "Waiting for the example callback.")}</p>}
+      {action.error !== null && (
+        <div role="alert" className="space-y-2 text-xs text-bad">
+          <p>{pick("콜백을 완료하지 못했습니다. 입력과 이전 결과는 유지됩니다.", "The callback failed. Inputs and previous results are kept.")} {action.error}</p>
+          <button type="button" onClick={action.retry} className={PILL_BTN}>{pick("같은 입력으로 다시 시도", "Retry Same Input")}</button>
+          <button type="button" onClick={action.reset} className={PILL_BTN}>{pick("오류 닫고 수정", "Dismiss and Edit")}</button>
         </div>
       )}
     </section>

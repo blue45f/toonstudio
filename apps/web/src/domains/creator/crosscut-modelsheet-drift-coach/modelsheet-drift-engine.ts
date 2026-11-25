@@ -1,3 +1,7 @@
+import { assertDriftPatch, assertDriftSession, driftNumber, driftText, nextDriftRevision, validateDriftCut, validateDriftCuts, validateDriftSpec } from "./drift-input-contract";
+
+export { exportDriftReportJson, exportDriftReportMarkdown } from "./drift-report-export";
+
 /**
  * Wave 48E — 화차 간 작화·비율 흔들림 감지 및 교정 제안 엔진 (Cross-Cut Model Sheet Drift Coach).
  *
@@ -232,6 +236,7 @@ function flipHairPart(side: HairPartSide): HairPartSide {
 
 function classifyMetricDeviation(key: DriftMetricKey, absPct: number): CutDriftSeverity {
   const { okPct, noticePct } = DRIFT_METRIC_META[key].thresholds;
+  driftNumber(okPct, 0, 100); driftNumber(noticePct, okPct, 100);
   if (absPct > noticePct) return "drift";
   return absPct > okPct ? "notice" : "ok";
 }
@@ -328,7 +333,8 @@ function buildMetricDeviation(spec: ModelSheetSpec, cut: EpisodeCutMetric, key: 
 }
 
 /** 단일 컷을 캐릭터 설정집 기준과 대조해 비율 편차·등급·누락 소품·붉은 펜 코멘트를 산출. */
-export function auditSingleCutDrift(spec: ModelSheetSpec, cut: EpisodeCutMetric): CutDriftAudit {
+export function auditSingleCutDrift(inputSpec: ModelSheetSpec, inputCut: EpisodeCutMetric): CutDriftAudit {
+  const spec = validateDriftSpec(inputSpec); const cut = validateDriftCut(inputCut);
   const headDetail = buildMetricDeviation(spec, cut, "headToBodyRatio");
   const eyeSpaceDetail = buildMetricDeviation(spec, cut, "eyeSpacingRatio");
   const eyeHeightDetail = buildMetricDeviation(spec, cut, "eyeHeightRatio");
@@ -410,8 +416,8 @@ export function auditEpisodeModelSheetDrift(params: {
   readonly spec: ModelSheetSpec;
   readonly cuts: readonly EpisodeCutMetric[];
 }): EpisodeModelSheetAuditReport {
-  const { spec, cuts } = params;
-  const bounded = cuts.slice(0, 60);
+  const spec = validateDriftSpec(params.spec);
+  const bounded = validateDriftCuts(params.cuts);
   const effectiveCuts = bounded.length > 0 ? bounded : generateEpisodeSampleCuts(spec.id, 1);
   const cutAudits = effectiveCuts.map((cut) => auditSingleCutDrift(spec, cut));
 
@@ -602,6 +608,7 @@ export function createDriftCoachSession(
 }
 
 export function selectDriftCoachCut(session: DriftCoachSessionState, cutNumber: number): DriftCoachSessionState {
+  assertDriftSession(session);
   if (!session.workingCuts.some((cut) => cut.cutNumber === cutNumber)) return session;
   return { ...session, selectedCutNumber: cutNumber, previewCandidateId: null };
 }
@@ -611,6 +618,7 @@ export function simulateCutMetricUpdate(
   cutNumber: number,
   patch: CutMetricPatch,
 ): DriftCoachSessionState {
+  assertDriftSession(session); assertDriftPatch(patch);
   let changed = false;
   const nextWorking = session.workingCuts.map((cut) => {
     if (cut.cutNumber !== cutNumber) return cut;
@@ -629,22 +637,29 @@ export function simulateCutMetricUpdate(
 }
 
 export function previewCutCorrection(session: DriftCoachSessionState, candidateId: string | null): DriftCoachSessionState {
+  assertDriftSession(session);
+  if (candidateId !== null) driftText(candidateId);
   return { ...session, previewCandidateId: candidateId !== null && session.previewCandidateId === candidateId ? null : candidateId };
 }
 
 export function applyCutCorrection(
   session: DriftCoachSessionState, cutNumber: number, candidate: CutCorrectionCandidate,
 ): DriftCoachSessionState {
+  assertDriftSession(session);
   const currentCut = session.workingCuts.find((cut) => cut.cutNumber === cutNumber);
   if (!currentCut) return session;
+  const proposed = validateDriftCut(candidate.proposedMetrics);
+  if (proposed.cutId !== currentCut.cutId || proposed.cutNumber !== currentCut.cutNumber || candidate.requiresAuthorApproval !== true
+    || !["minimal-nudge", "spec-exact", "accessory-full-restore"].includes(candidate.strategy)
+    || candidate.id !== `${currentCut.cutId}:${candidate.strategy}`) throw new RangeError("후보가 현재 컷과 연결되지 않습니다.");
+  driftText(candidate.titleKo); driftText(candidate.titleEn);
   const spec = getModelSheetSpec(session.archetypeId);
   const scoreBefore = auditSingleCutDrift(spec, currentCut).cutScore;
   const appliedCut: EpisodeCutMetric = {
-    ...candidate.proposedMetrics, cutId: currentCut.cutId, cutNumber: currentCut.cutNumber,
-    presentAccessories: [...candidate.proposedMetrics.presentAccessories],
+    ...proposed, presentAccessories: [...proposed.presentAccessories],
   };
   const scoreAfter = auditSingleCutDrift(spec, appliedCut).cutScore;
-  const nextRevision = session.revision + 1;
+  const nextRevision = nextDriftRevision(session);
   const originalCut = session.appliedFixByCut[cutNumber]?.originalCut ?? currentCut;
   const entry: CutApprovalHistoryEntry = {
     entryId: `rev-${nextRevision}-apply-${cutNumber}`, revision: nextRevision, action: "apply",
@@ -669,13 +684,14 @@ export function applyCutCorrection(
 }
 
 export function revertCutCorrection(session: DriftCoachSessionState, cutNumber: number): DriftCoachSessionState {
+  assertDriftSession(session);
   const record = session.appliedFixByCut[cutNumber];
   if (!record) return session;
   const spec = getModelSheetSpec(session.archetypeId);
   const currentCut = session.workingCuts.find((cut) => cut.cutNumber === cutNumber);
   const scoreBefore = currentCut ? auditSingleCutDrift(spec, currentCut).cutScore : record.scoreAfter;
   const scoreAfter = auditSingleCutDrift(spec, record.originalCut).cutScore;
-  const nextRevision = session.revision + 1;
+  const nextRevision = nextDriftRevision(session);
   const nextApplied: Record<number, AppliedCutFixRecord> = {};
   for (const [k, v] of Object.entries(session.appliedFixByCut)) {
     if (Number(k) !== cutNumber) nextApplied[Number(k)] = v;
@@ -697,11 +713,12 @@ export function revertCutCorrection(session: DriftCoachSessionState, cutNumber: 
 }
 
 export function revertAllCutCorrections(session: DriftCoachSessionState): DriftCoachSessionState {
+  assertDriftSession(session);
   const appliedCount = Object.keys(session.appliedFixByCut).length;
   const spec = getModelSheetSpec(session.archetypeId);
   const scoreBefore = auditEpisodeModelSheetDrift({ spec, cuts: session.workingCuts }).consistencyScore;
   const scoreAfter = auditEpisodeModelSheetDrift({ spec, cuts: session.baselineCuts }).consistencyScore;
-  const nextRevision = session.revision + 1;
+  const nextRevision = nextDriftRevision(session);
   const entry: CutApprovalHistoryEntry = {
     entryId: `rev-${nextRevision}-revert-all`, revision: nextRevision, action: "revert-all",
     cutNumber: null, strategy: null, scoreBefore, scoreAfter,
@@ -714,79 +731,4 @@ export function revertAllCutCorrections(session: DriftCoachSessionState): DriftC
     previewCandidateId: null, appliedFixByCut: {},
     approvalHistory: [entry, ...session.approvalHistory].slice(0, 40), revision: nextRevision,
   };
-}
-
-/** 검수 리포트 Markdown 직렬화. */
-export function exportDriftReportMarkdown(params: {
-  readonly audit: EpisodeModelSheetAuditReport;
-  readonly session: DriftCoachSessionState;
-  readonly locale?: "ko" | "en";
-}): string {
-  const { audit, session, locale = "ko" } = params;
-  const isEn = locale === "en";
-  const spec = audit.spec;
-  const hairLabel = isEn ? getHairPartMeta(spec.hairPartSide).labelEn : getHairPartMeta(spec.hairPartSide).labelKo;
-  const reqAcc = spec.requiredAccessories.map((id) => (isEn ? getAccessoryMeta(id).labelEn : getAccessoryMeta(id).labelKo)).join(", ");
-  const lines: string[] = [
-    isEn ? "# Cross-Cut Model Sheet Drift Audit Report" : "# 회차 캐릭터 작화·비율 흔들림 검수 리포트", "",
-    isEn ? `- **Character Archetype**: ${spec.nameEn} (${spec.headToBodyRatio.toFixed(1)}H)` : `- **설정집 기준 캐릭터**: ${spec.nameKo} (${spec.headToBodyRatio.toFixed(1)}등신)`,
-    isEn
-      ? `- **Baseline Spec**: Eye Spacing ${spec.eyeSpacingRatio.toFixed(2)}x · Eye Height ${spec.eyeHeightRatio.toFixed(2)} · Jaw Width ${spec.jawWidthRatio.toFixed(2)} · Hair Part ${hairLabel}`
-      : `- **기준 지표**: 눈 간격 ${spec.eyeSpacingRatio.toFixed(2)}배 · 눈 높이 ${spec.eyeHeightRatio.toFixed(2)} · 턱선 폭 ${spec.jawWidthRatio.toFixed(2)} · 가르마 ${hairLabel}`,
-    isEn ? `- **Required Props**: ${reqAcc}` : `- **필수 의상·장신구**: ${reqAcc}`,
-    isEn
-      ? `- **Episode Consistency Score**: **${audit.consistencyScore}/100** (OK ${audit.counts.ok} / Notice ${audit.counts.notice} / Drift ${audit.counts.drift} of ${audit.totalCuts} cuts)`
-      : `- **회차 일관성 점수**: **${audit.consistencyScore} / 100점** (총 ${audit.totalCuts}컷 · 정상 ${audit.counts.ok} / 주의 ${audit.counts.notice} / 흔들림 ${audit.counts.drift})`,
-    "", isEn ? "## Flagged Cuts" : "## 검수 대상 컷 목록", "",
-    isEn ? "| Cut | Severity | Score | Max Drift | Red-Pen Notes | Fix Status |" : "| 컷 | 등급 | 점수 | 최대 편차 | 붉은 펜 검수 메모 | 보정 상태 |",
-    "| --- | --- | ---: | ---: | --- | --- |",
-  ];
-  const flagged = audit.cutAudits.filter((item) => item.severity !== "ok" || Boolean(session.appliedFixByCut[item.cutNumber]));
-  if (flagged.length === 0) {
-    lines.push(isEn ? "| - | ok | 100 | 0.0% | All cuts within baseline tolerance | Clean |" : "| - | 정상 | 100점 | 0.0% | 전 컷 설정집 허용 오차 안 | 완료 |");
-  } else {
-    for (const item of flagged) {
-      const fix = session.appliedFixByCut[item.cutNumber];
-      const notes = (isEn ? item.redPenCalloutsEn : item.redPenCalloutsKo).join(" / ");
-      const statusText = fix ? (isEn ? `Applied (${fix.titleEn})` : `적용됨 (${fix.titleKo})`) : (isEn ? "Pending review" : "검수 대기");
-      const sev = isEn ? item.severity : item.severity === "drift" ? "흔들림" : item.severity === "notice" ? "주의" : "정상";
-      lines.push(`| #${item.cutNumber} | ${sev} | ${item.cutScore} | ${item.maxDeviationPct.toFixed(1)}% | ${notes} | ${statusText} |`);
-    }
-  }
-  lines.push("", isEn ? "## Approval History" : "## 컷별 승인·원복 이력", "");
-  if (session.approvalHistory.length === 0) lines.push(isEn ? "- No author approvals recorded yet." : "- 아직 작가 승인 이력이 없습니다.");
-  else for (const entry of session.approvalHistory) lines.push(`- [r${entry.revision}] ${isEn ? entry.summaryEn : entry.summaryKo}`);
-  return lines.join("\n");
-}
-
-/** 검수 리포트 JSON 직렬화. */
-export function exportDriftReportJson(params: {
-  readonly audit: EpisodeModelSheetAuditReport;
-  readonly session: DriftCoachSessionState;
-}): string {
-  const { audit, session } = params;
-  const appliedList = Object.values(session.appliedFixByCut).sort((a, b) => a.cutNumber - b.cutNumber);
-  return JSON.stringify(
-    {
-      schema: "toonstudio.crosscut-modelsheet-drift-coach.v1",
-      spec: audit.spec,
-      summary: {
-        totalCuts: audit.totalCuts, consistencyScore: audit.consistencyScore, grade: audit.grade,
-        counts: audit.counts, worstCutNumber: audit.worstCutNumber, missingAccessoryTotals: audit.missingAccessoryTotals,
-      },
-      flaggedCuts: audit.cutAudits.filter((item) => item.severity !== "ok").map((item) => ({
-        cutNumber: item.cutNumber, severity: item.severity, cutScore: item.cutScore,
-        maxDeviationPct: item.maxDeviationPct, weightedDriftPct: item.weightedDriftPct,
-        hairPartMismatch: item.hairPartMismatch, missingAccessories: item.missingAccessories,
-        redPenCalloutsKo: item.redPenCalloutsKo, redPenCalloutsEn: item.redPenCalloutsEn,
-      })),
-      appliedFixes: appliedList.map((fix) => ({
-        cutNumber: fix.cutNumber, strategy: fix.strategy, titleKo: fix.titleKo,
-        scoreBefore: fix.scoreBefore, scoreAfter: fix.scoreAfter, revision: fix.revision,
-      })),
-      approvalHistory: session.approvalHistory,
-    },
-    null,
-    2,
-  );
 }

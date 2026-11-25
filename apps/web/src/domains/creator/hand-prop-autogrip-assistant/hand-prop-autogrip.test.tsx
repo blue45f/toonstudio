@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -35,7 +35,7 @@ import {
   type HandSide,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("1. 8종 3D 소품 카탈로그 및 물리 사양 검증", () => {
   it("웹툰 실전 3D 소품 8종과 5종 파지 유형을 모두 포함한다", () => {
@@ -391,7 +391,7 @@ describe("5. StudioHandPropAutoGripPanel UI 렌더 및 상호작용", () => {
 
     expect(screen.getByTestId("studio-hand-prop-autogrip-panel")).toBeTruthy();
     expect(screen.getByTestId("autogrip-approval-badge").textContent).toContain("작가 승인 후 적용");
-    expect(screen.getByTestId("autogrip-session-status-badge").textContent).toContain("원본 유지 중");
+    expect(screen.getByTestId("autogrip-session-status-badge").textContent).toContain("예제 기준 유지 중");
 
     for (const prop of HAND_PROP_CATALOG) {
       expect(screen.getByTestId(`autogrip-prop-${prop.id}`)).toBeTruthy();
@@ -535,21 +535,143 @@ describe("5. StudioHandPropAutoGripPanel UI 렌더 및 상호작용", () => {
   });
 });
 
+describe("전달 확인과 합성 예제 경계", () => {
+  it("고정 예제이며 실제 메시 충돌·원고 저장을 확인하지 않음을 표시하고 내보낸다", () => {
+    render(<StudioHandPropAutoGripPanel />);
+    expect(screen.getByTestId("autogrip-example-disclosure").textContent).toContain("실제 3D");
+    expect(screen.queryByText("관통 없음")).toBeNull();
+    fireEvent.click(screen.getByTestId("autogrip-toggle-json-btn"));
+    const payload = JSON.parse(screen.getByTestId("autogrip-json-preview").textContent ?? "{}");
+    expect(payload.execution).toEqual({ source: "synthetic-catalog", meshCollisionChecked: false, sceneMutationVerified: false, persistenceVerified: false });
+    const metrics = evaluateHandPropPoseMetrics(NEUTRAL_OPEN_HAND_POSE, getHandPropSpec("sword"), "right", "relaxed-hold");
+    expect(metrics.contactPoints).toBe(0);
+  });
+
+  it("비동기 적용 확인 전에는 상태를 확정하거나 중복 요청하지 않는다", async () => {
+    let acknowledge: (() => void) | undefined;
+    const onApply = vi.fn(() => new Promise<void>((resolve) => { acknowledge = resolve; }));
+    render(<StudioHandPropAutoGripPanel onApply={onApply} />);
+    fireEvent.click(screen.getByTestId("autogrip-apply-btn-1"));
+    fireEvent.click(screen.getByTestId("autogrip-apply-btn-1"));
+    expect(onApply).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("autogrip-session-status-badge").textContent).not.toContain("적용됨");
+    expect((screen.getByTestId("autogrip-side-left") as HTMLButtonElement).matches(":disabled")).toBe(true);
+    await act(async () => { acknowledge?.(); });
+    expect(screen.getByTestId("autogrip-session-status-badge").textContent).toContain("적용됨");
+  });
+
+  it("반환값을 사용하지 않던 기존 void 콜백 호출자도 계속 동작한다", () => {
+    const events: string[] = [];
+    render(<StudioHandPropAutoGripPanel onApply={() => events.push("apply")} />);
+    fireEvent.click(screen.getByTestId("autogrip-apply-btn-1"));
+    expect(events).toEqual(["apply"]);
+    expect(screen.getByTestId("autogrip-session-status-badge").textContent).toContain("적용됨");
+  });
+
+  it.each(["throw", "reject", "decline", "blank"])("적용 %s 실패를 알리고 같은 버튼으로 최신 콜백에 재시도한다", async (mode) => {
+    const failed = vi.fn(() => {
+      if (mode === "throw") throw new Error("전달 실패");
+      if (mode === "reject") return Promise.reject(new Error("전달 실패"));
+      if (mode === "blank") return Promise.reject(new Error(""));
+      return { accepted: false, message: "전달 거절" };
+    });
+    const view = render(<StudioHandPropAutoGripPanel onApply={failed} />);
+    fireEvent.click(screen.getByTestId("autogrip-apply-btn-1"));
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByTestId("autogrip-session-status-badge").textContent).not.toContain("적용됨");
+    const accepted = vi.fn(() => ({ accepted: true }));
+    view.rerender(<StudioHandPropAutoGripPanel onApply={accepted} />);
+    fireEvent.click(screen.getByTestId("autogrip-apply-btn-1"));
+    await waitFor(() => expect(accepted).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId("autogrip-session-status-badge").textContent).toContain("적용됨");
+  });
+
+  it("적용 후 초기화도 복원 확인을 기다리며 실패 시 적용 이력을 보존한다", async () => {
+    const onRevert = vi.fn().mockRejectedValueOnce(new Error("복원 실패")).mockResolvedValueOnce(undefined);
+    render(<StudioHandPropAutoGripPanel onRevert={onRevert} />);
+    fireEvent.click(screen.getByTestId("autogrip-apply-btn-1"));
+    fireEvent.click(screen.getByTestId("autogrip-reset-btn"));
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByTestId("autogrip-session-status-badge").textContent).toContain("적용됨");
+    expect((screen.getByTestId("autogrip-revert-btn") as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByTestId("autogrip-reset-btn"));
+    await waitFor(() => expect(screen.getByTestId("autogrip-session-status-badge").textContent).not.toContain("적용됨"));
+    expect(onRevert).toHaveBeenCalledTimes(2);
+  });
+
+  it("적용 후 소품·손·의도를 바꿔도 JSON의 대상과 적용 ID가 섞이지 않는다", () => {
+    const onExportJson = vi.fn();
+    render(<StudioHandPropAutoGripPanel onExportJson={onExportJson} />);
+    fireEvent.click(screen.getByTestId("autogrip-apply-btn-1"));
+    fireEvent.click(screen.getByTestId("autogrip-prop-pen"));
+    fireEvent.click(screen.getByTestId("autogrip-side-left"));
+    fireEvent.click(screen.getByTestId("autogrip-intent-offering"));
+    fireEvent.click(screen.getByTestId("autogrip-toggle-json-btn"));
+    const payload = JSON.parse(screen.getByTestId("autogrip-json-preview").textContent ?? "{}");
+    expect(payload.handSide).toBe("left");
+    expect(payload.prop.id).toBe("pen");
+    expect(payload.activeProposalId).toContain("grip-pen-left-offering-");
+    expect(payload.session.appliedProposalId).toBeNull();
+    expect(payload.session.status).not.toBe("applied");
+    fireEvent.click(screen.getByTestId("autogrip-export-json-btn"));
+    const deliveredSession = onExportJson.mock.calls[0]?.[1];
+    expect(deliveredSession.current.propId).toBe("pen");
+    expect(deliveredSession.current.handSide).toBe("left");
+    expect(deliveredSession.appliedProposalId).toBeNull();
+    expect(deliveredSession.current.pose.fingers.index.mcpDeg).toBe(payload.rig15.joints.find((joint: { boneName: string }) => joint.boneName === "leftIndexProximal").angleDeg);
+    fireEvent.click(screen.getByTestId("autogrip-revert-btn"));
+    expect(screen.getByTestId("autogrip-silhouette-svg").getAttribute("data-hand-side")).toBe("right");
+    expect(screen.getByTestId("autogrip-silhouette-svg").getAttribute("data-prop-id")).toBe("mug");
+  });
+
+  it("클립보드 거부를 성공으로 표시하지 않고 미리보기와 복사 재시도를 제공한다", async () => {
+    const writeText = vi.fn().mockRejectedValueOnce(new Error("복사 권한 없음")).mockResolvedValueOnce(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    render(<StudioHandPropAutoGripPanel />);
+    fireEvent.click(screen.getByTestId("autogrip-export-json-btn"));
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByTestId("autogrip-json-preview")).toBeTruthy();
+    expect(screen.queryByText(/복사했습니다/)).toBeNull();
+    fireEvent.click(screen.getByTestId("autogrip-export-json-btn"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("복사했습니다"));
+    expect(writeText).toHaveBeenCalledTimes(2);
+  });
+
+  it("전달 콜백이 거절하면 복사를 중복 실행하지 않는다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const onExportJson = vi.fn().mockResolvedValue({ accepted: false, message: "받는 쪽에서 거절했습니다" });
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    render(<StudioHandPropAutoGripPanel onExportJson={onExportJson} />);
+    fireEvent.click(screen.getByTestId("autogrip-export-json-btn"));
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it("클립보드가 없으면 성공 대신 미리보기에서 직접 복사하도록 안내한다", async () => {
+    vi.stubGlobal("navigator", {});
+    render(<StudioHandPropAutoGripPanel />);
+    fireEvent.click(screen.getByTestId("autogrip-export-json-btn"));
+    expect((await screen.findByRole("alert")).textContent).toContain("직접 복사");
+    expect(screen.getByTestId("autogrip-json-preview")).toBeTruthy();
+  });
+});
+
 describe("6. 코드 위생 · Calm Atelier · 탈-바이올렛 하네스 계약 자가 검증", () => {
-  it("4개 파일 800줄 이하 및 금지 패턴(원시 색·transition-all·= {}·Web Storage·private Map store·BigInt·Sparkles) 0건", () => {
+  it("모듈 파일 800줄 이하 및 금지 패턴(원시 색·transition-all·= {}·Web Storage·private Map store·BigInt·Sparkles) 0건", () => {
     const dir = path.resolve(import.meta.dirname);
     const requiredFiles = [
       "hand-prop-autogrip-engine.ts",
       "StudioHandPropAutoGripPanel.tsx",
       "index.ts",
       "hand-prop-autogrip.test.tsx",
+      "use-hand-grip-delivery.ts",
     ];
     for (const file of requiredFiles) {
       expect(existsSync(path.join(dir, file))).toBe(true);
     }
 
     const allFiles = readdirSync(dir).filter((f) => /\.(?:ts|tsx)$/u.test(f));
-    expect(allFiles).toHaveLength(4);
+    expect(allFiles).toHaveLength(5);
 
     for (const file of allFiles) {
       const src = readFileSync(path.join(dir, file), "utf8");

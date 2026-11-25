@@ -1,5 +1,5 @@
 /**
- * Wave 40B — Display-P3 광색역 컬러 매니지먼트 · CMYK 소프트프루핑 · 실시간 동적 조명 스튜디오 패널.
+ * Wave 40B — Display-P3 광색역 컬러 매니지먼트 · CMYK 근사 계산 · CPU 합성 조명 예제.
  *
  * - 3탭 인터랙티브 워크벤치(Display-P3 게멋 매핑 / CMYK 소프트프루핑·말풍선 대비 / 실시간 동적 다중 조명).
  * - Calm Atelier 시맨틱 토큰 전용 (원시 색상 표기 0건 · Web Storage 0건 · props 기본 객체 대입 미사용).
@@ -232,10 +232,10 @@ export function StudioP3ColorLightingPanel(
     }));
   };
 
-  const tabs: readonly { readonly id: P3ColorLightingTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "gamut", label: pick("Display-P3 광색역 · 게멋 매핑", "Display-P3 Gamut"), icon: <Palette className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "softproof", label: pick("CMYK 소프트프루핑 · 대비 검사", "CMYK Proof & Contrast"), icon: <Printer className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "lighting", label: pick("실시간 동적 다중 조명 프리뷰", "Dynamic Studio Lighting"), icon: <Sun className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: P3ColorLightingTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "gamut", label: pick("Display-P3 광색역 · 게멋 매핑", "Display-P3 Gamut"), shortLabel: pick("광색역", "P3"), icon: <Palette className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "softproof", label: pick("CMYK 근사 · 대비 계산", "Approximate CMYK & Contrast"), shortLabel: "CMYK", icon: <Printer className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "lighting", label: pick("CPU 합성 표면 조명 예제", "CPU Synthetic Lighting"), shortLabel: pick("조명", "Lighting"), icon: <Sun className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const tacBadgeTone =
@@ -255,23 +255,26 @@ export function StudioP3ColorLightingPanel(
   return (
     <section
       data-testid="p3-color-lighting-panel"
-      aria-label={pick("Display-P3 광색역 컬러 매니지먼트 · CMYK 소프트프루핑 · 실시간 동적 조명 스튜디오 패널", "Display-P3 Color Management, CMYK Soft-Proofing & Dynamic Studio Lighting Panel")}
+      aria-label={pick("Display-P3 광색역 컬러 매니지먼트 · CMYK 근사 계산 · CPU 합성 조명 예제", "Display-P3 Color Calculations, Approximate CMYK and CPU Synthetic Lighting")}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-0.5 text-[11px] font-semibold text-fg-2">
             <Layers className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>{pick("Wave 40B · Display-P3 · CMYK · 실시간 4광원 리라이팅", "Wave 40B · Display-P3 · CMYK · 4-Light Relighting")}</span>
+            <span>{pick("Wave 40B · 색 변환 계산 · CMYK 근사 · CPU 합성 조명", "Wave 40B · Color Calculations · Approximate CMYK · CPU Lighting")}</span>
           </div>
           <h2 className="text-base font-bold text-fg">
-            {pick("광색역 컬러 매니지먼트 · 인쇄 소프트프루핑 · 동적 조명 엔진", "Wide-Gamut Color Management · CMYK Proofing · Dynamic Lighting")}
+            {pick("색 공간 계산 · CMYK 근사 · 합성 표면 조명", "Color Calculations · Approximate CMYK · Synthetic Surface Lighting")}
           </h2>
         </div>
         <div className="rounded-lg border border-good/40 bg-good-soft px-2.5 py-1.5 text-xs font-semibold text-good tabular-nums">
-          {pick(`D65 행렬 오차 < 1e-4 · 최대 ${MAX_DYNAMIC_LIGHTS}광원`, `D65 Matrix < 1e-4 · Up to ${MAX_DYNAMIC_LIGHTS} Lights`)}
+          {pick(`D65 행렬 계산 · 최대 ${MAX_DYNAMIC_LIGHTS}광원 예제`, `D65 Matrix Calculation · Up to ${MAX_DYNAMIC_LIGHTS} Demo Lights`)}
         </div>
       </header>
+      <p data-testid="color-lighting-scope-notice" className="text-xs text-fg-2">
+        {pick("고정 합성 색·표면의 CPU 계산 예제입니다. P3 CSS 표시는 화면 색역을 실측하지 않습니다. CMYK는 ICC 프로파일 없는 근사식이며 인쇄 적합성·실제 내보내기는 미검증입니다. 실제 GPU 실행·3D 씬·원고·기기 저장 반영은 없습니다.", "CPU calculations use fixed synthetic colors and surfaces. P3 CSS does not measure display gamut. CMYK is an approximation without ICC profiles; print suitability and export are unverified. No GPU execution or changes to 3D scenes, manuscripts or device storage.")}
+      </p>
 
       <div role="tablist" aria-label={pick("컬러 및 조명 워크벤치 탭", "Color & Lighting Workbench Tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => {
@@ -284,6 +287,8 @@ export function StudioP3ColorLightingPanel(
               type="button"
               role="tab"
               aria-selected={selected}
+              aria-label={tab.label}
+              title={tab.label}
               aria-controls={`${uid}-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`${TAB_BASE} ${
@@ -293,7 +298,7 @@ export function StudioP3ColorLightingPanel(
               }`}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{tab.shortLabel}</span>
             </button>
           );
         })}
@@ -407,7 +412,7 @@ export function StudioP3ColorLightingPanel(
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="flex items-center gap-1.5 text-xs font-bold text-fg">
                 <Printer className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>{pick("단행본 CMYK 소프트프루핑 · TAC 경고", "CMYK Soft-Proof & TAC Guard")}</span>
+                <span>{pick("CMYK 근사 계산 · 예제 TAC 경고", "Approximate CMYK · Demo TAC Thresholds")}</span>
               </h3>
               <span data-testid="cmyk-tac-badge" className={`rounded-md border px-2 py-0.5 text-[11px] font-bold tabular-nums ${tacBadgeTone}`}>
                 TAC {softProof.tac.totalInkPercent.toFixed(1)}% / {softProof.tac.limitPercent}%
@@ -449,7 +454,7 @@ export function StudioP3ColorLightingPanel(
               </div>
               <div className="space-y-1">
                 <div data-testid="cmyk-proof-swatch" className="h-12 rounded-md border border-line" style={{ backgroundColor: softProof.proofedOklchCss }} />
-                <div className="text-[11px] font-medium text-fg-2">{pick(`${printProfileId} 인쇄 시뮬`, `${printProfileId} Paper Proof`)}</div>
+                <div className="text-[11px] font-medium text-fg-2">{pick(`${printProfileId} 근사 예제`, `${printProfileId} Approximation`)}</div>
               </div>
             </div>
 
@@ -673,13 +678,13 @@ export function StudioP3ColorLightingPanel(
 
             <div className="space-y-3 rounded-xl border border-line bg-card p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-fg">{pick("2D 노멀맵·깊이버퍼 실시간 리라이트 프리뷰", "Live 2D Normal + Depth Relit Preview")}</span>
+                <span className="text-xs font-bold text-fg">{pick("합성 2D 노멀·깊이버퍼 CPU 조명 예제", "Synthetic 2D Normal + Depth CPU Lighting")}</span>
                 <span className="text-[11px] font-semibold text-fg-2 tabular-nums">{relightResult.width}×{relightResult.height} RGBA</span>
               </div>
               <div
                 data-testid="lighting-preview-mosaic"
                 role="img"
-                aria-label={pick("실시간 다중 동적 조명 리라이팅 프리뷰", "Real-time multi-light studio relighting preview")}
+                aria-label={pick("CPU 합성 표면 조명 예제", "CPU synthetic surface lighting example")}
                 className="grid overflow-hidden rounded-lg border border-line bg-canvas"
                 style={{ gridTemplateColumns: `repeat(${relightResult.previewMosaic.cols}, minmax(0, 1fr))` }}
               >
@@ -696,7 +701,7 @@ export function StudioP3ColorLightingPanel(
               <details className="rounded-lg border border-line bg-canvas p-2.5">
                 <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-fg">
                   <Cpu className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                  <span>{pick(`WebGPU WGSL 컴퓨트 셰이더 (${wgslCheck.lineCount}줄 · ${wgslCheck.valid ? "검증 통과" : "점검"})`, `WebGPU WGSL Compute Shader (${wgslCheck.lineCount} lines · ${wgslCheck.valid ? "Verified" : "Check"})`)}</span>
+                  <span>{pick(`미연결 WGSL 참고 코드 (${wgslCheck.lineCount}줄 · ${wgslCheck.valid ? "텍스트 검사 통과 · 컴파일 미검증" : "텍스트 점검"})`, `Unconnected WGSL Reference (${wgslCheck.lineCount} lines · ${wgslCheck.valid ? "Text checked · Not compiled" : "Text check"})`)}</span>
                 </summary>
                 <pre data-testid="wgsl-shader-preview" className="mt-2 max-h-40 overflow-auto rounded-md border border-line bg-panel p-2 text-[10px] text-fg-2 tabular-nums">
                   {DYNAMIC_STUDIO_LIGHTING_WGSL}

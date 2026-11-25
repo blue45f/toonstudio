@@ -10,6 +10,8 @@
  *   `revertAdvisorProposal`) 및 JSON 패키지 직렬화(`exportAdvisorStateJson`)
  */
 
+import { MAX_ADVISOR_DIALOGUE, MAX_ADVISOR_HISTORY, advisorText, assertAdvisorBundle, assertAdvisorJson, assertAdvisorProposal, assertAdvisorSession, assertAdvisorSnapshot, type AdvisorGeometryRules } from "./advisor-input-contract";
+
 export type CharacterArchetype = "stoic" | "energetic" | "tsundere" | "gentle" | "villain";
 export type DialogueEmotion =
   | "joy" | "anger" | "sadness" | "surprise" | "embarrassed" | "smirk" | "tired" | "determined";
@@ -237,6 +239,11 @@ const LATIN_VISEME_MAP: Readonly<Record<string, VisemeId>> = {
   a: "aa", i: "ih", y: "ih", u: "ou", e: "ee", o: "oh",
 };
 
+const ADVISOR_RULES: AdvisorGeometryRules = {
+  emotions: DIALOGUE_EMOTIONS.map((item) => item.id), visemes: ["aa", "ih", "ou", "ee", "oh", "closed"],
+  poses: Object.keys(UPPER_BODY_POSE_PRESETS), hands: Object.keys(HAND_GESTURE_PRESETS), weights: VRM_BLENDSHAPE_KEYS,
+};
+
 function round2(n: number): number { return Math.round(n * 100) / 100; }
 function clamp(n: number, min: number, max: number): number { return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : min; }
 function clamp01(n: number): number { return round2(clamp(n, 0, 1)); }
@@ -251,24 +258,21 @@ export function getArchetypeMeta(id: CharacterArchetype): CharacterArchetypeMeta
   for (const item of CHARACTER_ARCHETYPES) {
     if (item.id === id) return item;
   }
-  return { id: "stoic", labelKo: "냉정", labelEn: "Stoic", summaryKo: "표정 폭을 절제합니다.", summaryEn: "Restrains facial amplitude.", expressionScale: 0.72, mouthScale: 0.74, preferredEmotion: "determined", secondaryAffinity: "tired" };
+  throw new TypeError("지원하지 않는 캐릭터 성격입니다.");
 }
 
 export function getEmotionMeta(id: DialogueEmotion): EmotionMeta {
   for (const item of DIALOGUE_EMOTIONS) {
     if (item.id === id) return item;
   }
-  return { id: "determined", labelKo: "결의·단호", labelEn: "Determined", valence: "neutral" };
+  throw new TypeError("지원하지 않는 감정입니다.");
 }
 
 export function getPreviousCutPreset(id: PreviousCutPresetId): PreviousCutPreset {
   for (const item of PREVIOUS_CUT_PRESETS) {
     if (item.id === id) return item;
   }
-  return {
-    id: "calm-neutral", labelKo: "평온 대화 컷", labelEn: "Calm Dialogue Cut",
-    snapshot: { labelKo: "직전 컷 · 평온 대화", labelEn: "Prev Cut · Calm Dialogue", emotion: "determined", viseme: "closed", blendShapes: makeBlend({ happy: 0.12, relaxed: 0.42, blink: 0.08 }), eyebrowTiltDeg: 0, eyebrowLift: 0, gazeYaw: 0, gazePitch: 0, upperBodyPoseId: "hand-on-chin-think", handGestureId: "open-palm" },
-  };
+  throw new TypeError("지원하지 않는 직전 컷 프리셋입니다.");
 }
 
 function extractVisemeFromDialogue(dialogue: string): {
@@ -312,7 +316,10 @@ function extractVisemeFromDialogue(dialogue: string): {
 
 /** 한국어 대사 텍스트·감정 강도·캐릭터 성격 아키타입을 분석해 8대 감정과 입모양 비젬을 산출한다. */
 export function analyzeDialogueIntent(input: DialogueAnalysisInput): DialogueIntentAnalysis {
-  const dialogue = input.dialogue.trim();
+  advisorText(input.dialogue, MAX_ADVISOR_DIALOGUE);
+  if (input.intensity !== undefined && !Number.isFinite(input.intensity)) throw new RangeError("감정 강도는 유한한 수여야 합니다.");
+  const dialogue = input.dialogue;
+  const normalizedDialogue = dialogue.normalize("NFC").trim();
   const archetype: CharacterArchetype = input.archetype ?? "stoic";
   const archMeta = getArchetypeMeta(archetype);
   const effectiveIntensity = clampIntensity(input.intensity);
@@ -325,7 +332,7 @@ export function analyzeDialogueIntent(input: DialogueAnalysisInput): DialogueInt
   scores[archMeta.preferredEmotion] += 0.35;
   scores[archMeta.secondaryAffinity] += 0.15;
 
-  const lower = dialogue.toLowerCase();
+  const lower = normalizedDialogue.toLowerCase();
   for (const emotion of DIALOGUE_EMOTIONS) {
     for (const kw of EMOTION_LEXICON[emotion.id]) {
       if (lower.includes(kw)) {
@@ -336,29 +343,29 @@ export function analyzeDialogueIntent(input: DialogueAnalysisInput): DialogueInt
   }
 
   let punctuationEnergy = 0;
-  if (/[?!]{2,}/u.test(dialogue) && dialogue.includes("?") && dialogue.includes("!")) {
+  if (/[?!]{2,}/u.test(normalizedDialogue) && normalizedDialogue.includes("?") && normalizedDialogue.includes("!")) {
     scores.surprise += 1.6; scores.anger += 0.9; scores.embarrassed += 0.5;
     punctuationEnergy += 2; signals.push("부호(?!)");
-  } else if (/!{2,}/u.test(dialogue)) {
+  } else if (/!{2,}/u.test(normalizedDialogue)) {
     scores.anger += 1.25; scores.determined += 1.1; scores.surprise += 0.75; scores.joy += 0.45;
     punctuationEnergy += 2; signals.push("강조감탄(!!)");
-  } else if (dialogue.includes("!")) {
+  } else if (normalizedDialogue.includes("!")) {
     scores.determined += 0.45; scores.joy += 0.45; scores.anger += 0.35; scores.surprise += 0.35;
     punctuationEnergy += 1; signals.push("감탄부호(!)");
   }
-  if (/\?{2,}/u.test(dialogue)) {
+  if (/\?{2,}/u.test(normalizedDialogue)) {
     scores.surprise += 1.15; scores.embarrassed += 0.45; punctuationEnergy += 1; signals.push("연속의문(??)");
-  } else if (dialogue.includes("?")) {
+  } else if (normalizedDialogue.includes("?")) {
     scores.surprise += 0.35; scores.smirk += 0.25; signals.push("의문부호(?)");
   }
-  if (/(?:\.{2,}|…)/u.test(dialogue)) {
+  if (/(?:\.{2,}|…)/u.test(normalizedDialogue)) {
     scores.sadness += 0.85; scores.tired += 0.95; scores.embarrassed += 0.65;
     punctuationEnergy -= 1; signals.push("말줄임표(...)");
   }
-  if (dialogue.includes("~")) {
+  if (normalizedDialogue.includes("~")) {
     scores.joy += 0.95; scores.smirk += 0.6; signals.push("물결표(~)");
   }
-  if (/(?:^|\s)(?:아|어|그|저|으),/u.test(dialogue)) {
+  if (/(?:^|\s)(?:아|어|그|저|으),/u.test(normalizedDialogue)) {
     scores.embarrassed += 1.3; scores.surprise += 0.35; signals.push("더듬기(,)");
   }
 
@@ -368,7 +375,7 @@ export function analyzeDialogueIntent(input: DialogueAnalysisInput): DialogueInt
   const top = ranked[0] ?? { id: "determined" as DialogueEmotion, score: 1 };
   const second = ranked[1] ?? { id: "joy" as DialogueEmotion, score: 0.5 };
   const total = ranked.reduce((acc, item) => acc + item.score, 0);
-  const visemeMatch = extractVisemeFromDialogue(dialogue);
+  const visemeMatch = extractVisemeFromDialogue(normalizedDialogue);
 
   return {
     dialogue, archetype, effectiveIntensity,
@@ -448,6 +455,8 @@ export function checkExpressionContinuity(
   previousCut: CharacterCutSnapshot,
   target: CharacterAdjustmentProposal,
 ): ExpressionContinuityReport {
+  assertAdvisorSnapshot(previousCut, ADVISOR_RULES);
+  assertAdvisorProposal(target, ADVISOR_RULES);
   const emotionKeys = ["happy", "angry", "sad", "surprised", "relaxed"] as const;
   let l1Sum = 0;
   for (const key of emotionKeys) l1Sum += Math.abs(previousCut.blendShapes[key] - target.blendShapes[key]);
@@ -604,6 +613,7 @@ export function recommendCharacterAdjustments(
 
 /** 제안안으로부터 컷 스냅샷을 생성한다. */
 export function snapshotFromProposal(proposal: CharacterAdjustmentProposal): CharacterCutSnapshot {
+  assertAdvisorProposal(proposal, ADVISOR_RULES);
   return {
     labelKo: `적용안 · ${proposal.titleKo}`, labelEn: `Applied · ${proposal.titleEn}`,
     emotion: proposal.emotion, viseme: proposal.viseme, blendShapes: { ...proposal.blendShapes },
@@ -615,10 +625,12 @@ export function snapshotFromProposal(proposal: CharacterAdjustmentProposal): Cha
 
 /** 비파괴 적용·되돌리기 어시스턴트 세션의 초기 상태를 생성한다. */
 export function createAdvisorSessionState(baseline?: CharacterCutSnapshot, previousCut?: CharacterCutSnapshot): AdvisorApplyState {
+  if (baseline) assertAdvisorSnapshot(baseline, ADVISOR_RULES);
+  if (previousCut) assertAdvisorSnapshot(previousCut, ADVISOR_RULES);
   const defaultCut = getPreviousCutPreset("calm-neutral").snapshot;
   const resolvedBaseline: CharacterCutSnapshot = baseline
     ? { ...baseline, blendShapes: { ...baseline.blendShapes } }
-    : { ...defaultCut, labelKo: "원본 컷 (작가 기본값)", labelEn: "Original Baseline Cut" };
+    : { ...defaultCut, blendShapes: { ...defaultCut.blendShapes }, labelKo: "합성 기준 컷 (예제)", labelEn: "Synthetic Baseline Cut" };
   const resolvedPrev: CharacterCutSnapshot = previousCut
     ? { ...previousCut, blendShapes: { ...previousCut.blendShapes } }
     : { ...defaultCut, blendShapes: { ...defaultCut.blendShapes } };
@@ -632,6 +644,8 @@ export function createAdvisorSessionState(baseline?: CharacterCutSnapshot, previ
 
 /** 추천안을 실제 원본·적용 상태를 건드리지 않고 미리보기 상태로 토글한다. */
 export function previewAdvisorProposal(state: AdvisorApplyState, proposalId: string | null): AdvisorApplyState {
+  assertAdvisorSession(state, ADVISOR_RULES);
+  if (proposalId !== null) { advisorText(proposalId, 256); if (!proposalId.trim()) throw new TypeError("제안 ID가 필요합니다."); }
   const nextPreviewId = state.previewingProposalId === proposalId ? null : proposalId;
   const nextStatus: AdvisorSessionStatus = nextPreviewId ? "previewing" : state.appliedProposalId ? "applied" : "idle";
   return { ...state, previewingProposalId: nextPreviewId, status: nextStatus };
@@ -639,6 +653,8 @@ export function previewAdvisorProposal(state: AdvisorApplyState, proposalId: str
 
 /** 작가 승인으로 추천안을 1클릭 비파괴 적용한다(baseline 원본은 항상 보존). */
 export function applyAdvisorProposal(state: AdvisorApplyState, proposal: CharacterAdjustmentProposal): AdvisorApplyState {
+  assertAdvisorSession(state, ADVISOR_RULES); assertAdvisorProposal(proposal, ADVISOR_RULES);
+  if (state.history.length >= MAX_ADVISOR_HISTORY - 1) throw new RangeError("되돌리기 여유를 포함한 예제 이력 상한에 도달했습니다.");
   const nextTransition: AdvisorStateTransition = {
     step: state.history.length + 1, action: "apply", proposalId: proposal.id, labelKo: `${proposal.titleKo} 적용`,
   };
@@ -650,6 +666,7 @@ export function applyAdvisorProposal(state: AdvisorApplyState, proposal: Charact
 
 /** 적용된 표정·포즈·손 모양을 원본(baseline) 상태로 즉시 되돌린다. */
 export function revertAdvisorProposal(state: AdvisorApplyState): AdvisorApplyState {
+  assertAdvisorSession(state, ADVISOR_RULES);
   if (!state.canRevert && state.appliedProposalId === null) {
     return { ...state, previewingProposalId: null, status: "idle" };
   }
@@ -665,6 +682,7 @@ export function revertAdvisorProposal(state: AdvisorApplyState): AdvisorApplySta
 
 /** 직전 컷 참조 스냅샷을 갱신한다(원본·현재 적용 상태 보존). */
 export function updateAdvisorPreviousCut(state: AdvisorApplyState, previousCut: CharacterCutSnapshot): AdvisorApplyState {
+  assertAdvisorSession(state, ADVISOR_RULES); assertAdvisorSnapshot(previousCut, ADVISOR_RULES);
   return { ...state, previousCut: { ...previousCut, blendShapes: { ...previousCut.blendShapes } } };
 }
 
@@ -674,8 +692,12 @@ export function exportAdvisorStateJson(params: {
   readonly session: AdvisorApplyState;
 }): string {
   const { bundle, session } = params;
+  assertAdvisorJson(params); assertAdvisorSession(session, ADVISOR_RULES);
+  const canonical = recommendCharacterAdjustments({ dialogue: bundle.analysis.dialogue, archetype: bundle.analysis.archetype, intensity: bundle.analysis.effectiveIntensity }, bundle.continuityCheck === null ? null : session.previousCut);
+  assertAdvisorBundle(bundle, canonical, ADVISOR_RULES);
   return JSON.stringify({
     schemaVersion: "toonstudio.char-expression-pose-advisor.v1",
+    dataSourceKind: "heuristic-estimate", actualCharacterApplied: false, vrmFileConverted: false, persisted: false, authorIdentityVerified: false,
     nonDestructivePolicy: "author-approval-required",
     analysis: bundle.analysis,
     session: {

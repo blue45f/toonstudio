@@ -294,7 +294,8 @@ describe("Wave 41F: 프로 단축키 리매핑 · 왼손/한손 태블릿 미러
   it("10. auditStudioAccessibilityBudget은 Calm Atelier AAA 및 한국어 난독 친화 프리셋을 AAA 100점으로 판정한다", () => {
     const aaaReport = auditStudioAccessibilityBudget(ACCESSIBILITY_AUDIT_PRESETS["atelier-aaa"].input);
     expect(aaaReport.grade).toBe("AAA");
-    expect(aaaReport.passesW3cAaa).toBe(true);
+    expect(aaaReport.passesProvidedAaaChecks).toBe(true);
+    expect(aaaReport.passesW3cAaa).toBe(false);
     expect(aaaReport.focusRingPassesAaa).toBe(true);
     expect(aaaReport.passesDyslexiaFriendly).toBe(true);
     expect(aaaReport.overallScore).toBe(100);
@@ -329,7 +330,8 @@ describe("Wave 41F: 프로 단축키 리매핑 · 왼손/한손 태블릿 미러
     };
     const aaReport = auditStudioAccessibilityBudget(aaOnlyInput);
     expect(aaReport.grade).toBe("AA");
-    expect(aaReport.passesW3cAa).toBe(true);
+    expect(aaReport.passesProvidedAaChecks).toBe(true);
+    expect(aaReport.passesW3cAa).toBe(false);
     expect(aaReport.passesW3cAaa).toBe(false);
   });
 
@@ -340,7 +342,8 @@ describe("Wave 41F: 프로 단축키 리매핑 · 왼손/한손 태블릿 미러
     const fixed = applyAaaRemediation(broken);
     const after = auditStudioAccessibilityBudget(fixed);
     expect(after.grade).toBe("AAA");
-    expect(after.passesW3cAaa).toBe(true);
+    expect(after.passesProvidedAaaChecks).toBe(true);
+    expect(after.passesW3cAaa).toBe(false);
     expect(after.passesDyslexiaFriendly).toBe(true);
     expect(after.touchTargetSummary.minWidthPx).toBeGreaterThanOrEqual(44);
     expect(after.touchTargetSummary.minHeightPx).toBeGreaterThanOrEqual(44);
@@ -424,7 +427,7 @@ describe("Wave 41F: 프로 단축키 리매핑 · 왼손/한손 태블릿 미러
 
     // 자동 정리 버튼 클릭 -> 충돌 0건 해소
     fireEvent.click(screen.getByTestId("btn-auto-resolve-conflicts"));
-    expect(screen.getByTestId("shortcut-conflict-banner").textContent).toContain("충돌 0건 안전");
+    expect(screen.getByTestId("shortcut-conflict-banner").textContent).toContain("예제 충돌 0건");
   });
 
   it("17. 탭 1 JSON 내보내기·가져오기 검증 및 잘못된 JSON 오류 피드백이 정상 동작한다", () => {
@@ -459,7 +462,7 @@ describe("Wave 41F: 프로 단축키 리매핑 · 왼손/한손 태블릿 미러
 
     fireEvent.click(screen.getByTestId("hand-mode-left-handed"));
     expect(onPlan).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("metric-mirror-state").textContent).toContain("우측 조작 미러");
+    expect(screen.getByTestId("metric-mirror-state").textContent).toContain("우측 배치 예제");
     const afterRailX = Number(screen.getByTestId("svg-slot-toolRail").getAttribute("x"));
     expect(afterRailX).toBeGreaterThan(beforeRailX + 180);
 
@@ -488,7 +491,7 @@ describe("Wave 41F: 프로 단축키 리매핑 · 왼손/한손 태블릿 미러
     unmount();
 
     render(<StudioErgonomicsMasterPanel locale="en" initialTab="accessibility" />);
-    expect(screen.getByText(/WCAG 2\.2 AAA & Korean Readability Presets/)).toBeTruthy();
+    expect(screen.getByText(/Readability Input Presets/)).toBeTruthy();
     expect(screen.getByTestId("korean-typography-preview")).toBeTruthy();
   });
 

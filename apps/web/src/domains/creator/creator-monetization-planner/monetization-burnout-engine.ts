@@ -114,16 +114,17 @@ export interface KoreanCreatorSettlementInput {
   readonly grossContractAmountKrw: number;
   readonly deductibleExpenseKrw: number;
   readonly vatContractMode: VatContractMode;
+  readonly nationalIncomeTaxRatePct?: number; readonly localIncomeTaxRatePct?: number; readonly vatRatePct?: number;
 }
 
 export interface FreelancerWithholdingBreakdown {
-  readonly withholdingRatePct: 3.3; readonly nationalIncomeTaxRatePct: 3.0; readonly localIncomeTaxRatePct: 0.3;
+  readonly withholdingRatePct: number; readonly nationalIncomeTaxRatePct: number; readonly localIncomeTaxRatePct: number;
   readonly grossAmountKrw: number; readonly nationalIncomeTaxKrw: number; readonly localIncomeTaxKrw: number;
   readonly totalWithholdingTaxKrw: number; readonly immediateNetPayoutKrw: number; readonly netAfterExpensesKrw: number;
 }
 
 export interface BusinessVatBreakdown {
-  readonly vatRatePct: 10.0; readonly vatContractMode: VatContractMode;
+  readonly vatRatePct: number; readonly vatContractMode: VatContractMode;
   readonly supplyAmountKrw: number; readonly outputVatKrw: number; readonly invoiceTotalKrw: number;
   readonly inputVatCreditKrw: number; readonly netVatPayableKrw: number; readonly vatRefundKrw: number;
   readonly immediateCashInflowKrw: number; readonly netAfterVatSettlementKrw: number;
@@ -276,6 +277,7 @@ export const DEFAULT_KOREAN_SETTLEMENT_INPUT: KoreanCreatorSettlementInput = {
   grossContractAmountKrw: 4_000_000,
   deductibleExpenseKrw: 880_000,
   vatContractMode: "vat-exclusive",
+  nationalIncomeTaxRatePct: 3, localIncomeTaxRatePct: 0.3, vatRatePct: 10,
 };
 
 export const PRODUCTION_STAGE_CATALOG: readonly ProductionStageSpec[] = [
@@ -345,7 +347,7 @@ export const BURNOUT_SCENARIO_PRESETS: readonly BurnoutScenarioPreset[] = [
 ];
 
 function sanitizeNumber(value: number, fallback: number, min: number, max: number): number {
-  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+  return Math.min(max, Math.max(min, Number.isFinite(value) ? value : fallback));
 }
 
 function roundTo(value: number, digits: number): number {
@@ -599,25 +601,29 @@ export function calculateGoodsUnitEconomics(input: GoodsUnitEconomicsInput): Goo
   };
 }
 
-/** 한국 창작자 정산 시 프리랜서 3.3% 원천징수와 일반과세 사업자 부가세 10% 실수령액을 비교한다. */
+/** 입력 세율과 전액 공제 경비 가정으로 두 현금흐름을 비교한다. 기본값은 법적 적용 여부를 보증하지 않는다. */
 export function calculateKoreanCreatorSettlement(input: KoreanCreatorSettlementInput): KoreanCreatorSettlementResult {
   const vatContractMode: VatContractMode = input.vatContractMode === "vat-inclusive" ? "vat-inclusive" : "vat-exclusive";
+  const nationalIncomeTaxRatePct = sanitizeNumber(input.nationalIncomeTaxRatePct ?? 3, 3, 0, 100);
+  const localIncomeTaxRatePct = sanitizeNumber(input.localIncomeTaxRatePct ?? 0.3, 0.3, 0, 100 - nationalIncomeTaxRatePct);
+  const vatRatePct = sanitizeNumber(input.vatRatePct ?? 10, 10, 0, 100);
+  const withholdingRatePct = roundTo(nationalIncomeTaxRatePct + localIncomeTaxRatePct, 2);
   const sanitizedInput: KoreanCreatorSettlementInput = {
     grossContractAmountKrw: Math.round(sanitizeNumber(input.grossContractAmountKrw, 4_000_000, 0, 10_000_000_000)),
     deductibleExpenseKrw: Math.round(sanitizeNumber(input.deductibleExpenseKrw, 0, 0, 10_000_000_000)),
-    vatContractMode,
+    vatContractMode, nationalIncomeTaxRatePct, localIncomeTaxRatePct, vatRatePct,
   };
 
-  const nationalIncomeTaxKrw = Math.round(sanitizedInput.grossContractAmountKrw * 0.03);
-  const localIncomeTaxKrw = Math.round(sanitizedInput.grossContractAmountKrw * 0.003);
+  const nationalIncomeTaxKrw = Math.round(sanitizedInput.grossContractAmountKrw * nationalIncomeTaxRatePct / 100);
+  const localIncomeTaxKrw = Math.min(Math.round(sanitizedInput.grossContractAmountKrw * localIncomeTaxRatePct / 100), sanitizedInput.grossContractAmountKrw - nationalIncomeTaxKrw);
   const totalWithholdingTaxKrw = nationalIncomeTaxKrw + localIncomeTaxKrw;
   const immediateNetPayoutKrw = sanitizedInput.grossContractAmountKrw - totalWithholdingTaxKrw;
   const freelancerNetAfterExpensesKrw = immediateNetPayoutKrw - sanitizedInput.deductibleExpenseKrw;
 
-  const supplyAmountKrw = vatContractMode === "vat-exclusive" ? sanitizedInput.grossContractAmountKrw : Math.round(sanitizedInput.grossContractAmountKrw / 1.1);
-  const outputVatKrw = vatContractMode === "vat-exclusive" ? Math.round(supplyAmountKrw * 0.1) : sanitizedInput.grossContractAmountKrw - supplyAmountKrw;
+  const supplyAmountKrw = vatContractMode === "vat-exclusive" ? sanitizedInput.grossContractAmountKrw : Math.round(sanitizedInput.grossContractAmountKrw / (1 + vatRatePct / 100));
+  const outputVatKrw = vatContractMode === "vat-exclusive" ? Math.round(supplyAmountKrw * vatRatePct / 100) : sanitizedInput.grossContractAmountKrw - supplyAmountKrw;
   const invoiceTotalKrw = supplyAmountKrw + outputVatKrw;
-  const inputVatCreditKrw = Math.round(sanitizedInput.deductibleExpenseKrw / 11);
+  const inputVatCreditKrw = Math.round(sanitizedInput.deductibleExpenseKrw * vatRatePct / (100 + vatRatePct));
   const netVatPayableKrw = Math.max(0, outputVatKrw - inputVatCreditKrw);
   const vatRefundKrw = Math.max(0, inputVatCreditKrw - outputVatKrw);
   const netAfterVatSettlementKrw = invoiceTotalKrw - netVatPayableKrw + vatRefundKrw;
@@ -632,36 +638,36 @@ export function calculateKoreanCreatorSettlement(input: KoreanCreatorSettlementI
 
   if (postVatNetAfterExpensesDiffKrw > 10_000) {
     favoredCashflowStructure = "business-vat-10";
-    summaryKo = `부가세 정산·경비 차감 후 사업자 10% 구조가 프리랜서 3.3% 대비 ${formatKrw(postVatNetAfterExpensesDiffKrw)} 유리합니다(추정). 납부 부가세 ${formatKrw(netVatPayableKrw)}는 별도 유보하세요.`;
-    summaryEn = `After VAT settlement and expenses, Business VAT 10% retains ${formatKrw(postVatNetAfterExpensesDiffKrw)} more than Freelancer 3.3% (estimate). Reserve ${formatKrw(netVatPayableKrw)} for VAT filing.`;
+    summaryKo = `부가세 정산·경비 차감 후 부가세 ${vatRatePct}% 가정이 원천징수 ${withholdingRatePct}% 가정 대비 ${formatKrw(postVatNetAfterExpensesDiffKrw)} 유리합니다(추정). 납부 부가세 ${formatKrw(netVatPayableKrw)}는 별도 유보하세요.`;
+    summaryEn = `After VAT settlement and expenses, Assumed VAT ${vatRatePct}% retains ${formatKrw(postVatNetAfterExpensesDiffKrw)} more than assumed withholding ${withholdingRatePct}% (estimate). Reserve ${formatKrw(netVatPayableKrw)} for VAT filing.`;
   } else if (postVatNetAfterExpensesDiffKrw < -10_000) {
     favoredCashflowStructure = "freelancer-3.3";
-    summaryKo = `부가세 포함 총액 계약에서는 프리랜서 3.3% 즉시 정산이 사업자 부가세 차감 후보다 ${formatKrw(Math.abs(postVatNetAfterExpensesDiffKrw))} 높습니다(추정). 부가세 별도 조건 협상을 검토하세요.`;
-    summaryEn = `Under a VAT-inclusive cap, Freelancer 3.3% retains ${formatKrw(Math.abs(postVatNetAfterExpensesDiffKrw))} more post-VAT (estimate). Consider negotiating VAT-exclusive billing.`;
+    summaryKo = `부가세 포함 총액 계약에서는 원천징수 ${withholdingRatePct}% 가정의 즉시 현금이 사업자 부가세 차감 후보다 ${formatKrw(Math.abs(postVatNetAfterExpensesDiffKrw))} 높습니다(추정). 부가세 별도 조건 협상을 검토하세요.`;
+    summaryEn = `Under a VAT-inclusive cap, Assumed withholding ${withholdingRatePct}% retains ${formatKrw(Math.abs(postVatNetAfterExpensesDiffKrw))} more post-VAT (estimate). Consider negotiating VAT-exclusive billing.`;
   }
 
   return {
     dataSourceKind: "estimate",
     provenance: createEstimateProvenance(
-      "단순 현금흐름 비교용 세무 추정치입니다. 5월 종합소득세 누진세율·간이과세·면세(출판) 여부는 세무사 확인이 필요합니다.",
-      "Cashflow estimate for reference only. Actual May income tax brackets, simplified VAT, or publishing exemptions require a tax advisor.",
+      "입력 세율·경비 전액 공제 가정에 따른 현금흐름 예제입니다. 기본값은 현행 세법이나 적용 자격을 확인한 값이 아닙니다. 실제 신고는 별도 확인하세요.",
+      "Cashflow example from assumed rates and fully eligible expenses. Defaults do not verify current law or eligibility; confirm actual filings separately.",
     ),
     sanitizedInput,
     freelancer: {
-      withholdingRatePct: 3.3, nationalIncomeTaxRatePct: 3.0, localIncomeTaxRatePct: 0.3,
+      withholdingRatePct, nationalIncomeTaxRatePct, localIncomeTaxRatePct,
       grossAmountKrw: sanitizedInput.grossContractAmountKrw, nationalIncomeTaxKrw, localIncomeTaxKrw,
       totalWithholdingTaxKrw, immediateNetPayoutKrw, netAfterExpensesKrw: freelancerNetAfterExpensesKrw,
     },
     businessVat: {
-      vatRatePct: 10.0, vatContractMode, supplyAmountKrw, outputVatKrw, invoiceTotalKrw,
+      vatRatePct, vatContractMode, supplyAmountKrw, outputVatKrw, invoiceTotalKrw,
       inputVatCreditKrw, netVatPayableKrw, vatRefundKrw,
       immediateCashInflowKrw: invoiceTotalKrw, netAfterVatSettlementKrw, netAfterVatAndExpensesKrw,
     },
     comparison: {
       immediateCashDiffKrw, postVatNetAfterExpensesDiffKrw, vatSetAsideReserveKrw: netVatPayableKrw,
       favoredCashflowStructure, summaryKo, summaryEn,
-      taxDisclaimerKo: "3.3% 원천징수는 선납 세액이며 5월 종합소득세 확정신고 시 환급·추가납부가 발생합니다. 사업자 부가세는 신고 납부 유보금으로 관리하세요.",
-      taxDisclaimerEn: "3.3% withholding is a prepaid income tax reconciled in May. Set aside collected VAT separately for filing.",
+      taxDisclaimerKo: "원천징수와 부가세의 단순 현금흐름 비교입니다. 소득세 확정액·면세·공제 자격·환급 시기는 계산하지 않습니다.",
+      taxDisclaimerEn: "Compares assumed withholding and VAT cashflows only; final income tax, exemptions, credit eligibility and refund timing are not calculated.",
     },
   };
 }

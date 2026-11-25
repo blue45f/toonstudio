@@ -18,6 +18,7 @@ export {
   evaluateCompositionHarmony,
   generateGoldenSpiralPathPoints,
   projectWorldPointToFrame,
+  reflectCameraAcrossAxis,
   type AxisCrossingViolation,
   type AxisHemisphereSide,
   type BokehSeparationGrade,

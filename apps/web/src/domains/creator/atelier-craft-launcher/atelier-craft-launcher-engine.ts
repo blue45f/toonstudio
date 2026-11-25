@@ -1,8 +1,13 @@
+import { CRAFT_STATION_CATALOG } from "./atelier-craft-catalog";
+import { assertCount, assertPinState } from "./launcher-input-contract";
+
+export { CRAFT_STATION_CATALOG } from "./atelier-craft-catalog";
+
 /**
  * Wave 43D — 아틀리에 프로 도구 퀵 런처 (Atelier Craft Quick-Jump Showcase) 순수 엔진.
  *
- * - 웨이브 36~42로 구축된 40종+ 전문가 엔진과 46종 사전 베이크 아틀리에 WebP 에셋을
- *   8대 창작 워크플로우 스테이션으로 정리한다.
+ * - 계산 예제·관련 도구의 정적 설명과 사전 제작 참고 그림을 8대 경로로 정리한다.
+ *   엔진 수·장치 지원·원고 저장·출력의 실제 실행 상태를 검증하지 않는다.
  * - 브라우저 전역·Web Storage에 의존하지 않는 100% 결정론 순수 함수만 제공한다.
  */
 
@@ -46,6 +51,7 @@ export interface CraftStageSpec {
 
 export interface CraftStationSpec {
   readonly id: CraftStationId;
+  readonly scope: "catalog-reference";
   readonly order: number;
   readonly titleKo: string;
   readonly titleEn: string;
@@ -56,6 +62,8 @@ export interface CraftStationSpec {
   readonly stageLabelEn: string;
   readonly secondaryStageIds: readonly CraftWorkflowStageId[];
   readonly href: CraftRouteHref;
+  readonly routeMeaningKo: string;
+  readonly routeMeaningEn: string;
   readonly thumbnailSrc: CraftAtelierAssetPath;
   readonly secondaryPreviewSrc: CraftAtelierAssetPath;
   readonly thumbnailAltKo: string;
@@ -64,9 +72,6 @@ export interface CraftStationSpec {
   readonly secondaryAltEn: string;
   readonly shortcutHint: string;
   readonly shortcutKey: string;
-  readonly estimatedStartSeconds: number;
-  readonly estimatedStartTimeKo: string;
-  readonly estimatedStartTimeEn: string;
   readonly waveRange: string;
   readonly engineCount: number;
   readonly highlightsKo: readonly [string, string, string];
@@ -98,6 +103,8 @@ export interface RecommendCraftStationsOptions {
 }
 
 export interface CraftLauncherPinState {
+  readonly storageKind: "in-memory-preferences";
+  readonly persistent: false;
   readonly pinnedIds: readonly CraftStationId[];
   readonly maxPinned: number;
   readonly lastToggledId: CraftStationId | null;
@@ -146,256 +153,6 @@ export const CRAFT_WORKFLOW_STAGES: readonly CraftStageSpec[] = [
   },
 ] as const;
 
-export const CRAFT_STATION_CATALOG: readonly CraftStationSpec[] = [
-  {
-    id: "drawing-physical-ink", order: 1,
-    titleKo: "드로잉·물리잉크", titleEn: "Drawing · Physical Ink",
-    subtitleKo: "한지·수채 번짐·120Hz 필압과 액션 벡터 FX",
-    subtitleEn: "Paper grain, watercolor bleed, 120Hz ink, and vector FX",
-    stageId: "drawing", stageLabelKo: "작화", stageLabelEn: "Drawing", secondaryStageIds: ["conti"],
-    href: "/studio/canvas",
-    thumbnailSrc: "/assets/atelier/studio-craft/craft-gravity-watercolor.webp",
-    secondaryPreviewSrc: "/assets/atelier/cinema-ergo/ergo-material-folio.webp",
-    thumbnailAltKo: "중력 수채 번짐과 물리 잉크 브러시 아틀리에 시연",
-    thumbnailAltEn: "Gravity watercolor bleed and physical ink atelier preview",
-    secondaryAltKo: "한지·린넨·대리석 절차 재질 견본 폴리오",
-    secondaryAltEn: "Korean hanji, linen, and marble procedural material folio",
-    shortcutHint: "Alt+1", shortcutKey: "1",
-    estimatedStartSeconds: 15, estimatedStartTimeKo: "15초 시작", estimatedStartTimeEn: "15s start",
-    waveRange: "Wave 36–42", engineCount: 8,
-    highlightsKo: [
-      "종이 결·물감 번짐 물리 수채·잉크 브러시",
-      "120Hz 필압 추적과 왼손 미러 작업대 전환",
-      "액션 집중선·로맨스 반짝임 6종 벡터 FX 생성",
-    ],
-    highlightsEn: [
-      "Physical watercolor bleed and ink brushes over paper grain",
-      "120Hz stylus telemetry with ambidextrous desk mirroring",
-      "6 procedural action and romance vector FX generators",
-    ],
-    keywords: [
-      "드로잉", "물리잉크", "브러시", "수채화", "펜선", "한지", "벡터FX", "집중선", "작화",
-      "canvas", "drawing", "ink", "brush", "watercolor", "fx",
-    ],
-  },
-  {
-    id: "character-3d-hair", order: 2,
-    titleKo: "3D 캐릭터·헤어", titleEn: "3D Character · Hair",
-    subtitleKo: "신장·두신 턴테이블·VRM 헤어 이식과 52종 표정",
-    subtitleEn: "Height turntable, VRM hair transplant, and 52 expressions",
-    stageId: "3d", stageLabelKo: "3D", stageLabelEn: "3D", secondaryStageIds: ["drawing"],
-    href: "/studio/character",
-    thumbnailSrc: "/assets/atelier/studio-craft/craft-height-turntable.webp",
-    secondaryPreviewSrc: "/assets/atelier/studio-craft/craft-smartwatch-dial.webp",
-    thumbnailAltKo: "3D 캐릭터 신장 비율 턴테이블과 헤드 모델링 스튜디오",
-    thumbnailAltEn: "3D character height ratio turntable preview",
-    secondaryAltKo: "손목 다이얼 정밀 포즈·브러시 퀵 컨트롤러",
-    secondaryAltEn: "Precision dial controller for pose and brush adjustments",
-    shortcutHint: "Alt+2", shortcutKey: "2",
-    estimatedStartSeconds: 30, estimatedStartTimeKo: "30초 시작", estimatedStartTimeEn: "30s start",
-    waveRange: "Wave 37–41", engineCount: 5,
-    highlightsKo: [
-      "신장·두신 비율 조절과 360도 턴테이블 점검",
-      "VRM 헤어 이식·셀 셰이더 자동 재질 매칭",
-      "관절 가동 범위 보정과 표정 52종 포즈 저장",
-    ],
-    highlightsEn: [
-      "Height and head-ratio tuning with 360-degree turntable check",
-      "VRM hair transplant with automatic cel-shader transfer",
-      "Natural joint constraints and 52 expression pose presets",
-    ],
-    keywords: [
-      "캐릭터", "헤어", "신장", "턴테이블", "포즈", "표정", "셰이더", "3D",
-      "character", "vrm", "hair", "pose", "rig", "turntable",
-    ],
-  },
-  {
-    id: "bg3d-solar-lighting", order: 3,
-    titleKo: "3D 배경·태양광", titleEn: "3D Background · Solar Rig",
-    subtitleKo: "서울 위도 물리 하늘·3점 조명 릭과 LT 선화 추출",
-    subtitleEn: "Seoul solar arc, 3-point studio rig, and LT line extraction",
-    stageId: "3d", stageLabelKo: "3D", stageLabelEn: "3D", secondaryStageIds: ["conti"],
-    href: "/studio/bg3d",
-    thumbnailSrc: "/assets/atelier/studio-craft/studio-relight-triptych.webp",
-    secondaryPreviewSrc: "/assets/atelier/studio-craft/craft-lt-courtyard-tone.webp",
-    thumbnailAltKo: "주간·골든아워·야간 3분할 3D 배경 리라이트 트립틱",
-    thumbnailAltEn: "Daylight, golden-hour, and night 3D relight triptych",
-    secondaryAltKo: "3D 중정 배경 LT 선화 및 스크린톤 추출 미리보기",
-    secondaryAltEn: "3D courtyard LT line-art and screentone extraction preview",
-    shortcutHint: "Alt+3", shortcutKey: "3",
-    estimatedStartSeconds: 30, estimatedStartTimeKo: "30초 시작", estimatedStartTimeEn: "30s start",
-    waveRange: "Wave 38–42", engineCount: 5,
-    highlightsKo: [
-      "서울 위도 태양 궤적과 계절별 물리 하늘 돔",
-      "키·필·림 3점 조명 릭과 2D 컷 리라이트 브리지",
-      "3D 배경 원클릭 LT 선화·스크린톤 6패스 추출",
-    ],
-    highlightsEn: [
-      "Seoul latitude solar arc and seasonal physical sky dome",
-      "Key, fill, and rim 3-point rig with 2D cut relight bridge",
-      "One-click 6-pass LT line-art and screentone extraction",
-    ],
-    keywords: [
-      "배경", "태양광", "조명", "하늘", "리라이트", "선화", "스크린톤", "서울", "3D",
-      "bg3d", "lighting", "solar", "hdri", "lt", "relight",
-    ],
-  },
-  {
-    id: "virtual-studio-collab", order: 4,
-    titleKo: "가상 스튜디오 협업", titleEn: "Virtual Studio Collab",
-    subtitleKo: "6종 공방 공간·실시간 커서·어시스턴트 역할 큐",
-    subtitleEn: "6 themed rooms, live cursors, and role-based task queues",
-    stageId: "collab", stageLabelKo: "협업", stageLabelEn: "Collab", secondaryStageIds: ["conti"],
-    href: "/studio/space",
-    thumbnailSrc: "/assets/atelier/cinema-ergo/ergo-ambidextrous-desk.webp",
-    secondaryPreviewSrc: "/assets/atelier/studio-craft/studio-storyboard-scroll.webp",
-    thumbnailAltKo: "양손 인체공학 협업 데스크와 공동 작업 공간",
-    thumbnailAltEn: "Ambidextrous studio desk for live team collaboration",
-    secondaryAltKo: "팀 검수용 세로 스크롤 스토리보드 흐름판",
-    secondaryAltEn: "Vertical scroll storyboard strip for team review",
-    shortcutHint: "Alt+4", shortcutKey: "4",
-    estimatedStartSeconds: 20, estimatedStartTimeKo: "20초 시작", estimatedStartTimeEn: "20s start",
-    waveRange: "Wave 38–41", engineCount: 5,
-    highlightsKo: [
-      "6종 테마 공방 아바타 착석과 공동 원고 검수",
-      "실시간 커서·코멘트 핀·안전 영역 동시 확인",
-      "팀 뽀모도로 타이머와 역할별 마감 큐 동기화",
-    ],
-    highlightsEn: [
-      "6 themed studio rooms with avatars and shared page review",
-      "Live cursors, comment pins, and safe-zone overlays",
-      "Shared Pomodoro timer synced with role task queues",
-    ],
-    keywords: [
-      "가상", "스튜디오", "협업", "공방", "아바타", "검수", "커서", "뽀모도로", "팀",
-      "space", "collab", "virtual", "review", "room",
-    ],
-  },
-  {
-    id: "webtoon-cut-lettering-cinema", order: 5,
-    titleKo: "웹툰 컷·식자·시네마", titleEn: "Webtoon Cut · Lettering · Cinema",
-    subtitleKo: "한국어 어절 말풍선·180도 법칙·세로 시선 감독",
-    subtitleEn: "Korean optical balloons, 180-degree rule, and scroll eye-flow",
-    stageId: "conti", stageLabelKo: "콘티", stageLabelEn: "Storyboard", secondaryStageIds: ["drawing"],
-    href: "/studio/comic",
-    thumbnailSrc: "/assets/atelier/cinema-ergo/cinema-balloon-ink.webp",
-    secondaryPreviewSrc: "/assets/atelier/cinema-ergo/cinema-lens-golden.webp",
-    thumbnailAltKo: "한국어 광학 말풍선 식자와 먹선 효과음 시연",
-    thumbnailAltEn: "Korean optical speech-balloon lettering and ink SFX preview",
-    secondaryAltKo: "시네마 렌즈 화각과 황금나선 구도 가이드",
-    secondaryAltEn: "Cinema focal-length lens and golden spiral guide",
-    shortcutHint: "Alt+5", shortcutKey: "5",
-    estimatedStartSeconds: 20, estimatedStartTimeKo: "20초 시작", estimatedStartTimeEn: "20s start",
-    waveRange: "Wave 39–41", engineCount: 6,
-    highlightsKo: [
-      "한국어 어절 단위 광학 말풍선 자동 줄바꿈",
-      "180도 시선 법칙·황금나선 카메라 구도 점검",
-      "세로 스크롤 호흡과 5종 감정 SFX 벡터 식자",
-    ],
-    highlightsEn: [
-      "Korean word-boundary optical speech-balloon typesetting",
-      "180-degree camera axis and golden-spiral framing audit",
-      "Vertical scroll pacing with 5 expressive SFX styles",
-    ],
-    keywords: [
-      "웹툰", "컷", "식자", "시네마", "말풍선", "효과음", "콘티", "구도", "카메라",
-      "comic", "lettering", "balloon", "sfx", "cinema", "storyboard",
-    ],
-  },
-  {
-    id: "color-script-p3", order: 6,
-    titleKo: "컬러 스크립트·P3", titleEn: "Color Script · Display P3",
-    subtitleKo: "회차 4막 OKLCH 색채 설계·LMS 색각안전 검수",
-    subtitleEn: "4-act OKLCH color script and LMS color-blindness audit",
-    stageId: "drawing", stageLabelKo: "작화", stageLabelEn: "Drawing", secondaryStageIds: ["delivery"],
-    href: "/tech",
-    thumbnailSrc: "/assets/atelier/cinema-ergo/cinema-color-script.webp",
-    secondaryPreviewSrc: "/assets/atelier/cinema-ergo/cinema-pigment-swatches.webp",
-    thumbnailAltKo: "회차 4막 감정 컬러 스크립트 바 시연",
-    thumbnailAltEn: "4-act episode emotional color script strip",
-    secondaryAltKo: "LMS 색각안전 안료 스와치와 명도 대비 견본",
-    secondaryAltEn: "LMS color-safe pigment swatches and contrast chart",
-    shortcutHint: "Alt+6", shortcutKey: "6",
-    estimatedStartSeconds: 25, estimatedStartTimeKo: "25초 시작", estimatedStartTimeEn: "25s start",
-    waveRange: "Wave 40–41", engineCount: 5,
-    highlightsKo: [
-      "회차 4막 OKLCH·Display P3 감정 색채 설계",
-      "LMS 색각이상 3유형 실시간 대비 검증",
-      "다크·라이트 뷰어 경계와 화풍 DNA 일치 점검",
-    ],
-    highlightsEn: [
-      "4-act OKLCH and Display P3 emotional color scripting",
-      "Real-time 3-type LMS color-vision contrast verification",
-      "Dark/light viewer boundary and style DNA alignment",
-    ],
-    keywords: [
-      "컬러", "스크립트", "색채", "색각이상", "안료", "대비", "화풍",
-      "p3", "oklch", "lms", "color", "script", "palette", "tech",
-    ],
-  },
-  {
-    id: "movingtoon-reels-delivery", order: 7,
-    titleKo: "무빙툰·릴스·출고", titleEn: "Movingtoon · Reels · Export",
-    subtitleKo: "WebCodecs 4K 릴스·글로벌 리플로우·권리 BOM 봉인",
-    subtitleEn: "WebCodecs 4K reels, global reflow, and Rights BOM check",
-    stageId: "delivery", stageLabelKo: "출고", stageLabelEn: "Delivery", secondaryStageIds: ["collab"],
-    href: "/compare/studio",
-    thumbnailSrc: "/assets/atelier/studio-craft/studio-panel-breakout.webp",
-    secondaryPreviewSrc: "/assets/atelier/studio-craft/studio-goods-standee.webp",
-    thumbnailAltKo: "컷 경계 돌파 모션과 무빙툰 릴스 연출 시연",
-    thumbnailAltEn: "Panel breakout motion and movingtoon reels preview",
-    secondaryAltKo: "아크릴 스탠드 굿즈 다이컷 및 출고 시안",
-    secondaryAltEn: "Acrylic standee goods die-cut and print-ready export",
-    shortcutHint: "Alt+7", shortcutKey: "7",
-    estimatedStartSeconds: 40, estimatedStartTimeKo: "40초 시작", estimatedStartTimeEn: "40s start",
-    waveRange: "Wave 39–42", engineCount: 5,
-    highlightsKo: [
-      "WebCodecs 4K 릴스·무빙툰 컷 모션 즉시 출력",
-      "플랫폼별 세로·페이지 리플로우와 용량 예산 점검",
-      "권리 BOM 라이선스 검증 후 출고 패키지 봉인",
-    ],
-    highlightsEn: [
-      "WebCodecs 4K reels and movingtoon cut motion export",
-      "Platform reflow sizing with streaming byte-budget check",
-      "Rights BOM license verification before sealing delivery",
-    ],
-    keywords: [
-      "무빙툰", "릴스", "출고", "내보내기", "리플로우", "권리", "굿즈", "홍보",
-      "movingtoon", "reels", "webcodecs", "export", "delivery", "bom", "compare",
-    ],
-  },
-  {
-    id: "offline-resilience-settlement", order: 8,
-    titleKo: "오프라인 내구성·정산", titleEn: "Offline Resilience · Settlement",
-    subtitleKo: "CRDT 벡터시계·OPFS 패리티 복구·3.3% 원고료 정산",
-    subtitleEn: "CRDT vector clocks, OPFS parity recovery, and 3.3% payout math",
-    stageId: "delivery", stageLabelKo: "출고", stageLabelEn: "Delivery", secondaryStageIds: ["collab"],
-    href: "/production",
-    thumbnailSrc: "/assets/atelier/cinema-ergo/ergo-local-vault.webp",
-    secondaryPreviewSrc: "/assets/atelier/cinema-ergo/ergo-120hz-chronometer.webp",
-    thumbnailAltKo: "로컬 OPFS 패리티 금고와 오프라인 원고 보호 구조",
-    thumbnailAltEn: "Local OPFS parity vault and offline manuscript shield",
-    secondaryAltKo: "120Hz 정밀 프레임타임 진단 크로노미터",
-    secondaryAltEn: "120Hz precision frametime diagnostic chronometer",
-    shortcutHint: "Alt+8", shortcutKey: "8",
-    estimatedStartSeconds: 20, estimatedStartTimeKo: "20초 시작", estimatedStartTimeEn: "20s start",
-    waveRange: "Wave 41–42", engineCount: 5,
-    highlightsKo: [
-      "CRDT 벡터시계 압축과 OPFS 16K 패리티 무손실 복구",
-      "멀티탭 단일 쓰기 잠금과 120Hz 프레임 성능 진단",
-      "유료전환·굿즈 손익분기·3.3% 원고료 정산 계산",
-    ],
-    highlightsEn: [
-      "CRDT vector-clock compaction and OPFS 16K parity repair",
-      "Multi-tab single-writer fencing and 120Hz frame doctor",
-      "Paywall funnel, goods BEP, and 3.3% withholding payout math",
-    ],
-    keywords: [
-      "오프라인", "내구성", "정산", "백업", "복구", "성능", "원고료", "번아웃", "손익분기",
-      "crdt", "opfs", "offline", "settlement", "production", "120hz",
-    ],
-  },
-] as const;
 
 export const ATELIER_TOTAL_EXPERT_ENGINE_COUNT: number = CRAFT_STATION_CATALOG.reduce(
   (sum, station) => sum + station.engineCount,
@@ -658,7 +415,8 @@ export function recommendNextCraftStations(
   const catalog = options?.catalog ?? CRAFT_STATION_CATALOG;
   const activeStationId = options?.activeStationId ?? null;
   const pinnedSet = new Set(options?.pinnedIds ?? []);
-  const limit = Math.max(1, Math.min(8, options?.limit ?? 3));
+  const limit = options?.limit ?? 3;
+  assertCount(limit, CRAFT_STATION_CATALOG.length, "추천 한도");
   const rules = STAGE_RECOMMENDATION_RULES[currentStageId];
 
   const items: { readonly item: CraftRecommendationItem; readonly ruleIndex: number }[] = [];
@@ -694,13 +452,16 @@ export function createInitialPinState(
   initialPinnedIds: readonly CraftStationId[] = [],
   maxPinned: number = DEFAULT_MAX_PINNED_CRAFT_STATIONS,
 ): CraftLauncherPinState {
-  const safeMax = Math.max(1, Math.min(CRAFT_STATION_CATALOG.length, Math.floor(maxPinned)));
+  assertCount(maxPinned, CRAFT_STATION_CATALOG.length, "핀 한도");
+  const safeMax = maxPinned;
   const validIds = new Set<CraftStationId>(CRAFT_STATION_CATALOG.map((s) => s.id));
   const deduped: CraftStationId[] = [];
   for (const id of initialPinnedIds) {
-    if (validIds.has(id) && !deduped.includes(id) && deduped.length < safeMax) deduped.push(id);
+    if (!validIds.has(id) || deduped.includes(id)) continue;
+    if (deduped.length >= safeMax) throw new RangeError("초기 핀 목록이 한도를 넘습니다. 원본 목록은 유지됩니다.");
+    deduped.push(id);
   }
-  return { pinnedIds: deduped, maxPinned: safeMax, lastToggledId: null, lastAction: "init" };
+  return { storageKind: "in-memory-preferences", persistent: false, pinnedIds: deduped, maxPinned: safeMax, lastToggledId: null, lastAction: "init" };
 }
 
 /** 스테이션 즐겨찾기 핀을 순수 불변 방식으로 토글한다. */
@@ -708,8 +469,11 @@ export function togglePinnedCraftStation(
   state: CraftLauncherPinState,
   stationId: CraftStationId,
 ): CraftLauncherPinState {
+  assertPinState(state, CRAFT_STATION_CATALOG);
+  getCraftStationById(stationId);
   if (state.pinnedIds.includes(stationId)) {
     return {
+      ...state,
       pinnedIds: state.pinnedIds.filter((id) => id !== stationId),
       maxPinned: state.maxPinned,
       lastToggledId: stationId,
@@ -718,6 +482,7 @@ export function togglePinnedCraftStation(
   }
   if (state.pinnedIds.length >= state.maxPinned) {
     return {
+      ...state,
       pinnedIds: [...state.pinnedIds],
       maxPinned: state.maxPinned,
       lastToggledId: stationId,
@@ -725,6 +490,7 @@ export function togglePinnedCraftStation(
     };
   }
   return {
+    ...state,
     pinnedIds: [...state.pinnedIds, stationId],
     maxPinned: state.maxPinned,
     lastToggledId: stationId,
