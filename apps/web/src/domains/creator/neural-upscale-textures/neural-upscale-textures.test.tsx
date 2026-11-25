@@ -183,9 +183,10 @@ describe("1. 실시간 엣지 보존 업스케일러 (edge-preserving-upscaler)"
     expect(bilinearUpscale(tiny, 2).width).toBe(4);
   });
 
-  it("WEBGPU_EDGE_UPSCALE_WGSL 셰이더 구조 검증과 jsdom CPU 폴백 감지가 통과한다", () => {
+  it("WEBGPU_EDGE_UPSCALE_WGSL 텍스트 구조 검사와 jsdom CPU 실행 경계가 통과한다", () => {
     const report = validateUpscalerWgsl(WEBGPU_EDGE_UPSCALE_WGSL);
     expect(report.valid).toBe(true);
+    expect(report).toMatchObject({ validationKind: "text-only", compiled: false });
     expect(report.balancedDelimiters).toBe(true);
     expect(report.workgroupSize).toBe("8, 8, 1");
     expect(report.bindingCount).toBeGreaterThanOrEqual(4);
@@ -193,7 +194,7 @@ describe("1. 실시간 엣지 보존 업스케일러 (edge-preserving-upscaler)"
       "lanczos3_anti_ring_pass",
       "sobel_edge_thin_sharpen_pass",
     ]);
-    expect(detectUpscalerBackend()).toBe("cpu-fallback");
+    expect(detectUpscalerBackend()).toBe("cpu");
   });
 });
 

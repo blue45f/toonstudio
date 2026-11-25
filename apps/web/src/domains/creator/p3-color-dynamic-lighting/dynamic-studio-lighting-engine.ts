@@ -7,6 +7,8 @@
  * - 5종 시네마틱 웹툰 조명 프리셋 + WebGPU WGSL 컴퓨트 셰이더 소스.
  */
 
+import { assertFloatChannel, assertSurfaceGeometry } from "./dynamic-surface-contract";
+
 import {
   formatOklchCss,
   linearChannelToSrgb,
@@ -115,6 +117,8 @@ export interface RelightMetrics {
 }
 
 export interface DynamicRelightResult {
+  readonly backend: "cpu";
+  readonly gpuExecuted: false;
   readonly width: number;
   readonly height: number;
   readonly rgba: Uint8ClampedArray;
@@ -123,6 +127,8 @@ export interface DynamicRelightResult {
 }
 
 export interface WgslLightingContractCheck {
+  readonly validationKind: "text-only";
+  readonly compiled: false;
   readonly valid: boolean;
   readonly hasFourLightArray: boolean;
   readonly hasComputeEntry: boolean;
@@ -256,8 +262,9 @@ export function evaluateSkinSubsurfaceScattering(input: SkinSubsurfaceInput): Rg
 
 /** 실시간 리라이팅 테스트·프리뷰용 2.5D 웹툰 캐릭터(얼굴·볼 SSS·헤어·어깨·창틀) 표면 버퍼를 합성한다. */
 export function createDemoCharacterSurfaceBuffers(width = 64, height = 48): DynamicSurfaceBuffers {
-  const safeW = Math.max(8, Math.round(width));
-  const safeH = Math.max(8, Math.round(height));
+  assertSurfaceGeometry(width, height);
+  const safeW = width;
+  const safeH = height;
   const pixelCount = safeW * safeH;
   const albedoRgba = new Uint8ClampedArray(pixelCount * 4);
   const normalRgb = new Float32Array(pixelCount * 3);
@@ -340,14 +347,20 @@ export function createDemoCharacterSurfaceBuffers(width = 64, height = 48): Dyna
   return { width: safeW, height: safeH, albedoRgba, normalRgb, depthBuffer, skinMask };
 }
 
-/** 2D 노멀맵·깊이버퍼·피부 SSS 마스크 기반으로 최대 4개 실시간 광원을 합성해 RGBA 픽셀 버퍼를 생성한다. */
+/** 2D 버퍼에 최대 4광원을 CPU로 계산한다. 실제 3D 씬·원고 반영이나 GPU 실행 경로는 없다. */
 export function renderDynamicLitBuffer(
   surface: DynamicSurfaceBuffers,
   config: DynamicLightingSceneConfig,
 ): DynamicRelightResult {
   const startMs = typeof performance !== "undefined" ? performance.now() : 0;
   const { width, height, albedoRgba, normalRgb, depthBuffer, skinMask } = surface;
-  const pixelCount = width * height;
+  const pixelCount = assertSurfaceGeometry(width, height);
+  if (!(albedoRgba instanceof Uint8ClampedArray) || albedoRgba.length !== pixelCount * 4) {
+    throw new RangeError("표면 RGBA 길이는 width × height × 4와 같아야 합니다.");
+  }
+  assertFloatChannel(normalRgb, pixelCount * 3, -1, 1);
+  assertFloatChannel(depthBuffer, pixelCount, 0, 1);
+  assertFloatChannel(skinMask, pixelCount, 0, 1);
   const outRgba = new Uint8ClampedArray(pixelCount * 4);
 
   const activeLights = config.lights
@@ -507,6 +520,8 @@ export function renderDynamicLitBuffer(
   const endMs = typeof performance !== "undefined" ? performance.now() : startMs;
 
   return {
+    backend: "cpu",
+    gpuExecuted: false,
     width,
     height,
     rgba: outRgba,
@@ -518,7 +533,7 @@ export function renderDynamicLitBuffer(
       sssAffectedPixels,
       volumetricEnergy: pixelCount > 0 ? volumetricEnergySum / pixelCount : 0,
       warmToCoolRatio: totalBlue > 1e-6 ? totalRed / totalBlue : 1,
-      renderTimeMs: Math.max(0.01, endMs - startMs),
+      renderTimeMs: Math.max(0, endMs - startMs),
     },
     previewMosaic: { cols, rows, cells },
   };
@@ -743,6 +758,8 @@ export function validateWgslLightingContract(
   const hasSkinSubsurface = /fn\s+eval_skin_sss\b/u.test(source);
   const hasAcesToneMap = /fn\s+aces_filmic\b/u.test(source);
   return {
+    validationKind: "text-only",
+    compiled: false,
     valid: hasFourLightArray && hasComputeEntry && hasVolumetricGodRay && hasSkinSubsurface && hasAcesToneMap,
     hasFourLightArray,
     hasComputeEntry,

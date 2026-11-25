@@ -1,8 +1,8 @@
 /**
- * Wave 40C — 실시간 신경망/엣지보존 업스케일러 + 6종 절차적 심리스 PBR·망점 텍스처 통합 워크벤치.
+ * Wave 40C — CPU 엣지 보존 합성 예제 + 6종 절차적 심리스 PBR·망점 텍스처 통합 워크벤치.
  *
  * - Calm Atelier 시맨틱 토큰 전용 (원시 hex/rgb/hsl 0건 · Web Storage 0건 · props `= {}` 미사용)
- * - Tab 1: 2×/4× 웹툰 선화·셀채색 엣지 보존 업스케일러 비교(분할 뷰·PSNR·할로 0%·WGSL 검사기)
+ * - Tab 1: 2×/4× 웹툰 선화·셀채색 엣지 보존 업스케일러 비교(분할 뷰·PSNR·할로 측정·WGSL 텍스트 검사기)
  * - Tab 2: 6종 토러스 매핑 심리스 텍스처(Albedo + Sobel Normal + Roughness R + 2×2 타일 검증)
  */
 
@@ -39,6 +39,7 @@ import {
   type ProceduralMaterialId,
   type ProceduralTextureResult,
 } from "./procedural-texture-synth";
+import { useExampleResultNotification } from "./use-example-result-notification";
 
 export type NeuralUpscaleTexturesTabId = "upscaler" | "textures";
 export type UpscalerPreviewMode = "split" | "edge-preserving" | "bilinear";
@@ -48,8 +49,9 @@ export interface StudioNeuralUpscaleTexturesPanelProps {
   readonly initialTab?: NeuralUpscaleTexturesTabId;
   readonly locale?: "ko" | "en";
   readonly className?: string;
-  readonly onUpscaleComplete?: (result: WebtoonUpscaleResult) => void;
-  readonly onTextureSynthesized?: (result: ProceduralTextureResult) => void;
+  /** 결과 변경 알림이며 실제 원고 적용·저장 완료 응답이 아니다. */
+  readonly onUpscaleComplete?: (result: WebtoonUpscaleResult) => void | Promise<void>;
+  readonly onTextureSynthesized?: (result: ProceduralTextureResult) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -258,13 +260,8 @@ export function StudioNeuralUpscaleTexturesPanel(
     [materialId],
   );
 
-  useEffect(() => {
-    onUpscaleComplete?.(upscaleResult);
-  }, [upscaleResult, onUpscaleComplete]);
-
-  useEffect(() => {
-    onTextureSynthesized?.(textureResult);
-  }, [textureResult, onTextureSynthesized]);
+  const upscaleNotification = useExampleResultNotification(upscaleResult, onUpscaleComplete);
+  const textureNotification = useExampleResultNotification(textureResult, onTextureSynthesized);
 
   useEffect(() => {
     if (activeTab !== "upscaler") return;
@@ -319,7 +316,7 @@ export function StudioNeuralUpscaleTexturesPanel(
     <section
       data-testid="neural-upscale-textures-panel"
       aria-label={pick(
-        "실시간 엣지보존 업스케일러 및 절차적 심리스 PBR 텍스처 스튜디오 워크벤치",
+        "CPU 합성 샘플 업스케일·텍스처 예제",
         "Real-time Edge-Preserving Upscaler & Procedural Seamless PBR Texture Workbench",
       )}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
@@ -328,10 +325,10 @@ export function StudioNeuralUpscaleTexturesPanel(
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-0.5 text-[11px] font-semibold text-fg-2">
             <Cpu className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>{pick("Wave 40C · WebGPU WGSL + 토러스 심리스 PBR 파이프라인", "Wave 40C · WebGPU WGSL + Torus Seamless PBR Pipeline")}</span>
+            <span>{pick("Wave 40C · CPU 합성 샘플 · 절차적 텍스처", "Wave 40C · CPU Synthetic Samples · Procedural Textures")}</span>
           </div>
           <h2 className="text-base font-bold text-fg">
-            {pick("실시간 엣지보존 업스케일러 · 절차적 심리스 텍스처 합성기", "Edge-Preserving Upscaler · Procedural Seamless Texture Synth")}
+            {pick("CPU 엣지 보존 업스케일 · 절차적 텍스처 예제", "Edge-Preserving Upscaler · Procedural Seamless Texture Synth")}
           </h2>
         </div>
         <div
@@ -340,12 +337,21 @@ export function StudioNeuralUpscaleTexturesPanel(
         >
           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
           <span>
-            {upscaleResult.metrics.backend === "webgpu"
-              ? pick("WebGPU 컴퓨트 활성", "WebGPU Compute Active")
-              : pick("TS CPU 폴백 · WGSL 검증 완료", "TS CPU Fallback · WGSL Verified")}
+            {pick("CPU 계산 · GPU·ML 미실행", "CPU Calculation · GPU / ML Not Run")}
           </span>
         </div>
       </header>
+      <p data-testid="upscaler-scope-notice" className="text-xs text-fg-2">
+        {pick("고정 합성 샘플을 CPU·2D Canvas로 비교합니다. 사용자 원고·3D 씬·기기 저장·내보내기는 바뀌지 않습니다. 수치는 이 예제 계산 결과이며 실제 GPU·ML 품질 검증이 아닙니다.", "Fixed synthetic samples use CPU and 2D Canvas. Manuscripts, 3D scenes, device storage and exports are unchanged. Metrics describe this example, not GPU or ML quality validation.")}
+        {upscaleResult.metrics.gpuCapability === "api-present-unverified"
+          ? pick(" WebGPU API 존재만 확인했으며 장치·컴파일·실행은 미검증입니다.", " WebGPU API present; device, compilation and execution unverified.")
+          : pick(" WebGPU API 없음.", " WebGPU API unavailable.")}
+      </p>
+      {([["upscale", upscaleNotification], ["texture", textureNotification]] as const).map(([kind, status]) => status === "failed" || status === "pending" ? (
+        <p key={kind} role={status === "failed" ? "alert" : "status"} data-testid={`${kind}-notification-status`} className="text-xs text-fg-2">
+          {kind === "upscale" ? pick("업스케일", "Upscale") : pick("텍스처", "Texture")} · {status === "failed" ? pick("예제 결과 알림 실패. 실제 적용·저장 완료가 아니며 결과를 바꾸면 새로 알립니다.", "Example result notification failed. No apply or save confirmed; changing the result sends a new notification.") : pick("예제 결과 알림 처리 중 · 실제 적용·저장 완료 아님", "Example result notification pending; no apply or save confirmed")}
+        </p>
+      ) : null)}
 
       <div role="tablist" aria-label={pick("워크벤치 탭", "Workbench Tabs")} className="flex flex-wrap gap-2">
         {tabs.map((tab) => {
@@ -463,7 +469,7 @@ export function StudioNeuralUpscaleTexturesPanel(
             <div className="space-y-3 rounded-xl border border-line bg-card p-3.5">
               <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg">
                 <SlidersHorizontal className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                <span>{pick("업스케일 배율 · 원고 샘플 · 파라미터", "Scale · Sample Cut · Controls")}</span>
+                <span>{pick("업스케일 배율 · 합성 샘플 · 파라미터", "Scale · Sample Cut · Controls")}</span>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -553,11 +559,11 @@ export function StudioNeuralUpscaleTexturesPanel(
                 >
                   <span className="inline-flex items-center gap-1.5">
                     <Code2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                    <span>{pick("WebGPU WGSL 컴퓨트 셰이더 보기", "Inspect WebGPU WGSL Compute Shader")}</span>
+                    <span>{pick("미연결 WGSL 참고 코드 · 텍스트 검사", "Unconnected WGSL Reference · Text Check")}</span>
                   </span>
                   <span className="text-[11px] text-good tabular-nums">
                     {wgslValidation.valid
-                      ? `${wgslValidation.entryPoints.length} passes · WG ${wgslValidation.workgroupSize ?? "8,8,1"}`
+                      ? pick(`${wgslValidation.entryPoints.length}개 선언 · 컴파일 미검증`, `${wgslValidation.entryPoints.length} declarations · Not compiled`)
                       : pick("오류", "Error")}
                   </span>
                 </button>
