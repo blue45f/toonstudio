@@ -193,6 +193,15 @@ describe("2. 원고/콘티 분석 기반 화풍 Top-3 추천 (proposeStyleSpectr
 });
 
 describe("3. 3D→2D 안료/셀 변환기 (computeCrossMediaTransferPlan)", () => {
+  it("외부 화풍 설정에 비유한 수치가 있으면 해당 항목의 프리셋값을 사용한다", () => {
+    const defaults = createConfigFromStylePreset("watercolor-editorial");
+    const invalid = { ...defaults, maxChromaOklch: Number.NaN, paperGrainStrength: Infinity, shadowHueShiftDeg: -Infinity };
+    const source = getThreeDSourcePreset("pbr-wet-alley");
+    const asset = getExternalAssetPreset("ai-glossy-prop");
+    expect(computeCrossMediaTransferPlan(source, invalid)).toEqual(computeCrossMediaTransferPlan(source, defaults));
+    expect(auditExternalAssetStyleDrift(invalid, asset)).toEqual(auditExternalAssetStyleDrift(defaults, asset));
+  });
+
   it("4종 3D PBR 소스 × 6대 화풍(24조합) 전체에서 바이올렛 휴 0%와 안전한 셰이더 유니폼을 생성한다", () => {
     for (const src of THREE_D_SOURCE_PRESETS) {
       for (const preset of STYLE_SPECTRUM_PRESETS) {

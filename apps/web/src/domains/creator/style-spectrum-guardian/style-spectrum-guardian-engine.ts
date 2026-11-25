@@ -375,7 +375,21 @@ export function createConfigFromStylePreset(id: StyleSpectrumId): StyleTuningCon
 }
 
 function resolveTuningConfig(configOrStyleId: StyleTuningConfig | StyleSpectrumId): StyleTuningConfig {
-  return typeof configOrStyleId === "string" ? createConfigFromStylePreset(configOrStyleId) : configOrStyleId;
+  if (typeof configOrStyleId === "string") return createConfigFromStylePreset(configOrStyleId);
+
+  const defaults = createConfigFromStylePreset(configOrStyleId.styleId);
+  const finiteOr = (value: number, fallback: number): number => Number.isFinite(value) ? value : fallback;
+  return {
+    ...configOrStyleId,
+    styleId: defaults.styleId,
+    lineWidthPx: finiteOr(configOrStyleId.lineWidthPx, defaults.lineWidthPx),
+    shadingSteps: finiteOr(configOrStyleId.shadingSteps, defaults.shadingSteps),
+    screentoneLpi: finiteOr(configOrStyleId.screentoneLpi, defaults.screentoneLpi),
+    maxChromaOklch: finiteOr(configOrStyleId.maxChromaOklch, defaults.maxChromaOklch),
+    shadowHueShiftDeg: finiteOr(configOrStyleId.shadowHueShiftDeg, defaults.shadowHueShiftDeg),
+    paperGrainStrength: finiteOr(configOrStyleId.paperGrainStrength, defaults.paperGrainStrength),
+    targetContrastRatio: finiteOr(configOrStyleId.targetContrastRatio, defaults.targetContrastRatio),
+  };
 }
 
 /** 원고 장르와 대사/콘티 분위기를 분석해 가장 어울리는 화풍 Top-3와 이유를 비파괴 제안한다. */
@@ -632,7 +646,7 @@ export function applyStyleSpectrum(session: StyleGuardianSession, styleId: Style
 
 /** 외부 에셋 이질감 감사 결과를 바탕으로 원클릭 화풍 통일 보정을 비파괴 적용한다. */
 export function applyStyleUnificationCorrection(session: StyleGuardianSession, previousAudit: ExternalAssetDriftAudit): StyleGuardianSession {
-  const base = session.previewConfig ?? session.currentConfig;
+  const base = resolveTuningConfig(session.previewConfig ?? session.currentConfig);
   const audit = auditExternalAssetStyleDrift(base, previousAudit.asset);
   const preset = getStyleSpectrumPreset(base.styleId);
   const nextConfig: StyleTuningConfig = {
@@ -684,7 +698,7 @@ export function exportStyleGuardianJson(
   transferPlan: CrossMediaTransferPlan,
   driftAudit: ExternalAssetDriftAudit,
 ): string {
-  const activeConfig = session.previewConfig ?? session.currentConfig;
+  const activeConfig = resolveTuningConfig(session.previewConfig ?? session.currentConfig);
   const preset = getStyleSpectrumPreset(activeConfig.styleId);
   return JSON.stringify({
     schema: "toonstudio.style-spectrum-guardian.v1",
