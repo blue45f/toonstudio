@@ -9,26 +9,26 @@
 | 구분 | 파일 수 | 총 용량 | HERO_KEEP | OPTIMIZE | UPGRADE | QUARANTINE | 코드 참조 | 활성 매니페스트 | 비활성 매니페스트 | 완전 고아 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 3D 캐릭터 (VRM) | 117 | 452.03 MB | 40 | 15 | 0 | 62 | 117 | 0 | 0 | 0 |
-| 3D 배경·소품·파츠 (GLB) | 1,702 | 1737.27 MB | 545 | 118 | 23 | 1,016 | 588 | 1,091 | 3 | 20 |
-| 2D 이미지·아이콘·SVG | 7,102 | 1713.19 MB | 2,325 | 652 | 42 | 4,083 | 1,782 | 2,316 | 2,824 | 180 |
-| **전사 합계** | 8,921 | 3902.49 MB | 2,910 | 785 | 65 | 5,161 | 2,487 | 3,407 | 2,827 | 200 |
+| 3D 배경·소품·파츠 (GLB) | 1,701 | 1731.23 MB | 545 | 117 | 23 | 1,016 | 588 | 1,091 | 3 | 19 |
+| 2D 이미지·아이콘·SVG | 7,004 | 1675.66 MB | 2,325 | 629 | 42 | 4,008 | 1,782 | 2,316 | 2,754 | 152 |
+| **전사 합계** | 8,822 | 3858.92 MB | 2,910 | 761 | 65 | 5,086 | 2,487 | 3,407 | 2,757 | 171 |
 
 ### 상호 배타 절감 가능 용량 요약 (중복 집계 0건)
-- **1) 제거·격리 대상(`QUARANTINE_OFF_STYLE`) 실측 회수**: **415.05 MB** (블록형 Kenney·밈 VRM·LPC 픽셀·비활성/고아 에셋)
-- **2) 중복·구리비전(격리 제외분, SHA-256 72그룹 + 3D 구리비전 8건) 실측 회수**: **98.06 MB** (전체 SHA-256 낭비 7.77 MB, 3D 구리비전 90.32 MB)
-- **3) 과대 3D(>5 MB, 125개 = 1244.35 MB) Draco+1K/2K 압축 (65% 추정)**: **~808.83 MB**
-- **4) 비압축 대용량 PNG(>300 KB, 435개 = 562.67 MB) WebP 전환 (72% 추정)**: **~405.12 MB**
-- **5) 과대 2D 비PNG(>2 MB, 139개 = 412.67 MB) 리사이즈·WebP (50% 추정)**: **~206.33 MB**
-- **총 예상 절감 가능 용량**: **~1933.40 MB** (전사 3902.49 MB 대비 **49.5%**)
+- **1) 제거·격리 대상(`QUARANTINE_OFF_STYLE`) 실측 회수**: **409.52 MB** (블록형 Kenney·밈 VRM·LPC 픽셀·비활성/고아 에셋)
+- **2) 중복·구리비전(격리 제외분, SHA-256 71그룹 + 3D 구리비전 8건) 실측 회수**: **97.94 MB** (전체 SHA-256 낭비 7.65 MB, 3D 구리비전 90.32 MB)
+- **3) 과대 3D(>5 MB, 124개 = 1238.31 MB) Draco+1K/2K 압축 (65% 추정)**: **~804.90 MB**
+- **4) 비압축 대용량 PNG(>300 KB, 418개 = 547.47 MB) WebP 전환 (72% 추정)**: **~394.18 MB**
+- **5) 과대 2D 비PNG(>2 MB, 134개 = 395.99 MB) 리사이즈·WebP (50% 추정)**: **~198.00 MB**
+- **총 예상 절감 가능 용량**: **~1904.53 MB** (전사 3858.92 MB 대비 **49.4%**)
 
 ## 2. 등급별 용량 분포 (실측)
 
 | 등급 | 3D 수량 (용량) | 2D 수량 (용량) | 합계 수량 (용량) |
 |---|---:|---:|---:|
 | 유지 (HERO_KEEP) | 585 (641.42 MB) | 2,325 (528.05 MB) | 2,910 (1169.47 MB) |
-| 최적화·중복 (OPTIMIZE_HEAVY_OR_DUP) | 133 (1334.67 MB) | 652 (983.08 MB) | 785 (2317.75 MB) |
+| 최적화·중복 (OPTIMIZE_HEAVY_OR_DUP) | 132 (1328.63 MB) | 629 (951.09 MB) | 761 (2279.72 MB) |
 | 고품질 교체 (UPGRADE_LOW_CRAFT) | 23 (0.10 MB) | 42 (0.12 MB) | 65 (0.22 MB) |
-| 제거·격리 (QUARANTINE_OFF_STYLE) | 1,078 (213.11 MB) | 4,083 (201.95 MB) | 5,161 (415.05 MB) |
+| 제거·격리 (QUARANTINE_OFF_STYLE) | 1,078 (213.11 MB) | 4,008 (196.41 MB) | 5,086 (409.52 MB) |
 
 ## 3. Top 20 즉시 제거·격리 대상 (`QUARANTINE_OFF_STYLE` — VRM 8 · GLB 6 · 2D 6)
 
@@ -98,12 +98,12 @@
 | 12 | `apps/web/public/vrm/Sakurada_Fumiriya.vrm` | VRM | 18.45 MB | 39,548t · tex 30(max 2048px) · minY 0.0002m | code-direct | 과대 용량(18.45 MB > 5 MB) |
 | 13 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-vintage-radio-transceiver/vintage_radio_transceiver.glb` | GLB | 17.50 MB | 42,350t · tex 6(max 2048px) · minY -0.0015m | code-direct | 과대 용량(17.50 MB > 5 MB) |
 | 14 | `apps/web/public/vrm/Vivi.vrm` | VRM | 17.25 MB | 25,834t · tex 28(max 2048px) · minY -0.0001m | code-direct | 과대 용량(17.25 MB > 5 MB) |
-| 15 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-leafy-grass/leafy_grass_nor_gl_2k.jpg` | 2D | 5.77 MB | 2048x2048 (jpg) | orphan | 과대 2D 파일(5.77 MB > 2 MB) |
-| 16 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-red-laterite-soil-stones/red_laterite_soil_stones_nor_gl_2k.jpg` | 2D | 5.65 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.65 MB > 2 MB) |
-| 17 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-gravel-embedded-concrete/gravel_embedded_concrete_nor_gl_2k.jpg` | 2D | 5.57 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.57 MB > 2 MB) |
-| 18 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-brown-mud-leaves-01/brown_mud_leaves_01_nor_gl_2k.jpg` | 2D | 5.43 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.43 MB > 2 MB) |
-| 19 | `apps/web/public/assets/studio/cc0-20260906/assets/ambientcg-fabric066/fabric066-2k-jpg-color.webp` | 2D | 5.42 MB | 2048x2048 (webp) | code-template | 과대 2D 파일(5.42 MB > 2 MB) |
-| 20 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-forrest-ground-01/forrest_ground_01_nor_gl_2k.jpg` | 2D | 5.29 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.29 MB > 2 MB) |
+| 15 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-red-laterite-soil-stones/red_laterite_soil_stones_nor_gl_2k.jpg` | 2D | 5.65 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.65 MB > 2 MB) |
+| 16 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-gravel-embedded-concrete/gravel_embedded_concrete_nor_gl_2k.jpg` | 2D | 5.57 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.57 MB > 2 MB) |
+| 17 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-brown-mud-leaves-01/brown_mud_leaves_01_nor_gl_2k.jpg` | 2D | 5.43 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.43 MB > 2 MB) |
+| 18 | `apps/web/public/assets/studio/cc0-20260906/assets/ambientcg-fabric066/fabric066-2k-jpg-color.webp` | 2D | 5.42 MB | 2048x2048 (webp) | code-template | 과대 2D 파일(5.42 MB > 2 MB) |
+| 19 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-forrest-ground-01/forrest_ground_01_nor_gl_2k.jpg` | 2D | 5.29 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.29 MB > 2 MB) |
+| 20 | `apps/web/public/assets/studio/cc0-20260906/assets/polyhaven-forest-ground-04/forest_ground_04_nor_gl_2k.jpg` | 2D | 5.04 MB | 2048x2048 (jpg) | manifest-active | 과대 2D 파일(5.04 MB > 2 MB) |
 
 ### SHA-256 완전 중복 상위 그룹 (실측)
 
@@ -131,8 +131,6 @@
 | `assets/virtual-studio/style-packs` | 0 (0.00 MB) | 705 (105.22 MB) | 351 (7.10 MB) | 활성 매니페스트 검수 후 정리 |
 | `assets/virtual-studio/style-packs-v5` | 0 (0.00 MB) | 1847 (38.24 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/virtual-studio/npc-cast-v3` | 0 (0.00 MB) | 69 (37.12 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
-| `cc0/polyhaven-*` | 6 (22.72 MB) | 0 (0.00 MB) | 320 (561.88 MB) | 활성 매니페스트 검수 후 정리 |
-| `assets/virtual-studio/npc-cast-v2` | 0 (0.00 MB) | 35 (17.11 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/virtual-studio/office-standing-expressions-v1` | 0 (0.00 MB) | 8 (15.74 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/3d/environments` | 9 (9.52 MB) | 3 (5.67 MB) | 60 (105.37 MB) | 활성 매니페스트 검수 후 정리 |
 | `assets/characters/shaper-atelier-protagonist` | 0 (0.00 MB) | 6 (13.81 MB) | 1 (3.62 MB) | 활성 매니페스트 검수 후 정리 |
@@ -140,7 +138,6 @@
 | `assets/virtual-studio/living-town-v6` | 0 (0.00 MB) | 69 (6.75 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/characters/toonstudio-kit-v2` | 10 (3.26 MB) | 5 (0.08 MB) | 52 (59.88 MB) | 활성 매니페스트 검수 후 정리 |
 | `assets/virtual-studio/studio-art-v10` | 3 (2.63 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
-| `assets/virtual-studio/reference` | 20 (2.51 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/virtual-studio/toon-office-v1` | 41 (0.41 MB) | 16 (2.04 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/virtual-studio/living-world` | 0 (0.00 MB) | 1 (1.97 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/virtual-studio/imagegen25-v7` | 0 (0.00 MB) | 18 (1.93 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
@@ -149,13 +146,16 @@
 | `assets/studio/scene-assistant` | 10 (1.08 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/virtual-studio/campus-v1` | 6 (1.06 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/3d/outfits` | 18 (0.89 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
-| `(public-root)` | 10 (0.70 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `brand` | 0 (0.00 MB) | 4 (0.66 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
-| `cc0/ambientcg-fabric066` | 1 (0.52 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
+| `(public-root)` | 9 (0.57 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `brand/showcase-covers-20261009` | 3 (0.49 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/site-experience/site-art-v1` | 0 (0.00 MB) | 4 (0.46 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 | `assets/studio/vibrant-sprites` | 10 (0.42 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
-| `assets/virtual-studio/npc-cast-v1` | 0 (0.00 MB) | 35 (0.31 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
+| `brand/hero-20261009-wave11` | 2 (0.29 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
+| `images` | 1 (0.18 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
+| `brand/luminous-atelier-20261114` | 3 (0.14 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
+| `brand/toonstudio-premium-icons` | 5 (0.13 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
+| `brand/product-tour` | 1 (0.09 MB) | 0 (0.00 MB) | 0 (0.00 MB) | Tier A/B 일괄 삭제 후보 |
 
 ## 7. Wave 64B 실행 권고 (안전 순서)
 
