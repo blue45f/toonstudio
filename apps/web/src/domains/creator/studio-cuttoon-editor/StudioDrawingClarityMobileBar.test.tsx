@@ -332,8 +332,7 @@ describe("웹 모바일 기본 상단", () => {
     expect(mobileCss).toContain("flex-direction: row;");
     expect(mobileCss).toContain("align-items: center;");
     expect(mobileCss).toContain("gap: 0.5rem;");
-    expect(mobileCss).toContain("@media (max-width: 559px)");
-    expect(mobileCss).toContain("min-height: 48px;");
+    expect(mobileCss).toMatch(/\.studio-drawing-clarity-mobile-header\s*\{\s*height: 44px;\s*min-height: 44px;\s*max-height: 44px;/u);
     expect(mobileCss).toContain("[data-studio-connection-notice-summary]:empty");
     expect(mobileCss).not.toContain("-webkit-line-clamp: 1");
 

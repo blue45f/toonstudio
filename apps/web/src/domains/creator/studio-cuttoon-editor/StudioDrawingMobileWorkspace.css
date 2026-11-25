@@ -57,28 +57,21 @@
   top: 4px;
 }
 
-/* 좁은 모바일(<560px) 2줄 배치에서는 최소 48px 높이와 tight 행간으로 하단 클리핑을 0px로 막는다. */
+/* 44px 안에서 제목과 큰 글씨 안내가 각각 한 줄을 쓰도록 한다. */
 @media (max-width: 559px) {
-  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header {
-    height: auto;
-    min-height: 48px;
-    max-height: none;
+  .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) h1 {
+    top: 0;
+    line-height: 16px;
   }
-  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title {
-    height: 48px;
-    min-height: 48px;
-    max-height: 48px;
-    line-height: 1.25;
+  .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > svg {
+    top: 1px;
   }
-  #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title h1 {
-    top: 4px;
-    line-height: 17px;
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) {
+    padding-block: 0 1px;
   }
-  #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true] {
-    min-height: 48px;
-    max-height: 48px;
-    padding: 21px 0 5px;
-    line-height: 1.25;
+  #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > span {
+    line-height: clamp(1em, 1.25em, 27px);
+    max-height: 1lh;
   }
 }
 
