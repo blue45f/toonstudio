@@ -417,9 +417,16 @@ export function storySeedPlanPatch(
 }
 
 /** 제공자 계약 — 로컬 결정적 제공자가 기본, AI 제공자는 같은 모양으로 갈아 끼운다. */
+export interface StorySeedGenerateOptions {
+  readonly signal?: AbortSignal;
+}
+
 export interface StorySeedProvider {
   readonly kind: "local" | "ai";
-  generate(input: StorySeedInput): Promise<StorySeedDraft | null>;
+  generate(
+    input: StorySeedInput,
+    options?: StorySeedGenerateOptions,
+  ): Promise<StorySeedDraft | null>;
 }
 
 export const localStorySeedProvider: StorySeedProvider = {
@@ -583,10 +590,13 @@ export function parseStorySeedAiResponse(
 }
 
 /** 텍스트 AI를 한 번 부른다. 성공하면 응답 글, 실패하면 사용자에게 보여 줄 이유를 돌려준다. */
-export type StorySeedTextCompletion = (prompt: {
-  readonly system: string;
-  readonly user: string;
-}) => Promise<{ readonly ok: true; readonly content: string } | { readonly ok: false; readonly error: string }>;
+export type StorySeedTextCompletion = (
+  prompt: {
+    readonly system: string;
+    readonly user: string;
+  },
+  options?: StorySeedGenerateOptions,
+) => Promise<{ readonly ok: true; readonly content: string } | { readonly ok: false; readonly error: string }>;
 
 /** AI 확장이 결과를 내지 못했다. 규칙 기반 초안을 AI 결과처럼 꾸미지 않고 이유와 함께 알린다. */
 export class StorySeedAiError extends Error {
@@ -604,9 +614,12 @@ export class StorySeedAiError extends Error {
 export function createTextAiStorySeedProvider(complete: StorySeedTextCompletion): StorySeedProvider {
   return {
     kind: "ai",
-    async generate(input: StorySeedInput): Promise<StorySeedDraft | null> {
+    async generate(
+      input: StorySeedInput,
+      options?: StorySeedGenerateOptions,
+    ): Promise<StorySeedDraft | null> {
       if (!buildLocalStorySeed(input)) return null;
-      const result = await complete(buildStorySeedAiPrompt(input));
+      const result = await complete(buildStorySeedAiPrompt(input), options);
       if (!result.ok) throw new StorySeedAiError(result.error);
       const parsed = parseStorySeedAiResponse(result.content, input);
       if (!parsed) {

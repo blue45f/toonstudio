@@ -314,12 +314,14 @@ function EpisodeSynopsisSurface({
   const [planning, setPlanning] = useProjectPlanning(projectId);
   const [source] = useProjectStorySource(projectId);
   const [lore] = useProjectWorldLore(projectId);
+  const lastSeedUndoRef = useRef<{ readonly episodeId: string; readonly previousPlan: EpisodePlanWithSynopsis } | null>(null);
 
   useEffect(() => {
     setSaveError(null);
     setFreshIdeasMounted(false);
     setLivingSpecMounted(false);
     setStorySeedNotice(null);
+    lastSeedUndoRef.current = null;
   }, [projectId]);
 
   const bibleCharacters = useMemo(() => source?.story.bible.characters ?? [], [source]);
@@ -358,12 +360,20 @@ function EpisodeSynopsisSurface({
     }
   };
 
-  const targetPlan = planning.plans[0];
+  const targetPlan = planning.plans.find((plan) => plan.episodeId === pickedEpisodeId) ?? planning.plans[0];
   const targetHasContent = Boolean(targetPlan && (targetPlan.logline.trim() || targetPlan.goal?.trim() || targetPlan.synopsis?.trim()));
-  const handleApplySeed = (patch: StorySeedPlanPatch, draft: StorySeedDraft) => {
-    if (!targetPlan) return;
+  const handleApplySeed = (patch: StorySeedPlanPatch, draft: StorySeedDraft, lockedEpisodeId?: string) => {
+    const resolvedTarget = planning.plans.find((plan) => plan.episodeId === (lockedEpisodeId ?? targetPlan?.episodeId)) ?? targetPlan;
+    if (!resolvedTarget) return;
+    lastSeedUndoRef.current = { episodeId: resolvedTarget.episodeId, previousPlan: resolvedTarget };
     const seedSettingRefs = resolveStorySeedReferencedSettings(settingRefs, draft.referencedSettingIds).map((ref) => ({ id: ref.id, kind: ref.kind, name: ref.name }));
-    handleSavePlan({ ...targetPlan, ...patch, seedSettingRefs });
+    handleSavePlan({ ...resolvedTarget, ...patch, seedSettingRefs });
+  };
+  const handleUndoSeed = (episodeId: string) => {
+    const undoRecord = lastSeedUndoRef.current;
+    if (!undoRecord || undoRecord.episodeId !== episodeId) return;
+    lastSeedUndoRef.current = null;
+    handleSavePlan(undoRecord.previousPlan);
   };
 
   const reactionCard = buildReaderReactionQuoteCard(episodeMetrics);
@@ -381,7 +391,15 @@ function EpisodeSynopsisSurface({
       </div>
       {targetPlan && (
         <div className="mb-4">
-          <StudioStorySeedBuilder settingRefs={settingRefs} targetHasContent={targetHasContent} onApplySeed={handleApplySeed} />
+          <StudioStorySeedBuilder
+            settingRefs={settingRefs}
+            targetHasContent={targetHasContent}
+            targetEpisodeId={targetPlan.episodeId}
+            targetEpisodeLabel={`${targetPlan.episodeNumber}화 · ${targetPlan.title.trim() || "회차 기획"}`}
+            targetCurrentSnapshot={{ logline: targetPlan.logline, goal: targetPlan.goal, synopsis: targetPlan.synopsis }}
+            onApplySeed={handleApplySeed}
+            onUndoAppliedSeed={handleUndoSeed}
+          />
         </div>
       )}
       <label className="mb-3 block text-sm font-semibold text-fg [word-break:keep-all]">
