@@ -257,7 +257,7 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
       license: same("MIT OR Apache-2.0"),
       mode: t("Rust · 벤더 포크 · 피처 뒤", "Rust · vendored fork · behind a feature"),
       note: t(
-        "GPU 장치 연결은 toon-fabric을 켰을 때 사용한다. rustix 보안 업데이트와 빌드 도구 호환성 수정은 공통으로 적용한다. 같은 장치 안에서 쓰는 경로가 열렸고 읽은 바이트는 기존 경로와 일치한다. 속도 이득은 크기마다 달라 정본 측정(2026-09-23, Chrome 153)에서 256px 0.93배(이득 없음)·512px 3.29배·1024px 3.12배다. 옛 1.89~2.43배(2026-08-08)는 이전 기록이다. 상류 PR 근거는 못 찾았다.",
+        "GPU 장치 연결은 toon-fabric에서 켠다. rustix 보안·빌드 도구 수정은 공통이다. 같은 장치에서 읽은 바이트는 기존 경로와 일치했다. Chrome 153 실측(2026-09-23)은 256px 0.93배, 512px 3.29배, 1024px 3.12배다. 1.89~2.43배는 이전 측정(2026-08-08)이며 상류 PR은 확인되지 않았다.",
         "GPU device adoption requires toon-fabric. The rustix security update and build-tool fix apply to all builds. A path that uses the adopted device in place is open, and the bytes read match the old path. The speed-up varies with size: the canonical run (2026-09-23, Chrome 153) gives 0.93x at 256px (no gain), 3.29x at 512px and 3.12x at 1024px; the older 1.89x-2.43x (2026-08-08) is a prior record. We found no evidence of an upstream PR.",
       ),
     },
