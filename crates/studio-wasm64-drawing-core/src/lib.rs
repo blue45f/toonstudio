@@ -18,6 +18,8 @@ pub mod tactile_texture_kernel;
 pub mod tile_compositor_kernel;
 pub mod tile_delta_kernel;
 pub mod vector_psd_tile_kernel;
+#[cfg(feature = "extended-3d")]
+pub mod virtual_3d_physics_kernel;
 pub mod wasm_ffi;
 
 pub use brush_kernel::{
@@ -62,9 +64,21 @@ pub use wasm_ffi::{
     WASM_HOTPATH_CAPABILITIES,
 };
 #[cfg(feature = "extended-3d")]
+pub use virtual_3d_physics_kernel::{
+    render_foley_biquad_block, solve_finger_fabrik_chain, solve_hand_fabrik_15joints,
+    step_verlet_spring_chains_soa, FingerAngleLimits, FingerFabrikConfig, FingerIkResult,
+    FoleyBiquadState, FoleyBlockStats, FoleyDspConfig, FoleyFilterMode, HandIkResult,
+    SphereCollider, VerletSpringChainsSoa, VerletSpringConfig, VerletStepStats,
+    AUDIOWORKLET_BLOCK_FRAMES, FINGER_JOINT_COUNT, FINGER_POINT_COUNT, FOLEY_PEAK_CEILING,
+    FOLEY_TARGET_LUFS, HAND_FINGER_COUNT, HAND_TOTAL_JOINTS,
+};
+#[cfg(feature = "extended-3d")]
 pub use wasm_ffi::{
     wasm_encode_morton_2d_u32, wasm_encode_morton_3d_u32, wasm_extended_3d_capabilities,
-    wasm_extract_lt_lineart_from_gbuffer, wasm_skin_vrm_mesh_4bone_soa, LT_LINEART_FFI_PARAM_COUNT,
+    wasm_extract_lt_lineart_from_gbuffer, wasm_render_foley_biquad_block,
+    wasm_skin_vrm_mesh_4bone_soa, wasm_solve_finger_fabrik_chain,
+    wasm_step_verlet_spring_chains_soa, FABRIK_FINGER_FFI_PARAM_COUNT, FOLEY_DSP_FFI_PARAM_COUNT,
+    FOLEY_DSP_FFI_STATE_LEN, LT_LINEART_FFI_PARAM_COUNT, VERLET_SPRING_FFI_PARAM_COUNT,
     WASM_EXTENDED_3D_CAPABILITIES,
 };
 
