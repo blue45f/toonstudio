@@ -286,9 +286,9 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
 
   const activeGutterPanel = workingStrip.panels.find((p) => p.panelId === selectedPanelId) ?? workingStrip.panels[0];
 
-  const tabs: readonly { readonly id: CinematographyDirectorTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "camera-180", label: pick("3D 시네마 렌즈 · 180도 법칙 · 구도", "3D Cinema Lens · 180° Rule · Framing"), icon: <Camera className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "vertical-eyeflow", label: pick("세로 스크롤 Z·S커브 시선 흐름 검증기", "Vertical Scroll Z/S Eye-Flow Verifier"), icon: <MoveVertical className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: CinematographyDirectorTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "camera-180", label: pick("3D 시네마 렌즈 · 180도 법칙 · 구도", "3D Cinema Lens · 180° Rule · Framing"), shortLabel: pick("카메라", "Camera"), icon: <Camera className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "vertical-eyeflow", label: pick("세로 스크롤 Z·S커브 시선 흐름 검증기", "Vertical Scroll Z/S Eye-Flow Verifier"), shortLabel: pick("시선 경로", "Eye flow"), icon: <MoveVertical className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
   const shotScales: readonly { readonly id: ShotScaleId; readonly labelKo: string; readonly labelEn: string }[] = [
     { id: "closeup", labelKo: "클로즈업", labelEn: "Close-Up" },
@@ -350,11 +350,11 @@ export function StudioCinematographyDirectorPanel(props: StudioCinematographyDir
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? SOLID_ACTIVE : IDLE_TONE}`}
           >
-            {tab.icon}<span>{tab.label}</span>
+            {tab.icon}<span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>

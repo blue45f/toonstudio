@@ -232,10 +232,10 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
     updateAuditInput(applyAaaRemediation(auditInput), "atelier-aaa");
   };
 
-  const tabs: readonly { readonly id: ErgonomicsMasterTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "shortcuts", label: pick("4대 단축키 리매핑·충돌", "4-Tool Shortcuts & Conflicts"), icon: <Keyboard className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "handedness", label: pick("왼손·한손 태블릿 미러", "Left-Hand & Tablet Mirror"), icon: <Hand className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "accessibility", label: pick("접근성 입력값 예제", "Accessibility Input Examples"), icon: <Accessibility className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: ErgonomicsMasterTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "shortcuts", label: pick("4대 단축키 리매핑·충돌", "4-Tool Shortcuts & Conflicts"), shortLabel: pick("단축키", "Shortcuts"), icon: <Keyboard className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "handedness", label: pick("왼손·한손 태블릿 미러", "Left-Hand & Tablet Mirror"), shortLabel: pick("도구 배치", "Layout"), icon: <Hand className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "accessibility", label: pick("접근성 입력값 예제", "Accessibility Input Examples"), shortLabel: pick("가독성", "Readability"), icon: <Accessibility className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const selectedCommandSpec = SHORTCUT_COMMANDS.find((c) => c.id === selectedCommandId) ?? SHORTCUT_COMMANDS[0];
@@ -276,11 +276,11 @@ export function StudioErgonomicsMasterPanel(props: StudioErgonomicsMasterPanelPr
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? ACTIVE_TONE : IDLE_TONE}`}
           >
-            {tab.icon}<span>{tab.label}</span>
+            {tab.icon}<span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>

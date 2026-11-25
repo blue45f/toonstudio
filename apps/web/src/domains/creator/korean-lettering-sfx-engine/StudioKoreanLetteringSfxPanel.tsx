@@ -210,9 +210,9 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
     setLastSfxStatus(pick("폰트 의존 SVG 텍스트 예제 구성 확인. 실제 레이어 생성·저장은 연결되지 않았습니다.", "Font-dependent SVG text example inspected. No layer creation or persistence is connected."));
   };
 
-  const tabs: readonly { readonly id: KoreanLetteringSfxTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "balloon-typeset", label: pick("한국어 광학 말풍선 조판 · 세로쓰기", "Korean Optical Balloon & Vertical-RL"), icon: <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "sfx-vector", label: pick("5종 감정 의성어(SFX) 벡터 타이포", "5-Envelope Emotion SFX Vector"), icon: <Wand2 className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: KoreanLetteringSfxTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "balloon-typeset", label: pick("한국어 광학 말풍선 조판 · 세로쓰기", "Korean Optical Balloon & Vertical-RL"), shortLabel: pick("말풍선", "Balloons"), icon: <MessageSquareText className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "sfx-vector", label: pick("5종 감정 의성어(SFX) 벡터 타이포", "5-Envelope Emotion SFX Vector"), shortLabel: pick("효과 글자", "SFX text"), icon: <Wand2 className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const svgPadX = 16;
@@ -252,12 +252,12 @@ export function StudioKoreanLetteringSfxPanel(props: StudioKoreanLetteringSfxPan
         {tabs.map((tab) => (
           <button
             key={tab.id} type="button" role="tab" id={`${uid}-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id} aria-controls={`${uid}-panel-${tab.id}`}
+            aria-selected={activeTab === tab.id} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`}
             data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? SOLID_ACTIVE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>

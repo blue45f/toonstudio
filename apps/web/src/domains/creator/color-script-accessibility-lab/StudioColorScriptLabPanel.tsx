@@ -238,10 +238,10 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
     dualNotification.notify([dualInput.id, r.recommendedBorderHex]);
   };
 
-  const tabs: readonly { readonly id: ColorScriptLabTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "arc", label: pick("4막 감정 컬러 스크립트 아크", "4-Act Color Script Arc"), icon: <Palette className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "cvd", label: pick("4종 색각이상 LMS 시뮬레이터", "4-Type LMS CVD Simulator"), icon: <Eye className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "dualViewer", label: pick("다크·라이트 양면 경계 검수", "Dark/Light Dual Viewer"), icon: <Moon className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: ColorScriptLabTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "arc", label: pick("4막 감정 컬러 스크립트 아크", "4-Act Color Script Arc"), shortLabel: pick("색 흐름", "Color arc"), icon: <Palette className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "cvd", label: pick("4종 색각이상 LMS 시뮬레이터", "4-Type LMS CVD Simulator"), shortLabel: pick("색각 변환", "CVD model"), icon: <Eye className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "dualViewer", label: pick("다크·라이트 양면 경계 검수", "Dark/Light Dual Viewer"), shortLabel: pick("경계 대비", "Border"), icon: <Moon className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   const tensionPoints = arcResult.acts.map((act, idx) => `${44 + idx * 88},${Math.round(78 - act.tension * 58)}`).join(" ");
@@ -289,13 +289,14 @@ export function StudioColorScriptLabPanel(props: StudioColorScriptLabPanelProps)
               data-testid={`csa-tab-${tab.id}`}
               type="button"
               role="tab"
+              aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label}
               aria-selected={selected}
               aria-controls={`${uid}-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`${TAB_BASE} ${selected ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg"}`}
             >
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{tab.shortLabel}</span>
             </button>
           );
         })}

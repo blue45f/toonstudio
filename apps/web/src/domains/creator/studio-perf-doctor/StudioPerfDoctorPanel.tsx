@@ -217,9 +217,9 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
   const severityLabel = (severity: JankSpikeSeverity): string =>
     severity === "minor" ? pick("경미", "Minor") : severity === "moderate" ? pick("중간", "Moderate") : pick("심각", "Severe");
 
-  const tabs: readonly { readonly id: StudioPerfDoctorTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "frametime-profiler", label: pick("120Hz 프레임타임 히스토그램 · 스테이지 분해", "120Hz Frame Histogram & Stage Breakdown"), icon: <Activity className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "runtime-health", label: pick("GPU VRAM · 타일 캐시 · OPFS WAL 헬스 & 1클릭 처방", "GPU VRAM · Tile Cache · OPFS WAL & 1-Click Fix"), icon: <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: StudioPerfDoctorTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "frametime-profiler", label: pick("120Hz 프레임타임 히스토그램 · 스테이지 분해", "120Hz Frame Histogram & Stage Breakdown"), shortLabel: pick("프레임 예산", "Frames"), icon: <Activity className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "runtime-health", label: pick("GPU VRAM · 타일 캐시 · OPFS WAL 헬스 & 1클릭 처방", "GPU VRAM · Tile Cache · OPFS WAL & 1-Click Fix"), shortLabel: pick("자원 제안", "Resources"), icon: <ShieldCheck className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   return (
@@ -281,11 +281,11 @@ export function StudioPerfDoctorPanel(props: StudioPerfDoctorPanelProps): ReactE
           <button
             key={tab.id} id={`${uid}-tab-${tab.id}`} type="button" role="tab"
             data-testid={`tab-${tab.id}`} aria-selected={activeTab === tab.id}
-            aria-controls={`${uid}-panel-${tab.id}`} onClick={() => setActiveTab(tab.id)}
+            aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`} onClick={() => setActiveTab(tab.id)}
             className={`${TAB_BTN} ${activeTab === tab.id ? ACTIVE_TONE : IDLE_TONE}`}
           >
             {tab.icon}
-            <span>{tab.label}</span>
+            <span>{tab.shortLabel}</span>
           </button>
         ))}
       </div>

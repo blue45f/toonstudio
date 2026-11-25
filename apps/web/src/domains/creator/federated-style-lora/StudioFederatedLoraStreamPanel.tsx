@@ -262,9 +262,9 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
   };
 
   const latestStep = session.stepHistory[session.stepHistory.length - 1] ?? null;
-  const tabs: readonly { readonly id: FederatedLoraStreamTabId; readonly label: string; readonly icon: ReactElement }[] = [
-    { id: "federated-lora", label: pick("저랭크 MSE · 가정 예산", "Low-Rank MSE · Assumed Budget"), icon: <Lock className="h-3.5 w-3.5" aria-hidden="true" /> },
-    { id: "semantic-stream", label: pick("시맨틱 LOD 스트리밍 · 메모리 모델 LRU", "Semantic LOD · In-Memory LRU Metadata"), icon: <Layers className="h-3.5 w-3.5" aria-hidden="true" /> },
+  const tabs: readonly { readonly id: FederatedLoraStreamTabId; readonly label: string; readonly shortLabel: string; readonly icon: ReactElement }[] = [
+    { id: "federated-lora", label: pick("저랭크 MSE · 가정 예산", "Low-Rank MSE · Assumed Budget"), shortLabel: pick("가정 학습", "Training model"), icon: <Lock className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
+    { id: "semantic-stream", label: pick("시맨틱 LOD 스트리밍 · 메모리 모델 LRU", "Semantic LOD · In-Memory LRU Metadata"), shortLabel: pick("메모리 캐시", "Cache model"), icon: <Layers className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" /> },
   ];
 
   return (
@@ -297,9 +297,9 @@ export function StudioFederatedLoraStreamPanel(props: StudioFederatedLoraStreamP
         {tabs.map((tab) => {
           const selected = activeTab === tab.id;
           return (
-            <button key={tab.id} id={`${uid}-tab-${tab.id}`} type="button" role="tab" aria-selected={selected} aria-controls={`${uid}-panel-${tab.id}`} data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)} className={`${TAB_BTN} ${selected ? ACTIVE_TONE : IDLE_TONE}`}>
+            <button key={tab.id} id={`${uid}-tab-${tab.id}`} type="button" role="tab" aria-selected={selected} aria-label={`${tab.shortLabel}: ${tab.label}`} title={tab.label} aria-controls={`${uid}-panel-${tab.id}`} data-testid={`tab-${tab.id}`} onClick={() => setActiveTab(tab.id)} className={`${TAB_BTN} ${selected ? ACTIVE_TONE : IDLE_TONE}`}>
               {tab.icon}
-              <span>{tab.label}</span>
+              <span>{tab.shortLabel}</span>
             </button>
           );
         })}
