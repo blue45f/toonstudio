@@ -1,4 +1,4 @@
-import { BookOpen, Calculator, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { BookOpen, Calculator, Database, Gauge, Glasses, Globe, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -86,6 +86,22 @@ const LazyAssistantHandoffPanel = lazy(async () => {
   return { default: m.StudioAssistantHandoffKitPanel };
 });
 
+const LazyStudioGlobalIpPitchPanel = lazy(async () => {
+  await import("../global-ip-pitch-studio");
+  const m = await import("../global-ip-pitch-studio/StudioGlobalIpPitchPanel");
+  return { default: m.StudioGlobalIpPitchPanel };
+});
+const LazyStudioProDigitizerCalibratorPanel = lazy(async () => {
+  await import("../pro-digitizer-hid-engine");
+  const m = await import("../pro-digitizer-hid-engine/StudioProDigitizerCalibratorPanel");
+  return { default: m.StudioProDigitizerCalibratorPanel };
+});
+const LazyStudioSpatialWearablePanel = lazy(async () => {
+  await import("../spatial-wearable-studio");
+  const m = await import("../spatial-wearable-studio/StudioSpatialWearablePanel");
+  return { default: m.StudioSpatialWearablePanel };
+});
+
 type EcosystemTabId =
   | "workflowDag"
   | "openBridge"
@@ -102,7 +118,10 @@ type EcosystemTabId =
   | "aiLatentConti"
   | "monetizationPlan"
   | "offlineResilience"
-  | "assistantHandoff";
+  | "assistantHandoff"
+  | "globalIpPitch"
+  | "proDigitizerHid"
+  | "spatialWearable";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -141,10 +160,19 @@ const ECOSYSTEM_TABS: readonly {
   { id: "monetizationPlan", labelKo: "유료전환·굿즈·정산 가정 계산", labelEn: "Funnel · Goods · Settlement Estimates" },
   { id: "offlineResilience", labelKo: "오프라인 병합·복구·잠금 예제", labelEn: "Offline Merge · Recovery · Lease Examples" },
   { id: "assistantHandoff", labelKo: "레이어 검수·인수인계 예제", labelEn: "Layer Review · Handoff Examples" },
+  { id: "globalIpPitch", labelKo: "IP 피칭·수익 가정 예제", labelEn: "IP Pitch · Revenue Assumption Examples" },
+  { id: "proDigitizerHid", labelKo: "펜 입력·보정 계산 예제", labelEn: "Pen Input · Calibration Examples" },
+  { id: "spatialWearable", labelKo: "기기 배치·시간 예측 예제", labelEn: "Device Layout · Timing Estimate Examples" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
   switch (id) {
+    case "globalIpPitch":
+      return <Presentation size={15} aria-hidden="true" />;
+    case "proDigitizerHid":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "spatialWearable":
+      return <Glasses size={15} aria-hidden="true" />;
     case "assistantHandoff":
       return <PackageCheck size={15} aria-hidden="true" />;
     case "monetizationPlan":
@@ -241,6 +269,9 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "monetizationPlan" ? <LazyStudioCreatorMonetizationPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "offlineResilience" ? <LazyStudioOfflineResiliencePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "assistantHandoff" ? <LazyAssistantHandoffPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "globalIpPitch" ? <LazyStudioGlobalIpPitchPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "proDigitizerHid" ? <LazyStudioProDigitizerCalibratorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "spatialWearable" ? <LazyStudioSpatialWearablePanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">

@@ -15,7 +15,7 @@ vi.mock("@/shared/lib/i18n", () => ({
   useI18n: (select: (state: { readonly lang: string }) => unknown) => select(language),
 }));
 
-// 기존 기본 탭의 렌더러는 이 검증 범위가 아니다. 새 열일곱 개의 모듈은 실제로 지연 로드한다.
+// 기존 기본 탭의 렌더러는 이 검증 범위가 아니다. 새 스물네 개의 모듈은 실제로 지연 로드한다.
 vi.mock("../auto-qa-pixel-engine/AutoQaPixelScannerPanel", () => ({ AutoQaPixelScannerPanel: () => null }));
 vi.mock("../brush-physics-pro/StudioBrushPhysicsProPanel", () => ({ StudioBrushPhysicsProPanel: () => null }));
 vi.mock("../creator-experience-calibrator/StudioCreatorCalibratorPanel", () => ({ StudioCreatorCalibratorPanel: () => null }));
@@ -48,6 +48,13 @@ const cases: readonly ExampleCase[] = [
   { ko: "액션·로맨스 SVG 효과 예제", en: "Action · Romance SVG Examples", panel: "studio-action-fx-lab-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../action-fx-procedural-lab") },
   { ko: "유료전환·굿즈·정산 가정 계산", en: "Funnel · Goods · Settlement Estimates", panel: "creator-monetization-planner-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../creator-monetization-planner") },
   { ko: "오프라인 병합·복구·잠금 예제", en: "Offline Merge · Recovery · Lease Examples", panel: "offline-resilience-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../offline-crdt-resilience") },
+  { ko: "핀·검수 메모 예제", en: "Pin · Review Note Examples", panel: "studio-visual-pin-review-panel", Hub: AutoQaCollabHubPanel, load: () => import("../visual-pin-review-studio") },
+  { ko: "대사·배경음·효과음 큐 예제", en: "Dialogue · Music · Sound Cue Examples", panel: "studio-webtoon-audio-cue-panel", Hub: AutoQaCollabHubPanel, load: () => import("../webtoon-audio-cue-director") },
+  { ko: "무드보드·팔레트 예제", en: "Moodboard · Palette Examples", panel: "studio-editorial-moodboard-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../editorial-moodboard-palette") },
+  { ko: "표정·포즈 제안 예제", en: "Expression · Pose Suggestion Examples", panel: "studio-char-expression-pose-advisor-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../char-expression-pose-advisor") },
+  { ko: "IP 피칭·수익 가정 예제", en: "IP Pitch · Revenue Assumption Examples", panel: "studio-global-ip-pitch-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../global-ip-pitch-studio") },
+  { ko: "펜 입력·보정 계산 예제", en: "Pen Input · Calibration Examples", panel: "pro-digitizer-calibrator-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../pro-digitizer-hid-engine") },
+  { ko: "기기 배치·시간 예측 예제", en: "Device Layout · Timing Estimate Examples", panel: "studio-spatial-wearable-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../spatial-wearable-studio") },
 ];
 
 afterEach(cleanup);
@@ -78,6 +85,10 @@ describe("새 예제의 단일 진입점과 화면 언어", () => {
       await act(async () => { fireEvent.click(tab); });
       const panel = await screen.findByTestId(entry.panel, undefined, { timeout: 5_000 });
       expect(tab.getAttribute("aria-selected")).toBe("true");
+      if (entry.panel === "studio-editorial-moodboard-panel") {
+        const guide = within(panel).getByTestId("spectrum-domain-pigment-guide");
+        expect(within(guide).getAllByRole("listitem", { hidden: true })).toHaveLength(5);
+      }
       const title = within(panel).getAllByRole("heading")[0]?.textContent ?? "";
       expect(title.length).toBeGreaterThan(0);
       expect(/[가-힣]/u.test(title)).toBe(locale === "ko");

@@ -1,4 +1,4 @@
-import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, Palette, ScanSearch, Sparkles } from "lucide-react";
+import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, MapPin, Music, Palette, ScanSearch, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -72,6 +72,17 @@ const LazyPacingThumbnailPanel = lazy(async () => {
   return { default: m.StudioEpisodePacingThumbnailPanel };
 });
 
+const LazyStudioVisualPinReviewPanel = lazy(async () => {
+  await import("../visual-pin-review-studio");
+  const m = await import("../visual-pin-review-studio/StudioVisualPinReviewPanel");
+  return { default: m.StudioVisualPinReviewPanel };
+});
+const LazyStudioWebtoonAudioCuePanel = lazy(async () => {
+  await import("../webtoon-audio-cue-director");
+  const m = await import("../webtoon-audio-cue-director/StudioWebtoonAudioCuePanel");
+  return { default: m.StudioWebtoonAudioCuePanel };
+});
+
 type QaHubTabId =
   | "pixel"
   | "layout"
@@ -85,7 +96,9 @@ type QaHubTabId =
   | "colorScript"
   | "panelRhythm"
   | "mobileReader"
-  | "pacingThumbnail";
+  | "pacingThumbnail"
+  | "visualPinReview"
+  | "audioCueDirector";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -121,10 +134,16 @@ const QA_HUB_TABS: readonly {
   { id: "panelRhythm", labelKo: "컷 높이·여백·읽기 호흡 예제", labelEn: "Panel Size · Gutter · Rhythm Examples" },
   { id: "mobileReader", labelKo: "모바일 크기·독서 가독성 예제", labelEn: "Mobile Size · Reading Legibility Examples" },
   { id: "pacingThumbnail", labelKo: "컷 호흡·썸네일 수치 예제", labelEn: "Panel Rhythm · Thumbnail Metric Examples" },
+  { id: "visualPinReview", labelKo: "핀·검수 메모 예제", labelEn: "Pin · Review Note Examples" },
+  { id: "audioCueDirector", labelKo: "대사·배경음·효과음 큐 예제", labelEn: "Dialogue · Music · Sound Cue Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
   switch (id) {
+    case "visualPinReview":
+      return <MapPin size={15} aria-hidden="true" />;
+    case "audioCueDirector":
+      return <Music size={15} aria-hidden="true" />;
     case "mobileReader":
       return <LayoutList size={15} aria-hidden="true" />;
     case "pacingThumbnail":
@@ -212,6 +231,8 @@ export function AutoQaCollabHubPanel() {
           {active === "panelRhythm" ? <LazyPanelRhythmPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "mobileReader" ? <LazyMobileReaderPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "pacingThumbnail" ? <LazyPacingThumbnailPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "visualPinReview" ? <LazyStudioVisualPinReviewPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "audioCueDirector" ? <LazyStudioWebtoonAudioCuePanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">
