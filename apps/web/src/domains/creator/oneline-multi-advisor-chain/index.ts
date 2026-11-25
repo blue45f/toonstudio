@@ -1,0 +1,53 @@
+/**
+ * Wave 49D — 대사 한 줄 → 4대 어시스턴트 원스톱 연출 체인 (One-Line Multi-Advisor Orchestrator) 공개 배럴.
+ */
+
+export {
+  ADVISOR_SLOT_KEYS,
+  ADVISOR_SLOT_META,
+  ONE_LINE_SCENARIO_PRESETS,
+  ORCHESTRATOR_SCHEMA_VERSION,
+  applySingleSlot,
+  applyUnifiedSelection,
+  auditUnifiedSceneCoherence,
+  createOrchestratorSession,
+  deriveCameraTension,
+  exportUnifiedSceneBundleJson,
+  exportUnifiedSceneMarkdown,
+  findMatchingBundleId,
+  getOneLineScenarioPreset,
+  mapEmotionToBalloonTone,
+  orchestrateOneLineSceneBundles,
+  resolveActiveOrchestratorView,
+  revertAllOrchestratorSlots,
+  revertOrchestratorSlot,
+  selectSlotCandidate,
+  selectUnifiedBundle,
+  togglePreviewOrchestrator,
+  type AdvisorSlotKey,
+  type AdvisorSlotMeta,
+  type AppliedSlotRecord,
+  type OneLineOrchestrationInput,
+  type OneLineOrchestrationResult,
+  type OneLineOrchestratorSession,
+  type OneLineScenarioId,
+  type OneLineScenarioPreset,
+  type OrchestratorAppliedSlots,
+  type OrchestratorHistoryEntry,
+  type OrchestratorSessionStatus,
+  type ResolvedOrchestratorView,
+  type ResolvedSlotItem,
+  type SlotCandidateIndex,
+  type SlotSelectionMap,
+  type SlotViewSource,
+  type UnifiedBundleId,
+  type UnifiedBundleVariant,
+  type UnifiedCoherenceAudit,
+  type UnifiedCoherenceGrade,
+  type UnifiedSceneBundle,
+} from "./oneline-orchestrator-engine";
+
+export {
+  StudioOneLineOrchestratorPanel,
+  type StudioOneLineOrchestratorPanelProps,
+} from "./StudioOneLineOrchestratorPanel";
