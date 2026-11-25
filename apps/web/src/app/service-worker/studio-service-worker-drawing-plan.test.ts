@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { collectStudioOfflineDrawingUrls, DRAWING_ROOTS } from "./studio-service-worker-drawing-plan";
-import type { StudioViteManifest } from "./studio-service-worker-precache-plan";
+import { planStudioServiceWorkerPrecache, type StudioViteManifest } from "./studio-service-worker-precache-plan";
 
 const names = DRAWING_ROOTS;
 const skiaKey = "../../packages/studio-engine-skia/src/index.ts";
@@ -57,6 +57,21 @@ describe("explicit offline drawing pack", () => {
       StudioDurableSaveIntentPanel: { name: "StudioDurableSaveIntentPanel", file: "assets/save-intent-panel.js" },
     }, files);
     expect(urls).toContain("/assets/save-intent-panel.js");
+  });
+  it("모바일 브러시 시트의 지연 도구는 드로잉 준비 때만 받는다", () => {
+    const mobileManifest = {
+      ...manifest,
+      "index.html": { file: "assets/app.js", dynamicImports: ["StudioBrushStudio"] },
+      StudioBrushStudio: { name: "StudioBrushStudio", file: "assets/brush-studio.js", imports: ["pressureCurve"] },
+      pressureCurve: { file: "assets/pressure-curve.js" },
+    };
+    const drawing = collectStudioOfflineDrawingUrls(mobileManifest, files);
+    expect(drawing).toEqual(expect.arrayContaining(["/assets/brush-studio.js", "/assets/pressure-curve.js"]));
+    const initial = planStudioServiceWorkerPrecache({
+      manifest: mobileManifest, appEntryKey: "index.html", warmUrls: ["/i18n/studio/mainMenu/ko.json"], sizeOf: () => 1,
+    });
+    expect(initial.criticalUrls).toEqual(["/assets/app.js"]);
+    expect(initial.warmUrls).toEqual(["/i18n/studio/mainMenu/ko.json"]);
   });
   it("fails the build instead of silently omitting a renamed core module", () => {
     expect(() => collectStudioOfflineDrawingUrls({}, files)).toThrow(/root missing/u);
