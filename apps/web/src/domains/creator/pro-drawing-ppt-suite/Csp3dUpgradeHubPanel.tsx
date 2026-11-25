@@ -1,4 +1,4 @@
-import { Brush, Camera, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Camera, Hand, Layers, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -68,6 +68,16 @@ const LazyStudioCharacterSheetBiblePanel = lazy(async () => {
   const m = await import("../character-sheet-bible-studio/StudioCharacterSheetBiblePanel");
   return { default: m.StudioCharacterSheetBiblePanel };
 });
+const LazyStudioEditorialMoodboardPanel = lazy(async () => {
+  await import("../editorial-moodboard-palette");
+  const m = await import("../editorial-moodboard-palette/StudioEditorialMoodboardPanel");
+  return { default: m.StudioEditorialMoodboardPanel };
+});
+const LazyStudioCharExpressionPoseAdvisorPanel = lazy(async () => {
+  await import("../char-expression-pose-advisor");
+  const m = await import("../char-expression-pose-advisor/StudioCharExpressionPoseAdvisorPanel");
+  return { default: m.StudioCharExpressionPoseAdvisorPanel };
+});
 
 type Csp3dTabId =
   | "puppet"
@@ -82,7 +92,9 @@ type Csp3dTabId =
   | "lightingRig3d"
   | "actionFxLab"
   | "foleyMixer"
-  | "charSheetBible";
+  | "charSheetBible"
+  | "editorialMoodboard"
+  | "charExprAdvisor";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -102,6 +114,8 @@ const CSP3D_TABS: readonly {
   { id: "actionFxLab", labelKo: "웹툰 6종 액션·마법진·로맨스 벡터 FX 랩", labelEn: "6-Preset Action & Romance Vector FX Lab" },
   { id: "foleyMixer", labelKo: "화실 물리 사운드(Foley)·-24 LUFS 공간 음향 믹서", labelEn: "Atelier Physical Foley · -24 LUFS Acoustic Mixer" },
   { id: "charSheetBible", labelKo: "캐릭터 설정집·표정 9궁도·의상 5슬롯 조판", labelEn: "Character Sheet Bible · 9-Expression · 5-Outfit" },
+  { id: "editorialMoodboard", labelKo: "탈-바이올렛 에디토리얼 무드보드·5안료 팔레트", labelEn: "Zero-Violet Editorial Moodboard · 5-Pigment Palette" },
+  { id: "charExprAdvisor", labelKo: "대사·감정 캐릭터 표정·입모양·포즈 자동 제안", labelEn: "Dialogue Character Expression · Mouth · Pose Advisor" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -148,6 +162,10 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Volume2 size={15} aria-hidden="true" />;
     case "charSheetBible":
       return <UserSquare2 size={15} aria-hidden="true" />;
+    case "editorialMoodboard":
+      return <Palette size={15} aria-hidden="true" />;
+    case "charExprAdvisor":
+      return <Smile size={15} aria-hidden="true" />;
   }
 }
 
@@ -209,6 +227,8 @@ export function Csp3dUpgradeHubPanel() {
           {active === "actionFxLab" ? <LazyStudioActionFxLabPanel /> : null}
           {active === "foleyMixer" ? <LazyStudioAtelierFoleyMixerPanel /> : null}
           {active === "charSheetBible" ? <LazyStudioCharacterSheetBiblePanel /> : null}
+          {active === "editorialMoodboard" ? <LazyStudioEditorialMoodboardPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "charExprAdvisor" ? <LazyStudioCharExpressionPoseAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

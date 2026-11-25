@@ -1,4 +1,4 @@
-import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Gauge, Glasses, Globe, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -103,6 +103,21 @@ const LazyStudioEpisodePacingThumbnailPanel = lazy(async () => {
   const m = await import("../episode-pacing-thumbnail-lab/StudioEpisodePacingThumbnailPanel");
   return { default: m.StudioEpisodePacingThumbnailPanel };
 });
+const LazyStudioGlobalIpPitchPanel = lazy(async () => {
+  await import("../global-ip-pitch-studio");
+  const m = await import("../global-ip-pitch-studio/StudioGlobalIpPitchPanel");
+  return { default: m.StudioGlobalIpPitchPanel };
+});
+const LazyStudioProDigitizerCalibratorPanel = lazy(async () => {
+  await import("../pro-digitizer-hid-engine");
+  const m = await import("../pro-digitizer-hid-engine/StudioProDigitizerCalibratorPanel");
+  return { default: m.StudioProDigitizerCalibratorPanel };
+});
+const LazyStudioSpatialWearablePanel = lazy(async () => {
+  await import("../spatial-wearable-studio");
+  const m = await import("../spatial-wearable-studio/StudioSpatialWearablePanel");
+  return { default: m.StudioSpatialWearablePanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -124,7 +139,10 @@ type EcosystemTabId =
   | "perfDoctor"
   | "craftLauncher"
   | "assistHandoff"
-  | "pacingThumbLab";
+  | "pacingThumbLab"
+  | "globalIpPitch"
+  | "proDigitizerHid"
+  | "spatialWearable";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -167,6 +185,9 @@ const ECOSYSTEM_TABS: readonly {
   { id: "craftLauncher", labelKo: "8대 아틀리에 프로 도구 퀵 런처", labelEn: "8-Station Atelier Craft Launcher" },
   { id: "assistHandoff", labelKo: "어시스턴트 분업 인수인계·레이어 검수·정산 추정", labelEn: "Assistant Handoff · Layer QA · Payout Estimate" },
   { id: "pacingThumbLab", labelKo: "초반 3컷 대사 벽·썸네일 A/B 규칙 점검", labelEn: "Opening Hook · Dialogue Wall · Thumbnail A/B" },
+  { id: "globalIpPitch", labelKo: "글로벌 IP·OTT·출판 12장 피칭 바이블", labelEn: "Global IP · OTT · 12-Slide Pitch Bible" },
+  { id: "proDigitizerHid", labelKo: "와콤·애플펜슬 프로·S펜·HID 캘리브레이터", labelEn: "Pro Digitizer · Stylus · USB HID Calibrator" },
+  { id: "spatialWearable", labelKo: "비전 프로·스마트 글래스·워치 멀티기기 작업실", labelEn: "Vision Pro · Smart Glasses · Watch Deck" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -211,6 +232,12 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <ClipboardCheck size={15} aria-hidden="true" />;
     case "pacingThumbLab":
       return <BarChart3 size={15} aria-hidden="true" />;
+    case "globalIpPitch":
+      return <Presentation size={15} aria-hidden="true" />;
+    case "proDigitizerHid":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "spatialWearable":
+      return <Glasses size={15} aria-hidden="true" />;
   }
 }
 
@@ -279,6 +306,9 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "craftLauncher" ? <LazyStudioAtelierCraftLauncherPanel /> : null}
           {active === "assistHandoff" ? <LazyStudioAssistantHandoffKitPanel /> : null}
           {active === "pacingThumbLab" ? <LazyStudioEpisodePacingThumbnailPanel /> : null}
+          {active === "globalIpPitch" ? <LazyStudioGlobalIpPitchPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "proDigitizerHid" ? <LazyStudioProDigitizerCalibratorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "spatialWearable" ? <LazyStudioSpatialWearablePanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

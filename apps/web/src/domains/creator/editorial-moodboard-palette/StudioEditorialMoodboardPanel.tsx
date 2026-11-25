@@ -15,6 +15,12 @@ import {
 import { useEffect, useId, useMemo, useState, type ReactElement } from "react";
 
 import {
+  SPECTRUM_CHROMATIC_DISCIPLINE,
+  SPECTRUM_DOMAIN_IDS,
+  SPECTRUM_DOMAIN_PIGMENTS,
+} from "@/shared/lib/spectrum-editorial-tokens";
+
+import {
   EDITORIAL_MOODBOARD_PRESETS, PIGMENT_ROLE_IDS, PIGMENT_ROLE_LABELS, TARGET_CHROMATIC_RATIO,
   auditChromaticBalance, autoRepairPaletteContrast, buildEditorialPosterSvg,
   exportPaletteCspSwatch, exportPaletteCssVariables, exportPaletteOklchJson,
@@ -573,6 +579,27 @@ export function StudioEditorialMoodboardPanel(props: StudioEditorialMoodboardPan
               </pre>
             ) : null}
           </div>
+
+          <details className="rounded-xl border border-line bg-canvas p-3">
+            <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+              {pick(
+                `5대 도메인 스펙트럼 안료 기준 (${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.neutralSurfaceRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.domainPigmentRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.editorialDetailRatio * 100)})`,
+                `5 Domain Spectrum Pigments (${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.neutralSurfaceRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.domainPigmentRatio * 100)}/${Math.round(SPECTRUM_CHROMATIC_DISCIPLINE.editorialDetailRatio * 100)})`,
+              )}
+            </summary>
+            <ul className="mt-2.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {SPECTRUM_DOMAIN_IDS.map((domainId) => {
+                const pigment = SPECTRUM_DOMAIN_PIGMENTS[domainId];
+                return (
+                  <li key={domainId} className="flex items-center gap-2 rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs">
+                    <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-line" style={{ backgroundColor: pigment.vivid.ink }} aria-hidden="true" />
+                    <span className="font-semibold text-fg [word-break:keep-all]">{isEn ? pigment.nameEn : pigment.nameKo}</span>
+                    <span className="ml-auto font-mono text-[11px] text-fg-3 tabular-nums">{pigment.hue}°</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
         </div>
       </div>
     </section>

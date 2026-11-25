@@ -1,4 +1,4 @@
-import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, LayoutList, MessageSquareText, Palette, Rows3, ScanSearch, Smartphone, Sparkles } from "lucide-react";
+import { Accessibility, CheckCircle2, Clapperboard, Eye, GitBranch, Globe2, LayoutList, MapPin, MessageSquareText, Music, Palette, Rows3, ScanSearch, Smartphone, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -68,6 +68,16 @@ const LazyMobileReaderPreviewPanel = lazy(async () => {
   const m = await import("../mobile-reader-preview-sim/StudioMobileReaderPreviewPanel");
   return { default: m.StudioMobileReaderPreviewPanel };
 });
+const LazyStudioVisualPinReviewPanel = lazy(async () => {
+  await import("../visual-pin-review-studio");
+  const m = await import("../visual-pin-review-studio/StudioVisualPinReviewPanel");
+  return { default: m.StudioVisualPinReviewPanel };
+});
+const LazyStudioWebtoonAudioCuePanel = lazy(async () => {
+  await import("../webtoon-audio-cue-director");
+  const m = await import("../webtoon-audio-cue-director/StudioWebtoonAudioCuePanel");
+  return { default: m.StudioWebtoonAudioCuePanel };
+});
 
 type QaHubTabId =
   | "pixel"
@@ -82,7 +92,9 @@ type QaHubTabId =
   | "colorScriptA11y"
   | "ergonomicsMaster"
   | "panelRhythm"
-  | "mobileReaderSim";
+  | "mobileReaderSim"
+  | "visualPinReview"
+  | "audioCueDirector";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -118,6 +130,8 @@ const QA_HUB_TABS: readonly {
   { id: "ergonomicsMaster", labelKo: "4대 도구 단축키·왼손 미러·WCAG 2.2 AAA", labelEn: "4-Tool Shortcuts · Left-Hand · WCAG 2.2 AAA" },
   { id: "panelRhythm", labelKo: "세로 컷 분할·여백 리듬·대사 호흡", labelEn: "Vertical Scroll Gutter & Beat Rhythm" },
   { id: "mobileReaderSim", labelKo: "9:16 모바일 독자 뷰어·4기종 가독성 점검", labelEn: "9:16 Mobile Reader Preview · 4-Device Audit" },
+  { id: "visualPinReview", labelKo: "캔버스 핀 검수·6단계 바통터치·외부 툴 브리지", labelEn: "Canvas Pin Review · Baton Pass · Open Bridges" },
+  { id: "audioCueDirector", labelKo: "한국어 립싱크 비젬·BGM·SFX 큐 디렉터", labelEn: "Korean Lip-Sync Viseme · BGM · SFX Cue Director" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
@@ -148,6 +162,10 @@ function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
       return <Rows3 size={15} aria-hidden="true" />;
     case "mobileReaderSim":
       return <Smartphone size={15} aria-hidden="true" />;
+    case "visualPinReview":
+      return <MapPin size={15} aria-hidden="true" />;
+    case "audioCueDirector":
+      return <Music size={15} aria-hidden="true" />;
   }
 }
 
@@ -209,6 +227,8 @@ export function AutoQaCollabHubPanel() {
           {active === "ergonomicsMaster" ? <LazyErgonomicsMasterPanel /> : null}
           {active === "panelRhythm" ? <LazyWebtoonPanelRhythmPanel /> : null}
           {active === "mobileReaderSim" ? <LazyMobileReaderPreviewPanel /> : null}
+          {active === "visualPinReview" ? <LazyStudioVisualPinReviewPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "audioCueDirector" ? <LazyStudioWebtoonAudioCuePanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
