@@ -1,0 +1,57 @@
+/**
+ * Wave 61C — ToonSilicon 8대 모던 실리콘 · Google Tensor TPU · WASM64
+ * 전방위 가속 오케스트레이터 및 스튜디오 제어판 공개 배럴.
+ */
+
+export {
+  DEFAULT_EXECUTION_ENVIRONMENT,
+  DEFAULT_FOCUS_WORKLOAD_ID,
+  DEFAULT_MEMORY_ADDRESS_MODE,
+  DEFAULT_MODERN_SILICON_ID,
+  EXECUTION_ENVIRONMENTS,
+  MEMORY_ADDRESS_MODES,
+  MODERN_SILICON_IDS,
+  MODERN_SILICON_PROFILES,
+  TOONSTUDIO_COMPUTE_WORKLOADS,
+  TOONSTUDIO_WORKLOAD_IDS,
+  TOON_SILICON_BRAND_STACK,
+  TOON_SILICON_MEASUREMENT_BASIS,
+  TOON_SILICON_MODEL_KIND,
+  TOON_SILICON_SCHEMA_VERSION,
+  alignTensorShape,
+  buildSiliconFullPowerPlan,
+  exportToonSiliconPlanJson,
+  formatOklch,
+  getModernSiliconProfile,
+  getToonStudioWorkload,
+  isVioletSlopHue,
+  resolveRuntimeBoundary,
+  sanitizeNonVioletHue,
+  type ComputeUnitKind,
+  type CpuDispatchAllocation,
+  type CpuSchedulingPolicy,
+  type EngineSubsystemBrand,
+  type ExecutionEnvironmentMode,
+  type ExportedToonSiliconPlan,
+  type GpuDispatchAllocation,
+  type MemoryAddressMode,
+  type ModernSiliconId,
+  type ModernSiliconProfile,
+  type NpuTpuDispatchAllocation,
+  type OklchColor,
+  type RuntimeBoundaryReport,
+  type SiliconCpuProfile,
+  type SiliconGpuProfile,
+  type SiliconNpuTpuProfile,
+  type SiliconPlatformGroup,
+  type ToonSiliconDispatchInput,
+  type ToonSiliconFullPowerPlan,
+  type ToonStudioWorkloadId,
+  type ToonStudioWorkloadProfile,
+  type WorkloadDispatchRoute,
+} from "./toon-silicon-engine";
+
+export {
+  StudioToonSiliconPanel,
+  type StudioToonSiliconPanelProps,
+} from "./StudioToonSiliconPanel";
