@@ -11,6 +11,8 @@
  * 순수 함수형 모듈: Web Storage · BigInt 리터럴 · private Map store · 원시 색 코드 미사용.
  */
 
+import { assertHudEnums, assertWearableAction, MAX_SPATIAL_JSON_CHARS, normalizeWearableState, validateSpatialDeviceIds, validateSpatialSnapshot, validateSpatialTransport } from "./spatial-input-contract";
+
 export const SPATIAL_WEARABLE_SCHEMA_ID = "toonstudio.spatial-wearable-studio.v1" as const;
 
 export type SpatialSimulationDataSourceKind = "estimate";
@@ -48,6 +50,7 @@ export type MultiDevicePresetId =
 
 export interface SpatialEstimateProvenance {
   readonly dataSourceKind: SpatialSimulationDataSourceKind;
+  readonly hardwareVerified: false; readonly deviceConnected: false; readonly sensorMeasured: false;
   readonly badgeLabelKo: "시뮬레이션 · 추정"; readonly badgeLabelEn: "Simulated · Estimate";
   readonly noticeKo: string; readonly noticeEn: string;
 }
@@ -214,8 +217,9 @@ export const NON_MEDICAL_BREAK_DISCLAIMER_KO = "비의료 단순 작업 시간 �
 export const NON_MEDICAL_BREAK_DISCLAIMER_EN = "Non-medical elapsed work-time reminder only. Not biometric monitoring or medical diagnosis.";
 export const SPATIAL_ESTIMATE_PROVENANCE: SpatialEstimateProvenance = {
   dataSourceKind: "estimate", badgeLabelKo: "시뮬레이션 · 추정", badgeLabelEn: "Simulated · Estimate",
-  noticeKo: "지연 시간·대역폭·공간 6DoF 좌표·시야 점유율은 공개 웹 표준(WebXR·WebRTC·WebBluetooth·PointerEvents) 기준 시뮬레이션 추정치이며 실기기 계측값이 아닙니다.",
-  noticeEn: "Latency, bandwidth, 6DoF coordinates, and HUD occlusion are simulation estimates modeled on public web APIs, not hardware benchmarks.",
+  hardwareVerified: false, deviceConnected: false, sensorMeasured: false,
+  noticeKo: "정적 프로필·각도·대역폭 가정의 계산 예제입니다. 실기기·센서 계측, 브라우저 지원 확인, WebXR 연결·전송·인증, 원고 반영·저장은 수행하지 않습니다. 의료 판정이 아닙니다.",
+  noticeEn: "A calculation example using static profiles, angles, and bandwidth assumptions. No hardware or sensor measurement, browser capability detection, WebXR connection, transport, certification, manuscript changes, or persistence. Not a medical assessment.",
 };
 export const COMFORTABLE_GAZE_MIN_DEG = -15 as const;
 export const COMFORTABLE_GAZE_MAX_DEG = 0 as const;
@@ -257,9 +261,6 @@ function round1(v: number): number { return Math.round(v * 10) / 10; }
 function round2(v: number): number { return Math.round(v * 100) / 100; }
 function round3(v: number): number { return Math.round(v * 1000) / 1000; }
 function degToRad(deg: number): number { return (deg * Math.PI) / 180; }
-function readClampedNum(obj: Record<string, unknown>, key: string, fallback: number, min: number, max: number): number {
-  return clamp(typeof obj[key] === "number" ? obj[key] : fallback, min, max);
-}
 function addConflict(
   list: TopologyConflict[], code: TopologyConflictCode, severity: TopologyConflictSeverity, deviceIds: readonly SpatialDeviceId[],
   titleKo: string, titleEn: string, detailKo: string, detailEn: string, recommendationKo: string, recommendationEn: string,
@@ -283,9 +284,8 @@ export function getArHudPreset(id: ArHudPresetId): ArHudPresetSpec {
 /** 멀티 디바이스 페어링 토폴로지: 역할 충돌 검사 · 지연 예산 추정 · 우선순위 대역폭 배분. */
 export function computeMultiDeviceTopology(options: ComputeMultiDeviceTopologyOptions): MultiDeviceTopologyResult {
   const availableLinkBandwidthMbps = round1(clamp(options.availableLinkBandwidthMbps ?? DEFAULT_LINK_BANDWIDTH_MBPS, 5, 2000));
-  const syncTransportMode: SyncTransportMode = options.syncTransportMode ?? "lan-webrtc";
-  const uniqueSet = new Set<SpatialDeviceId>();
-  for (const id of options.activeDeviceIds) { if (isSpatialDeviceId(id)) uniqueSet.add(id); }
+  const syncTransportMode = validateSpatialTransport(options.syncTransportMode ?? "lan-webrtc");
+  const uniqueSet = new Set(validateSpatialDeviceIds(options.activeDeviceIds, SPATIAL_DEVICE_IDS));
   const activeDeviceIds = SPATIAL_DEVICE_IDS.filter((id) => uniqueSet.has(id));
   const activeDevices = activeDeviceIds.map((id) => getSpatialDeviceSpec(id));
 
@@ -524,15 +524,12 @@ export function computeSpatialCanvasRig(rawInput: SpatialCanvasRigInput): Spatia
 
 /** 워치 크라운·스마트 링 제스처 매퍼(브러시 크기/확대축소/타임라인 스크럽/실행취소). */
 export function resolveWearableDialAction(input: WearableDialActionInput): WearableDialActionResult {
+  assertWearableAction(input);
   const { mode, gesture, precisionModifier = false, state } = input;
-  const delta = Number.isFinite(input.detentDelta ?? 0) ? Math.trunc(input.detentDelta ?? 0) : 0;
-  const maxF = Math.max(1, Math.trunc(state.timelineMaxFrames));
-  const maxH = Math.max(1, Math.trunc(state.historyMaxIndex));
-  const norm: WearableStudioControlState = {
-    brushSizePx: Math.round(clamp(state.brushSizePx, 1, 300)), canvasZoomPct: Math.round(clamp(state.canvasZoomPct, 10, 800)),
-    timelineFrame: Math.round(clamp(state.timelineFrame, 0, maxF)), timelineMaxFrames: maxF,
-    historyIndex: Math.round(clamp(state.historyIndex, 0, maxH)), historyMaxIndex: maxH,
-  };
+  const delta = Number.isFinite(input.detentDelta ?? 0) ? Math.trunc(clamp(input.detentDelta ?? 0, -4096, 4096)) : 0;
+  const norm = normalizeWearableState(state);
+  const maxF = norm.timelineMaxFrames;
+  const maxH = norm.historyMaxIndex;
 
   if (gesture === "double-tap") {
     const nextMode = WEARABLE_DIAL_MODES[(WEARABLE_DIAL_MODES.indexOf(mode) + 1) % WEARABLE_DIAL_MODES.length];
@@ -626,6 +623,7 @@ export function evaluateSessionBreakReminder(input: SessionBreakReminderInput): 
 
 /** AR 스마트 글래스 투시 그리드·마감 타이머 최소 간섭 HUD 프로필 빌더. */
 export function buildArGlassesHudProfile(options: ArGlassesHudOptions): ArGlassesHudProfile {
+  assertHudEnums(options);
   const preset = getArHudPreset(options.presetId ?? "perspective-grid-minimal");
   const perspectiveGridType: PerspectiveGridType = options.perspectiveGridType ?? preset.defaultGridType;
   const gridOpacityPct = Math.round(clamp(options.gridOpacityPct ?? preset.defaultGridOpacityPct, 5, 45));
@@ -659,7 +657,8 @@ export function buildArGlassesHudProfile(options: ArGlassesHudOptions): ArGlasse
 }
 
 /** 세션 설정 전체를 결정론적 JSON으로 직렬화한다. */
-export function exportSpatialWearableSessionJson(snapshot: SpatialWearableSessionSnapshot): string {
+export function exportSpatialWearableSessionJson(input: SpatialWearableSessionSnapshot): string {
+  const snapshot = validateSpatialSnapshot(input, SPATIAL_DEVICE_IDS);
   const topology = computeMultiDeviceTopology({ activeDeviceIds: snapshot.activeDeviceIds, availableLinkBandwidthMbps: snapshot.availableLinkBandwidthMbps, syncTransportMode: snapshot.syncTransportMode });
   const spatialRig = computeSpatialCanvasRig(snapshot.spatialRigInput);
   const wearingHmd = topology.activeDeviceIds.includes("vision-pro-webxr") || topology.activeDeviceIds.includes("ar-smart-glasses");
@@ -683,66 +682,21 @@ export function exportSpatialWearableSessionJson(snapshot: SpatialWearableSessio
 
 /** 세션 설정 JSON을 fail-closed 방식으로 검증·복원한다. */
 export function parseSpatialWearableSessionJson(rawJson: string): ParseSpatialWearableSessionResult {
+  if (typeof rawJson !== "string" || rawJson.length > MAX_SPATIAL_JSON_CHARS) return {
+    ok: false, errorCode: "invalid-json", messageKo: "JSON 예제는 최대 1048576자입니다.", messageEn: "JSON is limited to 1048576 characters.",
+  };
   let parsed: unknown;
   try { parsed = JSON.parse(rawJson); } catch {
     return { ok: false, errorCode: "invalid-json", messageKo: "유효한 JSON 형식이 아닙니다.", messageEn: "Input is not valid JSON." };
   }
-  if (typeof parsed !== "object" || parsed === null) {
-    return { ok: false, errorCode: "invalid-schema", messageKo: "루트 객체가 비어 있습니다.", messageEn: "Root JSON payload must be an object." };
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)
+    || !("schema" in parsed) || parsed.schema !== SPATIAL_WEARABLE_SCHEMA_ID || !("config" in parsed)
+    || typeof parsed.config !== "object" || parsed.config === null || Array.isArray(parsed.config)) {
+    return { ok: false, errorCode: "invalid-schema", messageKo: "지원 스키마와 config 객체가 필요합니다.", messageEn: "Expected the supported schema and config object." };
   }
-  const root = parsed as Record<string, unknown>;
-  if (root.schema !== SPATIAL_WEARABLE_SCHEMA_ID || typeof root.config !== "object" || root.config === null) {
-    return { ok: false, errorCode: "invalid-schema", messageKo: `지원 스키마(${SPATIAL_WEARABLE_SCHEMA_ID})가 일치하지 않습니다.`, messageEn: `Expected schema ${SPATIAL_WEARABLE_SCHEMA_ID} with config.` };
+  try {
+    return { ok: true, config: validateSpatialSnapshot(parsed.config, SPATIAL_DEVICE_IDS) };
+  } catch {
+    return { ok: false, errorCode: "invalid-fields", messageKo: "중복 기기·미지원 값·유한 범위를 벗어난 수치가 있습니다. 원문을 확인하세요.", messageEn: "Duplicate devices, unsupported values, or out-of-range numbers. Review the original JSON." };
   }
-  const cfg = root.config as Record<string, unknown>;
-  if (!Array.isArray(cfg.activeDeviceIds) || !cfg.activeDeviceIds.every(isSpatialDeviceId)) {
-    return { ok: false, errorCode: "invalid-fields", messageKo: "activeDeviceIds에 허용되지 않는 기기가 포함되어 있습니다.", messageEn: "activeDeviceIds contains an unsupported device ID." };
-  }
-  const transport = cfg.syncTransportMode;
-  if (transport !== "lan-webrtc" && transport !== "usb-tether-hybrid" && transport !== "cloud-relay") {
-    return { ok: false, errorCode: "invalid-fields", messageKo: "syncTransportMode 값이 유효하지 않습니다.", messageEn: "Invalid syncTransportMode value." };
-  }
-
-  const objOrEmpty = (v: unknown): Record<string, unknown> => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {});
-  const rawRig = objOrEmpty(cfg.spatialRigInput);
-  const rawW = objOrEmpty(cfg.wearableState);
-  const rawH = objOrEmpty(cfg.arHudOptions);
-  const optNum = (o: Record<string, unknown>, k: string): number | undefined => (typeof o[k] === "number" ? o[k] : undefined);
-  const rigInput = computeSpatialCanvasRig({
-    eyeHeightM: optNum(rawRig, "eyeHeightM"), viewingDistanceM: optNum(rawRig, "viewingDistanceM"),
-    horizontalFovDeg: optNum(rawRig, "horizontalFovDeg"), verticalFovDeg: optNum(rawRig, "verticalFovDeg"),
-    gazePitchDeg: optNum(rawRig, "gazePitchDeg"), panelCurvatureDeg: optNum(rawRig, "panelCurvatureDeg"),
-  }).input;
-
-  const wearableMode: WearableDialMode = typeof cfg.wearableMode === "string" && WEARABLE_DIAL_MODES.includes(cfg.wearableMode as WearableDialMode) ? (cfg.wearableMode as WearableDialMode) : "brush-size";
-  const presetId: ArHudPresetId = rawH.presetId === "perspective-grid-minimal" || rawH.presetId === "pose-silhouette-whisper" || rawH.presetId === "deadline-focus-only" ? rawH.presetId : "perspective-grid-minimal";
-  const perspectiveGridType: PerspectiveGridType = rawH.perspectiveGridType === "none" || rawH.perspectiveGridType === "1-point" || rawH.perspectiveGridType === "2-point" || rawH.perspectiveGridType === "3-point" ? rawH.perspectiveGridType : getArHudPreset(presetId).defaultGridType;
-  const peripheralCorner: ArHudCorner = rawH.peripheralCorner === "top-right" || rawH.peripheralCorner === "top-left" || rawH.peripheralCorner === "bottom-right" ? rawH.peripheralCorner : "top-right";
-  const maxFrames = Math.round(readClampedNum(rawW, "timelineMaxFrames", DEFAULT_WEARABLE_CONTROL_STATE.timelineMaxFrames, 1, 3600));
-  const maxHistory = Math.round(readClampedNum(rawW, "historyMaxIndex", DEFAULT_WEARABLE_CONTROL_STATE.historyMaxIndex, 1, 200));
-
-  return {
-    ok: true,
-    config: {
-      activeDeviceIds: [...new Set(cfg.activeDeviceIds)], syncTransportMode: transport,
-      availableLinkBandwidthMbps: round1(readClampedNum(cfg, "availableLinkBandwidthMbps", DEFAULT_LINK_BANDWIDTH_MBPS, 5, 2000)),
-      spatialRigInput: rigInput, wearableMode,
-      wearableState: {
-        brushSizePx: Math.round(readClampedNum(rawW, "brushSizePx", DEFAULT_WEARABLE_CONTROL_STATE.brushSizePx, 1, 300)),
-        canvasZoomPct: Math.round(readClampedNum(rawW, "canvasZoomPct", DEFAULT_WEARABLE_CONTROL_STATE.canvasZoomPct, 10, 800)),
-        timelineFrame: Math.round(readClampedNum(rawW, "timelineFrame", DEFAULT_WEARABLE_CONTROL_STATE.timelineFrame, 0, maxFrames)),
-        timelineMaxFrames: maxFrames,
-        historyIndex: Math.round(readClampedNum(rawW, "historyIndex", DEFAULT_WEARABLE_CONTROL_STATE.historyIndex, 0, maxHistory)),
-        historyMaxIndex: maxHistory,
-      },
-      elapsedWorkMinutes: Math.round(readClampedNum(cfg, "elapsedWorkMinutes", 32, 0, 720)),
-      breakIntervalMinutes: Math.round(readClampedNum(cfg, "breakIntervalMinutes", 50, 15, 120)),
-      hapticNudgeEnabled: typeof cfg.hapticNudgeEnabled === "boolean" ? cfg.hapticNudgeEnabled : true,
-      arHudOptions: {
-        presetId, perspectiveGridType, gridOpacityPct: Math.round(readClampedNum(rawH, "gridOpacityPct", 18, 5, 45)),
-        showDeadlineTimer: typeof rawH.showDeadlineTimer === "boolean" ? rawH.showDeadlineTimer : true,
-        deadlineRemainingMinutes: Math.round(readClampedNum(rawH, "deadlineRemainingMinutes", 45, 0, 720)), peripheralCorner,
-      },
-    },
-  };
 }
