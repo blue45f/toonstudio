@@ -31,6 +31,14 @@ STUDIO_EDITOR_ONLY_CHUNK = re.compile(
     r"-[A-Za-z0-9_-]{8}\.js$"
 )
 
+# /create의 분위기 선택에서 표시하는 기본 그림과 대체 그림이다.
+CREATE_MOOD_SPRITES = (
+    "beginner-1-story.webp", "tool-bubble-sfx.webp",
+    "beginner-2-pose.webp", "tool-vrm.webp",
+    "beginner-3-brush.webp", "tool-watercolor.webp",
+    "beginner-4-publish.webp", "emblem-studio.webp",
+)
+
 
 def is_redundant_admin_locale(flat: Path, selected: set[Path]) -> bool:
     # 관리자 로더는 <namespace>/<locale>.json을 요청한다. 합본에만 있는 값이나 충돌은 보존한다.
@@ -69,6 +77,11 @@ def select_preview_files(root: Path) -> set[Path]:
                      and not STUDIO_RUNTIME_CHUNK.fullmatch(path.name)
                      and not STUDIO_PPT_ADVANCED_CHUNK.fullmatch(path.name)
                      and not STUDIO_EDITOR_ONLY_CHUNK.fullmatch(path.name))
+        sprite_dir = assets / "studio" / "vibrant-sprites"
+        for name in CREATE_MOOD_SPRITES:
+            sprite = sprite_dir / name
+            if sprite.is_file():
+                files.add(sprite)
     for directory in ("brand", "fonts", "icons", "i18n", "locales"):
         path = root / directory
         if path.is_dir():

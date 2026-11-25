@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -26,7 +27,7 @@ import { StudioCompetitorBenchmarkPage } from "./StudioCompetitorBenchmarkPage";
 
 import { useI18n } from "@/shared/lib/i18n";
 
-const REPO_ROOT = path.resolve(process.cwd());
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
 const SHOWCASE_DIR = path.join(REPO_ROOT, "apps/web/src/domains/showcase");
 
 function LocationSpy() {

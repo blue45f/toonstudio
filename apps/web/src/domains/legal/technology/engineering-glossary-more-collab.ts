@@ -269,4 +269,42 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     chapters: ["webtransport-transport", "collaborative-crdt-boundary"],
     atlasIds: ["webtransport-experiment"],
   },
+  {
+    id: "webrtc-perfect-negotiation",
+    category: "collab",
+    term: t("WebRTC Perfect Negotiation · Glare 충돌 해소", "WebRTC Perfect Negotiation · Glare resolution"),
+    definition: t(
+      "두 브라우저가 동시에 연결 제안(offer)을 보내 부딪히는 Glare 상황에서, 서버 중재 없이 한쪽이 스스로 양보해 통화를 잇는 WebRTC 협상 패턴입니다.",
+      "A WebRTC negotiation pattern that resolves glare—when both browsers send connection offers at once—by having one side yield without server arbitration.",
+    ),
+    analogy: t(
+      "두 사람이 동시에 전화를 걸면 둘 다 통화 중 소리만 듣습니다. 미리 ‘전화번호가 큰 사람이 끊고 받기’라고 정해 두면, 교환원 없이도 바로 통화가 이어집니다.",
+      "When two people dial each other at the same moment, both hear a busy tone. Agreeing beforehand that the larger number hangs up and answers connects the call with no operator.",
+    ),
+    inToonstudio: t(
+      "허들 컨트롤러(live/huddle/studio-p2p-huddle-controller.ts)가 두 참가자의 sessionId 를 비교해 큰 쪽을 양보 역할(polite)로 정합니다. 충돌 시 작은 쪽은 상대 오퍼를 무시하고 큰 쪽은 setRemoteDescription 으로 자기 오퍼를 되돌린 뒤 답합니다. ICE 후보는 64개까지 대기하고 끊기면 4초 이상 간격으로 최대 3번 재시작합니다.",
+      "The huddle controller (live/huddle/studio-p2p-huddle-controller.ts) compares both sessionId values and assigns the larger side the polite role. On collision, the smaller side ignores the peer offer while the larger rolls back via setRemoteDescription and answers. Up to 64 ICE candidates wait, and drops trigger up to 3 ICE restarts at least 4 s apart.",
+    ),
+    chapters: ["webrtc-media-authority", "webrtc-standard"],
+    atlasIds: ["webrtc-perfect-negotiation"],
+  },
+  {
+    id: "hlc-crdt-tile-delta",
+    category: "collab",
+    term: t("HLC CRDT 256×256 타일 델타 병합", "HLC CRDT 256x256 tile-delta merge"),
+    definition: t(
+      "기기 시각·논리 카운터·작성자 ID 를 묶은 하이브리드 논리 시계(HLC)로 순서를 매기고, 바뀐 256×256 픽셀 타일의 변경 조각만 순서 없이 합쳐도 같은 그림에 모이게 하는 병합 방식입니다.",
+      "A merge scheme that orders edits with a Hybrid Logical Clock (wall time, logical counter and peer ID) and converges 256x256 pixel tile deltas regardless of arrival order.",
+    ),
+    analogy: t(
+      "시계가 몇 초씩 어긋난 네 작가가 오프라인으로 같은 원고를 나누어 칠한 뒤, 각자 바뀐 타일 칸에 ‘시각·순번·이름’ 도장을 찍어 모으는 것과 같습니다. 어느 순서로 모아도 최종 그림은 하나로 맞춰집니다.",
+      "Like four artists whose watches differ by a few seconds painting separate patches offline, each stamping changed squares with time, sequence and name: whatever order the patches arrive in, the final page matches.",
+    ),
+    inToonstudio: t(
+      "distributed-crdt-tile-sync/crdt-tile-sync-engine.ts 가 HLC(tickHlcLocal·receiveHlcRemote·compareHlc)와 256×256 타일 LWW/Op-Log, 같은 타일 변경을 한 패스로 묶는 코얼레싱 모형을 제공합니다. 현재는 메모리 CRDT 시뮬레이터·비용 모형이며, 실제 운영 문서 권한과 잠금은 서버·Yjs 실험 경로가 맡습니다.",
+      "distributed-crdt-tile-sync/crdt-tile-sync-engine.ts provides HLC (tickHlcLocal, receiveHlcRemote, compareHlc), a 256x256 tile LWW/op-log and a dirty-tile coalescing model that folds same-tile edits into one pass. Today it is an in-memory reference simulator and cost model; live document authority stays on the server and experimental Yjs path.",
+    ),
+    chapters: ["collaborative-crdt-boundary", "crdt-semantic-scope"],
+    atlasIds: ["yjs-crdt-document", "tiled-document-copy-on-write"],
+  },
 ];

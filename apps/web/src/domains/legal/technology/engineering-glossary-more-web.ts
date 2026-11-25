@@ -365,4 +365,23 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
     chapters: ["on-device-translation", "nextgen-web-experiments"],
     atlasIds: ["intl-segmenter-korean-lines"],
   },
+  {
+    id: "wasm-relaxed-simd",
+    category: "web",
+    term: t("WASM64 · Relaxed-SIMD CPU 명령어 가속", "WASM64 & Relaxed-SIMD CPU acceleration"),
+    definition: t(
+      "WASM64(64비트 메모리 주소)로 4GiB 벽을 넓히고, Relaxed-SIMD 로 각 CPU 의 빠른 곱셈·덧셈(FMA)과 벡터 명령을 직접 써서 픽셀·행렬 연산을 가속하는 웹 어셈블리 확장입니다.",
+      "WebAssembly extensions pairing 64-bit addressing (WASM64) past the 4 GiB wall with Relaxed-SIMD instructions that map straight onto native CPU vector and FMA ops.",
+    ),
+    analogy: t(
+      "넓은 새 창고(WASM64)로 옮기고, 각 지역 도로 사정에 맞춰 현지 지름길(Relaxed-SIMD)을 타는 것과 같습니다. 아주 미세한 반올림 차이를 허용하는 대신 계산 속도를 끌어올립니다.",
+      "Like moving into a larger warehouse (WASM64) and taking each city's native express lane (Relaxed-SIMD): allowing tiny rounding differences buys faster batch math.",
+    ),
+    inToonstudio: t(
+      "crates/studio-wasm64-drawing-core 는 외부 크레이트 0개·#![deny(unsafe_code)] 안전 Rust 커널로 WASM64 호환 타일·혼색·필터 연산을 구현합니다. 실행 시에는 studio-wasm64-memory-governor.ts 가 memory64·SIMD128 을 먼저 탐지하고, toon-silicon-engine.ts 가 8대 실리콘의 Relaxed-SIMD/WASM32 폴백 배정 계획을 세웁니다.",
+      "crates/studio-wasm64-drawing-core implements zero-dependency safe Rust (#![deny(unsafe_code)]) tile, pigment and filter kernels built for WASM64 compatibility. At run time, studio-wasm64-memory-governor.ts probes memory64 and SIMD128 first, while toon-silicon-engine.ts plans Relaxed-SIMD and WASM32 fallback dispatch across eight silicon profiles.",
+    ),
+    chapters: ["wasm-fixed-simd", "worker-architecture"],
+    atlasIds: ["wasm-self-built-fixed-simd", "wasm-memory64-zip-crc"],
+  },
 ];
