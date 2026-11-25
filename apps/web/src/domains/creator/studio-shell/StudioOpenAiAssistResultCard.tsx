@@ -1,5 +1,5 @@
-import { Check, Copy, ListPlus, ShieldCheck } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Check, Copy, ListPlus, Undo2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -7,15 +7,22 @@ import { cn } from "@/shared/lib/utils";
 
 import type {
   StudioOpenAiAssistSuccess,
+  StudioOpenAiExtendedStructuredResult,
   StudioOpenAiScriptToCutsData,
 } from "../ai/studio-openai-creative-assist-client";
 import type { StudioStoryBeat } from "../studio-storyboard-planner";
+import { StudioOpenAiExtendedResultBody } from "./StudioOpenAiExtendedResultBody";
 
-const LazyStudioFreeAiAssistWorkbench = lazy(() =>
-  import("./StudioFreeAiAssistWorkbench").then((mod) => ({
-    default: mod.StudioFreeAiAssistWorkbench,
-  })),
-);
+function isExtendedStructuredResult(
+  result: StudioOpenAiAssistSuccess["result"],
+): result is StudioOpenAiExtendedStructuredResult {
+  return (
+    result.mode !== "idea-remix" &&
+    result.mode !== "script-to-cuts" &&
+    result.mode !== "dialogue-polish" &&
+    result.mode !== "export-preflight-coach"
+  );
+}
 
 async function copyPlainText(text: string): Promise<boolean> {
   try {
@@ -43,18 +50,26 @@ function cutsToStoryBeats(
 
 export function StudioOpenAiAssistResultCard({
   response,
+  originalPrompt,
   onAppendStoryBeats,
+  onUndoAppendedStoryBeats,
 }: {
   readonly response: StudioOpenAiAssistSuccess;
-  readonly onAppendStoryBeats?: (beats: readonly StudioStoryBeat[]) => void;
+  readonly originalPrompt?: string;
+  readonly onAppendStoryBeats?: (
+    beats: readonly StudioStoryBeat[],
+  ) => readonly string[] | void;
+  readonly onUndoAppendedStoryBeats?: (beatIds: readonly string[]) => void;
 }) {
   const bt = useBilingual("StudioOpenAiAssistResultCard");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [appendedResponse, setAppendedResponse] =
-    useState<StudioOpenAiAssistSuccess | null>(null);
-  const [freeLabOpen, setFreeLabOpen] = useState(false);
-  const appended = appendedResponse === response;
+  const [appendedRecord, setAppendedRecord] = useState<{
+    readonly response: StudioOpenAiAssistSuccess;
+    readonly beatIds: readonly string[];
+  } | null>(null);
+  const appended = appendedRecord?.response === response;
+  const appendedBeatIds = appended ? appendedRecord.beatIds : [];
 
   useEffect(() => {
     return () => {
@@ -106,6 +121,20 @@ export function StudioOpenAiAssistResultCard({
           </span>
         ) : null}
       </div>
+
+      {originalPrompt?.trim() ? (
+        <div
+          data-testid="openai-original-vs-suggestion"
+          className="mt-3 rounded-xl border border-line bg-panel/60 px-3 py-2.5 text-xs [word-break:keep-all]"
+        >
+          <span className="text-[0.65rem] font-extrabold tracking-wide text-fg-3">
+            {bt("원문 비교 기준 (보낸 요청)", "Original input for comparison")}
+          </span>
+          <p className="mt-1 whitespace-pre-wrap leading-5 text-fg-2">
+            {originalPrompt.trim()}
+          </p>
+        </div>
+      ) : null}
 
       {result.mode === "idea-remix" ? (
         <div className="mt-3 space-y-3">
@@ -196,24 +225,50 @@ export function StudioOpenAiAssistResultCard({
                   "Appends behind existing story beats without overwriting.",
                 )}
               </span>
-              <button
-                type="button"
-                disabled={appended}
-                onClick={() => {
-                  onAppendStoryBeats(cutsToStoryBeats(result.data.cuts));
-                  setAppendedResponse(response);
-                }}
-                className={buttonClass({
-                  variant: appended ? "outline" : "solid",
-                  size: "sm",
-                  className: "min-h-10 gap-1.5",
-                })}
-              >
-                {appended ? <Check size={14} /> : <ListPlus size={14} />}
-                {appended
-                  ? bt("기획 컷 목록에 추가됨", "Added to story beats")
-                  : bt("기획 컷 목록에 사본으로 추가", "Append to story beats")}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={appended}
+                  onClick={() => {
+                    const insertedIds = onAppendStoryBeats(cutsToStoryBeats(result.data.cuts));
+                    setAppendedRecord({
+                      response,
+                      beatIds: Array.isArray(insertedIds) ? insertedIds : [],
+                    });
+                  }}
+                  className={buttonClass({
+                    variant: appended ? "outline" : "solid",
+                    size: "sm",
+                    className: "min-h-10 gap-1.5",
+                  })}
+                >
+                  {appended ? <Check size={14} /> : <ListPlus size={14} />}
+                  {appended
+                    ? bt("기획 컷 목록에 추가됨", "Added to story beats")
+                    : bt("기획 컷 목록에 사본으로 추가", "Append to story beats")}
+                </button>
+                {appended && onUndoAppendedStoryBeats && appendedBeatIds.length > 0 ? (
+                  <button
+                    type="button"
+                    data-testid="openai-undo-appended-beats-btn"
+                    onClick={() => {
+                      onUndoAppendedStoryBeats(appendedBeatIds);
+                      setAppendedRecord(null);
+                    }}
+                    className={buttonClass({
+                      variant: "outline",
+                      size: "sm",
+                      className: "min-h-10 gap-1.5",
+                    })}
+                  >
+                    <Undo2 size={14} aria-hidden="true" />
+                    {bt(
+                      `방금 추가한 ${appendedBeatIds.length}컷만 되돌리기`,
+                      `Undo ${appendedBeatIds.length} added beat(s)`,
+                    )}
+                  </button>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </div>
@@ -312,42 +367,13 @@ export function StudioOpenAiAssistResultCard({
         </div>
       ) : null}
 
-      <div className="mt-4 border-t border-line pt-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg-2">
-            <ShieldCheck size={14} className="text-success" aria-hidden="true" />
-            {bt(
-              "유료 과금 0원 보호 ON · 무료 소진 시 자동 중지 (14모드 확장 랩)",
-              "Zero-bill protection ON · stops on free-tier cutoff (14-mode lab)",
-            )}
-          </span>
-          <button
-            type="button"
-            aria-expanded={freeLabOpen}
-            onClick={() => setFreeLabOpen((prev) => !prev)}
-            className={buttonClass({
-              variant: "outline",
-              size: "sm",
-              className: "min-h-10 gap-1.5",
-            })}
-          >
-            {freeLabOpen
-              ? bt("무과금 14모드 AI 랩 닫기", "Close 14-mode free AI lab")
-              : bt("무과금 14모드 AI 랩 열기", "Open 14-mode free AI lab")}
-          </button>
-        </div>
-        {freeLabOpen ? (
-          <Suspense
-            fallback={
-              <p className="mt-3 text-xs text-fg-3">
-                {bt("무과금 AI 14모드 랩을 불러오는 중…", "Loading 14-mode free AI lab…")}
-              </p>
-            }
-          >
-            <LazyStudioFreeAiAssistWorkbench />
-          </Suspense>
-        ) : null}
-      </div>
+      {isExtendedStructuredResult(result) ? (
+        <StudioOpenAiExtendedResultBody
+          result={result}
+          copiedKey={copiedKey}
+          onCopy={(key, value) => void handleCopy(key, value)}
+        />
+      ) : null}
     </div>
   );
 }

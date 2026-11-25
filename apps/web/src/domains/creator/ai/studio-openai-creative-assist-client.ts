@@ -1,11 +1,32 @@
 import { withCsrfProtection } from "@/shared/lib/csrf";
 import { useApp } from "@/shared/lib/store";
 
-export type StudioOpenAiAssistMode =
-  | "idea-remix"
-  | "script-to-cuts"
-  | "dialogue-polish"
-  | "export-preflight-coach";
+export const ALL_STUDIO_OPENAI_ASSIST_MODES = [
+  "idea-remix",
+  "script-to-cuts",
+  "dialogue-polish",
+  "export-preflight-coach",
+  "character-bible-forge",
+  "continuity-plot-audit",
+  "bg3d-camera-blocking",
+  "color-mood-director",
+  "sfx-onomatopoeia-lab",
+  "photoshop-fx-recipe",
+  "scroll-pacing-auditor",
+  "thumbnail-hook-optimizer",
+  "localization-glossary-check",
+  "mcp-workflow-macro",
+] as const;
+
+export type StudioOpenAiAssistMode = (typeof ALL_STUDIO_OPENAI_ASSIST_MODES)[number];
+
+const STUDIO_OPENAI_ASSIST_MODE_SET: ReadonlySet<string> = new Set(
+  ALL_STUDIO_OPENAI_ASSIST_MODES,
+);
+
+export function isStudioOpenAiAssistMode(value: unknown): value is StudioOpenAiAssistMode {
+  return typeof value === "string" && STUDIO_OPENAI_ASSIST_MODE_SET.has(value);
+}
 
 export type StudioOpenAiTargetPlatform =
   | "vertical-webtoon"
@@ -94,11 +115,171 @@ export interface StudioOpenAiExportCoachData {
   }[];
 }
 
+export interface StudioOpenAiCharacterBibleForgeData {
+  readonly characterName: string;
+  readonly archetypeKo: string;
+  readonly speechTone: string;
+  readonly appearancePalette: string;
+  readonly coreMotivation: string;
+  readonly forbiddenLines: readonly string[];
+  readonly relationshipHooks: readonly {
+    readonly target: string;
+    readonly dynamic: string;
+  }[];
+  readonly visualConsistencyCue: string;
+}
+
+export interface StudioOpenAiContinuityPlotAuditData {
+  readonly overallConsistencyScore: number;
+  readonly summary: string;
+  readonly issues: readonly {
+    readonly severity: "critical" | "warn" | "tip";
+    readonly category: string;
+    readonly locationHint: string;
+    readonly conflictDetail: string;
+    readonly fixSuggestion: string;
+  }[];
+}
+
+export interface StudioOpenAiBg3dCameraBlockingData {
+  readonly sceneSummary: string;
+  readonly camera: {
+    readonly lensMm: number;
+    readonly fovDeg: number;
+    readonly angleLabel: string;
+    readonly position: readonly [number, number, number];
+    readonly target: readonly [number, number, number];
+    readonly rollDeg: number;
+  };
+  readonly lighting: {
+    readonly timeOfDay: string;
+    readonly keyLightColor: string;
+    readonly rimLightNote: string;
+    readonly ambientRatio: number;
+  };
+  readonly propsToPlace: readonly string[];
+  readonly blockingNotes: readonly string[];
+}
+
+export interface StudioOpenAiColorMoodDirectorData {
+  readonly emotionLabel: string;
+  readonly moodSummary: string;
+  readonly palette: readonly {
+    readonly role: string;
+    readonly nameKo: string;
+    readonly oklch: string;
+    readonly usageTip: string;
+  }[];
+  readonly lightingGuide: string;
+  readonly contrastWarning: string;
+}
+
+export interface StudioOpenAiSfxOnomatopoeiaLabData {
+  readonly sceneEnergy: string;
+  readonly suggestions: readonly {
+    readonly ko: string;
+    readonly ja: string;
+    readonly en: string;
+    readonly intent: string;
+    readonly typographyTip: string;
+    readonly placementHint: string;
+  }[];
+}
+
+export interface StudioOpenAiPhotoshopFxRecipeData {
+  readonly lookNameKo: string;
+  readonly summary: string;
+  readonly layerStyles: readonly {
+    readonly effect: string;
+    readonly blendMode: string;
+    readonly opacityPct: number;
+    readonly paramsSummary: string;
+  }[];
+  readonly cameraRaw: {
+    readonly exposure: number;
+    readonly contrast: number;
+    readonly clarity: number;
+    readonly dehaze: number;
+    readonly temperatureShift: number;
+    readonly grainPct: number;
+  };
+  readonly nonDestructiveTip: string;
+}
+
+export interface StudioOpenAiScrollPacingAuditorData {
+  readonly rhythmVerdict: string;
+  readonly averageGapPx: number;
+  readonly cliffhangerScore: number;
+  readonly cliffhangerTip: string;
+  readonly beatPacing: readonly {
+    readonly section: string;
+    readonly pacing: "tight" | "steady" | "breath" | "drop";
+    readonly recommendedGapPx: number;
+    readonly readerRetentionNote: string;
+  }[];
+}
+
+export interface StudioOpenAiThumbnailHookOptimizerData {
+  readonly hookDiagnosis: string;
+  readonly titleVariants: readonly {
+    readonly variantLabel: string;
+    readonly title: string;
+    readonly subCopy: string;
+    readonly hookReason: string;
+  }[];
+  readonly thumbnailSpec: {
+    readonly focalSubject: string;
+    readonly contrastNote: string;
+    readonly textOverlayMaxChars: number;
+    readonly cropSafetyTip: string;
+  };
+}
+
+export interface StudioOpenAiLocalizationGlossaryCheckData {
+  readonly targetLocales: readonly string[];
+  readonly glossary: readonly {
+    readonly termKo: string;
+    readonly en: string;
+    readonly ja: string;
+    readonly ruleNote: string;
+  }[];
+  readonly culturalNotes: readonly {
+    readonly severity: "info" | "warn";
+    readonly topic: string;
+    readonly adaptationTip: string;
+  }[];
+}
+
+export interface StudioOpenAiMcpWorkflowMacroData {
+  readonly macroTitle: string;
+  readonly summary: string;
+  readonly zeroCostSafe: boolean;
+  readonly steps: readonly {
+    readonly stepOrder: number;
+    readonly toolName: string;
+    readonly reasonKo: string;
+    readonly argumentsJson: string;
+  }[];
+}
+
+export type StudioOpenAiExtendedStructuredResult =
+  | { readonly mode: "character-bible-forge"; readonly data: StudioOpenAiCharacterBibleForgeData }
+  | { readonly mode: "continuity-plot-audit"; readonly data: StudioOpenAiContinuityPlotAuditData }
+  | { readonly mode: "bg3d-camera-blocking"; readonly data: StudioOpenAiBg3dCameraBlockingData }
+  | { readonly mode: "color-mood-director"; readonly data: StudioOpenAiColorMoodDirectorData }
+  | { readonly mode: "sfx-onomatopoeia-lab"; readonly data: StudioOpenAiSfxOnomatopoeiaLabData }
+  | { readonly mode: "photoshop-fx-recipe"; readonly data: StudioOpenAiPhotoshopFxRecipeData }
+  | { readonly mode: "scroll-pacing-auditor"; readonly data: StudioOpenAiScrollPacingAuditorData }
+  | { readonly mode: "thumbnail-hook-optimizer"; readonly data: StudioOpenAiThumbnailHookOptimizerData }
+  | { readonly mode: "localization-glossary-check"; readonly data: StudioOpenAiLocalizationGlossaryCheckData }
+  | { readonly mode: "mcp-workflow-macro"; readonly data: StudioOpenAiMcpWorkflowMacroData };
+
 export type StudioOpenAiStructuredResult =
   | { readonly mode: "idea-remix"; readonly data: StudioOpenAiIdeaRemixData }
   | { readonly mode: "script-to-cuts"; readonly data: StudioOpenAiScriptToCutsData }
   | { readonly mode: "dialogue-polish"; readonly data: StudioOpenAiDialoguePolishData }
-  | { readonly mode: "export-preflight-coach"; readonly data: StudioOpenAiExportCoachData };
+  | { readonly mode: "export-preflight-coach"; readonly data: StudioOpenAiExportCoachData }
+  | StudioOpenAiExtendedStructuredResult;
 
 export interface StudioOpenAiAssistSuccess {
   readonly provider: "openai";
@@ -188,6 +369,96 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+/** 14종 OpenAI 창작 보조 응답 스키마의 필수 구조 필드를 검증한다. */
+export function isValidStudioOpenAiStructuredResult(
+  value: unknown,
+): value is StudioOpenAiStructuredResult {
+  const result = asRecord(value);
+  if (!result || !isStudioOpenAiAssistMode(result.mode)) return false;
+  const data = asRecord(result.data);
+  if (!data) return false;
+
+  switch (result.mode) {
+    case "idea-remix":
+      return typeof data.summary === "string" && Array.isArray(data.angles);
+    case "script-to-cuts":
+      return (
+        typeof data.episodeGoal === "string" &&
+        typeof data.pacingTip === "string" &&
+        Array.isArray(data.cuts)
+      );
+    case "dialogue-polish":
+      return typeof data.readabilityNote === "string" && Array.isArray(data.balloons);
+    case "export-preflight-coach":
+      return (
+        typeof data.readinessSummary === "string" &&
+        typeof data.episodeBlurbSuggestion === "string" &&
+        Array.isArray(data.checks)
+      );
+    case "character-bible-forge":
+      return (
+        typeof data.characterName === "string" &&
+        typeof data.archetypeKo === "string" &&
+        Array.isArray(data.forbiddenLines) &&
+        Array.isArray(data.relationshipHooks)
+      );
+    case "continuity-plot-audit":
+      return (
+        typeof data.overallConsistencyScore === "number" &&
+        typeof data.summary === "string" &&
+        Array.isArray(data.issues)
+      );
+    case "bg3d-camera-blocking":
+      return (
+        typeof data.sceneSummary === "string" &&
+        Boolean(asRecord(data.camera)) &&
+        Boolean(asRecord(data.lighting)) &&
+        Array.isArray(data.propsToPlace) &&
+        Array.isArray(data.blockingNotes)
+      );
+    case "color-mood-director":
+      return (
+        typeof data.emotionLabel === "string" &&
+        typeof data.moodSummary === "string" &&
+        Array.isArray(data.palette)
+      );
+    case "sfx-onomatopoeia-lab":
+      return typeof data.sceneEnergy === "string" && Array.isArray(data.suggestions);
+    case "photoshop-fx-recipe":
+      return (
+        typeof data.lookNameKo === "string" &&
+        typeof data.summary === "string" &&
+        Array.isArray(data.layerStyles) &&
+        Boolean(asRecord(data.cameraRaw))
+      );
+    case "scroll-pacing-auditor":
+      return (
+        typeof data.rhythmVerdict === "string" &&
+        typeof data.averageGapPx === "number" &&
+        typeof data.cliffhangerScore === "number" &&
+        Array.isArray(data.beatPacing)
+      );
+    case "thumbnail-hook-optimizer":
+      return (
+        typeof data.hookDiagnosis === "string" &&
+        Array.isArray(data.titleVariants) &&
+        Boolean(asRecord(data.thumbnailSpec))
+      );
+    case "localization-glossary-check":
+      return (
+        Array.isArray(data.targetLocales) &&
+        Array.isArray(data.glossary) &&
+        Array.isArray(data.culturalNotes)
+      );
+    case "mcp-workflow-macro":
+      return (
+        typeof data.macroTitle === "string" &&
+        typeof data.summary === "string" &&
+        Array.isArray(data.steps)
+      );
+  }
+}
+
 function extractErrorDetails(
   body: unknown,
   fallbackMessage: string,
@@ -248,9 +519,19 @@ export async function fetchStudioOpenAiAssistStatus(options: {
       // 키 설정 상태만으로 계정의 잔액·자동 충전·후불 과금 여부를 판정하지 않는다.
       autoBillingDisabled: null,
       modelConfigurationError: json.modelConfigurationError === "retired" ? "retired" : null,
-      modes: Array.isArray(json.modes) && json.modes.length > 0
-        ? json.modes
-        : DEFAULT_STUDIO_OPENAI_MODES,
+      modes: (() => {
+        if (!Array.isArray(json.modes) || json.modes.length === 0) {
+          return DEFAULT_STUDIO_OPENAI_MODES;
+        }
+        const valid = json.modes.filter(
+          (item): item is StudioOpenAiModeDescriptor =>
+            Boolean(item) &&
+            typeof item === "object" &&
+            isStudioOpenAiAssistMode((item as { id?: unknown }).id) &&
+            typeof (item as { labelKo?: unknown }).labelKo === "string",
+        );
+        return valid.length > 0 ? valid : DEFAULT_STUDIO_OPENAI_MODES;
+      })(),
       limits: json.limits ?? {
         burstPerMinute: 5,
         hourlyRequests: 20,
@@ -382,7 +663,11 @@ export async function runStudioOpenAiCreativeAssist(
     }
 
     const record = asRecord(body);
-    if (!record || record.provider !== "openai" || !asRecord(record.result)) {
+    if (
+      !record ||
+      record.provider !== "openai" ||
+      !isValidStudioOpenAiStructuredResult(record.result)
+    ) {
       return {
         ok: false,
         status: 502,

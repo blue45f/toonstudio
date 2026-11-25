@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, CheckCircle2, Film, Layers, LayoutGrid, Lock, Sparkles, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Feather, Film, Layers, LayoutGrid, Lock, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -160,7 +160,7 @@ export function StudioDesignStoryAi4SuitesPanel({ projectTitle, fetchImpl }: Stu
     setWritingCopy(true);
     try {
       const response = await runMagicWriteZeroBill(
-        { kind: writeKind, promptKo: canvaPrompt, projectTitle, toneKo: activeBrandKit.toneKo, offlineOnly: !fetchImpl },
+        { kind: writeKind, promptKo: canvaPrompt, projectTitle, toneKo: activeBrandKit.toneKo },
         { fetchImpl },
       );
       setMagicWriteResult(response);
@@ -185,7 +185,7 @@ export function StudioDesignStoryAi4SuitesPanel({ projectTitle, fetchImpl }: Stu
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
         <div>
           <p className="inline-flex items-center gap-1.5 text-xs font-bold text-accent">
-            <Sparkles size={14} aria-hidden="true" />
+            <Feather size={14} aria-hidden="true" />
             무과금 로컬 디자인·스토리 창작 도구 (₩0)
           </p>
           <h4 id="studio-design-story-4suites-heading" className="mt-1 text-base font-extrabold text-fg">
