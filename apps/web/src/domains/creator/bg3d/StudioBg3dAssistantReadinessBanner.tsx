@@ -48,6 +48,7 @@ export function StudioBg3dAssistantReadinessBanner({
         role="status"
         aria-live="polite"
         data-testid="studio-bg3d-assistant-initializing"
+        data-bg3d-assistant-viewport-dedupe="true"
         className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/35 bg-accent-soft/60 px-3 py-2.5 text-xs text-fg"
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -91,6 +92,7 @@ export function StudioBg3dAssistantReadinessBanner({
       role="alert"
       data-testid="studio-bg3d-assistant-error"
       data-bg3d-readiness-compact="true"
+      data-bg3d-assistant-viewport-dedupe="true"
       className="mx-3 mt-2 rounded-[var(--atelier-radius-inner,10px)] border border-warn/45 bg-panel text-xs text-fg shadow-[var(--atelier-specular-top)]"
     >
       <details className="group">
