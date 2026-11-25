@@ -2,7 +2,7 @@ import { collectStudioManifestClosure, type StudioViteManifest } from "./studio-
 
 // 스튜디오의 온라인 첫 사용 뒤에만 준비하며, 서비스 워커 설치 비용에는 포함하지 않는다.
 export const DRAWING_ROOTS = [
-  "StudioRouter", "StudioInspectorAside", "StudioToolHintBubble", "StudioColorVisionHintPreview",
+  "StudioRouter", "StudioMobileEditingDock", "StudioInspectorAside", "StudioToolHintBubble", "StudioColorVisionHintPreview",
   "StudioDraftSaveCenter", "studio-legacy-editor-adapter", "studio-pages-history-durable-runtime",
   "StudioPageThumbnails", "studio-lowlatency-predictor", "studio-procedural-foley-audio",
   "StudioDrawingClarityExport", "StudioExportMenuPanel", "StudioPromoHandoffSection", "StudioEnhancedExportMenuPanel",

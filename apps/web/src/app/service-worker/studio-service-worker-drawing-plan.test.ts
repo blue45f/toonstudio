@@ -39,6 +39,17 @@ describe("explicit offline drawing pack", () => {
     expect(urls.some((url) => url.includes("unrelated-heavy"))).toBe(false);
     expect(new Set(urls).size).toBe(urls.length);
   });
+  it("데스크톱에서 준비해도 좁은 화면에서 쓸 모바일 도크와 하위 모듈을 포함한다", () => {
+    const urls = collectStudioOfflineDrawingUrls({
+      ...manifest,
+      StudioMobileEditingDock: { name: "StudioMobileEditingDock", file: "assets/mobile-dock.js", imports: ["eraserPicker"] },
+      eraserPicker: { file: "assets/eraser-picker.js", imports: ["eraserPlan"] },
+      eraserPlan: { file: "assets/eraser-plan.js" },
+    }, files);
+    expect(urls).toEqual(expect.arrayContaining([
+      "/assets/mobile-dock.js", "/assets/eraser-picker.js", "/assets/eraser-plan.js",
+    ]));
+  });
   it("fails the build instead of silently omitting a renamed core module", () => {
     expect(() => collectStudioOfflineDrawingUrls({}, files)).toThrow(/root missing/u);
   });
