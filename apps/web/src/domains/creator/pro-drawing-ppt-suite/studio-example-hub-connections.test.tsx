@@ -91,6 +91,10 @@ const cases: readonly ExampleCase[] = [
   { ko: "작업대 색상과 다이얼 미리보기", en: "Workbench Colors and Dial Preview", panel: "atelier-visual-signature-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-visual-signature") },
   { ko: "한 손 모바일 도구 배치 미리보기", en: "One-Handed Mobile Tool Layout Preview", panel: "mobile-thumbzone-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../mobile-thumbzone-studio-ux") },
   { ko: "브랜드 이름 검사", en: "Brand Name Audit", panel: "atelier-brand-registry-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-brand-registry") },
+  { ko: "공간 렌더링 예제", en: "Spatial Rendering Example", panel: "studio-prism-spatial-render-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../prism-spatial-render") },
+  { ko: "붓결과 종이 질감 미리보기", en: "Bristle and Paper Texture Preview", panel: "studio-atelier-ink-optical-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../atelier-ink-optical-grain") },
+  { ko: "캐릭터 체형과 옷 맞춤 미리보기", en: "Character Shape and Clothing Fit Preview", panel: "atelier-cast-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-cast-customizer") },
+  { ko: "칩셋별 연산 배치 계획", en: "Compute Planning by Chipset", panel: "toon-silicon-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../toon-silicon-runtime") },
 ];
 
 afterEach(cleanup);
