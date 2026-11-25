@@ -22,15 +22,18 @@ import {
   type TabWriterLeaseAction, type TabWriterLeaseState, type VectorClock, type VectorClockRelation,
 } from "./offline-resilience-engine";
 
+import { ExampleNotificationStatus } from "./ExampleNotificationStatus";
+import { useExampleNotification } from "./use-example-notification";
+
 export type OfflineResilienceTabId = "crdt-vclock" | "opfs-parity" | "tab-lease";
 
 export interface StudioOfflineResiliencePanelProps {
   readonly locale?: "ko" | "en";
   readonly className?: string;
   readonly initialTab?: OfflineResilienceTabId;
-  readonly onCompactionChange?: (result: CrdtCompactionResult) => void;
-  readonly onRecoveryReportChange?: (report: ManuscriptRecoveryReport) => void;
-  readonly onLeaseStateChange?: (state: TabWriterLeaseState) => void;
+  readonly onCompactionChange?: (result: CrdtCompactionResult) => void | Promise<void>;
+  readonly onRecoveryReportChange?: (report: ManuscriptRecoveryReport) => void | Promise<void>;
+  readonly onLeaseStateChange?: (state: TabWriterLeaseState) => void | Promise<void>;
 }
 
 const FOCUS_RING =
@@ -93,6 +96,12 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
     onCompactionChange, onRecoveryReportChange, onLeaseStateChange,
   } = props;
 
+  const compactionNotification = useExampleNotification(onCompactionChange);
+  const recoveryNotification = useExampleNotification(onRecoveryReportChange);
+  const leaseNotification = useExampleNotification(onLeaseStateChange);
+  const notifications = [compactionNotification, recoveryNotification, leaseNotification];
+  const pending = notifications.some((notification) => notification.status === "pending");
+  function isPending(): boolean { return notifications.some((notification) => notification.isPending()); }
   const uid = useId();
   const storeLang = useI18n((state) => state.lang);
   const isKo = (locale ?? (storeLang.toLowerCase().startsWith("ko") ? "ko" : "en")) === "ko";
@@ -140,11 +149,14 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
   const totalPreservedDrafts = useMemo(() => leaseState.tabs.reduce((s, t) => s + t.pendingReadOnlyDraftCount, 0), [leaseState.tabs]);
 
   const handleBumpClock = (side: "A" | "B", actor: string): void => {
+    if (isPending()) return;
     if (side === "A") setClockA((prev) => incrementVectorClock(prev, actor));
     else setClockB((prev) => incrementVectorClock(prev, actor));
   };
 
   const handleAppendOverwrite = (): void => {
+    if (isPending()) return;
+    if (opLog.length >= 512) return;
     const latest = opLog[opLog.length - 1];
     const nextLamport = Math.max(...opLog.map((op) => op.lamport), 0) + 1;
     const baseClock = latest ? latest.clock : { "ipad-main": 0, "desktop-studio": 0, "assist-pen": 0 };
@@ -166,6 +178,7 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
   };
 
   const handleInjectConcurrentConflict = (): void => {
+    if (isPending() || opLog.length > 510) return;
     const nextLamport = Math.max(...opLog.map((op) => op.lamport), 4) + 1;
     const opDesktop: CrdtOperation = {
       opId: `op-${String(opSeq).padStart(2, "0")}`,
@@ -196,19 +209,20 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
   };
 
   const handleRunCompaction = (): void => {
+    if (isPending()) return;
     const result = compactCrdtOpLog(opLog);
-    setOpLog(result.compactedOps);
     setLastCompaction(result);
-    onCompactionChange?.(result);
+    compactionNotification.notify(result);
     setNotice(
       pick(
-        `CRDT 큐 압축 완료: ${result.originalCount}건 → ${result.compactedCount}건 (${result.reductionPct}% 절감, 충돌 ${result.conflicts.length}건 결정론 해결)`,
-        `Compacted CRDT queue: ${result.originalCount} → ${result.compactedCount} ops (${result.reductionPct}% saved, ${result.conflicts.length} conflict(s) resolved)`,
+        `메모리 예제 CRDT 큐 압축 후보: ${result.originalCount}건 → ${result.compactedCount}건 (${result.reductionPct}% 절감, 충돌 ${result.conflicts.length}건 결정론 해결)`,
+        `In-memory CRDT compaction candidate: ${result.originalCount} → ${result.compactedCount} ops (${result.reductionPct}% saved, ${result.conflicts.length} conflict(s) resolved)`,
       ),
     );
   };
 
   const handleResetCrdt = (): void => {
+    if (isPending()) return;
     setOpLog(createDefaultCrdtOpLog());
     setOpSeq(8);
     setLastCompaction(null);
@@ -218,6 +232,7 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
   };
 
   const handleInjectCorruption = (target: string | "parity"): void => {
+    if (isPending()) return;
     const offset = 10 + corruptStep * 7;
     const mask = 0x5a + ((corruptStep * 29) & 0x7f);
     setStripe(corruptManuscriptChunk(stripe, target, offset, mask));
@@ -232,14 +247,16 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
   };
 
   const handleVerifyAndRepair = (): void => {
+    if (isPending()) return;
     const report = verifyAndRepairManuscriptChunks(stripe);
     setStripe(report.repairedStripe);
     setRecoveryReport(report);
-    onRecoveryReportChange?.(report);
+    recoveryNotification.notify(report);
     setNotice(isKo ? report.summaryKo : report.summaryEn);
   };
 
   const handleResetStripe = (): void => {
+    if (isPending()) return;
     setStripe(createDefaultManuscriptParityStripe(256));
     setCorruptStep(0);
     setRecoveryReport(null);
@@ -247,17 +264,19 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
   };
 
   const dispatchLease = (action: TabWriterLeaseAction): void => {
+    if (isPending()) return;
     const next = stepTabWriterLease(leaseState, action);
     setLeaseState(next);
-    onLeaseStateChange?.(next);
+    leaseNotification.notify(next);
     const latest = next.auditLog[0];
     if (latest) setNotice(isKo ? latest.detailKo : latest.detailEn);
   };
 
   const handleResetLease = (): void => {
+    if (isPending()) return;
     const fresh = createInitialTabWriterLeaseState(5000);
     setLeaseState(fresh);
-    onLeaseStateChange?.(fresh);
+    leaseNotification.notify(fresh);
     setNotice(pick("멀티탭 단일 쓰기 잠금 시뮬레이터를 초기 상태(에폭 1)로 복원했습니다.", "Reset multi-tab writer lease state to Epoch 1."));
   };
 
@@ -280,6 +299,11 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
       aria-label={pick("오프라인 CRDT · OPFS 청크 패리티 · 멀티탭 단일 쓰기 잠금 내구성 랩", "Offline CRDT · OPFS Chunk Parity · Multi-Tab Writer Lease Lab")}
       className={`space-y-4 rounded-xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
+      <p data-testid="offline-example-scope" className="rounded-lg border border-line bg-card p-3 text-xs text-fg-2">{pick("메모리 계산 예제입니다. 실제 원고·OPFS·CRDT 큐를 읽거나 저장하지 않으며 브라우저 탭 잠금도 적용하지 않습니다. 새로 열면 초기화됩니다.", "In-memory computation examples; actual documents, OPFS and CRDT queues are not read or saved, and browser tab locks are not applied. Reopening resets the example.")}</p>
+      <ExampleNotificationStatus status={compactionNotification.status} retry={compactionNotification.retry} retryTestId="retry-compaction-notification" isEn={!isKo} />
+      <ExampleNotificationStatus status={recoveryNotification.status} retry={recoveryNotification.retry} retryTestId="retry-recovery-notification" isEn={!isKo} />
+      <ExampleNotificationStatus status={leaseNotification.status} retry={leaseNotification.retry} retryTestId="retry-lease-notification" isEn={!isKo} />
+      <fieldset disabled={pending} className="min-w-0 space-y-4 border-0 p-0">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -290,8 +314,8 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
           </div>
           <p className="text-xs text-fg-2">
             {pick(
-              "네트워크 단절 시 벡터시계 인과 병합으로 오프라인 큐를 압축하고, OPFS 16K 원고 청크 손상을 XOR 패리티로 무손실 복구하며, 단조 증가 펜싱 토큰으로 멀티탭 동시 쓰기를 차단합니다.",
-              "Compact offline CRDT queues via vector clocks, repair corrupted 16K OPFS chunks with XOR parity, and fence stale multi-tab writes with monotonic epochs.",
+              "벡터시계·XOR 패리티·펜싱 토큰 계산을 메모리에서 비교합니다. 압축 후보와 원문 예제 큐를 분리해 보존합니다.",
+              "Compare vector clocks, XOR parity and fencing tokens in memory. Compaction candidates remain separate from the original example queue.",
             )}
           </p>
         </div>
@@ -396,11 +420,11 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
               <GitMerge className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{pick("CRDT 델타 큐 압축 실행", "Run CRDT Compaction")}</span>
             </button>
-            <button type="button" data-testid="btn-append-overwrite" onClick={handleAppendOverwrite} className={`${ACTION_BTN} ${IDLE_TONE}`}>
+            <button type="button" data-testid="btn-append-overwrite" disabled={opLog.length >= 512} onClick={handleAppendOverwrite} className={`${ACTION_BTN} ${IDLE_TONE}`}>
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{pick("중복 덮어쓰기 연산 추가", "Queue Overwrite Op")}</span>
             </button>
-            <button type="button" data-testid="btn-inject-conflict" onClick={handleInjectConcurrentConflict} className={`${ACTION_BTN} ${IDLE_TONE}`}>
+            <button type="button" data-testid="btn-inject-conflict" disabled={opLog.length > 510} onClick={handleInjectConcurrentConflict} className={`${ACTION_BTN} ${IDLE_TONE}`}>
               <Zap className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{pick("동시 편집 충돌 쌍 주입", "Inject Concurrent Pair")}</span>
             </button>
@@ -577,10 +601,10 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
               sub={pick(`만료 기준 ${leaseState.leaseTtlMs} ms`, `TTL window ${leaseState.leaseTtlMs} ms`)}
             />
             <MetricCard
-              label={pick("차단 쓰기 · 보존 초안", "Fenced · Safe Drafts")}
+              label={pick("차단 쓰기 · 미저장 시도", "Fenced · Unsaved Attempts")}
               valueTestId="lease-fenced-summary"
-              value={pick(`차단 ${totalFencedWrites} · 초안 ${totalPreservedDrafts}`, `${totalFencedWrites} fenced · ${totalPreservedDrafts} drafts`)}
-              sub={pick("비파괴 읽기 전용 격리", "Non-destructive read-only buffer")}
+              value={pick(`차단 ${totalFencedWrites} · 미저장 ${totalPreservedDrafts}`, `${totalFencedWrites} fenced · ${totalPreservedDrafts} unsaved`)}
+              sub={pick("초안 내용은 저장하지 않음", "Draft content is not stored")}
             />
           </div>
 
@@ -624,7 +648,7 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
                   <div className="flex flex-wrap gap-2 text-xs text-fg-2 tabular-nums">
                     <span>{pick(`승인 ${tab.acceptedWrites}`, `OK ${tab.acceptedWrites}`)}</span>
                     <span>{pick(`차단 ${tab.blockedWriteAttempts}`, `Fenced ${tab.blockedWriteAttempts}`)}</span>
-                    <span data-testid={`lease-drafts-${tab.tabId}`}>{pick(`초안 보존 ${tab.pendingReadOnlyDraftCount}`, `Drafts ${tab.pendingReadOnlyDraftCount}`)}</span>
+                    <span data-testid={`lease-drafts-${tab.tabId}`}>{pick(`미저장 시도 ${tab.pendingReadOnlyDraftCount}`, `Unsaved attempts ${tab.pendingReadOnlyDraftCount}`)}</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <button type="button" data-testid={`btn-acquire-${tab.tabId}`} onClick={() => dispatchLease({ type: "request-write-lease", tabId: tab.tabId })} className={`${ACTION_BTN} ${IDLE_TONE} flex-1`}>
@@ -671,6 +695,7 @@ export function StudioOfflineResiliencePanel(props: StudioOfflineResiliencePanel
           </div>
         </div>
       )}
+      </fieldset>
     </section>
   );
 }

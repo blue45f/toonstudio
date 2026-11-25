@@ -314,8 +314,8 @@ describe("Wave 42D: 오프라인 CRDT 벡터시계 · OPFS 16K 패리티 복구 
     fireEvent.click(screen.getByTestId("btn-compact-crdt"));
 
     expect(onCompaction).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("crdt-op-count").textContent).toContain("4 → 4");
-    expect(screen.getByTestId("resilience-notice-banner").textContent).toContain("CRDT 큐 압축 완료");
+    expect(screen.getByTestId("crdt-op-count").textContent).toContain("10 → 4");
+    expect(screen.getByTestId("resilience-notice-banner").textContent).toContain("메모리 예제 CRDT 큐 압축 후보");
   });
 
   it("20. 탭 2(OPFS 16K 무결성·XOR 복구)에서 단일 손상 무손실 복구와 이중 손상 fail-closed 경고가 동작한다", () => {
@@ -351,9 +351,9 @@ describe("Wave 42D: 오프라인 CRDT 벡터시계 · OPFS 16K 패리티 복구 
     expect(screen.getByTestId("lease-active-writer").textContent).toBe("tab-ref");
     expect(screen.getByTestId("lease-fencing-epoch").textContent).toContain("Epoch 2");
 
-    // 구 쓰기 탭 tab-main(known Epoch 1)에서 쓰기 시도 -> 차단 + 초안 보존 1건
+    // 구 쓰기 탭 tab-main(known Epoch 1)의 예제 쓰기 시도 -> 차단·미저장 시도 1건 기록
     fireEvent.click(screen.getByTestId("btn-write-tab-main"));
-    expect(screen.getByTestId("lease-fenced-summary").textContent).toContain("차단 1 · 초안 1");
+    expect(screen.getByTestId("lease-fenced-summary").textContent).toContain("차단 1 · 미저장 1");
     expect(screen.getByTestId("lease-drafts-tab-main").textContent).toContain("1");
     expect(onLease).toHaveBeenCalled();
   });
