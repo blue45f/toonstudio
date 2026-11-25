@@ -1,9 +1,11 @@
 import type { BilingualText } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { StudioAiAssistToolId } from "../../ai/studio-ai-assist-ux";
-import type {
-  StudioOpenAiAssistMode,
-  StudioOpenAiAssistSuccess,
+import {
+  isStudioOpenAiAssistMode,
+  isValidStudioOpenAiAssistSuccess,
+  type StudioOpenAiAssistMode,
+  type StudioOpenAiAssistSuccess,
 } from "../../ai/studio-openai-creative-assist-client";
 
 export type StudioProjectAssistantSectionId =
@@ -22,66 +24,8 @@ export type AssistantSuggestionSpec = Readonly<{
   prompt: BilingualText;
 }>;
 
-const VALID_OPENAI_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
-  "idea-remix",
-  "script-to-cuts",
-  "dialogue-polish",
-  "export-preflight-coach",
-]);
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function isValidOpenAiMode(value: unknown): value is StudioOpenAiAssistMode {
-  return (
-    typeof value === "string" &&
-    VALID_OPENAI_MODES.has(value as StudioOpenAiAssistMode)
-  );
-}
-
-function isValidStoredSuccess(value: unknown): value is StudioOpenAiAssistSuccess {
-  if (!isRecord(value) || value.provider !== "openai" || typeof value.model !== "string") {
-    return false;
-  }
-  const privacy = value.privacy;
-  const quota = value.quota;
-  const result = value.result;
-  if (
-    !isRecord(privacy) ||
-    privacy.storeData !== false ||
-    typeof privacy.piiRedactedCount !== "number" ||
-    !isRecord(quota) ||
-    typeof quota.remainingDaily !== "number" ||
-    typeof quota.dailyLimit !== "number" ||
-    !isRecord(result) ||
-    !isValidOpenAiMode(result.mode) ||
-    !isRecord(result.data)
-  ) {
-    return false;
-  }
-
-  if (result.mode === "idea-remix") {
-    return typeof result.data.summary === "string" && Array.isArray(result.data.angles);
-  }
-  if (result.mode === "script-to-cuts") {
-    return (
-      typeof result.data.episodeGoal === "string" &&
-      typeof result.data.pacingTip === "string" &&
-      Array.isArray(result.data.cuts)
-    );
-  }
-  if (result.mode === "dialogue-polish") {
-    return (
-      typeof result.data.readabilityNote === "string" &&
-      Array.isArray(result.data.balloons)
-    );
-  }
-  return (
-    typeof result.data.readinessSummary === "string" &&
-    typeof result.data.episodeBlurbSuggestion === "string" &&
-    Array.isArray(result.data.checks)
-  );
 }
 
 export const STUDIO_ASSISTANT_SUGGESTIONS: Readonly<
@@ -292,10 +236,10 @@ export function readStudioAssistantSessionState(
           ? parsed.inputText
           : null;
     const rawMode = parsed.openAiMode ?? parsed.mode;
-    if (prompt === null || !isValidOpenAiMode(rawMode)) {
+    if (prompt === null || !isStudioOpenAiAssistMode(rawMode)) {
       return null;
     }
-    const lastResult = isValidStoredSuccess(parsed.lastResult)
+    const lastResult = isValidStudioOpenAiAssistSuccess(parsed.lastResult)
       ? parsed.lastResult
       : null;
     if (!prompt.trim() && lastResult === null) {
@@ -317,8 +261,8 @@ export function writeStudioAssistantSessionState(
   storageOverride?: Storage | null,
 ): void {
   const storage = resolveStudioAssistantSessionStorage(storageOverride);
-  if (!storage || !projectId || !isValidOpenAiMode(snapshot.openAiMode)) return;
-  const sanitizedResult = isValidStoredSuccess(snapshot.lastResult)
+  if (!storage || !projectId || !isStudioOpenAiAssistMode(snapshot.openAiMode)) return;
+  const sanitizedResult = isValidStudioOpenAiAssistSuccess(snapshot.lastResult)
     ? snapshot.lastResult
     : null;
   if (!snapshot.prompt.trim() && sanitizedResult === null) {

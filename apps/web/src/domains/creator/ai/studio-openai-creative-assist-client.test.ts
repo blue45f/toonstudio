@@ -22,6 +22,46 @@ function delayedBodyResponse(signal: AbortSignal | null | undefined, status: num
 }
 
 describe("studio-openai-creative-assist-client", () => {
+  it("요청 모드가 일치하는 정본 결과만 수락한다", async () => {
+    const response = {
+      provider: "openai",
+      model: "mock-model",
+      result: {
+        mode: "continuity-plot-audit",
+        data: {
+          overallConsistencyScore: 90,
+          summary: "흐름 점검",
+          issues: [{
+            severity: "tip",
+            category: "소품",
+            locationHint: "첫 장면",
+            conflictDetail: "반복되는 소품의 모양을 확인하세요.",
+            fixSuggestion: "등장 장면의 소품을 같은 모양으로 그리세요.",
+          }],
+        },
+      },
+      privacy: { storeData: false, piiRedactedCount: 0 },
+      quota: { remainingDaily: 1, dailyLimit: 2 },
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    };
+    const request = async (body: unknown, mode: Parameters<typeof runStudioOpenAiCreativeAssist>[0]["mode"]) => {
+      const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json(body));
+      const result = await runStudioOpenAiCreativeAssist(
+        { mode, inputText: "합성 원고" },
+        { fetchImpl, sessionToken: "test-session" },
+      );
+      expect(fetchImpl).toHaveBeenCalledOnce();
+      return result;
+    };
+
+    expect(await request(response, "continuity-plot-audit")).toEqual({ ok: true, data: response });
+    const invalid = { ok: false, status: 502, code: "INVALID_SERVER_PAYLOAD" };
+    expect(await request(response, "idea-remix")).toMatchObject(invalid);
+    expect(await request({ ...response, usage: null }, "continuity-plot-audit")).toMatchObject(invalid);
+    const brokenResult = { ...response.result, data: { ...response.result.data, issues: [null] } };
+    expect(await request({ ...response, result: brokenResult }, "continuity-plot-audit")).toMatchObject(invalid);
+  });
+
   it("서버가 연결되지 않았을 때도 오류 없이 안전한 미설정 안내 상태를 반환한다", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
     const status = await fetchStudioOpenAiAssistStatus({ fetchImpl: fetchMock });

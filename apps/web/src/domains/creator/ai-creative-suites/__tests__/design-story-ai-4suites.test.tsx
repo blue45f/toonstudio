@@ -188,6 +188,28 @@ describe("Canva Magic Studio 클린룸 엔진", () => {
     expect(result.variantsKo.join(" ")).not.toContain("editor@example.com");
   });
 
+  it("Magic Write는 클라우드 선택 없이 브라우저 기본 요청을 보내지 않는다", async () => {
+    const ambientFetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({ code: "quota_exceeded" }, { status: 429 }),
+    );
+    try {
+      const result = await runMagicWriteZeroBill({ kind: "promo-copy", promptKo: "합성 홍보 문구" });
+      expect(ambientFetch).not.toHaveBeenCalled();
+      expect(result.providerTier).toBe("local-fallback");
+
+      const cloudFallback = await runMagicWriteZeroBill({
+        kind: "promo-copy",
+        promptKo: "합성 홍보 문구",
+        offlineOnly: false,
+      });
+      expect(ambientFetch).toHaveBeenCalledTimes(1);
+      expect(cloudFallback.providerTier).toBe("local-fallback");
+      expect(cloudFallback.noticeKo).toContain("클라우드 무료 한도 보호");
+    } finally {
+      ambientFetch.mockRestore();
+    }
+  });
+
   it("8. Magic Write가 무료 클라우드 캐스케이드 응답 성공 시 구조화 카피를 연결한다", async () => {
     const fetchOk = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
@@ -543,6 +565,69 @@ describe("StudioDesignStoryAi4SuitesPanel UI · 접근성 · 지연 마운트 �
       expect(screen.getByTestId("canva-magic-write-result")).toBeTruthy();
     });
     expect(screen.getByTestId("canva-magic-write-result").textContent).toContain("비용 ₩0");
+  });
+
+  it("홍보 초안은 이 기기에서 만들고 무료 클라우드를 직접 고를 때만 서버에 보낸다", async () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({
+        provider: "github-models-free",
+        providerTier: "cloud-free",
+        model: "openai/gpt-4o-mini",
+        privacy: { piiRedactedCount: 0 },
+        result: {
+          mode: "thumbnail-hook-optimizer",
+          data: {
+            hookDiagnosis: "합성 클라우드 홍보 제목",
+            titleVariants: [
+              { variantLabel: "첫 만남", title: "우산을 건넨 날", subCopy: "첫 장면", hookReason: "만남" },
+              { variantLabel: "반전", title: "닫히지 않은 우산", subCopy: "둘의 사연", hookReason: "호기심" },
+            ],
+            thumbnailSpec: {
+              focalSubject: "노란 우산", contrastNote: "배경을 어둡게",
+              textOverlayMaxChars: 12, cropSafetyTip: "우산을 가운데 배치",
+            },
+          },
+        },
+      }))
+      .mockResolvedValueOnce(Response.json({ code: "quota_exceeded" }, { status: 429 }));
+
+    render(<StudioDesignStoryAi4SuitesPanel projectTitle="달빛 우산" fetchImpl={fetchImpl} />);
+    fireEvent.change(screen.getByLabelText("한 줄로 원하는 디자인 설명하기"), {
+      target: { value: "합성 홍보 문구 editor@example.com" },
+    });
+
+    const result = () => screen.getByTestId("canva-magic-write-result").textContent;
+    fireEvent.click(screen.getByRole("button", { name: /₩0 홍보 카피 만들기/u }));
+    await waitFor(() => expect(screen.getByTestId("canva-magic-write-result")).toBeTruthy());
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result()).toContain("이 기기에서 생성");
+
+    const cloud = screen.getByRole("button", { name: "무료 클라우드로 초안 만들기" });
+    const disclosure = cloud.getAttribute("aria-describedby");
+    expect(disclosure).toBeTruthy();
+    expect(document.getElementById(disclosure ?? "")?.textContent)
+      .toContain("문구, 작품 제목, 브랜드 말투를 서버에 보냅니다");
+    fireEvent.click(cloud);
+    await waitFor(() => expect(result()).toContain("합성 클라우드 홍보 제목"));
+    expect(result()).toContain("무료 클라우드에서 생성");
+    expect(result()).toContain("우산을 건넨 날");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, request] = fetchImpl.mock.calls[0];
+    expect(url).toBe("/api/studio/ai/creative-assist");
+    expect(JSON.parse(String(request?.body))).toMatchObject({
+      mode: "thumbnail-hook-optimizer",
+      inputText: expect.stringContaining("합성 홍보 문구"),
+      projectTitle: "달빛 우산",
+      genreOrTone: "따뜻하고 섬세한 감성",
+      allowZeroBillCascade: true,
+    });
+    expect(String(request?.body)).not.toContain("editor@example.com");
+
+    fireEvent.click(screen.getByRole("button", { name: "무료 클라우드로 초안 만들기" }));
+    await waitFor(() => expect(result()).toContain("이 기기에서 생성"));
+    expect(result()).toContain("클라우드 무료 한도 보호");
+    expect(result()).toContain("비용 ₩0");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   it("27. 피그마 탭에서 레이어 표준 정리와 4.5:1 말풍선 대비 자동 보정이 동작한다", () => {

@@ -637,7 +637,12 @@ export async function runMagicWriteZeroBill(
   const toneKo = request.toneKo?.trim() || "친근하고 선명한";
   const localDraft = buildLocalMagicWriteVariants(request.kind, masked.sanitizedText, projectTitle, toneKo);
 
-  if (request.offlineOnly || !options.fetchImpl) {
+  const resolvedFetch = options.fetchImpl ??
+    (request.offlineOnly === false && typeof globalThis.fetch === "function"
+      ? globalThis.fetch.bind(globalThis)
+      : undefined);
+
+  if (request.offlineOnly || !resolvedFetch) {
     return {
       kind: request.kind,
       kindLabelKo: kindMeta.labelKo,
@@ -650,13 +655,13 @@ export async function runMagicWriteZeroBill(
       costGuaranteedZeroUsd: 0,
       paidBillingBlocked: true,
       piiRedactedCount: masked.redactedCount,
-      noticeKo: "유료 과금 없는 로컬 무과금 작성기로 즉시 초안을 만들었습니다.",
+      noticeKo: null,
     };
   }
 
   const cascade = await runFreeAiZeroBillAssist(
     { mode: kindMeta.cascadeMode, inputText: `${kindMeta.labelKo} (${toneKo}): ${masked.sanitizedText}`, projectTitle, genreOrTone: toneKo },
-    { fetchImpl: options.fetchImpl, signal: options.signal },
+    { fetchImpl: resolvedFetch, signal: options.signal },
   );
   const useCloud = cascade.providerTier === "cloud-free" && cascade.bulletsKo.length > 0;
   const variantsKo = useCloud ? cascade.bulletsKo : localDraft.variantsKo;

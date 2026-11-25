@@ -84,3 +84,35 @@ describe("도우미 탭 초안 저장소 접근 거부", () => {
     expect(next.prompt).toBe("저장되지 않은 새 입력");
   });
 });
+
+it("이전 저장본의 입력과 유효 결과를 살리고 잘못된 결과만 폐기한다", () => {
+  const storage = memoryStorage();
+  const lastResult = {
+    provider: "openai",
+    model: "mock-model",
+    result: {
+      mode: "continuity-plot-audit",
+      data: {
+        overallConsistencyScore: 90,
+        summary: "흐름 점검",
+        issues: [{
+          severity: "tip",
+          category: "소품",
+          locationHint: "첫 장면",
+          conflictDetail: "반복되는 소품의 모양을 확인하세요.",
+          fixSuggestion: "등장 장면의 소품을 같은 모양으로 그리세요.",
+        }],
+      },
+    },
+    privacy: { storeData: false, piiRedactedCount: 0 },
+    quota: { remainingDaily: 1, dailyLimit: 2 },
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+  };
+  const stored = { inputText: draft.prompt, mode: draft.openAiMode, lastResult };
+  storage.setItem(key, JSON.stringify(stored));
+  expect(readStudioAssistantSessionState("project-a", storage)).toEqual({ ...draft, lastResult });
+
+  const brokenResult = { ...lastResult.result, data: { ...lastResult.result.data, issues: [null] } };
+  storage.setItem(key, JSON.stringify({ ...stored, lastResult: { ...lastResult, result: brokenResult } }));
+  expect(readStudioAssistantSessionState("project-a", storage)).toEqual(draft);
+});
