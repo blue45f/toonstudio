@@ -55,7 +55,8 @@ jobs:
           python-version: '3.11'
       - name: Install Python image verification dependencies
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: python3 -m pip install Pillow==11.3.0 numpy==2.2.6
+        run: |
+          python3 -m pip install --only-binary=:all: --require-hashes -r .github/requirements/studio-image-verification.txt
       - name: Offline asset packaging and curation unit tests
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |

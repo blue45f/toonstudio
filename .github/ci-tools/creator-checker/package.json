@@ -1,0 +1,9 @@
+{
+  "name": "toonstudio-ci-tool-creator-checker",
+  "private": true,
+  "dependencies": {
+    "fast-xml-parser": "5.12.0",
+    "playwright": "1.62.1",
+    "typescript": "6.0.3"
+  }
+}
