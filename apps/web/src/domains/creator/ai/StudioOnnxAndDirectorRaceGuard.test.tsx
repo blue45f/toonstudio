@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_AI_DEFAULT_SETTINGS } from "./studio-ai-client";
@@ -8,9 +8,10 @@ import { StudioOnnxAnimeStylePanel } from "./StudioOnnxAnimeStylePanel";
 import { StudioOnnxColorizePanel } from "./StudioOnnxColorizePanel";
 import { StudioOnnxUpscalePanel } from "../StudioOnnxUpscalePanel";
 
-const { convertImageToAnimeStyleMock, colorizeOnDeviceMock, upscaleOnDeviceMock } = vi.hoisted(
+const { convertImageToAnimeStyleMock, animeStyleOnDeviceMock, colorizeOnDeviceMock, upscaleOnDeviceMock } = vi.hoisted(
   () => ({
     convertImageToAnimeStyleMock: vi.fn(),
+    animeStyleOnDeviceMock: vi.fn(),
     colorizeOnDeviceMock: vi.fn(),
     upscaleOnDeviceMock: vi.fn(),
   }),
@@ -25,6 +26,10 @@ vi.mock("./studio-ai-client", async (importOriginal) => {
   };
 });
 
+vi.mock("../studio-onnx-anime-style", () => ({
+  convertToAnimeStyleOnDevice: animeStyleOnDeviceMock,
+}));
+
 vi.mock("../studio-onnx-colorize", () => ({
   colorizeLineArtOnDeviceWithLayers: colorizeOnDeviceMock,
 }));
@@ -36,6 +41,7 @@ vi.mock("../studio-onnx-upscale", () => ({
 afterEach(() => {
   cleanup();
   convertImageToAnimeStyleMock.mockReset();
+  animeStyleOnDeviceMock.mockReset();
   colorizeOnDeviceMock.mockReset();
   upscaleOnDeviceMock.mockReset();
 });
@@ -80,6 +86,58 @@ describe("인스펙터 ONNX/클라우드 AI 이미지 전환 중단·취소 가�
     resolveCloud!({ ok: true, data: { dataUrl: "data:image/png;base64,STALE_A_RESULT" } });
     await Promise.resolve();
     expect(onResultA).not.toHaveBeenCalled();
+  });
+
+  it.each(["cloud", "device"] as const)("%s 경로의 이전 변환이 끝나도 새 변환의 진행 상태를 유지한다", async (route) => {
+    const previousResult = "data:image/png;base64,STALE_A_RESULT";
+    const currentResult = "data:image/png;base64,CURRENT_B_RESULT";
+    const previousDevice = Promise.withResolvers<{ dataUrl: string }>();
+    const previousCloud = Promise.withResolvers<{ ok: true; data: { dataUrl: string } }>();
+    const currentCloud = Promise.withResolvers<{ ok: true; data: { dataUrl: string } }>();
+    if (route === "device") {
+      animeStyleOnDeviceMock.mockReturnValueOnce(previousDevice.promise);
+    } else {
+      convertImageToAnimeStyleMock.mockReturnValueOnce(previousCloud.promise);
+    }
+    convertImageToAnimeStyleMock.mockReturnValueOnce(currentCloud.promise);
+
+    const onResult = vi.fn();
+    const { rerender } = render(
+      <StudioOnnxAnimeStylePanel src="data:image/png;base64,IMAGE_A" cloudConfigured onResult={onResult} />,
+    );
+    fireEvent.click(screen.getByRole("button", {
+      name: route === "device" ? "기기에서 애니풍으로 변환" : "AI로 고화질 변환",
+    }));
+    const previousMock = route === "device" ? animeStyleOnDeviceMock : convertImageToAnimeStyleMock;
+    await waitFor(() => expect(previousMock).toHaveBeenCalledTimes(1));
+    const previousSignal = previousMock.mock.calls[0]?.[route === "device" ? 1 : 4]?.signal;
+
+    rerender(
+      <StudioOnnxAnimeStylePanel src="data:image/png;base64,IMAGE_B" cloudConfigured onResult={onResult} />,
+    );
+    expect(previousSignal?.aborted).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "AI로 고화질 변환" }));
+    await waitFor(() => expect(convertImageToAnimeStyleMock).toHaveBeenLastCalledWith(
+      expect.anything(), "data:image/png;base64,IMAGE_B", "", "episode", { signal: expect.any(AbortSignal) },
+    ));
+
+    await act(async () => {
+      if (route === "device") {
+        previousDevice.resolve({ dataUrl: previousResult });
+      } else {
+        previousCloud.resolve({ ok: true, data: { dataUrl: previousResult } });
+      }
+    });
+    expect.soft(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByTestId("onnx-anime-cloud-cancel-btn")).toBeTruthy();
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "AI로 변환하는 중…" }).disabled).toBe(true);
+    expect(onResult).not.toHaveBeenCalled();
+
+    await act(async () => {
+      currentCloud.resolve({ ok: true, data: { dataUrl: currentResult } });
+    });
+    expect(onResult).toHaveBeenCalledExactlyOnceWith(currentResult);
+    expect(screen.queryByTestId("onnx-anime-cloud-cancel-btn")).toBeNull();
   });
 
   it("클라우드 애니풍 변환 중 취소 버튼 클릭 시 AbortSignal을 중단하고 취소 안내를 보여준다", async () => {

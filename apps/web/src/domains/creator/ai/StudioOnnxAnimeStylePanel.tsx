@@ -57,21 +57,16 @@ export function StudioOnnxAnimeStylePanel({
   const [busy, setBusy] = useState<BusyRoute>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
-  const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      abortRef.current?.abort();
-    };
-  }, []);
-
-  useEffect(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
     setBusy(null);
     setPreviewSrc(null);
     setError(null);
+    return () => {
+      const controller = abortRef.current;
+      abortRef.current = null;
+      controller?.abort();
+    };
   }, [src]);
 
   const runDevice = async () => {
@@ -86,11 +81,11 @@ export function StudioOnnxAnimeStylePanel({
         kind,
         signal: controller.signal,
       });
-      if (!mountedRef.current || controller.signal.aborted || abortRef.current !== controller) return;
+      if (abortRef.current !== controller || controller.signal.aborted) return;
       setPreviewSrc(result.dataUrl);
       onResult(result.dataUrl);
     } catch (cause) {
-      if (!mountedRef.current || abortRef.current !== controller) return;
+      if (abortRef.current !== controller) return;
       if (cause instanceof Error && cause.name === "AbortError") {
         setError(T("변환을 취소했어요."));
       } else {
@@ -101,8 +96,10 @@ export function StudioOnnxAnimeStylePanel({
         );
       }
     } finally {
-      if (mountedRef.current) setBusy(null);
-      if (abortRef.current === controller) abortRef.current = null;
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setBusy(null);
+      }
     }
   };
 
@@ -121,8 +118,9 @@ export function StudioOnnxAnimeStylePanel({
       const result = await client.convertImageToAnimeStyle(settings, src, "", purpose, {
         signal: controller.signal,
       });
-      if (!mountedRef.current || controller.signal.aborted || abortRef.current !== controller) {
-        if (mountedRef.current && controller.signal.aborted) setError(T("변환을 취소했어요."));
+      if (abortRef.current !== controller) return;
+      if (controller.signal.aborted) {
+        setError(T("변환을 취소했어요."));
         return;
       }
       if (result.ok) {
@@ -132,7 +130,7 @@ export function StudioOnnxAnimeStylePanel({
         setError(result.error);
       }
     } catch (cause) {
-      if (!mountedRef.current || abortRef.current !== controller) return;
+      if (abortRef.current !== controller) return;
       if (cause instanceof Error && cause.name === "AbortError") {
         setError(T("변환을 취소했어요."));
       } else {
@@ -143,8 +141,10 @@ export function StudioOnnxAnimeStylePanel({
         );
       }
     } finally {
-      if (mountedRef.current) setBusy(null);
-      if (abortRef.current === controller) abortRef.current = null;
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setBusy(null);
+      }
     }
   };
 
