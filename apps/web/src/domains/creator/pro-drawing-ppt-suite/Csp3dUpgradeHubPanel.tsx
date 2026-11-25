@@ -1,4 +1,4 @@
-import { Brush, Hand, Layers, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Camera, Hand, Layers, Move, Palette, ShieldCheck, Smile, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -78,6 +78,24 @@ const LazyStudioCharExpressionPoseAdvisorPanel = lazy(async () => {
   return { default: m.StudioCharExpressionPoseAdvisorPanel };
 });
 
+const LazyStudioSceneLightingAdvisorPanel = lazy(async () => {
+  await import("../scene-lighting-atmosphere-advisor");
+  const m = await import("../scene-lighting-atmosphere-advisor/StudioSceneLightingAdvisorPanel");
+  return { default: m.StudioSceneLightingAdvisorPanel };
+});
+
+const LazyStudioCameraFramingCoachPanel = lazy(async () => {
+  await import("../camera-framing-continuity-coach");
+  const m = await import("../camera-framing-continuity-coach/StudioCameraFramingCoachPanel");
+  return { default: m.StudioCameraFramingCoachPanel };
+});
+
+const LazyStudioHandPropAutoGripPanel = lazy(async () => {
+  await import("../hand-prop-autogrip-assistant");
+  const m = await import("../hand-prop-autogrip-assistant/StudioHandPropAutoGripPanel");
+  return { default: m.StudioHandPropAutoGripPanel };
+});
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -92,7 +110,10 @@ type Csp3dTabId =
   | "actionFxLab"
   | "characterBible"
   | "editorialMoodboard"
-  | "charExprAdvisor";
+  | "charExprAdvisor"
+  | "sceneLightingAdv"
+  | "cameraFramingAdv"
+  | "handPropAutoGrip";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -113,6 +134,9 @@ const CSP3D_TABS: readonly {
   { id: "characterBible", labelKo: "캐릭터 설정·표정 조판 예제", labelEn: "Character Sheet · Expression Layout Examples" },
   { id: "editorialMoodboard", labelKo: "무드보드·팔레트 예제", labelEn: "Moodboard · Palette Examples" },
   { id: "charExprAdvisor", labelKo: "표정·포즈 제안 예제", labelEn: "Expression · Pose Suggestion Examples" },
+  { id: "sceneLightingAdv", labelKo: "컷 조명·색온도 제안 예제", labelEn: "Scene Lighting · Color Temperature Examples" },
+  { id: "cameraFramingAdv", labelKo: "카메라 구도·시선 축 예제", labelEn: "Camera Framing · Sightline Examples" },
+  { id: "handPropAutoGrip", labelKo: "손·소품 그립 제안 예제", labelEn: "Hand · Prop Grip Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -133,6 +157,12 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "handPropAutoGrip":
+      return <Hand size={15} aria-hidden="true" />;
+    case "cameraFramingAdv":
+      return <Camera size={15} aria-hidden="true" />;
+    case "sceneLightingAdv":
+      return <Sun size={15} aria-hidden="true" />;
     case "editorialMoodboard":
       return <Palette size={15} aria-hidden="true" />;
     case "charExprAdvisor":
@@ -223,6 +253,9 @@ export function Csp3dUpgradeHubPanel() {
           {active === "characterBible" ? <LazyCharacterBiblePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "editorialMoodboard" ? <LazyStudioEditorialMoodboardPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "charExprAdvisor" ? <LazyStudioCharExpressionPoseAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "sceneLightingAdv" ? <LazyStudioSceneLightingAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "cameraFramingAdv" ? <LazyStudioCameraFramingCoachPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "handPropAutoGrip" ? <LazyStudioHandPropAutoGripPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 

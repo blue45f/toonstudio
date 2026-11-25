@@ -55,6 +55,11 @@ const cases: readonly ExampleCase[] = [
   { ko: "IP 피칭·수익 가정 예제", en: "IP Pitch · Revenue Assumption Examples", panel: "studio-global-ip-pitch-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../global-ip-pitch-studio") },
   { ko: "펜 입력·보정 계산 예제", en: "Pen Input · Calibration Examples", panel: "pro-digitizer-calibrator-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../pro-digitizer-hid-engine") },
   { ko: "기기 배치·시간 예측 예제", en: "Device Layout · Timing Estimate Examples", panel: "studio-spatial-wearable-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../spatial-wearable-studio") },
+  { ko: "말풍선·효과음 배치 예제", en: "Balloon · Sound Effect Placement Examples", panel: "studio-balloon-sfx-proposer-panel", Hub: AutoQaCollabHubPanel, load: () => import("../balloon-sfx-placement-proposer") },
+  { ko: "컷별 설정집 대조 예제", en: "Cut-by-Cut Model Sheet Examples", panel: "modelsheet-drift-coach-panel", Hub: AutoQaCollabHubPanel, load: () => import("../crosscut-modelsheet-drift-coach") },
+  { ko: "컷 조명·색온도 제안 예제", en: "Scene Lighting · Color Temperature Examples", panel: "studio-scene-lighting-advisor-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../scene-lighting-atmosphere-advisor") },
+  { ko: "카메라 구도·시선 축 예제", en: "Camera Framing · Sightline Examples", panel: "studio-camera-framing-coach-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../camera-framing-continuity-coach") },
+  { ko: "손·소품 그립 제안 예제", en: "Hand · Prop Grip Examples", panel: "studio-hand-prop-autogrip-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../hand-prop-autogrip-assistant") },
 ];
 
 afterEach(cleanup);

@@ -1,4 +1,4 @@
-import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, MapPin, Music, Palette, ScanSearch, Sparkles } from "lucide-react";
+import { CheckCircle2, Clapperboard, GitBranch, Globe2, LayoutList, MapPin, MessageSquareText, Music, Palette, ScanSearch, Sparkles } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -83,6 +83,18 @@ const LazyStudioWebtoonAudioCuePanel = lazy(async () => {
   return { default: m.StudioWebtoonAudioCuePanel };
 });
 
+const LazyStudioBalloonSfxProposerPanel = lazy(async () => {
+  await import("../balloon-sfx-placement-proposer");
+  const m = await import("../balloon-sfx-placement-proposer/StudioBalloonSfxProposerPanel");
+  return { default: m.StudioBalloonSfxProposerPanel };
+});
+
+const LazyStudioModelSheetDriftCoachPanel = lazy(async () => {
+  await import("../crosscut-modelsheet-drift-coach");
+  const m = await import("../crosscut-modelsheet-drift-coach/StudioModelSheetDriftCoachPanel");
+  return { default: m.StudioModelSheetDriftCoachPanel };
+});
+
 type QaHubTabId =
   | "pixel"
   | "layout"
@@ -98,7 +110,9 @@ type QaHubTabId =
   | "mobileReader"
   | "pacingThumbnail"
   | "visualPinReview"
-  | "audioCueDirector";
+  | "audioCueDirector"
+  | "balloonSfxProposer"
+  | "modelSheetDrift";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -136,10 +150,16 @@ const QA_HUB_TABS: readonly {
   { id: "pacingThumbnail", labelKo: "컷 호흡·썸네일 수치 예제", labelEn: "Panel Rhythm · Thumbnail Metric Examples" },
   { id: "visualPinReview", labelKo: "핀·검수 메모 예제", labelEn: "Pin · Review Note Examples" },
   { id: "audioCueDirector", labelKo: "대사·배경음·효과음 큐 예제", labelEn: "Dialogue · Music · Sound Cue Examples" },
+  { id: "balloonSfxProposer", labelKo: "말풍선·효과음 배치 예제", labelEn: "Balloon · Sound Effect Placement Examples" },
+  { id: "modelSheetDrift", labelKo: "컷별 설정집 대조 예제", labelEn: "Cut-by-Cut Model Sheet Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
   switch (id) {
+    case "modelSheetDrift":
+      return <ScanSearch size={15} aria-hidden="true" />;
+    case "balloonSfxProposer":
+      return <MessageSquareText size={15} aria-hidden="true" />;
     case "visualPinReview":
       return <MapPin size={15} aria-hidden="true" />;
     case "audioCueDirector":
@@ -233,6 +253,8 @@ export function AutoQaCollabHubPanel() {
           {active === "pacingThumbnail" ? <LazyPacingThumbnailPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "visualPinReview" ? <LazyStudioVisualPinReviewPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "audioCueDirector" ? <LazyStudioWebtoonAudioCuePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "balloonSfxProposer" ? <LazyStudioBalloonSfxProposerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "modelSheetDrift" ? <LazyStudioModelSheetDriftCoachPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">
