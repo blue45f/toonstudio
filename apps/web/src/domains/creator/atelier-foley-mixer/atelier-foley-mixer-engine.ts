@@ -7,6 +7,8 @@
  * - 순수 DSP 그래프 생성기 + jsdom 안전 Web Audio 원샷 프리뷰 + JSON 직렬화/역직렬화
  */
 
+import { playFoleyPreview } from "./foley-audio-preview";
+
 export type DrawingToolFoleyId =
   | "gpen-steel-scratch" | "graphite-2b-grain" | "alcohol-marker-squeak"
   | "watercolor-wet-wash" | "impasto-palette-knife";
@@ -137,8 +139,8 @@ export interface PreviewAudioParamLike { value: number; setValueAtTime?: (value:
 export interface PreviewAudioNodeLike { connect: (destination: unknown) => unknown; disconnect?: () => void }
 export interface PreviewBiquadFilterLike extends PreviewAudioNodeLike { type: BiquadFilterType; frequency: PreviewAudioParamLike; Q: PreviewAudioParamLike }
 export interface PreviewGainNodeLike extends PreviewAudioNodeLike { gain: PreviewAudioParamLike }
-export interface PreviewBufferSourceLike extends PreviewAudioNodeLike { buffer: unknown; start: (when?: number) => void; stop: (when?: number) => void }
-export interface PreviewOscillatorLike extends PreviewAudioNodeLike { type: OscillatorType; frequency: PreviewAudioParamLike; start: (when?: number) => void; stop: (when?: number) => void }
+export interface PreviewBufferSourceLike extends PreviewAudioNodeLike { onended?: (() => void) | null; buffer: unknown; start: (when?: number) => void; stop: (when?: number) => void }
+export interface PreviewOscillatorLike extends PreviewAudioNodeLike { onended?: (() => void) | null; type: OscillatorType; frequency: PreviewAudioParamLike; start: (when?: number) => void; stop: (when?: number) => void }
 export interface PreviewAudioBufferLike { getChannelData: (channel: number) => Float32Array }
 
 export interface PreviewAudioContextLike {
@@ -153,14 +155,17 @@ export interface PreviewAudioContextLike {
 
 export interface PreviewFoleySoundOptions {
   readonly kind?: FoleyPreviewKind; readonly durationMs?: number;
+  /** 팩토리로 주입한 컨텍스트는 외부 소유이며 닫지 않는다. */
   readonly audioContextFactory?: () => PreviewAudioContextLike | null;
+  readonly signal?: AbortSignal; readonly onStarted?: () => void;
 }
 
 export interface FoleyPreviewResult {
-  readonly status: "played" | "muted-noop" | "unavailable-noop" | "error-noop";
+  readonly status: "played" | "stopped" | "muted-noop" | "unavailable-noop" | "error-noop";
+  /** native 종료 신호와 생성한 자원 정리를 모두 확인한 경우에만 true다. */
   readonly played: boolean;
   readonly kind: FoleyPreviewKind;
-  readonly reason: "ok" | "safety-muted" | "zero-gain" | "no-audio-context" | "audio-error";
+  readonly reason: "ok" | "cancelled" | "safety-muted" | "zero-gain" | "no-audio-context" | "audio-error" | "cleanup-error" | "resource-limit";
   readonly durationMs: number;
   readonly peakDb: number;
 }
@@ -396,6 +401,7 @@ export function applyAmbiencePresetToConfig(
 
 /** 화구·종이·앰비언스·촉각 UI·안전장치 설정을 순수 결정론적 DSP 파라미터 그래프로 변환한다. */
 export function computeFoleyDspGraph(config: FoleyMixerConfig, stroke?: FoleyStrokeTelemetry): FoleyDspGraph {
+  assertFoleyConfig(config); finite([stroke?.pressure01 ?? 0.65, stroke?.velocity01 ?? 0.55]);
   const tool = DRAWING_TOOL_FOLEY_PROFILES[config.toolId];
   const paper = PAPER_RESONANCE_PROFILES[config.paperId];
   const ambienceProfile = ATELIER_AMBIENCE_PROFILES[config.ambienceId];
@@ -512,110 +518,12 @@ export function computeFoleyDspGraph(config: FoleyMixerConfig, stroke?: FoleyStr
   };
 }
 
-function createDefaultBrowserAudioContext(): PreviewAudioContextLike | null {
-  if (typeof globalThis === "undefined") return null;
-  const host = globalThis as unknown as {
-    readonly AudioContext?: new () => PreviewAudioContextLike;
-    readonly webkitAudioContext?: new () => PreviewAudioContextLike;
-  };
-  const Ctor = host.AudioContext ?? host.webkitAudioContext;
-  if (typeof Ctor !== "function") return null;
-  try { return new Ctor(); } catch { return null; }
-}
-
-function writeDeterministicNoiseSamples(samples: Float32Array, grainDensity01: number): void {
-  let seed = 0x51a7c3d9;
-  let pink = 0;
-  for (let i = 0; i < samples.length; i += 1) {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    const white = (seed / 4294967296) * 2 - 1;
-    pink = pink * 0.72 + white * 0.28;
-    const u = samples.length > 1 ? i / (samples.length - 1) : 0.5;
-    const hann = 0.5 * (1 - Math.cos(2 * Math.PI * u));
-    samples[i] = clamp((grainDensity01 * white * 0.45 + (1 - grainDensity01 * 0.45) * pink) * hann, -0.95, 0.95);
-  }
-}
-
-function setAudioParamSafe(param: PreviewAudioParamLike, value: number, time: number): void {
-  if (typeof param.setValueAtTime === "function") param.setValueAtTime(value, time);
-  else param.value = value;
-}
-
-/** 선택적 브라우저 Web Audio 원샷 프리뷰 헬퍼(jsdom/AudioContext 부재 및 안전 음소거 시 no-op). */
-export function previewFoleySound(graph: FoleyDspGraph, options?: PreviewFoleySoundOptions): FoleyPreviewResult {
-  const kind: FoleyPreviewKind = options?.kind ?? "stroke";
-  if (!graph.safety.isAudible) {
-    return { status: "muted-noop", played: false, kind, reason: "safety-muted", durationMs: 0, peakDb: SILENCE_FLOOR_DB };
-  }
-  const targetGain =
-    kind === "stroke"
-      ? graph.friction.effectiveGainLinear * graph.master.limiterRatio
-      : kind === "ambience"
-        ? graph.ambience.effectiveGainLinear * graph.master.limiterRatio
-        : graph.tactileUi.effectiveGainLinear * graph.master.limiterRatio;
-
-  if (targetGain <= 0.0001) {
-    return { status: "muted-noop", played: false, kind, reason: "zero-gain", durationMs: 0, peakDb: SILENCE_FLOOR_DB };
-  }
-
-  const ctx = options?.audioContextFactory ? options.audioContextFactory() : createDefaultBrowserAudioContext();
-  if (!ctx) {
-    return { status: "unavailable-noop", played: false, kind, reason: "no-audio-context", durationMs: 0, peakDb: linearGainToDb(targetGain) };
-  }
-
-  const defaultDur =
-    kind === "stroke"
-      ? DRAWING_TOOL_FOLEY_PROFILES[graph.toolId].previewDurationMs
-      : kind === "ambience" ? 420 : Math.max(24, TACTILE_UI_PRESETS[graph.tactilePresetId].clickDurationMs);
-  const durationMs = Math.round(clamp(options?.durationMs ?? defaultDur, 20, 1200));
-  const durationSec = durationMs / 1000;
-
-  try {
-    if (ctx.state === "suspended" && typeof ctx.resume === "function") void ctx.resume();
-    const now = Number.isFinite(ctx.currentTime) ? ctx.currentTime : 0;
-    const clampedGain = Math.min(MASTER_PEAK_CEILING_LINEAR, targetGain);
-    const gainNode = ctx.createGain();
-    setAudioParamSafe(gainNode.gain, clampedGain, now);
-    gainNode.connect(ctx.destination);
-
-    if (kind === "tactile-ui") {
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      setAudioParamSafe(osc.frequency, Math.max(120, graph.tactileUi.clickFrequencyHz), now);
-      osc.connect(gainNode);
-      osc.start(now);
-      osc.stop(now + durationSec);
-    } else {
-      const sr = Math.max(8000, Math.round(ctx.sampleRate || 44100));
-      const buffer = ctx.createBuffer(1, Math.max(128, Math.round(sr * durationSec)), sr);
-      writeDeterministicNoiseSamples(buffer.getChannelData(0), kind === "stroke" ? graph.friction.fiberGrainDensity01 : 0.25);
-
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      const bandpass = ctx.createBiquadFilter();
-      bandpass.type = "bandpass";
-      setAudioParamSafe(
-        bandpass.frequency,
-        kind === "stroke" ? graph.friction.centerFrequencyHz : ATELIER_AMBIENCE_PROFILES[graph.ambienceId].ambienceCenterHz,
-        now,
-      );
-      setAudioParamSafe(bandpass.Q, kind === "stroke" ? graph.friction.qFactor : 0.9, now);
-
-      const lowpass = ctx.createBiquadFilter();
-      lowpass.type = "lowpass";
-      setAudioParamSafe(lowpass.frequency, kind === "stroke" ? graph.friction.lpfCutoffHz : 2400, now);
-
-      src.connect(bandpass);
-      bandpass.connect(lowpass);
-      lowpass.connect(gainNode);
-      src.start(now);
-      src.stop(now + durationSec);
-    }
-
-    return { status: "played", played: true, kind, reason: "ok", durationMs, peakDb: linearGainToDb(clampedGain) };
-  } catch {
-    return { status: "error-noop", played: false, kind, reason: "audio-error", durationMs: 0, peakDb: SILENCE_FLOOR_DB };
-  }
+/** 실제 Web Audio 시작과 native 종료·자체 자원 정리를 기다린 뒤 시연 결과를 반환한다. */
+export function previewFoleySound(graph: FoleyDspGraph, options?: PreviewFoleySoundOptions): Promise<FoleyPreviewResult> {
+  const kind = options?.kind ?? "stroke";
+  const defaultDurationMs = kind === "stroke" ? DRAWING_TOOL_FOLEY_PROFILES[graph.toolId]?.previewDurationMs ?? 200
+    : kind === "ambience" ? 420 : Math.max(24, TACTILE_UI_PRESETS[graph.tactilePresetId]?.clickDurationMs ?? 24);
+  return playFoleyPreview(graph, options, { defaultDurationMs, ambienceFrequencyHz: ATELIER_AMBIENCE_PROFILES[graph.ambienceId]?.ambienceCenterHz ?? 620 });
 }
 
 const isToolId = (v: unknown): v is DrawingToolFoleyId => typeof v === "string" && (DRAWING_TOOL_FOLEY_IDS as readonly string[]).includes(v);
@@ -623,20 +531,30 @@ const isPaperId = (v: unknown): v is PaperResonanceId => typeof v === "string" &
 const isAmbienceId = (v: unknown): v is AtelierAmbienceId => typeof v === "string" && (ATELIER_AMBIENCE_IDS as readonly string[]).includes(v);
 const isTactileId = (v: unknown): v is TactileUiPresetId => typeof v === "string" && (TACTILE_UI_PRESET_IDS as readonly string[]).includes(v);
 
+function finite(values: readonly number[]): void {
+  if (values.some((value) => !Number.isFinite(value))) throw new RangeError("Foley 계산 입력은 유한한 수여야 합니다.");
+}
+
+function assertFoleyConfig(config: FoleyMixerConfig): void {
+  if (!isToolId(config.toolId) || !isPaperId(config.paperId) || !isAmbienceId(config.ambienceId) || !isTactileId(config.tactilePresetId)) throw new RangeError("등록되지 않은 사운드 예제입니다.");
+  finite([config.masterVolume01, config.foleyBusGain01, config.ambienceBusGain01, config.tactileBusGain01, config.currentHour, config.quietHours.startHour, config.quietHours.endHour, ...ATELIER_AMBIENCE_IDS.map((id) => config.ambienceLevels[id])]);
+  if ([config.muted, config.prefersReducedMotion, config.quietHours.enabled].some((value) => typeof value !== "boolean") || !["mute", "attenuate-soft"].includes(config.reducedMotionPolicy)) throw new RangeError("사운드 안전장치 설정이 올바르지 않습니다.");
+}
+
 function sanitizeConfig(config: FoleyMixerConfig): FoleyMixerConfig {
   return {
     toolId: config.toolId, paperId: config.paperId, ambienceId: config.ambienceId,
     ambienceLevels: {
-      "rainy-night-atelier": round2(clamp01(config.ambienceLevels["rainy-night-atelier"])),
-      "hanok-timber-study": round2(clamp01(config.ambienceLevels["hanok-timber-study"])),
-      "dawn-deadline-cafe": round2(clamp01(config.ambienceLevels["dawn-deadline-cafe"])),
-      "silent-focus": round2(clamp01(config.ambienceLevels["silent-focus"])),
+      "rainy-night-atelier": clamp01(config.ambienceLevels["rainy-night-atelier"]),
+      "hanok-timber-study": clamp01(config.ambienceLevels["hanok-timber-study"]),
+      "dawn-deadline-cafe": clamp01(config.ambienceLevels["dawn-deadline-cafe"]),
+      "silent-focus": clamp01(config.ambienceLevels["silent-focus"]),
     },
     tactilePresetId: config.tactilePresetId,
-    masterVolume01: round2(clamp01(config.masterVolume01)), muted: Boolean(config.muted),
-    foleyBusGain01: round2(clamp01(config.foleyBusGain01)),
-    ambienceBusGain01: round2(clamp01(config.ambienceBusGain01)),
-    tactileBusGain01: round2(clamp01(config.tactileBusGain01)),
+    masterVolume01: clamp01(config.masterVolume01), muted: Boolean(config.muted),
+    foleyBusGain01: clamp01(config.foleyBusGain01),
+    ambienceBusGain01: clamp01(config.ambienceBusGain01),
+    tactileBusGain01: clamp01(config.tactileBusGain01),
     prefersReducedMotion: Boolean(config.prefersReducedMotion),
     reducedMotionPolicy: config.reducedMotionPolicy === "attenuate-soft" ? "attenuate-soft" : "mute",
     quietHours: {
@@ -650,9 +568,11 @@ function sanitizeConfig(config: FoleyMixerConfig): FoleyMixerConfig {
 
 /** 현재 화실 Foley 믹서 설정을 버전 명시 v1 JSON 문자열로 직렬화한다. */
 export function serializeFoleyMixerPreset(config: FoleyMixerConfig, presetName?: string): string {
-  const cleanName = (presetName ?? "Atelier Foley Custom").trim() || "Atelier Foley Custom";
+  assertFoleyConfig(config);
+  const cleanName = presetName?.trim() ? presetName : "Atelier Foley Custom";
+  if (cleanName.length > 64) throw new RangeError("프리셋 이름은 64자까지 지원합니다. 원문은 자르지 않습니다.");
   const payload: FoleyMixerPresetPayload = {
-    schema: FOLEY_MIXER_PRESET_SCHEMA, schemaVersion: 1, name: cleanName.slice(0, 64), config: sanitizeConfig(config),
+    schema: FOLEY_MIXER_PRESET_SCHEMA, schemaVersion: 1, name: cleanName, config: sanitizeConfig(config),
   };
   return JSON.stringify(payload, null, 2);
 }
@@ -664,11 +584,12 @@ function readClampedUnit(rec: Record<string, unknown>, key: string, fallback: nu
     return fallback;
   }
   if (raw < 0 || raw > 1) warnings.push(`${key}: [0, 1] 범위로 클램핑`);
-  return round2(clamp01(raw));
+  return clamp01(raw);
 }
 
 /** 직렬화된 화실 Foley 믹서 프리셋 JSON을 검증·역직렬화한다. */
 export function parseFoleyMixerPreset(rawJson: string): FoleyPresetParseResult {
+  if (rawJson.length > 65536) return { ok: false, errorCode: "invalid-fields", messageKo: "프리셋 JSON은 65,536자까지 지원합니다. 입력 원문은 유지됩니다.", messageEn: "Preset JSON supports up to 65,536 characters. Source input is preserved." };
   const trimmed = rawJson.trim();
   if (trimmed.length === 0) {
     return { ok: false, errorCode: "empty-input", messageKo: "프리셋 JSON 내용이 비어 있습니다.", messageEn: "Preset JSON input is empty." };
@@ -732,7 +653,8 @@ export function parseFoleyMixerPreset(rawJson: string): FoleyPresetParseResult {
     currentHour: normalizeHour(typeof cfg.currentHour === "number" ? cfg.currentHour : 15),
   };
 
-  const name = typeof root.name === "string" && root.name.trim().length > 0 ? root.name.trim().slice(0, 64) : "Atelier Foley Custom";
+  if (typeof root.name === "string" && root.name.length > 64) return { ok: false, errorCode: "invalid-fields", messageKo: "프리셋 이름은 64자까지 지원합니다. 원문은 자르지 않습니다.", messageEn: "Preset names support up to 64 characters; source is not truncated." };
+  const name = typeof root.name === "string" && root.name.trim().length > 0 ? root.name : "Atelier Foley Custom";
   return {
     ok: true,
     preset: { schema: FOLEY_MIXER_PRESET_SCHEMA, schemaVersion: 1, name, config },
