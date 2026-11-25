@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -104,6 +106,63 @@ describe("ComicIntro", () => {
     expect(art?.getAttribute("src")).toBe(COMIC_INTRO_ART_URL);
     expect(art?.getAttribute("alt")).toBe("");
     expect(container.querySelector(".comic-character")).toBeNull();
+  });
+
+  it("첫 번째 컷은 수제 펜촉 주얼 엠블럼을 장식으로 배치하고 기존 캡션을 유지한다", () => {
+    const { container } = render(<ComicIntro variant="full" onDone={vi.fn()} />);
+    const panelOne = container.querySelector(".comic-panel--one");
+    const emblem = panelOne?.querySelector<HTMLImageElement>(".comic-panel-emblem");
+    expect(emblem).not.toBeNull();
+    expect(emblem?.getAttribute("src")).toBe("/assets/atelier/jewels/jewel-drawing-nib.webp");
+    expect(emblem?.getAttribute("alt")).toBe("");
+    expect(emblem?.getAttribute("aria-hidden")).toBe("true");
+    expect(emblem?.getAttribute("decoding")).toBe("async");
+    expect(emblem?.getAttribute("draggable")).toBe("false");
+    expect(panelOne?.textContent).toContain("오늘은 어떤 이야기를");
+  });
+
+  it("세 번째 컷은 노을 도심 웹툰 배경과 어두운 비네트를 집중선·로고 뒤에 레이어링한다", () => {
+    const { container } = render(<ComicIntro variant="full" onDone={vi.fn()} />);
+    const panelThree = container.querySelector(".comic-panel--three");
+    const backdrop = panelThree?.querySelector<HTMLImageElement>(".comic-panel-backdrop");
+    const vignette = panelThree?.querySelector(".comic-panel-vignette");
+    const speedlines = panelThree?.querySelector(".comic-speedlines");
+    const logo = panelThree?.querySelector(".comic-panel-logo");
+
+    expect(backdrop).not.toBeNull();
+    expect(backdrop?.getAttribute("src")).toBe("/assets/atelier/backgrounds/bg-seoul-crosswalk.webp");
+    expect(backdrop?.getAttribute("alt")).toBe("");
+    expect(backdrop?.getAttribute("aria-hidden")).toBe("true");
+    expect(backdrop?.getAttribute("decoding")).toBe("async");
+    expect(backdrop?.getAttribute("draggable")).toBe("false");
+    expect(vignette).not.toBeNull();
+    expect(speedlines).not.toBeNull();
+    expect(logo?.textContent).toContain("툰스튜디오");
+    expect(logo?.textContent).toContain("에서 시작해요");
+
+    expect((backdrop?.compareDocumentPosition(vignette as Node) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect((vignette?.compareDocumentPosition(speedlines as Node) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect((speedlines?.compareDocumentPosition(logo as Node) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  });
+
+  it("오프닝 TSX에 원시 색상 리터럴이 없고 실존 아트워크와 CSS 비네트·모션 감소·고대비 계약을 지킨다", () => {
+    const tsx = readFileSync(
+      path.resolve(process.cwd(), "apps/web/src/domains/marketing/comic-intro/ComicIntro.tsx"),
+      "utf8",
+    );
+    const css = readFileSync(
+      path.resolve(process.cwd(), "apps/web/src/domains/marketing/comic-intro/comic-intro.css"),
+      "utf8",
+    );
+
+    expect(tsx).not.toMatch(/#[0-9a-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(/iu);
+    expect(existsSync(path.resolve(process.cwd(), "apps/web/public/assets/atelier/jewels/jewel-drawing-nib.webp"))).toBe(true);
+    expect(existsSync(path.resolve(process.cwd(), "apps/web/public/assets/atelier/backgrounds/bg-seoul-crosswalk.webp"))).toBe(true);
+    expect(css).toContain(".comic-panel-backdrop");
+    expect(css).toContain(".comic-panel-vignette");
+    expect(css).toContain(".comic-panel-emblem");
+    expect(css).toContain("prefers-reduced-motion: reduce");
+    expect(css).toContain("forced-colors: active");
   });
 });
 

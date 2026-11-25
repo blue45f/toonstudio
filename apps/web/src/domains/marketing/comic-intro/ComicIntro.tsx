@@ -3,6 +3,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { COMIC_INTRO_ART_URL } from "./comic-intro-art";
 import "./comic-intro.css";
 
+const COMIC_INTRO_NIB_EMBLEM_URL = "/assets/atelier/jewels/jewel-drawing-nib.webp";
+const COMIC_INTRO_BACKDROP_URL = "/assets/atelier/backgrounds/bg-seoul-crosswalk.webp";
+
 export type ComicIntroVariant = "full" | "short";
 
 export interface ComicIntroProps {
@@ -87,8 +90,18 @@ export function ComicIntro({ variant, onDone }: ComicIntroProps) {
     >
       <div className="comic-intro-stage" aria-hidden="true">
         <div className="comic-panel comic-panel--one">
+          <span className="comic-panel-emblem-frame" aria-hidden="true">
+            <img
+              className="comic-panel-emblem"
+              src={COMIC_INTRO_NIB_EMBLEM_URL}
+              alt=""
+              aria-hidden="true"
+              decoding="async"
+              draggable={false}
+            />
+          </span>
           <p className="comic-panel-caption">오늘은 어떤 이야기를</p>
-          <svg className="comic-panel-doodle" viewBox="0 0 120 60" focusable="false">
+          <svg className="comic-panel-doodle" viewBox="0 0 120 60" focusable="false" aria-hidden="true">
             <path d="M8 48 C 30 20, 52 44, 74 22 S 104 30, 112 14" fill="none" strokeWidth="3" strokeLinecap="round" />
             <circle cx="104" cy="12" r="4" />
           </svg>
@@ -100,20 +113,43 @@ export function ComicIntro({ variant, onDone }: ComicIntroProps) {
           </div>
         </div>
         <div className="comic-panel comic-panel--three">
-          <svg className="comic-speedlines" viewBox="0 0 200 120" focusable="false">
+          <img
+            className="comic-panel-backdrop"
+            src={COMIC_INTRO_BACKDROP_URL}
+            alt=""
+            aria-hidden="true"
+            decoding="async"
+            draggable={false}
+          />
+          <div className="comic-panel-vignette" aria-hidden="true" />
+          <svg
+            className="comic-speedlines"
+            viewBox="0 0 200 120"
+            preserveAspectRatio="none"
+            focusable="false"
+            aria-hidden="true"
+          >
             <g>
-              <path d="M100 60 L8 8" />
-              <path d="M100 60 L44 2" />
-              <path d="M100 60 L100 0" />
-              <path d="M100 60 L156 2" />
-              <path d="M100 60 L192 8" />
-              <path d="M100 60 L196 60" />
-              <path d="M100 60 L192 112" />
-              <path d="M100 60 L156 118" />
-              <path d="M100 60 L100 120" />
-              <path d="M100 60 L44 118" />
-              <path d="M100 60 L8 112" />
-              <path d="M100 60 L4 60" />
+              <path d="M0 0 L7 0 L52 31 Z" />
+              <path d="M31 0 L37 0 L67 26 Z" />
+              <path d="M69 0 L74 0 L84 22 Z" />
+              <path d="M98 0 L102 0 L100 19 Z" />
+              <path d="M126 0 L131 0 L116 22 Z" />
+              <path d="M163 0 L169 0 L133 26 Z" />
+              <path d="M193 0 L200 0 L148 31 Z" />
+              <path d="M200 28 L200 34 L156 46 Z" />
+              <path d="M200 58 L200 62 L164 60 Z" />
+              <path d="M200 86 L200 92 L156 74 Z" />
+              <path d="M200 115 L200 120 L193 120 L148 89 Z" />
+              <path d="M169 120 L163 120 L133 94 Z" />
+              <path d="M131 120 L126 120 L116 98 Z" />
+              <path d="M102 120 L98 120 L100 101 Z" />
+              <path d="M74 120 L69 120 L84 98 Z" />
+              <path d="M37 120 L31 120 L67 94 Z" />
+              <path d="M7 120 L0 120 L0 115 L52 89 Z" />
+              <path d="M0 92 L0 86 L44 74 Z" />
+              <path d="M0 62 L0 58 L36 60 Z" />
+              <path d="M0 34 L0 28 L44 46 Z" />
             </g>
           </svg>
           <p className="comic-panel-logo">
