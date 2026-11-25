@@ -47,6 +47,7 @@ function renderPanel(overrides: Partial<Parameters<typeof StudioDialogueSuggestP
       error={null}
       candidates={null}
       onGenerate={noop}
+      onGenerateLocally={noop}
       canInsertToSelected={false}
       onAddToScript={noop}
       onInsertToSelected={noop}

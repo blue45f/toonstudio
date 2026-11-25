@@ -25,6 +25,7 @@ describe("Studio text AI drafting before connection", () => {
           error={null}
           candidates={null}
           onGenerate={vi.fn()}
+          onGenerateLocally={vi.fn()}
           canInsertToSelected={false}
           onAddToScript={vi.fn()}
           onInsertToSelected={vi.fn()}

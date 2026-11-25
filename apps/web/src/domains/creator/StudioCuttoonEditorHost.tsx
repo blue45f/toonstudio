@@ -1335,8 +1335,9 @@ import {
 } from "./studio-cuttoon-edit/studio-host-view-and-resize-helpers";
 import {
   buildStudioTextAiSettlementOptions, planStudioScenarioProductionImport, resolveStudioAddReferenceAttachment,
-  runStudioApplyAiAssistPresetPrompt, runStudioApplyColorizeCandidate, runStudioExecuteAiColorizeCandidate,
+  runStudioApplyAiAssistPresetPrompt, runStudioApplyColorizeCandidate, runStudioApplyDialogueSuggestion, runStudioExecuteAiColorizeCandidate,
   runStudioExecuteSuggestColorPalette, runStudioExecuteSuggestDialogueLines, runStudioWriterRoomAiDraft,
+  type StudioAiDialogueLockedTarget,
 } from "./studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers";
 import {
   applyStudioSnapEnabledVisible, applyStudioToolOperationSnapshot, deriveStudioOptionsBarsDrawModel,
@@ -12097,6 +12098,8 @@ const puppetWarpArmed =
     createColorizeCandidateSession(),
   );
   const [aiColorizeCandidateTargetId, setAiColorizeCandidateTargetId] = useState<string | null>(null);
+  const [aiColorizeCandidateTargetPageId, setAiColorizeCandidateTargetPageId] = useState<string | null>(null);
+  const aiColorizeAbortRef = useRef<AbortController | null>(null);
   const aiColorizeCandidateProvenanceRef = useRef(
     new Map<string, ReturnType<typeof captureStudioAiGeneratedAssetProvenance>>(),
   );
@@ -12131,6 +12134,13 @@ const puppetWarpArmed =
   const [aiDialogueSuggestCandidates, setAiDialogueSuggestCandidates] = useState<DialogueSuggestionCandidate[] | null>(
     null
   );
+  const [aiDialogueSuggestLockedTarget, setAiDialogueSuggestLockedTarget] =
+    useState<StudioAiDialogueLockedTarget | null>(null);
+  const aiDialogueSuggestAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    aiColorizeAbortRef.current?.abort();
+    aiDialogueSuggestAbortRef.current?.abort();
+  }, []);
   // 색상 팔레트 추천 — 결과가 색상 데이터(hex+용도 설명)라 대사/나레이션 제안과 동일한 이유로 AI 최초
   // 사용 고지(runWithAiNotice) 대상이 아니다. "저장"은 아래 saveSuggestedPaletteToLibrary에서
   // 패널과 동일한 V12 SQLite repository로 들어가며, 다음에 스타일 탭을 열 때 그 권위를 읽는다.
@@ -14855,7 +14865,30 @@ const puppetWarpArmed =
     width: number,
     height: number,
     aiProvenance: StudioPublishAiProvenance,
+    requestTarget?: { readonly pageId: string; readonly selectedFrameId: string | null },
   ): boolean {
+    if (requestTarget && requestTarget.pageId !== currentPageIdRef.current) {
+      const targetPage = pages.find((page) => page.id === requestTarget.pageId);
+      if (!targetPage) return false;
+      const targetFrames = targetPage.elements.filter((el) => el.type === "frame");
+      let nextElements: El[];
+      if (requestTarget.selectedFrameId && targetPage.elements.some((el) => el.id === requestTarget.selectedFrameId && el.type === "frame")) {
+        nextElements = targetPage.elements.map((el) =>
+          el.id === requestTarget.selectedFrameId ? ({ ...el, bg: dataUrl, aiProvenance, bundleSourceCredit: undefined } as El) : el,
+        );
+      } else if (targetFrames.length > 0) {
+        nextElements = targetPage.elements.map((el) =>
+          el.type === "frame" ? ({ ...el, bg: dataUrl, aiProvenance, bundleSourceCredit: undefined } as El) : el,
+        );
+      } else {
+        const el = createCanvasImageElement({
+          id: uid(), src: dataUrl, canvasWidth: CANVAS_W, canvasHeight: targetPage.canvasH,
+          sourceWidth: width, sourceHeight: height, horizontalInset: 0, minY: 0,
+        });
+        nextElements = [{ ...el, aiProvenance }, ...targetPage.elements];
+      }
+      return commitPages(pages.map((page) => (page.id === requestTarget.pageId ? { ...page, elements: nextElements } : page)));
+    }
     return runStudioInsertAiBackgroundImage({
       dataUrl, width, height, aiProvenance, selected: selected ?? undefined, elements, canvasH,
       patchEl, commit, setSelectedId, setTool,
@@ -14867,6 +14900,8 @@ const puppetWarpArmed =
   async function executeAiBackgroundGenerate(prompt: string, size: StudioAiImageSize) {
     if (collaborationAccessRef.current.locked) return;
     const mutationTicket = captureStudioMutationTicket();
+    const requestPageId = activePage.id;
+    const requestSelectedFrameId = selected?.type === "frame" ? selected.id : null;
     setAiBgBusy(true);
     setAiBgError(null);
     const provider = studioImageAiProviderContext(aiSettings);
@@ -14880,8 +14915,8 @@ const puppetWarpArmed =
       promptVersion: 1,
       prompt,
       target: {
-        pageId: activePage.id,
-        ...(selected?.type === "frame" ? { elementId: selected.id } : {}),
+        pageId: requestPageId,
+        ...(requestSelectedFrameId ? { elementId: requestSelectedFrameId } : {}),
       },
       requestedSize: parseStudioAiRequestedSize(size),
       references: [],
@@ -14901,7 +14936,8 @@ const puppetWarpArmed =
       result.data.dataUrl,
       result.data.width,
       result.data.height,
-      requestProvenance
+      requestProvenance,
+      { pageId: requestPageId, selectedFrameId: requestSelectedFrameId },
     )) {
       setAiBgError(t("studio.hostStatus.bgApplyFailed", "배경 이미지는 생성됐지만 현재 원고에 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       setAiBgBusy(false);
@@ -14927,11 +14963,47 @@ const puppetWarpArmed =
     });
   }
 
-  // AI 자동 채색 실행 — elId/srcAtRequestTime을 호출 시점에 캡처해 넘긴다(await 도중 선택이 바뀌어도
-  // 엉뚱한 요소를 덮어쓰지 않는다 — captureAnimFrame/bakeLiquifyStroke와 동일한 관례).
+  function patchImageElOnPage(
+    pageId: string,
+    elId: string,
+    patch: { src: string; aiProvenance?: StudioPublishAiProvenance },
+  ): boolean {
+    if (pageId === currentPageIdRef.current) return patchEl(elId, patch);
+    const targetPage = pages.find((page) => page.id === pageId);
+    const target = targetPage?.elements.find((el) => el.id === elId);
+    if (!targetPage || !target || target.type !== "image") return false;
+    if (isEffectivelyLocked(target, targetPage.groups ?? [])) return false;
+    const workAssetReason = studioWorkAssetSourceReplacementReason(target, patch as Record<string, unknown>);
+    if (workAssetReason) {
+      setError(workAssetReason);
+      return false;
+    }
+    const linked3dPassReason = studioLinked3dPassSourceReplacementReason(target, patch as Record<string, unknown>);
+    if (linked3dPassReason) {
+      setError(linked3dPassReason);
+      return false;
+    }
+    return commitPages(
+      pages.map((page) =>
+        page.id === pageId
+          ? {
+              ...page,
+              elements: page.elements.map((el) => (el.id === elId ? ({ ...el, ...patch } as El) : el)),
+            }
+          : page,
+      ),
+    );
+  }
+
+  // AI 자동 채색 실행 — elId/srcAtRequestTime/pageId를 호출 시점에 캡처해 넘긴다(await 도중 컷이나 선택이
+  // 바뀌어도 엉뚱한 요소를 덮어쓰지 않고 원래 컷의 이미지 레이어에 반영한다).
   async function executeAiColorize(elId: string, srcAtRequestTime: string, prompt: string) {
     if (collaborationAccessRef.current.locked) return;
     const mutationTicket = captureStudioMutationTicket();
+    const requestPageId = activePage.id;
+    aiColorizeAbortRef.current?.abort();
+    const controller = new AbortController();
+    aiColorizeAbortRef.current = controller;
     setAiColorizeBusy(true);
     setAiColorizeError(null);
     const provider = studioImageAiProviderContext(aiSettings);
@@ -14944,11 +15016,12 @@ const puppetWarpArmed =
       transport: provider.transport,
       promptVersion: 1,
       prompt,
-      target: { pageId: activePage.id, elementId: elId },
+      target: { pageId: requestPageId, elementId: elId },
       references: [{ assetId: elId }],
     });
-    const result = await colorizeLineArt(aiSettings, srcAtRequestTime, prompt);
-    if (!canApplyStudioMutation(mutationTicket)) {
+    const result = await colorizeLineArt(aiSettings, srcAtRequestTime, prompt, { signal: controller.signal });
+    if (aiColorizeAbortRef.current === controller) aiColorizeAbortRef.current = null;
+    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) {
       if (editorMountedRef.current) setAiColorizeBusy(false);
       return;
     }
@@ -14958,13 +15031,15 @@ const puppetWarpArmed =
       setAiColorizeBusy(false);
       return;
     }
-    const target = elementById.get(elId);
+    const target =
+      pages.find((page) => page.id === requestPageId)?.elements.find((el) => el.id === elId) ??
+      elementById.get(elId);
     if (!target || target.type !== "image") {
       setAiColorizeError(t("studio.hostStatus.colorizeSourceLayerNotFound", "채색 결과를 적용할 원본 이미지 레이어를 찾지 못했어요. 레이어를 다시 선택한 뒤 재시도해 주세요."));
       setAiColorizeBusy(false);
       return;
     }
-    if (!patchEl(elId, { src: result.data.dataUrl, aiProvenance: requestProvenance })) {
+    if (!patchImageElOnPage(requestPageId, elId, { src: result.data.dataUrl, aiProvenance: requestProvenance })) {
       setAiColorizeError(t("studio.hostStatus.colorizeApplyFailed", "채색 결과는 생성됐지만 이미지 레이어에 적용하지 못했어요. 레이어 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       setAiColorizeBusy(false);
       return;
@@ -14977,11 +15052,11 @@ const puppetWarpArmed =
     await runStudioExecuteAiColorizeCandidate({
       elId, srcAtRequestTime, prompt, collaborationLocked: collaborationAccessRef.current.locked,
       activePageId: activePage.id, aiSettings, candidateSession: aiColorizeCandidateSession,
-      candidateProvenanceRef: aiColorizeCandidateProvenanceRef, editorMountedRef,
+      candidateProvenanceRef: aiColorizeCandidateProvenanceRef, editorMountedRef, abortRef: aiColorizeAbortRef,
       captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
       beginTrackedOperation: beginTrackedStudioAiOperation, settleOperation: settleTrackedStudioAiOperation,
       setBusy: setAiColorizeBusy, setError: setAiColorizeError, setSession: setAiColorizeCandidateSession,
-      setTargetId: setAiColorizeCandidateTargetId,
+      setTargetId: setAiColorizeCandidateTargetId, setTargetPageId: setAiColorizeCandidateTargetPageId,
     });
   }
   function onColorizeSelected() {
@@ -15011,15 +15086,22 @@ const puppetWarpArmed =
     if (result.ok) setAiColorizeCandidateSession(result.session);
   }
   function onApplyColorizeCandidate() {
+    const resolvedPageId = aiColorizeCandidateTargetPageId ?? activePage.id;
+    const targetElement = aiColorizeCandidateTargetId
+      ? (pages.find((page) => page.id === resolvedPageId)?.elements.find((el) => el.id === aiColorizeCandidateTargetId)
+        ?? elementById.get(aiColorizeCandidateTargetId))
+      : undefined;
     runStudioApplyColorizeCandidate({
-      targetId: aiColorizeCandidateTargetId, candidateSession: aiColorizeCandidateSession,
-      targetElement: aiColorizeCandidateTargetId ? elementById.get(aiColorizeCandidateTargetId) : undefined,
-      candidateProvenanceRef: aiColorizeCandidateProvenanceRef, patchEl, setError: setAiColorizeError,
+      targetId: aiColorizeCandidateTargetId, targetPageId: resolvedPageId,
+      candidateSession: aiColorizeCandidateSession, targetElement,
+      candidateProvenanceRef: aiColorizeCandidateProvenanceRef, patchEl,
+      patchElOnPage: patchImageElOnPage, setError: setAiColorizeError,
     });
   }
   function onClearColorizeCandidates() {
     setAiColorizeCandidateSession(createColorizeCandidateSession());
     setAiColorizeCandidateTargetId(null);
+    setAiColorizeCandidateTargetPageId(null);
   }
   function onContextNoteChange(
     patch: Partial<
@@ -15067,6 +15149,7 @@ const puppetWarpArmed =
   ) {
     if (collaborationAccessRef.current.locked) return;
     const mutationTicket = captureStudioMutationTicket();
+    const requestPageId = activePage.id;
     setAiCharacterBusy(true);
     setAiCharacterError(null);
     const provider = studioImageAiProviderContext(aiSettings);
@@ -15079,7 +15162,7 @@ const puppetWarpArmed =
       transport: provider.transport,
       promptVersion: 1,
       prompt,
-      target: { pageId: activePage.id },
+      target: { pageId: requestPageId },
       references: [{ assetId: reference.elementId }],
     });
     const result = await generateConsistentCharacterImage(aiSettings, reference.src, prompt);
@@ -15093,7 +15176,25 @@ const puppetWarpArmed =
       setAiCharacterBusy(false);
       return;
     }
-    if (!addRenderedImage(result.data.dataUrl, reference.width, reference.height, requestProvenance)) {
+    const addedOk =
+      requestPageId !== currentPageIdRef.current
+        ? (() => {
+            const targetPage = pages.find((page) => page.id === requestPageId);
+            if (!targetPage) return false;
+            const element = createCanvasImageElement({
+              id: uid(), src: result.data.dataUrl, canvasWidth: CANVAS_W, canvasHeight: targetPage.canvasH,
+              sourceWidth: reference.width, sourceHeight: reference.height,
+            });
+            return commitPages(
+              pages.map((page) =>
+                page.id === requestPageId
+                  ? { ...page, elements: [...page.elements, { ...element, aiProvenance: requestProvenance }] }
+                  : page,
+              ),
+            );
+          })()
+        : addRenderedImage(result.data.dataUrl, reference.width, reference.height, requestProvenance);
+    if (!addedOk) {
       setAiCharacterError(t("studio.hostStatus.characterAddFailed", "캐릭터 이미지는 생성됐지만 현재 원고에 추가하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
       setAiCharacterBusy(false);
       return;
@@ -15310,26 +15411,56 @@ const puppetWarpArmed =
     setScenarioRegeneratingIndex(null);
   }
 
-  // 장면 구성 제안 텍스트를 일반 텍스트 요소로 캔버스에 추가한다 — addText()와 동일한 스폰 위치 규칙
-  // (선택된 패널이 있으면 그 중앙, 없으면 캔버스 중앙), 다만 제안 텍스트는 여러 줄 불릿이라 addText
-  // 기본값(fontSize 40, width 220)보다 작은 글자 크기·넓은 폭을 쓴다.
-  function insertAiCompositionNote(text: string) {
+  // 장면 구성 제안 텍스트를 일반 텍스트 요소로 캔버스에 추가한다 — 요청 시점 컷(targetPageId)이
+  // 현재 컷과 다르면 원래 컷에 안전하게 추가해 B컷 오염을 막는다.
+  function insertAiCompositionNote(text: string, targetPageId?: string) {
+    if (targetPageId && targetPageId !== activePage.id) {
+      const targetPage = pages.find((page) => page.id === targetPageId);
+      if (!targetPage) return;
+      const noteEl: El = {
+        id: uid(), type: "text", text,
+        x: Math.round(CANVAS_W / 2) - 130, y: Math.round(targetPage.canvasH / 2) - 70,
+        width: 260, fontSize: 16, fill: color, rotation: 0,
+      };
+      commitPages(
+        pages.map((page) =>
+          page.id === targetPageId ? { ...page, elements: [...page.elements, noteEl] } : page,
+        ),
+      );
+      return;
+    }
     const [cx, cy] = spawnCenter({ width: 260, height: 140, margin: 8 });
     addEl({ id: uid(), type: "text", text, x: cx - 130, y: cy - 70, width: 260, fontSize: 16, fill: color, rotation: 0 });
   }
 
-  // 대사/나레이션 제안(BYOK) — 결과가 텍스트라 AI 최초 사용 고지(runWithAiNotice) 대상이 아니다
-  // (StudioAiCompositionPanel/executeGenerateTranslations와 동일 판단 근거). includeContext가 켜져
-  // 있으면 현재 페이지에 이미 배치된 대사(collectDialogueItems, 이 페이지로 스코프 한정 — 다른
-  // 페이지의 무관한 대사까지 섞으면 오히려 톤을 흐린다)를 시스템 프롬프트 맥락으로 함께 실어 보낸다.
-  async function executeSuggestDialogueLines() {
+  // 대사/나레이션 제안(BYOK) — 요청 시점의 컷·선택 말풍선과 원문을 고정해, 생성 중 또는 생성 뒤
+  // 다른 컷으로 이동해도 적용 대상이 바뀌지 않도록 보호한다.
+  async function executeSuggestDialogueLines(localOnly = false) {
+    const pageIndex = Math.max(0, pages.findIndex((page) => page.id === activePage.id));
+    const lockedTarget: StudioAiDialogueLockedTarget | null =
+      selected && (selected.type === "bubble" || selected.type === "text")
+        ? {
+            pageId: activePage.id,
+            elementId: selected.id,
+            pageLabel: activePage.name?.trim() || `${pageIndex + 1}컷`,
+            originalText: selected.text,
+          }
+        : null;
     await runStudioExecuteSuggestDialogueLines({
       collaborationLocked: collaborationAccessRef.current.locked, situationText: aiDialogueSuggestSituation,
-      busy: aiDialogueSuggestBusy, includeContext: aiDialogueSuggestIncludeContext, pages, activePageId: activePage.id,
-      aiSettings, textAiTransport, pendingProvider: pendingTextAiProviderContext,
+      busy: aiDialogueSuggestBusy, includeContext: aiDialogueSuggestIncludeContext, localOnly, pages, activePageId: activePage.id,
+      aiSettings, textAiTransport, abortRef: aiDialogueSuggestAbortRef,
+      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
+      lockedTarget, setLockedTarget: setAiDialogueSuggestLockedTarget,
+      pendingProvider: pendingTextAiProviderContext,
       beginTrackedOperation: beginTrackedStudioAiOperation, settleTextOperation: settleTrackedTextAiOperation,
       setBusy: setAiDialogueSuggestBusy, setError: setAiDialogueSuggestError, setCandidates: setAiDialogueSuggestCandidates,
     });
+  }
+  function cancelSuggestDialogueLines() {
+    aiDialogueSuggestAbortRef.current?.abort();
+    aiDialogueSuggestAbortRef.current = null;
+    setAiDialogueSuggestBusy(false);
   }
   // 후보를 "대사 한 번에" 스크립트(말풍선 탭의 dialogueScript)에 미니 문법 한 줄로 추가한다 — 이미
   // 입력해 둔 스크립트가 있으면 줄바꿈으로 이어붙인다(덮어쓰지 않음, 여러 후보를 골라 순서대로 쌓을
@@ -15338,13 +15469,18 @@ const puppetWarpArmed =
     const line = formatDialogueSuggestionLine(candidate);
     setDialogueScript((prev) => (prev.trim() ? `${prev}\n${line}` : line));
   }
-  // 선택된 말풍선·텍스트 요소에 후보를 바로 삽입 — 미니 문법("이름: ")이 아니라 candidate.text만
-  // 넣는다. bubble/text 요소의 text 필드는 원래도 화자 이름을 담지 않는다(studio-dialogue.ts의
-  // parseDialogueScript가 화자를 좌/우 배치에만 쓰고 text 자체엔 반영하지 않는 것과 동일한 관례 —
-  // patchDialogueText를 그대로 재사용해 이중 구현하지 않는다).
+  // 고정된 원본 말풍선·텍스트 요소에 후보를 바로 삽입한다 — A컷에서 생성 후 B컷으로 이동했더라도
+  // B컷의 선택 요소를 덮어쓰지 않고 A컷의 고정 대상 말풍선에만 패치한다.
   function insertDialogueSuggestionToSelected(candidate: DialogueSuggestionCandidate) {
-    if (!selected || (selected.type !== "bubble" && selected.type !== "text")) return;
-    patchDialogueText(activePage.id, selected.id, candidate.text);
+    const lockedTarget = aiDialogueSuggestLockedTarget;
+    const applied = runStudioApplyDialogueSuggestion({
+      pages, activePageId: activePage.id, selected, lockedTarget, text: candidate.text,
+      patchDialogueText, setError: setAiDialogueSuggestError,
+    });
+    if (applied && lockedTarget) {
+      setAiDialogueSuggestError(null);
+      setAiDialogueSuggestLockedTarget({ ...lockedTarget, lastAppliedText: candidate.text });
+    }
   }
 
   // 색상 팔레트 추천(BYOK) — studio-ai-client.suggestColorPalette 문서 참고. 결과가 색상 데이터라
@@ -15530,7 +15666,7 @@ const puppetWarpArmed =
   // 배치된 대사 일괄 편집 — 순수 헬퍼가 무변경이면 입력 배열을 그대로 돌려주므로 참조 비교로 빈 커밋을 막는다.
   function patchDialogueText(pageId: string, elId: string, text: string) {
     const next = applyDialogueTextEdit(pages, pageId, elId, text);
-    if (next !== pages) commitPages(next as PageState[]);
+    return next === pages || commitPages(next as PageState[]);
   }
   // 찾아바꾸기 일괄 적용 — 여러 페이지를 한 번에 바꿔도 히스토리 1개(실행취소 1회).
   function applyDialogueReplacePlan(plan: DialogueReplacePlan) {
@@ -20893,6 +21029,7 @@ function clearSelectionForEdit() {
     applyStudioBackgroundFill,
     applyTemplate,
     beginTrackedStudioAiOperation,
+    cancelSuggestDialogueLines,
     deleteClip,
     disarmAllPixelTools,
     ensureRecentColorsLoaded,
@@ -21634,6 +21771,7 @@ function clearSelectionForEdit() {
       aiDialogueSuggestCandidates={aiDialogueSuggestCandidates}
       aiDialogueSuggestError={aiDialogueSuggestError}
       aiDialogueSuggestIncludeContext={aiDialogueSuggestIncludeContext}
+      aiDialogueSuggestLockedTarget={aiDialogueSuggestLockedTarget}
       aiDialogueSuggestSituation={aiDialogueSuggestSituation}
       aiNoticeOpen={aiNoticeOpen}
       aiPaletteSuggestBusy={aiPaletteSuggestBusy}

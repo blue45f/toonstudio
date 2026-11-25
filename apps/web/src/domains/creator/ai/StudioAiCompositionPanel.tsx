@@ -10,7 +10,7 @@ import {
 // 배지 전제)의 대상이 아니고, 캔버스 상태(addEl/patchEl)에도 개입하지 않아 부모와 공유할 상태가
 // 없다(StudioLineCleanupPanel과 같은 "얇은 자체 완결 패널" 부류) — 이 판단의 근거는
 // docs/studio-ai-assist-integration.md §5에 있다.
-import { Clapperboard, Copy, Loader2, StickyNote } from "lucide-react";
+import { Clapperboard, Copy, Loader2, StickyNote, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { AnswerTuningControls } from "./AnswerTuningControls";
@@ -34,6 +34,7 @@ export interface StudioAiCompositionOperationSettlement {
   operationId: string;
   result: StudioAiResult<unknown>;
   textProvenance?: StudioTextAiProvenance;
+  aborted?: boolean;
 }
 
 export function StudioAiCompositionPanel({
@@ -42,6 +43,8 @@ export function StudioAiCompositionPanel({
   configured,
   sceneText,
   onSceneTextChange,
+  activePageId,
+  activePageLabel,
   onInsertAsNote,
   onOperationStart,
   onOperationSettled,
@@ -52,8 +55,11 @@ export function StudioAiCompositionPanel({
   /** Controlled scene draft (parent may inject presets). */
   sceneText?: string;
   onSceneTextChange?: (value: string) => void;
+  /** 요청 시작 시점의 대상 컷 ID. 컷을 옮겨도 메모 적용 대상이 바뀌지 않는다. */
+  activePageId?: string;
+  activePageLabel?: string;
   /** 제안 텍스트를 캔버스에 메모(텍스트 요소)로 추가하고 싶을 때만 넘긴다 — 선택 사항. */
-  onInsertAsNote?: (text: string) => void;
+  onInsertAsNote?: (text: string, targetPageId?: string) => void;
   /** 중앙 provenance가 실제 네트워크 요청 전에 pending을 남길 수 있게 한다. */
   onOperationStart?: (prompt: string) => string;
   /** 결과 본문·원문 오류 대신 구조화 결과와 안전한 실제 공급자 정보만 전달한다. */
@@ -67,10 +73,20 @@ export function StudioAiCompositionPanel({
     code: StudioAiErrorCode;
     message: string;
   } | null>(null);
-  const [suggestion, setSuggestion] = useState<string | null>(null);
-  // 답변 조절 공통 부품 — 조절값은 suggestSceneComposition이 시스템 지시문·temperature·maxTokens로 반영한다.
+  const [completedSuggestion, setCompletedSuggestion] = useState<{
+    readonly text: string;
+    readonly page: { readonly id: string; readonly label?: string } | null;
+  } | null>(null);
+  const suggestion = completedSuggestion?.text ?? null;
+  const lockedPage = completedSuggestion?.page ?? null;
+  // 답변 조절값은 suggestSceneComposition이 시스템 지시문·temperature·maxTokens에 반영한다.
   const [answerTuning, setAnswerTuning] = useState<AnswerTuning>(DEFAULT_ANSWER_TUNING);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const activeRequestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    activeRequestRef.current?.abort();
+    activeRequestRef.current = null;
+  }, []);
   // 팔레트·대사 패널과 동일 — 결과·에러가 팝오버 fold 아래에 생기지 않게 도착 시 nearest 스크롤.
   const feedbackRef = useRef<HTMLDivElement | null>(null);
   const hasFeedback = Boolean(suggestion || failure);
@@ -80,37 +96,72 @@ export function StudioAiCompositionPanel({
 
   const run = async () => {
     const prompt = sceneTextValue.trim();
-    if (busy || !configured || !prompt) return;
+    if (activeRequestRef.current || !configured || !prompt) return;
+    const controller = new AbortController();
+    const signal = transport?.signal
+      ? AbortSignal.any([transport.signal, controller.signal])
+      : controller.signal;
+    activeRequestRef.current = controller;
+    const page = activePageId ? { id: activePageId, label: activePageLabel } : null;
     setBusy(true);
     setFailure(null);
     setCopyState("idle");
-    const operationId = onOperationStart?.(prompt);
-    const operationTransport = operationId && transport
-      ? studioTextAiTransportForOperation(transport, operationId)
-      : transport;
-    const result = await suggestSceneComposition(settings, prompt, operationTransport, answerTuning);
-    if (operationId) {
-      onOperationSettled?.({
-        operationId,
-        result,
-        ...(result.ok ? { textProvenance: result.data.textProvenance } : {}),
-      });
+    try {
+      const operationId = onOperationStart?.(prompt);
+      const requestTransport: StudioTextAiTransport = { ...(transport ?? { mode: "byok" }), signal };
+      const operationTransport = operationId
+        ? studioTextAiTransportForOperation(requestTransport, operationId)
+        : requestTransport;
+      const result = await suggestSceneComposition(settings, prompt, operationTransport, answerTuning);
+      if (signal.aborted) {
+        if (operationId) {
+          onOperationSettled?.({
+            operationId,
+            result: { ok: false, code: "network_error", error: "요청을 취소했어요." },
+            aborted: true,
+          });
+        }
+        return;
+      }
+      if (operationId) {
+        onOperationSettled?.({
+          operationId,
+          result,
+          ...(result.ok ? { textProvenance: result.data.textProvenance } : {}),
+        });
+      }
+      if (result.ok) {
+        setCopyState("idle");
+        setCompletedSuggestion({ text: result.data.suggestion, page });
+      } else {
+        setFailure({ code: result.code, message: result.error });
+      }
+    } finally {
+      if (activeRequestRef.current === controller) {
+        activeRequestRef.current = null;
+        setBusy(false);
+      }
     }
-    if (result.ok) {
-      setSuggestion(result.data.suggestion);
-    } else {
-      setFailure({ code: result.code, message: result.error });
-    }
+  };
+
+  const cancelRun = () => {
+    activeRequestRef.current?.abort();
+    activeRequestRef.current = null;
     setBusy(false);
   };
 
   const runLocalFallback = () => {
     const prompt = sceneTextValue.trim();
     if (busy || !prompt) return;
+    const page = activePageId ? { id: activePageId, label: activePageLabel } : null;
     setFailure(null);
     setCopyState("idle");
-    setSuggestion(buildLocalSceneCompositionSuggestion(prompt));
+    setCompletedSuggestion({ text: buildLocalSceneCompositionSuggestion(prompt), page });
   };
+
+  const switchedAwayFromLockedPage = Boolean(
+    lockedPage && activePageId && lockedPage.id !== activePageId,
+  );
 
   const copySuggestion = async () => {
     if (!suggestion) return;
@@ -161,6 +212,17 @@ export function StudioAiCompositionPanel({
           {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" /> : <Clapperboard size={14} />}
           {busy ? "구상하는 중…" : "구도 제안 받기"}
         </button>
+        {busy ? (
+          <button
+            type="button"
+            data-testid="composition-cancel-btn"
+            onClick={cancelRun}
+            className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-medium text-fg transition-colors hover:bg-raised"
+          >
+            <X size={13} aria-hidden="true" />
+            취소
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={runLocalFallback}
@@ -183,6 +245,16 @@ export function StudioAiCompositionPanel({
 
         {suggestion && (
           <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-card/70 p-2">
+            {switchedAwayFromLockedPage && lockedPage ? (
+              <p
+                role="status"
+                data-testid="composition-target-lock-banner"
+                className="rounded-md border border-accent/40 bg-accent-soft/40 px-2 py-1 text-[0.63rem] font-semibold text-fg [word-break:keep-all]"
+              >
+                다른 컷으로 이동했지만 메모 적용 대상은 원래{" "}
+                <strong>{lockedPage.label ?? "원본 컷"}</strong>에 고정되어 있어요.
+              </p>
+            ) : null}
             <p className="whitespace-pre-wrap text-[0.68rem] leading-relaxed text-fg-2">{suggestion}</p>
             <div className="flex items-center gap-1.5">
               <button
@@ -207,10 +279,14 @@ export function StudioAiCompositionPanel({
               {onInsertAsNote && (
                 <button
                   type="button"
-                  onClick={() => onInsertAsNote(suggestion)}
+                  onClick={() => onInsertAsNote(suggestion, lockedPage?.id)}
                   className="inline-flex min-h-11 items-center gap-1 rounded-md border border-line bg-panel px-2 text-[0.63rem] font-medium text-fg-2 transition-colors hover:bg-raised"
                 >
-                  <StickyNote size={11} /> {translateCurrentStaticSourceText("domains.creator.ai.StudioAiCompositionPanel", "ko", "캔버스에 메모로 추가")}</button>
+                  <StickyNote size={11} />{" "}
+                  {switchedAwayFromLockedPage && lockedPage?.label
+                    ? `원래 ${lockedPage.label}에 메모로 추가`
+                    : translateCurrentStaticSourceText("domains.creator.ai.StudioAiCompositionPanel", "ko", "캔버스에 메모로 추가")}
+                </button>
               )}
             </div>
           </div>
