@@ -307,6 +307,13 @@ describe("Studio advanced WebGPU live-ink integration", () => {
     const settleSource = page.slice(settleStart, settleEnd);
     expect(settleSource).toContain('failSelectedGpuLiveInk("request-failed", finished.id)');
     expect(settleSource).not.toContain("draftPreviewStoreRef.current.settle(finished)");
+    const cleanup = page.slice(page.indexOf("const clearDraftPreview ="));
+    const finalReceiptGate = cleanup.slice(0, cleanup.indexOf("const wasStampDirect"));
+    expect(finalReceiptGate).toContain("applyLiveStrokeBackendPresentationEffects()");
+    expect(finalReceiptGate).not.toContain("setPinnedPresentationVisible(false)");
+    const releasePin = cleanup.slice(cleanup.indexOf("if (gpuLiveInkPinnedRef.current)"), cleanup.indexOf("// preserveInk:"));
+    expect(releasePin.match(/setPinnedPresentationVisible\(false\)/gu)).toHaveLength(1);
+    expect(releasePin).toContain("if (!preserveInk) {");
     expect(page).not.toContain("relinquishGpuLiveInkToKonva");
     expect(page).toContain(
       "webGpuCanvasHandleRef.current?.setPinnedPresentationVisible(false)"
