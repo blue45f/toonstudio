@@ -1,6 +1,9 @@
 {
   "name": "toonstudio-ci-tool-openwiki",
   "private": true,
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true
+  },
   "dependencies": {
     "jsdom": "30.0.0",
     "mermaid": "12.3.0",

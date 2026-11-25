@@ -316,6 +316,23 @@ describe("verify-solo-commercial-readiness (1인 기업 상용 라이선스·Ope
     assert.deepEqual(violations, [], `OpenSSF Scorecard 회귀 감지:\n${violations.join("\n")}`);
   });
 
+  test("OpenWiki는 잠긴 SQLite 한 버전만 소스 빌드를 허용하고 네이티브 실행을 확인한다", () => {
+    const toolRoot = path.join(REPO_ROOT, ".github/ci-tools/openwiki");
+    const pkg = JSON.parse(readFileSync(path.join(toolRoot, "package.json"), "utf8"));
+    const lock = JSON.parse(readFileSync(path.join(toolRoot, "package-lock.json"), "utf8"));
+    const version = lock.packages["node_modules/better-sqlite3"].version;
+    assert.deepEqual(pkg.allowScripts, { [`better-sqlite3@${version}`]: true });
+    const workflow = parseYaml(readFileSync(path.join(REPO_ROOT, ".github/workflows/openwiki-update.yml"), "utf8"));
+    const steps = workflow.jobs.update.steps;
+    assert.ok(steps.some((step) => /npm ci --ignore-scripts\b/u.test(step.run ?? "")));
+    const build = steps.find((step) => (step.run ?? "").includes(`npm rebuild better-sqlite3@${version} `));
+    assert.ok(build, "잠긴 SQLite 버전만 지정하는 빌드 단계가 필요합니다");
+    assert.equal(build.env.npm_config_build_from_source, "true");
+    assert.match(build.run, /--ignore-scripts=false\b/u);
+    assert.match(build.run, /--strict-allow-scripts\b/u);
+    assert.match(build.run, /:memory:/u);
+  });
+
   test("SECURITY.md는 비공개 취약점 제보 URL과 협조적 공개 원칙·기한을 명시하고 promo-render lockfile이 제품 버전과 일치한다", () => {
     const policy = readFileSync(path.join(REPO_ROOT, "SECURITY.md"), "utf8");
     assert.match(policy, /https:\/\/github\.com\/blue45f\/toonstudio\/security\/advisories\/new/u);

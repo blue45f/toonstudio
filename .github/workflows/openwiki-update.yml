@@ -47,9 +47,18 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/openwiki"
           cp .github/ci-tools/openwiki/package.json .github/ci-tools/openwiki/package-lock.json "$RUNNER_TEMP/openwiki/"
-          npm ci --prefix "$RUNNER_TEMP/openwiki" --ignore-scripts --no-audit --no-fund
+          cd "$RUNNER_TEMP/openwiki"
+          npm ci --ignore-scripts --no-audit --no-fund
           echo "$RUNNER_TEMP/openwiki/node_modules/.bin" >> "$GITHUB_PATH"
           echo "NODE_PATH=$RUNNER_TEMP/openwiki/node_modules" >> "$GITHUB_ENV"
+      - name: 잠긴 OpenWiki SQLite만 소스 빌드
+        if: steps.openwiki-config.outputs.enabled == 'true'
+        working-directory: ${{ runner.temp }}/openwiki
+        env:
+          npm_config_build_from_source: "true"
+        run: |
+          npm rebuild better-sqlite3@12.11.1 --ignore-scripts=false --strict-allow-scripts --no-audit --no-fund
+          node -e "const Database = require('better-sqlite3'); const db = new Database(':memory:'); if (db.prepare('SELECT 42 AS value').get().value !== 42) throw new Error('SQLite 네이티브 실행 실패'); db.close();"
       - name: Update repository wiki
         if: steps.openwiki-config.outputs.enabled == 'true'
         id: openwiki

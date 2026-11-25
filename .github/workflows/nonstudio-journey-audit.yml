@@ -151,7 +151,8 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/nonstudio-browser"
           cp .github/ci-tools/playwright/package.json .github/ci-tools/playwright/package-lock.json "$RUNNER_TEMP/nonstudio-browser/"
-          npm ci --prefix "$RUNNER_TEMP/nonstudio-browser" --ignore-scripts --no-audit --no-fund
+          cd "$RUNNER_TEMP/nonstudio-browser"
+          npm ci --ignore-scripts --no-audit --no-fund
           "$RUNNER_TEMP/nonstudio-browser/node_modules/.bin/playwright" install --with-deps chromium
       - name: Public production navigation and CSS preview audit
         env:
