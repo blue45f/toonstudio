@@ -212,6 +212,31 @@ function parseLockfilePackageKey(rawKey) {
   return { name: base.slice(0, lastAt), version: base.slice(lastAt + 1) };
 }
 
+function extractLockfilePeerRefs(line) {
+  const refs = [];
+  let idx = line.indexOf("(");
+  while (idx >= 0) {
+    const start = idx + 1;
+    let end = start;
+    while (end < line.length && line[end] !== "(" && line[end] !== ")") {
+      end += 1;
+    }
+    if (end > start && (line[end] === "(" || line[end] === ")")) {
+      const token = line.slice(start, end);
+      const sep = token.lastIndexOf("@");
+      if (sep > 0 && sep + 1 < token.length) {
+        const name = token.slice(0, sep);
+        const version = token.slice(sep + 1);
+        if (name !== "patch_hash" && !name.includes("=")) {
+          refs.push({ name, version });
+        }
+      }
+    }
+    idx = line.indexOf("(", start);
+  }
+  return refs;
+}
+
 function scanPnpmLockfile(lockfileText) {
   const packages = new Map();
   const peerLinks = new Map();
@@ -235,18 +260,14 @@ function scanPnpmLockfile(lockfileText) {
           const existing = packages.get(parsed.name) ?? new Set();
           if (parsed.version) existing.add(parsed.version);
           packages.set(parsed.name, existing);
-          // 예: p5.brush@2.2.1(...)(p5@2.3.1) 에서 p5 경유 출처 추출
-          for (const match of line.matchAll(/\(([a-z0-9@._/-]+)@([^()]+)\)/giu)) {
-            const peerName = match[1];
-            const peerVer = match[2];
-            if (peerName && peerName !== "patch_hash") {
-              const peerVers = packages.get(peerName) ?? new Set();
-              peerVers.add(peerVer);
-              packages.set(peerName, peerVers);
-              const via = peerLinks.get(peerName) ?? new Set();
-              via.add(`${parsed.name}@${parsed.version}`);
-              peerLinks.set(peerName, via);
-            }
+          // 예: p5.brush@2.2.1(...)(p5@2.3.1(typescript@6.0.3))에서 중첩 피어 포함 경유 출처 추출
+          for (const { name: peerName, version: peerVer } of extractLockfilePeerRefs(line)) {
+            const peerVers = packages.get(peerName) ?? new Set();
+            peerVers.add(peerVer);
+            packages.set(peerName, peerVers);
+            const via = peerLinks.get(peerName) ?? new Set();
+            via.add(`${parsed.name}@${parsed.version}`);
+            peerLinks.set(peerName, via);
           }
         }
         continue;

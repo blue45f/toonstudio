@@ -10,9 +10,7 @@ on:
   schedule:
     - cron: "17 18 * * *"
 
-permissions:
-  contents: read
-  issues: write
+permissions: {}
 
 concurrency:
   group: studio-3d-production-visual-audit
@@ -22,6 +20,9 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
     env:
       AUDIT_URL: ${{ inputs.url || 'https://www.toonstudio.cloud/studio' }}
       OUTPUT_DIR: artifacts/studio-3d-production-audit
