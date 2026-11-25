@@ -9,35 +9,39 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
 export const MIRROR_PATH = '/etc/apt/apt-mirrors.txt';
-const AWS = 'http://us-east-2.ec2.archive.ubuntu.com/ubuntu/';
-const AZURE = 'http://azure.archive.ubuntu.com/ubuntu/';
-const ARCHIVE = 'https://archive.ubuntu.com/ubuntu/';
-const SECURITY = 'https://security.ubuntu.com/ubuntu/';
-const ORIGINAL = { [AWS]: 1, [AZURE]: 1, [ARCHIVE]: 2, [SECURITY]: 3 };
-const PRIORITIZED = { [AWS]: 3, [ARCHIVE]: 1, [SECURITY]: 2 };
+const MIRROR_KINDS = new Map([
+  ['http://us-east-1.ec2.archive.ubuntu.com/ubuntu/', 'aws'],
+  ['http://us-east-2.ec2.archive.ubuntu.com/ubuntu/', 'aws'],
+  ['http://us-west-2.ec2.archive.ubuntu.com/ubuntu/', 'aws'],
+  ['http://azure.archive.ubuntu.com/ubuntu/', 'azure'],
+  ['https://archive.ubuntu.com/ubuntu/', 'archive'],
+  ['https://security.ubuntu.com/ubuntu/', 'security'],
+]);
+const ORIGINAL = { aws: 1, azure: 1, archive: 2, security: 3 };
+const PRIORITIZED = { aws: 3, archive: 1, security: 2 };
 
 export function prioritizeUbuntuAptMirrors(content) {
   if (typeof content !== 'string' || Buffer.byteLength(content) > 4096) throw new Error('APT_MIRROR_FORMAT');
   const lines = content.split(/(?<=\n)/u);
   const entries = lines.map((line) => {
     const match = /^(https?:\/\/[^\s]+)(\tpriority:)([1-9]\d*)(\r?\n)$/u.exec(line);
-    if (!match || !Object.hasOwn(ORIGINAL, match[1])) throw new Error('APT_MIRROR_FORMAT');
-    return { uri: match[1], priority: Number(match[3]), separator: match[2], ending: match[4] };
+    if (!match || !MIRROR_KINDS.has(match[1])) throw new Error('APT_MIRROR_FORMAT');
+    const [, uri, separator, priority, ending] = match;
+    return { uri, kind: MIRROR_KINDS.get(uri), priority: Number(priority), separator, ending };
   });
-  const ids = new Set(entries.map(({ uri }) => uri));
-  if (ids.size !== entries.length || !ids.has(ARCHIVE) || !ids.has(SECURITY)
-      || (ids.has(AWS) && ids.has(AZURE)) || entries.length !== (ids.has(AWS) || ids.has(AZURE) ? 3 : 2)) {
+  const kinds = new Set(entries.map(({ kind }) => kind));
+  if (kinds.size !== entries.length || !kinds.has('archive') || !kinds.has('security') || entries.length > 3) {
     throw new Error('APT_MIRROR_LAYOUT');
   }
-  if (ids.has(AWS) && entries.every(({ uri, priority }) => priority === PRIORITIZED[uri])) {
+  if (kinds.has('aws') && entries.every(({ kind, priority }) => priority === PRIORITIZED[kind])) {
     return { changed: false, reason: 'aws-already-prioritized', content };
   }
-  if (!entries.every(({ uri, priority }) => priority === ORIGINAL[uri])) throw new Error('APT_MIRROR_PRIORITY');
-  if (!ids.has(AWS)) return { changed: false, reason: ids.has(AZURE) ? 'azure-unmodified' : 'canonical-only-unmodified', content };
+  if (!entries.every(({ kind, priority }) => priority === ORIGINAL[kind])) throw new Error('APT_MIRROR_PRIORITY');
+  if (!kinds.has('aws')) return { changed: false, reason: kinds.has('azure') ? 'azure-unmodified' : 'canonical-only-unmodified', content };
   return {
     changed: true,
     reason: 'aws-priorities-updated',
-    content: entries.map(({ uri, separator, ending }) => `${uri}${separator}${PRIORITIZED[uri]}${ending}`).join(''),
+    content: entries.map(({ uri, kind, separator, ending }) => `${uri}${separator}${PRIORITIZED[kind]}${ending}`).join(''),
   };
 }
 
