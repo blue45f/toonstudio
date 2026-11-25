@@ -305,7 +305,7 @@ export function renderStudioCanvasSelectionDecorations({
         />
         </Suspense>
       ) : null}
-      <StudioNaturalTransformer
+      {tool === "select" && <StudioNaturalTransformer
         ref={trRef}
         // Draw elements use the dedicated proxy Transformer above. This general Transformer has
         // nodes([]) and paints no pixels for that selection, so it cannot be treated as authored
@@ -345,7 +345,7 @@ export function renderStudioCanvasSelectionDecorations({
         boundBoxFunc={(oldBox: KonvaTransformerBox, newBox: KonvaTransformerBox) =>
           constrainStudioTransformBox(oldBox, newBox, transformerMinimumSize)
         }
-      />
+      />}
       {/* 잠긴 선택 요소는 트랜스포머가 안 붙으므로 점선 박스로 '선택됨'을 표시(삭제·잠금해제 안내). */}
       {selected && isEffectivelyLocked(selected, groups) && marqueeIds.length === 0 && tool === "select" && !isExporting && (() => {
         const sb = elBounds(selected);
