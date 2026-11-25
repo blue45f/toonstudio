@@ -563,3 +563,12 @@ pub unsafe extern "C" fn wasm_composite_tile_dirty_rect(
         Err(ref err) => error_to_ffi_code(err),
     }
 }
+
+#[cfg(feature = "extended-3d")]
+mod extended_3d;
+#[cfg(feature = "extended-3d")]
+pub use extended_3d::{
+    wasm_encode_morton_2d_u32, wasm_encode_morton_3d_u32, wasm_extended_3d_capabilities,
+    wasm_extract_lt_lineart_from_gbuffer, wasm_skin_vrm_mesh_4bone_soa, LT_LINEART_FFI_PARAM_COUNT,
+    WASM_EXTENDED_3D_CAPABILITIES,
+};
