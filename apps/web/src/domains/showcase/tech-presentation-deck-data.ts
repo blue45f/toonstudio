@@ -1,5 +1,5 @@
 /**
- * ToonStudio 실전 기술 발표 덱(16장) · 8대 AI 보조 기술 카탈로그 · 쉬운 용어집(22선) 정본 데이터.
+ * ToonStudio 실전 기술 발표 덱(18장) · 8대 AI 보조 엔진 · WebRTC/희귀 웹 API 18종 · 쉬운 용어집(28선) 정본 데이터.
  *
  * - 모든 항목은 실제 저장소 파일 경로(`repoPaths`)와 실존 스프라이트(`spritePath`)에 근거한다.
  * - 현재 구현(`current`)과 점진 확장(`expanding`), 웹 표준 경로와 네이티브 브리지를 정직하게 구분한다.
@@ -7,68 +7,57 @@
  */
 
 import type { BilingualText } from "./competitor-benchmark-data";
+import {
+  RARE_WEB_APIS_PRESENTATION_SLIDE,
+  TECH_RARE_WEB_APIS_18,
+  TECH_RARE_WEB_API_CATEGORIES,
+  WEBRTC_AND_RARE_API_GLOSSARY_ENTRIES,
+  WEBRTC_AUTHORITY_MATRIX,
+  WEBRTC_EVIDENCE_DOC_PATH,
+  WEBRTC_MEASURED_FILE_COUNT,
+  WEBRTC_PRESENTATION_SLIDE,
+  WEBRTC_PROTOCOL_PILLARS,
+  filterRareWebApis,
+  type RareWebPlatformApiEntry,
+  type TechAiExecutionMode,
+  type TechAiShowcaseModule,
+  type TechDeckStatus,
+  type TechDiagramNode,
+  type TechDiagramTone,
+  type TechGlossaryCategory,
+  type TechPlainGlossaryEntry,
+  type TechPresentationSlide,
+  type TechRareApiCategory,
+  type WebRtcAuthorityMatrixRow,
+  type WebRtcProtocolPillar,
+} from "./tech-presentation-webrtc-api-data";
 
-export type TechDeckStatus = "current" | "expanding";
-export type TechDiagramTone = "accent" | "cool" | "good" | "warn";
-export type TechGlossaryCategory =
-  | "rendering"
-  | "hardware"
-  | "ai"
-  | "storage-sync"
-  | "ux-web"
-  | "trust-security";
-export type TechAiExecutionMode = "on-device" | "zero-bill-api" | "hybrid";
-
-export interface TechDiagramNode {
-  readonly stage: string;
-  readonly label: BilingualText;
-  readonly metric: BilingualText;
-  readonly tone: TechDiagramTone;
-}
-
-export interface TechPresentationSlide {
-  readonly id: string;
-  readonly slideNumber: number;
-  readonly sectionTag: BilingualText;
-  readonly brandSystem: string;
-  readonly status: TechDeckStatus;
-  readonly title: BilingualText;
-  readonly summary: BilingualText;
-  readonly spritePath: string;
-  readonly spriteAlt: BilingualText;
-  readonly diagramTitle: BilingualText;
-  readonly diagramNodes: readonly TechDiagramNode[];
-  readonly whyChosen: BilingualText;
-  readonly whereUsed: BilingualText;
-  readonly reusePlaybook: BilingualText;
-  readonly plainBackground: BilingualText;
-  readonly tradeoff: BilingualText;
-  readonly speakerNotes: BilingualText;
-  readonly repoPaths: readonly string[];
-}
-
-export interface TechAiShowcaseModule {
-  readonly id: string;
-  readonly code: string;
-  readonly brandTag: string;
-  readonly status: TechDeckStatus;
-  readonly executionMode: TechAiExecutionMode;
-  readonly title: BilingualText;
-  readonly whatItSolves: BilingualText;
-  readonly howItWorks: BilingualText;
-  readonly whereUsed: BilingualText;
-  readonly reuseCase: BilingualText;
-  readonly repoPaths: readonly string[];
-}
-
-export interface TechPlainGlossaryEntry {
-  readonly id: string;
-  readonly category: TechGlossaryCategory;
-  readonly term: BilingualText;
-  readonly oneLineAnalogy: BilingualText;
-  readonly technicalMeaning: BilingualText;
-  readonly usedInSlideNumbers: readonly number[];
-}
+export {
+  RARE_WEB_APIS_PRESENTATION_SLIDE,
+  TECH_RARE_WEB_APIS_18,
+  TECH_RARE_WEB_API_CATEGORIES,
+  WEBRTC_AND_RARE_API_GLOSSARY_ENTRIES,
+  WEBRTC_AUTHORITY_MATRIX,
+  WEBRTC_EVIDENCE_DOC_PATH,
+  WEBRTC_MEASURED_FILE_COUNT,
+  WEBRTC_PRESENTATION_SLIDE,
+  WEBRTC_PROTOCOL_PILLARS,
+  filterRareWebApis,
+};
+export type {
+  RareWebPlatformApiEntry,
+  TechAiExecutionMode,
+  TechAiShowcaseModule,
+  TechDeckStatus,
+  TechDiagramNode,
+  TechDiagramTone,
+  TechGlossaryCategory,
+  TechPlainGlossaryEntry,
+  TechPresentationSlide,
+  TechRareApiCategory,
+  WebRtcAuthorityMatrixRow,
+  WebRtcProtocolPillar,
+};
 
 const bi = (ko: string, en: string): BilingualText => ({ ko, en });
 
@@ -85,7 +74,7 @@ export const TECH_GLOSSARY_CATEGORIES: readonly {
   readonly id: "all" | TechGlossaryCategory;
   readonly label: BilingualText;
 }[] = [
-  { id: "all", label: bi("전체 22개", "All 22 Terms") },
+  { id: "all", label: bi("전체 28개", "All 28 Terms") },
   { id: "rendering", label: bi("렌더링 · 브러시", "Rendering & Brush") },
   { id: "hardware", label: bi("실리콘 · 입력", "Silicon & Input") },
   { id: "ai", label: bi("AI 보조", "AI Assist") },
@@ -180,7 +169,7 @@ export const TECH_PRESENTATION_SLIDES: readonly TechPresentationSlide[] = [
       dn("PREWARM", "3-Wave WGSL 캐시", "3-Wave WGSL Prewarm", "12종 파이프라인 분산 예약", "12 pipelines wave-staged", "warn"),
     ],
     whyChosen: bi("브라우저 GPU 앱의 가장 큰 불만은 첫 브러시를 긋는 순간 셰이더 컴파일 때문에 화면이 뚝 끊기는 콜드 스타트 스터터입니다. 최신 WebGPU 확장과 단계별 프리컴파일 스케줄러를 함께 설계해 대역폭과 초기 지연을 동시에 겨냥했습니다.", "Cold-start shader compilation causes jarring first-stroke freezes in GPU web apps. Pairing modern WebGPU extensions with 3-Wave precompile scheduling targets both memory bandwidth and first-stroke responsiveness."),
-    whereUsed: bi("SpectrumCompute 극한 셰이더 브리지, KM7 분광 브러시 파이프라인 선택기, 12종 핵심 셰이더 3-Wave 프리컴파일 플래너에 적용돼 있습니다.", "Used in the SpectrumCompute shader bridge, KM7 precision selector, and the 12-pipeline 3-Wave WGSL prewarm planner."),
+    whereUsed: bi("SpectrumCompute 서브그룹 셰이더 브리지, KM7 분광 브러시 파이프라인 선택기, 12종 핵심 셰이더 3-Wave 프리컴파일 플래너에 적용돼 있습니다.", "Used in the SpectrumCompute subgroup shader bridge, KM7 precision selector, and the 12-pipeline 3-Wave WGSL prewarm planner."),
     reusePlaybook: bi("웹 기반 3D 엔진, 실시간 이미지 필터 편집기, 대용량 벡터 지도 렌더러, 브라우저 게임의 셰이더 스터터 제거 설계에 그대로 재사용할 수 있습니다.", "Directly reusable in browser 3D engines, real-time photo editors, vector map renderers, and web games fighting shader-compile stutter."),
     plainBackground: bi("Subgroups는 GPU 안의 인접 작업자들이 중앙 창고(공유 메모리)를 거치지 않고 바로 옆 사람과 숫자를 주고받는 고속 통신이고, f16은 화질을 지키며 데이터 부피를 절반으로 줄이는 압축 숫자 형식입니다.", "Subgroups let neighboring GPU lanes exchange values directly without slow shared-memory barriers, while f16 halves memory traffic without visibly degrading pigment math."),
     tradeoff: bi("현재 구현은 WGSL 셰이더 소스, 4단 기능 협상, CPU 정밀도 패리티 검증, 3-Wave 메타데이터·예산 플래너까지 검증돼 있으며, 실기 브라우저 `createComputePipelineAsync` 캐시 직결 및 GPU 타임스탬프 실측은 점진 확장 트랙입니다.", "Current scope verifies WGSL sources, 4-tier capability negotiation, CPU precision parity, and 3-Wave scheduling models; live browser `createComputePipelineAsync` GPU cache dispatch is an active expanding track."),
@@ -345,7 +334,7 @@ export const TECH_PRESENTATION_SLIDES: readonly TechPresentationSlide[] = [
     reusePlaybook: bi("SaaS 무료 티어 LLM 비용 폭주 차단 게이트웨이, 영상/게임 스토리보드 검수기, 브랜드 디자인 QA 자동 감시, 전자상거래 상품 이미지 일관성 검사에 바로 적용할 수 있습니다.", "Directly reusable as a fail-closed LLM cost firewall, animation/game storyboard QA linter, or e-commerce visual consistency checker."),
     plainBackground: bi("예산 상한을 넘길 것 같으면 자동으로 지갑을 닫아 버리는 '안전금고형 AI 배차반'과, 이전 컷에 있던 안경이 사라지거나 옷 색깔이 바뀐 실수를 짚어 주는 '꼼꼼한 편집부 교정 어시스턴트'입니다.", "Think of a fail-safe dispatcher that locks the wallet before any paid call fires, paired with a sharp copy-editor catching missing glasses or shifted jacket colors across 60 panels."),
     tradeoff: bi("무료 공급자 쿼터가 모두 소진되면 유료 전환 대신 정직하게 차단(Fail-Closed)하고 온디바이스 결정론 검수 모드로 동작합니다. 교정 패치는 항상 작가가 미리보기 후 승인해야 반영됩니다.", "When free provider quotas exhaust, the router fails closed instead of silently billing and falls back to local deterministic checks. Every fix requires explicit creator preview and approval."),
-    speakerNotes: bi("AI 어시스턴트의 첫 번째 자랑거리는 '비용 통제와 작가 주권'입니다. 유료 모델은 네트워크 호출 전에 막고, 60컷에서 안경이 사라지거나 가르마가 뒤집힌 실수를 CIEDE2000 색차와 설정집 비율 수식으로 찾아내 비파괴 교정안을 제안합니다.", "Our first AI highlight is cost safety plus artist sovereignty: paid models are blocked before any request leaves the server, while deterministic continuity and drift guards spot missing props and proportion shifts non-destructively."),
+    speakerNotes: bi("AI 어시스턴트의 첫 번째 설계 기준은 '비용 통제와 작가 주권'입니다. 유료 모델은 네트워크 호출 전에 막고, 60컷에서 안경이 사라지거나 가르마가 뒤집힌 실수를 CIEDE2000 색차와 설정집 비율 수식으로 찾아내 비파괴 교정안을 제안합니다.", "Our first AI design rule is cost safety plus artist sovereignty: paid models are blocked before any request leaves the server, while deterministic continuity and drift guards spot missing props and proportion shifts non-destructively."),
     repoPaths: ["apps/api/src/modules/studio-ai/studio-free-ai-zero-bill-router.ts", "apps/api/src/modules/studio-ai/studio-ai-comic-director.service.ts", "apps/web/src/domains/creator/webtoon-continuity-guard/webtoon-continuity-guard.ts", "apps/web/src/domains/creator/crosscut-modelsheet-drift-coach/modelsheet-drift-engine.ts"],
   },
   {
@@ -368,7 +357,7 @@ export const TECH_PRESENTATION_SLIDES: readonly TechPresentationSlide[] = [
     reusePlaybook: bi("한국어 자막·카드뉴스 자동 조판, 3D 아바타 실시간 립싱크, 영화/영상 콘티 180° 편집 검수기, 사진·영상 3D LUT 컬러 그레이딩 웹앱에 그대로 이식할 수 있습니다.", "Reusable in Korean caption/social-card auto-layout, 3D avatar lip-sync, film storyboard 180-deg checkers, and browser 3D LUT color graders."),
     plainBackground: bi("대사를 읽으면 한글 모음('아·이·우·에·오')을 분해해 캐릭터 입모양을 맞추고, 두 인물이 대화할 때 카메라가 선을 넘어 방향이 헷갈리지 않게(180° 법칙) 고스트 가이드로 짚어 주는 온디바이스 조감독입니다.", "It acts like a local assistant director—splitting Korean vowels to match mouth shapes, spacing speech bubbles without overlap, and warning when a camera cut crosses the 180-degree sightline."),
     tradeoff: bi("결정론적 규칙·색공간 연산 기반 모듈은 오프라인에서 즉시 0원으로 작동하며, 외부 생성형 포즈 렌더링(`ai-pose-guide` ControlNet 어댑터)은 계약 모델만 로컬에 두고 외부 추론 연동 시 별도 명시 동의를 받습니다.", "Local math and rule engines run instantly offline at zero cost, whereas optional external ControlNet pose rendering (`ai-pose-guide`) stays strictly separated behind explicit typed contracts."),
-    speakerNotes: bi("두 번째 AI 자랑거리는 '서버 호출 0건 온디바이스 어시스턴트'입니다. 한글 음절 중성 분해로 VRM 입모양을 추론하고, 17³ 3D LUT로 기준 컷의 화풍 DNA를 추출해 ΔE00 색차를 줄이는 전 과정이 브라우저 안에서 결정론적으로 돌아갑니다.", "Our second AI highlight runs completely on-device with zero external API calls: Hangul vowel decomposition drives VRM visemes, voice prosody lays out zero-overlap bubbles, and 17^3 3D LUTs harmonize style DNA locally."),
+    speakerNotes: bi("두 번째 AI 설계 기준은 '서버 호출 0건 온디바이스 어시스턴트'입니다. 한글 음절 중성 분해로 VRM 입모양을 추론하고, 17³ 3D LUT로 기준 컷의 화풍 DNA를 추출해 ΔE00 색차를 줄이는 전 과정이 브라우저 안에서 결정론적으로 돌아갑니다.", "Our second AI design rule runs completely on-device with zero external API calls: Hangul vowel decomposition drives VRM visemes, voice prosody lays out zero-overlap bubbles, and 17^3 3D LUTs harmonize style DNA locally."),
     repoPaths: ["apps/web/src/domains/creator/webnn-pigment-director/kubelka-munk-optics.ts", "apps/web/src/domains/creator/voice-to-balloon-layout/voice-to-balloon-engine.ts", "apps/web/src/domains/creator/ai-pose-guide/ai-pose-guide-model.ts", "apps/web/src/domains/creator/char-expression-pose-advisor/char-expression-pose-engine.ts", "apps/web/src/domains/creator/camera-framing-continuity-coach/camera-framing-coach-engine.ts", "apps/web/src/domains/creator/ai-latent-storyboard/latent-style-harmonizer.ts"],
   },
   {
@@ -444,8 +433,8 @@ export const TECH_PRESENTATION_SLIDES: readonly TechPresentationSlide[] = [
     id: "nextgen-web-runtime-apis", slideNumber: 16, status: "current",
     sectionTag: bi("16 · 차세대 웹 런타임 API 총망라", "16 · 10 Next-Gen Web Runtime APIs"),
     brandSystem: "ToonCore · SpectrumCompute · LoomSync",
-    title: bi("차세대 웹 표준 런타임 API 10선 총망라: 설치 없는 네이티브급 브라우저 OS", "10 Next-Gen Web Platform APIs: A Zero-Install Browser Creative OS"),
-    summary: bi("WebGPU · WebNN · OPFS · WebCodecs · Compute Pressure · WebHID · AudioWorklet · SharedArrayBuffer · View Transitions · Speculation Rules 10대 웹 표준을 단일 점진 향상 매트릭스로 묶어 설치 파일 없이 크로스플랫폼 제작 환경을 완성합니다.", "Synthesizes 10 modern standards—WebGPU, WebNN, OPFS, WebCodecs, Compute Pressure, WebHID, AudioWorklet, SharedArrayBuffer, View Transitions, and Speculation Rules—into one progressive zero-install creative platform."),
+    title: bi("차세대 웹 표준 런타임 API 10선 통합: 설치 없는 브라우저 제작 런타임", "10 Next-Gen Web Platform APIs: A Zero-Install Browser Creative Runtime"),
+    summary: bi("WebGPU · WebNN · OPFS · WebCodecs · Compute Pressure · WebHID · AudioWorklet · SharedArrayBuffer · View Transitions · Speculation Rules 10대 웹 표준을 단일 점진 향상 매트릭스로 묶어 설치 파일 없이 크로스플랫폼 제작 환경을 구성합니다.", "Synthesizes 10 modern standards—WebGPU, WebNN, OPFS, WebCodecs, Compute Pressure, WebHID, AudioWorklet, SharedArrayBuffer, View Transitions, and Speculation Rules—into one progressive zero-install creative platform."),
     spritePath: "/assets/studio/vibrant-sprites/emblem-benchmark.webp",
     spriteAlt: bi("차세대 웹 표준 플랫폼 10선 통합 엠블럼", "10 next-gen web platform standards emblem"),
     diagramTitle: bi("연산(WebGPU·WebNN·SAB) + I/O(OPFS·WebCodecs·WebHID·AudioWorklet) + 체감(Pressure·VT·Speculation)", "Compute (WebGPU/WebNN/SAB) + I/O (OPFS/WebCodecs/HID/Audio) + UX (Pressure/VT/Speculation)"),
@@ -460,16 +449,18 @@ export const TECH_PRESENTATION_SLIDES: readonly TechPresentationSlide[] = [
     reusePlaybook: bi("차세대 브라우저 IDE, 오디오/영상 제작 웹앱, 3D 협업 설계 도구, 오프라인 AI 워크스페이스의 표준 기술 선정 체크리스트와 폴백 매트릭스로 바로 채택할 수 있습니다.", "Serves directly as a production capability-and-fallback checklist for browser IDEs, web DAWs/NLEs, 3D collab tools, and offline AI workspaces."),
     plainBackground: bi("예전 웹 브라우저는 문서 뷰어였지만, 이제는 그래픽카드·AI 칩·하드디스크·영상 인코더·외부 조종기까지 안전하게 연결하는 미니 운영체제입니다. ToonStudio는 이 10개 표준을 빠짐없이 엮어 냅니다.", "Modern browsers are no longer passive document viewers—they are sandboxed mini-operating systems with safe access to GPUs, NPUs, private storage, video codecs, and hardware dials."),
     tradeoff: bi("SharedArrayBuffer는 COOP/COEP 교차 출처 격리 헤더가 필요하고, WebGPU·WebNN·WebHID는 브라우저별 성숙도가 다릅니다. 따라서 ToonStudio는 10개 API 전부에 대해 미지원 시 즉시 동작하는 결정론 폴백 계약을 테스트로 잠갔습니다.", "SharedArrayBuffer requires COOP/COEP isolation headers, and WebGPU/WebNN/WebHID maturity differs across browsers. Every single one of the 10 APIs is therefore test-locked with an automatic deterministic fallback."),
-    speakerNotes: bi("마지막 16장은 오늘 발표의 결론입니다. 10대 차세대 웹 표준 API를 점진 향상과 안전 폴백으로 엮었기 때문에, 창작자는 설치 파일 없이 링크 하나만 열어도 자신의 기기가 허락하는 최고 성능의 스튜디오를 바로 만날 수 있습니다.", "Slide 16 brings everything together: by weaving 10 modern web standards with deterministic fallbacks, any creator opens one URL and automatically receives the highest tier their hardware supports."),
+    speakerNotes: bi("16장은 핵심 런타임 웹 표준 API 10선을 점진 향상과 안전 폴백으로 엮은 요약입니다. 이어지는 17·18장에서는 실제 24파일 WebRTC 프로토콜과 저장소 실측 희귀 웹 API 18종 전체 지도로 이어집니다.", "Slide 16 summarizes 10 core runtime web standards with deterministic fallbacks, leading directly into Slide 17 on our 24-file WebRTC protocol and Slide 18's measured map of 18 rare Web APIs."),
     repoPaths: ["apps/web/src/domains/creator/kernel/chrome-nextgen-platform-accelerator.ts", "apps/web/src/domains/showcase/nextgen-tech-showcase-data.ts", "apps/web/src/domains/creator/webcodecs-opfs-engine/webcodecs-reels-encoder.ts", "apps/web/src/domains/creator/kernel/Memory64CrossRealmWorker.ts"],
   },
+  WEBRTC_PRESENTATION_SLIDE,
+  RARE_WEB_APIS_PRESENTATION_SLIDE,
 ];
 
 export const TECH_AI_SHOWCASE_MODULES: readonly TechAiShowcaseModule[] = [
   {
     id: "zero-bill-ai-router", code: "AI-01", brandTag: "KilnExport · API", status: "current", executionMode: "zero-bill-api",
     title: bi("₩0 Fail-Closed 다중 무료 AI 캐스케이드 라우터", "KRW 0 Fail-Closed Multi-Provider Free AI Router"),
-    whatItSolves: bi("유료 모델 오호출이나 일일 무료 쿼터 초과로 인한 서버 AI 과금 폭주를 구조적으로 원천 차단합니다.", "Structurally prevents surprise AI bills from paid-model slips or free-tier quota overruns."),
+    whatItSolves: bi("유료 모델 오호출이나 일일 무료 쿼터 초과로 인한 서버 AI 과금 폭주를 네트워크 호출 전 단계에서 차단합니다.", "Structurally prevents surprise AI bills from paid-model slips or free-tier quota overruns before any request fires."),
     howItWorks: bi("네트워크 호출 전 무료 화이트리스트를 검증하고, 90% 안전선·402/429 감지 시 다음 UTC 자정까지 자동 차단 후 다음 무료 공급자로 페일오버합니다.", "Verifies a free-model whitelist before network calls, locks providers at 90% safety cutoff or 402/429 until UTC midnight, and cascades to the next free tier."),
     whereUsed: bi("백엔드 스튜디오 AI 어시스턴트 API 전 엔드포인트의 비용 방화벽", "Cost firewall across backend studio AI assistant endpoints"),
     reuseCase: bi("스타트업 무료 티어 LLM SaaS, 교육용 AI 실습 플랫폼의 과금 안전장치", "Zero-surprise LLM gateway for freemium SaaS and classroom AI labs"),
@@ -550,7 +541,7 @@ export const TECH_PLAIN_GLOSSARY: readonly TechPlainGlossaryEntry[] = [
   {
     id: "wasm64-unsafe-zero", category: "hardware", usedInSlideNumbers: [1, 2],
     term: bi("Rust/WASM64 & unsafe 0 경계", "Rust/WASM64 & Zero-Unsafe Boundary"),
-    oneLineAnalogy: bi("브라우저에 꽂는 초소형 48KB 고속 칩이되, 메모리 사고를 원천 봉쇄한 안전 설계", "A tiny 48KB high-speed cartridge plugged into the browser with compile-time memory safety"),
+    oneLineAnalogy: bi("브라우저에 꽂는 초소형 48KB 고속 칩이되, 메모리 경계 오류를 컴파일 단계에서 막는 안전 설계", "A tiny 48KB high-speed cartridge plugged into the browser with compile-time memory safety"),
     technicalMeaning: bi("`#![deny(unsafe_code)]`로 핵심 연산 커널을 100% 안전 Rust로 유지하고, 4GB 한계를 넘는 64비트 메모리 주소 공간 확장을 대비한 모듈입니다.", "Enforces `#![deny(unsafe_code)]` across core Rust kernels while preparing 64-bit linear addressing beyond the 4GB wasm32 ceiling."),
   },
   {
@@ -611,7 +602,7 @@ export const TECH_PLAIN_GLOSSARY: readonly TechPlainGlossaryEntry[] = [
     id: "morton-zorder-bvh", category: "storage-sync", usedInSlideNumbers: [8, 9],
     term: bi("Morton Z-Order 가상 타일 & BVH", "Morton Z-Order Tiles & BVH"),
     oneLineAnalogy: bi("넓은 캔버스를 Z자 지그재그 번호로 묶어 인접한 그림 조각을 메모리 가까이 모아 두는 초고속 주소 정리법", "Numbering 2D canvas tiles in a Z-curve so nearby pixels stay side by side in CPU/GPU caches"),
-    technicalMeaning: bi("2D/3D 좌표를 비트 인터리빙(Morton code)해 공간 지역성을 극대화하고, BVH 경계 상자 트리로 충돌·선화 탐색을 가속합니다.", "Bit-interleaves 2D/3D coordinates for cache locality in sparse tile tables and accelerates hit-testing via bounding-volume hierarchies."),
+    technicalMeaning: bi("2D/3D 좌표를 비트 인터리빙(Morton code)해 메모리 공간 지역성을 높이고, BVH 경계 상자 트리로 충돌·선화 탐색을 가속합니다.", "Bit-interleaves 2D/3D coordinates for cache locality in sparse tile tables and accelerates hit-testing via bounding-volume hierarchies."),
   },
   {
     id: "opfs-sqlite-rle", category: "storage-sync", usedInSlideNumbers: [1, 9, 10],
@@ -656,9 +647,9 @@ export const TECH_PLAIN_GLOSSARY: readonly TechPlainGlossaryEntry[] = [
     technicalMeaning: bi("원시 hex 없이 OKLCH 토큰으로 9개 테마를 통일하고, WCAG 2.2 대비비와 APCA W3 Lc 지각 명암으로 말풍선·UI 가독성을 검증합니다.", "Unifies 9 themes via raw-hex-free OKLCH tokens while validating text legibility with WCAG 2.2 ratios and APCA W3 Lc lightness contrast."),
   },
   {
-    id: "view-transitions-speculation", category: "ux-web", usedInSlideNumbers: [15, 16],
+    id: "view-transitions-speculation", category: "ux-web", usedInSlideNumbers: [15, 16, 18],
     term: bi("View Transitions & Speculation Rules API", "View Transitions & Speculation Rules API"),
-    oneLineAnalogy: bi("다음에 누를 페이지를 몰래 미리 준비해 두고, 화면이 바뀔 때 부드럽게 겹쳐 넘겨 주는 브라우저 기본 마법", "Preloading likely next pages quietly and cross-fading views natively at 60fps"),
+    oneLineAnalogy: bi("다음에 누를 페이지를 미리 준비해 두고, 화면이 바뀔 때 부드럽게 겹쳐 넘겨 주는 브라우저 기본 전환 기능", "Preloading likely next pages quietly and cross-fading views natively at 60fps"),
     technicalMeaning: bi("DOM 스냅샷 간 180ms 네이티브 크로스페이드와 moderate 프리페치를 제공하며, 미지원·모션감소 환경에서는 즉시 안전 폴백합니다.", "Delivers 180ms native DOM cross-fades and moderate route prefetching with instant fallbacks on unsupported or reduced-motion devices."),
   },
   {
@@ -673,6 +664,7 @@ export const TECH_PLAIN_GLOSSARY: readonly TechPlainGlossaryEntry[] = [
     oneLineAnalogy: bi("100개 메뉴 중 지금 그리는 단계에 꼭 필요한 6개만 꺼내 두고 나머지는 쉬운 검색 서랍에 정리하는 집중 UI", "Surfacing only the 6 essential tools for your current drawing phase while keeping the rest searchable in a drawer"),
     technicalMeaning: bi("Hick-Hyman 법칙 기반 6-핀 상단 바, 0-용어 실시간 검색, `<details>` 서랍, 7번째 자동-핀과 캔버스 `>=82%` 면적 계약을 강제합니다.", "Enforces a 6-pin bar, zero-jargon search, `<details>` drawer, 7th auto-pin, and >=82% canvas viewport contract."),
   },
+  ...WEBRTC_AND_RARE_API_GLOSSARY_ENTRIES,
 ];
 
 export function filterGlossaryEntries(

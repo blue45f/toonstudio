@@ -184,7 +184,7 @@ export function installSpeculationRulesOnce(
   script.type = "speculationrules";
   script.setAttribute(SPECULATION_MARKER_ATTR, SPECULATION_MARKER_VALUE);
   // 운영 정적 CSP의 script-src 해시(STUDIO_PRERENDER_URLS)와 일치하는 정본 JSON을 사용해
-  // 라이브 환경에서 인라인 Speculation Rules CSP 위반 콘솔 오류를 원천 차단한다.
+  // 라이브 환경에서 인라인 Speculation Rules CSP 위반 콘솔 오류를 방지한다.
   script.textContent = options?.urls
     ? JSON.stringify({
         prefetch: [
