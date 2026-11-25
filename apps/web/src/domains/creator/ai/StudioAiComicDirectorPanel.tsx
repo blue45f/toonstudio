@@ -252,6 +252,11 @@ function DirectorReviewSession({
   const [repairPrompt, setRepairPrompt] = useState("선택 영역만 자연스럽게 수정하고 얼굴, 의상, 배경과 구도는 유지합니다.");
   const [mediaBusy, setMediaBusy] = useState<"quality" | "repair" | "layers" | null>(null);
   const [mediaMessage, setMediaMessage] = useState<string | null>(null);
+  const repairAbortRef = useRef<AbortController | null>(null);
+  const mediaInputs = { items, referenceSignature: scenarioImageReferenceSignature(imageReferenceDocument.references) };
+  const mediaInputsRef = useRef(mediaInputs);
+  mediaInputsRef.current = mediaInputs;
+  useEffect(() => () => { repairAbortRef.current?.abort(); repairAbortRef.current = null; }, [open]);
   const [localJobs, setLocalJobs] = useState<StudioAiComicDirectorJob[]>([]);
   const [session, setSession] = useState<StudioAiComicDirectorSessionDocument>(() => {
     const route = parseStudioWorkspaceRoute(new URL(window.location.href));
@@ -452,37 +457,37 @@ function DirectorReviewSession({
     mutateLocalSession({ scenes: items, approval: null });
   };
 
+  const resolveLockedSceneIndex = (preferredIndex: number, candidateId: string, sourceUrl: string): number => {
+    const current = mediaInputsRef.current.items;
+    const containsSource = (scene: ScenarioPreviewItem) => scenarioImageCandidates(scene)
+      .some((candidate) => candidate.id === candidateId && candidate.imageDataUrl === sourceUrl);
+    const preferred = current[preferredIndex];
+    if (preferred && containsSource(preferred)) return preferredIndex;
+    if (candidateId.startsWith("legacy-")) return -1;
+    const resolved = current.findIndex(containsSource);
+    return resolved >= 0 && current.findLastIndex(containsSource) === resolved ? resolved : -1;
+  };
+
   const analyzeCandidate = async () => {
-    if (!activeItem || !activeCandidate) return;
+    if (!activeItem || !activeCandidate || mediaBusy !== null) return;
+    const [targetIdx, targetCandidateId, sourceUrl] = [activeIndex, activeCandidate.id, activeCandidate.imageDataUrl];
     setMediaBusy("quality");
     setMediaMessage(null);
     const operationId = uid("quality");
-    const job = await persistJob({
-      operationId,
-      kind: "quality",
-      progressTotal: 1,
-      payload: { panelIndex: activeIndex, candidateId: activeCandidate.id },
-    });
+    const job = await persistJob({ operationId, kind: "quality", progressTotal: 1, payload: { panelIndex: targetIdx, candidateId: targetCandidateId } });
     try {
-      const report = await analyzeStudioAiComicCandidate(activeCandidate.imageDataUrl);
-      const candidates = scenarioImageCandidates(activeItem).map((candidate) =>
-        candidate.id === activeCandidate.id ? { ...candidate, qualityReport: report } : candidate,
-      );
-      onChangeScene(activeIndex, { imageCandidates: candidates, qualityReport: report });
-      setMediaMessage(`픽셀 품질 분석 완료 · ${report.width}×${report.height}px · 확인 ${report.findings.filter((finding) => finding.severity === "review").length}개`);
-      void api?.createArtifact(sessionId ?? "", {
-        panelId: String(activeIndex),
-        parentArtifactId: activeCandidate.id,
-        kind: "quality-report",
-        payload: report,
+      const report = await analyzeStudioAiComicCandidate(sourceUrl);
+      const resolvedIdx = resolveLockedSceneIndex(targetIdx, targetCandidateId, sourceUrl);
+      const resolvedItem = resolvedIdx >= 0 ? mediaInputsRef.current.items[resolvedIdx] : undefined;
+      if (!resolvedItem) return;
+      const candidates = scenarioImageCandidates(resolvedItem).map((c) => (c.id === targetCandidateId ? { ...c, qualityReport: report } : c));
+      onChangeScene(resolvedIdx, {
+        imageCandidates: candidates,
+        ...(selectedCandidate(resolvedItem)?.id === targetCandidateId ? { qualityReport: report } : {}),
       });
-      await finishJob(job, {
-        status: "succeeded",
-        progressDone: 1,
-        progressTotal: 1,
-        result: report as unknown as Record<string, unknown>,
-        eventType: "quality.completed",
-      });
+      setMediaMessage(`픽셀 품질 분석 완료 · ${report.width}×${report.height}px · 확인 ${report.findings.filter((f) => f.severity === "review").length}개`);
+      void api?.createArtifact(sessionId ?? "", { panelId: String(resolvedIdx), parentArtifactId: targetCandidateId, kind: "quality-report", payload: report });
+      await finishJob(job, { status: "succeeded", progressDone: 1, progressTotal: 1, result: report as unknown as Record<string, unknown>, eventType: "quality.completed" });
     } catch (qualityError) {
       const message = qualityError instanceof Error ? qualityError.message : r5CreatorStatusText("r5cat1.creator.aiComicDirector.qualityFailed", "후보 품질을 분석하지 못했습니다.");
       setMediaMessage(message);
@@ -493,115 +498,92 @@ function DirectorReviewSession({
   };
 
   const repairCandidate = async () => {
-    if (!activeItem || !activeCandidate || !aiSettings || !maskDataUrl) return;
+    if (!activeItem || !activeCandidate || !aiSettings || !maskDataUrl || mediaBusy !== null) return;
+    const [targetIdx, targetCandidateId, sourceUrl] = [activeIndex, activeCandidate.id, activeCandidate.imageDataUrl];
+    const initialInputs = scenarioImageInputFingerprint(activeItem, mediaInputs.referenceSignature);
+    const sourceFingerprint = activeCandidate.inputFingerprint;
+    const controller = new AbortController();
+    repairAbortRef.current = controller;
     setMediaBusy("repair");
     setMediaMessage(null);
     const operationId = uid("repair");
-    const job = await persistJob({
-      operationId,
-      kind: "repair",
-      progressTotal: 1,
-      payload: { panelIndex: activeIndex, candidateId: activeCandidate.id, target: repairTarget },
-    });
-    const controller = new AbortController();
-    const result = await repairStudioAiComicImageRegion({
-      settings: aiSettings,
-      sourceImageDataUrl: activeCandidate.imageDataUrl,
-      maskDataUrl,
-      prompt: repairPrompt,
-      target: repairTarget,
-      parentCandidateId: activeCandidate.id,
-      signal: controller.signal,
-    });
-    if (!result.ok) {
-      setMediaMessage(result.error);
-      await finishJob(job, { status: "failed", error: result.error, eventType: "repair.failed" });
+    let job: StudioAiComicDirectorJob | null = null;
+    try {
+      job = await persistJob({ operationId, kind: "repair", progressTotal: 1, payload: { panelIndex: targetIdx, candidateId: targetCandidateId, target: repairTarget } });
+      const result = controller.signal.aborted ? null : await repairStudioAiComicImageRegion({
+        settings: aiSettings, sourceImageDataUrl: sourceUrl, maskDataUrl, prompt: repairPrompt,
+        target: repairTarget, parentCandidateId: targetCandidateId, signal: controller.signal,
+      });
+      if (!result || controller.signal.aborted) {
+        setMediaMessage("선택 영역 수리를 취소했어요.");
+        await finishJob(job, { status: "cancelled", eventType: "repair.cancelled" });
+        return;
+      }
+      if (!result.ok) {
+        setMediaMessage(result.error);
+        await finishJob(job, { status: "failed", error: result.error, eventType: "repair.failed" });
+        return;
+      }
+      const resolvedIdx = resolveLockedSceneIndex(targetIdx, targetCandidateId, sourceUrl);
+      const { items: latestItems, referenceSignature } = mediaInputsRef.current;
+      const resolvedItem = latestItems[resolvedIdx];
+      if (!resolvedItem) {
+        await finishJob(job, { status: "cancelled", eventType: "repair.cancelled" });
+        return;
+      }
+      const appended = appendScenarioImageCandidate(resolvedItem, {
+        id: operationId, imageDataUrl: result.data.imageDataUrl,
+        inputFingerprint: sourceFingerprint, createdAt: result.data.repair.createdAt,
+      });
+      const candidates = (appended.imageCandidates ?? []).map((c) => (c.id === operationId ? { ...c, repair: result.data.repair } : c));
+      const selectRepair = selectedCandidate(resolvedItem)?.id === targetCandidateId &&
+        scenarioImageInputFingerprint(resolvedItem, referenceSignature) === initialInputs;
+      onChangeScene(resolvedIdx, {
+        imageCandidates: candidates,
+        ...(selectRepair ? {
+          selectedImageCandidateId: operationId, imageDataUrl: result.data.imageDataUrl,
+          imageError: undefined, approvedImageCandidateId: undefined, approvalRevision: undefined,
+          layerManifest: undefined, qualityReport: undefined,
+        } : {}),
+      });
+      setMediaMessage(`${REPAIR_TARGETS.find((t) => t.id === repairTarget)?.label ?? "선택 영역"} 수리 결과를 새 후보로 추가했습니다.`);
+      void api?.createArtifact(sessionId ?? "", { panelId: String(resolvedIdx), parentArtifactId: targetCandidateId, kind: "repair", payload: result.data.repair });
+      await finishJob(job, { status: "succeeded", progressDone: 1, progressTotal: 1, result: { candidateId: operationId }, eventType: "repair.completed" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "선택 영역을 수리하지 못했습니다.";
+      setMediaMessage(message);
+      await finishJob(job, { status: "failed", error: message, eventType: "repair.failed" });
+    } finally {
+      if (repairAbortRef.current === controller) repairAbortRef.current = null;
       setMediaBusy(null);
-      return;
     }
-    const appended = appendScenarioImageCandidate(activeItem, {
-      id: operationId,
-      imageDataUrl: result.data.imageDataUrl,
-      inputFingerprint: scenarioImageInputFingerprint(
-        activeItem,
-        scenarioImageReferenceSignature(imageReferenceDocument.references),
-      ),
-      createdAt: result.data.repair.createdAt,
-    });
-    const candidates = (appended.imageCandidates ?? []).map((candidate) =>
-      candidate.id === operationId ? { ...candidate, repair: result.data.repair } : candidate,
-    );
-    onChangeScene(activeIndex, {
-      imageCandidates: candidates,
-      selectedImageCandidateId: operationId,
-      imageDataUrl: result.data.imageDataUrl,
-      imageError: undefined,
-      approvedImageCandidateId: undefined,
-      approvalRevision: undefined,
-      layerManifest: undefined,
-    });
-    setMediaMessage(`${REPAIR_TARGETS.find((target) => target.id === repairTarget)?.label ?? "선택 영역"} 수리 결과를 새 후보로 추가했습니다.`);
-    void api?.createArtifact(sessionId ?? "", {
-      panelId: String(activeIndex),
-      parentArtifactId: activeCandidate.id,
-      kind: "repair",
-      payload: result.data.repair,
-    });
-    await finishJob(job, {
-      status: "succeeded",
-      progressDone: 1,
-      progressTotal: 1,
-      result: { candidateId: operationId },
-      eventType: "repair.completed",
-    });
-    setMediaBusy(null);
   };
 
   const decomposeCandidate = async () => {
-    if (!activeItem || !activeCandidate) return;
+    if (!activeItem || !activeCandidate || mediaBusy !== null) return;
+    const [targetIdx, targetCandidateId, sourceUrl] = [activeIndex, activeCandidate.id, activeCandidate.imageDataUrl];
     setMediaBusy("layers");
     setMediaMessage(null);
     const operationId = uid("decomposition");
-    const job = await persistJob({
-      operationId,
-      kind: "decomposition",
-      progressTotal: 1,
-      payload: { panelIndex: activeIndex, candidateId: activeCandidate.id },
-    });
+    const job = await persistJob({ operationId, kind: "decomposition", progressTotal: 1, payload: { panelIndex: targetIdx, candidateId: targetCandidateId } });
     try {
       const manifest = maskDataUrl
-        ? await decomposeStudioAiComicCandidate({
-            sourceImageDataUrl: activeCandidate.imageDataUrl,
-            maskDataUrl,
-            sourceCandidateId: activeCandidate.id,
-          })
-        : singleLayerStudioAiComicManifest(activeCandidate.id, activeCandidate.imageDataUrl);
-      const candidates = scenarioImageCandidates(activeItem).map((candidate) =>
-        candidate.id === activeCandidate.id ? { ...candidate, layerManifest: manifest } : candidate,
-      );
-      onChangeScene(activeIndex, { imageCandidates: candidates, layerManifest: manifest });
-      setMediaMessage(
-        manifest.editable
-          ? "검토한 마스크로 전경과 배경을 실제 PNG 레이어로 분리했습니다."
-          : manifest.limitation ?? "단일 장면 레이어로 유지합니다.",
-      );
+        ? await decomposeStudioAiComicCandidate({ sourceImageDataUrl: sourceUrl, maskDataUrl, sourceCandidateId: targetCandidateId })
+        : singleLayerStudioAiComicManifest(targetCandidateId, sourceUrl);
+      const resolvedIdx = resolveLockedSceneIndex(targetIdx, targetCandidateId, sourceUrl);
+      const resolvedItem = resolvedIdx >= 0 ? mediaInputsRef.current.items[resolvedIdx] : undefined;
+      if (!resolvedItem) return;
+      const candidates = scenarioImageCandidates(resolvedItem).map((c) => (c.id === targetCandidateId ? { ...c, layerManifest: manifest } : c));
+      onChangeScene(resolvedIdx, {
+        imageCandidates: candidates,
+        ...(selectedCandidate(resolvedItem)?.id === targetCandidateId ? { layerManifest: manifest } : {}),
+      });
+      setMediaMessage(manifest.editable ? "검토한 마스크로 전경과 배경을 실제 PNG 레이어로 분리했습니다." : manifest.limitation ?? "단일 장면 레이어로 유지합니다.");
       void api?.createArtifact(sessionId ?? "", {
-        panelId: String(activeIndex),
-        parentArtifactId: activeCandidate.id,
-        kind: "layer-manifest",
-        payload: {
-          method: manifest.method,
-          editable: manifest.editable,
-          layers: manifest.layers.map((layer) => ({ id: layer.id, name: layer.name, role: layer.role })),
-        },
+        panelId: String(resolvedIdx), parentArtifactId: targetCandidateId, kind: "layer-manifest",
+        payload: { method: manifest.method, editable: manifest.editable, layers: manifest.layers.map((l) => ({ id: l.id, name: l.name, role: l.role })) },
       });
-      await finishJob(job, {
-        status: "succeeded",
-        progressDone: 1,
-        progressTotal: 1,
-        result: { method: manifest.method, layerCount: manifest.layers.length },
-        eventType: "decomposition.completed",
-      });
+      await finishJob(job, { status: "succeeded", progressDone: 1, progressTotal: 1, result: { method: manifest.method, layerCount: manifest.layers.length }, eventType: "decomposition.completed" });
     } catch (layerError) {
       const message = layerError instanceof Error ? layerError.message : r5CreatorStatusText("r5cat1.creator.aiComicDirector.layerSplitFailed", "레이어를 분리하지 못했습니다.");
       setMediaMessage(message);
@@ -718,7 +700,7 @@ function DirectorReviewSession({
                         </li>
                       ))}
                     </ul>
-                    {activeItem ? <aside className="rounded-xl border border-line bg-panel p-3"><h3 className="text-xs font-bold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{activeIndex + 1} {translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "연출")}</h3><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "비트 역할")}<select value={activeItem.beatType} onChange={(event) => onChangeScene(activeIndex, { beatType: event.target.value as ScenarioBeatType })} disabled={busy} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2 text-xs">{SCENARIO_BEAT_TYPES.map((beat) => <option key={beat} value={beat}>{SCENARIO_BEAT_LABELS[beat]}</option>)}</select></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "장면 요약")}<textarea value={activeItem.summary} onChange={(event) => onChangeScene(activeIndex, { summary: event.target.value.slice(0, 240) })} disabled={busy} rows={2} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "그림 프롬프트")}<textarea aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "{v0}번 장면 그림 프롬프트"), { v0: String(activeIndex + 1) })} value={activeItem.imagePrompt} onChange={(event) => onChangeScene(activeIndex, { imagePrompt: event.target.value.slice(0, 4_000), approvedImageCandidateId: undefined, approvalRevision: undefined })} disabled={busy} rows={6} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs leading-relaxed" /></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "대사·지문")}<textarea value={activeItem.dialogue} onChange={(event) => onChangeScene(activeIndex, { dialogue: event.target.value.slice(0, 4_000) })} disabled={busy} rows={4} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><details className="mt-2 rounded-lg border border-line bg-card p-2"><summary className="min-h-11 cursor-pointer text-xs font-semibold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "연속성 기준")}</summary><StudioContinuityMetadataEditor value={activeItem.continuity ?? {}} onChange={(continuity) => onChangeScene(activeIndex, { continuity, approvedImageCandidateId: undefined, approvalRevision: undefined })} disabled={busy} compact /></details><button type="button" onClick={() => onRemoveScene(activeIndex)} disabled={busy || items.length <= 1} className="mt-2 min-h-11 rounded-lg border border-bad/30 bg-bad/10 px-3 text-xs text-bad disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 삭제")}</button></aside> : null}
+                    {activeItem ? <aside className="rounded-xl border border-line bg-panel p-3"><h3 className="text-xs font-bold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{activeIndex + 1} {translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "연출")}</h3><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "비트 역할")}<select value={activeItem.beatType} onChange={(event) => onChangeScene(activeIndex, { beatType: event.target.value as ScenarioBeatType })} disabled={busy} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2 text-xs">{SCENARIO_BEAT_TYPES.map((beat) => <option key={beat} value={beat}>{SCENARIO_BEAT_LABELS[beat]}</option>)}</select></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "장면 요약")}<textarea value={activeItem.summary} onChange={(event) => onChangeScene(activeIndex, { summary: event.target.value.slice(0, 240) })} disabled={busy} rows={2} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "그림 프롬프트")}<textarea aria-label={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "{v0}번 장면 그림 프롬프트"), { v0: String(activeIndex + 1) })} value={activeItem.imagePrompt} onChange={(event) => onChangeScene(activeIndex, { imagePrompt: event.target.value.slice(0, 4_000), approvedImageCandidateId: undefined, approvalRevision: undefined })} disabled={busy} rows={6} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs leading-relaxed" /></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "대사·지문")}<textarea value={activeItem.dialogue} onChange={(event) => onChangeScene(activeIndex, { dialogue: event.target.value.slice(0, 4_000) })} disabled={busy} rows={4} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><details className="mt-2 rounded-lg border border-line bg-card p-2"><summary className="min-h-11 cursor-pointer text-xs font-semibold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "연속성 기준")}</summary><StudioContinuityMetadataEditor value={activeItem.continuity ?? {}} onChange={(continuity) => onChangeScene(activeIndex, { continuity, approvedImageCandidateId: undefined, approvalRevision: undefined })} disabled={busy} compact /></details><button type="button" onClick={() => onRemoveScene(activeIndex)} disabled={busy || mediaBusy !== null || items.length <= 1} className="mt-2 min-h-11 rounded-lg border border-bad/30 bg-bad/10 px-3 text-xs text-bad disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 삭제")}</button></aside> : null}
                   </div>
                 )}
                 <StudioCharacterCanonDirectorSection
@@ -737,7 +719,7 @@ function DirectorReviewSession({
                 {busy ? <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-xl border border-accent/30 bg-accent-soft p-3 text-xs"><Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden />{stageLabel ?? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "제작 중…")}{progress ? ` (${progress.done}/${progress.total})` : ""}</div> : null}
                 <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_25rem]">
                   <section><div className="mb-2 flex gap-1 overflow-x-auto pb-1">{items.map((item, index) => <button key={index} type="button" onClick={() => { setActiveIndex(index); setMaskDataUrl(""); }} className={cn("min-h-11 shrink-0 rounded-lg border px-3 text-xs", activeIndex === index ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-3")}>{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 ")}{index + 1}{item.imageCandidates?.length ? ` · ${item.imageCandidates.length}` : ""}</button>)}</div>{activeItem ? <><div className="grid gap-2 sm:grid-cols-2">{scenarioImageCandidates(activeItem).map((candidate, candidateIndex) => { const chosen = candidate.id === activeCandidate?.id; return <label key={candidate.id} className={cn("overflow-hidden rounded-xl border bg-card", chosen ? "border-accent" : "border-line")}><span className="block aspect-[4/3] bg-raised"><img src={candidate.imageDataUrl} alt={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "컷 {v0} 후보 {v1}"), { v0: String(activeIndex + 1), v1: String(candidateIndex + 1) })} className="size-full object-cover" /></span><span className="flex min-h-11 items-center gap-2 px-2"><input type="radio" name={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "en", "candidate-{v0}"), { v0: String(activeIndex) })} checked={chosen} onChange={() => chooseCandidate(candidate.id)} className="size-4 accent-accent" /><strong className="text-xs">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "후보 ")}{candidateIndex + 1}</strong>{candidate.repair ? <span className="rounded-full bg-good/10 px-2 py-0.5 text-[0.58rem] text-good">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "부분 수리")}</span> : null}{candidate.qualityReport ? <span className="ml-auto text-[0.58rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "분석됨")}</span> : null}</span></label>; })}</div>{!scenarioImageCandidates(activeItem).length ? <div className="rounded-xl border border-dashed border-line p-8 text-center"><p className="text-sm font-semibold">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "아직 이미지 후보가 없습니다.")}</p><button type="button" onClick={() => onRegenerateScene(activeIndex)} disabled={!imageConfigured || busy || regeneratingIndex !== null} className="mt-3 min-h-11 rounded-lg bg-accent px-4 text-xs font-bold text-on-accent disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 이미지 생성")}</button></div> : null}</> : null}</section>
-                  <aside className="space-y-3 rounded-xl border border-line bg-panel p-3"><section><h3 className="flex items-center gap-1.5 text-xs font-bold"><ScanSearch size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "후보 품질 분석")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "해상도·투명도·가장자리·명암을 실제 픽셀로 측정합니다. 정체성과 해부는 모르는 상태로 남깁니다.")}</p><button type="button" onClick={() => void analyzeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "quality" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "분석 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "현재 후보 픽셀 품질 분석")}</button>{activeCandidate?.qualityReport ? <ul className="mt-2 space-y-1 text-[0.62rem] text-fg-2">{activeCandidate.qualityReport.findings.map((finding) => <li key={finding.id} className={cn("rounded-lg border p-2", finding.severity === "review" ? "border-warn/30 bg-warn/10" : "border-line bg-card")}>{resolveStudioAiComicFindingMessage(finding, activeCandidate.qualityReport)}</li>)}</ul> : null}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><WandSparkles size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리")}</h3>{!repairCapabilities.maskEdit ? <><p className="mt-1 rounded-lg border border-warn/30 bg-warn/10 p-2 text-[0.64rem] text-warn">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리를 연결하지 않았습니다. ")}{repairCapabilities.reason}</p><button type="button" onClick={() => onRegenerateScene(activeIndex)} disabled={!activeItem || busy} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 전체 다시 제작")}</button></> : activeCandidate ? <><StudioDirectorMaskEditor source={activeCandidate.imageDataUrl} onChange={setMaskDataUrl} /><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 대상")}<select value={repairTarget} onChange={(event) => setRepairTarget(event.target.value as StudioAiComicRepairTarget)} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2 text-xs">{REPAIR_TARGETS.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}</select></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 지시")}<textarea value={repairPrompt} onChange={(event) => setRepairPrompt(event.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><button type="button" onClick={() => void repairCandidate()} disabled={!maskDataUrl || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg bg-accent px-3 text-xs font-bold text-on-accent disabled:opacity-45">{mediaBusy === "repair" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역 수리 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역만 수리")}</button></> : <p className="mt-1 text-[0.64rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "먼저 사용할 후보를 선택하세요.")}</p>}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><Layers3 size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "검토한 마스크가 있으면 실제 전경·배경 PNG를 만들고, 없으면 단일 레이어 폴백을 명시합니다.")}</p><button type="button" onClick={() => void decomposeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "layers" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리 중…") : maskDataUrl ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크로 전경·배경 분리") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "단일 레이어로 유지")}</button>{activeItem?.layerManifest ? <p className={cn("mt-2 rounded-lg border p-2 text-[0.62rem]", activeItem.layerManifest.editable ? "border-good/30 bg-good/10 text-good" : "border-line bg-card text-fg-3")}>{activeItem.layerManifest.editable ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "{v0}개 편집 레이어 준비됨"), { v0: String(activeItem.layerManifest.layers.length) }) : activeItem.layerManifest.limitation}</p> : null}</section>{mediaMessage ? <p role="status" className="rounded-lg border border-line bg-card p-2 text-[0.65rem] text-fg-2">{mediaMessage}</p> : null}</aside>
+                  <aside className="space-y-3 rounded-xl border border-line bg-panel p-3"><section><h3 className="flex items-center gap-1.5 text-xs font-bold"><ScanSearch size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "후보 품질 분석")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "해상도·투명도·가장자리·명암을 실제 픽셀로 측정합니다. 정체성과 해부는 모르는 상태로 남깁니다.")}</p><button type="button" onClick={() => void analyzeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "quality" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "분석 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "현재 후보 픽셀 품질 분석")}</button>{activeCandidate?.qualityReport ? <ul className="mt-2 space-y-1 text-[0.62rem] text-fg-2">{activeCandidate.qualityReport.findings.map((finding) => <li key={finding.id} className={cn("rounded-lg border p-2", finding.severity === "review" ? "border-warn/30 bg-warn/10" : "border-line bg-card")}>{resolveStudioAiComicFindingMessage(finding, activeCandidate.qualityReport)}</li>)}</ul> : null}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><WandSparkles size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리")}</h3>{!repairCapabilities.maskEdit ? <><p className="mt-1 rounded-lg border border-warn/30 bg-warn/10 p-2 text-[0.64rem] text-warn">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크 영역 수리를 연결하지 않았습니다. ")}{repairCapabilities.reason}</p><button type="button" onClick={() => onRegenerateScene(activeIndex)} disabled={!activeItem || busy} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "이 컷 전체 다시 제작")}</button></> : activeCandidate ? <><StudioDirectorMaskEditor source={activeCandidate.imageDataUrl} onChange={setMaskDataUrl} /><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 대상")}<select value={repairTarget} onChange={(event) => setRepairTarget(event.target.value as StudioAiComicRepairTarget)} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-card px-2 text-xs">{REPAIR_TARGETS.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}</select></label><label className="mt-2 block text-[0.64rem] font-semibold text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "수리 지시")}<textarea value={repairPrompt} onChange={(event) => setRepairPrompt(event.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-line bg-card p-2 text-xs" /></label><button type="button" onClick={() => void repairCandidate()} disabled={!maskDataUrl || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg bg-accent px-3 text-xs font-bold text-on-accent disabled:opacity-45">{mediaBusy === "repair" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역 수리 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "선택 영역만 수리")}</button>{mediaBusy === "repair" ? <button type="button" data-testid="comic-director-repair-cancel-btn" onClick={() => repairAbortRef.current?.abort()} className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-raised">수리 취소</button> : null}</> : <p className="mt-1 text-[0.64rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "먼저 사용할 후보를 선택하세요.")}</p>}</section><section className="border-t border-line pt-3"><h3 className="flex items-center gap-1.5 text-xs font-bold"><Layers3 size={14} className="text-accent" aria-hidden />{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리")}</h3><p className="mt-1 text-[0.62rem] text-fg-3">{translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "검토한 마스크가 있으면 실제 전경·배경 PNG를 만들고, 없으면 단일 레이어 폴백을 명시합니다.")}</p><button type="button" onClick={() => void decomposeCandidate()} disabled={!activeCandidate || mediaBusy !== null} className="mt-2 min-h-11 w-full rounded-lg border border-line bg-card text-xs font-semibold hover:bg-raised disabled:opacity-45">{mediaBusy === "layers" ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "레이어 분리 중…") : maskDataUrl ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "마스크로 전경·배경 분리") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "단일 레이어로 유지")}</button>{activeItem?.layerManifest ? <p className={cn("mt-2 rounded-lg border p-2 text-[0.62rem]", activeItem.layerManifest.editable ? "border-good/30 bg-good/10 text-good" : "border-line bg-card text-fg-3")}>{activeItem.layerManifest.editable ? formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ai.StudioAiComicDirectorPanel", "ko", "{v0}개 편집 레이어 준비됨"), { v0: String(activeItem.layerManifest.layers.length) }) : activeItem.layerManifest.limitation}</p> : null}</section>{mediaMessage ? <p role="status" className="rounded-lg border border-line bg-card p-2 text-[0.65rem] text-fg-2">{mediaMessage}</p> : null}</aside>
                 </div>
               </div>
             ) : null}

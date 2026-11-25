@@ -13,7 +13,7 @@ import {
 // 스티커의 알파 테두리 후처리는 없다 — outline이 불투명 이미지에 no-op인
 // 사유가 studio-photo-webtoon-preset.ts에 명시된 별도 경로라 경계로 둔다.
 // 모델·런타임·클라이언트는 실행 버튼을 눌렀을 때만 동적 import로 지연 로딩된다.
-import { Cloud, Loader2, Sparkles, X } from "lucide-react";
+import { Cloud, Loader2, Palette, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
@@ -67,6 +67,9 @@ export function StudioOnnxAnimeStylePanel({
   }, []);
 
   useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(null);
     setPreviewSrc(null);
     setError(null);
   }, [src]);
@@ -83,11 +86,11 @@ export function StudioOnnxAnimeStylePanel({
         kind,
         signal: controller.signal,
       });
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || controller.signal.aborted || abortRef.current !== controller) return;
       setPreviewSrc(result.dataUrl);
       onResult(result.dataUrl);
     } catch (cause) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || abortRef.current !== controller) return;
       if (cause instanceof Error && cause.name === "AbortError") {
         setError(T("변환을 취소했어요."));
       } else {
@@ -107,14 +110,21 @@ export function StudioOnnxAnimeStylePanel({
     if (busy || !cloudConfigured) return;
     setBusy("cloud");
     setError(null);
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const client = await import("./studio-ai-client");
       const settings = client.loadStudioAiSessionSettings(
         window.sessionStorage,
         window.localStorage,
       );
-      const result = await client.convertImageToAnimeStyle(settings, src, "", purpose);
-      if (!mountedRef.current) return;
+      const result = await client.convertImageToAnimeStyle(settings, src, "", purpose, {
+        signal: controller.signal,
+      });
+      if (!mountedRef.current || controller.signal.aborted || abortRef.current !== controller) {
+        if (mountedRef.current && controller.signal.aborted) setError(T("변환을 취소했어요."));
+        return;
+      }
       if (result.ok) {
         setPreviewSrc(result.data.dataUrl);
         onResult(result.data.dataUrl);
@@ -122,14 +132,19 @@ export function StudioOnnxAnimeStylePanel({
         setError(result.error);
       }
     } catch (cause) {
-      if (!mountedRef.current) return;
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : T("AI 변환에 실패했어요."),
-      );
+      if (!mountedRef.current || abortRef.current !== controller) return;
+      if (cause instanceof Error && cause.name === "AbortError") {
+        setError(T("변환을 취소했어요."));
+      } else {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : T("AI 변환에 실패했어요."),
+        );
+      }
     } finally {
       if (mountedRef.current) setBusy(null);
+      if (abortRef.current === controller) abortRef.current = null;
     }
   };
 
@@ -139,7 +154,7 @@ export function StudioOnnxAnimeStylePanel({
       data-studio-anime-style-panel="true"
     >
       <div className="flex items-center gap-1.5 text-sm font-bold text-fg">
-        <Sparkles size={14} className="text-accent" aria-hidden />
+        <Palette size={14} className="text-accent" aria-hidden />
         {T("애니풍 변환")} <StudioAiConnectionBadge kind="local" detail="기기 변환은 로컬 ONNX로 실행됩니다. 클라우드 변환 버튼은 개인 키가 있을 때만 활성화됩니다." /></div>
 
       <p className="text-[0.68rem] leading-relaxed text-fg-2">
@@ -219,7 +234,7 @@ export function StudioOnnxAnimeStylePanel({
         >
           {busy === "device"
             ? <Loader2 size={14} className="animate-spin" aria-hidden />
-            : <Sparkles size={14} aria-hidden />}
+            : <Palette size={14} aria-hidden />}
           {busy === "device" ? T("변환하는 중…") : T("기기에서 애니풍으로 변환")}
         </button>
         {busy === "device" && (
@@ -244,24 +259,41 @@ export function StudioOnnxAnimeStylePanel({
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={() => void runCloud()}
-        disabled={busy !== null || !cloudConfigured}
-        className={cn(
-          "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold",
-          STUDIO_EASE,
-          STUDIO_FOCUS_RING,
-          cloudConfigured
-            ? "border-line bg-card text-fg-2 hover:text-fg"
-            : "cursor-not-allowed border-line bg-card text-fg-3 opacity-60",
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          onClick={() => void runCloud()}
+          disabled={busy !== null || !cloudConfigured}
+          className={cn(
+            "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold",
+            STUDIO_EASE,
+            STUDIO_FOCUS_RING,
+            cloudConfigured
+              ? "border-line bg-card text-fg-2 hover:text-fg"
+              : "cursor-not-allowed border-line bg-card text-fg-3 opacity-60",
+          )}
+        >
+          {busy === "cloud"
+            ? <Loader2 size={14} className="animate-spin" aria-hidden />
+            : <Cloud size={14} aria-hidden />}
+          {busy === "cloud" ? T("AI로 변환하는 중…") : T("AI로 고화질 변환")}
+        </button>
+        {busy === "cloud" && (
+          <button
+            type="button"
+            data-testid="onnx-anime-cloud-cancel-btn"
+            onClick={() => abortRef.current?.abort()}
+            className={cn(
+              "inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-line bg-card px-3 py-2 text-sm font-semibold text-fg-2",
+              STUDIO_EASE,
+              "hover:text-fg",
+            )}
+          >
+            <X size={14} aria-hidden />
+            {T("취소")}
+          </button>
         )}
-      >
-        {busy === "cloud"
-          ? <Loader2 size={14} className="animate-spin" aria-hidden />
-          : <Cloud size={14} aria-hidden />}
-        {busy === "cloud" ? T("AI로 변환하는 중…") : T("AI로 고화질 변환")}
-      </button>
+      </div>
       {!cloudConfigured && (
         <p className="text-[0.66rem] leading-relaxed text-fg-3">
           {T("AI 고화질 변환은 API 키를 등록하면 쓸 수 있어요. 키가 없어도 위 기기 변환은 그대로 됩니다.")}

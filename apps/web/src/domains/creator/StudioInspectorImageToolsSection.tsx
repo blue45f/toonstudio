@@ -146,15 +146,18 @@ export function StudioInspectorSelectedImageTools({
                                 selectedSrc={selected.src}
                               />
                               <StudioOnnxColorizePanel
+                                key={selected.id}
                                 src={selected.src}
                                 cloudConfigured={isStudioAiConfigured(aiSettings)}
                                 onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
                               />
                               <StudioOnnxUpscalePanel
+                                key={selected.id}
                                 src={selected.src}
                                 onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
                               />
                               <StudioOnnxAnimeStylePanel
+                                key={selected.id}
                                 src={selected.src}
                                 cloudConfigured={isStudioAiConfigured(aiSettings)}
                                 onResult={(dataUrl) => patchEl(selected.id, { src: dataUrl })}
