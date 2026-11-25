@@ -12,12 +12,13 @@ import {
   Gauge,
   Layers,
   Plug,
+  Presentation,
   RefreshCw,
   Scale,
-  Sparkles,
   Terminal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import type { BilingualText } from "./competitor-benchmark-data";
 import {
@@ -41,6 +42,7 @@ import {
   TechLlmMcpApiPanel,
   TechResearchPapersAndUxPanel,
 } from "./TechLlmMcpAndResearchTabs";
+import { TechPresentationDeckSection } from "./TechPresentationDeckSection";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -77,12 +79,32 @@ const LAYER_FLOW = [
   },
 ] as const;
 
+const VALID_TECH_TABS: readonly TechTabId[] = [
+  "presentation",
+  "architecture",
+  "remotion",
+  "ai-skills",
+  "chrome-apis",
+  "llm-mcp-api",
+  "papers-rd",
+];
+
+function resolveInitialTab(rawTab: string | null): TechTabId {
+  if (rawTab && (VALID_TECH_TABS as readonly string[]).includes(rawTab)) {
+    return rawTab as TechTabId;
+  }
+  return "architecture";
+}
+
 export function ToonStudioTechShowcasePage() {
   const lang = useI18n((state) => state.lang);
   const locale: "ko" | "en" = lang === "en" ? "en" : "ko";
   const copy = TECH_SHOWCASE_PAGE_COPY[locale];
+  const [searchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<TechTabId>("architecture");
+  const [activeTab, setActiveTab] = useState<TechTabId>(
+    () => resolveInitialTab(searchParams.get("tab")),
+  );
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(REMOTION_CODE_RECIPES[0]!.id);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [highContrast, setHighContrast] = useState<boolean>(
@@ -130,6 +152,7 @@ export function ToonStudioTechShowcasePage() {
   };
 
   const tabs: readonly { id: TechTabId; label: string; icon: typeof Layers }[] = [
+    { id: "presentation", label: copy.tabPresentation, icon: Presentation },
     { id: "architecture", label: copy.tabArchitecture, icon: Layers },
     { id: "remotion", label: copy.tabRemotion, icon: Film },
     { id: "ai-skills", label: copy.tabAiSkills, icon: Bot },
@@ -160,7 +183,19 @@ export function ToonStudioTechShowcasePage() {
                 {copy.subtitle}
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-2.5">
-                <Link href="/compare/studio" className={buttonClass({ size: "md", className: "min-h-11" })}>
+                <button
+                  type="button"
+                  data-testid="tech-hero-open-deck"
+                  onClick={() => handleTabChange("presentation")}
+                  className={buttonClass({ size: "md", className: "min-h-11 motion-reduce:transition-none" })}
+                >
+                  <Presentation size={15} aria-hidden="true" />
+                  {copy.ctaPresentationDeck}
+                </button>
+                <Link
+                  href="/compare/studio"
+                  className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}
+                >
                   <Scale size={15} aria-hidden="true" />
                   {copy.ctaCompare}
                 </Link>
@@ -245,6 +280,10 @@ export function ToonStudioTechShowcasePage() {
 
         {/* 3. 탭 패널 콘텐츠 */}
         <div className="ts-showcase-stage">
+          {activeTab === "presentation" ? (
+            <TechPresentationDeckSection locale={locale} />
+          ) : null}
+
           {activeTab === "architecture" ? (
             <section
               role="tabpanel"
@@ -445,7 +484,7 @@ export function ToonStudioTechShowcasePage() {
             >
               <div className="rounded-3xl border border-line bg-panel p-5 sm:p-6">
                 <div className="flex items-center gap-2 text-xs font-bold tracking-[0.12em] text-accent uppercase">
-                  <Sparkles size={14} aria-hidden="true" />
+                  <Cpu size={14} aria-hidden="true" />
                   <span>AI AGENT HARNESS & SWARM RATCHETS</span>
                 </div>
                 <h2 id="tech-ai-heading" className="mt-1 text-xl font-bold text-fg sm:text-2xl">
@@ -495,7 +534,7 @@ export function ToonStudioTechShowcasePage() {
                       onClick={handleTestViewTransition}
                       className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
                     >
-                      <Sparkles size={14} aria-hidden="true" />
+                      <Layers size={14} aria-hidden="true" />
                       {copy.probeTestTransition}
                     </button>
                     <button

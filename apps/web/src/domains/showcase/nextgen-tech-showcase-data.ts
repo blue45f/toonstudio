@@ -9,6 +9,7 @@
 import type { BilingualText } from "./competitor-benchmark-data";
 
 export type TechTabId =
+  | "presentation"
   | "architecture"
   | "remotion"
   | "ai-skills"
