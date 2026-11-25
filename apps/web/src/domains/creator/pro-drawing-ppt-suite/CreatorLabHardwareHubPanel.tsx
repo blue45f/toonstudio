@@ -110,6 +110,17 @@ const LazyErgonomicsPanel = lazy(async () => {
   return { default: m.StudioErgonomicsMasterPanel };
 });
 
+const LazyCraftLauncherPanel = lazy(async () => {
+  await import("../atelier-craft-launcher");
+  const m = await import("../atelier-craft-launcher/StudioAtelierCraftLauncherPanel");
+  return { default: m.StudioAtelierCraftLauncherPanel };
+});
+const LazyAtelierFoleyMixerPanel = lazy(async () => {
+  await import("../atelier-foley-mixer");
+  const m = await import("../atelier-foley-mixer/StudioAtelierFoleyMixerPanel");
+  return { default: m.StudioAtelierFoleyMixerPanel };
+});
+
 type CreatorLabTabId =
   | "calibrator"
   | "signatureLab"
@@ -131,7 +142,9 @@ type CreatorLabTabId =
   | "handcraftedAtelier"
   | "onboardingDiorama"
   | "perfDoctor"
-  | "ergonomics";
+  | "ergonomics"
+  | "craftLauncher"
+  | "atelierFoley";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -159,10 +172,16 @@ const CREATOR_LAB_TABS: readonly {
   { id: "onboardingDiorama", labelKo: "첫 컷 구성·창작자 설정 추천 예제", labelEn: "First-Cut Layout · Creator Setting Examples" },
   { id: "perfDoctor", labelKo: "성능 수치·설정 제안 예제", labelEn: "Performance Metrics · Setting Examples" },
   { id: "ergonomics", labelKo: "단축키·배치 제안 예제", labelEn: "Shortcut · Layout Examples" },
+  { id: "craftLauncher", labelKo: "도구 탐색·작업 준비", labelEn: "Tool Finder · Work Preparation" },
+  { id: "atelierFoley", labelKo: "작업실 음향·웹 오디오", labelEn: "Atelier Sound · Web Audio" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
   switch (id) {
+    case "craftLauncher":
+      return <Compass size={15} aria-hidden="true" />;
+    case "atelierFoley":
+      return <Music size={15} aria-hidden="true" />;
     case "calibrator":
       return <Gauge size={15} aria-hidden="true" />;
     case "signatureLab":
@@ -274,6 +293,8 @@ export function CreatorLabHardwareHubPanel() {
           {active === "onboardingDiorama" ? <LazyStudioOnboardingDioramaPanel /> : null}
           {active === "perfDoctor" ? <LazyPerfDoctorPanel /> : null}
           {active === "ergonomics" ? <LazyErgonomicsPanel /> : null}
+          {active === "craftLauncher" ? <LazyCraftLauncherPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "atelierFoley" ? <LazyAtelierFoleyMixerPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

@@ -55,6 +55,12 @@ const LazyColorScriptPanel = lazy(async () => {
   return { default: m.StudioColorScriptLabPanel };
 });
 
+const LazyPanelRhythmPanel = lazy(async () => {
+  await import("../webtoon-panel-rhythm-studio");
+  const m = await import("../webtoon-panel-rhythm-studio/StudioWebtoonPanelRhythmPanel");
+  return { default: m.StudioWebtoonPanelRhythmPanel };
+});
+
 type QaHubTabId =
   | "pixel"
   | "layout"
@@ -65,7 +71,8 @@ type QaHubTabId =
   | "renderFarmVcs"
   | "movingtoonReels"
   | "cinematography"
-  | "colorScript";
+  | "colorScript"
+  | "panelRhythm";
 
 const QA_HUB_TABS: readonly {
   readonly id: QaHubTabId;
@@ -82,10 +89,13 @@ const QA_HUB_TABS: readonly {
   { id: "movingtoonReels", labelKo: "무빙툰 좌표·비트·자막 문자열 예제", labelEn: "Moving-Toon Coordinates · Beats · Subtitle Examples" },
   { id: "cinematography", labelKo: "카메라 투영·시선 동선 예제", labelEn: "Camera Projection · Eye-Flow Examples" },
   { id: "colorScript", labelKo: "색상 대비·색각 변환 예제", labelEn: "Color Contrast · Vision Simulation Examples" },
+  { id: "panelRhythm", labelKo: "컷 높이·여백·읽기 호흡 예제", labelEn: "Panel Size · Gutter · Rhythm Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
   switch (id) {
+    case "panelRhythm":
+      return <LayoutList size={15} aria-hidden="true" />;
     case "pixel":
       return <ScanSearch size={15} aria-hidden="true" />;
     case "layout":
@@ -164,6 +174,7 @@ export function AutoQaCollabHubPanel() {
           {active === "movingtoonReels" ? <LazyMovingtoonReelsPanel /> : null}
           {active === "cinematography" ? <LazyCinematographyPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "colorScript" ? <LazyColorScriptPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "panelRhythm" ? <LazyPanelRhythmPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>
