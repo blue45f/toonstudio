@@ -72,9 +72,9 @@ const cases: readonly ExampleCase[] = [
   { ko: "페이퍼크래프트 전개도와 접힘 미리보기", en: "Papercraft Dieline and Fold Preview", panel: "papercraft-unfold-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../papercraft-3d-unfold-goods") },
   { ko: "기기별 NPU·GPU 배치 계획", en: "Device NPU and GPU Planning", panel: "studio-heterogeneous-silicon-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../heterogeneous-npu-runtime") },
   { ko: "Rust WASM 전환 계획", en: "Rust WASM Expansion Planning", panel: "studio-rust-expansion-architect-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../rust-full-expansion-planner") },
-  { ko: "멀티코어·Vello GPU 스케줄 예제", en: "Multicore and Vello GPU Scheduling Examples", panel: "studio-multicore-vello-scheduler-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../multicore-gpu-vello-scheduler") },
+  { ko: "멀티코어·스펙트럼 컴퓨트 GPU 스케줄 예제", en: "Multicore and SpectrumCompute GPU Scheduling Examples", panel: "studio-multicore-vello-scheduler-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../multicore-gpu-vello-scheduler") },
   { ko: "Rust WASM 이식·검증 예제", en: "Rust WASM Porting and Parity Exercise", panel: "studio-rust-hotspot-porter-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../rust-hotspot-parity-porter") },
-  { ko: "타일 동기화와 병합 예제", en: "Tile Sync and Merge Examples", panel: "studio-distributed-crdt-sync-panel", Hub: AutoQaCollabHubPanel, load: () => import("../distributed-crdt-tile-sync") },
+  { ko: "협업 드로잉 타일 동기화·병합 예제", en: "Collaborative Drawing Tile Sync & Merge Examples", panel: "studio-distributed-crdt-sync-panel", Hub: AutoQaCollabHubPanel, load: () => import("../distributed-crdt-tile-sync") },
   { ko: "대형 캔버스 타일·저장 예제", en: "Large Canvas Tile and Storage Examples", panel: "studio-giga-canvas-swap-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../giga-canvas-virtual-swap") },
   { ko: "확대와 좌표 정밀도 예제", en: "Zoom and Coordinate Precision Examples", panel: "studio-infinite-zoom-spatial-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../infinite-zoom-spatial-gpu") },
   { ko: "의존성 전환 계획", en: "Dependency Cutover Planning", panel: "dependency-wasm64-audit-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../dependency-wasm64-auditor") },
@@ -82,11 +82,15 @@ const cases: readonly ExampleCase[] = [
   { ko: "필압 곡선과 획 보정 예제", en: "Pressure Curve and Stroke Compensation Examples", panel: "studio-stylus-neural-compensation-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../stylus-neural-compensation") },
   { ko: "절차적 에셋 미리보기", en: "Procedural Asset Preview", panel: "procedural-asset-synth-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../procedural-asset-synthesizer") },
   { ko: "NPU 그래프와 열 제어 예제", en: "NPU Graph and Thermal Control Examples", panel: "webnn-npu-thermal-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../webnn-npu-thermal-compiler") },
-  { ko: "파라메트릭 스케치와 도면 예제", en: "Parametric Sketch and Drawing Examples", panel: "shapr3d-cad-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../shapr3d-parametric-cad") },
+  { ko: "아틀리에 솔리드 CAD · 파라메트릭 도면", en: "Atelier Solid CAD · Parametric Drawing", panel: "shapr3d-cad-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../shapr3d-parametric-cad") },
   { ko: "도구 배치와 색상 대비 예제", en: "Tool Layout and Palette Contrast Examples", panel: "calm-intent-ux-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../calm-intent-ux-orchestrator") },
   { ko: "작화 출처 원장 예제", en: "Stroke Provenance Ledger Examples", panel: "human-ink-ledger-panel", Hub: AutoQaCollabHubPanel, load: () => import("../human-ink-provenance-ledger") },
   { ko: "셰이더 준비·영상 인코딩 계획", en: "Shader Preparation and Video Encoding Plans", panel: "studio-shader-prewarm-webcodecs-panel", Hub: AutoQaCollabHubPanel, load: () => import("../shader-prewarm-webcodecs") },
   { ko: "컷 구도와 대사 배치 예제", en: "Panel Framing and Dialogue Layout Examples", panel: "oneshot-cut-director-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../oneshot-cut-director") },
+  { ko: "몰입 화면과 획 피드백 미리보기", en: "Immersive Canvas and Stroke Feedback Preview", panel: "atelier-tactile-hud-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-tactile-feedback") },
+  { ko: "작업대 색상과 다이얼 미리보기", en: "Workbench Colors and Dial Preview", panel: "atelier-visual-signature-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-visual-signature") },
+  { ko: "한 손 모바일 도구 배치 미리보기", en: "One-Handed Mobile Tool Layout Preview", panel: "mobile-thumbzone-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../mobile-thumbzone-studio-ux") },
+  { ko: "브랜드 이름 검사", en: "Brand Name Audit", panel: "atelier-brand-registry-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-brand-registry") },
 ];
 
 afterEach(cleanup);
@@ -97,8 +101,13 @@ describe("새 예제의 단일 진입점과 화면 언어", () => {
     await act(async () => {
       render(<><AutoQaCollabHubPanel /><BrushWasm3dFrontierHubPanel /><CreatorLabHardwareHubPanel /><Csp3dUpgradeHubPanel /><OpenEcosystemWorkflowHubPanel /></>);
     });
+    for (const drawer of document.querySelectorAll('details[data-testid="studio-hub-calm-drawer"]')) {
+      (drawer as HTMLDetailsElement).open = true;
+    }
     for (const entry of cases) {
-      expect(screen.getAllByRole("tab", { name: entry[locale] })).toHaveLength(1);
+      const pinnedTabs = screen.queryAllByRole("tab", { name: entry[locale] });
+      const drawerButtons = screen.queryAllByRole("button", { name: entry[locale] });
+      expect(pinnedTabs.length + drawerButtons.length).toBe(1);
     }
   });
 
@@ -110,13 +119,18 @@ describe("새 예제의 단일 진입점과 화면 언어", () => {
       const Hub = entry.Hub;
       await act(async () => { render(<Hub />); });
       expect(screen.queryByTestId(entry.panel)).toBeNull();
-      const tabs = screen.getAllByRole("tab", { name: entry[locale] });
-      expect(tabs).toHaveLength(1);
-      const tab = tabs[0];
-      if (!tab) throw new Error("예제 진입 탭이 없습니다.");
-      await act(async () => { fireEvent.click(tab); });
+      for (const drawer of document.querySelectorAll('details[data-testid="studio-hub-calm-drawer"]')) {
+        (drawer as HTMLDetailsElement).open = true;
+      }
+      const pinnedTabs = screen.queryAllByRole("tab", { name: entry[locale] });
+      const drawerButtons = screen.queryAllByRole("button", { name: entry[locale] });
+      expect(pinnedTabs.length + drawerButtons.length).toBe(1);
+      const trigger = pinnedTabs[0] ?? drawerButtons[0];
+      if (!trigger) throw new Error("예제 진입 탭이 없습니다.");
+      await act(async () => { fireEvent.click(trigger); });
       const panel = await screen.findByTestId(entry.panel, undefined, { timeout: 5_000 });
-      expect(tab.getAttribute("aria-selected")).toBe("true");
+      const activeTab = screen.getByRole("tab", { name: entry[locale] });
+      expect(activeTab.getAttribute("aria-selected")).toBe("true");
       if (entry.panel === "studio-editorial-moodboard-panel") {
         const guide = within(panel).getByTestId("spectrum-domain-pigment-guide");
         expect(within(guide).getAllByRole("listitem", { hidden: true })).toHaveLength(5);
@@ -124,7 +138,7 @@ describe("새 예제의 단일 진입점과 화면 언어", () => {
       const title = within(panel).getAllByRole("heading")[0]?.textContent ?? "";
       expect(title.length).toBeGreaterThan(0);
       expect(/[가-힣]/u.test(title)).toBe(locale === "ko");
-      expect(panel.closest('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(tab.id);
+      expect(panel.closest('[role="tabpanel"]')?.getAttribute("aria-labelledby")).toBe(activeTab.id);
     });
   }
 });

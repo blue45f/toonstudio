@@ -3,6 +3,8 @@ import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 
+import { StudioHubCalmTabNavigator } from "./StudioHubCalmTabNavigator";
+
 const LazyStudioCreatorCalibratorPanel = lazy(() =>
   import("../creator-experience-calibrator/StudioCreatorCalibratorPanel").then((m) => ({
     default: m.StudioCreatorCalibratorPanel,
@@ -141,6 +143,19 @@ const LazyStudioOneshotCutDirectorPanel = lazy(() =>
   import("../oneshot-cut-director").then((module) => ({ default: module.StudioOneshotCutDirectorPanel })),
 );
 
+const LazyStudioImmersiveFeedbackHudPanel = lazy(() =>
+  import("../atelier-tactile-feedback").then((module) => ({ default: module.StudioImmersiveFeedbackHudPanel })),
+);
+const LazyStudioAtelierVisualSignaturePanel = lazy(() =>
+  import("../atelier-visual-signature").then((module) => ({ default: module.StudioAtelierVisualSignaturePanel })),
+);
+const LazyStudioMobileThumbzonePanel = lazy(() =>
+  import("../mobile-thumbzone-studio-ux").then((module) => ({ default: module.StudioMobileThumbzonePanel })),
+);
+const LazyStudioAtelierBrandRegistryPanel = lazy(() =>
+  import("../atelier-brand-registry").then((module) => ({ default: module.StudioAtelierBrandRegistryPanel })),
+);
+
 type CreatorLabTabId =
   | "calibrator"
   | "signatureLab"
@@ -169,7 +184,11 @@ type CreatorLabTabId =
   | "adaptiveCalm"
   | "stylusCompensation"
   | "calmIntentExample"
-  | "oneshotCutDirector";
+  | "oneshotCutDirector"
+  | "immersiveFeedbackPreview"
+  | "visualSignaturePreview"
+  | "mobileThumbzonePreview"
+  | "brandRegistryAudit";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -204,10 +223,31 @@ const CREATOR_LAB_TABS: readonly {
   { id: "stylusCompensation", labelKo: "필압 곡선과 획 보정 예제", labelEn: "Pressure Curve and Stroke Compensation Examples" },
   { id: "calmIntentExample", labelKo: "도구 배치와 색상 대비 예제", labelEn: "Tool Layout and Palette Contrast Examples" },
   { id: "oneshotCutDirector", labelKo: "컷 구도와 대사 배치 예제", labelEn: "Panel Framing and Dialogue Layout Examples" },
+  { id: "immersiveFeedbackPreview", labelKo: "몰입 화면과 획 피드백 미리보기", labelEn: "Immersive Canvas and Stroke Feedback Preview" },
+  { id: "visualSignaturePreview", labelKo: "작업대 색상과 다이얼 미리보기", labelEn: "Workbench Colors and Dial Preview" },
+  { id: "mobileThumbzonePreview", labelKo: "한 손 모바일 도구 배치 미리보기", labelEn: "One-Handed Mobile Tool Layout Preview" },
+  { id: "brandRegistryAudit", labelKo: "브랜드 이름 검사", labelEn: "Brand Name Audit" },
+];
+
+const CREATOR_LAB_PINNED_TABS: readonly CreatorLabTabId[] = [
+  "calibrator",
+  "signatureLab",
+  "stylusHardware",
+  "sketchTo3d",
+  "voiceBalloon",
+  "craftLauncher",
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
   switch (id) {
+    case "immersiveFeedbackPreview":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "visualSignaturePreview":
+      return <Eye size={15} aria-hidden="true" />;
+    case "mobileThumbzonePreview":
+      return <Smartphone size={15} aria-hidden="true" />;
+    case "brandRegistryAudit":
+      return <CheckCircle2 size={15} aria-hidden="true" />;
     case "oneshotCutDirector":
       return <Clapperboard size={15} aria-hidden="true" />;
     case "calmIntentExample":
@@ -279,30 +319,18 @@ export function CreatorLabHardwareHubPanel() {
       aria-label={isEn ? "Creator Calibration, Signature Webtoon Lab, and Hardware Hub" : "창작자 캘리브레이터 · 웹툰 시그니처 랩 · 주변기기 허브"}
       data-testid="creator-lab-hardware-hub"
     >
-      <div role="tablist" aria-label={isEn ? "Creator lab modules" : "창작 랩 및 하드웨어 모듈 선택"} className="flex flex-wrap gap-2">
-        {CREATOR_LAB_TABS.map((tab) => {
-          const selected = tab.id === active;
-          return (
-            <button
-              key={tab.id}
-              id={`${baseId}-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${baseId}-panel-${tab.id}`}
-              onClick={() => setActive(tab.id)}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold [word-break:keep-all] transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none ${
-                selected
-                  ? "border-accent bg-accent text-on-accent"
-                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"
-              }`}
-            >
-              <CreatorLabIcon id={tab.id} />
-              <span>{isEn ? tab.labelEn : tab.labelKo}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StudioHubCalmTabNavigator
+        baseId={baseId}
+        ariaLabel={isEn ? "Creator lab modules" : "창작 랩 및 하드웨어 모듈 선택"}
+        tabs={CREATOR_LAB_TABS}
+        pinnedIds={CREATOR_LAB_PINNED_TABS}
+        activeId={active}
+        onSelect={setActive}
+        renderIcon={(id) => <CreatorLabIcon id={id} />}
+        isEn={isEn}
+        searchPlaceholderKo="필압, 색역, 태블릿, 3D 포즈, 음향, 단축키 등으로 검색…"
+        searchPlaceholderEn="Search pressure, gamut, tablet, 3D pose, audio, shortcuts…"
+      />
 
       <div id={`${baseId}-panel-${active}`} role="tabpanel" aria-labelledby={`${baseId}-tab-${active}`}>
         <Suspense
@@ -340,6 +368,10 @@ export function CreatorLabHardwareHubPanel() {
           {active === "stylusCompensation" ? <LazyStudioStylusNeuralCompensationPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "calmIntentExample" ? <LazyStudioCalmIntentUxPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "oneshotCutDirector" ? <LazyStudioOneshotCutDirectorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "immersiveFeedbackPreview" ? <LazyStudioImmersiveFeedbackHudPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "visualSignaturePreview" ? <LazyStudioAtelierVisualSignaturePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "mobileThumbzonePreview" ? <LazyStudioMobileThumbzonePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "brandRegistryAudit" ? <LazyStudioAtelierBrandRegistryPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

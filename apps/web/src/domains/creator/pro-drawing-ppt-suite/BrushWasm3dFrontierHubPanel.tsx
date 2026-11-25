@@ -1,7 +1,9 @@
-import { Box, Cpu, Eye, Layers, Palette, PenTool, Scissors, Server, SlidersHorizontal, Sparkles, Wand2, Zap } from "lucide-react";
+import { Box, Cpu, Eye, Feather, Layers, Palette, PenTool, Scissors, Server, SlidersHorizontal, Wand2, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
+
+import { StudioHubCalmTabNavigator } from "./StudioHubCalmTabNavigator";
 
 const LazyStudioBrushPhysicsProPanel = lazy(() =>
   import("../brush-physics-pro/StudioBrushPhysicsProPanel").then((m) => ({
@@ -187,6 +189,15 @@ const FRONTIER_TABS: readonly {
   { id: "radianceCascades", labelKo: "2D 조명·그림자 예제", labelEn: "2D Lighting and Shadow Examples" },
 ];
 
+const FRONTIER_PINNED_TABS: readonly FrontierTabId[] = [
+  "brushPhysics",
+  "brushCustomLab",
+  "wasm64Core",
+  "scene3dNpr",
+  "vectorInkProj",
+  "liveOracle",
+];
+
 const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
   readonly id: string;
   readonly titleKo: string;
@@ -282,7 +293,7 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
     case "tactileBrush":
       return <PenTool size={15} aria-hidden="true" />;
     case "brushPhysics":
-      return <Sparkles size={15} aria-hidden="true" />;
+      return <Feather size={15} aria-hidden="true" />;
     case "brushCustomLab":
       return <SlidersHorizontal size={15} aria-hidden="true" />;
     case "brush3dExtreme":
@@ -316,7 +327,7 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
     case "nocodeShaderGrid":
       return <Layers size={15} aria-hidden="true" />;
     case "federatedLora":
-      return <Sparkles size={15} aria-hidden="true" />;
+      return <SlidersHorizontal size={15} aria-hidden="true" />;
     case "liveOracle":
       return <Layers size={15} aria-hidden="true" />;
   }
@@ -379,30 +390,18 @@ export function BrushWasm3dFrontierHubPanel() {
       aria-label={isEn ? "Brush Physics, Rust Wasm64, and 3D NPR Frontier Hub" : "물리 브러시 · Rust Wasm64 · 3D NPR 차세대 엔진 허브"}
       data-testid="brush-wasm-3d-frontier-hub"
     >
-      <div role="tablist" aria-label={isEn ? "Frontier engine modules" : "차세대 코어 엔진 선택"} className="flex flex-wrap gap-2">
-        {FRONTIER_TABS.map((tab) => {
-          const selected = tab.id === active;
-          return (
-            <button
-              key={tab.id}
-              id={`${baseId}-tab-${tab.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${baseId}-panel-${tab.id}`}
-              onClick={() => setActive(tab.id)}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold [word-break:keep-all] transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none ${
-                selected
-                  ? "border-accent bg-accent text-on-accent"
-                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"
-              }`}
-            >
-              <FrontierIcon id={tab.id} />
-              <span>{isEn ? tab.labelEn : tab.labelKo}</span>
-            </button>
-          );
-        })}
-      </div>
+      <StudioHubCalmTabNavigator
+        baseId={baseId}
+        ariaLabel={isEn ? "Frontier engine modules" : "차세대 코어 엔진 선택"}
+        tabs={FRONTIER_TABS}
+        pinnedIds={FRONTIER_PINNED_TABS}
+        activeId={active}
+        onSelect={setActive}
+        renderIcon={(id) => <FrontierIcon id={id} />}
+        isEn={isEn}
+        searchPlaceholderKo="브러시 질감, 3D 선화, 조명, 대형 캔버스 등으로 검색…"
+        searchPlaceholderEn="Search brush texture, 3D ink, lighting, large canvas…"
+      />
 
       <div id={`${baseId}-panel-${active}`} role="tabpanel" aria-labelledby={`${baseId}-tab-${active}`}>
         {active === "liveOracle" ? (
@@ -419,7 +418,7 @@ export function BrushWasm3dFrontierHubPanel() {
                 onClick={() => void runLiveEngineOracle()}
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-accent bg-accent px-3 py-2 text-xs font-semibold text-on-accent transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] disabled:opacity-60 motion-reduce:transition-none"
               >
-                <Sparkles size={14} aria-hidden="true" />
+                <Zap size={14} aria-hidden="true" />
                 <span>{oracleBusy ? (isEn ? "Running..." : "측정 중…") : isEn ? "Run Live Oracle" : "실시간 오라클 실행"}</span>
               </button>
             </div>
