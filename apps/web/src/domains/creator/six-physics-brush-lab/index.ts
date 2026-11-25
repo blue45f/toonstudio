@@ -1,0 +1,52 @@
+/**
+ * Wave 53D — 6대 학술 논문 기반 독립 물리 브러시 개성 엔진 및 비교 랩 공개 배럴.
+ */
+
+export {
+  DEFAULT_COMMON_STROKE_INPUT,
+  MIN_GPEN_SDF_DPI,
+  SIX_PHYSICS_BRUSH_ENGINES,
+  SIX_PHYSICS_MANIFEST_SCHEMA_VERSION,
+  STROKE_SCENARIO_PRESETS,
+  VIOLET_HUE_MAX_DEG,
+  VIOLET_HUE_MIN_DEG,
+  buildBrushPhysicsManifest,
+  compareBrushPhysicsDivergence,
+  exportBrushPhysicsManifestJson,
+  formatOklch,
+  getPhysicsBrushEngineSpec,
+  isVioletHueDeg,
+  normalizeBrushStrokeInput,
+  sanitizeNonVioletOklch,
+  simulatePhysicsBrushStroke,
+  type AcademicPaperCitation,
+  type AcousticFoleyProfile,
+  type BrushDivergenceAxis,
+  type BrushPhysicsDivergenceReport,
+  type BrushPhysicsPipelineManifest,
+  type BrushPhysicsSimulationResult,
+  type BrushStrokeScenarioPreset,
+  type ColorMixingParadigm,
+  type CommonBrushStrokeInput,
+  type DivergenceAxisId,
+  type DryMediaSousa99Physics,
+  type EdgeBehaviorParadigm,
+  type EngineSpecificPhysics,
+  type GPenLoopBlinn05Physics,
+  type GpuStateBufferSpec,
+  type HeightModelParadigm,
+  type MarkerFoilPbrPhysics,
+  type NormalizedBrushStrokeInput,
+  type OilWetbrush15Physics,
+  type OklchColor,
+  type PhysicsBrushEngineId,
+  type PhysicsBrushEngineSpec,
+  type SumiMoxi05Physics,
+  type WatercolorCurtis97Physics,
+  type WgslPipelineSpec,
+} from "./six-physics-brush-engine";
+
+export {
+  StudioSixPhysicsBrushLabPanel,
+  type StudioSixPhysicsBrushLabPanelProps,
+} from "./StudioSixPhysicsBrushLabPanel";
