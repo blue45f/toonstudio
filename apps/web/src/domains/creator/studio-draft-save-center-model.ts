@@ -201,7 +201,7 @@ function deviceSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatus
   };
 }
 
-function serverSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatusSection {
+function serverSection(input: StudioDraftSaveCenterInput, t: (ko: string, en: string) => string): StudioDraftSaveStatusSection {
   if (input.hydrationFailed) {
     return {
       tone: "danger",
@@ -264,7 +264,7 @@ function serverSection(input: StudioDraftSaveCenterInput): StudioDraftSaveStatus
     return {
       tone: "warning",
       title: "서버는 오프라인",
-      detail: "이 기기에는 계속 보관하며, 서버 저장은 연결 후 가능합니다.",
+      detail: t("인터넷에 연결하면 원고를 서버에 저장할 수 있어요.", "Reconnect to save the manuscript to the server."),
     };
   }
 
@@ -325,7 +325,7 @@ export function resolveStudioDraftSaveCenter(
       title: t("오프라인", "Offline"),
       detail: t("연결이 돌아오면 서버 원고를 다시 확인해요.", "The manuscript will be checked with the server when you reconnect."),
     }
-    : serverSection(input);
+    : serverSection(input, t);
   const hasServerRisk = server.tone === "danger";
   const serverRevision = normalizedRevision(input.serverRevision);
   const serverConflict = Boolean(
@@ -403,7 +403,7 @@ export function resolveStudioDraftSaveCenter(
     tone = "warning";
     compactLabel = "오프라인";
     headline = "서버 연결 없이 작업 중이에요";
-    detail = `${device.title}. ${server.detail}`;
+    detail = server.detail;
   } else if (input.collaborationSyncPending) {
     phase = "syncing";
     tone = "progress";

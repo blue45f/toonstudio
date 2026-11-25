@@ -150,7 +150,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
     "studio-foundation": [
       ...["production-v2", "living-world", "drawn-characters-v1", "ambient-audio", "npc-cast-v1", "npc-cast-v2", "npc-cast-v3", "npc-cast-v4", "characters-lpc-v1", "portraits-v1", "art-v4", "style-packs", "style-packs-v5", "living-town-v6", "imagegen25-v7", "experience-v8", "cinematic-v9", "world-v2", "office-cast-v2", "office-themes-v1"].map((id) => `${asset}virtual-studio/${id}/`),
       `${asset}virtual-studio/art-v4-manifest.json`, `${asset}studio/props/`,
-      `${asset}studio/vibrant-sprites/`,
+      `${asset}studio/vibrant-sprites/`, `${asset}atelier/spaces/`,
       `${asset}virtual-studio/toon-office-v1/characters/`, `${asset}studio/illustration-20260926/`,
       `${asset}studio/bundle-renders-v1/`, `${asset}studio/bundle-scenes-v1/`, `${asset}virtual-studio/bundle-decor-v1/`,
       ...foundationInputs,
@@ -176,8 +176,8 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.equal(foundationDocumentSet.size, 19);
   assert.ok(foundationDocumentInputs.every((path) => path.endsWith(".md") && !path.includes("*")), "문서 입력은 정확한 개별 Markdown 파일이어야 합니다.");
   assertTrackedDocumentInputs(foundationDocumentInputs, { cwd: repoRoot });
-  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !heroSet.has(path) && !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 91, 0, 1, 7]);
-  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 133, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.filter((path) => !heroSet.has(path) && !routeVisualSet.has(path) && !foundationDocumentSet.has(path)).length), [13, 92, 0, 1, 7]);
+  assert.deepEqual(Object.values(owned).map((paths) => paths.length), [13, 134, 0, 1, 7]);
   const declarations = [...staticJob.matchAll(/\$\{\{ matrix\.shard == '([^']+)' && '([^']+)' \|\| '' \}\}/gu)];
   assert.match(staticJob, /persist-credentials: false/u);
   assert.match(staticJob, /sparse-checkout-cone-mode: false/u);
@@ -187,14 +187,14 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   assert.ok(heroDeclarations.every((match) => match[1] === "studio-foundation"), "hero 모델은 foundation만 소유해야 합니다.");
   const routeVisualDeclarations = declarations.filter((match) => routeVisualSet.has(match[2]));
   const foundationDocumentDeclarations = declarations.filter((match) => foundationDocumentSet.has(match[2]));
-  assert.equal(originalDeclarations.length, 112, "기존 111개와 vibrant 스프라이트 디렉터리 1개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(originalDeclarations.map((match) => match[2])).size, 107, "기존 라이선스와 네 VRM의 shard 공유만 유지합니다.");
+  assert.equal(originalDeclarations.length, 113, "기존 111개와 스프라이트·작업실 테마 디렉터리 선언 2개를 정확히 보존해야 합니다.");
+  assert.equal(new Set(originalDeclarations.map((match) => match[2])).size, 108, "기존 라이선스와 네 VRM의 shard 공유만 유지합니다.");
   assert.deepEqual(routeVisualDeclarations.map((match) => match[2]).sort(), [...routeVisualInputs].sort());
   assert.ok(routeVisualDeclarations.every((match) => match[1] === "studio-foundation"), "페이지 시각 입력은 foundation만 소유해야 합니다.");
   assert.deepEqual(foundationDocumentDeclarations.map((match) => match[2]).sort(), [...foundationDocumentInputs].sort());
   assert.ok(foundationDocumentDeclarations.every((match) => match[1] === "studio-foundation"), "추가 문서 선언은 foundation만 소유해야 합니다.");
-  assert.equal(declarations.length, 154, "기존 111개와 vibrant 스프라이트 디렉터리 1개·hero VRM 9개·원본 PNG 14개·문서 19개 선언을 정확히 보존해야 합니다.");
-  assert.equal(new Set(declarations.map((match) => match[2])).size, 149, "추가 스프라이트 디렉터리·VRM·PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
+  assert.equal(declarations.length, 155, "기존 111개와 스프라이트·작업실 테마 디렉터리 2개·hero VRM 9개·원본 PNG 14개·문서 19개 선언을 정확히 보존해야 합니다.");
+  assert.equal(new Set(declarations.map((match) => match[2])).size, 150, "추가 스프라이트 디렉터리·VRM·PNG·문서는 기존 입력이나 다른 shard 선언과 중복하지 않습니다.");
   for (const [shard, paths] of Object.entries(owned)) {
     assert.deepEqual(declarations.filter((match) => match[1] === shard).map((match) => match[2]).sort(), [...paths].sort(), shard);
   }
@@ -209,7 +209,7 @@ export function assertStaticCheckoutInputContract(staticJob, repoRoot, typecheck
   const commonManifests = [world, ...["boatyard-v1", "coast-v1", "specimen-v1", "glasshouse-v1"]
     .map((pack) => `apps/web/public/assets/3d/environments/${pack}/manifest.json`)];
   const unrelated = ["apps/web/public/assets/unrelated/large.glb", "apps/web/public/vrm/unrelated.vrm", "artifacts/unrelated.bin",
-    "apps/web/public/vrm/toonstudio-hero-v1/unrelated.vrm",
+    "apps/web/public/vrm/toonstudio-hero-v1/unrelated.vrm", "apps/web/public/assets/atelier/unrelated.webp",
     "apps/web/public/assets/virtual-studio/studio-art-v11/unrelated-large.webp",
     "apps/web/public/assets/3d/environments/bundle-v1/unrelated-large.glb"];
   const unrelatedDocuments = ["docs/third-party/unrelated.md", "docs/adr/9999-unrelated.md", "docs/unrelated/large.bin"];

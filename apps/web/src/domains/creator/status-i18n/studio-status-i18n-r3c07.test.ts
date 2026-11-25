@@ -237,7 +237,7 @@ const EXPECTED_KO: Readonly<Record<string, string>> = {
   "studio.panelStatus.r3c07.creatorPack.packsEmpty": "조건에 맞는 Creator Pack이 없습니다.",
   "studio.panelStatus.r3c07.draftSync.syncFailed": "동기화 작업을 완료하지 못했습니다.",
   "studio.panelStatus.r3c07.draftSync.serverAndDeviceProtected": "팀 서버와 이 기기의 복구 저장소에 원고를 보호합니다.",
-  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "서버가 다시 연결될 때까지 변경 {count}개를 이 기기의 복구 저장소에 보관합니다. 아직 팀 서버에 반영되지 않았습니다.",
+  "studio.panelStatus.r3c07.draftSync.offlineDurableQueued": "협업 변경 {count}건이 이 기기의 전송 대기열에 저장됐습니다. 아직 팀 서버에 반영되지 않았습니다.",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFound": "따라 그리기 원본을 찾지 못했어요",
   "studio.panelStatus.r3c07.drawingPractice.originalNotFoundDescription": "내 그림은 그대로 유지됩니다. 같은 원본을 다시 가져오세요.",
   "studio.panelStatus.r3c07.effectsWorkspace.budgetExceeded": "효과 스택 저장 예산을 초과해 기존 스택을 유지했습니다.",
