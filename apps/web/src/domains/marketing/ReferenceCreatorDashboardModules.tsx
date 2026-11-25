@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ArrowUpRight, BookOpen, Boxes, Check, ChevronRight, FolderKanban, Layers3, MessageCircle, NotebookPen, PackageCheck, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, BookOpen, Boxes, Check, ChevronRight, Compass, FolderKanban, Layers3, MessageCircle, NotebookPen, PackageCheck, Palette, Users, type LucideIcon } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
@@ -38,7 +38,7 @@ function Workspace({ kind, title, href, icon: Icon, caption, children, bi }: {
 
 function ProjectShelf({ bi }: { bi: Localize }) {
   return (
-    <Workspace kind="projects" title={bi("프로젝트", "Projects")} href="/studio" icon={FolderKanban} caption={bi("당신의 모든 이야기, 하나의 세계로", "Your stories, one universe")} bi={bi}>
+    <Workspace kind="projects" title={bi("프로젝트", "Projects")} href="/studio" icon={FolderKanban} caption={bi("진행 중인 원고와 회차를 한 선반에 정리해요", "Keep active episodes and drafts on one shelf")} bi={bi}>
       <div className="rd-mini-project-sidebar" aria-hidden="true"><FolderKanban /><BookOpen /><Layers3 /></div>
       <div className="rd-mini-project-library">
         <div className="rd-mini-meta"><strong>{bi("작품 선반", "Story shelf")}</strong><span>{bi("예시 작품", "Example works")}</span></div>
@@ -55,7 +55,7 @@ function ProjectShelf({ bi }: { bi: Localize }) {
 function CharacterSheet({ bi }: { bi: Localize }) {
   const [character, setCharacter] = useState<"pink" | "blue">("pink");
   return (
-    <Workspace kind="character" title={bi("캐릭터 스튜디오", "Character studio")} href="/studio/assets/characters/new" icon={Users} caption={bi("인물에 표정과 이야기를 더하세요", "Give every character a story")} bi={bi}>
+    <Workspace kind="character" title={bi("캐릭터 스튜디오", "Character studio")} href="/studio/assets/characters/new" icon={Users} caption={bi("인물의 표정과 헤어·의상을 한눈에 맞춥니다", "Match face, hair and outfit sheets in one view")} bi={bi}>
       <div className="rd-mini-character-portrait"><MiniArt name={`character-${character}`} /><span>{bi("캐릭터 예시", "Character example")}</span></div>
       <div className="rd-mini-character-sheet">
         <div className="rd-mini-character-picker" role="group" aria-label={bi("예시 캐릭터 선택", "Choose an example character")}>
@@ -82,7 +82,7 @@ function BackgroundGallery({ bi }: { bi: Localize }) {
   ];
   const selected = scenes.find((item) => item.id === scene) ?? scenes[0];
   return (
-    <Workspace kind="background" title={bi("배경 스튜디오", "Background studio")} href="/studio/bg3d" icon={Boxes} caption={bi("상상한 장면을 하나의 공간으로", "Worlds beyond imagination")} bi={bi}>
+    <Workspace kind="background" title={bi("배경 스튜디오", "Background studio")} href="/studio/bg3d" icon={Boxes} caption={bi("3D 공간으로 구도와 원근을 먼저 잡아요", "Frame camera angles and perspective in 3D")} bi={bi}>
       <figure className="rd-mini-background-main"><img src={selected.src} alt={bi(`${selected.ko} 배경 예시`, `${selected.en} background example`)} width={480} height={360} loading="lazy" decoding="async" /><figcaption>{bi("배경 예시", "Scene example")} · {bi(selected.ko, selected.en)}</figcaption></figure>
       <div className="rd-mini-background-picker" role="group" aria-label={bi("배경 예시 선택", "Choose an example background")}>
         {scenes.map((item) => <button type="button" key={item.id} aria-pressed={scene === item.id} aria-label={bi(`${item.ko} 배경 보기`, `View ${item.en.toLowerCase()} background`)} onClick={() => setScene(item.id)}><img src={item.src} alt="" width={96} height={64} loading="lazy" decoding="async" /><span>{bi(item.ko, item.en)}</span></button>)}
@@ -93,12 +93,12 @@ function BackgroundGallery({ bi }: { bi: Localize }) {
 
 function AssetGrid({ bi }: { bi: Localize }) {
   return (
-    <Workspace kind="assets" title={bi("에셋 라이브러리", "Asset library")} href="/studio/assets" icon={Layers3} caption={bi("작품을 완성하는 작은 재료들", "Everything your next scene needs")} bi={bi}>
+    <Workspace kind="assets" title={bi("에셋 라이브러리", "Asset library")} href="/studio/assets" icon={Layers3} caption={bi("말풍선·망점·효과음 소재를 바로 꺼내 씁니다", "Drop balloons, screentones and SFX straight into a panel")} bi={bi}>
       <div className="rd-mini-meta"><strong>{bi("소재 보드", "Material board")}</strong><span>{bi("소재 예시", "Material examples")}</span></div>
       <div className="rd-mini-asset-grid" role="group" aria-label={bi("캐릭터·말풍선·효과 소재 예시", "Character, speech bubble and effect examples")}>
         <div className="rd-mini-asset-tile"><MiniArt name="materials" /></div>
         <div className="rd-mini-asset-tile rd-mini-asset-bubble"><MessageCircle aria-hidden="true" /><span>{bi("안녕!", "Hello!")}</span></div>
-        <div className="rd-mini-asset-tile rd-mini-asset-spark"><Sparkles aria-hidden="true" /></div>
+        <div className="rd-mini-asset-tile rd-mini-asset-spark"><Palette aria-hidden="true" /></div>
         <div className="rd-mini-asset-tile"><MiniArt name="character-blue" /></div>
         <div className="rd-mini-asset-tile rd-mini-asset-screentone" role="img" aria-label={bi("망점 패턴", "Halftone pattern")} />
         <div className="rd-mini-asset-tile rd-mini-asset-speed" role="img" aria-label={bi("집중선 효과", "Speed line effect")} />
@@ -132,7 +132,7 @@ function StoryPlanning({ bi }: { bi: Localize }) {
 
 function AiDirector({ bi }: { bi: Localize }) {
   return (
-    <Workspace kind="ai" title={bi("AI 크리에이티브 디렉터", "AI creative director")} href="/studio/ai-lab" icon={Sparkles} caption={bi("내 API 키로, 내가 선택한 창작 도구", "Your API key. Your creative choices.")} bi={bi}>
+    <Workspace kind="ai" title={bi("AI 크리에이티브 디렉터", "AI creative director")} href="/studio/ai-lab" icon={Compass} caption={bi("내 API 키로 원하는 보조 도구만 골라 씁니다", "Your API key. Only the helper tools you pick.")} bi={bi}>
       <div className="rd-mini-luna"><MiniArt name="luna" /></div>
       <div className="rd-mini-ai-copy"><strong>Luna</strong><span>{bi("창작 도우미", "Creative assistant")}</span><p>{bi("어떤 이야기를 함께 만들어 볼까요?", "What story shall we imagine together?")}</p><Link href="/studio/ai-lab">{bi("AI 도구 살펴보기", "Explore AI tools")}<ChevronRight size={14} aria-hidden="true" /></Link></div>
     </Workspace>
@@ -158,7 +158,7 @@ function CommunityGallery({ bi }: { bi: Localize }) {
   const [genre, setGenre] = useState<"all" | "characters">("all");
   const images = genre === "all" ? ["project-romance", "character-pink", "project-crimson", "character-blue"] : ["character-pink", "character-blue"];
   return (
-    <Workspace kind="community" title={bi("커뮤니티", "Community")} href="/community" icon={Users} caption={bi("함께 만드는 더 큰 이야기", "Together, we create more")} bi={bi}>
+    <Workspace kind="community" title={bi("커뮤니티", "Community")} href="/community" icon={Users} caption={bi("동료 작가와 작품 피드백을 나눕니다", "Share works and critique with fellow creators")} bi={bi}>
       <div className="rd-mini-community-tabs" role="group" aria-label={bi("예시 갤러리 분류", "Example gallery categories")}><button type="button" aria-pressed={genre === "all"} onClick={() => setGenre("all")}>{bi("전체", "All")}</button><button type="button" aria-pressed={genre === "characters"} onClick={() => setGenre("characters")}>{bi("캐릭터", "Characters")}</button><span>{bi("예시 작품", "Example works")}</span></div>
       <div className="rd-mini-community-gallery" data-genre={genre}>{images.map((name) => <MiniArt key={name} name={name} />)}</div>
     </Workspace>

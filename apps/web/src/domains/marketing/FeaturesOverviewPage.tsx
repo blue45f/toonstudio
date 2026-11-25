@@ -1,5 +1,5 @@
 import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, LayoutGrid, Map as MapIcon, Sparkles } from "lucide-react";
+import { ArrowRight, Film, LayoutGrid, Map as MapIcon } from "lucide-react";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { sitePageHeaderArtFor } from "@/domains/legal/public/site-page-header-art";
@@ -35,12 +35,12 @@ const PAGE_COPY = {
     eyebrow: "TOONSTUDIO FEATURES",
     title: "툰스튜디오의 모든 기능을 한눈에.",
     description:
-      "기획·스토리부터 그리기, 3D, AI, 제작 관리, 배우기, 작품 발견과 커뮤니티까지 — 웹툰 한 편이 태어나 독자에게 닿는 전 과정을 한곳에서 이어 갑니다. 이 페이지는 영역별 대표 기능을 요약한 지도이고, 직접 열 수 있는 모든 페이지의 목록은 전체 사이트맵이 소유합니다.",
+      "기획과 스토리부터 2D 작화, 3D 배경, AI 보조, 제작 관리, 작품 발견과 커뮤니티까지 웹툰 한 편이 독자에게 닿는 흐름을 영역별로 정리했습니다. 세부 페이지와 실험 도구 전체는 사이트맵에서 바로 찾을 수 있어요.",
     start: "새 작품 시작하기",
     sitemap: "전체 사이트맵",
     pageTitle: "ToonStudio 전체 기능 한눈에 · 기획에서 발견까지",
     metaDescription:
-      "기획·스토리, 그리기, 3D, AI, 제작 관리, 배우기, 작품 발견과 커뮤니티까지 툰스튜디오의 기능을 영역별로 요약한 지도입니다. 실험·베타·로그인 필요 같은 사용 조건도 함께 표시합니다.",
+      "기획·스토리, 2D 그리기, 3D, AI, 제작 관리, 배우기, 작품 발견과 커뮤니티까지 툰스튜디오의 기능을 영역별로 정리한 지도입니다. 실험·베타·로그인 필요 같은 사용 조건도 함께 표시합니다.",
     factsLabel: "서비스 규모",
     factTitles: "외부 플랫폼 작품 정보",
     factPlatforms: "카탈로그에 담긴 플랫폼",
@@ -52,7 +52,7 @@ const PAGE_COPY = {
     jumpLabel: "영역 바로가기",
     itemsUnit: "개 기능",
     ctaTitle: "찾는 기능이 여기 없나요?",
-    ctaBody: "이 페이지는 대표 기능만 추린 요약입니다. 실험 도구와 세부 페이지를 포함한 전체 목록은 사이트맵에서 검색할 수 있습니다.",
+    ctaBody: "여기에는 영역별 핵심 기능만 추렸습니다. 실험 도구와 세부 페이지까지 모두 찾으려면 사이트맵에서 검색해 보세요.",
     ambientBadge: "생성형 AI 배경 영상",
     ctaSitemap: "사이트맵에서 전체 찾기",
     ctaSupport: "문의하기",
@@ -290,7 +290,7 @@ export function FeaturesOverviewPage() {
                   </span>
                   {headerClip ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white">
-                      <Sparkles size={13} aria-hidden="true" />
+                      <Film size={13} aria-hidden="true" />
                       {copy.ambientBadge}
                     </span>
                   ) : null}
@@ -360,7 +360,7 @@ export function FeaturesOverviewPage() {
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-fg-2">{copy.ctaBody}</p>
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 text-xs font-bold text-white">
-            <Sparkles size={13} aria-hidden="true" />
+            <Film size={13} aria-hidden="true" />
             {copy.ambientBadge}
           </span>
         </div>

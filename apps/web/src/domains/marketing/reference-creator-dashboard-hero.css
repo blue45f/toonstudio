@@ -11,11 +11,11 @@
 .reference-dashboard .rd-clarity-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
-  gap: clamp(32px, 5vw, 76px);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(32px, 5.2vw, 84px);
   align-items: center;
-  min-height: min(560px, calc(100svh - var(--site-header-height, 60px) - 210px));
-  padding-block: clamp(28px, 4.4vw, 60px) clamp(28px, 3.6vw, 48px);
+  min-height: min(568px, calc(100svh - var(--site-header-height, 60px) - 204px));
+  padding-block: clamp(30px, 4.6vw, 64px) clamp(26px, 3.4vw, 46px);
 }
 
 .rd-clarity-copy {
@@ -86,6 +86,7 @@
   transition:
     background-color var(--ink-fast, 150ms) var(--ink-ease),
     border-color var(--ink-fast, 150ms) var(--ink-ease),
+    box-shadow var(--ink-fast, 150ms) var(--ink-ease),
     color var(--ink-fast, 150ms) var(--ink-ease),
     transform var(--ink-fast, 150ms) var(--ink-ease);
 }
@@ -95,27 +96,34 @@
   flex: none;
 }
 
-/* 주 CTA: 버밀리온 주홍(28°) 고대비 아티스트 안료 버튼 */
+/* 주 CTA: 버밀리온 주홍(28°) 1px 스펙큘러 상단 광택 + 주얼-톤 깊이 버튼 */
 .reference-dashboard .rd-clarity-actions > .rd-clarity-start {
   min-height: 52px;
   padding: 12px 24px;
-  border: 1px solid color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 80%, transparent);
-  background: var(--spectrum-pigment-draw, var(--color-accent));
+  border: 1px solid color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 82%, oklch(0.96 0.02 65));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 92%, oklch(0.97 0.015 70)) 0%,
+    var(--spectrum-pigment-draw, var(--color-accent)) 100%
+  );
   color: var(--spectrum-pigment-draw-on, var(--color-on-accent));
-  box-shadow: 0 10px 24px -16px color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 oklch(0.98 0.012 75 / 0.38),
+    0 12px 26px -14px color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 72%, transparent);
 }
 
 .reference-dashboard .rd-clarity-actions > .rd-clarity-start:active {
-  transform: scale(0.98);
+  transform: translateY(0) scale(0.985);
 }
 
-/* 보조 CTA: 비리디언 에메랄드(158°) 아웃라인 갤러리 버튼 */
+/* 보조 CTA: 비리디언 에메랄드(158°) 1px 스펙큘러 아웃라인 갤러리 버튼 */
 .reference-dashboard .rd-clarity-actions > .rd-clarity-browse {
   min-height: 52px;
   padding: 12px 20px;
-  border: 1.5px solid var(--spectrum-pigment-market-border, var(--color-line-strong));
-  background: color-mix(in oklch, var(--spectrum-pigment-market, oklch(0.765 0.155 158)) 8%, var(--rd-card));
+  border: 1px solid var(--spectrum-pigment-market-border, var(--color-line-strong));
+  background: color-mix(in oklch, var(--spectrum-pigment-market, oklch(0.765 0.155 158)) 9%, var(--rd-card));
   color: var(--rd-fg);
+  box-shadow: inset 0 1px 0 oklch(0.98 0.008 160 / 0.14);
 }
 
 .reference-dashboard .rd-clarity-actions > .rd-clarity-browse > svg {
@@ -189,10 +197,12 @@
   position: relative;
   height: 100%;
   overflow: hidden;
-  border: 1px solid var(--color-line-strong);
+  border: 1px solid color-mix(in oklch, var(--color-line-strong) 84%, oklch(0.96 0.008 80));
   border-radius: 18px;
   background: var(--rd-card);
-  box-shadow: 0 26px 52px -34px oklch(0.08 0.005 65 / 0.65);
+  box-shadow:
+    inset 0 1px 0 oklch(0.98 0.008 80 / 0.16),
+    0 28px 56px -32px oklch(0.08 0.005 65 / 0.68);
 }
 
 /* 스테이지 상단 3px 5대 도메인 안료 에디토리얼 바 */
@@ -594,17 +604,31 @@
 
 @media (hover: hover) {
   .reference-dashboard .rd-clarity-actions > .rd-clarity-start:hover {
-    background: color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 88%, var(--color-fg));
-    transform: translateY(-1px);
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 82%, oklch(0.98 0.012 72)) 0%,
+      color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 94%, var(--color-fg)) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 oklch(0.99 0.01 75 / 0.48),
+      0 16px 32px -14px color-mix(in oklch, var(--spectrum-pigment-draw, oklch(0.715 0.165 28)) 78%, transparent);
+    transform: translateY(-2px);
   }
   .reference-dashboard .rd-clarity-actions > .rd-clarity-browse:hover {
     border-color: var(--spectrum-pigment-market, oklch(0.765 0.155 158));
     background: var(--spectrum-pigment-market-soft, var(--rd-panel));
     color: var(--color-fg);
-    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 oklch(0.98 0.01 160 / 0.24),
+      0 12px 24px -16px color-mix(in oklch, var(--spectrum-pigment-market, oklch(0.765 0.155 158)) 55%, transparent);
+    transform: translateY(-2px);
   }
   .rd-clarity-journey li > a:hover {
     background: color-mix(in oklch, var(--spectrum-domain-pigment, var(--color-fg)) 8%, transparent);
+    transform: translateY(-1px);
+  }
+  .rd-v4-preset-chip:hover {
+    transform: translateY(-1px);
   }
   .rd-clarity-helpers > details:hover {
     border-color: var(--color-line-strong);

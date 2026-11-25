@@ -4,11 +4,11 @@ import {
   BookOpen,
   CheckCircle2,
   FileCheck2,
+  Film,
   Globe2,
   RefreshCw,
   RotateCcw,
   ShieldAlert,
-  Sparkles,
 } from "lucide-react";
 
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -407,11 +407,11 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
       >
         <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-extrabold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]">
           <span className="inline-flex items-center gap-2">
-            <Sparkles size={15} className="shrink-0 text-accent" aria-hidden="true" />
+            <Film size={15} className="shrink-0 text-accent" aria-hidden="true" />
             <span>
               {bt(
-                "30초 컷츠·차세대 웹 도구 (빠른 인코딩 · 60초 첫 1컷 가이드)",
-                "30s Cuts & Next-Gen Web Tools (Fast Export · 60s Guide)",
+                "30초 컷츠 · 빠른 웹 인코딩 도구 (60초 첫 1컷 가이드)",
+                "30s Cuts & Fast Web Export Tools (60s First-Panel Guide)",
               )}
             </span>
           </span>
@@ -426,7 +426,7 @@ function StudioExportPanelContent({ projectId, locale, owner }: StudioExportPane
                 role="status"
                 className="mt-3 rounded-xl border border-line bg-card p-4 text-xs font-semibold text-fg-2"
               >
-                {bt("차세대 웹 도구와 30초 컷츠 익스포터를 불러오는 중입니다…", "Loading next-gen web tools & 30s Cuts exporter…")}
+                {bt("빠른 웹 인코딩 도구와 30초 컷츠 내보내기를 불러오는 중입니다…", "Loading fast web export & 30s Cuts tools…")}
               </div>
             }
           >
