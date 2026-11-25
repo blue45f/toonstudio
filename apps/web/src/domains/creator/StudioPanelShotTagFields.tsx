@@ -29,6 +29,8 @@ export interface StudioPanelShotTagFieldsProps {
   onCameraAngleChange: (value: string) => void;
   /** compact = 그리드 카드 같은 좁은 공간, default = 상세 패널. */
   size?: "compact" | "default";
+  /** 좁은 카드(소·중)에서는 1열(stacked)로 배치해 "샷"·"앵글" 글자 잘림을 방지한다. */
+  layout?: "row" | "stacked";
   className?: string;
 }
 
@@ -38,12 +40,12 @@ export interface StudioPanelShotTagFieldsProps {
  * 전용 기능이었다 — `pointer-coarse` 는 이 저장소가 이미 쓰는 터치 승격 규칙이다.
  */
 const SIZE_CLASS: Record<NonNullable<StudioPanelShotTagFieldsProps["size"]>, string> = {
-  compact: "min-h-10 min-w-10 px-1.5 text-[10px] pointer-coarse:h-11 pointer-coarse:px-1.5 pointer-coarse:text-[11px]",
-  default: "min-h-10 min-w-10 px-2 text-xs pointer-coarse:h-11",
+  compact: "min-h-10 px-1.5 text-xs leading-tight pointer-coarse:min-h-11 pointer-coarse:px-2",
+  default: "min-h-10 px-2 text-xs pointer-coarse:min-h-11",
 };
 
 const SELECT_BASE_CLASS =
-  "min-w-0 flex-1 rounded-md border border-line bg-card/80 text-fg-2 outline-none transition-colors hover:border-accent/50 focus:border-accent focus:text-fg";
+  "min-w-0 w-full rounded-md border border-line bg-card/80 text-fg-2 outline-none transition-colors hover:border-accent/50 focus:border-accent focus:text-fg";
 
 /** 컷 카드/패널에서 상시 노출되는 샷 타입 · 카메라 앵글 셀렉트 한 쌍. */
 export function StudioPanelShotTagFields({
@@ -52,15 +54,24 @@ export function StudioPanelShotTagFields({
   onShotTypeChange,
   onCameraAngleChange,
   size = "default",
+  layout,
   className,
 }: StudioPanelShotTagFieldsProps): ReactElement {
   const sizeClass = SIZE_CLASS[size];
+  const resolvedLayout = layout ?? (size === "compact" ? "stacked" : "row");
 
   const handleShotType = (e: ChangeEvent<HTMLSelectElement>) => onShotTypeChange(e.target.value);
   const handleCameraAngle = (e: ChangeEvent<HTMLSelectElement>) => onCameraAngleChange(e.target.value);
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div
+      data-shot-tag-layout={resolvedLayout}
+      className={cn(
+        "grid min-w-0 gap-1",
+        resolvedLayout === "stacked" ? "grid-cols-1" : "grid-cols-2",
+        className,
+      )}
+    >
       <select
         value={shotType ?? ""}
         onChange={handleShotType}
