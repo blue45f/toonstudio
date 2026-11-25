@@ -4,6 +4,7 @@
   min-height: 44px;
   max-height: 44px;
   padding-block: 0;
+  padding-inline: max(6px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-right));
   overflow: hidden;
 }
 
@@ -85,7 +86,7 @@
 @media (min-width: 560px) {
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header {
     gap: 8px;
-    padding-inline: 10px;
+    padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
   }
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title {
     display: flex;
@@ -147,11 +148,14 @@
 }
 
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-context {
+  position: relative;
+  z-index: 45;
   height: auto;
   min-height: 44px;
   max-height: none;
   column-gap: 4px;
-  padding: 0 4px;
+  padding: 0 max(4px, env(safe-area-inset-right)) 0 max(4px, env(safe-area-inset-left));
+  overscroll-behavior-x: contain;
 }
 
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-context :is(button, summary) {
@@ -196,7 +200,7 @@
 @media (max-width: 390px) {
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header {
     gap: 2px;
-    padding-inline: 4px;
+    padding-inline: max(4px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-right));
   }
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title {
     min-width: 48px;
@@ -304,4 +308,26 @@
     min-width: 44px;
     padding-inline: 4px;
   }
+}
+
+/* 모바일·태블릿에서 선택 빠른 작업바가 떠 있으면 오프라인 배지를 위로 올려 서로 가리지 않게 한다. */
+html:has(#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-selection-actions="true"]) [data-studio-shell-floating-target="offline-readiness"] {
+  bottom: max(
+    calc(var(--studio-canvas-bottom-inset, 7rem) + 4.75rem),
+    calc(var(--studio-mobile-dock-measured-height, 4rem) + 4.75rem)
+  );
+}
+
+/* 모바일 시트나 브러시 라이브러리 대화상자가 열려 있는 동안 수동 상태 배지가 하단 버튼·닫기를 가리지 않도록 계층을 양보한다. */
+html:has([data-studio-mobile-sheet="true"]:not([hidden]):not([aria-hidden="true"])) :is(
+  [data-studio-shell-floating-target="offline-readiness"],
+  [data-studio-operation-sync-placement="floating"],
+  [data-studio-draft-save-placement="floating"]
+),
+html:has([data-studio-brush-library="true"][role="dialog"]) :is(
+  [data-studio-shell-floating-target="offline-readiness"],
+  [data-studio-operation-sync-placement="floating"],
+  [data-studio-draft-save-placement="floating"]
+) {
+  z-index: 0 !important;
 }

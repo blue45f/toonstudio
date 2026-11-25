@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   CloudUpload,
+  Columns2,
   Command,
   Download,
   FlipHorizontal2,
@@ -20,7 +21,6 @@ import {
   Redo2,
   ShieldAlert,
   SlidersHorizontal,
-  Sparkles,
   Undo2,
   X,
 } from "lucide-react";
@@ -288,9 +288,9 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
       data-studio-csp-two-x-verified={String(cspScorecard.meetsTwoXTarget)}
       data-studio-appbar-advanced-open={advancedOpen ? "true" : "false"}
       style={{ containerType: "inline-size" }}
-      className="@container relative z-30 flex flex-col border-b border-line bg-panel/95 shadow-sm backdrop-blur-xl"
+      className="@container relative z-[50] flex flex-col border-b border-line bg-panel/95 pt-[env(safe-area-inset-top)] shadow-sm backdrop-blur-xl"
     >
-      <div className="flex min-h-12 shrink-0 items-center gap-1.5 px-2 sm:gap-2 sm:px-3">
+      <div className="flex min-h-12 shrink-0 items-center gap-1.5 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:gap-2 sm:pl-[max(0.75rem,env(safe-area-inset-left))] sm:pr-[max(0.75rem,env(safe-area-inset-right))]">
         <div className="flex min-w-0 items-center gap-1.5 pr-1">
           <StudioEditorReturnButton
             variant="immersive"
@@ -299,7 +299,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           <ToonStudioMark className="hidden size-8 shrink-0 rounded-xl shadow-sm sm:block" />
           <div className="hidden min-w-0 sm:block">
             <div className="flex items-center gap-1.5">
-              <strong className="block truncate text-xs font-black tracking-[-0.02em] text-fg">
+              <strong className="block truncate text-xs font-bold tracking-[-0.02em] text-fg">
                 <ToonStudioWordmark /> {tx("드로잉")}
               </strong>
               <span
@@ -309,14 +309,14 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
                 CSP {cspScorecard.compositeRatio}×
               </span>
             </div>
-            <span className="block max-w-40 truncate text-[0.65rem] text-fg-3">{docTitle}</span>
+            <span className="block max-w-40 truncate text-xs text-fg-3">{docTitle}</span>
           </div>
         </div>
 
-        <div data-studio-appbar-core-controls="true" className="hidden min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex" aria-label={tx("현재 드로잉 설정")}>
+        <div data-studio-appbar-core-controls="true" className="hidden min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex" aria-label={tx("현재 드로잉 설정")}>
           <button
             type="button"
-            className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-card px-2.5 min-h-9 py-1.5 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-line bg-card px-2.5 min-h-9 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             aria-label={`${tx("브러시 라이브러리 열기, 현재")} ${brushName}`}
             title={tx("브러시 라이브러리")}
             onClick={(event) => {
@@ -334,7 +334,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           {/* 브러시 크기 빠른 스텝 컨트롤 */}
           <div
             data-studio-quick-size-control="true"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-[0.68rem] font-semibold tabular-nums text-fg-2"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-xs font-semibold tabular-nums text-fg-2"
             role="group"
             aria-label={tx("브러시 크기 빠른 조절")}
             onWheel={(event) => {
@@ -356,7 +356,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               data-testid="drawing-appbar-size-cycle"
               className="min-w-11 px-1 text-center transition-colors hover:text-fg"
               aria-label={`${tx("브러시 크기 빠른 전환, 현재")} ${currentWidth} px`}
-              title={tx("클릭하여 자주 쓰는 브러시 크기(2·5·12·28·64px) 전환 · 휠/상하키 미세 조절 · 단축키 [ / ]")}
+              title={tx("클릭해 브러시 크기 전환 (2·5·12·28·64px) · 단축키 [ / ]")}
               onClick={() => s.setStrokeWidth?.(nextInCycle(QUICK_STROKE_WIDTHS, currentWidth))}
               onKeyDown={(event) => {
                 if (event.key === "ArrowUp") {
@@ -384,7 +384,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           {/* 브러시 불투명도 빠른 스텝 컨트롤 */}
           <div
             data-studio-quick-opacity-control="true"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-[0.68rem] font-semibold tabular-nums text-fg-2"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-xs font-semibold tabular-nums text-fg-2"
             role="group"
             aria-label={tx("브러시 불투명도 빠른 조절")}
             onWheel={(event) => {
@@ -406,7 +406,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               data-testid="drawing-appbar-opacity-cycle"
               className="min-w-10 px-1 text-center transition-colors hover:text-fg"
               aria-label={`${tx("브러시 불투명도 빠른 전환, 현재")} ${percent(currentOpacity)}`}
-              title={tx("클릭하여 불투명도(100%·75%·50%·25%) 빠른 전환 · 휠/상하키 미세 조절")}
+              title={tx("클릭해 불투명도 전환 (100·75·50·25%)")}
               onClick={() => s.setBrushOpacity?.(nextInCycle(QUICK_OPACITIES, currentOpacity))}
               onKeyDown={(event) => {
                 if (event.key === "ArrowUp") {
@@ -434,7 +434,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           <button
             type="button"
             data-studio-color-swatch="true"
-            className="size-6 shrink-0 rounded-full border-2 border-card shadow ring-1 ring-line transition-transform [forced-color-adjust:none] hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="size-6 shrink-0 rounded-full border-2 border-card shadow ring-1 ring-line transition-shadow [forced-color-adjust:none] hover:ring-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             style={{ backgroundColor: typeof s.color === "string" ? s.color : "#000000" }}
             aria-label={`${tx("현재 색상")} ${String(s.color ?? "")}`}
             title={`${tx("컬러 휠 열기")} (${String(s.color ?? "#000000")})`}
@@ -449,10 +449,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             aria-expanded={advancedOpen}
             aria-controls="studio-drawing-appbar-advanced-panel"
             aria-label={advancedOpen ? tx("고급 드로잉 옵션 접기") : tx("고급 드로잉 옵션 펼치기")}
-            title={tx("손떨림 보정·대칭·반전·브러시 랩·도형 보정·배율 등 고급 드로잉 옵션 접기/펼치기")}
+            title={advancedOpen ? tx("보조 드로잉 옵션 접기") : tx("보정·대칭·반전·브러시 설정 펼치기")}
             onClick={() => setAdvancedOpen((prev) => !prev)}
             className={cn(
-              "inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[0.66rem] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+              "inline-flex min-h-8 shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
               advancedOpen || activeAdvancedCount > 0
                 ? "border-accent/50 bg-accent/15 text-fg"
                 : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
@@ -461,7 +461,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             <SlidersHorizontal size={12} aria-hidden="true" />
             <span>{tx("고급 옵션")}</span>
             {!advancedOpen && activeAdvancedCount > 0 ? (
-              <span data-testid="drawing-appbar-advanced-active-count" className="rounded-full bg-accent px-1.5 py-px text-[0.58rem] font-extrabold tabular-nums text-on-accent">
+              <span data-testid="drawing-appbar-advanced-active-count" className="rounded-full bg-accent px-1.5 py-px text-xs font-bold leading-none tabular-nums text-on-accent">
                 {activeAdvancedCount}
               </span>
             ) : null}
@@ -473,10 +473,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             data-testid="drawing-appbar-sync-status"
             aria-live="polite"
             aria-label={s.scopedSavePendingConfirmation ? tx("저장 상태 확인") : `${hasServerWork ? tx("원고 동기화 상태") : tx("원고 저장 상태")}: ${syncLabel}`}
-            title={s.scopedSavePendingConfirmation ? tx("기존 요청의 저장 상태 확인") : tx("클릭하여 즉시 원고 저장 플러시")}
+            title={s.scopedSavePendingConfirmation ? tx("이전 저장 상태 확인") : tx("지금 원고 저장")}
             onClick={() => s.requestSaveFlush?.()}
             className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[0.65rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+              "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
               hasSyncError ? "border-warn/45 bg-warn/10 text-warn" : isOfflineProtected ? "border-cool/45 bg-cool/10 text-cool" : isSyncBusy ? "border-accent/45 bg-accent/10 text-accent" : "border-good/35 bg-good/10 text-good",
             )}
           >
@@ -526,11 +526,11 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
       </div>
 
       {advancedOpen && !s.canvasOnlyMode ? (
-        <div id="studio-drawing-appbar-advanced-panel" role="region" aria-label={tx("고급 드로잉 옵션")} data-studio-appbar-advanced-panel="true" className="absolute inset-x-0 top-full z-40 flex flex-wrap items-center gap-1.5 border-b border-line bg-panel/98 px-2.5 py-1.5 shadow-lg backdrop-blur-xl sm:px-3">
+        <div id="studio-drawing-appbar-advanced-panel" role="region" aria-label={tx("고급 드로잉 옵션")} data-studio-appbar-advanced-panel="true" className="absolute inset-x-0 top-full z-[55] flex max-h-[calc(100dvh-4rem-env(safe-area-inset-top))] flex-wrap items-center gap-1.5 overflow-y-auto overscroll-contain border-b border-line bg-panel/98 py-1.5 pl-[max(0.625rem,env(safe-area-inset-left))] pr-[max(0.625rem,env(safe-area-inset-right))] shadow-lg backdrop-blur-xl sm:pl-[max(0.75rem,env(safe-area-inset-left))] sm:pr-[max(0.75rem,env(safe-area-inset-right))]">
           {/* 손떨림 보정 빠른 스텝 컨트롤 */}
           <div
             data-studio-quick-stabilizer-control="true"
-            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-[0.68rem] font-semibold tabular-nums text-fg-2"
+            className="inline-flex min-h-8 items-center rounded-full border border-line bg-card px-1 text-xs font-semibold tabular-nums text-fg-2"
             role="group"
             aria-label={tx("손떨림 보정 빠른 조절")}
             onWheel={(event) => {
@@ -552,7 +552,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               data-testid="drawing-appbar-stabilizer-cycle"
               className="px-1 text-center transition-colors hover:text-fg"
               aria-label={`${tx("손떨림 보정 강도 빠른 전환, 현재")} ${tx("손떨림 보정")} ${stabilizer}`}
-              title={tx("클릭하여 손떨림 보정 단계(0·3·7·12·15) 빠른 전환 · 휠/상하키 미세 조절")}
+              title={tx("클릭해 보정 단계 전환 (0·3·7·12·15)")}
               onClick={() => s.setStabilizer?.(nextInCycle(QUICK_STABILIZER_LEVELS, stabilizer))}
               onKeyDown={(event) => {
                 if (event.key === "ArrowUp") {
@@ -586,13 +586,13 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             title={`${tx("대칭 그리기 모드 전환")} · ${resolveSymmetryShortLabel(symmetryType)}`}
             onClick={handleCycleSymmetry}
             className={cn(
-              "inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-[0.66rem] font-semibold transition-colors",
+              "inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
               symmetryActive
                 ? "border-accent/50 bg-accent/15 text-fg"
                 : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
             )}
           >
-            <Sparkles size={12} aria-hidden="true" />
+            <Columns2 size={12} aria-hidden="true" />
             <span>{resolveSymmetryShortLabel(symmetryType)}</span>
           </button>
 
@@ -602,10 +602,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             data-studio-quick-flip-toggle="true"
             aria-pressed={canvasFlipH}
             aria-label={tx("캔버스 좌우 반전 보기")}
-            title={tx("캔버스 좌우 반전 보기 (데생 균형 점검)")}
+            title={tx("캔버스 좌우 반전 보기")}
             onClick={() => s.studioOptionsBarsHandlers?.flipCanvasHorizontal?.()}
             className={cn(
-              "inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-[0.66rem] font-semibold transition-colors",
+              "inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
               canvasFlipH
                 ? "border-accent/50 bg-accent/15 text-fg"
                 : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
@@ -620,7 +620,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             type="button"
             data-studio-open-brush-lab="true"
             aria-label={tx("브러시 랩 열기")}
-            title={tx("브러시 랩 (물리 안료·질감·다이내믹스 스튜디오)")}
+            title={tx("브러시 세부 설정 (질감·필압·번짐)")}
             onClick={(event) => {
               if (typeof s.studioOptionsBarsHandlers?.openBrushStudio === "function") {
                 s.studioOptionsBarsHandlers.openBrushStudio(event.currentTarget);
@@ -628,7 +628,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
               }
               s.studioBrushCatalogHandlers?.toggle?.("desktop-dock", event.currentTarget);
             }}
-            className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-[0.66rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+            className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg"
           >
             <SlidersHorizontal size={12} aria-hidden="true" />
             <span>{tx("브러시 랩")}</span>
@@ -640,10 +640,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             data-studio-quick-shape-toggle="true"
             aria-pressed={quickShapeActive}
             aria-label={tx("빠른 도형 보정 전환")}
-            title={tx("빠른 도형 보정 (직선·원·다각형 자동 스냅)")}
+            title={tx("그린 선을 직선·원·다각형으로 정리")}
             onClick={handleToggleQuickShape}
             className={cn(
-              "inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-[0.66rem] font-semibold transition-colors",
+              "inline-flex min-h-8 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
               quickShapeActive
                 ? "border-accent/50 bg-accent/15 text-fg"
                 : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
@@ -657,9 +657,9 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             type="button"
             data-studio-quick-zoom-reset="true"
             aria-label={tx("캔버스 배율 100% 초기화")}
-            title={tx("캔버스 배율 100%로 즉시 초기화")}
+            title={tx("캔버스 배율 100%로 맞추기")}
             onClick={handleResetZoom}
-            className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-[0.66rem] font-semibold tabular-nums text-fg-2 transition-colors hover:bg-raised hover:text-fg"
+            className="inline-flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 py-1 text-xs font-semibold tabular-nums text-fg-2 transition-colors hover:bg-raised hover:text-fg"
           >
             <span data-testid="studio-appbar-zoom-percent">{zoomPercent}%</span>
           </button>
@@ -668,10 +668,10 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             <button type="button" className={cn(buttonClass({ variant: s.quickAccessPaletteOpen ? "solid" : "quiet", size: "icon" }))} aria-pressed={Boolean(s.quickAccessPaletteOpen)} aria-label={tx("퀵 액세스")} title={`${tx("퀵 액세스")} · ${tx("자주 쓰는 명령")}`} onClick={() => s.setQuickAccessPaletteOpen?.((value: boolean) => !value)}>
               <Command size={16} aria-hidden="true" />
             </button>
-            <button type="button" data-testid="drawing-appbar-help-button" className={cn(buttonClass({ variant: s.shortcutsOpen ? "solid" : "quiet", size: "icon" }))} aria-pressed={Boolean(s.shortcutsOpen)} aria-label={tx("단축키 및 입문 가이드")} title={`${tx("단축키 및 클립스튜디오·프로크리에이트 이주 가이드")} · ?`} onClick={() => s.setShortcutsOpen?.((value: boolean) => !value)}>
+            <button type="button" data-testid="drawing-appbar-help-button" className={cn(buttonClass({ variant: s.shortcutsOpen ? "solid" : "quiet", size: "icon" }))} aria-pressed={Boolean(s.shortcutsOpen)} aria-label={tx("단축키 및 입문 가이드")} title={`${tx("단축키와 시작 안내")} · ?`} onClick={() => s.setShortcutsOpen?.((value: boolean) => !value)}>
               <HelpCircle size={16} aria-hidden="true" />
             </button>
-            <Link href={integratedHref} className={cn(buttonClass({ variant: "outline", size: "sm" }), "min-h-8 gap-1 px-2 text-[0.66rem] font-bold")}>
+            <Link href={integratedHref} className={cn(buttonClass({ variant: "outline", size: "sm" }), "min-h-8 gap-1 px-2 text-xs font-bold")}>
               <PanelRight size={14} aria-hidden="true" />
               {tx("전체 스튜디오")}
             </Link>
@@ -697,7 +697,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
           }
         }}
         className={cn(
-          "items-center justify-between gap-1.5 border-t border-line/60 px-2 py-1.5 md:hidden",
+          "items-center justify-between gap-1.5 overscroll-x-contain border-t border-line/60 py-1.5 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] md:hidden",
           mobileStripVisible ? "flex flex-wrap" : "hidden",
         )}
         aria-label={tx("모바일 빠른 드로잉 스트립")}
@@ -745,14 +745,14 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             aria-label={tx("모바일 대칭 전환")}
             onClick={handleCycleSymmetry}
           >
-            <Sparkles size={13} aria-hidden="true" />
+            <Columns2 size={13} aria-hidden="true" />
             <span>{resolveSymmetryShortLabel(symmetryType)}</span>
           </button>
           <button
             type="button"
             data-testid="drawing-appbar-mobile-strip-dismiss"
             aria-label={tx("모바일 빠른 스트립 닫기")}
-            title={tx("모바일 빠른 스트립을 접어 캔버스 작업영역을 넓힙니다")}
+            title={tx("빠른 바 접기")}
             onClick={collapseMobileStripAndRestoreFocus}
             className="inline-flex size-11 items-center justify-center rounded-full border border-line bg-card text-fg-3 hover:bg-raised hover:text-fg"
           >

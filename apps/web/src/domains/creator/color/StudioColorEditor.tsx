@@ -221,14 +221,14 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
           : <StudioWebtoonCelShadePanel saveFeedbackExternally value={session.color} onSelectColor={choose} onSaveAsPalette={(name, colors) => { void save(name, colors); }} />}
         <section className="space-y-2 rounded-lg border border-line p-2" aria-label="장면 색온도 OKLCH 3-톤">
           <div className="flex items-center justify-between gap-2 text-xs text-fg-2">
-            <label htmlFor={`${id}-scene-kelvin`} className="font-semibold">장면 색온도 (OKLCH 3-톤)</label>
+            <label htmlFor={`${id}-scene-kelvin`} className="font-semibold">조명 색온도</label>
             <output htmlFor={`${id}-scene-kelvin`} className="font-mono tabular-nums">{sceneKelvin}K</output>
           </div>
           <input id={`${id}-scene-kelvin`} type="range" aria-label="장면 조명 색온도"
             min={SCENE_TEMPERATURE_KELVIN_RANGE.min} max={SCENE_TEMPERATURE_KELVIN_RANGE.max} step={SCENE_TEMPERATURE_KELVIN_RANGE.step}
             value={sceneKelvin} onChange={(event) => setSceneKelvin(Number(event.currentTarget.value))}
             className="h-6 w-full cursor-pointer accent-accent" />
-          <label className="flex items-center justify-between gap-2 text-xs text-fg-2">색약 소프트프루프
+          <label className="flex items-center justify-between gap-2 text-xs text-fg-2">색약 미리보기
             <select aria-label="색약 소프트프루프 모드" value={cvdSoftProof}
               onChange={(event) => setCvdSoftProof(event.currentTarget.value as ColorVisionSoftProofMode)}
               className={`${button} bg-card`}>
@@ -237,7 +237,7 @@ export function StudioColorEditor({ session, onChange: publishRaw, onGestureComm
               ))}
             </select>
           </label>
-          <StudioColorSwatches title="OKLCH 3-톤 (광원·중간·그림자·반사광)" colors={oklchThreeTone.orderedHexSwatches}
+          <StudioColorSwatches title="조명별 명암 색 (밝음·중간·그림자·반사광)" colors={oklchThreeTone.orderedHexSwatches}
             value={session.color} onChoose={choose} softProofMode={cvdSoftProof} showContrastAudit />
         </section>
         <StudioColorSwatches title="밝기와 음영 단계" colors={shades} value={session.color} onChoose={choose} softProofMode={cvdSoftProof} />

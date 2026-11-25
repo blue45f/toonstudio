@@ -201,10 +201,10 @@ function StudioDrawingClarityDesktopBar({
           <span>{bt("5 검수/출고", "5 Export")}</span>
         </button>
       </div>
-      <button type="button" data-studio-clarity-omnibox="true" data-studio-clarity-find-tools="true" className="studio-drawing-omnibox" onClick={(event) => openSearch(event.currentTarget)} title={bt("기능·도구 통합 검색 (⌘K)", "Search tools and commands (⌘K)")}>
+      <button type="button" data-studio-clarity-omnibox="true" data-studio-clarity-find-tools="true" className="studio-drawing-omnibox" onClick={(event) => openSearch(event.currentTarget)} title={bt("도구 검색 (⌘K)", "Search tools (⌘K)")}>
         <StudioToolArtwork tool="search" /><span>{bt("검색", "Search")}</span><kbd aria-hidden="true">⌘K</kbd>
       </button>
-      <button type="button" data-studio-clarity-history-btn="true" className="studio-drawing-clarity-button studio-drawing-clarity-compact-btn" onClick={openHistory} title={bt("저장 기록과 스냅샷 복원 열기", "Open save history and restore snapshots")}>
+      <button type="button" data-studio-clarity-history-btn="true" className="studio-drawing-clarity-button studio-drawing-clarity-compact-btn" onClick={openHistory} title={bt("이전 저장 기록 보기", "View save history")}>
         <StudioToolArtwork tool="history" /><span>{bt("수정이력", "History")}</span>
       </button>
       <StudioDrawingClaritySaveButton session={s} />
@@ -212,7 +212,7 @@ function StudioDrawingClarityDesktopBar({
       <button type="button" data-studio-share-invite-trigger="true" className="studio-drawing-clarity-button studio-drawing-clarity-share" onClick={(event) => onOpenShare(event.currentTarget)}>
         <StudioToolArtwork tool="share" /><span>{bt("공유·초대", "Share & Invite")}</span>
       </button>
-      <button type="button" data-studio-clarity-export-btn="true" className="studio-drawing-clarity-button studio-drawing-clarity-export" onClick={(event) => { onExportTrigger(event.currentTarget); s.setExportMenuOpen(true); }} title={bt("세로 스크롤 분할 PNG·PSD 출고", "Export draft")}>
+      <button type="button" data-studio-clarity-export-btn="true" className="studio-drawing-clarity-button studio-drawing-clarity-export" onClick={(event) => { onExportTrigger(event.currentTarget); s.setExportMenuOpen(true); }} title={bt("원고 내보내기 (PNG·PSD)", "Export draft (PNG·PSD)")}>
         <StudioToolArtwork tool="export" /><span>{bt("출고", "Export")}</span>
       </button>
       <StudioDrawingClarityMore id="studio-drawing-clarity-more-menu" hostId="studio-drawing-clarity-desktop-more-slot" purpose={bt("작업 설정과 도움말", "Work settings and help")} presentation="tasks" triggerRef={moreRef} filterItems={filterItems} panel={clarity.panel} actions={[
