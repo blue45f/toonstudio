@@ -1,16 +1,18 @@
-# toon-vello fork track — vendored file manifest (TOON-PATCH 0001).
+# toon-vello fork track — vendored file manifest (TOON-PATCH 0001 + 0002).
 #
 # Base: crates.io wgpu 30.0.1,
 # .crate sha256 527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e.
-# Regeneration + patch: PATCHES/0001-webgpu-handle-adoption.patch.
+# 재생: PATCHES/0001-webgpu-handle-adoption.patch 뒤에
+# PATCHES/0002-rustix-security-and-clippy.patch 적용.
 #
 # Patched files (everything else below is upstream bytes, unmodified):
-#   Cargo.toml, src/backend/webgpu.rs, src/api/device.rs
+#   0001: Cargo.toml, src/backend/webgpu.rs, src/api/device.rs
+#   0002: Cargo.lock, src/util/device.rs (rustix 보안 업데이트·동일 의미 초기화)
 #
 # crates/studio-engine-vello/tests/vendor_patch_parity.rs fails on any drift,
 # so an undeclared edit to the vendored tree cannot ride along unnoticed.
 f804c8a7defda8581eaee63e6c2b4197eeb917f61f3501f468926f1b1e7381b1  .cargo_vcs_info.json
-33300e7f2c87119592ad2bbe3200637d0256f8eb366a339032d80640bf41c3eb  Cargo.lock
+bf42b93e7492baa5935cc310ee3c53e1089743f6d7dde8ab23a5dae0a2a90dc6  Cargo.lock
 b1fd1a64a3aa8d6b7804094cb48e6c95af80f359289e22b38ee427cf2da57551  Cargo.toml
 af9c8f15b38002654be47beb018aefe141d10c9fdbc21c9fa017a28cbd023fc9  Cargo.toml.orig
 a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9  LICENSE.APACHE
@@ -192,7 +194,7 @@ ec10c1a8478fe05590d920d4a8b143b50426471c6ae6b11a904b941bd1321442  src/macros/le-
 d5b9c469c67c2976a1c92e9d160888744c41880d6b28262dabc507cd337d53c5  src/macros/mod.rs
 6b5869754341042480cf43e65d83e3006d3b9a506165bd5f2394c8c26d3f0be0  src/util/belt.rs
 8c91d8168c8f72ea4ad7e7facc21072d014a82b3d84de9b0504d0a0fcb3a146b  src/util/blit.wgsl
-5165417ab59e057b22aa16dd0a9728134c026dfda3c03beac7db6ccdb31b40c2  src/util/device.rs
+57466192d5cc8ba5291e3008aed34efacea13ac753d630bf4b8340c90062d3ec  src/util/device.rs
 67192104cc0729891ff6f2282cd22e1375e3ff123ec85ff644e21cf7353fbca7  src/util/encoder.rs
 9b7c66f7ea60894e1f01a567f4fcd31d072945e92a1ed944e67839a4b96d2f5e  src/util/init.rs
 6fe4a1d2cc7d0abd2e789e0944bdb852cfb64e66763cc948adb2b224b8acf1a6  src/util/mod.rs
