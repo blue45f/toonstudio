@@ -128,8 +128,6 @@ export interface SfxTextPreset {
   readonly labelKo: string;
   readonly labelEn: string;
   readonly text: string;
-  readonly renderingKind: "font-dependent-svg-text";
-  readonly glyphOutlineGenerated: false;
   readonly envelopeId: SfxEnvelopeId;
   readonly script: SfxScriptKind;
 }
