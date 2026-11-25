@@ -200,15 +200,15 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
     name: "wgpu-toon",
     title: t("복사해 한 가지만 더한 벤더 포크: 같은 GPUDevice 공유", "A vendored fork with one addition: sharing the same GPUDevice"),
     status: "experimental",
-    tagline: t("wgpu 30.0.1을 저장소에 복사해 GPU 장치 연결과 보안·도구 패치를 적용합니다.", "The repository vendors wgpu 30.0.1 with GPU device adoption and security and tooling patches."),
+    tagline: t("wgpu 30.0.1의 패치 2개 중 GPU 공유는 toon-fabric을 켜야 하고, rustix·Clippy 수정은 항상 적용됩니다.", "The wgpu 30.0.1 fork carries 2 patches. GPU device sharing requires toon-fabric. The rustix update and Clippy fix apply in every build."),
     background: [
       t(
         "오픈소스를 쓰다 보면 우리에게 꼭 필요한 기능이 원본에 없을 때가 있습니다. 가장 가벼운 해결은 작은 패치이고, 부족하면 원본 소스를 저장소에 복사해 고쳐 쓰는 벤더 포크가 됩니다. ToonStudio 는 그래픽 라이브러리 wgpu 30.0.1 를 crates/vendor/wgpu-toon 에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 열어 둔 GPU 작업대(GPUDevice)를 다른 도구와 함께 쓰게 하는 기능입니다(장치를 한 곳에서 빌려 쓰는 구조는 드로잉 카드 gpu-fabric-device-lease-vello 에서 다룹니다).",
         "Sometimes open source lacks a feature we need. The lightest fix is a small patch; when that is not enough, copying the source into the repository and editing it is a vendored fork. ToonStudio copied the graphics library wgpu 30.0.1 into crates/vendor/wgpu-toon and added one feature: letting the GPU workbench (GPUDevice) that the page already opened be shared with other tools (how one device is leased to everyone is covered in the drawing card gpu-fabric-device-lease-vello).",
       ),
       t(
-        "wgpu 29 에는 페이지가 이미 가진 GPUDevice 를 wgpu::Device 로 받아들이는 방법이 없었습니다. 그래서 필터 WGSL(GPU 셰이더 언어)과 Vello(벡터 렌더러)가 서로 다른 작업대를 써서, 결과를 넘길 때마다 CPU 로 읽어 내렸다가(readback) 다시 올려야 했습니다. 포크는 같은 GPUDevice 를 채택(adopt)해 이 왕복을 없앱니다. 패치는 6개 파일에 걸친 6개 hunk(패치 주석 기준)이고 모두 toon-fabric 피처 뒤에 있어, 피처를 끄면 원본 wgpu 와 API 가 같습니다.",
-        "wgpu 29 had no way to take a GPUDevice the page already owns and treat it as a wgpu::Device. So the filter WGSL (GPU shader language) and Vello (a vector renderer) used different workbenches and had to read results down to the CPU (readback) and upload them again at every hand-off. The fork adopts the same GPUDevice and removes that round trip. The patch is six hunks (by its own comments) across six files, all behind the toon-fabric feature, so with it off the API equals upstream wgpu.",
+        "wgpu 29 에는 페이지가 이미 가진 GPUDevice 를 wgpu::Device 로 받아들이는 방법이 없었습니다. 그래서 필터 WGSL(GPU 셰이더 언어)과 Vello(벡터 렌더러)가 서로 다른 작업대를 써서, 결과를 넘길 때마다 CPU 로 읽어 내렸다가(readback) 다시 올려야 했습니다. 포크는 같은 GPUDevice 를 채택(adopt)해 이 왕복을 없앱니다. 장치 공유 패치(0001)는 파일 3개를 고칩니다. toon-fabric을 끄면 원본 wgpu와 같은 API를 사용합니다.",
+        "wgpu 29 had no way to take a GPUDevice the page already owns and treat it as a wgpu::Device. So the filter WGSL (GPU shader language) and Vello (a vector renderer) used different workbenches and had to read results down to the CPU (readback) and upload them again at every hand-off. The fork adopts the same GPUDevice and removes that round trip. The device-sharing patch (0001) changes three files. With toon-fabric off, the API matches upstream wgpu.",
       ),
       t(
         "속도 이득은 크기마다 다르고, 정본은 결과 파일 하나입니다. 2026-09-23 측정(Chrome 153, 표본 9개)은 256²·512²·1024² 에서 0.93·3.29·3.12배로, 256² 는 이득이 측정되지 않았습니다. 문서에 이전 기록(2026-08-08, Chromium 140)으로 남은 1.89·2.12·2.43배는 덮어써진 옛 결과의 수치이고, 그때 붙인 ‘왕복 하한’ 풀이도 현재 값으로는 확인되지 않습니다. 읽은 바이트가 기존 경로와 일치한다는 점은 어느 쪽이나 같습니다. 배속을 단정하지 말고 구조적 이유(readback 제거)와 픽셀 일치를 근거로 말하는 편이 안전합니다.",
@@ -220,7 +220,7 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
       ),
     ],
     keyPoints: [
-      t("wgpu 30.0.1 복사본과 패치 두 개. 장치 연결에 toon-fabric 사용", "A wgpu 30.0.1 copy with two patches. GPU device adoption uses toon-fabric"),
+      t("wgpu 30.0.1 포크의 패치 2개 중 GPU 장치 공유만 toon-fabric을 사용", "The wgpu 30.0.1 fork has 2 patches. Only GPU device sharing requires toon-fabric"),
       t("같은 GPUDevice 를 공유해 CPU 왕복(readback)을 없앤다", "Sharing one GPUDevice removes the CPU round trip (readback)"),
       t("배속은 크기마다 다르다: 0.93~3.29배(2026-09-23 정본)", "Speed-up varies by size: 0.93-3.29x (canonical, 2026-09-23)"),
     ],
@@ -259,7 +259,7 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
       {
         feature: t("복사본 드리프트 게이트", "Vendored-copy drift gate"),
         role: t("UPSTREAM.sha256 이 복사본의 모든 파일 해시를 고정하고, 시험이 선언되지 않은 수정과 패치 문서 누락을 잡도록 설계돼 있습니다.", "UPSTREAM.sha256 pins the hash of every vendored file, and a test is designed to catch undeclared edits and gaps in the patch document."),
-        paths: ["crates/vendor/wgpu-toon/UPSTREAM.sha256", "crates/studio-engine-vello/tests/vendor_patch_parity.rs"],
+        paths: ["crates/vendor/wgpu-toon/UPSTREAM.sha256", "crates/vendor/wgpu-toon/PATCHES/0002-rustix-security-and-clippy.patch", "crates/studio-engine-vello/tests/vendor_patch_parity.rs"],
       },
       {
         feature: t("측정 기록", "Measurement records"),
@@ -285,8 +285,8 @@ wgpu = { version = "30.0.1", optional = true, default-features = false, features
 wgpu = { path = "../vendor/wgpu-toon" }
 `, "#"),
         explain: t(
-          "crates/studio-engine-vello/Cargo.toml 의 발췌입니다. [patch.crates-io] 한 줄이 복사본을 끼우고, toon-fabric 피처가 꺼져 있으면 모든 패치 코드가 컴파일에서 빠집니다. 이 구조 덕분에 Track A 는 원본 변화 감지기 역할도 합니다.",
-          "An excerpt of crates/studio-engine-vello/Cargo.toml. One [patch.crates-io] line swaps in the copy, and with the toon-fabric feature off all patched code is compiled out. That is why Track A doubles as a detector of upstream changes.",
+          "crates/studio-engine-vello/Cargo.toml 의 발췌입니다. [patch.crates-io] 한 줄이 복사본을 끼우고, toon-fabric을 끄면 GPU 장치 공유 API가 컴파일에서 빠집니다. 이 구조 덕분에 Track A 는 원본 변화 감지기 역할도 합니다.",
+          "An excerpt of crates/studio-engine-vello/Cargo.toml. One [patch.crates-io] line swaps in the copy, and with toon-fabric off the device-sharing API is compiled out. That is why Track A doubles as a detector of upstream changes.",
         ),
         source: "crates/studio-engine-vello/Cargo.toml",
       },
@@ -295,7 +295,7 @@ wgpu = { path = "../vendor/wgpu-toon" }
         title: t("피처 뒤에 숨긴 채택 함수", "The adoption function hidden behind the feature"),
         language: "rust",
         ...codePair(`
-//~ 포크의 모든 추가 코드는 피처 뒤에 있다: 끄면 컴파일에서 사라져 원본과 API 가 같다. ## All added fork code sits behind the feature: with it off it compiles out and the API equals upstream.
+//~ 장치 공유 함수는 toon-fabric을 켠 WebGPU 빌드에서 컴파일된다. ## The device-sharing function is compiled for WebGPU builds with toon-fabric enabled.
 #[cfg(all(webgpu, feature = "toon-fabric"))]
 #[must_use]
 pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
@@ -307,8 +307,8 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
 //~ wgpu 는 채택한 핸들을 파괴하지 않는다: GPUDevice 의 수명은 호출한 쪽 책임이다. ## wgpu never destroys an adopted handle: the caller owns the GPUDevice lifetime.
 `),
         explain: t(
-          "0001-webgpu-handle-adoption.patch 의 device.rs hunk(impl Device 안)를 줄인 것입니다. 이 함수는 wgpu 30 에도 없어 상류 PR 후보로만 기록돼 있습니다. 나머지 hunk 중 몇 개는 wgpu 30 에 이미 있는 내보내기 기능의 백포트입니다.",
-          "A reduction of the device.rs hunk (inside impl Device) in 0001-webgpu-handle-adoption.patch. This function does not exist in wgpu 30 either, so it is recorded only as a candidate for an upstream PR. Several of the other hunks are backports of export features already in wgpu 30.",
+          "0001-webgpu-handle-adoption.patch 의 device.rs hunk(impl Device 안)를 줄인 것입니다. 이 함수는 wgpu 30 에도 없어 상류 PR 후보로만 기록돼 있습니다. 이전 버전에서 가져와야 했던 내보내기 기능은 wgpu 30에 포함돼 있습니다.",
+          "A reduction of the device.rs hunk (inside impl Device) in 0001-webgpu-handle-adoption.patch. This function does not exist in wgpu 30 either, so it is recorded only as a candidate for an upstream PR. wgpu 30 already includes the export functions that earlier versions needed to backport.",
         ),
         source: "crates/vendor/wgpu-toon/PATCHES/0001-webgpu-handle-adoption.patch",
       },
@@ -324,8 +324,8 @@ pub fn from_webgpu_handle(device: webgpu::GpuDevice) -> (Self, Queue) {
     chapterIds: ["open-source", "performance"],
     talk: {
       pitch: t(
-        "오픈소스 그래픽 라이브러리 wgpu 에 우리에게 꼭 필요한 기능이 없어서, 30.0.1 를 저장소에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 가진 GPU 작업대를 Vello 가 함께 쓰게 해서 CPU 로 왕복하던 단계를 없앱니다. 모든 변경은 피처 하나 뒤에 있고 끄면 원본과 같습니다.",
-        "The open-source graphics library wgpu lacked a feature we needed, so we copied version 30.0.1 into the repository and added just one thing: letting Vello share the GPU workbench the page already owns, which removes the round trip through the CPU. Every change sits behind one feature, and with it off the code equals the original.",
+        "오픈소스 그래픽 라이브러리 wgpu 에 우리에게 꼭 필요한 기능이 없어서, 30.0.1 를 저장소에 복사해 한 가지 기능만 더했습니다. 페이지가 이미 가진 GPU 작업대를 Vello 가 함께 쓰게 해서 CPU 로 왕복하던 단계를 없앱니다. GPU 장치 공유는 toon-fabric을 켜야 동작합니다. 별도 패치로 적용하는 rustix 업데이트와 Clippy 수정은 피처 설정과 무관합니다.",
+        "The open-source graphics library wgpu lacked a feature we needed, so we copied version 30.0.1 into the repository and added just one thing: letting Vello share the GPU workbench the page already owns, which removes the round trip through the CPU. GPU device sharing requires toon-fabric. A separate patch applies the rustix update and Clippy fix regardless of that feature.",
       ),
       analogy: t(
         "공동 작업대입니다. 두 장인이 각자 작업대를 쓰면 물건을 넘길 때마다 상자에 담아 옮겨야 하지만, 같은 작업대를 쓰면 옆으로 밀어 주기만 하면 됩니다.",

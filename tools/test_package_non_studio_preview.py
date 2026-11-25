@@ -1,5 +1,6 @@
 """실제 tar 내용·원본 보존·250 MB 실패 경계를 검사한다."""
 import importlib.util
+import json
 from pathlib import Path
 import tarfile
 import tempfile
@@ -12,16 +13,41 @@ spec.loader.exec_module(preview)
 
 
 class PreviewPackageTests(unittest.TestCase):
+    def test_omit_only_redundant_flat_admin_locale_copies(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            dictionaries = {
+                "i18n/admin/zh-hant.json": {"label": "標籤", "shared": "共用"},
+                "i18n/admin/dashboard/zh-hant.json": {"label": "標籤", "shared": "共用"},
+                "i18n/admin/audit/zh-hant.json": {"shared": "共用"},
+                "i18n/admin/fr.json": {"shared": "Tableau"},
+                "i18n/admin/dashboard/fr.json": {"shared": "Tableau"},
+                "i18n/admin/audit/fr.json": {"shared": "Audit"},
+                "i18n/admin/de.json": {"dashboard": "Start", "extra": "Nur hier"},
+                "i18n/admin/dashboard/de.json": {"dashboard": "Start"},
+                "i18n/admin/es.json": {"flag": True},
+                "i18n/admin/dashboard/es.json": {"flag": 1},
+                "i18n/admin/manifest.json": {"label": "Index"},
+                "i18n/admin/dashboard/manifest.json": {"label": "Index"},
+                "i18n/app/zh-hant.json": {"label": "標籤", "shared": "共用"},
+            }
+            for name, dictionary in dictionaries.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(dictionary), encoding="utf-8")
+            actual = {path.relative_to(root).as_posix() for path in preview.select_preview_files(root)}
+            self.assertEqual(actual, set(dictionaries) - {"i18n/admin/zh-hant.json"})
+
     def test_archive_keeps_public_dependencies_and_does_not_change_production_dist(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "dist"
-            kept = ["index.html", "assets/public-AbCd1234.js", "assets/opencv-public-demo-AbCd1234.js",
+            kept = ["index.html", "offline-draw/bootstrap.js", "assets/public-AbCd1234.js", "assets/opencv-public-demo-AbCd1234.js",
                     "assets/main-AbCd1234.css", "fonts/public.woff2", "brand/public.webp", "data/catalog/01.json",
                     "i18n/ko/common.json", "locales/en.json", "catalog/index.json", "assets/studio-bg3d-physics.worker-public-demo-AbCd1234.js",
                     "assets/studio-offline-branch.worker-public-demo-AbCd1234.js",
                     "assets/studio-bg3d-babylon-runtime-public-demo-AbCd1234.js",
                     "assets/StudioPptProDrawingPanel-AbCd1234.js", "assets/OtherStudioPanel-AbCd1234.js"]
-            omitted = ["assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
+            omitted = ["offline-draw/cache.js", "assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
                        "assets/studio-bg3d-physics.worker-AbCd1234.js", "assets/studio-offline-branch.worker-AbCd1234.js",
                        "assets/studio-bg3d-babylon-runtime-AbCd1234.js",
                        "assets/3d/unused.png", "i18n/studio/unused.json"]
@@ -57,14 +83,14 @@ class PreviewPackageTests(unittest.TestCase):
                 self.assertEqual((root / name).read_bytes(), before[name])
 
     def test_exact_editor_only_outputs_are_omitted_but_public_and_similar_names_are_kept(self):
-        # PR #2915의 실제 7개 출력 이름이다. 공개 진입·공유 라이브러리를 이름 접두사로 제거하지 않는다.
+        # PR #2915와 후속 빌드에서 확인한 출력 이름이다. 공개 진입·공유 라이브러리를 이름 접두사로 제거하지 않는다.
         outputs = [
             ("studio-legacy-editor-adapter", "DuAiZQPz"), ("StudioBackground3D", "BSNomNzI"),
             ("StudioBg3dAdvancedWorkbenchHub", "DLXZTVE0"), ("StudioAiSuperSuiteModal", "BH9rMbm-"),
             ("spark.module", "DIN76ddv"), ("studio-svg-export.worker", "BrFzt7r4"),
-            ("StudioInspectorAside", "BMWSV9Jq"),
+            ("StudioInspectorAside", "BMWSV9Jq"), ("phaser.esm", "BxCDEWDb"),
         ]
-        kept = ["index.html", "assets/engineering-atlas-content-Dw9uIV7G.js", "assets/phaser.esm-BxCDEWDb.js",
+        kept = ["index.html", "assets/engineering-atlas-content-Dw9uIV7G.js",
                 "assets/three.webgpu-B1J9WKJU.js", "assets/pdf.worker.min-CIqJB0yW.mjs",
                 "assets/StudioCharacterShaper-CNxchBWK.js", "assets/useStudioVrmPoserController-BPE66aKi.js",
                 "assets/StudioVirtualSpacePage-BqNBT1tY.js", "assets/OpenEcosystemWorkflowHubPanel-B14vJxtl.js",
