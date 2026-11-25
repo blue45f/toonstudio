@@ -1,0 +1,55 @@
+/**
+ * Wave 59C — 아틀리에 하드웨어 비주얼 시그니처(3단 표면 사다리 · 동심원 곡률 ·
+ * WCAG 2.2/APCA 대비 감사 · 카메라 렌즈 로터리 다이얼 · 브러시 그레인 스와치) 공개 배럴.
+ */
+
+export {
+  ATELIER_BRUSH_GRAIN_SWATCHES,
+  ATELIER_SURFACE_THEMES,
+  DEFAULT_DETENT_STEP_DEG,
+  DEFAULT_SNAP_WINDOW_DEG,
+  RHYTHM_BASE_UNIT_PX,
+  VIOLET_HUE_MAX,
+  VIOLET_HUE_MIN,
+  auditAllThemesContrast,
+  auditConcentricGeometry,
+  auditThemeTypographyContrast,
+  auditVioletZeroPolicy,
+  buildAtelierVisualSignatureSnapshot,
+  computeApcaPerceptualContrastLc,
+  computeRelativeLuminanceY,
+  computeWcagContrastRatio,
+  evaluateRotaryDialDetent,
+  exportAtelierDesignTokensCss,
+  exportVisualSignatureJson,
+  formatOklch,
+  getAtelierSurfaceTheme,
+  getBrushGrainSwatch,
+  isForbiddenVioletHue,
+  normalizeHue,
+  oklchToLinearSrgb,
+  sanitizeNonVioletHue,
+  type AtelierSurfaceTheme,
+  type AtelierSurfaceThemeId,
+  type AtelierVisualSignatureSnapshot,
+  type BrushGrainSwatch,
+  type BrushGrainSwatchId,
+  type ConcentricGeometryAudit,
+  type ConcentricGeometryInput,
+  type ContrastAuditRow,
+  type ContrastRoleId,
+  type OklchColor,
+  type RotaryDialEvaluation,
+  type RotaryDialInput,
+  type RotaryDialModeId,
+  type RotaryTickMark,
+  type SurfaceLadderTier,
+  type ThemeTypographyContrastAudit,
+  type VioletZeroAudit,
+  type VisualHierarchyBalanceAudit,
+} from "./atelier-visual-signature-engine";
+
+export {
+  StudioAtelierVisualSignaturePanel,
+  type StudioAtelierVisualSignaturePanelProps,
+} from "./StudioAtelierVisualSignaturePanel";
