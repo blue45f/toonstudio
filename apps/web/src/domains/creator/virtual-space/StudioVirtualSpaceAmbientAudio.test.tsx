@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceAmbientAudio } from "./StudioVirtualSpaceAmbientAudio";
 import {
   selectStudioProximityPreset, setStudioProximityRadiusVisible, studioProximityDisplaySnapshot,
 } from "./studio-virtual-space-acoustics";
+import { StudioVirtualSpaceSoundEngine } from "./studio-virtual-space-sound-engine";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   setStudioProximityRadiusVisible(false);
   selectStudioProximityPreset("whisper");
 });
@@ -78,8 +80,10 @@ describe("StudioVirtualSpaceAmbientAudio proximity section", () => {
     expect(statusAfterFootstep.textContent).toContain("원목 마루 발소리 청음");
     expect(statusAfterFootstep.textContent).toContain("bandpass");
 
+    const playSfx = vi.spyOn(StudioVirtualSpaceSoundEngine.prototype, "playSfx");
     const focusSfxBtn = screen.getByTestId("studio-vspace-audition-sfx-focus-start");
     fireEvent.click(focusSfxBtn);
+    expect(playSfx).toHaveBeenCalledExactlyOnceWith("focus-start", 1);
     expect(screen.getByTestId("studio-vspace-sfx-audition-status").textContent).toContain("494Hz → 740Hz sine");
   });
 });
