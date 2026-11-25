@@ -6,10 +6,11 @@ import {
   RotateCcw,
   Send,
   ShieldCheck,
-  Sparkles,
   UserCheck,
+  X,
 } from "lucide-react";
 import {
+  useEffect,
   useId,
   useRef,
   useState,
@@ -84,6 +85,19 @@ export function StudioAiSupportCenterChat({
   const composerId = useId();
   const oneLineInputId = useId();
   const logRef = useRef<HTMLDivElement>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
+  const handoffAbortRef = useRef<AbortController | null>(null);
+  const chatEpochRef = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      chatEpochRef.current += 1;
+      chatAbortRef.current?.abort();
+      chatAbortRef.current = null;
+      handoffAbortRef.current?.abort();
+      handoffAbortRef.current = null;
+    };
+  }, []);
 
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<SupportAiChatMessage[]>(() => [
@@ -114,6 +128,10 @@ export function StudioAiSupportCenterChat({
   const dispatchMessage = async (rawText: string) => {
     const trimmed = rawText.trim();
     if (!trimmed || sending) return;
+    chatAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
+    const epoch = chatEpochRef.current;
     setSending(true);
     setHandoffSavedMessage(null);
     const snapshotHistory = messages;
@@ -124,14 +142,34 @@ export function StudioAiSupportCenterChat({
         message: trimmed,
         history: snapshotHistory,
         currentPath,
+        signal: controller.signal,
       });
+      if (
+        chatEpochRef.current !== epoch ||
+        controller.signal.aborted ||
+        chatAbortRef.current !== controller
+      ) {
+        return;
+      }
       setSessionId(reply.sessionId);
       setMessages((prev) => [...prev, reply.userMessage, reply.assistantMessage]);
       setDraft("");
       queueMicrotask(scrollLogToBottom);
     } finally {
-      setSending(false);
+      if (chatAbortRef.current === controller) {
+        chatAbortRef.current = null;
+        if (chatEpochRef.current === epoch) {
+          setSending(false);
+        }
+      }
     }
+  };
+
+  const handleCancelSending = () => {
+    chatEpochRef.current += 1;
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = null;
+    setSending(false);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -155,6 +193,7 @@ export function StudioAiSupportCenterChat({
   };
 
   const handleOpenEscalation = async (sourceMessageId?: string) => {
+    if (handoffLoading) return;
     if (sourceMessageId) {
       setMessages((prev) =>
         prev.map((item) =>
@@ -162,6 +201,10 @@ export function StudioAiSupportCenterChat({
         ),
       );
     }
+    handoffAbortRef.current?.abort();
+    const controller = new AbortController();
+    handoffAbortRef.current = controller;
+    const epoch = chatEpochRef.current;
     setHandoffOpen(true);
     setHandoffLoading(true);
     setHandoffSavedMessage(null);
@@ -171,7 +214,15 @@ export function StudioAiSupportCenterChat({
         oneLineIssue: oneLineIssue.trim() || undefined,
         messages,
         currentPath,
+        signal: controller.signal,
       });
+      if (
+        chatEpochRef.current !== epoch ||
+        controller.signal.aborted ||
+        handoffAbortRef.current !== controller
+      ) {
+        return;
+      }
       setAutofillMeta(filled);
       setOneLineIssue(filled.oneLineIssue);
       setHandoffCategory(filled.category);
@@ -180,11 +231,23 @@ export function StudioAiSupportCenterChat({
       setChecklist(filled.diagnosticChecklist);
       setCheckedItems([]);
     } finally {
-      setHandoffLoading(false);
+      if (handoffAbortRef.current === controller) {
+        handoffAbortRef.current = null;
+        if (chatEpochRef.current === epoch) {
+          setHandoffLoading(false);
+        }
+      }
     }
   };
 
   const handleResetChat = () => {
+    chatEpochRef.current += 1;
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = null;
+    handoffAbortRef.current?.abort();
+    handoffAbortRef.current = null;
+    setSending(false);
+    setHandoffLoading(false);
     setSessionId(undefined);
     setMessages([buildLocalSupportGreeting()]);
     setDraft("");
@@ -259,7 +322,7 @@ export function StudioAiSupportCenterChat({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="inline-flex items-center gap-1.5 text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">
-              <Sparkles size={14} aria-hidden="true" />
+              <Headphones size={14} aria-hidden="true" />
               AI SUPPORT CENTER · ₩0
             </p>
             <h2
@@ -489,6 +552,20 @@ export function StudioAiSupportCenterChat({
               <Send size={15} aria-hidden="true" />
               질문 보내기
             </button>
+            {sending ? (
+              <button
+                type="button"
+                data-testid="support-chat-cancel-btn"
+                onClick={handleCancelSending}
+                className={buttonClass({
+                  variant: "outline",
+                  className: "min-h-11 gap-1.5 px-3 text-xs",
+                })}
+              >
+                <X size={14} aria-hidden="true" />
+                요청 취소
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {

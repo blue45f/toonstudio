@@ -132,6 +132,8 @@ export function CreatorEcosystemPage() {
   const [continuityDraft, setContinuityDraft] = useState({ episode: "1", entity: "주인공", field: "의상", value: "교복", transitionReason: "" });
   const [dialogueDraft, setDialogueDraft] = useState({ id: "line-1", source: "내일도 여기서 만날래?", locale: "en", translated: "" });
   const [aiBusy, setAiBusy] = useState(false);
+  const translateAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => { translateAbortRef.current?.abort(); translateAbortRef.current = null; }, []);
   const [betaTitle, setBetaTitle] = useState("새 연재작 1화");
   const [betaPages, setBetaPages] = useState("도입\n갈등\n반전\n마무리");
   const [processImages, setProcessImages] = useState<Array<{ label: string; dataUrl: string }>>([]);
@@ -198,15 +200,53 @@ export function CreatorEcosystemPage() {
   };
   const suggestTranslation = async () => {
     if (!dialogueDraft.source.trim() || aiBusy) return;
+    translateAbortRef.current?.abort();
+    const controller = new AbortController();
+    translateAbortRef.current = controller;
+    const lockedId = dialogueDraft.id;
+    const lockedLocale = dialogueDraft.locale;
+    const lockedSource = dialogueDraft.source;
     setAiBusy(true);
-    const result = await completeAutomaticFreeText(
-      "You are a professional webtoon localizer. Return only the translated dialogue, without quotes or explanation.",
-      `Target locale: ${dialogueDraft.locale}\nDialogue: ${dialogueDraft.source}`,
-    );
+    try {
+      const result = await completeAutomaticFreeText(
+        "You are a professional webtoon localizer. Return only the translated dialogue, without quotes or explanation.",
+        `Target locale: ${lockedLocale}\nDialogue: ${lockedSource}`,
+        controller.signal,
+      );
+      if (controller.signal.aborted || translateAbortRef.current !== controller) return;
+      if (!result.ok) { setNotice(result.error); return; }
+      let appliedToCurrentDraft = false;
+      setDialogueDraft((current) => {
+        if (current.id !== lockedId || current.locale !== lockedLocale || current.source !== lockedSource) {
+          return current;
+        }
+        appliedToCurrentDraft = true;
+        return { ...current, translated: result.data.content };
+      });
+      if (!appliedToCurrentDraft) {
+        setState((current) => setDialogueTranslation(
+          upsertDialogueSource(current, lockedId, lockedSource),
+          lockedId,
+          lockedLocale,
+          result.data.content,
+          false,
+        ));
+        setNotice(`${lockedId} (${lockedLocale}) 번역 초안을 원래 대사 행에 저장했습니다. 현재 편집 중인 행은 덮어쓰지 않았습니다.`);
+        return;
+      }
+      setNotice(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.translationDraftNotice", { provider: result.data.provider, model: result.data.model }, "${result.data.provider} / ${result.data.model} 제안을 검토용 초안으로만 불러왔습니다. 승인 전에는 배포 데이터가 되지 않습니다."));
+    } finally {
+      if (translateAbortRef.current === controller) {
+        translateAbortRef.current = null;
+        setAiBusy(false);
+      }
+    }
+  };
+  const cancelTranslationSuggest = () => {
+    translateAbortRef.current?.abort();
+    translateAbortRef.current = null;
     setAiBusy(false);
-    if (!result.ok) { setNotice(result.error); return; }
-    setDialogueDraft((current) => ({ ...current, translated: result.data.content }));
-    setNotice(creatorSub2StatusText("studio.creatorSub2.status.ecosystem.page.translationDraftNotice", { provider: result.data.provider, model: result.data.model }, "${result.data.provider} / ${result.data.model} 제안을 검토용 초안으로만 불러왔습니다. 승인 전에는 배포 데이터가 되지 않습니다."));
+    setNotice("번역 초안 요청을 취소했습니다.");
   };
 
   const exportBetaPackage = () => {
@@ -330,7 +370,7 @@ export function CreatorEcosystemPage() {
       </section>
 
       <section id="ecosystem-localization" role="tabpanel" aria-labelledby={ecosystemTabId("ecosystem-localization")} hidden={active !== "ecosystem-localization"} className="mt-6 scroll-mt-24"><SectionHeading icon={Languages} eyebrow="LOCALIZATION" title={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문·번역·승인·오래된 번역 관리")} description={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문이 바뀌면 기존 번역을 자동으로 오래된 상태로 표시합니다. AI는 사용자 키로 초안만 제안하며 승인 전에는 배포 데이터가 아닙니다.")} />
-        <div className="grid gap-4 lg:grid-cols-2"><div className={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "{v0} grid gap-2"), { v0: String(CARD) })}><input className={INPUT} value={dialogueDraft.id} onChange={(event) => setDialogueDraft((current) => ({ ...current, id: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "대사 ID")} /><textarea className={INPUT} value={dialogueDraft.source} onChange={(event) => setDialogueDraft((current) => ({ ...current, source: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문")} /><div className="grid grid-cols-[7rem_1fr] gap-2"><input className={INPUT} value={dialogueDraft.locale} onChange={(event) => setDialogueDraft((current) => ({ ...current, locale: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "번역 로케일")} /><textarea className={INPUT} value={dialogueDraft.translated} onChange={(event) => setDialogueDraft((current) => ({ ...current, translated: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "번역문")} /></div><div className="flex flex-wrap gap-2"><button type="button" className={BUTTON} onClick={saveDialogue}>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문 저장")}</button><button type="button" className={BUTTON} onClick={() => void suggestTranslation()} disabled={aiBusy}>{aiBusy ? translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "제안 중…") : translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "내 AI로 번역 초안")}</button><button type="button" className={BUTTON} onClick={() => saveTranslation(false)}>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "초안 저장")}</button><button type="button" className={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "{v0} border-good/40 text-good"), { v0: String(BUTTON) })} onClick={() => saveTranslation(true)}>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "검토 승인")}</button></div></div><div className={CARD}><table className="w-full text-left text-xs"><thead><tr className="text-fg-3"><th>ID</th><th>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문")}</th><th>{dialogueDraft.locale}</th><th>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "상태")}</th></tr></thead><tbody>{state.dialogue.map((row) => { const status = translationStatus(row, dialogueDraft.locale); return <tr key={row.id} className="border-t border-line"><td className="py-2">{row.id}</td><td className="max-w-40 truncate">{row.source}</td><td className="max-w-40 truncate">{row.translations[dialogueDraft.locale]?.text ?? "—"}</td><td className={status === "approved" ? translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "text-good") : status === "stale" ? translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "text-warn") : translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "text-fg-3")}>{status}</td></tr>; })}</tbody></table></div></div>
+        <div className="grid gap-4 lg:grid-cols-2"><div className={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "{v0} grid gap-2"), { v0: String(CARD) })}><input className={INPUT} value={dialogueDraft.id} onChange={(event) => setDialogueDraft((current) => ({ ...current, id: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "대사 ID")} /><textarea className={INPUT} value={dialogueDraft.source} onChange={(event) => setDialogueDraft((current) => ({ ...current, source: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문")} /><div className="grid grid-cols-[7rem_1fr] gap-2"><input className={INPUT} value={dialogueDraft.locale} onChange={(event) => setDialogueDraft((current) => ({ ...current, locale: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "번역 로케일")} /><textarea className={INPUT} value={dialogueDraft.translated} onChange={(event) => setDialogueDraft((current) => ({ ...current, translated: event.target.value }))} aria-label={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "번역문")} /></div><div className="flex flex-wrap gap-2"><button type="button" className={BUTTON} onClick={saveDialogue}>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문 저장")}</button><button type="button" className={BUTTON} onClick={() => void suggestTranslation()} disabled={aiBusy}>{aiBusy ? translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "제안 중…") : translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "내 AI로 번역 초안")}</button>{aiBusy ? <button type="button" data-testid="ecosystem-translate-cancel-btn" className={BUTTON} onClick={cancelTranslationSuggest}>취소</button> : null}<button type="button" className={BUTTON} onClick={() => saveTranslation(false)}>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "초안 저장")}</button><button type="button" className={formatI18nTemplate(translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "{v0} border-good/40 text-good"), { v0: String(BUTTON) })} onClick={() => saveTranslation(true)}>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "검토 승인")}</button></div></div><div className={CARD}><table className="w-full text-left text-xs"><thead><tr className="text-fg-3"><th>ID</th><th>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "원문")}</th><th>{dialogueDraft.locale}</th><th>{translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "상태")}</th></tr></thead><tbody>{state.dialogue.map((row) => { const status = translationStatus(row, dialogueDraft.locale); return <tr key={row.id} className="border-t border-line"><td className="py-2">{row.id}</td><td className="max-w-40 truncate">{row.source}</td><td className="max-w-40 truncate">{row.translations[dialogueDraft.locale]?.text ?? "—"}</td><td className={status === "approved" ? translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "text-good") : status === "stale" ? translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "text-warn") : translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "en", "text-fg-3")}>{status}</td></tr>; })}</tbody></table></div></div>
       </section>
 
       <section id="ecosystem-beta" role="tabpanel" aria-labelledby={ecosystemTabId("ecosystem-beta")} hidden={active !== "ecosystem-beta"} className="mt-6 scroll-mt-24"><SectionHeading icon={Users} eyebrow="BETA READERS" title={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "제작자 검토와 독자 반응을 분리")} description={translateCurrentStaticSourceText("domains.creator.ecosystem.CreatorEcosystemPage", "ko", "이해도·가독성·다음 장면 기대를 묻는 가벼운 오프라인 패키지를 내보내고 응답을 다시 가져옵니다.")} />
