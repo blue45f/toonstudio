@@ -12,6 +12,7 @@ use std::fmt;
 
 pub mod brush_kernel;
 pub mod filter_warp_kernel;
+pub mod simd_bvh_skinning_kernel;
 pub mod spectral_km_kernel;
 pub mod tactile_texture_kernel;
 pub mod tile_compositor_kernel;
@@ -26,6 +27,12 @@ pub use brush_kernel::{
 pub use filter_warp_kernel::{
     gaussian_blur_rgba_into, gaussian_blur_rgba_masked, unsharp_mask_rgba, unsharp_mask_rgba_into,
     warp_mesh_rigid_mls, WarpPin,
+};
+pub use simd_bvh_skinning_kernel::{
+    build_morton_bvh_2d, encode_morton_2d_u32, encode_morton_3d_u32,
+    extract_lt_lineart_from_gbuffer, query_morton_bvh_aabb, skin_vrm_mesh_4bone_soa, Aabb2D,
+    LtLineArtConfig, LtLineArtStats, MortonBvh2D, MortonBvhNode2D, SkinningStats, VrmMeshSoaInput,
+    VrmMeshSoaOutput, IDENTITY_MAT4, MORTON_BVH_LEAF_CAPACITY,
 };
 pub use spectral_km_kernel::{mix_pigments_km16, mix_pigments_km16_strip, KM_SPECTRAL_BANDS};
 pub use tactile_texture_kernel::{
@@ -53,6 +60,12 @@ pub use wasm_ffi::{
     wasm_mix_pigments_km_packed, wasm_sample_world_paper_height, wasm_stamp_tactile_bristle,
     wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes, TACTILE_BRUSH_FFI_PARAM_COUNT,
     WASM_HOTPATH_CAPABILITIES,
+};
+#[cfg(feature = "extended-3d")]
+pub use wasm_ffi::{
+    wasm_encode_morton_2d_u32, wasm_encode_morton_3d_u32, wasm_extended_3d_capabilities,
+    wasm_extract_lt_lineart_from_gbuffer, wasm_skin_vrm_mesh_4bone_soa, LT_LINEART_FFI_PARAM_COUNT,
+    WASM_EXTENDED_3D_CAPABILITIES,
 };
 
 /// 코어 드로잉 엔진의 모든 연산이 공유하는 panic 없는 오류 모델.
