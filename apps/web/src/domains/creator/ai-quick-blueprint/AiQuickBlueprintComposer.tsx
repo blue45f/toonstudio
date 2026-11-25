@@ -7,7 +7,7 @@ import {
   Users,
   Wand2,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getAuthUserId } from "@/domains/auth/public/session/auth-session-state";
@@ -76,6 +76,11 @@ export function AiQuickBlueprintComposer({
   const [statusNotice, setStatusNotice] = useState<string>("");
   const [errorNotice, setErrorNotice] = useState<string>("");
   const abortRef = useRef<AbortController | null>(null);
+  const draftRevision = useRef(0);
+  const updateLocalBlueprint = useCallback((update: SetStateAction<AiQuickBlueprint | null>) => {
+    draftRevision.current += 1;
+    setBlueprint(update);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -85,7 +90,7 @@ export function AiQuickBlueprintComposer({
 
   // 언어가 전환되면 이미 열려 있는 블루프린트도 새 로케일로 재구성해 한/영 혼종을 막는다.
   useEffect(() => {
-    setBlueprint((prev) => {
+    updateLocalBlueprint((prev) => {
       if (!prev || prev.locale === locale) return prev;
       return buildAiQuickBlueprint({
         idea: prev.idea,
@@ -96,7 +101,7 @@ export function AiQuickBlueprintComposer({
     });
     setStatusNotice("");
     setErrorNotice("");
-  }, [locale]);
+  }, [locale, updateLocalBlueprint]);
 
   function generateInstant(
     nextIdea: string,
@@ -110,7 +115,7 @@ export function AiQuickBlueprintComposer({
       toneId: nextTone,
       locale,
     });
-    setBlueprint(created);
+    updateLocalBlueprint(created);
     setStatusNotice(
       bt(
         `‘${created.title}’ ${created.cuts.length}컷 콘티와 대사 초안을 바로 짰어요. 문장을 고치거나 바로 스튜디오로 열 수 있어요.`,
@@ -153,15 +158,24 @@ export function AiQuickBlueprintComposer({
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    const revisionAtRequest = draftRevision.current;
+    const draftChanged = () => {
+      if (draftRevision.current === revisionAtRequest) return false;
+      setStatusNotice(bt(
+        "윤문을 기다리는 동안 콘티가 바뀌었어요. 지금 작성한 내용을 유지했어요.",
+        "The storyboard changed while polishing. Your current edits were kept.",
+      ));
+      return true;
+    };
     setPolishing(true);
     setErrorNotice("");
     try {
       const outcome = await polishBlueprintWithCloudAi(blueprint, controller.signal);
-      if (controller.signal.aborted) return;
-      setBlueprint(outcome.blueprint);
+      if (controller.signal.aborted || draftChanged()) return;
+      setBlueprint((current) => current === blueprint ? outcome.blueprint : current);
       setStatusNotice(outcome.statusMessage);
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError") || draftChanged()) return;
       setStatusNotice(
         bt(
           "지금 설계된 스마트 콘티를 그대로 유지했어요. 바로 편집하거나 스튜디오에서 열 수 있어요.",
@@ -180,7 +194,7 @@ export function AiQuickBlueprintComposer({
     field: "scene" | "dialogue" | "narration",
     value: string,
   ) {
-    setBlueprint((prev) => {
+    updateLocalBlueprint((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
@@ -192,7 +206,7 @@ export function AiQuickBlueprintComposer({
   }
 
   function handleRemixCut(cutId: string, style: AiBlueprintRemixStyle) {
-    setBlueprint((prev) => (prev ? remixBlueprintCut(prev, cutId, style) : prev));
+    updateLocalBlueprint((prev) => (prev ? remixBlueprintCut(prev, cutId, style) : prev));
   }
 
   function handleOpenInStudio() {
@@ -288,7 +302,10 @@ export function AiQuickBlueprintComposer({
             type="text"
             value={idea}
             maxLength={200}
-            onChange={(event) => setIdea(event.target.value)}
+            onChange={(event) => {
+              draftRevision.current += 1;
+              setIdea(event.target.value);
+            }}
             placeholder={bt(
               "예: 비 오는 날 헌책방에서 내일의 일기장을 주웠다",
               "e.g. Found tomorrow's diary in a rainy bookshop",
@@ -409,7 +426,7 @@ export function AiQuickBlueprintComposer({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setBlueprint((prev) => (prev ? cycleBlueprintTitle(prev) : prev))}
+                    onClick={() => updateLocalBlueprint((prev) => (prev ? cycleBlueprintTitle(prev) : prev))}
                     className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
                   >
                     <RefreshCw size={12} aria-hidden="true" />
@@ -435,7 +452,7 @@ export function AiQuickBlueprintComposer({
                 value={blueprint.title}
                 maxLength={80}
                 onChange={(event) =>
-                  setBlueprint((prev) =>
+                  updateLocalBlueprint((prev) =>
                     prev
                       ? {
                           ...prev,
@@ -489,7 +506,7 @@ export function AiQuickBlueprintComposer({
               {blueprint.cuts.length < 8 ? (
                 <button
                   type="button"
-                  onClick={() => setBlueprint((prev) => (prev ? appendBlueprintCut(prev) : prev))}
+                  onClick={() => updateLocalBlueprint((prev) => (prev ? appendBlueprintCut(prev) : prev))}
                   className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-accent/55 hover:text-accent"
                 >
                   <Plus size={13} aria-hidden="true" />
