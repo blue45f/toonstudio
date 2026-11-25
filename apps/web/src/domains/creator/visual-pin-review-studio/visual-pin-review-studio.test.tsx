@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -44,7 +44,7 @@ import {
   updateReviewPinStatus,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("1. 6종 원클릭 시각 검수 도장 & 컷 좌표 번호 핀 불변 상태 관리", () => {
   it("6종 도장 · 3종 핀 상태 · 6단계 바통 공정 · 5대 외부 브리지 상수가 모두 정의되어 있다", () => {
@@ -103,7 +103,7 @@ describe("1. 6종 원클릭 시각 검수 도장 & 컷 좌표 번호 핀 불변 
     expect(added?.yPct).toBe(0);
     expect(added?.stageId).toBe("shading");
     expect(added?.status).toBe("open");
-    expect(added?.comment).toBe("목 그림자 채색 누락 보강");
+    expect(added?.comment).toBe("목 그림자\n채색 누락 보강");
   });
 
   it("approved-stamp 도장은 기본 상태가 resolved이고 바통 승계 차단에 포함되지 않는다", () => {
@@ -144,7 +144,7 @@ describe("1. 6종 원클릭 시각 검수 도장 & 컷 좌표 번호 핀 불변 
     expect(removeReviewPin(s0, "missing")).toBe(s0);
 
     const s1 = updateReviewPinComment(s0, "pin-1", "시선 처리\n선명하게");
-    expect(s1.pins.find((p) => p.id === "pin-1")?.comment).toBe("시선 처리 선명하게");
+    expect(s1.pins.find((p) => p.id === "pin-1")?.comment).toBe("시선 처리\n선명하게");
 
     const s2 = updateReviewPinStage(s1, "pin-1", "shading");
     expect(s2.pins.find((p) => p.id === "pin-1")?.stageId).toBe("shading");
@@ -348,7 +348,7 @@ describe("3. 5대 외부 툴 오픈 표준 라운드트립 브리지 & 손실/�
 
     expect(manifest.schemaVersion).toBe(VISUAL_PIN_BRIDGE_SCHEMA_VERSION);
     expect(manifest.proprietaryBypassAvoided).toBe(true);
-    expect(manifest.suggestedFileName).toBe("toonstudio-lineart-episode-blender-glb-camera.glb");
+    expect(manifest.suggestedFileName).toBe("toonstudio-lineart-episode-blender-glb-camera.manifest.json");
     expect(manifest.oneLineDigestKo).toContain("블렌더");
     expect(manifest.oneLineDigestKo).not.toContain("\n");
 
@@ -369,7 +369,7 @@ describe("3. 5대 외부 툴 오픈 표준 라운드트립 브리지 & 손실/�
   it("scope='active-cut' 옵션이 현재 활성 컷 핀만 매니페스트와 파일명에 반영한다", () => {
     const state = selectActiveReviewCut(createInitialVisualPinReviewState(), "cut-02");
     const cutManifest = buildExternalBridgeManifest("csp-psd-layers", state, { scope: "active-cut" });
-    expect(cutManifest.suggestedFileName).toBe("toonstudio-lineart-cut-02-csp-psd-layers.psd");
+    expect(cutManifest.suggestedFileName).toBe("toonstudio-lineart-cut-02-csp-psd-layers.manifest.json");
     expect(cutManifest.pins).toHaveLength(1);
     expect(cutManifest.pins[0]?.cutId).toBe("cut-02");
   });
@@ -482,7 +482,8 @@ describe("4. StudioVisualPinReviewPanel UI · 상호작용 · 접근성 · 코�
     expect(screen.getByTestId("visual-pin-after-layer").getAttribute("style")).toContain("75%");
   });
 
-  it("5대 외부 브리지 전환 · 범위 토글 · Markdown/JSON 복사 콜백 · 미리보기 탭이 정상 동작한다", () => {
+  it("5대 외부 브리지 전환 · 범위 토글 · Markdown/JSON 복사 콜백 · 미리보기 탭이 정상 동작한다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
     const onCopyBridgeDigest = vi.fn();
     const onCopyBridgeJson = vi.fn();
     render(
@@ -503,16 +504,19 @@ describe("4. StudioVisualPinReviewPanel UI · 상호작용 · 접근성 · 코�
     expect(onCopyBridgeDigest).toHaveBeenCalledTimes(1);
     expect(onCopyBridgeDigest.mock.calls[0]?.[0]).toContain("블렌더");
 
+    await waitFor(() => expect(screen.getByTestId("visual-pin-copy-status").textContent).toContain("복사 완료"));
     fireEvent.click(screen.getByTestId("visual-pin-copy-json-btn"));
     expect(onCopyBridgeJson).toHaveBeenCalledTimes(1);
     expect(onCopyBridgeJson.mock.calls[0]?.[0]).toContain(VISUAL_PIN_BRIDGE_SCHEMA_VERSION);
     expect(screen.getByTestId("visual-pin-export-preview").textContent).toContain('"bridgeId": "blender-glb-camera"');
 
+    await waitFor(() => expect(screen.getByTestId("visual-pin-copy-status").textContent).toContain("복사 완료"));
     fireEvent.click(screen.getByTestId("visual-pin-preview-tab-hidden"));
     expect(screen.queryByTestId("visual-pin-export-preview")).toBeNull();
   });
 
-  it("영문 로케일(locale='en') · clean 변형 · 1줄 알림 복사 · 샘플 복원이 정상 동작한다", () => {
+  it("영문 로케일(locale='en') · clean 변형 · 1줄 알림 복사 · 샘플 복원이 정상 동작한다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
     const onStateChange = vi.fn();
     render(
       <StudioVisualPinReviewPanel
@@ -527,7 +531,7 @@ describe("4. StudioVisualPinReviewPanel UI · 상호작용 · 접근성 · 코�
     expect(screen.getByTestId("visual-pin-bridge-detail").textContent).toContain("Slack & Notion");
 
     fireEvent.click(screen.getByTestId("visual-pin-copy-alert-btn"));
-    expect(screen.getByTestId("visual-pin-status-banner").textContent).toContain("Copied 1-line baton notification");
+    await waitFor(() => expect(screen.getByTestId("visual-pin-copy-status").textContent).toContain("Clipboard copy completed"));
 
     fireEvent.click(screen.getByTestId("visual-pin-reset-btn"));
     expect(screen.getByTestId("visual-pin-unresolved-kpi").textContent).toContain("2 Open");

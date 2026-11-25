@@ -4,7 +4,7 @@
  *
  * - 컷 캔버스 핀 보드: 6종 원클릭 검수 도장 선택 · 클릭 좌표 번호 핀 배치 · 1탭 해결 토글 · 전후 비교 슬라이더
  * - 6단계 바통터치 진행 바: 미해결 핀 잔여 시 다음 공정 승계 자동 안내 및 1줄 요약 알림 복사
- * - 5대 외부 툴 오픈 표준 브리지: 유료 사유 포맷 우회 없이 `.psd`·`.glb`·JSON·Markdown 손실/보존 매핑표 & 매니페스트 복사
+ * - 5대 외부 툴 포맷 참고 목록: 유료 사유 포맷 우회 없이 `.psd`·`.glb`·JSON·Markdown 손실/보존 매핑표 & 매니페스트 복사
  * - Calm Atelier 시맨틱 토큰 전용 (원시 색 · 광범위 트랜지션 · 기본 빈 객체 props · Web Storage · 과장 아이콘 미사용)
  */
 
@@ -13,7 +13,7 @@ import {
   Crosshair, FileText, Layers, MapPin, MessageSquare, Palette, RotateCcw,
   ShieldAlert, ShieldCheck, SlidersHorizontal, Stamp, Trash2,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState, type MouseEvent, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type MouseEvent, type ReactElement } from "react";
 
 import {
   BATON_STAGE_SPECS, EXTERNAL_BRIDGE_SPECS, REVIEW_STAMP_SPECS, SAMPLE_REVIEW_CUTS,
@@ -24,8 +24,12 @@ import {
   summarizeBridgeFidelity, summarizeReviewPins, toggleReviewPinResolved, updateReviewPinComment,
   type BatonStageId, type ExternalBridgeId, type ExternalBridgeManifest, type ReviewLocale,
   type ReviewPinStatus, type ReviewStampId, type RoundtripFidelityStatus, type SemanticTone,
-  type StageGateReadinessReport, type VisualPinReviewState,
+  type StageGateReadinessReport, type StageTransitionResult, type VisualPinReviewState,
 } from "./visual-pin-review-engine";
+
+import { MAX_REVIEW_COMMENT, MAX_REVIEW_PINS } from "./visual-pin-input-contract";
+import { ReviewOperationStatus } from "./ReviewOperationStatus";
+import { useReviewClipboard, useReviewNotification } from "./use-review-notification";
 
 export interface StudioVisualPinReviewPanelProps {
   readonly initialStageId?: BatonStageId;
@@ -33,10 +37,10 @@ export interface StudioVisualPinReviewPanelProps {
   readonly initialBridgeId?: ExternalBridgeId;
   readonly locale?: ReviewLocale;
   readonly className?: string;
-  readonly onStateChange?: (state: VisualPinReviewState, gate: StageGateReadinessReport) => void;
-  readonly onStageAdvance?: (nextStageId: BatonStageId, state: VisualPinReviewState) => void;
-  readonly onCopyBridgeDigest?: (markdown: string, manifest: ExternalBridgeManifest) => void;
-  readonly onCopyBridgeJson?: (json: string, manifest: ExternalBridgeManifest) => void;
+  readonly onStateChange?: (state: VisualPinReviewState, gate: StageGateReadinessReport) => void | Promise<void>;
+  readonly onStageAdvance?: (nextStageId: BatonStageId, state: VisualPinReviewState) => void | Promise<void>;
+  readonly onCopyBridgeDigest?: (markdown: string, manifest: ExternalBridgeManifest) => void | Promise<void>;
+  readonly onCopyBridgeJson?: (json: string, manifest: ExternalBridgeManifest) => void | Promise<void>;
 }
 
 type PinFilterMode = "all" | "unresolved" | "resolved";
@@ -74,9 +78,9 @@ function tonePinClass(tone: SemanticTone, resolved: boolean): string {
 }
 
 function fidelityMeta(status: RoundtripFidelityStatus, isEn: boolean): { readonly label: string; readonly cls: string } {
-  if (status === "preserved") return { label: isEn ? "Preserved" : "원본 보존", cls: "border-good bg-good-soft text-good" };
-  if (status === "approximated") return { label: isEn ? "Approximated" : "근사 변환", cls: "border-warn bg-warning-soft text-warn" };
-  return { label: isEn ? "Flattened" : "평탄화", cls: "border-bad bg-bad-soft text-bad" };
+  if (status === "preserved") return { label: isEn ? "Preservation assumption" : "원본 보존 가정", cls: "border-good bg-good-soft text-good" };
+  if (status === "approximated") return { label: isEn ? "Approximation assumption" : "근사 변환 가정", cls: "border-warn bg-warning-soft text-warn" };
+  return { label: isEn ? "Flattening assumption" : "평탄화 가정", cls: "border-bad bg-bad-soft text-bad" };
 }
 
 function pinStatusLabel(status: ReviewPinStatus, isEn: boolean): string {
@@ -178,7 +182,8 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
     createInitialVisualPinReviewState({ variant: initialVariant, currentStageId: initialStageId }),
   );
   const [activeStampId, setActiveStampId] = useState<ReviewStampId>("expression-fix");
-  const [quickComment, setQuickComment] = useState<string>("");
+  const [quickDrafts, setQuickDrafts] = useState<Readonly<Record<string, string>>>({});
+  const quickComment = quickDrafts[reviewState.activeCutId] ?? "";
   const [selectedPinId, setSelectedPinId] = useState<string | null>("pin-1");
   const [pinFilter, setPinFilter] = useState<PinFilterMode>("all");
   const [activeBridgeId, setActiveBridgeId] = useState<ExternalBridgeId>(initialBridgeId);
@@ -204,27 +209,33 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
     [activeBridgeId, reviewState, bridgeScope, locale],
   );
 
+  const statePayload = useMemo(() => ({ state: reviewState, gate }), [reviewState, gate]);
+  const stateNotification = useReviewNotification(onStateChange ? ({ state, gate: currentGate }: typeof statePayload) => onStateChange(state, currentGate) : undefined);
+  const stageNotification = useReviewNotification(onStageAdvance ? ({ stageId, state }: { stageId: BatonStageId; state: VisualPinReviewState }) => onStageAdvance(stageId, state) : undefined);
+  const markdownNotification = useReviewNotification(onCopyBridgeDigest ? ({ text, manifest }: { text: string; manifest: ExternalBridgeManifest }) => onCopyBridgeDigest(text, manifest) : undefined);
+  const jsonNotification = useReviewNotification(onCopyBridgeJson ? ({ text, manifest }: { text: string; manifest: ExternalBridgeManifest }) => onCopyBridgeJson(text, manifest) : undefined);
+  const clipboard = useReviewClipboard();
+  const channels = [stateNotification, stageNotification, markdownNotification, jsonNotification, clipboard];
+  const busy = channels.some((channel) => channel.status === "pending");
+  const lastState = useRef<typeof statePayload | null>(null);
+  const { notify: notifyState } = stateNotification;
   useEffect(() => {
-    onStateChange?.(reviewState, gate);
-  }, [reviewState, gate, onStateChange]);
-
-  const copySafely = (text: string): void => {
-    if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      void navigator.clipboard.writeText(text).catch(() => undefined);
-    }
-  };
+    if (lastState.current !== statePayload) { lastState.current = statePayload; notifyState(statePayload); }
+  }, [statePayload, notifyState]);
 
   const handleCanvasSurfaceClick = (event: MouseEvent<HTMLButtonElement>): void => {
+    if (channels.some((channel) => channel.isPending())) return;
+    if (reviewState.pins.length >= MAX_REVIEW_PINS) { setStatusBanner(pick("핀은 최대 256개입니다. 댓글 초안은 유지됩니다.", "Up to 256 pins. The comment draft is preserved.")); return; }
     const rect = event.currentTarget.getBoundingClientRect();
     const xPct = rect.width > 0 ? ((event.clientX - rect.left) / rect.width) * 100 : 52;
     const yPct = rect.height > 0 ? ((event.clientY - rect.top) / rect.height) * 100 : 46;
     const stamp = getReviewStampSpec(activeStampId);
     const nextPinId = `pin-${reviewState.nextPinNumber}`;
     setReviewState((prev) => addVisualReviewPin(prev, {
-      stampId: activeStampId, xPct, yPct, cutId: prev.activeCutId, comment: quickComment || undefined, locale,
+      stampId: activeStampId, xPct, yPct, cutId: prev.activeCutId, comment: quickComment === "" ? undefined : quickComment, locale,
     }));
     setSelectedPinId(nextPinId);
-    setQuickComment("");
+    setQuickDrafts((prev) => ({ ...prev, [reviewState.activeCutId]: "" }));
     setStatusBanner(
       pick(
         `${reviewState.nextPinNumber}번 '${stamp.labelKo}' 핀을 (${Math.round(xPct)}%, ${Math.round(yPct)}%)에 꽂았습니다.`,
@@ -267,56 +278,56 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
   };
 
   const handleAdvanceStage = (): void => {
-    const res = advanceBatonStage(reviewState);
+    if (channels.some((channel) => channel.isPending())) return;
+    let res: StageTransitionResult;
+    try { res = advanceBatonStage(reviewState); } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      setStatusBanner(pick("공정 예제 이력 상한에 도달했습니다. 기존 상태는 유지됩니다.", "The example history limit was reached. The current state is preserved."));
+      return;
+    }
     if (!res.transitioned) {
       setStatusBanner(isEn ? res.gate.autoGuidanceEn : res.gate.autoGuidanceKo);
       return;
     }
     setReviewState(res.state);
-    onStageAdvance?.(res.state.currentStageId, res.state);
+    stageNotification.notify({ stageId: res.state.currentStageId, state: res.state });
     setStatusBanner(isEn ? res.notification.oneLineSummaryEn : res.notification.oneLineSummaryKo);
   };
 
   const handleSelectStage = (stageId: BatonStageId): void => {
-    const res = rewindBatonStage(reviewState, stageId);
+    if (channels.some((channel) => channel.isPending())) return;
+    let res: StageTransitionResult;
+    try { res = rewindBatonStage(reviewState, stageId); } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      setStatusBanner(pick("공정 예제 이력 상한에 도달했습니다. 기존 상태는 유지됩니다.", "The example history limit was reached. The current state is preserved."));
+      return;
+    }
     if (!res.transitioned) return;
     setReviewState(res.state);
     setStatusBanner(pick(`'${getBatonStageSpec(stageId).shortLabelKo}' 공정 검수 보드로 전환했습니다.`, `Switched review board to ${getBatonStageSpec(stageId).shortLabelEn}.`));
   };
 
   const handleCopyOneLineAlert = (): void => {
-    const text = isEn ? gate.notification.oneLineSummaryEn : gate.notification.oneLineSummaryKo;
-    copySafely(text);
-    setStatusBanner(pick("1줄 바통 요약 알림을 복사했습니다.", "Copied 1-line baton notification."));
+    if (channels.some((channel) => channel.isPending())) return;
+    clipboard.notify(isEn ? gate.notification.oneLineSummaryEn : gate.notification.oneLineSummaryKo);
   };
-
   const handleCopyBridgeMarkdown = (): void => {
-    onCopyBridgeDigest?.(bridgeManifest.markdownDigest, bridgeManifest);
-    copySafely(bridgeManifest.markdownDigest);
+    if (channels.some((channel) => channel.isPending())) return;
+    markdownNotification.notify({ text: bridgeManifest.markdownDigest, manifest: bridgeManifest });
+    clipboard.notify(bridgeManifest.markdownDigest);
     setPreviewTab("markdown");
-    setStatusBanner(
-      pick(
-        `${bridgeManifest.bridge.shortNameKo} 협업 요약 Markdown(${bridgeManifest.markdownDigest.length.toLocaleString("ko-KR")}자)을 복사했습니다.`,
-        `Copied ${bridgeManifest.bridge.shortNameEn} Markdown digest (${bridgeManifest.markdownDigest.length.toLocaleString("en-US")} chars).`,
-      ),
-    );
   };
-
   const handleCopyBridgeJson = (): void => {
-    onCopyBridgeJson?.(bridgeManifest.jsonPayload, bridgeManifest);
-    copySafely(bridgeManifest.jsonPayload);
+    if (channels.some((channel) => channel.isPending())) return;
+    jsonNotification.notify({ text: bridgeManifest.jsonPayload, manifest: bridgeManifest });
+    clipboard.notify(bridgeManifest.jsonPayload);
     setPreviewTab("json");
-    setStatusBanner(
-      pick(
-        `${bridgeManifest.bridge.shortNameKo} 오픈 표준 매니페스트 JSON(${bridgeManifest.suggestedFileName})을 복사했습니다.`,
-        `Copied ${bridgeManifest.bridge.shortNameEn} open-standard JSON manifest (${bridgeManifest.suggestedFileName}).`,
-      ),
-    );
   };
 
   const handleResetSample = (): void => {
     setReviewState(createInitialVisualPinReviewState({ variant: "sample", currentStageId: initialStageId }));
     setSelectedPinId("pin-1");
+    setQuickDrafts({});
     setStatusBanner(pick("샘플 원고 컷과 검수 핀 상태로 초기화했습니다.", "Reset sample cuts and review pins."));
   };
 
@@ -336,6 +347,12 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
       className={`space-y-5 rounded-2xl border border-line bg-card p-5 text-fg ${className ?? ""}`}
     >
       {/* 헤더 */}
+      <ReviewOperationStatus channel="state" {...stateNotification} pending={busy} isEn={isEn} />
+      <ReviewOperationStatus channel="stage" {...stageNotification} pending={busy} isEn={isEn} />
+      <ReviewOperationStatus channel="markdown" {...markdownNotification} pending={busy} isEn={isEn} />
+      <ReviewOperationStatus channel="json" {...jsonNotification} pending={busy} isEn={isEn} />
+      <ReviewOperationStatus channel="clipboard" {...clipboard} pending={busy} isEn={isEn} />
+      <fieldset disabled={busy} className="contents">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -352,7 +369,7 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
             {pick("직관적 캔버스 핀 검수 · 6단계 바통터치 & 외부 툴 라운드트립 브리지", "Visual Pin Review, 6-Stage Baton & External Roundtrip Bridge")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("장황한 글 대신 컷 위를 클릭해 6종 도장 핀을 꽂고 전후 슬라이더로 확인한 뒤, 클립스튜디오·포토샵·블렌더·피그마·슬랙/노션 오픈 표준으로 바로 넘깁니다.", "Drop numbered review stamps directly on cuts, inspect before/after splits, track 6-stage baton gates, and export via open standards.")}
+            {pick("합성 SVG 컷과 고정 시각을 사용하는 메모리 검토 예제입니다. 실제 원고 변경·저장·협업 서버·역할 권한·팀 전송은 수행하지 않습니다. 외부 툴 목록은 포맷 참고이며 파일 변환·왕복 호환성을 검증하지 않았습니다. 닫으면 입력이 사라집니다.", "An in-memory review example with synthetic SVG cuts and fixed timestamps. No actual artwork changes, storage, collaboration server, role enforcement or team delivery. Tool entries are format references without verified conversion or roundtrip compatibility. Inputs disappear when closed.")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -379,7 +396,7 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
         <KpiCard testId="visual-pin-stage-kpi" valueTone="text-accent" label={pick("바통터치 현재 공정", "Current Baton Stage")} value={`${isEn ? gate.currentStage.shortLabelEn : gate.currentStage.shortLabelKo} · ${gate.progressPct}%`} subtext={isEn ? `Owner: ${gate.currentStage.ownerRoleEn}` : `담당: ${gate.currentStage.ownerRoleKo}`} />
         <KpiCard testId="visual-pin-unresolved-kpi" valueTone={episodeSummary.blockingUnresolvedCount > 0 ? "text-bad" : "text-good"} label={pick("미해결 차단 핀", "Open Blocking Pins")} value={pick(`${episodeSummary.blockingUnresolvedCount}건`, `${episodeSummary.blockingUnresolvedCount} Open`)} subtext={pick(`미해결 ${episodeSummary.openCount} · 수정중 ${episodeSummary.inProgressCount}`, `Open ${episodeSummary.openCount} · WIP ${episodeSummary.inProgressCount}`)} />
         <KpiCard testId="visual-pin-resolved-kpi" valueTone="text-good" label={pick("해결 완료 · 승인 도장", "Resolved & Approved")} value={pick(`${episodeSummary.resolvedCount} / ${episodeSummary.total}건`, `${episodeSummary.resolvedCount} / ${episodeSummary.total}`)} subtext={pick(`승인 도장 ${episodeSummary.approvedStampCount}건`, `${episodeSummary.approvedStampCount} approval stamp(s)`)} />
-        <KpiCard testId="visual-pin-bridge-kpi" valueTone="text-cool" label={pick("선택 외부 툴 브리지", "Active External Bridge")} value={`${isEn ? bridgeManifest.bridge.shortNameEn : bridgeManifest.bridge.shortNameKo} (${bridgeManifest.bridge.fileExtension})`} subtext={pick(`원본 보존 ${bridgeManifest.fidelitySummary.preservedCount}/${bridgeManifest.fidelitySummary.totalMappings}항목`, `Preserved ${bridgeManifest.fidelitySummary.preservedCount}/${bridgeManifest.fidelitySummary.totalMappings}`)} />
+        <KpiCard testId="visual-pin-bridge-kpi" valueTone="text-cool" label={pick("선택 포맷 참고 목록", "Active Format Reference")} value={`${isEn ? bridgeManifest.bridge.shortNameEn : bridgeManifest.bridge.shortNameKo} (${bridgeManifest.bridge.fileExtension})`} subtext={pick(`목록의 보존 분류 ${bridgeManifest.fidelitySummary.preservedCount}/${bridgeManifest.fidelitySummary.totalMappings}항목`, `Catalog preservation class ${bridgeManifest.fidelitySummary.preservedCount}/${bridgeManifest.fidelitySummary.totalMappings}`)} />
       </div>
 
       {/* 1. 6단계 바통터치 진행 바 & 승계 자동 안내 */}
@@ -453,7 +470,7 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
                 const active = cut.id === reviewState.activeCutId;
                 const cutOpen = summarizeReviewPins(reviewState.pins, cut.id).blockingUnresolvedCount;
                 return (
-                  <button key={cut.id} type="button" data-testid={`visual-pin-cut-${cut.id}`} aria-pressed={active} onClick={() => setReviewState((prev) => selectActiveReviewCut(prev, cut.id))} className={active ? BTN_ACTIVE : BTN_OUTLINE}>
+                  <button key={cut.id} type="button" data-testid={`visual-pin-cut-${cut.id}`} aria-pressed={active} onClick={() => { setReviewState((prev) => selectActiveReviewCut(prev, cut.id)); setSelectedPinId(null); }} className={active ? BTN_ACTIVE : BTN_OUTLINE}>
                     <span>{pick(`${cut.cutNumber}컷`, `Cut ${cut.cutNumber}`)}</span>
                     <span className="tabular-nums opacity-80">{`(${cutOpen})`}</span>
                   </button>
@@ -476,10 +493,10 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
 
           <div className="space-y-1">
             <label htmlFor={quickCommentId} className="flex items-center justify-between text-[11px] font-medium text-fg-3 [word-break:keep-all]">
-              <span>{pick(`다음 클릭 핀 1줄 메모 (${activeStamp.labelKo} · 비우면 기본 문구 자동 입력)`, `Next pin 1-line note (${activeStamp.labelEn} · optional)`)}</span>
+              <span>{pick(`다음 클릭 핀 댓글 원문 (${activeStamp.labelKo} · 비우면 기본 문구 자동 입력)`, `Next pin comment (${activeStamp.labelEn} · optional)`)}</span>
               <span className="inline-flex items-center gap-1 text-accent"><Crosshair className="h-3 w-3" aria-hidden="true" />{pick("캔버스 클릭으로 즉시 배치", "Click canvas to stamp")}</span>
             </label>
-            <input id={quickCommentId} type="text" data-testid="visual-pin-quick-comment" value={quickComment} placeholder={isEn ? activeStamp.defaultCommentEn : activeStamp.defaultCommentKo} onChange={(e) => setQuickComment(e.target.value)} className={INPUT_CLS} />
+            <textarea id={quickCommentId} rows={2} data-testid="visual-pin-quick-comment" value={quickComment} maxLength={MAX_REVIEW_COMMENT} placeholder={isEn ? activeStamp.defaultCommentEn : activeStamp.defaultCommentKo} onChange={(e) => { const text = e.target.value; setQuickDrafts((prev) => ({ ...prev, [reviewState.activeCutId]: text })); }} className={INPUT_CLS} />
           </div>
 
           <div data-testid="visual-pin-canvas-board" className="relative">
@@ -556,8 +573,8 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
                       </span>
                     </div>
                     <div>
-                      <label htmlFor={commentInputId} className="sr-only">{pick(`${pin.pinNumber}번 핀 1줄 코멘트`, `Pin ${pin.pinNumber} comment`)}</label>
-                      <input id={commentInputId} type="text" data-testid={`visual-pin-comment-input-${pin.id}`} value={pin.comment} onChange={(e) => setReviewState((prev) => updateReviewPinComment(prev, pin.id, e.target.value))} className={INPUT_CLS} />
+                      <label htmlFor={commentInputId} className="sr-only">{pick(`${pin.pinNumber}번 핀 댓글 원문`, `Pin ${pin.pinNumber} comment`)}</label>
+                      <textarea id={commentInputId} rows={2} maxLength={MAX_REVIEW_COMMENT} data-testid={`visual-pin-comment-input-${pin.id}`} value={pin.comment} onChange={(e) => setReviewState((prev) => updateReviewPinComment(prev, pin.id, e.target.value, undefined, pin.comment))} className={INPUT_CLS} />
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <span className="text-[11px] text-fg-3 [word-break:keep-all]">{pick(`담당: ${pin.assignee}`, `Owner: ${pin.assignee}`)}</span>
@@ -581,12 +598,12 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
         </div>
       </div>
 
-      {/* 3. 5대 외부 툴 오픈 표준 라운드트립 브리지 & 손실/보존 매핑표 */}
+      {/* 3. 외부 툴 포맷 참고 목록 & 손실/보존 매핑표 */}
       <div className="space-y-3 rounded-xl border border-line bg-canvas p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{pick("3. 5대 외부 툴 오픈 표준 라운드트립 브리지", "3. 5 External Tool Open-Standard Roundtrip Bridges")}</h3>
-            <p className="mt-0.5 text-[11px] text-fg-3 [word-break:keep-all]">{pick("유료·사유 포맷(.clip · .psdc · .blend DNA · .fig)을 우회하지 않고 공개 표준 포맷의 보존·손실 범위를 투명하게 안내합니다.", "Uses open exchange formats (.psd, .glb, W3C JSON, Markdown) with transparent preservation/loss maps and zero proprietary bypass.")}</p>
+            <h3 className="text-xs font-bold text-fg [word-break:keep-all]">{pick("3. 외부 툴 포맷 참고 목록", "3. Tool Format Reference Catalog")}</h3>
+            <p className="mt-0.5 text-[11px] text-fg-3 [word-break:keep-all]">{pick("정적 포맷 참고 목록입니다. 아래 보존·근사·평탄화는 분류 가정이며 실제 파일 변환·왕복 보존율을 측정한 결과가 아닙니다.", "A static format-reference catalog. Preservation, approximation and flattening are classification assumptions, not measured file conversion or roundtrip fidelity.")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <button type="button" data-testid="visual-pin-scope-episode" aria-pressed={bridgeScope === "episode"} onClick={() => setBridgeScope("episode")} className={bridgeScope === "episode" ? BTN_ACTIVE : BTN_OUTLINE}>{pick("전체 회차", "Episode")}</button>
@@ -662,6 +679,7 @@ export function StudioVisualPinReviewPanel(props: StudioVisualPinReviewPanelProp
           </div>
         </div>
       </div>
+      </fieldset>
     </section>
   );
 }
