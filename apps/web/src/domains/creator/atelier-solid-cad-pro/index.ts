@@ -2,6 +2,7 @@ export {
   ATELIER_SOLID_PRESETS,
   SOLID_FEATURE_META,
   SOLID_FEATURE_ORDER,
+  StepAp214ExportUnavailableError,
   buildWatertightSolidMesh,
   createDefaultAtelierSolidParams,
   evaluateAtelierSolidModel,

@@ -473,6 +473,33 @@ describe("5. StudioAtelierVibrantUiPanel 라이브 UI 렌더링 및 인터랙션
     expect(screen.getByTestId("atelier-vivid-ink-ripple")).toBeTruthy();
   });
 
+  it("기기의 모션 감소 설정을 토글과 초기화보다 우선한다", () => {
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })));
+    try {
+      render(<StudioAtelierVibrantUiPanel />);
+      const panel = screen.getByTestId("atelier-vibrant-ui-panel");
+      expect(panel.getAttribute("data-reduced-motion")).toBe("true");
+      fireEvent.click(screen.getByTestId("atelier-vivid-reduced-motion-toggle"));
+      expect(panel.getAttribute("data-reduced-motion")).toBe("true");
+      fireEvent.click(screen.getByTestId("atelier-vivid-reset-btn"));
+      expect(panel.getAttribute("data-reduced-motion")).toBe("true");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("외부 내보내기에 실패하면 오류와 직접 복사할 미리보기를 제공한다", async () => {
+    const onExportCss = vi.fn().mockRejectedValue(new Error("unavailable destination"));
+    render(<StudioAtelierVibrantUiPanel onExportCss={onExportCss} />);
+    fireEvent.click(screen.getByTestId("atelier-vivid-copy-css-btn"));
+    await waitFor(() => expect(screen.getByTestId("atelier-vivid-status-banner").textContent).toContain("외부 내보내기에 실패했습니다."));
+    expect(screen.getByTestId("atelier-vivid-export-preview").getAttribute("data-format")).toBe("css");
+  });
+
   it("모션 감소 안전 토글 클릭 시 틸트(0°/0°)·잉크 물결 비활성·reduced-motion 상태가 즉시 스냅된다", () => {
     render(<StudioAtelierVibrantUiPanel />);
     fireEvent.click(screen.getByTestId("atelier-vivid-probe-bottom-right"));

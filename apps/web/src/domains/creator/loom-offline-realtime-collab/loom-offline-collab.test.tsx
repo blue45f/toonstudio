@@ -27,6 +27,55 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("검수 메타데이터 모형의 보안 경계", () => {
+  it("실제 공유 URL·암호키·보호 완료 상태를 생성하지 않는다", () => {
+    const link = generateE2eeForensicReviewLink({ allowDownload: true });
+    expect(link.reviewUrl).toBe("");
+    expect(link.keyFingerprint).toBe("");
+    expect(link.cipherSuite).toBe("none");
+    expect(link.plannedCipherSuite).toBe("AES-GCM-256");
+    expect(link.encryptionPerformed).toBe(false);
+    expect(link.keyMaterialGenerated).toBe(false);
+    expect(link.serverCanReadPlaintext).toBeNull();
+    expect(link.allowDownload).toBe(false);
+    expect(JSON.stringify(link)).not.toContain("#key=");
+  });
+
+  it("보호된 것처럼 꾸민 기존 메타데이터도 실제 암호 검증을 통과하지 못한다", () => {
+    const link = generateE2eeForensicReviewLink();
+    const forged = { ...link, cipherSuite: "AES-GCM-256" as const, keyDerivation: "ECDH-P256 + HKDF-SHA-256" as const, ivBytes: 12 as const, authTagBits: 128 as const, serverCanReadPlaintext: false as const, reviewUrl: "https://example.invalid/review#key=not-a-key" };
+    const result = verifyForensicReviewLink(forged);
+    expect(result.watermarkDigestValid).toBe(true);
+    expect(result.valid).toBe(false);
+    expect(result.zeroKnowledgeEnforced).toBe(false);
+    expect(result.cryptographicProtectionVerified).toBe(false);
+  });
+
+  it("모형 만료 시각을 지나도 실제 키 폐기를 주장하지 않는다", () => {
+    const link = generateE2eeForensicReviewLink();
+    const result = verifyForensicReviewLink(link, link.expiresAtEpochMs + 1);
+    expect(result.isExpired).toBe(true);
+    expect(result.valid).toBe(false);
+    expect(result.keyRevoked).toBe(false);
+    expect(result.verdictKo).not.toContain("키 파기 완료");
+  });
+
+  it("메타데이터 날짜의 비정상적인 유한 입력도 Date 범위 오류를 만들지 않는다", () => {
+    const link = generateE2eeForensicReviewLink({ nowEpochMs: Number.MAX_VALUE });
+    expect(Number.isFinite(Date.parse(link.expiresAtIso))).toBe(true);
+    expect(verifyForensicReviewLink(link).valid).toBe(false);
+  });
+
+  it("UI와 JSON도 공유 불가·암호화 미실행 상태를 명시한다", () => {
+    render(<StudioLoomOfflineCollabPanel />);
+    expect(screen.getByTestId("e2ee-verification-badge").textContent).toContain("공유 불가");
+    expect(screen.getByTestId("e2ee-review-url").textContent).toContain("생성하지 않습니다");
+    const { payload } = exportLoomOfflineCollabJson();
+    expect(payload.runtimeEvidence).toMatchObject({ opfsWritePerformed: false, sqliteWalPersisted: false, encryptionPerformed: false, keyMaterialGenerated: false, realtimeNetworkConnected: false });
+    expect(payload.realtimeCollab.e2eeVerification.valid).toBe(false);
+  });
+});
+
 describe("1. 비행기 모드 6단계 무결성 시뮬레이션 & WAL 크래시 0-손실 복구", () => {
   it("기본 오프라인 시뮬레이션(100 스트로크·18 레이어·6 3D 배치)이 6단계 모두 PASS이고 손실 0바이트를 증명한다", () => {
     const report = runOfflineOutageSimulation();
@@ -305,35 +354,37 @@ describe("5. 120Hz 16B 라이브 커서 · Follow Mode · A/B 브랜치 디프 &
   });
 });
 
-describe("6. E2EE(WebCrypto AES-GCM-256) 키 핑거프린트 & 포렌식 워터마크 만료 링크", () => {
-  it("서버가 평문을 열람할 수 없는 AES-GCM-256 E2EE 링크와 키 핑거프린트를 생성한다", () => {
+describe("6. 검수 메타데이터 모형·표식 예시·만료 시각", () => {
+  it("보호 기능을 실행하지 않는 모형이며 공유 URL과 키를 생성하지 않는다", () => {
     const link = generateE2eeForensicReviewLink({ episodeId: "EP-012-ROOFTOP", viewerHandle: "pd-han@review.local", expiresInHours: 24 });
-    expect(link.cipherSuite).toBe("AES-GCM-256");
-    expect(link.ivBytes).toBe(12);
-    expect(link.authTagBits).toBe(128);
-    expect(link.serverCanReadPlaintext).toBe(false);
-    expect(link.keyFingerprint).toMatch(/^E2EE:[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/u);
-    expect(link.reviewUrl).toContain("#key=");
+    expect(link.cipherSuite).toBe("none");
+    expect(link.plannedCipherSuite).toBe("AES-GCM-256");
+    expect(link.ivBytes).toBe(0);
+    expect(link.authTagBits).toBe(0);
+    expect(link.serverCanReadPlaintext).toBeNull();
+    expect(link.keyFingerprint).toBe("");
+    expect(link.reviewUrl).toBe("");
   });
 
-  it("외부 검수 링크 포렌식 워터마크에 열람자 식별자와 만료 UTC 시각이 자동 삽입된다", () => {
+  it("표식 모형에 예시 식별자와 만료 시각을 표시하되 원고에는 적용하지 않는다", () => {
     const link = generateE2eeForensicReviewLink({ viewerHandle: "editor-seo@review.local", expiresInHours: 12, nowEpochMs: DEFAULT_SIMULATION_EPOCH_MS });
     expect(link.watermarkText).toContain("editor-seo@review.local");
     expect(link.watermarkText).toContain("2026-11-27 00:00 UTC");
     expect(link.watermarkText).toContain("WM-");
   });
 
-  it("verifyForensicReviewLink가 만료 전에는 유효, 만료 후에는 자동 파기를 판정한다", () => {
+  it("만료 전후의 모형 시각을 구분하되 실제 보호·키 파기를 주장하지 않는다", () => {
     const link = generateE2eeForensicReviewLink({ expiresInHours: 12, nowEpochMs: DEFAULT_SIMULATION_EPOCH_MS });
     const activeCheck = verifyForensicReviewLink(link, DEFAULT_SIMULATION_EPOCH_MS + 3600 * 1000);
     const expiredCheck = verifyForensicReviewLink(link, DEFAULT_SIMULATION_EPOCH_MS + 13 * 3600 * 1000);
-    expect(activeCheck.valid).toBe(true);
+    expect(activeCheck.valid).toBe(false);
+    expect(activeCheck.cryptographicProtectionVerified).toBe(false);
     expect(activeCheck.isExpired).toBe(false);
     expect(expiredCheck.valid).toBe(false);
     expect(expiredCheck.isExpired).toBe(true);
   });
 
-  it("포렌식 워터마크 텍스트 변조 시 무결성 다이제스트 검증이 즉시 차단한다", () => {
+  it("표식 모형 텍스트 변경은 비암호 체크섬 불일치로만 보고한다", () => {
     const link = generateE2eeForensicReviewLink({ nowEpochMs: DEFAULT_SIMULATION_EPOCH_MS });
     const tampered = { ...link, watermarkText: `${link.watermarkText} TAMPERED` };
     const verdict = verifyForensicReviewLink(tampered, DEFAULT_SIMULATION_EPOCH_MS + 1000);

@@ -12,6 +12,7 @@ import {
   filterGlossaryEntries, type TechAiExecutionMode, type TechDiagramNode, type TechDiagramTone,
   type TechGlossaryCategory,
 } from "./tech-presentation-deck-data";
+import { TechWebRtcAndRareApiShowcase } from "./TechWebRtcAndRareApiShowcase";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
@@ -118,7 +119,7 @@ export function TechPresentationDeckSection(props: TechPresentationDeckSectionPr
     const clamped = Math.max(0, Math.min(totalSlides - 1, nextIndex));
     startSafeViewTransition(() => setSlideIndex(clamped));
     if (scrollToStage && typeof stageRef.current?.scrollIntoView === "function") {
-      stageRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      stageRef.current.scrollIntoView({ block: "nearest" });
     }
   };
 
@@ -297,7 +298,7 @@ export function TechPresentationDeckSection(props: TechPresentationDeckSectionPr
         </div>
       </article>
 
-      {/* 3. 전체 16장 목차 점프 보드 */}
+      {/* 3. 전체 18장 목차 점프 보드 */}
       <details open data-testid="tech-deck-toc" className="rounded-3xl border border-line bg-panel p-5">
         <summary className="cursor-pointer list-none text-sm font-bold text-fg sm:text-base">{copy.tocSummary}</summary>
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -325,7 +326,10 @@ export function TechPresentationDeckSection(props: TechPresentationDeckSectionPr
         </div>
       </details>
 
-      {/* 4. AI 보조·어시스턴트 8대 핵심 기술 하이라이트 그리드 */}
+      {/* 4. WebRTC 24파일 프로토콜 · 8대 권위 매트릭스 & 실측 희귀 웹 API 18종 카탈로그 */}
+      <TechWebRtcAndRareApiShowcase locale={locale} onJumpToSlide={(idx) => goToSlide(idx, true)} />
+
+      {/* 5. AI 보조·어시스턴트 8대 핵심 엔진 그리드 */}
       <div data-testid="tech-ai-showcase-grid" className="space-y-4 rounded-3xl border border-line bg-panel p-5 sm:p-6">
         <div>
           <p className="inline-flex items-center gap-1.5 font-display text-xs font-bold tracking-[0.12em] text-accent uppercase">
@@ -370,7 +374,7 @@ export function TechPresentationDeckSection(props: TechPresentationDeckSectionPr
         </div>
       </div>
 
-      {/* 5. 비전문가용 쉬운 기술 용어집 22선 (실시간 검색 + 카테고리 필터 + 슬라이드 점프) */}
+      {/* 6. 비전문가용 쉬운 기술 용어집 28선 (실시간 검색 + 카테고리 필터 + 슬라이드 점프) */}
       <div data-testid="tech-plain-glossary" className="space-y-4 rounded-3xl border border-line bg-panel p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="max-w-3xl">

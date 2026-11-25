@@ -37,6 +37,34 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("프로파일 계획과 실제 장치 실행의 경계", () => {
+  it("48가지 계획 모두 실제 가속 기능 활성화나 장치 실행을 주장하지 않는다", () => {
+    for (const siliconId of MODERN_SILICON_IDS) {
+      for (const environment of EXECUTION_ENVIRONMENTS) {
+        for (const memoryMode of MEMORY_ADDRESS_MODES) {
+          const { plan, json } = exportToonSiliconPlanJson({ siliconId, environment, memoryMode });
+          expect(plan.runtimeState).toMatchObject({ hardwareProbed: false, gpuExecuted: false, nativeBridgeExecuted: false, workersStarted: false, persisted: false });
+          expect(plan.runtimeBoundary.activeStandardLayers).toEqual([]);
+          expect(plan.runtimeBoundary.nativeFfiBridgeLayers).toEqual([]);
+          expect(plan.runtimeBoundary.plannedStandardLayers.length).toBeGreaterThan(0);
+          expect(plan.computeUnits.cpu.memory64Active).toBe(false);
+          expect(plan.computeUnits.cpu.sharedArrayBufferThreads).toBe(false);
+          expect(plan.computeUnits.gpu.f16ShaderEnabled).toBe(false);
+          expect(plan.computeUnits.npuTpu.zeroCopyMlTensorActive).toBe(false);
+          expect(JSON.parse(json).runtimeState.hardwareProbed).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("네이티브 환경을 골라도 브리지가 활성화됐다고 표시하지 않는다", () => {
+    render(<StudioToonSiliconPanel />);
+    fireEvent.click(screen.getByTestId("toon-silicon-env-desktop-native-bridge"));
+    expect(screen.getByTestId("toon-silicon-panel").textContent).not.toContain("브리지 활성");
+    expect(screen.getByTestId("toon-silicon-honesty-notice").textContent).toContain("장치 미검증");
+  });
+});
+
 const RAW_HEX_PATTERN = new RegExp("#[0-9a-fA-F]{3,8}\\b", "u");
 const RAW_RGB_PATTERN = new RegExp("\\b" + "rgb" + "a?\\s*\\(", "iu");
 const RAW_HSL_PATTERN = new RegExp("\\b" + "hsl" + "a?\\s*\\(", "iu");
@@ -205,9 +233,9 @@ describe("3. 브라우저 표준 API vs 데스크톱·모바일 네이티브 FFI
     expect(boundary.directNativeDriverBlocked).toBe(true);
     expect(boundary.blockedDirectApis).toEqual(["CUDA", "Metal", "ROCm", "NNAPI"]);
     expect(boundary.nativeFfiBridgeLayers).toEqual([]);
-    expect(boundary.activeStandardLayers.join(" ")).toContain("WASM64");
-    expect(boundary.activeStandardLayers.join(" ")).toContain("WebGPU");
-    expect(boundary.activeStandardLayers.join(" ")).toContain("LiteRT-Web TPU Delegate");
+    expect(boundary.plannedStandardLayers.join(" ")).toContain("WASM64");
+    expect(boundary.plannedStandardLayers.join(" ")).toContain("WebGPU");
+    expect(boundary.plannedStandardLayers.join(" ")).toContain("LiteRT-Web TPU Delegate");
   });
 
   it("mobile-pwa-android-ios는 브라우저 샌드박스를 유지하면서 모바일 워커·아틀라스 한도를 적용한다", () => {
@@ -222,24 +250,26 @@ describe("3. 브라우저 표준 API vs 데스크톱·모바일 네이티브 FFI
     expect(plan.computeUnits.gpu.atlasBudgetMb).toBeLessThanOrEqual(512);
   });
 
-  it("desktop-native-bridge는 네이티브 FFI 브리지와 실리콘별 플랫폼 Delegate를 활성화한다", () => {
+  it("desktop-native-bridge는 네이티브 FFI 브리지와 플랫폼 Delegate 연결 계획을 반환하되 실제 활성화하지 않는다", () => {
     const silicon = getModernSiliconProfile("google-tensor-tpu");
     const boundary = resolveRuntimeBoundary(silicon, "desktop-native-bridge", "wasm64-memory64");
-    expect(boundary.sandboxedBrowserTab).toBe(false);
-    expect(boundary.directNativeDriverBlocked).toBe(false);
-    expect(boundary.blockedDirectApis).toEqual([]);
-    expect(boundary.nativeFfiBridgeLayers.join(" ")).toContain("Tauri / Electron Native FFI Bridge");
-    expect(boundary.nativeFfiBridgeLayers.join(" ")).toContain("Android NNAPI / LiteRT C++ TPU Delegate");
+    expect(boundary.sandboxedBrowserTab).toBe(true);
+    expect(boundary.directNativeDriverBlocked).toBe(true);
+    expect(boundary.plannedDirectNativeDriverBlocked).toBe(false);
+    expect(boundary.blockedDirectApis).toEqual(["CUDA", "Metal", "ROCm", "NNAPI"]);
+    expect(boundary.plannedNativeFfiBridgeLayers.join(" ")).toContain("Tauri / Electron Native FFI Bridge");
+    expect(boundary.plannedNativeFfiBridgeLayers.join(" ")).toContain("Android NNAPI / LiteRT C++ TPU Delegate");
   });
 
   it("wasm64-memory64와 wasm32-simd-safe 전환 시 주소 비트(64 vs 32)와 표준 계층 표기가 정확히 바뀐다", () => {
     const p64 = buildSiliconFullPowerPlan({ siliconId: "intel-core-ultra-xe2", memoryMode: "wasm64-memory64" });
     const p32 = buildSiliconFullPowerPlan({ siliconId: "intel-core-ultra-xe2", memoryMode: "wasm32-simd-safe" });
-    expect(p64.computeUnits.cpu.memory64Active).toBe(true);
+    expect(p64.computeUnits.cpu.memory64Active).toBe(false);
+    expect(p64.computeUnits.cpu.plannedMemory64).toBe(true);
     expect(p64.computeUnits.cpu.addressSpaceBits).toBe(64);
     expect(p32.computeUnits.cpu.memory64Active).toBe(false);
     expect(p32.computeUnits.cpu.addressSpaceBits).toBe(32);
-    expect(p32.runtimeBoundary.activeStandardLayers[0]).toContain("WASM32");
+    expect(p32.runtimeBoundary.plannedStandardLayers[0]).toContain("WASM32");
   });
 
   it("브라우저 탭은 128-bit WASM SIMD를, 네이티브 브리지는 SVE2(256)·Zen5 AVX-512(512)를 정직하게 분리한다", () => {
@@ -280,18 +310,19 @@ describe("4. 실리콘 맞춤형 동적 커널 배정기 (buildSiliconFullPowerP
     expect(plan32.computeUnits.gpu.atlasBudgetMb).toBeLessThan(plan64.computeUnits.gpu.atlasBudgetMb);
   });
 
-  it("Google Tensor TPU에서 선화·채색 AI 선택 시 64-정렬 정적 텐서와 Zero-Copy MLTensor(Readback 0회)를 배정한다", () => {
+  it("Google Tensor TPU에서 선화·채색 AI 선택 시 64-정렬 정적 텐서와 Zero-Copy MLTensor(Readback 가정 0회)를 계획한다", () => {
     const plan = buildSiliconFullPowerPlan({
       siliconId: "google-tensor-tpu",
       focusWorkloadId: "lineart-color-ai",
     });
     expect(plan.computeUnits.npuTpu.paddedFocusShape).toEqual([1, 4, 768, 1280]);
-    expect(plan.computeUnits.npuTpu.zeroCopyMlTensorActive).toBe(true);
+    expect(plan.computeUnits.npuTpu.zeroCopyMlTensorActive).toBe(false);
+    expect(plan.computeUnits.npuTpu.plannedZeroCopyMlTensor).toBe(true);
     expect(plan.computeUnits.npuTpu.cpuStagingReadbacks).toBe(0);
     expect(plan.activeWorkloadRoute.primaryUnit).toBe("npu-tpu");
   });
 
-  it("Exynos Xclipse는 브라우저 모드에서 스테이징 복사(Readback 2회)로 폴백하고 네이티브 브리지에서 Zero-Copy를 연다", () => {
+  it("Exynos Xclipse는 브라우저 모드에서 스테이징 복사(Readback 가정 2회)를 계획하고 네이티브 모드에서 Zero-Copy를 계획한다", () => {
     const browserPlan = buildSiliconFullPowerPlan({
       siliconId: "samsung-exynos-xclipse",
       environment: "browser-web-standard",
@@ -303,9 +334,11 @@ describe("4. 실리콘 맞춤형 동적 커널 배정기 (buildSiliconFullPowerP
       focusWorkloadId: "lineart-color-ai",
     });
     expect(browserPlan.computeUnits.npuTpu.zeroCopyMlTensorActive).toBe(false);
-    expect(browserPlan.computeUnits.npuTpu.cpuStagingReadbacks).toBe(2);
+    expect(browserPlan.computeUnits.npuTpu.cpuStagingReadbacks).toBe(0);
+    expect(browserPlan.computeUnits.npuTpu.plannedCpuStagingReadbacks).toBe(2);
     expect(browserPlan.activeWorkloadRoute.memoryPathLabel).toContain("CPU Staging (2 Readbacks)");
-    expect(nativePlan.computeUnits.npuTpu.zeroCopyMlTensorActive).toBe(true);
+    expect(nativePlan.computeUnits.npuTpu.zeroCopyMlTensorActive).toBe(false);
+    expect(nativePlan.computeUnits.npuTpu.plannedZeroCopyMlTensor).toBe(true);
     expect(nativePlan.computeUnits.npuTpu.cpuStagingReadbacks).toBe(0);
   });
 

@@ -434,6 +434,10 @@ describe("4. WGSL 화풍 변환 컴퓨트 커널 & JSON 매니페스트 내보�
     expect(parsed.ondeviceAiDispatch.totalServerUploadBytes).toBe(0);
     expect(parsed.ondeviceAiDispatch.cloudServerCostWon).toBe(0);
     expect(parsed.ondeviceAiDispatch.tasks).toHaveLength(7);
+    expect(parsed.ondeviceAiDispatch).toMatchObject({
+      inferencePerformed: false,
+      hardwareProbePerformed: false,
+    });
     expect(parsed.violetAudit.violetPercent).toBe(0);
     expect(raw).not.toMatch(EXTERNAL_BRAND_REGEX);
   });

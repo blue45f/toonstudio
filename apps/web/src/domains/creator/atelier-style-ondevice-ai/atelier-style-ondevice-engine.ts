@@ -450,13 +450,13 @@ export function resolveOndeviceAiDispatchMatrix(siliconId?: ToonSiliconProfileId
     const routeHonestyTier: DispatchRouteHonestyTier =
       task.complexityClass === "micro" ? "web-standard-ready" : pureBrowserReady ? "web-standard-with-native-boost" : "native-bridge-recommended";
     const executionNoteKo =
-      routeHonestyTier === "web-standard-ready" ? `브라우저 표준(${webStandardPath}) 단독 즉시 실행 · 서버 전송 0B`
-        : routeHonestyTier === "web-standard-with-native-boost" ? `브라우저(${webStandardPath}) 오프라인 실행 · ${silicon.nativeBridgeApi} 연결 시 가속 확장`
-          : `브라우저 타일 분할(${webStandardPath}) 동작 · 대용량 작업은 ${silicon.nativeBridgeApi} 권장`;
+      routeHonestyTier === "web-standard-ready" ? `브라우저 표준(${webStandardPath}) 사용 계획`
+        : routeHonestyTier === "web-standard-with-native-boost" ? `브라우저(${webStandardPath}) 사용 계획 · ${silicon.nativeBridgeApi} 연동 후보`
+          : `브라우저 타일 분할(${webStandardPath}) 계획 · 대용량 작업의 ${silicon.nativeBridgeApi} 연동 후보`;
     const executionNoteEn =
-      routeHonestyTier === "web-standard-ready" ? `Direct browser standard (${webStandardPath}) with 0B upload.`
-        : routeHonestyTier === "web-standard-with-native-boost" ? `Offline browser (${webStandardPath}); optional ${silicon.nativeBridgeApi} boost.`
-          : `Chunked browser (${webStandardPath}); ${silicon.nativeBridgeApi} recommended for mobile batches.`;
+      routeHonestyTier === "web-standard-ready" ? `Planned browser path (${webStandardPath}).`
+        : routeHonestyTier === "web-standard-with-native-boost" ? `Planned browser path (${webStandardPath}) with optional ${silicon.nativeBridgeApi} integration.`
+          : `Planned browser tiling (${webStandardPath}) with ${silicon.nativeBridgeApi} as an option for large batches.`;
     return {
       task, siliconId: silicon.id, quantization, webStandardPath, nativeBridgePath: silicon.nativeBridgeApi,
       routeHonestyTier, memoryFootprintTier: isMobile ? task.memoryTierMobile : task.memoryTierPc,
@@ -469,8 +469,8 @@ export function resolveOndeviceAiDispatchMatrix(siliconId?: ToonSiliconProfileId
     totalTasks: rows.length, totalServerUploadBytes: 0, cloudServerCostWon: 0, allOfflineCapable: true,
     webStandardReadyCount: rows.filter((r) => r.routeHonestyTier !== "native-bridge-recommended").length,
     nativeBridgeRecommendedCount: rows.filter((r) => r.routeHonestyTier === "native-bridge-recommended").length,
-    honestyNoticeKo: "아키텍처 디스패치 명세(ondevice-style-and-ai-dispatch-architecture): 허위 실측 ms/FPS를 표시하지 않으며 브라우저 표준(WebNN · LiteRT-Web)과 네이티브 브리지 경로를 투명하게 구분합니다.",
-    honestyNoticeEn: "Architecture dispatch spec (ondevice-style-and-ai-dispatch-architecture): no fabricated ms/FPS claims; distinguishes browser WebNN/LiteRT-Web from OS native bridges.",
+    honestyNoticeKo: "기기 프로필로 실행 경로를 계획합니다. 이 미리보기에서는 기기 가속기나 AI 모델을 실행하지 않습니다.",
+    honestyNoticeEn: "Device profiles describe planned paths. This preview does not run an accelerator or AI model.",
   };
 }
 
@@ -593,6 +593,7 @@ export function exportAtelierStyleOndeviceJson(snapshot: AtelierStyleOndeviceSna
       styleDna: snapshot.transform.styleDna, scene3dSyncPlan: snapshot.transform.scene3dSyncPlan,
     },
     ondeviceAiDispatch: {
+      inferencePerformed: false, hardwareProbePerformed: false,
       siliconId: snapshot.dispatchMatrix.silicon.id, siliconName: snapshot.dispatchMatrix.silicon.nameEn,
       formFactor: snapshot.dispatchMatrix.silicon.formFactor, totalTasks: snapshot.dispatchMatrix.totalTasks,
       totalServerUploadBytes: snapshot.dispatchMatrix.totalServerUploadBytes, cloudServerCostWon: snapshot.dispatchMatrix.cloudServerCostWon,

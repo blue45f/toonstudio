@@ -122,7 +122,26 @@ const LazyStudioShapr3dCadPanel = lazy(() =>
   import("../shapr3d-parametric-cad").then((module) => ({ default: module.StudioShapr3dCadPanel })),
 );
 
+const LazyStudioAtelierCastPanel = lazy(() =>
+  import("../atelier-cast-customizer").then((module) => ({ default: module.StudioAtelierCastPanel })),
+);
+
+const LazyStudioAtelierOpticalFilterPanel = lazy(() =>
+  import("../atelier-optical-filters").then((module) => ({ default: module.StudioAtelierOpticalFilterPanel })),
+);
+const LazyStudioAtelierSolidCadProPanel = lazy(() =>
+  import("../atelier-solid-cad-pro").then((module) => ({ default: module.StudioAtelierSolidCadProPanel })),
+);
+
+const LazyStudioAtelierStyleOndevicePanel = lazy(() =>
+  import("../atelier-style-ondevice-ai").then((module) => ({ default: module.StudioAtelierStyleOndevicePanel })),
+);
+
 type Csp3dTabId =
+  | "stylePipelinePreview"
+  | "opticalFilterPreview"
+  | "solidCadPreview"
+  | "castDesignPreview"
   | "puppet"
   | "surface3d"
   | "hand3d"
@@ -158,6 +177,10 @@ const CSP3D_TABS: readonly {
   { id: "watermark", labelKo: "비가시 워터마크·속도곡선·경계블러", labelEn: "Anti-AI Watermark · Velocity · Safe Blur" },
   { id: "commercialPro", labelKo: "리라이트·식자·투고 구성 예제", labelEn: "Relight · Lettering · Submission Examples" },
   { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
+  { id: "castDesignPreview", labelKo: "캐릭터 체형과 옷 맞춤 미리보기", labelEn: "Character Shape and Clothing Fit Preview" },
+  { id: "opticalFilterPreview", labelKo: "광학 필터와 스크린톤 미리보기", labelEn: "Optical Filter and Screentone Preview" },
+  { id: "stylePipelinePreview", labelKo: "화풍 변환과 기기별 연산 계획", labelEn: "Style Transformations and Device Planning" },
+  { id: "solidCadPreview", labelKo: "입체 도면과 치수 미리보기", labelEn: "Solid Drawing and Dimensions Preview" },
   { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
   { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
   { id: "koreanLettering", labelKo: "한글 조판·SVG 글자 배치 예제", labelEn: "Korean Typesetting · SVG Text Examples" },
@@ -242,6 +265,14 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <ShieldCheck size={15} aria-hidden="true" />;
     case "commercialPro":
       return <Layers size={15} aria-hidden="true" />;
+    case "stylePipelinePreview":
+      return <Palette size={15} aria-hidden="true" />;
+    case "opticalFilterPreview":
+      return <Sun size={15} aria-hidden="true" />;
+    case "solidCadPreview":
+      return <Box size={15} aria-hidden="true" />;
+    case "castDesignPreview":
+      return <Smile size={15} aria-hidden="true" />;
     case "charlabCsp":
       return <Watch size={15} aria-hidden="true" />;
     case "p3ColorLight":
@@ -292,6 +323,10 @@ export function Csp3dUpgradeHubPanel() {
           {active === "watermark" ? <LazyCspWatermarkVelocityPanel /> : null}
           {active === "commercialPro" ? <LazyProCommercialPanel /> : null}
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
+          {active === "castDesignPreview" ? <LazyStudioAtelierCastPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "opticalFilterPreview" ? <LazyStudioAtelierOpticalFilterPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "stylePipelinePreview" ? <LazyStudioAtelierStyleOndevicePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "solidCadPreview" ? <LazyStudioAtelierSolidCadProPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
           {active === "koreanLettering" ? <LazyKoreanLetteringPanel /> : null}

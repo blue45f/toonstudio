@@ -314,7 +314,7 @@ describe("Wave 63C: CalmChrome GNB·LNB·탑메뉴·푸터 평면 동선 및 적
     expect(restored.frames[2]?.isCurrentHead).toBe(true);
     expect(restored.frames[2]?.canRestore).toBe(false);
     expect(restored.resumeBreadcrumbKo[0]).toBe("3D/캐릭터");
-    expect(restored.lastActionSummaryKo).toContain("1클릭 복원 완료");
+    expect(restored.lastActionSummaryKo).toContain("예시 프레임을 선택했습니다.");
   });
 
   it("33. restoreVisualUndoSnapshot이 범위 밖 인덱스를 0과 마지막 인덱스로 안전 클램프한다", () => {
@@ -396,10 +396,11 @@ describe("Wave 63C: CalmChrome GNB·LNB·탑메뉴·푸터 평면 동선 및 적
     expect(screen.getByTestId("active-phase-topbar-tools").textContent).toContain("솔리드 돌출");
     expect(screen.getByTestId("active-phase-topbar-tools").textContent).toContain("의상 케이지 리핏");
     expect(screen.getByTestId("active-phase-lnb-items").textContent).toContain("AtelierSolid CAD");
-    expect(screen.getByTestId("active-phase-footer-status").textContent).toContain("매니폴드 0 오류");
+    expect(screen.getByTestId("active-phase-footer-status").textContent).toContain("메시 검사 상태 예시");
 
     fireEvent.click(screen.getByTestId("phase-tab-qa-export"));
     expect(screen.getByTestId("active-phase-topbar-tools").textContent).toContain("권리 BOM 점검");
+    expect(screen.getByTestId("active-phase-footer-status").textContent).toContain("권리 검사 상태 표시 예시");
   });
 
   it("39. 라이브 Cmd+K 검색 입력·칩 클릭이 결과를 랭킹하고 목적지 클릭 시 onSelectRoute를 호출한다", () => {

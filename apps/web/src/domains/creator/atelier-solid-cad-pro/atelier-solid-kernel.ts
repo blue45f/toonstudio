@@ -1,7 +1,7 @@
 /**
- * AtelierSolid Pro — 실측 수밀 Half-Edge 매니폴드 B-Rep 솔리드 커널,
- * 10종 직접 모델링·어셈블리 피처 연산, KilnExport(Binary STL · STEP AP214 · GD&T 도면),
- * AtelierStage 1-클릭 웹툰 3D→2D LT 선화·원근선 브리지 엔진.
+ * AtelierSolid Pro — CPU 프리셋 삼각 메시·Half-Edge 위상·오프셋 조립 참고값 계산.
+ * Binary STL 버퍼와 원근 치수 참고도·LT 페이로드를 생성하며 실제 원고·권리 출고는 미연동이다.
+ * 전체 형상·재가져오기가 미검증인 STEP AP214 출력은 차단한다.
  * 미터 스케일(1.0 = 1m) · 바닥 접지(minY = 0.000m) · OKLCH 전용(바이올렛 270~320° 0%).
  */
 
@@ -462,7 +462,7 @@ function buildAssemblyInternal(paramsInput?: Partial<AtelierSolidParams>) {
   return { preset, params, resolved, mesh: finalizeWatertightMesh(builder), assembly };
 }
 
-/** 실제 3D 수밀 B-Rep/폴리헤드랄 솔리드 메쉬 빌더 (1.0 = 1m, 바닥 자동 접지 minY === 0). */
+/** CPU 폴리헤드랄 메시 빌더 (1.0 = 1m, 바닥 자동 접지 minY === 0). */
 export const buildWatertightSolidMesh = (paramsInput?: Partial<AtelierSolidParams>): WatertightSolidMesh => buildAssemblyInternal(paramsInput).mesh;
 
 /** AtelierSolid Pro 전체 파라메트릭·수밀·어셈블리 통합 평가. */
@@ -491,40 +491,18 @@ export function exportBinaryStlBuffer(mesh: WatertightSolidMesh, label = "Atelie
   return bytes;
 }
 
-/** ISO-10303-21 STEP AP214 ASCII B-Rep 파일 문자열 생성. */
-export function exportStepAp214Ascii(evaluation: AtelierSolidEvaluation): string {
-  const { preset, mesh, topology } = evaluation;
-  const lines: string[] = [
-    "ISO-10303-21;", "HEADER;",
-    `FILE_DESCRIPTION(('AtelierSolid Pro Manifold Solid (${preset.id})'),'2;1');`,
-    `FILE_NAME('${preset.id}.step','2026-11-26T00:00:00',('AtelierSolid Pro'),('ToonStudio AtelierStage'),'KilnExport AP214','AtelierSolid Kernel','');`,
-    "FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));", "ENDSEC;", "DATA;",
-    "#1=APPLICATION_CONTEXT('automotive design');", "#2=APPLICATION_PROTOCOL_DEFINITION('international standard','automotive_design',2000,#1);",
-    "#3=PRODUCT_CONTEXT('',#1,'mechanical');", `#4=PRODUCT('${preset.id}','${preset.nameEn}','Watertight=${topology.watertight} Vol=${topology.signedVolumeCm3}cm3',(#3));`,
-    "#5=PRODUCT_DEFINITION_FORMATION('1','',#4);", "#6=PRODUCT_DEFINITION_CONTEXT('part definition',#1,'design');",
-    "#7=PRODUCT_DEFINITION('design','',#5,#6);", "#8=PRODUCT_DEFINITION_SHAPE('','',#7);",
-    "#9=(LENGTH_UNIT()NAMED_UNIT(*)SI_UNIT(.MILLI.,.METRE.));", "#10=(NAMED_UNIT(*)PLANE_ANGLE_UNIT()SI_UNIT($,.RADIAN.));",
-    "#11=(NAMED_UNIT(*)SI_UNIT($,.STERADIAN.)SOLID_ANGLE_UNIT());", "#12=UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(0.05),#9,'DISTANCE_ACCURACY_VALUE','GD&T +-0.05mm');",
-    "#13=(GEOMETRIC_REPRESENTATION_CONTEXT(3)GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#12))GLOBAL_UNIT_ASSIGNED_CONTEXT((#9,#10,#11))REPRESENTATION_CONTEXT('AtelierSolid','3D'));",
-    "#14=CARTESIAN_POINT('Origin',(0.0,0.0,0.0));", "#15=DIRECTION('AxisZ',(0.0,0.0,1.0));", "#16=DIRECTION('AxisX',(1.0,0.0,0.0));", "#17=AXIS2_PLACEMENT_3D('WorldFrame',#14,#15,#16);",
-  ];
-  let id = 20;
-  const faceIds: number[] = [];
-  const fmt = (idx: number): string => `(${(mesh.positions[idx] * 1000).toFixed(3)},${(mesh.positions[idx + 1] * 1000).toFixed(3)},${(mesh.positions[idx + 2] * 1000).toFixed(3)})`;
-  for (let t = 0; t < Math.min(mesh.triangleCount, 96); t += 1) {
-    const p0 = id++, p1 = id++, p2 = id++, v0 = id++, v1 = id++, v2 = id++, lp = id++, bnd = id++, dr = id++, ax = id++, pl = id++, fc = id++;
-    lines.push(
-      `#${p0}=CARTESIAN_POINT('',${fmt(mesh.indices[t * 3] * 3)});`, `#${p1}=CARTESIAN_POINT('',${fmt(mesh.indices[t * 3 + 1] * 3)});`, `#${p2}=CARTESIAN_POINT('',${fmt(mesh.indices[t * 3 + 2] * 3)});`,
-      `#${v0}=VERTEX_POINT('',#${p0});`, `#${v1}=VERTEX_POINT('',#${p1});`, `#${v2}=VERTEX_POINT('',#${p2});`,
-      `#${lp}=POLY_LOOP('',(#${p0},#${p1},#${p2}));`, `#${bnd}=FACE_OUTER_BOUND('',#${lp},.T.);`,
-      `#${dr}=DIRECTION('',(${mesh.faceNormals[t * 3].toFixed(5)},${mesh.faceNormals[t * 3 + 1].toFixed(5)},${mesh.faceNormals[t * 3 + 2].toFixed(5)}));`,
-      `#${ax}=AXIS2_PLACEMENT_3D('',#${p0},#${dr},#16);`, `#${pl}=PLANE('',#${ax});`, `#${fc}=ADVANCED_FACE('',(#${bnd}),#${pl},.T.);`,
-    );
-    faceIds.push(fc);
+export class StepAp214ExportUnavailableError extends Error {
+  readonly code = "STEP_AP214_UNVERIFIED";
+  readonly exportPerformed = false;
+  constructor(readonly presetId: AtelierSolidPresetId) {
+    super(`STEP_AP214_UNVERIFIED: ${presetId} — complete topology and import round-trip are not verified`);
+    this.name = "StepAp214ExportUnavailableError";
   }
-  const sh = id++, br = id++, rp = id++, sr = id;
-  lines.push(`#${sh}=CLOSED_SHELL('AtelierSolidShell',(${faceIds.map((f) => `#${f}`).join(",")}));`, `#${br}=MANIFOLD_SOLID_BREP('${preset.id}',#${sh});`, `#${rp}=ADVANCED_BREP_SHAPE_REPRESENTATION('${preset.id}',(#17,#${br}),#13);`, `#${sr}=SHAPE_DEFINITION_REPRESENTATION(#8,#${rp});`, "ENDSEC;", "END-ISO-10303-21;");
-  return lines.join("\n");
+}
+
+/** 전체 형상·AP214 재가져오기 검증 전에는 잘린 STEP 파일을 반환하지 않는다. */
+export function exportStepAp214Ascii(evaluation: AtelierSolidEvaluation): never {
+  throw new StepAp214ExportUnavailableError(evaluation.preset.id);
 }
 
 function projectPoint3D(p: Vec3, c: Vec3, yR: number, pR: number, mode: PerspectiveMode, sc: number, d: number, cx: number, cy: number) {
@@ -587,7 +565,7 @@ export function exportWebtoonLtLineartPayload(evaluation: AtelierSolidEvaluation
   };
 }
 
-/** GD&T 공차(±0.05mm) 포함 정투상 3면도 + 등각투영 도면 좌표 및 SVG 생성. */
+/** 원근 4방향 치수 참고도. 표시 공차는 예시값이며 정투상·제조 정밀도를 검증하지 않는다. */
 export function exportEngineeringDrawingSvgSpec(evaluation: AtelierSolidEvaluation): EngineeringDrawingSpec {
   const { preset, dimensionsMm, topology, params } = evaluation;
   const gdtCallouts: GdtCalloutSpec[] = [

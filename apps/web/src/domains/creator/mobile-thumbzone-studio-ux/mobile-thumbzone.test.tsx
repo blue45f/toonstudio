@@ -165,7 +165,7 @@ describe("2. 엄지 도달 호 · 좌우 완전 미러 · 손바닥 오터치 �
     }
   });
 
-  it("5종 기기 닫힘 상태(좌/우손) 모두 캔버스 실가용 면적 >= 82%, 엄지 편안 적중률 100%, 하단 38% 100%를 충족한다", () => {
+  it("5종 기기 닫힘 상태의 82% 목표는 전체 화면 기준이며 엄지 적중률과 하단 배치는 100%다", () => {
     const hands: readonly Handedness[] = ["right", "left"];
     for (const vp of MOBILE_STUDIO_VIEWPORTS) {
       for (const handedness of hands) {
@@ -175,11 +175,20 @@ describe("2. 엄지 도달 호 · 좌우 완전 미러 · 손바닥 오터치 �
           bottomSheetState: "closed",
         });
         expect(res.metrics.canvasUsableAreaPct).toBeGreaterThanOrEqual(CANVAS_USABLE_AREA_TARGET_PCT);
-        expect(res.metrics.meetsCanvas82Gate).toBe(true);
+        expect(res.metrics.meetsCanvas82Gate).toBe(
+          res.metrics.canvasUsableAreaPx2 * 100 >= res.metrics.totalViewportAreaPx2 * CANVAS_USABLE_AREA_TARGET_PCT,
+        );
         expect(res.metrics.easyReachHitRatePct).toBe(100);
         expect(res.metrics.lower38CompliancePct).toBe(100);
       }
     }
+  });
+
+  it("iPhone 375의 안전 영역 비율이 82%를 넘겨도 전체 화면이 77.7%이면 목표 미달이다", () => {
+    const res = evaluateThumbZoneErgonomics({ viewportId: "iphone-compact-375", bottomSheetState: "closed" });
+    expect(res.metrics.canvasUsableAreaPct).toBe(86.3);
+    expect(res.metrics.canvasGrossViewportPct).toBe(77.7);
+    expect(res.metrics.meetsCanvas82Gate).toBe(false);
   });
 
   it("5종 기기 × 3시트 × 2손 × 2몰입(60조합) 전수에서 44px 준수율 100%, Safe 충돌 0건, 겹침 0건, 오버플로우 0px를 유지한다", () => {
@@ -452,7 +461,7 @@ describe("4. StudioMobileThumbzonePanel 라이브 시뮬레이터 UI 인터랙�
     expect(halfCanvas).toBeGreaterThan(expandedCanvas);
   });
 
-  it("몰입 모드 토글이 상단바·슬라이더·시트를 숨기고 복귀 버튼과 98%+ 캔버스 면적을 표시한다", () => {
+  it("몰입 모드가 도구를 숨기고 복귀 버튼과 전체 화면 기준 캔버스 비율을 표시한다", () => {
     render(<StudioMobileThumbzonePanel />);
     const toggle = screen.getByTestId("thumbzone-immersive-toggle");
 
@@ -461,7 +470,8 @@ describe("4. StudioMobileThumbzonePanel 라이브 시뮬레이터 UI 인터랙�
     expect(screen.queryByTestId("thumbzone-topbar-layer")).toBeNull();
     expect(screen.queryByTestId("thumbzone-vertical-sliders-layer")).toBeNull();
     expect(screen.getByTestId("thumbzone-immersive-restore-layer")).toBeTruthy();
-    expect(Number.parseFloat(screen.getByTestId("thumbzone-metric-canvas").textContent ?? "0")).toBeGreaterThanOrEqual(98);
+    const immersive = evaluateThumbZoneErgonomics({ viewportId: "iphone-compact-375", immersiveMode: true });
+    expect(screen.getByTestId("thumbzone-metric-canvas").textContent).toBe(`${immersive.metrics.canvasGrossViewportPct}%`);
 
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-pressed")).toBe("false");

@@ -134,6 +134,9 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
   const [jobs, setJobs] = useState<readonly StudioAiJob[]>([]);
   const [error, setError] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [applyCopyFailed, setApplyCopyFailed] = useState(false);
+  const jobDrafts = useRef(new Map<string, string>());
+  const applyingCopy = useRef(false);
   const pending = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const formId = useId();
@@ -188,7 +191,11 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
     runningJob = transitionStudioAiJob(runningJob, { type: "request-confirmation", at: createdAt });
     runningJob = transitionStudioAiJob(runningJob, { type: "confirm", accepted: true, at: createdAt });
     runningJob = transitionStudioAiJob(runningJob, { type: "start", at: createdAt });
+    const retainedJobs = jobs.slice(0, 7);
     setJobs((prev) => [runningJob, ...prev].slice(0, 8));
+    for (const id of jobDrafts.current.keys()) {
+      if (!retainedJobs.some((job) => job.id === id)) jobDrafts.current.delete(id);
+    }
 
     const controller = new AbortController();
     pending.current = controller;
@@ -235,6 +242,7 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
             : j,
         ),
       );
+      jobDrafts.current.set(jobId, result.data.content);
       setAnswer({
         suggestionId: selected.id,
         content: result.data.content,
@@ -274,6 +282,38 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
       setCopyState("copied");
     } catch {
       setCopyState("failed");
+    }
+  };
+
+  const applyJobCopy = async (jobId: string, mode: StudioAiApplicationMode) => {
+    if (applyingCopy.current || !jobs.some((job) => job.id === jobId && job.status === "approved")) return;
+    const content = jobDrafts.current.get(jobId);
+    setApplyCopyFailed(false);
+    applyingCopy.current = true;
+    try {
+      if (content === undefined || !navigator.clipboard?.writeText) {
+        setApplyCopyFailed(true);
+        return;
+      }
+      await navigator.clipboard.writeText(content);
+      const at = new Date().toISOString();
+      setJobs((prev) =>
+        prev.map((job) => job.id === jobId && job.status === "approved"
+          ? transitionStudioAiJob(job, {
+              type: "apply",
+              at,
+              application: {
+                mode,
+                targetDocumentId: "director-draft-buffer",
+                createdObjectIds: [`copy-${jobId}`],
+              },
+            })
+          : job),
+      );
+    } catch {
+      setApplyCopyFailed(true);
+    } finally {
+      applyingCopy.current = false;
     }
   };
 
@@ -517,35 +557,28 @@ export function AiCreativeDirectorPanel({ className }: { readonly className?: st
             </article>
           ) : null}
 
+          {applyCopyFailed ? (
+            <p role="alert" className="mt-4 text-sm text-bad">
+              {bt("결과를 복사하지 못했어요. 브라우저의 클립보드 권한을 확인한 뒤 다시 시도해 주세요.", "Could not copy the result. Check your browser’s clipboard permission and try again.")}
+            </p>
+          ) : null}
+
           {jobs.length > 0 ? (
             <StudioAiJobQueuePanel
               className="mt-4"
               jobs={jobs}
+              clipboardCopy={{
+                description: bt("승인한 제안만 복사할 수 있어요. 원고는 변경되지 않아요.", "Only approved suggestions can be copied. Your work is not changed."),
+                actionLabel: bt("클립보드에 복사", "Copy to clipboard"),
+                completeLabel: bt("복사 완료", "Copied"),
+              }}
               onApprove={(jobId) => {
                 const at = new Date().toISOString();
                 setJobs((prev) =>
                   prev.map((j) => (j.id === jobId && j.status === "preview-ready" ? transitionStudioAiJob(j, { type: "approve", at }) : j)),
                 );
               }}
-              onApply={(jobId, mode: StudioAiApplicationMode) => {
-                const at = new Date().toISOString();
-                setJobs((prev) =>
-                  prev.map((j) =>
-                    j.id === jobId && j.status === "approved"
-                      ? transitionStudioAiJob(j, {
-                          type: "apply",
-                          at,
-                          application: {
-                            mode,
-                            targetDocumentId: "director-draft-buffer",
-                            createdObjectIds: [`copy-${jobId}`],
-                          },
-                        })
-                      : j,
-                  ),
-                );
-                void copyAnswer();
-              }}
+              onApply={(jobId, mode) => void applyJobCopy(jobId, mode)}
               onRetry={() => {
                 void submit();
               }}

@@ -3,7 +3,7 @@
  *
  * - 원클릭 "인터넷 강제 차단(비행기 모드)" 토글 + 오프라인 스트로크 추가 + 크래시 WAL 복구 + 온라인 RLE-Delta 자동 병합
  * - 4인 동시 분업 레인(선화·밑색·3D 배경·식자) & 순수 시맨틱 OKLCH SVG 보드(공간 핀·빨간펜·120Hz 라이브 커서·따라보기)
- * - A/B안 비주얼 디프 브랜치 & 타임머신 롤백 + WebCrypto AES-GCM-256 E2EE 포렌식 워터마크 만료 링크 + JSON 내보내기
+ * - A/B안 비주얼 디프 브랜치 & 타임머신 롤백 + 검수 메타데이터 모형(암호화·키·공유 URL 미생성) + JSON 내보내기
  * - Calm Atelier 토큰 엄수(원시 색·바이올렛 265~325°·광범위 트랜지션·장식 아이콘·Web Storage·기본 빈 객체 props 0건)
  */
 
@@ -322,7 +322,7 @@ export function StudioLoomOfflineCollabPanel(props: StudioLoomOfflineCollabPanel
   return (
     <section
       data-testid="studio-loom-offline-collab-panel"
-      aria-label={pick("LoomSync 완전 오프라인 비행기 모드 시뮬레이터 및 실시간 팀 협업 제어판", "LoomSync Offline Outage Simulator & Realtime Team Collaboration")}
+      aria-label={pick("LoomSync 오프라인·팀 협업 메모리 참조 예제", "LoomSync Offline Outage Simulator & Realtime Team Collaboration")}
       className={`space-y-5 rounded-2xl border border-line bg-canvas p-5 text-fg ${props.className ?? ""}`.trim()}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
@@ -341,7 +341,7 @@ export function StudioLoomOfflineCollabPanel(props: StudioLoomOfflineCollabPanel
             {pick("비행기 모드 무손실 오프라인 검증 & 4인 실시간 협업 스튜디오", "Airplane-Mode Zero-Loss Verifier & 4-Role Live Collab Studio")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("네트워크 완전 단절·크래시 복구 후 256×256 RLE-Delta 병합과 4역할 소프트 락·공간 음성핀·빨간펜·A/B 브랜치·E2EE 포렌식 링크를 한곳에서 검증합니다.", "Verify full outage crash recovery, 256×256 RLE-Delta merge, 4-role soft locks, spatial voice/redline pins, A/B branches, and E2EE forensic review links.")}
+            {pick("CPU 메모리 모형으로 오프라인 복구·타일 병합·4역할 협업·검수 메타데이터를 비교합니다. 실제 저장·팀 연결·암호화·공유 링크는 연결되지 않았습니다.", "Compare outage recovery, tile merge, team collaboration, and review metadata in a CPU memory model. Live persistence, team networking, encryption, and shared links are not connected.")}
           </p>
         </div>
 
@@ -605,20 +605,20 @@ export function StudioLoomOfflineCollabPanel(props: StudioLoomOfflineCollabPanel
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]">
             <KeyRound className="h-4 w-4 text-accent" aria-hidden="true" />
-            {pick("미공개 원고 E2EE(WebCrypto AES-GCM-256) & 열람자 포렌식 워터마크 만료 링크", "Unreleased Manuscript E2EE (AES-GCM-256) & Forensic Watermark Link")}
+            {pick("검수 메타데이터 모형 · 암호화/공유 미연결", "Review Metadata Model · No Encryption or Sharing")}
           </h3>
-          <span data-testid="e2ee-verification-badge" className="rounded-full border border-good bg-good-soft px-2.5 py-0.5 font-mono text-[11px] font-bold text-good">
-            {`${collabReport.e2eeLink.cipherSuite} · ${collabReport.e2eeLink.keyFingerprint}`}
+          <span data-testid="e2ee-verification-badge" className="rounded-full border border-line bg-card px-2.5 py-0.5 font-mono text-[11px] font-bold text-fg-2">
+            {pick("암호화 미실행 · 공유 불가", "Encryption Not Executed · Not Shareable")}
           </span>
         </div>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="space-y-1">
-            <label htmlFor={viewerInputId} className="block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("외부 검수 열람자 식별자", "External Reviewer Identifier")}</label>
+            <label htmlFor={viewerInputId} className="block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("검수자 식별자 예시", "Example Reviewer Identifier")}</label>
             <input id={viewerInputId} data-testid="e2ee-viewer-input" type="text" value={viewerHandle} onChange={(event) => setViewerHandle(event.target.value)} className={`min-h-11 w-full rounded-lg border border-line bg-card px-3 text-xs text-fg ${FOCUS_RING}`} />
           </div>
           <div className="space-y-1">
-            <span className="block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("링크 자동 만료 시간", "Auto-Expiry Window")}</span>
+            <span className="block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("모형 만료 시간 (접근 제어 없음)", "Model Expiry Window (No Access Control)")}</span>
             <div className="flex gap-1.5">
               {EXPIRY_PRESETS.map((hours) => (
                 <button key={hours} type="button" data-testid={`expiry-hours-${hours}`} aria-pressed={expiresInHours === hours} onClick={() => setExpiresInHours(hours)} className={expiresInHours === hours ? BTN_ACTIVE : BTN_OUTLINE}>{`${hours}h`}</button>
@@ -626,7 +626,7 @@ export function StudioLoomOfflineCollabPanel(props: StudioLoomOfflineCollabPanel
             </div>
           </div>
           <div className="space-y-1">
-            <span className="block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("포렌식 워터마크 밀도", "Watermark Density")}</span>
+            <span className="block text-[11px] font-semibold text-fg-2 [word-break:keep-all]">{pick("원고 미적용 표식 밀도 예시", "Example Watermark Density (Not Applied)")}</span>
             <div className="flex gap-1.5">
               {DENSITY_OPTIONS.map((opt) => (
                 <button key={opt.id} type="button" data-testid={`wm-density-${opt.id}`} aria-pressed={watermarkDensity === opt.id} onClick={() => setWatermarkDensity(opt.id)} className={watermarkDensity === opt.id ? BTN_ACTIVE : BTN_OUTLINE}>{isEn ? opt.en : opt.ko}</button>
@@ -637,11 +637,11 @@ export function StudioLoomOfflineCollabPanel(props: StudioLoomOfflineCollabPanel
 
         <div data-testid="forensic-watermark-preview" className="space-y-1 rounded-lg border border-line-strong bg-card p-3">
           <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-            <span className="font-semibold text-good [word-break:keep-all]">{isEn ? collabReport.e2eeVerification.verdictEn : collabReport.e2eeVerification.verdictKo}</span>
-            <span className="font-mono text-fg-3 tabular-nums">{`Digest ${collabReport.e2eeLink.watermarkDigest} · Download Off`}</span>
+            <span className="font-semibold text-fg-2 [word-break:keep-all]">{isEn ? collabReport.e2eeVerification.verdictEn : collabReport.e2eeVerification.verdictKo}</span>
+            <span className="font-mono text-fg-3 tabular-nums">{`Model checksum ${collabReport.e2eeLink.watermarkDigest} · Download Off`}</span>
           </div>
           <div className="font-mono text-xs font-semibold text-fg">{collabReport.e2eeLink.watermarkText}</div>
-          <div data-testid="e2ee-review-url" className="truncate font-mono text-[11px] text-fg-2">{collabReport.e2eeLink.reviewUrl}</div>
+          <div data-testid="e2ee-review-url" className="truncate font-mono text-[11px] text-fg-2">{collabReport.e2eeLink.reviewUrl || pick("실제 검수 URL과 암호키를 생성하지 않습니다.", "No live review URL or cryptographic key is generated.")}</div>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-2">

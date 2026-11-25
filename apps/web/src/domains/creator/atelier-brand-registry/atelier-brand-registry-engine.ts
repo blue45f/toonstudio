@@ -153,6 +153,10 @@ export interface BrandGovernanceExportOptions {
 
 export interface BrandRegistryExportPayload {
   readonly schemaVersion: typeof BRAND_REGISTRY_SCHEMA_VERSION;
+  readonly executionScope: {
+    readonly kind: "fixed-baseline-preview"; readonly liveFilesystemScan: false;
+    readonly filesystemMutation: false; readonly persistence: "none";
+  };
   readonly measuredAt: typeof BRAND_REGISTRY_MEASURED_AT;
   readonly baselineCommitShort: typeof BRAND_REGISTRY_BASELINE_COMMIT;
   readonly policyStatement: string;
@@ -606,8 +610,9 @@ export function exportBrandGovernanceMarkdown(options?: BrandGovernanceExportOpt
     "# ADR: ToonStudio 10대 고유 브랜드 아키텍처 네이밍 정본 및 외부 명칭 차단 정책",
     "",
     "- **문서 상태**: Proposed (Wave 60A 자동 감사 엔진 기준)",
-    `- **실측 일자**: ${BRAND_REGISTRY_MEASURED_AT}`,
+    `- **고정 스냅샷 일자**: ${BRAND_REGISTRY_MEASURED_AT}`,
     `- **기준 커밋**: \`${BRAND_REGISTRY_BASELINE_COMMIT}\``,
+    "- **실행 범위**: 입력 문자열의 규칙 검사와 고정 자료 미리보기입니다. 실시간 저장소 스캔이나 파일 변경을 실행하지 않습니다.",
     `- **스캔 범위**: \`crates/\` · \`packages/\` · \`apps/web/src/domains/creator/\` (총 ${REPOSITORY_SCAN_SUMMARY.totalScannedDirs}개 디렉터리, ${REPOSITORY_SCAN_SUMMARY.totalScannedFiles.toLocaleString("en-US")}개 파일)`,
     `- **실측 레거시 매칭**: ${REPOSITORY_SCAN_SUMMARY.totalMatchedDirs}개 디렉터리(벤더 격리 ${REPOSITORY_SCAN_SUMMARY.totalVendoredExemptDirs}개 포함), ${REPOSITORY_SCAN_SUMMARY.totalMatchedFiles}개 파일(보안 헤더 오탐 ${REPOSITORY_SCAN_SUMMARY.totalSecurityAcronymFalsePositives}건 분리)`,
     "",
@@ -656,6 +661,10 @@ export function exportBrandRegistryJson(options?: BrandGovernanceExportOptions):
   });
   const payload: BrandRegistryExportPayload = {
     schemaVersion: BRAND_REGISTRY_SCHEMA_VERSION,
+    executionScope: {
+      kind: "fixed-baseline-preview", liveFilesystemScan: false,
+      filesystemMutation: false, persistence: "none",
+    },
     measuredAt: BRAND_REGISTRY_MEASURED_AT,
     baselineCommitShort: BRAND_REGISTRY_BASELINE_COMMIT,
     policyStatement: "ToonStudio 제품 파일명·디렉터리명·심볼명·UI 제목은 10대 고유 포멀 브랜드 정본만 사용하며, 공식 /compare/studio 비교 표와 Cargo.toml/crates/vendor 의존성 선언만 allowed-external-reference 예외로 허용한다.",

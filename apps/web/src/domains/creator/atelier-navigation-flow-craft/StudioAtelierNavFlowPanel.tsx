@@ -378,7 +378,8 @@ export function StudioAtelierNavFlowPanel(props: StudioAtelierNavFlowPanelProps)
         </nav>
       </header>
 
-      {/* Top KPI Summary Strip */}
+      <p className="text-xs text-fg-2">{pick("도구 배치와 작업 순서를 보여 주는 예제입니다. 아래 수치는 설정한 모형에서 계산했습니다.", "This preview illustrates workflow and tool layout. The figures below come from the configured model.")}</p>
+      {/* 설계 모형 지표 */}
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <div className="rounded-xl border border-line bg-card p-3">
           <div className="text-[11px] font-medium text-fg-2 [word-break:keep-all]">{pick("평균 클릭 깊이", "Avg Click Depth")}</div>
@@ -595,7 +596,7 @@ export function StudioAtelierNavFlowPanel(props: StudioAtelierNavFlowPanelProps)
       <div className="space-y-3 rounded-xl border border-line bg-panel p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-bold text-fg [word-break:keep-all]">{pick("비주얼 언두 필름스트립 (1클릭 시점 복원)", "Visual Undo Filmstrip (1-Click Restore)")}</h3>
+            <h3 className="text-sm font-bold text-fg [word-break:keep-all]">{pick("이전 작업 시점 선택 예제", "Undo Timeline Example")}</h3>
             <p className="text-xs text-fg-2 tabular-nums">{isEn ? timeline.episodeTitleEn : timeline.episodeTitleKo} · Undo {timeline.undoDepth} / Redo {timeline.redoDepth}</p>
           </div>
           <div className="flex items-center gap-1.5">

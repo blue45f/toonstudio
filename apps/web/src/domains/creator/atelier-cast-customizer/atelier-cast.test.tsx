@@ -44,6 +44,36 @@ import {
 
 afterEach(cleanup);
 
+describe("실행 증거와 해석 모델의 경계", () => {
+  it("가상의 GPU 입력도 실제 실행과 메쉬 검증을 주장하지 않는다", () => {
+    const snapshot = buildAtelierCastSnapshot({ webGpuProbe: { hasNavigatorGpu: true, adapterAvailable: true } });
+    expect(snapshot.backend.activeBackend).toBe("svg-preview");
+    expect(snapshot.backend.plannedBackend).toBe("webgpu");
+    expect(snapshot.backend.activePassCount).toBe(0);
+    expect(snapshot.backend.computeSkinningEnabled).toBe(false);
+    expect(snapshot.runtimeState).toMatchObject({ gpuExecuted: false, meshValidated: false, canvasApplied: false, persisted: false });
+    expect(snapshot.anatomy.measurementBasis).toBe("analytical-reference-model");
+    const manifest = JSON.parse(exportAtelierCastManifestJson(snapshot));
+    expect(manifest.runtimeState.meshValidated).toBe(false);
+    expect(manifest.anatomyRefit.measurementBasis).toBe("analytical-reference-model");
+    expect(manifest.webGpuDefaultPolicy.activeBackend).toBe("svg-preview");
+  });
+
+  it("화면이 관통 실측 대신 CPU/SVG 참조 예제와 메쉬 미검증을 알린다", () => {
+    render(<StudioAtelierCastPanel />);
+    expect(screen.getByTestId("atelier-cast-backend-badge").textContent).toContain("CPU/SVG");
+    expect(screen.getByTestId("atelier-cast-clipping-badge").textContent).toContain("메쉬 미검증");
+    expect(screen.getByTestId("atelier-cast-anatomy-svg").getAttribute("aria-label")).toContain("해석 모형·메쉬 미검증");
+    expect(screen.getByTestId("atelier-cast-panel").textContent).not.toContain("하드웨어 어댑터 감지");
+  });
+
+  it("영문 SVG 접근 이름도 모델 관통 값과 메쉬 미검증을 알린다", () => {
+    render(<StudioAtelierCastPanel locale="en" />);
+    expect(screen.getByTestId("atelier-cast-anatomy-svg").getAttribute("aria-label")).toContain("CPU/SVG analytical reference, mesh unvalidated");
+    expect(screen.getByTestId("atelier-cast-anatomy-svg").getAttribute("aria-label")).toContain("model 0 clips");
+  });
+});
+
 function assertSvgZeroRawAndViolet(svgMarkup: string): void {
   expect(svgMarkup).not.toMatch(/#[0-9a-fA-F]{3,8}\b/u);
   expect(svgMarkup).not.toMatch(/\brgba?\s*\(/iu);
@@ -287,41 +317,47 @@ describe("4. 단일 탈-바이올렛 OKLCH 5안료 룩뎁 조화 패스", () => 
 });
 
 describe("5. WebGPU 기본 3D 협상 정책 · 4축 품질 평가기 · apps/character-lab 통합 계약", () => {
-  it("navigator.gpu 하드웨어 감지 시 ToonCore WebGPU 기본 5패스 실행을 선택한다", () => {
+  it("GPU 조건을 입력하면 5패스 계획을 비교하되 실제 실행은 하지 않는다", () => {
     const neg = negotiateAtelier3dWebGpuDefault({ hasNavigatorGpu: true, adapterAvailable: true, isFallbackAdapter: false });
     expect(neg.policy).toBe("webgpu-default");
-    expect(neg.activeBackend).toBe("webgpu");
-    expect(neg.laneId).toBe("tooncore-webgpu-default");
+    expect(neg.activeBackend).toBe("svg-preview");
+    expect(neg.plannedBackend).toBe("webgpu");
+    expect(neg.laneId).toBe("atelier-svg-safe-preview");
     expect(neg.fallbackTriggered).toBe(false);
-    expect(neg.computeSkinningEnabled).toBe(true);
-    expect(neg.instancedHairEnabled).toBe(true);
-    expect(neg.activePassCount).toBe(5);
+    expect(neg.computeSkinningEnabled).toBe(false);
+    expect(neg.instancedHairEnabled).toBe(false);
+    expect(neg.activePassCount).toBe(0);
+    expect(neg.plannedPassCount).toBe(5);
   });
 
-  it("navigator.gpu 미지원 환경에서 WebGL2 투명 폴백으로 자동 전환한다", () => {
+  it("GPU 미지원 조건에서 WebGL2 계획을 비교하되 실제 폴백을 수행하지 않는다", () => {
     const neg = negotiateAtelier3dWebGpuDefault({ hasNavigatorGpu: false, supportsWebGl2: true });
-    expect(neg.activeBackend).toBe("webgl2");
-    expect(neg.laneId).toBe("tooncore-webgl2-fallback");
-    expect(neg.fallbackTriggered).toBe(true);
-    expect(neg.faceSdfPassEnabled).toBe(true);
-    expect(neg.activePassCount).toBe(4);
+    expect(neg.activeBackend).toBe("svg-preview");
+    expect(neg.plannedBackend).toBe("webgl2");
+    expect(neg.laneId).toBe("atelier-svg-safe-preview");
+    expect(neg.fallbackTriggered).toBe(false);
+    expect(neg.faceSdfPassEnabled).toBe(false);
+    expect(neg.activePassCount).toBe(0);
+    expect(neg.plannedPassCount).toBe(4);
   });
 
-  it("소프트웨어 WebGPU 폴백 어댑터는 제외하고 WebGL2 투명 폴백으로 전환한다", () => {
+  it("소프트웨어 어댑터 제외 조건으로 WebGL2 비교 계획을 만든다", () => {
     const neg = negotiateAtelier3dWebGpuDefault({ hasNavigatorGpu: true, adapterAvailable: true, isFallbackAdapter: true, supportsWebGl2: true });
-    expect(neg.activeBackend).toBe("webgl2");
-    expect(neg.fallbackTriggered).toBe(true);
+    expect(neg.activeBackend).toBe("svg-preview");
+    expect(neg.plannedBackend).toBe("webgl2");
+    expect(neg.fallbackTriggered).toBe(false);
     expect(neg.reasonKo).toContain("소프트웨어 WebGPU");
   });
 
-  it("WebGPU·WebGL2가 모두 없는 환경에서는 시맨틱 SVG 안전 프리뷰로 폴백한다", () => {
+  it("WebGPU·WebGL2 모두 없는 조건에서도 SVG 참조 예제를 유지한다", () => {
     const neg = negotiateAtelier3dWebGpuDefault({ hasNavigatorGpu: false, supportsWebGl2: false });
     expect(neg.activeBackend).toBe("svg-preview");
     expect(neg.laneId).toBe("atelier-svg-safe-preview");
-    expect(neg.activePassCount).toBe(1);
+    expect(neg.activePassCount).toBe(0);
+    expect(neg.plannedBackend).toBe("svg-preview");
   });
 
-  it("evaluateCharacterCustomQuality가 4축 점수에서 구형 선형 대비 +35pt 이상 개선을 증명한다", () => {
+  it("evaluateCharacterCustomQuality가 4축 점수에서 구형 선형 대비 +35pt 이상 차이를 보이는 모형을 비교한다", () => {
     const params = getAtelierArchetype("action-hunter-lead").params;
     const coupled = evaluateCharacterCustomQuality(params, { solverMode: "atelier-coupled", pigmentId: "3d" });
     const legacy = evaluateCharacterCustomQuality(params, { solverMode: "legacy-linear", pigmentId: "3d" });
@@ -364,19 +400,19 @@ describe("5. WebGPU 기본 3D 협상 정책 · 4축 품질 평가기 · apps/cha
     expect(parsed.brands).toEqual({ customizer: "AtelierCast", lookdev: "PrismLight", runtime: "ToonCore" });
     expect(parsed.anatomyRefit.meshClippingCount).toBe(0);
     expect(parsed.anatomyRefit.proportionBreakCount).toBe(0);
-    expect(parsed.webGpuDefaultPolicy.activeBackend).toBe("webgpu");
+    expect(parsed.webGpuDefaultPolicy.activeBackend).toBe("svg-preview");
     expect(parsed.oklchHarmony.violetViolationCount).toBe(0);
   });
 });
 
 describe("6. StudioAtelierCastPanel UI 인터랙션 · 2단 시맨틱 SVG · 로케일/콜백 검증", () => {
-  it("props 없이 기본 렌더링(<StudioAtelierCastPanel />) 시 WebGPU 기본·관통 0건·2단 SVG가 정상 표시된다", () => {
+  it("props 없이 기본 렌더링(<StudioAtelierCastPanel />) 시 CPU/SVG 참조·메쉬 미검증·2단 SVG가 표시된다", () => {
     render(<StudioAtelierCastPanel />);
     expect(screen.getByTestId("atelier-cast-panel")).toBeTruthy();
-    expect(screen.getByTestId("atelier-cast-backend-badge").textContent).toContain("WebGPU");
+    expect(screen.getByTestId("atelier-cast-backend-badge").textContent).toContain("CPU/SVG");
     expect(screen.getByTestId("atelier-cast-clipping-badge").textContent).toContain("관통 0건");
     expect(screen.getByTestId("atelier-cast-anatomy-svg").getAttribute("data-clipping-count")).toBe("0");
-    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-active-backend")).toBe("webgpu");
+    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-active-backend")).toBe("svg-preview");
     expect(screen.getByTestId("atelier-cast-face-sdf-curve")).toBeTruthy();
   });
 
@@ -395,7 +431,7 @@ describe("6. StudioAtelierCastPanel UI 인터랙션 · 2단 시맨틱 SVG · 로
     expect(onCharacterChange).toHaveBeenCalledTimes(2);
   });
 
-  it("키·등신비·어깨·허리·턱선·눈 크기·눈 간격·헤어·의상 여유·외곽선 슬라이더 변경 시 실시간 반영되며 관통 0건을 유지한다", () => {
+  it("키·등신비·어깨·허리·턱선·눈 크기·눈 간격·헤어·의상 여유·외곽선 슬라이더 변경 시 실시간 반영되며 모형 관통 값과 미검증 계약을 유지한다", () => {
     render(<StudioAtelierCastPanel />);
     fireEvent.change(screen.getByTestId("atelier-cast-slider-heightCm"), { target: { value: "190" } });
     fireEvent.change(screen.getByTestId("atelier-cast-slider-headRatio"), { target: { value: "8.4" } });
@@ -429,8 +465,8 @@ describe("6. StudioAtelierCastPanel UI 인터랙션 · 2단 시맨틱 SVG · 로
   it("WebGL2 투명 폴백 체험 토글 및 5안료 버튼 클릭이 우측 파이프라인 SVG와 배지를 갱신한다", () => {
     render(<StudioAtelierCastPanel />);
     fireEvent.click(screen.getByTestId("atelier-cast-fallback-toggle"));
-    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-active-backend")).toBe("webgl2");
-    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-pass-count")).toBe("4");
+    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-active-backend")).toBe("svg-preview");
+    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-pass-count")).toBe("0");
 
     fireEvent.click(screen.getByTestId("atelier-cast-pigment-market"));
     expect(screen.getByTestId("atelier-cast-pigment-market").getAttribute("aria-pressed")).toBe("true");
@@ -463,7 +499,7 @@ describe("6. StudioAtelierCastPanel UI 인터랙션 · 2단 시맨틱 SVG · 로
 
     expect(screen.getByTestId("atelier-cast-anatomy-svg").getAttribute("data-archetype-id")).toBe("campus-romance-lead");
     expect(screen.getByTestId("atelier-cast-anatomy-svg").getAttribute("data-solver-mode")).toBe("atelier-coupled");
-    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-active-backend")).toBe("webgpu");
+    expect(screen.getByTestId("atelier-cast-webgpu-svg").getAttribute("data-active-backend")).toBe("svg-preview");
   });
 
   it("영문 로케일(locale='en') 및 initialArchetypeId 선택적 props를 정확히 렌더링한다", () => {

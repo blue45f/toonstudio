@@ -101,7 +101,7 @@ function BrandArchitectureLayerSvg(props: {
         {isEn ? "ToonStudio 10 Proprietary Formal Brands · 5-Layer Architecture" : "ToonStudio 10대 고유 포멀 브랜드 · 5계층 아키텍처 정본 맵"}
       </text>
       <text x="702" y="24" textAnchor="end" fill={verdictStroke} fontSize="10" fontWeight="700">
-        {isEn ? `MEASURED ${BRAND_REGISTRY_MEASURED_AT} · 0% VIOLET` : `실측 ${BRAND_REGISTRY_MEASURED_AT} · 시맨틱 OKLCH`}
+        {isEn ? `BASELINE ${BRAND_REGISTRY_BASELINE_COMMIT}` : `기준 ${BRAND_REGISTRY_BASELINE_COMMIT} · 고정 자료`}
       </text>
 
       {BRAND_ARCHITECTURE_LAYERS.map((layer, layerIdx) => {
@@ -151,7 +151,7 @@ function BrandArchitectureLayerSvg(props: {
 
       <line x1="16" y1="322" x2="704" y2="322" stroke={SVG_GRID_STROKE} strokeWidth="0.9" />
       <text x="18" y="338" fill="currentColor" fillOpacity={0.82} fontSize="9" fontFamily="monospace">
-        {`SCAN ${REPOSITORY_SCAN_SUMMARY.totalScannedDirs} dirs / ${REPOSITORY_SCAN_SUMMARY.totalScannedFiles} files · LEGACY ${REPOSITORY_SCAN_SUMMARY.totalMatchedDirs} dirs / ${REPOSITORY_SCAN_SUMMARY.totalMatchedFiles} files · RULES ${EXTERNAL_NAME_DETECTION_RULES.length}`}
+        {`BASELINE ${REPOSITORY_SCAN_SUMMARY.totalScannedDirs} dirs / ${REPOSITORY_SCAN_SUMMARY.totalScannedFiles} files · LEGACY ${REPOSITORY_SCAN_SUMMARY.totalMatchedDirs} dirs / ${REPOSITORY_SCAN_SUMMARY.totalMatchedFiles} files · RULES ${EXTERNAL_NAME_DETECTION_RULES.length}`}
       </text>
       <text x="702" y="338" textAnchor="end" fill={SVG_GOOD_INK} fontSize="9" fontWeight="700">
         {isEn ? "NO FORCED RENAMES · PHASED FACADE PLAN" : "강제 이름변경 금지 · 4단계 파사드 전환"}
@@ -266,6 +266,7 @@ export function StudioAtelierBrandRegistryPanel(
     <section
       data-testid="atelier-brand-registry-panel"
       aria-labelledby={headingId}
+      aria-describedby={`${headingId}-scope`}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg md:p-5 ${props.className ?? ""}`}
     >
       {/* 상단 헤더 */}
@@ -301,8 +302,8 @@ export function StudioAtelierBrandRegistryPanel(
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
             {pick(
-              "파일명·패키지명·심볼명·UI 제목의 외부 명칭 혼입을 즉시 검사하고 10대 고유 브랜드 대체안을 제시합니다. 기존 파일 강제 이름변경 없이 4단계 안전 전환 계획을 유지합니다.",
-              "Audits file paths, packages, symbols, and UI labels for external naming drift and suggests canonical proprietary replacements with a 4-phase zero-breakage plan.",
+              "입력한 파일명·패키지명·심볼명·UI 제목 문자열을 규칙으로 검사하고 고유 브랜드 대체안과 4단계 전환 계획 자료를 보여 줍니다.",
+              "Checks the entered file path, package, symbol or UI label string against naming rules and previews canonical suggestions and a four-phase plan.",
             )}
           </p>
         </div>
@@ -331,6 +332,9 @@ export function StudioAtelierBrandRegistryPanel(
           </button>
         </div>
       </header>
+      <p id={`${headingId}-scope`} data-testid="brand-registry-scope" className="text-xs text-fg-2 [word-break:keep-all]">
+        {pick(`저장소 수치는 ${BRAND_REGISTRY_MEASURED_AT} · ${BRAND_REGISTRY_BASELINE_COMMIT} 기준의 고정 스냅샷입니다. 현재 저장소를 스캔하거나 파일을 변경하지 않습니다. 입력과 선택은 임시 상태이므로 패널을 닫기 전 필요한 내용을 복사해 주세요.`, `Repository figures are a fixed snapshot from ${BRAND_REGISTRY_MEASURED_AT} · ${BRAND_REGISTRY_BASELINE_COMMIT}. This panel does not scan the current repository or modify files. Input and selections are temporary; copy anything needed before closing the panel.`)}
+      </p>
 
       {/* 실시간 파일명/모듈명/UI 라벨 브랜드 클린 검사기 */}
       <div data-testid="brand-audit-workbench" className="space-y-3 rounded-xl border border-line-strong bg-card p-4">
@@ -528,7 +532,7 @@ export function StudioAtelierBrandRegistryPanel(
             </div>
             <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs tabular-nums">
               <div className="rounded-lg border border-line bg-panel px-2.5 py-1.5">
-                <div className="text-[10px] text-fg-3">{pick("스캔 전체", "Scanned")}</div>
+                <div className="text-[10px] text-fg-3">{pick("기준 스캔 전체", "Baseline Scan")}</div>
                 <div className="font-bold text-fg">{`${root.scannedDirs}d / ${root.scannedFiles.toLocaleString("en-US")}f`}</div>
               </div>
               <div className="rounded-lg border border-line bg-panel px-2.5 py-1.5">
@@ -546,7 +550,7 @@ export function StudioAtelierBrandRegistryPanel(
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-xs font-bold text-fg [word-break:keep-all]">
-              {pick("실측 레거시 경로 4단계 무중단 전환 매트릭스", "4-Phase Zero-Breakage Legacy Path Migration Matrix")}
+              {pick("기준 레거시 경로 4단계 전환 계획", "Baseline Legacy Paths & 4-Phase Plan")}
             </h3>
             <p className="text-[11px] text-fg-2 [word-break:keep-all]">
               {pick(

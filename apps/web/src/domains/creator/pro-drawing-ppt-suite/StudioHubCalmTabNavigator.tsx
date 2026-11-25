@@ -1,5 +1,5 @@
 import { ChevronDown, LayoutGrid, Pin, Search, X } from "lucide-react";
-import { useMemo, useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react";
 
 export interface StudioHubCalmTabItem<T extends string = string> {
   readonly id: T;
@@ -43,6 +43,12 @@ export function StudioHubCalmTabNavigator<T extends string>(props: StudioHubCalm
     searchPlaceholderKo, searchPlaceholderEn,
   } = props;
   const [query, setQuery] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
+
+  const clearSearch = () => {
+    setQuery("");
+    searchInput.current?.focus();
+  };
 
   const { pinnedTabs, drawerTabs, visibleTabs, autoPinnedId } = useMemo(() => {
     const byId = new Map<T, StudioHubCalmTabItem<T>>(tabs.map((tab) => [tab.id, tab]));
@@ -105,7 +111,7 @@ export function StudioHubCalmTabNavigator<T extends string>(props: StudioHubCalm
         data-hub-module-id={tab.id}
         onClick={() => {
           onSelect(tab.id);
-          if (clearSearchOnSelect) setQuery("");
+          if (clearSearchOnSelect) clearSearch();
         }}
         className={`${MODULE_BASE} ${selected ? ACTIVE_TONE : MODULE_IDLE}`}
       >
@@ -159,6 +165,7 @@ export function StudioHubCalmTabNavigator<T extends string>(props: StudioHubCalm
           <Search size={15} aria-hidden="true" className="pointer-events-none absolute left-3 text-fg-3" />
           <input
             id={`${baseId}-module-search`}
+            ref={searchInput}
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -176,7 +183,7 @@ export function StudioHubCalmTabNavigator<T extends string>(props: StudioHubCalm
           {query.length > 0 ? (
             <button
               type="button"
-              onClick={() => setQuery("")}
+              onClick={clearSearch}
               aria-label={isEn ? "Clear search" : "검색어 지우기"}
               data-testid="studio-hub-calm-search-clear"
               className={`absolute right-0 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl text-fg-2 transition-colors duration-150 hover:text-fg motion-reduce:transition-none ${FOCUS_RING}`}
@@ -213,7 +220,7 @@ export function StudioHubCalmTabNavigator<T extends string>(props: StudioHubCalm
                 </p>
                 <button
                   type="button"
-                  onClick={() => setQuery("")}
+                  onClick={clearSearch}
                   className={`inline-flex min-h-11 cursor-pointer items-center rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg transition-colors duration-150 hover:border-line-strong hover:bg-raised motion-reduce:transition-none ${FOCUS_RING}`}
                 >
                   {isEn ? "Reset search" : "검색 초기화"}

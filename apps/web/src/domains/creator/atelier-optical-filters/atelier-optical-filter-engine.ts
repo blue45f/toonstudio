@@ -6,6 +6,8 @@
  * WGSL 컴퓨트 셰이더 생성기를 제공한다.
  */
 
+import { quantizeFloat16 } from "../render/webgpu-extreme-subgroups/extreme-webgpu-runtime-bridge";
+
 export const ATELIER_FILTER_BRAND = "AtelierFilter" as const;
 export const PRISM_LIGHT_ENGINE = "PrismLight" as const;
 export const ATELIER_INK_PIPELINE = "AtelierInk" as const;
@@ -181,10 +183,7 @@ export function formatNonVioletOklch(color: OklchColor, alpha?: number): string 
 export function srgbToLinear(ch: number): number { const c = clamp(ch, 0, 1); return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }
 export function linearToSrgb(lin: number): number { const c = clamp(lin, 0, 1); return c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055; }
 export function linearToHalf16Quantize(lin: number): number {
-  const safe = clamp(lin, 0, 16);
-  if (safe === 0) return 0;
-  const step = 2 ** Math.max(-14, Math.floor(Math.log2(safe)) - 10);
-  return Math.round(safe / step) * step;
+  return quantizeFloat16(clamp(lin, 0, 16));
 }
 
 export function linearRgbToOklch(rgb: LinearRgb): OklchColor {
@@ -453,13 +452,32 @@ fn lut_at(ri: u32, gi: u32, bi: u32) -> vec3<f32> {
   return lut3d_table[min((bi * sz + gi) * sz + ri, arrayLength(&lut3d_table) - 1u)].rgb;
 }
 fn stage_tetrahedral_lut3d(rgb: vec3<f32>) -> vec3<f32> {
+  let sz = u.lut_size;
+  if ((sz != 17u && sz != 33u) || arrayLength(&lut3d_table) < sz * sz * sz) { return rgb; }
   let max_u = max(u.lut_size, 2u) - 1u;
   let sc = clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.0)) * f32(max_u);
   let i0 = vec3<u32>(floor(sc)); let i1 = min(i0 + vec3<u32>(1u), vec3<u32>(max_u)); let f = fract(sc);
-  let va = select(lut_at(i0.r, i1.g, i0.b), lut_at(i1.r, i0.g, i0.b), f.r >= f.g);
-  let vb = select(lut_at(i0.r, i1.g, i1.b), lut_at(i1.r, i1.g, i0.b), f.g >= f.b);
-  let w1 = abs(f.r - f.g); let w2 = abs(f.g - f.b); let w3 = min(min(f.r, f.g), f.b);
-  let graded = max(0.0, 1.0 - w1 - w2 - w3) * lut_at(i0.r, i0.g, i0.b) + w1 * va + w2 * vb + w3 * lut_at(i1.r, i1.g, i1.b);
+  var va: vec3<f32>; var vb: vec3<f32>; var w: vec4<f32>;
+  if (f.r >= f.g && f.g >= f.b) {
+    va = lut_at(i1.r, i0.g, i0.b); vb = lut_at(i1.r, i1.g, i0.b);
+    w = vec4<f32>(1.0 - f.r, f.r - f.g, f.g - f.b, f.b);
+  } else if (f.r >= f.b && f.b >= f.g) {
+    va = lut_at(i1.r, i0.g, i0.b); vb = lut_at(i1.r, i0.g, i1.b);
+    w = vec4<f32>(1.0 - f.r, f.r - f.b, f.b - f.g, f.g);
+  } else if (f.b >= f.r && f.r >= f.g) {
+    va = lut_at(i0.r, i0.g, i1.b); vb = lut_at(i1.r, i0.g, i1.b);
+    w = vec4<f32>(1.0 - f.b, f.b - f.r, f.r - f.g, f.g);
+  } else if (f.g >= f.r && f.r >= f.b) {
+    va = lut_at(i0.r, i1.g, i0.b); vb = lut_at(i1.r, i1.g, i0.b);
+    w = vec4<f32>(1.0 - f.g, f.g - f.r, f.r - f.b, f.b);
+  } else if (f.g >= f.b && f.b >= f.r) {
+    va = lut_at(i0.r, i1.g, i0.b); vb = lut_at(i0.r, i1.g, i1.b);
+    w = vec4<f32>(1.0 - f.g, f.g - f.b, f.b - f.r, f.r);
+  } else {
+    va = lut_at(i0.r, i0.g, i1.b); vb = lut_at(i0.r, i1.g, i1.b);
+    w = vec4<f32>(1.0 - f.b, f.b - f.g, f.g - f.r, f.r);
+  }
+  let graded = w.x * lut_at(i0.r, i0.g, i0.b) + w.y * va + w.z * vb + w.w * lut_at(i1.r, i1.g, i1.b);
   return mix(rgb, graded, u.intensity * (1.0 - u.skin_protection * 0.25));
 }
 fn stage_sobel_ink_acutance(px: vec2<u32>, rgb: vec3<f32>) -> vec3<f32> {

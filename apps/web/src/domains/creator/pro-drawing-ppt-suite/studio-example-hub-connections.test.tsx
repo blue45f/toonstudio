@@ -87,6 +87,23 @@ const cases: readonly ExampleCase[] = [
   { ko: "작화 출처 원장 예제", en: "Stroke Provenance Ledger Examples", panel: "human-ink-ledger-panel", Hub: AutoQaCollabHubPanel, load: () => import("../human-ink-provenance-ledger") },
   { ko: "셰이더 준비·영상 인코딩 계획", en: "Shader Preparation and Video Encoding Plans", panel: "studio-shader-prewarm-webcodecs-panel", Hub: AutoQaCollabHubPanel, load: () => import("../shader-prewarm-webcodecs") },
   { ko: "컷 구도와 대사 배치 예제", en: "Panel Framing and Dialogue Layout Examples", panel: "oneshot-cut-director-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../oneshot-cut-director") },
+  { ko: "몰입 화면과 획 피드백 미리보기", en: "Immersive Canvas and Stroke Feedback Preview", panel: "atelier-tactile-hud-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-tactile-feedback") },
+  { ko: "작업대 색상과 다이얼 미리보기", en: "Workbench Colors and Dial Preview", panel: "atelier-visual-signature-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-visual-signature") },
+  { ko: "한 손 모바일 도구 배치 미리보기", en: "One-Handed Mobile Tool Layout Preview", panel: "mobile-thumbzone-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../mobile-thumbzone-studio-ux") },
+  { ko: "브랜드 이름 검사", en: "Brand Name Audit", panel: "atelier-brand-registry-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-brand-registry") },
+  { ko: "공간 렌더링 예제", en: "Spatial Rendering Example", panel: "studio-prism-spatial-render-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../prism-spatial-render") },
+  { ko: "붓결과 종이 질감 미리보기", en: "Bristle and Paper Texture Preview", panel: "studio-atelier-ink-optical-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../atelier-ink-optical-grain") },
+  { ko: "캐릭터 체형과 옷 맞춤 미리보기", en: "Character Shape and Clothing Fit Preview", panel: "atelier-cast-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-cast-customizer") },
+  { ko: "칩셋별 연산 배치 계획", en: "Compute Planning by Chipset", panel: "toon-silicon-panel", Hub: OpenEcosystemWorkflowHubPanel, load: () => import("../toon-silicon-runtime") },
+  { ko: "가상 무대 카메라와 조명 미리보기", en: "Virtual Stage Camera and Lights Preview", panel: "atelier-stage-living-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-stage-living-ux") },
+  { ko: "작업 순서와 메뉴 배치 미리보기", en: "Workflow and Navigation Preview", panel: "studio-atelier-nav-flow-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-navigation-flow-craft") },
+  { ko: "작업대 색상과 움직임 미리보기", en: "Workbench Colors and Motion Preview", panel: "atelier-vibrant-ui-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-vibrant-motion-ui") },
+  { ko: "광학 필터와 스크린톤 미리보기", en: "Optical Filter and Screentone Preview", panel: "studio-atelier-optical-filter-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-optical-filters") },
+  { ko: "입체 도면과 치수 미리보기", en: "Solid Drawing and Dimensions Preview", panel: "atelier-solid-cad-pro-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-solid-cad-pro") },
+  { ko: "작업실 사용법과 연습 순서", en: "Studio Guide and Practice Steps", panel: "atelier-manual-os-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../atelier-interactive-manual") },
+  { ko: "화풍 변환과 기기별 연산 계획", en: "Style Transformations and Device Planning", panel: "atelier-style-ondevice-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../atelier-style-ondevice-ai") },
+  { ko: "두 가지 붓끝과 연산 경로 미리보기", en: "Dual-Tip Brush and Compute Paths Preview", panel: "studio-atelier-isa-brush-ultra-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../atelier-isa-brush-ultra") },
+  { ko: "오프라인 복구와 협업 예제", en: "Offline Recovery and Collaboration Example", panel: "studio-loom-offline-collab-panel", Hub: AutoQaCollabHubPanel, load: () => import("../loom-offline-realtime-collab") },
 ];
 
 afterEach(cleanup);

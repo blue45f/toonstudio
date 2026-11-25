@@ -40,6 +40,28 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("고정 기준 스냅샷 범위", () => {
+  it("내보내기는 기준 커밋의 고정 자료이며 실시간 스캔·파일 변경·저장을 수행하지 않는다", () => {
+    const { payload } = exportBrandRegistryJson();
+    expect(payload).toMatchObject({
+      baselineCommitShort: BRAND_REGISTRY_BASELINE_COMMIT,
+      executionScope: {
+        kind: "fixed-baseline-preview", liveFilesystemScan: false,
+        filesystemMutation: false, persistence: "none",
+      },
+    });
+    expect(exportBrandGovernanceMarkdown()).toContain("고정 스냅샷");
+    expect(exportBrandGovernanceMarkdown()).toContain("실시간 저장소 스캔이나 파일 변경을 실행하지 않습니다");
+  });
+
+  it("화면에서 입력 문자열 검사와 기준 자료를 구분하고 임시 입력 보관을 안내한다", () => {
+    render(<StudioAtelierBrandRegistryPanel />);
+    expect(screen.getByTestId("brand-registry-scope").textContent).toContain("고정 스냅샷");
+    expect(screen.getByTestId("brand-registry-scope").textContent).toContain(BRAND_REGISTRY_BASELINE_COMMIT);
+    expect(screen.getByTestId("brand-registry-scope").textContent).toContain("패널을 닫기 전");
+  });
+});
+
 const FORBIDDEN_EXTERNAL_TOKENS = EXTERNAL_NAME_DETECTION_RULES
   .filter((r) => r.severity === "block")
   .map((r) => r.tokens[0]);

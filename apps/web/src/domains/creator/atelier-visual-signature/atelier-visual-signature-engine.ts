@@ -3,7 +3,7 @@
  *
  * - 4종 정본 3단 표면 사다리(Warm Alabaster · Ink Obsidian · Hanok Sepia · WCAG AAA Ultra)
  * - 전 색상 OKLCH 구조체 전용(원시 색상 표기 0건, 바이올렛 휴 270~320° 완전 배제)
- * - OKLCH → Linear sRGB → WCAG 2.2 상대 휘도 대비비(Contrast Ratio) & APCA 지각 대비(Lc) 실측 수식
+ * - 프리셋 OKLCH → Linear sRGB → WCAG 2.2 대비비 & APCA 지각 대비(Lc) 수식 계산
  * - 동심원 곡률(outerRadiusPx === innerRadiusPx + paddingPx) · 8pt 리듬 · 85/10/5 시각 위계 감사
  * - 카메라 렌즈·하드웨어 감성 15° 로터리 다이얼 디텐트·관성 스냅 물리 모델 & 브러시 그레인 스와치
  * - 순수 결정론적 TypeScript 엔진(DOM · 저장소 · 네트워크 의존 0건)
@@ -32,7 +32,11 @@ export interface AtelierSurfaceTheme {
   readonly labelKo: string; readonly labelEn: string; readonly craftNoteKo: string; readonly craftNoteEn: string;
   readonly accentNameKo: string; readonly accentNameEn: string; readonly accentHueDeg: number;
   readonly contrastStandard: "WCAG-AA" | "WCAG-AAA"; readonly minWcagRatio: number; readonly minApcaAbsLc: number;
-  readonly glareReductionPercent: number; readonly blueLightAttenuationPercent: number;
+  readonly comfortReferenceScope: "unmeasured-design-reference";
+  /** @deprecated 호환용 설계 예시값이며 실제 눈부심 감소율을 측정한 값이 아니다. */
+  readonly glareReductionPercent: number;
+  /** @deprecated 호환용 설계 예시값이며 실제 디스플레이 청색광 감쇠율을 측정한 값이 아니다. */
+  readonly blueLightAttenuationPercent: number;
   readonly canvas: OklchColor; readonly panel: OklchColor; readonly instrument: OklchColor;
   readonly line: OklchColor; readonly lineStrong: OklchColor; readonly ink: OklchColor; readonly inkMuted: OklchColor;
   readonly accent: OklchColor; readonly onAccent: OklchColor; readonly focusRing: OklchColor;
@@ -197,7 +201,7 @@ export function computeApcaPerceptualContrastLc(textColor: OklchColor, backgroun
 }
 
 function makeTheme(
-  spec: Omit<AtelierSurfaceTheme, "ladder"> & {
+  spec: Omit<AtelierSurfaceTheme, "ladder" | "comfortReferenceScope"> & {
     readonly tier1Ko: string; readonly tier1En: string;
     readonly tier2Ko: string; readonly tier2En: string;
     readonly tier3Ko: string; readonly tier3En: string;
@@ -206,6 +210,7 @@ function makeTheme(
   const { tier1Ko, tier1En, tier2Ko, tier2En, tier3Ko, tier3En, ...base } = spec;
   return {
     ...base,
+    comfortReferenceScope: "unmeasured-design-reference",
     ladder: [
       { tier: 1, tokenName: "--atelier-surface-canvas", labelKo: tier1Ko, labelEn: tier1En, roleKo: "원고 바탕(1단)", roleEn: "Tier 1 Canvas", color: base.canvas },
       { tier: 2, tokenName: "--atelier-surface-panel", labelKo: tier2Ko, labelEn: tier2En, roleKo: "작업대 패널(2단)", roleEn: "Tier 2 Panel", color: base.panel },
@@ -229,8 +234,8 @@ export const ATELIER_SURFACE_THEMES: readonly AtelierSurfaceTheme[] = [
   }),
   makeTheme({
     id: "ink-obsidian", polarity: "dark", labelKo: "잉크 옵시디언 야간", labelEn: "Ink Obsidian Night",
-    craftNoteKo: "눈부심 0% 먹물 슬레이트 3단 계층과 웜 앰버 72° 조도 신호로 장시간 야간 마감에 맞춤",
-    craftNoteEn: "Zero-glare ink slate 3-tier surfaces paired with Warm Amber 72° cues for overnight deadlines",
+    craftNoteKo: "먹물 슬레이트 3단 계층과 웜 앰버 72° 포인트를 조합한 어두운 표면 색상 예시",
+    craftNoteEn: "Dark surface color example pairing ink slate tiers with Warm Amber 72° accents",
     accentNameKo: "웜 앰버 72°", accentNameEn: "Warm Amber 72°", accentHueDeg: 72,
     contrastStandard: "WCAG-AA", minWcagRatio: 4.5, minApcaAbsLc: 60, glareReductionPercent: 100, blueLightAttenuationPercent: 82,
     canvas: ok(0.155, 0.012, 225), panel: ok(0.195, 0.014, 224), instrument: ok(0.24, 0.015, 222),
@@ -241,8 +246,8 @@ export const ATELIER_SURFACE_THEMES: readonly AtelierSurfaceTheme[] = [
   }),
   makeTheme({
     id: "hanok-sepia", polarity: "light", labelKo: "한옥 한지 세피아", labelEn: "Hanok Hanji Sepia",
-    craftNoteKo: "청색광을 억제한 닥지 세피아 3단 표면과 테라코타 42° 포인트로 원고 채색 중립성 유지",
-    craftNoteEn: "Blue-light-reduced hanji sepia surfaces and Terracotta 42° accents keeping color grading neutral",
+    craftNoteKo: "닥지 세피아 3단 표면과 테라코타 42° 포인트를 조합한 따뜻한 표면 색상 예시",
+    craftNoteEn: "Warm surface color example pairing hanji sepia tiers with Terracotta 42° accents",
     accentNameKo: "테라코타 42°", accentNameEn: "Terracotta 42°", accentHueDeg: 42,
     contrastStandard: "WCAG-AA", minWcagRatio: 4.5, minApcaAbsLc: 60, glareReductionPercent: 86, blueLightAttenuationPercent: 68,
     canvas: ok(0.938, 0.022, 82), panel: ok(0.902, 0.025, 80), instrument: ok(0.964, 0.018, 84),
@@ -253,8 +258,8 @@ export const ATELIER_SURFACE_THEMES: readonly AtelierSurfaceTheme[] = [
   }),
   makeTheme({
     id: "wcag-aaa-ultra", polarity: "dark", labelKo: "WCAG AAA 초고대비", labelEn: "WCAG AAA Ultra",
-    craftNoteKo: "전 항목 대비비 7:1 이상 및 APCA |Lc| 75 이상으로 저시력·밝은 야외 채광 환경 대응",
-    craftNoteEn: "Every pair exceeds WCAG 7:1 and APCA |Lc| 75 for low-vision accessibility and bright outdoor light",
+    craftNoteKo: "프리셋 토큰의 대비비 7:1 및 APCA |Lc| 75를 목표로 한 색상 예시이며 실제 화면 접근성은 별도 검증",
+    craftNoteEn: "Color example targeting WCAG 7:1 and APCA |Lc| 75 in preset tokens; rendered accessibility needs separate testing",
     accentNameKo: "시그널 앰버 78°", accentNameEn: "Signal Amber 78°", accentHueDeg: 78,
     contrastStandard: "WCAG-AAA", minWcagRatio: 7.0, minApcaAbsLc: 75, glareReductionPercent: 96, blueLightAttenuationPercent: 76,
     canvas: ok(0.115, 0.006, 225), panel: ok(0.15, 0.008, 225), instrument: ok(0.185, 0.009, 225),
@@ -319,7 +324,7 @@ function buildContrastRow(
   };
 }
 
-/** 테마 전 구간(본문·캡션·버튼·포커스 링·포인트 신호) WCAG 2.2 & APCA Lc 실측 감사. */
+/** 프리셋 토큰의 WCAG 2.2 & APCA Lc 계산. 실제 DOM·디스플레이를 측정하지 않는다. */
 export function auditThemeTypographyContrast(themeId: AtelierSurfaceThemeId): ThemeTypographyContrastAudit {
   const theme = getAtelierSurfaceTheme(themeId);
   const rows: readonly ContrastAuditRow[] = [
@@ -489,6 +494,7 @@ export function exportAtelierDesignTokensCss(snapshot: AtelierVisualSignatureSna
   const { theme, concentricAudit, rotaryDial, activeBrushSwatch } = snapshot;
   return [
     `/* ToonStudio Atelier Visual Signature — ${theme.id} (${theme.contrastStandard}) */`,
+    "/* 토큰 계산 미리보기. 실제 원고 테마·브러시 적용, 디스플레이 측정, 설정 저장도 수행하지 않음. */",
     `:root[data-atelier-theme="${theme.id}"] {`,
     `  --atelier-surface-canvas: ${formatOklch(theme.canvas)};`,
     `  --atelier-surface-panel: ${formatOklch(theme.panel)};`,
@@ -524,8 +530,13 @@ export function exportVisualSignatureJson(snapshot: AtelierVisualSignatureSnapsh
     {
       schemaVersion: "toonstudio.atelier-visual-signature.v1",
       evaluationScope: "deterministic-design-system-audit",
+      executionScope: {
+        physicalDisplayMeasurement: false, runtimeThemeApplied: false,
+        runtimeBrushApplied: false, persistence: "none",
+      },
       theme: {
         id: theme.id, polarity: theme.polarity, labelKo: theme.labelKo, accentNameKo: theme.accentNameKo,
+        comfortReferenceScope: theme.comfortReferenceScope,
         accentHueDeg: theme.accentHueDeg, contrastStandard: theme.contrastStandard,
         surfaceLadder: theme.ladder.map((step) => ({ tier: step.tier, tokenName: step.tokenName, labelKo: step.labelKo, oklch: formatOklch(step.color) })),
       },

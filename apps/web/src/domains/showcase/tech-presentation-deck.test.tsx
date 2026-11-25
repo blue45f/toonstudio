@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -11,20 +12,28 @@ import {
   TECH_GLOSSARY_CATEGORIES,
   TECH_PLAIN_GLOSSARY,
   TECH_PRESENTATION_SLIDES,
+  TECH_RARE_WEB_APIS_18,
+  TECH_RARE_WEB_API_CATEGORIES,
+  WEBRTC_AUTHORITY_MATRIX,
+  WEBRTC_EVIDENCE_DOC_PATH,
+  WEBRTC_MEASURED_FILE_COUNT,
+  WEBRTC_PROTOCOL_PILLARS,
   filterGlossaryEntries,
+  filterRareWebApis,
 } from "./tech-presentation-deck-data";
 import { TechPresentationDeckSection } from "./TechPresentationDeckSection";
 import { ToonStudioTechShowcasePage } from "./ToonStudioTechShowcasePage";
 
 import { useI18n } from "@/shared/lib/i18n";
 
-const REPO_ROOT = path.resolve(process.cwd());
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
 const KOREAN_RE = /[\uAC00-\uD7A3]/u;
 const RAW_COLOR_RE = /#[0-9a-fA-F]{3,8}|rgb\(|rgba\(|hsl\(/i;
+const FORBIDDEN_AI_SLOP_RE = /혁신적|압도적|초격차|극대화|풀파워|완벽하게|원천\s*차단|패러다임/u;
 
 describe("Tech presentation deck data integrity & repo evidence", () => {
-  it("contains 16 complete bilingual slides with 3-part practical playbooks, valid diagrams, and real repoPaths & sprites", () => {
-    expect(TECH_PRESENTATION_SLIDES).toHaveLength(16);
+  it("contains 18 complete bilingual slides with 3-part practical playbooks, valid diagrams, and real repoPaths & sprites", () => {
+    expect(TECH_PRESENTATION_SLIDES).toHaveLength(18);
 
     const seenIds = new Set<string>();
     for (let i = 0; i < TECH_PRESENTATION_SLIDES.length; i += 1) {
@@ -103,8 +112,8 @@ describe("Tech presentation deck data integrity & repo evidence", () => {
     }
   });
 
-  it("exposes 22 plain-language glossary entries with valid slide cross-references and multi-token search", () => {
-    expect(TECH_PLAIN_GLOSSARY).toHaveLength(22);
+  it("exposes 28 plain-language glossary entries with valid slide cross-references and multi-token search", () => {
+    expect(TECH_PLAIN_GLOSSARY).toHaveLength(28);
     expect(TECH_GLOSSARY_CATEGORIES).toHaveLength(7);
 
     for (const entry of TECH_PLAIN_GLOSSARY) {
@@ -125,6 +134,9 @@ describe("Tech presentation deck data integrity & repo evidence", () => {
     const kmMatches = filterGlossaryEntries(TECH_PLAIN_GLOSSARY, "all", "쿠벨카 분광");
     expect(kmMatches.some((item) => item.id === "kubelka-munk")).toBe(true);
 
+    const webrtcMatches = filterGlossaryEntries(TECH_PLAIN_GLOSSARY, "storage-sync", "Perfect Negotiation");
+    expect(webrtcMatches.map((item) => item.id)).toEqual(["webrtc-perfect-negotiation"]);
+
     const uxMatches = filterGlossaryEntries(TECH_PLAIN_GLOSSARY, "ux-web", "APCA");
     expect(uxMatches.map((item) => item.id)).toEqual(["oklch-apca"]);
 
@@ -132,23 +144,94 @@ describe("Tech presentation deck data integrity & repo evidence", () => {
     expect(emptyMatches).toHaveLength(0);
   });
 
-  it("enforces zero raw hex/rgb/hsl, zero transition-all, zero Sparkles, and zero '= {}' default props in new showcase files", () => {
-    const filesToAudit = [
+  it("verifies WebRTC 24-file protocol evidence doc, 8-plane authority matrix, and 18 measured rare Web APIs on disk", () => {
+    expect(WEBRTC_EVIDENCE_DOC_PATH).toBe("docs/technology/toonstudio-webrtc-realtime-media-2026-09-25.md");
+    expect(existsSync(path.join(REPO_ROOT, WEBRTC_EVIDENCE_DOC_PATH))).toBe(true);
+    expect(WEBRTC_MEASURED_FILE_COUNT).toBe(24);
+    expect(WEBRTC_AUTHORITY_MATRIX).toHaveLength(8);
+    expect(WEBRTC_PROTOCOL_PILLARS).toHaveLength(4);
+
+    const webrtcSlide = TECH_PRESENTATION_SLIDES.find((s) => s.id === "webrtc-realtime-media-protocol");
+    expect(webrtcSlide?.slideNumber).toBe(17);
+    expect(webrtcSlide?.repoPaths).toContain(WEBRTC_EVIDENCE_DOC_PATH);
+
+    for (const row of WEBRTC_AUTHORITY_MATRIX) {
+      expect(row.concern.en).not.toMatch(KOREAN_RE);
+      expect(row.authority.en).not.toMatch(KOREAN_RE);
+      expect(row.technology.en).not.toMatch(KOREAN_RE);
+      expect(row.durability.en).not.toMatch(KOREAN_RE);
+    }
+
+    for (const pillar of WEBRTC_PROTOCOL_PILLARS) {
+      expect(pillar.title.en).not.toMatch(KOREAN_RE);
+      expect(pillar.summary.en).not.toMatch(KOREAN_RE);
+      expect(pillar.why.en).not.toMatch(KOREAN_RE);
+      expect(pillar.where.en).not.toMatch(KOREAN_RE);
+      expect(pillar.reuse.en).not.toMatch(KOREAN_RE);
+      expect(pillar.repoPaths.length).toBeGreaterThan(0);
+      for (const relPath of pillar.repoPaths) {
+        expect(existsSync(path.join(REPO_ROOT, relPath)), `${pillar.id}: ${relPath}`).toBe(true);
+      }
+    }
+
+    expect(TECH_RARE_WEB_APIS_18).toHaveLength(18);
+    expect(TECH_RARE_WEB_API_CATEGORIES).toHaveLength(5);
+    expect(TECH_RARE_WEB_APIS_18.map((api) => api.fileCount)).toEqual([
+      101, 91, 75, 61, 32, 28, 24, 20, 13, 13, 11, 10, 8, 8, 7, 7, 6, 4,
+    ]);
+
+    for (const api of TECH_RARE_WEB_APIS_18) {
+      expect(api.flowSteps.length).toBeGreaterThanOrEqual(3);
+      expect(api.why.ko.length).toBeGreaterThan(0);
+      expect(api.why.en).not.toMatch(KOREAN_RE);
+      expect(api.whereUsed.ko.length).toBeGreaterThan(0);
+      expect(api.whereUsed.en).not.toMatch(KOREAN_RE);
+      expect(api.reusePlaybook.ko.length).toBeGreaterThan(0);
+      expect(api.reusePlaybook.en).not.toMatch(KOREAN_RE);
+      expect(existsSync(path.join(REPO_ROOT, api.repoPath)), `${api.id}: ${api.repoPath}`).toBe(true);
+    }
+
+    expect(filterRareWebApis(TECH_RARE_WEB_APIS_18, "all")).toHaveLength(18);
+    expect(filterRareWebApis(TECH_RARE_WEB_APIS_18, "media-realtime").map((api) => api.id)).toEqual([
+      "webrtc",
+      "webcodecs",
+      "audio-worklet",
+    ]);
+  });
+
+  it("enforces zero raw hex/rgb/hsl, zero transition-all, zero Sparkles, zero '= {}' default props, and zero forbidden AI slop phrases", () => {
+    const strictTokenFiles = [
       "apps/web/src/domains/showcase/tech-presentation-deck-data.ts",
+      "apps/web/src/domains/showcase/tech-presentation-webrtc-api-data.ts",
       "apps/web/src/domains/showcase/TechPresentationDeckSection.tsx",
+      "apps/web/src/domains/showcase/TechWebRtcAndRareApiShowcase.tsx",
       "apps/web/src/domains/showcase/ToonStudioTechShowcasePage.tsx",
     ];
-    for (const relPath of filesToAudit) {
+    for (const relPath of strictTokenFiles) {
       const source = readFileSync(path.join(REPO_ROOT, relPath), "utf8");
       expect(source, `${relPath} raw colors`).not.toMatch(RAW_COLOR_RE);
       expect(source, `${relPath} transition-all`).not.toContain("transition-all");
       expect(source, `${relPath} Sparkles`).not.toContain("Sparkles");
       expect(source, `${relPath} default empty object prop`).not.toMatch(/=\s*\{\s*\}/u);
     }
+
+    const unslopAuditedFiles = [
+      ...strictTokenFiles,
+      "apps/web/src/domains/showcase/showcase-ui-copy.ts",
+      "apps/web/src/domains/showcase/StudioNextGenInnovationsStrip.tsx",
+      "apps/web/src/domains/showcase/benchmark-visual-matrix-data.ts",
+      "apps/web/src/domains/showcase/brush-filter-competitor-data.ts",
+      "apps/web/src/domains/showcase/nextgen-web-platform-enhancer.ts",
+    ];
+    for (const relPath of unslopAuditedFiles) {
+      const source = readFileSync(path.join(REPO_ROOT, relPath), "utf8");
+      expect(source, `${relPath} Sparkles`).not.toContain("Sparkles");
+      expect(source, `${relPath} AI slop copy`).not.toMatch(FORBIDDEN_AI_SLOP_RE);
+    }
   });
 });
 
-describe("TechPresentationDeckSection interactive deck, AI grid & glossary", () => {
+describe("TechPresentationDeckSection interactive deck, WebRTC/18-API catalog, AI grid & glossary", () => {
   afterEach(() => {
     cleanup();
   });
@@ -160,39 +243,52 @@ describe("TechPresentationDeckSection interactive deck, AI grid & glossary", () 
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("01 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("01 / 18");
     expect(screen.getByTestId("tech-deck-active-slide").getAttribute("data-slide-id")).toBe("zero-copy-overview");
 
     // 버튼 이동
     fireEvent.click(screen.getByTestId("tech-deck-next"));
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 18");
     expect(screen.getByTestId("tech-deck-active-slide").getAttribute("data-slide-id")).toBe("rust-wasm64-core");
 
     fireEvent.click(screen.getByTestId("tech-deck-prev"));
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("01 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("01 / 18");
 
     // 키보드 ArrowRight / ArrowLeft 이동
     fireEvent.keyDown(window, { key: "ArrowRight" });
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 18");
     fireEvent.keyDown(window, { key: "ArrowRight" });
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("03 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("03 / 18");
     fireEvent.keyDown(window, { key: "ArrowLeft" });
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 18");
 
     // 검색 입력창 내부에서는 Arrow 키가 슬라이드를 이동시키지 않음
     const searchInput = screen.getByTestId("tech-glossary-search");
     fireEvent.keyDown(searchInput, { key: "ArrowRight" });
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("02 / 18");
 
     // 전체 목차 14번(CalmChrome UX)으로 직접 점프
     fireEvent.click(screen.getByTestId("tech-deck-toc-14"));
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("14 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("14 / 18");
     expect(screen.getByTestId("tech-deck-active-slide").getAttribute("data-slide-id")).toBe(
       "calm-chrome-ux-engineering",
     );
+
+    // WebRTC 섹션 -> 슬라이드 17, 희귀 웹 API 18종 섹션 -> 슬라이드 18 점프
+    fireEvent.click(screen.getByTestId("tech-webrtc-jump-slide-17"));
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("17 / 18");
+    expect(screen.getByTestId("tech-deck-active-slide").getAttribute("data-slide-id")).toBe(
+      "webrtc-realtime-media-protocol",
+    );
+
+    fireEvent.click(screen.getByTestId("tech-rare-apis-jump-slide-18"));
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("18 / 18");
+    expect(screen.getByTestId("tech-deck-active-slide").getAttribute("data-slide-id")).toBe(
+      "rare-web-platform-apis-18",
+    );
   });
 
-  it("toggles speaker notes, renders semantic raw-color-free SVG diagram, 8 AI modules, and deep links", () => {
+  it("toggles speaker notes, renders semantic raw-color-free SVG diagrams, WebRTC matrix, 18 rare APIs, 8 AI modules, and deep links", () => {
     render(
       <MemoryRouter>
         <TechPresentationDeckSection locale="ko" />
@@ -210,11 +306,30 @@ describe("TechPresentationDeckSection interactive deck, AI grid & glossary", () 
     // 순수 시맨틱 SVG 다이어그램에 원시 색상 0건
     const svg = screen.getByTestId("tech-deck-diagram-svg");
     expect(svg.innerHTML).not.toMatch(RAW_COLOR_RE);
+    const webrtcSvg = screen.getByTestId("tech-webrtc-architecture-svg");
+    expect(webrtcSvg.innerHTML).not.toMatch(RAW_COLOR_RE);
 
     // 3단 실무 해설 카드 모두 존재
     expect(screen.getByTestId("tech-deck-why-chosen").textContent).toContain("왜 이 기술을 선택했나");
     expect(screen.getByTestId("tech-deck-where-used").textContent).toContain("ToonStudio 실제 적용처");
     expect(screen.getByTestId("tech-deck-reuse-playbook").textContent).toContain("다른 프로젝트 재사용법");
+
+    // WebRTC 8대 권위 매트릭스 · 4대 프로토콜 · 희귀 웹 API 18종 렌더링 및 필터링 검증
+    for (const row of WEBRTC_AUTHORITY_MATRIX) {
+      expect(screen.getByTestId(`tech-webrtc-authority-row-${row.id}`)).toBeTruthy();
+    }
+    for (const pillar of WEBRTC_PROTOCOL_PILLARS) {
+      expect(screen.getByTestId(`tech-webrtc-pillar-${pillar.id}`)).toBeTruthy();
+    }
+    expect(screen.getByTestId("tech-rare-apis-count").textContent).toContain("18 / 18");
+    for (const api of TECH_RARE_WEB_APIS_18) {
+      expect(screen.getByTestId(`tech-rare-api-card-${api.id}`)).toBeTruthy();
+    }
+    fireEvent.click(screen.getByTestId("tech-rare-api-cat-media-realtime"));
+    expect(screen.getByTestId("tech-rare-apis-count").textContent).toContain("3 / 18");
+    expect(screen.getByTestId("tech-rare-api-card-webrtc")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("tech-rare-api-cat-all"));
+    expect(screen.getByTestId("tech-rare-apis-count").textContent).toContain("18 / 18");
 
     // 원클릭 포털 링크 3종 검증
     expect(screen.getByTestId("tech-deck-link-full-deck").getAttribute("href")).toBe("/about/technology/deck");
@@ -236,27 +351,36 @@ describe("TechPresentationDeckSection interactive deck, AI grid & glossary", () 
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("22 / 22");
+    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("28 / 28");
 
     // AI 카테고리 필터
     fireEvent.click(screen.getByTestId("tech-glossary-cat-ai"));
-    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("3 / 22");
+    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("3 / 28");
     expect(screen.getByTestId("tech-glossary-item-zero-bill-fail-closed")).toBeTruthy();
 
     // 검색으로 0건 상태 만든 뒤 초기화
     const searchInput = screen.getByTestId("tech-glossary-search");
     fireEvent.change(searchInput, { target: { value: "zzzz-no-match" } });
-    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("0 / 22");
+    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("0 / 28");
     fireEvent.click(screen.getByTestId("tech-glossary-reset"));
-    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("22 / 22");
+    expect(screen.getByTestId("tech-glossary-count").textContent).toContain("28 / 28");
 
     // 검색 후 용어의 슬라이드 점프 버튼 클릭 -> 해당 슬라이드로 즉시 이동
     fireEvent.change(searchInput, { target: { value: "APCA" } });
     expect(screen.getByTestId("tech-glossary-item-oklch-apca")).toBeTruthy();
     fireEvent.click(screen.getByTestId("tech-glossary-jump-oklch-apca-15"));
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("15 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("15 / 18");
     expect(screen.getByTestId("tech-deck-active-slide").getAttribute("data-slide-id")).toBe(
       "web-design-ui-platform-apis",
+    );
+
+    // WebRTC 신규 용어 검색 -> 슬라이드 17 점프
+    fireEvent.change(searchInput, { target: { value: "Perfect Negotiation" } });
+    expect(screen.getByTestId("tech-glossary-item-webrtc-perfect-negotiation")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("tech-glossary-jump-webrtc-perfect-negotiation-17"));
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("17 / 18");
+    expect(screen.getByTestId("tech-deck-active-slide").getAttribute("data-slide-id")).toBe(
+      "webrtc-realtime-media-protocol",
     );
   });
 
@@ -272,7 +396,7 @@ describe("TechPresentationDeckSection interactive deck, AI grid & glossary", () 
     expect(panel.textContent).not.toMatch(KOREAN_RE);
 
     const buttons = panel.querySelectorAll("button");
-    expect(buttons.length).toBeGreaterThan(30);
+    expect(buttons.length).toBeGreaterThan(35);
     for (const btn of buttons) {
       expect(btn.className, btn.getAttribute("data-testid") ?? btn.textContent ?? "button").toContain("min-h-11");
     }
@@ -303,7 +427,7 @@ describe("ToonStudioTechShowcasePage presentation tab integration", () => {
     // 히어로 최우선 CTA 클릭 시 실전 발표 덱 탭으로 즉시 전환
     fireEvent.click(screen.getByTestId("tech-hero-open-deck"));
     expect(screen.getByTestId("tech-panel-presentation")).toBeTruthy();
-    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("01 / 16");
+    expect(screen.getByTestId("tech-deck-counter").textContent).toBe("01 / 18");
 
     // 영문 전환 시 한글 잔류 0건
     act(() => {

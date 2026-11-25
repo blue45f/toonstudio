@@ -12,7 +12,7 @@ import {
   Eye, Focus, Layers, RotateCcw, ShieldCheck, SlidersHorizontal,
   SplitSquareHorizontal, Sun,
 } from "lucide-react";
-import { useId, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { Switch } from "@/shared/components/ui/switch";
 
@@ -33,7 +33,7 @@ export interface StudioAtelierOpticalFilterPanelProps {
   readonly locale?: "ko" | "en";
   readonly className?: string;
   readonly onPipelineChange?: (evaluation: AtelierOpticalFilterEvaluation) => void;
-  readonly onExportJson?: (json: string, evaluation: AtelierOpticalFilterEvaluation) => void;
+  readonly onExportJson?: (json: string, evaluation: AtelierOpticalFilterEvaluation) => void | Promise<void>;
 }
 
 // 탈-바이올렛 OKLCH 시맨틱 SVG 잉크(58°·202°·156°·78°·34° — 270~320° 완전 배제)
@@ -257,6 +257,12 @@ export function StudioAtelierOpticalFilterPanel(props: StudioAtelierOpticalFilte
   const [splitCurtainPercent, setSplitCurtainPercent] = useState<number>(initialSplit);
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [copiedTarget, setCopiedTarget] = useState<"none" | "json" | "wgsl">("none");
+  const [copyPending, setCopyPending] = useState(false);
+  const [copyError, setCopyError] = useState("");
+  const [manualCopy, setManualCopy] = useState<{ readonly target: "json" | "wgsl"; readonly text: string } | null>(null);
+  const copyInFlight = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const buildEval = (overrides?: Partial<{
     presetId: AtelierFilterId; stack: readonly AtelierFilterStackItem[]; intensity: number;
@@ -289,8 +295,11 @@ export function StudioAtelierOpticalFilterPanel(props: StudioAtelierOpticalFilte
     paperReliefStrength, screenAngleDeg, blueNoiseJitter, lutSize, toneAngleDeg,
     skinToneProtection, centerSafeRadius, splitCurtainPercent,
   ]);
+  const currentEvaluation = useRef(evaluation);
+  useEffect(() => { currentEvaluation.current = evaluation; }, [evaluation]);
 
   const notifyPipeline = (nextEval: AtelierOpticalFilterEvaluation, koMsg: string, enMsg: string): void => {
+    setCopiedTarget("none"); setCopyError(""); setManualCopy(null);
     setStatusMessage(pick(koMsg, enMsg));
     props.onPipelineChange?.(nextEval);
   };
@@ -354,28 +363,44 @@ export function StudioAtelierOpticalFilterPanel(props: StudioAtelierOpticalFilte
     );
   };
 
-  const handleCopyJson = (): void => {
-    const json = exportAtelierFilterChainJson(evaluation);
-    props.onExportJson?.(json, evaluation);
-    setCopiedTarget("json");
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(json).catch(() => undefined);
+  const handleCopyPayload = async (target: "json" | "wgsl"): Promise<void> => {
+    if (copyInFlight.current) return;
+    copyInFlight.current = true;
+    setCopyPending(true); setCopiedTarget("none"); setCopyError(""); setManualCopy(null);
+    const snapshot = evaluation;
+    const text = target === "json" ? exportAtelierFilterChainJson(snapshot) : snapshot.wgslShader.source;
+    try {
+      // 사용자 이벤트 안에서 먼저 복사를 시작하고 콜백의 ACK는 별도로 기다린다.
+      let clipboardResult: Promise<boolean>;
+      try {
+        const writeText = globalThis.navigator?.clipboard?.writeText;
+        clipboardResult = typeof writeText === "function"
+          ? Promise.resolve(writeText.call(globalThis.navigator.clipboard, text)).then(() => true, () => false)
+          : Promise.resolve(false);
+      } catch { clipboardResult = Promise.resolve(false); }
+      const exportResult = target === "json" && props.onExportJson
+        ? Promise.resolve().then(() => props.onExportJson?.(text, snapshot)).then(() => true, () => false)
+        : Promise.resolve(true);
+      const [copied, delivered] = await Promise.all([clipboardResult, exportResult]);
+      if (!mounted.current) return;
+      if (currentEvaluation.current !== snapshot) {
+        setStatusMessage(pick("이전 구성의 복사 요청이 끝났습니다. 현재 구성을 다시 복사해 주세요.", "The previous configuration request finished. Copy the current configuration again."));
+        return;
+      }
+      setCopiedTarget(copied ? target : "none");
+      if (!copied) setManualCopy({ target, text });
+      const failures = [
+        ...(!copied ? [pick("복사 실패: 아래 요청 당시 소스를 직접 선택하거나 다시 시도해 주세요.", "Copy failed: select the requested source below or retry.")] : []),
+        ...(!delivered ? [pick("JSON 전달 실패: 내보내기 콜백을 다시 시도해 주세요.", "JSON delivery failed: retry the export callback.")] : []),
+      ];
+      setCopyError(failures.join(" "));
+      setStatusMessage(copied
+        ? pick(`${target.toUpperCase()} 소스를 클립보드에 복사했습니다.`, `Copied ${target.toUpperCase()} source to the clipboard.`)
+        : pick(`${target.toUpperCase()} 복사를 완료하지 못했습니다.`, `${target.toUpperCase()} copy did not complete.`));
+    } finally {
+      copyInFlight.current = false;
+      if (mounted.current) setCopyPending(false);
     }
-    setStatusMessage(pick(
-      `AtelierFilter 체인 JSON(${json.length}자)을 복사·내보냈습니다.`,
-      `Copied and exported AtelierFilter chain JSON (${json.length} chars).`,
-    ));
-  };
-
-  const handleCopyWgsl = (): void => {
-    setCopiedTarget("wgsl");
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(evaluation.wgslShader.source).catch(() => undefined);
-    }
-    setStatusMessage(pick(
-      `WGSL 컴퓨트 셰이더(${evaluation.wgslShader.lineCount}줄 · @workgroup_size(8, 8, 1))를 복사했습니다.`,
-      `Copied WGSL compute shader (${evaluation.wgslShader.lineCount} lines · @workgroup_size(8, 8, 1)).`,
-    ));
   };
 
   const { comparison, splitCurtain, wgslShader } = evaluation;
@@ -384,6 +409,7 @@ export function StudioAtelierOpticalFilterPanel(props: StudioAtelierOpticalFilte
     <section
       aria-labelledby={headingId}
       data-testid="studio-atelier-optical-filter-panel"
+      data-copied-target={copiedTarget}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${props.className ?? ""}`}
     >
       {/* 헤더 */}
@@ -403,7 +429,7 @@ export function StudioAtelierOpticalFilterPanel(props: StudioAtelierOpticalFilte
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" data-testid="copy-filter-json-btn" onClick={handleCopyJson} className={BTN_SOLID}>
+          <button type="button" data-testid="copy-filter-json-btn" onClick={() => void handleCopyPayload("json")} disabled={copyPending} aria-busy={copyPending} className={BTN_SOLID}>
             {copiedTarget === "json" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
             <span>{pick("필터 체인 JSON 복사", "Copy Chain JSON")}</span>
           </button>
@@ -632,7 +658,7 @@ export function StudioAtelierOpticalFilterPanel(props: StudioAtelierOpticalFilte
               <Eye className="h-3.5 w-3.5 text-cool" aria-hidden="true" />
               {pick("현재 비파괴 필터 스택 순서·조리개 날 수·LUT 격자·커튼 비율이 실시간 반영된 WGSL 소스입니다.", "WGSL source dynamically reflects active filter order, aperture blades, LUT lattice, and curtain ratio.")}
             </span>
-            <button type="button" data-testid="copy-wgsl-btn" onClick={handleCopyWgsl} className={BTN_OUTLINE}>
+            <button type="button" data-testid="copy-wgsl-btn" onClick={() => void handleCopyPayload("wgsl")} disabled={copyPending} aria-busy={copyPending} className={BTN_OUTLINE}>
               {copiedTarget === "wgsl" ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
               <span>{pick("WGSL 코드 복사", "Copy WGSL")}</span>
             </button>
@@ -643,6 +669,13 @@ export function StudioAtelierOpticalFilterPanel(props: StudioAtelierOpticalFilte
         </div>
       </details>
 
+      {copyError ? <p role="alert" className="text-xs text-fg-2">{copyError}</p> : null}
+      {manualCopy ? (
+        <div className="space-y-2">
+          <p className="text-xs text-fg-2">{pick(`요청 당시 ${manualCopy.target.toUpperCase()} · 직접 복사`, `Requested ${manualCopy.target.toUpperCase()} · Manual Copy`)}</p>
+          <pre data-testid="filter-manual-copy-preview" className="max-h-56 overflow-auto rounded-lg border border-line bg-canvas p-3 font-mono text-[11px] text-fg">{manualCopy.text}</pre>
+        </div>
+      ) : null}
       <div data-testid="atelier-filter-status" aria-live="polite" className="text-xs font-medium text-fg-2 [word-break:keep-all]">
         {statusMessage || pick(evaluation.activePreset.opticalMechanismKo, evaluation.activePreset.opticalMechanismEn)}
       </div>

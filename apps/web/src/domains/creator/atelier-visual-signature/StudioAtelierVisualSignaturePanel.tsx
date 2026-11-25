@@ -271,8 +271,8 @@ export function StudioAtelierVisualSignaturePanel(props: StudioAtelierVisualSign
     setThemeId(nextThemeId);
     const next = emitSnapshot({ themeId: nextThemeId });
     setStatusMessage(pick(
-      `'${next.theme.labelKo}' 적용 · 최저 대비 ${next.contrastAudit.worstWcagRatio}:1 (APCA |Lc| ${next.contrastAudit.worstApcaAbsLc})`,
-      `Applied ${next.theme.labelEn} · Min contrast ${next.contrastAudit.worstWcagRatio}:1 (APCA |Lc| ${next.contrastAudit.worstApcaAbsLc}).`,
+      `'${next.theme.labelKo}' 미리보기 · 토큰 최저 대비 ${next.contrastAudit.worstWcagRatio}:1 (APCA |Lc| ${next.contrastAudit.worstApcaAbsLc})`,
+      `Previewing ${next.theme.labelEn} · Min token contrast ${next.contrastAudit.worstWcagRatio}:1 (APCA |Lc| ${next.contrastAudit.worstApcaAbsLc}).`,
     ));
   };
 
@@ -343,7 +343,8 @@ export function StudioAtelierVisualSignaturePanel(props: StudioAtelierVisualSign
   return (
     <section
       data-testid="atelier-visual-signature-panel"
-      aria-label={pick("아틀리에 하드웨어 비주얼 시그니처 제어판", "Atelier Hardware Visual Signature Panel")}
+      aria-label={pick("아틀리에 비주얼 시그니처 계산 미리보기", "Atelier Hardware Visual Signature Calculation Preview")}
+      aria-describedby={`${uid}-scope`}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg md:p-5 ${props.className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -362,7 +363,7 @@ export function StudioAtelierVisualSignaturePanel(props: StudioAtelierVisualSign
             {pick("아틀리에 3단 표면 사다리 · 동심원 곡률 · 로터리 다이얼 시그니처", "Atelier 3-Tier Surface Ladder · Concentric Curvature · Rotary Dial Signature")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("한지 화실과 정밀 카메라 렌즈 감성을 OKLCH 수식과 WCAG 2.2 · APCA 대비 감사로 검증합니다.", "Verifies hanji atelier surfaces and camera-lens hardware geometry with OKLCH, WCAG 2.2, and APCA math.")}
+            {pick("프리셋 색상·곡률·다이얼을 SVG로 미리 보고, OKLCH 토큰의 WCAG 2.2 · APCA 대비를 계산합니다.", "Preview preset colors, geometry and dials in SVG, and calculate WCAG 2.2 and APCA contrast from OKLCH tokens.")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -378,8 +379,11 @@ export function StudioAtelierVisualSignaturePanel(props: StudioAtelierVisualSign
         </div>
       </header>
 
+      <p id={`${uid}-scope`} data-testid="atelier-sig-scope" className="text-xs text-fg-2 [word-break:keep-all]">
+        {pick("패널 안의 계산 미리보기이며 실제 원고·브러시에는 적용되지 않습니다. 눈부심·청색광과 실제 화면 접근성은 측정하지 않습니다. 설정은 임시 상태이므로 패널을 닫기 전 필요한 CSS·JSON을 복사해 주세요.", "This panel previews calculations; it does not apply them to the manuscript or brush. Glare, blue light and rendered accessibility are not measured. Settings are temporary; copy the CSS or JSON before closing the panel.")}
+      </p>
       <div role="status" aria-live="polite" data-testid="atelier-sig-status-banner" className="rounded-lg border border-line bg-raised px-3 py-2 text-xs text-fg-2 [word-break:keep-all]">
-        {statusMessage || pick(`현재 '${snapshot.theme.labelKo}' 테마 적용 중 · 총 ${snapshot.violetAudit.inspectedTokenCount}개 OKLCH 토큰 검사(바이올렛 0건)`, `Active '${snapshot.theme.labelEn}' · Inspected ${snapshot.violetAudit.inspectedTokenCount} OKLCH tokens (0 violet).`)}
+        {statusMessage || pick(`현재 '${snapshot.theme.labelKo}' 미리보기 · 총 ${snapshot.violetAudit.inspectedTokenCount}개 OKLCH 토큰 검사(바이올렛 0건)`, `Previewing '${snapshot.theme.labelEn}' · Inspected ${snapshot.violetAudit.inspectedTokenCount} OKLCH tokens (0 violet).`)}
       </div>
 
       {/* 4종 아틀리에 테마 실시간 전환 카드 */}

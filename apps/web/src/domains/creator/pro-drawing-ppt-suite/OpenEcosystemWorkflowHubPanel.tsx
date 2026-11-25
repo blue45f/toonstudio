@@ -124,7 +124,12 @@ const LazyStudioWebNnNpuThermalPanel = lazy(() =>
   import("../webnn-npu-thermal-compiler").then((module) => ({ default: module.StudioWebNnNpuThermalPanel })),
 );
 
+const LazyStudioToonSiliconPanel = lazy(() =>
+  import("../toon-silicon-runtime").then((module) => ({ default: module.StudioToonSiliconPanel })),
+);
+
 type EcosystemTabId =
+  | "siliconPlan"
   | "workflowDag"
   | "openBridge"
   | "standardsPublish"
@@ -191,6 +196,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "proDigitizerHid", labelKo: "펜 입력·보정 계산 예제", labelEn: "Pen Input · Calibration Examples" },
   { id: "spatialWearable", labelKo: "기기 배치·시간 예측 예제", labelEn: "Device Layout · Timing Estimate Examples" },
   { id: "heterogeneousNpu", labelKo: "기기별 NPU·GPU 배치 계획", labelEn: "Device NPU and GPU Planning" },
+  { id: "siliconPlan", labelKo: "칩셋별 연산 배치 계획", labelEn: "Compute Planning by Chipset" },
   { id: "rustFullExpansion", labelKo: "Rust WASM 전환 계획", labelEn: "Rust WASM Expansion Planning" },
   { id: "multicoreVello", labelKo: "멀티코어·스펙트럼 컴퓨트 GPU 스케줄 예제", labelEn: "Multicore and SpectrumCompute GPU Scheduling Examples" },
   { id: "rustHotspotPorter", labelKo: "Rust WASM 이식·검증 예제", labelEn: "Rust WASM Porting and Parity Exercise" },
@@ -209,6 +215,8 @@ const ECOSYSTEM_PINNED_TABS: readonly EcosystemTabId[] = [
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
   switch (id) {
     case "npuThermal":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "siliconPlan":
       return <Cpu size={15} aria-hidden="true" />;
     case "heterogeneousNpu":
       return <Cpu size={15} aria-hidden="true" />;
@@ -312,6 +320,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "proDigitizerHid" ? <LazyStudioProDigitizerCalibratorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "spatialWearable" ? <LazyStudioSpatialWearablePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "heterogeneousNpu" ? <LazyStudioHeterogeneousSiliconPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "siliconPlan" ? <LazyStudioToonSiliconPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "rustFullExpansion" ? <LazyStudioRustExpansionArchitectPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "multicoreVello" ? <LazyStudioMulticoreVelloSchedulerPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "rustHotspotPorter" ? <LazyStudioRustHotspotPorterPanel locale={isEn ? "en" : "ko"} /> : null}

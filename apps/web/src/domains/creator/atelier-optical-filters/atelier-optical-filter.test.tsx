@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -46,7 +46,104 @@ import {
   type AtelierFilterStackItem,
 } from "./index";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+describe("FP16·WGSL 수식·복사 완료 경계 회귀", () => {
+  it("FP16 최소 subnormal과 round-to-nearest-even 경계를 보존한다", () => {
+    expect(linearToHalf16Quantize(2 ** -24)).toBe(2 ** -24);
+    expect(linearToHalf16Quantize(2 ** -25)).toBe(0);
+    expect(linearToHalf16Quantize(3 * 2 ** -25)).toBe(2 * 2 ** -24);
+    expect(linearToHalf16Quantize(1 + 2 ** -11)).toBe(1);
+    expect(linearToHalf16Quantize(1 + 3 * 2 ** -11)).toBe(1 + 2 ** -9);
+  });
+
+  it("생성 WGSL의 여섯 tetrahedral 분기 수식이 identity LUT와 CPU 결과를 보존한다", () => {
+    const source = buildAtelierFilterWgslShader(normalizeAtelierFilterInput()).source;
+    const body = source.slice(source.indexOf("fn stage_tetrahedral_lut3d"), source.indexOf("fn stage_sobel_ink_acutance"));
+    const cases = [...body.matchAll(/(?:if\s*\(([^)]+)\)|else)\s*\{\s*va\s*=\s*lut_at\(([^)]+)\);\s*vb\s*=\s*lut_at\(([^)]+)\);\s*w\s*=\s*vec4<f32>\(([^)]+)\);\s*\}/gu)];
+    expect(cases).toHaveLength(6);
+    for (const size of [17, 33] as const) {
+      for (const fraction of [[0.2, 0.3, 0.8], [0.2, 0.8, 0.3], [0.3, 0.2, 0.8], [0.3, 0.8, 0.2], [0.8, 0.2, 0.3], [0.8, 0.3, 0.2]]) {
+        const f: Record<string, number> = { r: fraction[0], g: fraction[1], b: fraction[2] };
+        const branch = cases.find((entry) => !entry[1] || entry[1].split("&&").every((condition) => {
+          const match = condition.trim().match(/^f\.([rgb])\s*>=\s*f\.([rgb])$/u);
+          if (!match) throw new Error("지원하지 않는 WGSL 비교식");
+          return f[match[1]] >= f[match[2]];
+        }));
+        if (!branch) throw new Error("WGSL tetrahedral 분기 없음");
+        const scalar = (term: string): number => term.trim().startsWith("f.") ? f[term.trim().slice(2)] : Number(term);
+        const weights = branch[4].split(",").map((expression) => expression.trim().split(/\s*-\s*/u).map(scalar).reduce((a, b) => a - b));
+        const vertex = (text: string): number[] => text.split(",").map((term) => {
+          const match = term.trim().match(/^i([01])\.[rgb]$/u);
+          if (!match) throw new Error("지원하지 않는 WGSL LUT 꼭짓점");
+          return Number(match[1]) / (size - 1);
+        });
+        const corners = [[0, 0, 0], vertex(branch[2]), vertex(branch[3]), [1, 1, 1].map((n) => n / (size - 1))];
+        const shader = [0, 1, 2].map((channel) => corners.reduce((sum, point, i) => sum + point[channel] * weights[i], 0));
+        const rgb = { r: f.r / (size - 1), g: f.g / (size - 1), b: f.b / (size - 1) };
+        const cpu = sampleTetrahedralLut3d(rgb, size, (r, g, b) => ({ r, g, b }));
+        expect(shader[0]).toBeCloseTo(cpu.r, 12); expect(shader[1]).toBeCloseTo(cpu.g, 12); expect(shader[2]).toBeCloseTo(cpu.b, 12);
+      }
+    }
+    expect(body).toContain("arrayLength(&lut3d_table) < sz * sz * sz");
+  });
+
+  it("클립보드가 없으면 성공 대신 직접 복사할 JSON을 표시한다", async () => {
+    vi.stubGlobal("navigator", {});
+    render(<StudioAtelierOpticalFilterPanel />);
+    fireEvent.click(screen.getByTestId("copy-filter-json-btn"));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("복사 실패"));
+    expect(screen.getByTestId("studio-atelier-optical-filter-panel").getAttribute("data-copied-target")).toBe("none");
+    expect(JSON.parse(screen.getByTestId("filter-manual-copy-preview").textContent ?? "").brand).toBe("AtelierFilter");
+  });
+
+  it("권한 거부 뒤 WGSL 복사를 재시도할 수 있다", async () => {
+    const writeText = vi.fn().mockRejectedValueOnce(new Error("denied")).mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    render(<StudioAtelierOpticalFilterPanel />);
+    fireEvent.click(screen.getByTestId("copy-wgsl-btn"));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("복사 실패"));
+    fireEvent.click(screen.getByTestId("copy-wgsl-btn"));
+    await waitFor(() => expect(screen.getByTestId("studio-atelier-optical-filter-panel").getAttribute("data-copied-target")).toBe("wgsl"));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(writeText).toHaveBeenCalledTimes(2);
+  });
+
+  it("JSON 전달 callback 거부도 복사 결과와 구분해 알린다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+    const onExportJson = vi.fn().mockRejectedValue(new Error("export failed"));
+    render(<StudioAtelierOpticalFilterPanel onExportJson={onExportJson} />);
+    fireEvent.click(screen.getByTestId("copy-filter-json-btn"));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("전달 실패"));
+    expect(screen.getByTestId("studio-atelier-optical-filter-panel").getAttribute("data-copied-target")).toBe("json");
+  });
+
+  it("복사 중 구성이 바뀌면 이전 요청으로 현재 구성의 성공 표시를 만들지 않는다", async () => {
+    let complete = (): void => { throw new Error("복사가 시작되지 않음"); };
+    vi.stubGlobal("navigator", { clipboard: { writeText: () => new Promise<void>((resolveCopy) => { complete = resolveCopy; }) } });
+    render(<StudioAtelierOpticalFilterPanel />);
+    fireEvent.click(screen.getByTestId("copy-filter-json-btn"));
+    expect(screen.getByTestId("copy-filter-json-btn").getAttribute("aria-busy")).toBe("true");
+    fireEvent.change(screen.getByTestId("slider-tone-angle"), { target: { value: "-24" } });
+    complete();
+    await waitFor(() => expect(screen.getByTestId("atelier-filter-status").textContent).toContain("이전 구성"));
+    expect(screen.getByTestId("studio-atelier-optical-filter-panel").getAttribute("data-copied-target")).toBe("none");
+  });
+
+  it("클립보드와 callback이 같은 JSON을 받고 ACK 완료 후 성공을 알린다", async () => {
+    let complete = (): void => { throw new Error("콜백이 시작되지 않음"); };
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const onExportJson = vi.fn<(json: string) => Promise<void>>(() => new Promise<void>((resolveExport) => { complete = resolveExport; }));
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    render(<StudioAtelierOpticalFilterPanel onExportJson={onExportJson} />);
+    fireEvent.click(screen.getByTestId("copy-filter-json-btn"));
+    await waitFor(() => expect(onExportJson).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toBe(onExportJson.mock.calls[0][0]);
+    expect(screen.getByTestId("studio-atelier-optical-filter-panel").getAttribute("data-copied-target")).toBe("none");
+    complete();
+    await waitFor(() => expect(screen.getByTestId("studio-atelier-optical-filter-panel").getAttribute("data-copied-target")).toBe("json"));
+  });
+});
 
 describe("1. 프리셋 레지스트리 · 고유 브랜드 · 경계 정규화", () => {
   it("6대 프로 광학·웹툰 필터 프리셋이 요구 ID와 비중복 스테이지 비트로 등록되어 있다", () => {
@@ -542,7 +639,8 @@ describe("9. 스튜디오 패널 UI 인터랙션 · 접근성 · 디자인/브�
     expect(svg.getAttribute("data-lut-size")).toBe("33");
   });
 
-  it("WGSL <details> 코드 확인 및 JSON 복사 버튼이 onExportJson과 라이브 상태를 갱신한다", () => {
+  it("WGSL <details> 코드 확인 및 JSON 복사 버튼이 onExportJson과 라이브 상태를 갱신한다", async () => {
+    vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
     const onExportJson = vi.fn();
     render(<StudioAtelierOpticalFilterPanel onExportJson={onExportJson} />);
     const details = screen.getByTestId("wgsl-shader-details") as HTMLDetailsElement;
@@ -550,13 +648,14 @@ describe("9. 스튜디오 패널 UI 인터랙션 · 접근성 · 디자인/브�
     expect(screen.getByTestId("wgsl-shader-code").textContent).toContain("@compute @workgroup_size(8, 8, 1)");
 
     fireEvent.click(screen.getByTestId("copy-filter-json-btn"));
-    expect(onExportJson).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onExportJson).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByTestId("studio-atelier-optical-filter-panel").getAttribute("data-copied-target")).toBe("json"));
     const [jsonArg] = onExportJson.mock.calls[0] as [string];
     expect(JSON.parse(jsonArg).brand).toBe("AtelierFilter");
     expect(screen.getByTestId("atelier-filter-status").textContent).toContain("JSON");
 
     fireEvent.click(screen.getByTestId("copy-wgsl-btn"));
-    expect(screen.getByTestId("atelier-filter-status").textContent).toContain("WGSL");
+    await waitFor(() => expect(screen.getByTestId("atelier-filter-status").textContent).toContain("WGSL"));
   });
 
   it("정적 디자인 계약(원시색·바이올렛·transition-all·Sparkles·Web Storage·= {}·외부 브랜드 0건)을 준수한다", () => {

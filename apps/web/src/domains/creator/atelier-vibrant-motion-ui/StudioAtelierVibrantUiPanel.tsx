@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useId, useMemo, useRef, useState, type PointerEvent, type ReactElement } from "react";
 
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { copyText } from "@/shared/lib/copy-text";
 
 import {
@@ -241,7 +242,9 @@ export function StudioAtelierVibrantUiPanel(props: StudioAtelierVibrantUiPanelPr
   const defaultReduced = Boolean(props.initialReducedMotion);
 
   const [paletteId, setPaletteId] = useState<AtelierVividPaletteId>(defaultPaletteId);
-  const [reducedMotion, setReducedMotion] = useState<boolean>(defaultReduced);
+  const [manualReducedMotion, setManualReducedMotion] = useState(defaultReduced);
+  const systemReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const reducedMotion = manualReducedMotion || systemReducedMotion;
   const [pointerPos, setPointerPos] = useState<{ readonly x: number; readonly y: number }>({ x: 0.26, y: -0.18 });
   const [scrollProgress, setScrollProgress] = useState<number>(0.35);
   const [rippleActive, setRippleActive] = useState<boolean>(false);
@@ -270,20 +273,24 @@ export function StudioAtelierVibrantUiPanel(props: StudioAtelierVibrantUiPanelPr
   const handleSelectPalette = (nextId: AtelierVividPaletteId) => {
     setPaletteId(nextId);
     const nextSnap = buildAtelierVividSnapshot({ paletteId: nextId, buttonState: inspectedState, pointerX: pointerPos.x, pointerY: pointerPos.y, scrollProgress, rippleAgeMs, rippleActive, reducedMotion });
-    setStatusMessage(pick(`${nextSnap.palette.labelKo} 무드 적용 완료 (바이올렛 0% · 최소 대비 ${nextSnap.contrastAudit.worstWcagRatio}:1)`, `Applied ${nextSnap.palette.labelEn} (0% violet · worst contrast ${nextSnap.contrastAudit.worstWcagRatio}:1)`));
+    setStatusMessage(pick(`${nextSnap.palette.labelKo} 미리보기 · 최소 계산 대비 ${nextSnap.contrastAudit.worstWcagRatio}:1`, `${nextSnap.palette.labelEn} preview · lowest calculated contrast ${nextSnap.contrastAudit.worstWcagRatio}:1`));
     props.onPaletteChange?.(nextSnap);
   };
 
   const handleToggleReducedMotion = () => {
-    setReducedMotion((prev) => {
-      const next = !prev;
-      if (next) {
-        setRippleActive(false);
-        setRippleAgeMs(0);
-      }
-      setStatusMessage(next ? pick("모션 감소 안전 모드 켜짐: 3D 틸트·시차·스프링 스케일 즉시 0으로 고정", "Reduced motion active: tilt, parallax, and spring scale snapped to 0") : pick("역동적 마이크로-시어터 모션 복원: ±4.5° 틸트와 150ms 스프링 프레스 활성", "Vivid micro-theater motion enabled: ±4.5° tilt and 150ms spring press"));
-      return next;
-    });
+    if (systemReducedMotion) {
+      setStatusMessage(pick("기기의 모션 감소 설정을 적용 중입니다.", "Following your device's reduced-motion setting."));
+      return;
+    }
+    const next = !manualReducedMotion;
+    setManualReducedMotion(next);
+    if (next) {
+      setRippleActive(false);
+      setRippleAgeMs(0);
+    }
+    setStatusMessage(next
+      ? pick("미리보기의 기울임과 움직임을 줄였습니다.", "Reduced the preview's tilt and motion.")
+      : pick("미리보기의 움직임을 복원했습니다.", "Restored motion in the preview."));
   };
 
   const handleStagePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -310,16 +317,28 @@ export function StudioAtelierVibrantUiPanel(props: StudioAtelierVibrantUiPanelPr
     setShowDrawer(true);
     const payload = format === "css" ? cssOutput : jsonOutput;
     const req = ++copyRequestId.current;
-    if (format === "css") await props.onExportCss?.(payload, snapshot);
-    else await props.onExportJson?.(payload, snapshot);
-    const copied = await copyText(payload);
+    const clipboardResult = copyText(payload);
+    const onExport = format === "css" ? props.onExportCss : props.onExportJson;
+    let exportFailed = false;
+    try {
+      await onExport?.(payload, snapshot);
+    } catch {
+      exportFailed = true;
+    }
+    const copied = await clipboardResult;
     if (req !== copyRequestId.current) return;
-    setStatusMessage(copied ? pick(`${format.toUpperCase()} 토큰 시트를 클립보드에 복사했습니다.`, `Copied ${format.toUpperCase()} tokens to clipboard.`) : pick(`${format.toUpperCase()} 토큰 미리보기를 열었습니다.`, `Opened ${format.toUpperCase()} token preview drawer.`));
+    const clipboardStatus = copied
+      ? pick("클립보드에 복사했습니다.", "Copied to clipboard.")
+      : pick("미리보기에서 직접 복사할 수 있습니다.", "You can copy the text from the preview.");
+    setStatusMessage(exportFailed
+      ? pick(`외부 내보내기에 실패했습니다. ${clipboardStatus}`, `Could not export to the destination. ${clipboardStatus}`)
+      : `${format.toUpperCase()} · ${clipboardStatus}`);
   };
 
   const handleReset = () => {
+    copyRequestId.current++;
     setPaletteId(defaultPaletteId);
-    setReducedMotion(defaultReduced);
+    setManualReducedMotion(defaultReduced);
     setPointerPos({ x: 0.26, y: -0.18 });
     setScrollProgress(0.35);
     setRippleActive(false);

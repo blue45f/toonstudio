@@ -7,7 +7,7 @@
  *   재연결 256×256 RLE-Delta 타일 업로드 및 HLC CRDT 인과 수렴 검증(바이트 손실 0건)
  * - 실시간 팀 협업 6대 모듈: 4역할 소프트 락·핸드오프, 캔버스 공간 핀+10초 음성+빨간펜,
  *   120Hz 16B 라이브 커서·따라보기, A/B안 비주얼 디프 브랜치·타임머신 롤백,
- *   WebCrypto AES-GCM-256 E2EE 포렌식 워터마크 만료 링크, JSON 내보내기
+ *   검수 메타데이터 모형(실제 암호화·키 생성/폐기·공유 URL 미생성), JSON 내보내기
  */
 
 export const LOOM_OFFLINE_COLLAB_SCHEMA_VERSION = "toonstudio.loom-offline-collab.v1" as const;
@@ -163,9 +163,12 @@ export interface E2eeForensicLinkInput {
 }
 
 export interface E2eeForensicReviewLink {
-  readonly episodeId: string; readonly cipherSuite: "AES-GCM-256";
-  readonly keyDerivation: "ECDH-P256 + HKDF-SHA-256"; readonly ivBytes: 12; readonly authTagBits: 128;
-  readonly serverCanReadPlaintext: false; readonly keyFingerprint: string;
+  readonly episodeId: string; readonly cipherSuite: "none" | "AES-GCM-256";
+  readonly keyDerivation: "none" | "ECDH-P256 + HKDF-SHA-256"; readonly ivBytes: 0 | 12; readonly authTagBits: 0 | 128;
+  readonly serverCanReadPlaintext: false | null; readonly keyFingerprint: string;
+  readonly modelKind?: "review-metadata-simulation"; readonly plannedCipherSuite?: "AES-GCM-256";
+  readonly encryptionPerformed?: false; readonly keyMaterialGenerated?: false;
+  readonly watermarkApplied?: false; readonly liveShareEnabled?: false;
   readonly viewerHandle: string; readonly viewerRoleLabel: string;
   readonly watermarkDensity: WatermarkDensity; readonly allowDownload: boolean;
   readonly watermarkText: string; readonly watermarkDigest: string;
@@ -177,6 +180,8 @@ export interface ForensicLinkVerificationResult {
   readonly valid: boolean; readonly isExpired: boolean;
   readonly watermarkDigestValid: boolean; readonly zeroKnowledgeEnforced: boolean;
   readonly verdictKo: string; readonly verdictEn: string;
+  readonly verificationKind?: "metadata-checksum-only"; readonly cryptographicProtectionVerified?: false;
+  readonly keyRevoked?: false;
 }
 
 export interface RealtimeTeamCollabInput {
@@ -211,6 +216,10 @@ export interface LoomOfflineCollabExportPayload {
   readonly offlineBoundary: readonly OfflineCapabilityBoundaryItem[];
   readonly realtimeCollab: RealtimeTeamCollabReport;
   readonly honestyNoteKo: string; readonly honestyNoteEn: string;
+  readonly runtimeEvidence?: {
+    readonly opfsWritePerformed: false; readonly sqliteWalPersisted: false; readonly realtimeNetworkConnected: false;
+    readonly encryptionPerformed: false; readonly keyMaterialGenerated: false; readonly watermarkApplied: false;
+  };
 }
 
 export interface LoomOfflineCollabExportBundle {
@@ -257,10 +266,6 @@ function fnv1aHex(input: string): string {
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash.toString(16).toUpperCase().padStart(8, "0");
-}
-
-function formatFingerprintGroups(seed: string): string {
-  return `E2EE:${fnv1aHex(`${seed}:k0`).slice(0, 4)}-${fnv1aHex(`${seed}:k1`).slice(0, 4)}-${fnv1aHex(`${seed}:k2`).slice(0, 4)}-${fnv1aHex(`${seed}:k3`).slice(0, 4)}`;
 }
 
 export function compareHlcTimestamp(left: HlcTimestamp, right: HlcTimestamp): number {
@@ -607,25 +612,24 @@ export function generateE2eeForensicReviewLink(input?: E2eeForensicLinkInput): E
   const viewerRoleLabel = input?.viewerRoleLabel?.trim() || "담당 PD 검수";
   const expiresInHours = clampInt(input?.expiresInHours, 24, 1, 168).value;
   const watermarkDensity: WatermarkDensity = input?.watermarkDensity === "subtle" || input?.watermarkDensity === "strict" ? input.watermarkDensity : "standard";
-  const allowDownload = Boolean(input?.allowDownload ?? false);
-  const nowEpochMs = input?.nowEpochMs !== undefined && Number.isFinite(input.nowEpochMs) ? input.nowEpochMs : DEFAULT_SIMULATION_EPOCH_MS;
-  const expiresAtEpochMs = nowEpochMs + expiresInHours * 3600 * 1000;
+  const ttlMs = expiresInHours * 3600 * 1000;
+  const nowEpochMs = clampInt(input?.nowEpochMs, DEFAULT_SIMULATION_EPOCH_MS, -8_640_000_000_000_000, 8_640_000_000_000_000 - ttlMs).value;
+  const expiresAtEpochMs = nowEpochMs + ttlMs;
   const createdAtIso = new Date(nowEpochMs).toISOString();
   const expiresAtIso = new Date(expiresAtEpochMs).toISOString();
 
-  const keySeed = `${LOOM_SYNC_BRAND}:${episodeId}:${viewerHandle}:${createdAtIso}`;
-  const keyFingerprint = formatFingerprintGroups(keySeed);
+  // FNV는 화면 메타데이터 비교용 체크섬이며 키·서명·암호 인증이 아니다.
+  const keyFingerprint = "";
   const wmCode = `WM-${fnv1aHex(`${viewerHandle}:${episodeId}:${expiresAtIso}`).slice(0, 6)}`;
-  const watermarkText = `${viewerRoleLabel}(${viewerHandle}) · ${wmCode} · 만료 ${expiresAtIso.slice(0, 16).replace("T", " ")} UTC · AES-GCM-256`;
+  const watermarkText = `표식 모형 (원고 미적용) · ${viewerRoleLabel}(${viewerHandle}) · ${wmCode} · 예시 만료 ${expiresAtIso.slice(0, 16).replace("T", " ")} UTC`;
   const watermarkDigest = fnv1aHex(`${keyFingerprint}|${watermarkText}|${expiresAtEpochMs}`);
-  const opaqueToken = `${fnv1aHex(`tok:${keySeed}`)}${fnv1aHex(`exp:${expiresAtIso}`)}`.toLowerCase();
-  const keyFragment = `${fnv1aHex(`frag:${keySeed}`)}${fnv1aHex(`iv:${wmCode}`)}`.toLowerCase();
-
   return {
-    episodeId, cipherSuite: "AES-GCM-256", keyDerivation: "ECDH-P256 + HKDF-SHA-256", ivBytes: 12, authTagBits: 128,
-    serverCanReadPlaintext: false, keyFingerprint, viewerHandle, viewerRoleLabel, watermarkDensity, allowDownload,
+    episodeId, cipherSuite: "none", keyDerivation: "none", ivBytes: 0, authTagBits: 0,
+    modelKind: "review-metadata-simulation", plannedCipherSuite: "AES-GCM-256",
+    encryptionPerformed: false, keyMaterialGenerated: false, watermarkApplied: false, liveShareEnabled: false,
+    serverCanReadPlaintext: null, keyFingerprint, viewerHandle, viewerRoleLabel, watermarkDensity, allowDownload: false,
     watermarkText, watermarkDigest, createdAtIso, expiresAtIso, expiresAtEpochMs, expiresInHours,
-    reviewUrl: `https://review.toonstudio.cloud/e2ee/${episodeId}?token=${opaqueToken}#key=${keyFragment}`,
+    reviewUrl: "",
   };
 }
 
@@ -636,15 +640,11 @@ export function verifyForensicReviewLink(
   const expectedDigest = fnv1aHex(`${link.keyFingerprint}|${link.watermarkText}|${link.expiresAtEpochMs}`);
   const watermarkDigestValid = Object.is(expectedDigest, link.watermarkDigest);
   const isExpired = checkEpochMs >= link.expiresAtEpochMs;
-  const zeroKnowledgeEnforced =
-    link.cipherSuite === "AES-GCM-256" && link.ivBytes === 12 && link.authTagBits === 128 &&
-    link.serverCanReadPlaintext === false && link.reviewUrl.includes("#key=");
-  const valid = !isExpired && watermarkDigestValid && zeroKnowledgeEnforced;
-
   return {
-    valid, isExpired, watermarkDigestValid, zeroKnowledgeEnforced,
-    verdictKo: !watermarkDigestValid ? "포렌식 워터마크 무결성 불일치 — 링크 차단" : isExpired ? "열람 만료 시각 경과 — 키 파기 완료" : "AES-GCM-256 종단간 암호화 및 포렌식 워터마크 유효",
-    verdictEn: !watermarkDigestValid ? "Forensic watermark integrity mismatch — blocked" : isExpired ? "Review window expired — key revoked" : "AES-GCM-256 E2EE and forensic watermark verified",
+    valid: false, isExpired, watermarkDigestValid, zeroKnowledgeEnforced: false,
+    verificationKind: "metadata-checksum-only", cryptographicProtectionVerified: false, keyRevoked: false,
+    verdictKo: `${!watermarkDigestValid ? "모형 체크섬 불일치" : isExpired ? "모형 만료 시각 경과" : "검수 메타데이터 모형"} — 암호화·키 생성·키 폐기·접근 제어 미실행, 공유 불가`,
+    verdictEn: `${!watermarkDigestValid ? "Model checksum mismatch" : isExpired ? "Model expiry reached" : "Review metadata model"} — no encryption, key generation, key revocation, or access control; not shareable`,
   };
 }
 
@@ -682,8 +682,9 @@ export function exportLoomOfflineCollabJson(input?: LoomOfflineCollabExportInput
     offlineSimulation: runOfflineOutageSimulation(input?.offlineInput),
     offlineBoundary: getOfflineCapabilityBoundary(),
     realtimeCollab: evaluateRealtimeTeamCollabSession(input?.collabInput),
-    honestyNoteKo: "오프라인 무결성 시뮬레이션은 실제 ToonStudio SW·OPFS·SQLite WAL·HLC 계약을 결정적으로 검증하며, 최초 1회 SW 설치 전 방문·클라우드 LLM·원격 팀 동기화·외부 결제는 네트워크가 필요합니다.",
-    honestyNoteEn: "The offline outage simulation deterministically verifies ToonStudio SW, OPFS, SQLite WAL, and HLC contracts; first-time SW install, cloud LLM, remote team sync, and external billing still require network connectivity.",
+    runtimeEvidence: { opfsWritePerformed: false, sqliteWalPersisted: false, realtimeNetworkConnected: false, encryptionPerformed: false, keyMaterialGenerated: false, watermarkApplied: false },
+    honestyNoteKo: "CPU 메모리 참조 시뮬레이션입니다. 실제 SW·OPFS·SQLite 저장·원격 팀 동기화·암호화·키 생성/폐기·원고 워터마크·권리 검사는 연결되지 않았습니다. 검수 URL을 생성하거나 미공개 원고를 보호하지 않습니다.",
+    honestyNoteEn: "CPU in-memory reference simulation only. Live SW/OPFS/SQLite persistence, remote team sync, encryption, key generation/revocation, manuscript watermarking, and rights checks are not connected. No review URL is generated and no unreleased manuscript is protected.",
   };
   return { payload, json: JSON.stringify(payload, null, 2) };
 }

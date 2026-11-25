@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -120,7 +121,7 @@ test("2D image header parsers handle PNG, JPEG, WebP (VP8X/VP8L/VP8), and SVG wi
   assert.equal(icon.isWireframeScene, false);
 });
 
-test("classify3dAsset and classify2dAsset assign accurate 4-tier quality grades", () => {
+test("classify3dAsset and classify2dAsset assign deterministic 4-tier heuristic grades", () => {
   const base3d = { ext: ".glb", bytes: 400_000, triangles: 2400, textures: 2, minY: 0, maxTextureDim: 1024, parseError: null, isReferencedInCode: true, refSource: "code-direct", isExactDup: false, isShadowDup: false };
   assert.equal(classify3dAsset({ ...base3d, webPath: "/assets/3d/hero_desk.glb" }).grade, "HERO_KEEP");
   assert.equal(classify3dAsset({ ...base3d, webPath: "/assets/3d/polyhaven.glb", bytes: 12 * 1048576 }).grade, "OPTIMIZE_HEAVY_OR_DUP");
@@ -135,6 +136,46 @@ test("classify3dAsset and classify2dAsset assign accurate 4-tier quality grades"
   assert.equal(classify2dAsset({ ...base2d, ext: ".svg", bytes: 5500, width: 720, height: 560, svg: { isWireframeScene: true, shapeCount: 40 }, webPath: "/brand/studio-scene.svg" }).grade, "UPGRADE_LOW_CRAFT");
   assert.equal(classify2dAsset({ ...base2d, webPath: "/assets/virtual-studio/characters-lpc-v1/hero.png" }).grade, "QUARANTINE_OFF_STYLE");
   assert.equal(classify2dAsset({ ...base2d, webPath: "/brand/orphan.webp", isReferencedInCode: false, refSource: "orphan" }).grade, "QUARANTINE_OFF_STYLE");
+});
+
+test("header-only asset audit does not claim rendering, topology, rights or reclaimed bytes", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "toonstudio-audit-scope-"));
+  try {
+    const assetDir = path.join(tmp, "apps/web/public/brand");
+    fs.mkdirSync(assetDir, { recursive: true });
+    const assetPath = path.join(assetDir, "header-only.png");
+    const original = makePngHeader(1024, 1024);
+    fs.writeFileSync(assetPath, original);
+    const audit = runVisualAssetAudit(tmp);
+    assert.deepEqual(audit.scope, {
+      analysis: "header-json-metadata-heuristics", referenceCheck: "static-literal-and-manifest-scan",
+      rendered: false, topologyValidated: false, rightsValidated: false, runtimeReferencesValidated: false,
+      assetFilesModified: false, assetFilesDeleted: 0, reclaimedBytes: 0,
+      savingsBasis: "candidate-source-bytes-and-unverified-compression-ratios",
+    });
+    assert.deepEqual(fs.readFileSync(assetPath), original);
+    const md = renderAuditMarkdown(audit);
+    assert.match(md, /헤더·메타데이터 휴리스틱/);
+    assert.match(md, /렌더링·위상·권리 검증을 수행하지 않습니다/);
+    assert.match(md, /실제 회수 용량은 0바이트/);
+    assert.doesNotMatch(md, /100% 실측|실측 회수|즉시 안전 삭제|무위험 즉시 정리/);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+});
+
+test("JSON and dry-run CLI preserve the unverified scope and write no report or asset files", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "toonstudio-audit-json-"));
+  try {
+    const output = execFileSync(process.execPath, [path.join(import.meta.dirname, "audit-visual-assets-quality.mjs"), "--root", tmp, "--json"], { encoding: "utf8" });
+    const report = JSON.parse(output);
+    assert.equal(report.scope?.analysis, "header-json-metadata-heuristics");
+    assert.equal(report.scope?.assetFilesModified, false);
+    assert.equal(report.scope?.reclaimedBytes, 0);
+    assert.equal(report.summary.totalFiles, 0);
+    const preview = execFileSync(process.execPath, [path.join(import.meta.dirname, "audit-visual-assets-quality.mjs"), "--root", tmp, "--dry-run"], { encoding: "utf8" });
+    assert.match(preview, /렌더·위상·권리는 미검증/);
+    assert.match(preview, /실제 회수 용량 0바이트/);
+    assert.deepEqual(fs.readdirSync(tmp), []);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });
 
 test("runVisualAssetAudit and renderAuditMarkdown audit a synthetic workspace end-to-end", () => {

@@ -1,5 +1,5 @@
 /**
- * Wave 61B — AtelierCast 해부학 연동 3D 캐릭터 커스텀 & PrismLight WebGPU 기본 3D 룩뎁 제어판.
+ * Wave 61B — AtelierCast 해부학 비율·PrismLight 파이프라인 CPU/SVG 참조 예제 제어판.
  *
  * - 모든 props 선택적(`= {}` 기본 props 미사용), 순수 결정론적 엔진 연동
  * - 순수 시맨틱 SVG 2단 시각화 (좌: 실시간 해부학 등신 비율·Face-SDF 음영·3층 안구·케이지 클리핑 0 프리뷰,
@@ -98,11 +98,11 @@ function AnatomyLookdevPreviewSvg(props: { readonly snapshot: AtelierCastSnapsho
   return (
     <svg
       data-testid="atelier-cast-anatomy-svg" data-archetype-id={snapshot.archetype.id} data-solver-mode={solverMode}
-      data-clipping-count={anatomy.meshClippingCount} data-proportion-breaks={anatomy.proportionBreakCount}
+      data-clipping-count={anatomy.meshClippingCount} data-measurement-basis="analytical-reference-model" data-mesh-validated="false" data-proportion-breaks={anatomy.proportionBreakCount}
       data-head-ratio={params.headRatio.toFixed(1)} data-violet-free="true" viewBox="0 0 360 240" role="img"
       aria-label={isEn
-        ? `AtelierCast ${params.headRatio.toFixed(1)}-head anatomy, outfit cage refit (${anatomy.meshClippingCount} clips), and PrismLight Face-SDF preview`
-        : `AtelierCast ${params.headRatio.toFixed(1)}등신 해부학 연동·의상 케이지 리핏(관통 ${anatomy.meshClippingCount}건) 및 PrismLight Face-SDF 프리뷰`}
+        ? `AtelierCast CPU/SVG analytical reference, mesh unvalidated: ${params.headRatio.toFixed(1)}-head anatomy, model ${anatomy.meshClippingCount} clips, and PrismLight Face-SDF preview`
+        : `AtelierCast CPU/SVG 해석 모형·메쉬 미검증: ${params.headRatio.toFixed(1)}등신 비율·모형 관통 ${anatomy.meshClippingCount}건 및 PrismLight Face-SDF 프리뷰`}
       className="h-64 w-full rounded-xl border border-line-strong bg-canvas text-fg"
     >
       <rect x="0" y="0" width="360" height="240" rx="14" fill={c.panel} />
@@ -136,7 +136,7 @@ function AnatomyLookdevPreviewSvg(props: { readonly snapshot: AtelierCastSnapsho
       </text>
 
       <rect x="182" y="10" width="168" height="220" rx="10" fill={c.canvas} stroke={c.line} strokeWidth="0.9" />
-      <text x="190" y="23" fill={c.ink} fontSize="7.6" fontWeight="700">{isCoupled ? (isEn ? "PrismLight Face-SDF & 3-Layer Eye" : "PrismLight Face-SDF · 3층 안구") : (isEn ? "Legacy Phong Triangle Shadow" : "구형 퐁 각진 삼각형 그림자")}</text>
+      <text x="190" y="23" fill={c.ink} fontSize="7.6" fontWeight="700">{isCoupled ? (isEn ? "PrismLight Face-SDF & 3-Layer Eye" : "PrismLight Face-SDF · 3층 안구 모형") : (isEn ? "Legacy Phong Triangle Shadow" : "구형 퐁 각진 삼각형 그림자")}</text>
       <ellipse cx={faceCx} cy={faceCy - 12} rx={hairCrownR * 0.88} ry={hairCrownR * 0.92} fill={c.hair} stroke={c.outline} strokeWidth={strokeW * 0.85} />
       {isCoupled ? <path d={`M ${faceCx - 28} ${faceCy - 34} Q ${faceCx} ${faceCy - 46 - params.hairVolume * 6} ${faceCx + 28} ${faceCy - 34}`} fill="none" stroke={c.hairRing} strokeWidth="3.2" strokeLinecap="round" /> : null}
       <path d={`M ${faceCx - 34} ${faceCy - 14} C ${faceCx - 35} ${faceCy + 16}, ${faceCx - jawHalfW} ${faceCy + 34}, ${faceCx} ${faceCy + 42} C ${faceCx + jawHalfW} ${faceCy + 34}, ${faceCx + 35} ${faceCy + 16}, ${faceCx + 34} ${faceCy - 14} C ${faceCx + 32} ${faceCy - 38}, ${faceCx - 32} ${faceCy - 38}, ${faceCx - 34} ${faceCy - 14} Z`} fill={c.skin} stroke={c.outline} strokeWidth={strokeW} />
@@ -167,40 +167,40 @@ function WebGpuPipelineQualitySvg(props: { readonly snapshot: AtelierCastSnapsho
   const { snapshot, isEn } = props;
   const { backend, quality, renderPasses } = snapshot;
   const c = getPaletteColors(snapshot);
-  const isWebGpu = backend.activeBackend === "webgpu";
+  const isWebGpu = backend.plannedBackend === "webgpu";
 
   return (
     <svg
       data-testid="atelier-cast-webgpu-svg" data-active-backend={backend.activeBackend} data-overall-score={quality.overallScore}
-      data-pass-count={backend.activePassCount} data-violet-violations={quality.violetHueViolationCount} data-violet-free="true"
+      data-pass-count={backend.activePassCount} data-planned-pass-count={backend.plannedPassCount} data-violet-violations={quality.violetHueViolationCount} data-violet-free="true"
       viewBox="0 0 360 240" role="img"
       aria-label={isEn
-        ? `ToonCore WebGPU 5-pass 3D default pipeline (${backend.activeBackend}) and 4-axis lookdev quality scores (${quality.overallScore}/100)`
-        : `ToonCore WebGPU 5패스 3D 기본 파이프라인(${backend.activeBackend}) 및 품질 4축 점수(${quality.overallScore}/100)`}
+        ? `ToonCore WebGPU 5-pass planning model (${backend.activeBackend}) and 4-axis lookdev quality scores (${quality.overallScore}/100)`
+        : `ToonCore WebGPU 5패스 계획 모형(${backend.activeBackend}) 및 품질 4축 점수(${quality.overallScore}/100)`}
       className="h-64 w-full rounded-xl border border-line-strong bg-canvas text-fg"
     >
       <rect x="0" y="0" width="360" height="240" rx="14" fill={c.panel} />
       <rect x="10" y="10" width="340" height="104" rx="10" fill={c.card} stroke={c.line} strokeWidth="0.9" />
-      <text x="20" y="25" fill={c.ink} fontSize="8.2" fontWeight="700">{isEn ? "ToonCore WebGPU 5-Pass Default 3D Pipeline" : "ToonCore WebGPU 5패스 3D 기본 렌더링 파이프라인"}</text>
-      <text x="342" y="25" textAnchor="end" fill={isWebGpu ? c.good : c.warn} fontSize="7.4" fontWeight="700" fontFamily="monospace">{`${backend.activeBackend.toUpperCase()} · ${backend.activePassCount}/5 PASS`}</text>
+      <text x="20" y="25" fill={c.ink} fontSize="8.2" fontWeight="700">{isEn ? "ToonCore WebGPU 5-Pass Plan · Not Executed" : "ToonCore WebGPU 5패스 설계 도해 · GPU 미실행"}</text>
+      <text x="342" y="25" textAnchor="end" fill={isWebGpu ? c.good : c.warn} fontSize="7.4" fontWeight="700" fontFamily="monospace">{`${backend.plannedBackend.toUpperCase()} · ${backend.plannedPassCount}/5 PLAN`}</text>
       {renderPasses.map((pass, idx) => {
         const px = 18 + idx * 66;
-        const active = idx < backend.activePassCount;
+        const active = idx < backend.plannedPassCount;
         const shortLabel = pass.order === 1 ? (isEn ? "Skin/Cage" : "스키닝·케이지") : pass.order === 2 ? "Face-SDF" : pass.order === 3 ? (isEn ? "3L Eye" : "3층 안구") : pass.order === 4 ? (isEn ? "Hair Ring" : "엔젤링") : (isEn ? "Taper+OK" : "외곽선·톤");
         return (
-          <g key={pass.id} data-pass-id={pass.id} data-pass-active={String(active)}>
+          <g key={pass.id} data-pass-id={pass.id} data-pass-active="false" data-pass-planned={String(active)}>
             <rect x={px} y="36" width="58" height="48" rx="7" fill={active ? (pass.stage === "compute" ? c.goodSoft : c.rimSoft) : c.canvas} stroke={active ? (pass.stage === "compute" ? c.good : c.rim) : c.line} strokeWidth={active ? "1.2" : "0.8"} />
             <text x={px + 29} y="50" textAnchor="middle" fill={active ? c.ink : c.muted} fontSize="6.4" fontWeight="700" fontFamily="monospace">{`P${pass.order} · ${pass.brandLayer.slice(0, 5)}`}</text>
             <text x={px + 29} y="63" textAnchor="middle" fill={active ? c.ink : c.muted} fontSize="6.1" fontWeight="600">{shortLabel}</text>
-            <text x={px + 29} y="76" textAnchor="middle" fill={active ? c.good : c.muted} fontSize="5.7" fontFamily="monospace">{active ? (pass.stage === "compute" ? "COMPUTE" : "GPU PASS") : "BYPASS"}</text>
+            <text x={px + 29} y="76" textAnchor="middle" fill={active ? c.good : c.muted} fontSize="5.7" fontFamily="monospace">{active ? (pass.stage === "compute" ? "COMPUTE PLAN" : "GPU PLAN") : "NOT PLANNED"}</text>
             {idx < renderPasses.length - 1 ? <line x1={px + 58} y1="60" x2={px + 66} y2="60" stroke={active ? c.rim : c.line} strokeWidth="1.2" /> : null}
           </g>
         );
       })}
-      <text x="20" y="102" fill={c.muted} fontSize="6.8" fontFamily="monospace">{`WGSL ${snapshot.wgslValidation.valid ? "VALID" : "INVALID"} · ${snapshot.wgslValidation.bindingCount} BINDINGS · ${snapshot.uniformsByteLength}B (16B ALIGNED)`}</text>
+      <text x="20" y="102" fill={c.muted} fontSize="6.8" fontFamily="monospace">{`WGSL STATIC ${snapshot.wgslValidation.valid ? "PASS" : "FAIL"} · ${snapshot.wgslValidation.bindingCount} BINDINGS · ${snapshot.uniformsByteLength}B (16B ALIGNED)`}</text>
 
       <rect x="10" y="122" width="340" height="108" rx="10" fill={c.card} stroke={c.line} strokeWidth="0.9" />
-      <text x="20" y="138" fill={c.ink} fontSize="8.2" fontWeight="700">{isEn ? "4-Axis Character Custom Quality vs Legacy" : "3D 캐릭터 커스텀 품질 4축 점수 (구형 선형 대비)"}</text>
+      <text x="20" y="138" fill={c.ink} fontSize="8.2" fontWeight="700">{isEn ? "4-Axis Model Comparison · Not Measured" : "해석 모형 비교 점수 4축 · 실측 아님"}</text>
       <text x="342" y="138" textAnchor="end" fill={quality.improvementPoints >= 0 ? c.good : c.warn} fontSize="7.8" fontWeight="700" fontFamily="monospace">{`${quality.overallScore}/100 (${quality.improvementPoints >= 0 ? "+" : ""}${quality.improvementPoints}pt)`}</text>
       {quality.axes.map((axis, idx) => {
         const y = 148 + idx * 19;
@@ -220,7 +220,7 @@ function WebGpuPipelineQualitySvg(props: { readonly snapshot: AtelierCastSnapsho
   );
 }
 
-/** AtelierCast 해부학 연동 3D 캐릭터 커스텀 & PrismLight WebGPU 기본 3D 룩뎁 패널. */
+/** AtelierCast 해부학 비율·PrismLight 파이프라인 CPU/SVG 참조 예제 패널. */
 export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): ReactElement {
   const isEn = props.locale === "en";
   const pick = (ko: string, en: string): string => (isEn ? en : ko);
@@ -269,8 +269,8 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
     setParams(preset.params);
     const next = emitChange({ archetypeId: preset.id, pigmentId: preset.defaultPigmentId, params: preset.params });
     setStatusMessage(pick(
-      `'${preset.labelKo}' 원형 적용 — 관통 ${next.anatomy.meshClippingCount}건 · 종합 품질 ${next.quality.overallScore}/100`,
-      `Applied ${preset.labelEn} — ${next.anatomy.meshClippingCount} clips · quality ${next.quality.overallScore}/100.`,
+      `'${preset.labelKo}' 참조 원형 선택 — 모형 관통 ${next.anatomy.meshClippingCount}건 · 종합 품질 ${next.quality.overallScore}/100`,
+      `Selected ${preset.labelEn} model — ${next.anatomy.meshClippingCount} clips · quality ${next.quality.overallScore}/100.`,
     ));
   };
 
@@ -284,8 +284,8 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
     setSolverMode(nextMode);
     const next = emitChange({ solverMode: nextMode });
     setStatusMessage(nextMode === "atelier-coupled"
-      ? pick(`AtelierCast 연동·WebGPU 기본 모드 — 관통 0건 · 점수 ${next.quality.overallScore}/100`, `AtelierCast coupled WebGPU default — 0 clips · ${next.quality.overallScore}/100.`)
-      : pick(`구형 선형 스케일 비교 모드 — 관통 ${next.anatomy.meshClippingCount}건 · 파탄 ${next.anatomy.proportionBreakCount}건 감지`, `Legacy linear comparison — ${next.anatomy.meshClippingCount} clips, ${next.anatomy.proportionBreakCount} breaks detected.`));
+      ? pick(`AtelierCast CPU/SVG 참조 모드 — 모형 관통 0건 · 메쉬 미검증 · 점수 ${next.quality.overallScore}/100`, `AtelierCast CPU/SVG reference — model 0 clips; mesh unvalidated · ${next.quality.overallScore}/100.`)
+      : pick(`구형 선형 스케일 모형 — 예시 관통 ${next.anatomy.meshClippingCount}건 · 파탄 ${next.anatomy.proportionBreakCount}건 감지`, `Legacy linear comparison — ${next.anatomy.meshClippingCount} clips, ${next.anatomy.proportionBreakCount} breaks detected.`));
   };
 
   const handleCopyPayload = async (kind: "json" | "wgsl"): Promise<void> => {
@@ -313,13 +313,13 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
     setParams(initialArchetype.params);
     setDrawerTab("closed");
     emitChange({ archetypeId: initialArchetype.id, pigmentId: initialArchetype.defaultPigmentId, solverMode: "atelier-coupled", params: initialArchetype.params, simulateWebGl2Fallback: false });
-    setStatusMessage(pick("기본 원형과 ToonCore WebGPU 기본 룩뎁 설정으로 되돌렸습니다.", "Reset archetype and ToonCore WebGPU default lookdev settings."));
+    setStatusMessage(pick("기본 참조 원형과 WebGPU 파이프라인 계획으로 되돌렸습니다. 실제 GPU는 실행하지 않습니다.", "Reset reference archetype and WebGPU plan. No GPU execution."));
   };
 
   return (
     <section
       data-testid="atelier-cast-panel"
-      aria-label={pick("AtelierCast 해부학 3D 캐릭터 커스텀 및 PrismLight WebGPU 기본 룩뎁", "AtelierCast Anatomical 3D Customizer and PrismLight WebGPU Default Lookdev")}
+      aria-label={pick("AtelierCast CPU/SVG 해부학 참조 예제 및 WebGPU 설계", "AtelierCast CPU/SVG Anatomy Reference and WebGPU Plan")}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg md:p-5 ${props.className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -333,7 +333,7 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
               {snapshot.anatomy.meshClippingCount === 0
                 ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 : <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
-              {pick(`관통 ${snapshot.anatomy.meshClippingCount}건 · 비율 파탄 ${snapshot.anatomy.proportionBreakCount}건`, `${snapshot.anatomy.meshClippingCount} Clips · ${snapshot.anatomy.proportionBreakCount} Breaks`)}
+              {pick(`메쉬 미검증 · 모형 관통 ${snapshot.anatomy.meshClippingCount}건 · 비율 예시 ${snapshot.anatomy.proportionBreakCount}건`, `Mesh unvalidated · Model ${snapshot.anatomy.meshClippingCount} clips / ${snapshot.anatomy.proportionBreakCount} breaks`)}
             </span>
             <span data-testid="atelier-cast-violet-badge" className="inline-flex items-center gap-1 rounded-full border border-line bg-card px-2.5 py-0.5 text-[11px] font-semibold text-fg tabular-nums [word-break:keep-all]">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
@@ -341,10 +341,10 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
             </span>
           </div>
           <h2 className="text-base font-bold tracking-tight text-fg [word-break:keep-all]">
-            {pick("AtelierCast 해부학 연동 3D 캐릭터 커스텀 · PrismLight WebGPU 기본 룩뎁", "AtelierCast Coupled 3D Character Customizer · PrismLight WebGPU Lookdev")}
+            {pick("AtelierCast CPU/SVG 해부학 참조 예제 · WebGPU 설계", "AtelierCast CPU/SVG Anatomy Reference · WebGPU Plan")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("해부학 연동 블렌드셰이프·의상 케이지 리핏으로 관통과 비율 파탄을 없애고 ToonCore WebGPU 5패스로 얼굴 음영과 안구를 정교하게 조율합니다.", "Eliminates garment clipping and proportion breaks via coupled blendshapes, running PrismLight Face-SDF and 3-layer eye shading on ToonCore WebGPU by default.")}
+            {pick("CPU 수식과 SVG로 비율·의상 여유·음영 설계를 비교합니다. 관통과 품질 점수는 모형 값이며 실제 메쉬 검사는 하지 않습니다. GPU 실행·캐릭터 생성·캔버스 반영·영구 저장은 연결되지 않았습니다.", "CPU formulas and SVG compare anatomy, clearance, and shading plans. Clipping and quality scores are model values, not mesh validation. GPU execution, character creation, canvas application, and persistence are not connected.")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -404,11 +404,11 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
         <div className="space-y-2 lg:col-span-6">
           <span className="flex items-center gap-1.5 text-xs font-semibold text-fg [word-break:keep-all]">
             <Layers className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            {pick("WebGPU 기본 vs 구형 선형 스케일 비교", "WebGPU Default vs Legacy Linear Scale")}
+            {pick("CPU/SVG 해석 모형 · 연동/선형 설계 비교", "CPU/SVG Analytical Model · Coupled/Linear Comparison")}
           </span>
           <div className="flex flex-wrap gap-2" role="group" aria-label={pick("솔버 비교 모드", "Solver comparison mode")}>
             <button type="button" data-testid="atelier-cast-mode-coupled" aria-pressed={solverMode === "atelier-coupled"} onClick={() => handleModeToggle("atelier-coupled")} className={solverMode === "atelier-coupled" ? BTN_SOLID : BTN_OUTLINE}>
-              {pick("AtelierCast 연동 · WebGPU 기본", "AtelierCast Coupled · WebGPU")}
+              {pick("AtelierCast 연동 모형 · GPU 미실행", "AtelierCast Coupled Model · No GPU Execution")}
             </button>
             <button type="button" data-testid="atelier-cast-mode-legacy" aria-pressed={solverMode === "legacy-linear"} onClick={() => handleModeToggle("legacy-linear")} className={solverMode === "legacy-linear" ? BTN_ACTIVE : BTN_OUTLINE}>
               {pick("구형 선형 스케일 비교", "Legacy Linear Compare")}
@@ -453,7 +453,7 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
           <div className="flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-1.5 text-xs font-semibold text-fg [word-break:keep-all]">
               <Eye className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              {pick("해부학 등신비 · Face-SDF 음영 · 3층 안구 · 케이지 프리뷰", "Anatomy Ratio · Face-SDF · 3-Layer Eye · Cage Preview")}
+              {pick("해부학 등신비 · Face-SDF 음영 · 3층 안구 · 케이지 프리뷰", "Anatomy Ratio · Face-SDF · 3-Layer Eye Model · Cage Preview")}
             </h3>
             <span className="font-mono text-[11px] text-accent tabular-nums">
               {`GAP ${snapshot.anatomy.collarCageClearanceMm}mm`}
@@ -465,7 +465,7 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
           <div className="flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-1.5 text-xs font-semibold text-fg [word-break:keep-all]">
               <Cpu className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              {pick("ToonCore WebGPU 5패스 기본 파이프라인 & 4축 품질 점수", "ToonCore WebGPU 5-Pass Pipeline & 4-Axis Quality")}
+              {pick("WebGPU 파이프라인 계획 & 4축 모형 점수", "WebGPU Pipeline Plan & 4-Axis Model Scores")}
             </h3>
             <span className="font-mono text-[11px] text-good tabular-nums">
               {`${snapshot.quality.overallScore}/100`}
@@ -515,25 +515,25 @@ export function StudioAtelierCastPanel(props: StudioAtelierCastPanelProps): Reac
       {/* 핵심 KPI 4종 */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <div className="rounded-xl border border-line bg-card p-3">
-          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("메쉬 관통 · 비율 파탄", "Mesh Clips · Breaks")}</div>
+          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("모형 관통 · 비율 예시 (메쉬 미검증)", "Model Clips · Breaks (Mesh Unvalidated)")}</div>
           <div data-testid="atelier-cast-kpi-clipping" className="mt-1 font-mono text-sm font-bold text-good tabular-nums">
             {pick(`${snapshot.anatomy.meshClippingCount}건 / ${snapshot.anatomy.proportionBreakCount}건`, `${snapshot.anatomy.meshClippingCount} / ${snapshot.anatomy.proportionBreakCount}`)}
           </div>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
-          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("4축 룩뎁 품질 점수", "4-Axis Lookdev Score")}</div>
+          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("4축 해석 모형 점수 · 실측 아님", "4-Axis Analytical Model Score")}</div>
           <div data-testid="atelier-cast-kpi-score" className="mt-1 font-mono text-sm font-bold text-accent tabular-nums">
             {`${snapshot.quality.overallScore}/100 (${snapshot.quality.improvementPoints >= 0 ? "+" : ""}${snapshot.quality.improvementPoints})`}
           </div>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
-          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("기본 3D 런타임 정책", "Default 3D Runtime")}</div>
+          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("현재 CPU/SVG 참조 경로", "Current CPU/SVG Reference Path")}</div>
           <div data-testid="atelier-cast-kpi-backend" className="mt-1 font-mono text-sm font-bold text-fg tabular-nums">
             {`${snapshot.backend.activeBackend.toUpperCase()} · ${snapshot.backend.activePassCount}P`}
           </div>
         </div>
         <div className="rounded-xl border border-line bg-card p-3">
-          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("Face-SDF · 3층 안구", "Face-SDF · 3-Layer Eye")}</div>
+          <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("Face-SDF · 3층 안구 모형", "Face-SDF · 3-Layer Eye Model")}</div>
           <div data-testid="atelier-cast-kpi-lookdev" className="mt-1 font-mono text-sm font-bold text-fg tabular-nums">
             {`${snapshot.quality.faceSdfSmoothnessPct}% · ${snapshot.quality.eyeParallaxLayers}L`}
           </div>

@@ -125,7 +125,7 @@ function ToonSiliconHeterogeneousSvg(props: {
   const { cpu, gpu, npuTpu } = computeUnits;
   const siliconInk = formatOklch(silicon.accentOklch);
   const siliconFill = formatOklch(silicon.accentOklch, 0.12);
-  const zeroCopyInk = npuTpu.zeroCopyMlTensorActive ? SVG_GOOD_INK : SVG_WARN_INK;
+  const zeroCopyInk = npuTpu.plannedZeroCopyMlTensor ? SVG_GOOD_INK : SVG_WARN_INK;
 
   const barMaxWidth = 132;
   const cpuBarW = Math.max(10, Math.round((cpu.loadSharePct / 100) * barMaxWidth));
@@ -140,7 +140,7 @@ function ToonSiliconHeterogeneousSvg(props: {
       data-environment={plan.environment}
       data-memory-mode={plan.memoryMode}
       data-focus-workload={plan.focusWorkloadId}
-      data-zero-copy={npuTpu.zeroCopyMlTensorActive ? "true" : "false"}
+      data-zero-copy="false" data-planned-zero-copy={npuTpu.plannedZeroCopyMlTensor ? "true" : "false"}
       data-subgroup-size={gpu.subgroupSize}
       data-violet-free="true"
       viewBox="0 0 720 316"
@@ -155,12 +155,12 @@ function ToonSiliconHeterogeneousSvg(props: {
       <rect x="0" y="0" width="720" height="316" fill={SVG_BG} />
 
       <text x="16" y="22" fill="currentColor" fontSize="11" fontWeight="700">
-        {isEn ? `ToonSilicon 3-Unit Heterogeneous Dispatch · ${silicon.shortLabel}` : `ToonSilicon 3유닛 이기종 부하 분산 · ${silicon.shortLabel}`}
+        {isEn ? `ToonSilicon 3-Unit Dispatch Plan · ${silicon.shortLabel}` : `ToonSilicon 3유닛 배정 계획 · ${silicon.shortLabel}`}
       </text>
       <text x="704" y="22" textAnchor="end" fill={zeroCopyInk} fontSize="9.5" fontWeight="700">
-        {npuTpu.zeroCopyMlTensorActive
-          ? isEn ? "ZERO-COPY MLTENSOR · 0 READBACKS" : "ZERO-COPY MLTENSOR · Readback 0회"
-          : isEn ? "STAGED COPY FALLBACK · 2 READBACKS" : "스테이징 복사 폴백 · Readback 2회"}
+        {npuTpu.plannedZeroCopyMlTensor
+          ? isEn ? "PLANNED ZERO-COPY · 0 READBACKS" : "Zero-Copy 계획 · Readback 가정 0회"
+          : isEn ? "PLANNED STAGED COPY · 2 READBACKS" : "스테이징 계획 · Readback 가정 2회"}
       </text>
 
       {/* 좌측: ToonCore / SpectrumCompute 오케스트레이터 허브 */}
@@ -169,7 +169,7 @@ function ToonSiliconHeterogeneousSvg(props: {
       <text x="93" y="81" textAnchor="middle" fill="currentColor" fontSize="8.8" fontWeight="600">ToonCore · SpectrumCompute</text>
       <rect x="28" y="92" width="130" height="24" rx="5" fill={siliconInk} fillOpacity={0.18} />
       <text x="93" y="107" textAnchor="middle" fill="currentColor" fontFamily="monospace" fontSize="8.6" fontWeight="700">
-        {cpu.memory64Active ? "WASM64 memory64 (i64)" : "WASM32 SIMD128 (i32)"}
+        {cpu.plannedMemory64 ? "WASM64 memory64 (i64)" : "WASM32 SIMD128 (i32)"}
       </text>
       <text x="93" y="135" textAnchor="middle" fill="currentColor" fontSize="8.6" fontWeight="700">
         {isEn ? activeWorkloadRoute.nameEn : activeWorkloadRoute.nameKo}
@@ -177,14 +177,14 @@ function ToonSiliconHeterogeneousSvg(props: {
       <text x="93" y="151" textAnchor="middle" fill="currentColor" fillOpacity={0.78} fontFamily="monospace" fontSize="8.4">{paddedShapeLabel}</text>
       <rect x="28" y="164" width="130" height="28" rx="5" fill={SVG_BG} stroke={SVG_FRAME} strokeWidth="1" />
       <text x="93" y="176" textAnchor="middle" fill="currentColor" fontSize="8.1" fontWeight="700">
-        {runtimeBoundary.sandboxedBrowserTab
+        {(plan.environment !== "desktop-native-bridge")
           ? isEn ? "Browser Sandbox Standard" : "브라우저 샌드박스 표준"
           : isEn ? "Native Shell FFI Bridge" : "네이티브 셸 FFI 브리지"}
       </text>
-      <text x="93" y="188" textAnchor="middle" fill={runtimeBoundary.directNativeDriverBlocked ? SVG_WARN_INK : SVG_GOOD_INK} fontSize="7.8" fontWeight="700">
-        {runtimeBoundary.directNativeDriverBlocked
+      <text x="93" y="188" textAnchor="middle" fill={runtimeBoundary.plannedDirectNativeDriverBlocked ? SVG_WARN_INK : SVG_GOOD_INK} fontSize="7.8" fontWeight="700">
+        {runtimeBoundary.plannedDirectNativeDriverBlocked
           ? isEn ? "Direct CUDA/Metal/NNAPI Blocked" : "CUDA·Metal·ROCm·NNAPI 직접 차단"
-          : isEn ? "Platform Native Delegate Active" : "플랫폼 네이티브 브리지 활성"}
+          : isEn ? "Native Delegate Plan · Not Connected" : "네이티브 브리지 계획 · 미연결"}
       </text>
       <text x="93" y="218" textAnchor="middle" fill={siliconInk} fontFamily="monospace" fontSize="8.5" fontWeight="700">
         {`${cpu.loadSharePct}% / ${gpu.loadSharePct}% / ${npuTpu.loadSharePct}%`}
@@ -212,11 +212,11 @@ function ToonSiliconHeterogeneousSvg(props: {
       <text x="222" y="130" fill={SVG_GPU_INK} fontSize="9.8" fontWeight="700">{`WebGPU · ${gpu.gpuFamilyLabel} (${gpu.graphicsBackend})`}</text>
       <text x="222" y="146" fill="currentColor" fontSize="8.5">
         {isEn
-          ? `Subgroup/Wave ${gpu.subgroupSize} · f16 ${gpu.f16ShaderEnabled ? "ON" : "OFF"} · Atlas ${gpu.atlasBudgetMb} MiB`
-          : `Subgroup/Wave ${gpu.subgroupSize} · f16 ${gpu.f16ShaderEnabled ? "활성" : "비활성"} · 아틀라스 ${gpu.atlasBudgetMb} MiB`}
+          ? `Subgroup/Wave ${gpu.subgroupSize} · f16 plan ${gpu.plannedF16Shader ? "YES" : "NO"} · Atlas ${gpu.atlasBudgetMb} MiB`
+          : `Subgroup/Wave ${gpu.subgroupSize} · f16 계획 ${gpu.plannedF16Shader ? "사용" : "미사용"} · 아틀라스 ${gpu.atlasBudgetMb} MiB`}
       </text>
       <text x="222" y="161" fill="currentColor" fillOpacity={0.78} fontSize="8.1">
-        {gpu.unifiedMemoryZeroCopy
+        {gpu.plannedUnifiedMemoryZeroCopy
           ? isEn ? "Unified / Shared Memory Zero-Copy Atlas Path" : "통합·공유 메모리 Zero-Copy 아틀라스 경로"
           : isEn ? "Discrete / Staged Upload Texture Atlas Path" : "분리·스테이징 업로드 텍스처 아틀라스 경로"}
       </text>
@@ -360,28 +360,28 @@ export function StudioToonSiliconPanel(props: StudioToonSiliconPanelProps): Reac
             <span
               data-testid="toon-silicon-boundary-badge"
               className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold [word-break:keep-all] ${
-                runtimeBoundary.sandboxedBrowserTab ? "border-warn bg-warning-soft text-warn" : "border-good bg-good-soft text-good"
+                (plan.environment !== "desktop-native-bridge") ? "border-warn bg-warning-soft text-warn" : "border-good bg-good-soft text-good"
               }`}
             >
-              {runtimeBoundary.sandboxedBrowserTab ? (
+              {(plan.environment !== "desktop-native-bridge") ? (
                 <ShieldAlert className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               ) : (
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               )}
-              {runtimeBoundary.sandboxedBrowserTab
+              {(plan.environment !== "desktop-native-bridge")
                 ? pick("브라우저 샌드박스 표준 API", "Browser Sandbox Standard API")
-                : pick("네이티브 셸 FFI 브리지 활성", "Native Shell FFI Bridge Active")}
+                : pick("네이티브 셸 FFI 브리지 계획 · 미연결", "Native Shell FFI Bridge Plan · Not Connected")}
             </span>
             <span
               data-testid="toon-silicon-memory-badge"
               className="inline-flex items-center gap-1 rounded-full border border-line bg-card px-2.5 py-0.5 font-mono text-[11px] font-semibold text-fg-2 tabular-nums"
             >
               <HardDrive className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
-              {computeUnits.cpu.memory64Active ? "WASM64 · i64" : "WASM32 · i32"}
+              {computeUnits.cpu.plannedMemory64 ? "WASM64 · i64" : "WASM32 · i32"}
             </span>
           </div>
           <h2 id={headingId} className="text-base font-bold tracking-tight text-fg [word-break:keep-all]">
-            {pick("ToonSilicon 8대 모던 실리콘 · Google Tensor TPU · WASM64 오케스트레이터", "ToonSilicon 8 Modern Silicon & Google Tensor TPU WASM64 Orchestrator")}
+            {pick("ToonSilicon 실리콘 프로파일 배정 계획 · 장치 미검증", "ToonSilicon Profile Dispatch Plan · Devices Unverified")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
             {pick(
@@ -430,7 +430,7 @@ export function StudioToonSiliconPanel(props: StudioToonSiliconPanelProps): Reac
         <div className="space-y-2.5 rounded-xl border border-line bg-card p-3.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-fg [word-break:keep-all]">
             <Zap className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            {pick("실행 환경 & 메모리 주소 모드", "Execution Environment & Memory Mode")}
+            {pick("계획 대상 환경 & 메모리 주소 모드", "Planned Environment & Memory Mode")}
           </div>
           <div className="grid grid-cols-1 gap-1.5">
             {EXECUTION_ENVIRONMENTS.map((env) => (
@@ -439,7 +439,7 @@ export function StudioToonSiliconPanel(props: StudioToonSiliconPanelProps): Reac
                 type="button"
                 data-testid={`toon-silicon-env-${env}`}
                 aria-pressed={state.environment === env}
-                onClick={() => applyPatch({ environment: env }, `실행 환경을 '${ENV_LABELS[env].ko}'로 전환했습니다.`, `Switched environment to '${ENV_LABELS[env].en}'.`)}
+                onClick={() => applyPatch({ environment: env }, `계획 대상 환경을 '${ENV_LABELS[env].ko}'로 바꿨습니다. 실제 환경은 전환하지 않습니다.`, `Selected '${ENV_LABELS[env].en}' as the plan target; the actual runtime is unchanged.`)}
                 className={`${state.environment === env ? BTN_ACTIVE : BTN_OUTLINE} justify-start text-left`}
               >
                 {isEn ? ENV_LABELS[env].en : ENV_LABELS[env].ko}
@@ -465,7 +465,7 @@ export function StudioToonSiliconPanel(props: StudioToonSiliconPanelProps): Reac
         <div data-testid="toon-silicon-boundary-panel" className="space-y-2.5 rounded-xl border border-line bg-card p-3.5">
           <div className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-1.5 text-xs font-semibold text-fg [word-break:keep-all]">
-              {runtimeBoundary.directNativeDriverBlocked ? (
+              {runtimeBoundary.plannedDirectNativeDriverBlocked ? (
                 <ShieldAlert className="h-3.5 w-3.5 text-warn" aria-hidden="true" />
               ) : (
                 <CheckCircle2 className="h-3.5 w-3.5 text-good" aria-hidden="true" />
@@ -478,14 +478,14 @@ export function StudioToonSiliconPanel(props: StudioToonSiliconPanelProps): Reac
             {isEn ? runtimeBoundary.boundarySummaryEn : runtimeBoundary.boundarySummaryKo}
           </p>
           <div className="space-y-1.5">
-            <div className="text-[11px] font-semibold text-fg-2">{pick("활성 표준 계층", "Active Standard Layers")}</div>
+            <div className="text-[11px] font-semibold text-fg-2">{pick("계획한 표준 계층 · 미실행", "Planned Standard Layers · Not Executed")}</div>
             <div className="flex flex-wrap gap-1.5">
-              {runtimeBoundary.activeStandardLayers.map((layer) => (
+              {runtimeBoundary.plannedStandardLayers.map((layer) => (
                 <span key={layer} className="rounded-md border border-line bg-panel px-2 py-0.5 font-mono text-[10px] text-fg">{layer}</span>
               ))}
             </div>
           </div>
-          {runtimeBoundary.directNativeDriverBlocked ? (
+          {runtimeBoundary.plannedDirectNativeDriverBlocked ? (
             <div className="rounded-lg border border-warn bg-warning-soft px-2.5 py-2 text-[11px] text-warn [word-break:keep-all]">
               <span className="font-semibold">{pick("직접 호출 차단: ", "Blocked Direct APIs: ")}</span>
               <span className="font-mono">{runtimeBoundary.blockedDirectApis.join(" · ")}</span>
@@ -493,7 +493,7 @@ export function StudioToonSiliconPanel(props: StudioToonSiliconPanelProps): Reac
           ) : (
             <div className="rounded-lg border border-good bg-good-soft px-2.5 py-2 text-[11px] text-good [word-break:keep-all]">
               <span className="font-semibold">{pick("네이티브 FFI 확장: ", "Native FFI Bridge: ")}</span>
-              <span>{runtimeBoundary.nativeFfiBridgeLayers.join(" · ")}</span>
+              <span>{runtimeBoundary.plannedNativeFfiBridgeLayers.join(" · ")}</span>
             </div>
           )}
         </div>
@@ -534,7 +534,7 @@ export function StudioToonSiliconPanel(props: StudioToonSiliconPanelProps): Reac
             <span className="font-mono text-accent tabular-nums">{`${computeUnits.npuTpu.loadSharePct}%`}</span>
           </div>
           <p className="font-mono text-xs font-semibold text-fg tabular-nums">
-            {`${computeUnits.npuTpu.precisionMode} · ${computeUnits.npuTpu.zeroCopyMlTensorActive ? "Zero-Copy MLTensor" : "Staging Copy"}`}
+            {`${computeUnits.npuTpu.precisionMode} · ${computeUnits.npuTpu.plannedZeroCopyMlTensor ? "Planned Zero-Copy MLTensor" : "Planned Staging Copy"}`}
           </p>
           <p className="text-[11px] text-fg-2 [word-break:keep-all]">{computeUnits.npuTpu.acceleratorLabel}</p>
           <p className="font-mono text-[10px] text-fg-3">{computeUnits.npuTpu.delegateLayer}</p>

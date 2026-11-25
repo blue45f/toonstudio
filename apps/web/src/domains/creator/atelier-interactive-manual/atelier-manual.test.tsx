@@ -479,6 +479,13 @@ describe("5. UI 제어판(StudioAtelierManualOsPanel) 인터랙션 · 필터 · 
     expect(screen.getByTestId("mastery-overall-readout").textContent).toContain("1/20 (5%)");
   });
 
+  it("외부 내보내기가 실패해도 JSON 미리보기와 오류 안내를 제공한다", async () => {
+    const onExportJson = vi.fn().mockRejectedValue(new Error("destination unavailable"));
+    render(<StudioAtelierManualOsPanel onExportJson={onExportJson} />);
+    fireEvent.click(screen.getByTestId("manual-copy-json-btn"));
+    await waitFor(() => expect(screen.getByTestId("manual-status-message").textContent).toContain("외부 내보내기에 실패했습니다."));
+  });
+
   it("JSON 복사 버튼이 클립보드 쓰기·미리보기 표시·onExportJson을 실행하고 초기화 버튼이 상태를 복구한다", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });

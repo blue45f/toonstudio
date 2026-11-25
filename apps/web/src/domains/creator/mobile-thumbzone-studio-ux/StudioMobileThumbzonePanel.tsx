@@ -368,7 +368,7 @@ export function StudioMobileThumbzonePanel(props: StudioMobileThumbzonePanelProp
       handleSheetChange(bottomSheetState === "closed" ? "half" : "closed");
       return;
     }
-    setStatusMessage(pick(`엄지 아크 '${label}' 동작을 실행했습니다.`, `Triggered thumb-arc action '${label}'.`));
+    setStatusMessage(pick(`미리보기에서 '${label}' 도구를 선택했습니다.`, `Selected '${label}' in the layout preview.`));
   };
 
   const handleExportJson = async (): Promise<void> => {
@@ -591,9 +591,9 @@ export function StudioMobileThumbzonePanel(props: StudioMobileThumbzonePanelProp
 
           <div className="grid grid-cols-2 gap-2" data-testid="thumbzone-metrics-grid">
             <div className="rounded-xl border border-line bg-card p-3">
-              <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("캔버스 실가용 면적", "Usable Canvas Area")}</div>
-              <div data-testid="thumbzone-metric-canvas" className={`mt-0.5 font-mono text-lg font-bold tabular-nums ${metrics.meetsCanvas82Gate ? "text-good" : "text-warn"}`}>{`${metrics.canvasUsableAreaPct}%`}</div>
-              <div className="text-[11px] text-fg-2 [word-break:keep-all]">{metrics.meetsCanvas82Gate ? pick("닫힘 기준 ≥ 82% 충족", "Meets ≥ 82% gate") : pick("시트 열림 · 상단 캔버스 유지", "Sheet open · top peek kept")}</div>
+              <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("전체 화면의 캔버스 비율", "Canvas Share of Full Viewport")}</div>
+              <div data-testid="thumbzone-metric-canvas" className={`mt-0.5 font-mono text-lg font-bold tabular-nums ${metrics.meetsCanvas82Gate ? "text-good" : "text-warn"}`}>{`${metrics.canvasGrossViewportPct}%`}</div>
+              <div className="text-[11px] text-fg-2 [word-break:keep-all]">{metrics.meetsCanvas82Gate ? pick("82% 이상", "At least 82%") : pick("82% 미만", "Below 82%")}</div>
             </div>
             <div className="rounded-xl border border-line bg-card p-3">
               <div className="text-[11px] text-fg-3 [word-break:keep-all]">{pick("엄지 편안 구간 적중률", "Easy-Reach Hit Rate")}</div>

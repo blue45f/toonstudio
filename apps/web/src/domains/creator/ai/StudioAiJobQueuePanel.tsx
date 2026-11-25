@@ -30,6 +30,7 @@ export interface StudioAiJobQueuePanelProps {
   readonly onCreateFirstJob?: () => void;
   readonly onConfirm?: (jobId: string, accepted: boolean) => void;
   readonly onApprove?: (jobId: string) => void;
+  readonly clipboardCopy?: { readonly description: string; readonly actionLabel: string; readonly completeLabel: string };
   readonly onApply?: (jobId: string, mode: StudioAiApplicationMode) => void;
   readonly onRetry?: (jobId: string) => void;
   readonly onCancel?: (jobId: string) => void;
@@ -107,6 +108,7 @@ export function StudioAiJobQueuePanel({
   onCreateFirstJob,
   onConfirm,
   onApprove,
+  clipboardCopy,
   onApply,
   onRetry,
   onCancel,
@@ -142,7 +144,7 @@ export function StudioAiJobQueuePanel({
           )}
         </div>
         <p className="text-xs text-fg-3 [word-break:keep-all]">
-          원본 원고를 자동 덮어쓰지 않으며, 승인한 결과만 사본 또는 선택 영역에 적용합니다.
+          {clipboardCopy?.description ?? "원본 원고를 자동 덮어쓰지 않으며, 승인한 결과만 사본 또는 선택 영역에 적용합니다."}
         </p>
       </header>
 
@@ -234,7 +236,7 @@ export function StudioAiJobQueuePanel({
                         )}
                       >
                         <StatusIcon status={job.status} />
-                        {stateInfo.labelKo}
+                        {clipboardCopy && job.status === "applied" ? clipboardCopy.completeLabel : stateInfo.labelKo}
                       </span>
                       <span className="text-xs font-semibold text-fg">
                         {SKILL_LABELS_KO[job.skill]}
@@ -305,7 +307,7 @@ export function StudioAiJobQueuePanel({
                   </div>
                 )}
 
-                {job.application && (
+                {!clipboardCopy && job.application && (
                   <p className="text-xs text-good">
                     {job.application.mode === "selection" ? "선택 영역" : "새 사본 레이어"}에{" "}
                     <span className="font-display font-semibold tnum">
@@ -361,9 +363,9 @@ export function StudioAiJobQueuePanel({
                         className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent transition-opacity hover:opacity-90"
                       >
                         <CopyPlus size={13} aria-hidden="true" />
-                        사본으로 적용
+                        {clipboardCopy?.actionLabel ?? "사본으로 적용"}
                       </button>
-                      {job.request.selectionId && (
+                      {!clipboardCopy && job.request.selectionId && (
                         <button
                           type="button"
                           onClick={() => onApply(job.id, "selection")}

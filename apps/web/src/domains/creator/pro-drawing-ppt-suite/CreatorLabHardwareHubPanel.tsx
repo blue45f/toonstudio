@@ -143,7 +143,38 @@ const LazyStudioOneshotCutDirectorPanel = lazy(() =>
   import("../oneshot-cut-director").then((module) => ({ default: module.StudioOneshotCutDirectorPanel })),
 );
 
+const LazyStudioImmersiveFeedbackHudPanel = lazy(() =>
+  import("../atelier-tactile-feedback").then((module) => ({ default: module.StudioImmersiveFeedbackHudPanel })),
+);
+const LazyStudioAtelierVisualSignaturePanel = lazy(() =>
+  import("../atelier-visual-signature").then((module) => ({ default: module.StudioAtelierVisualSignaturePanel })),
+);
+const LazyStudioMobileThumbzonePanel = lazy(() =>
+  import("../mobile-thumbzone-studio-ux").then((module) => ({ default: module.StudioMobileThumbzonePanel })),
+);
+const LazyStudioAtelierBrandRegistryPanel = lazy(() =>
+  import("../atelier-brand-registry").then((module) => ({ default: module.StudioAtelierBrandRegistryPanel })),
+);
+
+const LazyStudioAtelierStageLivingPanel = lazy(() =>
+  import("../atelier-stage-living-ux").then((module) => ({ default: module.StudioAtelierStageLivingPanel })),
+);
+const LazyStudioAtelierNavFlowPanel = lazy(() =>
+  import("../atelier-navigation-flow-craft").then((module) => ({ default: module.StudioAtelierNavFlowPanel })),
+);
+const LazyStudioAtelierVibrantUiPanel = lazy(() =>
+  import("../atelier-vibrant-motion-ui").then((module) => ({ default: module.StudioAtelierVibrantUiPanel })),
+);
+
+const LazyStudioAtelierManualOsPanel = lazy(() =>
+  import("../atelier-interactive-manual").then((module) => ({ default: module.StudioAtelierManualOsPanel })),
+);
+
 type CreatorLabTabId =
+  | "manualGuide"
+  | "stageLivingPreview"
+  | "navFlowPreview"
+  | "vibrantMotionPreview"
   | "calibrator"
   | "signatureLab"
   | "productionGoods"
@@ -171,7 +202,11 @@ type CreatorLabTabId =
   | "adaptiveCalm"
   | "stylusCompensation"
   | "calmIntentExample"
-  | "oneshotCutDirector";
+  | "oneshotCutDirector"
+  | "immersiveFeedbackPreview"
+  | "visualSignaturePreview"
+  | "mobileThumbzonePreview"
+  | "brandRegistryAudit";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -206,6 +241,14 @@ const CREATOR_LAB_TABS: readonly {
   { id: "stylusCompensation", labelKo: "필압 곡선과 획 보정 예제", labelEn: "Pressure Curve and Stroke Compensation Examples" },
   { id: "calmIntentExample", labelKo: "도구 배치와 색상 대비 예제", labelEn: "Tool Layout and Palette Contrast Examples" },
   { id: "oneshotCutDirector", labelKo: "컷 구도와 대사 배치 예제", labelEn: "Panel Framing and Dialogue Layout Examples" },
+  { id: "immersiveFeedbackPreview", labelKo: "몰입 화면과 획 피드백 미리보기", labelEn: "Immersive Canvas and Stroke Feedback Preview" },
+  { id: "visualSignaturePreview", labelKo: "작업대 색상과 다이얼 미리보기", labelEn: "Workbench Colors and Dial Preview" },
+  { id: "mobileThumbzonePreview", labelKo: "한 손 모바일 도구 배치 미리보기", labelEn: "One-Handed Mobile Tool Layout Preview" },
+  { id: "brandRegistryAudit", labelKo: "브랜드 이름 검사", labelEn: "Brand Name Audit" },
+  { id: "stageLivingPreview", labelKo: "가상 무대 카메라와 조명 미리보기", labelEn: "Virtual Stage Camera and Lights Preview" },
+  { id: "navFlowPreview", labelKo: "작업 순서와 메뉴 배치 미리보기", labelEn: "Workflow and Navigation Preview" },
+  { id: "manualGuide", labelKo: "작업실 사용법과 연습 순서", labelEn: "Studio Guide and Practice Steps" },
+  { id: "vibrantMotionPreview", labelKo: "작업대 색상과 움직임 미리보기", labelEn: "Workbench Colors and Motion Preview" },
 ];
 
 const CREATOR_LAB_PINNED_TABS: readonly CreatorLabTabId[] = [
@@ -219,6 +262,22 @@ const CREATOR_LAB_PINNED_TABS: readonly CreatorLabTabId[] = [
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
   switch (id) {
+    case "immersiveFeedbackPreview":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "visualSignaturePreview":
+      return <Eye size={15} aria-hidden="true" />;
+    case "mobileThumbzonePreview":
+      return <Smartphone size={15} aria-hidden="true" />;
+    case "stageLivingPreview":
+      return <Camera size={15} aria-hidden="true" />;
+    case "manualGuide":
+      return <CheckCircle2 size={15} aria-hidden="true" />;
+    case "navFlowPreview":
+      return <Compass size={15} aria-hidden="true" />;
+    case "vibrantMotionPreview":
+      return <Eye size={15} aria-hidden="true" />;
+    case "brandRegistryAudit":
+      return <CheckCircle2 size={15} aria-hidden="true" />;
     case "oneshotCutDirector":
       return <Clapperboard size={15} aria-hidden="true" />;
     case "calmIntentExample":
@@ -339,6 +398,14 @@ export function CreatorLabHardwareHubPanel() {
           {active === "stylusCompensation" ? <LazyStudioStylusNeuralCompensationPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "calmIntentExample" ? <LazyStudioCalmIntentUxPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "oneshotCutDirector" ? <LazyStudioOneshotCutDirectorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "immersiveFeedbackPreview" ? <LazyStudioImmersiveFeedbackHudPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "visualSignaturePreview" ? <LazyStudioAtelierVisualSignaturePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "mobileThumbzonePreview" ? <LazyStudioMobileThumbzonePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "brandRegistryAudit" ? <LazyStudioAtelierBrandRegistryPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "stageLivingPreview" ? <LazyStudioAtelierStageLivingPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "navFlowPreview" ? <LazyStudioAtelierNavFlowPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "manualGuide" ? <LazyStudioAtelierManualOsPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "vibrantMotionPreview" ? <LazyStudioAtelierVibrantUiPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

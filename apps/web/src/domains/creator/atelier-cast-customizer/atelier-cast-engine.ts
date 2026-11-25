@@ -1,10 +1,10 @@
 /**
  * Wave 61B — AtelierCast 해부학 연동 3D 캐릭터 커스텀 · 의상 케이지 자동 리핏 ·
- * PrismLight WebGPU 기본 3D 룩뎁(Face-SDF · 3층 안구 · 이방성 헤어 엔젤링 · 거리 적응형 테이퍼 외곽선) ·
+ * PrismLight WebGPU 룩뎁 설계 모형(Face-SDF · 3층 안구 · 이방성 헤어 엔젤링 · 거리 적응형 테이퍼 외곽선) ·
  * 단일 탈-바이올렛 OKLCH 5안료 조화 & apps/character-lab 통합 계약 엔진.
  *
  * - 현재 구현(Current): 결정론적 해부학 연동·케이지 리핏 솔버, 4축 품질 비교 평가기,
- *   미컴파일 WGSL 정적 계약 소스·검증기·16B 정렬 Uniform 패커, WebGPU 기본 3D 협상 정책,
+ *   미컴파일 WGSL 정적 계약 소스·검증기·16B 정렬 Uniform 패커, 장치에 접근하지 않는 WebGPU 백엔드 계획 비교,
  *   OKLCH 5안료 룩뎁 조화 패스, apps/character-lab → AtelierCast 통합 체크리스트·라우트 매핑.
  * - 목표 런타임(Target): 브라우저 실기 GPUDevice 컴퓨트 스키닝 및 5패스 PrismLight 렌더 그래프 연결.
  */
@@ -57,6 +57,7 @@ export interface AtelierArchetypePreset {
   readonly defaultPigmentId: AtelierPigmentId; readonly params: AtelierCharacterParams;
 }
 export interface AnatomyCageRefitSolution {
+  readonly measurementBasis: "analytical-reference-model"; readonly meshValidated: false;
   readonly mode: AtelierSolverMode; readonly regime: AtelierProportionRegime;
   readonly effectiveDisplayHeightCm: number; readonly headHeightCm: number;
   readonly clavicleSpanCm: number; readonly ribcageWidthCm: number; readonly waistWidthCm: number;
@@ -73,6 +74,7 @@ export interface LookdevQualityAxis {
   readonly summaryKo: string; readonly summaryEn: string;
 }
 export interface CharacterCustomQualityReport {
+  readonly measurementBasis: "analytical-reference-model"; readonly meshValidated: false;
   readonly mode: AtelierSolverMode; readonly overallScore: number; readonly legacyOverallScore: number;
   readonly improvementPoints: number; readonly meshClippingCount: number; readonly proportionBreakCount: number;
   readonly faceSdfSmoothnessPct: number; readonly eyeParallaxLayers: number;
@@ -97,6 +99,8 @@ export interface WebGpuProbeInput {
 export interface Atelier3dBackendNegotiation {
   readonly policy: "webgpu-default"; readonly runtimeBrand: typeof ATELIER_RUNTIME_BRAND;
   readonly activeBackend: Atelier3dBackendKind;
+  readonly plannedBackend: Atelier3dBackendKind; readonly plannedPassCount: number;
+  readonly hardwareVerified: false;
   readonly laneId: "tooncore-webgpu-default" | "tooncore-webgl2-fallback" | "atelier-svg-safe-preview";
   readonly labelKo: string; readonly labelEn: string;
   readonly computeSkinningEnabled: boolean; readonly faceSdfPassEnabled: boolean;
@@ -154,6 +158,10 @@ export interface AtelierCastSnapshot {
   readonly backend: Atelier3dBackendNegotiation; readonly renderPasses: readonly AtelierRenderPassSpec[];
   readonly wgslValidation: AtelierWgslValidationReport; readonly uniformsByteLength: number;
   readonly integration: CharacterLabIntegrationSummary;
+  readonly runtimeState: {
+    readonly model: "analytical-reference-model"; readonly gpuExecuted: false; readonly meshValidated: false;
+    readonly canvasApplied: false; readonly persisted: false;
+  };
 }
 
 const WGSL_RESERVED_KEYWORDS = new Set(
@@ -317,7 +325,7 @@ export const CHARACTER_LAB_ROUTE_MAPPINGS: readonly CharacterLabRouteMapping[] =
 
 export const CHARACTER_LAB_INTEGRATION_CHECKLIST: readonly CharacterLabChecklistItem[] = [
   { id: "unify-15slot-recipe-contract", phase: "phase-1-contract", status: "ready-contract", sourceModule: "apps/character-lab/src/contracts", targetModule: "apps/web/src/domains/creator/atelier-cast-customizer", titleKo: "15슬롯 레시피·해부학 파라미터 계약 단일화", titleEn: "Unify 15-slot recipe and coupled anatomy parameter contracts", verificationGate: "교차 앱 직접 import 0건 유지 + 레시피 JSON 왕복 동치 검증" },
-  { id: "promote-webgpu-default-negotiator", phase: "phase-2-render", status: "ready-contract", sourceModule: "apps/character-lab/src/render (수동 백엔드 선택)", targetModule: "ToonCore WebGPU Default Negotiator", titleKo: "WebGPU 기본 100% 실행 및 미지원 환경 투명 WebGL2 폴백 전환", titleEn: "Switch to WebGPU-first 3D default with transparent WebGL2 fallback", verificationGate: "navigator.gpu 감지 시 WebGPU 기본 선택 + 폴백 사유 UI 노출" },
+  { id: "promote-webgpu-default-negotiator", phase: "phase-2-render", status: "ready-contract", sourceModule: "apps/character-lab/src/render (수동 백엔드 선택)", targetModule: "ToonCore WebGPU Default Negotiator", titleKo: "WebGPU 우선·WebGL2 폴백 경로 계획 (런타임 미연결)", titleEn: "Plan WebGPU-first and WebGL2 fallback routes; runtime not connected", verificationGate: "백엔드 비교 계획과 실제 GPU 미실행 상태를 함께 표시" },
   { id: "replace-linear-scale-with-cage-refit", phase: "phase-2-render", status: "ready-contract", sourceModule: "apps/character-lab/src/domains/humanoid", targetModule: "AtelierCast Coupled Blendshape & Cage Refit Solver", titleKo: "단순 선형 본 스케일링 → 해부학 연동·케이지 리핏 솔버 교체", titleEn: "Replace linear bone scaling with coupled blendshape and cage refit", verificationGate: "5종 웹툰 원형 전 구간 메쉬 관통 0건 · 비율 파탄 0건" },
   { id: "bind-prismlight-wgsl-lookdev", phase: "phase-2-render", status: "ready-contract", sourceModule: "apps/character-lab/src/render (기본 툰 셰이더)", targetModule: "PrismLight Face-SDF · 3-Layer Eye · Angel-Ring WGSL", titleKo: "PrismLight Face-SDF·3층 안구·엔젤링·테이퍼 외곽선 WGSL 바인딩", titleEn: "Bind PrismLight Face-SDF, 3-layer eye, angel-ring, and tapered outline WGSL", verificationGate: "정적 WGSL 계약 통과 + 16B Uniform 정렬 + 탈-바이올렛 5안료 검증" },
   { id: "lazy-bridge-kit-assets", phase: "phase-3-assets", status: "planned-migration", sourceModule: "apps/character-lab/public/assets/characters/toonstudio-kit-v1", targetModule: "apps/web lazy asset loader (/studio/character)", titleKo: "모듈 키트 GLB 에셋 지연 로드 연결 (Studio 초기 번들 경계 준수)", titleEn: "Lazy-load modular kit GLB assets while respecting Studio eager bundle guard", verificationGate: "check:studio-eager-graph 통과 + SHA-256 키트 무결성 확인" },
@@ -416,6 +424,7 @@ export function solveAnatomyAndCageRefit(
 
   if (mode === "atelier-coupled") {
     return {
+      measurementBasis: "analytical-reference-model", meshValidated: false,
       mode, regime, effectiveDisplayHeightCm, headHeightCm, clavicleSpanCm, ribcageWidthCm, waistWidthCm,
       shoulderJointTwistDeg, armTaperRatio, collarCageClearanceMm, hairShoulderBufferMm, eyeTempleMarginMm,
       meshClippingCount: 0, proportionBreakCount: 0, refitIterations: 3, clippingHotspotsKo: [], clippingHotspotsEn: [],
@@ -433,6 +442,7 @@ export function solveAnatomyAndCageRefit(
   if (hotspotsKo.length === 0) { hotspotsKo.push("어깨 관절 비틀림 미보정 · 소매 경계 미세 관통"); hotspotsEn.push("Uncompensated shoulder twist & cuff clipping"); }
 
   return {
+    measurementBasis: "analytical-reference-model", meshValidated: false,
     mode, regime, effectiveDisplayHeightCm, headHeightCm, clavicleSpanCm, ribcageWidthCm, waistWidthCm,
     shoulderJointTwistDeg, armTaperRatio, collarCageClearanceMm, hairShoulderBufferMm, eyeTempleMarginMm,
     meshClippingCount, proportionBreakCount, refitIterations: 0, clippingHotspotsKo: hotspotsKo, clippingHotspotsEn: hotspotsEn,
@@ -470,54 +480,24 @@ export function buildAtelierPigmentHarmony(
   };
 }
 
+/** 입력은 백엔드 계획의 비교 조건이며 장치 조회나 GPU 실행 증거가 아니다. */
 export function negotiateAtelier3dWebGpuDefault(probe?: WebGpuProbeInput): Atelier3dBackendNegotiation {
-  const nav = (globalThis as { navigator?: { gpu?: unknown } }).navigator;
-  const detectedGpu = probe?.hasNavigatorGpu ?? Boolean(nav?.gpu);
-  const adapterAvailable = probe?.adapterAvailable ?? detectedGpu;
-  const isFallbackAdapter = probe?.isFallbackAdapter ?? false;
-  const supportsWebGl2 = probe?.supportsWebGl2 ?? true;
-  const forceLegacy = probe?.forceLegacyMode ?? false;
-
-  if (!forceLegacy && detectedGpu && adapterAvailable && !isFallbackAdapter) {
-    return {
-      policy: "webgpu-default", runtimeBrand: ATELIER_RUNTIME_BRAND, activeBackend: "webgpu",
-      laneId: "tooncore-webgpu-default", labelKo: "ToonCore WebGPU 3D 기본 실행", labelEn: "ToonCore WebGPU 3D Default",
-      computeSkinningEnabled: true, faceSdfPassEnabled: true, threeLayerEyeEnabled: true,
-      instancedHairEnabled: true, distanceTaperOutlineEnabled: true, fallbackTriggered: false,
-      reasonKo: "navigator.gpu 하드웨어 어댑터 감지 — 컴퓨트 스키닝·Face-SDF·인스턴스 헤어를 WebGPU로 기본 실행합니다.",
-      reasonEn: "Hardware navigator.gpu adapter detected — running compute skinning, Face-SDF, and instanced hair on WebGPU by default.",
-      activePassCount: ATELIER_WEBGPU_RENDER_PASSES.length,
-    };
-  }
-  if (supportsWebGl2) {
-    return {
-      policy: "webgpu-default", runtimeBrand: ATELIER_RUNTIME_BRAND, activeBackend: "webgl2",
-      laneId: "tooncore-webgl2-fallback",
-      labelKo: forceLegacy ? "구형 WebGL2 선형 비교 경로" : "ToonCore WebGL2 투명 폴백",
-      labelEn: forceLegacy ? "Legacy WebGL2 Comparison Path" : "ToonCore Transparent WebGL2 Fallback",
-      computeSkinningEnabled: false, faceSdfPassEnabled: !forceLegacy, threeLayerEyeEnabled: !forceLegacy,
-      instancedHairEnabled: false, distanceTaperOutlineEnabled: !forceLegacy, fallbackTriggered: true,
-      reasonKo: forceLegacy
-        ? "비교 모드에서 구형 WebGL2 선형 파이프라인을 시뮬레이션 중입니다."
-        : isFallbackAdapter
-          ? "소프트웨어 WebGPU 폴백 어댑터를 제외하고 WebGL2 투명 폴백으로 전환했습니다."
-          : "navigator.gpu 미지원 환경 — 사용자 개입 없이 WebGL2 투명 폴백 경로로 안전 전환했습니다.",
-      reasonEn: forceLegacy
-        ? "Simulating legacy WebGL2 linear pipeline in comparison mode."
-        : isFallbackAdapter
-          ? "Excluded software WebGPU fallback adapter and switched transparently to WebGL2."
-          : "navigator.gpu unavailable — switched transparently to the WebGL2 fallback path.",
-      activePassCount: forceLegacy ? 2 : 4,
-    };
-  }
+  const requestedGpu = probe?.hasNavigatorGpu ?? true;
+  const adapterPlanned = probe?.adapterAvailable ?? requestedGpu;
+  const softwareAdapter = probe?.isFallbackAdapter ?? false;
+  const legacyComparison = probe?.forceLegacyMode ?? false;
+  const plannedBackend: Atelier3dBackendKind = !legacyComparison && requestedGpu && adapterPlanned && !softwareAdapter
+    ? "webgpu" : (probe?.supportsWebGl2 ?? true) ? "webgl2" : "svg-preview";
+  const plannedPassCount = plannedBackend === "webgpu" ? 5 : plannedBackend === "webgl2" ? (legacyComparison ? 2 : 4) : 0;
   return {
-    policy: "webgpu-default", runtimeBrand: ATELIER_RUNTIME_BRAND, activeBackend: "svg-preview",
-    laneId: "atelier-svg-safe-preview", labelKo: "AtelierCast 시맨틱 SVG 안전 프리뷰", labelEn: "AtelierCast Semantic SVG Safe Preview",
+    policy: "webgpu-default", runtimeBrand: ATELIER_RUNTIME_BRAND,
+    activeBackend: "svg-preview", plannedBackend, plannedPassCount, hardwareVerified: false,
+    laneId: "atelier-svg-safe-preview", labelKo: "AtelierCast CPU/SVG 참조 예제", labelEn: "AtelierCast CPU/SVG Reference Example",
     computeSkinningEnabled: false, faceSdfPassEnabled: false, threeLayerEyeEnabled: false,
-    instancedHairEnabled: false, distanceTaperOutlineEnabled: false, fallbackTriggered: true,
-    reasonKo: "WebGPU·WebGL2 컨텍스트가 모두 없어 시맨틱 SVG 해부학 프리뷰로 안전 표시합니다.",
-    reasonEn: "Neither WebGPU nor WebGL2 is available — rendering the semantic SVG anatomy preview safely.",
-    activePassCount: 1,
+    instancedHairEnabled: false, distanceTaperOutlineEnabled: false, fallbackTriggered: false,
+    reasonKo: `CPU/SVG 해석 모형입니다. GPU·WebGL 실행, 메쉬 충돌 검사, 캔버스 반영, 영구 저장은 수행하지 않습니다. ${softwareAdapter ? "소프트웨어 WebGPU 제외 조건 · " : ""}비교 계획: ${plannedBackend} ${plannedPassCount}패스.`,
+    reasonEn: `CPU/SVG analytical model only. No GPU/WebGL execution, mesh collision validation, canvas application, or persistence. Comparison plan: ${plannedBackend}, ${plannedPassCount} passes.`,
+    activePassCount: 0,
   };
 }
 
@@ -603,18 +583,19 @@ export function evaluateCharacterCustomQuality(
   const hairAngelRingContrast = mode === "atelier-coupled" ? roundTo(0.84 + params.hairVolume * 0.12, 2) : 0.31;
   const outlineTaperConsistencyPct = mode === "atelier-coupled" ? Math.min(99, Math.round(92 + (1 - Math.abs(params.outlineWidthPx - 1.65) * 0.22) * 6)) : 52;
   const lookdevScore = mode === "atelier-coupled" ? Math.round((faceSdfSmoothnessPct + outlineTaperConsistencyPct + 95) / 3) : 47;
-  const runtimeScore = mode === "legacy-linear" ? 46 : backend.activeBackend === "webgpu" ? 98 : backend.activeBackend === "webgl2" ? 78 : 60;
+  const runtimeScore = mode === "legacy-linear" ? 46 : backend.plannedBackend === "webgpu" ? 98 : backend.plannedBackend === "webgl2" ? 78 : 60;
 
   const axes: readonly LookdevQualityAxis[] = [
-    { id: "anatomy-cage", labelKo: "해부학 연동 · 케이지 리핏", labelEn: "Coupled Anatomy & Cage Refit", score: anatomyScore, legacyBaselineScore: legacyAnatomyScore, deltaPoints: anatomyScore - legacyAnatomyScore, summaryKo: anatomy.meshClippingCount === 0 ? `관통 0건 · 비율 파탄 0건 · 칼라 여유 ${anatomy.collarCageClearanceMm}mm` : `관통 ${anatomy.meshClippingCount}건 · 비율 파탄 ${anatomy.proportionBreakCount}건`, summaryEn: anatomy.meshClippingCount === 0 ? `0 clipping · 0 proportion breaks · ${anatomy.collarCageClearanceMm}mm collar gap` : `${anatomy.meshClippingCount} clips · ${anatomy.proportionBreakCount} proportion breaks` },
+    { id: "anatomy-cage", labelKo: "해부학 연동 · 케이지 리핏", labelEn: "Coupled Anatomy & Cage Refit", score: anatomyScore, legacyBaselineScore: legacyAnatomyScore, deltaPoints: anatomyScore - legacyAnatomyScore, summaryKo: anatomy.meshClippingCount === 0 ? `모형 관통 0건 · 비율 파탄 0건 · 칼라 여유 ${anatomy.collarCageClearanceMm}mm` : `모형 관통 ${anatomy.meshClippingCount}건 · 비율 파탄 ${anatomy.proportionBreakCount}건`, summaryEn: anatomy.meshClippingCount === 0 ? `Model: 0 clipping · 0 proportion breaks · ${anatomy.collarCageClearanceMm}mm collar gap` : `Model: ${anatomy.meshClippingCount} clips · ${anatomy.proportionBreakCount} proportion breaks` },
     { id: "face-sdf-lookdev", labelKo: "Face-SDF · 3층 안구 · 엔젤링", labelEn: "Face-SDF · 3-Layer Eye · Angel-Ring", score: lookdevScore, legacyBaselineScore: 47, deltaPoints: lookdevScore - 47, summaryKo: mode === "atelier-coupled" ? `얼굴 SDF 부드러움 ${faceSdfSmoothnessPct}% · 안구 ${eyeParallaxLayers}층 · 테이퍼 ${outlineTaperConsistencyPct}%` : "구형 플라스틱 퐁 음영 · 코/볼 각진 삼각형 그림자 노출", summaryEn: mode === "atelier-coupled" ? `Face-SDF ${faceSdfSmoothnessPct}% · ${eyeParallaxLayers}-layer eye · ${outlineTaperConsistencyPct}% taper` : "Legacy plastic Phong shading with nose-cheek triangle shadows" },
     { id: "oklch-harmony", labelKo: "탈-바이올렛 OKLCH 5안료 조화", labelEn: "Non-Violet OKLCH 5-Pigment Harmony", score: harmony.toneCohesionScore, legacyBaselineScore: 54, deltaPoints: harmony.toneCohesionScore - 54, summaryKo: `${harmony.pigment.labelKo} 단일 조화 · 바이올렛 ${harmony.violetViolationCount}건`, summaryEn: `${harmony.pigment.labelEn} unified toning · ${harmony.violetViolationCount} violet hues` },
-    { id: "webgpu-runtime", labelKo: "ToonCore WebGPU 기본 런타임", labelEn: "ToonCore WebGPU Default Runtime", score: runtimeScore, legacyBaselineScore: 46, deltaPoints: runtimeScore - 46, summaryKo: `${backend.labelKo} (${backend.activePassCount}패스 활성)`, summaryEn: `${backend.labelEn} (${backend.activePassCount} active passes)` },
+    { id: "webgpu-runtime", labelKo: "WebGPU 파이프라인 계획 모형", labelEn: "WebGPU Pipeline Plan Model", score: runtimeScore, legacyBaselineScore: 46, deltaPoints: runtimeScore - 46, summaryKo: `${backend.labelKo} (${backend.plannedPassCount}패스 계획 · 미실행)`, summaryEn: `${backend.labelEn} (${backend.plannedPassCount} planned passes; not executed)` },
   ];
 
   const overallScore = Math.round(axes.reduce((sum, a) => sum + a.score, 0) / axes.length);
   const legacyOverallScore = Math.round(axes.reduce((sum, a) => sum + a.legacyBaselineScore, 0) / axes.length);
   return {
+    measurementBasis: "analytical-reference-model", meshValidated: false,
     mode, overallScore, legacyOverallScore, improvementPoints: overallScore - legacyOverallScore,
     meshClippingCount: anatomy.meshClippingCount, proportionBreakCount: anatomy.proportionBreakCount,
     faceSdfSmoothnessPct, eyeParallaxLayers, hairAngelRingContrast, outlineTaperConsistencyPct,
@@ -653,17 +634,20 @@ export function buildAtelierCastSnapshot(input?: AtelierCastBuildInput): Atelier
     wgslValidation: validateAtelierCastWgsl(ATELIER_CAST_WEBGPU_LOOKDEV_WGSL),
     uniformsByteLength: packAtelierCastLookdevUniforms(params, harmony).byteLength,
     integration: summarizeCharacterLabIntegration(),
+    runtimeState: { model: "analytical-reference-model", gpuExecuted: false, meshValidated: false, canvasApplied: false, persisted: false },
   };
 }
 
 export function exportAtelierCastManifestJson(snapshot: AtelierCastSnapshot): string {
   return JSON.stringify({
     schemaVersion: snapshot.schemaVersion,
+    runtimeState: snapshot.runtimeState,
+    honestyNoteKo: "CPU/SVG 참조 예제입니다. 관통·품질 점수는 해석 모형 값이며 실제 메쉬 검사나 성능 실측이 아닙니다. GPU 실행·캐릭터 생성·파일 저장은 연결되지 않았습니다.",
     brands: { customizer: snapshot.brand, lookdev: snapshot.lookdevBrand, runtime: snapshot.runtimeBrand },
     archetypeId: snapshot.archetype.id, solverMode: snapshot.solverMode, params: snapshot.params,
-    anatomyRefit: { regime: snapshot.anatomy.regime, clavicleSpanCm: snapshot.anatomy.clavicleSpanCm, ribcageWidthCm: snapshot.anatomy.ribcageWidthCm, collarCageClearanceMm: snapshot.anatomy.collarCageClearanceMm, meshClippingCount: snapshot.anatomy.meshClippingCount, proportionBreakCount: snapshot.anatomy.proportionBreakCount },
-    qualityReport: { overallScore: snapshot.quality.overallScore, legacyOverallScore: snapshot.quality.legacyOverallScore, improvementPoints: snapshot.quality.improvementPoints, faceSdfSmoothnessPct: snapshot.quality.faceSdfSmoothnessPct, eyeParallaxLayers: snapshot.quality.eyeParallaxLayers, violetHueViolationCount: snapshot.quality.violetHueViolationCount },
-    webGpuDefaultPolicy: { policy: snapshot.backend.policy, activeBackend: snapshot.backend.activeBackend, laneId: snapshot.backend.laneId, fallbackTriggered: snapshot.backend.fallbackTriggered, activePassCount: snapshot.backend.activePassCount },
+    anatomyRefit: { measurementBasis: snapshot.anatomy.measurementBasis, meshValidated: false, measuredMeshClippingCount: null, regime: snapshot.anatomy.regime, clavicleSpanCm: snapshot.anatomy.clavicleSpanCm, ribcageWidthCm: snapshot.anatomy.ribcageWidthCm, collarCageClearanceMm: snapshot.anatomy.collarCageClearanceMm, meshClippingCount: snapshot.anatomy.meshClippingCount, proportionBreakCount: snapshot.anatomy.proportionBreakCount },
+    qualityReport: { measurementBasis: "analytical-reference-model", overallScore: snapshot.quality.overallScore, legacyOverallScore: snapshot.quality.legacyOverallScore, improvementPoints: snapshot.quality.improvementPoints, faceSdfSmoothnessPct: snapshot.quality.faceSdfSmoothnessPct, eyeParallaxLayers: snapshot.quality.eyeParallaxLayers, violetHueViolationCount: snapshot.quality.violetHueViolationCount },
+    webGpuDefaultPolicy: { hardwareVerified: false, plannedBackend: snapshot.backend.plannedBackend, plannedPassCount: snapshot.backend.plannedPassCount, policy: snapshot.backend.policy, activeBackend: snapshot.backend.activeBackend, laneId: snapshot.backend.laneId, fallbackTriggered: snapshot.backend.fallbackTriggered, activePassCount: snapshot.backend.activePassCount },
     oklchHarmony: { pigmentId: snapshot.harmony.pigment.id, skinBase: formatOklch(snapshot.harmony.skinBase), skinSdfShadow: formatOklch(snapshot.harmony.skinSdfShadow), hairBase: formatOklch(snapshot.harmony.hairBase), hairAngelRing: formatOklch(snapshot.harmony.hairAngelRing), outfitPrimary: formatOklch(snapshot.harmony.outfitPrimary), rimLight: formatOklch(snapshot.harmony.rimLight), violetViolationCount: snapshot.harmony.violetViolationCount },
     wgslContract: { validationKind: snapshot.wgslValidation.validationKind, gpuCompiled: snapshot.wgslValidation.gpuCompiled, valid: snapshot.wgslValidation.valid, entryPoints: snapshot.wgslValidation.entryPoints, bindingCount: snapshot.wgslValidation.bindingCount, uniformsByteLength: snapshot.uniformsByteLength },
     characterLabIntegration: { contractReadyCount: snapshot.integration.contractReadyCount, plannedMigrationCount: snapshot.integration.plannedMigrationCount, routeMappings: snapshot.integration.routeMappings.map((r) => ({ labSource: r.labSource, studioRoute: r.studioRoute, migrationState: r.migrationState })) },

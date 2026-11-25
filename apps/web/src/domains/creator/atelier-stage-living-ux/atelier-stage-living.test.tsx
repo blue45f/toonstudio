@@ -252,6 +252,15 @@ describe("3. 거리 기반 말풍선 자동 페이드(3.2m · 5.5m) & 3단계 �
 });
 
 describe("4. 벽면 포스트잇 & 콘티 핀보드 상호작용", () => {
+  it("긴 메모와 작성자 이름에서 이모지의 코드 포인트를 중간에 자르지 않는다", () => {
+    const notes = addWallStickyNote([], {
+      text: `${"가".repeat(63)}🎨끝`,
+      author: `${"나".repeat(15)}🎨끝`,
+    });
+    expect(notes[0]?.text).toBe(`${"가".repeat(63)}🎨`);
+    expect(notes[0]?.author).toBe(`${"나".repeat(15)}🎨`);
+  });
+
   it("기본 4개 콘티 포스트잇과 4종 무바이올렛 OKLCH 색상이 정상 구성된다", () => {
     expect(DEFAULT_WALL_STICKY_NOTES).toHaveLength(4);
     expect(STAGE_STICKY_NOTE_COLORS).toHaveLength(4);

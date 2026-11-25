@@ -393,7 +393,8 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
   return (
     <section
       data-testid="studio-atelier-isa-brush-ultra-panel"
-      aria-label={pick("AtelierInk Ultra 브러시 질감 및 ToonSilicon CPU ISA 제어판", "AtelierInk Ultra Brush & ToonSilicon CPU ISA Panel")}
+      aria-label={pick("AtelierInk Ultra CPU/SVG 브러시 계산·ToonSilicon ISA 계획 미리보기", "AtelierInk Ultra CPU/SVG Brush & ToonSilicon ISA Plan Preview")}
+      aria-describedby={`${uid}-execution-scope`}
       className={rootClassName}
     >
       {/* 헤더 + 빠른 동작 */}
@@ -408,8 +409,8 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
           </h2>
           <p className="max-w-3xl text-xs text-fg-2 [word-break:keep-all]">
             {pick(
-              "듀얼 팁 비반복 결합·더티 브러시 안료 픽업·모세관 섬유 번짐·동적 강모 갈라짐과 브라우저 WASM Relaxed-SIMD(AVX-512/NEON 로어링)·네이티브 AMX/SME/SVE2 경계를 통합 설계한다.",
-              "Unifies dual-tip grain modulation, dirty canvas pigment pickup, anisotropic capillary bleed, and dynamic bristle forking with WASM Relaxed-SIMD browser execution and native AMX/SME/SVE2 FFI boundaries.",
+              "듀얼 팁·안료 픽업·섬유 번짐·강모 갈라짐의 JS 참조 계산과 SVG를 확인하고, WASM·네이티브 ISA 경로는 실행 계획으로 비교합니다.",
+              "Explore JS reference calculations and SVG previews for dual tips, pigment pickup, fiber bleed and bristle forks; compare WASM and native ISA execution plans.",
             )}
           </p>
         </div>
@@ -426,6 +427,9 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
         </div>
       </div>
 
+      <p id={`${uid}-execution-scope`} data-testid="isa-execution-scope" className="text-xs text-fg-2 [word-break:keep-all]">
+        {pick("CPU/SVG·명세 미리보기입니다. 실제 GPU·WASM·기기 실행과 capability probe, 원고·브러시 적용, 원고 저장은 수행하지 않습니다. 설정은 임시 상태이므로 패널을 닫기 전 필요한 JSON·WGSL을 복사해 주세요.", "CPU/SVG and specification preview only. GPU, WASM, device execution, capability probes, manuscript/brush application and manuscript persistence are not performed. Settings are temporary; copy any needed JSON or WGSL before closing the panel.")}
+      </p>
       {copyState.status === "error" ? (
         <div role="alert" data-testid="ultra-copy-error-alert" className="flex items-center gap-2 rounded-lg border border-warn bg-raised px-3 py-2 text-xs text-warn [word-break:keep-all]">
           <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -517,23 +521,24 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
           </h3>
           <span
             data-testid="execution-boundary-badge"
+            data-execution-status="not-performed"
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold [word-break:keep-all] ${
-              dispatchPlan.activeBoundary === "browser-web-standard" ? "border-good bg-card text-good" : "border-warn bg-card text-warn"
+              dispatchPlan.plannedBoundary === "browser-web-standard" ? "border-line bg-card text-fg-2" : "border-warn bg-card text-warn"
             }`}
           >
             <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {dispatchPlan.activeBoundary === "browser-web-standard"
-              ? pick("브라우저 즉시 실행 · WASM Relaxed-SIMD", "Browser Ready · WASM Relaxed-SIMD")
-              : pick("네이티브 FFI 브리지 확장 경계 (AMX/SME/SVE2/AVX-512)", "Native FFI Bridge Boundary (AMX/SME/SVE2/AVX-512)")}
+            {dispatchPlan.plannedBoundary === "browser-web-standard"
+              ? pick("브라우저 즉시 실행 아님 · WASM 계획", "Browser Plan · WASM Not Executed")
+              : pick("네이티브 FFI 브리지 계획 · 미실행", "Native FFI Bridge Plan · Not Executed")}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" data-testid="boundary-browser-btn" aria-pressed={dispatchPlan.activeBoundary === "browser-web-standard"} onClick={() => handleSelectBoundary("browser-web-standard")} className={dispatchPlan.activeBoundary === "browser-web-standard" ? BTN_ACTIVE : BTN_OUTLINE}>
-            {pick("브라우저 웹 표준 (WASM Relaxed-SIMD · WASM64 · SAB)", "Browser Web Standard (WASM Relaxed-SIMD · WASM64 · SAB)")}
+          <button type="button" data-testid="boundary-browser-btn" aria-pressed={dispatchPlan.plannedBoundary === "browser-web-standard"} onClick={() => handleSelectBoundary("browser-web-standard")} className={dispatchPlan.plannedBoundary === "browser-web-standard" ? BTN_ACTIVE : BTN_OUTLINE}>
+            {pick("브라우저 경로 계획 (WASM · SAB)", "Browser Path Plan (WASM · SAB)")}
           </button>
-          <button type="button" data-testid="boundary-native-btn" aria-pressed={dispatchPlan.activeBoundary === "native-ffi-bridge"} onClick={() => handleSelectBoundary("native-ffi-bridge")} className={dispatchPlan.activeBoundary === "native-ffi-bridge" ? BTN_ACTIVE : BTN_OUTLINE}>
-            {pick("네이티브 FFI 브리지 (데스크톱/모바일 확장 경계)", "Native FFI Bridge (Desktop/Mobile Boundary)")}
+          <button type="button" data-testid="boundary-native-btn" aria-pressed={dispatchPlan.plannedBoundary === "native-ffi-bridge"} onClick={() => handleSelectBoundary("native-ffi-bridge")} className={dispatchPlan.plannedBoundary === "native-ffi-bridge" ? BTN_ACTIVE : BTN_OUTLINE}>
+            {pick("네이티브 FFI 브리지 계획", "Native FFI Bridge Plan")}
           </button>
         </div>
 
@@ -559,12 +564,12 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
 
         <div data-testid="isa-dispatch-detail" className="grid grid-cols-1 gap-2 rounded-lg border border-line bg-card p-3 text-xs md:grid-cols-2">
           <div className="space-y-1">
-            <span className="font-semibold text-good [word-break:keep-all]">{pick("현재 브라우저 즉시 동작 경로 (JIT 자동 로어링)", "Browser Immediate Path (Auto JIT Lowering)")}</span>
+            <span className="font-semibold text-fg-2 [word-break:keep-all]">{pick("브라우저 경로 계획 (JIT 로어링 미검증)", "Browser Path Plan (JIT Lowering Unverified)")}</span>
             <p className="font-mono text-[11px] text-fg-2">{dispatchPlan.profile.browserWasmPath}</p>
             <p className="text-[11px] text-fg-3 [word-break:keep-all]">{dispatchPlan.profile.browserJitLowering}</p>
           </div>
           <div className="space-y-1">
-            <span className="font-semibold text-warn [word-break:keep-all]">{pick("네이티브 FFI 브리지 전용 확장 ISA", "Native FFI Bridge Extension ISA")}</span>
+            <span className="font-semibold text-warn [word-break:keep-all]">{pick("네이티브 FFI 확장 ISA 계획 (미연결)", "Native FFI ISA Plan (Not Linked)")}</span>
             <p className="font-mono text-[11px] text-fg-2">{dispatchPlan.profile.nativeFfiIsaSet.join(" · ")}</p>
             <p className="text-[11px] text-fg-3 [word-break:keep-all]">{dispatchPlan.profile.matrixExtension}</p>
           </div>
@@ -575,8 +580,8 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
             <thead>
               <tr className="border-b border-line bg-raised text-[11px] text-fg-2">
                 <th className="px-3 py-2 font-semibold [word-break:keep-all]">{pick("ToonStudio 연산 커널", "ToonStudio Kernel")}</th>
-                <th className="px-3 py-2 font-semibold [word-break:keep-all]">{pick("활성 ISA 명령어 시퀀스", "Active ISA Instructions")}</th>
-                <th className="px-3 py-2 font-semibold tabular-nums">{pick("벡터 폭", "Lanes")}</th>
+                <th className="px-3 py-2 font-semibold [word-break:keep-all]">{pick("계획 ISA 명령어 시퀀스", "Planned ISA Instructions")}</th>
+                <th className="px-3 py-2 font-semibold tabular-nums">{pick("계획 벡터 폭", "Planned Lanes")}</th>
                 <th className="px-3 py-2 font-semibold tabular-nums">64B SoA</th>
               </tr>
             </thead>
@@ -587,7 +592,7 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
                     <div className="font-semibold text-fg [word-break:keep-all]">{isEn ? k.nameEn : k.nameKo}</div>
                     <div className="text-[10px] text-fg-3 [word-break:keep-all]">{isEn ? k.domainStageEn : k.domainStageKo}</div>
                   </td>
-                  <td className="px-3 py-2 align-top font-mono text-[11px] text-accent">{k.activeInstructions.join(" · ")}</td>
+                  <td className="px-3 py-2 align-top font-mono text-[11px] text-accent">{k.plannedInstructions.join(" · ")}</td>
                   <td className="px-3 py-2 align-top font-mono text-[11px] text-fg-2 tabular-nums">{`${k.vectorLaneWidthF32}×f32 / ${k.vectorLaneWidthI8}×i8`}</td>
                   <td className="px-3 py-2 align-top font-mono text-[11px] text-fg-2 tabular-nums">{`${k.soaAlignedBytes}B (${k.soaCacheLines}L)`}</td>
                 </tr>
@@ -618,7 +623,7 @@ export function StudioAtelierIsaBrushUltraPanel(props: StudioAtelierIsaBrushUltr
             {pick("WGSL 듀얼팁 · 더티픽업 컴퓨트 셰이더 펼치기", "Expand WGSL Dual-Tip & Dirty Pickup Compute Shader")}
           </span>
           <span data-testid="wgsl-static-badge" className="font-mono text-[11px] text-good tabular-nums">
-            {`Static ${wgslValidation.valid ? "PASS" : "FAIL"} · Uniform ${wgslValidation.uniformStructBytes}B · Fork ${wgslValidation.forkStructBytes}B`}
+            {`Static ${wgslValidation.valid ? "PASS" : "FAIL"} · GPU ${pick("미실행", "Not Executed")} · Uniform ${wgslValidation.uniformStructBytes}B · Fork ${wgslValidation.forkStructBytes}B`}
           </span>
         </summary>
         <div className="mt-3 space-y-2.5">

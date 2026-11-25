@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * 전사 3D(.glb/.gltf/.vrm) + 2D(.webp/.png/.jpg/.jpeg/.svg) 에셋 시각 품질·웹툰 적합성·용량·중복·참조 전수 감사 도구.
+ * 3D·2D 파일의 헤더·선언 메타데이터·파일 크기·정적 참조를 읽는 휴리스틱 감사 도구.
+ * 렌더·위상·권리·동적 참조를 검증하지 않으며 에셋 수정·삭제·실제 용량 회수를 수행하지 않는다.
  * 사용법: node scripts/audit-visual-assets-quality.mjs [--json] [--dry-run] [--out <경로>] [--root <디렉터리>]
  */
 import crypto from "node:crypto";
@@ -11,6 +12,12 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_REPORT_REL = "docs/architecture/asset-visual-quality-audit-2026-11-26.md";
 const AUDIT_DATE = "2026-11-26";
+const AUDIT_SCOPE = Object.freeze({
+  analysis: "header-json-metadata-heuristics", referenceCheck: "static-literal-and-manifest-scan",
+  rendered: false, topologyValidated: false, rightsValidated: false, runtimeReferencesValidated: false,
+  assetFilesModified: false, assetFilesDeleted: 0, reclaimedBytes: 0,
+  savingsBasis: "candidate-source-bytes-and-unverified-compression-ratios",
+});
 const EXT_3D = new Set([".glb", ".gltf", ".vrm"]);
 const EXT_2D = new Set([".webp", ".png", ".jpg", ".jpeg", ".svg"]);
 const TEXT_SRC_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".json", ".css", ".html"]);
@@ -286,7 +293,7 @@ export function resolveAssetReference(webPath, refIndex) {
 export function classify3dAsset(item) {
   const reasons = [], stem = path.posix.basename(item.webPath, item.ext).toLowerCase();
   if (OFF_STYLE_3D_RE.test(item.webPath) || (item.ext === ".vrm" && OFF_STYLE_VRM_STEMS.has(stem))) {
-    reasons.push(item.ext === ".vrm" ? "웹툰 톤 이질적 밈/마스코트/복셀 VRM" : "웹툰 톤 이질적 블록/장난감 팩(Kenney)");
+    reasons.push(item.ext === ".vrm" ? "경로명 패턴상 밈/마스코트/복셀 검토 후보" : "경로명 패턴상 블록/장난감 팩 검토 후보(Kenney)");
     if (!item.isReferencedInCode) reasons.push("코드 직접 미참조");
     return { grade: "QUARANTINE_OFF_STYLE", reasons };
   }
@@ -308,7 +315,7 @@ export function classify3dAsset(item) {
   }
   if (item.minY !== null && Math.abs(item.minY) > 0.1) reasons.push(`바닥 접지 편차(minY=${item.minY}m)`);
   if (item.maxTextureDim > 2048) reasons.push(`고해상도 텍스처(${item.maxTextureDim}px)`);
-  return { grade: "HERO_KEEP", reasons: reasons.length ? reasons : ["웹툰 톤·토폴로지·용량 기준 충족"] };
+  return { grade: "HERO_KEEP", reasons: reasons.length ? reasons : ["파일 크기·선언 메타데이터 기준 유지 후보(렌더·위상 미검증)"] };
 }
 
 export function classify2dAsset(item) {
@@ -326,7 +333,7 @@ export function classify2dAsset(item) {
   }
   const isLargePng = item.ext === ".png" && item.bytes > THRESHOLDS.largePngBytes, isHeavy2d = item.bytes > THRESHOLDS.heavy2dBytes;
   if (isLargePng || isHeavy2d || item.isExactDup || item.formatMismatch) {
-    if (isLargePng) reasons.push(`비압축 대용량 PNG(${fmtSize(item.bytes)} > 300 KB → WebP)`);
+    if (isLargePng) reasons.push(`대용량 PNG(${fmtSize(item.bytes)} > 300 KB → WebP)`);
     if (isHeavy2d) reasons.push(`과대 2D 파일(${fmtMB(item.bytes)} > 2 MB)`);
     if (item.isExactDup) reasons.push("SHA-256 동일 중복");
     if (item.formatMismatch) reasons.push(`확장자 불일치(${item.ext} 내부 ${item.detectedFormat})`);
@@ -335,7 +342,7 @@ export function classify2dAsset(item) {
   if (!item.isReferencedInCode && item.refSource !== "manifest-active") {
     return { grade: "QUARANTINE_OFF_STYLE", reasons: [item.refSource === "manifest-inactive" ? "비활성 매니페스트 미참조 2D" : "미참조 고아 2D 에셋"] };
   }
-  return { grade: "HERO_KEEP", reasons: ["해상도·포맷·웹툰 톤 적합"] };
+  return { grade: "HERO_KEEP", reasons: ["헤더 치수·포맷 기준 유지 후보(픽셀 디코드·톤 미검증)"] };
 }
 
 function annotateDuplicatesAndShadows(items3d, items2d) {
@@ -408,7 +415,7 @@ export function runVisualAssetAudit(repoRoot = DEFAULT_ROOT) {
   }
   const estSavingsBytes = sv.quarantineBytes + sv.dedupeBytes + Math.round(sv.heavy3dSrcBytes * 0.65) + Math.round(sv.largePngSrcBytes * 0.72) + Math.round(sv.heavy2dSrcBytes * 0.5);
   return {
-    auditDate: AUDIT_DATE, dups, items3d, items2d,
+    auditDate: AUDIT_DATE, scope: AUDIT_SCOPE, dups, items3d, items2d,
     summary: {
       vrm: summarize(items3d.filter((x) => x.kind === "vrm")), glb: summarize(items3d.filter((x) => x.kind === "glb")),
       all3d: summarize(items3d), all2d: summarize(items2d), totalFiles: all.length, totalBytes: all.reduce((s, x) => s + x.bytes, 0),
@@ -461,46 +468,50 @@ export function renderAuditMarkdown(audit) {
   }
   const packRows = [...byPack.values()].sort((a, b) => (b.aB + b.bB) - (a.aB + a.bB) || (b.cB - a.cB) || cmp(a.key, b.key)).slice(0, 28);
   return [
-    "# 전사 3D·2D 시각 에셋 품질·웹툰 적합성·용량·중복·참조 전수 감사 보고서", "",
-    `- **감사 기준일**: ${audit.auditDate} | **감사 도구**: \`scripts/audit-visual-assets-quality.mjs\` (바이너리 헤더·glTF/VRM JSON·PNG/WebP/JPEG/SVG 100% 실측)`,
+    "# 3D·2D 에셋 헤더·메타데이터 휴리스틱 및 파일 크기 후보 보고서", "",
+    `- **감사 기준일**: ${audit.auditDate} | **감사 도구**: \`scripts/audit-visual-assets-quality.mjs\` (바이너리 헤더·glTF/VRM JSON·이미지 치수 선언값·파일 크기 스캔)`,
     "- **대상 범위**: `apps/web/public/`, `apps/character-lab/public/` 전수 (`apps/web/src/`, `apps/character-lab/src/` 및 public manifest 대조)",
-    "- **안전 원칙**: 본 배치에서는 에셋을 삭제하지 않았으며, 절감 용량은 중복 집계 없는 상호 배타 버킷으로 산출했다(`추정` 별도 표기).", "",
-    "## 1. 전사 에셋 요약 (실측)", "",
-    "| 구분 | 파일 수 | 총 용량 | HERO_KEEP | OPTIMIZE | UPGRADE | QUARANTINE | 코드 참조 | 활성 매니페스트 | 비활성 매니페스트 | 완전 고아 |",
+    "- **상태(current)**: 헤더·메타데이터 휴리스틱과 파일 크기 후보를 계산하는 정적 스캔입니다.",
+    "- **검증 범위**: 렌더링·위상·권리 검증을 수행하지 않습니다. 이미지 픽셀 디코드, 3D 재가져오기, 기기 실행도 검사하지 않습니다.",
+    "- **참조 한계**: 코드 문자열과 일부 매니페스트만 대조합니다. 동적 경로·외부 소비자·실제 런타임 로드 여부는 미확인입니다.",
+    "- **실행 범위**: 에셋 파일은 수정·삭제하지 않으며 실제 회수 용량은 0바이트입니다. CLI는 기본 모드에서 보고서 파일만 기록합니다.",
+    "- **용량 해석**: 후보 원본 파일 크기는 회수 실적이나 안전 삭제 승인과 다릅니다. 65%·72%·50% 압축률은 결과물을 만들지 않은 미검증 가정입니다.", "",
+    "## 1. 전사 에셋 요약 (파일 수·크기 합계와 휴리스틱 분류)", "",
+    "| 구분 | 파일 수 | 총 용량 | HERO_KEEP | OPTIMIZE | UPGRADE | QUARANTINE | 코드 참조 | 활성 매니페스트 | 비활성 매니페스트 | 정적 미참조 |",
     "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ...[["3D 캐릭터 (VRM)", S.vrm], ["3D 배경·소품·파츠 (GLB)", S.glb], ["2D 이미지·아이콘·SVG", S.all2d], ["**전사 합계**", totalRow]]
       .map(([lb, s]) => `| ${lb} | ${n(s.count)} | ${fmtMB(s.totalBytes)} | ${n(s.grades.HERO_KEEP)} | ${n(s.grades.OPTIMIZE_HEAVY_OR_DUP)} | ${n(s.grades.UPGRADE_LOW_CRAFT)} | ${n(s.grades.QUARANTINE_OFF_STYLE)} | ${n(s.codeRef)} | ${n(s.manifestActive)} | ${n(s.manifestInactive)} | ${n(s.orphan)} |`), "",
-    "### 상호 배타 절감 가능 용량 요약 (중복 집계 0건)",
-    `- **1) 제거·격리 대상(\`QUARANTINE_OFF_STYLE\`) 실측 회수**: **${fmtMB(S.quarantineBytes)}** (블록형 Kenney·밈 VRM·LPC 픽셀·비활성/고아 에셋)`,
-    `- **2) 중복·구리비전(격리 제외분, SHA-256 ${S.exactDupGroups}그룹 + 3D 구리비전 ${S.shadow3dCount}건) 실측 회수**: **${fmtMB(S.dedupeBytes)}** (전체 SHA-256 낭비 ${fmtMB(S.exactDupWasteBytes)}, 3D 구리비전 ${fmtMB(S.shadowWasteBytes)})`,
+    "### 상호 배타 후보 파일 크기와 미검증 압축 가정 (버킷 간 중복 집계 없음)",
+    `- **1) 제거·격리 대상(\`QUARANTINE_OFF_STYLE\`) 후보 원본 파일 크기 합계**: **${fmtMB(S.quarantineBytes)}** (블록형 Kenney·밈 VRM·LPC 픽셀·비활성/고아 에셋)`,
+    `- **2) 중복·구리비전(격리 제외분, SHA-256 ${S.exactDupGroups}그룹 + 3D 구리비전 ${S.shadow3dCount}건) 후보 원본 파일 크기 합계**: **${fmtMB(S.dedupeBytes)}** (전체 SHA-256 낭비 ${fmtMB(S.exactDupWasteBytes)}, 3D 구리비전 ${fmtMB(S.shadowWasteBytes)})`,
     `- **3) 과대 3D(>5 MB, ${S.heavy3dCount}개 = ${fmtMB(S.heavy3dSrcBytes)}) Draco+1K/2K 압축 (65% 추정)**: **~${fmtMB(S.heavy3dSrcBytes * 0.65)}**`,
-    `- **4) 비압축 대용량 PNG(>300 KB, ${S.largePngCount}개 = ${fmtMB(S.largePngSrcBytes)}) WebP 전환 (72% 추정)**: **~${fmtMB(S.largePngSrcBytes * 0.72)}**`,
+    `- **4) 대용량 PNG(>300 KB, ${S.largePngCount}개 = ${fmtMB(S.largePngSrcBytes)}) WebP 전환 (72% 추정)**: **~${fmtMB(S.largePngSrcBytes * 0.72)}**`,
     `- **5) 과대 2D 비PNG(>2 MB, ${S.heavy2dCount}개 = ${fmtMB(S.heavy2dSrcBytes)}) 리사이즈·WebP (50% 추정)**: **~${fmtMB(S.heavy2dSrcBytes * 0.5)}**`,
-    `- **총 예상 절감 가능 용량**: **~${fmtMB(S.estSavingsBytes)}** (전사 ${fmtMB(S.totalBytes)} 대비 **${((S.estSavingsBytes / Math.max(1, S.totalBytes)) * 100).toFixed(1)}%**)`, "",
-    "## 2. 등급별 용량 분포 (실측)", "",
+    `- **가정상 절감 시나리오**: **~${fmtMB(S.estSavingsBytes)}** (전사 ${fmtMB(S.totalBytes)} 대비 **${((S.estSavingsBytes / Math.max(1, S.totalBytes)) * 100).toFixed(1)}%**)`, "",
+    "## 2. 휴리스틱 등급별 파일 크기 분포", "",
     "| 등급 | 3D 수량 (용량) | 2D 수량 (용량) | 합계 수량 (용량) |", "|---|---:|---:|---:|",
     ...grades.map((g) => `| ${gradeKo[g]} | ${n(S.all3d.grades[g])} (${fmtMB(S.all3d.gradeBytes[g])}) | ${n(S.all2d.grades[g])} (${fmtMB(S.all2d.gradeBytes[g])}) | ${n(S.all3d.grades[g] + S.all2d.grades[g])} (${fmtMB(S.all3d.gradeBytes[g] + S.all2d.gradeBytes[g])}) |`), "",
     "## 3. Top 20 즉시 제거·격리 대상 (`QUARANTINE_OFF_STYLE` — VRM 8 · GLB 6 · 2D 6)", "",
     "| 순위 | 경로 | 종류 | 용량 | 참조 상태 | 판정 사유 |", "|---:|---|---|---:|---|---|",
     ...topQ.map((x, i) => `| ${i + 1} | \`${x.repoPath}\` | ${x.kind.toUpperCase()} | ${fmtSize(x.bytes)} | ${x.refSource} | ${x.reasons.join("; ")} |`), "",
     "## 4. Top 20 즉시 교체(고품질 리메이크) 대상 (`UPGRADE_LOW_CRAFT` — 3D 12 · 2D 8)", "",
-    "| 순위 | 경로 | 종류 | 용량 | 형상/해상도 실측 | 참조 상태 | 판정 사유 |", "|---:|---|---|---:|---|---|---|",
+    "| 순위 | 경로 | 종류 | 용량 | 형상/해상도 선언 메타데이터 | 참조 상태 | 판정 사유 |", "|---:|---|---|---:|---|---|---|",
     ...topUp.map((x, i) => `| ${i + 1} | \`${x.repoPath}\` | ${x.kind.toUpperCase()} | ${fmtSize(x.bytes)} | ${x.kind === "2d" ? `${x.width}x${x.height}${x.svg ? ` (path ${x.svg.pathCount}/rect ${x.svg.rectCount}/도형 ${x.svg.shapeCount})` : ""}` : `${x.vertices ?? 0}v / ${x.triangles ?? 0}t / tex ${x.textures ?? 0}`} | ${x.refSource} | ${x.reasons.join("; ")} |`), "",
     "## 5. Top 20 용량 최적화·중복 제거 대상 (`OPTIMIZE_HEAVY_OR_DUP` — 3D 14 · 2D 6)", "",
-    "| 순위 | 경로 | 종류 | 용량 | 메시/텍스처 실측 | 참조 상태 | 최적화 조치 |", "|---:|---|---|---:|---|---|---|",
+    "| 순위 | 경로 | 종류 | 용량 | 메시/텍스처 선언 메타데이터 | 참조 상태 | 최적화 조치 |", "|---:|---|---|---:|---|---|---|",
     ...topOpt.map((x, i) => `| ${i + 1} | \`${x.repoPath}\` | ${x.kind.toUpperCase()} | ${fmtSize(x.bytes)} | ${x.kind === "2d" ? `${x.width}x${x.height} (${x.detectedFormat})` : `${n(x.triangles ?? 0)}t · tex ${x.textures ?? 0}(max ${x.maxTextureDim ?? 0}px) · minY ${x.minY ?? "-"}m`} | ${x.refSource} | ${x.reasons.join("; ")} |`), "",
     "### SHA-256 완전 중복 상위 그룹 (실측)", "",
     "| 순위 | 중복 수 | 낭비 용량 | 기준 파일 | 중복 파일 예시 |", "|---:|---:|---:|---|---|",
     ...[...dups.exact3dGroups, ...dups.exact2dGroups].slice(0, 12).map((g, i) => `| ${i + 1} | ${g.count} | ${fmtSize(g.wastedBytes)} | \`${g.files[0]}\` | \`${g.files.slice(1, 3).join("`, `")}\` |`), "",
-    "## 6. 미참조 고아 에셋 안전 삭제 목록 (디렉터리·팩 집계)", "",
-    "- **Tier A (즉시 안전 삭제)**: 코드·매니페스트 모두 미참조(`orphan`). **Tier B**: 죽은 매니페스트(`manifest-inactive`, `src/` 미로드). **Tier C**: 활성 매니페스트(`manifest-active`, 동시 수정 필수).", "",
-    "| 디렉터리/팩 | Tier A 완전 고아 | Tier B 비활성 매니페스트 | Tier C 활성 매니페스트 | 권고 조치 |", "|---|---:|---:|---:|---|",
-    ...packRows.map((p) => `| \`${p.key}\` | ${p.aN} (${fmtMB(p.aB)}) | ${p.bN} (${fmtMB(p.bB)}) | ${p.cN} (${fmtMB(p.cB)}) | ${p.off > 0 ? "웹툰 톤 불일치(격리 우선)" : p.cN === 0 ? "Tier A/B 일괄 삭제 후보" : "활성 매니페스트 검수 후 정리"} |`), "",
-    "## 7. Wave 64B 실행 권고 (안전 순서)", "",
-    "1. **무위험 즉시 정리**: Tier A·B 비활성 팩(`virtual-studio/style-packs/`, `npc-cast-v1..v3/`, `revisions/*`, `reference/`) 및 SHA-256 중복(`.jpg==.png` 이중 파일, 중복 hero 썸네일) 제거.",
-    "2. **웹툰 톤앤매너 정화**: `kenney-*` 블록형 3D·2D 팩, `characters-lpc-v1` 픽셀 스프라이트, 100Avatars 밈/푸드 VRM을 카탈로그·매니페스트와 함께 안전 격리.",
-    "3. **라이브 저품질 리메이크**: `brand/studio-scene.svg`·`production-os-*.svg`·`theme-scenes/*-studio.svg` 와이어프레임 SVG와 `models/varco3d/shaper-*.glb`(2.9 KB)·`creator-essentials/prop-*.glb`(2.4~5.8 KB)을 웹툰 아틀리에 품질로 교체.",
-    "4. **대용량 포맷·메시 압축**: >300 KB PNG 일괄 WebP 전환, >5 MB Polyhaven/`refined-v6`/`expansion-v2`/VRM 에셋 Draco+1K/2K 텍스처 압축 및 `expansion-v1` 구판 정리.", "",
+    "## 6. 정적 미참조 에셋의 삭제 전 재검토 목록 (디렉터리·팩 집계)", "",
+    "- **Tier A (정적 미참조 검토 후보)**: 코드·매니페스트 모두 미참조(`orphan`). **Tier B**: 죽은 매니페스트(`manifest-inactive`, `src/` 미로드). **Tier C**: 활성 매니페스트(`manifest-active`, 동시 수정 필수).", "",
+    "| 디렉터리/팩 | Tier A 정적 미참조 | Tier B 비활성 매니페스트 | Tier C 활성 매니페스트 | 권고 조치 |", "|---|---:|---:|---:|---|",
+    ...packRows.map((p) => `| \`${p.key}\` | ${p.aN} (${fmtMB(p.aB)}) | ${p.bN} (${fmtMB(p.bB)}) | ${p.cN} (${fmtMB(p.cB)}) | ${p.off > 0 ? "경로 패턴 후보·렌더 후 판정" : p.cN === 0 ? "동적·외부 참조 확인 후 개별 검토" : "활성 매니페스트 검수 후 정리"} |`), "",
+    "## 7. 후속 검증 계획 (미실행)", "",
+    "1. **참조 재검토**: Tier A·B와 중복 후보의 동적 URL·외부 소비자·매니페스트 로드 여부를 확인합니다. SHA-256 동일 파일도 경로별 참조가 다를 수 있어 삭제 가능성을 보증하지 않습니다.",
+    "2. **시각·권리 검토**: 경로 패턴으로 분류한 팩과 VRM은 실제 렌더·픽셀·라이선스·Rights BOM을 확인한 뒤 유지·교체·격리 여부를 결정합니다.",
+    "3. **실제 출력 검증**: 단순 도형·소용량 메타데이터 후보는 의도된 아이콘·프록시일 수도 있습니다. 사용 화면과 3D 재가져오기·위상 검증으로 교체 필요성을 판단합니다.",
+    "4. **압축 후보 비교**: 원본을 보존한 별도 결과물에서 용량·시각 차이·런타임 호환성을 비교합니다. 압축률과 실제 회수 용량은 그 결과가 나온 뒤 기록합니다.", "",
   ].join("\n");
 }
 
@@ -527,15 +538,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       fs.mkdirSync(path.dirname(outPath), { recursive: true });
       fs.writeFileSync(outPath, md, "utf8");
     }
-    if (opts.json) process.stdout.write(`${JSON.stringify({ auditDate: audit.auditDate, summary: audit.summary }, null, 2)}\n`);
+    if (opts.json) process.stdout.write(`${JSON.stringify({ auditDate: audit.auditDate, scope: audit.scope, summary: audit.summary }, null, 2)}\n`);
     else {
       const { summary: S } = audit;
       process.stdout.write([
-        `전사 3D/2D 시각 에셋 감사 완료 (${S.totalFiles.toLocaleString("en-US")}개, ${fmtMB(S.totalBytes)})`,
+        `전사 3D/2D 헤더·메타데이터 휴리스틱 스캔 완료 (${S.totalFiles.toLocaleString("en-US")}개, ${fmtMB(S.totalBytes)})`,
+        "  범위: 헤더·선언 메타데이터·정적 참조이며 렌더·위상·권리는 미검증입니다.",
+        "  에셋 수정·삭제 없음, 실제 회수 용량 0바이트. 아래 용량은 후보 원본 크기와 미검증 압축 가정입니다.",
         `  3D VRM: ${S.vrm.count}개 (${fmtMB(S.vrm.totalBytes)}) | GLB: ${S.glb.count}개 (${fmtMB(S.glb.totalBytes)}) | 2D: ${S.all2d.count}개 (${fmtMB(S.all2d.totalBytes)})`,
-        `  제거·격리(QUARANTINE): ${S.all3d.grades.QUARANTINE_OFF_STYLE + S.all2d.grades.QUARANTINE_OFF_STYLE}개 (${fmtMB(S.quarantineBytes)})`,
-        `  고품질 교체(UPGRADE): ${S.all3d.grades.UPGRADE_LOW_CRAFT + S.all2d.grades.UPGRADE_LOW_CRAFT}개 | 최적화·중복(OPTIMIZE): ${S.all3d.grades.OPTIMIZE_HEAVY_OR_DUP + S.all2d.grades.OPTIMIZE_HEAVY_OR_DUP}개`,
-        `  총 예상 절감 가능 용량(중복 집계 0건): ~${fmtMB(S.estSavingsBytes)}`,
+        `  격리 검토 후보(QUARANTINE): ${S.all3d.grades.QUARANTINE_OFF_STYLE + S.all2d.grades.QUARANTINE_OFF_STYLE}개 (${fmtMB(S.quarantineBytes)})`,
+        `  품질 검토 후보(UPGRADE): ${S.all3d.grades.UPGRADE_LOW_CRAFT + S.all2d.grades.UPGRADE_LOW_CRAFT}개 | 최적화·중복(OPTIMIZE): ${S.all3d.grades.OPTIMIZE_HEAVY_OR_DUP + S.all2d.grades.OPTIMIZE_HEAVY_OR_DUP}개`,
+        `  가정상 절감 시나리오(중복 집계 0건): ~${fmtMB(S.estSavingsBytes)}`,
         opts.dryRun ? "  [dry-run] 리포트 파일을 쓰지 않았습니다." : `  리포트 생성: ${opts.out}`,
       ].join("\n") + "\n");
     }

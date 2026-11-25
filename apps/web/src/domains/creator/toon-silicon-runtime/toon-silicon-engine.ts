@@ -95,6 +95,8 @@ export interface RuntimeBoundaryReport {
   readonly sandboxedBrowserTab: boolean; readonly directNativeDriverBlocked: boolean;
   readonly blockedDirectApis: readonly string[]; readonly activeStandardLayers: readonly string[];
   readonly nativeFfiBridgeLayers: readonly string[];
+  readonly plannedStandardLayers: readonly string[]; readonly plannedNativeFfiBridgeLayers: readonly string[];
+  readonly plannedDirectNativeDriverBlocked: boolean;
   readonly boundarySummaryKo: string; readonly boundarySummaryEn: string;
   readonly extensionPathKo: string; readonly extensionPathEn: string;
 }
@@ -104,12 +106,14 @@ export interface CpuDispatchAllocation {
   readonly schedulingPolicy: CpuSchedulingPolicy;
   readonly performanceWorkers: number; readonly efficiencyWorkers: number; readonly totalWorkers: number;
   readonly simdWidthBits: 128 | 256 | 512; readonly relaxedSimdEnabled: boolean; readonly sharedArrayBufferThreads: boolean;
+  readonly plannedMemory64: boolean; readonly plannedRelaxedSimd: boolean; readonly plannedSharedArrayBufferThreads: boolean;
   readonly memory64Active: boolean; readonly addressSpaceBits: 32 | 64; readonly linearAddressCeilingLabel: string;
   readonly tileSwapStrategyKo: string; readonly tileSwapStrategyEn: string; readonly loadSharePct: number;
 }
 
 export interface GpuDispatchAllocation {
   readonly gpuFamilyLabel: string; readonly graphicsBackend: string; readonly subgroupSize: 16 | 32 | 64;
+  readonly plannedF16Shader: boolean; readonly plannedUnifiedMemoryZeroCopy: boolean;
   readonly f16ShaderEnabled: boolean; readonly atlasBudgetMb: number; readonly unifiedMemoryZeroCopy: boolean;
   readonly loadSharePct: number;
 }
@@ -118,6 +122,7 @@ export interface NpuTpuDispatchAllocation {
   readonly acceleratorLabel: string; readonly delegateLayer: string; readonly precisionMode: string;
   readonly staticShapeCompileRequired: boolean; readonly staticTensorPaddingAlign: 16 | 32 | 64;
   readonly paddedFocusShape: readonly [number, number, number, number]; readonly systolicOrTileLayout: string;
+  readonly plannedZeroCopyMlTensor: boolean; readonly plannedCpuStagingReadbacks: 0 | 2;
   readonly zeroCopyMlTensorActive: boolean; readonly cpuStagingReadbacks: 0 | 2; readonly loadSharePct: number;
 }
 
@@ -156,6 +161,10 @@ export interface ToonSiliconFullPowerPlan {
   };
   readonly workloadRoutes: readonly WorkloadDispatchRoute[];
   readonly activeWorkloadRoute: WorkloadDispatchRoute;
+  readonly runtimeState: {
+    readonly hardwareProbed: false; readonly gpuExecuted: false; readonly nativeBridgeExecuted: false;
+    readonly workersStarted: false; readonly persisted: false;
+  };
   readonly honestyNoticeKo: string;
   readonly honestyNoticeEn: string;
 }
@@ -479,49 +488,29 @@ export function resolveRuntimeBoundary(
   memoryMode: MemoryAddressMode,
 ): RuntimeBoundaryReport {
   const isMemory64 = memoryMode === "wasm64-memory64";
+  const isNativePlan = environment === "desktop-native-bridge";
   const wasmLayer = isMemory64 ? "WASM64 (memory64 · i64) + Relaxed-SIMD" : "WASM32 Safe (SIMD128 · i32) + Relaxed-SIMD";
-  const webGpuLayer = `WebGPU (${silicon.gpu.graphicsBackend} · Subgroup ${silicon.gpu.subgroupSize})`;
-  const webNnLayer = silicon.npuTpu.browserDelegate;
-
-  if (environment === "desktop-native-bridge") {
-    return {
-      environment,
-      memoryMode,
-      sandboxedBrowserTab: false,
-      directNativeDriverBlocked: false,
-      blockedDirectApis: [],
-      activeStandardLayers: [wasmLayer, "SharedArrayBuffer Threads", webGpuLayer, webNnLayer],
-      nativeFfiBridgeLayers: [
-        "Tauri / Electron Native FFI Bridge",
-        silicon.npuTpu.nativeDelegate,
-        `OS Core Pinning (${silicon.cpu.nativeSimdWidthBits}-bit SIMD)`,
-      ],
-      boundarySummaryKo:
-        "데스크톱·모바일 네이티브 셸(Tauri/Electron/Android NNAPI) 경계에서는 표준 WASM·WebGPU 계층에 더해 네이티브 FFI 브리지로 플랫폼 가속기를 직접 확장합니다.",
-      boundarySummaryEn:
-        "Inside a native shell (Tauri/Electron/Android NNAPI), native FFI bridges extend standard WASM/WebGPU layers with direct platform delegates.",
-      extensionPathKo: `${silicon.npuTpu.nativeDelegate} · 직접 드라이버 브리지 활성`,
-      extensionPathEn: `${silicon.npuTpu.nativeDelegate} · Direct native bridge active`,
-    };
-  }
-
-  const isMobilePwa = environment === "mobile-pwa-android-ios";
   return {
-    environment,
-    memoryMode,
-    sandboxedBrowserTab: true,
-    directNativeDriverBlocked: true,
+    environment, memoryMode, sandboxedBrowserTab: true, directNativeDriverBlocked: true,
     blockedDirectApis: ["CUDA", "Metal", "ROCm", "NNAPI"],
-    activeStandardLayers: [wasmLayer, "SharedArrayBuffer Threads (COOP/COEP)", webGpuLayer, webNnLayer],
-    nativeFfiBridgeLayers: [],
-    boundarySummaryKo: isMobilePwa
-      ? "모바일 PWA 브라우저 탭에서는 샌드박스 보안상 CUDA·Metal·ROCm·NNAPI 직접 호출이 차단되며, 표준 WASM·WebGPU·WebNN/LiteRT-Web 계층과 모바일 메모리 한도 안에서 가속합니다."
-      : "웹 브라우저 탭에서는 샌드박스 보안상 CUDA·Metal·ROCm·NNAPI를 직접 호출할 수 없으며, WASM64·Relaxed-SIMD·SharedArrayBuffer·WebGPU·WebNN/LiteRT-Web 표준 계층으로 하드웨어를 가동합니다.",
-    boundarySummaryEn: isMobilePwa
-      ? "Mobile PWA tabs block direct CUDA/Metal/ROCm/NNAPI access due to browser sandboxing and execute through standard WASM, WebGPU, and WebNN/LiteRT-Web within mobile memory limits."
-      : "Web browser tabs cannot invoke CUDA/Metal/ROCm/NNAPI directly due to sandbox security; hardware runs through WASM64, Relaxed-SIMD, SharedArrayBuffer, WebGPU, and WebNN/LiteRT-Web.",
-    extensionPathKo: "데스크톱·모바일 네이티브 셸(Tauri/Electron/Android NNAPI) 전환 시 네이티브 FFI 브리지 확장",
-    extensionPathEn: "Extends via native FFI bridge when hosted inside Tauri, Electron, or Android NNAPI native shells",
+    activeStandardLayers: [], nativeFfiBridgeLayers: [],
+    plannedDirectNativeDriverBlocked: !isNativePlan,
+    plannedStandardLayers: [wasmLayer, "SharedArrayBuffer Threads (COOP/COEP)", `WebGPU (${silicon.gpu.graphicsBackend} · Subgroup ${silicon.gpu.subgroupSize})`, silicon.npuTpu.browserDelegate],
+    plannedNativeFfiBridgeLayers: isNativePlan
+      ? ["Tauri / Electron Native FFI Bridge", silicon.npuTpu.nativeDelegate, `OS Core Pinning (${silicon.cpu.nativeSimdWidthBits}-bit SIMD)`]
+      : [],
+    boundarySummaryKo: isNativePlan
+      ? "네이티브 셸용 배정 계획입니다. 현재 미리보기는 FFI·드라이버·장치에 접근하지 않으며 실제 브리지는 연결되지 않았습니다."
+      : "브라우저용 배정 계획입니다. WASM·WebGPU·WebNN·SharedArrayBuffer 지원을 조회하거나 실행하지 않았으며 실제 드라이버 접근은 연결되지 않았습니다.",
+    boundarySummaryEn: isNativePlan
+      ? "Native-shell dispatch plan only. This preview does not access FFI, drivers, or devices; no native bridge is connected."
+      : "Browser dispatch plan only. WASM, WebGPU, WebNN, and SharedArrayBuffer have not been probed or executed; no driver access is connected.",
+    extensionPathKo: isNativePlan
+      ? `${silicon.npuTpu.nativeDelegate} · 네이티브 FFI 브리지 연결 계획 (미실행)`
+      : "네이티브 셸 전환 시 별도 FFI 브리지 구현·권한·장치 검증 필요",
+    extensionPathEn: isNativePlan
+      ? `${silicon.npuTpu.nativeDelegate} · Native FFI bridge plan (not executed)`
+      : "Native shells require a separate FFI implementation, permissions, and device verification",
   };
 }
 
@@ -568,12 +557,12 @@ export function buildSiliconFullPowerPlan(input?: ToonSiliconDispatchInput): Too
         : Math.min(1024, Math.round(silicon.gpu.baseAtlasBudgetMb * 0.5));
   const atlasBudgetMb = Math.max(256, rawAtlasMb);
 
-  const zeroCopyMlTensorActive = isNative
+  const plannedZeroCopyMlTensor = isNative
     ? true
     : isMobilePwa
       ? silicon.npuTpu.zeroCopyMlTensorSupported && silicon.gpu.unifiedMemoryZeroCopy
       : silicon.npuTpu.zeroCopyMlTensorSupported;
-  const cpuStagingReadbacks: 0 | 2 = zeroCopyMlTensorActive ? 0 : 2;
+  const cpuStagingReadbacks: 0 | 2 = plannedZeroCopyMlTensor ? 0 : 2;
 
   const workloadRoutes: readonly WorkloadDispatchRoute[] = TOONSTUDIO_COMPUTE_WORKLOADS.map((wl) => {
     let cpuBias = wl.baseShares.cpu;
@@ -583,7 +572,7 @@ export function buildSiliconFullPowerPlan(input?: ToonSiliconDispatchInput): Too
     if (wl.isAiTensorWorkload) {
       npuBias += silicon.npuTpu.aiDispatchBoostPct;
       gpuBias -= Math.round(silicon.npuTpu.aiDispatchBoostPct / 2);
-      if (!zeroCopyMlTensorActive) {
+      if (!plannedZeroCopyMlTensor) {
         cpuBias += 6;
         npuBias -= 6;
       }
@@ -607,7 +596,7 @@ export function buildSiliconFullPowerPlan(input?: ToonSiliconDispatchInput): Too
       wl.isAiTensorWorkload && silicon.npuTpu.staticShapeCompileRequired,
     );
     const memoryPathLabel = wl.isAiTensorWorkload
-      ? zeroCopyMlTensorActive
+      ? plannedZeroCopyMlTensor
         ? `WebGPU ↔ Shared MLTensor Zero-Copy (${silicon.npuTpu.precisionLabel})`
         : `WebGPU → CPU Staging (2 Readbacks) → ${silicon.npuTpu.acceleratorLabel}`
       : isMemory64
@@ -643,8 +632,9 @@ export function buildSiliconFullPowerPlan(input?: ToonSiliconDispatchInput): Too
         clusterTopologyEn: silicon.cpu.clusterTopologyEn,
         schedulingPolicy: silicon.cpu.schedulingPolicy,
         performanceWorkers, efficiencyWorkers, totalWorkers: performanceWorkers + efficiencyWorkers,
-        simdWidthBits, relaxedSimdEnabled: silicon.cpu.relaxedSimdSupported, sharedArrayBufferThreads: true,
-        memory64Active: isMemory64, addressSpaceBits: isMemory64 ? 64 : 32,
+        simdWidthBits, relaxedSimdEnabled: false, sharedArrayBufferThreads: false,
+        plannedRelaxedSimd: silicon.cpu.relaxedSimdSupported, plannedSharedArrayBufferThreads: true, plannedMemory64: isMemory64,
+        memory64Active: false, addressSpaceBits: isMemory64 ? 64 : 32,
         linearAddressCeilingLabel: isMemory64 ? "16 GiB+ (WASM64 memory64 · i64)" : "4 GiB Ceiling (WASM32 SIMD128 · i32)",
         tileSwapStrategyKo: isMemory64 ? "WASM64 대용량 선형 아레나 + WebGPU 직접 스트리밍" : "WASM32 안전 슬랩 + OPFS 청크 스왑 링버퍼",
         tileSwapStrategyEn: isMemory64 ? "WASM64 large linear arena + direct WebGPU streaming" : "WASM32 safe slab + OPFS chunked swap ring buffer",
@@ -652,8 +642,8 @@ export function buildSiliconFullPowerPlan(input?: ToonSiliconDispatchInput): Too
       },
       gpu: {
         gpuFamilyLabel: silicon.gpu.gpuFamilyLabel, graphicsBackend: silicon.gpu.graphicsBackend,
-        subgroupSize: silicon.gpu.subgroupSize, f16ShaderEnabled: silicon.gpu.f16ShaderSupported,
-        atlasBudgetMb, unifiedMemoryZeroCopy: silicon.gpu.unifiedMemoryZeroCopy || isNative,
+        subgroupSize: silicon.gpu.subgroupSize, f16ShaderEnabled: false, plannedF16Shader: silicon.gpu.f16ShaderSupported,
+        atlasBudgetMb, unifiedMemoryZeroCopy: false, plannedUnifiedMemoryZeroCopy: silicon.gpu.unifiedMemoryZeroCopy || isNative,
         loadSharePct: activeWorkloadRoute.gpuSharePct,
       },
       npuTpu: {
@@ -663,15 +653,16 @@ export function buildSiliconFullPowerPlan(input?: ToonSiliconDispatchInput): Too
         staticShapeCompileRequired: silicon.npuTpu.staticShapeCompileRequired,
         staticTensorPaddingAlign: silicon.npuTpu.staticTensorPaddingAlign,
         paddedFocusShape, systolicOrTileLayout: silicon.npuTpu.systolicOrTileLayout,
-        zeroCopyMlTensorActive, cpuStagingReadbacks, loadSharePct: activeWorkloadRoute.npuTpuSharePct,
+        zeroCopyMlTensorActive: false, cpuStagingReadbacks: 0, plannedZeroCopyMlTensor, plannedCpuStagingReadbacks: cpuStagingReadbacks, loadSharePct: activeWorkloadRoute.npuTpuSharePct,
       },
     },
     workloadRoutes,
     activeWorkloadRoute,
+    runtimeState: { hardwareProbed: false, gpuExecuted: false, nativeBridgeExecuted: false, workersStarted: false, persisted: false },
     honestyNoticeKo:
-      "ToonSilicon 배정표는 하드웨어 아키텍처 역량과 표준 디스패치 계약을 정의합니다. 허위 TOPS·실측 FPS 수치를 표시하지 않으며, 브라우저 탭에서는 표준 WASM64·WebGPU·WebNN 계층만 사용합니다.",
+      "ToonSilicon은 가정한 프로파일로 만드는 배정 계획입니다. 장치 미검증·GPU/FFI/워커 미실행 상태이며 메모리·f16·Zero-Copy 수치는 계획과 요구 조건입니다. 허위 TOPS·실측 FPS를 표시하지 않으며 실제 가속·생성·저장은 연결되지 않았습니다.",
     honestyNoticeEn:
-      "ToonSilicon dispatch plans specify hardware capability and standard routing contracts. No fabricated TOPS or measured FPS numbers are claimed; browser tabs strictly use standard WASM64, WebGPU, and WebNN layers.",
+      "ToonSilicon is a dispatch plan based on assumed profiles. Devices are unverified; GPU, FFI, and workers are not executed. Memory, f16, and zero-copy are planned requirements. No fabricated TOPS or measured FPS numbers are claimed; live acceleration, generation, and persistence are not connected.",
   };
 }
 

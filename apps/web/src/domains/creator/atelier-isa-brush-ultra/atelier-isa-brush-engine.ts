@@ -9,6 +9,8 @@
  * - 허위 실측 배수·GFLOPS 0건, 원시 hex/rgb/hsl 0건, 바이올렛 휴(265~325°) 0%, Web Storage·BigInt 0건.
  */
 
+import { serializeIsaDispatchPlan, withIsaExecutionEvidence, type IsaDispatchExportPlan, type IsaPlanEvidenceFields } from "./isa-execution-evidence";
+
 export const ATELIER_ISA_BRUSH_SCHEMA_VERSION = "toonstudio.atelier-isa-brush-ultra.v1" as const;
 export const ATELIER_INK_ULTRA_BRAND = "AtelierInk Ultra" as const;
 export const TOON_SILICON_BRAND = "ToonSilicon" as const;
@@ -158,10 +160,12 @@ export interface ResolvedKernelIsaDispatch {
   readonly kernelId: ToonStudioKernelId; readonly nameKo: string; readonly nameEn: string;
   readonly domainStageKo: string; readonly domainStageEn: string; readonly activeBoundary: ExecutionBoundary;
   readonly activeInstructions: readonly string[]; readonly browserLoweringSummary: string;
+  readonly plannedBoundary: ExecutionBoundary; readonly plannedInstructions: readonly string[];
   readonly vectorLaneWidthF32: number; readonly vectorLaneWidthI8: number;
   readonly soaAlignedBytes: number; readonly soaCacheLines: number;
 }
-export interface CpuIsaDispatchPlan {
+/** active* 및 기존 메모리·스레드 값은 실행 상태가 아닌 계획 호환 별칭이다. */
+export interface CpuIsaDispatchPlan extends IsaPlanEvidenceFields {
   readonly modelKind: typeof ARCHITECTURE_MODEL_KIND; readonly siliconBrand: typeof TOON_SILICON_BRAND;
   readonly runtimeBrand: typeof TOON_CORE_BRAND; readonly profile: CpuIsaProfileSpec;
   readonly requestedBoundary: ExecutionBoundary; readonly activeBoundary: ExecutionBoundary;
@@ -181,7 +185,8 @@ export interface AtelierIsaBrushExportPayload {
     readonly runtime: typeof TOON_CORE_BRAND;
   };
   readonly optics: UltraBrushOpticsReport; readonly comparison: StandardVsUltraComparisonReport;
-  readonly isaDispatch: CpuIsaDispatchPlan; readonly wgslValidation: DualTipWgslValidationReport;
+  readonly isaDispatch: IsaDispatchExportPlan; readonly wgslValidation: DualTipWgslValidationReport;
+  readonly executionEvidence: CpuIsaDispatchPlan["executionEvidence"];
   readonly wgslByteLength: number; readonly honestyNoteKo: string; readonly honestyNoteEn: string;
 }
 
@@ -472,7 +477,8 @@ export function buildDualTipBrushWgsl(input?: UltraBrushOpticsInput): string {
   const norm = normalizeUltraBrushInput(input);
   const modeId = DUAL_TIP_MODE_META[norm.dualTipMode].wgslModeId;
   return `// AtelierInk Ultra Dual-Tip Optical Compute Shader (ToonCore / ToonSilicon)
-// Active preset mode: ${norm.dualTipMode} (${modeId}u), pickup=${norm.pickupPct}%, dilution=${norm.dilutionPct}%
+// Generated source only; GPU compilation and submission have not been performed.
+// Planned preset mode: ${norm.dualTipMode} (${modeId}u), pickup=${norm.pickupPct}%, dilution=${norm.dilutionPct}%
 struct UltraDualTipUniforms {
   stroke_segment : vec4<f32>,
   tip_params : vec4<f32>,
@@ -693,20 +699,18 @@ export function resolveCpuIsaDispatchPlan(options?: {
     const soaAlignedBytes = alignToCacheLine64(k.soaElementCount * F32_BYTES) * k.soaAttributeCount;
     return {
       kernelId: k.id, nameKo: k.nameKo, nameEn: k.nameEn, domainStageKo: k.domainStageKo, domainStageEn: k.domainStageEn,
-      activeBoundary, activeInstructions, browserLoweringSummary: profile.browserJitLowering,
+      activeBoundary, activeInstructions, plannedBoundary: activeBoundary, plannedInstructions: activeInstructions, browserLoweringSummary: profile.browserJitLowering,
       vectorLaneWidthF32: vectorBits / 32, vectorLaneWidthI8: vectorBits / 8, soaAlignedBytes, soaCacheLines: soaAlignedBytes / CACHE_LINE_BYTES,
     };
   });
-  return {
+  return withIsaExecutionEvidence({
     modelKind: ARCHITECTURE_MODEL_KIND, siliconBrand: TOON_SILICON_BRAND, runtimeBrand: TOON_CORE_BRAND,
-    profile, requestedBoundary, activeBoundary, browserImmediateReady: simd128 && relaxedSimd,
+    profile, requestedBoundary, activeBoundary, browserImmediateReady: false,
     nativeBridgeRequired: activeBoundary === "native-ffi-bridge", activeWasmStack,
     memoryAddressingMode: memory64 ? "wasm64-memory64" : "wasm32-tiled-fallback",
     threadSyncMode: sabWait ? "sab-atomics-wait-async" : "transferable-worker-fallback",
     workerPoolSlots: Math.max(1, Math.min(16, hw - 1 || 1)), soaLayout, kernelDispatches,
-    honestyNoteKo: "본 매트릭스는 명령어 매핑 및 실행 경계 설계 정본(cpu-isa-and-brush-optics-architecture)입니다. 브라우저에서는 WASM SIMD128·Relaxed-SIMD·WASM64·SharedArrayBuffer가 즉시 동작하며 JIT가 호스트 AVX/NEON으로 로어링합니다. Intel AMX·AVX-512 FP16·Apple AMX/SME·ARM SVE2/I8MM 직접 호출은 데스크톱·모바일 네이티브 FFI 브리지 경계에서 활성화되며 실측 배수·GFLOPS를 허위로 표기하지 않습니다.",
-    honestyNoteEn: "Architectural ISA dispatch specification (cpu-isa-and-brush-optics-architecture). Modern browsers immediately execute WASM SIMD128, Relaxed-SIMD, WASM64, and SharedArrayBuffer while JIT compilers lower to host AVX/NEON. Direct Intel AMX, AVX-512 FP16, Apple AMX/SME, and ARM SVE2/I8MM intrinsics require the native FFI bridge boundary; zero fabricated speedups or GFLOPS are reported.",
-  };
+  }, c !== undefined);
 }
 
 /** AtelierInk Ultra + ToonSilicon ISA 전체 스펙 JSON 내보내기 번들을 생성한다. */
@@ -725,7 +729,8 @@ export function exportAtelierIsaBrushJson(options?: {
   const payload: AtelierIsaBrushExportPayload = {
     schemaVersion: ATELIER_ISA_BRUSH_SCHEMA_VERSION, modelKind: ARCHITECTURE_MODEL_KIND,
     brands: { brush: ATELIER_INK_ULTRA_BRAND, silicon: TOON_SILICON_BRAND, runtime: TOON_CORE_BRAND },
-    optics, comparison, isaDispatch, wgslValidation, wgslByteLength: wgsl.length,
+    optics, comparison, isaDispatch: serializeIsaDispatchPlan(isaDispatch), wgslValidation, wgslByteLength: wgsl.length,
+    executionEvidence: isaDispatch.executionEvidence,
     honestyNoteKo: isaDispatch.honestyNoteKo, honestyNoteEn: isaDispatch.honestyNoteEn,
   };
   return { json: JSON.stringify(payload, null, 2), wgsl, payload };

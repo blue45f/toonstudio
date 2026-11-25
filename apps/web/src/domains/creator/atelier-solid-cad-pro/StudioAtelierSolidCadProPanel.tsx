@@ -1,6 +1,6 @@
 /**
- * AtelierSolid Pro — 실측 수밀 B-Rep 직접 모델링·어셈블리·KilnExport(STL/STEP/GD&T)·
- * AtelierStage 웹툰 3D→2D LT 선화 원클릭 브리지 스튜디오 제어판.
+ * AtelierSolid Pro — CPU 삼각 메시·오프셋 메이트·치수 참고도·STL 버퍼 미리보기.
+ * STEP 출력은 미검증으로 차단하며 LT는 원고 적용 전 페이로드만 준비한다.
  * 모든 Props 선택적(빈 객체 기본값 금지) · Calm Atelier 시맨틱 토큰 + OKLCH 전용
  * (원시 색·바이올렛 270~320°·전역 전환·Web Storage 0건) · min-h-11 · tabular-nums · keep-all.
  */
@@ -15,7 +15,7 @@ import { copyText } from "@/shared/lib/copy-text";
 
 import {
   ATELIER_SOLID_PRESETS, createDefaultAtelierSolidParams, evaluateAtelierSolidModel,
-  exportBinaryStlBuffer, exportEngineeringDrawingSvgSpec, exportStepAp214Ascii,
+  exportBinaryStlBuffer, exportEngineeringDrawingSvgSpec,
   exportWebtoonLtLineartPayload, formatOklch,
   type AssemblyMateMode, type AtelierSolidEvaluation, type AtelierSolidParams,
   type AtelierSolidPresetId, type EngineeringDrawingSpec, type PatternMode,
@@ -32,6 +32,7 @@ export interface StudioAtelierSolidCadProPanelProps {
   readonly className?: string;
   readonly onSolidChange?: (evaluation: AtelierSolidEvaluation) => void;
   readonly onExportStl?: (buffer: Uint8Array, evaluation: AtelierSolidEvaluation) => void | Promise<void>;
+  /** @deprecated AP214 전체 형상·재가져오기 검증 전에는 호출하지 않는다. */
   readonly onExportStep?: (stepAscii: string, evaluation: AtelierSolidEvaluation) => void | Promise<void>;
   readonly onSendToWebtoonLt?: (payload: WebtoonLtLineartPayload, evaluation: AtelierSolidEvaluation) => void | Promise<void>;
 }
@@ -61,7 +62,7 @@ const VIEW_TABS: readonly { readonly id: AtelierSolidViewMode; readonly ko: stri
   { id: "side", ko: "측면", en: "Side", yaw: 90, pitch: 0 },
   { id: "top", ko: "평면", en: "Top", yaw: 0, pitch: 74 },
   { id: "lt-lineart", ko: "웹툰 LT 선화", en: "Webtoon LT", yaw: 38, pitch: 18 },
-  { id: "drawing", ko: "GD&T 3면도", en: "GD&T Drawing", yaw: 34, pitch: 22 },
+  { id: "drawing", ko: "치수 참고도", en: "Dimension Reference", yaw: 34, pitch: 22 },
 ];
 
 type SliderParamKey = "pushPullMm" | "filletRadiusMm" | "chamferSizeMm" | "draftAngleDeg" | "wallThicknessMm" | "loftScaleRatio" | "mateOffsetMm";
@@ -175,7 +176,7 @@ function EngineeringDrawingSvgView(props: { readonly spec: EngineeringDrawingSpe
       <svg
         data-testid="atelier-solid-drawing-svg" data-preset-id={spec.presetId} data-violet-free="true"
         viewBox="0 0 468 334" role="img"
-        aria-label={isEn ? `GD&T 3-view and isometric engineering drawing for ${spec.presetId}` : `${spec.presetId} GD&T 정투상 3면도 및 등각투영 도면`}
+        aria-label={isEn ? `Perspective dimension reference for ${spec.presetId}; not a verified manufacturing drawing` : `${spec.presetId} 원근 치수 참고도·정투상 제조 도면 미검증`}
         className="h-80 w-full rounded-xl border border-line-strong bg-canvas text-fg"
       >
         <rect x="0" y="0" width="468" height="334" fill={SVG_PAPER} />
@@ -210,7 +211,7 @@ function EngineeringDrawingSvgView(props: { readonly spec: EngineeringDrawingSpe
   );
 }
 
-/** AtelierSolid Pro 실측 수밀 B-Rep CAD·어셈블리·KilnExport·웹툰 LT 선화 스튜디오 패널. */
+/** 실제 원고·제품 출고와 분리한 CPU 메시 CAD·LT 페이로드 미리보기. */
 export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPanelProps): ReactElement {
   const isEn = props.locale === "en";
   const initialPreset = props.initialPresetId ?? "rofan-arch-balcony";
@@ -283,12 +284,9 @@ export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPan
     setStatusNote(summary);
   };
 
-  const handleExportStep = async (): Promise<void> => {
-    const step = exportStepAp214Ascii(evaluation);
-    await props.onExportStep?.(step, evaluation);
-    await copyText(step);
-    const summary = isEn ? `STEP AP214 ASCII generated (${step.length} chars, ISO-10303-21)` : `STEP AP214 ASCII 생성 완료 (${step.length}자, ISO-10303-21)`;
-    setExportPreview({ kind: "STEP", summary, text: step.split("\n").slice(0, 22).join("\n") });
+  const handleStepAvailability = (): void => {
+    const summary = isEn ? "STEP AP214 unavailable: full geometry and import round-trip are unverified." : "STEP AP214 미지원: 전체 형상·재가져오기 검증 전입니다.";
+    setExportPreview({ kind: "STEP_UNAVAILABLE", summary, text: summary });
     setStatusNote(summary);
   };
 
@@ -297,8 +295,8 @@ export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPan
     const json = JSON.stringify({ schema: ltPayload.schema, bridgeTarget: ltPayload.bridgeTarget, presetId: ltPayload.presetId, perspectiveMode: ltPayload.perspectiveMode, creaseAngleDeg: ltPayload.creaseAngleDeg, summary: ltPayload.summary, vanishingPoints: ltPayload.vanishingPoints }, null, 2);
     await copyText(json);
     const summary = isEn
-      ? `Sent to AtelierStage 2D LT: ${ltPayload.summary.silhouetteCount} silhouettes · ${ltPayload.summary.creaseCount} creases`
-      : `AtelierStage 2D LT 전송 완료: 실루엣 ${ltPayload.summary.silhouetteCount}선 · 주름각 ${ltPayload.summary.creaseCount}선`;
+      ? `LT payload ready: ${ltPayload.summary.silhouetteCount} silhouettes · ${ltPayload.summary.creaseCount} creases · ${props.onSendToWebtoonLt ? "callback delivered; document persistence unverified" : "not applied to the manuscript"}`
+      : `LT 페이로드 준비: 실루엣 ${ltPayload.summary.silhouetteCount}선 · 주름각 ${ltPayload.summary.creaseCount}선 · ${props.onSendToWebtoonLt ? "콜백 전달·원고 저장 미확인" : "원고 미반영"}`;
     setExportPreview({ kind: "LT", summary, text: json });
     setStatusNote(summary);
   };
@@ -306,7 +304,8 @@ export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPan
   return (
     <section
       data-testid="atelier-solid-cad-pro-panel"
-      aria-label={isEn ? "AtelierSolid Pro Manifold B-Rep CAD Workbench" : "AtelierSolid Pro 실측 수밀 B-Rep CAD 워크벤치"}
+      aria-label={isEn ? "AtelierSolid Pro CPU Mesh CAD Preview" : "AtelierSolid Pro CPU 메시 CAD 미리보기"}
+      aria-describedby={`${idPrefix}-scope`}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg ${props.className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
@@ -314,13 +313,13 @@ export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPan
           <div className="flex items-center gap-2">
             <Box className="h-5 w-5 text-accent" aria-hidden="true" />
             <h2 className="text-base font-bold text-fg [word-break:keep-all]">
-              {isEn ? "AtelierSolid Pro — Manifold B-Rep CAD & Webtoon LT" : "AtelierSolid Pro — 실측 수밀 B-Rep CAD · 웹툰 LT 선화"}
+              {isEn ? "AtelierSolid Pro — CPU Mesh & LT Preview" : "AtelierSolid Pro — CPU 메시·LT 미리보기"}
             </h2>
           </div>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
             {isEn
-              ? "Half-Edge watertight solid modeling, assembly clash checks, KilnExport STEP/STL, and 1-click AtelierStage 2D LT extraction."
-              : "Half-Edge 수밀 매니폴드 직접 모델링·어셈블리 간섭 검사·KilnExport STEP/STL·AtelierStage 1-클릭 2D LT 선화 브리지."}
+              ? "Parametric preset meshes, Half-Edge topology calculations, offset-based assembly references, STL buffers and 2D lineart payloads."
+              : "파라메트릭 프리셋 메시·Half-Edge 위상 계산·오프셋 기반 조립 참고값·STL 버퍼·2D 선화 페이로드를 확인합니다."}
           </p>
         </div>
         <button type="button" data-testid="atelier-solid-reset-btn" onClick={handleReset} className={BTN_OUTLINE}>
@@ -328,6 +327,11 @@ export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPan
           <span>{isEn ? "Reset" : "초기화"}</span>
         </button>
       </header>
+      <p id={`${idPrefix}-scope`} data-testid="atelier-solid-scope" className="text-xs text-fg-2 [word-break:keep-all]">
+        {isEn
+          ? "CPU/SVG preset preview. No GPU/device integration, Rights BOM validation, manuscript persistence or production delivery is performed. Clearance is an offset-based reference; drawing views use perspective with illustrative tolerances, not certified orthographic manufacturing drawings. Parameters are temporary; retain any needed data before closing the panel. STL produces a buffer only; actual file saving requires the host callback. STEP AP214 output is unavailable."
+          : "CPU/SVG 프리셋 미리보기입니다. GPU·기기 입력·Rights BOM 검사·실제 원고 저장·제품 출고는 연동하지 않습니다. 간섭·여유는 오프셋 기준 참고값이며 도면은 원근 투영과 예시 공차를 사용합니다(정투상·제조 공차 보증 없음). 설정은 임시 상태이므로 패널을 닫기 전 필요한 데이터를 보관해 주세요. STL은 버퍼만 생성하며 실제 파일 저장에는 호스트 콜백이 필요합니다. STEP AP214 출력은 지원하지 않습니다."}
+      </p>
 
       <div className="flex flex-wrap gap-2" role="group" aria-label={isEn ? "CAD Presets" : "실전 CAD 프리셋"}>
         {ATELIER_SOLID_PRESETS.map((preset) => {
@@ -356,7 +360,7 @@ export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPan
           <div className="mt-1 font-mono text-[11px] tabular-nums">minY={evaluation.topology.minYMeters.toFixed(3)}m · Y0={String(evaluation.topology.floorGroundedY0)}</div>
         </div>
         <div data-testid="atelier-solid-euler-readout" className="rounded-xl border border-line bg-card px-3 py-2 text-xs">
-          <div className="font-bold text-fg [word-break:keep-all]">{isEn ? "Euler & Solid Volume" : "오일러 지표 · 실측 체적"}</div>
+          <div className="font-bold text-fg [word-break:keep-all]">{isEn ? "Euler & Mesh Volume" : "오일러 지표 · 메시 계산 체적"}</div>
           <div className="mt-1 font-mono text-[11px] text-fg-2 tabular-nums">χ={evaluation.topology.eulerCharacteristic} (g={evaluation.topology.genus}, C={evaluation.topology.componentCount}) · {evaluation.topology.signedVolumeCm3} cm³</div>
         </div>
         <div data-testid="atelier-solid-assembly-badge" className={`rounded-xl border px-3 py-2 text-xs ${evaluation.assembly.hasInterference ? "border-bad bg-bad-soft text-bad" : "border-good bg-good-soft text-good"}`}>
@@ -513,13 +517,13 @@ export function StudioAtelierSolidCadProPanel(props: StudioAtelierSolidCadProPan
       <footer className="space-y-2.5 rounded-xl border border-line bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" data-testid="atelier-solid-export-stl-btn" onClick={() => { void handleExportStl(); }} className={BTN_SOLID}>
-            <Download className="h-4 w-4" aria-hidden="true" /><span>{isEn ? "Export Binary STL" : "Binary STL 내보내기"}</span>
+            <Download className="h-4 w-4" aria-hidden="true" /><span>{isEn ? "Build Binary STL Buffer" : "Binary STL 버퍼 생성"}</span>
           </button>
-          <button type="button" data-testid="atelier-solid-export-step-btn" onClick={() => { void handleExportStep(); }} className={BTN_OUTLINE}>
-            <FileCode2 className="h-4 w-4" aria-hidden="true" /><span>{isEn ? "Export STEP AP214" : "STEP AP214 내보내기"}</span>
+          <button type="button" data-testid="atelier-solid-export-step-btn" onClick={handleStepAvailability} className={BTN_OUTLINE}>
+            <FileCode2 className="h-4 w-4" aria-hidden="true" /><span>{isEn ? "STEP Availability" : "STEP 지원 상태"}</span>
           </button>
           <button type="button" data-testid="atelier-solid-export-lt-btn" onClick={() => { void handleSendLt(); }} className={BTN_ACTIVE}>
-            <Copy className="h-4 w-4" aria-hidden="true" /><span>{isEn ? "1-Click Webtoon 2D LT Bridge" : "1-클릭 웹툰 2D LT 선화 전송"}</span>
+            <Copy className="h-4 w-4" aria-hidden="true" /><span>{isEn ? "Prepare 2D LT Payload" : "2D LT 선화 페이로드 준비"}</span>
           </button>
           {statusNote ? <span data-testid="atelier-solid-export-status" role="status" className="text-xs font-medium text-fg-2 [word-break:keep-all] tabular-nums">{statusNote}</span> : null}
         </div>

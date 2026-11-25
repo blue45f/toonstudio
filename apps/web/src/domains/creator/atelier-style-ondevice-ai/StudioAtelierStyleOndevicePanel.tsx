@@ -307,8 +307,8 @@ export function StudioAtelierStyleOndevicePanel(props: StudioAtelierStyleOndevic
     setSiliconId(nextSiliconId);
     const next = emitChange({ siliconId: nextSiliconId });
     setStatusMessage(pick(
-      `ToonSilicon 기기 '${next.dispatchMatrix.silicon.nameKo}' 선택 · 7대 AI 기능 서버 전송 0B`,
-      `Selected ${next.dispatchMatrix.silicon.nameEn} · 0B server upload across all 7 AI tasks.`,
+      `${next.dispatchMatrix.silicon.nameKo}의 연산 경로를 표시했습니다.`,
+      `Showing planned compute paths for ${next.dispatchMatrix.silicon.nameEn}.`,
     ));
   };
 
@@ -363,7 +363,7 @@ export function StudioAtelierStyleOndevicePanel(props: StudioAtelierStyleOndevic
             </span>
             <span data-testid="atelier-style-zero-upload-badge" className="inline-flex items-center gap-1 rounded-full border border-good bg-good-soft px-2.5 py-0.5 text-[11px] font-semibold text-good tabular-nums [word-break:keep-all]">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {pick("서버 전송 0B · 서버비 0원 · 오프라인", "0B Upload · Zero Server Fee · Offline")}
+              {pick("미리보기 서버 전송 0B", "Preview upload: 0B")}
             </span>
             <span data-testid="atelier-style-violet-badge" className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-raised px-2.5 py-0.5 text-[11px] font-semibold text-fg-2 tabular-nums [word-break:keep-all]">
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-good" aria-hidden="true" />
@@ -374,7 +374,7 @@ export function StudioAtelierStyleOndevicePanel(props: StudioAtelierStyleOndevic
             {pick("7대 웹툰 화풍 실시간 양방향 변환 & PC·모바일 온디바이스 AI", "7 Webtoon Styles Bidirectional Transform & PC/Mobile On-Device AI")}
           </h2>
           <p className="text-xs text-fg-2 [word-break:keep-all]">
-            {pick("수묵·로판·액션·힐링·느와르·임파스토·셀 애니 화풍을 원본 벡터 보존 상태로 전환하고, 기기 NPU/TPU에서 서버비 없이 AI 보조를 실행합니다.", "Switches across 7 webtoon styles non-destructively while running creator AI on local NPU/TPU silicon with zero cloud fee.")}
+            {pick("일곱 가지 화풍의 변환 결과를 미리 보고, 기기별 AI 연산 경로 계획을 확인합니다.", "Preview seven style transformations and see the planned AI paths for each device.")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -520,7 +520,7 @@ export function StudioAtelierStyleOndevicePanel(props: StudioAtelierStyleOndevic
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="flex items-center gap-1.5 text-xs font-semibold text-fg [word-break:keep-all]">
             <Cpu className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            {pick("ToonSilicon 온디바이스 AI 7대 기능 실행 경로 (PC · 모바일 9종)", "ToonSilicon 7 On-Device AI Tasks Across 9 PC/Mobile Chips")}
+            {pick("기기 9종의 AI 연산 경로 계획", "Planned AI Paths Across 9 Devices")}
           </h3>
           <span className="font-mono text-[11px] text-fg-3 tabular-nums">{snapshot.modelKind}</span>
         </div>
@@ -593,7 +593,7 @@ export function StudioAtelierStyleOndevicePanel(props: StudioAtelierStyleOndevic
                         data-testid={`atelier-ai-zero-upload-${row.task.id}`}
                         className="inline-flex items-center gap-1 rounded-full border border-good bg-good-soft px-2 py-0.5 font-mono text-[10px] font-semibold text-good tabular-nums [word-break:keep-all]"
                       >
-                        {pick(`서버 전송 ${row.serverUploadBytes}B · 오프라인`, `${row.serverUploadBytes}B Upload · Offline`)}
+                        {pick(`미리보기 전송 ${row.serverUploadBytes}B`, `Preview upload: ${row.serverUploadBytes}B`)}
                       </span>
                     </td>
                   </tr>

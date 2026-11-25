@@ -517,9 +517,11 @@ export function addWallStickyNote(
   if (trimmed.length === 0) return notes;
   const nextSlot = notes.reduce((acc, n) => Math.max(acc, n.pinSlot), -1) + 1;
   const tiltPattern = [-2, 1.5, -1, 2, -1.5, 1];
+  const text = Array.from(trimmed).slice(0, 64).join("");
+  const author = Array.from(input.author?.trim() || "나").slice(0, 16).join("");
   return [
     ...notes,
-    { id: `note-${nextSlot + 1}`, text: trimmed.slice(0, 64), author: (input.author?.trim() || "나").slice(0, 16), colorId: input.colorId ?? "butter-paper", done: false, pinSlot: nextSlot, tiltDeg: tiltPattern[nextSlot % tiltPattern.length] ?? 0 },
+    { id: `note-${nextSlot + 1}`, text, author, colorId: input.colorId ?? "butter-paper", done: false, pinSlot: nextSlot, tiltDeg: tiltPattern[nextSlot % tiltPattern.length] ?? 0 },
   ];
 }
 
@@ -619,7 +621,8 @@ export function exportAtelierStageLivingJson(snapshot: AtelierStageLivingSnapsho
       reachablePeerCount: interactions.reachablePeerCount, clearPeerCount: interactions.clearPeerCount,
       ambienceId: interactions.ambience.id, colorTempKelvin: interactions.ambience.colorTempKelvin,
       ambientVolumePercent: interactions.ambience.ambientVolumePercent, visualFatigueScore: interactions.ambience.visualFatigueScore,
-      pinboard: { totalNotes: interactions.pinboard.totalNotes, completedNotes: interactions.pinboard.completedNotes, completionRatePercent: interactions.pinboard.completionRatePercent },
+      visualFatigueScoreSource: "preset-example",
+      pinboard: { totalNotes: interactions.pinboard.totalNotes, completedNotes: interactions.pinboard.completedNotes, completionRatePercent: interactions.pinboard.completionRatePercent, includesNoteText: false },
       deskPeek: { deskId: interactions.deskPeek.desk.id, creatorName: interactions.deskPeek.desk.creatorName, progressPercent: interactions.deskPeek.desk.progressPercent, coEditInviteState: interactions.deskPeek.coEditInviteState },
     },
     dockBudget: {

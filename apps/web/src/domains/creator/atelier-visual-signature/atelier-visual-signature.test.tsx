@@ -38,6 +38,40 @@ import {
 
 afterEach(cleanup);
 
+describe("계산 미리보기와 측정 범위", () => {
+  it("광학 수치는 측정하지 않은 설계 참고값이며 원고 적용·저장과 구분한다", () => {
+    for (const theme of ATELIER_SURFACE_THEMES) {
+      expect(theme).toHaveProperty("comfortReferenceScope", "unmeasured-design-reference");
+      expect(theme.craftNoteKo).not.toMatch(/눈부심 0%|청색광을 억제/u);
+    }
+    const snapshot = buildAtelierVisualSignatureSnapshot({
+      themeId: "warm-alabaster",
+      innerRadiusPx: 12,
+      paddingPx: 8,
+      rawAngleDeg: 15,
+    });
+    const exported: unknown = JSON.parse(exportVisualSignatureJson(snapshot));
+    expect(exported).toMatchObject({
+      evaluationScope: "deterministic-design-system-audit",
+      executionScope: {
+        physicalDisplayMeasurement: false, runtimeThemeApplied: false,
+        runtimeBrushApplied: false, persistence: "none",
+      },
+      theme: { comfortReferenceScope: "unmeasured-design-reference" },
+    });
+    expect(exportAtelierDesignTokensCss(snapshot)).toContain("설정 저장도 수행하지 않음");
+  });
+
+  it("테마 전환은 패널 미리보기로 알리고 실제 원고·브러시 연결과 임시 상태 범위를 안내한다", () => {
+    render(<StudioAtelierVisualSignaturePanel />);
+    expect(screen.getByTestId("atelier-visual-signature-panel").getAttribute("aria-label")).toContain("미리보기");
+    expect(screen.getByTestId("atelier-sig-scope").textContent).toContain("원고·브러시에는 적용되지 않습니다");
+    expect(screen.getByTestId("atelier-sig-scope").textContent).toContain("패널을 닫기 전");
+    fireEvent.click(screen.getByTestId("atelier-sig-theme-ink-obsidian"));
+    expect(screen.getByTestId("atelier-sig-status-banner").textContent).toContain("미리보기");
+  });
+});
+
 function assertZeroRawColorsAndZeroViolet(markup: string): void {
   expect(markup).not.toMatch(/#[0-9a-fA-F]{3,8}\b/u);
   expect(markup).not.toMatch(/\brgba?\s*\(/iu);

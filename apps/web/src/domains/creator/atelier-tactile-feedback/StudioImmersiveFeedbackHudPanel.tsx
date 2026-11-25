@@ -11,7 +11,7 @@ import {
   CheckCircle2, Code2, Copy, Crosshair, Eye, Hand, Layers, Maximize2,
   Minimize2, Pipette, RotateCcw, Save, SlidersHorizontal, Undo2, WifiOff,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState, type PointerEvent, type ReactElement } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactElement } from "react";
 
 import { Switch } from "@/shared/components/ui/switch";
 
@@ -40,6 +40,19 @@ const BTN_BASE = `inline-flex min-h-11 cursor-pointer items-center justify-cente
 const BTN_SOLID = `${BTN_BASE} bg-accent px-3.5 py-2 text-on-accent hover:bg-accent-2`;
 const BTN_OUTLINE = `${BTN_BASE} border border-line bg-card px-3 py-2 text-fg hover:border-line-strong hover:bg-raised`;
 const BTN_ACTIVE = `${BTN_BASE} border border-accent bg-accent-soft px-3 py-2 text-accent`;
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function readSystemReducedMotion(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function"
+    && window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+function subscribeSystemReducedMotion(listener: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+  const media = window.matchMedia(REDUCED_MOTION_QUERY);
+  media.addEventListener("change", listener);
+  return () => media.removeEventListener("change", listener);
+}
 
 function StudioLiveTactileCanvasSvg(props: {
   readonly state: TactileFeedbackState; readonly isEn: boolean; readonly grainPatternId: string;
@@ -76,8 +89,8 @@ function StudioLiveTactileCanvasSvg(props: {
   const grainTile = Math.max(4, Math.round(theme.grainScalePx * 4));
 
   const ariaLabel = isEn
-    ? `Live atelier tactile HUD preview in ${viewport.labelEn}, ${viewport.canvasOccupancyPercent}% canvas area, ${theme.labelEn} surface, grain ${surfaceTactile.grainPercentLabel}`
-    : `${viewport.labelKo} 라이브 캔버스 목업, 캔버스 점유 ${viewport.canvasOccupancyPercent}%, ${theme.labelKo} 표면, 종이결 ${surfaceTactile.grainPercentLabel}`;
+    ? `Tactile HUD mockup, fixed layout target ${viewport.canvasOccupancyPercent}%, unmeasured, ${theme.labelEn} surface, simulated save indicators only`
+    : `${viewport.labelKo} HUD 목업, 고정 레이아웃 목표 ${viewport.canvasOccupancyPercent}%·실측 전, ${theme.labelKo} 표면, 저장 상태 표시 시연`;
 
   return (
     <svg
@@ -231,7 +244,7 @@ function StudioLiveTactileCanvasSvg(props: {
       <rect x="0" y={LIVE_CANVAS_SVG_HEIGHT - 26} width={LIVE_CANVAS_SVG_WIDTH} height="26" fill={chromeBg} />
       <line x1="0" y1={LIVE_CANVAS_SVG_HEIGHT - 26} x2={LIVE_CANVAS_SVG_WIDTH} y2={LIVE_CANVAS_SVG_HEIGHT - 26} stroke={borderInk} strokeWidth="1" />
       <text x="12" y={LIVE_CANVAS_SVG_HEIGHT - 10} fill={paperInk} fontSize="8" fontFamily="monospace" fontWeight="700">
-        {`CANVAS ${viewport.canvasOccupancyPercent}% · GRAIN ${surfaceTactile.grainPercentLabel} · DETENT ${surfaceTactile.pressDetentDepthPx}px · MOTION ${surfaceTactile.detentTransitionMs}ms`}
+        {`LAYOUT TARGET ${viewport.canvasOccupancyPercent}% · GRAIN ${surfaceTactile.grainPercentLabel} · DETENT ${surfaceTactile.pressDetentDepthPx}px · MOTION ${surfaceTactile.detentTransitionMs}ms`}
       </text>
       <text x={LIVE_CANVAS_SVG_WIDTH - 12} y={LIVE_CANVAS_SVG_HEIGHT - 10} textAnchor="end" fill={mutedInk} fontSize="7.8" fontFamily="monospace">
         {`CONTRAST ${surfaceTactile.canvasInkContrast}:1 · VIOLET-FREE`}
@@ -265,7 +278,9 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
   const [opfsSaveStatus, setOpfsSaveStatus] = useState<OpfsSaveStatus>("steady-forest");
   const [eyedropperActive, setEyedropperActive] = useState<boolean>(true);
   const [selectedPresetId, setSelectedPresetId] = useState<string>(EYEDROPPER_SAMPLE_PRESETS[1].id);
-  const [reducedMotion, setReducedMotion] = useState<boolean>(false);
+  const systemReducedMotion = useSyncExternalStore(subscribeSystemReducedMotion, readSystemReducedMotion, () => false);
+  const [manualReducedMotion, setManualReducedMotion] = useState<boolean>(false);
+  const reducedMotion = systemReducedMotion || manualReducedMotion;
   const [jsonOpen, setJsonOpen] = useState<boolean>(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
 
@@ -380,8 +395,16 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
     setOpfsSaveStatus("steady-forest");
     setEyedropperActive(true);
     setSelectedPresetId(EYEDROPPER_SAMPLE_PRESETS[1].id);
-    setReducedMotion(false);
+    setManualReducedMotion(false);
     setCopyStatus("idle");
+    const resetMode = props.initialMode ?? "full-bleed-96";
+    props.onModeChange?.(resetMode, evaluateTactileFeedbackState({
+      mode: resetMode, surfaceId: "warm-alabaster", edgeDistancePx: 48, edgePointerActive: false,
+      pressure: 0.64, tiltDeg: 56, velocityPxPerSec: 340, brushSizePx: 28, brushOpacityPercent: 88,
+      ephemeralTriggerElapsedMs: null, lastActionKind: "idle", actionElapsedMs: 0,
+      opfsSaveStatus: "steady-forest", eyedropperActive: true,
+      sampledPixel: EYEDROPPER_SAMPLE_PRESETS[1].color, reducedMotion: systemReducedMotion,
+    }));
   }
 
   const isFullBleed = mode === "full-bleed-96";
@@ -393,7 +416,7 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
     { id: brushOpacityId, testId: "tactile-slider-brush-opacity", label: pick("브러시 불투명도", "Brush Opacity"), readout: `${brushOpacityPercent}%`, min: 10, max: 100, value: brushOpacityPercent, onChange: (v: number) => { setBrushOpacityPercent(v); scheduleEphemeralPill(); } },
   ];
   const metricCards = [
-    { testId: "tactile-metric-nib", title: pick("1. 펜촉 헤일로", "1. Nib Halo"), value: `${feedbackState.nibHalo.radiusXPx}×${feedbackState.nibHalo.radiusYPx}px`, sub: pick("시야 방해 0%", "0% Occlusion"), tone: "text-fg", span: "" },
+    { testId: "tactile-metric-nib", title: pick("1. 펜촉 헤일로", "1. Nib Halo"), value: `${feedbackState.nibHalo.radiusXPx}×${feedbackState.nibHalo.radiusYPx}px`, sub: pick("시야 방해 0% 규격값", "0% Occlusion Target"), tone: "text-fg", span: "" },
     { testId: "tactile-metric-pill", title: pick("2. 자동 소멸 필", "2. Ephemeral Pill"), value: feedbackState.ephemeralPill.visible ? `${feedbackState.ephemeralPill.remainingMs}ms` : pick("대기(900ms)", "Idle (900ms)"), sub: feedbackState.ephemeralPill.phase, tone: "text-fg", span: "" },
     { testId: "tactile-metric-opfs", title: pick("3. 잉크 파동·OPFS", "3. Ripple & OPFS"), value: `${feedbackState.inkRippleAndSave.durationMs}ms`, sub: isEn ? feedbackState.inkRippleAndSave.opfsDot.labelEn : feedbackState.inkRippleAndSave.opfsDot.labelKo, tone: "text-good", span: "" },
     { testId: "tactile-metric-loupe", title: pick("4. OKLCH 루페", "4. OKLCH Loupe"), value: `${feedbackState.eyedropperLoupe.contrastVsCanvas}:1 (${feedbackState.eyedropperLoupe.contrastGrade})`, sub: `H ${feedbackState.eyedropperLoupe.rawHueDeg}° → ${feedbackState.eyedropperLoupe.safeHueDeg}°`, tone: "text-fg", span: "" },
@@ -403,7 +426,7 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
   return (
     <section
       data-testid="atelier-tactile-hud-panel"
-      aria-label={pick("96% 풀블리드 몰입 모드 및 촉각 시각 피드백 HUD", "96% Full-Bleed Immersive Mode & Tactile Visual Feedback HUD")}
+      aria-label={pick("몰입 모드·저장 표시 HUD 규격 미리보기", "Immersive Mode & Save Indicator HUD Spec Preview")}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${props.className ?? ""}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -411,7 +434,7 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent tabular-nums">
               <Maximize2 className="h-3 w-3 shrink-0" aria-hidden="true" />
-              {`${feedbackState.viewport.canvasOccupancyPercent}% CANVAS`}
+              {`${feedbackState.viewport.canvasOccupancyPercent}% CANVAS · ${pick("규격 목표", "DESIGN TARGET")}`}
             </span>
             <span className="font-mono text-[11px] text-fg-3 tabular-nums">{pick("미리보기·토큰 규격 전용", "Preview & Token Spec Only")}</span>
           </div>
@@ -420,6 +443,9 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
           </h2>
           <p className="max-w-2xl text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
             {isEn ? feedbackState.viewport.summaryEn : feedbackState.viewport.summaryKo}
+          </p>
+          <p data-testid="tactile-preview-scope" className="max-w-2xl text-xs leading-relaxed text-fg-2">
+            {pick("고정 레이아웃 목표와 타이머로 HUD를 시연합니다. 캔버스 면적은 실측 전이며 실제 원고 편집·실행취소·OPFS 저장은 수행하지 않습니다.", "Fixed layout targets and timers demonstrate the HUD. Canvas area is unmeasured; manuscript editing, undo, and OPFS writes are not performed.")}
           </p>
         </div>
 
@@ -430,7 +456,7 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
             className={isFullBleed ? BTN_SOLID : BTN_OUTLINE}
           >
             {isFullBleed ? <Minimize2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : <Maximize2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
-            {isFullBleed ? pick("96% 풀블리드 활성", "96% Full-Bleed On") : pick("96% 풀블리드 켜기", "Enter 96% Full-Bleed")}
+            {isFullBleed ? pick("96% 풀블리드 시안 활성", "96% Full-Bleed Preview On") : pick("96% 풀블리드 시안 보기", "Preview 96% Full-Bleed")}
           </button>
           <button type="button" data-testid="tactile-copy-json-btn" onClick={() => void handleCopyJson()} className={BTN_OUTLINE}>
             <Copy className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("JSON 규격 복사", "Copy Spec JSON")}
@@ -463,7 +489,7 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
           ) : null}
           <div className="flex items-center gap-2 rounded-lg bg-raised px-3 py-1">
             <span className="text-xs font-medium text-fg-2 [word-break:keep-all]">{pick("모션 감소(즉시 스냅)", "Reduced Motion")}</span>
-            <Switch data-testid="tactile-reduced-motion-switch" checked={reducedMotion} onCheckedChange={setReducedMotion} aria-label={pick("모션 감소 즉시 스냅 전환", "Toggle reduced motion instant snap")} />
+            <Switch data-testid="tactile-reduced-motion-switch" checked={reducedMotion} disabled={systemReducedMotion} onCheckedChange={setManualReducedMotion} aria-label={systemReducedMotion ? pick("시스템 모션 감소 적용 중", "System reduced motion applied") : pick("모션 감소 즉시 스냅 전환", "Toggle reduced motion instant snap")} />
           </div>
         </div>
       </div>
@@ -526,13 +552,13 @@ export function StudioImmersiveFeedbackHudPanel(props: StudioImmersiveFeedbackHu
           </div>
 
           <div className="space-y-2 border-t border-line/60 pt-3">
-            <h3 className="text-xs font-semibold text-fg">{pick("150ms 잉크 파동 · OPFS 상태 점 · 스포이드 루페", "150ms Ink Ripple · OPFS Status Dot · Eyedropper Loupe")}</h3>
+            <h3 className="text-xs font-semibold text-fg">{pick("타이머 피드백 시연 · 저장 표시 예시 · 스포이드 루페", "Timer Feedback Demo · Save Indicator Preview · Eyedropper Loupe")}</h3>
             <div className="flex flex-wrap gap-2">
               <button type="button" data-testid="tactile-action-undo" onClick={() => triggerRipple("undo")} className={BTN_OUTLINE}>
                 <Undo2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("실행취소 파동", "Undo Ripple")}
               </button>
               <button type="button" data-testid="tactile-action-opfs-save" onClick={handleOpfsSaveTrigger} className={BTN_OUTLINE}>
-                <Save className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("OPFS 저장 펄스", "OPFS Save Pulse")}
+                <Save className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("OPFS 저장 표시 시연", "Preview OPFS Save Indicator")}
               </button>
               <button type="button" data-testid="tactile-action-snap" onClick={() => triggerRipple("snap")} className={BTN_OUTLINE}>
                 <Crosshair className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{pick("스냅 확인", "Snap Pulse")}

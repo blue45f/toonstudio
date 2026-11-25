@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useId, useMemo, useState, type ReactElement } from "react";
 
+import { copyText } from "@/shared/lib/copy-text";
+
 import {
   ATELIER_MANUAL_BRAND_NAME, ATELIER_MANUAL_SCHEMA_VERSION, ATELIER_MANUAL_UPDATED_AT,
   EVERYDAY_QUICK_SEARCH_CHIPS, LEARNING_LEVEL_ROADMAP, MANUAL_WORK_CONTEXT_SPECS,
@@ -34,7 +36,7 @@ export interface StudioAtelierManualOsPanelProps {
   readonly className?: string;
   readonly onSelectGuide?: (guide: StudioFeatureGuide) => void;
   readonly onToggleCompleted?: (guideId: string, completedIds: readonly string[], progress: ManualMasteryProgress) => void;
-  readonly onExportJson?: (json: string, payload: InteractiveManualExportPayload) => void;
+  readonly onExportJson?: (json: string, payload: InteractiveManualExportPayload) => void | Promise<void>;
 }
 
 const FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-canvas";
@@ -187,13 +189,20 @@ export function StudioAtelierManualOsPanel(props: StudioAtelierManualOsPanelProp
 
   const handleCopyJson = async (): Promise<void> => {
     setShowJsonPreview(true);
-    props.onExportJson?.(exportBundle.json, exportBundle.payload);
+    const clipboardResult = copyText(exportBundle.json);
+    let exportFailed = false;
     try {
-      await navigator.clipboard.writeText(exportBundle.json);
-      setStatusMessage(pick("AtelierGuide 전체 매뉴얼·진도 JSON을 클립보드에 복사했습니다.", "Copied AtelierGuide manual & progress JSON to clipboard."));
+      await props.onExportJson?.(exportBundle.json, exportBundle.payload);
     } catch {
-      setStatusMessage(pick("클립보드 권한이 없어 하단 JSON 미리보기 영역에 표시했습니다.", "Clipboard unavailable; JSON shown in preview below."));
+      exportFailed = true;
     }
+    const copied = await clipboardResult;
+    const copyStatus = copied
+      ? pick("JSON을 클립보드에 복사했습니다.", "Copied the JSON to clipboard.")
+      : pick("미리보기에서 JSON을 직접 복사할 수 있습니다.", "You can copy the JSON from the preview.");
+    setStatusMessage(exportFailed
+      ? pick(`외부 내보내기에 실패했습니다. ${copyStatus}`, `Could not export to the destination. ${copyStatus}`)
+      : copyStatus);
   };
 
   const handleResetAll = (): void => {

@@ -540,11 +540,12 @@ export function evaluateThumbZoneErgonomics(input?: ThumbZoneErgonomicsInput): T
 
   const canvasUsableAreaPx2 = Math.max(0, safeViewportAreaPx2 - appChromeAreaPx2);
   const canvasUsableAreaPct = round1((canvasUsableAreaPx2 / safeViewportAreaPx2) * 100);
-  const canvasGrossViewportPct = round1((canvasUsableAreaPx2 / totalViewportAreaPx2) * 100);
+  const grossViewportPct = (canvasUsableAreaPx2 / totalViewportAreaPx2) * 100;
+  const canvasGrossViewportPct = round1(grossViewportPct);
 
   const metrics: ThumbZoneErgonomicMetrics = {
     canvasUsableAreaPct, canvasGrossViewportPct, canvasUsableAreaPx2, safeViewportAreaPx2, totalViewportAreaPx2,
-    appChromeAreaPx2, meetsCanvas82Gate: canvasUsableAreaPct >= CANVAS_USABLE_AREA_TARGET_PCT,
+    appChromeAreaPx2, meetsCanvas82Gate: grossViewportPct >= CANVAS_USABLE_AREA_TARGET_PCT,
     easyReachHitRatePct, allControlsEasyReachPct: round1((allEasyCount / Math.max(1, allTrackedCount)) * 100),
     touchTarget44CompliancePct, minTouchTargetPx: Number.isFinite(minTouchTargetPx) ? minTouchTargetPx : MIN_TOUCH_TARGET_PX,
     safeAreaCollisionCount, controlOverlapCount, horizontalOverflowPx, lower38CompliancePct,

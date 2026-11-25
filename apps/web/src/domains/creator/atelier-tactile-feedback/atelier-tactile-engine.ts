@@ -146,8 +146,8 @@ export interface TactileFeedbackState {
 export const IMMERSIVE_VIEWPORT_MODES: readonly ImmersiveViewportModeSpec[] = [
   {
     id: "full-bleed-96", labelKo: "96% 풀블리드 몰입", labelEn: "96% Full-Bleed Focus",
-    summaryKo: "상단 바와 사이드바를 완전히 비우고 가장자리 28px 근접 시에만 180ms 플로팅 필을 띄웁니다.",
-    summaryEn: "Hides top bar and sidebars; reveals a translucent floating pill within 28px of edges in 180ms.",
+    summaryKo: "캔버스 96%를 목표로 한 고정 레이아웃 시안입니다. 가장자리 28px 근접 표시를 미리 봅니다.",
+    summaryEn: "Fixed layout concept targeting 96% canvas area, with a preview of the 28px edge reveal.",
     canvasOccupancyPercent: IMMERSIVE_CANVAS_TARGET_PERCENT, chromeOccupancyPercent: 100 - IMMERSIVE_CANVAS_TARGET_PERCENT,
     topBarVisible: false, topBarHeightPx: 0, leftRailVisible: false, leftSlidersOnly: false, inspectorDocked: false,
     edgeRevealThresholdPx: EDGE_REVEAL_THRESHOLD_PX, edgeRevealFadeMs: EDGE_REVEAL_FADE_MS,
@@ -155,8 +155,8 @@ export const IMMERSIVE_VIEWPORT_MODES: readonly ImmersiveViewportModeSpec[] = [
   },
   {
     id: "calm-studio-88", labelKo: "88% 차분한 아틀리에", labelEn: "88% Calm Studio",
-    summaryKo: "단일 44px 컨텍스트 바와 좌측 크기·불투명도 2-슬라이더만 유지해 캔버스 88%를 지킵니다.",
-    summaryEn: "Keeps only the single 44px context bar and left 2-slider strip for 88% canvas area.",
+    summaryKo: "44px 컨텍스트 바와 좌측 슬라이더를 둔 88% 목표 시안입니다. 실제 편집기 면적은 실측 전입니다.",
+    summaryEn: "88% layout target with a 44px context bar and left sliders; actual editor occupancy is unmeasured.",
     canvasOccupancyPercent: CALM_STUDIO_CANVAS_PERCENT, chromeOccupancyPercent: 100 - CALM_STUDIO_CANVAS_PERCENT,
     topBarVisible: true, topBarHeightPx: CONTEXT_BAR_HEIGHT_PX, leftRailVisible: true, leftSlidersOnly: true, inspectorDocked: false,
     edgeRevealThresholdPx: 0, edgeRevealFadeMs: 0,
@@ -164,8 +164,8 @@ export const IMMERSIVE_VIEWPORT_MODES: readonly ImmersiveViewportModeSpec[] = [
   },
   {
     id: "workbench-82", labelKo: "82% 전문 워크벤치", labelEn: "82% Pro Workbench",
-    summaryKo: "전문 인스펙터를 우측 도킹하면서도 캔버스 최소 82% 점유 기준을 지킵니다.",
-    summaryEn: "Docks the professional inspector while strictly preserving the 82% canvas floor.",
+    summaryKo: "우측 인스펙터를 포함한 82% 목표 시안입니다. 실제 제품의 면적 기준 충족 여부는 검증 전입니다.",
+    summaryEn: "82% layout target with a docked inspector; actual product layout compliance is unverified.",
     canvasOccupancyPercent: PRODUCT_CANVAS_FLOOR_PERCENT, chromeOccupancyPercent: 100 - PRODUCT_CANVAS_FLOOR_PERCENT,
     topBarVisible: true, topBarHeightPx: CONTEXT_BAR_HEIGHT_PX, leftRailVisible: true, leftSlidersOnly: false, inspectorDocked: true,
     edgeRevealThresholdPx: 0, edgeRevealFadeMs: 0,
@@ -391,18 +391,18 @@ function evaluateOpfsDot(status: OpfsSaveStatus, reducedMotion: boolean): OpfsSa
   if (status === "saving-pulse") {
     return {
       status, dotColorOklch: formatOklch({ l: 0.62, c: 0.135, h: 196 }), ringColorOklch: formatOklch({ l: 0.62, c: 0.135, h: 196 }, 0.42),
-      pulseActive: !reducedMotion, shapeCue: "ring-pulse", labelKo: "OPFS 저장 중", labelEn: "Saving to OPFS",
+      pulseActive: !reducedMotion, shapeCue: "ring-pulse", labelKo: "OPFS 저장 중 표시 시연", labelEn: "OPFS Saving Indicator Preview",
     };
   }
   if (status === "offline-amber") {
     return {
       status, dotColorOklch: formatOklch({ l: 0.72, c: 0.15, h: 76 }), ringColorOklch: formatOklch({ l: 0.72, c: 0.15, h: 76 }, 0.36),
-      pulseActive: false, shapeCue: "diamond-amber", labelKo: "오프라인 로컬 보관", labelEn: "Offline Local Hold",
+      pulseActive: false, shapeCue: "diamond-amber", labelKo: "오프라인 보관 표시 시연", labelEn: "Offline Hold Indicator Preview",
     };
   }
   return {
     status: "steady-forest", dotColorOklch: formatOklch({ l: 0.58, c: 0.14, h: 152 }), ringColorOklch: formatOklch({ l: 0.58, c: 0.14, h: 152 }, 0.32),
-    pulseActive: false, shapeCue: "solid-dot", labelKo: "OPFS 안전 저장", labelEn: "OPFS Saved",
+    pulseActive: false, shapeCue: "solid-dot", labelKo: "OPFS 저장 완료 표시 예시", labelEn: "OPFS Saved Indicator Preview",
   };
 }
 
@@ -416,9 +416,9 @@ function evaluateInkRippleAndSave(params: {
   const easedProgress = params.reducedMotion ? (active ? 1 : 0) : roundTo(1 - Math.pow(1 - rawProgress, 3), 3);
   const actionMeta: Record<TactileRippleActionKind, { readonly ko: string; readonly en: string; readonly color: OklchColor }> = {
     idle: { ko: "대기 중", en: "Idle", color: params.surface.mutedInk },
-    "opfs-save": { ko: "OPFS 체크포인트 저장", en: "OPFS Checkpoint Saved", color: { l: 0.58, c: 0.14, h: 152 } },
-    undo: { ko: "실행취소 1단계 복귀", en: "Undo Step Restored", color: { l: 0.62, c: 0.145, h: 42 } },
-    snap: { ko: "가이드선 정밀 스냅", en: "Guide Precision Snap", color: { l: 0.62, c: 0.13, h: 204 } },
+    "opfs-save": { ko: "OPFS 저장 표시 시연", en: "OPFS Save Indicator Preview", color: { l: 0.58, c: 0.14, h: 152 } },
+    undo: { ko: "실행취소 표시 시연", en: "Undo Indicator Preview", color: { l: 0.62, c: 0.145, h: 42 } },
+    snap: { ko: "스냅 표시 시연", en: "Snap Indicator Preview", color: { l: 0.62, c: 0.13, h: 204 } },
   };
   const chosen = actionMeta[params.actionKind];
 
@@ -550,6 +550,11 @@ export function exportTactileFeedbackSpecJson(state: TactileFeedbackState): stri
     {
       schemaVersion: TACTILE_SPEC_SCHEMA_VERSION,
       scopeNotice: "preview-token-spec-only",
+      executionPreview: {
+        renderer: "react-svg", timingSource: "demo-timer",
+        canvasOccupancySource: "fixed-design-target-unmeasured", productLayoutVerified: false,
+        documentModified: false, opfsWritePerformed: false, saveStatusSource: "simulated-indicator",
+      },
       viewport: {
         mode: viewport.id, canvasOccupancyPercent: viewport.canvasOccupancyPercent,
         chromeOccupancyPercent: viewport.chromeOccupancyPercent, meetsProductFloor82: viewport.meetsProductFloor,

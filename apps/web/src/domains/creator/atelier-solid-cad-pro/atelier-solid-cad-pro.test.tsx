@@ -10,6 +10,7 @@ import {
   ATELIER_SOLID_PRESETS,
   SOLID_FEATURE_META,
   SOLID_FEATURE_ORDER,
+  StepAp214ExportUnavailableError,
   StudioAtelierSolidCadProPanel,
   buildWatertightSolidMesh,
   createDefaultAtelierSolidParams,
@@ -349,25 +350,16 @@ describe("4. KilnExport 표준 익스포터 (Binary STL · STEP AP214 · GD&T 3�
     expect(view.getUint16(84 + 48, true)).toBe(0);
   });
 
-  it("exportStepAp214Ascii가 유효한 ISO-10303-21 AP214 HEADER/DATA/END 구문을 생성한다", () => {
-    const step = exportStepAp214Ascii(evaluateAtelierSolidModel({ presetId: "scifi-mech-actuator" }));
-    expect(step.startsWith("ISO-10303-21;")).toBe(true);
-    expect(step).toContain("HEADER;");
-    expect(step).toContain("FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));");
-    expect(step).toContain("DATA;");
-    expect(step.endsWith("END-ISO-10303-21;")).toBe(true);
+  it("exportStepAp214Ascii는 AP214 재가져오기 검증 전 식별 가능한 미지원 오류로 차단한다", () => {
+    const evaluation = evaluateAtelierSolidModel({ presetId: "scifi-mech-actuator" });
+    expect(() => exportStepAp214Ascii(evaluation)).toThrow(StepAp214ExportUnavailableError);
+    expect(() => exportStepAp214Ascii(evaluation)).toThrow("STEP_AP214_UNVERIFIED");
   });
 
-  it("STEP AP214 본문에 실제 B-Rep 솔리드 엔티티와 GD&T ±0.05mm 공차 컨텍스트가 포함된다", () => {
-    const step = exportStepAp214Ascii(evaluateAtelierSolidModel({ presetId: "cafe-glass-showcase" }));
-    expect(step).toContain("CARTESIAN_POINT");
-    expect(step).toContain("VERTEX_POINT");
-    expect(step).toContain("POLY_LOOP");
-    expect(step).toContain("ADVANCED_FACE");
-    expect(step).toContain("CLOSED_SHELL");
-    expect(step).toContain("MANIFOLD_SOLID_BREP");
-    expect(step).toContain("ADVANCED_BREP_SHAPE_REPRESENTATION");
-    expect(step).toContain("LENGTH_MEASURE(0.05)");
+  it("STEP 미지원 오류는 생성하지 않은 파일과 프리셋 식별자를 구분한다", () => {
+    const error = new StepAp214ExportUnavailableError("cafe-glass-showcase");
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toMatchObject({ code: "STEP_AP214_UNVERIFIED", exportPerformed: false, presetId: "cafe-glass-showcase" });
   });
 
   it("exportEngineeringDrawingSvgSpec가 정투상 3면도+등각투영 4뷰와 GD&T ±0.05mm 콜아웃을 계산한다", () => {
@@ -502,7 +494,7 @@ describe("6. StudioAtelierSolidCadProPanel UI 인터랙션 및 접근성 검증"
     expect(screen.getByTestId("atelier-solid-regen-hash").textContent).toBe(before);
   });
 
-  it("Binary STL·STEP AP214·1-클릭 웹툰 2D LT 내보내기 버튼이 콜백과 미리보기를 실행한다", async () => {
+  it("Binary STL·LT 콜백 전달을 유지하고 미지원 STEP은 상태 표시만 한다", async () => {
     const onExportStl = vi.fn();
     const onExportStep = vi.fn();
     const onSendToWebtoonLt = vi.fn();
@@ -519,9 +511,8 @@ describe("6. StudioAtelierSolidCadProPanel UI 인터랙션 및 접근성 검증"
     expect(screen.getByTestId("atelier-solid-export-preview").getAttribute("data-export-kind")).toBe("STL");
 
     fireEvent.click(screen.getByTestId("atelier-solid-export-step-btn"));
-    await waitFor(() => expect(onExportStep).toHaveBeenCalledTimes(1));
-    expect(onExportStep.mock.calls[0]?.[0]).toContain("ISO-10303-21;");
-    expect(screen.getByTestId("atelier-solid-export-preview").getAttribute("data-export-kind")).toBe("STEP");
+    expect(onExportStep).not.toHaveBeenCalled();
+    expect(screen.getByTestId("atelier-solid-export-preview").getAttribute("data-export-kind")).toBe("STEP_UNAVAILABLE");
 
     fireEvent.click(screen.getByTestId("atelier-solid-export-lt-btn"));
     await waitFor(() => expect(onSendToWebtoonLt).toHaveBeenCalledTimes(1));

@@ -121,7 +121,21 @@ const LazyStudioWebGpuRadiancePanel = lazy(() =>
   import("../webgpu-radiance-cascades").then((module) => ({ default: module.StudioWebGpuRadiancePanel })),
 );
 
+const LazyStudioPrismSpatialRenderPanel = lazy(() =>
+  import("../prism-spatial-render").then((module) => ({ default: module.StudioPrismSpatialRenderPanel })),
+);
+const LazyStudioAtelierInkOpticalPanel = lazy(() =>
+  import("../atelier-ink-optical-grain").then((module) => ({ default: module.StudioAtelierInkOpticalPanel })),
+);
+
+const LazyStudioAtelierIsaBrushUltraPanel = lazy(() =>
+  import("../atelier-isa-brush-ultra").then((module) => ({ default: module.StudioAtelierIsaBrushUltraPanel })),
+);
+
 type FrontierTabId =
+  | "dualTipBrushPreview"
+  | "prismSpatialPreview"
+  | "inkOpticsPreview"
   | "brushPhysics"
   | "brushCustomLab"
   | "brush3dExtreme"
@@ -182,6 +196,9 @@ const FRONTIER_TABS: readonly {
   { id: "liveOracle", labelKo: "실시간 엔진 오라클 (194종·KM·GPU)", labelEn: "Live Engine Oracle (194 · KM · GPU)" },
   { id: "federatedLora", labelKo: "저랭크 학습·캐시 계산 예제", labelEn: "Low-Rank Learning · Cache Examples" },
   { id: "tactileBrush", labelKo: "브러시 질감 예제", labelEn: "Brush Texture Examples" },
+  { id: "prismSpatialPreview", labelKo: "공간 렌더링 예제", labelEn: "Spatial Rendering Example" },
+  { id: "inkOpticsPreview", labelKo: "붓결과 종이 질감 미리보기", labelEn: "Bristle and Paper Texture Preview" },
+  { id: "dualTipBrushPreview", labelKo: "두 가지 붓끝과 연산 경로 미리보기", labelEn: "Dual-Tip Brush and Compute Paths Preview" },
   { id: "nativeMigrationPlan", labelKo: "WASM 전환 예산 예제", labelEn: "WASM Migration Budget Examples" },
   { id: "largeCanvasBudget", labelKo: "대형 캔버스 타일·저장 예제", labelEn: "Large Canvas Tile and Storage Examples" },
   { id: "infiniteZoom", labelKo: "확대와 좌표 정밀도 예제", labelEn: "Zoom and Coordinate Precision Examples" },
@@ -290,6 +307,12 @@ function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
       return <Zap size={15} aria-hidden="true" />;
     case "nativeMigrationPlan":
       return <Cpu size={15} aria-hidden="true" />;
+    case "prismSpatialPreview":
+      return <Box size={15} aria-hidden="true" />;
+    case "dualTipBrushPreview":
+      return <PenTool size={15} aria-hidden="true" />;
+    case "inkOpticsPreview":
+      return <PenTool size={15} aria-hidden="true" />;
     case "tactileBrush":
       return <PenTool size={15} aria-hidden="true" />;
     case "brushPhysics":
@@ -477,6 +500,9 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "webnnPigment" ? <LazyStudioWebnnPigmentDirectorPanel /> : null}
             {active === "federatedLora" ? <LazyFederatedLoraPanel /> : null}
             {active === "tactileBrush" ? <LazyStudioTactileBrushTexturePanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "prismSpatialPreview" ? <LazyStudioPrismSpatialRenderPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "inkOpticsPreview" ? <LazyStudioAtelierInkOpticalPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "dualTipBrushPreview" ? <LazyStudioAtelierIsaBrushUltraPanel locale={isEn ? "en" : "ko"} /> : null}
             {active === "nativeMigrationPlan" ? <LazyStudioNativeWasmMigrationPanel locale={isEn ? "en" : "ko"} /> : null}
             {active === "largeCanvasBudget" ? <LazyStudioGigaCanvasSwapPanel locale={isEn ? "en" : "ko"} /> : null}
             {active === "infiniteZoom" ? <LazyStudioInfiniteZoomSpatialPanel locale={isEn ? "en" : "ko"} /> : null}

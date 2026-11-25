@@ -456,7 +456,7 @@ export function StudioAtelierStageLivingPanel(props: StudioAtelierStageLivingPan
       <div className="space-y-2 rounded-xl border border-line bg-card p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]"><Sun className="h-4 w-4 text-accent" aria-hidden="true" />{pick("4종 작업실 분위기 씬 프리셋", "4 Studio Ambience Scene Presets")}</h3>
-          <span data-testid="stage-ambience-metrics" className="font-mono text-[11px] text-fg-2 tabular-nums">{`${interactions.ambience.colorTempKelvin}K · ${pick("앰비언트", "Ambience")} ${interactions.ambience.ambientVolumePercent}% · ${pick("시각 피로", "Fatigue")} ${interactions.ambience.visualFatigueScore}/100`}</span>
+          <span data-testid="stage-ambience-metrics" className="font-mono text-[11px] text-fg-2 tabular-nums">{`${interactions.ambience.colorTempKelvin}K · ${pick("앰비언트", "Ambience")} ${interactions.ambience.ambientVolumePercent}% · ${pick("피로도 설정 예시", "Fatigue preset example")} ${interactions.ambience.visualFatigueScore}/100`}</span>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={pick("작업실 분위기 선택", "Studio ambience presets")}>
           {STAGE_AMBIENCE_PRESETS.map((preset) => (
@@ -507,6 +507,7 @@ export function StudioAtelierStageLivingPanel(props: StudioAtelierStageLivingPan
             <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-fg [word-break:keep-all]"><Pin className="h-4 w-4 text-accent" aria-hidden="true" />{pick("벽면 포스트잇 & 콘티 핀보드", "Wall Sticky-Note & Conti Pinboard")}</h3>
             <span data-testid="stage-pinboard-metrics" className="font-mono text-[11px] text-fg-2 tabular-nums">{`${interactions.pinboard.completedNotes}/${interactions.pinboard.totalNotes} (${interactions.pinboard.completionRatePercent}%)`}</span>
           </div>
+          <p className="text-xs text-fg-2">{pick("메모는 이 화면을 닫을 때까지 유지됩니다. JSON에는 메모 개수만 담깁니다.", "Notes last until this preview closes. JSON includes note counts only.")}</p>
           <form onSubmit={handleAddStickyNote} className="flex flex-wrap items-center gap-2">
             <label htmlFor={noteInputId} className="sr-only">{pick("새 핀보드 메모 입력", "New pinboard note")}</label>
             <input id={noteInputId} data-testid="stage-note-input" type="text" value={draftNote} onChange={(e) => setDraftNote(e.target.value)} placeholder={pick("컷 피드백·마감 체크를 벽에 꽂아 보세요", "Pin a cut note or checklist item")} className={`min-h-11 min-w-44 flex-1 rounded-lg border border-line bg-canvas px-3 text-xs text-fg placeholder:text-fg-3 ${FOCUS_RING}`} />
