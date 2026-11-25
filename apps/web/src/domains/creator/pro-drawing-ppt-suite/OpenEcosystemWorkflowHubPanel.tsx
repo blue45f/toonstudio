@@ -1,4 +1,4 @@
-import { Activity, BookOpen, Calculator, Cpu, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { Activity, BookOpen, Calculator, Compass, Cpu, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -88,6 +88,11 @@ const LazyStudioPerfDoctorPanel = lazy(async () => {
   const m = await import("../studio-perf-doctor/StudioPerfDoctorPanel");
   return { default: m.StudioPerfDoctorPanel };
 });
+const LazyStudioAtelierCraftLauncherPanel = lazy(async () => {
+  await import("../atelier-craft-launcher");
+  const m = await import("../atelier-craft-launcher/StudioAtelierCraftLauncherPanel");
+  return { default: m.StudioAtelierCraftLauncherPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -106,7 +111,8 @@ type EcosystemTabId =
   | "federatedLora"
   | "monetizationPlan"
   | "offlineResilience"
-  | "perfDoctor";
+  | "perfDoctor"
+  | "craftLauncher";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -146,6 +152,7 @@ const ECOSYSTEM_TABS: readonly {
   { id: "monetizationPlan", labelKo: "유료전환·굿즈 BEP·3.3% 정산·번아웃", labelEn: "Paywall Funnel · Goods BEP · Burnout" },
   { id: "offlineResilience", labelKo: "오프라인 CRDT·OPFS 패리티·멀티탭 잠금", labelEn: "Offline CRDT · OPFS Parity · Tab Lease" },
   { id: "perfDoctor", labelKo: "120Hz 프레임타임·VRAM·OPFS 닥터", labelEn: "120Hz Frame Profiler · VRAM · OPFS Doctor" },
+  { id: "craftLauncher", labelKo: "8대 아틀리에 프로 도구 퀵 런처", labelEn: "8-Station Atelier Craft Launcher" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -184,6 +191,8 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Database size={15} aria-hidden="true" />;
     case "perfDoctor":
       return <Activity size={15} aria-hidden="true" />;
+    case "craftLauncher":
+      return <Compass size={15} aria-hidden="true" />;
   }
 }
 
@@ -249,6 +258,7 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "monetizationPlan" ? <LazyStudioCreatorMonetizationPanel /> : null}
           {active === "offlineResilience" ? <LazyStudioOfflineResiliencePanel /> : null}
           {active === "perfDoctor" ? <LazyStudioPerfDoctorPanel /> : null}
+          {active === "craftLauncher" ? <LazyStudioAtelierCraftLauncherPanel /> : null}
         </Suspense>
       </div>
 

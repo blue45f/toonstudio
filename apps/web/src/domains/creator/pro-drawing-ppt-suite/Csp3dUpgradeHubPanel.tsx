@@ -1,4 +1,4 @@
-import { Brush, Camera, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, Wand2, Watch, Zap } from "lucide-react";
+import { Brush, Camera, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, Volume2, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -58,6 +58,11 @@ const LazyStudioActionFxLabPanel = lazy(async () => {
   const m = await import("../action-fx-procedural-lab/StudioActionFxLabPanel");
   return { default: m.StudioActionFxLabPanel };
 });
+const LazyStudioAtelierFoleyMixerPanel = lazy(async () => {
+  await import("../atelier-foley-mixer");
+  const m = await import("../atelier-foley-mixer/StudioAtelierFoleyMixerPanel");
+  return { default: m.StudioAtelierFoleyMixerPanel };
+});
 
 type Csp3dTabId =
   | "puppet"
@@ -70,7 +75,8 @@ type Csp3dTabId =
   | "neuralUpscale"
   | "cinematographyDir"
   | "lightingRig3d"
-  | "actionFxLab";
+  | "actionFxLab"
+  | "foleyMixer";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -88,6 +94,7 @@ const CSP3D_TABS: readonly {
   { id: "cinematographyDir", labelKo: "3D 시네마토그래피·180도 법칙·세로 시선 유도", labelEn: "3D Cinematography · 180° Rule · Eye-Flow" },
   { id: "lightingRig3d", labelKo: "서울 물리 하늘·3점 조명 릭·그림자 캐처", labelEn: "Seoul Physical Sky · 3-Point Rig · Shadow Catcher" },
   { id: "actionFxLab", labelKo: "웹툰 6종 액션·마법진·로맨스 벡터 FX 랩", labelEn: "6-Preset Action & Romance Vector FX Lab" },
+  { id: "foleyMixer", labelKo: "화실 물리 사운드(Foley)·-24 LUFS 공간 음향 믹서", labelEn: "Atelier Physical Foley · -24 LUFS Acoustic Mixer" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -130,6 +137,8 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Sunrise size={15} aria-hidden="true" />;
     case "actionFxLab":
       return <Zap size={15} aria-hidden="true" />;
+    case "foleyMixer":
+      return <Volume2 size={15} aria-hidden="true" />;
   }
 }
 
@@ -189,6 +198,7 @@ export function Csp3dUpgradeHubPanel() {
           {active === "cinematographyDir" ? <LazyCinematographyDirectorPanel /> : null}
           {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel /> : null}
           {active === "actionFxLab" ? <LazyStudioActionFxLabPanel /> : null}
+          {active === "foleyMixer" ? <LazyStudioAtelierFoleyMixerPanel /> : null}
         </Suspense>
       </div>
 
