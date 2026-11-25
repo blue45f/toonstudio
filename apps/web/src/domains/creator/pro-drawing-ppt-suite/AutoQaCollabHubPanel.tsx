@@ -95,6 +95,14 @@ const LazyStudioModelSheetDriftCoachPanel = lazy(async () => {
   return { default: m.StudioModelSheetDriftCoachPanel };
 });
 
+const LazyStudioOneLineOrchestratorPanel = lazy(() =>
+  import("../oneline-multi-advisor-chain").then((module) => ({ default: module.StudioOneLineOrchestratorPanel })),
+);
+
+const LazyStudioScrollPacingComposerPanel = lazy(() =>
+  import("../scroll-pacing-tension-composer").then((module) => ({ default: module.StudioScrollPacingComposerPanel })),
+);
+
 type QaHubTabId =
   | "pixel"
   | "layout"
@@ -112,7 +120,9 @@ type QaHubTabId =
   | "visualPinReview"
   | "audioCueDirector"
   | "balloonSfxProposer"
-  | "modelSheetDrift";
+  | "modelSheetDrift"
+  | "oneLineOrchestrator"
+  | "scrollPacing";
 
 const RHYTHM_FOLEY_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -152,10 +162,16 @@ const QA_HUB_TABS: readonly {
   { id: "audioCueDirector", labelKo: "대사·배경음·효과음 큐 예제", labelEn: "Dialogue · Music · Sound Cue Examples" },
   { id: "balloonSfxProposer", labelKo: "말풍선·효과음 배치 예제", labelEn: "Balloon · Sound Effect Placement Examples" },
   { id: "modelSheetDrift", labelKo: "컷별 설정집 대조 예제", labelEn: "Cut-by-Cut Model Sheet Examples" },
+  { id: "oneLineOrchestrator", labelKo: "한 줄 연출 예제", labelEn: "One-Line Direction Examples" },
+  { id: "scrollPacing", labelKo: "스크롤 컷 호흡 예제", labelEn: "Scroll Pacing Examples" },
 ];
 
 function QaHubIcon({ id }: { readonly id: QaHubTabId }) {
   switch (id) {
+    case "scrollPacing":
+      return <LayoutList size={15} aria-hidden="true" />;
+    case "oneLineOrchestrator":
+      return <MessageSquareText size={15} aria-hidden="true" />;
     case "modelSheetDrift":
       return <ScanSearch size={15} aria-hidden="true" />;
     case "balloonSfxProposer":
@@ -255,6 +271,8 @@ export function AutoQaCollabHubPanel() {
           {active === "audioCueDirector" ? <LazyStudioWebtoonAudioCuePanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "balloonSfxProposer" ? <LazyStudioBalloonSfxProposerPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "modelSheetDrift" ? <LazyStudioModelSheetDriftCoachPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "oneLineOrchestrator" ? <LazyStudioOneLineOrchestratorPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "scrollPacing" ? <LazyStudioScrollPacingComposerPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">

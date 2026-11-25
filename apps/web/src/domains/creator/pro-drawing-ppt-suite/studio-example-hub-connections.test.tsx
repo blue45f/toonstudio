@@ -60,6 +60,11 @@ const cases: readonly ExampleCase[] = [
   { ko: "컷 조명·색온도 제안 예제", en: "Scene Lighting · Color Temperature Examples", panel: "studio-scene-lighting-advisor-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../scene-lighting-atmosphere-advisor") },
   { ko: "카메라 구도·시선 축 예제", en: "Camera Framing · Sightline Examples", panel: "studio-camera-framing-coach-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../camera-framing-continuity-coach") },
   { ko: "손·소품 그립 제안 예제", en: "Hand · Prop Grip Examples", panel: "studio-hand-prop-autogrip-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../hand-prop-autogrip-assistant") },
+  { ko: "브러시 질감 예제", en: "Brush Texture Examples", panel: "tactile-brush-texture-panel", Hub: BrushWasm3dFrontierHubPanel, load: () => import("../tactile-brush-texture-studio") },
+  { ko: "한 줄 연출 예제", en: "One-Line Direction Examples", panel: "studio-oneline-orchestrator-panel", Hub: AutoQaCollabHubPanel, load: () => import("../oneline-multi-advisor-chain") },
+  { ko: "스크롤 컷 호흡 예제", en: "Scroll Pacing Examples", panel: "studio-scroll-pacing-composer-panel", Hub: AutoQaCollabHubPanel, load: () => import("../scroll-pacing-tension-composer") },
+  { ko: "화풍·재질 비교 예제", en: "Art Style · Material Examples", panel: "studio-style-spectrum-guardian-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../style-spectrum-guardian") },
+  { ko: "집중·화면 이동·햅틱 예제", en: "Focus · View Movement · Haptic Examples", panel: "studio-focus-pan-haptic-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../focus-pan-haptic-studio") },
 ];
 
 afterEach(cleanup);

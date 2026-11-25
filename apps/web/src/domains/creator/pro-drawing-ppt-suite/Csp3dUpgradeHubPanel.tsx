@@ -96,6 +96,10 @@ const LazyStudioHandPropAutoGripPanel = lazy(async () => {
   return { default: m.StudioHandPropAutoGripPanel };
 });
 
+const LazyStudioStyleSpectrumGuardianPanel = lazy(() =>
+  import("../style-spectrum-guardian").then((module) => ({ default: module.StudioStyleSpectrumGuardianPanel })),
+);
+
 type Csp3dTabId =
   | "puppet"
   | "surface3d"
@@ -113,7 +117,8 @@ type Csp3dTabId =
   | "charExprAdvisor"
   | "sceneLightingAdv"
   | "cameraFramingAdv"
-  | "handPropAutoGrip";
+  | "handPropAutoGrip"
+  | "styleSpectrum";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -137,6 +142,7 @@ const CSP3D_TABS: readonly {
   { id: "sceneLightingAdv", labelKo: "컷 조명·색온도 제안 예제", labelEn: "Scene Lighting · Color Temperature Examples" },
   { id: "cameraFramingAdv", labelKo: "카메라 구도·시선 축 예제", labelEn: "Camera Framing · Sightline Examples" },
   { id: "handPropAutoGrip", labelKo: "손·소품 그립 제안 예제", labelEn: "Hand · Prop Grip Examples" },
+  { id: "styleSpectrum", labelKo: "화풍·재질 비교 예제", labelEn: "Art Style · Material Examples" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -157,6 +163,8 @@ const STUDIO_CRAFT_VISUAL_CARDS: readonly {
 
 function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
   switch (id) {
+    case "styleSpectrum":
+      return <Palette size={15} aria-hidden="true" />;
     case "handPropAutoGrip":
       return <Hand size={15} aria-hidden="true" />;
     case "cameraFramingAdv":
@@ -256,6 +264,7 @@ export function Csp3dUpgradeHubPanel() {
           {active === "sceneLightingAdv" ? <LazyStudioSceneLightingAdvisorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "cameraFramingAdv" ? <LazyStudioCameraFramingCoachPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "handPropAutoGrip" ? <LazyStudioHandPropAutoGripPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "styleSpectrum" ? <LazyStudioStyleSpectrumGuardianPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
 
