@@ -22,7 +22,7 @@
 [data-studio-illustrated-surface] :where(.rounded-3xl, .rounded-2xl) { border-radius: .75rem; }
 [data-studio-illustrated-surface] :where(.bg-card) { background-color: var(--illustrated-card); }
 [data-studio-illustrated-surface] :where(.border-line) { border-color: var(--illustrated-line); }
-[data-studio-illustrated-surface] :where([aria-current="page"], [data-studio-template-selected="true"], [data-studio-project-card][data-selected="true"]) {
+[data-studio-illustrated-surface] :where(a[aria-current="page"], button[aria-current="page"], [data-studio-template-selected="true"], [data-studio-project-card][data-selected="true"]) {
   border-color: var(--color-accent);
   box-shadow: inset 2px 0 var(--color-accent);
 }
@@ -200,7 +200,7 @@
 @media (forced-colors: active) {
   [data-studio-illustrated-surface] { --illustrated-panel: Canvas; --illustrated-card: Canvas; --illustrated-line: CanvasText; background: Canvas; color: CanvasText; }
   [data-studio-illustrated-surface] :where(a, button, input, select, textarea, summary) { border-color: ButtonText; }
-  [data-studio-illustrated-surface] :where([aria-current="page"], [aria-pressed="true"], [data-studio-template-selected="true"], [data-studio-project-card][data-selected="true"]) { outline: 2px solid Highlight; outline-offset: -2px; }
+  [data-studio-illustrated-surface] :where(a[aria-current="page"], button[aria-current="page"], [aria-pressed="true"], [data-studio-template-selected="true"], [data-studio-project-card][data-selected="true"]) { outline: 2px solid Highlight; outline-offset: -2px; }
   [data-studio-illustrated-surface] :where(a, button, input, select, textarea, summary):focus-visible { outline-color: Highlight; }
 }
 

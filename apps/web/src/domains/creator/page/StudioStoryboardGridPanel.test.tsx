@@ -121,6 +121,42 @@ describe("StudioStoryboardGridPanel sequence grid", () => {
     expect(shotSelect.parentElement?.getAttribute("data-shot-tag-layout")).toBe("row");
     expect(shotSelect.parentElement?.className).toContain("grid-cols-2");
   });
+
+  it("pins the close button in the title row, left-aligns wrapping toolbar groups, and trims status select right padding", () => {
+    renderPanel();
+
+    const titleRow = document.querySelector("[data-studio-storyboard-title-row='true']");
+    const toolbar = document.querySelector("[data-studio-storyboard-toolbar='true']");
+    const closeButton = screen.getByRole("button", { name: "닫기" });
+    const statusFilter = document.querySelector("[data-studio-storyboard-status-filter='true']");
+    const statusSelect = screen.getByRole("combobox", { name: "스토리보드 상태 필터" });
+
+    // 닫기 버튼은 툴바가 2줄로 줄바꿈되더라도 제목 줄 우상단에 고정된다.
+    expect(titleRow).toBeTruthy();
+    expect(titleRow?.className).toContain("justify-between");
+    expect(titleRow?.contains(closeButton)).toBe(true);
+    expect(toolbar?.contains(closeButton)).toBe(false);
+
+    // 툴바는 flex-wrap items-center justify-between + 하위 도구 그룹 좌측 자연 정렬을 유지한다.
+    expect(toolbar?.className).toContain("flex-wrap");
+    expect(toolbar?.className).toContain("items-center");
+    expect(toolbar?.className).toContain("justify-between");
+    expect(toolbar?.className).not.toContain("justify-end");
+    expect(toolbar?.className).not.toContain("ml-auto");
+    const toolGroups = Array.from(toolbar?.children ?? []);
+    expect(toolGroups).toHaveLength(2);
+    for (const group of toolGroups) {
+      expect(group.className).toContain("justify-start");
+    }
+
+    // 상태 셀렉트 박스는 이중 우측 패딩(px-3 + 전역 2rem)을 제거하고 커스텀 화살표와 깔끔하게 맞물린다.
+    expect(statusFilter?.className).toContain("pr-0");
+    expect(statusFilter?.className).not.toContain("px-3");
+    expect(statusSelect.getAttribute("data-select-native")).toBe("true");
+    expect(statusSelect.className).toContain("appearance-none");
+    expect(statusSelect.className).toContain("bg-transparent!");
+    expect(statusSelect.className).toContain("pr-7");
+  });
 });
 
 describe("StudioStoryboardGridPanel solo summary", () => {
