@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement, createRef, type PropsWithChildren, type ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { StudioBg3dAssistantReadinessBanner } from "./StudioBg3dAssistantReadinessBanner";
 import { StudioBg3dEditorModal } from "./StudioBg3dEditorModal";
+import { deriveStudioBg3dReadinessState } from "./studio-bg3d-readiness-state";
 
 import type { StudioBg3dEditorModalHost } from "./StudioBg3dEditorModal";
 import type { StudioBg3dSceneOutlinerController } from "./studio-bg3d-scene-outliner-controller";
@@ -170,5 +174,61 @@ describe("BG3D modal compositor boundary", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     view.rerender(createElement(StudioBg3dEditorModal, { h: host({ open: false }) }));
     expect(view.container.childNodes).toHaveLength(0);
+  });
+
+  it("모바일 헤더를 1행(제목·간편/정밀·닫기)과 선택적 2행(상태·원고 복귀)의 2줄 이내로 구성한다", () => {
+    const unavailableReadiness = deriveStudioBg3dReadinessState({
+      enginePhase: "ready",
+      planStatus: "unavailable",
+      selectedBackend: "webgpu",
+      hasModelRenderer: false,
+      isRestoringScene: false,
+      planNotice: "사용 가능한 WebGPU 어댑터를 찾지 못했습니다.",
+    });
+    const view = renderModal(host());
+    const header = document.querySelector<HTMLElement>("[data-bg3d-workspace-header]");
+    expect(header?.getAttribute("data-bg3d-header-layout")).toBe("compact-two-row");
+    expect(header?.querySelector("[data-bg3d-header-title]")?.className).toContain("order-1");
+    expect(header?.querySelector("[data-bg3d-header-actions]")?.className).toContain("order-2");
+    expect(header?.querySelector("[data-bg3d-header-status-row]")).toBeNull();
+
+    view.rerender(createElement(StudioBg3dEditorModal, { h: host({ readinessState: unavailableReadiness }) }));
+    const statusRow = header?.querySelector<HTMLElement>("[data-bg3d-header-status-row]");
+    expect(statusRow?.className).toContain("order-3");
+    expect(statusRow?.className).toContain("w-full");
+    expect(screen.getByTestId("studio-bg3d-active-engine-badge").textContent).toContain("WebGPU 사용 불가");
+    expect(screen.getByTestId("studio-bg3d-header-return-2d").className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: /간편/ }).className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: /정밀/ }).className).toContain("min-h-11");
+  });
+
+  it("모바일에서 중앙 복구 패널이 떠 있을 때 하단 경고 배너 중복을 억제하고 전체 시트 복구 경로는 유지한다", () => {
+    const unavailableReadiness = deriveStudioBg3dReadinessState({
+      enginePhase: "ready",
+      planStatus: "unavailable",
+      selectedBackend: "webgpu",
+      hasModelRenderer: false,
+      isRestoringScene: false,
+    });
+    render(
+      createElement(StudioBg3dAssistantReadinessBanner, {
+        readiness: unavailableReadiness,
+        preference: "webgpu",
+        hasDraftScene: false,
+        onPreferenceChange: vi.fn(),
+        onReturnTo2d: vi.fn(),
+      }),
+    );
+    const errorBanner = screen.getByTestId("studio-bg3d-assistant-error");
+    expect(errorBanner.getAttribute("data-bg3d-readiness-compact")).toBe("true");
+    expect(errorBanner.getAttribute("data-bg3d-assistant-viewport-dedupe")).toBe("true");
+    expect(errorBanner.textContent).toContain("WebGPU 사용 불가");
+
+    const mobileCss = readFileSync(
+      resolve(process.cwd(), "apps/web/src/domains/creator/bg3d/studio-bg3d-mobile-workspace.css"),
+      "utf8",
+    );
+    expect(mobileCss).toContain('.scene-assistant:not([data-sheet-state="full"]):has([data-testid="studio-bg3d-engine-unavailable"])');
+    expect(mobileCss).toContain('[data-testid="studio-bg3d-assistant-error"][data-bg3d-assistant-viewport-dedupe="true"]');
   });
 });

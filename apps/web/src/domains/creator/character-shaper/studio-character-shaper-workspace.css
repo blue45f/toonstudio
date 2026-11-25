@@ -204,23 +204,44 @@
   min-height: 128px;
   grid-template-rows: minmax(0, 1fr) auto;
 }
-[data-character-shaper-layout="mobile"] [data-character-shaper-hud] > [aria-label="뷰포트 보기 설정"] {
+[data-character-shaper-layout="mobile"] [data-character-shaper-hud] > [data-character-shaper-hud-controls="true"] {
   display: flex;
   position: static;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.375rem;
   padding: 0.375rem;
   min-height: 56px;
+}
+[data-character-shaper-layout="mobile"] [data-character-hud-compact-bar="true"] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+[data-character-shaper-layout="mobile"] [data-character-hud-tools="true"][data-compact-tools-open="false"] {
+  display: none;
+}
+[data-character-shaper-layout="mobile"] [data-character-hud-tools="true"][data-compact-tools-open="true"] {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.25rem;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding: 0.375rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
-[data-character-shaper-layout="mobile"] [data-character-shaper-hud] > [role="status"] {
+[data-character-shaper-layout="mobile"] [data-character-shaper-hud] > [data-character-hud-status="true"] {
   top: 0.375rem;
   bottom: auto;
   max-width: calc(100% - 7rem);
   pointer-events: none;
 }
-[data-character-shaper-layout="mobile"] [data-character-shaper-hud] button {
+[data-character-shaper-layout="mobile"] [data-character-shaper-hud] button:not([aria-pressed="true"]):not([aria-expanded="true"]) {
   background-color: color-mix(in oklab, var(--color-panel) 94%, transparent);
   box-shadow: none;
 }
@@ -348,6 +369,7 @@
   position: static;
   background: var(--color-panel);
   border-top: 1px solid var(--color-line);
+  pointer-events: auto;
 }
 [data-character-shaper-layout="mobile"][data-studio-3d-keyboard-open="true"] [data-character-shaper-hud] { display: none; }
 [data-character-shaper-layout="mobile"][data-studio-3d-keyboard-open="true"] [data-character-shaper-viewport] { min-height: 72px; }
@@ -366,7 +388,7 @@
 }
 [data-character-paint-options][hidden],
 [data-character-shaper-mobile-tools][hidden] { display: none; }
-[data-character-shaper-view-tools="true"] [data-character-shaper-hud] > [role="status"] {
+[data-character-shaper-view-tools="true"] [data-character-shaper-hud] > [data-character-hud-status="true"] {
   position: static;
   display: block;
   max-width: none;
@@ -414,9 +436,23 @@
   flex-direction: column;
   align-items: stretch;
 }
-[data-character-shaper-landscape="true"] [data-character-shaper-view-tools] [data-character-shaper-hud] > [aria-label="뷰포트 보기 설정"] {
+[data-character-shaper-landscape="true"] [data-character-shaper-view-tools] [data-character-hud-tools-toggle="true"] {
+  display: none;
+}
+[data-character-shaper-landscape="true"] [data-character-shaper-view-tools] [data-character-hud-compact-bar="true"] {
+  justify-content: flex-start;
+}
+[data-character-shaper-landscape="true"] [data-character-shaper-view-tools] [data-character-hud-tools="true"][data-compact-tools-open] {
+  display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
+  gap: 0.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 [data-character-shaper-landscape="true"] [data-character-shaper-drawer] { left: auto; width: min(52%, 26rem); }
 [data-character-shaper-landscape="true"][data-character-shaper-paint="true"] [data-character-shaper-viewport="true"] {

@@ -340,7 +340,7 @@ export function StudioSaveSyncStatusCenter({
               onClick={closeAndRestoreFocus}
               ref={closeButtonRef}
               aria-label="저장 상태 닫기"
-              className="grid min-h-8 min-w-8 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+              className="grid min-h-11 min-w-11 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg"
             >
               <X className="size-4" aria-hidden />
             </button>
@@ -355,7 +355,7 @@ export function StudioSaveSyncStatusCenter({
                 type="button"
                 data-testid="studio-open-save-conflict-dialog"
                 onClick={() => setConflictDialogOpen(true)}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-warn/45 bg-raised px-2.5 text-[0.72rem] font-semibold text-warn hover:bg-accent-soft hover:text-accent pointer-coarse:min-h-11"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg border border-warn/45 bg-raised px-3 text-xs font-semibold text-warn hover:bg-accent-soft hover:text-accent"
               >
                 <TriangleAlert className="size-3.5" aria-hidden />
                 <span>{bi("저장본 충돌 복구", "Resolve save conflict")}</span>
@@ -365,7 +365,7 @@ export function StudioSaveSyncStatusCenter({
               <button
                 type="button"
                 onClick={onRetrySave}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-danger/40 bg-raised px-2.5 text-[0.72rem] font-semibold text-danger hover:bg-danger/10 pointer-coarse:min-h-11"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg border border-danger/40 bg-raised px-3 text-xs font-semibold text-danger hover:bg-danger/10"
               >
                 <RotateCcw className="size-3.5" aria-hidden />
                 <span>{r4CreatorStatusText("r4cat1.creator.saveSync.retryNow", "지금 다시 시도")}</span>
@@ -376,7 +376,7 @@ export function StudioSaveSyncStatusCenter({
                 type="button"
                 data-studio-download-local-backup="true"
                 onClick={onDownloadLocalBackup}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-accent/45 bg-accent-soft/20 px-2.5 text-[0.72rem] font-semibold text-accent hover:bg-accent-soft/35 pointer-coarse:min-h-11"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg border border-accent/45 bg-accent-soft/20 px-3 text-xs font-semibold text-accent hover:bg-accent-soft/35"
               >
                 <Download className="size-3.5" aria-hidden />
                 <span>{bi("로컬 백업 내려받기", "Download local backup")}</span>
@@ -386,7 +386,7 @@ export function StudioSaveSyncStatusCenter({
               <button
                 type="button"
                 onClick={onRecheckConnection}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-raised px-2.5 text-[0.72rem] font-semibold text-fg-2 hover:bg-accent-soft hover:text-accent pointer-coarse:min-h-11"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-raised px-3 text-xs font-semibold text-fg-2 hover:bg-accent-soft hover:text-accent"
               >
                 <RefreshCw className="size-3.5" aria-hidden />
                 <span>연결 다시 확인</span>
@@ -396,7 +396,7 @@ export function StudioSaveSyncStatusCenter({
               <button
                 type="button"
                 onClick={onForceCheckpoint}
-                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-raised px-2.5 text-[0.72rem] font-semibold text-fg-2 hover:bg-accent-soft hover:text-accent pointer-coarse:min-h-11"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-raised px-3 text-xs font-semibold text-fg-2 hover:bg-accent-soft hover:text-accent"
               >
                 <RefreshCw className="size-3.5" aria-hidden />
                 <span>복구 지점 만들기</span>
@@ -411,7 +411,7 @@ export function StudioSaveSyncStatusCenter({
           <div ref={setNoticeElement} data-studio-connection-notice-details="true" />
 
           <details className="mt-3 rounded-lg border border-line bg-panel/35">
-            <summary className="cursor-pointer px-2.5 py-2 text-[0.72rem] font-semibold text-fg-2">
+            <summary className="flex min-h-11 cursor-pointer items-center px-2.5 py-2 text-xs font-semibold text-fg-2">
               고급 진단 보기
             </summary>
             <div className="space-y-2 border-t border-line/60 px-2.5 py-2 text-[0.68rem] text-fg-3">
@@ -433,7 +433,7 @@ export function StudioSaveSyncStatusCenter({
               <button
                 type="button"
                 onClick={handleCopyDiagnostics}
-                className="mt-1 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-2.5 font-semibold text-fg-2 hover:bg-raised pointer-coarse:min-h-11"
+                className="mt-1 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 font-semibold text-fg-2 hover:bg-raised"
               >
                 <Copy className="size-3.5" aria-hidden />
                 <span aria-live="polite">
@@ -470,7 +470,7 @@ export function StudioSaveSyncStatusCenter({
         data-studio-save-matched-page-id={cutMatch?.matchedPageId ?? undefined}
         data-studio-save-matched-page-label={cutMatch?.matchedPageLabel ?? undefined}
         aria-describedby={noticeSummaryId}
-        className={drawing ? "studio-drawing-save-summary" : "flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium tabular-nums text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"}
+        className={drawing ? "studio-drawing-save-summary" : "flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card/90 px-3 py-1 text-xs font-medium tabular-nums text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"}
       >
         <SummaryIcon
           className={`size-3.5 ${drawing && drawingState === "saved" ? "text-success" : statusTone} ${view.kind === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`}

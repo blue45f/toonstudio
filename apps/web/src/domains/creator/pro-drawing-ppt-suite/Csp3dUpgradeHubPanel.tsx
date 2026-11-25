@@ -1,4 +1,4 @@
-import { Brush, Hand, Layers, Move, ShieldCheck, Sun, Wand2, Watch } from "lucide-react";
+import { Brush, Camera, Hand, Layers, Move, ShieldCheck, Sun, Sunrise, UserSquare2, Volume2, Wand2, Watch, Zap } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -43,6 +43,31 @@ const LazyNeuralUpscaleTexturesPanel = lazy(async () => {
   const m = await import("../neural-upscale-textures/StudioNeuralUpscaleTexturesPanel");
   return { default: m.StudioNeuralUpscaleTexturesPanel };
 });
+const LazyCinematographyDirectorPanel = lazy(async () => {
+  await import("../webtoon-cinematography-director");
+  const m = await import("../webtoon-cinematography-director/StudioCinematographyDirectorPanel");
+  return { default: m.StudioCinematographyDirectorPanel };
+});
+const LazyStudio3dLightingRigPanel = lazy(async () => {
+  await import("../studio-3d-lighting-rig");
+  const m = await import("../studio-3d-lighting-rig/Studio3dLightingRigPanel");
+  return { default: m.Studio3dLightingRigPanel };
+});
+const LazyStudioActionFxLabPanel = lazy(async () => {
+  await import("../action-fx-procedural-lab");
+  const m = await import("../action-fx-procedural-lab/StudioActionFxLabPanel");
+  return { default: m.StudioActionFxLabPanel };
+});
+const LazyStudioAtelierFoleyMixerPanel = lazy(async () => {
+  await import("../atelier-foley-mixer");
+  const m = await import("../atelier-foley-mixer/StudioAtelierFoleyMixerPanel");
+  return { default: m.StudioAtelierFoleyMixerPanel };
+});
+const LazyStudioCharacterSheetBiblePanel = lazy(async () => {
+  await import("../character-sheet-bible-studio");
+  const m = await import("../character-sheet-bible-studio/StudioCharacterSheetBiblePanel");
+  return { default: m.StudioCharacterSheetBiblePanel };
+});
 
 type Csp3dTabId =
   | "puppet"
@@ -52,7 +77,12 @@ type Csp3dTabId =
   | "commercialPro"
   | "charlabCsp"
   | "p3ColorLight"
-  | "neuralUpscale";
+  | "neuralUpscale"
+  | "cinematographyDir"
+  | "lightingRig3d"
+  | "actionFxLab"
+  | "foleyMixer"
+  | "charSheetBible";
 
 const CSP3D_TABS: readonly {
   readonly id: Csp3dTabId;
@@ -67,6 +97,11 @@ const CSP3D_TABS: readonly {
   { id: "charlabCsp", labelKo: "캐릭터·벡터·워치 큐 예제", labelEn: "Character · Vector · Watch Queue Examples" },
   { id: "p3ColorLight", labelKo: "광색역·CMYK 근사·조명 계산 예제", labelEn: "Wide Gamut · Approximate CMYK · Lighting Examples" },
   { id: "neuralUpscale", labelKo: "CPU 확대·절차 텍스처 예제", labelEn: "CPU Upscale · Procedural Texture Examples" },
+  { id: "cinematographyDir", labelKo: "3D 시네마토그래피·180도 법칙·세로 시선 유도", labelEn: "3D Cinematography · 180° Rule · Eye-Flow" },
+  { id: "lightingRig3d", labelKo: "서울 물리 하늘·3점 조명 릭·그림자 캐처", labelEn: "Seoul Physical Sky · 3-Point Rig · Shadow Catcher" },
+  { id: "actionFxLab", labelKo: "웹툰 6종 액션·마법진·로맨스 벡터 FX 랩", labelEn: "6-Preset Action & Romance Vector FX Lab" },
+  { id: "foleyMixer", labelKo: "화실 물리 사운드(Foley)·-24 LUFS 공간 음향 믹서", labelEn: "Atelier Physical Foley · -24 LUFS Acoustic Mixer" },
+  { id: "charSheetBible", labelKo: "캐릭터 설정집·표정 9궁도·의상 5슬롯 조판", labelEn: "Character Sheet Bible · 9-Expression · 5-Outfit" },
 ];
 
 const STUDIO_CRAFT_VISUAL_CARDS: readonly {
@@ -103,6 +138,16 @@ function Csp3dIcon({ id }: { readonly id: Csp3dTabId }) {
       return <Sun size={15} aria-hidden="true" />;
     case "neuralUpscale":
       return <Wand2 size={15} aria-hidden="true" />;
+    case "cinematographyDir":
+      return <Camera size={15} aria-hidden="true" />;
+    case "lightingRig3d":
+      return <Sunrise size={15} aria-hidden="true" />;
+    case "actionFxLab":
+      return <Zap size={15} aria-hidden="true" />;
+    case "foleyMixer":
+      return <Volume2 size={15} aria-hidden="true" />;
+    case "charSheetBible":
+      return <UserSquare2 size={15} aria-hidden="true" />;
   }
 }
 
@@ -159,6 +204,11 @@ export function Csp3dUpgradeHubPanel() {
           {active === "charlabCsp" ? <LazyCharlabCspSurpassPanel /> : null}
           {active === "p3ColorLight" ? <LazyP3ColorLightingPanel /> : null}
           {active === "neuralUpscale" ? <LazyNeuralUpscaleTexturesPanel /> : null}
+          {active === "cinematographyDir" ? <LazyCinematographyDirectorPanel /> : null}
+          {active === "lightingRig3d" ? <LazyStudio3dLightingRigPanel /> : null}
+          {active === "actionFxLab" ? <LazyStudioActionFxLabPanel /> : null}
+          {active === "foleyMixer" ? <LazyStudioAtelierFoleyMixerPanel /> : null}
+          {active === "charSheetBible" ? <LazyStudioCharacterSheetBiblePanel /> : null}
         </Suspense>
       </div>
 

@@ -313,23 +313,33 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
       }}
     >
       <div className="mx-auto flex h-full max-h-full max-w-[1800px] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
-        <header data-bg3d-workspace-header="true" className="flex flex-wrap shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2 sm:flex-nowrap sm:items-start sm:gap-3 sm:px-5 sm:py-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <StudioToolArtwork tool="environment" className="[--studio-tool-art-size:28px] sm:[--studio-tool-art-size:38px]" />
+        <header
+          data-bg3d-workspace-header="true"
+          data-bg3d-header-layout="compact-two-row"
+          className="flex shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-b border-line px-2.5 py-1.5 sm:flex-nowrap sm:items-center sm:gap-3 sm:px-5 sm:py-3"
+        >
+          <div
+            data-bg3d-header-title="true"
+            className="order-1 flex min-w-0 flex-1 items-center gap-2 sm:flex-initial sm:gap-2.5"
+          >
+            <StudioToolArtwork tool="environment" className="shrink-0 [--studio-tool-art-size:26px] sm:[--studio-tool-art-size:38px]" />
             <div className="min-w-0">
               <h2
                 id="studio-bg3d-dialog-title"
-                className="mt-0.5 truncate text-base font-bold tracking-tight text-fg sm:mt-1 sm:text-xl"
+                className="truncate text-sm font-bold tracking-tight text-fg sm:mt-0.5 sm:text-xl"
               >
                 {title}
               </h2>
-              <p id="studio-bg3d-dialog-description" className="mt-1 hidden line-clamp-1 text-xs text-fg-3 min-[480px]:block">
+              <p id="studio-bg3d-dialog-description" className="mt-0.5 hidden line-clamp-1 text-xs text-fg-3 sm:block">
                 {description}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:flex-nowrap sm:gap-2">
-            {h.readinessState ? (
+          {h.readinessState ? (
+            <div
+              data-bg3d-header-status-row="true"
+              className="order-3 flex w-full min-w-0 items-center justify-between gap-1.5 sm:order-2 sm:ml-auto sm:w-auto sm:shrink-0 sm:justify-end"
+            >
               <StudioBg3dReadinessBadge
                 readiness={h.readinessState}
                 lowQualityActive={Boolean(h.resourceRecovery?.lowQualityActive)}
@@ -337,7 +347,15 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
                 disableReturnTo2d={isCapturing || deletingModelId !== null}
                 onReturnTo2d={h.resourceRecovery?.returnTo2d ?? requestUserClose}
               />
-            ) : null}
+            </div>
+          ) : null}
+          <div
+            data-bg3d-header-actions="true"
+            className={studioBg3dClassNames(
+              "order-2 flex shrink-0 items-center gap-1.5 sm:order-3 sm:gap-2",
+              !h.readinessState && "sm:ml-auto",
+            )}
+          >
             <a
               href="/studio/3d/dcc/model"
               data-testid="bg3d-open-hybrid-dcc-link"
@@ -347,7 +365,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               정밀 모델러 (DCC)
             </a>
             <div
-              className="flex items-center rounded-lg border border-line bg-card p-0.5"
+              className="flex shrink-0 items-center rounded-lg border border-line bg-card p-0 sm:p-0.5"
               role="group"
               aria-label={translateCurrentStaticSourceText(
                 "domains.creator.bg3d.StudioBg3dEditorModal",
@@ -358,20 +376,20 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               <button
                 type="button"
                 aria-pressed={experienceMode === "simple"}
-                className="min-h-11 rounded-md px-2.5 text-xs font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-3"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs font-bold whitespace-nowrap text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:min-h-9 sm:min-w-0 sm:px-3"
                 onClick={() => setExperienceMode("simple")}
               >
-                <Sparkles size={12} className="mr-1 hidden min-[360px]:inline" aria-hidden />
+                <Sparkles size={12} className="mr-1 hidden sm:inline" aria-hidden />
                 <span className="hidden sm:inline">장면 도우미</span>
                 <span className="sm:hidden">간편</span>
               </button>
               <button
                 type="button"
                 aria-pressed={experienceMode === "pro"}
-                className="min-h-11 rounded-md px-2.5 text-xs font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-3"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs font-bold whitespace-nowrap text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:min-h-9 sm:min-w-0 sm:px-3"
                 onClick={() => setExperienceMode("pro")}
               >
-                <SlidersHorizontal size={12} className="mr-1 hidden min-[360px]:inline" aria-hidden />
+                <SlidersHorizontal size={12} className="mr-1 hidden sm:inline" aria-hidden />
                 <span className="hidden sm:inline">정밀 편집</span>
                 <span className="sm:hidden">정밀</span>
               </button>

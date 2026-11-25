@@ -652,4 +652,30 @@ describe("drawing save purpose screen", () => {
     );
     expect(screen.queryByRole("button", { name: "로컬 백업 내려받기" })).toBeNull();
   });
+
+  it("저장 상태 트리거와 닫기·복구 버튼에 44px(min-h-11) 터치 영역을 기본 적용한다", () => {
+    render(
+      <StudioSaveSyncStatusCenter
+        journal={createEmptyOperationJournal("touch-44")}
+        statusOverride={{
+          documentId: "touch-44",
+          localDurable: false,
+          pendingOperationsCount: 0,
+          lastSavedAt: 0,
+          lastCheckpointAt: 0,
+          cloudSyncStatus: "synced",
+          summaryText: "",
+        }}
+        onRetrySave={vi.fn()}
+        onForceCheckpoint={vi.fn()}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: /저장 상태 열기/u });
+    expect(trigger.className).toContain("min-h-11");
+    expect(trigger.className).not.toContain("min-h-8");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "저장 상태 닫기" }).className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: "지금 다시 시도" }).className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: "복구 지점 만들기" }).className).toContain("min-h-11");
+  });
 });

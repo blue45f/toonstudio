@@ -6,6 +6,10 @@ const source = readFileSync(
   new URL("./StudioFrontDoorPages.tsx", import.meta.url),
   "utf8",
 );
+const illustratedSurfaceCss = readFileSync(
+  new URL("./studio-illustrated-project-surfaces.css", import.meta.url),
+  "utf8",
+);
 const projectHome = readFileSync(
   new URL("./StudioProjectLibraryManagementPage.tsx", import.meta.url),
   "utf8",
@@ -107,5 +111,26 @@ describe("Studio front door UX contract", () => {
     expect(source).toContain("export function StudioAssetsPage");
     // WCAG 2.5.8 / 터치 타깃: 브레드크럼 링크가 16px로 축소되지 않고 44×44px 히트 영역을 보장한다.
     expect(source).toContain("min-h-11 min-w-11");
+  });
+
+  it("polishes /studio/import breadcrumb and 3 import cards without raw colors or transition-all", () => {
+    // 원시 색 토큰 및 transition-all 0건
+    expect(source).not.toMatch(/\btransition-all\b/u);
+    expect(source).not.toMatch(
+      /\b(?:bg|text|border|ring|from|to|via|shadow|accent)-(?:white|black|slate|amber|rose|sky|emerald|violet|fuchsia|red|green|blue|yellow|orange|indigo|purple|pink|cyan|teal|zinc|gray|neutral)(?:-[0-9]{2,3})?(?:\/[0-9]+)?|\b(?:bg|text|border)-\[#[0-9a-fA-F]{3,8}\]/u,
+    );
+
+    // 브레드크럼 span[aria-current="page"]에 왼쪽 주황 커서처럼 보이는 inset 2px 바가 붙지 않도록 링크/버튼에만 한정한다.
+    expect(illustratedSurfaceCss).toContain('a[aria-current="page"], button[aria-current="page"]');
+    expect(illustratedSurfaceCss).not.toMatch(/:where\(\[aria-current="page"\]/u);
+    expect(source).toContain('data-studio-import-breadcrumb="true"');
+    expect(source).toContain("select-none text-fg-3/60");
+    expect(source).toContain("focus-visible:outline-accent");
+
+    // 가져오기 카드 3종 촉각 hover/press · 44px 터치 · 한글 어절 줄바꿈
+    expect(source).toContain('data-studio-import-card="true"');
+    expect(source).toContain("transition-[background-color,border-color,color,transform] duration-150");
+    expect(source).toContain("active:scale-[0.99]");
+    expect(source).toContain("[word-break:keep-all]");
   });
 });

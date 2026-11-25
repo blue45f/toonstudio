@@ -198,7 +198,7 @@ export function StudioSaveStatusBar({
           type="button"
           onClick={onRetrySave}
           data-studio-inline-save-retry="true"
-          className="flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 text-[0.75rem] font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <RotateCcw className="size-3.5" aria-hidden="true" />
           {bi("다시 시도", "Retry")}
@@ -208,7 +208,7 @@ export function StudioSaveStatusBar({
         <button
           type="button"
           onClick={onRecheckConnection}
-          className="flex min-h-8 items-center gap-1 rounded-full border border-line bg-card px-2.5 text-[0.75rem] font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <RotateCcw className="size-3.5" aria-hidden="true" />
           {bi("연결 다시 확인", "Check connection")}

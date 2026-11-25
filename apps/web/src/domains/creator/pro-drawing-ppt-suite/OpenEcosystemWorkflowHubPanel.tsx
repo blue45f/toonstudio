@@ -1,4 +1,4 @@
-import { BookOpen, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Calculator, ClipboardCheck, Compass, Cpu, Database, Gauge, Globe, Link2, PackageCheck, Palette, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -68,6 +68,41 @@ const LazyStudioAiLatentStoryboardPanel = lazy(async () => {
   const m = await import("../ai-latent-storyboard/StudioAiLatentStoryboardPanel");
   return { default: m.StudioAiLatentStoryboardPanel };
 });
+const LazyStudioFederatedLoraStreamPanel = lazy(async () => {
+  await import("../federated-style-lora");
+  const m = await import("../federated-style-lora/StudioFederatedLoraStreamPanel");
+  return { default: m.StudioFederatedLoraStreamPanel };
+});
+const LazyStudioCreatorMonetizationPanel = lazy(async () => {
+  await import("../creator-monetization-planner");
+  const m = await import("../creator-monetization-planner/StudioCreatorMonetizationPanel");
+  return { default: m.StudioCreatorMonetizationPanel };
+});
+const LazyStudioOfflineResiliencePanel = lazy(async () => {
+  await import("../offline-crdt-resilience");
+  const m = await import("../offline-crdt-resilience/StudioOfflineResiliencePanel");
+  return { default: m.StudioOfflineResiliencePanel };
+});
+const LazyStudioPerfDoctorPanel = lazy(async () => {
+  await import("../studio-perf-doctor");
+  const m = await import("../studio-perf-doctor/StudioPerfDoctorPanel");
+  return { default: m.StudioPerfDoctorPanel };
+});
+const LazyStudioAtelierCraftLauncherPanel = lazy(async () => {
+  await import("../atelier-craft-launcher");
+  const m = await import("../atelier-craft-launcher/StudioAtelierCraftLauncherPanel");
+  return { default: m.StudioAtelierCraftLauncherPanel };
+});
+const LazyStudioAssistantHandoffKitPanel = lazy(async () => {
+  await import("../assistant-handoff-qa-kit");
+  const m = await import("../assistant-handoff-qa-kit/StudioAssistantHandoffKitPanel");
+  return { default: m.StudioAssistantHandoffKitPanel };
+});
+const LazyStudioEpisodePacingThumbnailPanel = lazy(async () => {
+  await import("../episode-pacing-thumbnail-lab");
+  const m = await import("../episode-pacing-thumbnail-lab/StudioEpisodePacingThumbnailPanel");
+  return { default: m.StudioEpisodePacingThumbnailPanel };
+});
 
 type EcosystemTabId =
   | "workflowDag"
@@ -82,7 +117,30 @@ type EcosystemTabId =
   | "styleShaderPack"
   | "episodeColorScript"
   | "webcodecsOpfs"
-  | "aiLatentConti";
+  | "aiLatentConti"
+  | "federatedLora"
+  | "monetizationPlan"
+  | "offlineResilience"
+  | "perfDoctor"
+  | "craftLauncher"
+  | "assistHandoff"
+  | "pacingThumbLab";
+
+const CINEMA_ERGO_VISUAL_CARDS: readonly {
+  readonly id: string;
+  readonly src: string;
+  readonly titleKo: string;
+  readonly titleEn: string;
+}[] = [
+  { id: "balloonInk", src: "/assets/atelier/cinema-ergo/cinema-balloon-ink.webp", titleKo: "광학 말풍선·SFX 잉킹", titleEn: "Optical Balloon & SFX Inking" },
+  { id: "lensGolden", src: "/assets/atelier/cinema-ergo/cinema-lens-golden.webp", titleKo: "3D 시네마 렌즈·황금나선", titleEn: "Cinema Lenses & Golden Spiral" },
+  { id: "colorScript", src: "/assets/atelier/cinema-ergo/cinema-color-script.webp", titleKo: "4막 감정 컬러 스크립트", titleEn: "4-Act Color Script" },
+  { id: "pigmentSwatches", src: "/assets/atelier/cinema-ergo/cinema-pigment-swatches.webp", titleKo: "LMS 색각안전 안료 스와치", titleEn: "LMS Accessible Swatches" },
+  { id: "ambidextrousDesk", src: "/assets/atelier/cinema-ergo/ergo-ambidextrous-desk.webp", titleKo: "왼손·양손 인체공학 데스크", titleEn: "Ambidextrous Studio Desk" },
+  { id: "localVault", src: "/assets/atelier/cinema-ergo/ergo-local-vault.webp", titleKo: "온디바이스 로컬 LoRA 금고", titleEn: "Local Privacy LoRA Vault" },
+  { id: "chronometer120hz", src: "/assets/atelier/cinema-ergo/ergo-120hz-chronometer.webp", titleKo: "120Hz 정밀 프레임 닥터", titleEn: "120Hz Precision Profiler" },
+  { id: "materialFolio", src: "/assets/atelier/cinema-ergo/ergo-material-folio.webp", titleKo: "한지·린넨·대리석 절차 재질", titleEn: "Seamless Material Folio" },
+];
 
 const ECOSYSTEM_TABS: readonly {
   readonly id: EcosystemTabId;
@@ -102,6 +160,13 @@ const ECOSYSTEM_TABS: readonly {
   { id: "episodeColorScript", labelKo: "60컷 OKLCH 컬러스크립트 조화", labelEn: "60-Cut OKLCH Color Script" },
   { id: "webcodecsOpfs", labelKo: "코덱 지원 점검·희소 타일·OPFS 버전", labelEn: "Codec Support Probe · Sparse Tile · OPFS VCS" },
   { id: "aiLatentConti", labelKo: "색 변환 예제·대본 분석·브러시 추천", labelEn: "Color Example · Script Parser · Brush Suggestions" },
+  { id: "federatedLora", labelKo: "온디바이스 LoRA 연합학습·시맨틱 LOD", labelEn: "On-Device Federated LoRA · Semantic LOD" },
+  { id: "monetizationPlan", labelKo: "유료전환·굿즈 BEP·3.3% 정산·번아웃", labelEn: "Paywall Funnel · Goods BEP · Burnout" },
+  { id: "offlineResilience", labelKo: "오프라인 CRDT·OPFS 패리티·멀티탭 잠금", labelEn: "Offline CRDT · OPFS Parity · Tab Lease" },
+  { id: "perfDoctor", labelKo: "120Hz 프레임타임·VRAM·OPFS 닥터", labelEn: "120Hz Frame Profiler · VRAM · OPFS Doctor" },
+  { id: "craftLauncher", labelKo: "8대 아틀리에 프로 도구 퀵 런처", labelEn: "8-Station Atelier Craft Launcher" },
+  { id: "assistHandoff", labelKo: "어시스턴트 분업 인수인계·레이어 검수·정산 추정", labelEn: "Assistant Handoff · Layer QA · Payout Estimate" },
+  { id: "pacingThumbLab", labelKo: "초반 3컷 대사 벽·썸네일 A/B 규칙 점검", labelEn: "Opening Hook · Dialogue Wall · Thumbnail A/B" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
@@ -132,6 +197,20 @@ function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
       return <Workflow size={15} aria-hidden="true" />;
     case "aiLatentConti":
       return <Wand2 size={15} aria-hidden="true" />;
+    case "federatedLora":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "monetizationPlan":
+      return <Calculator size={15} aria-hidden="true" />;
+    case "offlineResilience":
+      return <Database size={15} aria-hidden="true" />;
+    case "perfDoctor":
+      return <Activity size={15} aria-hidden="true" />;
+    case "craftLauncher":
+      return <Compass size={15} aria-hidden="true" />;
+    case "assistHandoff":
+      return <ClipboardCheck size={15} aria-hidden="true" />;
+    case "pacingThumbLab":
+      return <BarChart3 size={15} aria-hidden="true" />;
   }
 }
 
@@ -193,8 +272,42 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "episodeColorScript" ? <LazyStudioEpisodeColorScriptPanel /> : null}
           {active === "webcodecsOpfs" ? <LazyStudioWebcodecsOpfsPanel /> : null}
           {active === "aiLatentConti" ? <LazyStudioAiLatentStoryboardPanel /> : null}
+          {active === "federatedLora" ? <LazyStudioFederatedLoraStreamPanel /> : null}
+          {active === "monetizationPlan" ? <LazyStudioCreatorMonetizationPanel /> : null}
+          {active === "offlineResilience" ? <LazyStudioOfflineResiliencePanel /> : null}
+          {active === "perfDoctor" ? <LazyStudioPerfDoctorPanel /> : null}
+          {active === "craftLauncher" ? <LazyStudioAtelierCraftLauncherPanel /> : null}
+          {active === "assistHandoff" ? <LazyStudioAssistantHandoffKitPanel /> : null}
+          {active === "pacingThumbLab" ? <LazyStudioEpisodePacingThumbnailPanel /> : null}
         </Suspense>
       </div>
+
+      <details className="rounded-xl border border-line bg-panel p-2.5">
+        <summary className="cursor-pointer select-none text-xs font-semibold text-fg [word-break:keep-all]">
+          {isEn
+            ? `Cinematography, Ergonomics & Precision Atelier Cards (${CINEMA_ERGO_VISUAL_CARDS.length})`
+            : `시네마토그래피·인체공학·정밀 아틀리에 비주얼 카드 (${CINEMA_ERGO_VISUAL_CARDS.length}종)`}
+        </summary>
+        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {CINEMA_ERGO_VISUAL_CARDS.map((card) => (
+            <figure
+              key={card.id}
+              className="overflow-hidden rounded-lg border border-line bg-card"
+            >
+              <img
+                src={card.src}
+                alt={isEn ? card.titleEn : card.titleKo}
+                loading="lazy"
+                decoding="async"
+                className="aspect-square w-full object-cover outline-1 -outline-offset-1 outline-line"
+              />
+              <figcaption className="px-2 py-1.5 text-[11px] font-medium text-fg-2 [word-break:keep-all]">
+                {isEn ? card.titleEn : card.titleKo}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </details>
     </section>
   );
 }

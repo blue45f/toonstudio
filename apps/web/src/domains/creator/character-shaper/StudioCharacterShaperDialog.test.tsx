@@ -860,14 +860,47 @@ describe("터치 첫 사용 조작 안내", () => {
   it("세로 모바일에서 처음 한 번 실제 제스처만 안내하고, 닫은 뒤 도구 버튼으로 다시 연다", () => {
     renderDialog({ width: 390, coarse: true });
     const guide = screen.getByRole("region", { name: "화면 조작 안내" });
+    expect(guide.getAttribute("data-character-gesture-guide-layout")).toBe("slim-bar");
     expect(guide.textContent).toContain("한 손가락으로 끌기");
     expect(guide.textContent).toContain("두 손가락 벌리기·오므리기");
     expect(guide.textContent).toContain("버튼 길게 누르기");
-    fireEvent.click(screen.getByRole("button", { name: "확인" }));
+    const confirm = screen.getByRole("button", { name: "확인" });
+    expect(confirm.classList.contains("min-h-11")).toBe(true);
+    expect(confirm.classList.contains("min-w-11")).toBe(true);
+    fireEvent.click(confirm);
     expect(screen.queryByRole("region", { name: "화면 조작 안내" })).toBeNull();
     expect(localStorage.getItem(CHARACTER_SHAPER_GESTURE_GUIDE_KEY)).toBe("seen");
     fireEvent.click(screen.getByRole("button", { name: "화면 조작 안내 보기" }));
     expect(screen.getByRole("region", { name: "화면 조작 안내" })).toBeTruthy();
+  });
+
+  it("모바일 뷰포트 HUD 빠른 도구는 기본 접힘 상태이며 토글로 펼치고 접는다", () => {
+    localStorage.setItem(CHARACTER_SHAPER_GESTURE_GUIDE_KEY, "seen");
+    const mobile = renderDialog({ width: 390, coarse: true });
+    const toggle = screen.getByTestId("shaper-hud-tools-toggle");
+    const toolsPanel = document.querySelector<HTMLElement>('[data-character-hud-tools="true"]');
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.classList.contains("min-h-11")).toBe(true);
+    expect(toolsPanel?.id).toBe(toggle.getAttribute("aria-controls"));
+    expect(toolsPanel?.getAttribute("data-compact-tools-open")).toBe("false");
+    expect(toolsPanel?.classList.contains("hidden")).toBe(true);
+    expect(screen.getByRole("button", { name: "화면 조작 안내 보기" })).toBeTruthy();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toolsPanel?.getAttribute("data-compact-tools-open")).toBe("true");
+    expect(toolsPanel?.classList.contains("hidden")).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "화면 조작 안내 보기" }));
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toolsPanel?.getAttribute("data-compact-tools-open")).toBe("false");
+    expect(screen.getByRole("region", { name: "화면 조작 안내" })).toBeTruthy();
+
+    mobile.unmount();
+    cleanup();
+    renderDialog({ width: 1440 });
+    expect(screen.queryByTestId("shaper-hud-tools-toggle")).toBeNull();
+    expect(document.querySelector('[data-character-hud-tools="true"]')?.getAttribute("data-compact-tools-open")).toBe("true");
   });
 
   it("Escape는 편집기를 닫기 전에 안내부터 닫는다", () => {

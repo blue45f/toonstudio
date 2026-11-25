@@ -6,8 +6,8 @@
  * Bottom-left: a status pill (model status / busy reason / hold-to-compare). Every control is a
  * labelled 44px button; the wrapper is pointer-transparent so orbiting the model keeps working.
  */
-import { CircleQuestionMark, Eye, EyeOff, LoaderCircle, Maximize2, PenLine, RotateCw, SunMedium, ZoomIn, ZoomOut } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { CircleQuestionMark, Eye, EyeOff, LoaderCircle, Maximize2, PenLine, RotateCw, SlidersHorizontal, SunMedium, ZoomIn, ZoomOut } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { StudioHudPill } from "../studio-chrome-ui";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
@@ -79,6 +79,8 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
   const settings = useCharacterShaperSessionSettings();
   const locale = useI18n((state) => state.lang);
   const bt = useBilingual("CharacterShaperViewportHud");
+  const toolsPanelId = useId();
+  const [compactToolsOpen, setCompactToolsOpen] = useState(false);
   const [ltOpen, setLtOpen] = useState(false);
   const [ltApplyError, setLtApplyError] = useState<string | null>(null);
   const [ltSource, setLtSource] = useState<StudioLtConvertDialogSource>({
@@ -122,6 +124,7 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
     setLtSource({ status: "idle", imageData: null, error: null, label: "" });
   };
   const openLtDialog = () => {
+    setCompactToolsOpen(false);
     request.current += 1;
     setLtApplyError(null);
     setLtOpen(true);
@@ -182,132 +185,186 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, o
       setLtApplyError(null);
     } catch (cause) { setLtApplyError(cause instanceof Error ? cause.message : r3c04StatusText("studio.r3c04Status.shaper.outputDock.pngSaveFailed", "PNG를 저장하지 못했습니다.")); }
   };
+  const toolButtons = (
+    <>
+      <button
+        type="button"
+        aria-pressed={turntable}
+        aria-keyshortcuts="T"
+        disabled={paintMode || cameraLocked || !modelReady}
+        title={
+          paintMode
+            ? "표면 드로잉 중에는 턴테이블을 잠급니다."
+            : turntable
+              ? "턴테이블 정지 (T)"
+              : "턴테이블 회전 (T)"
+        }
+        aria-label={turntable ? "턴테이블 정지" : "턴테이블 회전"}
+        onClick={() => h.setTurntable((value: boolean) => !value)}
+        className={cn(HUD_BUTTON, turntable && HUD_BUTTON_ACTIVE)}
+      >
+        <RotateCw
+          size={17}
+          aria-hidden
+          className={turntable ? "animate-spin [animation-duration:3s] motion-reduce:animate-none" : ""}
+        />
+        <HudLabel>{bt("회전", "Spin")}</HudLabel>
+      </button>
+      <button
+        type="button"
+        aria-label={`조명 톤 바꾸기 (현재 ${lightingLabel})`}
+        title={`조명 톤: ${lightingLabel} → ${characterLightingToneLabel(nextCharacterLightingTone(lightingTone))}`}
+        disabled={!modelReady}
+        onClick={() => h.setLightingTone(nextCharacterLightingTone(lightingTone))}
+        className={cn(HUD_BUTTON, "relative")}
+      >
+        <SunMedium size={17} aria-hidden />
+        <span aria-hidden data-character-hud-tone="true" className="absolute inset-x-0 bottom-0.5 text-center text-[0.55rem] font-semibold leading-none">
+          {lightingLabel}
+        </span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={transparent}
+        aria-label={transparent ? "투명 배경 끄기" : "투명 배경 켜기"}
+        title={transparent ? "투명 배경 · 캔버스에 추가하면 캐릭터만 남습니다" : "배경색 포함 · 투명 배경으로 바꾸려면 누르세요"}
+        onClick={() => h.setTransparentBackground(!transparent)}
+        className={cn(
+          HUD_BUTTON,
+          transparent &&
+            "border-accent/60 text-accent [background-image:linear-gradient(45deg,oklch(0.75_0.01_80/0.22)_25%,transparent_25%),linear-gradient(-45deg,oklch(0.75_0.01_80/0.22)_25%,transparent_25%),linear-gradient(45deg,transparent_75%,oklch(0.75_0.01_80/0.22)_75%),linear-gradient(-45deg,transparent_75%,oklch(0.75_0.01_80/0.22)_75%)] [background-position:0_0,0_6px,6px_-6px,-6px_0] [background-size:12px_12px]",
+        )}
+      >
+        {transparent ? <Eye size={17} aria-hidden /> : <EyeOff size={17} aria-hidden />}
+        <HudLabel>{bt("배경", "BG")}</HudLabel>
+      </button>
+      <div className={cn("my-0.5 h-px w-full bg-line/70", compact && "hidden")} aria-hidden />
+      <button
+        type="button"
+        aria-label="확대"
+        title="확대"
+        disabled={cameraLocked || !modelReady}
+        onClick={() => h.zoomViewport(0.82)}
+        className={HUD_BUTTON}
+      >
+        <ZoomIn size={17} aria-hidden />
+        <HudLabel>{bt("확대", "Zoom in")}</HudLabel>
+      </button>
+      <button
+        type="button"
+        aria-label="축소"
+        title="축소"
+        disabled={cameraLocked || !modelReady}
+        onClick={() => h.zoomViewport(1.22)}
+        className={HUD_BUTTON}
+      >
+        <ZoomOut size={17} aria-hidden />
+        <HudLabel>{bt("축소", "Zoom out")}</HudLabel>
+      </button>
+      <button
+        type="button"
+        aria-label="시점 초기화"
+        title="시점 초기화"
+        disabled={cameraLocked || !modelReady}
+        onClick={() => h.handleViewReset()}
+        className={HUD_BUTTON}
+      >
+        <Maximize2 size={17} aria-hidden />
+        <HudLabel>{bt("초기화", "Reset")}</HudLabel>
+      </button>
+      <div className={cn("my-0.5 h-px w-full bg-line/70", compact && "hidden")} aria-hidden />
+      <button
+        type="button"
+        aria-label="LT 변환"
+        title="LT 변환 · 3D 뷰를 선화 + 톤 레이어로 분리"
+        disabled={!modelReady}
+        onClick={openLtDialog}
+        className={HUD_BUTTON}
+      >
+        <PenLine size={17} aria-hidden />
+        <HudLabel>{bt("LT 변환", "LT")}</HudLabel>
+      </button>
+    </>
+  );
+
   return (
     <div
       data-character-shaper-hud="true"
       className="pointer-events-none absolute inset-0 z-20"
     >
       <div
-        role="group"
-        aria-label="뷰포트 보기 설정"
+        data-character-shaper-hud-controls="true"
+        data-compact-tools-open={compact ? (compactToolsOpen ? "true" : "false") : "true"}
         className={cn(
-          "pointer-events-auto absolute right-2 gap-1.5",
-          compact ? "top-2 grid grid-cols-2" : "top-2 flex flex-col",
+          "pointer-events-auto absolute right-2 top-2 flex flex-col gap-1.5",
+          compact && "items-end",
         )}
       >
-        <button
-          type="button"
-          aria-pressed={turntable}
-          aria-keyshortcuts="T"
-          disabled={paintMode || cameraLocked || !modelReady}
-          title={
-            paintMode
-              ? "표면 드로잉 중에는 턴테이블을 잠급니다."
-              : turntable
-                ? "턴테이블 정지 (T)"
-                : "턴테이블 회전 (T)"
-          }
-          aria-label={turntable ? "턴테이블 정지" : "턴테이블 회전"}
-          onClick={() => h.setTurntable((value: boolean) => !value)}
-          className={cn(HUD_BUTTON, turntable && HUD_BUTTON_ACTIVE)}
-        >
-          <RotateCw
-            size={17}
-            aria-hidden
-            className={turntable ? "animate-spin [animation-duration:3s] motion-reduce:animate-none" : ""}
-          />
-          <HudLabel>{bt("회전", "Spin")}</HudLabel>
-        </button>
-        <button
-          type="button"
-          aria-label={`조명 톤 바꾸기 (현재 ${lightingLabel})`}
-          title={`조명 톤: ${lightingLabel} → ${characterLightingToneLabel(nextCharacterLightingTone(lightingTone))}`}
-          disabled={!modelReady}
-          onClick={() => h.setLightingTone(nextCharacterLightingTone(lightingTone))}
-          className={cn(HUD_BUTTON, "relative")}
-        >
-          <SunMedium size={17} aria-hidden />
-          <span aria-hidden data-character-hud-tone="true" className="absolute inset-x-0 bottom-0.5 text-center text-[0.55rem] font-semibold leading-none">
-            {lightingLabel}
-          </span>
-        </button>
-        <button
-          type="button"
-          aria-pressed={transparent}
-          aria-label={transparent ? "투명 배경 끄기" : "투명 배경 켜기"}
-          title={transparent ? "투명 배경 · 캔버스에 추가하면 캐릭터만 남습니다" : "배경색 포함 · 투명 배경으로 바꾸려면 누르세요"}
-          onClick={() => h.setTransparentBackground(!transparent)}
+        {compact ? (
+          <div
+            role="group"
+            aria-label="뷰포트 보기 설정"
+            data-character-hud-compact-bar="true"
+            className="flex items-center justify-end gap-1.5"
+          >
+            <button
+              type="button"
+              data-testid="shaper-hud-tools-toggle"
+              data-character-hud-tools-toggle="true"
+              aria-expanded={compactToolsOpen}
+              aria-controls={toolsPanelId}
+              aria-label={compactToolsOpen ? bt("보기 도구 접기", "Hide view tools") : bt("보기 도구 펼치기", "Show view tools")}
+              title={compactToolsOpen ? bt("보기 도구 접기", "Hide view tools") : bt("보기 도구 펼치기", "Show view tools")}
+              onClick={() => setCompactToolsOpen((open) => !open)}
+              className={cn(
+                "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-line/70 bg-panel/90 px-3 text-xs font-semibold text-fg-2 shadow-sm backdrop-blur [word-break:keep-all]",
+                "transition-colors duration-150 hover:bg-accent-soft hover:text-accent motion-reduce:transition-none",
+                STUDIO_FOCUS_RING,
+                compactToolsOpen && HUD_BUTTON_ACTIVE,
+              )}
+            >
+              <SlidersHorizontal size={15} aria-hidden />
+              <span>{bt("보기 도구", "View tools")}</span>
+            </button>
+            {onShowGuide ? (
+              <button
+                type="button"
+                data-character-gesture-guide-trigger="true"
+                aria-label={bt("화면 조작 안내 보기", "Show touch controls")}
+                title={bt("화면 조작 안내", "Touch controls")}
+                onClick={() => {
+                  setCompactToolsOpen(false);
+                  onShowGuide();
+                }}
+                className={HUD_BUTTON}
+              >
+                <CircleQuestionMark size={17} aria-hidden />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        <div
+          id={toolsPanelId}
+          role="group"
+          aria-label={compact ? bt("뷰포트 빠른 도구", "Viewport quick tools") : "뷰포트 보기 설정"}
+          data-character-hud-tools="true"
+          data-compact-tools-open={compact ? (compactToolsOpen ? "true" : "false") : "true"}
           className={cn(
-            HUD_BUTTON,
-            transparent &&
-              "border-accent/60 text-accent [background-image:linear-gradient(45deg,oklch(0.75_0.01_80/0.22)_25%,transparent_25%),linear-gradient(-45deg,oklch(0.75_0.01_80/0.22)_25%,transparent_25%),linear-gradient(45deg,transparent_75%,oklch(0.75_0.01_80/0.22)_75%),linear-gradient(-45deg,transparent_75%,oklch(0.75_0.01_80/0.22)_75%)] [background-position:0_0,0_6px,6px_-6px,-6px_0] [background-size:12px_12px]",
+            compact
+              ? compactToolsOpen
+                ? "grid grid-cols-2 gap-1.5 rounded-2xl border border-line-strong/80 bg-panel/95 p-1.5 shadow-lg backdrop-blur"
+                : "hidden"
+              : "flex flex-col gap-1.5",
           )}
         >
-          {transparent ? <Eye size={17} aria-hidden /> : <EyeOff size={17} aria-hidden />}
-          <HudLabel>{bt("배경", "BG")}</HudLabel>
-        </button>
-        <div className={cn("my-0.5 h-px w-full bg-line/70", compact && "hidden")} aria-hidden />
-        <button
-          type="button"
-          aria-label="확대"
-          title="확대"
-          disabled={cameraLocked || !modelReady}
-          onClick={() => h.zoomViewport(0.82)}
-          className={HUD_BUTTON}
-        >
-          <ZoomIn size={17} aria-hidden />
-          <HudLabel>{bt("확대", "Zoom in")}</HudLabel>
-        </button>
-        <button
-          type="button"
-          aria-label="축소"
-          title="축소"
-          disabled={cameraLocked || !modelReady}
-          onClick={() => h.zoomViewport(1.22)}
-          className={HUD_BUTTON}
-        >
-          <ZoomOut size={17} aria-hidden />
-          <HudLabel>{bt("축소", "Zoom out")}</HudLabel>
-        </button>
-        <button
-          type="button"
-          aria-label="시점 초기화"
-          title="시점 초기화"
-          disabled={cameraLocked || !modelReady}
-          onClick={() => h.handleViewReset()}
-          className={HUD_BUTTON}
-        >
-          <Maximize2 size={17} aria-hidden />
-          <HudLabel>{bt("초기화", "Reset")}</HudLabel>
-        </button>
-        <div className={cn("my-0.5 h-px w-full bg-line/70", compact && "hidden")} aria-hidden />
-        <button
-          type="button"
-          aria-label="LT 변환"
-          title="LT 변환 · 3D 뷰를 선화 + 톤 레이어로 분리"
-          disabled={!modelReady}
-          onClick={openLtDialog}
-          className={HUD_BUTTON}
-        >
-          <PenLine size={17} aria-hidden />
-          <HudLabel>{bt("LT 변환", "LT")}</HudLabel>
-        </button>
-        {compact && onShowGuide ? (
-          <button
-            type="button"
-            data-character-gesture-guide-trigger="true"
-            aria-label={bt("화면 조작 안내 보기", "Show touch controls")}
-            title={bt("화면 조작 안내", "Touch controls")}
-            onClick={onShowGuide}
-            className={HUD_BUTTON}
-          >
-            <CircleQuestionMark size={17} aria-hidden />
-            <HudLabel>{bt("안내", "Help")}</HudLabel>
-          </button>
-        ) : null}
+          {toolButtons}
+        </div>
       </div>
 
-      <div className="pointer-events-auto absolute bottom-2 left-2 flex max-w-[75%] flex-wrap items-center gap-1.5">
+      <div
+        data-character-hud-status="true"
+        className="pointer-events-auto absolute bottom-2 left-2 flex max-w-[75%] flex-wrap items-center gap-1.5"
+      >
         <div role="status" className="min-w-0 max-w-full">
           <StudioHudPill
             accent={pill.accent}
