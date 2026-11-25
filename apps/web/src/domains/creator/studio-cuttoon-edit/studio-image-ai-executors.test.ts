@@ -1,17 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { STUDIO_AI_DEFAULT_SETTINGS } from "../ai/studio-ai-settings";
-import { generateBackgroundImage } from "../ai/studio-ai-client-lazy";
+import { colorizeLineArt, generateBackgroundImage, suggestColorPalette } from "../ai/studio-ai-client-lazy";
+import { createColorizeCandidateSession } from "../ai/studio-ai-colorize-candidates";
+import type { StudioAiGeneratedAssetProvenance } from "../ai/studio-ai-generated-asset-model";
 import type { El } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
 import { createStudioImageAiExecutors } from "./studio-image-ai-executors";
+import { cancelStudioAiRequest, runStudioExecuteSuggestColorPalette } from "./studio-host-wave2-ai-assist-helpers";
 
 vi.mock("../ai/studio-ai-client-lazy", async (importOriginal) => ({
   ...await importOriginal<typeof import("../ai/studio-ai-client-lazy")>(),
+  colorizeLineArt: vi.fn(),
   generateBackgroundImage: vi.fn(),
+  suggestColorPalette: vi.fn(),
 }));
 
 const generatedImage = "data:image/png;base64,Z2VuZXJhdGVk";
+const ticket = { accessGeneration: 0, documentGeneration: 0, authScopeKey: null, workId: null };
 
 function frame(id: string, background: string): Extract<El, { type: "frame" }> {
   return { id, type: "frame", x: 0, y: 0, width: 200, height: 150, bg: background };
@@ -21,25 +27,17 @@ function page(id: string, elements: El[], groups?: PageState["groups"]): PageSta
   return { id, elements, groups, bg: "#fff", bgGrad: null, canvasH: 1080 };
 }
 
-function startBackgroundRequest(initialPages: PageState[], selected: El | null) {
+function createRequestContext(initialPages: PageState[], selected: El | null) {
   let currentPages = initialPages;
   const currentPageIdRef = { current: "cut-a" };
-  const elementById = new Map(initialPages.flatMap((item) => item.elements).map((item) => [item.id, item]));
-  const response = Promise.withResolvers<Awaited<ReturnType<typeof generateBackgroundImage>>>();
-  vi.mocked(generateBackgroundImage).mockReturnValueOnce(response.promise);
-
   const commitPages = vi.fn<(next: PageState[]) => boolean>(() => true);
   const setFailure = vi.fn();
   const patchEl = vi.fn(() => true);
   const setMenu = vi.fn();
   const context = {
-    editorMountedRef: { current: true },
     currentPageIdRef,
-    aiColorizeAbortRef: { current: null },
-    pages: initialPages,
     readCurrentPages: () => currentPages,
     activePage: { id: "cut-a" },
-    elementById,
     selected,
     elements: initialPages.flatMap((item) => item.id === "cut-a" ? item.elements : []),
     canvasH: 1080,
@@ -55,24 +53,35 @@ function startBackgroundRequest(initialPages: PageState[], selected: El | null) 
     setTool: vi.fn(),
     patchEl,
     commitPages,
-    setBusy: vi.fn(),
     setFailure,
     setMenu,
   };
+  return {
+    context,
+    moveToNextPage(latest: PageState[]) {
+      currentPageIdRef.current = "cut-b";
+      currentPages = latest;
+    },
+  };
+}
+
+function startBackgroundRequest(initialPages: PageState[], selected: El | null) {
+  const { context, moveToNextPage } = createRequestContext(initialPages, selected);
+  const controller = new AbortController();
+  const response = Promise.withResolvers<Awaited<ReturnType<typeof generateBackgroundImage>>>();
+  vi.mocked(generateBackgroundImage).mockReturnValueOnce(response.promise);
   const pending = createStudioImageAiExecutors(context).executeAiBackgroundGenerate(
     "비 내리는 거리",
     "1024x1024",
-    { accessGeneration: 0, documentGeneration: 0, authScopeKey: null, workId: null },
+    ticket,
+    controller,
   );
 
   return {
-    commitPages,
-    patchEl,
-    setFailure,
-    setMenu,
+    ...context,
+    controller,
     async finishAfterMovingToNextPage(latest: PageState[]) {
-      currentPageIdRef.current = "cut-b";
-      currentPages = latest;
+      moveToNextPage(latest);
       response.resolve({
         ok: true,
         data: { dataUrl: generatedImage, width: 1024, height: 1024, model: "fixture-model" },
@@ -155,5 +164,126 @@ describe("페이지 이동 후 AI 배경 반영", () => {
 
     expect(request.commitPages).not.toHaveBeenCalled();
     expect(request.setFailure).toHaveBeenCalledWith("studio.hostStatus.bgApplyFailed");
+  });
+});
+
+describe("취소한 AI 요청의 늦은 응답", () => {
+  it("배경 응답 정산 직후 취소해도 원고에 반영하지 않는다", async () => {
+    const firstFrame = frame("frame-a", "original-a");
+    const pages = [page("cut-a", [firstFrame]), page("cut-b", [])];
+    const request = startBackgroundRequest(pages, firstFrame);
+    request.settleTrackedStudioAiOperation.mockImplementationOnce(() => request.controller.abort());
+
+    await request.finishAfterMovingToNextPage(pages);
+
+    expect(request.controller.signal.aborted).toBe(true);
+    expect(request.commitPages).not.toHaveBeenCalled();
+    expect(request.patchEl).not.toHaveBeenCalled();
+    expect(request.setMenu).not.toHaveBeenCalled();
+  });
+
+  it("채색 후보 요청을 취소하면 새 요청의 후보와 출처만 남긴다", async () => {
+    const image: El = {
+      id: "image-a", type: "image", src: "original-image",
+      x: 0, y: 0, width: 200, height: 150, rotation: 0,
+    };
+    const { context } = createRequestContext([page("cut-a", [image])], image);
+    const first = Promise.withResolvers<Awaited<ReturnType<typeof colorizeLineArt>>>();
+    const second = Promise.withResolvers<Awaited<ReturnType<typeof colorizeLineArt>>>();
+    vi.mocked(colorizeLineArt).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const firstController = new AbortController();
+    const abortRef: { current: AbortController | null } = { current: firstController };
+    const candidates = {
+      session: createColorizeCandidateSession(),
+      provenanceById: new Map<string, StudioAiGeneratedAssetProvenance>(),
+      setSession: vi.fn(),
+      setTargetId: vi.fn(),
+      setTargetPageId: vi.fn(),
+    };
+    const execute = (controller: AbortController) => createStudioImageAiExecutors({
+      ...context,
+      canApplyStudioMutation: () => abortRef.current === controller,
+    }).executeAiColorize(image.id, image.src, "차분한 채색", ticket, controller, candidates);
+
+    const pendingFirst = execute(firstController);
+    expect(vi.mocked(colorizeLineArt).mock.lastCall?.[3]?.signal).toBe(firstController.signal);
+    cancelStudioAiRequest(abortRef, vi.fn());
+    const secondController = new AbortController();
+    abortRef.current = secondController;
+    const pendingSecond = execute(secondController);
+    first.resolve({ ok: true, data: { dataUrl: "data:image/png;base64,YQ==" } });
+    await pendingFirst;
+
+    expect(firstController.signal.aborted).toBe(true);
+    expect(secondController.signal.aborted).toBe(false);
+    expect(candidates.setSession).not.toHaveBeenCalled();
+    expect(candidates.provenanceById.size).toBe(0);
+    expect(context.settleTrackedStudioAiOperation).toHaveBeenCalledExactlyOnceWith(
+      "background-operation", { ok: false }, { aborted: true },
+    );
+
+    second.resolve({ ok: true, data: { dataUrl: generatedImage } });
+    await pendingSecond;
+    expect(candidates.setSession).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      candidates: [expect.objectContaining({ dataUrl: generatedImage })],
+    }));
+    expect(candidates.setTargetId).toHaveBeenCalledExactlyOnceWith("image-a");
+    expect(candidates.provenanceById.size).toBe(1);
+    expect(context.patchImageElOnPage).not.toHaveBeenCalled();
+  });
+
+  it("취소한 팔레트 응답은 새 팔레트 요청의 진행 상태나 결과를 덮지 않는다", async () => {
+    const first = Promise.withResolvers<Awaited<ReturnType<typeof suggestColorPalette>>>();
+    const second = Promise.withResolvers<Awaited<ReturnType<typeof suggestColorPalette>>>();
+    vi.mocked(suggestColorPalette).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const abortRef: { current: AbortController | null } = { current: null };
+    const setBusy = vi.fn();
+    const setSuggestion = vi.fn();
+    const settleTextOperation = vi.fn();
+    const context = {
+      collaborationLocked: false,
+      busy: false,
+      activePageId: "cut-a",
+      aiSettings: STUDIO_AI_DEFAULT_SETTINGS,
+      textAiTransport: { mode: "server" } as const,
+      abortRef,
+      pendingProvider: () => ({ provider: "fixture", model: "fixture-model", transport: "server" as const }),
+      settleTextOperation,
+      setBusy,
+      setError: vi.fn(),
+      setSuggestion,
+      clearSavedMessage: vi.fn(),
+    };
+
+    const pendingFirst = runStudioExecuteSuggestColorPalette({
+      ...context, moodText: "가을 저녁", beginTrackedOperation: () => "palette-first",
+    });
+    const firstSignal = vi.mocked(suggestColorPalette).mock.lastCall?.[2]?.signal;
+    cancelStudioAiRequest(abortRef, setBusy);
+    const pendingSecond = runStudioExecuteSuggestColorPalette({
+      ...context, moodText: "겨울 아침", beginTrackedOperation: () => "palette-second",
+    });
+    const secondSignal = vi.mocked(suggestColorPalette).mock.lastCall?.[2]?.signal;
+    setBusy.mockClear();
+    setSuggestion.mockClear();
+    const textProvenance = {
+      provider: "fixture", model: "fixture-model", transport: "server", promptVersion: 1,
+      createdAt: "2026-11-26T00:00:00.000Z",
+    } as const;
+    first.resolve({ ok: true, data: { name: "가을", colors: [{ hex: "#aa5500", role: "배경" }], textProvenance } });
+    await pendingFirst;
+
+    expect(firstSignal?.aborted).toBe(true);
+    expect(secondSignal?.aborted).toBe(false);
+    expect(setBusy).not.toHaveBeenCalled();
+    expect(setSuggestion).not.toHaveBeenCalled();
+    expect(settleTextOperation).toHaveBeenCalledExactlyOnceWith("palette-first", { ok: false }, undefined, true);
+
+    const winter = { name: "겨울", colors: [{ hex: "#225577", role: "배경" }], textProvenance };
+    second.resolve({ ok: true, data: winter });
+    await pendingSecond;
+    expect(setSuggestion).toHaveBeenCalledExactlyOnceWith(winter);
+    expect(setBusy).toHaveBeenCalledExactlyOnceWith(false);
+    expect(abortRef.current).toBeNull();
   });
 });

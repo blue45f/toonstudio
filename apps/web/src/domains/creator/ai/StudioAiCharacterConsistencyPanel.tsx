@@ -7,7 +7,7 @@ import {
 // 여기에 7대 웹툰 일관성 락(안면 골격·가르마 방향·비대칭 복식/흉터 좌우반전 방지·손 대비 무기 비례·
 // 180도 시선 축/키 차이·고유색 Albedo 고정·부상 누적 유지)과 5종 다각도 앵글 프리셋을 내재화하여
 // 원클릭으로 정밀 일관성 가드레일 프롬프트를 합성·주입한다.
-import { Check, Loader2, Lock, MousePointer2, ShieldCheck, Sparkles, UserRoundCheck } from "lucide-react";
+import { Check, Loader2, Lock, MousePointer2, ShieldCheck, UserRoundCheck, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AiRecoveryNotice } from "@/shared/ai/AiRecoveryNotice";
@@ -103,6 +103,7 @@ export function StudioAiCharacterConsistencyPanel({
   busy,
   error,
   onGenerate,
+  onCancel,
   onRequestSelectReference,
 }: {
   configured: boolean;
@@ -115,6 +116,7 @@ export function StudioAiCharacterConsistencyPanel({
   busy: boolean;
   error: string | null;
   onGenerate: () => void;
+  onCancel?: () => void;
   /** 캔버스 선택 모드로 전환해 기준 캐릭터 이미지를 고르게 한다. */
   onRequestSelectReference: () => void;
 }) {
@@ -278,7 +280,7 @@ export function StudioAiCharacterConsistencyPanel({
           data-testid="inject-consistency-dna-prompt-btn"
           className="inline-flex items-center justify-center gap-1 rounded-md border border-accent/40 bg-accent/15 px-2 py-1 text-[0.6rem] font-bold text-accent transition-colors hover:bg-accent/25 disabled:opacity-50"
         >
-          <Sparkles size={11} aria-hidden />
+          <Wand2 size={11} aria-hidden />
           선택한 일관성 DNA 락 프롬프트 주입
         </button>
       </div>
@@ -295,15 +297,27 @@ export function StudioAiCharacterConsistencyPanel({
         className="h-14 w-full resize-none rounded-md border border-line bg-panel px-2 py-1 text-[0.65rem] leading-snug text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent disabled:opacity-60"
       />
 
-      <button
-        type="button"
-        onClick={onGenerate}
-        disabled={!canGenerate}
-        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {busy ? <Loader2 size={14} className="animate-spin" /> : <UserRoundCheck size={14} />}
-        {busy ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiCharacterConsistencyPanel", "ko", "생성하는 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiCharacterConsistencyPanel", "ko", "같은 캐릭터로 생성")}
-      </button>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={!canGenerate}
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <UserRoundCheck size={14} aria-hidden />}
+          {busy ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiCharacterConsistencyPanel", "ko", "생성하는 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiCharacterConsistencyPanel", "ko", "같은 캐릭터로 생성")}
+        </button>
+        {busy && onCancel ? (
+          <button
+            type="button"
+            data-testid="ai-character-cancel-btn"
+            onClick={onCancel}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-card px-3 py-2 text-xs font-bold text-fg-2 transition-colors hover:bg-raised"
+          >
+            취소
+          </button>
+        ) : null}
+      </div>
 
       {error ? (
         <AiRecoveryNotice

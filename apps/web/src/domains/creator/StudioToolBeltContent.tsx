@@ -214,7 +214,10 @@ export interface StudioToolBeltContentHandlers {
   onDeleteSharedAsset: (id: string) => Promise<void>;
   onReportSharedAsset: (asset: SharedAssetCatalogItem, reason: CreatorAssetReportReason, details: string) => Promise<void>;
   onGenerateAiBackground: () => void;
+  onCancelAiBackground?: () => void;
   onGenerateAiCharacter: () => void;
+  onCancelAiCharacter?: () => void;
+  onCancelSuggestColorPalette?: () => void;
   onGenerateAsset: () => Promise<void>;
   onPickImage: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   onShareAsset: (asset: StudioAsset, options: StudioAssetShareOptions) => Promise<void>;

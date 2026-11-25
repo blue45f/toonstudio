@@ -7,10 +7,12 @@ import {
   type StudioAiImageSize,
   type StudioAiSettings,
 } from "../ai/studio-ai-client-lazy";
-import { captureStudioAiGeneratedAssetProvenance } from "../ai/studio-ai-generated-asset-model";
+import { addColorizeCandidate, type StudioAiColorizeCandidateSession } from "../ai/studio-ai-colorize-candidates";
+import { captureStudioAiGeneratedAssetProvenance, type StudioAiGeneratedAssetProvenance } from "../ai/studio-ai-generated-asset-model";
 import {
   parseStudioAiRequestedSize,
   studioImageAiProviderContext,
+  type SettleStudioAiOperationOptions,
   type StudioAiObservableResult,
   type StudioAiPendingOperationInput,
 } from "../ai/studio-ai-provenance-recorder";
@@ -24,14 +26,18 @@ import type { PageState } from "../studio-page-state";
 import type { StudioPublishAiProvenance } from "../studio-publish-preflight";
 import { runStudioInsertAiBackgroundImage } from "./studio-host-wave6-ai-generation-helpers";
 
+interface StudioColorizeCandidateOutput {
+  readonly session: StudioAiColorizeCandidateSession;
+  readonly provenanceById: Map<string, StudioAiGeneratedAssetProvenance>;
+  readonly setSession: (session: StudioAiColorizeCandidateSession) => void;
+  readonly setTargetId: (id: string) => void;
+  readonly setTargetPageId: (pageId: string) => void;
+}
+
 interface StudioImageAiExecutionContext {
-  readonly editorMountedRef: { readonly current: boolean };
   readonly currentPageIdRef: { readonly current: string };
-  readonly aiColorizeAbortRef: { current: AbortController | null };
-  readonly pages: readonly PageState[];
   readonly readCurrentPages: () => readonly PageState[];
   readonly activePage: Pick<PageState, "id">;
-  readonly elementById: ReadonlyMap<string, El>;
   readonly selected: El | null;
   readonly elements: readonly El[];
   readonly canvasH: number;
@@ -42,7 +48,9 @@ interface StudioImageAiExecutionContext {
     scope: string,
     input: Omit<StudioAiPendingOperationInput, "id">,
   ) => string;
-  readonly settleTrackedStudioAiOperation: (id: string, result: StudioAiObservableResult) => void;
+  readonly settleTrackedStudioAiOperation: (
+    id: string, result: StudioAiObservableResult, options?: SettleStudioAiOperationOptions,
+  ) => void;
   readonly addRenderedImage: (
     src: string, width: number, height: number, provenance: StudioPublishAiProvenance,
   ) => boolean;
@@ -52,18 +60,39 @@ interface StudioImageAiExecutionContext {
   readonly setTool: (next: "select" | "draw") => void;
   readonly patchEl: (id: string, patch: Partial<El>) => boolean;
   readonly commitPages: (next: PageState[]) => boolean;
-  readonly setBusy: (busy: boolean) => void;
   readonly setFailure: (error: string | null) => void;
   readonly setMenu: (menu: null) => void;
 }
 
 export function createStudioImageAiExecutors({
-  editorMountedRef, currentPageIdRef, aiColorizeAbortRef,
-  pages, readCurrentPages, activePage, elementById, selected, elements, canvasH, aiSettings, t,
+  currentPageIdRef, readCurrentPages, activePage, selected, elements, canvasH, aiSettings, t,
   canApplyStudioMutation, beginTrackedStudioAiOperation, settleTrackedStudioAiOperation,
   addRenderedImage, patchImageElOnPage, patchEl, commitPages, commit, setSelectedId, setTool,
-  setBusy, setFailure, setMenu,
+  setFailure, setMenu,
 }: StudioImageAiExecutionContext) {
+  async function requestImageResult<T extends StudioAiObservableResult>(
+    operationId: string, ticket: StudioEditorMutationTicket, signal: AbortSignal, request: () => Promise<T>,
+  ): Promise<T | null> {
+    if (signal.aborted || !canApplyStudioMutation(ticket)) return null;
+    const settleCancelled = () => {
+      if (canApplyStudioMutation(ticket)) settleTrackedStudioAiOperation(operationId, { ok: false }, { aborted: true });
+    };
+    signal.addEventListener("abort", settleCancelled, { once: true });
+    try {
+      const result = await request();
+      if (signal.aborted || !canApplyStudioMutation(ticket)) return null;
+      settleTrackedStudioAiOperation(operationId, result);
+      return result;
+    } catch (error) {
+      if (!signal.aborted && canApplyStudioMutation(ticket)) {
+        settleTrackedStudioAiOperation(operationId, { ok: false, code: "network_error" });
+      }
+      throw error;
+    } finally {
+      signal.removeEventListener("abort", settleCancelled);
+    }
+  }
+
   // AI로 생성된 배경 이미지를 삽입 — addBgScene과 동일한 배치 정책(선택된 프레임이 있으면 그 칸만,
   // 프레임이 여럿이면 전부, 없으면 캔버스 전체 배경으로 맨 뒤에 새 요소 추가). width/height는
   // generateBackgroundImage가 요청한 size 문자열에서 그대로 파생한 값이라 이미지 로드 없이 동기적으로
@@ -108,7 +137,10 @@ export function createStudioImageAiExecutors({
 
   // 배경 생성 실행 — 이미 runWithAiNotice로 게이팅된 상태에서만 호출된다. 실패해도 throw하지
   // 않는다(studio-ai-client.ts 계약) — result.ok만 분기하면 된다.
-  async function executeAiBackgroundGenerate(prompt: string, size: StudioAiImageSize, mutationTicket: StudioEditorMutationTicket) {
+  async function executeAiBackgroundGenerate(
+    prompt: string, size: StudioAiImageSize, mutationTicket: StudioEditorMutationTicket, controller: AbortController,
+  ) {
+    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
     const requestPageId = activePage.id;
     const requestSelectedFrameId = selected?.type === "frame" ? selected.id : null;
     const provider = studioImageAiProviderContext(aiSettings);
@@ -128,15 +160,12 @@ export function createStudioImageAiExecutors({
       requestedSize: parseStudioAiRequestedSize(size),
       references: [],
     });
-    const result = await generateBackgroundImage(aiSettings, prompt, { size });
-    if (!canApplyStudioMutation(mutationTicket)) {
-      if (editorMountedRef.current) setBusy(false);
-      return;
-    }
-    settleTrackedStudioAiOperation(operationId, result);
+    const result = await requestImageResult(operationId, mutationTicket, controller.signal, () =>
+      generateBackgroundImage(aiSettings, prompt, { size, signal: controller.signal }),
+    );
+    if (!result || controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
     if (!result.ok) {
       setFailure(result.error);
-      setBusy(false);
       return;
     }
     if (!insertAiBackgroundImage(
@@ -147,10 +176,8 @@ export function createStudioImageAiExecutors({
       { pageId: requestPageId, selectedFrameId: requestSelectedFrameId },
     )) {
       setFailure(t("studio.hostStatus.bgApplyFailed", "배경 이미지는 생성됐지만 현재 원고에 적용하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-      setBusy(false);
       return;
     }
-    setBusy(false);
     setMenu(null); // 다른 "생성 후 팝오버 닫기" 흐름(addBgScene 등)과 동일 UX.
   }
 
@@ -159,7 +186,9 @@ export function createStudioImageAiExecutors({
   async function executeAiColorize(
     elId: string, srcAtRequestTime: string, prompt: string,
     mutationTicket: StudioEditorMutationTicket, controller: AbortController,
+    candidates?: StudioColorizeCandidateOutput,
   ) {
+    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
     const requestPageId = activePage.id;
     const provider = studioImageAiProviderContext(aiSettings);
     const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "edited");
@@ -174,32 +203,45 @@ export function createStudioImageAiExecutors({
       target: { pageId: requestPageId, elementId: elId },
       references: [{ assetId: elId }],
     });
-    const result = await colorizeLineArt(aiSettings, srcAtRequestTime, prompt, { signal: controller.signal });
-    if (aiColorizeAbortRef.current === controller) aiColorizeAbortRef.current = null;
-    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) {
-      if (editorMountedRef.current) setBusy(false);
-      return;
-    }
-    settleTrackedStudioAiOperation(operationId, result);
+    const result = await requestImageResult(operationId, mutationTicket, controller.signal, () =>
+      colorizeLineArt(aiSettings, srcAtRequestTime, prompt, { signal: controller.signal }),
+    );
+    if (!result || controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
     if (!result.ok) {
       setFailure(result.error);
-      setBusy(false);
       return;
     }
-    const target =
-      pages.find((page) => page.id === requestPageId)?.elements.find((el) => el.id === elId) ??
-      elementById.get(elId);
-    if (!target || target.type !== "image") {
+    const targetPage = readCurrentPages().find((page) => page.id === requestPageId);
+    const target = targetPage?.elements.find((el) => el.id === elId);
+    if (!target || target.type !== "image" || target.src !== srcAtRequestTime) {
       setFailure(t("studio.hostStatus.colorizeSourceLayerNotFound", "채색 결과를 적용할 원본 이미지 레이어를 찾지 못했어요. 레이어를 다시 선택한 뒤 재시도해 주세요."));
-      setBusy(false);
+      return;
+    }
+    if (candidates) {
+      const now = Date.now();
+      const id = `candidate-${now}-${candidates.session.candidates.length}`;
+      const added = addColorizeCandidate(candidates.session, {
+        id, dataUrl: result.data.dataUrl, prompt, createdAt: now,
+      });
+      if (!added.ok) {
+        setFailure("채색 후보 상한(3장)에 닿았어요. 후보를 비운 뒤 다시 모아 주세요.");
+        return;
+      }
+      candidates.provenanceById.set(id, requestProvenance);
+      candidates.setSession(added.session);
+      candidates.setTargetId(elId);
+      candidates.setTargetPageId(requestPageId);
+      return;
+    }
+    const applyFailure = t("studio.hostStatus.colorizeApplyFailed", "채색 결과는 생성됐지만 이미지 레이어에 적용하지 못했어요. 레이어 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
+    if (isEffectivelyLocked(target, targetPage?.groups ?? [])) {
+      setFailure(applyFailure);
       return;
     }
     if (!patchImageElOnPage(requestPageId, elId, { src: result.data.dataUrl, aiProvenance: requestProvenance })) {
-      setFailure(t("studio.hostStatus.colorizeApplyFailed", "채색 결과는 생성됐지만 이미지 레이어에 적용하지 못했어요. 레이어 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-      setBusy(false);
+      setFailure(applyFailure);
       return;
     }
-    setBusy(false);
   }
 
   // AI 캐릭터 일관성 생성 실행(젠툰 벤치마크) — reference id/src/size를 호출 시점에 함께 캡처해
@@ -212,7 +254,9 @@ export function createStudioImageAiExecutors({
     reference: { elementId: string; src: string; width: number; height: number },
     prompt: string,
     mutationTicket: StudioEditorMutationTicket,
+    controller: AbortController,
   ) {
+    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
     const requestPageId = activePage.id;
     const provider = studioImageAiProviderContext(aiSettings);
     const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "generated");
@@ -227,28 +271,26 @@ export function createStudioImageAiExecutors({
       target: { pageId: requestPageId },
       references: [{ assetId: reference.elementId }],
     });
-    const result = await generateConsistentCharacterImage(aiSettings, reference.src, prompt);
-    if (!canApplyStudioMutation(mutationTicket)) {
-      if (editorMountedRef.current) setBusy(false);
-      return;
-    }
-    settleTrackedStudioAiOperation(operationId, result);
+    const result = await requestImageResult(operationId, mutationTicket, controller.signal, () =>
+      generateConsistentCharacterImage(aiSettings, reference.src, prompt, { signal: controller.signal }),
+    );
+    if (!result || controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
     if (!result.ok) {
       setFailure(result.error);
-      setBusy(false);
       return;
     }
     const addedOk =
       requestPageId !== currentPageIdRef.current
         ? (() => {
-            const targetPage = pages.find((page) => page.id === requestPageId);
+            const latestPages = readCurrentPages();
+            const targetPage = latestPages.find((page) => page.id === requestPageId);
             if (!targetPage) return false;
             const element = createCanvasImageElement({
               id: uid(), src: result.data.dataUrl, canvasWidth: CANVAS_W, canvasHeight: targetPage.canvasH,
               sourceWidth: reference.width, sourceHeight: reference.height,
             });
             return commitPages(
-              pages.map((page) =>
+              latestPages.map((page) =>
                 page.id === requestPageId
                   ? { ...page, elements: [...page.elements, { ...element, aiProvenance: requestProvenance }] }
                   : page,
@@ -258,10 +300,8 @@ export function createStudioImageAiExecutors({
         : addRenderedImage(result.data.dataUrl, reference.width, reference.height, requestProvenance);
     if (!addedOk) {
       setFailure(t("studio.hostStatus.characterAddFailed", "캐릭터 이미지는 생성됐지만 현재 원고에 추가하지 못했어요. 편집 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요."));
-      setBusy(false);
       return;
     }
-    setBusy(false);
     setMenu(null); // 다른 "생성 후 팝오버 닫기" 흐름(AI 배경 생성 등)과 동일 UX.
   }
   return {

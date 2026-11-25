@@ -3,7 +3,6 @@ import type { MutableRefObject } from "react";
 import type { StudioAiAssistToolId } from "../ai/studio-ai-assist-ux";
 import { resolveColorizeCandidateApply } from "../ai/studio-ai-candidate-apply";
 import {
-  colorizeLineArt,
   generateStudioWriterRoomDraft,
   studioTextAiTransportForOperation,
   suggestColorPalette,
@@ -12,17 +11,10 @@ import {
   type StudioTextAiProvenance,
   type StudioTextAiTransport,
 } from "../ai/studio-ai-client-lazy";
-import {
-  addColorizeCandidate,
-  type StudioAiColorizeCandidateSession,
-} from "../ai/studio-ai-colorize-candidates";
+import type { StudioAiColorizeCandidateSession } from "../ai/studio-ai-colorize-candidates";
 import type { StudioAiComicComposerHandoff } from "../ai/studio-ai-comic-composer-handoff";
+import type { StudioAiGeneratedAssetProvenance } from "../ai/studio-ai-generated-asset-model";
 import {
-  captureStudioAiGeneratedAssetProvenance,
-  type StudioAiGeneratedAssetProvenance,
-} from "../ai/studio-ai-generated-asset-model";
-import {
-  studioImageAiProviderContext,
   type SettleStudioAiOperationOptions,
   type StudioAiObservableResult,
   type StudioAiOperationProviderContext,
@@ -210,84 +202,15 @@ export interface StudioAiDialogueLockedTarget {
   readonly lastAppliedText?: string;
 }
 
-export async function runStudioExecuteAiColorizeCandidate<TTicket>(input: {
-  readonly elId: string;
-  readonly srcAtRequestTime: string;
-  readonly prompt: string;
-  readonly collaborationLocked: boolean;
-  readonly activePageId: string;
-  readonly aiSettings: StudioAiSettings;
-  readonly candidateSession: StudioAiColorizeCandidateSession;
-  readonly candidateProvenanceRef: MutableRefObject<Map<string, StudioAiGeneratedAssetProvenance>>;
-  readonly editorMountedRef: MutableRefObject<boolean>;
-  readonly abortRef?: MutableRefObject<AbortController | null>;
-  readonly captureMutationTicket: () => TTicket;
-  readonly canApplyMutation: (ticket: TTicket) => boolean;
-  readonly beginTrackedOperation: (
-    feature: "colorize",
-    operation: StudioTrackedAiOperationPayload,
-  ) => string;
-  readonly settleOperation: (operationId: string, result: StudioAiObservableResult) => void;
-  readonly setBusy: (busy: boolean) => void;
-  readonly setError: (error: string | null) => void;
-  readonly setSession: (session: StudioAiColorizeCandidateSession) => void;
-  readonly setTargetId: (targetId: string | null) => void;
-  readonly setTargetPageId?: (pageId: string | null) => void;
-}): Promise<void> {
-  if (input.collaborationLocked) return;
-  const mutationTicket = input.captureMutationTicket();
-  input.abortRef?.current?.abort();
-  const controller = new AbortController();
-  if (input.abortRef) input.abortRef.current = controller;
-  input.setBusy(true);
-  input.setError(null);
-  const provider = studioImageAiProviderContext(input.aiSettings);
-  const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "edited");
-  const operationId = input.beginTrackedOperation("colorize", {
-    kind: "image",
-    task: "colorize",
-    provider: provider.provider,
-    model: provider.model,
-    transport: provider.transport,
-    promptVersion: 1,
-    prompt: input.prompt,
-    target: { pageId: input.activePageId, elementId: input.elId },
-    references: [{ assetId: input.elId }],
-  });
-  const result = await colorizeLineArt(
-    input.aiSettings,
-    input.srcAtRequestTime,
-    input.prompt,
-    { signal: controller.signal },
-  );
-  if (input.abortRef?.current === controller) input.abortRef.current = null;
-  if (controller.signal.aborted || !input.canApplyMutation(mutationTicket)) {
-    if (input.editorMountedRef.current) input.setBusy(false);
-    return;
-  }
-  input.settleOperation(operationId, result);
-  if (!result.ok) {
-    input.setError(result.error);
-    input.setBusy(false);
-    return;
-  }
-  const candidateId = `candidate-${Date.now()}-${input.candidateSession.candidates.length}`;
-  const added = addColorizeCandidate(input.candidateSession, {
-    id: candidateId,
-    dataUrl: result.data.dataUrl,
-    prompt: input.prompt,
-    createdAt: Date.now(),
-  });
-  if (!added.ok) {
-    input.setError("채색 후보 상한(3장)에 닿았어요. 후보를 비운 뒤 다시 모아 주세요.");
-    input.setBusy(false);
-    return;
-  }
-  input.candidateProvenanceRef.current.set(candidateId, requestProvenance);
-  input.setSession(added.session);
-  input.setTargetId(input.elId);
-  input.setTargetPageId?.(input.activePageId);
-  input.setBusy(false);
+export function cancelStudioAiRequest(
+  abortRef: MutableRefObject<AbortController | null>, setBusy: (busy: boolean) => void,
+): void {
+  const controller = abortRef.current;
+  if (!controller) return;
+  controller.abort();
+  if (abortRef.current !== controller) return;
+  abortRef.current = null;
+  setBusy(false);
 }
 
 export function runStudioApplyColorizeCandidate(input: {
@@ -513,13 +436,16 @@ export async function runStudioExecuteSuggestDialogueLines<TTicket = unknown>(in
   }
 }
 
-export async function runStudioExecuteSuggestColorPalette(input: {
+export async function runStudioExecuteSuggestColorPalette<TTicket = unknown>(input: {
   readonly collaborationLocked: boolean;
   readonly moodText: string;
   readonly busy: boolean;
   readonly activePageId: string;
   readonly aiSettings: StudioAiSettings;
   readonly textAiTransport: StudioTextAiTransport;
+  readonly abortRef?: MutableRefObject<AbortController | null>;
+  readonly captureMutationTicket?: () => TTicket;
+  readonly canApplyMutation?: (ticket: TTicket) => boolean;
   readonly pendingProvider: () => StudioAiOperationProviderContext;
   readonly beginTrackedOperation: (
     feature: "palette",
@@ -529,6 +455,7 @@ export async function runStudioExecuteSuggestColorPalette(input: {
     operationId: string,
     result: StudioAiObservableResult,
     textProvenance?: StudioTextAiProvenance,
+    aborted?: boolean,
   ) => void;
   readonly setBusy: (busy: boolean) => void;
   readonly setError: (error: string | null) => void;
@@ -537,7 +464,10 @@ export async function runStudioExecuteSuggestColorPalette(input: {
 }): Promise<void> {
   if (input.collaborationLocked) return;
   const mood = input.moodText.trim();
-  if (!mood || input.busy) return;
+  if (!mood || input.busy || input.abortRef?.current) return;
+  const mutationTicket = input.captureMutationTicket?.();
+  const controller = new AbortController();
+  if (input.abortRef) input.abortRef.current = controller;
   input.setBusy(true);
   input.setError(null);
   input.setSuggestion(null);
@@ -554,13 +484,31 @@ export async function runStudioExecuteSuggestColorPalette(input: {
     target: { pageId: input.activePageId },
     references: [],
   });
-  const result = await suggestColorPalette(
-    input.aiSettings,
-    mood,
-    studioTextAiTransportForOperation(input.textAiTransport, operationId),
+  const ownsRequest = () => !input.abortRef || input.abortRef.current === controller;
+  const canApply = () => ownsRequest() && (
+    mutationTicket === undefined || !input.canApplyMutation || input.canApplyMutation(mutationTicket)
   );
-  input.settleTextOperation(operationId, result, result.ok ? result.data.textProvenance : undefined);
-  if (result.ok) input.setSuggestion(result.data);
-  else input.setError(result.error);
-  input.setBusy(false);
+  const settleCancelled = () => {
+    if (canApply()) input.settleTextOperation(operationId, { ok: false }, undefined, true);
+  };
+  controller.signal.addEventListener("abort", settleCancelled, { once: true });
+  try {
+    const transport = studioTextAiTransportForOperation(input.textAiTransport, operationId);
+    const result = await suggestColorPalette(input.aiSettings, mood, { ...transport, signal: controller.signal });
+    if (controller.signal.aborted || !canApply()) return;
+    input.settleTextOperation(operationId, result, result.ok ? result.data.textProvenance : undefined);
+    if (result.ok) input.setSuggestion(result.data);
+    else input.setError(result.error);
+  } catch {
+    if (!controller.signal.aborted && canApply()) {
+      input.settleTextOperation(operationId, { ok: false, code: "network_error" });
+      input.setError("팔레트 추천을 완료하지 못했어요. 다시 시도해 주세요.");
+    }
+  } finally {
+    controller.signal.removeEventListener("abort", settleCancelled);
+    if (ownsRequest()) {
+      if (input.abortRef) input.abortRef.current = null;
+      input.setBusy(false);
+    }
+  }
 }

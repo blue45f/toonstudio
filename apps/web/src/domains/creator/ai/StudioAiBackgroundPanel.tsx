@@ -3,7 +3,7 @@ import {
 } from "@/shared/lib/i18n-bilingual-copy";
 // AI 배경 생성 패널 — 텍스트 프롬프트로 배경 이미지를 생성해 캔버스에 삽입한다.
 // Presentation only; generate + notice gate owned by StudioPage.
-import { ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { ImageIcon, Loader2, Wand2 } from "lucide-react";
 
 import { STUDIO_EASE, STUDIO_FOCUS_RING } from "../studio-panel-ui";
 
@@ -24,6 +24,7 @@ export function StudioAiBackgroundPanel({
   busy,
   error,
   onGenerate,
+  onCancel,
 }: {
   configured: boolean;
   prompt: string;
@@ -33,6 +34,7 @@ export function StudioAiBackgroundPanel({
   busy: boolean;
   error: string | null;
   onGenerate: () => void;
+  onCancel?: () => void;
 }) {
   const canGenerate = configured && !busy && prompt.trim().length > 0;
 
@@ -104,20 +106,32 @@ export function StudioAiBackgroundPanel({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onGenerate}
-        disabled={!canGenerate}
-        className={cn(
-          "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-on-accent",
-          STUDIO_EASE,
-          STUDIO_FOCUS_RING,
-          "hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-55"
-        )}
-      >
-        {busy ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Sparkles size={15} aria-hidden />}
-        {busy ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiBackgroundPanel", "ko", "그리는 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiBackgroundPanel", "ko", "배경 생성")}
-      </button>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={!canGenerate}
+          className={cn(
+            "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-on-accent",
+            STUDIO_EASE,
+            STUDIO_FOCUS_RING,
+            "hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-55"
+          )}
+        >
+          {busy ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" aria-hidden /> : <Wand2 size={15} aria-hidden />}
+          {busy ? translateCurrentStaticSourceText("domains.creator.ai.StudioAiBackgroundPanel", "ko", "그리는 중…") : translateCurrentStaticSourceText("domains.creator.ai.StudioAiBackgroundPanel", "ko", "배경 생성")}
+        </button>
+        {busy && onCancel ? (
+          <button
+            type="button"
+            data-testid="ai-bg-cancel-btn"
+            onClick={onCancel}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-line bg-card px-3 py-2 text-xs font-bold text-fg-2 transition-colors hover:bg-raised"
+          >
+            취소
+          </button>
+        ) : null}
+      </div>
 
       {error ? (
         <AiRecoveryNotice

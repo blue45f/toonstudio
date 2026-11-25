@@ -139,6 +139,9 @@ export function StudioAiToolPopoverBody({
     insertAiCompositionNote,
     insertDialogueSuggestionToSelected,
     insertStockImage,
+    onCancelAiBackground,
+    onCancelAiCharacter,
+    onCancelSuggestColorPalette,
     onGenerateAiBackground,
     onGenerateAiCharacter,
     pendingTextAiProviderContext,
@@ -467,6 +470,7 @@ export function StudioAiToolPopoverBody({
                       busy={aiBgBusy}
                       error={aiBgError}
                       onGenerate={onGenerateAiBackground}
+                      onCancel={onCancelAiBackground}
                     />
                   ) : null}
                   {aiAssistTool === "character" ? (
@@ -495,6 +499,7 @@ export function StudioAiToolPopoverBody({
                         }
                         onGenerateAiCharacter();
                       }}
+                      onCancel={onCancelAiCharacter}
                     />
                     <StudioAiLoraTrainingPanel
                       selectedImageSrc={selected?.type === "image" ? selected.src : null}
@@ -593,6 +598,7 @@ export function StudioAiToolPopoverBody({
                         }
                         void executeSuggestColorPalette();
                       }}
+                      onCancel={onCancelSuggestColorPalette}
                       onSaveToLibrary={saveSuggestedPaletteToLibrary}
                     />
                   ) : null}

@@ -160,6 +160,7 @@ export interface StudioInspectorAsideHandlers {
   previewIsometricOrigin: (x: number, y: number) => void;
   commitIsometricOrigin: (x: number, y: number) => void;
   onColorizeSelected: () => void;
+  onCancelColorize?: () => void;
   onMinimapClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onMinimapKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   openBrushCatalog: (trigger: HTMLButtonElement) => void;

@@ -67,7 +67,7 @@ export function StudioInspectorSelectedImageTools({
     inspectorInteractionPolicy, inspectorLayout, invertFilterMask, invertLayerMask, invertQuickMask,
     layerMaskBusy, layerMaskHardness, layerMaskPaintActive, layerMaskPaintMode, layerMaskRadius,
     layerMaskStrength, liquifyActive, liquifyBusy, liquifyMode, liquifyRadius, liquifyStrength,
-    onAutoColorPlanImageSize, onColorizeSelected, onQuickMaskTintColorChange, onQuickMaskTintOpacityChange,
+    onAutoColorPlanImageSize, onCancelColorize, onColorizeSelected, onQuickMaskTintColorChange, onQuickMaskTintOpacityChange,
     onTogglePixelMagneticLasso, openFeatureTutorial, openStudioFilter, openStudioLayerLift, patchEl,
     pixelBrushRadius, pixelBusy, pixelCombine, pixelMagneticLasso, pixelSel, pixelSelectionCanRedo,
     pixelSelectionCanUndo, pixelTool, polyLassoSession, puppetWarpActive, puppetWarpBusy, puppetWarpPins,
@@ -136,6 +136,7 @@ export function StudioInspectorSelectedImageTools({
                                 busy={aiColorizeBusy}
                                 error={aiColorizeError}
                                 onColorize={onColorizeSelected}
+                                onCancel={onCancelColorize}
                               />
                               <StudioAiColorizeExtras
                                 wiring={aiColorizeExtras}
