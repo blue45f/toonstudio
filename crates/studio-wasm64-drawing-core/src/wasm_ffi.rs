@@ -563,3 +563,28 @@ pub unsafe extern "C" fn wasm_composite_tile_dirty_rect(
         Err(ref err) => error_to_ffi_code(err),
     }
 }
+
+#[cfg(feature = "extended-3d")]
+mod extended_3d;
+#[cfg(feature = "extended-3d")]
+pub use extended_3d::{
+    wasm_encode_morton_2d_u32, wasm_encode_morton_3d_u32, wasm_extended_3d_capabilities,
+    wasm_extract_lt_lineart_from_gbuffer, wasm_skin_vrm_mesh_4bone_soa, LT_LINEART_FFI_PARAM_COUNT,
+    WASM_EXTENDED_3D_CAPABILITIES,
+};
+
+#[cfg(feature = "virtual-3d-physics")]
+mod virtual_3d_physics;
+#[cfg(feature = "virtual-3d-physics")]
+pub use virtual_3d_physics::{
+    wasm_render_foley_biquad_block, wasm_solve_finger_fabrik_chain,
+    wasm_step_verlet_spring_chains_soa,
+};
+#[cfg(feature = "virtual-3d-physics")]
+pub const VERLET_SPRING_FFI_PARAM_COUNT: usize = 10;
+#[cfg(feature = "virtual-3d-physics")]
+pub const FABRIK_FINGER_FFI_PARAM_COUNT: usize = 12;
+#[cfg(feature = "virtual-3d-physics")]
+pub const FOLEY_DSP_FFI_PARAM_COUNT: usize = 9;
+#[cfg(feature = "virtual-3d-physics")]
+pub const FOLEY_DSP_FFI_STATE_LEN: usize = 5;

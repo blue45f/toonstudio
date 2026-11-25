@@ -2,7 +2,7 @@ import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, Headphones, LayoutGrid, X } from "lucide-react";
+import { ArrowRight, LayoutGrid, X } from "lucide-react";
 import { useEffect, useRef, type CSSProperties, type RefObject } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -294,7 +294,8 @@ export function MobileHeaderNavigation({
 
             <nav aria-label={bi("전체 서비스 메뉴", "All service navigation")} className="site-menu-navigation">
               <SiteMenuDestinations locale={locale} currentGroupId={currentGroupId}
-                currentPathname={pathname} isActive={isActive} menuId={menuId} />
+                currentPathname={pathname} isActive={isActive} menuId={menuId}
+                reservedDestinationHrefs={["/sitemap/all", ...SITE_UTILITY_NAVIGATION.map((item) => item.href)]} />
 
               <Link href="/sitemap/all" aria-current={isActive("/sitemap/all", true) ? "page" : undefined} className="site-menu-directory">
                 <LayoutGrid size={18} aria-hidden="true" />
@@ -304,24 +305,6 @@ export function MobileHeaderNavigation({
 
               <SiteMenuUtilities onOpenMusic={openMusic} settingsActive={isActive("/settings")} />
               <div className="mt-4 grid gap-2 border-t border-line pt-4">
-                <Link
-                  href="/studio/support"
-                  aria-current={isActive("/studio/support") ? "page" : undefined}
-                  data-journey-stage={5}
-                  data-accent-tone="support"
-                  className={cx(
-                    "group flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-semibold outline-none transition-[border-color,background-color,color] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
-                    isActive("/studio/support")
-                      ? "border-success bg-success-soft text-fg"
-                      : "border-success/35 bg-success-soft/60 text-fg hover:border-success hover:bg-success-soft",
-                  )}
-                >
-                  <Headphones size={17} aria-hidden="true" className="shrink-0 text-success" />
-                  <span className="min-w-0 break-words [word-break:keep-all]">
-                    {bi("AI 고객센터 · 1:1 채팅상담", "AI Support · 1:1 Live Chat")}
-                  </span>
-                  <span aria-hidden="true" className="ml-auto text-xs text-success">↗</span>
-                </Link>
                 {SITE_UTILITY_NAVIGATION.filter((item) => item.id !== "settings").map((item) => {
                   const active = isActive(item.href, item.exact);
                   const Icon = item.icon;

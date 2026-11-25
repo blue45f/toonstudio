@@ -58,12 +58,15 @@ async function assertPublicHomeInput(dashboard) {
   await expect(modes).toHaveCount(2);
   await expect(modes.nth(0)).toHaveAttribute("aria-pressed", "true");
   await expect(modes.nth(1)).toHaveAttribute("aria-pressed", "false");
-  await expect(input).toHaveAttribute("placeholder", /아이디어/u);
+  await expect(input).toHaveRole("textbox");
+  await expect(input).toHaveAccessibleName("아이디어 입력");
+  await expect(input).toHaveAttribute("placeholder", "예: 비 오는 날의 첫사랑");
   await input.fill("비 오는 날의 첫사랑");
   await modes.nth(1).click();
   await expect(modes.nth(1)).toHaveAttribute("aria-pressed", "true");
   await expect(modes.nth(0)).toHaveAttribute("aria-pressed", "false");
-  await expect(input).toHaveAttribute("placeholder", /작품명/u);
+  await expect(input).toHaveAccessibleName("작품 검색");
+  await expect(input).toHaveAttribute("placeholder", "작품명·작가·태그");
   await expect(input).toHaveValue("비 오는 날의 첫사랑");
   await modes.nth(0).click();
   await expect(modes.nth(0)).toHaveAttribute("aria-pressed", "true");

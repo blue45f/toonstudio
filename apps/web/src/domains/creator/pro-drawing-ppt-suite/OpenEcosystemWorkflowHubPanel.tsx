@@ -1,4 +1,4 @@
-import { BookOpen, Calculator, Database, Gauge, Glasses, Globe, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
+import { Activity, BookOpen, Calculator, Cpu, Database, Gauge, Glasses, Globe, Layers, Link2, PackageCheck, Palette, PenTool, Presentation, Radio, Scale, Shield, ShieldCheck, Wand2, Workflow } from "lucide-react";
 import { lazy, Suspense, useId, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -102,6 +102,26 @@ const LazyStudioSpatialWearablePanel = lazy(async () => {
   return { default: m.StudioSpatialWearablePanel };
 });
 
+const LazyStudioHeterogeneousSiliconPanel = lazy(() =>
+  import("../heterogeneous-npu-runtime").then((module) => ({ default: module.StudioHeterogeneousSiliconPanel })),
+);
+
+const LazyStudioRustExpansionArchitectPanel = lazy(() =>
+  import("../rust-full-expansion-planner").then((module) => ({ default: module.StudioRustExpansionArchitectPanel })),
+);
+
+const LazyStudioMulticoreVelloSchedulerPanel = lazy(() =>
+  import("../multicore-gpu-vello-scheduler").then((module) => ({ default: module.StudioMulticoreVelloSchedulerPanel })),
+);
+
+const LazyStudioRustHotspotPorterPanel = lazy(() =>
+  import("../rust-hotspot-parity-porter").then((module) => ({ default: module.StudioRustHotspotPorterPanel })),
+);
+
+const LazyStudioWebNnNpuThermalPanel = lazy(() =>
+  import("../webnn-npu-thermal-compiler").then((module) => ({ default: module.StudioWebNnNpuThermalPanel })),
+);
+
 type EcosystemTabId =
   | "workflowDag"
   | "openBridge"
@@ -121,7 +141,12 @@ type EcosystemTabId =
   | "assistantHandoff"
   | "globalIpPitch"
   | "proDigitizerHid"
-  | "spatialWearable";
+  | "spatialWearable"
+  | "heterogeneousNpu"
+  | "rustFullExpansion"
+  | "multicoreVello"
+  | "rustHotspotPorter"
+  | "npuThermal";
 
 const CINEMA_ERGO_VISUAL_CARDS: readonly {
   readonly id: string;
@@ -163,10 +188,25 @@ const ECOSYSTEM_TABS: readonly {
   { id: "globalIpPitch", labelKo: "IP 피칭·수익 가정 예제", labelEn: "IP Pitch · Revenue Assumption Examples" },
   { id: "proDigitizerHid", labelKo: "펜 입력·보정 계산 예제", labelEn: "Pen Input · Calibration Examples" },
   { id: "spatialWearable", labelKo: "기기 배치·시간 예측 예제", labelEn: "Device Layout · Timing Estimate Examples" },
+  { id: "heterogeneousNpu", labelKo: "기기별 NPU·GPU 배치 계획", labelEn: "Device NPU and GPU Planning" },
+  { id: "rustFullExpansion", labelKo: "Rust WASM 전환 계획", labelEn: "Rust WASM Expansion Planning" },
+  { id: "multicoreVello", labelKo: "멀티코어·Vello GPU 스케줄 예제", labelEn: "Multicore and Vello GPU Scheduling Examples" },
+  { id: "rustHotspotPorter", labelKo: "Rust WASM 이식·검증 예제", labelEn: "Rust WASM Porting and Parity Exercise" },
+  { id: "npuThermal", labelKo: "NPU 그래프와 열 제어 예제", labelEn: "NPU Graph and Thermal Control Examples" },
 ];
 
 function EcosystemIcon({ id }: { readonly id: EcosystemTabId }) {
   switch (id) {
+    case "npuThermal":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "heterogeneousNpu":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "rustFullExpansion":
+      return <Layers size={15} aria-hidden="true" />;
+    case "multicoreVello":
+      return <Activity size={15} aria-hidden="true" />;
+    case "rustHotspotPorter":
+      return <Scale size={15} aria-hidden="true" />;
     case "globalIpPitch":
       return <Presentation size={15} aria-hidden="true" />;
     case "proDigitizerHid":
@@ -272,6 +312,11 @@ export function OpenEcosystemWorkflowHubPanel() {
           {active === "globalIpPitch" ? <LazyStudioGlobalIpPitchPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "proDigitizerHid" ? <LazyStudioProDigitizerCalibratorPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "spatialWearable" ? <LazyStudioSpatialWearablePanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "heterogeneousNpu" ? <LazyStudioHeterogeneousSiliconPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "rustFullExpansion" ? <LazyStudioRustExpansionArchitectPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "multicoreVello" ? <LazyStudioMulticoreVelloSchedulerPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "rustHotspotPorter" ? <LazyStudioRustHotspotPorterPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "npuThermal" ? <LazyStudioWebNnNpuThermalPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
       <details className="rounded-xl border border-line bg-panel p-2.5">

@@ -22,15 +22,53 @@ STUDIO_PPT_ADVANCED_CHUNK = re.compile(
     r"-[A-Za-z0-9_-]{8}\.js$"
 )
 
+# PR #2915 빌드에서 확인한 원고 편집기 전용 지연 진입점이다. 공유 vendor나 공개 shaper는 제외하지 않는다.
+# Spark는 BG3D 참고 도구, Phaser는 Studio 가상 공간 캔버스에서만 지연 로딩한다.
+# SVG worker와 Inspector도 원고 편집기 안에서만 생성·지연 로딩한다. 아래 테스트가 해당 경계를 함께 확인한다.
+STUDIO_EDITOR_ONLY_CHUNK = re.compile(
+    r"^(?:studio-legacy-editor-adapter|StudioBackground3D|StudioBg3dAdvancedWorkbenchHub|"
+    r"StudioAiSuperSuiteModal|spark\.module|phaser\.esm|studio-svg-export\.worker|StudioInspectorAside)"
+    r"-[A-Za-z0-9_-]{8}\.js$"
+)
+
+
+def is_redundant_admin_locale(flat: Path, selected: set[Path]) -> bool:
+    # 관리자 로더는 <namespace>/<locale>.json을 요청한다. 합본에만 있는 값이나 충돌은 보존한다.
+    if not re.fullmatch(r"[a-z]{2,3}(?:-[a-z0-9]+)*\.json", flat.name):
+        return False
+    parts = [path for path in flat.parent.glob(f"*/{flat.name}") if path in selected]
+    if not parts:
+        return False
+    try:
+        combined = json.loads(flat.read_text(encoding="utf-8"))
+        if not isinstance(combined, dict) or not all(isinstance(value, str) for value in combined.values()):
+            return False
+        merged = {}
+        for part in parts:
+            entries = json.loads(part.read_text(encoding="utf-8"))
+            if not isinstance(entries, dict):
+                return False
+            if any(key not in combined or combined[key] != value for key, value in entries.items()):
+                return False
+            merged.update(entries)
+        return merged == combined
+    except (ValueError, OSError):
+        return False
+
 
 def select_preview_files(root: Path) -> set[Path]:
     files = {path for path in root.iterdir() if path.is_file() and path.suffix in ALLOWED_SUFFIXES}
+    # 공개 페이지도 index.html의 스크립트 태그로 이 파일을 요청한다.
+    bootstrap = root / "offline-draw" / "bootstrap.js"
+    if bootstrap.is_file():
+        files.add(bootstrap)
     assets = root / "assets"
     if assets.is_dir():
         files.update(path for path in assets.iterdir()
                      if path.is_file() and path.suffix in ALLOWED_SUFFIXES
                      and not STUDIO_RUNTIME_CHUNK.fullmatch(path.name)
-                     and not STUDIO_PPT_ADVANCED_CHUNK.fullmatch(path.name))
+                     and not STUDIO_PPT_ADVANCED_CHUNK.fullmatch(path.name)
+                     and not STUDIO_EDITOR_ONLY_CHUNK.fullmatch(path.name))
     for directory in ("brand", "fonts", "icons", "i18n", "locales"):
         path = root / directory
         if path.is_dir():
@@ -41,6 +79,9 @@ def select_preview_files(root: Path) -> set[Path]:
         path = root / directory
         if path.is_dir():
             files.update(item for item in path.rglob("*.json") if item.stat().st_size < 8_000_000)
+    for flat in (root / "i18n" / "admin").glob("*.json"):
+        if flat in files and is_redundant_admin_locale(flat, files):
+            files.remove(flat)
     return files
 
 

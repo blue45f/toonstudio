@@ -103,6 +103,22 @@ const LazyStudioNativeWasmMigrationPanel = lazy(() =>
   import("../native-wasm-migration-studio").then((module) => ({ default: module.StudioNativeWasmMigrationPanel })),
 );
 
+const LazyStudioGigaCanvasSwapPanel = lazy(() =>
+  import("../giga-canvas-virtual-swap").then((module) => ({ default: module.StudioGigaCanvasSwapPanel })),
+);
+
+const LazyStudioInfiniteZoomSpatialPanel = lazy(() =>
+  import("../infinite-zoom-spatial-gpu").then((module) => ({ default: module.StudioInfiniteZoomSpatialPanel })),
+);
+
+const LazyStudioDependencyWasm64AuditPanel = lazy(() =>
+  import("../dependency-wasm64-auditor").then((module) => ({ default: module.StudioDependencyWasm64AuditPanel })),
+);
+
+const LazyStudioWebGpuRadiancePanel = lazy(() =>
+  import("../webgpu-radiance-cascades").then((module) => ({ default: module.StudioWebGpuRadiancePanel })),
+);
+
 type FrontierTabId =
   | "brushPhysics"
   | "brushCustomLab"
@@ -124,7 +140,11 @@ type FrontierTabId =
   | "liveOracle"
   | "federatedLora"
   | "tactileBrush"
-  | "nativeMigrationPlan";
+  | "nativeMigrationPlan"
+  | "largeCanvasBudget"
+  | "infiniteZoom"
+  | "dependencyCutover"
+  | "radianceCascades";
 
 interface OracleLiveSnapshot {
   readonly catalogBrushes: number;
@@ -161,6 +181,10 @@ const FRONTIER_TABS: readonly {
   { id: "federatedLora", labelKo: "저랭크 학습·캐시 계산 예제", labelEn: "Low-Rank Learning · Cache Examples" },
   { id: "tactileBrush", labelKo: "브러시 질감 예제", labelEn: "Brush Texture Examples" },
   { id: "nativeMigrationPlan", labelKo: "WASM 전환 예산 예제", labelEn: "WASM Migration Budget Examples" },
+  { id: "largeCanvasBudget", labelKo: "대형 캔버스 타일·저장 예제", labelEn: "Large Canvas Tile and Storage Examples" },
+  { id: "infiniteZoom", labelKo: "확대와 좌표 정밀도 예제", labelEn: "Zoom and Coordinate Precision Examples" },
+  { id: "dependencyCutover", labelKo: "의존성 전환 계획", labelEn: "Dependency Cutover Planning" },
+  { id: "radianceCascades", labelKo: "2D 조명·그림자 예제", labelEn: "2D Lighting and Shadow Examples" },
 ];
 
 const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
@@ -245,6 +269,14 @@ const ATELIER_PREBAKED_ASSET_GROUPS: readonly {
 
 function FrontierIcon({ id }: { readonly id: FrontierTabId }) {
   switch (id) {
+    case "largeCanvasBudget":
+      return <Layers size={15} aria-hidden="true" />;
+    case "infiniteZoom":
+      return <Eye size={15} aria-hidden="true" />;
+    case "dependencyCutover":
+      return <Cpu size={15} aria-hidden="true" />;
+    case "radianceCascades":
+      return <Zap size={15} aria-hidden="true" />;
     case "nativeMigrationPlan":
       return <Cpu size={15} aria-hidden="true" />;
     case "tactileBrush":
@@ -447,6 +479,10 @@ export function BrushWasm3dFrontierHubPanel() {
             {active === "federatedLora" ? <LazyFederatedLoraPanel /> : null}
             {active === "tactileBrush" ? <LazyStudioTactileBrushTexturePanel locale={isEn ? "en" : "ko"} /> : null}
             {active === "nativeMigrationPlan" ? <LazyStudioNativeWasmMigrationPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "largeCanvasBudget" ? <LazyStudioGigaCanvasSwapPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "infiniteZoom" ? <LazyStudioInfiniteZoomSpatialPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "dependencyCutover" ? <LazyStudioDependencyWasm64AuditPanel locale={isEn ? "en" : "ko"} /> : null}
+            {active === "radianceCascades" ? <LazyStudioWebGpuRadiancePanel locale={isEn ? "en" : "ko"} /> : null}
             {active === "drawingFrontier" ? <LazyStudioNextgenDrawingFrontierPanel /> : null}
             {active === "visualOracle" ? <LazyStudioVisualIntegrityOraclePanel /> : null}
             {active === "nocodeShaderGrid" ? <LazyStudioNoCodeShaderGridPanel /> : null}

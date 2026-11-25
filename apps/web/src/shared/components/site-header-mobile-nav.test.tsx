@@ -61,6 +61,21 @@ function rankingMenuLink() {
 }
 
 describe("모바일 전체 메뉴", () => {
+  it.each(["/", "/about", "/help", "/support", "/community", "/research"])("%s의 전체 메뉴는 주 행동과 모든 목적지를 하나씩만 두고 다섯 여정·일곱 목적 그룹을 보존한다", (pathname) => {
+    render(menu(true, vi.fn(), pathname));
+    const dialog = screen.getByRole("dialog");
+    const links = Array.from(dialog.querySelectorAll("a[href]"), (link) => link.getAttribute("href"));
+    expect(links).toHaveLength(new Set(links).size);
+    expect(links.filter((href) => href === "/create")).toHaveLength(1);
+    expect(links.filter((href) => href === "/studio")).toHaveLength(1);
+    const journey = dialog.querySelectorAll<HTMLAnchorElement>(".site-menu-journey__card");
+    expect(journey).toHaveLength(5);
+    for (const card of journey) { card.focus(); expect(document.activeElement).toBe(card); expect(card.textContent).toBeTruthy(); }
+    expect(dialog.querySelectorAll(".site-menu-task")).toHaveLength(7);
+    expect(links).toContain("/settings");
+    expect(links).toContain("/studio/support");
+  });
+
   it("실제 메뉴를 닫아도 RouterLink 이동을 먼저 처리하고 본문을 유지한다", async () => {
     renderStatefulMenu();
     const link = rankingMenuLink();

@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SettingsPage } from "./SettingsPage";
+import { SiteExperienceFrame } from "@/shared/components/site-experience/SiteExperienceFrame";
+import { EXPERIENCE_MODE_KEY } from "@/shared/components/site-experience/site-experience-policy";
 
 vi.mock("@/platform/me-client", () => ({
   getMyProfile: vi.fn(async () => { throw new Error("offline"); }),
@@ -11,7 +13,6 @@ vi.mock("@/platform/me-client", () => ({
 }));
 vi.mock("@/shared/components/appearance/AppearanceSettings", () => ({ AppearanceSettings: () => <div data-testid="appearance" /> }));
 vi.mock("@/shared/components/RegionalPreferences", () => ({ RegionalPreferences: () => <div data-testid="regional" /> }));
-vi.mock("@/shared/components/site-experience/site-experience-context", () => ({ useSiteExperience: () => null }));
 vi.mock("@/shared/voice", () => ({ VoiceGuideSettingsSection: () => <section aria-label="음성 안내 설정" /> }));
 vi.mock("@/shared/ambient", () => ({ AmbientSettingsSection: () => <section aria-label="앰비언트 설정" /> }));
 vi.mock("./ConnectedAccountsSettings", () => ({ ConnectedAccountsSettings: () => <div data-testid="connected-accounts" /> }));
@@ -31,6 +32,43 @@ function renderSettings(entry = "/settings?view=display") {
 
 beforeEach(() => window.localStorage.clear());
 afterEach(cleanup);
+
+function GuestAppearanceJourney({ entry = "/settings" }: { entry?: string }) {
+  return <MemoryRouter initialEntries={[entry]}><Routes>
+    <Route path="/settings" element={<SiteExperienceFrame enabled={false}><SettingsPage /><Link to="/">검증용 홈</Link></SiteExperienceFrame>} />
+    <Route path="/" element={<SiteExperienceFrame enabled><p>홈</p><Link to="/settings">검증용 설정</Link></SiteExperienceFrame>} />
+  </Routes></MemoryRouter>;
+}
+
+describe("게스트 사이트 배경 설정", () => {
+  it("작업 셸에서 선택하고 홈 방문·새로고침 뒤에도 유지하며 Studio 배경은 만들지 않는다", () => {
+    const first = render(<GuestAppearanceJourney />);
+    expect(screen.getByRole("radio", { name: "차분하게" }).getAttribute("aria-checked")).toBe("true");
+    expect(first.container.querySelector("[data-site-experience], .site-experience-ambient")).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: "화려하게" }));
+    expect(screen.getByRole("radio", { name: "화려하게" }).getAttribute("aria-checked")).toBe("true");
+    expect(localStorage.getItem(EXPERIENCE_MODE_KEY)).toBe("vivid");
+    expect(first.container.querySelector("[data-site-experience], .site-experience-ambient")).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "검증용 홈" }));
+    expect(first.container.querySelector('[data-site-experience="vivid"]')).not.toBeNull();
+    first.unmount();
+    const refreshed = render(<GuestAppearanceJourney entry="/" />);
+    expect(refreshed.container.querySelector('[data-site-experience="vivid"]')).not.toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "검증용 설정" }));
+    expect(screen.getByRole("radio", { name: "화려하게" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("radio", { name: "차분하게" }));
+    fireEvent.click(screen.getByRole("link", { name: "검증용 홈" }));
+    expect(refreshed.container.querySelector('[data-site-experience="calm"]')).not.toBeNull();
+    expect(localStorage.getItem(EXPERIENCE_MODE_KEY)).toBe("calm");
+  });
+
+  it("사이트 컨텍스트가 활성인 설정에서는 선택을 즉시 화면에 반영한다", () => {
+    const result = render(<MemoryRouter><SiteExperienceFrame enabled><SettingsPage /></SiteExperienceFrame></MemoryRouter>);
+    fireEvent.click(screen.getByRole("radio", { name: "화려하게" }));
+    expect(result.container.querySelector('[data-site-experience="vivid"]')).not.toBeNull();
+    expect(localStorage.getItem(EXPERIENCE_MODE_KEY)).toBe("vivid");
+  });
+});
 
 describe("설정 화면 탭", () => {
   it("목록(?view=overview)에서 처음 연 계정 초안도 목록 왕복과 Back·Forward 중 같은 입력 DOM을 유지한다", () => {

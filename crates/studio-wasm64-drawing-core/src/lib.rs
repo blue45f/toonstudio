@@ -12,11 +12,14 @@ use std::fmt;
 
 pub mod brush_kernel;
 pub mod filter_warp_kernel;
+pub mod simd_bvh_skinning_kernel;
 pub mod spectral_km_kernel;
 pub mod tactile_texture_kernel;
 pub mod tile_compositor_kernel;
 pub mod tile_delta_kernel;
 pub mod vector_psd_tile_kernel;
+#[cfg(feature = "virtual-3d-physics")]
+pub mod virtual_3d_physics_kernel;
 pub mod wasm_ffi;
 
 pub use brush_kernel::{
@@ -26,6 +29,12 @@ pub use brush_kernel::{
 pub use filter_warp_kernel::{
     gaussian_blur_rgba_into, gaussian_blur_rgba_masked, unsharp_mask_rgba, unsharp_mask_rgba_into,
     warp_mesh_rigid_mls, WarpPin,
+};
+pub use simd_bvh_skinning_kernel::{
+    build_morton_bvh_2d, encode_morton_2d_u32, encode_morton_3d_u32,
+    extract_lt_lineart_from_gbuffer, query_morton_bvh_aabb, skin_vrm_mesh_4bone_soa, Aabb2D,
+    LtLineArtConfig, LtLineArtStats, MortonBvh2D, MortonBvhNode2D, SkinningStats, VrmMeshSoaInput,
+    VrmMeshSoaOutput, IDENTITY_MAT4, MORTON_BVH_LEAF_CAPACITY,
 };
 pub use spectral_km_kernel::{mix_pigments_km16, mix_pigments_km16_strip, KM_SPECTRAL_BANDS};
 pub use tactile_texture_kernel::{
@@ -53,6 +62,12 @@ pub use wasm_ffi::{
     wasm_mix_pigments_km_packed, wasm_sample_world_paper_height, wasm_stamp_tactile_bristle,
     wasm_unsharp_mask_rgba, wasm_xor_tile_delta_bytes, TACTILE_BRUSH_FFI_PARAM_COUNT,
     WASM_HOTPATH_CAPABILITIES,
+};
+#[cfg(feature = "extended-3d")]
+pub use wasm_ffi::{
+    wasm_encode_morton_2d_u32, wasm_encode_morton_3d_u32, wasm_extended_3d_capabilities,
+    wasm_extract_lt_lineart_from_gbuffer, wasm_skin_vrm_mesh_4bone_soa, LT_LINEART_FFI_PARAM_COUNT,
+    WASM_EXTENDED_3D_CAPABILITIES,
 };
 
 /// 코어 드로잉 엔진의 모든 연산이 공유하는 panic 없는 오류 모델.
@@ -151,3 +166,19 @@ pub(crate) fn checked_rgba_len(width: u32, height: u32) -> Result<usize, Drawing
         .checked_mul(4)
         .ok_or(DrawingCoreError::InvalidDimensions { width, height })
 }
+
+#[cfg(feature = "virtual-3d-physics")]
+pub use virtual_3d_physics_kernel::{
+    render_foley_biquad_block, solve_finger_fabrik_chain, solve_hand_fabrik_15joints,
+    step_verlet_spring_chains_soa, FingerAngleLimits, FingerFabrikConfig, FingerIkResult,
+    FoleyBiquadState, FoleyBlockStats, FoleyDspConfig, FoleyFilterMode, HandIkResult,
+    SphereCollider, VerletSpringChainsSoa, VerletSpringConfig, VerletStepStats,
+    AUDIOWORKLET_BLOCK_FRAMES, FINGER_JOINT_COUNT, FINGER_POINT_COUNT, FOLEY_PEAK_CEILING,
+    FOLEY_TARGET_LUFS, HAND_FINGER_COUNT, HAND_TOTAL_JOINTS,
+};
+#[cfg(feature = "virtual-3d-physics")]
+pub use wasm_ffi::{
+    wasm_render_foley_biquad_block, wasm_solve_finger_fabrik_chain,
+    wasm_step_verlet_spring_chains_soa, FABRIK_FINGER_FFI_PARAM_COUNT, FOLEY_DSP_FFI_PARAM_COUNT,
+    FOLEY_DSP_FFI_STATE_LEN, VERLET_SPRING_FFI_PARAM_COUNT,
+};

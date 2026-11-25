@@ -89,6 +89,9 @@ describe("무빙툰 수치 예제·자막 문자열의 경계", () => {
     { id: "cue\ninjected", text: "원문" },
     { id: "NOTE", text: "원문" },
     { id: "cue", text: "<b>원문</b>" },
+    { id: "cue", text: "앞 --> 뒤" },
+    { id: "cue", text: "앞 --!> 뒤" },
+    { id: "cue--!>id", text: "원문" },
   ])("지원하지 않는 자막 블록은 원문을 유지하고 형식 성공·출력 문자열을 만들지 않는다: %j", (input) => {
     const cues = [{ ...input, startSec: 0, endSec: 5 }];
     const before = JSON.stringify(cues);
@@ -111,6 +114,8 @@ describe("무빙툰 수치 예제·자막 문자열의 경계", () => {
     expect(generateSubtitleTracks([{ id: "crlf", startSec: 0, endSec: 5, text: "첫 줄\r\n둘째 줄" }]).validation.valid).toBe(true);
     const source = [{ id: "cue", startSec: 0, endSec: 5, text: "원문" }];
     expect(generateSubtitleTracks(source, { title: "제목\n\n가짜 블록" }).validation.valid).toBe(false);
+    expect(generateSubtitleTracks(source, { title: "제목 --!> 주석종료" }).validation.valid).toBe(false);
+    expect(generateSubtitleTracks([{ ...source[0], speaker: "화자 --!> 주입" }], { includeSpeakerLabel: true }).validation.valid).toBe(false);
     expect(generateSubtitleTracks([{ ...source[0], id: "cue", text: "원문", startSec: 1, endSec: 1.0001 }]).validation.valid).toBe(false);
   });
 

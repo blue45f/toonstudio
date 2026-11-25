@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { SiteExperienceContext } from "./site-experience-context";
-import { EXPERIENCE_MODE_KEY, parseExperienceMode, type ExperienceMode } from "./site-experience-policy";
 import { illustratedArtworkSource } from "./site-illustrated-art";
+import { useStoredSiteExperienceMode } from "./use-site-experience-mode";
 
-import { readBrowserPreference, writeBrowserPreference } from "@/shared/lib/browser-preferences";
 import { useTheme } from "@/shared/lib/theme";
 import { getThemeSceneAsset } from "@/shared/lib/theme-scene-assets";
 
@@ -72,22 +71,8 @@ function SiteThemeAmbientArt() {
 
 /** No root/body mutations: unmounting the web frame removes every visual effect. */
 function ActiveSiteExperienceFrame({ children }: { children: ReactNode }) {
-  const [mode, updateMode] = useState<ExperienceMode>(() => parseExperienceMode(
-    readBrowserPreference(() => globalThis.localStorage, EXPERIENCE_MODE_KEY),
-  ));
-  const setMode = useCallback((next: ExperienceMode) => {
-    updateMode(next);
-    writeBrowserPreference(() => globalThis.localStorage, EXPERIENCE_MODE_KEY, next);
-  }, []);
-  useEffect(() => {
-    const sync = (event: StorageEvent) => {
-      if (event.key !== EXPERIENCE_MODE_KEY && event.key !== null) return;
-      updateMode(parseExperienceMode(readBrowserPreference(() => globalThis.localStorage, EXPERIENCE_MODE_KEY)));
-    };
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
-  const settings = useMemo(() => ({ mode, setMode }), [mode, setMode]);
+  const settings = useStoredSiteExperienceMode();
+  const { mode } = settings;
   return (
     <SiteExperienceContext.Provider value={settings}>
       <div data-site-experience={mode} data-slot="site-experience-frame">

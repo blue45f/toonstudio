@@ -1,0 +1,50 @@
+/**
+ * Wave 55D — 절차적 SVG 생성·재질 설계·권리 미검토 이력 공개 배럴.
+ */
+
+export {
+  PIGMENT_HARMONIES,
+  PROCEDURAL_ASSET_RECIPES,
+  SYNTH_SVG_HEIGHT,
+  SYNTH_SVG_WIDTH,
+  VIOLET_SLOP_MAX_HUE,
+  VIOLET_SLOP_MIN_HUE,
+  computeDeterministicDigest,
+  createMulberry32,
+  exportProceduralAssetManifestJson,
+  exportSynthesizedAssetSvg,
+  formatOklch,
+  getPigmentHarmony,
+  getProceduralAssetRecipe,
+  isVioletSlopHue,
+  nextDeterministicSeed,
+  normalizeSeed,
+  resolveChannelElementStyle,
+  sanitizeNonVioletHue,
+  synthesizeProceduralAsset,
+  type ComplexityLod,
+  type DagGraphIntegrity,
+  type DagPipelineNode,
+  type DagStageKind,
+  type NormalizedSynthParams,
+  type OklchColor,
+  type PbrMaterialStats,
+  type PigmentHarmonyId,
+  type PigmentHarmonySpec,
+  type PreviewChannelId,
+  type ProceduralAssetRecipe,
+  type ProceduralAssetRecipeId,
+  type ProceduralAssetSynthInput,
+  type ProceduralAssetSynthResult,
+  type RightsBomCleanCertificate,
+  type SvgLayerKind,
+  type SvgPrimitiveElement,
+  type SynthesizedSvgScene,
+  type Vec2,
+  type WatertightMesh3dSummary,
+} from "./procedural-asset-synth-engine";
+
+export {
+  StudioProceduralAssetSynthPanel,
+  type StudioProceduralAssetSynthPanelProps,
+} from "./StudioProceduralAssetSynthPanel";

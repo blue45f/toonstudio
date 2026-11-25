@@ -4,7 +4,7 @@ import { assertAudioCueExport } from "./audio-cue-input-contract";
 function round1(value: number): number { return Math.round(value * 10) / 10; }
 
 function sanitizeWebVttText(text: string): string {
-  return text.replace(/&/gu, "&amp;").replace(/</gu, "&lt;").replace(/>/gu, "&gt;").replace(/\r?\n+/gu, " ");
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replace(/[\r\n]+/gu, " ");
 }
 
 /** 에피소드 오디오 큐시트를 표준 WebVTT(`.vtt`) 자막 문자열로 직렬화한다. */
@@ -27,7 +27,7 @@ export function exportAudioCueWebVtt(cueSheet: EpisodeAudioCueSheet, options?: E
       const startTs = formatWebVttTimestamp(cut.lipSync.startTimeMs);
       const endTs = formatWebVttTimestamp(Math.max(cut.lipSync.startTimeMs + 100, cut.lipSync.endTimeMs));
       if (includeCueNotes) {
-        lines.push(`NOTE cut=${cut.cutId} scroll=${cut.scrollStartPct}%..${cut.scrollEndPct}% mood=${cut.bgmMood} tone=${cut.emotionTone} duck=${cut.isDuckingActive ? `${cueSheet.dialogueDuckingDb}dB` : "0dB"}`, "");
+        lines.push(`NOTE cut=${sanitizeWebVttText(cut.cutId)} scroll=${cut.scrollStartPct}%..${cut.scrollEndPct}% mood=${cut.bgmMood} tone=${cut.emotionTone} duck=${cut.isDuckingActive ? `${cueSheet.dialogueDuckingDb}dB` : "0dB"}`, "");
       }
       lines.push(String(cueNumber), `${startTs} --> ${endTs}`, `<v ${sanitizeWebVttText(cut.speaker || "화자")}>${sanitizeWebVttText(cut.dialogue)}`, "");
       cueNumber += 1;

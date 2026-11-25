@@ -129,6 +129,18 @@ const LazyStudioAdaptiveCalmGuardPanel = lazy(() =>
   import("../adaptive-calm-stack-guard").then((module) => ({ default: module.StudioAdaptiveCalmGuardPanel })),
 );
 
+const LazyStudioStylusNeuralCompensationPanel = lazy(() =>
+  import("../stylus-neural-compensation").then((module) => ({ default: module.StudioStylusNeuralCompensationPanel })),
+);
+
+const LazyStudioCalmIntentUxPanel = lazy(() =>
+  import("../calm-intent-ux-orchestrator").then((module) => ({ default: module.StudioCalmIntentUxPanel })),
+);
+
+const LazyStudioOneshotCutDirectorPanel = lazy(() =>
+  import("../oneshot-cut-director").then((module) => ({ default: module.StudioOneshotCutDirectorPanel })),
+);
+
 type CreatorLabTabId =
   | "calibrator"
   | "signatureLab"
@@ -154,7 +166,10 @@ type CreatorLabTabId =
   | "craftLauncher"
   | "atelierFoley"
   | "focusHaptics"
-  | "adaptiveCalm";
+  | "adaptiveCalm"
+  | "stylusCompensation"
+  | "calmIntentExample"
+  | "oneshotCutDirector";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -186,10 +201,19 @@ const CREATOR_LAB_TABS: readonly {
   { id: "atelierFoley", labelKo: "작업실 음향·웹 오디오", labelEn: "Atelier Sound · Web Audio" },
   { id: "focusHaptics", labelKo: "집중·화면 이동·햅틱 예제", labelEn: "Focus · View Movement · Haptic Examples" },
   { id: "adaptiveCalm", labelKo: "작업 도구 배치·기기 예산 예제", labelEn: "Tool Layout · Device Budget Examples" },
+  { id: "stylusCompensation", labelKo: "필압 곡선과 획 보정 예제", labelEn: "Pressure Curve and Stroke Compensation Examples" },
+  { id: "calmIntentExample", labelKo: "도구 배치와 색상 대비 예제", labelEn: "Tool Layout and Palette Contrast Examples" },
+  { id: "oneshotCutDirector", labelKo: "컷 구도와 대사 배치 예제", labelEn: "Panel Framing and Dialogue Layout Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
   switch (id) {
+    case "oneshotCutDirector":
+      return <Clapperboard size={15} aria-hidden="true" />;
+    case "calmIntentExample":
+      return <Compass size={15} aria-hidden="true" />;
+    case "stylusCompensation":
+      return <PenTool size={15} aria-hidden="true" />;
     case "adaptiveCalm":
       return <Compass size={15} aria-hidden="true" />;
     case "focusHaptics":
@@ -313,6 +337,9 @@ export function CreatorLabHardwareHubPanel() {
           {active === "atelierFoley" ? <LazyAtelierFoleyMixerPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "focusHaptics" ? <LazyStudioFocusPanHapticPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "adaptiveCalm" ? <LazyStudioAdaptiveCalmGuardPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "stylusCompensation" ? <LazyStudioStylusNeuralCompensationPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "calmIntentExample" ? <LazyStudioCalmIntentUxPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "oneshotCutDirector" ? <LazyStudioOneshotCutDirectorPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

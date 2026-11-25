@@ -79,7 +79,9 @@ export interface SparseTileCompositeUniformInput {
   readonly dirtyHeight?: number | undefined;
   readonly blendMode?: SparseTileBlendMode | undefined;
   readonly opacity?: number | undefined;
+  /** false는 음이 아닌 선형 HDR 입력이다. true는 0..1 sRGB 입력을 디코딩한다. */
   readonly inputIsSrgb?: boolean | undefined;
+  /** false이면 Normal/Add의 선형 HDR을 보존한다. true는 0..1 sRGB 표시 범위로 제한한다. */
   readonly outputToSrgb?: boolean | undefined;
 }
 
@@ -361,7 +363,9 @@ fn sparse_tile_composite_main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (out_a <= 1e-6) { dst_tile[idx] = vec4<f32>(0.0); return; }
 
   var out_lin = vec3<f32>(0.0);
-  if (params.blend_mode == 11u) {
+  if (params.blend_mode == 0u) {
+    out_lin = (src_lin * sa + dst_lin * da * (1.0 - sa)) / out_a;
+  } else if (params.blend_mode == 11u) {
     out_lin = (dst_lin * da + src_lin * sa) / out_a;
   } else {
     let dc = clamp(dst_lin, vec3<f32>(0.0), vec3<f32>(1.0));

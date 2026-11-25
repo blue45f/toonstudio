@@ -1,0 +1,51 @@
+/**
+ * Wave 54A — 상위 5% 핫스팟 Rust WASM 점진 전환 · 0-diff 동치 증명 하네스 공개 배럴.
+ */
+
+export {
+  PORTER_PIPELINE_STAGES,
+  TOP_5PCT_HOTSPOT_TARGETS,
+  TOTAL_CODEBASE_LOC_REFERENCE,
+  buildHotspotParityReceipt,
+  createInitialHotspotSession,
+  createRustCandidateKernel,
+  enableRustHotspotKernel,
+  exportHotspotParityMarkdown,
+  exportHotspotParityReportJson,
+  getHotspotTarget,
+  recordGoldenIoFixtures,
+  rollbackToTsReference,
+  runFullVerifiedPortFlow,
+  runPortStep,
+  runRecordStep,
+  runScanStep,
+  runTsReferenceKernel,
+  runVerifyStep,
+  scanHotspotProfile,
+  summarizeParetoConcentration,
+  verifyTsVsRustParity,
+  type FixtureCategory,
+  type FixtureParityDetail,
+  type GoldenIoFixture,
+  type HotspotKernelFn,
+  type HotspotParityProofReceipt,
+  type HotspotPorterSession,
+  type HotspotScanResult,
+  type HotspotTargetId,
+  type HotspotTargetSpec,
+  type KernelRoutingMode,
+  type ParetoConcentrationSummary,
+  type ParityGateDecision,
+  type ParityVerificationResult,
+  type PorterAuditEntry,
+  type PorterPipelineStage,
+  type PorterStageSpec,
+  type RustCandidateOptions,
+  type RustPortReadiness,
+} from "./rust-hotspot-porter-engine";
+
+export {
+  StudioRustHotspotPorterPanel,
+  type HotspotGateChangeEvent,
+  type StudioRustHotspotPorterPanelProps,
+} from "./StudioRustHotspotPorterPanel";

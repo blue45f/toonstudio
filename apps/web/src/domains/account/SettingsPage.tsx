@@ -34,7 +34,7 @@ import { AppearanceSettings } from "@/shared/components/appearance/AppearanceSet
 import { StudioInteractionSfxSettingsSection } from "@/domains/account/StudioInteractionSfxSettingsSection";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { RegionalPreferences } from "@/shared/components/RegionalPreferences";
-import { useSiteExperience } from "@/shared/components/site-experience/site-experience-context";
+import { useSiteExperienceMode } from "@/shared/components/site-experience/use-site-experience-mode";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
 import { SectionNav, type SectionNavItem } from "@/shared/components/section-nav";
@@ -92,7 +92,7 @@ export function SettingsPage() {
   const location = useLocation();
   const overview = new URLSearchParams(location.search).get("view") === "overview" && !location.hash;
   const hydrated = useHydrated();
-  const experience = useSiteExperience();
+  const experience = useSiteExperienceMode();
   const lang = useI18n((s) => s.lang);
   const userId = useApp((s) => s.userId);
   const setLang = useI18n((s) => s.setLang);
@@ -422,14 +422,14 @@ export function SettingsPage() {
 
         {/* 표시 설정 */}
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.display")}>
-          {experience && <Row icon={Sliders}
+          <Row icon={Sliders}
             title={lang.startsWith("ko") ? "화면 효과" : "Appearance"}
             desc={lang.startsWith("ko") ? "화려한 색채와 차분한 화면 중 선택하세요. 스튜디오는 변경되지 않습니다." : "Choose a vivid or calm appearance. Studio remains unchanged."}>
             <Choice options={[
               { id: "vivid", label: lang.startsWith("ko") ? "화려하게" : "Vivid" },
               { id: "calm", label: lang.startsWith("ko") ? "차분하게" : "Calm" },
             ]} value={experience.mode} label={lang.startsWith("ko") ? "화면 효과" : "Appearance"} onChange={(next) => { experience.setMode(next); flashSaved(); }} />
-          </Row>}
+          </Row>
           <Row icon={Star} title={t("settings.rating.title")} desc={t("settings.rating.desc")}>
             <Choice options={scaleOptions} value={ratingScale} label={t("settings.rating.title")} onChange={(next) => { setRatingScale(next); flashSaved(); }} />
           </Row>
