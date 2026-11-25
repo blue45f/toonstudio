@@ -48,7 +48,10 @@ beforeEach(() => {
   mocks.keyOrder = "none";
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("AiCreativeDirectorPanel", () => {
   it("starts with the suggestion list and blocks requests with real alternatives when AI is offline", async () => {
@@ -109,6 +112,63 @@ describe("AiCreativeDirectorPanel", () => {
     expect(mocks.complete).toHaveBeenCalledWith(expect.objectContaining({ task }), expect.any(AbortSignal));
     const queue = screen.getByRole("region", { name: "AI 생성 검토 대기열" });
     expect(within(queue).getByText(queueLabel)).toBeTruthy();
+  });
+
+  it("copies the approved job's own draft even after a newer answer arrives", async () => {
+    mocks.status.mockResolvedValue(configuredStatus);
+    mocks.complete
+      .mockResolvedValueOnce({ ok: true, data: { content: "첫 번째 제안", provider: "gemini", model: "gemini-flash" } })
+      .mockResolvedValueOnce({ ok: true, data: { content: "두 번째 제안", provider: "gemini", model: "gemini-flash" } });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", new Proxy(navigator, { get: (target, key) => key === "clipboard" ? { writeText } : Reflect.get(target, key, target) }));
+    renderPanel();
+
+    await screen.findByText("ToonStudio AI 연결됨");
+    const input = screen.getByLabelText(/요청 내용/u);
+    fireEvent.change(input, { target: { value: "첫 번째 요청" } });
+    fireEvent.click(screen.getByRole("button", { name: "루나에게 요청" }));
+    await screen.findByText("첫 번째 제안");
+
+    fireEvent.change(input, { target: { value: "두 번째 요청" } });
+    fireEvent.click(screen.getByRole("button", { name: "루나에게 요청" }));
+    await screen.findByText("두 번째 제안");
+
+    const row = within(screen.getByRole("region", { name: "AI 생성 검토 대기열" })).getByText("첫 번째 요청").closest("li");
+    const newerRow = within(screen.getByRole("region", { name: "AI 생성 검토 대기열" })).getByText("두 번째 요청").closest("li");
+    if (!row || !newerRow) throw new Error("두 작업이 대기열에 없습니다.");
+    fireEvent.click(within(newerRow).getByRole("button", { name: "결과 승인" }));
+    fireEvent.click(within(row).getByRole("button", { name: "결과 승인" }));
+    fireEvent.click(within(row).getByRole("button", { name: /클립보드에 복사|사본으로 적용/u }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledExactlyOnceWith("첫 번째 제안"));
+    expect(await within(row).findByText("복사 완료")).toBeTruthy();
+    expect(newerRow.dataset.status).toBe("approved");
+    expect(screen.queryByText(/새 사본 레이어/u)).toBeNull();
+  });
+
+  it("keeps an approved draft retryable when the clipboard rejects the write", async () => {
+    mocks.status.mockResolvedValue(configuredStatus);
+    mocks.complete.mockResolvedValue({ ok: true, data: { content: "유지할 제안", provider: "gemini", model: "gemini-flash" } });
+    const writeText = vi.fn().mockRejectedValueOnce(new DOMException("denied", "NotAllowedError")).mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", new Proxy(navigator, { get: (target, key) => key === "clipboard" ? { writeText } : Reflect.get(target, key, target) }));
+    renderPanel();
+
+    await screen.findByText("ToonStudio AI 연결됨");
+    fireEvent.change(screen.getByLabelText(/요청 내용/u), { target: { value: "유지할 요청" } });
+    fireEvent.click(screen.getByRole("button", { name: "루나에게 요청" }));
+    await screen.findByText("유지할 제안");
+
+    const row = within(screen.getByRole("region", { name: "AI 생성 검토 대기열" })).getByText("유지할 요청").closest("li");
+    if (!row) throw new Error("작업이 대기열에 없습니다.");
+    fireEvent.click(within(row).getByRole("button", { name: "결과 승인" }));
+    fireEvent.click(within(row).getByRole("button", { name: /클립보드에 복사|사본으로 적용/u }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledOnce());
+    expect(row.dataset.status).toBe("approved");
+    expect((await screen.findByRole("alert")).textContent).toContain("결과를 복사하지 못했어요.");
+    expect(within(row).queryByText("복사 완료")).toBeNull();
+
+    fireEvent.click(within(row).getByRole("button", { name: /클립보드에 복사|사본으로 적용/u }));
+    expect(await within(row).findByText("복사 완료")).toBeTruthy();
+    expect(mocks.complete).toHaveBeenCalledOnce();
   });
 
   it("shows the failure honestly without inventing a result", async () => {
