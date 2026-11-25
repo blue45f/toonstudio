@@ -31,6 +31,32 @@ test('공식 AWS 목록의 priority만 변경하고 재실행은 멱등이다', 
   assert.equal(prioritizeUbuntuAptMirrors(desired).changed, false);
   assert.equal(prioritizeUbuntuAptMirrors(original.replaceAll('\n', '\r\n')).content, desired.replaceAll('\n', '\r\n'));
 });
+for (const region of ['us-east-1', 'us-west-2']) {
+  test(`AWS ${region}의 주소와 행 순서를 보존하고 priority만 변경한다`, () => {
+    const input = original.replace('us-east-2', region);
+    const expected = desired.replace('us-east-2', region);
+    assert.equal(Buffer.byteLength(input), 152);
+    assert.deepEqual(prioritizeUbuntuAptMirrors(input), {
+      changed: true, reason: 'aws-priorities-updated', content: expected,
+    });
+    const { fs, writes } = fakeFs(expected);
+    assert.deepEqual(run(fs), { changed: false, reason: 'aws-already-prioritized' });
+    assert.deepEqual(writes, []);
+  });
+}
+test('여러 클라우드 주소나 등록되지 않은 미러가 있으면 파일을 쓰지 않는다', () => {
+  const west = aws.replace('us-east-2', 'us-west-2');
+  const azure = aws.replace('us-east-2.ec2.archive', 'azure.archive');
+  for (const input of [
+    west + original, west + azure + canonical,
+    original.replace('us-east-2', 'us-west-9'),
+    original.replace('us-east-2.ec2.archive.ubuntu.com', 'us-east-1.ec2.archive.ubuntu.com.example.invalid'),
+  ]) {
+    const { fs, writes } = fakeFs(input);
+    assert.throws(() => run(fs), /APT_MIRROR_(?:FORMAT|LAYOUT)/u);
+    assert.deepEqual(writes, []);
+  }
+});
 test('관측하지 않은 Azure 및 공식 canonical-only 경로는 변경하지 않는다', () => {
   for (const content of [original.replace('us-east-2.ec2.archive', 'azure.archive'), canonical]) {
     assert.equal(prioritizeUbuntuAptMirrors(content).content, content);
