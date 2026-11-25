@@ -31,6 +31,9 @@ import {
   type StudioLineSegment,
 } from "./render/studio-radial-line-geometry";
 import { isEffectivelyHidden, type LayerGroup } from "./studio-layers";
+import { clampThumbStroke, downsamplePoints } from "./studio-thumbnail-stroke";
+
+export { clampThumbStroke, downsamplePoints };
 
 // ── 입력 — 느슨한 구조 타입(StudioPage 의 El/PageState 가 그대로 대입 가능) ────────────
 
@@ -217,31 +220,12 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 // ── SVG 기하 유틸(순수) ─────────────────────────────────────────────────────────────
 
-/** 획 두께 하한 클램프 — 0 이하(획 없음)는 그대로 0. */
-export function clampThumbStroke(width: number, minStroke: number): number {
-  if (!Number.isFinite(width) || width <= 0) return 0;
-  return Math.max(width, minStroke);
-}
-
 /** 줄 수·줄 길이 클램프(초과분 말줄임 "…"). 썸네일 텍스트 비용 상한. */
 export function clampThumbTextLines(text: string, maxLines: number, maxChars: number): string[] {
   return text
     .split("\n")
     .slice(0, Math.max(1, maxLines))
     .map((line) => (line.length > maxChars ? `${line.slice(0, Math.max(0, maxChars - 1))}…` : line));
-}
-
-/** [x,y,...] 플랫 배열을 균등 간격으로 최대 maxPoints 개로 줄인다(양 끝점 보존). */
-export function downsamplePoints(points: number[], maxPoints = 24): number[] {
-  const n = Math.floor(points.length / 2);
-  if (n <= maxPoints) return points.slice(0, n * 2);
-  const out: number[] = [];
-  const step = (n - 1) / (maxPoints - 1);
-  for (let i = 0; i < maxPoints; i++) {
-    const idx = Math.round(i * step) * 2;
-    out.push(points[idx] ?? 0, points[idx + 1] ?? 0);
-  }
-  return out;
 }
 
 /** [x,y,...] → SVG points 속성 문자열("x,y x,y"). */
