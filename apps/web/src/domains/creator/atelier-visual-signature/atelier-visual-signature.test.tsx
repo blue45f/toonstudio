@@ -44,7 +44,13 @@ describe("계산 미리보기와 측정 범위", () => {
       expect(theme).toHaveProperty("comfortReferenceScope", "unmeasured-design-reference");
       expect(theme.craftNoteKo).not.toMatch(/눈부심 0%|청색광을 억제/u);
     }
-    const exported: unknown = JSON.parse(exportVisualSignatureJson(buildAtelierVisualSignatureSnapshot({})));
+    const snapshot = buildAtelierVisualSignatureSnapshot({
+      themeId: "warm-alabaster",
+      innerRadiusPx: 12,
+      paddingPx: 8,
+      rawAngleDeg: 15,
+    });
+    const exported: unknown = JSON.parse(exportVisualSignatureJson(snapshot));
     expect(exported).toMatchObject({
       evaluationScope: "deterministic-design-system-audit",
       executionScope: {
@@ -53,7 +59,7 @@ describe("계산 미리보기와 측정 범위", () => {
       },
       theme: { comfortReferenceScope: "unmeasured-design-reference" },
     });
-    expect(exportAtelierDesignTokensCss(buildAtelierVisualSignatureSnapshot({}))).toContain("설정 저장도 수행하지 않음");
+    expect(exportAtelierDesignTokensCss(snapshot)).toContain("설정 저장도 수행하지 않음");
   });
 
   it("테마 전환은 패널 미리보기로 알리고 실제 원고·브러시 연결과 임시 상태 범위를 안내한다", () => {
