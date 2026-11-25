@@ -468,7 +468,10 @@ jobs:
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile --prefer-offline
-          curl -fsSL https://onpod.ai/install.sh | sh
+          ONPOD_INSTALL_SH_SHA256="79f9bb748e34faa3f778674c6237240cc4d126b258ecee1e51e683441da85fda"
+          curl -fsSL https://onpod.ai/install.sh -o "$RUNNER_TEMP/onpod-install.sh"
+          printf '%s  %s\n' "$ONPOD_INSTALL_SH_SHA256" "$RUNNER_TEMP/onpod-install.sh" | sha256sum -c -
+          sh "$RUNNER_TEMP/onpod-install.sh"
           for bin_dir in "$HOME/.local/bin" "$HOME/.onpod/bin"; do
             if [[ -d "$bin_dir" ]]; then
               echo "$bin_dir" >> "$GITHUB_PATH"

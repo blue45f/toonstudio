@@ -83,10 +83,8 @@ function measureStudioRailMorePosition(
   dialog?: Pick<DOMRect, "height" | "width"> | null
 ): PositionedStudioRailMore {
   const viewport = currentStudioRailMoreViewport();
-  const maxHeight = Math.max(0, Math.min(
-    STUDIO_RAIL_MORE_MAX_HEIGHT_PX,
-    viewport.height - 16
-  ));
+  const topClearance = viewport.width >= 1024 ? 44 : 0;
+  const maxHeight = Math.max(0, Math.min(STUDIO_RAIL_MORE_MAX_HEIGHT_PX, viewport.height - 16 - topClearance));
   const measuredHeight = dialog?.height && dialog.height > 0
     ? Math.min(dialog.height, maxHeight)
     : maxHeight;
@@ -95,10 +93,7 @@ function measureStudioRailMorePosition(
     : STUDIO_RAIL_MORE_WIDTH_PX;
 
   const resolved = resolveStudioRailMorePosition({
-    popoverHeight: measuredHeight,
-    popoverWidth: measuredWidth,
-    trigger,
-    viewport,
+    popoverHeight: measuredHeight, popoverWidth: measuredWidth, topClearance, trigger, viewport,
   });
   const viewportLeft = viewport.left ?? 0;
   const viewportRight = viewportLeft + viewport.width;
@@ -644,7 +639,7 @@ function StudioLeftToolRailConnected({ pinnedToolHost }: Pick<StudioLeftToolRail
 "data-studio-rail-tool-id": "pixel-pencil",
 "icon": Grid3X3,
 "label": "픽셀 펜 (P)",
-"description": "1px 하드 픽셀 펜으로 그립니다. 안티앨리어스·필압 없이 또렷한 선을 남깁니다.",
+"description": "1px 픽셀 펜으로 번짐 없이 또렷한 선을 그립니다.",
 "active": tool === "draw" && drawMode === "pixel" && !drawToolTemporarilyOverridden,
 "disabled": activeSurfaceReviewLocked,
 "unavailableReason": activeSurfaceReviewLocked ? reviewLockReason() : undefined,
@@ -743,7 +738,7 @@ function StudioLeftToolRailConnected({ pinnedToolHost }: Pick<StudioLeftToolRail
 "data-studio-rail-tool-id": "eyedropper",
 "icon": Pipette,
 "label": "스포이드 (I / Alt+클릭)",
-"description": "캔버스 색을 샘플링해 주 색으로 가져옵니다. 펜으로 그리는 중엔 Alt+클릭으로도 동작해요.",
+"description": "캔버스 색을 찍어 현재 색으로 가져옵니다. 그리는 중에는 Alt+클릭으로 바로 쓸 수 있어요.",
 "active": eyedropperActive,
 "onClick": () => {
                 const next = !eyedropperActive;
@@ -982,7 +977,7 @@ function StudioLeftToolRailConnected({ pinnedToolHost }: Pick<StudioLeftToolRail
 "launcher": true,
 "icon": Sparkles,
 "label": "캐릭터 셰이퍼",
-"description": "프리셋 카드로 얼굴·헤어·체형·의상을 고르고, 사진·웹캠으로 포즈를 잡고, 투명 PNG나 레이어 PSD로 내보냅니다.",
+"description": "얼굴·헤어·체형·의상을 골라 캐릭터와 포즈를 만들고 투명 PNG나 PSD로 내보냅니다.",
 "active": characterShaperOpen,
 "accented": true,
 "onClick": () => setCharacterShaperOpen?.((v) => !v)
@@ -1001,8 +996,8 @@ function StudioLeftToolRailConnected({ pinnedToolHost }: Pick<StudioLeftToolRail
 "data-studio-rail-tool-id": "hybrid-dcc",
 "launcher": true,
 "icon": Box,
-"label": "Hybrid 3D DCC",
-"description": "메시·불리언·CAD/스컬프/클로스·샷·.toon3d 하이브리드 워크스페이스를 엽니다. 웹툰 세트장 구축과 컷 연출을 한 화면에서 처리합니다.",
+"label": "3D 세트장",
+"description": "웹툰 3D 세트장과 컷 구도를 한 화면에서 만듭니다.",
 "active": hybridDccOpen,
 "accented": true,
 "onClick": () => setHybridDccOpen?.((v) => !v)
@@ -1098,7 +1093,7 @@ zoom: { icon: Search, label: zoomViewToolLabel, description: zoomViewToolOpen ? 
         <div ref={railMoreDialogRef} id={railMoreDialogId} role="dialog" aria-modal="false"
           aria-labelledby={railMoreTitleId} tabIndex={-1} data-studio-shortcut-boundary="true"
           data-studio-z-layer={STUDIO_Z_LAYERS.railMoreDialog} data-hud-collision-free="true"
-          className="fixed z-[90] studio-vibrant-surface studio-vibrant-keep-all studio-vibrant-anchored-popover flex w-[26rem] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl border border-line bg-panel p-3 shadow-xl"
+          className="fixed z-[90] studio-vibrant-surface studio-vibrant-keep-all studio-vibrant-anchored-popover flex w-[26rem] max-w-[calc(100vw-max(1rem,env(safe-area-inset-left)+env(safe-area-inset-right)))] flex-col overflow-hidden rounded-xl border border-line bg-panel p-3 shadow-xl"
           style={{ left: railMorePosition.left, top: railMorePosition.top, maxHeight: railMorePosition.maxHeight, zIndex: STUDIO_Z_LAYERS.railMoreDialog }}>
           <header className="mb-2 flex shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">

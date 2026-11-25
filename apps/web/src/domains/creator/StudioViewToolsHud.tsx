@@ -393,7 +393,7 @@ export function StudioViewToolsHud({
             />
             <span
               aria-hidden
-              className="pointer-events-none absolute right-2 text-[0.65rem] font-black text-fg-3"
+              className="pointer-events-none absolute right-2 text-xs font-bold text-fg-3"
             >
               %
             </span>
@@ -408,7 +408,7 @@ export function StudioViewToolsHud({
                 ? `현재 확대율 ${zoomPercent}퍼센트`
                 : `현재 회전 각도 ${rotation}도`
             }
-            className="min-w-11 rounded-lg border border-line/70 bg-card px-2 py-1 text-center text-[0.72rem] font-bold tabular-nums text-fg-2"
+            className="min-w-11 rounded-lg border border-line/70 bg-card px-2 py-1 text-center text-xs font-bold tabular-nums text-fg-2"
           >
             {currentValue}
           </span>

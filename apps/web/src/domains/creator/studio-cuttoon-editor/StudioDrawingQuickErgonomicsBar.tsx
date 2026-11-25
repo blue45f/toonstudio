@@ -469,8 +469,8 @@ export function StudioDrawingQuickErgonomicsBar({
           s.onChangePressureCurvePreset?.(next, PRESSURE_CURVE_PRESETS[next]);
         }}
         title={blocked && blockedReason ? blockedReason : bt(
-          "클릭할 때마다 필압 베지어 곡선 및 실시간 필압 감도(표준 → 부드러움 → 단단한 G펜 → 강약 강조)를 동시 전환합니다",
-          "Cycle cubic Bezier pen pressure curve and live pressure feel",
+          "펜 필압 감도 전환 (표준 → 부드러움 → 단단함 → 강약 강조)",
+          "Cycle pen pressure feel (Standard → Soft → Firm → Dynamic)",
         )}
       >
         <Gauge size={15} aria-hidden />
@@ -495,8 +495,8 @@ export function StudioDrawingQuickErgonomicsBar({
           s.onToggleQuickShapeSnap?.(next);
         }}
         title={blocked && blockedReason ? blockedReason : bt(
-          `그린 뒤 0.4초 멈추면 직선·사각형·타원으로 자동 스냅합니다 (빠른 메뉴 ${activeQuickMenuCount}슬롯 준비됨)`,
-          `Hold 0.4s after drawing to snap clean shapes (${activeQuickMenuCount} QuickMenu slots ready)`,
+          "그린 뒤 잠깐 멈추면 직선·사각형·타원으로 정리합니다",
+          "Hold briefly after drawing to straighten into clean shapes",
         )}
       >
         <Shapes size={15} aria-hidden />
@@ -548,8 +548,8 @@ export function StudioDrawingQuickErgonomicsBar({
           s.changeStudioSymmetryType?.(resolveNextSymmetryMode(s.symmetryType));
         }}
         title={bt(
-          "클릭할 때마다 대칭 자 모드(꺼짐 → 수직 → 수평 → 방사 → 만화경 → 실크)를 순환합니다",
-          "Cycle symmetry drawing guide mode",
+          "대칭 선 모드 전환 (꺼짐 → 수직 → 수평 → 방사 → 만화경 → 실크)",
+          "Cycle symmetry guide mode",
         )}
       >
         <Columns2 size={15} aria-hidden />
@@ -568,8 +568,8 @@ export function StudioDrawingQuickErgonomicsBar({
           data-studio-aux-control="true" data-studio-compact-icon-chip="true"
           onClick={() => s.setPerspectiveRulerActive?.((active) => !active)}
           title={blocked && blockedReason ? blockedReason : bt(
-            "원근 자 스냅 켜기/끄기 · 소실점 방사선에 펜·직선을 자동 정렬합니다",
-            "Toggle perspective ruler snap",
+            "원근 안내선에 맞춰 그리기 켜기/끄기",
+            "Toggle perspective guide snap",
           )}
         >
           <Magnet size={15} aria-hidden />
@@ -586,7 +586,7 @@ export function StudioDrawingQuickErgonomicsBar({
         className="studio-drawing-ergonomics-chip"
         data-studio-aux-control="true" data-studio-compact-icon-chip="true"
         onClick={(event) => s.studioOptionsBarsHandlers?.openBrushStudio?.(event.currentTarget)}
-        title={bt("서브픽셀 테이퍼·습식 안료 브러시 랩 열기", "Open Brush Lab studio")}
+        title={bt("브러시 세부 설정 열기", "Open brush settings")}
       >
         <img
           src="/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp"
@@ -605,7 +605,7 @@ export function StudioDrawingQuickErgonomicsBar({
         aria-pressed={s.showWebtoonGuides}
         data-studio-aux-control="true" data-studio-compact-icon-chip="true"
         onClick={() => s.setShowWebtoonGuides((visible) => !visible)}
-        title={bt("모바일 독자 가독 폭(690·720px)과 세이프 영역 가이드를 캔버스에 표시합니다", "Toggle mobile reader safe-width guides (690/720px)")}
+        title={bt("모바일 가독 폭(690·720px) 안내선 표시", "Show mobile reader width guides (690·720px)")}
       >
         <Compass size={15} aria-hidden />
         <span>{bt("모바일 폭 가이드", "Mobile width guide")}</span>
@@ -667,7 +667,7 @@ export function StudioDrawingQuickErgonomicsBar({
         aria-pressed={miniDockOpen}
         data-studio-mini-dock-toggle="true" data-studio-compact-icon-chip="true"
         onClick={() => setMiniDockOpen((open) => !open)}
-        title={bt("상황 인식 스크러버 미니 독 열기/닫기", "Toggle context-aware scrubber mini dock")}
+        title={bt("하단 빠른 조절 바 열기/닫기", "Toggle quick adjustment dock")}
       >
         <SlidersHorizontal size={15} aria-hidden />
         <span>{bt("미니 독", "Mini dock")}</span>
@@ -687,7 +687,7 @@ export function StudioDrawingQuickErgonomicsBar({
 
       {miniDockOpen ? (
         <Suspense fallback={null}>
-          <div className="fixed bottom-16 left-1/2 z-[35] -translate-x-1/2">
+          <div className="fixed bottom-[max(4rem,calc(var(--studio-canvas-bottom-inset,0px)+0.75rem),calc(env(safe-area-inset-bottom)+4rem))] left-1/2 z-[45] max-w-[calc(100vw-max(1.5rem,env(safe-area-inset-left)+env(safe-area-inset-right)))] -translate-x-1/2">
             <LazyStudioContextMiniDock
               mode={miniDockMode}
               strokeWidth={roundedWidth}

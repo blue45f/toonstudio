@@ -34,6 +34,7 @@ function clamp(value: number, minimum: number, maximum: number): number {
 export function resolveStudioRailMorePosition(input: {
   readonly popoverHeight: number;
   readonly popoverWidth: number;
+  readonly topClearance?: number;
   readonly trigger: StudioRailMoreTriggerRect;
   readonly viewport: StudioRailMoreViewport;
 }): StudioRailMorePosition {
@@ -41,8 +42,9 @@ export function resolveStudioRailMorePosition(input: {
   const viewportTop = finiteOr(input.viewport.top, 0);
   const viewportWidth = Math.max(0, finiteOr(input.viewport.width, 0));
   const viewportHeight = Math.max(0, finiteOr(input.viewport.height, 0));
+  const topClearance = Math.max(0, finiteOr(input.topClearance, 0));
   const availableWidth = Math.max(0, viewportWidth - STUDIO_RAIL_MORE_MARGIN_PX * 2);
-  const availableHeight = Math.max(0, viewportHeight - STUDIO_RAIL_MORE_MARGIN_PX * 2);
+  const availableHeight = Math.max(0, viewportHeight - STUDIO_RAIL_MORE_MARGIN_PX * 2 - topClearance);
   const popoverWidth = clamp(finiteOr(input.popoverWidth, 0), 0, availableWidth);
   const popoverHeight = clamp(finiteOr(input.popoverHeight, 0), 0, availableHeight);
   const minimumLeft = viewportLeft + STUDIO_RAIL_MORE_MARGIN_PX;
@@ -50,7 +52,7 @@ export function resolveStudioRailMorePosition(input: {
     minimumLeft,
     viewportLeft + viewportWidth - popoverWidth - STUDIO_RAIL_MORE_MARGIN_PX
   );
-  const minimumTop = viewportTop + STUDIO_RAIL_MORE_MARGIN_PX;
+  const minimumTop = viewportTop + STUDIO_RAIL_MORE_MARGIN_PX + topClearance;
   const maximumTop = Math.max(
     minimumTop,
     viewportTop + viewportHeight - popoverHeight - STUDIO_RAIL_MORE_MARGIN_PX

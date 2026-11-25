@@ -242,12 +242,12 @@ export function StudioDrawingInputHudStrip({
         }
         title={
           zenFocus
-            ? bt("Zen 집중 모드 해제 (Esc)", "Exit Zen focus mode (Esc)")
-            : bt("Zen 캔버스 최대화 집중 모드 전환", "Maximize canvas in Zen focus mode")
+            ? bt("집중 모드 끄기 (Esc)", "Exit focus mode (Esc)")
+            : bt("도구를 숨기고 캔버스에 집중", "Hide extra chrome and focus on canvas")
         }
       >
         {zenFocus ? <Minimize2 size={14} aria-hidden /> : <Maximize2 size={14} aria-hidden />}
-        <span>Zen</span>
+        <span>{bt("집중", "Focus")}</span>
       </button>
 
       <button
@@ -264,8 +264,8 @@ export function StudioDrawingInputHudStrip({
         }
         title={
           isLeftHanded
-            ? bt("왼손잡이 미러(우측 도구 레일) 사용 중 · 클릭해 오른손잡이로 전환", "Left-handed mirror active · Click for right-handed")
-            : bt("오른손잡이 배치(좌측 도구 레일) · 클릭해 왼손잡이 미러로 전환", "Right-handed layout · Click for left-handed mirror")
+            ? bt("오른손잡이 배치로 전환 (도구 왼쪽)", "Switch to right-handed layout")
+            : bt("왼손잡이 배치로 전환 (도구 오른쪽)", "Switch to left-handed layout")
         }
       >
         {isLeftHanded ? <PanelRight size={14} aria-hidden /> : <PanelLeft size={14} aria-hidden />}

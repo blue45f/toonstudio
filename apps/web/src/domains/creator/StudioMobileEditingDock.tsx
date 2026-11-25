@@ -709,14 +709,14 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
             role="toolbar"
             aria-label="선택 항목 빠른 작업"
             data-studio-mobile-selection-actions="true"
-            className="fixed inset-x-2 z-[53] mx-auto flex max-w-[34rem] items-center gap-1 overflow-x-auto rounded-2xl border border-line bg-panel/95 p-1.5 shadow-2xl backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:hidden"
+            className="fixed left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] z-[53] mx-auto flex max-w-[34rem] items-center gap-1 overflow-x-auto overscroll-x-contain rounded-2xl border border-line bg-panel/95 p-1.5 shadow-2xl backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:hidden"
             style={{ bottom: `calc(var(--studio-canvas-bottom-inset, 7rem) + 0.35rem + ${safeMobileKeyboardInset}px)` }}
           >
             <div className="w-[4.75rem] shrink-0 px-2">
-              <p className="truncate text-[0.68rem] font-bold text-fg">
+              <p className="truncate text-xs font-bold text-fg">
                 {marqueeIds.length > 0 ? `${marqueeIds.length}개 선택` : selected ? elementLabel(selected) : "선택"}
               </p>
-              <p className="text-[0.58rem] font-medium uppercase tracking-wide text-fg-3">빠른 작업</p>
+              <p className="text-xs font-medium text-fg-3">빠른 작업</p>
             </div>
             <span aria-hidden className="h-8 w-px shrink-0 bg-line" />
             {openSelectionTransform ? <StudioContextActionButton
@@ -1409,13 +1409,13 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
             tabIndex={-1}
             data-studio-mobile-sheet="true"
             data-studio-shortcut-boundary="true"
-            className="fixed inset-x-2 z-[60] mx-auto max-w-[32rem] rounded-2xl border border-line bg-panel/98 p-3 shadow-2xl backdrop-blur lg:hidden"
+            className="fixed left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))] z-[60] mx-auto max-h-[calc(100dvh-9rem-env(safe-area-inset-top))] max-w-[32rem] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-panel/98 p-3 shadow-2xl backdrop-blur lg:hidden"
             style={{ bottom: `calc(var(--studio-canvas-bottom-inset, 7rem) + 0.5rem + ${safeMobileKeyboardInset}px)` }}
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-[0.8rem] font-bold text-fg">색각·명암 검수</h2>
-                <p className="text-[0.68rem] text-fg-3">원고를 바꾸지 않고 화면 표시만 전환합니다.</p>
+                <h2 className="text-xs font-bold text-fg">색각·명암 검수</h2>
+                <p className="text-xs text-fg-3">원고를 바꾸지 않고 화면 표시만 전환합니다.</p>
               </div>
               <button
                 type="button"

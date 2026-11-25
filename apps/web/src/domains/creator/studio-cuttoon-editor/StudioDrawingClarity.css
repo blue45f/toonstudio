@@ -35,7 +35,7 @@ button[data-studio-drawing-save-summary=true]>span:not([data-studio-connection-n
 .studio-drawing-clarity-mobile-header{height:44px;min-height:44px;max-height:44px;gap:4px;padding:0 6px}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-save{min-width:52px;padding-inline:8px}
 .studio-drawing-clarity-mobile-export{min-width:44px;min-height:44px;padding:0 10px;background:var(--color-accent);border-color:var(--color-accent);color:var(--color-on-accent);font-weight:600;white-space:nowrap}
-.studio-drawing-clarity-context-row{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:6px;height:44px;min-height:44px;max-height:44px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:0 8px;flex-shrink:0;border-bottom:1px solid var(--color-line);background:var(--color-panel);color:var(--color-fg-2)}
+.studio-drawing-clarity-context-row{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:6px;height:44px;min-height:44px;max-height:44px;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;padding:0 8px;flex-shrink:0;border-bottom:1px solid var(--color-line);background:var(--color-panel);color:var(--color-fg-2)}
 .studio-drawing-clarity-context-row:empty{display:none}
 /* 선택해도 원고 원점은 고정된다. 같은 줄에 실제 선택 명령만 표시한다. */
 .studio-drawing-selection-slot:empty,
@@ -104,7 +104,7 @@ button[data-studio-drawing-save-summary=true]>span:not([data-studio-connection-n
 .studio-drawing-clarity-mobile-context .studio-drawing-clarity-history button{width:44px;font-size:12px}
 .studio-drawing-clarity-mobile-context .studio-drawing-clarity-history button>span{display:none}
 /* 좌측 48px 정밀 도구 레일: 9개 코어 그룹 + 2px 인셋 라벤더 활성선 */
-.studio-drawing-clarity-rail{display:flex;flex-direction:column;align-items:center;align-self:stretch;order:-1;flex:0 0 48px;width:48px;gap:4px;padding:6px 2px;background:var(--color-panel);border-inline-end:1px solid var(--color-line);overflow-y:auto;scrollbar-width:thin}
+.studio-drawing-clarity-rail{position:relative;z-index:20;display:flex;flex-direction:column;align-items:center;align-self:stretch;order:-1;flex:0 0 48px;width:48px;gap:4px;padding:6px 2px;background:var(--color-panel);border-inline-end:1px solid var(--color-line);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .studio-drawing-clarity-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;width:100%;align-content:start}
 .studio-drawing-clarity-tools>.studio-drawing-clarity-button,.studio-drawing-clarity-tools summary{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;width:44px;min-width:44px;margin-inline:auto;padding:2px;font-size:12px;border-color:transparent}
 .studio-drawing-rail-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
@@ -157,6 +157,7 @@ button[data-studio-drawing-save-summary=true]>span:not([data-studio-connection-n
 /* 캔버스의 커서·채팅 버튼은 그 위에 열린 레이어 패널의 조작면을 침범하지 않는다. */
 [data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]) #studio-canvas-workspace{isolation:isolate}
 [data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]):has([data-studio-inspector-dock=right]) [data-studio-operation-sync-placement=floating]{right:calc(var(--studio-drawing-inspector-width) + max(.75rem,env(safe-area-inset-right)))}
+body:has(#studio-app-shell[data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-inspector-dock=right]) :is([data-studio-shell-floating-target="offline-readiness"],[data-studio-draft-save-placement="floating"]){right:calc(var(--studio-drawing-inspector-width) + max(.75rem,env(safe-area-inset-right)))}
 [data-studio-inspector-dock=left]>.studio-drawing-clarity-pane--inspector{left:0;right:auto;border-left:0;border-right:1px solid var(--color-line);box-shadow:var(--shadow-2,10px 0 24px -16px color-mix(in oklch,var(--color-fg) 20%,transparent))}
 .studio-drawing-clarity-pane--inspector #studio-inspector{min-width:0!important;max-width:calc(min(360px,38vw) - 12px)!important}
 .studio-drawing-clarity-pane--inspector>div:not(.studio-drawing-clarity-pane-heading){min-height:0}
@@ -168,6 +169,11 @@ body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-stud
 [data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=pages] [data-studio-page-sequence-strip=true]{position:absolute!important;inset:auto 0 0!important;z-index:34}
 [data-studio-drawing-clarity=true] [data-studio-canvas-viewport]{--studio-page-strip-offset:0px!important;--studio-draw-options-height:0px!important}
 [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-status-bar=true]{bottom:12px!important;max-width:calc(100% - 24px)}
+/* 모바일·태블릿에서는 캔버스 상태 바가 하단 편집 독·홈 인디케이터 아래에 묻히지 않도록 독 위로 들어 올린다. */
+[data-studio-drawing-clarity=true][data-studio-drawing-clarity-mobile=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-status-bar=true]{bottom:max(calc(var(--studio-canvas-bottom-inset,4.5rem) + .5rem),calc(var(--studio-mobile-dock-measured-height,4rem) + .5rem),calc(env(safe-area-inset-bottom) + 4.5rem))!important;max-width:calc(100% - max(1.5rem,env(safe-area-inset-left) + env(safe-area-inset-right)))}
+/* 데스크톱에서 서비스 저하 배너나 좌측 열린 브러시 패널과 캔버스 상태 바가 겹치지 않게 비킨다. */
+html:has([data-service-degraded-banner="degraded"]) [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true]):not([data-studio-drawing-clarity-panel=pages]) [data-studio-status-bar=true]{bottom:max(12px,var(--service-status-overlay-clearance,0px))!important}
+[data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=brush]:not([data-studio-drawing-clarity-mobile=true]):not([data-studio-handedness="left"]):not([data-studio-handedness="left-handed"]) [data-studio-status-bar=true]{left:calc(min(320px,calc(100vw - 56px)) + 56px);max-width:calc(100% - min(320px,calc(100vw - 56px)) - 68px)}
 .studio-drawing-clarity-entry-mobile{padding:4px 8px;border-top:1px solid var(--color-line)}
 .studio-drawing-clarity-entry-mobile:empty{display:none}
 .studio-drawing-clarity-entry-mobile>.studio-drawing-clarity-button{width:100%}
@@ -479,9 +485,26 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
     box-shadow:inset 0 1px 0 color-mix(in oklch,var(--color-fg) 14%,transparent),var(--atelier-elevation-dock,0 8px 22px -10px color-mix(in oklch,var(--color-fg) 18%,transparent));
     transition:opacity 180ms cubic-bezier(.22,1,.36,1);
   }
-  /* 플로팅 퀵 바(y: 50~94px) 뒤로 우상단 협업·저장 HUD가 겹치지 않도록 퀵 바 아래 기준선으로 분리한다. */
+  /* 플로팅 퀵 바(y: 50~94px) 뒤로 우상단 협업·저장·보기 HUD가 겹치지 않도록 퀵 바 아래 기준선으로 분리한다. */
   #studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-floating-controls]{
     top:3.75rem;
+  }
+  #studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true]) [data-studio-canvas-viewport]>[data-studio-view-tools-hud]{
+    top:3.75rem;
+  }
+  /* 데스크톱에서 브러시·페이지·레이어 패널(z:35)이 열렸을 때 상단 플로팅 퀵 바가 패널 아래로 잘리지 않도록 안전 여백을 확보한다. */
+  #studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true]):not([data-studio-handedness="left"]):not([data-studio-handedness="left-handed"]):is([data-studio-drawing-clarity-panel=brush],[data-studio-drawing-clarity-panel=pages]) .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    left:calc(min(320px,calc(100vw - 56px)) + 56px);
+    right:12px;
+    max-width:calc(100% - min(320px,calc(100vw - 56px)) - 68px);
+  }
+  #studio-app-shell[data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]):has([data-studio-inspector-dock=right]) .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    right:calc(var(--studio-drawing-inspector-width) + 12px);
+    max-width:calc(100% - var(--studio-drawing-inspector-width) - 66px);
+  }
+  #studio-app-shell[data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=layers]:not([data-studio-drawing-clarity-mobile=true]):has([data-studio-inspector-dock=left]) .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    left:calc(var(--studio-drawing-inspector-width) + 12px);
+    max-width:calc(100% - var(--studio-drawing-inspector-width) - 24px);
   }
   body:has(#studio-app-shell[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-mobile=true])) [data-studio-draft-save-placement=floating]{
     top:calc(6.5rem + env(safe-area-inset-top));
@@ -517,6 +540,11 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
   #studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
     left:12px;
     right:54px;
+  }
+  #studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]):is([data-studio-drawing-clarity-panel=brush],[data-studio-drawing-clarity-panel=pages]) .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context){
+    left:12px;
+    right:calc(min(320px,calc(100vw - 56px)) + 56px);
+    max-width:calc(100% - min(320px,calc(100vw - 56px)) - 68px);
   }
   #studio-app-shell:is([data-studio-handedness="left"],[data-studio-handedness="left-handed"]) :is(.studio-drawing-clarity-pane--brush,.studio-drawing-clarity-pane--pages){
     left:auto;

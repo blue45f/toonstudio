@@ -205,14 +205,22 @@ export function StudioColorPopover({ value, onChange, recentColors, documentColo
               onRequestCanvasEyedropper={onRequestCanvasEyedropper ? () => {
                 if (finish(false)) onRequestCanvasEyedropper();
               } : undefined} />
-            <div className="mt-3">
-              <StudioSpectralBlendPreviewChip
-                foregroundHex={session.color}
-                canvasBaseHex={recentColors.find((hex) => hex.toLowerCase() !== session.color.toLowerCase())}
-                compact={position.compact}
-                onPickMixedColor={change}
-              />
-            </div>
+            <details
+              data-studio-spectral-blend-disclosure="true"
+              className="mt-3 rounded-xl border border-line bg-card/60"
+            >
+              <summary className="flex min-h-11 cursor-pointer items-center justify-between px-3 text-xs font-semibold text-fg-2 [word-break:keep-all]">
+                물감 섞임 미리보기
+              </summary>
+              <div className="px-2 pb-2">
+                <StudioSpectralBlendPreviewChip
+                  foregroundHex={session.color}
+                  canvasBaseHex={recentColors.find((hex) => hex.toLowerCase() !== session.color.toLowerCase())}
+                  compact={position.compact}
+                  onPickMixedColor={change}
+                />
+              </div>
+            </details>
           </div>
           <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-panel p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <button type="button" data-studio-color-cancel="true" onClick={dismiss}
