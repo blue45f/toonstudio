@@ -61,7 +61,10 @@ test("runLongStrokeAndMixAudit가 전 브러시 70종(코어 10 + 마스터 60)�
       minCacheHitRate: 0.9,
       renderSheetsDir: tmpDir,
     });
-    assert.equal(report.passed, true, JSON.stringify(report.summary));
+    assert.equal(report.passed, true, JSON.stringify({
+      summary: report.summary,
+      failedMix: report.mixedScenarios.filter((scenario) => !scenario.passed),
+    }));
     assert.equal(report.summary.coreStampCount, 10);
     assert.equal(report.summary.globalMasterCount, 60);
     assert.equal(report.summary.mixedScenarioCount, 4);

@@ -76,6 +76,16 @@ function isPhaseRead(node: ts.Node): boolean {
     || (ts.isPropertyAccessExpression(node) && node.name.text === "phase");
 }
 
+function isPhaseType(node: ts.LiteralTypeNode): boolean {
+  let declaration = node.parent;
+  while (ts.isUnionTypeNode(declaration) || ts.isParenthesizedTypeNode(declaration)) {
+    declaration = declaration.parent;
+  }
+  if (ts.isTypeAliasDeclaration(declaration)) return declaration.name.text.endsWith("Phase");
+  return (ts.isVariableDeclaration(declaration) || ts.isPropertySignature(declaration)
+    || ts.isParameter(declaration)) && ts.isIdentifier(declaration.name) && declaration.name.text === "phase";
+}
+
 function phaseLiteralOffsets(text: string): ReadonlySet<number> {
   const offsets = new Set<number>();
   const source = ts.createSourceFile("fixture.tsx", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -93,7 +103,7 @@ function phaseLiteralOffsets(text: string): ReadonlySet<number> {
       const phaseExpectation = expectation && ts.isCallExpression(expectation)
         && ts.isIdentifier(expectation.expression) && expectation.expression.text === "expect"
         && expectation.arguments.length === 1 && expectation.arguments[0] && isPhaseRead(expectation.arguments[0]);
-      if (ts.isLiteralTypeNode(parent) || phaseAssignment || phaseProperty || phaseExpectation) offsets.add(node.getStart(source) + 1);
+      if ((ts.isLiteralTypeNode(parent) && isPhaseType(parent)) || phaseAssignment || phaseProperty || phaseExpectation) offsets.add(node.getStart(source) + 1);
     }
     ts.forEachChild(node, visit);
   };
@@ -171,6 +181,7 @@ describe("죽은 클래스 패턴 계약", () => {
   });
 
   it.each([
+    'type ClassName = "fade-in" | "other";',
     'const className = "fade-in";',
     '<div className="fade-in" />',
     '<div className={phase === "fade-in" ? "fade-in" : "animate-fade-in"} />',

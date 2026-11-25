@@ -50,6 +50,7 @@ export const PERF_BUDGET_TEST_FILES = Object.freeze([
   "apps/web/src/domains/creator/studio-living-ink-provider.test.ts",
   "apps/web/src/domains/creator/studio-living-ink-settled-bake-v1.test.ts",
   "apps/web/src/domains/creator/webnn-pigment-director/webnn-lineart-budget.test.ts",
+  "scripts/audit-all-brushes-long-stroke-and-mix.test.mjs",
   "scripts/studio-brush-catalogue-perf-matrix.test.ts",
   "scripts/verify-brush-100-competitor-score.test.mjs",
   "tests/visual/bristle-quality.test.ts",
