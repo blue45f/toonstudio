@@ -125,6 +125,10 @@ const LazyStudioFocusPanHapticPanel = lazy(() =>
   import("../focus-pan-haptic-studio").then((module) => ({ default: module.StudioFocusPanHapticPanel })),
 );
 
+const LazyStudioAdaptiveCalmGuardPanel = lazy(() =>
+  import("../adaptive-calm-stack-guard").then((module) => ({ default: module.StudioAdaptiveCalmGuardPanel })),
+);
+
 type CreatorLabTabId =
   | "calibrator"
   | "signatureLab"
@@ -149,7 +153,8 @@ type CreatorLabTabId =
   | "ergonomics"
   | "craftLauncher"
   | "atelierFoley"
-  | "focusHaptics";
+  | "focusHaptics"
+  | "adaptiveCalm";
 
 const CREATOR_LAB_TABS: readonly {
   readonly id: CreatorLabTabId;
@@ -180,10 +185,13 @@ const CREATOR_LAB_TABS: readonly {
   { id: "craftLauncher", labelKo: "도구 탐색·작업 준비", labelEn: "Tool Finder · Work Preparation" },
   { id: "atelierFoley", labelKo: "작업실 음향·웹 오디오", labelEn: "Atelier Sound · Web Audio" },
   { id: "focusHaptics", labelKo: "집중·화면 이동·햅틱 예제", labelEn: "Focus · View Movement · Haptic Examples" },
+  { id: "adaptiveCalm", labelKo: "작업 도구 배치·기기 예산 예제", labelEn: "Tool Layout · Device Budget Examples" },
 ];
 
 function CreatorLabIcon({ id }: { readonly id: CreatorLabTabId }) {
   switch (id) {
+    case "adaptiveCalm":
+      return <Compass size={15} aria-hidden="true" />;
     case "focusHaptics":
       return <Gauge size={15} aria-hidden="true" />;
     case "craftLauncher":
@@ -304,6 +312,7 @@ export function CreatorLabHardwareHubPanel() {
           {active === "craftLauncher" ? <LazyCraftLauncherPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "atelierFoley" ? <LazyAtelierFoleyMixerPanel locale={isEn ? "en" : "ko"} /> : null}
           {active === "focusHaptics" ? <LazyStudioFocusPanHapticPanel locale={isEn ? "en" : "ko"} /> : null}
+          {active === "adaptiveCalm" ? <LazyStudioAdaptiveCalmGuardPanel locale={isEn ? "en" : "ko"} /> : null}
         </Suspense>
       </div>
     </section>

@@ -65,6 +65,7 @@ const cases: readonly ExampleCase[] = [
   { ko: "스크롤 컷 호흡 예제", en: "Scroll Pacing Examples", panel: "studio-scroll-pacing-composer-panel", Hub: AutoQaCollabHubPanel, load: () => import("../scroll-pacing-tension-composer") },
   { ko: "화풍·재질 비교 예제", en: "Art Style · Material Examples", panel: "studio-style-spectrum-guardian-panel", Hub: Csp3dUpgradeHubPanel, load: () => import("../style-spectrum-guardian") },
   { ko: "집중·화면 이동·햅틱 예제", en: "Focus · View Movement · Haptic Examples", panel: "studio-focus-pan-haptic-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../focus-pan-haptic-studio") },
+  { ko: "작업 도구 배치·기기 예산 예제", en: "Tool Layout · Device Budget Examples", panel: "studio-adaptive-calm-guard-panel", Hub: CreatorLabHardwareHubPanel, load: () => import("../adaptive-calm-stack-guard") },
 ];
 
 afterEach(cleanup);
