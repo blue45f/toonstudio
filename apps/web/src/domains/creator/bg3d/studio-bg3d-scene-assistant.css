@@ -1373,19 +1373,14 @@
   }
 }
 
-/* 첫 줄에서 장면 이름과 닫기를 찾고, 그 아래에서 렌더 상태와 편집 모드를 바꾼다. */
+/* 첫 줄은 제목·간편/정밀·닫기로 고정하고, 상태·원고 복귀는 필요 시 두 번째 줄 한 행에 배치한다. */
 @media (max-width: 639px) {
-  [data-bg3d-workspace-header] { position: relative; gap: 2px; align-items: center; padding-block: 3px; }
-  [data-bg3d-workspace-header] > div:first-child { min-height: 44px; max-width: calc(100% - 44px); }
-  [data-bg3d-workspace-header] > div:nth-child(2) { flex: 0 0 100%; gap: 4px; }
-  [data-bg3d-workspace-header] [data-bg3d-initial-focus] { position: absolute; right: 6px; top: 2px; min-width: 44px; min-height: 44px; }
-  [data-bg3d-workspace-header] [data-testid="studio-bg3d-header-return-2d"] { padding-inline: 5px; }
-  [data-bg3d-workspace-header] [role="group"] { margin-inline-start: auto; }
+  [data-studio-bg3d-workspace] [data-bg3d-header-status-row] { flex: 0 0 100%; }
   .scene-assistant__footer-secondary:empty { display: none; }
 }
 
 @media (max-width: 359px) {
-  [data-bg3d-workspace-header] [data-testid="studio-bg3d-header-return-2d"] span { display: none; }
+  [data-studio-bg3d-workspace] [data-bg3d-workspace-header] [data-testid="studio-bg3d-header-return-2d"] span { display: none; }
   .scene-assistant__step-number { width: 1.25rem; height: 1.25rem; }
 }
 

@@ -55,10 +55,13 @@ async function mountTab(adapter: FailOnceAdapter) {
   const callIndex = initialization.mock.calls.length;
   const mounted = render(<TestPanel />);
   await waitFor(() => {
-    expect(screen.getByRole("button", { name: "스냅샷 커밋" }).hasAttribute("disabled")).toBe(false);
+    expect(initialization.mock.results[callIndex]?.type).toBe("return");
   });
   const result = initialization.mock.results[callIndex];
   if (result?.type !== "return") throw new Error("실제 저장소 초기화 결과가 없습니다.");
+  // 시드 해시 계산의 속도 대신 실제 초기화 완료와 React 반영을 기다린다.
+  await act(async () => { await result.value; });
+  expect(screen.getByRole("button", { name: "스냅샷 커밋" }).hasAttribute("disabled")).toBe(false);
   return { ...mounted, ...await result.value };
 }
 
@@ -312,6 +315,53 @@ describe("OPFS 탭 저장 실패 안내와 재시도", () => {
     expect(screen.getByLabelText<HTMLInputElement>("커밋 메시지").value).toBe("연결 회복 후 저장할 초안");
     expect(vcs.createOpfsVfsAdapter).toHaveBeenCalledTimes(2);
     await expectPreserved(original.engine, adapter, history, original.latestSnapshot);
+  });
+
+  it("첫 manifest 저장 뒤 참조 실패를 알리고 재연결하면 원본 이력으로 작업을 회복한다", async () => {
+    let blockRef = true;
+    class InitialRefFailureAdapter extends FailOnceAdapter {
+      override async writeFile(path: string, data: Uint8Array): Promise<void> {
+        if (blockRef && path === "refs/heads/main" && data.byteLength > 0) {
+          throw new DOMException("첫 참조 저장 실패", "QuotaExceededError");
+        }
+        await super.writeFile(path, data);
+      }
+    }
+    const adapter = new InitialRefFailureAdapter();
+    vi.mocked(vcs.createOpfsVfsAdapter).mockResolvedValue(adapter);
+    render(<StrictMode><TestPanel /></StrictMode>);
+    await screen.findByRole("alert");
+    expectFailure("OPFS 초기화");
+    expect(screen.getByRole("button", { name: "스냅샷 커밋" }).hasAttribute("disabled")).toBe(true);
+    const manifests = await adapter.listFiles("objects/commits");
+    expect(manifests).toHaveLength(1);
+    const id = manifests[0]?.replace(/\.json$/, "") ?? "";
+    const pending = new vcs.OpfsSnapshotVcsEngine({ adapter });
+    await pending.init();
+    const original = pending.getCommit(id);
+    const originalSnapshot = await pending.restoreCommit(id);
+    const originalManifest = await adapter.readFile(`objects/commits/${id}.json`);
+    fireEvent.change(screen.getByLabelText("커밋 메시지"), { target: { value: "복구 후 저장할 초안" } });
+
+    blockRef = false;
+    fireEvent.click(screen.getByRole("button", { name: "저장소 다시 연결" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("저장소에 다시 연결했습니다."));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "스냅샷 커밋" }).hasAttribute("disabled")).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>("커밋 메시지").value).toBe("복구 후 저장할 초안");
+    expect(screen.getByText("HEAD").parentElement?.textContent).toContain(id);
+    const reopened = await vcs.createSeededWebtoonVcs(adapter);
+    expect(reopened.engine.getCommitHistory()).toEqual([original]);
+    expect(reopened.latestSnapshot).toEqual(originalSnapshot);
+    expect(await adapter.readFile(`objects/commits/${id}.json`)).toEqual(originalManifest);
+    expect(await adapter.listFiles("objects/commits")).toEqual(manifests);
+
+    fireEvent.click(screen.getByRole("button", { name: "스냅샷 커밋" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("저장 완료"));
+    const saved = await vcs.createSeededWebtoonVcs(adapter);
+    expect(saved.engine.getCommitHistory()).toHaveLength(2);
+    expect(saved.engine.getCommitHistory()[0]?.parentId).toBe(id);
+    expect(saved.engine.getCommitHistory()[1]).toEqual(original);
   });
 
   it.each(["opfs", "memory-vfs"] as const)("부모 %s 표시는 연결 전·실패 때 미확인이며 재연결 후 확인한 backend만 알린다", async (backend) => {
