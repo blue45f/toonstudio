@@ -1,23 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { STUDIO_AI_DEFAULT_SETTINGS } from "../ai/studio-ai-settings";
-import { colorizeLineArt, generateBackgroundImage, suggestColorPalette } from "../ai/studio-ai-client-lazy";
-import { createColorizeCandidateSession } from "../ai/studio-ai-colorize-candidates";
+import { colorizeLineArt, generateBackgroundImage, generateConsistentCharacterImage, suggestColorPalette } from "../ai/studio-ai-client-lazy";
+import { createColorizeCandidateSession, selectColorizeCandidate, type StudioAiColorizeCandidateSession } from "../ai/studio-ai-colorize-candidates";
 import type { StudioAiGeneratedAssetProvenance } from "../ai/studio-ai-generated-asset-model";
+import { isStudioEditorMutationContinuationAllowed, type StudioEditorMutationTicket } from "../studio-editor-scope";
 import type { El } from "../studio-element-model";
+import { createEmptyDocumentMaster, withMasterElements } from "../studio-master-page";
 import type { PageState } from "../studio-page-state";
-import { createStudioImageAiExecutors } from "./studio-image-ai-executors";
+import { applyStudioImageAiCandidate, createStudioImageAiExecutors, type StudioColorizeTarget } from "./studio-image-ai-executors";
 import { cancelStudioAiRequest, runStudioExecuteSuggestColorPalette } from "./studio-host-wave2-ai-assist-helpers";
 
 vi.mock("../ai/studio-ai-client-lazy", async (importOriginal) => ({
   ...await importOriginal<typeof import("../ai/studio-ai-client-lazy")>(),
   colorizeLineArt: vi.fn(),
   generateBackgroundImage: vi.fn(),
+  generateConsistentCharacterImage: vi.fn(),
   suggestColorPalette: vi.fn(),
 }));
 
 const generatedImage = "data:image/png;base64,Z2VuZXJhdGVk";
-const ticket = { accessGeneration: 0, documentGeneration: 0, authScopeKey: null, workId: null };
+const ticket: StudioEditorMutationTicket = { accessGeneration: 0, documentGeneration: 0, authScopeKey: null, workId: null };
 
 function frame(id: string, background: string): Extract<El, { type: "frame" }> {
   return { id, type: "frame", x: 0, y: 0, width: 200, height: 150, bg: background };
@@ -37,7 +40,10 @@ function createRequestContext(initialPages: PageState[], selected: El | null) {
   const context = {
     currentPageIdRef,
     readCurrentPages: () => currentPages,
-    activePage: { id: "cut-a" },
+    requestSurface: { kind: "page", pageId: "cut-a" } as const,
+    masterEditModeRef: { current: false },
+    readCurrentMasterElements: () => [],
+    patchMasterImageEl: vi.fn(() => true),
     selected,
     elements: initialPages.flatMap((item) => item.id === "cut-a" ? item.elements : []),
     canvasH: 1080,
@@ -167,6 +173,165 @@ describe("페이지 이동 후 AI 배경 반영", () => {
   });
 });
 
+function startMasterColorize(collectCandidate = false) {
+  const image = {
+    id: "master-image", type: "image", src: "master-original",
+    x: 0, y: 0, width: 200, height: 150, rotation: 0,
+  } satisfies El;
+  const sibling = { ...image, id: "master-sibling", src: "master-sibling-original" };
+  let master = withMasterElements(createEmptyDocumentMaster<El>(), [image, sibling]);
+  const masterMode = { current: true };
+  const initial = createRequestContext([page("cut-a", [])], image);
+  const editorScope = { ...ticket, mounted: true, aborted: false, locked: false };
+  const patchMaster = vi.fn((id: string, patch: { src: string }) => {
+    master = withMasterElements(master, master.elements.map((el) => el.id === id ? { ...el, ...patch } : el));
+    return true;
+  });
+  const context = {
+    ...initial.context, requestSurface: { kind: "master", pageId: "cut-a" } as const,
+    masterEditModeRef: masterMode, readCurrentMasterElements: () => master.elements, patchMasterImageEl: patchMaster,
+    canApplyStudioMutation: (request: typeof ticket) => isStudioEditorMutationContinuationAllowed(request, editorScope),
+  };
+  const target: StudioColorizeTarget = { surface: context.requestSurface, elementId: image.id, src: image.src, ticket };
+  const candidates = {
+    session: createColorizeCandidateSession(),
+    provenanceById: new Map<string, StudioAiGeneratedAssetProvenance>(),
+    setSession: vi.fn<(session: StudioAiColorizeCandidateSession) => void>(),
+    setTarget: vi.fn(),
+  };
+  const response = Promise.withResolvers<Awaited<ReturnType<typeof colorizeLineArt>>>();
+  vi.mocked(colorizeLineArt).mockReturnValueOnce(response.promise);
+  const pending = createStudioImageAiExecutors(context)
+    .executeAiColorize(target, "야간 채색", new AbortController(), collectCandidate ? candidates : undefined);
+  return {
+    context, candidates, image, masterMode, moveToNextPage: initial.moveToNextPage, patchMaster, target,
+    replaceProject: () => { editorScope.documentGeneration += 1; },
+    readMaster: () => master,
+    replaceMaster: (elements: El[]) => { master = withMasterElements(master, elements); },
+    sibling,
+    async finish() {
+      response.resolve({ ok: true, data: { dataUrl: generatedImage } });
+      await pending;
+    },
+    applyCandidate() {
+      const candidateSession = candidates.setSession.mock.lastCall?.[0];
+      if (!candidateSession?.selectedId) throw new Error("테스트에서 적용할 채색 후보를 만들지 못했습니다.");
+      const selection = selectColorizeCandidate(candidateSession, candidateSession.selectedId);
+      if (!selection.ok) throw new Error("테스트에서 채색 후보를 선택하지 못했습니다.");
+      applyStudioImageAiCandidate(target, context, {
+        candidateSession: selection.session, candidateProvenanceRef: { current: candidates.provenanceById },
+        canApplyMutation: context.canApplyStudioMutation, setError: context.setFailure,
+      });
+    },
+  };
+}
+
+describe("마스터 이미지 AI 채색 권위", () => {
+  it("요청한 마스터에서만 채색하고 최신 요소 편집을 보존한다", async () => {
+    const request = startMasterColorize();
+    const latestImage = { ...request.image, width: 250 };
+    const editedSibling = { ...request.sibling, src: "master-sibling-edited" };
+    request.replaceMaster([latestImage, editedSibling]);
+    await request.finish();
+
+    expect(request.patchMaster).toHaveBeenCalledExactlyOnceWith(request.image.id, {
+      src: generatedImage, aiProvenance: expect.objectContaining({ action: "edited" }),
+    });
+    expect(request.readMaster().elements).toEqual([
+      { ...latestImage, src: generatedImage, aiProvenance: expect.objectContaining({ action: "edited" }) },
+      editedSibling,
+    ]);
+    expect(request.context.patchImageElOnPage).not.toHaveBeenCalled();
+    expect(request.context.setFailure).not.toHaveBeenCalled();
+  });
+
+  it("마스터 이미지에서도 원본과 연결된 후보를 모으고 확정 전에는 바꾸지 않는다", async () => {
+    const request = startMasterColorize(true);
+    await request.finish();
+    expect(request.candidates.setSession).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      candidates: [expect.objectContaining({ dataUrl: generatedImage })],
+    }));
+    expect(request.patchMaster).not.toHaveBeenCalled();
+    expect(request.context.patchImageElOnPage).not.toHaveBeenCalled();
+    expect(request.candidates.setTarget).toHaveBeenCalledExactlyOnceWith(request.target);
+    request.applyCandidate();
+    expect(request.patchMaster).toHaveBeenCalledExactlyOnceWith(request.image.id, {
+      src: generatedImage, aiProvenance: expect.objectContaining({ action: "edited" }),
+    });
+    expect(request.context.patchImageElOnPage).not.toHaveBeenCalled();
+  });
+
+  it.each(["원본 교체", "마스터 종료", "레이어 잠금", "원고 교체"])("%s 뒤 늦은 채색은 같은 ID를 덮지 않는다", async (change) => {
+    const request = startMasterColorize();
+    if (change === "원본 교체") request.replaceMaster([{ ...request.image, src: "replacement-source" }]);
+    if (change === "마스터 종료") {
+      request.masterMode.current = false;
+      request.moveToNextPage([page("cut-a", [request.image]), page("cut-b", [request.image])]);
+    }
+    if (change === "레이어 잠금") request.replaceMaster([{ ...request.image, locked: true }]);
+    if (change === "원고 교체") request.replaceProject();
+    await request.finish();
+    expect(request.patchMaster).not.toHaveBeenCalled();
+    expect(request.context.patchImageElOnPage).not.toHaveBeenCalled();
+  });
+
+  it.each(["원본 교체", "마스터 종료", "레이어 잠금"])("%s 뒤에는 이미 모은 후보도 다른 원본을 덮지 않는다", async (change) => {
+    const request = startMasterColorize(true);
+    await request.finish();
+    if (change === "원본 교체") request.replaceMaster([{ ...request.image, src: "replacement-source" }]);
+    if (change === "마스터 종료") {
+      request.masterMode.current = false;
+      request.moveToNextPage([page("cut-a", [request.image]), page("cut-b", [request.image])]);
+    }
+    if (change === "레이어 잠금") request.replaceMaster([{ ...request.image, locked: true }]);
+    request.applyCandidate();
+    expect(request.patchMaster).not.toHaveBeenCalled();
+    expect(request.context.patchImageElOnPage).not.toHaveBeenCalled();
+    expect(request.context.setFailure).toHaveBeenCalled();
+  });
+
+  it("동일 ID와 원본을 가진 새 원고에도 이전 원고에서 모은 후보를 적용하지 않는다", async () => {
+    const request = startMasterColorize(true);
+    await request.finish();
+    request.replaceProject();
+    request.applyCandidate();
+    expect(request.patchMaster).not.toHaveBeenCalled();
+    expect(request.context.patchImageElOnPage).not.toHaveBeenCalled();
+  });
+});
+
+describe("마스터와 일반 페이지 사이의 AI 이미지 생성", () => {
+  it.each(["master", "page"] as const)("생성 중 %s 화면을 벗어나면 배경과 캐릭터를 다른 권위에 쓰지 않는다", async (kind) => {
+    const selected = frame("same-frame", "original-background");
+    const pages = [page("cut-a", [selected]), page("cut-b", [selected])];
+    const fixture = createRequestContext(pages, selected);
+    const masterEditModeRef = { current: kind === "master" };
+    const context = { ...fixture.context, requestSurface: { kind, pageId: "cut-a" }, masterEditModeRef };
+    const executors = createStudioImageAiExecutors(context);
+    const background = Promise.withResolvers<Awaited<ReturnType<typeof generateBackgroundImage>>>();
+    const character = Promise.withResolvers<Awaited<ReturnType<typeof generateConsistentCharacterImage>>>();
+    vi.mocked(generateBackgroundImage).mockReturnValueOnce(background.promise);
+    vi.mocked(generateConsistentCharacterImage).mockReturnValueOnce(character.promise);
+    const pendingBackground = executors.executeAiBackgroundGenerate("배경", "1024x1024", ticket, new AbortController());
+    const reference = { elementId: "same-image", src: "character-original", width: 200, height: 100 };
+    const pendingCharacter = executors.executeAiCharacterConsistency(reference, "캐릭터", ticket, new AbortController());
+
+    masterEditModeRef.current = !masterEditModeRef.current;
+    fixture.moveToNextPage(pages);
+    const response = { ok: true, data: { dataUrl: generatedImage, width: 1024, height: 1024, model: "fixture-model" } } as const;
+    background.resolve(response);
+    character.resolve(response);
+    await Promise.all([pendingBackground, pendingCharacter]);
+
+    expect(context.patchEl).not.toHaveBeenCalled();
+    expect(context.commit).not.toHaveBeenCalled();
+    expect(context.commitPages).not.toHaveBeenCalled();
+    expect(context.addRenderedImage).not.toHaveBeenCalled();
+    expect(context.setMenu).not.toHaveBeenCalled();
+    expect(context.setSelectedId).not.toHaveBeenCalled();
+  });
+});
+
 describe("취소한 AI 요청의 늦은 응답", () => {
   it("배경 응답 정산 직후 취소해도 원고에 반영하지 않는다", async () => {
     const firstFrame = frame("frame-a", "original-a");
@@ -197,13 +362,14 @@ describe("취소한 AI 요청의 늦은 응답", () => {
       session: createColorizeCandidateSession(),
       provenanceById: new Map<string, StudioAiGeneratedAssetProvenance>(),
       setSession: vi.fn(),
-      setTargetId: vi.fn(),
-      setTargetPageId: vi.fn(),
+      setTarget: vi.fn(),
     };
     const execute = (controller: AbortController) => createStudioImageAiExecutors({
       ...context,
       canApplyStudioMutation: () => abortRef.current === controller,
-    }).executeAiColorize(image.id, image.src, "차분한 채색", ticket, controller, candidates);
+    }).executeAiColorize({
+      surface: context.requestSurface, elementId: image.id, src: image.src, ticket,
+    }, "차분한 채색", controller, candidates);
 
     const pendingFirst = execute(firstController);
     expect(vi.mocked(colorizeLineArt).mock.lastCall?.[3]?.signal).toBe(firstController.signal);
@@ -227,7 +393,7 @@ describe("취소한 AI 요청의 늦은 응답", () => {
     expect(candidates.setSession).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
       candidates: [expect.objectContaining({ dataUrl: generatedImage })],
     }));
-    expect(candidates.setTargetId).toHaveBeenCalledExactlyOnceWith("image-a");
+    expect(candidates.setTarget).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ elementId: "image-a" }));
     expect(candidates.provenanceById.size).toBe(1);
     expect(context.patchImageElOnPage).not.toHaveBeenCalled();
   });
@@ -247,6 +413,7 @@ describe("취소한 AI 요청의 늦은 응답", () => {
       aiSettings: STUDIO_AI_DEFAULT_SETTINGS,
       textAiTransport: { mode: "server" } as const,
       abortRef,
+      isRequestScopeCurrent: () => true,
       pendingProvider: () => ({ provider: "fixture", model: "fixture-model", transport: "server" as const }),
       settleTextOperation,
       setBusy,

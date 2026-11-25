@@ -83,10 +83,10 @@ describe("Studio AI generated asset fail-closed boundary", () => {
 
   it("loads image executors only after AI notice and rechecks the mutation ticket before use", () => {
     for (const name of ["onGenerateAiBackground", "requestColorize", "onGenerateAiCharacter"]) {
-      expectInOrder(functionSource(name), ["runWithAiNotice", "runImageAiRequest"]);
+      expectInOrder(functionSource(name), ["captureStudioMutationTicket()", "runWithAiNotice", "runImageAiRequest"]);
     }
     expectInOrder(functionSource("runImageAiRequest"), [
-      "captureStudioMutationTicket()",
+      "canApplyStudioMutation(ticket)",
       "setBusy(true)",
       "await import(",
       "canApplyStudioMutation(ticket)",
@@ -169,12 +169,30 @@ describe("Studio AI generated asset fail-closed boundary", () => {
       "setMenu(null)",
     ]);
     expectInOrder(functionSource("executeAiColorize"), [
-      "if (!patchImageElOnPage(requestPageId, elId",
+      "const resolved = resolveColorizeTarget(target, surfaceAccess)",
+      "if (!resolved.patch(",
       "setFailure",
       "return;",
     ]);
+    expectInOrder(functionSource("resolveColorizeTarget"), [
+      "isRequestSurfaceActive(surface, access)",
+      "access.readCurrentPages()",
+      "access.readCurrentMasterElements()",
+      "element.src !== src",
+      "isEffectivelyLocked(element",
+      "!locked",
+      "access.patchMasterImageEl(elementId, patch)",
+      "access.patchImageElOnPage(surface.pageId, elementId, patch)",
+    ]);
+    expectInOrder(functionSource("applyStudioImageAiCandidate"), [
+      "canApplyMutation(target.ticket)",
+      "resolveColorizeTarget(target, access)",
+      "resolved?.patch(patch)",
+    ]);
     expectInOrder(functionSource("patchImageElOnPage"), [
-      "if (pageId === currentPageIdRef.current) return patchEl(elId, patch);",
+      "if (masterEditModeRef.current) return false;",
+      "pageId === currentPageIdRef.current && pageId === aiImagePatchElRef.current.pageId",
+      "return aiImagePatchElRef.current.patchEl(elId, patch);",
       "rejectElementSourceReplacement(target, patch)",
       "return commitPages(",
     ]);

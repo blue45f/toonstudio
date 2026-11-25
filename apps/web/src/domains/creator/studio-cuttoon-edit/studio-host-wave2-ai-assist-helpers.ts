@@ -436,16 +436,15 @@ export async function runStudioExecuteSuggestDialogueLines<TTicket = unknown>(in
   }
 }
 
-export async function runStudioExecuteSuggestColorPalette<TTicket = unknown>(input: {
+export async function runStudioExecuteSuggestColorPalette(input: {
   readonly collaborationLocked: boolean;
   readonly moodText: string;
   readonly busy: boolean;
   readonly activePageId: string;
   readonly aiSettings: StudioAiSettings;
   readonly textAiTransport: StudioTextAiTransport;
-  readonly abortRef?: MutableRefObject<AbortController | null>;
-  readonly captureMutationTicket?: () => TTicket;
-  readonly canApplyMutation?: (ticket: TTicket) => boolean;
+  readonly abortRef: MutableRefObject<AbortController | null>;
+  readonly isRequestScopeCurrent: () => boolean;
   readonly pendingProvider: () => StudioAiOperationProviderContext;
   readonly beginTrackedOperation: (
     feature: "palette",
@@ -462,12 +461,12 @@ export async function runStudioExecuteSuggestColorPalette<TTicket = unknown>(inp
   readonly setSuggestion: (suggestion: PaletteSuggestion | null) => void;
   readonly clearSavedMessage: () => void;
 }): Promise<void> {
-  if (input.collaborationLocked) return;
+  const { abortRef, isRequestScopeCurrent } = input;
+  if (input.collaborationLocked || !isRequestScopeCurrent()) return;
   const mood = input.moodText.trim();
-  if (!mood || input.busy || input.abortRef?.current) return;
-  const mutationTicket = input.captureMutationTicket?.();
+  if (!mood || input.busy || abortRef.current) return;
   const controller = new AbortController();
-  if (input.abortRef) input.abortRef.current = controller;
+  abortRef.current = controller;
   input.setBusy(true);
   input.setError(null);
   input.setSuggestion(null);
@@ -484,30 +483,32 @@ export async function runStudioExecuteSuggestColorPalette<TTicket = unknown>(inp
     target: { pageId: input.activePageId },
     references: [],
   });
-  const ownsRequest = () => !input.abortRef || input.abortRef.current === controller;
-  const canApply = () => ownsRequest() && (
-    mutationTicket === undefined || !input.canApplyMutation || input.canApplyMutation(mutationTicket)
-  );
+  const ownsRequest = () => abortRef.current === controller;
+  let settled = false;
+  function settle(result: StudioAiObservableResult, provenance?: StudioTextAiProvenance, aborted?: boolean): boolean {
+    if (settled || !ownsRequest() || !isRequestScopeCurrent()) return false;
+    settled = true;
+    input.settleTextOperation(operationId, result, provenance, aborted);
+    return true;
+  }
   const settleCancelled = () => {
-    if (canApply()) input.settleTextOperation(operationId, { ok: false }, undefined, true);
+    settle({ ok: false }, undefined, true);
   };
   controller.signal.addEventListener("abort", settleCancelled, { once: true });
   try {
     const transport = studioTextAiTransportForOperation(input.textAiTransport, operationId);
     const result = await suggestColorPalette(input.aiSettings, mood, { ...transport, signal: controller.signal });
-    if (controller.signal.aborted || !canApply()) return;
-    input.settleTextOperation(operationId, result, result.ok ? result.data.textProvenance : undefined);
+    if (controller.signal.aborted || !settle(result, result.ok ? result.data.textProvenance : undefined)) return;
     if (result.ok) input.setSuggestion(result.data);
     else input.setError(result.error);
   } catch {
-    if (!controller.signal.aborted && canApply()) {
-      input.settleTextOperation(operationId, { ok: false, code: "network_error" });
+    if (!controller.signal.aborted && settle({ ok: false, code: "network_error" })) {
       input.setError("팔레트 추천을 완료하지 못했어요. 다시 시도해 주세요.");
     }
   } finally {
     controller.signal.removeEventListener("abort", settleCancelled);
     if (ownsRequest()) {
-      if (input.abortRef) input.abortRef.current = null;
+      abortRef.current = null;
       input.setBusy(false);
     }
   }

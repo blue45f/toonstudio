@@ -24,20 +24,76 @@ import { createCanvasImageElement } from "../studio-image-placement";
 import { isEffectivelyLocked } from "../studio-layers";
 import type { PageState } from "../studio-page-state";
 import type { StudioPublishAiProvenance } from "../studio-publish-preflight";
+import { runStudioApplyColorizeCandidate } from "./studio-host-wave2-ai-assist-helpers";
 import { runStudioInsertAiBackgroundImage } from "./studio-host-wave6-ai-generation-helpers";
+
+export interface StudioImageAiSurface {
+  readonly kind: "page" | "master";
+  readonly pageId: string;
+}
+
+export interface StudioColorizeTarget {
+  readonly surface: StudioImageAiSurface;
+  readonly elementId: string;
+  readonly src: string;
+  readonly ticket: StudioEditorMutationTicket;
+}
+
+type StudioAiImagePatch = { src: string; aiProvenance?: StudioPublishAiProvenance };
+
+interface StudioImageAiSurfaceAccess {
+  readonly masterEditModeRef: { readonly current: boolean };
+  readonly readCurrentPages: () => readonly PageState[];
+  readonly readCurrentMasterElements: () => readonly El[];
+  readonly patchImageElOnPage: (pageId: string, id: string, patch: StudioAiImagePatch) => boolean;
+  readonly patchMasterImageEl: (id: string, patch: StudioAiImagePatch) => boolean;
+}
+
+function isRequestSurfaceActive(surface: StudioImageAiSurface, access: StudioImageAiSurfaceAccess): boolean {
+  return access.masterEditModeRef.current === (surface.kind === "master");
+}
+
+function resolveColorizeTarget(target: StudioColorizeTarget, access: StudioImageAiSurfaceAccess) {
+  const { surface, elementId, src } = target;
+  if (!isRequestSurfaceActive(surface, access)) return;
+  const page = surface.kind === "page" ? access.readCurrentPages().find((entry) => entry.id === surface.pageId) : undefined;
+  const elements = surface.kind === "master" ? access.readCurrentMasterElements() : page?.elements;
+  const element = elements?.find((entry) => entry.id === elementId);
+  if (!element || element.type !== "image" || element.src !== src) return;
+  const locked = isEffectivelyLocked(element, page?.groups ?? []);
+  return {
+    element,
+    patch: (patch: StudioAiImagePatch) => !locked && (surface.kind === "master"
+      ? access.patchMasterImageEl(elementId, patch)
+      : access.patchImageElOnPage(surface.pageId, elementId, patch)),
+  };
+}
+
+export function applyStudioImageAiCandidate(
+  target: StudioColorizeTarget, access: StudioImageAiSurfaceAccess,
+  { canApplyMutation, ...input }: Pick<Parameters<typeof runStudioApplyColorizeCandidate>[0], "candidateSession" | "candidateProvenanceRef" | "setError">
+    & { readonly canApplyMutation: (ticket: StudioEditorMutationTicket) => boolean },
+) {
+  if (!canApplyMutation(target.ticket)) return;
+  const resolved = resolveColorizeTarget(target, access);
+  runStudioApplyColorizeCandidate({
+    ...input,
+    targetId: target.elementId,
+    targetElement: resolved?.element,
+    patchEl: (_id, patch) => resolved?.patch(patch) ?? false,
+  });
+}
 
 interface StudioColorizeCandidateOutput {
   readonly session: StudioAiColorizeCandidateSession;
   readonly provenanceById: Map<string, StudioAiGeneratedAssetProvenance>;
   readonly setSession: (session: StudioAiColorizeCandidateSession) => void;
-  readonly setTargetId: (id: string) => void;
-  readonly setTargetPageId: (pageId: string) => void;
+  readonly setTarget: (target: StudioColorizeTarget) => void;
 }
 
-interface StudioImageAiExecutionContext {
+interface StudioImageAiExecutionContext extends StudioImageAiSurfaceAccess {
   readonly currentPageIdRef: { readonly current: string };
-  readonly readCurrentPages: () => readonly PageState[];
-  readonly activePage: Pick<PageState, "id">;
+  readonly requestSurface: StudioImageAiSurface;
   readonly selected: El | null;
   readonly elements: readonly El[];
   readonly canvasH: number;
@@ -54,7 +110,6 @@ interface StudioImageAiExecutionContext {
   readonly addRenderedImage: (
     src: string, width: number, height: number, provenance: StudioPublishAiProvenance,
   ) => boolean;
-  readonly patchImageElOnPage: (pageId: string, id: string, patch: { src: string; aiProvenance?: StudioPublishAiProvenance }) => boolean;
   readonly commit: (next: El[]) => boolean;
   readonly setSelectedId: Dispatch<SetStateAction<string | null>>;
   readonly setTool: (next: "select" | "draw") => void;
@@ -65,11 +120,17 @@ interface StudioImageAiExecutionContext {
 }
 
 export function createStudioImageAiExecutors({
-  currentPageIdRef, readCurrentPages, activePage, selected, elements, canvasH, aiSettings, t,
+  currentPageIdRef, requestSurface, selected, elements, canvasH, aiSettings, t,
   canApplyStudioMutation, beginTrackedStudioAiOperation, settleTrackedStudioAiOperation,
-  addRenderedImage, patchImageElOnPage, patchEl, commitPages, commit, setSelectedId, setTool,
-  setFailure, setMenu,
+  addRenderedImage, patchEl, commitPages, commit, setSelectedId, setTool,
+  setFailure, setMenu, ...surfaceAccess
 }: StudioImageAiExecutionContext) {
+  const { readCurrentPages } = surfaceAccess;
+
+  function canUseRequestSurface(ticket: StudioEditorMutationTicket, signal: AbortSignal): boolean {
+    return !signal.aborted && canApplyStudioMutation(ticket) && isRequestSurfaceActive(requestSurface, surfaceAccess);
+  }
+
   async function requestImageResult<T extends StudioAiObservableResult>(
     operationId: string, ticket: StudioEditorMutationTicket, signal: AbortSignal, request: () => Promise<T>,
   ): Promise<T | null> {
@@ -104,7 +165,7 @@ export function createStudioImageAiExecutors({
     aiProvenance: StudioPublishAiProvenance,
     requestTarget?: { readonly pageId: string; readonly selectedFrameId: string | null },
   ): boolean {
-    if (requestTarget && requestTarget.pageId !== currentPageIdRef.current) {
+    if (requestSurface.kind === "page" && requestTarget && requestTarget.pageId !== currentPageIdRef.current) {
       const latestPages = readCurrentPages();
       const targetPage = latestPages.find((page) => page.id === requestTarget.pageId);
       if (!targetPage) return false;
@@ -140,8 +201,8 @@ export function createStudioImageAiExecutors({
   async function executeAiBackgroundGenerate(
     prompt: string, size: StudioAiImageSize, mutationTicket: StudioEditorMutationTicket, controller: AbortController,
   ) {
-    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
-    const requestPageId = activePage.id;
+    if (!canUseRequestSurface(mutationTicket, controller.signal)) return;
+    const requestPageId = requestSurface.pageId;
     const requestSelectedFrameId = selected?.type === "frame" ? selected.id : null;
     const provider = studioImageAiProviderContext(aiSettings);
     const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "generated");
@@ -163,7 +224,7 @@ export function createStudioImageAiExecutors({
     const result = await requestImageResult(operationId, mutationTicket, controller.signal, () =>
       generateBackgroundImage(aiSettings, prompt, { size, signal: controller.signal }),
     );
-    if (!result || controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
+    if (!result || !canUseRequestSurface(mutationTicket, controller.signal)) return;
     if (!result.ok) {
       setFailure(result.error);
       return;
@@ -181,15 +242,18 @@ export function createStudioImageAiExecutors({
     setMenu(null); // 다른 "생성 후 팝오버 닫기" 흐름(addBgScene 등)과 동일 UX.
   }
 
-  // AI 자동 채색 실행 — elId/srcAtRequestTime/pageId를 호출 시점에 캡처해 넘긴다(await 도중 컷이나 선택이
-  // 바뀌어도 엉뚱한 요소를 덮어쓰지 않고 원래 컷의 이미지 레이어에 반영한다).
+  // 선택과 화면이 바뀌어도 요청 당시 원본의 최신 이미지 레이어만 채색한다.
   async function executeAiColorize(
-    elId: string, srcAtRequestTime: string, prompt: string,
-    mutationTicket: StudioEditorMutationTicket, controller: AbortController,
+    target: StudioColorizeTarget, prompt: string, controller: AbortController,
     candidates?: StudioColorizeCandidateOutput,
   ) {
-    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
-    const requestPageId = activePage.id;
+    const { elementId, src, ticket, surface } = target;
+    if (!canUseRequestSurface(ticket, controller.signal)) return;
+    const reportMissingSource = () => setFailure(t("studio.hostStatus.colorizeSourceLayerNotFound", "채색 결과를 적용할 원본 이미지 레이어를 찾지 못했어요. 레이어를 다시 선택한 뒤 재시도해 주세요."));
+    if (!resolveColorizeTarget(target, surfaceAccess)) {
+      reportMissingSource();
+      return;
+    }
     const provider = studioImageAiProviderContext(aiSettings);
     const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "edited");
     const operationId = beginTrackedStudioAiOperation("colorize", {
@@ -200,21 +264,20 @@ export function createStudioImageAiExecutors({
       transport: provider.transport,
       promptVersion: 1,
       prompt,
-      target: { pageId: requestPageId, elementId: elId },
-      references: [{ assetId: elId }],
+      target: { pageId: surface.pageId, elementId },
+      references: [{ assetId: elementId }],
     });
-    const result = await requestImageResult(operationId, mutationTicket, controller.signal, () =>
-      colorizeLineArt(aiSettings, srcAtRequestTime, prompt, { signal: controller.signal }),
+    const result = await requestImageResult(operationId, ticket, controller.signal, () =>
+      colorizeLineArt(aiSettings, src, prompt, { signal: controller.signal }),
     );
-    if (!result || controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
+    if (!result || !canUseRequestSurface(ticket, controller.signal)) return;
     if (!result.ok) {
       setFailure(result.error);
       return;
     }
-    const targetPage = readCurrentPages().find((page) => page.id === requestPageId);
-    const target = targetPage?.elements.find((el) => el.id === elId);
-    if (!target || target.type !== "image" || target.src !== srcAtRequestTime) {
-      setFailure(t("studio.hostStatus.colorizeSourceLayerNotFound", "채색 결과를 적용할 원본 이미지 레이어를 찾지 못했어요. 레이어를 다시 선택한 뒤 재시도해 주세요."));
+    const resolved = resolveColorizeTarget(target, surfaceAccess);
+    if (!resolved) {
+      reportMissingSource();
       return;
     }
     if (candidates) {
@@ -229,16 +292,11 @@ export function createStudioImageAiExecutors({
       }
       candidates.provenanceById.set(id, requestProvenance);
       candidates.setSession(added.session);
-      candidates.setTargetId(elId);
-      candidates.setTargetPageId(requestPageId);
+      candidates.setTarget(target);
       return;
     }
     const applyFailure = t("studio.hostStatus.colorizeApplyFailed", "채색 결과는 생성됐지만 이미지 레이어에 적용하지 못했어요. 레이어 잠금과 동기화 상태를 확인한 뒤 다시 시도해 주세요.");
-    if (isEffectivelyLocked(target, targetPage?.groups ?? [])) {
-      setFailure(applyFailure);
-      return;
-    }
-    if (!patchImageElOnPage(requestPageId, elId, { src: result.data.dataUrl, aiProvenance: requestProvenance })) {
+    if (!resolved.patch({ src: result.data.dataUrl, aiProvenance: requestProvenance })) {
       setFailure(applyFailure);
       return;
     }
@@ -256,8 +314,8 @@ export function createStudioImageAiExecutors({
     mutationTicket: StudioEditorMutationTicket,
     controller: AbortController,
   ) {
-    if (controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
-    const requestPageId = activePage.id;
+    if (!canUseRequestSurface(mutationTicket, controller.signal)) return;
+    const requestPageId = requestSurface.pageId;
     const provider = studioImageAiProviderContext(aiSettings);
     const requestProvenance = captureStudioAiGeneratedAssetProvenance(provider, "generated");
     const operationId = beginTrackedStudioAiOperation("character-image", {
@@ -274,13 +332,13 @@ export function createStudioImageAiExecutors({
     const result = await requestImageResult(operationId, mutationTicket, controller.signal, () =>
       generateConsistentCharacterImage(aiSettings, reference.src, prompt, { signal: controller.signal }),
     );
-    if (!result || controller.signal.aborted || !canApplyStudioMutation(mutationTicket)) return;
+    if (!result || !canUseRequestSurface(mutationTicket, controller.signal)) return;
     if (!result.ok) {
       setFailure(result.error);
       return;
     }
     const addedOk =
-      requestPageId !== currentPageIdRef.current
+      requestSurface.kind === "page" && requestPageId !== currentPageIdRef.current
         ? (() => {
             const latestPages = readCurrentPages();
             const targetPage = latestPages.find((page) => page.id === requestPageId);

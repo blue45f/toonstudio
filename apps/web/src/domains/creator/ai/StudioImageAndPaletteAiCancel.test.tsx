@@ -46,7 +46,10 @@ function createTestImageRuntime() {
   const executors = createStudioImageAiExecutors({
     currentPageIdRef: { current: "page-a" },
     readCurrentPages: () => [],
-    activePage: { id: "page-a" },
+    requestSurface: { kind: "page", pageId: "page-a" },
+    masterEditModeRef: { current: false },
+    readCurrentMasterElements: () => [],
+    patchMasterImageEl: vi.fn(() => true),
     selected: null,
     elements: [],
     canvasH: 1080,
@@ -236,6 +239,7 @@ describe("AI 이미지 도구와 팔레트의 요청 준비·취소", () => {
     const pending = runStudioExecuteSuggestColorPalette({
       collaborationLocked: false, moodText: "청춘 로맨스", busy: false, activePageId: "page-a",
       aiSettings: STUDIO_AI_DEFAULT_SETTINGS, textAiTransport: { mode: "server" }, abortRef,
+      isRequestScopeCurrent: () => true,
       pendingProvider: () => ({ provider: "gemini", model: "fixture-model", transport: "server" }),
       beginTrackedOperation: () => "op-palette", settleTextOperation,
       setBusy, setError: vi.fn(), setSuggestion, clearSavedMessage: vi.fn(),

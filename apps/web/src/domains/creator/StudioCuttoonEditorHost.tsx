@@ -1333,10 +1333,11 @@ import {
 } from "./studio-cuttoon-edit/studio-host-view-and-resize-helpers";
 import {
   buildStudioTextAiSettlementOptions, planStudioScenarioProductionImport, resolveStudioAddReferenceAttachment,
-  cancelStudioAiRequest, runStudioApplyAiAssistPresetPrompt, runStudioApplyColorizeCandidate, runStudioApplyDialogueSuggestion,
+  cancelStudioAiRequest, runStudioApplyAiAssistPresetPrompt, runStudioApplyDialogueSuggestion,
   runStudioExecuteSuggestColorPalette, runStudioExecuteSuggestDialogueLines, runStudioWriterRoomAiDraft,
   type StudioAiDialogueLockedTarget,
 } from "./studio-cuttoon-edit/studio-host-wave2-ai-assist-helpers";
+import type { StudioColorizeTarget, StudioImageAiSurface } from "./studio-cuttoon-edit/studio-image-ai-executors";
 import {
   applyStudioSnapEnabledVisible, applyStudioToolOperationSnapshot, deriveStudioOptionsBarsDrawModel,
   deriveStudioSelectedForInspector, hasStudioBg3dCurrentTarget, runStudioExecuteQuickAccessCommand,
@@ -12095,8 +12096,7 @@ const puppetWarpArmed =
   const [aiColorizeCandidateSession, setAiColorizeCandidateSession] = useState(() =>
     createColorizeCandidateSession(),
   );
-  const [aiColorizeCandidateTargetId, setAiColorizeCandidateTargetId] = useState<string | null>(null);
-  const [aiColorizeCandidateTargetPageId, setAiColorizeCandidateTargetPageId] = useState<string | null>(null);
+  const [aiColorizeCandidateTarget, setAiColorizeCandidateTarget] = useState<StudioColorizeTarget | null>(null);
   const aiColorizeAbortRef = useRef<AbortController | null>(null);
   const aiColorizeCandidateProvenanceRef = useRef(
     new Map<string, ReturnType<typeof captureStudioAiGeneratedAssetProvenance>>(),
@@ -14852,12 +14852,24 @@ const puppetWarpArmed =
     return true;
   }
 
+  const aiImagePatchElRef = useRef({ pageId: activePage.id, patchEl });
+  aiImagePatchElRef.current = { pageId: activePage.id, patchEl };
+  const imageAiSurface: StudioImageAiSurface = { kind: masterEditMode ? "master" : "page", pageId: activePage.id };
+  const imageAiSurfaceAccess = {
+    masterEditModeRef, patchImageElOnPage,
+    readCurrentPages: () => pagesHistoryRef.current[pagesHiRef.current] ?? pages,
+    readCurrentMasterElements: () => activeElementsRef.current,
+    patchMasterImageEl: (...args: Parameters<typeof patchEl>) => aiImagePatchElRef.current.patchEl(...args),
+  };
   function patchImageElOnPage(
     pageId: string,
     elId: string,
     patch: { src: string; aiProvenance?: StudioPublishAiProvenance },
   ): boolean {
-    if (pageId === currentPageIdRef.current) return patchEl(elId, patch);
+    if (masterEditModeRef.current) return false;
+    if (pageId === currentPageIdRef.current && pageId === aiImagePatchElRef.current.pageId) {
+      return aiImagePatchElRef.current.patchEl(elId, patch);
+    }
     const latestPages = pagesHistoryRef.current[pagesHiRef.current] ?? pages;
     const targetPage = latestPages.find((page) => page.id === pageId);
     const target = targetPage?.elements.find((el) => el.id === elId);
@@ -14878,6 +14890,7 @@ const puppetWarpArmed =
 
   async function runImageAiRequest(
     kind: "background" | "colorize" | "character",
+    ticket: ReturnType<typeof captureStudioMutationTicket>,
     execute: (
       executors: ReturnType<typeof import("./studio-cuttoon-edit/studio-image-ai-executors").createStudioImageAiExecutors>,
       ticket: ReturnType<typeof captureStudioMutationTicket>,
@@ -14888,7 +14901,7 @@ const puppetWarpArmed =
       : kind === "colorize" ? [aiColorizeAbortRef, setAiColorizeBusy, setAiColorizeError] as const
       : [aiCharacterAbortRef, setAiCharacterBusy, setAiCharacterError] as const;
     if (collaborationAccessRef.current.locked || abortRef.current) return;
-    const ticket = captureStudioMutationTicket();
+    if (!canApplyStudioMutation(ticket) || masterEditModeRef.current !== (imageAiSurface.kind === "master")) return;
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy(true);
@@ -14897,11 +14910,11 @@ const puppetWarpArmed =
       const engine = await import("./studio-cuttoon-edit/studio-image-ai-executors");
       if (controller.signal.aborted || !canApplyStudioMutation(ticket)) return;
       await execute(engine.createStudioImageAiExecutors({
-        currentPageIdRef, activePage, selected, elements, canvasH, aiSettings, t,
-        readCurrentPages: () => pagesHistoryRef.current[pagesHiRef.current] ?? pages,
+        ...imageAiSurfaceAccess, requestSurface: imageAiSurface,
+        currentPageIdRef, selected, elements, canvasH, aiSettings, t,
         canApplyStudioMutation: (request) => abortRef.current === controller && canApplyStudioMutation(request),
         beginTrackedStudioAiOperation, settleTrackedStudioAiOperation,
-        addRenderedImage, patchImageElOnPage, patchEl, commitPages, commit, setSelectedId, setTool,
+        addRenderedImage, patchEl, commitPages, commit, setSelectedId, setTool,
         setFailure, setMenu,
       }), ticket, controller);
     } catch {
@@ -14921,7 +14934,8 @@ const puppetWarpArmed =
     const prompt = aiBgPrompt.trim();
     if (!prompt || aiBgBusy || !isStudioAiConfigured(aiSettings)) return;
     setAiRecentPrompts(pushStudioAiRecentPrompt(globalThis.sessionStorage, "background", prompt));
-    runWithAiNotice(() => void runImageAiRequest("background", (engine, ticket, controller) =>
+    const ticket = captureStudioMutationTicket();
+    runWithAiNotice(() => void runImageAiRequest("background", ticket, (engine, ticket, controller) =>
       engine.executeAiBackgroundGenerate(prompt, aiBgSize, ticket, controller),
     ));
   }
@@ -14941,17 +14955,22 @@ const puppetWarpArmed =
     const prompt = composeColorizeContextPrompt({ basePrompt, note: aiContextNote });
     const referenceResult = buildReferenceColorizeRequest({ prompt, attachments: aiReferenceAttachments });
     setAiReferenceWarnings(referenceResult.ok ? referenceResult.request.warnings : []);
-    const elId = selected.id;
-    const srcAtRequestTime = selected.src;
+    const target: StudioColorizeTarget = {
+      surface: imageAiSurface, elementId: selected.id, src: selected.src, ticket: captureStudioMutationTicket(),
+    };
+    const previous = aiColorizeCandidateTarget;
     const candidateOutput = collectCandidate ? {
-      session: aiColorizeCandidateTargetId === elId && aiColorizeCandidateTargetPageId === activePage.id
+      session: previous?.elementId === target.elementId && previous.src === target.src
+        && previous.surface.kind === target.surface.kind && previous.surface.pageId === target.surface.pageId
+        && previous.ticket.documentGeneration === target.ticket.documentGeneration
+        && previous.ticket.accessGeneration === target.ticket.accessGeneration
+        && previous.ticket.authScopeKey === target.ticket.authScopeKey && previous.ticket.workId === target.ticket.workId
         ? aiColorizeCandidateSession : createColorizeCandidateSession(),
       provenanceById: aiColorizeCandidateProvenanceRef.current,
-      setSession: setAiColorizeCandidateSession, setTargetId: setAiColorizeCandidateTargetId,
-      setTargetPageId: setAiColorizeCandidateTargetPageId,
+      setSession: setAiColorizeCandidateSession, setTarget: setAiColorizeCandidateTarget,
     } : undefined;
-    runWithAiNotice(() => void runImageAiRequest("colorize", (engine, ticket, controller) =>
-      engine.executeAiColorize(elId, srcAtRequestTime, prompt, ticket, controller, candidateOutput),
+    runWithAiNotice(() => void runImageAiRequest("colorize", target.ticket, (engine, _ticket, controller) =>
+      engine.executeAiColorize(target, prompt, controller, candidateOutput),
     ));
   }
   function onColorizeSelected() { requestColorize(false); }
@@ -14960,23 +14979,18 @@ const puppetWarpArmed =
     const result = selectColorizeCandidate(aiColorizeCandidateSession, candidateId);
     if (result.ok) setAiColorizeCandidateSession(result.session);
   }
-  function onApplyColorizeCandidate() {
-    const resolvedPageId = aiColorizeCandidateTargetPageId ?? activePage.id;
-    const targetElement = aiColorizeCandidateTargetId
-      ? (pages.find((page) => page.id === resolvedPageId)?.elements.find((el) => el.id === aiColorizeCandidateTargetId)
-        ?? elementById.get(aiColorizeCandidateTargetId))
-      : undefined;
-    runStudioApplyColorizeCandidate({
-      targetId: aiColorizeCandidateTargetId, targetPageId: resolvedPageId,
-      candidateSession: aiColorizeCandidateSession, targetElement,
-      candidateProvenanceRef: aiColorizeCandidateProvenanceRef, patchEl,
-      patchElOnPage: patchImageElOnPage, setError: setAiColorizeError,
+  async function onApplyColorizeCandidate() {
+    const target = aiColorizeCandidateTarget;
+    if (!target || !canApplyStudioMutation(target.ticket)) return;
+    const engine = await import("./studio-cuttoon-edit/studio-image-ai-executors");
+    engine.applyStudioImageAiCandidate(target, imageAiSurfaceAccess, {
+      candidateSession: aiColorizeCandidateSession, candidateProvenanceRef: aiColorizeCandidateProvenanceRef,
+      setError: setAiColorizeError, canApplyMutation: canApplyStudioMutation,
     });
   }
   function onClearColorizeCandidates() {
     setAiColorizeCandidateSession(createColorizeCandidateSession());
-    setAiColorizeCandidateTargetId(null);
-    setAiColorizeCandidateTargetPageId(null);
+    setAiColorizeCandidateTarget(null);
   }
   function onContextNoteChange(
     patch: Partial<
@@ -14999,7 +15013,7 @@ const puppetWarpArmed =
   }
   const aiColorizeExtras: StudioAiColorizeWiring = {
     candidateSession: aiColorizeCandidateSession,
-    candidateTargetId: aiColorizeCandidateTargetId,
+    candidateTargetId: aiColorizeCandidateTarget?.elementId ?? null,
     onCollectCandidate: () => requestColorize(true),
     onSelectCandidate: onSelectColorizeCandidate,
     onApplyCandidate: onApplyColorizeCandidate,
@@ -15023,7 +15037,8 @@ const puppetWarpArmed =
       width: selected.width,
       height: selected.height,
     };
-    runWithAiNotice(() => void runImageAiRequest("character", (engine, ticket, controller) =>
+    const ticket = captureStudioMutationTicket();
+    runWithAiNotice(() => void runImageAiRequest("character", ticket, (engine, ticket, controller) =>
       engine.executeAiCharacterConsistency(reference, prompt, ticket, controller),
     ));
   }
@@ -15303,10 +15318,15 @@ const puppetWarpArmed =
   // 색상 팔레트 추천(BYOK) — studio-ai-client.suggestColorPalette 문서 참고. 결과가 색상 데이터라
   // 대사/나레이션 제안과 동일한 이유로 runWithAiNotice 게이트를 타지 않는다.
   async function executeSuggestColorPalette() {
+    const requestScope = captureStudioMutationTicket();
     await runStudioExecuteSuggestColorPalette({
       collaborationLocked: collaborationAccessRef.current.locked, moodText: aiPaletteSuggestMood,
       busy: aiPaletteSuggestBusy, activePageId: activePage.id, aiSettings, textAiTransport, abortRef: aiPaletteSuggestAbortRef,
-      captureMutationTicket: captureStudioMutationTicket, canApplyMutation: canApplyStudioMutation,
+      isRequestScopeCurrent: () => {
+        const current = captureStudioMutationTicket();
+        return editorMountedRef.current && current.authScopeKey === requestScope.authScopeKey
+          && current.workId === requestScope.workId && current.accessGeneration === requestScope.accessGeneration;
+      },
       pendingProvider: pendingTextAiProviderContext, beginTrackedOperation: beginTrackedStudioAiOperation,
       settleTextOperation: settleTrackedTextAiOperation, setBusy: setAiPaletteSuggestBusy,
       setError: setAiPaletteSuggestError, setSuggestion: setAiPaletteSuggestion,
