@@ -29,6 +29,10 @@ STUDIO_PPT_ADVANCED_CHUNK = re.compile(
 
 def select_preview_files(root: Path) -> set[Path]:
     files = {path for path in root.iterdir() if path.is_file() and path.suffix in ALLOWED_SUFFIXES}
+    # 공개 페이지도 index.html의 스크립트 태그로 이 파일을 요청한다.
+    bootstrap = root / "offline-draw" / "bootstrap.js"
+    if bootstrap.is_file():
+        files.add(bootstrap)
     assets = root / "assets"
     if assets.is_dir():
         files.update(path for path in assets.iterdir()

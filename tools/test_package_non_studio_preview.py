@@ -15,7 +15,7 @@ class PreviewPackageTests(unittest.TestCase):
     def test_archive_keeps_public_dependencies_and_does_not_change_production_dist(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp) / "dist"
-            kept = ["index.html", "assets/public-AbCd1234.js", "assets/opencv-public-demo-AbCd1234.js",
+            kept = ["index.html", "offline-draw/bootstrap.js", "assets/public-AbCd1234.js", "assets/opencv-public-demo-AbCd1234.js",
                     "assets/main-AbCd1234.css", "fonts/public.woff2", "brand/public.webp", "data/catalog/01.json",
                     "i18n/ko/common.json", "locales/en.json", "catalog/index.json", "assets/studio-bg3d-physics.worker-public-demo-AbCd1234.js",
                     "assets/studio-offline-branch.worker-public-demo-AbCd1234.js",
@@ -23,7 +23,7 @@ class PreviewPackageTests(unittest.TestCase):
                     "assets/spark.module-public-demo-AbCd1234.js", "assets/phaser.esm-public-demo-AbCd1234.js",
                     "assets/StudioScene3dSplatReferencePanel-AbCd1234.js", "assets/StudioVirtualSpacePhaserCanvas-AbCd1234.js",
                     "assets/StudioPptProDrawingPanel-AbCd1234.js", "assets/OtherStudioPanel-AbCd1234.js"]
-            omitted = ["assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
+            omitted = ["offline-draw/cache.js", "assets/opencv-AbCd1234.js", "assets/web-ifc-api-AbCd1234.js",
                        "assets/spark.module-DIN76ddv.js", "assets/phaser.esm-BxCDEWDb.js",
                        "assets/studio-bg3d-physics.worker-AbCd1234.js", "assets/studio-offline-branch.worker-AbCd1234.js",
                        "assets/studio-bg3d-babylon-runtime-AbCd1234.js",
