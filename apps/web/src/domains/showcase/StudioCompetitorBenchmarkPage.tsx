@@ -15,7 +15,6 @@ import {
 import { useEffect, useState } from "react";
 
 import { BenchmarkVisualMatrixSection } from "./BenchmarkVisualMatrixSection";
-
 import {
   BENCHMARK_AXES,
   BENCHMARK_DEVICE_CARDS,
@@ -29,6 +28,7 @@ import {
   type BenchmarkStatus,
   type BilingualText,
 } from "./competitor-benchmark-data";
+import { DeepDomainCompareTabsSection } from "./DeepDomainCompareTabsSection";
 import {
   probeBrowserNextGenWebApis,
   type NextGenWebApiProbeReport,
@@ -212,7 +212,10 @@ export function StudioCompetitorBenchmarkPage() {
         {/* 2. 한눈에 보는 7×9 시각 히트맵 · 1:1 맞대결 · SVG 커버리지 도표 · 툴 체인 전환 */}
         <BenchmarkVisualMatrixSection locale={locale} onSelectAxis={handleSelectAxis} />
 
-        {/* 3. 라이브 브라우저 하드웨어 & 차세대 API 신호등 */}
+        {/* 3. 브러시 · 필터 · 드로잉 · 실시간 협업 · 3D 셰이퍼 5대 심층 도표 비교 (Magma Studio 포함 8종) */}
+        <DeepDomainCompareTabsSection locale={locale} />
+
+        {/* 4. 라이브 브라우저 하드웨어 & 차세대 API 신호등 */}
         <section
           data-testid="benchmark-live-probe"
           aria-labelledby="benchmark-live-probe-heading"
