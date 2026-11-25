@@ -51,6 +51,13 @@ class PreviewPackageTests(unittest.TestCase):
                        "assets/studio-bg3d-physics.worker-AbCd1234.js", "assets/studio-offline-branch.worker-AbCd1234.js",
                        "assets/studio-bg3d-babylon-runtime-AbCd1234.js",
                        "assets/3d/unused.png", "i18n/studio/unused.json"]
+            sprites = "assets/studio/vibrant-sprites"
+            kept.extend(f"{sprites}/{name}.webp" for name in (
+                "beginner-1-story", "beginner-2-pose", "beginner-3-brush", "beginner-4-publish",
+                "tool-bubble-sfx", "tool-vrm", "tool-watercolor", "emblem-studio",
+            ))
+            omitted.extend([f"{sprites}/brush-ink.webp", f"{sprites}/beginner-5-extra.webp",
+                            "assets/studio/other/beginner-1-story.webp"])
             # 2026-11-23 production 빌드에서 확인한 고급 PPT 두 탭의 실제 출력 이름이다.
             advanced_outputs = [
                 "AutoQaCollabHubPanel-DIAF5OdY.js", "Csp3dUpgradeHubPanel-CvEWnHKv.js",
