@@ -165,14 +165,16 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
   });
   const linked = useLinkedCutCapture({ request: linkedCutCapture, scene: props.initialScene, src: props.initialDataUrl, documentId, h, controller });
   const assets = useStudioCharacterAssets(h, controller.authoring, documentId, setSelected, open);
+  const deliver = props.onInsert;
+  const { admitOutput } = linked;
   useLayoutEffect(() => {
     place.current = { scope: captureScope, insert: async result => {
-      if (!linkedCutCapture) return assets.insert(result, props.onInsert);
-      if (!await linked.admitOutput() || place.current?.scope !== captureScope) return false;
-      return props.onInsert({ ...result, scene: { ...result.scene, characterDocumentId: linkedCutCapture.documentId } });
+      if (!linkedCutCapture) return assets.insert(result, deliver);
+      if (!await admitOutput() || place.current?.scope !== captureScope) return false;
+      return deliver({ ...result, scene: { ...result.scene, characterDocumentId: linkedCutCapture.documentId } });
     } };
     return () => { place.current = null; };
-  }, [assets, captureScope, linked.admitOutput, linkedCutCapture, props.onInsert]);
+  }, [admitOutput, assets, captureScope, deliver, linkedCutCapture]);
   const binding = controller.binding;
   const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced);
   const variantHost = {
