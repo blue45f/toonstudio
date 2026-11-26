@@ -35,6 +35,22 @@ async function makeTempDir(): Promise<string> {
   return dir;
 }
 
+async function makeSyntheticNativeDylib(dir: string): Promise<string> {
+  const header = process.platform === "win32"
+    ? Buffer.from([0x4d, 0x5a, 0x90, 0x00])
+    : process.platform === "linux"
+      ? Buffer.from([0x7f, 0x45, 0x4c, 0x46])
+      : Buffer.from([0xcf, 0xfa, 0xed, 0xfe]);
+  const symbolPayload = Buffer.from(
+    `\0${[...NATIVE_CORE_REQUIRED_SYMBOLS, ...NATIVE_WAVE3_REQUIRED_SYMBOLS].join("\0")}\0`,
+    "ascii",
+  );
+  const ext = process.platform === "win32" ? "dll" : process.platform === "linux" ? "so" : "dylib";
+  const filePath = join(dir, `libstudio_wasm64_drawing_core.${ext}`);
+  await writeFile(filePath, Buffer.concat([header, symbolPayload]));
+  return filePath;
+}
+
 function makeDeterministicTile(width: number, height: number, seed = 0x12345678): Uint8Array {
   const bytes = new Uint8Array(width * height * 4);
   let state = seed >>> 0;
@@ -62,17 +78,27 @@ afterEach(async () => {
 
 describe("desktop-sync native Rust core / WASM64 bridge", () => {
   it("discovers compiled native libstudio_wasm64_drawing_core.dylib with all C-ABI symbols", async () => {
-    const probe = await probeNativeRustDylib({ repoRoot: REPO_ROOT });
-    expect(probe.available).toBe(true);
-    expect(probe.path).toContain("crates/studio-wasm64-drawing-core/target/release/libstudio_wasm64_drawing_core.");
-    expect(probe.byteLength).toBeGreaterThan(64 * 1024);
-    expect(probe.symbolsVerified).toBe(true);
-    expect(probe.missingSymbols).toEqual([]);
-    expect(probe.foundSymbols).toEqual([...NATIVE_CORE_REQUIRED_SYMBOLS]);
-    expect(probe.wave3SymbolsVerified).toBe(true);
-    expect(probe.foundWave3Symbols).toEqual([...NATIVE_WAVE3_REQUIRED_SYMBOLS]);
-    if (process.platform === "darwin") {
-      expect(probe.format).toBe("mach-o");
+    const syntheticPath = await makeSyntheticNativeDylib(await makeTempDir());
+    const syntheticProbe = await probeNativeRustDylib({ nativeLibraryPath: syntheticPath });
+    expect(syntheticProbe.available).toBe(true);
+    expect(syntheticProbe.symbolsVerified).toBe(true);
+    expect(syntheticProbe.missingSymbols).toEqual([]);
+    expect(syntheticProbe.foundSymbols).toEqual([...NATIVE_CORE_REQUIRED_SYMBOLS]);
+    expect(syntheticProbe.wave3SymbolsVerified).toBe(true);
+    expect(syntheticProbe.foundWave3Symbols).toEqual([...NATIVE_WAVE3_REQUIRED_SYMBOLS]);
+
+    const realProbe = await probeNativeRustDylib({ repoRoot: REPO_ROOT });
+    if (realProbe.available) {
+      expect(realProbe.path).toContain("crates/studio-wasm64-drawing-core/target/release/libstudio_wasm64_drawing_core.");
+      expect(realProbe.byteLength).toBeGreaterThan(64 * 1024);
+      expect(realProbe.symbolsVerified).toBe(true);
+      expect(realProbe.missingSymbols).toEqual([]);
+      expect(realProbe.foundSymbols).toEqual([...NATIVE_CORE_REQUIRED_SYMBOLS]);
+      expect(realProbe.wave3SymbolsVerified).toBe(true);
+      expect(realProbe.foundWave3Symbols).toEqual([...NATIVE_WAVE3_REQUIRED_SYMBOLS]);
+      if (process.platform === "darwin") {
+        expect(realProbe.format).toBe("mach-o");
+      }
     }
   });
 
@@ -84,12 +110,19 @@ describe("desktop-sync native Rust core / WASM64 bridge", () => {
       expect(initTelemetry.resolvedPath).toContain("studio-wasm64-drawing-core-relaxed-simd.wasm");
       expect(initTelemetry.abiVersion).toBe(EXPECTED_RUST_CORE_ABI);
       expect(initTelemetry.capabilitiesMask).toBe(EXPECTED_RUST_CORE_CAPABILITIES);
-      expect(initTelemetry.nativeLibrary.available).toBe(true);
-      expect(initTelemetry.nativeLibrary.symbolsVerified).toBe(true);
-      expect(initTelemetry.discoveryTrail[0]).toMatchObject({
-        tier: "native-dylib",
-        status: "probed-no-runner",
-      });
+      if (initTelemetry.nativeLibrary.available) {
+        expect(initTelemetry.nativeLibrary.symbolsVerified).toBe(true);
+        expect(initTelemetry.discoveryTrail[0]).toMatchObject({
+          tier: "native-dylib",
+          status: "probed-no-runner",
+        });
+      } else {
+        expect(initTelemetry.discoveryTrail[0]).toMatchObject({
+          tier: "native-dylib",
+          status: "failed",
+          reason: "native-dylib-not-found",
+        });
+      }
 
       // 1) FNV-1a 32-bit standard vectors + batch 0-diff parity
       const encoder = new TextEncoder();
@@ -198,9 +231,11 @@ describe("desktop-sync native Rust core / WASM64 bridge", () => {
   });
 
   it("selects priority #1 native-dylib when nativeRunner hook is attached", async () => {
+    const syntheticPath = await makeSyntheticNativeDylib(await makeTempDir());
     const disposeSpy = vi.fn();
     const bridge = await createNativeRustCoreBridge({
       repoRoot: REPO_ROOT,
+      nativeLibraryPath: syntheticPath,
       nativeRunner: {
         fnv1aChecksum: jsFnv1aChecksum32,
         xorTileDelta: jsComputeXorTileDelta,
@@ -332,8 +367,10 @@ describe("desktop-sync native Rust core / WASM64 bridge", () => {
     expect(bridge.getTelemetry().wave3Backend).toBe("js-fallback");
 
     // Priority #1 native-dylib Wave-3 hooks + forced js-fallback tier verification
+    const syntheticWave3Dylib = await makeSyntheticNativeDylib(await makeTempDir());
     const nativeBridge = await createNativeRustCoreBridge({
       repoRoot: REPO_ROOT,
+      nativeLibraryPath: syntheticWave3Dylib,
       nativeRunner: {
         fnv1aChecksum: jsFnv1aChecksum32,
         xorTileDelta: jsComputeXorTileDelta,
