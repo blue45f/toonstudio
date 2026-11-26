@@ -79,7 +79,6 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
     if (!eligible.some(Boolean)) continue;
     const skin = getStudioVrmHeadSkinVertices(mesh);
     const allSkin = skin.count === position.count;
-    const skinIndices = !allSkin && skin.indices ? new Set(skin.indices) : null;
     const toHead = inverseHead.clone().multiply(mesh.matrixWorld);
     for (let index = 0; index < position.count && visited < SAMPLE_BUDGET; index += stride) {
       visited++;
@@ -94,7 +93,7 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
       if (point.y <= 0.004 || point.y > 0.48 || Math.abs(point.x) > 0.30 || Math.abs(point.z) > 0.30) continue;
       points.push(point);
       // 모자 여유 높이에는 헤어를 포함하고, 안경이 닿는 콧등 깊이는 얼굴 표면에서만 잰다.
-      if (allSkin || skinIndices?.has(index)) skinPoints.push(point);
+      if (allSkin || skin.membership?.[index]) skinPoints.push(point);
     }
   }
   if (points.length < MIN_SAMPLES) return null;
