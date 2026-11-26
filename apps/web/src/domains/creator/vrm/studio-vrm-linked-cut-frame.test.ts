@@ -1,0 +1,35 @@
+import { PerspectiveCamera, Vector3 } from "three";
+import { describe, expect, it } from "vitest";
+
+import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, readLinkedCutPngSize } from "./studio-vrm-linked-cut-frame";
+import { createDefaultStudioVrmSceneDocument } from "./studio-vrm-scene-document";
+
+describe("linked placement recapture", () => {
+  const scene = createDefaultStudioVrmSceneDocument();
+  it("reads original PNG geometry with a pose fragment and rejects an unavailable or malformed source", () => {
+    const size = readLinkedCutPngSize("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAEA#pose");
+    expect(size).toEqual({ width: 512, height: 256 });
+    expect(readLinkedCutPngSize("blob:a")).toBeNull();
+    expect(readLinkedCutPngSize("data:image/png;base64,iVBORw0KGgoAAAABSUhEUgAAAgAAAAEA")).toBeNull();
+  });
+  it("permits new appearance only if the original shot and acting survive round-trip", () => {
+    const changedLook = { ...scene, appearance: { ...scene.appearance, mannequin: !scene.appearance.mannequin } };
+    expect(linkedCutContextMatches(scene, changedLook)).toBe(true);
+    expect(linkedCutContextMatches(scene, { ...changedLook, pose: { ...scene.pose, bodyRotationY: scene.pose.bodyRotationY + .3 } })).toBe(false);
+    expect(linkedCutContextMatches(scene, { ...changedLook, expressions: { ...scene.expressions, happy: 0.75 } })).toBe(false);
+    expect(linkedCutContextMatches(scene, { ...changedLook, render: { ...scene.render, transparentBackground: !scene.render.transparentBackground } })).toBe(false);
+    expect(linkedCutCameraMatches(scene.camera, { ...scene.camera, fovDegrees: scene.camera.fovDegrees + 1 })).toBe(false);
+  });
+  it("captures with the stored shot aspect even when the current window is landscape", () => {
+    const camera = new PerspectiveCamera(35, 2, .01, 100);
+    camera.position.set(2, 1, 3);
+    camera.lookAt(new Vector3(0, 1, 0));
+    const frame = { source: { ...scene, render: { ...scene.render, width: 90, height: 160 } }, pixels: { width: 180, height: 320 } };
+    const output = cameraForLinkedCut(camera, frame);
+    expect(output.aspect).toBe(90 / 160);
+    expect(output.position.distanceTo(camera.position)).toBeLessThan(1e-8);
+    expect(output.quaternion.angleTo(camera.quaternion)).toBeLessThan(1e-6);
+    expect(camera.aspect).toBe(2);
+    expect(output).not.toBe(camera);
+  });
+});

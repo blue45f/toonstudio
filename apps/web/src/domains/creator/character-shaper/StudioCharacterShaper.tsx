@@ -22,6 +22,7 @@ import { useCharacterPlatformWorkbench } from "../character-platform/ui/use-char
 import { CharacterPlatformWorkbench } from "../character-platform/ui/CharacterPlatformWorkbench";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { StudioSurfaceErrorBoundary } from "../StudioSurfaceErrorBoundary";
+import { StudioVrmPoserViewport } from "../vrm/StudioVrmPoserViewport";
 import { StudioVrmPoserDialog } from "../vrm/StudioVrmPoserDialog";
 import { useStudioVrmPoserController } from "../vrm/useStudioVrmPoserController";
 
@@ -32,6 +33,7 @@ import { isCharacterShaperTypingTarget, pushCharacterShaperKeyLayer } from "./ch
 import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
 import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
 import { sceneUsesCharacterModel, type StudioCharacterAsset } from "./studio-character-asset-library";
+import { useLinkedCutCapture, type LinkedCutCaptureRequest } from "./use-linked-cut-capture";
 import { useStudioCharacterAssets } from "./use-studio-character-assets";
 import { useCharacterShaperBinding } from "./useCharacterShaperBinding";
 
@@ -52,6 +54,7 @@ const RETURN_BUTTON_CLASS = cn(
 );
 
 export type StudioCharacterShaperProps = StudioVrmPoserProps & {
+  readonly linkedCutCapture?: LinkedCutCaptureRequest;
   readonly onInsertLtLayers?: import("../lt-convert/studio-lt-raster-output").StudioLtInsertLayers;
   /** Hosts without a Studio document (the character landing) save files instead of inserting. */
   readonly outputTarget?: CharacterShaperOutputTarget;
@@ -135,7 +138,7 @@ function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeo
   return null;
 }
 
-function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayers, ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
+function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayers, linkedCutCapture, ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
   const { open } = props;
   const [selection, setSelection] = useState<{
     origin: StudioVrmPoserProps["initialScene"]; asset: StudioCharacterAsset | null;
@@ -156,14 +159,19 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
   const [advanced, setAdvanced] = useState(false);
   const runtimeBinding = useCharacterShaperBinding(h, { runtimeOnly: true });
   const controller = useCharacterPlatformWorkbench(h, runtimeBinding, {
-    documentAuthority: true, legacyEditing: advanced, documentId,
+    documentAuthority: true, legacyEditing: advanced, readOnlyCapture: Boolean(linkedCutCapture), documentId,
     placementScene: placement?.characterDocumentId === documentId ? placement : undefined,
   });
+  const linked = useLinkedCutCapture({ request: linkedCutCapture, scene: props.initialScene, src: props.initialDataUrl, documentId, h, controller });
   const assets = useStudioCharacterAssets(h, controller.authoring, documentId, setSelected, open);
   useLayoutEffect(() => {
-    place.current = { scope: captureScope, insert: result => assets.insert(result, props.onInsert) };
+    place.current = { scope: captureScope, insert: async result => {
+      if (!linkedCutCapture) return assets.insert(result, props.onInsert);
+      if (!await linked.admitOutput() || place.current?.scope !== captureScope) return false;
+      return props.onInsert({ ...result, scene: { ...result.scene, characterDocumentId: linkedCutCapture.documentId } });
+    } };
     return () => { place.current = null; };
-  }, [assets, captureScope, props.onInsert]);
+  }, [assets, captureScope, linked.admitOutput, linkedCutCapture, props.onInsert]);
   const binding = controller.binding;
   const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced);
   const variantHost = {
@@ -206,6 +214,14 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
   }, [advanced, dialogRef]);
 
   if (!open) return null;
+  if (linkedCutCapture) return (
+    <CharacterShaperSessionSettingsProvider gazeAvailable={false} locked>
+      <CharacterShaperMaterialSyncBridge h={h} />
+      <div inert aria-hidden className="pointer-events-none fixed inset-0 -z-10 grid">
+        <StudioVrmPoserViewport h={{ ...h, onLinkedCutPropStatus: linked.onLinkedCutPropStatus, onLinkedCutWardrobeStatus: linked.onLinkedCutWardrobeStatus }} presentation="shaper" />
+      </div>
+    </CharacterShaperSessionSettingsProvider>
+  );
 
   return (
     <CharacterShaperSessionSettingsProvider gazeAvailable={Boolean(h.vrm?.lookAt) && !h.webcamActive} locked={advanced || Boolean(h.isCapturing || h.isSharingPose || h.isThumbnailCapturing)}>

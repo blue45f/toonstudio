@@ -51,6 +51,7 @@ import {
   captureStudioVrmRgba,
   encodeStudioVrmCapturePngDataUrl,
 } from "./studio-vrm-raster-capture";
+import { cameraForLinkedCut, linkedCutContextMatches, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
 import { createStudioVrmRigProfileSelection } from "./studio-vrm-rig-profile";
 import {
   STUDIO_VRM_HUMANOID_BONES,
@@ -475,6 +476,10 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
   }
 
   function handleInsert() {
+    handleInsertFrame();
+  }
+
+  function handleInsertFrame(frame?: LinkedCutFrame) {
     if (broadcastPreviewActive || isCapturing || isSharingPose || isThumbnailCapturing) return;
     if (
       proportionRigStatus === "reload-required"
@@ -604,7 +609,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     const captureFaceControllerSnapshot = avatarForgeFaceController.getSnapshot();
     const captureRequest = captureRequestRef.current + 1;
     captureRequestRef.current = captureRequest;
-    const { camera, gl, scene } = currentCapture;
+    const { camera: viewportCamera, gl, scene } = currentCapture;
     const captureGeneration = insertCaptureGenerationRef.current + 1;
     insertCaptureGenerationRef.current = captureGeneration;
     insertCaptureAbortRef.current?.abort();
@@ -631,7 +636,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
       && vrmRef.current === currentVrm
       && captureRef.current.gl === gl
       && captureRef.current.scene === scene
-      && captureRef.current.camera === camera
+      && captureRef.current.camera === viewportCamera
       && texturePaintRuntimeRef.current === currentTexturePaintRuntime
       && (currentTexturePaintRuntime?.getContentRevision() ?? 0)
         === captureTexturePaintRevision
@@ -741,8 +746,8 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
           // Display size = the legacy logical export size (stable placement on the document);
           // the raster renders denser so the insert stays crisp at 100% zoom on HiDPI and
           // survives a moderate scale-up. Budget failures fall back to display-density capture.
-          const { width: displayWidth, height: displayHeight } = roundExportSize(gl.domElement);
-          const capturePlan = planStudio3dInsertCaptureSize({
+          const { width: displayWidth, height: displayHeight } = frame?.source.render ?? roundExportSize(gl.domElement);
+          const capturePlan = frame?.pixels ?? planStudio3dInsertCaptureSize({
             displayWidth,
             displayHeight,
             devicePixelRatio: globalThis.devicePixelRatio || 1,
@@ -769,6 +774,10 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
           if (!sceneDocument) {
             throw new Error("재편집 가능한 3D 데생 인형 장면을 만들지 못했습니다.");
           }
+          if (frame && !linkedCutContextMatches(frame.source, sceneDocument)) {
+            throw new Error("저장한 컷의 연기·카메라·배경을 그대로 복원할 수 없습니다.");
+          }
+          const camera = frame ? cameraForLinkedCut(viewportCamera, frame) : viewportCamera;
           releaseCaptureHelpers = acquireVrmCaptureHelperLease({
             subjectOnly: insertBackground.plan.subjectOnly,
           });
@@ -872,5 +881,6 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
     removeVrmProp,
     createCurrentSceneDocument,
     handleInsert,
+    handleLinkedCutInsert: handleInsertFrame,
   });
 }

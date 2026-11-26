@@ -536,6 +536,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                           key={`${proportionRigRevision}:${item.uid}`}
                           vrm={vrm}
                           instance={item}
+                          onAttachmentStatus={h.onLinkedCutPropStatus}
                           capturePaused={isCapturing}
                           metrics={effectivePropRigMetrics}
                           rigRevision={proportionRigRevision}
@@ -576,6 +577,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                             capturePaused={isCapturing}
                             rigRevision={proportionRigRevision}
                             onSurfaceReceipt={handleWardrobeSurfaceReceipt}
+                            onAttachmentStatus={h.onLinkedCutWardrobeStatus}
                             onXpbdCaptureSyncChange={handleWardrobeXpbdCaptureSyncChange}
                           />
                         ) : null;

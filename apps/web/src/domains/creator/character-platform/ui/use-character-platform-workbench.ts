@@ -177,7 +177,7 @@ function quaternionBones(
 export function useCharacterPlatformWorkbench(
   h: StudioVrmPoserHost,
   binding: CharacterShaperBinding,
-  options: { readonly documentAuthority?: boolean; readonly legacyEditing?: boolean; readonly documentId?: string; readonly placementScene?: StudioVrmSceneDocument } = {},
+  options: { readonly documentAuthority?: boolean; readonly legacyEditing?: boolean; readonly readOnlyCapture?: boolean; readonly documentId?: string; readonly placementScene?: StudioVrmSceneDocument } = {},
 ): CharacterPlatformWorkbenchState {
   const modelId = activeModelId(h, binding);
   const scopeRef = useRef({ active: false });
@@ -302,6 +302,7 @@ export function useCharacterPlatformWorkbench(
     sourceFingerprint,
     {
       placementScene: options.placementScene,
+      autosave: !options.readOnlyCapture,
       synchronizeProjection: options.documentAuthority !== true || options.legacyEditing === true,
       enabled: !options.documentAuthority || (h.status === "ready" && Boolean(h.vrm)),
       initializeDocument: async (initial) => validateCharacterDocumentV3({
