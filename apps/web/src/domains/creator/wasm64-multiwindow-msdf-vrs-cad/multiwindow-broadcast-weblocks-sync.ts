@@ -11,7 +11,6 @@
 import {
   DEFAULT_SYNC_CHANNEL_NAME,
   InMemoryBroadcastChannel,
-  InMemoryLockManager,
   resolveBrowserBroadcastChannel,
   resolveBrowserLockManager,
   type BroadcastChannelLike,
@@ -259,7 +258,7 @@ export class StudioMultiWindowSyncCoordinator {
   private readonly leaderPriority: number;
   private readonly channel: BroadcastChannelLike | null;
   private readonly sharedWorkerPort: SharedWorkerPortLike | null;
-  private readonly lockManager: WebLockManagerLike;
+  private readonly lockManager: WebLockManagerLike | null;
   private readonly transport: SyncTransportKind;
   private readonly autoStartTimers: boolean;
   private readonly onRemoteDelta?: (frame: StateDeltaFrameMessage) => void;
@@ -333,7 +332,7 @@ export class StudioMultiWindowSyncCoordinator {
         ? options.broadcastChannel
         : resolveBrowserBroadcastChannel(this.channelName);
     this.sharedWorkerPort = options.sharedWorkerPort ?? null;
-    this.lockManager = options.lockManager ?? resolveBrowserLockManager() ?? new InMemoryLockManager();
+    this.lockManager = options.lockManager ?? resolveBrowserLockManager();
 
     this.transport = this.sharedWorkerPort
       ? "shared-worker"
@@ -479,6 +478,17 @@ export class StudioMultiWindowSyncCoordinator {
     task: (ctx: OpfsWriteLeaseContext) => Promise<T> | T,
     options?: OpfsWriteLeaseOptions,
   ): Promise<OpfsWriteLeaseResult<T>> {
+    // 창마다 독립된 메모리 잠금은 OPFS 공유 쓰기를 직렬화하지 못하므로 대체하지 않는다.
+    if (!this.lockManager) {
+      this.leaseRejectedUnavailable += 1;
+      return {
+        acquired: false,
+        value: null,
+        fencingToken: null,
+        walEpoch: this.walEpoch,
+        waitDurationMs: 0,
+      };
+    }
     const requestStartedMs = this.now();
     return await this.lockManager.request<OpfsWriteLeaseResult<T>>(
       this.opfsLockName,

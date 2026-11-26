@@ -135,6 +135,7 @@ export class StudioWebGpuComputeDispatcher {
 
   private readonly shaderModules = new Map<WgslKernelId, ComputeGpuShaderModuleLike>();
   private readonly pipelines = new Map<WgslKernelId, ComputeGpuPipelineLike>();
+  private readonly pendingPipelines = new Map<WgslKernelId, Promise<ComputeGpuPipelineLike>>();
   private readonly bindGroupCache = new Map<string, ComputeGpuBindGroupLike>();
   private readonly bufferPools = new Map<string, ComputeGpuBufferLike[]>();
   private readonly bufferIds = new WeakMap<ComputeGpuBufferLike, number>();
@@ -215,6 +216,8 @@ export class StudioWebGpuComputeDispatcher {
     const activeDevice = this.requireActiveDevice();
     const cached = this.pipelines.get(kernelId);
     if (cached) return cached;
+    const pending = this.pendingPipelines.get(kernelId);
+    if (pending) return pending;
     const kernel = WGSL_COMPUTE_KERNELS[kernelId];
     const validation = validateWgslComputeShader(kernel.source, kernel.entryPoint);
     if (!validation.valid) throw new Error(`Invalid WGSL kernel '${kernelId}': ${validation.errors.join("; ")}`);
@@ -226,16 +229,26 @@ export class StudioWebGpuComputeDispatcher {
     const desc: ComputePipelineDescriptorLike = {
       label: `pipeline:${kernelId}`, layout: "auto", compute: { module, entryPoint: kernel.entryPoint },
     };
-    let pipeline: ComputeGpuPipelineLike;
-    if (typeof activeDevice.createComputePipelineAsync === "function") {
-      pipeline = await activeDevice.createComputePipelineAsync(desc);
-    } else if (typeof activeDevice.createComputePipeline === "function") {
-      pipeline = activeDevice.createComputePipeline(desc);
-    } else {
-      throw new Error("GPUDevice missing createComputePipelineAsync / createComputePipeline");
+    const creation = (async (): Promise<ComputeGpuPipelineLike> => {
+      let pipeline: ComputeGpuPipelineLike;
+      if (typeof activeDevice.createComputePipelineAsync === "function") {
+        pipeline = await activeDevice.createComputePipelineAsync(desc);
+      } else if (typeof activeDevice.createComputePipeline === "function") {
+        pipeline = activeDevice.createComputePipeline(desc);
+      } else {
+        throw new Error("GPUDevice missing createComputePipelineAsync / createComputePipeline");
+      }
+      // 유실·종료 중 완료된 컴파일은 해제한 캐시를 다시 채우지 않는다.
+      this.requireActiveDevice();
+      this.pipelines.set(kernelId, pipeline);
+      return pipeline;
+    })();
+    this.pendingPipelines.set(kernelId, creation);
+    try {
+      return await creation;
+    } finally {
+      if (this.pendingPipelines.get(kernelId) === creation) this.pendingPipelines.delete(kernelId);
     }
-    this.pipelines.set(kernelId, pipeline);
-    return pipeline;
   }
 
   public async dispatchKernel(request: ComputeDispatchRequest): Promise<ComputeDispatchResult> {
@@ -366,6 +379,7 @@ export class StudioWebGpuComputeDispatcher {
     this.bufferPools.clear();
     this.bindGroupCache.clear();
     this.pipelines.clear();
+    this.pendingPipelines.clear();
     this.shaderModules.clear();
   }
 

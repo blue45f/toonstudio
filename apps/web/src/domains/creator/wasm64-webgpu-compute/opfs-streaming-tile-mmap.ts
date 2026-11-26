@@ -22,7 +22,7 @@ const BIG_MASK32 = BigInt(0xffffffff);
 const SPARSE_BLOCK_BYTES = 65536;
 const BIG_SPARSE_BLOCK = BigInt(SPARSE_BLOCK_BYTES);
 
-export interface SyncAccessHandleReadWriteOptions { readonly at?: number | bigint; }
+export interface SyncAccessHandleReadWriteOptions { readonly at?: number; }
 export interface SyncAccessHandleLike {
   read(buffer: ArrayBufferView, options?: SyncAccessHandleReadWriteOptions): number;
   write(buffer: ArrayBufferView, options?: SyncAccessHandleReadWriteOptions): number;
@@ -82,6 +82,14 @@ function writeUint64LE(v: DataView, off: number, value: bigint): void {
   const safe = value < BIG_ZERO ? BIG_ZERO : value;
   v.setUint32(off, Number(safe & BIG_MASK32), true);
   v.setUint32(off + 4, Number((safe >> BIG_32) & BIG_MASK32), true);
+}
+
+/** 내부 주소는 bigint로 유지하고 네이티브 OPFS 경계에서만 손실 없이 변환한다. */
+function nativeFileOffset(at: bigint, byteLength: number): number {
+  if (at < BIG_ZERO || at + BigInt(byteLength) > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("OPFS byte range exceeds the safe integer range");
+  }
+  return Number(at);
 }
 
 function encodeTileDeltaRle(raw: Uint8Array): Uint8Array {
@@ -252,10 +260,10 @@ export class OpfsStreamingTileMmap {
     this.evictIfNeeded();
     const target = this.recycledBuffers.pop() ?? new Uint8Array(this.tileByteLength);
     if (entry.encoding === TILE_ENCODING_RAW) {
-      if (this.handle.read(target, { at: entry.byteOffset }) !== entry.uncompressedByteLength) throw new Error(`Short read on raw tile '${key}'`);
+      if (this.readAt(target, entry.byteOffset) !== entry.uncompressedByteLength) throw new Error(`Short read on raw tile '${key}'`);
     } else {
       const comp = new Uint8Array(entry.storedByteLength);
-      if (this.handle.read(comp, { at: entry.byteOffset }) !== entry.storedByteLength) throw new Error(`Short read on compressed tile '${key}'`);
+      if (this.readAt(comp, entry.byteOffset) !== entry.storedByteLength) throw new Error(`Short read on compressed tile '${key}'`);
       decodeTileDeltaRle(comp, target);
     }
     const actual = computeFnv1a32(target);
@@ -355,10 +363,14 @@ export class OpfsStreamingTileMmap {
       },
     };
   }
+  private readAt(bytes: Uint8Array, at: bigint): number {
+    return this.handle.read(bytes, { at: nativeFileOffset(at, bytes.byteLength) });
+  }
   private writeFully(bytes: Uint8Array, at: bigint): void {
+    const start = nativeFileOffset(at, bytes.byteLength);
     let written = 0;
     while (written < bytes.byteLength) {
-      const count = this.handle.write(bytes.subarray(written), { at: at + BigInt(written) });
+      const count = this.handle.write(bytes.subarray(written), { at: start + written });
       if (!Number.isInteger(count) || count <= 0 || count > bytes.byteLength - written) {
         throw new Error("Incomplete tile mmap write");
       }
@@ -377,7 +389,7 @@ export class OpfsStreamingTileMmap {
   }
   private loadExistingFile(requestedCapacity?: number): void {
     const hdr = new Uint8Array(TILE_MMAP_HEADER_BYTES);
-    if (this.handle.read(hdr, { at: BIG_ZERO }) !== hdr.byteLength) throw new Error("Short read on tile mmap header");
+    if (this.readAt(hdr, BIG_ZERO) !== hdr.byteLength) throw new Error("Short read on tile mmap header");
     const magic = String.fromCharCode(hdr[0], hdr[1], hdr[2], hdr[3]);
     if (magic !== TILE_MMAP_MAGIC) throw new Error(`Invalid TSM6 tile mmap magic: '${magic}'`);
     const v = new DataView(hdr.buffer);
@@ -400,7 +412,7 @@ export class OpfsStreamingTileMmap {
     }
     if (pageCount === 0) return;
     const dirBuf = new Uint8Array(pageCount * TILE_DIR_ENTRY_BYTES);
-    if (this.handle.read(dirBuf, { at: this.directoryByteOffset }) !== dirBuf.byteLength) throw new Error("Short read on tile mmap directory");
+    if (this.readAt(dirBuf, this.directoryByteOffset) !== dirBuf.byteLength) throw new Error("Short read on tile mmap directory");
     const dv = new DataView(dirBuf.buffer);
     for (let i = 0; i < pageCount; i += 1) {
       const b = i * TILE_DIR_ENTRY_BYTES;
