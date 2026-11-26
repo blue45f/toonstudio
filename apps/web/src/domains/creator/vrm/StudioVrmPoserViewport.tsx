@@ -77,12 +77,11 @@ import {
   StudioVrmViewportReadyFrame, CaptureBridge, StudioVrmCanvasSizeSync
 } from "./StudioVrmViewportHelpers";
 import {
-  StudioVrmPropAttachment,
   StudioVrmRuntimeCommit,
   StudioVrmWardrobeAttachment,
 } from "./StudioVrmWardrobePropsProjection";
 
-import type { PropInstance } from "./studio-vrm-props";
+import { StudioVrmViewportPropAttachments } from "./StudioVrmViewportPropAttachments";
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type { StudioVrmTexturePaintPanelSettings } from "./StudioVrmTexturePaintPanel";
 import type {
@@ -530,19 +529,16 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       onReport={handlePoseBalanceReport}
                     />
                   ) : null}
-                  {vrm
-                    ? vrmPropItems.map((item: PropInstance) => (
-                        <StudioVrmPropAttachment
-                          key={`${proportionRigRevision}:${item.uid}`}
-                          vrm={vrm}
-                          instance={item}
-                          onAttachmentStatus={h.onLinkedCutPropStatus}
-                          capturePaused={isCapturing}
-                          metrics={effectivePropRigMetrics}
-                          rigRevision={proportionRigRevision}
-                        />
-                      ))
-                    : null}
+                  {vrm && (
+                    <StudioVrmViewportPropAttachments
+                      vrm={vrm}
+                      instances={vrmPropItems}
+                      onAttachmentStatus={h.onLinkedCutPropStatus}
+                      capturePaused={isCapturing}
+                      metrics={effectivePropRigMetrics}
+                      rigRevision={proportionRigRevision}
+                    />
+                  )}
                   {vrm && vrmPropItems.length > 0 ? (
                     <StudioVrmGripContactRefine
                       vrm={vrm}
