@@ -1,0 +1,90 @@
+name: Studio mixed viewport benchmark
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/studio-mixed-viewport-benchmark.yml'
+      - 'scripts/benchmark-studio-mixed-viewport.mts'
+      - 'apps/web/tools/browser-harnesses/studio-mixed-viewport.js'
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: Baseline application commit SHA
+        required: true
+        type: string
+      candidate:
+        description: Candidate application commit SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+concurrency:
+  group: studio-mixed-viewport-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  mixed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      BASELINE: ${{ inputs.baseline || '905910f1f9e5b8c42b7ec733c55e00c3127df277' }}
+      CANDIDATE: ${{ inputs.candidate || '2b92191b0591b2687234a1028ac0f010029d094d' }}
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/apps/web/public/**/*.vrm
+            !/apps/web/public/**/*.glb
+            !/apps/web/public/**/*.mp4
+            /apps/web/public/vrm/sample.vrm
+            /apps/web/public/studio-assets/blender-precision-bg-v14/korean-highschool-window-corridor-bay-v14.glb
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Prepare identical measurement code and runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$BASELINE" =~ ^[0-9a-f]{40}$ && "$CANDIDATE" =~ ^[0-9a-f]{40}$ && "$BASELINE" != "$CANDIDATE" ]]
+          git fetch --no-tags --filter=blob:none --depth=1 origin "$BASELINE" "$CANDIDATE"
+          git diff --exit-code "$BASELINE" "$CANDIDATE" -- pnpm-lock.yaml pnpm-workspace.yaml package.json
+          mkdir -p "$RUNNER_TEMP/mixed-probe" "$RUNNER_TEMP/mixed-results"
+          cp scripts/benchmark-studio-mixed-viewport.mts apps/web/tools/browser-harnesses/studio-mixed-viewport.js "$RUNNER_TEMP/mixed-probe/"
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+      - name: Measure application checkouts on one runner in ABBA order
+        shell: bash
+        run: |
+          set -euo pipefail
+          for run in A1 B1 B2 A2; do
+            revision="$BASELINE"
+            if [[ "$run" == B* ]]; then revision="$CANDIDATE"; fi
+            git checkout --detach "$revision"
+            cp "$RUNNER_TEMP/mixed-probe/benchmark-studio-mixed-viewport.mts" scripts/
+            cp "$RUNNER_TEMP/mixed-probe/studio-mixed-viewport.js" apps/web/tools/browser-harnesses/
+            STUDIO_MIXED_VIEWPORT_OUT="$RUNNER_TEMP/mixed-results/$run" pnpm exec tsx scripts/benchmark-studio-mixed-viewport.mts
+          done
+          node --input-type=module <<'NODE'
+          import {readFileSync, writeFileSync} from 'node:fs';
+          import path from 'node:path';
+          const root = path.join(process.env.RUNNER_TEMP, 'mixed-results');
+          const runs = ['A1','B1','B2','A2'].map(id => ({ id, ...JSON.parse(readFileSync(path.join(root,id,'timing.json'),'utf8')) }));
+          const comparable = x => JSON.stringify([x.assets,x.counts,x.view,x.buffer,x.dpr,x.cameraStart,x.target,x.gpu,x.browser]);
+          if (runs.some(x => comparable(x) !== comparable(runs[0]))) throw Error('Assets, scene, view, camera or runner did not match; do not compare these runs.');
+          const lines = ['| Run | Commit | Frame intervals | p50 ms | p95 ms |','|---|---|---:|---:|---:|', ...runs.map(x => '| '+[x.id,x.sha.slice(0,10),x.sampleCount,x.p50.toFixed(2),x.p95.toFixed(2)].join(' | ')+' |')];
+          writeFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n')+'\n\n' + runs[0].gpu.renderer + '\n');
+          NODE
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: studio-mixed-viewport-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/mixed-results
+          if-no-files-found: warn
+          retention-days: 7
