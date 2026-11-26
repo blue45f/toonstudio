@@ -562,6 +562,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/virtual-space/studio-virtual-space-placed-fixtures.ts", "local-storage-write", "storageKey(scope)", 1, REVIEWED_LOCAL_WORKING_COPY, "studio-virtual-space-placed-fixtures.test.ts verifies the localStorage round-trip, scope isolation, corrupt-value rejection, catalog/coordinate/rotation validation, and the 24-item placement cap."),
 
   // Explicit legacy IndexedDB seams. Operation counts prevent a file-level blanket exemption.
+  allow("apps/web/src/domains/creator/character-platform/presets/legacy-character-draft.ts", "indexeddb-open", '"toonstudio-character-lab-work"', 1, LEGACY_IDB, "legacy-character-draft.test.ts verifies explicit read-only import and that a missing database is not created. The editor does not select this database as its save authority."),
   allow("apps/web/src/domains/creator/bg3d/bg3d-model-library.ts", "indexeddb-open", '"toonstudio-studio-bg3d-model-library"', 1, LEGACY_IDB, LEGACY_IDB_PROOF),
   allow("apps/web/src/domains/creator/bg3d/bg3d-model-library.ts", "indexeddb-write", "add", 2, LEGACY_IDB, LEGACY_IDB_PROOF),
   allow("apps/web/src/domains/creator/bg3d/bg3d-model-library.ts", "indexeddb-write", "put", 3, LEGACY_IDB, LEGACY_IDB_PROOF),

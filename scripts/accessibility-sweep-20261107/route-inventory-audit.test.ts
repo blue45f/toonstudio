@@ -115,21 +115,22 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
     },
   );
 
-  it("현재 라우트 전체(선언 327건, 구체 확장 455건, 와일드카드 위임 5건)를 누락 없이 인벤토리화한다", async () => {
+  it("현재 라우트 전체(선언 331건, 구체 확장 459건, 와일드카드 위임 5건)를 누락 없이 인벤토리화한다", async () => {
     const report = await auditSitewideRouteInventory(REPO_ROOT);
 
-    expect(report.counts.appRouteDeclarations).toBe(327);
-    // Studio 정본의 /studio/canvas/poser 별칭을 독립 경로로 더하고 기존 경로와 중복 제거한다.
+    expect(report.counts.appRouteDeclarations).toBe(331);
+    // Studio 정본의 /studio/canvas/poser와 캐릭터 호환 주소를 포함하고 중복은 제거한다.
     // MCP·CLI 안내는 편집기 와일드카드와 별개인 /studio/mcp 앱 라우트로 포함한다.
-    expect(report.counts.expandedRoutes).toBe(455);
+    expect(report.counts.expandedRoutes).toBe(459);
     expect(report.counts.wildcardExclusions).toBe(5);
-    expect(report.counts.studioRegistrationsAndAliases).toBe(55);
+    expect(report.counts.studioRegistrationsAndAliases).toBe(56);
     expect(report.counts.studioManifestRoutes).toBeGreaterThanOrEqual(45);
     expect(report.counts.adminRoutesAndAliases).toBeGreaterThanOrEqual(15);
     expect(report.counts.learningRoutes).toBe(60);
 
     expect(report.sourceAuthorities).toEqual(expect.arrayContaining([
       "apps/web/src/app/routes/groups/app-routes.tsx",
+      "apps/web/src/app/routes/groups/creator-character-alias-routes.tsx",
       "apps/web/src/domains/admin/router/admin-route-manifest.ts",
       "apps/web/src/domains/creator/studio-route-registry.ts",
       "apps/web/src/domains/creator/studio-router/studio-route-manifest.ts",
@@ -142,8 +143,8 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
       expect(fs.statSync(path.join(REPO_ROOT, source)).isFile()).toBe(true);
     }
 
-    expect(report.allExpandedRoutes).toHaveLength(455);
-    expect(new Set(report.allExpandedRoutes).size).toBe(455);
+    expect(report.allExpandedRoutes).toHaveLength(459);
+    expect(new Set(report.allExpandedRoutes).size).toBe(459);
 
     for (const route of report.allExpandedRoutes) {
       expect(route.startsWith("/")).toBe(true);
@@ -182,7 +183,7 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
     expect(report.allExpandedRoutes).toContain("/admin/overview");
   });
 
-  it("MCP·CLI 안내를 실제 앱 선언 출처가 있는 Studio 허브 경로로 수집한다", async () => {
+  it("MCP·CLI 안내와 캐릭터 호환 주소를 실제 앱 선언 출처와 함께 수집한다", async () => {
     const inventory = await collectAuditRouteInventory(REPO_ROOT);
     expect(inventory.entries.filter((entry) => entry.path === "/studio/mcp")).toEqual([{
       path: "/studio/mcp",
@@ -196,6 +197,25 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
       })],
     }]);
     expect(classifyRouteDomain("/studio/mcp")).toBe("studio-hub");
+
+    for (const [pattern, id] of [
+      ["/character-shaper", "creator-character-shaper-alias"],
+      ["/character-lab", "creator-character-lab"],
+      ["/studio/character-lab", "creator-studio-character-lab"],
+      ["/research/character-3d", "creator-research-character-3d"],
+    ]) {
+      expect(inventory.entries.filter((entry) => entry.path === pattern)).toEqual([{
+        path: pattern,
+        usesPlaceholder: false,
+        sources: expect.arrayContaining([expect.objectContaining({
+          source: "apps/web/src/app/routes/groups/creator-character-alias-routes.tsx",
+          symbol: "creatorCharacterAliasRoutes",
+          kind: "app-route",
+          id,
+          pattern,
+        })]),
+      }]);
+    }
   });
 
   it("라우트 도메인 분류기가 주요 공개·제작·관리 경로를 일관되게 분류한다", () => {
