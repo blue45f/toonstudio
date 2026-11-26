@@ -12,6 +12,7 @@ import {
   SITE_NAVIGATION_GROUPS,
   SITE_UTILITY_NAVIGATION,
 } from "@/shared/components/site-navigation";
+import { creatorCharacterAliasRoutes } from "@/app/routes/groups/creator-character-alias-routes";
 import { canonicalSitePath } from "@/shared/lib/site-route-metadata";
 
 const SITEMAP_SOURCE = "apps/web/src/domains/legal/SitemapDirectoryPage.tsx";
@@ -21,6 +22,7 @@ const PUBLIC_ROUTE_SOURCE_FILES = [
   "apps/web/src/app/routes/groups/character-chat.routes.tsx",
   "apps/web/src/app/routes/groups/community.routes.tsx",
   "apps/web/src/app/routes/groups/creator.routes.tsx",
+  "apps/web/src/app/routes/groups/creator-character-alias-routes.tsx",
   "apps/web/src/app/routes/groups/creator-showcase-routes.tsx",
   "apps/web/src/app/routes/groups/creator-resources.routes.tsx",
   "apps/web/src/app/routes/groups/cuts.routes.tsx",
@@ -209,6 +211,17 @@ describe("site directory experience contracts", () => {
       expect(routes).toContain(`path: "${legacy}", element: <ShowcaseRedirect to="${canonical}" />`);
       expect(directoryPaths).toContain(canonical);
       expect(extendedDestinationHrefs).not.toContain(legacy);
+    }
+  });
+
+  it("publishes the canonical Studio destination for every retired character entry", () => {
+    const publicPaths = staticUserFacingRoutes();
+    const rawDirectoryHrefs = SITEMAP_DIRECTORY_ENTRIES.map(entry => entry.href);
+    for (const { path, element } of creatorCharacterAliasRoutes) {
+      expect(publicPaths).toContain(path);
+      expect(canonicalSitePath(path)).toBe(element.props.pathname);
+      expect(rawDirectoryHrefs).toContain(element.props.pathname);
+      expect(rawDirectoryHrefs).not.toContain(path);
     }
   });
 
