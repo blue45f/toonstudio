@@ -226,15 +226,17 @@ pub unsafe extern "C" fn wasm_raycast_mesh_sah_bvh_3d(
     if nv > MAX_SAH_BVH_VERTICES || nt > MAX_SAH_BVH_TRIANGLES {
         return FFI_ERR_INVALID_PARAMETER;
     }
-    if !aligned_non_null::<f32>(ray_params_ptr as usize)
+    if ray_params_ptr.is_null()
+        || out_hit_ptr.is_null()
+        || !aligned_non_null::<f32>(ray_params_ptr as usize)
         || !aligned_non_null::<f32>(out_hit_ptr as usize)
     {
         return FFI_ERR_NULL_OR_ALIAS;
     }
-    if nv > 0 && !aligned_non_null::<f32>(positions_xyz_ptr as usize) {
+    if nv > 0 && (positions_xyz_ptr.is_null() || !aligned_non_null::<f32>(positions_xyz_ptr as usize)) {
         return FFI_ERR_NULL_OR_ALIAS;
     }
-    if nt > 0 && !aligned_non_null::<u32>(indices_ptr as usize) {
+    if nt > 0 && (indices_ptr.is_null() || !aligned_non_null::<u32>(indices_ptr as usize)) {
         return FFI_ERR_NULL_OR_ALIAS;
     }
 
@@ -271,7 +273,7 @@ pub unsafe extern "C" fn wasm_raycast_mesh_sah_bvh_3d(
             } else {
                 slice::from_raw_parts(indices_ptr, idx_len)
             },
-            *ray_params_ptr.cast::<[f32; SAH_BVH_RAY_FFI_LEN]>(),
+            slice::from_raw_parts(ray_params_ptr, SAH_BVH_RAY_FFI_LEN),
             slice::from_raw_parts_mut(out_hit_ptr, SAH_BVH_HIT_FFI_LEN),
         )
     };
@@ -328,7 +330,9 @@ pub unsafe extern "C" fn wasm_solve_two_bone_ik_3d(
     if flags > 1 {
         return FFI_ERR_INVALID_PARAMETER;
     }
-    if !aligned_non_null::<f32>(params_ptr as usize)
+    if params_ptr.is_null()
+        || out_result_ptr.is_null()
+        || !aligned_non_null::<f32>(params_ptr as usize)
         || !aligned_non_null::<f32>(out_result_ptr as usize)
     {
         return FFI_ERR_NULL_OR_ALIAS;
@@ -347,7 +351,7 @@ pub unsafe extern "C" fn wasm_solve_two_bone_ik_3d(
     // SAFETY: null·정렬·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
     let (p, out) = unsafe {
         (
-            *params_ptr.cast::<[f32; TWO_BONE_IK_FFI_PARAM_LEN]>(),
+            slice::from_raw_parts(params_ptr, TWO_BONE_IK_FFI_PARAM_LEN),
             slice::from_raw_parts_mut(out_result_ptr, TWO_BONE_IK_FFI_OUT_LEN),
         )
     };
@@ -409,7 +413,9 @@ pub unsafe extern "C" fn wasm_solve_ccd_spine_ik_3d(
     if !(MIN_CCD_CHAIN_JOINTS..=MAX_CCD_CHAIN_JOINTS).contains(&n) || flags > 1 {
         return FFI_ERR_INVALID_PARAMETER;
     }
-    if !aligned_non_null::<f32>(joints_xyz_ptr as usize)
+    if joints_xyz_ptr.is_null()
+        || target_xyz_ptr.is_null()
+        || !aligned_non_null::<f32>(joints_xyz_ptr as usize)
         || !aligned_non_null::<f32>(target_xyz_ptr as usize)
         || (!params_ptr.is_null() && !aligned_non_null::<f32>(params_ptr as usize))
     {
@@ -438,14 +444,15 @@ pub unsafe extern "C" fn wasm_solve_ccd_spine_ik_3d(
     // SAFETY: null·정렬·길이·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
     let (joints_raw, target, cfg) = unsafe {
         let j_slice = slice::from_raw_parts_mut(joints_xyz_ptr, joints_len);
-        let t = *target_xyz_ptr.cast::<[f32; 3]>();
+        let t_slice = slice::from_raw_parts(target_xyz_ptr, 3);
+        let t = [t_slice[0], t_slice[1], t_slice[2]];
         let mut cfg = if params_ptr.is_null() {
             CcdChainConfig {
                 floor_y: if (flags & 1) != 0 { Some(0.0) } else { None },
                 ..CcdChainConfig::default()
             }
         } else {
-            let p = *params_ptr.cast::<[f32; CCD_SPINE_IK_FFI_PARAM_LEN]>();
+            let p = slice::from_raw_parts(params_ptr, CCD_SPINE_IK_FFI_PARAM_LEN);
             CcdChainConfig {
                 max_iterations,
                 tolerance: p[0],
