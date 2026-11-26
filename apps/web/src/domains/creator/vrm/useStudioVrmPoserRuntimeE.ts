@@ -4,8 +4,6 @@
  */
 import { useEffect } from "react";
 
-import { planStudio3dInsertCaptureSize } from "../scene-3d/studio-3d-insert-capture-plan";
-
 import { createStudioVrmAuthoredFingerSnapshot } from "./studio-vrm-auto-grip-authority";
 import {
   serializeAvatarForgeState,
@@ -35,7 +33,6 @@ import {
 } from "./studio-vrm-pose-bake";
 import {
   getErrorMessage,
-  roundExportSize,
 } from "./studio-vrm-poser-helpers";
 import {
   stripFingerBones,
@@ -51,7 +48,7 @@ import {
   captureStudioVrmRgba,
   encodeStudioVrmCapturePngDataUrl,
 } from "./studio-vrm-raster-capture";
-import { cameraForLinkedCut, linkedCutContextMatches, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
+import { resolveVrmCaptureCameraForFrame, resolveVrmInsertCaptureDimensions, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
 import { createStudioVrmRigProfileSelection } from "./studio-vrm-rig-profile";
 import {
   STUDIO_VRM_HUMANOID_BONES,
@@ -743,17 +740,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
               );
             }
           }
-          // Display size = the legacy logical export size (stable placement on the document);
-          // the raster renders denser so the insert stays crisp at 100% zoom on HiDPI and
-          // survives a moderate scale-up. Budget failures fall back to display-density capture.
-          const { width: displayWidth, height: displayHeight } = frame?.source.render ?? roundExportSize(gl.domElement);
-          const capturePlan = frame?.pixels ?? planStudio3dInsertCaptureSize({
-            displayWidth,
-            displayHeight,
-            devicePixelRatio: globalThis.devicePixelRatio || 1,
-          });
-          const width = capturePlan?.width ?? displayWidth;
-          const height = capturePlan?.height ?? displayHeight;
+          const { displayWidth, displayHeight, width, height } = resolveVrmInsertCaptureDimensions(gl.domElement, frame);
           const bakedPose = bakeStudioVrmRuntimePose(currentVrm);
           if (!bakedPose) {
             throw new Error("삽입할 VRM 자세를 회전 기반 데이터로 변환하지 못했습니다.");
@@ -774,10 +761,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
           if (!sceneDocument) {
             throw new Error("재편집 가능한 3D 데생 인형 장면을 만들지 못했습니다.");
           }
-          if (frame && !linkedCutContextMatches(frame.source, sceneDocument)) {
-            throw new Error("저장한 컷의 연기·카메라·배경을 그대로 복원할 수 없습니다.");
-          }
-          const camera = frame ? cameraForLinkedCut(viewportCamera, frame) : viewportCamera;
+          const camera = resolveVrmCaptureCameraForFrame(viewportCamera, sceneDocument, frame);
           releaseCaptureHelpers = acquireVrmCaptureHelperLease({
             subjectOnly: insertBackground.plan.subjectOnly,
           });
