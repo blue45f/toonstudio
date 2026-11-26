@@ -69,7 +69,17 @@ describe("Avatar Forge v4 product integration boundary", () => {
   it("rebinds every normalized-rig consumer and keeps one authorable body authority", () => {
     expect(poser).toContain("rigRevision={proportionRigRevision}");
     expect(poser).toContain('key={`${jointHandleSessionGeneration}:${proportionRigRevision}`}');
-    expect(poser).toContain('key={`${proportionRigRevision}:${item.uid}`}');
+    const propList = section(poser, "<StudioVrmViewportPropAttachments", "/>");
+    expect(propList).toContain("instances={vrmPropItems}");
+    expect(propList).toContain("vrm={vrm}");
+    expect(propList).toContain("metrics={effectivePropRigMetrics}");
+    expect(propList).toContain("rigRevision={proportionRigRevision}");
+    expect(propList).toContain("capturePaused={isCapturing}");
+    expect(propList).toContain("onAttachmentStatus={h.onLinkedCutPropStatus}");
+    const prop = section(poser, "<StudioVrmPropAttachment", "/>");
+    expect(prop).toContain('key={`${props.rigRevision}:${instance.uid}`}');
+    expect(prop).toContain("instance={instance}");
+    expect(prop).toContain("{...props}");
     expect(poser).toContain('key={`${proportionRigRevision}:${slot}`}');
     expect(projection).toContain("[instance.bone, rigRevision, vrm]");
     expect(poser).not.toContain('aria-label="캐릭터 키 비율"');

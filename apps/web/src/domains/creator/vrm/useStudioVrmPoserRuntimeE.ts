@@ -23,6 +23,7 @@ import {
 } from "./studio-vrm-pose-bake";
 import {
   getErrorMessage,
+  vrmInsertCaptureSize,
 } from "./studio-vrm-poser-helpers";
 import {
   stripFingerBones,
@@ -38,7 +39,7 @@ import {
   captureStudioVrmRgba,
   encodeStudioVrmCapturePngDataUrl,
 } from "./studio-vrm-raster-capture";
-import { resolveVrmCaptureCameraForFrame, resolveVrmInsertCaptureDimensions, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
+import { resolveVrmCaptureCameraForFrame, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
 import { createStudioVrmRigProfileSelection } from "./studio-vrm-rig-profile";
 import {
   STUDIO_VRM_HUMANOID_BONES,
@@ -724,7 +725,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
               );
             }
           }
-          const { displayWidth, displayHeight, width, height } = resolveVrmInsertCaptureDimensions(gl.domElement, frame);
+          const { displayWidth, displayHeight, width, height } = vrmInsertCaptureSize(gl.domElement, frame);
           const bakedPose = bakeStudioVrmRuntimePose(currentVrm);
           if (!bakedPose) {
             throw new Error("삽입할 VRM 자세를 회전 기반 데이터로 변환하지 못했습니다.");
