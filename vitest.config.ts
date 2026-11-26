@@ -107,6 +107,8 @@ export default defineConfig({
         "scripts/local-test-stack.test.mjs",
         "scripts/lint-strict-warning-budget.test.mjs",
         "scripts/two-cut-server-egress.test.mjs",
+        "deploy/cloudflare-static/edge-api-lane-router.test.mjs",
+        "deploy/cloudflare-static/edge-image-negotiator.test.mjs",
       // Timing budgets and exhaustive CPU references remain mandatory in the quiet pass
       // (vitest.perf.config.ts), without V8's hot-loop instrumentation overhead.
       ...SERIAL_TEST_FILES,
