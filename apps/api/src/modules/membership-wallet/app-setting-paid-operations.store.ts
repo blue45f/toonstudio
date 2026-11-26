@@ -3,10 +3,10 @@
  *
  * 사업자등록·통신판매업 신고·PG 심사 완료 전에는 항상 기본값 false(무료·활동 크레딧 모드)로
  * 동작하며, 관리자가 어드민 콘솔에서 스위치를 켜면 재배포·재시작 없이 즉시 반영·유지된다.
- * DB 장애나 미초기화 상태에서는 메모리 폴백 값(기본 false)으로 fail-closed 된다.
+ * DB 장애나 미설정 상태에서는 유료 운영을 끈 상태로 판단한다.
  */
 
-import { Inject, Injectable, Optional } from "@nestjs/common";
+import { Inject, Injectable, Optional, ServiceUnavailableException } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 
 import { appSettings, db } from "../../platform/database";
@@ -44,7 +44,9 @@ const defaultDbBackend: PaidOperationsPersistenceBackend = {
     return null;
   },
   async write(enabled: boolean): Promise<void> {
-    if (!process.env.DATABASE_URL?.trim()) return;
+    if (!process.env.DATABASE_URL?.trim()) {
+      throw new ServiceUnavailableException("유료 운영 설정 저장소에 연결할 수 없습니다.");
+    }
     await ensureSettingsTable();
     const updatedAt = new Date();
     await db
@@ -65,7 +67,6 @@ const defaultDbBackend: PaidOperationsPersistenceBackend = {
 export class AppSettingPaidOperationsStore
   implements PaidOperationsSettingStore
 {
-  private fallbackEnabled = false;
   private readonly backend: PaidOperationsPersistenceBackend;
 
   constructor(
@@ -78,20 +79,13 @@ export class AppSettingPaidOperationsStore
 
   async getPaidOperationsEnabled(): Promise<boolean> {
     try {
-      const persisted = await this.backend.read();
-      if (typeof persisted === "boolean") {
-        this.fallbackEnabled = persisted;
-        return persisted;
-      }
-      return this.fallbackEnabled;
+      return (await this.backend.read()) === true;
     } catch {
-      return this.fallbackEnabled;
+      return false;
     }
   }
 
   async setPaidOperationsEnabled(value: boolean): Promise<void> {
-    const normalized = value === true;
-    this.fallbackEnabled = normalized;
-    await this.backend.write(normalized);
+    await this.backend.write(value === true);
   }
 }

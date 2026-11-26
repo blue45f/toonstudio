@@ -202,6 +202,7 @@ export function MembershipCreditGatePanel({
   };
 
   const paidOn = state.paidOperationsEnabled;
+  const creditPurchasesEnabled = paidOn && state.creditPurchasesEnabled === true;
 
   return (
     <section
@@ -213,32 +214,43 @@ export function MembershipCreditGatePanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black tracking-[0.12em] text-accent">
-            {paidOn ? "CREDIT SUBSCRIPTION & TOP-UP" : "ACTIVITY CREDIT REWARDS"}
+            {creditPurchasesEnabled
+              ? "CREDIT SUBSCRIPTION & TOP-UP"
+              : paidOn
+                ? "CREDIT SUBSCRIPTION"
+                : "ACTIVITY CREDIT REWARDS"}
           </p>
           <h2
             id="credit-billing-gate-heading"
             className="mt-1 text-lg font-black text-fg sm:text-xl [word-break:keep-all]"
           >
-            {paidOn
+            {creditPurchasesEnabled
               ? bi(
                   "크레딧 정기구독 · 추가 크레딧 충전",
                   "Credit Subscriptions & Top-Up Packs",
                 )
-              : bi(
-                  "활동으로 크레딧 적립하기 (베타 기간 현금 결제 없음)",
-                  "Earn Studio Credits Through Activity (No Cash Billing in Beta)",
-                )}
+              : paidOn
+                ? bi("크레딧 정기구독", "Credit Subscriptions")
+                : bi(
+                    "활동으로 크레딧 적립하기 (베타 기간 현금 결제 없음)",
+                    "Earn Studio Credits Through Activity (No Cash Billing in Beta)",
+                  )}
           </h2>
           <p className="mt-1 text-xs leading-5 text-fg-2 [word-break:keep-all]">
-            {paidOn
+            {creditPurchasesEnabled
               ? bi(
                   "월 정기 크레딧 플랜을 구독하거나 필요한 만큼 크레딧을 단건 충전할 수 있으며, 창작·댓글 활동 보너스 크레딧도 계속 적립됩니다.",
                   "Subscribe to a monthly credit plan or top up credit packs as needed, while continuing to earn bonus credits from creative activity.",
                 )
-              : bi(
-                  "현재는 정식 유료 전환 전 공개 검증 단계로 현금 결제·구독 결제를 받지 않습니다. 웹툰·그림 업로드와 댓글 활동만으로 보너스 크레딧을 적립해 기능을 이용할 수 있습니다.",
-                  "Cash payments and paid subscriptions are off during open validation. Upload webtoons or illustrations and leave comments to earn bonus credits free.",
-                )}
+              : paidOn
+                ? bi(
+                    "월 정기 크레딧 플랜을 신청하거나 창작·댓글 활동으로 보너스 크레딧을 적립할 수 있습니다.",
+                    "Apply for a monthly credit plan or earn bonus credits from creative activity.",
+                  )
+                : bi(
+                    "현재는 정식 유료 전환 전 공개 검증 단계로 현금 결제·구독 결제를 받지 않습니다. 웹툰·그림 업로드와 댓글 활동만으로 보너스 크레딧을 적립해 기능을 이용할 수 있습니다.",
+                    "Cash payments and paid subscriptions are off during open validation. Upload webtoons or illustrations and leave comments to earn bonus credits free.",
+                  )}
           </p>
         </div>
         <span
@@ -249,9 +261,11 @@ export function MembershipCreditGatePanel({
           }`}
         >
           {paidOn ? <Unlock size={13} aria-hidden /> : <Lock size={13} aria-hidden />}
-          {paidOn
+          {creditPurchasesEnabled
             ? bi("유료 구독·충전 열림", "Paid Billing Active")
-            : bi("무결제 활동 적립 모드", "Free Activity-Only Mode")}
+            : paidOn
+              ? bi("정기구독 신청 가능", "Subscription Requests Open")
+              : bi("무결제 활동 적립 모드", "Free Activity-Only Mode")}
         </span>
       </div>
 
@@ -291,7 +305,7 @@ export function MembershipCreditGatePanel({
       {paidOn ? (
         <div
           data-testid="paid-credit-controls"
-          className="mt-5 grid gap-4 border-t border-line pt-5 lg:grid-cols-2"
+          className={`mt-5 grid gap-4 border-t border-line pt-5 ${creditPurchasesEnabled ? "lg:grid-cols-2" : ""}`}
         >
           <div className="rounded-xl border border-line bg-panel p-4">
             <h3 className="text-sm font-bold text-fg">
@@ -337,44 +351,48 @@ export function MembershipCreditGatePanel({
             </div>
           </div>
 
-          <div className="rounded-xl border border-line bg-panel p-4">
-            <h3 className="text-sm font-bold text-fg">
-              {bi("단건 추가 크레딧 구매", "Top-Up Credit Packs")}
-            </h3>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {state.creditPacks.map((pack) => (
-                <div
-                  key={pack.id}
-                  className="flex flex-col justify-between rounded-lg border border-line bg-card p-3"
-                >
-                  <div>
-                    <p className="text-sm font-black tabular-nums text-fg">
-                      {formatter.format(pack.credits)} C
-                    </p>
-                    <p className="mt-0.5 text-xs tabular-nums text-fg-3">
-                      {formatter.format(pack.krwPrice)}
-                      {bi("원", " KRW")}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={busyKey === pack.id}
-                    data-testid={`buy-credit-pack-${pack.id}`}
-                    onClick={() => void handlePaidPackClick(pack.id)}
-                    className={buttonClass({
-                      variant: "outline",
-                      size: "sm",
-                      className: "mt-3 min-h-11 w-full text-xs",
-                    })}
+          {creditPurchasesEnabled ? (
+            <div className="rounded-xl border border-line bg-panel p-4">
+              <h3 className="text-sm font-bold text-fg">
+                {bi("단건 추가 크레딧 구매", "Top-Up Credit Packs")}
+              </h3>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {state.creditPacks.map((pack) => (
+                  <div
+                    key={pack.id}
+                    className="flex flex-col justify-between rounded-lg border border-line bg-card p-3"
                   >
-                    {bi("크레딧 구매", "Buy Credits")}
-                  </button>
-                </div>
-              ))}
+                    <div>
+                      <p className="text-sm font-black tabular-nums text-fg">
+                        {formatter.format(pack.credits)} C
+                      </p>
+                      <p className="mt-0.5 text-xs tabular-nums text-fg-3">
+                        {formatter.format(pack.krwPrice)}
+                        {bi("원", " KRW")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busyKey === pack.id}
+                      data-testid={`buy-credit-pack-${pack.id}`}
+                      onClick={() => void handlePaidPackClick(pack.id)}
+                      className={buttonClass({
+                        variant: "outline",
+                        size: "sm",
+                        className: "mt-3 min-h-11 w-full text-xs",
+                      })}
+                    >
+                      {bi("크레딧 구매", "Buy Credits")}
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
-      ) : (
+      ) : null}
+
+      {!creditPurchasesEnabled ? (
         <div
           data-testid="free-waitlist-controls"
           className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3.5"
@@ -429,7 +447,7 @@ export function MembershipCreditGatePanel({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
       {feedback ? (
         <p

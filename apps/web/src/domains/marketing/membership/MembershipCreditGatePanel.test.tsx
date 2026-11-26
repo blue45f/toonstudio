@@ -115,12 +115,12 @@ describe("MembershipCreditGatePanel (어드민 유료화 토글 연동 UI)", () 
     expect(registerWaitlistMock).toHaveBeenCalledWith("plan", "team");
   });
 
-  it("어드민 토글 ON일 때 정기구독 신청 버튼과 크레딧 팩 구매 버튼이 즉시 나타난다", async () => {
+  it.each([true, false])("어드민 토글 ON일 때 구매 가능 여부 %s에 맞춰 구매 버튼 또는 출시 알림을 표시한다", async (creditPurchasesEnabled) => {
     getBillingModeMock.mockResolvedValue({
       paidOperationsEnabled: true,
       mode: "paid-credit-active",
       subscriptionsEnabled: true,
-      creditPurchasesEnabled: true,
+      creditPurchasesEnabled,
       krwPerCredit: 10,
       activityRewardExpiryDays: 90,
       monthlyActivityCreditPoolCap: 50_000,
@@ -150,9 +150,9 @@ describe("MembershipCreditGatePanel (어드민 유료화 토글 연동 UI)", () 
     render(<MembershipCreditGatePanel formatter={formatter} />);
 
     expect(await screen.findByTestId("paid-credit-controls")).toBeTruthy();
-    expect(screen.queryByTestId("free-waitlist-controls")).toBeNull();
     expect(screen.getByTestId("subscribe-plan-team")).toBeTruthy();
-    expect(screen.getByTestId("buy-credit-pack-credit-pack-1000")).toBeTruthy();
+    expect(Boolean(screen.queryByTestId("free-waitlist-controls"))).toBe(!creditPurchasesEnabled);
+    expect(Boolean(screen.queryByTestId("buy-credit-pack-credit-pack-1000"))).toBe(creditPurchasesEnabled);
 
     claimReferralMock.mockResolvedValue({
       claimed: true,
