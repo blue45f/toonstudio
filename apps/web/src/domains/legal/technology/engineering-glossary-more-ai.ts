@@ -365,4 +365,42 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
     chapters: ["on-device-inference", "free-ai-routing"],
     atlasIds: ["webgpu-llm-nf4-paged-attention-vram-pager"],
   },
+  {
+    id: "korean-josa-lore-linter-voice-vrm",
+    category: "ai",
+    term: t("한국어 받침 조사 호응 로어 린터 & 음성→52 VRM 표정", "Batchim-aware Korean Josa lore linter & Voice→52 VRM animator"),
+    definition: t(
+      "Aho-Corasick 트라이로 세계관 고유명사 오기·시대착오 어휘를 찾아 종성 받침(ㄹ 예외 포함)에 맞춰 조사를 자동 교정하고, 더빙 음성 포먼트를 52종 VRM 표정으로 바꾸는 로컬 도구입니다.",
+      "Finds multi-episode lore typos and era anachronisms via Aho-Corasick while harmonizing Korean Batchim particles, paired with offline voice-to-52 VRM expression animation.",
+    ),
+    analogy: t(
+      "사극·판타지 설정집과 한국어 맞춤법을 꿰고 있는 전속 교열 기자와, 성우 목소리만으로 인형 입모양·눈썹을 움직이는 조종사가 인터넷 없이 내 기기 안에서 일하는 것과 같습니다.",
+      "Like an offline script copy-editor fluent in period lore and Korean grammar working alongside a voice-driven VRM puppeteer.",
+    ),
+    inToonstudio: t(
+      "series-lore-consistency-linter.ts(은/는·이/가·으로/로 6쌍 조사 호응·시대착오 탐지), VoiceToVrmExpressionAnimator(52 블렌드셰이프), O(N) 적분 가이드 소프트 매트를 토큰 ₩0으로 검증했습니다.",
+      "Verified at ₩0 token cost across series-lore-consistency-linter.ts (6 Korean particle pairs), VoiceToVrmExpressionAnimator (52 blendshapes) and O(N) guided soft matting.",
+    ),
+    chapters: ["on-device-inference", "sound-generation"],
+    atlasIds: ["wave8-to-19-voice-vrm-lore-josa-linter"],
+  },
+  {
+    id: "korean-choseong-jamo-bm25f-search",
+    category: "ai",
+    term: t("무서버 한글 초성·자모 분해 & 1자모 오타 허용 BM25F 검색", "Serverless Korean Choseong/Jamo & 1-Jamo fuzzy BM25F search"),
+    definition: t(
+      "유니코드 한글 음절을 초·중·종성 자모로 분해하고 격조사·보조사를 떼어 내어, 외부 검색 서버 없이 초성 질의와 단일 자모 오타까지 4필드 가중 BM25F로 1ms 미만에 찾는 엔진입니다.",
+      "Decomposes Hangul syllables into Choseong/Jamo and strips particles to run Choseong and 1-Jamo typo-tolerant 4-field BM25F manuscript search in <1 ms with zero servers.",
+    ),
+    analogy: t(
+      "초성 세 글자나 받침 오타가 섞인 쪽지만 건네도 대사·인물·연출 노트·효과음 서랍 네 칸을 순식간에 뒤져 정확한 컷 번호를 펼쳐 주는 원고실 사서와 같습니다.",
+      "Like an in-browser manuscript librarian who resolves shorthand initials, inflected Korean nouns and single-key typos across 300 cuts in under a millisecond.",
+    ),
+    inToonstudio: t(
+      "korean-jamo-bm25f-manuscript-search.ts 가 어근 음운 결합 검증 기반 조사 분리, SymSpell 1-자모 삭제 역색인, 대사(3.0)·인물(2.6)·노트(1.8)·효과음(1.4) 300컷 <1ms 검색을 검증했습니다.",
+      "korean-jamo-bm25f-manuscript-search.ts verified phonologically guarded Josa stripping, SymSpell 1-Jamo delete keys and <1 ms 4-field BM25F ranking across 300 cuts.",
+    ),
+    chapters: ["on-device-inference", "storage"],
+    atlasIds: ["wave23-korean-choseong-jamo-bm25f-search"],
+  },
 ];

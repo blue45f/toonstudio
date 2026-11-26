@@ -553,4 +553,42 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
     chapters: ["brush-engine", "browser-local-compute"],
     atlasIds: ["supergap-wet-paper-msdf-autoflat-tremor-upscaler"],
   },
+  {
+    id: "kubelka-munk-dcel-planar-fill",
+    category: "brush",
+    term: t("8밴드 Kubelka-Munk 분광 혼색 & 반간선(DCEL) 평면 채색", "8-band Kubelka-Munk pigment mix & half-edge DCEL planar fill"),
+    definition: t(
+      "400~700nm 8개 파장 대역의 흡수·산란비(K/S)로 탁함 없는 감산 혼색을 계산하고, 교차 선화를 반간선 평면 그래프(DCEL)로 쪼개 1px 흰 틈 없이 면을 채우는 작화 기법입니다.",
+      "Computes vibrant subtractive pigment mixtures across 8 spectral bands (400–700 nm) and fills intersecting vector strokes with zero-gap half-edge DCEL planar faces.",
+    ),
+    analogy: t(
+      "빛이 아니라 실제 물감 가루의 반사율을 계산하는 팔레트와, 펜선 교차점을 지도 행정구역처럼 정확히 따라가 테두리 틈새로 색이 남지 않는 채색 도구의 결합입니다.",
+      "Like pairing a physical pigment-reflectance palette with a topological map filler that leaves no halo gaps along crisp ink boundaries.",
+    ),
+    inToonstudio: t(
+      "wasm64-wave11-apex/saccade-kubelka-homography.ts(8밴드 K/S 혼색)와 wasm64-wave15-structural/planar-map-diffusion-curves.ts(DCEL 채색·확산 곡선), Wave 6 smin 말풍선 조각기를 단위 테스트로 검증했습니다.",
+      "Unit-verified across saccade-kubelka-homography.ts (8-band K/S mix), planar-map-diffusion-curves.ts (DCEL fill & diffusion curves) and Wave 6 smin SDF balloon sculpting.",
+    ),
+    chapters: ["brush-engine", "brush-render-authority"],
+    atlasIds: ["wave11-to-15-spectral-dcel-blue-noise", "wave5-to-8-sdf-kalman-moire-arap"],
+  },
+  {
+    id: "hdr-pq-gainmap-spot-foil-colorscript",
+    category: "brush",
+    term: t("선택적 PQ HDR 게인맵 · ±0.1mm 별색 박 분판 & 60컷 컬러 스크립트", "Selective PQ HDR gain-map, ±0.1 mm spot-foil plates & 60-cut color-script"),
+    definition: t(
+      "말풍선 백색은 203 nits에 고정한 채 이펙트만 1,000 nits HDR 게인맵으로 올리고, 단행본 ±0.1mm 금·은박 분판과 60컷 회차 OKLCH 색온도 조화를 함께 다루는 마감 파이프라인입니다.",
+      "Anchors diffuse paper white at 203 nits while boosting VFX to 1,000-nit HDR gain-maps, paired with ±0.1 mm spot-foil press plates and 60-cut OKLCH episode color-scripts.",
+    ),
+    analogy: t(
+      "원고지 바탕에는 눈이 편한 독서등을 켜 두면서 마법 광선에만 스포트라이트를 비추고, 단행본 표지에는 정밀 금박 동판과 17³ 색보정 필름을 함께 맞추는 마감 공정입니다.",
+      "Like keeping gentle reading light on comic paper while spotlighting magic effects on HDR displays and aligning precision gold-foil dies for print.",
+    ),
+    inToonstudio: t(
+      "hdr-pq-ribbon-brush-lookat.ts(ST.2084·ISO-21496-1·r·κ<0.85 리본 붓), wang-tile-assistant-sheet-spot-foil.ts(±0.1mm 별색 판), episode-oklch-color-script.ts 및 B4/A4 톰보·17³ LUT를 검증했습니다.",
+      "Verified across hdr-pq-ribbon-brush-lookat.ts, wang-tile-assistant-sheet-spot-foil.ts (±0.1 mm foil trap), episode-oklch-color-script.ts and Wave 19 B4/A4 crop-marks + 17³ LUT.",
+    ),
+    chapters: ["brush-engine", "licenses"],
+    atlasIds: ["wave21-to-23-spot-foil-hdr-color-script", "wave16-to-19-gpen-print-cropmarks-lut"],
+  },
 ];

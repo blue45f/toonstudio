@@ -3,4 +3,4 @@
  * (`ENGINEERING_CHAPTER_COUNT`와 같은 방식). 실제 목록과 같은지는 engineering-glossary-count.test.ts가 확인하므로,
  * 용어를 더하거나 빼면 이 값을 함께 바꿔야 테스트가 통과한다.
  */
-export const ENGINEERING_GLOSSARY_TERM_COUNT = 222;
+export const ENGINEERING_GLOSSARY_TERM_COUNT = 236;

@@ -232,4 +232,23 @@ export const GLOSSARY_MORE_INPUT: readonly GlossaryTerm[] = [
     chapters: ["brush-engine", "blender-mcp-boundary"],
     atlasIds: ["thermal-pacer-dual-journal-vault-biometric-coldboot", "zero-lag-companion-pairing-ephemeral-redline-hw"],
   },
+  {
+    id: "markov-idle-prefetch-fitts-radial-hud",
+    category: "input",
+    term: t("2차 마르코프 ≤2ms 선행 프리페처 & 피츠 법칙 44px 방사형 HUD", "2nd-order Markov <=2 ms prefetcher & Fitts >=44 px radial HUD"),
+    definition: t(
+      "작가의 공정 전환 이력을 라플라스 평활화 2차 마르코프 연쇄로 학습해 유휴 ≤2ms 안에 다음 지연 모듈을 예열하고, 섀넌-피츠 공식으로 ≥44×44px 비겹침 8분할 파이 메뉴를 배치하는 인체공학 계층입니다.",
+      "Prewarms predicted lazy wasm64 modules inside <=2 ms idle windows via 2nd-order Laplace Markov chains while optimizing >=44×44 px 8-slice radial pie menus via Fitts' law.",
+    ),
+    analogy: t(
+      "다음 순서를 예측해 도구를 미리 꺼내 두는 조수와 손목만 살짝 움직이면 닿는 큼직한 원형 팔레트, 그리고 말풍선 잘림 없는 9:16 숏폼 뷰파인더를 합친 작업 환경입니다.",
+      "Like an assistant pre-staging the next brush during pauses, paired with a thumb-friendly 8-slice radial palette and a balloon-safe 9:16 viewfinder.",
+    ),
+    inToonstudio: t(
+      "markov-intent-prefetch-orchestrator.ts(Save-Data·발열 보호 ≤2ms 예열), fitts-radial-hud-chord-optimizer.ts(≥44×44px 비겹침·한 손 무충돌 코드), 임계 감쇠 스크롤·9:16 디렉터를 검증했습니다.",
+      "Verified across markov-intent-prefetch-orchestrator.ts (<=2 ms idle prewarm), fitts-radial-hud-chord-optimizer.ts (>=44×44 px slices & safe chords) and 9:16 shortform framing.",
+    ),
+    chapters: ["performance", "quality"],
+    atlasIds: ["wave24-markov-prefetch-fitts-radial-hud", "wave6-to-21-scroll-cinema-saccade-shortform"],
+  },
 ];

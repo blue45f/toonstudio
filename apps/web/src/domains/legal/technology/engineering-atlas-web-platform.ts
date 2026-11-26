@@ -9,6 +9,7 @@ import { ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE } from "./engineering-atlas-web-
 import { ENGINEERING_ATLAS_WEB_PLATFORM_WASM } from "./engineering-atlas-web-platform-wasm";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_WASM64_IPC } from "./engineering-atlas-web-platform-wasm64-ipc";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_WAVE4_HYPERCORE } from "./engineering-atlas-web-platform-wave4-hypercore";
+import { ENGINEERING_ATLAS_WEB_PLATFORM_WAVES25TO31_AUTONOMY } from "./engineering-atlas-web-platform-waves25to31-autonomy";
 
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
@@ -28,4 +29,5 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM: readonly EngineeringAtlasEntry[] = 
   ...ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_HONESTY,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA,
+  ...ENGINEERING_ATLAS_WEB_PLATFORM_WAVES25TO31_AUTONOMY,
 ];
