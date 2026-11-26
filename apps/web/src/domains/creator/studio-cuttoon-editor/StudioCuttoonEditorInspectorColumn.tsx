@@ -7,7 +7,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { Suspense } from "react";
 import { resolveStudioPaperGrainVisibleV1 } from "../brush/studio-paper-grain-visibility-v1";
 import { hasActiveImageFilters } from "../render/studio-konva-filter-fields";
-import { reopenStudioVrmCut } from "../studio-reopen-vrm-cut";
+import { reopenStudioVrmCut } from "./studio-reopen-vrm-cut";
 import { StudioEdgeRailButton } from "../studio-chrome-ui";
 import { LazyStudioInspectorAside } from "../studio-inspector-aside-loader";
 import { StudioInspectorAsideFallback } from "../studio-mobile-dock-presets";
