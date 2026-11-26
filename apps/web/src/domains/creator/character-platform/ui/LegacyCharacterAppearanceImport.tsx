@@ -65,7 +65,7 @@ export function LegacyCharacterAppearanceImport({ catalog, importPresets, downlo
       })}>{bt("이 기기의 내 룩 찾기", "Find saved looks")}</button>
       <button type="button" disabled={busy} className={buttonClass} onClick={() => void run(async () => {
         setPreview(null);
-        const raw = await readLegacyCharacterDraft(window.indexedDB);
+        const raw = await readLegacyCharacterDraft();
         if (raw === null) setNotice(bt("이 주소에 저장된 이전 작업이 없습니다.", "No older draft was saved on this origin."));
         else open(raw, "device-draft.character.json");
       })}>{bt("이 기기의 작업 열기", "Open saved draft")}</button>

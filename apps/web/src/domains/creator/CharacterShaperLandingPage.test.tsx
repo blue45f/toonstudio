@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { probeCharacterShaperWebGl } from "./character-shaper/character-shaper-entry";
 import { CharacterShaperLandingPage } from "./CharacterShaperLandingPage";
 
+import { creatorRoutes } from "@/app/routes/groups/creator.routes";
 import { useI18n } from "@/shared/lib/i18n";
 
 const SLOT_LABELS = [
@@ -355,11 +356,15 @@ describe("CharacterShaperLandingPage", () => {
 
 describe("/shaper registration", () => {
   it("is wired into the router, titles, manifest, sitemap and centralized site navigation", () => {
-    // AppRouter now renders one <Route> per entry of the grouped route table, so the /shaper
-    // registration lives in the creator group rather than in the router JSX.
-    expect(readRepoFile("apps/web/src/app/routes/groups/creator.routes.tsx")).toContain(
-      '{ id: "creator-character-shaper", path: "/shaper", element: <Navigate to={studioRoutePath("asset-character-new")} replace /> }',
-    );
+    const alias = creatorRoutes.find(route => route.id === "creator-character-shaper");
+    expect(alias?.path).toBe("/shaper");
+    render(<MemoryRouter initialEntries={["/shaper?editor=open"]}>
+      <Routes>
+        <Route path="/shaper" element={alias?.element} />
+        <Route path="/studio/assets/characters/new" element={<LocationProbe />} />
+      </Routes>
+    </MemoryRouter>);
+    expect(screen.getByTestId("location").textContent).toBe("/studio/assets/characters/new?editor=open");
     expect(readRepoFile("apps/web/src/app/routes/route-titles.ts")).toContain('"/shaper": "route.shaper"');
     // 라우트 거버넌스(route-manifest.ts, BLUEPRINT §1.3)는 모든 표면에 정본 그룹·역할·tier·stage 선언을 요구한다.
     // 항목의 값 검증은 route-governance.test.ts 가 맡고, 여기서는 /shaper 가 네 필드를 모두 선언한 채 등록됐는지만 본다.

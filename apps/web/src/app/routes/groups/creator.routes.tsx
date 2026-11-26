@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
@@ -18,6 +18,7 @@ import {
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
   PdfWorkbenchPage,
 } from "./creator-route-pages";
+import { creatorCharacterAliasRoutes } from "./creator-character-alias-routes";
 import { creatorCreateRoutes, creatorShowcaseRoutes } from "./creator-showcase-routes";
 
 const StudioHomeEntryRoute = lazyRetry(
@@ -26,11 +27,6 @@ const StudioHomeEntryRoute = lazyRetry(
   })),
   "StudioHomeEntryRoute",
 );
-
-function CharacterEntryRedirect({ pathname = "/studio/character" }: { readonly pathname?: string }) {
-  const { search, hash, state } = useLocation();
-  return <Navigate to={{ pathname, search, hash }} state={state} replace />;
-}
 
 export const creatorRoutes = defineAppRoutes([
   { id: "creator-character-onboarding", path: "/onboarding/character", element: <StudioCharacterOnboardingPage /> },
@@ -91,11 +87,7 @@ export const creatorRoutes = defineAppRoutes([
   // /motion-webtoon은 레지스트리 별칭 선언만 있고 이 항목이 없어 전역 404로 떨어졌다 (F-B21-1).
   { id: "creator-motion-webtoon", path: "/motion-webtoon", element: <Navigate to={studioRoutePath("motion-webtoon")} replace /> },
   { id: "creator-music", path: "/music", element: <Navigate to={studioRoutePath("asset-audio")} replace /> },
-  { id: "creator-character-shaper", path: "/shaper", element: <CharacterEntryRedirect pathname={studioRoutePath("asset-character-new")} /> },
-  { id: "creator-character-shaper-alias", path: "/character-shaper", element: <CharacterEntryRedirect pathname={studioRoutePath("asset-character-new")} /> },
-  { id: "creator-character-lab", path: "/character-lab", element: <CharacterEntryRedirect /> },
-  { id: "creator-studio-character-lab", path: "/studio/character-lab", element: <CharacterEntryRedirect /> },
-  { id: "creator-research-character-3d", path: "/research/character-3d", element: <CharacterEntryRedirect /> },
+  ...creatorCharacterAliasRoutes,
   { id: "creator-brush-lab", path: "/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
   { id: "creator-studio-brush-lab", path: "/studio/brush-lab", element: <Navigate to={studioRoutePath("asset-brush-new")} replace /> },
 

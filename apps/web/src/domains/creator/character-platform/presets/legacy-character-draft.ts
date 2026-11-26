@@ -1,5 +1,8 @@
+import { getBrowserIndexedDbFactory } from "@/shared/lib/idb-kv";
+
 /** 예전 편집기의 기기 작업 하나를 읽는다. 읽는 과정에서 저장소를 생성하거나 갱신하지 않는다. */
-export function readLegacyCharacterDraft(factory: IDBFactory): Promise<string | null> {
+export function readLegacyCharacterDraft(factory: IDBFactory | null = getBrowserIndexedDbFactory()): Promise<string | null> {
+  if (!factory) return Promise.reject(new Error("draft-unavailable"));
   return new Promise((resolve, reject) => {
     const request = factory.open("toonstudio-character-lab-work");
     let absent = false;
