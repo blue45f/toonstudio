@@ -24,6 +24,7 @@ export const STUDIO_VRM_POSER_IMPLEMENTATION_FILES = [
   "./StudioVrmPoser.tsx",
   "./StudioVrmPoserDialog.tsx",
   "./StudioVrmPoserViewport.tsx",
+  "./StudioVrmViewportPropAttachments.tsx",
   "./StudioVrmPoserPanelBodyA.tsx",
   "./StudioVrmPoserPanelBodyB.tsx",
   "./StudioVrmPoserPanelBodyC.tsx",
