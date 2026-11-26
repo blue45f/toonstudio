@@ -66,22 +66,21 @@
   top: 6px;
 }
 
-/* 제목(top: 5px, 16px)과 한 줄 상태(line-height: 14px)가 44px 바 안에서 여유 있게 중앙 정렬된다. */
+/* 제목 아래 27px에는 기본 크기 안내와 200% 확대(24px) 한 줄 안내가 잘림 없이 들어간다. */
 @media (max-width: 559px) {
   .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) h1 {
-    top: 5px;
+    top: 0;
     line-height: 16px;
   }
   .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > svg {
-    top: 6px;
+    top: 1px;
   }
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) {
-    align-items: center;
-    padding-block: 22px 6px;
+    padding-block: 0 1px;
   }
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > span {
-    line-height: 14px;
-    max-height: 16px;
+    line-height: 1.125;
+    max-height: 27px;
   }
 }
 
