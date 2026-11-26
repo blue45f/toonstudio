@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { createStudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
@@ -41,9 +41,14 @@ function mount(count: number) {
 }
 async function currentJob(index: number, total: number) {
   await screen.findByText(new RegExp(index + " / " + total));
-  const props = harness.capture.mock.lastCall?.[0];
-  if (!props?.initialScene || !props.linkedCutCapture) throw Error("컷 캡처를 마운트하지 못했습니다.");
-  return { props, scene: props.initialScene, guard: props.linkedCutCapture };
+  return waitFor(() => {
+    const props = harness.capture.mock.lastCall?.[0];
+    // Progress is visible before the lazy WebGL surface finishes mounting.
+    if (!props?.initialScene || !props.linkedCutCapture || props.initialScene.camera.fovDegrees !== 34 + index) {
+      throw Error("해당 컷의 캡처를 마운트하지 못했습니다.");
+    }
+    return { props, scene: props.initialScene, guard: props.linkedCutCapture };
+  });
 }
 async function complete(job: Awaited<ReturnType<typeof currentJob>>) {
   await act(async () => {
