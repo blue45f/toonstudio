@@ -1,6 +1,6 @@
 import { isStudioVrmCharacterDocumentId } from "@toonstudio/contracts/studio-vrm-scene-fields";
 
-import type { ImageEl } from "./studio-element-model";
+import type { ImageEl } from "../studio-element-model";
 
 interface StudioVrmCutEditControls {
   setPoserInitialDataUrl: (url: string) => void;
