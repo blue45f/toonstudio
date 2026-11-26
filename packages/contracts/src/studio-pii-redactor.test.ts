@@ -60,6 +60,58 @@ describe("redactCreatorSensitiveText (한국형 복합 PII 마스킹 및 오탐 
     }
   });
 
+  it.each([
+    "+821012345678",
+    "+82 10 12345678",
+    "+82(0)10-1234-5678",
+    "010-12345678",
+    "0101234-5678",
+    "01012345678",
+    "02-12345678",
+    "021234-5678",
+    "0311234567",
+    "07012345678",
+    "05071342-8899",
+  ])("국제·부분 구분자 전화번호 %s를 부분 노출 없이 마스킹한다", (phone) => {
+    expect(redactCreatorSensitiveText(`연락처: ${phone}`)).toEqual({
+      sanitizedText: "연락처: [연락처 비공개]",
+      redactedCount: 1,
+    });
+  });
+
+  it.each(["9900133456789", "010123456789", "01012345", "123456789", "2026-11-26"])(
+    "전화번호가 아닌 숫자 %s를 일부 전화번호로 잘라내지 않는다",
+    (value) => {
+      expect(redactCreatorSensitiveText(value)).toEqual({ sanitizedText: value, redactedCount: 0 });
+    },
+  );
+
+  it.each(["", "계좌", "계좌 번호", "계좌 번호:", "카톡", "카톡 ID", "카톡 ID:"])(
+    "값이 없는 %s 라벨과 긴 공백을 역추적 없이 그대로 보존한다",
+    (label) => {
+      const raw = `${label}${"\t".repeat(100_000)}!`;
+      expect(redactCreatorSensitiveText(raw)).toEqual({ sanitizedText: raw, redactedCount: 0 });
+    },
+  );
+
+  it("긴 공백 뒤의 실제 계좌·SNS 값도 빠뜨리지 않고 원문의 라벨과 공백을 보존한다", () => {
+    const gap = "\t \u3000".repeat(10_000);
+    const bankPrefix = `정산 계좌${gap}번호${gap}:${gap}`;
+    const snsPrefix = `카카오${gap}톡${gap}ID${gap}：${gap}`;
+    const raw = `${bankPrefix}123456789012 / ${snsPrefix}@artist_test`;
+    const sanitizedText = `${bankPrefix}[계좌번호 비공개] / ${snsPrefix}[계정 비공개]`;
+    expect(redactCreatorSensitiveText(raw)).toEqual({ sanitizedText, redactedCount: 2 });
+    expect(redactCreatorSensitiveText(sanitizedText)).toEqual({ sanitizedText, redactedCount: 0 });
+  });
+
+  it("띄어 쓴 은행·SNS 라벨과 후속 후보를 보존하면서 계좌·아이디만 마스킹한다", () => {
+    const raw = "KB 국민은행 : 123456789012 / NH 농협은행 234567890123 / 카톡 ! Kakao Talk ID: artist_123";
+    expect(redactCreatorSensitiveText(raw)).toEqual({
+      sanitizedText: "KB 국민은행 : [계좌번호 비공개] / NH 농협은행 [계좌번호 비공개] / 카톡 ! Kakao Talk ID: [계정 비공개]",
+      redactedCount: 3,
+    });
+  });
+
   it("카카오톡 ID·오픈채팅 URL·인스타그램 핸들을 마스킹하되 npm 스코프 패키지는 건드리지 않는다", () => {
     const raw =
       "카톡 ID: webtoon_k99 / https://open.kakao.com/o/gAbCdEf1 / 인스타 @seoul_sketch_92 / IG: @artist.minji_2026 / 패키지 @toonstudio/contracts @cf/google/gemma";

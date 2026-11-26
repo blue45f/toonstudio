@@ -288,7 +288,8 @@ export function buildModeSystemInstruction(mode: StudioOpenAiAssistMode): string
         "어느 톤에도 원문에 없는 강조나 감정을 보태지 마세요. line과 subBubble에는 화자가 입 밖에 낼 대사만 쓰고 편집 설명은 reason에 쓰세요. " +
         "두 화자가 주고받은 대사는 각 대안에서 서로 누구에게 말하는지와 두 사람의 선택을 유지하세요. " +
         "마스킹한 계좌번호·연락처·주소는 숫자나 끝자리를 지어내지 말고 번호나 주소가 드러나지 않는 표현으로 남기세요. " +
-        "긴 대사는 같은 항목의 subBubble에 이어 쓰고, 한 말풍선으로 충분하면 subBubble은 빈 문자열로 두세요."
+        "긴 대사는 같은 항목의 subBubble에 이어 쓰고, 한 말풍선으로 충분하면 subBubble은 빈 문자열로 두세요. " +
+        "reason에는 공통 설명 반복 대신 해당 안만의 호흡·강조점을 한 문장으로 적으세요."
       );
     case "export-preflight-coach":
       return (

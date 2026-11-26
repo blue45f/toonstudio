@@ -33,21 +33,23 @@ const SOCIAL_URL_PATTERN =
 
 // 한국 전화번호 (국제 +82, 괄호 지역/휴대폰 번호, 050x 안심번호, 070, 유니코드 대시, 무구분자 휴대폰·유선·070·050x 포함)
 const PHONE_PATTERN =
-  /(?:(?<![\w(])\+82[\s.\-–—−]*\(?0?(?:1[016789]|2|[3-6][1-5]|70|50\d)\)?[\s.\-–—−~]*|\(0(?:1[016789]|2|[3-6][1-5]|70|50\d)\)[\s.\-–—−~]*|(?<!\d)0(?:1[016789]|2|[3-6][1-5]|70|50\d)(?:\)[\s.\-–—−~]*|[\s.\-–—−~]+))\d{3,4}(?:[\s.\-–—−~]+)\d{4}(?!\d)|(?<!\d)0(?:1[016789]|2|[3-6][1-5]|70|50\d)\d{7,8}(?!\d)/gu;
+  /(?:(?<![\w(])\+82[\s.\-–—−]*\(?(?:\(0\)|0)?(?:1[016789]|2|[3-6][1-5]|70|50\d)\)?[\s.\-–—−~]*|\(0(?:1[016789]|2|[3-6][1-5]|70|50\d)\)[\s.\-–—−~]*|(?<!\d)0(?:1[016789]|2|[3-6][1-5]|70|50\d)\)?[\s.\-–—−~]*)\d{3,4}[\s.\-–—−~]*\d{4}(?!\d)/gu;
 
-// 은행명·계좌 라벨 뒤 계좌번호(라벨은 유지하고 숫자만 마스킹해 대사 맥락 보존)
-// 선택 항목에 딸린 공백은 라벨이나 콜론과 함께 묶어 같은 공백을 여러 번 나눠 검사하지 않는다.
-const LABELED_KOREAN_BANK_ACCOUNT_PATTERN =
-  /((?:(?:국민|KB(?:\s*국민)?|신한|우리|하나|KEB하나|농협|NH(?:\s*농협)?|기업|IBK(?:\s*기업)?|카카오\s*뱅크|카뱅|토스\s*뱅크|케이\s*뱅크|우체국|새마을(?:금고)?|수협|신협|SC제일|씨티|부산|대구|광주|전북|경남|제주|산업|수출입|저축)\s*은행?|(?:(?:정산|입금|출금|환불|원고료)\s*)?계좌(?:\s*번호)?)\s*(?:[:：]\s*)?)(?:\d{2,6}(?:[-–—−\s]\d{2,7}){1,3}|\d{10,14})(?!\d)/giu;
+// 라벨 탐색에는 고정 문자열만 사용한다. 공백은 아래 단방향 스캐너에서 처리해
+// 계좌·SNS 라벨의 선택적 필드 사이에서 같은 공백을 반복 분할하는 역추적을 막는다.
+const BANK_ACCOUNT_LABEL_PATTERN =
+  /국민|KB|신한|우리|하나|농협|NH|기업|IBK|카카오|카뱅|토스|케이|우체국|새마을(?:금고)?|수협|신협|SC제일|씨티|부산|대구|광주|전북|경남|제주|산업|수출입|저축|계좌/giu;
+const BANK_ACCOUNT_VALUE_PATTERN = /(?:\d{2,6}(?:[-–—−\s]\d{2,7}){1,3}|\d{10,14})(?!\d)/uy;
 
 // 라벨 없는 3~4구간 하이픈 한국 은행 계좌번호 (예: 123401-04-123456, 110-423-891234, 302-1234-5678-91)
 // 전화번호(이미 마스킹됨)·날짜(YYYY-MM-DD는 3번째 구간이 2자리)는 제외한다.
 const UNLABELED_KOREAN_BANK_ACCOUNT_PATTERN =
   /(?<!\d)\d{3,6}[-–—−]\d{2,6}[-–—−]\d{4,7}(?:[-–—−]\d{1,3})?(?!\d)/gu;
 
-// 카카오톡·인스타그램·텔레그램 등 라벨이 붙은 SNS/메신저 ID (라벨 유지, 아이디만 치환)
-const LABELED_SNS_ID_PATTERN =
-  /((?:카카오(?:\s*톡)?|카톡|Kakao\s*Talk|인스타(?:그램)?|Instagram|IG|텔레그램|Telegram|라인|LINE|트위터|스레드|Threads)\s*(?:(?:아이디|ID|계정|핸들)\s*)?(?:[:：]\s*)?)@?[A-Za-z0-9][A-Za-z0-9._-]{2,29}(?![/\w])/giu;
+const SNS_LABEL_PATTERN =
+  /카카오|카톡|Kakao|인스타(?:그램)?|Instagram|IG|텔레그램|Telegram|라인|LINE|트위터|스레드|Threads/giu;
+const SNS_FIELD_PATTERN = /아이디|ID|계정|핸들/iy;
+const SNS_VALUE_PATTERN = /@?[A-Za-z0-9][A-Za-z0-9._-]{2,29}(?![/\w])/uy;
 
 // 독립 @SNS 핸들 (이메일 앞부분은 이미 마스킹됨, npm 스코프 `@pkg/name` 및 `@cf/...` 는 `/` 후행 제외)
 const STANDALONE_SNS_HANDLE_PATTERN =
@@ -84,6 +86,38 @@ const KOREAN_ADDRESS_PATTERN = new RegExp(
   "gu",
 );
 
+function skipWhitespace(input: string, start: number): number {
+  let cursor = start;
+  while (cursor < input.length && /\s/u.test(input.charAt(cursor))) cursor += 1;
+  return cursor;
+}
+
+function bankAccountPrefixEnd(input: string, start: number, label: string): number | null {
+  let cursor = skipWhitespace(input, start);
+  if (label === "계좌") {
+    return input.startsWith("번호", cursor) ? cursor + 2 : cursor;
+  }
+  if (label === "카카오" || label === "토스" || label === "케이") {
+    if (!input.startsWith("뱅크", cursor)) return null;
+    cursor = skipWhitespace(input, cursor + 2);
+  }
+  if (!input.startsWith("은", cursor)) return null;
+  return cursor + (input.startsWith("은행", cursor) ? 2 : 1);
+}
+
+function snsPrefixEnd(input: string, start: number, label: string): number | null {
+  let cursor = skipWhitespace(input, start);
+  if (label === "카카오" && input.startsWith("톡", cursor)) cursor += 1;
+  if (label.toLowerCase() === "kakao") {
+    if (input.slice(cursor, cursor + 4).toLowerCase() !== "talk") return null;
+    cursor += 4;
+  }
+  cursor = skipWhitespace(input, cursor);
+  SNS_FIELD_PATTERN.lastIndex = cursor;
+  const field = SNS_FIELD_PATTERN.exec(input);
+  return field ? SNS_FIELD_PATTERN.lastIndex : cursor;
+}
+
 /**
  * 외부 AI 전송 전 원고·메모에 섞여 들어간 개인정보(비밀키, 주민·외국인등록번호, 카드번호,
  * 이메일, SNS 링크·아이디·핸들, 전화번호, 은행 계좌번호, 한국 도로명·지번·아파트·건물명 주소)를 마스킹한다.
@@ -98,11 +132,36 @@ export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
       return token;
     });
 
-  const replaceKeepingPrefix = (input: string, pattern: RegExp, token: string): string =>
-    input.replace(pattern, (_match, prefix: string) => {
+  const replaceKeepingPrefix = (
+    input: string,
+    labelPattern: RegExp,
+    prefixEnd: (input: string, start: number, label: string) => number | null,
+    valuePattern: RegExp,
+    token: string,
+  ): string => {
+    const chunks: string[] = [];
+    let copiedUntil = 0;
+    labelPattern.lastIndex = 0;
+    let label: RegExpExecArray | null;
+    while ((label = labelPattern.exec(input)) !== null) {
+      const end = prefixEnd(input, labelPattern.lastIndex, label[0]);
+      if (end === null) continue;
+      let valueStart = skipWhitespace(input, end);
+      if (input[valueStart] === ":" || input[valueStart] === "：") {
+        valueStart = skipWhitespace(input, valueStart + 1);
+      }
+      // sticky 모드와 유한 길이 값 규칙으로 라벨 직후 한 위치만 검사한다.
+      valuePattern.lastIndex = valueStart;
+      if (!valuePattern.exec(input)) continue;
+      chunks.push(input.slice(copiedUntil, valueStart), token);
+      copiedUntil = valuePattern.lastIndex;
+      labelPattern.lastIndex = copiedUntil;
       redactedCount += 1;
-      return `${prefix}${token}`;
-    });
+    }
+    if (chunks.length === 0) return input;
+    chunks.push(input.slice(copiedUntil));
+    return chunks.join("");
+  };
 
   let current = raw;
   current = replaceCounted(current, SECRET_KEY_PATTERN, "[비밀키 마스킹됨]");
@@ -111,9 +170,9 @@ export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
   current = replaceCounted(current, EMAIL_PATTERN, "[이메일 비공개]");
   current = replaceCounted(current, SOCIAL_URL_PATTERN, "[SNS 링크 비공개]");
   current = replaceCounted(current, PHONE_PATTERN, "[연락처 비공개]");
-  current = replaceKeepingPrefix(current, LABELED_KOREAN_BANK_ACCOUNT_PATTERN, "[계좌번호 비공개]");
+  current = replaceKeepingPrefix(current, BANK_ACCOUNT_LABEL_PATTERN, bankAccountPrefixEnd, BANK_ACCOUNT_VALUE_PATTERN, "[계좌번호 비공개]");
   current = replaceCounted(current, UNLABELED_KOREAN_BANK_ACCOUNT_PATTERN, "[계좌번호 비공개]");
-  current = replaceKeepingPrefix(current, LABELED_SNS_ID_PATTERN, "[계정 비공개]");
+  current = replaceKeepingPrefix(current, SNS_LABEL_PATTERN, snsPrefixEnd, SNS_VALUE_PATTERN, "[계정 비공개]");
   current = replaceCounted(current, STANDALONE_SNS_HANDLE_PATTERN, "[계정 비공개]");
   current = replaceCounted(current, KOREAN_ADDRESS_PATTERN, "[주소 비공개]");
 
