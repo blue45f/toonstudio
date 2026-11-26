@@ -18,6 +18,7 @@ import {
   type ShaperShaderDisplayMode,
 } from "./character-shaper-mtoon-uniforms";
 import { useCharacterShaperMaterialSettings } from "./character-shaper-session-settings";
+import { CharacterShaperArtStyleSection } from "./CharacterShaperArtStyleSection";
 import { CharacterColorControl } from "./CharacterShaperControls";
 import { InspectorSection } from "./CharacterShaperInspectorParts";
 
@@ -336,6 +337,8 @@ export function CharacterShaperSkinSection({
           </p>
         </div>
       </InspectorSection>
+
+      <CharacterShaperArtStyleSection binding={binding} locked={locked} />
 
       <InspectorSection
         title="음영·림·주선 색조 (전문가 설정)"
