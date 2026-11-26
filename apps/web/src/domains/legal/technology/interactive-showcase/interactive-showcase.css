@@ -1,0 +1,100 @@
+/* ── 기술 허브 인터랙티브 쇼케이스 시트 ─────────────────────────────
+   Calm / Starlight Atelier 시맨틱 토큰(--color-*)과 OKLCH color-mix만 사용한다.
+   원시 색상 리터럴과 포괄 트랜지션 사용을 전면 금지한다. */
+
+.tech-showcase-range {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  inline-size: 100%;
+  min-block-size: 2.75rem; /* >= 44px 터치·펜 히트 영역 보장 */
+  margin: 0;
+  padding-block: 0.75rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tech-showcase-range:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
+.tech-showcase-range::-webkit-slider-runnable-track {
+  block-size: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-raised);
+}
+
+.tech-showcase-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  inline-size: 1.35rem;
+  block-size: 1.35rem;
+  margin-block-start: -0.475rem;
+  border-radius: 999px;
+  border: 2px solid var(--color-card);
+  background: var(--color-accent);
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.tech-showcase-range:hover::-webkit-slider-thumb {
+  background: var(--color-accent-2);
+}
+
+.tech-showcase-range:active::-webkit-slider-thumb {
+  transform: scale(0.96);
+}
+
+.tech-showcase-range::-moz-range-track {
+  block-size: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-raised);
+}
+
+.tech-showcase-range::-moz-range-thumb {
+  inline-size: 1.35rem;
+  block-size: 1.35rem;
+  border-radius: 999px;
+  border: 2px solid var(--color-card);
+  background: var(--color-accent);
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.tech-showcase-bar-fill {
+  transition: inline-size 180ms ease-out;
+}
+
+.tech-showcase-node {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.tech-showcase-node:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tech-showcase-range::-webkit-slider-thumb,
+  .tech-showcase-range::-moz-range-thumb,
+  .tech-showcase-bar-fill,
+  .tech-showcase-node {
+    transition: none;
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .tech-showcase-range::-webkit-slider-runnable-track,
+  .tech-showcase-range::-moz-range-track {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .tech-showcase-range::-webkit-slider-thumb,
+  .tech-showcase-range::-moz-range-thumb {
+    background: Highlight;
+    border-color: CanvasText;
+  }
+}

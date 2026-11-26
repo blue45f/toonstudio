@@ -555,4 +555,42 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
     chapters: ["performance", "quality"],
     atlasIds: ["supergap-motiontoon-depth-vfx-hrtf-sab-telemetry"],
   },
+  {
+    id: "lms-cvd-daltonizer-epub3-vestibular-qa",
+    category: "web",
+    term: t("LMS 색각 보정 · EPUB 3.3 가이드 뷰 · 전정 안전 셰이크", "LMS CVD daltonizer, EPUB 3.3 Guided-View & vestibular shake"),
+    definition: t(
+      "원추세포(LMS) 기준으로 색맹 혼동 색상을 분리하고, 말풍선 읽기 순서 DAG·EPUB 3.3 전자책 패키징·멀미 억제(롤 <=2.5°) 액션 셰이크를 브라우저 안에서 처리하는 마감 엔진입니다.",
+      "A local finishing suite separating color-blind confusion pairs in LMS cone space alongside balloon reading-order DAG, EPUB 3.3 packaging and <=2.5 deg vestibular-safe camera shake.",
+    ),
+    analogy: t(
+      "출고 직전 색약 독자 안경을 써 보고, 말풍선 번호표를 맞추고, 놀이기구 흔들림 안전장치까지 점검하는 편집 데스크와 같습니다.",
+      "Like putting on color-vision glasses, numbering speech bubbles in order and checking motion comfort limits before print.",
+    ),
+    inToonstudio: t(
+      "wasm64-wave25~28 모듈군이 한글 광학 커닝·Knuth-Plass 줄바꿈, Brettel D65 LMS 달토나이제이션, 말풍선 Z/역Z DAG, EPUB 3.3 매니페스트, 버터워스 멀미 대역 감쇠 셰이크, 50화 SHA-256 중복 제거를 단위 검증으로 입증했습니다.",
+      "wasm64-wave25–28 modules unit-verify Hangul optical kerning, Brettel D65 LMS daltonizing, balloon DAG, EPUB 3.3 manifests, Butterworth nausea-band attenuation and 50-episode SHA-256 dedup.",
+    ),
+    chapters: ["accessibility", "quality", "performance"],
+    atlasIds: ["waves25-to-28-kerning-cvd-epub3-vestibular-qa"],
+  },
+  {
+    id: "sacred-82-viewport-36check-master-preflight",
+    category: "web",
+    term: t("82% 성역 뷰포트 · 36항목 마스터 프리플라이트 · 발열 거버너", "82% sacred viewport, 36-check master preflight & thermal governor"),
+    definition: t(
+      "편집 화면의 82% 이상을 순수 캔버스로 비워 두고, 태블릿이 뜨거워져도 펜 120Hz 입력은 늦추지 않으며, 출고 전 36개 품질·권리·개인정보 항목을 한 번에 점검하는 스튜디오 규율입니다.",
+      "A studio discipline keeping >=82% of the screen as pure canvas, preserving unthrottled 120 Hz stylus input under tablet heat and running 36 pre-release checks in one pass.",
+    ),
+    analogy: t(
+      "도구는 서랍에 넣어 화판을 넓게 쓰고, 더운 날에도 붓끝은 무뎌지지 않게 식히며, 출항 전 36칸 점검표를 도장 찍어 내보내는 작업실 규칙입니다.",
+      "Like keeping tools tucked away for a wide drawing board, cooling the room without slowing your brush and stamping a 36-item preflight sheet before shipping.",
+    ),
+    inToonstudio: t(
+      "wasm64-wave29~31 모듈군이 수밀 들로네 2D 퍼펫·음향 의성어, 초기 번들 0B Waves 1~30 역량 카탈로그·36항목 출고 게이트·발열 거버너, 44px 바·<=7메뉴·>=82% 캔버스 및 소실점 만화 자 스냅을 검증했습니다.",
+      "wasm64-wave29–31 modules verify watertight 2D Delaunay puppets, a 0 B Waves 1–30 catalog, the 36-check preflight gate, thermal governor and >=82% sacred viewport + comic ruler snap.",
+    ),
+    chapters: ["architecture", "quality", "performance"],
+    atlasIds: ["waves29-to-31-puppet-master-preflight-sacred-viewport"],
+  },
 ];

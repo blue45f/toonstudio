@@ -19,9 +19,16 @@ const LONG_STROKE_AUDIT = "scripts/audit-all-brushes-long-stroke-and-mix.mjs";
 const BRUSH_TILE_BUDGET = /\bconst\s+(\w+)\s*=\s*auditBrushTextureQuality\s*\([\s\S]*?\bexpect\(\1\.p95TileMs\)\.toBeLessThanOrEqual\(/u;
 const CROWD_GENERATION_BUDGET = /\bconst\s+(\w+)\s*=\s*generateProceduralCrowd\s*\([\s\S]*?\bexpect\(\1\.metrics\.generationTimeMs\)\.toBeLessThan\(/u;
 
+const WAVE_KERNEL_BUDGETS = [
+  /\b(?:const|let)\s+(\w+)\s*=\s*sculptBalloonClusterContours\([\s\S]*?expect\(\1\.computeTimeMs\)\.toBeLessThan\(/u,
+  /\bconst\s+(\w+)\s*=\s*generateRadialSpeedlines\([\s\S]*?expect\(\1\.elapsedMs\)\.toBeLessThan\(/u,
+  /\blet\s+(\w+)\s*=\s*generateKajiyaMarschnerHairHighlight\([\s\S]*?timings\.push\(\1\.elapsedMs\)[\s\S]*?expect\(medianElapsedMs\)\.toBeLessThan\(/u,
+];
+
 function measuresExecutionTime(source: string): boolean {
   const testBodies = source.split(/^\s*(?:it|test)\s*\(/mu);
   return source.includes("performance.now(")
+    || testBodies.some((body) => WAVE_KERNEL_BUDGETS.some((budget) => budget.test(body)))
     || source.includes("process.cpuUsage(")
     || source.includes("process.threadCpuUsage(")
     || source.includes("evaluateStudioCalibrated")

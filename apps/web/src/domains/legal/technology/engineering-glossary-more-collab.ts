@@ -421,4 +421,42 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     chapters: ["webrtc-media-authority", "licenses"],
     atlasIds: ["webrtc-sctp-vector-clock-zk-ownership"],
   },
+  {
+    id: "hlc-tombstoneless-rga-ddmin-crdt",
+    category: "collab",
+    term: t("HLC 시공간 CRDT · 무묘비 런 병합 RGA & ddmin 수렴 퍼저", "HLC spacetime CRDT, tombstoneless RGA & ddmin convergence fuzzer"),
+    definition: t(
+      "하이브리드 논리 시계(HLC)·벡터 시계 인과 이력, 정족수 확인 후 삭제 묘비를 회수하는 런 병합 시퀀스 CRDT, 패킷 역전·중복 반례를 최소 크기로 줄이는 ddmin 퍼저를 묶은 협업 코어입니다.",
+      "Pairs Hybrid Logical + Vector Clock causal history and quorum-compacted tombstoneless sequence CRDTs with a seeded ddmin counterexample-shrinking convergence fuzzer.",
+    ),
+    analogy: t(
+      "뒤섞여 도착한 수정 메모를 인과 순서대로 다시 꽂아 주고, 전원이 확인한 지우개 자국은 비워 메모리를 아끼며, 엉키는 순서는 실험실에서 먼저 찾아내는 공동 작업장입니다.",
+      "Like a shared binder that sorts out-of-order notes causally, sweeps away acknowledged erasures and stress-tests packet chaos ahead of time.",
+    ),
+    inToonstudio: t(
+      "deterministic-fuzzer-daltonizer.ts(4대 수렴 불변식 ddmin 축소), spacetime-continuum-crdt.ts(HLC+벡터시계), neural-tex-defrag-p2p-e2ee.ts(무묘비 RGA · 무서버 ECDH+AES-GCM)를 검증했습니다.",
+      "Verified across deterministic-fuzzer-daltonizer.ts (ddmin shrinking), spacetime-continuum-crdt.ts (HLC+VectorClock) and neural-tex-defrag-p2p-e2ee.ts (run-coalesced RGA & ECDH E2EE).",
+    ),
+    chapters: ["collaborative-crdt-boundary", "webrtc-media-authority"],
+    atlasIds: ["wave5-to-9-crdt-fuzzer-hlc-ecdh-zero-server"],
+  },
+  {
+    id: "wots-plus-multisig-10000bps-manifest",
+    category: "collab",
+    term: t("양자내성 WOTS+ 해시 봉인 · M-of-N 다중서명 & 10,000bps 정산 원장", "Post-quantum WOTS+ seal, M-of-N co-signing & 10,000 bps royalty ledger"),
+    definition: t(
+      "타원곡선 없이 SHA-256 해시 사슬만으로 검증되는 양자내성 Winternitz(WOTS+) 출처 서명, 역할별 M-of-N 출고 공동 서명, 1원 오차 없는 10,000bps 지분 매니페스트를 결합한 공증 계층입니다.",
+      "Unites hash-based post-quantum Winternitz (WOTS+) provenance signatures, role-gated M-of-N release co-signing and exact BigInt 10,000-bps co-creator royalty manifests.",
+    ),
+    analogy: t(
+      "글·그림·PD 중 정해진 인원이 도장을 찍어야 닫히는 출고함과, 끝자리 1원까지 합계가 맞는 정산표, 양자컴퓨터로도 풀 수 없는 해시 사슬 봉인 왁스를 함께 쓰는 절차입니다.",
+      "Like sealing a multi-key dispatch box with a down-to-the-last-won payout ledger and quantum-resistant hash-chain wax at zero gas cost.",
+    ),
+    inToonstudio: t(
+      "bvh-colorize-lod-cosign.ts(M-of-N 임계치 서명), voiceface-royalty-manifest.ts(10,000bps BigInt 최대 잔여 배분), omnichannel-master-release-gate.ts(WOTS+ w=16 · 한국형 PII 스캔)를 검증했습니다.",
+      "Unit-verified across bvh-colorize-lod-cosign.ts (M-of-N quorum), voiceface-royalty-manifest.ts (10,000-bps BigInt split) and omnichannel-master-release-gate.ts (WOTS+ & PII gate).",
+    ),
+    chapters: ["licenses", "content-addressing"],
+    atlasIds: ["wave7-to-20-multisig-royalty-wots-attestation"],
+  },
 ];

@@ -473,7 +473,8 @@ export class WasmRendererWorkerPool {
 
     return new Promise<RenderTileTaskResult>((resolve, reject) => {
       const job: QueuedInternalJob = {
-        input,
+        // 멱등 작업은 호출자와 워커 양쪽에서 독립된 제출 시점의 입력으로 재시도한다.
+        input: input.idempotent === false ? input : { ...input, payload: targetSlice.slice() },
         handle,
         descriptor,
         assignedWorkerId,
@@ -559,10 +560,15 @@ export class WasmRendererWorkerPool {
     const worker = this.workers[workerId]!;
 
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
     try {
       const execPromise = worker.executeDescriptor(job.descriptor, this.arena.bytesView);
       const timeoutPromise = new Promise<never>((_, rej) => {
         timeoutHandle = setTimeout(() => {
+          timedOut = true;
+          // 종료 요청만으로 기존 실행의 완료를 보장할 수 없다. 해당 슬롯은 실행이 끝나야 반납한다.
+          const releaseLease = () => this.arena.free(job.handle);
+          void execPromise.then(releaseLease, releaseLease);
           rej(new Error(`워커 ${workerId} 응답 시간(${this.taskTimeoutMs}ms) 초과`));
         }, this.taskTimeoutMs);
       });
@@ -586,16 +592,27 @@ export class WasmRendererWorkerPool {
     } catch (error) {
       const fails = (this.workerFailures[workerId] ?? 0) + 1;
       this.workerFailures[workerId] = fails;
-      if (fails >= this.maxConsecutiveFailures) {
+      if (timedOut || fails >= this.maxConsecutiveFailures) {
         this.recycleUnhealthyWorker(workerId);
       }
 
       if (job.input.idempotent !== false && job.attempts <= 2) {
+        const handle = timedOut ? this.arena.alloc(job.descriptor.byteLength) : job.handle;
+        if (!handle) {
+          this.backpressureRejections += 1;
+          job.reject(new Error("시간 초과 작업을 재시도할 슬랩 블록이 부족합니다."));
+          return;
+        }
+        this.arena.viewOf(handle).set(job.input.payload);
         this.retriedTasks += 1;
         const nextTarget = (workerId + 1) % this.workerCount;
-        this.enqueueIntoDeque(nextTarget, job);
+        this.enqueueIntoDeque(nextTarget, {
+          ...job,
+          handle,
+          descriptor: { ...job.descriptor, byteOffset: handle.byteOffset },
+        });
       } else {
-        this.arena.free(job.handle);
+        if (!timedOut) this.arena.free(job.handle);
         job.reject(error instanceof Error ? error : new Error(String(error)));
       }
     } finally {

@@ -2,7 +2,7 @@
  * P2P 비잔틴 결함 감내(`3f + 1` 정족수) 상태 다이제스트 검증기 및
  * ₩0 무수수료 WebCrypto(Ed25519 / ECDSA P-256) + SHA-256 해시체인 · 머클 에포크 타임스탬프 감사 원장.
  *
- * - 이중 투표(Equivocation) 및 변조된 피어 델타를 즉시 격리하고 `2f + 1` 정직 정족수 도달 시에만 상태 전이 확정
+ * - 이중 투표(Equivocation) 및 변조된 피어 델타를 격리하고 로스터의 정족수 도달 시에만 상태 전이 확정
  * - 가스비가 드는 퍼블릭 블록체인 없이 WebCrypto 서명 + SHA-256 해시체인 + 머클 루트로 오프라인 영구 검증
  */
 
@@ -181,6 +181,13 @@ async function hashLeafHex(entryHashHex: string): Promise<string> {
   return sha256Hex(prefixed);
 }
 
+/** 구분자가 없는 기존 영수증은 같은 바이트를 유지한다. 자유 텍스트의 경계는 JSON 배열로 보존한다. */
+function auditPreimage(domain: string, fields: readonly string[]): string {
+  return fields.some((field) => field.includes("|"))
+    ? JSON.stringify([domain + "-v2", ...fields])
+    : [domain + "-v1", ...fields].join("|");
+}
+
 function canonicalEntryPreimage(params: {
   readonly index: number;
   readonly manuscriptId: string;
@@ -191,8 +198,7 @@ function canonicalEntryPreimage(params: {
   readonly creatorId: string;
   readonly publicKeyThumbprintHex: string;
 }): string {
-  return [
-    "toonstudio-audit-v1",
+  return auditPreimage("toonstudio-audit", [
     String(params.index),
     params.manuscriptId,
     params.timestampIso,
@@ -201,7 +207,7 @@ function canonicalEntryPreimage(params: {
     params.metadataSummary,
     params.creatorId,
     params.publicKeyThumbprintHex,
-  ].join("|");
+  ]);
 }
 
 function canonicalEpochPreimage(
@@ -211,7 +217,7 @@ function canonicalEpochPreimage(
   endIndex: number,
   merkleRootHex: string,
 ): string {
-  return `toonstudio-epoch-v1|${epochId}|${sealedAtIso}|${startIndex}|${endIndex}|${merkleRootHex}`;
+  return auditPreimage("toonstudio-epoch", [epochId, sealedAtIso, String(startIndex), String(endIndex), merkleRootHex]);
 }
 
 /** WebCrypto에서 Ed25519를 우선 생성하고 미지원 환경에서는 ECDSA P-256으로 자동 폴백한다. */
@@ -319,7 +325,7 @@ async function verifyBytesHex(
 
 /**
  * `N >= 3f + 1` 피어 집합에서 비잔틴 이중 투표(Equivocation)와 손상된 델타를 배제하고
- * `2f + 1` 정직 정족수 합의로만 상태 다이제스트를 전이시키는 검증기.
+ * 서로 다른 두 정족수가 정직 피어를 적어도 한 명 공유할 때만 상태 다이제스트를 전이시키는 검증기.
  */
 export class P2pBftStateValidator {
   public readonly maxFaultyPeers: number;
@@ -348,7 +354,7 @@ export class P2pBftStateValidator {
     }
     this.roster = new Set(uniquePeers);
     this.maxFaultyPeers = f;
-    this.requiredQuorum = 2 * f + 1;
+    this.requiredQuorum = Math.floor((uniquePeers.length + f) / 2) + 1;
     this.headDigestHex = options.genesisDigestHex ?? GENESIS_HASH_HEX;
   }
 
@@ -362,6 +368,22 @@ export class P2pBftStateValidator {
         voteCount: 0,
         requiredQuorum: this.requiredQuorum,
       };
+    }
+
+    if (attestation.deltaPayload) {
+      const actualDigest = await sha256Hex(attestation.deltaPayload);
+      if (actualDigest !== attestation.stateDeltaDigestHex) {
+        this.corruptedCount += 1;
+        this.quarantined.add(attestation.peerId);
+        return {
+          status: "rejected-corrupted-delta",
+          epoch: attestation.epoch,
+          sequence: attestation.sequence,
+          candidateDigestHex: attestation.stateDeltaDigestHex,
+          voteCount: 0,
+          requiredQuorum: this.requiredQuorum,
+        };
+      }
     }
 
     if (this.quarantined.has(attestation.peerId)) {
@@ -387,22 +409,6 @@ export class P2pBftStateValidator {
         voteCount: 0,
         requiredQuorum: this.requiredQuorum,
       };
-    }
-
-    if (attestation.deltaPayload) {
-      const actualDigest = await sha256Hex(attestation.deltaPayload);
-      if (actualDigest !== attestation.stateDeltaDigestHex) {
-        this.corruptedCount += 1;
-        this.quarantined.add(attestation.peerId);
-        return {
-          status: "rejected-corrupted-delta",
-          epoch: attestation.epoch,
-          sequence: attestation.sequence,
-          candidateDigestHex: attestation.stateDeltaDigestHex,
-          voteCount: 0,
-          requiredQuorum: this.requiredQuorum,
-        };
-      }
     }
 
     const slotKey = `${attestation.epoch}:${attestation.sequence}:${attestation.peerId}`;
@@ -482,6 +488,14 @@ export class P2pBftStateValidator {
   }
 }
 
+type AuditRevisionInput = {
+  readonly identity: CreatorAuditIdentity;
+  readonly manuscriptId: string;
+  readonly contentBytes: Uint8Array;
+  readonly metadataSummary: string;
+  readonly timestampIso?: string;
+};
+
 /**
  * 가스비 ₩0 WebCrypto 서명 + SHA-256 해시체인 + 머클 에포크 봉인 기반 창작 시점 감사 원장.
  */
@@ -489,17 +503,21 @@ export class ZeroFeeTimestampAuditLog {
   private readonly entries: TimestampAuditEntry[] = [];
   private readonly epochs: MerkleEpochBundle[] = [];
 
-  public async appendRevision(params: {
-    readonly identity: CreatorAuditIdentity;
-    readonly manuscriptId: string;
-    readonly contentBytes: Uint8Array;
-    readonly metadataSummary: string;
-    readonly timestampIso?: string;
-  }): Promise<TimestampAuditEntry> {
+  private pendingAppend: Promise<void> = Promise.resolve();
+
+  public appendRevision(params: AuditRevisionInput): Promise<TimestampAuditEntry> {
+    const timestampIso = params.timestampIso ?? new Date().toISOString();
+    const snapshot = { ...params, contentBytes: new Uint8Array(params.contentBytes) };
+    const append = this.pendingAppend.then(() => this.appendSnapshot(snapshot, timestampIso));
+    // 실패는 해당 호출자에게 전달하고, 후속 쓰기는 마지막으로 저장된 항목부터 계속한다.
+    this.pendingAppend = append.then(() => undefined, () => undefined);
+    return append;
+  }
+
+  private async appendSnapshot(params: AuditRevisionInput, timestampIso: string): Promise<TimestampAuditEntry> {
     const index = this.entries.length;
     const prevEntryHashHex =
       index === 0 ? GENESIS_HASH_HEX : (this.entries[index - 1]?.entryHashHex ?? GENESIS_HASH_HEX);
-    const timestampIso = params.timestampIso ?? "2026-11-26T18:00:00.000Z";
     const contentSha256Hex = await sha256Hex(params.contentBytes);
     const preimage = canonicalEntryPreimage({
       index,
@@ -578,6 +596,8 @@ export class ZeroFeeTimestampAuditLog {
     readonly endIndex?: number;
     readonly sealedAtIso?: string;
   }): Promise<MerkleEpochBundle> {
+    const sealedAtIso = params.sealedAtIso ?? new Date().toISOString();
+    await this.pendingAppend;
     if (this.entries.length === 0) {
       throw new Error("봉인할 감사 항목이 없습니다.");
     }
@@ -590,7 +610,6 @@ export class ZeroFeeTimestampAuditLog {
     const layers = await this.buildMerkleLayers(startIndex, endIndex);
     const topLayer = layers[layers.length - 1];
     const merkleRootHex = topLayer?.[0] ?? GENESIS_HASH_HEX;
-    const sealedAtIso = params.sealedAtIso ?? "2026-11-26T18:05:00.000Z";
     const epochMsg = canonicalEpochPreimage(
       params.epochId,
       sealedAtIso,

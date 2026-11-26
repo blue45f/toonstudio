@@ -383,4 +383,42 @@ export const GLOSSARY_MORE_DATA: readonly GlossaryTerm[] = [
     chapters: ["storage", "pwa-continuity"],
     atlasIds: ["thermal-pacer-dual-journal-vault-biometric-coldboot"],
   },
+  {
+    id: "fastcdc-reed-solomon-tsarc-cartridge",
+    category: "data",
+    term: t("FastCDC 롤링 해시 델타 · GF(256) 리드-솔로몬 & .tsarc 카트리지", "FastCDC delta pack, GF(256) Reed-Solomon & .tsarc cartridge"),
+    definition: t(
+      "바이트 삽입에도 경계가 밀리지 않는 콘텐츠 정의 청킹(CDC) 델타 압축, 일부 조각이 손상돼도 원본을 되살리는 GF(256) 리드-솔로몬 패리티, 머클 포함 증명 기반 .tsarc 장기 보관 포맷입니다.",
+      "Combines insertion-resilient content-defined chunking (CDC) deltas, GF(256) Cauchy Reed-Solomon erasure/error recovery and SHA-256 Merkle-verified .tsarc archival cartridges.",
+    ),
+    analogy: t(
+      "문단이 끼어들어도 바뀐 장만 오려 붙이는 가변 책갈피, 일부 조각이 젖어도 복원되는 블랙박스 패리티 카드, 색공간과 서브셋 폰트까지 함께 밀봉한 10년 타임캡슐의 조합입니다.",
+      "Like combining shift-proof bookmarks, erasure-coded flight-recorder parity cards and a self-verifying 10-year archival time capsule.",
+    ),
+    inToonstudio: t(
+      "mmap-multiqueue-autoscaler.ts(OPFS 64KiB 윈도), cdc-rabinkarp-delta-pack.ts(Gear/Rabin-Karp 델타), reed-solomon-visual-recovery.ts(0x11d 유한체 복구), lufs-mastering-tsarc-archive.ts 를 검증했습니다.",
+      "Verified across mmap-multiqueue-autoscaler.ts (64 KiB OPFS windows), cdc-rabinkarp-delta-pack.ts, reed-solomon-visual-recovery.ts (GF(256)) and lufs-mastering-tsarc-archive.ts.",
+    ),
+    chapters: ["storage", "storage-migration"],
+    atlasIds: ["wave5-to-11-opfs-mmap-reed-solomon-tsarc"],
+  },
+  {
+    id: "opfs-idle-rfc6962-merkle-scrubber",
+    category: "data",
+    term: t("유휴 ≤2.0ms OPFS 머클 비트부패 스크러버 & XOR 자가 복구", "Idle <=2.0 ms OPFS RFC 6962 Merkle scrubber & XOR self-healer"),
+    definition: t(
+      "펜 작업 사이 ≤2.0ms 유휴 시간 조각마다 OPFS 타일의 RFC 6962 SHA-256 머클 리프 해시를 점검하고, 조용히 깨진 타일을 이중 저널이나 형제 XOR 패리티로 복원하는 보존 장치입니다.",
+      "Audits OPFS tile digests against an RFC 6962 SHA-256 binary Merkle tree inside <=2.0 ms idle slices and self-heals bit-rot from dual journals or sibling XOR parity.",
+    ),
+    analogy: t(
+      "독자가 책장을 넘기는 짧은 틈마다 사서가 서가를 한 칸씩 대조해 잉크가 번진 파본 페이지를 예비 인쇄본으로 조용히 교체해 두는 보존실과 같습니다.",
+      "Like a conservator checking one shelf between page turns and replacing damaged pages from verified parity proofs without interrupting the author.",
+    ),
+    inToonstudio: t(
+      "wasm64-wave22-ultragap/opfs-merkle-scrubber.ts 가 0x00/0x01 도메인 분리 머클 검증, ≤2.0ms 유휴 예산 준수, 비트 반전·영점화·절단 자가 치유 및 복구 불가 시 안전 격리를 검증했습니다.",
+      "opfs-merkle-scrubber.ts verified 0x00/0x01 domain-separated Merkle checks, <=2.0 ms idle budget compliance, journal/XOR healing and safe quarantine on double faults.",
+    ),
+    chapters: ["storage", "pwa-continuity"],
+    atlasIds: ["wave22-opfs-idle-merkle-bitrot-scrubber"],
+  },
 ];

@@ -421,4 +421,42 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
     chapters: ["web-3d-engine", "performance"],
     atlasIds: ["split-csm-shadow-compute-meshlet-spatial-hash"],
   },
+  {
+    id: "dqs-rbf-skinning-15dof-hand-ik",
+    category: "spatial",
+    term: t("듀얼 쿼터니언(DQS)+RBF 스키닝 & 15-DOF 힘줄 연동 손 파지 IK", "Dual-Quaternion + RBF skinning & 15-DOF tendon-coupled hand IK"),
+    definition: t(
+      "팔목·어깨 비틀림 시 부피 붕괴(0.000%)를 막는 반구 정렬 듀얼 쿼터니언·RBF 보정 스키닝과, 수지 힘줄 비율(DIP ≈ 0.67·PIP)로 소품을 관통 없이 감싸 쥐는 15자유도 손가락 IK입니다.",
+      "Combines hemisphere-aligned Dual-Quaternion + Gaussian RBF skinning (0.000% twist volume loss) with 15-DOF tendon-coupled (DIP ≈ 0.67·PIP) prop grasp IK.",
+    ),
+    analogy: t(
+      "비틀어도 사탕 봉지처럼 홀쭉해지지 않는 관절 인형 뼈대와, 컵이나 검 자루에 가까이 대면 다섯 손가락이 표면에 맞춰 자연스럽게 감기는 의수를 결합한 장치입니다.",
+      "Like a mannequin limb that never pinches when twisted paired with five prosthetic fingers that curl naturally onto a cup or hilt.",
+    ),
+    inToonstudio: t(
+      "dqs-psd-neural-skinning.ts(180° 비틀림 부피 손실 0.000%), hand-grasp-contact-ik.ts(SDF 접촉 파지), 수밀 2-다양체 3D 한글 효과음 메쉬와 박막 CoC 보케·스윙-트위스트 관절 가드를 검증했습니다.",
+      "Verified across dqs-psd-neural-skinning.ts (0.000% volume loss), hand-grasp-contact-ik.ts, watertight 2-manifold 3D Korean SFX meshes and swing-twist joint guards.",
+    ),
+    chapters: ["web-3d-engine", "blender-mcp-boundary"],
+    atlasIds: ["wave13-to-20-dqs-skinning-sfx-mesh-hand-ik", "wave5-to-10-acoustic-sh-bokeh-joint-guard"],
+  },
+  {
+    id: "geodesic-expmap-bent-wall-shadow",
+    category: "spatial",
+    term: t("이산 지수 사상(r, θ) 측지선 의복 래퍼 & 꺾인 벽 원근 그림자", "Discrete ExpMap (r, θ) geodesic garment wrap & bent-wall shadow"),
+    definition: t(
+      "곡면 소매·망토 위에서 등거리 측지 극좌표(r, θ)로 체크무늬·문장을 접힘 없이 감싸고, 2D 캐릭터 그림자가 바닥에서 수직 벽 모서리를 만나 위로 꺾여 올라가게 투영하는 기법입니다.",
+      "Wraps tartan and emblem decals across curved garments with zero pinching via geodesic polar (r, θ) coordinates and bends 2D cast shadows cleanly up vertical walls.",
+    ),
+    analogy: t(
+      "둥근 어깨 위에서도 눈금이 늘어나지 않는 재단사의 천 줄자와, 복도 모서리에 손전등을 비췄을 때 바닥 그림자가 벽을 타고 꺾여 올라가는 물리 법칙을 그대로 옮긴 도구입니다.",
+      "Like a tailor's non-stretching cloth tape over curved shoulders paired with real flashlight shadow geometry at a hallway corner.",
+    ),
+    inToonstudio: t(
+      "geodesic-garment-color-script.ts(끼임 0건 곡면 의복 래핑), perspective-shadow-opfs-scrubber.ts(2D 동차좌표 벽면 굴절 그림자), hdr-pq-ribbon-brush-lookat.ts(안구 ±28° 시선 협응)를 검증했습니다.",
+      "Unit-verified across geodesic-garment-color-script.ts (0-pinch wrap), perspective-shadow-opfs-scrubber.ts (bent-wall shadow) and oculo-cephalic (±28° eye) gaze coordination.",
+    ),
+    chapters: ["web-3d-engine"],
+    atlasIds: ["wave22-to-23-oculo-cephalic-bent-shadow-geodesic"],
+  },
 ];

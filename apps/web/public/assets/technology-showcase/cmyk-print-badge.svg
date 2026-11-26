@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="cmykTitle cmykDesc">
+  <title id="cmykTitle">CMYK 인쇄 프리플라이트 · 단행본 조판 배지</title>
+  <desc id="cmykDesc">인쇄 핀맞춤 레지스트레이션 마크와 광물성 4원색 잉크 스트립을 결합한 출판 프리플라이트 기술 배지</desc>
+  <defs>
+    <linearGradient id="cmPaper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCFBF7"/>
+      <stop offset="100%" stop-color="#EFEAD8"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="#1F4435" stroke="#C89B4F" stroke-width="2.5"/>
+  <rect x="15" y="15" width="98" height="98" rx="21" fill="url(#cmPaper)" stroke="#C89B4F" stroke-width="1.5"/>
+  <!-- Print Trim & Bleed Crop Marks -->
+  <g stroke="#22201D" stroke-width="2" stroke-linecap="round">
+    <path d="M24 32 L24 24 L32 24" fill="none"/>
+    <path d="M96 24 L104 24 L104 32" fill="none"/>
+    <path d="M24 96 L24 104 L32 104" fill="none"/>
+    <path d="M96 104 L104 104 L104 96" fill="none"/>
+  </g>
+  <!-- Precision Press Registration Target -->
+  <circle cx="64" cy="54" r="18" fill="none" stroke="#1E1D1A" stroke-width="2"/>
+  <circle cx="64" cy="54" r="10" fill="#1E1D1A"/>
+  <path d="M64 44 A10 10 0 0 1 74 54 L64 54 Z" fill="#FAF8F3"/>
+  <path d="M64 64 A10 10 0 0 1 54 54 L64 54 Z" fill="#FAF8F3"/>
+  <line x1="40" y1="54" x2="88" y2="54" stroke="#1E1D1A" stroke-width="1.75"/>
+  <line x1="64" y1="30" x2="64" y2="78" stroke="#1E1D1A" stroke-width="1.75"/>
+  <!-- Calibrated Studio Mineral CMYK Densitometer Swatch Bar (Zero Neon) -->
+  <g stroke="#1E1D1A" stroke-width="1.25">
+    <rect x="30" y="84" width="16" height="12" rx="2.5" fill="#1E7898"/>
+    <rect x="48" y="84" width="16" height="12" rx="2.5" fill="#B83B4A"/>
+    <rect x="66" y="84" width="16" height="12" rx="2.5" fill="#D9A528"/>
+    <rect x="84" y="84" width="14" height="12" rx="2.5" fill="#1E1D1A"/>
+  </g>
+</svg>

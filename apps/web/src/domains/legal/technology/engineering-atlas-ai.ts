@@ -5,6 +5,7 @@ import { ENGINEERING_ATLAS_AI_ONDEVICE } from "./engineering-atlas-ai-ondevice";
 import { ENGINEERING_ATLAS_AI_ROUTING } from "./engineering-atlas-ai-routing";
 import { ENGINEERING_ATLAS_AI_SILICON } from "./engineering-atlas-ai-silicon";
 import { ENGINEERING_ATLAS_AI_WAVE4_VRAM_PAGER } from "./engineering-atlas-ai-wave4-vram-pager";
+import { ENGINEERING_ATLAS_AI_WAVES8TO23_LORE_JAMO_SEARCH } from "./engineering-atlas-ai-waves8to23-lore-jamo-search";
 
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
@@ -17,6 +18,7 @@ export const ENGINEERING_ATLAS_AI: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_AI_EVAL_STARTER,
   ...ENGINEERING_ATLAS_AI_COPILOT_STYLE,
   ...ENGINEERING_ATLAS_AI_WAVE4_VRAM_PAGER,
+  ...ENGINEERING_ATLAS_AI_WAVES8TO23_LORE_JAMO_SEARCH,
   ...ENGINEERING_ATLAS_AI_ONDEVICE,
   ...ENGINEERING_ATLAS_AI_SILICON,
   ...ENGINEERING_ATLAS_AI_GENERATIVE,

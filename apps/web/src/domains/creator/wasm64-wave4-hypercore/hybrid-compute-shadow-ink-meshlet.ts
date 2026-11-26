@@ -147,7 +147,7 @@ export interface AssetStreamSealManifest {
 }
 
 export interface VerifiedChunkStagePort {
-  readonly writeVerifiedChunk: (chunkIndex: number, plainBytes: Uint8Array) => void;
+  readonly writeVerifiedChunk: (chunkIndex: number, plainBytes: Uint8Array) => void | Promise<void>;
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
@@ -251,6 +251,7 @@ export class ChunkAuthenticatedAssetStreamVerifier {
   private readonly leafHashes: string[] = [];
   private expectedIndex = 0;
   private poisonedChunkCount = 0;
+  private pending: Promise<unknown> = Promise.resolve();
 
   public constructor(manifest: AssetStreamSealManifest, aesKey: CryptoKey, stagePort: VerifiedChunkStagePort) {
     this.manifest = manifest;
@@ -258,7 +259,15 @@ export class ChunkAuthenticatedAssetStreamVerifier {
     this.stagePort = stagePort;
   }
 
-  public async ingestChunk(packet: AuthenticatedAssetChunkPacket): Promise<{
+  public ingestChunk(packet: AuthenticatedAssetChunkPacket) {
+    // 앞선 저장이 실패해도 뒤이어 요청한 청크는 마지막 저장 위치부터 검증한다.
+    const next = () => this.verifyAndStage(packet);
+    const result = this.pending.then(next, next);
+    this.pending = result;
+    return result;
+  }
+
+  private async verifyAndStage(packet: AuthenticatedAssetChunkPacket): Promise<{
     readonly accepted: boolean;
     readonly streamCompleted: boolean;
     readonly reason: string;
@@ -307,9 +316,9 @@ export class ChunkAuthenticatedAssetStreamVerifier {
       }
     }
 
+    await this.stagePort.writeVerifiedChunk(packet.chunkIndex, plainBytes);
     this.leafHashes.push(actualLeafHash);
     this.expectedIndex += 1;
-    this.stagePort.writeVerifiedChunk(packet.chunkIndex, plainBytes);
     return { accepted: true, streamCompleted: packet.isFinal, reason: "ok" };
   }
 
@@ -499,7 +508,9 @@ export function stepSpatialHashParticles(
   cellSize: number,
   restitution = 0.8,
 ): { readonly resolvedCollisions: number } {
-  const invCell = 1 / Math.max(1e-3, cellSize);
+  // 인접한 27셀에 겹침 후보가 모두 들어가도록 가장 큰 입자 지름을 셀 너비의 하한으로 둔다.
+  const maxDiameter = particles.reduce((largest, particle) => Math.max(largest, 2 * particle.radius), 0);
+  const invCell = 1 / Math.max(1e-3, cellSize, maxDiameter);
   const buckets = new Map<string, number[]>();
 
   for (let i = 0; i < particles.length; i += 1) {

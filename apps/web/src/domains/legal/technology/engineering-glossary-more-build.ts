@@ -140,4 +140,23 @@ export const GLOSSARY_MORE_BUILD: readonly GlossaryTerm[] = [
     chapters: ["quality", "delivery"],
     atlasIds: ["smart-ci-dep-graph-lpt-shard-scheduler"],
   },
+  {
+    id: "edge-4lane-shield-monolith-ratchet",
+    category: "craft",
+    term: t("Cloudflare 4-레인 fail-closed 엣지 실드 & 모놀리스 경계 래칫", "Cloudflare 4-lane fail-closed edge shield & monolith boundary ratchet"),
+    definition: t(
+      "공개 무인증 읽기만 엣지 캐시로 받고 쿠키·인증·변경 요청은 100% private/no-store 로 원점에 직통시키는 4-레인 라우터와, 모놀리스 스코프 분해·퇴역 패키지 0-임포트 감사 도구의 결합입니다.",
+      "Combines a 4-lane Cloudflare edge router forcing private, no-store bypass on any auth/cookie request with a zero-dep TS monolith boundary analyzer and 0-import legacy ratchet.",
+    ),
+    analogy: t(
+      "입구에서 공개 안내 책자 방문객과 금고 출입자를 다른 통로로 엄격히 분리하는 보안 게이트와, 건물 내부의 복잡한 배선을 구역별 분전반으로 안전하게 나누는 점검 도면입니다.",
+      "Like an entrance gate strictly separating public brochures from authenticated vault lanes, backed by an internal sub-circuit refactoring blueprint.",
+    ),
+    inToonstudio: t(
+      "운영 중인 deploy/cloudflare-static/edge-api-lane-router.mjs(4개 레인·이중 응답 헤더 검증), scripts/typecheck-shards.mjs(물리 RAM 적응형 힙), monolith-decomposition-analyzer.ts 를 검증했습니다.",
+      "Verified in live deploy/cloudflare-static/edge-api-lane-router.mjs (4 lanes & response Set-Cookie guard), RAM-adaptive scripts/typecheck-shards.mjs and monolith-decomposition-analyzer.ts.",
+    ),
+    chapters: ["architecture", "infrastructure", "quality"],
+    atlasIds: ["monolith-girvan-newman-audit-and-edge-4lane-shield"],
+  },
 ];
