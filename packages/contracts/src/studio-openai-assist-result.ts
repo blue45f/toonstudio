@@ -54,7 +54,7 @@ export const ContinuityPlotAuditOutputSchema = z
           })
           .strict(),
       )
-      .min(1)
+      .min(0)
       .max(12),
   })
   .strict();
@@ -322,8 +322,8 @@ export const OpenAiScriptToCutsOutputSchema = z
           })
           .strict(),
       )
-      .min(2)
-      .max(16),
+      .min(0)
+      .max(20),
   })
   .strict();
 

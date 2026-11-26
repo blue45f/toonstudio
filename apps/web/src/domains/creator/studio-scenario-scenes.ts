@@ -17,6 +17,8 @@
  * 대괄호 대신 중괄호 짝을 맞춰 찾는다.
  */
 
+import { redactCreatorSensitiveText } from "@toonstudio/contracts/studio-pii-redactor";
+
 import { normalizeScenarioBeatType, type ScenarioBeatType } from "./studio-story-beats";
 
 import type { StudioStoryBeat } from "./studio-continuity";
@@ -73,29 +75,32 @@ export function buildScenarioScenesPrompt(
     ? `정확히 ${Math.round(sceneCountHint)}개의 장면으로 나누세요.`
     : "스토리 길이에 맞게 자연스럽게 3~8개의 장면으로 나누세요.";
 
-  const normalizedCharacterContext = characterContext.trim().slice(0, 12_000);
+  const sanitizedStory = redactCreatorSensitiveText(storyText.trim()).sanitizedText;
+  const normalizedCharacterContext = redactCreatorSensitiveText(characterContext.trim()).sanitizedText.slice(0, 12_000);
   const system = [
-    "당신은 한국 웹툰 시나리오 작가입니다. 사용자가 입력한 짧은 스토리 아이디어를 여러 개의 장면(컷)으로 나눕니다.",
+    "당신은 한국 웹툰 시나리오 작가입니다. 사용자가 입력한 스토리 아이디어를 세로 스크롤 웹툰 장면(컷)으로 나눕니다.",
     countInstruction,
     "다른 설명이나 마크다운 코드블록 없이, 반드시 아래 예시와 동일한 구조의 JSON 객체 하나만 응답하세요.",
     JSON_SHAPE_EXAMPLE,
-    "characterDescription: 이야기에 등장하는 주요 인물의 외모(헤어스타일·의상·특징 등)를 한국어 한 문장으로. 특정 인물이 없으면 빈 문자열.",
+    "characterDescription: 이야기에 등장하는 주요 인물의 외모(헤어스타일·안경·흉터·문신·의상·시그니처 무기 등)를 한국어 한 문장으로. 특정 인물이 없으면 빈 문자열.",
     '각 장면의 beatType: "setup"(도입), "inciting"(사건 발생), "escalation"(고조), "turn"(전환), "climax"(절정), "resolution"(해결), "transition"(연결) 중 하나.',
-    "각 장면의 summary: 이 장면에서 무엇이 일어나고 무엇이 달라지는지 한국어 한 문장으로.",
-    "각 장면의 imagePrompt: 그 장면의 배경·상황·구도를 그림으로 그리기 위한 묘사(인물 외모 묘사는 반복하지 마세요 — 상황·배경 위주).",
-    '각 장면의 dialogue: 그 장면 대사를 한 줄에 한 마디씩 "이름: 대사" 형식으로 적으세요(지문·내레이션은 "(지문)"처럼 괄호로 감싸세요). 대사가 없는 장면은 빈 문자열("")로 두세요.',
-    "각 장면의 continuity: characterNames(등장인물 이름 배열), location(장소), time(시간대), costumes(캐릭터 이름→의상), props(소품 이름→상태·소유·위치)를 명시하세요.",
+    "각 장면의 summary: 이 장면에서 무엇이 일어나고 무엇이 달라지는지 번역투 없는 자연스러운 한국어 한 문장으로.",
+    "각 장면의 imagePrompt: 그 장면의 세로 스크롤 컷 구도(와이드/미디엄/접사/액션 등)·배경·동작을 과밀하지 않게 묘사하고, 등장인물의 핵심 고정 식별자(안경·흉터·문신·고유 무기 등)가 빠지지 않게 유지하세요.",
+    '각 장면의 dialogue: 그 장면 대사를 한 줄에 한 마디씩 "이름: 대사" 형식으로 적으세요(지문·내레이션은 "(지문)"처럼 괄호로 감싸세요). 원문에 말맛이 살아 있는 핵심 대사는 임의로 밋밋하게 바꾸지 말고 최대한 살리세요. 대사가 없는 장면은 빈 문자열("")로 두세요.',
+    "각 장면의 continuity: characterNames(등장인물 이름 배열), location(장소), time(시간대), costumes(캐릭터 이름→[고정] 의상과 고정 외형 앵커 포함), props(소품·무기 이름→상태·소유·위치)를 명시하세요.",
     "직전 장면과 장소·시간·의상·소품이 의도적으로 달라지면 continuity.transitionExplanations의 같은 필드(의상·소품은 같은 이름 키)에 변경 이유를 적으세요. 알 수 없는 값은 추측하지 말고 생략하세요.",
     ...(normalizedCharacterContext
-      ? ["사용자 메시지의 캐릭터 바이블을 모든 장면에 일관되게 반영하고, [고정] 표시가 붙은 설정은 바꾸거나 모순되게 쓰지 마세요."]
+      ? [
+          "사용자 메시지의 [고정] 캐릭터 바이블(머리·안경·흉터·문신·의상·무기)을 모든 장면의 continuity.costumes·props에 일관되게 유지하고, 바이블에 없는 외투나 장신구를 임의로 덧붙여 다른 인물 실루엣과 겹치게 만들지 마세요.",
+        ]
       : []),
   ].join("\n");
 
   return {
     system,
     user: normalizedCharacterContext
-      ? `[캐릭터 바이블]\n${normalizedCharacterContext}\n\n[스토리 아이디어]\n${storyText.trim()}`
-      : storyText.trim(),
+      ? `[캐릭터 바이블]\n${normalizedCharacterContext}\n\n[스토리 아이디어]\n${sanitizedStory}`
+      : sanitizedStory,
   };
 }
 
@@ -169,20 +174,49 @@ export function normalizeScenarioContinuity(value: unknown): ScenarioContinuityM
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-/** raw 문자열에서 첫 `{` 로 시작해 짝이 맞는(중첩 중괄호를 세어가며 찾은) `}` 까지를 잘라낸다.
- *  코드펜스(```json ... ```)나 앞뒤 설명 문장이 섞여 있어도 객체 부분만 뽑아낸다 — 짝이 맞는 `}` 를
- *  찾지 못하면(잘린 응답 등) null(studio-dialogue-translate.extractJsonArrayLiteral과 동일 전략,
- *  대괄호 대신 중괄호). */
+/**
+ * raw 문자열에서 JSON 문자열 리터럴 내부의 중괄호를 무시하고 최상위 `{` 와 짝이 맞는 `}` 까지를 추출한다.
+ * 코드펜스나 설명 문장, 대사 안의 `{스킬}`·`:}` 이모티콘이 섞여 있어도 안전하게 JSON 객체만 뽑아낸다.
+ */
 function extractJsonObjectLiteral(raw: string): string | null {
-  const start = raw.indexOf("{");
-  if (start === -1) return null;
-  let depth = 0;
-  for (let i = start; i < raw.length; i++) {
-    if (raw[i] === "{") depth++;
-    else if (raw[i] === "}") {
-      depth--;
-      if (depth === 0) return raw.slice(start, i + 1);
+  let searchFrom = 0;
+  while (searchFrom < raw.length) {
+    const start = raw.indexOf("{", searchFrom);
+    if (start === -1) return null;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < raw.length; i += 1) {
+      const ch = raw[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch === '"') {
+        inString = true;
+      } else if (ch === "{") {
+        depth += 1;
+      } else if (ch === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          const candidate = raw.slice(start, i + 1);
+          try {
+            const parsed: unknown = JSON.parse(candidate);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return candidate;
+          } catch {
+            // 앞선 텍스트의 중괄호였다면 다음 '{'부터 탐색한다.
+          }
+          break;
+        }
+      }
     }
+    searchFrom = start + 1;
   }
   return null;
 }

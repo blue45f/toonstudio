@@ -203,23 +203,29 @@ export function buildTranslationPrompt(
 
 // ── 응답 파싱(순수 — 방어적) ────────────────────────────────────────────────
 
-/**
- * raw 문자열에서 첫 `[` 로 시작해 그와 짝이 맞는(중첩 대괄호를 세어가며 찾은) `]` 까지를 잘라낸다.
- * 코드펜스(```json ... ```)나 앞뒤 설명 문장이 섞여 있어도 배열 부분만 뽑아낸다. 짝이 맞는 `]` 를
- * 찾지 못하면(배열 자체가 없거나 잘린 응답) null. 번역 텍스트 안에 대괄호 문자가 그대로(짝 없이)
- * 등장하는 극단적 경우는 오검출할 수 있으나, 그 경우도 이어지는 JSON.parse 가 실패해 ok:false 로
- * 안전하게 귀결된다(크래시 없음 — 정직성 규약).
- */
+/** JSON 문자열 리터럴 안의 대괄호(`[시스템]`, `:]` 등)를 무시하고 첫 유효 JSON 배열을 추출한다. */
 function extractJsonArrayLiteral(raw: string): string | null {
-  const start = raw.indexOf("[");
-  if (start === -1) return null;
-  let depth = 0;
-  for (let i = start; i < raw.length; i++) {
-    if (raw[i] === "[") depth++;
-    else if (raw[i] === "]") {
-      depth--;
-      if (depth === 0) return raw.slice(start, i + 1);
+  for (let from = 0; from < raw.length; ) {
+    const start = raw.indexOf("[", from);
+    if (start === -1) return null;
+    let depth = 0;
+    let inStr = false;
+    let esc = false;
+    for (let i = start; i < raw.length; i += 1) {
+      const ch = raw[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === "\\") esc = true;
+        else if (ch === '"') inStr = false;
+      } else if (ch === '"') inStr = true;
+      else if (ch === "[") depth += 1;
+      else if (ch === "]" && --depth === 0) {
+        const s = raw.slice(start, i + 1);
+        try { if (Array.isArray(JSON.parse(s))) return s; } catch { /* next */ }
+        break;
+      }
     }
+    from = start + 1;
   }
   return null;
 }

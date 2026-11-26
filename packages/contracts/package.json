@@ -232,6 +232,11 @@
       "import": "./src/studio-openai-assist-result.ts",
       "default": "./src/studio-openai-assist-result.ts"
     },
+    "./studio-pii-redactor": {
+      "types": "./src/studio-pii-redactor.ts",
+      "import": "./src/studio-pii-redactor.ts",
+      "default": "./src/studio-pii-redactor.ts"
+    },
     "./studio-live-auth-ticket": {
       "types": "./src/studio-live-auth-ticket.ts",
       "import": "./src/studio-live-auth-ticket.ts",

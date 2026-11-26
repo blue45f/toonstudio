@@ -57,7 +57,7 @@ export const EXTENDED_MODE_JSON_SCHEMAS: Readonly<
         summary: { type: "string", description: "연속성·개연성 종합 요약(최대 480자)" },
         issues: {
           type: "array",
-          description: "발견된 설정·연속성 이슈 목록(핵심 1~6개, 1~12개 이내)",
+          description: "발견된 설정·연속성 이슈 목록(핵심 1~6개, 0~12개 이내; 원고가 없거나 안전 거절·오류 없음 시 빈 배열 [])",
           items: {
             type: "object",
             additionalProperties: false,
@@ -311,7 +311,7 @@ export const EXTENDED_MODE_JSON_SCHEMAS: Readonly<
         },
         glossary: {
           type: "array",
-          description: "핵심 고유명사·호칭·세계관 용어집(2~16개 항목)",
+          description: "핵심 고유명사·호칭·세계관 용어집(권장 6~12개, 2~16개 이내)",
           items: {
             type: "object",
             additionalProperties: false,

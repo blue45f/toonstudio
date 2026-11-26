@@ -14,8 +14,8 @@ const REASONING_CHAT_MODEL_PATTERN = /^(?:openai\/)?(?:gpt-5|gpt-6|o3|o4)(?:$|[-
 const GPT_IMAGE_MODEL_PATTERN = /^(?:openai\/)?(?:gpt-image|chatgpt-image)(?:$|[-._:])/iu;
 const RETIRED_OPENAI_IMAGE_MODEL_PATTERN = /^dall-e-[23]$/iu;
 
-const REASONING_MIN_COMPLETION_TOKENS = 2_048;
-const REASONING_EXTRA_HEADROOM_TOKENS = 1_536;
+const REASONING_MIN_COMPLETION_TOKENS = 4_000;
+const REASONING_EXTRA_HEADROOM_TOKENS = 2_400;
 const REASONING_MAX_COMPLETION_TOKENS = 8_192;
 
 function positiveInt(value: unknown): number | null {

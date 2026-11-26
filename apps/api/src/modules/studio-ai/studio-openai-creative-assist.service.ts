@@ -46,11 +46,18 @@ export {
 
 const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
 const MAX_OUTPUT_TOKENS = 1_400;
+const NON_REASONING_LONG_OUTPUT_TOKENS = 3_200;
 const REASONING_MODEL_MIN_OUTPUT_TOKENS = 4_000;
 const REASONING_MODEL_COMPLEX_OUTPUT_TOKENS = 6_000;
 const COMPLEX_REASONING_ASSIST_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
   "mcp-workflow-macro",
 ]);
+const MULTI_RECORD_NON_REASONING_MODES: ReadonlySet<StudioOpenAiAssistMode> = new Set([
+  "script-to-cuts",
+  "continuity-plot-audit",
+  "localization-glossary-check",
+]);
+const LONG_INPUT_OUTPUT_HEADROOM_CHARS = 800;
 const MAX_ERROR_BODY_BYTES = 8_192;
 
 @Injectable()
@@ -285,8 +292,12 @@ export class StudioOpenAiCreativeAssistService {
       let response: Response;
       let responseText: string;
       const reasoningModel = isOpenAiReasoningModel(config.model);
+      const isLongInput = input.inputText.length >= LONG_INPUT_OUTPUT_HEADROOM_CHARS;
       const isComplexReasoningMode =
-        reasoningModel && COMPLEX_REASONING_ASSIST_MODES.has(input.mode);
+        reasoningModel &&
+        (COMPLEX_REASONING_ASSIST_MODES.has(input.mode) ||
+          (isLongInput && MULTI_RECORD_NON_REASONING_MODES.has(input.mode)));
+      const needsLongNonReasoningOutput = !reasoningModel && isLongInput;
       const maxCompletionTokens = reasoningModel
         ? Math.max(
             MAX_OUTPUT_TOKENS,
@@ -294,7 +305,9 @@ export class StudioOpenAiCreativeAssistService {
               ? REASONING_MODEL_COMPLEX_OUTPUT_TOKENS
               : REASONING_MODEL_MIN_OUTPUT_TOKENS,
           )
-        : MAX_OUTPUT_TOKENS;
+        : needsLongNonReasoningOutput
+          ? NON_REASONING_LONG_OUTPUT_TOKENS
+          : MAX_OUTPUT_TOKENS;
       try {
         response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, {
           method: "POST",
@@ -385,6 +398,7 @@ export class StudioOpenAiCreativeAssistService {
         });
       }
       if (firstChoice.finish_reason === "length") {
+        quota.release();
         throw new BadGatewayException({
           code: "OPENAI_OUTPUT_TRUNCATED",
           message: "답변이 길어 중간에 잘렸어요. 한 장면이나 짧은 문단 단위로 나누어 요청해 주세요.",
@@ -493,6 +507,19 @@ export class StudioOpenAiCreativeAssistService {
         code: "OPENAI_SCHEMA_MISMATCH",
         message: "AI 보조 결과 형식이 맞지 않아 적용하지 않았어요. 다시 시도해 주세요.",
       });
+    }
+    if (validated.mode === "scroll-pacing-auditor" && validated.data.beatPacing.length > 0) {
+      const meanGap = Math.round(
+        validated.data.beatPacing.reduce((sum, item) => sum + item.recommendedGapPx, 0) /
+          validated.data.beatPacing.length,
+      );
+      const syncedAverageGapPx = Math.min(1_600, Math.max(16, meanGap));
+      if (syncedAverageGapPx !== validated.data.averageGapPx) {
+        return {
+          mode: "scroll-pacing-auditor",
+          data: { ...validated.data, averageGapPx: syncedAverageGapPx },
+        };
+      }
     }
     return validated;
   }

@@ -47,6 +47,7 @@ export function buildOpenAiTextCompletionBody(params: {
   };
 
   if (reasoning) {
+    body.reasoning_effort = "low";
     body.max_completion_tokens = computeReasoningMaxCompletionTokens(params.maxTokens);
   } else {
     body.temperature = params.temperature;

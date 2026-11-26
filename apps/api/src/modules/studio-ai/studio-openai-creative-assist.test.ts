@@ -978,4 +978,145 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(buildModeSystemInstruction("idea-remix")).toContain("메타 식별자");
     expect(buildModeSystemInstruction("character-bible-forge")).toContain("공격 문구");
   });
+
+  it("uses 60s default timeout for reasoning models, expands non-reasoning output cap for long scripts, releases quota on truncation, and syncs scroll-pacing averageGapPx", async () => {
+    expect(
+      resolveStudioOpenAiCreativeConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "gpt-6.2-astra" }).timeoutMs,
+    ).toBe(60_000);
+    expect(
+      resolveStudioOpenAiCreativeConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "gpt-5.5" }).timeoutMs,
+    ).toBe(60_000);
+    expect(
+      resolveStudioOpenAiCreativeConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "gpt-4.1" }).timeoutMs,
+    ).toBe(30_000);
+    expect(
+      resolveStudioOpenAiCreativeConfig({
+        OPENAI_API_KEY: "test",
+        OPENAI_MODEL: "gpt-6.2-astra",
+        STUDIO_OPENAI_TIMEOUT_MS: "85000",
+      }).timeoutMs,
+    ).toBe(85_000);
+
+    // continuity-plot-audit & script-to-cuts 안전 거절(빈 배열) 스키마 허용 검증
+    expect(
+      validateAssistModeStructuredOutput("continuity-plot-audit", {
+        overallConsistencyScore: 0,
+        summary: "점검할 대본이나 콘티 메모를 입력해 주세요.",
+        issues: [],
+      }),
+    ).not.toBeNull();
+    expect(
+      validateAssistModeStructuredOutput("script-to-cuts", {
+        episodeGoal: "분할할 장면 대본을 입력해 주세요.",
+        pacingTip: "등장인물과 장면 흐름을 2문장 이상 적어 주시면 컷을 구성해 드립니다.",
+        cuts: [],
+      }),
+    ).not.toBeNull();
+
+    const service = new StudioOpenAiCreativeAssistService();
+    let capturedLongBody: Record<string, unknown> = {};
+    const longScript = "1화 장면 대본입니다. 비 오는 종로 도서관에서 별빛 사서가 싸운다.\n".repeat(40);
+    await service.assist(
+      "user:long-41",
+      { mode: "script-to-cuts", inputText: longScript },
+      {
+        env: { OPENAI_API_KEY: "test-placeholder", OPENAI_MODEL: "gpt-4.1" },
+        fetchImpl: vi.fn<typeof fetch>(async (_url, init) => {
+          capturedLongBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+          return new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  finish_reason: "stop",
+                  message: {
+                    content: JSON.stringify({
+                      episodeGoal: "도서관 격돌",
+                      pacingTip: "긴박한 호흡",
+                      cuts: [
+                        {
+                          cutNumber: 1,
+                          beatKind: "setup",
+                          shotType: "와이드샷",
+                          visualAction: "도서관 전경",
+                          dialogue: "",
+                          scrollGapHint: "180px",
+                        },
+                      ],
+                    }),
+                  },
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }),
+      },
+    );
+    expect(capturedLongBody.max_completion_tokens).toBe(3_200);
+
+    // finish_reason === "length" 시 일일 한도 슬롯을 복원해 재시도가 차단되지 않아야 한다
+    const retryEnv = {
+      OPENAI_API_KEY: "test-placeholder",
+      STUDIO_OPENAI_DAILY_REQUEST_LIMIT: "1",
+    };
+    await expect(
+      service.assist(
+        "user:trunc-release",
+        { mode: "dialogue-polish", inputText: "긴 대사를 다듬어 주세요." },
+        {
+          env: retryEnv,
+          fetchImpl: vi.fn<typeof fetch>(async () =>
+            new Response(
+              JSON.stringify({ choices: [{ finish_reason: "length", message: { content: "{" } }] }),
+              { status: 200 },
+            ),
+          ),
+        },
+      ),
+    ).rejects.toMatchObject({ status: 502, response: { code: "OPENAI_OUTPUT_TRUNCATED" } });
+
+    const retryOk = await service.assist(
+      "user:trunc-release",
+      { mode: "dialogue-polish", inputText: "긴 대사를 다듬어 주세요." },
+      { env: retryEnv, fetchImpl: vi.fn<typeof fetch>(async () => createDialogueResponse()) },
+    );
+    expect(retryOk.result.mode).toBe("dialogue-polish");
+
+    // scroll-pacing-auditor averageGapPx 산술평균 자동 정규화 확인
+    const pacingRes = await service.assist(
+      "user:pacing-sync",
+      { mode: "scroll-pacing-auditor", inputText: "1컷 도입 후 2컷 반전으로 여백을 크게 줍니다." },
+      {
+        env: { OPENAI_API_KEY: "test-placeholder" },
+        fetchImpl: vi.fn<typeof fetch>(async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  finish_reason: "stop",
+                  message: {
+                    content: JSON.stringify({
+                      rhythmVerdict: "초반은 빠르게, 엔딩은 여백을 넓힙니다.",
+                      averageGapPx: 150,
+                      cliffhangerScore: 88,
+                      cliffhangerTip: "엔딩 직전 360px 여백을 유지하세요.",
+                      beatPacing: [
+                        { section: "도입", pacing: "tight", recommendedGapPx: 100, readerRetentionNote: "빠른 전개" },
+                        { section: "반전", pacing: "drop", recommendedGapPx: 320, readerRetentionNote: "시선 정지" },
+                      ],
+                    }),
+                  },
+                },
+              ],
+            }),
+            { status: 200 },
+          ),
+        ),
+      },
+    );
+    expect(pacingRes.result.mode).toBe("scroll-pacing-auditor");
+    if (pacingRes.result.mode === "scroll-pacing-auditor") {
+      expect(pacingRes.result.data.averageGapPx).toBe(210);
+    }
+  });
 });

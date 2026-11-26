@@ -1,6 +1,12 @@
 import { createHash } from "node:crypto";
 
 import { HttpException, HttpStatus } from "@nestjs/common";
+import {
+  redactCreatorSensitiveText,
+  type RedactedCreatorText,
+} from "@toonstudio/contracts/studio-pii-redactor";
+
+export { redactCreatorSensitiveText, type RedactedCreatorText };
 
 export type EnvLike = Partial<Record<string, string | undefined>>;
 
@@ -47,6 +53,8 @@ export function isGeminiFreeTierModel(model: string): boolean {
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_REASONING_TIMEOUT_MS = 60_000;
+const MAX_TIMEOUT_MS = 90_000;
 const DEFAULT_BURST_LIMIT_PER_MINUTE = 5;
 const DEFAULT_HOURLY_REQUEST_LIMIT = 20;
 const DEFAULT_DAILY_REQUEST_LIMIT = 60;
@@ -55,19 +63,6 @@ const MAX_TRACKED_ACTOR_BUCKETS = 1_024;
 
 const ORG_ID_PATTERN = /^org-[A-Za-z0-9_-]{4,80}$/u;
 const PROJECT_ID_PATTERN = /^proj_[A-Za-z0-9_-]{4,80}$/u;
-
-// 모듈 로드 시 1회 컴파일해 요청당 정규식 재생성 비용을 없앤다.
-const SECRET_KEY_PATTERN =
-  /\b(?:sk-[A-Za-z0-9_-]{16,}|Bearer\s+[A-Za-z0-9._-]{20,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AIza[A-Za-z0-9_-]{30,}|xox[baprs]-[A-Za-z0-9-]{16,})\b/gu;
-const RESIDENT_ID_PATTERN = /\b\d{6}-?[1-8]\d{6}\b/gu;
-const CARD_NUMBER_PATTERN =
-  /\b(?:\d{4}[-\s]?){3}\d{4}\b|\b\d{4}[-\s]?\d{6}[-\s]?\d{5}\b/gu;
-const EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu;
-const PHONE_PATTERN =
-  /(?:(?<!\w)\+82[-\s.]?0?1[016789]|\b(?:01[016789]|02|0[3-6][1-5]|070))[-\s.]?\d{3,4}[-\s.]?\d{4}\b/gu;
-// 한국 도로명·지번 주소(시·도 + 시·군·구 + 도로명/동·가·리 + 건물/지번 번호 + 선택 동·호·층)만 정밀 마스킹한다.
-const KOREAN_ADDRESS_PATTERN =
-  /(?<![가-힣A-Za-z0-9])(?:세종(?:특별자치시|시)?(?:\s+[가-힣]{1,8}(?:읍|면))?|(?:서울|부산|대구|인천|광주|대전|울산|경기|강원|충청북|충청남|충북|충남|전라북|전라남|전북|전남|경상북|경상남|경북|경남|제주)(?:특별자치도|특별시|광역시|도|시)?(?:\s+[가-힣]{1,8}(?:시|군|구)){1,2}(?:\s+[가-힣]{1,8}(?:읍|면))?)\s+(?:[가-힣]{1,12}(?:\s*\d{1,2}(?:·\d{1,2})?)?(?:동|가|리)|[가-힣]{1,12}(?:(?<!으)로|대로)(?:\s*\d{1,3}[가-힣]?길)?|[가-힣]{1,12}\d{1,3}[가-힣]?길|[가-힣]{1,12}길)\s*\d{1,5}(?:-\d{1,5})?(?:번지)?(?!(?:\d|분|초|시|일|월|년|살|세|명|개|번(?!지)|회|차|원|호선|역|출구|길|(?<=[^0-9][1-9])가|[A-Za-z]))(?:(?:,\s*|\s+)(?:(?:지하\s*)?\d{1,3}층|[A-Za-z가-힣0-9-]{1,6}동(?:\s*\d{1,5}(?:-\d{1,4})?호)?|(?:지하\s*|[A-Za-z])?\d{1,5}(?:-\d{1,4})?호)){0,3}/gu;
 
 export interface StudioOpenAiCreativeConfig {
   readonly configured: boolean;
@@ -121,7 +116,12 @@ export function resolveStudioOpenAiCreativeConfig(
     modelConfigurationError,
     organizationId: ORG_ID_PATTERN.test(rawOrg) ? rawOrg : null,
     projectId: PROJECT_ID_PATTERN.test(rawProject) ? rawProject : null,
-    timeoutMs: parsePositiveLimit(env.STUDIO_OPENAI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS, 5_000, 60_000),
+    timeoutMs: parsePositiveLimit(
+      env.STUDIO_OPENAI_TIMEOUT_MS,
+      isOpenAiReasoningModel(model) ? DEFAULT_REASONING_TIMEOUT_MS : DEFAULT_TIMEOUT_MS,
+      5_000,
+      MAX_TIMEOUT_MS,
+    ),
     limits: {
       burstPerMinute: parsePositiveLimit(
         env.STUDIO_OPENAI_BURST_LIMIT_PER_MINUTE,
@@ -148,37 +148,6 @@ export function resolveStudioOpenAiCreativeConfig(
         20_000,
       ),
     },
-  };
-}
-
-export interface RedactedCreatorText {
-  readonly sanitizedText: string;
-  readonly redactedCount: number;
-}
-
-/**
- * 외부 AI 전송 전 원고·메모에 섞여 들어간 개인정보(이메일, 전화번호, 주민·외국인등록번호, 카드번호,
- * 한국 도로명·지번 주소)와 실수로 붙여 넣은 API 키·토큰 문자열을 마스킹한다.
- */
-export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
-  let redactedCount = 0;
-  const replaceCounted = (input: string, pattern: RegExp, token: string): string =>
-    input.replace(pattern, () => {
-      redactedCount += 1;
-      return token;
-    });
-
-  let current = raw;
-  current = replaceCounted(current, SECRET_KEY_PATTERN, "[비밀키 마스킹됨]");
-  current = replaceCounted(current, RESIDENT_ID_PATTERN, "[주민번호 비공개]");
-  current = replaceCounted(current, CARD_NUMBER_PATTERN, "[카드번호 비공개]");
-  current = replaceCounted(current, EMAIL_PATTERN, "[이메일 비공개]");
-  current = replaceCounted(current, PHONE_PATTERN, "[연락처 비공개]");
-  current = replaceCounted(current, KOREAN_ADDRESS_PATTERN, "[주소 비공개]");
-
-  return {
-    sanitizedText: current,
-    redactedCount,
   };
 }
 

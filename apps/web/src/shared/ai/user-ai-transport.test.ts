@@ -538,14 +538,14 @@ describe("managed cloud AI transport", () => {
         routing: { mode: "automatic", allowPaidFallback: true, preferPaidKeys: true, managedPoolPriority: 50, serverProviderOrder: [] },
       });
 
-      const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
         choices: [{ message: { content: `ok:${reasoningModel}` }, finish_reason: "stop" }],
       }), { status: 200, headers: { "content-type": "application/json" } }));
       vi.stubGlobal("fetch", fetchMock);
 
       const detailed = await completeUserAiTextDetailed("sys", "usr");
       expect(detailed.content).toBe(`ok:${reasoningModel}`);
-      const detailedBody = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)) as Record<string, unknown>;
+      const detailedBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as Record<string, unknown>;
       expect(detailedBody.max_tokens).toBeUndefined();
       expect(detailedBody.temperature).toBeUndefined();
       expect(detailedBody.max_completion_tokens).toBe(4096);
@@ -556,7 +556,7 @@ describe("managed cloud AI transport", () => {
         temperature: 0.7,
         max_tokens: 400,
       });
-      const legacyBody = JSON.parse(String((fetchMock.mock.calls[1]?.[1] as RequestInit).body)) as Record<string, unknown>;
+      const legacyBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)) as Record<string, unknown>;
       expect(legacyBody.model).toBe(reasoningModel);
       expect(legacyBody.max_tokens).toBeUndefined();
       expect(legacyBody.temperature).toBeUndefined();
@@ -584,7 +584,7 @@ describe("managed cloud AI transport", () => {
         routing: { mode: "automatic", allowPaidFallback: true, preferPaidKeys: true, managedPoolPriority: 50, serverProviderOrder: [] },
       });
 
-      const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
         data: [{ b64_json: "AA==" }],
       }), { status: 200, headers: { "content-type": "application/json" } }));
       vi.stubGlobal("fetch", fetchMock);
@@ -596,7 +596,7 @@ describe("managed cloud AI transport", () => {
         size: "1024x1792",
         response_format: "b64_json",
       });
-      const jsonBody = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)) as Record<string, unknown>;
+      const jsonBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as Record<string, unknown>;
       expect(jsonBody.model).toBe(imageModel);
       expect(jsonBody.size).toBe("1024x1536");
       expect(jsonBody.response_format).toBeUndefined();
@@ -607,7 +607,7 @@ describe("managed cloud AI transport", () => {
       form.append("size", "1792x1024");
       form.append("response_format", "b64_json");
       await userAiLegacyForm(form);
-      const sentForm = (fetchMock.mock.calls[1]?.[1] as RequestInit).body as FormData;
+      const sentForm = fetchMock.mock.calls[1]?.[1]?.body as FormData;
       expect(sentForm.get("model")).toBe(imageModel);
       expect(sentForm.get("size")).toBe("1536x1024");
       expect(sentForm.get("response_format")).toBeNull();
