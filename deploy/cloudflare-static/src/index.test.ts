@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { withInlineScriptHashes } from "../../../scripts/cloudflare-static-rules.mjs";
+import { createMemoryEdgeCache } from "../edge-cache-coalescer.mjs";
 
 import { createEdgeErrorDiagnostics } from "./edge-error-diagnostics";
 import {
@@ -1971,5 +1972,98 @@ describe("Cloudflare 엣지 오류 진단", () => {
         dependency: "upstream", operation: "upstream_response", errorType: "TypeError",
       });
     });
+  });
+});
+
+describe("4-Lane 엣지 API 라우터 및 Singleflight 캐시 실드 통합", () => {
+  it("게이트웨이 레벨에서 동시 50건의 공개 AI 모드 GET을 원점 1회 호출로 병합하고 보안 헤더를 유지한다", async () => {
+    const cache = createMemoryEdgeCache();
+    let releaseOrigin!: () => void;
+    const gate = new Promise<void>((resolve) => { releaseOrigin = resolve; });
+    const upstream = vi.fn<typeof fetch>(async () => {
+      await gate;
+      return new Response(JSON.stringify({ modes: ["fast", "quality"] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const gateway = createCloudflareStaticGateway({ fetch: upstream, cache });
+    const env = environment();
+
+    const pending = Array.from({ length: 50 }, () =>
+      gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/modes"), env));
+    await Promise.resolve();
+    releaseOrigin();
+
+    const responses = await Promise.all(pending);
+    expect(upstream).toHaveBeenCalledOnce();
+    const statuses = responses.map((response) => response.headers.get("x-toonstudio-edge-cache"));
+    expect(statuses.filter((value) => value === "MISS")).toHaveLength(1);
+    expect(statuses.filter((value) => value === "COALESCED")).toHaveLength(49);
+    for (const response of responses) {
+      expect(response.headers.get("x-toonstudio-api-lane")).toBe("edge-public-read");
+      expect(response.headers.get("content-security-policy")).toBe(
+        COMMON_SECURITY_HEADERS["Content-Security-Policy"],
+      );
+      await expect(response.json()).resolves.toEqual({ modes: ["fast", "quality"] });
+    }
+  });
+
+  it("인증·AI 추론 요청은 캐시를 우회하고 위조된 레인 헤더를 제거한 뒤 권위 레인을 기록한다", async () => {
+    const cache = createMemoryEdgeCache();
+    let currentTime = 1_700_000_000_000;
+    const upstream = vi.fn<typeof fetch>(async (request) => {
+      const proxied = request as Request;
+      return new Response(JSON.stringify({
+        laneHeader: proxied.headers.get("x-toonstudio-api-lane"),
+        spoofedCache: proxied.headers.get("x-toonstudio-edge-cache"),
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const gateway = createCloudflareStaticGateway({
+      fetch: upstream,
+      cache,
+      now: () => currentTime,
+    });
+    const env = environment();
+
+    const aiPost = await gateway(new Request("https://www.toonstudio.cloud/api/studio-ai/openai-assist", {
+      method: "POST",
+      body: JSON.stringify({ prompt: "draw panel" }),
+      headers: {
+        "content-type": "application/json",
+        "x-toonstudio-api-lane": "edge-public-read",
+        "x-toonstudio-edge-cache": "HIT",
+      },
+    }), env);
+    expect(aiPost.headers.get("x-toonstudio-api-lane")).toBe("edge-ai-assist");
+    expect(aiPost.headers.get("x-toonstudio-edge-cache")).toBe("BYPASS");
+    expect(aiPost.headers.get("cache-control")).toBe("private, no-store");
+    await expect(aiPost.json()).resolves.toEqual({
+      laneHeader: "edge-ai-assist",
+      spoofedCache: null,
+    });
+
+    // SWR STALE + ctx.waitUntil 백그라운드 갱신 통합 검증
+    const waitUntilPromises: Array<Promise<unknown>> = [];
+    const ctx = { waitUntil: (promise: Promise<unknown>) => { waitUntilPromises.push(promise); } };
+    const miss = await gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/free-quota-status"), env, ctx);
+    expect(miss.headers.get("x-toonstudio-edge-cache")).toBe("MISS");
+
+    currentTime += 35_000; // TTL 30s 초과, SWR 120s 이내
+    const stale = await gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/free-quota-status"), env, ctx);
+    expect(stale.headers.get("x-toonstudio-edge-cache")).toBe("STALE");
+    expect(waitUntilPromises).toHaveLength(1);
+    await Promise.all(waitUntilPromises);
+
+    // 같은 경로라도 Cookie가 있으면 반드시 BYPASS한다.
+    const authed = await gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/free-quota-status", {
+      headers: { cookie: "session=user-1" },
+    }), env, ctx);
+    expect(authed.headers.get("x-toonstudio-api-lane")).toBe("core-stateful-onpod");
+    expect(authed.headers.get("x-toonstudio-edge-cache")).toBe("BYPASS");
+    expect(authed.headers.get("cache-control")).toBe("private, no-store");
   });
 });

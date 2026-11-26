@@ -2,7 +2,16 @@ import {
   getStaticPolicyDocument,
   isPolicySlug,
 } from "../../../packages/core/src/legal-policy";
-import { parsePublicSharePath } from "../../../packages/core/src/public-share-path";
+import {
+  API_LANE_HEADER,
+  EDGE_CACHE_HEADER,
+  classifyApiLane,
+} from "../edge-api-lane-router.mjs";
+import {
+  createEdgeApiCacheCoalescer,
+  type EdgeCacheInput,
+  type EdgeExecutionContext,
+} from "../edge-cache-coalescer.mjs";
 
 import { CORE_CLIENT_IP_HEADER, trustedConnectingIp } from "./core-client-ip";
 import {
@@ -28,6 +37,7 @@ import {
   type R2ObjectBodyBinding,
 } from "./large-static-assets";
 import { createNeisCreatorResourceEdge } from "./neis-creator-resource-edge";
+import { isOgPagePath, mapDynamicPath } from "./og-share-routes";
 
 export type { AssetsBinding, R2BucketBinding, R2ObjectBinding, R2ObjectBodyBinding } from "./large-static-assets";
 
@@ -49,6 +59,8 @@ export interface CloudflareStaticEnv extends EdgeErrorDiagnosticsEnv {
 
 interface GatewayRuntime {
   readonly fetch: typeof globalThis.fetch;
+  readonly cache?: EdgeCacheInput;
+  readonly now?: () => number;
 }
 
 type DynamicRoute =
@@ -178,53 +190,6 @@ function validatedOrigin(raw: string | undefined): URL | null {
   return url;
 }
 
-function hasExactlyOneEncodedSegment(
-  pathname: string,
-  prefix: string,
-): boolean {
-  if (!pathname.startsWith(prefix)) return false;
-  const segment = pathname.slice(prefix.length);
-  return segment.length > 0 && !segment.includes("/");
-}
-
-function isCreatorWorkOgPath(pathname: string): boolean {
-  if (!hasExactlyOneEncodedSegment(pathname, "/create/")) return false;
-  const segment = pathname.slice("/create/".length);
-  return segment !== "challenges" && segment !== "promo";
-}
-
-function isCollaborationOgPath(pathname: string): boolean {
-  if (!hasExactlyOneEncodedSegment(pathname, "/collaborate/")) return false;
-  const segment = pathname.slice("/collaborate/".length);
-  return segment !== "new" && segment !== "moderation";
-}
-
-function isPromotionOgPath(pathname: string): boolean {
-  if (!hasExactlyOneEncodedSegment(pathname, "/community/promote/")) return false;
-  const segment = pathname.slice("/community/promote/".length);
-  return segment !== "new" && segment !== "moderation";
-}
-
-function isOgPagePath(pathname: string): boolean {
-  return hasExactlyOneEncodedSegment(pathname, "/title/")
-    || pathname === "/market"
-    || pathname === "/market/browse"
-    || hasExactlyOneEncodedSegment(pathname, "/market/resource/")
-    || isCreatorWorkOgPath(pathname)
-    || hasExactlyOneEncodedSegment(pathname, "/create/series/")
-    || hasExactlyOneEncodedSegment(pathname, "/showcase/work/")
-    || hasExactlyOneEncodedSegment(pathname, "/showcase/series/")
-    || hasExactlyOneEncodedSegment(pathname, "/u/")
-    || hasExactlyOneEncodedSegment(pathname, "/author/")
-    || hasExactlyOneEncodedSegment(pathname, "/community/post/")
-    || hasExactlyOneEncodedSegment(pathname, "/community/cafes/")
-    || hasExactlyOneEncodedSegment(pathname, "/pencafe/")
-    || isCollaborationOgPath(pathname)
-    || isPromotionOgPath(pathname)
-    || pathname === "/ranking"
-    || pathname === "/play";
-}
-
 function isCrawlerRequest(request: Request): boolean {
   const method = request.method.toUpperCase();
   return (method === "GET" || method === "HEAD")
@@ -242,80 +207,6 @@ function isDynamicPath(pathname: string): boolean {
 
 function isWebSocketUpgrade(request: Request): boolean {
   return request.headers.get("upgrade")?.toLowerCase() === "websocket";
-}
-
-function decodePathSegment(value: string): string | null {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return null;
-  }
-}
-
-function mappedSegment(
-  pathname: string,
-  prefix: string,
-  key: string,
-): URLSearchParams | null {
-  if (!hasExactlyOneEncodedSegment(pathname, prefix)) return null;
-  const value = decodePathSegment(pathname.slice(prefix.length));
-  return value ? new URLSearchParams({ [key]: value }) : null;
-}
-
-function mapDynamicPath(requestUrl: URL): URLSearchParams | null {
-  const { pathname } = requestUrl;
-  if (pathname === "/market") {
-    return new URLSearchParams({ marketPage: "home" });
-  }
-  if (pathname === "/market/browse") {
-    return new URLSearchParams({ marketPage: "browse" });
-  }
-  if (pathname === "/ranking" || pathname === "/play") {
-    return new URLSearchParams({ staticPage: pathname.slice(1) });
-  }
-  if (pathname.startsWith("/market/resource/")) {
-    return mappedSegment(pathname, "/market/resource/", "marketResourceId");
-  }
-  if (pathname.startsWith("/title/")) {
-    return mappedSegment(pathname, "/title/", "slug");
-  }
-  if (pathname.startsWith("/create/series/")) {
-    return mappedSegment(pathname, "/create/series/", "creatorSeriesId");
-  }
-  if (pathname.startsWith("/showcase/series/")) {
-    return mappedSegment(pathname, "/showcase/series/", "creatorSeriesId");
-  }
-  if (pathname.startsWith("/showcase/work/")) {
-    return mappedSegment(pathname, "/showcase/work/", "creatorWorkId");
-  }
-  if (isCreatorWorkOgPath(pathname)) {
-    return mappedSegment(pathname, "/create/", "creatorWorkId");
-  }
-  if (pathname.startsWith("/u/")) {
-    return mappedSegment(pathname, "/u/", "profileUserId");
-  }
-  if (pathname.startsWith("/author/")) {
-    return mappedSegment(pathname, "/author/", "authorName");
-  }
-  if (pathname.startsWith("/community/post/")) {
-    return mappedSegment(pathname, "/community/post/", "communityPostId");
-  }
-  if (pathname.startsWith("/community/cafes/")) {
-    return mappedSegment(pathname, "/community/cafes/", "communityCafeSlug");
-  }
-  if (pathname.startsWith("/pencafe/")) {
-    return mappedSegment(pathname, "/pencafe/", "pencafeName");
-  }
-  if (isCollaborationOgPath(pathname)) {
-    return mappedSegment(pathname, "/collaborate/", "collaborationPostId");
-  }
-  if (isPromotionOgPath(pathname)) {
-    return mappedSegment(pathname, "/community/promote/", "promotionPostId");
-  }
-  if (parsePublicSharePath(requestUrl.pathname)) {
-    return new URLSearchParams({ publicPath: requestUrl.pathname });
-  }
-  return null;
 }
 
 function pathWithin(pathname: string, prefix: string): boolean {
@@ -536,6 +427,8 @@ export function createUpstreamApiRequest(
   headers.delete("x-real-ip");
   headers.delete(CORE_ORIGIN_AUTH_HEADER);
   headers.delete(CORE_CLIENT_IP_HEADER);
+  headers.delete(API_LANE_HEADER);
+  headers.delete(EDGE_CACHE_HEADER);
   if (route === "public-read" || route === "large-asset" || ogQuery) {
     removePublicReadCredentials(headers);
   } else if (connectingIp) {
@@ -548,6 +441,9 @@ export function createUpstreamApiRequest(
   headers.set("x-toonstudio-edge", "cloudflare-static-gateway-v2");
   headers.set("x-toonstudio-edge-route", route);
   headers.set("x-toonstudio-edge-attempt", String(attempt));
+  if (!ogQuery && route !== "large-asset") {
+    headers.set(API_LANE_HEADER, classifyApiLane(request).lane);
+  }
   if (coreOriginSecret) {
     headers.set(CORE_ORIGIN_AUTH_HEADER, coreOriginSecret);
   }
@@ -662,14 +558,28 @@ async function serveR2LargeAsset(
   }
 }
 
+class UpstreamExhaustedError extends Error {
+  readonly attempted: number;
+
+  constructor(attempted: number) {
+    super("UPSTREAM_EXHAUSTED");
+    this.attempted = attempted;
+  }
+}
+
 export function createCloudflareStaticGateway(
   runtime: GatewayRuntime = DEFAULT_RUNTIME,
 ) {
   const neisCreatorResources = createNeisCreatorResourceEdge(runtime);
   const reportError = createEdgeErrorDiagnostics();
+  const apiCacheCoalescer = createEdgeApiCacheCoalescer({
+    cache: runtime.cache,
+    now: runtime.now,
+  });
   return async function fetchRequest(
     request: Request,
     env: CloudflareStaticEnv,
+    ctx?: EdgeExecutionContext,
   ): Promise<Response> {
     const requestUrl = new URL(request.url);
     if (isEdgeLivenessRequest(request, requestUrl)) {
@@ -740,56 +650,71 @@ export function createCloudflareStaticGateway(
       );
     }
 
-    const orderedOrigins = retryableRead(request, route)
-      ? orderedReadOrigins(request, origins)
-      : origins.slice(0, 1);
-    let attempted = 0;
-    for (const [index, origin] of orderedOrigins.entries()) {
-      attempted += 1;
-      let operation: "upstream_fetch" | "upstream_response" = "upstream_fetch";
-      try {
-        const response = await runtime.fetch(
-          createUpstreamApiRequest(
-            request,
-            origin,
-            route,
-            index,
-            coreOrigin?.origin === origin.origin
-              ? coreOriginSecret ?? undefined
-              : undefined,
-          ),
-        );
-        operation = "upstream_response";
-        // Reconstructing a WebSocket upgrade response drops the runtime-specific
-        // WebSocket handle. Security headers apply to HTTP responses; the upgrade
-        // handshake must pass through unchanged.
-        if (isWebSocketUpgrade(request) || response.status === 101) return response;
-        const shouldRetry = retryableRead(request, route)
-          && RETRYABLE_UPSTREAM_STATUSES.has(response.status)
-          && index + 1 < orderedOrigins.length;
-        if (shouldRetry) {
-          await cancelRetryResponse(response);
-          continue;
-        }
-        const patchedResponse = await neisCreatorResources.patchProviderAvailability(
-          request,
-          response,
-          env,
-        );
-        return withSecurityHeaders(patchedResponse);
-      } catch (cause) {
-        const retrying = retryableRead(request, route) && index + 1 < orderedOrigins.length;
-        reportError(env, request, { route, operation, attempt: attempted, retrying }, cause);
-        if (retrying) {
-          continue;
+    async function proxyToOrderedOrigins(targetRequest: Request): Promise<Response> {
+      const orderedOrigins = retryableRead(targetRequest, route)
+        ? orderedReadOrigins(targetRequest, origins)
+        : origins.slice(0, 1);
+      let attempted = 0;
+      for (const [index, origin] of orderedOrigins.entries()) {
+        attempted += 1;
+        let operation: "upstream_fetch" | "upstream_response" = "upstream_fetch";
+        try {
+          const response = await runtime.fetch(
+            createUpstreamApiRequest(
+              targetRequest,
+              origin,
+              route,
+              index,
+              coreOrigin?.origin === origin.origin
+                ? coreOriginSecret ?? undefined
+                : undefined,
+            ),
+          );
+          operation = "upstream_response";
+          // Reconstructing a WebSocket upgrade response drops the runtime-specific
+          // WebSocket handle. Security headers apply to HTTP responses; the upgrade
+          // handshake must pass through unchanged.
+          if (isWebSocketUpgrade(targetRequest) || response.status === 101) return response;
+          const shouldRetry = retryableRead(targetRequest, route)
+            && RETRYABLE_UPSTREAM_STATUSES.has(response.status)
+            && index + 1 < orderedOrigins.length;
+          if (shouldRetry) {
+            await cancelRetryResponse(response);
+            continue;
+          }
+          const patchedResponse = await neisCreatorResources.patchProviderAvailability(
+            targetRequest,
+            response,
+            env,
+          );
+          return withSecurityHeaders(patchedResponse);
+        } catch (cause) {
+          const retrying = retryableRead(targetRequest, route) && index + 1 < orderedOrigins.length;
+          reportError(env, targetRequest, { route, operation, attempt: attempted, retrying }, cause);
+          if (retrying) {
+            continue;
+          }
         }
       }
+      throw new UpstreamExhaustedError(attempted);
     }
 
-    return jsonError(
-      502,
-      attempted > 0 ? "CORE_API_UPSTREAM_FAILED" : "CORE_API_UNAVAILABLE",
-    );
+    const useEdgeApiShield = !isWebSocketUpgrade(request)
+      && !isOgPagePath(requestUrl.pathname)
+      && route !== "large-asset";
+    try {
+      return useEdgeApiShield
+        ? await apiCacheCoalescer.handle(request, proxyToOrderedOrigins, ctx)
+        : await proxyToOrderedOrigins(request);
+    } catch (cause) {
+      if (cause instanceof UpstreamExhaustedError) {
+        return jsonError(
+          502,
+          cause.attempted > 0 ? "CORE_API_UPSTREAM_FAILED" : "CORE_API_UNAVAILABLE",
+        );
+      }
+      return jsonError(502, "CORE_API_UPSTREAM_FAILED");
+    }
   };
 }
 
