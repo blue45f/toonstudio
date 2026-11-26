@@ -26,12 +26,15 @@ afterEach(() => {
 });
 
 async function renderAt(entry: string) {
+  const isIntroduction = entry.toLowerCase().split("#", 1)[0]?.replace(/\/+$/u, "") === "/about/studio";
+  if (isIntroduction) {
+    // CI에서도 소개 청크의 첫 변환 시간과 화면 렌더링을 따로 기다린다.
+    await import("./CreatorStudioIntroduction");
+  }
   await act(async () => {
     render(<MemoryRouter initialEntries={[entry]}><CreatorHomeExperience /></MemoryRouter>);
   });
-  // /about/studio is intentionally lazy-loaded to keep the public homepage's first-load graph small.
-  // Wait for the narrative to resolve instead of asserting against Suspense's empty fallback.
-  if (entry.toLowerCase().split("#", 1)[0]?.replace(/\/+$/u, "") === "/about/studio") {
+  if (isIntroduction) {
     await screen.findByRole("heading", { level: 1 });
   }
 }
