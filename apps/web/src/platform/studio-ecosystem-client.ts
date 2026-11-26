@@ -18,6 +18,27 @@ export interface CafePostAttachmentPayload {
   readonly spoilerBlur?: boolean;
 }
 
+export interface PlazaLiveMessageItem {
+  readonly id: string;
+  readonly partyId: string | null;
+  readonly senderName: string;
+  readonly roleLabel: string;
+  readonly text: string;
+  readonly createdAt: string;
+}
+
+export type PlazaAvailabilityMode = "urgent-sub-ready" | "online-ready" | "busy";
+
+export interface PlazaPresenceItem {
+  readonly userId: string;
+  readonly nickname: string;
+  readonly roleCode: string;
+  readonly availability: PlazaAvailabilityMode;
+  readonly tools: readonly string[];
+  readonly cutRateKrw: number;
+  readonly updatedAt: string;
+}
+
 export const studioEcosystemClient = {
   evaluatePermission(payload: {
     readonly userId: string;
@@ -61,9 +82,52 @@ export const studioEcosystemClient = {
   },
 
   assignPlazaSlot(partyId: string, slotId: string, avatarId: string) {
-    return api.post<{ assigned: boolean }>(
+    return api.post<{
+      assigned: boolean;
+      brokerageFeeRate?: 0;
+      handoffReviewPath?: string;
+    }>(
       `/studio-ecosystem/plaza/parties/${encodeURIComponent(partyId)}/slots/${encodeURIComponent(slotId)}/assign`,
       { avatarId },
+    );
+  },
+
+  listPlazaMessages(partyId?: string) {
+    return api.get<{ items: PlazaLiveMessageItem[] }>(
+      "/studio-ecosystem/plaza/messages",
+      { params: partyId ? { partyId } : undefined },
+    );
+  },
+
+  postPlazaMessage(payload: {
+    readonly partyId?: string | null;
+    readonly senderName: string;
+    readonly roleLabel?: string;
+    readonly text: string;
+  }) {
+    return api.post<PlazaLiveMessageItem>(
+      "/studio-ecosystem/plaza/messages",
+      payload,
+    );
+  },
+
+  listPlazaPresence() {
+    return api.get<{ items: PlazaPresenceItem[] }>(
+      "/studio-ecosystem/plaza/presence",
+    );
+  },
+
+  upsertPlazaPresence(payload: {
+    readonly userId: string;
+    readonly nickname: string;
+    readonly roleCode: string;
+    readonly availability: PlazaAvailabilityMode;
+    readonly tools?: readonly string[];
+    readonly cutRateKrw?: number;
+  }) {
+    return api.post<PlazaPresenceItem>(
+      "/studio-ecosystem/plaza/presence",
+      payload,
     );
   },
 

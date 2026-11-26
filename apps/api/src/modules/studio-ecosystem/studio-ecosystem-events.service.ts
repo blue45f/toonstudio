@@ -4,6 +4,8 @@ import { EventEmitter } from "node:events";
 export type StudioEcosystemEventType =
   | "plaza.party_created"
   | "plaza.slot_assigned"
+  | "plaza.message_posted"
+  | "plaza.presence_updated"
   | "cafe.post_created"
   | "rbac.role_assigned"
   | "support.triage";
