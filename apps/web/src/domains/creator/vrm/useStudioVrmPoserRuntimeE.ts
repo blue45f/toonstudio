@@ -7,20 +7,10 @@ import { useEffect } from "react";
 import { planStudio3dInsertCaptureSize } from "../scene-3d/studio-3d-insert-capture-plan";
 
 import { createStudioVrmAuthoredFingerSnapshot } from "./studio-vrm-auto-grip-authority";
-import {
-  serializeAvatarForgeState,
-} from "./studio-vrm-avatar-forge";
-import {
-  serializeCostume,
-  type CostumeState,
-  type CostumeSlot,
-} from "./studio-vrm-costume";
-import {
-  applyStudioVrmCostumeState,
-} from "./studio-vrm-costume-runtime";
-import {
-  resolveStudioVrmInsertBackgroundMode,
-} from "./studio-vrm-insert-background-mode";
+import { serializeAvatarForgeState } from "./studio-vrm-avatar-forge";
+import { serializeCostume, type CostumeState, type CostumeSlot } from "./studio-vrm-costume";
+import { applyStudioVrmCostumeState } from "./studio-vrm-costume-runtime";
+import { resolveStudioVrmInsertBackgroundMode } from "./studio-vrm-insert-background-mode";
 import {
   parseVrmPhysicsSettings,
   DEFAULT_VRM_PHYSICS,
@@ -80,19 +70,13 @@ import {
   type WardrobeSlot,
   type WardrobeState,
 } from "./studio-vrm-wardrobe";
-import {
-  STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS,
-} from "./StudioVrmPoserTypes";
-import {
-  studioVrmProportionsRequireRuntime,
-} from "./StudioVrmViewportUtils";
+import { STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS } from "./StudioVrmPoserTypes";
+import { studioVrmProportionsRequireRuntime } from "./StudioVrmViewportUtils";
 import type {
   StudioVrmWardrobeCaptureSync,
   StudioVrmWardrobeSurfaceReceipt,
 } from "./StudioVrmWardrobePropsProjection";
-import {
-  canonicalizeVrmContentHash,
-} from "./vrm-library";
+import { canonicalizeVrmContentHash } from "./vrm-library";
 
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type { VrmLibraryEntry } from "./vrm-library";

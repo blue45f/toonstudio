@@ -29,24 +29,14 @@ import {
 } from "./studio-vrm-pose-balance";
 import { useStudioVrmViewportBudget } from "./useStudioVrmViewportBudget";
 
-import {
-  StudioToolHintTarget,
-} from "../StudioToolHint";
-
+import { StudioToolHintTarget } from "../StudioToolHint";
 import {
   enabledStudioVrmIkPolesSceneLocal,
   enabledStudioVrmIkTargetsSceneLocal,
 } from "./studio-vrm-ik-constraints";
-import {
-  cx,
-} from "./studio-vrm-poser-helpers";
-import {
-  SCENE_PROPS,
-  SceneProp3D,
-} from "./studio-vrm-procedural-scene-props";
-import {
-  WARDROBE_SLOTS,
-} from "./studio-vrm-wardrobe";
+import { cx } from "./studio-vrm-poser-helpers";
+import { SCENE_PROPS, SceneProp3D } from "./studio-vrm-procedural-scene-props";
+import { WARDROBE_SLOTS } from "./studio-vrm-wardrobe";
 import { VrmActor } from "./StudioVrmActor";
 import {
   StudioVrmAvatarForge,

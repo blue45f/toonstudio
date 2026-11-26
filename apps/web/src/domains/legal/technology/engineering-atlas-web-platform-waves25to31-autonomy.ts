@@ -222,6 +222,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WAVES25TO31_AUTONOMY: readonly Engin
         paths: [
           "apps/web/src/domains/creator/wasm64-wave30-grand-milestone-verify/episode-master-preflight-gate.ts",
           "apps/web/src/domains/creator/wasm64-wave31-monolith-layout-kernel/sacred-canvas-viewport-solver.ts",
+          "apps/web/src/domains/creator/wasm64-wave32-subpixel-halftone-color-proof/stochastic-rosette-halftone-proofer.ts",
         ],
       },
     ],
