@@ -313,6 +313,46 @@ export function claimReferralBonusCredits(inviterCode: string): Promise<{
   return api.post("/membership/referral-claim", { inviterCode });
 }
 
+export type TeamAssistantQuotaView = {
+  allocationId: string;
+  ownerUserId: string;
+  workspaceId: string;
+  assistantUserId: string;
+  assistantNickname: string;
+  roleKo: string;
+  limitCredits: number;
+  usedCredits: number;
+  remainingCredits: number;
+  status: "active" | "revoked";
+  createdAt: string;
+  revokedAt: string | null;
+};
+
+export function listTeamAssistantQuotas(): Promise<{
+  items: TeamAssistantQuotaView[];
+}> {
+  return api.get("/membership/team-quotas");
+}
+
+export function allocateTeamAssistantQuota(payload: {
+  workspaceId: string;
+  assistantUserId: string;
+  assistantNickname: string;
+  roleKo: string;
+  limitCredits: number;
+}): Promise<TeamAssistantQuotaView> {
+  return api.post("/membership/team-quotas/allocate", payload);
+}
+
+export function revokeTeamAssistantQuota(
+  allocationId: string,
+): Promise<TeamAssistantQuotaView & { releasedCredits: number }> {
+  return api.post(
+    `/membership/team-quotas/${encodeURIComponent(allocationId)}/revoke`,
+    {},
+  );
+}
+
 export function purchaseCreditPackWithGate(
   packId: string,
   requestId: string,

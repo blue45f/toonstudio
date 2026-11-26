@@ -8,6 +8,7 @@ import {
   CreditBillingModeService,
   MembershipRewardDispatcherService,
 } from "./credit-billing-mode.service";
+import { TeamCreditSubwalletService } from "./team-credit-subwallet.service";
 import { CreditSpendController } from "./credit-spend.controller";
 import { CreditSpendService } from "./credit-spend.service";
 import { MarketplaceCreditPaymentController } from "./marketplace-credit-payment.controller";
@@ -31,6 +32,7 @@ import { MEMBERSHIP_REWARD_SERVICE } from "./membership-wallet.tokens";
   providers: [
     MembershipWalletService,
     CreditBillingModeService,
+    TeamCreditSubwalletService,
     MembershipRewardDispatcherService,
     CreditSpendService,
     MarketplaceCreditPaymentService,
