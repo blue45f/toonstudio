@@ -8,9 +8,19 @@ export function hasVrmSceneFields(value: unknown, keys: readonly string[]): valu
 const root = ["kind", "version", "model", "pose", "expressions", "camera", "appearance", "rig", "props", "sceneProps",
   "lighting", "lightingTone", "physics", "env", "render", "surfacePaint"];
 
+const linkedRoot = [...root, "characterDocumentId"];
+
+/** 제작 문서의 네임스페이스를 허용하되 파일·원격 주소와 예약 키를 식별자로 사용하지 않는다. */
+export function isStudioVrmCharacterDocumentId(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,255}$/u.test(value)
+    && !UNSAFE_REFERENCE_PATTERN.test(value) && !FORBIDDEN_KEYS.has(value.toLowerCase());
+}
+
 /** 개인 원고의 v6 정규 판독과 팀 컷 수신에서 같은 필수 필드를 검사한다. */
 export function hasStudioVrmV6Fields(v: unknown): v is Fields & { rig: Fields; pose: Fields & { translations: Fields } } {
-  return hasVrmSceneFields(v, root) && v.kind === "studio-vrm-scene" && v.version === 6
+  if (!hasVrmSceneFields(v, root)
+    && !(hasVrmSceneFields(v, linkedRoot) && isStudioVrmCharacterDocumentId(v.characterDocumentId))) return false;
+  return v.kind === "studio-vrm-scene" && v.version === 6
     && hasVrmSceneFields(v.rig, ["version", "jointProfile", "fullBodyIk", "footPlant", "floorHeight"])
     && hasVrmSceneFields(v.pose, ["bones", "yOffset", "bodyRotationY", "fingerOverrides", "translations", "ikConstraints"])
     && hasVrmSceneFields(v.pose.translations, ["version", "root", "hips", "spine"]);
