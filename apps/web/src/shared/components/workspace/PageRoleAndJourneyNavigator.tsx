@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Compass, Search } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Compass, Search } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { cx } from "@/shared/lib/cx";
@@ -31,6 +31,7 @@ interface PageRoleAndJourneyNavigatorProps {
   readonly pathname: string;
   readonly context?: WorkspaceNavigationContext;
   readonly compact?: boolean;
+  readonly defaultCollapsed?: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export function PageRoleAndJourneyNavigator({
   pathname,
   context = {},
   compact = false,
+  defaultCollapsed = false,
 }: PageRoleAndJourneyNavigatorProps) {
   const bt = useBilingual("PageRoleAndJourneyNavigator");
   const isKo = useI18n((state) => state.lang.toLowerCase().startsWith("ko"));
@@ -79,17 +81,8 @@ export function PageRoleAndJourneyNavigator({
     return () => window.removeEventListener("keydown", handleGlobalShortcut);
   }, []);
 
-  return (
-    <section
-      data-role-journey-bar="true"
-      data-journey-stage={entry.stageNumber}
-      data-accent-tone={entry.accentTone}
-      aria-label={bt("페이지 역할과 5단계 창작 여정", "Page role and 5-stage creation journey")}
-      className={cx(
-        "mb-3 rounded-2xl border border-line bg-panel/95 text-fg shadow-xs",
-        compact ? "p-2.5 sm:p-3" : "p-3 sm:p-3.5",
-      )}
-    >
+  const body = (
+    <>
       <ol
         aria-label={bt("5단계 창작 여정", "5-stage creation journey")}
         className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1 snap-x lg:grid lg:grid-cols-5 lg:overflow-visible lg:pb-0"
@@ -174,7 +167,10 @@ export function PageRoleAndJourneyNavigator({
               )}
             >
               <Search size={14} strokeWidth={2} aria-hidden="true" className="shrink-0 text-warning" />
-              <span>{bt("소재 검색 (⌘⇧K)", "Assets (⌘⇧K)")}</span>
+              <span>
+                {bt("소재 검색", "Assets")}
+                <span className="hidden sm:inline"> (⌘⇧K)</span>
+              </span>
             </button>
           </div>
           <p className="mt-1 text-sm font-semibold leading-snug text-fg [word-break:keep-all]">
@@ -192,21 +188,21 @@ export function PageRoleAndJourneyNavigator({
           className="min-w-0 lg:max-w-[52%] lg:shrink-0"
         >
           <span className="mb-1 block text-[11px] font-semibold text-fg-3 [word-break:keep-all]">
-            {bt("다음 추천 동선", "Recommended next")}
+            {bt("도움이 필요할 때", "Helpful links")}
           </span>
-          <ul className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5 snap-x sm:flex-wrap sm:overflow-visible sm:pb-0">
+          <ul className="grid grid-cols-1 gap-1.5 sm:flex sm:flex-wrap">
             {entry.recommendedNextSteps.map((next) => {
               const label = isKo ? next.labelKo : next.labelEn;
               const reason = isKo ? next.reasonKo : next.reasonEn;
               return (
-                <li key={next.href} className="shrink-0 snap-start">
+                <li key={next.href} className="min-w-0 sm:shrink-0">
                   <Link
                     href={workspaceNavigationHref(next.href, context)}
                     title={reason}
                     data-next-step-href={next.href}
                     data-accent-tone={next.accentTone}
                     className={cx(
-                      "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]",
+                      "inline-flex min-h-11 w-full items-center justify-between gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-auto sm:justify-start [word-break:keep-all]",
                       accentToneChipClasses(next.accentTone, false),
                     )}
                   >
@@ -220,11 +216,68 @@ export function PageRoleAndJourneyNavigator({
           </ul>
         </nav>
       </div>
-      {paletteOpen ? (
-        <Suspense fallback={null}>
-          <GlobalAssetSearchPalette open={paletteOpen} onClose={closePalette} />
-        </Suspense>
-      ) : null}
+    </>
+  );
+
+  const palette = paletteOpen ? (
+    <Suspense fallback={null}>
+      <GlobalAssetSearchPalette open={paletteOpen} onClose={closePalette} />
+    </Suspense>
+  ) : null;
+
+  if (defaultCollapsed) {
+    const guide = (
+      <details
+        data-role-journey-bar="true"
+        data-journey-stage={entry.stageNumber}
+        data-accent-tone={entry.accentTone}
+        className="group mb-2.5 rounded-2xl border border-line bg-panel/95 text-fg shadow-xs"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-3 py-1.5 text-xs font-semibold text-fg-2 outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 items-center gap-2">
+            <span
+              data-accent-tone={entry.accentTone}
+              className={cx(
+                "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums [word-break:keep-all]",
+                accentToneBadgeClasses(entry.accentTone),
+              )}
+            >
+              <Compass size={12} strokeWidth={1.8} aria-hidden="true" />
+              <span>{isKo ? entry.stageBadgeKo : entry.stageBadgeEn}</span>
+            </span>
+            <span className="truncate text-fg [word-break:keep-all]">
+              {isKo ? entry.pageLabelKo : entry.pageLabelEn}
+            </span>
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1 text-fg-3 [word-break:keep-all]">
+            <span>{bt("공간 안내", "Space guide")}</span>
+            <ChevronDown
+              size={14}
+              strokeWidth={1.8}
+              aria-hidden="true"
+              className="transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+            />
+          </span>
+        </summary>
+        <div className="border-t border-line/80 p-3 sm:p-3.5">{body}</div>
+      </details>
+    );
+    return <>{guide}{palette}</>;
+  }
+
+  return (
+    <section
+      data-role-journey-bar="true"
+      data-journey-stage={entry.stageNumber}
+      data-accent-tone={entry.accentTone}
+      aria-label={bt("페이지 역할과 5단계 창작 여정", "Page role and 5-stage creation journey")}
+      className={cx(
+        "mb-3 rounded-2xl border border-line bg-panel/95 text-fg shadow-xs",
+        compact ? "p-2.5 sm:p-3" : "p-3 sm:p-3.5",
+      )}
+    >
+      {body}
+      {palette}
     </section>
   );
 }

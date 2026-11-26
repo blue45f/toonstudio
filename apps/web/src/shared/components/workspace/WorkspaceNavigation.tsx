@@ -337,7 +337,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
                   data-current-stage={isCurrentStage ? "true" : undefined}
                   title={isKo ? stage.subtitleKo : stage.subtitleEn}
                   className={cx(
-                    "flex min-h-9 items-center gap-2 rounded-lg border px-2 py-1 text-xs font-medium outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]",
+                    "flex min-h-11 items-center gap-2 rounded-lg border px-2 py-1 text-xs font-medium outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [word-break:keep-all]",
                     accentToneChipClasses(stage.accentTone, isCurrentStage),
                   )}
                 >
@@ -357,7 +357,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
           href="/creator-support"
           data-journey-stage={5}
           data-accent-tone="support"
-          className="mt-1.5 flex min-h-9 items-center justify-between rounded-lg border border-success/35 bg-success-soft/55 px-2.5 py-1 text-[11px] font-semibold text-fg transition-[border-color,background-color] duration-150 hover:border-success hover:bg-success-soft motion-reduce:transition-none [word-break:keep-all]"
+          className="mt-1.5 flex min-h-11 items-center justify-between rounded-lg border border-success/35 bg-success-soft/55 px-2.5 py-1 text-[11px] font-semibold text-fg transition-[border-color,background-color] duration-150 hover:border-success hover:bg-success-soft motion-reduce:transition-none [word-break:keep-all]"
         >
           <span>{isKo ? "창작자 지원 프로그램" : "Creator support"}</span>
           <ArrowRight size={12} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-success" />

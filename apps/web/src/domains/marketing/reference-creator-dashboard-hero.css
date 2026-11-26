@@ -12,10 +12,10 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: clamp(32px, 5.2vw, 84px);
+  gap: clamp(28px, 4.4vw, 68px);
   align-items: center;
-  min-height: min(568px, calc(100svh - var(--site-header-height, 60px) - 204px));
-  padding-block: clamp(30px, 4.6vw, 64px) clamp(26px, 3.4vw, 46px);
+  min-height: min(432px, calc(100svh - var(--site-header-height, 60px) - 310px));
+  padding-block: clamp(16px, 2.2vw, 28px) clamp(14px, 1.8vw, 22px);
 }
 
 .rd-clarity-copy {
@@ -58,10 +58,10 @@
 
 .reference-dashboard .rd-clarity-copy > p {
   max-width: 36ch;
-  margin-block: 22px 34px;
+  margin-block: 16px 24px;
   color: var(--rd-muted);
   font-size: clamp(16px, 1.25vw, 18px);
-  line-height: 1.62;
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
@@ -130,14 +130,14 @@
   color: var(--spectrum-pigment-market, oklch(0.765 0.155 158));
 }
 
-/* 우측 원고 아트 스테이지: 매거진 표지형 5대 안료 에디토리얼 프레임 + 건축 크롭마크 + 라이브 스와치 바 */
+/* 우측 원고 아트 스테이지: 절제된 에디토리얼 프레임 + 차분한 톤으로 왼쪽 CTA 위계를 살린다. */
 .rd-clarity-art {
   position: relative;
   min-width: 0;
   margin: 0;
-  padding: 10px;
-  aspect-ratio: 16 / 11;
-  max-height: 520px;
+  padding: 8px;
+  aspect-ratio: 16 / 10;
+  max-height: 396px;
 }
 
 .rd-editorial-cropmarks {
@@ -148,9 +148,9 @@
 
 .rd-editorial-cropmarks > i {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  border-color: color-mix(in oklch, var(--color-line-strong) 82%, transparent);
+  width: 12px;
+  height: 12px;
+  border-color: color-mix(in oklch, var(--color-line-strong) 55%, transparent);
   border-style: solid;
   border-width: 0;
   transition: border-color 220ms var(--ink-ease);
@@ -159,59 +159,56 @@
 .rd-crop-tl {
   top: 0;
   left: 0;
-  border-top-width: 2px;
-  border-left-width: 2px;
-  border-top-left-radius: 5px;
-  border-color: var(--spectrum-pigment-draw, oklch(0.715 0.165 28));
+  border-top-width: 1px;
+  border-left-width: 1px;
+  border-top-left-radius: 4px;
 }
 
 .rd-crop-tr {
   top: 0;
   right: 0;
-  border-top-width: 2px;
-  border-right-width: 2px;
-  border-top-right-radius: 5px;
-  border-color: var(--spectrum-pigment-3d, oklch(0.74 0.135 245));
+  border-top-width: 1px;
+  border-right-width: 1px;
+  border-top-right-radius: 4px;
 }
 
 .rd-crop-bl {
   bottom: 0;
   left: 0;
-  border-bottom-width: 2px;
-  border-left-width: 2px;
-  border-bottom-left-radius: 5px;
-  border-color: var(--spectrum-pigment-character, oklch(0.79 0.158 72));
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+  border-bottom-left-radius: 4px;
 }
 
 .rd-crop-br {
   right: 0;
   bottom: 0;
-  border-right-width: 2px;
-  border-bottom-width: 2px;
-  border-bottom-right-radius: 5px;
-  border-color: var(--spectrum-pigment-market, oklch(0.765 0.155 158));
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  border-bottom-right-radius: 4px;
 }
 
 .rd-clarity-manuscript {
-  --ink-radius: 18px;
+  --ink-radius: 16px;
   position: relative;
   height: 100%;
   overflow: hidden;
-  border: 1px solid color-mix(in oklch, var(--color-line-strong) 84%, oklch(0.96 0.008 80));
-  border-radius: 18px;
+  border: 1px solid color-mix(in oklch, var(--color-line-strong) 78%, transparent);
+  border-radius: 16px;
   background: var(--rd-card);
   box-shadow:
-    inset 0 1px 0 oklch(0.98 0.008 80 / 0.16),
-    0 28px 56px -32px oklch(0.08 0.005 65 / 0.68);
+    inset 0 1px 0 oklch(0.98 0.008 80 / 0.1),
+    0 20px 44px -30px oklch(0.08 0.005 65 / 0.56);
 }
 
-/* 스테이지 상단 3px 5대 도메인 안료 에디토리얼 바 */
+/* 스테이지 상단 절제된 2px 안료 헤어라인 */
 .rd-stage-pigment-bar {
   position: absolute;
   inset-block-start: 0;
   inset-inline: 0;
   z-index: 3;
-  height: 3px;
+  height: 2px;
+  opacity: 0.28;
   pointer-events: none;
   background-image: linear-gradient(
     90deg,
@@ -223,30 +220,31 @@
   );
 }
 
-/* 스테이지 좌하단 5대 안료 캘리브레이션 스와치 바 (텍스트 0 · 장식 글로우 0) */
+/* 스테이지 좌하단 5대 안료 캘리브레이션 스와치 바 (절제된 저채도 보조 표시) */
 .rd-stage-swatch-bar {
   position: absolute;
-  left: 14px;
-  bottom: 14px;
+  left: 12px;
+  bottom: 12px;
   z-index: 3;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 8px;
-  border: 1px solid oklch(0.96 0.006 85 / 0.24);
+  gap: 4px;
+  padding: 4px 7px;
+  border: 1px solid oklch(0.96 0.006 85 / 0.16);
   border-radius: 999px;
-  background: color-mix(in oklch, var(--rd-art-scrim) 76%, transparent);
+  background: color-mix(in oklch, var(--rd-art-scrim) 68%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  opacity: 0.42;
   pointer-events: none;
 }
 
 .rd-stage-swatch-bar > i {
   display: block;
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
-  border: 1px solid oklch(0.98 0.004 85 / 0.35);
+  border: 1px solid oklch(0.98 0.004 85 / 0.25);
   transition: transform 200ms var(--ink-ease);
 }
 
@@ -301,28 +299,24 @@
   block-size: 100%;
   object-fit: cover;
   object-position: 50% 42%;
+  filter: saturate(0.66) contrast(0.95) brightness(0.92);
 }
 
 .rd-clarity-art > figcaption {
   position: absolute;
-  right: 22px;
-  bottom: 22px;
-  z-index: 3;
-  padding: 4px 11px;
-  border: 1px solid oklch(0.96 0.006 85 / 0.22);
-  border-radius: 8px;
-  background: color-mix(in oklch, var(--rd-art-scrim) 78%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: var(--rd-on-art);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.4;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* 준비 → 그리기 → 완성: 도메인 안료 시그니처 링 + 연결 잉크 라인 */
 .reference-dashboard .rd-clarity-journey {
-  padding-block: 8px;
+  padding-block: 4px;
   border-block: 1px solid var(--color-line);
 }
 
@@ -349,8 +343,8 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
-  min-height: 64px;
-  padding: 10px 14px 10px 6px;
+  min-height: 54px;
+  padding: 6px 12px 6px 6px;
   border-radius: 12px;
   color: var(--rd-fg);
   transition: background-color var(--ink-fast, 150ms) var(--ink-ease);
@@ -415,7 +409,8 @@
   grid-template-columns: minmax(0, 1fr) minmax(240px, 312px);
   gap: 14px;
   align-items: start;
-  margin-top: 22px;
+  margin-top: 14px;
+  margin-bottom: 48px;
 }
 
 /* Luna를 사용자가 직접 펼치면 충분한 폭으로 확장되도록 레이아웃 전환 */
