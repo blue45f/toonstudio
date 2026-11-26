@@ -54,17 +54,18 @@ describe("연결된 컷의 래스터 일괄 갱신", () => {
 
   it("잠긴 그룹·보호 원본·중복 ID를 제외하고 캡처 중 바뀐 포즈나 다른 컷의 결과를 폐기한다", () => {
     const [a, b, c, d, e, f] = [cut(0), cut(1), cut(2), cut(3), cut(4), cut(5)] as const;
-    const initial = page([a, b, { ...c, groupId: "locked" }, { ...d, src: "studio-opfs-cas:sealed" }, e, e, f]);
+    const initial = page([a, b, { ...c, groupId: "locked" }, { ...d, src: "studio-opfs-cas:sealed" }, e, e, f,
+      { ...cut(6), bg3dLtBundleId: "sealed-inline-pass" }]);
     initial.groups = [{ id: "locked", name: "확정 컷", locked: true }];
     const plan = planStudioCharacterCutRefresh(initial, character.documentId, character.revision);
     expect(plan.targets.map(item => item.elementId)).toEqual([a.id, b.id, f.id]);
-    expect(plan.skipped).toBe(4);
+    expect(plan.skipped).toBe(5);
     const latest = { ...initial, elements: initial.elements.map(item => item.id === a.id
       ? { ...a, vrmScene: { ...a.vrmScene, expressions: { happy: 0.6 } } }
       : item.id === f.id ? { ...f, locked: true } : item) };
     const results = new Map([[a.id, render(a)], [b.id, render(a)], [f.id, render(f)]]);
     const commit = vi.fn(() => true);
-    expect(applyStudioCharacterCutRefresh(latest, plan, results, commit, character)).toEqual({ updated: 0, skipped: 7 });
+    expect(applyStudioCharacterCutRefresh(latest, plan, results, commit, character)).toEqual({ updated: 0, skipped: 8 });
     expect(commit).not.toHaveBeenCalled();
   });
 

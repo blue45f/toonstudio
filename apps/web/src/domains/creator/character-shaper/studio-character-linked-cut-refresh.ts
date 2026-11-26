@@ -1,3 +1,6 @@
+import { applyStudioBundleSourcePatch } from "../catalog/studio-bundle-source-credit";
+import { studioLinked3dPassSourceReplacementReason } from "../studio-linked-3d-raster-edit-policy";
+import { studioWorkAssetSourceReplacementReason } from "../studio-work-asset-edit-guard";
 import { isEffectivelyLocked } from "../studio-layers";
 import { isPageReviewLocked } from "../studio-page-review";
 import { linkedCutContextMatches, readLinkedCutPngSize } from "../vrm/studio-vrm-linked-cut-frame";
@@ -33,14 +36,19 @@ function layerFingerprint(layer: ImageLayer): string {
   return JSON.stringify({ ...layer, src: undefined, vrmScene: undefined });
 }
 
-function ambiguousIds(elements: readonly El[]): Set<string> {
+function reservedOrAmbiguousIds(page: PageState): Set<string> {
+  const reserved = new Set(page.linked3dRender?.links.flatMap(link => link.layers.map(layer => layer.elementId)));
   const seen = new Set<string>();
-  const ambiguous = new Set<string>();
-  for (const element of elements) {
-    if (seen.has(element.id)) ambiguous.add(element.id);
+  for (const element of page.elements) {
+    if (seen.has(element.id)) reserved.add(element.id);
     seen.add(element.id);
   }
-  return ambiguous;
+  return reserved;
+}
+
+function isSealedImage(layer: ImageLayer): boolean {
+  return layer.bundleSourceCredit !== undefined || layer.bg3dLtBundleReference !== undefined
+    || layer.bg3dLtBundleId !== undefined || layer.bg3dLtRole !== undefined || layer.bg3dScene !== undefined;
 }
 
 /** 한 페이지에서 같은 캐릭터에 명시적으로 연결된 편집 가능 컷만 캡처한다. */
@@ -50,14 +58,14 @@ export function planStudioCharacterCutRefresh(
   const targets: StudioCharacterCutRefreshTarget[] = [];
   let skipped = 0;
   if (documentId && Number.isSafeInteger(revision) && revision >= 0) {
-    const duplicates = ambiguousIds(page.elements);
+    const reserved = reservedOrAmbiguousIds(page);
     const pageLocked = isPageReviewLocked(page.review);
     for (const element of page.elements) {
       const scene = element.type === "image" ? element.vrmScene : undefined;
       if (element.type !== "image" || !scene || scene.characterDocumentId !== documentId) continue;
       // 인라인 PNG 이외의 팀 에셋 URI와 봉인된 3D 패스는 캡처 원본으로 교체할 수 없다.
       const png = readLinkedCutPngSize(element.src);
-      if (pageLocked || duplicates.has(element.id) || isEffectivelyLocked(element, page.groups ?? []) || !png) {
+      if (pageLocked || reserved.has(element.id) || isSealedImage(element) || isEffectivelyLocked(element, page.groups ?? []) || !png) {
         skipped++;
         continue;
       }
@@ -86,12 +94,12 @@ export function applyStudioCharacterCutRefresh(
     return { updated: 0, skipped: total };
   }
   const targets = new Map(plan.targets.map(target => [target.elementId, target]));
-  const duplicates = ambiguousIds(page.elements);
+  const reserved = reservedOrAmbiguousIds(page);
   let updated = 0;
   const elements = page.elements.map((layer): El => {
     const target = targets.get(layer.id);
     const result = results.get(layer.id);
-    if (!target || !result || layer.type !== "image" || !layer.vrmScene || duplicates.has(layer.id)
+    if (!target || !result || layer.type !== "image" || !layer.vrmScene || reserved.has(layer.id) || isSealedImage(layer)
       || isEffectivelyLocked(layer, page.groups ?? []) || layer.src !== target.src
       || layer.vrmScene.characterDocumentId !== plan.documentId || result.scene.characterDocumentId !== plan.documentId
       || layerFingerprint(layer) !== target.layerFingerprint
@@ -104,8 +112,10 @@ export function applyStudioCharacterCutRefresh(
     const scene = { ...layer.vrmScene, appearance: result.scene.appearance, props: result.scene.props };
     const capturedScene = serializeStudioVrmSceneDocument(scene);
     if (!capturedScene || (layer.src === result.pngDataUrl && capturedScene === target.sceneFingerprint)) return layer;
+    const patch = { src: result.pngDataUrl, vrmScene: scene };
+    if (studioWorkAssetSourceReplacementReason(layer, patch) || studioLinked3dPassSourceReplacementReason(layer, patch)) return layer;
     updated++;
-    return { ...layer, src: result.pngDataUrl, vrmScene: scene };
+    return applyStudioBundleSourcePatch(layer, patch);
   });
   if (updated > 0 && !commit(elements, undefined, page.id)) updated = 0;
   return { updated, skipped: total - updated };
