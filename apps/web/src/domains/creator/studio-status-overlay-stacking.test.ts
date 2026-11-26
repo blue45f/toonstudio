@@ -9,6 +9,7 @@ const responsiveCss = readFileSync(new URL("./studio-inspector-responsive.css", 
 const offlinePanel = readFileSync(new URL("./offline/StudioOfflinePanel.tsx", import.meta.url), "utf8");
 const saveStatusMount = readFileSync(new URL("./StudioSaveStatusChromeMount.tsx", import.meta.url), "utf8");
 const editorChrome = readFileSync(new URL("./studio-cuttoon-editor/StudioCuttoonEditorChrome.tsx", import.meta.url), "utf8");
+const enduranceChip = readFileSync(new URL("./session-endurance/StudioEnduranceGuardChip.tsx", import.meta.url), "utf8");
 
 describe("Studio global status overlay stacking", () => {
   it("오류 안내가 떠 있는 동안 첫 게시 제안 카드가 닫기(✕)를 덮지 않는다", () => {
@@ -25,6 +26,13 @@ describe("Studio global status overlay stacking", () => {
     expect(appEntry).toContain('import "./styles/studio-overlay-stacking.css";');
     expect(overlayCss).toContain('[data-studio-status-notice-dismiss="true"]');
     expect(overlayCss).toContain('[role="status"]:has(>');
+  });
+
+  it("모바일 시트를 조작하는 동안 부유 세션 진단 버튼만 시트에서 비킨다", () => {
+    expect(enduranceChip).toContain('data-studio-endurance-placement={inline ? "menubar" : "floating"}');
+    expect(overlayCss).toMatch(
+      /html:has\(\[data-studio-mobile-sheet\]:not\(\[hidden\]\):not\(\[aria-hidden="true"\]\)\) \[data-studio-endurance-placement="floating"\]\s*\{\s*display:\s*none\s*;/u,
+    );
   });
 
   it("sequences the beta notice before the quick-start coach", () => {

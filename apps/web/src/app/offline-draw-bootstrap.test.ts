@@ -6,15 +6,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const source = readFileSync(new NodeUrl("../../public/offline-draw/bootstrap.js", import.meta.url), "utf8");
 
-function start(): void {
-  new Script(source).runInNewContext({ document, location, window, navigator,
-    MutationObserver, setTimeout, clearTimeout, requestIdleCallback: vi.fn() });
+function start({ online = true, reload = vi.fn() } = {}) {
+  new Script(source).runInNewContext({
+    document, window, navigator: { onLine: online }, HTMLScriptElement,
+    location: { pathname: location.pathname, search: location.search, reload },
+    MutationObserver, setTimeout, clearTimeout, requestIdleCallback: vi.fn(),
+  });
+  return reload;
+}
+
+function failScript(src: string, type = "module"): void {
+  const script = document.createElement("script");
+  script.type = type;
+  script.setAttribute("src", src);
+  document.head.append(script);
+  script.dispatchEvent(new Event("error"));
+  script.remove();
 }
 
 beforeEach(() => {
   vi.useFakeTimers();
   vi.stubGlobal("requestIdleCallback", vi.fn());
   history.replaceState(null, "", "/studio/character");
+  sessionStorage.clear();
   document.body.innerHTML = '<div id="root"></div>';
 });
 
@@ -77,5 +91,46 @@ describe("늦은 Studio 시작과 긴급 복구 안내", () => {
     start();
     await vi.advanceTimersByTimeAsync(20_000);
     expect(document.getElementById("toon-local-recovery")).toBeNull();
+  });
+
+  it("진입 모듈 실패는 같은 주소와 빌드에서 한 번만 다시 열고 반복 실패에는 긴급 안내를 표시한다", async () => {
+    history.replaceState(null, "", "/studio/lift3d?subject=prop");
+    const reload = start();
+    failScript("/assets/index-buildA.js");
+    failScript("/assets/index-buildA.js");
+    expect(reload).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(document.getElementById("toon-local-recovery")).not.toBeNull();
+  });
+
+  it("다른 주소나 빌드에서 실패하면 이전 시도의 기록에 묶이지 않는다", () => {
+    sessionStorage.setItem("toonstudio:entry-boot-reload", JSON.stringify([
+      "/studio/character", "", "/assets/index-buildA.js",
+    ]));
+    history.replaceState(null, "", "/studio/lift3d");
+    const reload = start();
+    failScript("/assets/index-buildA.js");
+    failScript("/assets/index-buildB.js");
+    expect(reload).toHaveBeenCalledTimes(2);
+  });
+
+  it("다른 청크나 classic script가 실패해도 다시 열지 않고 렌더 뒤에는 문서를 보호한다", async () => {
+    const reload = start();
+    failScript("/assets/StudioLift3dPage-build.js");
+    failScript("/assets/index-build.js", "text/javascript");
+    failScript("https://another.example/assets/index-build.js");
+    expect(reload).not.toHaveBeenCalled();
+    document.getElementById("root")?.append(document.createElement("main"));
+    await Promise.resolve();
+    failScript("/assets/index-build.js");
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("오프라인에서는 자동으로 다시 열지 않고 긴급 안내를 유지한다", async () => {
+    const reload = start({ online: false });
+    failScript("/assets/index-build.js");
+    expect(reload).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(document.getElementById("toon-local-recovery")).not.toBeNull();
   });
 });

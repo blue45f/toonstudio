@@ -71,9 +71,9 @@ function placeholders(value: string): string[] {
 }
 
 describe("r5cat1.creator 사전 (5라운드 형제 등록 모듈)", () => {
-  it("ko/en 키가 패리티를 이루고 14키이며 en에 한글이 없다", () => {
+  it("ko/en 키가 패리티를 이루고 15키이며 en에 한글이 없다", () => {
     expect(Object.keys(DICTS.en).sort()).toEqual(KEYS);
-    expect(KEYS).toHaveLength(14);
+    expect(KEYS).toHaveLength(15);
     for (const key of KEYS) {
       expect(key.startsWith("r5cat1.creator."), key).toBe(true);
       expect(DICTS.ko[key], `ko missing ${key}`).toBeTruthy();

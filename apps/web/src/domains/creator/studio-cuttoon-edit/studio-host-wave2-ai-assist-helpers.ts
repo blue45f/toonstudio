@@ -496,8 +496,10 @@ export async function runStudioExecuteSuggestColorPalette(input: {
   };
   controller.signal.addEventListener("abort", settleCancelled, { once: true });
   try {
-    const transport = studioTextAiTransportForOperation(input.textAiTransport, operationId);
-    const result = await suggestColorPalette(input.aiSettings, mood, { ...transport, signal: controller.signal });
+    const result = await suggestColorPalette(input.aiSettings, mood, {
+      ...studioTextAiTransportForOperation(input.textAiTransport, operationId),
+      signal: controller.signal,
+    });
     if (controller.signal.aborted || !settle(result, result.ok ? result.data.textProvenance : undefined)) return;
     if (result.ok) input.setSuggestion(result.data);
     else input.setError(result.error);

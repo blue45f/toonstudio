@@ -6,6 +6,24 @@
   // 돌면 사용자가 링크 위에 머문 시간만큼 가짜 '복구 실패' 안내가 생기므로, 타이머와 캐시 준비를 활성화 뒤로 미룬다.
   function start() {
     let offered = false;
+    const studioMounted = () => Boolean(document.getElementById('root')?.firstElementChild);
+    // 초기 모듈 그래프가 끊기면 React의 청크 복구도 시작하지 못한다. 현재 문서의
+    // 진입 모듈 자체가 실패할 때만 같은 주소의 같은 빌드를 한 번 다시 불러온다.
+    function recoverEntry(event) {
+      if (studioMounted() || navigator.onLine === false || document.visibilityState === 'hidden') return;
+      const script = event.target;
+      if (!(script instanceof HTMLScriptElement) || script.type !== 'module') return;
+      const entry = script.getAttribute('src');
+      if (!entry || !/^\/assets\/index-[\w-]+\.js$/.test(entry)) return;
+      const guard = 'toonstudio:entry-boot-reload';
+      const attempt = JSON.stringify([location.pathname, location.search, entry]);
+      try {
+        if (window.sessionStorage.getItem(guard) === attempt) return;
+        window.sessionStorage.setItem(guard, attempt);
+      } catch { return; }
+      location.reload();
+    }
+    window.addEventListener('error', recoverEntry, true);
     function offer() {
       if (offered || !document.body) return;
       offered = true;
@@ -22,12 +40,13 @@
     // Ordinary network loss stays in the current Studio. Offer this separate
     // emergency document only when the Studio root never mounted at all.
     const recoveryTimer = setTimeout(() => {
-      if (!document.getElementById('root')?.firstElementChild) offer();
+      if (!studioMounted()) offer();
     }, 10000);
     // 느린 기기에서도 정상 시작 후 긴급 안내가 편집 버튼을 가리지 않아야 한다.
     const mountObserver = new MutationObserver(clearRecoveredNotice);
     function clearRecoveredNotice() {
-      if (!document.getElementById('root')?.firstElementChild) return;
+      if (!studioMounted()) return;
+      window.removeEventListener('error', recoverEntry, true);
       clearTimeout(recoveryTimer);
       document.getElementById('toon-local-recovery')?.remove();
       mountObserver.disconnect();
