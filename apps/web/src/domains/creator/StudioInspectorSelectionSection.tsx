@@ -130,9 +130,7 @@ export function StudioInspectorSelectionSection({
     setPanelSplitActive,
     setPanelSplitHint,
     setPanelSplitRatio,
-    setPoserInitialDataUrl,
-    setPoserInitialElementId,
-    setPoserVrmOpen,
+    onEditVrmElement,
     setSharedDocumentNotice,
     setTool,
     splitFrameSelected,
@@ -679,9 +677,7 @@ export function StudioInspectorSelectionSection({
                 alignSelected={alignSelected}
                 duplicateSelected={duplicateSelected}
                 removeSelected={removeSelected}
-                setPoserInitialDataUrl={setPoserInitialDataUrl}
-                setPoserInitialElementId={setPoserInitialElementId}
-                setPoserVrmOpen={setPoserVrmOpen}
+                onEditVrmElement={onEditVrmElement}
                 setBg3dInitialScene={setBg3dInitialScene}
                 setBg3dInitialDataUrl={setBg3dInitialDataUrl}
                 setBg3dInitialElementId={setBg3dInitialElementId}

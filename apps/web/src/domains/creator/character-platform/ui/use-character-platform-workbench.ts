@@ -41,6 +41,7 @@ import type {
   CharacterSlotKind,
 } from "../../character-shaper/character-shaper-contract";
 import type { StudioAsyncKeyValueStore } from "../../studio-local-database";
+import type { StudioVrmSceneDocument } from "../../vrm/studio-vrm-scene-document";
 import type { StudioVrmPoserHost } from "../../vrm/StudioVrmPoserHost";
 
 const PRESET_STORE = createCharacterPartPresetStore();
@@ -176,7 +177,7 @@ function quaternionBones(
 export function useCharacterPlatformWorkbench(
   h: StudioVrmPoserHost,
   binding: CharacterShaperBinding,
-  options: { readonly documentAuthority?: boolean; readonly legacyEditing?: boolean } = {},
+  options: { readonly documentAuthority?: boolean; readonly legacyEditing?: boolean; readonly documentId?: string; readonly placementScene?: StudioVrmSceneDocument } = {},
 ): CharacterPlatformWorkbenchState {
   const modelId = activeModelId(h, binding);
   const scopeRef = useRef({ active: false });
@@ -228,7 +229,7 @@ export function useCharacterPlatformWorkbench(
   const document = useMemo(
     () =>
       projectCharacterShaperDocument({
-        documentId: `character-shaper:${modelId}`,
+        documentId: options.documentId ?? `character-shaper:${modelId}`,
         recipe: binding.recipe,
         snapshot: binding.snapshot,
         profile: binding.profile,
@@ -251,6 +252,7 @@ export function useCharacterPlatformWorkbench(
       binding.snapshot,
       canonicalManifest,
       documentClock,
+      options.documentId,
       h.insertBackgroundColor,
       h.transparentBackground,
       modelId,
@@ -299,6 +301,7 @@ export function useCharacterPlatformWorkbench(
     documentV3Projection,
     sourceFingerprint,
     {
+      placementScene: options.placementScene,
       synchronizeProjection: options.documentAuthority !== true || options.legacyEditing === true,
       enabled: !options.documentAuthority || (h.status === "ready" && Boolean(h.vrm)),
       initializeDocument: async (initial) => validateCharacterDocumentV3({

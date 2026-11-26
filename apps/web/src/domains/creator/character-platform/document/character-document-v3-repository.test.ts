@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { createStudioCharacterAsset, readStudioCharacterAssets, sceneUsesCharacterModel } from "../../character-shaper/studio-character-asset-library";
 import { CharacterDocumentV3Repository } from "./character-document-v3-repository";
 import {
   createCharacterDocumentV2,
@@ -85,5 +86,41 @@ describe("CharacterDocument V3 SQLite-WASM repository", () => {
     gate.resolve();
     await Promise.all([one, two]);
     expect((await repository.load("character:repository"))?.revision).toBe(2);
+  });
+});
+
+describe("스튜디오 캐릭터 목록과 원고 배치 식별자", () => {
+  it("같은 모델로 동시에 만든 두 캐릭터 외형을 별개 문서로 저장하고 새 목록에서도 유지한다", async () => {
+    const { store } = memoryStore();
+    const repository = new CharacterDocumentV3Repository({ storeFactory: async () => store });
+    const ops = { store, save: repository.save.bind(repository), remove: repository.remove.bind(repository) };
+    const source = document();
+    const [left, right] = await Promise.all([
+      createStudioCharacterAsset(source, "주인공", ops),
+      createStudioCharacterAsset({ ...source, look: { ...source.look, colors: { hairBase: "#998877" } } }, "주인공", ops),
+    ]);
+    expect(left.asset.modelId).toBe(right.asset.modelId);
+    expect(left.asset.documentId).not.toBe(right.asset.documentId);
+    expect(await readStudioCharacterAssets(store)).toEqual([left.asset, right.asset]);
+    expect(right.asset.name).toBe("주인공 (2)");
+    expect((await repository.load(right.asset.documentId))?.look.colors.hairBase).toBe("#998877");
+    expect((await repository.load(left.asset.documentId))?.look.colors).toEqual(source.look.colors);
+  });
+
+  it("목록 저장이 실패하면 반쪽짜리 새 캐릭터 문서를 남기지 않는다", async () => {
+    const { store, rows } = memoryStore();
+    const repository = new CharacterDocumentV3Repository({ storeFactory: async () => store });
+    const index = { ...store, set: async () => { throw new Error("quota"); } };
+    await expect(createStudioCharacterAsset(document(), "인물", {
+      store: index, save: repository.save.bind(repository), remove: repository.remove.bind(repository),
+    })).rejects.toThrow("quota");
+    expect(rows.size).toBe(0);
+  });
+
+  it("다른 기본 모델·파일의 장면에는 선택한 캐릭터 식별자를 붙이지 않는다", () => {
+    const entry = { id: "hero", name: "주인공", source: "sample" as const, createdAt: 0, updatedAt: 0, thumbnail: null };
+    expect(sceneUsesCharacterModel({ source: "bundled", id: "hero", name: "주인공" }, entry)).toBe(true);
+    expect(sceneUsesCharacterModel({ source: "bundled", id: "other", name: "주인공" }, entry)).toBe(false);
+    expect(sceneUsesCharacterModel({ source: "bundled", id: "hero", name: "주인공" }, { ...entry, source: "memory" })).toBe(false);
   });
 });

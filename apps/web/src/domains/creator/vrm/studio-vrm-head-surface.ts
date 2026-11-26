@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { isStudioAuthoredAttachment } from "./studio-vrm-authored-attachment";
+import { getStudioVrmHeadSkinVertices } from "./studio-vrm-head-skin-vertices";
 
 import type { VrmPropFaceSocket } from "./studio-vrm-prop-rig";
 import type { PropAttachBone, Vec3 } from "./studio-vrm-props";
@@ -65,6 +66,7 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
   });
   const stride = Math.max(1, Math.ceil(vertexCount / SAMPLE_BUDGET));
   const points: THREE.Vector3[] = [];
+  const skinPoints: THREE.Vector3[] = [];
   let visited = 0;
   for (const mesh of meshes) {
     if (visited >= SAMPLE_BUDGET) break;
@@ -74,6 +76,9 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
     const position = geometry.getAttribute("position");
     const indices = geometry.getAttribute("skinIndex");
     const weights = geometry.getAttribute("skinWeight");
+    if (!eligible.some(Boolean)) continue;
+    const skin = getStudioVrmHeadSkinVertices(mesh);
+    const allSkin = skin.count === position.count;
     const toHead = inverseHead.clone().multiply(mesh.matrixWorld);
     for (let index = 0; index < position.count && visited < SAMPLE_BUDGET; index += stride) {
       visited++;
@@ -87,6 +92,8 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
       // Discard neck, hanging hair and remote head-weighted decorations.
       if (point.y <= 0.004 || point.y > 0.48 || Math.abs(point.x) > 0.30 || Math.abs(point.z) > 0.30) continue;
       points.push(point);
+      // 모자 여유 높이에는 헤어를 포함하고, 안경이 닿는 콧등 깊이는 얼굴 표면에서만 잰다.
+      if (allSkin || skin.membership?.[index]) skinPoints.push(point);
     }
   }
   if (points.length < MIN_SAMPLES) return null;
@@ -109,7 +116,7 @@ export function measureStudioVrmHeadSurface(vrm: VRM): StudioVrmHeadSurface | nu
       eyeDistanceSource = "measured";
     }
   }
-  const faceBand = points.filter((point) => Math.abs(point.y - eyeY) < top * 0.16 && Math.abs(point.x) < width * 0.28);
+  const faceBand = skinPoints.filter((point) => Math.abs(point.y - eyeY) < top * 0.16 && Math.abs(point.x) < width * 0.28);
   if (faceBand.length < 16) return null;
   const front = quantile(faceBand.map((point) => point.z), 0.96) + 0.004;
   if (front < 0.01 || front > 0.25) return null;

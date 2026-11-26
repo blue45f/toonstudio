@@ -403,7 +403,7 @@ export const GEN3D_MCP_GENERATED_BATCH2_MODELS: readonly Gen3dMcpGeneratedModelE
       topologyMode: "h31-pbr",
       uvUnwrapped: true,
       freeTrialBadgeKo: "Ultra-HD 50cr 소진 #11",
-      nameKo: "3D 캐릭터 랩 사이버펑크 네온 닌자 마스크·택티컬 후드·플라즈마 쌍검 세트",
+      nameKo: "사이버펑크 네온 닌자 마스크·택티컬 후드·플라즈마 쌍검 세트",
       descriptionKo:
         "SF·헌터물 액션 캐릭터 커스터마이징을 위한 발광 바이저 닌자 복면·택티컬 방탄 후드·등 장착형 플라즈마 카타나 세트",
       url: "/models/tripo3d-mcp/tripo_h31_character_cyberpunk_ninja_kit.glb",
@@ -432,7 +432,7 @@ export const GEN3D_MCP_GENERATED_BATCH2_MODELS: readonly Gen3dMcpGeneratedModelE
       topologyMode: "h31-pbr",
       uvUnwrapped: true,
       freeTrialBadgeKo: "Ultra-HD 50cr 소진 #12",
-      nameKo: "3D 캐릭터 랩 신성 발키리 날개 투구·은빛 흉갑·성창·아이기스 방패 무장 세트",
+      nameKo: "신성 발키리 날개 투구·은빛 흉갑·성창·아이기스 방패 무장 세트",
       descriptionKo:
         "성좌물·판타지 여전사 캐릭터 커스터마이징을 위한 발키리 날개 서클릿 투구·인그레이빙 플레이트 흉갑·성광 랜스·방패 키트",
       url: "/models/tripo3d-mcp/tripo_h31_character_valkyrie_armor_kit.glb",
@@ -461,7 +461,7 @@ export const GEN3D_MCP_GENERATED_BATCH2_MODELS: readonly Gen3dMcpGeneratedModelE
       topologyMode: "h31-pbr",
       uvUnwrapped: true,
       freeTrialBadgeKo: "Ultra-HD 50cr 소진 #13",
-      nameKo: "3D 캐릭터 랩 스팀펑크 발명가 황동 고글·태엽 백팩·에테르 라이플 기어 세트",
+      nameKo: "스팀펑크 발명가 황동 고글·태엽 백팩·에테르 라이플 기어 세트",
       descriptionKo:
         "스팀펑크·아카데미 마공학자 캐릭터를 위한 다중 렌즈 황동 고글·증기 태엽 부스터 백팩·에테르 캐논 라이플 커스터마이징 키트",
       url: "/models/tripo3d-mcp/tripo_h31_character_steampunk_gear_kit.glb",
@@ -490,7 +490,7 @@ export const GEN3D_MCP_GENERATED_BATCH2_MODELS: readonly Gen3dMcpGeneratedModelE
       topologyMode: "h31-pbr",
       uvUnwrapped: true,
       freeTrialBadgeKo: "Ultra-HD 50cr 소진 #14",
-      nameKo: "3D 캐릭터 랩 K-POP 아이돌 무대 크롭 재킷·인이어 헤드셋·응원봉 의상 키트",
+      nameKo: "K-POP 아이돌 무대 크롭 재킷·인이어 헤드셋·응원봉 의상 키트",
       descriptionKo:
         "연예계·아이돌 데뷔물 웹툰 주인공을 위한 스팽글 무대 제복 재킷·무선 헤드셋 마이크·별빛 응원봉·초커 액세서리 세트",
       url: "/models/tripo3d-mcp/tripo_h31_character_kpop_idol_stage_kit.glb",
@@ -519,7 +519,7 @@ export const GEN3D_MCP_GENERATED_BATCH2_MODELS: readonly Gen3dMcpGeneratedModelE
       topologyMode: "h31-pbr",
       uvUnwrapped: true,
       freeTrialBadgeKo: "Ultra-HD 50cr 소진 #15",
-      nameKo: "3D 캐릭터 랩 다크 판타지 네크로맨서 해골 견갑 망토·영혼 랜턴·대낫 세트",
+      nameKo: "다크 판타지 네크로맨서 해골 견갑 망토·영혼 랜턴·대낫 세트",
       descriptionKo:
         "다크 판타지·헌터물 군주 캐릭터를 위한 흑요석 해골 견갑 망토·소울 파이어 랜턴·사신의 대낫(Soul Scythe) 무장 키트",
       url: "/models/tripo3d-mcp/tripo_h31_character_necromancer_scythe_kit.glb",
@@ -548,7 +548,7 @@ export const GEN3D_MCP_GENERATED_BATCH2_MODELS: readonly Gen3dMcpGeneratedModelE
       topologyMode: "h31-pbr",
       uvUnwrapped: true,
       freeTrialBadgeKo: "잔여 크레딧 완결 소진 #19 (30cr → 잔액 0cr)",
-      nameKo: "3D 캐릭터 랩 조선 왕실 흑립(갓)·구슬 갓끈·옥비녀·합죽선 전통 장신구 세트",
+      nameKo: "조선 왕실 흑립(갓)·구슬 갓끈·옥비녀·합죽선 전통 장신구 세트",
       descriptionKo:
         "사극·동양 판타지·케이팝 데몬헌터풍 캐릭터를 위한 전통 흑립(갓)·호박 구슬 갓끈·백옥 비녀·수묵 합죽선 커스터마이징 키트",
       url: "/models/tripo3d-mcp/tripo_h31_character_joseon_gat_fan_kit.glb",

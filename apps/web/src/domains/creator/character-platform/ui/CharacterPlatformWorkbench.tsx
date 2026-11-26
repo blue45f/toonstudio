@@ -27,6 +27,7 @@ import {
   resolveShaperContextKeycapStatusGuide,
 } from "../../character-shaper/character-shaper-ui-model";
 import { executeCharacterAuthoringTaskInBrowser } from "../runtime/character-authoring-worker-client";
+import { LegacyCharacterAppearanceImport } from "./LegacyCharacterAppearanceImport";
 import { CharacterGroomPanel } from "./CharacterGroomPanel";
 import { CharacterPoseV3Panel } from "../pose-v3/CharacterPoseV3Panel";
 import { CharacterCanonicalPartsPanel } from "./CharacterCanonicalPartsPanel";
@@ -472,6 +473,7 @@ function CharacterPlatformWorkbenchView({ h, binding, workbench }: {
         </label>
         <button type="button" className={PRIMARY_BUTTON} disabled={savingPreset || !presetName.trim() || !hasSlotSelection(binding, presetSlot)} onClick={savePreset}><Save size={14} aria-hidden />현재 파츠 저장</button>
       </Section>
+      <LegacyCharacterAppearanceImport catalog={binding.catalog} importPresets={workbench.importPresets} download={downloadText} buttonClass={BUTTON} />
       <Section title={`내 프리셋 · ${workbench.presets.length}개`}>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={BUTTON} onClick={() => requestImport("presets")}><Upload size={14} aria-hidden />불러오기</button>

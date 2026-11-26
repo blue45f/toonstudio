@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { VRMLoaderPlugin, VRMUtils, type VRM } from "@pixiv/three-vrm";
-import { Group, Quaternion, Vector3 } from "three";
+import {
+  Bone, BufferGeometry, Float32BufferAttribute, Group, MeshBasicMaterial,
+  Quaternion, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3,
+} from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { describe, expect, it } from "vitest";
 
@@ -147,6 +150,47 @@ for (const { filename, eyeBones, hairClearance } of FIXTURES) {
     });
   });
 }
+
+describe("앞머리가 있는 통합 메시의 안경 피팅", () => {
+  it("앞머리를 길게 돌출해도 안경 접촉 깊이는 얼굴 표면을 따른다", () => {
+    const scene = new Group();
+    const head = new Bone();
+    const geometry = new BufferGeometry();
+    const positions: number[] = [];
+    for (const depth of [0.07, 0.15]) {
+      for (let row = 0; row < 18; row++) {
+        for (let column = 0; column < 24; column++) {
+          positions.push((column / 23 - 0.5) * 0.18, 0.01 + row / 17 * 0.2, depth);
+        }
+      }
+    }
+    const count = positions.length / 3;
+    const faceCount = count / 2;
+    const weights = new Float32Array(count * 4);
+    for (let vertex = 0; vertex < count; vertex++) weights[vertex * 4] = 1;
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("skinIndex", new Uint16BufferAttribute(new Uint16Array(count * 4), 4));
+    geometry.setAttribute("skinWeight", new Float32BufferAttribute(weights, 4));
+    geometry.addGroup(0, faceCount, 0);
+    geometry.addGroup(faceCount, faceCount, 1);
+    const skin = new MeshBasicMaterial();
+    const bangs = new MeshBasicMaterial();
+    skin.name = "Face";
+    bangs.name = "Hair";
+    const mesh = new SkinnedMesh(geometry, [skin, bangs]);
+    scene.add(head, mesh);
+    mesh.bind(new Skeleton([head]));
+    const bone = (name: string) => name === "head" ? head : null;
+    const vrm = { scene, humanoid: { getRawBoneNode: bone, getNormalizedBoneNode: bone } } as unknown as VRM;
+
+    const metrics = measureVrmPropRigMetrics(vrm);
+    expect(metrics.faceSocket.surfaceMeasured).toBe(true);
+    expect(metrics.faceSocket.position[2]).toBeCloseTo(0.074, 5);
+    const glasses = createPropInstance("glasses", "glasses-with-bangs")!;
+    const equipped = resolvePropAttachment(propDefById("glasses")!, glasses, metrics);
+    expect(equipped.socketPosition[2]).toBeCloseTo(0.068, 5);
+  });
+});
 
 describe("surface fitting fallback", () => {
   it("keeps partial rigs and old metrics on the existing fallback path", () => {

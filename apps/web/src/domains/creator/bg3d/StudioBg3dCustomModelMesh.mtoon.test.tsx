@@ -77,7 +77,11 @@ describe("actual BG3D component의 MToon 인스턴스 수명", () => {
     const sourceOffset = source.body.uniforms.uvAnimationScrollXOffset?.value;
     const siblingOffset = siblingBody.uniforms.uvAnimationScrollXOffset?.value;
     const state: FrameState = { clock: { elapsedTime: 1 }, camera: new THREE.PerspectiveCamera(), size: { width: 100, height: 100 } };
+    const updateMatrix = vi.spyOn(THREE.Object3D.prototype, "updateWorldMatrix");
+    const cloneMatrix = vi.spyOn(THREE.Matrix4.prototype, "clone");
     act(() => { f.frames.forEach((frame) => frame(state, .25)); });
+    expect(updateMatrix).not.toHaveBeenCalled();
+    expect(cloneMatrix).not.toHaveBeenCalled();
     expect(current.uniforms.uvAnimationScrollXOffset?.value).toBeCloseTo(.1);
     expect(source.body.uniforms.uvAnimationScrollXOffset?.value).toBe(sourceOffset);
     expect(siblingBody.uniforms.uvAnimationScrollXOffset?.value).toBe(siblingOffset);

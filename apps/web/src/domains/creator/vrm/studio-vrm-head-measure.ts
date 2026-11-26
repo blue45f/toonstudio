@@ -5,14 +5,14 @@
  *  - 스킨 메시만 본다. 헤어 카드·소품처럼 나중에 머리에 붙은 강체 오브젝트가 두상을 부풀리지 않게.
  *  - 정점의 **최대 가중치 본이 정확히 머리 본**일 때만 쓴다. 눈·턱·헤어 스프링 본이 주도하는 정점과
  *    머리 본 아래에 매달린 귀·리본 본의 정점은 빠진다.
- *  - 헤어로 분류되는 메시(이름·재질)와 생성 오브젝트(포지 헤어·워드로브 의상)는 뺀다.
+ *  - 원본 헤어 메시·헤어 재질 그룹과 생성 오브젝트(포지 헤어·워드로브 의상)는 뺀다.
  *  - 같은 정점 버퍼를 나눠 쓰는 프리미티브(VRoid baked)는 인덱스가 실제로 쓰는 정점만, 한 번씩.
  * 좌표는 현재 포즈의 스킨 위치를 정규화 머리 본 로컬로 옮긴 것이다. 머리 정점은 머리 본과 함께
  * 강체로 움직이므로 포즈가 바뀌어도 값이 거의 같다.
  */
 import * as THREE from "three";
 
-import { classifyMeshName } from "./studio-vrm-costume";
+import { getStudioVrmHeadSkinVertices } from "./studio-vrm-head-skin-vertices";
 import {
   buildStudioVrmHeadProfile,
   resolveStudioVrmHeadFit,
@@ -36,16 +36,6 @@ export interface StudioVrmHeadMeasureOptions {
 
 /** 한 번에 모으는 머리 정점 상한. 초과분은 고르게 솎는다(측정은 리그 갱신 때만 돈다). */
 const HEAD_POINT_BUDGET = 24_000;
-
-function materialNames(mesh: THREE.Mesh): string[] {
-  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-  return materials.map((material) => material?.name ?? "").filter((name) => name.length > 0);
-}
-
-function isHairSurface(mesh: THREE.Mesh): boolean {
-  if (classifyMeshName(mesh.name).protected === "hair") return true;
-  return materialNames(mesh).some((name) => classifyMeshName(name).protected === "hair");
-}
 
 function skipped(object: THREE.Object3D, skip: StudioVrmHeadMeasureOptions["skip"]): boolean {
   let current: THREE.Object3D | null = object;
@@ -76,7 +66,7 @@ export function collectStudioVrmHeadSkinPoints(
     const mesh = object as THREE.SkinnedMesh;
     if (!mesh.isSkinnedMesh || !mesh.visible || !mesh.skeleton) return;
     if (mesh.userData?.studioVrmSkinnedGarmentReceipt) return;
-    if (skipped(mesh, options.skip) || isHairSurface(mesh)) return;
+    if (skipped(mesh, options.skip)) return;
     const headIndex = mesh.skeleton.bones.indexOf(rawHead as THREE.Bone);
     if (headIndex < 0) return;
     const geometry = mesh.geometry;
@@ -84,6 +74,8 @@ export function collectStudioVrmHeadSkinPoints(
     const skinIndex = geometry.getAttribute("skinIndex");
     const skinWeight = geometry.getAttribute("skinWeight");
     if (!position || !skinIndex || !skinWeight) return;
+    const surface = getStudioVrmHeadSkinVertices(mesh);
+    if (surface.count === 0) return;
     let seen = visited.get(position);
     if (!seen) {
       seen = new Uint8Array(position.count);
@@ -108,12 +100,7 @@ export function collectStudioVrmHeadSkinPoints(
         out.push(point.x, point.y, point.z);
       }
     };
-    const index = geometry.getIndex();
-    if (index) {
-      for (let item = 0; item < index.count; item += 1) consider(index.getX(item));
-    } else {
-      for (let vertex = 0; vertex < position.count; vertex += 1) consider(vertex);
-    }
+    for (let item = 0; item < surface.count; item += 1) consider(surface.indices?.[item] ?? item);
   });
 
   if (out.length / 3 <= HEAD_POINT_BUDGET) return Float32Array.from(out);

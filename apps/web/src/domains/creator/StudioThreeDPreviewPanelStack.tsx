@@ -543,6 +543,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
       <Suspense fallback={<PoserLoadingOverlay />}>
         {characterShaperOpen ? (
           <StudioCharacterShaper
+            key={poserInitialElementId}
             onInsertLtLayers={insertCharacterLtLayers && (async (layers, signal) => {
               if (!await insertCharacterLtLayers(layers, signal) || signal.aborted) return false;
               setCharacterShaperOpen(false);

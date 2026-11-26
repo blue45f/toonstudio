@@ -142,6 +142,27 @@ describe("collectStudioVrmHeadSkinPoints", () => {
     expect(collectStudioVrmHeadSkinPoints(vrm, normalizedHead).length / 3).toBe(600);
   });
 
+  it.each([false, true])("얼굴과 머리카락이 한 메시여도 피부 재질의 그리기 범위만 실측한다 (인덱스 %s)", (indexed) => {
+    const { vrm, normalizedHead } = syntheticVrm();
+    const before = collectStudioVrmHeadSkinPoints(vrm, normalizedHead);
+    const face = vrm.scene.getObjectByName("Face");
+    if (!(face instanceof THREE.SkinnedMesh)) throw new Error("얼굴 스킨 메시 누락");
+    face.material = [
+      new THREE.MeshBasicMaterial({ name: "Face_00_SKIN" }),
+      new THREE.MeshBasicMaterial({ name: "Hair_00_HAIR" }),
+    ];
+    const geometry = face.geometry;
+    const order = Array.from({ length: 600 }, (_, index) => indexed ? 599 - index : index);
+    if (indexed) geometry.setIndex(order);
+    geometry.addGroup(0, 300, 1);
+    geometry.addGroup(300, 300, 0);
+    geometry.setDrawRange(3, 588);
+
+    const skin = collectStudioVrmHeadSkinPoints(vrm, normalizedHead);
+    const expected = order.slice(300, 591).flatMap((index) => Array.from(before.subarray(index * 3, index * 3 + 3)));
+    expect(Array.from(skin)).toEqual(expected);
+  });
+
   it("실측 두상 맞춤은 구 반폭 0.1 m 를 캡이 덮게 잡는다", () => {
     const { vrm, normalizedHead } = syntheticVrm();
     const { fit, sampleCount } = measureStudioVrmHeadFit(vrm, normalizedHead);

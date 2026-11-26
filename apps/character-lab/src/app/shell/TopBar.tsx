@@ -159,7 +159,10 @@ export function TopBar() {
   return (
     <header className="cl-topbar">
       <div className="cl-topbar-brand">
-        <h1 className="cl-title">ToonStudio Character Lab</h1>
+        <h1 className="cl-title">ToonStudio · 캐릭터 원본 편집</h1>
+        <a className="cl-button" href="https://www.toonstudio.cloud/studio/character" target="_blank" rel="noopener noreferrer">
+          스튜디오 캐릭터 열기 (새 탭)
+        </a>
       </div>
 
       {/* 핵심 6개 액션 바: 엔진·품질 드로어, Undo/Redo, 음영 전환, 2D 컷 전송, 도움말 */}

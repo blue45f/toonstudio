@@ -7,6 +7,7 @@ import {
   UNSAFE_REFERENCE_KEY_PATTERN,
   UNSAFE_REFERENCE_PATTERN,
   containsControlCharacter,
+  isStudioVrmCharacterDocumentId,
   normalizedDataOrNull,
 } from "@toonstudio/contracts/studio-vrm-scene-fields";
 import {
@@ -720,6 +721,7 @@ export function normalizeDecodedDocumentFields(value: Record<string, unknown>): 
   return {
     kind: STUDIO_VRM_SCENE_DOCUMENT_KIND,
     version: STUDIO_VRM_SCENE_DOCUMENT_VERSION,
+    ...(isStudioVrmCharacterDocumentId(value.characterDocumentId) ? { characterDocumentId: value.characterDocumentId } : {}),
     model: normalizeModel(value.model),
     pose: normalizePose(value.pose),
     expressions: normalizeExpressions(value.expressions),

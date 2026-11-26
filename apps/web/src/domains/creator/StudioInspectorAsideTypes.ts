@@ -45,7 +45,7 @@ import type {
 } from "./studio-dodge-burn";
 import type { DrawMode, DrawShapeKind, StudioMenu, Tool } from "./studio-editor-tool-model";
 import type { StudioEffectFavoriteState, StudioEffectId } from "./studio-effect-favorites";
-import type { El } from "./studio-element-model";
+import type { El, ImageEl } from "./studio-element-model";
 import type { StudioExtendedBlendModeId } from "./studio-extended-blend";
 import type { StudioFigmaSelectionLayoutPatch } from "./studio-figma-selection-ux";
 import type { HealCloneMode } from "./studio-heal-clone";
@@ -510,9 +510,7 @@ export interface StudioInspectorAsideProps {
   setColorRangePreviewEnabled: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setColorRangeSamples: import("react").Dispatch<import("react").SetStateAction<ColorRangeSample[]>>;
   setPixelTool: import("react").Dispatch<import("react").SetStateAction<SelectionToolKind | "wand" | null>>;
-  setPoserInitialDataUrl: import("react").Dispatch<import("react").SetStateAction<string | undefined>>;
-  setPoserInitialElementId: import("react").Dispatch<import("react").SetStateAction<string | undefined>>;
-  setPoserVrmOpen: import("react").Dispatch<import("react").SetStateAction<boolean>>;
+  onEditVrmElement: (element: ImageEl) => void;
   setPostCorrection: import("react").Dispatch<import("react").SetStateAction<number>>;
   setPreserveCorners: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   setPressureCurve: import("react").Dispatch<import("react").SetStateAction<number>>;

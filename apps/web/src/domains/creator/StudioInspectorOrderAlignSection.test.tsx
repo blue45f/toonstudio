@@ -3,6 +3,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createDefaultStudioVrmSceneDocument } from "./contracts/studio-vrm-scene-document";
+import { reopenStudioVrmCut } from "./studio-reopen-vrm-cut";
 import { auditStudioInspectorDensity } from "./studio-inspector-dom-density";
 import { resetStudioInspectorSectionStateCache } from "./studio-inspector-section-state";
 import {
@@ -10,7 +12,7 @@ import {
   StudioInspectorSelectionActions,
 } from "./StudioInspectorOrderAlignSection";
 
-import type { El } from "./studio-element-model";
+import type { ImageEl } from "./studio-element-model";
 
 beforeEach(() => {
   globalThis.localStorage?.clear();
@@ -18,7 +20,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const dummyEl: El = {
+const dummyEl: ImageEl = {
   id: "el-1",
   type: "image",
   src: "data:image/png;base64,abc",
@@ -30,20 +32,18 @@ const dummyEl: El = {
   opacity: 1,
 };
 
-function renderOrderAlignSection() {
+function renderOrderAlignSection(selected = dummyEl, onEditVrmElement: (element: ImageEl) => void = vi.fn()) {
   const alignSelected = vi.fn();
   const view = render(
     <StudioInspectorOrderAlignSection
-      selected={dummyEl}
+      selected={selected}
       selectedBg3dEditSource={null}
       patchEl={vi.fn()}
       reorder={vi.fn()}
       alignSelected={alignSelected}
       duplicateSelected={vi.fn()}
       removeSelected={vi.fn()}
-      setPoserInitialDataUrl={vi.fn()}
-      setPoserInitialElementId={vi.fn()}
-      setPoserVrmOpen={vi.fn()}
+      onEditVrmElement={onEditVrmElement}
       setBg3dInitialScene={vi.fn()}
       setBg3dInitialDataUrl={vi.fn()}
       setBg3dInitialElementId={vi.fn()}
@@ -73,6 +73,24 @@ function renderActions(selectionCount: number) {
 }
 
 describe("StudioInspectorOrderAlignSection", () => {
+  it.each(["linked", "unlinked", "legacy"] as const)("3D 재편집에서 %s 컷의 편집기와 갱신 대상 ID를 유지한다", (kind) => {
+    const characterDocumentId = "character:00000000-0000-4000-8000-000000000001";
+    const scene = createDefaultStudioVrmSceneDocument();
+    const selected: ImageEl = kind === "legacy"
+      ? { ...dummyEl, src: dummyEl.src + "#" + encodeURIComponent(JSON.stringify({ tool: "vrm-poser" })) }
+      : { ...dummyEl, vrmScene: kind === "linked" ? { ...scene, characterDocumentId } : scene };
+    const controls = {
+      setPoserInitialDataUrl: vi.fn(), setPoserInitialElementId: vi.fn(),
+      setPoserVrmOpen: vi.fn(), setCharacterShaperOpen: vi.fn(),
+    };
+    renderOrderAlignSection(selected, (element) => reopenStudioVrmCut(element, controls));
+    fireEvent.click(screen.getByRole("button", { name: "3D 캐릭터 재편집" }));
+    expect(controls.setPoserInitialDataUrl).toHaveBeenCalledWith(selected.src);
+    expect(controls.setPoserInitialElementId).toHaveBeenCalledWith(selected.id);
+    const { setPoserVrmOpen: poser, setCharacterShaperOpen: shaper } = controls;
+    expect(kind === "linked" ? shaper : poser).toHaveBeenCalledWith(true);
+    expect(kind === "linked" ? poser : shaper).not.toHaveBeenCalled();
+  });
   it("keeps single-selection alignment live and explains why distribution is unavailable", () => {
     const { alignSelected } = renderOrderAlignSection();
 

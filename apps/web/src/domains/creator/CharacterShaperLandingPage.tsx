@@ -1,10 +1,10 @@
 import { SITE_URL } from "@toonstudio/core/business";
 import { Suspense, useMemo, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 
-import { CharacterShaperEditorLoading } from "./character-shaper/CharacterShaperEditorLoading";
 import {
   CHARACTER_SHAPER_LANDING_PATH,
+  characterShaperCanvasLocation,
   probeCharacterShaperWebGl,
 } from "./character-shaper/character-shaper-entry";
 import { CharacterShaperLandingClosing } from "./character-shaper/landing/CharacterShaperLandingClosing";
@@ -27,17 +27,10 @@ import { useBilingual, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 // 캐릭터 셰이퍼 워크벤치 진입(/studio/assets/characters/new, /shaper 별칭).
-// 기본 진입 시 마케팅 랜딩 게이트를 두지 않고 WebGL 지원 환경이면 인터랙티브 3D 편집기를 즉시 마운트한다.
-// 사용 가이드·FAQ·단축키 안내가 필요할 때는 편집기를 닫거나 `?guide=1` / `#how-to`로 진입해 확인한다.
+// 기본 진입과 예전 편집기 링크는 같은 Studio 원고에서 캐릭터를 만들고 배치한다.
+// `?guide=1` / `#how-to`로 들어온 사용자는 가이드를 먼저 본다.
 
 const SHAPER_PATH = CHARACTER_SHAPER_LANDING_PATH;
-
-const CharacterShaperStandaloneEditor = lazyRetry(
-  () => import("./character-shaper/CharacterShaperStandaloneEditor").then((module) => ({
-    default: module.CharacterShaperStandaloneEditor,
-  })),
-  "CharacterShaperStandaloneEditor",
-);
 
 const LazyStudioCharacterShaperUnifiedPanel = lazyRetry(
   () =>
@@ -104,17 +97,15 @@ export function CharacterShaperLandingPage() {
     },
   });
 
+  if (showEditor) return <Navigate replace to={characterShaperCanvasLocation(searchParams)} />;
+
   return (
     <div className="studio-character-guide">
       <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6">
         <SiteContextualSubNav pathnameOverride="/studio/assets/characters/new" className="mb-4" />
       </div>
       <CharacterShaperLandingHero
-        editor={
-          webglStatus === "unsupported" && !editor.webglBlocked
-            ? { ...editor, webglBlocked: true, close: handleCloseEditor }
-            : editor
-        }
+        editor={{ ...editor, webglBlocked: editor.webglBlocked || webglStatus === "unsupported", close: handleCloseEditor }}
       />
       <CharacterShaperLandingSteps />
       <CharacterShaperLandingGuide />
@@ -154,11 +145,6 @@ export function CharacterShaperLandingPage() {
         </details>
       </section>
 
-      {showEditor ? (
-        <Suspense fallback={<CharacterShaperEditorLoading />}>
-          <CharacterShaperStandaloneEditor onClose={handleCloseEditor} />
-        </Suspense>
-      ) : null}
     </div>
   );
 }

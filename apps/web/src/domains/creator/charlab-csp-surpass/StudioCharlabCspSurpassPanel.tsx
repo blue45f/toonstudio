@@ -4,7 +4,7 @@
  * - Calm Atelier 시맨틱 토큰 전용 (원시 hex/rgb/hsl 0건 · Web Storage 0건 · props `= {}` 미사용)
  */
 
-import { Link2, Palette, PenTool, SlidersHorizontal, Users, Watch } from "lucide-react";
+import { Palette, PenTool, SlidersHorizontal, Users, Watch } from "lucide-react";
 import { useId, useMemo, useRef, useState, type ReactElement } from "react";
 
 import {
@@ -162,22 +162,13 @@ export function StudioCharlabCspSurpassPanel(
       data-testid="charlab-csp-surpass-panel"
       aria-busy={callbackPending}
       aria-label={pick(
-        "캐릭터 랩스 라이브 링크 · CSP 돌파 드로잉 · 스마트워치 리모컨 스튜디오 패널",
-        "Character Labs Live-Link, Drawing Surpass & Smartwatch Companion Panel",
+        "캐릭터 라이브 링크 · CSP 돌파 드로잉 · 스마트워치 리모컨 스튜디오 패널",
+        "Character Live-Link, Drawing Surpass & Smartwatch Companion Panel",
       )}
       className={`space-y-4 rounded-2xl border border-line bg-panel p-4 text-fg [word-break:keep-all] ${className ?? ""}`}
     >
       <header className="flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-0.5 text-[11px] font-semibold text-fg-2">
-            <Link2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>
-              {pick(
-                "Wave 39E · 캐릭터 랩스 + 돌파 드로잉 + 워치 리모컨",
-                "Wave 39E · CharLab + Drawing Surpass + Watch",
-              )}
-            </span>
-          </div>
           <h2 className="text-base font-bold text-fg">
             {pick(
               "캐릭터 라이브 링크 · 정밀 드로잉 · 워치 동반 제어",

@@ -389,6 +389,37 @@ test("15. 브러시 100점 점검 · 3D VRM 밀착 점검 · 통합 소재 CC0 �
   assert.equal(materials.items[0].license, "cc0");
 });
 
+test("VRM 밀착 점검은 제공된 측정값만 판정하고 누락된 검사를 통과시키지 않는다", () => {
+  const engine = createToonStudioMcpEngine();
+  const auditFit = (args) => callTool(engine, 1, "toonstudio_vrm_3d_fit_audit", args);
+  const measured = { hairGapMm: 2.5, hairPenetrationMm: 0.5, handPose: "relaxed", groundY: -0.001, nonManifoldEdges: 0 };
+  const socket = { socket: "hat", itemId: "cap", offsetMm: 3, rotationDriftDeg: 5 };
+  const empty = auditFit({ avatarId: "hero" });
+  assert.equal(empty.ok, false);
+  assert.equal(empty.audit.verdict, "insufficient-data");
+  assert.equal(empty.audit.fitScore, null);
+  assert.deepEqual(empty.audit.checks, []);
+  assert.equal(empty.audit.missingMeasurements.length, 4);
+
+  const hairOnly = auditFit({ hairGapMm: 0, hairPenetrationMm: 0 }).audit;
+  assert.equal(hairOnly.verdict, "insufficient-data");
+  assert.deepEqual(hairOnly.checks.map((row) => row.id), ["hair-scalp-fit"]);
+  assert.equal(auditFit({ ...measured, hairGapMm: -1 }).audit.verdict, "insufficient-data");
+  assert.equal(auditFit({ ...measured, groundY: null }).audit.fitScore, null);
+  assert.equal(auditFit({ ...measured, equippedSockets: [null] }).audit.verdict, "insufficient-data");
+  const partialSocket = auditFit({ ...measured, equippedSockets: [{ socket: "hat", offsetMm: 0 }] }).audit;
+  assert.equal(partialSocket.fitScore, null);
+  assert.deepEqual(partialSocket.missingMeasurements, ["socket:hat"]);
+
+  assert.equal(auditFit({ nonManifoldEdges: 2 }).audit.verdict, "blocked");
+  assert.equal(auditFit({ ...measured, equippedSockets: [{ ...socket, offsetMm: 3.1 }] }).audit.verdict, "needs-refit");
+  const complete = auditFit({ ...measured, equippedSockets: [socket] }).audit;
+  assert.equal(complete.verdict, "pass");
+  assert.equal(complete.fitScore, 100);
+  assert.deepEqual(complete.missingMeasurements, []);
+  assert.equal(auditFit(measured).audit.checks.some((row) => row.id.startsWith("socket:")), false);
+});
+
 test("16. toonstudio_plugin_sandbox_verify가 승인·검토필요·위험조합 차단·시크릿 차단을 판정한다", () => {
   const engine = createToonStudioMcpEngine();
   const approved = callTool(engine, 1, "toonstudio_plugin_sandbox_verify", {

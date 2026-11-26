@@ -3,12 +3,11 @@
  *
  * `/studio/character`는 Studio 편집기의 캐릭터 표면이다(새 초안에서 셰이퍼를 열 때 쓰는 주소).
  * 캐릭터 소재 랜딩(`/studio/assets/characters/new`)은 `?editor=open` 한 개의 검색 매개변수로
- * 단독 편집기를 제자리에서 연다. URL이 열린 상태의 유일한 기준이라 공유 링크·뒤로 가기·
- * 새로고침이 같은 결과를 낸다.
+ * 원고의 셰이퍼를 연다. 예전 공유 링크도 같은 편집기로 연결된다.
  */
 
 export const CHARACTER_SHAPER_LANDING_PATH = "/studio/assets/characters/new";
-/** 학습 센터 데이터에 남아 있는 예전 작업실 경로(편집기 캐릭터 표면). */
+/** 학습 센터에도 등록된 원고 편집기의 캐릭터 표면. */
 export const CHARACTER_SHAPER_LEGACY_STUDIO_PATH = "/studio/character";
 export const CHARACTER_SHAPER_EDITOR_PARAM = "editor";
 export const CHARACTER_SHAPER_EDITOR_OPEN = "open";
@@ -25,10 +24,19 @@ export function isCharacterShaperEditorRequested(search: URLSearchParams): boole
 /** 다른 매개변수는 보존하고 편집기 매개변수만 켜거나 끈 검색 문자열을 만든다. */
 export function characterShaperEditorSearch(search: URLSearchParams, open: boolean): string {
   const next = new URLSearchParams(search);
-  if (open) next.set(CHARACTER_SHAPER_EDITOR_PARAM, CHARACTER_SHAPER_EDITOR_OPEN);
-  else next.delete(CHARACTER_SHAPER_EDITOR_PARAM);
+  if (open) {
+    next.delete("guide");
+    next.set(CHARACTER_SHAPER_EDITOR_PARAM, CHARACTER_SHAPER_EDITOR_OPEN);
+  } else next.delete(CHARACTER_SHAPER_EDITOR_PARAM);
   const serialized = next.toString();
   return serialized.length > 0 ? `?${serialized}` : "";
+}
+
+/** 안내 전용 상태만 걷어 내고 원고 식별자·언어·기존 공유 매개변수는 유지한다. */
+export function characterShaperCanvasLocation(search: URLSearchParams) {
+  const next = new URLSearchParams(search);
+  next.delete("guide");
+  return { pathname: CHARACTER_SHAPER_LEGACY_STUDIO_PATH, search: characterShaperEditorSearch(next, false) };
 }
 
 /**

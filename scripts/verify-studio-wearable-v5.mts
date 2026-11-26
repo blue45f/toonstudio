@@ -1,4 +1,4 @@
-/** pnpm exec tsx scripts/verify-studio-wearable-v5.mts [--assets-only] */
+/** pnpm exec tsx scripts/verify-studio-wearable-v5.mts [--assets-only] [--headwear-only] */
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import { copyFile, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -45,6 +45,9 @@ const pageErrors:string[]=[];page.on("pageerror",(error)=>pageErrors.push(error.
 interface Frame {title:string;file:string;status:string;receipt:unknown;error?:string;distinctColors?:number;nonblank?:boolean;foregroundPixels?:number;largestComponent?:number;occupiedWidth?:number;occupiedHeight?:number}
 const frames:Frame[]=[];
 const assets=JSON.parse(readFileSync("apps/web/public/assets/3d/wearable-v5-manifest.json","utf8")) as {assets:{id:string;file:string;sha256:string}[]};
+const headwearIds = new Set(["cap", "beret", "sunglasses", "headphones", "ribbon", "beanie", "blender_wizard_hat"]);
+const headwearOnly = process.argv.includes("--headwear-only");
+const reviewAssets = headwearOnly ? assets.assets.filter((asset) => headwearIds.has(asset.id)) : assets.assets;
 let fatal:unknown=null;
 async function inspect(){return page.evaluate(async()=>{
   // Keep pixel analysis in the browser: sending 102,400 numeric values per frame through
@@ -84,17 +87,19 @@ async function view(angle:number,crop:string){await page.evaluate(({angle,crop})
 try{
   await page.goto("http://127.0.0.1:5278",{waitUntil:"networkidle"});
   await page.waitForFunction(()=>(window as unknown as {studioWearableQA?:{status:string}}).studioWearableQA?.status==="idle",{},{timeout:60_000});
-  for(const asset of assets.assets){
+  for(const asset of reviewAssets){
     try{
       await select({type:"asset",id:asset.id,assetUrl:`/assets/3d/${asset.file}`,angle:30});
       for(const angle of [30,90,180]){await view(angle,"full");await capture(`asset-${asset.id}-${angle}`);}
     }catch(error){frames.push({title:`asset-${asset.id}`,file:"",status:"error",receipt:null,error:String(error)});}
   }
   if(!process.argv.includes("--assets-only")){
-    const catalogue=await page.evaluate(()=>(window as unknown as {studioWearableQA:{catalogue:{wardrobe:{id:string;slot:string}[]}}}).studioWearableQA.catalogue.wardrobe);
-    for(const model of ["sample","avatar-b"]){
+    const { models, wardrobe } = await page.evaluate(() => (
+      window as unknown as { studioWearableQA: { catalogue: { models: string[]; wardrobe: { id: string; slot: string }[] } } }
+    ).studioWearableQA.catalogue);
+    for(const model of models){
       await select({type:"native",id:"native",model});await capture(`${model}-native`);
-      for(const garment of catalogue){
+      for(const garment of headwearOnly ? [] : wardrobe){
         try{
           await select({type:"wardrobe",id:garment.id,model,angle:30});
           for(const angle of [30,90,180]){await view(angle,"full");await capture(`${model}-wardrobe-${garment.id}-${angle}`);}
@@ -103,9 +108,9 @@ try{
           await view(30,"full");await capture(`${model}-wardrobe-${garment.id}-${pose}`);
         }catch(error){frames.push({title:`${model}-wardrobe-${garment.id}`,file:"",status:"error",receipt:null,error:String(error)});}
       }
-      for(const asset of assets.assets){
+      for(const asset of reviewAssets){
         try{
-          const head=["cap","beret","sunglasses","headphones","ribbon","beanie","blender_wizard_hat"].includes(asset.id);
+          const head=headwearIds.has(asset.id);
           const crop=head?"head":asset.id==="shoulderbag"?"torso":"hand";
           await select({type:"prop",id:asset.id,model,angle:30,crop});
           for(const angle of [30,90,180]){await view(angle,crop);await capture(`${model}-prop-${asset.id}-${angle}`);}
@@ -132,7 +137,7 @@ try{
     await writeFile(join(directory,`contact-sheet-${String(start/12+1).padStart(2,"0")}.jpg`),Buffer.from(data,"base64"));
   }
 }finally{
-  await writeFile(join(directory,"review.json"),JSON.stringify({sourceCommit:process.env.GITHUB_SHA??"local",assets:assets.assets,frames,pageErrors,fatal,note:"Ready means loaded/rendered, not human aesthetic approval. Inspect the PNGs, worn views and deformation frames."},null,2));
+  await writeFile(join(directory,"review.json"),JSON.stringify({sourceCommit:process.env.GITHUB_SHA??"local",assets:reviewAssets,frames,pageErrors,fatal,note:"Ready means loaded/rendered, not human aesthetic approval. Inspect the PNGs, worn views and deformation frames."},null,2));
   await browser.close();await new Promise<void>((done)=>server.close(()=>done()));
 }
 const failingAssets=frames.filter((frame)=>(frame.title.startsWith("asset-")||frame.title.includes("-prop-"))&&(frame.status!=="ready"||!frame.nonblank));

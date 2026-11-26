@@ -322,6 +322,8 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
     const run = animationRunRef.current;
     if (!editableClone) return;
     editableClone.updateMaterials(deltaSeconds);
+    // 정적 배치도 재질 애니메이션은 진행하되 포즈 계산용 월드 행렬은 읽지 않는다.
+    if (!run?.playback.playing && !constraintsRef.current?.enabled) return;
     const group = groupRef.current;
     if (!group) return;
     group.updateWorldMatrix(true, false);
