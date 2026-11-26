@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { studioEcosystemClient } from "@/platform/studio-ecosystem-client";
 import { useStudioEcosystemStream } from "@/platform/use-studio-ecosystem-stream";
 
+import { PlazaLiveCommsBox } from "./PlazaLiveCommsBox";
 import {
   DETAILED_WEBTOON_ROLES,
   assignAvatarToPartySlot,
@@ -107,9 +108,14 @@ export function MmorpgRecruitmentPlazaPanel({
   const [newPartyTitle, setNewPartyTitle] = useState("");
   const [newPartyRole, setNewPartyRole] = useState(DETAILED_WEBTOON_ROLES[2].code);
   const [notice, setNotice] = useState<string | null>(null);
+  const [handoffReviewPath, setHandoffReviewPath] = useState<string | null>(null);
   const stream = useStudioEcosystemStream(true);
   const latestPlazaEventId = useMemo(
     () => stream.events.find((e) => e.type === "plaza.party_created" || e.type === "plaza.slot_assigned")?.id ?? null,
+    [stream.events],
+  );
+  const latestMessageEvent = useMemo(
+    () => stream.events.find((e) => e.type === "plaza.message_posted"),
     [stream.events],
   );
 
@@ -194,6 +200,7 @@ export function MmorpgRecruitmentPlazaPanel({
   };
 
   const handleInvite = (avatarId: string, nickname: string) => {
+    const defaultHandoffPath = `/collaborate/workspace?party=${encodeURIComponent(party.partyId)}&slot=${encodeURIComponent(activeSlot.slotId)}`;
     setParties((prev) =>
       prev.map((item) =>
         item.partyId === party.partyId
@@ -201,11 +208,19 @@ export function MmorpgRecruitmentPlazaPanel({
           : item,
       ),
     );
+    setHandoffReviewPath(defaultHandoffPath);
     onInviteMatchedAvatar?.(party.partyId, activeSlot.slotId, avatarId);
     setNotice(`${nickname} 님을 [${getDetailedWebtoonRole(activeSlot.roleCode).labelKo}] 슬롯에 실시간 매칭했습니다.`);
-    void studioEcosystemClient.assignPlazaSlot(party.partyId, activeSlot.slotId, avatarId).catch(() => {
-      // 오프라인/로컬 미리보기 환경에서는 낙관적 매칭 상태를 유지한다.
-    });
+    void studioEcosystemClient
+      .assignPlazaSlot(party.partyId, activeSlot.slotId, avatarId)
+      .then((res) => {
+        if (res?.handoffReviewPath) {
+          setHandoffReviewPath(res.handoffReviewPath);
+        }
+      })
+      .catch(() => {
+        // 오프라인/로컬 미리보기 환경에서는 낙관적 매칭 상태를 유지한다.
+      });
   };
 
   return (
@@ -361,6 +376,15 @@ export function MmorpgRecruitmentPlazaPanel({
           })}
         </ul>
       </div>
+
+      <PlazaLiveCommsBox
+        activePartyId={party.partyId}
+        activePartyTitle={party.title}
+        activeRoleCode={activeSlot.roleCode}
+        activeRoleLabel={getDetailedWebtoonRole(activeSlot.roleCode).labelKo}
+        handoffReviewPath={handoffReviewPath}
+        latestMessageEvent={latestMessageEvent}
+      />
 
       <div className="flex flex-col gap-2.5 border-t border-line pt-3">
         <div className="flex snap-x gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0">

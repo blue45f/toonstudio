@@ -1,6 +1,7 @@
 import { Download, DollarSign, Gauge, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { AdminPaidOperationsToggle } from "./AdminMembershipPolicy";
 import {
   adminButtonClass,
   adminFetch,
@@ -554,6 +555,8 @@ export function AdminOps({ uid }: { uid: string }) {
     <div className="flex flex-col gap-6">
       <AdminPreparationEntries />
       {configError && <AdminNotice title={t("admin.ops.loadError")} body={configError} />}
+
+      <AdminPaidOperationsToggle uid={uid} />
 
       <Section
         icon={<DollarSign size={15} />}

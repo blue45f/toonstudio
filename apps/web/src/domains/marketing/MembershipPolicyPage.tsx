@@ -16,6 +16,7 @@ import { useApp } from "@/shared/lib/store";
 import { useDocumentTitle, useMetaDescription, usePageSocialMeta } from "@/shared/seo/use-document-title";
 
 import { MembershipActivityPanel } from "./membership/MembershipActivityPanel";
+import { MembershipCreditGatePanel } from "./membership/MembershipCreditGatePanel";
 import { MembershipMePanel } from "./membership/MembershipMePanel";
 import { MembershipOpsPanel } from "./membership/MembershipOpsPanel";
 import { MembershipPlanTable } from "./membership/MembershipPlanTable";
@@ -101,6 +102,8 @@ export function MembershipPolicyPage() {
             </div>
           </dl>
         </section>
+
+        <MembershipCreditGatePanel formatter={formatter} />
 
         <IntroTabs
           tabs={tabs}
