@@ -346,4 +346,23 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
     chapters: ["on-device-inference", "quality"],
     atlasIds: ["zero-token-continuity-diff-retention-plot-graph"],
   },
+  {
+    id: "webgpu-nf4-paged-attention-vram-pager",
+    category: "ai",
+    term: t("WebGPU NF4 행렬곱 & PagedAttention KV VRAM 페이저", "WebGPU NF4 MatMul & PagedAttention KV VRAM pager"),
+    definition: t(
+      "4비트 NF4·INT4 가중치와 256토큰 단위의 KV 페이지를 쓰는 로컬 LLM 메모리 관리 방식입니다.",
+      "A local LLM memory-management approach combining 4-bit NF4 and INT4 weights with 256-token KV pages.",
+    ),
+    analogy: t(
+      "작은 책상(VRAM) 위에는 첫 장 요약본(싱크 토큰)과 지금 읽는 쪽만 펼쳐 두고, 가운데 장들은 번호표를 붙여 옆 서랍(백킹 풀)에 보관하며 필요할 때 꺼내 보는 독서대입니다.",
+      "Like keeping chapter one and the current page on a compact desk while filing middle pages in a numbered side drawer until needed.",
+    ),
+    inToonstudio: t(
+      "인메모리 단위 테스트에서 1.6 GiB 가상 예산과 8,704토큰을 입력해 반출·복원과 페이저의 OOM 카운터 0을 확인했습니다. /studio 실행 연결과 실제 GPU 검증은 후속 단계입니다.",
+      "An in-memory unit test used a simulated 1.6 GiB budget and 8,704 tokens to verify swaps and a pager OOM counter of zero. /studio integration and physical GPU testing are follow-up work.",
+    ),
+    chapters: ["on-device-inference", "free-ai-routing"],
+    atlasIds: ["webgpu-llm-nf4-paged-attention-vram-pager"],
+  },
 ];

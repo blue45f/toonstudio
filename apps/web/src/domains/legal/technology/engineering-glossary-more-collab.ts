@@ -383,4 +383,42 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     chapters: ["webrtc-media-authority", "browser-local-compute"],
     atlasIds: ["zero-lag-companion-pairing-ephemeral-redline-hw"],
   },
+  {
+    id: "p2p-bft-quorum-merkle-audit-log",
+    category: "collab",
+    term: t("3f+1 BFT 정족수 · AEAD 스트림 · ₩0 머클 시점 원장", "3f+1 BFT quorum, AEAD stream & ₩0 Merkle timestamp log"),
+    definition: t(
+      "이중 투표와 훼손된 청크를 판별하고, WebCrypto 서명과 머클 트리로 기록한 시각과 내용의 무결성을 검증하는 방식입니다.",
+      "An approach for detecting double votes and corrupted chunks and verifying the integrity of recorded timestamps and content with WebCrypto signatures and a Merkle tree.",
+    ),
+    analogy: t(
+      "말을 바꾸는 참석자의 투표권은 즉시 회수하고, 봉인 스티커(AES-GCM)가 뜯긴 상자는 창고 입구에서 돌려보내며, 확정된 원고는 공증 수수료 없이 작가 인감 사슬로 묶는 검수소입니다.",
+      "Like revoking double-voters, turning away parcels with broken tamper seals before warehousing, and chaining signed pages without notary fees.",
+    ),
+    inToonstudio: t(
+      "단위 테스트에서 서명 폴백, 오프라인 영수증 검증, 변조된 청크의 쓰기 차단을 확인했습니다. /studio 팀 작업 연결은 후속 단계입니다.",
+      "Unit tests cover signature fallback, offline receipt verification and withholding writes for tampered chunks. /studio collaboration integration is a follow-up.",
+    ),
+    chapters: ["collaborative-crdt-boundary", "webrtc-media-authority"],
+    atlasIds: ["p2p-bft-quorum-merkle-timestamp-audit"],
+  },
+  {
+    id: "fiat-shamir-schnorr-zk-ownership",
+    category: "collab",
+    term: t("Fiat-Shamir Schnorr 영지식 원고 소유권 증명", "Fiat-Shamir Schnorr zero-knowledge ownership proof"),
+    definition: t(
+      "작가의 비밀 마스터 시드를 외부 서버나 검증자에게 드러내지 않고도, 공개 커밋먼트와 일회용 챌린지 논스에 대한 수학적 응답만으로 원고 소유권을 입증하는 암호 기법입니다.",
+      "A cryptographic protocol proving authorship of a manuscript digest against a public commitment and verifier nonce without revealing the secret seed.",
+    ),
+    analogy: t(
+      "금고 비밀번호 숫자를 한 자도 입 밖에 내지 않으면서, 검증자가 매번 새로 내는 난수 문제를 금고 주인만 풀 수 있는 방식으로 통과하는 증명입니다.",
+      "Like proving you know a vault combination by answering fresh random challenges that only the holder can compute, without speaking a single digit.",
+    ),
+    inToonstudio: t(
+      "단위 테스트에서 증명 검증, 다른 시드와 다른 논스에 대한 거절을 확인했습니다. /studio 공유 화면 연결은 후속 단계입니다.",
+      "Unit tests cover proof verification and rejection with a different seed or nonce. /studio sharing integration is a follow-up.",
+    ),
+    chapters: ["webrtc-media-authority", "licenses"],
+    atlasIds: ["webrtc-sctp-vector-clock-zk-ownership"],
+  },
 ];

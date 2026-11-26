@@ -208,4 +208,23 @@ export const GLOSSARY_MORE_CRAFT: readonly GlossaryTerm[] = [
     chapters: ["licenses", "share-distribution-boundary"],
     atlasIds: ["smart-license-guardian-subcanvas-delegation-ip-studio"],
   },
+  {
+    id: "morphological-spline-rgss-capillary-ink",
+    category: "brush",
+    term: t("모폴로지 스플라인 · 4× RGSS 서브픽셀 · 모세관 번짐", "Morphological spline, 4× RGSS subpixel & capillary ink"),
+    definition: t(
+      "형태학적 필터로 스타일러스 선폭 튐을 정돈해 제어점을 줄이고, 4× 회전 격자·5탭 LCD 서브픽셀 선화와 섬유 이방성 모세관 수묵 번짐을 함께 처리하는 드로잉 커널입니다.",
+      "Smooths stylus width spikes to prune spline knots while rendering 4× RGSS 5-tap LCD subpixel line-art and mass-conserving anisotropic capillary ink bleed.",
+    ),
+    analogy: t(
+      "손떨림 자국은 매끄럽게 정돈해 가볍게 저장하고, 화면에서는 서브픽셀 눈금으로 날카로운 만화 펜선을, 젖은 한지 위에서는 결을 따라 번지는 먹물을 재현하는 화구입니다.",
+      "Like smoothing jittery pen marks for compact storage while rendering sharp subpixel manga ink and fiber-guided sumi-e bleed on wet paper.",
+    ),
+    inToonstudio: t(
+      "합성 스타일러스 입력에서 매듭 수 60% 이상 감소를 확인했습니다. 타일 요청 계획과 5탭 LCD 필터, 안료 질량 보존도 각각 단위 테스트로 확인했습니다. /studio 연결은 후속 단계입니다.",
+      "Synthetic stylus input verified over 60% knot reduction. Separate unit tests cover tile-request planning, the 5-tap LCD filter and pigment conservation. /studio integration is a follow-up.",
+    ),
+    chapters: ["brush-engine", "performance"],
+    atlasIds: ["morphological-spline-rgss-subpixel-capillary-ink"],
+  },
 ];

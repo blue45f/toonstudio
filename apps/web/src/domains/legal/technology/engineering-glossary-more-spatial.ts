@@ -402,4 +402,23 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
     chapters: ["web-3d-engine", "performance"],
     atlasIds: ["supergap-pnp-camera-smear-gbuffer-instancing"],
   },
+  {
+    id: "split-csm-shadow-compute-meshlet",
+    category: "spatial",
+    term: t("Split CSM 더티 타일 캐시 & 수밀 컴퓨트 메시렛", "Split CSM dirty-tile cache & watertight compute meshlet"),
+    definition: t(
+      "정적 건축 배경 그림자는 캐시하고 이동한 캐릭터 본 타일만 갱신하며, 공유 모서리 용접 컴퓨트 메시렛으로 균열 없는 동적 곡면 변위를 생성하는 3D 기법입니다.",
+      "Caches static architectural shadows to update only bone-dirty cascade tiles while generating crack-free displaced surfaces via shared-edge compute meshlets.",
+    ),
+    analogy: t(
+      "무대 배경 그림자는 사진으로 고정해 두고 배우가 움직인 발밑 타일만 다시 그리며, 의상 주름은 솔기 중점을 맞물려 틈이 벌어지지 않게 세분화하는 방식입니다.",
+      "Like caching static stage shadows to repaint only tiles under moving actors while welding seam midpoints so subdivided cloth never cracks.",
+    ),
+    inToonstudio: t(
+      "단위 장면의 그림자 갱신 대상 타일은 85% 이상 줄었고, 별도 정팔면체 세분화 입력에서 열린 경계 모서리 0개를 확인했습니다. /studio 3D 배경 연결은 후속 단계입니다.",
+      "Unit fixtures selected over 85% fewer shadow tiles and found zero open boundary edges after subdividing an octahedron. Integration into the /studio 3D background viewport is a follow-up.",
+    ),
+    chapters: ["web-3d-engine", "performance"],
+    atlasIds: ["split-csm-shadow-compute-meshlet-spatial-hash"],
+  },
 ];

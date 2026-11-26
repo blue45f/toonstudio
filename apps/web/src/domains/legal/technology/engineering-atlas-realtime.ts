@@ -4,6 +4,7 @@ import { ENGINEERING_ATLAS_REALTIME_MEDIA } from "./engineering-atlas-realtime-m
 import { ENGINEERING_ATLAS_REALTIME_NEGOTIATION } from "./engineering-atlas-realtime-negotiation";
 import { ENGINEERING_ATLAS_REALTIME_P2P_GRID_COMPANION } from "./engineering-atlas-realtime-p2p-grid-companion";
 import { ENGINEERING_ATLAS_REALTIME_TRANSPORT } from "./engineering-atlas-realtime-transport";
+import { ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK } from "./engineering-atlas-realtime-wave4-bft-zk";
 import { ENGINEERING_ATLAS_REALTIME_WEBRTC } from "./engineering-atlas-realtime-webrtc";
 
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
@@ -30,6 +31,8 @@ const PRESENTATION_ORDER: readonly string[] = [
   "infinite-canvas-webgpu-p2p-zerogc",
   "p2p-grid-tile-render-merkle-stream-r2-offload",
   "zero-lag-companion-pairing-ephemeral-redline-hw",
+  "p2p-bft-quorum-merkle-timestamp-audit",
+  "webrtc-sctp-vector-clock-zk-ownership",
 ];
 
 const rank = (id: string): number => {
@@ -49,4 +52,5 @@ export const ENGINEERING_ATLAS_REALTIME: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_REALTIME_TRANSPORT,
   ...ENGINEERING_ATLAS_REALTIME_INFINITE_P2P,
   ...ENGINEERING_ATLAS_REALTIME_P2P_GRID_COMPANION,
+  ...ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK,
 ].sort((left, right) => rank(left.id) - rank(right.id));

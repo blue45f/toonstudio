@@ -7,6 +7,7 @@ import { PLATFORM_OPS_QUALITY_CARDS } from "./engineering-atlas-platform-ops-qua
 import { PLATFORM_OPS_SAFETY_CARDS } from "./engineering-atlas-platform-ops-safety";
 import { PLATFORM_OPS_TRANSACTION_CARDS } from "./engineering-atlas-platform-ops-transactions";
 import { PLATFORM_OPS_TRUST_CARDS } from "./engineering-atlas-platform-ops-trust";
+import { PLATFORM_OPS_WAVE4_CI_CARDS } from "./engineering-atlas-platform-ops-wave4-ci";
 import { ENGINEERING_ATLAS_PLATFORM_OPS_ZERO_COST } from "./engineering-atlas-platform-ops-zero-cost";
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
@@ -25,4 +26,5 @@ export const ENGINEERING_ATLAS_PLATFORM_OPS: readonly EngineeringAtlasEntry[] = 
   ...PLATFORM_OPS_QUALITY_CARDS,
   ...PLATFORM_OPS_SAFETY_CARDS,
   ...PLATFORM_OPS_BUILD_CARDS,
+  ...PLATFORM_OPS_WAVE4_CI_CARDS,
 ];
