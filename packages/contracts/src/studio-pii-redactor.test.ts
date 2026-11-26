@@ -125,6 +125,20 @@ describe("redactCreatorSensitiveText (한국형 복합 PII 마스킹 및 오탐 
     expect(res.sanitizedText).toContain("@cf/google/gemma");
   });
 
+  it("짧은 SNS 아이디와 생략할 수 있는 ID 표기를 구분한다", () => {
+    const examples = [
+      { label: "카톡 ", account: "Ida" },
+      { label: "카카오톡 ID： ", account: "studio_guest" },
+      { label: "Kakao Talk id", account: "sketchbook" },
+    ];
+    for (const { label, account } of examples) {
+      expect(redactCreatorSensitiveText(label + account)).toEqual({
+        sanitizedText: label + "[계정 비공개]",
+        redactedCount: 1,
+      });
+    }
+  });
+
   it("아파트·건물명·시/도 생략·괄호 부가 한국 주소를 모두 마스킹하고 일반 웹툰 지문은 보존한다", () => {
     const addresses = [
       "서울 강남구 대치동 은마아파트 12동 804호",

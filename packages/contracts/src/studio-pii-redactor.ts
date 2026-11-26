@@ -92,6 +92,13 @@ function skipWhitespace(input: string, start: number): number {
   return cursor;
 }
 
+function skipLabelSeparator(input: string, start: number): number {
+  const separator = skipWhitespace(input, start);
+  return input[separator] === ":" || input[separator] === "："
+    ? skipWhitespace(input, separator + 1)
+    : separator;
+}
+
 function bankAccountPrefixEnd(input: string, start: number, label: string): number | null {
   let cursor = skipWhitespace(input, start);
   if (label === "계좌") {
@@ -114,8 +121,12 @@ function snsPrefixEnd(input: string, start: number, label: string): number | nul
   }
   cursor = skipWhitespace(input, cursor);
   SNS_FIELD_PATTERN.lastIndex = cursor;
-  const field = SNS_FIELD_PATTERN.exec(input);
-  return field ? SNS_FIELD_PATTERN.lastIndex : cursor;
+  if (!SNS_FIELD_PATTERN.test(input)) return cursor;
+
+  // ID가 짧은 아이디 자체의 일부일 수 있다. 필드 뒤에 값이 있을 때만 필드로 확정한다.
+  const fieldEnd = SNS_FIELD_PATTERN.lastIndex;
+  SNS_VALUE_PATTERN.lastIndex = skipLabelSeparator(input, fieldEnd);
+  return SNS_VALUE_PATTERN.test(input) ? fieldEnd : cursor;
 }
 
 /**
@@ -146,10 +157,7 @@ export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
     while ((label = labelPattern.exec(input)) !== null) {
       const end = prefixEnd(input, labelPattern.lastIndex, label[0]);
       if (end === null) continue;
-      let valueStart = skipWhitespace(input, end);
-      if (input[valueStart] === ":" || input[valueStart] === "：") {
-        valueStart = skipWhitespace(input, valueStart + 1);
-      }
+      const valueStart = skipLabelSeparator(input, end);
       // sticky 모드와 유한 길이 값 규칙으로 라벨 직후 한 위치만 검사한다.
       valuePattern.lastIndex = valueStart;
       if (!valuePattern.exec(input)) continue;
