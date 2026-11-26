@@ -51,7 +51,7 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
         "Peers submit votes and AEAD chunks; the BFT validator quarantines equivocators and confirms 2f+1 quorum, the AEAD verifier blocks tampered chunks before OPFS, and the audit log emits a signed Merkle receipt.",
       ),
       actors: [
-        { id: "peer", label: t("협업 피어", "Peers"), sub: t("델타 투표 · 청크 송신", "Votes & AEAD chunks"), tone: "remote" },
+        { id: "peer", label: t("협업 피어", "Peers"), sub: t("델타 투표 · 청크 송신", "Votes & AEAD chunks"), tone: "local" },
         { id: "bft", label: t("BFT 검증기", "BFT validator"), sub: t("3f+1 · 2f+1 정족수", "3f+1, 2f+1 quorum"), tone: "good" },
         { id: "aead", label: t("AEAD 스트림 가드", "AEAD stream guard"), sub: t("AES-GCM + 머클 루트", "AES-GCM + Merkle"), tone: "warn" },
         { id: "log", label: t("₩0 시점 감사 원장", "₩0 audit log"), sub: t("Ed25519 · 해시체인", "Ed25519, hash chain"), tone: "local" },
@@ -191,7 +191,7 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
       actors: [
         { id: "author", label: t("작가 기기", "Author peer"), sub: t("비밀 시드 s 보관", "Keeps secret seed s"), tone: "local" },
         { id: "sctp", label: t("SCTP 델타 · VC", "SCTP & VecClock"), sub: t("16KiB · XOR-RLE", "16 KiB, XOR-RLE"), tone: "good" },
-        { id: "verifier", label: t("오프라인 검증자", "Verifier"), sub: t("공개 커밋먼트 Y", "Public commitment Y"), tone: "remote" },
+        { id: "verifier", label: t("오프라인 검증자", "Verifier"), sub: t("공개 커밋먼트 Y", "Public commitment Y"), tone: "local" },
       ],
       messages: [
         { from: "author", to: "sctp", label: t("XOR-RLE 델타 청크 + 벡터 클록 전송", "Send XOR-RLE chunks + vector clock") },
