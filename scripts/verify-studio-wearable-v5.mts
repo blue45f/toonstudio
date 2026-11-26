@@ -91,10 +91,12 @@ try{
     }catch(error){frames.push({title:`asset-${asset.id}`,file:"",status:"error",receipt:null,error:String(error)});}
   }
   if(!process.argv.includes("--assets-only")){
-    const catalogue=await page.evaluate(()=>(window as unknown as {studioWearableQA:{catalogue:{wardrobe:{id:string;slot:string}[]}}}).studioWearableQA.catalogue.wardrobe);
-    for(const model of ["sample","avatar-b"]){
+    const { models, wardrobe } = await page.evaluate(() => (
+      window as unknown as { studioWearableQA: { catalogue: { models: string[]; wardrobe: { id: string; slot: string }[] } } }
+    ).studioWearableQA.catalogue);
+    for(const model of models){
       await select({type:"native",id:"native",model});await capture(`${model}-native`);
-      for(const garment of catalogue){
+      for(const garment of wardrobe){
         try{
           await select({type:"wardrobe",id:garment.id,model,angle:30});
           for(const angle of [30,90,180]){await view(angle,"full");await capture(`${model}-wardrobe-${garment.id}-${angle}`);}

@@ -4,13 +4,17 @@ import * as R from "./runtime/runtime.mjs";
 const { THREE: T, React, createRoot, Canvas, useFrame, useThree } = R;
 const h = React.createElement;
 const root = createRoot(document.getElementById("root"));
+const reviewModels = new Map([
+  ["sample", { url: "/vrm/sample.vrm", poseId: "sample-vrm" }],
+  ["shion", { url: "/vrm/Sendagaya_Shibu.vrm", poseId: "shion" }],
+]);
 const cache = new Map();
 let selectState = null;
 let generation = 0;
 let active = null;
 const api = {
   status: "initializing", frames: 0, receipt: null, errors: [],
-  catalogue: { wardrobe: R.WARDROBE_ITEMS.map(({id,slot,geometrySource})=>({id,slot,geometrySource})), props: R.VRM_PROPS.map(({id,category,geometrySource})=>({id,category,geometrySource})) },
+  catalogue: { models: [...reviewModels.keys()], wardrobe: R.WARDROBE_ITEMS.map(({id,slot,geometrySource})=>({id,slot,geometrySource})), props: R.VRM_PROPS.map(({id,category,geometrySource})=>({id,category,geometrySource})) },
 };
 window.studioWearableQA = api;
 window.addEventListener("error", (event)=>api.errors.push(event.message));
@@ -42,12 +46,13 @@ api.select = async ({ type="wardrobe", id, model="sample", angle=30, crop="full"
     const object=(await new R.GLTFLoader().loadAsync(assetUrl)).scene;
     active={type,id,object,angle,crop,token}; selectState(active);return;
   }
-  const url=model==="sample"?"/vrm/sample.vrm":"/vrm/AvatarSample_B.vrm";
-  const entry=await avatar(url); const {vrm,costume}=entry;
+  const fixture = reviewModels.get(model);
+  if (!fixture) throw new Error(`착용 검토 모델을 찾을 수 없습니다: ${model}`);
+  const entry=await avatar(fixture.url); const {vrm,costume}=entry;
   vrm.humanoid.setNormalizedPose(entry.rest); vrm.update(0); vrm.scene.updateMatrixWorld(true);
   R.applyStudioVrmCostumeState(costume,{hidden:[],recolor:{}});
   const wardrobeMetrics=R.measureStudioVrmWardrobeMetrics(vrm);
-  const idle=R.pickNaturalIdlePose(model==="sample"?"sample-vrm":"avatar-b");
+  const idle=R.pickNaturalIdlePose(fixture.poseId);
   R.applyPoseToVrm(vrm,R.stripFingerBones(idle.bones),idle.yOffset??0,undefined,{skipPalmCorrect:true});
   const metrics=R.measureVrmPropRigMetrics(vrm);
   let instance=null; let equip=null; let slot=null; let effectiveFit=1;
