@@ -649,3 +649,16 @@ pub const WASM_EXTENDED_CAPABILITIES: u32 = {
 pub extern "C" fn wasm_extended_capabilities() -> u32 {
     WASM_EXTENDED_CAPABILITIES
 }
+
+#[cfg(any(feature = "pro-raster-tools", feature = "extended-3d"))]
+mod wave2_native_kernels;
+#[cfg(any(feature = "pro-raster-tools", feature = "extended-3d"))]
+pub use wave2_native_kernels::{wasm_wave2_capabilities, WASM_WAVE2_CAPABILITIES};
+#[cfg(feature = "pro-raster-tools")]
+pub use wave2_native_kernels::{wasm_packbits_rle_decode, wasm_packbits_rle_encode};
+#[cfg(feature = "extended-3d")]
+pub use wave2_native_kernels::{
+    wasm_raycast_mesh_sah_bvh_3d, wasm_solve_ccd_spine_ik_3d, wasm_solve_two_bone_ik_3d,
+    CCD_SPINE_IK_FFI_PARAM_LEN, SAH_BVH_HIT_FFI_LEN, SAH_BVH_RAY_FFI_LEN,
+    TWO_BONE_IK_FFI_OUT_LEN, TWO_BONE_IK_FFI_PARAM_LEN,
+};

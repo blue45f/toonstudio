@@ -4,6 +4,7 @@ import { performance } from "node:perf_hooks";
 const EXPECTED_EXTENDED_3D_CAPABILITIES = 0x3f;
 const EXPECTED_ATELIER_STAGE_CAPABILITIES = 0x07;
 const EXPECTED_EXTENDED_SUITE_CAPABILITIES = 0x7ffff;
+const EXPECTED_WAVE2_CAPABILITIES = 0x1f;
 /** 선형 메모리 할당 추적기 (모든 테스트 종료 시 누수 0건 해제). */
 function createArena(e) {
   const allocs = [];
@@ -166,6 +167,7 @@ export function runExtendedSuiteSmoke(e) {
     assert.equal(Number(e.wasm_extended_3d_capabilities()), EXPECTED_EXTENDED_3D_CAPABILITIES);
     assert.equal(Number(e.wasm_atelier_stage_3d_capabilities()), EXPECTED_ATELIER_STAGE_CAPABILITIES);
     assert.equal(Number(e.wasm_extended_capabilities()), EXPECTED_EXTENDED_SUITE_CAPABILITIES);
+    assert.equal(Number(e.wasm_wave2_capabilities()), EXPECTED_WAVE2_CAPABILITIES);
 
     // 1) Morton 2D/3D
     assert.equal(e.wasm_encode_morton_2d_u32(3, 5) >>> 0, 0b100111);
@@ -411,6 +413,132 @@ export function runExtendedSuiteSmoke(e) {
     timings.liquify_64x64_ms = measure("liquify", () => {
       const aff = e.wasm_liquify_displace_rgba(canvasPtr, liqOutPtr, cw, ch, 0, liqParamsPtr, dirtyPtr);
       assert.ok(aff > 700);
+    }).ms;
+
+    // 18) Wave-2: PackBits RLE Encode & Decode (4,096 B 혼합 스캔라인 0-diff + 오버런 차단)
+    const rleSrc = new Uint8Array(4096);
+    for (let i = 0; i < rleSrc.length; i++) {
+      rleSrc[i] = i % 64 < 48 ? (i >>> 6) & 255 : (i * 37) & 255;
+    }
+    const rleSrcPtr = arena.u8(rleSrc);
+    const maxRleCap = e.wasm_packbits_rle_encode(rleSrcPtr, rleSrc.length, 0, 0);
+    assert.ok(maxRleCap >= rleSrc.length);
+    const rleEncPtr = arena.u8Zero(maxRleCap);
+    const rleDecPtr = arena.u8Zero(rleSrc.length);
+    timings.wave2_packbits_rle_4k_ms = measure("wave2_packbits_rle", () => {
+      const encLen = e.wasm_packbits_rle_encode(rleSrcPtr, rleSrc.length, rleEncPtr, maxRleCap);
+      assert.ok(encLen > 0 && encLen < rleSrc.length);
+      const decLen = e.wasm_packbits_rle_decode(rleEncPtr, encLen, rleDecPtr, rleSrc.length);
+      assert.equal(decLen, rleSrc.length);
+      const decView = new Uint8Array(e.memory.buffer, rleDecPtr, rleSrc.length);
+      for (let i = 0; i < rleSrc.length; i++) {
+        assert.equal(decView[i], rleSrc[i]);
+      }
+      // 오버런 차단(-4) 확인
+      const tinyPtr = arena.u8Zero(4);
+      assert.equal(e.wasm_packbits_rle_decode(rleEncPtr, encLen, tinyPtr, 4), -4);
+    }).ms;
+
+    // 19) Wave-2: 3D SAH Triangle BVH Raycast (16x16 하이트필드 = 512 삼각형)
+    const gn = 16;
+    const gStride = gn + 1;
+    const gVerts = new Float32Array(gStride * gStride * 3);
+    for (let iz = 0; iz <= gn; iz++) {
+      for (let ix = 0; ix <= gn; ix++) {
+        const vi = (iz * gStride + ix) * 3;
+        const x = ix * 0.25 - gn * 0.125;
+        const z = iz * 0.25 - gn * 0.125;
+        gVerts[vi] = x;
+        gVerts[vi + 1] = Math.sin(x * 1.2) * Math.cos(z * 1.1) * 0.25;
+        gVerts[vi + 2] = z;
+      }
+    }
+    const gTris = gn * gn * 2;
+    const gIdx = new Uint32Array(gTris * 3);
+    let gi = 0;
+    for (let iz = 0; iz < gn; iz++) {
+      for (let ix = 0; ix < gn; ix++) {
+        const a = iz * gStride + ix;
+        const b = a + 1;
+        const c = a + gStride;
+        const d = c + 1;
+        gIdx[gi++] = a;
+        gIdx[gi++] = c;
+        gIdx[gi++] = b;
+        gIdx[gi++] = b;
+        gIdx[gi++] = c;
+        gIdx[gi++] = d;
+      }
+    }
+    const bvhPosPtr = arena.f32(gVerts);
+    const bvhIdxPtr = arena.u32(gIdx);
+    const bvhRayPtr = arena.f32(new Float32Array([0.1, 3.0, -0.1, 0.0, -1.0, 0.0, 0.01, 20.0]));
+    const bvhOutPtr = arena.f32(new Float32Array(12));
+    timings.wave2_sah_bvh_512tri_raycast_ms = measure("wave2_sah_bvh", () => {
+      const hit = e.wasm_raycast_mesh_sah_bvh_3d(
+        bvhPosPtr,
+        gStride * gStride,
+        bvhIdxPtr,
+        gTris,
+        bvhRayPtr,
+        1,
+        bvhOutPtr,
+      );
+      assert.equal(hit, 1);
+      const out = new Float32Array(e.memory.buffer, bvhOutPtr, 12);
+      assert.ok(out[1] > 2.5 && out[1] < 3.5);
+      assert.ok(out[8] > 0.5); // +Y normal
+      assert.ok(out[11] > 0 && out[11] < 64); // SAH 프루닝 확인
+    }).ms;
+
+    // 20) Wave-2: Analytical 2-Bone IK (폴 벡터 + 소프트 과신전 + 바닥 접지 클램프)
+    const twoBoneParamsPtr = arena.f32(
+      new Float32Array([
+        0.0, 0.9, 0.0, // root (hip)
+        0.0, 0.5, 1.0, // pole (knee forward)
+        0.0, -0.25, 0.0, // target (지하 → 바닥 접지 클램프 트리거)
+        0.45, 0.45, // upper_len, lower_len
+        0.98, 0.02, // soft_extension_ratio, min_bend_angle_rad
+        0.0, 0.08, // floor_y, foot_sole_offset
+      ]),
+    );
+    const twoBoneOutPtr = arena.f32(new Float32Array(12));
+    timings.wave2_two_bone_ik_ms = measure("wave2_two_bone_ik", () => {
+      const status = e.wasm_solve_two_bone_ik_3d(twoBoneParamsPtr, 1, twoBoneOutPtr);
+      assert.equal(status, 1); // floor_clamped
+      const out = new Float32Array(e.memory.buffer, twoBoneOutPtr, 12);
+      assert.ok(Math.abs(out[4] - 0.08) < 1e-4);
+      assert.ok(out[2] > 0.05); // +Z 무릎 굴곡 방향
+    }).ms;
+
+    // 21) Wave-2: Damped CCD Multi-Joint Spine IK (6관절 척추 + 바닥 여유 높이)
+    const spineJointsPtr = arena.f32(
+      new Float32Array([
+        0.0, 0.9, 0.0,
+        0.0, 1.05, 0.0,
+        0.0, 1.2, 0.0,
+        0.0, 1.35, 0.0,
+        0.0, 1.47, 0.0,
+        0.0, 1.6, 0.0,
+      ]),
+    );
+    const spineTargetPtr = arena.f32(new Float32Array([0.3, 1.38, 0.22]));
+    const spineParamsPtr = arena.f32(new Float32Array([1e-3, 0.35, 0.75, 0.65, 0.0, 0.05]));
+    timings.wave2_ccd_spine_ik_6j_ms = measure("wave2_ccd_spine_ik", () => {
+      const iters = e.wasm_solve_ccd_spine_ik_3d(
+        spineJointsPtr,
+        6,
+        spineTargetPtr,
+        48,
+        1,
+        spineParamsPtr,
+      );
+      assert.ok(iters > 0 && iters <= 48);
+      const solved = new Float32Array(e.memory.buffer, spineJointsPtr, 18);
+      const dx = solved[15] - 0.3;
+      const dy = solved[16] - 1.38;
+      const dz = solved[17] - 0.22;
+      assert.ok(Math.hypot(dx, dy, dz) <= 2e-3);
     }).ms;
 
     return timings;

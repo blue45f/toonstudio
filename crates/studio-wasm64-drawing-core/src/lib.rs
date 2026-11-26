@@ -13,11 +13,17 @@ use std::fmt;
 #[cfg(feature = "extended-3d")]
 pub mod atelier_stage_3d_kernel;
 pub mod brush_kernel;
+#[cfg(feature = "extended-3d")]
+pub mod bvh3d_sah_raycast_kernel;
 #[cfg(feature = "pro-raster-tools")]
 pub mod color_halftone_kernel;
 pub mod filter_warp_kernel;
 #[cfg(feature = "pro-raster-tools")]
 pub mod flood_fill_selection_kernel;
+#[cfg(feature = "extended-3d")]
+pub mod humanoid_body_ik_kernel;
+#[cfg(feature = "pro-raster-tools")]
+pub mod psd_psb_codec_kernel;
 pub mod simd_bvh_skinning_kernel;
 pub mod spectral_km_kernel;
 pub mod tactile_texture_kernel;
@@ -234,3 +240,35 @@ pub use wasm_ffi::{
     feature = "pro-raster-tools"
 ))]
 pub use wasm_ffi::{wasm_extended_capabilities, WASM_EXTENDED_CAPABILITIES};
+
+#[cfg(feature = "pro-raster-tools")]
+pub use psd_psb_codec_kernel::{
+    decode_packbits_rle, decode_packbits_rle_into, decode_psd_layer_channel_8bit,
+    encode_packbits_rle, encode_packbits_rle_into, packbits_max_encoded_len,
+    parse_psd_psb_layers_metadata, write_psd_psb_header_and_channels, PsdChannelMetadata,
+    PsdCompression, PsdDocumentLayersMetadata, PsdDocumentWriteSpec, PsdFormatVersion,
+    PsdLayerChannelInput, PsdLayerMetadata, PsdLayerWriteSpec, PSB_V2_MAX_DIM, PSD_CHANNEL_ALPHA,
+    PSD_CHANNEL_BLUE, PSD_CHANNEL_GREEN, PSD_CHANNEL_RED, PSD_CHANNEL_USER_MASK, PSD_V1_MAX_DIM,
+};
+#[cfg(feature = "extended-3d")]
+pub use bvh3d_sah_raycast_kernel::{
+    build_sah_bvh_3d, closest_point_on_triangle_3d, query_sphere_sah_bvh_3d, raycast_sah_bvh_3d,
+    Aabb3D, Ray3D, RaycastHit3D, SahBvh3D, SahBvhConfig, SahBvhNode3D, SphereOverlapHit3D,
+    SphereQueryResult3D, BVH3D_DEFAULT_LEAF_TRIANGLES, BVH3D_MAX_DEPTH, SAH_BIN_COUNT,
+};
+#[cfg(feature = "extended-3d")]
+pub use humanoid_body_ik_kernel::{
+    clamp_foot_contact_floor_3d, solve_ccd_chain_3d, solve_two_bone_ik_3d, CcdChainConfig,
+    CcdChainResult, TwoBoneIkConfig, TwoBoneIkResult, MAX_CCD_CHAIN_JOINTS, MAX_CCD_ITERATIONS,
+    MIN_CCD_CHAIN_JOINTS,
+};
+#[cfg(any(feature = "pro-raster-tools", feature = "extended-3d"))]
+pub use wasm_ffi::{wasm_wave2_capabilities, WASM_WAVE2_CAPABILITIES};
+#[cfg(feature = "pro-raster-tools")]
+pub use wasm_ffi::{wasm_packbits_rle_decode, wasm_packbits_rle_encode};
+#[cfg(feature = "extended-3d")]
+pub use wasm_ffi::{
+    wasm_raycast_mesh_sah_bvh_3d, wasm_solve_ccd_spine_ik_3d, wasm_solve_two_bone_ik_3d,
+    CCD_SPINE_IK_FFI_PARAM_LEN, SAH_BVH_HIT_FFI_LEN, SAH_BVH_RAY_FFI_LEN,
+    TWO_BONE_IK_FFI_OUT_LEN, TWO_BONE_IK_FFI_PARAM_LEN,
+};
