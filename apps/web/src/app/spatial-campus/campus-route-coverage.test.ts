@@ -56,6 +56,18 @@ describe("campus route authority coverage", () => {
     expect(campusBinding("future-unregistered", "/unknown")).toBeNull();
   });
   it.each([
+    ["creator-character-shaper-alias", "/character-shaper", "creator-studio-assets-character-new", "/studio/assets/characters/new"],
+    ["creator-character-lab", "/character-lab", "creator-studio", "/studio/character"],
+    ["creator-studio-character-lab", "/studio/character-lab", "creator-studio", "/studio/character"],
+    ["creator-research-character-3d", "/research/character-3d", "creator-studio", "/studio/character"],
+  ])("%s는 정식 캐릭터 화면과 같은 캠퍼스 분류를 유지한다", (id, pathname, targetId, targetPath) => {
+    expect(routes.find((route) => route.id === id)).toEqual({ id, path: pathname });
+    const target = campusBinding(targetId, targetPath);
+    expect(target).toMatchObject({ districtId: "atelier", private: true });
+    expect(campusBinding(id, pathname)).toEqual({ ...target, routeId: id });
+    expect(campusBinding(id, pathname, "?shareToken=fixture")).toMatchObject({ surface: "protected", private: true });
+  });
+  it.each([
     ["catalog-compare-studio", "/compare/studio", "legal-about-technology-benchmarks", "/about/technology/benchmarks"],
     ["catalog-tech", "/tech", "legal-about-technology", "/about/technology"],
   ])("%s는 기존 기술 안내와 같은 공개 학습실이며 민감한 검색값은 보호한다", (id, pathname, referenceId, referencePath) => {
