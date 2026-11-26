@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { deriveStudioReviewPageMapping } from "@toonstudio/studio-project-model";
 
 import { submissionVisualFixture } from "../apps/web/src/domains/creator/production-hub/production-submission-visual-review.test-fixture";
 
@@ -84,12 +85,16 @@ async function prepareProject(page: Page) {
         ...(cursor === null ? {} : { cursor: expectedCursor }),
       });
       const ordinal = cursor === null ? 0 : 1;
+      const mapping = deriveStudioReviewPageMapping(
+        { width: 800, pagesList: ["page-0", "page-1"].map((id) => ({ id, canvasH: 1200, elements: [] })) },
+        { sourceServerRevision: 7, sourceContentDigest: revision.rootGraphHash, ordinal, renderWidth: 800, renderHeight: 1200 },
+      );
       const subject = { schemaVersion: 1, projectId: project.id, workId: aggregate.workId,
         artifactId: review.artifactId, reviewId: review.id, revisionId: revision.id, rootGraphHash: revision.rootGraphHash };
       return route.fulfill({ json: { ok: true, subject,
         previews: [{ sha256: imageSha256, ordinal, mediaType: "image/webp", byteLength: imageBytes.byteLength,
           url: `https://collaboration-fixture.test/__collaboration-fixture/${revision.id}-${ordinal}.webp`,
-          expiresAt: Date.now() + 60_000, mapping: { status: "unmapped", reason: "legacy-review" } }],
+          expiresAt: Date.now() + 60_000, mapping }],
         nextCursor: ordinal === 0 ? expectedCursor : null } });
     }
     if (path.endsWith("/health/capabilities")) return route.fulfill({ json: { status: "available", incidentId: null, retryAfterSeconds: null,
