@@ -55,7 +55,7 @@
 .studio-library-resume-selection { position: absolute; top: 12px; right: 12px; z-index: 3; }
 .studio-library-resume-content { padding: 16px 18px 8px; }
 .studio-library-resume-content h2 { margin: 0; font-size: clamp(1.25rem, 2.2vw, 1.5rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.35; overflow-wrap: anywhere; color: var(--color-fg); }
-.studio-library-resume-content h2 a { display: inline-block; min-height: 32px; transition: color 150ms ease; }
+.studio-library-resume-content h2 a { display: inline-flex; align-items: center; min-height: 44px; transition: color 150ms ease; }
 .studio-library-resume-content h2 a:hover { color: var(--color-accent); }
 .studio-library-resume-content p { margin: 6px 0 14px; font-size: 0.875rem; line-height: 1.55; overflow-wrap: anywhere; color: var(--color-fg-2); }
 .studio-library-resume-open {
@@ -80,7 +80,7 @@
 .studio-library-work-list-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .studio-library-work-list-heading h2 { margin: 0; color: var(--color-fg); font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.015em; }
 .studio-library-work-list-heading button {
-  min-height: 36px; padding: 6px 12px; border: 1px solid var(--color-line); border-radius: 8px;
+  min-height: 44px; padding: 6px 12px; border: 1px solid var(--color-line); border-radius: 8px;
   background: var(--color-panel); color: var(--color-fg-2); font-size: 0.8125rem; font-weight: 500;
   transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
 }
@@ -115,7 +115,7 @@
 .studio-library-project-row-description { display: grid; gap: 4px; min-width: 0; flex: 1; }
 .studio-library-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 0; color: var(--color-fg-3); font-size: 0.75rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
 .studio-library-project-row-description h3 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.35; overflow-wrap: anywhere; color: var(--color-fg); }
-.studio-library-project-row-description h3 a { display: inline-block; padding-block: 2px; transition: color 150ms ease; }
+.studio-library-project-row-description h3 a { display: inline-flex; align-items: center; min-height: 44px; padding-block: 4px; transition: color 150ms ease; }
 .studio-library-project-row-description h3 a:hover { color: var(--color-accent); }
 .studio-library-row-resume-context { margin: 0; color: var(--color-fg-2); font-size: 0.8125rem; line-height: 1.45; overflow-wrap: anywhere; }
 .studio-library-project-row-footer { grid-column: 2; display: flex; align-items: center; min-width: 0; padding-top: 2px; }
@@ -123,7 +123,7 @@
 
 /* 모든 카드에 거대한 보라색 막대를 두지 않고 단정한 원고 열기 링크(ink-arrow)로 통일한다. */
 .studio-library-row-continue {
-  display: inline-flex; min-width: 0; min-height: 38px; width: fit-content; align-items: center; gap: 6px; padding: 6px 12px;
+  display: inline-flex; min-width: 0; min-height: 44px; width: fit-content; align-items: center; gap: 6px; padding: 6px 12px;
   border: 1px solid var(--color-line-strong); border-radius: 8px; background: var(--color-card); color: var(--color-fg);
   font-size: 0.8125rem; font-weight: 500; transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
 }
@@ -132,10 +132,10 @@
 .studio-library-row-continue > svg { flex: none; }
 
 .studio-library-project-row-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-line); }
-.studio-library-row-save-attention { display: inline-flex; align-items: center; min-height: 36px; }
+.studio-library-row-save-attention { display: inline-flex; align-items: center; min-height: 44px; }
 .studio-library-project-row-management { min-width: 0; margin-left: auto; }
 .studio-library-project-row-management summary {
-  display: inline-flex; min-height: 36px; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px;
+  display: inline-flex; min-height: 44px; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px;
   color: var(--color-fg-3); font-size: 0.75rem; font-weight: 500; cursor: pointer; list-style: none;
   transition: background-color 150ms ease, color 150ms ease;
 }
@@ -147,7 +147,7 @@
 .studio-library-project-row-management[open] { flex-basis: 100%; margin-left: 0; }
 .studio-library-project-row-management > div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; padding: 8px 4px 2px; border-top: 1px solid var(--color-line); }
 .studio-library-project-row-management > div > a, .studio-library-project-row-management > div > button {
-  display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px;
+  display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px;
   border-radius: 8px; font-size: 0.8125rem; font-weight: 500; color: var(--color-fg-2); transition: background-color 150ms ease, color 150ms ease;
 }
 .studio-library-project-row-management > div > a:hover, .studio-library-project-row-management > div > button:hover { background: var(--color-raised); color: var(--color-fg); }

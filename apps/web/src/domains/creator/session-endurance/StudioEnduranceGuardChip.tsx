@@ -149,7 +149,7 @@ export function StudioEnduranceGuardChip({
   const popoverPosition = useStudioMenubarPopoverPosition(triggerRef, inline && open);
 
   const overallStatus = worstStatus(gpu.overallStatus, history.status);
-  const compactIconOnly = inline || (canvasOnlyMode && overallStatus === "healthy" && !open);
+  const compactIconOnly = inline || ((canvasOnlyMode || mobileImmersive) && overallStatus === "healthy" && !open);
   const statusLabel = STATUS_LABEL_KO[overallStatus];
 
   const handleClose = useCallback(() => {
@@ -200,7 +200,7 @@ export function StudioEnduranceGuardChip({
         className,
       )}
       style={mobileImmersive ? {
-        bottom: "calc(max(var(--studio-canvas-bottom-inset, 7rem), var(--studio-mobile-dock-measured-height, 0px), var(--service-status-overlay-clearance, 0px), env(safe-area-inset-bottom)) + 0.75rem)",
+        bottom: "calc(max(var(--studio-canvas-bottom-inset, 4rem), var(--studio-mobile-dock-measured-height, 0px), var(--service-status-overlay-clearance, 0px), env(safe-area-inset-bottom)) + 0.5rem)",
       } : undefined}
     >
       {open && (!inline || popoverPosition) ? renderPanel(
