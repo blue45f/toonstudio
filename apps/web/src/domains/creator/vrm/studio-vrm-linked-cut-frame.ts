@@ -3,9 +3,7 @@ import type { StudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
 import { readPngDimensions } from "@/platform/creator-asset-response-validation";
 import { STUDIO_BG3D_SHOT_BATCH_MAX_DIMENSION } from "../bg3d/studio-bg3d-shot-batch-limits";
-import { planStudio3dInsertCaptureSize } from "../scene-3d/studio-3d-insert-capture-plan";
 import { STUDIO_VRM_PNG_MAX_PIXELS } from "./studio-vrm-png-worker-protocol";
-import { roundExportSize } from "./studio-vrm-poser-helpers";
 
 export interface LinkedCutFrame {
   readonly source: StudioVrmSceneDocument;
@@ -59,25 +57,6 @@ export function cameraForLinkedCut(source: Camera, frame: LinkedCutFrame): Persp
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
   return camera;
-}
-
-/** Resolve logical display size and target raster size for either a live insert or linked-cut refresh. */
-export function resolveVrmInsertCaptureDimensions(
-  canvas: HTMLCanvasElement,
-  frame: LinkedCutFrame | undefined,
-): { readonly displayWidth: number; readonly displayHeight: number; readonly width: number; readonly height: number } {
-  const { width: displayWidth, height: displayHeight } = frame?.source.render ?? roundExportSize(canvas);
-  const capturePlan = frame?.pixels ?? planStudio3dInsertCaptureSize({
-    displayWidth,
-    displayHeight,
-    devicePixelRatio: globalThis.devicePixelRatio || 1,
-  });
-  return {
-    displayWidth,
-    displayHeight,
-    width: capturePlan?.width ?? displayWidth,
-    height: capturePlan?.height ?? displayHeight,
-  };
 }
 
 /** Validate scene match and return the capture camera for a live insert or linked-cut refresh. */

@@ -571,7 +571,7 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "wasm64-wave25~28 모듈군이 한글 광학 커닝·Knuth-Plass 줄바꿈, Brettel D65 LMS 달토나이제이션, 말풍선 Z/역Z DAG, EPUB 3.3 매니페스트, 버터워스 멀미 대역 감쇠 셰이크, 50화 SHA-256 중복 제거를 단위 검증으로 입증했습니다.",
       "wasm64-wave25–28 modules unit-verify Hangul optical kerning, Brettel D65 LMS daltonizing, balloon DAG, EPUB 3.3 manifests, Butterworth nausea-band attenuation and 50-episode SHA-256 dedup.",
     ),
-    chapters: ["accessibility", "quality", "performance"],
+    chapters: ["product-intent", "quality", "performance"],
     atlasIds: ["waves25-to-28-kerning-cvd-epub3-vestibular-qa"],
   },
   {

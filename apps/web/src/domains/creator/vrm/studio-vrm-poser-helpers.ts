@@ -6,6 +6,7 @@
 import * as THREE from "three";
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 
+import { planStudio3dInsertCaptureSize } from "../scene-3d/studio-3d-insert-capture-plan";
 import { EXTRA_POSE_PRESETS, NATURAL_IDLE_POSES, POSER_FINGER_BONES } from "../studio-pose-presets";
 import { createTwoBoneDefaultPoleTarget } from "../studio-rig-two-bone-ik";
 
@@ -39,6 +40,7 @@ import {
 } from "./StudioVrmJointHandles";
 import { findVrmActionSilhouettePreset } from "./vrm-action-silhouette-presets";
 
+import type { LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
 import type { StudioVrmCameraSettings, StudioVrmPoseTranslations, StudioVrmSceneDocument } from "./studio-vrm-scene-document";
 import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
 
@@ -259,6 +261,21 @@ export function roundExportSize(canvas: HTMLCanvasElement) {
 
   const aspect = canvas.width / canvas.height;
   return { width: Math.round(EXPORT_HEIGHT * aspect), height: EXPORT_HEIGHT };
+}
+
+export function vrmInsertCaptureSize(canvas: HTMLCanvasElement, frame?: LinkedCutFrame) {
+  // Display size = the legacy logical export size (stable placement on the document);
+  // the raster renders denser so the insert stays crisp at 100% zoom on HiDPI and
+  // survives a moderate scale-up. Budget failures fall back to display-density capture.
+  const { width: displayWidth, height: displayHeight } = frame?.source.render ?? roundExportSize(canvas);
+  const capturePlan = frame?.pixels ?? planStudio3dInsertCaptureSize({
+    displayWidth,
+    displayHeight,
+    devicePixelRatio: globalThis.devicePixelRatio || 1,
+  });
+  const width = capturePlan?.width ?? displayWidth;
+  const height = capturePlan?.height ?? displayHeight;
+  return { displayWidth, displayHeight, width, height };
 }
 
 export function roundThumbnailCaptureSize(canvas: HTMLCanvasElement) {

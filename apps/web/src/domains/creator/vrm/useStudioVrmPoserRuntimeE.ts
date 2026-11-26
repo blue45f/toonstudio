@@ -5,20 +5,10 @@
 import { useEffect } from "react";
 
 import { createStudioVrmAuthoredFingerSnapshot } from "./studio-vrm-auto-grip-authority";
-import {
-  serializeAvatarForgeState,
-} from "./studio-vrm-avatar-forge";
-import {
-  serializeCostume,
-  type CostumeState,
-  type CostumeSlot,
-} from "./studio-vrm-costume";
-import {
-  applyStudioVrmCostumeState,
-} from "./studio-vrm-costume-runtime";
-import {
-  resolveStudioVrmInsertBackgroundMode,
-} from "./studio-vrm-insert-background-mode";
+import { serializeAvatarForgeState } from "./studio-vrm-avatar-forge";
+import { serializeCostume, type CostumeState, type CostumeSlot } from "./studio-vrm-costume";
+import { applyStudioVrmCostumeState } from "./studio-vrm-costume-runtime";
+import { resolveStudioVrmInsertBackgroundMode } from "./studio-vrm-insert-background-mode";
 import {
   parseVrmPhysicsSettings,
   DEFAULT_VRM_PHYSICS,
@@ -33,6 +23,7 @@ import {
 } from "./studio-vrm-pose-bake";
 import {
   getErrorMessage,
+  vrmInsertCaptureSize,
 } from "./studio-vrm-poser-helpers";
 import {
   stripFingerBones,
@@ -48,7 +39,7 @@ import {
   captureStudioVrmRgba,
   encodeStudioVrmCapturePngDataUrl,
 } from "./studio-vrm-raster-capture";
-import { resolveVrmCaptureCameraForFrame, resolveVrmInsertCaptureDimensions, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
+import { resolveVrmCaptureCameraForFrame, type LinkedCutFrame } from "./studio-vrm-linked-cut-frame";
 import { createStudioVrmRigProfileSelection } from "./studio-vrm-rig-profile";
 import {
   STUDIO_VRM_HUMANOID_BONES,
@@ -77,19 +68,13 @@ import {
   type WardrobeSlot,
   type WardrobeState,
 } from "./studio-vrm-wardrobe";
-import {
-  STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS,
-} from "./StudioVrmPoserTypes";
-import {
-  studioVrmProportionsRequireRuntime,
-} from "./StudioVrmViewportUtils";
+import { STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS } from "./StudioVrmPoserTypes";
+import { studioVrmProportionsRequireRuntime } from "./StudioVrmViewportUtils";
 import type {
   StudioVrmWardrobeCaptureSync,
   StudioVrmWardrobeSurfaceReceipt,
 } from "./StudioVrmWardrobePropsProjection";
-import {
-  canonicalizeVrmContentHash,
-} from "./vrm-library";
+import { canonicalizeVrmContentHash } from "./vrm-library";
 
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type { VrmLibraryEntry } from "./vrm-library";
@@ -740,7 +725,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
               );
             }
           }
-          const { displayWidth, displayHeight, width, height } = resolveVrmInsertCaptureDimensions(gl.domElement, frame);
+          const { displayWidth, displayHeight, width, height } = vrmInsertCaptureSize(gl.domElement, frame);
           const bakedPose = bakeStudioVrmRuntimePose(currentVrm);
           if (!bakedPose) {
             throw new Error("삽입할 VRM 자세를 회전 기반 데이터로 변환하지 못했습니다.");
