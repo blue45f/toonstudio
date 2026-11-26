@@ -3,7 +3,6 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import test from "node:test";
 
 import {
   classify2dAsset,
@@ -17,6 +16,8 @@ import {
   renderAuditMarkdown,
   runVisualAssetAudit,
 } from "./audit-visual-assets-quality.mjs";
+
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 function makePngHeader(width, height, padBytes = 0) {
   const buf = Buffer.alloc(24 + padBytes);

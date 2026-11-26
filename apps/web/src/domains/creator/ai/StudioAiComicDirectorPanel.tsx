@@ -551,7 +551,7 @@ function DirectorReviewSession({
       void api?.createArtifact(sessionId ?? "", { panelId: String(resolvedIdx), parentArtifactId: targetCandidateId, kind: "repair", payload: result.data.repair });
       await finishJob(job, { status: "succeeded", progressDone: 1, progressTotal: 1, result: { candidateId: operationId }, eventType: "repair.completed" });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "선택 영역을 수리하지 못했습니다.";
+      const message = error instanceof Error ? error.message : r5CreatorStatusText("r5cat1.creator.aiComicDirector.repairFailed", "선택 영역을 수리하지 못했습니다.");
       setMediaMessage(message);
       await finishJob(job, { status: "failed", error: message, eventType: "repair.failed" });
     } finally {

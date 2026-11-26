@@ -18,6 +18,7 @@ import {
 
 registerI18nLocaleEntries("ko", {
   "r5cat1.creator.aiComicDirector.qualityFailed": "후보 품질을 분석하지 못했습니다.",
+  "r5cat1.creator.aiComicDirector.repairFailed": "선택 영역을 수리하지 못했습니다.",
   "r5cat1.creator.aiComicDirector.layerSplitFailed": "레이어를 분리하지 못했습니다.",
   "r5cat1.creator.localizationQa.unscorable": "채점 불가",
   "r5cat1.creator.localizationQa.emptyCues": "검사할 대사가 없어 점수를 낼 수 없습니다.",
@@ -35,6 +36,7 @@ registerI18nLocaleEntries("ko", {
 
 registerI18nLocaleEntries("en", {
   "r5cat1.creator.aiComicDirector.qualityFailed": "Could not analyze the candidate quality.",
+  "r5cat1.creator.aiComicDirector.repairFailed": "Could not repair the selected area.",
   "r5cat1.creator.aiComicDirector.layerSplitFailed": "Could not split the layers.",
   "r5cat1.creator.localizationQa.unscorable": "Cannot be scored",
   "r5cat1.creator.localizationQa.emptyCues": "There are no lines to check, so no score can be given.",

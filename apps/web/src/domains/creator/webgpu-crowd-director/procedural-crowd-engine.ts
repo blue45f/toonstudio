@@ -217,7 +217,9 @@ function samplePerspectivePoissonPositions(
   const gridCols = Math.max(4, Math.ceil((maxWorldX - minWorldX) / cellSize) + 2);
   const gridRows = Math.max(4, Math.ceil(depthSpan / cellSize) + 2);
 
-  const cellHead = new Int32Array(gridCols * gridRows);
+  // 빈 테두리 한 칸을 두어 가장자리에서도 같은 3×3 이웃을 검사한다.
+  const gridStride = gridCols + 2;
+  const cellHead = new Int32Array(gridStride * (gridRows + 2));
   cellHead.fill(-1);
   const nextNode = new Int32Array(count);
   nextNode.fill(-1);
@@ -238,15 +240,10 @@ function samplePerspectivePoissonPositions(
     const gz = Math.floor((wz - nearM) * invCellSize);
     if (gx < 0 || gx >= gridCols || gz < 0 || gz >= gridRows) return false;
 
-    const rStart = gz > 0 ? gz - 1 : 0;
-    const rEnd = gz + 1 < gridRows ? gz + 1 : gridRows - 1;
-    const cStart = gx > 0 ? gx - 1 : 0;
-    const cEnd = gx + 1 < gridCols ? gx + 1 : gridCols - 1;
-
-    for (let r = rStart; r <= rEnd; r += 1) {
-      const rowOffset = r * gridCols;
-      for (let c = cStart; c <= cEnd; c += 1) {
-        let idx = cellHead[rowOffset + c] ?? -1;
+    const cellIdx = (gz + 1) * gridStride + gx + 1;
+    for (let row = cellIdx - gridStride; row <= cellIdx + gridStride; row += gridStride) {
+      for (let cell = row - 1; cell <= row + 1; cell += 1) {
+        let idx = cellHead[cell] ?? -1;
         while (idx !== -1) {
           const dx = wx - (placedX[idx] ?? 0);
           const dz = wz - (placedZ[idx] ?? 0);
@@ -258,7 +255,6 @@ function samplePerspectivePoissonPositions(
       }
     }
 
-    const cellIdx = gz * gridCols + gx;
     const id = placed;
     placedX[id] = wx;
     placedZ[id] = wz;
@@ -358,25 +354,21 @@ function samplePerspectivePoissonPositions(
   for (let i = 0; i < placed; i += 1) {
     const wx = placedX[i] ?? 0;
     const wz = placedZ[i] ?? 0;
+    // 배치 후보의 좌표 대신 저장된 Float32 좌표에서 감사 셀을 계산한다.
     const gx = Math.floor((wx - minWorldX) / cellSize);
     const gz = Math.floor((wz - nearM) / cellSize);
-    const rStart = gz > 0 ? gz - 1 : 0;
-    const rEnd = gz + 1 < gridRows ? gz + 1 : gridRows - 1;
-    const cStart = gx > 0 ? gx - 1 : 0;
-    const cEnd = gx + 1 < gridCols ? gx + 1 : gridCols - 1;
+    const cellIdx = (gz + 1) * gridStride + gx + 1;
 
-    for (let r = rStart; r <= rEnd; r += 1) {
-      const rowOffset = r * gridCols;
-      for (let c = cStart; c <= cEnd; c += 1) {
-        let j = cellHead[rowOffset + c] ?? -1;
-        while (j !== -1) {
-          if (j > i) {
-            const dx = wx - (placedX[j] ?? 0);
-            const dz = wz - (placedZ[j] ?? 0);
-            const dSq = dx * dx + dz * dz;
-            if (dSq < minObservedSq) minObservedSq = dSq;
-            if (dSq < auditTolSq) overlapViolations += 1;
-          }
+    for (let row = cellIdx - gridStride; row <= cellIdx + gridStride; row += gridStride) {
+      for (let cell = row - 1; cell <= row + 1; cell += 1) {
+        let j = cellHead[cell] ?? -1;
+        // 셀 인덱스는 삽입 역순이므로 앞에서 검사한 점에 도달하면 탐색을 끝낸다.
+        while (j > i) {
+          const dx = wx - (placedX[j] ?? 0);
+          const dz = wz - (placedZ[j] ?? 0);
+          const dSq = dx * dx + dz * dz;
+          if (dSq < minObservedSq) minObservedSq = dSq;
+          if (dSq < auditTolSq) overlapViolations += 1;
           j = nextNode[j] ?? -1;
         }
       }
@@ -507,6 +499,14 @@ export function generateProceduralCrowd(options: CrowdGenerationOptions = {}): C
   const depthSpan = Math.max(0.001, farM - nearM);
   const cameraEyeHeightM = ((canvasHeight * 0.94 - vpY) * nearM) / focalPx;
   const baseForegroundHeightPx = Math.min(canvasHeight * 0.37, Math.max(88, (canvasHeight - vpY) * 0.62));
+  const screenXMin = canvasWidth * 0.02;
+  const screenXMax = canvasWidth * 0.98;
+  const screenYMin = canvasHeight * 0.14;
+  const screenYMax = canvasHeight * 0.96;
+  const fadeWeight = 0.35 + 0.65 * strokeAttenuation;
+  const strokeWidthRange = nearStrokeWidthPx - farStrokeWidthPx;
+  const headBlend = clampNumber(0.45 + 0.55 * focalAttention, 0, 1);
+  const bodyBlend = clampNumber(0.22 + 0.64 * focalAttention, 0, 1);
   const strokeInkBase = {
     l: Math.max(0.08, preset.inkNearOklch.l * 0.58),
     c: preset.inkNearOklch.c * 0.85,
@@ -537,9 +537,9 @@ export function generateProceduralCrowd(options: CrowdGenerationOptions = {}): C
 
     // 핀홀 원근 투영(깊이 증가 시 perspectiveScale 엄격 단조 감소)
     const perspectiveScale = nearM / worldZ;
-    const screenX = clampNumber(vpX + (worldX * focalPx) / worldZ, canvasWidth * 0.02, canvasWidth * 0.98);
+    const screenX = clampNumber(vpX + (worldX * focalPx) / worldZ, screenXMin, screenXMax);
     const rawGroundY = vpY + ((cameraEyeHeightM - worldY) * focalPx) / worldZ;
-    const screenY = clampNumber(rawGroundY, canvasHeight * 0.14, canvasHeight * 0.96);
+    const screenY = clampNumber(rawGroundY, screenYMin, screenYMax);
 
     const heightFactor = 0.91 + rng() * 0.18;
     const seated =
@@ -554,13 +554,13 @@ export function generateProceduralCrowd(options: CrowdGenerationOptions = {}): C
     // 원거리 대기 원근 페이드 & 근경 G펜 → 원경 얇은 실루엣 선두께 감쇄
     const depthCurve = Math.pow(depth, 0.85);
     const atmosphericFade = clampNumber(
-      depthCurve * maxAtmosphericFade * (0.35 + 0.65 * strokeAttenuation),
+      depthCurve * maxAtmosphericFade * fadeWeight,
       0,
       maxAtmosphericFade,
     );
     const opacity = clampNumber(1 - atmosphericFade * 0.56, 0.28, 1);
     const strokeWidthPx = clampNumber(
-      nearStrokeWidthPx - (nearStrokeWidthPx - farStrokeWidthPx) * (depthCurve * strokeAttenuation),
+      nearStrokeWidthPx - strokeWidthRange * (depthCurve * strokeAttenuation),
       farStrokeWidthPx,
       nearStrokeWidthPx,
     );
@@ -588,10 +588,9 @@ export function generateProceduralCrowd(options: CrowdGenerationOptions = {}): C
       naturalBaseYaw = (rng() - 0.5) * 1.1;
     }
 
-    const headBlend = clampNumber(0.45 + 0.55 * focalAttention, 0, 1);
-    const bodyBlend = clampNumber(0.22 + 0.64 * focalAttention, 0, 1);
-    const headYawRad = naturalBaseYaw + normalizeAngleDiff(targetYawRad - naturalBaseYaw) * headBlend;
-    const bodyYawRad = naturalBaseYaw + normalizeAngleDiff(targetYawRad - naturalBaseYaw) * bodyBlend;
+    const focalYawDelta = normalizeAngleDiff(targetYawRad - naturalBaseYaw);
+    const headYawRad = naturalBaseYaw + focalYawDelta * headBlend;
+    const bodyYawRad = naturalBaseYaw + focalYawDelta * bodyBlend;
     const gazeAlignmentScore = clampNumber(0.5 + 0.5 * Math.cos(headYawRad - targetYawRad), 0, 1);
     sumGazeAlignment += gazeAlignmentScore;
 
