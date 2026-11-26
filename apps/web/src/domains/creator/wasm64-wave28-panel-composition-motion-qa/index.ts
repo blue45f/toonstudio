@@ -1,0 +1,96 @@
+/**
+ * Wasm64 Wave 28 Panel Composition, Motion Comfort & Series Asset QA — 진입점 배럴.
+ *
+ * - `panel-dynamic-symmetry-coach`: Jay Hambidge 동적 대칭(`baroque`·`sinister`) 수직 역수선 아마추어,
+ *   삼등분선·여백 비율(`negativeSpaceRatio < 0.28` 경고) 평가 및 말풍선 안전 여백 보존 카메라 팬·배율 코치
+ * - `motion-sickness-safe-camera-shake`: 타격 역경직(`2..5`프레임) + 다중 시차 `trauma²` 카메라 셰이크,
+ *   전정기관 멀미 억제(`|rollDeg| <= 2.5°`, `0.1–0.45 Hz` 고역통과 감쇠, `prefersReducedMotion` 무변위 보장)
+ * - `cross-episode-asset-deduplicator`: 50화 연재 공용 에셋 2단계(FNV-1a → FIPS 180-4 SHA-256) 중복 제거기,
+ *   통합 팩 매니페스트 및 참조 카운트 Mark-and-Sweep GC 검증기(`danglingRefCount === 0`)
+ *
+ * 주의: 초기 스튜디오 번들에서 정적 import하지 않고 필요 시점에만 지연 로드한다(`0B` 초기 번들 영향).
+ */
+
+export {
+  applyCameraAdjustmentToPanel,
+  ARMATURE_NODE_FAMILIES,
+  buildDynamicSymmetryArmature,
+  computeNegativeSpaceMetrics,
+  DEFAULT_BALLOON_SAFE_MARGIN_RATIO,
+  DYNAMIC_SYMMETRY_DIAGONALS,
+  evaluatePanelComposition,
+  IDEAL_NEGATIVE_SPACE_MAX_RATIO,
+  IDEAL_NEGATIVE_SPACE_MIN_RATIO,
+  MAX_RECOMMENDED_CAMERA_SCALE,
+  MIN_HEALTHY_NEGATIVE_SPACE_RATIO,
+  MIN_RECOMMENDED_CAMERA_SCALE,
+  PANEL_FOCAL_POINT_KINDS,
+  type ArmatureIntersectionNode,
+  type ArmatureLineSegment,
+  type ArmatureNodeFamily,
+  type CameraCropPanAdjustment,
+  type CompositionScoreBreakdown,
+  type DynamicSymmetryArmature,
+  type DynamicSymmetryDiagonalKind,
+  type FocalNodeAlignment,
+  type ForegroundOccupancyMask,
+  type NegativeSpaceMetrics,
+  type PanelCompositionCoachReport,
+  type PanelCompositionInput,
+  type PanelFocalPoint,
+  type PanelFocalPointKind,
+  type Point2D,
+  type ReciprocalArmatureSegment,
+  type SpeechBalloonBox,
+  type UnitVector2D,
+} from "./panel-dynamic-symmetry-coach";
+
+export {
+  applyVestibularHighPassFilter,
+  CAMERA_SHAKE_PLANES,
+  computeBandRmsAmplitude,
+  DEFAULT_CAMERA_SHAKE_FPS,
+  DEFAULT_MAX_ANGULAR_VELOCITY_DEG_PER_SEC,
+  DEFAULT_PARALLAX_FACTORS,
+  DEFAULT_VESTIBULAR_HIGH_PASS_CUTOFF_HZ,
+  MAX_HIT_STOP_FRAMES,
+  MAX_VESTIBULAR_ROLL_DEG,
+  MIN_HIT_STOP_FRAMES,
+  NAUSEA_BAND_MAX_HZ,
+  NAUSEA_BAND_MIN_HZ,
+  sampleQuinticNoise1D,
+  synthesizeSafeCameraShake,
+  type CameraShakePlane,
+  type HitStopWindowSummary,
+  type ImpactImpulse,
+  type LowFrequencyDriftInjection,
+  type ParallaxPlaneFactors,
+  type PlaneShakePose,
+  type SafeCameraShakeConfig,
+  type SafeCameraShakeFrame,
+  type SafeCameraShakeTimeline,
+} from "./motion-sickness-safe-camera-shake";
+
+export {
+  computeAssetFnv1a32Hex,
+  computeAssetSha256Hex,
+  CrossEpisodeAssetDeduplicator,
+  EPISODE_LIFECYCLE_STATES,
+  SERIES_ASSET_KINDS,
+  type AssetDedupProbeResult,
+  type AssetKindDedupSummary,
+  type DeduplicatedBlobDescriptor,
+  type EpisodeAssetBinding,
+  type EpisodeAssetInput,
+  type EpisodeLifecycleState,
+  type EpisodeManifestEntry,
+  type GcExecutionReport,
+  type GcPlannerOptions,
+  type IntegrityVerificationReport,
+  type MarkAndSweepGcPlan,
+  type OrphanBlobCandidate,
+  type SeriesAssetKind,
+  type SeriesEpisodeInput,
+  type SeriesPackManifest,
+  type TwoStageFingerprintStats,
+} from "./cross-episode-asset-deduplicator";

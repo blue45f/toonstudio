@@ -1,0 +1,83 @@
+/**
+ * Wasm64 Wave 19 Atelier Perfection 아날로그 원고·분광 광학·실내 매핑·사면체 색보정·세계관 검수 공개 진입점.
+ *
+ * - `analog-manuscript-prism-interior`: 상업지 B4·동인지 A4 만화 원고용지(내측 테두리·재단선·모서리 톰보),
+ *   아트나이프 방향성 톤 깎기, 불투명 화이트 수정액 스플래터 커널, 코시 파장 분산 보석·마법 프리즘 굴절기,
+ *   2-삼각형 의사 3D 실내 매핑(0 실내 폴리곤) 도심 야경 외벽 셰이더 커널
+ * - `tetrahedral-lut-lore-linter`: 마하 밴딩 없는 사면체 3D 색보정 LUT(`17³` / `.cube` 호환) 분위기 베이커 및
+ *   Aho-Corasick + 편집 거리(`Levenshtein <= 1`) 조사 호응 기반 다회차 세계관 고유명사·시대착오 일관성 검사기
+ *
+ * 주의: Studio 초기 진입 그래프에서 정적으로 import하지 않고 필요한 시점에만 지연 로드(on-demand)한다.
+ */
+
+export {
+  applyOpaqueWhiteoutStrokes,
+  createBrilliantGemPolyhedron,
+  createEquilateralPrismPolyhedron,
+  evaluateCauchyRefractiveIndex,
+  generateAnalogManuscriptTemplate,
+  MANUSCRIPT_DIMENSION_PRESETS,
+  PRISM_MATERIAL_PRESETS,
+  renderInteriorMappedFacadeBuffer,
+  sampleInteriorMappedFacadePoint,
+  sampleKentPaperFiberReflectance,
+  scrapeScreentoneWithKnife,
+  SPECTRAL_WAVELENGTHS_NM,
+  traceSpectralPrismRay,
+  type CauchyMaterialSpec,
+  type ConvexCrystalPolyhedron,
+  type CrystalFacetPlane,
+  type GuideBoxPx,
+  type GuideLineSegmentPx,
+  type InteriorFacadeConfig,
+  type InteriorFacadeRenderOptions,
+  type InteriorFacadeRenderReport,
+  type InteriorFacadeSample,
+  type InteriorSurfaceHitKind,
+  type ManuscriptDimensionsMm,
+  type ManuscriptFormatPresetId,
+  type ManuscriptGuideRole,
+  type ManuscriptTemplateLayout,
+  type ManuscriptTemplateOptions,
+  type PrismMaterialPresetId,
+  type SpectralBandRayResult,
+  type SpectralPrismTraceInput,
+  type SpectralPrismTraceResult,
+  type ToneKnifeScrapeInput,
+  type ToneKnifeScrapeResult,
+  type ToneKnifeStroke,
+  type Vec3,
+  type WhiteoutCompositeInput,
+  type WhiteoutCompositeResult,
+  type WhiteoutStroke,
+} from "./analog-manuscript-prism-interior";
+
+export {
+  applyTetrahedralLutToRgbaBuffer,
+  bakeStudioMoodLut3D,
+  boundedLevenshteinAtMostOne,
+  compareTetrahedralVsTrilinearLut,
+  DEFAULT_ERA_ANACHRONISM_RULES,
+  evaluateTetrahedralLutSample,
+  evaluateTrilinearLutSample,
+  harmonizeKoreanJosa,
+  lintSeriesLoreConsistency,
+  parseCubeLut,
+  serializeCubeLut,
+  STUDIO_MOOD_LUT_PRESETS,
+  type AutoFixedEpisodeResult,
+  type ForbiddenAnachronismRule,
+  type LoreCanonicalEntry,
+  type LoreConsistencyReport,
+  type LoreEntityCategory,
+  type LoreEpisodeInput,
+  type LoreIssueKind,
+  type LoreLinterOptions,
+  type LoreLintFinding,
+  type Lut3DTable,
+  type LutInterpolationDiagnostic,
+  type RgbTriplet,
+  type StudioMoodPresetId,
+  type StudioMoodPresetMeta,
+  type WorldEraSetting,
+} from "./tetrahedral-lut-lore-linter";
