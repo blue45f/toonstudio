@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { inspect } from "node:util";
 
@@ -66,6 +67,30 @@ function retainedAiProvenance(rawPrompt: string) {
 }
 
 describe("studio project canonical document boundary", () => {
+  it("수신한 서버 원고 JSON의 대사를 고치고 프로젝트 파일로 저장·재열기한다", async () => {
+    const archive = process.env.STUDIO_APPROVED_CUT_ZIP;
+    const fileName = "manuscript.toonstudio-work.json";
+    const source = archive ? execFileSync("unzip", ["-p", archive, `source/${fileName}`], { encoding: "utf8" })
+      : JSON.stringify({ width: 2, pagesList: Array.from({ length: 8 }, (_, index) => ({
+        ...page(`page-${index + 1}`), elements: [{ id: `line-${index + 1}`, type: "bubble", text: "네가 내일까지 보내 줄래?" }],
+      })) });
+    expect(JSON.parse(source)).not.toHaveProperty("version");
+    await expect(parseStudioProjectDocument(source, "unrelated.json")).rejects.toThrow();
+    const opened = await parseStudioProjectDocument(source, fileName);
+    expect(opened.project.pagesList).toHaveLength(8);
+    const pages = structuredClone(opened.project.pagesList);
+    const fourth = pages.find((item) => item.id === "page-4");
+    const bubble = fourth?.elements.find((element) => element && typeof element === "object" && "id" in element && element.id === "line-4");
+    if (!bubble || typeof bubble !== "object" || !("text" in bubble)) throw new Error("네 번째 컷의 편집 가능한 대사가 없습니다.");
+    expect(bubble.text).toBe("네가 내일까지 보내 줄래?");
+    bubble.text = "응, 내가 내일까지 보낼게.";
+    const saved = await buildStudioProjectDocumentSaveArtifact({ ...opened.project, pagesList: pages }, metadata);
+    const reopened = await parseStudioProjectDocument(saved.canonicalJson);
+    expect(reopened.source).toBe("canonical-envelope");
+    expect(reopened.project.pagesList).toEqual(pages);
+    await expect(parseStudioProjectDocument({ ...JSON.parse(source), version: 999 }, fileName)).rejects.toThrow();
+  });
+
   it("keeps current raw project JSON import-compatible", async () => {
     const loaded = await parseStudioProjectDocument({
       version: 2,
@@ -444,7 +469,7 @@ describe("studio project canonical document boundary", () => {
     );
     expect(projectArchiveSource).toContain("{ parseStudioProjectDocument },");
     expect(projectArchiveSource).toContain(
-      "const loaded = await parseStudioProjectDocument(text);"
+      "const loaded = await parseStudioProjectDocument(text, file.name);"
     );
     expect(projectArchiveSource).toContain(
       "applyStudioProjectSnapshot(loaded.project)"

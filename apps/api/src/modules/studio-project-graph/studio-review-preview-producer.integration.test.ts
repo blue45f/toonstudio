@@ -1,3 +1,4 @@
+import { registerApprovedCutDeliveryCase } from "./studio-approved-cut-delivery-test-cases";
 import type { PinnedShareCreate } from "@toonstudio/studio-project-model/pinned-review-share";
 import { createHash, randomUUID } from "node:crypto";
 import { Image, decodePng, encodePng } from "image-js";
@@ -22,7 +23,6 @@ import { studioReviewPreviewDigest, studioReviewPreviewIntentKey, studioReviewPr
 const URL = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim();
 if (process.env.CI && !URL) throw new Error("CI must provide STUDIO_LIVE_POSTGRES_INTEGRATION_URL; review preview pin/delete transactions cannot be skipped");
 const withPostgres = URL ? describe : describe.skip;
-
 withPostgres("review capture PostgreSQL ownership, immutable history and object lifetime", () => {
   let pool: Pool;
   let database: typeof DatabaseRuntime;
@@ -41,7 +41,6 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
   const pixels = new Uint8Array([10, 20, 30, 40, 255, 0, 127, 0]);
   const png = Buffer.from(encodePng(new Image(2, 1, { data: pixels, colorModel: "RGBA" })));
   const file = () => ({ buffer: Buffer.from(png), size: png.length, mimetype: "image/png" });
-
   beforeAll(async () => {
     process.env.DATABASE_URL = URL!;
     pool = new Pool({ connectionString: URL, max: 3, application_name: "studio-review-preview-integration" });
@@ -104,9 +103,10 @@ withPostgres("review capture PostgreSQL ownership, immutable history and object 
     if (previousAdmission === undefined) delete process.env.STUDIO_WORK_ASSET_ADMISSION; else process.env.STUDIO_WORK_ASSET_ADMISSION = previousAdmission;
   });
 
+  registerApprovedCutDeliveryCase({ pool: () => pool, service: () => service, graph: () => graph, storage: () => storage,
+    readObject: (hash) => stored.get(`derived:sha256:${hash}`), addUser: (id) => users.push(id), capture: () => capture(8), completeCapture });
   registerStudioReviewPreviewProducerCases({ pool: () => pool, service: () => service, graph: () => graph,
-    capture: () => capture(1), completeCapture,
-  });
+    capture: () => capture(1), completeCapture });
 
   async function capture(pageCount = 2, extension: Record<string, unknown> = {},
     pageElements: (ordinal: number) => Record<string, unknown>[] = () => []) {

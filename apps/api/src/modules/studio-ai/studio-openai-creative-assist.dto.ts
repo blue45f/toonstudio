@@ -1,3 +1,4 @@
+import { ApprovedDialoguePairSchema } from "@toonstudio/contracts/studio-approved-dialogue-review";
 import { StudioOpenAiAssistModeSchema } from "@toonstudio/contracts/studio-openai-assist-result";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
@@ -45,3 +46,5 @@ export class StudioOpenAiCreativeAssistDto extends createZodDto(
 export type StudioOpenAiCreativeAssistRequest = z.infer<
   typeof StudioOpenAiCreativeAssistRequestSchema
 >;
+
+export class StudioApprovedDialogueReviewDto extends createZodDto(ApprovedDialoguePairSchema) {}

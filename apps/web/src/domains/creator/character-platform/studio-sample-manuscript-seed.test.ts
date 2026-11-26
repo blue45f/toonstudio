@@ -158,6 +158,19 @@ describe("createSampleManuscriptPracticeCopy", () => {
     expect(findSampleManuscriptPracticeCopy(storage)?.project.id).toBe("sample-practice-1");
   });
 
+  it("따라 그리기 사본이 있어도 대사 연습을 다시 열면 같은 복습 사본을 쓴다", () => {
+    const storage = new MemoryStorage();
+    createSampleManuscriptPracticeCopy(storage, { at: AT, mode: "trace" });
+    const study = createSampleManuscriptPracticeCopy(storage, { at: AT, mode: "study" });
+    if (study.status !== "created") throw new Error("복습 사본을 만들지 못했습니다.");
+    const again = createSampleManuscriptPracticeCopy(storage, { at: AT, mode: "study" });
+    expect(again.status).toBe("already-created");
+    if (again.status !== "already-created") throw new Error("기존 복습 사본을 찾지 못했습니다.");
+    expect(again.documentId).toBe(study.documentId);
+    expect(seedPages(again.autosave).flatMap((page) => page.elements).filter((element) => element.type === "bubble" && !element.locked)).toHaveLength(3);
+    expect(readStudioProjectLibrary(storage).projects).toHaveLength(3);
+  });
+
   it("study mode clones without locks or fading and without a practice group", () => {
     const storage = new MemoryStorage();
     const result = createSampleManuscriptPracticeCopy(storage, { at: AT, mode: "study" });

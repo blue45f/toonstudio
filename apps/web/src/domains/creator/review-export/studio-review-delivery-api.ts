@@ -5,7 +5,7 @@ import { api, apiPath } from "@/platform/api";
 
 const base = (workId: string) => `/creator/works/${encodeURIComponent(workId)}/review-deliveries`;
 export async function listStudioReviewDeliveries(workId: string) {
-  return reviewDeliveryListSchema.parse(await api.get<unknown>(base(workId)));
+  return reviewDeliveryListSchema.parse(await api.get<unknown>(`${base(workId)}?editableSource=1`));
 }
 export async function prepareStudioReviewDelivery(workId: string, input: ReviewDeliveryPrepare) {
   const body = reviewDeliveryPrepareSchema.parse(input);

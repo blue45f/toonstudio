@@ -12,6 +12,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { MembershipMilestoneReferralStrip } from "./MembershipMilestoneReferralStrip";
+import { TeamCreditQuotaDisclosure } from "./TeamCreditQuotaDisclosure";
 
 const FALLBACK_BILLING_MODE: MembershipBillingModeView = {
   paidOperationsEnabled: false,
@@ -287,6 +288,8 @@ export function MembershipCreditGatePanel({
         formatter={formatter}
         milestones={state.milestoneCreditRewards}
       />
+
+      <TeamCreditQuotaDisclosure formatter={formatter} />
 
       {paidOn ? (
         <div
