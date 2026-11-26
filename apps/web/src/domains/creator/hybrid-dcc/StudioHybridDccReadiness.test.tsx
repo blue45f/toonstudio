@@ -14,6 +14,11 @@ vi.mock("@react-three/fiber", () => ({
   useThree: () => ({ gl: {}, scene: {} }),
 }));
 
+// 이 테스트는 실제 R3F 프레임 루프 대신 상태 표시와 도구 진입을 확인한다.
+vi.mock("./StudioHybridDccOrbitControls", () => ({
+  StudioHybridDccOrbitControls: () => null,
+}));
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();

@@ -14890,10 +14890,10 @@ const puppetWarpArmed =
 
   async function runImageAiRequest(
     kind: "background" | "colorize" | "character",
-    ticket: ReturnType<typeof captureStudioMutationTicket>,
+    ticket: StudioEditorMutationTicket,
     execute: (
       executors: ReturnType<typeof import("./studio-cuttoon-edit/studio-image-ai-executors").createStudioImageAiExecutors>,
-      ticket: ReturnType<typeof captureStudioMutationTicket>,
+      ticket: StudioEditorMutationTicket,
       controller: AbortController,
     ) => Promise<void>,
   ) {

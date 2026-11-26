@@ -43,6 +43,11 @@ html:has([data-studio-mobile-sheet]:not([hidden]):not([aria-hidden="true"])) [da
   display: none !important;
 }
 
+/* 모바일 시트가 열려 있으면 별도 쌓임 맥락의 부유 진단 버튼이 시트 조작부를 덮지 않도록 잠시 숨긴다. */
+html:has([data-studio-mobile-sheet]:not([hidden]):not([aria-hidden="true"])) [data-studio-endurance-placement="floating"] {
+  display: none;
+}
+
 /* Reduced-motion users should never observe the low-opacity first route frame. A 0.01ms animation
  * can still be sampled by assistive tooling before animationend, so make the stable frame explicit. */
 @media (prefers-reduced-motion: reduce) {
