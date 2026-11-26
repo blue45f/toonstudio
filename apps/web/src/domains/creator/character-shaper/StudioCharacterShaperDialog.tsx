@@ -92,7 +92,7 @@ function ShelfSkeleton() {
   );
 }
 
-export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, onInsertLtLayers, outputTarget = "canvas" }: StudioCharacterShaperDialogProps) {
+export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced, onInsertLtLayers, outputTarget = "canvas" }: StudioCharacterShaperDialogProps) {
   const t = useT();
   useStudio3dVisualViewport(h.dialogRef as RefObject<HTMLElement | null>);
   const isDesktop = useMediaQuery(CHARACTER_SHAPER_DESKTOP_QUERY);
@@ -663,7 +663,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, onInse
         data-inspector-column={ui.inspectorOpen ? "true" : undefined}
         className="relative grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)]">
         <div className="min-h-0 min-w-0" inert={ui.drawer !== null ? true : undefined}>
-          <CharacterShaperLibrary h={h} binding={binding} />
+          <CharacterShaperLibrary h={h} binding={binding} assets={assets} />
         </div>
         <div data-character-reference-stage-column="true" className="flex min-h-0 min-w-0 flex-col"
           inert={ui.drawer !== null ? true : undefined}>

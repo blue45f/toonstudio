@@ -13,7 +13,7 @@
  */
 
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { CharacterRuntimeThumbnailRecorder } from "../character-platform/thumbnail/character-runtime-thumbnail-store";
@@ -31,10 +31,13 @@ import { useCharacterShaperMaterialSettings } from "./character-shaper-session-s
 import { isCharacterShaperTypingTarget, pushCharacterShaperKeyLayer } from "./character-shaper-ui-model";
 import { CharacterShaperSessionSettingsProvider } from "./CharacterShaperSessionSettingsProvider";
 import { StudioCharacterShaperDialog } from "./StudioCharacterShaperDialog";
+import { sceneUsesCharacterModel, type StudioCharacterAsset } from "./studio-character-asset-library";
+import { useStudioCharacterAssets } from "./use-studio-character-assets";
 import { useCharacterShaperBinding } from "./useCharacterShaperBinding";
 
 import type { CharacterShaperOutputTarget } from "./character-shaper-ui-contract";
 import type { StudioVrmPoserProps } from "../vrm/StudioVrmPoserTypes";
+import type { VrmLibraryEntry } from "../vrm/vrm-library";
 import type { RefObject } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -134,14 +137,34 @@ function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeo
 
 function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayers, ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
   const { open } = props;
-  const h = useStudioVrmPoserController(props);
+  const place = useRef<StudioVrmPoserProps["onInsert"]>(() => false);
+  const onInsert = useCallback<StudioVrmPoserProps["onInsert"]>((result) => place.current(result), []);
+  const h = useStudioVrmPoserController(open ? { ...props, onInsert } : props);
+  const [selected, setSelected] = useState<StudioCharacterAsset | null | undefined>(undefined);
+  const models: readonly VrmLibraryEntry[] = Array.isArray(h.libraryEntries) ? h.libraryEntries : [];
+  const activeModel = models.find(entry => entry.id === h.activeModelId);
+  const placement = props.initialScene && sceneUsesCharacterModel(props.initialScene.model, activeModel) ? props.initialScene : undefined;
+  const documentId = selected === undefined ? placement?.characterDocumentId
+    : selected && selected.modelId === h.activeModelId ? selected.documentId : undefined;
   const [advanced, setAdvanced] = useState(false);
   const runtimeBinding = useCharacterShaperBinding(h, { runtimeOnly: true });
-  const controller = useCharacterPlatformWorkbench(h, runtimeBinding, { documentAuthority: true, legacyEditing: advanced });
+  const controller = useCharacterPlatformWorkbench(h, runtimeBinding, {
+    documentAuthority: true, legacyEditing: advanced, documentId,
+    placementScene: placement?.characterDocumentId === documentId ? placement : undefined,
+  });
+  const assets = useStudioCharacterAssets(h, controller.authoring, documentId, setSelected, open);
+  useLayoutEffect(() => {
+    place.current = result => assets.insert(result, props.onInsert);
+    return () => { place.current = () => false; };
+  }, [assets, props.onInsert]);
   const binding = controller.binding;
   const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced);
   const variantHost = {
     ...inputHost,
+    loadModelFromLibraryEntry: (entry: VrmLibraryEntry) => {
+      setSelected(null);
+      return h.loadModelFromLibraryEntry(entry);
+    },
     vrmCreativeReadOnly: inputHost.vrmCreativeReadOnly || !controller.authoring.hydrated,
     handleSaveFullLocal: () => controller.authoring.hydrated && h.handleSaveFullLocal(controller.authoring.exportJson()),
     handleLoadFullLocal: async (name: string) => {
@@ -199,8 +222,8 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
         </>
       ) : (
         <>
-          <StudioCharacterShaperDialog onInsertLtLayers={onInsertLtLayers} h={variantHost} binding={binding} outputTarget={outputTarget} onOpenAdvanced={() => setAdvanced(true)} />
-          <CharacterRuntimeThumbnailRecorder h={h} binding={binding} />
+          <StudioCharacterShaperDialog assets={assets} onInsertLtLayers={onInsertLtLayers} h={variantHost} binding={binding} outputTarget={outputTarget} onOpenAdvanced={() => setAdvanced(true)} />
+          <CharacterRuntimeThumbnailRecorder h={h} binding={binding} documentId={controller.authoring.hydrated ? documentId : undefined} />
           <CharacterPlatformWorkbench h={inputHost} binding={binding} controller={controller} />
         </>
       )}

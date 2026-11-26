@@ -2,6 +2,7 @@ import { Check, Plus, Search, UserRound } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { resolveVrmLibraryEntryDisplayName } from "../vrm/studio-vrm-display-name";
+import { CharacterAssetLibraryControls, type CharacterAssetLibraryActions } from "./CharacterAssetLibraryControls";
 import { CharacterShaperSavedVariants } from "./CharacterShaperSavedVariants";
 import { discoverCharacterLibrary } from "./character-shaper-reference-model";
 
@@ -23,7 +24,8 @@ function CharacterPortrait({ entry }: { readonly entry: VrmLibraryEntry }) {
   </span>;
 }
 
-export function CharacterShaperLibrary({ h, binding }: {
+export function CharacterShaperLibrary({ h, binding, assets }: {
+  readonly assets?: CharacterAssetLibraryActions;
   readonly h: StudioVrmPoserHost;
   readonly binding: CharacterShaperBinding;
 }) {
@@ -53,6 +55,7 @@ export function CharacterShaperLibrary({ h, binding }: {
       </label>
     </header>
     <div className="character-library__scroll">
+      {assets && <CharacterAssetLibraryControls assets={assets} disabled={locked || Boolean(binding.previewEntryId)} query={query} />}
       {collection === "mine" && <CharacterShaperSavedVariants h={h} disabled={locked || Boolean(binding.previewEntryId)} query={query} />}
       {visible.length ? <ul className="character-library__list">
         {visible.map((entry) => {
@@ -73,7 +76,7 @@ export function CharacterShaperLibrary({ h, binding }: {
             {selected ? <Check size={14} aria-hidden className="character-library__check" /> : null}
           </button></li>;
         })}
-      </ul> : <p role="status" className="character-library__empty">{query.trim()
+      </ul> : (!assets?.entries.length || query.trim()) && <p role="status" className="character-library__empty">{query.trim()
         ? t("studio.character.library.noResults", "일치하는 캐릭터가 없습니다.")
         : t("studio.character.library.empty", "내 VRM 파일을 가져와 캐릭터를 추가하세요.")}</p>}
     </div>

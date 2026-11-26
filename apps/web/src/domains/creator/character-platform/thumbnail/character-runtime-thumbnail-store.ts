@@ -1,5 +1,6 @@
 import { compareCodeUnitStrings } from "@/shared/lib/compare-code-unit-strings";
 
+import { saveStudioCharacterPreview } from "../../character-shaper/studio-character-asset-library";
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import type * as THREE from "three";
 
@@ -8,6 +9,7 @@ import type { StudioVrmPoserHost } from "../../vrm/StudioVrmPoserHost";
 import { captureStudioVrmRgba, encodeStudioVrmCapturePngBlob } from "../../vrm/studio-vrm-raster-capture";
 
 interface CharacterRuntimeThumbnailRecord {
+  readonly documentId?: string;
   readonly modelId: string;
   readonly signature: string;
   readonly source: symbol | null;
@@ -133,12 +135,13 @@ export function clearCharacterRuntimeThumbnails(): void {
   publish({ activeModelId: null, activeSignature: null, activeSource: null, owner: null, records: new Map(), revision: state.revision + 1 });
 }
 
-export function CharacterRuntimeThumbnailRecorder({ h, binding }: {
+export function CharacterRuntimeThumbnailRecorder({ h, binding, documentId }: {
+  readonly documentId?: string;
   readonly h: StudioVrmPoserHost;
   readonly binding: CharacterShaperBinding;
 }) {
   const ownerRef = useRef({});
-  const liveRef = useRef({ h, binding });
+  const liveRef = useRef({ h, binding, documentId });
   const modelId = typeof h.activeModelId === "string" ? h.activeModelId : null;
   const capture = h.captureRef?.current;
   const source = sourceIdentity(h.vrm ?? capture?.scene);
@@ -147,7 +150,7 @@ export function CharacterRuntimeThumbnailRecorder({ h, binding }: {
   const owner = ownerRef.current;
 
   useLayoutEffect(() => {
-    liveRef.current = { h, binding };
+    liveRef.current = { h, binding, documentId };
     setActiveAppearance(owner, modelId, allowed ? signature : null, source);
   });
   useLayoutEffect(() => () => {
@@ -159,8 +162,8 @@ export function CharacterRuntimeThumbnailRecorder({ h, binding }: {
   useEffect(() => {
     const ids = selectedEntryIds(binding.recipe);
     const previous = modelId ? state.records.get(modelId) : null;
-    if (!modelId || !allowed || ids.length === 0 ||
-      (previous?.signature === signature && previous.source === source)) return;
+    if (!modelId || !allowed || (!documentId && ids.length === 0) ||
+      (previous?.signature === signature && previous.source === source && previous.documentId === documentId)) return;
     if (!capture?.gl || !capture.scene || !capture.camera) return;
     // captureRef.current is mutable; retain the identities that produced these pixels.
     const { gl, scene, camera } = capture;
@@ -168,7 +171,7 @@ export function CharacterRuntimeThumbnailRecorder({ h, binding }: {
     const isCurrent = () => {
       const live = liveRef.current;
       const currentCapture = live.h.captureRef?.current;
-      return !controller.signal.aborted && state.owner === owner && captureAllowed(live.h, live.binding)
+      return !controller.signal.aborted && state.owner === owner && live.documentId === documentId && captureAllowed(live.h, live.binding)
         && live.h.activeModelId === modelId && sourceIdentity(live.h.vrm ?? currentCapture?.scene) === source
         && currentCapture?.gl === gl && currentCapture?.scene === scene
         && currentCapture?.camera === camera && appearanceSignature(live.h, live.binding) === signature;
@@ -197,14 +200,15 @@ export function CharacterRuntimeThumbnailRecorder({ h, binding }: {
           if (!isCurrent() || liveRef.current.h.captureVisualAuthorityRef?.current?.identity !== visualIdentity
             || typeof URL.createObjectURL !== "function") return;
           const url = URL.createObjectURL(blob);
-          recordThumbnail(Object.freeze({ modelId, signature, source, entryIds: new Set(ids), url, createdAt: Date.now() }));
+          recordThumbnail(Object.freeze({ documentId, modelId, signature, source, entryIds: new Set(ids), url, createdAt: Date.now() }));
+          if (documentId) await saveStudioCharacterPreview(documentId, blob, isCurrent);
         } catch {
           // Failed or superseded captures retain the clearly labelled diagram fallback.
         }
       })();
     }, 180);
     return () => { controller.abort(); window.clearTimeout(timer); };
-  }, [allowed, binding.recipe, capture, modelId, owner, signature, source]);
+  }, [allowed, binding.recipe, capture, documentId, modelId, owner, signature, source]);
 
   return null;
 }
