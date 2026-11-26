@@ -133,7 +133,14 @@ export function CreateStartPage() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const previousSection = useRef(activeSection);
   const initialIdea = searchParams.get("idea") ?? "";
-  const [aiComposerOpen, setAiComposerOpen] = useState(() => initialIdea.trim().length > 0);
+  const [atelierActivated, setAtelierActivated] = useState(false);
+  const [aiComposerOpen, setAiComposerOpen] = useState(() => initialIdea.trim().length > 0 || hash === "#ai-composer");
+  const [aiComposerActivated, setAiComposerActivated] = useState(() => initialIdea.trim().length > 0 || hash === "#ai-composer");
+  useEffect(() => {
+    if (hash !== "#ai-composer") return;
+    setAiComposerOpen(true);
+    setAiComposerActivated(true);
+  }, [hash]);
   useEffect(() => {
     if (previousSection.current === activeSection) return;
     previousSection.current = activeSection;
@@ -342,15 +349,34 @@ export function CreateStartPage() {
             </nav>
           </div>
 
-          <div className="mt-8">
-            <CreateStartGrandAtelierSection storyHref={storyHref} />
-          </div>
+          <details
+            onToggle={(event) => {
+              if (event.target === event.currentTarget && event.currentTarget.open) {
+                setAtelierActivated(true);
+              }
+            }}
+            data-testid="create-atelier-disclosure"
+            className="group/atelier-more mt-5 rounded-xl border border-line bg-panel"
+          >
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0 [word-break:keep-all]">
+                {bt("다른 규격과 도구 보기", "More formats & tools")}
+              </span>
+              <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open/atelier-more:rotate-180 motion-reduce:transition-none" />
+            </summary>
+            {atelierActivated ? (
+              <div className="border-t border-line p-3 sm:p-5">
+                <CreateStartGrandAtelierSection storyHref={storyHref} />
+              </div>
+            ) : null}
+          </details>
 
           <details
             open={aiComposerOpen}
             onToggle={(event) => {
               if (event.target === event.currentTarget) {
                 setAiComposerOpen(event.currentTarget.open);
+                if (event.currentTarget.open) setAiComposerActivated(true);
               }
             }}
             data-testid="create-ai-blueprint-disclosure"
@@ -365,14 +391,16 @@ export function CreateStartPage() {
                 <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" className="transition-transform duration-150 group-open/ai-composer:rotate-180 motion-reduce:transition-none" />
               </span>
             </summary>
-            <div className="border-t border-line p-4 sm:p-5">
-              <Suspense fallback={null}>
-                <AiQuickBlueprintComposer
-                  initialIdea={initialIdea}
-                  className="mt-0 border-0 bg-transparent p-0 shadow-none sm:p-0"
-                />
-              </Suspense>
-            </div>
+            {aiComposerActivated ? (
+              <div className="border-t border-line p-4 sm:p-5">
+                <Suspense fallback={<LoadingState variant="skeleton" label={bt("콘티 도구를 불러오는 중이에요", "Loading storyboard tools")} />}>
+                  <AiQuickBlueprintComposer
+                    initialIdea={initialIdea}
+                    className="mt-0 border-0 bg-transparent p-0 shadow-none sm:p-0"
+                  />
+                </Suspense>
+              </div>
+            ) : null}
           </details>
         </>
       ) : null}

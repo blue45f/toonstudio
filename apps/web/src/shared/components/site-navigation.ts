@@ -575,8 +575,8 @@ export const SITE_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
 export const TOONSTUDIO_NAVIGATION_GROUPS = SITE_NAVIGATION_GROUPS;
 export const TOONSPECTRUM_NAVIGATION_GROUPS = SITE_NAVIGATION_GROUPS;
 
-/** 모바일·태블릿의 목적지 순서는 공개/개인 문맥에서 동일하다. 권한은 각 기존 목적지가 확인한다. */
-export const TOONSTUDIO_MOBILE_TABS = [I.studio, I.explore, I.market, I.me] as const;
+/** 모바일은 홈·만들기·내 작업과 별도 더보기 버튼에 집중한다. 권한은 각 기존 목적지가 확인한다. */
+export const TOONSTUDIO_MOBILE_TABS = [I.home, I.make, I.studio] as const;
 export const TOONSPECTRUM_MOBILE_TABS = TOONSTUDIO_MOBILE_TABS;
 export const UNIFIED_MOBILE_TABS = TOONSPECTRUM_MOBILE_TABS;
 

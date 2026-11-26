@@ -24,6 +24,15 @@ function HistoryBack() {
   return <button type="button" onClick={() => navigate(-1)}>테스트 이전 주소</button>;
 }
 
+function ComposerHashNavigation() {
+  const navigate = useNavigate();
+  return <>
+    <button type="button" onClick={() => navigate("/create#ai-composer")}>테스트 콘티 해시 이동</button>
+    <button type="button" onClick={() => navigate("/create#notes")}>테스트 다른 해시 이동</button>
+    <button type="button" onClick={() => navigate("/create?from=home#ai-composer")}>테스트 쿼리만 변경</button>
+  </>;
+}
+
 function renderStartSheet(initialEntry: string, extra?: ReactNode) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
@@ -166,9 +175,15 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("heading", { name: "새 웹툰·원고 시작" })).toBeTruthy();
   });
 
-  it("기본 화면에는 주요 시작 카드와 표준 규격을 바로 보여주고 세부 픽셀 규격·전문 도구·한 줄 콘티는 접힌 펼침 영역으로 둔다", () => {
+  it("기본 화면은 주요 시작에 집중하고 추가 규격과 도구는 처음 펼칠 때 불러와 입력을 유지한다", async () => {
     renderStartSheet("/create");
-    const atelierPresets = screen.getByTestId("create-grand-atelier-presets");
+    const atelierDisclosure = screen.getByTestId("create-atelier-disclosure") as HTMLDetailsElement;
+    expect(atelierDisclosure.open).toBe(false);
+    expect(screen.queryByTestId("create-grand-atelier-presets")).toBeNull();
+    expect(screen.queryByTestId("beginner-instant-comic-wizard")).toBeNull();
+    const atelierSummary = within(atelierDisclosure).getByText("다른 규격과 도구 보기");
+    fireEvent.click(atelierSummary);
+    const atelierPresets = await screen.findByTestId("create-grand-atelier-presets");
     expect(within(atelierPresets).getByRole("link", { name: "1클릭 바로 그리기" }).getAttribute("href"))
       .toContain("/studio/new?lane=blank&preset=webtoon-standard");
     expect(within(atelierPresets).getByRole("link", { name: "4컷 캔버스 열기" }).getAttribute("href"))
@@ -188,6 +203,16 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(within(specBuilder).getByTestId("create-inline-spec-submit").getAttribute("href"))
       .toBe("/studio/new?lane=blank&width=1080&height=12800&dpi=300&collab=team");
     expect(within(proDisclosure).getByText("브러시 실험실")).toBeTruthy();
+    const wizardTitle = screen.getByLabelText("내 첫 4컷 제목 (1줄)") as HTMLInputElement;
+    fireEvent.change(wizardTitle, { target: { value: "다시 펼쳐도 남는 내 이야기" } });
+    fireEvent.click(atelierSummary);
+    expect(atelierDisclosure.open).toBe(false);
+    expect(screen.getByLabelText("내 첫 4컷 제목 (1줄)")).toBe(wizardTitle);
+    fireEvent.click(atelierSummary);
+    expect(atelierDisclosure.open).toBe(true);
+    expect(wizardTitle.value).toBe("다시 펼쳐도 남는 내 이야기");
+    expect(within(specBuilder).getByTestId("create-inline-spec-submit").getAttribute("href"))
+      .toBe("/studio/new?lane=blank&width=1080&height=12800&dpi=300&collab=team");
 
     const guide = screen.getByTestId("create-start-persona-guide");
     expect(within(guide).getByRole("heading", { name: "이야기부터 시작" })).toBeTruthy();
@@ -203,10 +228,73 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.queryByText(/가입 없이 이 기기에 자동 저장/)).toBeNull();
   });
 
-  it("영어 로케일에서 두 시작 선택과 별도 제작 도구 화면에 한글이 누수되지 않는다", () => {
+  it("한 줄 콘티는 처음 펼칠 때 불러오고 다시 접어도 작성 중인 아이디어를 유지한다", async () => {
+    renderStartSheet("/create");
+    const aiDisclosure = screen.getByTestId("create-ai-blueprint-disclosure") as HTMLDetailsElement;
+    expect(aiDisclosure.open).toBe(false);
+    expect(screen.queryByTestId("ai-quick-blueprint-composer")).toBeNull();
+    const summary = within(aiDisclosure).getByText("글 한 줄로 콘티 초안 만들기");
+    fireEvent.click(summary);
+    const ideaInput = await screen.findByLabelText("웹툰 아이디어 한 줄 입력") as HTMLInputElement;
+    fireEvent.change(ideaInput, { target: { value: "달에서 만난 고양이" } });
+    fireEvent.click(summary);
+    expect(aiDisclosure.open).toBe(false);
+    expect(screen.getByLabelText("웹툰 아이디어 한 줄 입력")).toBe(ideaInput);
+    fireEvent.click(summary);
+    expect(aiDisclosure.open).toBe(true);
+    expect(ideaInput.value).toBe("달에서 만난 고양이");
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
+  it("전달받은 아이디어가 있으면 한 줄 콘티를 바로 펼쳐 불러온다", async () => {
+    renderStartSheet(`/create?idea=${encodeURIComponent("달에서 만난 고양이")}`);
+    const aiDisclosure = screen.getByTestId("create-ai-blueprint-disclosure") as HTMLDetailsElement;
+    expect(aiDisclosure.open).toBe(true);
+    const ideaInput = await screen.findByLabelText("웹툰 아이디어 한 줄 입력") as HTMLInputElement;
+    expect(ideaInput.value).toBe("달에서 만난 고양이");
+    expect(screen.queryByTestId("create-grand-atelier-presets")).toBeNull();
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
+  it("아이디어 없는 콘티 해시 딥링크도 작성기를 펼치고 앵커를 마운트한다", async () => {
+    renderStartSheet("/create#ai-composer");
+    const aiDisclosure = screen.getByTestId("create-ai-blueprint-disclosure") as HTMLDetailsElement;
+    expect(aiDisclosure.open).toBe(true);
+    const composer = await screen.findByTestId("ai-quick-blueprint-composer");
+    expect(composer.id).toBe("ai-composer");
+    expect((within(composer).getByLabelText("웹툰 아이디어 한 줄 입력") as HTMLInputElement).value).toBe("");
+    expect(screen.queryByTestId("create-grand-atelier-presets")).toBeNull();
+  });
+
+  it("콘티 해시 이동은 작성기를 열되 사용자가 접으면 다음 해시 이동까지 그대로 둔다", async () => {
+    renderStartSheet("/create", <ComposerHashNavigation />);
+    const aiDisclosure = screen.getByTestId("create-ai-blueprint-disclosure") as HTMLDetailsElement;
+    expect(screen.queryByTestId("ai-quick-blueprint-composer")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "테스트 콘티 해시 이동" }));
+    const ideaInput = await screen.findByLabelText("웹툰 아이디어 한 줄 입력") as HTMLInputElement;
+    expect(aiDisclosure.open).toBe(true);
+    fireEvent.change(ideaInput, { target: { value: "해시 이동 뒤에도 남는 이야기" } });
+    fireEvent.click(within(aiDisclosure).getByText("글 한 줄로 콘티 초안 만들기"));
+    fireEvent(aiDisclosure, new Event("toggle"));
+    expect(aiDisclosure.open).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "테스트 쿼리만 변경" }));
+    expect(aiDisclosure.open).toBe(false);
+    expect(screen.getByLabelText("웹툰 아이디어 한 줄 입력")).toBe(ideaInput);
+    fireEvent.click(screen.getByRole("button", { name: "테스트 다른 해시 이동" }));
+    expect(aiDisclosure.open).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "테스트 콘티 해시 이동" }));
+    expect(aiDisclosure.open).toBe(true);
+    expect(ideaInput.value).toBe("해시 이동 뒤에도 남는 이야기");
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
+  it("영어 로케일에서 두 시작 선택과 별도 제작 도구 화면에 한글이 누수되지 않는다", async () => {
     useI18n.setState({ lang: "en" });
     renderStartSheet("/create");
-    expect(screen.getByTestId("create-grand-atelier-v4").textContent).not.toMatch(/[가-힣]/u);
+    const atelierDisclosure = screen.getByTestId("create-atelier-disclosure");
+    expect(atelierDisclosure.textContent).not.toMatch(/[가-힣]/u);
+    fireEvent.click(within(atelierDisclosure).getByText("More formats & tools"));
+    expect((await screen.findByTestId("create-grand-atelier-v4")).textContent).not.toMatch(/[가-힣]/u);
     const guide = screen.getByTestId("create-start-persona-guide");
     expect(guide.textContent).not.toMatch(/[가-힣]/u);
     fireEvent.click(screen.getByTestId("create-start-section-pipeline"));

@@ -66,6 +66,27 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     expect(container.textContent).not.toMatch(/OPFS|SQLite|1초|오른쪽 규격/u);
   });
 
+  it("빈 작업실은 중복 이어하기 상자 없이 네 가지 시작과 선택형 연습을 제공한다", () => {
+    const { container } = showHeader("/studio", true);
+    const quickStart = screen.getByRole("region", { name: "빠른 작업 시작" });
+    expect(container.querySelector('[data-studio-bento-resume="true"]')).toBeNull();
+    expect(within(quickStart).getByRole("heading", { name: "어떤 이야기를 만들까요?" })).toBeTruthy();
+    const startRoutes = within(quickStart).getByRole("navigation", { name: "작업 시작 방식" });
+    expect(within(startRoutes).getAllByRole("link")).toHaveLength(4);
+    expect(within(startRoutes).getByRole("link", { name: /원고 파일 불러오기/u }).getAttribute("href"))
+      .toBe("/studio/import");
+    expect(startRoutes.closest("details")).toBeNull();
+    const sampleDetails = quickStart.querySelector<HTMLDetailsElement>('[data-studio-dialogue-sample-disclosure="true"]');
+    expect(sampleDetails?.open).toBe(false);
+    const sampleAction = within(quickStart).getByRole("button", { name: "샘플 3컷 대사 고치기" });
+    expect(sampleAction.closest("details")).toBe(sampleDetails);
+    fireEvent.click(within(quickStart).getByText("샘플로 가볍게 연습하기", { exact: true }));
+    expect(sampleDetails?.open).toBe(true);
+    fireEvent.click(within(quickStart).getByText("샘플로 가볍게 연습하기", { exact: true }));
+    expect(sampleDetails?.open).toBe(false);
+    expect(within(quickStart).getByRole("button", { name: "샘플 3컷 대사 고치기" })).toBe(sampleAction);
+  });
+
   it.each([
     ["2026-11-11T00:00:00Z", true],
     ["2026-11-13T00:00:00Z", false],
@@ -108,6 +129,9 @@ describe("작업 홈의 첫 행동과 상태 안내", () => {
     expect(screen.getByRole("navigation", { name: "작업 시작 방식" }).closest("details")).toBeNull();
     expect(container.querySelectorAll("details[data-studio-library-secondary-drawer='true']")).toHaveLength(1);
     expect(within(recent).getByRole("link", { name: "이어서 작업" }).getAttribute("data-studio-library-primary-action")).toBe("resume");
+    const quickStart = screen.getByRole("region", { name: "빠른 작업 시작" });
+    expect(recent.compareDocumentPosition(quickStart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(newWork.getAttribute("data-studio-library-primary-action")).toBeNull();
   });
 
   it("기본 예제 두 개를 개인 작업과 구분하고 검색은 직접, 일괄 선택은 이름 있는 보조 도구로 제공한다", () => {

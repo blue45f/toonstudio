@@ -65,7 +65,7 @@ describe("mobile route density contract", () => {
     // 헤더 아래 두 번째 탐색 줄은 주 메뉴와 선택 표시가 겹쳐 제거했다(모바일은 하단 탭이 같은 역할).
     expect(shell).not.toContain(".public-site-journey");
     const purposes = [
-      ["/studio", "내 작업"], ["/discover", "작품 찾기"], ["/market", "소재 찾기"], ["/my", "내 정보"],
+      ["/", "사이트 홈"], ["/create", "작품 시작하기"], ["/studio", "내 작업"],
     ];
     for (const route of ["/", "/studio", "/explore", "/market", "/my"]) {
       expect(mobileSiteTabsForPath(route).map((item) => [item.href, item.label.ko])).toEqual(purposes);

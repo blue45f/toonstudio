@@ -153,17 +153,28 @@ describe("/about/studio 소개 서사", () => {
 });
 
 describe("/ 공개 홈", () => {
-  it("참고 보드형 대시보드를 그리고 끝에 '처음 둘러보는 순서'의 다음 버튼(서비스 소개)을 둔다", async () => {
+  it("처음에는 시작 동선을 보여주고 작업실 소개를 펼치면 서비스 소개와 제품 투어로 이어진다", async () => {
     await renderAt("/");
     const root = document.querySelector('[data-home-view="dashboard"]');
     expect(root?.classList.contains("creator-experience")).toBe(true);
     expect(root?.querySelector("[data-reference-dashboard]")).not.toBeNull();
     expect(screen.queryByRole("tablist")).toBeNull();
-    const flow = document.querySelector('nav[data-service-flow="home"]');
-    expect(flow).not.toBeNull();
-    expect(flow?.querySelector('a[aria-current="step"]')?.getAttribute("href")).toBe("/");
-    const next = [...(flow?.querySelectorAll("a") ?? [])].find((link) => link.textContent?.startsWith("다음"));
+    expect(document.querySelector('nav[data-service-flow="home"]')).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "서비스 더 알아보기" })).toBeNull();
+    const more = document.querySelector<HTMLDetailsElement>("details.rd-more");
+    expect(more?.open).toBe(false);
+    const summary = more?.querySelector("summary");
+    if (!summary) throw new Error("작업실 소개를 펼치는 summary가 필요합니다.");
+    fireEvent.click(summary);
+
+    const flow = await screen.findByRole("navigation", { name: "처음 둘러보는 순서" });
+    expect(more?.open).toBe(true);
+    expect(flow.getAttribute("data-service-flow")).toBe("home");
+    expect(flow.querySelector('a[aria-current="step"]')?.getAttribute("href")).toBe("/");
+    const next = [...flow.querySelectorAll("a")].find((link) => link.textContent?.startsWith("다음"));
     expect(next?.getAttribute("href")).toBe("/about");
+    const learnMore = screen.getByRole("navigation", { name: "서비스 더 알아보기" });
+    expect(within(learnMore).getByRole("link", { name: "9분 제품 투어" }).getAttribute("href")).toBe("/product-tour");
     for (const sectionId of ["creator-flow", "creator-principles", "creator-support", "creator-bridge"]) {
       expect(document.getElementById(sectionId)).toBeNull();
     }

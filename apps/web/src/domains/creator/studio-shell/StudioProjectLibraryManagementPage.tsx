@@ -16,6 +16,7 @@ import "./studio-visual-identity.css";
 import "./studio-visual-identity-v2.css";
 import "./studio-illustrated-project-surfaces.css";
 import "./studio-project-library-mobile-first.css";
+import "./studio-project-library-vivid.css";
 
 // 떠 있는 음성 안내 버튼(음성 합성·자막 모듈)은 목록 첫 화면 뒤에 불러온다.
 const VoiceGuideButton = lazyRetry(
@@ -51,7 +52,7 @@ export function StudioProjectLibraryManagementPage() {
   const controller = useStudioProjectLibraryManagementController();
   const bt = useBilingual("StudioProjectLibraryManagementPage");
   return (
-    <div data-studio-illustrated-surface="library" data-route-ready="studio-project-library" className="studio-visual-identity-page min-h-[calc(100vh-4rem)] min-w-0 bg-bg">
+    <div data-studio-illustrated-surface="library" data-studio-library-vivid="true" data-route-ready="studio-project-library" className="studio-visual-identity-page min-h-[calc(100vh-4rem)] min-w-0 bg-bg">
       <Container size="wide" className="min-w-0 py-3 sm:py-11">
         <StudioProjectLibraryManagementHeader controller={controller} />
         <StudioProjectLibraryManagementContent controller={controller} />

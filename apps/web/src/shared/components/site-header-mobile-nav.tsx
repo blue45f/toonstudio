@@ -21,21 +21,20 @@ import { SiteMenuUtilities } from "./SiteMenuUtilities";
 import { useSiteMenuAudioHandoff } from "./use-site-menu-audio-handoff";
 import { siteMobilePurposeHref, type SiteMobilePurposeHref } from "./site-mobile-purpose";
 import { ToonStudioWordmark } from "./toonstudio-brand";
-import {
-  accentToneBadgeClasses,
-  resolvePageRoleJourney,
-} from "./workspace/page-role-journey-map";
+import { resolvePageRoleJourney } from "./workspace/page-role-journey-map";
 
 import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
 import { useI18n, useT } from "@/shared/lib/i18n";
+import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 
 import "./site-menu.css";
+import "./site-menu-progressive.css";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("site-header-mobile-nav", ko, en);
 
-/** 목적지 이름은 단일 지도의 정본 라벨을 그대로 쓴다. 표면별 덮어씀 금지. */
+/** 모바일 탭은 짧은 행동 이름을 쓰고, 실제 목적지와 접근 정책은 정본 지도를 유지한다. */
 
 interface MobileHeaderNavigationProps {
   menuOpen: boolean;
@@ -43,6 +42,7 @@ interface MobileHeaderNavigationProps {
   panelRef: RefObject<HTMLDivElement | null>;
   closeMenu: () => void;
   closeForUtility?: () => void;
+  onOpenMenu?: (trigger: HTMLButtonElement) => void;
   isActive: (href: string, exact?: boolean) => boolean;
   isPurposeActive: (href: string, exact?: boolean) => boolean;
   currentPurposeHref?: SiteMobilePurposeHref | null;
@@ -123,6 +123,7 @@ export function MobileHeaderNavigation({
   panelRef,
   closeMenu,
   closeForUtility,
+  onOpenMenu,
   isActive,
   currentPurposeHref,
   hideBottomTabs = false,
@@ -140,19 +141,20 @@ export function MobileHeaderNavigation({
   /** 지도는 하나다. 현재 경로가 속한 여정 구간만 강조 표시한다. */
   const currentGroupId = siteNavigationGroupForPath(pathname)?.id ?? null;
   const currentRole = resolvePageRoleJourney(pathname);
-  const isKo = locale === "ko";
   const mobileTabs = [...mobileSiteTabsForPath(pathname), SITE_NAVIGATION_ITEMS.allMenu];
   const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;
-  const activeTabIndex = mobileTabs.findIndex((item) => item.id === "all-menu"
-    ? pathname === "/sitemap" || pathname.startsWith("/sitemap/")
-    : resolvedPurposeHref === item.href);
+  const canonicalPath = canonicalSitePath(pathname);
+  const activeTabId = canonicalPath === "/" ? "home"
+    : canonicalPath === "/create" ? "make"
+      : resolvedPurposeHref === "/studio" ? "studio"
+        : canonicalPath === "/sitemap" || canonicalPath.startsWith("/sitemap/") || resolvedPurposeHref !== null || currentGroupId !== null ? "all-menu"
+          : null;
+  const activeTabIndex = mobileTabs.findIndex((item) => item.id === activeTabId);
   /** The bottom tab bar is a mobile-only surface: never render it on desktop,
    * even if the CSS media query hiding it were lost. Tabs keep the canonical
    * destinations from the navigation model (no legacy /new or /more aliases). */
   const showBottomTabs = isMobileViewport && !hideBottomTabs;
-  const menuDescription = isKo
-    ? currentRole.roleHeadlineKo
-    : currentRole.roleHeadlineEn;
+  const menuDescription = bi("만들고, 찾고, 이어 가는 곳", "Create, explore, and keep going");
 
   useEffect(() => {
     const committed = previousLocationKey.current !== locationKey;
@@ -261,20 +263,7 @@ export function MobileHeaderNavigation({
                 <div className="flex min-w-0 items-center gap-3">
                   <ToonStudioMark className="size-10 rounded-[0.85rem]" />
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="block truncate font-display text-sm font-semibold text-fg">
-                        <ToonStudioWordmark />
-                      </span>
-                      <span
-                        data-accent-tone={currentRole.accentTone}
-                        className={cx(
-                          "rounded-full border px-2 py-0.5 text-[10px] font-semibold tabular-nums [word-break:keep-all]",
-                          accentToneBadgeClasses(currentRole.accentTone),
-                        )}
-                      >
-                        {isKo ? currentRole.stageBadgeKo : currentRole.stageBadgeEn}
-                      </span>
-                    </div>
+                    <span className="block truncate font-display text-sm font-semibold text-fg"><ToonStudioWordmark /></span>
                     <span className="mt-0.5 block truncate text-xs text-fg-3 [word-break:keep-all]">
                       {menuDescription}
                     </span>
@@ -304,7 +293,7 @@ export function MobileHeaderNavigation({
               </Link>
 
               <SiteMenuUtilities onOpenMusic={openMusic} settingsActive={isActive("/settings")} />
-              <div className="mt-4 grid gap-2 border-t border-line pt-4">
+              <div className="site-menu-utility-links mt-4 grid gap-2 border-t border-line pt-4">
                 {SITE_UTILITY_NAVIGATION.filter((item) => item.id !== "settings").map((item) => {
                   const active = isActive(item.href, item.exact);
                   const Icon = item.icon;
@@ -352,16 +341,17 @@ export function MobileHeaderNavigation({
         </div>
       )}
 
-      {showBottomTabs && !menuOpen && (
+      {showBottomTabs && (
         <nav
           aria-label={t("nav.quickAccess")}
+          hidden={menuOpen}
           data-site-product={navigationContext}
           data-journey-stage={currentRole.stageNumber}
           className="site-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-line bg-panel min-[1180px]:hidden"
         >
           <div
             className={cx(
-              "site-bottom-tabs__grid relative mx-auto grid max-w-md px-1 pb-[env(safe-area-inset-bottom)] md:max-w-2xl md:px-4",
+              "site-bottom-tabs__grid relative mx-auto grid max-w-md px-1 md:max-w-2xl md:px-4",
               mobileTabs.length === 5
                 ? "grid-cols-[repeat(5,minmax(0,1fr))]"
                 : "grid-cols-[repeat(4,minmax(0,1fr))]"
@@ -373,27 +363,30 @@ export function MobileHeaderNavigation({
             {mobileTabs.map((item, index) => {
               const active = index === activeTabIndex;
               const Icon = item.icon;
-              const label = siteNavigationText(item.label, locale);
+              const label = item.id === "home" ? bi("홈", "Home")
+                : item.id === "make" ? bi("만들기", "Create")
+                  : item.id === "all-menu" ? bi("더보기", "More")
+                    : siteNavigationText(item.label, locale);
               const tabRole = resolvePageRoleJourney(item.href);
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  aria-label={label}
-                  aria-current={active ? "page" : undefined}
-                  data-journey-stage={tabRole.stageNumber}
-                  data-accent-tone={tabRole.accentTone}
-                  className={cx(
-                    "site-bottom-tabs__link relative flex min-h-[3.75rem] min-w-0 flex-col items-center justify-center gap-1 overflow-hidden px-0.5 py-2 text-xs font-medium break-keep outline-none transition-[color,transform] duration-150 active:scale-[0.96] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:active:scale-100",
-                    active ? "text-fg" : "text-fg-3 hover:text-fg-2"
-                  )}
-                >
-                  <span className="relative grid size-8 shrink-0 place-items-center">
-                    <Icon size={22} strokeWidth={1.75} className={cx("relative transition-colors duration-150 motion-reduce:transition-none", active && "text-accent")} />
-                  </span>
-                  <span className="min-w-0 max-w-full truncate text-[11px] leading-tight">{label}</span>
-                </Link>
+              const className = cx(
+                "site-bottom-tabs__link relative flex min-h-[3.75rem] min-w-0 flex-col items-center justify-center gap-1 overflow-hidden px-0.5 py-2 text-xs font-medium break-keep outline-none transition-[color,transform] duration-150 active:scale-[0.96] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:active:scale-100",
+                active ? "text-fg" : "text-fg-3 hover:text-fg-2"
               );
+              const content = <>
+                <span className="site-bottom-tabs__icon relative grid size-8 shrink-0 place-items-center"><Icon size={22} strokeWidth={1.75} aria-hidden="true" /></span>
+                <span className="min-w-0 max-w-full truncate text-[11px] leading-tight">{label}</span>
+              </>;
+              return item.id === "all-menu" && onOpenMenu ? <button
+                key={item.id} type="button" className={className} aria-label={label}
+                data-mobile-tab={item.id} data-accent-tone={tabRole.accentTone}
+                aria-current={active ? "true" : undefined}
+                aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls={menuId}
+                onClick={(event) => onOpenMenu(event.currentTarget)}
+              >{content}</button> : <Link
+                key={item.id} href={item.href} className={className} aria-label={label}
+                aria-current={active ? "page" : undefined}
+                data-mobile-tab={item.id} data-journey-stage={tabRole.stageNumber} data-accent-tone={tabRole.accentTone}
+              >{content}</Link>;
             })}
           </div>
         </nav>

@@ -140,9 +140,10 @@ describe("mobile site shell accessibility", () => {
     const technologyEntry = menuDestination(dialog, "/about/technology", "제작 기술");
     expect(technologyEntry.getAttribute("href")).toBe("/about/technology");
 
-    // 빠른 이동은 메뉴 동안 제거되고 실제 본문은 inert/aria-hidden과 초점 가드로 격리된다.
-    expect(quickNavigation.isConnected).toBe(false);
-    expect(container.querySelector('nav[aria-label="빠른 이동"]')).toBeNull();
+    // 하단 버튼의 초점 복귀를 위해 노드는 유지하되 메뉴 동안 숨기고 배경을 격리한다.
+    expect(quickNavigation.isConnected).toBe(true);
+    expect(quickNavigation.hasAttribute("hidden")).toBe(true);
+    expect(screen.queryByRole("navigation", { name: "빠른 이동" })).toBeNull();
     expect(pageAction.hasAttribute("inert")).toBe(true);
     expect(pageAction.getAttribute("aria-hidden")).toBe("true");
 
@@ -176,7 +177,7 @@ describe("mobile site shell accessibility", () => {
     expect(pageAction.hasAttribute("aria-hidden")).toBe(false);
   });
 
-  it("keeps desktop destinations and five equal mobile tabs on discovery routes", async () => {
+  it("keeps desktop destinations and four stable mobile actions on discovery routes", async () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/discover"]}>
         <SiteHeader />
@@ -187,11 +188,11 @@ describe("mobile site shell accessibility", () => {
     expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(PRIMARY_ENTRY_HREFS);
 
     const quickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
-    expect(Array.from(quickNavigation.querySelectorAll("a")).map((link) => link.getAttribute("href"))).toEqual(["/studio", "/discover", "/market", "/my", "/sitemap"]);
+    expect(Array.from(quickNavigation.querySelectorAll("a")).map((link) => link.getAttribute("href"))).toEqual(["/", "/create", "/studio"]);
     const grid = quickNavigation.querySelector<HTMLElement>(":scope > .grid");
-    expect(grid?.classList.contains("grid-cols-[repeat(5,minmax(0,1fr))]")).toBe(true);
-    expect(grid?.style.getPropertyValue("--tab-count")).toBe("5");
-    expect(within(quickNavigation).getByRole("link", { name: "작품 찾기" }).getAttribute("aria-current")).toBe("page");
+    expect(grid?.classList.contains("grid-cols-[repeat(4,minmax(0,1fr))]")).toBe(true);
+    expect(grid?.style.getPropertyValue("--tab-count")).toBe("4");
+    expect(within(quickNavigation).getByRole("button", { name: "더보기" }).getAttribute("aria-current")).toBe("true");
     const trigger = fullMenuTrigger();
     fireEvent.click(trigger);
     const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
@@ -200,6 +201,21 @@ describe("mobile site shell accessibility", () => {
     expect(menuDestination(dialog, "/", "사이트 홈").getAttribute("href")).toBe("/");
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("더보기에서 연 메뉴는 닫은 뒤 같은 하단 버튼에 초점을 돌린다", async () => {
+    render(<MemoryRouter><SiteHeader /></MemoryRouter>);
+    const quickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
+    const more = within(quickNavigation).getByRole("button", { name: "더보기" });
+    fireEvent.click(more);
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    expect(more.isConnected).toBe(true);
+    expect(quickNavigation.hasAttribute("inert")).toBe(true);
+    fireEvent.keyDown(within(dialog).getByRole("button", { name: "전체 메뉴 닫기" }), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "전체 메뉴" })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(more));
+    expect(quickNavigation.hasAttribute("inert")).toBe(false);
+    expect(more.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("shows Korean on the closed search-first language picker", () => {
@@ -248,7 +264,7 @@ describe("mobile site shell accessibility", () => {
     const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
     const close = within(dialog).getByRole("button", { name: "전체 메뉴 닫기" });
     await waitFor(() => expect(document.activeElement).toBe(close));
-    expect(container.querySelector('nav[aria-label="빠른 이동"]')).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "빠른 이동" })).toBeNull();
     expect(document.body.style.overflow).toBe("hidden");
 
     act(() => {
@@ -263,7 +279,7 @@ describe("mobile site shell accessibility", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "전체 메뉴" })).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(trigger));
-    expect(container.querySelector('nav[aria-label="빠른 이동"]')).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "빠른 이동" })).toBeNull();
     expect(container.querySelector("header")?.hasAttribute("inert")).toBe(false);
     expect(document.body.style.overflow).toBe("");
     expect(document.documentElement.style.overflow).toBe("");

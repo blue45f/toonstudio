@@ -29,6 +29,7 @@ const PAGE_SOURCE = "apps/web/src/domains/marketing/ProductTourPage.tsx";
 const PLAYER_SOURCE = "apps/web/src/domains/marketing/ProductTourPlayer.tsx";
 const ROUTE_SOURCE = "apps/web/src/app/routes/groups/marketing.routes.tsx";
 const HOME_DASHBOARD_SOURCE = "apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx";
+const HOME_DETAILS_SOURCE = "apps/web/src/domains/marketing/HomeVividMore.tsx";
 const HOME_CONTENT_SOURCE = "apps/web/src/domains/marketing/reference-home-content.ts";
 const REMOTION_SOURCE = "tools/media/brand-film/src/ProductTourFilm.tsx";
 const SHARED_REMOTION_SOURCE = "packages/product-tour-film/src/ProductTourFilm.tsx";
@@ -72,12 +73,14 @@ describe("long-form product tour contracts", () => {
   it("registers the public page and links it from the creator home and the introduction", () => {
     const routeSource = readFileSync(ROUTE_SOURCE, "utf8");
     const dashboard = readFileSync(HOME_DASHBOARD_SOURCE, "utf8");
+    const homeDetails = readFileSync(HOME_DETAILS_SOURCE, "utf8");
     const homeContent = readFileSync(HOME_CONTENT_SOURCE, "utf8");
     const aboutSource = readFileSync("apps/web/src/domains/legal/AboutPage.tsx", "utf8");
 
     expect(routeSource).toContain('path: "/product-tour"');
-    // 홈은 '처음 둘러보는 순서'의 다음 버튼과 '더 알아보기'로, 서비스 소개는 9분 제품 투어 버튼으로 투어에 닿는다.
-    expect(dashboard).toContain('<ServiceFlowNext current="home"');
+    // 홈은 펼친 작업실 소개의 다음 버튼과 더 알아보기로, 서비스 소개는 제품 투어 버튼으로 이어진다.
+    expect(dashboard).toContain("<LazyHomeVividMore />");
+    expect(homeDetails).toContain('<ServiceFlowNext current="home"');
     expect(homeContent).toContain('{ id: "tour", href: "/product-tour"');
     expect(homeContent).toContain('{ href: "/product-tour", ko: "9분 제품 투어"');
     expect(aboutSource).toContain('href: "/product-tour"');

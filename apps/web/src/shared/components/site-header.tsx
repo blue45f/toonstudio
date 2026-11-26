@@ -121,6 +121,7 @@ export function SiteHeader({
   const isMobileNavigationViewport = useMobileNavigationViewport();
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuReturnFocusRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const shouldRenderMobileNavigation = menuRequested || menuOpen || isMobileNavigationViewport;
   const hideBottomTabs = isImmersiveMobileRoute(pathname);
@@ -147,10 +148,17 @@ export function SiteHeader({
 
   const closeMenu = useCallback(() => {
     setMenuOpen(false);
-    window.requestAnimationFrame(() =>
-      triggerRef.current?.focus({ preventScroll: true })
-    );
+    window.requestAnimationFrame(() => {
+      const origin = menuReturnFocusRef.current;
+      (origin?.isConnected ? origin : triggerRef.current)?.focus({ preventScroll: true });
+    });
   }, [setMenuOpen]);
+
+  const openMenu = useCallback((trigger: HTMLButtonElement) => {
+    menuReturnFocusRef.current = trigger;
+    setMenuRequested(true);
+    setMenuOpen(true);
+  }, [setMenuOpen, setMenuRequested]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -238,7 +246,7 @@ export function SiteHeader({
             <button
               ref={triggerRef}
               type="button"
-              onClick={() => { setMenuRequested(true); setMenuOpen((open) => !open); }}
+              onClick={(event) => { if (menuOpen) closeMenu(); else openMenu(event.currentTarget); }}
               aria-haspopup="dialog" data-site-mobile-menu-trigger="true" data-site-menu-entry="available"
               aria-expanded={menuOpen}
               aria-controls={menuId}
@@ -261,6 +269,7 @@ export function SiteHeader({
             menuId={menuId}
             panelRef={panelRef}
             closeMenu={closeMenu} closeForUtility={() => setMenuOpen(false)}
+            onOpenMenu={openMenu}
             isActive={isActive}
             isPurposeActive={isPurposeActive}
             hideBottomTabs={hideBottomTabs}

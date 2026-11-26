@@ -107,8 +107,9 @@ describe("단일 창작 헤더", () => {
     const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
     const close = within(dialog).getByRole("button", { name: "전체 메뉴 닫기" });
     await waitFor(() => expect(document.activeElement).toBe(close));
-    expect(within(dialog).getByRole("link", { name: /작품 찾기/u }).getAttribute("href"))
-      .toBe("/sitemap/discover");
+    const discoverGroup = dialog.querySelector<HTMLElement>('[data-menu-group="discover"] > summary');
+    expect(discoverGroup?.textContent).toContain("작품 찾기");
+    expect(discoverGroup?.getAttribute("aria-expanded")).toBe("false");
     const search = within(dialog).getByRole("searchbox");
     fireEvent.change(search, { target: { value: "랭킹" } });
     const destination = within(dialog).getByRole("link", { name: "랭킹" });

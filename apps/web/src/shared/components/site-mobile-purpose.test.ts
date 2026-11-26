@@ -51,10 +51,10 @@ describe("모바일 네 목적지의 현재 위치", () => {
     expect(restricted.access).toBe("project");
     expect(siteMobilePurposeHref("/production/projects/manuscript-a/overview?role=admin")).toBe(SITE_NAVIGATION_ITEMS.studio.href);
     expect(resolveSiteRouteMetadata("/production/projects/manuscript-a/overview")).toEqual(restricted);
-    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.href)).toEqual(["/studio", "/discover", "/market", "/my"]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.href)).toEqual(["/", "/create", "/studio"]);
     expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label)).toEqual([
-      { ko: "내 작업", en: "My work" }, { ko: "작품 찾기", en: "Discover" },
-      { ko: "소재 찾기", en: "Assets" }, { ko: "내 정보", en: "My account" },
+      { ko: "사이트 홈", en: "Site home" }, { ko: "작품 시작하기", en: "Start a work" },
+      { ko: "내 작업", en: "My work" },
     ]);
     expect(JSON.stringify(TOONSTUDIO_MOBILE_TABS)).toBe(before);
   });
