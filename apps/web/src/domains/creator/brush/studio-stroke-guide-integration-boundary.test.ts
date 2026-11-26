@@ -22,10 +22,10 @@ describe("studio stroke guide integration boundary", () => {
     expect(pageSource).toContain("const strokeGuideRef = useRef<Konva.Line>(null);");
     expect(pageSource).toContain("strokeGuideRef={strokeGuideRef}");
     expect(viewportSource).toContain(
-      'strokeGuideRef: import("react").RefObject<import("konva/lib/shapes/Line").Line | null>;',
+      "strokeGuideRef: StudioReadonlyRef<StudioLineNodeLike | null>;",
     );
     expect(viewportSource).toContain("guideRef={");
-    expect(viewportSource).toContain("? strokeGuideRef");
+    expect(viewportSource).toContain("? (strokeGuideRef as RefObject<Konva.Line | null>)");
     expect(cursorSource).toContain('name="studio-stroke-guide"');
     expect(cursorSource).toContain("listening={false}");
     expect(cursorSource).toContain("visible={false}");
