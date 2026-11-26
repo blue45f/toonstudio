@@ -4,6 +4,7 @@ import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 import { studioRoutePath } from "@/domains/creator/studio-route-registry";
 import { defineAppRoutes } from "../app-route-definition";
+import { creatorCharacterAliasRoutes } from "./creator-character-alias-routes";
 import {
   CharacterShaperLandingPage, CreatorEnvironmentGuidePage, CreatorEcosystemPage,
   CreatorGrowthIpPage, CreatorGrowthLabPage, CreatorEcosystemViewerPage,
@@ -18,7 +19,6 @@ import {
   StudioTemplatesPage, StudioRouter, CreatorAnalyticsPage, StudioPoserPage,
   PdfWorkbenchPage,
 } from "./creator-route-pages";
-import { creatorCharacterAliasRoutes } from "./creator-character-alias-routes";
 import { creatorCreateRoutes, creatorShowcaseRoutes } from "./creator-showcase-routes";
 
 const StudioHomeEntryRoute = lazyRetry(

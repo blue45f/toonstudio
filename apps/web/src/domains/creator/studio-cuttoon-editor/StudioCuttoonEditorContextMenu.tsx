@@ -8,7 +8,7 @@ import { isStudioVrmCharacterDocumentId } from "@toonstudio/contracts/studio-vrm
 import { StudioCanvasContextMenu } from "../canvas/StudioCanvasContextMenu";
 import { preloadStudioBackground3D } from "../studio-background-3d-loader";
 import { parseStudio3dTool } from "../studio-background-3d-metadata";
-import { reopenStudioVrmCut } from "../studio-reopen-vrm-cut";
+import { reopenStudioVrmCut } from "./studio-reopen-vrm-cut";
 import { isEffectivelyLocked } from "../studio-layers";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 

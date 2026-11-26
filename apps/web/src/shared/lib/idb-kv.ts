@@ -26,7 +26,7 @@ interface CachedConnection {
 
 let cached: CachedConnection | null = null;
 
-export function getBrowserIndexedDbFactory(): IDBFactory | null {
+function currentFactory(): IDBFactory | null {
   try {
     return typeof indexedDB !== "undefined" ? indexedDB : null;
   } catch {
@@ -35,7 +35,7 @@ export function getBrowserIndexedDbFactory(): IDBFactory | null {
 }
 
 function openDatabase(): Promise<IDBDatabase | null> {
-  const factory = getBrowserIndexedDbFactory();
+  const factory = currentFactory();
   if (!factory) return Promise.resolve(null);
   if (cached && cached.factory === factory) return cached.promise;
   const promise = new Promise<IDBDatabase | null>((resolve) => {

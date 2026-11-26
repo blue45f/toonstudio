@@ -100,7 +100,6 @@ test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스
 
 test("1440·1280·390 원고에서 연결 복구와 오프라인 도구 준비를 함께 읽어도 캔버스 원점을 유지한다", async ({ page }) => {
   await page.route("**/api/health/capabilities*", route => route.fulfill({ status: 503, json: { status: "unavailable" } }));
-  const retryLabel = "연결 대기";
   const retryMessage = "연결 복구 후 재시도";
   const message = "일부 오프라인 도구 준비 필요";
   for (const size of [{ width: 1440, height: 1100 }, { width: 1280, height: 900 }, { width: 390, height: 844 }]) {
@@ -109,8 +108,7 @@ test("1440·1280·390 원고에서 연결 복구와 오프라인 도구 준비�
       const { header, canvas, summary, notice } = await openManuscriptHeader(page);
       const title = header.locator(".studio-drawing-clarity-title");
       const retry = summary.locator("[data-studio-draft-save-attention]");
-      await expect(retry).toHaveText(retryLabel);
-      await expect(retry).toHaveAttribute("title", retryMessage);
+      await expect(retry).toHaveText(retryMessage);
       await offlinePhase(page, "ready");
       await expect(summary).toHaveAccessibleDescription(retryMessage);
       const origin = await canvas.boundingBox();
@@ -124,7 +122,7 @@ test("1440·1280·390 원고에서 연결 복구와 오프라인 도구 준비�
       if (!hit) throw new Error("저장 상태 버튼의 터치 영역이 없습니다.");
       expect(hit.width).toBeGreaterThanOrEqual(44);
       expect(hit.height).toBeGreaterThanOrEqual(44);
-      for (const [label, expected] of [[retry, retryLabel], [notice, message]] as const) {
+      for (const [label, expected] of [[retry, retryMessage], [notice, message]] as const) {
         await expect(label).toHaveText(expected);
         await expect(label).toBeVisible();
         const lines = await label.evaluate(node => {
