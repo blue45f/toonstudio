@@ -181,6 +181,16 @@
 .site-header__create:hover {
   background-color: var(--color-accent-2, var(--color-accent));
 }
+/* 첫 화면(/)에는 히어로 주 행동 버튼이 이미 있으므로 상단바 버튼은 테두리형으로 낮춰 중복 강조를 피한다. */
+:root:has(.creator-home) .site-header__create {
+  border-color: var(--color-line);
+  background-color: var(--color-card);
+  color: var(--color-fg);
+}
+:root:has(.creator-home) .site-header__create:hover {
+  border-color: var(--color-line-strong);
+  background-color: var(--color-raised);
+}
 :root[data-design-theme="contrast"] .site-header__create {
   background-color: var(--color-accent);
   box-shadow: none;

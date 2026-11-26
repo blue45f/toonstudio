@@ -288,6 +288,7 @@ export function StudioDraftOperationSyncAssistant({
       {model.ariaLiveMessage}
     </span>
   );
+  const compactFloatingProgress = !inline && !urgent && model.tone === "progress" && pendingCount === 0 && !open;
   const trigger = (
     <button
       ref={triggerRef}
@@ -306,13 +307,22 @@ export function StudioDraftOperationSyncAssistant({
       data-sync-tone={model.tone}
       className={cn(
         TRIGGER_CLASS,
-        inline ? cn(INLINE_TRIGGER_CLASS, INLINE_WIDE_CLASS[urgent ? "urgent" : "calm"]) : FLOATING_TRIGGER_CLASS,
+        inline
+          ? cn(INLINE_TRIGGER_CLASS, INLINE_WIDE_CLASS[urgent ? "urgent" : "calm"])
+          : compactFloatingProgress
+            ? "w-11 justify-center px-0 shadow-md"
+            : FLOATING_TRIGGER_CLASS,
         TONE_CLASS[model.tone],
         !inline && "bg-panel",
       )}
     >
       <StatusIcon tone={model.tone} className="h-4 w-4 shrink-0" />
-      <span className={cn("truncate", !inline && "text-fg", inline && (urgent ? "max-xl:sr-only" : "max-2xl:sr-only"))}>
+      <span className={cn(
+        "truncate whitespace-nowrap",
+        !inline && !compactFloatingProgress && "text-fg",
+        compactFloatingProgress && "sr-only",
+        inline && (urgent ? "max-xl:sr-only" : "max-2xl:sr-only"),
+      )}>
         {model.compactLabel}
       </span>
       {pendingCount > 0 ? (
@@ -496,7 +506,7 @@ export function StudioDraftOperationSyncAssistant({
         "pointer-events-auto fixed right-[max(0.75rem,env(safe-area-inset-right))] lg:z-[58]",
         open ? "z-[58]" : "z-[51]",
         anchorAtBottom
-          ? "bottom-[calc(9.75rem+env(safe-area-inset-bottom))] [--studio-sync-offset:9.75rem]"
+          ? "bottom-[calc(max(var(--studio-canvas-bottom-inset,4rem),var(--studio-mobile-dock-measured-height,0px))+0.5rem)] [--studio-sync-offset:5rem]"
           : "top-[calc(11rem+env(safe-area-inset-top))] [--studio-sync-offset:11rem]",
       )}
     >

@@ -36,10 +36,19 @@
   display: none;
 }
 
-/* 중요한 안내는 큰 글꼴의 첫 줄을 한 줄 말줄임 상자에 다시 가두지 않는다. */
+/* 44px 상단바 안에서 제목(16px)과 한 줄 상태(14px)를 세로 중앙에 맞춰 하단 잘림을 막는다. */
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > span {
   display: block;
-  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-connection-notice-summary] > * {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 두 상태 문구가 있을 때 저장 아이콘을 제목 줄에 두어 안내 너비를 확보한다. */
@@ -54,24 +63,25 @@
 .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > svg {
   position: absolute;
   inset-inline-start: 0;
-  top: 4px;
+  top: 6px;
 }
 
-/* 제목 아래 27px에는 기본 크기 안내 두 줄이나 두 배 크기 안내 한 줄이 들어간다. */
+/* 제목(top: 5px, 16px)과 한 줄 상태(line-height: 14px)가 44px 바 안에서 여유 있게 중앙 정렬된다. */
 @media (max-width: 559px) {
   .studio-drawing-clarity-mobile-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) h1 {
-    top: 0;
+    top: 5px;
     line-height: 16px;
   }
   .studio-drawing-clarity-mobile-header button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > svg {
-    top: 1px;
+    top: 6px;
   }
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) {
-    padding-block: 0 1px;
+    align-items: center;
+    padding-block: 22px 6px;
   }
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) > span {
-    line-height: 1.125;
-    max-height: 27px;
+    line-height: 14px;
+    max-height: 16px;
   }
 }
 
