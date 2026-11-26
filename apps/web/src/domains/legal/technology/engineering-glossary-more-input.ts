@@ -213,4 +213,23 @@ export const GLOSSARY_MORE_INPUT: readonly GlossaryTerm[] = [
     chapters: ["quality", "performance"],
     atlasIds: ["pointer-drag-kanban"],
   },
+  {
+    id: "biometric-12d-ink-auth-gyro-webhid",
+    category: "input",
+    term: t("12차원 스타일러스 잉크 인증 · 자이로/WebHID · DCC 핫싱크", "12D biometric stylus ink auth, gyro/WebHID & DCC hot-sync"),
+    definition: t(
+      "필압·속도·기울기 12차원 운동 특징으로 본인 필적을 로컬 판별하고, 컴패니언 자이로 다이얼·WebHID/WebMIDI 시프트 레이어·외부 DCC(.psd/.glb) 핫싱크를 묶은 입력 확장입니다.",
+      "An input suite profiling 12D stylus kinematics for local authorship verification alongside companion gyro dials, WebHID/WebMIDI shift layers and .psd/.glb DCC hot-sync.",
+    ),
+    analogy: t(
+      "필압과 속도로 작가 고유의 손버릇을 알아보는 필체 감정기와, 왼손 다이얼·MIDI 패드·외부 Blender/Photoshop 파일 연동을 한 책상에 연결한 입력 장치함입니다.",
+      "Like a handwriting profiler for stylus strokes paired with a gyro dial, MIDI/HID macro pad and live .psd/.glb file drop-box.",
+    ),
+    inToonstudio: t(
+      "StylusBiometricInkProfiler(authentic vs imposter-suspected), CompanionGyroDialController(데드존·EMA), HardwareHidMidiMapper, ExternalDccHotSyncManager(.psd/.glb 매직 헤더)를 검증했습니다.",
+      "Verified across StylusBiometricInkProfiler, CompanionGyroDialController (deadzone/EMA), HardwareHidMidiMapper and ExternalDccHotSyncManager (.psd/.glb magic headers).",
+    ),
+    chapters: ["brush-engine", "blender-mcp-boundary"],
+    atlasIds: ["thermal-pacer-dual-journal-vault-biometric-coldboot", "zero-lag-companion-pairing-ephemeral-redline-hw"],
+  },
 ];

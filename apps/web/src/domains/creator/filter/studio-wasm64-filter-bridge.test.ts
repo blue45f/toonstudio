@@ -298,6 +298,64 @@ describe("실물 Rust .wasm 필터 가속 브리지 (studio-wasm64-filter-bridge
     ).toThrow(RangeError);
   });
 
+  it("자동 CPU 티어 선택으로 relaxed-simd 실물 바이너리를 예열하고 텔레메트리 cpuTier와 0 diff 정합을 보고한다", async () => {
+    const relaxedPath = path.join(
+      REPO_ROOT,
+      "apps/web/public/wasm/studio-wasm64-drawing-core-relaxed-simd.wasm",
+    );
+    expect(existsSync(relaxedPath)).toBe(true);
+    const raw = readFileSync(relaxedPath);
+    const relaxedBytes = new Uint8Array(
+      raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength),
+    );
+    const requestedUrls: string[] = [];
+
+    const telemetry = await warmStudioWasmFilterRuntime({
+      fetchFn: async (input) => {
+        const url = String(input);
+        requestedUrls.push(url);
+        return new Response(relaxedBytes.slice().buffer, {
+          status: 200,
+          headers: {
+            "content-type": "application/wasm",
+            "content-length": String(relaxedBytes.byteLength),
+          },
+        });
+      },
+    });
+
+    expect(requestedUrls).toEqual(["/wasm/studio-wasm64-drawing-core-relaxed-simd.wasm"]);
+    expect(telemetry.wasmReady).toBe(true);
+    expect(telemetry.cpuTier).toBe("wasm-relaxed-simd");
+    expect(telemetry.resolvedWasmUrl).toBe("/wasm/studio-wasm64-drawing-core-relaxed-simd.wasm");
+
+    const rgba = createSyntheticRgbaClamped(32, 32);
+    const wasmRes = executeStudioFilterWithWasmAcceleration({
+      filter: "unsharp-mask",
+      rgba,
+      width: 32,
+      height: 32,
+      sigma: 1.4,
+      amount: 1.25,
+      threshold: 2,
+    });
+    setStudioWasmFilterAccelerationEnabled(false);
+    const jsRes = executeStudioFilterWithWasmAcceleration({
+      filter: "unsharp-mask",
+      rgba,
+      width: 32,
+      height: 32,
+      sigma: 1.4,
+      amount: 1.25,
+      threshold: 2,
+    });
+
+    expect(wasmRes.engine).toBe("rust-wasm");
+    expect(wasmRes.cpuTier).toBe("wasm-relaxed-simd");
+    expect(jsRes.cpuTier).toBe("js-fallback");
+    expect(maxChannelDiff(wasmRes.output, jsRes.output)).toBe(0);
+  });
+
   it("신규 브리지 소스 파일은 800줄 이하이며 웹 스토리지·금지 패턴을 사용하지 않는다", () => {
     const src = readFileSync(
       path.join(REPO_ROOT, "apps/web/src/domains/creator/filter/studio-wasm64-filter-bridge.ts"),

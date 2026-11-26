@@ -9,6 +9,7 @@ export * from "./filesystem-remote.js";
 export * from "./journal.js";
 export * from "./local-folder-hot-reload-watcher.js";
 export * from "./model.js";
+export * from "./native-rust-core-bridge.js";
 export * from "./path-policy.js";
 export * from "./planner.js";
 export * from "./remote-target.js";

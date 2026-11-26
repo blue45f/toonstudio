@@ -7,11 +7,11 @@
  *
  * Soft-lock: optional onInteractionBegin/End claim live collaboration resources for the gesture.
  */
-import type Konva from "konva";
+import type { StudioKonvaEventLike, StudioNodeLike, StudioPoint2D } from "./canvas/studio-stage-handle-types";
 
-type DragEvt = Konva.KonvaEventObject<DragEvent>;
-type XfEvt = Konva.KonvaEventObject<Event>;
-type BoundFunc = (pos: Konva.Vector2d) => Konva.Vector2d;
+type DragEvt = StudioKonvaEventLike<DragEvent>;
+type XfEvt = StudioKonvaEventLike<Event>;
+type BoundFunc = (pos: StudioPoint2D) => StudioPoint2D;
 
 export type StudioNodeInteractionGuards = {
   /** Return false to cancel drag/transform start (e.g. soft-lock deny). */
@@ -38,8 +38,8 @@ export function withStudioNodeInteractionGuards(
       if (onInteractionBegin && !onInteractionBegin()) {
         // Transformer will not apply if the node rejects interaction; stop any active transform.
         const node = e.target;
-        if (typeof (node as Konva.Node & { stopDrag?: () => void }).stopDrag === "function") {
-          (node as Konva.Node & { stopDrag: () => void }).stopDrag();
+        if (typeof (node as StudioNodeLike & { stopDrag?: () => void }).stopDrag === "function") {
+          (node as StudioNodeLike & { stopDrag: () => void }).stopDrag();
         }
       }
     },

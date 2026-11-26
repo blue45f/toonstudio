@@ -17,7 +17,12 @@
  * React commits — the imperative discipline `translateGroupPreview` already uses for the
  * multi-select overlay, and what the hot-path de-React contract requires.
  */
-import type Konva from "konva";
+import type {
+  StudioExportStageLike,
+  StudioNodeLike,
+  StudioSceneNodeLike,
+  StudioStageLike,
+} from "./canvas/studio-stage-handle-types";
 
 /** Scoped so `off` can never strip listeners the product installed on the same node. */
 export const STUDIO_SELECTION_CHROME_MIRROR_NAMESPACE = "studioSelectionChromeMirror";
@@ -69,9 +74,9 @@ export const STUDIO_LIVE_TRANSFORM_PARKED_CHROME_ATTR =
  * Only ever called for chrome this module just hid, which keeps the un-park symmetric: chrome the
  * product hid for its own reasons is never in the set and is never revealed by the restore.
  */
-function registerStudioParkedChrome(stage: Konva.Stage, node: Konva.Node): void {
+function registerStudioParkedChrome(stage: StudioStageLike, node: StudioNodeLike): void {
   const existing = stage.getAttr(STUDIO_LIVE_TRANSFORM_PARKED_CHROME_ATTR);
-  const parked: Set<Konva.Node> = existing instanceof Set ? existing : new Set<Konva.Node>();
+  const parked: Set<StudioNodeLike> = existing instanceof Set ? existing : new Set<StudioNodeLike>();
   parked.add(node);
   stage.setAttr(STUDIO_LIVE_TRANSFORM_PARKED_CHROME_ATTR, parked);
 }
@@ -82,20 +87,20 @@ function registerStudioParkedChrome(stage: Konva.Stage, node: Konva.Node): void 
  * @returns the nodes restored, so the caller can keep its own accounting honest.
  */
 export function drainStudioLateParkedChrome(
-  stage: Konva.Stage | null
-): readonly Konva.Node[] {
+  stage: StudioStageLike | null
+): readonly StudioNodeLike[] {
   if (!stage) return [];
   const existing = stage.getAttr(STUDIO_LIVE_TRANSFORM_PARKED_CHROME_ATTR);
   if (!(existing instanceof Set)) return [];
-  const restored = [...existing] as Konva.Node[];
+  const restored = [...existing] as StudioNodeLike[];
   for (const node of restored) node.visible(true);
-  stage.setAttr(STUDIO_LIVE_TRANSFORM_PARKED_CHROME_ATTR, new Set<Konva.Node>());
+  stage.setAttr(STUDIO_LIVE_TRANSFORM_PARKED_CHROME_ATTR, new Set<StudioNodeLike>());
   return restored;
 }
 
-function konvaNodeDepth(node: Konva.Node): number {
+function konvaNodeDepth(node: StudioNodeLike): number {
   let depth = 0;
-  let current: Konva.Node | null = node.getParent();
+  let current: StudioNodeLike | null = node.getParent();
   while (current) {
     depth += 1;
     current = current.getParent();
@@ -111,13 +116,21 @@ function konvaNodeDepth(node: Konva.Node): number {
  * during a drag, so the shallowest match is the one worth mirroring.
  */
 export function findStudioDrawWrapperNode(
-  stage: Konva.Stage,
+  stage: StudioExportStageLike,
   elementId: string
-): Konva.Node | null {
+): StudioSceneNodeLike | null;
+export function findStudioDrawWrapperNode(
+  stage: StudioStageLike,
+  elementId: string
+): StudioNodeLike | null;
+export function findStudioDrawWrapperNode(
+  stage: StudioStageLike,
+  elementId: string
+): StudioNodeLike | null {
   const matches = stage.find(
-    (node: Konva.Node) => node.getAttr("studioElementId") === elementId
+    (node: StudioNodeLike) => node.getAttr("studioElementId") === elementId
   );
-  let best: Konva.Node | null = null;
+  let best: StudioNodeLike | null = null;
   let bestDepth = Number.POSITIVE_INFINITY;
   for (const candidate of matches) {
     const depth = konvaNodeDepth(candidate);
@@ -141,7 +154,7 @@ export function findStudioDrawWrapperNode(
  * @returns an unsubscribe; a no-op when the element has no node in the scene.
  */
 export function mirrorStudioDrawElementTranslation(
-  stage: Konva.Stage,
+  stage: StudioStageLike,
   elementId: string,
   apply: (offset: { x: number; y: number }) => void
 ): () => void {
@@ -173,7 +186,7 @@ export function mirrorStudioDrawElementTranslation(
  * @returns an unsubscribe for every listener this call installed.
  */
 export function mirrorStudioDrawSelectionIndicators(
-  indicators: ReadonlyMap<string, Konva.Group>
+  indicators: ReadonlyMap<string, StudioNodeLike>
 ): () => void {
   const detachers: Array<() => void> = [];
   for (const [elementId, indicator] of indicators) {

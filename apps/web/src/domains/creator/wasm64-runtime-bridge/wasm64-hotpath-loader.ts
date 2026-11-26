@@ -10,9 +10,17 @@
  */
 
 import {
-  benchmarkWasm64VsJsHotpaths,
-  createHotpathBenchmarkFixtures,
-} from "./wasm64-hotpath-benchmark";
+  detectWasmCpuTier,
+  fetchAndInstantiateWasmUrl,
+  inferCpuTierFromUrl,
+  inferWasmBinaryCpuTier,
+  normalizeWasmArrayBuffer,
+  resolveWasmCoreTierCandidates,
+} from "./wasm64-cpu-tier";
+import {
+  jsCompositeTileDirtyRect,
+  jsMixPigmentsKmPacked,
+} from "./wasm64-hotpath-js-compositor";
 import {
   DEFAULT_IMPASTO_LIGHT_PARAMS,
   jsApplyImpastoLightingRgba,
@@ -27,61 +35,48 @@ import {
 } from "./wasm64-hotpath-js-fallback";
 import {
   DEFAULT_WASM64_HOTPATH_ROUTING,
-  STUDIO_WASM64_CORE_URL,
   WASM64_HOTPATH_EXPECTED_ABI,
   WASM64_HOTPATH_EXPECTED_CAPABILITIES,
-  type HotpathBenchmarkFixtures,
-  type HotpathBenchmarkSuiteResult,
   type HotpathBlurOptions,
   type HotpathBlurResult,
   type HotpathImpastoOptions,
   type HotpathImpastoResult,
-  type HotpathKernelBenchmarkEntry,
   type HotpathKm16StripResult,
+  type HotpathTileCompositeOptions,
+  type HotpathTileCompositeResult,
   type HotpathUnsharpOptions,
   type HotpathUnsharpResult,
   type HotpathXorDeltaResult,
   type LoadStudioWasm64HotpathOptions,
   type StudioWasm64HotpathMetadata,
   type StudioWasm64HotpathRuntime,
+  type TileBlendModeCode,
+  type Wasm64ExecutableTier,
   type Wasm64HotpathBackendMode,
-  type Wasm64HotpathLoadSource,
   type Wasm64HotpathRouteKey,
   type Wasm64HotpathRoutingConfig,
+  type WasmCoreTierCandidate,
+  type WasmDirtyRect,
   type ZeroCopyUnsharpViewResult,
 } from "./wasm64-hotpath-types";
 
 export {
   benchmarkWasm64VsJsHotpaths,
   createHotpathBenchmarkFixtures,
-  DEFAULT_IMPASTO_LIGHT_PARAMS,
-  DEFAULT_WASM64_HOTPATH_ROUTING,
-  STUDIO_WASM64_CORE_URL,
-  WASM64_HOTPATH_EXPECTED_ABI,
-  WASM64_HOTPATH_EXPECTED_CAPABILITIES,
-};
-export type {
-  HotpathBenchmarkFixtures,
-  HotpathBenchmarkSuiteResult,
-  HotpathBlurOptions,
-  HotpathBlurResult,
-  HotpathImpastoOptions,
-  HotpathImpastoResult,
-  HotpathKernelBenchmarkEntry,
-  HotpathKm16StripResult,
-  HotpathUnsharpOptions,
-  HotpathUnsharpResult,
-  HotpathXorDeltaResult,
-  ImpastoLightParams,
-  LoadStudioWasm64HotpathOptions,
-  StudioWasm64HotpathMetadata,
-  StudioWasm64HotpathRuntime,
-  Wasm64HotpathBackendMode,
-  Wasm64HotpathLoadSource,
-  Wasm64HotpathRouteKey,
-  Wasm64HotpathRoutingConfig,
-  ZeroCopyUnsharpViewResult,
-};
+} from "./wasm64-hotpath-benchmark";
+export {
+  detectWasmCpuTier,
+  inferCpuTierFromUrl,
+  inferWasmBinaryCpuTier,
+  probeWasmCpuTierCapabilities,
+  resolveWasmCoreTierCandidates,
+  WASM_RELAXED_SIMD_PROBE_BYTES,
+  WASM_SCALAR_PROBE_BYTES,
+  WASM_SIMD128_PROBE_BYTES,
+  type WasmValidateFn,
+} from "./wasm64-cpu-tier";
+export { DEFAULT_IMPASTO_LIGHT_PARAMS };
+export * from "./wasm64-hotpath-types";
 
 interface RawRustWasmExports {
   readonly memory: WebAssembly.Memory;
@@ -113,12 +108,25 @@ interface RawRustWasmExports {
     height: number,
     lightParamsPtr: number,
   ) => number;
+  readonly wasm_mix_pigments_km_packed: (rgbaA: number, rgbaB: number, ratio: number) => number;
   readonly wasm_mix_pigments_km16_packed: (rgbaA: number, rgbaB: number, ratio: number) => number;
   readonly wasm_mix_pigments_km16_strip: (
     dstPtr: number,
     srcPtr: number,
     pixelCount: number,
     ratio: number,
+  ) => number;
+  readonly wasm_composite_tile_dirty_rect: (
+    dstPtr: number,
+    srcPtr: number,
+    tileWidth: number,
+    tileHeight: number,
+    dirtyX: number,
+    dirtyY: number,
+    dirtyWidth: number,
+    dirtyHeight: number,
+    blendMode: number,
+    opacityU8: number,
   ) => number;
   readonly wasm_xor_tile_delta_bytes: (
     prevPtr: number,
@@ -154,8 +162,10 @@ function isRustWasmExports(exportsObj: WebAssembly.Exports): exportsObj is WebAs
     typeof exportsObj.wasm_unsharp_mask_rgba === "function" &&
     typeof exportsObj.wasm_gaussian_blur_rgba === "function" &&
     typeof exportsObj.wasm_apply_impasto_lighting_rgba === "function" &&
+    typeof exportsObj.wasm_mix_pigments_km_packed === "function" &&
     typeof exportsObj.wasm_mix_pigments_km16_packed === "function" &&
     typeof exportsObj.wasm_mix_pigments_km16_strip === "function" &&
+    typeof exportsObj.wasm_composite_tile_dirty_rect === "function" &&
     typeof exportsObj.wasm_xor_tile_delta_bytes === "function" &&
     typeof exportsObj.wasm_fnv1a_checksum === "function" &&
     typeof exportsObj.wasm_sample_world_paper_height === "function"
@@ -379,6 +389,18 @@ function buildRuntime(
     };
   };
 
+  const mixPigmentsKmPacked = (
+    rgbaA: number,
+    rgbaB: number,
+    ratio: number,
+    forceBackend?: Wasm64HotpathBackendMode,
+  ): number => {
+    if (shouldUseWasm("km16SpectralMix", forceBackend) && wasmExports) {
+      return wasmExports.wasm_mix_pigments_km_packed(rgbaA >>> 0, rgbaB >>> 0, ratio) >>> 0;
+    }
+    return jsMixPigmentsKmPacked(rgbaA, rgbaB, ratio);
+  };
+
   const mixPigmentsKm16Packed = (
     rgbaA: number,
     rgbaB: number,
@@ -418,6 +440,70 @@ function buildRuntime(
     }
 
     const jsRes = jsMixPigmentsKm16Strip(dstRgba, srcRgba, ratio);
+    return {
+      output: jsRes.output,
+      processedPixels: jsRes.processedPixels,
+      elapsedMs: nowMs() - started,
+      backendMode: "js-fallback",
+    };
+  };
+
+  const compositeTileDirtyRect = (
+    dstRgba: Uint8Array,
+    srcRgba: Uint8Array,
+    tileWidth: number,
+    tileHeight: number,
+    options: HotpathTileCompositeOptions = {},
+  ): HotpathTileCompositeResult => {
+    const dirty: WasmDirtyRect = options.dirtyRect ?? {
+      x: 0,
+      y: 0,
+      width: tileWidth,
+      height: tileHeight,
+    };
+    const blendMode: TileBlendModeCode = options.blendMode ?? 0;
+    const opacityU8 = Math.max(0, Math.min(255, Math.round(options.opacityU8 ?? 255)));
+    const started = nowMs();
+
+    if (options.forceBackend !== "js-fallback" && wasmExports && !disposed) {
+      const byteLen = tileWidth * tileHeight * 4;
+      const dstPtr = ensureSlot(slotOut, byteLen);
+      const srcPtr = ensureSlot(slotA, byteLen);
+      new Uint8Array(wasmExports.memory.buffer, dstPtr, byteLen).set(dstRgba);
+      new Uint8Array(wasmExports.memory.buffer, srcPtr, byteLen).set(srcRgba);
+      const rc = wasmExports.wasm_composite_tile_dirty_rect(
+        dstPtr,
+        srcPtr,
+        tileWidth >>> 0,
+        tileHeight >>> 0,
+        dirty.x >>> 0,
+        dirty.y >>> 0,
+        dirty.width >>> 0,
+        dirty.height >>> 0,
+        blendMode,
+        opacityU8,
+      );
+      if (rc < 0) {
+        throw new Error(`wasm_composite_tile_dirty_rect 오류 코드: ${rc}`);
+      }
+      const output = new Uint8Array(new Uint8Array(wasmExports.memory.buffer, dstPtr, byteLen));
+      return {
+        output,
+        processedPixels: rc,
+        elapsedMs: nowMs() - started,
+        backendMode: "rust-wasm",
+      };
+    }
+
+    const jsRes = jsCompositeTileDirtyRect(
+      dstRgba,
+      srcRgba,
+      tileWidth,
+      tileHeight,
+      dirty,
+      blendMode,
+      opacityU8,
+    );
     return {
       output: jsRes.output,
       processedPixels: jsRes.processedPixels,
@@ -521,8 +607,10 @@ function buildRuntime(
     runZeroCopyUnsharp,
     gaussianBlurRgba,
     applyImpastoLightingRgba,
+    mixPigmentsKmPacked,
     mixPigmentsKm16Packed,
     mixPigmentsKm16Strip,
+    compositeTileDirtyRect,
     xorTileDeltaBytes,
     fnv1aChecksum,
     sampleWorldPaperHeight,
@@ -539,6 +627,8 @@ export function createStudioWasm64JsFallbackRuntime(
     null,
     {
       backendMode: "js-fallback",
+      cpuTier: "js-fallback",
+      resolvedUrl: null,
       wasmByteLength: 0,
       abiVersion: WASM64_HOTPATH_EXPECTED_ABI,
       capabilitiesMask: WASM64_HOTPATH_EXPECTED_CAPABILITIES,
@@ -554,24 +644,24 @@ export function createStudioWasm64JsFallbackRuntime(
 export async function createStudioWasm64HotpathFromBytes(
   wasmBytes: Uint8Array | ArrayBuffer,
   initialRouting?: Partial<Wasm64HotpathRoutingConfig>,
+  tierMeta?: {
+    readonly cpuTierHint?: Wasm64ExecutableTier;
+    readonly resolvedUrl?: string | null;
+  },
 ): Promise<StudioWasm64HotpathRuntime> {
   const started = nowMs();
-  const buffer: ArrayBuffer =
-    wasmBytes instanceof ArrayBuffer
-      ? wasmBytes
-      : wasmBytes.buffer instanceof ArrayBuffer &&
-          wasmBytes.byteOffset === 0 &&
-          wasmBytes.byteLength === wasmBytes.buffer.byteLength
-        ? wasmBytes.buffer
-        : new Uint8Array(wasmBytes).buffer;
+  const buffer = normalizeWasmArrayBuffer(wasmBytes);
   const { instance } = await WebAssembly.instantiate(buffer, {});
   if (!isRustWasmExports(instance.exports)) {
     throw new Error("컴파일된 studio-wasm64-drawing-core.wasm 필수 export 시그니처가 누락되었습니다");
   }
+  const cpuTier = tierMeta?.cpuTierHint ?? inferWasmBinaryCpuTier(new Uint8Array(buffer));
   return buildRuntime(
     instance.exports,
     {
       backendMode: "rust-wasm",
+      cpuTier,
+      resolvedUrl: tierMeta?.resolvedUrl ?? null,
       wasmByteLength: buffer.byteLength,
       abiVersion: instance.exports.wasm_drawing_core_abi_version() >>> 0,
       capabilitiesMask: instance.exports.wasm_hotpath_capabilities() >>> 0,
@@ -584,9 +674,8 @@ export async function createStudioWasm64HotpathFromBytes(
 }
 
 /**
- * `studio-wasm64-drawing-core.wasm` 바이너리를 로드·인스턴스화한다.
- * `wasmBytes`가 전달되면 즉시 `WebAssembly.instantiate`로 실행하며, URL 로드 실패 시
- * 바이트 동등 JS 폴백으로 안전하게 강등한다.
+ * `studio-wasm64-drawing-core` 바이너리를 CPU 계층(`relaxed-simd` → `simd128` → `scalar` → JS 폴백)
+ * 순으로 자동 탐색·인스턴스화한다. `wasmBytes`·`wasmUrl` 명시 시 기존 호환 경로를 그대로 따른다.
  */
 export async function loadStudioWasm64HotpathRuntime(
   options: LoadStudioWasm64HotpathOptions = {},
@@ -599,7 +688,10 @@ export async function loadStudioWasm64HotpathRuntime(
   }
   if (options.wasmBytes) {
     try {
-      return await createStudioWasm64HotpathFromBytes(options.wasmBytes, options.initialRouting);
+      return await createStudioWasm64HotpathFromBytes(options.wasmBytes, options.initialRouting, {
+        cpuTierHint: options.cpuTierHint,
+        resolvedUrl: options.wasmUrl ?? null,
+      });
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       return createStudioWasm64JsFallbackRuntime(`Wasm 바이트 인스턴스화 실패: ${reason}`, options.initialRouting);
@@ -611,74 +703,55 @@ export async function loadStudioWasm64HotpathRuntime(
     return createStudioWasm64JsFallbackRuntime("fetch API 미지원 비네트워크 환경", options.initialRouting);
   }
 
+  const candidates: readonly WasmCoreTierCandidate[] = options.wasmUrl
+    ? [
+        {
+          tier: options.cpuTierHint ?? inferCpuTierFromUrl(options.wasmUrl) ?? "wasm-scalar",
+          url: options.wasmUrl,
+        },
+      ]
+    : resolveWasmCoreTierCandidates(
+        options.preferredTier ?? detectWasmCpuTier(options.validateFn),
+      );
+
+  if (candidates.length === 0) {
+    return createStudioWasm64JsFallbackRuntime("WebAssembly CPU 계층 프로브 미지원", options.initialRouting);
+  }
+
   const started = nowMs();
-  const url = options.wasmUrl ?? STUDIO_WASM64_CORE_URL;
-  try {
-    const response = await fetchImpl(url);
-    if (!response.ok) {
-      return createStudioWasm64JsFallbackRuntime(
-        `Wasm 번들 HTTP ${response.status} 응답 (${url})`,
+  let lastErrorReason = "Wasm 티어 후보군 로드 실패";
+
+  for (const candidate of candidates) {
+    try {
+      const fetched = await fetchAndInstantiateWasmUrl(candidate.url, fetchImpl);
+      if (!isRustWasmExports(fetched.instance.exports)) {
+        throw new Error(`필수 Wasm export 누락 (${candidate.url})`);
+      }
+      const detectedTier: Wasm64ExecutableTier =
+        options.cpuTierHint ??
+        (options.wasmUrl && fetched.binaryBytes
+          ? inferCpuTierFromUrl(candidate.url) ?? inferWasmBinaryCpuTier(fetched.binaryBytes)
+          : candidate.tier);
+
+      return buildRuntime(
+        fetched.instance.exports,
+        {
+          backendMode: "rust-wasm",
+          cpuTier: detectedTier,
+          resolvedUrl: candidate.url,
+          wasmByteLength: fetched.byteLength,
+          abiVersion: fetched.instance.exports.wasm_drawing_core_abi_version() >>> 0,
+          capabilitiesMask: fetched.instance.exports.wasm_hotpath_capabilities() >>> 0,
+          loadSource: fetched.loadSource,
+          loadElapsedMs: nowMs() - started,
+          fallbackReason: null,
+        },
         options.initialRouting,
       );
+    } catch (error) {
+      lastErrorReason = error instanceof Error ? error.message : String(error);
     }
-
-    const contentType = response.headers?.get("content-type") ?? "";
-    const contentLength = Number(response.headers?.get("content-length") ?? 0);
-    const canStream =
-      typeof WebAssembly.instantiateStreaming === "function" &&
-      contentType.toLowerCase().includes("application/wasm") &&
-      Number.isFinite(contentLength) &&
-      contentLength > 0;
-
-    if (canStream) {
-      const cloneForFallback = typeof response.clone === "function" ? response.clone() : null;
-      try {
-        const streamed = await WebAssembly.instantiateStreaming(Promise.resolve(response), {});
-        if (!isRustWasmExports(streamed.instance.exports)) {
-          throw new Error("필수 Wasm export 누락");
-        }
-        return buildRuntime(
-          streamed.instance.exports,
-          {
-            backendMode: "rust-wasm",
-            wasmByteLength: contentLength,
-            abiVersion: streamed.instance.exports.wasm_drawing_core_abi_version() >>> 0,
-            capabilitiesMask: streamed.instance.exports.wasm_hotpath_capabilities() >>> 0,
-            loadSource: "instantiate-streaming",
-            loadElapsedMs: nowMs() - started,
-            fallbackReason: null,
-          },
-          options.initialRouting,
-        );
-      } catch {
-        if (cloneForFallback) {
-          const bytes = new Uint8Array(await cloneForFallback.arrayBuffer());
-          return await createStudioWasm64HotpathFromBytes(bytes, options.initialRouting);
-        }
-        throw new Error("instantiateStreaming 실패 및 복제 응답 없음");
-      }
-    }
-
-    const buffer = await response.arrayBuffer();
-    const { instance } = await WebAssembly.instantiate(buffer, {});
-    if (!isRustWasmExports(instance.exports)) {
-      throw new Error("필수 Wasm export 누락");
-    }
-    return buildRuntime(
-      instance.exports,
-      {
-        backendMode: "rust-wasm",
-        wasmByteLength: buffer.byteLength,
-        abiVersion: instance.exports.wasm_drawing_core_abi_version() >>> 0,
-        capabilitiesMask: instance.exports.wasm_hotpath_capabilities() >>> 0,
-        loadSource: "fetch-array-buffer",
-        loadElapsedMs: nowMs() - started,
-        fallbackReason: null,
-      },
-      options.initialRouting,
-    );
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    return createStudioWasm64JsFallbackRuntime(`Wasm 네트워크 로드 폴백: ${reason}`, options.initialRouting);
   }
+
+  return createStudioWasm64JsFallbackRuntime(`Wasm 네트워크 로드 폴백: ${lastErrorReason}`, options.initialRouting);
 }

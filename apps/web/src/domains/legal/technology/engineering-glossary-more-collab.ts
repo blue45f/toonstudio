@@ -307,4 +307,80 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     chapters: ["collaborative-crdt-boundary", "crdt-semantic-scope"],
     atlasIds: ["yjs-crdt-document", "tiled-document-copy-on-write"],
   },
+  {
+    id: "webgpu-collab-dirty-rect-compositor",
+    category: "collab",
+    term: t("WebGPU 멀티피어 더티-렉트 협업 컴포지터", "WebGPU multi-peer dirty-rect collaborative compositor"),
+    definition: t(
+      "여러 동시 편집자가 그린 임시 스트로크와 변경 타일의 사각형 영역(dirty rect)을 인접 구역끼리 병합해 최소 횟수의 WebGPU 패스로 합성하는 렌더링 가속기입니다.",
+      "A collaborative compositor that merges nearby dirty rectangles across multiple peers' strokes and changed tiles to minimize WebGPU draw passes.",
+    ),
+    analogy: t(
+      "네 사람이 벽화의 각기 다른 모서리를 고쳤을 때 벽 전체를 네 번 덧칠하는 대신, 고친 모서리끼리 묶어 한 번에 마감 코팅을 올리는 작업 방식입니다.",
+      "Like clear-coating only the merged patches touched by four muralists in one pass instead of repainting the entire wall four times.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/webgpu-collab-compositor.ts 가 피어별 색상 틴트·더티 사각형 병합·WGSL 타일 합성을 구현해 테스트 실측 드로우콜 97.4% 절감을 확인했고, WebGPU 미지원 시 CPU 컴포지터로 폴백합니다.",
+      "wasm64-infinite-collab/webgpu-collab-compositor.ts merges peer dirty rectangles and runs WGSL tile compositing, measuring 97.4% fewer draw calls in tests with a CPU fallback.",
+    ),
+    chapters: ["collaborative-crdt-boundary", "performance"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "webgpu-tier-budget-recovery"],
+  },
+  {
+    id: "webrtc-sctp-xor-rle-p2p-sync",
+    category: "collab",
+    term: t("WebRTC 16 KiB SCTP 무손실 XOR+RLE P2P 에셋 동기화", "WebRTC 16 KiB SCTP lossless XOR+RLE P2P sync"),
+    definition: t(
+      "서버를 거치지 않고 브라우저 간 WebRTC DataChannel 의 16 KiB SCTP 프레임 안에서 64비트 FNV-1a 차분과 무손실 XOR+RLE 델타만 주고받아 대용량 캔버스 타일을 맞추는 프로토콜입니다.",
+      "A server-free peer protocol exchanging 64-bit FNV-1a manifest diffs and lossless XOR+RLE deltas inside WebRTC's 16 KiB SCTP frame cap.",
+    ),
+    analogy: t(
+      "큰 앨범 전체를 클라우드에 올렸다 내려받는 대신, 친구와 목차(FNV-1a)만 비교해 바뀐 사진 조각만 우편엽서(16 KiB) 크기로 압축해 직접 주고받는 직거래 동기화입니다.",
+      "Like comparing photo album indexes directly with a friend and mailing only postcard-sized (16 KiB) compressed diffs of changed pages with zero cloud upload.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/p2p-lossless-delta-asset-sync.ts 가 16 KiB 청크 분할·슬라이딩 윈도우 재전송·SHA-256 검산을 구현해 테스트에서 대역폭 99.22% 절감·서버 0 B·3피어 혼돈 0-byte-diff 수렴을 검증했습니다.",
+      "wasm64-infinite-collab/p2p-lossless-delta-asset-sync.ts verified 99.22% bandwidth savings, 0 B server relay traffic and 0-byte-diff convergence across 3 chaotic peers using 16 KiB SCTP chunks and SHA-256 checks.",
+    ),
+    chapters: ["webrtc-media-authority", "collaborative-crdt-boundary"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "webrtc-datachannel-direct-lane"],
+  },
+  {
+    id: "p2p-grid-render-merkle-r2-offload",
+    category: "collab",
+    term: t("P2P 그리드 타일 렌더 · Merkle 자가치유 · R2 90% 오프로드", "P2P grid tile render, Merkle self-heal & 90% R2 offload"),
+    definition: t(
+      "팀 기기끼리 타일 렌더를 워크 스틸링·FNV-1a 검증으로 분담하고, 에셋 DAG 머클 자가치유와 R2+P2P 웜 메시 오프로드·잉크 우선순위 CRDT 를 결합한 무서버 협업 계층입니다.",
+      "A server-free collaboration layer uniting work-stealing FNV-1a P2P grid rendering, Merkle asset self-healing, 90% warm-mesh R2 offload and ink-priority CRDT.",
+    ),
+    analogy: t(
+      "팀원들이 퍼즐 조각을 나눠 맞추다 먼저 끝낸 사람이 돕고(워크 스틸링), 틀린 조각을 낸 피어는 제외하며, 이미 받은 파일은 옆자리에서 바로 공유해 서버 트래픽을 90% 줄이는 방식입니다.",
+      "Like teammates splitting puzzle tiles with work stealing, quarantining faulty peers by checksum and sharing cached assets locally to cut origin traffic by 90%.",
+    ),
+    inToonstudio: t(
+      "P2pGridRenderCoordinator(4초 타임아웃 재할당·FNV-1a 격리), RealTimeAssetStreamPipeline(DAG 머클 자가치유), HybridR2P2pAssetCacheRouter(90% 오프로드), ContextAwarePriorityCrdt 를 검증했습니다.",
+      "Verified across P2pGridRenderCoordinator (4 s failover, FNV-1a quarantine), RealTimeAssetStreamPipeline (Merkle self-heal), HybridR2P2pAssetCacheRouter (90% offload) and ContextAwarePriorityCrdt.",
+    ),
+    chapters: ["collaborative-crdt-boundary", "webrtc-media-authority"],
+    atlasIds: ["p2p-grid-tile-render-merkle-stream-r2-offload"],
+  },
+  {
+    id: "zero-lag-sas-pairing-ephemeral-redline",
+    category: "collab",
+    term: t("6자리 SAS 컴패니언 페어링 & 일회성 P2P 레드라인", "6-digit SAS companion pairing & ephemeral P2P redline"),
+    definition: t(
+      "6자리 인증 코드(SAS)와 ≤16 KiB XOR+RLE 압축으로 PC↔태블릿을 저지연 미러링하고, 설치 없는 TTL 암호화 P2P 링크로 원본 무변조 교정 오버레이를 받는 협업 프로토콜입니다.",
+      "A local pairing protocol linking PC and tablet via 6-digit SAS + <=16 KiB XOR+RLE dirty tiles alongside zero-install TTL encrypted P2P redline overlays that never mutate art.",
+    ),
+    analogy: t(
+      "블루투스 숫자 6자리 맞추듯 태블릿을 PC 보조 액정으로 붙이고, 편집자에게는 그림 위에 투명 트레이싱지만 얹어 메모할 수 있는 기한 한정 링크를 건네는 작업 방식입니다.",
+      "Like pairing a tablet display with a 6-digit code and handing editors a time-limited tracing-paper overlay link that never touches original ink.",
+    ),
+    inToonstudio: t(
+      "ZeroLagDevicePairingSession(6.15× 더티 압축·스타일러스 릴레이)과 EphemeralP2pRedlineReviewSession(TTL·토글 오버레이·원본 무변조)을 단위 테스트로 검증했습니다.",
+      "Verified in ZeroLagDevicePairingSession (6.15× dirty-tile compression, stylus relay) and EphemeralP2pRedlineReviewSession (TTL, toggle overlays, 0 art mutation).",
+    ),
+    chapters: ["webrtc-media-authority", "browser-local-compute"],
+    atlasIds: ["zero-lag-companion-pairing-ephemeral-redline-hw"],
+  },
 ];

@@ -1,6 +1,6 @@
 import type { ChangeEvent, Dispatch, MutableRefObject, SetStateAction } from "react";
 import { flushSync } from "react-dom";
-import type Konva from "konva";
+import type { StudioExportStageLike, StudioReadonlyRef } from "../canvas/studio-stage-handle-types";
 
 import { loadStudioSvgExportWorkerClientModule } from "../export/studio-document-export-loaders";
 import type { MotionCutImage } from "../export/studio-motion-export";
@@ -266,7 +266,9 @@ export async function runStudioExportCurrentPageToInkMl({
   return exportStudioInkMl(drawElements);
 }
 
-export async function runStudioSendCurrentPageToCompareReview({
+export async function runStudioSendCurrentPageToCompareReview<
+  TStage extends StudioExportStageLike = StudioExportStageLike,
+>({
   workId, studioAuthReady, studioAuthUserId, storage, stageRef, selectedId, activePage,
   activePageIndex, revokeStudioRasterHandoffRef, getAuthUserId, readStageInDocumentView,
   setSelectedId, announceDrawingShortcut, setError, tooLargeMessage, sendFailedMessage,
@@ -275,13 +277,13 @@ export async function runStudioSendCurrentPageToCompareReview({
   readonly studioAuthReady: boolean;
   readonly studioAuthUserId: string | null;
   readonly storage: Storage | null;
-  readonly stageRef: MutableRefObject<Konva.Stage | null>;
+  readonly stageRef: StudioReadonlyRef<TStage | null>;
   readonly selectedId: string | null;
   readonly activePage: PageState;
   readonly activePageIndex: number;
   readonly revokeStudioRasterHandoffRef: MutableRefObject<() => void>;
   readonly getAuthUserId: () => string | null;
-  readonly readStageInDocumentView: <T>(stage: Konva.Stage, read: () => T, settleDelay?: number) => T;
+  readonly readStageInDocumentView: <T>(stage: TStage, read: () => T, settleDelay?: number) => T;
   readonly setSelectedId: Dispatch<SetStateAction<string | null>>;
   readonly announceDrawingShortcut: (message: string) => void;
   readonly setError: Dispatch<SetStateAction<string | null>>;
@@ -326,17 +328,19 @@ export async function runStudioSendCurrentPageToCompareReview({
   }
 }
 
-export async function runStudioSaveElementAsEmeresLibraryItem({
+export async function runStudioSaveElementAsEmeresLibraryItem<
+  TStage extends StudioExportStageLike = StudioExportStageLike,
+>({
   elId, elementById, stageRef, effScale, revokeStudioRasterHandoffRef,
   readStageInDocumentView, setSelectedId, hideContextMenu, saveEmeresItem,
   setError, groupBlockedMessage, saveFailedMessage,
 }: {
   readonly elId: string;
   readonly elementById: ReadonlyMap<string, El>;
-  readonly stageRef: MutableRefObject<Konva.Stage | null>;
+  readonly stageRef: StudioReadonlyRef<TStage | null>;
   readonly effScale: number;
   readonly revokeStudioRasterHandoffRef: MutableRefObject<() => void>;
-  readonly readStageInDocumentView: <T>(stage: Konva.Stage, read: () => T, settleDelay?: number) => T;
+  readonly readStageInDocumentView: <T>(stage: TStage, read: () => T, settleDelay?: number) => T;
   readonly setSelectedId: Dispatch<SetStateAction<string | null>>;
   readonly hideContextMenu: () => void;
   readonly saveEmeresItem: (item: StudioEmeresLibraryItem) => Promise<void>;
@@ -470,7 +474,7 @@ export async function runStudioCaptureTimelapseStep({
   readonly effScale: number;
   readonly setPagesHi: Dispatch<SetStateAction<number>>;
   readonly setCurrentPageId: (next: string) => boolean;
-  readonly captureReadyStageForHistoryPage: (page: PageState, historyIndex: number) => Promise<Konva.Stage>;
+  readonly captureReadyStageForHistoryPage: (page: PageState, historyIndex: number) => Promise<StudioExportStageLike>;
   readonly pageNotFoundMessage: string;
 }): Promise<MotionCutImage> {
   const snapshot = pagesHistory[historyIndex];

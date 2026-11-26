@@ -382,6 +382,177 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
       "crates/studio-wasm64-drawing-core implements zero-dependency safe Rust (#![deny(unsafe_code)]) tile, pigment and filter kernels built for WASM64 compatibility. At run time, studio-wasm64-memory-governor.ts probes memory64 and SIMD128 first, while toon-silicon-engine.ts plans Relaxed-SIMD and WASM32 fallback dispatch across eight silicon profiles.",
     ),
     chapters: ["wasm-fixed-simd", "worker-architecture"],
-    atlasIds: ["wasm-self-built-fixed-simd", "wasm-memory64-zip-crc"],
+    atlasIds: ["wasm-self-built-fixed-simd", "wasm-memory64-zip-crc", "wasm64-drawing-core-extended-suite"],
+  },
+  {
+    id: "seqlock-lock-free-snapshot",
+    category: "web",
+    term: t("Seqlock (락프리 시퀀스 락)", "Seqlock (lock-free sequence lock)"),
+    definition: t(
+      "쓰기 시작 때 순서 번호를 홀수로, 끝날 때 짝수로 올리고 읽는 쪽은 앞뒤 번호가 같은 짝수일 때만 채택해 자물쇠 대기 없이 일관된 스냅샷을 읽는 동기화 기법입니다.",
+      "A lock-free synchronization pattern where writers bump a counter to odd on start and even on finish, so readers retry until both loads match and are even.",
+    ),
+    analogy: t(
+      "인쇄소 편집자가 판을 고칠 때 문 앞에 ‘수정 중(홀수)’ 팻말을 걸고 끝나면 ‘확정(짝수)’ 번호로 바꾸는 방식과 같습니다. 읽는 사람은 줄 서지 않고 들어갔다 나오며 번호가 안 바뀌었는지만 확인합니다.",
+      "Like a print editor hanging an odd ‘editing’ sign during changes and flipping to an even number when done: readers never queue and only check that the number stayed identical.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts 가 독립 64B 캐시라인(오프셋 128B)에 Atomics 시퀀스 카운터를 두고 메인 스레드·WASM 워커·WebGPU 렌더러 사이에서 0-카피 스냅샷을 읽습니다. 현재 모듈·테스트 검증을 마쳤으며, 편집기 전체 파이프라인 통합은 단계적으로 진행합니다.",
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts places an Atomics sequence counter on its own 64-byte cache line (byte 128) for zero-copy snapshots across the main thread, WASM Worker and WebGPU renderer. Unit verification is complete; full editor pipeline integration is phased.",
+    ),
+    chapters: ["worker-architecture", "performance-budget"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "cross-origin-isolation-studio-gate"],
+  },
+  {
+    id: "spsc-lock-free-ring-buffer",
+    category: "web",
+    term: t("SPSC 락프리 링 버퍼 (제로카피 IPC)", "SPSC lock-free ring buffer (zero-copy IPC)"),
+    definition: t(
+      "생산자 하나와 소비자 하나가 원형 공유 메모리에서 각자 포인터(head·tail)만 원자적으로 갱신하며 직렬화·락 없이 고정 크기 바이너리 명령을 주고받는 큐입니다.",
+      "A single-producer, single-consumer circular queue in shared memory where each side updates only its own atomic pointer to pass fixed binary commands without locks or serialization.",
+    ),
+    analogy: t(
+      "주방장 한 명이 회전 초밥 레일에 접시를 올리고 서빙 한 명만 집어 가는 원형 레일과 같습니다. 서로 맡은 번호표 칸만 고치므로 부딪히지 않고 접시를 옮겨 담을 필요도 없습니다.",
+      "Like one chef placing plates onto a conveyor belt and one server picking them up: each touches only its own counter, so neither waits nor repacks plates.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-zero-copy-ipc-ring.ts 가 head(64B)와 tail(128B)을 다른 64B 캐시라인에 격리해 False Sharing 을 막고 64B 명령을 전송합니다. Vitest 실측에서 0.931ms(10.74M cmds/s)를 기록했고, SharedArrayBuffer 미지원 환경에서는 ArrayBuffer 링으로 자동 폴백합니다.",
+      "wasm64-zero-copy-ipc/wasm64-zero-copy-ipc-ring.ts isolates head (byte 64) and tail (byte 128) on separate 64-byte cache lines to avoid false sharing while passing 64-byte commands. Vitest measured 0.931 ms (10.74M cmds/s), with automatic ArrayBuffer fallback when SharedArrayBuffer is absent.",
+    ),
+    chapters: ["worker-architecture", "performance"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "worker-envelope-64-workers"],
+  },
+  {
+    id: "opfs-sync-access-64bit-tile-mmap",
+    category: "web",
+    term: t("OPFS SyncAccessHandle 64비트 가상 타일 매퍼", "OPFS SyncAccessHandle 64-bit virtual tile mapper"),
+    definition: t(
+      "Dedicated Worker 의 동기 OPFS 파일 핸들과 BigInt 64비트 오프셋으로 4GiB 를 넘는 초대형 원고 타일을 디스크에 두고, 정해진 RAM 상한 안에서만 꺼내 쓰는 페이징 계층입니다.",
+      "A paging layer pairing Dedicated Worker synchronous OPFS handles with BigInt 64-bit offsets to address documents past 4 GiB while keeping resident RAM inside a fixed cap.",
+    ),
+    analogy: t(
+      "두꺼운 백과사전 전집을 책상에 다 펼치는 대신, 서고(OPFS)의 64비트 색인 번호로 지금 보는 64쪽(16MiB)만 꺼내 두고 안 보는 쪽은 제자리에 꽂아 두는 열람 방식입니다.",
+      "Like keeping an entire encyclopedia in the stacks (OPFS) by 64-bit call number and laying only 64 pages (16 MiB) on the desk at once.",
+    ),
+    inToonstudio: t(
+      "wasm64-webgpu-compute/opfs-streaming-tile-mmap.ts 가 TSM6 바이너리 헤더와 40B 희소 디렉터리로 16GiB+ 가상 오프셋을 주소 지정합니다. 기본 64타일(16MiB) LRU 상한·제로카피 버퍼 재활용·타일별 FNV-1a 32비트 변조 감지를 단위 테스트로 검증했습니다.",
+      "wasm64-webgpu-compute/opfs-streaming-tile-mmap.ts uses a TSM6 binary header and 40-byte sparse directory to address 16 GiB+ virtual offsets. Its 64-tile (16 MiB) LRU cap, zero-copy buffer recycling and per-tile FNV-1a 32-bit tamper checks are unit-tested.",
+    ),
+    chapters: ["storage", "browser-local-first"],
+    atlasIds: ["wasm64-webgpu-opfs-tile-pipeline", "opfs-content-addressed-store"],
+  },
+  {
+    id: "webcodecs-hardware-zero-copy",
+    category: "web",
+    term: t("WebCodecs 하드웨어 제로카피 인코딩", "WebCodecs hardware zero-copy encoding"),
+    definition: t(
+      "GPU 에서 그려 낸 영상 프레임(VideoFrame)을 CPU 메모리로 되복사하지 않고 WebCodecs 하드웨어 인코더(H.264·HEVC·AV1·Opus)에 직접 넘겨 압축하는 미디어 경로입니다.",
+      "A media path passing GPU-rendered VideoFrames directly into WebCodecs hardware encoders (H.264, HEVC, AV1, Opus) without round-tripping pixels through CPU copies.",
+    ),
+    analogy: t(
+      "화로에서 방금 구운 빵을 창고로 옮겼다가 다시 포장대로 나르지 않고, 오븐 출구에서 바로 포장 기계(전용 영상 칩)로 넘겨 시간과 열을 줄이는 직결 라인과 같습니다.",
+      "Like sending bread straight from the oven onto the wrapping machine (dedicated video chip) instead of hauling it to storage and back, saving time and heat.",
+    ),
+    inToonstudio: t(
+      "studio-hardware-accelerator-probe.ts 가 VideoEncoder·AudioEncoder 의 prefer-hardware 지원(H.264·HEVC·AV1·Opus)을 사전 탐지하고, studio-zero-copy-buffer-pool.ts 가 Transferable 슬랩 풀을 제공합니다. 모션 웹툰 내보내기는 실운용 중이며 하드웨어 사용 여부는 브라우저·OS 정책에 따릅니다.",
+      "studio-hardware-accelerator-probe.ts probes prefer-hardware support for H.264, HEVC, AV1 and Opus via VideoEncoder/AudioEncoder, paired with the Transferable slab pool in studio-zero-copy-buffer-pool.ts. Motion-webtoon export is live; actual hardware usage follows browser and OS policy.",
+    ),
+    chapters: ["performance", "nextgen-web-experiments"],
+    atlasIds: ["webcodecs-selected-pipeline", "hardware-silicon-npu-webcodecs-cascade"],
+  },
+  {
+    id: "infinite-quadtree-lod-streamer",
+    category: "web",
+    term: t("16 GiB+ OPFS 쿼드트리 LOD 무한 캔버스 스트리머", "16 GiB+ OPFS quadtree LOD infinite canvas streamer"),
+    definition: t(
+      "초대형 가상 캔버스를 사분트리(Quadtree) 공간 색인과 줌 단계별 상세도(LOD)로 나누어, 현재 화면과 이동 방향에 걸린 타일만 OPFS 에서 스트리밍하는 메모리 절약 엔진입니다.",
+      "A memory-bounded engine indexing an oversized virtual canvas with a quadtree and zoom-driven LOD so only visible and prefetched tiles stream from OPFS.",
+    ),
+    analogy: t(
+      "지구 전체 위성지도를 한 번에 펼치는 대신, 지금 보고 있는 동네와 스크롤하려는 방향의 지도 타일만 줌 배율에 맞춰 꺼내 오는 지도 앱 원리와 같습니다.",
+      "Like a map app fetching only the tiles in view and along your pan direction at the right zoom detail instead of loading the entire planet at once.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/infinite-vector-tile-streamer.ts 가 지그재그 좌표 인코딩·RDP 폴리라인 단순화·뷰포트 선행 프리페치·CPU/GPU 상주 예산 상한을 구현해 단위 테스트로 검증했습니다(지연 로드, 초기 번들 0B).",
+      "wasm64-infinite-collab/infinite-vector-tile-streamer.ts implements zigzag tile coding, RDP simplification, lookahead prefetch and bounded CPU/GPU residency, verified by unit tests with 0 B eager-bundle cost.",
+    ),
+    chapters: ["storage", "performance"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "wasm64-webgpu-opfs-tile-pipeline"],
+  },
+  {
+    id: "zero-gc-120hz-object-pool",
+    category: "web",
+    term: t("120Hz Zero-GC 객체 풀 (Object Pool)", "120 Hz Zero-GC object pool"),
+    definition: t(
+      "초당 120회 이상 쏟아지는 스트로크 정점·행렬·더티 렉트 버퍼를 매번 새로 만들고 버리는 대신, 미리 잡은 슬랩을 대여·반납해 가비지 컬렉션(GC) 멈춤을 없애는 메모리 관리 기법입니다.",
+      "A memory pattern that leases and returns preallocated slabs for 120 Hz stroke vertices, matrices and dirty rects instead of allocating per frame, avoiding GC stalls.",
+    ),
+    analogy: t(
+      "손님이 올 때마다 일회용 컵을 사다 버리면 설거지 산(GC)이 쌓여 영업이 멈추지만, 정해진 수의 머그잔을 바로 씻어 돌려쓰면 주방이 일정한 속도로 돌아가는 것과 같습니다.",
+      "Like rinsing and reusing a fixed set of mugs instead of piling up disposable cups until garbage pickup halts the cafe.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/heap-zero-gc-object-pool.ts 가 아핀 행렬·스트로크 정점·더티 렉트·타일 스크래치 슬랩을 대여·추적합니다. 120Hz 10만 스트로크 스트레스 테스트에서 재사용률 99.9987%, 누수 0건을 검증했습니다.",
+      "wasm64-infinite-collab/heap-zero-gc-object-pool.ts manages affine matrices, stroke buffers, dirty rects and tile slabs, achieving a 99.9987% reuse rate and 0 leaks in a 100K-stroke 120 Hz stress test.",
+    ),
+    chapters: ["performance", "worker-architecture"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "wasm64-zero-copy-ipc-arena"],
+  },
+  {
+    id: "wgsl-cel-rim-halftone-autoshader",
+    category: "web",
+    term: t("WGSL 2.5D 오토 셰이더 & 로컬 ₩0 WebCodecs 오디오툰", "WGSL 2.5D autoshader & local ₩0 WebCodecs AudioToon"),
+    definition: t(
+      "WebGPU 16×16 WGSL 컴퓨트로 2.5D 선화 셀 음영·림라이트·하프톤을 계산하고, 64비트 SAB 채널과 WebCodecs 하드웨어 인코더로 9:16·16:9 60fps 오디오툰을 서버 없이 내보내는 파이프라인입니다.",
+      "A browser-local pipeline pairing a 16x16 WGSL 2.5D cel/rim/halftone autoshader, a 64-bit SAB worker channel and WebCodecs hardware 9:16/16:9 60 fps AudioToon export at ₩0 server cost.",
+    ),
+    analogy: t(
+      "외부 영상 렌더 서버에 원고를 맡기는 대신, 내 기기 GPU 에서 만화 음영을 입히고 전용 영상 칩으로 바로 숏폼 파일을 구워 내는 자급자족 제작 라인입니다.",
+      "Like shading comics on your own GPU and encoding the short-form clip on your device's video chip without paying a cloud render farm.",
+    ),
+    inToonstudio: t(
+      "wasm64-gpu-media-pipeline/ 이 WGSL 오토셰이더(+CPU 폴백), BigInt 64비트 SAB 채널(+비격리 Transferable 폴백), 9:16·16:9 60fps WebCodecs 오디오툰 먹서를 제공하며 단위 테스트를 통과했습니다.",
+      "wasm64-gpu-media-pipeline/ ships the WGSL autoshader (with CPU fallback), 64-bit BigInt SAB channel (with Transferable fallback) and 9:16/16:9 60 fps WebCodecs AudioToon muxer, verified by unit tests.",
+    ),
+    chapters: ["performance", "sound-generation", "nextgen-web-experiments"],
+    atlasIds: ["webgpu-cel-sab64-webcodecs-audiotoon", "webcodecs-selected-pipeline"],
+  },
+  {
+    id: "motiontoon-depth-vfx-hrtf-sab-ring",
+    category: "web",
+    term: t("2.5D 모션툰 · 뎁스 VFX · 3D HRTF · Lock-Free SAB 링버퍼", "2.5D MotionToon, depth VFX, 3D HRTF & lock-free SAB ring"),
+    definition: t(
+      "정지 1컷을 2.5D 메시 모션툰·광학흐름 동화·3D 뎁스 파티클·패럴랙스로 움직이게 하고, 스크롤 스템+3D HRTF 입체음향을 Lock-Free SAB AudioWorklet 링버퍼로 재생하는 로컬 엔진입니다.",
+      "A zero-token local engine turning single cuts into 2.5D MotionToon, optical-flow in-betweens, depth VFX and parallax with scroll-stem 3D HRTF over a lock-free SAB AudioWorklet ring.",
+    ),
+    analogy: t(
+      "정지 웹툰 컷에 인형 관절·비/눈 충돌·입체 음향을 브라우저에서 바로 얹고, 끊김 없는 전용 파이프(SAB 링버퍼)로 128샘플씩 흘려보내는 미니 극장입니다.",
+      "Like adding puppet rigs, depth-colliding rain/snow and binaural sound to static comic cuts through a zero-underrun 128-sample audio pipe.",
+    ),
+    inToonstudio: t(
+      "1컷 모션툰 18ms/60f, 광학흐름 동화 9ms, 5종 뎁스 VFX 18ms, 스크롤 스템+3D HRTF 1ms, 128샘플 Lock-Free SAB 링버퍼 0.041ms(언더런 0·non-SAB 폴백 포함)를 검증했습니다.",
+      "Verified at 18 ms/60f MotionToon, 9 ms optical flow, 18 ms depth VFX, 1 ms scroll-stem 3D HRTF and 0.041 ms lock-free SAB audio ring (0 underruns + non-SAB fallback).",
+    ),
+    chapters: ["sound-generation", "performance"],
+    atlasIds: ["supergap-motiontoon-depth-vfx-hrtf-sab-telemetry"],
+  },
+  {
+    id: "autonomous-120hz-ols-telemetry-gate",
+    category: "web",
+    term: t("자율 120Hz OLS 힙 누수 · 컷 회귀 텔레메트리 게이트", "Autonomous 120 Hz OLS heap-leak & per-cut telemetry gate"),
+    definition: t(
+      "120Hz(8.33ms) 프레임 예산 안에서 P99 지연·VRAM 초과·지속적 단조 힙 누수를 OLS 선형 회귀로 판별하되 정상 톱니형 GC 패턴은 걸러 내어 원인 컷 번호를 자동 귀속하는 감시기입니다.",
+      "A 120 Hz (8.33 ms) runtime gate using OLS regression to separate true monotonic heap leaks from healthy sawtooth GC and pin P99/VRAM regressions to offending cuts.",
+    ),
+    analogy: t(
+      "숨을 쉬듯 오르내리는 정상 메모리 정리(톱니 GC)에는 울리지 않고, 물이 계속 새는 컷 번호만 콕 집어 알려 주는 120Hz 계기판입니다.",
+      "Like a 120 Hz cockpit gauge that ignores normal breathing sawtooth GC and flags only the exact cut leaking memory or blowing frame budget.",
+    ),
+    inToonstudio: t(
+      "wasm64-grid-brush-parallax-telemetry/depth-parallax-exporter-and-frame-telemetry.ts 의 AutonomousFrameTelemetryGate 가 톱니 GC 무오탐·P99/힙 누수/VRAM 컷 귀속을 검증했습니다.",
+      "AutonomousFrameTelemetryGate in depth-parallax-exporter-and-frame-telemetry.ts passes zero-false-positive sawtooth-GC and per-cut P99/heap/VRAM attribution tests.",
+    ),
+    chapters: ["performance", "quality"],
+    atlasIds: ["supergap-motiontoon-depth-vfx-hrtf-sab-telemetry"],
   },
 ];

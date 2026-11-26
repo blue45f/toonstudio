@@ -382,4 +382,175 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
     chapters: ["brush-engine", "brush-pipeline"],
     atlasIds: ["spectral-color-mixing-mixbox", "material-physics-paper-tooth"],
   },
+  {
+    id: "soa-shared-render-state-tree",
+    category: "brush",
+    term: t("SoA (Struct-of-Arrays) 공유 렌더 상태 트리", "SoA (Struct-of-Arrays) shared render-state tree"),
+    definition: t(
+      "레이어마다 모든 속성을 한 객체에 묶는 대신, 좌표·투명도·블렌드 모드 같은 같은 속성끼리 연속 TypedArray 열로 모아 캐시 적중과 스레드 공유를 높이는 자료구조입니다.",
+      "A layout that stores each layer property (bounds, opacity, blend mode) in its own contiguous TypedArray column rather than per-layer objects, improving cache locality and shared-memory reads.",
+    ),
+    analogy: t(
+      "학생마다 키·몸무게·성적을 개인 봉투에 따로 넣는 대신 ‘키 명단’과 ‘성적 명단’을 표 열별로 묶어 두면, 키 평균만 낼 때 다른 종이를 뒤적이지 않고 한 번에 훑을 수 있는 것과 같습니다.",
+      "Like keeping separate lists for heights and scores instead of individual folders: when you only need heights, you scan one clean sheet without opening every folder.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts 가 12개의 64B 정렬 TypedArray 열(layerIds·boundsX/Y/W/H·opacity·dirtyGeneration 등)을 공유 아레나에 직접 배치해 JSON 직렬화 없이 워커와 렌더러가 함께 읽습니다. 단위·통합 테스트로 검증됐습니다.",
+      "wasm64-zero-copy-ipc/wasm64-soa-render-state-tree.ts lays out 12 64-byte-aligned TypedArray columns (layerIds, boundsX/Y/W/H, opacity, dirtyGeneration, etc.) inside the shared arena for zero-serialization worker/renderer reads, verified by unit tests.",
+    ),
+    chapters: ["brush-render-authority", "worker-architecture"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "renderer-role-ledger"],
+  },
+  {
+    id: "xor-delta-rle-tile-undo",
+    category: "brush",
+    term: t("XOR-Delta + RLE 무손실 타일 언두 압축", "XOR-Delta + RLE lossless tile undo compression"),
+    definition: t(
+      "편집 전후 타일 픽셀의 비트 차이(XOR)만 구해 변화가 없는 0 구간을 길이 부호(RLE)로 묶고, 같은 패킷 하나로 Undo·Redo 를 0바이트 오차로 복원하는 압축 기법입니다.",
+      "A lossless undo scheme that XORs before/after tile pixels, run-length encodes unchanged zero spans, and reuses the single symmetric packet for zero-diff Undo and Redo.",
+    ),
+    analogy: t(
+      "문서를 고칠 때마다 전체 페이지를 복사해 쌓는 대신, ‘안 바뀐 줄 500칸 건너뛰고 501번째 칸만 이 글자로 뒤집기’라고 메모 한 장만 남기는 것과 같습니다. 같은 메모를 다시 적용하면 원래대로 돌아갑니다.",
+      "Like jotting ‘skip 500 unchanged cells, flip cell 501’ instead of photocopying the whole sheet each edit; applying the same note again restores the original.",
+    ),
+    inToonstudio: t(
+      "wasm64-zero-copy-ipc/wasm64-tile-undo-compressor.ts 와 Rust 커널 wasm_xor_tile_delta_bytes 가 256×256 RGBA8(256KiB) 타일을 단일 패스로 압축합니다. 테스트 실측에서 RAM 98.19% 절감(55.17×·0B 오차)을 확인했고 고엔트로피 타일은 raw-xor(+16B)로 보호합니다.",
+      "wasm64-zero-copy-ipc/wasm64-tile-undo-compressor.ts and the Rust kernel wasm_xor_tile_delta_bytes compress 256x256 RGBA8 tiles in a single pass. Tests verified 98.19% RAM savings (55.17x, 0-byte diff) with a raw-xor (+16 B) cap on high-entropy tiles.",
+    ),
+    chapters: ["performance-budget", "storage"],
+    atlasIds: ["wasm64-zero-copy-ipc-arena", "undo-history-byte-budget"],
+  },
+  {
+    id: "skyline-texture-atlas-draw-batching",
+    category: "brush",
+    term: t("Skyline 동적 텍스처 아틀라스 & 드로우 콜 배칭", "Skyline dynamic texture atlas & draw-call batching"),
+    definition: t(
+      "여러 브러시 스탬프·글자 텍스처를 윗선 높이선(Skyline) 알고리즘으로 큰 텍스처 한 장에 빈틈없이 채우고, 겹치지 않는 같은 재질의 그리기를 한 번의 GPU 호출로 묶는 최적화입니다.",
+      "An optimization packing brush stamps and glyphs tightly into one large texture with a Skyline algorithm, then merging non-overlapping draws sharing the same material into one GPU call.",
+    ),
+    analogy: t(
+      "작은 스티커 백 장을 낱장으로 인쇄기에 넣으면 백 번 멈추지만, 큰 용지 한 장에 높이를 맞춰 빼곡히 배치(Skyline)하고 같은 색끼리 한 번에 찍어 내면(배칭) 작업이 훨씬 빨라지는 원리입니다.",
+      "Feeding 100 loose stickers into a press stops 100 times, whereas arranging them tightly on one sheet (Skyline) and printing matching inks together (batching) cuts passes drastically.",
+    ),
+    inToonstudio: t(
+      "wasm64-render-batcher/wasm64-texture-atlas-packer.ts 가 Skyline Bottom-Left(2048×2048·1px 거터·LRU 퇴거·더티 사각형 부분 업로드)를 구현하고, wasm64-draw-call-coalescer.ts 가 64B 고정 버퍼로 비겹침 드로우 콜을 병합합니다. 현재 모듈·테스트 검증을 마쳤습니다.",
+      "wasm64-render-batcher/wasm64-texture-atlas-packer.ts implements Skyline Bottom-Left packing (2048x2048, 1 px gutter, LRU eviction, dirty-rect uploads) and wasm64-draw-call-coalescer.ts merges non-overlapping calls in a 64-byte buffer. Module tests are verified.",
+    ),
+    chapters: ["brush-engine", "performance-budget"],
+    atlasIds: ["wasm64-drawing-core-extended-suite", "renderer-role-ledger"],
+  },
+  {
+    id: "konva-vello-phase12-bridge",
+    category: "brush",
+    term: t("Konva 중립 인터페이스 분리 & Vello Phase 1-2 브리지", "Konva neutral decoupling & Vello Phase 1-2 runtime bridge"),
+    definition: t(
+      "기존 Konva 구체 타입 결합을 중립 계약으로 끊고, 가이드·말풍선·한국어 세로쓰기를 피처 플래그 뒤의 Vello 로 넘기며 오류 시 Konva 로 자동 폴백하는 무중단 전환 구조입니다.",
+      "A staged migration decoupling concrete Konva types onto neutral contracts while routing guides, balloons and Korean vertical text to feature-flagged Vello with automatic Konva fallback.",
+    ),
+    analogy: t(
+      "운영 중인 고속도로를 막지 않고 옆에 새 교량(Vello)을 놓은 뒤 시험 개통하고, 이상 신호가 뜨면 즉시 기존 차선(Konva)으로 되돌리는 무중단 교체 방식과 같습니다.",
+      "Like building a new bridge (Vello) beside a live highway, opening it behind a switch, and instantly routing traffic back to the original lane (Konva) if any fault appears.",
+    ),
+    inToonstudio: t(
+      "Phase 0 에서 비-JSX Konva 결합을 59→1파일(98.3%)로 줄이고 Wave 1–2 중복 18.88 MiB·opencv-js·pixi.js 를 분리했습니다. studio-vello-viewport-runtime-bridge.ts 가 안전 기본값 false 로 Phase 1-2 를 통합하며 GPU 유실 시 Konva 로 즉시 폴백합니다.",
+      "Phase 0 cut non-JSX Konva coupling from 59 to 1 file (98.3%) and decoupled 18.88 MiB plus opencv-js and pixi.js. studio-vello-viewport-runtime-bridge.ts defaults to false and reverts immediately to Konva on GPU loss.",
+    ),
+    chapters: ["architecture", "brush-render-authority"],
+    atlasIds: ["konva-vello-lineage-phase12-bridge", "renderer-role-ledger"],
+  },
+  {
+    id: "rust-wave3-62-c-abi-dylib",
+    category: "brush",
+    term: t("Wave 2–3 안전 Rust 62 C-ABI WASM64 & ARM64 .dylib", "Wave 2–3 safe Rust 62 C-ABI WASM64 & ARM64 .dylib"),
+    definition: t(
+      "외부 크레이트 0개·#![deny(unsafe_code)] 안전 Rust 단일 소스로 PSB·SAH BVH·IK·오디오 DSP·벡터·슬라이서·CMYK 62개 C-ABI WASM 과 Apple Silicon 네이티브 .dylib 를 함께 빌드하는 코어입니다.",
+      "A zero-crate #![deny(unsafe_code)] Rust core compiling PSB, SAH BVH, IK, Audio DSP, vector, slicer and CMYK kernels into both a 62-export WASM64 binary and an Apple Silicon native .dylib.",
+    ),
+    analogy: t(
+      "한 권의 안전 설계도에서 웹 브라우저용 경량 엔진(301.37 KiB)과 맥 전용 네이티브 엔진(542.72 KiB)을 동시에 찍어 내어 어느 쪽에서 돌려도 똑같은 결과(0-diff)가 나오게 하는 제작 방식입니다.",
+      "Like printing both a compact web engine (301.37 KiB) and a native macOS engine (542.72 KiB) from one verified blueprint so both produce identical 0-diff outputs.",
+    ),
+    inToonstudio: t(
+      "crates/studio-wasm64-drawing-core 가 확장 WASM 301.37 KiB(62 exports·SIMD 4,145개)와 ARM64 .dylib 542.72 KiB(61 심볼·NEON 6,332개)를 빌드합니다. M2 Max 실측에서 벡터 15.32×/6.96×·블러 7.98×/4.07×·오디오 DSP 2.41×(0-diff)를 확인했습니다.",
+      "crates/studio-wasm64-drawing-core builds a 301.37 KiB WASM (62 exports, 4,145 SIMD) and a 542.72 KiB ARM64 .dylib (61 symbols, 6,332 NEON). M2 Max 0-diff benchmarks hit 15.32x/6.96x vector, 7.98x/4.07x blur and 2.41x Audio DSP.",
+    ),
+    chapters: ["wasm-fixed-simd", "performance"],
+    atlasIds: ["rust-wave23-native-wasm64-kernels", "wasm64-drawing-core-extended-suite"],
+  },
+  {
+    id: "webtoon-smart-slicer-fnv64",
+    category: "brush",
+    term: t("웹툰 스마트 자동 슬라이서 & 64비트 FNV-1a 타일 중복제거", "Webtoon smart auto-slicer & 64-bit FNV-1a tile dedup"),
+    definition: t(
+      "세로로 긴 웹툰 원고에서 말풍선과 선화를 피해 빈 여백(gutter)을 찾아 자동 분할하고, 반복되는 256×256 픽셀 타일을 64비트 FNV-1a 해시로 묶어 용량과 처리 시간을 줄이는 커널입니다.",
+      "A kernel that slices tall vertical webtoons along ink-free gutters to protect balloons and lineart, then deduplicates repeated 256x256 pixel tiles using 64-bit FNV-1a hashes.",
+    ),
+    analogy: t(
+      "두루마리 만화를 가위로 자를 때 그림 위가 아니라 빈 칸만 골라 자르고, 똑같은 흰 여백 조각 백 장은 한 장만 보관해 번호표만 붙이는 제본 자동화입니다.",
+      "Like cutting a long scroll only across blank margins so drawings stay intact, then keeping one copy of 100 identical white patches with index tags.",
+    ),
+    inToonstudio: t(
+      "crates/studio-wasm64-drawing-core/src/webtoon_slicer_dedup_kernel.rs 가 행별 잉크 밀도로 안전 절단선을 계산하고 64비트 FNV-1a 타일 중복제거를 수행합니다. M2 Max 실측에서 Native 24.52×·WASM 19.82×(0-diff) 가속을 검증했습니다.",
+      "webtoon_slicer_dedup_kernel.rs scores row ink density for safe cut lines and runs 64-bit FNV-1a tile deduplication, measured on Apple M2 Max at 24.52x Native and 19.82x WASM with 0-diff parity.",
+    ),
+    chapters: ["wasm-fixed-simd", "performance"],
+    atlasIds: ["rust-wave23-native-wasm64-kernels", "export-engine-deterministic-pdf"],
+  },
+  {
+    id: "webgpu-multipass-vram-aliasing",
+    category: "brush",
+    term: t("WebGPU 멀티패스 DAG & 일시 VRAM 에일리어싱", "WebGPU multi-pass DAG & transient VRAM aliasing"),
+    definition: t(
+      "렌더 패스 의존성을 DAG 로 위상 정렬해 불필요한 패스를 걷어 내고, 생존 구간이 겹치지 않는 중간 텍스처끼리 같은 VRAM 슬롯을 재사용하는 GPU 메모리 최적화 기법입니다.",
+      "A GPU memory optimizer that topologically compiles render passes, prunes dead passes and aliases physical VRAM slots across non-overlapping transient textures.",
+    ),
+    analogy: t(
+      "장면마다 소품 창고를 따로 빌리지 않고 앞 촬영이 끝난 창고를 다음 팀이 이어 쓰며, 초대형 원고는 화면에 보이는 조각(1024px 타일)만 꺼내 놓는 무대 운영 방식입니다.",
+      "Like reusing the same prop warehouse across non-overlapping film shoots while loading only visible 1024 px tiles of giant scrolls.",
+    ),
+    inToonstudio: t(
+      "wasm64-multipass-copilot-ledger/webgpu-multipass-render-graph.ts 가 Dead-Pass Culling·RAW/WAR/WAW 배리어와 구간 에일리어싱으로 표준 5단계 VRAM 을 352→144 MiB(59.09%), 8K×16K 가상 타일을 97.76% 절감했습니다.",
+      "wasm64-multipass-copilot-ledger/webgpu-multipass-render-graph.ts cuts 5-stage transient VRAM from 352 to 144 MiB (59.09%) and 8K×16K vertical tiled memory by 97.76% with automatic hazard barriers.",
+    ),
+    chapters: ["brush-render-authority", "performance"],
+    atlasIds: ["webgpu-multipass-render-graph-vram-aliasing"],
+  },
+  {
+    id: "wet-paper-lbm-v2-curved-msdf-sfx",
+    category: "brush",
+    term: t("Wet Paper LBM v2 & 곡선 3중 외곽선 MSDF SFX", "Wet Paper LBM v2 & curved triple-outline MSDF SFX"),
+    definition: t(
+      "한지·황목·중목 종이 결 위에서 격자 볼츠만(LBM)으로 수채 모세관 번짐·입상화를 계산하고, 가변 폰트 3중 외곽선 효과음을 베지어·방사 곡선에 배치하는 0-토큰 작화 커널입니다.",
+      "Zero-token drawing kernels simulating capillary watercolor wicking/granulation across three paper grains via LBM alongside curved triple-outline variable-axis MSDF sound effects.",
+    ),
+    analogy: t(
+      "진짜 한지에 물감이 스며 마르는 물리 법칙과, 휘어진 액션 동선을 따라 굵기가 변하는 만화 효과음 식자를 브라우저 안에서 클라우드 토큰 없이 바로 그리는 작업대입니다.",
+      "Like combining real hanji watercolor wicking with curved, three-outline comic sound effects directly inside the browser at zero tokens.",
+    ),
+    inToonstudio: t(
+      "wasm64-supergap-drawing-3d/ 의 wet-paper-lbm-v2.ts·curved-msdf-sfx.ts·wet-paper-msdf-sfx-autoflat.ts 가 3종 종이 WGSL/CPU 파리티, 한글 베지어·영문 방사 SFX, 열린 선화 갭 닫기 오토 플랫팅을 검증했습니다.",
+      "wet-paper-lbm-v2.ts, curved-msdf-sfx.ts and wet-paper-msdf-sfx-autoflat.ts verify 3-paper WGSL/CPU parity, Hangul Bezier & EN radial SFX and zero-token vector gap auto-flatting.",
+    ),
+    chapters: ["brush-engine", "brush-render-authority"],
+    atlasIds: ["supergap-wet-paper-msdf-autoflat-tremor-upscaler"],
+  },
+  {
+    id: "lineart-superres-haptic-tremor-fft",
+    category: "brush",
+    term: t("8Hz 손떨림 FFT 보정 · 링잉 0 선화 초해상도 · 햅틱 마찰", "8 Hz tremor FFT, ringing-free lineart SR & haptic friction"),
+    definition: t(
+      "초기 스트로크를 FFT 로 분석해 8Hz 손떨림 대역만 One-Euro/칼만으로 눌러 90° 모서리를 살리고, 링잉 0건 2×/4× 선화 확대와 4종 지면 마찰 촉각을 묶은 드로잉 보조입니다.",
+      "A drawing suite calibrating 8 Hz hand-tremor FFT cutoffs (>45% RMS drop while keeping 90° corners), ringing-free 2×/4× lineart upscaling and 4-paper haptic friction.",
+    ),
+    analogy: t(
+      "작가 손떨림 주기만 골라 잡아 주는 펜 안정기, 번짐 없이 선을 또렷하게 키우는 확대경, 켄트지·캔버스 결을 손끝에 전하는 촉각 종이판을 함께 쓰는 구성입니다.",
+      "Like pairing a personalized pen stabilizer, a halo-free ink magnifier and tactile paper textures on one offline canvas.",
+    ),
+    inToonstudio: t(
+      "tremor-fft-calibrator.ts(RMS >45% 저감), adaptive-brush-dynamics-and-lineart-upscaler.ts(링잉 헤일로 0), HapticBrushFrictionEngine(켄트·세목·중목·캔버스 배럴롤)을 단위 테스트로 검증했습니다.",
+      "Verified across tremor-fft-calibrator.ts (>45% RMS drop), adaptive-brush-dynamics-and-lineart-upscaler.ts (0 ringing halos) and HapticBrushFrictionEngine (4 paper substrates).",
+    ),
+    chapters: ["brush-engine", "browser-local-compute"],
+    atlasIds: ["supergap-wet-paper-msdf-autoflat-tremor-upscaler"],
+  },
 ];

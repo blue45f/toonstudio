@@ -1,10 +1,10 @@
-import type Konva from "konva";
+import type { StudioNodeLike } from "../canvas/studio-stage-handle-types";
 
-const rasterPresentationCacheOwners = new WeakMap<Konva.Node, () => boolean>();
+const rasterPresentationCacheOwners = new WeakMap<StudioNodeLike, () => boolean>();
 
 /** Cache owners retain their own density, bounds and compositing policy. */
 export function registerStudioRasterPresentationCache(
-  node: Konva.Node | null,
+  node: StudioNodeLike | null,
   refresh: () => boolean,
 ): () => void {
   if (!node) return () => undefined;
@@ -21,7 +21,7 @@ export function registerStudioRasterPresentationCache(
  * drawing their children, so rebuild from the nearest owner outwards to include the new pixels.
  * An unknown or failed cache cannot substantiate an exact capture receipt.
  */
-export function refreshStudioRasterPresentationCaches(node: Konva.Node): boolean {
+export function refreshStudioRasterPresentationCaches(node: StudioNodeLike): boolean {
   for (let parent = node.getParent(); parent; parent = parent.getParent()) {
     const refresh = rasterPresentationCacheOwners.get(parent);
     if (refresh) {
@@ -38,10 +38,10 @@ export function refreshStudioRasterPresentationCaches(node: Konva.Node): boolean
 }
 
 type StudioRasterCapturePrepare = (pixelRatio: number) => () => void;
-const rasterCapturePreparations = new WeakMap<object, Map<Konva.Node, StudioRasterCapturePrepare>>();
+const rasterCapturePreparations = new WeakMap<object, Map<StudioNodeLike, StudioRasterCapturePrepare>>();
 
 /** The disposer removes the exact owner, so editor unmount does not retain a Stage or a document. */
-export function registerStudioRasterCapturePreparation(node: Konva.Node, prepare: StudioRasterCapturePrepare): () => void {
+export function registerStudioRasterCapturePreparation(node: StudioNodeLike, prepare: StudioRasterCapturePrepare): () => void {
   const stage = node.getStage();
   if (!stage) return () => undefined;
   let entries = rasterCapturePreparations.get(stage);
@@ -53,7 +53,7 @@ export function registerStudioRasterCapturePreparation(node: Konva.Node, prepare
   };
 }
 
-function rasterCacheDepth(node: Konva.Node): number {
+function rasterCacheDepth(node: StudioNodeLike): number {
   let depth = 0;
   for (let parent = node.getParent(); parent; parent = parent.getParent()) depth++;
   return depth;

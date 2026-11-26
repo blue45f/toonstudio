@@ -109,9 +109,11 @@ describe("Studio live dynamic brush integration boundary", () => {
     expect(hosts).toContain("renderer.attach({");
     expect(viewport).toContain("<StudioLiveDynamicBrushOverlayHost");
     expect(viewport).toContain("renderer={liveDynamicBrushOverlayRenderer}");
+    const liveDraftStart = viewport.indexOf("<Layer ref={liveDraftLayerRef");
+    expect(liveDraftStart).toBeGreaterThan(-1);
     const liveDraftScene = viewport.slice(
-      viewport.indexOf("<Layer ref={liveDraftLayerRef}"),
-      viewport.indexOf("</Layer>", viewport.indexOf("<Layer ref={liveDraftLayerRef}")),
+      liveDraftStart,
+      viewport.indexOf("</Layer>", liveDraftStart),
     );
     expect(liveDraftScene).toContain(
       "liveDynamicBrushOverlayRenderer.isActive",

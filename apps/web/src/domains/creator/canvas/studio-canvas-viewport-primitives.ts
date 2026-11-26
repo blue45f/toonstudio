@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioLayerLike, StudioNodeLike } from "./studio-stage-handle-types";
 
 export function localizeText(
   t: (key: string, fallback?: string) => string,
@@ -32,8 +32,8 @@ export const STUDIO_STAGE_CLIPPED_STYLE = {
 } as const;
 
 export function liveNodeDisplayBounds(
-  node: Konva.Node | null | undefined,
-  layer: Konva.Layer | null,
+  node: StudioNodeLike | null | undefined,
+  layer: StudioLayerLike | null,
   fallback: { x: number; y: number; w: number; h: number }
 ): { x: number; y: number; w: number; h: number } {
   if (!node || !layer) return fallback;

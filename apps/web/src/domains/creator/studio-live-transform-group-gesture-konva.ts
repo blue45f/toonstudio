@@ -80,7 +80,7 @@ import type { StudioLiveTransformDrawSnapshot } from "./studio-live-transform-dr
 import type { StudioLiveTransformPreviewScheduler } from "./studio-live-transform-preview-session";
 import type { StudioLiveTransformWireframeFallback } from "./studio-live-transform-wireframe-fallback-konva";
 import type { StudioSingleObjectDragLayerSession } from "./studio-single-object-drag-layer";
-import type Konva from "konva";
+import type { StudioExportStageLike, StudioSceneLayerLike, StudioSceneNodeLike, StudioSceneTransformerLike } from "./canvas/studio-stage-handle-types";
 
 export interface BeginStudioKonvaGroupDrawTransformGestureOptions {
   readonly preview: {
@@ -89,23 +89,23 @@ export interface BeginStudioKonvaGroupDrawTransformGestureOptions {
     readonly selection: readonly El[];
     /** The whole page composition, for clip resolution and scene budgeting. */
     readonly elements: readonly El[];
-    readonly dragLayer: Konva.Layer | null;
+    readonly dragLayer: StudioSceneLayerLike | null;
     readonly draftStore?: StudioLiveTransformDraftStore;
     readonly scheduler?: StudioLiveTransformPreviewScheduler;
     readonly isLocked: (element: El) => boolean;
     readonly flushDraftPublication?: (mutation: () => void) => void;
   };
   readonly sourceBounds: StudioGroupUniformResizeBounds;
-  readonly stage: Konva.Stage;
-  readonly proxy: Konva.Rect;
-  readonly transformer: Konva.Transformer;
+  readonly stage: StudioExportStageLike;
+  readonly proxy: StudioSceneNodeLike;
+  readonly transformer: StudioSceneTransformerLike;
   readonly onError?: (error: unknown) => void;
   readonly onFatalError?: (error: unknown) => void;
 }
 
 interface StudioGroupTransformMember {
   readonly element: DrawEl;
-  readonly node: Konva.Node;
+  readonly node: StudioSceneNodeLike;
   readonly snapshot: StudioLiveTransformDrawSnapshot | null;
   /**
    * This member's OWN box, padded by the radius its renderer can paint outside the centre line.
@@ -165,12 +165,12 @@ function mapBoundsThroughFrame(
 }
 
 function studioLiveTransformRasterMetrics(
-  stage: Konva.Stage,
-  layer: Konva.Layer | null,
+  stage: StudioExportStageLike,
+  layer: StudioSceneLayerLike | null,
 ): { readonly rasterScale: number; readonly sceneCanvasBackingPixels: number } {
   const stageScale = Math.max(Math.abs(stage.scaleX()), Math.abs(stage.scaleY()));
   const sceneCanvas = layer?.getCanvas();
-  const nativeSceneCanvas = layer?.getNativeCanvasElement();
+  const nativeSceneCanvas = layer?.getNativeCanvasElement?.();
   const pixelRatio = sceneCanvas?.getPixelRatio() ?? studioKonvaRuntime.pixelRatio;
   return {
     rasterScale: stageScale * pixelRatio,
@@ -270,9 +270,9 @@ export function beginStudioKonvaGroupDrawTransformGesture(
   if (!mainLayer || !dragLayer || mainLayer === dragLayer) return null;
   // Bound after the guard because `restoreSources` below is a hoisted `function` declaration, and
   // TypeScript resets a const's narrowing for those -- they are callable before the guard runs.
-  const draftLayer: Konva.Layer = dragLayer;
+  const draftLayer: StudioSceneLayerLike = dragLayer;
 
-  let parkedIndicators: Konva.Node[] = [];
+  let parkedIndicators: StudioSceneNodeLike[] = [];
   let chromeLift: StudioSingleObjectDragLayerSession | null = null;
   let previewSession: ReturnType<typeof createStudioLiveTransformPreviewSession> | null = null;
   let fallbackPreview: StudioLiveTransformWireframeFallback | null = null;
@@ -292,7 +292,7 @@ export function beginStudioKonvaGroupDrawTransformGesture(
    * silently. Per-member entries make both directions idempotent and resumable, so a retry after a
    * partial failure picks up exactly the members still owed.
    */
-  const sourceVisibility = new Map<Konva.Node, boolean>();
+  const sourceVisibility = new Map<StudioSceneNodeLike, boolean>();
   let closeState: "open" | "closing" | "closed" = "open";
   let closeOutcome: Parameters<
     StudioLiveCanvasGestureTransientAdapter<StudioLiveSelectionTransformFrame>["close"]

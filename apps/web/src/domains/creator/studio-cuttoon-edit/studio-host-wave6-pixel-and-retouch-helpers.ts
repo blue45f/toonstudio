@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioLineNodeLike, StudioReadonlyRef, StudioRectNodeLike } from "../canvas/studio-stage-handle-types";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import type { StudioAdvancedFillPreview } from "../studio-advanced-fill-preview";
 import type { StudioAdvancedFillSettings } from "../studio-advanced-fill-settings";
@@ -484,7 +484,7 @@ export function runStudioClearMarqueePreview({
   readonly pendingMarqueeRectRef: MutableRefObject<unknown>;
   readonly marqueeRafRef: MutableRefObject<number | null>;
   readonly setMarqueeActive: Dispatch<SetStateAction<boolean>>;
-  readonly marqueeRectNodeRef: MutableRefObject<Konva.Rect | null>;
+  readonly marqueeRectNodeRef: StudioReadonlyRef<StudioRectNodeLike | null>;
 }): void {
   pendingMarqueeRectRef.current = null;
   if (marqueeRafRef.current !== null) {
@@ -504,7 +504,7 @@ export function runStudioClearPaintRetouchStrokePreview({
 }: {
   readonly pendingPaintRetouchStrokePreviewRef: MutableRefObject<unknown>;
   readonly paintRetouchStrokeRafRef: MutableRefObject<number | null>;
-  readonly paintRetouchStrokeLineRef: MutableRefObject<Konva.Line | null>;
+  readonly paintRetouchStrokeLineRef: StudioReadonlyRef<StudioLineNodeLike | null>;
 }): void {
   pendingPaintRetouchStrokePreviewRef.current = null;
   if (paintRetouchStrokeRafRef.current !== null) {

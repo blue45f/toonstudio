@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioStageLike } from "../canvas/studio-stage-handle-types";
 import type { StudioBrushSnapshot } from "./studio-brush-library";
 import { snapshotStudioStagePointerBatchMapper, type StudioStagePointerBatchMapper } from "../canvas/studio-stage-pointer-coordinate";
 
@@ -20,7 +20,7 @@ export interface StudioCatalogInputGesture {
   brushSnapshot?: StudioBrushSnapshot;
   scope: string;
   sourceScope?: string;
-  stage: Konva.Stage;
+  stage: StudioStageLike;
   start: StudioCatalogPointerBatch;
   moves: StudioCatalogPointerBatch[];
   end: PointerEvent | null;
@@ -89,7 +89,7 @@ export class StudioPendingCatalogInput {
     }
   }
 
-  capture(input: { pointer: PointerEvent; stage: Konva.Stage; scope: string; ownerScope: string; touchDraw: boolean }): boolean {
+  capture(input: { pointer: PointerEvent; stage: StudioStageLike; scope: string; ownerScope: string; touchDraw: boolean }): boolean {
     if (!this.request || this.request.phase === "failed" || this.request.phase === "cancelled") return false;
     const { pointer, stage, scope } = input;
     if (pointer.altKey || pointer.button !== 0 && pointer.button !== -1 && pointer.button !== 5) return false;

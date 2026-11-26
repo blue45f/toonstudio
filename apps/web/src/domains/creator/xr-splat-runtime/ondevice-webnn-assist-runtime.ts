@@ -9,6 +9,13 @@
  *   2) Sobel 엣지 + 테두리 시드 플러드필 기반 전경 누끼(Matting) 마스크 추출
  */
 
+import {
+  createStudioHardwareAcceleratorProbe,
+  probeStudioHardwareAcceleration,
+  type StudioHardwareAccelerationReport,
+  type StudioHardwareAcceleratorProbeDeps,
+} from "../toon-silicon-runtime/studio-hardware-accelerator-probe";
+
 export const ONDEVICE_WEBNN_ASSIST_VERSION = 1 as const;
 export const ZERO_SERVER_GPU_COST_KRW = 0 as const;
 
@@ -35,6 +42,10 @@ export interface OnDeviceHardwareProbe {
   readonly webNnDeviceType?: "npu" | "gpu" | "cpu";
   readonly hasWebGpu: boolean;
   readonly hasWasmSimd: boolean;
+  readonly hasWasmRelaxedSimd?: boolean;
+  readonly hasWebGpuShaderF16?: boolean;
+  readonly hasWebGpuSubgroups?: boolean;
+  readonly wasmThreads?: number;
   readonly estimatedVramMb?: number;
   readonly isMobile?: boolean;
 }
@@ -172,6 +183,50 @@ export function createDefaultOnDeviceConsentState(): OnDeviceAssistConsentState 
     consentedAtMs: null,
     allowOpfsModelCache: false,
     allowNetworkModelDownload: false,
+  });
+}
+
+/**
+ * 표준 실리콘 하드웨어 프로브 결과를 온디바이스 WebNN 보조 런타임 프로브 형식으로 변환한다.
+ */
+export function toOnDeviceHardwareProbe(
+  report: StudioHardwareAccelerationReport,
+  options?: { readonly estimatedVramMb?: number; readonly isMobile?: boolean },
+): OnDeviceHardwareProbe {
+  const storageLimitMb =
+    report.webgpu.maxStorageBufferBindingSize !== null
+      ? Math.max(256, Math.round(report.webgpu.maxStorageBufferBindingSize / (1024 * 1024)))
+      : undefined;
+  return Object.freeze({
+    hasWebNn: report.webnn.available,
+    webNnDeviceType:
+      report.webnn.deviceType === "unavailable" ? undefined : report.webnn.deviceType,
+    hasWebGpu: report.webgpu.available,
+    hasWasmSimd: report.wasm.simd128,
+    hasWasmRelaxedSimd: report.wasm.relaxedSimd,
+    hasWebGpuShaderF16: report.webgpu.shaderF16,
+    hasWebGpuSubgroups: report.webgpu.subgroups,
+    wasmThreads: report.wasm.wasmThreadCount,
+    estimatedVramMb: options?.estimatedVramMb ?? storageLimitMb,
+    isMobile: options?.isMobile,
+  });
+}
+
+/**
+ * 브라우저 실기기에서 WebNN(NPU/GPU/CPU)·WebGPU·WASM SIMD 역량을 실제 프로브해 반환한다.
+ */
+export async function probeOnDeviceHardwareCapabilities(
+  deps?: StudioHardwareAcceleratorProbeDeps & {
+    readonly estimatedVramMb?: number;
+    readonly isMobile?: boolean;
+  },
+): Promise<OnDeviceHardwareProbe> {
+  const report = deps
+    ? await createStudioHardwareAcceleratorProbe(deps)()
+    : await probeStudioHardwareAcceleration();
+  return toOnDeviceHardwareProbe(report, {
+    estimatedVramMb: deps?.estimatedVramMb,
+    isMobile: deps?.isMobile,
   });
 }
 

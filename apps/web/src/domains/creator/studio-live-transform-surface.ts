@@ -1,7 +1,7 @@
 import { studioKonvaRuntime } from "./render/studio-konva-runtime";
 import { STUDIO_LIVE_TRANSFORM_EXACT_MAX_BACKING_PIXELS } from "./studio-live-transform-exact-draft-admission";
 
-import type Konva from "konva";
+import type { StudioLayerLike } from "./canvas/studio-stage-handle-types";
 
 export const STUDIO_LIVE_TRANSFORM_SURFACE_ATTRIBUTE = "data-studio-live-transform-surface";
 export const STUDIO_LIVE_TRANSFORM_SURFACE_ATTRIBUTE_VALUE = "adaptive-preview";
@@ -28,7 +28,7 @@ export function studioLiveTransformSurfacePixelRatio(
  * clip coordinates and the hit canvas remain in the original coordinate system. Pointer-up paints
  * the committed vector on the untouched full-resolution document surface.
  */
-export function attachStudioLiveTransformSurface(layer: Konva.Layer): () => void {
+export function attachStudioLiveTransformSurface(layer: StudioLayerLike): () => void {
   const stage = layer.getStage();
   if (!stage) return () => undefined;
   const canvas = layer.getCanvas();

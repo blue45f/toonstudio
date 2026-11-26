@@ -217,13 +217,36 @@ export const BROWSER_STUDIO_SECTION: ArchitectureGuideSection = {
   atlasIds: [
     "renderer-role-ledger",
     "stroke-surface-route-pointerdown",
+    "konva-vello-lineage-phase12-bridge",
+    "rust-wave23-native-wasm64-kernels",
+    "webgpu-multipass-render-graph-vram-aliasing",
+    "supergap-wet-paper-msdf-autoflat-tremor-upscaler",
+    "webgpu-cel-sab64-webcodecs-audiotoon",
+    "supergap-motiontoon-depth-vfx-hrtf-sab-telemetry",
+    "global-4culture-flipper-branching-webtoon-narrative",
     "sqlite-wasm-opfs-sah-pool",
     "autosave-crash-recovery-journal",
     "worker-envelope-64-workers",
     "service-worker-app-shell-policy",
   ],
   chapterIds: ["architecture", "brush-render-authority", "storage", "worker-architecture", "pwa-continuity"],
-  glossaryIds: ["renderer-role-ledger", "stroke-surface-route", "sqlite-wasm", "opfs", "web-worker", "service-worker"],
+  glossaryIds: [
+    "renderer-role-ledger",
+    "stroke-surface-route",
+    "konva-vello-phase12-bridge",
+    "rust-wave3-62-c-abi-dylib",
+    "webgpu-multipass-vram-aliasing",
+    "wet-paper-lbm-v2-curved-msdf-sfx",
+    "lineart-superres-haptic-tremor-fft",
+    "motiontoon-depth-vfx-hrtf-sab-ring",
+    "autonomous-120hz-ols-telemetry-gate",
+    "global-4culture-flipper-branching-webtoon",
+    "zero-gc-120hz-object-pool",
+    "sqlite-wasm",
+    "opfs",
+    "web-worker",
+    "service-worker",
+  ],
 };
 
 /** 2) 화면을 여는 순간 — 주소 입력부터 화면과 API 응답까지의 길. */
@@ -387,6 +410,7 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
   status: "configured",
   atlasIds: [
     "static-first-edge-gateway",
+    "zero-cost-4lane-edge-5tier-storage",
     "health-live-ready-capabilities",
     "large-asset-delivery-r2-range",
     "edge-origin-auth-trusted-proxy",
@@ -394,7 +418,7 @@ export const REQUEST_JOURNEY_SECTION: ArchitectureGuideSection = {
     "response-header-contract-csp",
   ],
   chapterIds: ["infrastructure", "cost-engineering", "pwa-continuity"],
-  glossaryIds: ["health-live-ready", "csp", "hashed-name-immutable-cache", "offline-shell"],
+  glossaryIds: ["singleflight-4lane-edge-api", "health-live-ready", "csp", "hashed-name-immutable-cache", "offline-shell"],
 };
 
 export const ARCHITECTURE_RUNTIME_SECTIONS_A: readonly ArchitectureGuideSection[] = [BROWSER_STUDIO_SECTION, REQUEST_JOURNEY_SECTION];

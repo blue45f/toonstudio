@@ -1,5 +1,12 @@
 /* StudioPage/StudioCuttoonEditor의 기존 세션 계약. */
 import type { StudioAnimaticWorkspaceDocument } from "../animatic/studio-animatic-workspace";
+import type {
+  StudioCircleNodeLike,
+  StudioExportStageLike,
+  StudioLineNodeLike,
+  StudioReadonlyRef,
+  StudioSceneTransformerLike,
+} from "../canvas/studio-stage-handle-types";
 
 import type { StudioSaveIntentScope } from "../studio-durable-save-intent";
 import type {
@@ -372,18 +379,18 @@ export type StudioCuttoonEditorViewSessionRest = {
   smudgeActive: boolean;
   smudgeArmed: boolean;
   smudgeBusy: boolean;
-  smudgeCursorRef: import("react").RefObject<import("konva").default.Circle | null>;
+  smudgeCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   smudgeRadius: number;
   smudgeStrength: number;
   snapEnabled: boolean;
   sourceHydrationPending: boolean;
   stabilizer: number;
   stabilizerMode: "standard" | "adaptive" | "precision" | "weighted";
-  stageRef: import("react").RefObject<import("konva").default.Stage | null>;
+  stageRef: StudioReadonlyRef<StudioExportStageLike | null>;
   stampTuning: import("../brush/studio-brush-library").StudioBrushStampTuning | null;
   startStudioCommentPlacementSession: () => void;
   storyboardGridOpen: boolean;
-  strokeGuideRef: import("react").RefObject<import("konva").default.Line | null>;
+  strokeGuideRef: StudioReadonlyRef<StudioLineNodeLike | null>;
   strokeWidth: number;
   studioAuthUserId: string | null;
   studioBgSceneAssetsError: string | null;
@@ -508,7 +515,7 @@ export type StudioCuttoonEditorViewSessionRest = {
   toggleSelectedElementsLocked: () => void;
   toneSearchQuery: string;
   tool: "select" | "draw" | "hand";
-  trRef: import("react").RefObject<import("konva").default.Transformer | null>;
+  trRef: StudioReadonlyRef<StudioSceneTransformerLike | null>;
   translateBusy: boolean;
   translateDraft: Map<string, string> | null;
   translateError: string | null;

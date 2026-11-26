@@ -623,9 +623,9 @@ const EXPANSION_TUNING: Readonly<
     flow: { base: 0.8, mappings: [{ source: "pressure", from: 0.6, to: 1 }] },
   },
   "wood-grain-flow": {
-    // Wood grain: fibre lines ride the stroke while rings stay locked to it.
+    spacingRatio: 0.085, scatterRatio: 0.025, // 촘촘한 섬유 겹침으로 반복 외곽 요철을 줄인다.
     grain: { space: "stroke-fixed", amount: 0.42, scale: 7, contrast: 0.6, seed: 0x4b0a_1302 },
-    width: { mappings: [{ source: "pressure", from: 0.7, to: 1.25 }] },
+    width: { mappings: [{ source: "pressure", from: 0.7, to: 1.25 }], jitter: { mode: "multiply", amount: 0.06 } },
     roundness: { jitter: { mode: "multiply", amount: 0.06 } },
     flow: { base: 0.62, mappings: [{ source: "pressure", from: 0.55, to: 1 }] },
   },

@@ -1,3 +1,4 @@
+import type { StudioStageLike } from "../canvas/studio-stage-handle-types";
 import type { StudioNodeEditPointerSession } from "../vector/studio-node-edit-pointer-session";
 
 export type PixelSelectionActivationKind = string;
@@ -7,7 +8,7 @@ export type StudioLivingInkPinnedStroke = any;
 export type StudioCuttoonStagePointersHost = {
   scopedDrawAllowed?: () => boolean;
   scopedCanvasBoundaryRef?: import("../studio-collab/studio-scoped-drawing-boundary").StudioScopedCanvasBoundaryRef;
-  capturePendingCatalogInput?: (event: PointerEvent, stage: import("konva").default.Stage | null) => boolean;
+  capturePendingCatalogInput?(event: PointerEvent, stage: StudioStageLike | null): boolean;
   pendingStrokeAdmissionRef?: { current: import("../live/studio-pending-stroke-admission").StudioPendingStrokeAdmissionQueue | null };
   activeCatalogBrush: any;
   activeGroupId: any;

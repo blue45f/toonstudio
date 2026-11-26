@@ -45,7 +45,7 @@ import type {
 } from "./studio-publish-preflight";
 import type { StudioSharedDocument } from "./studio-shared-document-client";
 import type { WorkDetail } from "@/platform/creator-client";
-import type Konva from "konva";
+import type { StudioExportStageLike } from "./canvas/studio-stage-handle-types";
 import type { Location, NavigateFunction } from "react-router-dom";
 import { frozenStatus6Text } from "./status-i18n/studio-frozen6-status-i18n";
 
@@ -154,7 +154,7 @@ export interface StudioPageSavePipelineDeps {
   readonly openWorkMetadataStep: (status: "published" | "draft") => void;
   readonly clearPendingSaveIntent: () => void;
   // ── 캡처 파이프라인
-  readonly captureReadyStageForPage: (page: PageState) => Promise<Konva.Stage>;
+  readonly captureReadyStageForPage: (page: PageState) => Promise<StudioExportStageLike>;
   readonly preserveStudioViewBeforeCapture: () => void;
   readonly hideStrokeGuide: () => void;
   readonly setIsExporting: (busy: boolean) => void;

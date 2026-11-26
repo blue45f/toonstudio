@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioNodeLike } from "./studio-stage-handle-types";
 
 /**
  * Resolve a Studio element id while walking through Konva wrapper groups.
@@ -6,8 +6,8 @@ import type Konva from "konva";
  * Both the editor pointer controller and the extracted viewport renderer use this
  * leaf helper. Keeping it outside either React module prevents a circular import.
  */
-export function studioElementIdOf(node: Konva.Node | null): string | null {
-  let current: Konva.Node | null = node;
+export function studioElementIdOf(node: StudioNodeLike | null): string | null {
+  let current: StudioNodeLike | null = node;
   while (current) {
     const id = current.getAttr("studioElementId");
     if (typeof id === "string" && id) return id;

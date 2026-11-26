@@ -36,8 +36,8 @@
  */
 import { studioLiveTransformClipChanged } from "./studio-live-transform-clip-tracking";
 
+import type { StudioNodeLike, StudioSceneNodeLike } from "./canvas/studio-stage-handle-types";
 import type { StudioLiveTransformClipRect } from "./studio-live-transform-clip-tracking";
-import type Konva from "konva";
 
 /**
  * Attr holding this gesture's claim on a container: what it last WROTE, and the value to restore.
@@ -56,7 +56,7 @@ import type Konva from "konva";
  */
 export const STUDIO_LIVE_TRANSFORM_CLIP_OWNED_ATTR = "studioLiveTransformClipOwned";
 
-interface ClipContainer extends Konva.Node {
+interface ClipContainer extends StudioSceneNodeLike {
   getClipWidth?: () => number | undefined;
   getClipHeight?: () => number | undefined;
   clipFunc?: (value?: unknown) => unknown;
@@ -66,11 +66,11 @@ interface ClipContainer extends Konva.Node {
 export type StudioLiveTransformClipHostMode = "attrs" | "func";
 
 export interface StudioLiveTransformClipHost {
-  readonly node: Konva.Node;
+  readonly node: StudioSceneNodeLike;
   readonly mode: StudioLiveTransformClipHostMode;
 }
 
-function asContainer(node: Konva.Node | null | undefined): ClipContainer | null {
+function asContainer(node: StudioSceneNodeLike | null | undefined): ClipContainer | null {
   if (!node) return null;
   const candidate = node as ClipContainer;
   return typeof candidate.clipFunc === "function" ? candidate : null;
@@ -83,7 +83,7 @@ interface StudioLiveTransformClipClaim {
   readonly restore: StudioLiveTransformClipRect | null;
 }
 
-function readClaim(node: Konva.Node): StudioLiveTransformClipClaim | undefined {
+function readClaim(node: StudioNodeLike): StudioLiveTransformClipClaim | undefined {
   return node.getAttr(STUDIO_LIVE_TRANSFORM_CLIP_OWNED_ATTR) as
     | StudioLiveTransformClipClaim
     | undefined;
@@ -97,14 +97,14 @@ function readClaim(node: Konva.Node): StudioLiveTransformClipClaim | undefined {
  * nearest ancestor already carrying one — the per-element `Group` built for a panel member.
  */
 export function findStudioLiveTransformClipHost(
-  wrapper: Konva.Node | null,
-  dragLayer: Konva.Node | null,
+  wrapper: StudioSceneNodeLike | null,
+  dragLayer: StudioNodeLike | null,
 ): StudioLiveTransformClipHost | null {
   if (!wrapper) return null;
   if (dragLayer && wrapper.getLayer() === dragLayer && asContainer(wrapper)) {
     return { node: wrapper, mode: "func" };
   }
-  let current: Konva.Node | null = wrapper.getParent();
+  let current: StudioSceneNodeLike | null = wrapper.getParent();
   while (current) {
     const candidate = asContainer(current);
     if (
@@ -147,7 +147,7 @@ export function readStudioLiveTransformClip(
  * the drag Layer's, i.e. document space — through the node's own transform at draw time.
  */
 function documentRectClipFunc(
-  node: Konva.Node,
+  node: StudioSceneNodeLike,
   rect: StudioLiveTransformClipRect,
 ): (ctx: { beginPath: () => void; moveTo: (x: number, y: number) => void;
   lineTo: (x: number, y: number) => void; closePath: () => void }) => void {

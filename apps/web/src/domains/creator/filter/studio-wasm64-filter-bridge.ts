@@ -15,6 +15,7 @@ import {
   type ImpastoLightParams,
   type LoadStudioWasm64HotpathOptions,
   type StudioWasm64HotpathRuntime,
+  type Wasm64CpuTier,
   type Wasm64HotpathBackendMode,
 } from "../wasm64-runtime-bridge";
 
@@ -56,6 +57,7 @@ export interface StudioWasmFilterExecutionResult {
   readonly height: number;
   readonly filter: StudioWasmAcceleratedFilterKind;
   readonly engine: StudioWasmFilterEngine;
+  readonly cpuTier: Wasm64CpuTier;
   readonly durationMs: number;
   readonly affectedPixels: number;
   readonly wasmReady: boolean;
@@ -65,6 +67,8 @@ export interface StudioWasmFilterExecutionResult {
 export interface StudioWasmFilterTelemetry {
   readonly enabled: boolean;
   readonly wasmReady: boolean;
+  readonly cpuTier: Wasm64CpuTier;
+  readonly resolvedWasmUrl: string | null;
   readonly wasmExecCount: number;
   readonly jsFallbackCount: number;
   readonly lastEngine: StudioWasmFilterEngine | null;
@@ -224,6 +228,8 @@ export function getStudioWasmFilterTelemetry(): StudioWasmFilterTelemetry {
   return Object.freeze({
     enabled: accelerationEnabled,
     wasmReady: ready,
+    cpuTier: ready && meta ? meta.cpuTier : "js-fallback",
+    resolvedWasmUrl: ready && meta ? meta.resolvedUrl : null,
     wasmExecCount,
     jsFallbackCount,
     lastEngine,
@@ -406,12 +412,18 @@ export function executeStudioFilterWithWasmAcceleration(
     request.rgba.set(output, 0);
   }
 
+  const activeCpuTier: Wasm64CpuTier =
+    kernelResult.engine === "rust-wasm" && cachedWasmRuntime
+      ? cachedWasmRuntime.getMetadata().cpuTier
+      : "js-fallback";
+
   return {
     output: request.mutateInPlace ? request.rgba : output,
     width: request.width,
     height: request.height,
     filter: request.filter,
     engine: kernelResult.engine,
+    cpuTier: activeCpuTier,
     durationMs: kernelResult.durationMs,
     affectedPixels: kernelResult.affectedPixels,
     wasmReady: isWasmRuntimeReady(),

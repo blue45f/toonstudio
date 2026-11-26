@@ -2,7 +2,22 @@ import {
   getStaticPolicyDocument,
   isPolicySlug,
 } from "../../../packages/core/src/legal-policy";
-import { parsePublicSharePath } from "../../../packages/core/src/public-share-path";
+import {
+  API_LANE_HEADER,
+  EDGE_CACHE_HEADER,
+  classifyApiLane,
+} from "../edge-api-lane-router.mjs";
+import {
+  createEdgeApiCacheCoalescer,
+  type EdgeCacheInput,
+  type EdgeExecutionContext,
+} from "../edge-cache-coalescer.mjs";
+import {
+  IMAGE_FORMATS,
+  negotiateImageFormat,
+  serveNegotiatedStaticImage,
+  type NegotiatedAssetCandidate,
+} from "../edge-image-negotiator.mjs";
 
 import { CORE_CLIENT_IP_HEADER, trustedConnectingIp } from "./core-client-ip";
 import {
@@ -23,11 +38,13 @@ import {
   r2RangeHeaders,
   staticMediaFallback,
   type AssetsBinding,
+  type CloudflareLargeAssetDescriptor,
   type R2BucketBinding,
   type R2ObjectBinding,
   type R2ObjectBodyBinding,
 } from "./large-static-assets";
 import { createNeisCreatorResourceEdge } from "./neis-creator-resource-edge";
+import { isOgPagePath, mapDynamicPath } from "./og-share-routes";
 
 export type { AssetsBinding, R2BucketBinding, R2ObjectBinding, R2ObjectBodyBinding } from "./large-static-assets";
 
@@ -49,6 +66,8 @@ export interface CloudflareStaticEnv extends EdgeErrorDiagnosticsEnv {
 
 interface GatewayRuntime {
   readonly fetch: typeof globalThis.fetch;
+  readonly cache?: EdgeCacheInput;
+  readonly now?: () => number;
 }
 
 type DynamicRoute =
@@ -178,53 +197,6 @@ function validatedOrigin(raw: string | undefined): URL | null {
   return url;
 }
 
-function hasExactlyOneEncodedSegment(
-  pathname: string,
-  prefix: string,
-): boolean {
-  if (!pathname.startsWith(prefix)) return false;
-  const segment = pathname.slice(prefix.length);
-  return segment.length > 0 && !segment.includes("/");
-}
-
-function isCreatorWorkOgPath(pathname: string): boolean {
-  if (!hasExactlyOneEncodedSegment(pathname, "/create/")) return false;
-  const segment = pathname.slice("/create/".length);
-  return segment !== "challenges" && segment !== "promo";
-}
-
-function isCollaborationOgPath(pathname: string): boolean {
-  if (!hasExactlyOneEncodedSegment(pathname, "/collaborate/")) return false;
-  const segment = pathname.slice("/collaborate/".length);
-  return segment !== "new" && segment !== "moderation";
-}
-
-function isPromotionOgPath(pathname: string): boolean {
-  if (!hasExactlyOneEncodedSegment(pathname, "/community/promote/")) return false;
-  const segment = pathname.slice("/community/promote/".length);
-  return segment !== "new" && segment !== "moderation";
-}
-
-function isOgPagePath(pathname: string): boolean {
-  return hasExactlyOneEncodedSegment(pathname, "/title/")
-    || pathname === "/market"
-    || pathname === "/market/browse"
-    || hasExactlyOneEncodedSegment(pathname, "/market/resource/")
-    || isCreatorWorkOgPath(pathname)
-    || hasExactlyOneEncodedSegment(pathname, "/create/series/")
-    || hasExactlyOneEncodedSegment(pathname, "/showcase/work/")
-    || hasExactlyOneEncodedSegment(pathname, "/showcase/series/")
-    || hasExactlyOneEncodedSegment(pathname, "/u/")
-    || hasExactlyOneEncodedSegment(pathname, "/author/")
-    || hasExactlyOneEncodedSegment(pathname, "/community/post/")
-    || hasExactlyOneEncodedSegment(pathname, "/community/cafes/")
-    || hasExactlyOneEncodedSegment(pathname, "/pencafe/")
-    || isCollaborationOgPath(pathname)
-    || isPromotionOgPath(pathname)
-    || pathname === "/ranking"
-    || pathname === "/play";
-}
-
 function isCrawlerRequest(request: Request): boolean {
   const method = request.method.toUpperCase();
   return (method === "GET" || method === "HEAD")
@@ -242,80 +214,6 @@ function isDynamicPath(pathname: string): boolean {
 
 function isWebSocketUpgrade(request: Request): boolean {
   return request.headers.get("upgrade")?.toLowerCase() === "websocket";
-}
-
-function decodePathSegment(value: string): string | null {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return null;
-  }
-}
-
-function mappedSegment(
-  pathname: string,
-  prefix: string,
-  key: string,
-): URLSearchParams | null {
-  if (!hasExactlyOneEncodedSegment(pathname, prefix)) return null;
-  const value = decodePathSegment(pathname.slice(prefix.length));
-  return value ? new URLSearchParams({ [key]: value }) : null;
-}
-
-function mapDynamicPath(requestUrl: URL): URLSearchParams | null {
-  const { pathname } = requestUrl;
-  if (pathname === "/market") {
-    return new URLSearchParams({ marketPage: "home" });
-  }
-  if (pathname === "/market/browse") {
-    return new URLSearchParams({ marketPage: "browse" });
-  }
-  if (pathname === "/ranking" || pathname === "/play") {
-    return new URLSearchParams({ staticPage: pathname.slice(1) });
-  }
-  if (pathname.startsWith("/market/resource/")) {
-    return mappedSegment(pathname, "/market/resource/", "marketResourceId");
-  }
-  if (pathname.startsWith("/title/")) {
-    return mappedSegment(pathname, "/title/", "slug");
-  }
-  if (pathname.startsWith("/create/series/")) {
-    return mappedSegment(pathname, "/create/series/", "creatorSeriesId");
-  }
-  if (pathname.startsWith("/showcase/series/")) {
-    return mappedSegment(pathname, "/showcase/series/", "creatorSeriesId");
-  }
-  if (pathname.startsWith("/showcase/work/")) {
-    return mappedSegment(pathname, "/showcase/work/", "creatorWorkId");
-  }
-  if (isCreatorWorkOgPath(pathname)) {
-    return mappedSegment(pathname, "/create/", "creatorWorkId");
-  }
-  if (pathname.startsWith("/u/")) {
-    return mappedSegment(pathname, "/u/", "profileUserId");
-  }
-  if (pathname.startsWith("/author/")) {
-    return mappedSegment(pathname, "/author/", "authorName");
-  }
-  if (pathname.startsWith("/community/post/")) {
-    return mappedSegment(pathname, "/community/post/", "communityPostId");
-  }
-  if (pathname.startsWith("/community/cafes/")) {
-    return mappedSegment(pathname, "/community/cafes/", "communityCafeSlug");
-  }
-  if (pathname.startsWith("/pencafe/")) {
-    return mappedSegment(pathname, "/pencafe/", "pencafeName");
-  }
-  if (isCollaborationOgPath(pathname)) {
-    return mappedSegment(pathname, "/collaborate/", "collaborationPostId");
-  }
-  if (isPromotionOgPath(pathname)) {
-    return mappedSegment(pathname, "/community/promote/", "promotionPostId");
-  }
-  if (parsePublicSharePath(requestUrl.pathname)) {
-    return new URLSearchParams({ publicPath: requestUrl.pathname });
-  }
-  return null;
 }
 
 function pathWithin(pathname: string, prefix: string): boolean {
@@ -536,6 +434,8 @@ export function createUpstreamApiRequest(
   headers.delete("x-real-ip");
   headers.delete(CORE_ORIGIN_AUTH_HEADER);
   headers.delete(CORE_CLIENT_IP_HEADER);
+  headers.delete(API_LANE_HEADER);
+  headers.delete(EDGE_CACHE_HEADER);
   if (route === "public-read" || route === "large-asset" || ogQuery) {
     removePublicReadCredentials(headers);
   } else if (connectingIp) {
@@ -548,6 +448,9 @@ export function createUpstreamApiRequest(
   headers.set("x-toonstudio-edge", "cloudflare-static-gateway-v2");
   headers.set("x-toonstudio-edge-route", route);
   headers.set("x-toonstudio-edge-attempt", String(attempt));
+  if (!ogQuery && route !== "large-asset") {
+    headers.set(API_LANE_HEADER, classifyApiLane(request).lane);
+  }
   if (coreOriginSecret) {
     headers.set(CORE_ORIGIN_AUTH_HEADER, coreOriginSecret);
   }
@@ -582,6 +485,58 @@ function retryableRead(request: Request, route: DynamicRoute): boolean {
     && !isWebSocketUpgrade(request);
 }
 
+const NEGOTIABLE_IMAGE_PATH_PATTERN = /\.(?:png|jpe?g|webp|avif)$/iu;
+
+function isNegotiableImageRequest(request: Request, url: URL): boolean {
+  const method = request.method.toUpperCase();
+  return (method === "GET" || method === "HEAD") && NEGOTIABLE_IMAGE_PATH_PATTERN.test(url.pathname);
+}
+
+async function readR2ObjectResponse(
+  request: Request,
+  key: string,
+  descriptor: CloudflareLargeAssetDescriptor,
+  env: CloudflareStaticEnv,
+  reportError: EdgeErrorReporter,
+): Promise<Response | null> {
+  if (!env.LARGE_ASSETS) return null;
+  const method = request.method.toUpperCase();
+  let operation: "r2_get" | "r2_head" | "r2_response" = method === "HEAD" ? "r2_head" : "r2_get";
+  try {
+    let partial = false;
+    let object: R2ObjectBinding | R2ObjectBodyBinding | null;
+    if (method === "HEAD") {
+      object = await env.LARGE_ASSETS.head(key);
+    } else {
+      const requestedRange = r2RangeHeaders(request);
+      let acceptedRange = requestedRange;
+      if (requestedRange && request.headers.has("if-range")) {
+        operation = "r2_head";
+        const metadata = await env.LARGE_ASSETS.head(key);
+        if (!metadata) return null;
+        acceptedRange = matchesIfRange(request, metadata.httpEtag) ? requestedRange : undefined;
+      }
+      operation = "r2_get";
+      object = await env.LARGE_ASSETS.get(key, acceptedRange ? { range: acceptedRange } : undefined);
+      partial = Boolean(acceptedRange && object?.range);
+    }
+    if (!object) return null;
+
+    operation = "r2_response";
+    const headers = r2AssetResponseHeaders(object, descriptor, partial);
+    if (matchesIfNoneMatch(request, object.httpEtag)) {
+      headers.delete("content-length");
+      headers.delete("content-range");
+      return withSecurityHeaders(new Response(null, { status: 304, headers }));
+    }
+    const body = method === "HEAD" ? null : (object as R2ObjectBodyBinding).body;
+    return withSecurityHeaders(new Response(body, { status: partial ? 206 : 200, headers }));
+  } catch (cause) {
+    reportError(env, request, { route: "large-asset", operation, attempt: 1, retrying: false }, cause);
+    return null;
+  }
+}
+
 async function serveR2LargeAsset(
   request: Request,
   env: CloudflareStaticEnv,
@@ -614,51 +569,46 @@ async function serveR2LargeAsset(
       headers: descriptor.sameOriginOnly ? { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" } : { allow: "GET, HEAD, OPTIONS" },
     }));
   }
+  return readR2ObjectResponse(request, key, descriptor, env, reportError);
+}
 
-  let operation: "r2_get" | "r2_head" | "r2_response" = method === "HEAD" ? "r2_head" : "r2_get";
-  try {
-    let partial = false;
-    let object: R2ObjectBinding | R2ObjectBodyBinding | null;
-    if (method === "HEAD") {
-      object = await env.LARGE_ASSETS.head(key);
-    } else {
-      const requestedRange = r2RangeHeaders(request);
-      let acceptedRange = requestedRange;
-      if (requestedRange && request.headers.has("if-range")) {
-        operation = "r2_head";
-        const metadata = await env.LARGE_ASSETS.head(key);
-        if (!metadata) return null;
-        acceptedRange = matchesIfRange(request, metadata.httpEtag)
-          ? requestedRange
-          : undefined;
-      }
-      operation = "r2_get";
-      object = await env.LARGE_ASSETS.get(
-        key,
-        acceptedRange ? { range: acceptedRange } : undefined,
-      );
-      partial = Boolean(acceptedRange && object?.range);
-    }
-    if (!object) return null;
+async function serveNegotiatedR2MediaImage(
+  request: Request,
+  descriptor: CloudflareLargeAssetDescriptor,
+  env: CloudflareStaticEnv,
+  reportError: EdgeErrorReporter,
+): Promise<Response> {
+  const preferredFormat = negotiateImageFormat(request.headers.get("accept"));
+  if (env.LARGE_ASSETS) {
+    let r2Hit = false;
+    const r2Response = await serveNegotiatedStaticImage(
+      request,
+      async (candidate: NegotiatedAssetCandidate, variantRequest: Request) => {
+        if (!candidate.isOriginal && preferredFormat === IMAGE_FORMATS.ORIGINAL && candidate.bucket === null) {
+          return null;
+        }
+        const variantDescriptor = candidate.contentType
+          ? { ...descriptor, contentType: candidate.contentType }
+          : descriptor;
+        const response = await readR2ObjectResponse(variantRequest, candidate.key, variantDescriptor, env, reportError);
+        if (response) r2Hit = true;
+        return response;
+      },
+    );
+    if (r2Hit) return withSecurityHeaders(r2Response);
+  }
+  return withSecurityHeaders(await serveNegotiatedStaticImage(
+    request,
+    (_candidate, variantRequest) => env.ASSETS.fetch(variantRequest),
+  ));
+}
 
-    operation = "r2_response";
-    const headers = r2AssetResponseHeaders(object, descriptor, partial);
-    if (matchesIfNoneMatch(request, object.httpEtag)) {
-      headers.delete("content-length");
-      headers.delete("content-range");
-      return withSecurityHeaders(new Response(null, { status: 304, headers }));
-    }
+class UpstreamExhaustedError extends Error {
+  readonly attempted: number;
 
-    const body = method === "HEAD"
-      ? null
-      : (object as R2ObjectBodyBinding).body;
-    return withSecurityHeaders(new Response(body, {
-      status: partial ? 206 : 200,
-      headers,
-    }));
-  } catch (cause) {
-    reportError(env, request, { route: "large-asset", operation, attempt: 1, retrying: false }, cause);
-    return null;
+  constructor(attempted: number) {
+    super("UPSTREAM_EXHAUSTED");
+    this.attempted = attempted;
   }
 }
 
@@ -667,9 +617,14 @@ export function createCloudflareStaticGateway(
 ) {
   const neisCreatorResources = createNeisCreatorResourceEdge(runtime);
   const reportError = createEdgeErrorDiagnostics();
+  const apiCacheCoalescer = createEdgeApiCacheCoalescer({
+    cache: runtime.cache,
+    now: runtime.now,
+  });
   return async function fetchRequest(
     request: Request,
     env: CloudflareStaticEnv,
+    ctx?: EdgeExecutionContext,
   ): Promise<Response> {
     const requestUrl = new URL(request.url);
     if (isEdgeLivenessRequest(request, requestUrl)) {
@@ -681,6 +636,12 @@ export function createCloudflareStaticGateway(
       return request.method === "HEAD" ? new Response(null, rejection) : rejection;
     }
     if (!isDynamicPath(requestUrl.pathname)) {
+      if (isNegotiableImageRequest(request, requestUrl)) {
+        return withSecurityHeaders(await serveNegotiatedStaticImage(
+          request,
+          (_candidate, variantRequest) => env.ASSETS.fetch(variantRequest),
+        ));
+      }
       return env.ASSETS.fetch(request);
     }
     // Human navigation stays on Static Assets. Only recognized crawler traffic wakes the
@@ -702,9 +663,12 @@ export function createCloudflareStaticGateway(
       // 이중 압축이 되었고(2026-10-13 운영 실측: 전 경로 이중 brotli),
       // 어떤 클라이언트도 해제하지 못해 엔진·모델 로딩이 깨졌다.
       // R2 원본 + 엣지 네이티브 압축 조합은 클라이언트별로 정확히 동작한다.
+      const largeAsset = cloudflareLargeAssetDescriptor(requestUrl.pathname);
+      if (largeAsset?.staticFallback && isNegotiableImageRequest(request, requestUrl)) {
+        return serveNegotiatedR2MediaImage(request, largeAsset, env, reportError);
+      }
       const r2Response = await serveR2LargeAsset(request, env, reportError);
       if (r2Response) return r2Response;
-      const largeAsset = cloudflareLargeAssetDescriptor(requestUrl.pathname);
       // R2 미디어 이관 경로는 R2에 아직 없으면 Static Assets로 돌린다(단계 이관·롤백 안전망).
       if (largeAsset?.staticFallback) return withSecurityHeaders(await staticMediaFallback(request, env.ASSETS));
       // 동일 출처 전용(bundle-v2) 바이트는 R2에만 있다. 폴백 원본의 응답 헤더(CORS 등)가 가드 계약을 깨지 못하게 닫는다.
@@ -740,56 +704,71 @@ export function createCloudflareStaticGateway(
       );
     }
 
-    const orderedOrigins = retryableRead(request, route)
-      ? orderedReadOrigins(request, origins)
-      : origins.slice(0, 1);
-    let attempted = 0;
-    for (const [index, origin] of orderedOrigins.entries()) {
-      attempted += 1;
-      let operation: "upstream_fetch" | "upstream_response" = "upstream_fetch";
-      try {
-        const response = await runtime.fetch(
-          createUpstreamApiRequest(
-            request,
-            origin,
-            route,
-            index,
-            coreOrigin?.origin === origin.origin
-              ? coreOriginSecret ?? undefined
-              : undefined,
-          ),
-        );
-        operation = "upstream_response";
-        // Reconstructing a WebSocket upgrade response drops the runtime-specific
-        // WebSocket handle. Security headers apply to HTTP responses; the upgrade
-        // handshake must pass through unchanged.
-        if (isWebSocketUpgrade(request) || response.status === 101) return response;
-        const shouldRetry = retryableRead(request, route)
-          && RETRYABLE_UPSTREAM_STATUSES.has(response.status)
-          && index + 1 < orderedOrigins.length;
-        if (shouldRetry) {
-          await cancelRetryResponse(response);
-          continue;
-        }
-        const patchedResponse = await neisCreatorResources.patchProviderAvailability(
-          request,
-          response,
-          env,
-        );
-        return withSecurityHeaders(patchedResponse);
-      } catch (cause) {
-        const retrying = retryableRead(request, route) && index + 1 < orderedOrigins.length;
-        reportError(env, request, { route, operation, attempt: attempted, retrying }, cause);
-        if (retrying) {
-          continue;
+    async function proxyToOrderedOrigins(targetRequest: Request): Promise<Response> {
+      const orderedOrigins = retryableRead(targetRequest, route)
+        ? orderedReadOrigins(targetRequest, origins)
+        : origins.slice(0, 1);
+      let attempted = 0;
+      for (const [index, origin] of orderedOrigins.entries()) {
+        attempted += 1;
+        let operation: "upstream_fetch" | "upstream_response" = "upstream_fetch";
+        try {
+          const response = await runtime.fetch(
+            createUpstreamApiRequest(
+              targetRequest,
+              origin,
+              route,
+              index,
+              coreOrigin?.origin === origin.origin
+                ? coreOriginSecret ?? undefined
+                : undefined,
+            ),
+          );
+          operation = "upstream_response";
+          // Reconstructing a WebSocket upgrade response drops the runtime-specific
+          // WebSocket handle. Security headers apply to HTTP responses; the upgrade
+          // handshake must pass through unchanged.
+          if (isWebSocketUpgrade(targetRequest) || response.status === 101) return response;
+          const shouldRetry = retryableRead(targetRequest, route)
+            && RETRYABLE_UPSTREAM_STATUSES.has(response.status)
+            && index + 1 < orderedOrigins.length;
+          if (shouldRetry) {
+            await cancelRetryResponse(response);
+            continue;
+          }
+          const patchedResponse = await neisCreatorResources.patchProviderAvailability(
+            targetRequest,
+            response,
+            env,
+          );
+          return withSecurityHeaders(patchedResponse);
+        } catch (cause) {
+          const retrying = retryableRead(targetRequest, route) && index + 1 < orderedOrigins.length;
+          reportError(env, targetRequest, { route, operation, attempt: attempted, retrying }, cause);
+          if (retrying) {
+            continue;
+          }
         }
       }
+      throw new UpstreamExhaustedError(attempted);
     }
 
-    return jsonError(
-      502,
-      attempted > 0 ? "CORE_API_UPSTREAM_FAILED" : "CORE_API_UNAVAILABLE",
-    );
+    const useEdgeApiShield = !isWebSocketUpgrade(request)
+      && !isOgPagePath(requestUrl.pathname)
+      && route !== "large-asset";
+    try {
+      return useEdgeApiShield
+        ? await apiCacheCoalescer.handle(request, proxyToOrderedOrigins, ctx)
+        : await proxyToOrderedOrigins(request);
+    } catch (cause) {
+      if (cause instanceof UpstreamExhaustedError) {
+        return jsonError(
+          502,
+          cause.attempted > 0 ? "CORE_API_UPSTREAM_FAILED" : "CORE_API_UNAVAILABLE",
+        );
+      }
+      return jsonError(502, "CORE_API_UPSTREAM_FAILED");
+    }
   };
 }
 

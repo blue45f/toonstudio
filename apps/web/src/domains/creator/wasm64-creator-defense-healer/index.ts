@@ -1,0 +1,103 @@
+/**
+ * Creator Defense & Healer ₩0(무서버·제로-토큰) 로컬 서브시스템 공개 진입점.
+ *
+ * - WebGPU 비가시성 암호화 시각 워터마크 각인·추출기 (8×8 Haar-Walsh DM-QIM 대역확산 + WGSL)
+ * - 제로-토큰(0 Token) 작가 화풍 프로파일러 & ₩0 PC↔태블릿/모바일 컴패니언 페어링(6자리 SAS + <=16KiB XOR+RLE)
+ * - 자동 3D 메시 토폴로지·법선 치유기 · 온디바이스 1줄 시맨틱 씬 컴포저 · 컨텍스트 인식 우선순위 CRDT
+ *
+ * 주의: Studio 초기 진입 그래프(`main.tsx`, `studio-legacy-editor-adapter.tsx`)에서
+ * 정적으로 import하지 않고, 기능 활성화 시점에만 동적(on-demand) 로드한다.
+ */
+
+export {
+  computeKeyedCrc16,
+  computeRgbaPsnrDb,
+  decodeWatermarkPayload64,
+  DEFAULT_QIM_STEP,
+  deriveWatermarkKeySeed,
+  encodeWatermarkPayload64,
+  extractInvisibleWatermarkCpu,
+  hashWatermarkU32,
+  imprintInvisibleWatermarkCpu,
+  MIN_IMPERCEPTIBLE_PSNR_DB,
+  simulateLossyPerturbation,
+  validateWatermarkWgslSource,
+  WATERMARK_BLOCK_SIZE,
+  WATERMARK_MODES_PER_BLOCK,
+  WATERMARK_PAYLOAD_BITS,
+  WATERMARK_PAYLOAD_BYTES,
+  WebGpuWatermarkImprinter,
+  WGSL_INVISIBLE_WATERMARK_IMPRINT,
+  type DecodedWatermarkPayload,
+  type EncodedWatermarkPayload,
+  type LossyPerturbationOptions,
+  type MinimalWebGpuDeviceLike,
+  type RgbaQualityMetrics,
+  type WatermarkExtractOptions,
+  type WatermarkExtractResult,
+  type WatermarkImprintOptions,
+  type WatermarkImprintResult,
+  type WatermarkPayloadSpec,
+  type WatermarkWgslValidationReport,
+} from "./webgpu-invisible-watermark-imprinter";
+
+export {
+  ArtistStyleProfiler,
+  decodeXorRle,
+  DEFAULT_MIRROR_TILE_SIZE,
+  encodeXorRle,
+  MAX_DATACHANNEL_FRAME_BYTES,
+  srgbToOklch,
+  ZeroLagDevicePairingSession,
+  type ArtistBrushPreset,
+  type ArtistLightingPreset,
+  type ArtistStyleProfile,
+  type ArtistTonePreset,
+  type CompanionInputType,
+  type CompanionStylusInput,
+  type ContrastCurveProfile,
+  type EmittedCutStylePreset,
+  type LightingMoodKind,
+  type LineStyleKind,
+  type MirrorFrameBatch,
+  type MirrorReceiveReport,
+  type OklchSwatch,
+  type PairingAnswer,
+  type PairingOffer,
+  type PairingRole,
+  type PairingState,
+  type PaletteHarmonyKind,
+  type RelayedStylusEvent,
+  type StyleCutContext,
+} from "./zero-token-style-profiler-and-pairing";
+
+export {
+  comparePriorityCrdtOps,
+  composeSemanticSceneOffline,
+  ContextAwarePriorityCrdt,
+  CRDT_LANE_BASE_PRIORITY,
+  healMeshTopologyAndNormals,
+  inspectMeshTopologyDefects,
+  type ComposedSemanticScene,
+  type CrdtApplyOutcome,
+  type CrdtPriorityLane,
+  type CrdtScalar,
+  type CrdtTelemetry,
+  type CrdtValue,
+  type CreateCrdtOpInput,
+  type HealedTriangleMesh,
+  type MeshDefectMetrics,
+  type MeshHealOptions,
+  type MeshHealResult,
+  type MeshHealSummary,
+  type PriorityCrdtOp,
+  type RawTriangleMesh,
+  type SemanticCameraAngle,
+  type SemanticCameraSpec,
+  type SemanticLightSpec,
+  type SemanticSceneAsset,
+  type SemanticShotScale,
+  type SemanticStageId,
+  type SemanticTimeOfDay,
+  type SemanticWeatherKind,
+} from "./mesh-topology-healer-and-semantic-scene";

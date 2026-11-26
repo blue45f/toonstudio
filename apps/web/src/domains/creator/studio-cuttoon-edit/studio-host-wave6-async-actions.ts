@@ -1,5 +1,5 @@
-import type Konva from "konva";
-import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
+import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import type { StudioReadonlyRef, StudioStageLike } from "../canvas/studio-stage-handle-types";
 
 import type {
   generateScenarioScenes,
@@ -39,7 +39,9 @@ import type { PageState } from "../studio-page-state";
 import { layoutScenarioPanels, type ScenarioPreviewItem } from "../studio-scenario-layout";
 import type { StudioWorkAssetHydratorRuntime } from "../studio-work-asset-hydrator";
 
-export async function runStudioCaptureReadyStageForHistoryPage({
+export async function runStudioCaptureReadyStageForHistoryPage<
+  TStage extends StudioStageLike = StudioStageLike,
+>({
   page, historyIndex, studioRevisionProjectGenerationRef, ensureSharedDocumentAvailableForExport,
   studioWorkAssetHydrator, captureCommitRef, stageRef, sharedDocRequiredMessage,
 }: {
@@ -57,9 +59,9 @@ export async function runStudioCaptureReadyStageForHistoryPage({
     timelapse: boolean;
     masterEditMode: boolean;
   }>;
-  readonly stageRef: RefObject<Konva.Stage | null>;
+  readonly stageRef: StudioReadonlyRef<TStage | null>;
   readonly sharedDocRequiredMessage: () => string;
-}): Promise<Konva.Stage> {
+}): Promise<TStage> {
   const captureGeneration = studioRevisionProjectGenerationRef.current;
   if (!ensureSharedDocumentAvailableForExport()) {
     throw new Error(sharedDocRequiredMessage());

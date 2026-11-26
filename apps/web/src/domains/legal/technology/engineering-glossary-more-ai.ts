@@ -270,4 +270,80 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
     chapters: ["on-device-inference", "browser-local-compute"],
     atlasIds: ["onnx-runtime-web-inference", "capability-detection-registry-27"],
   },
+  {
+    id: "five-tier-zero-cost-storage-nine-pool-ai",
+    category: "ai",
+    term: t("5계층 ₩0 무료 저장소 연합 & 9단 무료 AI 가중 분산", "5-tier zero-cost storage federation & 9-pool free AI cascade"),
+    definition: t(
+      "파일 무게와 보안 성격에 따라 저장소를 5개 무료 계층으로 나누고, AI 요청은 온디바이스 0-토큰 선행 뒤 무료 공급자 9곳을 순서대로 두드려 유료 전환을 막는 비용 설계입니다.",
+      "A zero-cost design federating storage across five free tiers by data weight while routing AI through an on-device zero-token layer and nine free-only provider pools without paid auto-upgrade.",
+    ),
+    analogy: t(
+      "무거운 원고는 내 책상(OPFS)과 개인 드라이브(BYO)에 두고 공용 파일만 무료 서랍 다섯 곳에 나눠 보관하며, AI 는 내 기기에서 먼저 풀고 모자랄 때만 무료 창구 9곳을 차례로 이용하는 살림법입니다.",
+      "Like keeping heavy drafts on your desk (OPFS) and personal drive (BYO) while splitting shared files across five free drawers, and checking your own device before visiting nine free AI counters in order.",
+    ),
+    inToonstudio: t(
+      "저장소는 로컬 OPFS·BYO 클라우드·R2(10GB 무료)·서울 onpod+D1·Cloudflare Static Assets 5계층으로 분담하고, AI 는 ondevice-zero-token-router.ts 와 studio-free-ai-provider-catalog.ts(9단 무료 풀·90% 차단선)로 ₩0 경계를 지킵니다(운영 키 활성은 배포 설정 범위).",
+      "Storage splits across local OPFS, BYO Cloud, R2 (10 GB free), Seoul onpod+D1 and Cloudflare Static Assets, while AI enforces zero-bill boundaries via ondevice-zero-token-router.ts and studio-free-ai-provider-catalog.ts (9 free pools, 90% cutoff; live keys are deployment config).",
+    ),
+    chapters: ["free-first-infra", "free-ai-routing"],
+    atlasIds: ["zero-cost-4lane-edge-5tier-storage", "free-first-ai-routing"],
+  },
+  {
+    id: "korean-pii-guard-zero-cost-starter",
+    category: "ai",
+    term: t("한국형 PII 사전 차단 & 영구 ₩0 오프라인 AI 스타터 팩", "Korean PII pre-send guard & permanent ₩0 offline AI starter pack"),
+    definition: t(
+      "외부 LLM 송신 전 한국형 계좌·주민번호·도로명/건물주소·메신저 핸들을 가려 유출을 막고, 오프라인 256차원 코사인 색인과 증류 에셋으로 토큰 0개에서도 창작을 이어 가는 구성입니다.",
+      "A safety and zero-cost pairing that blocks Korean bank accounts, resident IDs, addresses and SNS handles before LLM egress while resolving catalog lookups via a 256D offline cosine index.",
+    ),
+    analogy: t(
+      "외부 번역가에게 보내기 전에 연락처와 주소를 먼저 가리는 보안 검수대와, 자주 쓰는 참고 자료 884건을 아예 책상 서랍에 꽂아 무료로 바로 찾는 사전 세트를 함께 두는 방식입니다.",
+      "Like redacting addresses and phone numbers before emailing an advisor while keeping 884 common references right in your desk drawer at zero cost.",
+    ),
+    inToonstudio: t(
+      "전용 평가 트랙에서 gpt-6.2-astra·5.5·4.1 3모델 105/105·Round-3 고난도 23건 100%(평균 94.13·안전성 100·PII 유출 0건)를 검증했고, 40 WebP·20 MP3·13 카탈로그·884건 256차원 코사인 엔진(semantic-cosine-index.ts)을 결합했습니다.",
+      "On the live-eval track, gpt-6.2-astra/5.5/4.1 passed 105/105 and Round-3 23/23 (94.13 avg, 100 safety, 0 PII leaks), paired with 40 WebP, 20 MP3, 13 catalogs and the 884-item 256D semantic-cosine-index.ts engine.",
+    ),
+    chapters: ["free-ai-routing", "on-device-inference"],
+    atlasIds: ["openai-flagship-eval-korean-pii-starter", "free-first-ai-routing"],
+  },
+  {
+    id: "ondevice-copilot-rag-style-profiler",
+    category: "ai",
+    term: t("0-토큰 로컬 코파일럿 RAG · 화풍 프로파일러 · 1줄 씬 합성", "0-token local copilot RAG, style profiler & 1-line scene"),
+    definition: t(
+      "클라우드 토큰 없이 BM25+256차원 코사인으로 이전 회차 메모리를 검색하고, 작가 화풍(선·OKLCH·톤)을 추출하며 한 줄 지시문을 3D 씬 구조로 합성하는 온디바이스 도구군입니다.",
+      "Zero-token on-device tools combining BM25+256D episode memory RAG, canvas style profiling (line/OKLCH/tone) and offline 1-line 3D semantic scene composition.",
+    ),
+    analogy: t(
+      "외부 AI 서버에 원고를 올리지 않고 내 책상 위 설정집 색인 카드(RAG)·물감표(화풍)·무대 사전(1줄 씬)을 1ms 만에 찾아 꺼내 쓰는 비서입니다.",
+      "Like looking up your own indexed lore cards, palette swatch book and stage lexicon on your desk in 1 ms with zero cloud uploads.",
+    ),
+    inToonstudio: t(
+      "OnDeviceCreativeCopilot(30화 150컷 1.222ms·선택적 Chrome Built-in AI 훅), ArtistStyleProfiler(0토큰 화풍 프리셋), composeSemanticSceneOffline(0.09ms)을 단위 테스트로 검증했습니다.",
+      "Verified via OnDeviceCreativeCopilot (30-ep/150-cut in 1.222 ms + optional Chrome Built-in AI), ArtistStyleProfiler and composeSemanticSceneOffline (0.09 ms).",
+    ),
+    chapters: ["on-device-inference", "free-ai-routing"],
+    atlasIds: ["ondevice-creative-copilot-rag-style-profiler"],
+  },
+  {
+    id: "oklch-continuity-diff-retention-plot-graph",
+    category: "ai",
+    term: t("OKLCH 연속성 Diff · 이탈 히트맵 · 120화 모순 그래프", "OKLCH continuity diff, retention heatmap & 120-ep plot graph"),
+    definition: t(
+      "OKLCH 색차 작붕·클립보드 C2PA 차단, 40컷 모바일 이탈 히트맵, 64컷 양방향 대사 시트, 120화 인물·복선 모순 감사를 토큰 0개로 수행하는 사전 검수 파이프라인입니다.",
+      "A zero-token pre-publish QA suite uniting OKLCH color drift & C2PA clipboard guards, a 40-cut mobile retention heatmap, a 64-cut dialogue binder and a 120-episode plot graph.",
+    ),
+    analogy: t(
+      "편집자가 색상표·저작권 점검표·모바일 스크롤 스톱워치·120화 인물 관계도를 한 번에 훑어 10ms 안에 작붕과 복선 누락을 잡아 주는 자동 검수대입니다.",
+      "Like an editor scanning color swatches, copyright stamps, a scroll stopwatch and a 120-episode lore chart in under 10 ms.",
+    ),
+    inToonstudio: t(
+      "continuity-diff-and-clipboard-guard.ts(PNG/JPEG/WebP C2PA), mobile-retention-heatmap.ts(40컷 2ms), dialogue-spreadsheet-binder.ts(64컷 7ms), EpisodeContinuityGraphDb(120화 2ms)를 검증했습니다.",
+      "Verified across continuity-diff-and-clipboard-guard.ts, mobile-retention-heatmap.ts (2 ms), dialogue-spreadsheet-binder.ts (7 ms) and EpisodeContinuityGraphDb (2 ms).",
+    ),
+    chapters: ["on-device-inference", "quality"],
+    atlasIds: ["zero-token-continuity-diff-retention-plot-graph"],
+  },
 ];

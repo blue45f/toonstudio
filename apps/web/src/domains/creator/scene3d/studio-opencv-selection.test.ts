@@ -9,8 +9,7 @@ import {
   refineMaskEdges,
 } from "../studio-opencv-selection";
 
-import type { StudioSelectionPathArtifact } from "../studio-opencv-selection";
-import type { CV } from "@techstark/opencv-js";
+import type { StudioNativeSelectionRuntime, StudioSelectionPathArtifact } from "../studio-opencv-selection";
 import type { SceneIR } from "@toonstudio/studio-project-model";
 
 /**
@@ -122,7 +121,7 @@ function maskIoU(a: Uint8Array, b: Uint8Array): number {
 }
 
 describe("studio-opencv-selection", () => {
-  let cv: CV;
+  let cv: StudioNativeSelectionRuntime;
   let skia: SkiaRenderModule;
   let ck: unknown;
 
@@ -409,7 +408,7 @@ describe("studio-opencv-selection", () => {
   });
 
   describe("Mat lifetime hygiene", () => {
-    function wasmHeapBytes(runtime: CV): number {
+    function wasmHeapBytes(runtime: StudioNativeSelectionRuntime): number {
       const probe = new runtime.Mat(1, 1, runtime.CV_8UC1);
       try {
         return probe.data.buffer.byteLength;

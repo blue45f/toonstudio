@@ -57,16 +57,20 @@ pub unsafe extern "C" fn wasm_cull_stage_frustum_hiz(
     if n > MAX_STAGE_OBJECTS {
         return FFI_ERR_INVALID_PARAMETER;
     }
-    if !aligned_non_null::<f32>(view_proj_ptr as usize)
+    if view_proj_ptr.is_null()
+        || camera_and_lod_ptr.is_null()
+        || !aligned_non_null::<f32>(view_proj_ptr as usize)
         || !aligned_non_null::<f32>(camera_and_lod_ptr as usize)
         || (!out_stats_ptr.is_null() && !aligned_non_null::<u32>(out_stats_ptr as usize))
     {
         return FFI_ERR_NULL_OR_ALIAS;
     }
     if n > 0
-        && (!aligned_non_null::<f32>(aabbs_ptr as usize)
-            || !aligned_non_null::<u32>(out_visible_indices_ptr as usize)
-            || out_visible_lods_ptr.is_null())
+        && (aabbs_ptr.is_null()
+            || out_visible_indices_ptr.is_null()
+            || out_visible_lods_ptr.is_null()
+            || !aligned_non_null::<f32>(aabbs_ptr as usize)
+            || !aligned_non_null::<u32>(out_visible_indices_ptr as usize))
     {
         return FFI_ERR_NULL_OR_ALIAS;
     }
@@ -116,10 +120,10 @@ pub unsafe extern "C" fn wasm_cull_stage_frustum_hiz(
     }
 
     // SAFETY: null·정렬·오버플로·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
-    let (vp, cam_p, aabb_raw, out_idx, out_lod) = unsafe {
+    let (vp_slice, cam_p, aabb_raw, out_idx, out_lod) = unsafe {
         (
-            *view_proj_ptr.cast::<[f32; 16]>(),
-            *camera_and_lod_ptr.cast::<[f32; STAGE_CULL_CAMERA_FFI_LEN]>(),
+            slice::from_raw_parts(view_proj_ptr, 16),
+            slice::from_raw_parts(camera_and_lod_ptr, STAGE_CULL_CAMERA_FFI_LEN),
             if n == 0 {
                 &[][..]
             } else {
@@ -137,6 +141,8 @@ pub unsafe extern "C" fn wasm_cull_stage_frustum_hiz(
             },
         )
     };
+    let mut vp = [0.0_f32; 16];
+    vp.copy_from_slice(vp_slice);
     if !cam_p[6].is_finite() || (cam_p[6] != 0.0 && cam_p[6] != 1.0) {
         return FFI_ERR_INVALID_PARAMETER;
     }
@@ -280,13 +286,18 @@ pub unsafe extern "C" fn wasm_evaluate_stage_acoustics_and_lighting(
     if ns > MAX_STAGE_AUDIO_SOURCES || nl > MAX_STAGE_LIGHTS || nc > MAX_STAGE_CAST_SAMPLES {
         return FFI_ERR_INVALID_PARAMETER;
     }
-    if !aligned_non_null::<f32>(listener_ptr as usize)
+    if listener_ptr.is_null()
+        || !aligned_non_null::<f32>(listener_ptr as usize)
         || (ns > 0
-            && (!aligned_non_null::<f32>(sources_ptr as usize)
+            && (sources_ptr.is_null()
+                || out_audio_ptr.is_null()
+                || !aligned_non_null::<f32>(sources_ptr as usize)
                 || !aligned_non_null::<f32>(out_audio_ptr as usize)))
-        || (nl > 0 && !aligned_non_null::<f32>(lights_ptr as usize))
+        || (nl > 0 && (lights_ptr.is_null() || !aligned_non_null::<f32>(lights_ptr as usize)))
         || (nc > 0
-            && (!aligned_non_null::<f32>(samples_ptr as usize)
+            && (samples_ptr.is_null()
+                || out_lighting_ptr.is_null()
+                || !aligned_non_null::<f32>(samples_ptr as usize)
                 || !aligned_non_null::<f32>(out_lighting_ptr as usize)))
     {
         return FFI_ERR_NULL_OR_ALIAS;
@@ -330,7 +341,7 @@ pub unsafe extern "C" fn wasm_evaluate_stage_acoustics_and_lighting(
     // SAFETY: null·정렬·오버플로·비중첩 검증 완료, 호출자가 유효 선형 메모리 범위를 보장한다.
     let (lp, src_raw, lgt_raw, smp_raw, oa_raw, ol_raw) = unsafe {
         (
-            *listener_ptr.cast::<[f32; STAGE_LISTENER_FFI_LEN]>(),
+            slice::from_raw_parts(listener_ptr, STAGE_LISTENER_FFI_LEN),
             if ns == 0 {
                 &[][..]
             } else {

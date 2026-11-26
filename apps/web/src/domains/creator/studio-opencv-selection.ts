@@ -1,24 +1,25 @@
 /**
- * OpenCV.js smart-selection provider utilities (E16 lane).
+ * 스마트 선택·윤곽선 추출 유틸리티 (E16 레인 · 제로 의존성 네이티브 런타임).
  *
- * Pure data-in/data-out helpers for foreground extraction (grabCut), flood
- * masks (floodFill), edge refinement (morphology + Gaussian feather) and
- * mask→PathIR vectorization. The module never touches React, the DOM or a UI
- * surface, so every function is callable from a dedicated worker: load the
- * runtime once with {@link loadOpenCvForSelection} at worker boot, then call
- * the compute functions with typed arrays (optionally passing the loaded
- * runtime explicitly to keep the hot path synchronous-after-await).
- *
- * The OpenCV package is reached through a dynamic import only — a static
- * value import would defeat the bundle lazy-load gate. Every cv.Mat /
- * cv.MatVector created here is registered in one MatScope and deleted in
- * reverse creation order before any result crosses the boundary (canvaskit
- * dispose lesson: a missed delete leaks width*height bytes per call until the
- * wasm heap grows without bound).
+ * 전경 추출(grabCut), 플러드 마스크(floodFill), 경계 정제(morphology + Gaussian feather),
+ * 마스크→PathIR 벡터화를 순수 데이터 입출력으로 수행한다.
+ * 기본 실행은 14 MiB 외부 Emscripten 바이너리 대신 제로 의존성 네이티브 선택 런타임
+ * (`./selection/studio-native-selection-runtime`)을 로드하며, `runtimeLoader` 주입 시 외부 호환
+ * 런타임도 동일한 검증·MatScope 역순 해제 경계로 수용한다.
  */
 
-import type { CV, Mat } from "@techstark/opencv-js";
 import type { PathIR, PathVerbIR } from "@toonstudio/studio-project-model";
+
+import {
+  createStudioNativeSelectionRuntime,
+  type StudioNativeSelectionMat,
+  type StudioNativeSelectionRuntime,
+} from "./selection/studio-native-selection-runtime";
+
+export type { StudioNativeSelectionMat, StudioNativeSelectionRuntime };
+
+type SelectionRuntime = StudioNativeSelectionRuntime;
+type SelectionMat = StudioNativeSelectionMat;
 
 export const STUDIO_OPENCV_SELECTION_VERSION = 1 as const;
 
@@ -122,7 +123,7 @@ const REQUIRED_RUNTIME_CONSTANTS = [
   "BORDER_CONSTANT",
 ] as const;
 
-let cachedRuntimePromise: Promise<CV> | null = null;
+let cachedRuntimePromise: Promise<SelectionRuntime> | null = null;
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
@@ -151,9 +152,8 @@ function isThenable(value: unknown): value is PromiseLike<unknown> {
 }
 
 /**
- * @techstark/opencv-js exposes the emscripten module behind up to two layers
- * of `default` and may hand out a thenable that resolves once the wasm
- * runtime is initialized (same unwrap chain as studio-opencv-image-provider).
+ * 주입된 외부 런타임이 `default` 중첩이나 초기화 thenable(`ready`) 뒤에 감싸여 있는
+ * 경우에도 동일한 언랩 체인으로 본체 객체를 꺼낸다.
  */
 async function unwrapRuntimeCandidate(moduleNamespace: unknown): Promise<unknown> {
   let candidate: unknown = moduleNamespace;
@@ -185,7 +185,7 @@ async function unwrapRuntimeCandidate(moduleNamespace: unknown): Promise<unknown
   return candidate;
 }
 
-function validateSelectionRuntime(candidate: unknown): CV {
+function validateSelectionRuntime(candidate: unknown): SelectionRuntime {
   if (typeof candidate !== "object" || candidate === null) {
     throw new OpenCvUnavailableError("OpenCV runtime did not resolve to an object");
   }
@@ -204,7 +204,7 @@ function validateSelectionRuntime(candidate: unknown): CV {
       );
     }
   }
-  return candidate as CV;
+  return candidate as SelectionRuntime;
 }
 
 function toUnavailableError(error: unknown): OpenCvUnavailableError {
@@ -213,42 +213,13 @@ function toUnavailableError(error: unknown): OpenCvUnavailableError {
 }
 
 /**
- * Acquires the raw @techstark/opencv-js module.
- *
- * The primary lane is the bundler-analyzable dynamic import (the production
- * browser/worker path — static imports are rejected by the bundle gate).
- * Under Vitest/Vite SSR that lane is poisoned: the package's CommonJS
- * `module.exports` is a live Promise, the SSR interop namespace re-exports
- * its `then`, and dynamic-import promise assimilation then calls
- * Promise.prototype.then on the namespace receiver. The Node-only fallback
- * resolves the same package through createRequire, which hands back the
- * untouched `Promise<CV>` for the shared unwrap chain.
- */
-async function importOpenCvModule(): Promise<unknown> {
-  try {
-    return await import("@techstark/opencv-js");
-  } catch (bundlerLaneError) {
-    const isNodeRuntime =
-      typeof process !== "undefined"
-      && typeof process.versions?.node === "string";
-    if (!isNodeRuntime) throw bundlerLaneError;
-    const nodeModuleSpecifier = "node:module";
-    const { createRequire } = (await import(
-      /* @vite-ignore */ nodeModuleSpecifier
-    )) as typeof import("node:module");
-    return createRequire(import.meta.url)("@techstark/opencv-js") as unknown;
-  }
-}
-
-/**
- * Loads and validates the OpenCV.js runtime. The default package load is
- * dynamic-import based, resolved once and cached module-wide; a failed load
- * clears the cache so a later call can retry. Rejects with
- * {@link OpenCvUnavailableError} when the runtime cannot be produced.
+ * 선택 런타임을 로드·검증해 캐시한다.
+ * 기본 경로는 제로 의존성 네이티브 선택 런타임을 사용하며,
+ * `runtimeLoader`가 주입되면 캐시하지 않고 동일 계약으로 검증한다.
  */
 export async function loadOpenCvForSelection(
   options: StudioOpenCvSelectionLoadOptions = {},
-): Promise<CV> {
+): Promise<SelectionRuntime> {
   if (!isPlainRecord(options)) {
     throw new TypeError("loadOpenCvForSelection options must be a plain object");
   }
@@ -264,8 +235,8 @@ export async function loadOpenCvForSelection(
       throw toUnavailableError(error);
     }
   }
-  cachedRuntimePromise ??= importOpenCvModule()
-    .then(unwrapRuntimeCandidate)
+  cachedRuntimePromise ??= Promise.resolve()
+    .then(() => createStudioNativeSelectionRuntime())
     .then(validateSelectionRuntime)
     .catch((error: unknown) => {
       cachedRuntimePromise = null;
@@ -332,7 +303,7 @@ function withMatScope<T>(work: (scope: MatScope) => T): T {
   return result;
 }
 
-function describeCvError(runtime: CV, error: unknown): string {
+function describeCvError(runtime: SelectionRuntime, error: unknown): string {
   if (typeof error === "number") {
     const exceptionFromPtr = (
       runtime as unknown as {
@@ -355,7 +326,7 @@ function describeCvError(runtime: CV, error: unknown): string {
   return String(error);
 }
 
-function asOperationError(operation: string, runtime: CV, error: unknown): Error {
+function asOperationError(operation: string, runtime: SelectionRuntime, error: unknown): Error {
   if (
     error instanceof StudioOpenCvSelectionError
     || error instanceof OpenCvUnavailableError
@@ -370,7 +341,7 @@ function asOperationError(operation: string, runtime: CV, error: unknown): Error
   );
 }
 
-async function resolveRuntime(runtime: CV | undefined): Promise<CV> {
+async function resolveRuntime(runtime: SelectionRuntime | undefined): Promise<SelectionRuntime> {
   return runtime ?? loadOpenCvForSelection();
 }
 
@@ -413,7 +384,7 @@ function assertMaskBuffer(mask: RgbaBuffer, width: number, height: number): void
   }
 }
 
-function assertMatShape(mat: Mat, rows: number, cols: number, label: string): void {
+function assertMatShape(mat: SelectionMat, rows: number, cols: number, label: string): void {
   if (mat.rows !== rows || mat.cols !== cols) {
     throw new StudioOpenCvSelectionError(
       `${label} has an unexpected shape ${mat.rows}x${mat.cols}, expected ${rows}x${cols}`,
@@ -490,7 +461,7 @@ export async function computeGrabCutMask(
   height: number,
   rect: StudioSelectionRect,
   iterations = 3,
-  runtime?: CV,
+  runtime?: SelectionRuntime,
 ): Promise<Uint8Array> {
   assertSelectionDimensions(width, height);
   assertRgbaBuffer(rgba, width, height);
@@ -554,7 +525,7 @@ export async function computeFloodMask(
   seedY: number,
   tolerance: number,
   options: StudioFloodMaskOptions = {},
-  runtime?: CV,
+  runtime?: SelectionRuntime,
 ): Promise<Uint8Array> {
   assertSelectionDimensions(width, height);
   assertRgbaBuffer(rgba, width, height);
@@ -643,7 +614,7 @@ export async function refineMaskEdges(
   width: number,
   height: number,
   options: StudioMaskRefineOptions = {},
-  runtime?: CV,
+  runtime?: SelectionRuntime,
 ): Promise<Uint8Array> {
   assertSelectionDimensions(width, height);
   assertMaskBuffer(mask, width, height);
@@ -733,7 +704,7 @@ export async function maskToPathIR(
   width: number,
   height: number,
   simplifyEps = 1,
-  runtime?: CV,
+  runtime?: SelectionRuntime,
 ): Promise<StudioSelectionPathArtifact> {
   assertSelectionDimensions(width, height);
   assertMaskBuffer(mask, width, height);

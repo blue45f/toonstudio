@@ -14,8 +14,11 @@ import {
   resolveBubbleFontSize,
 } from "./studio-bubble-text-fit";
 
+import type {
+  StudioNodeLike,
+  StudioReadonlyRef,
+} from "../canvas/studio-stage-handle-types";
 import type { El } from "../studio-element-model";
-import type Konva from "konva";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
@@ -27,10 +30,32 @@ function editableElement(el: El | undefined): EditableEl | null {
   return el && (el.type === "text" || el.type === "bubble" || el.type === "sticker") ? el : null;
 }
 
+interface StudioOverlayMatrixTransformLike {
+  getMatrix(): readonly number[];
+}
+
+interface StudioOverlayContainerNodeLike extends StudioNodeLike {
+  findOne?(selector: string): unknown;
+}
+
+interface StudioOverlayTextNodeLike extends StudioNodeLike {
+  getAbsoluteTransform(): StudioOverlayMatrixTransformLike;
+  text(): string;
+  text(value: string): unknown;
+  fontFamily(): string;
+  fontStyle(): string;
+  fontSize(): number;
+  fontSize(value: number): unknown;
+  lineHeight(): number;
+  letterSpacing(): number;
+  align(): string;
+  fill(): unknown;
+}
+
 interface StudioTextEditOverlayProps {
   elementId: string;
   elementById: Map<string, El>;
-  nodeRefsRef: import("react").RefObject<Record<string, Konva.Node | null>>;
+  nodeRefsRef: StudioReadonlyRef<Readonly<Record<string, StudioNodeLike | null>>>;
   effScale: number;
   /**
    * Where the Stage's local origin sits inside the document box, in CSS pixels.
@@ -74,18 +99,33 @@ interface OverlaySnapshot {
  * Text 하나를 한 번만 찾아 캐시한다(bubble Group 자식은 Path(들)·Text·선택 시 KCircle 뿐이라
  * findOne("Text")로 항상 유일하게 잡힌다).
  */
-function resolveOverlayTextNode(el: EditableEl, raw: Konva.Node | null | undefined): Konva.Text | null {
+function isOverlayTextNode(node: unknown): node is StudioOverlayTextNodeLike {
+  if (!node || typeof node !== "object") return false;
+  const candidate = node as Partial<StudioOverlayTextNodeLike>;
+  return (
+    typeof candidate.getAbsoluteTransform === "function"
+    && typeof candidate.text === "function"
+    && typeof candidate.fontSize === "function"
+  );
+}
+
+function resolveOverlayTextNode(
+  el: EditableEl,
+  raw: StudioNodeLike | null | undefined,
+): StudioOverlayTextNodeLike | null {
   if (!raw) return null;
   if (el.type === "bubble") {
-    const group = raw as Konva.Group;
+    const group = raw as StudioOverlayContainerNodeLike;
     const found = typeof group.findOne === "function" ? group.findOne("Text") : null;
-    return (found as Konva.Text | null) ?? null;
+    return isOverlayTextNode(found) ? found : null;
   }
-  if (el.type === "text" || el.type === "sticker") return raw as Konva.Text;
+  if (el.type === "text" || el.type === "sticker") {
+    return isOverlayTextNode(raw) ? raw : null;
+  }
   return null;
 }
 
-function readOverlayVisual(textNode: Konva.Text): OverlayVisual {
+function readOverlayVisual(textNode: StudioOverlayTextNodeLike): OverlayVisual {
   const m = textNode.getAbsoluteTransform().getMatrix();
   return {
     matrix: [m[0]!, m[1]!, m[2]!, m[3]!, m[4]!, m[5]!],
@@ -121,7 +161,7 @@ export default function StudioTextEditOverlay({
   onCancel,
 }: StudioTextEditOverlayProps) {
   const el = editableElement(elementById.get(elementId));
-  const textNodeRef = useRef<Konva.Text | null>(null);
+  const textNodeRef = useRef<StudioOverlayTextNodeLike | null>(null);
   const originalRef = useRef<OverlaySnapshot | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const initialSelectionElementIdRef = useRef<string | null>(null);

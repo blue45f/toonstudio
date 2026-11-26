@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { withInlineScriptHashes } from "../../../scripts/cloudflare-static-rules.mjs";
+import { createMemoryEdgeCache } from "../edge-cache-coalescer.mjs";
 
 import { createEdgeErrorDiagnostics } from "./edge-error-diagnostics";
 import {
@@ -1971,5 +1972,220 @@ describe("Cloudflare 엣지 오류 진단", () => {
         dependency: "upstream", operation: "upstream_response", errorType: "TypeError",
       });
     });
+  });
+});
+
+describe("4-Lane 엣지 API 라우터 및 Singleflight 캐시 실드 통합", () => {
+  it("게이트웨이 레벨에서 동시 50건의 공개 AI 모드 GET을 원점 1회 호출로 병합하고 보안 헤더를 유지한다", async () => {
+    const cache = createMemoryEdgeCache();
+    let releaseOrigin!: () => void;
+    const gate = new Promise<void>((resolve) => { releaseOrigin = resolve; });
+    const upstream = vi.fn<typeof fetch>(async () => {
+      await gate;
+      return new Response(JSON.stringify({ modes: ["fast", "quality"] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const gateway = createCloudflareStaticGateway({ fetch: upstream, cache });
+    const env = environment();
+
+    const pending = Array.from({ length: 50 }, () =>
+      gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/modes"), env));
+    await Promise.resolve();
+    releaseOrigin();
+
+    const responses = await Promise.all(pending);
+    expect(upstream).toHaveBeenCalledOnce();
+    const statuses = responses.map((response) => response.headers.get("x-toonstudio-edge-cache"));
+    expect(statuses.filter((value) => value === "MISS")).toHaveLength(1);
+    expect(statuses.filter((value) => value === "COALESCED")).toHaveLength(49);
+    for (const response of responses) {
+      expect(response.headers.get("x-toonstudio-api-lane")).toBe("edge-public-read");
+      expect(response.headers.get("content-security-policy")).toBe(
+        COMMON_SECURITY_HEADERS["Content-Security-Policy"],
+      );
+      await expect(response.json()).resolves.toEqual({ modes: ["fast", "quality"] });
+    }
+  });
+
+  it("인증·AI 추론 요청은 캐시를 우회하고 위조된 레인 헤더를 제거한 뒤 권위 레인을 기록한다", async () => {
+    const cache = createMemoryEdgeCache();
+    let currentTime = 1_700_000_000_000;
+    const upstream = vi.fn<typeof fetch>(async (request) => {
+      const proxied = request as Request;
+      return new Response(JSON.stringify({
+        laneHeader: proxied.headers.get("x-toonstudio-api-lane"),
+        spoofedCache: proxied.headers.get("x-toonstudio-edge-cache"),
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const gateway = createCloudflareStaticGateway({
+      fetch: upstream,
+      cache,
+      now: () => currentTime,
+    });
+    const env = environment();
+
+    const aiPost = await gateway(new Request("https://www.toonstudio.cloud/api/studio-ai/openai-assist", {
+      method: "POST",
+      body: JSON.stringify({ prompt: "draw panel" }),
+      headers: {
+        "content-type": "application/json",
+        "x-toonstudio-api-lane": "edge-public-read",
+        "x-toonstudio-edge-cache": "HIT",
+      },
+    }), env);
+    expect(aiPost.headers.get("x-toonstudio-api-lane")).toBe("edge-ai-assist");
+    expect(aiPost.headers.get("x-toonstudio-edge-cache")).toBe("BYPASS");
+    expect(aiPost.headers.get("cache-control")).toBe("private, no-store");
+    await expect(aiPost.json()).resolves.toEqual({
+      laneHeader: "edge-ai-assist",
+      spoofedCache: null,
+    });
+
+    // SWR STALE + ctx.waitUntil 백그라운드 갱신 통합 검증
+    const waitUntilPromises: Array<Promise<unknown>> = [];
+    const ctx = { waitUntil: (promise: Promise<unknown>) => { waitUntilPromises.push(promise); } };
+    const miss = await gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/free-quota-status"), env, ctx);
+    expect(miss.headers.get("x-toonstudio-edge-cache")).toBe("MISS");
+
+    currentTime += 35_000; // TTL 30s 초과, SWR 120s 이내
+    const stale = await gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/free-quota-status"), env, ctx);
+    expect(stale.headers.get("x-toonstudio-edge-cache")).toBe("STALE");
+    expect(waitUntilPromises).toHaveLength(1);
+    await Promise.all(waitUntilPromises);
+
+    // 같은 경로라도 Cookie가 있으면 반드시 BYPASS한다.
+    const authed = await gateway(new Request("https://www.toonstudio.cloud/api/studio/ai/free-quota-status", {
+      headers: { cookie: "session=user-1" },
+    }), env, ctx);
+    expect(authed.headers.get("x-toonstudio-api-lane")).toBe("core-stateful-onpod");
+    expect(authed.headers.get("x-toonstudio-edge-cache")).toBe("BYPASS");
+    expect(authed.headers.get("cache-control")).toBe("private, no-store");
+  });
+});
+
+describe("엣지 동적 이미지 포맷 협상(AVIF/WebP) 및 원본 폴백 통합", () => {
+  it("R2 미디어와 공개 정적 이미지 경로에서 Accept·DPR·폭 버킷에 맞는 AVIF/WebP 변형을 협상 서빙한다", async () => {
+    const r2Objects = new Map<string, string>([
+      ["assets/virtual-studio/style-packs-v5/card.w1280.avif", "r2-avif-1280"],
+      ["assets/virtual-studio/style-packs-v5/card.png", "r2-original-png"],
+    ]);
+    const get = vi.fn(async (key: string) => {
+      const body = r2Objects.get(key);
+      return body ? r2Object(body) : null;
+    });
+    const assetFetch = vi.fn(async (request: Request) => {
+      const path = new URL(request.url).pathname;
+      if (path === "/brand/hero-a1b2c3d4.webp") {
+        return new Response("static-webp-hero", { status: 200, headers: { "content-type": "image/webp" } });
+      }
+      return new Response("<!doctype html>", { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
+    });
+    const upstream = vi.fn<typeof fetch>();
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+    const env = environment({
+      ASSETS: { fetch: assetFetch },
+      LARGE_ASSETS: { get, head: vi.fn(async () => null) },
+    });
+
+    // R2 미디어: AVIF + 폭 600 * DPR 2 -> w1280.avif 1회 조회 히트
+    const r2Avif = await gateway(new Request(
+      "https://www.toonstudio.cloud/assets/virtual-studio/style-packs-v5/card.png?w=600&dpr=2",
+      { headers: { accept: "image/avif,image/webp,*/*;q=0.8" } },
+    ), env);
+    expect(r2Avif.status).toBe(200);
+    expect(await r2Avif.text()).toBe("r2-avif-1280");
+    expect(r2Avif.headers.get("content-type")).toBe("image/avif");
+    expect(r2Avif.headers.get("x-toonstudio-image-format")).toBe("avif");
+    expect(r2Avif.headers.get("x-toonstudio-image-bucket")).toBe("1280");
+    expect(r2Avif.headers.get("vary")).toContain("Accept");
+    expect(r2Avif.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+    expect(r2Avif.headers.get("cross-origin-resource-policy")).toBe("same-origin");
+    expect(r2Avif.headers.get("content-security-policy")).toBe(COMMON_SECURITY_HEADERS["Content-Security-Policy"]);
+    expect(get).toHaveBeenCalledWith("assets/virtual-studio/style-packs-v5/card.w1280.avif", undefined);
+    expect(assetFetch).not.toHaveBeenCalled();
+
+    // 공개 정적 이미지(콘텐츠 해시): WebP 전용 클라이언트 -> .webp + immutable 캐시 + Vary: Accept
+    const publicWebp = await gateway(new Request(
+      "https://www.toonstudio.cloud/brand/hero-a1b2c3d4.png",
+      { headers: { accept: "image/webp,image/png,*/*;q=0.8" } },
+    ), env);
+    expect(publicWebp.status).toBe(200);
+    expect(await publicWebp.text()).toBe("static-webp-hero");
+    expect(publicWebp.headers.get("content-type")).toBe("image/webp");
+    expect(publicWebp.headers.get("x-toonstudio-image-format")).toBe("webp");
+    expect(publicWebp.headers.get("vary")).toBe("Accept");
+    expect(publicWebp.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
+  it("AVIF/WebP 변형이 없거나 SPA HTML 폴백을 반환하면 R2와 공개 경로 모두 원본 이미지로 무중단 폴백한다", async () => {
+    const r2Lookups: string[] = [];
+    const get = vi.fn(async (key: string) => {
+      r2Lookups.push(key);
+      return key === "assets/virtual-studio/style-packs-v5/fallback.png"
+        ? r2Object("r2-original-png")
+        : null;
+    });
+    const staticLookups: string[] = [];
+    const assetFetch = vi.fn(async (request: Request) => {
+      const path = new URL(request.url).pathname;
+      staticLookups.push(path);
+      if (path.endsWith(".avif")) return new Response(null, { status: 404 });
+      if (path.endsWith(".webp")) {
+        return new Response("<!doctype html><html>spa</html>", {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      }
+      return new Response("static-original-jpg", {
+        status: 200,
+        headers: { "content-type": "image/jpeg" },
+      });
+    });
+    const upstream = vi.fn<typeof fetch>();
+    const gateway = createCloudflareStaticGateway({ fetch: upstream });
+    const env = environment({
+      ASSETS: { fetch: assetFetch },
+      LARGE_ASSETS: { get, head: vi.fn(async () => null) },
+    });
+
+    // R2 미디어: .avif/.webp 미존재 시 Static Assets로 빠지지 않고 R2 원본 PNG로 폴백
+    const r2Fallback = await gateway(new Request(
+      "https://www.toonstudio.cloud/assets/virtual-studio/style-packs-v5/fallback.png",
+      { headers: { accept: "image/avif,image/webp,*/*" } },
+    ), env);
+    expect(r2Fallback.status).toBe(200);
+    expect(await r2Fallback.text()).toBe("r2-original-png");
+    expect(r2Fallback.headers.get("content-type")).toBe("image/png");
+    expect(r2Fallback.headers.get("x-toonstudio-image-format")).toBe("original");
+    expect(r2Fallback.headers.get("vary")).toContain("Accept");
+    expect(r2Fallback.headers.get("x-toonstudio-large-asset-source")).toBe("r2");
+    expect(r2Lookups).toEqual([
+      "assets/virtual-studio/style-packs-v5/fallback.avif",
+      "assets/virtual-studio/style-packs-v5/fallback.webp",
+      "assets/virtual-studio/style-packs-v5/fallback.png",
+    ]);
+    expect(assetFetch).not.toHaveBeenCalled();
+
+    // 공개 정적 이미지: .avif(404) · .webp(SPA HTML 함정) 건너뛰고 원본 JPG 안전 서빙
+    const publicFallback = await gateway(new Request(
+      "https://www.toonstudio.cloud/brand/banner.jpg",
+      { headers: { accept: "image/avif,image/webp,*/*" } },
+    ), env);
+    expect(publicFallback.status).toBe(200);
+    expect(await publicFallback.text()).toBe("static-original-jpg");
+    expect(publicFallback.headers.get("content-type")).toBe("image/jpeg");
+    expect(publicFallback.headers.get("x-toonstudio-image-format")).toBe("original");
+    expect(publicFallback.headers.get("vary")).toBe("Accept");
+    expect(publicFallback.headers.get("content-security-policy")).toBe(
+      COMMON_SECURITY_HEADERS["Content-Security-Policy"],
+    );
+    expect(staticLookups).toEqual(["/brand/banner.avif", "/brand/banner.webp", "/brand/banner.jpg"]);
+    expect(upstream).not.toHaveBeenCalled();
   });
 });

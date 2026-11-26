@@ -497,6 +497,62 @@ export const TOONSTUDIO_FREE_AI_ROUTES: readonly ToonStudioFreeAiRoute[] = [
       "apps/web/src/shared/ai/free-ai-policy.ts",
     ],
   },
+  {
+    id: "zero-bill-9pool-and-ondevice-router",
+    title: t("9단 ₩0 무료 AI 가중 분산과 온디바이스 0-토큰 라우터", "9-pool zero-bill free AI cascade & on-device zero-token router"),
+    body: t(
+      "2026-11-26 코드 기준, 외부 무료 API 한도를 아끼기 위해 브라우저 쪽 온디바이스 0-토큰 라우터(ondevice-zero-token-router.ts)와 로컬 코사인 색인이 단순 분류·검색 질의를 먼저 처리합니다. 원격 호출이 필요하면 서버 ₩0 라우터가 9개 무료 공급자 카탈로그(openai-free-share → gemini-free → github-models-free → cloudflare-workers-ai-free → mistral-free → sambanova-free → groq-free → openrouter-free → local-zero-cost-fallback) 순서대로 무료 허용 모델만 시도하고, 90% 안전 차단선·402/429 감지 시 유료 전환 없이 중단하거나 로컬로 내립니다. 운영 공급자 키 활성은 별도 배포 설정 단계입니다.",
+      "As verified in code on 2026-11-26, a browser on-device zero-token router (ondevice-zero-token-router.ts) and local cosine index handle eligible lookup and routing prompts before spending remote quotas. When remote inference is needed, the zero-bill server router steps through nine allowlisted free pools with a 90% safety cutoff and 402/429 guards, dropping to local fallback rather than converting to paid billing. Live provider keys remain deployment configuration.",
+    ),
+    evidence: [
+      "apps/api/src/modules/studio-ai/openai-assist/studio-free-ai-provider-catalog.ts",
+      "apps/api/src/modules/studio-ai/studio-free-ai-zero-bill-router.ts",
+      "apps/web/src/domains/creator/free-ai-edge-optimizer/ondevice-zero-token-router.ts",
+      "apps/web/src/shared/ai/free-ai-zero-bill-cascade.ts",
+    ],
+  },
+  {
+    id: "four-lane-edge-and-five-tier-storage",
+    title: t("실리콘 NPU 캐스케이드 · 4-Lane 엣지 분산 · 5계층 ₩0 저장소", "Silicon NPU cascade, 4-Lane edge routing & 5-tier ₩0 storage"),
+    body: t(
+      "AI 토큰 비용뿐 아니라 서버·저장소 비용까지 ₩0 구조로 묶기 위해 6대 로컬 ONNX 모델은 WebNN NPU → WebGPU → WASM Relaxed-SIMD 순으로 자동 폴백하고(studio-onnx-session-cascade.ts), 트래픽은 공개 읽기(Singleflight 엣지 캐시)·무료 AI·실시간 DO/P2P·서울 onpod 상태 코어 4개 레인으로 나눕니다. 저장소 역시 로컬 OPFS(64비트 타일 매퍼)·사용자 BYO 클라우드·R2 10GB 무료·onpod+D1·Cloudflare Static Assets 5계층으로 역할을 분담해 무거운 원고가 유료 서버 대역폭을 태우지 않게 막습니다.",
+      "To hold both AI and infrastructure near zero cost, six local ONNX models fail over automatically from WebNN NPU to WebGPU to WASM Relaxed-SIMD (studio-onnx-session-cascade.ts), while requests split across four edge/origin lanes (Singleflight public reads, free AI, realtime DO/P2P, Seoul onpod writes). Storage is federated across five tiers—local OPFS, user BYO Cloud, R2 10 GB free, onpod+D1 and Cloudflare Static Assets—so heavy manuscripts never burn paid server bandwidth.",
+    ),
+    evidence: [
+      "apps/web/src/domains/creator/toon-silicon-runtime/studio-onnx-session-cascade.ts",
+      "apps/web/src/domains/creator/wasm64-webgpu-compute/opfs-streaming-tile-mmap.ts",
+      "docs/operations/infrastructure-map.md",
+      "docs/operations/free-ai-runtime.md",
+    ],
+  },
+  {
+    id: "flagship-eval-pii-and-offline-starter-pack",
+    title: t("한국형 PII 사전 차단 · 플래그십 교차 검증 · ₩0 오프라인 AI 스타터 팩", "Korean PII pre-send guard, flagship eval & ₩0 offline AI starter pack"),
+    body: t(
+      "외부 LLM 으로 개인정보가 새어 나가는 사고를 막기 위해 송신 전 한국형 PII 차단 가드(studio-openai-guardrails.ts)가 계좌·주민등록번호·도로명/건물주소·카카오톡/인스타 핸들을 걸러 냅니다. 전용 실전 평가 트랙에서는 gpt-6.2-astra·gpt-5.5·gpt-4.1 3모델 교차 평가 105/105 와 Round-3 고난도 23케이스 100%(평균 94.13점·안전성 100점·PII 유출 0건)를 확인했습니다. 동시에 ₩0 영구 오프라인 스타터 팩(40 WebP·20 AudioToon MP3·13종 증류 카탈로그·884건 256차원 코사인 색인)과 브라우저 Tier 0A 검색 엔진(semantic-cosine-index.ts)으로 외부 토큰 없이도 카탈로그 탐색과 창작이 이어지게 설계했습니다.",
+      "To stop personal data from leaking to remote LLMs, pre-send Korean PII guardrails (studio-openai-guardrails.ts) block bank accounts, resident IDs, road/building addresses and KakaoTalk/Instagram handles. On the live-eval track, 3-model testing across gpt-6.2-astra, gpt-5.5 and gpt-4.1 passed 105/105 plus 23/23 Round-3 stress cases (94.13 avg, 100 safety, 0 PII leaks), paired with a permanent ₩0 offline starter pack (40 WebP, 20 AudioToon MP3, 13 distilled catalogs and an 884-item 256D offline cosine index via semantic-cosine-index.ts).",
+    ),
+    evidence: [
+      "apps/api/src/modules/studio-ai/openai-assist/studio-openai-guardrails.ts",
+      "apps/web/src/domains/creator/free-ai-edge-optimizer/semantic-cosine-index.ts",
+      "apps/web/src/domains/creator/wasm64-offline-pwa/pwa-base-asset-pinner-guards.ts",
+      "docs/operations/free-ai-runtime.md",
+    ],
+  },
+  {
+    id: "supergap-zero-token-copilot-rag-and-qa",
+    title: t("Super-Gap 0-토큰 로컬 코파일럿 RAG · 화풍 · 1줄 씬 · 120화 모순 감사", "Super-Gap zero-token local copilot RAG, style, 1-line scene & 120-ep QA"),
+    body: t(
+      "장기 연재 기억과 사전 검수를 클라우드 LLM 에 매번 보내지 않고 브라우저 안에서 0-토큰으로 끝내는 지연 로드 모듈군을 검증했습니다(2026-11-26). 30화 150컷 로컬 코파일럿 RAG(1.222ms·BM25+256D 코사인·선택적 Chrome Built-in AI 훅), 화풍 프로파일러(OKLCH·선 굵기·톤), 1줄 시맨틱 3D 씬 합성(0.09ms), OKLCH 연속성 Diff·클립보드 C2PA 가드, 40컷 모바일 이탈 히트맵(2ms), 64컷 양방향 대사 시트(7ms), 120화 인물·복선 모순 그래프 감사(2ms)가 모두 외부 토큰 0개·초기 번들 0B 영향으로 동작합니다.",
+      "Verified lazy-loaded zero-token browser modules (2026-11-26) keep recurring editorial memory and QA off cloud LLMs: 30-ep/150-cut local copilot RAG (1.222 ms, BM25+256D cosine, optional Chrome Built-in AI hook), OKLCH artist style profiler, 1-line semantic 3D scene composer (0.09 ms), OKLCH continuity diff & C2PA clipboard guard, 40-cut mobile retention heatmap (2 ms), 64-cut dialogue binder (7 ms) and 120-episode continuity plot graph (2 ms), all at 0 tokens and 0 B eager bundle impact.",
+    ),
+    evidence: [
+      "apps/web/src/domains/creator/wasm64-multipass-copilot-ledger/ondevice-creative-copilot-rag.ts",
+      "apps/web/src/domains/creator/wasm64-creator-defense-healer/artist-style-profiler.ts",
+      "apps/web/src/domains/creator/wasm64-publish-continuity-resilience/continuity-diff-and-clipboard-guard.ts",
+      "apps/web/src/domains/creator/wasm64-supergap-motion-audio/retention-heatmap-spreadsheet-plotgraph.ts",
+    ],
+  },
 ];
 
 export const FREE_AI_TOKEN_CAUTIONS: readonly LocalizedText[] = [

@@ -1,19 +1,17 @@
 /**
  * Deterministic, renderer-neutral vector-ink fitting boundary.
  *
- * The three permissive specialist libraries are deliberately kept behind this file:
- *
- * - simplify-js performs high-quality adaptive pre-simplification.
- * - fit-curve performs deterministic cubic fitting.
- * - bezier-js supplies curve length, exact extrema bounds, projection and arc-length resampling.
+ * Uses zero-dep pure TypeScript geometry kernels matching Rust `vector_psd_tile_kernel`:
+ * - `simplifyPolylineRdp` performs 2-stage adaptive pre-simplification.
+ * - `fitCurveSchneider` performs deterministic Schneider cubic fitting.
+ * - `StudioCubicBezier` supplies curve length, exact extrema bounds, projection and arc-length resampling.
  *
  * History, collaboration and persistence only receive the frozen plain-data artifact below.
  * No vendor instance or vendor-owned point is ever returned or serialized.
  */
 
-import { Bezier } from "bezier-js";
-import fitCurve from "fit-curve";
-import simplify from "simplify-js";
+import { fitCurveSchneider } from "./drawing/studio-fit-curve-schneider";
+import { simplifyPolylineRdp, StudioCubicBezier } from "./vector/studio-vector-ink-curve-math";
 
 export const STUDIO_VECTOR_INK_GEOMETRY_VERSION = 1 as const;
 
@@ -624,7 +622,7 @@ function simplifyRange(
   }
 
   const tolerance = adaptiveSimplificationTolerance(points, range, maxCurveError, guard);
-  const vendorOutput = simplify(vendorInput, tolerance, true) as SimplifyPoint[];
+  const vendorOutput = simplifyPolylineRdp(vendorInput, tolerance, true);
   if (
     vendorOutput.length < 2 ||
     vendorOutput[0]?.workIndex !== range[0] ||
@@ -642,24 +640,23 @@ function simplifyRange(
   })));
 }
 
-function samePoint(left: readonly number[], right: SimplifyPoint): boolean {
-  return left[0] === right.x && left[1] === right.y;
+function samePoint(left: StudioVectorInkPoint, right: SimplifyPoint): boolean {
+  return left.x === right.x && left.y === right.y;
 }
 
-function validateVendorControlPoint(point: readonly number[]): StudioVectorInkPoint {
+function validateVendorControlPoint(point: StudioVectorInkPoint): StudioVectorInkPoint {
   if (
-    point.length < 2 ||
-    !finiteNumber(point[0]) ||
-    !finiteNumber(point[1]) ||
-    Math.abs(point[0]) > STUDIO_VECTOR_INK_GEOMETRY_LIMITS.maxCoordinateAbsolute * 4 ||
-    Math.abs(point[1]) > STUDIO_VECTOR_INK_GEOMETRY_LIMITS.maxCoordinateAbsolute * 4
+    !finiteNumber(point.x) ||
+    !finiteNumber(point.y) ||
+    Math.abs(point.x) > STUDIO_VECTOR_INK_GEOMETRY_LIMITS.maxCoordinateAbsolute * 4 ||
+    Math.abs(point.y) > STUDIO_VECTOR_INK_GEOMETRY_LIMITS.maxCoordinateAbsolute * 4
   ) {
     throw new StudioVectorInkStop(
       "provider-failure",
       "fit-curve returned a non-finite or unbounded control point",
     );
   }
-  return freezePoint(point[0], point[1]);
+  return freezePoint(point.x, point.y);
 }
 
 function fitSimplifiedPoints(
@@ -676,24 +673,17 @@ function fitSimplifiedPoints(
   }
 
   guard.checkpoint(simplified.length);
-  const vendorInput = simplified.map((point) => [point.x, point.y] as [number, number]);
-  const fitted = fitCurve(vendorInput, error * error);
-  if (!Array.isArray(fitted) || fitted.length === 0) {
+  const fitted = fitCurveSchneider(simplified, error * error);
+  if (fitted.length === 0) {
     throw new StudioVectorInkStop("provider-failure", "fit-curve returned no cubic segments");
   }
   guard.admitSegments(fitted.length);
 
   const curves: InternalCurve[] = [];
   let simplifiedCursor = 0;
-  for (const vendorCurve of fitted) {
+  for (const segment of fitted) {
     guard.checkpoint();
-    if (!Array.isArray(vendorCurve) || vendorCurve.length !== 4) {
-      throw new StudioVectorInkStop(
-        "provider-failure",
-        "fit-curve returned an invalid cubic segment",
-      );
-    }
-    if (!samePoint(vendorCurve[0]!, simplified[simplifiedCursor]!)) {
+    if (!samePoint(segment.p0, simplified[simplifiedCursor]!)) {
       throw new StudioVectorInkStop(
         "provider-failure",
         "fit-curve returned a discontinuous segment start",
@@ -702,7 +692,7 @@ function fitSimplifiedPoints(
     let endpointIndex = simplifiedCursor + 1;
     while (
       endpointIndex < simplified.length &&
-      !samePoint(vendorCurve[3]!, simplified[endpointIndex]!)
+      !samePoint(segment.p3, simplified[endpointIndex]!)
     ) {
       endpointIndex += 1;
     }
@@ -715,10 +705,10 @@ function fitSimplifiedPoints(
     const workStart = simplified[simplifiedCursor]!.workIndex;
     const workEnd = simplified[endpointIndex]!.workIndex;
     const controls = Object.freeze([
-      validateVendorControlPoint(vendorCurve[0]!),
-      validateVendorControlPoint(vendorCurve[1]!),
-      validateVendorControlPoint(vendorCurve[2]!),
-      validateVendorControlPoint(vendorCurve[3]!),
+      validateVendorControlPoint(segment.p0),
+      validateVendorControlPoint(segment.ctrl1),
+      validateVendorControlPoint(segment.ctrl2),
+      validateVendorControlPoint(segment.p3),
     ]) as InternalCurve["controls"];
     curves.push(Object.freeze({
       controls,
@@ -784,11 +774,11 @@ function createExactPolylineCurves(
   return Object.freeze(curves);
 }
 
-function createBezier(curve: InternalCurve): Bezier {
-  return new Bezier(curve.controls.map(({ x, y }) => ({ x, y })));
+function createBezier(curve: InternalCurve): StudioCubicBezier {
+  return new StudioCubicBezier(curve.controls);
 }
 
-function projectDistance(bezier: Bezier, point: StudioVectorInkPoint): number {
+function projectDistance(bezier: StudioCubicBezier, point: StudioVectorInkPoint): number {
   const projection = bezier.project(point);
   if (
     !finiteNumber(projection.x) ||
@@ -884,7 +874,7 @@ function freezeBounds(
   });
 }
 
-function boundsFromBezier(bezier: Bezier): StudioVectorInkBounds {
+function boundsFromBezier(bezier: StudioCubicBezier): StudioVectorInkBounds {
   const bounds = bezier.bbox();
   if (
     !finiteNumber(bounds.x.min) ||
@@ -917,7 +907,7 @@ function unionBounds(bounds: readonly StudioVectorInkBounds[]): StudioVectorInkB
 }
 
 function tAtArcDistance(
-  bezier: Bezier,
+  bezier: StudioCubicBezier,
   arcLength: number,
   targetDistance: number,
   guard: StudioVectorInkBudgetGuard,
@@ -962,7 +952,7 @@ function tAtArcDistance(
 }
 
 function createArcSamples(
-  bezier: Bezier,
+  bezier: StudioCubicBezier,
   arcLength: number,
   spacing: number,
   guard: StudioVectorInkBudgetGuard,
@@ -1013,7 +1003,7 @@ function createPressureRange(
 }
 
 function createPressureSamples(
-  bezier: Bezier,
+  bezier: StudioCubicBezier,
   samples: readonly StudioVectorInkSample[],
   sourceStart: number,
   sourceEnd: number,

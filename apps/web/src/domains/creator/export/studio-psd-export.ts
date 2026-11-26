@@ -72,7 +72,7 @@ import type {
   PsdInterchangeLossManifest,
   PsdInterchangeProfile,
 } from "../studio-psd-import";
-import type Konva from "konva";
+import type { StudioExportStageLike, StudioSceneNodeLike, StudioToCanvasConfig } from "../canvas/studio-stage-handle-types";
 
 import { resolvePsdExportResultMessage } from "../status-i18n/studio-producer-error-i18n-exports";
 
@@ -872,8 +872,8 @@ function containingPanel(el: PsdExportEl, all: readonly PsdExportEl[]): PsdFrame
 
 /** Node.toCanvas paints its own surface; resizing/redrawing the whole Stage is unnecessary. */
 function capturePsdDrawNode(
-  node: Konva.Node,
-  stage: Konva.Stage,
+  node: StudioSceneNodeLike,
+  stage: StudioExportStageLike,
   canvasW: number,
   canvasH: number,
   scale: number,
@@ -954,15 +954,15 @@ function shadowPaddingLogical(el: PsdExportEl): number {
   return blur + Math.max(offX, offY);
 }
 
-function findElementNode(stage: Konva.Stage, elementId: string): Konva.Node | undefined {
-  return stage.findOne<Konva.Node>((node: Konva.Node) => {
+function findElementNode(stage: StudioExportStageLike, elementId: string): StudioSceneNodeLike | undefined {
+  return stage.findOne((node: StudioSceneNodeLike) => {
     const id = node.getAttr("studioElementId");
     return typeof id === "string" && id === elementId;
   });
 }
 
 /** 자기 마스크까지만 포함한다. 아래 레이어 클리핑은 PSD clipping 속성으로 보존한다. */
-export function psdLayerCaptureNode(node: Konva.Node, element: PsdExportEl): Konva.Node {
+export function psdLayerCaptureNode(node: StudioSceneNodeLike, element: PsdExportEl): StudioSceneNodeLike {
   if (!element.maskSrc || element.maskEnabled === false) return node;
   let ancestor = node.getParent?.();
   while (ancestor) {
@@ -972,7 +972,7 @@ export function psdLayerCaptureNode(node: Konva.Node, element: PsdExportEl): Kon
   throw new StudioPsdExportError("maskCaptureBoundsMissing", { label: element.name ?? element.id });
 }
 
-function capturePsdLayerCanvas(node: Konva.Node, options: Parameters<Konva.Node["toCanvas"]>[0]): HTMLCanvasElement {
+function capturePsdLayerCanvas(node: StudioSceneNodeLike, options?: StudioToCanvasConfig): HTMLCanvasElement {
   const previous = node.globalCompositeOperation?.();
   try {
     // 레이어 자체를 투명 표면에 캡처할 때는 외부 블렌드를 제거한다. PSD descriptor가 적용한다.
@@ -1170,7 +1170,7 @@ function withPsdExportLossDecisions(
 
 /** Preserve the live composite when an adjustment depends on other source layers. */
 function exportAdjustmentGraphPsd(input: {
-  stage: Konva.Stage;
+  stage: StudioExportStageLike;
   elements: readonly PsdExportEl[];
   canvasW: number;
   canvasH: number;
@@ -1278,7 +1278,7 @@ function exportAdjustmentGraphPsd(input: {
  * 남긴다 — 사용자가 "실패"보다 "빈 파일이라도 받는" 편이 낫다는 판단(문서화된 설계 선택).
  */
 export async function exportPagePsd(
-  stage: Konva.Stage,
+  stage: StudioExportStageLike,
   elements: readonly PsdExportEl[],
   canvasW: number,
   canvasH: number,

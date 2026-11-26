@@ -600,3 +600,88 @@ pub const FABRIK_FINGER_FFI_PARAM_COUNT: usize = 12;
 pub const FOLEY_DSP_FFI_PARAM_COUNT: usize = 9;
 #[cfg(feature = "virtual-3d-physics")]
 pub const FOLEY_DSP_FFI_STATE_LEN: usize = 5;
+
+#[cfg(feature = "pro-raster-tools")]
+mod pro_raster_tools;
+#[cfg(feature = "pro-raster-tools")]
+pub use pro_raster_tools::{
+    wasm_extract_marching_ants_segments, wasm_flood_fill_rgba, wasm_liquify_displace_rgba,
+    wasm_magic_wand_mask, wasm_oklch_to_rgba_batch, wasm_parse_psd_header,
+    wasm_render_halftone_screentone, wasm_rgba_to_cmyk_batch, wasm_rgba_to_oklch_batch,
+    wasm_vectorize_stroke_cubic, wasm_warp_mesh_rigid_mls, DIRTY_RECT_FFI_U32_LEN,
+    HALFTONE_FFI_PARAM_COUNT, LIQUIFY_FFI_PARAM_COUNT, MARCHING_ANT_SEGMENT_STRIDE,
+    MLS_WARP_PIN_STRIDE, PSD_HEADER_FFI_U64_LEN, VECTORIZE_POINT_STRIDE,
+    VECTORIZE_SEGMENT_STRIDE, VECTORIZE_STATS_LEN,
+};
+
+/// 확장 스위트(`extended-3d` / `virtual-3d-physics` / `pro-raster-tools`) 통합 기능 비트마스크.
+///
+/// - `bits 0..=5`  (`0x0000_003F`): `extended-3d` (VRM 4-본 스키닝, Morton 2D/3D, LT 선화, Hi-Z 컬링, 공간 해시 구체, 공간 음향·광원)
+/// - `bits 6..=8`  (`0x0000_01C0`): `virtual-3d-physics` (Verlet 스프링, 손가락 FABRIK IK, Foley Biquad DSP)
+/// - `bits 9..=18` (`0x0007_FE00`): `pro-raster-tools` (MLS 워프, 3차 베지어 벡터라이저, PSD 파서, 플러드 필, 매직 완드, 마칭 앤츠, OKLCH, CMYK, 하프톤, 리퀴파이)
+#[cfg(any(
+    feature = "extended-3d",
+    feature = "virtual-3d-physics",
+    feature = "pro-raster-tools"
+))]
+pub const WASM_EXTENDED_CAPABILITIES: u32 = {
+    let mut mask = 0u32;
+    if cfg!(feature = "extended-3d") {
+        mask |= 0x0000_003F;
+    }
+    if cfg!(feature = "virtual-3d-physics") {
+        mask |= 0x0000_01C0;
+    }
+    if cfg!(feature = "pro-raster-tools") {
+        mask |= 0x0007_FE00;
+    }
+    mask
+};
+
+/// 컴파일된 확장 `.wasm` 모듈이 활성화한 통합 확장 기능 비트마스크를 반환한다.
+#[cfg(any(
+    feature = "extended-3d",
+    feature = "virtual-3d-physics",
+    feature = "pro-raster-tools"
+))]
+#[no_mangle]
+#[must_use]
+pub extern "C" fn wasm_extended_capabilities() -> u32 {
+    WASM_EXTENDED_CAPABILITIES
+}
+
+#[cfg(any(feature = "pro-raster-tools", feature = "extended-3d"))]
+mod wave2_native_kernels;
+#[cfg(any(feature = "pro-raster-tools", feature = "extended-3d"))]
+pub use wave2_native_kernels::{wasm_wave2_capabilities, WASM_WAVE2_CAPABILITIES};
+#[cfg(feature = "pro-raster-tools")]
+pub use wave2_native_kernels::{wasm_packbits_rle_decode, wasm_packbits_rle_encode};
+#[cfg(feature = "extended-3d")]
+pub use wave2_native_kernels::{
+    wasm_raycast_mesh_sah_bvh_3d, wasm_solve_ccd_spine_ik_3d, wasm_solve_two_bone_ik_3d,
+    CCD_SPINE_IK_FFI_PARAM_LEN, SAH_BVH_HIT_FFI_LEN, SAH_BVH_RAY_FFI_LEN,
+    TWO_BONE_IK_FFI_OUT_LEN, TWO_BONE_IK_FFI_PARAM_LEN,
+};
+
+#[cfg(feature = "extended-suite")]
+mod wave3_native_kernels;
+#[cfg(feature = "extended-suite")]
+mod wave3_slicer_color;
+#[cfg(feature = "extended-suite")]
+pub use wave3_native_kernels::{
+    wasm_audio_biquad_eq_stereo, wasm_audio_mix_master_stereo, wasm_audio_resample_mono,
+    wasm_audio_schroeder_reverb_stereo, wasm_vector_expand_stroke_outline,
+    wasm_vector_flatten_bezier_arc_len, wasm_vector_hit_test_batch, wasm_vector_simplify_rdp,
+    wasm_vector_smooth_chaikin, wasm_wave3_capabilities, WASM_WAVE3_CAPABILITIES,
+    WAVE3_BEZIER_CTRL_LEN, WAVE3_BIQUAD_PARAM_LEN, WAVE3_BIQUAD_STATE_LEN,
+    WAVE3_DYNAMICS_PARAM_LEN, WAVE3_MIX_METRICS_LEN, WAVE3_MIX_TRACK_STRIDE,
+    WAVE3_REVERB_PARAM_LEN,
+};
+#[cfg(feature = "extended-suite")]
+pub use wave3_slicer_color::{
+    wasm_color_extract_palette_median_cut, wasm_color_p3_to_srgb_batch,
+    wasm_color_rgba_to_cmyk_tac_batch, wasm_color_srgb_to_p3_batch, wasm_webtoon_dedup_tiles_fnv64,
+    wasm_webtoon_plan_smart_slices, WAVE3_CMYK_TAC_PARAM_LEN, WAVE3_CMYK_TAC_STATS_LEN,
+    WAVE3_DEDUP_ENTRY_U64_STRIDE, WAVE3_DEDUP_SUMMARY_LEN, WAVE3_PALETTE_SWATCH_U32_STRIDE,
+    WAVE3_SLICE_PARAM_LEN, WAVE3_SLICE_SPAN_STRIDE,
+};

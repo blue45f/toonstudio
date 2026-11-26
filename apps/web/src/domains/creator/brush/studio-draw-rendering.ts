@@ -41,8 +41,8 @@ import type { StudioBrushSymmetrySpec } from "./studio-brush-symmetry";
 import type { DrawEl } from "../studio-element-model";
 import type { StudioInkPressureModel } from "./studio-ink-pressure-model";
 import type { StudioStrokePaintModel } from "./studio-stroke-paint-model";
+import type { StudioCanvasContextLike } from "../canvas/studio-stage-handle-types";
 import type { StudioLiveInkStrokeStyle } from "../live/studio-live-ink-overlay";
-import type Konva from "konva";
 
 export type StudioDraftPreviewCompositeMode = "source-over" | "backdrop-multiply";
 
@@ -381,7 +381,7 @@ export function getSymmetricPoints(
  * 그려 미리보기와 커밋 픽셀이 일치한다.
  */
 export function drawFreehandPenSegments(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   smoothed: number[],
   sampledPressures: readonly number[] | null,
   strokeColor: string,
@@ -390,7 +390,7 @@ export function drawFreehandPenSegments(
 ): void {
   if (smoothed.length < 4) return;
   if (composite && composite !== "source-over") {
-    if (typeof (context as { setAttr?: unknown }).setAttr === "function") {
+    if (typeof context.setAttr === "function") {
       context.setAttr("globalCompositeOperation", composite);
     }
     context.globalCompositeOperation = composite;
@@ -435,7 +435,7 @@ export function drawFreehandPenSegments(
 
 /** Canonical new-stroke rasterizer shared with the Canvas live overlay and retained WebGPU path. */
 export function drawStudioCausalInkDabs(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   points: readonly number[],
   pressures: readonly number[] | undefined,
   strokeColor: string,
@@ -457,11 +457,11 @@ export function drawStudioCausalInkDabs(
 
 /** Draws the already-resolved contract without reapplying alias or pressure transformations. */
 export function drawStudioCausalInkContract(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   contract: StudioCausalInkDrawContract
 ): void {
   if (contract.composite && contract.composite !== "source-over") {
-    if (typeof (context as { setAttr?: unknown }).setAttr === "function") {
+    if (typeof context.setAttr === "function") {
       context.setAttr("globalCompositeOperation", contract.composite);
     }
     context.globalCompositeOperation = contract.composite;
@@ -510,7 +510,7 @@ export function isDirectLiveStampDraftEl(el: DrawEl): boolean {
 }
 
 /** 다이렉트 라이브 초안을 임페러티브로 그린다 — React 렌더 없이 Konva batchDraw 로만 갱신. */
-export function drawLiveFreehandDraftToContext(context: Konva.Context, el: DrawEl): void {
+export function drawLiveFreehandDraftToContext(context: StudioCanvasContextLike, el: DrawEl): void {
   const isEraser = el.mode === "eraser";
   const contract = resolveStudioCausalInkDrawContract(el);
   const strokeColor = contract.strokeColor;

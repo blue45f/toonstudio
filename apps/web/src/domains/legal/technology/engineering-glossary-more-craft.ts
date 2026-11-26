@@ -170,4 +170,42 @@ export const GLOSSARY_MORE_CRAFT: readonly GlossaryTerm[] = [
     ),
     chapters: ["quality", "ai-assisted-engineering"],
   },
+  {
+    id: "global-4culture-flipper-branching-webtoon",
+    category: "craft",
+    term: t("4대 문화권 반전 대합 & 무-eval 정적 분기 웹툰", "4-culture involution flipper & no-eval branching webtoon"),
+    definition: t(
+      "한국·일본·북미·중화권 읽기 방향 반전을 대합(f(f(x))=x)으로 보장하고 통화·도량형·1.38× 팽창을 검수하며, 막다른 길·eval() 없는 정적 인터랙티브 분기 웹툰 번들을 만드는 도구입니다.",
+      "A ₩0 local toolchain enforcing exact involution (f(f(x))=x) across ko/jp/en/zh reading flips with unit/overflow QA, plus a no-eval static branching webtoon exporter blocking soft-locks.",
+    ),
+    analogy: t(
+      "거울에 두 번 비추면 원위치로 정확히 돌아오는 해외 수출 검수판과, 독자가 막다른 길에 갇히지 않게 모든 갈래를 출판 전 점검하는 정적 게임북 컴파일러입니다.",
+      "Like a reversible translation mirror for global editions paired with a gamebook validator proving no reader hits a dead end.",
+    ),
+    inToonstudio: t(
+      "wasm64-supergap-global-ip-branch/ 의 auditAndFlipGlobalLocalization(전치사 'in' 오탐 방지·CNY 식별)과 InteractiveBranchingWebtoonExporter(소프트락·무가드 루프 차단·CSP 안전 HTML)를 검증했습니다.",
+      "auditAndFlipGlobalLocalization (preposition 'in' guard, CNY detection) and InteractiveBranchingWebtoonExporter (soft-lock & loop checks, CSP-safe HTML) pass unit tests.",
+    ),
+    chapters: ["on-device-translation", "share-distribution-boundary"],
+    atlasIds: ["global-4culture-flipper-branching-webtoon-narrative"],
+  },
+  {
+    id: "smart-license-guardian-subcanvas-ip-studio",
+    category: "craft",
+    term: t("스마트 라이선스 가디언 · 서브캔버스 위임 · IP 파생 스튜디오", "Smart license guardian, sub-canvas delegation & IP studio"),
+    definition: t(
+      "만료·비상업·폰트 임베딩 위반을 내보내기 직전 하드 차단하고, AES-GCM 어시스턴트 부분 위임·정산 BOM 과 4종 2차 저작(CMYK·스프라이트·360°·15초 트레일러) SHA-256 봉인을 묶었습니다.",
+      "Combines hard pre-export license blocking (+ XMP/iTXt/C2PA), AES-GCM scoped sub-canvas delegation with payout BOMs and 4-way SHA-256 sealed creator IP derivative bundling.",
+    ),
+    analogy: t(
+      "외주 담당자에게는 맡은 컷만 봉인해 건네고, 출고 직전 라이선스 세관 심사를 통과한 원고만 아크릴 스탠디·스프라이트·360° 턴테이블·트레일러 상자에 봉인 테이프를 붙이는 공정입니다.",
+      "Like scoping assistant pages under seal, clearing a rights customs gate and sealing standee, sprite, 360° turntable and trailer packages with SHA-256.",
+    ),
+    inToonstudio: t(
+      "SmartLicenseGuardian(PNG iTXt CRC-32·C2PA), SubCanvasDelegationManager(미허용 변조 거부·정산 BOM), packageCreatorIpDerivatives(CMYK TAC≤300%·1바이트 변조 감지 봉인)를 검증했습니다.",
+      "Verified in SmartLicenseGuardian (PNG iTXt CRC-32, C2PA), SubCanvasDelegationManager (scope guard + payout BOM) and packageCreatorIpDerivatives (SHA-256 seal).",
+    ),
+    chapters: ["licenses", "share-distribution-boundary"],
+    atlasIds: ["smart-license-guardian-subcanvas-delegation-ip-studio"],
+  },
 ];

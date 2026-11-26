@@ -9,10 +9,10 @@
 import { STUDIO_LIVE_TRANSFORM_PREVIEW_NEUTRAL_ATTRS } from "./studio-live-transform-preview";
 
 import type { StudioLiveTransformPreviewNodeAttrs } from "./studio-live-transform-preview";
-import type Konva from "konva";
+import type { StudioNodeLike, StudioStageLike } from "./canvas/studio-stage-handle-types";
 
 export function applyStudioLiveTransformPreviewNodeAttrs(
-  node: Konva.Node,
+  node: StudioNodeLike,
   attrs: StudioLiveTransformPreviewNodeAttrs
 ): void {
   node.position({ x: attrs.x, y: attrs.y });
@@ -21,7 +21,7 @@ export function applyStudioLiveTransformPreviewNodeAttrs(
   node.offset({ x: attrs.offsetX, y: attrs.offsetY });
 }
 
-export function resetStudioLiveTransformPreviewNodeAttrs(node: Konva.Node): void {
+export function resetStudioLiveTransformPreviewNodeAttrs(node: StudioNodeLike): void {
   applyStudioLiveTransformPreviewNodeAttrs(
     node,
     STUDIO_LIVE_TRANSFORM_PREVIEW_NEUTRAL_ATTRS
@@ -44,12 +44,12 @@ export function resetStudioLiveTransformPreviewNodeAttrs(node: Konva.Node): void
  * let this gesture commit at release.
  */
 export function studioLiveTransformPreviewHasCachedDuplicate(
-  stage: Konva.Stage,
+  stage: StudioStageLike,
   elementId: string,
-  previewNode: Konva.Node
+  previewNode: StudioNodeLike
 ): boolean {
   return stage
-    .find((node: Konva.Node) => node.getAttr("studioElementId") === elementId)
+    .find((node: StudioNodeLike) => node.getAttr("studioElementId") === elementId)
     .some((node) => node !== previewNode && !studioLiveTransformPreviewEligible(node));
 }
 
@@ -63,8 +63,8 @@ export function studioLiveTransformPreviewHasCachedDuplicate(
 export const STUDIO_LIVE_TRANSFORM_PREVIEW_BLOCKED_ATTR =
   "studioLiveTransformPreviewBlocked";
 
-export function studioLiveTransformPreviewEligible(node: Konva.Node): boolean {
-  let current: Konva.Node | null = node;
+export function studioLiveTransformPreviewEligible(node: StudioNodeLike): boolean {
+  let current: StudioNodeLike | null = node;
   while (current) {
     if (current.isCached()) return false;
     if (current.getAttr(STUDIO_LIVE_TRANSFORM_PREVIEW_BLOCKED_ATTR) === true) return false;

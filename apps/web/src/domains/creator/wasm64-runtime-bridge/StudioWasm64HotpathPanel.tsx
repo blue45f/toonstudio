@@ -15,10 +15,10 @@ import {
   benchmarkWasm64VsJsHotpaths,
   DEFAULT_WASM64_HOTPATH_ROUTING,
   loadStudioWasm64HotpathRuntime,
-  STUDIO_WASM64_CORE_URL,
   type HotpathBenchmarkSuiteResult,
   type StudioWasm64HotpathMetadata,
   type StudioWasm64HotpathRuntime,
+  type Wasm64CpuTier,
   type Wasm64HotpathRouteKey,
   type Wasm64HotpathRoutingConfig,
 } from "./wasm64-hotpath-loader";
@@ -97,11 +97,24 @@ function formatMs(ms: number | null): string {
   return `${ms.toFixed(2)} ms`;
 }
 
+function formatCpuTierLabel(tier: Wasm64CpuTier, isEn: boolean): string {
+  switch (tier) {
+    case "wasm-relaxed-simd":
+      return "Relaxed-SIMD";
+    case "wasm-simd128":
+      return "SIMD128";
+    case "wasm-scalar":
+      return isEn ? "Scalar Wasm" : "스칼라 Wasm";
+    case "js-fallback":
+      return isEn ? "JS Fallback" : "JS 폴백";
+  }
+}
+
 /** Rust `.wasm` 런타임 핫패스 상태 · 실측 속도 배율 · 라우팅 토글 패널. */
 export function StudioWasm64HotpathPanel({
   locale,
   className,
-  wasmUrl = STUDIO_WASM64_CORE_URL,
+  wasmUrl,
   wasmBytes,
   preloadedRuntime,
   initialRouting,
@@ -271,7 +284,7 @@ export function StudioWasm64HotpathPanel({
           {loading
             ? pick("Wasm 로드 중…", "Loading Wasm…")
             : isWasmLoaded
-              ? pick("Rust Wasm 활성", "Rust Wasm Active")
+              ? `${pick("Rust Wasm 활성", "Rust Wasm Active")} · ${formatCpuTierLabel(metadata.cpuTier, isEn)}`
               : pick("JS 동등 폴백", "JS Parity Fallback")}
         </span>
       </header>

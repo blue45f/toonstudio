@@ -173,11 +173,23 @@ export const DATA_AUTHORITY_SECTION: ArchitectureGuideSection = {
     "sqlite-wasm-opfs-sah-pool",
     "opfs-content-addressed-store",
     "storage-persistence-quota-safe-mode",
+    "local-cmyk-pdfx4-epub3-cbz-platform-packager",
+    "webgpu-watermark-merkle-ledger-pq-seal",
+    "smart-license-guardian-subcanvas-delegation-ip-studio",
     "file-system-access-resave",
     "federated-free-data-plane",
   ],
   chapterIds: ["storage", "infrastructure", "cost-engineering"],
-  glossaryIds: ["data-authority-ledger", "opfs", "sqlite-wasm", "indexeddb", "migration-checksum-ledger"],
+  glossaryIds: [
+    "data-authority-ledger",
+    "opfs",
+    "sqlite-wasm",
+    "indexeddb",
+    "local-cmyk-pdfx4-epub3-cbz-packager",
+    "dm-qim-watermark-pq-wots-merkle-ledger",
+    "smart-license-guardian-subcanvas-ip-studio",
+    "migration-checksum-ledger",
+  ],
 };
 
 /** 4) 함께 그릴 때 — 문서·잠금·임시 상태·직통 통화가 오가는 길. */
@@ -360,9 +372,25 @@ export const REALTIME_COLLAB_SECTION: ArchitectureGuideSection = {
     "durable-objects-realtime",
     "webrtc-three-plane-signaling",
     "webrtc-datachannel-direct-lane",
+    "infinite-canvas-webgpu-p2p-zerogc",
+    "p2p-grid-tile-render-merkle-stream-r2-offload",
+    "zero-lag-companion-pairing-ephemeral-redline-hw",
   ],
   chapterIds: ["collaborative-crdt-boundary", "webrtc-media-authority", "authentication"],
-  glossaryIds: ["socket-io", "crdt", "yjs", "durable-objects", "webrtc", "signaling", "presence"],
+  glossaryIds: [
+    "socket-io",
+    "crdt",
+    "yjs",
+    "durable-objects",
+    "webrtc",
+    "webgpu-collab-dirty-rect-compositor",
+    "webrtc-sctp-xor-rle-p2p-sync",
+    "p2p-grid-render-merkle-r2-offload",
+    "zero-lag-sas-pairing-ephemeral-redline",
+    "biometric-12d-ink-auth-gyro-webhid",
+    "signaling",
+    "presence",
+  ],
 };
 
 export const ARCHITECTURE_RUNTIME_SECTIONS_B: readonly ArchitectureGuideSection[] = [DATA_AUTHORITY_SECTION, REALTIME_COLLAB_SECTION];

@@ -15,8 +15,8 @@ import type { StudioGpuBackend, StudioGpuFrameReceipt } from "./studio-webgpu-fr
 import type { StudioGpuLiveSourceJournalRejectionReason } from "./studio-webgpu-live-source-journal";
 import type { StudioGpuPendingDrawAuthority } from "./studio-webgpu-pending-authority";
 import type { StudioGpuStroke } from "./studio-webgpu-stroke";
-import type Konva from "konva";
-import type { MutableRefObject, RefObject } from "react";
+import type { StudioLayerLike, StudioReadonlyRef } from "../canvas/studio-stage-handle-types";
+import type { MutableRefObject } from "react";
 
 /** 입력·대칭 예산의 정상 거절을 GPU 장치 장애로 바꾸지 않는다. */
 export function studioLiveSourceJournalFailureReason(
@@ -46,7 +46,7 @@ export interface StudioLiveStrokeGpuAuditContext {
   readonly gpuLiveAcceptedRequestIdRef: MutableRefObject<string | null>;
   readonly gpuLiveInkPinnedRef: MutableRefObject<boolean>;
   readonly gpuPinReceiptWatchdogRef: MutableRefObject<StudioGpuPinReceiptWatchdog | null>;
-  readonly liveDraftLayerRef: RefObject<Konva.Layer | null>;
+  readonly liveDraftLayerRef: StudioReadonlyRef<StudioLayerLike | null>;
   readonly liveStrokeBackendAuditActiveIdRef: MutableRefObject<string | null>;
   readonly liveStrokeBackendAuditEarlyGpuReceiptsRef: MutableRefObject<
     Map<string, { readonly strokeId: string; readonly receipt: StudioGpuFrameReceipt }>

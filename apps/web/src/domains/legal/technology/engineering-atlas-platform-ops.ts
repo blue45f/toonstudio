@@ -1,11 +1,13 @@
 import { PLATFORM_OPS_BACKEND_CARDS } from "./engineering-atlas-platform-ops-backend";
 import { PLATFORM_OPS_BUILD_CARDS } from "./engineering-atlas-platform-ops-build";
+import { PLATFORM_OPS_CREATOR_DEFENSE_CARDS } from "./engineering-atlas-platform-ops-creator-defense";
 import { PLATFORM_OPS_DATA_CARDS } from "./engineering-atlas-platform-ops-data";
 import { PLATFORM_OPS_EDGE_CARDS } from "./engineering-atlas-platform-ops-edge";
 import { PLATFORM_OPS_QUALITY_CARDS } from "./engineering-atlas-platform-ops-quality";
 import { PLATFORM_OPS_SAFETY_CARDS } from "./engineering-atlas-platform-ops-safety";
 import { PLATFORM_OPS_TRANSACTION_CARDS } from "./engineering-atlas-platform-ops-transactions";
 import { PLATFORM_OPS_TRUST_CARDS } from "./engineering-atlas-platform-ops-trust";
+import { ENGINEERING_ATLAS_PLATFORM_OPS_ZERO_COST } from "./engineering-atlas-platform-ops-zero-cost";
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
 /**
@@ -14,8 +16,10 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
  */
 export const ENGINEERING_ATLAS_PLATFORM_OPS: readonly EngineeringAtlasEntry[] = [
   ...PLATFORM_OPS_EDGE_CARDS,
+  ...ENGINEERING_ATLAS_PLATFORM_OPS_ZERO_COST,
   ...PLATFORM_OPS_DATA_CARDS,
   ...PLATFORM_OPS_TRUST_CARDS,
+  ...PLATFORM_OPS_CREATOR_DEFENSE_CARDS,
   ...PLATFORM_OPS_BACKEND_CARDS,
   ...PLATFORM_OPS_TRANSACTION_CARDS,
   ...PLATFORM_OPS_QUALITY_CARDS,

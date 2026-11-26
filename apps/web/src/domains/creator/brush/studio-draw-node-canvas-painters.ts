@@ -36,8 +36,12 @@ import { rasterizeStudioCoverageBands } from "./studio-stroke-coverage-raster";
 import type { StudioAngledNibStrokeLocalCoveragePlan } from "./studio-stroke-local-coverage";
 import type { WatercolorBrushDab } from "./studio-watercolor-brush";
 
+import type {
+  StudioCanvasContextLike,
+  StudioShapeDrawContextLike,
+  StudioShapeLike,
+} from "../canvas/studio-stage-handle-types";
 import type { DrawEl } from "../studio-element-model";
-import type Konva from "konva";
 
 export interface StudioDrawPencilPassPlan {
   readonly pass: StudioBrushAliasPencilPass;
@@ -70,7 +74,7 @@ export interface StudioDrawFreehandPenStrokeParams {
 }
 
 export function paintStudioDrawCalligraphyRibbon(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   ribbon: StudioCalligraphyRibbonPlan,
   smoothed: readonly number[],
   aliasStrokeWidth: number,
@@ -123,8 +127,8 @@ export function paintStudioDrawCalligraphyRibbon(
 }
 
 export function paintStudioDrawAngledNibCoverage(
-  context: Konva.Context,
-  shape: Konva.Shape,
+  context: StudioShapeDrawContextLike,
+  shape: StudioShapeLike,
   coveragePlan: StudioAngledNibStrokeLocalCoveragePlan,
   tonal: boolean,
   stroke: string,
@@ -179,7 +183,7 @@ export function paintStudioDrawAngledNibCoverage(
 }
 
 export function paintStudioDrawWatercolorDab(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   dab: WatercolorBrushDab,
   stroke: string,
   opacity: number,
@@ -209,8 +213,8 @@ export function paintStudioDrawWatercolorDab(
 }
 
 export function paintStudioDrawScreentoneDots(
-  context: Konva.Context,
-  shape: Konva.Shape,
+  context: StudioShapeDrawContextLike,
+  shape: StudioShapeLike,
   dots: readonly number[],
   dotR: number,
 ): void {
@@ -223,7 +227,7 @@ export function paintStudioDrawScreentoneDots(
 }
 
 export function paintStudioDrawPencilRibbonPasses(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   passPlans: readonly StudioDrawPencilPassPlan[],
   stroke: string,
 ): void {
@@ -297,7 +301,7 @@ export function paintStudioDrawPencilRibbonPasses(
 }
 
 export function paintStudioDrawHighlighterWashTap(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   washPlan: StudioHighlighterWashPlan,
   stroke: string,
 ): void {
@@ -312,7 +316,7 @@ export function paintStudioDrawHighlighterWashTap(
 }
 
 export function paintStudioDrawHighlighterWashRibbon(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   washPlan: StudioHighlighterWashPlan,
   stroke: string,
 ): void {
@@ -336,7 +340,7 @@ export function paintStudioDrawHighlighterWashRibbon(
 }
 
 export function paintStudioDrawLuminousRibbonPass(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   params: StudioDrawLuminousPassPaintParams,
 ): void {
   const fxInput = {
@@ -369,7 +373,7 @@ export function paintStudioDrawLuminousRibbonPass(
 }
 
 export function paintStudioDrawGlitterParticles(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   particles: readonly FxGlitterParticle[],
   stroke: string,
   opacity: number,
@@ -395,7 +399,7 @@ export function paintStudioDrawGlitterParticles(
 }
 
 export function paintStudioDrawPastelDabs(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   dabs: readonly FxPastelDab[],
   stroke: string,
   opacity: number,
@@ -453,7 +457,7 @@ export function paintStudioDrawPastelDabs(
 }
 
 export function paintStudioDrawFreehandPenStroke(
-  context: Konva.Context,
+  context: StudioCanvasContextLike,
   params: StudioDrawFreehandPenStrokeParams,
 ): void {
   if (params.smoothed.length < 4) return;

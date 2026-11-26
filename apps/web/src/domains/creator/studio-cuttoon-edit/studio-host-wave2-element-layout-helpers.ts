@@ -1,5 +1,5 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
-import type Konva from "konva";
+import type { StudioExportStageLike } from "../canvas/studio-stage-handle-types";
 
 import { isStudioLegacyPigmentArchivedElement } from "@toonstudio/contracts/studio-legacy-pigment-archive";
 
@@ -56,18 +56,21 @@ export interface StudioGutterDragSession {
   readonly segment: SharedGutterSegment;
 }
 
-export async function runStudioCaptureAnimFrame<TTicket>(input: {
+export async function runStudioCaptureAnimFrame<
+  TTicket,
+  TStage extends StudioExportStageLike = StudioExportStageLike,
+>(input: {
   readonly elId: string;
   readonly element: El | undefined;
   readonly elements: El[];
-  readonly stage: Konva.Stage | null;
+  readonly stage: TStage | null;
   readonly effScale: number;
   readonly capturedElementIdsRef: MutableRefObject<Set<string>>;
   readonly captureMutationTicket: () => TTicket;
   readonly canApplyMutation: (ticket: TTicket) => boolean;
   readonly setError: (message: string) => void;
   readonly clearSelection: () => void;
-  readonly readStageInDocumentView: <T>(stage: Konva.Stage, reader: () => T, scale: number) => T;
+  readonly readStageInDocumentView: <T>(stage: TStage, reader: () => T, scale: number) => T;
   readonly revokeRasterHandoff: () => void;
   readonly allocateId: () => string;
   readonly markDocumentChanged: () => boolean;
@@ -108,18 +111,21 @@ export async function runStudioCaptureAnimFrame<TTicket>(input: {
   input.capturedElementIdsRef.current = new Set(next.map((item) => item.id));
 }
 
-export async function runStudioCaptureTimelineKeyframe<TTicket>(input: {
+export async function runStudioCaptureTimelineKeyframe<
+  TTicket,
+  TStage extends StudioExportStageLike = StudioExportStageLike,
+>(input: {
   readonly trackId: string;
   readonly frameIndex: number;
   readonly element: El | undefined;
-  readonly stage: Konva.Stage | null;
+  readonly stage: TStage | null;
   readonly effScale: number;
   readonly animTimeline: AnimationTimelineDoc;
   readonly captureMutationTicket: () => TTicket;
   readonly canApplyMutation: (ticket: TTicket) => boolean;
   readonly setError: (message: string) => void;
   readonly clearSelection: () => void;
-  readonly readStageInDocumentView: <T>(stage: Konva.Stage, reader: () => T, scale: number) => T;
+  readonly readStageInDocumentView: <T>(stage: TStage, reader: () => T, scale: number) => T;
   readonly revokeRasterHandoff: () => void;
   readonly allocateId: () => string;
   readonly markDocumentChanged: () => boolean;

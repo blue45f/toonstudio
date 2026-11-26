@@ -512,11 +512,14 @@ describe("5. StudioToonSiliconPanel 제어판 UI · 3유닛 SVG 도해 · 인터
 });
 
 describe("6. 엄격 품질·하네스·브랜드 정적 계약 자가 검증", () => {
-  it("소유 디렉터리에 정확히 4개 파일만 존재하고 줄 수 상한(engine<=750, panel<=680, all<=800)을 지킨다", () => {
+  it("소유 디렉터리에 정의된 7개 파일만 존재하고 줄 수 상한(engine<=750, panel<=680, all<=800)을 지킨다", () => {
     const dir = path.resolve(import.meta.dirname);
     const expectedFiles = [
       "StudioToonSiliconPanel.tsx",
       "index.ts",
+      "studio-hardware-accelerator-probe.test.ts",
+      "studio-hardware-accelerator-probe.ts",
+      "studio-onnx-session-cascade.ts",
       "toon-silicon-engine.ts",
       "toon-silicon.test.tsx",
     ];
