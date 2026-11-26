@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ProductionTaskOutputEvidence } from "@toonstudio/core/production";
 import { deriveStudioReviewPageMapping } from "@toonstudio/studio-project-model";
 import { api } from "@/platform/api";
 import type { StudioReviewPreviewResult } from "../project-graph/studio-project-graph-client";
 import { ProductionSubmissionVisualReview } from "./ProductionSubmissionVisualReview";
-import { loadPinnedSubmissionPreviews, loadSubmissionVisualReview, refreshPinnedSubmissionPreview, resolveSubmissionVisualReview, SubmissionVisualReviewCaptureRequired } from "./production-submission-visual-review";
+import { type PinnedSubmissionVisualSource, loadPinnedSubmissionPreviews, loadSubmissionVisualReview, refreshPinnedSubmissionPreview, resolveSubmissionVisualReview, SubmissionVisualReviewCaptureRequired } from "./production-submission-visual-review";
 import { submissionCaptureVisualFixture, submissionVisualFixture } from "./production-submission-visual-review.test-fixture";
 
 vi.mock("./production-submission-visual-review", async (importOriginal) => ({
@@ -20,6 +21,12 @@ function fixture() {
   const preview = (ordinal: number, label: string, sha256 = f.hash) => ({ sha256, ordinal, mediaType: "image/png" as const, byteLength: 10,
     url: `https://preview.test/${label}/${ordinal}`, expiresAt: Date.now() + 30_000, mapping: { status: "unmapped" as const, reason: "legacy-review" as const } });
   return { ...f, data, preview };
+}
+
+function mappedPage(f: ReturnType<typeof fixture>, source: PinnedSubmissionVisualSource, ids: string[], ordinal: number) {
+  const mapping = deriveStudioReviewPageMapping({ width: 800, pagesList: ids.map(id => ({ id, canvasH: 1200, elements: [] })) },
+    { sourceServerRevision: 7, sourceContentDigest: source.revision.rootGraphHash, ordinal, renderWidth: 800, renderHeight: 1200 });
+  return { ...f.preview(ordinal, source.revision.id), mapping };
 }
 
 function deferred<T>() {
@@ -60,6 +67,60 @@ async function streamingFixture() {
 }
 
 describe("고정 제출 원고 이미지 패널", () => {
+  it.each([
+    ["document", "document", "approved", true],
+    ["document", "frames", "approved", false],
+    ["pages", "document", "approved", false],
+    ["document", "document", "open", false],
+  ] as const)("이전 %s·현재 %s·검수 %s의 원본 읽기 경계를 지킨다", async (previousMode, currentMode, reviewStatus, allow) => {
+    const f = fixture(), before = f.data.baselines[0], deliverable = f.aggregate.deliverables[0];
+    if (!before || !deliverable) throw new Error("검수 fixture가 필요합니다.");
+    const ids = (source: PinnedSubmissionVisualSource) => !allow ? ["page"] : source.revision.id === before.revision.id
+      ? ["removed", "moved", "retained"] : ["retained", "added", "moved"];
+    const evidence = (source: PinnedSubmissionVisualSource, mode: ProductionTaskOutputEvidence["selectionMode"]): ProductionTaskOutputEvidence => ({
+      version: 1, kind: "studio-review-capture", documentRole: "thumbnail", taskId: "task", scope: deliverable.scope,
+      selectionMode: mode, subject: { schemaVersion: 1, projectId: source.projectId, workId: source.workId, artifactId: source.artifact.id,
+        reviewId: source.review.id, revisionId: source.revision.id, rootGraphHash: source.revision.rootGraphHash },
+      sourceServerRevision: 7, captureSequence: 1, pages: ids(source).map((pageId, ordinal) => ({ ordinal, pageId, sha256: source.revision.rootGraphHash,
+        frameIds: mode === "frames" ? ["selected"] : [] })),
+    });
+    const previousEvidence = evidence(before, previousMode), currentEvidence = evidence(f.data.submission, currentMode);
+    const previous = { ...f.submission, id: "previous", submittedAt: "2020-01-01T00:00:00Z", sourceEvidence: previousEvidence, revisionRef: before.sourceRevisionRef };
+    const current = { ...f.submission, sourceEvidence: currentEvidence };
+    const baseline = { ...before, outputEvidence: previousEvidence, review: { ...before.review, status: reviewStatus } };
+    vi.mocked(loadSubmissionVisualReview).mockResolvedValue({ submission: { ...f.data.submission, outputEvidence: currentEvidence }, baselines: [baseline] });
+    vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(async source => ids(source).map((_, ordinal) => mappedPage(f, source, ids(source), ordinal)));
+    const compare = vi.spyOn(api, "post").mockResolvedValue({ approved: previousEvidence.subject, current: currentEvidence.subject, decidedAt: "2026-11-26T00:00:00Z",
+      changes: [{ pageId: "moved", frameId: null, beforeIndex: 1, afterIndex: 2, kinds: ["page"], dialogue: [] },
+        { pageId: "removed", frameId: null, beforeIndex: 0, afterIndex: null, kinds: ["page"], dialogue: [] }] });
+    render(<ProductionSubmissionVisualReview aggregate={{ ...f.aggregate, submissions: [previous, current] }} submission={current} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    await screen.findByRole("img");
+    fireEvent.change(screen.getByRole("combobox", { name: "비교 기준본" }), { target: { value: baseline.sourceRevisionRef.id } });
+    if (allow) {
+      await screen.findByRole("combobox", { name: "다시 볼 변경 항목 2개" });
+      expect(compare).toHaveBeenCalledExactlyOnceWith("/studio-project-graph/approved-cut-changes", { approved: previousEvidence.subject, current: currentEvidence.subject }, expect.objectContaining({ signal: expect.any(AbortSignal) }));
+      fireEvent.click(screen.getByRole("button", { name: "원고 겹쳐 보기" }));
+      expect(screen.getByRole("slider", { name: "제출본 불투명도" })).toBeTruthy();
+      expect(screen.getAllByRole("img").map(img => img.getAttribute("src"))).toEqual([
+        f.preview(1, baseline.revision.id).url, f.preview(2, f.data.submission.revision.id).url,
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: "승인 후 변경 컷" }));
+      fireEvent.click(await screen.findByRole("button", { name: "다음 변경" }));
+      fireEvent.click(screen.getByRole("button", { name: "원고 나란히" }));
+      expect(screen.getByRole("img").getAttribute("src")).toBe(f.preview(0, baseline.revision.id).url);
+      expect(screen.getByRole("button", { name: "원고 겹쳐 보기" }).hasAttribute("disabled")).toBe(true);
+      fireEvent.change(screen.getByRole("combobox", { name: "이미지 순번" }), { target: { value: "0" } });
+      expect(screen.getAllByRole("img").map(img => img.getAttribute("src"))).toEqual([
+        f.preview(2, baseline.revision.id).url, f.preview(0, f.data.submission.revision.id).url,
+      ]);
+    } else {
+      await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(2));
+      expect(screen.queryByRole("button", { name: "승인 후 변경 컷" })).toBeNull();
+      expect(compare).not.toHaveBeenCalled();
+    }
+  });
+
   it("33페이지의 후반 cursor가 지연되어도 먼저 검증한 32페이지를 표시한다", async () => {
     const f = await streamingFixture(), pending = deferred<StudioReviewPreviewResult>();
     // 실제 component → 실제 cursor loader → 실제 graph client를 사용하고 HTTP 응답만 제어한다.
@@ -288,6 +349,22 @@ describe("고정 제출 원고 이미지 패널", () => {
       "https://preview.test/input-revision/0", "https://preview.test/submitted-revision/0",
     ]);
     expect(screen.getByRole("link", { name: "이 고정본에 핀 의견 남기기" }).getAttribute("href")).toContain("revision=submitted-revision");
+    expect((screen.getByRole("button", { name: "원고 겹쳐 보기" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("combobox", { name: "기준본 이미지 순번" })).toBeTruthy();
+  });
+  it("페이지 순서가 달라지면 같은 페이지 ID만 짝지어 겹친다", async () => {
+    const f = fixture();
+    vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(async source => {
+      const ids = source.revision.id === "submitted-revision" ? ["page-a", "page-b"] : ["page-b", "page-a"];
+      return ids.map((_id, index) => mappedPage(f, source, ids, index));
+    });
+    render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
+    fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
+    await screen.findByRole("img");
+    fireEvent.change(screen.getByRole("combobox", { name: "비교 기준본" }), { target: { value: "input-revision" } });
+    await waitFor(() => expect(screen.getAllByRole("img").map(image => image.getAttribute("src"))).toEqual([
+      "https://preview.test/input-revision/1", "https://preview.test/submitted-revision/0",
+    ]));
     fireEvent.click(screen.getByRole("button", { name: "원고 겹쳐 보기" }));
     expect(screen.getByRole("slider", { name: "제출본 불투명도" })).toBeTruthy();
   });
@@ -296,7 +373,8 @@ describe("고정 제출 원고 이미지 패널", () => {
     vi.mocked(loadSubmissionVisualReview).mockResolvedValue({ ...f.data, submission: { ...f.data.submission,
       revision: { ...f.data.submission.revision, blobRefs: [0, 2].map((ordinal) => ({ sha256: f.hash, ordinal, role: "preview" as const })) } } });
     vi.mocked(loadPinnedSubmissionPreviews).mockImplementation(async (source) => source.revision.id === "submitted-revision"
-      ? [f.preview(0, "submission"), f.preview(2, "submission")] : [f.preview(0, "input", source.revision.rootGraphHash)]);
+      ? [mappedPage(f, source, ["page-one", "page-two", "page-new"], 0), mappedPage(f, source, ["page-one", "page-two", "page-new"], 2)]
+      : [mappedPage(f, source, ["page-one"], 0)]);
     render(<ProductionSubmissionVisualReview aggregate={f.aggregate} submission={f.submission} />);
     fireEvent.click(screen.getByRole("button", { name: "제출 원고 이미지 열기" }));
     await screen.findByRole("img");
@@ -304,7 +382,7 @@ describe("고정 제출 원고 이미지 패널", () => {
     await waitFor(() => expect(screen.getAllByRole("img")).toHaveLength(2));
     fireEvent.change(screen.getByRole("combobox", { name: "이미지 순번" }), { target: { value: "2" } });
     expect(screen.getByText("이 버전에는 해당 순번의 이미지가 없습니다.")).toBeTruthy();
-    expect(screen.getByRole("img").getAttribute("src")).toBe("https://preview.test/submission/2");
+    expect(screen.getByRole("img").getAttribute("src")).toBe("https://preview.test/submitted-revision/2");
   });
   it("이미지 오류는 같은 고정 원고를 한 번 자동 조회하고 교체 URL도 실패하면 멈춘다", async () => {
     const f = fixture();

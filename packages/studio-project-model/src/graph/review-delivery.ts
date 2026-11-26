@@ -14,7 +14,7 @@ export const reviewDeliveryState = z.enum(["prepared", "issued", "delivered", "a
 export const reviewDeliveryProfileSchema = z.object({
   contract: z.literal("studio-review-delivery-profile-v1"),
   id: z.literal("approved-review-original-zip"), version: z.literal(1),
-  container: z.literal("zip-store"), includeReadme: z.literal(true),
+  container: z.literal("zip-store"), includeReadme: z.literal(true), includeEditableSource: z.literal(true).optional(),
 }).strict();
 export type ReviewDeliveryProfile = z.infer<typeof reviewDeliveryProfileSchema>;
 export const DEFAULT_REVIEW_DELIVERY_PROFILE: ReviewDeliveryProfile = Object.freeze({
@@ -64,8 +64,13 @@ export const reviewDeliveryManifestSchema = z.object({
   rights: reviewDeliveryRightsSchema.omit({ statement: true }),
   pages: z.array(pinnedSharePageSchema.extend({ path: z.string().regex(/^pages\/[0-9]{6}\.(?:png|jpg|webp)$/u) }).strict())
     .min(1).max(REVIEW_DELIVERY_MAX_PAGES),
+  editableSource: z.object({ path: z.literal("source/manuscript.toonstudio-work.json"), sha256: digest }).strict().optional(),
   totalPageBytes: z.number().int().positive().max(REVIEW_DELIVERY_MAX_SOURCE_BYTES), checksum: z.literal("SHA-256"),
 }).strict().superRefine((manifest, context) => {
+  if (Boolean(manifest.profile.includeEditableSource) !== Boolean(manifest.editableSource)
+    || (manifest.editableSource && manifest.editableSource.sha256 !== manifest.source.rootGraphHash)) {
+    context.addIssue({ code: "custom", message: "편집 원본과 승인된 원고가 일치해야 합니다." });
+  }
   if (manifest.pages.some((page, index) => page.ordinal !== index)
     || manifest.pages.reduce((sum, page) => sum + page.byteLength, 0) !== manifest.totalPageBytes) {
     context.addIssue({ code: "custom", message: "Delivery manifest totals or order are invalid" });
@@ -73,7 +78,7 @@ export const reviewDeliveryManifestSchema = z.object({
 });
 export type ReviewDeliveryManifest = z.infer<typeof reviewDeliveryManifestSchema>;
 
-export const reviewDeliveryRecipientSchema = z.object({ userId: identity, displayName: z.string().min(1).max(160) }).strict();
+export const reviewDeliveryRecipientSchema = z.object({ userId: identity, displayName: z.string().min(1).max(160), canReceiveSource: z.boolean().optional() }).strict();
 export const reviewDeliveryJobSchema = z.object({
   contract: z.literal("studio-review-delivery-job-v1"), id: reviewDeliveryId, workId: identity,
   subject: pinnedShareSubject, title: z.string().min(1).max(160),
@@ -106,5 +111,6 @@ export function createReviewDeliveryManifest(input: {
     profile: input.profile, rights: { contract: input.rights.contract, statementVersion: input.rights.statementVersion,
       mode: input.rights.mode, rightsGraphDigest: input.rights.rightsGraphDigest, confirmed: true },
     pages: input.source.pages.map((page) => ({ ...page, path: reviewDeliveryPagePath(page) })),
+    ...(input.profile.includeEditableSource ? { editableSource: { path: "source/manuscript.toonstudio-work.json", sha256: input.source.subject.rootGraphHash } } : {}),
     totalPageBytes: input.source.pages.reduce((sum, page) => sum + page.byteLength, 0), checksum: "SHA-256" });
 }

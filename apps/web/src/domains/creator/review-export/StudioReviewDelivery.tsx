@@ -88,8 +88,10 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
   const workId = verified.subject.workId;
   const [data, setData] = useState<DeliveryList | null>(null);
   const [recipient, setRecipient] = useState("");
+  const selectedRecipient = data?.recipients.find((item) => item.userId === recipient);
   const [title, setTitle] = useState(verified.review.title);
   const [statement, setStatement] = useState("");
+  const [includeEditableSource, setIncludeEditableSource] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState("");
@@ -148,9 +150,7 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
       const next = await listStudioReviewDeliveries(workId);
       if (!current(own, actor, session)) return;
       setData(next);
-      setRecipient((value) => next.recipients.some((item) => item.userId === value)
-        ? value
-        : next.recipients[0]?.userId ?? "");
+      setRecipient((value) => value || next.recipients[0]?.userId || "");
     } catch {
       if (current(own, actor, session)) {
         setData(null);
@@ -223,10 +223,21 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
       return true;
     } catch (error) {
       if (current(own, actor, session)) {
-        setNotice(isAppApiError(error) && error.code === "studio_review_delivery_material_rights"
-          ? bt("원고에 사용한 소재의 사용권과 출처 표기를 확인하고 수정본을 다시 승인해 주세요.",
-            "Check the material licenses and attribution, then approve the revised manuscript.")
-          : bt(
+        const errorCode = isAppApiError(error) ? error.code : undefined;
+        const messages: Record<string, readonly [string, string]> = {
+          studio_review_delivery_material_rights: ["원고에 사용한 소재의 사용권과 출처 표기를 확인하고 수정본을 다시 승인해 주세요.",
+            "Check the material licenses and attribution, then approve the revised manuscript."],
+          studio_review_delivery_size_limit: ["승인 이미지와 편집 원고를 합쳐 128MiB를 넘습니다. 이미지와 편집 보관 파일을 따로 전달해 주세요.",
+            "The images and editable manuscript exceed 128 MiB. Deliver the images and project archive separately."],
+          studio_review_delivery_archive_required: ["이 원고의 3D 패스에는 PNG가 필요합니다. 편집기에서 .toonproject.zip 보관 파일로 저장해 주세요.",
+            "This 3D manuscript needs pass images. Save it as a .toonproject.zip archive in the editor."],
+          studio_review_delivery_editor_required: ["받는 사람의 편집 권한이 바뀌었습니다. 수신자 목록을 다시 확인해 주세요.",
+            "The recipient's editing access changed. Refresh the recipient list."],
+          studio_review_delivery_source_changed: ["승인 후 원고가 바뀌었습니다. 변경된 컷을 검수하고 새 승인본으로 전달해 주세요.",
+            "The manuscript changed after approval. Review the changed cuts and deliver the newly approved version."],
+        };
+        const message = errorCode && messages[errorCode];
+        setNotice(message ? bt(...message) : bt(
           "결과를 확정하지 못했어요. 같은 요청으로 다시 시도하면 중복 처리하지 않습니다.",
           "The result could not be confirmed. Retrying the same request will not duplicate it.",
         ));
@@ -239,7 +250,10 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
   };
 
   const prepare = async () => {
-    if (!data?.canPrepare || !recipient || !confirmed || !statement.trim() || busy || !online) return;
+    if (!data?.canPrepare || !selectedRecipient || (includeEditableSource && !selectedRecipient.canReceiveSource)
+      || !confirmed || !statement.trim() || busy || !online) return;
+    const profile = includeEditableSource
+      ? { ...DEFAULT_REVIEW_DELIVERY_PROFILE, includeEditableSource: true as const } : DEFAULT_REVIEW_DELIVERY_PROFILE;
     const normalizedTitle = title.trim() || verified.review.title;
     const normalizedStatement = statement.trim();
     const fingerprint = canonicalJson({
@@ -249,7 +263,7 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
       recipient,
       mode: data.mode,
       statement: normalizedStatement,
-      profile: DEFAULT_REVIEW_DELIVERY_PROFILE,
+      profile,
     });
     const identity = stablePrepareIdentity(prepareAttempt.current, fingerprint);
     prepareAttempt.current = identity;
@@ -259,7 +273,7 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
         recipient,
         mode: data.mode,
         statement: normalizedStatement,
-        profile: DEFAULT_REVIEW_DELIVERY_PROFILE,
+        profile,
       });
       return prepareStudioReviewDelivery(verified.subject.workId, {
         id: identity.id,
@@ -267,7 +281,7 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
         subject: verified.subject,
         title: normalizedTitle,
         recipientUserId: recipient,
-        profile: DEFAULT_REVIEW_DELIVERY_PROFILE,
+        profile,
         rights: {
           contract: "studio-review-delivery-rights-v1",
           statementVersion: 1,
@@ -366,7 +380,8 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
 
     {data?.canPrepare ? <div className="grid gap-3 rounded-lg bg-panel p-3 md:grid-cols-2">
       <label className="text-sm">{bt("수신 팀원", "Team recipient")}
-        <select className={`${field} mt-1`} value={recipient} disabled={Boolean(busy) || !online} onChange={(event) => setRecipient(event.target.value)}>
+        <select className={`${field} mt-1`} value={recipient} disabled={Boolean(busy) || !online} onChange={(event) => { setRecipient(event.target.value); setIncludeEditableSource(false); setConfirmed(false); }}>
+          {recipient && !selectedRecipient ? <option value={recipient}>{bt("선택한 팀원의 권한이 바뀌었습니다", "Selected recipient access changed")}</option> : null}
           {!data.recipients.length ? <option value="">{bt("전달 가능한 팀원이 없습니다", "No eligible team recipient")}</option> : null}
           {data.recipients.map((item) => <option key={item.userId} value={item.userId}>{item.displayName}</option>)}
         </select>
@@ -374,6 +389,11 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
       <label className="text-sm">{bt("전달 제목", "Delivery title")}
         <input className={`${field} mt-1`} maxLength={160} value={title} disabled={Boolean(busy) || !online} onChange={(event) => setTitle(event.target.value)} />
       </label>
+      {selectedRecipient?.canReceiveSource || includeEditableSource ? <label className="flex min-h-11 items-center gap-2 text-sm md:col-span-2">
+        <input type="checkbox" checked={includeEditableSource} disabled={Boolean(busy) || !online}
+          onChange={(event) => { setIncludeEditableSource(event.target.checked); setConfirmed(false); }} />
+        {bt("편집 담당자에게 승인 원고 JSON도 전달 (외부 소재는 작품에서 참조)", "Include the approved editable manuscript JSON for this editor (linked assets stay in the work)")}
+      </label> : null}
       <label className="text-sm md:col-span-2">{bt("권리·사용 조건 확인 근거", "Rights and usage attestation")}
         <textarea className="mt-1 min-h-24 w-full rounded-lg border border-line bg-card p-3 text-sm" maxLength={2000} value={statement} disabled={Boolean(busy) || !online} onChange={(event) => setStatement(event.target.value)} />
       </label>
@@ -384,7 +404,7 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
           `I confirmed the ${data.mode} operating mode and the statement above. This is not automatic legal certification.`,
         )}
       </label>
-      <button type="button" className={button} disabled={!recipient || !confirmed || !statement.trim() || Boolean(busy) || !online} onClick={() => void prepare()}>{bt("전달 준비", "Prepare delivery")}</button>
+      <button type="button" className={button} disabled={!selectedRecipient || (includeEditableSource && !selectedRecipient.canReceiveSource) || !confirmed || !statement.trim() || Boolean(busy) || !online} onClick={() => void prepare()}>{bt("전달 준비", "Prepare delivery")}</button>
     </div> : null}
 
     <div className="space-y-3">{data?.items.map((job) => <article key={job.id} className="rounded-lg border border-line p-3">
@@ -399,7 +419,7 @@ function StudioReviewDeliveryForActor({ actorId, verified }: {
         <summary>{bt("고정 manifest 확인", "Inspect pinned manifest")}</summary>
         <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded bg-panel p-2">{JSON.stringify(job.manifest, null, 2)}</pre>
       </details>
-      {!job.currentRecipientBinding && job.state !== "cancelled" ? <p role="alert" className="mt-2 text-sm">{bt(
+      {actorId === job.recipient.userId && !job.currentRecipientBinding && job.state !== "cancelled" ? <p role="alert" className="mt-2 text-sm">{bt(
         "수신자의 현재 팀 권한이 준비 당시와 달라 다운로드·수락을 막았습니다.",
         "Recipient access changed since preparation; download and acceptance are blocked.",
       )}</p> : null}

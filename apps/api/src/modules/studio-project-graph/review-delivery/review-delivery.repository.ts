@@ -5,6 +5,7 @@ import type { Pool, PoolClient } from "pg";
 import { canonicalJson } from "@toonstudio/studio-project-model";
 import {
   createReviewDeliveryManifest,
+  REVIEW_DELIVERY_MAX_SOURCE_BYTES,
   reviewDeliveryActionSchema,
   reviewDeliveryAcceptSchema,
   reviewDeliveryJobSchema,
@@ -36,11 +37,11 @@ interface DeliveryRow {
   createdAt: Date; updatedAt: Date; issuedAt: Date | null; deliveredAt: Date | null; acceptedAt: Date | null; cancelledAt: Date | null;
 }
 interface EventRow { deliveryId: string; requestHash: string; response: unknown }
-interface RecipientBinding { readonly userId: string; readonly displayName: string; readonly digest: string }
+interface RecipientBinding { readonly userId: string; readonly displayName: string; readonly digest: string; readonly canReceiveSource: boolean }
 interface DeliveryAccess { readonly manager: boolean; readonly recipient: boolean; readonly currentRecipient: boolean }
 export interface ReviewDeliveryDownloadSource {
   readonly row: DeliveryRow; readonly pages: ReviewDeliverySource["pages"];
-  readonly objects: readonly LocatedPrivateObjectReference[]; readonly actorIsRecipient: boolean;
+  readonly objects: readonly LocatedPrivateObjectReference[]; readonly actorIsRecipient: boolean; readonly editableSource?: unknown;
 }
 
 function at(value: Date | null): string | null { return value?.toISOString() ?? null; }
@@ -71,14 +72,14 @@ async function recipientBinding(client: PoolClient, workId: string, userId: stri
   const user = (await client.query<{ id: string; name: string | null; status: string; sessionVersion: number }>(
     'SELECT id,name,status,"sessionVersion" FROM "user" WHERE id=$1 FOR SHARE', [userId])).rows[0];
   if (!work || !user || user.status !== "active") return null;
-  if (work.ownerId === userId) return { userId, displayName: user.name?.trim() || "Owner",
+  if (work.ownerId === userId) return { userId, displayName: user.name?.trim() || "Owner", canReceiveSource: true,
     digest: shareHash({ workId, userId, owner: true, sessionVersion: user.sessionVersion }) };
   const membership = (await client.query<{ userId: string; role: string; status: string; invitationId: string; updatedAt: string }>(
     'SELECT "userId",role,status,"invitationId","updatedAt"::text AS "updatedAt" FROM creator_work_collaborator WHERE "workId"=$1 AND "userId"=$2 FOR SHARE',
     [workId, userId])).rows[0];
   const access = resolveCreatorCollaborationAccess({ actorUserId: userId, ownerUserId: work.ownerId, membership });
   if (!membership || membership.status !== "active" || !access.view) return null;
-  return { userId, displayName: user.name?.trim() || userId,
+  return { userId, displayName: user.name?.trim() || userId, canReceiveSource: access.edit,
     digest: shareHash({ workId, userId, sessionVersion: user.sessionVersion, invitationId: membership.invitationId,
       role: membership.role, status: membership.status, updatedAt: membership.updatedAt }) };
 }
@@ -127,16 +128,17 @@ async function saveEvent(client: PoolClient, deliveryId: string, actor: string, 
 export class StudioReviewDeliveryRepository {
   constructor(@Inject(STUDIO_REVIEW_DELIVERY_POOL) private readonly pool: Pool) {}
 
-  async list(actor: string, workId: string) {
+  async list(actor: string, workId: string, editableSource = false) {
     return transaction(this.pool, async (client) => {
       const manager = await isManager(client, actor, workId);
-      const rows = (await client.query<DeliveryRow>(`SELECT id,"workId","reviewId","createdBy","recipientUserId","operationId","requestHash",source,"sourceHash",profile,"profileHash",rights,manifest,"manifestHash","recipientBindingHash",state,version,"archiveSha256","archiveByteLength","createdAt","updatedAt","issuedAt","deliveredAt","acceptedAt","cancelledAt" FROM studio_review_delivery WHERE "workId"=$1 AND ($2::boolean OR "recipientUserId"=$3) ORDER BY "createdAt" DESC,id LIMIT 100`, [workId, manager, actor])).rows;
+      const rows = (await client.query<DeliveryRow>(`SELECT id,"workId","reviewId","createdBy","recipientUserId","operationId","requestHash",source,"sourceHash",profile,"profileHash",rights,manifest,"manifestHash","recipientBindingHash",state,version,"archiveSha256","archiveByteLength","createdAt","updatedAt","issuedAt","deliveredAt","acceptedAt","cancelledAt" FROM studio_review_delivery WHERE "workId"=$1 AND ($2::boolean OR "recipientUserId"=$3)
+        AND ($4::boolean OR NOT (profile ? 'includeEditableSource')) ORDER BY "createdAt" DESC,id LIMIT 100`, [workId, manager, actor, editableSource])).rows;
       if (!manager && rows.length === 0) throw new ForbiddenException({ code: "studio_review_delivery_forbidden" });
-      const recipients: { userId: string; displayName: string }[] = [];
+      const recipients: { userId: string; displayName: string; canReceiveSource?: boolean }[] = [];
       if (manager) {
         const ids = (await client.query<{ id: string }>(`SELECT "userId" AS id FROM creator_work WHERE id=$1 UNION SELECT "userId" AS id FROM creator_work_collaborator WHERE "workId"=$1 AND status='active' ORDER BY id LIMIT 1001`, [workId])).rows;
         if (ids.length > 1000) throw new ConflictException({ code: "studio_review_delivery_recipient_limit" });
-        for (const candidate of ids) { const binding = await recipientBinding(client, workId, candidate.id); if (binding && candidate.id !== actor) recipients.push({ userId: binding.userId, displayName: binding.displayName }); }
+        for (const candidate of ids) { const binding = await recipientBinding(client, workId, candidate.id); if (binding && candidate.id !== actor) recipients.push({ userId: binding.userId, displayName: binding.displayName, ...(editableSource ? { canReceiveSource: binding.canReceiveSource } : {}) }); }
       }
       const policy = resolveOperationPolicy(await loadOperationPolicy(client), runtimeLicenseFingerprint(), new Date());
       return { items: await Promise.all(rows.map((row) => view(client, actor, row))), recipients, canPrepare: manager, mode: policy.mode };
@@ -158,17 +160,26 @@ export class StudioReviewDeliveryRepository {
       if (input.rights.mode !== effective.mode) throw new ConflictException({ code: "studio_review_delivery_mode_changed", mode: effective.mode });
       const recipient = await recipientBinding(client, workId, input.recipientUserId);
       if (!recipient) throw new ConflictException({ code: "studio_review_delivery_recipient_unavailable" });
+      if (input.profile.includeEditableSource && !recipient.canReceiveSource) {
+        throw new ConflictException({ code: "studio_review_delivery_editor_required" });
+      }
       const expectedRightsDigest = deliveryHash({ subject: input.subject, recipient: input.recipientUserId,
         mode: effective.mode, statement: input.rights.statement, profile: input.profile });
       if (input.rights.rightsGraphDigest !== expectedRightsDigest) {
         throw new ConflictException({ code: "studio_review_delivery_rights_digest_invalid" });
       }
-      const capture = await captureWithDeliveryRights(client, input.subject);
+      const capture = await captureWithDeliveryRights(client, input.subject, input.profile.includeEditableSource);
       if (!capture.approvalDigest || !capture.decidedAt || capture.rasters.length > 100) throw new ConflictException({ code: "studio_review_delivery_approval_required" });
       const ordinals = capture.rasters.map((_, index) => index);
       const images = await pinnedShareImages(client, input.subject, capture, ordinals);
       const source = reviewDeliverySourceSchema.parse({ subject: input.subject, approvalDigest: capture.approvalDigest,
         decidedAt: capture.decidedAt, pages: images.pages });
+      if (input.profile.includeEditableSource) {
+        const imageBytes = source.pages.reduce((total, page) => total + page.byteLength, 0);
+        if (Buffer.byteLength(canonicalJson(capture.sourceSnapshot)) + imageBytes > REVIEW_DELIVERY_MAX_SOURCE_BYTES) {
+          throw new ConflictException({ code: "studio_review_delivery_size_limit" });
+        }
+      }
       const createdAt = await timestamp(client);
       const manifest = createReviewDeliveryManifest({ id: input.id, title: input.title, preparedAt: createdAt.toISOString(), source, sourceDigest: deliveryHash(source), profile: input.profile, rights: input.rights });
       const hashes = { request: requestHash(input), source: deliveryHash(source), profile: deliveryHash(input.profile), manifest: deliveryHash(manifest) };
@@ -180,8 +191,10 @@ export class StudioReviewDeliveryRepository {
     });
   }
 
-  private async assertCurrentSource(client: PoolClient, row: DeliveryRow): Promise<{ pages: ReviewDeliverySource["pages"]; objects: LocatedPrivateObjectReference[] }> {
-    const stored = reviewDeliverySourceSchema.parse(row.source), capture = await captureWithDeliveryRights(client, stored.subject);
+  private async assertCurrentSource(client: PoolClient, row: DeliveryRow): Promise<{ pages: ReviewDeliverySource["pages"]; objects: LocatedPrivateObjectReference[]; editableSource?: unknown }> {
+    const stored = reviewDeliverySourceSchema.parse(row.source);
+    const profile = reviewDeliveryProfileSchema.parse(row.profile);
+    const capture = await captureWithDeliveryRights(client, stored.subject, profile.includeEditableSource);
     if (!capture.approvalDigest || !capture.decidedAt || capture.approvalDigest !== stored.approvalDigest || capture.decidedAt !== stored.decidedAt) {
       throw new ConflictException({ code: "studio_review_delivery_source_changed" });
     }
@@ -189,7 +202,14 @@ export class StudioReviewDeliveryRepository {
     if (canonicalJson(images.pages) !== canonicalJson(stored.pages) || deliveryHash(stored) !== row.sourceHash) {
       throw new ConflictException({ code: "studio_review_delivery_source_changed" });
     }
-    return { pages: images.pages, objects: images.objects };
+    if (profile.includeEditableSource) {
+      const recipient = await recipientBinding(client, row.workId, row.recipientUserId);
+      if (!recipient?.canReceiveSource || recipient.digest !== row.recipientBindingHash) {
+        throw new ConflictException({ code: "studio_review_delivery_editor_required" });
+      }
+      return { ...images, editableSource: capture.sourceSnapshot };
+    }
+    return images;
   }
 
   async issue(actor: string, workId: string, deliveryId: string, inputValue: ReviewDeliveryAction): Promise<ReviewDeliveryJob> {
@@ -246,7 +266,7 @@ export class StudioReviewDeliveryRepository {
         throw new ConflictException({ code: "studio_review_delivery_conflict" });
       }
       const source = await this.assertCurrentSource(client, row);
-      return { row, pages: source.pages, objects: source.objects, actorIsRecipient: access.currentRecipient };
+      return { row, ...source, actorIsRecipient: access.currentRecipient };
     });
   }
 
@@ -255,7 +275,13 @@ export class StudioReviewDeliveryRepository {
     const input = reviewDeliveryActionSchema.parse(inputValue);
     return transaction(this.pool, async (client) => {
       await lockOperation(client, actor, input.operationId);
-      if (await replayEvent(client, actor, deliveryId, input.operationId, input)) return view(client, actor, await readRow(client, workId, deliveryId));
+      if (await replayEvent(client, actor, deliveryId, input.operationId, input)) {
+        const prior = await readRow(client, workId, deliveryId);
+        const access = await accessFor(client, actor, prior);
+        if (prior.state === "cancelled" || (!access.manager && !access.currentRecipient)) throw new ConflictException({ code: "studio_review_delivery_conflict" });
+        await this.assertCurrentSource(client, prior);
+        return view(client, actor, prior);
+      }
       let row = await readRow(client, workId, deliveryId, "update"); const access = await accessFor(client, actor, row);
       if (row.version !== input.expectedVersion || row.manifestHash !== input.manifestDigest || row.state === "cancelled"
         || (!access.manager && !(access.currentRecipient && ["issued","delivered","accepted"].includes(row.state)))) throw new ConflictException({ code: "studio_review_delivery_conflict" });

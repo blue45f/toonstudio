@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 export interface ReviewDeliveryZipEntry { readonly path: string; readonly bytes: Buffer }
 export interface ReviewDeliveryZipResult { readonly bytes: Buffer; readonly sha256: string }
 const MAX_ARCHIVE_BYTES = 160 * 1024 * 1024;
-const MAX_FILES = 102;
+const MAX_FILES = 103;
 const UTF8_FLAG = 0x0800;
 const DOS_DATE_1980_01_01 = 0x0021;
 const table = (() => {
@@ -21,7 +21,7 @@ function crc32(bytes: Uint8Array): number {
   return (value ^ 0xffffffff) >>> 0;
 }
 function safePath(value: string): Buffer {
-  if (!/^(?:pages\/[0-9]{6}\.(?:png|jpg|webp)|manifest\.json|README\.txt)$/u.test(value)) throw new Error("review_delivery_zip_path");
+  if (!/^(?:pages\/[0-9]{6}\.(?:png|jpg|webp)|manifest\.json|source\/manuscript\.toonstudio-work\.json|README\.txt)$/u.test(value)) throw new Error("review_delivery_zip_path");
   const bytes = Buffer.from(value, "utf8");
   if (bytes.length === 0 || bytes.length > 240) throw new Error("review_delivery_zip_path");
   return bytes;

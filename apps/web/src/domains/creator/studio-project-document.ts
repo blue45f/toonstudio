@@ -361,9 +361,14 @@ export async function buildStudioProjectDocumentSaveArtifact(
  * metadata or extensions.
  */
 export async function parseStudioProjectDocument(
-  value: unknown
+  value: unknown,
+  fileName?: string,
 ): Promise<StudioProjectDocumentLoadResult> {
-  const decoded = decodeProjectDocumentInput(value);
+  const raw = decodeProjectDocumentInput(value);
+  // 승인 원고 파일은 서버가 저장한 JSON 그대로다. 파일 포맷 버전은 보통 생략되어 있다.
+  const decoded = fileName?.endsWith(".toonstudio-work.json") && isRecord(raw) && !Object.hasOwn(raw, "version")
+    && !isStudioDocumentEnvelopeCandidate(raw) && typeof raw.width === "number" && Number.isFinite(raw.width) && raw.width > 0 && Array.isArray(raw.pagesList)
+    ? { ...raw, version: 2 } : raw;
   if (!isStudioDocumentEnvelopeCandidate(decoded)) {
     const futureVersion = futureRawProjectVersion(decoded);
     if (futureVersion !== null) {

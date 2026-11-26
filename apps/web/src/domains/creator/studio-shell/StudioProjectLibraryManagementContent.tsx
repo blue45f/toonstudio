@@ -16,6 +16,7 @@ import { studioCanvasHref } from "../studio-workspace-route";
 import { StudioProjectLibraryResumeCard } from "./StudioProjectLibraryResumeCard";
 import { StudioProjectLibraryFastStartStrip } from "./StudioProjectLibraryFastStartStrip";
 import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryDateLabel, studioProjectLibraryManagementViewHref } from "./studio-project-library-management-model";
+import { StudioDialogueSampleStart } from "../workspace/StudioDialogueSampleStart";
 import { StudioExampleProjectBanner } from "../workspace/StudioExampleProjectBanner";
 import { StudioSampleManuscriptCard } from "../workspace/StudioSampleManuscriptCard";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
@@ -168,7 +169,7 @@ export function StudioProjectLibraryManagementContent({
                 {bi("작업 중인 개인 원고가 아직 없습니다", "No personal manuscript yet")}
               </h2>
               <p className="text-xs leading-5 text-fg-2 [word-break:keep-all]">
-                {bi("오른쪽 빠른 시작으로 첫 원고를 만들거나, 아래 예제를 열어 작업실을 체험해 보세요.", "Start your first manuscript on the right or try an example below.")}
+                {bi("바로 시작에서 새 원고를 만들거나 샘플의 대사를 고쳐 보세요.", "Create your first manuscript or edit the sample dialogue in Quick start.")}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -200,6 +201,7 @@ export function StudioProjectLibraryManagementContent({
             {bi("세로 웹툰 · 4컷 · 3D · 가져오기", "Webtoon · 4-panel · 3D · Import")}
           </span>
         </div>
+        <StudioDialogueSampleStart />
         <StudioProjectLibraryFastStartStrip className="flex-1" />
       </section>
     </div>

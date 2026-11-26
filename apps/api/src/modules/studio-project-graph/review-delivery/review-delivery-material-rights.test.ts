@@ -30,7 +30,15 @@ describe("고정 검수 원고 소재 확인", () => {
     expect(() => assertReviewDeliveryMaterialRights(doc(background(commercial), community("cc-by-4.0", "원작자")))).not.toThrow();
     const master = { elements: [community("cc-by-nc-4.0")] };
     expect(() => assertReviewDeliveryMaterialRights({ ...doc(), master })).toThrow();
-    expect(() => assertReviewDeliveryMaterialRights({ pagesList: [{ elements: [], hideMaster: true }], master })).not.toThrow();
+    const hiddenMaster = { pagesList: [{ elements: [], hideMaster: true }], master };
+    expect(() => assertReviewDeliveryMaterialRights(hiddenMaster)).not.toThrow();
+    expect(() => assertReviewDeliveryMaterialRights(hiddenMaster, true)).toThrow();
+  });
+
+  it("별도 PNG가 필요한 연결 3D 원고는 편집 JSON 대신 보관 파일을 안내한다", () => {
+    const linked = { pagesList: [{ elements: [], linked3dRender: { links: [{ id: "line-pass" }] } }] };
+    expect(() => assertReviewDeliveryMaterialRights(linked)).not.toThrow();
+    expect(() => assertReviewDeliveryMaterialRights(linked, true)).toThrow();
   });
 });
 
