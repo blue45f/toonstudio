@@ -600,7 +600,7 @@ export function StudioDraftSaveCenter({
     : outboxWarning
       ? bt("저장 대기 기록 확인 필요", "Check the pending save record")
       : !isOnline
-        ? bt("연결 대기", "Waiting to reconnect")
+        ? bt("연결 복구 후 재시도", "Retry after connection restores")
         : saving
           ? bt("서버에 저장 중", "Saving to server")
           : null;
@@ -785,7 +785,7 @@ export function StudioDraftSaveCenter({
   const forceVisible = model.tone === "danger" || model.tone === "warning" ? "true" : undefined;
   if (embedded && menubarSlot) return <>
     {serviceStatusSlot?.kind === "modal" ? createPortal(statusRegions, serviceStatusSlot.element) : statusRegions}
-    {criticalSaveLabel && editorStatusSlot ? createPortal(<span data-studio-draft-save-attention="true" className="inline-block max-w-full truncate whitespace-nowrap leading-tight" title={!isOnline && !serverSaveError && !outboxWarning ? bt("연결 복구 후 재시도", "Retry after connection restores") : criticalSaveLabel}>{criticalSaveLabel}</span>, editorStatusSlot.summary) : null}
+    {criticalSaveLabel && editorStatusSlot ? createPortal(<span data-studio-draft-save-attention="true">{criticalSaveLabel}</span>, editorStatusSlot.summary) : null}
     {createPortal(dialog, menubarSlot)}
   </>;
   if (inline) {
