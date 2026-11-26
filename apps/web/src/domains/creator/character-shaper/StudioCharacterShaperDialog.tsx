@@ -452,7 +452,9 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
     </div>
   );
 
-  const shelfContent = status === "loading" ? (
+  const [compactLibraryOpen, setCompactLibraryOpen] = useState(false);
+  const compactLibraryId = useId();
+  const presetShelf = status === "loading" ? (
     <ShelfSkeleton />
   ) : status === "empty" || status === "error" ? (
     emptyState
@@ -470,6 +472,20 @@ export function StudioCharacterShaperDialog({ h, binding, assets, onOpenAdvanced
       onCommitEntry={commitEntry}
     />
   );
+
+  const shelfContent = layout !== "desktop" && assets ? (
+    <div className="flex h-full min-h-0 flex-col">
+      <button type="button" className={cn("min-h-11 shrink-0 border-b border-line px-3 text-start text-sm text-fg", STUDIO_FOCUS_RING)}
+        aria-expanded={compactLibraryOpen} aria-controls={compactLibraryId}
+        onClick={() => setCompactLibraryOpen(value => !value)}>
+        {t("studio.character.library.title", "캐릭터 라이브러리")}
+      </button>
+      <div id={compactLibraryId} className="min-h-0 flex-1 overflow-y-auto" hidden={!compactLibraryOpen}>
+        {compactLibraryOpen && <CharacterShaperLibrary h={h} binding={binding} assets={assets} />}
+      </div>
+      {!compactLibraryOpen && <div className="min-h-0 flex-1">{presetShelf}</div>}
+    </div>
+  ) : presetShelf;
 
   const inspector = (
     <CharacterShaperInspector

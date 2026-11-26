@@ -94,7 +94,7 @@ export function useStudioCharacterAssets(h: StudioVrmPoserHost, authoring: Chara
   }
 
   async function insert(result: StudioVrmPoserInsertResult, place: StudioVrmPoserProps["onInsert"]) {
-    if (!authoring.hydrated || !model || !sceneUsesCharacterModel(result.scene.model, model)) return false;
+    if (!authoring.hydrated || !model || pending.current || !sceneUsesCharacterModel(result.scene.model, model)) return false;
     let documentId = activeId ?? bound.current?.documentId;
     if (documentId) {
       if (authoring.authority.getSnapshot().document.documentId !== documentId || !await authoring.saveNow()

@@ -13,7 +13,7 @@
  */
 
 import { ArrowLeft } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { CharacterRuntimeThumbnailRecorder } from "../character-platform/thumbnail/character-runtime-thumbnail-store";
@@ -137,10 +137,17 @@ function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeo
 
 function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayers, ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
   const { open } = props;
-  const place = useRef<StudioVrmPoserProps["onInsert"]>(() => false);
-  const onInsert = useCallback<StudioVrmPoserProps["onInsert"]>((result) => place.current(result), []);
+  const [selection, setSelection] = useState<{
+    origin: StudioVrmPoserProps["initialScene"]; asset: StudioCharacterAsset | null;
+  }>();
+  const selected = selection?.origin === props.initialScene ? selection?.asset : undefined;
+  const setSelected = (asset: StudioCharacterAsset | null) => setSelection({ origin: props.initialScene, asset });
+  // 캡처가 PNG 인코딩을 기다리는 동안 같은 모델의 다른 캐릭터나 다른 컷이 열릴 수 있다.
+  const captureScope = useMemo(() => Symbol(), [open, props.initialScene, selected]);
+  const place = useRef<{ scope: symbol; insert: StudioVrmPoserProps["onInsert"] } | null>(null);
+  const onInsert = useCallback<StudioVrmPoserProps["onInsert"]>((result) =>
+    place.current?.scope === captureScope ? place.current.insert(result) : false, [captureScope]);
   const h = useStudioVrmPoserController(open ? { ...props, onInsert } : props);
-  const [selected, setSelected] = useState<StudioCharacterAsset | null | undefined>(undefined);
   const models: readonly VrmLibraryEntry[] = Array.isArray(h.libraryEntries) ? h.libraryEntries : [];
   const activeModel = models.find(entry => entry.id === h.activeModelId);
   const placement = props.initialScene && sceneUsesCharacterModel(props.initialScene.model, activeModel) ? props.initialScene : undefined;
@@ -154,9 +161,9 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
   });
   const assets = useStudioCharacterAssets(h, controller.authoring, documentId, setSelected, open);
   useLayoutEffect(() => {
-    place.current = result => assets.insert(result, props.onInsert);
-    return () => { place.current = () => false; };
-  }, [assets, props.onInsert]);
+    place.current = { scope: captureScope, insert: result => assets.insert(result, props.onInsert) };
+    return () => { place.current = null; };
+  }, [assets, captureScope, props.onInsert]);
   const binding = controller.binding;
   const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced);
   const variantHost = {
@@ -182,6 +189,7 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
 
   useEffect(() => {
     if (!open) {
+      setSelection(undefined);
       cancelPreview?.();
       setAdvanced(false);
     }

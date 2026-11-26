@@ -36,6 +36,7 @@ export function CharacterShaperLibrary({ h, binding, assets }: {
   const fileRef = useRef<HTMLInputElement>(null);
   const entries: readonly VrmLibraryEntry[] = Array.isArray(h.libraryEntries) ? h.libraryEntries : [];
   const visible = discoverCharacterLibrary(entries, query, collection);
+  const hasAuthoredMatch = assets?.entries.some(asset => asset.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   const locked = h.status === "loading" || binding.busyReason !== null || binding.compareActive
     || Boolean(h.isCapturing || h.isThumbnailCapturing || h.isSharingPose || h.texturePaintModeSelected);
 
@@ -76,7 +77,7 @@ export function CharacterShaperLibrary({ h, binding, assets }: {
             {selected ? <Check size={14} aria-hidden className="character-library__check" /> : null}
           </button></li>;
         })}
-      </ul> : (!assets?.entries.length || query.trim()) && <p role="status" className="character-library__empty">{query.trim()
+      </ul> : !hasAuthoredMatch && <p role="status" className="character-library__empty">{query.trim()
         ? t("studio.character.library.noResults", "일치하는 캐릭터가 없습니다.")
         : t("studio.character.library.empty", "내 VRM 파일을 가져와 캐릭터를 추가하세요.")}</p>}
     </div>
