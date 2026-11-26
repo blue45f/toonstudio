@@ -476,7 +476,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                 { id: "all", labelKo: `전체 (${GEN3D_MCP_GENERATED_MODELS.length})` },
                 { id: "bg3d", labelKo: `3D 배경 (${GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "bg3d").length})` },
                 { id: "mannequin", labelKo: `3D 데생인형 (${GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "mannequin").length})` },
-                { id: "character-lab", labelKo: `3D 캐릭터 랩 (${GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab").length})` },
+                { id: "character-lab", labelKo: `3D 캐릭터 (${GEN3D_MCP_GENERATED_MODELS.filter((m) => m.domain === "character-lab").length})` },
               ] as const
             ).map((tab) => (
               <button
