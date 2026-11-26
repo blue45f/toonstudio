@@ -81,8 +81,8 @@ export function applyStudioCharacterCutRefresh(
   currentCharacter: { readonly documentId: string; readonly revision: number } | null,
 ): { updated: number; skipped: number } {
   const total = plan.targets.length + plan.skipped;
-  if (page.id !== plan.pageId || isPageReviewLocked(page.review)
-    || currentCharacter?.documentId !== plan.documentId || currentCharacter.revision !== plan.revision) {
+  if (!currentCharacter || page.id !== plan.pageId || isPageReviewLocked(page.review)
+    || currentCharacter.documentId !== plan.documentId || currentCharacter.revision !== plan.revision) {
     return { updated: 0, skipped: total };
   }
   const targets = new Map(plan.targets.map(target => [target.elementId, target]));
@@ -102,7 +102,8 @@ export function applyStudioCharacterCutRefresh(
     if (!size || size.width !== target.pixelWidth || size.height !== target.pixelHeight
       || result.width !== size.width || result.height !== size.height) return layer;
     const scene = { ...layer.vrmScene, appearance: result.scene.appearance, props: result.scene.props };
-    if (layer.src === result.pngDataUrl && serializeStudioVrmSceneDocument(scene) === target.sceneFingerprint) return layer;
+    const capturedScene = serializeStudioVrmSceneDocument(scene);
+    if (!capturedScene || (layer.src === result.pngDataUrl && capturedScene === target.sceneFingerprint)) return layer;
     updated++;
     return { ...layer, src: result.pngDataUrl, vrmScene: scene };
   });
