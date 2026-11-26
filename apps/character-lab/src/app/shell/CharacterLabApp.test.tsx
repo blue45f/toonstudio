@@ -14,7 +14,7 @@ describe("CharacterLabApp", () => {
   it("엔진 미선택 상태에서는 렌더·factory 호출이 없고 셸 골격만 그린다", () => {
     const { runtime, factory, engine } = createMockRuntime();
     render(<CharacterLabApp runtime={runtime} />);
-    expect(screen.getByRole("heading", { level: 1, name: "ToonStudio Character Lab" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "ToonStudio · 캐릭터 원본 편집" })).toBeTruthy();
     expect(screen.queryByText("실험 앱 · 배포 대상 아님")).toBeNull();
     expect(screen.getByRole("status").textContent).toContain("엔진 미선택");
     expect(factory.calls).toHaveLength(0);

@@ -26,7 +26,10 @@ describe("app/shell/TopBar", () => {
         <TopBar />
       </MockLabProvider>,
     );
-    expect(screen.getByRole("heading", { level: 1, name: "ToonStudio Character Lab" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "ToonStudio · 캐릭터 원본 편집" })).toBeTruthy();
+    const studio = screen.getByRole("link", { name: "스튜디오 캐릭터 열기 (새 탭)" });
+    expect(studio.getAttribute("href")).toBe("https://www.toonstudio.cloud/studio/character");
+    expect(studio.getAttribute("target")).toBe("_blank");
     expect(screen.queryByText("실험 앱 · 배포 대상 아님")).toBeNull();
     expect(screen.getByRole("status").textContent).toContain("엔진 미선택");
     fireEvent.click(screen.getByRole("button", { name: "WebGPU" }));

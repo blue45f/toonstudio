@@ -37,8 +37,8 @@ const PRESET_EN_COPY: Readonly<
   },
   "char-pose-3d": {
     label: "3D Characters, Dolls & Poses",
-    description: "Lock tricky high-angle and low-angle anatomy or hand poses in the 3D Character Lab.",
-    studioMountLabel: "Open in 3D Character Lab",
+    description: "Adjust high-angle and low-angle anatomy and hand poses in the Studio character editor.",
+    studioMountLabel: "Open in Studio Characters",
   },
   "tone-sfx": {
     label: "Screentones, Balloons & SFX",

@@ -23,7 +23,7 @@ export function CompositionFailure({ error }: CompositionFailureProps) {
   return (
     <main className="cl-composition-failure" role="alert">
       <p className="cl-eyebrow">실험 앱 · 배포 대상 아님</p>
-      <h1 className="cl-title">ToonStudio Character Lab</h1>
+      <h1 className="cl-title">ToonStudio · 캐릭터 원본 편집</h1>
       <h2>{described.title}</h2>
       <ul>
         {described.lines.map((line, index) => (

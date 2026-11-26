@@ -66,7 +66,7 @@ export class CharacterDocumentV3Repository {
 
   async save(
     document: CharacterDocumentV3,
-    options: { readonly expectedStoredRevision?: number; readonly allowRevisionRegression?: boolean } = {},
+    options: { readonly expectedStoredRevision?: number | null; readonly allowRevisionRegression?: boolean } = {},
   ): Promise<CharacterDocumentV3SaveReceipt> {
     const serialized = serializeCharacterDocumentV3(document);
     const byteLength = bytes(serialized);
@@ -102,7 +102,7 @@ export class CharacterDocumentV3Repository {
             `캐릭터 문서 revision을 ${current.revision}에서 ${document.revision}(으)로 되돌릴 수 없습니다.`,
           );
         }
-      } else if (options.expectedStoredRevision !== undefined) {
+      } else if (typeof options.expectedStoredRevision === "number") {
         throw new CharacterDocumentV3RepositoryError(
           "revision-conflict",
           "저장된 캐릭터 문서가 없지만 기존 revision을 예상했습니다.",

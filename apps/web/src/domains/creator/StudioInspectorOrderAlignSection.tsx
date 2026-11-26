@@ -18,7 +18,7 @@ import { parseStudio3dTool } from "./studio-background-3d-metadata";
 import { StudioInspectorSection } from "./StudioInspectorSection";
 
 import type { StudioBg3dSceneDocument } from "./bg3d/studio-bg3d-scene-document";
-import type { El } from "./studio-element-model";
+import type { El, ImageEl } from "./studio-element-model";
 import type { ReactNode } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -256,9 +256,7 @@ interface StudioInspectorOrderAlignSectionProps {
   alignSelected: (mode: StudioInspectorAlignMode) => void;
   duplicateSelected: () => void;
   removeSelected: () => void;
-  setPoserInitialDataUrl: (url: string | undefined) => void;
-  setPoserInitialElementId: (id: string | undefined) => void;
-  setPoserVrmOpen: (open: boolean) => void;
+  onEditVrmElement: (element: ImageEl) => void;
   setBg3dInitialScene: (scene: StudioBg3dSceneDocument | undefined) => void;
   setBg3dInitialDataUrl: (url: string | undefined) => void;
   setBg3dInitialElementId: (id: string | undefined) => void;
@@ -272,9 +270,7 @@ export function StudioInspectorOrderAlignSection({
   alignSelected,
   duplicateSelected,
   removeSelected,
-  setPoserInitialDataUrl,
-  setPoserInitialElementId,
-  setPoserVrmOpen,
+  onEditVrmElement,
   setBg3dInitialScene,
   setBg3dInitialDataUrl,
   setBg3dInitialElementId,
@@ -289,11 +285,7 @@ export function StudioInspectorOrderAlignSection({
       {canEditVrm ? (
         <button
           type="button"
-          onClick={() => {
-            setPoserInitialDataUrl(selected.src);
-            setPoserInitialElementId(selected.id);
-            setPoserVrmOpen(true);
-          }}
+          onClick={() => onEditVrmElement(selected)}
           aria-label="3D 캐릭터 재편집"
           data-inspector-control-id="selection.edit-vrm"
           data-inspector-priority="advanced"

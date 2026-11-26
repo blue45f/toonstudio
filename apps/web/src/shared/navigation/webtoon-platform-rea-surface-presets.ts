@@ -396,9 +396,9 @@ export const MARKET_ECOSYSTEM_PRESETS: readonly MarketEcosystemPreset[] = Object
     label: "3D 캐릭터 · 데생 인형 · 포즈",
     badge: "3D POSE",
     categoryCode: "3D_POS",
-    description: "까다로운 하이앵글·로우앵글 인체 비례와 손 포즈를 3D 랩에서 즉시 잡습니다.",
-    studioMountRoute: "/research/character-3d",
-    studioMountLabel: "3D 캐릭터 랩에서 열기",
+    description: "캐릭터 편집기에서 하이앵글·로우앵글의 인체 비례와 손 포즈를 맞춥니다.",
+    studioMountRoute: "/studio/character",
+    studioMountLabel: "스튜디오 캐릭터에서 열기",
     derivedFrom: ["clip-studio", "pixiv-booth", "sketchfab-3d"],
   },
   {

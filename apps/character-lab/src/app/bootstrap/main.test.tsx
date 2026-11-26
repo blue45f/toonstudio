@@ -65,7 +65,7 @@ describe("app/bootstrap/main", () => {
       composeCharacterLab: () => mock.runtime,
     }));
     await startApp();
-    expect(screen.getByRole("heading", { level: 1, name: "ToonStudio Character Lab" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "ToonStudio · 캐릭터 원본 편집" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "슬롯 레일(15칸)" })).toBeTruthy();
     expect(screen.getByRole("tablist", { name: "인스펙터" })).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();

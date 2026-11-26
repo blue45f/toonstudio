@@ -242,7 +242,7 @@ export function StudioAsset3dCatalogExecutionPanel({
       >
         <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 font-semibold text-fg">
           <span>
-            VARCO 3D Character Labs 모듈러 파츠 ({STUDIO_ASSET3D_CHARACTER_LAB_MODULAR_ITEMS.length}
+            3D 캐릭터 모듈러 파츠 ({STUDIO_ASSET3D_CHARACTER_LAB_MODULAR_ITEMS.length}
             종 · 4-View 턴어라운드 {STUDIO_ASSET3D_COMPLETED_TURNAROUND_SHEETS.length}시트) & 3D 배경
             아이소메트릭 디오라마 ({STUDIO_ASSET3D_ISOMETRIC_DIORAMA_SCENES.length}종) · 한국 웹툰 소품
             ({STUDIO_ASSET3D_WEBTOON_PROP_ASSETS.length}종)
@@ -259,11 +259,11 @@ export function StudioAsset3dCatalogExecutionPanel({
         <div className="mt-2 grid grid-cols-1 gap-2.5 text-[0.72rem] text-fg-2 md:grid-cols-3">
           <div className="flex flex-col gap-1">
             <span className="font-medium text-fg">
-              Character Labs 베이스 아키타입 ({STUDIO_ASSET3D_RIGGED_CHARACTER_ARCHETYPES.length}종)
+              캐릭터 기본 체형 ({STUDIO_ASSET3D_RIGGED_CHARACTER_ARCHETYPES.length}종)
               & 가발/의상/액세서리/날개 전체 슬롯
             </span>
             <select
-              aria-label="Character Labs 베이스 아키타입"
+              aria-label="캐릭터 기본 체형"
               data-testid="varco3d-charlab-archetype-select"
               value={selectedArchetypeId}
               onChange={(e) => setSelectedArchetypeId(e.target.value)}

@@ -319,4 +319,67 @@ export const studioEcosystemClient = {
       estimatedQueueMinutes: number;
     }>("/studio-ecosystem/support/triage", { message });
   },
+
+  issueDeliveryRightsCertificate(payload: {
+    readonly workTitle: string;
+    readonly episodeLabel: string;
+    readonly creatorName: string;
+    readonly verifiedAssets: readonly {
+      readonly assetName: string;
+      readonly category: "3d-bg" | "font" | "brush" | "texture" | "ai-assist";
+      readonly licenseType: string;
+      readonly licenseVerified: boolean;
+    }[];
+    readonly zeroUnauthorizedAiConfirmed: boolean;
+  }) {
+    return api.post<{
+      certificateId: string;
+      sha256Digest: string;
+      shortVerifyCode: string;
+      assetCount: number;
+      issuedAt: string;
+    }>("/studio-ecosystem/handoff/rights-certificate", payload);
+  },
+
+  createGuestReviewLink(payload: {
+    readonly workspaceId: string;
+    readonly episodeCutLabel: string;
+    readonly createdByUserId: string;
+    readonly ttlHours?: number;
+  }) {
+    return api.post<{
+      token: string;
+      workspaceId: string;
+      episodeCutLabel: string;
+      status: "active" | "revoked";
+      expiresAt: string;
+    }>("/studio-ecosystem/handoff/guest-links", payload);
+  },
+
+  revokeGuestReviewLink(token: string) {
+    return api.post<{ token: string; status: "active" | "revoked" }>(
+      `/studio-ecosystem/handoff/guest-links/${encodeURIComponent(token)}/revoke`,
+      {},
+    );
+  },
+
+  configureStudioByokPolicy(
+    workspaceId: string,
+    payload: {
+      readonly enabled: boolean;
+      readonly provider: "openai" | "anthropic" | "gemini" | "local";
+      readonly keyTailHint?: string;
+    },
+  ) {
+    return api.post<{
+      workspaceId: string;
+      enabled: boolean;
+      provider: string;
+      maskedKeyHint: string | null;
+      platformTokenChargeKrw: 0;
+    }>(
+      `/studio-ecosystem/handoff/byok/${encodeURIComponent(workspaceId)}`,
+      payload,
+    );
+  },
 };

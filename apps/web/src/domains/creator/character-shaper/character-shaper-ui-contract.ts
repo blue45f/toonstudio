@@ -137,6 +137,7 @@ export interface CharacterShaperUiState {
 export type CharacterShaperOutputTarget = "canvas" | "file";
 
 export interface StudioCharacterShaperDialogProps {
+  readonly assets?: import("./CharacterAssetLibraryControls").CharacterAssetLibraryActions;
   readonly onInsertLtLayers?: StudioLtInsertLayers;
   readonly h: StudioVrmPoserHost;
   readonly binding: CharacterShaperBinding;

@@ -39,9 +39,9 @@ export const STUDIO_VRM_SCENE_DOCUMENT_V4_MAX_BYTES =
 /** v5 reserves bounded metadata headroom for deterministic surface-paint texture bindings. */
 export const STUDIO_VRM_SCENE_DOCUMENT_V5_MAX_BYTES =
   STUDIO_VRM_SCENE_DOCUMENT_V4_MAX_BYTES + 128 * 1024;
-/** v6 reserves bounded headroom so every maximum-size v5 scene can add `lightingTone` losslessly. */
+/** v5 조명 톤 승격과 기존 v6 씬에 최대 256자의 제작 문서 ID를 연결할 여유를 둔다. */
 export const STUDIO_VRM_SCENE_DOCUMENT_MAX_BYTES =
-  STUDIO_VRM_SCENE_DOCUMENT_V5_MAX_BYTES + 512;
+  STUDIO_VRM_SCENE_DOCUMENT_V5_MAX_BYTES + 1_024;
 /** Matches the default project-archive per-attachment ceiling so every accepted scene is portable. */
 export const STUDIO_VRM_MODEL_MAX_BYTES = 96 * 1024 * 1024;
 export const STUDIO_VRM_MAX_POSE_BONES = 64;
@@ -269,6 +269,8 @@ export interface StudioVrmSurfacePaintSettings {
 export interface StudioVrmSceneDocument {
   readonly kind: typeof STUDIO_VRM_SCENE_DOCUMENT_KIND;
   readonly version: typeof STUDIO_VRM_SCENE_DOCUMENT_VERSION;
+  /** 라이브러리에서 제작한 캐릭터의 문서 ID. 같은 VRM을 쓰는 별개 캐릭터를 구분한다. */
+  readonly characterDocumentId?: string;
   readonly model: StudioVrmSceneModel;
   readonly pose: StudioVrmPoseState;
   readonly expressions: Readonly<Record<string, number>>;
