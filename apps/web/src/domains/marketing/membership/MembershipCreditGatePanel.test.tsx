@@ -8,6 +8,9 @@ const getBillingModeMock = vi.hoisted(() => vi.fn());
 const registerWaitlistMock = vi.hoisted(() => vi.fn());
 const purchasePackMock = vi.hoisted(() => vi.fn());
 const claimReferralMock = vi.hoisted(() => vi.fn());
+const listTeamQuotasMock = vi.hoisted(() => vi.fn());
+const allocateTeamQuotaMock = vi.hoisted(() => vi.fn());
+const revokeTeamQuotaMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/platform/membership-wallet-client", async (importOriginal) => {
   const actual =
@@ -18,6 +21,9 @@ vi.mock("@/platform/membership-wallet-client", async (importOriginal) => {
     registerCreditWaitlistIntent: registerWaitlistMock,
     purchaseCreditPackWithGate: purchasePackMock,
     claimReferralBonusCredits: claimReferralMock,
+    listTeamAssistantQuotas: listTeamQuotasMock,
+    allocateTeamAssistantQuota: allocateTeamQuotaMock,
+    revokeTeamAssistantQuota: revokeTeamQuotaMock,
   };
 });
 
@@ -32,6 +38,11 @@ beforeEach(() => {
   getBillingModeMock.mockReset();
   registerWaitlistMock.mockReset();
   purchasePackMock.mockReset();
+  claimReferralMock.mockReset();
+  listTeamQuotasMock.mockReset();
+  allocateTeamQuotaMock.mockReset();
+  revokeTeamQuotaMock.mockReset();
+  listTeamQuotasMock.mockResolvedValue({ items: [] });
 });
 
 afterEach(() => {
@@ -167,5 +178,48 @@ describe("MembershipCreditGatePanel (어드민 유료화 토글 연동 UI)", () 
     fireEvent.click(screen.getByTestId("claim-referral-btn"));
     expect(await screen.findByText(/동료 초대 보너스 \+100 C가 적립되었습니다/)).toBeTruthy();
     expect(claimReferralMock).toHaveBeenCalledWith("TS-creator-lead");
+
+    allocateTeamQuotaMock.mockResolvedValue({
+      allocationId: "quota-test-1",
+      ownerUserId: "user-test-1",
+      workspaceId: "ep-review-room",
+      assistantUserId: "assist-luna",
+      assistantNickname: "assist-luna",
+      roleKo: "선화·채색 어시스턴트",
+      limitCredits: 300,
+      usedCredits: 0,
+      remainingCredits: 300,
+      status: "active",
+      createdAt: "2026-11-26T08:00:00.000Z",
+      revokedAt: null,
+    });
+    revokeTeamQuotaMock.mockResolvedValue({
+      allocationId: "quota-test-1",
+      ownerUserId: "user-test-1",
+      workspaceId: "ep-review-room",
+      assistantUserId: "assist-luna",
+      assistantNickname: "assist-luna",
+      roleKo: "선화·채색 어시스턴트",
+      limitCredits: 300,
+      usedCredits: 0,
+      remainingCredits: 0,
+      releasedCredits: 300,
+      status: "revoked",
+      createdAt: "2026-11-26T08:00:00.000Z",
+      revokedAt: "2026-11-26T08:05:00.000Z",
+    });
+
+    fireEvent.change(screen.getByLabelText("외주 어시스턴트 ID"), {
+      target: { value: "assist-luna" },
+    });
+    fireEvent.click(screen.getByTestId("allocate-team-quota-btn"));
+    expect(
+      await screen.findByText(/이번 회차 한도 300 C를 배정했습니다/),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("revoke-quota-quota-test-1"));
+    expect(
+      await screen.findByText(/미사용 한도 300 C를 팀 공용 지갑으로 즉시 회수했습니다/),
+    ).toBeTruthy();
   });
 });
