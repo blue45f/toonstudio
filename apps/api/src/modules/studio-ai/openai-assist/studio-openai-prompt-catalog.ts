@@ -110,6 +110,9 @@ export const STUDIO_OPENAI_MODE_DESCRIPTORS: readonly StudioOpenAiModeDescriptor
   },
 ]);
 
+export const DIALOGUE_TONE_LABELS = ["자연스러운 구어체", "짧고 강한 핵심형", "감정 여운 강조형"] as const;
+const DIALOGUE_ALTERNATIVES = "balloons에는 톤마다 독립적으로 쓸 수 있는 완결된 대안 하나씩, 총 3개를 담으세요.";
+
 export const MODE_JSON_SCHEMAS: Readonly<
   Record<StudioOpenAiAssistMode, { readonly name: string; readonly schema: Record<string, unknown> }>
 > = Object.freeze({
@@ -196,12 +199,13 @@ export const MODE_JSON_SCHEMAS: Readonly<
         readabilityNote: { type: "string" },
         balloons: {
           type: "array",
+          description: DIALOGUE_ALTERNATIVES,
           items: {
             type: "object",
             additionalProperties: false,
             required: ["toneLabel", "line", "subBubble", "reason"],
             properties: {
-              toneLabel: { type: "string" },
+              toneLabel: { type: "string", enum: DIALOGUE_TONE_LABELS },
               line: { type: "string" },
               subBubble: { type: "string" },
               reason: { type: "string" },
@@ -260,9 +264,12 @@ export function buildModeSystemInstruction(mode: StudioOpenAiAssistMode): string
       );
     case "dialogue-polish":
       return (
-        `${BASE_SYSTEM_PROMPT} 대사가 모바일 말풍선 한 칸에 자연스럽게 읽히도록 줄 길이와 호흡을 다듬어 3가지 톤 대안` +
-        "(자연스러운 구어체, 짧고 강한 핵심형, 감정 여운 강조형)을 제안하세요. 긴 대사는 본 말풍선(line)과 " +
-        "보조 말풍선(subBubble, 없으면 빈 문자열)로 나누세요."
+        `${BASE_SYSTEM_PROMPT} ${DIALOGUE_ALTERNATIVES} toneLabel에는 ${DIALOGUE_TONE_LABELS.join(", ")}을 각각 한 번씩 쓰세요. ` +
+        "각 안의 대사만 읽어도 누가 누구에게 무슨 말을 하는지, 누가 무엇을 언제까지 어떤 조건에서 하는지 원문과 같아야 합니다. " +
+        "사건이 실제로 일어났는지와 화자가 무엇을 부정하는지(행동·이유·의도)를 구별하세요. 높임말과 요청·승인·확인의 뜻도 지키세요. " +
+        "구어체는 입말로 풀고, 핵심형은 세부 사실과 조건을 모두 남긴 채 군더더기만 줄이세요. 여운은 어순과 호흡으로 살리세요. " +
+        "어느 톤에도 원문에 없는 강조나 감정을 보태지 마세요. line과 subBubble에는 화자가 입 밖에 낼 대사만 쓰고 편집 설명은 reason에 쓰세요. " +
+        "긴 대사는 같은 항목의 subBubble에 이어 쓰고, 한 말풍선으로 충분하면 subBubble은 빈 문자열로 두세요."
       );
     case "export-preflight-coach":
       return (

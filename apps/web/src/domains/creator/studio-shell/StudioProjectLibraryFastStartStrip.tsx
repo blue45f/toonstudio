@@ -57,8 +57,10 @@ const FAST_START_ITEMS = [
 
 export function StudioProjectLibraryFastStartStrip({
   className,
+  columns = 2,
 }: {
   readonly className?: string;
+  readonly columns?: 2 | 4;
 } = {}) {
   useBilingualI18nRevision();
 
@@ -66,7 +68,11 @@ export function StudioProjectLibraryFastStartStrip({
     <nav
       aria-label={bi("작업 시작 방식", "Ways to start creating")}
       data-studio-fast-start-strip="true"
-      className={cn("grid h-full auto-rows-fr grid-cols-1 gap-2.5 sm:grid-cols-2", className)}
+      className={cn(
+        "grid h-full auto-rows-fr grid-cols-1 gap-2.5 sm:grid-cols-2",
+        columns === 4 && "xl:grid-cols-4",
+        className,
+      )}
     >
       {FAST_START_ITEMS.map((item) => {
         return (

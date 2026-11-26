@@ -4,6 +4,7 @@ import {
   type StudioAiResult,
   type StudioAiSettings,
 } from "./studio-ai-client";
+import { studioImageFormatField } from "./studio-ai-image-format";
 import { aiErrorText } from "./studio-ai-error-i18n-t4t5";
 
 import type {
@@ -152,7 +153,7 @@ export async function repairStudioAiComicImageRegion(input: {
   form.append("image", source, "comic-director-source.png");
   form.append("mask", mask, "comic-director-mask.png");
   form.append("prompt", prompt);
-  form.append("response_format", "b64_json");
+  form.set(...studioImageFormatField(input.settings));
 
   let response: Response;
   try {
