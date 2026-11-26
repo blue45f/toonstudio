@@ -16,6 +16,134 @@ import {
 
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_ROOT = path.resolve(TEST_DIR, "../../../../public");
+const HAS_STARTER_PACK_ASSETS = fs.existsSync(
+  path.join(PUBLIC_ROOT, "assets/ai-starter-pack/manifest.json"),
+);
+
+function createSyntheticStarterPackFetch() {
+  const requestedUrls: string[] = [];
+  const fixtures: Record<string, unknown> = {
+    "assets/ai-starter-pack/manifest.json": {
+      items: [
+        {
+          id: "bg-1",
+          category: "backgrounds",
+          titleKo: "로판 황궁 노을",
+          genreKo: "로판",
+          size: "1024x1024",
+          model: "gpt-image-1.5",
+          publicPath: "/assets/ai-starter-pack/backgrounds/bg-1.webp",
+          bytes: 1024,
+        },
+      ],
+      proV2Assets: [
+        {
+          id: "cov-1",
+          category: "cover-template",
+          titleKo: "로판 표지",
+          size: "1024x1536",
+          model: "gpt-image-1.5",
+          path: "pro-v2/cov-1.webp",
+          bytes: 2048,
+        },
+      ],
+    },
+    "assets/ai-starter-pack/audiotoon/manifest.json": {
+      clips: [
+        { id: "aud-1", lang: "en", voice: "nova", titleKo: "오프닝", publicPath: "/assets/ai-starter-pack/audiotoon/aud-1.mp3", bytes: 512 },
+        { id: "aud-2", lang: "ko", voice: "alloy", role: "나레이션", path: "audiotoon/aud-2.mp3", bytes: 512 },
+      ],
+    },
+    "assets/ai-starter-pack/distilled/sfx-dictionary-200.json": {
+      genres: [
+        {
+          genreKo: "로판",
+          entries: [{ id: "sfx-1", ko: "두근두근", en: "ba-dump", ja: "ドキドキ" }],
+        },
+      ],
+    },
+    "assets/ai-starter-pack/distilled/oklch-palettes-200.json": {
+      items: [
+        {
+          id: "pal-1",
+          nameKo: "우산 아래 느와르",
+          genre: "noir",
+          mood: "noir",
+          lightingNoteKo: "가로등 반사광",
+          swatches: ["#112233"],
+        },
+      ],
+    },
+    "assets/ai-starter-pack/distilled/bg3d-camera-presets-100.json": {
+      themes: [
+        {
+          themeKo: "궁전 복도",
+          presets: [
+            {
+              id: "bg3d-1",
+              titleKo: "광각 복도",
+              lensMm: 24,
+              timeOfDay: "dusk",
+              webtoonUseCaseKo: "입장 연출",
+              props: ["샹들리에"],
+            },
+          ],
+        },
+      ],
+    },
+    "assets/ai-starter-pack/distilled/mcp-workflow-macros-100.json": {
+      domains: [
+        {
+          domainKo: "캔버스",
+          macros: [
+            {
+              id: "mac-1",
+              titleKo: "캔버스 정리",
+              naturalPromptKo: "캔버스를 화면에 맞춰 정렬",
+              steps: [{ toolName: "studio.canvas.fit", reasonKo: "시야 맞춤" }],
+            },
+          ],
+        },
+      ],
+    },
+    "assets/ai-starter-pack/distilled/cliffhanger-patterns-100.json": {
+      patterns: [
+        {
+          id: "clf-1",
+          nameKo: "긴 여백 반전",
+          genreKo: "로판",
+          penultimateCutKo: "정적",
+          finalCutHookKo: "문 열림",
+          scrollGapPx: 480,
+        },
+      ],
+    },
+    "assets/ai-starter-pack/distilled/character-archetypes-50.json": {
+      archetypes: [
+        {
+          id: "arc-1",
+          labelKo: "냉철한 왕녀",
+          visualCueKo: "은빛 왕관",
+          speechEndings: ["~하라"],
+          sampleLines: ["물러서라."],
+          forbiddenLines: ["안녕?"],
+        },
+      ],
+    },
+  };
+  const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    requestedUrls.push(url);
+    const relative = url.replace(/^\/+/u, "");
+    const payload = fixtures[relative];
+    if (!payload) return new Response("Not Found", { status: 404 });
+    return new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }) as unknown as typeof fetch;
+  return { fetchImpl, requestedUrls };
+}
 
 function createDiskBackedFetch() {
   const requestedUrls: string[] = [];
@@ -38,7 +166,33 @@ function createDiskBackedFetch() {
 }
 
 describe("studio-ai-starter-pack-catalog (영구 ₩0 오프라인 카탈로그 및 시맨틱 검색)", () => {
-  it("생성 시점에 어떠한 네트워크 요청도 실행하지 않고 요청한 카탈로그만 지연 로드·캐시·중복 제거한다", async () => {
+  it("스파스 체크아웃 환경에서도 지연 로드·중복 제거·캐시 초기화 및 카탈로그 브라우징이 정확히 동작한다", async () => {
+    const { fetchImpl, requestedUrls } = createSyntheticStarterPackFetch();
+    const catalog = createStudioAiStarterPackCatalog({ fetchImpl });
+
+    expect(requestedUrls).toHaveLength(0);
+    const [first, second] = await Promise.all([catalog.loadVisuals(), catalog.loadVisuals()]);
+    expect(first).toHaveLength(2);
+    expect(second).toBe(first);
+    expect(requestedUrls).toEqual([`${AI_STARTER_PACK_BASE_URL}/manifest.json`]);
+
+    catalog.clearCache();
+    expect(catalog.getLoadedDatasets()).toEqual([]);
+    const covers = await catalog.browseVisuals({ tier: "pro-v2", category: "cover-template" });
+    expect(covers).toHaveLength(1);
+    const enAudio = await catalog.browseAudioClips({ lang: "en" });
+    expect(enAudio).toHaveLength(1);
+    expect(await catalog.browseSfx({ genreKo: "로판", query: "두근" })).toHaveLength(1);
+    expect(await catalog.browseOklchPalettes({ query: "우산" })).toHaveLength(1);
+    expect(await catalog.browseBg3dPresets({ maxLensMm: 28 })).toHaveLength(1);
+    expect(await catalog.browseMcpMacros({ toolPrefix: "studio.canvas." })).toHaveLength(1);
+    expect(await catalog.browseCliffhangers({ minGapPx: 400 })).toHaveLength(1);
+    expect(await catalog.browseCharacterArchetypes({ query: "왕녀" })).toHaveLength(1);
+  });
+
+  it.runIf(HAS_STARTER_PACK_ASSETS)(
+    "생성 시점에 어떠한 네트워크 요청도 실행하지 않고 요청한 카탈로그만 지연 로드·캐시·중복 제거한다",
+    async () => {
     const { fetchImpl, requestedUrls } = createDiskBackedFetch();
     const catalog = createStudioAiStarterPackCatalog({ fetchImpl });
 
@@ -60,7 +214,9 @@ describe("studio-ai-starter-pack-catalog (영구 ₩0 오프라인 카탈로그 
     expect(requestedUrls).toHaveLength(2);
   });
 
-  it("실제 public/assets/ai-starter-pack 전체 자산(40 비주얼·20 오디오·200 SFX·200 팔레트·100 3D·100 매크로·100 클리프행어·50 아키타입·884 임베딩)을 정확히 정규화 로드한다", async () => {
+  it.runIf(HAS_STARTER_PACK_ASSETS)(
+    "실제 public/assets/ai-starter-pack 전체 자산(40 비주얼·20 오디오·200 SFX·200 팔레트·100 3D·100 매크로·100 클리프행어·50 아키타입·884 임베딩)을 정확히 정규화 로드한다",
+    async () => {
     const { fetchImpl } = createDiskBackedFetch();
     const catalog = createStudioAiStarterPackCatalog({ fetchImpl });
 
@@ -119,7 +275,9 @@ describe("studio-ai-starter-pack-catalog (영구 ₩0 오프라인 카탈로그 
     expect(semanticIndex.runtimeCostKrw).toBe(0);
   });
 
-  it("카탈로그별 타입 안전 브라우징·필터링이 정확하게 동작한다", async () => {
+  it.runIf(HAS_STARTER_PACK_ASSETS)(
+    "카탈로그별 타입 안전 브라우징·필터링이 정확하게 동작한다",
+    async () => {
     const { fetchImpl } = createDiskBackedFetch();
     const catalog = createStudioAiStarterPackCatalog({ fetchImpl });
 
@@ -152,7 +310,9 @@ describe("studio-ai-starter-pack-catalog (영구 ₩0 오프라인 카탈로그 
     expect(royalArchetypes.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("코사인 유사도 수학과 884건 오프라인 시맨틱 검색(0 토큰)이 정확히 작동한다", async () => {
+  it.runIf(HAS_STARTER_PACK_ASSETS)(
+    "코사인 유사도 수학과 884건 오프라인 시맨틱 검색(0 토큰)이 정확히 작동한다",
+    async () => {
     expect(cosineSimilarity([1, 0, 0], [1, 0, 0])).toBeCloseTo(1, 6);
     expect(cosineSimilarity([1, 0], [0, 1])).toBeCloseTo(0, 6);
     expect(cosineSimilarity([1, 0], [-1, 0])).toBeCloseTo(-1, 6);
