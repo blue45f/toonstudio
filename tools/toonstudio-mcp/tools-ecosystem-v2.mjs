@@ -563,76 +563,80 @@ export function createEcosystemV2McpTools({ state, persistState }) {
     },
     {
       name: "toonstudio_vrm_3d_fit_audit",
-      description: "3D VRM 캐릭터의 헤어 밀착·손 포즈 관절·아이템 소켓 정렬·바닥 접지(Y=0)·매니폴드 기준을 점검합니다.",
+      description: "호출자가 제공한 실측값으로 두피 밀착, 손 포즈 프리셋, 아이템 소켓, 바닥 접지와 매니폴드를 점검합니다. 필수 측정값이 빠지면 점수를 산출하지 않습니다.",
       inputSchema: {
         type: "object",
         properties: {
           avatarId: { type: "string" },
-          hairGapMm: { type: "number" },
-          hairPenetrationMm: { type: "number" },
+          hairGapMm: { type: "number", minimum: 0 },
+          hairPenetrationMm: { type: "number", minimum: 0 },
           handPose: { type: "string", enum: ["relaxed", "pen-grip", "sword-grip", "open-palm", "fist"] },
-          equippedSockets: { type: "array" },
+          equippedSockets: {
+            type: "array",
+            description: "점검할 장착 소켓 목록. 생략하거나 빈 목록을 보내면 소켓 검사를 수행하지 않습니다.",
+            items: {
+              type: "object",
+              properties: {
+                socket: { type: "string" },
+                itemId: { type: "string" },
+                offsetMm: { type: "number", minimum: 0 },
+                rotationDriftDeg: { type: "number", minimum: 0 },
+              },
+            },
+          },
           groundY: { type: "number" },
-          nonManifoldEdges: { type: "number" },
+          nonManifoldEdges: { type: "integer", minimum: 0 },
         },
       },
       handler: (args = {}) => {
-        const avatarId = String(args.avatarId || "vrm-lead-01");
-        const hairGapMm = clampNum(args.hairGapMm, 0.8, 0, 50);
-        const hairPenetrationMm = clampNum(args.hairPenetrationMm, 0, 0, 50);
-        const handPose = String(args.handPose || "pen-grip");
-        const groundY = clampNum(args.groundY, 0, -10, 10);
-        const nonManifoldEdges = Math.round(clampNum(args.nonManifoldEdges, 0, 0, 100_000));
-        const sockets = Array.isArray(args.equippedSockets)
-          ? args.equippedSockets
-          : [{ socket: "right-hand-grip", itemId: "prop-stylus-pen", offsetMm: 0.6, rotationDriftDeg: 1.2 }];
-
-        const checks = [
-          {
-            id: "hair-scalp-fit",
-            passed: hairGapMm <= 2.5 && hairPenetrationMm <= 0.5,
-            detail: `두피 이격 ${hairGapMm}mm (<=2.5mm), 관통 ${hairPenetrationMm}mm (<=0.5mm)`,
-          },
-          {
-            id: "hand-pose-limits",
-            passed: ["relaxed", "pen-grip", "sword-grip", "open-palm", "fist"].includes(handPose),
-            detail: `손 포즈 프리셋 '${handPose}' 관절 가동범위 검증 완료`,
-          },
-          {
-            id: "floor-grounding-y0",
-            passed: Math.abs(groundY) <= 0.001,
-            detail: `glTF 바닥 접지 Y=${groundY}m (기준 0.000m)`,
-          },
-          {
-            id: "manifold-topology",
-            passed: nonManifoldEdges === 0,
-            detail: `비매니폴드 엣지 ${nonManifoldEdges}건 (기준 0건)`,
-          },
-        ];
-
-        for (const item of sockets) {
-          const offsetMm = clampNum(item?.offsetMm, 0, 0, 100);
-          const rotDeg = clampNum(item?.rotationDriftDeg, 0, 0, 180);
-          checks.push({
-            id: `socket:${String(item?.socket || "hand")}`,
-            passed: offsetMm <= 3 && rotDeg <= 5,
-            detail: `아이템 '${String(item?.itemId || "prop")}' 오프셋 ${offsetMm}mm / 회전 오차 ${rotDeg}°`,
-          });
+        const { avatarId, hairGapMm, hairPenetrationMm, handPose, groundY, nonManifoldEdges, equippedSockets } = args;
+        const checks = [];
+        const missingMeasurements = [];
+        const isNonnegativeNumber = (value) => Number.isFinite(value) && value >= 0;
+        function check(id, hasEvidence, passed, detail) {
+          if (hasEvidence) checks.push({ id, passed, detail });
+          else missingMeasurements.push(id);
         }
 
-        const failedCount = checks.filter((c) => !c.passed).length;
-        const fitScore = Math.max(0, 100 - failedCount * 20);
+        check("hair-scalp-fit", isNonnegativeNumber(hairGapMm) && isNonnegativeNumber(hairPenetrationMm),
+          hairGapMm <= 2.5 && hairPenetrationMm <= 0.5,
+          `두피 이격 ${hairGapMm}mm (<=2.5mm), 관통 ${hairPenetrationMm}mm (<=0.5mm)`);
+        check("hand-pose-limits", typeof handPose === "string" && handPose.length > 0,
+          ["relaxed", "pen-grip", "sword-grip", "open-palm", "fist"].includes(handPose),
+          `손 포즈 프리셋 '${handPose}'의 지원 여부`);
+        check("floor-grounding-y0", Number.isFinite(groundY), Math.abs(groundY) <= 0.001,
+          `glTF 바닥 접지 Y=${groundY}m (기준 0.000m)`);
+        const hasTopology = Number.isInteger(nonManifoldEdges) && nonManifoldEdges >= 0;
+        check("manifold-topology", hasTopology, nonManifoldEdges === 0,
+          `비매니폴드 엣지 ${nonManifoldEdges}건 (기준 0건)`);
+
+        if (Array.isArray(equippedSockets)) {
+          for (const [index, item] of equippedSockets.entries()) {
+            const socketId = item?.socket || String(index + 1);
+            check(`socket:${socketId}`, isNonnegativeNumber(item?.offsetMm) && isNonnegativeNumber(item?.rotationDriftDeg),
+              item?.offsetMm <= 3 && item?.rotationDriftDeg <= 5,
+              `아이템 '${item?.itemId ?? socketId}' 오프셋 ${item?.offsetMm}mm / 회전 오차 ${item?.rotationDriftDeg}°`);
+          }
+        } else if (equippedSockets !== undefined) {
+          missingMeasurements.push("equippedSockets");
+        }
+
+        const failedCount = checks.filter((item) => !item.passed).length;
+        const complete = missingMeasurements.length === 0;
+        let verdict = complete ? "pass" : "insufficient-data";
+        if (failedCount > 0) verdict = hasTopology && nonManifoldEdges > 0 ? "blocked" : "needs-refit";
         const audit = {
           auditId: `vrm-fit-${state.ecosystemV2.vrmFitAudits.length + 1}`,
-          avatarId,
-          handPose,
-          fitScore,
-          verdict: failedCount === 0 ? "pass" : nonManifoldEdges > 0 ? "blocked" : "needs-refit",
+          avatarId: avatarId ?? null,
+          handPose: handPose ?? null,
+          fitScore: complete ? Math.max(0, 100 - failedCount * 20) : null,
+          verdict,
           checks,
+          missingMeasurements,
         };
         state.ecosystemV2.vrmFitAudits.push(audit);
         persistState();
-        return { ok: audit.verdict !== "blocked", audit };
+        return { ok: complete && verdict !== "blocked", audit };
       },
     },
     {
