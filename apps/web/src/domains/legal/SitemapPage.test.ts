@@ -21,6 +21,7 @@ const PUBLIC_ROUTE_SOURCE_FILES = [
   "apps/web/src/app/routes/groups/character-chat.routes.tsx",
   "apps/web/src/app/routes/groups/community.routes.tsx",
   "apps/web/src/app/routes/groups/creator.routes.tsx",
+  "apps/web/src/app/routes/groups/creator-character-alias-routes.tsx",
   "apps/web/src/app/routes/groups/creator-showcase-routes.tsx",
   "apps/web/src/app/routes/groups/creator-resources.routes.tsx",
   "apps/web/src/app/routes/groups/cuts.routes.tsx",
