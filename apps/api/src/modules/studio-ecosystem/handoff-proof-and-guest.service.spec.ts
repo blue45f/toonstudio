@@ -1,6 +1,20 @@
+import { MODULE_METADATA } from "@nestjs/common/constants";
 import { describe, expect, it } from "vitest";
 
+import { HandoffProofAndGuestController } from "./handoff-proof-and-guest.controller";
 import { HandoffProofAndGuestService } from "./handoff-proof-and-guest.service";
+import { PlazaHandoffOpsController } from "./plaza-handoff-ops.controller";
+import { StudioEcosystemModule } from "./studio-ecosystem.module";
+
+describe("StudioEcosystemModule", () => {
+  it("keeps the in-memory handoff prototype off the public API", () => {
+    const controllers = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, StudioEcosystemModule);
+    expect(controllers).toContain(PlazaHandoffOpsController);
+    expect(controllers).not.toContain(HandoffProofAndGuestController);
+    expect(Reflect.getMetadata(MODULE_METADATA.PROVIDERS, StudioEcosystemModule))
+      .not.toContain(HandoffProofAndGuestService);
+  });
+});
 
 describe("HandoffProofAndGuestService", () => {
   it("issues and verifies SHA-256 Rights BOM delivery certificate and blocks unverified assets", () => {
