@@ -24,8 +24,8 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
         "In serverless P2P sessions, faulty peers can equivocate on state deltas or inject mid-stream corrupted asset chunks, while public blockchains charge gas fees per timestamp.",
       ),
       t(
-        "P2pBftStateValidator(p2p-bft-timestamp-audit.ts)는 N ≥ 3f+1 로스터에서 이중 투표 및 해시 불일치 피어를 즉시 격리하고 정직 피어 2f+1 정족수가 모였을 때만 상태를 전이합니다. ChunkAuthenticatedAssetStreamVerifier(hybrid-compute-shadow-ink-meshlet.ts)는 청크별 AES-256-GCM(96비트 순차 논스+AAD)과 머클 루트를 검증해 오염 청크를 OPFS 쓰기 전에 거절합니다.",
-        "P2pBftStateValidator quarantines equivocating or corrupted peers and commits only at 2f+1 quorum, while ChunkAuthenticatedAssetStreamVerifier checks per-chunk AES-256-GCM tags and Merkle roots before any OPFS write.",
+        "P2pBftStateValidator(p2p-bft-timestamp-audit.ts)는 N ≥ 3f+1 로스터에서 이중 투표 및 해시 불일치 피어를 즉시 격리하고 전체 N과 결함 한도 f에 대해 (N+f)/2보다 많은 표가 모였을 때만 상태를 전이합니다. ChunkAuthenticatedAssetStreamVerifier(hybrid-compute-shadow-ink-meshlet.ts)는 청크별 AES-256-GCM(96비트 순차 논스+AAD)과 머클 루트를 검증해 오염 청크를 OPFS 쓰기 전에 거절합니다.",
+        "P2pBftStateValidator quarantines equivocating or corrupted peers and commits only when votes exceed (N+f)/2, while ChunkAuthenticatedAssetStreamVerifier checks per-chunk AES-256-GCM tags and Merkle roots before any OPFS write.",
       ),
       t(
         "ZeroFeeTimestampAuditLog 는 WebCrypto(Ed25519 우선, ECDSA P-256 자동 폴백) 서명과 SHA-256 해시체인을 머클 에포크 트리로 봉인해 O(log N) 오프라인 검증 영수증을 발급합니다. 현재 구현(Current): 단위 검증 완료(가스비 ₩0, 초기 번들 0B). 향후 목표(Target): 팀 룸 원장 내보내기 메뉴에 연결합니다.",
@@ -47,8 +47,8 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
         "Quarantines equivocation and poisoned chunks upfront, sealing committed revisions into offline Merkle receipts.",
       ),
       alt: t(
-        "피어들이 상태 투표와 암호화 청크를 보내면 BFT 검증기가 이중 투표 피어를 격리하고 2f+1 정족수를 확인하며, AEAD 검증기가 오염 청크를 OPFS 기록 전에 차단한 뒤, 감사 원장이 WebCrypto 서명 머클 영수증을 발급합니다.",
-        "Peers submit votes and AEAD chunks; the BFT validator quarantines equivocators and confirms 2f+1 quorum, the AEAD verifier blocks tampered chunks before OPFS, and the audit log emits a signed Merkle receipt.",
+        "피어들이 상태 투표와 암호화 청크를 보내면 BFT 검증기가 이중 투표 피어를 격리하고 로스터 정족수를 확인하며, AEAD 검증기가 오염 청크를 OPFS 기록 전에 차단한 뒤, 감사 원장이 WebCrypto 서명 머클 영수증을 발급합니다.",
+        "Peers submit votes and AEAD chunks; the BFT validator quarantines equivocators and checks the roster-specific quorum, the AEAD verifier blocks tampered chunks before OPFS, and the audit log emits a signed Merkle receipt.",
       ),
       actors: [
         { id: "peer", label: t("협업 피어", "Peers"), sub: t("델타 투표 · 청크 송신", "Votes & AEAD chunks"), tone: "local" },
@@ -58,7 +58,7 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
       ],
       messages: [
         { from: "peer", to: "bft", label: t("에포크·시퀀스 다이제스트 투표", "Submit epoch/seq digest votes") },
-        { from: "bft", to: "bft", label: t("이중 투표 격리 · 2f+1 정족수 확정", "Quarantine equivocator, commit 2f+1") },
+        { from: "bft", to: "bft", label: t("이중 투표 격리 · 정족수 확인", "Quarantine equivocation and check quorum") },
         { from: "peer", to: "aead", label: t("AES-256-GCM 에셋 청크 스트리밍", "Stream AES-256-GCM asset chunks") },
         { from: "aead", to: "log", label: t("태그·머클 통과 청크만 승인", "Admit verified chunks only"), note: t("오염 청크 0B 기록", "0 B written on poison") },
         { from: "log", to: "peer", label: t("오프라인 검증 머클 영수증 발급", "Emit offline Merkle proof receipt"), style: "dashed", note: t("가스비 ₩0", "₩0 gas fee") },

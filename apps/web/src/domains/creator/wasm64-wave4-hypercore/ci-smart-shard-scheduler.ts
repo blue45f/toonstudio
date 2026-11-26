@@ -312,7 +312,12 @@ export function buildSmartCiSchedulePlan(params: {
   readonly shardCount?: number;
   readonly workflowCatalog?: readonly CiWorkflowSpec[];
 }): CiSmartSchedulePlan {
-  const catalog = params.workflowCatalog ?? DEFAULT_CI_WORKFLOW_CATALOG;
+  const requested = params.workflowCatalog ?? DEFAULT_CI_WORKFLOW_CATALOG;
+  const specifiedIds = new Set(requested.map((workflow) => workflow.id));
+  const missingGates = DEFAULT_CI_WORKFLOW_CATALOG.filter(
+    (workflow) => workflow.mandatory && !specifiedIds.has(workflow.id),
+  );
+  const catalog = [...missingGates, ...requested];
   const impacted = propagateImpactedPackages(params.changedFiles);
   const impactedSet = new Set(impacted);
 
@@ -332,11 +337,6 @@ export function buildSmartCiSchedulePlan(params: {
     } else {
       skippedWorkflows.push(wf.id as CiOptionalWorkflowId);
     }
-  }
-
-  // 안전 불변식 이중 확인: 필수 게이트(`core`, `verify`)가 누락되면 즉시 복구한다.
-  for (const gate of MANDATORY_RELEASE_GATES) {
-    selectedSet.add(gate);
   }
 
   const relevantSuites = params.suites.filter(

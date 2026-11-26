@@ -197,42 +197,43 @@ export function decodeBinaryXorRleDelta(prevBytes: Uint8Array, deltaPacket: Uint
   if (deltaPacket.byteLength < 4) {
     throw new RangeError("델타 패킷 헤더가 손상되었습니다.");
   }
-  const nextLen =
-    ((deltaPacket[0] ?? 0) |
-      ((deltaPacket[1] ?? 0) << 8) |
-      ((deltaPacket[2] ?? 0) << 16) |
-      ((deltaPacket[3] ?? 0) << 24)) >>>
-    0;
-  const out = new Uint8Array(nextLen);
-  let writePos = 0;
+  const nextLen = new DataView(deltaPacket.buffer, deltaPacket.byteOffset, 4).getUint32(0, true);
   let cursor = 4;
+  let decoded = 0;
 
-  while (cursor < deltaPacket.byteLength && writePos < nextLen) {
-    const tag = deltaPacket[cursor] ?? 0;
-    cursor += 1;
-    if (tag === 0x00) {
-      const run = (deltaPacket[cursor] ?? 0) | ((deltaPacket[cursor + 1] ?? 0) << 8);
+  // 선언된 출력 길이와 각 토큰을 검증한 뒤에만 결과 버퍼를 할당한다.
+  while (cursor < deltaPacket.length) {
+    const tag = deltaPacket[cursor++];
+    let count: number;
+    if (tag === 0) {
+      if (cursor + 2 > deltaPacket.length) throw new RangeError("델타 반복 길이가 누락되었습니다.");
+      count = deltaPacket[cursor] | (deltaPacket[cursor + 1] << 8);
       cursor += 2;
-      for (let k = 0; k < run && writePos < nextLen; k += 1) {
-        out[writePos] = writePos < prevBytes.byteLength ? (prevBytes[writePos] ?? 0) : 0;
-        writePos += 1;
-      }
     } else if ((tag & 0x80) !== 0) {
-      const count = tag & 0x7f;
-      for (let k = 0; k < count && writePos < nextLen; k += 1) {
-        const diff = deltaPacket[cursor] ?? 0;
-        cursor += 1;
-        const base = writePos < prevBytes.byteLength ? (prevBytes[writePos] ?? 0) : 0;
-        out[writePos] = (base ^ diff) & 0xff;
-        writePos += 1;
-      }
+      count = tag & 0x7f;
+      if (cursor + count > deltaPacket.length) throw new RangeError("델타 리터럴이 잘렸습니다.");
+      cursor += count;
     } else {
-      throw new Error("알 수 없는 XOR-RLE 델타 태그입니다.");
+      throw new RangeError("알 수 없는 XOR-RLE 델타 태그입니다.");
     }
+    decoded += count;
+    if (count === 0 || decoded > nextLen) throw new RangeError("델타 토큰 길이가 유효하지 않습니다.");
   }
+  if (decoded !== nextLen) throw new RangeError("델타 복원 길이가 목표 길이와 일치하지 않습니다.");
 
-  if (writePos !== nextLen) {
-    throw new Error("델타 복원 길이가 목표 길이와 일치하지 않습니다.");
+  const out = new Uint8Array(nextLen);
+  out.set(prevBytes.subarray(0, nextLen));
+  let writePos = 0;
+  cursor = 4;
+  while (cursor < deltaPacket.length) {
+    const tag = deltaPacket[cursor++];
+    if (tag === 0) {
+      writePos += deltaPacket[cursor] | (deltaPacket[cursor + 1] << 8);
+      cursor += 2;
+    } else {
+      const count = tag & 0x7f;
+      for (let k = 0; k < count; k += 1) out[writePos++] ^= deltaPacket[cursor++];
+    }
   }
   return out;
 }
