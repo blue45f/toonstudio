@@ -9,6 +9,13 @@
  *   정규화된 상대 열 지수(0..100)와 열 여유도(thermalHeadroom01: 0..1) 기반 결정론적 해석 모델을 사용한다.
  */
 
+import type {
+  StudioHardwareAccelerationReport,
+  StudioHardwareExecutionTier,
+  StudioOnnxHardwareEpOption,
+  StudioWasmSimdTier,
+  StudioWebNnDeviceType,
+} from "../studio-hardware-accelerator-probe";
 import { WEBNN_RUNTIME_EVIDENCE, serializeWebNnPlan } from "./webnn-planner-export";
 
 export const WEBNN_NPU_THERMAL_SCHEMA_VERSION = "toonstudio.webnn-npu-thermal-plan.v1" as const;
@@ -709,4 +716,27 @@ export function buildWebNnNpuThermalPlan(input: WebNnNpuThermalPlanInput = {}): 
 export function exportWebNnThermalPlanJson(input: WebNnNpuThermalPlanInput = {}): ExportedWebNnThermalPlan {
   const plan = buildWebNnNpuThermalPlan(input);
   return { plan, json: serializeWebNnPlan(plan) };
+}
+
+export interface WebNnHardwareProbeAdapterSummary {
+  readonly npuContextReady: boolean; readonly webnnDeviceType: StudioWebNnDeviceType;
+  readonly webgpuFallbackReady: boolean; readonly shaderF16Ready: boolean; readonly subgroupsReady: boolean;
+  readonly wasmSimdTier: StudioWasmSimdTier; readonly wasmThreads: number;
+  readonly executionTier: StudioHardwareExecutionTier;
+  readonly recommendedExecutionProviders: readonly StudioOnnxHardwareEpOption[];
+  readonly suggestedThermalFallbackTier: DegradationTier;
+}
+
+/** 별도 프로브된 실기기 하드웨어 리포트를 WebNN NPU 가용성 및 열 강등 바닥 단계로 요약한다. */
+export function summarizeWebNnHardwareAvailability(
+  probe: StudioHardwareAccelerationReport,
+): WebNnHardwareProbeAdapterSummary {
+  return Object.freeze({
+    npuContextReady: probe.webnn.npuAvailable, webnnDeviceType: probe.webnn.deviceType,
+    webgpuFallbackReady: probe.webgpu.available, shaderF16Ready: probe.webgpu.shaderF16,
+    subgroupsReady: probe.webgpu.subgroups, wasmSimdTier: probe.wasm.simdTier,
+    wasmThreads: probe.wasm.wasmThreadCount, executionTier: probe.executionTier,
+    recommendedExecutionProviders: probe.onnxExecutionProviders,
+    suggestedThermalFallbackTier: probe.webnn.npuAvailable ? 0 : 4,
+  });
 }

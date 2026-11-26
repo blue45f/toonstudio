@@ -1,0 +1,66 @@
+/**
+ * 무비용($0) PWA 불변 에셋 피너(0-네트워크 재방문) 및 유휴 슬라이스 컷 썸네일·내보내기 프리플라이트 워커.
+ *
+ * 주의: Studio 초기 진입 그래프(`main.tsx`, `studio-legacy-editor-adapter.tsx`)에서
+ * 정적으로 import하지 않고, PWA 부트스트랩 또는 내보내기/페이지 오거나이저 시점에 지연 로드(on-demand)한다.
+ */
+
+export {
+  DEFAULT_AI_STARTER_MANIFEST_URL,
+  DEFAULT_PWA_BASE_ASSET_DESCRIPTORS,
+  DEFAULT_SEMANTIC_INDEX_256D_URL,
+  DEFAULT_WASM64_CORE_ASSET_URLS,
+  InMemoryCacheStorage,
+  InMemoryPinCache,
+  PWA_BASE_CACHE_PREFIX,
+  PwaBaseAssetPinner,
+  WASM_MAGIC_BYTES,
+  computeBaseAssetVersionHash,
+  createInMemoryCacheStorage,
+  hasValidWasmMagicHeader,
+  type MatchPinnedAssetResolution,
+  type PinAssetFailure,
+  type PinCacheLike,
+  type PinCacheStorageLike,
+  type PinFailureReason,
+  type PinRunResult,
+  type PinnedAssetRecord,
+  type PwaBaseAssetDescriptor,
+  type PwaBaseAssetKind,
+  type PwaBaseAssetPinnerOptions,
+  type PwaBaseAssetPinnerTelemetry,
+} from "./pwa-base-asset-pinner";
+
+export {
+  DEFAULT_IDLE_MAX_SLICE_MS,
+  DEFAULT_PRECOMPUTE_CACHE_ENTRIES,
+  DEFAULT_THUMBNAIL_HEIGHT,
+  DEFAULT_THUMBNAIL_ROWS_PER_CHUNK,
+  DEFAULT_THUMBNAIL_WIDTH,
+  IdleThumbnailAndPreflightScheduler,
+  MAX_RECOMMENDED_SLICE_HEIGHT_PX,
+  MIN_WEBTOON_STRIP_WIDTH_PX,
+  computeFnv1a32,
+  computeRgbaContentHash,
+  downsampleRgba8BilinearBox,
+  downsampleRgba8RowRange,
+  validateCutExportPreflight,
+  type ColorProfileName,
+  type CutPrecomputeCancelReason,
+  type CutPrecomputeJob,
+  type CutPrecomputeOutcome,
+  type CutPrecomputeResult,
+  type DownsampledThumbnail,
+  type ExportPlatformTarget,
+  type ExportPreflightInput,
+  type ExportPreflightReport,
+  type IdleJobPriority,
+  type IdlePrecomputeTelemetry,
+  type IdleSliceYieldContext,
+  type IdleThumbnailAndPreflightSchedulerOptions,
+  type PreflightIssue,
+  type PreflightIssueCode,
+  type RightsBomAssetItem,
+  type RightsBomAssetKind,
+  type RightsLicenseTier,
+} from "./idle-thumbnail-and-preflight-worker";

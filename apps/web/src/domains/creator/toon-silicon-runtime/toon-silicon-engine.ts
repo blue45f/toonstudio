@@ -10,6 +10,14 @@
  *   브라우저 탭에서 CUDA/Metal/ROCm/NNAPI 직접 호출이 불가함을 명시한다.
  */
 
+import type {
+  StudioHardwareAccelerationReport,
+  StudioHardwareExecutionTier,
+  StudioOnnxHardwareEpOption,
+  StudioWasmSimdTier,
+  StudioWebNnDeviceType,
+} from "../studio-hardware-accelerator-probe";
+
 export const TOON_SILICON_SCHEMA_VERSION = "toonstudio.toon-silicon-dispatch.v1" as const;
 export const TOON_SILICON_MODEL_KIND = "silicon-capability-and-dispatch-architecture" as const;
 export const TOON_SILICON_MEASUREMENT_BASIS = "architecture-capability-dispatch-spec" as const;
@@ -670,4 +678,46 @@ export function buildSiliconFullPowerPlan(input?: ToonSiliconDispatchInput): Too
 export function exportToonSiliconPlanJson(input?: ToonSiliconDispatchInput): ExportedToonSiliconPlan {
   const plan = buildSiliconFullPowerPlan(input);
   return { plan, json: JSON.stringify(plan, null, 2) };
+}
+
+export interface ProbedToonSiliconDispatchSnapshot {
+  readonly siliconId: ModernSiliconId;
+  readonly focusWorkloadId: ToonStudioWorkloadId;
+  readonly hardwareProbed: true;
+  readonly executionTier: StudioHardwareExecutionTier;
+  readonly simdTier: StudioWasmSimdTier;
+  readonly memory64Supported: boolean;
+  readonly sharedArrayBufferThreads: boolean;
+  readonly wasmThreads: number;
+  readonly webgpuAvailable: boolean;
+  readonly shaderF16Supported: boolean;
+  readonly subgroupsSupported: boolean;
+  readonly webnnDeviceType: StudioWebNnDeviceType;
+  readonly onnxExecutionProviders: readonly StudioOnnxHardwareEpOption[];
+  readonly webCodecsHardwareReady: boolean;
+  readonly zeroCopyVideoFramePath: boolean;
+}
+
+/** 별도 실행한 실기기 하드웨어 프로브 결과를 계획 모델과 분리된 검증 스냅샷으로 결합한다. */
+export function bindLiveHardwareProbeToSiliconPlan(
+  plan: ToonSiliconFullPowerPlan,
+  probe: StudioHardwareAccelerationReport,
+): ProbedToonSiliconDispatchSnapshot {
+  return Object.freeze({
+    siliconId: plan.siliconId,
+    focusWorkloadId: plan.focusWorkloadId,
+    hardwareProbed: true,
+    executionTier: probe.executionTier,
+    simdTier: probe.wasm.simdTier,
+    memory64Supported: probe.wasm.memory64,
+    sharedArrayBufferThreads: probe.wasm.sharedArrayBuffer,
+    wasmThreads: probe.wasm.wasmThreadCount,
+    webgpuAvailable: probe.webgpu.available,
+    shaderF16Supported: probe.webgpu.shaderF16,
+    subgroupsSupported: probe.webgpu.subgroups,
+    webnnDeviceType: probe.webnn.deviceType,
+    onnxExecutionProviders: probe.onnxExecutionProviders,
+    webCodecsHardwareReady: probe.webCodecs.hardwareAccelerationPreferred,
+    zeroCopyVideoFramePath: probe.webCodecs.zeroCopyVideoFramePath,
+  });
 }

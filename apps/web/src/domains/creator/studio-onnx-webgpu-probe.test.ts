@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createStudioOnnxWebGpuAdapterProbe,
+  createStudioOnnxWebGpuCapabilityProbe,
   studioOnnxWebGpuApiAvailable,
   type StudioOnnxGpuLike,
 } from "./studio-onnx-webgpu-probe";
@@ -51,5 +52,37 @@ describe("Studio ONNX WebGPU adapter probe", () => {
   it("keeps the sync presence check independent from the adapter verdict", () => {
     // 테스트 환경에는 navigator.gpu가 없으므로 존재 확인은 false다.
     expect(studioOnnxWebGpuApiAvailable()).toBe(false);
+  });
+
+  it("extracts shader-f16, subgroups, and compute limits via a single memoized requestAdapter call", async () => {
+    const gpu = fakeGpu({
+      features: new Set(["shader-f16", "subgroups"]),
+      limits: {
+        maxStorageBufferBindingSize: 268_435_456,
+        maxComputeInvocationsPerWorkgroup: 1024,
+      },
+    });
+    const probe = createStudioOnnxWebGpuCapabilityProbe(() => gpu);
+    const [first, second] = await Promise.all([probe(), probe()]);
+    expect(first).toBe(second);
+    expect(first).toEqual({
+      available: true,
+      shaderF16: true,
+      subgroups: true,
+      maxStorageBufferBindingSize: 268_435_456,
+      maxComputeInvocationsPerWorkgroup: 1024,
+    });
+    expect(gpu.requestAdapter).toHaveBeenCalledTimes(1);
+
+    const unavailable = await createStudioOnnxWebGpuCapabilityProbe(() =>
+      fakeGpu(null, true),
+    )();
+    expect(unavailable).toEqual({
+      available: false,
+      shaderF16: false,
+      subgroups: false,
+      maxStorageBufferBindingSize: null,
+      maxComputeInvocationsPerWorkgroup: null,
+    });
   });
 });

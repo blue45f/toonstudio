@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  buildHardwareAccelerationReport,
+  probeWasmCpuCapabilities,
+  type StudioHardwareAccelerationReport,
+} from "./studio-hardware-accelerator-probe";
+import {
   createStudioOnnxInferenceProvider,
   resolveStudioOnnxModelUrl,
   studioOnnxLogitsToUint8Mask,
   type StudioOnnxRuntime,
 } from "./studio-onnx-inference-provider";
+import { STUDIO_ONNX_CASCADE_LOCAL_MODEL_IDS } from "./studio-onnx-session-cascade";
 import {
   createStudioOnnxModelRegistry,
   type StudioOnnxModelDescriptor,
@@ -701,5 +707,325 @@ describe("studioOnnxLogitsToUint8Mask", () => {
         height: 1,
       }),
     ).toThrow(/must be finite/u);
+  });
+});
+
+function hardwareReport(overrides: {
+  readonly npu?: boolean;
+  readonly webgpu?: boolean;
+  readonly shaderF16?: boolean;
+  readonly subgroups?: boolean;
+  readonly crossOriginIsolated?: boolean;
+  readonly hardwareConcurrency?: number;
+} = {}): StudioHardwareAccelerationReport {
+  const wasm = probeWasmCpuCapabilities({
+    validateWasm: () => true,
+    crossOriginIsolated: overrides.crossOriginIsolated ?? true,
+    sharedArrayBufferAvailable: true,
+    hardwareConcurrency: overrides.hardwareConcurrency ?? 8,
+  });
+  return buildHardwareAccelerationReport({
+    wasm,
+    webgpu: {
+      apiAvailable: overrides.webgpu ?? true,
+      available: overrides.webgpu ?? true,
+      shaderF16: overrides.shaderF16 ?? true,
+      subgroups: overrides.subgroups ?? true,
+      maxStorageBufferBindingSize: 268_435_456,
+      maxComputeInvocationsPerWorkgroup: 1024,
+      adapterInfo: null,
+      timedOut: false,
+    },
+    webnn: {
+      apiAvailable: overrides.npu ?? true,
+      available: overrides.npu ?? true,
+      npuAvailable: overrides.npu ?? true,
+      deviceType: overrides.npu === false ? "unavailable" : "npu",
+      timedOut: false,
+    },
+    webCodecs: {
+      hasVideoEncoder: false,
+      hasAudioEncoder: false,
+      hasVideoFrame: false,
+      h264: false,
+      hevc: false,
+      av1: false,
+      opus: false,
+      supportedVideoCodecs: [],
+      preferredVideoCodec: null,
+      highestEfficiencyVideoCodec: null,
+      hardwareAccelerationPreferred: false,
+      zeroCopyVideoFramePath: false,
+    },
+  });
+}
+
+describe("Studio ONNX WebNN(NPU) -> WebGPU -> WASM cascade, SIMD/thread env & zero-copy", () => {
+  it("runs WebNN NPU first automatically for all 6 local ONNX models and exposes telemetry", async () => {
+    const localModels = [
+      "teed",
+      "u2netp",
+      "tag2pix",
+      "realesrgan-anime-6b",
+      "animegan2-face-paint-512-v2",
+      "animegan2-paprika",
+    ] as const;
+
+    for (const modelId of localModels) {
+      expect(STUDIO_ONNX_CASCADE_LOCAL_MODEL_IDS).toContain(modelId);
+      const session = new FakeSession();
+      session.run.mockResolvedValue({
+        mask: new FakeTensor("float32", new Float32Array([0.3, 0.7]), [1, 2]),
+      });
+      const envWasm: { simd?: boolean | "fixed" | "relaxed"; numThreads?: number } = {};
+      const createSpy = vi.fn(async () => session);
+      const runtime = {
+        InferenceSession: { create: createSpy },
+        Tensor: FakeTensor,
+        env: { wasm: envWasm },
+      } as unknown as StudioOnnxRuntime;
+
+      const provider = createStudioOnnxInferenceProvider({
+        registry: createStudioOnnxModelRegistry([descriptor(modelId)]),
+        executionProvider: "webgpu",
+        loadRuntime: async () => runtime,
+        hardwareProbe: async () => hardwareReport({
+          npu: true,
+          webgpu: true,
+          shaderF16: true,
+          subgroups: true,
+          crossOriginIsolated: true,
+          hardwareConcurrency: 8,
+        }),
+        initialEpoch: EPOCH,
+      });
+
+      const result = await provider.infer({
+        modelId,
+        version: "1.0.0",
+        source: { kind: "bytes", bytes: MODEL_BYTES },
+        epoch: EPOCH,
+        inputs: inferenceInputs(),
+      });
+
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      expect(createSpy.mock.calls[0]?.[1]).toMatchObject({
+        executionProviders: [
+          { name: "webnn", deviceType: "npu", powerPreference: "default" },
+        ],
+      });
+      expect(envWasm).toEqual({ simd: true, numThreads: 7 });
+      expect(result.telemetry).toMatchObject({
+        activeProvider: "webnn-npu",
+        attemptedProviders: ["webnn-npu"],
+        fallbackReason: null,
+        simdTier: "relaxed-simd",
+        wasmThreads: 7,
+        shaderF16: true,
+        subgroups: true,
+        zeroCopyEnabled: true,
+        transferableBufferCount: 1,
+      });
+      expect(provider.hardwareTelemetry).toEqual(result.telemetry);
+      expect(provider.getHardwareTelemetry?.(modelId, "1.0.0")?.activeProvider).toBe("webnn-npu");
+      expect(result.transferables).toHaveLength(1);
+      await provider.dispose();
+    }
+  });
+
+  it("automatically fails over from WebNN NPU op rejection to WebGPU, then to WASM", async () => {
+    const session = new FakeSession();
+    session.run.mockResolvedValue({
+      mask: new FakeTensor("float32", new Float32Array([0.4, 0.6]), [1, 2]),
+    });
+
+    // Case 1: NPU rejects ConvTranspose -> falls back to WebGPU seamlessly
+    const epAttemptsGpu: unknown[] = [];
+    const gpuFallbackRuntime = {
+      InferenceSession: {
+        create: vi.fn(async (_bytes: Uint8Array, opts: { executionProviders: unknown[] }) => {
+          epAttemptsGpu.push(opts.executionProviders[0]);
+          const firstEp = opts.executionProviders[0] as { name?: string };
+          if (firstEp?.name === "webnn") {
+            throw new Error("WebNN NPU unsupported op: ConvTranspose");
+          }
+          return session;
+        }),
+      },
+      Tensor: FakeTensor,
+      env: { wasm: {} },
+    } as unknown as StudioOnnxRuntime;
+
+    const gpuFallbackProvider = createStudioOnnxInferenceProvider({
+      registry: createStudioOnnxModelRegistry([descriptor("tag2pix")]),
+      executionProvider: "webgpu",
+      loadRuntime: async () => gpuFallbackRuntime,
+      hardwareProbe: async () => hardwareReport({
+        npu: true,
+        webgpu: true,
+        shaderF16: true,
+        subgroups: false,
+      }),
+      initialEpoch: EPOCH,
+    });
+
+    const gpuResult = await gpuFallbackProvider.infer({
+      modelId: "tag2pix",
+      version: "1.0.0",
+      source: { kind: "bytes", bytes: MODEL_BYTES },
+      epoch: EPOCH,
+      inputs: inferenceInputs(),
+    });
+    expect(epAttemptsGpu).toEqual([
+      { name: "webnn", deviceType: "npu", powerPreference: "default" },
+      { name: "webgpu", validationMode: "basic" },
+    ]);
+    expect(gpuResult.telemetry).toMatchObject({
+      activeProvider: "webgpu",
+      attemptedProviders: ["webnn-npu", "webgpu"],
+      shaderF16: true,
+      subgroups: false,
+    });
+    expect(gpuResult.telemetry?.fallbackReason).toContain("ConvTranspose");
+    await gpuFallbackProvider.dispose();
+
+    // Case 2: Both NPU (Resize) and WebGPU fail -> falls back to WASM with non-isolated thread=1
+    const wasmEnv: { simd?: boolean; numThreads?: number } = {};
+    const wasmFallbackRuntime = {
+      InferenceSession: {
+        create: vi.fn(async (_bytes: Uint8Array, opts: { executionProviders: unknown[] }) => {
+          const ep = opts.executionProviders[0];
+          if (typeof ep === "object" && ep !== null && "name" in ep) {
+            throw new Error(`${(ep as { name: string }).name} op Resize rejected`);
+          }
+          return session;
+        }),
+      },
+      Tensor: FakeTensor,
+      env: { wasm: wasmEnv },
+    } as unknown as StudioOnnxRuntime;
+
+    const wasmFallbackProvider = createStudioOnnxInferenceProvider({
+      registry: createStudioOnnxModelRegistry([descriptor("realesrgan-anime-6b")]),
+      executionProvider: "webgpu",
+      loadRuntime: async () => wasmFallbackRuntime,
+      hardwareProbe: async () => hardwareReport({
+        npu: true,
+        webgpu: true,
+        crossOriginIsolated: false,
+        hardwareConcurrency: 12,
+      }),
+      initialEpoch: EPOCH,
+    });
+
+    const wasmResult = await wasmFallbackProvider.infer({
+      modelId: "realesrgan-anime-6b",
+      version: "1.0.0",
+      source: { kind: "bytes", bytes: MODEL_BYTES },
+      epoch: EPOCH,
+      inputs: inferenceInputs(),
+    });
+    expect(wasmEnv).toEqual({ simd: true, numThreads: 1 });
+    expect(wasmResult.telemetry).toMatchObject({
+      activeProvider: "wasm",
+      attemptedProviders: ["webnn-npu", "webgpu", "wasm"],
+      wasmThreads: 1,
+    });
+    expect(wasmResult.telemetry?.fallbackReason).toContain("webnn-npu-session-failed");
+    expect(wasmResult.telemetry?.fallbackReason).toContain("webgpu-session-failed");
+    await wasmFallbackProvider.dispose();
+  });
+
+  it("supports zero-copy input binding and transferable output ArrayBuffers for worker handoff", async () => {
+    const session = new FakeSession();
+    session.run.mockResolvedValue({
+      mask: new FakeTensor("float32", new Float32Array([0.1, 0.9]), [1, 2]),
+    });
+    const fixture = fakeRuntime(async () => session);
+    const provider = createStudioOnnxInferenceProvider({
+      registry: createStudioOnnxModelRegistry([descriptor()]),
+      executionProvider: "wasm",
+      loadRuntime: async () => fixture.runtime,
+      hardwareProbe: async () => hardwareReport({
+        npu: false,
+        webgpu: false,
+        crossOriginIsolated: false,
+      }),
+      zeroCopyTransfer: true,
+      initialEpoch: EPOCH,
+    });
+
+    const callerInput = new Float32Array([0.25, 0.75]);
+    const result = await provider.infer({
+      modelId: "selection-mask",
+      version: "1.0.0",
+      source: { kind: "bytes", bytes: MODEL_BYTES },
+      epoch: EPOCH,
+      inputs: [
+        {
+          name: "pixels",
+          elementType: "float32",
+          dims: [1, 2],
+          data: callerInput,
+        },
+      ],
+    });
+
+    // Zero-copy input handoff binds the caller's exact typed array without an extra clone.
+    expect(fixture.constructedTensors[0]?.data).toBe(callerInput);
+    expect(result.telemetry?.zeroCopyEnabled).toBe(true);
+    expect(result.telemetry?.transferableBufferCount).toBe(1);
+    expect(result.transferables).toEqual([result.outputs.mask.data.buffer]);
+    await provider.dispose();
+  });
+
+  it("recovers to WASM when hardwareProbe throws and stops cascade immediately on abort", async () => {
+    const session = new FakeSession();
+    session.run.mockResolvedValue({
+      mask: new FakeTensor("float32", new Float32Array([0.2, 0.8]), [1, 2]),
+    });
+    const fixture = fakeRuntime(async () => session);
+    const recoveredProvider = createStudioOnnxInferenceProvider({
+      registry: createStudioOnnxModelRegistry([descriptor("teed")]),
+      executionProvider: "webgpu",
+      loadRuntime: async () => fixture.runtime,
+      hardwareProbe: async () => {
+        throw new Error("probe crash");
+      },
+      initialEpoch: EPOCH,
+    });
+
+    const recovered = await recoveredProvider.infer({
+      modelId: "teed",
+      version: "1.0.0",
+      source: { kind: "bytes", bytes: MODEL_BYTES },
+      epoch: EPOCH,
+      inputs: inferenceInputs(),
+    });
+    expect(recovered.telemetry?.activeProvider).toBe("wasm");
+    expect(fixture.createSpy).toHaveBeenCalledTimes(1);
+    await recoveredProvider.dispose();
+
+    const controller = new AbortController();
+    const abortFixture = fakeRuntime(async () => {
+      controller.abort();
+      throw new Error("npu interrupted");
+    });
+    const abortProvider = createStudioOnnxInferenceProvider({
+      registry: createStudioOnnxModelRegistry([descriptor("u2netp")]),
+      executionProvider: "webgpu",
+      loadRuntime: async () => abortFixture.runtime,
+      hardwareProbe: async () => hardwareReport({ npu: true, webgpu: true }),
+      initialEpoch: EPOCH,
+    });
+    await expect(
+      abortProvider.loadModel({
+        modelId: "u2netp",
+        version: "1.0.0",
+        source: { kind: "bytes", bytes: MODEL_BYTES },
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ code: "aborted" });
+    expect(abortFixture.createSpy).toHaveBeenCalledTimes(1);
   });
 });

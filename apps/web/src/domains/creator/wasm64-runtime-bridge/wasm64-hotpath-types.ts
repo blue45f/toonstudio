@@ -6,12 +6,45 @@ import type { ImpastoLightParams } from "./wasm64-hotpath-js-fallback";
 
 export type { ImpastoLightParams };
 
-/** Vite `apps/web/public/wasm/` 정적 자산 기본 경로. */
+/** Vite `apps/web/public/wasm/` 정적 자산 기본 경로 (스칼라 · SIMD128 · Relaxed-SIMD · 확장 스위트). */
 export const STUDIO_WASM64_CORE_URL = "/wasm/studio-wasm64-drawing-core.wasm";
+export const STUDIO_WASM64_CORE_SIMD_URL = "/wasm/studio-wasm64-drawing-core-simd.wasm";
+export const STUDIO_WASM64_CORE_RELAXED_SIMD_URL =
+  "/wasm/studio-wasm64-drawing-core-relaxed-simd.wasm";
+export const STUDIO_WASM64_EXTENDED_SUITE_URL = "/wasm/studio-wasm64-extended-suite.wasm";
 export const WASM64_HOTPATH_EXPECTED_ABI = 1;
 export const WASM64_HOTPATH_EXPECTED_CAPABILITIES = 0x7f;
 
 export type Wasm64HotpathBackendMode = "rust-wasm" | "js-fallback";
+export type Wasm64CpuTier =
+  | "wasm-relaxed-simd"
+  | "wasm-simd128"
+  | "wasm-scalar"
+  | "js-fallback";
+export type Wasm64ExecutableTier = Exclude<Wasm64CpuTier, "js-fallback">;
+
+export interface Wasm64CpuTierProbe {
+  readonly tier: Wasm64CpuTier;
+  readonly webAssemblySupported: boolean;
+  readonly simd128Supported: boolean;
+  readonly relaxedSimdSupported: boolean;
+}
+
+export interface WasmCoreTierCandidate {
+  readonly tier: Wasm64ExecutableTier;
+  readonly url: string;
+}
+
+export interface WasmDirtyRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** `TileBlendMode` C-ABI 코드 (0=Normal..11=Add). */
+export type TileBlendModeCode = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+
 export type Wasm64HotpathLoadSource =
   | "instantiate-streaming"
   | "instantiate-bytes"
@@ -43,6 +76,8 @@ export const DEFAULT_WASM64_HOTPATH_ROUTING: Wasm64HotpathRoutingConfig = Object
 
 export interface StudioWasm64HotpathMetadata {
   readonly backendMode: Wasm64HotpathBackendMode;
+  readonly cpuTier: Wasm64CpuTier;
+  readonly resolvedUrl: string | null;
   readonly wasmByteLength: number;
   readonly abiVersion: number;
   readonly capabilitiesMask: number;
@@ -55,7 +90,10 @@ export interface StudioWasm64HotpathMetadata {
 export interface LoadStudioWasm64HotpathOptions {
   readonly wasmUrl?: string;
   readonly wasmBytes?: Uint8Array | ArrayBuffer;
+  readonly cpuTierHint?: Wasm64ExecutableTier;
+  readonly preferredTier?: Wasm64CpuTier;
   readonly fetchFn?: typeof fetch;
+  readonly validateFn?: (bytes: Uint8Array) => boolean;
   readonly forceJsFallback?: boolean;
   readonly initialRouting?: Partial<Wasm64HotpathRoutingConfig>;
 }
@@ -119,6 +157,20 @@ export interface HotpathXorDeltaResult {
   readonly zeroCopyViewBytes: number;
 }
 
+export interface HotpathTileCompositeOptions {
+  readonly dirtyRect?: WasmDirtyRect;
+  readonly blendMode?: TileBlendModeCode;
+  readonly opacityU8?: number;
+  readonly forceBackend?: Wasm64HotpathBackendMode;
+}
+
+export interface HotpathTileCompositeResult {
+  readonly output: Uint8Array;
+  readonly processedPixels: number;
+  readonly elapsedMs: number;
+  readonly backendMode: Wasm64HotpathBackendMode;
+}
+
 export interface ZeroCopyUnsharpViewResult {
   readonly outputView: Uint8Array;
   readonly modifiedPixels: number;
@@ -155,6 +207,12 @@ export interface StudioWasm64HotpathRuntime {
     height: number,
     options?: HotpathImpastoOptions,
   ) => HotpathImpastoResult;
+  readonly mixPigmentsKmPacked: (
+    rgbaA: number,
+    rgbaB: number,
+    ratio: number,
+    forceBackend?: Wasm64HotpathBackendMode,
+  ) => number;
   readonly mixPigmentsKm16Packed: (
     rgbaA: number,
     rgbaB: number,
@@ -167,6 +225,13 @@ export interface StudioWasm64HotpathRuntime {
     ratio: number,
     forceBackend?: Wasm64HotpathBackendMode,
   ) => HotpathKm16StripResult;
+  readonly compositeTileDirtyRect: (
+    dstRgba: Uint8Array,
+    srcRgba: Uint8Array,
+    tileWidth: number,
+    tileHeight: number,
+    options?: HotpathTileCompositeOptions,
+  ) => HotpathTileCompositeResult;
   readonly xorTileDeltaBytes: (
     prev: Uint8Array,
     next: Uint8Array,

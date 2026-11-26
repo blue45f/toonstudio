@@ -1,4 +1,8 @@
 import {
+  probeStudioHardwareAcceleration,
+  type StudioHardwareAcceleratorProbe,
+} from "./studio-hardware-accelerator-probe";
+import {
   STUDIO_ONNX_HARD_LIMITS,
   findStudioOnnxModelDescriptor,
   nonNegativeSafeInteger,
@@ -14,12 +18,24 @@ import {
   type StudioOnnxTensorSchema,
 } from "./studio-onnx-model-registry";
 import {
+  buildStudioOnnxHardwareTelemetry,
+  buildSyncOnnxHardwareReport,
+  collectStudioOnnxOutputTransferables,
+  configureStudioOnnxWasmEnv,
+  createStudioOnnxSessionWithCascade,
+  isStudioOnnxLocalAcceleratedModelId,
+  type StudioOnnxHardwareTelemetry,
+  type StudioOnnxRuntimeEnvLike,
+} from "./studio-onnx-session-cascade";
+import {
   probeStudioOnnxWebGpuAdapter,
   studioOnnxWebGpuApiAvailable,
 } from "./studio-onnx-webgpu-probe";
 import { sha256HexPortable } from "./studio-sha256";
 
 import type { InferenceSession, Tensor } from "onnxruntime-web";
+
+export type { StudioOnnxHardwareTelemetry } from "./studio-onnx-session-cascade";
 
 export const STUDIO_ONNX_RUNTIME_VERSION = "1.27.0" as const;
 export const STUDIO_ONNX_EXECUTION_PROVIDERS = [
@@ -78,6 +94,7 @@ export class StudioOnnxInferenceError extends Error {
 export interface StudioOnnxRuntime {
   readonly InferenceSession: typeof InferenceSession;
   readonly Tensor: typeof Tensor;
+  readonly env?: StudioOnnxRuntimeEnvLike;
 }
 
 export type StudioOnnxRuntimeLoader = () => Promise<StudioOnnxRuntime>;
@@ -150,6 +167,8 @@ export interface StudioOnnxInferenceResult {
   readonly epoch: StudioOnnxEpoch;
   readonly receipt: StudioOnnxSessionReceipt;
   readonly outputs: Readonly<Record<string, StudioOnnxTensorValue>>;
+  readonly telemetry?: StudioOnnxHardwareTelemetry;
+  readonly transferables?: readonly ArrayBuffer[];
 }
 
 export interface StudioOnnxLoadModelRequest {
@@ -167,11 +186,18 @@ export interface StudioOnnxInferenceRequest {
   readonly inputs: readonly StudioOnnxTensorValue[];
   /** Applied to model loading. A running WebGPU dispatch is checked after completion. */
   readonly signal?: AbortSignal;
+  /** true이면 입력 방어 복사를 생략하고 출력 Transferable 버퍼 핸드오프를 활성화한다. */
+  readonly zeroCopyTransfer?: boolean;
 }
 
 export interface StudioOnnxInferenceProvider {
   readonly destroyed: boolean;
   readonly epoch: StudioOnnxEpoch;
+  readonly hardwareTelemetry?: StudioOnnxHardwareTelemetry | null;
+  getHardwareTelemetry?(
+    modelId?: string,
+    version?: string,
+  ): StudioOnnxHardwareTelemetry | null;
   setEpoch(epoch: StudioOnnxEpoch): void;
   loadModel(request: StudioOnnxLoadModelRequest): Promise<StudioOnnxSessionReceipt>;
   infer(request: StudioOnnxInferenceRequest): Promise<StudioOnnxInferenceResult>;
@@ -183,6 +209,13 @@ export interface CreateStudioOnnxInferenceProviderOptions {
   readonly registry: StudioOnnxModelRegistry;
   /** Immutable for this provider. A failed provider is never replaced in-flight. */
   readonly executionProvider?: StudioOnnxExecutionProvider;
+  /**
+   * 하드웨어 캐스케이드(`webnn` NPU → `webgpu` → `wasm`) 모드.
+   * `"auto"`(기본)는 6대 로컬 ONNX 모델의 가속 경로에서 자동 활성화된다.
+   */
+  readonly hardwareCascade?: boolean | "auto";
+  readonly hardwareProbe?: StudioHardwareAcceleratorProbe;
+  readonly zeroCopyTransfer?: boolean;
   readonly budgets?: Partial<StudioOnnxInferenceBudgets>;
   readonly urlPolicy?: StudioOnnxUrlPolicy;
   readonly loadRuntime?: StudioOnnxRuntimeLoader;
@@ -198,6 +231,7 @@ interface CachedStudioOnnxSession {
   readonly runtime: StudioOnnxRuntime;
   readonly session: InferenceSession;
   readonly receipt: StudioOnnxSessionReceipt;
+  readonly telemetry: StudioOnnxHardwareTelemetry;
   activeLeases: number;
   readonly idleResolvers: Array<() => void>;
 }
@@ -218,17 +252,10 @@ function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw abortedError();
 }
 
-function ownDataValue(
-  source: object,
-  key: string,
-  code: StudioOnnxInferenceErrorCode = "invalid-input",
-  required = false,
-): unknown {
+function ownDataValue(source: object, key: string, code: StudioOnnxInferenceErrorCode = "invalid-input", required = false): unknown {
   const descriptor = Object.getOwnPropertyDescriptor(source, key);
   if (!descriptor) {
-    if (required) {
-      throw inferenceError(code, `ONNX ${key} must be an own data property.`);
-    }
+    if (required) throw inferenceError(code, `ONNX ${key} must be an own data property.`);
     return undefined;
   }
   if (!("value" in descriptor)) {
@@ -237,148 +264,87 @@ function ownDataValue(
   return descriptor.value;
 }
 
-function ownArrayValues(
-  source: readonly unknown[],
-  label: string,
-  code: StudioOnnxInferenceErrorCode = "invalid-input",
-): unknown[] {
+function ownArrayValues(source: readonly unknown[], label: string, code: StudioOnnxInferenceErrorCode = "invalid-input"): unknown[] {
   const values: unknown[] = [];
   for (let index = 0; index < source.length; index += 1) {
     const descriptor = Object.getOwnPropertyDescriptor(source, String(index));
     if (!descriptor || !("value" in descriptor)) {
-      throw inferenceError(
-        code,
-        `ONNX ${label}[${index}] must be an own data property.`,
-      );
+      throw inferenceError(code, `ONNX ${label}[${index}] must be an own data property.`);
     }
     values.push(descriptor.value);
   }
   return values;
 }
 
-function awaitWithAbort<T>(
-  promise: Promise<T>,
-  signal?: AbortSignal,
-): Promise<T> {
+function awaitWithAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return promise;
   if (signal.aborted) return Promise.reject(abortedError());
   return new Promise<T>((resolve, reject) => {
-    const onAbort = () => {
-      cleanup();
-      reject(abortedError());
-    };
+    const onAbort = () => { cleanup(); reject(abortedError()); };
     const cleanup = () => signal.removeEventListener("abort", onAbort);
     signal.addEventListener("abort", onAbort, { once: true });
     promise.then(
-      (value) => {
-        cleanup();
-        resolve(value);
-      },
-      (cause: unknown) => {
-        cleanup();
-        reject(cause);
-      },
+      (value) => { cleanup(); resolve(value); },
+      (cause: unknown) => { cleanup(); reject(cause); },
     );
   });
 }
 
-function awaitSessionWithAbort(
-  promise: Promise<InferenceSession>,
-  signal?: AbortSignal,
-): Promise<InferenceSession> {
+function awaitSessionWithAbort(promise: Promise<InferenceSession>, signal?: AbortSignal): Promise<InferenceSession> {
   if (!signal) return promise;
   if (signal.aborted) {
-    void promise.then(
-      (session) => session.release(),
-      () => undefined,
-    );
+    void promise.then((session) => session.release(), () => undefined);
     return Promise.reject(abortedError());
   }
   return new Promise<InferenceSession>((resolve, reject) => {
     let aborted = false;
-    const onAbort = () => {
-      aborted = true;
-      cleanup();
-      reject(abortedError());
-    };
+    const onAbort = () => { aborted = true; cleanup(); reject(abortedError()); };
     const cleanup = () => signal.removeEventListener("abort", onAbort);
     signal.addEventListener("abort", onAbort, { once: true });
     promise.then(
       (session) => {
         cleanup();
-        if (aborted) {
-          void session.release().catch(() => undefined);
-          return;
-        }
+        if (aborted) { void session.release().catch(() => undefined); return; }
         resolve(session);
       },
-      (cause: unknown) => {
-        cleanup();
-        if (!aborted) reject(cause);
-      },
+      (cause: unknown) => { cleanup(); if (!aborted) reject(cause); },
     );
   });
 }
 
 function isAbortError(cause: unknown): boolean {
-  return (
-    cause instanceof StudioOnnxInferenceError
-      ? cause.code === "aborted"
-      : cause instanceof Error && cause.name === "AbortError"
-  );
+  return cause instanceof StudioOnnxInferenceError
+    ? cause.code === "aborted"
+    : cause instanceof Error && cause.name === "AbortError";
 }
 
 function assertEpoch(epoch: StudioOnnxEpoch): void {
   for (const value of [epoch.request, epoch.stroke, epoch.document]) {
     if (!Number.isSafeInteger(value) || value < 0) {
-      throw inferenceError(
-        "invalid-epoch",
-        "ONNX request, stroke, and document epochs must be non-negative safe integers.",
-      );
+      throw inferenceError("invalid-epoch", "ONNX request, stroke, and document epochs must be non-negative safe integers.");
     }
   }
 }
 
 function epochsEqual(left: StudioOnnxEpoch, right: StudioOnnxEpoch): boolean {
-  return (
-    left.request === right.request &&
-    left.stroke === right.stroke &&
-    left.document === right.document
-  );
+  return left.request === right.request && left.stroke === right.stroke && left.document === right.document;
 }
 
 function cloneEpoch(epoch: StudioOnnxEpoch): StudioOnnxEpoch {
   return Object.freeze({ ...epoch });
 }
 
-function validateBudgets(
-  partial: Partial<StudioOnnxInferenceBudgets> | undefined,
-): StudioOnnxInferenceBudgets {
-  const budgets = {
-    ...DEFAULT_STUDIO_ONNX_INFERENCE_BUDGETS,
-    ...partial,
-  };
+function validateBudgets(partial: Partial<StudioOnnxInferenceBudgets> | undefined): StudioOnnxInferenceBudgets {
+  const budgets = { ...DEFAULT_STUDIO_ONNX_INFERENCE_BUDGETS, ...partial };
   const entries = [
     ["maxModelBytes", budgets.maxModelBytes, STUDIO_ONNX_HARD_LIMITS.maxModelBytes],
-    [
-      "maxTensorElements",
-      budgets.maxTensorElements,
-      STUDIO_ONNX_HARD_LIMITS.maxTensorElements,
-    ],
+    ["maxTensorElements", budgets.maxTensorElements, STUDIO_ONNX_HARD_LIMITS.maxTensorElements],
     ["maxTensorBytes", budgets.maxTensorBytes, STUDIO_ONNX_HARD_LIMITS.maxTensorBytes],
-    [
-      "maxRequestInputBytes",
-      budgets.maxRequestInputBytes,
-      STUDIO_ONNX_HARD_LIMITS.maxTensorBytes,
-    ],
+    ["maxRequestInputBytes", budgets.maxRequestInputBytes, STUDIO_ONNX_HARD_LIMITS.maxTensorBytes],
     ["maxResultBytes", budgets.maxResultBytes, STUDIO_ONNX_HARD_LIMITS.maxTensorBytes],
   ] as const;
   for (const [name, value, hardMaximum] of entries) {
-    if (
-      !Number.isSafeInteger(value) ||
-      value <= 0 ||
-      value > hardMaximum
-    ) {
+    if (!Number.isSafeInteger(value) || value <= 0 || value > hardMaximum) {
       throw new RangeError(`${name} exceeds the ONNX provider hard budget.`);
     }
   }
@@ -395,25 +361,12 @@ function defaultBaseUrl(): string {
 }
 
 function isLocalhost(hostname: string): boolean {
-  return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "[::1]"
-  );
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
-export function resolveStudioOnnxModelUrl(
-  rawUrl: string,
-  policy: StudioOnnxUrlPolicy = {},
-): string {
+export function resolveStudioOnnxModelUrl(rawUrl: string, policy: StudioOnnxUrlPolicy = {}): string {
   const maximum = policy.maxUrlCharacters ?? 2_048;
-  if (
-    !Number.isSafeInteger(maximum) ||
-    maximum <= 0 ||
-    maximum > 16_384 ||
-    rawUrl.length === 0 ||
-    rawUrl.length > maximum
-  ) {
+  if (!Number.isSafeInteger(maximum) || maximum <= 0 || maximum > 16_384 || rawUrl.length === 0 || rawUrl.length > maximum) {
     throw inferenceError("model-url-rejected", "ONNX model URL length is invalid.");
   }
 
@@ -427,36 +380,19 @@ export function resolveStudioOnnxModelUrl(
   }
 
   if (
-    (resolved.protocol !== "https:" && resolved.protocol !== "http:") ||
-    resolved.username.length > 0 ||
-    resolved.password.length > 0 ||
-    resolved.hash.length > 0 ||
-    !resolved.pathname.toLowerCase().endsWith(".onnx")
+    (resolved.protocol !== "https:" && resolved.protocol !== "http:")
+    || resolved.username.length > 0 || resolved.password.length > 0 || resolved.hash.length > 0
+    || !resolved.pathname.toLowerCase().endsWith(".onnx")
   ) {
-    throw inferenceError(
-      "model-url-rejected",
-      "ONNX model URL must be an HTTP(S) .onnx resource without credentials or fragments.",
-    );
+    throw inferenceError("model-url-rejected", "ONNX model URL must be an HTTP(S) .onnx resource without credentials or fragments.");
   }
-  if (
-    resolved.protocol === "http:" &&
-    !(policy.allowHttpLocalhost === true && isLocalhost(resolved.hostname))
-  ) {
-    throw inferenceError(
-      "model-url-rejected",
-      "Plain HTTP ONNX model URLs are restricted to explicitly allowed localhost use.",
-    );
+  if (resolved.protocol === "http:" && !(policy.allowHttpLocalhost === true && isLocalhost(resolved.hostname))) {
+    throw inferenceError("model-url-rejected", "Plain HTTP ONNX model URLs are restricted to explicitly allowed localhost use.");
   }
 
-  const allowedOrigins = new Set([
-    base.origin,
-    ...(policy.allowedOrigins ?? []),
-  ]);
+  const allowedOrigins = new Set([base.origin, ...(policy.allowedOrigins ?? [])]);
   if (!allowedOrigins.has(resolved.origin)) {
-    throw inferenceError(
-      "model-url-rejected",
-      "ONNX model URL origin is not allowed by the local model policy.",
-    );
+    throw inferenceError("model-url-rejected", "ONNX model URL origin is not allowed by the local model policy.");
   }
   return resolved.href;
 }
@@ -543,24 +479,16 @@ function tensorDataMatchesElementType(
   data: StudioOnnxTensorData,
 ): boolean {
   switch (elementType) {
-    case "float32":
-      return data instanceof Float32Array;
-    case "float64":
-      return data instanceof Float64Array;
+    case "float32": return data instanceof Float32Array;
+    case "float64": return data instanceof Float64Array;
     case "float16":
-    case "uint16":
-      return data instanceof Uint16Array;
-    case "int8":
-      return data instanceof Int8Array;
+    case "uint16": return data instanceof Uint16Array;
+    case "int8": return data instanceof Int8Array;
     case "uint8":
-    case "bool":
-      return data instanceof Uint8Array;
-    case "int16":
-      return data instanceof Int16Array;
-    case "int32":
-      return data instanceof Int32Array;
-    case "uint32":
-      return data instanceof Uint32Array;
+    case "bool": return data instanceof Uint8Array;
+    case "int16": return data instanceof Int16Array;
+    case "int32": return data instanceof Int32Array;
+    case "uint32": return data instanceof Uint32Array;
   }
 }
 
@@ -614,72 +542,26 @@ function validateTensorValue(
   return expectedBytes;
 }
 
-function createRuntimeTensor(
-  runtime: StudioOnnxRuntime,
-  input: StudioOnnxTensorValue,
-): Tensor {
+function createRuntimeTensor(runtime: StudioOnnxRuntime, input: StudioOnnxTensorValue): Tensor {
   switch (input.elementType) {
-    case "float32":
-      return new runtime.Tensor(
-        "float32",
-        input.data as Float32Array,
-        input.dims,
-      );
-    case "float64":
-      return new runtime.Tensor(
-        "float64",
-        input.data as Float64Array,
-        input.dims,
-      );
-    case "float16":
-      return new runtime.Tensor(
-        "float16",
-        input.data as Uint16Array,
-        input.dims,
-      );
-    case "int8":
-      return new runtime.Tensor("int8", input.data as Int8Array, input.dims);
-    case "uint8":
-      return new runtime.Tensor("uint8", input.data as Uint8Array, input.dims);
-    case "int16":
-      return new runtime.Tensor(
-        "int16",
-        input.data as Int16Array,
-        input.dims,
-      );
-    case "uint16":
-      return new runtime.Tensor(
-        "uint16",
-        input.data as Uint16Array,
-        input.dims,
-      );
-    case "int32":
-      return new runtime.Tensor(
-        "int32",
-        input.data as Int32Array,
-        input.dims,
-      );
-    case "uint32":
-      return new runtime.Tensor(
-        "uint32",
-        input.data as Uint32Array,
-        input.dims,
-      );
-    case "bool":
-      return new runtime.Tensor("bool", input.data as Uint8Array, input.dims);
+    case "float32": return new runtime.Tensor("float32", input.data as Float32Array, input.dims);
+    case "float64": return new runtime.Tensor("float64", input.data as Float64Array, input.dims);
+    case "float16": return new runtime.Tensor("float16", input.data as Uint16Array, input.dims);
+    case "int8": return new runtime.Tensor("int8", input.data as Int8Array, input.dims);
+    case "uint8": return new runtime.Tensor("uint8", input.data as Uint8Array, input.dims);
+    case "int16": return new runtime.Tensor("int16", input.data as Int16Array, input.dims);
+    case "uint16": return new runtime.Tensor("uint16", input.data as Uint16Array, input.dims);
+    case "int32": return new runtime.Tensor("int32", input.data as Int32Array, input.dims);
+    case "uint32": return new runtime.Tensor("uint32", input.data as Uint32Array, input.dims);
+    case "bool": return new runtime.Tensor("bool", input.data as Uint8Array, input.dims);
   }
 }
 
 function tensorLike(value: unknown): value is Tensor {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    "dims" in value &&
-    "type" in value &&
-    "getData" in value &&
-    typeof value.getData === "function" &&
-    "dispose" in value &&
-    typeof value.dispose === "function"
+    typeof value === "object" && value !== null && "dims" in value && "type" in value
+    && "getData" in value && typeof value.getData === "function"
+    && "dispose" in value && typeof value.dispose === "function"
   );
 }
 
@@ -688,44 +570,25 @@ function copyRuntimeTensorData(
   data: Tensor["data"],
 ): StudioOnnxTensorData {
   switch (elementType) {
-    case "float32":
-      return new Float32Array(data as Float32Array);
-    case "float64":
-      return new Float64Array(data as Float64Array);
+    case "float32": return new Float32Array(data as Float32Array);
+    case "float64": return new Float64Array(data as Float64Array);
     case "float16":
-    case "uint16":
-      return new Uint16Array(data as Uint16Array);
-    case "int8":
-      return new Int8Array(data as Int8Array);
+    case "uint16": return new Uint16Array(data as Uint16Array);
+    case "int8": return new Int8Array(data as Int8Array);
     case "uint8":
-    case "bool":
-      return new Uint8Array(data as Uint8Array);
-    case "int16":
-      return new Int16Array(data as Int16Array);
-    case "int32":
-      return new Int32Array(data as Int32Array);
-    case "uint32":
-      return new Uint32Array(data as Uint32Array);
+    case "bool": return new Uint8Array(data as Uint8Array);
+    case "int16": return new Int16Array(data as Int16Array);
+    case "int32": return new Int32Array(data as Int32Array);
+    case "uint32": return new Uint32Array(data as Uint32Array);
   }
 }
 
-function runtimeTensorElementType(
-  value: string,
-): StudioOnnxTensorElementType | null {
+function runtimeTensorElementType(value: string): StudioOnnxTensorElementType | null {
   switch (value) {
-    case "float32":
-    case "float64":
-    case "float16":
-    case "int8":
-    case "uint8":
-    case "int16":
-    case "uint16":
-    case "int32":
-    case "uint32":
-    case "bool":
+    case "float32": case "float64": case "float16": case "int8": case "uint8":
+    case "int16": case "uint16": case "int32": case "uint32": case "bool":
       return value;
-    default:
-      return null;
+    default: return null;
   }
 }
 
@@ -766,9 +629,15 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
   private readonly loadRuntime: StudioOnnxRuntimeLoader;
   private readonly loadModelBytes: StudioOnnxModelByteLoader;
   private readonly executionProvider: StudioOnnxExecutionProvider;
+  private readonly hardwareCascadeMode: boolean | "auto";
+  private readonly customHardwareProbe: StudioHardwareAcceleratorProbe | null;
+  private readonly hardwareProbe: StudioHardwareAcceleratorProbe;
+  private readonly defaultZeroCopyTransfer: boolean;
+  private readonly hasCustomWebGpuProbe: boolean;
   private readonly webGpuApiAvailable: () => boolean;
   private readonly webGpuAdapterProbe: () => Promise<boolean>;
   private readonly sessions = new Map<string, CachedStudioOnnxSession>();
+  private latestTelemetry: StudioOnnxHardwareTelemetry | null = null;
   private currentEpoch: StudioOnnxEpoch;
   private isDestroyed = false;
   private activeInferenceCount = 0;
@@ -782,6 +651,12 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
     this.loadRuntime = options.loadRuntime ?? loadStudioOnnxRuntime;
     this.loadModelBytes = options.loadModelBytes ?? fetchStudioOnnxModelBytes;
     this.executionProvider = options.executionProvider ?? "webgpu";
+    this.hardwareCascadeMode = options.hardwareCascade ?? "auto";
+    this.customHardwareProbe = options.hardwareProbe ?? null;
+    this.hardwareProbe = options.hardwareProbe ?? probeStudioHardwareAcceleration;
+    this.defaultZeroCopyTransfer = options.zeroCopyTransfer === true;
+    this.hasCustomWebGpuProbe =
+      options.webGpuApiAvailable !== undefined || options.webGpuAdapterProbe !== undefined;
     this.webGpuApiAvailable =
       options.webGpuApiAvailable ?? studioOnnxWebGpuApiAvailable;
     this.webGpuAdapterProbe =
@@ -804,6 +679,30 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
 
   get epoch(): StudioOnnxEpoch {
     return this.currentEpoch;
+  }
+
+  get hardwareTelemetry(): StudioOnnxHardwareTelemetry | null {
+    return this.latestTelemetry;
+  }
+
+  getHardwareTelemetry(
+    modelId?: string,
+    version?: string,
+  ): StudioOnnxHardwareTelemetry | null {
+    if (modelId !== undefined && version !== undefined) {
+      return this.sessions.get(studioOnnxModelKey(modelId, version))?.telemetry ?? null;
+    }
+    return this.latestTelemetry;
+  }
+
+  private shouldUseCascade(descriptor: StudioOnnxModelDescriptor): boolean {
+    if (this.hardwareCascadeMode === true) return true;
+    if (this.hardwareCascadeMode === false) return false;
+    return (
+      this.executionProvider === "webgpu"
+      && !this.hasCustomWebGpuProbe
+      && isStudioOnnxLocalAcceleratedModelId(descriptor.id)
+    );
   }
 
   private assertAlive(): void {
@@ -947,43 +846,100 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
     signal?: AbortSignal,
   ): Promise<CachedStudioOnnxSession> {
     throwIfAborted(signal);
-    if (this.executionProvider === "webgpu") {
-      if (!this.webGpuApiAvailable()) {
-        throw inferenceError(
-          "session-create-failed",
-          "The selected ONNX WebGPU execution provider is unavailable.",
-        );
-      }
-      // 공유 어댑터 프로브가 없음을 확정하면 ORT 세션 생성을 시도하지 않는다.
-      if (!(await this.webGpuAdapterProbe())) {
-        throw inferenceError(
-          "session-create-failed",
-          "The selected ONNX WebGPU execution provider has no adapter.",
-        );
+    const useCascade = this.shouldUseCascade(descriptor);
+    let session: InferenceSession;
+    let receiptProvider: StudioOnnxExecutionProvider = this.executionProvider;
+    let telemetry: StudioOnnxHardwareTelemetry;
+
+    if (useCascade) {
+      let hardware;
+      try {
+        hardware = await awaitWithAbort(this.hardwareProbe(), signal);
+      } catch (cause) {
+        if (signal?.aborted || isAbortError(cause)) throw abortedError();
+        hardware = buildSyncOnnxHardwareReport(false);
       }
       throwIfAborted(signal);
-    }
-
-    let session: InferenceSession;
-    try {
-      session = await awaitSessionWithAbort(
-        runtime.InferenceSession.create(bytes, {
-          executionProviders:
-            this.executionProvider === "webgpu"
-              ? [{ name: "webgpu", validationMode: "basic" }]
-              : ["wasm"],
-          graphOptimizationLevel: "all",
-          executionMode: "sequential",
-        }),
-        signal,
-      );
-    } catch (cause) {
-      if (signal?.aborted || isAbortError(cause)) throw abortedError();
-      throw inferenceError(
-        "session-create-failed",
-        `ONNX Runtime could not create the selected ${this.executionProvider} session.`,
-        cause,
-      );
+      configureStudioOnnxWasmEnv(runtime.env, hardware);
+      try {
+        const outcome = await createStudioOnnxSessionWithCascade({
+          hardware,
+          createSessionForOptions: (sessionOptions) =>
+            awaitSessionWithAbort(
+              runtime.InferenceSession.create(bytes, sessionOptions),
+              signal,
+            ),
+          isAbortCause: isAbortError,
+          signal,
+        });
+        session = outcome.session;
+        receiptProvider = outcome.activeProvider === "wasm" ? "wasm" : "webgpu";
+        telemetry = buildStudioOnnxHardwareTelemetry({
+          hardware,
+          activeProvider: outcome.activeProvider,
+          attemptedProviders: outcome.attemptedProviders,
+          fallbackReason: outcome.fallbackReason,
+          zeroCopyEnabled:
+            this.defaultZeroCopyTransfer || hardware.zeroCopy.sharedArrayBuffer,
+        });
+      } catch (cause) {
+        if (signal?.aborted || isAbortError(cause)) throw abortedError();
+        throw inferenceError(
+          "session-create-failed",
+          "ONNX Runtime could not create a session across the WebNN/WebGPU/WASM cascade.",
+          cause,
+        );
+      }
+    } else {
+      const hardware = this.customHardwareProbe
+        ? await awaitWithAbort(this.customHardwareProbe(), signal)
+        : buildSyncOnnxHardwareReport(this.executionProvider === "webgpu");
+      throwIfAborted(signal);
+      configureStudioOnnxWasmEnv(runtime.env, hardware);
+      if (this.executionProvider === "webgpu") {
+        if (!this.webGpuApiAvailable()) {
+          throw inferenceError(
+            "session-create-failed",
+            "The selected ONNX WebGPU execution provider is unavailable.",
+          );
+        }
+        // 공유 어댑터 프로브가 없음을 확정하면 ORT 세션 생성을 시도하지 않는다.
+        if (!(await this.webGpuAdapterProbe())) {
+          throw inferenceError(
+            "session-create-failed",
+            "The selected ONNX WebGPU execution provider has no adapter.",
+          );
+        }
+        throwIfAborted(signal);
+      }
+      try {
+        session = await awaitSessionWithAbort(
+          runtime.InferenceSession.create(bytes, {
+            executionProviders:
+              this.executionProvider === "webgpu"
+                ? [{ name: "webgpu", validationMode: "basic" }]
+                : ["wasm"],
+            graphOptimizationLevel: "all",
+            executionMode: "sequential",
+          }),
+          signal,
+        );
+      } catch (cause) {
+        if (signal?.aborted || isAbortError(cause)) throw abortedError();
+        throw inferenceError(
+          "session-create-failed",
+          `ONNX Runtime could not create the selected ${this.executionProvider} session.`,
+          cause,
+        );
+      }
+      telemetry = buildStudioOnnxHardwareTelemetry({
+        hardware,
+        activeProvider: this.executionProvider,
+        attemptedProviders: [this.executionProvider],
+        fallbackReason: null,
+        zeroCopyEnabled:
+          this.defaultZeroCopyTransfer || hardware.zeroCopy.sharedArrayBuffer,
+      });
     }
 
     if (signal?.aborted || this.isDestroyed) {
@@ -1005,6 +961,7 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
       );
     }
 
+    this.latestTelemetry = telemetry;
     return {
       descriptor,
       runtime,
@@ -1012,8 +969,9 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
       receipt: freezeReceipt({
         descriptor,
         byteLength: bytes.byteLength,
-        executionProvider: this.executionProvider,
+        executionProvider: receiptProvider,
       }),
+      telemetry,
       activeLeases: 0,
       idleResolvers: [],
     };
@@ -1178,6 +1136,7 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
   private snapshotInputs(
     descriptor: StudioOnnxModelDescriptor,
     inputs: readonly StudioOnnxTensorValue[],
+    zeroCopyTransfer = false,
   ): readonly StudioOnnxTensorValue[] {
     if (!Array.isArray(inputs) || inputs.length !== descriptor.inputs.length) {
       throw inferenceError(
@@ -1251,7 +1210,9 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
     }
     return Object.freeze(snapshots.map((snapshot) => Object.freeze({
       ...snapshot,
-      data: copyRuntimeTensorData(snapshot.elementType, snapshot.data),
+      data: zeroCopyTransfer
+        ? snapshot.data
+        : copyRuntimeTensorData(snapshot.elementType, snapshot.data),
     })));
   }
 
@@ -1336,12 +1297,14 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
     const epochValue = ownDataValue(request, "epoch", "invalid-input", true);
     const inputsValue = ownDataValue(request, "inputs", "invalid-input", true);
     const signalValue = ownDataValue(request, "signal");
+    const zeroCopyValue = ownDataValue(request, "zeroCopyTransfer");
     if (
       typeof modelId !== "string"
       || typeof version !== "string"
       || !epochValue
       || typeof epochValue !== "object"
       || !Array.isArray(inputsValue)
+      || (zeroCopyValue !== undefined && typeof zeroCopyValue !== "boolean")
       || (
         signalValue !== undefined
         && (
@@ -1358,10 +1321,11 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
       document: ownDataValue(epochValue, "document", "invalid-epoch", true) as number,
     };
     const signal = signalValue as AbortSignal | undefined;
+    const effectiveZeroCopy = (zeroCopyValue ?? this.defaultZeroCopyTransfer) === true;
     this.assertCurrentEpoch(epoch);
     throwIfAborted(signal);
     const descriptor = this.descriptor(modelId, version);
-    const inputs = this.snapshotInputs(descriptor, inputsValue);
+    const inputs = this.snapshotInputs(descriptor, inputsValue, effectiveZeroCopy);
     const cached = await this.acquireSession(
       descriptor,
       source,
@@ -1398,10 +1362,19 @@ class OnnxStudioInferenceProvider implements StudioOnnxInferenceProvider {
         disposeOnnxValues(rawOutputs);
       }
 
+      const transferables = collectStudioOnnxOutputTransferables(outputs);
+      const telemetry: StudioOnnxHardwareTelemetry = Object.freeze({
+        ...cached.telemetry,
+        zeroCopyEnabled: effectiveZeroCopy || cached.telemetry.zeroCopyEnabled,
+        transferableBufferCount: transferables.length,
+      });
+      this.latestTelemetry = telemetry;
       return Object.freeze({
         epoch: cloneEpoch(epoch),
         receipt: cached.receipt,
         outputs,
+        telemetry,
+        transferables,
       });
     } finally {
       this.releaseSessionLease(cached);
