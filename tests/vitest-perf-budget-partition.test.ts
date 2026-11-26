@@ -15,8 +15,12 @@ const CATALOGUE_TIMING_TEST = "scripts/studio-brush-catalogue-perf-matrix.test.t
 const CATALOGUE_TIMING_HELPER = "scripts/studio-brush-catalogue-perf-matrix.ts";
 const CATALOGUE_TIMING_CALL = /\bevaluateStudioBrushCataloguePaint(?:PerfMatrix|PerfRow|Soak)\s*\(/u;
 const LONG_STROKE_AUDIT = "scripts/audit-all-brushes-long-stroke-and-mix.mjs";
+// 같은 테스트에서 제품 호출의 반환값에 시간 상한을 적용한 경우만 인정한다.
+const BRUSH_TILE_BUDGET = /\bconst\s+(\w+)\s*=\s*auditBrushTextureQuality\s*\([\s\S]*?\bexpect\(\1\.p95TileMs\)\.toBeLessThanOrEqual\(/u;
+const CROWD_GENERATION_BUDGET = /\bconst\s+(\w+)\s*=\s*generateProceduralCrowd\s*\([\s\S]*?\bexpect\(\1\.metrics\.generationTimeMs\)\.toBeLessThan\(/u;
 
 function measuresExecutionTime(source: string): boolean {
+  const testBodies = source.split(/^\s*(?:it|test)\s*\(/mu);
   return source.includes("performance.now(")
     || source.includes("process.cpuUsage(")
     || source.includes("process.threadCpuUsage(")
@@ -24,7 +28,11 @@ function measuresExecutionTime(source: string): boolean {
     || (source.includes('from "./audit-all-brushes-long-stroke-and-mix.mjs"')
       && /\brunLongStrokeAndMixAudit\s*\(/u.test(source))
     || (source.includes('from "./studio-brush-catalogue-perf-matrix"')
-      && CATALOGUE_TIMING_CALL.test(source));
+      && CATALOGUE_TIMING_CALL.test(source))
+    || (source.includes('from "./brush-texture-quality-oracle"')
+      && testBodies.some((body) => BRUSH_TILE_BUDGET.test(body)))
+    || (source.includes('from "./index"')
+      && testBodies.some((body) => CROWD_GENERATION_BUDGET.test(body)));
 }
 
 /**
@@ -91,6 +99,21 @@ describe("execution-time budget partition", () => {
     ].join("\n");
     expect(measuresExecutionTime(deterministicOnly)).toBe(false);
     expect(measuresExecutionTime("expect(geometry.length).toBe(42);")).toBe(false);
+  });
+
+  it("브러시와 군중 생성의 실제 소요 시간을 검사하는 파일을 등록한다", () => {
+    expect(PERF_BUDGET_TEST_FILES).toContain("apps/web/src/domains/creator/brush-physics-pro/brush-physics-pro.test.tsx");
+    expect(PERF_BUDGET_TEST_FILES).toContain("apps/web/src/domains/creator/webgpu-crowd-director/webgpu-crowd-director.test.ts");
+    const fixedMetrics = [
+      'import { auditBrushTextureQuality } from "./brush-texture-quality-oracle";',
+      'import { generateProceduralCrowd } from "./index";',
+      "const brush = auditBrushTextureQuality({});",
+      "const crowd = generateProceduralCrowd({});",
+      "const fixture = { p95TileMs: 0, metrics: { generationTimeMs: 0 } };",
+      "expect(fixture.p95TileMs).toBeLessThanOrEqual(4.0);",
+      "expect(fixture.metrics.generationTimeMs).toBeLessThan(5);",
+    ].join("\n");
+    expect(measuresExecutionTime(fixedMetrics)).toBe(false);
   });
 
   it("포인터 리플레이 예산만 필수 직렬 레인에 두고 결정적 포인터 계약은 루트에 유지한다", () => {
