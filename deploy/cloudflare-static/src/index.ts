@@ -12,6 +12,12 @@ import {
   type EdgeCacheInput,
   type EdgeExecutionContext,
 } from "../edge-cache-coalescer.mjs";
+import {
+  IMAGE_FORMATS,
+  negotiateImageFormat,
+  serveNegotiatedStaticImage,
+  type NegotiatedAssetCandidate,
+} from "../edge-image-negotiator.mjs";
 
 import { CORE_CLIENT_IP_HEADER, trustedConnectingIp } from "./core-client-ip";
 import {
@@ -32,6 +38,7 @@ import {
   r2RangeHeaders,
   staticMediaFallback,
   type AssetsBinding,
+  type CloudflareLargeAssetDescriptor,
   type R2BucketBinding,
   type R2ObjectBinding,
   type R2ObjectBodyBinding,
@@ -478,6 +485,58 @@ function retryableRead(request: Request, route: DynamicRoute): boolean {
     && !isWebSocketUpgrade(request);
 }
 
+const NEGOTIABLE_IMAGE_PATH_PATTERN = /\.(?:png|jpe?g|webp|avif)$/iu;
+
+function isNegotiableImageRequest(request: Request, url: URL): boolean {
+  const method = request.method.toUpperCase();
+  return (method === "GET" || method === "HEAD") && NEGOTIABLE_IMAGE_PATH_PATTERN.test(url.pathname);
+}
+
+async function readR2ObjectResponse(
+  request: Request,
+  key: string,
+  descriptor: CloudflareLargeAssetDescriptor,
+  env: CloudflareStaticEnv,
+  reportError: EdgeErrorReporter,
+): Promise<Response | null> {
+  if (!env.LARGE_ASSETS) return null;
+  const method = request.method.toUpperCase();
+  let operation: "r2_get" | "r2_head" | "r2_response" = method === "HEAD" ? "r2_head" : "r2_get";
+  try {
+    let partial = false;
+    let object: R2ObjectBinding | R2ObjectBodyBinding | null;
+    if (method === "HEAD") {
+      object = await env.LARGE_ASSETS.head(key);
+    } else {
+      const requestedRange = r2RangeHeaders(request);
+      let acceptedRange = requestedRange;
+      if (requestedRange && request.headers.has("if-range")) {
+        operation = "r2_head";
+        const metadata = await env.LARGE_ASSETS.head(key);
+        if (!metadata) return null;
+        acceptedRange = matchesIfRange(request, metadata.httpEtag) ? requestedRange : undefined;
+      }
+      operation = "r2_get";
+      object = await env.LARGE_ASSETS.get(key, acceptedRange ? { range: acceptedRange } : undefined);
+      partial = Boolean(acceptedRange && object?.range);
+    }
+    if (!object) return null;
+
+    operation = "r2_response";
+    const headers = r2AssetResponseHeaders(object, descriptor, partial);
+    if (matchesIfNoneMatch(request, object.httpEtag)) {
+      headers.delete("content-length");
+      headers.delete("content-range");
+      return withSecurityHeaders(new Response(null, { status: 304, headers }));
+    }
+    const body = method === "HEAD" ? null : (object as R2ObjectBodyBinding).body;
+    return withSecurityHeaders(new Response(body, { status: partial ? 206 : 200, headers }));
+  } catch (cause) {
+    reportError(env, request, { route: "large-asset", operation, attempt: 1, retrying: false }, cause);
+    return null;
+  }
+}
+
 async function serveR2LargeAsset(
   request: Request,
   env: CloudflareStaticEnv,
@@ -510,52 +569,38 @@ async function serveR2LargeAsset(
       headers: descriptor.sameOriginOnly ? { allow: "GET, HEAD, OPTIONS", vary: "Sec-Fetch-Site" } : { allow: "GET, HEAD, OPTIONS" },
     }));
   }
+  return readR2ObjectResponse(request, key, descriptor, env, reportError);
+}
 
-  let operation: "r2_get" | "r2_head" | "r2_response" = method === "HEAD" ? "r2_head" : "r2_get";
-  try {
-    let partial = false;
-    let object: R2ObjectBinding | R2ObjectBodyBinding | null;
-    if (method === "HEAD") {
-      object = await env.LARGE_ASSETS.head(key);
-    } else {
-      const requestedRange = r2RangeHeaders(request);
-      let acceptedRange = requestedRange;
-      if (requestedRange && request.headers.has("if-range")) {
-        operation = "r2_head";
-        const metadata = await env.LARGE_ASSETS.head(key);
-        if (!metadata) return null;
-        acceptedRange = matchesIfRange(request, metadata.httpEtag)
-          ? requestedRange
-          : undefined;
-      }
-      operation = "r2_get";
-      object = await env.LARGE_ASSETS.get(
-        key,
-        acceptedRange ? { range: acceptedRange } : undefined,
-      );
-      partial = Boolean(acceptedRange && object?.range);
-    }
-    if (!object) return null;
-
-    operation = "r2_response";
-    const headers = r2AssetResponseHeaders(object, descriptor, partial);
-    if (matchesIfNoneMatch(request, object.httpEtag)) {
-      headers.delete("content-length");
-      headers.delete("content-range");
-      return withSecurityHeaders(new Response(null, { status: 304, headers }));
-    }
-
-    const body = method === "HEAD"
-      ? null
-      : (object as R2ObjectBodyBinding).body;
-    return withSecurityHeaders(new Response(body, {
-      status: partial ? 206 : 200,
-      headers,
-    }));
-  } catch (cause) {
-    reportError(env, request, { route: "large-asset", operation, attempt: 1, retrying: false }, cause);
-    return null;
+async function serveNegotiatedR2MediaImage(
+  request: Request,
+  descriptor: CloudflareLargeAssetDescriptor,
+  env: CloudflareStaticEnv,
+  reportError: EdgeErrorReporter,
+): Promise<Response> {
+  const preferredFormat = negotiateImageFormat(request.headers.get("accept"));
+  if (env.LARGE_ASSETS) {
+    let r2Hit = false;
+    const r2Response = await serveNegotiatedStaticImage(
+      request,
+      async (candidate: NegotiatedAssetCandidate, variantRequest: Request) => {
+        if (!candidate.isOriginal && preferredFormat === IMAGE_FORMATS.ORIGINAL && candidate.bucket === null) {
+          return null;
+        }
+        const variantDescriptor = candidate.contentType
+          ? { ...descriptor, contentType: candidate.contentType }
+          : descriptor;
+        const response = await readR2ObjectResponse(variantRequest, candidate.key, variantDescriptor, env, reportError);
+        if (response) r2Hit = true;
+        return response;
+      },
+    );
+    if (r2Hit) return withSecurityHeaders(r2Response);
   }
+  return withSecurityHeaders(await serveNegotiatedStaticImage(
+    request,
+    (_candidate, variantRequest) => env.ASSETS.fetch(variantRequest),
+  ));
 }
 
 class UpstreamExhaustedError extends Error {
@@ -591,6 +636,12 @@ export function createCloudflareStaticGateway(
       return request.method === "HEAD" ? new Response(null, rejection) : rejection;
     }
     if (!isDynamicPath(requestUrl.pathname)) {
+      if (isNegotiableImageRequest(request, requestUrl)) {
+        return withSecurityHeaders(await serveNegotiatedStaticImage(
+          request,
+          (_candidate, variantRequest) => env.ASSETS.fetch(variantRequest),
+        ));
+      }
       return env.ASSETS.fetch(request);
     }
     // Human navigation stays on Static Assets. Only recognized crawler traffic wakes the
@@ -612,9 +663,12 @@ export function createCloudflareStaticGateway(
       // 이중 압축이 되었고(2026-10-13 운영 실측: 전 경로 이중 brotli),
       // 어떤 클라이언트도 해제하지 못해 엔진·모델 로딩이 깨졌다.
       // R2 원본 + 엣지 네이티브 압축 조합은 클라이언트별로 정확히 동작한다.
+      const largeAsset = cloudflareLargeAssetDescriptor(requestUrl.pathname);
+      if (largeAsset?.staticFallback && isNegotiableImageRequest(request, requestUrl)) {
+        return serveNegotiatedR2MediaImage(request, largeAsset, env, reportError);
+      }
       const r2Response = await serveR2LargeAsset(request, env, reportError);
       if (r2Response) return r2Response;
-      const largeAsset = cloudflareLargeAssetDescriptor(requestUrl.pathname);
       // R2 미디어 이관 경로는 R2에 아직 없으면 Static Assets로 돌린다(단계 이관·롤백 안전망).
       if (largeAsset?.staticFallback) return withSecurityHeaders(await staticMediaFallback(request, env.ASSETS));
       // 동일 출처 전용(bundle-v2) 바이트는 R2에만 있다. 폴백 원본의 응답 헤더(CORS 등)가 가드 계약을 깨지 못하게 닫는다.
