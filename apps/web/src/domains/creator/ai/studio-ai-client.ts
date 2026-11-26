@@ -364,11 +364,11 @@ async function postImageJson(
   signal?: AbortSignal,
 ): Promise<StudioAiResult<unknown>> {
   if (!usesUnifiedCloudRouting(settings)) {
-    const [field, value] = studioImageFormatField(settings);
+    const formatField = studioImageFormatField(settings);
     return postJson(
       buildUrl(settings.baseUrl, settings.imageGenerationPath),
       settings.apiKey,
-      { ...body, [field]: value },
+      formatField ? { ...body, [formatField[0]]: formatField[1] } : body,
       signal,
     );
   }
@@ -385,7 +385,8 @@ async function postImageForm(
   signal?: AbortSignal,
 ): Promise<StudioAiResult<unknown>> {
   if (!usesUnifiedCloudRouting(settings)) {
-    form.set(...studioImageFormatField(settings));
+    const formatField = studioImageFormatField(settings);
+    if (formatField) form.set(formatField[0], formatField[1]);
     return postForm(
       buildUrl(settings.baseUrl, settings.imageEditPath),
       settings.apiKey,

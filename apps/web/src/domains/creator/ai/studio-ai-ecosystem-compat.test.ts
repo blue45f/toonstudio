@@ -54,8 +54,8 @@ describe("OpenAI flagship compatibility helpers (shared/ai/openai-model-compat)"
     }
     expect(isRetiredOpenAiImageModel("dall-e-3")).toBe(true);
     expect(isRetiredOpenAiImageModel("gpt-image-1.5")).toBe(false);
-    expect(DEFAULT_OPENAI_IMAGE_MODEL).toBe("gpt-image-1.5");
-    expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe("gpt-image-2.6-flare");
+    expect(DEFAULT_OPENAI_IMAGE_MODEL).toBe("gpt-image-2.6-flare");
+    expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe(DEFAULT_OPENAI_IMAGE_MODEL);
   });
 
   it("normalizes chat & image payloads bidirectionally across reasoning and legacy models", () => {

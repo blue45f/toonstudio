@@ -153,7 +153,8 @@ export async function repairStudioAiComicImageRegion(input: {
   form.append("image", source, "comic-director-source.png");
   form.append("mask", mask, "comic-director-mask.png");
   form.append("prompt", prompt);
-  form.set(...studioImageFormatField(input.settings));
+  const formatField = studioImageFormatField(input.settings);
+  if (formatField) form.set(formatField[0], formatField[1]);
 
   let response: Response;
   try {

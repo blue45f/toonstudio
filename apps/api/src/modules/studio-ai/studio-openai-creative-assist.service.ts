@@ -335,7 +335,7 @@ export class StudioOpenAiCreativeAssistService {
         (COMPLEX_REASONING_ASSIST_MODES.has(completion.assistMode) ||
           (isLongInput && MULTI_RECORD_NON_REASONING_MODES.has(completion.assistMode)));
       const needsLongNonReasoningOutput = !reasoningModel && isLongInput;
-      const baseMaxTokens = Math.max(MAX_OUTPUT_TOKENS, completion.maxOutputTokens);
+      const baseMaxTokens = Math.max(1, completion.maxOutputTokens);
       const maxCompletionTokens = reasoningModel
         ? Math.max(
             baseMaxTokens,

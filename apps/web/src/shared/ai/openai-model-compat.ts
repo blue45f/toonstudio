@@ -8,7 +8,7 @@
  * - 레거시(`dall-e-3` 등) 및 서드파티 OpenAI 호환 모델은 기존 계약을 유지한다.
  */
 
-export const DEFAULT_OPENAI_IMAGE_MODEL = "gpt-image-1.5";
+export { DEFAULT_OPENAI_IMAGE_MODEL } from "./openai-image-model";
 
 const REASONING_CHAT_MODEL_PATTERN = /^(?:openai\/)?(?:gpt-5|gpt-6|o3|o4)(?:$|[-._:])/iu;
 const GPT_IMAGE_MODEL_PATTERN = /^(?:openai\/)?(?:gpt-image|chatgpt-image)(?:$|[-._:])/iu;
