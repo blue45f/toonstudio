@@ -18,7 +18,7 @@ import {
   type StudioHardwareExecutionTier,
   type StudioWasmSimdTier,
 } from "./studio-hardware-accelerator-probe";
-import { extractTransferableArrayBuffer } from "./studio-zero-copy-buffer-pool";
+import { extractTransferableArrayBuffer } from "../wasm64-zero-copy-ipc/studio-zero-copy-buffer-pool";
 
 export const STUDIO_ONNX_CASCADE_LOCAL_MODEL_IDS = Object.freeze([
   "teed",

@@ -16,7 +16,7 @@ import type {
   StudioOnnxHardwareEpOption,
   StudioWasmSimdTier,
   StudioWebNnDeviceType,
-} from "../studio-hardware-accelerator-probe";
+} from "./studio-hardware-accelerator-probe";
 
 export const TOON_SILICON_SCHEMA_VERSION = "toonstudio.toon-silicon-dispatch.v1" as const;
 export const TOON_SILICON_MODEL_KIND = "silicon-capability-and-dispatch-architecture" as const;

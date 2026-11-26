@@ -4,14 +4,14 @@ import {
   buildHardwareAccelerationReport,
   probeWasmCpuCapabilities,
   type StudioHardwareAccelerationReport,
-} from "./studio-hardware-accelerator-probe";
+} from "./toon-silicon-runtime/studio-hardware-accelerator-probe";
 import {
   createStudioOnnxInferenceProvider,
   resolveStudioOnnxModelUrl,
   studioOnnxLogitsToUint8Mask,
   type StudioOnnxRuntime,
 } from "./studio-onnx-inference-provider";
-import { STUDIO_ONNX_CASCADE_LOCAL_MODEL_IDS } from "./studio-onnx-session-cascade";
+import { STUDIO_ONNX_CASCADE_LOCAL_MODEL_IDS } from "./toon-silicon-runtime/studio-onnx-session-cascade";
 import {
   createStudioOnnxModelRegistry,
   type StudioOnnxModelDescriptor,

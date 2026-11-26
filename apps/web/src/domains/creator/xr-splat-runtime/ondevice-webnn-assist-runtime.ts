@@ -14,7 +14,7 @@ import {
   probeStudioHardwareAcceleration,
   type StudioHardwareAccelerationReport,
   type StudioHardwareAcceleratorProbeDeps,
-} from "../studio-hardware-accelerator-probe";
+} from "../toon-silicon-runtime/studio-hardware-accelerator-probe";
 
 export const ONDEVICE_WEBNN_ASSIST_VERSION = 1 as const;
 export const ZERO_SERVER_GPU_COST_KRW = 0 as const;

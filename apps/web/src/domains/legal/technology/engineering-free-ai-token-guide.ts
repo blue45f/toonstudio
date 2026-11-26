@@ -519,7 +519,7 @@ export const TOONSTUDIO_FREE_AI_ROUTES: readonly ToonStudioFreeAiRoute[] = [
       "To hold both AI and infrastructure near zero cost, six local ONNX models fail over automatically from WebNN NPU to WebGPU to WASM Relaxed-SIMD (studio-onnx-session-cascade.ts), while requests split across four edge/origin lanes (Singleflight public reads, free AI, realtime DO/P2P, Seoul onpod writes). Storage is federated across five tiers—local OPFS, user BYO Cloud, R2 10 GB free, onpod+D1 and Cloudflare Static Assets—so heavy manuscripts never burn paid server bandwidth.",
     ),
     evidence: [
-      "apps/web/src/domains/creator/studio-onnx-session-cascade.ts",
+      "apps/web/src/domains/creator/toon-silicon-runtime/studio-onnx-session-cascade.ts",
       "apps/web/src/domains/creator/wasm64-webgpu-compute/opfs-streaming-tile-mmap.ts",
       "docs/operations/infrastructure-map.md",
       "docs/operations/free-ai-runtime.md",

@@ -11,7 +11,7 @@
  */
 
 import { fitCurveSchneider } from "./drawing/studio-fit-curve-schneider";
-import { simplifyPolylineRdp, StudioCubicBezier } from "./studio-vector-ink-curve-math";
+import { simplifyPolylineRdp, StudioCubicBezier } from "./vector/studio-vector-ink-curve-math";
 
 export const STUDIO_VECTOR_INK_GEOMETRY_VERSION = 1 as const;
 

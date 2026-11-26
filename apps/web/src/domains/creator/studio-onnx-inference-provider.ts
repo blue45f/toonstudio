@@ -1,7 +1,7 @@
 import {
   probeStudioHardwareAcceleration,
   type StudioHardwareAcceleratorProbe,
-} from "./studio-hardware-accelerator-probe";
+} from "./toon-silicon-runtime/studio-hardware-accelerator-probe";
 import {
   STUDIO_ONNX_HARD_LIMITS,
   findStudioOnnxModelDescriptor,
@@ -26,7 +26,7 @@ import {
   isStudioOnnxLocalAcceleratedModelId,
   type StudioOnnxHardwareTelemetry,
   type StudioOnnxRuntimeEnvLike,
-} from "./studio-onnx-session-cascade";
+} from "./toon-silicon-runtime/studio-onnx-session-cascade";
 import {
   probeStudioOnnxWebGpuAdapter,
   studioOnnxWebGpuApiAvailable,
@@ -35,7 +35,7 @@ import { sha256HexPortable } from "./studio-sha256";
 
 import type { InferenceSession, Tensor } from "onnxruntime-web";
 
-export type { StudioOnnxHardwareTelemetry } from "./studio-onnx-session-cascade";
+export type { StudioOnnxHardwareTelemetry } from "./toon-silicon-runtime/studio-onnx-session-cascade";
 
 export const STUDIO_ONNX_RUNTIME_VERSION = "1.27.0" as const;
 export const STUDIO_ONNX_EXECUTION_PROVIDERS = [

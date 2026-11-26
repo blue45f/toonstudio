@@ -15,7 +15,7 @@ import type {
   StudioOnnxHardwareEpOption,
   StudioWasmSimdTier,
   StudioWebNnDeviceType,
-} from "../studio-hardware-accelerator-probe";
+} from "../toon-silicon-runtime/studio-hardware-accelerator-probe";
 import { WEBNN_RUNTIME_EVIDENCE, serializeWebNnPlan } from "./webnn-planner-export";
 
 export const WEBNN_NPU_THERMAL_SCHEMA_VERSION = "toonstudio.webnn-npu-thermal-plan.v1" as const;

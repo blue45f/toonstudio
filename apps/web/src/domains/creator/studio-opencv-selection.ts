@@ -4,7 +4,7 @@
  * 전경 추출(grabCut), 플러드 마스크(floodFill), 경계 정제(morphology + Gaussian feather),
  * 마스크→PathIR 벡터화를 순수 데이터 입출력으로 수행한다.
  * 기본 실행은 14 MiB 외부 Emscripten 바이너리 대신 제로 의존성 네이티브 선택 런타임
- * (`./studio-native-selection-runtime`)을 로드하며, `runtimeLoader` 주입 시 외부 호환
+ * (`./selection/studio-native-selection-runtime`)을 로드하며, `runtimeLoader` 주입 시 외부 호환
  * 런타임도 동일한 검증·MatScope 역순 해제 경계로 수용한다.
  */
 
@@ -14,7 +14,7 @@ import {
   createStudioNativeSelectionRuntime,
   type StudioNativeSelectionMat,
   type StudioNativeSelectionRuntime,
-} from "./studio-native-selection-runtime";
+} from "./selection/studio-native-selection-runtime";
 
 export type { StudioNativeSelectionMat, StudioNativeSelectionRuntime };
 

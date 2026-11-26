@@ -101,7 +101,7 @@ export const ENGINEERING_ATLAS_AI_SILICON: readonly EngineeringAtlasEntry[] = [
           "CPU SIMD/Relaxed-SIMD, WebGPU shader-f16·subgroups, WebNN NPU, WebCodecs 하드웨어 코덱(H.264·HEVC·AV1·Opus)을 탐지합니다.",
           "Detects CPU SIMD/Relaxed-SIMD, WebGPU shader-f16/subgroups, WebNN NPU and WebCodecs hardware codecs (H.264/HEVC/AV1/Opus).",
         ),
-        paths: ["apps/web/src/domains/creator/studio-hardware-accelerator-probe.ts"],
+        paths: ["apps/web/src/domains/creator/toon-silicon-runtime/studio-hardware-accelerator-probe.ts"],
         route: "/studio",
       },
       {
@@ -111,7 +111,7 @@ export const ENGINEERING_ATLAS_AI_SILICON: readonly EngineeringAtlasEntry[] = [
           "Creates sessions for teed, u2netp, tag2pix, realesrgan and animegan2 with automatic WebNN NPU → WebGPU → WASM failover.",
         ),
         paths: [
-          "apps/web/src/domains/creator/studio-onnx-session-cascade.ts",
+          "apps/web/src/domains/creator/toon-silicon-runtime/studio-onnx-session-cascade.ts",
           "apps/web/src/domains/creator/studio-onnx-inference-provider.ts",
         ],
       },
@@ -121,7 +121,7 @@ export const ENGINEERING_ATLAS_AI_SILICON: readonly EngineeringAtlasEntry[] = [
           "워커·ONNX·WebCodecs 간 ArrayBuffer 를 재할당 없이 대여·반납해 고해상도 작업 중 GC 멈춤을 줄입니다.",
           "Leases and recycles ArrayBuffers across Workers, ONNX and WebCodecs to cut GC pauses on high-res tasks.",
         ),
-        paths: ["apps/web/src/domains/creator/studio-zero-copy-buffer-pool.ts"],
+        paths: ["apps/web/src/domains/creator/wasm64-zero-copy-ipc/studio-zero-copy-buffer-pool.ts"],
       },
     ],
     samples: [
@@ -199,17 +199,17 @@ export const ENGINEERING_ATLAS_AI_SILICON: readonly EngineeringAtlasEntry[] = [
       {
         value: "6 local ONNX",
         label: t("NPU→WebGPU→WASM 자동 캐스케이드 대상 로컬 모델", "Local models covered by NPU → WebGPU → WASM cascade"),
-        source: "apps/web/src/domains/creator/studio-onnx-session-cascade.ts",
+        source: "apps/web/src/domains/creator/toon-silicon-runtime/studio-onnx-session-cascade.ts",
       },
       {
         value: "H.264/HEVC/AV1",
         label: t("WebCodecs 하드웨어 인코딩 사전 탐지 영상 코덱(+Opus)", "WebCodecs hardware-probe video codecs (plus Opus audio)"),
-        source: "apps/web/src/domains/creator/studio-hardware-accelerator-probe.ts",
+        source: "apps/web/src/domains/creator/toon-silicon-runtime/studio-hardware-accelerator-probe.ts",
       },
       {
         value: "0-GC Slab Pool",
         label: t("텐서·프레임 Transferable 버퍼 재사용 풀", "Transferable slab buffer pool for tensors & frames"),
-        source: "apps/web/src/domains/creator/studio-zero-copy-buffer-pool.ts",
+        source: "apps/web/src/domains/creator/wasm64-zero-copy-ipc/studio-zero-copy-buffer-pool.ts",
       },
     ],
     reviewedAt: "2026-11-26",

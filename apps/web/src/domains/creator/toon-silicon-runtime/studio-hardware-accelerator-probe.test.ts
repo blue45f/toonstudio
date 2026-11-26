@@ -19,13 +19,13 @@ import {
 import {
   bindLiveHardwareProbeToSiliconPlan,
   buildSiliconFullPowerPlan,
-} from "./toon-silicon-runtime";
-import { summarizeWebNnHardwareAvailability } from "./webnn-npu-thermal-compiler";
+} from "./index";
+import { summarizeWebNnHardwareAvailability } from "../webnn-npu-thermal-compiler";
 import {
   probeOnDeviceHardwareCapabilities,
   selectOnDeviceExecutionProvider,
   toOnDeviceHardwareProbe,
-} from "./xr-splat-runtime/ondevice-webnn-assist-runtime";
+} from "../xr-splat-runtime/ondevice-webnn-assist-runtime";
 
 function fakeGpuAdapter(options: {
   readonly features?: readonly string[];
