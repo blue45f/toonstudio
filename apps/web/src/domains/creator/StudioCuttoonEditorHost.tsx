@@ -22031,6 +22031,7 @@ function clearSelectionForEdit() {
       pages={pages}
       pagesHi={pagesHi}
       pagesHiRef={pagesHiRef}
+      pagesHistoryRef={pagesHistoryRef}
       pagesHistory={pagesHistory}
       pagesHistoryDurabilityStatus={pagesHistoryDurabilityStatus}
       pagesSheetRef={pagesSheetRef}

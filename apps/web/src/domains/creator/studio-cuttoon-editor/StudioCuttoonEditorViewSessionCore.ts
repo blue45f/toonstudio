@@ -475,6 +475,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   pages: import("../studio-page-state").PageState[];
   pagesHi: number;
   pagesHiRef: import("react").RefObject<number>;
+  pagesHistoryRef: import("react").RefObject<import("../studio-page-state").PageState[][]>;
   pagesHistory: import("../studio-page-state").PageState[][];
   pagesHistoryDurabilityStatus: import("../studio-pages-history-command-journal-client").StudioPagesHistoryCommandJournalDurabilityStatus;
   pagesSheetRef: import("react").RefObject<HTMLDivElement | null>;
