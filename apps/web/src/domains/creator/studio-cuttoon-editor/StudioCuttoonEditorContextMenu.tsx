@@ -7,6 +7,7 @@
 import { StudioCanvasContextMenu } from "../canvas/StudioCanvasContextMenu";
 import { preloadStudioBackground3D } from "../studio-background-3d-loader";
 import { parseStudio3dTool } from "../studio-background-3d-metadata";
+import { reopenStudioVrmCut } from "../studio-reopen-vrm-cut";
 import { isEffectivelyLocked } from "../studio-layers";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
@@ -33,9 +34,6 @@ export function StudioCuttoonEditorContextMenu(s: StudioCuttoonEditorViewSession
     setBg3dInitialScene,
     setBg3dOpen,
     setContextMenu,
-    setPoserInitialDataUrl,
-    setPoserInitialElementId,
-    setPoserVrmOpen,
     setQuickShapeActive,
     toggleSelectedElementsLocked,
   } = s;
@@ -53,11 +51,7 @@ export function StudioCuttoonEditorContextMenu(s: StudioCuttoonEditorViewSession
         onEditVrm={
           contextMenuEl?.type === "image" &&
           (contextMenuEl.vrmScene || parseStudio3dTool(contextMenuEl.src) === "vrm-poser")
-            ? () => {
-                setPoserInitialDataUrl(contextMenuEl.src);
-                setPoserInitialElementId(contextMenuEl.id);
-                setPoserVrmOpen(true);
-              }
+            ? () => reopenStudioVrmCut(contextMenuEl, s)
             : undefined
         }
         onEditBackground3d={
