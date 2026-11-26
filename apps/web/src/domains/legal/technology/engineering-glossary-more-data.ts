@@ -326,4 +326,61 @@ export const GLOSSARY_MORE_DATA: readonly GlossaryTerm[] = [
     chapters: ["pwa-continuity", "pwa-safe-update"],
     atlasIds: ["pwa-base-asset-pinner-5-guards", "user-approved-update-kill-switch"],
   },
+  {
+    id: "dm-qim-watermark-pq-wots-merkle-ledger",
+    category: "data",
+    term: t("DM-QIM 비가시 워터마크 · ₩0 Merkle 원장 · WOTS+ 봉인", "DM-QIM watermark, ₩0 Merkle ledger & PQ WOTS+ seal"),
+    definition: t(
+      "8×8 Haar-Walsh DM-QIM 비가시 워터마크, 고주파 스크래핑 방어막, 가스비 ₩0 ECDSA+Merkle 원장, RFC-8391 스타일 SHA-256 WOTS++ECDSA 포스트-양자 봉인을 묶은 저작권 증빙 체계입니다.",
+      "A zero-gas creator defense stack uniting 8×8 Haar-Walsh DM-QIM watermarks, a high-frequency scraping shield, an ECDSA+Merkle audit ledger and RFC-8391-style PQ WOTS++ECDSA seals.",
+    ),
+    analogy: t(
+      "지폐의 숨은 그림(DM-QIM)과 복사 방지 무늬(고주파 방어막)를 작품에 넣고, 1바이트만 바뀌어도 들통나는 등기부(Merkle)와 양자 시대 대비 이중 인감(WOTS+)을 찍는 방식입니다.",
+      "Like combining hidden banknote ink, anti-copy micro-patterns, a tamper-evident registry and dual post-quantum seals on every exported work.",
+    ),
+    inToonstudio: t(
+      "워터마크 PSNR 46.58 dB(섭동 후 100% 복원), 방어막 PSNR 44.85 dB(텍스트 변형 0), ₩0 Merkle 검증 3.065ms, WOTS++ECDSA 봉인 2,144 B·16ms 를 단위 테스트로 검증했습니다.",
+      "Verified at 46.58 dB watermark PSNR (100% recovery), 44.85 dB text-safe shield, 3.065 ms ₩0 Merkle verification and 2,144 B / 16 ms WOTS++ECDSA sealing.",
+    ),
+    chapters: ["licenses", "content-addressing"],
+    atlasIds: ["webgpu-watermark-merkle-ledger-pq-seal"],
+  },
+  {
+    id: "local-cmyk-pdfx4-epub3-cbz-packager",
+    category: "data",
+    term: t("₩0 로컬 CMYK PDF/X-4 · EPUB3 · CBZ · 4대 플랫폼 패키저", "₩0 local CMYK PDF/X-4, EPUB3, CBZ & 4-platform packager"),
+    definition: t(
+      "외부 변환 서버 없이 브라우저에서 네이버·카카오·라인·타파스 규격 검수와 300 DPI·3mm 도련·TAC ≤ 300% CMYK PDF/X-4, 고정 레이아웃 EPUB3·CBZ 를 패키징하는 출판 엔진입니다.",
+      "A ₩0 browser-local packager auditing Naver/Kakao/LINE/Tapas specs and building 300 DPI / 3 mm bleed / TAC<=300% CMYK PDF/X-4, fixed-layout EPUB3 and Rights-BOM CBZ archives.",
+    ),
+    analogy: t(
+      "연재 플랫폼 검수관과 인쇄소 감리 기사, 전자책 제본기를 내 노트북 안에 넣어 서버 비용 없이 네 가지 출판 규격을 한 번에 찍어 내는 출판 데스크입니다.",
+      "Like running a serial QA inspector, pressroom preflight checker and e-book binder right inside your browser with zero server bills.",
+    ),
+    inToonstudio: t(
+      "wasm64-publish-continuity-resilience/ 의 publish-spec-and-cmyk-softproof.ts 와 cmyk-pdfx4-epub3-print-packager.ts 가 4대 플랫폼 규격 위반 차단, TAC 300% 클램프, ZIP CBZ·EPUB3 를 검증했습니다.",
+      "publish-spec-and-cmyk-softproof.ts and cmyk-pdfx4-epub3-print-packager.ts verify 4-platform preflight gates, TAC<=300% CMYK soft-proofing and local EPUB3/CBZ ZIP generation.",
+    ),
+    chapters: ["storage", "licenses"],
+    atlasIds: ["local-cmyk-pdfx4-epub3-cbz-platform-packager"],
+  },
+  {
+    id: "thermal-pacer-dual-journal-zerotrust-vault",
+    category: "data",
+    term: t("발열 4단계 페이서 · A/B 이중 저널 · 비추출 키 볼트 · 콜드부트", "4-tier thermal pacer, A/B journal, key vault & cold-boot"),
+    definition: t(
+      "발열·배터리 4단계 품질 제어, FNV-1a32 A/B 이중 저널 즉시 복구, extractable:false 키 볼트, 3-Way 병합, MAD 마감 ETA, 97.01% XOR+RLE 타임랩스, 오프라인 콜드부트 감사 스위트입니다.",
+      "A local resilience suite pairing 4-tier thermal pacing, 0.116 ms A/B dual-journal recovery, extractable:false WebCrypto vaults, 3-way merge, MAD ETA, 97.01% timelapse and cold-boot audit.",
+    ),
+    analogy: t(
+      "기기가 뜨거워지면 기어를 낮추고, 예비 기록장과 복제 불가 금고 열쇠, 97% 압축 작업 영상 기록, 비행기 모드 이륙 전 점검표를 한 번에 챙기는 로컬 안전망입니다.",
+      "Like thermal downshifting, a dual flight recorder, non-exportable vault keys, 97% compressed undo timelapses and an offline pre-flight checklist in one kit.",
+    ),
+    inToonstudio: t(
+      "A/B 저널 손상 복구 0.116ms, WebCrypto extractable:false 추출 차단, 3-Way 비겹침 자동 병합, XOR+RLE 타임랩스 97.01% 압축, 제로-네트워크 콜드부트 감사를 단위 테스트로 검증했습니다.",
+      "Verified at 0.116 ms A/B restore, blocked raw key export on extractable:false keys, 3-way auto-merge, 97.01% XOR+RLE timelapse compression and offline cold-boot readiness.",
+    ),
+    chapters: ["storage", "pwa-continuity"],
+    atlasIds: ["thermal-pacer-dual-journal-vault-biometric-coldboot"],
+  },
 ];

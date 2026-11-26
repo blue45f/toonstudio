@@ -496,4 +496,61 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
     chapters: ["wasm-fixed-simd", "performance"],
     atlasIds: ["rust-wave23-native-wasm64-kernels", "export-engine-deterministic-pdf"],
   },
+  {
+    id: "webgpu-multipass-vram-aliasing",
+    category: "brush",
+    term: t("WebGPU 멀티패스 DAG & 일시 VRAM 에일리어싱", "WebGPU multi-pass DAG & transient VRAM aliasing"),
+    definition: t(
+      "렌더 패스 의존성을 DAG 로 위상 정렬해 불필요한 패스를 걷어 내고, 생존 구간이 겹치지 않는 중간 텍스처끼리 같은 VRAM 슬롯을 재사용하는 GPU 메모리 최적화 기법입니다.",
+      "A GPU memory optimizer that topologically compiles render passes, prunes dead passes and aliases physical VRAM slots across non-overlapping transient textures.",
+    ),
+    analogy: t(
+      "장면마다 소품 창고를 따로 빌리지 않고 앞 촬영이 끝난 창고를 다음 팀이 이어 쓰며, 초대형 원고는 화면에 보이는 조각(1024px 타일)만 꺼내 놓는 무대 운영 방식입니다.",
+      "Like reusing the same prop warehouse across non-overlapping film shoots while loading only visible 1024 px tiles of giant scrolls.",
+    ),
+    inToonstudio: t(
+      "wasm64-multipass-copilot-ledger/webgpu-multipass-render-graph.ts 가 Dead-Pass Culling·RAW/WAR/WAW 배리어와 구간 에일리어싱으로 표준 5단계 VRAM 을 352→144 MiB(59.09%), 8K×16K 가상 타일을 97.76% 절감했습니다.",
+      "wasm64-multipass-copilot-ledger/webgpu-multipass-render-graph.ts cuts 5-stage transient VRAM from 352 to 144 MiB (59.09%) and 8K×16K vertical tiled memory by 97.76% with automatic hazard barriers.",
+    ),
+    chapters: ["brush-render-authority", "performance"],
+    atlasIds: ["webgpu-multipass-render-graph-vram-aliasing"],
+  },
+  {
+    id: "wet-paper-lbm-v2-curved-msdf-sfx",
+    category: "brush",
+    term: t("Wet Paper LBM v2 & 곡선 3중 외곽선 MSDF SFX", "Wet Paper LBM v2 & curved triple-outline MSDF SFX"),
+    definition: t(
+      "한지·황목·중목 종이 결 위에서 격자 볼츠만(LBM)으로 수채 모세관 번짐·입상화를 계산하고, 가변 폰트 3중 외곽선 효과음을 베지어·방사 곡선에 배치하는 0-토큰 작화 커널입니다.",
+      "Zero-token drawing kernels simulating capillary watercolor wicking/granulation across three paper grains via LBM alongside curved triple-outline variable-axis MSDF sound effects.",
+    ),
+    analogy: t(
+      "진짜 한지에 물감이 스며 마르는 물리 법칙과, 휘어진 액션 동선을 따라 굵기가 변하는 만화 효과음 식자를 브라우저 안에서 클라우드 토큰 없이 바로 그리는 작업대입니다.",
+      "Like combining real hanji watercolor wicking with curved, three-outline comic sound effects directly inside the browser at zero tokens.",
+    ),
+    inToonstudio: t(
+      "wasm64-supergap-drawing-3d/ 의 wet-paper-lbm-v2.ts·curved-msdf-sfx.ts·wet-paper-msdf-sfx-autoflat.ts 가 3종 종이 WGSL/CPU 파리티, 한글 베지어·영문 방사 SFX, 열린 선화 갭 닫기 오토 플랫팅을 검증했습니다.",
+      "wet-paper-lbm-v2.ts, curved-msdf-sfx.ts and wet-paper-msdf-sfx-autoflat.ts verify 3-paper WGSL/CPU parity, Hangul Bezier & EN radial SFX and zero-token vector gap auto-flatting.",
+    ),
+    chapters: ["brush-engine", "brush-render-authority"],
+    atlasIds: ["supergap-wet-paper-msdf-autoflat-tremor-upscaler"],
+  },
+  {
+    id: "lineart-superres-haptic-tremor-fft",
+    category: "brush",
+    term: t("8Hz 손떨림 FFT 보정 · 링잉 0 선화 초해상도 · 햅틱 마찰", "8 Hz tremor FFT, ringing-free lineart SR & haptic friction"),
+    definition: t(
+      "초기 스트로크를 FFT 로 분석해 8Hz 손떨림 대역만 One-Euro/칼만으로 눌러 90° 모서리를 살리고, 링잉 0건 2×/4× 선화 확대와 4종 지면 마찰 촉각을 묶은 드로잉 보조입니다.",
+      "A drawing suite calibrating 8 Hz hand-tremor FFT cutoffs (>45% RMS drop while keeping 90° corners), ringing-free 2×/4× lineart upscaling and 4-paper haptic friction.",
+    ),
+    analogy: t(
+      "작가 손떨림 주기만 골라 잡아 주는 펜 안정기, 번짐 없이 선을 또렷하게 키우는 확대경, 켄트지·캔버스 결을 손끝에 전하는 촉각 종이판을 함께 쓰는 구성입니다.",
+      "Like pairing a personalized pen stabilizer, a halo-free ink magnifier and tactile paper textures on one offline canvas.",
+    ),
+    inToonstudio: t(
+      "tremor-fft-calibrator.ts(RMS >45% 저감), adaptive-brush-dynamics-and-lineart-upscaler.ts(링잉 헤일로 0), HapticBrushFrictionEngine(켄트·세목·중목·캔버스 배럴롤)을 단위 테스트로 검증했습니다.",
+      "Verified across tremor-fft-calibrator.ts (>45% RMS drop), adaptive-brush-dynamics-and-lineart-upscaler.ts (0 ringing halos) and HapticBrushFrictionEngine (4 paper substrates).",
+    ),
+    chapters: ["brush-engine", "browser-local-compute"],
+    atlasIds: ["supergap-wet-paper-msdf-autoflat-tremor-upscaler"],
+  },
 ];

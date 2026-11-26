@@ -517,4 +517,42 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
     chapters: ["performance", "sound-generation", "nextgen-web-experiments"],
     atlasIds: ["webgpu-cel-sab64-webcodecs-audiotoon", "webcodecs-selected-pipeline"],
   },
+  {
+    id: "motiontoon-depth-vfx-hrtf-sab-ring",
+    category: "web",
+    term: t("2.5D 모션툰 · 뎁스 VFX · 3D HRTF · Lock-Free SAB 링버퍼", "2.5D MotionToon, depth VFX, 3D HRTF & lock-free SAB ring"),
+    definition: t(
+      "정지 1컷을 2.5D 메시 모션툰·광학흐름 동화·3D 뎁스 파티클·패럴랙스로 움직이게 하고, 스크롤 스템+3D HRTF 입체음향을 Lock-Free SAB AudioWorklet 링버퍼로 재생하는 로컬 엔진입니다.",
+      "A zero-token local engine turning single cuts into 2.5D MotionToon, optical-flow in-betweens, depth VFX and parallax with scroll-stem 3D HRTF over a lock-free SAB AudioWorklet ring.",
+    ),
+    analogy: t(
+      "정지 웹툰 컷에 인형 관절·비/눈 충돌·입체 음향을 브라우저에서 바로 얹고, 끊김 없는 전용 파이프(SAB 링버퍼)로 128샘플씩 흘려보내는 미니 극장입니다.",
+      "Like adding puppet rigs, depth-colliding rain/snow and binaural sound to static comic cuts through a zero-underrun 128-sample audio pipe.",
+    ),
+    inToonstudio: t(
+      "1컷 모션툰 18ms/60f, 광학흐름 동화 9ms, 5종 뎁스 VFX 18ms, 스크롤 스템+3D HRTF 1ms, 128샘플 Lock-Free SAB 링버퍼 0.041ms(언더런 0·non-SAB 폴백 포함)를 검증했습니다.",
+      "Verified at 18 ms/60f MotionToon, 9 ms optical flow, 18 ms depth VFX, 1 ms scroll-stem 3D HRTF and 0.041 ms lock-free SAB audio ring (0 underruns + non-SAB fallback).",
+    ),
+    chapters: ["sound-generation", "performance"],
+    atlasIds: ["supergap-motiontoon-depth-vfx-hrtf-sab-telemetry"],
+  },
+  {
+    id: "autonomous-120hz-ols-telemetry-gate",
+    category: "web",
+    term: t("자율 120Hz OLS 힙 누수 · 컷 회귀 텔레메트리 게이트", "Autonomous 120 Hz OLS heap-leak & per-cut telemetry gate"),
+    definition: t(
+      "120Hz(8.33ms) 프레임 예산 안에서 P99 지연·VRAM 초과·지속적 단조 힙 누수를 OLS 선형 회귀로 판별하되 정상 톱니형 GC 패턴은 걸러 내어 원인 컷 번호를 자동 귀속하는 감시기입니다.",
+      "A 120 Hz (8.33 ms) runtime gate using OLS regression to separate true monotonic heap leaks from healthy sawtooth GC and pin P99/VRAM regressions to offending cuts.",
+    ),
+    analogy: t(
+      "숨을 쉬듯 오르내리는 정상 메모리 정리(톱니 GC)에는 울리지 않고, 물이 계속 새는 컷 번호만 콕 집어 알려 주는 120Hz 계기판입니다.",
+      "Like a 120 Hz cockpit gauge that ignores normal breathing sawtooth GC and flags only the exact cut leaking memory or blowing frame budget.",
+    ),
+    inToonstudio: t(
+      "wasm64-grid-brush-parallax-telemetry/depth-parallax-exporter-and-frame-telemetry.ts 의 AutonomousFrameTelemetryGate 가 톱니 GC 무오탐·P99/힙 누수/VRAM 컷 귀속을 검증했습니다.",
+      "AutonomousFrameTelemetryGate in depth-parallax-exporter-and-frame-telemetry.ts passes zero-false-positive sawtooth-GC and per-cut P99/heap/VRAM attribution tests.",
+    ),
+    chapters: ["performance", "quality"],
+    atlasIds: ["supergap-motiontoon-depth-vfx-hrtf-sab-telemetry"],
+  },
 ];

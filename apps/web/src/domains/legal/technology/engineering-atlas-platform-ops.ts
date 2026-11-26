@@ -1,5 +1,6 @@
 import { PLATFORM_OPS_BACKEND_CARDS } from "./engineering-atlas-platform-ops-backend";
 import { PLATFORM_OPS_BUILD_CARDS } from "./engineering-atlas-platform-ops-build";
+import { PLATFORM_OPS_CREATOR_DEFENSE_CARDS } from "./engineering-atlas-platform-ops-creator-defense";
 import { PLATFORM_OPS_DATA_CARDS } from "./engineering-atlas-platform-ops-data";
 import { PLATFORM_OPS_EDGE_CARDS } from "./engineering-atlas-platform-ops-edge";
 import { PLATFORM_OPS_QUALITY_CARDS } from "./engineering-atlas-platform-ops-quality";
@@ -18,6 +19,7 @@ export const ENGINEERING_ATLAS_PLATFORM_OPS: readonly EngineeringAtlasEntry[] = 
   ...ENGINEERING_ATLAS_PLATFORM_OPS_ZERO_COST,
   ...PLATFORM_OPS_DATA_CARDS,
   ...PLATFORM_OPS_TRUST_CARDS,
+  ...PLATFORM_OPS_CREATOR_DEFENSE_CARDS,
   ...PLATFORM_OPS_BACKEND_CARDS,
   ...PLATFORM_OPS_TRANSACTION_CARDS,
   ...PLATFORM_OPS_QUALITY_CARDS,

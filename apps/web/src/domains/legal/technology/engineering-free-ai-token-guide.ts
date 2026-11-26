@@ -539,6 +539,20 @@ export const TOONSTUDIO_FREE_AI_ROUTES: readonly ToonStudioFreeAiRoute[] = [
       "docs/operations/free-ai-runtime.md",
     ],
   },
+  {
+    id: "supergap-zero-token-copilot-rag-and-qa",
+    title: t("Super-Gap 0-토큰 로컬 코파일럿 RAG · 화풍 · 1줄 씬 · 120화 모순 감사", "Super-Gap zero-token local copilot RAG, style, 1-line scene & 120-ep QA"),
+    body: t(
+      "장기 연재 기억과 사전 검수를 클라우드 LLM 에 매번 보내지 않고 브라우저 안에서 0-토큰으로 끝내는 지연 로드 모듈군을 검증했습니다(2026-11-26). 30화 150컷 로컬 코파일럿 RAG(1.222ms·BM25+256D 코사인·선택적 Chrome Built-in AI 훅), 화풍 프로파일러(OKLCH·선 굵기·톤), 1줄 시맨틱 3D 씬 합성(0.09ms), OKLCH 연속성 Diff·클립보드 C2PA 가드, 40컷 모바일 이탈 히트맵(2ms), 64컷 양방향 대사 시트(7ms), 120화 인물·복선 모순 그래프 감사(2ms)가 모두 외부 토큰 0개·초기 번들 0B 영향으로 동작합니다.",
+      "Verified lazy-loaded zero-token browser modules (2026-11-26) keep recurring editorial memory and QA off cloud LLMs: 30-ep/150-cut local copilot RAG (1.222 ms, BM25+256D cosine, optional Chrome Built-in AI hook), OKLCH artist style profiler, 1-line semantic 3D scene composer (0.09 ms), OKLCH continuity diff & C2PA clipboard guard, 40-cut mobile retention heatmap (2 ms), 64-cut dialogue binder (7 ms) and 120-episode continuity plot graph (2 ms), all at 0 tokens and 0 B eager bundle impact.",
+    ),
+    evidence: [
+      "apps/web/src/domains/creator/wasm64-multipass-copilot-ledger/ondevice-creative-copilot-rag.ts",
+      "apps/web/src/domains/creator/wasm64-creator-defense-healer/artist-style-profiler.ts",
+      "apps/web/src/domains/creator/wasm64-publish-continuity-resilience/continuity-diff-and-clipboard-guard.ts",
+      "apps/web/src/domains/creator/wasm64-supergap-motion-audio/retention-heatmap-spreadsheet-plotgraph.ts",
+    ],
+  },
 ];
 
 export const FREE_AI_TOKEN_CAUTIONS: readonly LocalizedText[] = [

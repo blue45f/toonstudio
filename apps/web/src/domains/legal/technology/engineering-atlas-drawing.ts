@@ -5,6 +5,7 @@ import { ENGINEERING_ATLAS_DRAWING_INPUT } from "./engineering-atlas-drawing-inp
 import { ENGINEERING_ATLAS_DRAWING_LINEAGE } from "./engineering-atlas-drawing-lineage";
 import { ENGINEERING_ATLAS_DRAWING_OUTPUT } from "./engineering-atlas-drawing-output";
 import { ENGINEERING_ATLAS_DRAWING_PAINT } from "./engineering-atlas-drawing-paint";
+import { ENGINEERING_ATLAS_DRAWING_SUPERGAP_V2 } from "./engineering-atlas-drawing-supergap-v2";
 import { ENGINEERING_ATLAS_DRAWING_WASM64 } from "./engineering-atlas-drawing-wasm64";
 import { ENGINEERING_ATLAS_DRAWING_WAVE3 } from "./engineering-atlas-drawing-wave3";
 
@@ -15,6 +16,7 @@ export const ENGINEERING_ATLAS_DRAWING: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_DRAWING_LINEAGE,
   ...ENGINEERING_ATLAS_DRAWING_WASM64,
   ...ENGINEERING_ATLAS_DRAWING_WAVE3,
+  ...ENGINEERING_ATLAS_DRAWING_SUPERGAP_V2,
   ...ENGINEERING_ATLAS_DRAWING_PAINT,
   ...ENGINEERING_ATLAS_DRAWING_DOCUMENT,
   ...ENGINEERING_ATLAS_DRAWING_OUTPUT,

@@ -345,4 +345,61 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
     chapters: ["web-3d-engine", "on-device-inference"],
     atlasIds: ["nextgen-3d-xpbd-qem-retarget-gaze", "vrm-humanoid-rig"],
   },
+  {
+    id: "mesh-topology-healer-3dgs-sh-relight",
+    category: "spatial",
+    term: t("3D 메시 자동 힐러 & 3DGS 기수 정렬 · SH 리라이팅", "3D mesh topology healer & 3DGS radix/SH relighting"),
+    definition: t(
+      "중복 정점·퇴화면·역법선·구멍을 0결함 수밀 솔리드로 자동 치유하고, 3D Gaussian Splat 의 16/32비트 기수 정렬과 구면조화함수(SH) 시간대·날씨 리라이팅을 로컬로 돌리는 파이프라인입니다.",
+      "A local 3D pipeline healing defective meshes to 0-defect watertight solids while running 16/32-bit 3DGS depth radix sorting and spherical-harmonics time-of-day/weather relighting.",
+    ),
+    analogy: t(
+      "구멍 난 종이 모형을 1ms 만에 말끔히 붙이고, 3D 사진 배경에 새벽·노을·야간 조명과 눈·비 효과만 갈아 끼워 웹툰 톤으로 맞추는 3D 배경 작업실입니다.",
+      "Like repairing a torn prop in 1 ms and swapping dawn, sunset, night and weather lighting onto a 3DGS backdrop for webtoon NPR.",
+    ),
+    inToonstudio: t(
+      "mesh-topology-healer.ts(결함 0·수밀 부피 +1.0·1.01ms), WebGpu3dgsSplatSorter(4,096 스플랫 5.57ms), sh-3dgs-relight-weather.ts(새벽·정오·노을·야간 SH L0/L1 + 안개/비/눈)를 검증했습니다.",
+      "Verified across mesh-topology-healer.ts (0 defects, +1.0 volume, 1.01 ms), WebGpu3dgsSplatSorter (4,096 splats in 5.57 ms) and sh-3dgs-relight-weather.ts.",
+    ),
+    chapters: ["web-3d-engine", "virtual-studio-world-authority"],
+    atlasIds: ["supergap-mesh-healer-webcam-vrm-3dgs-relight"],
+  },
+  {
+    id: "webcam-arkit52-pnp-camera-gbuffer-split",
+    category: "spatial",
+    term: t("웹캠 52 ARKit VRM · 2D→3D PnP 역산 · G-Buffer 6레이어", "Webcam 52 ARKit VRM, 2D→3D PnP & 6-layer G-Buffer"),
+    definition: t(
+      "웹캠 랜드마크를 52개 ARKit VRM 표정으로 미러링하고, 2D 러프 소실선에서 3D 카메라를 1ms 미만으로 역산하며, G-Buffer Object-ID 6레이어로 말풍선 깊이 샌드위치를 합성합니다.",
+      "Mirrors webcam landmarks onto 52 ARKit VRM expressions, recovers 3D cameras from 2D vanishing guides in <1 ms, and splits 6 G-Buffer depth layers for 2D balloon sandwiches.",
+    ),
+    analogy: t(
+      "거울 앞에서 짓는 표정을 인형에 바로 옮겨 멈추고(컷 프리즈), 스케치 투시선으로 카메라 렌즈를 맞춘 뒤 전경 캐릭터와 배경 사이에 말풍선을 끼워 넣는 연출 도구입니다.",
+      "Like mirroring expressions onto a puppet with cut-freeze, locking a 3D lens to sketch vanishing lines, and sliding speech balloons between foreground and background.",
+    ),
+    inToonstudio: t(
+      "wasm64-supergap-drawing-3d/ 의 webcam-vrm-pose-solver.ts·camera-pnp-motion-smear.ts(24–135mm <1ms)·webcam-vrm-3dgs-pnp-smear-split.ts(6 RGBA 깊이 레이어)가 단위·엣지 테스트를 통과했습니다.",
+      "webcam-vrm-pose-solver.ts, camera-pnp-motion-smear.ts (24–135 mm in <1 ms) and webcam-vrm-3dgs-pnp-smear-split.ts (6 RGBA depth layers) pass unit and edge tests.",
+    ),
+    chapters: ["web-3d-engine", "browser-local-compute"],
+    atlasIds: ["supergap-mesh-healer-webcam-vrm-3dgs-relight", "supergap-pnp-camera-smear-gbuffer-instancing"],
+  },
+  {
+    id: "foveated-5000-instancing-motion-smear",
+    category: "spatial",
+    term: t("포비에이티드 렌더링 · 5,000 인스턴스 배칭 · 본 스미어", "Foveated rendering, 5,000-instance batching & bone smear"),
+    definition: t(
+      "시선·펜촉 주변 타일만 정밀 셰이딩하고 5,000개 3D 인스턴스를 64바이트 슬랩으로 압축하며, 3D 본 모션 벡터로 액션 스미어 잔상과 방사 집중선을 생성하는 3D 가속 계층입니다.",
+      "A 3D acceleration layer prioritizing gaze/pen foveal tiles, packing 5,000 instances into 64-byte WebGPU slabs and synthesizing bone motion-vector smears and radial speedlines.",
+    ),
+    analogy: t(
+      "눈이 보는 중심만 촘촘히 그리고(포비에이티드) 군중 5,000명을 한 묶음 지시서로 처리하며, 빠르게 움직이는 팔의 잔상과 집중선까지 자동으로 얹어 주는 무대 연출입니다.",
+      "Like shading only the focal spot densely, dispatching 5,000 crowd props in one batch and drawing action motion smears from bone velocity.",
+    ),
+    inToonstudio: t(
+      "foveated-instancing-and-haptic-brush.ts 가 셰이딩 75.38% 절감·5,000 인스턴스 99.02% 드로우콜 절감(4.74ms)을, camera-pnp-motion-smear.ts 가 본 스미어·방사 집중선 합성을 검증했습니다.",
+      "foveated-instancing-and-haptic-brush.ts verified 75.38% shading and 99.02% draw-call reduction (4.74 ms for 5,000 instances), paired with bone smear/speedline synthesis.",
+    ),
+    chapters: ["web-3d-engine", "performance"],
+    atlasIds: ["supergap-pnp-camera-smear-gbuffer-instancing"],
+  },
 ];

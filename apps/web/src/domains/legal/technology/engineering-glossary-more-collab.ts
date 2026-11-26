@@ -345,4 +345,42 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     chapters: ["webrtc-media-authority", "collaborative-crdt-boundary"],
     atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "webrtc-datachannel-direct-lane"],
   },
+  {
+    id: "p2p-grid-render-merkle-r2-offload",
+    category: "collab",
+    term: t("P2P 그리드 타일 렌더 · Merkle 자가치유 · R2 90% 오프로드", "P2P grid tile render, Merkle self-heal & 90% R2 offload"),
+    definition: t(
+      "팀 기기끼리 타일 렌더를 워크 스틸링·FNV-1a 검증으로 분담하고, 에셋 DAG 머클 자가치유와 R2+P2P 웜 메시 오프로드·잉크 우선순위 CRDT 를 결합한 무서버 협업 계층입니다.",
+      "A server-free collaboration layer uniting work-stealing FNV-1a P2P grid rendering, Merkle asset self-healing, 90% warm-mesh R2 offload and ink-priority CRDT.",
+    ),
+    analogy: t(
+      "팀원들이 퍼즐 조각을 나눠 맞추다 먼저 끝낸 사람이 돕고(워크 스틸링), 틀린 조각을 낸 피어는 제외하며, 이미 받은 파일은 옆자리에서 바로 공유해 서버 트래픽을 90% 줄이는 방식입니다.",
+      "Like teammates splitting puzzle tiles with work stealing, quarantining faulty peers by checksum and sharing cached assets locally to cut origin traffic by 90%.",
+    ),
+    inToonstudio: t(
+      "P2pGridRenderCoordinator(4초 타임아웃 재할당·FNV-1a 격리), RealTimeAssetStreamPipeline(DAG 머클 자가치유), HybridR2P2pAssetCacheRouter(90% 오프로드), ContextAwarePriorityCrdt 를 검증했습니다.",
+      "Verified across P2pGridRenderCoordinator (4 s failover, FNV-1a quarantine), RealTimeAssetStreamPipeline (Merkle self-heal), HybridR2P2pAssetCacheRouter (90% offload) and ContextAwarePriorityCrdt.",
+    ),
+    chapters: ["collaborative-crdt-boundary", "webrtc-media-authority"],
+    atlasIds: ["p2p-grid-tile-render-merkle-stream-r2-offload"],
+  },
+  {
+    id: "zero-lag-sas-pairing-ephemeral-redline",
+    category: "collab",
+    term: t("6자리 SAS 컴패니언 페어링 & 일회성 P2P 레드라인", "6-digit SAS companion pairing & ephemeral P2P redline"),
+    definition: t(
+      "6자리 인증 코드(SAS)와 ≤16 KiB XOR+RLE 압축으로 PC↔태블릿을 저지연 미러링하고, 설치 없는 TTL 암호화 P2P 링크로 원본 무변조 교정 오버레이를 받는 협업 프로토콜입니다.",
+      "A local pairing protocol linking PC and tablet via 6-digit SAS + <=16 KiB XOR+RLE dirty tiles alongside zero-install TTL encrypted P2P redline overlays that never mutate art.",
+    ),
+    analogy: t(
+      "블루투스 숫자 6자리 맞추듯 태블릿을 PC 보조 액정으로 붙이고, 편집자에게는 그림 위에 투명 트레이싱지만 얹어 메모할 수 있는 기한 한정 링크를 건네는 작업 방식입니다.",
+      "Like pairing a tablet display with a 6-digit code and handing editors a time-limited tracing-paper overlay link that never touches original ink.",
+    ),
+    inToonstudio: t(
+      "ZeroLagDevicePairingSession(6.15× 더티 압축·스타일러스 릴레이)과 EphemeralP2pRedlineReviewSession(TTL·토글 오버레이·원본 무변조)을 단위 테스트로 검증했습니다.",
+      "Verified in ZeroLagDevicePairingSession (6.15× dirty-tile compression, stylus relay) and EphemeralP2pRedlineReviewSession (TTL, toggle overlays, 0 art mutation).",
+    ),
+    chapters: ["webrtc-media-authority", "browser-local-compute"],
+    atlasIds: ["zero-lag-companion-pairing-ephemeral-redline-hw"],
+  },
 ];

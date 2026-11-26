@@ -190,6 +190,8 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     "three-r3f-viewport",
     "nextgen-3d-webgpu-gi-culling-procedural",
     "nextgen-3d-xpbd-qem-retarget-gaze",
+    "supergap-mesh-healer-webcam-vrm-3dgs-relight",
+    "supergap-pnp-camera-smear-gbuffer-instancing",
     "vrm-humanoid-rig",
     "glb-optimization-pipeline",
     "lift-2d-to-3d",
@@ -204,6 +206,9 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     "humanoid-bones",
     "webgpu-compute-gi-pcss-hiz",
     "xpbd-120hz-qem-retarget-gaze",
+    "mesh-topology-healer-3dgs-sh-relight",
+    "webcam-arkit52-pnp-camera-gbuffer-split",
+    "foveated-5000-instancing-motion-smear",
   ],
 };
 
@@ -388,6 +393,8 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
   atlasIds: [
     "free-first-ai-routing",
     "openai-flagship-eval-korean-pii-starter",
+    "ondevice-creative-copilot-rag-style-profiler",
+    "zero-token-continuity-diff-retention-plot-graph",
     "hardware-silicon-npu-webcodecs-cascade",
     "quota-ledger-budget",
     "ambiguous-failure-no-retry",
@@ -400,6 +407,8 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
   glossaryIds: [
     "ai-routing",
     "korean-pii-guard-zero-cost-starter",
+    "ondevice-copilot-rag-style-profiler",
+    "oklch-continuity-diff-retention-plot-graph",
     "quota-ledger",
     "byok",
     "ai-provider-allowlist",
@@ -628,6 +637,7 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
     "web-locks-broadcastchannel-single-author",
     "storage-persistence-quota-safe-mode",
     "pwa-base-asset-pinner-5-guards",
+    "thermal-pacer-dual-journal-vault-biometric-coldboot",
     "server-down-fallback-deadline",
     "user-approved-update-kill-switch",
     "webgpu-tier-budget-recovery",
@@ -637,6 +647,7 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
   glossaryIds: [
     "fail-visible",
     "pwa-base-asset-pinner-5-guards",
+    "thermal-pacer-dual-journal-zerotrust-vault",
     "gpu-device-loss",
     "kill-switch",
     "fault-injection",
