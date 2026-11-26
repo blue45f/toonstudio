@@ -2015,7 +2015,7 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
         async () => new Response(JSON.stringify({ data: [{ b64_json: btoa("gpt-image-bytes") }] }), { status: 200 }),
       );
       globalThis.fetch = mockFetch as unknown as typeof fetch;
-      const gptImageSettings: StudioAiSettings = { ...CONFIGURED, imageModel: "gpt-image-1.5" };
+      const gptImageSettings: StudioAiSettings = { ...CONFIGURED, baseUrl: STUDIO_AI_DEFAULT_SETTINGS.baseUrl, imageModel: "gpt-image-1.5" };
       const samplePng = pngDataUrl(0x55);
 
       // 1) generateBackgroundImage portrait normalization
@@ -2024,10 +2024,11 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
       const bgPortraitBody = JSON.parse((mockFetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
       expect(bgPortraitBody.size).toBe("1024x1536");
       expect(bgPortraitBody.response_format).toBeUndefined();
+      expect(bgPortraitBody.output_format).toBe("png");
 
       // 1b) generateBackgroundImage landscape normalization on gpt-image-2.6-sunburst
       const bgLandscape = await generateBackgroundImage(
-        { ...CONFIGURED, imageModel: "gpt-image-2.6-sunburst" },
+        { ...gptImageSettings, imageModel: "gpt-image-2.6-sunburst" },
         "노을 지는 옥상",
         { size: "1792x1024" },
       );
@@ -2053,21 +2054,21 @@ describe("studio-ai-client network calls (fetch mocked)", () => {
 
       // 5) generateImageWithRoleReferences
       const roleRef = await generateImageWithRoleReferences(
-        { ...CONFIGURED, imageModel: "chatgpt-image-latest" },
+        { ...gptImageSettings, imageModel: "chatgpt-image-latest" },
         [{ referenceId: "hero", role: "character", dataUrl: samplePng }],
         "지하철 승강장에서 기다리는 장면",
       );
       expect(roleRef.ok).toBe(true);
       expect(((mockFetch.mock.calls[5] as unknown as [string, RequestInit])[1].body as FormData).get("response_format")).toBeNull();
 
-      // 6) STUDIO_AI_DEFAULT_SETTINGS uses active gpt-image-1.5 (not retired dall-e-3)
-      expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe("gpt-image-1.5");
+      // 6) 기기 기본 이미지 모델과 세로 출력 크기
+      expect(STUDIO_AI_DEFAULT_SETTINGS.imageModel).toBe("gpt-image-2.6-flare");
       const defaultPortrait = await generateBackgroundImage(
         { ...STUDIO_AI_DEFAULT_SETTINGS, apiKey: "sk-test-key" },
         "새벽 편의점 앞",
         { size: "1024x1792" },
       );
-      expect(defaultPortrait).toMatchObject({ ok: true, data: { width: 1024, height: 1536, model: "gpt-image-1.5" } });
+      expect(defaultPortrait).toMatchObject({ ok: true, data: { width: 1024, height: 1536, model: "gpt-image-2.6-flare" } });
       const defaultBody = JSON.parse((mockFetch.mock.calls[6] as unknown as [string, RequestInit])[1].body as string);
       expect(defaultBody.size).toBe("1024x1536");
       expect(defaultBody.response_format).toBeUndefined();
