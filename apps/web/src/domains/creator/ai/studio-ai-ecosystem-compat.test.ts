@@ -12,6 +12,7 @@ import {
   normalizeOpenAiLegacyImageBody,
 } from "@/shared/ai/openai-model-compat";
 import { STUDIO_AI_DEFAULT_SETTINGS } from "./studio-ai-settings";
+import { buildOpenAiTextCompletionBody } from "./studio-ai-model-compat";
 
 import {
   buildWebtoonModelerOpenAiImageRequest,
@@ -61,6 +62,23 @@ describe("OpenAI flagship compatibility helpers (shared/ai/openai-model-compat)"
     expect(reasoningText).toMatchObject({ model: "gpt-6.2-astra", max_completion_tokens: 4096 });
     expect(reasoningText).not.toHaveProperty("max_tokens");
     expect(reasoningText).not.toHaveProperty("temperature");
+
+    const clientReasoningBody = buildOpenAiTextCompletionBody({
+      model: "gpt-6.2-astra",
+      system: "sys",
+      user: "usr",
+      temperature: 0.7,
+      maxTokens: 1800,
+      responseFormat: "json",
+    });
+    expect(clientReasoningBody).toMatchObject({
+      model: "gpt-6.2-astra",
+      reasoning_effort: "low",
+      max_completion_tokens: 4200,
+      response_format: { type: "json_object" },
+    });
+    expect(clientReasoningBody).not.toHaveProperty("temperature");
+    expect(clientReasoningBody).not.toHaveProperty("max_tokens");
 
     const pingNormalized = normalizeOpenAiLegacyChatBody("gpt-5.5", {
       model: "gpt-4o-mini",

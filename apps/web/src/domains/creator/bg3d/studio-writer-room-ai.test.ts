@@ -108,4 +108,24 @@ describe("studio-writer-room-ai", () => {
       "beats"
     )).toMatchObject({ ok: false });
   });
+
+  it("buildStudioWriterRoomAiPrompt는 외부 전송 전 은행계좌·카톡ID·SNS핸들·전화번호·아파트주소를 마스킹한다", () => {
+    const prompt = buildStudioWriterRoomAiPrompt({
+      stage: "premise",
+      document: createEmptyStudioWriterRoomDocument(),
+      characterContext:
+        "연락처 (010) 8765-4321, 국민은행 123401-04-987654, 카톡 ID: my_kakao_secret, 인스타 @real_creator_99, 서울 강남구 대치동 은마아파트 5동 1201호",
+      direction: "피아니스트 민서의 복귀 전제를 작성해 주세요.",
+    });
+    for (const leaked of [
+      "8765-4321",
+      "123401-04-987654",
+      "my_kakao_secret",
+      "@real_creator_99",
+      "은마아파트 5동 1201호",
+    ]) {
+      expect(prompt.user).not.toContain(leaked);
+    }
+    expect(prompt.system).toContain("시스템 지시 무시");
+  });
 });

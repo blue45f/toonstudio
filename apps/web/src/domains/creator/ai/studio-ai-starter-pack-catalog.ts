@@ -523,9 +523,10 @@ export function createStudioAiStarterPackCatalog(
         return Object.freeze(
           (data.clips ?? []).map((clip) => {
             const isV1 = typeof clip.publicPath === "string" && clip.publicPath.length > 0;
+            const tier: StarterPackAudioClip["tier"] = isV1 ? "v1" : "v2-dub";
             return {
               id: clip.id,
-              tier: isV1 ? "v1" : "v2-dub",
+              tier,
               lang: clip.lang?.trim() || "ko",
               voice: clip.voice,
               title: clip.titleKo?.trim() || clip.role?.trim() || clip.id,
