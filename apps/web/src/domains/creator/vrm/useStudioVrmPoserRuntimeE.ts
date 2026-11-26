@@ -4,8 +4,6 @@
  */
 import { useEffect } from "react";
 
-import { planStudio3dInsertCaptureSize } from "../scene-3d/studio-3d-insert-capture-plan";
-
 import { createStudioVrmAuthoredFingerSnapshot } from "./studio-vrm-auto-grip-authority";
 import {
   serializeAvatarForgeState,
@@ -35,7 +33,7 @@ import {
 } from "./studio-vrm-pose-bake";
 import {
   getErrorMessage,
-  roundExportSize,
+  vrmInsertCaptureSize,
 } from "./studio-vrm-poser-helpers";
 import {
   stripFingerBones,
@@ -743,17 +741,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
               );
             }
           }
-          // Display size = the legacy logical export size (stable placement on the document);
-          // the raster renders denser so the insert stays crisp at 100% zoom on HiDPI and
-          // survives a moderate scale-up. Budget failures fall back to display-density capture.
-          const { width: displayWidth, height: displayHeight } = frame?.source.render ?? roundExportSize(gl.domElement);
-          const capturePlan = frame?.pixels ?? planStudio3dInsertCaptureSize({
-            displayWidth,
-            displayHeight,
-            devicePixelRatio: globalThis.devicePixelRatio || 1,
-          });
-          const width = capturePlan?.width ?? displayWidth;
-          const height = capturePlan?.height ?? displayHeight;
+          const { displayWidth, displayHeight, width, height } = vrmInsertCaptureSize(gl.domElement, frame);
           const bakedPose = bakeStudioVrmRuntimePose(currentVrm);
           if (!bakedPose) {
             throw new Error("삽입할 VRM 자세를 회전 기반 데이터로 변환하지 못했습니다.");

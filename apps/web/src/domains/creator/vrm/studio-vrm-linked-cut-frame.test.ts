@@ -2,6 +2,7 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
 import { cameraForLinkedCut, linkedCutCameraMatches, linkedCutContextMatches, readLinkedCutPngSize } from "./studio-vrm-linked-cut-frame";
+import { vrmInsertCaptureSize } from "./studio-vrm-poser-helpers";
 import { createDefaultStudioVrmSceneDocument } from "./studio-vrm-scene-document";
 
 describe("linked placement recapture", () => {
@@ -25,6 +26,11 @@ describe("linked placement recapture", () => {
     camera.position.set(2, 1, 3);
     camera.lookAt(new Vector3(0, 1, 0));
     const frame = { source: { ...scene, render: { ...scene.render, width: 90, height: 160 } }, pixels: { width: 180, height: 320 } };
+    const canvas = { width: 200, height: 100 } as HTMLCanvasElement;
+    const normal = vrmInsertCaptureSize(canvas);
+    expect([normal.displayWidth, normal.displayHeight]).toEqual([1040, 520]);
+    expect(normal.width).toBeGreaterThan(normal.displayWidth);
+    expect(vrmInsertCaptureSize(canvas, frame)).toEqual({ displayWidth: 90, displayHeight: 160, width: 180, height: 320 });
     const output = cameraForLinkedCut(camera, frame);
     expect(output.aspect).toBe(90 / 160);
     expect(output.position.distanceTo(camera.position)).toBeLessThan(1e-8);
