@@ -188,12 +188,23 @@ export const VIRTUAL_STUDIO_3D_SECTION: ArchitectureGuideSection = {
     "world-authority-cas-projection",
     "space-is-not-permission",
     "three-r3f-viewport",
+    "nextgen-3d-webgpu-gi-culling-procedural",
+    "nextgen-3d-xpbd-qem-retarget-gaze",
     "vrm-humanoid-rig",
     "glb-optimization-pipeline",
     "lift-2d-to-3d",
   ],
   chapterIds: ["virtual-studio-world-authority", "web-3d-engine"],
-  glossaryIds: ["virtual-studio", "vrm", "threejs", "r3f", "gltf", "humanoid-bones"],
+  glossaryIds: [
+    "virtual-studio",
+    "vrm",
+    "threejs",
+    "r3f",
+    "gltf",
+    "humanoid-bones",
+    "webgpu-compute-gi-pcss-hiz",
+    "xpbd-120hz-qem-retarget-gaze",
+  ],
 };
 
 /** 6) AI가 끼어드는 길 — 처리 위치 선택, 예산 예약, 유료 허락, 제안과 승인. */
@@ -376,6 +387,8 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
   status: "configured",
   atlasIds: [
     "free-first-ai-routing",
+    "openai-flagship-eval-korean-pii-starter",
+    "hardware-silicon-npu-webcodecs-cascade",
     "quota-ledger-budget",
     "ambiguous-failure-no-retry",
     "byok-paid-approval-gate",
@@ -384,7 +397,16 @@ export const AI_PATH_SECTION: ArchitectureGuideSection = {
     "ai-proposal-not-commit",
   ],
   chapterIds: ["free-ai-routing", "ai-routing", "on-device-inference"],
-  glossaryIds: ["ai-routing", "quota-ledger", "byok", "ai-provider-allowlist", "ai-proposal-review", "ambiguous-failure", "onnx"],
+  glossaryIds: [
+    "ai-routing",
+    "korean-pii-guard-zero-cost-starter",
+    "quota-ledger",
+    "byok",
+    "ai-provider-allowlist",
+    "ai-proposal-review",
+    "ambiguous-failure",
+    "onnx",
+  ],
 };
 
 /** 7) 실패해도 작업이 남는 이유 — 층마다 무엇이 막히고 무엇이 남는가. */
@@ -605,13 +627,23 @@ export const RESILIENCE_SECTION: ArchitectureGuideSection = {
     "autosave-crash-recovery-journal",
     "web-locks-broadcastchannel-single-author",
     "storage-persistence-quota-safe-mode",
+    "pwa-base-asset-pinner-5-guards",
     "server-down-fallback-deadline",
     "user-approved-update-kill-switch",
     "webgpu-tier-budget-recovery",
     "fault-injection-and-soak",
   ],
   chapterIds: ["pwa-continuity", "storage", "troubleshooting-evidence"],
-  glossaryIds: ["fail-visible", "gpu-device-loss", "kill-switch", "fault-injection", "web-locks", "offline-shell", "soak-test"],
+  glossaryIds: [
+    "fail-visible",
+    "pwa-base-asset-pinner-5-guards",
+    "gpu-device-loss",
+    "kill-switch",
+    "fault-injection",
+    "web-locks",
+    "offline-shell",
+    "soak-test",
+  ],
 };
 
 export const ARCHITECTURE_RUNTIME_SECTIONS_C: readonly ArchitectureGuideSection[] = [

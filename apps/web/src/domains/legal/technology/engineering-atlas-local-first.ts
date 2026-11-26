@@ -1,6 +1,7 @@
 import { ENGINEERING_ATLAS_LOCAL_FIRST_DB } from "./engineering-atlas-local-first-db";
 import { ENGINEERING_ATLAS_LOCAL_FIRST_FILES } from "./engineering-atlas-local-first-files";
 import { ENGINEERING_ATLAS_LOCAL_FIRST_PWA } from "./engineering-atlas-local-first-pwa";
+import { ENGINEERING_ATLAS_LOCAL_FIRST_PWA_GUARDS } from "./engineering-atlas-local-first-pwa-guards";
 import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
 /**
@@ -11,5 +12,6 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 export const ENGINEERING_ATLAS_LOCAL_FIRST: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_LOCAL_FIRST_DB,
   ...ENGINEERING_ATLAS_LOCAL_FIRST_PWA,
+  ...ENGINEERING_ATLAS_LOCAL_FIRST_PWA_GUARDS,
   ...ENGINEERING_ATLAS_LOCAL_FIRST_FILES,
 ];

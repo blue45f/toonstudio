@@ -1,4 +1,5 @@
 import { ENGINEERING_ATLAS_REALTIME_COLLAB } from "./engineering-atlas-realtime-collab";
+import { ENGINEERING_ATLAS_REALTIME_INFINITE_P2P } from "./engineering-atlas-realtime-infinite-p2p";
 import { ENGINEERING_ATLAS_REALTIME_MEDIA } from "./engineering-atlas-realtime-media";
 import { ENGINEERING_ATLAS_REALTIME_NEGOTIATION } from "./engineering-atlas-realtime-negotiation";
 import { ENGINEERING_ATLAS_REALTIME_TRANSPORT } from "./engineering-atlas-realtime-transport";
@@ -8,7 +9,7 @@ import type { EngineeringAtlasEntry } from "./engineering-atlas-types";
 
 /**
  * 발표에서 읽는 순서: 문서 협업(Yjs → Socket.IO → 락 → Durable Objects) → WebRTC(구조 → 협상 → 직통 레인
- * → ICE·TURN → 인원 한계 → 화면 공유 → 권한) → 한계를 넘는 전송(WebTransport).
+ * → ICE·TURN → 인원 한계 → 화면 공유 → 권한) → 한계를 넘는 전송(WebTransport → 무한 캔버스·P2P 무손실 델타).
  * 목록에 없는 카드는 뒤에 붙는다.
  */
 const PRESENTATION_ORDER: readonly string[] = [
@@ -24,6 +25,7 @@ const PRESENTATION_ORDER: readonly string[] = [
   "screen-share-signaling",
   "media-permissions-policy",
   "webtransport-experiment",
+  "infinite-canvas-webgpu-p2p-zerogc",
 ];
 
 const rank = (id: string): number => {
@@ -41,4 +43,5 @@ export const ENGINEERING_ATLAS_REALTIME: readonly EngineeringAtlasEntry[] = [
   ...ENGINEERING_ATLAS_REALTIME_NEGOTIATION,
   ...ENGINEERING_ATLAS_REALTIME_MEDIA,
   ...ENGINEERING_ATLAS_REALTIME_TRANSPORT,
+  ...ENGINEERING_ATLAS_REALTIME_INFINITE_P2P,
 ].sort((left, right) => rank(left.id) - rank(right.id));

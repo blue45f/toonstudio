@@ -360,9 +360,20 @@ export const REALTIME_COLLAB_SECTION: ArchitectureGuideSection = {
     "durable-objects-realtime",
     "webrtc-three-plane-signaling",
     "webrtc-datachannel-direct-lane",
+    "infinite-canvas-webgpu-p2p-zerogc",
   ],
   chapterIds: ["collaborative-crdt-boundary", "webrtc-media-authority", "authentication"],
-  glossaryIds: ["socket-io", "crdt", "yjs", "durable-objects", "webrtc", "signaling", "presence"],
+  glossaryIds: [
+    "socket-io",
+    "crdt",
+    "yjs",
+    "durable-objects",
+    "webrtc",
+    "webgpu-collab-dirty-rect-compositor",
+    "webrtc-sctp-xor-rle-p2p-sync",
+    "signaling",
+    "presence",
+  ],
 };
 
 export const ARCHITECTURE_RUNTIME_SECTIONS_B: readonly ArchitectureGuideSection[] = [DATA_AUTHORITY_SECTION, REALTIME_COLLAB_SECTION];

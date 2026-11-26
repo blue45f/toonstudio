@@ -307,4 +307,23 @@ export const GLOSSARY_MORE_DATA: readonly GlossaryTerm[] = [
     chapters: ["infrastructure", "free-first-infra"],
     atlasIds: ["zero-cost-4lane-edge-5tier-storage", "static-first-edge-gateway"],
   },
+  {
+    id: "pwa-base-asset-pinner-5-guards",
+    category: "data",
+    term: t("PWA 베이스 에셋 피너 5대 프로덕션 안전장치", "PWA base asset pinner 5 production safety guards"),
+    definition: t(
+      "오프라인 WASM·스타터 캐시를 고정할 때 쿼터 상한, 스테이징 SRI 원자 스왑, 미저장 캔버스 보호, Safari 7일 ITP 자가 치유, 비상 킬스위치 5중 방어를 강제하는 캐시 컨트롤러입니다.",
+      "A hardened CacheStorage controller enforcing quota caps, staged SRI atomic swaps, unsaved-canvas deferral, Safari 7-day ITP self-healing and an emergency kill-switch.",
+    ),
+    analogy: t(
+      "예비 부품을 창고(스테이징)에서 바코드(SHA-256)·형태(\\0asm)까지 검수한 뒤 작업이 쉬는 시간에만 갈아 끼우고, 창고가 비워지면 자동 보충하며, 문제 시 비상 레버로 즉시 비우는 정비소 규칙입니다.",
+      "Like inspecting spare parts in a hangar (staging + SRI), swapping only when work is saved, auto-restocking if cleared, and keeping an emergency purge lever.",
+    ),
+    inToonstudio: t(
+      "wasm64-offline-pwa/pwa-base-asset-pinner.ts 가 가용 쿼터 20%/48 MiB 상한, .wasm 매직+SHA-256 원자 스왑, hasUnsavedCanvasEdits 보류, Safari ITP 자가 치유, ?reset-pwa-cache=1 킬스위치를 단위 테스트로 검증했습니다.",
+      "wasm64-offline-pwa/pwa-base-asset-pinner.ts enforces 20%/48 MiB limits, .wasm magic + SHA-256 atomic swaps, hasUnsavedCanvasEdits deferral, Safari ITP self-healing and the ?reset-pwa-cache=1 kill-switch.",
+    ),
+    chapters: ["pwa-continuity", "pwa-safe-update"],
+    atlasIds: ["pwa-base-asset-pinner-5-guards", "user-approved-update-kill-switch"],
+  },
 ];

@@ -1,4 +1,5 @@
 import { ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY } from "./engineering-atlas-web-platform-delivery";
+import { ENGINEERING_ATLAS_WEB_PLATFORM_GPU_MEDIA } from "./engineering-atlas-web-platform-gpu-media";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_HONESTY } from "./engineering-atlas-web-platform-honesty";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION } from "./engineering-atlas-web-platform-isolation";
 import { ENGINEERING_ATLAS_WEB_PLATFORM_MEDIA } from "./engineering-atlas-web-platform-media";
@@ -17,6 +18,7 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM: readonly EngineeringAtlasEntry[] = 
   ...ENGINEERING_ATLAS_WEB_PLATFORM_ISOLATION,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_WASM,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_WASM64_IPC,
+  ...ENGINEERING_ATLAS_WEB_PLATFORM_GPU_MEDIA,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_RUNTIME,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_SURFACE,
   ...ENGINEERING_ATLAS_WEB_PLATFORM_DELIVERY,

@@ -307,4 +307,42 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
     chapters: ["precision-geometry", "web-3d-dcc-pipeline"],
     atlasIds: ["opencascade-manifold-precision"],
   },
+  {
+    id: "webgpu-compute-gi-pcss-hiz",
+    category: "spatial",
+    term: t("WebGPU Compute 스크린스페이스 GI · PCSS · SAH BVH", "WebGPU Compute screen-space GI, PCSS & SAH BVH"),
+    definition: t(
+      "네이티브 하드웨어 RT 코어(DXR·Vulkan RT) 대신 브라우저 표준 WebGPU Compute 셰이더와 32B SAH BVH·Hi-Z 컬링으로 소프트 섀도우·간접광·반사를 근사하는 무비용 3D 렌더링 계층입니다.",
+      "A zero-cost browser 3D layer approximating soft shadows (PCSS), screen-space GI and reflections with standard WebGPU Compute shaders, a 32B SAH BVH and Hi-Z culling rather than native hardware RT cores.",
+    ),
+    analogy: t(
+      "수천만 원짜리 전용 광선 추적 촬영기(하드웨어 RT) 대신, 브라우저 GPU 계산기(WebGPU Compute)와 가시성 지도(Hi-Z)로 보이는 무대의 부드러운 그림자와 반사광만 알뜰하게 계산하는 조명 설계입니다.",
+      "Instead of dedicated hardware ray-tracing rigs, browser GPU compute shaders and Hi-Z visibility maps shade soft shadows and bounce light only where the camera looks.",
+    ),
+    inToonstudio: t(
+      "이 브랜치의 Rust 32B 12-버킷 SAH BVH(bvh3d_sah_raycast_kernel.rs)·Frustum+Hi-Z 커널·4단계 LOD 인스턴싱·무저장소 절차적 BG3D 기반 위에, 병렬 차세대 3D 트랙의 WebGPU Compute GI·PCSS·FFT 오디오 반응형 셰이더를 단계 통합합니다.",
+      "Builds on this branch's verified Rust 32B SAH BVH, Frustum+Hi-Z culling, 4-tier LOD instancing and procedural BG3D starter pack, staging parallel WebGPU Compute GI, PCSS and FFT audio-reactive 3D shaders.",
+    ),
+    chapters: ["web-3d-engine", "nextgen-web-experiments"],
+    atlasIds: ["nextgen-3d-webgpu-gi-culling-procedural", "webgpu-explicit-engine"],
+  },
+  {
+    id: "xpbd-120hz-qem-retarget-gaze",
+    category: "spatial",
+    term: t("120Hz XPBD 의상/헤어 물리 · QEM 경량화 · 시선 연동 조명", "120 Hz XPBD cloth/hair, QEM decimation & gaze-linked lighting"),
+    definition: t(
+      "QEM 메시 경량화와 Mixamo/VRM 55본 리타게팅, 시간 간격에 안정적인 120Hz XPBD 물리(선택적 WebNN 잔차), NPR UV 베이킹, 3D CRDT 메타 동기화·시선 연동 조명을 묶은 캐릭터 3D 파이프라인입니다.",
+      "A character 3D stack combining QEM mesh decimation, Mixamo/VRM 55-bone retargeting, 120 Hz XPBD cloth/hair (optional WebNN residual), NPR UV baking, 3D CRDT metadata and gaze-linked lighting.",
+    ),
+    analogy: t(
+      "가져온 3D 인형의 뼈대와 폴리곤을 작업실 규격에 맞게 다듬고(QEM·리타게팅), 옷자락 물리(XPBD)를 자연스럽게 돌리며, 캐릭터 시선 방향에 맞춰 조명이 따라오는 무대 자동화입니다.",
+      "Like refitting an imported 3D puppet's mesh and bones (QEM + retargeting), draping cloth smoothly (XPBD), and aiming key lights along the character's gaze.",
+    ),
+    inToonstudio: t(
+      "이 브랜치의 55본 휴머노이드 계약·Rust 2-Bone+CCD IK·가상 3D 물리 커널·WebNN 어시스트 훅·6패스 NPR·시선/조명 스튜디오 기반 위에, QEM·120Hz XPBD·4×4 텍스처 압축·3D CRDT 모듈을 단계적으로 연결합니다.",
+      "Extends this branch's 55-bone humanoid spec, Rust 2-Bone+CCD IK, virtual physics kernel, WebNN hook, 6-pass NPR and gaze/lighting studio with staged QEM, 120 Hz XPBD, 4x4 block compression and 3D CRDT integration.",
+    ),
+    chapters: ["web-3d-engine", "on-device-inference"],
+    atlasIds: ["nextgen-3d-xpbd-qem-retarget-gaze", "vrm-humanoid-rig"],
+  },
 ];

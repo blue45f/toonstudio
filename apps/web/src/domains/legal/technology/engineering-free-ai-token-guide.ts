@@ -525,6 +525,20 @@ export const TOONSTUDIO_FREE_AI_ROUTES: readonly ToonStudioFreeAiRoute[] = [
       "docs/operations/free-ai-runtime.md",
     ],
   },
+  {
+    id: "flagship-eval-pii-and-offline-starter-pack",
+    title: t("한국형 PII 사전 차단 · 플래그십 교차 검증 · ₩0 오프라인 AI 스타터 팩", "Korean PII pre-send guard, flagship eval & ₩0 offline AI starter pack"),
+    body: t(
+      "외부 LLM 으로 개인정보가 새어 나가는 사고를 막기 위해 송신 전 한국형 PII 차단 가드(studio-openai-guardrails.ts)가 계좌·주민등록번호·도로명/건물주소·카카오톡/인스타 핸들을 걸러 냅니다. 전용 실전 평가 트랙에서는 gpt-6.2-astra·gpt-5.5·gpt-4.1 3모델 교차 평가 105/105 와 Round-3 고난도 23케이스 100%(평균 94.13점·안전성 100점·PII 유출 0건)를 확인했습니다. 동시에 ₩0 영구 오프라인 스타터 팩(40 WebP·20 AudioToon MP3·13종 증류 카탈로그·884건 256차원 코사인 색인)과 브라우저 Tier 0A 검색 엔진(semantic-cosine-index.ts)으로 외부 토큰 없이도 카탈로그 탐색과 창작이 이어지게 설계했습니다.",
+      "To stop personal data from leaking to remote LLMs, pre-send Korean PII guardrails (studio-openai-guardrails.ts) block bank accounts, resident IDs, road/building addresses and KakaoTalk/Instagram handles. On the live-eval track, 3-model testing across gpt-6.2-astra, gpt-5.5 and gpt-4.1 passed 105/105 plus 23/23 Round-3 stress cases (94.13 avg, 100 safety, 0 PII leaks), paired with a permanent ₩0 offline starter pack (40 WebP, 20 AudioToon MP3, 13 distilled catalogs and an 884-item 256D offline cosine index via semantic-cosine-index.ts).",
+    ),
+    evidence: [
+      "apps/api/src/modules/studio-ai/openai-assist/studio-openai-guardrails.ts",
+      "apps/web/src/domains/creator/free-ai-edge-optimizer/semantic-cosine-index.ts",
+      "apps/web/src/domains/creator/wasm64-offline-pwa/pwa-base-asset-pinner-guards.ts",
+      "docs/operations/free-ai-runtime.md",
+    ],
+  },
 ];
 
 export const FREE_AI_TOKEN_CAUTIONS: readonly LocalizedText[] = [

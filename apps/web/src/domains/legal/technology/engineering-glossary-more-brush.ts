@@ -439,4 +439,61 @@ export const GLOSSARY_MORE_BRUSH: readonly GlossaryTerm[] = [
     chapters: ["brush-engine", "performance-budget"],
     atlasIds: ["wasm64-drawing-core-extended-suite", "renderer-role-ledger"],
   },
+  {
+    id: "konva-vello-phase12-bridge",
+    category: "brush",
+    term: t("Konva 중립 인터페이스 분리 & Vello Phase 1-2 브리지", "Konva neutral decoupling & Vello Phase 1-2 runtime bridge"),
+    definition: t(
+      "기존 Konva 구체 타입 결합을 중립 계약으로 끊고, 가이드·말풍선·한국어 세로쓰기를 피처 플래그 뒤의 Vello 로 넘기며 오류 시 Konva 로 자동 폴백하는 무중단 전환 구조입니다.",
+      "A staged migration decoupling concrete Konva types onto neutral contracts while routing guides, balloons and Korean vertical text to feature-flagged Vello with automatic Konva fallback.",
+    ),
+    analogy: t(
+      "운영 중인 고속도로를 막지 않고 옆에 새 교량(Vello)을 놓은 뒤 시험 개통하고, 이상 신호가 뜨면 즉시 기존 차선(Konva)으로 되돌리는 무중단 교체 방식과 같습니다.",
+      "Like building a new bridge (Vello) beside a live highway, opening it behind a switch, and instantly routing traffic back to the original lane (Konva) if any fault appears.",
+    ),
+    inToonstudio: t(
+      "Phase 0 에서 비-JSX Konva 결합을 59→1파일(98.3%)로 줄이고 Wave 1–2 중복 18.88 MiB·opencv-js·pixi.js 를 분리했습니다. studio-vello-viewport-runtime-bridge.ts 가 안전 기본값 false 로 Phase 1-2 를 통합하며 GPU 유실 시 Konva 로 즉시 폴백합니다.",
+      "Phase 0 cut non-JSX Konva coupling from 59 to 1 file (98.3%) and decoupled 18.88 MiB plus opencv-js and pixi.js. studio-vello-viewport-runtime-bridge.ts defaults to false and reverts immediately to Konva on GPU loss.",
+    ),
+    chapters: ["architecture", "brush-render-authority"],
+    atlasIds: ["konva-vello-lineage-phase12-bridge", "renderer-role-ledger"],
+  },
+  {
+    id: "rust-wave3-62-c-abi-dylib",
+    category: "brush",
+    term: t("Wave 2–3 안전 Rust 62 C-ABI WASM64 & ARM64 .dylib", "Wave 2–3 safe Rust 62 C-ABI WASM64 & ARM64 .dylib"),
+    definition: t(
+      "외부 크레이트 0개·#![deny(unsafe_code)] 안전 Rust 단일 소스로 PSB·SAH BVH·IK·오디오 DSP·벡터·슬라이서·CMYK 62개 C-ABI WASM 과 Apple Silicon 네이티브 .dylib 를 함께 빌드하는 코어입니다.",
+      "A zero-crate #![deny(unsafe_code)] Rust core compiling PSB, SAH BVH, IK, Audio DSP, vector, slicer and CMYK kernels into both a 62-export WASM64 binary and an Apple Silicon native .dylib.",
+    ),
+    analogy: t(
+      "한 권의 안전 설계도에서 웹 브라우저용 경량 엔진(301.37 KiB)과 맥 전용 네이티브 엔진(542.72 KiB)을 동시에 찍어 내어 어느 쪽에서 돌려도 똑같은 결과(0-diff)가 나오게 하는 제작 방식입니다.",
+      "Like printing both a compact web engine (301.37 KiB) and a native macOS engine (542.72 KiB) from one verified blueprint so both produce identical 0-diff outputs.",
+    ),
+    inToonstudio: t(
+      "crates/studio-wasm64-drawing-core 가 확장 WASM 301.37 KiB(62 exports·SIMD 4,145개)와 ARM64 .dylib 542.72 KiB(61 심볼·NEON 6,332개)를 빌드합니다. M2 Max 실측에서 벡터 15.32×/6.96×·블러 7.98×/4.07×·오디오 DSP 2.41×(0-diff)를 확인했습니다.",
+      "crates/studio-wasm64-drawing-core builds a 301.37 KiB WASM (62 exports, 4,145 SIMD) and a 542.72 KiB ARM64 .dylib (61 symbols, 6,332 NEON). M2 Max 0-diff benchmarks hit 15.32x/6.96x vector, 7.98x/4.07x blur and 2.41x Audio DSP.",
+    ),
+    chapters: ["wasm-fixed-simd", "performance"],
+    atlasIds: ["rust-wave23-native-wasm64-kernels", "wasm64-drawing-core-extended-suite"],
+  },
+  {
+    id: "webtoon-smart-slicer-fnv64",
+    category: "brush",
+    term: t("웹툰 스마트 자동 슬라이서 & 64비트 FNV-1a 타일 중복제거", "Webtoon smart auto-slicer & 64-bit FNV-1a tile dedup"),
+    definition: t(
+      "세로로 긴 웹툰 원고에서 말풍선과 선화를 피해 빈 여백(gutter)을 찾아 자동 분할하고, 반복되는 256×256 픽셀 타일을 64비트 FNV-1a 해시로 묶어 용량과 처리 시간을 줄이는 커널입니다.",
+      "A kernel that slices tall vertical webtoons along ink-free gutters to protect balloons and lineart, then deduplicates repeated 256x256 pixel tiles using 64-bit FNV-1a hashes.",
+    ),
+    analogy: t(
+      "두루마리 만화를 가위로 자를 때 그림 위가 아니라 빈 칸만 골라 자르고, 똑같은 흰 여백 조각 백 장은 한 장만 보관해 번호표만 붙이는 제본 자동화입니다.",
+      "Like cutting a long scroll only across blank margins so drawings stay intact, then keeping one copy of 100 identical white patches with index tags.",
+    ),
+    inToonstudio: t(
+      "crates/studio-wasm64-drawing-core/src/webtoon_slicer_dedup_kernel.rs 가 행별 잉크 밀도로 안전 절단선을 계산하고 64비트 FNV-1a 타일 중복제거를 수행합니다. M2 Max 실측에서 Native 24.52×·WASM 19.82×(0-diff) 가속을 검증했습니다.",
+      "webtoon_slicer_dedup_kernel.rs scores row ink density for safe cut lines and runs 64-bit FNV-1a tile deduplication, measured on Apple M2 Max at 24.52x Native and 19.82x WASM with 0-diff parity.",
+    ),
+    chapters: ["wasm-fixed-simd", "performance"],
+    atlasIds: ["rust-wave23-native-wasm64-kernels", "export-engine-deterministic-pdf"],
+  },
 ];

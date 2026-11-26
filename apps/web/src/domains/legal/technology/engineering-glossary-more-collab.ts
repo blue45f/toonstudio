@@ -307,4 +307,42 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     chapters: ["collaborative-crdt-boundary", "crdt-semantic-scope"],
     atlasIds: ["yjs-crdt-document", "tiled-document-copy-on-write"],
   },
+  {
+    id: "webgpu-collab-dirty-rect-compositor",
+    category: "collab",
+    term: t("WebGPU 멀티피어 더티-렉트 협업 컴포지터", "WebGPU multi-peer dirty-rect collaborative compositor"),
+    definition: t(
+      "여러 동시 편집자가 그린 임시 스트로크와 변경 타일의 사각형 영역(dirty rect)을 인접 구역끼리 병합해 최소 횟수의 WebGPU 패스로 합성하는 렌더링 가속기입니다.",
+      "A collaborative compositor that merges nearby dirty rectangles across multiple peers' strokes and changed tiles to minimize WebGPU draw passes.",
+    ),
+    analogy: t(
+      "네 사람이 벽화의 각기 다른 모서리를 고쳤을 때 벽 전체를 네 번 덧칠하는 대신, 고친 모서리끼리 묶어 한 번에 마감 코팅을 올리는 작업 방식입니다.",
+      "Like clear-coating only the merged patches touched by four muralists in one pass instead of repainting the entire wall four times.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/webgpu-collab-compositor.ts 가 피어별 색상 틴트·더티 사각형 병합·WGSL 타일 합성을 구현해 테스트 실측 드로우콜 97.4% 절감을 확인했고, WebGPU 미지원 시 CPU 컴포지터로 폴백합니다.",
+      "wasm64-infinite-collab/webgpu-collab-compositor.ts merges peer dirty rectangles and runs WGSL tile compositing, measuring 97.4% fewer draw calls in tests with a CPU fallback.",
+    ),
+    chapters: ["collaborative-crdt-boundary", "performance"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "webgpu-tier-budget-recovery"],
+  },
+  {
+    id: "webrtc-sctp-xor-rle-p2p-sync",
+    category: "collab",
+    term: t("WebRTC 16 KiB SCTP 무손실 XOR+RLE P2P 에셋 동기화", "WebRTC 16 KiB SCTP lossless XOR+RLE P2P sync"),
+    definition: t(
+      "서버를 거치지 않고 브라우저 간 WebRTC DataChannel 의 16 KiB SCTP 프레임 안에서 64비트 FNV-1a 차분과 무손실 XOR+RLE 델타만 주고받아 대용량 캔버스 타일을 맞추는 프로토콜입니다.",
+      "A server-free peer protocol exchanging 64-bit FNV-1a manifest diffs and lossless XOR+RLE deltas inside WebRTC's 16 KiB SCTP frame cap.",
+    ),
+    analogy: t(
+      "큰 앨범 전체를 클라우드에 올렸다 내려받는 대신, 친구와 목차(FNV-1a)만 비교해 바뀐 사진 조각만 우편엽서(16 KiB) 크기로 압축해 직접 주고받는 직거래 동기화입니다.",
+      "Like comparing photo album indexes directly with a friend and mailing only postcard-sized (16 KiB) compressed diffs of changed pages with zero cloud upload.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/p2p-lossless-delta-asset-sync.ts 가 16 KiB 청크 분할·슬라이딩 윈도우 재전송·SHA-256 검산을 구현해 테스트에서 대역폭 99.22% 절감·서버 0 B·3피어 혼돈 0-byte-diff 수렴을 검증했습니다.",
+      "wasm64-infinite-collab/p2p-lossless-delta-asset-sync.ts verified 99.22% bandwidth savings, 0 B server relay traffic and 0-byte-diff convergence across 3 chaotic peers using 16 KiB SCTP chunks and SHA-256 checks.",
+    ),
+    chapters: ["webrtc-media-authority", "collaborative-crdt-boundary"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "webrtc-datachannel-direct-lane"],
+  },
 ];

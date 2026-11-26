@@ -460,4 +460,61 @@ export const GLOSSARY_MORE_WEB: readonly GlossaryTerm[] = [
     chapters: ["performance", "nextgen-web-experiments"],
     atlasIds: ["webcodecs-selected-pipeline", "hardware-silicon-npu-webcodecs-cascade"],
   },
+  {
+    id: "infinite-quadtree-lod-streamer",
+    category: "web",
+    term: t("16 GiB+ OPFS 쿼드트리 LOD 무한 캔버스 스트리머", "16 GiB+ OPFS quadtree LOD infinite canvas streamer"),
+    definition: t(
+      "초대형 가상 캔버스를 사분트리(Quadtree) 공간 색인과 줌 단계별 상세도(LOD)로 나누어, 현재 화면과 이동 방향에 걸린 타일만 OPFS 에서 스트리밍하는 메모리 절약 엔진입니다.",
+      "A memory-bounded engine indexing an oversized virtual canvas with a quadtree and zoom-driven LOD so only visible and prefetched tiles stream from OPFS.",
+    ),
+    analogy: t(
+      "지구 전체 위성지도를 한 번에 펼치는 대신, 지금 보고 있는 동네와 스크롤하려는 방향의 지도 타일만 줌 배율에 맞춰 꺼내 오는 지도 앱 원리와 같습니다.",
+      "Like a map app fetching only the tiles in view and along your pan direction at the right zoom detail instead of loading the entire planet at once.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/infinite-vector-tile-streamer.ts 가 지그재그 좌표 인코딩·RDP 폴리라인 단순화·뷰포트 선행 프리페치·CPU/GPU 상주 예산 상한을 구현해 단위 테스트로 검증했습니다(지연 로드, 초기 번들 0B).",
+      "wasm64-infinite-collab/infinite-vector-tile-streamer.ts implements zigzag tile coding, RDP simplification, lookahead prefetch and bounded CPU/GPU residency, verified by unit tests with 0 B eager-bundle cost.",
+    ),
+    chapters: ["storage", "performance"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "wasm64-webgpu-opfs-tile-pipeline"],
+  },
+  {
+    id: "zero-gc-120hz-object-pool",
+    category: "web",
+    term: t("120Hz Zero-GC 객체 풀 (Object Pool)", "120 Hz Zero-GC object pool"),
+    definition: t(
+      "초당 120회 이상 쏟아지는 스트로크 정점·행렬·더티 렉트 버퍼를 매번 새로 만들고 버리는 대신, 미리 잡은 슬랩을 대여·반납해 가비지 컬렉션(GC) 멈춤을 없애는 메모리 관리 기법입니다.",
+      "A memory pattern that leases and returns preallocated slabs for 120 Hz stroke vertices, matrices and dirty rects instead of allocating per frame, avoiding GC stalls.",
+    ),
+    analogy: t(
+      "손님이 올 때마다 일회용 컵을 사다 버리면 설거지 산(GC)이 쌓여 영업이 멈추지만, 정해진 수의 머그잔을 바로 씻어 돌려쓰면 주방이 일정한 속도로 돌아가는 것과 같습니다.",
+      "Like rinsing and reusing a fixed set of mugs instead of piling up disposable cups until garbage pickup halts the cafe.",
+    ),
+    inToonstudio: t(
+      "wasm64-infinite-collab/heap-zero-gc-object-pool.ts 가 아핀 행렬·스트로크 정점·더티 렉트·타일 스크래치 슬랩을 대여·추적합니다. 120Hz 10만 스트로크 스트레스 테스트에서 재사용률 99.9987%, 누수 0건을 검증했습니다.",
+      "wasm64-infinite-collab/heap-zero-gc-object-pool.ts manages affine matrices, stroke buffers, dirty rects and tile slabs, achieving a 99.9987% reuse rate and 0 leaks in a 100K-stroke 120 Hz stress test.",
+    ),
+    chapters: ["performance", "worker-architecture"],
+    atlasIds: ["infinite-canvas-webgpu-p2p-zerogc", "wasm64-zero-copy-ipc-arena"],
+  },
+  {
+    id: "wgsl-cel-rim-halftone-autoshader",
+    category: "web",
+    term: t("WGSL 2.5D 오토 셰이더 & 로컬 ₩0 WebCodecs 오디오툰", "WGSL 2.5D autoshader & local ₩0 WebCodecs AudioToon"),
+    definition: t(
+      "WebGPU 16×16 WGSL 컴퓨트로 2.5D 선화 셀 음영·림라이트·하프톤을 계산하고, 64비트 SAB 채널과 WebCodecs 하드웨어 인코더로 9:16·16:9 60fps 오디오툰을 서버 없이 내보내는 파이프라인입니다.",
+      "A browser-local pipeline pairing a 16x16 WGSL 2.5D cel/rim/halftone autoshader, a 64-bit SAB worker channel and WebCodecs hardware 9:16/16:9 60 fps AudioToon export at ₩0 server cost.",
+    ),
+    analogy: t(
+      "외부 영상 렌더 서버에 원고를 맡기는 대신, 내 기기 GPU 에서 만화 음영을 입히고 전용 영상 칩으로 바로 숏폼 파일을 구워 내는 자급자족 제작 라인입니다.",
+      "Like shading comics on your own GPU and encoding the short-form clip on your device's video chip without paying a cloud render farm.",
+    ),
+    inToonstudio: t(
+      "wasm64-gpu-media-pipeline/ 이 WGSL 오토셰이더(+CPU 폴백), BigInt 64비트 SAB 채널(+비격리 Transferable 폴백), 9:16·16:9 60fps WebCodecs 오디오툰 먹서를 제공하며 단위 테스트를 통과했습니다.",
+      "wasm64-gpu-media-pipeline/ ships the WGSL autoshader (with CPU fallback), 64-bit BigInt SAB channel (with Transferable fallback) and 9:16/16:9 60 fps WebCodecs AudioToon muxer, verified by unit tests.",
+    ),
+    chapters: ["performance", "sound-generation", "nextgen-web-experiments"],
+    atlasIds: ["webgpu-cel-sab64-webcodecs-audiotoon", "webcodecs-selected-pipeline"],
+  },
 ];

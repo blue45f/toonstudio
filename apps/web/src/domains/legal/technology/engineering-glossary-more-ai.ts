@@ -289,4 +289,23 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
     chapters: ["free-first-infra", "free-ai-routing"],
     atlasIds: ["zero-cost-4lane-edge-5tier-storage", "free-first-ai-routing"],
   },
+  {
+    id: "korean-pii-guard-zero-cost-starter",
+    category: "ai",
+    term: t("한국형 PII 사전 차단 & 영구 ₩0 오프라인 AI 스타터 팩", "Korean PII pre-send guard & permanent ₩0 offline AI starter pack"),
+    definition: t(
+      "외부 LLM 송신 전 한국형 계좌·주민번호·도로명/건물주소·메신저 핸들을 가려 유출을 막고, 오프라인 256차원 코사인 색인과 증류 에셋으로 토큰 0개에서도 창작을 이어 가는 구성입니다.",
+      "A safety and zero-cost pairing that blocks Korean bank accounts, resident IDs, addresses and SNS handles before LLM egress while resolving catalog lookups via a 256D offline cosine index.",
+    ),
+    analogy: t(
+      "외부 번역가에게 보내기 전에 연락처와 주소를 먼저 가리는 보안 검수대와, 자주 쓰는 참고 자료 884건을 아예 책상 서랍에 꽂아 무료로 바로 찾는 사전 세트를 함께 두는 방식입니다.",
+      "Like redacting addresses and phone numbers before emailing an advisor while keeping 884 common references right in your desk drawer at zero cost.",
+    ),
+    inToonstudio: t(
+      "전용 평가 트랙에서 gpt-6.2-astra·5.5·4.1 3모델 105/105·Round-3 고난도 23건 100%(평균 94.13·안전성 100·PII 유출 0건)를 검증했고, 40 WebP·20 MP3·13 카탈로그·884건 256차원 코사인 엔진(semantic-cosine-index.ts)을 결합했습니다.",
+      "On the live-eval track, gpt-6.2-astra/5.5/4.1 passed 105/105 and Round-3 23/23 (94.13 avg, 100 safety, 0 PII leaks), paired with 40 WebP, 20 MP3, 13 catalogs and the 884-item 256D semantic-cosine-index.ts engine.",
+    ),
+    chapters: ["free-ai-routing", "on-device-inference"],
+    atlasIds: ["openai-flagship-eval-korean-pii-starter", "free-first-ai-routing"],
+  },
 ];
