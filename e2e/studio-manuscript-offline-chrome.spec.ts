@@ -100,7 +100,7 @@ test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스
 
 test("1440·1280·390 원고에서 연결 복구와 오프라인 도구 준비를 함께 읽어도 캔버스 원점을 유지한다", async ({ page }) => {
   await page.route("**/api/health/capabilities*", route => route.fulfill({ status: 503, json: { status: "unavailable" } }));
-  const retryMessage = "연결 복구 후 재시도";
+  const retryMessage = "연결 대기";
   const message = "일부 오프라인 도구 준비 필요";
   for (const size of [{ width: 1440, height: 1100 }, { width: 1280, height: 900 }, { width: 390, height: 844 }]) {
     await test.step(`${size.width}px에서 두 안내를 추가하고 해제한다`, async () => {
