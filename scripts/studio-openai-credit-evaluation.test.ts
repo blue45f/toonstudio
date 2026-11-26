@@ -2,8 +2,11 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { buildModeSystemInstruction, MODE_JSON_SCHEMAS } from "../apps/api/src/modules/studio-ai/openai-assist/studio-openai-prompt-catalog";
+import { OpenAiDialoguePolishOutputSchema } from "../apps/api/src/modules/studio-ai/studio-openai-creative-assist.dto";
+
 import { buildCreditEvaluationPlan, CALL_INTERVAL_MS, CreditExecutionEvidenceSchema, fingerprintApiKey, readCreditUsage, runCreditEvaluation, type CreditEvaluationOptions, type CreditEvaluationReport } from "./studio-openai-credit-evaluation-core";
-import { CREDIT_EVALUATION_FIXTURES } from "./studio-openai-credit-evaluation-fixtures";
+import { CREDIT_EVALUATION_FIXTURES, evaluateCreditOutput } from "./studio-openai-credit-evaluation-fixtures";
 
 const NOW = new Date("2026-11-18T05:00:00.000Z");
 const ENV = { OPENAI_API_KEY: "test-only-placeholder", OPENAI_ORG_ID: "org-evaluation", OPENAI_PROJECT_ID: "proj_evaluation" };
@@ -25,7 +28,11 @@ function evidence(changes: Record<string, unknown> = {}): Record<string, unknown
 function structuredOutput(schemaName: string): object {
   if (schemaName === "toonstudio_dialogue_polish") return {
     readabilityNote: "가상 응답의 형식만 검사합니다.",
-    balloons: ["구어체", "핵심형", "여운형"].map((toneLabel) => ({ toneLabel, line: "내일 오전까지 보내도 괜찮을까요?", subBubble: "", reason: "허락을 구하는 문장입니다." })),
+    balloons: [
+      { toneLabel: "자연스러운 구어체", line: "내일 오전까지 보내도 괜찮을까요?" },
+      { toneLabel: "짧고 강한 핵심형", line: "내일 오전까지 보내도 될까요?" },
+      { toneLabel: "감정 여운 강조형", line: "혹시… 내일 오전까지 보내도 괜찮을까요?" },
+    ].map((item) => ({ ...item, subBubble: "", reason: "허락을 구하는 문장입니다." })),
   };
   if (schemaName === "toonstudio_script_to_cuts") return {
     episodeGoal: "가상 컷의 구조를 확인합니다.", pacingTip: "행동 뒤에 여백을 둡니다.",
@@ -59,13 +66,68 @@ function options(changes: Partial<CreditEvaluationOptions> = {}): CreditEvaluati
   };
 }
 
-beforeAll(async () => { planHash = (await runCreditEvaluation()).planHash; });
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("실제 네트워크는 테스트에서 금지됩니다."); }));
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+describe("대사 대안 계약", () => {
+  const alternatives = [
+    { toneLabel: "자연스러운 구어체", line: "주소만 확인했어요.", subBubble: "아직 만난 적은 없어요.", reason: "사실을 차례로 전한다." },
+    { toneLabel: "짧고 강한 핵심형", line: "주소만 확인했어요.", subBubble: "대면은 아직이에요.", reason: "뒷말을 짧게 맺는다." },
+    { toneLabel: "감정 여운 강조형", line: "아직 만나진 못했어요.", subBubble: "확인한 건 주소뿐이에요.", reason: "확인한 사실을 마지막에 둔다." },
+  ];
+  const evaluate = (balloons: typeof alternatives) =>
+    evaluateCreditOutput({ mode: "dialogue-polish", data: { readabilityNote: "대면 여부를 보존한다.", balloons } })[0]?.passed;
+
+  it("생성 요청에서 세 톤과 항목의 단위를 일치시킨다", () => {
+    const labels = alternatives.map(({ toneLabel }) => toneLabel);
+    const prompt = buildModeSystemInstruction("dialogue-polish");
+    for (const label of labels) expect(prompt).toContain(label);
+    expect(MODE_JSON_SCHEMAS["dialogue-polish"].schema).toMatchObject({
+      properties: { balloons: {
+        description: expect.stringContaining("총 3개"),
+        items: { properties: { toneLabel: { enum: labels } } },
+      } },
+    });
+  });
+
+  it("보조 말풍선까지 읽어 대안을 구분하고 원문을 그대로 둔다", () => {
+    const reordered = [...alternatives].reverse();
+    const snapshot = structuredClone(reordered);
+    expect(evaluate(reordered)).toBe(true);
+    expect(reordered).toEqual(snapshot);
+  });
+
+  it("허용 길이 끝에 있는 보조 대사까지 비교한다", () => {
+    const [first, second, third] = alternatives;
+    const line = "가".repeat(200);
+    const prefix = "나".repeat(156);
+    const balloons = [
+      { ...first, line, subBubble: prefix + "없어요." },
+      { ...second, line, subBubble: prefix + "없지요." },
+      third,
+    ];
+    const parsed = OpenAiDialoguePolishOutputSchema.parse({ readabilityNote: "경계값", balloons });
+    expect(evaluate(parsed.balloons)).toBe(true);
+    expect(parsed.balloons).toEqual(balloons);
+  });
+
+  it("같은 톤을 나눈 7개 항목, 세 항목 안의 중복 톤, 경계만 옮긴 같은 대사를 거부한다", () => {
+    const [first, second, third] = alternatives;
+    expect(evaluate([...alternatives, ...alternatives, first])).toBe(false);
+    expect(evaluate([first, { ...second, toneLabel: first.toneLabel }, third])).toBe(false);
+    expect(evaluate([first, { ...second, line: first.line + "\n" + first.subBubble, subBubble: "" }, third])).toBe(false);
+  });
+
+  it("기존 두 항목 응답은 공용 파서로 읽을 수 있고 새 생성 평가에서는 탈락한다", () => {
+    const balloons = alternatives.slice(0, 2);
+    expect(OpenAiDialoguePolishOutputSchema.safeParse({ readabilityNote: "기존 결과", balloons }).success).toBe(true);
+    expect(evaluate(balloons)).toBe(false);
+  });
+});
 
 describe("OpenAI 크레딧 검증 오프라인 계획", () => {
   it("기본 실행은 키 없이 20개 계획만 만들며 외부 transport와 전역 fetch를 호출하지 않는다", async () => {
@@ -90,6 +152,13 @@ describe("OpenAI 크레딧 검증 오프라인 계획", () => {
       expect(body.store).toBe(false);
       expect(body.max_completion_tokens).toBe(1400);
       expect(body.messages).toHaveLength(2);
+      if (entry.fixture.input.mode === "dialogue-polish") {
+        expect(body.messages[0]).toMatchObject({
+          role: "system",
+          content: expect.stringContaining("사건이 실제로 일어났는지와 화자가 무엇을 부정하는지"),
+        });
+        expect(body.messages[0]).toHaveProperty("content", buildModeSystemInstruction("dialogue-polish"));
+      }
       expect(body.response_format.json_schema.strict).toBe(true);
       expect(entry.reservedInputTokens).toBeGreaterThan(Buffer.byteLength(entry.body, "utf8"));
     }
@@ -99,6 +168,7 @@ describe("OpenAI 크레딧 검증 오프라인 계획", () => {
 });
 
 describe("OpenAI 실행 승인·시도·예약 경계", () => {
+  beforeAll(async () => { planHash = (await runCreditEvaluation()).planHash; });
   it.each([
     { label: "증거 없음", value: undefined },
     { label: "잔액 부족", value: () => evidence({ availablePromotionalCreditUsd: 0.99 }) },

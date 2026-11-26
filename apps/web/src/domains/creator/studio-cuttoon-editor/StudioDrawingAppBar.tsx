@@ -473,15 +473,18 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             data-testid="drawing-appbar-sync-status"
             aria-live="polite"
             aria-label={s.scopedSavePendingConfirmation ? tx("저장 상태 확인") : `${hasServerWork ? tx("원고 동기화 상태") : tx("원고 저장 상태")}: ${syncLabel}`}
-            title={s.scopedSavePendingConfirmation ? tx("이전 저장 상태 확인") : tx("지금 원고 저장")}
+            title={s.scopedSavePendingConfirmation ? tx("이전 저장 상태 확인") : activeErrorMessage !== "" ? syncLabel : tx("지금 원고 저장")}
             onClick={() => s.requestSaveFlush?.()}
             className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+              "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-bold leading-none transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
               hasSyncError ? "border-warn/45 bg-warn/10 text-warn" : isOfflineProtected ? "border-cool/45 bg-cool/10 text-cool" : isSyncBusy ? "border-accent/45 bg-accent/10 text-accent" : "border-good/35 bg-good/10 text-good",
             )}
           >
             {hasSyncError || isOfflineProtected ? <ShieldAlert size={12} aria-hidden="true" /> : isSyncBusy ? <CloudUpload size={12} aria-hidden="true" /> : <CheckCircle2 size={12} aria-hidden="true" />}
-            <span className="hidden lg:inline">{syncLabel}</span>
+            <span className="hidden whitespace-nowrap lg:inline">
+              {!isConflictError && activeErrorMessage !== "" ? tx("연결 대기") : syncLabel}
+            </span>
+            {!isConflictError && activeErrorMessage !== "" ? <span className="sr-only"> ({syncLabel})</span> : null}
           </button>
         </div>
 

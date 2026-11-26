@@ -156,7 +156,7 @@
 .workspace-support-nav a[aria-current="page"] svg{color:var(--ts-spectrum-support)}
 
 .workspace-main{position:relative;padding:var(--layout-workspace-main-padding-block) var(--layout-workspace-main-padding-inline) var(--layout-workspace-main-padding-block-end);background:var(--color-canvas);scrollbar-color:color-mix(in oklch,var(--color-fg-3) 45%,transparent) transparent}
-.workspace-task-content{padding:16px 24px 78px}.workspace-task-purpose{border-color:var(--color-line)}
+.workspace-task-content{padding:12px 24px 78px}.workspace-task-purpose{border-color:var(--color-line)}
 .workspace-task-route-content{min-height:0;color:var(--color-fg)}
 .workspace-task-route-content :where(input,textarea,select){border-color:var(--color-line)!important;background:var(--color-panel)!important;color:var(--color-fg)!important;box-shadow:none}
 .workspace-task-route-content :where(input,textarea,select):focus{border-color:var(--workspace-accent,var(--color-accent))!important;box-shadow:none!important}
@@ -167,16 +167,21 @@
 
 /* 작업공간 내 페이지 역할·다음 동선 바 ([data-role-journey-bar]) */
 .workspace-shell [data-role-journey-bar]{
-  margin-block:0 16px;
+  margin-block:0 10px;
   border-radius:var(--ts-radius-outer);
   border-color:color-mix(in oklch,var(--ts-journey-tone,var(--workspace-accent,var(--ts-spectrum-creation))) 34%,var(--color-line));
 }
-.workspace-shell [data-role-journey-bar] :is(a,button){
+.workspace-shell details[data-role-journey-bar]{
+  padding:0;
+  gap:0;
+}
+.workspace-shell [data-role-journey-bar] :is(a,button,summary){
   min-height:44px;
   border-radius:var(--ts-radius-inner);
 }
 
-.campus-toolbar{position:relative;margin-bottom:18px;padding:10px 12px;border:1px solid color-mix(in oklch,var(--workspace-accent,var(--ts-spectrum-collab)) 24%,var(--color-line));border-radius:var(--ts-radius-outer);background:var(--color-panel);box-shadow:none}
+.campus-toolbar{position:relative;margin-bottom:10px;padding:6px 10px;border:1px solid color-mix(in oklch,var(--workspace-accent,var(--ts-spectrum-collab)) 24%,var(--color-line));border-radius:var(--ts-radius-outer);background:var(--color-panel);box-shadow:none}
+.workspace-task-content:has(.ai-settings-page) .campus-toolbar{margin-bottom:6px;padding:4px 8px}
 .campus-control{min-height:44px;border-color:var(--color-line);border-radius:var(--ts-radius-inner);background:var(--color-card);box-shadow:none;transition:background-color 150ms cubic-bezier(.22,1,.36,1),border-color 150ms cubic-bezier(.22,1,.36,1),color 150ms cubic-bezier(.22,1,.36,1),transform 150ms cubic-bezier(.22,1,.36,1)}
 .campus-control:hover{border-color:color-mix(in oklch,var(--workspace-accent,var(--color-accent)) 45%,var(--color-line-strong));background:var(--color-raised)}
 .campus-modes{border-color:var(--color-line);border-radius:var(--ts-radius-mid);background:var(--color-canvas)}
@@ -218,8 +223,8 @@
   .workspace-sidebar .workspace-nav :is(a,button),
   .workspace-support-nav a{min-height:48px;min-width:44px}
   .workspace-topbar{padding:8px 18px}
-  .workspace-task-content{padding:16px 20px 64px}
-  .workspace-shell [data-role-journey-bar]{padding:12px 14px;gap:10px}
+  .workspace-task-content{padding:12px 20px 64px}
+  .workspace-shell section[data-role-journey-bar]{padding:12px 14px;gap:10px}
 }
 
 @media(max-width:1100px){.campus-workbench{grid-template-columns:minmax(0,1fr)}.campus-room{display:block}.campus-room-media{min-height:280px}.campus-room-destinations{grid-column:auto}.campus-private-note{grid-column:auto}}
@@ -234,7 +239,7 @@
   :root[data-design-theme] .workspace-sidebar .workspace-nav-rail .workspace-nav[data-slot="workspace-nav"] a[aria-current="page"],
   :root .workspace-sidebar .workspace-nav-rail .workspace-nav[data-slot="workspace-nav"] a[aria-current="page"]{border-color:transparent;border-radius:0 0 10px 10px;background:color-mix(in oklch,var(--ts-nav-tone,var(--color-accent)) 14%,transparent);color:var(--color-fg);box-shadow:inset 0 2.5px 0 var(--ts-nav-tone,var(--color-accent))}
   .workspace-shell [data-role-journey-bar] :is([data-role-journey-steps],[data-role-journey-next],ol,ul){overflow-x:auto;overscroll-behavior:contain;scrollbar-width:none}
-  .campus-toolbar{margin-bottom:12px;padding:8px;border-radius:var(--ts-radius-mid)}.campus-workbench{gap:16px}.campus-room{border-radius:14px}.campus-room-media{min-height:240px}.campus-room-heading{left:16px;right:16px;bottom:44px}.campus-room-heading h2{font-size:24px}.campus-room-heading>p:last-child{font-size:12px}.campus-room-emblem{top:14px;left:14px;width:40px;height:40px;border-radius:10px}.campus-room-signals{left:14px;right:14px;bottom:12px}.campus-room-destinations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;padding:8px}.campus-room-destinations a{min-height:56px;white-space:normal}.campus-destination-copy strong{font-size:11px}.campus-destination-copy small{display:none}.campus-destination-icon{width:30px;height:30px;border-radius:8px}
+  .campus-toolbar{margin-bottom:12px;padding:8px;border-radius:var(--ts-radius-mid)}.workspace-task-content:has(.ai-settings-page) .campus-toolbar{display:none}.campus-workbench{gap:16px}.campus-room{border-radius:14px}.campus-room-media{min-height:240px}.campus-room-heading{left:16px;right:16px;bottom:44px}.campus-room-heading h2{font-size:24px}.campus-room-heading>p:last-child{font-size:12px}.campus-room-emblem{top:14px;left:14px;width:40px;height:40px;border-radius:10px}.campus-room-signals{left:14px;right:14px;bottom:12px}.campus-room-destinations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;padding:8px}.campus-room-destinations a{min-height:56px;white-space:normal}.campus-destination-copy strong{font-size:11px}.campus-destination-copy small{display:none}.campus-destination-icon{width:30px;height:30px;border-radius:8px}
 }
 
 /* ── 넓은 화면 좌측 메뉴 행 (1280px 이상 · 36px 고밀도 행 · 정돈된 선 아이콘 열 + 수직 스펙트럼 잉크 막대) ── */
@@ -245,11 +250,11 @@
   .workspace-shell{grid-template-columns:var(--layout-rail-row) minmax(0,1fr)}
   .workspace-sidebar{padding:12px 10px;overflow-y:auto;overscroll-behavior:contain}
   .workspace-sidebar .workspace-nav{gap:3px}
-  .workspace-sidebar .workspace-nav :is(a,button){flex-direction:row;justify-content:flex-start;min-height:38px;gap:10px;padding:0 10px 0 12px;border-radius:var(--ts-radius-inner);font-size:13px;font-weight:500;color:var(--color-fg-2);transform:none}
+  .workspace-sidebar .workspace-nav :is(a,button){flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px 0 12px;border-radius:var(--ts-radius-inner);font-size:13px;font-weight:500;color:var(--color-fg-2);transform:none}
   .workspace-nav-visual{width:22px;height:22px;flex:none;border-radius:6px}
   .workspace-nav-visual>.workspace-nav-line-icon{width:17px;height:17px}
   .workspace-shortcut-group{display:block;margin-top:12px;padding-top:12px;border-top:1px solid var(--color-line)}
-  .workspace-shortcut-group>summary{display:flex;align-items:center;gap:10px;min-height:36px;margin-bottom:2px;padding:0 10px 0 12px;list-style:none;cursor:pointer;border-radius:var(--ts-radius-inner);color:var(--color-fg-3);font-size:12px;font-weight:600;transition:background-color 150ms ease,color 150ms ease}
+  .workspace-shortcut-group>summary{display:flex;align-items:center;gap:10px;min-height:44px;margin-bottom:2px;padding:0 10px 0 12px;list-style:none;cursor:pointer;border-radius:var(--ts-radius-inner);color:var(--color-fg-3);font-size:12px;font-weight:600;transition:background-color 150ms ease,color 150ms ease}
   .workspace-shortcut-group>summary::-webkit-details-marker{display:none}
   .workspace-shortcut-group>summary>svg:first-child{width:16px;height:16px;margin-inline:2px;flex:none;color:var(--ts-spectrum-creation)}
   .workspace-shortcut-group>summary>span{flex:1}
@@ -258,7 +263,7 @@
   .workspace-shortcut-group>summary:focus-visible{outline:2px solid var(--color-accent);outline-offset:-2px}
   .workspace-shortcut-group>summary:hover{background:var(--color-raised);color:var(--color-fg)}
   .workspace-nav-shortcuts{display:flex;flex-direction:column;gap:3px;margin-top:4px;padding-top:0;border-top:0;transition:opacity 160ms cubic-bezier(.22,1,.36,1),transform 160ms cubic-bezier(.22,1,.36,1)}
-  .workspace-nav-shortcuts a{position:relative;display:flex;align-items:center;gap:10px;min-height:36px;padding:0 10px 0 12px;border:1px solid transparent;border-radius:var(--ts-radius-inner);color:var(--color-fg-2);font-size:13px;font-weight:500;text-decoration:none;transition:background-color 150ms ease,border-color 150ms ease,color 150ms ease,transform 150ms ease}
+  .workspace-nav-shortcuts a{position:relative;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px 0 12px;border:1px solid transparent;border-radius:var(--ts-radius-inner);color:var(--color-fg-2);font-size:13px;font-weight:500;text-decoration:none;transition:background-color 150ms ease,border-color 150ms ease,color 150ms ease,transform 150ms ease}
   .workspace-nav-shortcuts a:hover{border-color:color-mix(in oklch,var(--ts-nav-tone) 32%,var(--color-line));background:color-mix(in oklch,var(--ts-nav-tone) 10%,var(--color-raised));color:var(--color-fg)}
   .workspace-nav-shortcuts a:hover .workspace-nav-visual{color:var(--ts-nav-tone)}
   .workspace-nav-shortcuts a[aria-current="page"]{border-color:color-mix(in oklch,var(--ts-nav-tone) 42%,var(--color-line));background:color-mix(in oklch,var(--ts-nav-tone) 14%,var(--color-raised));color:var(--color-fg);font-weight:600;box-shadow:inset 3px 0 0 var(--ts-nav-tone)}
@@ -270,9 +275,9 @@
   :root[data-design-theme] .workspace-sidebar .workspace-nav-rail:has(.workspace-nav-shortcuts a[aria-current="page"]) .workspace-nav[data-slot="workspace-nav"] a[aria-current="page"] .workspace-nav-visual,
   :root .workspace-sidebar .workspace-nav-rail:has(.workspace-nav-shortcuts a[aria-current="page"]) .workspace-nav[data-slot="workspace-nav"] a[aria-current="page"] .workspace-nav-visual{color:var(--color-fg-3);background:transparent}
   .workspace-support-nav{margin-top:auto;padding-top:10px;gap:3px}
-  .workspace-support-nav a{flex-direction:row;justify-content:flex-start;min-height:38px;gap:10px;padding:0 10px 0 12px;border-radius:var(--ts-radius-inner);font-size:13px;font-weight:500}
+  .workspace-support-nav a{flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px 0 12px;border-radius:var(--ts-radius-inner);font-size:13px;font-weight:500}
   .workspace-support-nav a svg{width:17px;height:17px;margin-inline:1.5px;flex:none}
-  .workspace-shell [data-role-journey-bar]{padding:12px 16px}
+  .workspace-shell section[data-role-journey-bar]{padding:12px 16px}
 }
 @media (min-width:1280px) and (pointer:coarse){
   .workspace-sidebar .workspace-nav :is(a,button),

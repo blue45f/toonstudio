@@ -29,6 +29,7 @@ import { StudioExternalFileBindingRepository } from "./studio-external-file-bind
 import { StudioProjectGraphController } from "./studio-project-graph.controller";
 import { StudioProjectGraphRepository } from "./studio-project-graph.repository";
 import { StudioProjectGraphService } from "./studio-project-graph.service";
+import { StudioApprovedCutComparisonController } from "./studio-approved-cut-comparison.controller";
 import { StudioReviewPreviewController } from "./studio-review-preview.controller";
 import { StudioReviewPreviewService } from "./studio-review-preview.service";
 import { StudioReviewPreviewProducerController } from "./studio-review-preview-producer.controller";
@@ -48,7 +49,7 @@ const privateObjectStorageModule = PrivateObjectStorageModule.fromEnvironment(pr
 
 @Module({
   imports: [CreatorModule, ...(privateObjectStorageModule ? [privateObjectStorageModule] : [])],
-  controllers: [StudioSpacePollController, StudioReviewDeliveryController, StudioReviewVoiceNoteController, StudioRecordingBoothAssetController, PinnedReviewShareController, ManuscriptVersionShareController, StudioReviewPolicyController, StudioSessionEvidenceController, StudioWorkSessionController, StudioProjectGraphController, StudioReviewPreviewController, StudioReviewPreviewProducerController, StudioWorldPublicationController, StudioWorldAcousticController, StudioWorldConversationController],
+  controllers: [StudioApprovedCutComparisonController, StudioSpacePollController, StudioReviewDeliveryController, StudioReviewVoiceNoteController, StudioRecordingBoothAssetController, PinnedReviewShareController, ManuscriptVersionShareController, StudioReviewPolicyController, StudioSessionEvidenceController, StudioWorkSessionController, StudioProjectGraphController, StudioReviewPreviewController, StudioReviewPreviewProducerController, StudioWorldPublicationController, StudioWorldAcousticController, StudioWorldConversationController],
   providers: [
     StudioSpacePollRepository,
     { provide: STUDIO_REVIEW_DELIVERY_POOL, useValue: dbPool }, StudioReviewDeliveryRepository, StudioReviewDeliveryService,

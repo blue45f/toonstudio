@@ -1,15 +1,13 @@
-import { Sparkles } from "lucide-react";
 import { Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { UnifiedAiSettings } from "@/shared/ai/UnifiedAiSettings";
 import { AssistConnectionCard } from "@/shared/ai/assist/AssistConnectionCard";
-import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { LoadingState } from "@/shared/components/LoadingState";
-import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import "./ai-settings-page.css";
 
 export function AiSettingsPage() {
   const t = useBilingual("AiSettingsPage");
@@ -28,28 +26,28 @@ export function AiSettingsPage() {
       : t("설정", "Settings");
 
   return (
-    <Container size="wide" className="py-8 sm:py-12">
-      <div data-own-control-size="">
-        <Link
-          to={backHref}
-          className="inline-flex min-h-11 min-w-11 items-center rounded-lg px-2 text-sm font-bold text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          ← {backLabel}
-        </Link>
-        <SitePageHeader
-          className="mb-7 mt-3"
-          icon={Sparkles}
-          eyebrow="AI CONNECTION CENTER"
-          title={t("AI 설정", "AI settings")}
-          description={t("자동 무료 AI, 내 API 키와 기능별 사용 순서를 한곳에서 관리해요. 처음에는 키 하나만 연결하면 되고, 세부 모델과 API 경로는 고급 설정에서만 보여요.", "Manage the automatic free AI, your API keys, and per-feature usage order in one place. Start by connecting a single key; detailed models and API paths stay inside advanced settings.")}
-          aside={
-            <SectionArt
-              image="studio-lobby"
-              className="aspect-[16/10] w-full rounded-2xl border border-line object-cover"
-            />
-          }
-          asideClassName="hidden lg:block"
-        />
+    <Container size="wide" className="ai-settings-page py-2 sm:py-3">
+      <div
+        data-own-control-size=""
+        className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line pb-2.5"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to={backHref}
+            className="inline-flex min-h-11 min-w-11 items-center rounded-lg px-2 text-sm font-semibold text-accent transition-colors hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+          >
+            ← {backLabel}
+          </Link>
+          <h1 className="text-lg font-bold tracking-tight text-fg sm:text-xl [word-break:keep-all]">
+            {t("AI 설정", "AI settings")}
+          </h1>
+        </div>
+        <p className="hidden text-xs leading-relaxed text-fg-2 sm:block [word-break:keep-all]">
+          {t(
+            "자동 무료 AI와 내 API 키, 기능별 사용 순서를 한곳에서 연결하고 관리해요.",
+            "Connect and manage automatic free AI, your API keys, and per-feature usage order in one place.",
+          )}
+        </p>
       </div>
       <Suspense
         fallback={

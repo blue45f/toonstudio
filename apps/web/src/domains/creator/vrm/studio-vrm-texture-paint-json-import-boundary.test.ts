@@ -84,7 +84,7 @@ describe("Studio JSON VRM surface-paint availability boundary", () => {
 
   it("keeps the import mutation gates around the async portability audit and project apply", () => {
     const parse = jsonImportSource.indexOf(
-      "const loaded = await parseStudioProjectDocument(text)",
+      "const loaded = await parseStudioProjectDocument(text, file.name)",
     );
     const audit = jsonImportSource.indexOf(
       "await auditStudioVrmTexturePaintJsonImport(loaded.project)",

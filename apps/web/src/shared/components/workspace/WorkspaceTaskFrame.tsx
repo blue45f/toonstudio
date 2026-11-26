@@ -110,7 +110,11 @@ export function WorkspaceTaskFrame({ route, owner = "local", children, campusMod
       {!focused && campusControls ? <div className="campus-toolbar" key="campus-controls">{campusControls}</div> : null}
       {route && !focused ? (
         <Suspense fallback={null} key="role-journey">
-          <PageRoleAndJourneyNavigator pathname={pathname} context={context} />
+          <PageRoleAndJourneyNavigator
+            pathname={pathname}
+            context={context}
+            defaultCollapsed={pathname === "/settings" || pathname.startsWith("/settings/")}
+          />
         </Suspense>
       ) : null}
       {route && !campusMode && !focused ? <details className="workspace-task-guide" key="purpose">

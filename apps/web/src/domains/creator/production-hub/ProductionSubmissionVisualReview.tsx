@@ -1,9 +1,14 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { ProductionProjectAggregate, Submission } from "@toonstudio/core/production";
+import { sameProductionRevision, type ProductionProjectAggregate, type Submission } from "@toonstudio/core/production";
+import type { ApprovedCutChange } from "@toonstudio/studio-project-model";
 import type { PinnedSubmissionPreview, PinnedSubmissionVisualSource, SubmissionVisualReviewData } from "./production-submission-visual-review";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import { matchReviewSourcePage, reviewOverlayAllowed } from "../virtual-space/studio-review-comparison-model";
+
+const ApprovedCutComparison = lazy(() => import("../virtual-space/StudioApprovedCutComparison")
+  .then((module) => ({ default: module.StudioApprovedCutComparison })));
 const ProductionSubmissionWriterRoom = lazy(() => import("./ProductionSubmissionWriterRoom"));
 
 type VisualState = { kind: "loading" } | { kind: "error"; message: string; captureHref?: string | null }
@@ -19,6 +24,10 @@ const previewSourceKey = (source: PinnedSubmissionVisualSource) => {
   return JSON.stringify([source.projectId, source.workId, source.artifact.id, source.revision.id,
     source.revision.rootGraphHash, source.review.id, source.outputEvidence ? bindingGenerations.get(source) : null]);
 };
+
+function changedPreview(pages: readonly PinnedSubmissionPreview[], pageId: string, ordinal: number | null) {
+  return pages.find(page => page.ordinal === ordinal && page.mapping.status === "mapped" && page.mapping.page.id === pageId);
+}
 
 function PinnedImage({ preview, label, canRefresh, onRefresh, onLoaded, selectedFrames = [] }: { readonly preview: PinnedSubmissionPreview | undefined; readonly label: string; readonly canRefresh: boolean;
   readonly selectedFrames?: readonly string[];
@@ -66,7 +75,9 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
   const [baselineId, setBaselineId] = useState("");
   const [baselineState, setBaselineState] = useState<BaselineState>({ kind: "idle" });
   const [ordinal, setOrdinal] = useState<number | null>(null);
-  const [mode, setMode] = useState<"compare" | "overlay">("compare");
+  const [selectedChange, setSelectedChange] = useState<ApprovedCutChange | null>(null);
+  const [mode, setMode] = useState<"changes" | "compare" | "overlay">("compare");
+  const [independentOrdinal, setIndependentOrdinal] = useState<number | null>(null);
   const [opacity, setOpacity] = useState(0.5);
   const [autoRefreshCount, setAutoRefreshCount] = useState(0);
   const autoAttempts = useRef(new Set<string>());
@@ -141,9 +152,26 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
   }, [submissionAutoKey, baselineAutoKey]);
   const baselinePages = currentBaselineState?.kind === "ready" ? currentBaselineState.pages : [];
   const ordinals = state.kind === "ready" ? [...new Set([...state.pages, ...baselinePages].map((page) => page.ordinal))].sort((left, right) => left - right) : [];
-  const selectedOrdinal = ordinal !== null && ordinals.includes(ordinal) ? ordinal : ordinals[0];
-  const currentPage = state.kind === "ready" ? state.pages.find((page) => page.ordinal === selectedOrdinal) : undefined;
-  const baselinePage = baselinePages.find((page) => page.ordinal === selectedOrdinal);
+  const selectedOrdinal = selectedChange ? selectedChange.afterIndex : ordinal !== null && ordinals.includes(ordinal) ? ordinal : ordinals[0];
+  const currentPage = state.kind === "ready" ? selectedChange
+    ? changedPreview(state.pages, selectedChange.pageId, selectedChange.afterIndex)
+    : state.pages.find((page) => page.ordinal === selectedOrdinal) : undefined;
+  const useIndependentPage = currentPage?.mapping.status === "unmapped";
+  const match = currentPage && matchReviewSourcePage(currentPage, baselinePages);
+  const baselinePage = selectedChange ? changedPreview(baselinePages, selectedChange.pageId, selectedChange.beforeIndex) : useIndependentPage
+    ? baselinePages.find(page => page.ordinal === independentOrdinal) ?? baselinePages[0]
+    : match?.kind === "matched" ? match.page : !currentPage ? baselinePages.find(page => page.ordinal === selectedOrdinal) : undefined;
+  const canOverlay = currentPage && baselinePage && reviewOverlayAllowed(baselinePage, currentPage);
+  // 전체 원고로 명시해 제출한 같은 산출물의 이전 승인본만 원문 비교에 사용한다.
+  const previous = baseline && aggregate.submissions.find(entry => entry.projectId === submission.projectId
+    && entry.deliverableId === submission.deliverableId && entry.id !== submission.id && entry.submittedAt < submission.submittedAt
+    && sameProductionRevision(entry.revisionRef, baseline.sourceRevisionRef));
+  const approvedSubject = previous?.sourceEvidence?.selectionMode === "document" && baseline?.review.status === "approved"
+    && baseline.outputEvidence?.selectionMode === "document" ? baseline.outputEvidence.subject : null;
+  const currentSubject = submission.sourceEvidence?.selectionMode === "document" && state.kind === "ready"
+    && state.data.submission.outputEvidence?.selectionMode === "document" ? state.data.submission.outputEvidence.subject : null;
+  const showChanges = mode === "changes" && approvedSubject && currentSubject && state.kind === "ready" && state.complete
+    && currentBaselineState?.kind === "ready" && currentBaselineState.complete;
   const imageKey = (source: PinnedSubmissionVisualSource, page: PinnedSubmissionPreview) => `${previewSourceKey(source)}:${page.ordinal}`;
   const autoRefresh = useCallback((source: PinnedSubmissionVisualSource, page: PinnedSubmissionPreview) => {
     const sourceKey = previewSourceKey(source);
@@ -179,12 +207,12 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
         if (generation === requestGeneration.current) setAutoRefreshCount((value) => Math.max(0, value - 1));
       });
   }, [bt]);
-  const renderImage = (source: PinnedSubmissionVisualSource, page: PinnedSubmissionPreview | undefined) => {
+  const renderImage = (source: PinnedSubmissionVisualSource, page: PinnedSubmissionPreview | undefined, frameId?: string | null) => {
     const complete = state.kind === "ready" && (source.revision.id === state.data.submission.revision.id
       ? state.complete : currentBaselineState?.kind === "ready" && currentBaselineState.complete === true);
     return <PinnedImage key={page ? `${page.url}:${page.expiresAt}` : `${source.revision.id}:missing`}
-      preview={page} label={`${source.label} · ${Number(selectedOrdinal) + 1}`} canRefresh={complete}
-      selectedFrames={source.outputEvidence?.pages.find((entry) => entry.ordinal === page?.ordinal)?.frameIds}
+      preview={page} label={`${source.label} · ${(page?.ordinal ?? 0) + 1}`} canRefresh={complete}
+      selectedFrames={frameId ? [frameId] : source.outputEvidence?.pages.find((entry) => entry.ordinal === page?.ordinal)?.frameIds}
       onRefresh={() => { if (page && complete) autoRefresh(source, page); }}
       onLoaded={() => { if (page) autoAttempts.current.delete(imageKey(source, page)); }} />;
   };
@@ -213,16 +241,22 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
       {state.data.submission.mapping === "captured-source" ? <p className="break-all text-xs text-fg-2">{bt("서버가 같은 제출 정본에서 만든 검수 이미지임을 확인했습니다.", "The server verified these images were captured from the same submitted source.")} · {state.data.submission.revision.id}</p> : null}
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs font-semibold">{bt("비교 기준본", "Comparison baseline")}
-          <select className="ml-2 min-h-11 max-w-full rounded-lg border border-line bg-card px-2" value={baseline ? baseline.comparisonKey ?? baseline.sourceRevisionRef.id : ""} onChange={(event) => setBaselineId(event.target.value)}>
+          <select className="ml-2 min-h-11 max-w-full rounded-lg border border-line bg-card px-2" value={baseline ? baseline.comparisonKey ?? baseline.sourceRevisionRef.id : ""} onChange={(event) => { setBaselineId(event.target.value); setMode("changes"); setSelectedChange(null); setIndependentOrdinal(null); }}>
             <option value="">{bt("제출본만 보기", "Submission only")}</option>
             {state.data.baselines.map((entry) => <option key={entry.comparisonKey ?? entry.sourceRevisionRef.id} value={entry.comparisonKey ?? entry.sourceRevisionRef.id}>{entry.label} · {entry.artifact.title} · {entry.sourceRevisionRef.id}</option>)}
           </select>
         </label>
-        <label className="text-xs font-semibold">{bt("이미지 순번", "Image position")}
-          <select className="ml-2 min-h-11 rounded-lg border border-line bg-card px-2" value={selectedOrdinal ?? ""} onChange={(event) => setOrdinal(Number(event.target.value))}>
+        {!showChanges ? <label className="text-xs font-semibold">{bt("이미지 순번", "Image position")}
+          <select className="ml-2 min-h-11 rounded-lg border border-line bg-card px-2" value={selectedOrdinal ?? ""} onChange={(event) => { setSelectedChange(null); setOrdinal(Number(event.target.value)); }}>
+            {selectedChange && selectedOrdinal === null ? <option value="" disabled>{bt(`삭제된 페이지 · 기준본 #${(selectedChange.beforeIndex ?? 0) + 1}`, `Removed page · baseline #${(selectedChange.beforeIndex ?? 0) + 1}`)}</option> : null}
             {ordinals.map((value, index) => <option key={value} value={value}>{index + 1} / {ordinals.length} · #{value + 1}</option>)}
           </select>
-        </label>
+        </label> : null}
+        {useIndependentPage && !showChanges && baselinePages.length > 0 ? <label className="text-xs font-semibold">{bt("기준본 이미지 순번", "Baseline image position")}
+          <select className="ml-2 min-h-11 rounded-lg border border-line bg-card px-2" value={baselinePage?.ordinal ?? ""}
+            onChange={event => setIndependentOrdinal(Number(event.target.value))}>{baselinePages.map(page =>
+              <option key={page.ordinal} value={page.ordinal}>#{page.ordinal + 1}</option>)}</select>
+        </label> : null}
         {state.complete && state.data.submission.reviewHref ? <a className={buttonClass({ variant: "outline", className: "min-h-11" })} href={state.data.submission.reviewHref}>{["open", "changes-requested"].includes(state.data.submission.review.status)
           ? bt("이 고정본에 핀 의견 남기기", "Leave pinned feedback on this version") : bt("이 고정본의 핀 의견 확인", "View pinned feedback on this version")}</a> : null}
       </div>
@@ -234,20 +268,25 @@ function SubmissionVisualReview({ aggregate, submission }: { readonly aggregate:
       {currentBaselineState?.kind === "error" ? <p role="alert" className="text-sm text-bad">{currentBaselineState.message}</p> : null}
       {baseline && currentBaselineState?.kind === "ready" ? <div className="flex flex-wrap items-center gap-3">
         <div role="group" aria-label={bt("실제 원고 비교 방식", "Manuscript comparison mode")} className="flex gap-2">
-          {(["compare", "overlay"] as const).map((value) => <button key={value} type="button" aria-pressed={mode === value} className={buttonClass({ variant: "outline", className: "min-h-11" })} onClick={() => setMode(value)}>{value === "compare" ? bt("원고 나란히", "Side by side") : bt("원고 겹쳐 보기", "Overlay")}</button>)}
+          {approvedSubject && currentSubject && state.complete && currentBaselineState.complete ? <button type="button" aria-pressed={Boolean(showChanges)}
+            className={buttonClass({ variant: "outline", className: "min-h-11" })} onClick={() => setMode("changes")}>{bt("승인 후 변경 컷", "Changed cuts since approval")}</button> : null}
+          {(["compare", "overlay"] as const).map((value) => <button key={value} type="button" disabled={value === "overlay" && !canOverlay} aria-pressed={value === "overlay" ? mode === "overlay" && Boolean(canOverlay) : !showChanges && !(mode === "overlay" && canOverlay)} className={buttonClass({ variant: "outline", className: "min-h-11" })} onClick={() => setMode(value)}>{value === "compare" ? bt("원고 나란히", "Side by side") : bt("원고 겹쳐 보기", "Overlay")}</button>)}
         </div>
-        {mode === "overlay" ? <label className="flex items-center gap-2 text-xs">{bt("제출본 불투명도", "Submission opacity")}<input type="range" min="0" max="1" step="0.05" value={opacity} onChange={(event) => setOpacity(Number(event.target.value))} /></label> : null}
+        {mode === "overlay" && canOverlay ? <label className="flex items-center gap-2 text-xs">{bt("제출본 불투명도", "Submission opacity")}<input type="range" min="0" max="1" step="0.05" value={opacity} onChange={(event) => setOpacity(Number(event.target.value))} /></label> : null}
       </div> : null}
-      <div className="max-h-[48rem] overflow-auto rounded-xl border border-line bg-canvas">
-        {baseline && currentBaselineState?.kind === "ready" && mode === "overlay" && currentPage && baselinePage ? <div className="relative mx-auto max-w-3xl">
+      {showChanges && baseline ? <Suspense fallback={<p role="status">{bt("변경 컷을 여는 중…", "Opening changed cuts…")}</p>}>
+        <ApprovedCutComparison approved={approvedSubject} current={currentSubject} beforePages={baselinePages} afterPages={state.pages} onSelectChange={setSelectedChange}
+          renderImage={(side, page, frameId) => renderImage(side === "before" ? baseline : state.data.submission, page, frameId)} />
+      </Suspense> : <div className="max-h-[48rem] overflow-auto rounded-xl border border-line bg-canvas">
+        {baseline && currentBaselineState?.kind === "ready" && mode === "overlay" && canOverlay ? <div className="relative mx-auto max-w-3xl">
           {renderImage(baseline, baselinePage)}
           <div className="absolute inset-x-0 top-0" style={{ opacity }}>{renderImage(state.data.submission, currentPage)}</div>
         </div> : <div className={baseline && currentBaselineState?.kind === "ready" ? "grid items-start gap-3 sm:grid-cols-2" : "mx-auto max-w-3xl"}>
           {baseline && currentBaselineState?.kind === "ready" ? <figure><figcaption className="bg-panel p-2 text-xs font-bold">{baseline.label} · {baseline.revision.id}</figcaption>{renderImage(baseline, baselinePage)}</figure> : null}
           <figure><figcaption className="bg-panel p-2 text-xs font-bold">{state.data.submission.label} · {state.data.submission.revision.id}</figcaption>{renderImage(state.data.submission, currentPage)}</figure>
         </div>}
-      </div>
-      <p className="text-xs text-fg-3">{bt("이미지 순번끼리 비교합니다. 원고 구성이 바뀌었다면 각 고정본의 순번을 확인하세요. 만료된 주소는 같은 고정본으로 자동 갱신합니다.", "Images are paired by position. Check each version if the page structure changed. Expired URLs refresh automatically for the same pinned version.")}</p>
+      </div>}
+      {baseline && !showChanges && useIndependentPage ? <p className="text-xs text-fg-2">{bt("페이지 연결 정보가 없어 각 버전의 이미지를 따로 선택합니다.", "Page matching is unavailable. Select each version’s image independently.")}</p> : null}
     </div> : null}
   </section>;
 }

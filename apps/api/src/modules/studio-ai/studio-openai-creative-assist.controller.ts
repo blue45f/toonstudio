@@ -13,7 +13,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 
-import { StudioOpenAiCreativeAssistDto } from "./studio-openai-creative-assist.dto";
+import { StudioApprovedDialogueReviewDto, StudioOpenAiCreativeAssistDto } from "./studio-openai-creative-assist.dto";
 import { StudioOpenAiCreativeAssistService } from "./studio-openai-creative-assist.service";
 
 import type { Request, Response } from "express";
@@ -52,7 +52,8 @@ async function withRequestAbort<T>(
   };
   request.once("aborted", abort);
   response.once("close", onClose);
-  if (request.aborted || request.destroyed) abort();
+  // Node 24는 완료된 POST 본문도 소진한 뒤 destroyed로 표시한다.
+  if (request.aborted || (response.destroyed && !response.writableEnded) || (request.destroyed && request.complete === false)) abort();
 
   try {
     return await run(controller.signal);
@@ -79,6 +80,21 @@ export class StudioOpenAiCreativeAssistController {
   @Header("Cache-Control", "no-store, max-age=0")
   freeQuotaStatus() {
     return this.assistService.freeQuotaStatus();
+  }
+
+  @Post("approved-dialogue-review")
+  @HttpCode(HttpStatus.OK)
+  @Header("Cache-Control", "no-store, max-age=0")
+  reviewApprovedDialogue(
+    @Headers("x-user-id") userId: string | undefined,
+    @Body() body: StudioApprovedDialogueReviewDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const actor = resolveOpenAiAssistActorKey(userId, request);
+    return withRequestAbort(request, response, (signal) =>
+      this.assistService.reviewApprovedDialogue(actor, body, { signal }),
+    );
   }
 
   @Post()

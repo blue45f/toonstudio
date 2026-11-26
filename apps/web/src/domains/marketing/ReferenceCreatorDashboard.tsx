@@ -42,8 +42,8 @@ const PRESET_CHIPS = [
   { href: "/create#ai-composer", domain: "character", ai: true, ko: "AI 자동 콘티·대사", en: "AI Storyboard" },
   { href: "/studio/new?lane=blank", domain: "draw", ai: false, ko: "세로 웹툰 (800×무한)", en: "Vertical Webtoon (800×∞)" },
   { href: "/studio/new?lane=storyboard&start=storyboard", domain: "draw", ai: false, ko: "인스타툰 4컷 (1080²)", en: "4-Panel Comic (1080²)" },
-  { href: "/studio/assets/characters/new", domain: "character", ai: false, ko: "3D 캐릭터 셰이퍼", en: "3D Character Shaper" },
-  { href: "/studio/bg3d", domain: "3d", ai: false, ko: "3D 배경 · LT 선화", en: "3D Scene · Line Art" },
+  { href: "/studio/assets/characters/new", domain: "character", ai: false, ko: "3D 캐릭터 다듬기", en: "3D Character Shaper" },
+  { href: "/studio/bg3d", domain: "3d", ai: false, ko: "3D 배경을 선화로", en: "3D Scene · Line Art" },
   { href: "/production", domain: "collab", ai: false, ko: "팀 공동 작업 · 검수", en: "Team Collab & Review" },
 ] as const;
 
