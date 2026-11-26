@@ -1,11 +1,17 @@
 /**
- * 곡률·줌·필압 적응형 가변폭 스트로크 세분화기 및 64비트 FNV-1a LRU/IndexedDB 지오메트리 캐시.
+ * 곡률·줌·필압 적응형 가변폭 스트로크 세분화기 및 64비트 FNV-1a LRU/OPFS 지오메트리 캐시.
  *
  * - 센트리페탈 Catmull-Rom → Cubic Bézier 변환 후 De Casteljau 화면 공간 평탄도·곡률·필압 오차 기반 적응 세분화
  * - 직선 구간은 최소 정점(1세그먼트)으로 절감하고 급곡선·코너·고배율 줌에서는 각짐(jagged corner) 없이 부드럽게 세분화
  * - 64비트 FNV-1a(`BigInt`) 제어점+스타일+로그 줌 LOD 버킷 해싱으로 팬/스크롤·동일 줌 재렌더 시 0 재계산 캐시 적중
- * - 바이트·엔트리 이중 상한 LRU 메모리 캐시 + 선택적 IndexedDB 영속 백킹 스토어 연동
+ * - 바이트·엔트리 이중 상한 LRU 메모리 캐시 + 선택적 OPFS 지오메트리 캐시
  */
+
+import {
+  selectStudioOpfsFileSystem,
+  type StudioOpfsFileSystem,
+  type StudioOpfsFileSystemProbeScope,
+} from "../studio-opfs-filesystem";
 
 export type StrokeCapStyle = "round" | "butt";
 export type StrokeJoinStyle = "round" | "bevel" | "miter";
@@ -38,12 +44,12 @@ export interface TessellatedStrokeGeometry {
 }
 export interface StrokeCacheLookupResult {
   readonly geometry: TessellatedStrokeGeometry; readonly cacheHit: boolean;
-  readonly source: "memory-lru" | "indexeddb-backing" | "computed";
+  readonly source: "memory-lru" | "opfs-backing" | "computed";
 }
 export interface StrokeBackingStoreLike {
-  readonly get: (key: string) => Promise<Uint8Array | null>;
-  readonly put: (key: string, payload: Uint8Array) => Promise<void>;
-  readonly delete: (key: string) => Promise<void>;
+  readonly read: (key: string) => Promise<Uint8Array | null>;
+  readonly write: (key: string, payload: Uint8Array) => Promise<boolean>;
+  readonly remove: (key: string) => Promise<void>;
   readonly clear?: () => Promise<void>;
 }
 export interface AdaptiveStrokeCacheOptions {
@@ -60,8 +66,25 @@ const FNV64_PRIME = BigInt("0x00000100000001b3");
 const U64_MASK = BigInt("0xffffffffffffffff");
 const SERIALIZED_MAGIC = 0x54534743; // "TSGC"
 const SERIALIZED_VERSION = 1;
+const SERIALIZED_HEADER_BYTES = 76;
+const OPFS_CACHE_SLOT_COUNT = 128;
+const OPFS_CACHE_SLOT_MAX_BYTES = 256 * 1024;
+const OPFS_CACHE_PATH = "geometry/";
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
+
+function formatStrokeCacheKey(hash64: bigint, zoomLodBucket: number): string {
+  return `stk64_${hash64.toString(16).padStart(16, "0")}_z${zoomLodBucket}`;
+}
+
+function normalizeSubdivisionOptions(options?: AdaptiveSubdivisionOptions) {
+  return {
+    pressureDeltaThreshold: clamp(options?.pressureDeltaThreshold ?? 0.14, 0.02, 1.0),
+    maxSegmentTurnDeg: clamp(options?.maxSegmentTurnDeg ?? 14, 4, 45),
+    maxSubdivisionDepth: clamp(Math.round(options?.maxSubdivisionDepth ?? 6), 1, 8),
+    uniformReferenceStepsPerSpan: Math.max(4, options?.uniformReferenceStepsPerSpan ?? 16),
+  };
+}
 
 /** 줌 배율을 1/4옥타브 로그 LOD 버킷으로 양자화해 미세 줌 변동이나 팬 이동 시 캐시 재사용을 극대화한다. */
 export function quantizeZoomLodBucket(zoom: number): { readonly bucket: number; readonly effectiveZoom: number } {
@@ -70,16 +93,18 @@ export function quantizeZoomLodBucket(zoom: number): { readonly bucket: number; 
   return { bucket, effectiveZoom: Math.pow(2, bucket / 4) };
 }
 
-/** 스트로크 제어점·두께·스타일·줌 LOD 버킷을 IEEE-754 바이트 단위로 64비트 FNV-1a 해싱한다. */
+/** 스트로크 제어점·스타일과 세분화 조건을 IEEE-754 바이트 단위로 64비트 FNV-1a 해싱한다. */
 export function hashStrokeControlPointsFnv64(
   input: AdaptiveStrokeInput,
   zoomLodBucket: number,
   flatnessTolerancePx = 0.35,
+  options?: AdaptiveSubdivisionOptions,
 ): { readonly hash64: bigint; readonly cacheKey: string } {
   const pointCount = input.points.length;
-  const buf = new ArrayBuffer(28 + pointCount * 20);
+  const buf = new ArrayBuffer(44 + pointCount * 20);
   const view = new DataView(buf);
   const bytes = new Uint8Array(buf);
+  const normalized = normalizeSubdivisionOptions(options);
   view.setInt32(0, zoomLodBucket, true);
   view.setFloat32(4, input.baseWidthPx, true);
   view.setFloat32(8, input.minWidthRatio ?? 0.2, true);
@@ -87,8 +112,12 @@ export function hashStrokeControlPointsFnv64(
   view.setFloat32(16, flatnessTolerancePx, true);
   view.setUint32(20, ((input.capStyle === "butt" ? 1 : 0) << 4) | (input.joinStyle === "bevel" ? 1 : input.joinStyle === "miter" ? 2 : 0), true);
   view.setUint32(24, pointCount, true);
+  view.setFloat32(28, normalized.pressureDeltaThreshold, true);
+  view.setFloat32(32, normalized.maxSegmentTurnDeg, true);
+  view.setUint32(36, normalized.maxSubdivisionDepth, true);
+  view.setFloat32(40, normalized.uniformReferenceStepsPerSpan, true);
 
-  let off = 28;
+  let off = 44;
   for (let i = 0; i < pointCount; i += 1) {
     const p = input.points[i]!;
     view.setFloat32(off, p.x, true); view.setFloat32(off + 4, p.y, true);
@@ -99,7 +128,7 @@ export function hashStrokeControlPointsFnv64(
 
   let h = FNV64_OFFSET;
   for (let i = 0; i < bytes.length; i += 1) h = ((h ^ BigInt(bytes[i]!)) * FNV64_PRIME) & U64_MASK;
-  return { hash64: h, cacheKey: `stk64_${h.toString(16).padStart(16, "0")}_z${zoomLodBucket}` };
+  return { hash64: h, cacheKey: formatStrokeCacheKey(h, zoomLodBucket) };
 }
 
 interface CubicBezierSpan {
@@ -176,15 +205,15 @@ function subdivideCubicAdaptive(
 export function subdivideAdaptiveStroke(input: AdaptiveStrokeInput, options?: AdaptiveSubdivisionOptions): TessellatedStrokeGeometry {
   const { bucket: zoomLodBucket, effectiveZoom } = quantizeZoomLodBucket(options?.zoom ?? 1);
   const flatTolPx = clamp(options?.flatnessTolerancePx ?? 0.35, 0.05, 4.0);
-  const pTol = clamp(options?.pressureDeltaThreshold ?? 0.14, 0.02, 1.0);
-  const maxTurnRad = (clamp(options?.maxSegmentTurnDeg ?? 14, 4, 45) * Math.PI) / 180;
-  const maxDepth = clamp(Math.round(options?.maxSubdivisionDepth ?? 6), 1, 8);
+  const normalized = normalizeSubdivisionOptions(options);
+  const { pressureDeltaThreshold: pTol, maxSubdivisionDepth: maxDepth } = normalized;
+  const maxTurnRad = (normalized.maxSegmentTurnDeg * Math.PI) / 180;
   const minW = clamp(input.minWidthRatio ?? 0.2, 0.05, 1.0);
   const maxW = clamp(input.maxWidthRatio ?? 1.25, minW, 3.0);
   const baseW = Math.max(0.5, input.baseWidthPx);
   const capStyle = input.capStyle ?? "round";
   const joinStyle = input.joinStyle ?? "round";
-  const { hash64, cacheKey } = hashStrokeControlPointsFnv64(input, zoomLodBucket, flatTolPx);
+  const { hash64, cacheKey } = hashStrokeControlPointsFnv64(input, zoomLodBucket, flatTolPx, options);
 
   const rawPoints = input.points;
   const rawSamples: { x: number; y: number; pressure: number }[] = [];
@@ -288,7 +317,7 @@ export function subdivideAdaptiveStroke(input: AdaptiveStrokeInput, options?: Ad
 
   const verticesXy = new Float32Array(verts); const uvs = new Float32Array(uvList); const indicesU32 = new Uint32Array(indices);
   const vertexCount = verticesXy.length / 2;
-  const uniformBaselineVertexCount = Math.max(1, rawPoints.length - 1) * Math.max(4, options?.uniformReferenceStepsPerSpan ?? 16) * 4;
+  const uniformBaselineVertexCount = Math.max(1, rawPoints.length - 1) * normalized.uniformReferenceStepsPerSpan * 4;
   return {
     cacheKey, hash64, zoomLodBucket, effectiveZoom, centerlineXy, widths, verticesXy, uvs, indices: indicesU32,
     bounds: { minX, minY, maxX, maxY, width: Math.max(0, maxX - minX), height: Math.max(0, maxY - minY) },
@@ -302,11 +331,11 @@ export function subdivideAdaptiveStroke(input: AdaptiveStrokeInput, options?: Ad
 }
 
 // ---------------------------------------------------------------------------
-// 바이너리 직렬화 · IndexedDB 백킹 스토어 · LRU 지오메트리 캐시
+// 바이너리 직렬화 · OPFS 백킹 스토어 · LRU 지오메트리 캐시
 // ---------------------------------------------------------------------------
 
 export function serializeStrokeGeometry(geom: TessellatedStrokeGeometry): Uint8Array {
-  const buf = new ArrayBuffer(76 + geom.byteLength);
+  const buf = new ArrayBuffer(SERIALIZED_HEADER_BYTES + geom.byteLength);
   const v = new DataView(buf);
   const out = new Uint8Array(buf);
   v.setUint32(0, SERIALIZED_MAGIC, true); v.setUint32(4, SERIALIZED_VERSION, true);
@@ -318,7 +347,7 @@ export function serializeStrokeGeometry(geom: TessellatedStrokeGeometry): Uint8A
   v.setFloat32(52, geom.bounds.minX, true); v.setFloat32(56, geom.bounds.minY, true);
   v.setFloat32(60, geom.bounds.maxX, true); v.setFloat32(64, geom.bounds.maxY, true);
   v.setFloat32(68, geom.vertexReductionVsUniformPct, true); v.setUint32(72, 0, true);
-  let off = 76;
+  let off = SERIALIZED_HEADER_BYTES;
   for (const typed of [geom.centerlineXy, geom.widths, geom.verticesXy, geom.uvs, geom.indices]) {
     out.set(new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength), off);
     off += typed.byteLength;
@@ -326,14 +355,22 @@ export function serializeStrokeGeometry(geom: TessellatedStrokeGeometry): Uint8A
   return out;
 }
 
-export function deserializeStrokeGeometry(cacheKey: string, payload: Uint8Array): TessellatedStrokeGeometry | null {
-  if (payload.byteLength < 76) return null;
+function readStrokeGeometryHeader(cacheKey: string, payload: Uint8Array): DataView | null {
+  if (payload.byteLength < SERIALIZED_HEADER_BYTES) return null;
   const v = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
   if (v.getUint32(0, true) !== SERIALIZED_MAGIC || v.getUint32(4, true) !== SERIALIZED_VERSION) return null;
+  if (cacheKey !== formatStrokeCacheKey(v.getBigUint64(8, true), v.getInt32(16, true))) return null;
   const sampleCount = v.getUint32(24, true); const vertexCount = v.getUint32(28, true); const indexCount = v.getUint32(32, true);
-  if (payload.byteLength < 76 + sampleCount * 12 + vertexCount * 16 + indexCount * 4) return null;
+  const dataBytes = sampleCount * 12 + vertexCount * 16 + indexCount * 4;
+  return payload.byteLength === SERIALIZED_HEADER_BYTES + dataBytes ? v : null;
+}
 
-  let off = 76;
+export function deserializeStrokeGeometry(cacheKey: string, payload: Uint8Array): TessellatedStrokeGeometry | null {
+  const v = readStrokeGeometryHeader(cacheKey, payload);
+  if (!v) return null;
+  const sampleCount = v.getUint32(24, true); const vertexCount = v.getUint32(28, true); const indexCount = v.getUint32(32, true);
+
+  let off = SERIALIZED_HEADER_BYTES;
   const take = (len: number): ArrayBuffer => {
     const ab = new ArrayBuffer(len);
     new Uint8Array(ab).set(payload.subarray(off, off + len));
@@ -359,43 +396,57 @@ export function deserializeStrokeGeometry(cacheKey: string, payload: Uint8Array)
   };
 }
 
-/** 브라우저 환경에서 지연 오픈되는 IndexedDB 스트로크 지오메트리 영속 스토어를 생성한다. */
-export function createBrowserIndexedDbStrokeStore(
-  dbName = "toonstudio-adaptive-stroke-cache-v1",
-  storeName = "stroke_geometries",
-): StrokeBackingStoreLike | null {
-  if (typeof globalThis === "undefined" || !("indexedDB" in globalThis) || !globalThis.indexedDB) return null;
-  const idb = globalThis.indexedDB;
-  let dbPromise: Promise<IDBDatabase> | null = null;
-  const openDb = (): Promise<IDBDatabase> => {
-    dbPromise ??= new Promise<IDBDatabase>((resolve, reject) => {
-      const req = idb.open(dbName, 1);
-      req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains(storeName)) req.result.createObjectStore(storeName); };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error ?? new Error("IndexedDB open failed"));
-    });
-    return dbPromise;
-  };
-  const runTx = async <T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> => {
-    const db = await openDb();
-    return new Promise<T>((resolve, reject) => {
-      const req = fn(db.transaction(storeName, mode).objectStore(storeName));
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error ?? new Error("IndexedDB tx failed"));
-    });
-  };
+function getStrokeCacheSlot(key: string): string | null {
+  const hashSuffix = /^stk64_[\da-f]{14}([\da-f]{2})_z(?:0|-?[1-9]\d?)$/.exec(key)?.[1];
+  if (!hashSuffix) return null;
+  const slot = Number.parseInt(hashSuffix, 16) % OPFS_CACHE_SLOT_COUNT;
+  return `${OPFS_CACHE_PATH}${slot}.bin`;
+}
+
+/** 재계산 가능한 지오메트리를 고정 슬롯에 덮어써 여러 탭에서도 32MiB 상한을 지킨다. */
+export function createOpfsStrokeStore(fs: StudioOpfsFileSystem): StrokeBackingStoreLike {
+  async function readSlot(path: string, key: string): Promise<Uint8Array | null> {
+    const size = await fs.size(path);
+    if (size === null || size > OPFS_CACHE_SLOT_MAX_BYTES) return null;
+    const payload = await fs.read(path);
+    return payload && readStrokeGeometryHeader(key, payload) ? payload : null;
+  }
+
   return {
-    get: async (key) => {
-      const val = (await runTx("readonly", (s) => s.get(key))) as Uint8Array | ArrayBuffer | undefined;
-      return !val ? null : val instanceof Uint8Array ? val : new Uint8Array(val);
+    async read(key) {
+      const path = getStrokeCacheSlot(key);
+      return path ? readSlot(path, key) : null;
     },
-    put: async (key, payload) => { await runTx("readwrite", (s) => s.put(payload, key)); },
-    delete: async (key) => { await runTx("readwrite", (s) => s.delete(key)); },
-    clear: async () => { await runTx("readwrite", (s) => s.clear()); },
+    async write(key, payload) {
+      const path = getStrokeCacheSlot(key);
+      if (!path || payload.byteLength > OPFS_CACHE_SLOT_MAX_BYTES || !readStrokeGeometryHeader(key, payload)) return false;
+      await fs.write(path, payload);
+      return true;
+    },
+    async remove(key) {
+      const path = getStrokeCacheSlot(key);
+      if (path && await readSlot(path, key)) await fs.remove(path);
+    },
+    async clear() {
+      const paths = await fs.list(OPFS_CACHE_PATH);
+      const slots = paths.filter((path) => {
+        const index = /^geometry\/(0|[1-9]\d{0,2})\.bin$/.exec(path)?.[1];
+        return index !== undefined && Number(index) < OPFS_CACHE_SLOT_COUNT;
+      });
+      await Promise.all(slots.map((path) => fs.remove(path)));
+    },
   };
 }
 
-/** 64비트 FNV-1a 해시 기반 바이트/엔트리 상한 LRU + 선택적 IndexedDB 스트로크 지오메트리 캐시. */
+/** OPFS가 막힌 환경에서는 별도 저장소 없이 메모리 LRU를 쓴다. */
+export async function createBrowserOpfsStrokeStore(
+  scope?: StudioOpfsFileSystemProbeScope,
+): Promise<StrokeBackingStoreLike | null> {
+  const selection = await selectStudioOpfsFileSystem(scope, { rootName: "toonstudio-stroke-geometry-cache-v1" });
+  return selection.kind === "opfs" ? createOpfsStrokeStore(selection.fs) : null;
+}
+
+/** 64비트 FNV-1a 해시 기반 바이트/엔트리 상한 LRU + 선택적 OPFS 스트로크 지오메트리 캐시. */
 export class AdaptiveStrokeGeometryCache {
   private readonly maxEntries: number;
   private readonly maxBytes: number;
@@ -432,7 +483,7 @@ export class AdaptiveStrokeGeometryCache {
 
   public getOrSubdivide(input: AdaptiveStrokeInput, options?: AdaptiveSubdivisionOptions): StrokeCacheLookupResult {
     const { bucket } = quantizeZoomLodBucket(options?.zoom ?? 1);
-    const { cacheKey } = hashStrokeControlPointsFnv64(input, bucket, clamp(options?.flatnessTolerancePx ?? 0.35, 0.05, 4.0));
+    const { cacheKey } = hashStrokeControlPointsFnv64(input, bucket, clamp(options?.flatnessTolerancePx ?? 0.35, 0.05, 4.0), options);
     const cached = this.entries.get(cacheKey);
     if (cached) { this.hits += 1; this.promote(cacheKey, cached); return { geometry: cached, cacheHit: true, source: "memory-lru" }; }
     this.misses += 1; this.recomputeCount += 1;
@@ -443,18 +494,21 @@ export class AdaptiveStrokeGeometryCache {
 
   public async getOrSubdivideAsync(input: AdaptiveStrokeInput, options?: AdaptiveSubdivisionOptions): Promise<StrokeCacheLookupResult> {
     const { bucket } = quantizeZoomLodBucket(options?.zoom ?? 1);
-    const { cacheKey } = hashStrokeControlPointsFnv64(input, bucket, clamp(options?.flatnessTolerancePx ?? 0.35, 0.05, 4.0));
+    const { cacheKey } = hashStrokeControlPointsFnv64(input, bucket, clamp(options?.flatnessTolerancePx ?? 0.35, 0.05, 4.0), options);
     const cached = this.entries.get(cacheKey);
     if (cached) { this.hits += 1; this.promote(cacheKey, cached); return { geometry: cached, cacheHit: true, source: "memory-lru" }; }
     if (this.backingStore) {
-      const stored = await this.backingStore.get(cacheKey);
+      // 기기 캐시를 읽을 수 없어도 스트로크는 입력에서 다시 계산한다.
+      const stored = await this.backingStore.read(cacheKey).catch(() => null);
       const hydrated = stored ? deserializeStrokeGeometry(cacheKey, stored) : null;
-      if (hydrated) { this.hits += 1; this.backingHits += 1; this.insert(hydrated); return { geometry: hydrated, cacheHit: true, source: "indexeddb-backing" }; }
+      if (hydrated) { this.hits += 1; this.backingHits += 1; this.insert(hydrated); return { geometry: hydrated, cacheHit: true, source: "opfs-backing" }; }
     }
     this.misses += 1; this.recomputeCount += 1;
     const geom = subdivideAdaptiveStroke(input, options);
     this.insert(geom);
-    if (this.backingStore) { await this.backingStore.put(cacheKey, serializeStrokeGeometry(geom)); this.backingWrites += 1; }
+    if (this.backingStore && await this.backingStore.write(cacheKey, serializeStrokeGeometry(geom)).catch(() => false)) {
+      this.backingWrites += 1;
+    }
     return { geometry: geom, cacheHit: false, source: "computed" };
   }
 

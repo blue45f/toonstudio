@@ -4,7 +4,7 @@
  *
  * - `ondevice-tts-and-anim-codec`: 무서버 한국어/영어/일본어 포먼트 TTS · 6-비젬 립싱크 · 48비트 Smallest-Three 스켈레탈 코덱
  * - `webnn-composition-object-detector`: WebNN NPU 자동 라우팅 + 오프라인 적분·HOG·연결요소 구도/말풍선 안전 슬롯 검출기
- * - `adaptive-stroke-cache-subdivider`: 곡률·줌·필압 적응형 가변폭 스트로크 세분화기 + 64비트 FNV-1a LRU/IndexedDB 캐시
+ * - `adaptive-stroke-cache-subdivider`: 곡률·줌·필압 적응형 가변폭 스트로크 세분화기 + 64비트 FNV-1a LRU/OPFS 캐시
  * - `webgpu-sparse-virtual-texturing`: 16K~64K 희소 가상 텍스처(SVT) 페이지 테이블 · 피드백 · LRU 아틀라스 · WGSL 컴퓨트 셰이더
  */
 
@@ -73,7 +73,8 @@ export {
 
 export {
   AdaptiveStrokeGeometryCache,
-  createBrowserIndexedDbStrokeStore,
+  createBrowserOpfsStrokeStore,
+  createOpfsStrokeStore,
   deserializeStrokeGeometry,
   hashStrokeControlPointsFnv64,
   quantizeZoomLodBucket,
