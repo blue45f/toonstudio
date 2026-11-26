@@ -229,7 +229,7 @@ import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioBackground3DMagicFilterMask } from "../scene-3d/studio-3d-insert-contract";
 import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
-import type Konva from "konva";
+import type { StudioStageLike } from "../canvas/studio-stage-handle-types";
 
 import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
 
@@ -311,7 +311,7 @@ export function bindStudioCuttoonStagePointersBatch(
     });
   }
   function consumeFreehandPointerBatch(
-    stage: Konva.Stage,
+    stage: StudioStageLike,
     pointerEvent: PointerEvent,
     includePredicted: boolean,
     options: {

@@ -43,7 +43,7 @@ import type { PageState } from "../studio-page-state";
 import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
 import type { StudioLiveStrokeFoleyBridgeRuntime } from "./studio-live-stroke-foley-bridge";
-import type Konva from "konva";
+import type { StudioStageLike } from "../canvas/studio-stage-handle-types";
 
 export function createStudioCuttoonStagePointerFinishHandler(
   h: StudioCuttoonStagePointersHost,
@@ -208,7 +208,7 @@ export function createStudioCuttoonStagePointerFinishHandler(
     return handoff;
   }
   function finishDrawingPointer(
-    stage: Konva.Stage | null,
+    stage: StudioStageLike | null,
     pointerEvent: PointerEvent,
     options: { consumeReleaseSample?: boolean; coordinateMapper?: StudioStagePointerBatchMapper; quickShapeSnapshot?: ReturnType<typeof snapshotQuickShapeTracking> } = {}
   ) {

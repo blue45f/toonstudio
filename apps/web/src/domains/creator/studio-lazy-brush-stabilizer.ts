@@ -1,5 +1,3 @@
-import { LazyBrush } from "lazy-brush";
-
 export const STUDIO_LAZY_BRUSH_DEFAULT_RADIUS_CSS_PX = 30;
 export const STUDIO_LAZY_BRUSH_MAX_RADIUS_CSS_PX = 512;
 export const STUDIO_LAZY_BRUSH_MIN_COORDINATE_SCALE = 0.01;
@@ -22,11 +20,7 @@ export type StudioLazyBrushPointerPolicyInput =
   | "pen-only"
   | Partial<StudioLazyBrushPointerPolicy>;
 
-/**
- * Mouse and touch input benefit from a lazy radius by default. Pen input is deliberately opt-in:
- * most styluses already provide high-rate coalesced samples and applying an additional spatial
- * leash without an explicit artist choice makes the nib feel detached from the cursor.
- */
+/** Mouse/touch default to active leash; stylus pen stays opt-in. */
 export const STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY =
   Object.freeze<StudioLazyBrushPointerPolicy>({
     mouse: true,
@@ -37,11 +31,8 @@ export const STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY =
 
 export interface StudioLazyBrushStabilizerOptions {
   readonly enabled?: boolean;
-  /** Perceived radius in screen CSS pixels, independent of document zoom. */
   readonly radiusCssPx?: number;
-  /** Number of screen CSS pixels occupied by one document-coordinate pixel. */
   readonly coordinateScale?: number;
-  /** 0 follows the radius boundary immediately; 1 approaches infinite friction. */
   readonly friction?: number;
   readonly pointerPolicy?: StudioLazyBrushPointerPolicyInput;
 }
@@ -50,7 +41,6 @@ export interface StudioLazyBrushStabilizerSample {
   readonly x: number;
   readonly y: number;
   readonly pointerType?: StudioLazyBrushPointerType;
-  /** A new pointer id starts a new stroke automatically instead of inheriting the prior leash. */
   readonly pointerId?: number;
 }
 
@@ -64,9 +54,7 @@ export interface StudioLazyBrushNormalizedOptions {
 }
 
 export interface StudioLazyBrushStabilizerResult {
-  /** Immutable document-coordinate output suitable for immediate retention by a stroke planner. */
   readonly point: readonly [number, number];
-  /** Latest raw pointer coordinate, useful for drawing a leash/guide. */
   readonly pointer: readonly [number, number];
   readonly accepted: boolean;
   readonly initialized: boolean;
@@ -80,59 +68,40 @@ export interface StudioLazyBrushStabilizerResult {
   readonly friction: number;
 }
 
-function finiteOr(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
+const finiteOr = (value: unknown, fallback: number): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(maximum, Math.max(minimum, value));
-}
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
 
-function normalizePointerType(value: unknown): StudioLazyBrushPointerType {
-  return value === "mouse" || value === "pen" || value === "touch"
-    ? value
-    : "unknown";
-}
+const normalizePointerType = (value: unknown): StudioLazyBrushPointerType =>
+  value === "mouse" || value === "pen" || value === "touch" ? value : "unknown";
 
-function normalizePointerId(value: unknown): number | null {
-  return typeof value === "number"
-    && Number.isSafeInteger(value)
-    && value >= 0
-    ? value
-    : null;
-}
+const normalizePointerId = (value: unknown): number | null =>
+  typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
 
-function frozenPoint(x: number, y: number): readonly [number, number] {
-  const canonical = (value: number) => Math.abs(value) < 1e-12 ? 0 : value;
-  return Object.freeze([canonical(x), canonical(y)] as [number, number]);
-}
+const frozenPoint = (x: number, y: number): readonly [number, number] =>
+  Object.freeze([Math.abs(x) < 1e-12 ? 0 : x, Math.abs(y) < 1e-12 ? 0 : y] as [number, number]);
+
+const POLICY_PRESETS: Readonly<Record<string, StudioLazyBrushPointerPolicy>> = {
+  all: Object.freeze({ mouse: true, pen: true, touch: true, unknown: true }),
+  "mouse-only": Object.freeze({ mouse: true, pen: false, touch: false, unknown: false }),
+  "non-pen": Object.freeze({ mouse: true, pen: false, touch: true, unknown: true }),
+  none: Object.freeze({ mouse: false, pen: false, touch: false, unknown: false }),
+  "pen-only": Object.freeze({ mouse: false, pen: true, touch: false, unknown: false }),
+};
 
 function normalizePointerPolicy(
   input: StudioLazyBrushPointerPolicyInput | undefined,
 ): StudioLazyBrushPointerPolicy {
-  if (input === "all") {
-    return Object.freeze({ mouse: true, pen: true, touch: true, unknown: true });
-  }
-  if (input === "mouse-only") {
-    return Object.freeze({ mouse: true, pen: false, touch: false, unknown: false });
-  }
-  if (input === "non-pen") {
-    return Object.freeze({ mouse: true, pen: false, touch: true, unknown: true });
-  }
-  if (input === "none") {
-    return Object.freeze({ mouse: false, pen: false, touch: false, unknown: false });
-  }
-  if (input === "pen-only") {
-    return Object.freeze({ mouse: false, pen: true, touch: false, unknown: false });
-  }
-  if (!input || typeof input !== "object") {
-    return STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY;
-  }
+  if (typeof input === "string" && input in POLICY_PRESETS) return POLICY_PRESETS[input]!;
+  if (!input || typeof input !== "object") return STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY;
+  const def = STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY;
   return Object.freeze({
-    mouse: input.mouse ?? STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY.mouse,
-    pen: input.pen ?? STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY.pen,
-    touch: input.touch ?? STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY.touch,
-    unknown: input.unknown ?? STUDIO_LAZY_BRUSH_DEFAULT_POINTER_POLICY.unknown,
+    mouse: input.mouse ?? def.mouse,
+    pen: input.pen ?? def.pen,
+    touch: input.touch ?? def.touch,
+    unknown: input.unknown ?? def.unknown,
   });
 }
 
@@ -166,25 +135,27 @@ export function shouldApplyStudioLazyBrush(
   return options.enabled && options.pointerPolicy[pointerType];
 }
 
-/**
- * Stateful adapter around `lazy-brush` with immutable, prefix-stable outputs.
- *
- * The third-party class is intentionally contained here: renderers consume plain tuples and never
- * retain its mutable points. `update()` auto-starts on the first valid sample, while `reset()`
- * guarantees that a new stroke cannot inherit the preceding stroke's radius or trailing position.
- */
+/** Zero-dep radius/friction pointer leash stabilizer with immutable, prefix-stable outputs. */
 export class StudioLazyBrushStabilizer {
-  private lazyBrush: LazyBrush | null = null;
+  private hasState = false;
+  private brushX = 0;
+  private brushY = 0;
+  private pointerX = 0;
+  private pointerY = 0;
   private pointerType: StudioLazyBrushPointerType = "unknown";
   private pointerId: number | null = null;
   private lastOptions = normalizeStudioLazyBrushOptions();
 
   get initialized(): boolean {
-    return this.lazyBrush !== null;
+    return this.hasState;
   }
 
   reset(): void {
-    this.lazyBrush = null;
+    this.hasState = false;
+    this.brushX = 0;
+    this.brushY = 0;
+    this.pointerX = 0;
+    this.pointerY = 0;
     this.pointerType = "unknown";
     this.pointerId = null;
     this.lastOptions = normalizeStudioLazyBrushOptions();
@@ -199,29 +170,18 @@ export class StudioLazyBrushStabilizer {
       this.reset();
       return this.rejectedResult(normalized);
     }
-
     const pointerType = normalizePointerType(sample.pointerType);
     const pointerId = normalizePointerId(sample.pointerId);
     const active = shouldApplyStudioLazyBrush(pointerType, normalized);
-    const point = { x: sample.x, y: sample.y };
-    this.lazyBrush = new LazyBrush({
-      enabled: active,
-      initialPoint: point,
-      // LazyBrush treats a constructor radius of 0 as its default. Set the exact normalized radius
-      // immediately below so a zero-radius pass-through remains valid.
-      radius: normalized.radiusDocumentPx || 1,
-    });
-    this.lazyBrush.setRadius(normalized.radiusDocumentPx);
+    this.hasState = true;
+    this.brushX = sample.x;
+    this.brushY = sample.y;
+    this.pointerX = sample.x;
+    this.pointerY = sample.y;
     this.pointerType = pointerType;
     this.pointerId = pointerId;
     this.lastOptions = normalized;
-    return this.result({
-      accepted: true,
-      firstPoint: true,
-      active,
-      moved: false,
-      options: normalized,
-    });
+    return this.result(true, true, active, false, normalized);
   }
 
   update(
@@ -232,11 +192,10 @@ export class StudioLazyBrushStabilizer {
     if (!Number.isFinite(sample.x) || !Number.isFinite(sample.y)) {
       return this.rejectedResult(normalized);
     }
-
     const pointerType = normalizePointerType(sample.pointerType);
     const pointerId = normalizePointerId(sample.pointerId);
     if (
-      !this.lazyBrush
+      !this.hasState
       || pointerType !== this.pointerType
       || (pointerId !== null && this.pointerId !== null && pointerId !== this.pointerId)
     ) {
@@ -244,76 +203,57 @@ export class StudioLazyBrushStabilizer {
     }
 
     const active = shouldApplyStudioLazyBrush(pointerType, normalized);
-    this.configure(active, normalized.radiusDocumentPx);
-    const before = this.lazyBrush.getBrushCoordinates();
+    const beforeX = this.brushX;
+    const beforeY = this.brushY;
+    const samePointer = this.pointerX === sample.x && this.pointerY === sample.y;
 
-    if (active && normalized.radiusDocumentPx <= 0) {
-      this.lazyBrush.update(sample, { both: true });
-    } else if (active) {
-      if (normalized.friction <= 0) {
-        this.lazyBrush.update(sample);
-      } else {
-        // lazy-brush 2.x interprets exactly `1` as an omitted value. Keep the public meaning
-        // (effectively infinite friction) without triggering that dependency edge case.
-        const dependencyFriction = normalized.friction >= 1
-          ? 1 - Number.EPSILON
-          : normalized.friction;
-        this.lazyBrush.update(sample, { friction: dependencyFriction });
+    if (!active || normalized.radiusDocumentPx <= 0) {
+      this.pointerX = sample.x;
+      this.pointerY = sample.y;
+      this.brushX = sample.x;
+      this.brushY = sample.y;
+    } else if (!samePointer || normalized.friction > 0) {
+      this.pointerX = sample.x;
+      this.pointerY = sample.y;
+      const dx = sample.x - this.brushX;
+      const dy = sample.y - this.brushY;
+      const distance = Math.hypot(dx, dy);
+      const excess = distance - normalized.radiusDocumentPx;
+      if (Math.round(excess * 10) / 10 > 0 && distance > 0 && normalized.friction < 1) {
+        const inv = 1 - normalized.friction;
+        const step = normalized.friction > 0
+          ? excess * (1 - Math.sqrt(1 - inv * inv))
+          : excess;
+        this.brushX += (dx / distance) * step;
+        this.brushY += (dy / distance) * step;
       }
-    } else {
-      this.lazyBrush.update(sample);
     }
 
-    const after = this.lazyBrush.getBrushCoordinates();
     this.pointerType = pointerType;
     this.pointerId = pointerId;
     this.lastOptions = normalized;
-    return this.result({
-      accepted: true,
-      firstPoint: false,
-      active,
-      moved: before.x !== after.x || before.y !== after.y,
-      options: normalized,
-    });
+    const moved = beforeX !== this.brushX || beforeY !== this.brushY;
+    return this.result(true, false, active, moved, normalized);
   }
 
-  /**
-   * Resolves the intentional lazy-radius trail to the latest raw endpoint on pointer-up.
-   * The returned endpoint is a new immutable value and cannot revise earlier emitted samples.
-   */
+  /** Resolves the intentional lazy-radius trail to the latest raw endpoint on pointer-up. */
   flush(): StudioLazyBrushStabilizerResult | null {
-    if (!this.lazyBrush) return null;
-    const before = this.lazyBrush.getBrushCoordinates();
-    const pointer = this.lazyBrush.getPointerCoordinates();
-    this.lazyBrush.update(pointer, { both: true });
-    const after = this.lazyBrush.getBrushCoordinates();
-    return this.result({
-      accepted: true,
-      firstPoint: false,
-      active: shouldApplyStudioLazyBrush(this.pointerType, this.lastOptions),
-      moved: before.x !== after.x || before.y !== after.y,
-      options: this.lastOptions,
-    });
+    if (!this.hasState) return null;
+    const moved = this.brushX !== this.pointerX || this.brushY !== this.pointerY;
+    this.brushX = this.pointerX;
+    this.brushY = this.pointerY;
+    return this.result(
+      true,
+      false,
+      shouldApplyStudioLazyBrush(this.pointerType, this.lastOptions),
+      moved,
+      this.lastOptions,
+    );
   }
 
-  private configure(active: boolean, radiusDocumentPx: number): void {
-    if (!this.lazyBrush) return;
-    this.lazyBrush.setRadius(radiusDocumentPx);
-    if (active) this.lazyBrush.enable();
-    else this.lazyBrush.disable();
-  }
-
-  private rejectedResult(
-    options: StudioLazyBrushNormalizedOptions,
-  ): StudioLazyBrushStabilizerResult {
-    if (this.lazyBrush) {
-      return this.result({
-        accepted: false,
-        firstPoint: false,
-        active: shouldApplyStudioLazyBrush(this.pointerType, options),
-        moved: false,
-        options,
-      });
+  private rejectedResult(options: StudioLazyBrushNormalizedOptions): StudioLazyBrushStabilizerResult {
+    if (this.hasState) {
+      return this.result(false, false, shouldApplyStudioLazyBrush(this.pointerType, options), false, options);
     }
     return Object.freeze({
       point: frozenPoint(0, 0),
@@ -331,28 +271,26 @@ export class StudioLazyBrushStabilizer {
     });
   }
 
-  private result(input: {
-    readonly accepted: boolean;
-    readonly firstPoint: boolean;
-    readonly active: boolean;
-    readonly moved: boolean;
-    readonly options: StudioLazyBrushNormalizedOptions;
-  }): StudioLazyBrushStabilizerResult {
-    const brush = this.lazyBrush?.getBrushCoordinates() ?? { x: 0, y: 0 };
-    const pointer = this.lazyBrush?.getPointerCoordinates() ?? brush;
+  private result(
+    accepted: boolean,
+    firstPoint: boolean,
+    active: boolean,
+    moved: boolean,
+    options: StudioLazyBrushNormalizedOptions,
+  ): StudioLazyBrushStabilizerResult {
     return Object.freeze({
-      point: frozenPoint(brush.x, brush.y),
-      pointer: frozenPoint(pointer.x, pointer.y),
-      accepted: input.accepted,
-      initialized: this.lazyBrush !== null,
-      firstPoint: input.firstPoint,
-      active: input.active,
-      moved: input.moved,
+      point: frozenPoint(this.brushX, this.brushY),
+      pointer: frozenPoint(this.pointerX, this.pointerY),
+      accepted,
+      initialized: this.hasState,
+      firstPoint,
+      active,
+      moved,
       pointerType: this.pointerType,
       pointerId: this.pointerId,
-      radiusCssPx: input.options.radiusCssPx,
-      radiusDocumentPx: input.options.radiusDocumentPx,
-      friction: input.options.friction,
+      radiusCssPx: options.radiusCssPx,
+      radiusDocumentPx: options.radiusDocumentPx,
+      friction: options.friction,
     });
   }
 }

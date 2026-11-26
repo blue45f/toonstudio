@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioImageNodeLike, StudioReadonlyRef, StudioStageLike } from "../canvas/studio-stage-handle-types";
 import type { MutableRefObject } from "react";
 
 import type { El } from "../studio-element-model";
@@ -86,7 +86,7 @@ export interface RunStudioLiquifyLivePreviewPumpInput {
   readonly activeElementsRef: MutableRefObject<El[]>;
   readonly liquifyPreviewTokenRef: MutableRefObject<number>;
   readonly liquifyPreviewSourceRef: MutableRefObject<StudioLiquifyPreviewSource | null>;
-  readonly liquifyPreviewImageRef: MutableRefObject<Konva.Image | null>;
+  readonly liquifyPreviewImageRef: StudioReadonlyRef<StudioImageNodeLike | null>;
   readonly liquifyRadius: number;
   readonly liquifyStrength: number;
 }
@@ -223,7 +223,7 @@ export async function runStudioLiquifyLivePreviewPump(
 export function runStudioLiquifyPointerSessionFinish(input: {
   readonly pointerEvent: PointerEvent;
   readonly cancelled: boolean;
-  readonly stage: Konva.Stage | null;
+  readonly stage: StudioStageLike | null;
   readonly liquifyDragRef: MutableRefObject<StudioLiquifyPointerSession | null>;
   readonly releaseCapture: (session: StudioLiquifyPointerSession) => void;
   readonly clearStrokePreview: () => void;
@@ -266,7 +266,7 @@ export function runStudioLiquifyPointerSessionFinish(input: {
 export function runStudioPendingPixelSelectionRasterGestureFinish(input: {
   readonly pointerEvent: PointerEvent;
   readonly cancelled: boolean;
-  readonly stage: Konva.Stage | null;
+  readonly stage: StudioStageLike | null;
   readonly pendingRef: MutableRefObject<StudioPendingPixelSelectionRasterGesture | null>;
   readonly releaseGesture: (pending: StudioPendingPixelSelectionRasterGesture) => void;
 }): boolean {
@@ -297,7 +297,7 @@ export function runStudioPendingPixelSelectionRasterGestureFinish(input: {
 export function runStudioPendingRasterRetouchGestureFinish(input: {
   readonly pointerEvent: PointerEvent;
   readonly cancelled: boolean;
-  readonly stage: Konva.Stage | null;
+  readonly stage: StudioStageLike | null;
   readonly pendingRef: MutableRefObject<StudioPendingRasterRetouchGesture | null>;
   readonly targetRef: MutableRefObject<{ frame: SelectionFrame; id: string } | null>;
   readonly releaseCapture: (gesture: StudioPendingRasterRetouchGesture) => void;
@@ -340,7 +340,7 @@ export function runStudioPendingRasterRetouchGestureFinish(input: {
 export function runStudioPixelSelectionPointerSessionFinish(input: {
   readonly pointerEvent: PointerEvent;
   readonly cancelled: boolean;
-  readonly stage: Konva.Stage | null;
+  readonly stage: StudioStageLike | null;
   readonly pixelDragRef: MutableRefObject<StudioPixelDragSession | null>;
   readonly pixelSelRef: MutableRefObject<PixelSelection | null>;
   readonly setPixelSel: (selection: PixelSelection | null) => void;

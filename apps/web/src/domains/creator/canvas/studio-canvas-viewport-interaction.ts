@@ -37,11 +37,15 @@ import {
 } from "./studio-canvas-viewport-primitives";
 
 import type {
+  StudioKonvaEventLike,
+  StudioSceneLayerLike,
+  StudioSceneNodeLike,
+} from "./studio-stage-handle-types";
+import type {
   StudioCanvasViewportProps,
 } from "./StudioCanvasViewportTypes";
 import type { El } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
-import type Konva from "konva";
 
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { useT } from "@/shared/lib/i18n";
@@ -50,7 +54,7 @@ interface StudioDuplicateDragIntent {
   readonly elementId: string;
   readonly sourceX: number;
   readonly sourceY: number;
-  readonly target: Konva.Node;
+  readonly target: StudioSceneNodeLike;
 }
 
 export function useStudioCanvasViewportInteraction(props: StudioCanvasViewportProps) {
@@ -119,7 +123,7 @@ export function useStudioCanvasViewportInteraction(props: StudioCanvasViewportPr
     selectElementFromCanvas,
     setCurrentPageId,
   } = stableHandlers;
-  const singleObjectDragLayerRef = useRef<Konva.Layer>(null);
+  const singleObjectDragLayerRef = useRef<StudioSceneLayerLike>(null);
   const singleObjectDragSessionRef = useRef<StudioSingleObjectDragLayerSession | null>(null);
   const duplicateDragIntentRef = useRef<StudioDuplicateDragIntent | null>(null);
   function restoreSingleObjectDragLayer(): boolean {
@@ -175,7 +179,7 @@ export function useStudioCanvasViewportInteraction(props: StudioCanvasViewportPr
   }
 
   function beginSingleObjectDragLayer(
-    event: Konva.KonvaEventObject<DragEvent>,
+    event: StudioKonvaEventLike<DragEvent, StudioSceneNodeLike>,
   ): void {
     if (!restoreSingleObjectDragLayer()) return;
     discardDuplicateDragIntent();
@@ -225,7 +229,7 @@ export function useStudioCanvasViewportInteraction(props: StudioCanvasViewportPr
   }
 
   function cancelSingleObjectDragLayer(
-    event: Konva.KonvaEventObject<MouseEvent | TouchEvent>,
+    event: StudioKonvaEventLike<MouseEvent | TouchEvent>,
   ): void {
     restoreSingleObjectDragLayer();
     discardDuplicateDragIntent();
@@ -612,7 +616,7 @@ export function useStudioCanvasViewportInteraction(props: StudioCanvasViewportPr
     });
   };
   const enterGroupFromCanvasGesture = (
-    event: Konva.KonvaEventObject<MouseEvent | TouchEvent>
+    event: StudioKonvaEventLike<MouseEvent | TouchEvent>
   ) => {
     if (
       canvasInteractionBlocked ||
@@ -654,7 +658,7 @@ export function useStudioCanvasViewportInteraction(props: StudioCanvasViewportPr
    * 갈라지지 않는다. 좁힐 게 없으면 `null` 이라 이 핸들러는 아무 상태도 건드리지 않는다.
    */
   const narrowCanvasSelectionOnRelease = (
-    event: Konva.KonvaEventObject<MouseEvent | TouchEvent>
+    event: StudioKonvaEventLike<MouseEvent | TouchEvent>
   ) => {
     if (
       canvasInteractionBlocked ||

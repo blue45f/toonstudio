@@ -24,7 +24,7 @@ export function useStudioLiveOilUnderlay(input: {
     transformRevision, gpuEnabled, elements } = input;
   useLayoutEffect(() => {
     renderer.oilUnderlay.setProvider((surface) => {
-      return captureStudioLiveOilUnderlay(layerRef.current, ownsDocument, left, top, surface);
+      return captureStudioLiveOilUnderlay(layerRef.current as Layer | null, ownsDocument, left, top, surface);
     });
     return () => renderer.oilUnderlay.setProvider(null);
   }, [renderer, layerRef, ownsDocument, left, top]);

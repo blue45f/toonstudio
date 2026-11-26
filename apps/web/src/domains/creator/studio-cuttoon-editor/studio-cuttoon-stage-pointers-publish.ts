@@ -229,7 +229,6 @@ import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioBackground3DMagicFilterMask } from "../scene-3d/studio-3d-insert-contract";
 import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
-import type Konva from "konva";
 
 import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
 

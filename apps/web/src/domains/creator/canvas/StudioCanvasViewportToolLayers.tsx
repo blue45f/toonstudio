@@ -14,6 +14,11 @@ import { isStudioBrushCursorMode } from "./studio-canvas-cursor";
 import { StudioCanvasGuideOverlayLayers } from "./StudioCanvasGuideLayers";
 import { StudioCanvasInteractiveOverlays } from "./StudioCanvasInteractiveOverlays";
 
+import type { RefObject } from "react";
+import type {
+  StudioReadonlyRef,
+  StudioSceneLayerLike,
+} from "./studio-stage-handle-types";
 import type {
   StudioCanvasViewportHandlers,
   StudioCanvasViewportProps,
@@ -140,7 +145,7 @@ export interface StudioCanvasViewportToolLayersProps {
   setSymmetryCenterY: StudioCanvasViewportProps["setSymmetryCenterY"];
   setUserGuides: StudioCanvasViewportProps["setUserGuides"];
   sharedGutters: StudioCanvasViewportProps["sharedGutters"];
-  singleObjectDragLayerRef: import("react").RefObject<Konva.Layer | null>;
+  singleObjectDragLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
   smartGuides: StudioCanvasViewportProps["smartGuides"];
   smudgeArmed: StudioCanvasViewportProps["smudgeArmed"];
   smudgeCursorRef: StudioCanvasViewportProps["smudgeCursorRef"];
@@ -311,7 +316,7 @@ export function StudioCanvasViewportToolLayers({
                 then repaints this tiny layer per pointer frame instead of rasterizing every
                 committed stroke/image in the document layer. Composite-sensitive and grouped
                 objects deliberately stay on the authoritative main layer. */}
-            <StudioLiveTransformLayer layerRef={singleObjectDragLayerRef}>
+            <StudioLiveTransformLayer layerRef={singleObjectDragLayerRef as RefObject<Konva.Layer | null>}>
               <StudioLiveTransformDraftNode
                 store={liveTransformDraftStore}
                 scope={liveTransformDraftScope}
@@ -325,7 +330,7 @@ export function StudioCanvasViewportToolLayers({
                 다이렉트 모드(펜/마커/지우개)는 임페러티브 sceneFunc 이 ref 에서 직접 그리므로
                 포인터 프레임에 React 렌더가 없고, 그 외 브러시는 기존 선언적 경로를 유지한다. */}
             {tool === "draw" && (
-              <Layer ref={liveDraftLayerRef} listening={false}>
+              <Layer ref={liveDraftLayerRef as RefObject<Konva.Layer | null>} listening={false}>
                 <Shape
                   sceneFunc={(context) => {
                     const el = liveDraftVisualRef.current;
@@ -359,8 +364,8 @@ export function StudioCanvasViewportToolLayers({
                 프레임은 이 서브트리만 다시 렌더한다. */}
             <StudioDraftPreviewLayers
               store={draftPreviewStore}
-              dynamicLayerRef={draftPreviewDynamicLayerRef}
-              normalLayerRef={draftPreviewNormalLayerRef}
+              dynamicLayerRef={draftPreviewDynamicLayerRef as RefObject<Konva.Layer | null>}
+              normalLayerRef={draftPreviewNormalLayerRef as RefObject<Konva.Layer | null>}
             />
             {/* 브러시 렌더 종류와 실제 범위를 반영하는 고대비 포인터. */}
             {!isExporting
@@ -374,10 +379,10 @@ export function StudioCanvasViewportToolLayers({
                 || (appSettings.general.showStrokeGuide && stabilizer > 0)
               ) ? (
                 <StudioBrushCursor
-                  cursorRef={brushCursorRef}
+                  cursorRef={brushCursorRef as RefObject<Konva.Group | null>}
                   guideRef={
                     appSettings.general.showStrokeGuide
-                      ? strokeGuideRef
+                      ? (strokeGuideRef as RefObject<Konva.Line | null>)
                       : undefined
                   }
                   brushId={drawMode === "eraser" && !eraserPresetActive ? "eraser" : brush}
@@ -397,7 +402,7 @@ export function StudioCanvasViewportToolLayers({
               <Layer listening={false}>
                 {liquifyArmed ? (
                   <KImage
-                    ref={liquifyPreviewImageRef}
+                    ref={liquifyPreviewImageRef as RefObject<Konva.Image | null>}
                     // Filled imperatively during drag; ImageConfig requires an image key.
                     image={undefined as unknown as HTMLCanvasElement}
                     visible={false}
@@ -406,7 +411,7 @@ export function StudioCanvasViewportToolLayers({
                   />
                 ) : null}
                 <Line
-                  ref={paintRetouchStrokeLineRef}
+                  ref={paintRetouchStrokeLineRef as RefObject<Konva.Line | null>}
                   visible={false}
                   stroke={
                     wetMixArmed
@@ -422,7 +427,7 @@ export function StudioCanvasViewportToolLayers({
                   listening={false}
                 />
                 <KCircle
-                  ref={smudgeCursorRef}
+                  ref={smudgeCursorRef as RefObject<Konva.Circle | null>}
                   visible={false}
                   radius={Math.max(1.5, wetMixArmed ? wetMixRadius : dodgeBurnArmed ? dodgeBurnRadius : liquifyArmed ? liquifyRadius : smudgeRadius)}
                   stroke={wetMixArmed ? "#2dd4bf" : dodgeBurnArmed ? "#eab308" : liquifyArmed ? "#fb923c" : "#7c5cff"}
@@ -435,7 +440,7 @@ export function StudioCanvasViewportToolLayers({
             {!isExporting && (layerMaskPaintArmed || quickMaskArmed) && (
               <Layer listening={false}>
                 <KCircle
-                  ref={layerMaskCursorRef}
+                  ref={layerMaskCursorRef as RefObject<Konva.Circle | null>}
                   visible={false}
                   radius={Math.max(1.5, quickMaskArmed ? quickMaskRadius : layerMaskRadius)}
                   stroke="#eab308"
@@ -448,7 +453,7 @@ export function StudioCanvasViewportToolLayers({
             {!isExporting && filterMaskPaintArmed && (
               <Layer listening={false}>
                 <KCircle
-                  ref={filterMaskCursorRef}
+                  ref={filterMaskCursorRef as RefObject<Konva.Circle | null>}
                   visible={false}
                   radius={Math.max(1.5, filterMaskRadius)}
                   stroke="#8b5cf6"
@@ -464,19 +469,19 @@ export function StudioCanvasViewportToolLayers({
             {!isExporting && healCloneArmed && (
               <Layer listening={false}>
                 <KCircle
-                  ref={healCloneCursorRef}
+                  ref={healCloneCursorRef as RefObject<Konva.Circle | null>}
                   visible={false}
                   stroke={healCloneTool === "heal" ? "#22c55e" : "#38bdf8"}
                   strokeWidth={1.5 / effScale}
                   dash={[3 / effScale, 2 / effScale]}
                 />
-                <KCircle ref={healCloneSourceCursorRef} visible={false} radius={5 / effScale} stroke="#f59e0b" strokeWidth={1.5 / effScale} />
+                <KCircle ref={healCloneSourceCursorRef as RefObject<Konva.Circle | null>} visible={false} radius={5 / effScale} stroke="#f59e0b" strokeWidth={1.5 / effScale} />
               </Layer>
             )}
             {!isExporting && historyBrushArmed && (
               <Layer listening={false}>
                 <KCircle
-                  ref={historyBrushCursorRef}
+                  ref={historyBrushCursorRef as RefObject<Konva.Circle | null>}
                   visible={false}
                   radius={Math.max(1.5, historyBrushRadius)}
                   stroke="#ec4899"
@@ -489,7 +494,7 @@ export function StudioCanvasViewportToolLayers({
             {!isExporting && tool === "select" && (
               <Layer listening={false}>
                 <Rect
-                  ref={marqueeRectNodeRef}
+                  ref={marqueeRectNodeRef as RefObject<Konva.Rect | null>}
                   visible={false}
                   fill="rgba(90,140,255,0.12)"
                   stroke="rgba(90,140,255,0.85)"

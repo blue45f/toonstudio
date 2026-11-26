@@ -6,7 +6,6 @@
  * Canonical history, persistence and brush pixel authority remain ToonStudio-owned.
  */
 
-import { LazyBrush } from "lazy-brush";
 import { getStroke } from "perfect-freehand";
 
 import {
@@ -152,10 +151,6 @@ export function runHybridPrecisionStabilizeSample(input: Readonly<{
   friction?: number;
   enabled?: boolean;
 }>): StudioLazyBrushStabilizerResult {
-  // Prove the lazy-brush package constructor is reachable on this path.
-  if (typeof LazyBrush !== "function") {
-    throw new TypeError("lazy-brush constructor is unavailable");
-  }
   const stabilizer = createStudioLazyBrushStabilizer();
   return stabilizer.update(
     {

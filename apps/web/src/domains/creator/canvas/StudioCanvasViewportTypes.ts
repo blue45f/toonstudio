@@ -80,8 +80,21 @@ import type {
   StudioWebGpuCanvasHandle,
   StudioWebGpuSurfaceFrameRequest,
 } from "../StudioWebGpuCanvas";
+import type {
+  StudioCircleNodeLike,
+  StudioExportStageLike,
+  StudioGroupNodeLike,
+  StudioImageNodeLike,
+  StudioKonvaEventLike,
+  StudioLineNodeLike,
+  StudioNodeLike,
+  StudioReadonlyRef,
+  StudioRectNodeLike,
+  StudioSceneLayerLike,
+  StudioSceneNodeLike,
+  StudioSceneTransformerLike,
+} from "./studio-stage-handle-types";
 import type { StudioCanvasStatusRailProps } from "./StudioCanvasStatusRail";
-import type Konva from "konva";
 
 export interface StudioCanvasViewportHandlers {
   activateCanvasTool: (tool: "select" | "draw", drawMode?: DrawMode) => void;
@@ -130,14 +143,14 @@ export interface StudioCanvasViewportHandlers {
     pngHash: `sha256:${string}`,
     routeKey: string,
   ) => void;
-  setElementNodeRef: (elId: string, node: Konva.Node | null) => void;
+  setElementNodeRef(elId: string, node: StudioNodeLike | null): void;
   isCanvasGroupDragActive: (elementId: string) => boolean;
-  selectElementFromCanvas: (
+  selectElementFromCanvas(
     elementId: string,
-    evt?: Konva.KonvaEventObject<MouseEvent | TouchEvent>,
+    evt?: StudioKonvaEventLike<MouseEvent | TouchEvent>,
     forceGroupEnter?: boolean
-  ) => void;
-  commitTextTransformEnd: (elId: string, fontSize: number, e: Konva.KonvaEventObject<Event>, opts: { minFontSize: number; patchWidth?: boolean }) => void;
+  ): void;
+  commitTextTransformEnd(elId: string, fontSize: number, e: StudioKonvaEventLike<Event>, opts: { minFontSize: number; patchWidth?: boolean }): void;
   acknowledgeAiNotice: () => void;
   alignSelected: (mode: "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom" | "distributeH" | "distributeV") => void;
   zoomToSelection: () => void;
@@ -199,12 +212,12 @@ export interface StudioCanvasViewportHandlers {
   patchAdvancedRuler: (id: string, patch: Partial<StudioAdvancedRuler>) => void;
   cancelStudioDrawingAssistPreview: () => void;
   nodeInteractionBegin: (elementId: string) => boolean;
-  onStageDown: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onStageDown(e: StudioKonvaEventLike<MouseEvent | TouchEvent>): void;
   onStageDragEnd: () => void;
-  onStageDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
-  onStageMove: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onStagePointerCancel: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
-  onStageUp: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  onStageDragMove(e: StudioKonvaEventLike<DragEvent>): void;
+  onStageMove(e: StudioKonvaEventLike<MouseEvent | TouchEvent>): void;
+  onStagePointerCancel(e: StudioKonvaEventLike<MouseEvent | TouchEvent>): void;
+  onStageUp(e: StudioKonvaEventLike<MouseEvent | TouchEvent>): void;
   onWrapDragLeave: (e: React.DragEvent) => void;
   onWrapDragOver: (e: React.DragEvent) => void;
   onWrapDrop: (e: React.DragEvent) => Promise<void>;
@@ -298,8 +311,8 @@ export interface StudioCanvasViewportProps {
   bg: string;
   bgGrad: string[] | null;
   brush: string;
-  brushCursorRef: import("react").RefObject<import("konva/lib/Group").Group | null>;
-  strokeGuideRef: import("react").RefObject<import("konva/lib/shapes/Line").Line | null>;
+  brushCursorRef: StudioReadonlyRef<StudioGroupNodeLike | null>;
+  strokeGuideRef: StudioReadonlyRef<StudioLineNodeLike | null>;
   brushOpacity: number;
   bubbleShapeArmed: boolean;
   bubbleShapeDraft: { elId: string; points: number[]; } | null;
@@ -367,14 +380,14 @@ export interface StudioCanvasViewportProps {
   autosaveDocumentLeadership: StudioCanvasStatusRailProps["autosaveDocumentLeadership"];
   autosaveLiveJam: StudioCanvasStatusRailProps["autosaveLiveJam"];
   healCloneArmed: boolean;
-  healCloneCursorRef: import("react").RefObject<import("konva/lib/shapes/Circle").Circle | null>;
+  healCloneCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   healCloneDragPreview: { points: SelPoint[]; } | null;
   healCloneRadius: number;
   healCloneSourceAnchor: SelPoint | null;
-  healCloneSourceCursorRef: import("react").RefObject<import("konva/lib/shapes/Circle").Circle | null>;
+  healCloneSourceCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   healCloneTool: HealCloneMode | null;
   historyBrushArmed: boolean;
-  historyBrushCursorRef: import("react").RefObject<import("konva/lib/shapes/Circle").Circle | null>;
+  historyBrushCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   historyBrushDragPreview: { points: SelPoint[]; } | null;
   historyBrushRadius: number;
   historyBrushSourceIndex: number | null;
@@ -388,12 +401,12 @@ export interface StudioCanvasViewportProps {
   isometricOriginY: number;
   isPanning: boolean;
   isSpacePressed: boolean;
-  filterMaskCursorRef: import("react").RefObject<import("konva/lib/shapes/Circle").Circle | null>;
+  filterMaskCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   filterMaskDragPreview: { points: SelPoint[]; } | null;
   filterMaskPaintArmed: boolean;
   filterMaskPaintMode: FilterMaskPaintMode;
   filterMaskRadius: number;
-  layerMaskCursorRef: import("react").RefObject<import("konva/lib/shapes/Circle").Circle | null>;
+  layerMaskCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   layerMaskDragPreview: { points: SelPoint[]; } | null;
   layerMaskPaintArmed: boolean;
   layerMaskPaintMode: LayerMaskPaintMode;
@@ -408,18 +421,18 @@ export interface StudioCanvasViewportProps {
   /** "나만 숨기기" — 문서(CRDT)에 없는, 이 클라이언트에서만 켠 로컬 숨김 대상. */
   localHiddenElementIds: ReadonlySet<string>;
   liveDraftDirectRef: import("react").RefObject<boolean>;
-  draftPreviewDynamicLayerRef: import("react").RefObject<import("konva/lib/Layer").Layer | null>;
-  draftPreviewNormalLayerRef: import("react").RefObject<import("konva/lib/Layer").Layer | null>;
-  liveDraftLayerRef: import("react").RefObject<import("konva/lib/Layer").Layer | null>;
+  draftPreviewDynamicLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
+  draftPreviewNormalLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
+  liveDraftLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
   liveDraftVisualRef: import("react").RefObject<DrawEl | null>;
   liveInkOverlayRendererRef: import("react").RefObject<StudioLiveInkOverlayRenderer>;
-  mainLayerRef: import("react").RefObject<import("konva/lib/Layer").Layer | null>;
+  mainLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
   /** Bumped when Escape/pointer-cancel cancels an in-flight selection resize outside Konva. */
   canvasSelectionResizeCancelSignal: number;
   marqueeIds: string[];
   /** 그룹 진입(더블클릭) 편집 중인 그룹 id — 경계 오버레이 표시용. */
   activeGroupId: string | null;
-  marqueeRectNodeRef: import("react").RefObject<import("konva/lib/shapes/Rect").Rect | null>;
+  marqueeRectNodeRef: StudioReadonlyRef<StudioRectNodeLike | null>;
   master: DocumentMaster<El>;
   masterEditMode: boolean;
   masterPanelOpen: boolean;
@@ -431,7 +444,7 @@ export interface StudioCanvasViewportProps {
   nodeEditDraft: { elId: string; points: number[]; pressures: number[]; } | null;
   nodeEditHandles: NodeEditHandle[];
   nodeEditTool: NodeEditTool | null;
-  nodeRefsRef: import("react").RefObject<Record<string, Konva.Node | null>>;
+  nodeRefsRef: StudioReadonlyRef<Readonly<Record<string, StudioSceneNodeLike | null>>>;
   onionSkin: OnionSkinSettings;
   pageGrade: PageGrade;
   pageGradeCss: string;
@@ -522,19 +535,19 @@ export interface StudioCanvasViewportProps {
   wetMixRadius: number;
   liquifyArmed: boolean;
   liquifyRadius: number;
-  smudgeCursorRef: import("react").RefObject<import("konva/lib/shapes/Circle").Circle | null>;
+  smudgeCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   /** Live paint-retouch stroke trail (smudge / dodge-burn / wet-mix); mutated outside React. */
-  paintRetouchStrokeLineRef: import("react").RefObject<import("konva/lib/shapes/Line").Line | null>;
+  paintRetouchStrokeLineRef: StudioReadonlyRef<StudioLineNodeLike | null>;
   /**
    * Live liquify warp preview (downscaled canvas/ImageData). Mutated outside React during drag;
    * cleared on pointerup before the full-resolution bake commits.
    */
-  liquifyPreviewImageRef: import("react").RefObject<import("konva/lib/shapes/Image").Image | null>;
+  liquifyPreviewImageRef: StudioReadonlyRef<StudioImageNodeLike | null>;
   smudgeRadius: number;
   sourceHydrationPending: boolean;
   stabilizer: number;
   stabilizerMode: "standard" | "adaptive" | "precision" | "weighted";
-  stageRef: import("react").RefObject<import("konva/lib/Stage").Stage | null>;
+  stageRef: StudioReadonlyRef<StudioExportStageLike | null>;
   strokeWidth: number;
   tipAngle: number;
   tipRoundness: number;
@@ -576,7 +589,7 @@ export interface StudioCanvasViewportProps {
   translateGlossary: string;
   translateProgress: { done: number; total: number; } | null;
   translateTargetLocale: string;
-  trRef: import("react").RefObject<import("konva/lib/shapes/Transformer").Transformer | null>;
+  trRef: StudioReadonlyRef<StudioSceneTransformerLike | null>;
   tutorialHubOpen: boolean;
   tutorialInitialId: string | null;
   uiDensityMode: "simple" | "full" | "focus";

@@ -231,7 +231,7 @@ import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioBackground3DMagicFilterMask } from "../scene-3d/studio-3d-insert-contract";
 import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
-import type Konva from "konva";
+import type { StudioKonvaEventLike } from "../canvas/studio-stage-handle-types";
 
 import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
 
@@ -345,7 +345,7 @@ export function bindStudioCuttoonStagePointersUp(
   const updateBrushCursor: StudioCuttoonStagePointersApi["updateBrushCursor"] = (
     ...args
   ) => api.updateBrushCursor(...args);
-  function onStageUp(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
+  function onStageUp(e: StudioKonvaEventLike<MouseEvent | TouchEvent>) {
     const pointerEvent = e.evt as PointerEvent;
     // Flush freehand auto-color scribble samples collected during the drag.
     const scribbleStroke = autoColorScribbleStrokeRef.current;

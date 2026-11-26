@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioStageLike } from "./studio-stage-handle-types";
 
 export interface StudioClientPointerCoordinate {
   readonly clientX: number;
@@ -35,7 +35,7 @@ export interface StudioStagePointerFrameMapperCacheLease {
   release(): void;
 }
 
-type StudioStageCoordinateSource = Pick<Konva.Stage, "getAbsoluteTransform" | "getContent">;
+type StudioStageCoordinateSource = Pick<StudioStageLike, "getAbsoluteTransform" | "getContent">;
 type StudioStagePointerContent = Pick<HTMLElement, "contains">;
 
 function positiveFiniteScale(renderedSize: number, layoutSize: number): number {

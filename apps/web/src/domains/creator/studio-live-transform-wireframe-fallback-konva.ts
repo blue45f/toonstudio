@@ -16,10 +16,14 @@
 import { studioDrawObjectTransformScale } from "./brush/studio-draw-object-transform";
 import { studioKonvaRuntime } from "./render/studio-konva-runtime";
 
+import type {
+  StudioLineNodeLike,
+  StudioSceneLayerLike,
+  StudioSceneNodeLike,
+} from "./canvas/studio-stage-handle-types";
 import type { DrawEl } from "./studio-element-model";
 import type { StudioGroupUniformResizeBounds } from "./studio-group-uniform-resize";
 import type { StudioLiveSelectionTransformFrame } from "./studio-live-canvas-gesture";
-import type Konva from "konva";
 
 export const STUDIO_LIVE_TRANSFORM_WIREFRAME_FALLBACK_NAME =
   "studio-live-transform-wireframe-fallback";
@@ -34,13 +38,13 @@ const STUDIO_LIVE_TRANSFORM_WIREFRAME_MIN_SCALE = 1e-4;
 
 export interface StudioLiveTransformWireframeMember {
   readonly element: DrawEl;
-  readonly node: Konva.Node;
+  readonly node: StudioSceneNodeLike;
 }
 
 export interface CreateStudioLiveTransformWireframeFallbackOptions {
   readonly members: readonly StudioLiveTransformWireframeMember[];
   readonly sourceBounds: StudioGroupUniformResizeBounds;
-  readonly dragLayer: Konva.Layer;
+  readonly dragLayer: StudioSceneLayerLike;
   /** Group resize preserves authored line weight; single-object resize scales it. */
   readonly strokeWidthPolicy: "preserve" | "scale";
 }
@@ -53,12 +57,12 @@ export interface StudioLiveTransformWireframeFallback {
 }
 
 interface StudioWireframeTrace {
-  readonly line: Konva.Line;
+  readonly line: StudioLineNodeLike;
   readonly authoredStrokeWidth: number;
 }
 
 interface StudioWireframeSourceStyle {
-  readonly node: Konva.Node;
+  readonly node: StudioSceneNodeLike;
   readonly visible: boolean;
   readonly opacity: number;
 }
@@ -113,7 +117,7 @@ function sampledPoints(points: readonly number[], maximumSamples: number): numbe
   return sampled.length >= 4 ? sampled : [];
 }
 
-function drawLayers(layers: ReadonlySet<Konva.Layer>): void {
+function drawLayers(layers: ReadonlySet<StudioSceneLayerLike>): void {
   for (const layer of layers) layer.drawScene();
 }
 
@@ -134,7 +138,7 @@ export function createStudioLiveTransformWireframeFallback(
   // Missing container/draw capabilities must degrade to the existing commit-at-release path rather
   // than aborting the whole gesture while constructing an optional visual guide.
   const layerCapabilities = options.dragLayer as Partial<
-    Pick<Konva.Layer, "add" | "findOne" | "drawScene">
+    Pick<StudioSceneLayerLike, "add" | "findOne" | "drawScene">
   >;
   if (
     typeof layerCapabilities.add !== "function"
@@ -217,7 +221,7 @@ export function createStudioLiveTransformWireframeFallback(
     visible: node.visible(),
     opacity: node.opacity(),
   }));
-  const sourceLayers = new Set<Konva.Layer>();
+  const sourceLayers = new Set<StudioSceneLayerLike>();
   for (const source of sourceStyles) {
     const layer = source.node.getLayer();
     if (layer) sourceLayers.add(layer);

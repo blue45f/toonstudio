@@ -1,5 +1,5 @@
 import type { MutableRefObject } from "react";
-import type Konva from "konva";
+import type { StudioReadonlyRef, StudioRectNodeLike } from "../canvas/studio-stage-handle-types";
 
 import { isDirectLiveDraftEl } from "../brush/studio-draw-rendering";
 import { StudioStrokePostprocessWorkerClient } from "../brush/studio-stroke-postprocess-worker-client";
@@ -442,7 +442,7 @@ export function runStudioScheduleMarqueeRect(input: {
   readonly next: { x: number; y: number; w: number; h: number } | null;
   readonly pendingRef: MutableRefObject<{ x: number; y: number; w: number; h: number } | null>;
   readonly rafRef: MutableRefObject<number | null>;
-  readonly rectNodeRef: MutableRefObject<Konva.Rect | null>;
+  readonly rectNodeRef: StudioReadonlyRef<StudioRectNodeLike | null>;
   readonly setMarqueeActive: (active: boolean) => void;
 }): void {
   input.pendingRef.current = input.next;

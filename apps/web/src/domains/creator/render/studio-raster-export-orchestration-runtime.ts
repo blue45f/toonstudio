@@ -24,8 +24,8 @@ import type {
   StudioRasterEncoded,
   StudioRasterInterchangeFormat,
 } from "./studio-raster-interchange";
+import type { StudioExportStageLike } from "../canvas/studio-stage-handle-types";
 import type { WatermarkSettings } from "../studio-watermark";
-import type Konva from "konva";
 import { formatNumber } from "@toonstudio/core/format";
 
 /** 선택된 페이지 그레이드 합성 표면을 만들 수 없어 원본으로 대체하지 않았음을 나타낸다. */
@@ -58,7 +58,7 @@ export function bakeStudioPageGradeIntoCanvas(
 
 /** Capture at the requested output scale so the current viewport zoom cannot drop a pixel. */
 export function captureStudioRasterAtExportScale(
-  stage: Konva.Stage,
+  stage: StudioExportStageLike,
   effectiveScale: number,
   exportScale: number,
 ): HTMLCanvasElement {
@@ -96,7 +96,7 @@ export interface StudioRasterExportOrchestrationInput {
     canvas: HTMLCanvasElement,
     settings: WatermarkSettings,
   ) => void;
-  readonly captureReadyStageForPage: (page: PageState, onReady?: (page: PageState) => void) => Promise<Konva.Stage>;
+  readonly captureReadyStageForPage: (page: PageState, onReady?: (page: PageState) => void) => Promise<StudioExportStageLike>;
   readonly preserveStudioViewBeforeCapture: () => void;
   readonly setExportMenuOpen: (open: boolean) => void;
   readonly setSelectedId: (id: string | null) => void;

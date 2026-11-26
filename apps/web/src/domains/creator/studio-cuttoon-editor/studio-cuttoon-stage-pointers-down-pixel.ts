@@ -228,7 +228,7 @@ import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioBackground3DMagicFilterMask } from "../scene-3d/studio-3d-insert-contract";
 import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
-import type Konva from "konva";
+import type { StudioKonvaEventLike } from "../canvas/studio-stage-handle-types";
 
 import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
 
@@ -275,7 +275,7 @@ export function bindStudioCuttoonStagePointersDownPixel(
     selected,
   } = h;
 
-  function tryStageDownPixel(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>, stagePointerEvent: PointerEvent): boolean {
+  function tryStageDownPixel(e: StudioKonvaEventLike<MouseEvent | TouchEvent>, stagePointerEvent: PointerEvent): boolean {
     // 픽셀 선택 도구 무장 중: 스테이지 드래그를 픽셀 선택 그리기로 가로챈다(요소 이동·마퀴·
     // 드로잉보다 우선). 트랜스포머 앵커는 예외(선택이 정규화 좌표라 리사이즈/회전을 따라간다),
     // Space/Hand 팬도 예외. 시작점은 이미지 밖이어도 된다(rect/ellipse 는 0..1 로 클램프).

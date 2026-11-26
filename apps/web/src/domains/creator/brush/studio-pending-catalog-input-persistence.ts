@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioStageLike } from "../canvas/studio-stage-handle-types";
 import { sanitizeBrushSnapshot, type StudioBrushSnapshot } from "./studio-brush-library";
 import type { StudioAsyncKeyValueStore } from "../studio-local-database";
 import { snapshotStudioCatalogPointer, type StudioCatalogInputGesture, type StudioCatalogPointerBatch } from "./studio-pending-catalog-input";
@@ -44,7 +44,7 @@ function restoreBatch(batch: StoredBatch): StudioCatalogPointerBatch {
   const [x, y, xx, xy, yx, yy] = batch.matrix as [number, number, number, number, number, number];
   return { pointer: restorePointer(batch.pointer), mapper: { pointFor: ({ clientX, clientY }) => ({ x: x + xx * clientX + yx * clientY, y: y + xy * clientX + yy * clientY }) } };
 }
-export function restoreStudioCatalogInputRecovery(record: StudioCatalogInputRecoveryRecord, stage: Konva.Stage, scope: string): StudioCatalogInputGesture {
+export function restoreStudioCatalogInputRecovery(record: StudioCatalogInputRecoveryRecord, stage: StudioStageLike, scope: string): StudioCatalogInputGesture {
   const start = restoreBatch(record.start);
   const moves = record.moves.map(restoreBatch);
   return { id: record.id, ownerScope: record.ownerScope, sourceScope: record.sourceScope, scope, catalogId: record.catalogId, operation: record.operation, brushSnapshot: record.brushSnapshot, stage, start, moves,

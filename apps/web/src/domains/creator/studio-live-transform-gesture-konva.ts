@@ -61,7 +61,7 @@ import type {
 } from "./studio-live-transform-draft-store";
 import type { StudioLiveTransformPreviewScheduler } from "./studio-live-transform-preview-session";
 import type { StudioSingleObjectDragLayerSession } from "./studio-single-object-drag-layer";
-import type Konva from "konva";
+import type { StudioExportStageLike, StudioSceneLayerLike, StudioSceneNodeLike, StudioSceneTransformerLike } from "./canvas/studio-stage-handle-types";
 
 const STUDIO_KONVA_TRANSFORM_RECOVERY_INITIAL_DELAY_MS = 16;
 const STUDIO_KONVA_TRANSFORM_RECOVERY_MAX_DELAY_MS = 1_000;
@@ -141,7 +141,7 @@ export interface StudioKonvaDrawTransformPreviewSpec {
   /** Gesture-start scene snapshot used by the commit-equivalent panel-membership calculation. */
   readonly elements: readonly El[];
   /** Dedicated, otherwise-empty Layer used to isolate per-frame raster invalidation. */
-  readonly dragLayer: Konva.Layer | null;
+  readonly dragLayer: StudioSceneLayerLike | null;
   /** Exact model-draft surface for non-uniform and route-changing frames. */
   readonly draftStore?: StudioLiveTransformDraftStore;
   /** Test/host injection; production defaults to the browser animation-frame scheduler. */
@@ -156,9 +156,9 @@ export interface StudioKonvaDrawTransformPreviewSpec {
 export interface BeginStudioKonvaDrawTransformGestureOptions {
   readonly preview: StudioKonvaDrawTransformPreviewSpec;
   readonly sourceBounds: StudioGroupUniformResizeBounds;
-  readonly stage: Konva.Stage;
-  readonly proxy: Konva.Rect;
-  readonly transformer: Konva.Transformer;
+  readonly stage: StudioExportStageLike;
+  readonly proxy: StudioSceneNodeLike;
+  readonly transformer: StudioSceneTransformerLike;
   /** Diagnostics only. A diagnostic failure is contained by the preview scheduler. */
   readonly onError?: (error: unknown) => void;
   /** A partial renderer write could not be neutralized; the outer gesture must cancel. */
@@ -200,9 +200,9 @@ function browserFrameScheduler(): StudioLiveTransformPreviewScheduler {
  *   resolving each wrapper itself — repeating the walk there triples the begin-time scene cost.
  */
 export function studioKonvaDrawTransformIsBusy(
-  stage: Konva.Stage,
+  stage: StudioExportStageLike,
   elementId: string,
-  wrapper?: Konva.Node | null,
+  wrapper?: StudioSceneNodeLike | null,
 ): boolean {
   return studioKonvaDrawTransformRecoveryPendingForElement(elementId)
     || (wrapper ?? findStudioDrawWrapperNode(stage, elementId))?.isDragging() === true;
@@ -215,12 +215,12 @@ interface StudioLiveTransformRasterMetrics {
 
 /** O(1) raster facts for the candidate authority Layer, refreshed because viewport DPR can change. */
 function studioLiveTransformRasterMetrics(
-  stage: Konva.Stage,
-  layer: Konva.Layer | null,
+  stage: StudioExportStageLike,
+  layer: StudioSceneLayerLike | null,
 ): StudioLiveTransformRasterMetrics {
   const stageScale = Math.max(Math.abs(stage.scaleX()), Math.abs(stage.scaleY()));
   const sceneCanvas = layer?.getCanvas();
-  const nativeSceneCanvas = layer?.getNativeCanvasElement();
+  const nativeSceneCanvas = layer?.getNativeCanvasElement?.();
   const pixelRatio = sceneCanvas?.getPixelRatio() ?? studioKonvaRuntime.pixelRatio;
   return {
     rasterScale: stageScale * pixelRatio,
@@ -245,13 +245,13 @@ function studioLiveTransformRasterMetrics(
  */
 function beginStudioKonvaDrawWireframeFallbackGesture(
   options: BeginStudioKonvaDrawTransformGestureOptions,
-  node: Konva.Node,
+  node: StudioSceneNodeLike,
 ): StudioLiveCanvasGestureTransientAdapter<StudioLiveSelectionTransformFrame> | null {
   const { element, dragLayer } = options.preview;
   const mainLayer = node.getLayer();
   if (!mainLayer || !dragLayer || mainLayer === dragLayer) return null;
 
-  let parkedIndicators: Konva.Node[] = [];
+  let parkedIndicators: StudioSceneNodeLike[] = [];
   let chromeLift: StudioSingleObjectDragLayerSession | null = null;
   let fallbackPreview: ReturnType<typeof createStudioLiveTransformWireframeFallback> = null;
   let previewSession: ReturnType<typeof createStudioLiveTransformPreviewSession> | null = null;
@@ -428,7 +428,7 @@ export function beginStudioKonvaDrawTransformGesture(
   }
   const snapshot = compileStudioLiveTransformDrawSnapshot(element);
 
-  let parkedIndicators: Konva.Node[] = [];
+  let parkedIndicators: StudioSceneNodeLike[] = [];
   let chromeLift: StudioSingleObjectDragLayerSession | null = null;
   let sourceLift: StudioSingleObjectDragLayerSession | null = null;
   let sourceIsolationUnavailable = false;

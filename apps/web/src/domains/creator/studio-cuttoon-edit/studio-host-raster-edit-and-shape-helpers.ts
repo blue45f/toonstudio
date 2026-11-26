@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioKonvaEventLike } from "../canvas/studio-stage-handle-types";
 import type { MutableRefObject } from "react";
 
 import { canLayerMask, invertLayerMaskAlpha } from "../layer/studio-layer-mask";
@@ -340,7 +340,7 @@ export async function runStudioBakeHistoryBrushDragStroke(input: {
 }
 
 export function runStudioBubbleShapePointerDown(input: {
-  readonly event: Konva.KonvaEventObject<MouseEvent | TouchEvent>;
+  readonly event: StudioKonvaEventLike<MouseEvent | TouchEvent>;
   readonly stagePointerEvent: PointerEvent;
   readonly bubbleShapeArmed: boolean;
   readonly selected: El | null;

@@ -1,14 +1,7 @@
 import { useStudioLiveOilUnderlay } from "./use-studio-live-oil-underlay";
 import { createStudioSkiaCameraSource } from "../render/studio-skia-camera-source";
 import { waitForStudioSkiaPresentationFence } from "../render/studio-skia-presentation-fence";
-import {
-  Profiler,
-  Suspense,
-  useLayoutEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { Profiler, Suspense, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ComponentProps, type ComponentRef, type RefObject } from "react";
 import { Stage, Layer, Rect, Shape, Group } from "react-konva/lib/ReactKonvaCore";
 
 import { drawLiveFreehandDraftToContext } from "../brush/studio-draw-rendering";
@@ -39,7 +32,7 @@ import {
 } from "./studio-canvas-viewport-primitives";
 import { StudioCanvasGuideUnderlay } from "./StudioCanvasGuideLayers";
 import { StudioDrawingPracticeGuide } from "./StudioDrawingPracticeGuide";
-import { renderStudioCanvasSelectionDecorations } from "./StudioCanvasSelectionDecorations";
+import { renderStudioCanvasSelectionDecorations, type StudioCanvasSelectionDecorationsContext } from "./StudioCanvasSelectionDecorations";
 import { StudioSkiaDocumentHitLayer } from "./StudioSkiaDocumentHitLayer";
 import {
   StudioCanvasViewportDocumentLayer,
@@ -106,17 +99,14 @@ export function StudioCanvasViewportStageHost({
     isMobile,
     liveDraftDirectRef,
     liveDraftVisualRef,
-    mainLayerRef,
     marqueeIds,
     masterEditMode,
-    nodeRefsRef,
     pageGrade,
     pageGradeCss,
     selected,
     showGrid,
     showWebtoonGuides,
     sourceHydrationPending,
-    stageRef,
     studioCanvasCommentPins,
     studioCommentPinReanchorDisabledReason,
     studioCommentPinReanchorableThreadIds,
@@ -129,11 +119,14 @@ export function StudioCanvasViewportStageHost({
     studioRasterVisibleDocumentRect,
     studioLiveRoomRef,
     tool,
-    trRef,
     webGpuViewportSurface,
     webtoonGuides,
     stableHandlers,
   } = viewport;
+  const mainLayerRef = viewport.mainLayerRef as RefObject<ComponentRef<typeof Layer> | null>;
+  const stageRef = viewport.stageRef as RefObject<ComponentRef<typeof Stage> | null>;
+  const trRef = viewport.trRef as StudioCanvasSelectionDecorationsContext["trRef"];
+  const nodeRefsRef = viewport.nodeRefsRef as ComponentProps<typeof StudioTextEditOverlay>["nodeRefsRef"];
   const {
     beginCanvasSelectionResize,
     cancelCanvasSelectionResize,
@@ -772,7 +765,7 @@ export function StudioCanvasViewportStageHost({
                 selectionLockState,
                 selectionRotatable,
                 singleDrawFreeScale: singleDrawFreeScale && !viewport.nodeEditArmed,
-                singleObjectDragLayerRef: interaction.singleObjectDragLayerRef,
+                singleObjectDragLayerRef: interaction.singleObjectDragLayerRef as StudioCanvasSelectionDecorationsContext["singleObjectDragLayerRef"],
                 liveTransformDraftStore,
                 liveTransformDraftScope,
                 tool,

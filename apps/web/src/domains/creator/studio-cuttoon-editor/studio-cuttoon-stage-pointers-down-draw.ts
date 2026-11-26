@@ -237,7 +237,7 @@ import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioBackground3DMagicFilterMask } from "../scene-3d/studio-3d-insert-contract";
 import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
-import type Konva from "konva";
+import type { StudioKonvaEventLike } from "../canvas/studio-stage-handle-types";
 
 import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
 
@@ -353,7 +353,7 @@ export function bindStudioCuttoonStagePointersDownDraw(
   const updateBrushCursor: StudioCuttoonStagePointersApi["updateBrushCursor"] = (
     ...args
   ) => api.updateBrushCursor(...args);
-  function tryStageDownDraw(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>, stagePointerEvent: PointerEvent, replayPosition?: { x: number; y: number }) {
+  function tryStageDownDraw(e: StudioKonvaEventLike<MouseEvent | TouchEvent>, stagePointerEvent: PointerEvent, replayPosition?: { x: number; y: number }) {
     if (collaborationAccessRef?.current.locked && !h.scopedDrawAllowed?.()) return;
     if (tool === "draw") {
       const pointerSample = e.evt as PointerEvent;

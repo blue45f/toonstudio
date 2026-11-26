@@ -1,5 +1,15 @@
 /* Extracted session contract from StudioCuttoonEditor.
  * Matches the original closure bag from StudioPage/StudioCuttoonEditor. */
+import type {
+  StudioCircleNodeLike,
+  StudioGroupNodeLike,
+  StudioImageNodeLike,
+  StudioLineNodeLike,
+  StudioReadonlyRef,
+  StudioRectNodeLike,
+  StudioSceneLayerLike,
+  StudioSceneNodeLike,
+} from "../canvas/studio-stage-handle-types";
 
 export type StudioCuttoonEditorViewSessionCore = {
   activatePrimaryCanvasTool: (nextTool: "select" | "draw", nextDrawMode?: import("../studio-editor-tool-model").DrawMode | undefined, selectionWillReplaceToolSnapshot?: boolean) => { changed: boolean; cancelledActiveStroke: boolean; next: import("../studio-primary-canvas-tool-transition").StudioPrimaryCanvasTool; };
@@ -125,7 +135,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   brush: string;
   brushBaselineController: import("../brush/useStudioBrushBaselineController").StudioBrushBaselineController;
   brushCatalogSession: { placement: import("../brush/StudioBrushLibrarySheet").StudioBrushCatalogPlacement; trigger: HTMLButtonElement; } | null;
-  brushCursorRef: import("react").RefObject<import("konva").default.Group | null>;
+  brushCursorRef: StudioReadonlyRef<StudioGroupNodeLike | null>;
   brushDynamics: import("../brush/studio-brush-dynamics-types").NormalizedStudioBrushDynamicsSettings;
   brushManagerSheetRef: import("react").RefObject<HTMLDivElement | null>;
   brushOpacity: number;
@@ -233,8 +243,8 @@ export type StudioCuttoonEditorViewSessionCore = {
   dodgeBurnRange: "shadows" | "midtones" | "highlights";
   dodgeBurnSponge: "saturate" | "desaturate";
   draftCollaboration: import("../studio-draft-collaboration").StudioDraftCollaborationReadiness | null;
-  draftPreviewDynamicLayerRef: import("react").RefObject<import("konva").default.Layer | null>;
-  draftPreviewNormalLayerRef: import("react").RefObject<import("konva").default.Layer | null>;
+  draftPreviewDynamicLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
+  draftPreviewNormalLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
   draftPreviewStore: import("../studio-draft-preview-store").StudioDraftPreviewStore;
   drawMode: "pen" | "eraser" | "shape" | "pixel" | "lasso-fill";
   drawShape: "line" | "rect" | "ellipse" | "star" | "arrow" | "triangle" | "polygon";
@@ -280,7 +290,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   eyedropperActive: boolean;
   filterClipboard: Partial<import("../render/studio-konva-filter-fields").ImageFilterFields> | null;
   filterMaskBusy: boolean;
-  filterMaskCursorRef: import("react").RefObject<import("konva").default.Circle | null>;
+  filterMaskCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   filterMaskDragPreview: { points: import("../studio-selection-tools").SelPoint[]; } | null;
   filterMaskHardness: number;
   filterMaskPaintActive: boolean;
@@ -327,19 +337,19 @@ export type StudioCuttoonEditorViewSessionCore = {
   healCloneAligned: boolean;
   healCloneArmed: boolean;
   healCloneBusy: boolean;
-  healCloneCursorRef: import("react").RefObject<import("konva").default.Circle | null>;
-  healCloneDragPreview: { points: import("../studio-selection-tools").SelPoint[]; lineRef: import("react").RefObject<import("konva").default.Line | null>; } | null;
+  healCloneCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
+  healCloneDragPreview: { points: import("../studio-selection-tools").SelPoint[]; lineRef: StudioReadonlyRef<StudioLineNodeLike | null>; } | null;
   healCloneHardness: number;
   healCloneOpacity: number;
   healCloneRadius: number;
   healCloneSourceAnchor: import("../studio-selection-tools").SelPoint | null;
-  healCloneSourceCursorRef: import("react").RefObject<import("konva").default.Circle | null>;
+  healCloneSourceCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   healCloneTool: import("../studio-heal-clone").HealCloneMode | null;
   history: import("../studio-page-state").PageState[][];
   historyBrushActive: boolean;
   historyBrushArmed: boolean;
   historyBrushBusy: boolean;
-  historyBrushCursorRef: import("react").RefObject<import("konva").default.Circle | null>;
+  historyBrushCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   historyBrushDragPreview: { points: import("../studio-selection-tools").SelPoint[]; } | null;
   historyBrushHardness: number;
   historyBrushOpacity: number;
@@ -377,7 +387,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   isometricOriginX: number;
   isometricOriginY: number;
   layerMaskBusy: boolean;
-  layerMaskCursorRef: import("react").RefObject<import("konva").default.Circle | null>;
+  layerMaskCursorRef: StudioReadonlyRef<StudioCircleNodeLike | null>;
   layerMaskDragPreview: { points: import("../studio-selection-tools").SelPoint[]; } | null;
   layerMaskHardness: number;
   layerMaskPaintActive: boolean;
@@ -393,11 +403,11 @@ export type StudioCuttoonEditorViewSessionCore = {
   liquifyArmed: boolean;
   liquifyBusy: boolean;
   liquifyMode: "push" | "twirl-clockwise" | "twirl-counterclockwise" | "pinch" | "bloat";
-  liquifyPreviewImageRef: import("react").RefObject<import("konva").default.Image | null>;
+  liquifyPreviewImageRef: StudioReadonlyRef<StudioImageNodeLike | null>;
   liquifyRadius: number;
   liquifyStrength: number;
   liveDraftDirectRef: import("react").RefObject<boolean>;
-  liveDraftLayerRef: import("react").RefObject<import("konva").default.Layer | null>;
+  liveDraftLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
   liveDraftShapeKind: import("../studio-editor-tool-model").DrawShapeKind | "freehand" | null | undefined;
   liveDraftVisualRef: import("react").RefObject<import("../studio-element-model").DrawEl | null>;
   liveDrawPressureStore: import("../live/StudioLiveInkHosts").StudioLivePressureStore;
@@ -416,11 +426,11 @@ export type StudioCuttoonEditorViewSessionCore = {
   loggedIn: boolean;
   macroSession: import("../studio-macro-recorder").StudioMacroSession;
   magicResizeStrategy: "reposition" | "scaleToFit";
-  mainLayerRef: import("react").RefObject<import("konva").default.Layer | null>;
+  mainLayerRef: StudioReadonlyRef<StudioSceneLayerLike | null>;
   mannequinPoserOpen: boolean;
   marqueeIds: string[];
   marqueeIdsRef: import("react").RefObject<string[]>;
-  marqueeRectNodeRef: import("react").RefObject<import("konva").default.Rect | null>;
+  marqueeRectNodeRef: StudioReadonlyRef<StudioRectNodeLike | null>;
   master: import("../studio-master-page").DocumentMaster<import("../studio-element-model").El>;
   masterEditMode: boolean;
   masterPanelOpen: boolean;
@@ -446,7 +456,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   nodeEditDraft: { elId: string; points: number[]; pressures: number[]; } | null;
   nodeEditHandles: import("../studio-node-edit").NodeEditHandle[];
   nodeEditTool: import("../studio-node-edit").NodeEditTool | null;
-  nodeRefsRef: import("react").RefObject<Record<string, import("konva").default.Node | null>>;
+  nodeRefsRef: StudioReadonlyRef<Readonly<Record<string, StudioSceneNodeLike | null>>>;
   nodeSmoothStrength: number;
   onPickImage: (e: import("react").ChangeEvent<HTMLInputElement, Element>) => Promise<void>;
   onionSkin: import("../studio-frame-animation").OnionSkinSettings;
@@ -468,7 +478,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   pagesHistory: import("../studio-page-state").PageState[][];
   pagesHistoryDurabilityStatus: import("../studio-pages-history-command-journal-client").StudioPagesHistoryCommandJournalDurabilityStatus;
   pagesSheetRef: import("react").RefObject<HTMLDivElement | null>;
-  paintRetouchStrokeLineRef: import("react").RefObject<import("konva").default.Line | null>;
+  paintRetouchStrokeLineRef: StudioReadonlyRef<StudioLineNodeLike | null>;
   panelGutter: number;
   panelLayoutPresets: import("../studio-panel-layouts").PanelLayoutPreset[];
   panelLayoutsError: string | null;

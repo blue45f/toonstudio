@@ -80,7 +80,7 @@ import {
   type SelectionFrame,
   type SelPoint,
 } from "../studio-selection-tools";
-import type Konva from "konva";
+import type { StudioKonvaEventLike } from "../canvas/studio-stage-handle-types";
 import type { StudioCuttoonStagePointersHost } from "./studio-cuttoon-stage-pointers-types";
 import type { StudioCuttoonStagePointersApi } from "./studio-cuttoon-stage-pointers-api";
 import type { StudioLiveStrokeFoleyBridgeRuntime } from "./studio-live-stroke-foley-bridge";
@@ -186,7 +186,7 @@ export function createStudioCuttoonStagePointerMoveHandler(
   const updateBrushCursor: StudioCuttoonStagePointersApi["updateBrushCursor"] = (...args) => api.updateBrushCursor(...args);
   const updateHealCloneCursorNodes: StudioCuttoonStagePointersApi["updateHealCloneCursorNodes"] = (...args) => api.updateHealCloneCursorNodes(...args);
   const updateHistoryBrushCursorNode: StudioCuttoonStagePointersApi["updateHistoryBrushCursorNode"] = (...args) => api.updateHistoryBrushCursorNode(...args);
-  function onStageMove(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
+  function onStageMove(e: StudioKonvaEventLike<MouseEvent | TouchEvent>) {
     const stagePointerEvent = e.evt as PointerEvent;
     const stageActiveDrawing = drawingRef.current;
     const nativeFreehandMoveOwnsStage = Boolean(

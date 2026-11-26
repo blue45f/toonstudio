@@ -1,5 +1,5 @@
 import type { MutableRefObject } from "react";
-import type Konva from "konva";
+import type { StudioLineNodeLike, StudioReadonlyRef } from "../canvas/studio-stage-handle-types";
 
 import {
   normalizeStudioDrawingAssistDocument,
@@ -87,7 +87,7 @@ export function runStudioSchedulePaintRetouchStrokePreview(input: {
   readonly session: StudioPaintRetouchStrokePreviewSession;
   readonly pendingRef: MutableRefObject<StudioPaintRetouchStrokePreviewSession | null>;
   readonly rafRef: MutableRefObject<number | null>;
-  readonly lineRef: MutableRefObject<Konva.Line | null>;
+  readonly lineRef: StudioReadonlyRef<StudioLineNodeLike | null>;
 }): void {
   input.pendingRef.current = input.session;
   if (input.rafRef.current !== null) return;

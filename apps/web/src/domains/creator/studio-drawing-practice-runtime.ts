@@ -3,7 +3,7 @@ import { canonicalizeStudioAssetContentHash } from "./studio-upload-image-safety
 
 import type { StudioAsset } from "./studio-asset-library";
 import type { StudioDrawingPracticeDocument } from "./studio-drawing-practice-document";
-import type Konva from "konva";
+import type { StudioNodeLike } from "./canvas/studio-stage-handle-types";
 
 /** SHA-256 is authoritative. assetId remains a same-device recovery hint only. */
 export function resolveStudioDrawingPracticeAsset(
@@ -53,7 +53,7 @@ export function routeStudioDrawingPracticeStroke<Element extends object>(
  * captures cannot accidentally sample it even before React has committed an exporting state.
  */
 export function registerStudioDrawingPracticeCaptureExclusion(
-  node: Konva.Node | null,
+  node: StudioNodeLike | null,
 ): () => void {
   if (!node) return () => undefined;
   return registerStudioRasterCapturePreparation(node, () => {

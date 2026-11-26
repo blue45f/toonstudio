@@ -333,10 +333,12 @@ describe("Studio hybrid brush/filter/edit runtime", () => {
         expect(text).toContain('from "perfect-freehand"');
       }
       if (route.library === "lazy-brush") {
-        expect(text).toContain('from "lazy-brush"');
+        expect(text).toContain("export class StudioLazyBrushStabilizer");
+        expect(text).not.toContain('from "lazy-brush"');
       }
       if (route.library === "rbush") {
-        expect(text).toContain('from "rbush"');
+        expect(text).toContain("export class StudioEngineSceneSpatialIndex");
+        expect(text).not.toContain('from "rbush"');
       }
       if (route.library === "pixi.js") {
         expect(text).toContain("pixi.js");

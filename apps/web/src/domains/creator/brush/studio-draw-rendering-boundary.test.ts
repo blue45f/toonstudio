@@ -125,15 +125,19 @@ describe("studio draw rendering ownership boundary", () => {
     }
   });
 
-  it("keeps DrawEl and Konva as whole-clause type-only dependencies", () => {
+  it("keeps DrawEl and neutral canvas context as whole-clause type-only dependencies without konva", () => {
     const rendering = moduleEdges("./studio-draw-rendering.ts");
 
     expect(rendering.typeImports).toContain("../studio-element-model");
-    expect(rendering.typeImports).toContain("konva");
+    expect(rendering.typeImports).toContain("../canvas/studio-stage-handle-types");
+    expect(rendering.allImports).not.toContain("konva");
     expect(rendering.valueImports).not.toContain("../studio-element-model");
+    expect(rendering.valueImports).not.toContain("../canvas/studio-stage-handle-types");
     expect(rendering.valueImports).not.toContain("konva");
     expect(rendering.source).toContain('import type { DrawEl } from "../studio-element-model";');
-    expect(rendering.source).toContain('import type Konva from "konva";');
+    expect(rendering.source).toContain(
+      'import type { StudioCanvasContextLike } from "../canvas/studio-stage-handle-types";',
+    );
   });
 
   it("does not pull editor lifecycle, UI, collaboration, or GPU responsibilities into the helper", () => {

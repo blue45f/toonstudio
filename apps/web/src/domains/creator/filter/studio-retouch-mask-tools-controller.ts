@@ -35,8 +35,12 @@ import {
   type FilterMaskPaintMode,
 } from "./studio-filter-mask";
 
+import type {
+  StudioCircleNodeLike,
+  StudioLineNodeLike,
+  StudioReadonlyRef,
+} from "../canvas/studio-stage-handle-types";
 import type { SelPoint, SelectionFrame } from "../studio-selection-tools";
-import type Konva from "konva";
 
 export interface UseStudioRetouchMaskToolsOptions {
   readonly selectedId: string | null;
@@ -70,7 +74,7 @@ export function useStudioRetouchMaskTools({
     radiusNorm: number;
     points: SelPoint[];
   } | null>(null);
-  const healClonePreviewLineRef = useRef<Konva.Line>(null);
+  const healClonePreviewLineRef = useRef<StudioLineNodeLike>(null);
   const healCloneRafRef = useRef<number | null>(null);
   const pendingHealCloneDragRef = useRef<{
     frame: SelectionFrame;
@@ -79,10 +83,10 @@ export function useStudioRetouchMaskTools({
   } | null>(null);
   const [healCloneDragPreview, setHealCloneDragPreview] = useState<{
     points: SelPoint[];
-    lineRef: import("react").RefObject<Konva.Line | null>;
+    lineRef: StudioReadonlyRef<StudioLineNodeLike | null>;
   } | null>(null);
-  const healCloneCursorRef = useRef<Konva.Circle>(null);
-  const healCloneSourceCursorRef = useRef<Konva.Circle>(null);
+  const healCloneCursorRef = useRef<StudioCircleNodeLike>(null);
+  const healCloneSourceCursorRef = useRef<StudioCircleNodeLike>(null);
 
   const scheduleHealCloneDragPreview = (session: {
     frame: SelectionFrame;
@@ -161,7 +165,7 @@ export function useStudioRetouchMaskTools({
     schedule: scheduleHistoryBrushDragPreview,
     clear: clearHistoryBrushDragPreview,
   } = useStudioRafPreview<{ points: SelPoint[] }>();
-  const historyBrushCursorRef = useRef<Konva.Circle>(null);
+  const historyBrushCursorRef = useRef<StudioCircleNodeLike>(null);
 
   useEffect(() => {
     void selectedId;
@@ -191,7 +195,7 @@ export function useStudioRetouchMaskTools({
     schedule: scheduleLayerMaskDragPreview,
     clear: clearLayerMaskDragPreview,
   } = useStudioRafPreview<{ points: SelPoint[] }>();
-  const layerMaskCursorRef = useRef<Konva.Circle>(null);
+  const layerMaskCursorRef = useRef<StudioCircleNodeLike>(null);
 
   useEffect(() => {
     void selectedId;
@@ -213,7 +217,7 @@ export function useStudioRetouchMaskTools({
     schedule: scheduleFilterMaskDragPreview,
     clear: clearFilterMaskDragPreview,
   } = useStudioRafPreview<{ points: SelPoint[] }>();
-  const filterMaskCursorRef = useRef<Konva.Circle>(null);
+  const filterMaskCursorRef = useRef<StudioCircleNodeLike>(null);
 
   useEffect(() => {
     void selectedId;

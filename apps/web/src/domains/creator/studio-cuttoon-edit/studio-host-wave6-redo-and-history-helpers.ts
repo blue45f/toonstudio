@@ -1,5 +1,5 @@
-import type { MutableRefObject, RefObject } from "react";
-import type Konva from "konva";
+import type { MutableRefObject } from "react";
+import type { StudioLayerLike, StudioReadonlyRef } from "../canvas/studio-stage-handle-types";
 import type { StudioInkMeshLivePreviewRuntime } from "../brush/studio-ink-mesh-live-preview-loader";
 import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioCrdtLiveStrokePublisher } from "../live/studio-crdt-live-stroke-publisher";
@@ -63,8 +63,8 @@ export function runStudioResetTransientInkForHistoryTransitionRefs({
   readonly clearSkiaCommittedInkRuntime: () => void;
   readonly committedInkSurfaceHandoffRafRef: MutableRefObject<number>;
   readonly webGpuCanvasHandleRef: MutableRefObject<StudioWebGpuCanvasHandle | null>;
-  readonly liveDraftLayerRef: RefObject<Konva.Layer | null>;
-  readonly mainLayerRef: RefObject<Konva.Layer | null>;
+  readonly liveDraftLayerRef: StudioReadonlyRef<StudioLayerLike | null>;
+  readonly mainLayerRef: StudioReadonlyRef<StudioLayerLike | null>;
 }): void {
   runStudioResetTransientInkForHistoryTransition({
     clearLiveOverlays: () => {

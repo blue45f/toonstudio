@@ -1,4 +1,4 @@
-import type Konva from "konva";
+import type { StudioContainerLike, StudioSceneLayerLike, StudioSceneNodeLike, StudioSceneTransformerLike } from "./canvas/studio-stage-handle-types";
 
 /** Explicit promise that a visible main-Layer sibling paints no pixels during a transform. */
 export const STUDIO_LIVE_TRANSFORM_Z_ORDER_EXEMPT_ATTR =
@@ -16,8 +16,8 @@ type LiftedNodeRestorePhase =
   | "externally-reparented";
 
 interface LiftedNodeRecord {
-  readonly node: Konva.Node;
-  readonly parent: Konva.Container;
+  readonly node: StudioSceneNodeLike;
+  readonly parent: StudioContainerLike;
   readonly zIndex: number;
   phase: LiftedNodeRestorePhase;
   restoreAbsolutePosition: { x: number; y: number } | null;
@@ -27,10 +27,10 @@ interface LiftedNodeRecord {
 
 export interface StudioSingleObjectDragLayerSession {
   readonly elementId: string;
-  readonly mainLayer: Konva.Layer;
-  readonly dragLayer: Konva.Layer;
-  readonly target: Konva.Node;
-  readonly transformer: Konva.Transformer | null;
+  readonly mainLayer: StudioSceneLayerLike;
+  readonly dragLayer: StudioSceneLayerLike;
+  readonly target: StudioSceneNodeLike;
+  readonly transformer: StudioSceneTransformerLike | null;
   readonly lifted: readonly LiftedNodeRecord[];
   /** Whether canvas authority receipts are deferred or must complete inside this transition. */
   readonly presentationMode: "deferred-batch" | "synchronous-authority";
@@ -54,14 +54,14 @@ let studioSingleObjectRecoveryDelayMs = STUDIO_SINGLE_OBJECT_RECOVERY_INITIAL_DE
 
 interface StudioSingleObjectRecoveryConflictInput {
   readonly elementId: string | null;
-  readonly dragLayer: Konva.Layer | null;
-  readonly nodes: readonly (Konva.Node | null | undefined)[];
+  readonly dragLayer: StudioSceneLayerLike | null;
+  readonly nodes: readonly (StudioSceneNodeLike | null | undefined)[];
 }
 
 function studioSingleObjectRecoveryConflicts(
   input: StudioSingleObjectRecoveryConflictInput,
 ): boolean {
-  const nodes = new Set(input.nodes.filter((node): node is Konva.Node => node != null));
+  const nodes = new Set(input.nodes.filter((node): node is StudioSceneNodeLike => node != null));
   for (const session of pendingStudioSingleObjectRecoveries) {
     if (input.elementId && session.elementId === input.elementId) return true;
     // The transform/drag Layer and Transformer are shared across selections. A different element
@@ -317,12 +317,12 @@ function performStudioSingleObjectLayerLift(
 }
 
 export interface BeginStudioSingleObjectDragLayerOptions {
-  readonly target: Konva.Node;
+  readonly target: StudioSceneNodeLike;
   readonly selectedElementId: string | null;
   readonly selectionSize: number;
-  readonly mainLayer: Konva.Layer | null;
-  readonly dragLayer: Konva.Layer | null;
-  readonly transformer?: Konva.Transformer | null;
+  readonly mainLayer: StudioSceneLayerLike | null;
+  readonly dragLayer: StudioSceneLayerLike | null;
+  readonly transformer?: StudioSceneTransformerLike | null;
   readonly selectedIsDraw: boolean;
   readonly hasMaskOrClip: boolean;
   /** destination-out, clip-below and authored blend modes need the document layer as a backdrop. */
@@ -330,9 +330,9 @@ export interface BeginStudioSingleObjectDragLayerOptions {
 }
 
 function studioLiftHomeParent(
-  node: Konva.Node,
-  layer: Konva.Layer,
-): Konva.Container | null {
+  node: StudioSceneNodeLike,
+  layer: StudioSceneLayerLike,
+): StudioContainerLike | null {
   const parent = node.getParent();
   if (parent === layer) return layer;
   if (
@@ -345,7 +345,7 @@ function studioLiftHomeParent(
   return null;
 }
 
-function nodeCompositeIsLayerSensitive(node: Konva.Node): boolean {
+function nodeCompositeIsLayerSensitive(node: StudioSceneNodeLike): boolean {
   const operation = node.getAttr("globalCompositeOperation");
   return (
     typeof operation === "string"
@@ -355,10 +355,10 @@ function nodeCompositeIsLayerSensitive(node: Konva.Node): boolean {
 }
 
 function authoredCompositeOperationIsLayerSensitive(
-  target: Konva.Node,
-  root: Konva.Node,
+  target: StudioSceneNodeLike,
+  root: StudioSceneNodeLike,
 ): boolean {
-  let current: Konva.Node | null = target;
+  let current: StudioSceneNodeLike | null = target;
   while (current) {
     if (nodeCompositeIsLayerSensitive(current)) return true;
     if (current === root) break;
@@ -376,9 +376,9 @@ function authoredCompositeOperationIsLayerSensitive(
  * hangs `globalCompositeOperation` on the shapes it emits (highlighter/wash multiply passes among
  * them) — so the transform lift, whose whole subject is a stroke, has to look down instead.
  */
-function subtreeCompositeIsLayerSensitive(node: Konva.Node): boolean {
+function subtreeCompositeIsLayerSensitive(node: StudioSceneNodeLike): boolean {
   if (nodeCompositeIsLayerSensitive(node)) return true;
-  const children = (node as Konva.Container).getChildren?.();
+  const children = (node as StudioContainerLike).getChildren?.();
   if (!children) return false;
   for (const child of children) {
     if (subtreeCompositeIsLayerSensitive(child)) return true;
@@ -396,7 +396,7 @@ function subtreeCompositeIsLayerSensitive(node: Konva.Node): boolean {
  * for the whole gesture and vanish again at commit. Refuse the lift there rather than previewing
  * artwork the commit will not produce.
  */
-function laterSiblingDependsOnStackingBelow(node: Konva.Node): boolean {
+function laterSiblingDependsOnStackingBelow(node: StudioSceneNodeLike): boolean {
   const parent = node.getParent();
   if (!parent) return false;
   const index = node.zIndex();
@@ -411,7 +411,7 @@ function laterSiblingDependsOnStackingBelow(node: Konva.Node): boolean {
  * artwork makes every otherwise-safe exact lift fail closed. Recurse to leaf nodes so the z-order
  * gate continues to reject real paint while admitting empty/fully-hidden UI containers.
  */
-function subtreeHasVisiblePaint(node: Konva.Node): boolean {
+function subtreeHasVisiblePaint(node: StudioSceneNodeLike): boolean {
   try {
     // Siblings share the same ancestor visibility/opacity. Inspect local authored state so the
     // reserved document shadow's authority opacity cannot make real Vello-painted siblings look
@@ -419,7 +419,7 @@ function subtreeHasVisiblePaint(node: Konva.Node): boolean {
     if (!node.visible() || node.opacity() <= 0) return false;
     // A cached container can replay pixels even when its current children are hidden or empty.
     if (node.isCached()) return true;
-    const children = (node as Konva.Container).getChildren?.();
+    const children = (node as StudioContainerLike).getChildren?.();
     if (children) return children.some((child) => subtreeHasVisiblePaint(child));
     return true;
   } catch {
@@ -436,8 +436,8 @@ function subtreeHasVisiblePaint(node: Konva.Node): boolean {
  * wrapper; other selection indicators have already been parked before this preflight.
  */
 function laterVisiblePaintingSibling(
-  node: Konva.Node,
-  exempt: ReadonlySet<Konva.Node>,
+  node: StudioSceneNodeLike,
+  exempt: ReadonlySet<StudioSceneNodeLike>,
 ): boolean {
   const parent = node.getParent();
   if (!parent) return false;
@@ -476,7 +476,7 @@ function laterVisiblePaintingSibling(
  * `laterVisiblePaintingSibling` is what this delegates to.
  */
 export function studioLiveTransformGroupStackingIsolatable(
-  wrappers: readonly Konva.Node[],
+  wrappers: readonly StudioSceneNodeLike[],
 ): boolean {
   if (wrappers.length === 0) return false;
   const selection = new Set(wrappers);
@@ -559,8 +559,8 @@ export function beginStudioSingleObjectDragLayer(
     return null;
   }
 
-  const roots: Konva.Node[] = [movingRoot];
-  let liftedTransformer: Konva.Transformer | null = null;
+  const roots: StudioSceneNodeLike[] = [movingRoot];
+  let liftedTransformer: StudioSceneTransformerLike | null = null;
   if (
     transformer
     && transformer.getLayer() === mainLayer
@@ -596,20 +596,20 @@ export function beginStudioSingleObjectDragLayer(
 export interface BeginStudioSingleDrawTransformLayerOptions {
   readonly elementId: string;
   /** The stroke's draggable wrapper — the node the live transform preview projects onto. */
-  readonly wrapper: Konva.Node;
+  readonly wrapper: StudioSceneNodeLike;
   /** The invisible gesture Rect the group-resize Transformer manipulates. */
-  readonly proxy: Konva.Node;
-  readonly transformer: Konva.Transformer;
-  readonly dragLayer: Konva.Layer | null;
+  readonly proxy: StudioSceneNodeLike;
+  readonly transformer: StudioSceneTransformerLike;
+  readonly dragLayer: StudioSceneLayerLike | null;
 }
 
 export interface BeginStudioSingleDrawTransformSourceLayerOptions {
   readonly elementId: string;
   /** Authoritative stroke wrapper. It remains in the document Layer until this claim succeeds. */
-  readonly wrapper: Konva.Node;
+  readonly wrapper: StudioSceneNodeLike;
   /** Already-isolated Transformer, refreshed when source ownership crosses Layer boundaries. */
-  readonly transformer: Konva.Transformer;
-  readonly dragLayer: Konva.Layer | null;
+  readonly transformer: StudioSceneTransformerLike;
+  readonly dragLayer: StudioSceneLayerLike | null;
 }
 
 /**
@@ -644,7 +644,7 @@ export function beginStudioSingleDrawTransformChromeLayer(
     return null;
   }
 
-  const roots: Konva.Node[] = [proxy, transformer];
+  const roots: StudioSceneNodeLike[] = [proxy, transformer];
   const lifted: LiftedNodeRecord[] = roots.map((node) => ({
     node,
     parent: mainLayer,
@@ -773,7 +773,7 @@ export function beginStudioSingleDrawTransformLayer(
     return null;
   }
 
-  const roots: Konva.Node[] = [wrapper, proxy, transformer];
+  const roots: StudioSceneNodeLike[] = [wrapper, proxy, transformer];
   const lifted: LiftedNodeRecord[] = roots.map((node) => ({
     node,
     parent: node === wrapper ? wrapperHomeParent : mainLayer,

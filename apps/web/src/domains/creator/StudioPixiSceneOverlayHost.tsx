@@ -1,22 +1,13 @@
 /**
- * Always-on Pixi selectable-scene overlay host.
+ * 선택 가능 씬 오버레이 호스트 (제로 의존성 네이티브 Canvas 2D 지연 로드).
  *
- * Mounts a dedicated transparent, pointer-inactive Pixi canvas above the Konva
- * stage. Syncs document selection bounds into Pixi; never owns brush pixels or
- * hit-test authority (pointer-events: none).
+ * Konva 스테이지 위에 전용 투명·포인터 비활성(`<canvas style="pointer-events:none">`)
+ * 선택 오버레이를 올린다. 기존 `pixi.js`(76.68 MiB) 의존을 제거하고
+ * `studio-native-scene-overlay-provider`를 선택 항목이 실제로 존재할 때만 동적 로드한다.
  *
- * Surface economics (measured, see docs/perf/canvas-findings.md §7-1): the Pixi
- * canvas is sized to the *stage*, so at 500% zoom it is a 4620x6930 WebGL
- * framebuffer — one quarter of the editor's whole raster budget. Wheel-zoom
- * settle time is linear in total canvas backing-store area, so an overlay that
- * has nothing to present must not hold that surface. Two rules follow:
- *
- *   1. The renderer is only created once there is at least one selectable
- *      overlay to draw. With an empty selection the overlay renders nothing, so
- *      not allocating it is pixel-identical and frees the framebuffer.
- *   2. Stage geometry changes resize the live renderer; they must never destroy
- *      and rebuild it. Recreating tore down a WebGL context and re-ran the lazy
- *      pixi.js import on every zoom notch and every panel resize.
+ * 표면 경제 규칙(docs/perf/canvas-findings.md §7-1):
+ *   1. 선택 오버레이가 1개 이상 있을 때만 표면을 생성한다.
+ *   2. 스테이지 크기·줌 변화는 살아 있는 표면을 리사이즈하며 재생성하지 않는다.
  */
 
 import { useEffect, useMemo, useRef } from "react";
@@ -27,13 +18,10 @@ import {
   studioPixiSceneHostIsAlwaysOn,
   type StudioPixiHostElementLike,
 } from "./render/studio-pixi-scene-host-admission";
-import {
-  createStudioPixiSceneProvider,
-} from "./render/studio-pixi-scene-provider";
 
+import type { StudioNativeSceneOverlayProvider } from "./render/studio-native-scene-overlay-provider";
 import type {
   StudioSceneDocumentTransform,
-  StudioSceneProvider,
   StudioSceneSelectableOverlay,
 } from "./studio-scene-provider";
 
@@ -68,7 +56,7 @@ export function StudioPixiSceneOverlayHost({
   documentWidth,
   documentHeight,
 }: StudioPixiSceneOverlayHostProps) {
-  const providerRef = useRef<StudioSceneProvider | null>(null);
+  const providerRef = useRef<StudioNativeSceneOverlayProvider | null>(null);
   const trackedIdsRef = useRef<string[]>([]);
   const generationRef = useRef(0);
 
@@ -102,8 +90,10 @@ export function StudioPixiSceneOverlayHost({
 
     void (async () => {
       try {
-        const provider = await createStudioPixiSceneProvider({
-          renderer: "webgpu",
+        const { createStudioNativeSceneOverlayProvider } = await import(
+          "./render/studio-native-scene-overlay-provider"
+        );
+        const provider = await createStudioNativeSceneOverlayProvider({
           width: initial.width,
           height: initial.height,
           dpr: Math.max(1, Math.min(3, initial.dpr)),

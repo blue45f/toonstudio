@@ -231,7 +231,7 @@ import type { StudioCrdtDocument } from "../live/studio-crdt-document";
 import type { StudioBackground3DMagicFilterMask } from "../scene-3d/studio-3d-insert-contract";
 import type { DrawEl, El, FrameEl, ImageEl } from "../studio-element-model";
 import type { PageState } from "../studio-page-state";
-import type Konva from "konva";
+import type { StudioKonvaEventLike } from "../canvas/studio-stage-handle-types";
 
 import { isStudioInkInputContractV2 } from "@/shared/lib/studio-ink-input-contract";
 
@@ -349,7 +349,7 @@ export function bindStudioCuttoonStagePointersFinish(
     input
   ) => api.queueStudioRasterDrawPromotion(input);
   const finishDrawingPointer = createStudioCuttoonStagePointerFinishHandler(h, api);
-  function onStagePointerCancel(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
+  function onStagePointerCancel(e: StudioKonvaEventLike<MouseEvent | TouchEvent>) {
     const pointerEvent = e.evt as PointerEvent;
     if (h.nodeEditDragRef.current) {
       if (ownsStudioNodeEditPointer(h.nodeEditDragRef.current, pointerEvent)) cancelStudioNodeEditPointer(h);

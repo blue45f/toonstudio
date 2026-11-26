@@ -1,5 +1,5 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
-import type Konva from "konva";
+import type { StudioKonvaEventLike } from "../canvas/studio-stage-handle-types";
 
 import { STUDIO_WORK_ASSET_MAX_ASSETS_PER_WORK } from "@/shared/lib/studio-work-asset-contract";
 
@@ -121,7 +121,7 @@ export function runStudioToggleCanvasWideMode(input: {
 
 export function runStudioSelectElementFromCanvas(input: {
   readonly elementId: string;
-  readonly evt?: Konva.KonvaEventObject<MouseEvent | TouchEvent>;
+  readonly evt?: StudioKonvaEventLike<MouseEvent | TouchEvent>;
   readonly forceGroupEnter: boolean;
   readonly elements: El[];
   readonly groups: LayerGroup[];
