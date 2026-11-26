@@ -167,4 +167,24 @@ describe("redactCreatorSensitiveText (한국형 복합 PII 마스킹 및 오탐 
       expect(res.sanitizedText).toBe(prose);
     }
   });
+
+  it("무하이픈 인터넷전문은행 계좌를 마스킹하고 영단어의 ig/line을 보존하며 긴 원고의 메일을 가린다", () => {
+    const fintech = redactCreatorSensitiveText("정산은 토스뱅크 100012345678 또는 카카오뱅크 3333012345678로 부탁해요.");
+    expect(fintech.redactedCount).toBe(2);
+    expect(fintech.sanitizedText).toBe("정산은 토스뱅크 [계좌번호 비공개] 또는 카카오뱅크 [계좌번호 비공개]로 부탁해요.");
+
+    const cameraSpec = "camera: high-angle, key lighting, outline-offset 2px, nightmare scene";
+    expect(redactCreatorSensitiveText(cameraSpec)).toEqual({
+      sanitizedText: cameraSpec,
+      redactedCount: 0,
+    });
+
+    const memo = "배경 원화 제안서는 sample_44@example.invalid 로 보냅니다. ";
+    const manuscript = memo.repeat(640);
+    const started = performance.now();
+    const result = redactCreatorSensitiveText(manuscript);
+    expect(result.redactedCount).toBe(640);
+    expect(result.sanitizedText).not.toContain("example.invalid");
+    expect(performance.now() - started).toBeLessThan(80);
+  });
 });

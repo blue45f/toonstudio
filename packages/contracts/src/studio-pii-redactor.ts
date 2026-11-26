@@ -24,8 +24,9 @@ const RESIDENT_ID_PATTERN =
 const CARD_NUMBER_PATTERN =
   /\b(?:\d{4}[-–—−\s]?){3}\d{4}\b|\b\d{4}[-–—−\s]?\d{6}[-–—−\s]?\d{5}\b/gu;
 
-// 이메일 주소
-const EMAIL_PATTERN = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu;
+// 이메일 주소 (로컬 파트 중간에서 검색을 다시 시작하지 않는다)
+const EMAIL_PATTERN =
+  /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/gu;
 
 // 카카오톡 오픈채팅·인스타그램·텔레그램 등 SNS 직접 링크
 const SOCIAL_URL_PATTERN =
@@ -35,10 +36,9 @@ const SOCIAL_URL_PATTERN =
 const PHONE_PATTERN =
   /(?:(?<![\w(])\+82[\s.\-–—−]*\(?(?:\(0\)|0)?(?:1[016789]|2|[3-6][1-5]|70|50\d)\)?[\s.\-–—−~]*|\(0(?:1[016789]|2|[3-6][1-5]|70|50\d)\)[\s.\-–—−~]*|(?<!\d)0(?:1[016789]|2|[3-6][1-5]|70|50\d)\)?[\s.\-–—−~]*)\d{3,4}[\s.\-–—−~]*\d{4}(?!\d)/gu;
 
-// 라벨 탐색에는 고정 문자열만 사용한다. 공백은 아래 단방향 스캐너에서 처리해
-// 계좌·SNS 라벨의 선택적 필드 사이에서 같은 공백을 반복 분할하는 역추적을 막는다.
+// 라벨 탐색에는 고정 문자열만 사용하고 공백은 단방향 스캐너에서 처리해 역추적을 원천 차단한다.
 const BANK_ACCOUNT_LABEL_PATTERN =
-  /국민|KB|신한|우리|하나|농협|NH|기업|IBK|카카오|카뱅|토스|케이|우체국|새마을(?:금고)?|수협|신협|SC제일|씨티|부산|대구|광주|전북|경남|제주|산업|수출입|저축|계좌/giu;
+  /(?:정산|입금|출금|환불|원고료|국민|KB|신한|우리|KEB하나|하나|농협|NH|기업|IBK|카카오|카뱅|토스|케이|우체국|새마을|수협|신협|SC제일|씨티|부산|대구|광주|전북|경남|제주|산업|수출입|저축|계좌)/giu;
 const BANK_ACCOUNT_VALUE_PATTERN = /(?:\d{2,6}(?:[-–—−\s]\d{2,7}){1,3}|\d{10,14})(?!\d)/uy;
 
 // 라벨 없는 3~4구간 하이픈 한국 은행 계좌번호 (예: 123401-04-123456, 110-423-891234, 302-1234-5678-91)
@@ -46,8 +46,9 @@ const BANK_ACCOUNT_VALUE_PATTERN = /(?:\d{2,6}(?:[-–—−\s]\d{2,7}){1,3}|\d{
 const UNLABELED_KOREAN_BANK_ACCOUNT_PATTERN =
   /(?<!\d)\d{3,6}[-–—−]\d{2,6}[-–—−]\d{4,7}(?:[-–—−]\d{1,3})?(?!\d)/gu;
 
+// 영단어 내부(high-angle, lighting, outline 등)의 IG/LINE 오탐을 막기 위해 좌측 경계를 강제한다.
 const SNS_LABEL_PATTERN =
-  /카카오|카톡|Kakao|인스타(?:그램)?|Instagram|IG|텔레그램|Telegram|라인|LINE|트위터|스레드|Threads/giu;
+  /카카오|카톡|인스타(?:그램)?|텔레그램|라인|트위터|스레드|(?<![A-Za-z0-9])(?:Kakao|Instagram|IG|Telegram|LINE|Threads)/giu;
 const SNS_FIELD_PATTERN = /아이디|ID|계정|핸들/iy;
 const SNS_VALUE_PATTERN = /@?[A-Za-z0-9][A-Za-z0-9._-]{2,29}(?![/\w])/uy;
 
@@ -86,6 +87,27 @@ const KOREAN_ADDRESS_PATTERN = new RegExp(
   "gu",
 );
 
+const OPTIONAL_EUNHAENG_BANKS = new Set([
+  "국민",
+  "kb",
+  "신한",
+  "우리",
+  "하나",
+  "keb하나",
+  "농협",
+  "nh",
+  "기업",
+  "ibk",
+  "수협",
+  "신협",
+  "sc제일",
+  "씨티",
+  "카뱅",
+  "우체국",
+]);
+
+const ACCOUNT_PURPOSE_PREFIXES = new Set(["정산", "입금", "출금", "환불", "원고료"]);
+
 function skipWhitespace(input: string, start: number): number {
   let cursor = start;
   while (cursor < input.length && /\s/u.test(input.charAt(cursor))) cursor += 1;
@@ -99,17 +121,70 @@ function skipLabelSeparator(input: string, start: number): number {
     : separator;
 }
 
-function bankAccountPrefixEnd(input: string, start: number, label: string): number | null {
+function consumeOptionalEunhaeng(input: string, start: number): number {
+  const cursor = skipWhitespace(input, start);
+  if (input.startsWith("은행", cursor)) return cursor + 2;
+  if (input.startsWith("은", cursor)) return cursor + 1;
+  return start;
+}
+
+function consumeOptionalAccountField(input: string, start: number): number {
   let cursor = skipWhitespace(input, start);
+  if (input.startsWith("계좌", cursor)) {
+    cursor = skipWhitespace(input, cursor + 2);
+    if (input.startsWith("번호", cursor)) return cursor + 2;
+    return cursor;
+  }
+  return start;
+}
+
+function bankAccountPrefixEnd(input: string, start: number, label: string): number | null {
+  const normalized = label.toLowerCase();
+  let cursor = skipWhitespace(input, start);
+
+  if (ACCOUNT_PURPOSE_PREFIXES.has(label)) {
+    if (!input.startsWith("계좌", cursor)) return null;
+    cursor = skipWhitespace(input, cursor + 2);
+    return input.startsWith("번호", cursor) ? cursor + 2 : cursor;
+  }
+
   if (label === "계좌") {
     return input.startsWith("번호", cursor) ? cursor + 2 : cursor;
   }
+
+  if (normalized === "kb" && input.startsWith("국민", cursor)) {
+    cursor += 2;
+  } else if (normalized === "nh" && input.startsWith("농협", cursor)) {
+    cursor += 2;
+  } else if (normalized === "ibk" && input.startsWith("기업", cursor)) {
+    cursor += 2;
+  }
+
   if (label === "카카오" || label === "토스" || label === "케이") {
     if (!input.startsWith("뱅크", cursor)) return null;
-    cursor = skipWhitespace(input, cursor + 2);
+    cursor = consumeOptionalEunhaeng(input, cursor + 2);
+    return consumeOptionalAccountField(input, cursor);
   }
+
+  if (label === "새마을") {
+    if (input.startsWith("금고", cursor)) {
+      cursor = consumeOptionalEunhaeng(input, cursor + 2);
+      return consumeOptionalAccountField(input, cursor);
+    }
+    const next = skipWhitespace(input, cursor);
+    if (!input.startsWith("은", next)) return null;
+    cursor = next + (input.startsWith("은행", next) ? 2 : 1);
+    return consumeOptionalAccountField(input, cursor);
+  }
+
+  if (OPTIONAL_EUNHAENG_BANKS.has(normalized)) {
+    cursor = consumeOptionalEunhaeng(input, cursor);
+    return consumeOptionalAccountField(input, cursor);
+  }
+
   if (!input.startsWith("은", cursor)) return null;
-  return cursor + (input.startsWith("은행", cursor) ? 2 : 1);
+  cursor += input.startsWith("은행", cursor) ? 2 : 1;
+  return consumeOptionalAccountField(input, cursor);
 }
 
 function snsPrefixEnd(input: string, start: number, label: string): number | null {
@@ -123,7 +198,7 @@ function snsPrefixEnd(input: string, start: number, label: string): number | nul
   SNS_FIELD_PATTERN.lastIndex = cursor;
   if (!SNS_FIELD_PATTERN.test(input)) return cursor;
 
-  // ID가 짧은 아이디 자체의 일부일 수 있다. 필드 뒤에 값이 있을 때만 필드로 확정한다.
+  // ID가 짧은 아이디(예: Ida) 자체의 접두부일 수 있으므로 필드 뒤에 실제 아이디 값이 올 때만 필드로 확정한다.
   const fieldEnd = SNS_FIELD_PATTERN.lastIndex;
   SNS_VALUE_PATTERN.lastIndex = skipLabelSeparator(input, fieldEnd);
   return SNS_VALUE_PATTERN.test(input) ? fieldEnd : cursor;
@@ -177,8 +252,8 @@ export function redactCreatorSensitiveText(raw: string): RedactedCreatorText {
   current = replaceCounted(current, CARD_NUMBER_PATTERN, "[카드번호 비공개]");
   current = replaceCounted(current, EMAIL_PATTERN, "[이메일 비공개]");
   current = replaceCounted(current, SOCIAL_URL_PATTERN, "[SNS 링크 비공개]");
-  current = replaceCounted(current, PHONE_PATTERN, "[연락처 비공개]");
   current = replaceKeepingPrefix(current, BANK_ACCOUNT_LABEL_PATTERN, bankAccountPrefixEnd, BANK_ACCOUNT_VALUE_PATTERN, "[계좌번호 비공개]");
+  current = replaceCounted(current, PHONE_PATTERN, "[연락처 비공개]");
   current = replaceCounted(current, UNLABELED_KOREAN_BANK_ACCOUNT_PATTERN, "[계좌번호 비공개]");
   current = replaceKeepingPrefix(current, SNS_LABEL_PATTERN, snsPrefixEnd, SNS_VALUE_PATTERN, "[계정 비공개]");
   current = replaceCounted(current, STANDALONE_SNS_HANDLE_PATTERN, "[계정 비공개]");
