@@ -1,0 +1,1815 @@
+{
+  "generatedAt": "2026-11-26T04:52:28.009Z",
+  "models": [
+    "gpt-6.2-astra"
+  ],
+  "domainBatches": 10,
+  "totalMacros": 100,
+  "domains": [
+    {
+      "customId": "mcp-macros-1",
+      "model": "gpt-6.2-astra",
+      "domainKo": "세로 스크롤 컷 레이아웃 자동 분할 및 여백 정렬",
+      "macros": [
+        {
+          "id": "split-at-gutters",
+          "titleKo": "빈 띠를 기준으로 통원고 컷 나누기",
+          "naturalPromptKo": "붙여 그린 세로 원고에서 가로로 완전히 비어 있는 띠만 찾아 컷을 나눠 줘. 말풍선 꼬리가 걸친 곳은 자르지 마.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.findBlankBands",
+              "reasonKo": "짧은 흰 선은 무시하고, 원고 폭 전체가 비어 있는 내부 여백만 경계 후보로 잡는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"axis\":\"y\",\"minHeightPx\":32,\"requiredBlankWidthRatio\":1,\"blankDefinition\":\"transparentOrCanvasBackground\",\"excludeOuterBands\":true,\"rejectIntersections\":[\"panelFrame\",\"text\",\"balloon\",\"effect\"],\"result\":\"internalGutters\"}"
+            },
+            {
+              "toolName": "studio.division.createPanelRegions",
+              "reasonKo": "각 빈 띠의 중앙에 비파괴 경계를 만들어 그림 레이어를 자르지 않고 컷별 작업 영역을 얻는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"boundariesFrom\":\"internalGutters\",\"positionInBand\":\"center\",\"output\":\"editableRegions\",\"preservePixels\":true,\"onEmpty\":\"leaveUnchanged\"}"
+            }
+          ]
+        },
+        {
+          "id": "split-at-guides",
+          "titleKo": "작가가 표시한 가이드선으로 컷 나누기",
+          "naturalPromptKo": "배경이 이어지는 장면이라 공백으로 나누기 어려워. 내가 ‘컷 경계’라고 표시한 가로 가이드만 써서 분할해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.collectGuides",
+              "reasonKo": "정렬용 가이드를 제외하고 컷 경계로 지정한 선만 위에서 아래로 정리한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"orientation\":\"horizontal\",\"labelEquals\":\"컷 경계\",\"insideCanvasOnly\":true,\"deduplicate\":true,\"sort\":\"yAscending\",\"result\":\"authorBoundaries\"}"
+            },
+            {
+              "toolName": "studio.division.createPanelRegions",
+              "reasonKo": "캔버스 양 끝과 지정한 선 사이를 각각 편집 가능한 컷 영역으로 등록한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"boundariesFrom\":\"authorBoundaries\",\"includeCanvasEdges\":true,\"output\":\"editableRegions\",\"preservePixels\":true,\"onEmpty\":\"leaveUnchanged\"}"
+            }
+          ]
+        },
+        {
+          "id": "normalize-dialogue-gaps",
+          "titleKo": "대화 컷 사이를 80px로 통일하기",
+          "naturalPromptKo": "선택한 연속 대화 컷 사이의 빈 공간을 80px로 맞춰 줘. 컷 밖으로 삐져나온 말풍선도 여백 계산에 넣어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.measurePanelBounds",
+              "reasonKo": "프레임과 연결된 말풍선·효과의 외곽까지 재서 실제로 비워 둘 공간을 계산한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedContiguousPanels\",\"bounds\":\"frameAndLinkedVisibleContent\",\"sort\":\"readingOrder\",\"result\":\"dialogueBounds\"}"
+            },
+            {
+              "toolName": "studio.canvas.reflowPanelStack",
+              "reasonKo": "첫 컷은 고정하고 나머지 컷 묶음을 세로로 옮긴다. 선택 구간 뒤의 원고도 함께 밀거나 당겨 끝 여백을 보존한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"boundsFrom\":\"dialogueBounds\",\"gapPx\":80,\"anchor\":\"firstPanel\",\"moveLinkedLayers\":true,\"downstream\":\"translateByNetDelta\",\"canvasHeight\":\"adjustByNetDelta\",\"onLockedConflict\":\"abortWithoutChanges\"}"
+            }
+          ]
+        },
+        {
+          "id": "space-scene-transitions",
+          "titleKo": "장면 전환 앞에만 긴 여백 넣기",
+          "naturalPromptKo": "‘장면 시작’ 태그가 붙은 컷 앞은 320px 쉬었다 읽히게 해 줘. 같은 장면 안의 컷 간격은 그대로 둬.",
+          "steps": [
+            {
+              "toolName": "studio.division.selectPanelGaps",
+              "reasonKo": "첫 컷 앞의 머리 여백은 제외하고 장면이 바뀌는 내부 간격만 고른다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeDocument\",\"nextPanelTag\":\"장면 시작\",\"internalOnly\":true,\"result\":\"transitionGaps\"}"
+            },
+            {
+              "toolName": "studio.canvas.setPanelGaps",
+              "reasonKo": "태그 앞의 간격만 바꾸고 이후 컷들을 묶어서 이동해 장면 내부의 호흡은 유지한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targetsFrom\":\"transitionGaps\",\"gapPx\":320,\"measureBetween\":\"frameAndLinkedVisibleContent\",\"propagate\":\"shiftAllFollowingPanels\",\"moveLinkedLayers\":true,\"preserveUntargetedGaps\":true,\"canvasHeight\":\"adjustByNetDelta\",\"onLockedConflict\":\"abortWithoutChanges\"}"
+            }
+          ]
+        },
+        {
+          "id": "center-narrow-panels",
+          "titleKo": "좁은 컷의 좌우 여백 균등 정렬",
+          "naturalPromptKo": "선택한 작은 컷들을 원고 한가운데로 보내 줘. 높이와 읽는 순서는 바꾸지 말고 전폭 컷은 건드리지 마.",
+          "steps": [
+            {
+              "toolName": "studio.division.filterPanels",
+              "reasonKo": "프레임 폭이 캔버스보다 작은 컷만 추려 전폭 컷과 바깥으로 넘기는 연출을 보존한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedPanels\",\"frameWidth\":\"lessThanCanvasWidth\",\"excludeTags\":[\"블리드\"],\"result\":\"narrowPanels\"}"
+            },
+            {
+              "toolName": "studio.canvas.alignPanelGroups",
+              "reasonKo": "프레임 중심을 캔버스 중심에 맞추되, 말풍선과 효과는 컷에 붙은 상태로 수평 이동한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targetsFrom\":\"narrowPanels\",\"axis\":\"x\",\"align\":\"frameCenter\",\"reference\":\"canvasCenter\",\"moveLinkedLayers\":true,\"preserveY\":true,\"resize\":false,\"onClip\":\"skipAndReport\"}"
+            }
+          ]
+        },
+        {
+          "id": "align-left-inset",
+          "titleKo": "왼쪽 정렬 컷의 시작선 맞추기",
+          "naturalPromptKo": "왼쪽으로 붙여 읽는 컷들만 프레임 시작선을 왼쪽 끝에서 48px로 맞춰 줘. 컷 크기는 그대로 둬.",
+          "steps": [
+            {
+              "toolName": "studio.division.filterPanels",
+              "reasonKo": "선택 범위 중 왼쪽 정렬로 표시된 컷만 골라 중앙 컷과 전폭 컷을 제외한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedPanels\",\"requireTag\":\"왼쪽 정렬\",\"frameWidth\":\"lessThanCanvasWidth\",\"excludeTags\":[\"블리드\"],\"result\":\"leftInsetPanels\"}"
+            },
+            {
+              "toolName": "studio.canvas.alignPanelGroups",
+              "reasonKo": "프레임 왼쪽 변을 기준선에 맞추고 반대쪽에서 내용이 잘릴 컷은 이동하지 않고 알린다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targetsFrom\":\"leftInsetPanels\",\"axis\":\"x\",\"align\":\"frameLeft\",\"reference\":\"canvasLeft\",\"offsetPx\":48,\"moveLinkedLayers\":true,\"preserveY\":true,\"resize\":false,\"onClip\":\"skipAndReport\"}"
+            }
+          ]
+        },
+        {
+          "id": "balance-outer-padding",
+          "titleKo": "원고 맨 위·아래 여백 맞추기",
+          "naturalPromptKo": "첫 내용 위에는 120px, 마지막 내용 아래에는 160px만 남겨 줘. 회차 제목이랑 작가 후기는 내용에 포함해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.measureContentExtent",
+              "reasonKo": "컷뿐 아니라 제목·후기와 프레임 밖 장식까지 포함해 실제 원고의 시작점과 끝점을 찾는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"axis\":\"y\",\"include\":\"allVisibleArtworkAndText\",\"exclude\":\"canvasBackgroundOnly\",\"result\":\"episodeExtent\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitOuterPadding",
+              "reasonKo": "내부 컷 간격을 유지한 채 캔버스 위아래의 빈 부분만 늘리거나 줄인다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"extentFrom\":\"episodeExtent\",\"topPx\":120,\"bottomPx\":160,\"preserveWidth\":true,\"preserveInternalLayout\":true,\"deleteOutsidePixels\":false,\"onEmpty\":\"leaveUnchanged\"}"
+            }
+          ]
+        },
+        {
+          "id": "insert-breathing-room",
+          "titleKo": "선택한 컷 뒤에 한 박자 더 넣기",
+          "naturalPromptKo": "반전 직전 컷을 골랐어. 이 컷 뒤의 지금 여백에 200px만 더하고, 다음 컷부터 끝까지 통째로 내려 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.selectPanelGaps",
+              "reasonKo": "선택한 컷 바로 다음의 간격 하나만 지정해 다른 전환 여백과 구분한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"singleSelectedPanel\",\"relativeGap\":\"after\",\"internalOnly\":true,\"result\":\"dramaticPause\"}"
+            },
+            {
+              "toolName": "studio.canvas.offsetPanelGap",
+              "reasonKo": "기존 간격을 덮어쓰지 않고 200px를 더하며, 다음 컷 이후의 배치와 끝 여백은 그대로 둔다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targetFrom\":\"dramaticPause\",\"deltaPx\":200,\"propagate\":\"shiftAllFollowingContent\",\"moveLinkedLayers\":true,\"canvasHeight\":\"adjustByNetDelta\",\"onEmpty\":\"leaveUnchanged\",\"onLockedConflict\":\"abortWithoutChanges\"}"
+            }
+          ]
+        },
+        {
+          "id": "repair-balloon-clearance",
+          "titleKo": "말풍선 때문에 좁아진 컷 사이만 벌리기",
+          "naturalPromptKo": "대사 수정 뒤에 아래 컷과 너무 붙은 곳만 고쳐 줘. 보이는 내용끼리 24px 이상 떨어져 있으면 그대로 둬.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.auditPanelClearance",
+              "reasonKo": "연속 컷의 프레임과 돌출된 말풍선 외곽을 비교해 최소 간격에 못 미치는 양을 컷 쌍별로 구한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeDocument\",\"pairs\":\"adjacentInReadingOrder\",\"bounds\":\"frameAndLinkedVisibleContent\",\"axis\":\"y\",\"minimumPx\":24,\"excludePairTags\":[\"의도된 겹침\"],\"result\":\"clearanceDeficits\"}"
+            },
+            {
+              "toolName": "studio.canvas.applyGapCorrections",
+              "reasonKo": "부족한 양만큼만 다음 컷과 그 아래 내용을 밀어 이미 충분한 여백은 유지한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"correctionsFrom\":\"clearanceDeficits\",\"mode\":\"increaseByDeficitOnly\",\"order\":\"topToBottom\",\"propagate\":\"shiftAllFollowingContent\",\"moveLinkedLayers\":true,\"canvasHeight\":\"adjustByNetDelta\",\"onLockedConflict\":\"abortWithoutChanges\"}"
+            }
+          ]
+        },
+        {
+          "id": "slice-for-upload",
+          "titleKo": "업로드 높이에 맞춰 빈 여백에서 파일 분할",
+          "naturalPromptKo": "원고를 높이 1280px 이하 PNG로 나눠 줘. 컷이나 글자를 가르지 말고, 안전한 여백이 없는 구간은 위치를 알려 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.planSlices",
+              "reasonKo": "전체 원고를 빠짐없이 덮으면서 각 조각이 제한 높이를 넘지 않도록 컷 사이 빈 띠에서 절단선을 찾는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"axis\":\"y\",\"maxSliceHeightPx\":1280,\"boundaryCandidates\":\"blankBandsBetweenPanelRegions\",\"rejectIntersections\":[\"artwork\",\"text\",\"balloon\",\"effect\"],\"coverage\":\"contiguousNoOverlap\",\"objective\":\"fewestSlices\",\"onInfeasible\":\"reportBlockedYRange\",\"result\":\"uploadPlan\"}"
+            },
+            {
+              "toolName": "studio.export.renderSlices",
+              "reasonKo": "전체 분할 계획이 성립할 때만 위에서 아래 순서로 로컬 파일을 저장해 불완전한 업로드 묶음을 만들지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"planFrom\":\"uploadPlan\",\"requireCompletePlan\":true,\"format\":\"png\",\"scale\":1,\"destination\":\"localProjectExports\",\"fileNamePattern\":\"episode_{index:03}.png\",\"startIndex\":1,\"onNameConflict\":\"createNewFolder\",\"preserveSource\":true}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-2",
+      "model": "gpt-6.2-astra",
+      "domainKo": "말풍선·식자·효과음 레이어 일괄 정리 및 모바일 가독성 보정",
+      "macros": [
+        {
+          "id": "type_01_group_by_role",
+          "titleKo": "컷 안에서 말풍선·대사·효과음 묶기",
+          "naturalPromptKo": "선택한 컷 안에서 말풍선, 대사, 효과음 레이어를 역할별로 묶어 줘. 그림 앞뒤 순서가 바뀔 레이어는 그대로 둬.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.planRoleGroups",
+              "reasonKo": "역할 태그와 기존 이름으로 분류하되, 역할이 불분명한 레이어는 이동 대상에서 뺀다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedPanels\",\"roles\":[\"balloon\",\"dialogue\",\"sfx\"],\"unknown\":\"skip\",\"output\":\"groupPlan\"}"
+            },
+            {
+              "toolName": "studio.photoshop.applyRoleGroups",
+              "reasonKo": "같은 부모 아래 연속된 레이어만 묶고, 클리핑 관계나 합성 결과가 달라지는 묶음은 건너뛴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"plan\":\"$groupPlan\",\"groupContiguousOnly\":true,\"preserveClipping\":true,\"requireCompositeMatch\":true,\"skipLocked\":true,\"undoGroup\":\"역할별 묶기\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_02_name_pairs",
+          "titleKo": "말풍선과 대사에 짝번호 붙이기",
+          "naturalPromptKo": "컷 3의 두 번째 말풍선과 대사를 ‘컷03_풍선02’, ‘컷03_대사02’처럼 이름 붙여 줘. 누가 어느 풍선 안에서 말하는지 애매한 건 표시만 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.indexBalloonPairs",
+              "reasonKo": "컷의 읽기 순서를 따르고, 기존 연결 정보가 없으면 대사 상자를 단독으로 포함하는 풍선만 짝으로 인정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"order\":\"documentReadingOrder\",\"match\":[\"explicitLink\",\"uniqueContainment\"],\"ambiguous\":\"report\",\"output\":\"pairs\"}"
+            },
+            {
+              "toolName": "studio.photoshop.renameLayerPairs",
+              "reasonKo": "짝의 두 이름을 함께 변경해 한쪽만 새 번호를 받는 일을 막는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"pairs\":\"$pairs\",\"balloonPattern\":\"컷{panel:02}_풍선{pair:02}\",\"textPattern\":\"컷{panel:02}_대사{pair:02}\",\"onLockedOrCollision\":\"skipWholePair\",\"undoGroup\":\"짝번호 붙이기\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_03_body_style",
+          "titleKo": "일반 대사만 본문 서체로 통일하기",
+          "naturalPromptKo": "붙여 넣은 대사의 글꼴과 행간을 이 작품의 본문 스타일에 맞춰 줘. 강조한 단어와 속말, 외침은 손대지 마.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.applyTextStyle",
+              "reasonKo": "일반 대사의 기본 글꼴과 행간만 맞추고 강조 구간은 보존한다. 작품 프리셋이나 설치 글꼴이 없으면 대체하지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedPanels\",\"role\":\"plainDialogue\",\"styleSource\":\"document.styles.bodyDialogue\",\"properties\":[\"fontFamily\",\"leading\"],\"preserveStyledRuns\":true,\"preserveText\":true,\"onMissingResource\":\"skipAndReport\",\"allowDownload\":false,\"skipLocked\":true,\"undoGroup\":\"본문 서체 통일\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_04_small_text",
+          "titleKo": "폰에서 작게 보이는 대사만 키우기",
+          "naturalPromptKo": "가로 360px로 보면 14px보다 작은 일반 대사만 키워 줘. 키웠을 때 풍선 안쪽 여백이 부족해지면 원래 크기로 두고 알려 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.measureRenderedType",
+              "reasonKo": "원고의 포인트 수가 아니라 모바일 폭으로 축소했을 때의 글자 크기를 기준으로 대상을 찾는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"role\":\"plainDialogue\",\"viewportWidthPx\":360,\"belowFontPx\":14,\"output\":\"smallDialogue\"}"
+            },
+            {
+              "toolName": "studio.photoshop.fitTextToMobileMinimum",
+              "reasonKo": "풍선의 몸통 안에 새 조판이 들어가는 경우만 적용하고, 넘치는 대사는 컷 번호와 함께 남긴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targets\":\"$smallDialogue\",\"viewportWidthPx\":360,\"targetFontPx\":14,\"minInnerPaddingPx\":4,\"excludeTailFromFit\":true,\"resizeBalloon\":false,\"onFitFailure\":\"keepOriginalAndReport\",\"skipLocked\":true,\"undoGroup\":\"작은 대사 보정\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_05_rebalance_lines",
+          "titleKo": "끝에 한 글자만 남은 대사 줄바꿈 다듬기",
+          "naturalPromptKo": "마지막 줄에 한 글자만 덩그러니 남은 대사를 찾아 줄 길이를 고르게 해 줘. 연출하려고 직접 넣은 줄바꿈은 유지해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.rebalanceDialogueWrap",
+              "reasonKo": "자동 줄바꿈으로 생긴 외톨이 줄만 대상으로 삼고, 글자를 고치거나 줄이는 대신 풍선 안에서 식자 상자 폭을 조정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedPanels\",\"role\":\"plainDialogue\",\"trigger\":\"singleGraphemeOnFinalSoftLine\",\"adjust\":\"textBoxWidthOnly\",\"bounds\":\"balloonBodyInset\",\"preserve\":[\"text\",\"hardBreaks\",\"fontSize\",\"boxCenter\"],\"rejectLineStartPunctuation\":true,\"onNoFit\":\"keepOriginalAndReport\",\"skipLocked\":true,\"undoGroup\":\"대사 줄바꿈 정리\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_06_center_dialogue",
+          "titleKo": "꼬리를 제외한 풍선 한가운데에 대사 놓기",
+          "naturalPromptKo": "둥근 말풍선 안에서 대사가 한쪽으로 쏠린 컷을 바로잡아 줘. 꼬리 때문에 글이 아래로 끌려가지 않게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.measureBalloonInsets",
+              "reasonKo": "꼬리를 뺀 몸통과 실제 글자 영역 사이의 여백을 재서 좌우 또는 상하 차이가 큰 짝만 추린다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedPanels\",\"shape\":\"roundBalloon\",\"pairing\":\"uniqueOnly\",\"excludeTail\":true,\"textBounds\":\"visibleGlyphs\",\"viewportWidthPx\":360,\"insetImbalanceAbovePx\":3,\"output\":\"offCenterPairs\"}"
+            },
+            {
+              "toolName": "studio.photoshop.centerPairedText",
+              "reasonKo": "대사 레이어만 평행 이동한다. 비대칭 배치로 지정했거나 꼬리와 몸통을 구별할 수 없는 풍선은 제외한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"pairs\":\"$offCenterPairs\",\"anchor\":\"tailExcludedBodyCenter\",\"move\":\"textOnly\",\"skipTags\":[\"intentionalOffset\"],\"onUncertainBody\":\"skip\",\"skipLocked\":true,\"undoGroup\":\"풍선 안 대사 정렬\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_07_sfx_contrast",
+          "titleKo": "배경에 묻히는 효과음에만 외곽선 넣기",
+          "naturalPromptKo": "작은 화면에서 배경과 섞이는 효과음만 골라 얇은 외곽선을 넣어 줘. 효과음 원래 색이나 손글씨 모양은 바꾸지 마.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.sampleSfxEdgeContrast",
+              "reasonKo": "효과음 가장자리와 바로 뒤 배경을 여러 지점에서 비교해 밝거나 어두운 외곽선 중 더 잘 구분되는 쪽을 고른다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"role\":\"sfx\",\"viewportWidthPx\":360,\"sample\":\"glyphBoundaryAgainstBackdrop\",\"contrastBelow\":3,\"candidateColors\":[\"#FFFFFF\",\"#171717\"],\"output\":\"strokeCandidates\"}"
+            },
+            {
+              "toolName": "studio.photoshop.applyEditableStroke",
+              "reasonKo": "축소본에서 대비가 실제로 나아지는 경우만 편집 가능한 레이어 효과로 적용한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targets\":\"$strokeCandidates\",\"color\":\"perTargetBestCandidate\",\"position\":\"outside\",\"widthAtViewportPx\":1,\"viewportWidthPx\":360,\"requireContrastImprovement\":true,\"existingStroke\":\"skip\",\"rasterize\":false,\"skipLocked\":true,\"undoGroup\":\"효과음 대비 보정\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_08_safe_edges",
+          "titleKo": "좌우 재단선에 걸친 말풍선 안쪽으로 옮기기",
+          "naturalPromptKo": "폰 화면 양옆에 너무 붙은 풍선과 대사를 한 쌍으로 안쪽에 넣어 줘. 꼬리가 다른 인물을 가리키거나 그림을 가리게 되면 옮기지 마.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.planBalloonSafeInset",
+              "reasonKo": "좌우 여백을 확보하는 최소 이동량을 구한다. 보호할 그림 영역이나 꼬리의 화자 연결을 확인할 수 없는 컷은 검토 대상으로 남긴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"viewportWidthPx\":360,\"horizontalInsetPx\":8,\"moveAxis\":\"x\",\"moveAsUnit\":[\"balloon\",\"dialogue\"],\"preserveTailTarget\":true,\"avoid\":[\"protectedArt\",\"otherBalloons\"],\"skipTags\":[\"intentionalBleed\"],\"onMissingConstraint\":\"reportOnly\",\"output\":\"safeMoves\"}"
+            },
+            {
+              "toolName": "studio.photoshop.applyLinkedTranslations",
+              "reasonKo": "검증된 이동만 풍선과 대사에 함께 적용해 둘 사이의 정렬을 유지한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"plan\":\"$safeMoves\",\"validatedOnly\":true,\"onLockedMember\":\"skipWholeUnit\",\"undoGroup\":\"좌우 안전 여백 확보\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_09_archive_drafts",
+          "titleKo": "숨긴 식자 시안을 삭제 없이 모으기",
+          "naturalPromptKo": "최종 대사를 고른 뒤 숨겨 둔 옛 문구와 효과음 시안만 컷별 보관 폴더에 넣어 줘. 번역본과 납품용 버전은 그대로 둬.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.archiveHiddenVariants",
+              "reasonKo": "직접 숨겼고 시안 태그가 있는 레이어만 보관한다. 언어판·납품 버전이나 다른 레이어가 참조하는 소스는 제외한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedPanels\",\"roles\":[\"dialogue\",\"sfx\"],\"requireOwnVisibility\":\"hidden\",\"requireTag\":\"draft\",\"excludeTags\":[\"localized\",\"delivery\"],\"excludeReferenced\":true,\"destination\":\"{panel}/식자 시안 보관\",\"destinationVisible\":false,\"preserveLayerIds\":true,\"delete\":false,\"skipLocked\":true,\"undoGroup\":\"숨긴 식자 시안 보관\"}"
+            }
+          ]
+        },
+        {
+          "id": "type_10_mobile_proof",
+          "titleKo": "업로드 전 모바일 식자 교정표 뽑기",
+          "naturalPromptKo": "완성 원고를 폰 폭으로 훑어서 빈 말풍선, 잘린 글자, 효과음이 대사를 덮은 곳만 컷 순서대로 보여 줘. 원고에는 표시를 남기지 마.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.auditMobileLettering",
+              "reasonKo": "납품 시 보이는 레이어만 검사하고, 의도적으로 비워 둔 풍선은 빈 대사 경고에서 제외한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"visibility\":\"deliveryComposite\",\"viewportWidthPx\":360,\"checks\":[\"emptyBalloon\",\"clippedGlyph\",\"sfxOccludesDialogueGlyph\"],\"ignoreTags\":[\"intentionalEmpty\"],\"readOnly\":true,\"output\":\"proofIssues\"}"
+            },
+            {
+              "toolName": "studio.export.renderLocalProofSheet",
+              "reasonKo": "문제가 있는 위치의 확대 이미지와 컷·레이어 이름을 임시 교정표에 모아 수정할 곳을 바로 찾게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"issues\":\"$proofIssues\",\"sort\":\"panelReadingOrder\",\"fields\":[\"panelName\",\"layerName\",\"issue\",\"detailCrop\"],\"destination\":\"localTempPreview\",\"onEmpty\":\"showPassSummary\",\"upload\":false,\"modifySource\":false}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-3",
+      "model": "gpt-6.2-astra",
+      "domainKo": "3D 배경(BG3D) 카메라 매칭 및 선화 추출(LT 변환)",
+      "macros": [
+        {
+          "id": "bg3d_01_corner",
+          "titleKo": "골목 모퉁이 러프에 2점 투시 맞추기",
+          "naturalPromptKo": "러프에서 표시한 왼쪽 처마선과 오른쪽 창틀선을 따라 건물을 맞추고, 눈높이는 그대로 둔 채 선화를 뽑아 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.matchCamera",
+              "reasonKo": "두 수평 방향의 가이드로 카메라 방향과 화각을 풀고, 표시한 모퉁이가 패널 안에서 밀리지 않게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scene\":\"activeScene\",\"target\":\"activePanel\",\"mode\":\"twoPoint\",\"guides\":\"selectedPerspectiveGuides\",\"requiredGuides\":{\"leftParallelLines\":2,\"rightParallelLines\":2,\"horizon\":1,\"cornerAnchorPair\":1},\"verticals\":\"parallel\",\"onInconsistentGuides\":\"stopWithGuideWarning\",\"output\":\"macroCamera\"}"
+            },
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "맞춘 카메라에서 보이는 건물 윤곽과 모서리만 투명 선화로 만든다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"macroCamera\",\"frame\":\"activePanel\",\"edges\":[\"silhouette\",\"crease\"],\"hiddenLines\":false,\"fill\":\"transparent\",\"outputNewLayer\":\"골목_선화\"}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_02_corridor",
+          "titleKo": "복도 끝을 지정한 소실점에 맞추기",
+          "naturalPromptKo": "복도 끝이 러프에 찍어 둔 점으로 모이게 해 줘. 문틀은 수직으로 세우고 바닥 줄눈도 선화에 남겨 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.matchCamera",
+              "reasonKo": "복도 길이축을 정면으로 보고 렌즈 시프트로 소실점을 옮겨, 화면 중심과 소실점이 달라도 문틀이 기울지 않게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scene\":\"activeScene\",\"target\":\"activePanel\",\"mode\":\"onePoint\",\"depthAxis\":\"selectedCorridorAxis\",\"vanishingPoint\":\"selectedPanelPoint\",\"framingReference\":\"selectedDoorFrameAnchorPairs\",\"allowLensShift\":true,\"lockRollDeg\":0,\"lockPitchDeg\":0,\"output\":\"macroCamera\"}"
+            },
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "윤곽선 외에 줄눈으로 태그한 선만 추가해 평평한 바닥의 패턴이 사라지지 않게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"macroCamera\",\"frame\":\"activePanel\",\"edges\":[\"silhouette\",\"crease\",\"taggedLine\"],\"includeLineTags\":[\"tileJoint\"],\"hiddenLines\":false,\"outputNewLayer\":\"복도_문틀과줄눈\"}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_03_reference",
+          "titleKo": "로케이션 사진과 같은 자리에서 선화 뽑기",
+          "naturalPromptKo": "사진과 세트에 짝지어 찍은 표식을 기준으로 카메라를 맞춰 줘. 위치가 잘 맞을 때만 사진 위에 배경선을 얹어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.matchCamera",
+              "reasonKo": "서로 다른 깊이에 있는 대응점으로 자세와 화각을 추정하고, 패널 좌표에서 오차가 큰 결과는 채택하지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"mode\":\"photoResection\",\"reference\":\"selectedLocalPhotoLayer\",\"correspondences\":\"selectedPhotoScenePairs\",\"minPairs\":6,\"requireNonCoplanar\":true,\"errorSpace\":\"activePanelPixels\",\"maxReprojectionRmsPx\":3,\"onFailure\":\"stopWithoutChanges\",\"output\":\"macroCamera\"}"
+            },
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "사진 레이어의 패널 내 위치와 크기를 그대로 사용해 선화를 겹친다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"macroCamera\",\"frame\":\"selectedLocalPhotoLayer\",\"inheritLayerTransform\":true,\"clipTo\":\"activePanel\",\"edges\":[\"silhouette\",\"crease\"],\"insertAbove\":\"selectedLocalPhotoLayer\",\"outputNewLayer\":\"로케이션_선화\"}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_04_continuity",
+          "titleKo": "직전 컷의 고정 카메라 이어 쓰기",
+          "naturalPromptKo": "같은 방에서 대화가 이어지는 컷이야. 직전 컷의 카메라는 그대로 쓰고 지금 컷에서 열린 문과 옮긴 의자만 현재 상태로 반영해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.copyCamera",
+              "reasonKo": "동일 세트의 직전 카메라만 복제해 현재 컷의 소품 상태를 되돌리지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"previousPanel.camera\",\"requireSameSceneCoordinates\":true,\"copy\":[\"pose\",\"projection\",\"focalLength\",\"sensor\",\"lensShift\",\"crop\"],\"exclude\":[\"objects\",\"visibility\",\"animationTime\"],\"onMissingSource\":\"stop\",\"output\":\"macroCamera\"}"
+            },
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "현재 세트 상태를 직전 컷의 구도로 렌더하고 패널 비율이 다르면 늘이지 않고 잘라낸다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"macroCamera\",\"sceneState\":\"activePanel\",\"frame\":\"activePanel\",\"fit\":\"centerCrop\",\"edges\":[\"silhouette\",\"crease\"],\"outputNewLayer\":\"연속컷_배경선\"}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_05_tall",
+          "titleKo": "가로 원경을 세로 패널로 다시 잡기",
+          "naturalPromptKo": "이 거리 전경을 세로 컷으로 써야 해. 선택한 상점 입구는 전부 보이게 하고 건물이 길쭉해지지 않게 다시 뽑아 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.reframeCamera",
+              "reasonKo": "원본 시점에서 세로 출력 게이트를 만들고, 입구가 안전 영역에 들어오도록 화각과 시프트만 조정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeCamera\",\"frame\":\"activePanel\",\"subjectBounds\":\"selectedEntrance\",\"fit\":\"containSubject\",\"safeMarginPct\":5,\"lockPose\":true,\"adjust\":[\"focalLength\",\"lensShift\"],\"pixelAspect\":1,\"onUnsatisfied\":\"stop\",\"output\":\"macroCamera\"}"
+            },
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "기존 비트맵을 세로로 늘이는 대신 패널 해상도로 선을 다시 생성한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"macroCamera\",\"resolution\":\"activePanelNative\",\"edges\":[\"silhouette\",\"crease\"],\"hiddenLines\":false,\"outputNewLayer\":\"세로컷_거리선화\"}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_06_clean",
+          "titleKo": "가구 곡면의 삼각망 선 없애기",
+          "naturalPromptKo": "소파의 둥근 면에 삼각형 선이 비치지 않게 해 줘. 바깥 윤곽과 쿠션 봉제선은 남겨 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "전체 메시 에지 대신 실루엣과 큰 꺾임만 추출하고, 봉제선 표식은 각도와 관계없이 보존한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"activeCamera\",\"frame\":\"activePanel\",\"objects\":\"selectedFurniture\",\"occluders\":\"allVisibleSceneObjects\",\"edges\":[\"silhouette\",\"crease\",\"taggedLine\"],\"minCreaseAngleDeg\":50,\"respectSmoothNormals\":true,\"includeLineTags\":[\"seam\"],\"wireframe\":false,\"hiddenLines\":false,\"outputNewLayer\":\"가구_정리선\"}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_07_depth",
+          "titleKo": "전경·중경·원경 선 굵기 나누기",
+          "naturalPromptKo": "가까운 난간은 묵직하고 뒤쪽 건물은 가늘게 보여 줘. 거리별로 나중에 따로 고칠 수 있게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "먼저 장면 전체의 가림을 판정한 뒤, 보이는 선분을 카메라 깊이에 따라 세 레이어로 분리한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"activeCamera\",\"frame\":\"activePanel\",\"edges\":[\"silhouette\",\"crease\"],\"hiddenLines\":false,\"depthSource\":\"visibleEdgeSamples.cameraZ\",\"splitAtDepthPercentiles\":[30,70],\"strokeUnit\":\"panelShortSidePercent\",\"nearToFarWidths\":[0.18,0.12,0.07],\"outputNewLayers\":[\"전경_굵은선\",\"중경_기본선\",\"원경_가는선\"]}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_08_mask",
+          "titleKo": "인물 뒤로 겹치는 배경선 가리기",
+          "naturalPromptKo": "인물 얼굴과 옷 위로 창틀 선이 지나가지 않게 해 줘. 인물 실루엣을 고치면 배경선도 다시 살릴 수 있게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "가려질 부분까지 포함해 배경선 원본을 별도 레이어에 보관한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"activeCamera\",\"frame\":\"activePanel\",\"edges\":[\"silhouette\",\"crease\"],\"hiddenLines\":false,\"outputNewLayer\":\"배경_마스크용\",\"output\":\"macroLines\"}"
+            },
+            {
+              "toolName": "studio.canvas.attachLayerMask",
+              "reasonKo": "선화가 아니라 채워진 인물 실루엣의 알파를 반전해 마스크로 연결하므로 배경 픽셀은 지워지지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"target\":\"macroLines\",\"source\":\"selectedCharacterSilhouette.alpha\",\"coordinateSpace\":\"activePanel\",\"invert\":true,\"linkMode\":\"live\",\"applyDestructively\":false}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_09_tone",
+          "titleKo": "실내 배경을 선과 그림자 톤으로 분판하기",
+          "naturalPromptKo": "교실 배경을 흑백 원고용으로 LT 변환해 줘. 책상 선은 또렷하게 두고 그림자 톤 농도는 따로 조절하고 싶어.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "조명 명암을 선으로 바꾸지 않고 형태선만 분리해 그림자 경계에 이중선이 생기지 않게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"activeCamera\",\"frame\":\"activePanel\",\"edges\":[\"silhouette\",\"crease\"],\"includeShadowEdges\":false,\"outputNewLayer\":\"교실_형태선\",\"output\":\"macroLines\"}"
+            },
+            {
+              "toolName": "studio.bg3d.extractTone",
+              "reasonKo": "같은 카메라의 그림자 패스를 두 농도의 편집 가능한 톤으로 변환해 형태선 아래에 둔다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"camera\":\"activeCamera\",\"frame\":\"activePanel\",\"source\":\"shadowPass\",\"valueConvention\":\"zeroLitOneShadow\",\"thresholds\":[0.25,0.65],\"densitiesPct\":[0,15,35],\"toneFrequency\":\"documentTonePreset\",\"editable\":true,\"insertBelow\":\"macroLines\",\"outputNewGroup\":\"교실_그림자톤\"}"
+            }
+          ]
+        },
+        {
+          "id": "bg3d_10_refresh",
+          "titleKo": "수정한 세트로 배경선만 갱신하기",
+          "naturalPromptKo": "책장 위치를 고쳤어. 지난 LT 설정과 구도는 유지하고 자동 생성한 선만 교체해 줘. 손으로 그린 보정선은 건드리지 마.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.extractLineArt",
+              "reasonKo": "선택한 생성 레이어에 기록된 카메라와 LT 설정을 현재 세트에 적용하고, 교체 전에 임시 결과를 완성한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"settingsFrom\":\"selectedGeneratedLayer.ltMetadata\",\"camera\":\"selectedGeneratedLayer.cameraSnapshot\",\"frame\":\"selectedGeneratedLayer.frameSnapshot\",\"sceneState\":\"currentLocalScene\",\"requireMatchingSceneId\":true,\"onMissingMetadata\":\"stop\",\"outputTemporary\":\"macroReplacement\"}"
+            },
+            {
+              "toolName": "studio.canvas.replaceGeneratedContent",
+              "reasonKo": "생성 이력이 확인되고 직접 가필되지 않은 레이어의 내용만 교체해 별도 보정 레이어와 기존 마스크를 보존한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"target\":\"selectedGeneratedLayer\",\"source\":\"macroReplacement\",\"requireUnmodifiedGeneratedPixels\":true,\"preserve\":[\"layerId\",\"mask\",\"opacity\",\"blendMode\",\"stackPosition\"],\"touchOtherLayers\":false,\"onConflict\":\"keepOriginalAndStop\",\"undoGroup\":\"배경선 갱신\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-4",
+      "model": "gpt-6.2-astra",
+      "domainKo": "포토샵 비파괴 보정·역광·야간·우천 FX 원클릭 적용",
+      "macros": [
+        {
+          "id": "ps_daily_01",
+          "titleKo": "먹선 살려 그늘 한 단 올리기",
+          "naturalPromptKo": "그늘 속 옷 주름이 보이게 해 줘. 먹선까지 회색으로 뜨거나 밝은 면이 날아가지는 않게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "현재 컷의 채색에만 보정이 걸리도록 채색 그룹에 클리핑하고, 재실행 시 같은 보정을 중복하지 않는다.",
+              "argumentsJson": "{\"target\":\"activePanel.colorGroup\",\"key\":\"shadow_lift\",\"name\":\"보정 · 그늘 열기\",\"placement\":\"clippedAboveTarget\",\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addAdjustmentLayer",
+              "reasonKo": "검정점과 밝은 면은 고정하고 어두운 중간톤만 들어 올린다. 광도 모드로 옷 색의 탁해짐을 줄인다.",
+              "argumentsJson": "{\"groupKey\":\"shadow_lift\",\"name\":\"그늘 밝기\",\"type\":\"curves\",\"channel\":\"RGB\",\"points8bit\":[[0,0],[24,28],[64,79],[128,136],[200,200],[255,255]],\"blendMode\":\"luminosity\",\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_02",
+          "titleKo": "얼굴에만 번진 노란 조명 걷기",
+          "naturalPromptKo": "피부 폴더에 묻은 노란 기운만 조금 빼 줘. 뒤쪽 카페 조명은 그대로 따뜻해야 해.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "작가가 선택한 피부 채색에만 클리핑한다. 배경이나 완성 컷 전체를 대신 보정하지 않는다.",
+              "argumentsJson": "{\"target\":\"selectedSkinPaintLayerOrGroup\",\"ifTargetMissing\":\"stopWithoutChanges\",\"key\":\"skin_cast\",\"name\":\"보정 · 피부 조명색\",\"placement\":\"clippedAboveTarget\",\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addAdjustmentLayer",
+              "reasonKo": "피부의 명암은 보존하면서 중간톤을 파랑 쪽으로 소량 이동해 노란색을 상쇄한다.",
+              "argumentsJson": "{\"groupKey\":\"skin_cast\",\"name\":\"중간톤 노랑 줄이기\",\"type\":\"colorBalance\",\"midtones\":{\"cyanRed\":0,\"magentaGreen\":0,\"yellowBlue\":9},\"preserveLuminosity\":true,\"opacityPct\":70,\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_03",
+          "titleKo": "대사 컷 배경 한 발 물리기",
+          "naturalPromptKo": "가게 진열대가 표정보다 먼저 보여. 인물과 말풍선은 두고 배경의 색과 대비만 눌러 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "배경 그룹에만 효과를 묶어 인물과 식자 레이어를 보정 범위에서 제외한다.",
+              "argumentsJson": "{\"target\":\"activePanel.backgroundGroup\",\"key\":\"quiet_bg\",\"name\":\"보정 · 대사 뒤 배경\",\"placement\":\"clippedAboveTarget\",\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addAdjustmentLayer",
+              "reasonKo": "진열 상품의 원색이 시선을 끌지 않도록 채도를 낮춘다.",
+              "argumentsJson": "{\"groupKey\":\"quiet_bg\",\"name\":\"배경 채도\",\"type\":\"hueSaturation\",\"saturation\":-18,\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addAdjustmentLayer",
+              "reasonKo": "배경에서 가장 어두운 선과 가장 밝은 반사광을 중간톤 쪽으로 모아 인물보다 대비가 약해지게 한다.",
+              "argumentsJson": "{\"groupKey\":\"quiet_bg\",\"name\":\"배경 대비\",\"type\":\"curves\",\"points8bit\":[[0,17],[96,102],[180,178],[255,240]],\"blendMode\":\"luminosity\",\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_04",
+          "titleKo": "창가 인물에 한쪽 역광선 넣기",
+          "naturalPromptKo": "왼쪽 창을 등진 인물이야. 머리와 어깨 전체를 두르지 말고 창을 향한 윤곽에만 가느다란 빛을 넣어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "인물 그룹 바로 위에 컷 경계로 제한된 효과 그룹을 두어 원래 선화를 건드리지 않는다.",
+              "argumentsJson": "{\"target\":\"activePanel.characterGroup\",\"key\":\"window_rim\",\"name\":\"역광 · 왼쪽 창\",\"placement\":\"aboveTarget\",\"clipToPanel\":true,\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addMaskedFillLayer",
+              "reasonKo": "인물 알파와 오른쪽으로 살짝 옮긴 알파의 차이를 마스크로 써서 왼쪽 실루엣의 안쪽에만 빛이 남게 한다.",
+              "argumentsJson": "{\"groupKey\":\"window_rim\",\"name\":\"창 쪽 림라이트\",\"color\":\"#FFE5BA\",\"blendMode\":\"screen\",\"opacityPct\":68,\"mask\":{\"operation\":\"alphaMinusShiftedAlpha\",\"source\":\"activePanel.characterGroup\",\"shiftXPanelWidthPct\":0.25,\"shiftYPanelHeightPct\":0,\"featherPanelWidthPct\":0.06},\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_05",
+          "titleKo": "노을 역광에 공기층 더하기",
+          "naturalPromptKo": "오른쪽 위에서 해가 들어오는 컷이야. 광원 주변은 뿌옇게 번지고 반대편 배경은 선명하게 남겨 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "빛 번짐을 배경에만 클리핑해 앞쪽 인물의 눈과 표정선이 흐려지지 않게 한다.",
+              "argumentsJson": "{\"target\":\"activePanel.backgroundGroup\",\"key\":\"sun_haze\",\"name\":\"역광 · 노을 공기층\",\"placement\":\"clippedAboveTarget\",\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addGradientFillLayer",
+              "reasonKo": "오른쪽 위의 옅은 노랑에서 살구색을 거쳐 투명해지는 방사형 채우기로 광원 거리감을 만든다.",
+              "argumentsJson": "{\"groupKey\":\"sun_haze\",\"name\":\"노을 산란광\",\"style\":\"radial\",\"centerPanelXY\":[0.88,0.12],\"radiusPanelDiagonalPct\":57,\"stops\":[{\"at\":0,\"color\":\"#FFF2CB\",\"alphaPct\":85},{\"at\":0.38,\"color\":\"#FFBB87\",\"alphaPct\":42},{\"at\":1,\"color\":\"#FFBB87\",\"alphaPct\":0}],\"blendMode\":\"screen\",\"opacityPct\":60,\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_06",
+          "titleKo": "낮 골목을 읽히는 밤 골목으로",
+          "naturalPromptKo": "낮 배경을 남색 밤 장면으로 바꿔 줘. 골목 안쪽의 문과 계단은 휴대폰에서도 구분돼야 해.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "야간 톤을 배경에만 묶어 같은 원화를 낮 컷에도 다시 쓸 수 있게 한다.",
+              "argumentsJson": "{\"target\":\"activePanel.backgroundGroup\",\"key\":\"night_alley\",\"name\":\"야간 · 골목 기본톤\",\"placement\":\"clippedAboveTarget\",\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addAdjustmentLayer",
+              "reasonKo": "밝은 벽과 바닥부터 어둡게 내리되 암부 곡선에는 기울기를 남겨 계단 경계가 한 덩어리로 뭉치지 않게 한다.",
+              "argumentsJson": "{\"groupKey\":\"night_alley\",\"name\":\"밤 노출\",\"type\":\"curves\",\"points8bit\":[[0,8],[48,37],[128,78],[208,131],[255,182]],\"blendMode\":\"luminosity\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addAdjustmentLayer",
+              "reasonKo": "명암 조정과 밤색 착색을 분리해 작가가 어두운 정도와 푸른 정도를 따로 바꿀 수 있게 한다.",
+              "argumentsJson": "{\"groupKey\":\"night_alley\",\"name\":\"남색 그림자\",\"type\":\"gradientMap\",\"stops\":[{\"at\":0,\"color\":\"#222A46\"},{\"at\":0.5,\"color\":\"#536787\"},{\"at\":1,\"color\":\"#B6CBCE\"}],\"blendMode\":\"color\",\"opacityPct\":64,\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_07",
+          "titleKo": "밤거리 간판에만 블룸 켜기",
+          "naturalPromptKo": "선택한 네온 간판에만 후광을 켜 줘. 글자는 또렷해야 하고 옆에 있는 흰 셔츠까지 빛나면 안 돼.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "선택한 간판 아래에 후광을 놓아 원본 글자가 가장 위에서 선명하게 보이도록 한다.",
+              "argumentsJson": "{\"target\":\"selectedSignLayerOrGroup\",\"ifTargetMissing\":\"stopWithoutChanges\",\"key\":\"sign_bloom\",\"name\":\"야간 · 간판 후광\",\"placement\":\"belowTarget\",\"clipToPanel\":true,\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addSmartFilterCopy",
+              "reasonKo": "간판을 투명 배경째 복제한 스마트 오브젝트에만 흐림을 걸어 간판색이 바깥으로 번지게 한다.",
+              "argumentsJson": "{\"groupKey\":\"sign_bloom\",\"source\":\"effectGroupTarget\",\"name\":\"네온 번짐 반경\",\"preserveSource\":true,\"filter\":\"gaussianBlur\",\"radiusPanelWidthPct\":0.85,\"blendMode\":\"screen\",\"opacityPct\":78,\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_08",
+          "titleKo": "인물 앞뒤로 사선 빗줄기 깔기",
+          "naturalPromptKo": "오른쪽 아래로 내리는 비를 넣어 줘. 뒤에는 잔비가 촘촘하고 앞에는 굵은 빗줄기가 드문드문 보이게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.addProceduralStrokeLayer",
+              "reasonKo": "인물 뒤에는 짧고 가는 빗금을 많이 배치한다. 고정 시드를 써서 재실행해도 빗금 위치가 튀지 않게 한다.",
+              "argumentsJson": "{\"target\":\"activePanel.characterGroup\",\"placement\":\"belowTarget\",\"clipToPanel\":true,\"key\":\"rain_far\",\"onRerun\":\"updateOwnedLayer\",\"name\":\"우천 · 원경 잔비\",\"output\":\"smartObject\",\"seed\":81,\"directionXY\":[0.32,1],\"countPerPanelMegapixel\":530,\"lengthPanelHeightPct\":[0.4,1.1],\"widthPanelWidthPct\":0.055,\"color\":\"#B4CBD9\",\"opacityPct\":28,\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addProceduralStrokeLayer",
+              "reasonKo": "앞쪽 빗줄기는 방향만 맞추고 길이와 간격을 키운다. 식자 아래에 두고 얼굴 보호 마스크가 있으면 적용한다.",
+              "argumentsJson": "{\"target\":\"activePanel.artwork\",\"placement\":\"aboveArtworkBelowLettering\",\"clipToPanel\":true,\"key\":\"rain_near\",\"onRerun\":\"updateOwnedLayer\",\"name\":\"우천 · 전경 빗줄기\",\"output\":\"smartObject\",\"seed\":82,\"directionXY\":[0.32,1],\"countPerPanelMegapixel\":58,\"lengthPanelHeightPct\":[1.8,3.6],\"widthPanelWidthPct\":0.13,\"color\":\"#DFEBF3\",\"opacityPct\":46,\"optionalExclusionMask\":\"activePanel.faceProtection\",\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_09",
+          "titleKo": "젖은 길 위에 간판빛 반사하기",
+          "naturalPromptKo": "도로 마스크 안에 간판빛이 비쳐야 해. 간판 글자가 거울처럼 읽히지 않게 아래로 길게 풀어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "간판과 노면 마스크가 모두 있을 때만 반사 그룹을 만들어 빛이 인도나 인물 위로 새지 않게 한다.",
+              "argumentsJson": "{\"target\":\"activePanel.roadLayer\",\"requires\":[\"activePanel.signLayer\",\"activePanel.roadMask\"],\"ifTargetMissing\":\"stopWithoutChanges\",\"key\":\"wet_road\",\"name\":\"우천 · 노면 반사\",\"placement\":\"aboveTarget\",\"groupMask\":\"activePanel.roadMask\",\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addTransformedSmartCopy",
+              "reasonKo": "간판 복제본만 뒤집고 늘인 뒤 같은 가로 위치의 노면 시작점에 맞춰 반사광의 출처가 자연스럽게 이어지게 한다.",
+              "argumentsJson": "{\"groupKey\":\"wet_road\",\"key\":\"road_light\",\"name\":\"간판빛 반사 띠\",\"source\":\"activePanel.signLayer\",\"flipY\":true,\"scaleYPct\":175,\"alignX\":\"sourceCenter\",\"alignTop\":\"roadMaskUpperEdgeAtSourceCenterX\",\"blendMode\":\"screen\",\"opacityPct\":42,\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addSmartFilter",
+              "reasonKo": "복제본에 세로 방향 흐림을 더해 반사된 글자 형태를 지우고 빛의 색띠만 남긴다.",
+              "argumentsJson": "{\"targetKey\":\"road_light\",\"filter\":\"motionBlur\",\"directionXY\":[0,1],\"distancePanelHeightPct\":2.8,\"zeroCostSafe\":true}"
+            }
+          ]
+        },
+        {
+          "id": "ps_daily_10",
+          "titleKo": "빗속 원경만 안개로 지우기",
+          "naturalPromptKo": "폭우 너머의 먼 건물이 희미하게 보이게 해 줘. 가까운 처마와 인물은 젖은 공기 너머로 밀려나면 안 돼.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.ensureEffectGroup",
+              "reasonKo": "원경 건물 그룹을 대상으로 고정한다. 원근 레이어가 나뉘지 않은 컷은 전체에 안개를 씌우지 않고 멈춘다.",
+              "argumentsJson": "{\"target\":\"activePanel.distantBackgroundGroup\",\"ifTargetMissing\":\"stopWithoutChanges\",\"key\":\"rain_distance\",\"name\":\"우천 · 원경 비안개\",\"placement\":\"clippedAboveTarget\",\"onRerun\":\"refreshMacroOwnedLayers\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addAdjustmentLayer",
+              "reasonKo": "먼 건물의 검정점을 올리고 밝은 창은 약간 눌러 비에 가린 거리의 낮은 대비를 만든다.",
+              "argumentsJson": "{\"groupKey\":\"rain_distance\",\"name\":\"먼 건물 대비\",\"type\":\"curves\",\"points8bit\":[[0,42],[72,92],[160,164],[255,231]],\"blendMode\":\"luminosity\",\"zeroCostSafe\":true}"
+            },
+            {
+              "toolName": "studio.photoshop.addGradientFillLayer",
+              "reasonKo": "건물 하단에서 짙어지는 회청색 안개를 별도 채우기로 얹어 지붕 윤곽은 남기고 먼 거리의 경계만 부드럽게 한다.",
+              "argumentsJson": "{\"groupKey\":\"rain_distance\",\"name\":\"거리 아래 비안개\",\"style\":\"linear\",\"fromPanelXY\":[0.5,0.2],\"toPanelXY\":[0.5,0.85],\"stops\":[{\"at\":0,\"color\":\"#B2C2CA\",\"alphaPct\":0},{\"at\":1,\"color\":\"#B2C2CA\",\"alphaPct\":58}],\"blendMode\":\"normal\",\"opacityPct\":60,\"zeroCostSafe\":true}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-5",
+      "model": "gpt-6.2-astra",
+      "domainKo": "캐릭터 바이블·작붕 검수·부상 누적 상태 체크",
+      "macros": [
+        {
+          "id": "bible-today",
+          "titleKo": "오늘 그릴 인물의 기준표 꺼내기",
+          "naturalPromptKo": "오늘 작업할 장면에 나오는 인물만 골라서, 그 시점의 얼굴·체형·의상 기준표를 옆에 띄워 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.readSceneContext",
+              "reasonKo": "회차 번호가 아니라 장면의 극중 시점과 등장인물 ID를 기준으로 삼는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeScene\",\"fields\":[\"storyPoint\",\"castIds\",\"outfitIds\"],\"saveAs\":\"scene\"}"
+            },
+            {
+              "toolName": "studio.canvas.showBibleCards",
+              "reasonKo": "해당 시점에 유효한 승인본만 표시하고, 기준표가 없는 인물은 따로 알린다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"localApprovedBible\",\"context\":\"$scene\",\"sections\":[\"faceTurnaround\",\"bodySilhouette\",\"currentOutfit\"],\"onMissing\":\"showMissingBadge\",\"target\":\"referenceDock\"}"
+            }
+          ]
+        },
+        {
+          "id": "bible-change",
+          "titleKo": "확정 디자인을 바이블 개정안으로 저장",
+          "naturalPromptKo": "선택한 컷에서 확정한 디자인을 기존 설정 옆에 붙여 줘. 어느 장면부터 적용할지는 내가 확인할게.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.captureSelection",
+              "reasonKo": "선택 영역만 견본으로 복사하고 출처 컷과 인물 태그를 보존한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeSelection\",\"requireTags\":[\"characterId\"],\"include\":[\"imageCopy\",\"panelId\",\"storyPoint\",\"characterId\"],\"saveAs\":\"sample\"}"
+            },
+            {
+              "toolName": "studio.canvas.createBibleRevisionDraft",
+              "reasonKo": "기존 승인본을 덮지 않고 전후 견본과 적용 시작점 후보를 검토함에 넣는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"sample\":\"$sample\",\"compareWith\":\"localApprovedBible\",\"suggestEffectiveFrom\":\"sample.storyPoint\",\"requireAuthorApproval\":true,\"deduplicateBy\":[\"panelId\",\"sampleHash\"],\"target\":\"localBibleDrafts\"}"
+            }
+          ]
+        },
+        {
+          "id": "face-check",
+          "titleKo": "같은 각도에서 얼굴 비율 대조",
+          "naturalPromptKo": "주인공 얼굴이 컷마다 달라 보여. 같은 각도의 기준 얼굴을 겹쳐서 눈 간격과 턱선을 확인하게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.matchFaceReferences",
+              "reasonKo": "선택한 인물과 각도·표정 태그가 맞는 승인 견본을 찾고, 대응 견본이 없는 컷은 보류한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"character\":\"selectedCharacterId\",\"source\":\"localApprovedBible\",\"matchTags\":[\"characterId\",\"viewAngle\",\"expressionClass\"],\"onNoMatch\":\"listForManualReview\",\"saveAs\":\"facePairs\"}"
+            },
+            {
+              "toolName": "studio.canvas.showAlignedOverlay",
+              "reasonKo": "눈 중심의 중점과 얼굴 높이에 맞춰 기준선을 정렬하되 가로 폭은 늘리지 않아 비율 차이를 드러낸다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"pairs\":\"$facePairs\",\"anchor\":\"eyeMidpoint\",\"uniformScaleBy\":\"faceHeight\",\"guides\":[\"eyeSpacing\",\"jawContour\"],\"opacity\":0.35,\"onMissingAnchor\":\"skipAndFlag\",\"target\":\"temporaryOverlay\"}"
+            }
+          ]
+        },
+        {
+          "id": "height-lineup",
+          "titleKo": "같이 선 인물의 키 관계 확인",
+          "naturalPromptKo": "둘이 나란히 선 컷에서 키 차이가 설정대로인지 봐 줘. 원근 때문에 비교 못 하는 컷은 빼 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.findComparableFigures",
+              "reasonKo": "같은 깊이에서 똑바로 서 있고 발바닥과 정수리가 보이는 인물 쌍만 고른다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeScene\",\"source\":\"localPanelTags\",\"require\":[\"sameDepthPlane\",\"uprightPose\",\"visibleSoles\",\"visibleCrown\",\"knownFootwear\"],\"onUncertain\":\"excludeWithReason\",\"saveAs\":\"standingPairs\"}"
+            },
+            {
+              "toolName": "studio.canvas.showHeightComparison",
+              "reasonKo": "신발 굽을 반영한 설정 키 비율과 컷에서 잰 비율을 함께 표시한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"pairs\":\"$standingPairs\",\"reference\":\"localApprovedBible\",\"adjustFor\":\"soleHeight\",\"display\":[\"expectedRatio\",\"drawnRatio\",\"soleAndCrownGuides\",\"excludedPanels\"],\"target\":\"reviewDock\"}"
+            }
+          ]
+        },
+        {
+          "id": "palette-check",
+          "titleKo": "밑색 팔레트 이탈 찾기",
+          "naturalPromptKo": "이번 화에서 머리나 눈 밑색을 잘못 찍은 컷만 모아 줘. 조명 효과는 비교하지 마.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.sampleTaggedFlats",
+              "reasonKo": "합성 화면 대신 머리·홍채 밑색 레이어의 불투명한 내부 픽셀에서 대표색을 읽는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"layerRoles\":[\"hairFlat\",\"irisFlat\"],\"sample\":\"opaqueInteriorMode\",\"excludeEffects\":true,\"groupBy\":[\"panelId\",\"characterId\",\"paletteVariant\",\"layerRole\"],\"saveAs\":\"flatSamples\"}"
+            },
+            {
+              "toolName": "studio.canvas.comparePaletteSwatches",
+              "reasonKo": "인물별 승인 팔레트 변형과 비교해 허용차를 넘는 컷에만 실제색과 기준색을 나란히 붙인다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"samples\":\"$flatSamples\",\"reference\":\"localApprovedBible.palettes\",\"metric\":\"deltaE2000\",\"threshold\":3,\"onMissingVariant\":\"markUnrated\",\"output\":\"localMismatchSwatchStrip\"}"
+            }
+          ]
+        },
+        {
+          "id": "side-check",
+          "titleKo": "가르마·점·귀걸이의 좌우 뒤집힘 확인",
+          "naturalPromptKo": "왼쪽 귀걸이가 오른쪽으로 넘어간 컷이 있나 봐 줘. 거울 장면과 후면 컷은 구분해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.resolveAnatomicalSides",
+              "reasonKo": "화면 좌우를 그대로 쓰지 않고 인물 방향과 거울 반사 태그로 인물 기준 좌우를 구한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"features\":[\"hairPart\",\"beautyMark\",\"earring\"],\"inputs\":[\"featureAnchor\",\"viewDirection\",\"reflectionTag\"],\"onAmbiguous\":\"manualReview\",\"saveAs\":\"sideObservations\"}"
+            },
+            {
+              "toolName": "studio.canvas.reviewFeatureSides",
+              "reasonKo": "보이는 특징만 기준표와 대조하고 좌우 불일치와 판정 보류를 분리한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"observations\":\"$sideObservations\",\"reference\":\"localApprovedBible.sidedFeatures\",\"ignoreOccluded\":true,\"groups\":[\"sideMismatch\",\"manualReview\"],\"target\":\"panelLinkedChecklist\"}"
+            }
+          ]
+        },
+        {
+          "id": "outfit-continuity",
+          "titleKo": "연속 장면의 복장·소품 누락 찾기",
+          "naturalPromptKo": "같은 대화 장면인데 재킷이나 가방이 중간에 사라진 컷을 찾아 줘. 벗거나 내려놓은 뒤라면 괜찮아.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.buildAppearanceTimeline",
+              "reasonKo": "장면 시작 복장에 착탈·소품 이동 이벤트를 컷 순서대로 반영해 예상 상태를 만든다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeContinuityBlock\",\"initialState\":\"approvedSceneEntry\",\"events\":[\"putOn\",\"takeOff\",\"pickUp\",\"putDown\",\"handoff\"],\"order\":\"storyBeatThenPanel\",\"saveAs\":\"appearanceStates\"}"
+            },
+            {
+              "toolName": "studio.canvas.compareVisibleItems",
+              "reasonKo": "해당 부위가 보이는데 예상 상태와 다른 컷만 직전 컷과 짝지어 제시한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"expected\":\"$appearanceStates\",\"actual\":\"localPanelItemAnnotations\",\"require\":\"attachmentRegionVisible\",\"unknownObservation\":\"unrated\",\"display\":\"previousAndFlaggedPanel\",\"target\":\"reviewDock\"}"
+            }
+          ]
+        },
+        {
+          "id": "injury-entry",
+          "titleKo": "새 부상 묘사를 상태 장부에 기록",
+          "naturalPromptKo": "선택한 컷에서 새로 생긴 멍을 이 인물의 상태 장부에 올려 줘. 이전에 있던 상처는 그대로 남겨 둬.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.readConditionMarker",
+              "reasonKo": "선택 마커에서 인물·부위·좌우·묘사 태그와 극중 발생 시점을 읽고 누락 항목은 확인을 요청한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"selectedConditionMarker\",\"required\":[\"markerId\",\"characterId\",\"bodyRegion\",\"anatomicalSide\",\"appearanceTag\",\"storyPoint\",\"panelId\"],\"onMissing\":\"pauseForAuthor\",\"saveAs\":\"conditionMarker\"}"
+            },
+            {
+              "toolName": "studio.canvas.appendConditionEvent",
+              "reasonKo": "기존 상태를 수정하지 않고 독립된 발생 이벤트를 추가하며, 같은 마커를 다시 눌러도 중복 기록하지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$conditionMarker\",\"eventType\":\"appearanceStart\",\"conditionIdFrom\":\"markerId\",\"idempotencyKey\":[\"characterId\",\"markerId\",\"appearanceStart\"],\"target\":\"localCharacterConditionLedger\",\"mode\":\"appendOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "injury-carryover",
+          "titleKo": "누적 부상 표시의 컷 간 연속성 검수",
+          "naturalPromptKo": "이 장면까지 남아 있어야 하는 멍과 밴드를 대조해 줘. 소매에 가린 자국은 누락으로 잡지 마.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.resolveConditionStates",
+              "reasonKo": "각 컷의 극중 시점까지 장부를 재생해 부상별 최신 묘사 상태를 구한다. 경과 시간만으로 회복을 추정하지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeScenePanels\",\"source\":\"localCharacterConditionLedger\",\"order\":\"storyPointThenEventSequence\",\"groupBy\":[\"characterId\",\"conditionId\"],\"transitions\":\"authoredEventsOnly\",\"saveAs\":\"expectedConditions\"}"
+            },
+            {
+              "toolName": "studio.canvas.reviewConditionContinuity",
+              "reasonKo": "노출된 부위의 묘사만 대조해 자국 누락, 잘못된 쪽, 종료 후 재등장을 컷별로 구분한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"expected\":\"$expectedConditions\",\"actual\":\"localPanelConditionAnnotations\",\"visibility\":\"exposedRegionOnly\",\"unknownObservation\":\"manualReview\",\"flags\":[\"missingMark\",\"wrongSide\",\"reappearedAfterEnd\"],\"target\":\"panelLinkedChecklist\"}"
+            }
+          ]
+        },
+        {
+          "id": "episode-handoff",
+          "titleKo": "다음 화용 인물 상태 인계표 내보내기",
+          "naturalPromptKo": "오늘 마감한 장면의 마지막 상태를 다음 화 작화팀에 넘길 한 장짜리 표로 뽑아 줘. 미해결 검수 건도 같이 적어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.collectHandoffSnapshot",
+              "reasonKo": "선택한 장면의 종료 시점을 명시해 회상 컷과 섞이지 않도록 하고, 인물별 복장·소지품·남은 부상과 미결 사항을 모은다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"anchor\":\"selectedSceneExit\",\"fields\":[\"storyPoint\",\"characterId\",\"bibleRevision\",\"outfit\",\"heldItems\",\"activeConditions\",\"openReviewFlags\",\"sourcePanelIds\"],\"missingState\":\"labelUnknown\",\"saveAs\":\"handoff\"}"
+            },
+            {
+              "toolName": "studio.export.renderHandoffSheet",
+              "reasonKo": "다음 작업자가 기준 컷을 바로 찾도록 컷 번호를 붙여 로컬 인계표로 저장한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$handoff\",\"format\":\"pdf\",\"layout\":\"singlePageSummary\",\"groupBy\":\"characterId\",\"includePanelIds\":true,\"pathTemplate\":\"project-local:/handoff/{episodeId}_{sceneId}_상태표.pdf\",\"onConflict\":\"versionCopy\",\"upload\":false}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-6",
+      "model": "gpt-6.2-astra",
+      "domainKo": "다국어 번역(한·영·일) 말풍선 폭 자동 리사이즈 및 용어집 검수",
+      "macros": [
+        {
+          "id": "ko-en-ja-draft",
+          "titleKo": "선택한 한국어 대사를 영·일판에 식자",
+          "naturalPromptKo": "선택한 말풍선만 영어와 일본어로 옮겨 줘. 이미 승인한 번역은 건드리지 말고, 새 번역은 용어집과 대조한 뒤 글자 크기를 유지해서 폭을 맞춰 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.translate",
+              "reasonKo": "비어 있는 번역 칸만 로컬 번역 초안으로 채워 승인본을 보존한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedBubbles\",\"source\":\"ko\",\"targets\":[\"en\",\"ja\"],\"engine\":\"installedOfflineOnly\",\"fallback\":\"none\",\"glossary\":\"project\",\"write\":\"emptyTargetsOnly\",\"saveChangedIdsAs\":\"drafted\"}"
+            },
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "새 대사에서 지정 번역어가 누락된 위치를 검수 목록에 남긴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"drafted\",\"glossary\":\"project\",\"mode\":\"reportOnly\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "언어별 실제 글꼴로 측정해 새 번역의 말풍선만 조정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"drafted\",\"fontSize\":\"preserve\",\"padding\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "source-edit-sync",
+          "titleKo": "원고 수정분만 번역 갱신",
+          "naturalPromptKo": "어제 번역한 뒤 한국어 대사를 고친 곳만 찾아 줘. 영·일 수정안을 용어집에 맞춰 만들고 새 폭도 미리 보여 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.findStaleTargets",
+              "reasonKo": "번역에 사용한 원문 리비전과 현재 원문이 다른 말풍선만 추린다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"source\":\"ko\",\"targets\":[\"en\",\"ja\"],\"compare\":\"sourceRevisionAtTranslation\",\"saveAs\":\"stale\"}"
+            },
+            {
+              "toolName": "studio.localization.translate",
+              "reasonKo": "기존 번역을 덮어쓰지 않고 변경된 원문의 영·일 수정안을 만든다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"stale\",\"engine\":\"installedOfflineOnly\",\"fallback\":\"none\",\"glossary\":\"project\",\"write\":\"proposalLayer\",\"saveAs\":\"revisions\"}"
+            },
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "수정안에서 용어 불일치를 표시한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"revisions\",\"glossary\":\"project\",\"mode\":\"annotateProposal\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "원본 식자는 유지하고 수정안 레이어에서만 폭 변화를 보여 준다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"revisions\",\"write\":\"proposalLayer\",\"fontSize\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "speaker-name-fix",
+          "titleKo": "캐릭터 이름의 옛 표기 일괄 정리",
+          "naturalPromptKo": "이번 화에 남은 예전 캐릭터 이름을 한·영·일 공식 표기로 바꿔 줘. 일반 단어와 겹치는 별명은 표시만 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.normalizeTerms",
+              "reasonKo": "이름 태그와 용어집 별칭이 함께 일치할 때만 교체해 동음이의어 오수정을 막는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"locales\":[\"ko\",\"en\",\"ja\"],\"glossary\":\"project\",\"category\":\"characterName\",\"match\":\"entityIdAndRegisteredAlias\",\"replaceWith\":\"approvedLocaleForm\",\"ambiguous\":\"flagOnly\",\"saveChangedIdsAs\":\"renamed\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "이름 길이가 달라진 말풍선만 다시 맞추고 꼬리 끝은 고정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"renamed\",\"tailTip\":\"lock\",\"fontSize\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "honorific-review",
+          "titleKo": "화자·청자별 호칭 검수",
+          "naturalPromptKo": "같은 인물을 부르는 호칭이 관계 설정과 맞는지 세 언어에서 확인해 줘. 어긋난 대사는 수정안과 말풍선 폭을 같이 보여 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "화자·청자 관계별 호칭표를 적용하고 관계 정보가 없으면 수동 검수로 남긴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"locales\":[\"ko\",\"en\",\"ja\"],\"glossary\":\"project\",\"category\":\"formOfAddress\",\"contextKeys\":[\"speakerId\",\"listenerId\",\"relationship\"],\"missingContext\":\"flagOnly\",\"mode\":\"proposeApprovedForm\",\"saveProposalsAs\":\"addressEdits\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "호칭 수정안을 선택했을 때의 폭을 원본 옆에서 비교할 수 있게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"addressEdits\",\"write\":\"proposalLayer\",\"fontSize\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "en-overflow",
+          "titleKo": "영문판 넘침만 골라 폭 확장",
+          "naturalPromptKo": "영문판에서 글자가 삐져나온 곳만 고쳐 줘. 공식 기술명은 중간에서 끊지 말고 얼굴을 가릴 만큼 넓어지면 표시만 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.findTextOverflow",
+              "reasonKo": "영문판의 실제 렌더링 결과에서 안쪽 여백을 침범한 말풍선을 찾는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"locale\":\"en\",\"measure\":\"renderedGlyphBounds\",\"saveAs\":\"enOverflow\"}"
+            },
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "기술명 표기를 대조하고 공식 표기와 일치하는 구간에 줄바꿈 금지를 지정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"enOverflow\",\"glossary\":\"project\",\"category\":\"skillName\",\"mismatch\":\"flagOnly\",\"saveApprovedSpansAs\":\"skillSpans\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "넘치는 풍선만 넓히되 보호 영역 침범이나 충돌이 생기면 원래 폭을 유지한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"enOverflow\",\"direction\":\"expandOnly\",\"noBreakSpansRef\":\"skillSpans\",\"fontSize\":\"preserve\",\"avoid\":[\"faceMasks\",\"otherBubbles\"],\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "ja-line-start",
+          "titleKo": "일문 가로쓰기 금칙 줄바꿈 정리",
+          "naturalPromptKo": "일본어 가로쓰기 대사에서 닫는 괄호나 쉼표가 줄 맨 앞에 나온 곳을 잡아 줘. 작품 고유명은 쪼개지 말고 폭을 조금만 바꿔 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "일문 가로쓰기 풍선에서 고유명의 지정 표기를 확인하고 보호할 문자열 범위를 기록한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"locale\":\"ja\",\"writingMode\":\"horizontal\",\"glossary\":\"project\",\"category\":\"properNoun\",\"mismatch\":\"flagOnly\",\"saveApprovedSpansAs\":\"jaNames\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "금칙 위반이 있는 풍선에서만 줄바꿈을 다시 계산하고 필요한 최소 폭 변화를 적용한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"locale\":\"ja\",\"writingMode\":\"horizontal\",\"filter\":\"kinsokuViolation\",\"lineBreakRule\":\"jaStrict\",\"noBreakSpansRef\":\"jaNames\",\"objective\":\"minimumWidthChange\",\"maxWidthChangePct\":10,\"fontSize\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "short-reaction",
+          "titleKo": "짧은 리액션의 빈 여백 줄이기",
+          "naturalPromptKo": "‘헉!’ 같은 짧은 감탄사인데 말풍선만 큰 곳을 줄여 줘. 한·영·일 대응 표현을 확인하고 연출용으로 크게 잡은 풍선은 그대로 둬.",
+          "steps": [
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "원문의 감탄사 항목과 번역 대응형을 대조해 승인 표현을 쓴 풍선만 축소 대상으로 넘긴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"source\":\"ko\",\"targets\":[\"en\",\"ja\"],\"glossary\":\"project\",\"category\":\"reaction\",\"match\":\"wholeUtterance\",\"mismatch\":\"flagOnly\",\"saveMatchedLocaleIdsAs\":\"reactions\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "연출 고정 태그를 제외하고 빈 공간이 큰 풍선만 스타일 최소 폭까지 줄인다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"reactions\",\"filter\":\"textWidthBelowHalfInnerWidth\",\"excludeTags\":[\"dramaticPause\",\"layoutLocked\"],\"direction\":\"shrinkOnly\",\"minWidth\":\"styleMinimum\",\"padding\":\"styleDefault\",\"tailTip\":\"lock\",\"fontSize\":\"preserve\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "linked-dialogue",
+          "titleKo": "연속 말풍선 묶음 재식자",
+          "naturalPromptKo": "선택한 연속 말풍선의 영·일 대사를 읽는 순서대로 다시 나눠 줘. 공식 용어를 두 풍선에 걸쳐 자르지 말고 묶음 안에서 폭을 조정해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "연속 대사를 이어서 검사해 기존 풍선 경계에 걸친 공식 용어까지 보호한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedLinkedGroup\",\"locales\":[\"en\",\"ja\"],\"glossary\":\"project\",\"textView\":\"joinedInReadingOrder\",\"mismatch\":\"flagOnly\",\"saveApprovedSpansAs\":\"linkedTerms\"}"
+            },
+            {
+              "toolName": "studio.canvas.reflowLinkedBubbles",
+              "reasonKo": "같은 화자의 대사를 어순 변경 없이 재분배하고 각 풍선 폭을 함께 계산한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedLinkedGroup\",\"locales\":[\"en\",\"ja\"],\"requireSameSpeaker\":true,\"preserveTextAndOrder\":true,\"splitAt\":\"clauseBoundary\",\"noBreakSpansRef\":\"linkedTerms\",\"resize\":\"widthOnly\",\"tailTips\":\"lock\",\"fontSize\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagGroupOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "lettering-import",
+          "titleKo": "감수자가 돌려준 번역표 반영",
+          "naturalPromptKo": "선택한 로컬 번역표에서 승인된 영·일 문장만 원고에 넣어 줘. 원문이 바뀌었거나 용어집과 충돌한 행은 보류하고 반영한 풍선만 폭을 맞춰 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.stageTable",
+              "reasonKo": "승인 행을 풍선 ID와 원문 리비전으로 연결하고 중복·불일치 행은 보류한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"input\":\"selectedLocalTable\",\"targets\":[\"en\",\"ja\"],\"status\":\"approved\",\"joinKeys\":[\"bubbleId\",\"sourceRevision\"],\"onDuplicateOrMismatch\":\"hold\",\"saveAs\":\"stagedRows\"}"
+            },
+            {
+              "toolName": "studio.localization.applyReviewedRows",
+              "reasonKo": "프로젝트 용어집 검사를 통과한 행만 번역 레이어에 반영한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"stagedRows\",\"glossary\":\"project\",\"onTermConflict\":\"holdAndReport\",\"saveChangedIdsAs\":\"imported\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "감수본으로 바뀐 풍선만 현재 글꼴과 여백에 맞춘다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"imported\",\"fontSize\":\"preserve\",\"padding\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\"}"
+            }
+          ]
+        },
+        {
+          "id": "delivery-proof",
+          "titleKo": "납품 전 3개 국어 대조 교정지 만들기",
+          "naturalPromptKo": "납품 전에 한국어·영어·일본어를 컷별로 나란히 보고 싶어. 용어 오류와 번역 누락을 표시하고, 넘친 풍선의 권장 폭을 교정지에만 적용해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.auditGlossary",
+              "reasonKo": "풍선 ID별로 세 판본을 연결해 번역 누락과 지정 용어 불일치를 기록한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"source\":\"ko\",\"targets\":[\"en\",\"ja\"],\"glossary\":\"project\",\"checks\":[\"missingTarget\",\"unapprovedTerm\"],\"mode\":\"reportOnly\",\"saveAs\":\"termReport\"}"
+            },
+            {
+              "toolName": "studio.canvas.fitBubbleWidth",
+              "reasonKo": "교정용 사본에서 넘친 풍선의 폭만 보정하고 해결되지 않은 충돌도 기록한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"activeEpisode\",\"locales\":[\"ko\",\"en\",\"ja\"],\"filter\":\"overflow\",\"write\":\"proofCopy\",\"fontSize\":\"preserve\",\"bounds\":\"panelSafeArea\",\"onConflict\":\"flagOnly\",\"saveCopyAs\":\"proofPages\",\"saveReportAs\":\"widthReport\"}"
+            },
+            {
+              "toolName": "studio.export.proofSheet",
+              "reasonKo": "세 판본과 검수 표시를 같은 컷 순서로 배치해 로컬 교정 PDF로 저장한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"pagesRef\":\"proofPages\",\"reportRefs\":[\"termReport\",\"widthReport\"],\"columns\":[\"ko\",\"en\",\"ja\"],\"groupBy\":\"panelId\",\"labels\":[\"panelId\",\"bubbleId\"],\"format\":\"pdf\",\"destination\":\"projectLocalProofs\",\"ifExists\":\"versionedCopy\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-7",
+      "model": "gpt-6.2-astra",
+      "domainKo": "VRM 포저·캐릭터 쉐이퍼 3D 포즈 컷 삽입 및 원근 스냅",
+      "macros": [
+        {
+          "id": "vrm-01",
+          "titleKo": "대기 자세를 바닥 표시에 세우기",
+          "naturalPromptKo": "선택한 캐릭터를 이 컷의 바닥 표시에 세워 줘. 두 발은 바닥에 붙이고 컷의 눈높이를 따라가게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.vrm.pose",
+              "reasonKo": "현재 체형은 유지하고 관절만 편안한 대기 자세로 바꾼다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeVrm\",\"preset\":\"local:standing_relaxed\",\"preserveShape\":true,\"out\":\"actor\"}"
+            },
+            {
+              "toolName": "studio.bg3d.snapPose",
+              "reasonKo": "두 발의 중점을 바닥 표시에 놓고 컷 카메라로 투영한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"$actor\",\"camera\":\"activePanel.camera\",\"anchor\":\"feetMidpoint\",\"target\":\"selectedFloorMark\",\"contacts\":[\"leftSole\",\"rightSole\"],\"plane\":\"activeFloor\",\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "배경을 덮어쓰지 않고 컷 안에 편집 가능한 인물을 추가한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$shot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"clipToPanel\":true,\"layerName\":\"대기 자세\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-02",
+          "titleKo": "복도 소실선을 따라 걷는 컷",
+          "naturalPromptKo": "복도 안쪽으로 걸어가는 뒷모습을 넣어 줘. 찍어 둔 곳에 왼발을 딛고 복도 방향으로 걷게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.vrm.pose",
+              "reasonKo": "왼발이 체중을 받는 보행 키포즈를 불러온다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeVrm\",\"preset\":\"local:walk_left_support\",\"out\":\"walker\"}"
+            },
+            {
+              "toolName": "studio.bg3d.snapPose",
+              "reasonKo": "지지발만 바닥에 고정하고 몸을 복도의 깊이축 안쪽으로 돌린다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"$walker\",\"camera\":\"activePanel.camera\",\"anchor\":\"leftSole\",\"target\":\"selectedFloorMark\",\"forward\":\"activeFloor.depthAxisAwayFromCamera\",\"preserveSwingFoot\":true,\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "보행 실루엣을 작화 밑그림으로 삽입한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$shot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"clipToPanel\":true,\"layerName\":\"복도 보행\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-03",
+          "titleKo": "의자 높이에 맞춰 앉히기",
+          "naturalPromptKo": "선택한 의자에 캐릭터를 앉혀 줘. 엉덩이가 좌판에 닿고 무릎은 의자 앞쪽을 향해야 해.",
+          "steps": [
+            {
+              "toolName": "studio.vrm.pose",
+              "reasonKo": "앉은 자세를 접촉 조정의 시작점으로 사용한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeVrm\",\"preset\":\"local:sit_upright\",\"out\":\"sitter\"}"
+            },
+            {
+              "toolName": "studio.bg3d.fitContacts",
+              "reasonKo": "좌판 접촉을 우선하고 다리 길이가 허용하는 범위에서 발을 바닥에 맞춘다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"$sitter\",\"camera\":\"activePanel.camera\",\"primary\":{\"anchor\":\"seatContact\",\"target\":\"selectedChair.seatTop\"},\"forward\":\"selectedChair.forward\",\"secondary\":{\"anchors\":[\"leftSole\",\"rightSole\"],\"target\":\"activeFloor\",\"ifUnreachable\":\"relaxSecondary\"},\"stretchBones\":false,\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "의자 깊이 정보를 사용해 팔걸이 뒤로 가야 할 부분을 가린다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$shot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"occlusionFrom\":\"selectedChair\",\"clipToPanel\":true,\"layerName\":\"의자 착석\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-04",
+          "titleKo": "왼손으로 책상을 짚는 자세",
+          "naturalPromptKo": "바닥 표시에 서서 왼손으로 책상 모서리를 짚게 해 줘. 손바닥이 상판에 묻히지 않게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.vrm.pose",
+              "reasonKo": "어깨와 팔꿈치를 조정하기 쉬운 기댄 자세를 준비한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeVrm\",\"preset\":\"local:lean_left_arm\",\"out\":\"actor\"}"
+            },
+            {
+              "toolName": "studio.bg3d.fitContacts",
+              "reasonKo": "발 위치를 유지하면서 손바닥의 접촉면을 상판 표면에 맞춘다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"$actor\",\"camera\":\"activePanel.camera\",\"primary\":{\"anchor\":\"feetMidpoint\",\"target\":\"selectedFloorMark\"},\"secondary\":{\"anchor\":\"leftPalmSurface\",\"target\":\"selectedTabletopMark\",\"normalAlignment\":\"opposed\"},\"solveChains\":[\"spine\",\"leftArm\"],\"stretchBones\":false,\"ifUnreachable\":\"stopBeforeInsert\",\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "책상과 인물의 앞뒤 관계를 반영해 배치한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$shot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"occlusionFrom\":\"selectedDesk\",\"clipToPanel\":true,\"layerName\":\"책상 짚기\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-05",
+          "titleKo": "두 인물의 대화 시선 맞추기",
+          "naturalPromptKo": "선택한 두 사람을 바닥 표시 순서대로 세워 줘. 키 차이는 그대로 두고 서로 눈을 보게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.snapGroup",
+              "reasonKo": "선택 순서로 인물과 바닥 표시를 짝지어 같은 카메라 공간에 놓는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actors\":\"selectedVrmPair\",\"targets\":\"selectedFloorMarkPair\",\"pairBy\":\"selectionOrder\",\"anchor\":\"feetMidpoint\",\"preserveScale\":true,\"orient\":\"facePartner\",\"camera\":\"activePanel.camera\",\"out\":\"pair\"}"
+            },
+            {
+              "toolName": "studio.vrm.solveGaze",
+              "reasonKo": "서로 다른 눈높이를 반영해 목과 눈의 방향만 보정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actors\":\"$pair\",\"targetPerActor\":\"partner.eyeMidpoint\",\"chains\":[\"neck\",\"eyes\"],\"lockFeet\":true,\"out\":\"dialogue\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "카메라를 공유하되 두 인물을 따로 수정할 수 있게 넣는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$dialogue\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"splitLayersByActor\":true,\"clipToPanel\":true,\"layerName\":\"대화 투샷\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-06",
+          "titleKo": "이전 컷 자세를 역앵글에 이어 붙이기",
+          "naturalPromptKo": "직전 컷에서 선택한 인물의 동작을 이 역앵글 컷에 이어 줘. 좌우 반전하지 말고 같은 자리에서 반대 카메라로 본 모습이어야 해.",
+          "steps": [
+            {
+              "toolName": "studio.vrm.capturePose",
+              "reasonKo": "스크린 좌표가 아닌 관절 회전과 장면 기준 위치를 함께 복사한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"previousPanel.selectedLinkedActor\",\"include\":[\"modelRef\",\"shape\",\"jointRotations\",\"worldTransform\",\"sceneFrameId\"],\"out\":\"continuity\"}"
+            },
+            {
+              "toolName": "studio.bg3d.projectPose",
+              "reasonKo": "공통 장면 좌표계인지 확인한 뒤 현재 컷 카메라에서 다시 투영한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$continuity\",\"camera\":\"activePanel.camera\",\"requireMatchingSceneFrame\":true,\"mirror\":false,\"out\":\"reverseShot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "이전 컷은 그대로 두고 현재 컷에 독립된 자세 복사본을 넣는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$reverseShot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"poseInstance\":\"independent\",\"clipToPanel\":true,\"layerName\":\"역앵글 연결 자세\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-07",
+          "titleKo": "체형 시트를 적용하고 발 위치 유지하기",
+          "naturalPromptKo": "컷에 넣어 둔 임시 인물을 내 캐릭터 체형으로 바꿔 줘. 포즈와 서 있는 자리는 바꾸지 마.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.captureAnchor",
+              "reasonKo": "체형 변경 전 지지발의 접지점을 장면 좌표로 저장한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"selectedPoseLayer.actor\",\"anchor\":\"supportSole\",\"space\":\"world\",\"out\":\"footLock\"}"
+            },
+            {
+              "toolName": "studio.vrm.applyShape",
+              "reasonKo": "호환되는 로컬 체형 시트를 복사본에 적용하고 관절 회전은 보존한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"selectedPoseLayer.actor\",\"preset\":\"selectedLocalShapeSheet\",\"requireCompatibleRig\":true,\"preserveJointRotations\":true,\"editCopy\":true,\"out\":\"reshaped\"}"
+            },
+            {
+              "toolName": "studio.bg3d.snapPose",
+              "reasonKo": "다리 길이 변화로 뜨거나 묻힌 지지발을 원래 접지점에 다시 놓는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"$reshaped\",\"anchor\":\"supportSole\",\"target\":\"$footLock\",\"camera\":\"activePanel.camera\",\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.updatePoseLayer",
+              "reasonKo": "새 레이어를 쌓지 않고 선택한 인물만 갱신한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"layer\":\"selectedPoseLayer\",\"source\":\"$shot\",\"preserveLayerOrder\":true,\"undoable\":true}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-08",
+          "titleKo": "계단 두 단에 걸친 오르막 자세",
+          "naturalPromptKo": "계단을 오르는 순간을 넣어 줘. 먼저 고른 아래 단에는 오른발, 다음 위 단에는 왼발을 올려 줘.",
+          "steps": [
+            {
+              "toolName": "studio.vrm.pose",
+              "reasonKo": "왼쪽 무릎을 들어 올린 계단 오르기 자세를 준비한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeVrm\",\"preset\":\"local:step_up_left\",\"out\":\"climber\"}"
+            },
+            {
+              "toolName": "studio.bg3d.fitContacts",
+              "reasonKo": "두 디딤면의 실제 높이 차이에 맞춰 골반과 무릎을 조절한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"$climber\",\"camera\":\"activePanel.camera\",\"contacts\":[{\"anchor\":\"rightSole\",\"target\":\"selectedTreadMarks[0]\"},{\"anchor\":\"leftSole\",\"target\":\"selectedTreadMarks[1]\"}],\"forward\":\"selectedStairs.ascentAxis\",\"solveChains\":[\"pelvis\",\"legs\"],\"stretchBones\":false,\"ifUnreachable\":\"stopBeforeInsert\",\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "계단 모서리에 가려지는 발 부분까지 반영해 삽입한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$shot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"occlusionFrom\":\"selectedStairs\",\"clipToPanel\":true,\"layerName\":\"계단 오르기\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-09",
+          "titleKo": "말풍선 자리를 비운 반신 리액션 컷",
+          "naturalPromptKo": "놀란 표정의 반신 컷을 넣어 줘. 표시한 곳에 눈이 오도록 잡고 말풍선 예약 영역은 비워 둬.",
+          "steps": [
+            {
+              "toolName": "studio.vrm.pose",
+              "reasonKo": "표정과 어깨 반응을 함께 적용해 반신 실루엣에서도 놀람이 드러나게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeVrm\",\"preset\":\"local:surprise_halfbody\",\"expression\":\"surprised\",\"out\":\"reaction\"}"
+            },
+            {
+              "toolName": "studio.bg3d.framePose",
+              "reasonKo": "컷의 원근을 유지하며 눈 표시와 말풍선 여백을 동시에 만족하는 구도를 찾는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"$reaction\",\"camera\":\"activePanel.camera\",\"lockCamera\":true,\"crop\":\"waistUp\",\"screenAnchor\":{\"joint\":\"eyeMidpoint\",\"target\":\"selectedEyeMark\"},\"excludeScreenRegion\":\"selectedBalloonReserve\",\"ifNoFit\":\"stopBeforeInsert\",\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "말풍선보다 아래에 반신 자세를 삽입한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$shot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"below\":\"balloonLayers\",\"clipToPanel\":true,\"layerName\":\"반신 리액션\"}"
+            }
+          ]
+        },
+        {
+          "id": "vrm-10",
+          "titleKo": "손그림 배경에서 원근을 따서 인물 넣기",
+          "naturalPromptKo": "3D 카메라가 없는 배경이야. 가로와 깊이 방향으로 그어 둔 보조선에서 원근을 잡고, 키 기준선 옆의 바닥 점에 인물을 넣어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.bg3d.solveCamera",
+              "reasonKo": "두 축의 소실선과 길이를 아는 수직 기준선으로 컷 전용 카메라와 바닥면을 추정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"panel\":\"activePanel\",\"guideSets\":[\"selectedWidthGuides\",\"selectedDepthGuides\"],\"axesOrthogonal\":true,\"verticalReference\":\"selectedHeightGuideWithMeters\",\"referenceBaseOnFloor\":true,\"principalPoint\":\"panelCenter\",\"onDegenerateGuides\":\"stopBeforeInsert\",\"out\":\"calibration\"}"
+            },
+            {
+              "toolName": "studio.bg3d.snapPose",
+              "reasonKo": "표시점을 추정 바닥에 역투영해 원래 신장의 인물을 해당 깊이에 세운다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"actor\":\"activeVrm\",\"camera\":\"$calibration.camera\",\"plane\":\"$calibration.floor\",\"screenTarget\":\"selectedFloorDot\",\"anchor\":\"feetMidpoint\",\"preserveMetricScale\":true,\"out\":\"shot\"}"
+            },
+            {
+              "toolName": "studio.canvas.insertPose",
+              "reasonKo": "손그림 배경과 보조선은 유지하고 보정 카메라가 연결된 인물만 추가한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"$shot\",\"panel\":\"activePanel\",\"mode\":\"linked3D\",\"retainCameraRef\":true,\"clipToPanel\":true,\"layerName\":\"손그림 원근 스냅\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-8",
+      "model": "gpt-6.2-astra",
+      "domainKo": "마감 전 프리플라이트(해상도·안전 영역·Rights BOM·금칙어) 자동 감사",
+      "macros": [
+        {
+          "id": "PF-01",
+          "titleKo": "납품 해상도 대조",
+          "naturalPromptKo": "이번 화 원고를 납품 크기로 내보내면 어느 페이지가 규격에서 벗어나는지 보여 줘.",
+          "steps": [
+            {
+              "toolName": "studio.export.auditRasterDimensions",
+              "reasonKo": "원본 캔버스 크기가 아니라 내보내기 배율과 자르기 설정까지 적용한 예상 픽셀 크기를 플랫폼 규격과 대조한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.deliveryPages\",\"simulateOnly\":true,\"exportSettings\":\"activeExportPreset\",\"rules\":\"localDeliveryProfile.pixelDimensions\",\"onMissingRules\":\"needsReview\",\"reportFields\":[\"page\",\"expectedPixelRange\",\"projectedWidthPx\",\"projectedHeightPx\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-02",
+          "titleKo": "확대로 흐려질 소품 찾기",
+          "naturalPromptKo": "작게 받은 로고나 소품을 너무 크게 쓴 컷만 찾아 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.auditRasterSampling",
+              "reasonKo": "보이는 비트맵의 사용 영역과 최종 출력에서 차지하는 픽셀 수를 축별로 비교해 확대가 과한 레이어를 찾는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.visibleRasterPlacements\",\"outputScaleFrom\":\"activeExportPreset\",\"accountFor\":[\"sourceCrop\",\"layerTransform\",\"parentTransforms\"],\"rules\":\"localQualityProfile.maxUpscaleRatio\",\"onMissingSourceOrRules\":\"needsReview\",\"reportFields\":[\"panel\",\"layerPath\",\"upscaleRatioX\",\"upscaleRatioY\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-03",
+          "titleKo": "대사·자막 안전 여백 검사",
+          "naturalPromptKo": "말풍선 대사나 자막이 납품 화면 가장자리에 너무 붙은 곳을 표시해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.auditTextSafeArea",
+              "reasonKo": "텍스트 상자가 아닌 실제 글자 외곽을 기준으로 검사하고, 어느 쪽 여백이 몇 픽셀 부족한지 알려 준다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.visibleText\",\"roles\":[\"dialogue\",\"caption\"],\"geometry\":\"renderedGlyphBounds\",\"coordinateSpace\":\"projectedDeliveryPixels\",\"rules\":\"localDeliveryProfile.textSafeInsetsPx\",\"onUnmeasurableOrMissingRules\":\"needsReview\",\"reportFields\":[\"page\",\"layerPath\",\"edge\",\"requiredInsetPx\",\"actualInsetPx\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-04",
+          "titleKo": "세로 분할선 걸침 검사",
+          "naturalPromptKo": "업로드용으로 나눌 때 말풍선이나 효과음 중간을 가르는 분할선이 있는지 봐 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.auditSliceIntersections",
+              "reasonKo": "예정된 분할선을 원고 위에 가상으로 겹쳐 보호 대상의 보이는 영역을 관통하는 선만 찾는다. 분할 위치는 바꾸지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode\",\"slicePlan\":\"activeExportPreset\",\"protectedRoles\":[\"balloon\",\"dialogue\",\"sfx\"],\"geometry\":\"visibleContentMask\",\"intersectionRule\":\"contentOnBothSidesOfCut\",\"onMissingPlanOrUnclassifiedContent\":\"needsReview\",\"reportFields\":[\"sliceIndex\",\"cutYpx\",\"panel\",\"layerPath\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-05",
+          "titleKo": "사용 소재와 Rights BOM 대사",
+          "naturalPromptKo": "이번 화에 실제로 보이는 배경·브러시·폰트 중 권리 목록에서 빠진 걸 찾아 줘.",
+          "steps": [
+            {
+              "toolName": "studio.export.auditRightsBomCoverage",
+              "reasonKo": "출력 대상의 소재 참조와 제작 이력을 로컬 권리 명세(Rights BOM)와 대조한다. 병합 등으로 출처를 추적할 수 없는 소재는 미등록과 구분한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.deliveryVisibleContent\",\"usageSources\":[\"assetReferences\",\"fontRuns\",\"recordedBrushUsage\",\"embeddedProvenance\"],\"bom\":\"project.localRightsBom\",\"matchBy\":[\"stableAssetId\",\"contentHash\"],\"onUntraceable\":\"needsReview\",\"onMissingBom\":\"needsReview\",\"reportFields\":[\"panel\",\"layerPath\",\"assetKind\",\"assetId\",\"matchStatus\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-06",
+          "titleKo": "공개 예정일 기준 이용 조건 검사",
+          "naturalPromptKo": "예약 공개일에 이용 기간이 끝나거나 이번 연재 채널에서 쓸 수 없는 소재가 있는지 확인해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.export.auditLicenseScope",
+              "reasonKo": "사용 소재별로 기록된 허용 기간·채널·지역을 배포 계획과 비교한다. 조건이나 증빙이 없으면 사용 가능으로 추정하지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.usedAssets\",\"bom\":\"project.localRightsBom\",\"releasePlan\":\"currentEpisode.localReleasePlan\",\"compare\":[\"scheduledReleaseAt\",\"publicationChannel\",\"territory\"],\"requireLocalEvidenceRef\":true,\"onMissingOrAmbiguous\":\"needsReview\",\"reportFields\":[\"assetId\",\"usageLocation\",\"condition\",\"plannedValue\",\"recordedAllowance\",\"evidenceRef\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-07",
+          "titleKo": "필수 크레딧 누락 검사",
+          "naturalPromptKo": "소재 약관에 적힌 저작자명과 출처 문구가 실제 공개될 크레딧에서 빠지지 않았는지 봐 줘.",
+          "steps": [
+            {
+              "toolName": "studio.export.auditAttribution",
+              "reasonKo": "권리 명세의 필수 표기 문구와 허용 표기 위치를 납품본의 크레딧 및 게시 설명란 초안과 비교한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.usedAssets\",\"requirements\":\"project.localRightsBom.attribution\",\"targets\":[\"deliveryVisibleCredits\",\"localPublicationDescriptionDraft\"],\"respectAllowedPlacement\":true,\"normalize\":[\"unicodeNFC\",\"lineEndings\"],\"onUnavailableTextOrTerms\":\"needsReview\",\"reportFields\":[\"assetId\",\"requiredText\",\"allowedPlacement\",\"foundPlacement\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-08",
+          "titleKo": "편집 가능 대사 금칙어 검사",
+          "naturalPromptKo": "대사와 내레이션에서 편집부 금칙어 후보를 찾아 줘. 문구는 고치지 말고 원문 위치만 짚어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.localization.auditRestrictedTerms",
+              "reasonKo": "회차 언어에 맞는 로컬 금칙어 사전과 승인 예외를 적용하고, 정규화된 검색 결과를 편집 가능한 원문 위치로 되돌려 준다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.visibleEditableText\",\"roles\":[\"dialogue\",\"narration\",\"caption\"],\"locale\":\"currentEpisode.locale\",\"dictionary\":\"project.localEditorialTerms\",\"exceptions\":\"project.approvedTermExceptions\",\"matchPolicy\":\"perDictionaryEntry\",\"returnOffsetsIn\":\"originalText\",\"autoReplace\":false,\"onMissingDictionary\":\"needsReview\",\"reportFields\":[\"panel\",\"layerPath\",\"originalSpan\",\"context\",\"ruleId\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-09",
+          "titleKo": "이미지 속 간판·효과음 금칙어 검사",
+          "naturalPromptKo": "텍스트 검색에 안 잡히는 간판이나 그림으로 그린 효과음도 금칙어 검토 목록에 넣어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.ai.readRasterTextLocal",
+              "reasonKo": "편집 가능한 글자를 제외한 납품 미리보기에서 로컬 OCR로 문구와 좌표를 읽는다. 판독이 불확실한 영역은 사람이 볼 수 있도록 남긴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode.deliveryPreview\",\"excludeEditableTextMask\":true,\"engine\":\"installedOfflineOcrOnly\",\"network\":false,\"onEngineUnavailable\":\"needsReview\",\"retainLowConfidenceRegions\":true,\"resultRef\":\"run.rasterText\"}"
+            },
+            {
+              "toolName": "studio.localization.auditRestrictedTerms",
+              "reasonKo": "판독 문구를 금칙어 사전과 대조해 원고 좌표로 안내한다. 판독 실패나 낮은 신뢰도는 금칙어 없음으로 처리하지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"inputRef\":\"run.rasterText\",\"locale\":\"currentEpisode.locale\",\"dictionary\":\"project.localEditorialTerms\",\"exceptions\":\"project.approvedTermExceptions\",\"matchPolicy\":\"perDictionaryEntry\",\"onMissingInputOrDictionary\":\"needsReview\",\"onLowConfidence\":\"needsReview\",\"reportFields\":[\"page\",\"bboxPx\",\"recognizedText\",\"confidence\",\"ruleId\",\"status\"]}"
+            }
+          ]
+        },
+        {
+          "id": "PF-10",
+          "titleKo": "현재 수정본 납품 게이트",
+          "naturalPromptKo": "지금 이 버전을 올려도 되는지 한 장으로 정리해 줘. 수정 후 다시 안 돌린 검사도 알려 줘.",
+          "steps": [
+            {
+              "toolName": "studio.export.auditPreflightGate",
+              "reasonKo": "현재 원고·납품 설정·권리 명세·금칙어 사전의 지문을 각 검사 당시 값과 비교한다. 필수 검사가 빠졌거나 관련 입력이 달라졌으면 이전 통과 결과를 무효로 표시한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"readOnly\":true,\"scope\":\"currentEpisode\",\"results\":\"project.localPreflightResults\",\"requiredChecks\":[\"PF-01\",\"PF-02\",\"PF-03\",\"PF-04\",\"PF-05\",\"PF-06\",\"PF-07\",\"PF-08\",\"PF-09\"],\"freshness\":\"comparePerCheckInputFingerprints\",\"onMissingOrStale\":\"rerunRequired\",\"passOnlyIf\":\"allRequiredChecksFreshAndPassed\",\"groupBy\":[\"blocker\",\"needsReview\",\"rerunRequired\",\"passed\"],\"reportFields\":[\"gateStatus\",\"checkId\",\"affectedLocation\",\"nextAction\"],\"publish\":false}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-9",
+      "model": "gpt-6.2-astra",
+      "domainKo": "오디오툰·모션웹툰 패럴랙스 및 컷별 타이밍 큐시트 생성",
+      "macros": [
+        {
+          "id": "cut-order",
+          "titleKo": "스크롤 원고에서 컷 번호 뽑기",
+          "naturalPromptKo": "현재 원고의 컷 프레임을 읽어서 재생 순서대로 C001부터 번호를 붙여 줘. 순서가 애매한 컷은 내가 확인할 수 있게 표시해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.readCutFrames",
+              "reasonKo": "그림이나 말풍선이 아니라 컷 프레임의 경계와 수동 순서 태그를 읽는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"include\":[\"frameId\",\"bounds\",\"readingOrderTag\"],\"result\":\"frames\"}"
+            },
+            {
+              "toolName": "studio.division.buildCutIndex",
+              "reasonKo": "수동 순서를 우선하고, 태그가 없으면 위에서 아래로 정렬한다. 세로 범위가 겹쳐 순서가 불명확하면 검토 대상으로 남긴다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"input\":\"$frames\",\"order\":[\"readingOrderTag\",\"topY\"],\"ambiguousOrder\":\"flag\",\"idPattern\":\"C{000}\",\"saveAs\":\"project://motion/cuts.json\"}"
+            }
+          ]
+        },
+        {
+          "id": "depth-stack",
+          "titleKo": "컷 레이어를 전경·인물·배경으로 묶기",
+          "naturalPromptKo": "원본 PSD는 그대로 두고, 깊이 태그가 붙은 레이어만 패럴랙스용으로 묶어 줘. 말풍선과 자막은 움직이지 않게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.photoshop.readLayerTree",
+              "reasonKo": "활성 원고에서 컷별 레이어 ID, 쌓임 순서, 역할 태그를 읽는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"groupBy\":\"cutFrame\",\"include\":[\"layerId\",\"stackOrder\",\"roleTag\",\"depthTag\"],\"result\":\"layers\"}"
+            },
+            {
+              "toolName": "studio.canvas.buildDepthMap",
+              "reasonKo": "원본 레이어를 옮기지 않고 움직임에 쓸 참조표를 만든다. 태그가 없는 레이어는 고정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"input\":\"$layers\",\"depthTags\":[\"foreground\",\"character\",\"background\"],\"screenLockedRoles\":[\"balloon\",\"caption\",\"lettering\"],\"untagged\":\"lockAndFlag\",\"preserveStackOrder\":true,\"saveAs\":\"project://motion/depth.json\"}"
+            }
+          ]
+        },
+        {
+          "id": "parallax-drift",
+          "titleKo": "빈 가장자리 없는 패럴랙스 넣기",
+          "naturalPromptKo": "선택한 컷에만 오른쪽으로 천천히 흐르는 패럴랙스를 넣어 줘. 숨겨진 그림이 부족하면 늘려 채우지 말고 이동량을 줄여 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.measureTravelBounds",
+              "reasonKo": "각 레이어를 이동해도 컷 바깥의 빈 영역이나 가려졌던 투명 구멍이 드러나지 않는 범위를 구한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedCutFrames\",\"depthMap\":\"project://motion/depth.json\",\"axis\":\"x\",\"checkAlphaCoverage\":true,\"result\":\"safeTravel\"}"
+            },
+            {
+              "toolName": "studio.canvas.writeParallaxTrack",
+              "reasonKo": "전경을 가장 많이 움직이되 모든 레이어가 안전 범위에 머물도록 이동량을 함께 줄인다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"input\":\"$safeTravel\",\"targetTravelPctOfCutWidth\":{\"foreground\":3,\"character\":1.5,\"background\":0.5},\"fit\":\"scaleTogetherToSafeBounds\",\"lockedTravel\":0,\"timeRange\":\"normalizedCutDuration\",\"easing\":\"easeInOut\",\"destination\":\"project://motion/parallax.json\",\"mergeBy\":\"cutId\"}"
+            }
+          ]
+        },
+        {
+          "id": "voice-timing",
+          "titleKo": "녹음 길이로 컷 타이밍 초안 잡기",
+          "naturalPromptKo": "이번 화 녹음 파일을 컷 ID와 대사 번호로 맞춰서 컷 시작·끝 시간을 잡아 줘. 녹음이 빠진 대사는 임의로 읽어 넣지 말고 표시해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.indexLocalAudio",
+              "reasonKo": "파일명에서 컷과 대사 번호를 읽고 로컬 음원의 실제 재생 길이를 측정한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"folder\":\"project://audio/voice/\",\"fileStemPattern\":\"{cutId}_{lineNo}\",\"durationUnit\":\"ms\",\"duplicateKey\":\"flag\",\"result\":\"voices\"}"
+            },
+            {
+              "toolName": "studio.division.buildVoiceTimeline",
+              "reasonKo": "컷 안에서 대사를 순서대로 배치하고 말 사이 여백까지 합산해 회차 기준 시간을 계산한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"cuts\":\"project://motion/cuts.json\",\"voices\":\"$voices\",\"expectedLines\":\"activeDocument.balloonLineTags\",\"leadMs\":150,\"betweenLinesMs\":180,\"tailMs\":300,\"silentCutHoldMs\":1200,\"missingOrDuplicateLine\":\"flagAndUseProvisionalHold\",\"provisionalLineMs\":1200,\"originMs\":0,\"saveAs\":\"project://motion/timeline.json\"}"
+            }
+          ]
+        },
+        {
+          "id": "balloon-cues",
+          "titleKo": "대사 시작에 말풍선 등장 맞추기",
+          "naturalPromptKo": "녹음이 시작되기 두 프레임 전에 해당 말풍선이 뜨게 해 줘. 첫 대사라도 이전 컷에 말풍선이 걸치면 안 돼.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.readBalloonTags",
+              "reasonKo": "말풍선 레이어를 컷 ID와 대사 번호 쌍으로 식별한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"key\":[\"cutId\",\"lineNo\"],\"result\":\"balloons\"}"
+            },
+            {
+              "toolName": "studio.division.buildVisibilityCues",
+              "reasonKo": "프로젝트 프레임률을 적용해 등장 시점을 앞당기고 컷 경계에서 노출을 제한한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targets\":\"$balloons\",\"timeline\":\"project://motion/timeline.json\",\"anchor\":\"voiceStart\",\"offsetFrames\":-2,\"fps\":\"project\",\"clampStart\":\"cutStart\",\"hideAt\":\"cutEnd\",\"unmatchedOrProvisional\":\"skipAndFlag\",\"saveAs\":\"project://motion/balloons.json\"}"
+            }
+          ]
+        },
+        {
+          "id": "sfx-markers",
+          "titleKo": "동작 마커에 효과음 맞추기",
+          "naturalPromptKo": "컷에 찍어 둔 발걸음·문 닫힘 마커에 내 효과음 폴더의 같은 이름 파일을 붙여 줘. 없는 소리는 내려받지 말고 목록에 남겨 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.readActionMarkers",
+              "reasonKo": "동작이 일어나는 컷 내부 시점과 효과음 키를 읽는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"source\":\"activeDocument\",\"tag\":\"sfx\",\"fields\":[\"cutId\",\"offsetMs\",\"soundKey\"],\"result\":\"hits\"}"
+            },
+            {
+              "toolName": "studio.division.placeSoundCues",
+              "reasonKo": "마커를 회차 기준 시점으로 변환하고 정확히 일치하는 로컬 음원만 연결한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"markers\":\"$hits\",\"timeline\":\"project://motion/timeline.json\",\"assetFolder\":\"project://audio/sfx/\",\"match\":\"exactUniqueStem\",\"missingOrAmbiguous\":\"flagWithoutAudio\",\"outsideCut\":\"skipAndFlag\",\"trimAtCutEnd\":true,\"saveAs\":\"project://motion/sfx.json\"}"
+            }
+          ]
+        },
+        {
+          "id": "pause-retime",
+          "titleKo": "선택 컷 끝에 감정 여백 추가하기",
+          "naturalPromptKo": "선택한 컷 끝에 반 박자 정도, 0.5초만 더 머물게 해 줘. 대사나 효과음을 늘이지 말고 뒤 컷의 큐는 함께 밀어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.planCutHolds",
+              "reasonKo": "선택 컷마다 정지 구간을 추가하고 뒤 컷에 누적되는 시간 이동량을 계산한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"timeline\":\"project://motion/timeline.json\",\"scope\":\"selectedCutFrames\",\"appendHoldMs\":500,\"motionDuringHold\":\"freezeLastFrame\",\"result\":\"holdPlan\"}"
+            },
+            {
+              "toolName": "studio.division.applyTimingPlan",
+              "reasonKo": "음원의 길이와 컷 내부 동작 시점은 보존하고 컷 경계 및 종속 큐를 한 번에 갱신한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"plan\":\"$holdPlan\",\"root\":\"project://motion/\",\"updateExisting\":[\"timeline\",\"parallax\",\"balloons\",\"sfx\"],\"cutEndAnchors\":\"followNewEnd\",\"stretchAudio\":false,\"backup\":true,\"atomic\":true}"
+            }
+          ]
+        },
+        {
+          "id": "timing-check",
+          "titleKo": "납품 전 타이밍 오류 찾기",
+          "naturalPromptKo": "컷 밖에서 울리는 소리, 한 트랙에서 겹치는 대사, 한 프레임도 안 보이는 말풍선을 찾아 줘. 수정하지 말고 문제 시점만 알려 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.auditCueTracks",
+              "reasonKo": "회차 기준 시간으로 트랙을 대조하고 컷 ID와 문제 시작 시점을 기록한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"root\":\"project://motion/\",\"fps\":\"project\",\"checks\":[\"audioOutsideCut\",\"sameVoiceTrackOverlap\",\"balloonVisibleUnderOneFrame\",\"provisionalVoiceTiming\",\"unresolvedAsset\"],\"missingTrack\":\"reportNotChecked\",\"readOnly\":true,\"result\":\"issues\"}"
+            },
+            {
+              "toolName": "studio.export.writeTimingReport",
+              "reasonKo": "작가가 원고에서 바로 찾아볼 수 있도록 컷 순서대로 검수표를 저장한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"input\":\"$issues\",\"columns\":[\"cutId\",\"track\",\"timecode\",\"issueKo\",\"assetRef\"],\"sortBy\":[\"cutId\",\"timecode\"],\"destination\":\"project://review/timing-check.csv\",\"encoding\":\"UTF-8-BOM\"}"
+            }
+          ]
+        },
+        {
+          "id": "motion-proof",
+          "titleKo": "선택 컷만 소리 있는 검토본 만들기",
+          "naturalPromptKo": "수정한 컷만 이어서 휴대폰으로 볼 작은 검토본을 만들어 줘. 패럴랙스와 말풍선, 소리가 맞는지 보게 컷 번호와 회차 타임코드도 찍어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.composeReviewSequence",
+              "reasonKo": "선택 컷을 재생 순서로 모으되 화면에 표시할 시간은 원래 회차 기준으로 유지한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedCutFrames\",\"timingRoot\":\"project://motion/\",\"tracks\":[\"timeline\",\"parallax\",\"balloons\",\"voice\",\"sfx\"],\"overlay\":[\"cutId\",\"episodeTimecode\"],\"result\":\"proof\"}"
+            },
+            {
+              "toolName": "studio.export.renderLocalPreview",
+              "reasonKo": "원고 비율을 유지한 저해상도 유성 검토본을 로컬에서 인코딩한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"input\":\"$proof\",\"widthPx\":540,\"preserveAspect\":true,\"fps\":\"project\",\"audio\":true,\"encoder\":\"localOnly\",\"destination\":\"project://review/selected-cuts.mp4\"}"
+            }
+          ]
+        },
+        {
+          "id": "handoff-sheet",
+          "titleKo": "편집자용 컷별 타이밍 큐시트 내보내기",
+          "naturalPromptKo": "최신 타임라인으로 편집자에게 넘길 큐시트를 만들어 줘. 컷 길이와 개별 큐 시점을 구분하고, 미확정 녹음은 확정본처럼 보이지 않게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.flattenCueSheet",
+              "reasonKo": "모든 컷에 요약 행을 두고, 그 아래 대사·말풍선·효과음·카메라 움직임을 개별 행으로 정리한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"root\":\"project://motion/\",\"includeEmptyCuts\":true,\"rowTypes\":[\"cutSummary\",\"voice\",\"balloon\",\"sfx\",\"parallax\"],\"timeBasis\":[\"episodeAbsolute\",\"cutRelative\"],\"intervalConvention\":\"startInclusiveEndExclusive\",\"carryReviewFlags\":true,\"result\":\"handoff\"}"
+            },
+            {
+              "toolName": "studio.export.writeCueSheet",
+              "reasonKo": "시간 단위와 기준이 열 이름에 드러나도록 한국어 CSV로 저장한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"input\":\"$handoff\",\"headersKo\":[\"컷 ID\",\"행 유형\",\"컷 길이(ms)\",\"회차 기준 시작(ms)\",\"회차 기준 종료(ms·미포함)\",\"컷 내부 시작(ms)\",\"컷 내부 종료(ms·미포함)\",\"대상 레이어·파일\",\"큐 내용\",\"확정 상태\",\"검토 메모\"],\"destination\":\"project://delivery/cut-cue-sheet.csv\",\"encoding\":\"UTF-8-BOM\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "customId": "mcp-macros-10",
+      "model": "gpt-6.2-astra",
+      "domainKo": "협업 분업(선화·밑색·명암·후보정) 레이어 잠금 및 리뷰 패키지 출고",
+      "macros": [
+        {
+          "id": "stage-setup",
+          "titleKo": "원고에 4공정 작업 그룹 준비",
+          "naturalPromptKo": "오늘 작업할 컷마다 선화·밑색·명암·후보정 그룹을 만들어 줘. 이미 정리한 그룹과 그림은 그대로 둬.",
+          "steps": [
+            {
+              "toolName": "studio.canvas.ensureStageGroups",
+              "reasonKo": "선택한 컷에 빠진 그룹만 추가하고, 기존 레이어의 위치와 잠금 상태는 바꾸지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedCuts\",\"onEmptySelection\":\"abort\",\"stagesBottomToTop\":[\"밑색\",\"명암\",\"선화\",\"후보정\"],\"matchBy\":\"stageId\",\"existingGroupPolicy\":\"preserve\",\"newGroupLocked\":true,\"onAmbiguousMatch\":\"abort\"}"
+            },
+            {
+              "toolName": "studio.division.ensureStageCards",
+              "reasonKo": "공정 그룹과 작업 카드를 연결해 컷별 진행 상태를 확인할 수 있게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedCuts\",\"oneCardPer\":[\"cutId\",\"stageId\"],\"newStatus\":\"대기\",\"existingCardPolicy\":\"preserve\",\"storage\":\"localProject\"}"
+            }
+          ]
+        },
+        {
+          "id": "lineart-start",
+          "titleKo": "선화 담당자의 작업 컷 열기",
+          "naturalPromptKo": "내가 선화를 맡은 컷에서 스케치는 보이게 두고 선화만 그릴 수 있게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.resolveWorkset",
+              "reasonKo": "현재 사용자에게 배정된 선화 카드 중 승인 전인 컷만 고른다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"stage\":\"선화\",\"assignee\":\"currentUser\",\"statusIn\":[\"대기\",\"작업 중\",\"수정 요청\"],\"output\":\"lineCuts\",\"onEmpty\":\"stop\"}"
+            },
+            {
+              "toolName": "studio.canvas.applyStageLockPreset",
+              "reasonKo": "스케치는 잠긴 참조로 남기고 선화 그룹만 편집 가능하게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"lineCuts\",\"editableStage\":\"선화\",\"lockOtherLayers\":true,\"showReferenceRole\":\"스케치\",\"preserveProtectedLocks\":true,\"onForeignCheckout\":\"skipAndReport\"}"
+            }
+          ]
+        },
+        {
+          "id": "flat-start",
+          "titleKo": "승인 선화를 밑색 담당자에게 인계",
+          "naturalPromptKo": "선화 승인이 끝난 내 컷만 골라 줘. 선은 건드리지 않고 밑색을 칠하고 싶어.",
+          "steps": [
+            {
+              "toolName": "studio.division.resolveWorkset",
+              "reasonKo": "밑색 배정과 선화 승인본의 현재 버전 일치를 함께 확인한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"stage\":\"밑색\",\"assignee\":\"currentUser\",\"statusIn\":[\"대기\",\"작업 중\",\"수정 요청\"],\"requireCurrentApproval\":[\"선화\"],\"output\":\"flatCuts\",\"onEmpty\":\"stop\"}"
+            },
+            {
+              "toolName": "studio.canvas.applyStageLockPreset",
+              "reasonKo": "승인 선화를 보이는 상태로 잠그고 밑색 그룹만 연다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"flatCuts\",\"editableStage\":\"밑색\",\"visibleStages\":[\"선화\",\"밑색\"],\"lockOtherLayers\":true,\"preserveProtectedLocks\":true,\"onForeignCheckout\":\"skipAndReport\"}"
+            }
+          ]
+        },
+        {
+          "id": "shade-start",
+          "titleKo": "승인 밑색 위에 명암 클리핑층 준비",
+          "naturalPromptKo": "밑색까지 승인된 내 컷에 그림자층을 준비해 줘. 밑색 경계 밖으로 칠해지지 않게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.resolveWorkset",
+              "reasonKo": "선화와 밑색이 모두 현재 버전으로 승인된 명암 작업만 대상으로 삼는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"stage\":\"명암\",\"assignee\":\"currentUser\",\"statusIn\":[\"대기\",\"작업 중\",\"수정 요청\"],\"requireCurrentApproval\":[\"선화\",\"밑색\"],\"output\":\"shadeCuts\",\"onEmpty\":\"stop\"}"
+            },
+            {
+              "toolName": "studio.canvas.prepareClippedStage",
+              "reasonKo": "밑색의 불투명 영역을 참조하는 명암층을 준비하고 다른 공정은 잠근다. 기존 명암 그림은 덮어쓰지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"shadeCuts\",\"editableStage\":\"명암\",\"clipSourceStage\":\"밑색\",\"layerRole\":\"기본 그림자\",\"newLayerBlendMode\":\"multiply\",\"reuseMatchingLayer\":true,\"lockOtherLayers\":true,\"preserveProtectedLocks\":true,\"onClipConflict\":\"skipAndReport\",\"onForeignCheckout\":\"skipAndReport\"}"
+            }
+          ]
+        },
+        {
+          "id": "finish-start",
+          "titleKo": "후보정용 비파괴 조정층 열기",
+          "naturalPromptKo": "명암까지 끝난 내 컷은 원화를 잠그고 후보정 그룹에서만 톤을 조절하게 해 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.resolveWorkset",
+              "reasonKo": "앞선 세 공정이 모두 승인된 컷만 후보정 대상으로 고른다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"stage\":\"후보정\",\"assignee\":\"currentUser\",\"statusIn\":[\"대기\",\"작업 중\",\"수정 요청\"],\"requireCurrentApproval\":[\"선화\",\"밑색\",\"명암\"],\"output\":\"finishCuts\",\"onEmpty\":\"stop\"}"
+            },
+            {
+              "toolName": "studio.photoshop.prepareAdjustmentStage",
+              "reasonKo": "기존 보정값은 유지하고, 조정층이 없을 때만 화면을 바꾸지 않는 기본 커브를 추가한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scopeRef\":\"finishCuts\",\"editableStage\":\"후보정\",\"ensureAdjustmentRole\":\"톤 커브\",\"newCurve\":\"identity\",\"existingAdjustmentPolicy\":\"preserve\",\"lockOtherLayers\":true,\"preserveProtectedLocks\":true,\"mergeLayers\":false,\"onForeignCheckout\":\"skipAndReport\"}"
+            }
+          ]
+        },
+        {
+          "id": "lock-audit",
+          "titleKo": "잘못 열린 레이어 점검표 만들기",
+          "naturalPromptKo": "작업 전에 승인층이나 다른 담당자 레이어가 열려 있는지 알려 줘. 잠금은 아직 바꾸지 마.",
+          "steps": [
+            {
+              "toolName": "studio.division.inspectLayerLocks",
+              "reasonKo": "컷별 작업 카드와 실제 레이어 잠금을 대조해 손대면 안 되는 층을 찾는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"currentEpisode\",\"checks\":[\"approvedButUnlocked\",\"otherAssigneeButUnlocked\",\"unassignedButUnlocked\",\"foreignCheckoutConflict\"],\"readOnly\":true,\"output\":\"lockFindings\"}"
+            },
+            {
+              "toolName": "studio.export.writeReport",
+              "reasonKo": "컷 번호와 그룹 경로를 함께 적어 담당자가 원고에서 바로 확인할 수 있게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"sourceRef\":\"lockFindings\",\"columns\":[\"cutNumber\",\"layerPath\",\"stage\",\"assignee\",\"finding\"],\"format\":\"csv-utf8-bom\",\"destination\":\"localProject/review/checks\",\"onExists\":\"version\"}"
+            }
+          ]
+        },
+        {
+          "id": "revision-open",
+          "titleKo": "리뷰에서 반려된 공정만 다시 열기",
+          "naturalPromptKo": "내게 돌아온 수정 요청만 열어 줘. 같은 컷이라도 지적받지 않은 공정은 잠가 둬.",
+          "steps": [
+            {
+              "toolName": "studio.division.resolveRevisionTargets",
+              "reasonKo": "미해결 리뷰 메모를 컷과 공정에 연결하고 대상 버전이 오래된 메모는 별도로 표시한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"assignee\":\"currentUser\",\"commentStatus\":\"open\",\"cardStatus\":\"수정 요청\",\"matchKeys\":[\"cutId\",\"stageId\",\"revisionId\"],\"onStaleOrUnmapped\":\"skipAndReport\",\"output\":\"revisionTargets\"}"
+            },
+            {
+              "toolName": "studio.canvas.applyRevisionLocks",
+              "reasonKo": "수정 요청이 연결된 그룹만 열고 리뷰 메모는 미해결 상태로 유지한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"targetsRef\":\"revisionTargets\",\"editable\":\"listedStagesPerCut\",\"lockUnlistedLayersInTargetCuts\":true,\"preserveProtectedLocks\":true,\"onForeignCheckout\":\"skipAndReport\",\"onEmpty\":\"stop\",\"resolveComments\":false}"
+            }
+          ]
+        },
+        {
+          "id": "revision-proof",
+          "titleKo": "수정 전후 비교 시트 뽑기",
+          "naturalPromptKo": "리뷰어가 다시 볼 수 있게 수정 요청 당시 그림과 지금 그림을 같은 크기로 나란히 뽑아 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.resolveRevisionPairs",
+              "reasonKo": "컷 번호가 아니라 고정 컷 ID로 리뷰 당시 스냅샷과 현재 저장본을 짝짓는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedRevisionCards\",\"before\":\"reviewCommentSnapshot\",\"after\":\"currentSavedRevision\",\"joinBy\":\"cutId\",\"onMissingSnapshot\":\"skipAndReport\",\"output\":\"proofPairs\"}"
+            },
+            {
+              "toolName": "studio.export.renderComparisonSheets",
+              "reasonKo": "두 버전에 같은 배율을 적용하고 수정 메모를 그림 밖에 배치한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"sourceRef\":\"proofPairs\",\"layout\":\"beforeLeftAfterRight\",\"scale\":\"samePixelsPerUnit\",\"labels\":[\"cutNumber\",\"revisionIds\",\"reviewComment\"],\"annotationPlacement\":\"margin\",\"format\":\"png\",\"destination\":\"localProject/review/proofs\",\"onExists\":\"version\",\"modifySource\":false}"
+            }
+          ]
+        },
+        {
+          "id": "review-submit",
+          "titleKo": "완료 공정 잠그고 리뷰 대기 등록",
+          "naturalPromptKo": "선택한 작업 카드를 리뷰에 넘겨 줘. 지금 저장한 버전을 고정하고 해당 공정은 더 그려지지 않게 잠가 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.preflightSubmission",
+              "reasonKo": "본인 배정, 저장 완료, 공정 그룹 연결, 타인 작업 충돌 여부를 먼저 검사한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"selectedCards\",\"requireAssignee\":\"currentUser\",\"allowedStatus\":[\"작업 중\",\"수정 요청\"],\"requireSaved\":true,\"requireMappedGroup\":true,\"rejectForeignCheckout\":true,\"onFailure\":\"abortAndReport\",\"output\":\"submissionPlan\"}"
+            },
+            {
+              "toolName": "studio.division.commitReviewSubmission",
+              "reasonKo": "스냅샷 고정, 제출 그룹 잠금, 상태 변경을 함께 처리해 잠기지 않은 원고가 리뷰 대기로 표시되지 않게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"planRef\":\"submissionPlan\",\"requireUnchangedRevision\":true,\"pinSavedSnapshot\":true,\"lockSubmittedGroups\":true,\"nextStatus\":\"리뷰 대기\",\"transaction\":\"allOrRollback\",\"storage\":\"localProject\"}"
+            }
+          ]
+        },
+        {
+          "id": "review-package",
+          "titleKo": "리뷰용 이미지·목록 ZIP 출고",
+          "naturalPromptKo": "이번 회차 리뷰 대기분을 컷 순서대로 묶어 줘. 원본 작업 파일 없이 검수용 이미지와 체크리스트만 로컬 출고 폴더에 넣어 줘.",
+          "steps": [
+            {
+              "toolName": "studio.division.resolveReviewManifest",
+              "reasonKo": "리뷰 대기 카드가 가리키는 고정 제출본을 사용해 이후 작업 내용이 검수 이미지에 섞이지 않게 한다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"scope\":\"currentEpisode\",\"cardStatus\":\"리뷰 대기\",\"source\":\"pinnedSubmissionSnapshots\",\"orderBy\":[\"cutSequence\",\"stageSequence\"],\"requireLockedSubmission\":true,\"onMissingOrUnlocked\":\"abortAndReport\",\"onEmpty\":\"stop\",\"output\":\"releaseManifest\"}"
+            },
+            {
+              "toolName": "studio.export.buildReviewArchive",
+              "reasonKo": "공정별 제출 이미지를 목록과 대조한 뒤 ZIP을 완성한다. 레이어 원본과 비공개 메모는 포함하지 않는다.",
+              "argumentsJson": "{\"zeroCostSafe\":true,\"manifestRef\":\"releaseManifest\",\"render\":\"flattened-sRGB-png\",\"imageName\":\"{cutSequence}_{stageId}_{revisionId}.png\",\"includeOnly\":[\"renderedImages\",\"checklist.csv\"],\"checklistColumns\":[\"cutNumber\",\"stage\",\"revisionId\",\"imageName\",\"reviewResult\"],\"verifyEveryManifestEntry\":true,\"publishOnlyAfterVerification\":true,\"format\":\"zip\",\"destination\":\"localProject/outbox/review\",\"onExists\":\"version\",\"upload\":false}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

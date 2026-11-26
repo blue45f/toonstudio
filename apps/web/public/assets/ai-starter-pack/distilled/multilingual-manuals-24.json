@@ -1,0 +1,1578 @@
+{
+  "generatedAt": "2026-11-26T04:52:28.009Z",
+  "models": [
+    "gpt-6.2-astra",
+    "gpt-5.5-2026-04-23"
+  ],
+  "totalManuals": 24,
+  "manuals": [
+    {
+      "customId": "manual-1-en",
+      "model": "gpt-6.2-astra",
+      "locale": "en",
+      "slug": "migrate-clip-studio-paint-pages-layers-brushes-to-toonstudio",
+      "title": "From Clip Studio Paint to ToonStudio: A Working Guide to Pages, Layers, and Brushes",
+      "summary": "Keep your editable Clip Studio Paint originals, use a layered PSD to move the artwork, and export a flattened PNG as a visual proof. Pilot one demanding page or scroll section before moving the full episode. Treat brushes as a separate job: matching a pen stroke is different from matching the pixels already on the page.",
+      "steps": [
+        {
+          "heading": "1. Pick a pilot that can actually fail",
+          "body": "Back up the original .clip files and, for a multi-page story, the .cmc management file and its page folder. Work on copies. Pick a page with your usual trouble spots: clipped character shadows, a masked panel border, live lettering, tone, and a glow over line art. Note the canvas dimensions in pixels, color profile, and resolution. For print, also record trim, bleed, and the safe area; for vertical scroll, record the full strip width and height.",
+          "proTip": "Write down what still needs editing. A painted background can often travel as pixels; a lead character’s dialogue probably needs to survive the next script revision."
+        },
+        {
+          "heading": "2. Export a visual proof before touching the stack",
+          "body": "In CSP, export the finished pilot as a single-layer PNG at full pixel size. Use the layer visibility and background you want the reader to see. For a web episode, use the intended web color settings, typically sRGB. Name the file clearly, such as ep012_s03_proof.png. This is your reference for appearance, not your editable handoff or a print color proof.",
+          "proTip": "Keep a crop of small lettering, fine hatching, and one tricky lighting effect. These are easier to compare at 100% than a whole episode zoomed out to fit a monitor."
+        },
+        {
+          "heading": "3. Prepare the layers around the edits you need",
+          "body": "In the handoff copy, keep inks, flats, shadows, effects, balloons, and lettering separate wherever you expect revisions. Give each stack a short, useful name such as p04_character_shadow. Keep a clipped layer next to its base and a mask with the artwork it controls. Don’t count on CSP vector control points, frame folders, rulers, 3D controls, or live tones staying editable through PSD. If a feature fails the pilot, render just that element in CSP and keep its editable source in the .clip master.",
+          "proTip": "For dialogue that may change, save the script by panel and balloon number, plus the font name, size, and alignment. Keep a clean balloon without text so you can reletter without patching white over the old line."
+        },
+        {
+          "heading": "4. Make the layered handoff",
+          "body": "In CSP, use File > Save Duplicate and choose Photoshop document (.psd). Don’t use Export (Single Layer) for the working file. Open the PSD in ToonStudio using the PSD option available in your build, then save a separate ToonStudio working document. Check the pixel dimensions and toggle an ink layer off and on before doing any cleanup. If your build can’t open a layered PSD, export the needed groups from CSP as separate full-canvas transparent PNGs and stack them in their original order in ToonStudio.",
+          "proTip": "For the PNG fallback, hide CSP’s Paper layer and don’t trim transparent margins. Matching canvas bounds keep every group registered. A PNG carries pixels and transparency, not its original blend mode or clipping relationship."
+        },
+        {
+          "heading": "5. Check the pilot before converting the episode",
+          "body": "Compare the ToonStudio canvas with the CSP proof at the same zoom and against the same background. Start with panel edges and balloon placement, then inspect shadow clipping, masks, blend modes, group opacity, tone density, and glow. Test editability as well as appearance: hide a balloon, move a shadow, or revise a line of dialogue, then undo. If an effect looks wrong, isolate its base and effect layers in CSP, compare that small stack, and either rebuild the relationship in ToonStudio or bake a copy with the layers it needs.",
+          "proTip": "A glow that blends with the painted sky may look different when exported on transparency. If the sky is locked for delivery, baking the sky and glow together is often safer than flattening the whole panel."
+        },
+        {
+          "heading": "6. Rebuild your daily pens before moving the brush library",
+          "body": "Start with the brushes you use every page: your inker, fill-edge cleanup pen, and main texture brush. In CSP, make a stroke card for each at production canvas size: a light-to-heavy taper, a slow curve, a fast flick, and overlapping strokes. Note brush diameter and units, minimum size, pressure response, opacity, spacing, stabilization, and any tip or paper texture. Use direct preset import only if your ToonStudio build explicitly supports the source format; don’t assume a CSP .sut file is portable. Otherwise start with the closest ToonStudio brush and match the silhouette and pressure taper first, then tune texture and smoothing.",
+          "proTip": "Test with the same tablet and pen. A brush can match the sample line but feel too slow on a face contour. Draw an eyelid or a jawline before signing it off, and reuse custom tips or textures only when their license permits it."
+        },
+        {
+          "heading": "7. Move the episode and check the actual delivery files",
+          "body": "Repeat the approved handoff page by page or scroll section by scroll section. Number files in reading order and keep the CSP masters, transfer files, ToonStudio working files, and delivery exports in separate folders. If the full strip exceeds a canvas or file-size limit in your build, split the copy at measured Y positions in quiet gutters, keep the width unchanged, and record each section’s start and end. Assemble or preview the sections in order and check the joins for missing rows, repeated rows, or broken lettering.",
+          "proTip": "Review the final export, not just the working canvas. For scroll delivery, read it at phone width and inspect slice boundaries. For print, verify final dimensions, bleed, resolution, and color requirements against the printer’s spec."
+        }
+      ],
+      "faq": [
+        {
+          "q": "The page looks right, but the lettering isn’t editable. Did the transfer work?",
+          "a": "It preserved the appearance, not the text object. If revisions are likely, keep the rendered lettering as a placement guide, recreate the text on a fresh layer using the saved script and a licensed font, then hide the guide. Recheck line breaks, balloon padding, and reading order."
+        },
+        {
+          "q": "Why do my screentones shimmer after the move?",
+          "a": "First compare the CSP proof and the ToonStudio export at 100% and at identical pixel dimensions. A fit-to-window preview can introduce a pattern that isn’t in the file. If the problem appears in the delivery image, check where resizing occurs. Test rendering the tone for the final output size rather than repeatedly scaling a rasterized dot pattern."
+        },
+        {
+          "q": "Do I need to migrate a brush for its existing strokes to appear?",
+          "a": "No. Strokes rendered into the artwork travel as pixels. You need a matching brush only to draw new marks or retouch old ones. Prioritize the inker you’ll use on tomorrow’s panels over a one-off texture that’s already baked into a background."
+        },
+        {
+          "q": "Can I discard the CSP project once the PSD opens?",
+          "a": "Keep the CSP master and its dependencies. A successful PSD import doesn’t preserve every native editing control, page-management setting, or brush preset. Reopen the saved ToonStudio pilot, make a test edit, and export it successfully before committing the rest of the episode."
+        }
+      ]
+    },
+    {
+      "customId": "manual-1-es",
+      "model": "gpt-6.2-astra",
+      "locale": "es",
+      "slug": "migrar-de-clip-studio-paint-a-toonstudio",
+      "title": "De Clip Studio Paint a ToonStudio: cómo trasladar un episodio, sus capas y tus pinceles",
+      "summary": "Conserva el .clip como original, usa un PSD por capas para trasladar el trabajo editable y guarda un PNG de referencia para comprobar el acabado. Haz primero la prueba con una escena difícil: así sabrás qué puedes seguir editando en ToonStudio, qué conviene rasterizar y qué pinceles tendrás que ajustar para que no cambie tu trazo.",
+      "steps": [
+        {
+          "heading": "1. Elige una escena que ponga a prueba el traslado",
+          "body": "Duplica el .clip de una página o de un tramo del episodio. Escoge uno que reúna elementos que realmente uses: entintado vectorial, tramas, sombras recortadas, brillos y bocadillos con texto. Anota las dimensiones en píxeles, la resolución y el perfil de color. Exporta desde CSP un PNG a tamaño de trabajo, sin redimensionar: será la referencia visual, no el archivo que vas a editar.",
+          "proTip": "Incluye una viñeta a sangre y otra con un bocadillo que sobresalga del marco. Enseguida verás si se ha perdido una máscara o si el texto ha saltado de línea."
+        },
+        {
+          "heading": "2. Prepara las capas según lo que aún tengas que corregir",
+          "body": "Trabaja solo en la copia. Pon nombres reconocibles a las carpetas, como «Viñeta 04 · tinta», «Color base» o «Rotulación». Mantén separados los elementos que vayan a recibir cambios: si falta aprobar el diálogo, no combines texto, bocadillo y dibujo. Revisa las capas ocultas y distingue los descartes de los recursos que aún necesitas, como una pose alternativa o un fondo limpio.",
+          "proTip": "No reorganices la pila solo para dejarla bonita. Mover una sombra recortada o sacar un brillo de su carpeta puede cambiar el resultado antes incluso de exportar."
+        },
+        {
+          "heading": "3. Guarda una copia por capas y ábrela en ToonStudio",
+          "body": "Comprueba qué formatos por capas admite tu versión de ToonStudio. Si admite PSD, en CSP usa «Archivo > Guardar como» y elige Photoshop (.psd); evita la exportación de una sola capa. Abre el PSD en ToonStudio y guarda el documento de trabajo con otro nombre. Comprueba el tamaño del lienzo, el orden de las carpetas, la visibilidad de las capas y la transparencia del fondo. No des por hecho que una capa conserva su función original solo porque conserve su nombre.",
+          "proTip": "Haz una comprobación rápida: oculta la tinta y mueve un bocadillo. Si desaparece también el color o se mueve media viñeta, revisa la estructura antes de trasladar el episodio entero."
+        },
+        {
+          "heading": "4. Resuelve las diferencias sin acoplar toda la página",
+          "body": "Compara la escena importada con el PNG al 100 %. Revisa primero los bordes de viñeta, las máscaras de recorte, los modos de fusión y las tramas. Si falla un efecto, identifica qué capas intervienen. Por ejemplo, si un brillo cambia sobre el pelo, vuelve a la copia de CSP y prepara una versión combinada del pelo con su brillo; no rasterices por ello la tinta ni el fondo. Las reglas, los objetos 3D y la tinta vectorial de CSP pueden conservar su aspecto sin conservar sus controles de edición.",
+          "proTip": "Si necesitas retocar el grosor de una línea vectorial, hazlo en el .clip mientras sigas teniendo sus puntos de control. Una capa de píxeles con el mismo aspecto no te devuelve esa posibilidad."
+        },
+        {
+          "heading": "5. Decide cómo vas a conservar la rotulación",
+          "body": "Prueba a colocar el cursor dentro de un diálogo en ToonStudio. Si puedes editarlo, comprueba la fuente, el interlineado, la alineación y los saltos de línea. Si el texto llega como imagen y aún puede cambiar el guion, recréalo en una capa de texto sobre el bocadillo vacío. Si la rotulación ya está aprobada, puedes mantenerla rasterizada a resolución de trabajo, separada del dibujo, y conservar el texto editable en el .clip.",
+          "proTip": "Guarda el guion con los diálogos numerados por viñeta. Para corregir una tilde o preparar otra edición, es más rápido recuperar la frase que transcribirla de la imagen."
+        },
+        {
+          "heading": "6. Traslada el comportamiento de tus pinceles, no solo el archivo",
+          "body": "Empieza por los pinceles de uso diario: plumilla, lápiz y textura, por ejemplo. En CSP guarda una muestra de cada uno al tamaño habitual y anota el diámetro en píxeles, el tamaño mínimo, la opacidad y qué parámetros responden a la presión. Exporta la subherramienta .sut como respaldo; impórtala en ToonStudio solo si tu versión admite expresamente ese formato. Si no, parte de un pincel similar y ajusta primero la silueta y el afilado del trazo, después la opacidad y, al final, el espaciado y la textura. Usa puntas y materiales propios o con licencia que permita ese uso.",
+          "proTip": "Con la misma tableta y el mismo zoom, dibuja una línea de fina a gruesa, una curva rápida y un mechón de pelo. Si todos los pinceles exigen apretar demasiado, revisa la curva de presión de la tableta antes de retocarlos uno por uno."
+        },
+        {
+          "heading": "7. Traslada la tira y valida una entrega de prueba",
+          "body": "Si la tira completa supera los límites de importación o resulta pesada al dibujar, divídela en tramos a resolución de trabajo. Corta en calles vacías entre viñetas, conserva el mismo ancho y numera los archivos en orden de lectura. Exporta una prueba desde ToonStudio con las dimensiones y el perfil que pida la plataforma. Revísala en el móvil: fíjate en la continuidad del espacio entre viñetas, la legibilidad del diálogo y la aparición de muaré en las tramas al reducir.",
+          "proTip": "Da el traslado por bueno cuando puedas hacer una corrección real —cambiar una frase o retocar una cara— y volver a exportar sin alterar el resto. Archiva juntos el .clip, el archivo de intercambio, la copia de ToonStudio y la referencia aprobada."
+        }
+      ],
+      "faq": [
+        {
+          "q": "¿Qué hago si mi versión de ToonStudio no abre el PSD por capas?",
+          "a": "Para una escena ya aprobada, importa el PNG de referencia si solo necesitas el acabado final. Si debes seguir dibujando, exporta desde CSP varios PNG con transparencia, uno por bloque de trabajo y todos con el lienzo completo, sin recortar al contenido. Colócalos en el mismo origen y orden. Así conservas el registro, aunque no las máscaras ni los controles originales; comprueba los brillos y sombras que dependían de capas inferiores."
+        },
+        {
+          "q": "¿Por qué cambia el color si las capas están en el mismo orden?",
+          "a": "Compara primero el PNG de referencia y la exportación de ToonStudio en el mismo visor. Si la diferencia afecta a toda la imagen, revisa el perfil de color y las opciones de exportación. Si solo cambia una zona, inspecciona el modo de fusión, la opacidad, el recorte y el fondo sobre el que se compone esa zona."
+        },
+        {
+          "q": "¿Cómo distingo una trama dañada de un problema de previsualización?",
+          "a": "Mira la trama al 100 % en el archivo de trabajo y en el PNG de referencia. Si coincide en ambos pero aparecen ondas en la entrega reducida, el problema está en el cambio de escala. Prueba una trama menos densa o un gris plano a tamaño de publicación y compara los resultados en el móvil."
+        },
+        {
+          "q": "¿Tengo que rehacer todos mis pinceles antes de empezar?",
+          "a": "No. Calibra primero los que necesitas para terminar la siguiente escena. Guarda cada ajuste aprobado con un nombre que indique su función y su tamaño de uso, como «Tinta de caras · 8 px». Mantén las muestras de CSP a mano para recuperar otros pinceles cuando los necesites."
+        }
+      ]
+    },
+    {
+      "customId": "manual-1-ja",
+      "model": "gpt-6.2-astra",
+      "locale": "ja",
+      "slug": "csp-to-toonstudio-manuscripts-layers-brushes",
+      "title": "CLIP STUDIO PAINTからToonStudioへ：原稿・レイヤー・ブラシの移行ガイド",
+      "summary": "移行のコツは、「続きを描くための編集用原稿」と「正しい見た目を確認するための見本」を分けること。まず見開き1点、または縦読み原稿の数コマで試し、線画の編集性、トーンの出方、ペンの描き味を確かめてから、残りの原稿を移します。",
+      "steps": [
+        {
+          "heading": "1. 本番原稿を残し、移行テスト用のページを選ぶ",
+          "body": "CSPの.clip原稿は上書きせず、複製で作業します。複数ページ作品は、ページ管理ファイル（.cmc）と各ページの.clipを含む作品フォルダーごと控えを取ってください。テストには白紙に近いページではなく、線画、トーン、ルビ付きのセリフ、フチ付きの描き文字、発光など、その作品で実際に使う要素がそろったページを選びます。",
+          "proTip": "見開きならノドをまたぐ絵、縦読みならコマ間の余白と長いグラデーションもテスト範囲に含めます。単独のコマでは気づきにくいズレを拾えます。"
+        },
+        {
+          "heading": "2. 仕上がり見本と原稿の寸法を控える",
+          "body": "CSPで納品時のレイヤー表示に戻し、［画像を統合して書き出し］から、原寸・同じ書き出し範囲で見本PNGを1枚作ります。紙原稿はキャンバス全体のピクセル寸法、解像度、仕上がり寸法、塗り足し幅を、縦読み原稿は全体の幅と高さを控えます。カラー作品ではカラープロファイルも記録します。見本PNGは見た目の照合用で、編集用原稿や印刷所指定の入稿データの代わりにはなりません。",
+          "proTip": "ファイル名に役割を付けましょう。たとえば「第03話_p012_見本.png」と「第03話_p012_編集用.psd」なら、見本の上に直接描き始める取り違えを防げます。"
+        },
+        {
+          "heading": "3. 残したい編集単位を決め、PSDで受け渡す",
+          "body": "ToonStudioの使用環境でPSDのレイヤー読み込みに対応していることを確認します。CSPでは［ファイル］→［複製を保存］からPSDを選びます。［画像を統合して書き出し］で作ったPSDでは、線画と着彩を別々に直せません。線画、下塗り、影、背景、フキダシ、文字は、移行後に動かす単位で分けておきます。PSDを読み込めない環境では、必要なまとまりごとに背景を非表示にし、同じキャンバス範囲の透過PNGを書き出して重ねます。",
+          "proTip": "透過PNGは絵の外側の余白を切り詰めないのがポイントです。各画像を原寸でキャンバス左上に合わせれば、小さな描き文字も元の位置に戻せます。"
+        },
+        {
+          "heading": "4. CSP固有の機能は、移行後の直し方に合わせて処理する",
+          "body": "ベクター線の制御点、コマ枠フォルダー、定規、3D素材、フチ効果は、見た目が移っても元と同じ操作ができるとは限りません。確定した絵は複製側で必要な部分だけラスタライズし、線画と背景は分けて残します。写植を直す予定があるなら、フキダシと文字を分離し、セリフ本文、フォント名、文字サイズ、行間を控えます。ToonStudio側では元の文字を非表示にして打ち直し、見本と改行・ルビ位置を合わせます。",
+          "proTip": "コマの外に描き足しがある背景は、コマ枠と一緒に焼き込む前に立ち止まりましょう。後で構図をずらすなら、枠で隠れる部分まで残した背景素材を別に取っておくと安心です。"
+        },
+        {
+          "heading": "5. ToonStudioで開き、重なりとトーンを点検する",
+          "body": "編集用原稿を開いたら、まずキャンバス寸法とレイヤー数を確認し、ToonStudio側の作業ファイルとして別名保存します。線画や文字の表示を一枚ずつ切り替え、目的の部分だけが消えるか確かめてください。次に見本と並べ、クリッピングした影のはみ出し、マスクの抜け、乗算の濃さ、発光の明るさを見ます。差が出たら全体を統合せず、原因のレイヤーだけ設定を直すか、効果がかかる範囲だけCSPで画像化して差し替えます。",
+          "proTip": "網点はまず100％表示で原寸同士を比べ、その後に実際の納品サイズで確認します。縮小プレビューだけで縞が見えても、原稿自体にモアレが出ているとは限りません。"
+        },
+        {
+          "heading": "6. ブラシは設定値より試し描きを基準に移す",
+          "body": "CSPで主線、髪のツヤ、カケアミなど、使用頻度の高いサブツールを選びます。ブラシサイズ、最小サイズ、筆圧の効き方、手ブレ補正、先端形状、散布間隔、紙質を控え、同じ原稿上に細い入り抜き、低速の曲線、速い払いを描いて見本にします。.sutを直接読み込めるかはToonStudio側の対応形式を確認してください。非対応なら近いペンを土台に、まず線幅と筆圧、次に補正、最後に先端と質感を合わせます。先端画像や紙質素材の持ち出しは、素材の利用条件で認められる範囲に限ります。",
+          "proTip": "同じペンタブと原稿倍率で、普段の力加減のまま人物の輪郭をひとつ描き比べてください。数値が同じでも、顎の払いが太く残ったり、速い線が遅れてついてきたりするなら調整の余地があります。"
+        },
+        {
+          "heading": "7. 納品形式でテスト出力してから全ページに展開する",
+          "body": "テスト原稿で線を一本加え、セリフを一か所直し、保存して開き直します。修正内容とレイヤー構成が残っていれば、次は実際の納品設定で書き出します。紙なら仕上がり線と塗り足し、縦読みなら指定幅、分割順、画像の継ぎ目を確認してください。端末や紙面での文字の読みやすさまで確認できたら、同じ手順を残りのページに適用します。.clip原本、見本、ToonStudioの編集用原稿、納品画像は別々に保管します。",
+          "proTip": "テスト時に「発光だけ画像化」「写植は打ち直し」など、作品ごとの例外をひとこと残しておくと、次話から担当者が替わっても同じ仕上がりにそろえられます。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "PSDを開いたらレイヤーが1枚しかありません。",
+          "a": "まずそのPSDをCSPで開き直します。CSPでも1枚なら、.clip原本から［複製を保存］でレイヤーを保持したPSDを作り直してください。CSPでは分かれているのにToonStudioでは1枚なら、画像として貼り付けていないか、使用環境がレイヤー付きPSDの読み込みに対応しているかを確認します。対応していなければ、編集したい単位ごとの透過PNGに切り替えます。"
+        },
+        {
+          "q": "縦読み原稿が長すぎて開けないときは？",
+          "a": "原稿幅を縮める前に、CSPの複製原稿をコマ間の余白で区切ります。全区間を同じ幅・倍率で書き出し、上から順に連番を付けます。分割位置の高さも控え、再結合したときの総ピクセル高が元と一致するか、境目に白線や絵の重複がないかを確認してください。"
+        },
+        {
+          "q": "カラーは合っているのに、網点だけ納品画像で荒れます。",
+          "a": "網点にした後で拡大縮小を繰り返していないか確認してください。紙向けは原寸を維持して指定解像度で出力します。縮小が避けられないWeb向けは、CSPの複製原稿で該当箇所を網点ではなくグレーの階調にした版も作り、実際の配信幅で見比べると判断しやすくなります。"
+        },
+        {
+          "q": "線の見た目は同じなのに、線幅修正や字の打ち替えができません。",
+          "a": "画像レイヤーとして移った可能性があります。レイヤーが分かれていることと、ベクター線や文字として編集できることは別です。制御点を使う修正なら.clip原本で直して線画だけ差し替えます。今後も変更が入るセリフは、ToonStudio側で文字として組み直しておく方が手戻りを減らせます。"
+        }
+      ]
+    },
+    {
+      "customId": "manual-1-ko",
+      "model": "gpt-6.2-astra",
+      "locale": "ko",
+      "slug": "clip-studio-paint-to-toonstudio",
+      "title": "클립스튜디오(CSP)에서 ToonStudio로: 원고·레이어·브러시 전환 실전 가이드",
+      "summary": "원본 .clip은 보관하고, 레이어 작업용 PSD와 완성본 대조용 PNG를 따로 준비하세요. 한 화를 통째로 옮기기 전에 대표 컷 하나로 선화 수정, 대사 교체, 브러시 필압, 최종 출력까지 확인하면 어디를 살리고 어디를 굳힐지 판단할 수 있습니다.",
+      "steps": [
+        {
+          "heading": "1. 대표 컷 하나로 전환 기준 잡기",
+          "body": "머리카락 선화, 밑색에 클리핑한 그림자, 말풍선, 톤처럼 평소 자주 쓰는 요소가 겹친 컷을 고릅니다. CSP에서 원고를 복제한 뒤 작업본의 가로·세로 픽셀 수, 해상도, 색상 프로파일을 적어 두세요. 같은 상태에서 배경까지 보이는 PNG를 원고 픽셀 크기 그대로 내보냅니다. 이 PNG는 이관 후 달라진 부분을 찾는 기준본입니다.",
+          "proTip": "원고 크기와 플랫폼 업로드 크기는 따로 기록하세요. 작은 업로드본만 보고 맞추면 선 끝이나 마스크 경계가 달라진 걸 놓치기 쉽습니다."
+        },
+        {
+          "heading": "2. 다시 그릴 레이어와 모양만 지킬 레이어 나누기",
+          "body": "복제본의 폴더를 배경, 인물 밑색, 인물 그림자, 선화, 효과, 말풍선, 대사처럼 수정 단위에 맞춰 정리합니다. 밑색과 그 위에 클리핑한 그림자는 붙여 두고, 대사는 말풍선과 분리합니다. 벡터선, 3D 소재, 프레임 테두리 폴더처럼 CSP 전용 편집 기능이 필요한 요소는 원본 .clip에 남깁니다. 모양만 옮겨도 되는 요소에 한해 복제본에서 래스터화하세요.",
+          "proTip": "선화가 화면에 똑같이 보여도 제어점까지 넘어온 건 아닙니다. 선폭 수정이 잦은 컷이라면 CSP 원본의 컷 번호와 ToonStudio 쪽 레이어 이름을 맞춰 두세요."
+        },
+        {
+          "heading": "3. 레이어 PSD와 보완용 PNG 내보내기",
+          "body": "CSP에서 복제본을 ‘파일 → 복제 저장’의 Photoshop 문서(.psd)로 저장합니다. 레이어가 필요한 파일에는 ‘화상을 통합하여 내보내기’를 쓰지 마세요. 특정 소재만 따로 가져와야 한다면 그 소재만 표시하고 용지 레이어까지 끈 뒤 투명 PNG로 내보냅니다. 캔버스 여백을 자르지 않아야 원래 좌표에 포개기 쉽습니다.",
+          "proTip": "PSD는 한 번 다시 열어 선화와 밑색의 눈 아이콘을 각각 꺼 보세요. 이미 한 장으로 합쳐졌다면 ToonStudio에서 불러오기 전에 내보내기 단계부터 바로잡을 수 있습니다."
+        },
+        {
+          "heading": "4. ToonStudio에서 기준본과 포개 검수하기",
+          "body": "사용 중인 ToonStudio 버전에서 PSD를 레이어 문서로 열 수 있는지 확인합니다. 지원한다면 PSD를 열고, 캔버스 픽셀 크기가 같은 상태에서 기준 PNG를 맨 위에 원본 크기로 맞춰 놓으세요. 기준본을 켰다 끄며 컷 테두리 밖으로 색이 새는지, 그림자가 밑색 밖으로 번지는지, 발광 효과의 밝기가 달라졌는지 확인합니다. 차이가 나는 곳은 레이어 순서, 클리핑 대상, 마스크, 합성 모드, 불투명도를 차례로 점검하세요. PSD 레이어를 읽지 못하는 환경이라면 수정 단위별 투명 PNG를 차례로 쌓는 방식으로 전환합니다.",
+          "proTip": "발광이나 보정 효과는 아래 그림의 색에 따라 결과가 달라집니다. 효과층 하나만 PNG로 빼도 모양이 안 맞는다면 확정된 컷에 한해 바탕과 효과를 함께 합치세요."
+        },
+        {
+          "heading": "5. 대사·말풍선·톤은 납품 상태로 확인하기",
+          "body": "대사를 한 줄 바꿔 실제로 입력할 수 있는지 확인하세요. 글자가 화상으로 들어왔다면 기존 글자층을 숨기고 대본에서 문구를 가져와 텍스트를 새로 얹습니다. 서체 사용 권한과 설치 여부를 확인한 뒤 글자 크기, 행간, 줄바꿈, 말풍선 안쪽 여백을 기준본과 맞추세요. 망점은 원고 배율에서만 판단하지 말고 업로드 폭으로 한 번 출력해 줄무늬나 얼룩이 생기는지도 봅니다.",
+          "proTip": "번역판을 만들 예정이라면 글자 없는 말풍선 상태로도 한 번 확인하세요. 대사를 끄자 말풍선까지 사라진다면 지금 분리해 두는 편이 좋습니다."
+        },
+        {
+          "heading": "6. 브러시는 수치보다 실제 획을 기준으로 맞추기",
+          "body": "CSP에서 주력 펜으로 가는 선, 약하게 눌렀다 힘주는 긴 선, 빠르게 빼는 머리카락 끝, 반복 해칭을 한 장에 그려 둡니다. 브러시 크기와 최소 굵기, 필압 반응, 손떨림 보정, 종이 질감 설정도 기록하세요. CSP의 .sut 파일은 ToonStudio에서 직접 읽는다고 가정하지 말고 지원 형식을 먼저 확인합니다. 직접 가져올 수 없다면 가장 비슷한 기본 펜을 골라 같은 캔버스와 태블릿으로 시험합니다. 최대 굵기와 필압부터 맞추고, 선 끝이 비슷해지면 보정과 질감을 조절하세요.",
+          "proTip": "펜선은 비슷한데 빠른 곡선만 늦게 따라온다면 굵기 대신 손떨림 보정부터 낮춰 보세요. 커스텀 브러시 끝 모양이나 텍스처를 옮길 때는 소재 약관에서 타 앱 사용이 허용되는지도 확인하세요."
+        },
+        {
+          "heading": "7. 한 컷 수정부터 최종 출력까지 통과한 뒤 한 화 옮기기",
+          "body": "시험 컷에서 선 하나를 고치고, 밑색을 바꾸고, 대사를 교체한 뒤 ToonStudio 작업 문서로 저장합니다. 닫았다 다시 열어 수정 내용과 레이어 분리가 남아 있는지 확인하세요. 대조용 PNG 레이어는 숨기거나 제거한 뒤 실제 납품 규격으로 출력합니다. 휴대폰에서 글자 크기, 선명도, 컷 사이 여백을 보고 분할본의 위아래 경계도 이어 봅니다. 문제가 없으면 같은 방식으로 나머지 컷을 옮기고, 원본 .clip·전달용 PSD·기준 PNG·ToonStudio 작업본을 구분해 보관하세요.",
+          "proTip": "세로 원고를 나눠 옮겨야 한다면 각 파일의 시작·끝 세로 좌표를 기록하세요. 말풍선 꼬리나 긴 효과선이 분할 경계에 걸리지 않는 곳을 고르면 재조립 검수가 한결 쉽습니다."
+        }
+      ],
+      "faq": [
+        {
+          "q": "컷은 멀쩡한데 수정해도 화면이 전혀 바뀌지 않아요.",
+          "a": "맨 위의 기준 PNG부터 꺼 보세요. 완성본 한 장이 수정 중인 레이어를 그대로 가리고 있을 수 있습니다. 그래도 바뀌지 않으면 같은 위치에 합쳐진 백업 레이어가 켜져 있는지 확인하세요."
+        },
+        {
+          "q": "밑색을 바꾸면 그림자만 예전 색으로 떠 보여요.",
+          "a": "그림자가 밑색과 이미 합쳐진 화상인지, 독립된 그림자층인지 먼저 확인하세요. 독립된 층이라면 원래의 합성 모드와 불투명도를 맞추고 클리핑을 다시 지정합니다. 이미 합쳐졌다면 CSP 복제본에서 밑색과 그림자를 분리해 다시 가져오는 편이 정확합니다."
+        },
+        {
+          "q": "전체적으로 색이 달라 보이는데 레이어마다 보정해야 하나요?",
+          "a": "먼저 같은 화면, 같은 뷰어에서 CSP 기준 PNG와 ToonStudio 출력본을 비교하세요. 두 파일 전체가 비슷한 방향으로 달라졌다면 개별 레이어보다 문서의 색상 프로파일과 출력 시 색 변환부터 확인합니다. 특정 효과 주변만 다르면 그때 해당 층의 합성 모드와 보정 범위를 점검하세요."
+        },
+        {
+          "q": "모든 브러시를 먼저 옮겨야 작업을 시작할 수 있나요?",
+          "a": "아닙니다. 매 컷 쓰는 선화 펜, 채색 붓, 지우개부터 맞추세요. 이미 찍어 둔 장식이나 배경 효과는 별도 레이어로 가져오고, 다음 화에서도 직접 그려야 하는 도구만 추가로 세팅하면 됩니다."
+        }
+      ]
+    },
+    {
+      "customId": "manual-2-en",
+      "model": "gpt-6.2-astra",
+      "locale": "en",
+      "slug": "procreate-ipad-toonstudio-webtoon-panel-workflow",
+      "title": "From Procreate to ToonStudio: Editing Webtoon Panels on iPad",
+      "summary": "Draw in Procreate and build the final scroll in ToonStudio. Keeping each panel’s artwork separate from its placement in the episode lets you fix a drawing, hold a reveal, or give a balloon more room without rebuilding the strip.",
+      "steps": [
+        {
+          "heading": "1. Set the episode width before you draw",
+          "body": "Check your publishing platform’s current requirements for image width, maximum height per file, accepted formats, and file size. Set up the episode in ToonStudio at the delivery width. In Procreate, choose an RGB canvas with an sRGB profile and enough pixels for the largest crop you expect to use. For example, if the episode is 800 px wide, a 1600 px-wide drawing gives you room to crop or scale down. The platform’s actual specs take priority.",
+          "proTip": "Check Procreate’s layer limit when choosing your canvas size. A canvas for one panel or a short sequence is usually easier to ink and revise than an episode-length canvas."
+        },
+        {
+          "heading": "2. Block out the scroll with rough panels",
+          "body": "Export quick thumbnails from Procreate and arrange them in reading order in ToonStudio. Use rough balloons with the actual dialogue, not empty ovals: a two-line exchange and a speech need different amounts of space. Scroll through the rough on a phone and note where the reader first sees a face, a line of dialogue, or the next reveal.",
+          "proTip": "For a surprise entrance, stop scrolling at the last line before the reveal. If the character’s head is already peeking into view, add space above the entrance panel and test again."
+        },
+        {
+          "heading": "3. Finish the art with the final crop in mind",
+          "body": "In Procreate, keep the sketch, inks, color, background, and effects on separate layers or in named groups. Use the approved rough as a framing guide, but draw a little beyond any edge you may want to adjust. Keep layout guides and draft balloons on layers you can hide. Decide where the panel border will live so you don’t bake one into the art and add a second one during layout.",
+          "proTip": "For a hand or sound effect that breaks the panel border, export the overhang as a separate transparent PNG. If it needs to line up exactly with the base art, export both from the same canvas without trimming."
+        },
+        {
+          "heading": "4. Export panel assets to Files",
+          "body": "Keep the layered .procreate file as your art master. Hide guides, sketches, and any lettering you’ll add during layout. In Procreate, use Actions > Share > PNG, then save the image to an episode folder in Files. For an asset that needs transparency, turn off Background color before export and hide any painted background layers. Give each panel a stable ID, such as EP012_P030_art_v01.png.",
+          "proTip": "Number panels in tens. If the editor asks for an extra reaction shot between P030 and P040, call it P035 rather than renaming the rest of the episode."
+        },
+        {
+          "heading": "5. Place, crop, and space the finished panels",
+          "body": "Bring the finished images into the ToonStudio episode and match each one to its rough. Preserve the aspect ratio when resizing. For a full-bleed shot, run the art to both edges of the strip; for an inset, check the side margins against neighboring panels. Once the framing is right, remove the rough from the visible layout. Adjust the gutters between panels rather than adding blank pixels to the Procreate files.",
+          "proTip": "Start with consistent gutters for a continuous exchange. Try a tighter gap for a quick back-and-forth or a wider one before a silent reaction, then judge the change by scrolling rather than by looking at the whole strip zoomed out."
+        },
+        {
+          "heading": "6. Letter at reading size",
+          "body": "Set the final dialogue and balloons in the layout wherever they need to stay editable. For English dialogue, guide the eye from top to bottom and left to right within a shared band. Leave padding around the text, point tails clearly toward the speaker, and keep them off eyes and key gestures. Place display lettering and sound effects after the dialogue so they don’t steal the first read unintentionally.",
+          "proTip": "If a line fits only after you shrink the type, try a better line break, a wider balloon, or moving the balloon into the gutter first. Compare it with the surrounding dialogue at phone size."
+        },
+        {
+          "heading": "7. Revise one panel without disturbing the scroll",
+          "body": "For an art correction, reopen the panel master in Procreate and export a new version with the same canvas dimensions and transparent padding. In ToonStudio, place it at the old panel’s position, scale, and crop. Compare the two before removing the old version; check border breaks, balloon tails, and anything aligned to the character. For a timing note, change the spacing in the layout instead of re-exporting the drawing.",
+          "proTip": "Keep the panel ID in review notes: “P030: move the tail to the second speaker” stays useful even if the editor inserts a panel earlier in the scene."
+        },
+        {
+          "heading": "8. Export and check the actual upload files",
+          "body": "Export the episode at the required pixel width and in the platform’s accepted format. If the strip exceeds a height limit, split it into ordered files within that limit, choosing gutter breaks where possible. Name the files in upload order, such as EP012_001.png and EP012_002.png. Inspect the exported images, then read the assembled episode in the platform preview if available. Check for soft type, clipped effects, doubled gutters, and missing or repeated rows at joins.",
+          "proTip": "Archive the approved ToonStudio layout, Procreate masters, panel assets, and exact upload files together. Keep later corrections separate so you can tell what actually went live."
+        }
+      ],
+      "faq": [
+        {
+          "q": "I already drew the whole scene on one long Procreate canvas. Do I need to redraw it?",
+          "a": "No. If the scene’s timing is locked, use it as one section. If individual beats need editing, duplicate the master and export the panels separately from the copy. Remove baked-in gutter space where you want ToonStudio to control the gap."
+        },
+        {
+          "q": "Why does my panel look blurry even though the Procreate canvas is 300 DPI?",
+          "a": "For a screen release, check pixel dimensions rather than DPI. A close-up cropped from a large canvas can still contain too few pixels for its placed width. Compare the cropped art’s pixel width with its width in the final export, and inspect the exported file rather than a zoomed editor preview."
+        },
+        {
+          "q": "Why did my border-breaking effect get a white box around it?",
+          "a": "Check that you exported a PNG with Background color turned off and that no visible layer fills the canvas. Test the PNG over a colored background. If the box is already there, correct the Procreate export; if not, check the backing or frame under the asset in the layout."
+        },
+        {
+          "q": "Should hand-lettered sound effects stay in Procreate?",
+          "a": "Keep them with the drawing if they are part of the illustration and won’t move. Export them separately if they cross a frame, need independent placement, or may be replaced for localization. Keep a clean version of the art underneath."
+        }
+      ]
+    },
+    {
+      "customId": "manual-2-es",
+      "model": "gpt-6.2-astra",
+      "locale": "es",
+      "slug": "de-procreate-a-toonstudio-edicion-de-vinetas-en-ipad",
+      "title": "De Procreate a ToonStudio: cómo montar un episodio de webtoon desde el iPad",
+      "summary": "Dibuja en Procreate y decide el ritmo de lectura en ToonStudio. Esta guía te lleva del boceto al episodio listo para publicar, con un archivo maestro que podrás retocar sin volver a montar toda la tira.",
+      "steps": [
+        {
+          "heading": "1. Fija el ancho de publicación antes de dibujar",
+          "body": "Consulta los requisitos de la plataforma donde publicarás: ancho en píxeles, altura y peso máximos por imagen, formatos admitidos y límites por episodio. Crea en Procreate un lienzo con el mismo ancho de la entrega o con un múltiplo de ese ancho. Por ejemplo, si la plataforma pide 800 px, puedes dibujar a 1600 px y reducir al final. Para pantalla, lo que cuenta son las dimensiones en píxeles, no los ppp.",
+          "proTip": "Usa un perfil sRGB desde el principio. Si ya trabajas en Display P3, revisa los colores más saturados en una copia convertida a sRGB antes de exportar."
+        },
+        {
+          "heading": "2. Resuelve el flujo de lectura con un boceto vertical",
+          "body": "En Procreate, haz una tira pequeña con las viñetas, las manchas de texto y los huecos entre escenas. No hace falta entintar: desliza la tira en el iPad e imagina qué verá quien lea en el móvil. Si una reacción revela el remate de un diálogo, prueba a separarla hasta que aparezca después del siguiente gesto de scroll.",
+          "proTip": "Marca ya dónde irá cada bocadillo. Dejar aire junto a una cara en el boceto es más fácil que recolocar el dibujo cuando ya está a color."
+        },
+        {
+          "heading": "3. Prepara originales que se puedan remontar",
+          "body": "Divide el dibujo por escenas si un lienzo muy alto te deja pocas capas. Dentro de cada escena, agrupa el fondo, el color y la línea de cada viñeta. Conserva aparte el texto, los bocadillos y las onomatopeyas que quizá quieras mover. Si un personaje rompe el marco, deja espacio para su silueta fuera del borde; no recortes esa parte al preparar la viñeta.",
+          "proTip": "Define la unidad de montaje según lo que deba moverse junto. Dos viñetas que comparten una ilustración de fondo pueden viajar como un solo bloque; dos primeros planos cuyo intervalo aún no has decidido, mejor por separado."
+        },
+        {
+          "heading": "4. Pasa las viñetas del iPad a ToonStudio",
+          "body": "Conserva el original en formato .procreate y trabaja sobre una copia para la entrega. Si vas a rotular en ToonStudio, oculta en la copia los bocadillos y el texto de referencia. Exporta cada viñeta o bloque desde Acciones > Compartir y guárdalo en Archivos. Usa PNG cuando necesites transparencia y oculta también el color de fondo del lienzo. Numera los recursos en orden de lectura, por ejemplo, ep03_010.png y ep03_020.png.",
+          "proTip": "Importa primero una sola viñeta en ToonStudio. Ponle detrás un fondo de otro color: enseguida verás si la zona que debía ser transparente ha quedado blanca."
+        },
+        {
+          "heading": "5. Monta la tira y ajusta la calle entre viñetas",
+          "body": "Prepara en ToonStudio una composición vertical con el ancho de salida elegido. Coloca los recursos en orden y ajusta su tamaño sin deformarlos. Usa una calle de referencia para los intercambios normales de diálogo y varíala con intención: acórtala para encadenar dos gestos y amplíala para sostener un silencio o señalar un cambio de escena. Haz una pasada de lectura antes de afinar los márgenes.",
+          "proTip": "Si una pausa no funciona, mueve la segunda viñeta y el tramo que la sigue como un conjunto. Así cambias ese intervalo sin deshacer el ritmo que ya has conseguido más abajo."
+        },
+        {
+          "heading": "6. Rotula para la pantalla del móvil",
+          "body": "Coloca los bocadillos siguiendo el recorrido de lectura en español: de arriba abajo y, cuando estén a la misma altura, de izquierda a derecha. Deja aire entre las letras y el contorno y dirige los rabillos hacia quien habla, sin tapar ojos ni gestos clave. Si mantuviste la rotulación de Procreate, comprueba su legibilidad con la tira ya reducida al ancho de entrega.",
+          "proTip": "Lee el diálogo en el móvil sin ampliar con los dedos. Si un bocadillo solo cabe haciendo la letra más pequeña que en el resto, prueba primero a acortar la frase o repartirla en dos."
+        },
+        {
+          "heading": "7. Exporta, revisa los cortes y guarda el montaje",
+          "body": "Conserva una copia editable del episodio en ToonStudio. Exporta la tira al ancho definitivo y, si la plataforma exige varias imágenes, divídela en tramos que respeten sus límites. Sitúa los cortes en calles despejadas siempre que sea posible y numera los archivos en orden. Abre la vista previa de publicación en un móvil y lee el episodio de principio a fin: comprueba los empalmes, el orden, el texto y la nitidez de la línea.",
+          "proTip": "Revisa cada empalme sobre el fondo real de publicación. Una raya inesperada puede ser una fila de píxeles sobrante, un margen transparente o una separación que añade la propia plataforma."
+        }
+      ],
+      "faq": [
+        {
+          "q": "¿Me conviene importar una tira entera o una imagen por viñeta?",
+          "a": "Si el montaje ya está cerrado, una tira por escena reduce el número de archivos. Si aún estás probando pausas, encuadres o posiciones de bocadillos, importa viñetas sueltas. El corte para publicar es otra decisión: hazlo al final, cuando el ritmo ya funcione."
+        },
+        {
+          "q": "¿Qué hago si la línea se ve borrosa al pasar a ToonStudio?",
+          "a": "Compara el PNG de Procreate con una exportación de ToonStudio, ambos al ancho final y al 100 %. Si el primero ya está borroso, revisa el tamaño del dibujo de origen. Si solo falla el segundo, comprueba que no hayas ampliado una viñeta pequeña o reducido la tira dos veces. No juzgues la nitidez únicamente por el zoom del editor."
+        },
+        {
+          "q": "¿Cómo corrijo una viñeta después de montar el episodio?",
+          "a": "Retócala en el original de Procreate y vuelve a exportarla con las mismas dimensiones y el mismo recorte. En ToonStudio, coloca la versión nueva sobre la anterior, comprueba que coincidan los bordes y retira la antigua. Revisa también los rabillos y las onomatopeyas: aunque el marco no haya cambiado, puede que ya no apunten al sitio correcto."
+        },
+        {
+          "q": "¿Qué hago si una imagen supera el peso permitido?",
+          "a": "Mantén el ancho de publicación. Si la plataforma admite más archivos, prueba primero a dividir el tramo en una calle. Si no necesitas transparencia y se admite JPEG, exporta una copia con compresión moderada y revisa de cerca el texto, las tramas y los contornos antes de subirla."
+        }
+      ]
+    },
+    {
+      "customId": "manual-2-ja",
+      "model": "gpt-6.2-astra",
+      "locale": "ja",
+      "slug": "procreate-ipad-toonstudio-webtoon-panel-workflow",
+      "title": "Procreateで描いて、ToonStudioでコマを組む：iPad作家のための縦読み原稿ガイド",
+      "summary": "作画の原本はProcreateに残し、ToonStudioではコマの順番、コマ間、セリフの見せ方を詰めます。ネームの引き継ぎからスマホでの試し読み、配信用画像の分割まで、原稿を描き直さずに仕上げる手順です。",
+      "steps": [
+        {
+          "heading": "1. 配信先の原稿幅を先に決める",
+          "body": "配信先の入稿要項で、画像の横幅、1枚あたりの最大の高さと容量、対応形式を確認します。ToonStudioで組む縦読み原稿の幅は、この仕上がり幅に合わせます。たとえば入稿幅が800pxなら、編集する原稿も幅800pxが基準です。Procreateで幅1600pxで描く場合は、線も描き文字も半分に縮む前提で、代表の1コマを先に縮小して読めるか確かめます。",
+          "proTip": "画面向けの原稿はdpiの数値より、書き出した画像のピクセル寸法で判断します。カラー作画は最初からsRGBにそろえると、アプリをまたいだ色確認がしやすくなります。"
+        },
+        {
+          "heading": "2. ネームにコマ番号と「間」の指示を入れる",
+          "body": "縦に並べたネームに上からコマ番号を振り、セリフの順番と、読者の指を止めたい位置を書き込みます。たとえば「010：問いかけ」「020：無言の手元」「030：返事のアップ」。返事を焦らしたいなら、広げるのは020の前ではなく、020と030の間です。このネームを見本にして、清書したコマをToonStudioで並べます。",
+          "proTip": "番号は010、020、030と飛ばしておくと、手元の寄りを015として足しても、後ろのファイル名を変えずに済みます。"
+        },
+        {
+          "heading": "3. Procreateでは差し替えやすい単位で描く",
+          "body": "基本は1コマ1キャンバス。背景や光が複数のコマにまたがる見せ場だけは、ひと続きの場面として描きます。線画・塗り・背景・効果・描き文字を分け、仮のフキダシも別レイヤーに置きます。フキダシの位置を見ながら構図を決めつつ、その下の絵も描いておけば、後でセリフの位置をずらせます。",
+          "proTip": "コマ間の白い余白は作画に焼き込まず、ToonStudioで付けます。一方、人物が枠から飛び出す演出は絵の一部。髪先や効果線までキャンバス内に収めてください。"
+        },
+        {
+          "heading": "4. 原本を残し、受け渡し用のコマを書き出す",
+          "body": "レイヤー付き原本は.procreateのまま保管します。仮フキダシ、下描き、ガイドを非表示にし、「アクション」→「共有」→「PNG」から「ファイルに保存」を選びます。透過が必要なコマでは「背景色」も非表示にします。ファイル名は「ep03_020_v01.png」のように話数・コマ番号・版で統一し、その話の素材フォルダにまとめます。",
+          "proTip": "まず枠から人物が飛び出すコマを1枚だけToonStudioに読み込み、色の付いた地の上に置いてみましょう。白い四角が残るなら、背景色か白ベタのレイヤーが表示されたままです。"
+        },
+        {
+          "heading": "5. ToonStudioでコマを並べ、幅とコマ間を別々に整える",
+          "body": "話数用の縦読み原稿にコマ画像を読み込み、ネームの番号順に配置します。まず縦横比を保ったまま、横いっぱいに見せるコマと、左右にアキを取るコマの幅を決めます。次に縦位置を調整します。掛け合いはコマ間を詰め、場面転換では少し広げるなど、同じ幅の余白を機械的に繰り返さないのがポイントです。",
+          "proTip": "大ゴマの効果は、その手前の画面で決まります。直前のセリフを読んでいるときに見せ場の顔がもう見えていたら、大ゴマを少し下げて試し読みします。"
+        },
+        {
+          "heading": "6. フキダシとセリフを置き、視線をつなぐ",
+          "body": "コマ位置が固まったら、確定台本からセリフを入れます。文字とフキダシはできるだけ絵と別に保ち、読む順番に高さの差を付けます。顔からフキダシへ、そこから次の人物やコマへと目が迷わず移るかを確認してください。文字が収まらないときは、すぐに文字サイズを下げず、意味の切れ目で改行するか、ひと呼吸分を次のフキダシに分けます。",
+          "proTip": "描き文字でも、拳に重なる「ドン」は絵と一緒に、コマ間に浮かぶ「……」は独立した素材に。絵と同時に動かしたいかどうかで分けると調整が楽です。"
+        },
+        {
+          "heading": "7. スマホで通読し、修正先を切り分ける",
+          "body": "確認用に書き出し、スマホで画面幅に合わせて、拡大せずに冒頭からスクロールします。最初の一読ではテンポとセリフの順番、二読目では文字の大きさ、線の潰れ、透過の縁を確認します。修正メモは「020：指先が切れている」「030：返事が早く見える」のようにコマ番号で残します。前者はProcreateで直して同じ寸法で再出力し、後者はToonStudioでコマ間だけを直します。",
+          "proTip": "絵を差し替えたら、そのコマ単体だけでなく前後も通読します。顔の向きや位置が少し変わるだけで、フキダシのしっぽが別の人物を指すことがあります。"
+        },
+        {
+          "heading": "8. 入稿用に分割し、つなぎ目まで検品する",
+          "body": "編集できる原稿を保存したうえで、完成画像を配信先指定の幅・形式で書き出します。高さ制限で分割する場合は、できるだけコマ間で切り、分割のための余白は足しません。「ep03_001」「ep03_002」のように連番を振り、全ファイルの寸法と容量を確認します。最後に投稿プレビューで先頭から末尾まで読み、画像の順番、つなぎ目の欠けや重複、ラストの余韻を確かめて入稿します。",
+          "proTip": "「作画原本」「受け渡し素材」「入稿用」は別フォルダに保管します。差し替え後は入稿用フォルダに旧版が混じっていないか、枚数と連番で照合してください。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "Procreateで1話分を長い1枚絵にしてもいいですか？",
+          "a": "背景が途切れず続く落下シーンなどは、長い1枚絵が向いています。会話中心の回まで1枚にすると、コマ間を少し変えるだけでも後ろの絵をまとめて動かすことになります。iPadで使えるレイヤー数もキャンバス寸法に左右されるので、普段はコマ単位、必要な見せ場だけ場面単位にすると扱いやすいです。"
+        },
+        {
+          "q": "幅をそろえたのに、あるコマだけ絵が小さく見えます。",
+          "a": "PNGの左右に透明な余白が残っていないか確認してください。画像の幅には透明部分も含まれるため、同じ幅に配置しても絵柄だけが小さく見えます。不要な余白は原本の複製をトリミングして再出力し、意図した余白はそのまま残します。"
+        },
+        {
+          "q": "コマ間は何px空ければいいですか？",
+          "a": "一律の正解はありません。まず普段の会話に使うアキを仕上がり幅の原稿でひとつ決め、それを基準に詰めたり広げたりします。迷ったらスマホで直前のセリフを読み、「次の表情を今見せたいか、ひと送り後に見せたいか」で決めてください。"
+        },
+        {
+          "q": "仕上げた線画が投稿後にぼやけるのはなぜですか？",
+          "a": "まず入稿用画像を投稿前に開き、指定の横幅になっているか確認します。小さく書き出した素材をToonStudioで拡大している場合は、Procreateの原本から十分な寸法で再出力します。入稿用画像は鮮明で投稿プレビューだけがぼやける場合は、配信先で再縮小や圧縮がかかる条件を確認しましょう。"
+        }
+      ]
+    },
+    {
+      "customId": "manual-2-ko",
+      "model": "gpt-6.2-astra",
+      "locale": "ko",
+      "slug": "procreate-ipad-toonstudio-panel-workflow",
+      "title": "아이패드에서 그린 원고, ToonStudio에서 세로 웹툰으로 편집하기",
+      "summary": "Procreate에서는 수정할 수 있는 그림 원본을 남기고, ToonStudio에서는 컷 순서와 여백, 말풍선을 보며 한 회차의 호흡을 잡습니다. 긴 통원고를 한 장씩 나눠 그린 경우와 컷마다 따로 그린 경우 모두에 쓸 수 있는 작업 순서입니다.",
+      "steps": [
+        {
+          "heading": "1. 연재처 규격을 확인하고 작업 폭을 정하세요",
+          "body": "연재처의 최신 업로드 안내에서 제출 이미지의 가로 폭, 장당 최대 높이와 용량, 허용 파일 형식을 확인하세요. Procreate에서는 모든 작업 캔버스의 가로 폭을 통일합니다. 예를 들어 제출 폭이 800px라면 1600px로 그려 두고 최종 출력 때 800px로 줄일 수 있습니다. 이때 그림뿐 아니라 선 굵기와 글자도 절반으로 줄어든다는 점을 감안하세요.",
+          "proTip": "한 회차를 그리기 전에 대사와 잔선이 있는 컷 하나만 제출 폭으로 줄여 휴대폰에서 보세요. 선이 날아가거나 작은 글씨가 뭉개지면 지금 고치는 편이 빠릅니다."
+        },
+        {
+          "heading": "2. 컷을 옮길 단위에 맞춰 캔버스를 나누세요",
+          "body": "스크롤하면서 간격을 조절할 장면은 한 컷씩 그려 두면 편합니다. 반대로 인물이 컷선을 뚫고 나오거나 배경이 다음 컷까지 이어지는 연출은 붙어 있는 컷들을 한 덩어리로 작업하세요. 긴 원고를 나눠 그릴 때는 그림 한가운데보다 장면 사이 빈 공간에서 끊습니다. 캔버스는 화면용 RGB로 만들고, 별도 납품 지침이 없다면 sRGB 프로파일을 사용하세요.",
+          "proTip": "Procreate는 캔버스가 클수록 쓸 수 있는 레이어 수가 줄어듭니다. 사용자 설정 캔버스를 만들 때 표시되는 최대 레이어 수를 보고 원고 한 장에 넣을 컷 수를 정하세요."
+        },
+        {
+          "heading": "3. 수정용 원본과 편집용 이미지를 따로 보관하세요",
+          "body": "Procreate 원본에는 선화, 채색, 배경, 효과음, 대사를 분리해 두세요. ToonStudio에서 식자할 예정이라면 말풍선과 대사 레이어를 끈 뒤 편집용 이미지를 내보냅니다. 그림과 맞물리는 손글씨 효과음은 그림에 남겨도 좋습니다. 어떤 요소를 어느 쪽에서 고칠지 정해 두면 대사가 두 겹으로 들어가는 일을 막을 수 있습니다.",
+          "proTip": "컷 밖으로 튀어나온 머리카락이나 손끝이 있다면 컷선이 아니라 가장 바깥쪽 그림을 기준으로 여유를 남기세요. 내보낼 때 잘린 부분은 컷 간격을 넓혀도 돌아오지 않습니다."
+        },
+        {
+          "heading": "4. Procreate에서 파일 앱으로 내보내세요",
+          "body": "원고를 열고 ‘동작(렌치) → 공유’에서 형식을 선택한 뒤 ‘파일에 저장’으로 회차 폴더에 모읍니다. 선화와 망점이 있는 컷은 PNG가 무난합니다. 컷 바깥을 투명하게 써야 한다면 레이어 목록에서 ‘배경 색상’을 끄고 PNG로 저장하세요. 수정에 쓸 .procreate 원본은 편집용 이미지와 별도 폴더에 백업합니다.",
+          "proTip": "파일명 앞에 ‘012_001’, ‘012_002’처럼 회차와 컷 번호를 같은 자릿수로 붙이세요. 중간에 끼워 넣는 반응 컷은 ‘012_002a’로 두면 뒤쪽 번호를 전부 바꿀 필요가 없습니다."
+        },
+        {
+          "heading": "5. ToonStudio에 회차 순서대로 배치하세요",
+          "body": "ToonStudio에서 해당 회차의 편집 원고를 열고 파일 앱에 모아 둔 이미지를 불러옵니다. 먼저 첫 컷을 놓고 원고의 좌우 경계와 컷선 위치를 확인한 뒤, 나머지를 콘티 순서대로 배치하세요. 같은 폭의 캔버스에 그린 컷은 같은 비율로 맞춥니다. 작은 반응 컷을 화면 폭에 억지로 늘리거나, 이미 여백이 들어간 통원고 조각 사이에 여백을 한 번 더 넣지 않도록 주의하세요.",
+          "proTip": "편집을 시작하기 전에 첫 컷부터 끝 컷까지 빠르게 훑어 컷 수와 장면 전환 지점을 콘티와 대조하세요. 빠진 컷을 식자 후에 발견하면 말풍선까지 밀어야 합니다."
+        },
+        {
+          "heading": "6. 컷 사이 여백으로 스크롤 호흡을 잡으세요",
+          "body": "먼저 같은 장면 안의 기본 간격을 맞추고, 연출이 필요한 곳만 바꿉니다. 말대꾸가 바로 튀어나오는 두 컷은 가까이 붙이고, 대답을 망설이는 얼굴 뒤에는 빈 공간을 조금 더 주세요. 반전 컷은 앞 대사를 읽는 동안 휴대폰 화면 아래로 결말이 먼저 비치지 않는지 확인합니다. 반대로 긴장감이 끊기면 여백을 줄여 다음 컷의 첫 단서가 보이게 하세요.",
+          "proTip": "여백 길이를 숫자로만 결정하지 마세요. 휴대폰에서 평소 만화를 읽는 속도로 한 번 밀었을 때 어느 표정에서 손이 멈추는지가 더 좋은 기준입니다."
+        },
+        {
+          "heading": "7. 말풍선을 얹고 대사 흐름을 점검하세요",
+          "body": "컷 위치가 잡히면 대본 순서대로 말풍선을 배치합니다. 먼저 읽을 말풍선이 위쪽에 오도록 하고, 높이가 비슷한 말풍선은 왼쪽에서 오른쪽으로 자연스럽게 이어지게 하세요. 꼬리는 화자를 분명히 가리키되 옆 인물의 입이나 중요한 표정을 가리지 않게 합니다. 긴 대사는 글자 크기부터 줄이지 말고 뜻이 끊기는 자리에서 줄을 바꾸거나 말풍선을 나누세요.",
+          "proTip": "식자가 끝나면 그림은 잠시 무시하고 말풍선만 따라 읽어 보세요. 한 번이라도 위로 되짚어 읽게 된다면 꼬리를 길게 빼기보다 말풍선 높이부터 조정해 보세요."
+        },
+        {
+          "heading": "8. 제출 규격으로 출력하고 실제 파일을 검수하세요",
+          "body": "편집 원고를 보존한 뒤 연재처가 요구하는 최종 폭과 형식으로 출력합니다. 장당 높이 제한 때문에 나눠야 한다면 말풍선, 얼굴, 효과음 한가운데가 아니라 컷 사이 여백에서 끊으세요. 파일명에 순번을 붙이고 각 파일의 픽셀 크기와 용량을 확인합니다. 마지막으로 출력본을 휴대폰에서 읽으며 글자 선명도, 색 변화, 컷 누락, 분할 경계의 중복이나 잘림을 점검하세요.",
+          "proTip": "수정 요청이 오면 그림은 Procreate 원본에서, 컷 간격과 식자는 ToonStudio 편집 원고에서 고치세요. 컷 하나만 교체했더라도 최종 분할 위치가 달라질 수 있으니 바로 앞뒤 파일까지 이어서 확인합니다."
+        }
+      ],
+      "faq": [
+        {
+          "q": "이미 긴 통원고에 말풍선까지 다 그렸는데 컷마다 다시 나눠야 하나요?",
+          "a": "아닙니다. 대사와 간격이 확정된 구간은 통원고 조각 그대로 배치하세요. 호흡을 바꿀 구간만 컷 사이 빈 곳에서 나누면 됩니다. 대사를 다시 식자할 구간은 Procreate에서 기존 말풍선과 글자를 모두 끈 사본을 내보내세요."
+        },
+        {
+          "q": "PNG로 저장했는데 컷 바깥이 흰색으로 보여요.",
+          "a": "먼저 Procreate의 ‘배경 색상’과 별도로 깔아 둔 흰 레이어가 있는지 확인하세요. 둘 다 껐는데도 하얗게 보이면 미리보기 배경 때문일 수 있습니다. 편집 원고에서 컷 뒤에 임시로 색 면을 놓아 비쳐 보이는지 확인한 뒤 색 면을 지우세요."
+        },
+        {
+          "q": "수정한 컷만 다시 넣었더니 주변 컷과 위치가 어긋나요.",
+          "a": "교체 전후 이미지의 캔버스 폭과 높이, 투명 여백이 같은지 비교하세요. 그림 크기가 같아도 여백을 잘라 내면 배치 기준점이 달라집니다. 가능하면 기존 캔버스 크기를 유지해 다시 내보내고, 컷선과 말풍선 꼬리가 원래 위치에 맞는지 확인하세요."
+        },
+        {
+          "q": "아이패드에서는 또렷한데 제출본의 대사가 흐려요.",
+          "a": "편집 화면이 아니라 최종 파일의 실제 픽셀 폭부터 확인하세요. 작은 이미지를 확대했다가 다시 줄이거나 JPEG를 여러 번 저장하면 글자 테두리가 뭉개질 수 있습니다. 원본 크기의 그림으로 편집하고 최종 폭으로 한 번만 줄이세요. 그래도 작게 읽히면 식자 단계에서 글자 크기와 줄바꿈을 다시 잡는 편이 좋습니다."
+        }
+      ]
+    },
+    {
+      "customId": "manual-3-en",
+      "model": "gpt-5.5-2026-04-23",
+      "locale": "en",
+      "slug": "switch-from-medibang-ibispaint-to-toonstudio-free-vertical-scroll-export",
+      "title": "Switch from MediBang or ibisPaint to ToonStudio Free Vertical Scroll Export",
+      "summary": "A practical migration workflow for comic creators moving finished or in-progress work from MediBang Paint or ibisPaint into ToonStudio, with a focus on preparing clean files, rebuilding a vertical scroll canvas, checking layers and lettering, and exporting a free webtoon-ready vertical episode.",
+      "steps": [
+        {
+          "heading": "Decide what you are moving: editable art or flattened pages",
+          "body": "Before exporting anything, choose your migration path. If you still need to redraw, recolor, relabel, or adjust panel timing, move editable files as PSD where possible. If the art is final and you only need to assemble a scroll episode, export high-resolution PNGs instead. PSD is better for preserving inks, flats, shadows, effects, speech balloons, and lettering as separate layers. PNG is safer when the original app uses brush effects, blending modes, clipping stacks, or text rendering that may not translate perfectly.",
+          "proTip": "For a deadline job, export both: one PSD for editing and one flattened PNG backup for visual reference. The PNG tells you what the page is supposed to look like if any layer behavior changes after import."
+        },
+        {
+          "heading": "Clean up your MediBang or ibisPaint file first",
+          "body": "Open the original project and remove anything you do not want to ship: sketch layers, unused color tests, hidden joke layers, old balloon drafts, and duplicate folders. Rename important layers with simple labels such as Inks, Flats, Shadows, FX, Balloons, SFX, and Text. Merge only the layers you are sure you will not need to edit. Keep line art, character color, backgrounds, speech balloons, and lettering separate if you plan to fine-tune the episode inside ToonStudio.",
+          "proTip": "Hidden layers can still travel inside a PSD and make the file heavier. If you do not need them, delete them before export and keep a separate archived copy of the original app file."
+        },
+        {
+          "heading": "Export from MediBang Paint",
+          "body": "In MediBang Paint, save your native project first, then export a PSD if you need editable layers. For finished artwork, export each page or section as a PNG at full size. If your comic was drawn as separate pages, name the files in reading order, such as episode01_001.png, episode01_002.png, and episode01_003.png. Avoid JPEG for final art unless you deliberately want compression, because it can dirty up flat colors, screentones, and crisp balloon edges.",
+          "proTip": "If your MediBang file uses text layers, check the exported PSD carefully. Fonts, spacing, and text boxes may not remain editable in the same way across apps, so keep a flattened reference PNG beside the PSD."
+        },
+        {
+          "heading": "Export from ibisPaint",
+          "body": "In ibisPaint, open the artwork and export as PSD when you want to preserve layers for ToonStudio. If you are moving finished cuts, export transparent or opaque PNGs at original resolution. Watch for app-specific brush textures, clipping setups, and blending modes; they can look slightly different outside ibisPaint. If a special effect is final, consider duplicating the file and flattening that effect into a normal image layer before export.",
+          "proTip": "For glow, blur, texture, and multiply-heavy shading stacks, export a flattened PNG proof. It is the fastest way to catch visual changes after import."
+        },
+        {
+          "heading": "Create a vertical scroll project in ToonStudio",
+          "body": "Start a new ToonStudio project using a vertical scroll format. Choose the width expected by your target platform or your studio pipeline, then give yourself enough height to assemble the episode comfortably. If you are unsure, work in sections instead of one giant canvas: intro, scene 1, scene 2, climax, outro. ToonStudio’s free vertical scroll export is designed for webtoon-style delivery, so build the episode as one continuous reading flow rather than as print pages stacked without pacing.",
+          "proTip": "A good scroll is not just pages glued together. Add breathing room between beats, longer gutters before reveals, and extra vertical space after big emotional panels."
+        },
+        {
+          "heading": "Import your PSDs or PNG cuts",
+          "body": "Bring your exported files into ToonStudio in story order. If importing PSDs, check the layer stack immediately: inks above colors, balloons above art, text above balloons, and effects where they belong. If importing PNGs, place each image as a cut and line them up in the scroll. Use the flattened reference export from MediBang or ibisPaint to compare color, texture, balloon placement, and special effects.",
+          "proTip": "Do not start fixing art until the whole episode is assembled. First confirm that everything imported, appears in the right order, and matches the reference."
+        },
+        {
+          "heading": "Rebuild scroll pacing instead of copying page layout blindly",
+          "body": "A page layout and a vertical scroll layout read differently. Wide page panels may need extra spacing above and below. Dense dialogue scenes often need more gutter room so the reader can breathe between balloons. Action panels may work better if separated into smaller reveals. In ToonStudio, adjust panel spacing, crop oversized page areas, and use vertical rhythm to guide the reader’s thumb. Keep important faces, sound effects, and reveals away from awkward crop zones.",
+          "proTip": "Scroll pacing is timing. If a punchline, kiss, monster reveal, or transformation matters, give it its own screen moment instead of burying it directly under the previous panel."
+        },
+        {
+          "heading": "Check lettering, balloons, and SFX after migration",
+          "body": "Lettering is the first thing readers notice when it goes wrong. Zoom to normal phone-reading size and check that all text is sharp, centered, and comfortably readable. Make sure balloon tails point clearly to the speaker, SFX does not cover important acting, and vertical spacing does not separate dialogue from the panel it belongs to. If text came in flattened and needs edits, recreate it in ToonStudio rather than stretching a rasterized text layer.",
+          "proTip": "Test on a phone, not only on a desktop monitor. If you have to pinch-zoom to read a line, the lettering is too small for vertical scroll."
+        },
+        {
+          "heading": "Use ToonStudio free vertical scroll export",
+          "body": "When the episode is assembled and checked, run ToonStudio’s free vertical scroll export. Export using the platform-ready settings required by your destination, or use a general webtoon-ready vertical image output if you are preparing samples, previews, or portfolio posts. Review the exported file or slices from top to bottom before uploading. Look for missing layers, banding in gradients, cut-off balloons, strange seams, and overly large file size.",
+          "proTip": "Always review the exported version, not just the canvas. Export is where hidden size limits, slice boundaries, and compression issues usually show up."
+        },
+        {
+          "heading": "Archive the migration cleanly",
+          "body": "After export, keep a tidy archive: the original MediBang or ibisPaint file, the exported PSD, the reference PNGs, the ToonStudio project, and the final vertical scroll export. Store the final file with the episode number and version, such as seriesname_ep03_v02_final. If a client, editor, or platform asks for changes later, you will know exactly which file to reopen.",
+          "proTip": "Never name a delivery file final_final_reallyfinal. Use version numbers. Your future self and your editor will thank you."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Should I migrate from MediBang or ibisPaint as PSD or PNG?",
+          "a": "Use PSD when you need editable layers. Use PNG when the art is finished or when app-specific effects must look exactly the same. For safest migration, export both: PSD for editing and PNG as a visual reference."
+        },
+        {
+          "q": "Will my brushes, fonts, and blending modes transfer perfectly into ToonStudio?",
+          "a": "Not always. Brush strokes are usually fine once rasterized, but live brush behavior does not transfer. Fonts may change if the same font is not available, and some blending modes, clipping setups, glows, or texture effects can render differently. Check against a flattened reference PNG."
+        },
+        {
+          "q": "Can I move a page-format comic into a vertical scroll episode?",
+          "a": "Yes, but you should re-pace it. A print or page canvas often feels cramped when simply stacked vertically. Add gutters, separate big beats, adjust balloon placement, and give reveals enough vertical space to land."
+        },
+        {
+          "q": "What image format should I avoid for webtoon export?",
+          "a": "Avoid JPEG during migration if you still need clean art. JPEG compression can create artifacts around line art, text, screentones, and flat colors. Use PSD for editable work and PNG for clean flattened transfers."
+        },
+        {
+          "q": "Why does my exported vertical scroll look different from the ToonStudio canvas?",
+          "a": "The export may apply slicing, scaling, color conversion, or compression depending on your settings. Review the actual exported file from top to bottom and compare it with your reference. If something changed, check layer visibility, effects, canvas size, and export dimensions."
+        },
+        {
+          "q": "Is ToonStudio’s free vertical scroll export enough for a creator switching apps?",
+          "a": "For many creators, yes. If your goal is to assemble and output a webtoon-style vertical episode without rebuilding your whole drawing workflow, the free vertical scroll export gives you a practical path from MediBang or ibisPaint files to a scroll-ready delivery."
+        }
+      ]
+    },
+    {
+      "customId": "manual-3-es",
+      "model": "gpt-6.2-astra",
+      "locale": "es",
+      "slug": "de-medibang-e-ibispaint-a-toonstudio-exportacion-vertical-gratuita",
+      "title": "De MediBang o ibisPaint a ToonStudio: cómo exportar tu webtoon vertical con el plan gratuito",
+      "summary": "Puedes seguir dibujando en MediBang o ibisPaint y usar ToonStudio solo para preparar la entrega. La clave es conservar el original por capas, montar una copia de lectura continua y cortarla según los requisitos del portal donde publiques.",
+      "steps": [
+        {
+          "heading": "1. Fija las medidas de entrega antes de mover el dibujo",
+          "body": "Consulta en el portal de publicación el ancho exigido en píxeles, el alto máximo por imagen, los formatos admitidos y el límite de peso por archivo y por episodio. Comprueba qué tamaños y opciones de exportación te ofrece el plan gratuito de ToonStudio. Antes de montar todo el capítulo, haz una prueba de ida y vuelta con una viñeta que tenga texto: expórtala desde tu app, llévala a ToonStudio y revisa el archivo de salida en el móvil.",
+          "proTip": "Para una entrega en pantalla, manda el ancho en píxeles. Cambiar solo los ppp no te dará más definición ni hará que una imagen demasiado ancha cumpla el límite."
+        },
+        {
+          "heading": "2. Guarda el máster y prepara una copia para el montaje",
+          "body": "En MediBang, guarda el original en MDP; en ibisPaint, conserva el proyecto en Mi galería y haz una copia de seguridad en IPV. Trabaja sobre un duplicado: oculta bocetos, guías y notas, y deja visibles los fondos, las viñetas, los bocadillos y las onomatopeyas que deban salir. Si el episodio tiene que leerse sobre blanco, añade un fondo blanco real en vez de dejar zonas transparentes.",
+          "proTip": "No acoples el original. Si mañana cambia una frase, podrás corregir el bocadillo en su capa y sustituir solo el tramo afectado."
+        },
+        {
+          "heading": "3. Saca de tu app una tira o una serie de tramos",
+          "body": "En MediBang, usa la opción de exportar a PNG; en ibisPaint, guarda una copia como PNG desde Mi galería. Para un episodio ya maquetado en vertical, exporta una sola tira si el tamaño lo permite. Si pesa demasiado para trabajar con soltura, divídela en tramos del mismo ancho, sin solapes ni filas perdidas. Si vienes de páginas con varias viñetas en paralelo, separa las viñetas o los grupos que deban leerse juntos: encoger la página entera suele dejar la rotulación diminuta.",
+          "proTip": "Numera los archivos con ceros a la izquierda, por ejemplo, ep03_001.png y ep03_002.png. Así el tramo 10 no se colará entre el 1 y el 2."
+        },
+        {
+          "heading": "4. Monta la lectura continua en ToonStudio",
+          "body": "Prepara un lienzo vertical con el ancho de entrega e importa las imágenes en orden de lectura. Si son tramos de una tira terminada, alinea sus bordes sin añadir separación: la calle entre viñetas ya forma parte del dibujo. Si son viñetas sueltas, coloca primero los bloques de diálogo y acción y ajusta después las calles. Deja más aire antes de una revelación si quieres que el lector tenga que deslizar para verla.",
+          "proTip": "Si necesitas reducir las imágenes, mantén la proporción y aplica la misma escala a todos los tramos. No estires cada uno por separado para que encaje."
+        },
+        {
+          "heading": "5. Revisa el episodio con el pulgar",
+          "body": "Lee la tira de arriba abajo en el móvil, sin pellizcar para ampliar. Comprueba que se entiende quién habla primero, que las colas de los bocadillos apuntan al personaje correcto y que ninguna onomatopeya queda pegada al borde. Si una frase cuesta leerla, corrige el cuerpo de letra o reparte el texto en el archivo por capas; después, vuelve a exportar ese tramo.",
+          "proTip": "Detente justo antes de cada giro de escena. Si la siguiente viñeta ya asoma y destripa el remate, alarga esa calle; si deslizas sin encontrar nada nuevo, acórtala."
+        },
+        {
+          "heading": "6. Exporta y prepara los cortes de entrega",
+          "body": "Elige entre las opciones gratuitas disponibles el ancho y el formato que admita el portal. PNG suele conservar mejor la línea y la rotulación; JPEG puede ahorrar peso en fondos pictóricos, pero conviene revisar los contornos de las letras. Si necesitas varios archivos y la exportación permite ajustar los cortes, sitúalos en calles sin dibujo y respeta el alto máximo de cada pieza. Si solo obtienes una tira completa, divídela después en un editor local, sin volver a escalarla.",
+          "proTip": "Por ejemplo, si tu portal pide 800 px de ancho y admite hasta 2000 px de alto por imagen, una pieza de 800 × 1840 px es válida. No hace falta rellenarla hasta 2000 px: ese blanco extra aparecería como una pausa al leer."
+        },
+        {
+          "heading": "7. Comprueba los archivos que realmente vas a subir",
+          "body": "Guarda la entrega en una carpeta aparte. Verifica dimensiones, peso y numeración de todos los archivos y súbelos en ese orden a la vista previa del portal. Recorre cada unión: no debería haber franjas blancas imprevistas, líneas repetidas ni trozos de viñeta ausentes. Revisa también la primera imagen y el cierre del episodio antes de publicar.",
+          "proTip": "Conserva juntos el máster por capas, el montaje y la carpeta de entrega aprobada. Si toca corregir el episodio, sabrás qué versión leyó el público."
+        }
+      ],
+      "faq": [
+        {
+          "q": "¿Tengo que dejar de dibujar en MediBang o ibisPaint?",
+          "a": "No. Puedes seguir entintando, coloreando y rotulando en tu app habitual. Para usar ToonStudio solo en la entrega, basta con llevarte una copia visual en PNG; los textos y las capas editables se quedan en el máster."
+        },
+        {
+          "q": "¿Qué hago si el episodio entero no cabe en un lienzo del plan gratuito?",
+          "a": "Móntalo por bloques del mismo ancho, con el cambio de bloque en una calle. Exporta y numera cada bloque en orden. Al revisar la unión, comprueba que la pausa prevista no se haya añadido dos veces, una al final del primer bloque y otra al principio del siguiente."
+        },
+        {
+          "q": "¿Por qué aparece una raya blanca entre dos archivos?",
+          "a": "Abre ambos archivos al 100 % y mira la última fila de uno y la primera del siguiente. Si hay un margen o una fila transparente, corrige el recorte y exporta de nuevo. Si los bordes encajan fuera del portal, revisa si su visor añade separación entre imágenes."
+        },
+        {
+          "q": "¿Cómo bajo el peso sin estropear el texto?",
+          "a": "Primero comprueba que no estés entregando más píxeles de ancho de los necesarios. Si el portal admite JPEG, prueba la compresión en un tramo con letra pequeña y fondos detallados y compara el resultado en el móvil. Si el único límite es por archivo y el portal admite más piezas, también puedes hacer cortes más cortos sin reducir la calidad."
+        }
+      ]
+    },
+    {
+      "customId": "manual-3-ja",
+      "model": "gpt-6.2-astra",
+      "locale": "ja",
+      "slug": "medibang-ibispaint-toonstudio-vertical-scroll-export",
+      "title": "メディバン・アイビスペイントからの乗り換えガイド：縦読み原稿の書き出しをToonStudioで",
+      "summary": "作画環境を丸ごと変える必要はありません。メディバンペイントやアイビスペイントで描いた原稿を使い、縦につないだときの間の調整と、投稿用画像の書き出しだけをToonStudioに移す手順です。まずは短い場面で、投稿先の規定を無料の範囲で満たせるか試しましょう。",
+      "steps": [
+        {
+          "heading": "1. 投稿先から逆算して、無料で書き出せるか試す",
+          "body": "投稿先の最新の入稿規定を開き、画像の横幅、1枚あたりの高さと容量の上限、対応形式、1話の枚数制限を控えます。次に、セリフとベタ塗りの両方が入った数コマを画像にして、ToonStudioで試しに並べます。無料で選べる書き出し設定を確認し、実際に保存した画像の寸法・容量・透かしの有無を確かめてから本編に取りかかります。",
+          "proTip": "幅と高さはpx（ピクセル）で照合します。元原稿と同じdpiでも、書き出した画像の横幅が投稿規定と一致するとは限りません。"
+        },
+        {
+          "heading": "2. 描き直せる元原稿を残し、受け渡し用の画像を作る",
+          "body": "メディバンではレイヤー付きのMDP原稿を別名保存。アイビスペイントではマイギャラリーで作品を複製し、バックアップ用にIPVも保管します。投稿用の見た目が固まっているなら、下描き・ガイド・メモを非表示にし、各ページを統合PNGで書き出せば十分です。ToonStudioに渡すのはこの画像で、元原稿のレイヤーは統合しません。",
+          "proTip": "白地のつもりだった部分が透明になっていないか、書き出したPNGを開いて確認。白で見せたい場面は、元原稿の最背面に白いレイヤーを敷くと確実です。"
+        },
+        {
+          "heading": "3. 縦読みの順番に素材をそろえる",
+          "body": "すでに縦長の原稿なら、上から下へ読める順に素材を用意します。見開きや右開きのページ漫画は、ページを丸ごと積む前に、スマホ幅でセリフが読めるか確認。文字が小さすぎるページだけ、元のアプリでコマやひと続きの会話ごとに切り出します。フキダシのしっぽや枠外にかかった描き文字まで含めてください。",
+          "proTip": "素材名は「第03話_001.png」「第03話_002.png」のように連番に。切り出しで読み順を変えた箇所は、元のページ番号よりも読者に見せる順番を優先します。"
+        },
+        {
+          "heading": "4. ToonStudioで横幅をそろえ、コマ間で間を作る",
+          "body": "投稿先の横幅を基準に縦読み用のキャンバスを用意し、素材を上から順に配置します。サイズ変更は縦横比を固定し、人物の顔やフキダシを横に引き伸ばさないようにします。会話の応酬はコマ間を詰め、場面転換や見せゴマの手前では余白を広げます。元ページの上下に余白がある場合は、つなぎ目で二重に空いていないかも確認します。",
+          "proTip": "見せゴマは単体の大きさだけでなく、ひとつ前のセリフを読んだ時点でどこまで見えているかが肝。スマホでゆっくりスクロールして間を決めましょう。"
+        },
+        {
+          "heading": "5. 入稿規定に沿って分割・書き出しする",
+          "body": "配置を保存してから投稿用を書き出します。線画や小さな文字をくっきり残したいならPNG、容量を抑えたいカラー原稿ならJPEGを候補にし、投稿先が受け付ける形式を選びます。1枚の高さが上限を超える場合は、上限に達する少し手前のコマ間を分割位置にします。希望の位置で分割できない場合は、区切りたい余白ごとに原稿を分け、同じ横幅で個別に書き出します。",
+          "proTip": "容量超過だからといって、まず横幅を削るのは禁物。投稿枚数に余裕があれば画像を短く分け、JPEGならセリフの輪郭を見ながら圧縮の強さを調整します。"
+        },
+        {
+          "heading": "6. 投稿プレビューで通読して納品する",
+          "body": "書き出し先は話数ごとに分け、投稿用画像だけを連番順にアップロードします。公開前に投稿先のプレビューをスマホで開き、冒頭から末尾まで通読。順番の逆転、コマの重複や抜け、分割位置の白線、セリフの欠けを確認します。直しが出たら該当素材を差し替え、前後のつなぎまで再確認します。",
+          "proTip": "初回の入稿が通ったら、採用した横幅・形式・分割の目安を話数フォルダーにメモ。元原稿、配置データ、投稿した最終画像を別々に残すと、次話も修正版も迷わず出せます。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "移行後もメディバンやアイビスペイントでセリフを直せますか？",
+          "a": "はい。レイヤー付きの元原稿を残しておけば、元のアプリで写植を直せます。統合PNGでは文字だけを編集できないので、修正したページやコマを同じ寸法で書き出し直し、ToonStudio側で差し替えてください。"
+        },
+        {
+          "q": "長い1話を読み込むと動作が重くなります。",
+          "a": "1話を巨大な1枚画像にせず、場面ごとの短いブロックに分けて作業します。各ブロックは同じ横幅でそろえ、末尾と次の先頭を並べて、余白の空きすぎやコマの重複がないか確認してください。"
+        },
+        {
+          "q": "無料で書き出した画像が投稿規定に合いません。",
+          "a": "高さや1枚の容量だけが問題なら、枚数制限内で短く分ける方法を試します。必要な横幅や形式自体が現在の無料設定で選べない場合は、無理に拡大したり拡張子だけ変えたりせず、元の作画アプリで規定どおりに書き出す工程を残してください。"
+        }
+      ]
+    },
+    {
+      "customId": "manual-3-ko",
+      "model": "gpt-6.2-astra",
+      "locale": "ko",
+      "slug": "medibang-ibispaint-to-toonstudio-scroll-export",
+      "title": "메디방·이비스페인트 원고, ToonStudio에서 무료로 세로 스크롤 출고하기",
+      "summary": "그리는 앱까지 바꿀 필요는 없습니다. 메디방페인트나 이비스페인트에 레이어 원본을 남겨 두고, ToonStudio에서는 한 화의 스크롤 흐름을 점검한 뒤 업로드용 이미지를 뽑으세요. 처음에는 짧은 장면 하나로 무료 출고 범위와 화질부터 확인하는 게 좋습니다.",
+      "steps": [
+        {
+          "heading": "1. 연재처 규격으로 출고 기준 잡기",
+          "body": "연재처의 작품 등록 화면에서 이미지 가로 폭(px), 파일 한 장의 최대 높이와 용량, 허용 형식, 한 화의 업로드 제한을 확인하세요. 원고를 몇 dpi로 그렸는지보다 중요한 건 최종 파일의 실제 픽셀 크기입니다. 연재처마다 기준이 다르니 다른 작품의 출고값을 그대로 쓰지 마세요.",
+          "proTip": "‘가로 __px / 장당 높이 __px 이하 / 장당 __MB 이하 / 허용 형식 __’처럼 한 줄로 적어 두면 마지막 검수가 빨라집니다."
+        },
+        {
+          "heading": "2. 레이어 원본은 보관하고, 넘길 사본만 만들기",
+          "body": "메디방에서는 작업 중인 MDP를 저장한 뒤 PNG 사본을 내보내세요. 이비스페인트에서는 내 갤러리에 편집 가능한 작품을 그대로 두고 PNG로 저장하세요. 컷선, 말풍선, 대사, 효과음이 모두 보이는 상태여야 합니다. 흰 바탕 연출이라면 맨 아래에 흰 배경을 깔아 투명 여백이 남지 않게 하세요.",
+          "proTip": "PNG 사본을 한 번 열어 대사 한 줄과 말풍선 꼬리까지 확인하세요. 작업 중 잠시 숨긴 레이어는 내보낸 그림에서도 빠집니다."
+        },
+        {
+          "heading": "3. 통원고와 분할 원고 구분하기",
+          "body": "이미 한 줄로 이어진 긴 원고라면 그 흐름을 유지하세요. 캔버스를 여러 장으로 나눠 그렸다면 각 장의 가로 폭을 맞추고 읽는 순서대로 ‘012화_001.png’, ‘012화_002.png’처럼 번호를 붙이세요. 태블릿에서 긴 이미지 저장이 자꾸 끊기면 억지로 한 장으로 합치지 말고, 컷 사이 여백을 기준으로 나눠 넘기세요.",
+          "proTip": "앞 장 아래쪽과 다음 장 위쪽에 같은 여백을 두 번 넣지 마세요. 붙여 읽으면 의도한 한 박자 쉼이 두 배로 길어집니다."
+        },
+        {
+          "heading": "4. 짧은 장면으로 무료 출고 먼저 시험하기",
+          "body": "ToonStudio에서 시험용 회차를 만들고, 작은 대사와 그라데이션이 함께 있는 장면을 불러오세요. 세로 스크롤 출고 화면에서 무료로 선택할 수 있는 형식과 크기를 연재처 기준과 대조한 뒤 실제 파일을 저장해 보세요. 필요한 설정에 유료 표시가 있거나 결과물이 규격에 맞지 않으면, 한 화를 전부 옮기기 전에 무료 설정으로 납품할 수 있는지부터 판단하세요.",
+          "proTip": "미리보기만 보고 화질을 판단하지 마세요. 저장된 파일의 속성에서 가로·세로 픽셀과 용량을 확인하고, 휴대폰에서 작은 대사가 읽히는지 보세요."
+        },
+        {
+          "heading": "5. 한 화를 순서대로 놓고 스크롤 호흡 보기",
+          "body": "본편 이미지를 첫 컷부터 엔딩 컷까지 차례로 배치하세요. 분할 원고는 각 이미지의 왼쪽 가장자리와 가로 폭을 맞추고 이음매를 확인하세요. 휴대폰에서 평소 읽는 속도로 내려 보며 대사를 읽기도 전에 다음 장면의 반전이 보이지 않는지, 장면이 바뀌는 여백이 지나치게 길지는 않은지 점검하세요.",
+          "proTip": "대사 오탈자를 찾았다면 합쳐진 PNG 위에 덧칠하지 말고 원본 앱에서 고치세요. 수정한 구간만 같은 폭으로 다시 내보내 교체하면 다음 출고 때도 수정 사항이 남습니다."
+        },
+        {
+          "heading": "6. 납품 폭을 맞춘 뒤 분할하기",
+          "body": "완성된 세로 원고를 연재처 가로 폭에 맞추되 가로세로 비율은 유지하세요. 그 폭에서 파일 한 장이 최대 높이와 용량을 넘지 않도록 나눕니다. 분할선을 조정할 수 있다면 대사나 얼굴 한가운데보다 컷 사이 여백을 고르세요. 허용 형식 중 PNG는 글자와 선을 또렷하게 보존하기 좋고, JPG는 채색 면적이 넓어 용량이 큰 원고에 유리합니다.",
+          "proTip": "용량을 줄이려고 JPG를 열었다가 JPG로 다시 저장하는 일을 반복하지 마세요. 출고 품질을 바꿔야 할 때는 PNG 사본에서 다시 뽑는 편이 작은 글자 주변을 깨끗하게 유지합니다."
+        },
+        {
+          "heading": "7. 업로드 미리보기까지 보고 출고 마치기",
+          "body": "최종 파일을 새 폴더에 모아 번호순으로 업로드하세요. 연재처 미리보기에서 첫 컷과 마지막 컷, 모든 파일 경계를 차례로 확인합니다. 같은 컷이 두 번 나오거나 대사가 빠지지 않았는지, 이음매에 가느다란 빈 줄이 생기지 않았는지 살피세요. 문제가 없으면 실제 업로드한 파일만 회차별 출고본으로 보관하세요.",
+          "proTip": "폴더를 ‘레이어원본 / 전달용PNG / 최종출고’로 나누세요. 다음 화부터는 규격 메모와 폴더 구조만 재사용하면 구버전을 잘못 올릴 일이 줄어듭니다."
+        }
+      ],
+      "faq": [
+        {
+          "q": "ToonStudio로 옮기면 메디방이나 이비스페인트에서 더 그릴 수 없나요?",
+          "a": "계속 그릴 수 있습니다. 이 방식은 작화 도구를 바꾸는 게 아니라 출고 단계만 옮기는 방식입니다. PNG에는 레이어가 남지 않으므로, 대사와 작화를 고칠 수 있는 원본 작품은 삭제하지 마세요."
+        },
+        {
+          "q": "원고 가로 폭이 연재처 기준보다 작은데 확대해서 내보내도 되나요?",
+          "a": "픽셀 수는 맞출 수 있지만 이미 뭉개진 글자나 선이 복원되지는 않습니다. 더 큰 레이어 원본이 있다면 거기서 다시 뽑으세요. 작은 원본뿐이라면 한 장면만 먼저 확대해 최종 폭에서 가독성을 확인하세요."
+        },
+        {
+          "q": "분할한 파일은 규격에 맞는데 한 화 전체가 용량 제한에 걸려요.",
+          "a": "장당 제한과 회차 전체 제한은 별개입니다. 더 잘게 나누는 것만으로는 전체 용량이 크게 줄지 않습니다. 가로 폭이 필요 이상으로 크지 않은지 확인하고, JPG가 허용된다면 용량이 큰 채색 구간부터 품질을 조절하세요. 그때마다 작은 대사와 어두운 그라데이션을 다시 확인하세요."
+        },
+        {
+          "q": "무료 출고로 어느 연재처에나 바로 올릴 수 있나요?",
+          "a": "연재처 규격과 현재 무료 출고 화면에서 선택 가능한 설정이 맞아야 합니다. 특정 폭이나 형식이 꼭 필요하다면 시험 파일 한 장을 연재처 등록 화면에 올려 보세요. 등록이 되는지뿐 아니라 미리보기에서 추가 축소로 글자가 흐려지지 않는지까지 확인하면 됩니다."
+        }
+      ]
+    },
+    {
+      "customId": "manual-4-en",
+      "model": "gpt-6.2-astra",
+      "locale": "en",
+      "slug": "psd-finishing-layers-toonstudio-nondestructive-fx",
+      "title": "Bringing Photoshop Finishing Layers into ToonStudio Without Baking In Your FX",
+      "summary": "A PSD can look right on import and still be hard to revise. Use a Photoshop reference to check the look, keep inks and color separate, and rebuild only the finishing effects that need live controls in ToonStudio.",
+      "steps": [
+        {
+          "heading": "1. Make a reference before changing the PSD",
+          "body": "Save a working copy of the layered master. From Photoshop, export a full-resolution sRGB PNG of the approved page with its intended background visible. Keep the same canvas dimensions for the handoff. Pick a few spots to compare later: a face in shadow, a bright rim light, a balloon edge, and a patch of screentone.",
+          "proTip": "If the chapter is one long strip, test a representative panel first. Choose one with overlapping effects, not just flat color."
+        },
+        {
+          "heading": "2. Separate the art from the finish",
+          "body": "Keep inks, flats, painted shadows, backgrounds, and lettering intact. Give finishing layers names that say what they affect, such as “Window glow — room only” or “Night grade — art except balloons.” Preserve the original stacking order, clipping relationships, and group blend modes. Moving an adjustment into a new group can change the composite before you even leave Photoshop.",
+          "proTip": "Toggle each finish off once. If a supposedly global grade leaves the balloons white, note that exclusion for the ToonStudio rebuild."
+        },
+        {
+          "heading": "3. Test appearance and editability separately",
+          "body": "Import the test PSD into your installed ToonStudio version and compare it with the reference. Then inspect the layer stack. A glow that looks perfect may have come across as pixels rather than an adjustable effect. Check adjustment layers, layer styles, Smart Filters, clipping masks, and groups individually. For each important finish, decide whether to keep it as imported, rebuild it as live FX, or render a fallback in Photoshop.",
+          "proTip": "Make one reversible test edit: change an effect setting, or hide the flat beneath a clipped shadow. Undo afterward. A matching thumbnail alone cannot confirm that the control or clipping relationship survived."
+        },
+        {
+          "heading": "4. Rebuild from the bottom of the stack up",
+          "body": "Disable the imported version of an effect before recreating it, so the page does not get graded or lit twice. Attach the ToonStudio effect to the narrowest target that matches the PSD: one character, one panel, or the full art stack. Match the mask and stacking order first, then tune the settings by eye. For a night scene, for example, rebuild the cool shadow grade below the warm window bloom if that is how the reference was composited.",
+          "proTip": "Match the result, not the slider number. Two blur controls set to the same value may produce different falloff at the edge of a glow."
+        },
+        {
+          "heading": "5. Render the smallest reliable fallback",
+          "body": "If an effect has no close live equivalent, render only what needs to be fixed. An isolated light streak can travel as a transparent PNG at the original canvas size; test it over the actual panel using the intended blend mode. A Curves adjustment that remaps the colors underneath cannot be preserved as a transparent overlay on its own. If it cannot be rebuilt, render the affected artwork and adjustment together, leaving unrelated elements such as lettering editable.",
+          "proTip": "Keep the original layers in the master PSD and label the rendered replacement clearly. Never leave both the replacement and its source composite visible in the delivery stack."
+        },
+        {
+          "heading": "6. Proof the export and hand off the live controls",
+          "body": "Export a proof from ToonStudio and compare it with the Photoshop reference at the same size. At 100%, inspect mask seams, pale fringes, and clipped blur edges. Then export at publication width and check the scroll on a phone: fine tones can develop moiré after resizing, and a subtle glow can wash out lettering. Deliver the editable ToonStudio file, the layered master PSD, the reference, and a short note listing live FX and rendered fallbacks.",
+          "proTip": "Include a revision cue such as “For a warmer dusk, adjust the live background grade; for a different rain texture, update the PSD render.” That tells the next artist exactly where to work."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Why did the whole panel get darker even though the layer opacities match?",
+          "a": "Disable the finish stack and compare the base art first. If the base matches, re-enable effects from the bottom up. At the first mismatch, check for a duplicated effect, a changed blend mode, or an adjustment reaching outside its original group. If even the base differs, check the document profile and compare exports in the same color-managed viewer."
+        },
+        {
+          "q": "My glow stops at the panel border. Is that a blur problem?",
+          "a": "Check the mask before increasing the blur. Blurring a light and then masking it to the panel gives a hard cutoff; masking the light source first and then blurring it can let the glow spill into the gutter. Match whichever order the approved PSD uses. If the glow was rendered separately, also check that the exported asset has room for the halo."
+        },
+        {
+          "q": "Should I flatten the chapter if it is already approved?",
+          "a": "A flattened export is appropriate for a final reading copy, not as your only handoff. Keep a layered master. If the art is locked but dialogue may change, a rendered art stack with separate balloons and lettering is a practical compromise."
+        },
+        {
+          "q": "Will live ToonStudio FX remain editable if I send a PSD back to Photoshop?",
+          "a": "Do not assume a round trip preserves live controls. Export a test PSD, reopen it in Photoshop, and inspect both the composite and the effect settings. Treat the native file where an effect was authored as the editable source unless the round-trip test confirms otherwise."
+        }
+      ]
+    },
+    {
+      "customId": "manual-4-es",
+      "model": "gpt-6.2-astra",
+      "locale": "es",
+      "slug": "capas-de-ajuste-psd-y-fx-no-destructivos",
+      "title": "Del PSD a ToonStudio: cómo conservar el retoque y los FX sin acoplar la página",
+      "summary": "Que una viñeta se vea igual al importar el PSD no significa que el retoque siga siendo editable. Usa una viñeta de prueba para decidir qué ajustes conservar, cuáles rehacer como FX en ToonStudio y qué efectos llevar en una capa de píxeles independiente, sin tocar el máster de Photoshop.",
+      "steps": [
+        {
+          "heading": "1. Prepara el máster y una referencia visual",
+          "body": "Guarda el PSD por capas como máster y trabaja sobre una copia de intercambio. Elige una viñeta que reúna los retoques habituales del episodio: por ejemplo, una cara en sombra, un neón con halo y un bocadillo que deba quedar blanco. Desde el máster, exporta esa viñeta en PNG a tamaño de trabajo. Será la referencia del acabado, no la capa sobre la que seguir dibujando.",
+          "proTip": "Para publicación en pantalla, usa el mismo perfil RGB en la copia y en la referencia, normalmente sRGB. Si el máster tiene otro perfil, convierte la copia a sRGB en vez de limitarte a asignarle ese perfil."
+        },
+        {
+          "heading": "2. Deja claro qué debe afectar cada ajuste",
+          "body": "En la copia del PSD, separa fondo, personajes, línea y rotulación. Nombra los ajustes por su función y destino: «Curvas · noche · solo fondo» dice más que «Curvas 3». Revisa si cada ajuste actúa por una máscara, por recorte a la capa inferior o por su posición en la pila. No reorganices las capas solo para que queden más ordenadas: mover una curva dentro de un grupo puede cambiar el resultado.",
+          "proTip": "Apaga y enciende el ajuste mirando el bocadillo y la piel. Si ninguno debería teñirse con el azul del fondo, ya tienes dos puntos de control para la importación."
+        },
+        {
+          "heading": "3. Haz dos pruebas de compatibilidad: aspecto y edición",
+          "body": "Abre la copia en ToonStudio y compara la viñeta con el PNG al 100 %. Después prueba una capa de cada tipo que uses: ajuste, máscara, estilo de capa y objeto inteligente con filtro. En cada caso, comprueba si puedes cambiar el parámetro original y si el cambio respeta su zona de aplicación. Poder ocultar una capa o bajarle la opacidad no demuestra, por ejemplo, que aún puedas editar los puntos de una curva. Deshaz cada prueba antes de pasar a la siguiente.",
+          "proTip": "Anota el resultado por efecto y versión de ToonStudio: «editable», «se ve bien, pero ya no es paramétrico» o «cambia de aspecto». No des por hecho que todos los elementos del PSD se importan igual."
+        },
+        {
+          "heading": "4. Reconstruye como FX solo lo que necesites seguir ajustando",
+          "body": "Si el ajuste importado funciona y respeta su máscara, consérvalo. Si no es editable y aún vas a retocarlo, parte de la ilustración sin ese ajuste y busca un FX nativo que permita conseguir el mismo resultado. Para enfriar el fondo, por ejemplo, aplica el FX al fondo o limítalo con una máscara; después iguala primero la luminosidad y luego el matiz con el PNG de referencia. Si el color ya viene incorporado a los píxeles, vuelve al PSD y exporta una versión sin ese ajuste antes de añadir el FX.",
+          "proTip": "No copies valores a ciegas: dos controles llamados «Intensidad» pueden responder de forma distinta. Comprueba el resultado alternando el FX, no solo comparando cifras."
+        },
+        {
+          "heading": "5. Lleva los acabados cerrados en un pase independiente",
+          "body": "Si el halo de un rótulo no se reproduce bien y su aspecto ya está aprobado, conserva el estilo editable en el máster. En la copia de intercambio, prepara una capa de píxeles con solo el halo sobre transparencia, si el efecto admite esa separación. Colócala en ToonStudio en la misma posición y con el modo de fusión adecuado, sin dejar activo también el halo importado. Podrás ocultar el pase, sustituirlo o variar su opacidad, aunque el radio del resplandor se seguirá editando en Photoshop.",
+          "proTip": "No intentes exportar una curva aislada como si fuera un halo: depende de los píxeles que tiene debajo. Si no hay un FX equivalente, exporta el grupo afectado con la curva aplicada y conserva su versión por capas en el máster."
+        },
+        {
+          "heading": "6. Verifica el archivo de entrega en tamaño de lectura",
+          "body": "Exporta la viñeta desde ToonStudio con los ajustes de entrega del episodio. Compárala con la referencia al mismo tamaño: revisa los bordes de las máscaras, el detalle en sombras, el alcance de los halos y los blancos de la rotulación. Después mírala al ancho de lectura en móvil; una trama limpia al 100 % puede producir muaré al reducirse. Cuando la prueba esté aprobada, aplica el mismo criterio al resto de la tira y conserva por separado el PSD máster, el proyecto editable de ToonStudio y la exportación final.",
+          "proTip": "Si encuentras una diferencia, desactiva un solo FX o pase cada vez. Empezar por el primero que altera la zona problemática suele ser más rápido que reajustar el color de toda la página."
+        }
+      ],
+      "faq": [
+        {
+          "q": "El ajuste de color ahora tiñe también la línea y los bocadillos. ¿Bajo la intensidad?",
+          "a": "Comprueba primero su alcance. Si en Photoshop solo afectaba al fondo, bajar la intensidad también debilitará el color correcto del fondo. Revisa la posición del FX, el recorte y la máscara; una vez aislado el fondo, afina la intensidad si hace falta."
+        },
+        {
+          "q": "¿Por qué el halo se ve bien sobre negro, pero distinto sobre la ilustración?",
+          "a": "Puede depender del modo de fusión y del color que queda debajo. Comprueba que el pase conserva la transparencia, que no incluye un fondo negro y que no estás sumando dos halos. Haz la comparación sobre el fondo real de la viñeta."
+        },
+        {
+          "q": "¿Un pase de píxeles cuenta como edición no destructiva?",
+          "a": "No modifica el dibujo si permanece en una capa independiente, pero sus parámetros de origen ya no son editables en ese pase. Para cambiar el radio de un desenfoque, por ejemplo, modifica el filtro en el máster y sustituye el pase."
+        },
+        {
+          "q": "¿Puedo volver a Photoshop y seguir editando los FX de ToonStudio?",
+          "a": "No presupongas una correspondencia de ida y vuelta entre un FX nativo y una capa de ajuste de Photoshop. Si necesitas entregar un PSD editable, prueba primero con una viñeta: abre el PSD de vuelta en Photoshop y verifica los controles y las máscaras que necesitará la siguiente persona. Conserva el proyecto de ToonStudio como fuente de sus FX."
+        }
+      ]
+    },
+    {
+      "customId": "manual-4-ja",
+      "model": "gpt-6.2-astra",
+      "locale": "ja",
+      "slug": "psd-adjustment-layers-toonstudio-nondestructive-fx",
+      "title": "PSDの仕上げレイヤーをToonStudioの非破壊FXに引き継ぐ",
+      "summary": "仕上げを渡すときは、「PSDと同じ絵を出すこと」と「あとで効果を調整できること」を分けて考えます。元PSDを残したうえで、締切まで色を詰めたい効果はToonStudioのFXで再現し、見た目を固定したい効果だけを画像にまとめます。まずは代表の1コマで読み込みから書き出しまで試しましょう。",
+      "steps": [
+        {
+          "heading": "1. 元PSDを残し、見本のPNGを作る",
+          "body": "Photoshopで元PSDを複製し、以降は受け渡し用のコピーで作業します。肌の影、細い線、強い発光など、今回の仕上げがよく分かるコマを選び、完成状態をPNGに書き出します。このPNGが色と輪郭の見本です。配信先の指定に合わせ、比較用の書き出しでは画像サイズとカラープロファイルをそろえます。",
+          "proTip": "夜から朝に切り替わる回なら、夜景と朝の肌色を1コマずつ残しましょう。片方だけに合わせて全編の色を崩すのを防げます。"
+        },
+        {
+          "heading": "2. 効果の名前より先に、どこに効いているかを確認する",
+          "body": "PSDの仕上げレイヤーを1枚ずつ非表示にし、何が変わるかを見ます。たとえば同じトーンカーブでも、「背景だけを暗くする」のと「人物を含むコマ全体を暗くする」のとでは移す位置が違います。対象、重なり順、描画モード、不透明度を控え、クリッピング、レイヤーマスク、グループの「通過」の有無も確認します。",
+          "proTip": "「トーンカーブ 3」は「背景のみ｜夕景の黒締め」のように改名しておくと、読み込み後に効果の役割を見失いません。"
+        },
+        {
+          "heading": "3. 読み込み結果を見て、仕上げごとに移し方を決める",
+          "body": "テスト用PSDをToonStudioに読み込み、見本と並べます。調整レイヤー、レイヤースタイル、スマートフィルターが、同名の編集可能なFXに変換されるとは限りません。表示を切り替え、設定を変更して元に戻せるかまで試します。見た目も編集性も保たれたものはそのまま使い、あとで調整したいものは元絵とFXに分け直し、再現が難しく修正予定もないものだけを画像にまとめます。",
+          "proTip": "見た目が合っていても、画像に焼き込まれた光はFXの強度では弱められません。発光を切って元の線が出るか試すと判断できます。"
+        },
+        {
+          "heading": "4. 色調補正は、補正前の絵にFXを重ね直す",
+          "body": "背景のトーンカーブを組み直す例なら、受け渡し用PSDではそのカーブだけを非表示にし、補正前の背景を読み込みます。ToonStudioで背景にだけ効く位置に明暗を調整できるFXを置き、見本の暗部と中間色を見ながら合わせます。続いて色味、彩度を調整します。顔やフキダシまで暗くなったら、数値を下げる前にFXの対象範囲を直してください。",
+          "proTip": "色調整を2つ以上移すときは、PSDで下にある効果から1つずつ戻します。順番を入れ替えると、同じ設定値でも仕上がりは変わります。"
+        },
+        {
+          "heading": "5. 発光・ぼかしは、芯とにじみを分けて合わせる",
+          "body": "ネオンなら、まず発光していない看板の文字を残し、その上でにじみをFXとして調整します。原寸で文字の芯が読めるかを見ながら広がりを合わせ、最後に光の強さを詰めます。PSDの「スクリーン」や「覆い焼き（リニア）- 加算」を使った光は下地の色で見え方が変わるため、透明部分のプレビューではなく本番の背景に重ねて判断します。",
+          "proTip": "光がコマ枠で不自然に切れたら、FXを強くするのではなく、ぼかす前に切り抜いているのか、ぼかしたあとでコマ内に収めているのかを確認しましょう。"
+        },
+        {
+          "heading": "6. 再現しにくい効果は、必要な範囲だけ固定する",
+          "body": "特殊なレイヤースタイルや質感を固定する場合は、受け渡し用PSDで対象だけを複製し、効果を含めて画像にまとめます。透明背景で成立する小物なら単体で、下地との合成が不可欠な夕焼けなら背景と補正を一緒にまとめます。人物、描き文字、セリフなど、まだ直すものは巻き込みません。読み込み後は固定版と元の効果のどちらか一方だけを表示します。",
+          "proTip": "「背景_夕焼け_補正込み」のように、何を焼き込んだかを名前に残します。後日、夕焼けに同じ補正を二重掛けする事故を防げます。"
+        },
+        {
+          "heading": "7. 配信用の書き出しで検版し、修正元を残す",
+          "body": "ToonStudioから見本と同じ条件でPNGを書き出し、同じビューアで交互に表示します。原寸では線の縁、マスクの抜け、発光の切れを、スマホの閲覧幅では肌色、暗部のつぶれ、セリフの読みやすさを確認します。問題がなければ同じ移し方をほかのコマにも適用し、最後に縦スクロールでコマ間の明るさの飛びを点検します。",
+          "proTip": "元PSD、受け渡し用PSD、ToonStudioの編集データ、承認済みPNGは別々に保存します。修正指示には「肌色はToonStudioのFX、夕焼けは元PSD」のように戻り先を添えましょう。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "調整レイヤーの設定値をそのままFXに入れれば、同じ色になりますか？",
+          "a": "同じとは限りません。効果の計算や適用順、対象範囲が違うと結果も変わります。まず補正を切った状態の絵が一致するか確認し、その後で見本の肌の中間色や影の濃さに合わせてください。"
+        },
+        {
+          "q": "読み込み後、背景だけの補正が人物にもかかっています。",
+          "a": "PSD側で補正をクリッピングしていたか、グループやマスクで範囲を絞っていたかを確認します。ToonStudioではレイヤーの並びを似せるだけでなく、FXの対象を背景に限定してください。同じ範囲を作れない場合は、背景とその補正だけをPSD側でまとめると人物の編集性を残せます。"
+        },
+        {
+          "q": "半透明の光素材を書き出したら、重ねても元の発光になりません。",
+          "a": "透過PNGに残るのは色と透明度で、PSDの描画モードや下地との合成結果までは引き継がれません。本番の下地に重ねて描画モードと強さを調整するか、見た目の一致を優先するなら光と下地を一緒に固定してください。"
+        },
+        {
+          "q": "ToonStudioで組み直したFXは、PSDに戻しても編集できますか？",
+          "a": "FXがPhotoshopの調整レイヤーとして往復できる前提にはしません。PSDでの再納品が必要なら、先にテスト用の1コマを往復させ、どの設定が編集できるか確認してください。往復できない効果は編集元を一本化し、もう一方には確認用の完成画像を渡します。"
+        }
+      ]
+    },
+    {
+      "customId": "manual-4-ko",
+      "model": "gpt-6.2-astra",
+      "locale": "ko",
+      "slug": "psd-post-processing-nondestructive-fx",
+      "title": "포토샵(PSD) 후보정 레이어와 ToonStudio 비파괴 FX 호환 가이드",
+      "summary": "호환 여부는 ‘포토샵에서 본 색과 빛이 그대로인가’와 ‘ToonStudio에서 효과를 다시 손볼 수 있는가’로 나눠 확인합니다. 가져왔을 때 모양이 같아도 PSD의 조정 레이어나 스마트 필터가 편집 가능한 FX로 바뀌었다는 뜻은 아닙니다. 포토샵 원본은 보존하고, 수정이 잦은 효과만 ToonStudio에서 재구성하는 방식이 안전합니다.",
+      "steps": [
+        {
+          "heading": "1. 대표 컷으로 기준 이미지 만들기",
+          "body": "한 화를 통째로 넘기기 전에 피부 위로 색광이 번지거나 인물 뒤로 배경이 흐려지는 컷을 고릅니다. 포토샵에서 최종 후보정을 모두 켠 상태로 그 컷을 PNG로 내보냅니다. 이 파일은 편집용이 아니라 대조용입니다. 웹 게시용이라면 원고 사본을 sRGB로 변환하고 기준 PNG와 테스트 PSD의 픽셀 크기, 배경색을 맞춥니다.",
+          "proTip": "효과 이름보다 확인할 자리를 표시해 두세요. ‘볼의 붉은 기’, ‘앞머리 끝의 역광’, ‘말풍선 흰 바탕’처럼 찍어 두면 검수가 빨라집니다."
+        },
+        {
+          "heading": "2. 레이어마다 ‘유지·재구성·확정’ 결정하기",
+          "body": "선화·밑색처럼 계속 손볼 픽셀 레이어는 우선 그대로 가져옵니다. 곡선·색조/채도 같은 조정 레이어, 스마트 필터, 외부 광선 같은 레이어 스타일은 가져온 뒤 설정까지 수정되는지 따로 봅니다. 피부 톤이나 회상 장면의 채도처럼 콘티 피드백에 따라 바뀔 효과는 ToonStudio FX로 재구성하고, 납품 룩이 확정된 복합 효과는 필요한 부분만 픽셀로 확정합니다.",
+          "proTip": "래스터화는 비파괴 변환이 아닙니다. ‘확정’은 전달본에서만 하고 스마트 오브젝트와 필터가 살아 있는 원본 PSD는 따로 둡니다."
+        },
+        {
+          "heading": "3. 전달용 PSD에서 효과 범위 정리하기",
+          "body": "원본을 복제한 뒤 ‘인물_피부’, ‘배경_창가광’, ‘컷전체_저녁톤’처럼 대상이 드러나게 이름을 붙입니다. 클리핑한 그림자 레이어는 기준이 되는 밑색 바로 위에 두고, 그룹의 혼합 모드와 마스크를 기록합니다. 컷 전체 색보정 아래에 말풍선까지 들어가 있다면 의도한 연출인지 확인합니다. ToonStudio에서 새로 만들 효과는 전달본에서 꺼 두어 두 번 적용되지 않게 합니다.",
+          "proTip": "포토샵의 ‘통과’ 그룹은 폴더 밖의 아래 레이어까지 보정할 수 있습니다. 폴더 이름만 보고 효과 범위를 판단하지 말고 눈 아이콘을 껐다 켜 보세요."
+        },
+        {
+          "heading": "4. 가져온 직후, 모양과 편집 가능 여부 따로 검사하기",
+          "body": "작업에 쓸 ToonStudio 버전에서 테스트 PSD를 열고 기준 PNG와 나란히 봅니다. 먼저 빠진 레이어, 쌓임 순서, 불투명도, 혼합 모드, 마스크 경계를 확인합니다. 그런 다음 후보정 항목을 하나씩 껐다 켜고 강도나 범위를 바꿔 봅니다. 광채가 보이더라도 반경을 바꿀 수 없다면 ‘모양 유지’이지 ‘필터 편집 가능’은 아닙니다. 검사한 값은 되돌립니다.",
+          "proTip": "테스트 기록은 ‘외부 광선 / 모양 일치 / 반경 수정 불가 / 역광 FX로 재구성’처럼 한 줄이면 충분합니다. 같은 버전과 제작 환경에서 다음 화에도 참고할 수 있습니다."
+        },
+        {
+          "heading": "5. 수정할 후보정만 비파괴 FX로 다시 쌓기",
+          "body": "예를 들어 회상 컷이라면 원색 밑색은 그대로 두고, ToonStudio에서 사용할 수 있는 색보정 FX로 채도를 낮춘 뒤 장면 톤을 맞춥니다. 인물만 보정할 때는 인물 범위로 제한하고, 배경 블러는 인물과 말풍선을 제외한 배경에만 겁니다. 포토샵에서 보정한 순서대로 효과를 하나씩 켜며 기준 컷에 맞춥니다. 같은 이름의 효과라도 수치까지 일대일로 대응한다고 가정하지 않습니다.",
+          "proTip": "마지막에 FX만 꺼 보세요. 보정 전 밑색이 돌아오고 선화·식자에는 변화가 없어야, 나중에 ‘피부 톤만 한 단계 낮춰 주세요’라는 수정에 대응할 수 있습니다."
+        },
+        {
+          "heading": "6. 재현이 어려운 광원은 배경 의존성부터 확인하기",
+          "body": "투명 바탕에 떼어 낼 수 있는 광원이라면 전달용 사본에서 광원만 투명 PNG로 내보냅니다. 원래 위치에 얹고 혼합 모드와 불투명도를 맞춘 뒤 실제 배경 위에서 비교합니다. 반대로 아래쪽 색을 읽는 조정 레이어나 합성 효과는 투명 PNG 한 장으로 같은 룩을 내기 어렵습니다. 재구성이 어렵다면 해당 배경과 효과만 함께 합친 대체 레이어를 만들고, 그 레이어에 포함된 원래 배경과 효과는 중복 표시하지 않습니다.",
+          "proTip": "광원은 캔버스 크기 그대로 내보내면 배치가 쉽습니다. 빛 번짐 끝이 잘렸다면 강도를 올리기 전에 내보낸 영역의 가장자리부터 확인하세요."
+        },
+        {
+          "heading": "7. 게시 크기로 검수하고 수정본 보관하기",
+          "body": "작업 배율에서는 머리카락·마스크 가장자리와 블러 이음새를 보고, 실제 게시 폭으로 내보낸 파일에서는 어두운 그라데이션의 띠, 사라진 망점, 말풍선 가독성을 확인합니다. 기준 PNG도 같은 폭으로 줄여 같은 뷰어에서 비교합니다. 검수가 끝나면 원본 PSD, 전달용 PSD, 편집 가능한 ToonStudio 작업 파일, 게시용 이미지를 구분해 보관합니다.",
+          "proTip": "ToonStudio에서 PSD로 다시 넘겨야 한다면 대표 컷부터 재출력해 포토샵에서 열어 보세요. 처음 가져오기가 잘됐다고 역방향에서도 FX 설정이 보존되는 것은 아닙니다."
+        }
+      ],
+      "faq": [
+        {
+          "q": "후보정을 모두 껐는데도 전체 색이 포토샵과 다릅니다. 어디부터 보나요?",
+          "a": "FX를 조절하기 전에 문서의 색상 모드와 프로파일을 확인하세요. 원고 사본을 sRGB로 ‘변환’하는 것과 기존 색상값에 sRGB 프로파일을 ‘할당’하는 것은 다릅니다. 같은 조건으로 내보낸 두 이미지를 같은 뷰어에서 비교한 뒤, 차이가 남을 때 레이어 합성을 점검합니다."
+        },
+        {
+          "q": "그림자가 인물 실루엣 밖으로 샙니다. 불투명도를 낮추면 될까요?",
+          "a": "농도보다 클리핑 범위 문제일 가능성이 큽니다. 그림자 아래에 원래 밑색이 있는지, 클리핑과 그룹 마스크가 유지됐는지 확인하세요. 연결이 풀렸다면 작업본에서 밑색의 불투명 영역을 기준으로 범위를 다시 제한합니다."
+        },
+        {
+          "q": "PSD에서는 예쁜 역광이 ToonStudio에서는 하얗게 뜹니다.",
+          "a": "먼저 가져온 레이어에 역광이 이미 합쳐져 있는데 새 광원 FX까지 켜져 있지 않은지 봅니다. 한쪽을 꺼도 차이가 나면 혼합 모드, 불투명도, 광원 아래의 배경색을 차례로 비교하세요. 투명 격자 위가 아니라 실제 컷 배경 위에서 맞춰야 합니다."
+        },
+        {
+          "q": "마감이 급하면 한 컷을 전부 합쳐도 되나요?",
+          "a": "수정이 끝난 게시용 컷이라면 가능합니다. 다만 대사 교체나 해외판 식자가 남아 있다면 글자와 말풍선은 합치지 마세요. 배경과 확정된 연출만 묶고, 인물이나 식자를 다시 손볼 수 있는 원본을 함께 남기는 편이 안전합니다."
+        }
+      ]
+    },
+    {
+      "customId": "manual-5-en",
+      "model": "gpt-6.2-astra",
+      "locale": "en",
+      "slug": "mobile-webtoon-readability-and-balloon-lettering-800px",
+      "title": "Lettering an 800 px Vertical-Scroll Webtoon for Mobile",
+      "summary": "Set dialogue size at phone scale, fit balloons to natural speech, and use the scroll to control when each line lands. The measurements below are starting points for an 800 px-wide export, not platform requirements. The final test is whether a reader can follow the scene on a phone without zooming or scrolling back to identify a speaker.",
+      "steps": [
+        {
+          "heading": "1. Measure at export size, judge at phone size",
+          "body": "Use the final 800 px-wide image as your lettering reference, even if you draw on a larger master. An 800 px strip displayed at 400 px wide appears at half scale, so a 32 px font setting appears about 16 px tall before accounting for the font's own proportions. If you work at 1600 px wide and export at 800 px, set that same dialogue to 64 px in the master.",
+          "proTip": "Make a short test strip with a quiet exchange, a crowded panel, and a shout. Export it and read it fit to width on your smallest target phone before lettering the episode."
+        },
+        {
+          "heading": "2. Build a small lettering style sheet",
+          "body": "On the 800 px export, try 32–36 px for everyday dialogue. Choose a face with open counters—the spaces inside letters such as “a” and “e”—and strokes that hold up after downsampling. Start with baseline-to-baseline spacing at 115–125% of the font size. For mixed-case text, check that descenders and capitals on adjacent lines stay clear; an all-caps comic face may need less space. Save approved styles for dialogue, captions, and emphasis.",
+          "proTip": "Check the sample line “I'll go. Will you?” on a phone. If the apostrophe disappears or the capital I and lowercase l run together, change the face or weight before increasing tracking across the whole episode."
+        },
+        {
+          "heading": "3. Break dialogue by ear, then shape the text block",
+          "body": "For a conventional oval balloon, center the copy and aim for shorter lines at the top and bottom with a fuller middle. Let phrasing beat symmetry: set “Wait here. / I'll get the keys.” rather than “Wait here. I'll / get the keys.” Keep names and short phrases together. If the last word sits alone, try rebreaking the whole block before cutting copy. A one-word line is fine when the pause is deliberate.",
+          "proTip": "Read the line aloud. If you would pause halfway through a long balloon, that may be the right place to split it into two linked balloons; don't shrink the type just to keep the speech in one oval."
+        },
+        {
+          "heading": "4. Fit the balloon around the lettering",
+          "body": "Place the text first, then draw the balloon. Start with roughly half a font size of clear space between the lettering and the inner outline—about 16 px for 32 px dialogue. Check the closest letters along the curved shoulders, not just the center of each side. Adjust the balloon by eye until the text looks centered. Keep the tail root out of the text block and aim the tip toward the speaker's mouth without touching the face.",
+          "proTip": "If widening a balloon covers an expression, try a narrower line break and a taller oval. Protect the acting before you compromise the dialogue size."
+        },
+        {
+          "heading": "5. Stage each exchange in scroll order",
+          "body": "Place balloons during thumbnails, while you can still move the characters. For English, lead the eye from top to bottom; when balloons share a row, stage them left to right. If the character on the right speaks first, give that balloon a clear vertical lead. Avoid crossed tails and keep essential lettering comfortably inside the strip edges; 32–48 px of side clearance is a useful starting point.",
+          "proTip": "Hide the text and trace the exchange using only balloon positions and tails. If you have to guess who answers next, move a balloon or restage the shot rather than trying to fix the order with a longer tail."
+        },
+        {
+          "heading": "6. Use the gutter to time the reveal",
+          "body": "Keep a quick reply close to its cue. For a held beat, add vertical gutter space before the reaction panel or answer. Preview it with a slow thumb scroll: when the setup is fully readable, check whether the punch line is already visible at the bottom of the screen. Adjust the gap or move the reply lower in its panel if an early reveal spoils the beat. Screen heights vary, so don't rely on an exact one-screen gap.",
+          "proTip": "Watch what enters the viewport first. If a reply appears before readers can tell who is speaking, move the balloon down enough for the speaker's face or another clear cue to arrive with it."
+        },
+        {
+          "heading": "7. Signal volume without sacrificing legibility",
+          "body": "Keep ordinary dialogue on a solid, high-contrast fill. For a whisper, try a broken balloon outline or a little extra breathing room instead of tiny gray type. For a shout, use a heavier weight, a larger setting, or a burst balloon. Give captions a consistent shape or alignment, and don't rely on color alone to distinguish narration from speech. Treat sound effects as part of the art, but keep them clear of dialogue tails and key expressions.",
+          "proTip": "Check one screen in grayscale. If a caption loses its identity or a translucent balloon becomes hard to read over screentone, change the shape or use an opaque fill."
+        },
+        {
+          "heading": "8. Proof the uploaded episode, not just the master",
+          "body": "Keep an editable lettering master. Export at the platform's required dimensions and file settings; if the strip must be sliced, place cuts in empty gutters where possible. Open the upload preview on a phone at normal reading width and scroll once at story pace. Flag any line you lean in to read, any exchange you read out of order, and any reveal that lands early. Then inspect slice seams, punctuation, clipped outlines, and thin strokes after platform processing.",
+          "proTip": "Ask a fresh reader to point to the speaker of each line in your busiest panel. A wrong answer identifies a staging or tail problem that a spelling pass won't catch."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Is 32 px a minimum dialogue size?",
+          "a": "No. It's a starting setting for an 800 px-wide export. Two fonts at 32 px can look noticeably different because their letter heights and stroke weights differ. Pick the setting that reads comfortably at the narrowest intended display width, then use it consistently for ordinary speech."
+        },
+        {
+          "q": "My lettering app uses points. What should I enter?",
+          "a": "If the app uses document resolution for point sizing, pixels = points × document PPI ÷ 72. At 144 PPI, 16 pt corresponds to a 32 px font setting before export scaling. If you then reduce the strip by half, that becomes 16 px in the export. Verify with an exported sample; the font setting is not the visible height of a capital letter."
+        },
+        {
+          "q": "What should I change first when a panel has too much dialogue?",
+          "a": "Cut words the art already communicates. Then rebreak the text, split at a genuine change of thought, or give the exchange another panel. Reducing one balloon's type size makes that line look quieter and forces the reader to adjust mid-scene."
+        },
+        {
+          "q": "Why does my lettering look sharp in the master but fuzzy in the reader?",
+          "a": "Compare the 800 px export with the upload preview at the same display width. If the export is already soft, check for lettering that was rasterized small and enlarged, or a strip that was resized more than once. If only the preview looks soft, check the platform's current upload specifications and compression settings. A sturdier font weight often survives processing better than a fine outline."
+        }
+      ]
+    },
+    {
+      "customId": "manual-5-es",
+      "model": "gpt-6.2-astra",
+      "locale": "es",
+      "slug": "webtoon-movil-800-px-legibilidad-y-rotulacion",
+      "title": "Rotulación para móvil: cómo hacer legible un webtoon de 800 px",
+      "summary": "Los 800 px son el ancho de la página exportada, no el ancho al que se lee. Usa las medidas de esta guía como punto de partida y da la rotulación por buena cuando el diálogo se lea sin ampliar, se entienda quién habla y el desplazamiento acompañe el ritmo de la escena.",
+      "steps": [
+        {
+          "heading": "1. Fija una escala de trabajo",
+          "body": "Toma todas las medidas sobre una página final de 800 px de ancho. Si dibujas a 1600 px, duplica los valores en el archivo maestro: un cuerpo de 32 px en la entrega equivale a 64 px en el original. Conserva el texto editable y comprueba la exportación, no solo el lienzo de trabajo.",
+          "proTip": "Ajustada a un ancho visible de 360 px, una página de 800 px se muestra al 45 %: un cuerpo de 32 px se ve como uno de unos 14,4 px. Ver el lienzo al 100 % en el monitor no reproduce esa lectura."
+        },
+        {
+          "heading": "2. Crea una hoja de estilos de rotulación",
+          "body": "Para el diálogo normal, prueba un cuerpo de 32–36 px y un interlineado del 115–125 %; por ejemplo, 34 px de cuerpo con 40 px de línea a línea. Elige una familia de trazo abierto y peso medio, con tildes, diéresis, eñe y signos de apertura. Parte del mismo cuerpo para las cartelas narrativas: distínguelas por la caja o la alineación, no por letra diminuta.",
+          "proTip": "Prueba «¿Quién llamó? ¡Fue Íñigo!» en un globo de dos líneas. Comprueba que las tildes no rocen la línea superior y que los signos de apertura no desaparezcan al reducir."
+        },
+        {
+          "heading": "3. Reserva el sitio de los globos en el boceto",
+          "body": "Coloca el diálogo provisional antes de cerrar el dibujo. Ordena los globos de arriba abajo y, cuando compartan altura, de izquierda a derecha. Si dos personajes se alternan, escalona sus intervenciones y orienta cada rabillo hacia quien habla, sin cruzar otro globo ni tapar una expresión. Como margen de arranque, deja 32–48 px entre el borde de la página y los globos que no vayan a sangre.",
+          "proTip": "Oculta el texto y recorre la viñeta siguiendo solo las masas blancas y los rabillos. Si dudas entre dos globos, cambia su altura antes de añadir líneas que intenten guiar la vista."
+        },
+        {
+          "heading": "4. Ajusta el globo a la frase, no la frase al hueco",
+          "body": "Prueba entre dos y cinco líneas cortas para una intervención corriente, sin forzar las réplicas breves. Centra el diálogo en los globos ovalados y deja que las líneas centrales sean algo más anchas. Como referencia, reserva 20–28 px de aire entre las letras y el contorno; revisa también las esquinas del bloque, donde más se acerca la curva. Corta por unidades de sentido y evita dejar un artículo solo al final de línea.",
+          "proTip": "Si no cabe, prueba primero otro salto de línea. Después ensancha el globo, recorta una redundancia o divide la intervención donde el personaje tomaría aire. No estreches las letras para salvar el encaje."
+        },
+        {
+          "heading": "5. Distingue las voces sin sacrificar contraste",
+          "body": "Para la voz normal, funciona bien la letra oscura sobre un fondo claro y opaco. Para un grito, prueba un peso mayor, algo más de cuerpo y un contorno quebrado; para un susurro, conserva un cuerpo legible y cambia el contorno a discontinuo. Si una voz viene de un teléfono o está fuera de campo, dale una señal de forma o rotulación que no dependa solo del color.",
+          "proTip": "Revisa la escena en escala de grises. Si el dibujo se transparenta detrás de las letras o ya no distingues una voz especial, ajusta el fondo o la silueta del globo."
+        },
+        {
+          "heading": "6. Mide las pausas con el pulgar",
+          "body": "En una conversación rápida, procura que al llegar a la respuesta siga siendo evidente a qué réplica contesta. Reserva más espacio vertical para un silencio, un cambio de escena o una revelación. No impongas una calle fija entre viñetas: prueba el desplazamiento en el móvil y ajusta la distancia según lo que convenga ver a la vez.",
+          "proTip": "Detente justo donde terminarías de leer la pregunta. Si el remate ya asoma por abajo y estropea la sorpresa, baja la viñeta siguiente; si hay que recorrer un vacío sin intención, acorta la calle."
+        },
+        {
+          "heading": "7. Valida el archivo que recibirá el lector",
+          "body": "Exporta al ancho de entrega y respeta los límites de altura, peso y formato de la plataforma. Si debes cortar la tira, hazlo en calles vacías, nunca por un globo, un rabillo o una onomatopeya. Abre la vista previa publicada o de prueba en un móvil estrecho, ajustada al ancho y sin ampliar. Lee el episodio de corrido: comprueba cuerpo, contraste, orden de lectura, atribución de las voces y continuidad entre cortes.",
+          "proTip": "Pide a alguien que no conozca el guion que lea la escena. Si amplía, vuelve atrás o atribuye una frase al personaje equivocado, anota el globo exacto: cada síntoma pide una corrección distinta."
+        }
+      ],
+      "faq": [
+        {
+          "q": "¿Los 32 px son un mínimo obligatorio?",
+          "a": "No. Son una referencia para diálogo en una exportación de 800 px de ancho. Dos familias al mismo cuerpo pueden tener alturas de minúscula y grosores muy distintos. Si en la vista móvil cuesta distinguir las letras, sube el cuerpo o cambia de familia y vuelve a ajustar el globo."
+        },
+        {
+          "q": "¿Puedo rotular todo en mayúsculas?",
+          "a": "Sí, si encaja con el tono de la serie. Elige una fuente pensada para rotulación, conserva las tildes en las mayúsculas y prueba primero una intervención larga. Si todas las voces ganan demasiada intensidad, reserva la negrita o el cambio de contorno para el énfasis."
+        },
+        {
+          "q": "¿Qué hago con un mensaje de móvil o un cartel pequeño dentro de la viñeta?",
+          "a": "Si hace falta leerlo para seguir la trama, trátalo como diálogo principal: usa un plano de detalle o muestra el mensaje en una caja de texto cercana. No obligues a ampliar una pantalla dibujada. Si es ambientación, basta con que no compita con la lectura."
+        },
+        {
+          "q": "¿Por qué el texto se ve bien en el original y borroso al publicar?",
+          "a": "Compara la exportación local con la vista de la plataforma al mismo ancho. Si ambas fallan, revisa la reducción y evita rasterizar el texto antes del escalado final. Si solo falla la versión publicada, comprueba si la plataforma vuelve a redimensionar o comprimir el archivo; ajusta la entrega a sus especificaciones y repite la prueba."
+        }
+      ]
+    },
+    {
+      "customId": "manual-5-ja",
+      "model": "gpt-6.2-astra",
+      "locale": "ja",
+      "slug": "mobile-800px-webtoon-lettering",
+      "title": "横幅800pxの縦スクロール漫画：スマホで読みやすいフキダシと写植の基準",
+      "summary": "基準は原稿上の大きさではなく、スマホで拡大せずに読めること。仕上がり幅800px・横組みの日本語セリフを例に、通常のセリフを38pxに揃え、字間、フキダシの余白、スクロール時の読み順を整える手順を紹介します。数値は制作の初期値です。入稿先の仕様を確認し、使う書体と実機で調整してください。",
+      "steps": [
+        {
+          "heading": "1. 仕上がり幅を基準に写植する",
+          "body": "このガイドのpx値は、すべて横幅800pxに書き出した画像上の値です。横幅1600pxで作画するなら、文字サイズも余白も2倍にして作業します。800px幅の画像をスマホで360px幅に表示すると、38pxのセリフは画面上で約17px相当になります。画面に左右の余白が付くビューアでは、端末幅ではなく画像の表示幅で計算してください。",
+          "proTip": "写植ツールの文字サイズがpt表示なら、38ptをそのまま使わないこと。単位をpxに切り替えるか、800pxに書き出した見本をスマホで開き、本文サイズを先に決めておきます。"
+        },
+        {
+          "heading": "2. 通常のセリフを軸に文字スタイルを作る",
+          "body": "通常のセリフは38pxを起点に、書体に合わせて36〜40pxで試します。モノローグも同じサイズで始め、声との違いは囲みや書体で表現します。小声はまず38pxのまま、フキダシの輪郭や余白で演出します。叫びは44〜52pxを目安に太さも一段上げ、見せ場に使います。",
+          "proTip": "「通常」「モノローグ」「叫び」を写植スタイルとして登録します。同じ話者の普通のセリフが、フキダシに合わせて少しずつ小さくなるのを防げます。"
+        },
+        {
+          "heading": "3. 字間より先に行送りと改行を整える",
+          "body": "日本語の横組みはベタ組み（字間追加なし）から始めます。38pxの文字なら、行送りは基準線から次の基準線まで48〜54pxが目安です。1つのフキダシはまず2〜4行で組み、行の長さを揃えるより、息継ぎできる位置で改行します。句読点や閉じカギが行頭に出ていないか、人名や熟語が不自然に割れていないかも確認します。",
+          "proTip": "最後の「た。」だけが次の行に落ちたら、字間を詰める前に手前の文節ごと送ってみます。まだ窮屈なら、フキダシの幅を少し広げます。"
+        },
+        {
+          "heading": "4. 文字を流し込むのではなく、セリフに合わせてフキダシを描く",
+          "body": "改行を決めてから仮のフキダシを当てます。通常のセリフでは、字面から輪郭線の内側まで、左右は1字分、上下は半字〜1字分を出発点にします。楕円形は四隅が狭いので、中央の行だけでなく、最上段と最下段の端の文字も見てください。収まらなければ、文字を縮める前にフキダシを広げるか、発話の切れ目で2つに分けます。",
+          "proTip": "しっぽは余白に含めず、本体だけを見て文字の位置を決めます。しっぽの付け根側に文字が寄って見えるときは、機械的な中央揃えより見た目の中心を優先します。"
+        },
+        {
+          "heading": "5. 上下の配置で会話の順番と間を作る",
+          "body": "最初に読むフキダシを上、返事を下に置き、スクロールすると発話順に現れるようにします。左右に振るときも、どちらが先か迷うほど上端を揃えないこと。しっぽは話者の顔の近くへ向け、別の人物やフキダシをまたがせません。掛け合いはフキダシ同士を近づけ、返事の前に沈黙があるなら、行間ではなくフキダシとフキダシの間を空けます。",
+          "proTip": "ネームの段階でセリフだけを追ってみます。返事を先に読んでしまう箇所は、しっぽを長くするより、返事のフキダシを一段下げるほうが自然です。"
+        },
+        {
+          "heading": "6. 細い線と背景の干渉を確認する",
+          "body": "標準は明るいベタのフキダシに濃い文字。画数の多い漢字の内側が潰れず、かなの細い払いも消えない太さを選びます。絵に直接載せるモノローグは、人物の髪や集中線と文字が重ならない位置へ移し、それでも読みにくければ座布団（文字の下に敷く面）を入れます。白フチを太くして解決しようとすると、隣り合う文字がつながって見えることがあります。",
+          "proTip": "効果音は読めるぎりぎりまで絵になじませても、物語を進めるセリフは別扱いに。小声を薄いグレーだけで表すと、画面を暗くしたときに言葉ごと消えてしまいます。"
+        },
+        {
+          "heading": "7. 書き出した画像をスマホで通読する",
+          "body": "入稿先指定の形式で横幅800pxに書き出し、可能なら投稿プレビューをスマホで開きます。まず拡大せずに1話を通読し、目を凝らした文字、読み返したセリフ、話者を取り違えた箇所に印を付けます。次にその箇所だけ止めて、字面の潰れ、窮屈な改行、しっぽの向き、画像の継ぎ目を確認します。分割が必要なら、文字やフキダシの途中を避け、コマ間の余白で切ります。",
+          "proTip": "検収では「通常のセリフが拡大なしで読める」「発話順と話者で迷わない」「分割後もセリフが欠けない」の3点を確認。直した箇所は単体で見るだけでなく、直前のコマからもう一度スクロールします。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "長ゼリフがどうしてもフキダシに入りません。どこから直せばいいですか？",
+          "a": "まず重複した言い回しを削れないか確認し、次に意味の切れ目でフキダシを分けます。たとえば問いかけと、その理由を説明する文は分けやすい組み合わせです。文言を変えられない場合は、コマ下の余白を広げて続きを置きます。そのセリフだけ級数を落とすのは最後の手段です。"
+        },
+        {
+          "q": "縦組みでも同じ数値を使えますか？",
+          "a": "文字サイズは同じ38pxから試せます。行送りは上下ではなく、隣り合う縦の行の間隔として見直してください。行は右から左へ送り、長音、三点リーダー、カギ括弧が縦組み用の向きになっているか、2桁の数字を縦中横にしたときに潰れていないかを確認します。"
+        },
+        {
+          "q": "同じ38pxなのに、書体を替えると小さく見えるのはなぜですか？",
+          "a": "文字サイズが同じでも、その枠の中で字面が占める割合や線の太さは書体ごとに違います。同じセリフを両方の書体で組み、800pxに書き出してスマホで見比べてください。字面が小さければサイズを、細い線だけが消えるならウェイトを調整します。"
+        },
+        {
+          "q": "スマホが手元にないとき、どこまで確認できますか？",
+          "a": "書き出した画像をブラウザで幅360px程度に表示し、改行、余白、フキダシの読み順を仮チェックできます。ただしモニター上の物理的な大きさや明るさはスマホと異なります。最終確認は実機の投稿プレビューで行ってください。"
+        }
+      ]
+    },
+    {
+      "customId": "manual-5-ko",
+      "model": "gpt-6.2-astra",
+      "locale": "ko",
+      "slug": "mobile-800px-webtoon-lettering-guide",
+      "title": "모바일 웹툰 식자 가이드: 가로 800px 원고에서 대사와 말풍선 잡기",
+      "summary": "가로 800px 완성본을 기준으로 기본 대사 크기와 행간을 정하고, 세로 스크롤에서 말풍선이 읽히는 순서를 잡는 작업 가이드입니다. 아래 수치는 플랫폼 납품 규격이 아니라 작품별 식자 프리셋을 만들기 위한 시작값입니다. 최종 기준은 독자가 휴대폰에서 확대하지 않고 읽을 수 있느냐입니다.",
+      "steps": [
+        {
+          "heading": "1. 원고 배율부터 맞추기",
+          "body": "이 가이드의 글자 크기와 여백은 모두 가로 800px로 출력한 이미지 기준입니다. 가로 1600px에서 작업해 절반으로 줄인다면, 완성본 대사 32px에 해당하는 작업 크기는 64px입니다. 식자 도구의 단위가 pt라면 숫자를 그대로 옮기지 말고 px로 전환하거나 800px 시험 출력본으로 크기를 맞추세요.",
+          "proTip": "가로 800px 이미지가 뷰어에서 가로 360px에 맞춰 표시되면, 원고의 32px 글자는 화면에서 약 14.4px 크기로 보입니다. 작업창의 100% 보기만으로는 독자가 볼 크기를 판단하기 어렵습니다."
+        },
+        {
+          "heading": "2. 평대사를 기준으로 식자 프리셋 만들기",
+          "body": "평대사는 32~36px, 굵기는 레귤러~미디엄에서 시작하세요. 받침이 뭉치지 않고 ‘ㅁ’, ‘ㅂ’ 안쪽 공간이 남는 서체가 좋습니다. 독백과 내레이션도 우선 평대사와 같은 크기로 놓고, 풍선 모양이나 사각 캡션으로 구별하세요. 외침은 40~48px 또는 한 단계 굵은 글꼴로 시험하되, 크기와 굵기를 꼭 함께 올릴 필요는 없습니다.",
+          "proTip": "후보 서체마다 같은 대사 ‘괜찮아. 정말이야?’를 넣어 비교하세요. 같은 32px라도 한글 자면이 작거나 획이 가늘면 축소했을 때 훨씬 작게 느껴집니다."
+        },
+        {
+          "heading": "3. 말의 호흡대로 줄을 나누기",
+          "body": "자간은 기본값으로 두고, 줄 기준선 사이 거리는 글자 크기의 1.3~1.45배에서 시작하세요. 32px 대사라면 약 42~46px입니다. 한 풍선에 2~3줄이 들어갈 때는 어절과 의미 덩어리를 먼저 살리세요. ‘나는 네가 올 줄 알았어.’는 ‘나는 네가 / 올 줄 알았어.’처럼 끊으면 ‘올 줄 알았어’가 한 호흡에 읽힙니다. 빗금은 줄바꿈 위치를 뜻합니다.",
+          "proTip": "끝줄에 한 글자만 매달리면 자간을 조이기 전에 앞줄의 어절 하나를 내려 보세요. 단, ‘왜?’처럼 그 한마디에 박자를 주려는 장면은 예외입니다."
+        },
+        {
+          "heading": "4. 글덩이에 맞춰 풍선 그리기",
+          "body": "대사를 먼저 식자한 뒤 풍선 외곽선을 잡으세요. 글자 끝에서 외곽선 안쪽까지 가장 좁은 곳에도 반 글자 정도는 남기고, 답답하면 한 글자 폭까지 벌려 보세요. 둥근 풍선은 가운데 줄보다 첫 줄과 끝줄의 양끝이 곡선에 먼저 닿습니다. 가운데 정렬을 누른 뒤에도 따옴표와 말줄임표를 포함한 글덩이가 눈으로 보기에 가운데 놓였는지 확인하세요.",
+          "proTip": "풍선을 키우면 표정이 가려지는 컷에서는 글자를 줄이지 마세요. 대사의 두 호흡을 앞뒤 풍선으로 나누거나, 콘티에서 풍선 자리를 먼저 확보하는 편이 낫습니다."
+        },
+        {
+          "heading": "5. 세로 스크롤에서 읽는 순서 잡기",
+          "body": "먼저 읽을 풍선을 위에 놓고, 다음 풍선은 시작 높이를 분명히 낮추세요. 좌우로 벌어진 두 풍선의 높이가 비슷하면 독자가 답부터 읽을 수 있습니다. 꼬리는 말하는 인물의 입 쪽을 향하게 하되, 다른 인물이나 풍선을 가로지르지 않게 하세요. 반응이 중요한 컷은 ‘질문 → 표정 → 대답’ 순서로 화면에 들어오는지 천천히 스크롤해 확인하세요.",
+          "proTip": "풍선 속 글자를 잠시 가리고 동료에게 읽을 순서와 화자를 짚어 달라고 해 보세요. 꼬리를 끝까지 따라가야만 답이 나오면 풍선 위치부터 바꿔 보세요."
+        },
+        {
+          "heading": "6. 작은 목소리와 효과음도 읽히게 연출하기",
+          "body": "속삭임은 작은 글씨보다 가는 풍선선이나 점선으로 먼저 표현하세요. 어두운 장면이라도 핵심 대사를 흐린 회색으로 낮추지 말고, 밝은 풍선 바탕과 짙은 글자로 대비를 확보하세요. 배경 위에 바로 얹는 독백은 한 줄 안에서도 명암이 달라질 수 있으므로 필요하면 반투명 면이나 캡션을 받치세요. 효과음은 크게 써도 되지만 대사나 표정의 읽는 길을 끊지 않게 배치합니다.",
+          "proTip": "휴대폰 밝기를 평소보다 한 단계 낮춰 보세요. 분위기는 살아 있는데 줄거리 단서가 사라진다면, 글자 크기보다 먼저 글자와 바탕의 명암 차이를 고치세요."
+        },
+        {
+          "heading": "7. 최종 파일을 뷰어에서 검수하고 기준 남기기",
+          "body": "실제 납품 설정으로 800px 이미지를 출력한 뒤, 가능하면 플랫폼 미리보기에서 가로 맞춤·확대 없이 한 화를 읽으세요. 긴 대사, 가장 작은 글씨, 어두운 배경의 독백을 우선 확인합니다. 받침과 문장부호가 뭉치지 않는지, 좌우 끝이 뷰어 여백에 붙지 않는지, 분할 이미지 경계에서 풍선이나 꼬리가 잘리거나 어긋나지 않는지 보세요. 플랫폼이 다른 폭이나 파일 규격을 요구하면 해당 규격을 우선합니다.",
+          "proTip": "검수를 통과한 컷 하나를 기준 컷으로 보관하세요. 사용 서체·굵기·크기·행간·출력 폭을 식자 프리셋에 함께 적어 두면 다음 화나 어시스턴트 작업에서도 같은 읽기감을 유지하기 쉽습니다."
+        }
+      ],
+      "faq": [
+        {
+          "q": "800px 웹툰이면 평대사는 무조건 32px로 맞춰야 하나요?",
+          "a": "아닙니다. 32~36px는 시험 범위입니다. 획이 가늘거나 자면이 작은 서체, 작은 화면에서도 편하게 읽혀야 하는 작품이라면 더 크게 잡으세요. 가장 긴 대사를 욱여넣을 수 있는 크기가 아니라, 평범한 한 컷을 확대 없이 편하게 읽는 크기를 기준으로 삼으세요."
+        },
+        {
+          "q": "대사 하나가 너무 길어서 풍선이 컷을 덮으면 어떻게 하나요?",
+          "a": "먼저 대본에서 겹치는 설명을 덜 수 있는지 작가와 확인하세요. 문구를 유지해야 한다면 말뜻이 바뀌는 지점에서 풍선을 나누세요. 둘로 나눠도 얼굴을 덮는다면 다음 컷으로 일부를 넘기거나 컷 여백을 늘리는 편이, 그 풍선만 유독 작게 식자하는 것보다 자연스럽습니다."
+        },
+        {
+          "q": "작업 파일에서는 선명한데 업로드 후 글자가 흐려집니다.",
+          "a": "800px 출력본과 플랫폼 미리보기를 나눠 확인하세요. 출력본부터 흐리면 식자 레이어를 너무 일찍 래스터화했거나 이미지를 여러 번 축소한 것은 아닌지 살펴보세요. 출력본은 선명하고 미리보기만 흐리면 플랫폼의 권장 폭·형식·용량을 확인하고 재압축으로 가는 획이 무너지지 않는지 비교하세요. 원본 식자 레이어는 편집 가능한 상태로 보관하는 것이 좋습니다."
+        }
+      ]
+    },
+    {
+      "customId": "manual-6-en",
+      "model": "gpt-6.2-astra",
+      "locale": "en",
+      "slug": "3d-background-line-art-and-character-perspective",
+      "title": "From 3D Set to Inked Panel: Background Lines and Character Perspective",
+      "summary": "Use a SketchUp set, a Blender scene, or an imported GLB to build a background that reads like part of the drawing. Match the camera to the acting, export registered line and color passes, and use the same ground plane to place the character’s feet and cast shadow.",
+      "steps": [
+        {
+          "heading": "1. Block the panel around the acting",
+          "body": "Thumbnail the character, speech balloons, and panel crop before picking a camera angle. Mark the action that has to read: a hand landing on a counter, for example, or a figure pausing in a doorway. Bring the thumbnail into your camera or drawing view as a guide. For a tall reveal, frame the whole panel rather than stretching a landscape render to fill the scroll.",
+          "proTip": "Keep a little image beyond the intended crop if the edit is still loose. Render that margin in every pass, then crop once in the panel file."
+        },
+        {
+          "heading": "2. Prepare the set at a believable scale",
+          "body": "In SketchUp, check a known dimension with Tape Measure and hide construction guides, measurements, and unused tags. In Blender, check the dimensions of a familiar prop and organize foreground blockers, furniture, and architecture into separate collections. For a GLB, use File > Import > glTF 2.0 in Blender. GLB is an asset format, not a line-art pass: inspect the imported hierarchy, scale, materials, and any transparent cards before choosing what to ink.",
+          "proTip": "Drop in a stand-in at the character’s stated height. If the stand-in fits the doorway but the desk reaches their chest, check the desk asset before adjusting the camera."
+        },
+        {
+          "heading": "3. Set the camera and save the shot",
+          "body": "Set the output aspect ratio to the panel’s working crop. Use a perspective camera for a typical interior or street shot. Adjust camera height and position until the overlaps work, then choose a field of view that frames the action. Moving the camera close and widening the view makes near objects loom; pulling back and narrowing the view reduces that size difference. In SketchUp, save the view as a Scene. In Blender, set the active camera and render from camera view, not the orbiting viewport.",
+          "proTip": "Save a guide image with the floor grid and stand-in visible. Keep that camera, aspect ratio, pixel size, and crop unchanged for every export."
+        },
+        {
+          "heading": "4. Build a placement guide before extracting lines",
+          "body": "Mark the horizon by extending two sets of receding horizontal edges, such as the long and short sides of rectangular floor tiles. Their vanishing points lie on the horizon, even if they fall outside the panel. Place a simple 3D figure at each intended foot position and render a guide. For a seated or leaning pose, include the seat, tabletop, or wall contact in the block-in; a standing height marker alone will not locate the hips or hands.",
+          "proTip": "The horizon is camera eye level, not necessarily the character’s eye line or the center of the panel. In a level-camera shot, if it crosses one upright figure at the shoulder, it crosses an equally tall upright figure on the same level floor at the shoulder farther back."
+        },
+        {
+          "heading": "5. SketchUp route: export a clean edge plate",
+          "body": "Recall the saved Scene, switch the face style to Hidden Line, and keep Edges on. Start with Profiles off or at their thinnest useful setting. Disable endpoints, extensions, shadows, axes, and guides. Use white faces and a white background, then export a 2D Graphic as PNG at the working dimensions. For a color plate, return to the same camera, use the shaded or textured face style, turn edges off, and export again at exactly the same size.",
+          "proTip": "If a curved chair back looks like a wire cage, inspect its softened or smoothed edges in the model. Don’t erase dozens of segment lines by hand if the same chair appears in ten panels."
+        },
+        {
+          "heading": "6. Blender or GLB route: render selected contours",
+          "body": "Enable Freestyle in Render Properties and configure a Line Set in View Layer Properties. Start with visible silhouettes and borders, then add creases only where they describe a useful plane change. Mark important missing seams with Freestyle Edge Marks and include that edge type in a line set. For a separate ink plate, enable Freestyle’s As Render Pass option and route the Freestyle output from Render Layers to a File Output node set to PNG RGBA. Save the matching color render without baked-in strokes.",
+          "proTip": "Render a panel-sized test before tuning line thickness. If an imported plant gets a box around its leaves, the contour may be tracing the rectangular mesh rather than the leaf texture. Exclude that asset from the line set and draw just the leaf clusters that read."
+        },
+        {
+          "heading": "7. Register the passes and ink for the panel",
+          "body": "Stack the color plate and edge plate at the same origin without resizing either one. Use Normal for transparent strokes or Multiply for black lines on white. Check registration at a near corner and a distant corner; a doubled edge is a pass mismatch, not a line-weight issue. Mask repetitive grout, distant window frames, and texture seams that compete with the face. Reinforce an important overlap with a short heavier stroke instead of thickening the entire set.",
+          "proTip": "Judge the background at phone reading size. If a midground railing turns into a black bar behind the character’s eyes, simplify or lighten its lines before adding more detail."
+        },
+        {
+          "heading": "8. Draw the character into the space",
+          "body": "Overlay the guide and anchor the weight-bearing foot first. Follow the stand-in for pelvis height, shoulder angle, and head size, then push the gesture without losing the contact points. Check which planes the camera can see: a downward view of a desk usually calls for some view of the tops of shoulders and shoes too. Put the character above the rear set and mask foreground elements onto a layer above the figure wherever they overlap.",
+          "proTip": "For a hand on a counter, mark the fingertip and heel-of-palm contacts on the counter plane before drawing the sleeve. A convincing contact sells the shot better than a perfectly traced cabinet."
+        },
+        {
+          "heading": "9. Match the light and ground the figure",
+          "body": "Read the key light from an existing prop: note its lit side, the direction its shadow falls across the floor, and how soft that shadow becomes. Shade the character to match. Paint a tight contact shadow only where the sole or body touches a surface, then extend the cast shadow along the receiving plane. If the shadow crosses a step, break and redirect its shape over the riser and tread rather than sliding one flat shadow across both.",
+          "proTip": "For a tricky pose, render the rough stand-in under the set lighting as a shadow reference. Use its direction and footprint, not its mannequin-shaped silhouette."
+        },
+        {
+          "heading": "10. Proof the scroll and archive the shot",
+          "body": "Hide the guides and review the panel between its neighbors at delivery width. Check that the face still leads, shoes do not float, foreground masks have no pale rims, and thin background lines survive downsampling. Keep the layered master at working resolution and export the delivery image from a copy. Archive the camera Scene or Blender file alongside the guide, clean color plate, line plate, and final crop.",
+          "proTip": "Name passes by episode, panel, shot version, and role, such as ep12_p034_v03_lines.png. When the camera changes, bump the version and regenerate the whole pass set."
+        }
+      ],
+      "faq": [
+        {
+          "q": "My character is the right height in pixels. Why do they still look pasted in?",
+          "a": "Check the foot position against the floor guide, then compare the head and pelvis with a stand-in at that exact spot. A figure scaled for the back wall but placed near the camera will look wrong even with excellent shading. Fix placement and viewing angle before adjusting color or adding a shadow."
+        },
+        {
+          "q": "What if the character drawing is already approved?",
+          "a": "Treat the drawing as the camera brief. Match a stand-in to the drawing’s head, feet, and visible top or underside planes, moving the 3D camera and set as needed. If the hand still misses a door handle, move the prop or adjust the local contact pose rather than warping the entire render."
+        },
+        {
+          "q": "Why does the edge plate drift away from the color plate on one side?",
+          "a": "Toggle the upper plate on and off. A constant offset suggests a layer-position or trim issue; a growing mismatch suggests a different scale, crop, or camera. Check canvas dimensions, output percentage, camera shift, and any automatic trimming. Re-export from the saved shot rather than nudging individual lines."
+        },
+        {
+          "q": "Should every prop edge get a line?",
+          "a": "No. Keep edges that explain a silhouette, overlap, contact, or important plane change. Let color and value describe minor bevels and distant texture. A handle the character is reaching for deserves more definition than a row of identical handles across the room."
+        }
+      ]
+    },
+    {
+      "customId": "manual-6-es",
+      "model": "gpt-6.2-astra",
+      "locale": "es",
+      "slug": "fondos-3d-linea-y-perspectiva-sketchup-blender-glb",
+      "title": "Del fondo 3D a la viñeta: cómo sacar la línea y encajar los personajes en perspectiva",
+      "summary": "Prepara el decorado en SketchUp o Blender, saca la línea y el color por separado y coloca a los personajes sin que parezcan pegados al fondo. Si recibes un GLB, úsalo como escena de partida en Blender: el archivo contiene el modelo, pero no hace falta que incluya un dibujo de línea.",
+      "steps": [
+        {
+          "heading": "1. Decide el encuadre desde el boceto",
+          "body": "Dibuja la viñeta en la plantilla de la tira, aunque solo sean dos siluetas y una puerta. Marca qué personaje lleva el peso del plano, dónde van sus pies y cuánto sitio necesita el bocadillo. Lleva esa proporción de ancho y alto a la cámara 3D. Si vas a reutilizar un pasillo en varios planos, guarda una cámara o escena por viñeta en vez de mover siempre la misma.",
+          "proTip": "En una viñeta alta, reserva el espacio del bocadillo antes de elegir la cámara. Así no tendrás que estirar el fondo al rotular."
+        },
+        {
+          "heading": "2. Comprueba la escala y limpia el decorado",
+          "body": "Mide en el modelo un elemento cuya medida conozcas, como la altura de una puerta, y corrige la escala del conjunto si hace falta. Conserva por separado suelo, paredes, mobiliario y objetos de primer término. Oculta lo que no entre en cuadro y los detalles que a tamaño de lectura se conviertan en ruido, como tornillos o juntas diminutas. Revisa también que no haya dos caras superpuestas en una misma pared.",
+          "proTip": "Coloca en el suelo una figura testigo de la altura de tu protagonista. Una puerta puede parecer convincente por sí sola y resultar demasiado baja en cuanto entra alguien."
+        },
+        {
+          "heading": "3. Fija la cámara, el horizonte y las posiciones",
+          "body": "Para un plano con líneas de fuga, usa una cámara en perspectiva, no una vista ortográfica. Elige primero desde dónde se mira la acción: la posición de la cámara determina la relación entre lo cercano y lo lejano. Después ajusta la focal para cerrar o abrir el encuadre. Guarda una referencia con una cuadrícula en el suelo y un maniquí en la posición de cada personaje. Si necesitas dibujar el horizonte, prolonga dos familias de aristas horizontales del decorado que fuguen en direcciones distintas y une sus puntos de fuga.",
+          "proTip": "El horizonte corresponde a la altura de los ojos de quien mira, no necesariamente a los ojos del protagonista. En un picado puede quedar fuera de la viñeta."
+        },
+        {
+          "heading": "4. Ruta SketchUp: exporta un pase limpio de aristas",
+          "body": "Guarda la vista como escena. Para el pase de línea, usa el estilo de caras «Línea oculta», pon el fondo blanco y desactiva cielo, suelo, ejes, guías y sombras. En los ajustes de aristas, deja las aristas visibles y prueba los perfiles con un grosor discreto; quita extremos y prolongaciones si buscas tinta limpia. Exporta un gráfico 2D en PNG con suavizado. Sin orbitar ni cambiar el zoom, recupera los materiales, oculta las aristas y exporta el color con las mismas dimensiones.",
+          "proTip": "Si un cilindro sale a rayas, suaviza las aristas entre sus caras en vez de borrarlas. Mantendrás el volumen sin entintar cada segmento."
+        },
+        {
+          "heading": "5. Ruta Blender o GLB: selecciona qué aristas se dibujan",
+          "body": "Si partes de un GLB, impórtalo en Blender desde Archivo > Importar > glTF 2.0 y comprueba escala, orientación y materiales en la vista de cámara. Para un archivo de Blender, parte de la cámara guardada. Activa Freestyle en las propiedades de render y configura el conjunto de líneas en la capa de vista: empieza por siluetas y bordes abiertos; añade aristas de pliegue solo donde expliquen el volumen. Para una junta que no se detecta, marca sus aristas como Freestyle en modo Edición y activa ese tipo de arista en el conjunto. Ajusta el grosor con una prueba al tamaño de entrega.",
+          "proTip": "No actives todas las aristas para recuperar una sola puerta. Si el marco está pintado en la textura y no tiene geometría, mantenlo en el pase de color o dibújalo a mano."
+        },
+        {
+          "heading": "6. Saca los pases sin perder el registro",
+          "body": "En Blender, activa «As Render Pass» en los ajustes de Freestyle de la capa de vista. En el compositor, usa la salida Freestyle del nodo Render Layers para guardar la línea en PNG RGBA con transparencia y la salida Image para el color. Si quieres retocar las sombras de forma independiente, prepara también una versión del fondo sin la iluminación dramática. Mantén fijos cámara, resolución, porcentaje de render y recorte en todos los pases. Importa las imágenes en el lienzo con el mismo origen y agrúpalas antes de moverlas.",
+          "proTip": "La línea negra sobre blanco de SketchUp funciona en modo Multiplicar; la línea con transparencia puede ir en Normal. Alterna la visibilidad de la línea sobre el color: el canto de una mesa no debería saltar ni un píxel."
+        },
+        {
+          "heading": "7. Encaja el cuerpo desde los apoyos, no desde la cabeza",
+          "body": "Sobre la referencia de cámara, marca la planta de cada pie y usa el maniquí para situar pelvis, hombros y coronilla. Dibuja la pose sobre esas marcas. Por ejemplo, si la protagonista está junto a la mesa y su compañero dos pasos más atrás, coloca primero ambos testigos en sus sitios en 3D: la diferencia de tamaño saldrá de la cámara. Para una figura sentada, comprueba el contacto de la pelvis con el asiento además de los pies. Oculta los testigos antes de exportar el fondo definitivo.",
+          "proTip": "Si el personaje parece flotar, comprueba los apoyos con la sombra apagada. Una sombra más oscura no corrige unos pies dibujados en otro plano."
+        },
+        {
+          "heading": "8. Compón por profundidad y unifica la tinta",
+          "body": "Ordena las capas de atrás hacia delante: fondo con su línea, sombra proyectada sobre el suelo, personaje y elementos que pasan por delante. Si el personaje está detrás de una barra, coloca una copia enmascarada de la barra, con su línea, por encima de la figura. Añade una sombra de contacto corta bajo los apoyos y haz que la sombra proyectada siga la dirección de luz del decorado. Aligera la línea del fondo lejano y retoca a mano los cruces donde un canto negro compita con la cara o las manos.",
+          "proTip": "Evita que el borde de un mueble roce justo la barbilla. Un solape claro o un pequeño hueco suele leerse mejor que dos contornos tangentes."
+        },
+        {
+          "heading": "9. Revisa la viñeta en la tira y guarda el plano",
+          "body": "Reduce una copia al ancho de publicación y léela en el móvil entre las dos viñetas contiguas. Comprueba si se entiende quién está delante, si la mirada llega al personaje antes que al mobiliario y si las tramas de ventanas o baldosas vibran al reducir. Si hay ruido, elimina líneas secundarias en origen y vuelve a sacar el pase. Guarda la escena o cámara, los ajustes de línea, la referencia con testigos y el archivo por capas con el identificador de la viñeta.",
+          "proTip": "Conserva el máster por capas y exporta una copia acoplada para publicar. Si cambia el diálogo o la pose, podrás retocar el plano sin reconstruir el decorado."
+        }
+      ],
+      "faq": [
+        {
+          "q": "¿Puedo sacar la línea directamente de cualquier GLB?",
+          "a": "GLB es un formato de intercambio, no un estilo de entintado. Puedes calcular siluetas y pliegues a partir de la malla, pero las líneas pintadas en una textura no se convierten automáticamente en aristas. Comprueba primero qué detalle pertenece a la geometría y cuál pertenece al material."
+        },
+        {
+          "q": "El personaje del fondo parece un niño. ¿Lo agrando?",
+          "a": "Antes de escalarlo a ojo, coloca dos testigos de la misma altura en el suelo, uno en cada posición. Si las siluetas coinciden con los testigos, la escala es coherente: revisa entonces las proporciones de cabeza y cuerpo, o acerca al personaje en la escena si necesitas que tenga más presencia."
+        },
+        {
+          "q": "¿Qué hago si la línea y el color coinciden en el centro pero no en las esquinas?",
+          "a": "Comprueba la relación de aspecto, el recorte y la cámara de ambos pases. También puede que una capa se haya escalado al importarla. Vuelve a exportar con un único encuadre y coloca las dos imágenes al 100 % antes de transformar el grupo; no intentes casar cada esquina deformando la línea."
+        },
+        {
+          "q": "¿Cuándo compensa repasar el fondo a mano?",
+          "a": "Cuando la geometría ya resuelve la perspectiva pero no la intención del dibujo. Conserva las líneas que sitúan el espacio —suelo, huecos y cantos principales— y repasa sobre todo las zonas narrativas: la puerta que se abre, la silla que alguien agarra o el objeto que debe llamar la atención."
+        }
+      ]
+    },
+    {
+      "customId": "manual-6-ja",
+      "model": "gpt-6.2-astra",
+      "locale": "ja",
+      "slug": "3d-background-lineart-character-perspective",
+      "title": "3D背景を線画に起こし、キャラを同じ空間に立たせる",
+      "summary": "SketchUpならスタイル、BlenderならFreestyleで、コマに必要な線だけを取り出します。GLBの読み込みから、カメラの決め方、キャラの接地、縦読み原稿での線幅チェックまでを、室内に人物を立たせるカットに沿って解説します。",
+      "steps": [
+        {
+          "heading": "1. ネームのコマを基準に画角を決める",
+          "body": "先に作画アプリでコマの縦横比と仕上がりサイズを決め、キャラの頭、足元、フキダシの位置をアタリで置きます。背景は原稿全体ではなく、このコマの比率で切り出します。あとで少しトリミングするなら、アタリの外側に余白を取った同じ構図を3D側でも使います。",
+          "proTip": "キャラの顔の真後ろに窓枠や棚板が重なると、線を薄くしても顔が読みにくくなります。抽出前ならカメラを少し横に振るだけで避けられます。"
+        },
+        {
+          "heading": "2. モデルの寸法を合わせ、描かない物を外す",
+          "body": "SketchUpでは元のモデルを複製して作業します。GLB素材はBlenderの「ファイル」→「インポート」→「glTF 2.0」から読み込みます。床面をそろえ、寸法の分かっている家具や建具を一つ測り、必要ならモデル全体を一括で拡縮します。ネジ、蝶番、棚の奥の小物など、配信サイズでは黒い点にしかならない物はタグやコレクション単位で隠します。",
+          "proTip": "GLBは受け渡し用の形式です。読み込んだあとは.blendで保存しておくと、カメラや線の設定も次のコマに引き継げます。"
+        },
+        {
+          "heading": "3. 人物の仮模型を置いてカメラを固定する",
+          "body": "キャラと同じ身長の箱か素体を、実際に立たせたい床位置に置きます。ネームに合わせてカメラの位置と高さを決め、最後に画角を詰めます。水平カメラなら、カメラ高が150cmのとき、同じ床に立つ人物の地上150cmの位置をアイレベルが通ります。アオリや俯瞰でカメラを傾ける場合は、縦線も収束するので、画面中央を機械的にアイレベルにしないでください。構図が決まったら、SketchUpはシーンに登録し、Blenderは使用カメラと出力解像度を固定します。",
+          "proTip": "素体入りの画像を「パース定規用」として1枚残し、そのあと素体を非表示にして背景を書き出します。床の奥行き線が短いコマでも、頭と足の位置を見失いません。"
+        },
+        {
+          "heading": "4A. SketchUp：隠線表示で白地の線画を作る",
+          "body": "面スタイルを「隠線表示」にし、エッジを表示します。背景は白、空・地面・影・軸・ガイドは非表示にします。輪郭線（プロファイル）はまず切り、家具の外形が弱い場合だけ細く足します。曲面に不要な分割線が出たら、対象のグループ内で該当エッジをソフトニングし、必要な角まで消えていないか確認します。登録したシーンのまま「エクスポート」→「2Dグラフィック」でPNGを書き出します。",
+          "proTip": "白地の線画は作画アプリで「乗算」にすれば、白を消さずに下の色を透かせます。線に色を付けたい場合は、先に白を透明化してから透明ピクセルをロックします。"
+        },
+        {
+          "heading": "4B. Blender：Freestyleで見えている稜線を拾う",
+          "body": "Freestyle対応のレンダーエンジンを選び、「レンダープロパティ」でFreestyleを有効にします。「ビューレイヤープロパティ」のラインセットは可視線を対象にし、まずシルエットと折れ目（Crease）で試し撮りします。板の端が抜けるときは境界（Border）、意匠上必要な線だけを足すなら編集モードで該当辺にFreestyle辺マークを付け、ラインセットでも辺マークを有効にします。線だけが欲しい場合はFreestyleをレンダーパスとして出力し、コンポジターで「レンダーレイヤー」のFreestyle出力を「ファイル出力」につないでRGBAのPNGに保存します。",
+          "proTip": "テクスチャに描かれた木目やタイル目地は、形状の稜線ではないので通常は拾えません。全部を立体化せず、必要な柄だけ色素材か手描きで戻す方がすっきりします。"
+        },
+        {
+          "heading": "5. 線・色・パース見本を同じ枠で重ねる",
+          "body": "背景色も3Dから使うなら、同じカメラ、同じ縦横比、同じピクセル数で、線を切った色画像を別に書き出します。作画アプリでは下から「背景色」「背景線」「キャラ」と積み、素体入りの見本を一時表示します。位置調整は背景一式をフォルダーにまとめ、縦横比を保ったまま行います。机が人物の手前に来る場合は机の色と線だけをマスクで切り出し、キャラより上に置きます。",
+          "proTip": "線が合うかは、画面中央だけでなく対角の2か所で確認します。片側だけずれていたら、線を描き直す前にトリミング範囲や拡縮率を見直してください。"
+        },
+        {
+          "heading": "6. キャラは顔の大きさより、床と骨盤から合わせる",
+          "body": "見本の足元に接地点を打ち、先に支持脚と骨盤を置いてから胸郭、頭を乗せます。靴底は床面に沿わせますが、つま先を必ず床板の消失点へ向ける必要はありません。足の向きが違っても、かかとと母指球が同じ床に載って見えることが大切です。机に手を置くポーズなら、手のひらの接点を天板上に決めてから、肩と手を肘でつなぎます。",
+          "proTip": "同じ床の奥にもう一人立たせるなら、素体を奥へ複製して見本を撮り直します。手前の人物画を目分量で縮めるより、身長差と足元の両方を保てます。"
+        },
+        {
+          "heading": "7. 接触影と線の強弱でなじませる",
+          "body": "キャラの下に影レイヤーを作り、まず靴底が床に触れる部分だけに短い接触影を入れます。次に、窓光など背景の主光源に合わせて落ち影を伸ばします。背景線は一律に薄くせず、手前の家具やキャラが触れる縁は残し、遠景の棚板や目地を細く、淡くします。人物の輪郭と背景線がぎりぎり接する箇所は、背景側を部分的に抜いてシルエットを読ませます。",
+          "proTip": "浮いて見えるときは、大きな楕円影を足す前に影を一度切り、足裏と床の位置関係を確認します。接地点のずれは濃い影では直りません。"
+        },
+        {
+          "heading": "8. 配信サイズで線を検品し、再利用できる形で保存する",
+          "body": "最終配信幅に縮小した画像をスマホで表示し、顔より背景が目立たないか、窓枠の平行線がつぶれていないか、斜線が途切れていないかを確認します。細線が消える場合は必要な輪郭だけを太くし、格子がちらつく場合は線を増やさず本数を減らします。納品画像とは別に、元モデル、カメラ名、書き出し寸法、線設定、合成原稿をカット番号でそろえて保存します。",
+          "proTip": "連続する室内カットでは、基準になる1コマを配信サイズで横に置いて検品すると、話数の途中で背景線だけが急に濃くなるのを防げます。"
+        }
+      ],
+      "faq": [
+        {
+          "q": "人物のサイズは合っているのに、背景と別撮りに見えます。",
+          "a": "素体入りの見本と重ね、肩や頭の上面がどれだけ見えるかを比べます。俯瞰の部屋に正面目線の顔を載せると、身長が正しくてもなじみません。足元を固定したまま、胸郭と頭の箱を背景カメラから見た角度で取り直してください。"
+        },
+        {
+          "q": "GLBから線を出すと、丸い柱に細かい縦線が出ます。",
+          "a": "Freestyleのラインセットで一度Creaseを切り、線が消えるか確認します。消えるなら面の折れを拾いすぎています。折れ目の判定を調整するか、柱を別コレクションに分け、柱用のラインセットではシルエット中心にします。壁や机に必要な角まで一緒に消さないのがコツです。"
+        },
+        {
+          "q": "背景をもっと広く見せたいとき、広角にすればよいですか？",
+          "a": "広角にすると同じカメラ位置から広い範囲が入りますが、人物を同じ大きさに戻そうとカメラを近づけると、手前と奥のサイズ差が強くなります。会話カットなら、まずカメラを引き、邪魔な手前の壁を非表示にして、必要な範囲を切り取る方法も試してください。"
+        },
+        {
+          "q": "パースを合わせたあとでキャラを少し動かしても大丈夫ですか？",
+          "a": "平面上で上下にずらすだけだと、足元だけが奥へ行き、身長は変わらない状態になりがちです。奥行き方向に動かすときは素体も移動して新しい頭身サイズを取り、机との重なり、接触影、フキダシの余白まで確認します。"
+        }
+      ]
+    },
+    {
+      "customId": "manual-6-ko",
+      "model": "gpt-6.2-astra",
+      "locale": "ko",
+      "slug": "3d-background-line-art-and-character-perspective",
+      "title": "3D 배경 선화 추출과 캐릭터 원근 합성",
+      "summary": "복도에 두 사람이 서 있는 컷을 예로, 러프에 맞춰 카메라를 잡고 SketchUp이나 Blender에서 배경선을 뽑는 과정을 안내합니다. GLB 소재를 불러올 때의 단위 점검부터 캐릭터의 발 위치, 앞뒤 가림, 접지 그림자까지 한 컷 안에서 맞춰 봅니다.",
+      "steps": [
+        {
+          "heading": "1. 러프에서 눈높이와 발자리를 먼저 정합니다",
+          "body": "컷 테두리를 그리고 두 인물의 머리와 발, 복도 끝 문만 덩어리로 잡습니다. 복도 양쪽의 걸레받이처럼 실제 공간에서 서로 평행한 선을 연장해 소실점을 찾습니다. 수평 방향의 소실점이 놓이는 높이가 아이레벨, 즉 카메라의 눈높이입니다. 러프 위에 아이레벨을 긋고 가까운 인물과 먼 인물의 발자리를 각각 표시합니다. 발이 잘리는 반신 컷도 작업 영역을 잠시 넓혀 바닥 위치까지 잡아 둡니다.",
+          "proTip": "긴 세로 원고 전체를 카메라 한 대에 맞출 필요는 없습니다. 컷마다 테두리의 가로세로 비율을 정하고 그 안에서 구도를 잡으세요."
+        },
+        {
+          "heading": "2. 3D 소재의 크기와 바닥을 맞춥니다",
+          "body": "SKP는 SketchUp에서 열고, GLB는 Blender의 ‘파일 > 가져오기 > glTF 2.0’으로 불러옵니다. GLB는 선화가 아니라 메시와 재질 등을 담는 파일이므로 불러온 뒤 카메라와 선화 방식을 따로 정해야 합니다. 문짝이나 책상처럼 치수를 아는 물체를 재고, 크기가 틀렸다면 소재 전체를 한꺼번에 조절합니다. 복도 바닥에 실제 설정 키와 같은 높이의 인체 더미 두 개를 세워 발바닥이 바닥면에 닿게 합니다.",
+          "proTip": "문손잡이가 더미의 어느 높이에 오는지 보세요. 배경과 인물을 따로 볼 때 놓치기 쉬운 단위 오류가 한눈에 드러납니다."
+        },
+        {
+          "heading": "3. 카메라를 러프에 맞추고 구도를 고정합니다",
+          "body": "원근감이 있는 복도 컷이라면 평행 투영이 아닌 원근 카메라를 씁니다. 먼저 카메라 높이를 조절해 러프의 아이레벨을 맞춥니다. 다음으로 카메라를 앞뒤로 옮겨 가까운 더미와 먼 더미의 크기 차이를 맞추고, 화각을 조절해 컷 안에 들어오는 범위를 정합니다. SketchUp은 현재 뷰를 장면(Scene)으로 저장하고, Blender는 카메라 뷰에서 출력 해상도를 컷 비율에 맞춥니다. 더미가 보이는 가이드 이미지를 한 장 뽑은 뒤 더미만 숨깁니다.",
+          "proTip": "앞 인물은 맞는데 뒤 인물이 너무 작다면 화각만 좁혀서는 해결되지 않습니다. 카메라를 뒤로 물려 두 인물의 크기 차이를 줄인 다음, 화각을 좁혀 원래 프레이밍을 되찾으세요."
+        },
+        {
+          "heading": "4. SketchUp에서는 스타일로 보이는 모서리만 뽑습니다",
+          "body": "면 스타일을 ‘은선(Hidden Line)’으로 바꾸고 모서리 표시를 켭니다. 축, 가이드, 숨겨진 형상, 그림자는 끕니다. 스타일의 프로파일은 실루엣을 강조하지만 창틀까지 두껍게 보일 수 있으니 우선 끈 상태와 비교합니다. 원통이나 곡면에 세로줄이 빽빽하면 해당 면의 모서리를 부드럽게 처리합니다. 저장한 장면에서 ‘파일 > 내보내기 > 2D 그래픽’으로 PNG를 뽑습니다. 흰 바탕에 검은 선으로 나왔다면 작화 파일에서 곱하기 레이어로 얹습니다.",
+          "proTip": "같은 배경의 밑색도 쓸 예정이라면 장면을 돌리지 말고 면 스타일과 모서리 표시만 바꿔 한 장 더 뽑으세요. 두 파일의 출력 크기도 같아야 창틀 안에 색이 딱 맞습니다."
+        },
+        {
+          "heading": "5. Blender에서는 Freestyle로 외곽선과 꺾임선을 나눕니다",
+          "body": "Blender 원본이나 가져온 GLB를 쓸 때는 렌더 속성에서 Freestyle을 켭니다. 뷰 레이어의 Freestyle 라인 세트에서 보이는 선(Visible)을 대상으로 실루엣(Silhouette)부터 시험 렌더합니다. 빠진 문틀이나 모서리는 꺾임선(Crease)을 추가해 확인합니다. 반대로 장식선이 너무 많으면 꺾임선을 줄이고 꼭 살릴 모서리만 편집 모드에서 Freestyle Edge로 표시한 뒤 라인 세트에 Edge Mark를 포함합니다. 선만 따로 쓰려면 Freestyle을 렌더 패스로 출력하는 옵션을 켜고, 컴포지터에서 Render Layers의 Freestyle 출력을 File Output에 연결해 PNG RGBA로 저장합니다.",
+          "proTip": "‘필름 > 투명’은 월드 배경을 투명하게 할 뿐, 건물의 면까지 지워 주지는 않습니다. 투명 선화가 필요하면 합성 결과(Combined)가 아니라 Freestyle 패스를 저장했는지 확인하세요."
+        },
+        {
+          "heading": "6. 캐릭터는 머리 크기가 아니라 발 위치부터 맞춥니다",
+          "body": "작화 파일에 배경선과 더미 가이드를 같은 위치로 불러옵니다. 더미의 발자리에 캐릭터의 체중이 실린 발을 놓고, 더미의 정수리를 키 기준으로 삼아 전신 러프를 그립니다. 더미가 없다면 같은 키의 인물을 옮기는 방법도 있습니다. 가까운 인물의 발에서 먼 인물의 발로 직선을 긋고 아이레벨까지 연장합니다. 그 교점과 가까운 인물의 정수리를 잇는 선이 먼 인물의 발 위 수직선과 만나는 곳이 예상 정수리입니다. 이 방법은 바닥이 평평하고 화면 속 수직선이 똑바로 서 있는 컷에 쓰세요.",
+          "proTip": "아이레벨이 가까운 인물의 턱을 지난다면, 같은 바닥에 선 같은 키·자세의 먼 인물도 턱 부근을 지나야 합니다. 계단 위 인물이나 몸을 숙인 인물에게까지 이 기준을 적용하지는 마세요."
+        },
+        {
+          "heading": "7. 앞뒤 가림과 접지 그림자로 한 공간에 묶습니다",
+          "body": "레이어는 아래에서부터 배경 밑색, 배경선, 바닥 그림자, 캐릭터, 전경 순으로 정리합니다. 난간 뒤에 인물이 서 있다면 인물을 가리는 난간의 선과 면만 복제해 전경 폴더로 올리고 마스크로 범위를 제한합니다. 발밑에는 신발이 바닥에 닿는 부분을 따라 짧고 진한 접촉 그림자를 놓습니다. 길게 드리우는 그림자는 창가나 조명의 반대 방향으로 바닥면을 따라 뻗게 합니다.",
+          "proTip": "양발 아래에 똑같은 타원을 붙이면 걷는 포즈가 굳어 보입니다. 디딘 발은 바닥과 그림자 사이를 붙이고, 들린 뒤꿈치 쪽은 그림자와 간격을 두세요."
+        },
+        {
+          "heading": "8. 납품 크기에서 선을 정리하고 재출력 기준을 남깁니다",
+          "body": "컷을 실제 연재 폭으로 줄여 봅니다. 창살 두 줄이 검은 띠처럼 뭉치거나 바닥 타일이 표정보다 먼저 보이면, 배경선 전체를 흐리지 말고 해당 구간의 안쪽 선부터 덜어냅니다. 얼굴 윤곽과 문틀이 아슬아슬하게 맞닿는 곳은 문틀 선을 마스크로 끊어 실루엣을 읽히게 합니다. 마지막으로 더미와 투시 보조선을 끄고 선화·밑색의 가장자리, 발밑, 전경 가림을 확인합니다. 컷 번호와 카메라 버전을 3D 장면과 출력 파일에 함께 남깁니다.",
+          "proTip": "콘티 수정으로 카메라가 바뀌면 선화만 갈지 마세요. 같은 카메라에서 더미 가이드와 밑색까지 다시 뽑아야 인물 발자리와 배경이 어긋나지 않습니다."
+        }
+      ],
+      "faq": [
+        {
+          "q": "GLB의 벽돌 무늬가 화면에는 보이는데 선화에서는 사라집니다.",
+          "a": "줄눈이 메시 모서리가 아니라 텍스처에 그려져 있다면 은선이나 Freestyle 꺾임선으로는 나오지 않습니다. 같은 카메라에서 재질이 보이는 이미지를 뽑아 밑색으로 쓰거나, 인물 가까이에 필요한 줄눈만 별도 레이어에 그려 넣으세요."
+        },
+        {
+          "q": "배경선과 밑색이 중앙에서는 맞는데 화면 끝에서 벌어집니다.",
+          "a": "두 이미지를 늘여 맞추기 전에 카메라, 화각, 출력 비율, 잘라낸 영역이 같은지 확인하세요. 원본 크기로 두 장을 포개 모서리의 창틀까지 일치하는지 본 뒤, 같은 폴더에 넣고 한 번에 축소하거나 잘라내는 편이 정확합니다."
+        },
+        {
+          "q": "계단이나 내려다보는 컷에서는 캐릭터 키를 어떻게 맞추나요?",
+          "a": "층이 다르면 같은 바닥을 전제로 한 아이레벨 작도를 그대로 쓸 수 없습니다. 각 인물이 딛는 디딤판에 설정 키의 더미를 직접 세우고 최종 카메라로 가이드를 뽑으세요. 내려다보는 컷은 정수리와 발끝뿐 아니라 어깨 윗면이 얼마나 보이는지도 가이드와 비교하면 배경만 내려다보이고 인물은 정면처럼 보이는 어긋남을 잡을 수 있습니다."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "generatedAt": "2026-11-26T04:52:28.009Z",
+  "source": "openai-batch-api-50pct-off",
+  "runtimeCostKrw": 0,
+  "batches": [
+    {
+      "name": "batch1-knowledge-distillation",
+      "batchId": "batch_6b07a461bbbc8190ac9a724ecd19fd65",
+      "model": "gpt-5.5",
+      "status": "completed",
+      "request_counts": {
+        "total": 37,
+        "completed": 37,
+        "failed": 0
+      },
+      "parsedOk": 20,
+      "parsedTotal": 37,
+      "totalTokens": 132223
+    },
+    {
+      "name": "batch2-gpt-5.5",
+      "batchId": "batch_6b07a6395acc8190a164d264e8ec7438",
+      "model": "gpt-5.5",
+      "status": "completed",
+      "request_counts": {
+        "total": 44,
+        "completed": 44,
+        "failed": 0
+      },
+      "parsedOk": 21,
+      "parsedTotal": 44,
+      "totalTokens": 126417
+    },
+    {
+      "name": "batch2-gpt-6.2-astra",
+      "batchId": "batch_6b07a63aec4c81908802a24edfa7b5fe",
+      "model": "gpt-6.2-astra",
+      "status": "completed",
+      "request_counts": {
+        "total": 5,
+        "completed": 5,
+        "failed": 0
+      },
+      "parsedOk": 5,
+      "parsedTotal": 5,
+      "totalTokens": 20390
+    },
+    {
+      "name": "batch3-gpt-6.2-astra",
+      "batchId": "batch_6b07a63c98a48190a6993fb05b983720",
+      "model": "gpt-6.2-astra",
+      "status": "completed",
+      "request_counts": {
+        "total": 35,
+        "completed": 35,
+        "failed": 0
+      },
+      "parsedOk": 35,
+      "parsedTotal": 35,
+      "totalTokens": 27788
+    },
+    {
+      "name": "batch3-gpt-5.5",
+      "batchId": "batch_6b07a63d91308190a664cf07d5ec3eae",
+      "model": "gpt-5.5",
+      "status": "completed",
+      "request_counts": {
+        "total": 35,
+        "completed": 35,
+        "failed": 0
+      },
+      "parsedOk": 15,
+      "parsedTotal": 35,
+      "totalTokens": 66950
+    },
+    {
+      "name": "batch3-gpt-4.1",
+      "batchId": "batch_6b07a63e9eb48190ae3646354975faad",
+      "model": "gpt-4.1",
+      "status": "in_progress",
+      "request_counts": {
+        "total": 35,
+        "completed": 31,
+        "failed": 0
+      },
+      "parsedOk": 0,
+      "parsedTotal": 0,
+      "totalTokens": 0
+    },
+    {
+      "name": "batch-recovery-b1b2-gpt-6.2-astra",
+      "batchId": "batch_6b07a9e296b48190b95fbd1fcc420b1b",
+      "model": "gpt-6.2-astra",
+      "status": "completed",
+      "request_counts": {
+        "total": 40,
+        "completed": 40,
+        "failed": 0
+      },
+      "parsedOk": 36,
+      "parsedTotal": 40,
+      "totalTokens": 156794
+    },
+    {
+      "name": "batch-recovery-b3-gpt-5.5",
+      "batchId": "batch_6b07a9e3bc08819096751f8be08e229d",
+      "model": "gpt-5.5",
+      "status": "completed",
+      "request_counts": {
+        "total": 20,
+        "completed": 20,
+        "failed": 0
+      },
+      "parsedOk": 20,
+      "parsedTotal": 20,
+      "totalTokens": 58462
+    }
+  ],
+  "files": [
+    {
+      "file": "sfx-dictionary-200.json",
+      "bytes": 109974,
+      "itemCount": 200,
+      "validRecords": 10
+    },
+    {
+      "file": "bg3d-camera-presets-100.json",
+      "bytes": 95464,
+      "itemCount": 100,
+      "validRecords": 10
+    },
+    {
+      "file": "mcp-workflow-macros-100.json",
+      "bytes": 140249,
+      "itemCount": 100,
+      "validRecords": 10
+    },
+    {
+      "file": "character-archetypes-50.json",
+      "bytes": 28290,
+      "itemCount": 50,
+      "validRecords": 1
+    },
+    {
+      "file": "cliffhanger-patterns-100.json",
+      "bytes": 56019,
+      "itemCount": 100,
+      "validRecords": 2
+    },
+    {
+      "file": "starter-episodes-20.json",
+      "bytes": 163894,
+      "itemCount": 20,
+      "validRecords": 20
+    },
+    {
+      "file": "multilingual-manuals-24.json",
+      "bytes": 200478,
+      "itemCount": 24,
+      "validRecords": 24
+    },
+    {
+      "file": "golden-eval-cases-50.json",
+      "bytes": 66553,
+      "itemCount": 50,
+      "validRecords": 5
+    },
+    {
+      "file": "eval-matrix-gpt-6.2-astra.json",
+      "bytes": 87815,
+      "itemCount": 35,
+      "validRecords": 35
+    },
+    {
+      "file": "eval-matrix-gpt-5.5.json",
+      "bytes": 296022,
+      "itemCount": 35,
+      "validRecords": 35
+    }
+  ]
+}
