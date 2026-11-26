@@ -4,14 +4,18 @@ import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_AI_STARTER_MANIFEST_URL,
   DEFAULT_IDLE_MAX_SLICE_MS,
+  DEFAULT_MAX_PIN_BYTES,
   DEFAULT_SEMANTIC_INDEX_256D_URL,
   DEFAULT_WASM64_CORE_ASSET_URLS,
   IdleThumbnailAndPreflightScheduler,
   PWA_BASE_CACHE_PREFIX,
+  PWA_BASE_STAGING_CACHE_PREFIX,
+  PWA_KILL_SWITCH_HEADER,
   PwaBaseAssetPinner,
   computeBaseAssetVersionHash,
   computeFnv1a32,
   computeRgbaContentHash,
+  computeSha256Sri,
   createInMemoryCacheStorage,
   downsampleRgba8BilinearBox,
   hasValidWasmMagicHeader,
@@ -341,8 +345,11 @@ describe("PwaBaseAssetPinner — 무비용($0) 원자적 피닝 · 0-네트워�
     const quotaPinner = new PwaBaseAssetPinner({ versionHash: "v2-quota", cacheStorage: flakyStorage, fetchFn: net.fetchFn });
     const quotaResult = await quotaPinner.pinAll();
     expect(quotaResult.ok).toBe(false);
-    expect(quotaResult.failures[0]?.reason).toBe("cache-write-error");
+    expect(quotaResult.status).toBe("quota-exceeded");
+    expect(quotaResult.quotaExceeded).toBe(true);
+    expect(quotaResult.failures[0]?.reason).toBe("quota-exceeded");
     expect(await backing.has(`${PWA_BASE_CACHE_PREFIX}v2-quota`)).toBe(false);
+    expect(await backing.has(`${PWA_BASE_STAGING_CACHE_PREFIX}v2-quota`)).toBe(false);
     expect(await backing.has(`${PWA_BASE_CACHE_PREFIX}v1`)).toBe(true);
 
     // AbortSignal 사전 취소
@@ -361,6 +368,189 @@ describe("PwaBaseAssetPinner — 무비용($0) 원자적 피닝 · 0-네트워�
     expect(h1).toBe(h2);
     expect(h1).not.toBe(h3);
     expect(h1).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  it("[가드 1] 저장소 쿼터 상한(48 MiB · 가용 20% · 스테이징 QuotaExceededError)에서 무충돌 중단 및 스테이징 정리를 보장한다", async () => {
+    expect(DEFAULT_MAX_PIN_BYTES).toBe(48 * 1024 * 1024);
+    const cacheStorage = createInMemoryCacheStorage();
+    const net = createFixtureFetch(makeCoreAssetFixtures("v1"));
+
+    // 1) 가용 쿼터(10KB)의 20%(= 2KB) 초과 시 안전 중단 + 스테이징 정리
+    const lowRes = await new PwaBaseAssetPinner({
+      versionHash: "v-low-quota", cacheStorage, fetchFn: net.fetchFn,
+      storageManager: { estimate: async () => ({ quota: 100_000, usage: 90_000 }) },
+    }).pinAll();
+    expect(lowRes).toMatchObject({ ok: false, status: "quota-exceeded", quotaExceeded: true });
+    expect(lowRes.failures[0]?.reason).toBe("quota-exceeded");
+    expect(await cacheStorage.has(`${PWA_BASE_STAGING_CACHE_PREFIX}v-low-quota`)).toBe(false);
+
+    // 2) maxPinBytes 상한 초과 시 안전 중단 + 스테이징 정리
+    const capRes = await new PwaBaseAssetPinner({
+      versionHash: "v-max-cap", maxPinBytes: 120, cacheStorage, fetchFn: net.fetchFn,
+      storageManager: { estimate: async () => ({ quota: 500 * 1024 * 1024, usage: 0 }) },
+    }).pinAll();
+    expect(capRes).toMatchObject({ ok: false, status: "quota-exceeded", quotaExceeded: true });
+    expect(await cacheStorage.has(`${PWA_BASE_STAGING_CACHE_PREFIX}v-max-cap`)).toBe(false);
+
+    // 3) 스테이징 put 중 DOMException(QuotaExceededError) 및 일반 I/O 오류 구분 + 고아 스테이징 정리
+    await cacheStorage.open(`${PWA_BASE_STAGING_CACHE_PREFIX}orphan`);
+    const wrapStagePut = (target: string, err: unknown): PinCacheStorageLike => ({
+      keys: () => cacheStorage.keys(), delete: (n) => cacheStorage.delete(n), has: (n) => cacheStorage.has(n), match: (r) => cacheStorage.match(r),
+      open: async (n): Promise<PinCacheLike> => {
+        const inner = await cacheStorage.open(n);
+        return n !== target ? inner : { match: (r) => inner.match(r), delete: (r) => inner.delete(r), keys: () => inner.keys(), put: async () => { throw err; } };
+      },
+    });
+    const domQuotaRes = await new PwaBaseAssetPinner({
+      versionHash: "v-dom-quota", cacheStorage: wrapStagePut(`${PWA_BASE_STAGING_CACHE_PREFIX}v-dom-quota`, new DOMException("Storage quota exceeded", "QuotaExceededError")), fetchFn: net.fetchFn,
+    }).pinAll();
+    expect(domQuotaRes).toMatchObject({ ok: false, status: "quota-exceeded", quotaExceeded: true });
+    expect(await cacheStorage.has(`${PWA_BASE_STAGING_CACHE_PREFIX}orphan`)).toBe(false);
+
+    const ioErrRes = await new PwaBaseAssetPinner({
+      versionHash: "v-io-err", cacheStorage: wrapStagePut(`${PWA_BASE_STAGING_CACHE_PREFIX}v-io-err`, new Error("disk-io-failed")), fetchFn: net.fetchFn,
+    }).pinAll();
+    expect(ioErrRes.ok).toBe(false);
+    expect(ioErrRes.failures[0]?.reason).toBe("cache-write-error");
+  });
+
+  it("[가드 2] 스테이징 캐시에서 HTTP 200·MIME·SHA-256 SRI를 100% 검증한 뒤에만 활성 세대를 원자적 교체한다", async () => {
+    const cacheStorage = createInMemoryCacheStorage();
+    const wasmBytes = makeValidWasmBinary(48, 7);
+    const jsonBytes = new TextEncoder().encode(JSON.stringify({ ok: true, rev: "r2" }));
+    const validSri = await computeSha256Sri(wasmBytes);
+    let storedGen: string | null = null;
+    const generationStore = { get: () => storedGen, set: (v: string | null) => { storedGen = v; } };
+    const v1Net = createFixtureFetch(new Map([
+      ["/wasm/core.wasm", { bytes: wasmBytes, contentType: "application/wasm" }],
+      ["/manifest.json", { bytes: jsonBytes, contentType: "application/json" }],
+    ]));
+
+    const resV1 = await new PwaBaseAssetPinner({
+      versionHash: "20261125", cacheStorage, generationStore, fetchFn: v1Net.fetchFn,
+      assets: [
+        { url: "/wasm/core.wasm", kind: "wasm", minBytes: 8, integrity: validSri, expectedMimeTypes: ["application/wasm"] },
+        { url: "/manifest.json", kind: "manifest", validateJson: true, expectedMimeTypes: ["application/json"] },
+      ],
+    }).pinAll();
+    expect(resV1).toMatchObject({ ok: true, activeVersionHash: "20261125" });
+    expect(storedGen).toBe("20261125");
+    expect(await cacheStorage.has(`${PWA_BASE_STAGING_CACHE_PREFIX}20261125`)).toBe(false);
+
+    // SRI 불일치 / HTTP 206 비-200 / SPA HTML MIME 오류는 모두 스테이징 롤백 및 활성 세대 보존
+    const badSriRes = await new PwaBaseAssetPinner({
+      versionHash: "20261126-sri", cacheStorage, generationStore, fetchFn: v1Net.fetchFn,
+      assets: [{ url: "/wasm/core.wasm", kind: "wasm", integrity: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" }],
+    }).pinAll();
+    expect(badSriRes.failures[0]?.reason).toBe("integrity-mismatch");
+    expect(await cacheStorage.has(`${PWA_BASE_STAGING_CACHE_PREFIX}20261126-sri`)).toBe(false);
+
+    const partialRes = await new PwaBaseAssetPinner({
+      versionHash: "20261126-206", cacheStorage, generationStore,
+      assets: [{ url: "/manifest.json", kind: "manifest", validateJson: true }],
+      fetchFn: async () => new Response(new Uint8Array(jsonBytes), { status: 206, headers: { "content-type": "application/json" } }),
+    }).pinAll();
+    expect(partialRes.failures[0]?.reason).toBe("http-error");
+
+    const mimeRes = await new PwaBaseAssetPinner({
+      versionHash: "20261126-mime", cacheStorage, generationStore,
+      assets: [{ url: "/manifest.json", kind: "manifest", validateJson: true }],
+      fetchFn: async () => new Response(new Uint8Array(jsonBytes), { status: 200, headers: { "content-type": "text/html" } }),
+    }).pinAll();
+    expect(mimeRes.failures[0]?.reason).toBe("invalid-mime-type");
+    expect(storedGen).toBe("20261125");
+  });
+
+  it("[가드 3] 미저장 캔버스 편집 중에는 강제 교체를 차단하고 pendingActivationVersion 적재 후 flushPendingActivation()으로 안전 교체한다", async () => {
+    const cacheStorage = createInMemoryCacheStorage();
+    expect((await new PwaBaseAssetPinner({ versionHash: "v1", cacheStorage, fetchFn: createFixtureFetch(makeCoreAssetFixtures("v1")).fetchFn }).pinAll()).ok).toBe(true);
+
+    let hasDirtyStrokes = true;
+    const onActivate = vi.fn();
+    const pinnerV2 = new PwaBaseAssetPinner({
+      versionHash: "v2", cacheStorage, fetchFn: createFixtureFetch(makeCoreAssetFixtures("v2")).fetchFn,
+      hasUnsavedCanvasEdits: () => hasDirtyStrokes, onActivate,
+    });
+
+    const deferred = await pinnerV2.pinAll();
+    expect(deferred).toMatchObject({ ok: true, status: "staged-pending-activation", activationDeferred: true, pendingActivationVersion: "v2", activeVersionHash: "v1" });
+    expect(onActivate).not.toHaveBeenCalled();
+    expect(await cacheStorage.has(`${PWA_BASE_STAGING_CACHE_PREFIX}v2`)).toBe(true);
+    expect(await cacheStorage.has(`${PWA_BASE_CACHE_PREFIX}v2`)).toBe(false);
+
+    // 작업 중 오프라인 조회는 v1 활성 세대만 읽어야 한다(JS/WASM 버전 혼재 0건)
+    const activeRead = await pinnerV2.resolvePinnedAsset(DEFAULT_AI_STARTER_MANIFEST_URL);
+    expect(activeRead.cacheName).toBe(`${PWA_BASE_CACHE_PREFIX}v1`);
+    expect(((await activeRead.response?.json()) as { release: string }).release).toBe("v1");
+    expect(await pinnerV2.flushPendingActivation()).toMatchObject({ activated: false, reason: "unsaved-canvas-edits" });
+
+    // 저장 완료 후 유휴 시점 flushPendingActivation() -> 원자적 세대 교체 + v1 정리 + onActivate 호출
+    hasDirtyStrokes = false;
+    const flushed = await pinnerV2.flushPendingActivation();
+    expect(flushed).toMatchObject({ activated: true, reason: "activated", activeVersionHash: "v2", pendingActivationVersion: null, prunedCacheNames: [`${PWA_BASE_CACHE_PREFIX}v1`] });
+    expect(await cacheStorage.has(`${PWA_BASE_STAGING_CACHE_PREFIX}v2`)).toBe(false);
+    expect(onActivate).toHaveBeenCalledWith({ versionHash: "v2", cacheName: `${PWA_BASE_CACHE_PREFIX}v2`, previousVersionHash: "v1" });
+  });
+
+  it("[가드 4] Safari 7일 ITP·OS 캐시 퇴거 시 storage.persist() 기회적 요청과 verifyAndSelfHealPinnedAssets() 무음 자가 치유가 동작한다", async () => {
+    const cacheStorage = createInMemoryCacheStorage();
+    const persistSpy = vi.fn(async () => true);
+    const net = createFixtureFetch(makeCoreAssetFixtures("v1"));
+    const pinner = new PwaBaseAssetPinner({
+      versionHash: "v1-itp", cacheStorage, fetchFn: net.fetchFn,
+      storageManager: { persist: persistSpy, persisted: async () => false, estimate: async () => ({ quota: 100 * 1024 * 1024, usage: 0 }) },
+    });
+
+    const initial = await pinner.pinAll();
+    expect(initial).toMatchObject({ ok: true, persistenceStatus: "granted" });
+    expect(persistSpy).toHaveBeenCalled();
+
+    net.resetCalls();
+    expect(await pinner.verifyAndSelfHealPinnedAssets()).toMatchObject({ healthy: true, healed: false });
+    expect(net.getCalls()).toBe(0);
+
+    // Safari 7일 ITP 부분 퇴거(1개 wasm 삭제 + 1개 매니페스트 손상) 후 무음 백그라운드 재피닝
+    const cache = await cacheStorage.open(pinner.cacheName);
+    await cache.delete(DEFAULT_WASM64_CORE_ASSET_URLS[0]);
+    await cache.put(DEFAULT_AI_STARTER_MANIFEST_URL, new Response("{corrupted", { status: 200 }));
+    const healed = await pinner.verifyAndSelfHealPinnedAssets();
+    expect(healed).toMatchObject({ healthy: true, healed: true, missingUrls: [DEFAULT_WASM64_CORE_ASSET_URLS[0]], corruptedUrls: [DEFAULT_AI_STARTER_MANIFEST_URL] });
+    expect(pinner.getTelemetry()).toMatchObject({ selfHealAttempts: 1, selfHealRecoveries: 1 });
+    expect(hasValidWasmMagicHeader((await pinner.readPinnedAssetBytes(DEFAULT_WASM64_CORE_ASSET_URLS[0]))!)).toBe(true);
+  });
+
+  it("[가드 5] emergencyPurgeBefore 컷오프·?reset-pwa-cache=1·서버 킬스위치 헤더·purgeAllPinnedCaches()가 오염 캐시만 안전하게 제거한다", async () => {
+    const cacheStorage = createInMemoryCacheStorage();
+    await (await cacheStorage.open("toonstudio-user-projects-v1")).put("/project/mine.json", new Response('{"saved":true}', { status: 200 }));
+    const net = createFixtureFetch(makeCoreAssetFixtures("v20261126"));
+
+    // 1) 구버전(20261120)은 emergencyPurgeBefore 컷오프로 즉시 차단·퍼지
+    expect((await new PwaBaseAssetPinner({ versionHash: "20261120", cacheStorage, fetchFn: net.fetchFn }).pinAll()).ok).toBe(true);
+    const blockedOld = await new PwaBaseAssetPinner({ versionHash: "20261120", emergencyPurgeBefore: "20261125", cacheStorage, fetchFn: net.fetchFn }).pinAll();
+    expect(blockedOld).toMatchObject({ ok: false, status: "purged" });
+    expect(blockedOld.failures[0]?.reason).toBe("kill-switch-purged");
+    expect(await cacheStorage.has(`${PWA_BASE_CACHE_PREFIX}20261120`)).toBe(false);
+
+    // 2) ?reset-pwa-cache=1 쿼리로 기존 캐시 퍼지 후 정상 재피닝
+    expect((await new PwaBaseAssetPinner({ versionHash: "20261126", cacheStorage, fetchFn: net.fetchFn }).pinAll()).ok).toBe(true);
+    const resetPinner = new PwaBaseAssetPinner({ versionHash: "20261126", urlSearch: "?studio=1&reset-pwa-cache=1", cacheStorage, fetchFn: net.fetchFn });
+    const resetRes = await resetPinner.pinAll();
+    expect(resetRes).toMatchObject({ ok: true, status: "pinned", fetchCalls: 6 });
+    expect(resetPinner.getTelemetry().lastPurge?.reason).toBe("url-reset-param");
+
+    // 3) 서버 킬스위치 헤더 수신 및 명시적 purgeAllPinnedCaches() 실행 시 사용자 프로젝트 캐시만 보존
+    const killNet = createFixtureFetch(makeCoreAssetFixtures("20261127"), {
+      [DEFAULT_WASM64_CORE_ASSET_URLS[0]]: () => new Response("", { status: 200, headers: { [PWA_KILL_SWITCH_HEADER]: "purge" } }),
+    });
+    const killPinner = new PwaBaseAssetPinner({ versionHash: "20261127", cacheStorage, fetchFn: killNet.fetchFn });
+    expect(await killPinner.pinAll()).toMatchObject({ ok: false, status: "purged" });
+    expect(await cacheStorage.keys()).toEqual(["toonstudio-user-projects-v1"]);
+
+    await cacheStorage.open(`${PWA_BASE_CACHE_PREFIX}manual`);
+    await cacheStorage.open(`${PWA_BASE_STAGING_CACHE_PREFIX}manual`);
+    const manualPurge = await killPinner.purgeAllPinnedCaches("manual-operator-reset");
+    expect(manualPurge.purgedCacheNames).toHaveLength(2);
+    expect(await cacheStorage.keys()).toEqual(["toonstudio-user-projects-v1"]);
   });
 });
 
@@ -393,53 +583,25 @@ describe("IdleThumbnailAndPreflightScheduler — RGBA8 다운샘플링 · Rights
 
   it("Rights BOM 비상업/만료 에셋, 색 프로파일·DPI 불일치, 네이버/카카오 800px 미만 세로 폭을 정확히 차단한다", () => {
     const clean = validateCutExportPreflight({
-      width: 800,
-      height: 1200,
-      dpi: 72,
-      colorProfile: "srgb",
-      exportTarget: "naver-webtoon",
-      commercialUse: true,
-      rgbaByteLength: 800 * 1200 * 4,
+      width: 800, height: 1200, dpi: 72, colorProfile: "srgb", exportTarget: "naver-webtoon",
+      commercialUse: true, rgbaByteLength: 800 * 1200 * 4,
       rightsBom: [
         { assetId: "font-01", name: "오픈 폰트", kind: "font", licenseTier: "cc0" },
         { assetId: "bg-02", name: "상업용 배경", kind: "3d-bg", licenseTier: "commercial-cleared" },
       ],
     });
-    expect(clean.ok).toBe(true);
-    expect(clean.canExport).toBe(true);
-    expect(clean.errorCount).toBe(0);
-    expect(clean.unlicensedAssetIds).toEqual([]);
+    expect(clean).toMatchObject({ ok: true, canExport: true, errorCount: 0, unlicensedAssetIds: [] });
 
     const invalidRights: RightsBomAssetItem[] = [
       { assetId: "vrm-personal", name: "개인용 VRM 아바타", kind: "vrm", licenseTier: "personal-only" },
       { assetId: "tex-unlicensed", name: "미승인 텍스처", kind: "texture", licenseTier: "unlicensed" },
-      {
-        assetId: "font-expired",
-        name: "만료된 유료 폰트",
-        kind: "font",
-        licenseTier: "commercial-cleared",
-        expiresAtMs: 1_700_000_000_000,
-      },
-      {
-        assetId: "brush-cc-by",
-        name: "저작자 표기 필요 브러시",
-        kind: "brush",
-        licenseTier: "commercial-cleared",
-        attributionRequired: true,
-        attributionProvided: false,
-      },
+      { assetId: "font-expired", name: "만료된 유료 폰트", kind: "font", licenseTier: "commercial-cleared", expiresAtMs: 1_700_000_000_000 },
+      { assetId: "brush-cc-by", name: "저작자 표기 필요 브러시", kind: "brush", licenseTier: "commercial-cleared", attributionRequired: true, attributionProvided: false },
     ];
 
     const blocked = validateCutExportPreflight({
-      width: 690,
-      height: 24000,
-      dpi: 48,
-      colorProfile: "cmyk",
-      exportTarget: "kakao-webtoon",
-      commercialUse: true,
-      rgbaByteLength: 1024,
-      nowEpochMs: 1_800_000_000_000,
-      rightsBom: invalidRights,
+      width: 690, height: 24000, dpi: 48, colorProfile: "cmyk", exportTarget: "kakao-webtoon",
+      commercialUse: true, rgbaByteLength: 1024, nowEpochMs: 1_800_000_000_000, rightsBom: invalidRights,
     });
 
     expect(blocked.ok).toBe(false);

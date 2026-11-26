@@ -1,282 +1,243 @@
 /**
- * 무비용($0) PWA 코어 불변 에셋 버전 해시 CacheStorage 피닝 컨트롤러.
+ * 무비용($0) PWA 코어 불변 에셋 버전 해시 CacheStorage 피닝 컨트롤러 (프로덕션 하드닝 v2).
  *
- * - WASM64 바이너리 4종, AI 스타터 팩 매니페스트, 884개 오프라인 시맨틱 인덱스,
- *   설정 가능한 기본 폰트·아이콘을 원자적 버전 캐시(`toonstudio-base-assets-v<hash>`)에 고정한다.
- * - HTTP 2xx, 바이트 길이, `.wasm` 매직 헤더(`\0asm`), JSON 구문 검사를 100% 통과해
- *   새 캐시에 커밋된 뒤에만 구버전 캐시를 정리하므로 오프라인 재방문 무결성이 유지된다.
+ * 5대 프로덕션 안전 가드:
+ * 1. 저장소 쿼터 상한 가드 (`navigator.storage.estimate()`, `maxPinBytes` 48 MiB, 가용 쿼터 20% 상한, `QuotaExceededError` 무충돌 롤백)
+ * 2. 원자적 세대 교체 및 무결성 검증 (`toonstudio-base-staging-<buildHash>` 스테이징 → HTTP 200·MIME·매직 바이트·SHA-256 SRI 100% 검증 후 세대 교체)
+ * 3. 비파괴 활성화 게이트 (`canActivateNow` / `hasUnsavedCanvasEdits` → `pendingActivationVersion` 대기 + `flushPendingActivation()`)
+ * 4. Safari 7일 ITP / 브라우저 퇴거 자가 치유 (`navigator.storage.persist()` 기회적 요청 + `verifyAndSelfHealPinnedAssets()`)
+ * 5. 비상 킬스위치 및 오염 캐시 일괄 퍼지 (`emergencyPurgeBefore`, `?reset-pwa-cache=1`, 서버 킬스위치 헤더, `purgeAllPinnedCaches(reason)`)
  */
 
-export const PWA_BASE_CACHE_PREFIX = "toonstudio-base-assets-v";
-export const DEFAULT_WASM64_CORE_ASSET_URLS = Object.freeze([
-  "/wasm/studio-wasm64-drawing-core.wasm",
-  "/wasm/studio-wasm64-drawing-core-simd.wasm",
-  "/wasm/studio-wasm64-drawing-core-relaxed-simd.wasm",
-  "/wasm/studio-wasm64-extended-suite.wasm",
-] as const);
-export const DEFAULT_AI_STARTER_MANIFEST_URL = "/assets/ai-starter-pack/manifest.json";
-export const DEFAULT_SEMANTIC_INDEX_256D_URL =
-  "/assets/ai-starter-pack/embeddings/catalog-semantic-index-256d.json";
+import {
+  DEFAULT_MAX_PIN_BYTES,
+  DEFAULT_MAX_QUOTA_FRACTION,
+  PWA_BASE_CACHE_PREFIX,
+  PWA_BASE_STAGING_CACHE_PREFIX,
+  buildAssetList,
+  compareVersionCutoff,
+  computeBaseAssetVersionHash,
+  extractKillSwitchFromHeaders,
+  isQuotaExceededError,
+  shouldTriggerEmergencyPurgeFromUrl,
+  validatePwaAssetPayload,
+  type ActivationContext,
+  type ActivationFlushResult,
+  type GenerationPointerStore,
+  type MatchPinnedAssetResolution,
+  type PinAssetFailure,
+  type PinCacheLike,
+  type PinCacheStorageLike,
+  type PinRunResult,
+  type PinStorageManagerLike,
+  type PinnedAssetRecord,
+  type PurgeCachesResult,
+  type PwaBaseAssetDescriptor,
+  type PwaBaseAssetPinnerOptions,
+  type PwaBaseAssetPinnerTelemetry,
+  type SelfHealResult,
+  type StoragePersistenceStatus,
+} from "./pwa-base-asset-pinner-guards";
 
-/** WebAssembly 바이너리 표준 매직 헤더(`\0asm`) 및 버전 1 (`0x01 0x00 0x00 0x00`). */
-export const WASM_MAGIC_BYTES = Object.freeze([0x00, 0x61, 0x73, 0x6d] as const);
-const WASM_V1_BYTES = Object.freeze([0x01, 0x00, 0x00, 0x00] as const);
-
-export type PwaBaseAssetKind = "wasm" | "manifest" | "semantic-index" | "font" | "icon" | "other";
-export type PinFailureReason =
-  | "http-error" | "network-error" | "empty-payload" | "byte-length-mismatch"
-  | "invalid-wasm-magic" | "invalid-json" | "custom-validation-failed"
-  | "cache-write-error" | "aborted";
-
-export interface PwaBaseAssetDescriptor {
-  readonly url: string; readonly kind: PwaBaseAssetKind;
-  readonly minBytes?: number; readonly maxBytes?: number; readonly expectedByteLength?: number;
-  readonly validateJson?: boolean;
-  readonly customValidate?: (bytes: Uint8Array, response: Response) => boolean | string;
-}
-
-export const DEFAULT_PWA_BASE_ASSET_DESCRIPTORS: readonly PwaBaseAssetDescriptor[] = Object.freeze([
-  ...DEFAULT_WASM64_CORE_ASSET_URLS.map((url): PwaBaseAssetDescriptor => ({ url, kind: "wasm", minBytes: 8 })),
-  { url: DEFAULT_AI_STARTER_MANIFEST_URL, kind: "manifest", minBytes: 2, validateJson: true },
-  { url: DEFAULT_SEMANTIC_INDEX_256D_URL, kind: "semantic-index", minBytes: 2, validateJson: true },
-]);
-
-export interface PinCacheLike {
-  match(request: RequestInfo | URL): Promise<Response | undefined>;
-  put(request: RequestInfo | URL, response: Response): Promise<void>;
-  delete(request: RequestInfo | URL): Promise<boolean>;
-  keys(): Promise<readonly Request[]>;
-}
-export interface PinCacheStorageLike {
-  open(cacheName: string): Promise<PinCacheLike>;
-  keys(): Promise<string[]>;
-  delete(cacheName: string): Promise<boolean>;
-  has(cacheName: string): Promise<boolean>;
-  match(request: RequestInfo | URL): Promise<Response | undefined>;
-}
-export interface PinnedAssetRecord {
-  readonly url: string; readonly kind: PwaBaseAssetKind; readonly byteLength: number; readonly source: "cache" | "network";
-}
-export interface PinAssetFailure {
-  readonly url: string; readonly kind: PwaBaseAssetKind; readonly reason: PinFailureReason; readonly message: string; readonly httpStatus?: number;
-}
-export interface PinRunResult {
-  readonly ok: boolean; readonly status: "pinned" | "already-pinned" | "failed" | "aborted";
-  readonly cacheName: string; readonly versionHash: string;
-  readonly pinnedAssets: readonly PinnedAssetRecord[]; readonly failures: readonly PinAssetFailure[];
-  readonly prunedCacheNames: readonly string[]; readonly fetchCalls: number;
-  readonly cacheHits: number; readonly totalBytes: number; readonly durationMs: number;
-}
-export interface MatchPinnedAssetResolution {
-  readonly hit: boolean; readonly url: string; readonly response: Response | null;
-  readonly cacheName: string | null; readonly source: "active-cache" | "fallback-cache" | "miss";
-}
-export interface PwaBaseAssetPinnerTelemetry {
-  readonly cacheName: string; readonly versionHash: string; readonly assetCount: number;
-  readonly totalNetworkFetchCalls: number; readonly offlineCacheHits: number;
-  readonly offlineCacheMisses: number; readonly lastPinResult: PinRunResult | null;
-}
-export interface PwaBaseAssetPinnerOptions {
-  readonly versionHash?: string; readonly buildTag?: string; readonly cachePrefix?: string;
-  readonly includeDefaultCoreAssets?: boolean;
-  readonly fontUrls?: readonly string[]; readonly iconUrls?: readonly string[];
-  readonly extraAssets?: readonly PwaBaseAssetDescriptor[]; readonly assets?: readonly PwaBaseAssetDescriptor[];
-  readonly cacheStorage?: PinCacheStorageLike; readonly fetchFn?: typeof fetch;
-  readonly requestInit?: RequestInit; readonly fallbackToAnyPinnedVersion?: boolean;
-  readonly verifyCachedIntegrityOnRecheck?: boolean; readonly now?: () => number;
-}
-
-const normalizeUrlKey = (req: RequestInfo | URL): string =>
-  typeof req === "string" ? req : req instanceof URL ? req.href : req.url;
-
-/** WebAssembly 바이너리 매직 헤더(`\0asm` + v1) 여부를 검증한다. */
-export function hasValidWasmMagicHeader(bytes: Uint8Array): boolean {
-  if (bytes.byteLength < 8) return false;
-  for (let i = 0; i < 4; i += 1) {
-    if (bytes[i] !== WASM_MAGIC_BYTES[i] || bytes[i + 4] !== WASM_V1_BYTES[i]) return false;
-  }
-  return true;
-}
-
-/** 에셋 목록과 빌드 태그로부터 결정적 FNV-1a 8자리 버전 해시를 계산한다. */
-export function computeBaseAssetVersionHash(assets: readonly PwaBaseAssetDescriptor[], buildTag = "v1"): string {
-  let hash = 0x811c9dc5;
-  const mix = (text: string): void => {
-    for (let i = 0; i < text.length; i += 1) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193) >>> 0;
-  };
-  mix(buildTag);
-  for (const a of assets) mix(`|${a.kind}:${a.url}${a.expectedByteLength !== undefined ? `#${a.expectedByteLength}` : ""}`);
-  return hash.toString(16).padStart(8, "0");
-}
-
-interface StoredEntry {
-  readonly bytes: Uint8Array; readonly status: number;
-  readonly statusText: string; readonly headers: readonly [string, string][];
-}
-
-/** Vitest 및 비브라우저 환경용 인메모리 `Cache` 구현체. */
-export class InMemoryPinCache implements PinCacheLike {
-  private readonly store = new Map<string, StoredEntry>();
-  async match(request: RequestInfo | URL): Promise<Response | undefined> {
-    const e = this.store.get(normalizeUrlKey(request));
-    return e ? new Response(new Uint8Array(e.bytes), { status: e.status, statusText: e.statusText, headers: e.headers.map(([k, v]) => [k, v] as [string, string]) }) : undefined;
-  }
-  async put(request: RequestInfo | URL, response: Response): Promise<void> {
-    const cloned = response.clone();
-    const headers: [string, string][] = [];
-    cloned.headers.forEach((v, k) => { headers.push([k, v]); });
-    this.store.set(normalizeUrlKey(request), { bytes: new Uint8Array(await cloned.arrayBuffer()), status: cloned.status, statusText: cloned.statusText, headers });
-  }
-  async delete(request: RequestInfo | URL): Promise<boolean> { return this.store.delete(normalizeUrlKey(request)); }
-  async keys(): Promise<readonly Request[]> { return Array.from(this.store.keys(), (url) => ({ url } as Request)); }
-}
-
-/** Vitest 및 비브라우저 환경용 인메모리 `CacheStorage` 테스트 더블. */
-export class InMemoryCacheStorage implements PinCacheStorageLike {
-  private readonly caches = new Map<string, InMemoryPinCache>();
-  async open(cacheName: string): Promise<PinCacheLike> {
-    let cache = this.caches.get(cacheName);
-    if (!cache) { cache = new InMemoryPinCache(); this.caches.set(cacheName, cache); }
-    return cache;
-  }
-  async keys(): Promise<string[]> { return Array.from(this.caches.keys()); }
-  async delete(cacheName: string): Promise<boolean> { return this.caches.delete(cacheName); }
-  async has(cacheName: string): Promise<boolean> { return this.caches.has(cacheName); }
-  async match(request: RequestInfo | URL): Promise<Response | undefined> {
-    for (const cache of this.caches.values()) { const hit = await cache.match(request); if (hit) return hit; }
-    return undefined;
-  }
-}
-
-export const createInMemoryCacheStorage = (): InMemoryCacheStorage => new InMemoryCacheStorage();
-
-function buildAssetList(options: PwaBaseAssetPinnerOptions): readonly PwaBaseAssetDescriptor[] {
-  const raw: PwaBaseAssetDescriptor[] = options.assets
-    ? [...options.assets]
-    : [
-      ...(options.includeDefaultCoreAssets !== false ? DEFAULT_PWA_BASE_ASSET_DESCRIPTORS : []),
-      ...(options.fontUrls ?? []).map((url): PwaBaseAssetDescriptor => ({ url, kind: "font", minBytes: 1 })),
-      ...(options.iconUrls ?? []).map((url): PwaBaseAssetDescriptor => ({ url, kind: "icon", minBytes: 1 })),
-      ...(options.extraAssets ?? []),
-    ];
-  const seen = new Set<string>();
-  const deduped: PwaBaseAssetDescriptor[] = [];
-  for (const item of raw) {
-    const url = item.url.trim();
-    if (url && !seen.has(url)) { seen.add(url); deduped.push({ ...item, url }); }
-  }
-  return Object.freeze(deduped);
-}
-
-function validatePayloadBytes(asset: PwaBaseAssetDescriptor, bytes: Uint8Array, response: Response): PinAssetFailure | null {
-  const fail = (reason: PinFailureReason, message: string): PinAssetFailure => ({ url: asset.url, kind: asset.kind, reason, message });
-  const len = bytes.byteLength;
-  if (len === 0) return fail("empty-payload", "빈 응답 바이트입니다.");
-  if (asset.expectedByteLength !== undefined && len !== asset.expectedByteLength) return fail("byte-length-mismatch", `예상 크기(${asset.expectedByteLength}B)와 다릅니다(${len}B).`);
-  if (asset.minBytes !== undefined && len < asset.minBytes) return fail("byte-length-mismatch", `최소 크기(${asset.minBytes}B) 미만입니다(${len}B).`);
-  if (asset.maxBytes !== undefined && len > asset.maxBytes) return fail("byte-length-mismatch", `최대 크기(${asset.maxBytes}B) 초과입니다(${len}B).`);
-  if ((asset.kind === "wasm" || asset.url.toLowerCase().endsWith(".wasm")) && !hasValidWasmMagicHeader(bytes)) {
-    return fail("invalid-wasm-magic", "유효한 WebAssembly 매직 헤더(\\0asm v1)가 아닙니다.");
-  }
-  if (asset.validateJson ?? (asset.kind === "manifest" || asset.kind === "semantic-index")) {
-    try {
-      const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
-      if (parsed === null || typeof parsed !== "object") return fail("invalid-json", "JSON 루트가 객체/배열이 아닙니다.");
-    } catch { return fail("invalid-json", "JSON 구문이 손상되었습니다."); }
-  }
-  if (asset.customValidate) {
-    const verdict = asset.customValidate(bytes, response);
-    if (verdict !== true) return fail("custom-validation-failed", typeof verdict === "string" ? verdict : "무결성 검증 실패.");
-  }
-  return null;
-}
+export * from "./pwa-base-asset-pinner-guards";
 
 type StagedAsset = { readonly asset: PwaBaseAssetDescriptor; readonly bytes: Uint8Array; readonly response: Response };
+type FetchValidationOutcome =
+  | StagedAsset
+  | PinAssetFailure
+  | { readonly killSwitchReason: string; readonly asset: PwaBaseAssetDescriptor };
 
 export class PwaBaseAssetPinner {
   readonly cachePrefix: string;
+  readonly stagingCachePrefix: string;
   readonly versionHash: string;
   readonly cacheName: string;
+  readonly stagingCacheName: string;
+  readonly maxPinBytes: number;
+  readonly maxQuotaFraction: number;
   readonly assets: readonly PwaBaseAssetDescriptor[];
   private readonly cacheStorage: PinCacheStorageLike;
+  private readonly storageManager: PinStorageManagerLike | null;
+  private readonly requestPersistence: boolean;
+  private readonly canActivateNow?: () => boolean;
+  private readonly hasUnsavedCanvasEdits?: () => boolean;
+  private readonly onActivate?: (ctx: ActivationContext) => Promise<void> | void;
+  private readonly generationStore?: GenerationPointerStore;
+  private readonly emergencyPurgeBefore?: string;
+  private readonly urlSearch?: string;
   private readonly fetchFn: typeof fetch;
   private readonly requestInit: RequestInit;
   private readonly fallbackToAnyPinnedVersion: boolean;
   private readonly verifyCachedIntegrityOnRecheck: boolean;
   private readonly now: () => number;
-  private readonly metrics = { networkFetchCalls: 0, offlineHits: 0, offlineMisses: 0 };
+  private readonly metrics = {
+    networkFetchCalls: 0, offlineHits: 0, offlineMisses: 0, selfHealAttempts: 0, selfHealRecoveries: 0,
+  };
+  private activeVersionHash: string | null = null;
+  private pendingActivationVersion: string | null = null;
+  private unsavedCanvasEditsOverride = false;
+  private persistenceStatus: StoragePersistenceStatus = "unsupported";
+  private urlResetApplied = false;
+  private lastPurge: PurgeCachesResult | null = null;
   private lastPinResult: PinRunResult | null = null;
 
   constructor(options: PwaBaseAssetPinnerOptions = {}) {
     this.cachePrefix = options.cachePrefix ?? PWA_BASE_CACHE_PREFIX;
+    this.stagingCachePrefix = options.stagingCachePrefix ?? PWA_BASE_STAGING_CACHE_PREFIX;
     this.assets = buildAssetList(options);
     const hash = (options.versionHash ?? computeBaseAssetVersionHash(this.assets, options.buildTag)).trim();
     if (!hash || /\s/.test(hash)) throw new RangeError(`유효한 versionHash가 필요합니다: "${hash}"`);
     this.versionHash = hash;
     this.cacheName = `${this.cachePrefix}${this.versionHash}`;
+    this.stagingCacheName = `${this.stagingCachePrefix}${this.versionHash}`;
+    this.maxPinBytes = options.maxPinBytes !== undefined && Number.isFinite(options.maxPinBytes) && options.maxPinBytes > 0
+      ? Math.floor(options.maxPinBytes) : DEFAULT_MAX_PIN_BYTES;
+    this.maxQuotaFraction = options.maxQuotaFraction !== undefined && Number.isFinite(options.maxQuotaFraction)
+      ? Math.min(1, Math.max(0.01, options.maxQuotaFraction)) : DEFAULT_MAX_QUOTA_FRACTION;
     const storage = options.cacheStorage ?? (globalThis.caches as unknown as PinCacheStorageLike | undefined);
     if (!storage) throw new Error("CacheStorage가 지원되지 않습니다. cacheStorage 옵션을 주입하세요.");
     this.cacheStorage = storage;
+    this.storageManager = options.storageManager !== undefined
+      ? options.storageManager
+      : ((globalThis.navigator as { storage?: PinStorageManagerLike } | undefined)?.storage ?? null);
+    this.requestPersistence = options.requestPersistence ?? true;
+    this.canActivateNow = options.canActivateNow;
+    this.hasUnsavedCanvasEdits = options.hasUnsavedCanvasEdits;
+    this.onActivate = options.onActivate;
+    this.generationStore = options.generationStore;
+    this.emergencyPurgeBefore = options.emergencyPurgeBefore?.trim() || undefined;
+    this.urlSearch = options.urlSearch;
     this.fetchFn = options.fetchFn ?? globalThis.fetch.bind(globalThis);
     this.requestInit = options.requestInit ?? { cache: "no-store" };
     this.fallbackToAnyPinnedVersion = options.fallbackToAnyPinnedVersion ?? true;
     this.verifyCachedIntegrityOnRecheck = options.verifyCachedIntegrityOnRecheck ?? false;
     this.now = options.now ?? (() => performance.now());
+    this.activeVersionHash = this.generationStore?.get() ?? null;
   }
 
-  /** 모든 코어 에셋을 현재 버전 캐시에 원자적 고정(이미 고정 시 0 네트워크). */
-  async pinAll(signal?: AbortSignal): Promise<PinRunResult> {
-    const startedAt = this.now();
-    const existing = await this.checkAlreadyPinned(signal);
-    if (existing) {
-      return this.finishPin(true, "already-pinned", existing.records, [], await this.pruneStaleCaches(), 0, existing.records.length, existing.totalBytes, startedAt);
-    }
+  /** 미저장 캔버스 편집 상태를 명시적으로 갱신한다(활성화 게이트 제어용). */
+  setHasUnsavedCanvasEdits(dirty: boolean): void { this.unsavedCanvasEditsOverride = dirty; }
+  getActiveVersionHash(): string | null { return this.activeVersionHash; }
+  getPendingActivationVersion(): string | null { return this.pendingActivationVersion; }
 
-    const staged: StagedAsset[] = [];
-    const failures: PinAssetFailure[] = [];
-    let fetchCalls = 0;
-    for (const asset of this.assets) {
-      if (signal?.aborted) { failures.push({ url: asset.url, kind: asset.kind, reason: "aborted", message: "피닝이 취소되었습니다." }); break; }
-      fetchCalls += 1;
-      this.metrics.networkFetchCalls += 1;
-      const fetched = await this.fetchAndValidate(asset, signal);
-      if ("reason" in fetched) { failures.push(fetched); break; }
-      staged.push(fetched);
-    }
-    if (failures.length > 0 || staged.length !== this.assets.length) {
-      return this.finishPin(false, failures.some((f) => f.reason === "aborted") ? "aborted" : "failed", [], failures, [], fetchCalls, 0, 0, startedAt);
-    }
-
-    const pinnedAssets: PinnedAssetRecord[] = [];
-    let totalBytes = 0;
+  /** 브라우저 영구 저장소(`navigator.storage.persist()`) 권한을 기회적으로 요청한다. */
+  async requestPersistentStorage(): Promise<StoragePersistenceStatus> {
+    if (!this.storageManager?.persist) { this.persistenceStatus = "unsupported"; return this.persistenceStatus; }
     try {
-      const targetCache = await this.cacheStorage.open(this.cacheName);
-      for (const item of staged) {
-        const headers = new Headers(item.response.headers);
-        headers.set("x-toonstudio-pin-version", this.versionHash);
-        await targetCache.put(item.asset.url, new Response(new Uint8Array(item.bytes), { status: item.response.status, statusText: item.response.statusText, headers }));
-        pinnedAssets.push({ url: item.asset.url, kind: item.asset.kind, byteLength: item.bytes.byteLength, source: "network" });
-        totalBytes += item.bytes.byteLength;
+      if (typeof this.storageManager.persisted === "function" && await this.storageManager.persisted()) {
+        this.persistenceStatus = "granted";
+        return this.persistenceStatus;
       }
+      this.persistenceStatus = (await this.storageManager.persist()) ? "granted" : "denied";
+      return this.persistenceStatus;
+    } catch {
+      this.persistenceStatus = "error";
+      return this.persistenceStatus;
+    }
+  }
+
+  /** 비상 킬스위치/수동 초기화용 — 모든 ToonStudio 핀·스테이징 캐시를 일괄 삭제한다(사용자 프로젝트 캐시 보존). */
+  async purgeAllPinnedCaches(reason: string): Promise<PurgeCachesResult> {
+    const purgedCacheNames: string[] = [];
+    for (const name of await this.cacheStorage.keys()) {
+      if ((name.startsWith(this.cachePrefix) || name.startsWith(this.stagingCachePrefix))
+        && (await this.cacheStorage.delete(name).catch(() => false))) {
+        purgedCacheNames.push(name);
+      }
+    }
+    this.activeVersionHash = null;
+    this.pendingActivationVersion = null;
+    this.generationStore?.set(null);
+    const result: PurgeCachesResult = { ok: true, reason, purgedCacheNames, purgedAtMs: this.now() };
+    this.lastPurge = result;
+    return result;
+  }
+
+  /** 모든 코어 에셋을 스테이징 캐시에 검증 후 원자적 세대 교체로 고정한다(이미 고정 시 0 네트워크). */
+  async pinAll(signal?: AbortSignal): Promise<PinRunResult> { return this.executePin(signal, false); }
+
+  /** 대기 중인 `pendingActivationVersion`을 안전 시점(유휴·저장 완료·사용자 확인)에 원자적으로 활성화한다. */
+  async flushPendingActivation(options: { readonly force?: boolean } = {}): Promise<ActivationFlushResult> {
+    if (!this.pendingActivationVersion) {
+      return { activated: false, reason: "no-pending-activation", activeVersionHash: this.activeVersionHash, pendingActivationVersion: null, prunedCacheNames: [] };
+    }
+    if (!options.force && !this.isActivationAllowed()) {
+      return { activated: false, reason: "unsaved-canvas-edits", activeVersionHash: this.activeVersionHash, pendingActivationVersion: this.pendingActivationVersion, prunedCacheNames: [] };
+    }
+    if (!(await this.cacheStorage.has(this.stagingCacheName))) {
+      this.pendingActivationVersion = null;
+      return { activated: false, reason: "staging-missing", activeVersionHash: this.activeVersionHash, pendingActivationVersion: null, prunedCacheNames: [] };
+    }
+    const stagingCache = await this.cacheStorage.open(this.stagingCacheName);
+    const stagedResponses: Array<{ readonly url: string; readonly response: Response }> = [];
+    for (const asset of this.assets) {
+      const hit = await stagingCache.match(asset.url);
+      if (!hit) {
+        await this.cacheStorage.delete(this.stagingCacheName).catch(() => false);
+        this.pendingActivationVersion = null;
+        return { activated: false, reason: "staging-missing", activeVersionHash: this.activeVersionHash, pendingActivationVersion: null, prunedCacheNames: [] };
+      }
+      stagedResponses.push({ url: asset.url, response: hit });
+    }
+    const previousVersion = this.activeVersionHash ?? await this.discoverExistingPinnedVersion();
+    try {
+      await this.promoteEntriesToActiveCache(stagedResponses);
     } catch (error) {
       await this.cacheStorage.delete(this.cacheName).catch(() => false);
-      return this.finishPin(false, "failed", [], [{ url: this.cacheName, kind: "other", reason: "cache-write-error", message: error instanceof Error ? error.message : String(error) }], [], fetchCalls, 0, 0, startedAt);
+      const quota = isQuotaExceededError(error);
+      if (quota) await this.cacheStorage.delete(this.stagingCacheName).catch(() => false);
+      return {
+        activated: false, reason: quota ? "quota-exceeded" : "cache-write-error",
+        activeVersionHash: this.activeVersionHash, pendingActivationVersion: quota ? null : this.pendingActivationVersion,
+        prunedCacheNames: [], errorMessage: error instanceof Error ? error.message : String(error),
+      };
     }
-    return this.finishPin(true, "pinned", pinnedAssets, [], await this.pruneStaleCaches(), fetchCalls, 0, totalBytes, startedAt);
+    await this.cacheStorage.delete(this.stagingCacheName).catch(() => false);
+    this.setActiveVersion(this.versionHash);
+    this.pendingActivationVersion = null;
+    const prunedCacheNames = await this.pruneStaleCaches();
+    await this.invokeOnActivate(previousVersion);
+    return { activated: true, reason: "activated", activeVersionHash: this.activeVersionHash, pendingActivationVersion: null, prunedCacheNames };
+  }
+
+  /** Safari 7일 ITP 또는 OS 캐시 퇴거로 누락·손상된 핀 에셋을 감지하고 백그라운드에서 무음 자가 치유한다. */
+  async verifyAndSelfHealPinnedAssets(signal?: AbortSignal): Promise<SelfHealResult> {
+    if (this.requestPersistence) await this.requestPersistentStorage();
+    const missingUrls: string[] = [];
+    const corruptedUrls: string[] = [];
+    if (!(await this.cacheStorage.has(this.cacheName))) {
+      for (const asset of this.assets) missingUrls.push(asset.url);
+    } else {
+      const cache = await this.cacheStorage.open(this.cacheName);
+      for (const asset of this.assets) {
+        const hit = await cache.match(asset.url);
+        if (!hit) { missingUrls.push(asset.url); continue; }
+        const bytes = new Uint8Array(await hit.arrayBuffer());
+        if (await validatePwaAssetPayload(asset, bytes, hit)) corruptedUrls.push(asset.url);
+      }
+    }
+    if (missingUrls.length === 0 && corruptedUrls.length === 0) {
+      return { healthy: true, healed: false, missingUrls, corruptedUrls, persistenceStatus: this.persistenceStatus, pinResult: null };
+    }
+    this.metrics.selfHealAttempts += 1;
+    const pinResult = await this.executePin(signal, true);
+    if (pinResult.ok) this.metrics.selfHealRecoveries += 1;
+    return { healthy: pinResult.ok, healed: pinResult.ok, missingUrls, corruptedUrls, persistenceStatus: this.persistenceStatus, pinResult };
   }
 
   /** 네트워크 호출 0회로 고정된 오프라인 에셋을 조회한다. */
   async matchPinnedAsset(url: string): Promise<Response | null> { return (await this.resolvePinnedAsset(url)).response; }
 
-  /** 활성 버전 캐시 우선 조회 + 구버전 핀 캐시 폴백(0 네트워크). */
+  /** 활성 세대 캐시 우선 조회 + 구버전 핀 캐시 폴백(0 네트워크, 스테이징 캐시 절대 미노출). */
   async resolvePinnedAsset(url: string): Promise<MatchPinnedAssetResolution> {
-    if (await this.cacheStorage.has(this.cacheName)) {
-      const hit = await (await this.cacheStorage.open(this.cacheName)).match(url);
-      if (hit) { this.metrics.offlineHits += 1; return { hit: true, url, response: hit, cacheName: this.cacheName, source: "active-cache" }; }
+    const primaryName = this.activeVersionHash ? `${this.cachePrefix}${this.activeVersionHash}` : this.cacheName;
+    if (await this.cacheStorage.has(primaryName)) {
+      const hit = await (await this.cacheStorage.open(primaryName)).match(url);
+      if (hit) { this.metrics.offlineHits += 1; return { hit: true, url, response: hit, cacheName: primaryName, source: "active-cache" }; }
     }
     if (this.fallbackToAnyPinnedVersion) {
       for (const name of (await this.cacheStorage.keys()).reverse()) {
-        if (name === this.cacheName || !name.startsWith(this.cachePrefix)) continue;
+        if (name === primaryName || !name.startsWith(this.cachePrefix)) continue;
         const hit = await (await this.cacheStorage.open(name)).match(url);
         if (hit) { this.metrics.offlineHits += 1; return { hit: true, url, response: hit, cacheName: name, source: "fallback-cache" }; }
       }
@@ -293,18 +254,193 @@ export class PwaBaseAssetPinner {
 
   getTelemetry(): PwaBaseAssetPinnerTelemetry {
     return {
-      cacheName: this.cacheName, versionHash: this.versionHash, assetCount: this.assets.length,
-      totalNetworkFetchCalls: this.metrics.networkFetchCalls, offlineCacheHits: this.metrics.offlineHits,
-      offlineCacheMisses: this.metrics.offlineMisses, lastPinResult: this.lastPinResult,
+      cacheName: this.cacheName, stagingCacheName: this.stagingCacheName, versionHash: this.versionHash,
+      activeVersionHash: this.activeVersionHash, pendingActivationVersion: this.pendingActivationVersion,
+      assetCount: this.assets.length, totalNetworkFetchCalls: this.metrics.networkFetchCalls,
+      offlineCacheHits: this.metrics.offlineHits, offlineCacheMisses: this.metrics.offlineMisses,
+      persistenceStatus: this.persistenceStatus, selfHealAttempts: this.metrics.selfHealAttempts,
+      selfHealRecoveries: this.metrics.selfHealRecoveries, lastPurge: this.lastPurge, lastPinResult: this.lastPinResult,
     };
   }
 
-  private async fetchAndValidate(asset: PwaBaseAssetDescriptor, signal?: AbortSignal): Promise<StagedAsset | PinAssetFailure> {
+  private async executePin(signal: AbortSignal | undefined, forceRepin: boolean): Promise<PinRunResult> {
+    const startedAt = this.now();
+    const search = this.urlSearch ?? (globalThis.location as { search?: string } | undefined)?.search ?? "";
+    if (!this.urlResetApplied && shouldTriggerEmergencyPurgeFromUrl(search)) {
+      this.urlResetApplied = true;
+      await this.purgeAllPinnedCaches("url-reset-param");
+    }
+    const cutoffBlocked = await this.applyEmergencyCutoff(startedAt);
+    if (cutoffBlocked) return cutoffBlocked;
+
+    if (this.requestPersistence) await this.requestPersistentStorage();
+    if (!forceRepin) {
+      const existing = await this.checkAlreadyPinned(signal);
+      if (existing) {
+        this.setActiveVersion(this.versionHash);
+        const pruned = await this.pruneStaleCaches();
+        return this.finishPin(true, "already-pinned", existing.records, [], pruned, 0, existing.records.length, existing.totalBytes, startedAt, false, false);
+      }
+    }
+
+    const effectiveQuotaCeiling = await this.computeEffectiveQuotaCeiling();
+    const minDeclaredBytes = this.assets.reduce((sum, a) => sum + Math.max(a.expectedByteLength ?? 0, a.minBytes ?? 0), 0);
+    if (effectiveQuotaCeiling <= 0 || minDeclaredBytes > effectiveQuotaCeiling) {
+      await this.pruneStagingCaches();
+      return this.finishPin(false, "quota-exceeded", [], [{
+        url: this.stagingCacheName, kind: "other", reason: "quota-exceeded",
+        message: `저장소 쿼터 상한(${effectiveQuotaCeiling}B)을 초과해 피닝을 안전 중단했습니다.`,
+      }], [], 0, 0, 0, startedAt, false, true);
+    }
+
+    await this.cacheStorage.delete(this.stagingCacheName).catch(() => false);
+    const stagedRecords: PinnedAssetRecord[] = [];
+    const stagedResponses: Array<{ readonly url: string; readonly response: Response }> = [];
+    const failures: PinAssetFailure[] = [];
+    let fetchCalls = 0;
+    let totalBytes = 0;
+    let quotaExceeded = false;
+    let purgedByKillSwitch = false;
+    let stagingCache: PinCacheLike | null = null;
+
+    for (const asset of this.assets) {
+      if (signal?.aborted) { failures.push({ url: asset.url, kind: asset.kind, reason: "aborted", message: "피닝이 취소되었습니다." }); break; }
+      fetchCalls += 1;
+      this.metrics.networkFetchCalls += 1;
+      const fetched = await this.fetchAndValidate(asset, signal);
+      if ("killSwitchReason" in fetched) {
+        await this.purgeAllPinnedCaches(fetched.killSwitchReason);
+        purgedByKillSwitch = true;
+        failures.push({ url: asset.url, kind: asset.kind, reason: "kill-switch-purged", message: `서버 킬스위치(${fetched.killSwitchReason})로 캐시를 퍼지했습니다.` });
+        break;
+      }
+      if ("reason" in fetched) { failures.push(fetched); break; }
+      if (totalBytes + fetched.bytes.byteLength > effectiveQuotaCeiling) {
+        quotaExceeded = true;
+        failures.push({ url: asset.url, kind: asset.kind, reason: "quota-exceeded", message: `누적 피닝 크기(${totalBytes + fetched.bytes.byteLength}B)가 허용 상한(${effectiveQuotaCeiling}B)을 초과합니다.` });
+        break;
+      }
+      try {
+        stagingCache ??= await this.cacheStorage.open(this.stagingCacheName);
+        const headers = new Headers(fetched.response.headers);
+        headers.set("x-toonstudio-pin-version", this.versionHash);
+        const stagedResp = new Response(new Uint8Array(fetched.bytes), { status: fetched.response.status, statusText: fetched.response.statusText, headers });
+        await stagingCache.put(asset.url, stagedResp.clone());
+        stagedResponses.push({ url: asset.url, response: stagedResp });
+        stagedRecords.push({ url: asset.url, kind: asset.kind, byteLength: fetched.bytes.byteLength, source: "network" });
+        totalBytes += fetched.bytes.byteLength;
+      } catch (error) {
+        quotaExceeded = isQuotaExceededError(error);
+        failures.push({ url: asset.url, kind: asset.kind, reason: quotaExceeded ? "quota-exceeded" : "cache-write-error", message: error instanceof Error ? error.message : String(error) });
+        break;
+      }
+    }
+
+    if (failures.length > 0 || stagedRecords.length !== this.assets.length) {
+      await this.cacheStorage.delete(this.stagingCacheName).catch(() => false);
+      if (quotaExceeded) await this.pruneStagingCaches();
+      const status: PinRunResult["status"] = purgedByKillSwitch ? "purged" : quotaExceeded ? "quota-exceeded" : failures.some((f) => f.reason === "aborted") ? "aborted" : "failed";
+      return this.finishPin(false, status, [], failures, [], fetchCalls, 0, 0, startedAt, false, quotaExceeded);
+    }
+
+    if (!this.isActivationAllowed()) {
+      this.activeVersionHash ??= await this.discoverExistingPinnedVersion();
+      this.pendingActivationVersion = this.versionHash;
+      return this.finishPin(true, "staged-pending-activation", stagedRecords, [], [], fetchCalls, 0, totalBytes, startedAt, true, false);
+    }
+
+    const previousVersion = this.activeVersionHash ?? await this.discoverExistingPinnedVersion();
+    try {
+      await this.promoteEntriesToActiveCache(stagedResponses);
+    } catch (error) {
+      const quota = isQuotaExceededError(error);
+      await this.cacheStorage.delete(this.cacheName).catch(() => false);
+      await this.cacheStorage.delete(this.stagingCacheName).catch(() => false);
+      if (quota) await this.pruneStagingCaches();
+      return this.finishPin(false, quota ? "quota-exceeded" : "failed", [], [{
+        url: this.cacheName, kind: "other", reason: quota ? "quota-exceeded" : "cache-write-error",
+        message: error instanceof Error ? error.message : String(error),
+      }], [], fetchCalls, 0, 0, startedAt, false, quota);
+    }
+
+    await this.cacheStorage.delete(this.stagingCacheName).catch(() => false);
+    this.setActiveVersion(this.versionHash);
+    this.pendingActivationVersion = null;
+    const pruned = await this.pruneStaleCaches();
+    await this.invokeOnActivate(previousVersion);
+    return this.finishPin(true, "pinned", stagedRecords, [], pruned, fetchCalls, 0, totalBytes, startedAt, false, false);
+  }
+
+  private async promoteEntriesToActiveCache(entries: readonly { readonly url: string; readonly response: Response }[]): Promise<void> {
+    const targetCache = await this.cacheStorage.open(this.cacheName);
+    for (const entry of entries) await targetCache.put(entry.url, entry.response.clone());
+  }
+
+  private async applyEmergencyCutoff(startedAt: number): Promise<PinRunResult | null> {
+    if (!this.emergencyPurgeBefore) return null;
+    const cutoff = this.emergencyPurgeBefore;
+    if (compareVersionCutoff(this.versionHash, cutoff) < 0) {
+      const purged = await this.purgeAllPinnedCaches(`emergency-purge-before:${cutoff}`);
+      return this.finishPin(false, "purged", [], [{
+        url: this.cacheName, kind: "other", reason: "kill-switch-purged",
+        message: `현재 버전(${this.versionHash})이 비상 퍼지 기준(${cutoff}) 미만이라 차단되었습니다.`,
+      }], purged.purgedCacheNames, 0, 0, 0, startedAt, false, false);
+    }
+    const purgedNames: string[] = [];
+    for (const name of await this.cacheStorage.keys()) {
+      const version = name.startsWith(this.cachePrefix) ? name.slice(this.cachePrefix.length)
+        : name.startsWith(this.stagingCachePrefix) ? name.slice(this.stagingCachePrefix.length) : null;
+      if (version && compareVersionCutoff(version, cutoff) < 0 && (await this.cacheStorage.delete(name).catch(() => false))) purgedNames.push(name);
+    }
+    if (purgedNames.length > 0) {
+      if (this.activeVersionHash && compareVersionCutoff(this.activeVersionHash, cutoff) < 0) this.setActiveVersion(null);
+      this.lastPurge = { ok: true, reason: `emergency-purge-before:${cutoff}`, purgedCacheNames: purgedNames, purgedAtMs: this.now() };
+    }
+    return null;
+  }
+
+  private async computeEffectiveQuotaCeiling(): Promise<number> {
+    if (!this.storageManager?.estimate) return this.maxPinBytes;
+    try {
+      const est = await this.storageManager.estimate();
+      if (typeof est.quota !== "number" || !Number.isFinite(est.quota) || est.quota <= 0) return this.maxPinBytes;
+      const usage = typeof est.usage === "number" && Number.isFinite(est.usage) && est.usage > 0 ? est.usage : 0;
+      return Math.min(this.maxPinBytes, Math.floor(Math.max(0, est.quota - usage) * this.maxQuotaFraction));
+    } catch { return this.maxPinBytes; }
+  }
+
+  private isActivationAllowed(): boolean {
+    if (this.unsavedCanvasEditsOverride || this.hasUnsavedCanvasEdits?.() === true) return false;
+    return this.canActivateNow?.() !== false;
+  }
+
+  private setActiveVersion(version: string | null): void { this.activeVersionHash = version; this.generationStore?.set(version); }
+
+  private async discoverExistingPinnedVersion(): Promise<string | null> {
+    const names = (await this.cacheStorage.keys()).filter((n) => n.startsWith(this.cachePrefix) && n !== this.cacheName);
+    const last = names.at(-1);
+    return last ? last.slice(this.cachePrefix.length) : null;
+  }
+
+  private async invokeOnActivate(previousVersionHash: string | null): Promise<void> {
+    if (!this.onActivate) return;
+    try { await this.onActivate({ versionHash: this.versionHash, cacheName: this.cacheName, previousVersionHash }); }
+    catch { /* 활성화 콜백 오류로 앱 부팅이나 피닝 완료 상태를 깨뜨리지 않는다. */ }
+  }
+
+  private async fetchAndValidate(asset: PwaBaseAssetDescriptor, signal?: AbortSignal): Promise<FetchValidationOutcome> {
     try {
       const response = await this.fetchFn(asset.url, { ...this.requestInit, signal });
-      if (!response.ok) return { url: asset.url, kind: asset.kind, reason: "http-error", httpStatus: response.status, message: `HTTP ${response.status} 응답 오류.` };
+      const killDirective = extractKillSwitchFromHeaders(response.headers);
+      if (killDirective.purgeAll) return { killSwitchReason: killDirective.reason ?? "server-kill-switch", asset };
+      if (killDirective.purgeBefore && compareVersionCutoff(this.versionHash, killDirective.purgeBefore) < 0) {
+        return { killSwitchReason: killDirective.reason ?? `server-purge-before:${killDirective.purgeBefore}`, asset };
+      }
+      if (response.status !== 200) {
+        return { url: asset.url, kind: asset.kind, reason: "http-error", httpStatus: response.status, message: `HTTP ${response.status} 응답 오류(HTTP 200 필수).` };
+      }
       const bytes = new Uint8Array(await response.arrayBuffer());
-      return validatePayloadBytes(asset, bytes, response) ?? { asset, bytes, response };
+      return (await validatePwaAssetPayload(asset, bytes, response)) ?? { asset, bytes, response };
     } catch (error) {
       const isAbort = signal?.aborted || (error instanceof Error && error.name === "AbortError");
       return { url: asset.url, kind: asset.kind, reason: isAbort ? "aborted" : "network-error", message: error instanceof Error ? error.message : String(error) };
@@ -315,9 +451,13 @@ export class PwaBaseAssetPinner {
     ok: boolean, status: PinRunResult["status"], pinnedAssets: readonly PinnedAssetRecord[],
     failures: readonly PinAssetFailure[], prunedCacheNames: readonly string[],
     fetchCalls: number, cacheHits: number, totalBytes: number, startedAt: number,
+    activationDeferred: boolean, quotaExceeded: boolean,
   ): PinRunResult {
     const result: PinRunResult = {
-      ok, status, cacheName: this.cacheName, versionHash: this.versionHash,
+      ok, status, cacheName: this.cacheName, stagingCacheName: this.stagingCacheName,
+      versionHash: this.versionHash, activeVersionHash: this.activeVersionHash,
+      pendingActivationVersion: this.pendingActivationVersion, activationDeferred,
+      quotaExceeded, persistenceStatus: this.persistenceStatus,
       pinnedAssets, failures, prunedCacheNames, fetchCalls, cacheHits, totalBytes,
       durationMs: Math.max(0, this.now() - startedAt),
     };
@@ -335,17 +475,28 @@ export class PwaBaseAssetPinner {
       const hit = await cache.match(asset.url);
       if (!hit) return null;
       const bytes = new Uint8Array(await hit.arrayBuffer());
-      if (this.verifyCachedIntegrityOnRecheck && validatePayloadBytes(asset, bytes, hit)) return null;
+      if (this.verifyCachedIntegrityOnRecheck && (await validatePwaAssetPayload(asset, bytes, hit))) return null;
       records.push({ url: asset.url, kind: asset.kind, byteLength: bytes.byteLength, source: "cache" });
       totalBytes += bytes.byteLength;
     }
     return { records, totalBytes };
   }
 
+  private async pruneStagingCaches(): Promise<string[]> {
+    const pruned: string[] = [];
+    for (const name of await this.cacheStorage.keys()) {
+      if (name.startsWith(this.stagingCachePrefix) && (await this.cacheStorage.delete(name).catch(() => false))) pruned.push(name);
+    }
+    return pruned;
+  }
+
   private async pruneStaleCaches(): Promise<string[]> {
     const pruned: string[] = [];
     for (const name of await this.cacheStorage.keys()) {
-      if (name !== this.cacheName && name.startsWith(this.cachePrefix) && (await this.cacheStorage.delete(name))) pruned.push(name);
+      const isOldPinned = name !== this.cacheName && name.startsWith(this.cachePrefix);
+      const isOrphanStaging = name.startsWith(this.stagingCachePrefix)
+        && !(this.pendingActivationVersion && name === `${this.stagingCachePrefix}${this.pendingActivationVersion}`);
+      if ((isOldPinned || isOrphanStaging) && (await this.cacheStorage.delete(name).catch(() => false))) pruned.push(name);
     }
     return pruned;
   }
