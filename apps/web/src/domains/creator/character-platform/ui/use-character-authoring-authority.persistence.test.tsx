@@ -7,6 +7,7 @@ import { createEmptyCharacterRecipe } from "../../character-shaper/character-sha
 import { createCharacterDocumentV2, projectCharacterRecipeV1 } from "../document/character-document-v2";
 import { migrateCharacterDocumentV2ToV3, serializeCharacterDocumentV3 } from "../document/character-document-v3";
 import { CharacterDocumentV3Repository } from "../document/character-document-v3-repository";
+import { createCharacterPlacementSession } from "../document/character-placement-session";
 import { useCharacterAuthoringAuthority } from "./use-character-authoring-authority";
 
 import type { CharacterDocumentV3 } from "../document/character-document-v3";
@@ -114,6 +115,24 @@ describe("캐릭터 저작 문서 저장 수명주기", () => {
     expect(reopened.pose).toEqual(cutB.pose);
     expect(reopened.expression).toEqual(cutB.expression);
     expect(reopened.camera).toEqual(cutB.camera);
+  });
+
+  it("같은 모델이라도 다른 캐릭터 연결이나 다른 편집 세션의 변경을 덮어쓰지 않는다", async () => {
+    const { repository } = fixture();
+    const base = document();
+    const another = { ...base, documentId: "character:another" };
+    expect(() => createCharacterPlacementSession(base, another, repository, true)).toThrow();
+    const first = createCharacterPlacementSession(base, base, repository, false);
+    const stale = createCharacterPlacementSession(base, base, repository, false);
+    await first.save(base);
+    const recolored = { ...base, look: { ...base.look, colors: { skin: "#123456" } } };
+    await expect(stale.save(recolored)).rejects.toMatchObject({ code: "revision-conflict" });
+    expect((await repository.load(base.documentId))?.look).toEqual(base.look);
+    await first.save(recolored);
+    const second = createCharacterPlacementSession(base, base, repository, true);
+    await expect(second.save({ ...base, look: { ...base.look, colors: { hairBase: "#abcdef" } } }))
+      .rejects.toMatchObject({ code: "revision-conflict" });
+    expect((await repository.load(base.documentId))?.look).toEqual(recolored.look);
   });
 
   it("취소된 자동저장 타이머를 저장 완료로 간주하지 않는다", async () => {
