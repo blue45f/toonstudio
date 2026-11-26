@@ -18,6 +18,105 @@ export interface CafePostAttachmentPayload {
   readonly spoilerBlur?: boolean;
 }
 
+export interface PlazaLiveMessageItem {
+  readonly id: string;
+  readonly partyId: string | null;
+  readonly senderName: string;
+  readonly roleLabel: string;
+  readonly text: string;
+  readonly createdAt: string;
+}
+
+export type PlazaAvailabilityMode = "urgent-sub-ready" | "online-ready" | "busy";
+
+export interface PlazaPresenceItem {
+  readonly userId: string;
+  readonly nickname: string;
+  readonly roleCode: string;
+  readonly availability: PlazaAvailabilityMode;
+  readonly tools: readonly string[];
+  readonly cutRateKrw: number;
+  readonly updatedAt: string;
+}
+
+export interface PlazaTrustBadgeView {
+  readonly avatarId: string;
+  readonly nickname: string;
+  readonly verifiedHandoffCount: number;
+  readonly onTimeDeliveryRatePct: number;
+  readonly cleanPassRatePct: number;
+  readonly medianResponseMinutes: number;
+  readonly badgeTier:
+    | "unverified"
+    | "verified-handoff"
+    | "clean-finisher"
+    | "studio-anchor";
+  readonly badgeLabelKo: string;
+}
+
+export type ManuscriptColorProfileView =
+  | "sRGB"
+  | "Display-P3"
+  | "CMYK"
+  | "Grayscale";
+
+export interface StarterKitColorChipView {
+  readonly roleKo: string;
+  readonly hex: string;
+}
+
+export interface PartyStarterKitView {
+  readonly partyId: string;
+  readonly workTitle: string;
+  readonly canvasWidthPx: number;
+  readonly dpi: number;
+  readonly colorProfile: ManuscriptColorProfileView;
+  readonly brushSpecKo: string;
+  readonly perspectiveGuideKo: string;
+  readonly colorChips: readonly StarterKitColorChipView[];
+  readonly updatedAt: string;
+}
+
+export interface PlazaPreflightResultView {
+  readonly passed: boolean;
+  readonly parsedFromBinary: boolean;
+  readonly fileName: string;
+  readonly expectedWidthPx: number;
+  readonly expectedDpi: number;
+  readonly expectedColorProfile: ManuscriptColorProfileView;
+  readonly detectedWidthPx: number | null;
+  readonly detectedDpi: number | null;
+  readonly detectedColorProfile: ManuscriptColorProfileView | null;
+  readonly changedLayerCount: number;
+  readonly unresolvedMandatoryPinCount: number;
+  readonly issues: readonly {
+    readonly code: string;
+    readonly severity: "blocker" | "warning";
+    readonly messageKo: string;
+  }[];
+  readonly summaryKo: string;
+}
+
+export interface AcademyClassroomView {
+  readonly classroomId: string;
+  readonly institutionName: string;
+  readonly courseTitle: string;
+  readonly instructorName: string;
+  readonly cohortSize: number;
+  readonly inviteCode: string;
+  readonly feeKrw: 0;
+  readonly targetWidthPx: number;
+  readonly targetDpi: number;
+  readonly submissions: readonly {
+    readonly submissionId: string;
+    readonly studentName: string;
+    readonly episodeCutLabel: string;
+    readonly unresolvedPinCount: number;
+    readonly passedSpecPreflight: boolean;
+    readonly approvalLocked: boolean;
+  }[];
+}
+
 export const studioEcosystemClient = {
   evaluatePermission(payload: {
     readonly userId: string;
@@ -61,9 +160,108 @@ export const studioEcosystemClient = {
   },
 
   assignPlazaSlot(partyId: string, slotId: string, avatarId: string) {
-    return api.post<{ assigned: boolean }>(
+    return api.post<{
+      assigned: boolean;
+      brokerageFeeRate?: 0;
+      handoffReviewPath?: string;
+    }>(
       `/studio-ecosystem/plaza/parties/${encodeURIComponent(partyId)}/slots/${encodeURIComponent(slotId)}/assign`,
       { avatarId },
+    );
+  },
+
+  listPlazaMessages(partyId?: string) {
+    return api.get<{ items: PlazaLiveMessageItem[] }>(
+      "/studio-ecosystem/plaza/messages",
+      { params: partyId ? { partyId } : undefined },
+    );
+  },
+
+  postPlazaMessage(payload: {
+    readonly partyId?: string | null;
+    readonly senderName: string;
+    readonly roleLabel?: string;
+    readonly text: string;
+  }) {
+    return api.post<PlazaLiveMessageItem>(
+      "/studio-ecosystem/plaza/messages",
+      payload,
+    );
+  },
+
+  listPlazaPresence() {
+    return api.get<{ items: PlazaPresenceItem[] }>(
+      "/studio-ecosystem/plaza/presence",
+    );
+  },
+
+  upsertPlazaPresence(payload: {
+    readonly userId: string;
+    readonly nickname: string;
+    readonly roleCode: string;
+    readonly availability: PlazaAvailabilityMode;
+    readonly tools?: readonly string[];
+    readonly cutRateKrw?: number;
+  }) {
+    return api.post<PlazaPresenceItem>(
+      "/studio-ecosystem/plaza/presence",
+      payload,
+    );
+  },
+
+  listPlazaTrustBadges() {
+    return api.get<{ items: PlazaTrustBadgeView[] }>(
+      "/studio-ecosystem/plaza/trust-badges",
+    );
+  },
+
+  getPartyStarterKit(partyId: string) {
+    return api.get<PartyStarterKitView>(
+      `/studio-ecosystem/plaza/parties/${encodeURIComponent(partyId)}/starter-kit`,
+    );
+  },
+
+  savePartyStarterKit(
+    partyId: string,
+    payload: Omit<PartyStarterKitView, "partyId" | "updatedAt">,
+  ) {
+    return api.post<PartyStarterKitView>(
+      `/studio-ecosystem/plaza/parties/${encodeURIComponent(partyId)}/starter-kit`,
+      payload,
+    );
+  },
+
+  inspectManuscriptPreflight(payload: {
+    readonly partyId?: string;
+    readonly fileName: string;
+    readonly headerBase64?: string;
+    readonly reportedWidthPx?: number;
+    readonly reportedDpi?: number;
+    readonly reportedColorProfile?: ManuscriptColorProfileView;
+    readonly changedLayerNames?: readonly string[];
+    readonly unresolvedMandatoryPinCount?: number;
+  }) {
+    return api.post<PlazaPreflightResultView>(
+      "/studio-ecosystem/plaza/preflight-check",
+      payload,
+    );
+  },
+
+  listAcademyClassrooms() {
+    return api.get<{ items: AcademyClassroomView[] }>(
+      "/studio-ecosystem/academy/classrooms",
+    );
+  },
+
+  createAcademyClassroom(payload: {
+    readonly institutionName: string;
+    readonly courseTitle: string;
+    readonly instructorName: string;
+    readonly cohortSize?: number;
+  }) {
+    return api.post<AcademyClassroomView>(
+      "/studio-ecosystem/academy/classrooms",
+      payload,
     );
   },
 
