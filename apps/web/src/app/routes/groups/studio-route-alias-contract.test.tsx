@@ -34,6 +34,26 @@ describe("studio route registry alias contract", () => {
     expect(unresolved).toEqual([]);
   });
 
+  it.each([
+    ["/character-lab", "/studio/character"],
+    ["/studio/character-lab", "/studio/character"],
+    ["/research/character-3d", "/studio/character"],
+    ["/character-shaper", "/studio/assets/characters/new"],
+    ["/shaper", "/studio/assets/characters/new"],
+  ])("캐릭터 북마크 %s의 작업 문맥을 보존한다", async (alias, pathname) => {
+    const route = matchRoutes(appRoutes, alias)?.at(-1)?.route;
+    if (!route || route.path !== alias) throw new Error(`누락된 캐릭터 별칭: ${alias}`);
+    const state = { from: "library" };
+    const router = createMemoryRouter([
+      { path: alias, element: route.element },
+      { path: pathname, element: <p>캐릭터</p> },
+    ], { initialEntries: [{ pathname: alias, search: "?assetId=hero&editor=open", hash: "#look", state }] });
+    render(<RouterProvider router={router} />);
+    await waitFor(() => expect(router.state.location.pathname).toBe(pathname));
+    expect(router.state.location).toMatchObject({ search: "?assetId=hero&editor=open", hash: "#look", state });
+    expect(router.state.historyAction).toBe("REPLACE");
+  });
+
   it("matches /motion-webtoon to its dedicated alias route", () => {
     expect(matchRoutes(appRoutes, "/motion-webtoon")?.at(-1)?.route.id).toBe("creator-motion-webtoon");
     expect(matchRoutes(appRoutes, "/studio/motion-webtoon")?.at(-1)?.route.id).toBe(
