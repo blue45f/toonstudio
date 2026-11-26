@@ -296,5 +296,17 @@ describe("dialogueLocalesForPages / dialogueTranslationCoverage", () => {
     );
     expect(map.get("b1")).toBe("[EN] 안녕 Minsu야");
   });
+
+  it("parseTranslationResponse는 문자열 내부 대괄호 태그·이모티콘(:]/[:)이 섞여도 깨지지 않고 파싱한다", () => {
+    const raw = `[참고] 번역 결과입니다:\n\`\`\`json\n${JSON.stringify([
+      { id: "d1", text: "[System] Hidden quest unlocked! :]" },
+      { id: "d2", text: "[Warning] Timer 02:59 :[" },
+    ])}\n\`\`\``;
+    const parsed = parseTranslationResponse(raw, ["d1", "d2"]);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.translations.get("d1")).toBe("[System] Hidden quest unlocked! :]");
+    expect(parsed.translations.get("d2")).toBe("[Warning] Timer 02:59 :[");
+  });
 });
 

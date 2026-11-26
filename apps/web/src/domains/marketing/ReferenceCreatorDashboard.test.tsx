@@ -12,6 +12,16 @@ import { completeUserAiTextDetailed, UserAiTransportError, type CompletedUserAiT
 import { ReferenceCreatorDashboard } from "./ReferenceCreatorDashboard";
 import { HOME_CORE_STUDIOS, HOME_LEARN_MORE, HOME_LUNA_SUGGESTIONS } from "./reference-home-content";
 
+vi.mock("@/shared/components/site-experience/use-atelier-motion", async () => {
+  const { useRef, useState } = await import("react");
+  return {
+    useAtelierMotion: function useMotionForDashboard() {
+      const [paused, setPaused] = useState(false);
+      return { hostRef: useRef<HTMLDivElement>(null), running: !paused, motionAllowed: true, paused, setPaused };
+    },
+  };
+});
+
 vi.mock("@/shared/ai/user-ai-transport", () => {
   class MockUserAiTransportError extends Error {
     readonly code: string;
@@ -109,20 +119,22 @@ async function dashboard(language = "ko") {
 }
 
 /** ④ 더 알아보기 밴드는 기본 접힘이므로, 접힌 구역을 검증하는 테스트는 먼저 펼친다. */
-function openMoreBand() {
+async function openMoreBand() {
   const details = document.querySelector<HTMLDetailsElement>("details.rd-more");
   if (details && !details.open) {
     fireEvent.click(details.querySelector("summary") as HTMLElement);
   }
+  await screen.findByRole("figure", { name: /편집기 콘셉트|Editor concept/u });
 }
 
-function openLunaHelp(language: "ko" | "en" = "ko") {
+async function openLunaHelp(language: "ko" | "en" = "ko") {
   const summary = screen.getByText(language === "ko" ? "시작이 막막한가요?" : "Need help getting started?").closest("summary");
   if (!summary) throw new Error("Luna 안내를 여는 summary가 필요합니다.");
   const details = summary.closest("details");
   if (!details) throw new Error("Luna 안내의 접이식 메뉴가 필요합니다.");
   if (!details.open) fireEvent.click(summary);
   expect(details.open).toBe(true);
+  await screen.findByRole("complementary", { name: language === "ko" ? "Luna 창작 안내" : "Luna creative guide" });
 }
 
 function openIdeaHelp(language: "ko" | "en" = "ko") {
@@ -140,14 +152,14 @@ function expectBefore(earlier: Element | null, later: Element | null) {
 }
 
 describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
-  it("작품 시작과 둘러보기를 먼저 보여 주고 아이디어 입력의 실제 시작 동선을 보존한다", async () => {
+  it("작품 시작과 내 작업을 먼저 보여 주고 아이디어 입력의 실제 시작 동선을 보존한다", async () => {
     await dashboard();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("상상한 장면을,나의 작품으로.");
     expect(screen.queryByRole("banner")).toBeNull();
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     expect(within(hero).getByRole("link", { name: "작품 시작하기" }).getAttribute("href")).toBe("/create");
-    expect(within(hero).getByRole("link", { name: "둘러보기" }).getAttribute("href")).toBe("/discover");
+    expect(within(hero).getByRole("link", { name: "내 작업 이어가기" }).getAttribute("href")).toBe("/studio");
     expect(hero.querySelector("form")).toBeNull();
     // 전역 검색과 헤더는 기존 공통 셸이 맡는다.
     expect(screen.queryByRole("button", { name: "작품·도구·소재, 필요한 것을 찾아보세요" })).toBeNull();
@@ -173,40 +185,32 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     fireEvent.click(within(hero).getByRole("link", { name: "작품 시작하기" }));
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/create");
-    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(true);
+    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(false);
     expect(completeAi).not.toHaveBeenCalled();
   });
 
-  it("여섯 시작 동선이 시작 시트와 실제 작업으로 이동한다", async () => {
+  it("기본 시작과 추가 작업실이 실제 작업으로 이어지고 중복 시작 그리드를 만들지 않는다", async () => {
     const observedNavigation = await dashboard();
-    openMoreBand();
-    const start = screen.getByRole("navigation", { name: "무엇부터 시작할까요?" });
-    const links = within(start).getAllByRole("link");
-    expect(links.map((link) => link.getAttribute("href"))).toEqual([
-      // 작품 시작은 시작 시트(/create)로 수렴한다 — 새 작품·템플릿·이어가기를 한 화면에서 고른다.
-      "/create",
-      "/story-lab",
-      "/studio/assets/characters/new",
-      "/studio/bg3d",
-      "/studio/canvas",
-      // 웨이브 C 발견 동선 실측: 1차 시작 카드에 제작 허브가 없던 구멍을 메웠다.
-      "/production",
-    ]);
-    fireEvent.click(within(start).getByRole("link", { name: /빈 캔버스/u }));
+    await openMoreBand();
+    const core = screen.getByRole("region", { name: "핵심 작업실, 바로 들어가기" });
+    fireEvent.click(within(core).getByRole("link", { name: "그리기 시작" }));
     expect(observedNavigation).toEqual([{ href: "/studio/canvas", prevented: false }]);
-    fireEvent.click(within(start).getByRole("link", { name: /스토리 만들기/u }));
-    expect(screen.getByLabelText("현재 URL").textContent).toBe("/story-lab");
+    const start = screen.getByRole("navigation", { name: "오늘은 무엇을 만들까요?" });
+    fireEvent.click(within(start).getByRole("link", { name: /이야기 만들기/u }));
+    expect(screen.getByLabelText("현재 URL").textContent).toBe("/create?intent=my-story");
+    expect(document.querySelector(".rd-quick-grid")).toBeNull();
   });
 
   it("기능 목록 그리드는 홈에 쌓지 않고 예시와 편집기 콘셉트를 실제 프로젝트와 구분한다", async () => {
     await dashboard();
-    openMoreBand();
+    await openMoreBand();
     expect(screen.queryByRole("region", { name: "모든 이야기가 연결되는 곳" })).toBeNull();
     expect(screen.getByRole("link", { name: "내 프로젝트" }).getAttribute("href")).toBe("/studio");
     expect(screen.getByRole("figure", { name: /편집기 콘셉트/u }).textContent).toContain("예시는 저장되지 않아요");
     expect(screen.getByRole("region", { name: "예시 작품" })).toBeTruthy();
-    expect(screen.getByText("12화 · 어제 업데이트")).toBeTruthy();
-    expect(screen.getByText("8화 · 3일 전")).toBeTruthy();
+    expect(screen.queryByText("12화 · 어제 업데이트")).toBeNull();
+    expect(screen.queryByText("8화 · 3일 전")).toBeNull();
+    expect(screen.getAllByText("브랜드 예시 아트")).toHaveLength(3);
     expect(screen.queryByText("최설의 도시")).toBeNull();
     expect(screen.queryByText(/2024\.11/u)).toBeNull();
   });
@@ -278,7 +282,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
       render(<MemoryRouter><SessionContext.Provider value={{ data: { user: { name: "연우" } }, ready: true, status: "authenticated", update: async () => null }}><ReferenceCreatorDashboard /></SessionContext.Provider></MemoryRouter>);
     });
     openIdeaHelp();
-    openLunaHelp();
+    await openLunaHelp();
     const idea = screen.getByRole("textbox", { name: "아이디어 입력" });
     const luna = screen.getByRole("textbox", { name: "Luna에게 물어보기" });
     fireEvent.change(idea, { target: { value: "돌아오는 계절" } });
@@ -298,14 +302,14 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
 
   it("영어 선택 시 모든 홈 동선과 접근성 이름을 영어로 제공한다", async () => {
     await dashboard("en");
-    openMoreBand();
-    openLunaHelp("en");
+    await openMoreBand();
+    await openLunaHelp("en");
     openIdeaHelp("en");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Imagine a scene.Make it your story.");
     expect(screen.getByRole("textbox", { name: "Idea input" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Start" })).toBeTruthy();
     expect(screen.getByRole("textbox", { name: "Ask Luna" })).toBeTruthy();
-    expect(screen.getByRole("navigation", { name: "Where would you like to start?" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "What will you create today?" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "My projects" }).getAttribute("href")).toBe("/studio");
     const root = document.querySelector("[data-reference-dashboard]");
     expect(root?.textContent).not.toMatch(/[가-힣]/u);
@@ -315,20 +319,19 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     }
   });
 
-  it("핵심 4대 런치패드를 첫 화면에서 즉시 노출하며 44px 동선 4개를 정본 경로로 연결한다", async () => {
+  it("시작 목적 세 가지를 바로 보여 주고 예시 작품은 펼쳐서 확인한다", async () => {
     await dashboard();
     const launchpad = screen.getByTestId("home-v2-spectrum-launchpad");
     expect(launchpad.closest("details")).toBeNull();
     expect(launchpad.textContent).not.toMatch(/1초|1S|WEBGPU|WEBXR|Rights BOM/u);
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     expect(within(hero).getByRole("link", { name: "작품 시작하기" }).closest("details")).toBeNull();
-    expect(screen.getByRole("region", { name: "예시 작품" }).closest("details")).toBeNull();
+    expect(screen.queryByRole("region", { name: "예시 작품" })).toBeNull();
     const links = within(launchpad).getAllByRole("link");
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/studio/new?lane=blank",
-      "/studio/bg3d",
-      "/discover",
-      "/read/spatial",
+      "/create?intent=my-story",
+      "/production",
     ]);
     for (const link of links) {
       expect(link.className).toContain("min-h-11");
@@ -337,7 +340,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
 
   it("예시 컷을 고르면 로컬 미리보기만 바뀌고 편집기로 이동하거나 검색을 실행하지 않는다", async () => {
     const observedNavigation = await dashboard();
-    openMoreBand();
+    await openMoreBand();
     const frames = screen.getByRole("group", { name: "예시 컷 선택" });
     fireEvent.click(within(frames).getByRole("button", { name: "예시 컷 3 선택" }));
     expect(within(frames).getAllByRole("button", { pressed: true })).toHaveLength(1);
@@ -351,13 +354,13 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
 
   it("예시 대사를 편집하면 말풍선이 바뀌고 다시 홈을 열 때 저장된 작품으로 남지 않는다", async () => {
     await dashboard();
-    openMoreBand();
+    await openMoreBand();
     fireEvent.change(screen.getByRole("textbox", { name: "예시 대사 편집" }), { target: { value: "우리의 다음 장면" } });
     expect(screen.getByText("우리의 다음 장면").className).toBe("rd-editor-bubble");
     expect(screen.getByRole("textbox", { name: "예시 대사 편집" }).getAttribute("maxlength")).toBe("60");
     cleanup();
     await dashboard();
-    openMoreBand();
+    await openMoreBand();
     expect(screen.queryByText("우리의 다음 장면")).toBeNull();
     expect(screen.getByRole("textbox", { name: "예시 대사 편집" }).getAttribute("value")).toBe("…아직 끝나지 않았어.");
   });
@@ -385,13 +388,13 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     // 브랜드 원고 아트는 실제 사용자의 저장 작품으로 표시하지 않는다.
     const artwork = screen.getByRole("figure", { name: "선화에서 완성작으로 이어지는 브랜드 예시 원고" });
     expect(within(artwork).getAllByRole("img")).toHaveLength(1);
-    expect(artwork.textContent).toBe("ToonStudio 브랜드 아트");
+    expect(artwork.querySelector("figcaption")?.textContent).toBe("ToonStudio 브랜드 아트");
     expect(artwork.textContent).not.toMatch(/저장됨|이어서 작업/u);
   });
 
   it("드로잉·3D·협업·가상 스튜디오 입구를 더 알아보기 밴드에서 실제 작업실로 연결한다", async () => {
     await dashboard();
-    openMoreBand();
+    await openMoreBand();
     const core = screen.getByRole("region", { name: "핵심 작업실, 바로 들어가기" });
     const cards = within(core).getAllByRole("listitem");
     expect(cards.map((card) => card.getAttribute("data-core-studio"))).toEqual(["drawing", "three-d", "collaboration", "virtual-studio"]);
@@ -404,7 +407,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
 
   it("Luna는 실제 도구로 가는 제안 칩과 직접 물을 수 있는 입력창을 함께 제공한다", async () => {
     await dashboard();
-    openLunaHelp();
+    await openLunaHelp();
     const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
     expect(within(luna).getByText("안녕하세요! 어떤 이야기를 함께 만들어 볼까요?")).toBeTruthy();
     expect(within(luna).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(HOME_LUNA_SUGGESTIONS.map((item) => item.href));
@@ -414,7 +417,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
   it("Luna에게 물으면 사용자 AI 전송으로 답하고, 연결이 없으면 키 등록 동선을 안내한다", async () => {
     completeAi.mockResolvedValueOnce(completedText("가제를 정했다면 스토리 연구실에서 인물의 욕망부터 적어 보세요."));
     await dashboard();
-    openLunaHelp();
+    await openLunaHelp();
     const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
     fireEvent.change(within(luna).getByRole("textbox", { name: "Luna에게 물어보기" }), { target: { value: "뭐부터 시작해?" } });
     fireEvent.click(within(luna).getByRole("button", { name: "Luna에게 보내기" }));
@@ -430,7 +433,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
 
   it("홈 하단에서 서비스 소개·영상·제작 과정·원칙으로 이어진다", async () => {
     await dashboard();
-    openMoreBand();
+    await openMoreBand();
     const more = screen.getByRole("navigation", { name: "서비스 더 알아보기" });
     expect(within(more).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(HOME_LEARN_MORE.map((link) => link.href));
   });
@@ -454,16 +457,16 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/search");
   });
 
-  it("아이디어 입력은 바로 열고 Luna 도움은 기본 접힘에서 클릭으로 펼치며 작품 시작을 바로 제공한다", async () => {
+  it("아이디어와 Luna를 기본으로 접어 두고 필요할 때 펼쳐도 작품 시작은 바로 제공한다", async () => {
     await dashboard();
     const hero = document.querySelector('[data-home-band="hero"]');
-    const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
-    expect(hero?.contains(luna)).toBe(true);
-    const details = luna.closest("details");
+    expect(screen.queryByRole("complementary", { name: "Luna 창작 안내" })).toBeNull();
+    const details = document.querySelector<HTMLDetailsElement>(".rd-luna-help");
     expect(details?.open).toBe(false);
-    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(true);
+    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(false);
     expect(screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." }).querySelector("a")?.closest("details")).toBeNull();
-    openLunaHelp();
+    await openLunaHelp();
+    expect(hero?.contains(screen.getByRole("complementary", { name: "Luna 창작 안내" }))).toBe(true);
     expect(details?.open).toBe(true);
     // 중간 섹션으로 따로 서 있지 않다.
     expect(document.querySelector(".rd-luna-section")).toBeNull();
@@ -475,22 +478,22 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(form?.contains(screen.getByRole("button", { name: "시작하기" }))).toBe(true);
   });
 
-  it("홈은 상태별 히어로·예시/다른 시작·작품 발견·더 알아보기 4밴드 순서이고 더 알아보기는 기본 접힘이다", async () => {
+  it("홈은 히어로·시작 목적·작품 발견·작업실 소개 순서이고 추가 기능은 기본 접힘이다", async () => {
     await dashboard();
     const root = document.querySelector("[data-reference-dashboard]");
     const bands = [...(root?.querySelectorAll("[data-home-band]") ?? [])].map((element) => element.getAttribute("data-home-band"));
     expect(bands).toEqual(["hero", "continue", "discover", "more"]);
     const more = document.querySelector<HTMLDetailsElement>("details.rd-more");
     expect(more?.open).toBe(false);
-    openMoreBand();
+    await openMoreBand();
     expect(more?.open).toBe(true);
-    // 시작 카드·핵심 작업실·에디터 미리보기·챕터 링크는 더 알아보기 밴드 안에서 펼치면 노출된다.
-    expect(more?.querySelector(".rd-quick")).not.toBeNull();
+    // 추가 작업실·에디터 미리보기·소개 링크만 펼치며 시작 카드 그리드는 중복하지 않는다.
+    expect(more?.querySelector(".rd-quick")).toBeNull();
     expect(more?.querySelector(".rd-core-studios")).not.toBeNull();
     expect(more?.querySelector(".rd-editor")).not.toBeNull();
     expect(more?.querySelector(".rd-chapters")).not.toBeNull();
-    // 예시 작품 선반은 더 알아보기 밴드 밖, 발견 미리보기보다 위에 있다.
-    expect(more?.querySelector(".rd-examples")).toBeNull();
+    // 예시 작품과 상세 도구는 작업실 소개를 펼친 후에만 화면을 차지한다.
+    expect(more?.querySelector(".rd-examples")).not.toBeNull();
     expect(more?.querySelector(".rd-discover")).toBeNull();
   });
 
@@ -534,4 +537,51 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     fireEvent.click(within(steps).getByRole("link", { name: /원고 그리기/u }));
     expect(observedNavigation).toEqual([{ href: "/studio/new?lane=blank", prevented: false }]);
   });
+
+  it("장식 모션을 멈춰도 시작 동선을 유지하고 다시 재생할 수 있다", async () => {
+    await dashboard();
+    const root = document.querySelector("[data-hero-motion]");
+    expect(root?.getAttribute("data-motion")).toBe("playing");
+    fireEvent.click(screen.getByRole("button", { name: "움직임 멈추기", pressed: false }));
+    expect(root?.getAttribute("data-motion")).toBe("paused");
+    const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
+    expect(within(hero).getByRole("link", { name: "작품 시작하기" }).getAttribute("href")).toBe("/create");
+    fireEvent.click(screen.getByRole("button", { name: "움직임 재생", pressed: true }));
+    expect(root?.getAttribute("data-motion")).toBe("playing");
+  });
+
+  it("검색과 도움을 접은 상태에서 세 가지 목적과 원고 시작 링크를 즉시 제공한다", async () => {
+    await dashboard();
+    const launchpad = screen.getByRole("navigation", { name: "오늘은 무엇을 만들까요?" });
+    expect(within(launchpad).getAllByRole("link")).toHaveLength(3);
+    expect(launchpad.closest("details")).toBeNull();
+    for (const selector of [".rd-idea-help", ".rd-luna-help", ".rd-discover", ".rd-more"]) {
+      expect(document.querySelector<HTMLDetailsElement>(selector)?.open).toBe(false);
+    }
+    expect(document.querySelector(".home-wow-showcase")).toBeNull();
+    expect(completeAi).not.toHaveBeenCalled();
+  });
+
+  it("처음 펼치기 전에는 Luna와 편집기 예시를 만들지 않고 닫았다 다시 열어도 입력을 보존한다", async () => {
+    await dashboard();
+    expect(screen.queryByRole("textbox", { name: "Luna에게 물어보기" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "예시 대사 편집" })).toBeNull();
+    await openLunaHelp();
+    const luna = screen.getByRole("textbox", { name: "Luna에게 물어보기" });
+    fireEvent.change(luna, { target: { value: "첫 장면의 구도를 고민 중이에요" } });
+    fireEvent.keyDown(luna, { key: "Escape" });
+    await openLunaHelp();
+    expect(screen.getByRole("textbox", { name: "Luna에게 물어보기" })).toBe(luna);
+    expect(luna.getAttribute("value")).toBe("첫 장면의 구도를 고민 중이에요");
+    await openMoreBand();
+    const dialogue = screen.getByRole("textbox", { name: "예시 대사 편집" });
+    fireEvent.change(dialogue, { target: { value: "나의 다음 장면" } });
+    const summary = document.querySelector<HTMLDetailsElement>(".rd-more")?.querySelector("summary");
+    if (!summary) throw new Error("작업실 소개를 닫을 수 있어야 합니다.");
+    fireEvent.click(summary);
+    await openMoreBand();
+    expect(screen.getByRole("textbox", { name: "예시 대사 편집" })).toBe(dialogue);
+    expect(dialogue.getAttribute("value")).toBe("나의 다음 장면");
+  });
+
 });

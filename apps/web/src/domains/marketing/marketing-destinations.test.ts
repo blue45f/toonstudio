@@ -19,6 +19,7 @@ const MARKETING_DIR = "apps/web/src/domains/marketing";
 const STUDIO_INTRODUCTION = "apps/web/src/domains/marketing/CreatorStudioIntroduction.tsx";
 const PRODUCT_TOUR_PAGE = "apps/web/src/domains/marketing/ProductTourPage.tsx";
 const HOME_DASHBOARD = "apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx";
+const HOME_DETAILS = "apps/web/src/domains/marketing/HomeVividMore.tsx";
 const ABOUT_PAGES = [
   "apps/web/src/domains/legal/AboutPage.tsx",
   "apps/web/src/domains/legal/WebtoonWorkflowPage.tsx",
@@ -183,7 +184,8 @@ describe("서비스 소개 서사와 페이지 간 연결", () => {
     expect(serviceFlowNext("about")?.href).toBe("/product-tour");
     expect(serviceFlowNext("tour")?.href).toBe("/studio/new");
     expect(serviceFlowNext("start")).toBeUndefined();
-    expect(read(HOME_DASHBOARD)).toContain('<ServiceFlowNext current="home"');
+    expect(read(HOME_DASHBOARD)).toContain("<LazyHomeVividMore />");
+    expect(read(HOME_DETAILS)).toContain('<ServiceFlowNext current="home"');
     expect(about).toContain('<ServiceFlowNext current="about"');
     expect(read(PRODUCT_TOUR_PAGE)).toContain('<ServiceFlowNext current="tour"');
   });

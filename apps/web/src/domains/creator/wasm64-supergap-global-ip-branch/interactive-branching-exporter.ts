@@ -105,6 +105,7 @@ export type BranchingValidationIssueCode =
   | "UNREACHABLE_NODE"
   | "UNREACHABLE_ENDING"
   | "UNREACHABLE_SECRET_CUT"
+  | "EXPLORATION_LIMIT_EXCEEDED"
   | "INFINITE_UNGUARDED_LOOP";
 
 export interface BranchingValidationIssue {
@@ -129,6 +130,7 @@ export interface BranchingGraphValidationReport {
   readonly infiniteLoopCycles: readonly (readonly string[])[];
   readonly maxDepth: number;
   readonly exploredStateCount: number;
+  readonly explorationComplete: boolean;
 }
 
 export interface StaticEdgeRuntimeManifest {
@@ -170,7 +172,8 @@ export class InteractiveBranchingWebtoonExporter {
 
   public constructor(options?: BranchingExporterOptions) {
     this.maxExploredStates = options?.maxExploredStates ?? 2048;
-    this.maxExplorationDepth = options?.maxExplorationDepth ?? 64;
+    // 기본 깊이는 상태 예산 안에서 허용하여 긴 선형 원고를 64컷에서 잘라 내지 않는다.
+    this.maxExplorationDepth = options?.maxExplorationDepth ?? this.maxExploredStates;
     this.allowExportWithErrors = options?.allowExportWithErrors ?? false;
   }
 
@@ -353,6 +356,7 @@ export class InteractiveBranchingWebtoonExporter {
     const conditionalDeadEndReported = new Set<string>();
     let maxDepth = 0;
     let exploredStateCount = 0;
+    let explorationComplete = true;
 
     if (hasStart) {
       const startNode = nodeMap[graph.startNodeId];
@@ -364,6 +368,18 @@ export class InteractiveBranchingWebtoonExporter {
       visitedStates.add(`${startNode.id}|${canonicalJsonStringify(startFlags)}`);
       reachableNodeSet.add(startNode.id);
 
+      const enqueueState = (target: CompiledBranchNode, flags: BranchStateMap, depth: number): void => {
+        const key = `${target.id}|${canonicalJsonStringify(flags)}`;
+        if (visitedStates.has(key)) return;
+        if (depth > this.maxExplorationDepth || visitedStates.size >= this.maxExploredStates) {
+          explorationComplete = false;
+          return;
+        }
+        visitedStates.add(key);
+        reachableNodeSet.add(target.id);
+        queue.push({ nodeId: target.id, flags, depth });
+      };
+
       let head = 0;
       while (head < queue.length && exploredStateCount < this.maxExploredStates) {
         const current = queue[head];
@@ -373,7 +389,7 @@ export class InteractiveBranchingWebtoonExporter {
           maxDepth = current.depth;
         }
         const node = nodeMap[current.nodeId];
-        if (node.kind === "ending" || current.depth >= this.maxExplorationDepth) {
+        if (node.kind === "ending") {
           continue;
         }
 
@@ -392,12 +408,7 @@ export class InteractiveBranchingWebtoonExporter {
             }
             transitionsFound += 1;
             const nextFlags = applyBranchMutations(applyBranchMutations(current.flags, ch.effects), target.onEnterEffects);
-            const key = `${target.id}|${canonicalJsonStringify(nextFlags)}`;
-            reachableNodeSet.add(target.id);
-            if (!visitedStates.has(key) && visitedStates.size < this.maxExploredStates) {
-              visitedStates.add(key);
-              queue.push({ nodeId: target.id, flags: nextFlags, depth: current.depth + 1 });
-            }
+            enqueueState(target, nextFlags, current.depth + 1);
           }
           if (transitionsFound === 0 && !node.nextNodeId && !conditionalDeadEndReported.has(node.id)) {
             conditionalDeadEndReported.add(node.id);
@@ -409,12 +420,7 @@ export class InteractiveBranchingWebtoonExporter {
           const tgOk = !target.unlockConditionAst || evaluateBranchCondition(target.unlockConditionAst, current.flags);
           if (tgOk) {
             const nextFlags = applyBranchMutations(current.flags, target.onEnterEffects);
-            const key = `${target.id}|${canonicalJsonStringify(nextFlags)}`;
-            reachableNodeSet.add(target.id);
-            if (!visitedStates.has(key) && visitedStates.size < this.maxExploredStates) {
-              visitedStates.add(key);
-              queue.push({ nodeId: target.id, flags: nextFlags, depth: current.depth + 1 });
-            }
+            enqueueState(target, nextFlags, current.depth + 1);
           } else if (!conditionalDeadEndReported.has(node.id)) {
             conditionalDeadEndReported.add(node.id);
             deadEndSet.add(node.id);
@@ -422,6 +428,14 @@ export class InteractiveBranchingWebtoonExporter {
           }
         }
       }
+      if (head < queue.length) explorationComplete = false;
+    }
+
+    if (!explorationComplete) {
+      issues.push({
+        code: "EXPLORATION_LIMIT_EXCEEDED", severity: "error",
+        messageKo: "상태·깊이 검사 한도에 도달해 남은 경로를 검증하지 못했습니다. 한도를 늘려 다시 검증하세요.",
+      });
     }
 
     const fullAdj: Record<string, string[]> = {};
@@ -486,6 +500,8 @@ export class InteractiveBranchingWebtoonExporter {
     for (let i = 0; i < compiledNodes.length; i += 1) {
       const node = compiledNodes[i];
       const reached = reachableNodeSet.has(node.id);
+      // 미검사 경로는 도달 불가의 증거가 아니다. 검사 미완료 오류로 내보내기는 계속 차단한다.
+      if (!reached && !explorationComplete) continue;
       if (node.kind === "ending") {
         if (reached) {
           reachableEndingIds.push(node.id);
@@ -521,6 +537,7 @@ export class InteractiveBranchingWebtoonExporter {
       infiniteLoopCycles,
       maxDepth,
       exploredStateCount,
+      explorationComplete,
     };
 
     const manifest: StaticBranchingManifest = {

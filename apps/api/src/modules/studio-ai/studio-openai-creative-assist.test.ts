@@ -3,13 +3,23 @@ import { EventEmitter } from "node:events";
 import { HttpException, UnauthorizedException } from "@nestjs/common";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { StudioOpenAiRateLimiter } from "./openai-assist/studio-openai-guardrails";
+import {
+  isOpenAiFreeShareModel,
+  StudioOpenAiRateLimiter,
+} from "./openai-assist/studio-openai-guardrails";
+import {
+  buildModeSystemInstruction,
+  MODE_JSON_SCHEMAS,
+} from "./openai-assist/studio-openai-prompt-catalog";
 import { StudioFreeAiZeroBillRouter } from "./studio-free-ai-zero-bill-router";
 import {
   StudioFreeAiController,
   StudioOpenAiCreativeAssistController,
 } from "./studio-openai-creative-assist.controller";
-import { StudioOpenAiCreativeAssistRequestSchema } from "./studio-openai-creative-assist.dto";
+import {
+  StudioOpenAiCreativeAssistRequestSchema,
+  validateAssistModeStructuredOutput,
+} from "./studio-openai-creative-assist.dto";
 import {
   redactCreatorSensitiveText,
   resolveStudioOpenAiCreativeConfig,
@@ -22,12 +32,14 @@ import type { Request, Response } from "express";
 function createRequestResponseHarness(headers: Record<string, string> = {}) {
   const request = new EventEmitter() as EventEmitter & {
     aborted: boolean;
+    complete: boolean;
     destroyed: boolean;
     headers: Record<string, string>;
     socket: { remoteAddress: string };
     header: (name: string) => string | undefined;
   };
   request.aborted = false;
+  request.complete = true;
   request.destroyed = false;
   request.headers = Object.fromEntries(
     Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]),
@@ -37,8 +49,10 @@ function createRequestResponseHarness(headers: Record<string, string> = {}) {
 
   const response = new EventEmitter() as EventEmitter & {
     writableEnded: boolean;
+    destroyed: boolean;
   };
   response.writableEnded = false;
+  response.destroyed = false;
 
   return {
     request: request as unknown as Request,
@@ -594,6 +608,30 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(result).toEqual({ abortedOnStart: true });
     expect(abortedHarness.requestEmitter.listenerCount("aborted")).toBe(0);
     expect(abortedHarness.responseEmitter.listenerCount("close")).toBe(0);
+
+    // Node 18+/24 body-parser가 POST 본문을 끝까지 읽으면 request.complete=true, request.destroyed=true가 되며
+    // 이는 정상 요청이므로 AbortSignal이 중단되면 안 된다.
+    const parsedPostHarness = createRequestResponseHarness();
+    parsedPostHarness.requestEmitter.complete = true;
+    parsedPostHarness.requestEmitter.destroyed = true;
+    const parsedPostResult = await controller.assist(
+      "creator-77",
+      body,
+      parsedPostHarness.request,
+      parsedPostHarness.response,
+    );
+    expect(parsedPostResult).toEqual({ abortedOnStart: false });
+
+    // 응답 소켓이 전송 완료 전에 파기되면 즉시 중단한다.
+    const responseDestroyedHarness = createRequestResponseHarness();
+    responseDestroyedHarness.responseEmitter.destroyed = true;
+    const responseDestroyedResult = await controller.assist(
+      "creator-77",
+      body,
+      responseDestroyedHarness.request,
+      responseDestroyedHarness.response,
+    );
+    expect(responseDestroyedResult).toEqual({ abortedOnStart: true });
   });
 
   it("exposes GET /api/studio/ai/free-quota-status, modes(14), and zero-bill cascade creative-assist safely", async () => {
@@ -649,5 +687,439 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     service.freeQuotaStatus({}, 1_700_000_000_000);
     expect(quotaSpy).toHaveBeenCalledTimes(1);
     expect(quotaSpy).toHaveBeenCalledWith({}, 1_700_000_000_000);
+  });
+
+  it("permits explicitly configured flagship OpenAI models while keeping OPENAI_FREE_DATA_SHARE_MODELS strictly unchanged", () => {
+    for (const flagship of ["gpt-4.1", "gpt-5.4-mini", "gpt-5.5", "gpt-6.2-astra", "gpt-6.2-sol"]) {
+      const config = resolveStudioOpenAiCreativeConfig({
+        OPENAI_API_KEY: "test-placeholder",
+        OPENAI_MODEL: flagship,
+      });
+      expect(config.model).toBe(flagship);
+      expect(config.modelConfigurationError).toBeNull();
+      expect(isOpenAiFreeShareModel(flagship)).toBe(false);
+    }
+    expect(isOpenAiFreeShareModel("gpt-4o-mini")).toBe(true);
+    expect(isOpenAiFreeShareModel("gpt-4.1-mini")).toBe(true);
+    expect(isOpenAiFreeShareModel("gpt-4o")).toBe(true);
+  });
+
+  it("omits temperature and increases max_completion_tokens headroom for GPT-5/GPT-6 reasoning models", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const capturedBodies: Array<Record<string, unknown>> = [];
+    const fetchMock = vi.fn<typeof fetch>(async (_url, init) => {
+      capturedBodies.push(JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>);
+      return createDialogueResponse();
+    });
+
+    await service.assist(
+      "user:reasoning-1",
+      { mode: "dialogue-polish", inputText: "늦어서 미안해. 많이 기다렸지?" },
+      { env: { OPENAI_API_KEY: "test-placeholder", OPENAI_MODEL: "gpt-5.5" }, fetchImpl: fetchMock },
+    );
+    await service.assist(
+      "user:reasoning-2",
+      { mode: "dialogue-polish", inputText: "늦어서 미안해. 많이 기다렸지?" },
+      { env: { OPENAI_API_KEY: "test-placeholder", OPENAI_MODEL: "gpt-6.2-astra" }, fetchImpl: fetchMock },
+    );
+    await service.assist(
+      "user:standard-41",
+      { mode: "dialogue-polish", inputText: "늦어서 미안해. 많이 기다렸지?" },
+      { env: { OPENAI_API_KEY: "test-placeholder", OPENAI_MODEL: "gpt-4.1" }, fetchImpl: fetchMock },
+    );
+
+    expect(capturedBodies[0]?.model).toBe("gpt-5.5");
+    expect(capturedBodies[0]?.temperature).toBeUndefined();
+    expect(Number(capturedBodies[0]?.max_completion_tokens)).toBeGreaterThanOrEqual(3_200);
+
+    expect(capturedBodies[1]?.model).toBe("gpt-6.2-astra");
+    expect(capturedBodies[1]?.temperature).toBeUndefined();
+    expect(Number(capturedBodies[1]?.max_completion_tokens)).toBeGreaterThanOrEqual(3_200);
+
+    expect(capturedBodies[2]?.model).toBe("gpt-4.1");
+    expect(capturedBodies[2]?.temperature).toBe(0.65);
+    expect(capturedBodies[2]?.max_completion_tokens).toBe(1_400);
+  });
+
+  it("validates relaxed scroll-pacing-auditor (16px floor) and localization-glossary-check (up to 16 entries) schemas", () => {
+    expect(buildModeSystemInstruction("scroll-pacing-auditor")).toContain("16~480px");
+
+    const tightPacing = validateAssistModeStructuredOutput("scroll-pacing-auditor", {
+      rhythmVerdict: "연속 타격 구간을 20px로 좁히고 반전 컷 직전에 360px 여백을 두어 몰입감을 살립니다.",
+      averageGapPx: 16,
+      cliffhangerScore: 88,
+      cliffhangerTip: "마지막 컷 대사 직전 검은 여백을 320px로 늘려 시선을 멈추게 하세요.",
+      beatPacing: [
+        { section: "1~3컷 추격", pacing: "tight", recommendedGapPx: 16, readerRetentionNote: "빠른 스크롤 가속 구간" },
+        { section: "4컷 반전", pacing: "drop", recommendedGapPx: 360, readerRetentionNote: "정적 연출로 감정 낙차 강조" },
+      ],
+    });
+    expect(tightPacing).not.toBeNull();
+
+    const tooSmallPacing = validateAssistModeStructuredOutput("scroll-pacing-auditor", {
+      rhythmVerdict: "테스트",
+      averageGapPx: 15,
+      cliffhangerScore: 50,
+      cliffhangerTip: "테스트",
+      beatPacing: [
+        { section: "1컷", pacing: "tight", recommendedGapPx: 16, readerRetentionNote: "메모" },
+        { section: "2컷", pacing: "steady", recommendedGapPx: 80, readerRetentionNote: "메모" },
+      ],
+    });
+    expect(tooSmallPacing).toBeNull();
+
+    const largeGlossary = validateAssistModeStructuredOutput("localization-glossary-check", {
+      targetLocales: ["en", "ja"],
+      glossary: Array.from({ length: 12 }, (_, idx) => ({
+        termKo: `세계관 용어 ${idx + 1}`,
+        en: "A".repeat(150),
+        ja: "あ".repeat(150),
+        ruleNote: "규".repeat(280),
+      })),
+      culturalNotes: Array.from({ length: 7 }, (_, idx) => ({
+        severity: idx % 2 === 0 ? "info" : "warn",
+        topic: `문화 주의 ${idx + 1}`,
+        adaptationTip: "팁".repeat(320),
+      })),
+    });
+    expect(largeGlossary).not.toBeNull();
+  });
+
+  it("masks Korean road-name and lot-number addresses before upstream send without false positives on webtoon prose", async () => {
+    const addresses = [
+      "서울시 강남구 테헤란로 123",
+      "경기도 성남시 분당구 판교역로 235 101동 202호",
+      "서울특별시 송파구 방이동 127-10",
+    ];
+    const sample =
+      `1컷: 거주지는 ${addresses[0]}으로 확인됐고, 본사는 ${addresses[1]}, 창고는 ${addresses[2]}이다.`;
+    const redacted = redactCreatorSensitiveText(sample);
+
+    expect(redacted.redactedCount).toBe(3);
+    for (const addr of addresses) {
+      expect(redacted.sanitizedText).not.toContain(addr);
+    }
+    expect(redacted.sanitizedText).not.toContain("테헤란로");
+    expect(redacted.sanitizedText).not.toContain("판교역로");
+    expect(redacted.sanitizedText).not.toContain("101동 202호");
+    expect(redacted.sanitizedText).not.toContain("방이동 127-10");
+    expect(redacted.sanitizedText.match(/\[주소 비공개\]/gu)).toHaveLength(3);
+
+    const safeProseCases = [
+      "강남역에서 만났다.",
+      "서울 하늘이 노을로 물들었다.",
+      "서울 중구 을지로 3가역 4번 출구에서 기다릴게.",
+      "서울 중구 종로 3가에서 만나자.",
+      "서울 친구 집으로 3분 걸렸다.",
+      "서울시 강남구 카페에서 콘티를 짰다.",
+    ];
+    for (const prose of safeProseCases) {
+      const check = redactCreatorSensitiveText(prose);
+      expect(check.redactedCount).toBe(0);
+      expect(check.sanitizedText).toBe(prose);
+    }
+
+    const service = new StudioOpenAiCreativeAssistService();
+    let capturedBodyText = "";
+    const fetchMock = vi.fn<typeof fetch>(async (_url, init) => {
+      capturedBodyText = String(init?.body ?? "");
+      return createDialogueResponse();
+    });
+
+    const res = await service.assist(
+      "user:pii-address-outbound",
+      {
+        mode: "dialogue-polish",
+        inputText:
+          "형사: 연락처 010-9876-5432, 메일 writer@example.com, 주민번호 900101-1234567, 주소는 서울시 강남구 테헤란로 123 빌딩 로비와 서울시 강남구 테헤란로 123으로 확인됐습니다.",
+      },
+      { env: { OPENAI_API_KEY: "test-placeholder" }, fetchImpl: fetchMock },
+    );
+
+    expect(capturedBodyText).not.toContain("010-9876-5432");
+    expect(capturedBodyText).not.toContain("writer@example.com");
+    expect(capturedBodyText).not.toContain("900101-1234567");
+    expect(capturedBodyText).not.toContain("서울시 강남구 테헤란로 123");
+    expect(capturedBodyText).toContain("[주소 비공개]");
+    expect(res.privacy.piiRedactedCount).toBe(5);
+  });
+
+  it("accepts up to 12 balloons in dialogue-polish and allows safe refusal empty fields in export/character modes", () => {
+    const twelveBalloons = Array.from({ length: 12 }, (_, idx) => ({
+      toneLabel: `안 ${idx + 1}`,
+      line: `핵심 대사 ${idx + 1}입니다.`,
+      subBubble: idx % 2 === 0 ? "보조 호흡 대사" : "",
+      reason: `호흡과 강조점 ${idx + 1} 설명입니다.`,
+    }));
+    const validTwelve = validateAssistModeStructuredOutput("dialogue-polish", {
+      readabilityNote: "다중 대사 씬을 12개 말풍선 이내로 정리했습니다.",
+      balloons: twelveBalloons,
+    });
+    expect(validTwelve).not.toBeNull();
+    if (validTwelve?.mode === "dialogue-polish") {
+      expect(validTwelve.data.balloons).toHaveLength(12);
+    }
+
+    const invalidThirteen = validateAssistModeStructuredOutput("dialogue-polish", {
+      readabilityNote: "초과 테스트",
+      balloons: [...twelveBalloons, twelveBalloons[0]],
+    });
+    expect(invalidThirteen).toBeNull();
+
+    const refusalExport = validateAssistModeStructuredOutput("export-preflight-coach", {
+      readinessSummary: "   ",
+      episodeBlurbSuggestion: "   ",
+      checks: [
+        { category: "원고 입력 안내", severity: "tip", detail: "컷별 대사와 장면 메모를 입력해 주세요." },
+        { category: "회차 소개 초안", severity: "tip", detail: "핵심 갈등 한 줄을 함께 적으면 소개글을 다듬어 드립니다." },
+      ],
+    });
+    expect(refusalExport).not.toBeNull();
+    if (refusalExport?.mode === "export-preflight-coach") {
+      expect(refusalExport.data.readinessSummary).toBe("");
+      expect(refusalExport.data.episodeBlurbSuggestion).toBe("");
+    }
+
+    const refusalCharacter = validateAssistModeStructuredOutput("character-bible-forge", {
+      characterName: "미정",
+      archetypeKo: "미정",
+      speechTone: "캐릭터 대사 예시나 성격을 알려 주시면 말투를 정리해 드립니다.",
+      appearancePalette: "머리색, 의상, 시그니처 소품을 입력해 주세요.",
+      coreMotivation: "인물의 목표와 결핍을 한 줄로 적어 주세요.",
+      forbiddenLines: [],
+      relationshipHooks: [],
+      visualConsistencyCue: "반복해 그릴 고정 외형 포인트를 입력해 주세요.",
+    });
+    expect(refusalCharacter).not.toBeNull();
+    if (refusalCharacter?.mode === "character-bible-forge") {
+      expect(refusalCharacter.data.forbiddenLines).toEqual([]);
+      expect(refusalCharacter.data.relationshipHooks).toEqual([]);
+    }
+  });
+
+  it("allocates reasoning_effort=low and 6000 max_completion_tokens for mcp-workflow-macro on reasoning models and syncs schema descriptions", async () => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const capturedBodies: Array<Record<string, unknown>> = [];
+    const macroResponse = () =>
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              finish_reason: "stop",
+              message: {
+                content: JSON.stringify({
+                  macroTitle: "무협 봄비 장면 매크로",
+                  summary: "3D 카메라부터 프리플라이트까지 무과금 툴로 실행합니다.",
+                  zeroCostSafe: true,
+                  steps: [
+                    {
+                      stepOrder: 1,
+                      toolName: "studio.bg3d.compose_scene",
+                      reasonKo: "3D 대청마루 카메라를 설정합니다.",
+                      argumentsJson: "{\"lensMm\":35,\"timeOfDay\":\"spring-rain\"}",
+                    },
+                    {
+                      stepOrder: 2,
+                      toolName: "studio.export.preflight_check",
+                      reasonKo: "내보내기 전 Rights BOM과 여백을 점검합니다.",
+                      argumentsJson: "{\"platform\":\"vertical-webtoon\",\"requireCleanRightsBom\":true}",
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      );
+
+    const fetchMock = vi.fn<typeof fetch>(async (_url, init) => {
+      capturedBodies.push(JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>);
+      return macroResponse();
+    });
+
+    for (const model of ["gpt-5.5", "gpt-6.2-astra", "gpt-4.1"] as const) {
+      await service.assist(
+        `user:macro-${model}`,
+        { mode: "mcp-workflow-macro", inputText: "3D 배경 세팅 후 봄비 보정과 프리플라이트를 실행해 줘." },
+        { env: { OPENAI_API_KEY: "test-placeholder", OPENAI_MODEL: model }, fetchImpl: fetchMock },
+      );
+    }
+
+    expect(capturedBodies[0]?.model).toBe("gpt-5.5");
+    expect(capturedBodies[0]?.reasoning_effort).toBe("low");
+    expect(capturedBodies[0]?.temperature).toBeUndefined();
+    expect(capturedBodies[0]?.max_completion_tokens).toBe(6_000);
+
+    expect(capturedBodies[1]?.model).toBe("gpt-6.2-astra");
+    expect(capturedBodies[1]?.reasoning_effort).toBe("low");
+    expect(capturedBodies[1]?.temperature).toBeUndefined();
+    expect(capturedBodies[1]?.max_completion_tokens).toBe(6_000);
+
+    expect(capturedBodies[2]?.model).toBe("gpt-4.1");
+    expect(capturedBodies[2]?.reasoning_effort).toBeUndefined();
+    expect(capturedBodies[2]?.temperature).toBe(0.65);
+    expect(capturedBodies[2]?.max_completion_tokens).toBe(1_400);
+
+    // 14개 전 모드 스키마에 배열 상한 description 동기화 및 핵심 프롬프트 가드 포함 확인
+    expect(Object.keys(MODE_JSON_SCHEMAS)).toHaveLength(14);
+    for (const spec of Object.values(MODE_JSON_SCHEMAS)) {
+      const props = (spec.schema.properties ?? {}) as Record<string, { type?: string; description?: string }>;
+      for (const prop of Object.values(props)) {
+        if (prop.type === "array") {
+          expect(typeof prop.description).toBe("string");
+          expect((prop.description ?? "").length).toBeGreaterThan(5);
+        }
+      }
+    }
+    const dialogueInstruction = buildModeSystemInstruction("dialogue-polish");
+    expect(dialogueInstruction).toContain("총 3개");
+    expect(dialogueInstruction).toContain("각각 한 번씩");
+    expect(dialogueInstruction).toContain("숫자나 끝자리를 지어내지");
+    expect(buildModeSystemInstruction("mcp-workflow-macro")).toContain("240자 이내");
+    expect(buildModeSystemInstruction("export-preflight-coach")).toContain("연속성 fix");
+    expect(buildModeSystemInstruction("idea-remix")).toContain("메타 식별자");
+    expect(buildModeSystemInstruction("character-bible-forge")).toContain("공격 문구");
+  });
+
+  it("uses 60s default timeout for reasoning models, expands non-reasoning output cap for long scripts, releases quota on truncation, and syncs scroll-pacing averageGapPx", async () => {
+    expect(
+      resolveStudioOpenAiCreativeConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "gpt-6.2-astra" }).timeoutMs,
+    ).toBe(60_000);
+    expect(
+      resolveStudioOpenAiCreativeConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "gpt-5.5" }).timeoutMs,
+    ).toBe(60_000);
+    expect(
+      resolveStudioOpenAiCreativeConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "gpt-4.1" }).timeoutMs,
+    ).toBe(30_000);
+    expect(
+      resolveStudioOpenAiCreativeConfig({
+        OPENAI_API_KEY: "test",
+        OPENAI_MODEL: "gpt-6.2-astra",
+        STUDIO_OPENAI_TIMEOUT_MS: "85000",
+      }).timeoutMs,
+    ).toBe(85_000);
+
+    // continuity-plot-audit & script-to-cuts 안전 거절(빈 배열) 스키마 허용 검증
+    expect(
+      validateAssistModeStructuredOutput("continuity-plot-audit", {
+        overallConsistencyScore: 0,
+        summary: "점검할 대본이나 콘티 메모를 입력해 주세요.",
+        issues: [],
+      }),
+    ).not.toBeNull();
+    expect(
+      validateAssistModeStructuredOutput("script-to-cuts", {
+        episodeGoal: "분할할 장면 대본을 입력해 주세요.",
+        pacingTip: "등장인물과 장면 흐름을 2문장 이상 적어 주시면 컷을 구성해 드립니다.",
+        cuts: [],
+      }),
+    ).not.toBeNull();
+
+    const service = new StudioOpenAiCreativeAssistService();
+    let capturedLongBody: Record<string, unknown> = {};
+    const longScript = "1화 장면 대본입니다. 비 오는 종로 도서관에서 별빛 사서가 싸운다.\n".repeat(40);
+    await service.assist(
+      "user:long-41",
+      { mode: "script-to-cuts", inputText: longScript },
+      {
+        env: { OPENAI_API_KEY: "test-placeholder", OPENAI_MODEL: "gpt-4.1" },
+        fetchImpl: vi.fn<typeof fetch>(async (_url, init) => {
+          capturedLongBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+          return new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  finish_reason: "stop",
+                  message: {
+                    content: JSON.stringify({
+                      episodeGoal: "도서관 격돌",
+                      pacingTip: "긴박한 호흡",
+                      cuts: [
+                        {
+                          cutNumber: 1,
+                          beatKind: "setup",
+                          shotType: "와이드샷",
+                          visualAction: "도서관 전경",
+                          dialogue: "",
+                          scrollGapHint: "180px",
+                        },
+                      ],
+                    }),
+                  },
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }),
+      },
+    );
+    expect(capturedLongBody.max_completion_tokens).toBe(3_200);
+
+    // finish_reason === "length" 시 일일 한도 슬롯을 복원해 재시도가 차단되지 않아야 한다
+    const retryEnv = {
+      OPENAI_API_KEY: "test-placeholder",
+      STUDIO_OPENAI_DAILY_REQUEST_LIMIT: "1",
+    };
+    await expect(
+      service.assist(
+        "user:trunc-release",
+        { mode: "dialogue-polish", inputText: "긴 대사를 다듬어 주세요." },
+        {
+          env: retryEnv,
+          fetchImpl: vi.fn<typeof fetch>(async () =>
+            new Response(
+              JSON.stringify({ choices: [{ finish_reason: "length", message: { content: "{" } }] }),
+              { status: 200 },
+            ),
+          ),
+        },
+      ),
+    ).rejects.toMatchObject({ status: 502, response: { code: "OPENAI_OUTPUT_TRUNCATED" } });
+
+    const retryOk = await service.assist(
+      "user:trunc-release",
+      { mode: "dialogue-polish", inputText: "긴 대사를 다듬어 주세요." },
+      { env: retryEnv, fetchImpl: vi.fn<typeof fetch>(async () => createDialogueResponse()) },
+    );
+    expect(retryOk.result.mode).toBe("dialogue-polish");
+
+    // scroll-pacing-auditor averageGapPx 산술평균 자동 정규화 확인
+    const pacingRes = await service.assist(
+      "user:pacing-sync",
+      { mode: "scroll-pacing-auditor", inputText: "1컷 도입 후 2컷 반전으로 여백을 크게 줍니다." },
+      {
+        env: { OPENAI_API_KEY: "test-placeholder" },
+        fetchImpl: vi.fn<typeof fetch>(async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  finish_reason: "stop",
+                  message: {
+                    content: JSON.stringify({
+                      rhythmVerdict: "초반은 빠르게, 엔딩은 여백을 넓힙니다.",
+                      averageGapPx: 150,
+                      cliffhangerScore: 88,
+                      cliffhangerTip: "엔딩 직전 360px 여백을 유지하세요.",
+                      beatPacing: [
+                        { section: "도입", pacing: "tight", recommendedGapPx: 100, readerRetentionNote: "빠른 전개" },
+                        { section: "반전", pacing: "drop", recommendedGapPx: 320, readerRetentionNote: "시선 정지" },
+                      ],
+                    }),
+                  },
+                },
+              ],
+            }),
+            { status: 200 },
+          ),
+        ),
+      },
+    );
+    expect(pacingRes.result.mode).toBe("scroll-pacing-auditor");
+    if (pacingRes.result.mode === "scroll-pacing-auditor") {
+      expect(pacingRes.result.data.averageGapPx).toBe(210);
+    }
   });
 });

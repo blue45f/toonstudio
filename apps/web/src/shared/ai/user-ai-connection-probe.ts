@@ -67,6 +67,9 @@ export async function probeUserAiConnection(
         Authorization: `Bearer ${key}`,
         Accept: "application/json",
       },
+      credentials: "omit",
+      referrerPolicy: "no-referrer",
+      cache: "no-store",
       signal: controller.signal,
     });
     if (response.ok) {

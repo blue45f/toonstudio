@@ -54,7 +54,7 @@ export const QUICK_KEY_PRESETS: Readonly<Record<QuickKeyProviderId, QuickKeyPres
     connectionId: "quick-openai",
     baseUrl: "https://api.openai.com/v1",
     model: "gpt-5-mini",
-    preferredModels: ["gpt-5-mini", "gpt-5", "gpt-4.1-mini", "gpt-4o-mini"],
+    preferredModels: ["gpt-5-mini", "gpt-5.4-mini", "gpt-5.5", "gpt-6.2-astra", "gpt-5", "gpt-4.1-mini", "gpt-4o-mini"],
     costPolicy: "user-funded-byok",
   },
   gemini: {

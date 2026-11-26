@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { ReferenceCreatorDashboard } from "./ReferenceCreatorDashboard";
+import { HomeOptionalPlayground } from "./HomeOptionalPlayground";
 import { useCreatorHomeSectionNavigation } from "./use-creator-home-section-navigation";
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 import { useTheme } from "@/shared/lib/theme";
@@ -15,17 +16,6 @@ import "./creator-home-spacing.css";
 const LazyCreatorStudioIntroduction = lazyRetry(
   () => import("./CreatorStudioIntroduction").then((module) => ({ default: module.CreatorStudioIntroduction })),
   "CreatorStudioIntroduction",
-);
-const LazyComicIntroHost = lazyRetry(
-  () => import("./comic-intro/ComicIntroHost").then((module) => ({ default: module.ComicIntroHost })),
-  "ComicIntroHost",
-);
-const LazyHomeFlagshipInteractiveShowcase = lazyRetry(
-  () =>
-    import("./flagship-showcase/HomeFlagshipInteractiveShowcase").then((module) => ({
-      default: module.HomeFlagshipInteractiveShowcase,
-    })),
-  "HomeFlagshipInteractiveShowcase",
 );
 
 /** Public front door. Historical introduction anchors keep their documented destination. */
@@ -47,18 +37,10 @@ export function CreatorHomeExperience() {
       lang={language}
     >
       {!introduction && <ReferenceCreatorDashboard />}
-      {!introduction && (
-        <Suspense fallback={null}>
-          <LazyHomeFlagshipInteractiveShowcase />
-        </Suspense>
-      )}
-      {introduction ? (
+      {!introduction && <HomeOptionalPlayground />}
+      {introduction && (
         <Suspense fallback={null}>
           <LazyCreatorStudioIntroduction />
-        </Suspense>
-      ) : (
-        <Suspense fallback={null}>
-          <LazyComicIntroHost />
         </Suspense>
       )}
     </div>

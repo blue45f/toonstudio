@@ -139,6 +139,7 @@ export class OffscreenRendererWorkerBridge {
   private scheduledFlushHandle: number | null = null;
   private activeStrokeId = 1;
   private activeBrushWidth = 6;
+  private fallbackLastPoint: { readonly strokeId: number; readonly x: number; readonly y: number } | null = null;
   private readonly counters = {
     seq: 0, batches: 0, points: 0, bytes: 0, frames: 0,
     dropped: 0, totalFrameMs: 0, maxFrameMs: 0, lastSeq: 0, pendingAcks: 0,
@@ -216,6 +217,7 @@ export class OffscreenRendererWorkerBridge {
     if (this.disposed || this.mode === "unattached" || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
       return false;
     }
+    if (strokeId !== undefined && strokeId !== this.activeStrokeId) this.flushPointerBatch();
     if (strokeId !== undefined) this.activeStrokeId = strokeId;
     if (brushWidth !== undefined) this.activeBrushWidth = brushWidth;
     const base = this.pendingPointCount * POINTER_POINT_STRIDE_FLOATS;
@@ -297,7 +299,7 @@ export class OffscreenRendererWorkerBridge {
 
     const startedAt = nowMs();
     if (this.opts.drawFallbackPreview !== false && this.fallbackContext) {
-      this.drawFallbackPolyline(this.fallbackContext, packed, pointCount, resolvedBrushWidth);
+      this.drawFallbackPolyline(this.fallbackContext, packed, pointCount, resolvedBrushWidth, resolvedStrokeId);
     }
     this.opts.onFallbackBatch?.(batch, this.fallbackContext);
     this.recordFrameMetrics(Math.max(0, nowMs() - startedAt), sequence);
@@ -353,19 +355,24 @@ export class OffscreenRendererWorkerBridge {
       this.worker = null;
     }
     this.fallbackContext = null;
+    this.fallbackLastPoint = null;
     this.counters.pendingAcks = 0;
   }
 
-  private drawFallbackPolyline(ctx: Canvas2DContextLike, pts: Float32Array, count: number, width: number): void {
+  private drawFallbackPolyline(ctx: Canvas2DContextLike, pts: Float32Array, count: number, width: number, strokeId: number): void {
     if (count === 0 || !ctx.beginPath || !ctx.moveTo || !ctx.stroke) return;
     ctx.lineWidth = width;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(pts[0] ?? 0, pts[1] ?? 0);
-    for (let i = 1; i < count; i += 1) {
+    const previous = this.fallbackLastPoint?.strokeId === strokeId ? this.fallbackLastPoint : null;
+    ctx.moveTo(previous?.x ?? pts[0] ?? 0, previous?.y ?? pts[1] ?? 0);
+    // 이전 배치의 마지막 점은 전송 버퍼나 점 수를 바꾸지 않고 렌더링에만 연결한다.
+    for (let i = previous ? 0 : 1; i < count; i += 1) {
       const base = i * POINTER_POINT_STRIDE_FLOATS;
       ctx.lineTo?.(pts[base] ?? 0, pts[base + 1] ?? 0);
     }
     ctx.stroke();
+    const last = (count - 1) * POINTER_POINT_STRIDE_FLOATS;
+    this.fallbackLastPoint = { strokeId, x: pts[last] ?? 0, y: pts[last + 1] ?? 0 };
   }
 }

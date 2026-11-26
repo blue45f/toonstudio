@@ -485,6 +485,10 @@ export class P2pLosslessDeltaSyncNode {
   private handleAssembledMessage(remotePeerId: number, frameType: P2pFrameTypeCode, payload: Uint8Array, nowMs: number): void {
     if (frameType === P2pFrameType.ManifestOffer) {
       const offer = JSON.parse(textDecoder.decode(payload)) as ManifestOfferPayload;
+      // 동일 해시로 타일 전송을 생략해도 관측한 버전보다 다음 로컬 편집이 뒤에 정렬되어야 한다.
+      for (const entry of offer.manifest) {
+        if (entry.lamportTs > this.lamportClock) this.lamportClock = entry.lamportTs;
+      }
       const diff = computeManifestDiff(this.getManifest(), offer.manifest);
       const requests: ManifestRequestItem[] = diff.missingKeys.map((key) => ({ key }));
       for (const key of diff.changedKeys) {

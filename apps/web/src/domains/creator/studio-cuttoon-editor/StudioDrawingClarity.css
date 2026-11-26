@@ -70,7 +70,7 @@ button[data-studio-drawing-save-summary=true]>span:not([data-studio-connection-n
 /* 중요한 안내는 원고명 아래의 24px 자리에 우선 표시한다. 큰 글꼴에서도 행간을 함께 키우고,
    전문과 복구 동작은 같은 버튼의 저장 상세에서 읽는다. 안내가 비면 저장 영수증을 다시 표시한다. */
 .studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)){padding-block:19px 1px;}
-.studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty))>span{display:block;line-height:1;width:100%;max-height:24px;}
+.studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty))>span{display:block;line-height:1;width:100%;max-height:24px;overflow:hidden;text-overflow:ellipsis;}
 .studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:has([data-studio-connection-notice-summary]:not(:empty)) [data-studio-clarity-receipt]{display:none;}
 .studio-drawing-clarity-title [data-studio-connection-notice-summary]>*{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .studio-drawing-clarity-title button[data-studio-drawing-save-summary=true]:focus-visible{outline-offset:-2px}

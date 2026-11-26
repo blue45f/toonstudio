@@ -371,8 +371,9 @@ export class SabZeroCopyWorkerChannel {
     }
 
     const slabCap = this.layout.slabByteLength;
-    const writePos = this.atomicLoad(CTRL.SLAB_WRITE_POS) >>> 0;
     const slabUsed = Math.max(0, this.atomicLoad(CTRL.SLAB_USED_BYTES));
+    // 소비가 끝난 빈 슬랩에는 랩어라운드 패딩을 남기지 않는다.
+    const writePos = slabUsed === 0 ? 0 : this.atomicLoad(CTRL.SLAB_WRITE_POS) >>> 0;
     let targetOffset = writePos;
     let reservedBytes = alignedPayloadLen;
     if (alignedPayloadLen > 0 && writePos + alignedPayloadLen > slabCap) {

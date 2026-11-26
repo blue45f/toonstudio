@@ -1,0 +1,188 @@
+{
+  "updatedAt": "2026-11-26T03:51:22.462Z",
+  "model": "gpt-4o-mini-tts-2025-12-15",
+  "rightsStatus": "toonstudio-first-party-ai-starter-pack",
+  "totalClips": 20,
+  "clips": [
+    {
+      "id": "audiotoon-noir-opening",
+      "voice": "onyx",
+      "titleKo": "누아르 1화 도입 내레이션",
+      "instructions": "차분하고 낮은 미스터리 스릴러 웹툰 내레이터 톤으로 천천히 또박또박 읽으세요.",
+      "text": "비 오는 밤 열한 시. 을지로 삼 번 출구 앞에는 늘 사라진 필름의 주인들이 기다린다.",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/audiotoon-noir-opening.mp3",
+      "bytes": 117120
+    },
+    {
+      "id": "audiotoon-noir-heroine",
+      "voice": "nova",
+      "titleKo": "누아르 여주인공 긴박 대사",
+      "instructions": "숨을 죽이듯 절박하고 단단한 한국어 드라마 대사 톤.",
+      "text": "오늘 자정 전에 열어. 내일이면 7번 보관함 필름이 전부 사라져.",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/audiotoon-noir-heroine.mp3",
+      "bytes": 106368
+    },
+    {
+      "id": "audiotoon-ropan-duchess",
+      "voice": "shimmer",
+      "titleKo": "로판 공작 영애 선언",
+      "instructions": "기품 있고 냉정한 귀족 영애의 단호한 말투.",
+      "text": "전하, 우리의 계약은 오늘 밤 이 발코니에서 끝났습니다.",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/audiotoon-ropan-duchess.mp3",
+      "bytes": 108288
+    },
+    {
+      "id": "audiotoon-action-awakening",
+      "voice": "echo",
+      "titleKo": "헌터 액션 각성 컷",
+      "instructions": "결연하고 에너지 넘치는 소년만화 주인공 각성 톤.",
+      "text": "물러서지 않아! 여기서 무너지면 내일은 없어!",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/audiotoon-action-awakening.mp3",
+      "bytes": 70656
+    },
+    {
+      "id": "audiotoon-campus-rain",
+      "voice": "alloy",
+      "titleKo": "학원 청춘 빗속 대사",
+      "instructions": "따뜻하고 수줍은 청춘 로맨스 톤.",
+      "text": "이 노래 끝나기 전에만 비가 그치면 좋겠다. 같이 걸을까?",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/audiotoon-campus-rain.mp3",
+      "bytes": 82560
+    },
+    {
+      "id": "audiotoon-murim-master",
+      "voice": "ash",
+      "titleKo": "무협 낭인 대치",
+      "instructions": "묵직하고 절제된 정통 무협 고수의 낮고 깊은 목소리.",
+      "text": "십 년 전 화산 절벽에서 매화검을 꺾은 자가 바로 너인가.",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/audiotoon-murim-master.mp3",
+      "bytes": 104064
+    },
+    {
+      "id": "guide-onboarding-welcome",
+      "voice": "coral",
+      "titleKo": "툰스튜디오 첫 화면 음성 가이드",
+      "instructions": "친절하고 차분한 크리에이티브 스튜디오 안내 톤.",
+      "text": "안녕하세요, 툰스튜디오입니다. 빈 캔버스나 14모드 스토리 도우미로 지금 바로 첫 컷을 시작해 보세요.",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/guide-onboarding-welcome.mp3",
+      "bytes": 154368
+    },
+    {
+      "id": "guide-export-preflight",
+      "voice": "sage",
+      "titleKo": "마감 전 프리플라이트 안내",
+      "instructions": "명료하고 신뢰감 있는 편집자 체크리스트 안내 톤.",
+      "text": "출고 전 해상도와 말풍선 여백, 라이선스 기록을 한 번에 점검하면 안전하게 연재본을 내보낼 수 있습니다.",
+      "publicPath": "/assets/ai-starter-pack/audiotoon/guide-export-preflight.mp3",
+      "bytes": 160896
+    },
+    {
+      "id": "dub-ko-ropan-empress",
+      "lang": "ko",
+      "voice": "coral",
+      "role": "로판 여주인공 선전포고 (한국어)",
+      "path": "audiotoon/dub-ko-ropan-empress.mp3",
+      "bytes": 132864,
+      "latencyMs": 2304
+    },
+    {
+      "id": "dub-en-ropan-empress",
+      "lang": "en",
+      "voice": "coral",
+      "role": "Romance-Fantasy Heroine Declaration (EN)",
+      "path": "audiotoon/dub-en-ropan-empress.mp3",
+      "bytes": 123264,
+      "latencyMs": 2284
+    },
+    {
+      "id": "dub-ja-ropan-empress",
+      "lang": "ja",
+      "voice": "shimmer",
+      "role": "ロマンスファンタジー令嬢宣言 (JA)",
+      "path": "audiotoon/dub-ja-ropan-empress.mp3",
+      "bytes": 157824,
+      "latencyMs": 2433
+    },
+    {
+      "id": "dub-ko-hunter-awakening",
+      "lang": "ko",
+      "voice": "onyx",
+      "role": "헌터물 S급 각성 클리프행어 (한국어)",
+      "path": "audiotoon/dub-ko-hunter-awakening.mp3",
+      "bytes": 157824,
+      "latencyMs": 2384
+    },
+    {
+      "id": "dub-en-hunter-awakening",
+      "lang": "en",
+      "voice": "onyx",
+      "role": "Action Hunter S-Rank Awakening (EN)",
+      "path": "audiotoon/dub-en-hunter-awakening.mp3",
+      "bytes": 126720,
+      "latencyMs": 3040
+    },
+    {
+      "id": "dub-ja-hunter-awakening",
+      "lang": "ja",
+      "voice": "ash",
+      "role": "ハンター覚醒クリフハンガー (JA)",
+      "path": "audiotoon/dub-ja-hunter-awakening.mp3",
+      "bytes": 157824,
+      "latencyMs": 2825
+    },
+    {
+      "id": "dub-ko-noir-detective",
+      "lang": "ko",
+      "voice": "ash",
+      "role": "느와르 형사 빗속 독백 (한국어)",
+      "path": "audiotoon/dub-ko-noir-detective.mp3",
+      "bytes": 157056,
+      "latencyMs": 2319
+    },
+    {
+      "id": "dub-en-noir-detective",
+      "lang": "en",
+      "voice": "ash",
+      "role": "Noir Detective Rain Monologue (EN)",
+      "path": "audiotoon/dub-en-noir-detective.mp3",
+      "bytes": 151296,
+      "latencyMs": 2059
+    },
+    {
+      "id": "dub-ko-slice-morning",
+      "lang": "ko",
+      "voice": "nova",
+      "role": "일상·학원물 따뜻한 오프닝 (한국어)",
+      "path": "audiotoon/dub-ko-slice-morning.mp3",
+      "bytes": 122496,
+      "latencyMs": 2011
+    },
+    {
+      "id": "dub-ja-slice-morning",
+      "lang": "ja",
+      "voice": "nova",
+      "role": "学園青春オープニング (JA)",
+      "path": "audiotoon/dub-ja-slice-morning.mp3",
+      "bytes": 149760,
+      "latencyMs": 2109
+    },
+    {
+      "id": "guide-en-studio-welcome",
+      "lang": "en",
+      "voice": "sage",
+      "role": "ToonStudio Global Onboarding Guide (EN)",
+      "path": "audiotoon/guide-en-studio-welcome.mp3",
+      "bytes": 191232,
+      "latencyMs": 2717
+    },
+    {
+      "id": "guide-ja-studio-welcome",
+      "lang": "ja",
+      "voice": "sage",
+      "role": "ToonStudio オンボーディング案内 (JA)",
+      "path": "audiotoon/guide-ja-studio-welcome.mp3",
+      "bytes": 235392,
+      "latencyMs": 3510
+    }
+  ]
+}

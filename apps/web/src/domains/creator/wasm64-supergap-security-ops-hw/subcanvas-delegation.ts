@@ -133,6 +133,7 @@ export type DelegationViolationCode =
   | "DELEGATION_NOT_FOUND"
   | "DELEGATION_EXPIRED"
   | "DECRYPTION_FAILED"
+  | "OUT_OF_SCOPE_DOCUMENT"
   | "OUT_OF_SCOPE_CUT"
   | "OUT_OF_SCOPE_LAYER"
   | "READONLY_LAYER_MODIFIED"
@@ -457,6 +458,20 @@ export class SubCanvasDelegationManager {
           {
             code: "DELEGATION_NOT_FOUND",
             message: `등록되지 않은 위임 ID입니다(${delegationId}).`,
+          },
+        ],
+        settlementBom: null,
+      };
+    }
+
+    if (masterDoc.workId !== record.workId || masterDoc.episodeId !== record.episodeId) {
+      return {
+        merged: false,
+        mergedDocument: masterDoc,
+        violations: [
+          {
+            code: "OUT_OF_SCOPE_DOCUMENT",
+            message: "위임을 발급한 작품·에피소드와 다른 문서에는 제출 결과를 병합할 수 없습니다.",
           },
         ],
         settlementBom: null,

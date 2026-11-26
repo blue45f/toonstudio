@@ -1,0 +1,266 @@
+/* 작업 홈: 이어하기를 먼저, 새 작업은 네 가지 선택으로 모은다. */
+[data-studio-library-vivid="true"] {
+  --studio-home-coral: var(--spectrum-pigment-draw, var(--color-accent));
+  --studio-home-amber: var(--spectrum-pigment-character, var(--color-warn));
+  --studio-home-teal: var(--spectrum-pigment-collab, var(--color-cool));
+  background-image: radial-gradient(ellipse at 90% 0%, color-mix(in oklch, var(--studio-home-teal) 9%, transparent), transparent 38rem);
+}
+
+[data-studio-library-vivid="true"] .studio-library-heading-art.studio-tool-art {
+  --studio-tool-art-size: clamp(44px, 4vw, 64px);
+}
+
+[data-studio-library-vivid="true"] .studio-library-heading-ink {
+  width: 4rem;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--spectrum-hairline-gradient);
+}
+
+.studio-vivid-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 20px;
+  min-width: 0;
+}
+
+.studio-vivid-create {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  padding: clamp(16px, 2vw, 28px);
+  border: 1px solid var(--color-line);
+  border-radius: 24px;
+  background: linear-gradient(135deg, color-mix(in oklch, var(--studio-home-amber) 9%, var(--color-panel)), var(--color-panel) 58%);
+}
+
+.studio-vivid-create-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.studio-vivid-create-heading > div { min-width: 0; }
+
+.studio-vivid-create-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 15px 15px 15px 5px;
+  background: var(--spectrum-pigment-character);
+  color: var(--spectrum-pigment-character-on);
+}
+
+.studio-vivid-eyebrow {
+  display: block;
+  color: var(--color-fg-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.studio-vivid-create-heading h2 {
+  margin: 3px 0 0;
+  color: var(--color-fg);
+  font-size: clamp(1.125rem, 2.2vw, 1.5rem);
+  line-height: 1.4;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.studio-vivid-create-heading p {
+  margin: 6px 0 0;
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.studio-vivid-start-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.studio-vivid-start-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px 14px;
+  border: 1px solid color-mix(in oklch, var(--spectrum-domain-pigment) 26%, var(--color-line));
+  border-radius: 18px;
+  background: color-mix(in oklch, var(--spectrum-domain-pigment) 8%, var(--color-card));
+  color: var(--color-fg);
+  text-decoration: none;
+  transition: transform 180ms var(--spectrum-motion-ease), border-color 180ms ease, background-color 180ms ease;
+}
+
+.studio-vivid-start-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--spectrum-domain-pigment-soft);
+  color: var(--spectrum-domain-pigment);
+}
+
+.studio-vivid-start-icon .studio-library-start-tool { --studio-tool-art-size: 36px; }
+.studio-vivid-start-copy { display: block; min-width: 0; }
+
+.studio-vivid-start-label {
+  display: block;
+  color: var(--color-fg);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 650;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.studio-vivid-start-hint {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-fg-2);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.studio-vivid-start-arrow {
+  position: absolute;
+  inset-block-start: 17px;
+  inset-inline-end: 14px;
+  color: var(--spectrum-domain-pigment);
+  transition: transform 180ms var(--spectrum-motion-ease);
+}
+
+.studio-vivid-try-sample {
+  min-width: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.studio-vivid-try-sample > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-block: 10px;
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  cursor: pointer;
+  list-style: none;
+}
+
+.studio-vivid-try-sample > summary::-webkit-details-marker { display: none; }
+.studio-vivid-try-sample > summary > svg { flex: none; }
+.studio-vivid-try-sample > summary > svg:last-child { margin-inline-start: auto; transition: transform 180ms ease; }
+.studio-vivid-try-sample[open] > summary > svg:last-child { transform: rotate(180deg); }
+.studio-vivid-try-sample > div { padding-block: 4px 8px; }
+.studio-vivid-try-sample > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 6px; }
+
+.studio-vivid-server-resume {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 14px;
+  min-height: 240px;
+  height: 100%;
+  padding: clamp(20px, 3vw, 36px);
+  border: 1px solid var(--spectrum-pigment-collab-border);
+  border-radius: 24px;
+  background: radial-gradient(ellipse at top right, var(--spectrum-pigment-collab-soft), transparent 80%), var(--color-panel);
+}
+
+[data-studio-library-vivid="true"] .studio-library-resume {
+  border-color: var(--spectrum-pigment-collab-border) !important;
+  border-radius: 24px !important;
+  box-shadow: none !important;
+}
+
+[data-studio-library-vivid="true"] .studio-library-resume-cover { height: 152px; }
+[data-studio-library-vivid="true"] .studio-library-resume-eyebrow { border-radius: 100px; padding: 5px 10px; }
+[data-studio-library-vivid="true"] .studio-library-resume-content h2 a { min-height: 44px; }
+[data-studio-library-vivid="true"] .studio-library-resume-open {
+  border-color: var(--spectrum-pigment-collab);
+  background: var(--spectrum-pigment-collab);
+  color: var(--spectrum-pigment-collab-on);
+  border-radius: 12px;
+}
+
+[data-studio-library-vivid="true"] .studio-library-entry-actions > a { border-radius: 12px; }
+[data-studio-library-vivid="true"] .studio-library-work-list-heading button { min-height: 44px; }
+
+@media (min-width: 768px) {
+  .studio-vivid-workbench[data-studio-has-resume="false"] .studio-vivid-start-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .studio-vivid-workbench[data-studio-has-resume="true"] {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  }
+
+  [data-studio-library-vivid="true"] .studio-library-resume-cover { height: 190px; }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .studio-vivid-start-tile:hover {
+    transform: translateY(-3px);
+    border-color: var(--spectrum-domain-pigment);
+    background: color-mix(in oklch, var(--spectrum-domain-pigment) 14%, var(--color-card));
+  }
+
+  .studio-vivid-start-tile:hover .studio-vivid-start-arrow { transform: translate(2px, -2px); }
+}
+
+@media (max-width: 639px) {
+  .studio-vivid-create { gap: 16px; border-radius: 20px; }
+  .studio-vivid-create-mark { display: none; }
+  .studio-vivid-start-tile { gap: 11px; padding: 14px 12px; }
+  .studio-vivid-start-hint { display: none; }
+  .studio-vivid-start-arrow { inset-inline-end: 10px; inset-block-start: 14px; }
+  [data-studio-library-vivid="true"] .studio-library-heading > div:first-child { flex-basis: 100%; }
+  [data-studio-library-vivid="true"] .studio-library-entry-actions { width: 100%; }
+  [data-studio-library-vivid="true"] .studio-library-entry-actions > a { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-vivid-start-tile,
+  .studio-vivid-start-arrow,
+  .studio-vivid-try-sample > summary > svg:last-child { transition: none; }
+}
+
+:root[data-design-theme="contrast"] [data-studio-library-vivid="true"],
+:root[data-design-theme="contrast"] .studio-vivid-create,
+:root[data-design-theme="contrast"] .studio-vivid-start-tile,
+:root[data-design-theme="contrast"] .studio-vivid-server-resume { background-image: none; }
+
+@media (forced-colors: active) {
+  [data-studio-library-vivid="true"],
+  .studio-vivid-create,
+  .studio-vivid-start-tile,
+  .studio-vivid-server-resume { background: Canvas; color: CanvasText; border-color: CanvasText; box-shadow: none; }
+  .studio-vivid-start-icon,
+  .studio-vivid-start-arrow,
+  .studio-vivid-create-mark { background: Canvas; color: CanvasText; }
+  [data-studio-library-vivid="true"] .studio-library-resume-open { background: ButtonFace; color: ButtonText; border-color: ButtonText; }
+  [data-studio-library-vivid="true"] .studio-library-heading-ink { background: CanvasText; }
+}

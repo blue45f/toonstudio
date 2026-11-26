@@ -147,6 +147,19 @@ describe("parseDialogueSuggestResponse", () => {
     if (!result.ok) return;
     expect(result.data[0]).toEqual({ speaker: "민수", text: "안녕", kind: "speech" });
   });
+
+  it("parses JSON arrays cleanly when dialogue text contains bracketed tags or emoticons like :] and :[", () => {
+    const raw = `제안 목록 [3안]:\n${JSON.stringify([
+      { speaker: "민수", text: "오늘 저녁 7시 어때? :]", kind: "speech" },
+      { speaker: "", text: "[속마음] 심장 터지겠다 :[", kind: "narration" },
+    ])}`;
+    const result = parseDialogueSuggestResponse(raw);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data).toHaveLength(2);
+    expect(result.data[0]?.text).toBe("오늘 저녁 7시 어때? :]");
+    expect(result.data[1]?.text).toBe("[속마음] 심장 터지겠다 :[");
+  });
 });
 
 describe("formatDialogueSuggestionLine", () => {

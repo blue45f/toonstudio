@@ -212,13 +212,13 @@ describe("site navigation information architecture", () => {
     expect(mobileSiteTabsForPath("/studio")).toBe(TOONSTUDIO_MOBILE_TABS);
   });
 
-  it("모든 모바일 문맥에서 네 정본 목적지를 같은 순서와 라벨로 제공한다", () => {
-    const expected = [SITE_NAVIGATION_ITEMS.studio, SITE_NAVIGATION_ITEMS.explore, SITE_NAVIGATION_ITEMS.market, SITE_NAVIGATION_ITEMS.me];
+  it("모든 모바일 문맥에서 홈·만들기·내 작업 정본을 같은 순서로 제공한다", () => {
+    const expected = [SITE_NAVIGATION_ITEMS.home, SITE_NAVIGATION_ITEMS.make, SITE_NAVIGATION_ITEMS.studio];
     for (const tabs of [TOONSTUDIO_MOBILE_TABS, TOONSPECTRUM_MOBILE_TABS, UNIFIED_MOBILE_TABS, MOBILE_SITE_TABS]) {
       expect(tabs).toEqual(expected);
-      expect(tabs.map((item) => item.href)).toEqual(["/studio", "/discover", "/market", "/my"]);
-      expect(tabs.map((item) => item.label.ko)).toEqual(["내 작업", "작품 찾기", "소재 찾기", "내 정보"]);
-      expect(tabs.map((item) => item.label.en)).toEqual(["My work", "Discover", "Assets", "My account"]);
+      expect(tabs.map((item) => item.href)).toEqual(["/", "/create", "/studio"]);
+      expect(tabs.map((item) => item.label.ko)).toEqual(["사이트 홈", "작품 시작하기", "내 작업"]);
+      expect(tabs.map((item) => item.label.en)).toEqual(["Site home", "Start a work", "My work"]);
     }
     for (const pathname of ["/", "/discover", "/market", "/my", "/home", "/studio", "/studio/p/example/canvas", "/team", "/settings", "/help"]) {
       expect(mobileSiteTabsForPath(pathname), pathname).toBe(TOONSTUDIO_MOBILE_TABS);

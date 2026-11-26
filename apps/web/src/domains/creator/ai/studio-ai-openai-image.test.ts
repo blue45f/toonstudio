@@ -54,6 +54,38 @@ describe("Studio OpenAI 이미지 BYOK", () => {
     expect(loadStudioAiSettings({ getItem: () => "{}", setItem: vi.fn() }).imageModel).toBe("gpt-image-2.6-flare");
   });
 
+  it("호환 게이트웨이로 GPT Image 생성 요청을 보낼 때 두 형식 필드를 생략한다", async () => {
+    const fetch = mockImageApi();
+    const baseUrl = "https://image-provider.test/v1";
+    const imageModel = "openai/gpt-image-2.6-flare";
+    const result = await generateBackgroundImage({ ...settings, baseUrl, imageModel }, prompt, {
+      size: "1024x1792", quality: "low",
+    });
+    expect(result.ok).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, init] = fetch.mock.calls[0] ?? [];
+    expect(url).toBe(`${baseUrl}/images/generations`);
+    expect(JSON.parse(String(init?.body))).toEqual({
+      model: imageModel, prompt, n: 1, quality: "low", size: "1024x1536",
+    });
+  });
+
+  it("타사 자체 이미지 모델의 기존 응답 형식과 출력 크기를 유지한다", async () => {
+    const fetch = mockImageApi();
+    const baseUrl = "https://image-provider.test/v1";
+    const imageModel = "provider-native-image";
+    const result = await generateBackgroundImage({ ...settings, baseUrl, imageModel }, prompt, {
+      size: "1024x1792", quality: "low",
+    });
+    expect(result.ok).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, init] = fetch.mock.calls[0] ?? [];
+    expect(url).toBe(baseUrl + "/images/generations");
+    expect(JSON.parse(String(init?.body))).toEqual({
+      model: imageModel, prompt, n: 1, quality: "low", size: "1024x1792", response_format: "b64_json",
+    });
+  });
+
   it("모델을 찾을 수 없으면 재시도 없이 404 오류를 반환", async () => {
     const fetch = mockImageApi().mockResolvedValue(Response.json({
       error: { message: "model_not_found" },
@@ -63,23 +95,49 @@ describe("Studio OpenAI 이미지 BYOK", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it.each(["colorize", "repair"])("%s 편집은 GPT Image용 multipart 형식을 사용", async (operation) => {
-    const fetch = mockImageApi();
-    const result = operation === "colorize"
-      ? await colorizeLineArt(settings, dataUrl, prompt)
-      : await repairStudioAiComicImageRegion({
-        settings, sourceImageDataUrl: dataUrl, maskDataUrl: dataUrl, prompt, target: "hands", parentCandidateId: "panel",
-      });
-    expect(result.ok).toBe(true);
-    expect(fetch).toHaveBeenCalledTimes(1);
-    const [url, init] = fetch.mock.calls[0] ?? [];
-    expect(url).toBe("https://api.openai.com/v1/images/edits");
-    const form = init?.body;
-    expect(form).toBeInstanceOf(FormData);
-    if (form instanceof FormData) {
-      expect(form.get("output_format")).toBe("png");
-      expect(form.has("response_format")).toBe(false);
-      expect(form.has("quality")).toBe(false);
-    }
+  describe.each([
+    {
+      provider: "공식 OpenAI",
+      baseUrl: settings.baseUrl,
+      imageModel: settings.imageModel,
+      outputFormat: "png",
+      responseFormat: null,
+    },
+    {
+      provider: "GPT Image 호환 게이트웨이",
+      baseUrl: "https://image-provider.test/v1",
+      imageModel: "chatgpt-image-latest",
+      outputFormat: null,
+      responseFormat: null,
+    },
+    {
+      provider: "타사 자체 이미지 모델",
+      baseUrl: "https://image-provider.test/v1",
+      imageModel: "provider-native-image",
+      outputFormat: null,
+      responseFormat: "b64_json",
+    },
+  ])("$provider", ({ baseUrl, imageModel, outputFormat, responseFormat }) => {
+    it.each(["colorize", "repair"])("%s 편집에 제공자별 multipart 형식을 적용한다", async (operation) => {
+      const fetch = mockImageApi();
+      const providerSettings = { ...settings, baseUrl, imageModel };
+      const result = operation === "colorize"
+        ? await colorizeLineArt(providerSettings, dataUrl, prompt)
+        : await repairStudioAiComicImageRegion({
+          settings: providerSettings, sourceImageDataUrl: dataUrl, maskDataUrl: dataUrl, prompt, target: "hands", parentCandidateId: "panel",
+        });
+      expect(result.ok).toBe(true);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      const [url, init] = fetch.mock.calls[0] ?? [];
+      expect(url).toBe(baseUrl + "/images/edits");
+      const form = init?.body;
+      expect(form).toBeInstanceOf(FormData);
+      if (form instanceof FormData) {
+        expect(form.get("model")).toBe(imageModel);
+        expect(form.get("output_format")).toBe(outputFormat);
+        expect(form.get("response_format")).toBe(responseFormat);
+        expect(form.has("quality")).toBe(false);
+      }
+    });
   });
 });

@@ -19,10 +19,44 @@ describe("승인 대사 의미 비교", () => {
     const service = new StudioOpenAiCreativeAssistService();
     const reply = await service.reviewApprovedDialogue("synthetic", { ...pair, currentDialogue: pair.currentDialogue + " example@example.test" }, { env, fetchImpl });
     expect(reply.result.findings).toEqual(findings);
-    const body = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body));
-    expect(body).toMatchObject({ store: false, max_completion_tokens: 850 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, request] = fetchImpl.mock.calls[0] ?? [];
+    expect(url).toBe("https://api.openai.com/v1/chat/completions");
+    expect(request?.method).toBe("POST");
+    const body = JSON.parse(String(request?.body));
+    expect(body).toMatchObject({
+      model: env.OPENAI_MODEL,
+      store: false,
+      max_completion_tokens: 850,
+      temperature: 0.65,
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: "toonstudio_approved_dialogue_review", strict: true },
+      },
+    });
+    expect(body).not.toHaveProperty("reasoning_effort");
     expect(body.messages[1].content).not.toContain("example@example.test");
     expect(JSON.parse(body.messages[1].content).approvedDialogue).toEqual(pair.approvedDialogue);
+  });
+
+  it("긴 대사와 추론 모델은 더 많은 출력 토큰을 확보한다", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => completion(JSON.stringify({ findings: [] })));
+    const service = new StudioOpenAiCreativeAssistService();
+    const longPair = {
+      ...pair,
+      currentDialogue: pair.currentDialogue + " 내일 아침에 회의실에서 원고를 같이 확인하자.".repeat(40),
+    };
+
+    await service.reviewApprovedDialogue("synthetic", longPair, { env, fetchImpl });
+    await service.reviewApprovedDialogue("synthetic", pair, {
+      env: { ...env, OPENAI_MODEL: "gpt-5.5" },
+      fetchImpl,
+    });
+
+    const [longBody, reasoningBody] = fetchImpl.mock.calls.map(([, request]) => JSON.parse(String(request?.body)));
+    expect(longBody).toMatchObject({ max_completion_tokens: 3_200, temperature: 0.65 });
+    expect(reasoningBody).toMatchObject({ model: "gpt-5.5", max_completion_tokens: 4_000, reasoning_effort: "low" });
+    expect(reasoningBody).not.toHaveProperty("temperature");
   });
 
   it.each([

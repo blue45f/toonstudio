@@ -39,7 +39,7 @@ export function StudioProjectLibraryManagementHeader({
         href={STUDIO_START_GATEWAY_HREF}
         data-studio-library-primary-action={recentProject || recentOwnerWork ? undefined : "new"}
         className={buttonClass({
-          variant: recentOwnerWork ? "outline" : "solid",
+          variant: recentProject || recentOwnerWork ? "outline" : "solid",
           className: "min-h-11 min-w-0 gap-2 whitespace-normal rounded-lg px-4 font-semibold",
         })}
       >

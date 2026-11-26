@@ -538,7 +538,7 @@ export async function runStudioOpenAiCreativeAssist(
   };
   options.signal?.addEventListener("abort", onExternalAbort, { once: true });
   if (options.signal?.aborted) onExternalAbort();
-  const timeoutMs = options.timeoutMs ?? 35_000;
+  const timeoutMs = options.timeoutMs ?? 65_000;
   const timer = setTimeout(() => {
     timedOut = true;
     if (!controller.signal.aborted) controller.abort();

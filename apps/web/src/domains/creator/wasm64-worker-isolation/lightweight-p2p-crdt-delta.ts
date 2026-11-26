@@ -235,7 +235,8 @@ export class LightweightCrdtStrokeLog {
   private localOpSeq = 0;
   private readonly orderedOps: CrdtStrokeOp[] = [];
   private readonly seenKeys = new Set<string>();
-  private readonly peerMaxSeq = new Map<number, number>();
+  private readonly peerContiguousSeq = new Map<number, number>();
+  private readonly peerPendingSeqs = new Map<number, Set<number>>();
 
   constructor(peerId: number, initialLamportTs = 0) {
     assertUintRange(peerId, 0xffff, "peerId");
@@ -250,7 +251,7 @@ export class LightweightCrdtStrokeLog {
   size(): number { return this.orderedOps.length; }
   getOrderedOps(): readonly CrdtStrokeOp[] { return this.orderedOps; }
   exportCanonicalBinary(): Uint8Array { return encodeCrdtStrokeBatch(this.orderedOps); }
-  getPeerSeqVector(): ReadonlyMap<number, number> { return new Map(this.peerMaxSeq); }
+  getPeerSeqVector(): ReadonlyMap<number, number> { return new Map(this.peerContiguousSeq); }
 
   createLocalOp(input: CrdtLocalStrokeOpInput): { readonly op: CrdtStrokeOp; readonly packet: Uint8Array } {
     this.lamportClock += 1;
@@ -331,13 +332,25 @@ export class LightweightCrdtStrokeLog {
     );
   }
 
+  private recordReceivedPeerSequence(peerId: number, opSeq: number): void {
+    let frontier = this.peerContiguousSeq.get(peerId) ?? 0;
+    if (opSeq <= frontier) return;
+    const pending = this.peerPendingSeqs.get(peerId) ?? new Set<number>();
+    pending.add(opSeq);
+    // 누락 구간 이후의 작업은 보관하되 재연결 벡터에서는 확인 완료로 광고하지 않는다.
+    while (pending.delete(frontier + 1)) frontier += 1;
+    this.peerContiguousSeq.set(peerId, frontier);
+    if (pending.size > 0) this.peerPendingSeqs.set(peerId, pending);
+    else this.peerPendingSeqs.delete(peerId);
+  }
+
   private ingestCanonicalOp(op: CrdtStrokeOp): boolean {
     if (op.lamportTs > this.lamportClock) this.lamportClock = op.lamportTs;
     const key = getCrdtStrokeOpKey(op);
     if (this.seenKeys.has(key)) return false;
     this.seenKeys.add(key);
 
-    if (op.opSeq > (this.peerMaxSeq.get(op.peerId) ?? 0)) this.peerMaxSeq.set(op.peerId, op.opSeq);
+    this.recordReceivedPeerSequence(op.peerId, op.opSeq);
     if (op.peerId === this.peerId && op.opSeq > this.localOpSeq) this.localOpSeq = op.opSeq;
 
     const len = this.orderedOps.length;

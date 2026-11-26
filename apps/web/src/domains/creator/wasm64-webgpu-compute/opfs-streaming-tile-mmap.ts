@@ -22,7 +22,7 @@ const BIG_MASK32 = BigInt(0xffffffff);
 const SPARSE_BLOCK_BYTES = 65536;
 const BIG_SPARSE_BLOCK = BigInt(SPARSE_BLOCK_BYTES);
 
-export interface SyncAccessHandleReadWriteOptions { readonly at?: number | bigint; }
+export interface SyncAccessHandleReadWriteOptions { readonly at?: number; }
 export interface SyncAccessHandleLike {
   read(buffer: ArrayBufferView, options?: SyncAccessHandleReadWriteOptions): number;
   write(buffer: ArrayBufferView, options?: SyncAccessHandleReadWriteOptions): number;
@@ -82,6 +82,14 @@ function writeUint64LE(v: DataView, off: number, value: bigint): void {
   const safe = value < BIG_ZERO ? BIG_ZERO : value;
   v.setUint32(off, Number(safe & BIG_MASK32), true);
   v.setUint32(off + 4, Number((safe >> BIG_32) & BIG_MASK32), true);
+}
+
+/** 내부 주소는 bigint로 유지하고 네이티브 OPFS 경계에서만 손실 없이 변환한다. */
+function nativeFileOffset(at: bigint, byteLength: number): number {
+  if (at < BIG_ZERO || at + BigInt(byteLength) > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("OPFS byte range exceeds the safe integer range");
+  }
+  return Number(at);
 }
 
 function encodeTileDeltaRle(raw: Uint8Array): Uint8Array {
@@ -181,7 +189,7 @@ export class OpfsStreamingTileMmap {
   private readonly tileDim: number;
   private readonly tileByteLength: number;
   private readonly maxResidentTiles: number;
-  private readonly directoryCapacity: number;
+  private directoryCapacity: number;
   private readonly enableCompression: boolean;
   private readonly virtualTilesPerRow: bigint;
   private readonly virtualLayerStrideBytes: bigint;
@@ -212,7 +220,7 @@ export class OpfsStreamingTileMmap {
     this.dataRegionByteOffset = reqBase > minDataOff ? reqBase : minDataOff;
     this.nextSlotByteOffset = this.dataRegionByteOffset;
     this.virtualDocumentBytes = this.dataRegionByteOffset;
-    if (this.handle.getSize() >= TILE_MMAP_HEADER_BYTES) this.loadExistingFile();
+    if (this.handle.getSize() >= TILE_MMAP_HEADER_BYTES) this.loadExistingFile(options.directoryCapacity);
     else { this.writeHeader(); this.handle.flush(); }
   }
 
@@ -252,10 +260,10 @@ export class OpfsStreamingTileMmap {
     this.evictIfNeeded();
     const target = this.recycledBuffers.pop() ?? new Uint8Array(this.tileByteLength);
     if (entry.encoding === TILE_ENCODING_RAW) {
-      if (this.handle.read(target, { at: entry.byteOffset }) !== entry.uncompressedByteLength) throw new Error(`Short read on raw tile '${key}'`);
+      if (this.readAt(target, entry.byteOffset) !== entry.uncompressedByteLength) throw new Error(`Short read on raw tile '${key}'`);
     } else {
       const comp = new Uint8Array(entry.storedByteLength);
-      if (this.handle.read(comp, { at: entry.byteOffset }) !== entry.storedByteLength) throw new Error(`Short read on compressed tile '${key}'`);
+      if (this.readAt(comp, entry.byteOffset) !== entry.storedByteLength) throw new Error(`Short read on compressed tile '${key}'`);
       decodeTileDeltaRle(comp, target);
     }
     const actual = computeFnv1a32(target);
@@ -294,9 +302,10 @@ export class OpfsStreamingTileMmap {
       const oldestKey = this.residentPages.keys().next().value;
       if (oldestKey === undefined) break;
       const victim = this.residentPages.get(oldestKey);
-      this.residentPages.delete(oldestKey);
       if (!victim) continue;
+      // 쓰기백이 실패하면 미저장 픽셀을 상주 상태로 보존해 재시도를 허용한다.
       if (victim.dirty) this.persistResidentPage(victim);
+      this.residentPages.delete(oldestKey);
       this.evictionCount += 1;
       if (this.recycledBuffers.length < 4) this.recycledBuffers.push(victim.pixels);
     }
@@ -309,21 +318,27 @@ export class OpfsStreamingTileMmap {
       const comp = encodeTileDeltaRle(page.pixels);
       if (comp.byteLength < page.pixels.byteLength) { payload = comp; encoding = TILE_ENCODING_DELTA_RLE; }
     }
-    let entry = this.directory.get(page.key);
-    if (!entry) {
+    const previous = this.directory.get(page.key);
+    let entry: TileDirectoryEntry;
+    if (!previous) {
       if (this.directory.size >= this.directoryCapacity) throw new Error(`Sparse tile directory capacity (${this.directoryCapacity}) exceeded`);
       entry = {
         slotIndex: this.directory.size, layerId: page.coord.layerId, tileX: page.coord.tileX, tileY: page.coord.tileY,
         encoding, byteOffset: this.nextSlotByteOffset, storedByteLength: payload.byteLength,
         uncompressedByteLength: this.tileByteLength, fnv1aChecksum: checksum, generation: 1,
       };
-      this.nextSlotByteOffset += BigInt(payload.byteLength); this.directory.set(page.key, entry);
     } else {
-      if (payload.byteLength > entry.storedByteLength) { entry.byteOffset = this.nextSlotByteOffset; this.nextSlotByteOffset += BigInt(payload.byteLength); }
-      entry.encoding = encoding; entry.storedByteLength = payload.byteLength; entry.fnv1aChecksum = checksum; entry.generation += 1;
+      entry = {
+        ...previous, encoding, storedByteLength: payload.byteLength, fnv1aChecksum: checksum,
+        generation: previous.generation + 1,
+        byteOffset: payload.byteLength > previous.storedByteLength ? this.nextSlotByteOffset : previous.byteOffset,
+      };
     }
-    this.handle.write(payload, { at: entry.byteOffset });
+    this.writeFully(payload, entry.byteOffset);
     this.writeDirectoryEntry(entry);
+    this.directory.set(page.key, entry);
+    const slotEnd = entry.byteOffset + BigInt(payload.byteLength);
+    if (slotEnd > this.nextSlotByteOffset) this.nextSlotByteOffset = slotEnd;
     if (this.nextSlotByteOffset > this.virtualDocumentBytes) this.virtualDocumentBytes = this.nextSlotByteOffset;
     page.dirty = false; this.dirtyFlushCount += 1;
   }
@@ -348,7 +363,21 @@ export class OpfsStreamingTileMmap {
       },
     };
   }
-  private writeHeader(): void { this.handle.write(this.encodeHeaderBytes().bytes, { at: BIG_ZERO }); }
+  private readAt(bytes: Uint8Array, at: bigint): number {
+    return this.handle.read(bytes, { at: nativeFileOffset(at, bytes.byteLength) });
+  }
+  private writeFully(bytes: Uint8Array, at: bigint): void {
+    const start = nativeFileOffset(at, bytes.byteLength);
+    let written = 0;
+    while (written < bytes.byteLength) {
+      const count = this.handle.write(bytes.subarray(written), { at: start + written });
+      if (!Number.isInteger(count) || count <= 0 || count > bytes.byteLength - written) {
+        throw new Error("Incomplete tile mmap write");
+      }
+      written += count;
+    }
+  }
+  private writeHeader(): void { this.writeFully(this.encodeHeaderBytes().bytes, BIG_ZERO); }
   private writeDirectoryEntry(entry: TileDirectoryEntry): void {
     const buf = new Uint8Array(TILE_DIR_ENTRY_BYTES);
     const v = new DataView(buf.buffer);
@@ -356,11 +385,11 @@ export class OpfsStreamingTileMmap {
     v.setUint32(12, entry.encoding, true); writeUint64LE(v, 16, entry.byteOffset);
     v.setUint32(24, entry.storedByteLength, true); v.setUint32(28, entry.uncompressedByteLength, true);
     v.setUint32(32, entry.fnv1aChecksum, true); v.setUint32(36, entry.generation, true);
-    this.handle.write(buf, { at: this.directoryByteOffset + BigInt(entry.slotIndex * TILE_DIR_ENTRY_BYTES) });
+    this.writeFully(buf, this.directoryByteOffset + BigInt(entry.slotIndex * TILE_DIR_ENTRY_BYTES));
   }
-  private loadExistingFile(): void {
+  private loadExistingFile(requestedCapacity?: number): void {
     const hdr = new Uint8Array(TILE_MMAP_HEADER_BYTES);
-    this.handle.read(hdr, { at: BIG_ZERO });
+    if (this.readAt(hdr, BIG_ZERO) !== hdr.byteLength) throw new Error("Short read on tile mmap header");
     const magic = String.fromCharCode(hdr[0], hdr[1], hdr[2], hdr[3]);
     if (magic !== TILE_MMAP_MAGIC) throw new Error(`Invalid TSM6 tile mmap magic: '${magic}'`);
     const v = new DataView(hdr.buffer);
@@ -369,10 +398,21 @@ export class OpfsStreamingTileMmap {
     if (v.getUint32(4, true) !== TILE_MMAP_VERSION) throw new Error(`Unsupported TSM6 version: ${v.getUint32(4, true)}`);
     if (v.getUint32(8, true) !== this.tileDim) throw new Error(`Tile dimension mismatch: file=${v.getUint32(8, true)}, expected=${this.tileDim}`);
     const pageCount = v.getUint32(16, true);
+    const capacity = v.getUint32(20, true);
+    if (capacity < 1 || pageCount > capacity || v.getUint32(12, true) !== RGBA8_BYTES_PER_PIXEL || readUint64LE(v, 24) !== this.directoryByteOffset) {
+      throw new Error("Invalid tile mmap directory header");
+    }
+    if (requestedCapacity !== undefined && Math.max(1, requestedCapacity) !== capacity) {
+      throw new Error(`Directory capacity mismatch: file=${capacity}, expected=${requestedCapacity}`);
+    }
+    this.directoryCapacity = capacity;
     this.dataRegionByteOffset = readUint64LE(v, 32); this.nextSlotByteOffset = readUint64LE(v, 40); this.virtualDocumentBytes = readUint64LE(v, 48);
+    if (this.dataRegionByteOffset < this.directoryByteOffset + BigInt(capacity * TILE_DIR_ENTRY_BYTES) || this.nextSlotByteOffset < this.dataRegionByteOffset) {
+      throw new Error("Tile mmap directory overlaps pixel data");
+    }
     if (pageCount === 0) return;
     const dirBuf = new Uint8Array(pageCount * TILE_DIR_ENTRY_BYTES);
-    this.handle.read(dirBuf, { at: this.directoryByteOffset });
+    if (this.readAt(dirBuf, this.directoryByteOffset) !== dirBuf.byteLength) throw new Error("Short read on tile mmap directory");
     const dv = new DataView(dirBuf.buffer);
     for (let i = 0; i < pageCount; i += 1) {
       const b = i * TILE_DIR_ENTRY_BYTES;

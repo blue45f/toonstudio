@@ -196,9 +196,11 @@ export async function invokeOnDevicePrompt(options: {
   const { api, surface } = resolvePromptApi(options.globalObject);
   if (!api) return { ok: false, reason: "prompt_api_missing" };
   let session: BrowserLanguageModelSession | undefined;
+  let completed = false;
   try {
     const res = await withSafeTimeout(
       api.create(options.systemPrompt ? { systemPrompt: options.systemPrompt } : undefined).then((s) => {
+        if (completed) { s.destroy?.(); return ""; }
         session = s;
         return s.prompt(options.prompt);
       }),
@@ -210,6 +212,7 @@ export async function invokeOnDevicePrompt(options: {
   } catch {
     return { ok: false, reason: "ondevice_prompt_error" };
   } finally {
+    completed = true;
     session?.destroy?.();
   }
 }
@@ -224,11 +227,13 @@ export async function invokeOnDeviceTranslator(options: {
   const { api, surface } = resolveTranslatorApi(options.globalObject);
   if (!api) return { ok: false, reason: "translator_missing" };
   let instance: BrowserTranslatorInstance | undefined;
+  let completed = false;
   try {
     const res = await withSafeTimeout(
       api
         .create({ sourceLanguage: options.sourceLanguage, targetLanguage: options.targetLanguage })
         .then((tr) => {
+          if (completed) { tr.destroy?.(); return ""; }
           instance = tr;
           return tr.translate(options.text);
         }),
@@ -240,6 +245,7 @@ export async function invokeOnDeviceTranslator(options: {
   } catch {
     return { ok: false, reason: "ondevice_translator_error" };
   } finally {
+    completed = true;
     instance?.destroy?.();
   }
 }

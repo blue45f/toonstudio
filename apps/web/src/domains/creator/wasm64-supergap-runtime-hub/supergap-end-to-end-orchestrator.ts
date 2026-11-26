@@ -77,6 +77,7 @@ import {
   type HybridProvenanceVerificationReport,
   type WotsPlusKeyPair,
 } from "../wasm64-supergap-security-ops-hw";
+import { encodePublishRasterPng } from "../wasm64-publish-continuity-resilience/publish-raster-png";
 
 export {
   auditSuperGapPlatformReadiness,
@@ -342,11 +343,7 @@ function buildPublishSliceForSpec(
   watermarkedRgba: Uint8ClampedArray,
 ): ManuscriptSliceInput {
   const spec = PLATFORM_PUBLISH_SPECS[specId];
-  const rawBytes = new Uint8Array(
-    watermarkedRgba.buffer,
-    watermarkedRgba.byteOffset,
-    watermarkedRgba.byteLength,
-  );
+  const rawBytes = encodePublishRasterPng(watermarkedRgba, canvasWidth, canvasHeight);
 
   if (spec.category === "print-pdfx4") {
     return {
