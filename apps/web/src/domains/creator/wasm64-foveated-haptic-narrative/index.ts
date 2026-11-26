@@ -1,0 +1,117 @@
+/**
+ * Wasm64 포비에이티드 멀티-인스턴싱·햅틱 브러시, 내러티브 시선/라이선스 가디언,
+ * 서브-ms AudioWorklet 링 버퍼 · 3DGS Radix/NPR 브리지 공개 진입점.
+ *
+ * - `foveated-instancing-and-haptic-brush`: 시선/펜촉 동심원 타일 스케줄러, 64바이트 WebGPU
+ *   멀티-인스턴싱 가상화기(`WGSL_MULTI_INSTANCE_CULL_BATCH`), 기울기·배럴롤 지면 마찰 햅틱 엔진
+ * - `narrative-eye-flow-and-license-guardian`: 다국어 세로 웹툰 시선 동선·역행·교차·TTS·모바일 밀도
+ *   최적화기, 상업 권리/만료/폰트 임베딩 하드 차단 가디언 및 XMP/PNG `iTXt`/EPUB/C2PA 주입기
+ * - `subms-audioworklet-ring-and-3dgs-bridge`: 128샘플 Lock-Free SPSC `SharedArrayBuffer`
+ *   AudioWorklet 링 버퍼(non-SAB 폴백 포함) 및 16/32비트 3DGS Radix 깊이 정렬·NPR WGSL 브리지
+ *
+ * 주의: Studio 초기 진입 그래프(`main.tsx`, `studio-legacy-editor-adapter.tsx`)에서
+ * 정적으로 import하지 않고, 해당 고급 기능 활성화 시점에만 지연 로드(on-demand)한다.
+ */
+
+export {
+  BRUSH_TIP_FRICTION_PROFILES,
+  computeFoveatedTilePrioritySchedule,
+  decodeInstanceSlabRecord,
+  DEFAULT_DEVICE_DPI,
+  DEFAULT_FOVEAL_TILE_SIZE_PX,
+  HapticBrushFrictionEngine,
+  INSTANCE_SLAB_STRIDE_BYTES,
+  INSTANCE_SLAB_STRIDE_WORDS,
+  MultiInstancingVirtualizer,
+  PAPER_SUBSTRATE_PROFILES,
+  WGSL_MULTI_INSTANCE_CULL_BATCH,
+  type BrushTipFrictionProfile,
+  type DecodedInstanceSlabRecord,
+  type FoveatedRingKind,
+  type FoveatedScheduleInput,
+  type FoveatedTilePrioritySchedule,
+  type FoveatedTileTask,
+  type HapticBrushFrictionEngineOptions,
+  type HapticBrushTipKind,
+  type HapticDispatchBackend,
+  type HapticDispatchOptions,
+  type HapticDispatchResult,
+  type HapticFrictionFrame,
+  type InstanceTransformInput,
+  type MultiInstanceBatchFrame,
+  type MultiInstanceDrawBatch,
+  type PaperSubstrateKind,
+  type PaperSubstrateProfile,
+  type StylusHapticSample,
+  type TactileAudioClickCue,
+  type TileBudgetBucket,
+  type VariableShadingRate,
+  type Vec3Tuple,
+  type Vec4Tuple,
+  type VibrationTargetLike,
+  type VirtualizerCameraContext,
+} from "./foveated-instancing-and-haptic-brush";
+
+export {
+  analyzeNarrativeReadingFlow,
+  COMPLIANCE_SCHEMA_VERSION,
+  DEFAULT_MOBILE_VIEWPORT_HEIGHT_PX,
+  DEFAULT_MOBILE_VIEWPORT_WIDTH_PX,
+  injectPublishingComplianceMetadata,
+  SmartLicenseGuardian,
+  type AssetLicenseViolation,
+  type AssetLicenseWarning,
+  type BalloonRepositionHint,
+  type C2paManifestHeader,
+  type ClearedAssetSummary,
+  type ComplianceInjectionInput,
+  type ComplianceInjectionResult,
+  type CutSceneTempo,
+  type ExportArtifactFormat,
+  type EyeFlowIssue,
+  type EyeFlowIssueKind,
+  type FontEmbeddingPermission,
+  type GazeWaypoint,
+  type GutterPacingMetric,
+  type HorizontalScanDirection,
+  type IssueSeverity,
+  type LicenseAuditReport,
+  type LicenseAuditRequest,
+  type LicensedAssetEntry,
+  type LicensedAssetKind,
+  type LicenseViolationReason,
+  type MobileViewportDensityWindow,
+  type NarrativeCutGeometry,
+  type NarrativeLocale,
+  type NarrativeReadingFlowInput,
+  type NarrativeReadingFlowReport,
+  type PublishingRightsScope,
+  type SpeechBalloonNode,
+} from "./narrative-eye-flow-and-license-guardian";
+
+export {
+  AUDIO_WORKLET_QUANTUM_FRAMES,
+  create3dgsNprPassDescriptor,
+  DEFAULT_AUDIO_SAMPLE_RATE_HZ,
+  RING_CONTROL_HEADER_BYTES,
+  RING_CONTROL_HEADER_INT32_COUNT,
+  sort3dgsSplatsByCameraDepth,
+  SubMsAudioWorkletRingBuffer,
+  WebGpu3dgsSplatSorter,
+  WGSL_3DGS_NPR_COMPOSITE,
+  type AudioBufferChannelLayout,
+  type AudioWorkletRingBufferOptions,
+  type AvSyncTelemetry,
+  type GaussianSplat3d,
+  type Npr3dgsCompositeOptions,
+  type Npr3dgsPassDescriptor,
+  type ProjectedGaussianSplat,
+  type RadixKeyBitWidth,
+  type RingReadResult,
+  type RingWriteResult,
+  type SplatCameraParams,
+  type SplatSortOptions,
+  type SplatSortResult,
+  type Vec3,
+  type Vec4,
+} from "./subms-audioworklet-ring-and-3dgs-bridge";
