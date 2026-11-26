@@ -39,6 +39,8 @@ import {
   EngineeringTechNav,
 } from "./technology/EngineeringStoryUi";
 import { TechnologyStackShowcase } from "./technology/TechnologyStackShowcase";
+import { TechnologyVisualGalleryStrip } from "./technology/TechnologyVisualGalleryStrip";
+import { TechnologyInteractiveShowcaseSection } from "./technology/interactive-showcase/TechnologyInteractiveShowcaseSection";
 
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
@@ -257,6 +259,9 @@ export function TechnologyPage() {
       <div className="mt-10">
         <TechnologyStackShowcase />
       </div>
+
+      <TechnologyInteractiveShowcaseSection className="mt-10 sm:mt-12" />
+      <TechnologyVisualGalleryStrip className="mt-10 sm:mt-12" />
 
       <section className="pb-12 sm:pb-16" aria-labelledby="engineering-films-title">
         <p className="eyebrow text-accent">{translateCurrentStaticSourceText(STATIC_SCOPE, "en", "WATCH THE PRODUCT")}</p>

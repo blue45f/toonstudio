@@ -1,0 +1,179 @@
+{
+  "generatedAt": "2026-11-26T18:00:58.307Z",
+  "paletteContract": "Warm-Starlight-Atelier-Zero-Neon",
+  "runtimeCostKrw": 0,
+  "counts": {
+    "medallionIcons": 4,
+    "heroPlates": 4,
+    "svgDomainBadges": 6,
+    "total": 14
+  },
+  "medallionIcons": [
+    {
+      "id": "icon-rust-wasm64",
+      "kind": "medallion-icon",
+      "titleKo": "Rust WASM64 고밀도 캔버스 엔진 메달리온 아이콘",
+      "genreKo": "코어 기술 엠블럼",
+      "size": "1024x1024",
+      "format": "webp-q84",
+      "transparent": true,
+      "bytes": 211012,
+      "sha256": "5f6a97fb6a4f3ea76e1d80c804a02cc355dd7982c0015399076ac60e5a6572a6",
+      "publicPath": "/assets/technology-showcase/icon-rust-wasm64.webp"
+    },
+    {
+      "id": "icon-webgpu-3d",
+      "kind": "medallion-icon",
+      "titleKo": "WebGPU 3D 공간·NPR 셰이더 메달리온 아이콘",
+      "genreKo": "코어 기술 엠블럼",
+      "size": "1024x1024",
+      "format": "webp-q84",
+      "transparent": true,
+      "bytes": 189102,
+      "sha256": "ea1d7d1c8ea6aba6a90e8a0413ba1f99146a242d1bb002ed5fa743817469ffc3",
+      "publicPath": "/assets/technology-showcase/icon-webgpu-3d.webp"
+    },
+    {
+      "id": "icon-ondevice-ai",
+      "kind": "medallion-icon",
+      "titleKo": "온디바이스 시맨틱 AI 창작 도우미 메달리온 아이콘",
+      "genreKo": "코어 기술 엠블럼",
+      "size": "1024x1024",
+      "format": "webp-q84",
+      "transparent": true,
+      "bytes": 232824,
+      "sha256": "7c4553bb3375a97de859beecc2fe31a3e7b7b2c314cc685c138dca277c06e368",
+      "publicPath": "/assets/technology-showcase/icon-ondevice-ai.webp"
+    },
+    {
+      "id": "icon-zero-trust-p2p",
+      "kind": "medallion-icon",
+      "titleKo": "제로트러스트 CRDT P2P 동시 작업 메달리온 아이콘",
+      "genreKo": "코어 기술 엠블럼",
+      "size": "1024x1024",
+      "format": "webp-q84",
+      "transparent": true,
+      "bytes": 189828,
+      "sha256": "c0745c501d05fc689341e6bf03dd9e2d1fe7c5b7835e1efb195c00c10a37a916",
+      "publicPath": "/assets/technology-showcase/icon-zero-trust-p2p.webp"
+    }
+  ],
+  "heroPlates": [
+    {
+      "id": "plate-joseon-royal-moonlight-courtyard",
+      "kind": "hero-plate",
+      "titleKo": "사극 월야 궁궐 · 근정전 회랑과 청사초롱",
+      "genreKo": "사극 드라마",
+      "size": "1536x1024",
+      "format": "webp-q84",
+      "transparent": false,
+      "bytes": 275286,
+      "sha256": "982af8dd14c425b30a5ef6d8b2f5cc03abf752803fd9bbed965163d815cde242",
+      "publicPath": "/assets/technology-showcase/plate-joseon-royal-moonlight-courtyard.webp"
+    },
+    {
+      "id": "plate-murim-misty-cliff-pavilion",
+      "kind": "hero-plate",
+      "titleKo": "무협 운해 정자 · 기암절벽 노송과 새벽 운무",
+      "genreKo": "정통 무협",
+      "size": "1536x1024",
+      "format": "webp-q84",
+      "transparent": false,
+      "bytes": 496140,
+      "sha256": "17b9e8c06d4e01db9ca31f36c7b5ff23f60b4e104e81756184cf3d77ed63f394",
+      "publicPath": "/assets/technology-showcase/plate-murim-misty-cliff-pavilion.webp"
+    },
+    {
+      "id": "plate-cyberpunk-industrial-noir-alley",
+      "kind": "hero-plate",
+      "titleKo": "근미래 인더스트리얼 골목 · 텅스텐 스팀 누아르",
+      "genreKo": "SF 하드보일드 누아르",
+      "size": "1536x1024",
+      "format": "webp-q84",
+      "transparent": false,
+      "bytes": 307782,
+      "sha256": "7ec3ce40450508e534d4c3de34b1a8bab92e453a6bb85a053905685fe9ea6ccf",
+      "publicPath": "/assets/technology-showcase/plate-cyberpunk-industrial-noir-alley.webp"
+    },
+    {
+      "id": "plate-fantasy-cathedral-library",
+      "kind": "hero-plate",
+      "titleKo": "판타지 대서고 · 성당형 천창과 황동 천구의 홀",
+      "genreKo": "정통 판타지 · 로판",
+      "size": "1536x1024",
+      "format": "webp-q84",
+      "transparent": false,
+      "bytes": 306938,
+      "sha256": "3afa853b12c2d1440482d49dc10f4aec05bacd3a84c8a3a0d0f2b1ce1b667ff3",
+      "publicPath": "/assets/technology-showcase/plate-fantasy-cathedral-library.webp"
+    }
+  ],
+  "svgDomainBadges": [
+    {
+      "id": "rust-simd-badge",
+      "kind": "svg-domain-badge",
+      "domain": "wasm64-simd",
+      "titleKo": "Rust WASM64 · SIMD 벡터 연산 엔진 배지",
+      "format": "svg",
+      "viewBox": "0 0 128 128",
+      "bytes": 2272,
+      "sha256": "7b517425ffd380f4555795907c4a09920c18c61908aba0c49f5f46f80698b79f",
+      "publicPath": "/assets/technology-showcase/rust-simd-badge.svg"
+    },
+    {
+      "id": "webgpu-compute-badge",
+      "kind": "svg-domain-badge",
+      "domain": "webgpu-3d",
+      "titleKo": "WebGPU 컴퓨트 · 3D NPR 공간 파이프라인 배지",
+      "format": "svg",
+      "viewBox": "0 0 128 128",
+      "bytes": 2360,
+      "sha256": "012c8c7a683f89a622f36409823f1d2f103cfdb1355f70d7d86e728f105fb9a2",
+      "publicPath": "/assets/technology-showcase/webgpu-compute-badge.svg"
+    },
+    {
+      "id": "sqlite-opfs-badge",
+      "kind": "svg-domain-badge",
+      "domain": "sqlite-opfs",
+      "titleKo": "SQLite WASM · OPFS 로컬 정본 스토리지 배지",
+      "format": "svg",
+      "viewBox": "0 0 128 128",
+      "bytes": 2016,
+      "sha256": "413027ca3d4df402f6582add2619541d8dbcfee3ea8d4b4849955f813cb48f51",
+      "publicPath": "/assets/technology-showcase/sqlite-opfs-badge.svg"
+    },
+    {
+      "id": "crdt-p2p-badge",
+      "kind": "svg-domain-badge",
+      "domain": "crdt-p2p",
+      "titleKo": "Yjs CRDT · 제로트러스트 P2P 협업 배지",
+      "format": "svg",
+      "viewBox": "0 0 128 128",
+      "bytes": 2148,
+      "sha256": "6ae5c1100db0c75d2e6f0152cbabdd9c0234c73a83688ded31987477564478ad",
+      "publicPath": "/assets/technology-showcase/crdt-p2p-badge.svg"
+    },
+    {
+      "id": "cmyk-print-badge",
+      "kind": "svg-domain-badge",
+      "domain": "cmyk-print",
+      "titleKo": "CMYK 인쇄 프리플라이트 · 단행본 조판 배지",
+      "format": "svg",
+      "viewBox": "0 0 128 128",
+      "bytes": 2015,
+      "sha256": "2fe9de23b10323ef1c4830792c84d47296cb17b02d121de7f6de29c724f083c0",
+      "publicPath": "/assets/technology-showcase/cmyk-print-badge.svg"
+    },
+    {
+      "id": "wcag-a11y-badge",
+      "kind": "svg-domain-badge",
+      "domain": "wcag-a11y",
+      "titleKo": "WCAG 고대비 · 44px 촉각 접근성 배지",
+      "format": "svg",
+      "viewBox": "0 0 128 128",
+      "bytes": 1618,
+      "sha256": "42bbe6ff4e30f4ec317506add1e7f001e283ae3d04d07906708cb5f913d01db2",
+      "publicPath": "/assets/technology-showcase/wcag-a11y-badge.svg"
+    }
+  ]
+}
