@@ -64,6 +64,7 @@ describe("redactCreatorSensitiveText (한국형 복합 PII 마스킹 및 오탐 
     "+821012345678",
     "+82 10 12345678",
     "+82(0)10-1234-5678",
+    "+82 (0) 10 12345678",
     "010-12345678",
     "0101234-5678",
     "01012345678",
@@ -76,6 +77,13 @@ describe("redactCreatorSensitiveText (한국형 복합 PII 마스킹 및 오탐 
     expect(redactCreatorSensitiveText(`연락처: ${phone}`)).toEqual({
       sanitizedText: "연락처: [연락처 비공개]",
       redactedCount: 1,
+    });
+  });
+
+  it("괄호 속 국제번호는 괄호를 보존하고 연락처 전체를 마스킹한다", () => {
+    expect(redactCreatorSensitiveText("연락처 (+821012345678), 사무실 (+82 2 12345678)")).toEqual({
+      sanitizedText: "연락처 ([연락처 비공개]), 사무실 ([연락처 비공개])",
+      redactedCount: 2,
     });
   });
 
