@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { ChevronDown, FolderOpen } from "lucide-react";
+import { ArrowRight, ChevronDown, FolderOpen, MessageSquareText, Sparkles } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -132,58 +132,67 @@ export function StudioProjectLibraryManagementContent({
   const homeBento = view === "active" && !query.trim() ? (
     <div
       data-studio-home-bento="true"
-      className={hasPersonalResume ? "grid items-stretch gap-4 lg:grid-cols-2" : "flex flex-col gap-3"}
+      data-studio-has-resume={hasPersonalResume}
+      className="studio-vivid-workbench"
     >
-      {hasPersonalResume || recentOwnerWork ? (
-        <div data-studio-bento-resume="true" className="flex min-w-0 flex-col">
-          {showServerResume ? (
-            <section aria-label={bi("최근 작업 빠른 이어하기", "Quick resume recent work")} data-recent-primary="true" className="flex h-full flex-col items-start justify-between gap-3 rounded-xl border border-line bg-panel p-4">
-              <h2 className="text-base font-semibold text-fg">{bi("최근 서버 원고", "Recent server manuscript")}</h2>
-              <p className="text-sm text-fg-2">{bi("마지막 열기", "Last opened")} {studioProjectLibraryDateLabel(new Date(recentOwnerWork.openedAt).toISOString(), locale)}</p>
-              <Link href={studioCanvasHref({ workId: recentOwnerWork.workId })} data-studio-recent-owner-work="true" data-studio-library-primary-action="resume" className={buttonClass({ size: "sm", className: "min-h-11 rounded-lg" })}>
-                {bi("이어서 작업", "Continue")}
-              </Link>
-            </section>
-          ) : recentProps ? (
-            <StudioProjectLibraryResumeCard
-              key={recentProps.project.id}
-              project={recentProps.project}
-              profile={recentProps.profile}
-              authUserId={authUserId}
-              locale={locale}
-              resumeHref={recentProps.continueHref}
-              resumeSummary={recentProps.resumeSummary}
-              overviewHref={recentProps.overviewHref}
-              onResume={recentProps.onTouch}
-              checked={recentProps.checked}
-              selection={selectionVisible ? <StudioProjectSelectionCheckbox checked={recentProps.checked}
-                label={formatI18nTemplate(String(bi("{value0} 선택", "Select {value0}")), { value0: recentProps.project.title })}
-                onChange={recentProps.onToggle} /> : null}
-              management={<StudioProjectLibraryCardActions {...recentProps} />}
-            />
-          ) : null}
-          {recentOwnerWork && !showServerResume ? (
-            <Link href={studioCanvasHref({ workId: recentOwnerWork.workId })} data-studio-recent-owner-work="true" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-4">
-              {bi("최근 서버 원고 열기", "Open recent server manuscript")}
+      {hasPersonalResume || recentOwnerWork ? <div data-studio-bento-resume="true" className="flex min-w-0 flex-col">
+        {showServerResume ? (
+          <section aria-label={bi("최근 작업 빠른 이어하기", "Quick resume recent work")} data-recent-primary="true" className="studio-vivid-server-resume">
+            <span className="studio-vivid-eyebrow">{bi("이어서 만들어요", "Pick up your story")}</span>
+            <h2 className="text-base font-semibold text-fg">{bi("최근 서버 원고", "Recent server manuscript")}</h2>
+            <p className="text-sm text-fg-2">{bi("마지막 열기", "Last opened")} {studioProjectLibraryDateLabel(new Date(recentOwnerWork.openedAt).toISOString(), locale)}</p>
+            <Link href={studioCanvasHref({ workId: recentOwnerWork.workId })} data-studio-recent-owner-work="true" data-studio-library-primary-action="resume" className="studio-library-resume-open ink-arrow">
+              {bi("이어서 작업", "Continue")}
+              <ArrowRight size={16} aria-hidden="true" />
             </Link>
-          ) : null}
-        </div>
-      ) : null}
+          </section>
+        ) : recentProps ? (
+          <StudioProjectLibraryResumeCard
+            key={recentProps.project.id}
+            project={recentProps.project}
+            profile={recentProps.profile}
+            authUserId={authUserId}
+            locale={locale}
+            resumeHref={recentProps.continueHref}
+            resumeSummary={recentProps.resumeSummary}
+            overviewHref={recentProps.overviewHref}
+            onResume={recentProps.onTouch}
+            checked={recentProps.checked}
+            selection={selectionVisible ? <StudioProjectSelectionCheckbox checked={recentProps.checked}
+              label={formatI18nTemplate(String(bi("{value0} 선택", "Select {value0}")), { value0: recentProps.project.title })}
+              onChange={recentProps.onToggle} /> : null}
+            management={<StudioProjectLibraryCardActions {...recentProps} />}
+          />
+        ) : null}
+        {recentOwnerWork && !showServerResume ? (
+          <Link href={studioCanvasHref({ workId: recentOwnerWork.workId })} data-studio-recent-owner-work="true" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-4">
+            {bi("최근 서버 원고 열기", "Open recent server manuscript")}
+          </Link>
+        ) : null}
+      </div> : null}
       <section
         aria-label={bi("빠른 작업 시작", "Quick start")}
         data-studio-bento-fast-start="true"
-        className="flex min-w-0 flex-col gap-3 rounded-[var(--atelier-radius-outer,14px)] border border-line-strong bg-panel p-4 shadow-[var(--atelier-elevation-dock)]"
+        data-studio-create-state={hasPersonalResume ? "returning" : "first-work"}
+        className="studio-vivid-create"
       >
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-fg">
-            {bi("바로 시작", "Quick start")}
-          </h2>
-          <span className="text-xs text-fg-3">
-            {bi("세로 웹툰 · 4컷 · 3D · 가져오기", "Webtoon · 4-panel · 3D · Import")}
-          </span>
+        <div className="studio-vivid-create-heading">
+          <span className="studio-vivid-create-mark" aria-hidden="true"><Sparkles size={22} strokeWidth={1.6} /></span>
+          <div>
+            <span className="studio-vivid-eyebrow">{bi("바로 시작", "Quick start")}</span>
+            <h2>{hasPersonalResume ? bi("새로운 장면을 시작해요", "Start a new scene") : bi("어떤 이야기를 만들까요?", "What will you create?")}</h2>
+            <p>{bi("형식을 고르면 바로 작업을 시작할 수 있어요.", "Choose a format and start creating.")}</p>
+          </div>
         </div>
-        <StudioDialogueSampleStart />
         <StudioProjectLibraryFastStartStrip className="flex-1" columns={hasPersonalResume ? 2 : 4} />
+        <details className="studio-vivid-try-sample" data-studio-dialogue-sample-disclosure="true">
+          <summary>
+            <MessageSquareText size={16} aria-hidden="true" />
+            <span>{bi("샘플로 가볍게 연습하기", "Try a sample first")}</span>
+            <ChevronDown size={16} aria-hidden="true" />
+          </summary>
+          <div><StudioDialogueSampleStart /></div>
+        </details>
       </section>
     </div>
   ) : null;

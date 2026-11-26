@@ -61,16 +61,18 @@ function rankingMenuLink() {
 }
 
 describe("모바일 전체 메뉴", () => {
-  it.each(["/", "/about", "/help", "/support", "/community", "/research"])("%s의 전체 메뉴는 주 행동과 모든 목적지를 하나씩만 두고 다섯 여정·일곱 목적 그룹을 보존한다", (pathname) => {
+  it.each(["/", "/about", "/help", "/support", "/community", "/research"])("%s의 전체 메뉴는 주 행동과 모든 목적지를 하나씩만 두고 두 시작 행동·일곱 접이식 목적 그룹을 보존한다", (pathname) => {
     render(menu(true, vi.fn(), pathname));
     const dialog = screen.getByRole("dialog");
     const links = Array.from(dialog.querySelectorAll("a[href]"), (link) => link.getAttribute("href"));
     expect(links).toHaveLength(new Set(links).size);
     expect(links.filter((href) => href === "/create")).toHaveLength(1);
     expect(links.filter((href) => href === "/studio")).toHaveLength(1);
-    const journey = dialog.querySelectorAll<HTMLAnchorElement>(".site-menu-journey__card");
-    expect(journey).toHaveLength(5);
-    for (const card of journey) { card.focus(); expect(document.activeElement).toBe(card); expect(card.textContent).toBeTruthy(); }
+    const summaries = dialog.querySelectorAll<HTMLElement>(".site-menu-group > summary");
+    expect(summaries).toHaveLength(7);
+    for (const summary of summaries) { summary.focus(); expect(document.activeElement).toBe(summary); expect(summary.textContent).toBeTruthy(); }
+    expect(dialog.querySelectorAll(".site-menu-actions > a")).toHaveLength(2);
+    expect(dialog.querySelector(".site-menu-journey")).toBeNull();
     expect(dialog.querySelectorAll(".site-menu-task")).toHaveLength(7);
     expect(links).toContain("/settings");
     expect(links).toContain("/studio/support");
@@ -114,11 +116,12 @@ describe("모바일 전체 메뉴", () => {
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
-  it("일곱 목적 헤더와 2열 세부 기능 바로가기를 접힘 없이 1클릭으로 연결한다", () => {
+  it("일곱 목적을 접어서 보여 주고 현재 목적만 펼쳐 세부 기능으로 연결한다", () => {
     render(menu());
     const dialog = screen.getByRole("dialog");
-    expect(dialog.querySelectorAll("details")).toHaveLength(0);
-    expect([...dialog.querySelectorAll(".site-menu-task")].map((link) => link.getAttribute("href"))).toEqual([
+    expect(dialog.querySelectorAll("details")).toHaveLength(7);
+    expect(dialog.querySelectorAll("details[open]")).toHaveLength(1);
+    expect([...dialog.querySelectorAll(".site-menu-group__all")].map((link) => link.getAttribute("href"))).toEqual([
       "/sitemap/discover", "/sitemap/create", "/sitemap/grow", "/sitemap/publish",
       "/sitemap/connect", "/sitemap/rest", "/sitemap/personal",
     ]);
@@ -161,7 +164,8 @@ describe("모바일 전체 메뉴", () => {
     const highlighted = dialog.querySelectorAll('[data-current-journey="true"]');
     expect(highlighted).toHaveLength(1);
     expect(highlighted[0]?.textContent).toContain(groupLabel);
-    expect(highlighted[0]?.getAttribute("href")).toBe(href);
+    expect(highlighted[0]?.getAttribute("aria-expanded")).toBe("true");
+    expect(highlighted[0]?.closest("details")?.querySelector(".site-menu-group__all")?.getAttribute("href")).toBe(href);
     expect(dialog.querySelectorAll(".site-menu-task")).toHaveLength(7);
   });
 
@@ -209,7 +213,7 @@ describe("모바일 전체 메뉴", () => {
     const { unmount } = render(tabs(true));
     const navigation = screen.getByRole("navigation", { name: "nav.quickAccess" });
     const hrefs = within(navigation).getAllByRole("link").map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(["/studio", "/discover", "/market", "/my", "/sitemap"]);
+    expect(hrefs).toEqual(["/", "/create", "/studio", "/sitemap"]);
     for (const href of hrefs) {
       expect(href).not.toMatch(/^\/(new|more)(\/|$)/u);
     }
@@ -241,14 +245,35 @@ describe("모바일 전체 메뉴", () => {
 });
 
 
-describe("모바일의 공통 네 목적 현재 위치", () => {
+describe("모바일의 공통 네 행동 현재 위치", () => {
+  it.each([["/", "홈"], ["/create", "만들기"], ["/studio", "내 작업"]])("%s의 현재 행동은 %s 하나다", (pathname, label) => {
+    render(menu(false, vi.fn(), pathname));
+    const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
+    expect(nav.querySelectorAll("[aria-current]")).toHaveLength(1);
+    expect(within(nav).getByRole("link", { name: label }).getAttribute("aria-current")).toBe("page");
+  });
+
+  it("더보기는 연결된 소유자의 메뉴를 열고 작업 화면에서는 독을 숨길 수 있다", () => {
+    const onOpenMenu = vi.fn();
+    const navigation = (hidden: boolean) => <MemoryRouter><MobileHeaderNavigation menuOpen={false} menuId="dock-menu" panelRef={createRef<HTMLDivElement>()} closeMenu={() => {}} onOpenMenu={onOpenMenu} isActive={() => false} isPurposeActive={() => false} hideBottomTabs={hidden} /></MemoryRouter>;
+    const view = render(navigation(false));
+    const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(3);
+    const more = within(nav).getByRole("button", { name: "더보기" });
+    expect(more.getAttribute("aria-haspopup")).toBe("dialog");
+    fireEvent.click(more);
+    expect(onOpenMenu).toHaveBeenCalledWith(more);
+    view.rerender(navigation(true));
+    expect(screen.queryByRole("navigation", { name: "nav.quickAccess" })).toBeNull();
+  });
+
   it("목적별 하위 메뉴에서도 엄지로 전체 메뉴에 돌아가고 현재 탭을 읽는다", () => {
     render(<MemoryRouter initialEntries={["/sitemap/create"]}><MobileHeaderNavigation
       menuOpen={false} menuId="section-menu" panelRef={createRef<HTMLDivElement>()}
       closeMenu={() => {}} isActive={() => false} isPurposeActive={() => false}
       currentPurposeHref={null} /></MemoryRouter>);
     const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
-    expect(within(nav).getAllByRole("link")).toHaveLength(5);
+    expect(within(nav).getAllByRole("link")).toHaveLength(4);
     const current = nav.querySelectorAll('[aria-current="page"]');
     expect(current).toHaveLength(1);
     expect(current[0]?.getAttribute("href")).toBe("/sitemap");
@@ -262,7 +287,7 @@ describe("모바일의 공통 네 목적 현재 위치", () => {
     const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
     const current = nav.querySelectorAll('a[aria-current="page"]');
     expect(current).toHaveLength(1);
-    expect(current[0]?.getAttribute("href")).toBe(href);
+    expect(current[0]?.getAttribute("href")).toBe(href === "/studio" ? "/studio" : "/sitemap");
   });
   it("목적 외 안내 페이지는 네 목적 중 하나를 거짓으로 활성화하지 않는다", () => {
     render(<MemoryRouter initialEntries={["/about"]}><MobileHeaderNavigation

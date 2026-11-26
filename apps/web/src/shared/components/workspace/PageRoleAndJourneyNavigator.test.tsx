@@ -11,6 +11,7 @@ import { useUi } from "@/shared/lib/ui-store";
 
 import { CommandPaletteHost } from "../command-palette-host";
 import { SiteMenuDestinations } from "../SiteMenuDestinations";
+import { resolveNavigationGroupsFor } from "../site-navigation";
 import { PageRoleAndJourneyNavigator } from "./PageRoleAndJourneyNavigator";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
 import { WorkspaceTaskFrame } from "./WorkspaceTaskFrame";
@@ -251,7 +252,13 @@ describe("PageRoleAndJourneyNavigator 컴포넌트", () => {
     expect(focusedView.container.querySelector('[data-role-journey-bar="true"]')).toBeNull();
   });
 
-  it("전체 메뉴·LNB·역할 동선 바가 동일한 5단계 순서와 신규 핵심 표면을 1클릭으로 연결한다", () => {
+  it("전체 메뉴는 목적별 펼침·검색으로 모든 동선을 보존하고 LNB·역할 바는 5단계 순서를 유지한다", () => {
+    const stageHrefs = ["/home", "/studio", "/production", "/market", "/studio/support"];
+    const menuHrefs = new Set([
+      ...stageHrefs,
+      ...CORE_SURFACE_QUICK_LINKS.map((item) => item.href),
+      ...resolveNavigationGroupsFor().flatMap((group) => group.items.map((item) => item.href)),
+    ]);
     const menuView = render(
       <MemoryRouter initialEntries={["/market"]}>
         <SiteMenuDestinations
@@ -263,14 +270,46 @@ describe("PageRoleAndJourneyNavigator 컴포넌트", () => {
         />
       </MemoryRouter>,
     );
-    const menuJourney = menuView.container.querySelector(".site-menu-journey__grid");
-    const menuStageHrefs = Array.from(menuJourney?.querySelectorAll("a") ?? []).map(
-      (link) => link.getAttribute("href"),
-    );
-    expect(menuStageHrefs).toEqual(["/home", "/studio", "/production", "/market", "/studio/support"]);
-    expect(menuView.container.querySelector('a[href="/creator-support"]')).not.toBeNull();
-    expect(menuView.container.querySelector('a[href="/studio/support"]')).not.toBeNull();
-    expect(menuView.container.querySelector('a[href="/production"]')).not.toBeNull();
+    const menu = within(menuView.container);
+    expect(menuView.container.querySelector(".site-menu-journey")).toBeNull();
+    expect(menuView.container.querySelector(".site-menu-journey__grid")).toBeNull();
+    expect(menuView.container.querySelectorAll("details[open]")).toHaveLength(1);
+    expect(menuView.container.querySelector("details[open]")?.getAttribute("data-menu-group")).toBe("grow");
+    const currentLinks = menu.getAllByRole("link").filter((link) => link.hasAttribute("aria-current"));
+    expect(currentLinks).toHaveLength(1);
+    expect(currentLinks[0]?.getAttribute("href")).toBe("/market");
+    expect(currentLinks[0]?.getAttribute("aria-current")).toBe("page");
+
+    // 접힌 DOM의 존재만 세지 않고 각 목적을 펼친 뒤 실제 접근 가능한 링크를 모은다.
+    const reachableHrefs = new Set(menu.getAllByRole("link").map((link) => link.getAttribute("href")));
+    const groups = menuView.container.querySelectorAll<HTMLDetailsElement>("details[data-menu-group]");
+    expect(groups).toHaveLength(7);
+    for (const group of groups) {
+      const summary = group.querySelector("summary");
+      if (!summary) throw new Error("목적별 메뉴의 펼침 버튼이 필요합니다.");
+      if (!group.open) {
+        expect(summary.getAttribute("aria-expanded")).toBe("false");
+        expect(within(group).queryAllByRole("link")).toHaveLength(0);
+        fireEvent.click(summary);
+      }
+      expect(group.open).toBe(true);
+      expect(summary.getAttribute("aria-expanded")).toBe("true");
+      expect(group.querySelector("[id]")?.id).toBe(summary.getAttribute("aria-controls"));
+      expect(menuView.container.querySelectorAll("details[open]")).toHaveLength(1);
+      for (const link of within(group).getAllByRole("link")) reachableHrefs.add(link.getAttribute("href"));
+    }
+    for (const href of menuHrefs) expect(reachableHrefs.has(href), href).toBe(true);
+
+    const search = menu.getByRole("searchbox", { name: "어떤 작업을 찾으세요?" });
+    for (const href of menuHrefs) {
+      fireEvent.change(search, { target: { value: href } });
+      const matches = menu.getAllByRole("link").filter((link) => link.getAttribute("href") === href);
+      expect(matches, href).toHaveLength(1);
+      expect(matches[0]?.getAttribute("aria-label"), href).toBeTruthy();
+      if (href === "/market") expect(matches[0]?.getAttribute("aria-current")).toBe("page");
+    }
+    fireEvent.click(menu.getByRole("button", { name: "메뉴 검색 지우기" }));
+    expect(document.activeElement).toBe(search);
     menuView.unmount();
 
     const lnbView = render(
@@ -278,13 +317,27 @@ describe("PageRoleAndJourneyNavigator 컴포넌트", () => {
         <WorkspaceNavigation />
       </MemoryRouter>,
     );
-    const hub = lnbView.container.querySelector('[data-workspace-journey-hub="true"]');
-    const lnbStageHrefs = Array.from(hub?.querySelectorAll("ol a") ?? []).map(
+    const hub = within(lnbView.container).getByRole("region", { name: "5단계 창작 여정" });
+    const lnbSteps = within(hub).getByRole("list", { name: "창작 여정 단계 이동" });
+    const lnbStageHrefs = within(lnbSteps).getAllByRole("link").map(
       (link) => link.getAttribute("href"),
     );
-    expect(lnbStageHrefs).toEqual(menuStageHrefs);
-    expect(hub?.querySelector('a[href="/creator-support"]')).not.toBeNull();
-    expect(hub?.querySelector('[data-current-stage="true"]')?.getAttribute("data-journey-stage")).toBe("3");
+    expect(lnbStageHrefs).toEqual(stageHrefs);
+    expect(hub.querySelector('a[href="/creator-support"]')).not.toBeNull();
+    expect(lnbSteps.querySelectorAll('[data-current-stage="true"]')).toHaveLength(1);
+    expect(lnbSteps.querySelector('[data-current-stage="true"]')?.getAttribute("data-journey-stage")).toBe("3");
+    lnbView.unmount();
+
+    render(
+      <MemoryRouter initialEntries={["/production"]}>
+        <PageRoleAndJourneyNavigator pathname="/production" />
+      </MemoryRouter>,
+    );
+    const roleSteps = screen.getByRole("list", { name: "5단계 창작 여정" });
+    expect(within(roleSteps).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(stageHrefs);
+    expect(roleSteps.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
+    expect(roleSteps.querySelector('[aria-current="step"]')?.getAttribute("href")).toBe("/production");
+    expect(roleSteps.querySelector('[aria-current="step"]')?.getAttribute("data-journey-stage")).toBe("3");
   });
 
   it("원시 HEX·transition-all·any 없이 시맨틱 OKLCH 토큰과 모션 감소 가드를 준수한다", () => {

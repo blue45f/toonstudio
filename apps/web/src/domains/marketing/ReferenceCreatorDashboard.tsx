@@ -1,36 +1,22 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowRight,
-  Boxes,
-  ChevronDown,
-  ChevronRight,
-  Compass,
-  FolderKanban,
-  Glasses,
-  Lightbulb,
-  MessageCircle,
-  PackageCheck,
-  PencilLine,
-  Plus,
-  Search,
+  ArrowRight, ArrowUpRight, ChevronDown, ChevronRight, Compass, FolderKanban,
+  Lightbulb, MessageCircle, PackageCheck, PencilLine, Search, Users,
 } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
-import { DiscoverHomePreview } from "@/domains/catalog/public/DiscoverHomePreview";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 
-import { HomeCoreStudios } from "./HomeCoreStudios";
-import { HomeLunaPanel } from "./HomeLunaPanel";
 import { HomeNowCard } from "./HomeNowCard";
-import { ServiceFlowNext } from "./public/intro-primitives";
-import { ReferenceEditorPreview } from "./ReferenceEditorPreview";
-import { HOME_EXAMPLES, HOME_LEARN_MORE, HOME_QUICK_STARTS, homeArt } from "./reference-home-content";
-import { HomeInteractiveWowShowcase } from "./wow-showcase/HomeInteractiveWowShowcase";
+import { HomeVividHero } from "./HomeVividHero";
 import "./reference-creator-dashboard.css";
-import "./reference-creator-dashboard-hero.css";
+import "./home-vivid.css";
 
-const inkIndex = (index: number) => ({ "--ink-i": index }) as CSSProperties;
+const LazyHomeLunaPanel = lazyRetry(() => import("./HomeLunaPanel").then((module) => ({ default: module.HomeLunaPanel })), "HomeLunaPanel");
+const LazyHomeVividMore = lazyRetry(() => import("./HomeVividMore").then((module) => ({ default: module.HomeVividMore })), "HomeVividMore");
+const LazyDiscoverHomePreview = lazyRetry(() => import("@/domains/catalog/public/DiscoverHomePreview").then((module) => ({ default: module.DiscoverHomePreview })), "DiscoverHomePreview");
 
 const JOURNEY = [
   { href: "/create?intent=my-story", domain: "character", icon: Lightbulb, ko: "이야기 준비", en: "Plan your story", detailKo: "인물·세계·첫 장면", detailEn: "Cast, world and first scene" },
@@ -38,75 +24,13 @@ const JOURNEY = [
   { href: "/studio?view=exports", domain: "market", icon: PackageCheck, ko: "작품 완성", en: "Finish your work", detailKo: "검수·내보내기·연재", detailEn: "Review, export and publish" },
 ] as const;
 
-const PRESET_CHIPS = [
-  { href: "/create#ai-composer", domain: "character", ai: true, ko: "AI 자동 콘티·대사", en: "AI Storyboard" },
-  { href: "/studio/new?lane=blank", domain: "draw", ai: false, ko: "세로 웹툰 (800×무한)", en: "Vertical Webtoon (800×∞)" },
-  { href: "/studio/new?lane=storyboard&start=storyboard", domain: "draw", ai: false, ko: "인스타툰 4컷 (1080²)", en: "4-Panel Comic (1080²)" },
-  { href: "/studio/assets/characters/new", domain: "character", ai: false, ko: "3D 캐릭터 다듬기", en: "3D Character Shaper" },
-  { href: "/studio/bg3d", domain: "3d", ai: false, ko: "3D 배경을 선화로", en: "3D Scene · Line Art" },
-  { href: "/production", domain: "collab", ai: false, ko: "팀 공동 작업 · 검수", en: "Team Collab & Review" },
+const TASKS = [
+  { href: "/studio/new?lane=blank", domain: "draw", icon: PencilLine, ko: "바로 그리기", en: "Start drawing", detailKo: "빈 원고에 첫 선을 그어 보세요.", detailEn: "Put the first line on a blank canvas.", image: "canvas-noir" },
+  { href: "/create?intent=my-story", domain: "character", icon: Lightbulb, ko: "이야기 만들기", en: "Shape a story", detailKo: "아이디어를 장면과 대사로 풀어봐요.", detailEn: "Turn an idea into scenes and dialogue.", image: "character-pink" },
+  { href: "/production", domain: "collab", icon: Users, ko: "함께 완성하기", en: "Create together", detailKo: "수정 요청부터 검수와 인계까지.", detailEn: "Follow revisions, reviews and handoffs.", image: "project-crimson" },
 ] as const;
 
-const LAUNCHPAD_ITEMS = [
-  {
-    href: "/studio/new?lane=blank",
-    domain: "draw",
-    primary: true,
-    icon: PencilLine,
-    ko: "바로 그리기",
-    en: "Start drawing",
-    detailKo: "빈 원고에서 그림과 이야기를 시작해요",
-    detailEn: "Start your art and story on a blank canvas",
-    ctaKo: "캔버스 열기",
-    ctaEn: "Open canvas",
-  },
-  {
-    href: "/studio/bg3d",
-    domain: "3d",
-    primary: false,
-    icon: Boxes,
-    ko: "3D 배경 만들기",
-    en: "Build a 3D scene",
-    detailKo: "공간과 캐릭터 포즈를 배치해요",
-    detailEn: "Arrange a scene and pose your characters",
-    ctaKo: "3D 스튜디오 열기",
-    ctaEn: "Open 3D studio",
-  },
-  {
-    href: "/discover",
-    domain: "market",
-    primary: false,
-    icon: Compass,
-    ko: "읽을 작품 찾기",
-    en: "Find a story to read",
-    detailKo: "취향에 맞는 작품과 공식 연재처를 찾아요",
-    detailEn: "Discover stories and where to read them",
-    ctaKo: "작품 둘러보기",
-    ctaEn: "Browse stories",
-  },
-  {
-    href: "/read/spatial",
-    domain: "collab",
-    primary: false,
-    icon: Glasses,
-    ko: "공간 뷰어 체험",
-    en: "Try the spatial viewer",
-    detailKo: "만화 컷을 입체적인 공간에서 감상해요",
-    detailEn: "Explore comic panels in a spatial view",
-    ctaKo: "뷰어 열기",
-    ctaEn: "Open viewer",
-  },
-] as const;
-
-/**
- * 공개 홈(/)은 4밴드 85/10/5 스펙트럼 에디토리얼 구조로 조립한다(data-home-band):
- * ① 히어로 — 실제 이어하기·가까운 일정이 있으면 먼저, 이어서 5대 안료 에디토리얼 프레임의
- *    원고 아트와 작품 시작·둘러보기, 준비→그리기→완성 3단계, 슬림 1줄 아이디어·검색 커맨드 바,
- *    기본 접힘 상태의 Luna 도움 트리거.
- * ② 이어서 고르기 — 5대 탈-바이올렛 안료 런치패드 4종, 예시 작품 갤러리 선반, 라이브 아틀리에 샌드박스.
- * ③ 작품 발견 미리보기.
- * ④ 더 알아보기 — 모든 뷰포트에서 기본 접힘으로 정돈한 시작 카드·핵심 작업실·편집기 미리보기·서비스 소개.
- */
+/** 첫 행동 세 가지를 먼저 보여 주고 탐색·도움·상세 소개는 필요할 때 펼친다. */
 export function ReferenceCreatorDashboard() {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
   const navigate = useNavigate();
@@ -114,29 +38,13 @@ export function ReferenceCreatorDashboard() {
   const [inputMode, setInputMode] = useState<"create" | "search">("create");
   const [lunaOpen, setLunaOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [activeJourneyStep, setActiveJourneyStep] = useState<number | null>(null);
+  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [lunaVisited, setLunaVisited] = useState(false);
+  const [moreVisited, setMoreVisited] = useState(false);
+  const [discoverVisited, setDiscoverVisited] = useState(false);
   const helpersRef = useRef<HTMLDivElement>(null);
-  const manuscriptStageRef = useRef<HTMLDivElement>(null);
-
-  const handleStagePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const stage = manuscriptStageRef.current;
-    if (!stage || event.pointerType === "touch") return;
-    const rect = stage.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return;
-    const nx = (event.clientX - rect.left) / rect.width - 0.5;
-    const ny = (event.clientY - rect.top) / rect.height - 0.5;
-    stage.style.setProperty("--tilt-rx", `${(-ny * 4.5).toFixed(2)}deg`);
-    stage.style.setProperty("--tilt-ry", `${(nx * 5.5).toFixed(2)}deg`);
-  };
-
-  const resetStageTilt = () => {
-    const stage = manuscriptStageRef.current;
-    if (!stage) return;
-    stage.style.setProperty("--tilt-rx", "0deg");
-    stage.style.setProperty("--tilt-ry", "0deg");
-  };
-
   const searching = inputMode === "search";
+
   const submitInput = (event: FormEvent) => {
     event.preventDefault();
     const text = idea.trim();
@@ -163,123 +71,16 @@ export function ReferenceCreatorDashboard() {
   }, []);
 
   return (
-    <div
-      className="reference-dashboard"
-      data-reference-dashboard="true"
-      data-home-editorial="spectrum-85-10-5"
-    >
+    <div className="reference-dashboard home-vivid" data-reference-dashboard="true" data-home-editorial="vivid-mobile-first">
       <div data-home-band="hero">
         <HomeNowCard>
-          <section className="rd-clarity-hero" aria-labelledby="creator-hero-title">
-            <div className="rd-clarity-copy">
-              <span className="rd-hero-spectrum-rule" data-testid="home-hero-spectrum-rule" aria-hidden="true" />
-              <h1 id="creator-hero-title" data-ink-enter="rise" style={inkIndex(0)}>
-                {bi("상상한 장면을,", "Imagine a scene.")}
-                <br />
-                <span>{bi("나의 작품으로.", "Make it your story.")}</span>
-              </h1>
-              <p data-ink-enter="rise" style={inkIndex(1)}>
-                {bi("기획과 콘티부터 작화·검수·출고까지, 브라우저 한 탭에서 이어 가요.", "Plan, storyboard, ink, review, and export in one browser tab.")}
-              </p>
-              <div className="rd-clarity-actions" data-ink-enter="rise" style={inkIndex(2)}>
-                <Link className="rd-clarity-start ink-arrow min-h-11" href="/create">
-                  {bi("작품 시작하기", "Start a work")}
-                  <ArrowRight size={18} strokeWidth={1.7} aria-hidden="true" />
-                </Link>
-                <Link className="rd-clarity-browse ink-arrow min-h-11" href="/discover">
-                  {bi("둘러보기", "Explore")}
-                  <ChevronRight size={18} strokeWidth={1.7} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-            <figure
-              className="rd-clarity-art"
-              data-focus-step={activeJourneyStep !== null ? String(activeJourneyStep) : undefined}
-              aria-label={bi("선화에서 완성작으로 이어지는 브랜드 예시 원고", "Brand artwork: from line art to a finished scene")}
-            >
-              <span className="rd-editorial-cropmarks" aria-hidden="true">
-                <i className="rd-crop-tl" />
-                <i className="rd-crop-tr" />
-                <i className="rd-crop-bl" />
-                <i className="rd-crop-br" />
-              </span>
-              <div
-                ref={manuscriptStageRef}
-                className="rd-clarity-manuscript ink-sheen ink-stage-tilt"
-                data-ink-enter="panel"
-                style={inkIndex(1)}
-                onPointerMove={handleStagePointerMove}
-                onPointerLeave={resetStageTilt}
-              >
-                <span className="rd-stage-pigment-bar" aria-hidden="true" />
-                <img
-                  data-ink-enter="zoom"
-                  src="/brand/luminous-atelier-20261114/scene-hero-living-atelier.webp"
-                  sizes="(max-width: 639px) 100vw, 52vw"
-                  alt={bi("선화에 색을 더하며 완성하는 웹툰 원고 예시", "Example webtoon manuscript progressing from line art to color")}
-                  width={960}
-                  height={600}
-                  decoding="async"
-                  fetchPriority="high"
-                />
-                <span className="rd-clarity-cropframe" aria-hidden="true" />
-                <span className="rd-stage-swatch-bar" data-testid="home-hero-swatch-bar" aria-hidden="true">
-                  <i data-pigment="draw" />
-                  <i data-pigment="character" />
-                  <i data-pigment="market" />
-                  <i data-pigment="collab" />
-                  <i data-pigment="3d" />
-                </span>
-              </div>
-              <figcaption>{bi("ToonStudio 브랜드 아트", "ToonStudio brand artwork")}</figcaption>
-            </figure>
-          </section>
-
-          <nav
-            className="rd-clarity-journey"
-            aria-label={bi("작품을 만드는 순서", "Steps to create your work")}
-            onPointerLeave={() => setActiveJourneyStep(null)}
-          >
-            <ol>
-              {JOURNEY.map((step, index) => {
-                const Icon = step.icon;
-                return (
-                  <li
-                    key={step.href}
-                    data-spectrum-domain={step.domain}
-                    data-ink-enter="rise"
-                    style={inkIndex(index + 3)}
-                    onPointerEnter={() => setActiveJourneyStep(index)}
-                    onFocus={() => setActiveJourneyStep(index)}
-                    onBlur={() => setActiveJourneyStep(null)}
-                  >
-                    <Link href={step.href} className="ink-arrow min-h-11">
-                      <span className="rd-clarity-journey-icon" aria-hidden="true">
-                        <Icon size={18} strokeWidth={1.6} />
-                      </span>
-                      <span className="rd-clarity-journey-text">
-                        <strong>{bi(step.ko, step.en)}</strong>
-                        <small>{bi(step.detailKo, step.detailEn)}</small>
-                      </span>
-                      <ChevronRight size={16} strokeWidth={1.6} aria-hidden="true" />
-                    </Link>
-                    {index < JOURNEY.length - 1 ? (
-                      <span className="rd-clarity-journey-connector" aria-hidden="true">
-                        <i data-ink-enter="line" style={inkIndex(index + 5)} />
-                      </span>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
-
+          <HomeVividHero />
           <div
             ref={helpersRef}
             className="rd-clarity-helpers"
             data-luna-open={lunaOpen ? "true" : "false"}
           >
-            <details className="rd-idea-help" open>
+            <details className="rd-idea-help">
               <summary className="rd-optional-summary">
                 <PencilLine size={16} strokeWidth={1.6} aria-hidden="true" />
                 <span>{bi("아이디어 쓰기 · 작품 찾기", "Write an idea · Find a story")}</span>
@@ -315,19 +116,6 @@ export function ReferenceCreatorDashboard() {
                   <ArrowRight size={16} strokeWidth={1.6} aria-hidden="true" />
                 </button>
               </form>
-              <div className="rd-v4-preset-chips" role="group" aria-label={bi("웹툰 빠른 규격 및 작업실 프리셋", "Quick webtoon format & studio presets")}>
-                {PRESET_CHIPS.map((chip) => (
-                  <Link
-                    key={chip.href}
-                    href={chip.href}
-                    data-spectrum-domain={chip.domain}
-                    className={chip.ai ? "rd-v4-preset-chip rd-v4-preset-chip--ai min-h-11" : "rd-v4-preset-chip min-h-11"}
-                  >
-                    <span className="rd-preset-dot" aria-hidden="true" />
-                    <span>{bi(chip.ko, chip.en)}</span>
-                  </Link>
-                ))}
-              </div>
             </details>
 
             <details
@@ -335,7 +123,9 @@ export function ReferenceCreatorDashboard() {
               data-spectrum-domain="collab"
               open={lunaOpen}
               onToggle={(event) => {
-                if (event.target === event.currentTarget) setLunaOpen(event.currentTarget.open);
+                if (event.target !== event.currentTarget) return;
+                setLunaOpen(event.currentTarget.open);
+                if (event.currentTarget.open) setLunaVisited(true);
               }}
             >
               <summary className="rd-optional-summary">
@@ -343,136 +133,72 @@ export function ReferenceCreatorDashboard() {
                 <span>{bi("시작이 막막한가요?", "Need help getting started?")}</span>
                 <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
               </summary>
-              <HomeLunaPanel />
+              {lunaVisited && <Suspense fallback={<p className="vivid-loading" role="status">{bi("창작 도움을 불러오는 중…", "Loading creative help…")}</p>}><LazyHomeLunaPanel /></Suspense>}
             </details>
           </div>
         </HomeNowCard>
       </div>
 
-      <div data-home-band="continue">
-        <nav
-          data-testid="home-v2-spectrum-launchpad"
-          aria-labelledby="rd-launchpad-title"
-          className="rd-v2-bento"
-        >
-          <span className="rd-v2-spectrum-ribbon" aria-hidden="true" />
-          <h2 id="rd-launchpad-title" className="rd-band-title" data-ink="line">
-            {bi("하고 싶은 작업을 고르세요", "Choose what you would like to do")}
-          </h2>
-          <div className="rd-v2-bento-grid" data-ink-stagger>
-            {LAUNCHPAD_ITEMS.map((item) => {
-              const Icon = item.icon;
+      <div data-home-band="continue" className="vivid-create-section">
+        <nav id="creator-start" data-testid="home-v2-spectrum-launchpad" aria-labelledby="creator-toolkit-title" className="vivid-task-section">
+          <div className="vivid-section-heading">
+            <div>
+              <span className="vivid-section-kicker">{bi("시작은 가볍게", "A little spark, a new beginning")}</span>
+              <h2 id="creator-toolkit-title" tabIndex={-1}>{bi("오늘은 무엇을 만들까요?", "What will you create today?")}</h2>
+            </div>
+            <span className="vivid-section-number" aria-hidden="true">01 / 03</span>
+          </div>
+          <div className="vivid-task-grid">
+            {TASKS.map((task, index) => {
+              const Icon = task.icon;
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  data-spectrum-domain={item.domain}
-                  className={item.primary ? "rd-v2-card rd-v2-card--primary ink-frame ink-arrow min-h-11" : "rd-v2-card ink-frame ink-arrow min-h-11"}
-                >
-                  <span className="rd-v2-card-icon" aria-hidden="true">
-                    <Icon size={18} strokeWidth={1.65} />
-                  </span>
-                  <span className="rd-v2-card-body">
-                    <strong>{bi(item.ko, item.en)}</strong>
-                    <small>{bi(item.detailKo, item.detailEn)}</small>
-                  </span>
-                  <span className="rd-v2-cta">
-                    {bi(item.ctaKo, item.ctaEn)}
-                    <ArrowRight size={14} strokeWidth={1.7} aria-hidden="true" />
-                  </span>
+                <Link key={task.href} href={task.href} data-spectrum-domain={task.domain} className="vivid-task min-h-11">
+                  <span className="vivid-task-number" aria-hidden="true">0{index + 1}</span>
+                  <span className="vivid-task-icon" aria-hidden="true"><Icon size={24} strokeWidth={1.7} /></span>
+                  <span className="vivid-task-copy"><strong>{bi(task.ko, task.en)}</strong><small>{bi(task.detailKo, task.detailEn)}</small></span>
+                  <ArrowUpRight className="vivid-task-arrow" size={22} aria-hidden="true" />
                 </Link>
               );
             })}
           </div>
         </nav>
-
-        <section className="rd-examples" aria-labelledby="rd-examples-title">
-          <div className="rd-examples-heading">
-            <h2 id="rd-examples-title" data-ink="line">{bi("예시 작품", "Example works")}</h2>
-            <Link href="/studio" className="ink-arrow inline-flex min-h-11 min-w-11 items-center gap-1.5">
-              <FolderKanban size={14} strokeWidth={1.6} aria-hidden="true" />
-              {bi("내 프로젝트", "My projects")}
-              <ChevronRight size={14} strokeWidth={1.6} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className="rd-example-shelf" data-ink-stagger="panel">
-            {HOME_EXAMPLES.map((example) => (
-              <div className="rd-example-cover" key={example.image}>
-                <span className="rd-example-art ink-cover">
-                  <img src={homeArt(example.image, 320)} alt="" width={180} height={120} decoding="async" />
-                </span>
-                <span className="rd-example-caption">
-                  {bi(example.ko, example.en)}
-                  <small>{bi(example.metaKo, example.metaEn)}</small>
-                </span>
-              </div>
-            ))}
-            <Link className="rd-new-project min-h-11" href="/create">
-              <Plus size={20} strokeWidth={1.7} aria-hidden="true" />
-              <span>{bi("작품 시작하기", "Start a work")}</span>
-            </Link>
-          </div>
-        </section>
-
-        <HomeInteractiveWowShowcase />
+        <nav className="vivid-journey" aria-label={bi("작품을 만드는 순서", "Steps to create your work")}>
+          <ol>
+            {JOURNEY.map((step, index) => {
+              const Icon = step.icon;
+              return <li key={step.href} data-spectrum-domain={step.domain}>
+                <Link href={step.href} className="min-h-11">
+                  <Icon size={17} aria-hidden="true" />
+                  <span><strong>{bi(step.ko, step.en)}</strong><small>{bi(step.detailKo, step.detailEn)}</small></span>
+                  {index < JOURNEY.length - 1 && <ChevronRight size={16} aria-hidden="true" />}
+                </Link>
+              </li>;
+            })}
+          </ol>
+        </nav>
       </div>
 
-      <div className="rd-discover" data-home-band="discover">
-        <DiscoverHomePreview />
-      </div>
-
-      <details
-        className="rd-more"
-        data-home-band="more"
-        open={moreOpen}
-        onToggle={(event) => {
-          if (event.target === event.currentTarget) setMoreOpen(event.currentTarget.open);
-        }}
-      >
-        <summary className="rd-more-summary">
-          <span className="rd-more-dots" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span>{bi("더 알아보기", "Learn more")}</span>
-          <small>{bi("시작 카드 · 핵심 작업실 · 에디터 미리보기 · 서비스 안내", "Start cards · Core studios · Editor preview · About")}</small>
-          <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" />
+      <details className="vivid-disclosure rd-discover" data-home-band="discover" open={discoverOpen} onToggle={(event) => {
+        if (event.target !== event.currentTarget) return;
+        setDiscoverOpen(event.currentTarget.open);
+        if (event.currentTarget.open) setDiscoverVisited(true);
+      }}>
+        <summary className="vivid-disclosure-summary">
+          <Compass size={21} aria-hidden="true" /><span><strong>{bi("다른 이야기가 궁금하다면", "Find your next inspiration")}</strong><small>{bi("작품을 둘러보고 새로운 영감을 만나세요.", "Discover stories and find a spark for your own.")}</small></span><ChevronDown size={18} aria-hidden="true" />
         </summary>
-        <nav id="creator-start" className="rd-quick" aria-labelledby="creator-toolkit-title">
-          <div className="rd-section-heading">
-            <h2 id="creator-toolkit-title" tabIndex={-1} data-ink="line">
-              {bi("무엇부터 시작할까요?", "Where would you like to start?")}
-            </h2>
-          </div>
-          <div className="rd-quick-grid" data-ink-stagger>
-            {HOME_QUICK_STARTS.map((item) => (
-              <Link key={item.href} href={item.href} className="ink-frame min-h-11">
-                <span className="rd-quick-art ink-cover">
-                  <img src={homeArt(item.image, 320)} alt="" width={240} height={144} decoding="async" />
-                </span>
-                <strong>{bi(item.ko, item.en)}</strong>
-                <small>{bi(item.detailKo, item.detailEn)}</small>
-              </Link>
-            ))}
-          </div>
-        </nav>
-        <HomeCoreStudios />
-        <div data-ink="settle">
-          <ReferenceEditorPreview />
-        </div>
-        <div className="rd-flow-next">
-          <ServiceFlowNext current="home" title={bi("처음이라면 서비스 소개부터", "New here? Start with the introduction")} />
-        </div>
-        <nav className="rd-chapters" aria-label={bi("서비스 더 알아보기", "Learn more about ToonStudio")}>
-          <span className="rd-chapters-label">{bi("더 알아보기", "Learn more")}</span>
-          {HOME_LEARN_MORE.map((link) => (
-            <Link key={link.href} href={link.href} className="ink-arrow min-h-11">
-              {bi(link.ko, link.en)}
-              <ArrowRight size={14} strokeWidth={1.6} aria-hidden="true" />
-            </Link>
-          ))}
-        </nav>
+        {discoverVisited && <Suspense fallback={<p className="vivid-loading" role="status">{bi("작품을 불러오는 중…", "Loading stories…")}</p>}><LazyDiscoverHomePreview /></Suspense>}
+        <Link href="/discover" className="vivid-disclosure-link min-h-11">{bi("작품 둘러보기", "Explore stories")}<ArrowRight size={16} aria-hidden="true" /></Link>
+      </details>
+
+      <details className="rd-more vivid-disclosure" data-home-band="more" open={moreOpen} onToggle={(event) => {
+        if (event.target !== event.currentTarget) return;
+        setMoreOpen(event.currentTarget.open);
+        if (event.currentTarget.open) setMoreVisited(true);
+      }}>
+        <summary className="vivid-disclosure-summary rd-more-summary">
+          <FolderKanban size={21} aria-hidden="true" /><span><strong>{bi("작업실 더 둘러보기", "Take a look around the studio")}</strong><small>{bi("예시 원고 · 3D · 협업 · 서비스 소개", "Sample artwork · 3D · Collaboration · About")}</small></span><ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        {moreVisited && <Suspense fallback={<p className="vivid-loading" role="status">{bi("작업실 소개를 불러오는 중…", "Loading the studio preview…")}</p>}><LazyHomeVividMore /></Suspense>}
       </details>
     </div>
   );

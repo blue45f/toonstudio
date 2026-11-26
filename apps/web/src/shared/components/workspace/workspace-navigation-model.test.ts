@@ -18,25 +18,27 @@ describe("studio-first navigation contract", () => {
   ])("keeps %s in the right global destination", (path, id) => {
     expect(workspaceNavigationActiveId(path!)).toBe(id);
   });
-  it("keeps five workspace destinations and four public mobile purposes with shared destination identities", () => {
+  it("작업실 다섯 목적지와 모바일의 홈·만들기·내 작업이 같은 정본 목적지를 사용한다", () => {
     expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.id)).toEqual(["workspace-home", "studio", "explore", "community", "all-menu"]);
     expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.href)).toEqual(["/home", "/studio", "/discover", "/community", "/sitemap"]);
     expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.label.ko)).toEqual(["작업 홈", "내 작업", "작품 찾기", "커뮤니티", "전체 메뉴"]);
     expect(TOONSTUDIO_MOBILE_TABS).toEqual([
-      SITE_NAVIGATION_ITEMS.studio, SITE_NAVIGATION_ITEMS.explore,
-      SITE_NAVIGATION_ITEMS.market, SITE_NAVIGATION_ITEMS.me,
+      SITE_NAVIGATION_ITEMS.home, SITE_NAVIGATION_ITEMS.make, SITE_NAVIGATION_ITEMS.studio,
     ]);
-    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.href)).toEqual(["/studio", "/discover", "/market", "/my"]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.href)).toEqual(["/", "/create", "/studio"]);
     expect(TOONSTUDIO_MOBILE_TABS.map((item) => [item.id, item.label.ko, item.href])).toEqual([
+      ["home", "사이트 홈", "/"],
+      ["make", "작품 시작하기", "/create"],
       ["studio", "내 작업", "/studio"],
-      ["explore", "작품 찾기", "/discover"],
-      ["market", "소재 찾기", "/market"],
-      ["me", "내 정보", "/my"],
     ]);
-    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.ko)).toEqual(["내 작업", "작품 찾기", "소재 찾기", "내 정보"]);
-    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.en)).toEqual(["My work", "Discover", "Assets", "My account"]);
-    expect(TOONSTUDIO_MOBILE_TABS[0]).toBe(TOONSTUDIO_PRIMARY_NAVIGATION[1]);
-    expect(TOONSTUDIO_MOBILE_TABS[1]).toBe(TOONSTUDIO_PRIMARY_NAVIGATION[2]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.ko)).toEqual(["사이트 홈", "작품 시작하기", "내 작업"]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.label.en)).toEqual(["Site home", "Start a work", "My work"]);
+    expect(TOONSTUDIO_MOBILE_TABS[0]).toBe(SITE_NAVIGATION_ITEMS.home);
+    expect(TOONSTUDIO_MOBILE_TABS[1]).toBe(SITE_NAVIGATION_ITEMS.make);
+    expect(TOONSTUDIO_MOBILE_TABS[2]).toBe(TOONSTUDIO_PRIMARY_NAVIGATION[1]);
+    // 네 번째 행동인 더보기는 하단 UI가 별도로 추가하며, 사이트맵 경로와 메뉴 접근성을 함께 제공한다.
+    expect([...TOONSTUDIO_MOBILE_TABS, SITE_NAVIGATION_ITEMS.allMenu].map((item) => item.href))
+      .toEqual(["/", "/create", "/studio", "/sitemap"]);
   });
   it.each(["/", "/home", "/team", "/hub"])("does not duplicate workspace chrome with a promotional scene on %s", (path) => {
     expect(supportsRoutePurposeScene(path)).toBe(false);
