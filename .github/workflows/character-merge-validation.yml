@@ -40,6 +40,10 @@ on:
       - "apps/web/src/domains/creator/studio-router/StudioRouteEntryContracts*"
       - "apps/web/src/domains/creator/studio-router/studio-route-manifest*"
       - "scripts/verify-character-contact-naturalness.mjs"
+      - "scripts/verify-studio-vrm-cooperative-capture.mjs"
+      - "apps/web/tools/browser-harnesses/vrm-cooperative-capture.ts"
+      - "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu*"
+      - "apps/web/src/domains/creator/character-platform/ui/use-character-authoring-authority*"
 
   workflow_dispatch:
 permissions:
