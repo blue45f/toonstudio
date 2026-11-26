@@ -13,7 +13,11 @@ use std::fmt;
 #[cfg(feature = "extended-3d")]
 pub mod atelier_stage_3d_kernel;
 pub mod brush_kernel;
+#[cfg(feature = "pro-raster-tools")]
+pub mod color_halftone_kernel;
 pub mod filter_warp_kernel;
+#[cfg(feature = "pro-raster-tools")]
+pub mod flood_fill_selection_kernel;
 pub mod simd_bvh_skinning_kernel;
 pub mod spectral_km_kernel;
 pub mod tactile_texture_kernel;
@@ -201,3 +205,32 @@ pub use wasm_ffi::{
     wasm_step_verlet_spring_chains_soa, FABRIK_FINGER_FFI_PARAM_COUNT, FOLEY_DSP_FFI_PARAM_COUNT,
     FOLEY_DSP_FFI_STATE_LEN, VERLET_SPRING_FFI_PARAM_COUNT,
 };
+#[cfg(feature = "pro-raster-tools")]
+pub use color_halftone_kernel::{
+    liquify_displace_rgba, oklch_to_rgba_batch, render_halftone_screentone_rgba,
+    rgba_to_cmyk_u8_batch, rgba_to_oklch_batch, HalftoneConfig, HalftonePattern,
+    LiquifyBrushConfig, LiquifyMode, LiquifyStats, MAX_HALFTONE_PITCH_PX, MIN_HALFTONE_PITCH_PX,
+};
+#[cfg(feature = "pro-raster-tools")]
+pub use flood_fill_selection_kernel::{
+    extract_marching_ants_segments, extract_marching_ants_segments_with_threshold,
+    flood_fill_rgba_scanline, magic_wand_select_mask, magic_wand_select_mask_into,
+    FloodFillConfig, FloodFillResult, MagicWandConfig, MagicWandSelection, MagicWandStats,
+    MarchingAntSegment, EMPTY_DIRTY_RECT, MAX_GAP_CLOSING_RADIUS,
+};
+#[cfg(feature = "pro-raster-tools")]
+pub use wasm_ffi::{
+    wasm_extract_marching_ants_segments, wasm_flood_fill_rgba, wasm_liquify_displace_rgba,
+    wasm_magic_wand_mask, wasm_oklch_to_rgba_batch, wasm_parse_psd_header,
+    wasm_render_halftone_screentone, wasm_rgba_to_cmyk_batch, wasm_rgba_to_oklch_batch,
+    wasm_vectorize_stroke_cubic, wasm_warp_mesh_rigid_mls, DIRTY_RECT_FFI_U32_LEN,
+    HALFTONE_FFI_PARAM_COUNT, LIQUIFY_FFI_PARAM_COUNT, MARCHING_ANT_SEGMENT_STRIDE,
+    MLS_WARP_PIN_STRIDE, PSD_HEADER_FFI_U64_LEN, VECTORIZE_POINT_STRIDE,
+    VECTORIZE_SEGMENT_STRIDE, VECTORIZE_STATS_LEN,
+};
+#[cfg(any(
+    feature = "extended-3d",
+    feature = "virtual-3d-physics",
+    feature = "pro-raster-tools"
+))]
+pub use wasm_ffi::{wasm_extended_capabilities, WASM_EXTENDED_CAPABILITIES};

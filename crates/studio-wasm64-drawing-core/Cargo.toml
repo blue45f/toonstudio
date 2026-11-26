@@ -15,6 +15,10 @@ default = []
 extended-3d = []
 # 가상 물리·손가락 IK·Foley CPU 커널과 추가 C-ABI (기존 3D 옵션과 별도 활성화)
 virtual-3d-physics = ["extended-3d"]
+# 프로 래스터 드로잉 커널(플러드 필·매직 완드·마칭 앤츠·OKLCH/CMYK·하프톤·리퀴파이·MLS 워프·벡터/PSD C-ABI)
+pro-raster-tools = []
+# 지연 로드용 전체 확장 스위트 메타 피처 (3D + 물리 + 프로 래스터 도구)
+full-suite = ["extended-3d", "virtual-3d-physics", "pro-raster-tools"]
 
 [dependencies]
 
