@@ -12,7 +12,7 @@ import type { StudioProjectRecord, StudioReviewSummary, StudioRevisionRecord } f
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 // 브라우저는 명시적인 API·이미지 fixture로 고정 버전 연결을 검사한다. 실제 저장·인가는 별도 DB HTTP 검증을 사용한다.
-async function prepareProject(page: Page) {
+async function prepareProject(page: Page, mappingStatus: "mapped" | "unmapped" = "mapped") {
   const imageBytes = readFileSync(resolve(process.cwd(), "apps/web/public/brand/studio-canvas-previews/romance.webp"));
   const imageSha256 = createHash("sha256").update(imageBytes).digest("hex");
   const previewBlobRefs = [0, 1].map((ordinal) => ({ sha256: imageSha256, role: "preview" as const, ordinal }));
@@ -85,7 +85,7 @@ async function prepareProject(page: Page) {
         ...(cursor === null ? {} : { cursor: expectedCursor }),
       });
       const ordinal = cursor === null ? 0 : 1;
-      const mapping = deriveStudioReviewPageMapping(
+      const mapping = mappingStatus === "unmapped" ? { status: "unmapped", reason: "legacy-review" } : deriveStudioReviewPageMapping(
         { width: 800, pagesList: ["page-0", "page-1"].map((id) => ({ id, canvasH: 1200, elements: [] })) },
         { sourceServerRevision: 7, sourceContentDigest: revision.rootGraphHash, ordinal, renderWidth: 800, renderHeight: 1200 },
       );
@@ -136,6 +136,24 @@ test("실제 제출 이미지의 고정 버전·비교·모바일·접근성", a
   expect(result.violations.map((entry) => ({ id: entry.id, nodes: entry.nodes.map((node) => node.target) }))).toEqual([]);
 });
 
+test("예전 원고는 제출본과 기준본을 따로 선택하고 오버레이를 차단한다", async ({ page }) => {
+  await prepareProject(page, "unmapped");
+  await page.goto("/production/projects/production-project/review?task=target-task&episode=episode-12", { waitUntil: "domcontentloaded" });
+  const panel = page.getByRole("region", { name: "고정 제출 원고 이미지", exact: true });
+  await expect(panel).toBeVisible({ timeout: 120_000 });
+  await expect(page.locator('[aria-hidden="true"][data-phase]')).toBeHidden();
+  await panel.getByRole("button", { name: "제출 원고 이미지 열기", exact: true }).click();
+  await expect(panel.getByRole("img", { name: "2차 제출본 · 1", exact: true })).toBeVisible();
+  await panel.getByRole("combobox", { name: "비교 기준본", exact: true }).selectOption("input-revision");
+  await panel.getByRole("combobox", { name: "이미지 순번", exact: true }).selectOption("1");
+  await expect(panel.getByRole("img", { name: "2차 제출본 · 2", exact: true })).toBeVisible();
+  await expect(panel.getByRole("img", { name: "2차 고정 입력본 · 1", exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "원고 겹쳐 보기", exact: true })).toBeDisabled();
+  await panel.getByRole("combobox", { name: "기준본 이미지 순번", exact: true }).selectOption("1");
+  await expect(panel.getByRole("img", { name: "2차 고정 입력본 · 2", exact: true })).toBeVisible();
+  await expect(panel.getByRole("img", { name: "2차 제출본 · 2", exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "원고 겹쳐 보기", exact: true })).toBeDisabled();
+});
 
 test("응답 유실 후 새로고침해도 같은 요청으로 검수 질문을 한 번만 복구한다", async ({ page }) => {
   const fixture = await prepareProject(page);
