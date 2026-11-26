@@ -415,8 +415,8 @@ export const GLOSSARY_MORE_SPATIAL: readonly GlossaryTerm[] = [
       "Like caching static stage shadows to repaint only tiles under moving actors while welding seam midpoints so subdivided cloth never cracks.",
     ),
     inToonstudio: t(
-      "hybrid-compute-shadow-ink-meshlet.ts 가 그림자 타일 85%+ 절감·무접촉 캐스케이드 스킵·열린 모서리 0개(openBoundaryEdges=0) 메시렛·O(N) 공간해시 충돌을 검증했습니다.",
-      "hybrid-compute-shadow-ink-meshlet.ts verified >85% shadow tile savings, cascade skipping, 0-open-edge meshlet subdivision and O(N) spatial-hash collisions.",
+      "단위 장면의 그림자 갱신 대상 타일은 85% 이상 줄었고, 별도 정팔면체 세분화 입력에서 열린 경계 모서리 0개를 확인했습니다. /studio 3D 배경 연결은 후속 단계입니다.",
+      "Unit fixtures selected over 85% fewer shadow tiles and found zero open boundary edges after subdividing an octahedron. Integration into the /studio 3D background viewport is a follow-up.",
     ),
     chapters: ["web-3d-engine", "performance"],
     atlasIds: ["split-csm-shadow-compute-meshlet-spatial-hash"],

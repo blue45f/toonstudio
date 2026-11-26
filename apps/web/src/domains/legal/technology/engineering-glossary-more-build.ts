@@ -115,8 +115,8 @@ export const GLOSSARY_MORE_BUILD: readonly GlossaryTerm[] = [
       "Like numbered crates on a belt, instant station replacement, a projector locked to a metronome and stage lights warmed during idle moments.",
     ),
     inToonstudio: t(
-      "wasm-worker-slab-pool.ts(장애 워커 재생성·배압), webgpu-webaudio-sab-sync.ts(PLL 위상 보정·유휴 예산 예열), scheduleHeterogeneousComputeDag 를 단위 검증했습니다.",
-      "Unit-verified across wasm-worker-slab-pool.ts (recycle & backpressure), webgpu-webaudio-sab-sync.ts (PLL & idle prewarm) and scheduleHeterogeneousComputeDag.",
+      "실험 모듈에서 장애 워커 교체, 공유 메모리 위상 보정, 작업 배정을 단위 테스트로 확인했습니다. /studio 렌더러 연결은 후속 단계입니다.",
+      "Experimental module tests cover worker replacement, shared-memory phase correction and work scheduling. Integration into the /studio renderer is a follow-up.",
     ),
     chapters: ["worker-architecture", "performance", "sound-generation"],
     atlasIds: ["wasm-worker-slab-sab-pll-shader-prewarmer"],
@@ -134,8 +134,8 @@ export const GLOSSARY_MORE_BUILD: readonly GlossaryTerm[] = [
       "Like keeping mandatory airport security active for everyone while skipping customs on domestic trips and assigning big bags to the shortest lane first.",
     ),
     inToonstudio: t(
-      "ci-smart-shard-scheduler.ts 가 문서·단일 도메인 변경에서도 core·verify 100% 보존, 미분류 루트 변경 fail-closed, 샤드 불균형비 ≤1.25 를 단위 테스트로 검증했습니다.",
-      "ci-smart-shard-scheduler.ts verified 100% core+verify preservation, fail-closed root handling and <=1.25 shard imbalance across unit tests.",
+      "문서·단일 도메인 변경을 넣은 단위 테스트에서 core·verify 유지, 미분류 루트 변경 처리와 샤드 불균형비 1.25 이하를 확인했습니다. GitHub Actions 연결은 후속 단계입니다.",
+      "Unit fixtures verify preservation of core and verify, fail-closed handling of root changes and a shard imbalance ratio at most 1.25. GitHub Actions integration is a follow-up.",
     ),
     chapters: ["quality", "delivery"],
     atlasIds: ["smart-ci-dep-graph-lpt-shard-scheduler"],

@@ -68,14 +68,13 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
       {
         feature: t("P2P BFT 상태 다이제스트 검증기 & ₩0 머클 타임스탬프 원장", "P2P BFT state validator & ₩0 Merkle timestamp ledger"),
         role: t(
-          "3f+1 비잔틴 이중 투표 격리와 WebCrypto 서명 SHA-256 해시체인·머클 에포크 영수증 발급/검증을 담당합니다.",
-          "Quarantines 3f+1 Byzantine equivocation and issues offline-verifiable WebCrypto SHA-256 Merkle timestamp receipts.",
+          "실험 모듈에서 이중 투표 격리와 WebCrypto 서명 영수증 발급·검증을 확인했습니다. /studio 팀 작업 연결은 후속 단계입니다.",
+          "Module tests cover equivocation handling and WebCrypto receipt issuance and verification. Integration into /studio collaboration is a follow-up.",
         ),
         paths: [
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/p2p-bft-timestamp-audit.ts",
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/wasm64-wave4-hypercore.test.ts",
         ],
-        route: "/studio",
       },
       {
         feature: t("청크 인증 AEAD 대용량 에셋 스트리밍 검증기", "Chunk-authenticated AEAD large-asset stream verifier"),
@@ -206,14 +205,13 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
       {
         feature: t("WebRTC SCTP 델타 재조립기 · 벡터 클록 · Schnorr 영지식 증명기", "WebRTC SCTP delta reassembler, vector clock & Schnorr ZK prover"),
         role: t(
-          "16KiB SCTP 청크 분할/역순 재조립, 벡터 클록 충돌 조정, 원고 시드 무노출 영지식 소유권 증명을 수행합니다.",
-          "Handles 16 KiB SCTP chunking/reassembly, vector-clock conflict resolution and zero-knowledge ownership proofs.",
+          "실험 모듈에서 16 KiB 청크 재조립, 벡터 클록 판정과 영지식 증명 검사를 확인했습니다. /studio 공유 화면 연결은 후속 단계입니다.",
+          "Module tests cover reassembly of 16 KiB chunks, vector-clock ordering and zero-knowledge proof verification. Integration into /studio sharing is a follow-up.",
         ),
         paths: [
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/webrtc-delta-and-zk-ownership.ts",
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/wasm64-wave4-hypercore.test.ts",
         ],
-        route: "/studio",
       },
     ],
     samples: [
@@ -256,8 +254,8 @@ export const ENGINEERING_ATLAS_REALTIME_WAVE4_BFT_ZK: readonly EngineeringAtlasE
     chapterIds: ["webrtc-media-authority", "collaborative-crdt-boundary"],
     talk: {
       pitch: t(
-        "비밀 마스터 시드를 서버나 상대방에게 한 글자도 보여주지 않는 Fiat-Shamir Schnorr 영지식 증명과 16KiB SCTP 바이너리 델타·벡터 클록으로 안전하고 가벼운 무서버 협업을 완성했습니다.",
-        "Pairs zero-seed-leakage Fiat-Shamir Schnorr ZK proofs with 16 KiB SCTP binary deltas and vector clocks for lightweight serverless collaboration.",
+        "단위 테스트에서 Fiat-Shamir Schnorr 증명의 검증, 16 KiB 바이너리 델타 재조립, 벡터 클록의 동시 편집 판정을 각각 확인했습니다.",
+        "Unit tests cover Fiat-Shamir Schnorr proof verification, reassembly of 16 KiB binary deltas and vector-clock ordering of concurrent edits.",
       ),
       analogy: t(
         "금고 비밀번호를 말하지 않고도 내가 금고 주인임을 매번 새 난수 질문으로 증명하는 마술 열쇠(영지식 증명)와 같습니다.",

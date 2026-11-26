@@ -351,16 +351,16 @@ export const GLOSSARY_MORE_AI: readonly GlossaryTerm[] = [
     category: "ai",
     term: t("WebGPU NF4 행렬곱 & PagedAttention KV VRAM 페이저", "WebGPU NF4 MatMul & PagedAttention KV VRAM pager"),
     definition: t(
-      "온디바이스 LLM 가중치를 4비트 NF4/INT4 로 압축하고 KV-Cache 를 256토큰 페이지로 쪼개 1.5~2.0 GiB VRAM 상한 안에서 8K+ 문맥을 운용하는 메모리 관리 계층입니다.",
-      "A local LLM memory layer pairing 4-bit NF4/INT4 WGSL MatMul with 256-token virtual KV pages to run 8K+ contexts inside a strict 1.5–2.0 GiB VRAM cap.",
+      "4비트 NF4·INT4 가중치와 256토큰 단위의 KV 페이지를 쓰는 로컬 LLM 메모리 관리 방식입니다.",
+      "A local LLM memory-management approach combining 4-bit NF4 and INT4 weights with 256-token KV pages.",
     ),
     analogy: t(
       "작은 책상(VRAM) 위에는 첫 장 요약본(싱크 토큰)과 지금 읽는 쪽만 펼쳐 두고, 가운데 장들은 번호표를 붙여 옆 서랍(백킹 풀)에 보관하며 필요할 때 꺼내 보는 독서대입니다.",
       "Like keeping chapter one and the current page on a compact desk while filing middle pages in a numbered side drawer until needed.",
     ),
     inToonstudio: t(
-      "wasm64-wave4-hypercore/webgpu-llm-vram-pager.ts 가 서브그룹·폴백 WGSL 튜닝과 1.6 GiB 상한 8,704토큰 OOM 0건·FNV-1a 스왑 복원을 단위 테스트로 검증했습니다.",
-      "wasm64-wave4-hypercore/webgpu-llm-vram-pager.ts verified adaptive WGSL tuning and 8,704-token paging under a 1.6 GiB cap with 0 OOM and FNV-1a swap checks.",
+      "인메모리 단위 테스트에서 1.6 GiB 가상 예산과 8,704토큰을 입력해 반출·복원과 페이저의 OOM 카운터 0을 확인했습니다. /studio 실행 연결과 실제 GPU 검증은 후속 단계입니다.",
+      "An in-memory unit test used a simulated 1.6 GiB budget and 8,704 tokens to verify swaps and a pager OOM counter of zero. /studio integration and physical GPU testing are follow-up work.",
     ),
     chapters: ["on-device-inference", "free-ai-routing"],
     atlasIds: ["webgpu-llm-nf4-paged-attention-vram-pager"],

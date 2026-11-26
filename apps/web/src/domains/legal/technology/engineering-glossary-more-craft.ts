@@ -221,8 +221,8 @@ export const GLOSSARY_MORE_CRAFT: readonly GlossaryTerm[] = [
       "Like smoothing jittery pen marks for compact storage while rendering sharp subpixel manga ink and fiber-guided sumi-e bleed on wet paper.",
     ),
     inToonstudio: t(
-      "spline-edge-subpixel-preview.ts(매듭 60%+ 압축·속도 원뿔 ₩0 타일 프리페치·5탭 LCD 필터)와 stepCapillaryInkBleed(안료 질량 보존)를 단위 테스트로 검증했습니다.",
-      "Unit-verified across spline-edge-subpixel-preview.ts (>60% knot pruning, ₩0 velocity-cone prefetch, 5-tap LCD filter) and mass-conserving stepCapillaryInkBleed.",
+      "합성 스타일러스 입력에서 매듭 수 60% 이상 감소를 확인했습니다. 타일 요청 계획과 5탭 LCD 필터, 안료 질량 보존도 각각 단위 테스트로 확인했습니다. /studio 연결은 후속 단계입니다.",
+      "Synthetic stylus input verified over 60% knot reduction. Separate unit tests cover tile-request planning, the 5-tap LCD filter and pigment conservation. /studio integration is a follow-up.",
     ),
     chapters: ["brush-engine", "performance"],
     atlasIds: ["morphological-spline-rgss-subpixel-capillary-ink"],
