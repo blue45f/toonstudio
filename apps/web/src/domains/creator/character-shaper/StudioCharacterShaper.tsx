@@ -90,7 +90,7 @@ export function StudioCharacterShaper({ recoverFromRenderFailure = true, ...prop
   );
 }
 
-function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeof useStudioVrmPoserController> }) {
+function CharacterShaperMaterialSyncBridge({ h, interactive = true }: { readonly h: ReturnType<typeof useStudioVrmPoserController>; readonly interactive?: boolean }) {
   const { shaperMaterial, setShaperMaterial } = useCharacterShaperMaterialSettings();
   useEffect(() => {
     const runSync = () => {
@@ -113,6 +113,7 @@ function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeo
 
   // SHAPER Space 단축키(`MaterialData::ToggleShader`): 웹툰 툰 ↔ 모델링 입체 셰이더 즉시 전환
   useEffect(() => {
+    if (!interactive) return;
     return pushCharacterShaperKeyLayer((event) => {
       if (
         event.key !== " "
@@ -133,7 +134,7 @@ function CharacterShaperMaterialSyncBridge({ h }: { readonly h: ReturnType<typeo
       }));
       return true;
     }, window);
-  }, [setShaperMaterial]);
+  }, [interactive, setShaperMaterial]);
 
   return null;
 }
@@ -216,7 +217,7 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayer
   if (!open) return null;
   if (linkedCutCapture) return (
     <CharacterShaperSessionSettingsProvider gazeAvailable={false} locked>
-      <CharacterShaperMaterialSyncBridge h={h} />
+      <CharacterShaperMaterialSyncBridge h={h} interactive={false} />
       <div inert aria-hidden className="pointer-events-none fixed inset-0 -z-10 grid">
         <StudioVrmPoserViewport h={{ ...h, onLinkedCutPropStatus: linked.onLinkedCutPropStatus, onLinkedCutWardrobeStatus: linked.onLinkedCutWardrobeStatus }} presentation="shaper" />
       </div>

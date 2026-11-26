@@ -119,10 +119,13 @@ export function useLinkedCutCapture(props: Props) {
     const { request, controller, h } = latest.current;
     if (!ticket?.started || !request) return false;
     const stored = await getCharacterDocumentV3Repository().load(request.documentId);
-    const current = controller.authoring.authority.getSnapshot();
-    return active.current === ticket && latest.current.scene === scene && stored?.revision === request.revision
-      && stored.documentId === request.documentId && current.document.documentId === request.documentId
-      && current.document.revision === request.revision && !current.previewDocument && attachmentsReady(h);
+    const now = latest.current;
+    const current = now.controller.authoring.authority.getSnapshot();
+    return active.current === ticket && now.scene === scene && now.documentId === request.documentId
+      && now.request?.revision === request.revision && now.h.vrm === h.vrm && now.controller.authoring.authority === controller.authoring.authority
+      && stored?.revision === request.revision && stored.documentId === request.documentId && stored.model.assetId === current.document.model.assetId
+      && current.document.documentId === request.documentId && current.document.revision === request.revision
+      && !current.previewDocument && attachmentsReady(now.h);
   }, [attachmentsReady, scene]);
 
   return { admitOutput, onLinkedCutPropStatus, onLinkedCutWardrobeStatus };
