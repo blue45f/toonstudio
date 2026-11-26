@@ -9,11 +9,19 @@ import {
   createNativeRustCoreBridge,
   EXPECTED_RUST_CORE_ABI,
   EXPECTED_RUST_CORE_CAPABILITIES,
+  EXPECTED_WAVE3_CAPABILITIES,
   jsApplyXorTileDelta,
   jsComputeXorTileDelta,
   jsFnv1aChecksum32,
   jsGaussianBlurRgba,
+  jsWave3AudioMixMaster,
+  jsWave3DedupTilesFnv64,
+  jsWave3ExtractPalette,
+  jsWave3RgbaToCmykTac,
+  jsWave3VectorExpandStroke,
+  jsWave3WebtoonSlice,
   NATIVE_CORE_REQUIRED_SYMBOLS,
+  NATIVE_WAVE3_REQUIRED_SYMBOLS,
   probeNativeRustDylib,
 } from "./native-rust-core-bridge.js";
 
@@ -61,6 +69,8 @@ describe("desktop-sync native Rust core / WASM64 bridge", () => {
     expect(probe.symbolsVerified).toBe(true);
     expect(probe.missingSymbols).toEqual([]);
     expect(probe.foundSymbols).toEqual([...NATIVE_CORE_REQUIRED_SYMBOLS]);
+    expect(probe.wave3SymbolsVerified).toBe(true);
+    expect(probe.foundWave3Symbols).toEqual([...NATIVE_WAVE3_REQUIRED_SYMBOLS]);
     if (process.platform === "darwin") {
       expect(probe.format).toBe("mach-o");
     }
@@ -236,5 +246,113 @@ describe("desktop-sync native Rust core / WASM64 bridge", () => {
     expect(() => bridge.computeXorTileDelta(new Uint8Array(4), new Uint8Array(8))).toThrow(RangeError);
     expect(() => bridge.gaussianBlurRgba(new Uint8Array(16), 4, 4, -1)).toThrow(RangeError);
     bridge.dispose();
+  });
+
+  it("executes Wave-3 Audio DSP, Vector Stroke, Webtoon Slicer/Dedup, and CMYK-TAC/Palette with 0-diff parity and tier fallback", async () => {
+    const bridge = await createNativeRustCoreBridge({ repoRoot: REPO_ROOT });
+    try {
+      expect(bridge.wave3Backend).toBe("wasm-relaxed-simd");
+      expect(bridge.getTelemetry().wave3CapabilitiesMask).toBe(EXPECTED_WAVE3_CAPABILITIES);
+      expect(bridge.getTelemetry().wave3ResolvedPath).toContain("studio-wasm64-extended-suite.wasm");
+
+      // 1) Audio DSP multi-track stereo mix + limiter + LUFS
+      const frames = 512;
+      const tracks = new Float32Array(frames * 2);
+      for (let i = 0; i < frames; i += 1) {
+        tracks[i] = Math.sin((2 * Math.PI * 440 * i) / 48_000) * 0.7;
+        tracks[frames + i] = Math.sin((2 * Math.PI * 880 * i) / 48_000) * 0.5;
+      }
+      const trackParams = [{ gain: 1.0, pan: -0.5 }, { gain: 0.9, pan: 0.5 }];
+      const audioWasm = bridge.audioMixMasterStereo(tracks, 2, frames, trackParams);
+      const audioJs = jsWave3AudioMixMaster(tracks, 2, frames, trackParams);
+      expect(audioWasm.backend).toBe("wasm-relaxed-simd");
+      expect(audioWasm.activeTracks).toBe(2);
+      expect(Math.abs(audioWasm.integratedLufs - audioJs.integratedLufs)).toBeLessThan(0.02);
+      expect(Math.abs(audioWasm.truePeakLinear - audioJs.truePeakLinear)).toBeLessThan(5e-4);
+
+      // 2) Vector variable-width stroke outline expansion
+      const spine = new Float32Array([0, 0, 2, 20, 0, 5, 20, 20, 3]);
+      const vecWasm = bridge.vectorExpandStrokeOutline(spine, "miter", 4);
+      const vecJs = jsWave3VectorExpandStroke(spine, "miter", 4);
+      expect(vecWasm.backend).toBe("wasm-relaxed-simd");
+      expect(vecWasm.vertexCount).toBe(vecJs.vertexCount);
+      for (let i = 0; i < vecWasm.polygonXy.length; i += 1) {
+        expect(Math.abs((vecWasm.polygonXy[i] ?? 0) - (vecJs.polygonXy[i] ?? 0))).toBeLessThan(1e-4);
+      }
+
+      // 3) Webtoon smart slicer + 64-bit FNV-1a tile dedup
+      const w = 64;
+      const h = 320;
+      const strip = new Uint8Array(w * h * 4).fill(255);
+      for (let y = 130; y <= 190; y += 1) {
+        for (let x = 10; x <= 54; x += 1) {
+          if (y <= 132 || y >= 188 || x <= 12 || x >= 52) {
+            const off = (y * w + x) * 4;
+            strip[off] = 16; strip[off + 1] = 16; strip[off + 2] = 20;
+          }
+        }
+      }
+      const sliceCfg = { targetHeight: 160, minHeight: 96, maxHeight: 240, searchWindow: 64 };
+      const slWasm = bridge.webtoonPlanSmartSlices(strip, w, h, sliceCfg);
+      const slJs = jsWave3WebtoonSlice(strip, w, h, sliceCfg);
+      expect(slWasm.backend).toBe("wasm-relaxed-simd");
+      expect(slWasm.spans.map((s) => [s.startY, s.endY])).toEqual(slJs.map((s) => [s.startY, s.endY]));
+
+      const ddWasm = bridge.webtoonDedupTilesFnv64(strip, w, h, 32);
+      const ddJs = jsWave3DedupTilesFnv64(strip, w, h, 32);
+      expect(ddWasm.backend).toBe("wasm-relaxed-simd");
+      expect(ddWasm.uniqueTiles).toBe(ddJs.uniqueTiles);
+      expect(ddWasm.hashes64).toEqual(ddJs.hashes64);
+      expect(ddWasm.canonicalIndices).toEqual(ddJs.canonicalIndices);
+
+      // 4) Print CMYK TAC-250% + Median-Cut palette 0-diff parity
+      const tile = makeDeterministicTile(32, 32, 0xfeedface);
+      const cmykWasm = bridge.colorRgbaToCmykTac(tile, { gcrStrength: 0.4, tacLimitPct: 250 });
+      const cmykJs = jsWave3RgbaToCmykTac(tile, { gcrStrength: 0.4, tacLimitPct: 250 });
+      expect(cmykWasm.backend).toBe("wasm-relaxed-simd");
+      expect(cmykWasm.maxTacPct).toBeLessThanOrEqual(250.01);
+      expect(Buffer.compare(cmykWasm.cmyk, cmykJs.cmyk)).toBe(0);
+
+      const palWasm = bridge.colorExtractPaletteMedianCut(tile, 16, 128);
+      const palJs = jsWave3ExtractPalette(tile, 16, 128);
+      expect(palWasm.backend).toBe("wasm-relaxed-simd");
+      expect(palWasm.swatches).toEqual(palJs);
+
+      expect(bridge.getTelemetry().ops).toMatchObject({
+        wave3AudioMix: 1,
+        wave3VectorStroke: 1,
+        wave3WebtoonSlice: 1,
+        wave3TileDedup: 1,
+        wave3CmykTac: 1,
+        wave3Palette: 1,
+      });
+    } finally {
+      bridge.dispose();
+    }
+    expect(bridge.getTelemetry().wave3Backend).toBe("js-fallback");
+
+    // Priority #1 native-dylib Wave-3 hooks + forced js-fallback tier verification
+    const nativeBridge = await createNativeRustCoreBridge({
+      repoRoot: REPO_ROOT,
+      nativeRunner: {
+        fnv1aChecksum: jsFnv1aChecksum32,
+        xorTileDelta: jsComputeXorTileDelta,
+        gaussianBlurRgba: jsGaussianBlurRgba,
+        audioMixMasterStereo: jsWave3AudioMixMaster,
+        vectorExpandStrokeOutline: jsWave3VectorExpandStroke,
+        webtoonPlanSmartSlices: jsWave3WebtoonSlice,
+        webtoonDedupTilesFnv64: jsWave3DedupTilesFnv64,
+        colorRgbaToCmykTac: jsWave3RgbaToCmykTac,
+        colorExtractPaletteMedianCut: jsWave3ExtractPalette,
+      },
+    });
+    expect(nativeBridge.wave3Backend).toBe("native-dylib");
+    expect(nativeBridge.colorRgbaToCmykTac(new Uint8Array([0, 0, 0, 255])).backend).toBe("native-dylib");
+    nativeBridge.dispose();
+
+    const jsBridge = await createNativeRustCoreBridge({ repoRoot: REPO_ROOT, preferredBackend: "js-fallback" });
+    expect(jsBridge.wave3Backend).toBe("js-fallback");
+    expect(jsBridge.colorRgbaToCmykTac(new Uint8Array([0, 0, 0, 255])).backend).toBe("js-fallback");
+    jsBridge.dispose();
   });
 });

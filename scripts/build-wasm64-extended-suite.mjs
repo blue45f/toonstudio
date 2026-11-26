@@ -6,7 +6,7 @@
  * 생성/검증 대상 (`apps/web/public/wasm/`):
  *   1. `studio-wasm64-drawing-core-simd.wasm`         (+simd128,+bulk-memory, < 56 KiB, 코어 16 exports)
  *   2. `studio-wasm64-drawing-core-relaxed-simd.wasm` (+simd128,+relaxed-simd,+bulk-memory, < 56 KiB, 코어 16 exports)
- *   3. `studio-wasm64-extended-suite.wasm`            (--features full-suite +simd128,+relaxed-simd,+bulk-memory, 전체 46 exports: 기존 40 + Wave-2 6)
+ *   3. `studio-wasm64-extended-suite.wasm`            (--features full-suite +simd128,+relaxed-simd,+bulk-memory, 전체 62 exports: 기존 40 + Wave-2 6 + Wave-3 16)
  *
  * 주의: 기본 유니버설 `< 48 KiB` 바이너리(`studio-wasm64-drawing-core.wasm`)는
  *       `scripts/build-wasm64-drawing-core.mjs` 계약 그대로 보존한다.
@@ -45,6 +45,7 @@ export const EXPECTED_EXTENDED_3D_CAPABILITIES = 0x3f;
 export const EXPECTED_ATELIER_STAGE_CAPABILITIES = 0x07;
 export const EXPECTED_EXTENDED_SUITE_CAPABILITIES = 0x7ffff;
 export const EXPECTED_WAVE2_CAPABILITIES = 0x1f;
+export const EXPECTED_WAVE3_CAPABILITIES = 0x0f;
 
 const FORBIDDEN_PATH_MARKERS = Object.freeze(["/Users/", "/home/", "\\Users\\"]);
 
@@ -109,12 +110,32 @@ export const WAVE2_NATIVE_EXPORTS = Object.freeze([
   "wasm_solve_ccd_spine_ik_3d",
 ]);
 
+export const WAVE3_NATIVE_EXPORTS = Object.freeze([
+  "wasm_wave3_capabilities",
+  "wasm_audio_biquad_eq_stereo",
+  "wasm_audio_mix_master_stereo",
+  "wasm_audio_schroeder_reverb_stereo",
+  "wasm_audio_resample_mono",
+  "wasm_vector_simplify_rdp",
+  "wasm_vector_smooth_chaikin",
+  "wasm_vector_flatten_bezier_arc_len",
+  "wasm_vector_expand_stroke_outline",
+  "wasm_vector_hit_test_batch",
+  "wasm_webtoon_plan_smart_slices",
+  "wasm_webtoon_dedup_tiles_fnv64",
+  "wasm_color_srgb_to_p3_batch",
+  "wasm_color_p3_to_srgb_batch",
+  "wasm_color_rgba_to_cmyk_tac_batch",
+  "wasm_color_extract_palette_median_cut",
+]);
+
 export const EXTENDED_SUITE_EXPORTS = Object.freeze([
   ...CORE_EXPORTS,
   ...EXTENDED_3D_EXPORTS,
   ...VIRTUAL_3D_PHYSICS_EXPORTS,
   ...PRO_RASTER_TOOLS_EXPORTS,
   ...WAVE2_NATIVE_EXPORTS,
+  ...WAVE3_NATIVE_EXPORTS,
 ]);
 
 export const ARTIFACT_SPECS = Object.freeze([
@@ -331,6 +352,7 @@ export async function verifyArtifact(spec, wasmPath) {
       : null,
     extendedCaps: spec.isExtendedSuite ? Number(exportsObj.wasm_extended_capabilities()) : null,
     wave2Caps: spec.isExtendedSuite ? Number(exportsObj.wasm_wave2_capabilities()) : null,
+    wave3Caps: spec.isExtendedSuite ? Number(exportsObj.wasm_wave3_capabilities()) : null,
     sha256,
     exportCount: exportNames.length,
     exportNames,
@@ -407,7 +429,7 @@ export async function main(argv = process.argv.slice(2)) {
   for (const r of reports) {
     const capsStr =
       r.extendedCaps !== null
-        ? `hotpath=0x${r.hotpathCaps.toString(16)} ext=0x${r.extendedCaps.toString(16)} (3d=0x${r.extended3dCaps.toString(16)}, stage=0x${r.atelierStageCaps.toString(16)}, wave2=0x${r.wave2Caps.toString(16)})`
+        ? `hotpath=0x${r.hotpathCaps.toString(16)} ext=0x${r.extendedCaps.toString(16)} (3d=0x${r.extended3dCaps.toString(16)}, stage=0x${r.atelierStageCaps.toString(16)}, wave2=0x${r.wave2Caps.toString(16)}, wave3=0x${r.wave3Caps.toString(16)})`
         : `hotpath=0x${r.hotpathCaps.toString(16)}`;
     console.log(
       `[wasm64-extended-suite] 검증 통과 [${r.id}]: ${r.path} · ${r.byteLength.toLocaleString("en-US")} B (${r.kib} KiB < ${r.maxKib} KiB) · ${r.targetFeatures} · ABI v${r.abiVersion} · ${capsStr} · exports=${r.exportCount} · V8=OK · sha256=${r.sha256.slice(0, 16)}…`,

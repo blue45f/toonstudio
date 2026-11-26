@@ -12,9 +12,13 @@ use std::fmt;
 
 #[cfg(feature = "extended-3d")]
 pub mod atelier_stage_3d_kernel;
+#[cfg(feature = "extended-suite")]
+pub mod audio_dsp_mixer_kernel;
 pub mod brush_kernel;
 #[cfg(feature = "extended-3d")]
 pub mod bvh3d_sah_raycast_kernel;
+#[cfg(feature = "extended-suite")]
+pub mod color_cmyk_oklch_kernel;
 #[cfg(feature = "pro-raster-tools")]
 pub mod color_halftone_kernel;
 pub mod filter_warp_kernel;
@@ -29,10 +33,14 @@ pub mod spectral_km_kernel;
 pub mod tactile_texture_kernel;
 pub mod tile_compositor_kernel;
 pub mod tile_delta_kernel;
+#[cfg(feature = "extended-suite")]
+pub mod vector_path_kernel;
 pub mod vector_psd_tile_kernel;
 #[cfg(feature = "virtual-3d-physics")]
 pub mod virtual_3d_physics_kernel;
 pub mod wasm_ffi;
+#[cfg(feature = "extended-suite")]
+pub mod webtoon_slicer_dedup_kernel;
 
 #[cfg(feature = "extended-3d")]
 pub use atelier_stage_3d_kernel::{
@@ -271,4 +279,47 @@ pub use wasm_ffi::{
     wasm_raycast_mesh_sah_bvh_3d, wasm_solve_ccd_spine_ik_3d, wasm_solve_two_bone_ik_3d,
     CCD_SPINE_IK_FFI_PARAM_LEN, SAH_BVH_HIT_FFI_LEN, SAH_BVH_RAY_FFI_LEN,
     TWO_BONE_IK_FFI_OUT_LEN, TWO_BONE_IK_FFI_PARAM_LEN,
+};
+#[cfg(feature = "extended-suite")]
+pub use audio_dsp_mixer_kernel::{
+    measure_loudness_true_peak, mix_and_master_stereo, mix_tracks_stereo, process_biquad_in_place,
+    process_biquad_stereo_in_place, process_dynamics_stereo, process_schroeder_reverb_stereo,
+    resample_mono, BiquadCoeffs, BiquadFilterKind, BiquadState, DynamicsConfig, DynamicsState,
+    DynamicsStats, LoudnessMetrics, MixMasterReport, MixTrackParams, ResampleInterpolation,
+    SchroederReverbConfig, MAX_AUDIO_SAMPLE_RATE, MIN_AUDIO_SAMPLE_RATE, SILENCE_LUFS_FLOOR,
+};
+#[cfg(feature = "extended-suite")]
+pub use color_cmyk_oklch_kernel::{
+    cmyk_to_rgba_proof_batch, display_p3_to_oklch_batch, display_p3_to_srgb_rgba_batch,
+    extract_palette_median_cut, oklch_f32_to_srgb_rgba_batch, oklch_to_display_p3_batch,
+    rgba_to_cmyk_tac_batch, srgb_rgba_to_display_p3_batch, srgb_rgba_to_oklch_f32_batch,
+    CmykTacConfig, CmykTacStats, PaletteSwatch, DEFAULT_CMYK_TAC_LIMIT_PCT, MAX_MEDIAN_CUT_COLORS,
+};
+#[cfg(feature = "extended-suite")]
+pub use vector_path_kernel::{
+    build_arc_length_table, expand_variable_width_stroke, flatten_cubic_bezier_adaptive,
+    hit_test_polygon_2d, hit_test_polygon_batch_2d, polygon_winding_number_2d,
+    sample_polyline_at_arc_length, simplify_polyline_rdp, simplify_polyline_rdp_indices,
+    smooth_polyline_chaikin, ExpandedStrokeOutline, FlattenedBezierCurve, StrokeJoinStyle,
+    WindingFillRule, MAX_BEZIER_SUBDIV_DEPTH, MAX_CHAIKIN_ITERATIONS,
+};
+#[cfg(feature = "extended-suite")]
+pub use wasm_ffi::{
+    wasm_audio_biquad_eq_stereo, wasm_audio_mix_master_stereo, wasm_audio_resample_mono,
+    wasm_audio_schroeder_reverb_stereo, wasm_color_extract_palette_median_cut,
+    wasm_color_p3_to_srgb_batch, wasm_color_rgba_to_cmyk_tac_batch, wasm_color_srgb_to_p3_batch,
+    wasm_vector_expand_stroke_outline, wasm_vector_flatten_bezier_arc_len,
+    wasm_vector_hit_test_batch, wasm_vector_simplify_rdp, wasm_vector_smooth_chaikin,
+    wasm_wave3_capabilities, wasm_webtoon_dedup_tiles_fnv64, wasm_webtoon_plan_smart_slices,
+    WASM_WAVE3_CAPABILITIES, WAVE3_BEZIER_CTRL_LEN, WAVE3_BIQUAD_PARAM_LEN, WAVE3_BIQUAD_STATE_LEN,
+    WAVE3_CMYK_TAC_PARAM_LEN, WAVE3_CMYK_TAC_STATS_LEN, WAVE3_DEDUP_ENTRY_U64_STRIDE,
+    WAVE3_DEDUP_SUMMARY_LEN, WAVE3_DYNAMICS_PARAM_LEN, WAVE3_MIX_METRICS_LEN,
+    WAVE3_MIX_TRACK_STRIDE, WAVE3_PALETTE_SWATCH_U32_STRIDE, WAVE3_REVERB_PARAM_LEN,
+    WAVE3_SLICE_PARAM_LEN, WAVE3_SLICE_SPAN_STRIDE,
+};
+#[cfg(feature = "extended-suite")]
+pub use webtoon_slicer_dedup_kernel::{
+    analyze_webtoon_row_energies, classify_and_dedup_tiles, fnv1a_hash_64,
+    plan_webtoon_smart_slices, RowCutMetrics, TileClass, TileDedupEntry, TileDedupReport,
+    WebtoonSliceConfig, WebtoonSliceSpan, FNV1A_64_OFFSET_BASIS, FNV1A_64_PRIME,
 };

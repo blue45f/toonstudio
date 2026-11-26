@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { performance } from "node:perf_hooks";
+import { runWave3Smoke } from "./wasm64-wave3-smoke.mjs";
 
 const EXPECTED_EXTENDED_3D_CAPABILITIES = 0x3f;
 const EXPECTED_ATELIER_STAGE_CAPABILITIES = 0x07;
@@ -540,6 +541,8 @@ export function runExtendedSuiteSmoke(e) {
       const dz = solved[17] - 0.22;
       assert.ok(Math.hypot(dx, dy, dz) <= 2e-3);
     }).ms;
+
+    Object.assign(timings, runWave3Smoke(e, arena, measure));
 
     return timings;
   } finally {

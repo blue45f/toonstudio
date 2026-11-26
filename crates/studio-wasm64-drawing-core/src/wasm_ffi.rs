@@ -662,3 +662,26 @@ pub use wave2_native_kernels::{
     CCD_SPINE_IK_FFI_PARAM_LEN, SAH_BVH_HIT_FFI_LEN, SAH_BVH_RAY_FFI_LEN,
     TWO_BONE_IK_FFI_OUT_LEN, TWO_BONE_IK_FFI_PARAM_LEN,
 };
+
+#[cfg(feature = "extended-suite")]
+mod wave3_native_kernels;
+#[cfg(feature = "extended-suite")]
+mod wave3_slicer_color;
+#[cfg(feature = "extended-suite")]
+pub use wave3_native_kernels::{
+    wasm_audio_biquad_eq_stereo, wasm_audio_mix_master_stereo, wasm_audio_resample_mono,
+    wasm_audio_schroeder_reverb_stereo, wasm_vector_expand_stroke_outline,
+    wasm_vector_flatten_bezier_arc_len, wasm_vector_hit_test_batch, wasm_vector_simplify_rdp,
+    wasm_vector_smooth_chaikin, wasm_wave3_capabilities, WASM_WAVE3_CAPABILITIES,
+    WAVE3_BEZIER_CTRL_LEN, WAVE3_BIQUAD_PARAM_LEN, WAVE3_BIQUAD_STATE_LEN,
+    WAVE3_DYNAMICS_PARAM_LEN, WAVE3_MIX_METRICS_LEN, WAVE3_MIX_TRACK_STRIDE,
+    WAVE3_REVERB_PARAM_LEN,
+};
+#[cfg(feature = "extended-suite")]
+pub use wave3_slicer_color::{
+    wasm_color_extract_palette_median_cut, wasm_color_p3_to_srgb_batch,
+    wasm_color_rgba_to_cmyk_tac_batch, wasm_color_srgb_to_p3_batch, wasm_webtoon_dedup_tiles_fnv64,
+    wasm_webtoon_plan_smart_slices, WAVE3_CMYK_TAC_PARAM_LEN, WAVE3_CMYK_TAC_STATS_LEN,
+    WAVE3_DEDUP_ENTRY_U64_STRIDE, WAVE3_DEDUP_SUMMARY_LEN, WAVE3_PALETTE_SWATCH_U32_STRIDE,
+    WAVE3_SLICE_PARAM_LEN, WAVE3_SLICE_SPAN_STRIDE,
+};

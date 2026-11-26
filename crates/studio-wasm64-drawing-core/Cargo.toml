@@ -17,8 +17,10 @@ extended-3d = []
 virtual-3d-physics = ["extended-3d"]
 # 프로 래스터 드로잉 커널(플러드 필·매직 완드·마칭 앤츠·OKLCH/CMYK·하프톤·리퀴파이·MLS 워프·벡터/PSD C-ABI)
 pro-raster-tools = []
-# 지연 로드용 전체 확장 스위트 메타 피처 (3D + 물리 + 프로 래스터 도구)
-full-suite = ["extended-3d", "virtual-3d-physics", "pro-raster-tools"]
+# Wave-3 확장 스위트 커널(오디오 DSP 믹서·무한 캔버스 벡터 기하·웹툰 스마트 슬라이서/타일 중복제거·Display-P3/CMYK TAC/팔레트)
+extended-suite = []
+# 지연 로드용 전체 확장 스위트 메타 피처 (3D + 물리 + 프로 래스터 도구 + Wave-3 확장 스위트)
+full-suite = ["extended-3d", "virtual-3d-physics", "pro-raster-tools", "extended-suite"]
 
 [dependencies]
 
