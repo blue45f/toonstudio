@@ -388,16 +388,16 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
     category: "collab",
     term: t("3f+1 BFT 정족수 · AEAD 스트림 · ₩0 머클 시점 원장", "3f+1 BFT quorum, AEAD stream & ₩0 Merkle timestamp log"),
     definition: t(
-      "비잔틴 이중 투표 피어와 오염된 스트리밍 청크를 저장 전에 격리하고, 가스비 ₩0 WebCrypto 전자서명 해시체인·머클 에포크로 창작 시점을 영구 증명하는 보안 계층입니다.",
-      "A serverless security layer quarantining 3f+1 Byzantine equivocation and poisoned AEAD chunks pre-storage while sealing ₩0 WebCrypto Merkle timestamp proofs.",
+      "이중 투표와 훼손된 청크를 판별하고, WebCrypto 서명과 머클 트리로 기록한 시각과 내용의 무결성을 검증하는 방식입니다.",
+      "An approach for detecting double votes and corrupted chunks and verifying the integrity of recorded timestamps and content with WebCrypto signatures and a Merkle tree.",
     ),
     analogy: t(
       "말을 바꾸는 참석자의 투표권은 즉시 회수하고, 봉인 스티커(AES-GCM)가 뜯긴 상자는 창고 입구에서 돌려보내며, 확정된 원고는 공증 수수료 없이 작가 인감 사슬로 묶는 검수소입니다.",
       "Like revoking double-voters, turning away parcels with broken tamper seals before warehousing, and chaining signed pages without notary fees.",
     ),
     inToonstudio: t(
-      "p2p-bft-timestamp-audit.ts(Ed25519/ECDSA 자동 폴백·오프라인 영수증 검증)와 ChunkAuthenticatedAssetStreamVerifier(오염 청크 0B 기록)를 단위 테스트로 검증했습니다.",
-      "Verified in p2p-bft-timestamp-audit.ts (Ed25519/ECDSA fallback, offline receipts) and ChunkAuthenticatedAssetStreamVerifier (0 B written on mid-stream tamper).",
+      "단위 테스트에서 서명 폴백, 오프라인 영수증 검증, 변조된 청크의 쓰기 차단을 확인했습니다. /studio 팀 작업 연결은 후속 단계입니다.",
+      "Unit tests cover signature fallback, offline receipt verification and withholding writes for tampered chunks. /studio collaboration integration is a follow-up.",
     ),
     chapters: ["collaborative-crdt-boundary", "webrtc-media-authority"],
     atlasIds: ["p2p-bft-quorum-merkle-timestamp-audit"],
@@ -415,8 +415,8 @@ export const GLOSSARY_MORE_COLLAB: readonly GlossaryTerm[] = [
       "Like proving you know a vault combination by answering fresh random challenges that only the holder can compute, without speaking a single digit.",
     ),
     inToonstudio: t(
-      "webrtc-delta-and-zk-ownership.ts 가 ES2017 호환 BigInt 안전 소수군 위에서 시드 무노출 증명·위조 시드 거절·리플레이 차단을 서버 비용 ₩0 으로 검증했습니다.",
-      "webrtc-delta-and-zk-ownership.ts verified zero-seed-leakage proofs, impostor rejection and replay blocking over an ES2017-compatible BigInt prime subgroup at ₩0.",
+      "단위 테스트에서 증명 검증, 다른 시드와 다른 논스에 대한 거절을 확인했습니다. /studio 공유 화면 연결은 후속 단계입니다.",
+      "Unit tests cover proof verification and rejection with a different seed or nonce. /studio sharing integration is a follow-up.",
     ),
     chapters: ["webrtc-media-authority", "licenses"],
     atlasIds: ["webrtc-sctp-vector-clock-zk-ownership"],

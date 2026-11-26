@@ -14,8 +14,8 @@ export const PLATFORM_OPS_WAVE4_CI_CARDS: readonly EngineeringAtlasEntry[] = [
     title: t("스마트 CI 역방향 의존성 경로 필터 · LPT 샤드 분산기", "Smart CI reverse-dependency filter & LPT shard load-balancer"),
     status: "experimental",
     tagline: t(
-      "필수 보호 게이트(core+verify)는 100% 보존하면서 무관한 중량 잡만 생략하고 LPT로 샤드 편차를 줄입니다.",
-      "Preserves mandatory core+verify gates 100% while skipping unaffected heavy jobs and balancing shards via LPT.",
+      "단위 테스트에서 core·verify를 유지하며 영향 범위와 LPT 샤드 배치를 계산하는 계획기를 확인했습니다.",
+      "Unit tests verify a planner that keeps core and verify, computes affected scopes and uses LPT to assign shards.",
     ),
     background: [
       t(
@@ -27,8 +27,8 @@ export const PLATFORM_OPS_WAVE4_CI_CARDS: readonly EngineeringAtlasEntry[] = [
         "propagateImpactedPackages walks reverse workspace dependencies from changed files while unconditionally pinning MANDATORY_RELEASE_GATES (core, verify) so required checks never hang.",
       ),
       t(
-        "선택된 테스트 스위트들은 Graham 의 LPT(Longest-Processing-Time-First) 알고리즘으로 예상 실행 시간 내림차순 정렬 후 가장 가벼운 샤드에 배분되어 전체 완료 시간(Makespan) 편차를 최소화합니다(Current: 단위 검증 완료·문서 PR 시 40분+ 절감 산출, Target: GitHub Actions 매트릭스 계획 스텝 연동).",
-        "Selected suites are sorted descending by duration and assigned via Graham's LPT algorithm to minimize shard makespan imbalance (Current: unit-verified with >40 runner-min savings on docs PRs; Target: GitHub Actions matrix planner step).",
+        "선택한 테스트를 예상 실행 시간이 긴 순서로 배치합니다. 문서 변경 단위 테스트는 입력으로 준 실행 시간에서 러너 시간 40분 이상 절감을 계산합니다. GitHub Actions 매트릭스 연동은 후속 단계입니다.",
+        "The planner assigns selected suites in descending order of estimated duration. A docs-only fixture computes over 40 runner-minutes of savings from supplied durations. Wiring it into the GitHub Actions matrix is a follow-up.",
       ),
     ],
     keyPoints: [
@@ -66,8 +66,8 @@ export const PLATFORM_OPS_WAVE4_CI_CARDS: readonly EngineeringAtlasEntry[] = [
       {
         feature: t("스마트 CI 역방향 의존성 필터 & Graham LPT 샤드 스케줄러", "Smart CI reverse-dependency filter & Graham LPT shard scheduler"),
         role: t(
-          "필수 게이트(core·verify) 불변 보존, 변경 영향 도메인 추출, LPT 샤드 부하 분산 및 러너 시간 절감 계산을 수행합니다.",
-          "Preserves mandatory core/verify gates, computes affected domains and balances runner shards via LPT.",
+          "실험용 계획기를 입력 경로와 예상 실행 시간으로 단위 검증했습니다. GitHub Actions 실행 연결은 후속 단계입니다.",
+          "The experimental planner has unit coverage using input paths and estimated durations. Wiring it into GitHub Actions is a follow-up.",
         ),
         paths: [
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/ci-smart-shard-scheduler.ts",
@@ -116,8 +116,8 @@ export const PLATFORM_OPS_WAVE4_CI_CARDS: readonly EngineeringAtlasEntry[] = [
     chapterIds: ["quality", "delivery"],
     talk: {
       pitch: t(
-        "브랜치 보호가 요구하는 core 와 verify 게이트는 단 한 번도 빠뜨리지 않으면서, 역방향 패키지 의존성과 Graham LPT 샤드 배치로 불필요한 러너 대기와 꼬리 지연을 함께 줄였습니다.",
-        "Never drops mandatory core or verify gates while cutting wasted runner minutes and straggler shards via reverse-dependency filtering and LPT balancing.",
+        "단위 테스트에서 변경 파일에 따라 러너 계획을 만들고, 선택된 샤드에 core·verify가 포함되는지 확인했습니다.",
+        "Unit tests build runner plans for changed paths and check that those plans include core and verify.",
       ),
       analogy: t(
         "공항의 필수 보안 검색대(core·verify)는 모든 승객이 반드시 통과하되, 국제선 환승객이 아니면 세관 재검사는 건너뛰고 가장 줄이 짧은 계산대부터 큰 짐을 배정하는 방식입니다.",

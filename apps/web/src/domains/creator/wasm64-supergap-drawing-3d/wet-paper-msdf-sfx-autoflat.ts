@@ -628,4 +628,3 @@ export function closeLineArtGapsAndAutoFlat(input: AutoFlattingInput): AutoFlatt
     elapsedMs: Math.max(0, t1 - t0),
   };
 }
-

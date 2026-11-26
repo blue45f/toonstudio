@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildVelloPhase1OverlayScene } from "../canvas/studio-vello-phase1-overlay-adapter";
+import { createStudioOpfsMemoryFileSystem } from "../studio-opfs-filesystem";
 import { packetizeWave3StereoPcm } from "../wasm64-gpu-media-pipeline/webcodecs-audiotoon-timeline-mux";
 import {
   AdaptiveStrokeGeometryCache,
@@ -11,6 +12,8 @@ import {
   buildCompositionOverlayState,
   compressSkeletalClip,
   computeSvtMemoryBudget,
+  createBrowserOpfsStrokeStore,
+  createOpfsStrokeStore,
   decompressSkeletalClip,
   deserializeStrokeGeometry,
   detectSpeechLanguage,
@@ -35,7 +38,6 @@ import {
   type AdaptiveStrokeInput,
   type SkeletalAnimationClip,
   type SkeletalBoneTrack,
-  type StrokeBackingStoreLike,
   type SvtGpuBufferLike,
   type SvtGpuDeviceLike,
 } from "./index";
@@ -407,7 +409,7 @@ describe("2. WebNN / 오프라인 구도·객체 검출기 및 Vello Phase1 오�
   });
 });
 
-describe("3. 곡률·줌·필압 적응형 스트로크 세분화기 및 64-bit FNV-1a LRU/IndexedDB 캐시", () => {
+describe("3. 곡률·줌·필압 적응형 스트로크 세분화기 및 64-bit FNV-1a LRU/OPFS 캐시", () => {
   it("직선 구간 정점 수를 대폭 절감하면서 급곡선·코너는 평탄도 오차 이내로 부드럽게 세분화한다", () => {
     const straightStroke: AdaptiveStrokeInput = {
       strokeId: "straight-1",
@@ -444,7 +446,7 @@ describe("3. 곡률·줌·필압 적응형 스트로크 세분화기 및 64-bit 
     expect(curveGeom.verticesXy.every((v) => Number.isFinite(v))).toBe(true);
   });
 
-  it("64-bit FNV-1a 캐시가 팬/동일 줌 재렌더에서 0 재계산 적중하고 LRU 축출 및 IndexedDB 백킹 복원을 수행한다", async () => {
+  it("64-bit FNV-1a 캐시가 팬/동일 줌 재렌더에서 0 재계산 적중하고 LRU 축출 및 OPFS 백킹 복원을 수행한다", async () => {
     const strokeA: AdaptiveStrokeInput = {
       strokeId: "sA",
       baseWidthPx: 10,
@@ -471,17 +473,7 @@ describe("3. 곡률·줌·필압 적응형 스트로크 세분화기 및 64-bit 
     expect(h1.hash64).toBe(h2.hash64);
     expect(h1.cacheKey).not.toBe(hDiff.cacheKey);
 
-    const backingMap = new Map<string, Uint8Array>();
-    const backingStore: StrokeBackingStoreLike = {
-      get: async (k) => backingMap.get(k) ?? null,
-      put: async (k, v) => {
-        backingMap.set(k, v);
-      },
-      delete: async (k) => {
-        backingMap.delete(k);
-      },
-    };
-
+    const backingStore = createOpfsStrokeStore(createStudioOpfsMemoryFileSystem());
     const cache = new AdaptiveStrokeGeometryCache({ maxEntries: 2, maxBytes: 1024 * 1024, backingStore });
     const first = await cache.getOrSubdivideAsync(strokeA, { zoom: 1.0 });
     expect(first.cacheHit).toBe(false);
@@ -493,7 +485,7 @@ describe("3. 곡률·줌·필압 적응형 스트로크 세분화기 및 64-bit 
     expect(second.source).toBe("memory-lru");
     expect(cache.getMetrics().recomputeCount).toBe(1);
 
-    // 바이너리 직렬화/역직렬화 무결성 + 메모리 클리어 후 IndexedDB 백킹 복원
+    // 바이너리 직렬화/역직렬화 무결성과 메모리 초기화 후 OPFS 백킹 복원
     const roundTrip = deserializeStrokeGeometry(first.geometry.cacheKey, serializeStrokeGeometry(first.geometry));
     expect(roundTrip?.vertexCount).toBe(first.geometry.vertexCount);
     expect(roundTrip?.hash64).toBe(first.geometry.hash64);
@@ -501,14 +493,69 @@ describe("3. 곡률·줌·필압 적응형 스트로크 세분화기 및 64-bit 
     cache.clearMemory();
     const hydrated = await cache.getOrSubdivideAsync(strokeA, { zoom: 1.0 });
     expect(hydrated.cacheHit).toBe(true);
-    expect(hydrated.source).toBe("indexeddb-backing");
+    expect(hydrated.source).toBe("opfs-backing");
+    expect(hydrated.geometry.verticesXy).toEqual(first.geometry.verticesXy);
     expect(cache.getMetrics().recomputeCount).toBe(1);
+
+    const lowerDepth = await cache.getOrSubdivideAsync(strokeA, { zoom: 1.0, maxSubdivisionDepth: 1 });
+    expect(lowerDepth.cacheHit).toBe(false);
+    expect(lowerDepth.geometry.centerlineSampleCount).toBeLessThan(first.geometry.centerlineSampleCount);
 
     // maxEntries=2 LRU 축출 검증
     cache.getOrSubdivide(strokeB, { zoom: 1.0 });
     cache.getOrSubdivide(strokeB, { zoom: 4.0 });
     expect(cache.getMetrics().evictions).toBeGreaterThanOrEqual(1);
     expect(cache.getMetrics().entryCount).toBeLessThanOrEqual(2);
+  });
+
+  it("OPFS 캐시의 128개 슬롯 상한을 유지하며 교체된 키와 잘못된 레코드를 캐시 미스로 처리한다", async () => {
+    const fs = createStudioOpfsMemoryFileSystem();
+    const store = createOpfsStrokeStore(fs);
+    const geometry = subdivideAdaptiveStroke({ baseWidthPx: 4, points: [{ x: 0, y: 0, pressure: 1 }, { x: 20, y: 9, pressure: 1 }] });
+    const keyAt = (index: number) => `stk64_${index.toString(16).padStart(16, "0")}_z0`;
+    const serializeAt = (index: number) => serializeStrokeGeometry({
+      ...geometry, hash64: BigInt(index), cacheKey: keyAt(index),
+    });
+
+    for (let index = 0; index < 129; index += 1) {
+      expect(await store.write(keyAt(index), serializeAt(index))).toBe(true);
+    }
+    expect(await fs.list()).toHaveLength(128);
+    expect(await store.read(keyAt(0))).toBeNull();
+    await store.remove(keyAt(0));
+    expect(await store.read(keyAt(128))).toEqual(serializeAt(128));
+    expect(await store.write(keyAt(128), serializeAt(0))).toBe(false);
+    expect(await store.write(keyAt(128), new Uint8Array(256 * 1024 + 1))).toBe(false);
+    expect(await store.write("../document", serializeAt(128))).toBe(false);
+
+    await fs.write("geometry/0.bin", Uint8Array.of(5));
+    expect(await store.read(keyAt(128))).toBeNull();
+    await fs.write("geometry/999.bin", Uint8Array.of(7));
+    await fs.write("manuscript.bin", Uint8Array.of(9));
+    await store.clear?.();
+    expect(await fs.list()).toEqual(["geometry/999.bin", "manuscript.bin"]);
+  });
+
+  it("OPFS를 열거나 캐시를 쓰고 읽지 못해도 같은 지오메트리를 계산해 메모리에서 재사용한다", async () => {
+    expect(await createBrowserOpfsStrokeStore({})).toBeNull();
+    expect(await createBrowserOpfsStrokeStore({
+      navigator: { storage: { async getDirectory() { throw new DOMException("Blocked", "SecurityError"); } } },
+    })).toBeNull();
+
+    const fs = createStudioOpfsMemoryFileSystem({ failReadAfter: 1, failWriteAfter: 1 });
+    const cache = new AdaptiveStrokeGeometryCache({ backingStore: createOpfsStrokeStore(fs) });
+    const stroke = { baseWidthPx: 4, points: [{ x: 0, y: 0, pressure: 1 }, { x: 20, y: 9, pressure: 1 }] };
+    const expected = subdivideAdaptiveStroke(stroke);
+    const computed = await cache.getOrSubdivideAsync(stroke);
+    expect(computed).toMatchObject({ geometry: expected, cacheHit: false, source: "computed" });
+    expect(fs.counts.write).toBe(1);
+    fs.restart({ failReadAfter: 1 });
+    const store = createOpfsStrokeStore(fs);
+    await expect(store.write(expected.cacheKey, serializeStrokeGeometry(expected))).resolves.toBe(true);
+    cache.clearMemory();
+    expect(await cache.getOrSubdivideAsync(stroke)).toMatchObject({ geometry: expected, source: "computed" });
+    expect(fs.counts.read).toBe(1);
+    expect(await cache.getOrSubdivideAsync(stroke)).toMatchObject({ geometry: expected, source: "memory-lru" });
   });
 });
 

@@ -15,8 +15,8 @@ export const THREE_D_WAVE4_CSM_MESHLET_CARDS: readonly EngineeringAtlasEntry[] =
     title: t("정적/동적 분리 CSM 그림자 · 수밀 컴퓨트 메시렛 · 공간 해시 충돌", "Split CSM shadow cache, watertight compute meshlet & spatial hash"),
     status: "experimental",
     tagline: t(
-      "움직인 캐릭터 본이 닿은 그림자 타일만 갱신해 85%+ 절감하고 균열 0개 수밀 컴퓨트 메시렛을 세분화합니다.",
-      "Cuts shadow tile redraws by 85%+ via bone-dirty Split CSM and subdivides 0-crack watertight compute meshlets.",
+      "단위 테스트에서 그림자 갱신 대상 타일을 85% 이상 줄이고, 정팔면체 세분화 뒤 열린 경계 모서리가 0개임을 확인했습니다.",
+      "Unit tests selected over 85% fewer shadow tiles and found zero open boundary edges after subdividing an octahedron.",
     ),
     background: [
       t(
@@ -28,12 +28,12 @@ export const THREE_D_WAVE4_CSM_MESHLET_CARDS: readonly EngineeringAtlasEntry[] =
         "SplitCsmDirtyTileCache retains static background depth tiles while light direction is steady, marking only cascade tiles touched by moving character bone AABBs.",
       ),
       t(
-        "subdivideAndDisplaceMeshlets 는 공유 모서리 용접(Shared-Edge Weld) 1→4 세분화와 면적 가중 정점 법선 변위, 64정점/126삼각형 메시렛 패킹으로 열린 경계 모서리 0개(openBoundaryEdges = 0) 수밀 매니폴드를 보장하며, stepSpatialHashParticles 는 균일 3D 공간 해시로 O(N) 입자 탄성 충돌을 풉니다(Current: 단위 검증 완료·0B 번들, Target: 3D 배경 뷰포트 옵션 연결).",
-        "subdivideAndDisplaceMeshlets guarantees 0 open boundary edges via shared-edge weld 1→4 tessellation and 64v/126t meshlet packing, paired with O(N) 3D spatial-hash particle collisions (Current: unit-verified, 0 B eager; Target: 3D viewport integration).",
+        "subdivideAndDisplaceMeshlets는 공유 모서리를 용접해 1→4로 세분화하고 64정점·126삼각형 한도로 메시렛을 묶습니다. 정팔면체 단위 테스트에서 열린 경계 모서리 0개를 확인했습니다. 입자 충돌도 별도 단위 테스트로 확인했으며 3D 배경 뷰포트 연결은 후속 단계입니다.",
+        "The meshlet module welds shared edges during 1-to-4 subdivision and packs at most 64 vertices and 126 triangles per meshlet. An octahedron unit fixture had zero open boundary edges. Particle collisions have separate unit coverage. 3D viewport integration is a follow-up.",
       ),
     ],
     keyPoints: [
-      t("정적 건축 배경 깊이 캐시 + 캐릭터 본 AABB 더티 타일만 선택 갱신(85%+ 절감)", "Static depth cache + bone-AABB dirty shadow tiles (>85% saved)"),
+      t("단위 장면에서 캐릭터 본 AABB가 닿은 타일만 골라 갱신 대상 85% 이상 감소", "Unit scene selects bone-AABB dirty tiles and reduces the update list by over 85%"),
       t("원거리 무접촉 캐스케이드 패스 전체 스킵으로 그림자 드로우콜 절감", "Skips untouched far shadow cascades completely"),
       t("레거시 지오메트리 셰이더를 대체하는 64v/126t 수밀(균열 0) 컴퓨트 메시렛", "64v/126t watertight (0-crack) compute meshlets replacing GS"),
       t("균일 3D 공간 해시 격자 기반 O(N) 근방 탐색 및 탄성 충격량 입자 충돌", "O(N) uniform 3D spatial-hash broadphase & impulse collision"),
@@ -61,14 +61,13 @@ export const THREE_D_WAVE4_CSM_MESHLET_CARDS: readonly EngineeringAtlasEntry[] =
       {
         feature: t("Split CSM 그림자 캐시 · 수밀 컴퓨트 메시렛 · 3D 공간 해시 솔버", "Split CSM cache, watertight compute meshlet & 3D spatial hash"),
         role: t(
-          "캐릭터 본 이동 영역 한정 CSM 타일 갱신, 균열 0개 법선 변위 메시렛 분할, O(N) 3D 입자 충돌을 수행합니다.",
-          "Computes bone-scoped CSM dirty tiles, crack-free displaced meshlets and O(N) 3D particle collisions.",
+          "실험 모듈에서 CSM 더티 타일, 메시렛 변위, 입자 충돌을 단위 테스트로 확인했습니다. /studio 3D 배경 뷰포트 연결은 후속 단계입니다.",
+          "Unit tests cover CSM dirty tiles, meshlet displacement and particle collisions. Integration into the /studio 3D background viewport is a follow-up.",
         ),
         paths: [
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/hybrid-compute-shadow-ink-meshlet.ts",
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/wasm64-wave4-hypercore.test.ts",
         ],
-        route: "/studio",
       },
     ],
     samples: [
@@ -109,8 +108,8 @@ export const THREE_D_WAVE4_CSM_MESHLET_CARDS: readonly EngineeringAtlasEntry[] =
     chapterIds: ["web-3d-engine", "performance"],
     talk: {
       pitch: t(
-        "정적 배경 그림자는 캐시해 두고 움직인 캐릭터 관절 타일만 다시 그려 그림자 타일 연산을 85% 이상 아끼며, 지오메트리 셰이더 없이도 균열 0개 수밀 컴퓨트 메시렛 변위를 구현했습니다.",
-        "Caches static stage shadows to save >85% of cascade tile work on character motion and delivers 0-crack watertight compute meshlet displacement without geometry shaders.",
+        "단위 장면에서 움직인 관절과 겹치는 타일만 골라 갱신 대상 수를 85% 이상 줄였습니다. 별도 정팔면체 입력의 세분화 결과에는 열린 경계 모서리가 없었습니다.",
+        "A unit scene selected over 85% fewer shadow tiles. A separate octahedron fixture produced subdivision geometry with zero open boundary edges.",
       ),
       analogy: t(
         "배경 세트장 조명은 그대로 사진으로 찍어 두고 배우가 발을 옮긴 바닥 타일만 다시 칠하며, 천 주름은 이음새 실밥을 맞물려 찢어지지 않게 늘리는 무대 기법입니다.",

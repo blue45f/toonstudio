@@ -15,8 +15,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WAVE4_HYPERCORE: readonly Engineerin
     title: t("WASM 슬랩 워커 풀 · SAB 오디오-GPU PLL · Ridge 셰이더 프리워머", "WASM slab worker pool, SAB audio-GPU PLL & Ridge shader prewarmer"),
     status: "experimental",
     tagline: t(
-      "64B..64KiB O(1) 슬랩·Work-Stealing 워커 풀, 48kHz↔120Hz SAB PLL 동기화, Ridge WGSL 프리워밍을 결합했습니다.",
-      "Unites a 64 B–64 KiB O(1) slab work-stealing WASM pool, 48 kHz↔120 Hz SAB PLL sync and Ridge WGSL pre-warming.",
+      "슬랩 워커 풀, 48 kHz↔120 Hz 공유 메모리 동기화 모형, 셰이더 예열 계획을 각 모듈에서 확인했습니다.",
+      "Module tests cover a slab worker pool, a 48 kHz↔120 Hz shared-memory timing model and shader prewarm planning.",
     ),
     background: [
       t(
@@ -43,8 +43,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WAVE4_HYPERCORE: readonly Engineerin
       kind: "layers",
       title: t("이기종 DAG · 제로카피 슬랩 워커 풀 · SAB PLL · Ridge 프리워머", "Heterogeneous DAG, zero-copy slab pool, SAB PLL & Ridge prewarmer"),
       caption: t(
-        "커널 배정, 무복사 슬랩 워커 실행, 오디오-GPU 위상 동기화, 유휴 셰이더 예열이 한 런타임 규율로 맞물립니다.",
-        "Kernel routing, zero-copy worker execution, audio-GPU phase lock and idle shader pre-warming operate together.",
+        "커널 배정, 공유 메모리 워커, 위상 동기화, 셰이더 예열 계획의 연결 구상입니다.",
+        "Proposed composition of kernel routing, shared-memory workers, phase locking and shader prewarm planning.",
       ),
       alt: t(
         "위에서부터 이기종 컴퓨트 DAG 스케줄러가 WASM64 SIMD 와 WebGPU 로 작업을 나누고, 비동기 WASM 워커 풀이 64B..64KiB 슬랩 아레나와 제로카피 링을 통해 실행하며, 아래에서 SAB 디지털 PLL 브리지와 온디바이스 Ridge 셰이더 프리워머가 프레임 지연을 막습니다.",
@@ -61,20 +61,19 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WAVE4_HYPERCORE: readonly Engineerin
       {
         feature: t("비동기 WASM 워커 풀 · 2^k 슬랩 아레나 · 이기종 DAG 스케줄러", "Async WASM worker pool, 2^k slab arena & heterogeneous DAG scheduler"),
         role: t(
-          "O(1) 슬랩 메모리 대여·제로카피 디스크립터 전송·Work-Stealing·장애 워커 재생성과 CPU/GPU DAG 스케줄링을 담당합니다.",
-          "Provides O(1) slab leasing, zero-copy descriptors, work-stealing, worker recycling and CPU/GPU DAG scheduling.",
+          "실험 모듈에서 슬랩 대여, 워커 교체, CPU·GPU 작업 배정 계획을 확인했습니다. /studio 렌더러 연결은 후속 단계입니다.",
+          "Module tests cover slab leasing, worker replacement and CPU/GPU routing plans. Integration into the /studio renderer is a follow-up.",
         ),
         paths: [
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/wasm-worker-slab-pool.ts",
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/hybrid-compute-shadow-ink-meshlet.ts",
         ],
-        route: "/studio",
       },
       {
         feature: t("SAB WebGPU↔WebAudio PLL 브리지 & Ridge WGSL 프리워머", "SAB WebGPU↔WebAudio PLL bridge & Ridge WGSL prewarmer"),
         role: t(
-          "공유 메모리 Seqlock 위에서 오디오-영상 위상을 맞추고 온디바이스 Ridge 회귀로 유휴 슬라이스 셰이더 예열을 제어합니다.",
-          "Locks audio-video phase over a Seqlock SAB and schedules idle-slice WGSL pre-warming via Ridge regression.",
+          "48 kHz 입력과 120 Hz 프레임의 지연을 합성해 위상 보정과 셰이더 예열 계획을 확인했습니다.",
+          "Synthetic 48 kHz audio and 120 Hz frame timing exercise phase correction and shader prewarm planning.",
         ),
         paths: [
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/webgpu-webaudio-sab-sync.ts",
@@ -119,8 +118,8 @@ export const ENGINEERING_ATLAS_WEB_PLATFORM_WAVE4_HYPERCORE: readonly Engineerin
     chapterIds: ["worker-architecture", "performance", "sound-generation"],
     talk: {
       pitch: t(
-        "64B~64KiB O(1) 슬랩 아레나와 장애 자동 교체 Work-Stealing 워커 풀, 48kHz↔120Hz SAB 위상 고정 루프, 온디바이스 Ridge 셰이더 예열기를 하나로 묶어 렌더링 멈춤과 오디오 어긋남을 함께 잡았습니다.",
-        "Combines an O(1) slab work-stealing WASM pool, a 48 kHz↔120 Hz SAB PLL and an on-device Ridge shader prewarmer to eliminate stalls and audio-visual drift.",
+        "실험 모듈에서 슬랩 워커의 장애 교체와 공유 메모리 위상 보정, 유휴 시간에 실행할 셰이더 예열 계획을 확인했습니다.",
+        "Module tests cover slab worker replacement, shared-memory phase correction and shader prewarm planning for idle time.",
       ),
       analogy: t(
         "규격 상자(슬랩)만 번호표로 넘기는 물류 레인, 고장 난 작업대를 즉시 새것으로 가는 반장, 메트로놈에 바늘을 맞추는 영사기(PLL), 공연 전 무대 조명을 미리 달궈 두는 스태프(프리워머)의 조합입니다.",

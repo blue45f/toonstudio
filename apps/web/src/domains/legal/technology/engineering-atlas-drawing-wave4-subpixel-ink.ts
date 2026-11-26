@@ -15,8 +15,8 @@ export const ENGINEERING_ATLAS_DRAWING_WAVE4_SUBPIXEL_INK: readonly EngineeringA
     title: t("모폴로지 스플라인 · 4× RGSS 서브픽셀 선화 · 모세관 잉크 번짐", "Morphological spline, 4× RGSS subpixel line-art & capillary ink"),
     status: "experimental",
     tagline: t(
-      "스타일러스 선폭 스파이크를 정제해 60%+ 압축하고 4× RGSS·LCD 서브픽셀 선화와 질량 보존 모세관 번짐을 그립니다.",
-      "Compresses stylus splines by 60%+ after morphological de-spiking and renders 4× RGSS LCD line-art & capillary ink.",
+      "합성 스타일러스 입력에서 매듭 수 60% 이상 감소를 확인했습니다. 서브픽셀 선화와 모세관 번짐도 각각 단위 테스트로 확인했습니다.",
+      "Unit fixtures verify more than 60% knot reduction on synthetic stylus input, subpixel ink and capillary bleed.",
     ),
     background: [
       t(
@@ -24,8 +24,8 @@ export const ENGINEERING_ATLAS_DRAWING_WAVE4_SUBPIXEL_INK: readonly EngineeringA
         "High-rate stylus streams leave redundant points and pressure spikes, while naive antialiasing blurs thin monochrome manga ink or introduces LCD color fringing.",
       ),
       t(
-        "optimizeMorphologicalSplineAsset(spline-edge-subpixel-preview.ts)은 1차원 형태학적 침식·팽창(Opening/Closing)으로 선폭 노이즈를 50% 이상 줄인 뒤 센트리페탈 Catmull-Rom 오차 한도 안에서 제어점을 60% 이상 압축합니다. planStaticEdgeTilePrefetch 는 뷰포트 가시 영역과 팬 속도 원뿔(Velocity Cone)로 ₩0 정적 타일만 선행 로드합니다.",
-        "optimizeMorphologicalSplineAsset removes width spikes by >50% via morphological open/close before pruning >60% of knots on centripetal Catmull-Rom curves, paired with ₩0 velocity-cone static tile prefetching.",
+        "합성 입력 테스트에서 optimizeMorphologicalSplineAsset은 형태학적 침식·팽창으로 선폭 노이즈를 50% 이상 줄이고 Catmull-Rom 매듭을 60% 이상 줄였습니다. planStaticEdgeTilePrefetch는 가시 영역과 이동 속도로 요청할 정적 타일을 정합니다.",
+        "A synthetic-input test verifies more than 50% width-noise reduction and 60% Catmull-Rom knot pruning. planStaticEdgeTilePrefetch selects static tiles from the viewport and pan velocity.",
       ),
       t(
         "renderSubpixelRgssLineArtPreview 는 4× 회전 격자(±0.125, ±0.375) 거리장 커버리지와 5탭 에너지 균형 필터([1,2,3,2,1]/9)로 무지개 테두리 없는 초선명 LCD 선화를 만들고, stepCapillaryInkBleed(hybrid-compute-shadow-ink-meshlet.ts)는 종이 섬유 이방성과 안료 질량 보존을 지키는 수묵 번짐을 계산합니다(Current: 단위 검증 완료·0B 번들, Target: 펜선 확대 프리뷰·동양화 브러시 연결).",
@@ -33,7 +33,7 @@ export const ENGINEERING_ATLAS_DRAWING_WAVE4_SUBPIXEL_INK: readonly EngineeringA
       ),
     ],
     keyPoints: [
-      t("형태학적 Opening/Closing 선폭 안정화 + Catmull-Rom 매듭 60%+ 압축", "Morphological width stabilization + >60% Catmull-Rom knot pruning"),
+      t("합성 입력에서 Opening/Closing 선폭 안정화와 Catmull-Rom 매듭 60% 이상 감소", "Synthetic-input checks for width stabilization and >60% Catmull-Rom knot pruning"),
       t("원점 연산 ₩0 콘텐츠 해시 정적 타일 매니페스트 & 속도 원뿔 프리페치", "₩0 content-hashed static tile manifest & velocity-cone prefetch"),
       t("4× 회전 격자(RGSS) 거리장 + 5탭 에너지 균형 LCD RGB 서브픽셀 선화", "4× RGSS signed-distance + 5-tap balanced LCD RGB subpixel ink"),
       t("종이 섬유 가로·세로 이방성 및 총 안료 질량 보존 모세관 수묵 번짐", "Fiber-anisotropic, mass-conserving capillary ink bleed step"),
@@ -66,14 +66,13 @@ export const ENGINEERING_ATLAS_DRAWING_WAVE4_SUBPIXEL_INK: readonly EngineeringA
       {
         feature: t("모폴로지 스플라인 압축기 · ₩0 타일 프리페치 · 4× RGSS LCD 프리뷰", "Morphological spline optimizer, ₩0 tile prefetch & 4× RGSS preview"),
         role: t(
-          "선폭 스파이크 제거·Catmull-Rom 매듭 압축, 속도 원뿔 정적 타일 프리페치, 4× RGSS/LCD 서브픽셀 선화 합성을 담당합니다.",
-          "Runs width de-spiking, Catmull-Rom pruning, velocity-cone static tile prefetch and 4× RGSS/LCD subpixel rendering.",
+          "실험 모듈의 선폭 보정, 타일 요청 계획, 서브픽셀 선화를 단위 테스트로 확인했습니다. /studio 펜선 미리보기 연결은 후속 단계입니다.",
+          "Unit tests cover width correction, tile-request planning and subpixel ink. Integration into the /studio stroke preview is a follow-up.",
         ),
         paths: [
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/spline-edge-subpixel-preview.ts",
           "apps/web/src/domains/creator/wasm64-wave4-hypercore/wasm64-wave4-hypercore.test.ts",
         ],
-        route: "/studio",
       },
       {
         feature: t("저점도 이방성 모세관 수묵/잉크 번짐 솔버", "Low-viscosity anisotropic capillary ink bleed solver"),
@@ -122,8 +121,8 @@ export const ENGINEERING_ATLAS_DRAWING_WAVE4_SUBPIXEL_INK: readonly EngineeringA
     chapterIds: ["brush-engine", "performance"],
     talk: {
       pitch: t(
-        "형태학적 필터로 스타일러스 압력 튐을 다듬어 점 개수를 60% 이상 줄이고, 4× 회전 격자·5탭 LCD 서브픽셀 커널과 질량 보존 모세관 번짐으로 펜선의 칼같은 선명함과 수묵의 번짐을 모두 잡았습니다.",
-        "Smooths stylus spikes to cut knot counts over 60%, pairing 4× RGSS 5-tap LCD subpixel rendering with mass-conserving capillary ink bleed.",
+        "합성 획에서 선폭 튐을 줄이고 매듭 수를 60% 이상 줄였습니다. 4× 회전 격자, 5탭 LCD 필터, 안료 질량을 보존하는 번짐은 각 모듈에서 확인했습니다.",
+        "A synthetic stroke verified width correction and over 60% knot reduction. Module tests cover 4× RGSS, the 5-tap LCD filter and mass-conserving ink bleed.",
       ),
       analogy: t(
         "떨리는 손자국은 자로 말끔히 정돈해 저장 용량을 줄이고, 화면에 비출 때는 돋보기 눈금(서브픽셀)까지 맞춰 날카로운 만화 펜선을 보여 주는 제도판입니다.",

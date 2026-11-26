@@ -60,7 +60,7 @@
     "typecheck:analyze-trace": "analyze-trace .tstrace",
     "typecheck:trace:report": "pnpm run typecheck:trace && pnpm run typecheck:analyze-trace",
     "test": "pnpm run test:root && pnpm run test:perf",
-    "test:root": "node scripts/verify-workspace-package-links.mjs && vitest run",
+    "test:root": "node scripts/verify-workspace-package-links.mjs && pnpm run test:cloudflare-static-edge && vitest run",
     "test:coverage": "vitest run --coverage",
     "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:fast": "vitest run",
